@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_HAS_BUILTIN_H                          /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_HAS_BUILTIN_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -21,10 +23,7 @@
 #include "ruby/3/config.h"
 
 /** Wraps (or simulates) `__has_builtin`. */
-#if defined(RUBY3_HAS_BUILTIN)
-# /* Take that. */
-
-#elif defined(__has_builtin) && ! RUBY3_COMPILER_IS(Intel)
+#if defined(__has_builtin) && ! RUBY3_COMPILER_IS(Intel)
 # /* :TODO:  Intel C  Compiler has  __has_builtin (since  19.1 maybe?),  and is
 #  * reportedly  broken.  We  have to  skip  them.  However  the situation  can
 #  * change.  They might improve someday.  We need to revisit here later. */
@@ -89,3 +88,5 @@
 #  define RUBY3_HAS_BUILTIN___builtin_unreachable 1
 # endif
 #endif
+
+#endif /* RUBY3_HAS_BUILTIN_H */

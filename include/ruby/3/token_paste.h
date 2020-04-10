@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_TOKEN_PASTE_H                          /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_TOKEN_PASTE_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -26,10 +28,7 @@
  * documented.  Please  improve this file when  you are really sure  about your
  * compiler's behaviour. */
 
-#if defined(RUBY3_TOKEN_PASTE)
-# /* Take that. */
-
-#elif RUBY3_COMPILER_SINCE(GCC, 4, 2, 0)
+#if RUBY3_COMPILER_SINCE(GCC, 4, 2, 0)
 # /* GCC is one of such compiler who  cannot write `_Pragma` inside of a `#if`.
 #  * Cannot but globally kill everything.  This  is of course a very bad thing.
 #  * If you know how to reroute this please tell us. */
@@ -69,3 +68,5 @@
 # /* No way. */
 # define RUBY3_TOKEN_PASTE(x, y) TOKEN_PASTE(x, y)
 #endif
+
+#endif /* RUBY3_TOKEN_PASTE_H */

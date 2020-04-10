@@ -1,3 +1,5 @@
+#ifndef RUBY_METHOD_H
+#define RUBY_METHOD_H 1
 /**********************************************************************
 
   method.h -
@@ -8,8 +10,6 @@
   Copyright (C) 2009 Koichi Sasada
 
 **********************************************************************/
-#ifndef RUBY_METHOD_H
-#define RUBY_METHOD_H 1
 
 #include "internal.h"
 #include "internal/imemo.h"

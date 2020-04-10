@@ -1,4 +1,6 @@
-/**                                                         \noop-*-C-*-vi:ft=c
+#ifndef INTERNAL_FIXNUM_H                                /*-*-C-*-vi:se ft=c:*/
+#define INTERNAL_FIXNUM_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -7,8 +9,6 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Fixnums.
  */
-#ifndef INTERNAL_FIXNUM_H
-#define INTERNAL_FIXNUM_H
 #include "ruby/3/config.h"      /* for HAVE_LONG_LONG */
 #include <limits.h>             /* for CHAR_BIT */
 #include "internal/compilers.h" /* for __has_builtin */

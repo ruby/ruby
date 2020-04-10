@@ -1,3 +1,5 @@
+#ifndef RUBY_MJIT_H
+#define RUBY_MJIT_H 1
 /**********************************************************************
 
   mjit.h - Interface to MRI method JIT compiler for Ruby's main thread
@@ -5,9 +7,6 @@
   Copyright (C) 2017 Vladimir Makarov <vmakarov@redhat.com>.
 
 **********************************************************************/
-
-#ifndef RUBY_MJIT_H
-#define RUBY_MJIT_H 1
 
 #include "ruby/3/config.h"
 

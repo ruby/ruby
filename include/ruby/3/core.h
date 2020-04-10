@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_CORE_H                                 /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_CORE_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -30,3 +32,4 @@
 #include "ruby/3/core/rstring.h"
 #include "ruby/3/core/rstruct.h"
 #include "ruby/3/core/rtypeddata.h"
+#endif /* RUBY3_CORE_H */

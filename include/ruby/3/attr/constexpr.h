@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_ATTR_CONSTEXPR_H                       /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_ATTR_CONSTEXPR_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -21,11 +23,8 @@
 #include "ruby/3/has/feature.h"
 #include "ruby/3/compiler_is.h"
 
-/** @cond INTERNAL_MACRO*/
-#if defined(RUBY3_ATTR_CONSTEXPR)
-# /* Take that. */
-
-#elif ! defined(__cplusplus)
+/** @cond INTERNAL_MACRO */
+#if ! defined(__cplusplus)
 # /* Makes no sense. */
 # define RUBY3_HAS_ATTR_CONSTEXPR_CXX11 0
 # define RUBY3_HAS_ATTR_CONSTEXPR_CXX14 0
@@ -63,10 +62,7 @@
 /** @endcond */
 
 /** Wraps (or simulates) C++11 `constexpr`.  */
-#if defined(RUBY3_ATTR_CONSTEXPR)
-# /* Take that. */
-
-#elif RUBY3_HAS_ATTR_CONSTEXPR_CXX14
+#if RUBY3_HAS_ATTR_CONSTEXPR_CXX14
 # define RUBY3_ATTR_CONSTEXPR(_) constexpr
 
 #elif RUBY3_HAS_ATTR_CONSTEXPR_CXX11
@@ -79,12 +75,10 @@
 #endif
 
 /** Enables #RUBY3_ATTR_CONSTEXPR iff. #RUBY_NDEBUG. */
-#if defined(RUBY3_ATTR_CONSTEXPR_ON_NDEBUG)
-# /* Take that. */
-
-#elif RUBY_NDEBUG
+#if RUBY_NDEBUG
 # define RUBY3_ATTR_CONSTEXPR_ON_NDEBUG(_) RUBY3_ATTR_CONSTEXPR(_)
-
 #else
 # define RUBY3_ATTR_CONSTEXPR_ON_NDEBUG(_) /* void */
 #endif
+
+#endif /* RUBY3_ATTR_CONSTEXPR_H */

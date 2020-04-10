@@ -1,4 +1,6 @@
-/**                                                         \noop-*-C-*-vi:ft=c
+#ifndef INTERNAL_UTIL_H                                  /*-*-C-*-vi:se ft=c:*/
+#define INTERNAL_UTIL_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -8,8 +10,6 @@
  * @brief      Internal header corresponding util.c.
  * @warning    DO NOT ADD RANDOM GARBAGE HERE THIS FILE IS FOR util.c
  */
-#ifndef INTERNAL_UTIL_H /* -*- C -*- */
-#define INTERNAL_UTIL_H
 #include "ruby/3/config.h"
 #include <stddef.h>             /* for size_t */
 

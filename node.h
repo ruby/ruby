@@ -1,3 +1,5 @@
+#ifndef RUBY_NODE_H
+#define RUBY_NODE_H 1
 /**********************************************************************
 
   node.h -
@@ -8,9 +10,6 @@
   Copyright (C) 1993-2007 Yukihiro Matsumoto
 
 **********************************************************************/
-
-#ifndef RUBY_NODE_H
-#define RUBY_NODE_H 1
 
 #if defined(__cplusplus)
 extern "C" {

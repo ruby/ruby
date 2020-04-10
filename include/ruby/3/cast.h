@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_CAST_H                                 /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_CAST_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -24,10 +26,7 @@
  * warnings.  Ruby internals are pure C so they should not bother.
  */
 
-#if defined(RUBY3_CAST)
-# /* Take that. */
-
-#elif ! defined(__cplusplus)
+#if ! defined(__cplusplus)
 # define RUBY3_CAST(expr) (expr)
 
 #elif RUBY3_COMPILER_SINCE(GCC, 4, 6, 0)
@@ -47,3 +46,5 @@
 # define RUBY3_CAST(expr) (expr)
 #endif
 /** @endcond */
+
+#endif /* RUBY3_CAST_H */

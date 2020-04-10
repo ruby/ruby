@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY_MISSING_H                               /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY_MISSING_H 1
+/**
  * @file
  * @author     $Author$
  * @date       Sat May 11 23:46:03 JST 2002
@@ -8,9 +10,6 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Prototype for *.c in ./missing, and for missing timeval struct.
  */
-#ifndef RUBY_MISSING_H
-#define RUBY_MISSING_H 1
-
 #include "ruby/3/config.h"
 
 #ifdef STDC_HEADERS

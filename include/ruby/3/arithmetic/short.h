@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_ARITHMETIC_SHORT_H                     /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_ARITHMETIC_SHORT_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -21,8 +23,6 @@
  * Shyouhei  wonders:  why  there  is   no  SHORT2NUM,  given  there  are  both
  * #USHORT2NUM and #CHR2FIX?
  */
-#ifndef  RUBY3_ARITHMETIC_SHORT_H
-#define  RUBY3_ARITHMETIC_SHORT_H
 #include "ruby/3/value.h"
 #include "ruby/3/dllexport.h"
 #include "ruby/3/special_consts.h"

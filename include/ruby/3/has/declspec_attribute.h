@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_HAS_DECLSPEC_ATTRIBUTE_H               /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_HAS_DECLSPEC_ATTRIBUTE_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -20,12 +22,8 @@
  */
 
 /** Wraps (or simulates) `__has_declspec_attribute`. */
-#if defined(RUBY3_HAS_DECLSPEC_ATTRIBUTE)
-# /* Take that. */
-
-#elif defined(__has_declspec_attribute)
+#if defined(__has_declspec_attribute)
 # define RUBY3_HAS_DECLSPEC_ATTRIBUTE(_) __has_declspec_attribute(_)
-
 #else
 # define RUBY3_HAS_DECLSPEC_ATTRIBUTE(_) RUBY3_TOKEN_PASTE(RUBY3_HAS_DECLSPEC_ATTRIBUTE_, _)
 # define RUBY3_HAS_DECLSPEC_ATTRIBUTE_align       RUBY3_COMPILER_SINCE(MSVC, 8, 0, 0)
@@ -44,3 +42,5 @@
 #  undef RUBY3_HAS_DECLSPEC_ATTRIBUTE_nothrow
 # endif
 #endif
+
+#endif /* RUBY3_HAS_DECLSPEC_ATTRIBUTE_H */

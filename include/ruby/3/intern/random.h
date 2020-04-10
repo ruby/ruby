@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_INTERN_RANDOM_H                        /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_INTERN_RANDOM_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -22,8 +24,6 @@
  *             generator", ACM  Trans. on  Modeling and Computer  Simulation, 8
  *             (1): pp 3-30, 1998.  https://doi.org/10.1145/272991.272995
  */
-#ifndef  RUBY3_INTERN_RANDOM_H
-#define  RUBY3_INTERN_RANDOM_H
 #include "ruby/3/dllexport.h"
 #include "ruby/3/value.h"
 

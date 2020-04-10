@@ -1,19 +1,18 @@
-/**********************************************************************
-
-  ruby/debug.h -
-
-  $Author: ko1 $
-  created at: Tue Nov 20 20:35:08 2012
-
-  Copyright (C) 2012 Yukihiro Matsumoto
-
-**********************************************************************/
-
-#ifndef RB_DEBUG_H
+#ifndef RB_DEBUG_H                                   /*-*-C++-*-vi:se ft=cpp:*/
 #define RB_DEBUG_H 1
-
+/**
+ * @file
+ * @author     $Author: ko1 $
+ * @date       Tue Nov 20 20:35:08 2012
+ * @copyright  Copyright (C) 2012 Yukihiro Matsumoto
+ * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
+ *             Permission  is hereby  granted,  to  either redistribute  and/or
+ *             modify this file, provided that  the conditions mentioned in the
+ *             file COPYING are met.  Consult the file for details.
+ */
 #include "ruby/3/dllexport.h"
 #include "ruby/3/event.h"
+#include "ruby/3/value.h"
 
 RUBY3_SYMBOL_EXPORT_BEGIN()
 

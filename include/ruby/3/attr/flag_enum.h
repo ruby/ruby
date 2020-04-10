@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_ATTR_FLAG_ENUM_H                       /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_ATTR_FLAG_ENUM_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -21,12 +23,10 @@
  */
 
 /** Wraps (or simulates) `__attribute__((flag_enum)` */
-#if defined(RUBY3_ATTR_FLAG_ENUM)
-# /* Take that. */
-
-#elif RUBY3_HAS_ATTRIBUTE(flag_enum)
+#if RUBY3_HAS_ATTRIBUTE(flag_enum)
 # define RUBY3_ATTR_FLAG_ENUM() __attribute__((__flag_enum__))
-
 #else
 # define RUBY3_ATTR_FLAG_ENUM() /* void */
 #endif
+
+#endif /* RUBY3ATTR_FLAG_ENUM_H */

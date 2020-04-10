@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY_BACKWARD2_GCC_VERSION_SINCE_H           /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY_BACKWARD2_GCC_VERSION_SINCE_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -31,3 +33,5 @@
     ((RUBY3_COMPILER_VERSION_MINOR == (y))      && \
      (RUBY3_COMPILER_VERSION_PATCH == (z))))))
 #endif
+
+#endif /* RUBY_BACKWARD2_GCC_VERSION_SINCE_H */

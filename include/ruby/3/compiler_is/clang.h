@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_COMPILER_IS_CLANG_H                    /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_COMPILER_IS_CLANG_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -20,10 +22,7 @@
  */
 #include "ruby/3/compiler_is/apple.h"
 
-#if defined(RUBY3_COMPILER_IS_Clang)
-# /* Take that. */
-
-#elif ! defined(__clang__)
+#if ! defined(__clang__)
 # define RUBY3_COMPILER_IS_Clang 0
 
 #elif RUBY3_COMPILER_IS(Apple)
@@ -35,3 +34,5 @@
 # define RUBY3_COMPILER_VERSION_MINOR __clang_minor__
 # define RUBY3_COMPILER_VERSION_PATCH __clang_patchlevel__
 #endif
+
+#endif /* RUBY3_COMPILER_IS_CLANG_H */

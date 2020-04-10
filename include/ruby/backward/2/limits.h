@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY_BACKWARD2_LIMITS_H                      /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY_BACKWARD2_LIMITS_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -94,3 +96,5 @@
 # define SSIZE_MAX SHRT_MAX
 # define SSIZE_MIN SHRT_MIN
 #endif
+
+#endif /* RUBY_BACKWARD2_LIMITS_H */

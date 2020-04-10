@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_ATTR_NOALIAS_H                         /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_ATTR_NOALIAS_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -47,12 +49,10 @@
 #include "ruby/3/has/declspec_attribute.h"
 
 /** Wraps (or simulates) `__declspec((noalias))` */
-#if defined(RUBY3_ATTR_NOALIAS)
-# /* Take that. */
-
-#elif RUBY3_HAS_DECLSPEC_ATTRIBUTE(noalias)
+#if RUBY3_HAS_DECLSPEC_ATTRIBUTE(noalias)
 # define RUBY3_ATTR_NOALIAS() __declspec(noalias)
-
 #else
 # define RUBY3_ATTR_NOALIAS() /* void */
 #endif
+
+#endif /* RUBY3_ATTR_NOALIAS_H */

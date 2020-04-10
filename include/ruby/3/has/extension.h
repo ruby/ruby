@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_HAS_EXTENSION_H                        /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_HAS_EXTENSION_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -21,13 +23,11 @@
 #include "ruby/3/has/feature.h"
 
 /** Wraps (or simulates) `__has_extension`. */
-#if defined(RUBY3_HAS_EXTENSION)
-# /* Take that. */
-
-#elif defined(__has_extension)
+#if defined(__has_extension)
 # define RUBY3_HAS_EXTENSION(_) __has_extension(_)
-
 #else
 # /* Pre-3.0 clang had __has_feature but not __has_extension. */
 # define RUBY3_HAS_EXTENSION(_) RUBY3_HAS_FEATURE(_)
 #endif
+
+#endif /* RUBY3_HAS_EXTENSION_H */

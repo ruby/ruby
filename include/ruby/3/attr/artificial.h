@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_ATTR_ARTIFICIAL_H                      /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_ATTR_ARTIFICIAL_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -34,12 +36,10 @@
  */
 
 /** Wraps (or simulates) `__attribute__((artificial))` */
-#if defined(RUBY3_ATTR_ARTIFICIAL)
-# /* Take that. */
-
-#elif RUBY3_HAS_ATTRIBUTE(artificial)
+#if RUBY3_HAS_ATTRIBUTE(artificial)
 # define RUBY3_ATTR_ARTIFICIAL() __attribute__((__artificial__))
-
 #else
 # define RUBY3_ATTR_ARTIFICIAL() /* void */
 #endif
+
+#endif /* RUBY3_ATTR_ARTIFICIAL_H */

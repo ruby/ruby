@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_ATTR_DEPRECATED_H                      /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_ATTR_DEPRECATED_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -24,10 +26,7 @@
 #include "ruby/3/has/extension.h"
 
 /** Wraps (or simulates) `[[deprecated]]` */
-#if defined(RUBY3_ATTR_DEPRECATED)
-# /* Take that. */
-
-#elif RUBY3_HAS_EXTENSION(attribute_deprecated_with_message)
+#if RUBY3_HAS_EXTENSION(attribute_deprecated_with_message)
 # define RUBY3_ATTR_DEPRECATED(msg) __attribute__((__deprecated__ msg))
 
 #elif RUBY3_COMPILER_SINCE(GCC, 4, 5, 0)
@@ -54,3 +53,5 @@
 #else
 # define RUBY3_ATTR_DEPRECATED(msg) /* void */
 #endif
+
+#endif /* RUBY3_ATTR_DEPRECATED_H */

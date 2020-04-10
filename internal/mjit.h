@@ -1,4 +1,6 @@
-/**                                                         \noop-*-C-*-vi:ft=c
+#ifndef INTERNAL_MJIT_H                                  /*-*-C-*-vi:se ft=c:*/
+#define INTERNAL_MJIT_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -7,8 +9,6 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for MJIT.
  */
-#ifndef INTERNAL_MJIT_H
-#define INTERNAL_MJIT_H
 #include "ruby/3/stdbool.h"     /* for bool */
 #include "ruby/ruby.h"          /* for VALUE */
 

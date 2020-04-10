@@ -1,17 +1,15 @@
-/**********************************************************************
-
-  util.h -
-
-  $Author$
-  created at: Thu Mar  9 11:55:53 JST 1995
-
-  Copyright (C) 1993-2007 Yukihiro Matsumoto
-
-**********************************************************************/
-
-#ifndef RUBY_UTIL_H
+#ifndef RUBY_UTIL_H                                  /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_UTIL_H 1
-
+/**
+ * @file
+ * @author     $Author$
+ * @date       Thu Mar  9 11:55:53 JST 1995
+ * @copyright  Copyright (C) 1993-2007 Yukihiro Matsumoto
+ * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
+ *             Permission  is hereby  granted,  to  either redistribute  and/or
+ *             modify this file, provided that  the conditions mentioned in the
+ *             file COPYING are met.  Consult the file for details.
+ */
 #include "ruby/3/config.h"
 #include "ruby/3/dllexport.h"
 #include "ruby/defines.h"

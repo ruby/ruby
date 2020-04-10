@@ -1,4 +1,6 @@
-/**                                                         \noop-*-C-*-vi:ft=c
+#ifndef INTERNAL_CLASS_H                                 /*-*-C-*-vi:se ft=c:*/
+#define INTERNAL_CLASS_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -7,8 +9,6 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Class.
  */
-#ifndef INTERNAL_CLASS_H
-#define INTERNAL_CLASS_H
 #include "id_table.h"           /* for struct rb_id_table */
 #include "internal/gc.h"        /* for RB_OBJ_WRITE */
 #include "internal/serial.h"    /* for rb_serial_t */

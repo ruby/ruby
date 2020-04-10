@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_WARNING_PUSH_H                         /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_WARNING_PUSH_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -43,10 +45,7 @@
  */
 #include "ruby/3/compiler_is.h"
 
-#ifdef RUBY3_WARNING_PUSH
-# /* Take that. */
-
-#elif RUBY3_COMPILER_SINCE(MSVC, 12, 0, 0)
+#if RUBY3_COMPILER_SINCE(MSVC, 12, 0, 0)
 # /* Not sure exactly when but it seems VC++ 6.0 is a version with it.*/
 # define RUBY3_WARNING_PUSH()        __pragma(warning(push))
 # define RUBY3_WARNING_POP()         __pragma(warning(pop))
@@ -87,3 +86,5 @@
 # define RUBY3_WARNING_IGNORED(flag) /* void */
 #endif /* _MSC_VER */
 /** @endcond */
+
+#endif /* RUBY3_WARNING_PUSH_H */

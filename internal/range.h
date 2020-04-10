@@ -1,4 +1,6 @@
-/**                                                         \noop-*-C-*-vi:ft=c
+#ifndef INTERNAL_RANGE_H                                  /*-*-C-*-vi:se ft=c:*/
+#define INTERNAL_RANGE_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -7,8 +9,6 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Range.
  */
-#ifndef INTERNAL_RANGE_H
-#define INTERNAL_RANGE_H
 #include "internal/struct.h"    /* for RSTRUCT */
 
 /* range.c */

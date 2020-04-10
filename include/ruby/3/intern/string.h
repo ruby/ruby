@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_INTERN_STRING_H                        /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_INTERN_STRING_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -18,8 +20,6 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Public APIs related to ::rb_cString.
  */
-#ifndef  RUBY3_INTERN_STRING_H
-#define  RUBY3_INTERN_STRING_H
 #include "ruby/3/config.h"
 
 #ifdef STDC_HEADERS

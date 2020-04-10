@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY_BACKWARD2_R_CAST_H                      /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY_BACKWARD2_R_CAST_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -20,8 +22,6 @@
  *
  * Nobody is actively using this macro.
  */
-#ifndef RUBY_BACKWARD2_R_CAST_H
-#define RUBY_BACKWARD2_R_CAST_H
 #define R_CAST(st)   (struct st*)
 #define RMOVED(obj)  (R_CAST(RMoved)(obj))
 #endif /* RUBY_BACKWARD2_R_CAST_H */

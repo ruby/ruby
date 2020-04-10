@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_INTERN_SELECT_LARGESIZE_H              /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_INTERN_SELECT_LARGESIZE_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -53,8 +55,6 @@
  *
  * So `rb_fd_set` doesn't reject file descriptors bigger than `FD_SETSIZE`.
  */
-#ifndef  RUBY3_INTERN_SELECT_LARGESIZE_H
-#define  RUBY3_INTERN_SELECT_LARGESIZE_H
 #include "ruby/3/attr/nonnull.h"
 #include "ruby/3/attr/pure.h"
 #include "ruby/3/dllexport.h"

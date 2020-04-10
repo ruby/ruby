@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_COMPILER_IS_SUNPRO_H                   /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_COMPILER_IS_SUNPRO_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -18,10 +20,7 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #RUBY3_COMPILER_IS_SunPro.
  */
-#if defined(RUBY3_COMPILER_IS_SunPro)
-# /* Take that. */
-
-#elif ! (defined(__SUNPRO_C) || defined(__SUNPRO_CC))
+#if ! (defined(__SUNPRO_C) || defined(__SUNPRO_CC))
 # define RUBY3_COMPILER_IS_SunPro 0
 
 #elif defined(__SUNPRO_C) && __SUNPRO_C >= 0x5100
@@ -52,3 +51,5 @@
 # define TERSE_COMPILER_VERSION_MINOR (__SUNPRO_CC >> 4 & 0xF)
 # define TERSE_COMPILER_VERSION_PATCH (__SUNPRO_CC      & 0xF)
 #endif
+
+#endif /* RUBY3_COMPILER_IS_SUNPRO_H */

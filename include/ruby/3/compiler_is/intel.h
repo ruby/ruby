@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_COMPILER_IS_INTEL_H                    /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_COMPILER_IS_INTEL_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -18,10 +20,7 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #RUBY3_COMPILER_IS_Intel.
  */
-#if defined(RUBY3_COMPILER_IS_Intel)
-# /* Take that. */
-
-#elif ! defined(__INTEL_COMPILER)
+#if ! defined(__INTEL_COMPILER)
 # define RUBY3_COMPILER_IS_Intel 0
 
 #elif ! defined(__INTEL_COMPILER_UPDATE)
@@ -38,3 +37,5 @@
 # define RUBY3_COMPILER_VERSION_MINOR (__INTEL_COMPILER % 100 / 10)
 # define RUBY3_COMPILER_VERSION_PATCH __INTEL_COMPILER_UPDATE
 #endif
+
+#endif /* RUBY3_COMPILER_IS_INTEL_H */

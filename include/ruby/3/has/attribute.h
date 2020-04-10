@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_HAS_ATTRIBUTE_H                        /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_HAS_ATTRIBUTE_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -21,10 +23,7 @@
 #include "ruby/3/config.h"
 
 /** Wraps (or simulates) `__has_attribute`. */
-#if defined(RUBY3_HAS_ATTRIBUTE)
-# /* Take that. */
-
-#elif defined(__has_attribute)
+#if defined(__has_attribute)
 # define RUBY3_HAS_ATTRIBUTE(_) __has_attribute(_)
 
 #elif RUBY3_COMPILER_IS(GCC)
@@ -150,3 +149,5 @@
 #  define RUBY3_HAS_ATTRIBUTE_weak 1
 # endif
 #endif
+
+#endif /* RUBY3_HAS_ATTRIBUTE_H */

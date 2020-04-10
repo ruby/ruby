@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY_BACKWARD2_LONG_LONG_H                   /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY_BACKWARD2_LONG_LONG_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -25,10 +27,7 @@
  */
 #include "ruby/3/config.h"
 
-#if defined(LONG_LONG)
-# /* Take that. */
-
-#elif RUBY3_HAS_WARNING("-Wc++11-long-long")
+#if RUBY3_HAS_WARNING("-Wc++11-long-long")
 # define HAVE_TRUE_LONG_LONG 1
 # define LONG_LONG                           \
     RUBY3_WARNING_PUSH()                     \
@@ -60,3 +59,5 @@
 # error Remember to attach a detailed description of your environment.
 # error Thank you!
 #endif
+
+#endif /* RUBY3_BACKWARD2_LONG_LONG_H */

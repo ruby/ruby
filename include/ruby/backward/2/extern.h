@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY_BACKWARD2_EXTERN_H                      /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY_BACKWARD2_EXTERN_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -24,10 +26,7 @@
  * @brief      Synonym of #RUBY_EXTERN.
  * @deprecated #EXTERN is deprecated, use #RUBY_EXTERN instead.
  */
-#ifdef EXTERN
-# /* Stop bothering then. */
-
-#elif defined __GNUC__
+#if defined __GNUC__
 # define EXTERN \
     _Pragma("message \"EXTERN is deprecated, use RUBY_EXTERN instead\""); \
     RUBY_EXTERN
@@ -43,3 +42,5 @@
 # define EXTERN <-<-"EXTERN is deprecated, use RUBY_EXTERN instead"->->
 
 #endif
+
+#endif /* RUBY_BACKWARD2_EXTERN_H */

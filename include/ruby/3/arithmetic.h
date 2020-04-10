@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_ARITHMETIC_H                           /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_ARITHMETIC_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -33,3 +35,4 @@
 #include "ruby/3/arithmetic/size_t.h"
 #include "ruby/3/arithmetic/st_data_t.h"
 #include "ruby/3/arithmetic/uid_t.h"
+#endif /* RUBY3_ARITHMETIC_H */

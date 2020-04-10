@@ -1,4 +1,6 @@
-/**                                                         \noop-*-C-*-vi:ft=c
+#ifndef INTERNAL_EVAL_H                                  /*-*-C-*-vi:se ft=c:*/
+#define INTERNAL_EVAL_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -9,8 +11,6 @@
  * @note       There  also  is  eval_intern.h, which  is  evaluator's  internal
  *             header (related to this file, but not the same role).
  */
-#ifndef INTERNAL_EVAL_H
-#define INTERNAL_EVAL_H
 #include "ruby/ruby.h"          /* for ID */
 
 #define id_signo ruby_static_id_signo

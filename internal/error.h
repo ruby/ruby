@@ -1,4 +1,6 @@
-/**                                                         \noop-*-C-*-vi:ft=c
+#ifndef INTERNAL_ERROR_H                                 /*-*-C-*-vi:se ft=c:*/
+#define INTERNAL_ERROR_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -7,8 +9,6 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Exception.
  */
-#ifndef INTERNAL_ERROR_H
-#define INTERNAL_ERROR_H
 #include "ruby/3/config.h"
 #include <stdarg.h>             /* for va_list */
 #include "internal/string.h"    /* for rb_fstring_cstr */

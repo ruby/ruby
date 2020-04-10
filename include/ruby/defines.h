@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY_DEFINES_H                               /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY_DEFINES_H 1
+/**
  * @file
  * @author     $Author$
  * @date       Wed May 18 00:21:44 JST 1994
@@ -7,8 +9,6 @@
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
  */
-#ifndef RUBY_DEFINES_H
-#define RUBY_DEFINES_H 1
 
 #include "ruby/3/config.h"
 

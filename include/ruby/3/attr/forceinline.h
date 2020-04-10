@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_ATTR_FORCEINLINE_H                     /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_ATTR_FORCEINLINE_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -25,15 +27,12 @@
  * `__forceinline` are mutually exclusive.  We have to mimic that behaviour for
  * non-MSVC compilers.
  */
-#if defined(RUBY3_ATTR_FORCEINLINE)
-# /* Take that. */
-
-#elif RUBY3_COMPILER_SINCE(MSVC, 12, 0, 0)
+#if RUBY3_COMPILER_SINCE(MSVC, 12, 0, 0)
 # define RUBY3_ATTR_FORCEINLINE() __forceinline
-
 #elif RUBY3_HAS_ATTRIBUTE(always_inline)
 # define RUBY3_ATTR_FORCEINLINE() __attribute__((__always_inline__)) inline
-
 #else
 # define RUBY3_ATTR_FORCEINLINE() inline
 #endif
+
+#endif /* RUBY3_ATTR_FORCEINLINE_H */

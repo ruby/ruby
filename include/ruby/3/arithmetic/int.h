@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_ARITHMETIC_INT_H                       /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_ARITHMETIC_INT_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -18,8 +20,6 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Arithmetic conversion between C's `int` and Ruby's.
  */
-#ifndef  RUBY3_ARITHMETIC_INT_H
-#define  RUBY3_ARITHMETIC_INT_H
 #include "ruby/3/config.h"
 #include "ruby/3/arithmetic/fixnum.h"
 #include "ruby/3/arithmetic/intptr_t.h"

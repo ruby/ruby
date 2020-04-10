@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY_BACKWARD2_RMODULE_H                     /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY_BACKWARD2_RMODULE_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -22,9 +24,8 @@
  * who is implementing the internals) could have used those macros for a while.
  * Kept public as-is here to keep some theoretical backwards compatibility.
  */
-#ifndef RMODULE_IV_TBL
 #define RMODULE_IV_TBL(m) RCLASS_IV_TBL(m)
 #define RMODULE_CONST_TBL(m) RCLASS_CONST_TBL(m)
 #define RMODULE_M_TBL(m) RCLASS_M_TBL(m)
 #define RMODULE_SUPER(m) RCLASS_SUPER(m)
-#endif
+#endif /* RUBY_BACKWARD2_RMODULE_H */

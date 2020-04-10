@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_ARITHMETIC_OFF_T_H                     /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_ARITHMETIC_OFF_T_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -43,3 +45,5 @@
 #else
 # define NUM2OFFT RB_NUM2INT
 #endif
+
+#endif /* RUBY3_ARITHMETIC_OFF_T_H */

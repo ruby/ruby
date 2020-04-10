@@ -1,3 +1,5 @@
+#ifndef CONSTANT_H
+#define CONSTANT_H
 /**********************************************************************
 
   constant.h -
@@ -8,8 +10,6 @@
   Copyright (C) 2009 Yusuke Endoh
 
 **********************************************************************/
-#ifndef CONSTANT_H
-#define CONSTANT_H
 #include "ruby/ruby.h"
 #include "id_table.h"
 

@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_COMPILER_IS_H                          /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_COMPILER_IS_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -25,12 +27,7 @@
  * @retval  true   It is.
  * @retval  false  It isn't.
  */
-#ifndef RUBY3_COMPILER_IS_INCLUDED
-#define RUBY3_COMPILER_IS_INCLUDED
-
-#ifndef RUBY3_COMPILER_IS
-# define RUBY3_COMPILER_IS(cc) RUBY3_COMPILER_IS_ ## cc
-#endif
+#define RUBY3_COMPILER_IS(cc) RUBY3_COMPILER_IS_ ## cc
 
 #include "ruby/3/compiler_is/apple.h"
 #include "ruby/3/compiler_is/clang.h"
@@ -45,4 +42,4 @@
  *
  * - ARM's armclang: ditto, it can be clang-backended.  */
 
-#endif // RUBY3_COMPILER_IS_INCLUDED
+#endif /* RUBY3_COMPILER_IS_H */

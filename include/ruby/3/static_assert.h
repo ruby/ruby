@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_STATIC_ASSERT_H                        /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_STATIC_ASSERT_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -22,10 +24,7 @@
 #include "ruby/3/has/extension.h"
 
 /** @cond INTERNAL_MACRO */
-#if defined(RUBY3_STATIC_ASSERT0)
-# /* Take that. */
-
-#elif defined(__cplusplus) && defined(__cpp_static_assert)
+#if defined(__cplusplus) && defined(__cpp_static_assert)
 # /* https://isocpp.org/std/standing-documents/sd-6-sg10-feature-test-recommendations */
 # define RUBY3_STATIC_ASSERT0 static_assert
 
@@ -62,10 +61,7 @@
  * @param  expr  Expression to assert.
  * @note   `name` shall not be a string literal.
  */
-#if defined(RUBY3_STATIC_ASSERT)
-# /* Take that. */
-
-#elif defined(__DOXYGEN__)
+#if defined(__DOXYGEN__)
 # define RUBY3_STATIC_ASSERT static_assert
 
 #elif defined(RUBY3_STATIC_ASSERT0)
@@ -76,3 +72,5 @@
 # define RUBY3_STATIC_ASSERT(name, expr) \
     typedef int static_assert_ ## name ## _check[1 - 2 * !(expr)]
 #endif
+
+#endif /* RUBY3_STATIC_ASSERT_H */

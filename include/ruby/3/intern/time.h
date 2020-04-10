@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_INTERN_TIME_H                         /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_INTERN_TIME_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -16,10 +18,8 @@
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
  *             extension libraries. They could be written in C++98.
- * @brief      Public APIs related to ::rb_cStruct.
+ * @brief      Public APIs related to ::rb_cTime.
  */
-#ifndef  RUBY3_INTERN_TIME_H
-#define  RUBY3_INTERN_TIME_H
 #include "ruby/3/config.h"
 
 #ifdef HAVE_TIME_H

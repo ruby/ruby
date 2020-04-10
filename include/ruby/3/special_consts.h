@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_SPECIAL_CONSTS_H                       /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_SPECIAL_CONSTS_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -22,8 +24,6 @@
  *             SIGPPL  Workshop   on  Programming  and   Programming  Languages
  *             (PPL2008), pp. 9-16, 2008.
  */
-#ifndef  RUBY3_SPECIAL_CONSTS_H
-#define  RUBY3_SPECIAL_CONSTS_H
 #include "ruby/3/attr/artificial.h"
 #include "ruby/3/attr/const.h"
 #include "ruby/3/attr/constexpr.h"
@@ -163,7 +163,6 @@ RB_FLONUM_P(VALUE obj)
     return false;
 #endif
 }
-
 
 RUBY3_ATTR_CONST()
 RUBY3_ATTR_CONSTEXPR(CXX11)

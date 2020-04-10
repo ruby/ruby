@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_INTERN_SELECT_WIN32_H                  /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_INTERN_SELECT_WIN32_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -18,8 +20,6 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Public APIs to provide ::rb_fd_select().
  */
-#ifndef  RUBY3_INTERN_SELECT_WIN32_H
-#define  RUBY3_INTERN_SELECT_WIN32_H
 #include "ruby/3/dosish.h"      /* for rb_w32_select */
 #include "ruby/3/attr/nonnull.h"
 #include "ruby/3/attr/pure.h"

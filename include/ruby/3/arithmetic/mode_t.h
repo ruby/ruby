@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_ARITHMETIC_MODE_T_H                    /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_ARITHMETIC_MODE_T_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -28,3 +30,5 @@
 #ifndef MODET2NUM
 # define MODET2NUM RB_INT2NUM
 #endif
+
+#endif /* RUBY3_ARITHMETIC_MODE_T_H */

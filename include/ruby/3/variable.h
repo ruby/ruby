@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_VARIABLE_H                             /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_VARIABLE_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -18,8 +20,6 @@
  *             extension libraries. They could be written in C++98.
  * @brief      C-function backended Ruby-global variables.
  */
-#ifndef  RUBY3_VARIABLE_H
-#define  RUBY3_VARIABLE_H
 #include "ruby/3/dllexport.h"
 #include "ruby/3/value.h"
 #include "ruby/3/attr/noreturn.h"
@@ -59,4 +59,4 @@ VALUE rb_iv_set(VALUE, const char*, VALUE);
 
 RUBY3_SYMBOL_EXPORT_END()
 
-#endif /* RUBY3_RHASH_H */
+#endif /* RUBY3_VARIABLE_H */

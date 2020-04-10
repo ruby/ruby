@@ -1,3 +1,5 @@
+#ifndef RUBY_ISEQ_H
+#define RUBY_ISEQ_H 1
 /**********************************************************************
 
   iseq.h -
@@ -8,9 +10,6 @@
   Copyright (C) 2004-2008 Koichi Sasada
 
 **********************************************************************/
-
-#ifndef RUBY_ISEQ_H
-#define RUBY_ISEQ_H 1
 #include "internal/gc.h"
 #include "vm_core.h"
 

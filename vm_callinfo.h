@@ -1,3 +1,14 @@
+#ifndef RUBY_VM_CALLINFO_H                               /*-*-C-*-vi:se ft=c:*/
+#define RUBY_VM_CALLINFO_H
+/**
+ * @file
+ * @author     Ruby developers <ruby-core@ruby-lang.org>
+ * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
+ *             Permission  is hereby  granted,  to  either redistribute  and/or
+ *             modify this file, provided that  the conditions mentioned in the
+ *             file COPYING are met.  Consult the file for details.
+ */
+
 #include "debug_counter.h"
 
 enum vm_call_flag_bits {
@@ -426,3 +437,5 @@ vm_ccs_p(const struct rb_class_cc_entries *ccs)
 
 // gc.c
 void rb_vm_ccs_free(struct rb_class_cc_entries *ccs);
+
+#endif /* RUBY_VM_CALLINFO_H */

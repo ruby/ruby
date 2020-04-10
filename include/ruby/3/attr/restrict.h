@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_ATTR_RESTRICT_H                        /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_ATTR_RESTRICT_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -24,10 +26,7 @@
  * `__has_declspec_attribute()` which involves macro substitution. */
 
 /** Wraps (or simulates) `__declspec(restrict)` */
-#if defined(RUBY3_ATTR_RESTRICT)
-# /* Take that. */
-
-#elif RUBY3_COMPILER_SINCE(MSVC, 14, 0, 0)
+#if RUBY3_COMPILER_SINCE(MSVC, 14, 0, 0)
 # define RUBY3_ATTR_RESTRICT() __declspec(RUBY3_TOKEN_PASTE(re, strict))
 
 #elif RUBY3_HAS_ATTRIBUTE(malloc)
@@ -39,3 +38,5 @@
 #else
 # define RUBY3_ATTR_RESTRICT() /* void */
 #endif
+
+#endif /* RUBY3_ATTR_RESTRICT_H */

@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_ATTR_CONST_H                           /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_ATTR_CONST_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -21,30 +23,22 @@
 #include "ruby/3/has/declspec_attribute.h"
 
 /** Wraps (or simulates) `__attribute__((const))` */
-#if defined(RUBY3_ATTR_CONST)
-# /* Take that. */
-
-#elif RUBY3_HAS_ATTRIBUTE(const)
+#if RUBY3_HAS_ATTRIBUTE(const)
 # define RUBY3_ATTR_CONST() __attribute__((__const__))
-
 #elif RUBY3_HAS_DECLSPEC_ATTRIBUTE(noalias)
 # /* If a function can be a const, that is also a noalias. */
 # define RUBY3_ATTR_CONST() __declspec(noalias)
-
 #elif RUBY3_COMPILER_SINCE(SunPro, 5, 10, 0)
 # define RUBY3_ATTR_CONST() _Pragma("no_side_effect")
-
 #else
 # define RUBY3_ATTR_CONST() /* void */
 #endif
 
 /** Enables #RUBY3_ATTR_CONST iff. #RUBY_NDEBUG. */
-#if defined(RUBY3_ATTR_CONST_ON_NDEBUG)
-# /* Take that. */
-
-#elif RUBY_NDEBUG
+#if RUBY_NDEBUG
 # define RUBY3_ATTR_CONST_ON_NDEBUG() RUBY3_ATTR_CONST()
-
 #else
 # define RUBY3_ATTR_CONST_ON_NDEBUG() /* void */
 #endif
+
+#endif /* RUBY3_ATTR_CONST_H */

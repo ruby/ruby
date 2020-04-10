@@ -1,3 +1,5 @@
+#ifndef RUBY_DEBUG_H
+#define RUBY_DEBUG_H
 /**********************************************************************
 
   vm_debug.h - YARV Debug function interface
@@ -8,9 +10,6 @@
   Copyright (C) 2004-2007 Koichi Sasada
 
 **********************************************************************/
-
-#ifndef RUBY_DEBUG_H
-#define RUBY_DEBUG_H
 
 #include "ruby/ruby.h"
 #include "node.h"

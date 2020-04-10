@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_ATTR_RETURNS_NONNULL_H                 /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_ATTR_RETURNS_NONNULL_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -20,10 +22,7 @@
  */
 
 /** Wraps (or simulates) `__attribute__((returns_nonnull))` */
-#if defined(RUBY3_ATTR_RETURNS_NONNULL)
-# /* Take that. */
-
-#elif defined(_Ret_nonnull_)
+#if defined(_Ret_nonnull_)
 # /* Take SAL definition. */
 # define RUBY3_ATTR_RETURNS_NONNULL() _Ret_nonnull_
 
@@ -33,3 +32,5 @@
 #else
 # define RUBY3_ATTR_RETURNS_NONNULL() /* void */
 #endif
+
+#endif /* RUBY3_ATTR_RETURNS_NONNULL_H */

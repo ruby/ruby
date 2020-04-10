@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_HAS_CPP_ATTRIBUTE_H                    /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_HAS_CPP_ATTRIBUTE_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -21,10 +23,7 @@
 #include "ruby/3/compiler_is.h"
 
 /** @cond INTERNAL_MACRO */
-#if defined(RUBY3_HAS_CPP_ATTRIBUTE0)
-# /* Take that. */
-
-#elif defined(__has_cpp_attribute)
+#if defined(__has_cpp_attribute)
 # define RUBY3_HAS_CPP_ATTRIBUTE0(_) __has_cpp_attribute(_)
 
 #elif RUBY3_COMPILER_IS(MSVC)
@@ -66,15 +65,13 @@
 /** @endcond */
 
 /** Wraps (or simulates) `__has_cpp_attribute`. */
-#ifdef RUBY3_HAS_CPP_ATTRIBUTE
-# /* Take that. */
-
-#elif ! defined(__cplusplus)
+#if ! defined(__cplusplus)
 # /* Makes no sense. */
 # define RUBY3_HAS_CPP_ATTRIBUTE(_) 0
-
 #else
 # /* GCC needs workarounds.  See https://gcc.godbolt.org/z/jdz3pa */
 # define RUBY3_HAS_CPP_ATTRIBUTE(_) \
     ((RUBY3_HAS_CPP_ATTRIBUTE0(_) <= __cplusplus) ? RUBY3_HAS_CPP_ATTRIBUTE0(_) : 0)
 #endif
+
+#endif /* RUBY3_HAS_CPP_ATTRIBUTE_H */

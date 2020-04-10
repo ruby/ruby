@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_ANYARGS_H                              /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_ANYARGS_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -65,8 +67,6 @@
  *      `__builtin_types_compatible_p`, and in doing  so we need to distinguish
  *      ::rb_f_notimplement from others, by type.
  */
-#ifndef  RUBY3_ANYARGS_H
-#define  RUBY3_ANYARGS_H
 #include "ruby/3/attr/maybe_unused.h"
 #include "ruby/3/attr/nonnull.h"
 #include "ruby/3/attr/weakref.h"
@@ -371,4 +371,4 @@ RUBY3_ANYARGS_DECL(rb_define_method, VALUE, const char *)
 
 #endif
 
-#endif  /* RUBY3_ANYARGS_H */
+#endif /* RUBY3_ANYARGS_H */
