@@ -7956,7 +7956,7 @@ rb_clock_gettime(int argc, VALUE *argv, VALUE _)
  *     Process.clock_getres(clock_id [, unit])   -> number
  *
  *  Returns an estimate of the resolution of a +clock_id+ using the POSIX
- *  clock_getres() function.
+ *  <code>clock_getres()</code> function.
  *
  *  Note the reported resolution is often inaccurate on most platforms due to
  *  operating system bugs for this function and therefore the reported resolution
