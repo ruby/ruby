@@ -3128,6 +3128,26 @@ http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
     warning
   end
 
+  def test_deprecated_attributes
+    assert_equal Gem::SpecificationPolicy::DEPRECATED_ATTRIBUTES, [:rubyforge_project]
+  end
+
+  def test_validate_deprecated_attributes
+    util_setup_validate
+
+    use_ui @ui do
+      Gem::SpecificationPolicy::DEPRECATED_ATTRIBUTES.each do |attr|
+        @a1.send("#{attr}=", 'invalid-attribute')
+      end
+
+      @a1.validate
+    end
+
+    Gem::SpecificationPolicy::DEPRECATED_ATTRIBUTES.each do |attr|
+      assert_match "#{attr} is deprecated", @ui.error
+    end
+  end
+
   def test_validate_license_values
     util_setup_validate
 
