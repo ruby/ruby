@@ -5049,10 +5049,9 @@ rb_ary_uniq_bang(VALUE ary)
 static VALUE
 rb_ary_uniq(VALUE ary)
 {
-    VALUE hash, uniq;
+    VALUE hash = 0, uniq;
 
     if (RARRAY_LEN(ary) <= 1) {
-        hash = 0;
         uniq = rb_ary_dup(ary);
     }
     else if (rb_block_given_p()) {
