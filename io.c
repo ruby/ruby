@@ -8866,7 +8866,34 @@ argf_lineno_setter(VALUE val, ID id, VALUE *var)
     ARGF.last_lineno = ARGF.lineno = n;
 }
 
-static VALUE argf_gets(int, VALUE *, VALUE);
+/*
+ *  call-seq:
+ *     ARGF.gets(sep=$/ [, getline_args])     -> string or nil
+ *     ARGF.gets(limit [, getline_args])      -> string or nil
+ *     ARGF.gets(sep, limit [, getline_args]) -> string or nil
+ *
+ *  Returns the next line from the current file in +ARGF+.
+ *
+ *  By default lines are assumed to be separated by <code>$/</code>;
+ *  to use a different character as a separator, supply it as a +String+
+ *  for the _sep_ argument.
+ *
+ *  The optional _limit_ argument specifies how many characters of each line
+ *  to return. By default all characters are returned.
+ *
+ *  See IO.readlines for details about getline_args.
+ *
+ */
+static VALUE
+argf_gets(int argc, VALUE *argv, VALUE argf)
+{
+    VALUE line;
+
+    line = argf_getline(argc, argv, argf);
+    rb_lastline_set(line);
+
+    return line;
+}
 
 /*
  *  call-seq:
@@ -8908,35 +8935,6 @@ rb_f_gets(int argc, VALUE *argv, VALUE recv)
 	return argf_gets(argc, argv, argf);
     }
     return rb_funcallv(argf, idGets, argc, argv);
-}
-
-/*
- *  call-seq:
- *     ARGF.gets(sep=$/ [, getline_args])     -> string or nil
- *     ARGF.gets(limit [, getline_args])      -> string or nil
- *     ARGF.gets(sep, limit [, getline_args]) -> string or nil
- *
- *  Returns the next line from the current file in +ARGF+.
- *
- *  By default lines are assumed to be separated by <code>$/</code>;
- *  to use a different character as a separator, supply it as a +String+
- *  for the _sep_ argument.
- *
- *  The optional _limit_ argument specifies how many characters of each line
- *  to return. By default all characters are returned.
- *
- *  See IO.readlines for details about getline_args.
- *
- */
-static VALUE
-argf_gets(int argc, VALUE *argv, VALUE argf)
-{
-    VALUE line;
-
-    line = argf_getline(argc, argv, argf);
-    rb_lastline_set(line);
-
-    return line;
 }
 
 VALUE
