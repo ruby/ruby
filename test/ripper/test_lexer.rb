@@ -138,4 +138,11 @@ class TestRipper::Lexer < Test::Unit::TestCase
     assert_equal pos, code.bytesize
     assert_equal expected.size, result.size
   end
+
+  def test_expected_tokens
+    result = Ripper::Lexer.new("class A").scan
+    ex = result.find {|e| e.event == :on_parse_error}
+    assert_match /unexpected end-of-input/, ex.message
+    assert_equal ["`class'", "`def'", "`module'", "`undef'"], ex.expected_tokens.sort
+  end
 end

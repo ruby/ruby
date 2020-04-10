@@ -60,9 +60,9 @@ class Ripper
       def nobits?(i) to_int.nobits?(i) end
     end
 
-    Elem = Struct.new(:pos, :event, :tok, :state, :message) do
-      def initialize(pos, event, tok, state, message = nil)
-        super(pos, event, tok, State.new(state), message)
+    Elem = Struct.new(:pos, :event, :tok, :state, :message, :expected_tokens) do
+      def initialize(pos, event, tok, state, message = nil, expected_tokens = nil)
+        super(pos, event, tok, State.new(state), message, expected_tokens)
       end
 
       def inspect
@@ -88,6 +88,7 @@ class Ripper
 
       def to_a
         a = super
+        a.pop unless a.last
         a.pop unless a.last
         a
       end
@@ -176,7 +177,7 @@ class Ripper
     end
 
     def on_error(mesg)
-      @errors.push Elem.new([lineno(), column()], __callee__, token(), state(), mesg)
+      @errors.push Elem.new([lineno(), column()], __callee__, token(), state(), mesg, expected_tokens)
     end
     alias on_parse_error on_error
     alias compile_error on_error
