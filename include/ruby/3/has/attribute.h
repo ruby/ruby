@@ -19,8 +19,6 @@
  * @brief      Defines #RUBY3_HAS_ATTRIBUTE.
  */
 #include "ruby/3/config.h"
-#include "ruby/3/compiler_since.h"
-#include "ruby/3/token_paste.h"
 
 /** Wraps (or simulates) `__has_attribute`. */
 #if defined(RUBY3_HAS_ATTRIBUTE)

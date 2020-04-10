@@ -32,7 +32,6 @@
 #include "ruby/3/core/rbasic.h"
 #include "ruby/3/dllexport.h"
 #include "ruby/3/fl_type.h"
-#include "ruby/3/token_paste.h"
 #include "ruby/3/value.h"
 #include "ruby/3/value_type.h"
 #include "ruby/defines.h"

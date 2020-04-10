@@ -18,7 +18,6 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #RUBY3_ATTR_FORMAT.
  */
-#include "ruby/3/has/attribute.h"
 
 /** Wraps (or simulates) `__attribute__((format))` */
 #if defined(RUBY3_ATTR_FORMAT)

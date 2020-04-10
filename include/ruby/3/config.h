@@ -27,6 +27,10 @@
 #endif
 
 #include "ruby/3/compiler_since.h"
+#include "ruby/3/has/warning.h"
+#include "ruby/3/has/attribute.h"
+#include "ruby/3/warning_push.h"
+#include "ruby/3/token_paste.h"
 
 #if defined(__cplusplus)
 #/* __builtin_choose_expr and __builtin_types_compatible aren't available

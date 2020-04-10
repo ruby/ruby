@@ -20,7 +20,6 @@
  */
 #include <assert.h>
 #include "ruby/3/has/extension.h"
-#include "ruby/3/compiler_since.h"
 
 /** @cond INTERNAL_MACRO */
 #if defined(RUBY3_STATIC_ASSERT0)

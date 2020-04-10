@@ -32,7 +32,6 @@
  *      case it gets  vital to know where the inlining  happened in the callee.
  *      See also https://stackoverflow.com/a/21936099
  */
-#include "ruby/3/has/attribute.h"
 
 /** Wraps (or simulates) `__attribute__((artificial))` */
 #if defined(RUBY3_ATTR_ARTIFICIAL)
