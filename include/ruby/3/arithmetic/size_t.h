@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_ARITHMETIC_SIZE_T_H                    /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_ARITHMETIC_SIZE_T_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -45,3 +47,5 @@
 # define NUM2SIZET  RB_NUM2UINT
 # define NUM2SSIZET RB_NUM2INT
 #endif
+
+#endif /* RUBY3_ARITHMETIC_SIZE_T_H */

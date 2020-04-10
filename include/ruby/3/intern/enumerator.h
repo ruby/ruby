@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_INTERN_ENUMERATOR_H                    /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_INTERN_ENUMERATOR_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -18,8 +20,6 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Public APIs related to ::rb_cEnumerator.
  */
-#ifndef  RUBY3_INTERN_ENUMERATOR_H
-#define  RUBY3_INTERN_ENUMERATOR_H
 #include "ruby/3/dllexport.h"
 #include "ruby/3/intern/eval.h" /* rb_frame_this_func */
 #include "ruby/3/iterator.h"    /* rb_block_given_p */

@@ -1,4 +1,6 @@
-/**                                                         \noop-*-C-*-vi:ft=c
+#ifndef INTERNAL_ARRAY_H                                 /*-*-C-*-vi:se ft=c:*/
+#define INTERNAL_ARRAY_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -7,8 +9,6 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Array.
  */
-#ifndef INTERNAL_ARRAY_H
-#define INTERNAL_ARRAY_H
 #include "ruby/3/config.h"
 #include <stddef.h>                 /* for size_t */
 #include "internal/static_assert.h" /* for STATIC_ASSERT */

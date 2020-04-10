@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_HAS_C_ATTRIBUTE_H                      /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_HAS_C_ATTRIBUTE_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -20,10 +22,7 @@
  */
 
 /** Wraps (or simulates) `__has_c_attribute`. */
-#if defined(RUBY3_HAS_C_ATTRIBUTE)
-# /* Take that. */
-
-#elif defined(__cplusplus)
+#if defined(__cplusplus)
 # /* Makes no sense. */
 # define RUBY3_HAS_C_ATTRIBUTE(_) 0
 
@@ -35,3 +34,5 @@
 #  * lacks C2x attributes as well.  Might change in future? */
 # define RUBY3_HAS_C_ATTRIBUTE(_) 0
 #endif
+
+#endif /* RUBY3_HAS_C_ATTRIBUTE_H */

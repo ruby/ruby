@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY_BACKWARD2_STDARG_H                      /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY_BACKWARD2_STDARG_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -41,3 +43,5 @@
 #else
 #define ANYARGS
 #endif
+
+#endif /* RUBY_BACKWARD2_STDARG_H */

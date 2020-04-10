@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_SCAN_ARGS_H                            /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_SCAN_ARGS_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -21,8 +23,6 @@
  * This  is a  beast.  It  statically analyses  the argument  spec string,  and
  * expands the assignment of variables into dedicated codes.
  */
-#ifndef  RUBY3_SCAN_ARGS_H
-#define  RUBY3_SCAN_ARGS_H
 #include "ruby/3/attr/diagnose_if.h"
 #include "ruby/3/attr/error.h"
 #include "ruby/3/attr/forceinline.h"

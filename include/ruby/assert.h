@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY_ASSERT_H                                /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY_ASSERT_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @date       Wed May 18 00:21:44 JST 1994
@@ -18,8 +20,6 @@
  *             We assume C99  for ruby itself but we don't  assume languages of
  *             extension libraries. They could be written in C++98.
  */
-#ifndef  RUBY_ASSERT_H
-#define  RUBY_ASSERT_H
 #include "ruby/3/assume.h"
 #include "ruby/3/attr/cold.h"
 #include "ruby/3/attr/noreturn.h"

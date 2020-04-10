@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY_BACKWARD2_ATTRIBUTES_H                  /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY_BACKWARD2_ATTRIBUTES_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -26,8 +28,6 @@
  * - A: Don't know.   Don't blame me.  Backward compatibility is  the key here.
  *      I'm just preserving what they have been.
  */
-#ifndef  RUBY_BACKWARD2_ATTRIBUTES_H
-#define  RUBY_BACKWARD2_ATTRIBUTES_H
 #include "ruby/3/config.h"
 #include "ruby/3/attr/alloc_size.h"
 #include "ruby/3/attr/cold.h"

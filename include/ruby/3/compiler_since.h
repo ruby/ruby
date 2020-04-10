@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_COMPILER_SINCE_H                       /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_COMPILER_SINCE_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -19,7 +21,6 @@
  * @brief      Defines #RUBY3_COMPILER_SINCE.
  */
 #include "ruby/3/compiler_is.h"
-#ifndef RUBY3_COMPILER_SINCE
 
 /**
  * @brief   Checks if the compiler is of given brand and is newer than or equal
@@ -57,4 +58,4 @@
     ((RUBY3_COMPILER_VERSION_MINOR == (y)) && \
      (RUBY3_COMPILER_VERSION_PATCH <  (z)))))))
 
-#endif /* RUBY3_COMPILER_SINCE */
+#endif /* RUBY3_COMPILER_SINCE_H */

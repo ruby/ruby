@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_ASSUME_H                               /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_ASSUME_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -23,8 +25,6 @@
  * - #RUBY3_ASSUME could fallback to #RUBY3_UNREACHABLE.
  * - #RUBY3_UNREACHABLE could fallback to #RUBY3_ASSUME.
  */
-#ifndef  RUBY3_ASSUME_H
-#define  RUBY3_ASSUME_H
 #include "ruby/3/config.h"
 #include "ruby/3/cast.h"
 #include "ruby/3/has/builtin.h"

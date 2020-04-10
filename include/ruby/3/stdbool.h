@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_STDBOOL_H                              /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_STDBOOL_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -45,3 +47,5 @@ typedef unsigned char _Bool;
 # define false ((_Bool)+0)
 # define __bool_true_false_are_defined
 #endif
+
+#endif /* RUBY3_STDBOOL_H */

@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_CONFIG_H                               /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_CONFIG_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -18,8 +20,6 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Thin wrapper to ruby/config.h
  */
-#ifndef  RUBY3_CONFIG_H
-#define  RUBY3_CONFIG_H
 #include "ruby/config.h"
 
 #ifdef RUBY_EXTCONF_H

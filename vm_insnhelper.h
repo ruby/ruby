@@ -1,3 +1,5 @@
+#ifndef RUBY_INSNHELPER_H
+#define RUBY_INSNHELPER_H
 /**********************************************************************
 
   insnhelper.h - helper macros to implement each instructions
@@ -8,9 +10,6 @@
   Copyright (C) 2004-2007 Koichi Sasada
 
 **********************************************************************/
-
-#ifndef RUBY_INSNHELPER_H
-#define RUBY_INSNHELPER_H
 
 RUBY_SYMBOL_EXPORT_BEGIN
 

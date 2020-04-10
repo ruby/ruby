@@ -1,4 +1,6 @@
-/**                                                         \noop-*-C-*-vi:ft=c
+#ifndef INTERNAL_STRUCT_H                                /*-*-C-*-vi:se ft=c:*/
+#define INTERNAL_STRUCT_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -7,8 +9,6 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Struct.
  */
-#ifndef INTERNAL_STRUCT_H
-#define INTERNAL_STRUCT_H
 #include "ruby/3/stdbool.h"     /* for bool */
 #include "internal/gc.h"        /* for RB_OBJ_WRITE */
 #include "ruby/ruby.h"          /* for struct RBasic */

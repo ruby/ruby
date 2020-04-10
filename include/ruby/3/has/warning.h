@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_HAS_WARNING_H                          /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_HAS_WARNING_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -20,12 +22,10 @@
  */
 
 /** Wraps (or simulates) `__has_warning`. */
-#if defined(RUBY3_HAS_WARNING)
-# /* Take that. */
-
-#elif defined(__has_warning)
+#if defined(__has_warning)
 # define RUBY3_HAS_WARNING(_) __has_warning(_)
-
 #else
 # define RUBY3_HAS_WARNING(_) 0
 #endif
+
+#endif /* RUBY3_HAS_WARNING_H */

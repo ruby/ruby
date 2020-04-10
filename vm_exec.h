@@ -1,3 +1,5 @@
+#ifndef RUBY_VM_EXEC_H
+#define RUBY_VM_EXEC_H
 /**********************************************************************
 
   vm.h -
@@ -8,9 +10,6 @@
   Copyright (C) 2004-2007 Koichi Sasada
 
 **********************************************************************/
-
-#ifndef RUBY_VM_EXEC_H
-#define RUBY_VM_EXEC_H
 
 typedef long OFFSET;
 typedef unsigned long lindex_t;

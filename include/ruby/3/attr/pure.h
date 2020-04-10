@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_ATTR_PURE_H                            /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_ATTR_PURE_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -21,26 +23,19 @@
 #include "ruby/assert.h"
 
 /** Wraps (or simulates) `__attribute__((pure))` */
-#if defined(RUBY3_ATTR_PURE)
-# /* Take that. */
-
-#elif RUBY3_HAS_ATTRIBUTE(pure)
+#if RUBY3_HAS_ATTRIBUTE(pure)
 # define RUBY3_ATTR_PURE() __attribute__((__pure__))
-
 #elif RUBY3_COMPILER_SINCE(SunPro, 5, 10, 0)
 # define RUBY3_ATTR_PURE() _Pragma("does_not_write_global_data")
-
 #else
 # define RUBY3_ATTR_PURE() /* void */
 #endif
 
 /** Enables #RUBY3_ATTR_PURE iff. #RUBY_NDEBUG. */
-#if defined(RUBY3_ATTR_PURE_ON_NDEBUG)
-# /* Take that. */
-
-#elif RUBY_NDEBUG
+#if RUBY_NDEBUG
 # define RUBY3_ATTR_PURE_ON_NDEBUG() RUBY3_ATTR_PURE()
-
 #else
 # define RUBY3_ATTR_PURE_ON_NDEBUG() /* void */
 #endif
+
+#endif /* RUBY3_ATTR_PURE_H */

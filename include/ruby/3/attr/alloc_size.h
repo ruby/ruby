@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_ATTR_ALLOC_SIZE_H                      /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_ATTR_ALLOC_SIZE_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -20,12 +22,10 @@
  */
 
 /** Wraps (or simulates) `__attribute__((alloc_size))` */
-#if defined(RUBY3_ATTR_ALLOC_SIZE)
-# /* Take that. */
-
-#elif RUBY3_HAS_ATTRIBUTE(alloc_size)
+#if RUBY3_HAS_ATTRIBUTE(alloc_size)
 # define RUBY3_ATTR_ALLOC_SIZE(tuple) __attribute__((__alloc_size__ tuple))
-
 #else
 # define RUBY3_ATTR_ALLOC_SIZE(tuple) /* void */
 #endif
+
+#endif /* RUBY3_ATTR_ALLOC_SIZE_H */

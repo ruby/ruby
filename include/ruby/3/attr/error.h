@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_ATTR_ERROR_H                           /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_ATTR_ERROR_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -20,12 +22,10 @@
  */
 
 /** Wraps (or simulates) `__attribute__((error))` */
-#if defined(RUBY3_ATTR_ERROR)
-# /* Take that. */
-
-#elif RUBY3_HAS_ATTRIBUTE(error)
+#if RUBY3_HAS_ATTRIBUTE(error)
 # define RUBY3_ATTR_ERROR(msg) __attribute__((__error__ msg))
-
 #else
 # define RUBY3_ATTR_ERROR(msg) /* void */
 #endif
+
+#endif /* RUBY3_ATTR_ERROR_H */

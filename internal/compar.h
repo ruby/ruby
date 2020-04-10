@@ -1,4 +1,6 @@
-/**                                                         \noop-*-C-*-vi:ft=c
+#ifndef INTERNAL_COMPAR_H                                /*-*-C-*-vi:se ft=c:*/
+#define INTERNAL_COMPAR_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -7,8 +9,6 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Comparable.
  */
-#ifndef INTERNAL_COMPAR_H
-#define INTERNAL_COMPAR_H
 #include "internal/vm.h"        /* for rb_method_basic_definition_p */
 
 #define STRING_P(s) (RB_TYPE_P((s), T_STRING) && CLASS_OF(s) == rb_cString)

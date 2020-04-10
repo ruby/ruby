@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY_BACKWARD2_BOOL_H                        /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY_BACKWARD2_BOOL_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -31,3 +33,5 @@
 #elif ! TRUE
 # error TRUE must be true
 #endif
+
+#endif /* RUBY_BACKWARD2_BOOL_H */

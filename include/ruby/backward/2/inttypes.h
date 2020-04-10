@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY_BACKWARD2_INTTYPES_H                    /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY_BACKWARD2_INTTYPES_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -126,3 +128,5 @@
 # define PRIxSIZE PRI_SIZE_PREFIX"x"
 # define PRIXSIZE PRI_SIZE_PREFIX"X"
 #endif
+
+#endif /* RUBY_BACKWARD2_INTTYPES_H */

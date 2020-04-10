@@ -1,4 +1,6 @@
-/**                                                         \noop-*-C-*-vi:ft=c
+#ifndef INTERNAL_ENUMERATOR_H                            /*-*-C-*-vi:se ft=c:*/
+#define INTERNAL_ENUMERATOR_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -7,8 +9,6 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Enumerator.
  */
-#ifndef INTERNAL_ENUMERATOR_H
-#define INTERNAL_ENUMERATOR_H
 #include "ruby/ruby.h"          /* for VALUE */
 #include "ruby/intern.h"        /* for rb_enumerator_size_func */
 

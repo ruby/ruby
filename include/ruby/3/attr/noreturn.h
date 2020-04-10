@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_ATTR_NORETURN_H                        /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_ATTR_NORETURN_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -22,10 +24,7 @@
 #include "ruby/3/has/declspec_attribute.h"
 
 /** Wraps (or simulates) `[[noreturn]]` */
-#if defined(RUBY3_ATTR_NORETURN)
-# /* Take that. */
-
-#elif RUBY3_COMPILER_SINCE(SunPro, 5, 10, 0)
+#if RUBY3_COMPILER_SINCE(SunPro, 5, 10, 0)
 # define RUBY3_ATTR_NORETURN() _Pragma("does_not_return")
 
 #elif RUBY3_HAS_DECLSPEC_ATTRIBUTE(noreturn)
@@ -47,3 +46,5 @@
 #else
 # define RUBY3_ATTR_NORETURN() /* void */
 #endif
+
+#endif /* RUBY3_ATTR_NORETURN_H */

@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_CONSTANT_P_H                           /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_CONSTANT_P_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -26,12 +28,10 @@
  */
 #include "ruby/3/has/builtin.h"
 
-#if defined(RUBY3_CONSTANT_P)
-# /* Take that. */
-
-#elif RUBY3_HAS_BUILTIN(__builtin_constant_p)
+#if RUBY3_HAS_BUILTIN(__builtin_constant_p)
 # define RUBY3_CONSTANT_P(expr) __builtin_constant_p(expr)
-
 #else
 # define RUBY3_CONSTANT_P(expr) 0
 #endif
+
+#endif /* RUBY3_CONSTANT_P_H */

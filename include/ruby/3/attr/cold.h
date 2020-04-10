@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_ATTR_COLD_H                            /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_ATTR_COLD_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -21,17 +23,14 @@
 #include "ruby/3/compiler_is.h"
 
 /** Wraps (or simulates) `__attribute__((cold))` */
-#if defined(RUBY3_ATTR_COLD)
-# /* Take that. */
-
-#elif RUBY3_COMPILER_IS(SunPro)
+#if RUBY3_COMPILER_IS(SunPro)
 # /* Recent SunPro has __has_attribute, and is borken. */
 # /* It reports it has attribute cold, reality isn't (warnings issued). */
 # define RUBY3_ATTR_COLD() /* void */
-
 #elif RUBY3_HAS_ATTRIBUTE(cold)
 # define RUBY3_ATTR_COLD() __attribute__((__cold__))
-
 #else
 # define RUBY3_ATTR_COLD() /* void */
 #endif
+
+#endif /* RUBY3_ATTR_COLD_H */

@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_RGENGC_H                               /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_RGENGC_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -22,8 +24,6 @@
  *             International  Symposium on  Memory Management  (ISMM 2019),  pp
  *             115-121, 2019. https://doi.org/10.1145/3315573.3329986
  */
-#ifndef  RUBY3_RGENGC_H
-#define  RUBY3_RGENGC_H
 #include "ruby/3/attr/artificial.h"
 #include "ruby/3/attr/pure.h"
 #include "ruby/3/dllexport.h"

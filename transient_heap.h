@@ -1,3 +1,5 @@
+#ifndef RUBY_TRANSIENT_HEAP_H
+#define RUBY_TRANSIENT_HEAP_H
 /**********************************************************************
 
   transient_heap.h - declarations of transient_heap related APIs.
@@ -5,9 +7,6 @@
   Copyright (C) 2018 Koichi Sasada
 
 **********************************************************************/
-
-#ifndef RUBY_TRANSIENT_HEAP_H
-#define RUBY_TRANSIENT_HEAP_H
 
 #include "internal.h"
 

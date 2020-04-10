@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_COMPILER_IS_GCC_H                      /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_COMPILER_IS_GCC_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -22,10 +24,7 @@
 #include "ruby/3/compiler_is/clang.h"
 #include "ruby/3/compiler_is/intel.h"
 
-#if defined(RUBY3_COMPILER_IS_GCC)
-# /* Take that. */
-
-#elif ! defined(__GNUC__)
+#if ! defined(__GNUC__)
 # define RUBY3_COMPILER_IS_GCC 0
 
 #elif RUBY3_COMPILER_IS(Apple)
@@ -43,3 +42,5 @@
 # define RUBY3_COMPILER_VERSION_MINOR __GNUC_MINOR__
 # define RUBY3_COMPILER_VERSION_PATCH __GNUC_PATCHLEVEL__
 #endif
+
+#endif /* RUBY3_COMPILER_IS_GCC_H */

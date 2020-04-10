@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_RHASH_H                                /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_RHASH_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -30,8 +32,6 @@
  *
  * Shyouhei stopped thinking.  Let them be as is.
  */
-#ifndef  RUBY3_RHASH_H
-#define  RUBY3_RHASH_H
 #include "ruby/3/config.h"
 
 #ifdef STDC_HEADERS

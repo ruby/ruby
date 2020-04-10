@@ -1,3 +1,5 @@
+#ifndef RUBY_THREAD_PTHREAD_H
+#define RUBY_THREAD_PTHREAD_H
 /**********************************************************************
 
   thread_pthread.h -
@@ -7,9 +9,6 @@
   Copyright (C) 2004-2007 Koichi Sasada
 
 **********************************************************************/
-
-#ifndef RUBY_THREAD_PTHREAD_H
-#define RUBY_THREAD_PTHREAD_H
 
 #ifdef HAVE_PTHREAD_NP_H
 #include <pthread_np.h>

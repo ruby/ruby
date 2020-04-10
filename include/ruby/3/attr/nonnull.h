@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_ATTR_NONNULL_H                         /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_ATTR_NONNULL_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -20,12 +22,10 @@
  */
 
 /** Wraps (or simulates) `__attribute__((nonnull))` */
-#if defined(RUBY3_ATTR_NONNULL)
-# /* Take that. */
-
-#elif RUBY3_HAS_ATTRIBUTE(nonnull)
+#if RUBY3_HAS_ATTRIBUTE(nonnull)
 # define RUBY3_ATTR_NONNULL(list) __attribute__((__nonnull__ list))
-
 #else
 # define RUBY3_ATTR_NONNULL(list) /* void */
 #endif
+
+#endif /* RUBY3_ATTR_NONNULL_H */

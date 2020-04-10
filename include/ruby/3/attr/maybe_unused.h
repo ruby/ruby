@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_ATTR_MAYBE_UNUSED_H                    /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_ATTR_MAYBE_UNUSED_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -22,18 +24,14 @@
 #include "ruby/3/has/cpp_attribute.h"
 
 /** Wraps  (or simulates)  `[[maybe_unused]]` */
-#if defined(RUBY3_ATTR_MAYBE_UNUSED)
-# /* Take that. */
-
-#elif RUBY3_HAS_CPP_ATTRIBUTE(maybe_unused)
+#if RUBY3_HAS_CPP_ATTRIBUTE(maybe_unused)
 # define RUBY3_ATTR_MAYBE_UNUSED() [[maybe_unused]]
-
 #elif RUBY3_HAS_C_ATTRIBUTE(maybe_unused)
 # define RUBY3_ATTR_MAYBE_UNUSED() [[maybe_unused]]
-
 #elif RUBY3_HAS_ATTRIBUTE(unused)
 # define RUBY3_ATTR_MAYBE_UNUSED() __attribute__((__unused__))
-
 #else
 # define RUBY3_ATTR_MAYBE_UNUSED() /* void */
 #endif
+
+#endif /* RUBY3_ATTR_MAYBE_UNUSED */

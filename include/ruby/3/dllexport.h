@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_DLLEXPORT_H                            /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_DLLEXPORT_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -18,8 +20,6 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Tewaking visibility of C variables/functions.
  */
-#ifndef  RUBY3_DLLEXPORT_H
-#define  RUBY3_DLLEXPORT_H
 #include "ruby/3/config.h"
 #include "ruby/3/compiler_is.h"
 

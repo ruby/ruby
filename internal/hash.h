@@ -1,4 +1,6 @@
-/**                                                         \noop-*-C-*-vi:ft=c
+#ifndef INTERNAL_HASH_H                                  /*-*-C-*-vi:se ft=c:*/
+#define INTERNAL_HASH_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -7,8 +9,6 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Hash.
  */
-#ifndef INTERNAL_HASH_H
-#define INTERNAL_HASH_H
 #include "ruby/3/config.h"
 #include <stddef.h>             /* for size_t */
 #include "ruby/3/stdbool.h"     /* for bool */

@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_ATTR_WEAKREF_H                         /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_ATTR_WEAKREF_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -20,12 +22,10 @@
  */
 
 /** Wraps (or simulates) `__attribute__((weakref))` */
-#if defined(RUBY3_ATTR_WEAKREF)
-# /* Take that. */
-
-#elif RUBY3_HAS_ATTRIBUTE(weakref)
+#if RUBY3_HAS_ATTRIBUTE(weakref)
 # define RUBY3_ATTR_WEAKREF(sym) __attribute__((__weakref__(# sym)))
-
 #else
 # define RUBY3_ATTR_WEAKREF(sym) /* void */
 #endif
+
+#endif /* RUBY3_ATTR_WEAKREF_H */

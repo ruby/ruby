@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY_BACKWARD2_STDALIGN_H                    /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY_BACKWARD2_STDALIGN_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -24,3 +26,5 @@
 #undef RUBY_ALIGNOF
 #define RUBY_ALIGNAS RUBY3_ALIGNAS
 #define RUBY_ALIGNOF RUBY3_ALIGNOF
+
+#endif /* RUBY_BACKWARD2_STDALIGN_H */

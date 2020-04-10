@@ -1,4 +1,6 @@
-/**                                                         \noop-*-C-*-vi:ft=c
+#ifndef INTERNAL_NUMERIC_H                               /*-*-C-*-vi:se ft=c:*/
+#define INTERNAL_NUMERIC_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -7,8 +9,6 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Numeric.
  */
-#ifndef INTERNAL_NUMERIC_H
-#define INTERNAL_NUMERIC_H
 #include "internal/bignum.h"    /* for BIGNUM_POSITIVE_P */
 #include "internal/bits.h"      /* for RUBY_BIT_ROTL */
 #include "internal/fixnum.h"    /* for FIXNUM_POSITIVE_P */

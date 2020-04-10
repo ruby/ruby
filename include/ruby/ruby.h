@@ -1,19 +1,17 @@
-/**********************************************************************
-
-  ruby/ruby.h -
-
-  $Author$
-  created at: Thu Jun 10 14:26:32 JST 1993
-
-  Copyright (C) 1993-2008 Yukihiro Matsumoto
-  Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
-  Copyright (C) 2000  Information-technology Promotion Agency, Japan
-
-**********************************************************************/
-
-#ifndef RUBY_RUBY_H
+#ifndef RUBY_RUBY_H                                  /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_RUBY_H 1
-
+/**
+ * @file
+ * @author     $Author$
+ * @date       Thu Jun 10 14:26:32 JST 1993
+ * @copyright  Copyright (C) 1993-2008 Yukihiro Matsumoto
+ * @copyright  Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
+ * @copyright  Copyright (C) 2000  Information-technology Promotion Agency, Japan
+ * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
+ *             Permission  is hereby  granted,  to  either redistribute  and/or
+ *             modify this file, provided that  the conditions mentioned in the
+ *             file COPYING are met.  Consult the file for details.
+ */
 #include "ruby/3/config.h"
 
 #ifdef HAVE_INTRINSICS_H

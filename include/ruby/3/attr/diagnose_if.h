@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_ATTR_DIAGNOSE_IF_H                     /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_ATTR_DIAGNOSE_IF_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -20,10 +22,7 @@
  */
 
 /** Wraps (or simulates) `__attribute__((diagnose_if))` */
-#if defined(RUBY3_ATTR_DIAGNOSE_IF)
-# /* Take that. */
-
-#elif RUBY3_COMPILER_BEFORE(Clang, 5, 0, 0)
+#if RUBY3_COMPILER_BEFORE(Clang, 5, 0, 0)
 # /* https://bugs.llvm.org/show_bug.cgi?id=34319 */
 # define RUBY3_ATTR_DIAGNOSE_IF(_, __, ___) /* void */
 
@@ -37,3 +36,5 @@
 #else
 # define RUBY3_ATTR_DIAGNOSE_IF(_, __, ___) /* void */
 #endif
+
+#endif /* RUBY3_ATTR_DIAGNOSE_IF_H */

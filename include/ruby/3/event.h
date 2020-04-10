@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_EVENT_H                                /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_EVENT_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -18,8 +20,6 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Debugging and tracing APIs.
  */
-#ifndef  RUBY3_EVENT_H
-#define  RUBY3_EVENT_H
 #include "ruby/3/dllexport.h"
 #include "ruby/3/value.h"
 

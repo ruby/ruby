@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_INTERN_SELECT_H                        /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_INTERN_SELECT_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -20,8 +22,6 @@
  * @note       Functions  and  structs defined  in  this  header file  are  not
  *             necessarily ruby-specific.  They don't need ::VALUE etc.
  */
-#ifndef  RUBY3_INTERN_SELECT_H
-#define  RUBY3_INTERN_SELECT_H
 #include "ruby/3/config.h"
 
 #ifdef HAVE_SYS_TYPES_H

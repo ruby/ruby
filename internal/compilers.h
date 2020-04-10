@@ -1,4 +1,6 @@
-/**                                                         \noop-*-C-*-vi:ft=c
+#ifndef INTERNAL_COMPILERS_H                             /*-*-C-*-vi:se ft=c:*/
+#define INTERNAL_COMPILERS_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -7,8 +9,6 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header absorbing C compipler differences.
  */
-#ifndef INTERNAL_COMPILERS_H
-#define INTERNAL_COMPILERS_H
 #include "ruby/3/compiler_since.h"
 #include "ruby/3/has/attribute.h"
 #include "ruby/3/has/builtin.h"

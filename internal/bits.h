@@ -1,4 +1,6 @@
-/**                                                         \noop-*-C-*-vi:ft=c
+#ifndef INTERNAL_BITS_H                                  /*-*-C-*-vi:se ft=c:*/
+#define INTERNAL_BITS_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -24,8 +26,6 @@
  * @see        https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=_rotr64
  * @see        https://stackoverflow.com/a/776523
  */
-#ifndef INTERNAL_BITS_H
-#define INTERNAL_BITS_H
 #include "ruby/3/config.h"
 #include <limits.h>             /* for CHAR_BITS */
 #include <stdint.h>             /* for uintptr_t */

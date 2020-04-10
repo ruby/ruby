@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_COMPILER_IS_MSVC_H                     /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_COMPILER_IS_MSVC_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -21,10 +23,7 @@
 #include "ruby/3/compiler_is/clang.h"
 #include "ruby/3/compiler_is/intel.h"
 
-#if defined(RUBY3_COMPILER_IS_MSVC)
-# /* Take that. */
-
-#elif ! defined(_MSC_VER)
+#if ! defined(_MSC_VER)
 # define RUBY3_COMPILER_IS_MSVC 0
 
 #elif RUBY3_COMPILER_IS(Clang)
@@ -54,3 +53,5 @@
 # define RUBY3_COMPILER_VERSION_MINOR (_MSC_VER % 100)
 # define RUBY3_COMPILER_VERSION_PATCH 0
 #endif
+
+#endif /* RUBY3_COMPILER_IS_MSVC_H */

@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_COMPILER_IS_APPLE_H                    /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_COMPILER_IS_APPLE_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -23,10 +25,7 @@
  * from LLVM's,  when it comes  to compiler  detection business in  this header
  * file.
  */
-#if defined(RUBY3_COMPILER_IS_Apple)
-# /* Take that. */
-
-#elif ! defined(__clang__)
+#if ! defined(__clang__)
 # define RUBY3_COMPILER_IS_Apple 0
 
 #elif ! defined(__apple_build_version__)
@@ -38,3 +37,5 @@
 # define RUBY3_COMPILER_VERSION_MINOR __clang_minor__
 # define RUBY3_COMPILER_VERSION_PATCH __clang_patchlevel__
 #endif
+
+#endif /* RUBY3_COMPILER_IS_APPLE_H */

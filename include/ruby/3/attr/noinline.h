@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_ATTR_NOINLINE_H                        /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_ATTR_NOINLINE_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -21,15 +23,12 @@
 #include "ruby/3/has/declspec_attribute.h"
 
 /** Wraps (or simulates) `__declspec(noinline)` */
-#if defined(RUBY3_ATTR_NOINLINE)
-# /* Take that. */
-
-#elif RUBY3_HAS_DECLSPEC_ATTRIBUTE(noinline)
+#if RUBY3_HAS_DECLSPEC_ATTRIBUTE(noinline)
 # define RUBY3_ATTR_NOINLINE() __declspec(noinline)
-
 #elif RUBY3_HAS_ATTRIBUTE(noinline)
 # define RUBY3_ATTR_NOINLINE() __attribute__((__noinline__))
-
 #else
 # define RUBY3_ATTR_NOINLINE() /* void */
 #endif
+
+#endif /* RUBY3_ATTR_NOINLINE_H */

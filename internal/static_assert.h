@@ -1,4 +1,6 @@
-/**                                                         \noop-*-C-*-vi:ft=c
+#ifndef INTERNAL_STATIC_ASSERT_H                         /*-*-C-*-vi:se ft=c:*/
+#define INTERNAL_STATIC_ASSERT_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -11,3 +13,5 @@
 #ifndef STATIC_ASSERT
 # define STATIC_ASSERT RUBY3_STATIC_ASSERT
 #endif
+
+#endif /* INTERNAL_STATIC_ASSERT_H */

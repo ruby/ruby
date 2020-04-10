@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_ATTR_ENUM_EXTENSIBILITY_H              /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_ATTR_ENUM_EXTENSIBILITY_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -20,12 +22,10 @@
  */
 
 /** Wraps (or simulates) `__attribute__((enum_extensibility))` */
-#if defined(RUBY3_ATTR_ENUM_EXTENSIBILITY)
-# /* Take that. */
-
-#elif RUBY3_HAS_ATTRIBUTE(enum_extensibility)
+#if RUBY3_HAS_ATTRIBUTE(enum_extensibility)
 # define RUBY3_ATTR_ENUM_EXTENSIBILITY(_) __attribute__((__enum_extensibility__(_)))
-
 #else
 # define RUBY3_ATTR_ENUM_EXTENSIBILITY(_) /* void */
 #endif
+
+#endif /* RUBY3_ATTR_ENUM_EXTENSIBILITY_H */

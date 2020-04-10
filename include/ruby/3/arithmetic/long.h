@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_ARITHMETIC_LONG_H                      /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_ARITHMETIC_LONG_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -26,8 +28,6 @@
  *      understand the difference of `int`  and `long` when they designed those
  *      macros.
  */
-#ifndef  RUBY3_ARITHMETIC_LONG_H
-#define  RUBY3_ARITHMETIC_LONG_H
 #include "ruby/3/config.h"
 #include "ruby/3/arithmetic/fixnum.h"   /* FIXABLE */
 #include "ruby/3/arithmetic/intptr_t.h" /* rb_int2big etc.*/

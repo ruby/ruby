@@ -1,3 +1,5 @@
+#ifndef RUBY_VM_CORE_H
+#define RUBY_VM_CORE_H
 /**********************************************************************
 
   vm_core.h -
@@ -8,9 +10,6 @@
   Copyright (C) 2004-2007 Koichi Sasada
 
 **********************************************************************/
-
-#ifndef RUBY_VM_CORE_H
-#define RUBY_VM_CORE_H
 
 /*
  * Enable check mode.

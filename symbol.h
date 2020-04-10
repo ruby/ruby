@@ -1,3 +1,5 @@
+#ifndef RUBY_SYMBOL_H
+#define RUBY_SYMBOL_H 1
 /**********************************************************************
 
   symbol.h -
@@ -8,9 +10,6 @@
   Copyright (C) 2014 Yukihiro Matsumoto
 
 **********************************************************************/
-
-#ifndef RUBY_SYMBOL_H
-#define RUBY_SYMBOL_H 1
 
 #include "id.h"
 #include "ruby/encoding.h"

@@ -1,4 +1,6 @@
-/**                                                         \noop-*-C-*-vi:ft=c
+#ifndef INTERNAL_SERIAL_H                                /*-*-C-*-vi:se ft=c:*/
+#define INTERNAL_SERIAL_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -7,8 +9,6 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for rb_serial_t.
  */
-#ifndef INTERNAL_SERIAL_H
-#define INTERNAL_SERIAL_H
 #include "ruby/3/config.h"      /* for HAVE_LONG_LONG */
 #include "ruby/defines.h"       /* for LONG_LONG */
 

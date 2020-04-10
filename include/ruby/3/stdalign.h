@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_STDALIGN_H                             /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_STDALIGN_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -48,10 +50,7 @@
  * - You cannot `struct _Alignas`.
  * - A `typedef` cannot have alignments.
  */
-#if defined(RUBY3_ALIGNAS)
-# /* OK, take that. */
-
-#elif defined(__cplusplus) && RUBY3_HAS_FEATURE(cxx_alignas)
+#if defined(__cplusplus) && RUBY3_HAS_FEATURE(cxx_alignas)
 # define RUBY3_ALIGNAS alignas
 
 #elif defined(__cplusplus) && (__cplusplus >= 201103L)
@@ -77,10 +76,7 @@
  * Wraps (or  simulates) `alignof`.   Unlike #RUBY3_ALIGNAS,  we can  safely say
  * both C/C++ definitions are effective.
  */
-#ifdef RUBY3_ALIGNOF
-# /* OK, take that. */
-
-#elif defined(__cplusplus) && RUBY3_HAS_EXTENSION(cxx_alignof)
+#if defined(__cplusplus) && RUBY3_HAS_EXTENSION(cxx_alignof)
 # define RUBY3_ALIGNOF __extension__ alignof
 
 #elif defined(__cplusplus) && (__cplusplus >= 201103L)
@@ -122,3 +118,5 @@
 #else
 # error :FIXME: add your compiler here to obtain an alignment.
 #endif
+
+#endif /* RUBY3_STDALIGN_H */

@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_ATTR_WARNING_H                         /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_ATTR_WARNING_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -20,12 +22,10 @@
  */
 
 /** Wraps (or simulates) `__attribute__((warning))` */
-#if defined(RUBY3_ATTR_WARNING)
-# /* Take that. */
-
-#elif RUBY3_HAS_ATTRIBUTE(warning)
+#if RUBY3_HAS_ATTRIBUTE(warning)
 # define RUBY3_ATTR_WARNING(msg) __attribute__((__warning__ msg))
-
 #else
 # define RUBY3_ATTR_WARNING(msg) /* void */
 #endif
+
+#endif /* RUBY3_ATTR_WARNING_H */

@@ -1,17 +1,15 @@
-/**********************************************************************
-
-  rubyio.h -
-
-  $Author$
-  created at: Fri Nov 12 16:47:09 JST 1993
-
-  Copyright (C) 1993-2007 Yukihiro Matsumoto
-
-**********************************************************************/
-
-#ifndef RUBY_IO_H
+#ifndef RUBY_IO_H                                    /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_IO_H 1
-
+/**
+ * @file
+ * @author     $Author$
+ * @date       Fri Nov 12 16:47:09 JST 1993
+ * @copyright  Copyright (C) 1993-2007 Yukihiro Matsumoto
+ * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
+ *             Permission  is hereby  granted,  to  either redistribute  and/or
+ *             modify this file, provided that  the conditions mentioned in the
+ *             file COPYING are met.  Consult the file for details.
+ */
 #include "ruby/3/config.h"
 
 #include <stdio.h>

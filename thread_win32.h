@@ -1,3 +1,5 @@
+#ifndef RUBY_THREAD_WIN32_H
+#define RUBY_THREAD_WIN32_H
 /**********************************************************************
 
   thread_win32.h -
@@ -9,8 +11,6 @@
 **********************************************************************/
 
 /* interface */
-#ifndef RUBY_THREAD_WIN32_H
-#define RUBY_THREAD_WIN32_H
 
 # ifdef __CYGWIN__
 # undef _WIN32
@@ -33,4 +33,3 @@ typedef struct rb_global_vm_lock_struct {
 } rb_global_vm_lock_t;
 
 #endif /* RUBY_THREAD_WIN32_H */
-

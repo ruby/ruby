@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_ATTR_FORMAT_H                          /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_ATTR_FORMAT_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -20,22 +22,16 @@
  */
 
 /** Wraps (or simulates) `__attribute__((format))` */
-#if defined(RUBY3_ATTR_FORMAT)
-# /* Take that. */
-
-#elif RUBY3_HAS_ATTRIBUTE(format)
+#if RUBY3_HAS_ATTRIBUTE(format)
 # define RUBY3_ATTR_FORMAT(x, y, z) __attribute__((__format__(x, y, z)))
-
 #else
 # define RUBY3_ATTR_FORMAT(x, y, z) /* void */
 #endif
 
-#if defined(RUBY3_PRINTF_FORMAT)
-# /* Take that. */
-
-#elif defined(__MINGW_PRINTF_FORMAT)
+#if defined(__MINGW_PRINTF_FORMAT)
 # define RUBY3_PRINTF_FORMAT __MINGW_PRINTF_FORMAT
-
 #else
 # define RUBY3_PRINTF_FORMAT __printf__
 #endif
+
+#endif /* RUBY3_ATTR_FORMAT_H */

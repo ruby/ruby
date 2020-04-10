@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_ATTR_NOEXCEPT_H                       /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_ATTR_NOEXCEPT_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -62,10 +64,7 @@
 #include "ruby/3/has/feature.h"
 
 /** Wraps (or simulates) C++11 `noexcept` */
-#if defined(RUBY3_ATTR_NOEXCEPT)
-# /* Take that. */
-
-#elif ! defined(__cplusplus)
+#if ! defined(__cplusplus)
 # /* Doesn't make sense. */
 # define RUBY3_ATTR_NOEXCEPT(_) /* void */
 
@@ -87,3 +86,5 @@
 #else
 # define RUBY3_ATTR_NOEXCEPT(_) /* void */
 #endif
+
+#endif /* RUBY3_ATTR_NOEXCEPT_H */

@@ -1,4 +1,6 @@
-/**                                                         \noop-*-C-*-vi:ft=c
+#ifndef INTERNAL_RANDOM_H                                /*-*-C-*-vi:se ft=c:*/
+#define INTERNAL_RANDOM_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -7,8 +9,6 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Random.
  */
-#ifndef INTERNAL_RANDOM_H
-#define INTERNAL_RANDOM_H
 #include <stddef.h>             /* for size_t */
 
 /* random.c */

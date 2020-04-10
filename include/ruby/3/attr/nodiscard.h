@@ -1,4 +1,6 @@
-/**                                                     \noop-*-C++-*-vi:ft=cpp
+#ifndef RUBY3_ATTR_NODISCARD_H                       /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY3_ATTR_NODISCARD_H
+/**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
@@ -26,22 +28,17 @@
  * nodiscard attribute can  have a message why the result  shall not be ignoed.
  * However GCC attribute and SAL annotation cannot take them.
  */
-#if defined(RUBY3_ATTR_NODISCARD)
-# /* Take that. */
-
-#elif RUBY3_HAS_CPP_ATTRIBUTE(nodiscard)
+#if RUBY3_HAS_CPP_ATTRIBUTE(nodiscard)
 # define RUBY3_ATTR_NODISCARD() [[nodiscard]]
-
 #elif RUBY3_HAS_C_ATTRIBUTE(nodiscard)
 # define RUBY3_ATTR_NODISCARD() [[nodiscard]]
-
 #elif RUBY3_HAS_ATTRIBUTE(warn_unused_result)
 # define RUBY3_ATTR_NODISCARD() __attribute__((__warn_unused_result__))
-
 #elif defined(_Check_return_)
 # /* Take SAL definition. */
 # define RUBY3_ATTR_NODISCARD() _Check_return_
-
 #else
 # define RUBY3_ATTR_NODISCARD() /* void */
 #endif
+
+#endif /* RUBY3_ATTR_NODISCARD_H */

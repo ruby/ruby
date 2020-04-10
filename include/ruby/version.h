@@ -1,17 +1,17 @@
-/**********************************************************************
-
-  ruby/version.h -
-
-  $Author$
-  created at: Wed May 13 12:56:56 JST 2009
-
-  Copyright (C) 1993-2009 Yukihiro Matsumoto
-  Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
-  Copyright (C) 2000  Information-technology Promotion Agency, Japan
-
-**********************************************************************/
-
-/*
+#ifndef RUBY_VERSION_H                               /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY_VERSION_H 1
+/**
+ * @file
+ * @author     $Author$
+ * @date       Wed May 13 12:56:56 JST 2009
+ * @copyright  Copyright (C) 1993-2009 Yukihiro Matsumoto
+ * @copyright  Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
+ * @copyright  Copyright (C) 2000  Information-technology Promotion Agency, Japan
+ * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
+ *             Permission  is hereby  granted,  to  either redistribute  and/or
+ *             modify this file, provided that  the conditions mentioned in the
+ *             file COPYING are met.  Consult the file for details.
+ *
  * This file contains only
  * - never-changeable information, and
  * - interfaces accessible from extension libraries.
@@ -19,9 +19,6 @@
  * Never try to check RUBY_VERSION_CODE etc in extension libraries,
  * check the features with mkmf.rb instead.
  */
-
-#ifndef RUBY_VERSION_H
-#define RUBY_VERSION_H 1
 
 /* The origin. */
 #define RUBY_AUTHOR "Yukihiro Matsumoto"
