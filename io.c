@@ -7839,11 +7839,11 @@ rb_f_puts(int argc, VALUE *argv, VALUE recv)
     return rb_funcallv(rb_stdout, rb_intern("puts"), argc, argv);
 }
 
-void
-rb_p(VALUE obj) /* for debug print within C code */
+static VALUE
+rb_p_write(VALUE str)
 {
     VALUE args[2];
-    args[0] = rb_obj_as_string(rb_inspect(obj));
+    args[0] = str;
     args[1] = rb_default_rs;
     if (RB_TYPE_P(rb_stdout, T_FILE) &&
         rb_method_basic_definition_p(CLASS_OF(rb_stdout), id_write)) {
@@ -7852,25 +7852,20 @@ rb_p(VALUE obj) /* for debug print within C code */
     else {
 	rb_io_writev(rb_stdout, 2, args);
     }
+    return Qnil;
 }
 
-struct rb_f_p_arg {
-    int argc;
-    VALUE *argv;
-};
+void
+rb_p(VALUE obj) /* for debug print within C code */
+{
+    rb_p_write(rb_obj_as_string(rb_inspect(obj)));
+}
 
 static VALUE
-rb_f_p_internal(VALUE arg)
+rb_p_result(int argc, const VALUE *argv)
 {
-    struct rb_f_p_arg *arg1 = (struct rb_f_p_arg*)arg;
-    int argc = arg1->argc;
-    VALUE *argv = arg1->argv;
-    int i;
     VALUE ret = Qnil;
 
-    for (i=0; i<argc; i++) {
-	rb_p(argv[i]);
-    }
     if (argc == 1) {
 	ret = argv[0];
     }
@@ -7904,11 +7899,12 @@ rb_f_p_internal(VALUE arg)
 static VALUE
 rb_f_p(int argc, VALUE *argv, VALUE self)
 {
-    struct rb_f_p_arg arg;
-    arg.argc = argc;
-    arg.argv = argv;
-
-    return rb_uninterruptible(rb_f_p_internal, (VALUE)&arg);
+    int i;
+    for (i=0; i<argc; i++) {
+        VALUE inspected = rb_obj_as_string(rb_inspect(argv[i]));
+        rb_uninterruptible(rb_p_write, inspected);
+    }
+    return rb_p_result(argc, argv);
 }
 
 /*
