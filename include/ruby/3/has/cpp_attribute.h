@@ -19,8 +19,6 @@
  * @brief      Defines #RUBY3_HAS_CPP_ATTRIBUTE.
  */
 #include "ruby/3/compiler_is.h"
-#include "ruby/3/compiler_since.h"
-#include "ruby/3/token_paste.h"
 
 /** @cond INTERNAL_MACRO */
 #if defined(RUBY3_HAS_CPP_ATTRIBUTE0)

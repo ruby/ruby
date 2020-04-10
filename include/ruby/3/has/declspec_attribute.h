@@ -18,8 +18,6 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #RUBY3_HAS_DECLSPEC_ATTRIBUTE.
  */
-#include "ruby/3/compiler_since.h"
-#include "ruby/3/token_paste.h"
 
 /** Wraps (or simulates) `__has_declspec_attribute`. */
 #if defined(RUBY3_HAS_DECLSPEC_ATTRIBUTE)

@@ -31,7 +31,6 @@
 #include "ruby/3/dllexport.h"
 #include "ruby/3/special_consts.h"
 #include "ruby/3/value.h"
-#include "ruby/3/warning_push.h"
 #include "ruby/assert.h"
 
 #define RB_INT2NUM  rb_int2num_inline

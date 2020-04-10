@@ -42,7 +42,6 @@
  *    ```
  */
 #include "ruby/3/compiler_is.h"
-#include "ruby/3/compiler_since.h"
 
 #ifdef RUBY3_WARNING_PUSH
 # /* Take that. */

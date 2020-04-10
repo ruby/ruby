@@ -24,8 +24,6 @@
  * compatibility only.
  */
 #include "ruby/3/config.h"
-#include "ruby/3/has/warning.h"
-#include "ruby/3/warning_push.h"
 
 #if defined(LONG_LONG)
 # /* Take that. */

@@ -18,8 +18,6 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #RUBY3_ATTR_DIAGNOSE_IF.
  */
-#include "ruby/3/has/attribute.h"
-#include "ruby/3/warning_push.h"
 
 /** Wraps (or simulates) `__attribute__((diagnose_if))` */
 #if defined(RUBY3_ATTR_DIAGNOSE_IF)

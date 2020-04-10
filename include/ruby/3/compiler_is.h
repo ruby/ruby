@@ -25,6 +25,9 @@
  * @retval  true   It is.
  * @retval  false  It isn't.
  */
+#ifndef RUBY3_COMPILER_IS_INCLUDED
+#define RUBY3_COMPILER_IS_INCLUDED
+
 #ifndef RUBY3_COMPILER_IS
 # define RUBY3_COMPILER_IS(cc) RUBY3_COMPILER_IS_ ## cc
 #endif
@@ -41,3 +44,5 @@
  *   Apple's might be needed.
  *
  * - ARM's armclang: ditto, it can be clang-backended.  */
+
+#endif // RUBY3_COMPILER_IS_INCLUDED

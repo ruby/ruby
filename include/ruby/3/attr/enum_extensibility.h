@@ -18,7 +18,6 @@
  *             extension libraries. They could be written in C++98.
  * @brief      #RUBY3_ATTR_ENUM_EXTENSIBILITY.
  */
-#include "ruby/3/has/attribute.h"
 
 /** Wraps (or simulates) `__attribute__((enum_extensibility))` */
 #if defined(RUBY3_ATTR_ENUM_EXTENSIBILITY)

@@ -20,7 +20,6 @@
  */
 #include "ruby/3/has/feature.h"
 #include "ruby/3/compiler_is.h"
-#include "ruby/3/token_paste.h"
 
 /** @cond INTERNAL_MACRO*/
 #if defined(RUBY3_ATTR_CONSTEXPR)

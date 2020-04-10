@@ -27,7 +27,6 @@
 #define  RUBY3_ASSUME_H
 #include "ruby/3/config.h"
 #include "ruby/3/cast.h"
-#include "ruby/3/compiler_since.h"
 #include "ruby/3/has/builtin.h"
 
 /** @cond INTERNAL_MACRO */

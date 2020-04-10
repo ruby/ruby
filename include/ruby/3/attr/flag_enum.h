@@ -19,7 +19,6 @@
  * @brief      Defines #RUBY3_ATTR_FLAG_ENUM.
  * @see        https://clang.llvm.org/docs/AttributeReference.html#flag_enum
  */
-#include "ruby/3/has/attribute.h"
 
 /** Wraps (or simulates) `__attribute__((flag_enum)` */
 #if defined(RUBY3_ATTR_FLAG_ENUM)
