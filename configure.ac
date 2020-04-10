@@ -1498,7 +1498,7 @@ AS_IF([test "$GCC" = yes], [
     ])
 
     AC_CACHE_CHECK([for __atomic builtins], [rb_cv_gcc_atomic_builtins], [
-	AC_TRY_LINK([unsigned char atomic_var;],
+	AC_TRY_LINK([unsigned int atomic_var;],
 		    [
 			__atomic_exchange_n(&atomic_var, 0, __ATOMIC_SEQ_CST);
 			__atomic_exchange_n(&atomic_var, 1, __ATOMIC_SEQ_CST);
@@ -1513,7 +1513,7 @@ AS_IF([test "$GCC" = yes], [
     ])
 
     AC_CACHE_CHECK([for __sync builtins], [rb_cv_gcc_sync_builtins], [
-	AC_TRY_LINK([unsigned char atomic_var;],
+	AC_TRY_LINK([unsigned int atomic_var;],
 		    [
 			__sync_lock_test_and_set(&atomic_var, 0);
 			__sync_lock_test_and_set(&atomic_var, 1);
