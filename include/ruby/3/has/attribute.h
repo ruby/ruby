@@ -91,62 +91,62 @@
 
 #else
 # /* Take config.h definition when available. */
-# define RUBY3_HAS_ATTRIBUTE(_) RUBY3_TOKEN_PASTE(RUBY3_HAS_ATTRIBUTE_, _)
+# define RUBY3_HAS_ATTRIBUTE(_) (RUBY3_TOKEN_PASTE(RUBY3_HAS_ATTRIBUTE_, _)+0)
 # ifdef ALWAYS_INLINE
-#  define RUBY3_HAS_ATTRIBUTE_always_inline
+#  define RUBY3_HAS_ATTRIBUTE_always_inline 1
 # endif
 # ifdef FUNC_CDECL
-#  define RUBY3_HAS_ATTRIBUTE_cdecl
+#  define RUBY3_HAS_ATTRIBUTE_cdecl 1
 # endif
 # ifdef CONSTFUNC
-#  define RUBY3_HAS_ATTRIBUTE_const
+#  define RUBY3_HAS_ATTRIBUTE_const 1
 # endif
 # ifdef DEPRECATED
-#  define RUBY3_HAS_ATTRIBUTE_deprecated
+#  define RUBY3_HAS_ATTRIBUTE_deprecated 1
 # endif
 # ifdef ERRORFUNC
-#  define RUBY3_HAS_ATTRIBUTE_error
+#  define RUBY3_HAS_ATTRIBUTE_error 1
 # endif
 # ifdef FUNC_FASTCALL
-#  define RUBY3_HAS_ATTRIBUTE_fastcall
+#  define RUBY3_HAS_ATTRIBUTE_fastcall 1
 # endif
 # ifdef PUREFUNC
-#  define RUBY3_HAS_ATTRIBUTE_pure
+#  define RUBY3_HAS_ATTRIBUTE_pure 1
 # endif
 # ifdef NO_ADDRESS_SAFETY_ANALYSIS
-#  define RUBY3_HAS_ATTRIBUTE_no_address_safety_analysis
+#  define RUBY3_HAS_ATTRIBUTE_no_address_safety_analysis 1
 # endif
 # ifdef NO_SANITIZE
-#  define RUBY3_HAS_ATTRIBUTE_no_sanitize
+#  define RUBY3_HAS_ATTRIBUTE_no_sanitize 1
 # endif
 # ifdef NO_SANITIZE_ADDRESS
-#  define RUBY3_HAS_ATTRIBUTE_no_sanitize_address
+#  define RUBY3_HAS_ATTRIBUTE_no_sanitize_address 1
 # endif
 # ifdef NOINLINE
-#  define RUBY3_HAS_ATTRIBUTE_noinline
+#  define RUBY3_HAS_ATTRIBUTE_noinline 1
 # endif
 # ifdef RUBY3_FUNC_NONNULL
-#  define RUBY3_HAS_ATTRIBUTE_nonnull
+#  define RUBY3_HAS_ATTRIBUTE_nonnull 1
 # endif
 # ifdef NORETURN
-#  define RUBY3_HAS_ATTRIBUTE_noreturn
+#  define RUBY3_HAS_ATTRIBUTE_noreturn 1
 # endif
 # ifdef FUNC_OPTIMIZED
-#  define RUBY3_HAS_ATTRIBUTE_optimize
+#  define RUBY3_HAS_ATTRIBUTE_optimize 1
 # endif
 # ifdef FUNC_STDCALL
-#  define RUBY3_HAS_ATTRIBUTE_stdcall
+#  define RUBY3_HAS_ATTRIBUTE_stdcall 1
 # endif
 # ifdef MAYBE_UNUSED
-#  define RUBY3_HAS_ATTRIBUTE_unused
+#  define RUBY3_HAS_ATTRIBUTE_unused 1
 # endif
 # ifdef WARN_UNUSED_RESULT
-#  define RUBY3_HAS_ATTRIBUTE_warn_unused_result
+#  define RUBY3_HAS_ATTRIBUTE_warn_unused_result 1
 # endif
 # ifdef WARNINGFUNC
-#  define RUBY3_HAS_ATTRIBUTE_warning
+#  define RUBY3_HAS_ATTRIBUTE_warning 1
 # endif
 # ifdef WEAK
-#  define RUBY3_HAS_ATTRIBUTE_weak
+#  define RUBY3_HAS_ATTRIBUTE_weak 1
 # endif
 #endif
