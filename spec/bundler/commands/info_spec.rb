@@ -41,6 +41,15 @@ RSpec.describe "bundle info" do
       expect(err).to eq("Could not find gem 'missing'.")
     end
 
+    it "warns if path no longer exists on disk" do
+      FileUtils.rm_rf(default_bundle_path("gems", "rails-2.3.2"))
+
+      bundle "info rails --path"
+
+      expect(err).to match(/has been deleted/i)
+      expect(err).to match(default_bundle_path("gems", "rails-2.3.2").to_s)
+    end
+
     context "given a default gem shippped in ruby", :ruby_repo do
       it "prints information about the default gem" do
         bundle! "info rdoc"
