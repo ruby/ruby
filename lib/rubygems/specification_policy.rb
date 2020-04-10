@@ -21,6 +21,8 @@ class Gem::SpecificationPolicy
     funding_uri
   ].freeze # :nodoc:
 
+  DEPRECATED_ATTRIBUTES = [:rubyforge_project].freeze #:nodoc:
+
   def initialize(specification)
     @warnings = 0
 
@@ -75,6 +77,8 @@ class Gem::SpecificationPolicy
     validate_values
 
     validate_dependencies
+
+    validate_deprecated_attributes
 
     if @warnings > 0
       if strict
@@ -407,6 +411,12 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
     return if File.read(executable_path, 2) == '#!'
 
     warning "#{executable_path} is missing #! line"
+  end
+
+  def validate_deprecated_attributes # :nodoc:
+    DEPRECATED_ATTRIBUTES.each do |attr|
+      warning("#{attr} is deprecated") unless @specification.send(attr).nil?
+    end
   end
 
   def warning(statement) # :nodoc:
