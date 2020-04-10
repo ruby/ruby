@@ -1716,7 +1716,7 @@ io_binwritev(struct iovec *iov, int iovcnt, rb_io_t *fptr)
 }
 
 static long
-io_fwritev(int argc, VALUE *argv, rb_io_t *fptr)
+io_fwritev(int argc, const VALUE *argv, rb_io_t *fptr)
 {
     int i, converted, iovcnt = argc + 1;
     long n;
@@ -1764,7 +1764,7 @@ iovcnt_ok(int iovcnt)
 #endif /* HAVE_WRITEV */
 
 static VALUE
-io_writev(int argc, VALUE *argv, VALUE io)
+io_writev(int argc, const VALUE *argv, VALUE io)
 {
     rb_io_t *fptr;
     long n;
@@ -1838,7 +1838,7 @@ rb_io_write(VALUE io, VALUE str)
 }
 
 static VALUE
-rb_io_writev(VALUE io, int argc, VALUE *argv)
+rb_io_writev(VALUE io, int argc, const VALUE *argv)
 {
     if (argc > 1 && rb_obj_method_arity(io, id_write) == 1) {
 	if (io != rb_stderr && RTEST(ruby_verbose)) {
