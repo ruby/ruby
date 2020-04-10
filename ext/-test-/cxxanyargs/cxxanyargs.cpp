@@ -5,6 +5,9 @@
 #elif defined(_MSC_VER)
 #pragma warning(disable : 4996)
 
+#elif defined(__INTEL_COMPILER)
+#pragma warning(disable : 1786)
+
 #elif defined(__clang__)
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
 
