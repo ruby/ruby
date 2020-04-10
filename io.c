@@ -549,9 +549,13 @@ static int
 errno_on_write(rb_io_t *fptr)
 {
     int e = errno;
-#if defined EPIPE && defined SIGPIPE
+#if defined EPIPE
     if (fptr_signal_on_epipe(fptr) && (e == EPIPE)) {
-        VALUE sig = INT2FIX(SIGPIPE);
+        const VALUE sig =
+# if defined SIGPIPE
+            INT2FIX(SIGPIPE) - INT2FIX(0) +
+# endif
+            INT2FIX(0);
         rb_exc_raise(rb_class_new_instance(1, &sig, rb_eSignal));
     }
 #endif
