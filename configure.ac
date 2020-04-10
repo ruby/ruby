@@ -576,6 +576,13 @@ AS_CASE(["$GCC:${warnflags+set}:${extra_warnflags:+set}:"],
     warnflags=
 ])
 RUBY_TRY_CFLAGS(-Qunused-arguments, [RUBY_APPEND_OPTIONS(rb_cv_wsuppress_flags, -Qunused-arguments)])
+AC_COMPILE_IFELSE([
+    AC_LANG_PROGRAM([
+@%:@if !(defined(__SUNPRO_C)||defined(__SUNPRO_CC))
+@%:@error not sunpro
+@%:@endif],[])], [
+    RUBY_TRY_CFLAGS(-erroff=E_STATEMENT_NOT_REACHED, [
+        RUBY_APPEND_OPTIONS(rb_cv_warnflags, -erroff=E_STATEMENT_NOT_REACHED)])],[])
 
 AC_ARG_WITH(compress-debug-sections,
 	AS_HELP_STRING([--with-compress-debug-sections=type],
