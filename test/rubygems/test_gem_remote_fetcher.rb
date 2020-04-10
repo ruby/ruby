@@ -100,12 +100,12 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     @proxies.each {|k| ENV[k] = nil }
 
     super
-    self.class.start_servers
-    self.class.enable_yaml = true
-    self.class.enable_zip = false
+    start_servers
+    self.enable_yaml = true
+    self.enable_zip = false
 
-    base_server_uri = "http://localhost:#{self.class.normal_server_port}"
-    @proxy_uri = "http://localhost:#{self.class.proxy_server_port}"
+    base_server_uri = "http://localhost:#{normal_server_port}"
+    @proxy_uri = "http://localhost:#{proxy_server_port}"
 
     @server_uri = base_server_uri + "/yaml"
     @server_z_uri = base_server_uri + "/yaml.Z"
@@ -129,7 +129,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
   def teardown
     @fetcher.close_all
-    self.class.stop_servers
+    stop_servers
     super
     Gem.configuration[:http_proxy] = nil
     @proxies.each_with_index {|k, i| ENV[k] = @old_proxies[i] }
@@ -881,7 +881,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
   def test_yaml_error_on_size
     use_ui @stub_ui do
-      self.class.enable_yaml = false
+      self.enable_yaml = false
       fetcher = Gem::RemoteFetcher.new nil
       @fetcher = fetcher
       assert_error { fetcher.size }
@@ -889,7 +889,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   def test_ssl_connection
-    ssl_server = self.class.start_ssl_server
+    ssl_server = start_ssl_server
     temp_ca_cert = File.join(DIR, 'ca_cert.pem')
     with_configured_fetcher(":ssl_ca_cert: #{temp_ca_cert}") do |fetcher|
       fetcher.fetch_path("https://localhost:#{ssl_server.config[:Port]}/yaml")
@@ -897,7 +897,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   def test_ssl_client_cert_auth_connection
-    ssl_server = self.class.start_ssl_server({
+    ssl_server = start_ssl_server({
       :SSLVerifyClient =>
         OpenSSL::SSL::VERIFY_PEER | OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT})
 
@@ -912,7 +912,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   def test_do_not_allow_invalid_client_cert_auth_connection
-    ssl_server = self.class.start_ssl_server({
+    ssl_server = start_ssl_server({
       :SSLVerifyClient =>
         OpenSSL::SSL::VERIFY_PEER | OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT})
 
@@ -929,7 +929,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   def test_do_not_allow_insecure_ssl_connection_by_default
-    ssl_server = self.class.start_ssl_server
+    ssl_server = start_ssl_server
     with_configured_fetcher do |fetcher|
       assert_raises Gem::RemoteFetcher::FetchError do
         fetcher.fetch_path("https://localhost:#{ssl_server.config[:Port]}/yaml")
@@ -938,14 +938,14 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   def test_ssl_connection_allow_verify_none
-    ssl_server = self.class.start_ssl_server
+    ssl_server = start_ssl_server
     with_configured_fetcher(":ssl_verify_mode: 0") do |fetcher|
       fetcher.fetch_path("https://localhost:#{ssl_server.config[:Port]}/yaml")
     end
   end
 
   def test_do_not_follow_insecure_redirect
-    ssl_server = self.class.start_ssl_server
+    ssl_server = start_ssl_server
     temp_ca_cert = File.join(DIR, 'ca_cert.pem')
     expected_error_message =
       "redirecting to non-https resource: #{@server_uri} (https://localhost:#{ssl_server.config[:Port]}/insecure_redirect?to=#{@server_uri})"
@@ -960,7 +960,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   def test_nil_ca_cert
-    ssl_server = self.class.start_ssl_server
+    ssl_server = start_ssl_server
     temp_ca_cert = nil
 
     with_configured_fetcher(":ssl_ca_cert: #{temp_ca_cert}") do |fetcher|
@@ -1012,148 +1012,144 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
   end
 
-  class << self
+  private
 
-    attr_reader :normal_server, :proxy_server
-    attr_accessor :enable_zip, :enable_yaml
+  attr_reader :normal_server, :proxy_server
+  attr_accessor :enable_zip, :enable_yaml
 
-    def start_servers
-      @normal_server ||= start_server(SERVER_DATA)
-      @proxy_server  ||= start_server(PROXY_DATA)
-      @enable_yaml = true
-      @enable_zip = false
+  def start_servers
+    @normal_server ||= start_server(SERVER_DATA)
+    @proxy_server  ||= start_server(PROXY_DATA)
+    @enable_yaml = true
+    @enable_zip = false
+    @ssl_server = nil
+    @ssl_server_thread = nil
+  end
+
+  def stop_servers
+    if @normal_server
+      @normal_server.kill.join
+      @normal_server = nil
+    end
+    if @proxy_server
+      @proxy_server.kill.join
+      @proxy_server = nil
+    end
+    if @ssl_server
+      @ssl_server.stop
       @ssl_server = nil
+    end
+    if @ssl_server_thread
+      @ssl_server_thread.kill.join
       @ssl_server_thread = nil
     end
+    utils = WEBrick::Utils # TimeoutHandler is since 1.9
+    utils::TimeoutHandler.terminate if defined?(utils::TimeoutHandler.terminate)
+  end
 
-    def stop_servers
-      if @normal_server
-        @normal_server.kill.join
-        @normal_server = nil
-      end
-      if @proxy_server
-        @proxy_server.kill.join
-        @proxy_server = nil
-      end
-      if @ssl_server
-        @ssl_server.stop
-        @ssl_server = nil
-      end
-      if @ssl_server_thread
-        @ssl_server_thread.kill.join
-        @ssl_server_thread = nil
-      end
-      utils = WEBrick::Utils # TimeoutHandler is since 1.9
-      utils::TimeoutHandler.terminate if defined?(utils::TimeoutHandler.terminate)
+  def normal_server_port
+    @normal_server[:server].config[:Port]
+  end
+
+  def proxy_server_port
+    @proxy_server[:server].config[:Port]
+  end
+
+  DIR = File.expand_path(File.dirname(__FILE__))
+
+  def start_ssl_server(config = {})
+    null_logger = NilLog.new
+    server = WEBrick::HTTPServer.new({
+      :Port => 0,
+      :Logger => null_logger,
+      :AccessLog => [],
+      :SSLEnable => true,
+      :SSLCACertificateFile => File.join(DIR, 'ca_cert.pem'),
+      :SSLCertificate => cert('ssl_cert.pem'),
+      :SSLPrivateKey => key('ssl_key.pem'),
+      :SSLVerifyClient => nil,
+      :SSLCertName => nil
+    }.merge(config))
+    server.mount_proc("/yaml") do |req, res|
+      res.body = "--- true\n"
     end
-
-    def normal_server_port
-      @normal_server[:server].config[:Port]
+    server.mount_proc("/insecure_redirect") do |req, res|
+      res.set_redirect(WEBrick::HTTPStatus::MovedPermanently, req.query['to'])
     end
-
-    def proxy_server_port
-      @proxy_server[:server].config[:Port]
+    server.ssl_context.tmp_dh_callback = proc { TEST_KEY_DH2048 }
+    t = Thread.new do
+      begin
+        server.start
+      rescue Exception => ex
+        puts "ERROR during server thread: #{ex.message}"
+        raise
+      ensure
+        server.shutdown
+      end
     end
-
-    DIR = File.expand_path(File.dirname(__FILE__))
-
-    def start_ssl_server(config = {})
-      null_logger = NilLog.new
-      server = WEBrick::HTTPServer.new({
-        :Port => 0,
-        :Logger => null_logger,
-        :AccessLog => [],
-        :SSLEnable => true,
-        :SSLCACertificateFile => File.join(DIR, 'ca_cert.pem'),
-        :SSLCertificate => cert('ssl_cert.pem'),
-        :SSLPrivateKey => key('ssl_key.pem'),
-        :SSLVerifyClient => nil,
-        :SSLCertName => nil
-      }.merge(config))
-      server.mount_proc("/yaml") do |req, res|
-        res.body = "--- true\n"
+    while server.status != :Running
+      sleep 0.1
+      unless t.alive?
+        t.join
+        raise
       end
-      server.mount_proc("/insecure_redirect") do |req, res|
-        res.set_redirect(WEBrick::HTTPStatus::MovedPermanently, req.query['to'])
-      end
-      server.ssl_context.tmp_dh_callback = proc { TEST_KEY_DH2048 }
-      t = Thread.new do
-        begin
-          server.start
-        rescue Exception => ex
-          puts "ERROR during server thread: #{ex.message}"
-          raise
-        ensure
-          server.shutdown
-        end
-      end
-      while server.status != :Running
-        sleep 0.1
-        unless t.alive?
-          t.join
-          raise
-        end
-      end
-      @ssl_server = server
-      @ssl_server_thread = t
-      server
     end
+    @ssl_server = server
+    @ssl_server_thread = t
+    server
+  end
 
-    private
-
-    def start_server(data)
-      null_logger = NilLog.new
-      s = WEBrick::HTTPServer.new(
-        :Port            => 0,
-        :DocumentRoot    => nil,
-        :Logger          => null_logger,
-        :AccessLog       => null_logger
-      )
-      s.mount_proc("/kill") { |req, res| s.shutdown }
-      s.mount_proc("/yaml") do |req, res|
-        if req["X-Captain"]
-          res.body = req["X-Captain"]
-        elsif @enable_yaml
-          res.body = data
-          res['Content-Type'] = 'text/plain'
-          res['content-length'] = data.size
-        else
-          res.status = "404"
-          res.body = "<h1>NOT FOUND</h1>"
-          res['Content-Type'] = 'text/html'
-        end
+  def start_server(data)
+    null_logger = NilLog.new
+    s = WEBrick::HTTPServer.new(
+      :Port            => 0,
+      :DocumentRoot    => nil,
+      :Logger          => null_logger,
+      :AccessLog       => null_logger
+    )
+    s.mount_proc("/kill") { |req, res| s.shutdown }
+    s.mount_proc("/yaml") do |req, res|
+      if req["X-Captain"]
+        res.body = req["X-Captain"]
+      elsif @enable_yaml
+        res.body = data
+        res['Content-Type'] = 'text/plain'
+        res['content-length'] = data.size
+      else
+        res.status = "404"
+        res.body = "<h1>NOT FOUND</h1>"
+        res['Content-Type'] = 'text/html'
       end
-      s.mount_proc("/yaml.Z") do |req, res|
-        if @enable_zip
-          res.body = Zlib::Deflate.deflate(data)
-          res['Content-Type'] = 'text/plain'
-        else
-          res.status = "404"
-          res.body = "<h1>NOT FOUND</h1>"
-          res['Content-Type'] = 'text/html'
-        end
+    end
+    s.mount_proc("/yaml.Z") do |req, res|
+      if @enable_zip
+        res.body = Zlib::Deflate.deflate(data)
+        res['Content-Type'] = 'text/plain'
+      else
+        res.status = "404"
+        res.body = "<h1>NOT FOUND</h1>"
+        res['Content-Type'] = 'text/html'
       end
-      th = Thread.new do
-        begin
-          s.start
-        rescue Exception => ex
-          abort "ERROR during server thread: #{ex.message}"
-        ensure
-          s.shutdown
-        end
+    end
+    th = Thread.new do
+      begin
+        s.start
+      rescue Exception => ex
+        abort "ERROR during server thread: #{ex.message}"
+      ensure
+        s.shutdown
       end
-      th[:server] = s
-      th
     end
+    th[:server] = s
+    th
+  end
 
-    def cert(filename)
-      OpenSSL::X509::Certificate.new(File.read(File.join(DIR, filename)))
-    end
+  def cert(filename)
+    OpenSSL::X509::Certificate.new(File.read(File.join(DIR, filename)))
+  end
 
-    def key(filename)
-      OpenSSL::PKey::RSA.new(File.read(File.join(DIR, filename)))
-    end
-
+  def key(filename)
+    OpenSSL::PKey::RSA.new(File.read(File.join(DIR, filename)))
   end
 
 end if defined?(OpenSSL::SSL)
