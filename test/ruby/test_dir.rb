@@ -320,6 +320,9 @@ class TestDir < Test::Unit::TestCase
     assert_entries(Dir.open(@root) {|dir| dir.entries})
     assert_entries(Dir.entries(@root))
     assert_raise(ArgumentError) {Dir.entries(@root+"\0")}
+    [Encoding::UTF_8, Encoding::ASCII_8BIT].each do |enc|
+      assert_equal(enc, Dir.entries(@root, encoding: enc).first.encoding)
+    end
   end
 
   def test_foreach
@@ -332,12 +335,19 @@ class TestDir < Test::Unit::TestCase
     Dir.mkdir(newdir)
     File.write(newdir+"/a", "")
     assert_equal(%w[. .. a], e.to_a.sort)
+    [Encoding::UTF_8, Encoding::ASCII_8BIT].each do |enc|
+      e = Dir.foreach(newdir, encoding: enc)
+      assert_equal(enc, e.to_a.first.encoding)
+    end
   end
 
   def test_children
     assert_entries(Dir.open(@root) {|dir| dir.children}, true)
     assert_entries(Dir.children(@root), true)
     assert_raise(ArgumentError) {Dir.children(@root+"\0")}
+    [Encoding::UTF_8, Encoding::ASCII_8BIT].each do |enc|
+      assert_equal(enc, Dir.children(@root, encoding: enc).first.encoding)
+    end
   end
 
   def test_each_child
@@ -350,6 +360,10 @@ class TestDir < Test::Unit::TestCase
     Dir.mkdir(newdir)
     File.write(newdir+"/a", "")
     assert_equal(%w[a], e.to_a)
+    [Encoding::UTF_8, Encoding::ASCII_8BIT].each do |enc|
+      e = Dir.each_child(newdir, encoding: enc)
+      assert_equal(enc, e.to_a.first.encoding)
+    end
   end
 
   def test_dir_enc
