@@ -1895,11 +1895,17 @@ rb_check_hash_type(VALUE hash)
  *  call-seq:
  *    Hash.try_convert(obj) -> new_hash or nil
  *
+ *
  *  Returns the Hash object created by calling <tt>obj.to_hash</tt>:
  *    require 'csv' # => true
  *    row = CSV::Row.new(['Name', 'Age'], ['Bob', 45])
  *    row.respond_to?(:to_hash)  # => true
  *    Hash.try_convert(row) # => {"Name"=>"Bob", "Age"=>45}
+ *
+ *  Returns the given <tt>obj</tt> if it is a Hash:
+ *    h = {}
+ *    h1 = Hash.try_convert(h)
+ *    h1.object_id == h.object_id # => true
  *
  *  Returns <tt>nil</tt> unless <tt>obj.respond_to?(:to_hash)</tt>:
  *    s = 'foo'
