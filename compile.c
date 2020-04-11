@@ -3951,7 +3951,7 @@ compile_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	{
 	    int len = (int)node->nd_alen / 2;
             struct rb_callinfo_kwarg *kw_arg =
-                rb_xmalloc_mul_add(len - 1, sizeof(VALUE), sizeof(struct rb_callinfo_kwarg));
+                rb_xmalloc_mul_add(len, sizeof(VALUE), sizeof(struct rb_callinfo_kwarg));
 	    VALUE *keywords = kw_arg->keywords;
 	    int i = 0;
 	    kw_arg->keyword_len = len;
@@ -10394,7 +10394,7 @@ ibf_load_ci_entries(const struct ibf_load *load,
             struct rb_callinfo_kwarg *kwarg = NULL;
             int kwlen = (int)ibf_load_small_value(load, &reading_pos);
             if (kwlen > 0) {
-                kwarg = rb_xmalloc_mul_add(kwlen - 1, sizeof(VALUE), sizeof(struct rb_callinfo_kwarg));;
+                kwarg = rb_xmalloc_mul_add(kwlen, sizeof(VALUE), sizeof(struct rb_callinfo_kwarg));
                 kwarg->keyword_len = kwlen;
                 for (int j=0; j<kwlen; j++) {
                     VALUE keyword = ibf_load_small_value(load, &reading_pos);
