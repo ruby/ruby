@@ -607,9 +607,15 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 	@$(IFCHANGE) "--timestamp=$(@:/=\)" $(RUBY_CONFIG_H:/=\) <<
 #ifndef $(guard)
 #define $(guard) 1
+!if defined(MSC_VER_LOWER)
+#if (_MSC_VER < $(MSC_VER_LOWER)) || (_MSC_VER > $(MSC_VER_UPPER))
+#error MSC version unmatch: $(MSC_VER_LOWER)..$(MSC_VER_UPPER) is expected.
+#endif
+!else
 #if _MSC_VER != $(MSC_VER)
 #error MSC version unmatch: $(MSC_VER) is expected.
 #endif
+!endif
 #define RUBY_MSVCRT_VERSION $(RT_VER)
 #define STDC_HEADERS 1
 #define HAVE_SYS_TYPES_H 1
