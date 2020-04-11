@@ -473,9 +473,9 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		}
 	    }
 	    break;
-
-	  case 's':
-	  case 'p':
+         case 'q':
+         case 's':
+         case 'p':
 	  format_s:
 	    {
 		VALUE arg = GETARG();
@@ -484,9 +484,14 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		if (*p == 'p') {
 		    str = rb_inspect(arg);
 		}
+               else if (*p == 'q') {
+                   str = rb_obj_as_string(arg);
+                   str = rb_str_dump(str);
+               }
 		else {
 		    str = rb_obj_as_string(arg);
 		}
+
 		len = RSTRING_LEN(str);
 		rb_str_set_len(result, blen);
 		if (coderange != ENC_CODERANGE_BROKEN && scanned < blen) {

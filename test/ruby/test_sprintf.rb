@@ -378,6 +378,12 @@ class TestSprintf < Test::Unit::TestCase
     assert_equal("foo" + " " * BSIZ, sprintf("%-#{ BSIZ + 3 }s", "foo"))
   end
 
+  def test_quoted_string
+    assert_equal(%q{"foo"}, sprintf("%q", "foo"))
+    assert_equal(%q{"foo\n bar"}, sprintf("%q", "foo\n bar"))
+    assert_equal(%q{"foo\r bar"}, sprintf("%q", "foo\r bar"))
+  end
+
   def test_integer
     assert_equal("01", sprintf("%#o", 1))
     assert_equal("0x1", sprintf("%#x", 1))
