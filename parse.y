@@ -1506,18 +1506,16 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 		| expr
 		;
 
-rassign 	: primary tASSOC lhs
+rassign 	: arg_value tASSOC lhs
 		    {
 		    /*%%%*/
-			value_expr($1);
 			$$ = node_assign(p, $3, $1, &@$);
 		    /*% %*/
 		    /*% ripper: assign!($3, $1) %*/
 		    }
-		| primary tASSOC mlhs
+		| arg_value tASSOC mlhs
 		    {
 		    /*%%%*/
-			value_expr($1);
 			$$ = node_assign(p, $3, $1, &@$);
 		    /*% %*/
 		    /*% ripper: massign!($3, $1) %*/
@@ -1525,7 +1523,6 @@ rassign 	: primary tASSOC lhs
 		| rassign tASSOC lhs
 		    {
 		    /*%%%*/
-			value_expr($1);
 			$$ = node_assign(p, $3, $1, &@$);
 		    /*% %*/
 		    /*% ripper: assign!($3, $1) %*/
@@ -1533,7 +1530,6 @@ rassign 	: primary tASSOC lhs
 		| rassign tASSOC mlhs
 		    {
 		    /*%%%*/
-			value_expr($1);
 			$$ = node_assign(p, $3, $1, &@$);
 		    /*% %*/
 		    /*% ripper: massign!($3, $1) %*/
