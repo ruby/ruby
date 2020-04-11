@@ -142,6 +142,10 @@ Excluding feature bug fixes.
     * This is experimental; if it brings a big incompatibility issue,
       it may be reverted until 2.8/3.0 release.
 
+* When writing to STDOUT redirected to a closed pipe, SignalException
+  is raised now instead of Errno::EPIPE, so that no broken pipe error
+  message will be shown.  [[Feature #14413]]
+
 ## Stdlib compatibility issues
 
 Excluding feature bug fixes.
@@ -177,6 +181,7 @@ Excluding feature bug fixes.
 [Feature #9573]:  https://bugs.ruby-lang.org/issues/9573
 [Feature #14183]: https://bugs.ruby-lang.org/issues/14183
 [Bug #14266]:     https://bugs.ruby-lang.org/issues/14266
+[Feature #14413]: https://bugs.ruby-lang.org/issues/14413
 [Feature #15575]: https://bugs.ruby-lang.org/issues/15575
 [Feature #16131]: https://bugs.ruby-lang.org/issues/16131
 [Feature #16166]: https://bugs.ruby-lang.org/issues/16166
