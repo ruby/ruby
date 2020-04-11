@@ -53,6 +53,7 @@
 #include "ruby/re.h"
 #include "ruby/util.h"
 #include "ruby_assert.h"
+#include "builtin.h"
 
 #define BEG(no) (regs->beg[(no)])
 #define END(no) (regs->end[(no)])
@@ -8261,24 +8262,13 @@ get_rs(void)
 #define rb_rs get_rs()
 
 static VALUE
-rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, VALUE ary)
+rb_str_enumerate_lines(VALUE str, VALUE rs, VALUE chomp, VALUE ary)
 {
     rb_encoding *enc;
-    VALUE line, rs, orig = str, opts = Qnil, chomp = Qfalse;
+    VALUE line, orig = str;
     const char *ptr, *pend, *subptr, *subend, *rsptr, *hit, *adjusted;
     long pos, len, rslen;
     int rsnewline = 0;
-
-    if (rb_scan_args(argc, argv, "01:", &rs, &opts) == 0)
-	rs = rb_rs;
-    if (!NIL_P(opts)) {
-	static ID keywords[1];
-	if (!keywords[0]) {
-	    keywords[0] = rb_intern_const("chomp");
-	}
-	rb_get_kwargs(opts, keywords, 0, 1, &chomp);
-	chomp = (chomp != Qundef && RTEST(chomp));
-    }
 
     if (NIL_P(rs)) {
 	if (!ENUM_ELEM(ary, str)) {
@@ -8395,84 +8385,31 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, VALUE ary)
 	return orig;
 }
 
-/*
- *  call-seq:
- *     str.each_line(separator=$/, chomp: false) {|substr| block } -> str
- *     str.each_line(separator=$/, chomp: false)                   -> an_enumerator
- *
- *  Splits <i>str</i> using the supplied parameter as the record
- *  separator (<code>$/</code> by default), passing each substring in
- *  turn to the supplied block.  If a zero-length record separator is
- *  supplied, the string is split into paragraphs delimited by
- *  multiple successive newlines.
- *
- *  If +chomp+ is +true+, +separator+ will be removed from the end of each
- *  line.
- *
- *  If no block is given, an enumerator is returned instead.
- *
- *     "hello\nworld".each_line {|s| p s}
- *     # prints:
- *     #   "hello\n"
- *     #   "world"
- *
- *     "hello\nworld".each_line('l') {|s| p s}
- *     # prints:
- *     #   "hel"
- *     #   "l"
- *     #   "o\nworl"
- *     #   "d"
- *
- *     "hello\n\n\nworld".each_line('') {|s| p s}
- *     # prints
- *     #   "hello\n\n"
- *     #   "world"
- *
- *     "hello\nworld".each_line(chomp: true) {|s| p s}
- *     # prints:
- *     #   "hello"
- *     #   "world"
- *
- *     "hello\nworld".each_line('l', chomp: true) {|s| p s}
- *     # prints:
- *     #   "he"
- *     #   ""
- *     #   "o\nwor"
- *     #   "d"
- *
- */
-
 static VALUE
-rb_str_each_line(int argc, VALUE *argv, VALUE str)
+rb_str_each_line(rb_execution_context_t *ec, VALUE str, VALUE rs, VALUE chomp)
 {
-    RETURN_SIZED_ENUMERATOR(str, argc, argv, 0);
-    return rb_str_enumerate_lines(argc, argv, str, 0);
+    if (!rb_block_given_p()) {
+        VALUE argv[2];
+        argv[0] = rs;
+
+        VALUE kw_hash = rb_hash_new();
+
+        rb_gc_register_mark_object(kw_hash);
+        rb_hash_aset(kw_hash, ID2SYM(rb_intern("chomp")), chomp);
+        rb_obj_freeze(kw_hash);
+
+        argv[1] = kw_hash;
+
+        return SIZED_ENUMERATOR_KW(str, 2, argv, 0, RB_PASS_KEYWORDS);
+    }
+    return rb_str_enumerate_lines(str, rs, chomp, 0);
 }
 
-/*
- *  call-seq:
- *     str.lines(separator=$/, chomp: false)  -> an_array
- *
- *  Returns an array of lines in <i>str</i> split using the supplied
- *  record separator (<code>$/</code> by default).  This is a
- *  shorthand for <code>str.each_line(separator, getline_args).to_a</code>.
- *
- *  If +chomp+ is +true+, +separator+ will be removed from the end of each
- *  line.
- *
- *     "hello\nworld\n".lines              #=> ["hello\n", "world\n"]
- *     "hello  world".lines(' ')           #=> ["hello ", " ", "world"]
- *     "hello\nworld\n".lines(chomp: true) #=> ["hello", "world"]
- *
- *  If a block is given, which is a deprecated form, works the same as
- *  <code>each_line</code>.
- */
-
 static VALUE
-rb_str_lines(int argc, VALUE *argv, VALUE str)
+rb_str_lines(rb_execution_context_t *ec, VALUE str, VALUE rs, VALUE chomp)
 {
     VALUE ary = WANTARRAY("lines", 0);
-    return rb_str_enumerate_lines(argc, argv, str, ary);
+    return rb_str_enumerate_lines(str, rs, chomp, ary);
 }
 
 static VALUE
@@ -11383,7 +11320,6 @@ Init_String(void)
     rb_define_method(rb_cString, "hex", rb_str_hex, 0);
     rb_define_method(rb_cString, "oct", rb_str_oct, 0);
     rb_define_method(rb_cString, "split", rb_str_split_m, -1);
-    rb_define_method(rb_cString, "lines", rb_str_lines, -1);
     rb_define_method(rb_cString, "bytes", rb_str_bytes, 0);
     rb_define_method(rb_cString, "chars", rb_str_chars, 0);
     rb_define_method(rb_cString, "codepoints", rb_str_codepoints, 0);
@@ -11439,7 +11375,6 @@ Init_String(void)
     rb_define_method(rb_cString, "delete!", rb_str_delete_bang, -1);
     rb_define_method(rb_cString, "squeeze!", rb_str_squeeze_bang, -1);
 
-    rb_define_method(rb_cString, "each_line", rb_str_each_line, -1);
     rb_define_method(rb_cString, "each_byte", rb_str_each_byte, 0);
     rb_define_method(rb_cString, "each_char", rb_str_each_char, 0);
     rb_define_method(rb_cString, "each_codepoint", rb_str_each_codepoint, 0);
@@ -11513,3 +11448,5 @@ Init_String(void)
 
     rb_define_method(rb_cSymbol, "encoding", sym_encoding, 0);
 }
+
+#include "string.rbinc"

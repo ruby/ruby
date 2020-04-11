@@ -17,6 +17,7 @@ gc.rb
 io.rb
 kernel.rb
 pack.rb
+string.rb
 trace_point.rb
 warning.rb
 
