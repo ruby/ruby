@@ -326,6 +326,12 @@ class TestDir < Test::Unit::TestCase
     assert_entries(Dir.open(@root) {|dir| dir.each.to_a})
     assert_entries(Dir.foreach(@root).to_a)
     assert_raise(ArgumentError) {Dir.foreach(@root+"\0").to_a}
+    newdir = @root+"/new"
+    e = Dir.foreach(newdir)
+    assert_raise(Errno::ENOENT) {e.to_a}
+    Dir.mkdir(newdir)
+    File.write(newdir+"/a", "")
+    assert_equal(%w[. .. a], e.to_a.sort)
   end
 
   def test_children
@@ -338,6 +344,12 @@ class TestDir < Test::Unit::TestCase
     assert_entries(Dir.open(@root) {|dir| dir.each_child.to_a}, true)
     assert_entries(Dir.each_child(@root).to_a, true)
     assert_raise(ArgumentError) {Dir.each_child(@root+"\0").to_a}
+    newdir = @root+"/new"
+    e = Dir.each_child(newdir)
+    assert_raise(Errno::ENOENT) {e.to_a}
+    Dir.mkdir(newdir)
+    File.write(newdir+"/a", "")
+    assert_equal(%w[a], e.to_a)
   end
 
   def test_dir_enc
