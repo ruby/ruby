@@ -16,8 +16,6 @@ class TestIOScheduler < Test::Unit::TestCase
       Thread.current.scheduler = scheduler
 
       i, o = UNIXSocket.pair
-      i.nonblock = true
-      o.nonblock = true # Eric wanted this to be the default for all IO
 
       Fiber do
         message = i.read(20)
@@ -67,10 +65,12 @@ class TestIOScheduler < Test::Unit::TestCase
       scheduler = Scheduler.new
       Thread.current.scheduler = scheduler
 
-      assert_equal Thread.scheduler, scheduler
+      Fiber do
+        assert_equal Thread.scheduler, scheduler
 
-      mutex.synchronize do
-        assert_nil Thread.scheduler
+        mutex.synchronize do
+          assert_nil Thread.scheduler
+        end
       end
     end
 

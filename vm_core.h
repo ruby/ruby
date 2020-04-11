@@ -978,7 +978,7 @@ typedef struct rb_thread_struct {
     rb_jmpbuf_t root_jmpbuf;
 
     VALUE scheduler;
-    unsigned exclusive;
+    unsigned blocking;
 
     /* misc */
     VALUE name;

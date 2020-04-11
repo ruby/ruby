@@ -2736,7 +2736,8 @@ th_init(rb_thread_t *th, VALUE self)
     th->self = self;
     rb_threadptr_root_fiber_setup(th);
 
-    th->exclusive = 0;
+    /* All threads are blocking until a non-blocking fiber is scheduled */
+    th->blocking = 1;
     th->scheduler = Qnil;
 
     if (self == 0) {

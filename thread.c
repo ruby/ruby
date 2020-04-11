@@ -711,7 +711,7 @@ thread_do_start(rb_thread_t *th)
         th->value = (*th->invoke_arg.func.func)(th->invoke_arg.func.arg);
     }
 
-    VALUE scheduler = rb_current_thread_scheduler();
+    VALUE scheduler = th->scheduler;
     if (scheduler != Qnil) {
         rb_funcall(scheduler, rb_intern("run"), 0);
     }
@@ -1478,7 +1478,7 @@ rb_nogvl(void *(*func)(void *), void *data1,
     rb_thread_t *th = rb_ec_thread_ptr(ec);
     int saved_errno = 0;
     VALUE ubf_th = Qfalse;
-    VALUE scheduler = rb_current_thread_scheduler();
+    VALUE scheduler = th->scheduler;
 
     if (ubf == RUBY_UBF_IO || ubf == RUBY_UBF_PROCESS) {
 	ubf = ubf_select;
@@ -3630,10 +3630,21 @@ VALUE rb_current_thread_scheduler(void)
 
     VM_ASSERT(th);
 
-    if (th->exclusive == 0)
+    if (th->blocking == 0)
         return th->scheduler;
     else
         return Qnil;
+}
+
+static VALUE
+rb_thread_blocking_p(VALUE thread)
+{
+    unsigned blocking = rb_thread_ptr(thread)->blocking;
+
+    if (blocking == 0)
+        return Qfalse;
+
+    return INT2NUM(blocking);
 }
 
 /*
@@ -5303,6 +5314,7 @@ Init_Thread(void)
     rb_define_method(rb_cThread, "keys", rb_thread_keys, 0);
     rb_define_method(rb_cThread, "priority", rb_thread_priority, 0);
     rb_define_method(rb_cThread, "priority=", rb_thread_priority_set, 1);
+    rb_define_method(rb_cThread, "blocking?", rb_thread_blocking_p, 0);
     rb_define_method(rb_cThread, "status", rb_thread_status, 0);
     rb_define_method(rb_cThread, "thread_variable_get", rb_thread_variable_get, 1);
     rb_define_method(rb_cThread, "thread_variable_set", rb_thread_variable_set, 2);

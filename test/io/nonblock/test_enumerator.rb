@@ -16,8 +16,6 @@ class TestIOEnumerator < Test::Unit::TestCase
       Thread.current.scheduler = scheduler
 
       i, o = UNIXSocket.pair
-      i.nonblock = true
-      o.nonblock = true
       e = i.to_enum(:each_char)
 
       Fiber do

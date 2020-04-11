@@ -126,17 +126,17 @@ class Scheduler
 
     return true
   end
-  
+
   def enter_blocking_region
     # puts "Enter blocking region: #{caller.first}"
   end
-  
+
   def exit_blocking_region
     # puts "Exit blocking region: #{caller.first}"
     @blocking << caller.first
   end
-  
+
   def fiber(&block)
-    Fiber.new(&block)
+    Fiber.new(blocking: false, &block)
   end
 end

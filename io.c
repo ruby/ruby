@@ -181,7 +181,7 @@ off_t __syscall(quad_t number, ...);
 #  define RUBY_PIPE_NONBLOCK_DEFAULT    (0)
 #elif defined(O_NONBLOCK)
   /* disabled for [Bug #15356] (Rack::Deflater + rails) failure: */
-#  define RUBY_PIPE_NONBLOCK_DEFAULT    (0)
+#  define RUBY_PIPE_NONBLOCK_DEFAULT    (O_NONBLOCK)
 #else /* any platforms where O_NONBLOCK does not exist? */
 #  define RUBY_PIPE_NONBLOCK_DEFAULT    (0)
 #endif

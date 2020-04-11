@@ -313,7 +313,7 @@ do_mutex_lock(VALUE self, int interruptible_p)
     // assertion
     if (mutex_owned_p(th, mutex) == Qfalse) rb_bug("do_mutex_lock: mutex is not owned.");
 
-    th->exclusive += 1;
+    th->blocking += 1;
 
     return self;
 }
@@ -411,7 +411,7 @@ rb_mutex_unlock(VALUE self)
     err = rb_mutex_unlock_th(mutex, th);
     if (err) rb_raise(rb_eThreadError, "%s", err);
 
-    th->exclusive -= 1;
+    th->blocking -= 1;
 
     return self;
 }
