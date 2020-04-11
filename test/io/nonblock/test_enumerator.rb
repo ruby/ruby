@@ -7,7 +7,8 @@ class TestIOEnumerator < Test::Unit::TestCase
   MESSAGE = "Hello World"
 
   def test_read
-    return unless defined?(UNIXSocket)
+    i, o = UNIXSocket.pair
+    return unless i.nonblock? && o.nonblock?
 
     message = String.new
 
@@ -15,7 +16,6 @@ class TestIOEnumerator < Test::Unit::TestCase
       scheduler = Scheduler.new
       Thread.current.scheduler = scheduler
 
-      i, o = UNIXSocket.pair
       e = i.to_enum(:each_char)
 
       Fiber do

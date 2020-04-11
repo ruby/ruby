@@ -25,7 +25,7 @@ describe "BasicSocket#write_nonblock" do
     platform_is :linux do
       it 'does not set the IO in nonblock mode' do
         require 'io/nonblock'
-        @w.nonblock?.should == false
+        @w.nonblock = false
         @w.write_nonblock("aaa").should == 3
         @w.nonblock?.should == false
       end
@@ -34,7 +34,7 @@ describe "BasicSocket#write_nonblock" do
     platform_is_not :linux, :windows do
       it 'sets the IO in nonblock mode' do
         require 'io/nonblock'
-        @w.nonblock?.should == false
+        @w.nonblock = false
         @w.write_nonblock("aaa").should == 3
         @w.nonblock?.should == true
       end

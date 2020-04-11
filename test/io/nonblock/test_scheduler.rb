@@ -7,15 +7,14 @@ class TestIOScheduler < Test::Unit::TestCase
   MESSAGE = "Hello World"
 
   def test_read
-    return unless defined?(UNIXSocket)
+    i, o = UNIXSocket.pair
+    return unless i.nonblock? && o.nonblock?
 
     message = nil
 
     thread = Thread.new do
       scheduler = Scheduler.new
       Thread.current.scheduler = scheduler
-
-      i, o = UNIXSocket.pair
 
       Fiber do
         message = i.read(20)
