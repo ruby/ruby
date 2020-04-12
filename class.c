@@ -2000,14 +2000,12 @@ rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, V
 
 struct rb_scan_args_t {
     int kw_flag;
-    int f_var;
-    int f_hash;
-    int f_block;
     int n_lead;
     int n_opt;
     int n_trail;
-    int n_mand;
-    int argi;
+    bool f_var;
+    bool f_hash;
+    bool f_block;
 };
 
 static void
@@ -2045,7 +2043,6 @@ rb_scan_args_parse(int kw_flag, const char *fmt, struct rb_scan_args_t *arg)
     if (*p != '\0') {
 	rb_fatal("bad scan arg format: %s", fmt);
     }
-    arg->n_mand = arg->n_lead + arg->n_trail;
 }
 
 static int
@@ -2053,29 +2050,38 @@ rb_scan_args_assign(const struct rb_scan_args_t *arg, int argc, const VALUE *con
 {
     int i, argi = 0;
     VALUE *var, hash = Qnil;
+#define rb_scan_args_next_param() va_arg(vargs, VALUE *)
+    const int kw_flag = arg->kw_flag;
+    const int n_lead = arg->n_lead;
+    const int n_opt = arg->n_opt;
+    const int n_trail = arg->n_trail;
+    const int n_mand = n_lead + n_trail;
+    const bool f_var = arg->f_var;
+    const bool f_hash = arg->f_hash;
+    const bool f_block = arg->f_block;
 
-    if (arg->f_hash && argc > 0) {
+    if (f_hash && argc > 0) {
         VALUE last = argv[argc - 1];
-        if (rb_scan_args_keyword_p(arg->kw_flag, last)) {
+        if (rb_scan_args_keyword_p(kw_flag, last)) {
             hash = rb_hash_dup(last);
             argc--;
         }
     }
 
-    if (argc < arg->n_mand) {
+    if (argc < n_mand) {
         goto argc_error;
     }
 
     /* capture leading mandatory arguments */
-    for (i = arg->n_lead; i-- > 0; ) {
-	var = va_arg(vargs, VALUE *);
+    for (i = n_lead; i-- > 0; ) {
+        var = rb_scan_args_next_param();
         if (var) *var = argv[argi];
 	argi++;
     }
     /* capture optional arguments */
-    for (i = arg->n_opt; i-- > 0; ) {
-	var = va_arg(vargs, VALUE *);
-        if (argi < argc - arg->n_trail) {
+    for (i = n_opt; i-- > 0; ) {
+        var = rb_scan_args_next_param();
+        if (argi < argc - n_trail) {
             if (var) *var = argv[argi];
 	    argi++;
 	}
@@ -2084,12 +2090,12 @@ rb_scan_args_assign(const struct rb_scan_args_t *arg, int argc, const VALUE *con
 	}
     }
     /* capture variable length arguments */
-    if (arg->f_var) {
-        int n_var = argc - argi - arg->n_trail;
+    if (f_var) {
+        int n_var = argc - argi - n_trail;
 
-	var = va_arg(vargs, VALUE *);
+        var = rb_scan_args_next_param();
 	if (0 < n_var) {
-            if (var) *var = rb_ary_new4(n_var, &argv[argi]);
+            if (var) *var = rb_ary_new_from_values(n_var, &argv[argi]);
 	    argi += n_var;
 	}
 	else {
@@ -2097,19 +2103,19 @@ rb_scan_args_assign(const struct rb_scan_args_t *arg, int argc, const VALUE *con
 	}
     }
     /* capture trailing mandatory arguments */
-    for (i = arg->n_trail; i-- > 0; ) {
-	var = va_arg(vargs, VALUE *);
+    for (i = n_trail; i-- > 0; ) {
+        var = rb_scan_args_next_param();
         if (var) *var = argv[argi];
 	argi++;
     }
     /* capture an option hash - phase 2: assignment */
-    if (arg->f_hash) {
-	var = va_arg(vargs, VALUE *);
+    if (f_hash) {
+        var = rb_scan_args_next_param();
         if (var) *var = hash;
     }
     /* capture iterator block */
-    if (arg->f_block) {
-	var = va_arg(vargs, VALUE *);
+    if (f_block) {
+        var = rb_scan_args_next_param();
 	if (rb_block_given_p()) {
 	    *var = rb_block_proc();
 	}
@@ -2124,14 +2130,22 @@ rb_scan_args_assign(const struct rb_scan_args_t *arg, int argc, const VALUE *con
     }
 
     return argc;
+#undef rb_scan_args_next_param
 }
 
 static int
 rb_scan_args_result(const struct rb_scan_args_t *const arg, int argc)
 {
     if (argc < 0) {
-        rb_error_arity(-1-argc, arg->n_mand, arg->f_var ? UNLIMITED_ARGUMENTS : arg->n_mand + arg->n_opt);
+        const int n_lead = arg->n_lead;
+        const int n_opt = arg->n_opt;
+        const int n_trail = arg->n_trail;
+        const int n_mand = n_lead + n_trail;
+        const bool f_var = arg->f_var;
+        argc = -argc - 1;
+        rb_error_arity(argc, n_mand, f_var ? UNLIMITED_ARGUMENTS : n_mand + n_opt);
     }
+
     return argc;
 }
 

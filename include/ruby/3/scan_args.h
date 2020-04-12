@@ -266,6 +266,7 @@ rb_scan_args_set(int kw_flag, int argc, const VALUE *argv,
 {
     int i, argi = 0, vari = 0;
     VALUE *var, hash = Qnil;
+#define rb_scan_args_next_param() vars[vari++]
     const int n_mand = n_lead + n_trail;
 
     if (f_hash && argc > 0) {
@@ -282,13 +283,13 @@ rb_scan_args_set(int kw_flag, int argc, const VALUE *argv,
 
     /* capture leading mandatory arguments */
     for (i = n_lead; i-- > 0; ) {
-        var = vars[vari++];
+        var = rb_scan_args_next_param();
         if (var) *var = argv[argi];
         argi++;
     }
     /* capture optional arguments */
     for (i = n_opt; i-- > 0; ) {
-        var = vars[vari++];
+        var = rb_scan_args_next_param();
         if (argi < argc - n_trail) {
             if (var) *var = argv[argi];
             argi++;
@@ -301,7 +302,7 @@ rb_scan_args_set(int kw_flag, int argc, const VALUE *argv,
     if (f_var) {
         int n_var = argc - argi - n_trail;
 
-        var = vars[vari++];
+        var = rb_scan_args_next_param();
         if (0 < n_var) {
             if (var) *var = rb_ary_new_from_values(n_var, &argv[argi]);
             argi += n_var;
@@ -312,18 +313,18 @@ rb_scan_args_set(int kw_flag, int argc, const VALUE *argv,
     }
     /* capture trailing mandatory arguments */
     for (i = n_trail; i-- > 0; ) {
-        var = vars[vari++];
+        var = rb_scan_args_next_param();
         if (var) *var = argv[argi];
         argi++;
     }
     /* capture an option hash - phase 2: assignment */
     if (f_hash) {
-        var = vars[vari++];
+        var = rb_scan_args_next_param();
         if (var) *var = hash;
     }
     /* capture iterator block */
     if (f_block) {
-        var = vars[vari++];
+        var = rb_scan_args_next_param();
         if (rb_block_given_p()) {
             *var = rb_block_proc();
         }
@@ -332,12 +333,13 @@ rb_scan_args_set(int kw_flag, int argc, const VALUE *argv,
         }
     }
 
-    if (argi >= argc) {
-        return argc;
+    if (argi < argc) {
+      argc_error:
+        rb_error_arity(argc, n_mand, f_var ? UNLIMITED_ARGUMENTS : n_mand + n_opt);
     }
 
-  argc_error:
-    rb_error_arity(argc, n_mand, f_var ? UNLIMITED_ARGUMENTS : n_mand + n_opt);
+    return argc;
+#undef rb_scan_args_next_param
 }
 
 #if ! defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
