@@ -20,6 +20,7 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines old #GCC_VERSION_SINCE
  */
+#include "ruby/3/compiler_since.h"
 
 #ifndef GCC_VERSION_SINCE
 #define GCC_VERSION_SINCE(x, y, z) RUBY3_COMPILER_SINCE(GCC, (x), (y), (z))

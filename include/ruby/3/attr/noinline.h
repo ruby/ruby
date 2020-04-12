@@ -20,6 +20,7 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #RUBY3_ATTR_NOINLINE.
  */
+#include "ruby/3/has/attribute.h"
 #include "ruby/3/has/declspec_attribute.h"
 
 /** Wraps (or simulates) `__declspec(noinline)` */

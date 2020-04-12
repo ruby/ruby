@@ -21,6 +21,8 @@
  * @brief      Defines #RUBY3_HAS_BUILTIN.
  */
 #include "ruby/3/config.h"
+#include "ruby/3/compiler_since.h"
+#include "ruby/3/token_paste.h"
 
 /** Wraps (or simulates) `__has_builtin`. */
 #if defined(__has_builtin) && ! RUBY3_COMPILER_IS(Intel)

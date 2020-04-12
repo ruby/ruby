@@ -21,6 +21,7 @@
  * @brief      Defines #RUBY3_ATTR_COLD.
  */
 #include "ruby/3/compiler_is.h"
+#include "ruby/3/has/attribute.h"
 
 /** Wraps (or simulates) `__attribute__((cold))` */
 #if RUBY3_COMPILER_IS(SunPro)

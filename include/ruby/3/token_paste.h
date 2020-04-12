@@ -21,6 +21,9 @@
  * @brief      Defines #RUBY3_TOKEN_PASTE.
  */
 #include "ruby/3/config.h"
+#include "ruby/3/compiler_since.h"
+#include "ruby/3/has/warning.h"
+#include "ruby/3/warning_push.h"
 
 /* :TODO: add your  compiler here.  There are many compilers  that can suppress
  * warnings via pragmas, but not all of them accept such things inside of `#if`

@@ -26,6 +26,8 @@
  * compatibility only.
  */
 #include "ruby/3/config.h"
+#include "ruby/3/has/warning.h"
+#include "ruby/3/warning_push.h"
 
 #if RUBY3_HAS_WARNING("-Wc++11-long-long")
 # define HAVE_TRUE_LONG_LONG 1

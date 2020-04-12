@@ -3878,6 +3878,7 @@ dir.$(OBJEXT): {$(VPATH)}3/variable.h
 dir.$(OBJEXT): {$(VPATH)}3/warning_push.h
 dir.$(OBJEXT): {$(VPATH)}3/xmalloc.h
 dir.$(OBJEXT): {$(VPATH)}assert.h
+dir.$(OBJEXT): {$(VPATH)}builtin.h
 dir.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 dir.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 dir.$(OBJEXT): {$(VPATH)}backward/2/bool.h
@@ -3890,7 +3891,6 @@ dir.$(OBJEXT): {$(VPATH)}backward/2/r_cast.h
 dir.$(OBJEXT): {$(VPATH)}backward/2/rmodule.h
 dir.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 dir.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
-dir.$(OBJEXT): {$(VPATH)}builtin.h
 dir.$(OBJEXT): {$(VPATH)}config.h
 dir.$(OBJEXT): {$(VPATH)}defines.h
 dir.$(OBJEXT): {$(VPATH)}dir.c
@@ -5416,10 +5416,6 @@ explicit_bzero.$(OBJEXT): {$(VPATH)}3/compiler_is/sunpro.h
 explicit_bzero.$(OBJEXT): {$(VPATH)}3/compiler_since.h
 explicit_bzero.$(OBJEXT): {$(VPATH)}3/config.h
 explicit_bzero.$(OBJEXT): {$(VPATH)}3/dllexport.h
-explicit_bzero.$(OBJEXT): {$(VPATH)}3/has/attribute.h
-explicit_bzero.$(OBJEXT): {$(VPATH)}3/has/warning.h
-explicit_bzero.$(OBJEXT): {$(VPATH)}3/token_paste.h
-explicit_bzero.$(OBJEXT): {$(VPATH)}3/warning_push.h
 explicit_bzero.$(OBJEXT): {$(VPATH)}config.h
 explicit_bzero.$(OBJEXT): {$(VPATH)}explicit_bzero.c
 explicit_bzero.$(OBJEXT): {$(VPATH)}missing.h
@@ -11782,10 +11778,6 @@ ruby-runner.$(OBJEXT): {$(VPATH)}3/compiler_is/msvc.h
 ruby-runner.$(OBJEXT): {$(VPATH)}3/compiler_is/sunpro.h
 ruby-runner.$(OBJEXT): {$(VPATH)}3/compiler_since.h
 ruby-runner.$(OBJEXT): {$(VPATH)}3/config.h
-ruby-runner.$(OBJEXT): {$(VPATH)}3/has/attribute.h
-ruby-runner.$(OBJEXT): {$(VPATH)}3/has/warning.h
-ruby-runner.$(OBJEXT): {$(VPATH)}3/token_paste.h
-ruby-runner.$(OBJEXT): {$(VPATH)}3/warning_push.h
 ruby-runner.$(OBJEXT): {$(VPATH)}config.h
 ruby-runner.$(OBJEXT): {$(VPATH)}ruby-runner.c
 ruby-runner.$(OBJEXT): {$(VPATH)}ruby-runner.h
@@ -13089,10 +13081,6 @@ strlcat.$(OBJEXT): {$(VPATH)}3/compiler_is/sunpro.h
 strlcat.$(OBJEXT): {$(VPATH)}3/compiler_since.h
 strlcat.$(OBJEXT): {$(VPATH)}3/config.h
 strlcat.$(OBJEXT): {$(VPATH)}3/dllexport.h
-strlcat.$(OBJEXT): {$(VPATH)}3/has/attribute.h
-strlcat.$(OBJEXT): {$(VPATH)}3/has/warning.h
-strlcat.$(OBJEXT): {$(VPATH)}3/token_paste.h
-strlcat.$(OBJEXT): {$(VPATH)}3/warning_push.h
 strlcat.$(OBJEXT): {$(VPATH)}config.h
 strlcat.$(OBJEXT): {$(VPATH)}missing.h
 strlcat.$(OBJEXT): {$(VPATH)}strlcat.c
@@ -13106,10 +13094,6 @@ strlcpy.$(OBJEXT): {$(VPATH)}3/compiler_is/sunpro.h
 strlcpy.$(OBJEXT): {$(VPATH)}3/compiler_since.h
 strlcpy.$(OBJEXT): {$(VPATH)}3/config.h
 strlcpy.$(OBJEXT): {$(VPATH)}3/dllexport.h
-strlcpy.$(OBJEXT): {$(VPATH)}3/has/attribute.h
-strlcpy.$(OBJEXT): {$(VPATH)}3/has/warning.h
-strlcpy.$(OBJEXT): {$(VPATH)}3/token_paste.h
-strlcpy.$(OBJEXT): {$(VPATH)}3/warning_push.h
 strlcpy.$(OBJEXT): {$(VPATH)}config.h
 strlcpy.$(OBJEXT): {$(VPATH)}missing.h
 strlcpy.$(OBJEXT): {$(VPATH)}strlcpy.c

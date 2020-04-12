@@ -27,8 +27,10 @@
 #endif
 
 #include "ruby/3/compiler_is.h"
+#include "ruby/3/compiler_since.h"
 #include "ruby/3/has/feature.h"
 #include "ruby/3/has/extension.h"
+#include "ruby/3/has/attribute.h"
 #include "ruby/3/has/declspec_attribute.h"
 
 /**

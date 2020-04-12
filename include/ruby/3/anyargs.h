@@ -72,6 +72,7 @@
 #include "ruby/3/attr/weakref.h"
 #include "ruby/3/cast.h"
 #include "ruby/3/config.h"
+#include "ruby/3/has/attribute.h"
 #include "ruby/3/intern/class.h"
 #include "ruby/3/intern/vm.h"
 #include "ruby/3/method.h"

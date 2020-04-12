@@ -44,6 +44,7 @@
  *    ```
  */
 #include "ruby/3/compiler_is.h"
+#include "ruby/3/compiler_since.h"
 
 #if RUBY3_COMPILER_SINCE(MSVC, 12, 0, 0)
 # /* Not sure exactly when but it seems VC++ 6.0 is a version with it.*/
