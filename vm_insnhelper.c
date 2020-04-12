@@ -3222,7 +3222,8 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
             const struct rb_callcache *cc = vm_cc_new(klass, cme, vm_call_super_method);
             RB_OBJ_WRITE(reg_cfp->iseq, &cd->cc, cc);
         }
-        else {
+        else if (cached_cme->def->type == VM_METHOD_TYPE_REFINED) {
+            // vm_call_refined checks cc->call
             vm_cc_call_set(cd->cc, vm_call_super_method);
         }
     }
