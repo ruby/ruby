@@ -245,11 +245,10 @@ static const char esc_reset[] = "\033[0m";
 static const char esc_none[] = "";
 
 static void
-show_usage_line(const char *str, unsigned int namelen, unsigned int secondlen, int help, int highlight)
+show_usage_line(const char *str, unsigned int namelen, unsigned int secondlen, int help, int highlight, unsigned int w)
 {
     const char *sb = highlight ? esc_bold : esc_none;
     const char *se = highlight ? esc_reset : esc_none;
-    const unsigned int w = 16;
     const int wrap = help && namelen + secondlen - 1 > w;
     printf("  %s%.*s%-*.*s%s%-*s%s\n", sb, namelen-1, str,
 	   (wrap ? 0 : w - namelen + 1),
@@ -259,7 +258,7 @@ show_usage_line(const char *str, unsigned int namelen, unsigned int secondlen, i
 }
 
 static void
-usage(const char *name, int help, int highlight)
+usage(const char *name, int help, int highlight, int columns)
 {
     /* This message really ought to be max 23 lines.
      * Removed -h because the user already knows that option. Others? */
@@ -340,7 +339,8 @@ usage(const char *name, int help, int highlight)
     const char *sb = highlight ? esc_standout+1 : esc_none;
     const char *se = highlight ? esc_reset : esc_none;
     const int num = numberof(usage_msg) - (help ? 1 : 0);
-#define SHOW(m) show_usage_line((m).str, (m).namelen, (m).secondlen, help, highlight)
+    unsigned int w = (columns > 80 ? (columns - 79) / 2 : 0) + 16;
+#define SHOW(m) show_usage_line((m).str, (m).namelen, (m).secondlen, help, highlight, w)
 
     printf("%sUsage:%s %s [switches] [--] [programfile] [arguments]\n", sb, se, name);
     for (i = 0; i < num; ++i)
@@ -1624,10 +1624,13 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	    (argc > 0 && argv && argv[0] ? argv[0] :
 	     origarg.argc > 0 && origarg.argv && origarg.argv[0] ? origarg.argv[0] :
 	     ruby_engine);
+        int columns = 0;
         if ((opt->dump & DUMP_BIT(help)) && tty) {
             const char *pager_env = getenv("RUBY_PAGER");
             if (!pager_env) pager_env = getenv("PAGER");
             if (pager_env && *pager_env && isatty(0)) {
+                const char *columns_env = getenv("COLUMNS");
+                if (columns_env) columns = atoi(columns_env);
                 VALUE pager = rb_str_new_cstr(pager_env);
 #ifdef HAVE_WORKING_FORK
                 int fds[2];
@@ -1661,7 +1664,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
                     dup2(fd, 1);
                     dup2(fd, 2);
                     /* more.com doesn't support CSI sequence */
-                    usage(progname, 1, 0);
+                    usage(progname, 1, 0, columns);
                     fflush(stdout);
                     dup2(oldout, 1);
                     dup2(olderr, 2);
@@ -1671,7 +1674,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 #endif
             }
         }
-	usage(progname, (opt->dump & DUMP_BIT(help)), tty);
+	usage(progname, (opt->dump & DUMP_BIT(help)), tty, columns);
 	return Qtrue;
     }
 
