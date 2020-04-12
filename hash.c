@@ -1895,7 +1895,6 @@ rb_check_hash_type(VALUE hash)
  *  call-seq:
  *    Hash.try_convert(obj) -> new_hash or nil
  *
- *
  *  Returns the Hash object created by calling <tt>obj.to_hash</tt>:
  *    require 'csv' # => true
  *    row = CSV::Row.new(['Name', 'Age'], ['Bob', 45])
