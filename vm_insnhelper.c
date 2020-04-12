@@ -3032,7 +3032,7 @@ vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, st
 
       case VM_METHOD_TYPE_REFINED:
         // CC_SET_FASTPATH(cc, vm_call_refined, TRUE);
-        // should not set FASTPATH because vm_call_refined check cc->call.
+        // should not set FASTPATH since vm_call_refined assumes cc->call is vm_call_super_method on invokesuper.
         return vm_call_refined(ec, cfp, calling, cd);
     }
 
@@ -3223,7 +3223,7 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
             RB_OBJ_WRITE(reg_cfp->iseq, &cd->cc, cc);
         }
         else if (cached_cme->def->type == VM_METHOD_TYPE_REFINED) {
-            // vm_call_refined checks cc->call
+            // vm_call_refined (search_refined_method) assumes cc->call is vm_call_super_method on invokesuper.
             vm_cc_call_set(cd->cc, vm_call_super_method);
         }
     }
