@@ -1,0 +1,10 @@
+prelude: |
+  str0 = ""
+  str1 = "a\n"
+  str10 = "a\n"*10
+  str_long = ("a"*1000+"\n")*10
+benchmark:
+  lines-0: str0.lines
+  lines-1: str1.lines
+  lines-10: str10.lines
+  lines-long: str_long.lines

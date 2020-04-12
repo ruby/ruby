@@ -1,0 +1,10 @@
+prelude: |
+  str0 = ""
+  str1 = "a\n"
+  str10 = "a\n"*10
+  str_long = ("a"*1000+"\n")*10
+benchmark:
+  each_line-0: str0.each_line {}
+  each_line-1: str1.each_line {}
+  each_line-10: str10.each_line {}
+  each_line-long: str_long.each_line {}
