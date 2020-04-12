@@ -20,6 +20,7 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #RUBY3_ATTR_MAYBE_UNUSED.
  */
+#include "ruby/3/has/attribute.h"
 #include "ruby/3/has/c_attribute.h"
 #include "ruby/3/has/cpp_attribute.h"
 

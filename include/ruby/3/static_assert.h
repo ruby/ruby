@@ -22,6 +22,7 @@
  */
 #include <assert.h>
 #include "ruby/3/has/extension.h"
+#include "ruby/3/compiler_since.h"
 
 /** @cond INTERNAL_MACRO */
 #if defined(__cplusplus) && defined(__cpp_static_assert)
