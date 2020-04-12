@@ -7,8 +7,10 @@ class TestIOEnumerator < Test::Unit::TestCase
   MESSAGE = "Hello World"
 
   def test_read
+    skip unless defined?(UNIXSocket)
+
     i, o = UNIXSocket.pair
-    return unless i.nonblock? && o.nonblock?
+    skip unless i.nonblock? && o.nonblock?
 
     message = String.new
 

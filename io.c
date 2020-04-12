@@ -177,15 +177,6 @@ off_t __syscall(quad_t number, ...);
 #define rename(f, t)	rb_w32_urename((f), (t))
 #endif
 
-#if defined(_WIN32)
-#  define RUBY_PIPE_NONBLOCK_DEFAULT    (0)
-#elif defined(O_NONBLOCK)
-  /* disabled for [Bug #15356] (Rack::Deflater + rails) failure: */
-#  define RUBY_PIPE_NONBLOCK_DEFAULT    (O_NONBLOCK)
-#else /* any platforms where O_NONBLOCK does not exist? */
-#  define RUBY_PIPE_NONBLOCK_DEFAULT    (0)
-#endif
-
 VALUE rb_cIO;
 VALUE rb_eEOFError;
 VALUE rb_eIOError;
@@ -406,44 +397,39 @@ rb_fd_set_nonblock(int fd)
 }
 
 int
-rb_cloexec_pipe(int fildes[2])
+rb_cloexec_pipe(int descriptors[2])
 {
     int ret;
 
-#if defined(HAVE_PIPE2)
-    static int try_pipe2 = 1;
-    if (try_pipe2) {
-        ret = pipe2(fildes, O_CLOEXEC | RUBY_PIPE_NONBLOCK_DEFAULT);
-        if (ret != -1)
-            return ret;
-        /* pipe2 is available since Linux 2.6.27, glibc 2.9. */
-        if (errno == ENOSYS) {
-            try_pipe2 = 0;
-            ret = pipe(fildes);
-        }
-    }
-    else {
-        ret = pipe(fildes);
-    }
+#ifdef HAVE_PIPE2
+    int result = pipe2(descriptors, O_CLOEXEC | O_NONBLOCK);
 #else
-    ret = pipe(fildes);
+    int result = pipe(descriptors);
 #endif
-    if (ret < 0) return ret;
+
+    if (result < 0)
+        return result;
+
 #ifdef __CYGWIN__
-    if (ret == 0 && fildes[1] == -1) {
-	close(fildes[0]);
-	fildes[0] = -1;
-	errno = ENFILE;
-	return -1;
+    if (ret == 0 && descriptors[1] == -1) {
+        close(descriptors[0]);
+        descriptors[0] = -1;
+        errno = ENFILE;
+        return -1;
     }
 #endif
-    rb_maygvl_fd_fix_cloexec(fildes[0]);
-    rb_maygvl_fd_fix_cloexec(fildes[1]);
-    if (RUBY_PIPE_NONBLOCK_DEFAULT) {
-        rb_fd_set_nonblock(fildes[0]);
-        rb_fd_set_nonblock(fildes[1]);
-    }
-    return ret;
+
+#ifndef HAVE_PIPE2
+    rb_maygvl_fd_fix_cloexec(descriptors[0]);
+    rb_maygvl_fd_fix_cloexec(descriptors[1]);
+
+#ifndef _WIN32
+    rb_fd_set_nonblock(descriptors[0]);
+    rb_fd_set_nonblock(descriptors[1]);
+#endif
+#endif
+
+    return result;
 }
 
 int
