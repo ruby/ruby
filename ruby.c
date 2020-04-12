@@ -1585,6 +1585,12 @@ rb_f_chomp(int argc, VALUE *argv, VALUE _)
     return str;
 }
 
+static void
+setup_pager_env(void)
+{
+    if (!getenv("LESS")) ruby_setenv("LESS", "-R"); // Output "raw" control characters.
+}
+
 static VALUE
 process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 {
@@ -1627,12 +1633,14 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
                     close(fds[0]);
                     close(fds[1]);
                     if (pid > 0) {
+                        setup_pager_env();
                         rb_f_exec(1, &pager);
                         kill(SIGTERM, pid);
                         rb_waitpid(pid, 0, 0);
                     }
                 }
 #else
+                setup_pager_env();
                 VALUE port = rb_io_popen(pager, rb_str_new_lit("w"), Qnil, Qnil);
                 if (!NIL_P(port)) {
                     int oldout = dup(1);
