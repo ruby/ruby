@@ -33,14 +33,14 @@ enum vm_call_flag_bits {
 
 struct rb_callinfo_kwarg {
     int keyword_len;
-    VALUE keywords[1];
+    VALUE keywords[];
 };
 
 static inline size_t
 rb_callinfo_kwarg_bytes(int keyword_len)
 {
     return rb_size_mul_add_or_raise(
-        keyword_len - 1,
+        keyword_len,
         sizeof(VALUE),
         sizeof(struct rb_callinfo_kwarg),
         rb_eRuntimeError);
