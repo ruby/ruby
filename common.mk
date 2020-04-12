@@ -8260,6 +8260,7 @@ miniprelude.$(OBJEXT): {$(VPATH)}prelude.rb
 miniprelude.$(OBJEXT): {$(VPATH)}ruby_assert.h
 miniprelude.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 miniprelude.$(OBJEXT): {$(VPATH)}st.h
+miniprelude.$(OBJEXT): {$(VPATH)}string.rb
 miniprelude.$(OBJEXT): {$(VPATH)}subst.h
 miniprelude.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 miniprelude.$(OBJEXT): {$(VPATH)}thread_native.h
