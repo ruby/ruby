@@ -1,0 +1,6 @@
+prelude: |
+  def mjit_send_cfunc
+    self.class
+  end
+benchmark: mjit_send_cfunc
+loop_count: 100000000
