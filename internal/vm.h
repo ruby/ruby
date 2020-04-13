@@ -23,17 +23,6 @@
 # undef rb_method_basic_definition_p
 #endif
 
-/* I have several reasons to choose 64 here:
- *
- * - A cache line must be a power-of-two size.
- * - Setting this to anything less than or equal to 32 boosts nothing.
- * - I have never seen an architecture that has 128 byte L1 cache line.
- * - I know Intel Core and Sparc T4 at least uses 64.
- * - I know jemalloc internally has this exact same `#define CACHE_LINE 64`.
- *   https://github.com/jemalloc/jemalloc/blob/dev/include/jemalloc/internal/jemalloc_internal_types.h
- */
-#define CACHELINE 64
-
 struct rb_callable_method_entry_struct; /* in method.h */
 struct rb_method_definition_struct;     /* in method.h */
 struct rb_execution_context_struct;     /* in vm_core.h */
