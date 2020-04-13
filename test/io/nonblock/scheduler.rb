@@ -9,6 +9,28 @@ rescue LoadError
 end
 
 class Scheduler
+  class Condition
+    def initialize
+      @waiting = []
+      @signalled = false
+    end
+
+    def signal
+      @signalled = true
+
+      while fiber = @waiting.shift
+        fiber.resume
+      end
+    end
+
+    def wait
+      unless @signalled
+        @waiting << Fiber.current
+        Fiber.yield
+      end
+    end
+  end
+  
   def initialize
     @readable = {}
     @writable = {}
