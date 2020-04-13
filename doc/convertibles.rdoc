@@ -1,0 +1,187 @@
+== Class-Convertible Objects
+
+Some Ruby methods accept one or more objects
+that can be either:
+* <i>Of a given class</i>, and so accepted as is.
+* <i>Convertible to that class</i>, in which case
+  the called method converts the object.
+
+For each of the relevant classes, the conversion is done by calling
+a specific conversion method:
+
+* Array: +to_ary+
+* Hash: +to_hash+
+* Integer: +to_int+
+* String: +to_str+
+
+=== Array-Convertible Objects
+
+An <i>Array-convertible object</i> is an object that:
+* Has instance method +to_ary+.
+* The method accepts no arguments.
+* The method returns an object +obj+ for which <tt>obj.kind_of?(Array)</tt> returns +true+.
+
+The examples in this section use method <tt>Array#replace</tt>,
+which accepts an Array-convertible argument.
+
+This class is Array-convertible:
+
+    class ArrayConvertible
+      def to_ary
+        [:foo, 'bar', baz = 2]
+      end
+    end
+    a = []
+    a.replace(ArrayConvertible.new) # => [:foo, "bar", 2]
+
+This class is not Array-convertible (no +to_ary+ method):
+
+    class NoToAry; end
+    a = []
+    a.replace(NoToAry.new) # Raises TypeError (no implicit conversion of NoToAry into Array)
+
+This class is not Array-convertible (method +to_ary+ takes arguments):
+
+    class ToAryTakesArguments
+      def to_ary(x)
+        [:foo, 'bar', baz = 2]
+      end
+    end
+    a = []
+    a.replace(ToAryTakesArguments.new) # Raises ArgumentError (wrong number of arguments (given 0, expected 1))
+
+This class is not Array-convertible (method +to_ary+ returns non-Array):
+
+    class ToAryReturnsNonArray
+      def to_ary
+        :foo
+      end
+    end
+    a = []
+    a.replace(ToAryReturnsNonArray.new) # Raises TypeError (can't convert ToAryReturnsNonArray to Array (ToAryReturnsNonArray#to_ary gives Symbol))
+
+=== Hash-Convertible Objects
+
+A <i>Hash-convertible object</i> is an object that:
+* Has instance method +to_hash+.
+* The method accepts no arguments.
+* The method returns an object +obj+ for which <tt>obj.kind_of?(Hash)</tt> returns +true+.
+
+The examples in this section use method <tt>Hash#merge</tt>,
+which accepts a Hash-convertible argument.
+
+This class is Hash-convertible:
+
+    class HashConvertible
+      def to_hash
+        {foo: 0, bar: 1, baz: 2}
+      end
+    end
+    h = {}
+    h.merge(HashConvertible.new) # => {:foo=>0, :bar=>1, :baz=>2}
+
+This class is not Hash-convertible (no +to_hash+ method):
+
+    class NoToHash; end
+    h = {}
+    h.merge(NoToHash.new) # Raises TypeError (no implicit conversion of NoToHash into Hash)
+
+This class is not Hash-convertible (method +to_hash+ takes arguments):
+
+    class ToHashTakesArguments
+      def to_hash(x)
+        {foo: 0, bar: 1, baz: 2}
+      end
+    end
+    h = {}
+    h.merge(ToHashTakesArguments.new) # Raises ArgumentError (wrong number of arguments (given 0, expected 1))
+
+This class is not Hash-convertible (method +to_hash+ returns non-Hash):
+
+    class ToHashReturnsNonHash
+      def to_hash
+        :foo
+      end
+    end
+    h = {}
+    h.merge(ToHashReturnsNonHash.new) # Raises TypeError (can't convert ToHashReturnsNonHash to Hash (ToHashReturnsNonHash#to_hash gives Symbol))
+
+=== Integer-Convertible Objects
+
+An <i>Integer-convertible object</i> is an object that:
+* Has instance method +to_int+.
+* The method accepts no arguments.
+* The method returns an object +obj+ for which <tt>obj.kind_of?(Integer)</tt> returns +true+.
+
+The examples in this section use method <tt>Array.new</tt>,
+which accepts an Integer-convertible argument.
+
+This user-defined class is Integer-convertible:
+
+    class IntegerConvertible
+      def to_int
+        3
+      end
+    end
+    a = Array.new(IntegerConvertible.new).size
+    a # => 3
+
+This class is not Integer-convertible (method +to_int+ takes arguments):
+
+    class NotIntegerConvertible
+      def to_int(x)
+        3
+      end
+    end
+    Array.new(NotIntegerConvertible.new) # Raises ArgumentError (wrong number of arguments (given 0, expected 1))
+
+This class is not Integer-convertible (method +to_int+ returns non-Integer):
+
+    class NotIntegerConvertible
+      def to_int
+        :foo
+      end
+    end
+    Array.new(NotIntegerConvertible.new) # Raises TypeError (can't convert NotIntegerConvertible to Integer (NotIntegerConvertible#to_int gives Symbol))
+
+=== String-Convertible Objects
+
+A <i>String-convertible object</i> is an object that:
+* Has instance method +to_str+.
+* The method accepts no arguments.
+* The method returns an object +obj+ for which <tt>obj.kind_of?(String)</tt> returns +true+.
+
+The examples in this section use method <tt>String::new</tt>,
+which accepts a String-convertible argument.
+
+This class is String-convertible:
+
+    class StringConvertible
+      def to_str
+        'foo'
+      end
+    end
+    String.new(StringConvertible.new) # => "foo"
+
+This class is not String-convertible (no +to_str+ method):
+
+    class NoToStr; end
+    String.new(NoToStr.new) # Raises TypeError (no implicit conversion of NoToStr into String)
+
+This class is not String-convertible (method +to_str+ takes arguments):
+
+    class ToStrTakesArguments
+      def to_str(x)
+        'foo'
+      end
+    end
+    String.new(ToStrTakesArguments.new) # Raises ArgumentError (wrong number of arguments (given 0, expected 1))
+
+This class is not String-convertible (method +to_str+ returns non-String):
+
+    class ToStrReturnsNonString
+      def to_str
+        :foo
+      end
+    end
+    String.new(ToStrReturnsNonString.new) # Raises TypeError (can't convert ToStrReturnsNonString to String (ToStrReturnsNonString#to_str gives Symbol))
