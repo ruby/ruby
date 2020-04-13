@@ -7959,8 +7959,11 @@ rb_clock_gettime(int argc, VALUE *argv, VALUE _)
  *  <code>clock_getres()</code> function.
  *
  *  Note the reported resolution is often inaccurate on most platforms due to
- *  operating system bugs for this function and therefore the reported resolution
+ *  underlying bugs for this function and therefore the reported resolution
  *  often differs from the actual resolution of the clock in practice.
+ *  Inaccurate reported resolutions have been observed for various clocks including
+ *  CLOCK_MONOTONIC and CLOCK_MONOTONIC_RAW when using Linux, macOS, BSD or AIX
+ *  platforms, when using ARM processors, or when using virtualization.
  *
  *  +clock_id+ specifies a kind of clock.
  *  See the document of +Process.clock_gettime+ for details.
