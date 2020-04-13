@@ -923,6 +923,22 @@ mjit_child_after_fork(void)
     start_worker();
 }
 
+// Edit 0 to 1 to enable this feature for investigating hot methods
+#define MJIT_COUNTER 0
+#if MJIT_COUNTER
+static void
+mjit_dump_total_calls(void)
+{
+    struct rb_mjit_unit *unit;
+    fprintf(stderr, "[MJIT_COUNTER] total_calls of active_units:\n");
+    list_for_each(&active_units.head, unit, unode) {
+        const rb_iseq_t *iseq = unit->iseq;
+        fprintf(stderr, "%8ld: %s@%s:%d\n", iseq->body->total_calls, RSTRING_PTR(iseq->body->location.label),
+                RSTRING_PTR(rb_iseq_path(iseq)), FIX2INT(iseq->body->location.first_lineno));
+    }
+}
+#endif
+
 // Finish the threads processing units and creating PCH, finalize
 // and free MJIT data.  It should be called last during MJIT
 // life.
@@ -957,6 +973,10 @@ mjit_finish(bool close_handle_p)
     rb_native_cond_destroy(&mjit_client_wakeup);
     rb_native_cond_destroy(&mjit_worker_wakeup);
     rb_native_cond_destroy(&mjit_gc_wakeup);
+
+#if MJIT_COUNTER
+    mjit_dump_total_calls();
+#endif
 
 #ifndef _MSC_VER // mswin has prebuilt precompiled header
     if (!mjit_opts.save_temps && getpid() == pch_owner_pid)
