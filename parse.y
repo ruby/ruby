@@ -1104,7 +1104,7 @@ static int looking_at_eol_p(struct parser_params *p);
 %type <node> string_contents xstring_contents regexp_contents string_content
 %type <node> words symbols symbol_list qwords qsymbols word_list qword_list qsym_list word
 %type <node> literal numeric simple_numeric ssym dsym symbol cpath def_name defn_head defs_head
-%type <node> top_compstmt top_stmts top_stmt begin_block rassign
+%type <node> top_compstmt top_stmts top_stmt begin_block rassign arg_rassign
 %type <node> bodystmt compstmt stmts stmt_or_begin stmt expr arg primary command command_call method_call
 %type <node> expr_value expr_value_do arg_value primary_value fcall rel_expr
 %type <node> if_tail opt_else case_body case_args cases opt_rescue exc_list exc_var opt_ensure
@@ -1195,6 +1195,7 @@ static int looking_at_eol_p(struct parser_params *p);
 
 %nonassoc tLOWEST
 %nonassoc tLBRACE_ARG
+%left tASSOC
 
 %nonassoc  modifier_if modifier_unless modifier_while modifier_until keyword_in
 %left  keyword_or keyword_and
@@ -1533,6 +1534,19 @@ rassign 	: arg_value tASSOC lhs
 			$$ = node_assign(p, $3, $1, &@$);
 		    /*% %*/
 		    /*% ripper: massign!($3, $1) %*/
+		    }
+		;
+
+arg_rassign	: arg tASSOC lhs %prec tLOWEST
+		    {
+		    /*%%%*/
+			$$ = node_assign(p, $3, $1, &@$);
+		    /*% %*/
+		    /*% ripper: assign!($3, $1) %*/
+		    }
+		| arg %prec tLOWEST
+		    {
+			$$ = $1;
 		    }
 		;
 
@@ -2449,7 +2463,7 @@ arg		: lhs '=' arg_rhs
 		    /*% %*/
 		    /*% ripper: ifop!($1, $3, $6) %*/
 		    }
-		| defn_head f_arglist_opt '=' arg
+		| defn_head f_arglist_opt '=' arg_rassign
 		    {
 			restore_defun(p, $<node>1->nd_defn);
 		    /*%%%*/
@@ -2458,7 +2472,7 @@ arg		: lhs '=' arg_rhs
 		    /*% ripper: def!(get_value($1), $2, $4) %*/
 			local_pop(p);
 		    }
-		| defs_head f_arglist_opt '=' arg
+		| defs_head f_arglist_opt '=' arg_rassign
 		    {
 			restore_defun(p, $<node>1->nd_defn);
 		    /*%%%*/
