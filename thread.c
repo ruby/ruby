@@ -4202,6 +4202,15 @@ rb_thread_fd_select(int max, rb_fdset_t * read, rb_fdset_t * write, rb_fdset_t *
     return (int)rb_ensure(do_select, (VALUE)&set, select_set_free, (VALUE)&set);
 }
 
+static VALUE
+rb_thread_timeout(struct timeval *timeout) {
+    if (timeout) {
+        return rb_float_new((double)timeout->tv_sec + (0.000001f * timeout->tv_usec));
+    }
+
+    return Qnil;
+}
+
 #ifdef USE_POLL
 
 /* The same with linux kernel. TODO: make platform independent definition. */
@@ -4230,8 +4239,8 @@ rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
 
     VALUE scheduler = rb_current_thread_scheduler();
     if (scheduler != Qnil) {
-        VALUE result = rb_funcall(scheduler, id_wait_for_single_fd, 3, INT2NUM(fd), INT2NUM(events), 
-            rb_float_new((double)timeout->tv_sec + (0.000001f * timeout->tv_usec))
+        VALUE result = rb_funcall(scheduler, id_wait_for_single_fd, 3, INT2NUM(fd), INT2NUM(events),
+            rb_thread_timeout(timeout)
         );
         return RTEST(result);
     }
@@ -4373,7 +4382,7 @@ rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
     VALUE scheduler = rb_current_thread_scheduler();
     if (scheduler != Qnil) {
         VALUE result = rb_funcall(scheduler, id_wait_for_single_fd, 3, INT2NUM(fd), INT2NUM(events),
-            rb_float_new((double)timeout->tv_sec + (0.000001f * timeout->tv_usec))
+            rb_thread_timeout(timeout)
         );
         return RTEST(result);
     }
