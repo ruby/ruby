@@ -1747,36 +1747,45 @@ set_proc_default(VALUE hash, VALUE proc)
 /*
  *  call-seq:
  *     Hash.new                          -> new_hash
- *     Hash.new(obj)                     -> new_hash
+ *     Hash.new(default_value)           -> new_hash
  *     Hash.new {|hash, key| block }     -> new_hash
  *
- *  Returns a new, empty hash. If this hash is subsequently accessed by
- *  a key that doesn't correspond to a hash entry, the value returned
- *  depends on the style of <code>new</code> used to create the hash. In
- *  the first form, the access returns <code>nil</code>. If
- *  <i>obj</i> is specified, this single object will be used for
- *  all <em>default values</em>. If a block is specified, it will be
- *  called with the hash object and the key, and should return the
- *  default value. It is the block's responsibility to store the value
- *  in the hash if required.
+ *  Returns a new empty Hash object.
  *
- *     h = Hash.new("Go Fish")
- *     h["a"] = 100
- *     h["b"] = 200
- *     h["a"]           #=> 100
- *     h["c"]           #=> "Go Fish"
- *     # The following alters the single default object
- *     h["c"].upcase!   #=> "GO FISH"
- *     h["d"]           #=> "GO FISH"
- *     h.keys           #=> ["a", "b"]
+ *  The initial default value and initial default proc for the new hash
+ *  depend on which form above was used. See {Default Values}[#class-Hash-label-Default+Values].
  *
- *     # While this creates a new default object each time
- *     h = Hash.new { |hash, key| hash[key] = "Go Fish: #{key}" }
- *     h["c"]           #=> "Go Fish: c"
- *     h["c"].upcase!   #=> "GO FISH: C"
- *     h["d"]           #=> "Go Fish: d"
- *     h.keys           #=> ["c", "d"]
+ *  If neither argument nor block given,
+ *  initializes both the default value and the default proc to <tt>nil</tt>:
+ *    h = Hash.new
+ *    h # => {}
+ *    h.class # => Hash
+ *    h.default # => nil
+ *    h.default_proc # => nil
+ *    h[:nosuch] # => nil
  *
+ *  If argument <tt>default_value</tt> given but no block given,
+ *  initializes the default value to the given <tt>default_value</tt>
+ *  and the default proc to <tt>nil</tt>:
+ *
+ *    h = Hash.new(false)
+ *    h # => {}
+ *    h.default # => false
+ *    h.default_proc # => nil
+ *    h[:nosuch] # => false
+ *
+ *  If block given but no argument given, stores the block as the default proc,
+ *  and sets the default value to <tt>nil</tt>:
+ *
+ *    h = Hash.new { |hash, key| "Default value for #{key}" }
+ *    h # => {}
+ *    h.default # => nil
+ *    h.default_proc.class # => Proc
+ *    h[:nosuch] # => "Default value for nosuch"
+ *
+ *  Raises an exception if both argument <tt>default_value</tt> and a block are given:
+ *
+ *    Hash.new(0) { } # Raises ArgumentError (wrong number of arguments (given 1, expected 0)) *
  */
 
 static VALUE
@@ -1885,14 +1894,32 @@ rb_check_hash_type(VALUE hash)
 
 /*
  *  call-seq:
- *     Hash.try_convert(obj) -> hash or nil
+ *    Hash.try_convert(obj) -> new_hash or nil
  *
- *  Try to convert <i>obj</i> into a hash, using to_hash method.
- *  Returns converted hash or nil if <i>obj</i> cannot be converted
- *  for any reason.
+ *  Returns the Hash object created by calling <tt>obj.to_hash</tt>:
+ *    require 'csv' # => true
+ *    row = CSV::Row.new(['Name', 'Age'], ['Bob', 45])
+ *    row.respond_to?(:to_hash)  # => true
+ *    Hash.try_convert(row) # => {"Name"=>"Bob", "Age"=>45}
  *
- *     Hash.try_convert({1=>2})   # => {1=>2}
- *     Hash.try_convert("1=>2")   # => nil
+ *  Returns the given <tt>obj</tt> if it is a Hash:
+ *    h = {}
+ *    h1 = Hash.try_convert(h)
+ *    h1.equal?(h) # => true # Identity check
+ *
+ *  Returns <tt>nil</tt> unless <tt>obj.respond_to?(:to_hash)</tt>:
+ *    s = 'foo'
+ *    s.respond_to?(:to_hash) # => false
+ *    Hash.try_convert(s) # => nil
+ *
+ *  Raises an exception unless <tt>obj.to_hash</tt> returns a Hash object:
+ *    class BadToHash
+ *      def to_hash
+ *        1
+ *      end
+ *    end
+ *    bad = BadToHash.new
+ *    Hash.try_convert(bad) # Raises TypeError (can't convert BadToHash to Hash (BadToHash#to_hash gives Integer))
  */
 static VALUE
 rb_hash_s_try_convert(VALUE dummy, VALUE hash)
