@@ -1751,8 +1751,7 @@ set_proc_default(VALUE hash, VALUE proc)
  *  Returns a new empty Hash object.
  *
  *  The initial default value and initial default proc for the new hash
- *  depend on which form above was used.
- *  See {Default Values}[#class-Hash-label-Default+Values].
+ *  depend on which form above was used. See {Default Values}[#class-Hash-label-Default+Values].
  *
  *  If neither argument nor block given,
  *  initializes both the default value and the default proc to <tt>nil</tt>:
@@ -1904,7 +1903,7 @@ rb_check_hash_type(VALUE hash)
  *  Returns the given <tt>obj</tt> if it is a Hash:
  *    h = {}
  *    h1 = Hash.try_convert(h)
- *    h1.object_id == h.object_id # => true
+ *    h1.equal?(h) # => true # Identity check
  *
  *  Returns <tt>nil</tt> unless <tt>obj.respond_to?(:to_hash)</tt>:
  *    s = 'foo'
