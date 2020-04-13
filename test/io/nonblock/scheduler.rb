@@ -133,11 +133,11 @@ class Scheduler
     # puts "wait_for_single_fd(#{fd}, #{events}, #{duration})"
     io = IO.for_fd(fd, autoclose: false)
 
-    unless (events & 1).zero?
+    unless (events & IO::WAIT_READABLE).zero?
       @readable[io] = Fiber.current
     end
 
-    unless (events & 2).zero?
+    unless (events & IO::WAIT_WRITABLE).zero?
       @writable[io] = Fiber.current
     end
 
