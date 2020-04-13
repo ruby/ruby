@@ -399,8 +399,6 @@ rb_fd_set_nonblock(int fd)
 int
 rb_cloexec_pipe(int descriptors[2])
 {
-    int ret;
-
 #ifdef HAVE_PIPE2
     int result = pipe2(descriptors, O_CLOEXEC | O_NONBLOCK);
 #else
