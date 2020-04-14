@@ -13,13 +13,13 @@ class TestIONonblockHTTP < Test::Unit::TestCase
       scheduler = Scheduler.new
       Thread.current.scheduler = scheduler
 
-      Fiber.new(blocking: false) do
+      Fiber do
         uri = URI("https://www.ruby-lang.org/en/")
 
         response = Net::HTTP.get(uri)
 
         assert !response.empty?
-      end.transfer
+      end
     end.join
   end
 end
