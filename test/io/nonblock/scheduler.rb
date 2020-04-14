@@ -36,8 +36,6 @@ class Scheduler
     @writable = {}
     @waiting = {}
     @blocking = []
-
-    @fiber = Fiber.current
   end
 
   attr :fiber
@@ -70,11 +68,11 @@ class Scheduler
       # puts "writable: #{writable}" if writable&.any?
 
       readable&.each do |io|
-        @readable[io]&.transfer
+        @readable[io]&.resume
       end
 
       writable&.each do |io|
-        @writable[io]&.transfer
+        @writable[io]&.resume
       end
 
       if @waiting.any?
@@ -84,7 +82,7 @@ class Scheduler
 
         waiting.each do |fiber, timeout|
           if timeout <= time
-            fiber.transfer
+            fiber.resume
           else
             @waiting[fiber] = timeout
           end
@@ -98,7 +96,7 @@ class Scheduler
 
     @readable[io] = Fiber.current
 
-    @fiber.transfer
+    Fiber.yield
 
     @readable.delete(io)
 
@@ -110,7 +108,7 @@ class Scheduler
 
     @writable[io] = Fiber.current
 
-    @fiber.transfer
+    Fiber.yield
 
     @writable.delete(io)
 
@@ -124,7 +122,7 @@ class Scheduler
   def wait_sleep(duration = nil)
     @waiting[Fiber.current] = current_time + duration
 
-    @fiber.transfer
+    Fiber.yield
 
     return true
   end
@@ -141,7 +139,7 @@ class Scheduler
       @writable[io] = Fiber.current
     end
 
-    @fiber.transfer
+    Fiber.yield
 
     @readable.delete(io)
     @writable.delete(io)
