@@ -151,6 +151,13 @@ class TestRDocMarkupToHtmlCrossref < XrefTestCase
                  REGEXP_HANDLING('#m')
   end
 
+  def test_handle_regexp_CROSSREF_with_arg_looks_like_TIDYLINK
+    result = @to.convert 'C1.m[:sym]'
+
+    assert_equal para("<a href=\"C1.html#method-c-m\"><code>C1.m[:sym]</code></a>"), result,
+                 'C1.m[:sym]'
+  end
+
   def test_handle_regexp_HYPERLINK_rdoc
     readme = @store.add_file 'README.txt'
     readme.parser = RDoc::Parser::Simple

@@ -39,10 +39,18 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
     @hyperlink_all = @options.hyperlink_all
     @show_hash     = @options.show_hash
 
-    crossref_re = @hyperlink_all ? ALL_CROSSREF_REGEXP : CROSSREF_REGEXP
+    @cross_reference = RDoc::CrossReference.new @context
+  end
+
+  def init_link_notation_regexp_handlings
+    add_regexp_handling_RDOCLINK
+
+    # The crossref must be linked before tidylink because Klass.method[:sym]
+    # will be processed as a tidylink first and will be broken.
+    crossref_re = @options.hyperlink_all ? ALL_CROSSREF_REGEXP : CROSSREF_REGEXP
     @markup.add_regexp_handling crossref_re, :CROSSREF
 
-    @cross_reference = RDoc::CrossReference.new @context
+    add_regexp_handling_TIDYLINK
   end
 
   ##
