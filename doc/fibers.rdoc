@@ -14,61 +14,61 @@ We introduce the concept of blocking and non-blocking fibers. This allows us to
 retain compatibility with the existing semantic model which existing code
 expects.
 
-	# The default:
-	Fiber.new(blocking: true) do
-		puts Fiber.current.blocking? # true
-	end.resume
+  # The default:
+  Fiber.new(blocking: true) do
+    puts Fiber.current.blocking? # true
+  end.resume
 
-	Fiber.new(blocking: false) do
-		puts Fiber.current.blocking? # false
-	end.resume
+  Fiber.new(blocking: false) do
+    puts Fiber.current.blocking? # false
+  end.resume
 
 We also introduce a new method which simplifes the creation of these
 non-blocking fibers:
 
-	Fiber do
-		puts Fiber.current.blocking? # false
-	end
+  Fiber do
+    puts Fiber.current.blocking? # false
+  end
 
 === Non-blocking Threads
 
 Threads, by default, are blocking. When switching to a non-blocking fiber, we
 update this state.
 
-	puts Thread.current.blocking? # 1 (true)
+  puts Thread.current.blocking? # 1 (true)
 
-	Fiber.new(blocking: false) do
-		puts Thread.current.blocking? # false
-	end.resume
+  Fiber.new(blocking: false) do
+    puts Thread.current.blocking? # false
+  end.resume
 
 In addition, locking a mutex causes the thread to become blocking:
 
-	mutex = Mutex.new
+  mutex = Mutex.new
 
-	puts Thread.current.blocking? # 1 (true)
+  puts Thread.current.blocking? # 1 (true)
 
-	Fiber.new(blocking: false) do
-		puts Thread.current.blocking? # false
-		mutex.synchronize do
-			puts Thread.current.blocking? # (1) true
-		end
-		
-		puts Thread.current.blocking? # false
-	end.resume
+  Fiber.new(blocking: false) do
+    puts Thread.current.blocking? # false
+    mutex.synchronize do
+      puts Thread.current.blocking? # (1) true
+    end
+
+    puts Thread.current.blocking? # false
+  end.resume
 
 === Non-blocking Mutex
 
 As a future feature, we may consider introducing non-blocking mutex.
 
-	mutex = Mutex.new(blocking: false)
-	
-	Fiber.new(blocking: false) do
-		puts Thread.current.blocking? # false
-		
-		mutex.synchronize do
-			puts Thread.current.blocking? # false
-		end
-	end.resume
+  mutex = Mutex.new(blocking: false)
+  
+  Fiber.new(blocking: false) do
+    puts Thread.current.blocking? # false
+
+    mutex.synchronize do
+      puts Thread.current.blocking? # false
+    end
+  end.resume
 
 Such a design will require extensions to the scheduler interface to support fair
 scheduling of tasks waiting on a non-blocking mutex.
@@ -78,75 +78,75 @@ scheduling of tasks waiting on a non-blocking mutex.
 We introduce a new interface for intercepting blocking operations that occur on
 non-blocking fibers:
 
-	class Scheduler
-		# Wait for the given file descriptor to become readable.
-		def wait_readable(fd)
-		end
-		
-		# Wait for the given file descriptor to become writable.
-		def wait_writable(fd)
-		end
-		
-		# Wait for the given file descriptor to match the specified events within
-		# the specified timeout.
-		# @param event [Integer] a bit mask of +IO::WAIT_READABLE+,
-		#   `IO::WAIT_WRITABLE` and `IO::WAIT_PRIORITY`.
-		# @param timeout [#to_f] the amount of time to wait for the event.
-		def wait_for_single_fd(fd, events, timeout)
-		end
-		
-		# Sleep the current task for the specified duration, or forever if not
-		# specified.
-		# @param duration [#to_f] the amount of time to sleep.
-		def wait_sleep(duration = nil)
-		end
-		
-		# The Ruby virtual machine is going to enter a system level blocking
-		# operation.
-		def enter_blocking_region
-		end
-		
-		# The Ruby virtual machine has completed the system level blocking
-		# operation.
-		def exit_blocking_region
-		end
-		
-		# Intercept the creation of a non-blocking fiber.
-		def fiber(&block)
-			Fiber.new(blocking: false, &block)
-		end
-		
-		# Invoked when the thread exits.
-		def run
-			# Implement event loop here.
-		end
-	end
+  class Scheduler
+    # Wait for the given file descriptor to become readable.
+    def wait_readable(fd)
+    end
+
+    # Wait for the given file descriptor to become writable.
+    def wait_writable(fd)
+    end
+
+    # Wait for the given file descriptor to match the specified events within
+    # the specified timeout.
+    # @param event [Integer] a bit mask of +IO::WAIT_READABLE+,
+    #   `IO::WAIT_WRITABLE` and `IO::WAIT_PRIORITY`.
+    # @param timeout [#to_f] the amount of time to wait for the event.
+    def wait_for_single_fd(fd, events, timeout)
+    end
+
+    # Sleep the current task for the specified duration, or forever if not
+    # specified.
+    # @param duration [#to_f] the amount of time to sleep.
+    def wait_sleep(duration = nil)
+    end
+
+    # The Ruby virtual machine is going to enter a system level blocking
+    # operation.
+    def enter_blocking_region
+    end
+
+    # The Ruby virtual machine has completed the system level blocking
+    # operation.
+    def exit_blocking_region
+    end
+
+    # Intercept the creation of a non-blocking fiber.
+    def fiber(&block)
+      Fiber.new(blocking: false, &block)
+    end
+
+    # Invoked when the thread exits.
+    def run
+      # Implement event loop here.
+    end
+  end
 
 === Non-blocking I/O
 
 By default, I/O should be marked as non-blocking:
 
-	static int
-	rsock_socket0(int domain, int type, int proto)
-	{
-	#ifdef SOCK_CLOEXEC
-		type |= SOCK_CLOEXEC;
-	#endif
+  static int
+  rsock_socket0(int domain, int type, int proto)
+  {
+  #ifdef SOCK_CLOEXEC
+    type |= SOCK_CLOEXEC;
+  #endif
 
-	#ifdef SOCK_NONBLOCK
-		type |= SOCK_NONBLOCK;
-	#endif
+  #ifdef SOCK_NONBLOCK
+    type |= SOCK_NONBLOCK;
+  #endif
 
-		int result = socket(domain, type, proto);
+    int result = socket(domain, type, proto);
 
-		if (result == -1)
-			return -1;
+    if (result == -1)
+      return -1;
 
-		rb_fd_fix_cloexec(result);
+    rb_fd_fix_cloexec(result);
 
-	#ifndef SOCK_NONBLOCK
-		rsock_make_fd_nonblock(result);
-	#endif
+  #ifndef SOCK_NONBLOCK
+    rsock_make_fd_nonblock(result);
+  #endif
 
-		return result;
-	}
+    return result;
+  }
