@@ -1,25 +1,23 @@
 
 require 'benchmark'
 
-TOPICS = ["cats", "dogs", "pigs", "skeletons"]
+TOPICS = ["cats", "dogs", "pigs", "skeletons", "zombies", "ocelots", "villagers", "pillagers"]
 
 require 'net/http'
 require 'uri'
+require 'json'
+
 require_relative 'scheduler'
 
-def fetch_topics(topics, blocking: true)
+def fetch_topics(topics)
 	responses = {}
 	
 	conditions = topics.map do |topic|
 		condition = Scheduler::Condition.new
 		
-		Fiber.new(blocking: blocking) do
-			puts "Fetching #{topic} (#{Thread.current.blocking?})"
-			
+		Fiber.new(blocking: Fiber.current.blocking?) do
 			uri = URI("https://www.google.com/search?q=#{topic}")
 			responses[topic] = Net::HTTP.get(uri).scan(topic).size
-			
-			puts "Finished fetching #{topic}"
 			
 			condition.signal
 		end.resume
@@ -33,34 +31,30 @@ def fetch_topics(topics, blocking: true)
 	return responses
 end
 
-Benchmark.benchmark do |benchmark|
-	benchmark.report("blocking") do
-		puts
+def sweep(repeats: 3, **options)
+	times = (1..8).map do |i|
+		$stderr.puts "Measuring #{i} topic(s)..."
+		topics = TOPICS[0...i]
 		
 		Thread.new do
-			scheduler = Scheduler.new
-			Thread.current.scheduler = scheduler
-			
-			Fiber.new(blocking: true) do
-				pp fetch_topics(TOPICS, blocking: true)
-			end.resume
-			
-			scheduler.run
-		end.join
+			Benchmark.realtime do
+				scheduler = Scheduler.new
+				Thread.current.scheduler = scheduler
+				
+				repeats.times do
+					Fiber.new(**options) do
+						pp fetch_topics(topics)
+					end.resume
+					
+					scheduler.run
+				end
+			end
+		end.value / repeats
 	end
 	
-	benchmark.report("nonblocking") do
-		puts
-		
-		Thread.new do
-			scheduler = Scheduler.new
-			Thread.current.scheduler = scheduler
-			
-			Fiber.new(blocking: false) do
-				pp fetch_topics(TOPICS, blocking: false)
-			end.resume
-			
-			scheduler.run
-		end
-	end
+	puts options.inspect
+	puts JSON.dump(times.map{|value| value.round(3)})
 end
+
+sweep(blocking: true)
+sweep(blocking: false)
