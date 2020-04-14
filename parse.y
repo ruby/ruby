@@ -2250,7 +2250,6 @@ arg		: lhs '=' arg_rhs
 		| primary_value '[' opt_call_args rbracket tOP_ASGN arg_rhs
 		    {
 		    /*%%%*/
-			value_expr($6);
 			$$ = new_ary_op_assign(p, $1, $3, $5, $6, &@3, &@$);
 		    /*% %*/
 		    /*% ripper: opassign!(aref_field!($1, escape_Qundef($3)), $5, $6) %*/
@@ -2258,7 +2257,6 @@ arg		: lhs '=' arg_rhs
 		| primary_value call_op tIDENTIFIER tOP_ASGN arg_rhs
 		    {
 		    /*%%%*/
-			value_expr($5);
 			$$ = new_attr_op_assign(p, $1, $2, $3, $4, $5, &@$);
 		    /*% %*/
 		    /*% ripper: opassign!(field!($1, $2, $3), $4, $5) %*/
@@ -2266,7 +2264,6 @@ arg		: lhs '=' arg_rhs
 		| primary_value call_op tCONSTANT tOP_ASGN arg_rhs
 		    {
 		    /*%%%*/
-			value_expr($5);
 			$$ = new_attr_op_assign(p, $1, $2, $3, $4, $5, &@$);
 		    /*% %*/
 		    /*% ripper: opassign!(field!($1, $2, $3), $4, $5) %*/
@@ -2274,7 +2271,6 @@ arg		: lhs '=' arg_rhs
 		| primary_value tCOLON2 tIDENTIFIER tOP_ASGN arg_rhs
 		    {
 		    /*%%%*/
-			value_expr($5);
 			$$ = new_attr_op_assign(p, $1, ID2VAL(idCOLON2), $3, $4, $5, &@$);
 		    /*% %*/
 		    /*% ripper: opassign!(field!($1, ID2VAL(idCOLON2), $3), $4, $5) %*/
