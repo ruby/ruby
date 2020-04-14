@@ -1,0 +1,7 @@
+prelude: |
+  s = Struct.new(*('a'..'z').map { |x| x.to_sym })
+  x = s.new
+benchmark:
+  vm_struct_big_href_hi: |
+    x[:z]
+loop_count: 6000000

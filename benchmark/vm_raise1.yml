@@ -1,0 +1,16 @@
+prelude: |
+  def rec n
+    if n > 0
+      rec n-1
+    else
+      raise
+    end
+  end
+benchmark:
+  vm_raise1: |
+    begin
+      rec 1
+    rescue
+      # ignore
+    end
+loop_count: 6000000

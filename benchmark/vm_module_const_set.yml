@@ -1,0 +1,8 @@
+prelude: |
+  module M
+  end
+  $VERBOSE = nil
+benchmark:
+  vm_module_const_set: |
+    M.const_set(:X, Module.new)
+loop_count: 6000000

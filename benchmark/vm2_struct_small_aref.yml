@@ -1,7 +1,0 @@
-prelude: |
-  s = Struct.new(:a, :b, :c)
-  x = s.new
-benchmark:
-  vm2_struct_small_aref: |
-    x.a
-loop_count: 6000000

@@ -1,0 +1,8 @@
+prelude: |
+  str = 'xxxhogexxx'
+benchmark:
+  vm_regexp: |
+    /hoge/ =~ str
+  vm_regexp_invert: |
+    str =~ /hoge/
+loop_count: 6000000

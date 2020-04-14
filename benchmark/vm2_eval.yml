@@ -1,4 +1,0 @@
-benchmark:
-  vm2_eval: |
-    eval("1")
-loop_count: 6000000
