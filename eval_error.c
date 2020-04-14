@@ -474,6 +474,10 @@ error_handle(rb_execution_context_t *ec, int ex)
 		 rb_ivar_get(errinfo, id_signo) != INT2FIX(SIGSEGV)) {
 	    /* no message when exiting by signal */
 	}
+        else if (rb_obj_is_kind_of(errinfo, rb_eSystemCallError) &&
+                 FIXNUM_P(rb_attr_get(errinfo, id_signo))) {
+	    /* no message when exiting by error to be mapped to signal */
+        }
 	else {
 	    rb_ec_error_print(ec, errinfo);
 	}

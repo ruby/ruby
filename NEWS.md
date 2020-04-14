@@ -149,9 +149,8 @@ Excluding feature bug fixes.
     * This is experimental; if it brings a big incompatibility issue,
       it may be reverted until 2.8/3.0 release.
 
-* When writing to STDOUT redirected to a closed pipe, SignalException
-  is raised now instead of Errno::EPIPE, so that no broken pipe error
-  message will be shown.  [[Feature #14413]]
+* When writing to STDOUT redirected to a closed pipe, no broken pipe
+  error message will be shown now.  [[Feature #14413]]
 
 ## Stdlib compatibility issues
 

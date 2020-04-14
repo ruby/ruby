@@ -545,10 +545,12 @@ static rb_io_t *flush_before_seek(rb_io_t *fptr);
      (fptr)->mode |= FMODE_SIGNAL_ON_EPIPE : \
      (fptr)->mode &= ~FMODE_SIGNAL_ON_EPIPE)
 
-static int
-errno_on_write(rb_io_t *fptr)
+extern ID ruby_static_id_signo;
+
+NORETURN(static void raise_on_write(rb_io_t *fptr, int e, VALUE errinfo));
+static void
+raise_on_write(rb_io_t *fptr, int e, VALUE errinfo)
 {
-    int e = errno;
 #if defined EPIPE
     if (fptr_signal_on_epipe(fptr) && (e == EPIPE)) {
         const VALUE sig =
@@ -556,14 +558,17 @@ errno_on_write(rb_io_t *fptr)
             INT2FIX(SIGPIPE) - INT2FIX(0) +
 # endif
             INT2FIX(0);
-        rb_exc_raise(rb_class_new_instance(1, &sig, rb_eSignal));
+        rb_ivar_set(errinfo, ruby_static_id_signo, sig);
     }
 #endif
-    return e;
+    rb_exc_raise(errinfo);
 }
 
 #define rb_sys_fail_on_write(fptr) \
-    rb_syserr_fail_path(errno_on_write(fptr), (fptr)->pathv)
+    do { \
+        int e = errno; \
+        raise_on_write(fptr, e, rb_syserr_new_path(e, (fptr)->pathv)); \
+    } while (0)
 
 #define NEED_NEWLINE_DECORATOR_ON_READ(fptr) ((fptr)->mode & FMODE_TEXTMODE)
 #define NEED_NEWLINE_DECORATOR_ON_WRITE(fptr) ((fptr)->mode & FMODE_TEXTMODE)

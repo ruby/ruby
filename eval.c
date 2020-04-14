@@ -243,6 +243,7 @@ rb_ec_cleanup(rb_execution_context_t *ec, volatile int ex)
     state = 0;
     for (nerr = 0; nerr < numberof(errs); ++nerr) {
 	VALUE err = ATOMIC_VALUE_EXCHANGE(errs[nerr], Qnil);
+        VALUE sig;
 
 	if (!RTEST(err)) continue;
 
@@ -258,6 +259,11 @@ rb_ec_cleanup(rb_execution_context_t *ec, volatile int ex)
 	    state = NUM2INT(sig);
 	    break;
 	}
+        else if (rb_obj_is_kind_of(err, rb_eSystemCallError) &&
+                 FIXNUM_P(sig = rb_attr_get(err, id_signo))) {
+	    state = NUM2INT(sig);
+	    break;
+        }
 	else if (sysex == EXIT_SUCCESS) {
 	    sysex = EXIT_FAILURE;
 	}
