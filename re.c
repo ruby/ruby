@@ -3265,8 +3265,8 @@ rb_reg_match2(VALUE re)
 
 /*
  *  call-seq:
- *     rxp.match(str)       -> matchdata or nil
- *     rxp.match(str,pos)   -> matchdata or nil
+ *     rxp.match(str, pos=0)                   -> matchdata or nil
+ *     rxp.match(str, pos=0) {|match| block }  -> obj
  *
  *  Returns a MatchData object describing the match, or
  *  <code>nil</code> if there was no match. This is equivalent to

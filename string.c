@@ -3841,8 +3841,8 @@ static VALUE get_pat(VALUE);
 
 /*
  *  call-seq:
- *     str.match(pattern)        -> matchdata or nil
- *     str.match(pattern, pos)   -> matchdata or nil
+ *     str.match(pattern, pos=0)                   -> matchdata or nil
+ *     str.match(pattern, pos=0) {|match| block }  -> obj
  *
  *  Converts <i>pattern</i> to a Regexp (if it isn't already one),
  *  then invokes its <code>match</code> method on the receiver.
