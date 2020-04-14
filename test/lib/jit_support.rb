@@ -64,9 +64,9 @@ module JITSupport
   #
   # Until we figure out why, this allows us to skip testing JIT when it happens.
   def vs120_pdb_corrupted?
-    return false unless ENV.key?('APPVEYOR') && RbConfig::CONFIG['MJIT_CC'].include?('Microsoft Visual Studio 12.0')
+    return false unless ENV.key?('APPVEYOR')
     _stdout, stderr, status = eval_with_jit_without_retry('proc {}.call', verbose: 2, min_calls: 1)
-    !status.success? && stderr.include?('.pdb is not the pdb file that was used when this precompiled header was created, recreate the precompiled header.')
+    !status.success? && stderr.include?('x64-mswin64_120') && stderr.include?('.pdb is not the pdb file that was used when this precompiled header was created, recreate the precompiled header.')
   end
 
   def remove_mjit_logs(stderr)
