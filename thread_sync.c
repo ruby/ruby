@@ -190,6 +190,8 @@ mutex_locked(rb_thread_t *th, VALUE self)
 	mutex->next_mutex = th->keeping_mutexes;
     }
     th->keeping_mutexes = mutex;
+
+    th->blocking += 1;
 }
 
 /*
@@ -313,8 +315,6 @@ do_mutex_lock(VALUE self, int interruptible_p)
     // assertion
     if (mutex_owned_p(th, mutex) == Qfalse) rb_bug("do_mutex_lock: mutex is not owned.");
 
-    th->blocking += 1;
-
     return self;
 }
 
@@ -367,6 +367,8 @@ rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th)
 	struct sync_waiter *cur = 0, *next;
 	rb_mutex_t **th_mutex = &th->keeping_mutexes;
 
+        th->blocking -= 1;
+
 	mutex->th = 0;
 	list_for_each_safe(&mutex->waitq, cur, next, node) {
 	    list_del_init(&cur->node);
@@ -410,8 +412,6 @@ rb_mutex_unlock(VALUE self)
 
     err = rb_mutex_unlock_th(mutex, th);
     if (err) rb_raise(rb_eThreadError, "%s", err);
-
-    th->blocking -= 1;
 
     return self;
 }
