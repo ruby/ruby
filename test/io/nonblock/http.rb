@@ -33,27 +33,34 @@ def fetch_topics(topics, blocking: true)
 	return responses
 end
 
-scheduler = Scheduler.new
-Thread.current.scheduler = scheduler
-
 Benchmark.benchmark do |benchmark|
 	benchmark.report("blocking") do
 		puts
 		
-		Fiber.new(blocking: true) do
-			pp fetch_topics(TOPICS, blocking: true)
-		end.resume
-		
-		scheduler.run
+		Thread.new do
+			scheduler = Scheduler.new
+			Thread.current.scheduler = scheduler
+			
+			Fiber.new(blocking: true) do
+				pp fetch_topics(TOPICS, blocking: true)
+			end.resume
+			
+			scheduler.run
+		end.join
 	end
 	
 	benchmark.report("nonblocking") do
 		puts
 		
-		Fiber.new(blocking: false) do
-			pp fetch_topics(TOPICS, blocking: false)
-		end.resume
-		
-		scheduler.run
+		Thread.new do
+			scheduler = Scheduler.new
+			Thread.current.scheduler = scheduler
+			
+			Fiber.new(blocking: false) do
+				pp fetch_topics(TOPICS, blocking: false)
+			end.resume
+			
+			scheduler.run
+		end
 	end
 end
