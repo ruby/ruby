@@ -66,6 +66,7 @@ RB_DEBUG_COUNTER(ccf_iseq_opt) /* has_opt == TRUE (has optional parameters), but
 RB_DEBUG_COUNTER(ccf_iseq_kw1) /* vm_call_iseq_setup_kwparm_kwarg() */
 RB_DEBUG_COUNTER(ccf_iseq_kw2) /* vm_call_iseq_setup_kwparm_nokwarg() */
 RB_DEBUG_COUNTER(ccf_cfunc)
+RB_DEBUG_COUNTER(ccf_cfunc_with_frame)
 RB_DEBUG_COUNTER(ccf_ivar) /* attr_reader */
 RB_DEBUG_COUNTER(ccf_attrset) /* attr_writer */
 RB_DEBUG_COUNTER(ccf_method_missing)

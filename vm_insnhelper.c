@@ -1964,6 +1964,13 @@ rb_iseq_only_kwparam_p(const rb_iseq_t *iseq)
            iseq->body->param.flags.has_block == FALSE;
 }
 
+// If true, cc->call needs to include `CALLER_SETUP_ARG` (i.e. can't be skipped in fastpath)
+MJIT_STATIC bool
+rb_splat_or_kwargs_p(const struct rb_callinfo *restrict ci)
+{
+    return IS_ARGS_SPLAT(ci) || IS_ARGS_KW_OR_KW_SPLAT(ci);
+}
+
 
 static inline void
 CALLER_SETUP_ARG(struct rb_control_frame_struct *restrict cfp,
@@ -2508,6 +2515,7 @@ vm_method_cfunc_entry(const rb_callable_method_entry_t *me)
 static VALUE
 vm_call_cfunc_with_frame(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling, struct rb_call_data *cd)
 {
+    RB_DEBUG_COUNTER_INC(ccf_cfunc_with_frame);
     const struct rb_callinfo *ci = cd->ci;
     const struct rb_callcache *cc = cd->cc;
     VALUE val;
@@ -2555,6 +2563,7 @@ vm_call_cfunc(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb
 
     CALLER_SETUP_ARG(reg_cfp, calling, ci);
     CALLER_REMOVE_EMPTY_KW_SPLAT(reg_cfp, calling, ci);
+    CC_SET_FASTPATH(cd->cc, vm_call_cfunc_with_frame, !rb_splat_or_kwargs_p(ci) && !calling->kw_splat);
     return vm_call_cfunc_with_frame(ec, reg_cfp, calling, cd);
 }
 

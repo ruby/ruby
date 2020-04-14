@@ -18,9 +18,12 @@
 % # compiler: Inline send insn where some supported fastpath is used.
     const rb_iseq_t *iseq = NULL;
     const CALL_INFO ci = cd->ci;
+    int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
+    extern bool rb_splat_or_kwargs_p(const struct rb_callinfo *restrict ci);
     if (!status->compile_info->disable_send_cache && has_valid_method_type(captured_cc) && (
-%       # `CC_SET_FASTPATH(cc, vm_call_cfunc, TRUE)` in `vm_call_method_each_type`
-        vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC
+%       # `CC_SET_FASTPATH(cd->cc, vm_call_cfunc_with_frame, ...)` in `vm_call_cfunc`
+        (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC
+         && !rb_splat_or_kwargs_p(ci) && !kw_splat)
 %       # `CC_SET_FASTPATH(cc, vm_call_iseq_setup_func(...), vm_call_iseq_optimizable_p(...))` in `vm_callee_setup_arg`,
 %       # and support only non-VM_CALL_TAILCALL path inside it
         || (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_ISEQ
@@ -61,14 +64,14 @@
 % else
             fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
 % end
-            fprintf(f, "        calling.kw_splat = %d;\n", IS_ARGS_KW_SPLAT(ci) > 0);
+            fprintf(f, "        calling.kw_splat = %d;\n", kw_splat);
             fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size + sp_inc - 1);
             fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
             if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
 %               # TODO: optimize this more
                 fprintf(f, "        CALL_DATA cd = (CALL_DATA)0x%"PRIxVALUE";\n", operands[0]);
-                fprintf(f, "        val = vm_call_cfunc(ec, reg_cfp, &calling, cd);\n");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling, cd);\n");
             }
             else { // VM_METHOD_TYPE_ISEQ
 %               # fastpath_applied_iseq_p checks rb_simple_iseq_p, which ensures has_opt == FALSE
