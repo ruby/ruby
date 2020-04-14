@@ -992,6 +992,12 @@ random_real(VALUE obj, rb_random_t *rnd, int excl)
         a = random_int32(rng, rnd);
         b = random_int32(rng, rnd);
     }
+    return rb_int_pair_to_real(a, b, excl);
+}
+
+double
+rb_int_pair_to_real(uint32_t a, uint32_t b, int excl)
+{
     if (excl) {
 	return int_pair_to_real_exclusive(a, b);
     }
