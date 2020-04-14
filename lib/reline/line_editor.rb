@@ -1330,7 +1330,7 @@ class Reline::LineEditor
     end
   end
 
-  private def search_history(key)
+  private def incremental_search_history(key)
     unless @history_pointer
       if @is_multiline
         @line_backup_in_history = whole_buffer
@@ -1412,12 +1412,12 @@ class Reline::LineEditor
   end
 
   private def ed_search_prev_history(key)
-    search_history(key)
+    incremental_search_history(key)
   end
   alias_method :reverse_search_history, :ed_search_prev_history
 
   private def ed_search_next_history(key)
-    search_history(key)
+    incremental_search_history(key)
   end
   alias_method :forward_search_history, :ed_search_next_history
 
