@@ -2830,6 +2830,12 @@ rb_sys_fail_path_in(const char *func_name, VALUE path)
 void
 rb_syserr_fail_path_in(const char *func_name, int n, VALUE path)
 {
+    rb_exc_raise(rb_syserr_new_path_in(func_name, n, path));
+}
+
+VALUE
+rb_syserr_new_path_in(const char *func_name, int n, VALUE path)
+{
     VALUE args[2];
 
     if (!path) path = Qnil;
@@ -2841,7 +2847,7 @@ rb_syserr_fail_path_in(const char *func_name, int n, VALUE path)
     }
     args[0] = path;
     args[1] = rb_str_new_cstr(func_name);
-    rb_exc_raise(rb_class_new_instance(2, args, get_syserr(n)));
+    return rb_class_new_instance(2, args, get_syserr(n));
 }
 #endif
 

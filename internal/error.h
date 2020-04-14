@@ -32,9 +32,11 @@
 #ifdef RUBY_FUNCTION_NAME_STRING
 # define rb_sys_fail_path(path) rb_sys_fail_path_in(RUBY_FUNCTION_NAME_STRING, path)
 # define rb_syserr_fail_path(err, path) rb_syserr_fail_path_in(RUBY_FUNCTION_NAME_STRING, (err), (path))
+# define rb_syserr_new_path(err, path) rb_syserr_new_path_in(RUBY_FUNCTION_NAME_STRING, (err), (path))
 #else
 # define rb_sys_fail_path(path) rb_sys_fail_str(path)
 # define rb_syserr_fail_path(err, path) rb_syserr_fail_str((err), (path))
+# define rb_syserr_new_path(err, path) rb_syserr_new_str((err), (path))
 #endif
 
 /* error.c */
@@ -79,6 +81,7 @@ int rb_bug_reporter_add(void (*func)(FILE *, void *), void *data);
 #ifdef RUBY_FUNCTION_NAME_STRING
 NORETURN(void rb_sys_fail_path_in(const char *func_name, VALUE path));
 NORETURN(void rb_syserr_fail_path_in(const char *func_name, int err, VALUE path));
+VALUE rb_syserr_new_path_in(const char *func_name, int n, VALUE path);
 #endif
 RUBY_SYMBOL_EXPORT_END
 
