@@ -28,12 +28,14 @@ typedef struct {
 typedef void rb_random_init_func(rb_random_t *, const uint32_t *, size_t);
 typedef unsigned int rb_random_get_int32_func(rb_random_t *);
 typedef void rb_random_get_bytes_func(rb_random_t *, void *, size_t);
+typedef double rb_random_get_real_func(rb_random_t *, int);
 
 typedef struct {
     size_t default_seed_bits;
     rb_random_init_func *init;
     rb_random_get_int32_func *get_int32;
     rb_random_get_bytes_func *get_bytes;
+    rb_random_get_real_func *get_real;
 } rb_random_interface_t;
 
 #define rb_rand_if(obj) \

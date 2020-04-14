@@ -989,6 +989,7 @@ random_real(VALUE obj, rb_random_t *rnd, int excl)
     }
     else {
         const rb_random_interface_t *rng = try_rand_if(obj, rnd);
+        if (rng->get_real) return rng->get_real(rnd, excl);
         a = random_int32(rng, rnd);
         b = random_int32(rng, rnd);
     }
