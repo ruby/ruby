@@ -13014,53 +13014,55 @@ argf_write(VALUE argf, VALUE str)
 }
 
 void
-rb_readwrite_sys_fail(enum rb_io_wait_readwrite writable, const char *mesg)
+rb_readwrite_sys_fail(enum rb_io_wait_readwrite waiting, const char *mesg)
 {
-    rb_readwrite_syserr_fail(writable, errno, mesg);
+    rb_readwrite_syserr_fail(waiting, errno, mesg);
 }
 
 void
-rb_readwrite_syserr_fail(enum rb_io_wait_readwrite writable, int n, const char *mesg)
+rb_readwrite_syserr_fail(enum rb_io_wait_readwrite waiting, int n, const char *mesg)
 {
-    VALUE arg;
+    VALUE arg, c = Qnil;
     arg = mesg ? rb_str_new2(mesg) : Qnil;
-    if (writable == RB_IO_WAIT_WRITABLE) {
+    switch (waiting) {
+      case RB_IO_WAIT_WRITABLE:
 	switch (n) {
 	  case EAGAIN:
-	    rb_exc_raise(rb_class_new_instance(1, &arg, rb_eEAGAINWaitWritable));
+            c = rb_eEAGAINWaitWritable;
 	    break;
 #if EAGAIN != EWOULDBLOCK
 	  case EWOULDBLOCK:
-	    rb_exc_raise(rb_class_new_instance(1, &arg, rb_eEWOULDBLOCKWaitWritable));
+            c = rb_eEWOULDBLOCKWaitWritable;
 	    break;
 #endif
 	  case EINPROGRESS:
-	    rb_exc_raise(rb_class_new_instance(1, &arg, rb_eEINPROGRESSWaitWritable));
+            c = rb_eEINPROGRESSWaitWritable;
 	    break;
 	  default:
-	    rb_mod_sys_fail_str(rb_mWaitWritable, arg);
+            rb_mod_syserr_fail_str(rb_mWaitWritable, n, arg);
 	}
-    }
-    else if (writable == RB_IO_WAIT_READABLE) {
+        break;
+      case RB_IO_WAIT_READABLE:
 	switch (n) {
 	  case EAGAIN:
-	    rb_exc_raise(rb_class_new_instance(1, &arg, rb_eEAGAINWaitReadable));
+            c = rb_eEAGAINWaitReadable;
 	    break;
 #if EAGAIN != EWOULDBLOCK
 	  case EWOULDBLOCK:
-	    rb_exc_raise(rb_class_new_instance(1, &arg, rb_eEWOULDBLOCKWaitReadable));
+            c = rb_eEWOULDBLOCKWaitReadable;
 	    break;
 #endif
 	  case EINPROGRESS:
-	    rb_exc_raise(rb_class_new_instance(1, &arg, rb_eEINPROGRESSWaitReadable));
+            c = rb_eEINPROGRESSWaitReadable;
 	    break;
 	  default:
-	    rb_mod_sys_fail_str(rb_mWaitReadable, arg);
+            rb_mod_syserr_fail_str(rb_mWaitReadable, n, arg);
 	}
+        break;
+      default:
+	rb_bug("invalid read/write type passed to rb_readwrite_sys_fail: %d", waiting);
     }
-    else {
-	rb_bug("invalid read/write type passed to rb_readwrite_sys_fail: %d", writable);
-    }
+    rb_exc_raise(rb_class_new_instance(1, &arg, c));
 }
 
 static VALUE
