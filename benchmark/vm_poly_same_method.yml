@@ -13,7 +13,7 @@ prelude: |
   o1 = Foo.new
   o2 = Bar.new
 benchmark:
-  vm2_poly_same_method: |
+  vm_poly_same_method: |
     o1.save; o2.save;
     o1.save; o2.save;
     o1.save; o2.save;

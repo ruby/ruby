@@ -3,7 +3,7 @@
 prelude: |
   fibers = []
 benchmark:
-  vm2_fiber_count: |
+  vm_fiber_count: |
     fiber = Fiber.new{Fiber.yield}
     fibers << fiber
     fiber.resume

@@ -3,7 +3,7 @@ prelude: |
     yield
   end
 benchmark:
-  vm1_block: |
+  vm_block: |
     m{
     }
 loop_count: 30000000

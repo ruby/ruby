@@ -4,6 +4,6 @@ prelude: |
     loop { Fiber.yield }
   end
 benchmark:
-  vm2_fiber_switch: |
+  vm_fiber_switch: |
     fib.resume
 loop_count: 20000000

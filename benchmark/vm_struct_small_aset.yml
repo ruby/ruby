@@ -1,6 +1,6 @@
 # loop_count is not utilized since `i` is involved in the script
 benchmark:
-  vm2_struct_small_aset: |
+  vm_struct_small_aset: |
     s = Struct.new(:a, :b, :c)
     x = s.new
     i = 0

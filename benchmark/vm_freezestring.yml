@@ -5,6 +5,6 @@ prelude: |
     end
   end
 benchmark:
-  vm2_freezestring: |
+  vm_freezestring: |
     "tXnL1BP5T1WPXMjuFNLQtallEtRcay1t2lHtJSrlVsDgvunlbtfpr/DGdH0NGYE9".freeze
 loop_count: 6000000

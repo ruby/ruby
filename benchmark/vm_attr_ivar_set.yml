@@ -8,7 +8,7 @@ prelude: |
   end
   obj = C.new
 benchmark:
-  vm1_attr_ivar_set: |
+  vm_attr_ivar_set: |
     obj.a = 1
     obj.b = 2
 loop_count: 30000000

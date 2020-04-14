@@ -13,5 +13,5 @@ prelude: |
 
   obj = CC.new
 benchmark:
-  vm2_super: obj.m
+  vm_super: obj.m
 loop_count: 6000000

@@ -1,6 +1,6 @@
 # loop_count is not utilized since `i` is involved in the script
 benchmark:
-  vm2_case_lit: |
+  vm_case_lit: |
     i = 0
     @ret = [ "foo", true, false, :sym, 6, nil, 0.1, 0xffffffffffffffff ]
     def foo(i)

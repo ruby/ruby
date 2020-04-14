@@ -12,6 +12,6 @@ prelude: |
 
   short_lived = ''
 benchmark:
-  vm1_gc_wb_obj_promoted: |
+  vm_gc_wb_obj_promoted: |
     long_lived.foo = short_lived # write barrier
 loop_count: 30000000

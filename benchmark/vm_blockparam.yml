@@ -2,6 +2,6 @@ prelude: |
   def m &b
   end
 benchmark:
-  vm1_blockparam: |
+  vm_blockparam: |
     m{}
 loop_count: 30000000

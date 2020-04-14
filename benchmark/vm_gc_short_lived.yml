@@ -1,5 +1,5 @@
 benchmark:
-  vm1_gc_short_lived: |
+  vm_gc_short_lived: |
     a = '' # short-lived String
     b = ''
     c = ''

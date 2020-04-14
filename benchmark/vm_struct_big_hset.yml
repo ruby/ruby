@@ -1,6 +1,6 @@
 # loop_count is not utilized since `i` is involved in the script
 benchmark:
-  vm2_struct_big_hset: |
+  vm_struct_big_hset: |
     s = Struct.new(*('a'..'z').map { |x| x.to_sym })
     x = s.new
     i = 0

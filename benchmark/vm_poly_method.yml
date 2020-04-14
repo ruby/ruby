@@ -1,6 +1,6 @@
 # loop_count is not utilized since `i` is involved in the script
 benchmark:
-  vm2_poly_method: |
+  vm_poly_method: |
     class C1
       def m
         1

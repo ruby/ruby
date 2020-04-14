@@ -13,6 +13,6 @@ prelude: |
 
   obj = CC.new
 benchmark:
-  vm2_zsuper: |
+  vm_zsuper: |
     obj.m 10
 loop_count: 6000000

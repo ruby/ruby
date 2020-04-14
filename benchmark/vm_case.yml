@@ -1,5 +1,5 @@
 benchmark:
-  vm2_case: |
+  vm_case: |
     case :foo
     when :bar
       raise

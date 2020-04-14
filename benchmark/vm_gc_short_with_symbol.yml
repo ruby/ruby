@@ -3,7 +3,7 @@ prelude: |
   GC.start
   GC.start
 benchmark:
-  vm1_gc_short_with_symbol: |
+  vm_gc_short_with_symbol: |
     a = '' # short-lived String
     b = ''
     c = ''

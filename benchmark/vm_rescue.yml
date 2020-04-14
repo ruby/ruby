@@ -1,5 +1,5 @@
 benchmark:
-  vm1_rescue: |
+  vm_rescue: |
     begin
     rescue
     end

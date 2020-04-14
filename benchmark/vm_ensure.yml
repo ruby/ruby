@@ -1,6 +1,6 @@
 # Not utilizing loop_count since using it for this is too unstable for now
 benchmark:
-  vm1_ensure: |
+  vm_ensure: |
     i = 0
     while i<30_000_000
       i += 1

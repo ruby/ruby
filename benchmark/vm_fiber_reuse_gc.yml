@@ -2,7 +2,7 @@
 prelude: |
   fibers = []
 benchmark:
-  vm2_fiber_reuse_gc: |
+  vm_fiber_reuse_gc: |
     2000.times do
       fiber = Fiber.new{Fiber.yield}
       fibers << fiber

@@ -1,6 +1,6 @@
 # while loop cost is not removed because `i` is used in the script
 benchmark:
-  vm1_lvar_init: |
+  vm_lvar_init: |
     def m v
       unless v
         # unreachable code

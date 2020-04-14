@@ -7,7 +7,7 @@ prelude: |
     end
   end
 benchmark:
-  vm2_raise2: |
+  vm_raise2: |
     begin
       rec 10
     rescue
