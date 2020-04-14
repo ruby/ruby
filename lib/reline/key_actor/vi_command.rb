@@ -37,7 +37,7 @@ class Reline::KeyActor::ViCommand < Reline::KeyActor::Base
     #  17 ^Q
     :ed_ignore,
     #  18 ^R
-    :ed_search_prev_history,
+    :vi_search_prev,
     #  19 ^S
     :ed_ignore,
     #  20 ^T
@@ -151,7 +151,7 @@ class Reline::KeyActor::ViCommand < Reline::KeyActor::Base
     #  74 J
     :vi_join_lines,
     #  75 K
-    :ed_search_prev_history,
+    :vi_search_prev,
     #  76 L
     :ed_unassigned,
     #  77 M

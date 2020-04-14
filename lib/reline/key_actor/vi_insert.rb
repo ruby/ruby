@@ -37,9 +37,9 @@ class Reline::KeyActor::ViInsert < Reline::KeyActor::Base
     #  17 ^Q
     :ed_ignore,
     #  18 ^R
-    :ed_search_prev_history,
+    :vi_search_prev,
     #  19 ^S
-    :ed_search_next_history,
+    :vi_search_next,
     #  20 ^T
     :ed_insert,
     #  21 ^U

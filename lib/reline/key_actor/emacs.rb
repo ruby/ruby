@@ -37,9 +37,9 @@ class Reline::KeyActor::Emacs < Reline::KeyActor::Base
     #  17 ^Q
     :ed_quoted_insert,
     #  18 ^R
-    :ed_search_prev_history,
+    :vi_search_prev,
     #  19 ^S
-    :ed_search_next_history,
+    :vi_search_next,
     #  20 ^T
     :ed_transpose_chars,
     #  21 ^U
@@ -413,11 +413,11 @@ class Reline::KeyActor::Emacs < Reline::KeyActor::Base
     # 205 M-M
     :ed_unassigned,
     # 206 M-N
-    :ed_search_next_history,
+    :vi_search_next,
     # 207 M-O
     :ed_sequence_lead_in,
     # 208 M-P
-    :ed_search_prev_history,
+    :vi_search_prev,
     # 209 M-Q
     :ed_unassigned,
     # 210 M-R
@@ -477,11 +477,11 @@ class Reline::KeyActor::Emacs < Reline::KeyActor::Base
     # 237 M-m
     :ed_unassigned,
     # 238 M-n
-    :ed_search_next_history,
+    :vi_search_next,
     # 239 M-o
     :ed_unassigned,
     # 240 M-p
-    :ed_search_prev_history,
+    :vi_search_prev,
     # 241 M-q
     :ed_unassigned,
     # 242 M-r
