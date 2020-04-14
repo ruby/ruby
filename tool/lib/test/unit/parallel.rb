@@ -43,10 +43,9 @@ module Test
         th = Thread.new do
           begin
             while buf = (self.verbose ? i.gets : i.readpartial(1024))
-              _report "p", buf
+              _report "p", buf or break
             end
           rescue IOError
-          rescue Errno::EPIPE
           end
         end
 
@@ -77,9 +76,7 @@ module Test
         result << ($: - @old_loadpath)
         result << suite.name
 
-        begin
-          _report "done", Marshal.dump(result)
-        rescue Errno::EPIPE; end
+        _report "done", Marshal.dump(result)
         return result
       ensure
         MiniTest::Unit.output = orig_stdout
@@ -128,32 +125,25 @@ module Test
               _run_suites MiniTest::Unit::TestCase.test_suites-suites, $2.to_sym
 
               if @need_exit
-                begin
-                  _report "bye"
-                rescue Errno::EPIPE; end
+                _report "bye"
                 exit
               else
                 _report "ready"
               end
             when /^quit$/
-              begin
-                _report "bye"
-              rescue Errno::EPIPE; end
+              _report "bye"
               exit
             end
           end
-        rescue Errno::EPIPE
         rescue Exception => e
-          begin
-            trace = e.backtrace || ['unknown method']
-            err = ["#{trace.shift}: #{e.message} (#{e.class})"] + trace.map{|t| "\t" + t }
+          trace = e.backtrace || ['unknown method']
+          err = ["#{trace.shift}: #{e.message} (#{e.class})"] + trace.map{|t| "\t" + t }
 
-            if @stdout
-              _report "bye", Marshal.dump(err.join("\n"))
-            else
-              raise "failed to report a failure due to lack of @stdout"
-            end
-          rescue Errno::EPIPE;end
+          if @stdout
+            _report "bye", Marshal.dump(err.join("\n"))
+          else
+            raise "failed to report a failure due to lack of @stdout"
+          end
           exit
         ensure
           @stdin.close if @stdin
@@ -163,6 +153,8 @@ module Test
 
       def _report(res, *args) # :nodoc:
         @stdout.write(args.empty? ? "#{res}\n" : "#{res} #{args.pack("m0")}\n")
+        true
+      rescue Errno::EPIPE
       rescue TypeError => e
         abort("#{e.inspect} in _report(#{res.inspect}, #{args.inspect})\n#{e.backtrace.join("\n")}")
       end
