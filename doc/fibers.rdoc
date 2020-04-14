@@ -1,7 +1,7 @@
 = Fibers
 
-Fibers are a flow-control primitive which allows you to suspend and resume a
-block of code explicitly. This is in contrast to threads which can be
+Fibers are a flow-control primitive which allows the system to suspend and
+resume a block of code explicitly. This is in contrast to threads which can be
 preemptively scheduled at any time. While having a similar memory overhead,
 context switching fibers is typically significantly faster as it does not
 involve a system call.
