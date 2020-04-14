@@ -57,6 +57,18 @@ module JITSupport
     end && RbConfig::CONFIG["MJIT_SUPPORT"] != 'no' && !PENDING_RUBYCI_NICKNAMES.include?(ENV['RUBYCI_NICKNAME'])
   end
 
+  # AppVeyor's Visual Studio 2013 is known to spuriously generate broken pch / pdb, like:
+  # error C2859: c:\projects\ruby\x64-mswin_120\include\ruby-2.8.0\x64-mswin64_120\rb_mjit_header-2.8.0.pdb
+  # is not the pdb file that was used when this precompiled header was created, recreate the precompiled header.
+  # https://ci.appveyor.com/project/ruby/ruby/builds/32159878/job/l2p38snw8yxxpp8h
+  #
+  # Until we figure out why, this allows us to skip testing JIT when it happens.
+  def vs120_pdb_corrupted?
+    return false unless ENV.key?('APPVEYOR') && RbConfig::CONFIG['MJIT_CC'].include?('Microsoft Visual Studio 12.0')
+    _stdout, stderr, status = eval_with_jit_without_retry('proc {}.call', verbose: 2, min_calls: 1)
+    !status.success? && stderr.include?('.pdb is not the pdb file that was used when this precompiled header was created, recreate the precompiled header.')
+  end
+
   def remove_mjit_logs(stderr)
     if RubyVM::MJIT.enabled? # utility for -DFORCE_MJIT_ENABLE
       stderr.gsub(/^MJIT warning: Skipped to compile unsupported instruction: \w+\n/m, '')
