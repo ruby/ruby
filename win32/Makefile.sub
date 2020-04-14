@@ -1341,11 +1341,17 @@ clean-local::
 #
 # TODO: Fix the above issue by including VC version in header name, and create another header
 # for --jit-debug as well.
+#
+# Using .pdb for ifchange target as a workaround since using .pch randomly results in:
+# > rb_mjit_header-2.8.0.pdb is not the pdb file that was used when this precompiled header
+# > was created, recreate the precompiled header.
+# with AppVeyor Visual Studio 2013 for some reason. TODO: Support updating multiple files
+# (.pdb and .pch) in win32/ifchange.bat
 $(TIMESTAMPDIR)/$(MJIT_PRECOMPILED_HEADER_NAME:.pch=).time: probes.h vm.$(OBJEXT)
 	$(ECHO) building $(@F:.time=.pch)
 	$(Q) $(CC) -DMJIT_HEADER $(CFLAGS) $(XCFLAGS:-DRUBY_EXPORT =) -URUBY_EXPORT $(CPPFLAGS) $(srcdir)/vm.c -c -Yc \
-	  $(COUTFLAG)$(@F:.time=.)$(OBJEXT) -Fd$(@F:.time=.pdb) -Fp$(@F:.time=.pch).new
-	$(Q) $(IFCHANGE) "--timestamp=$@" $(@F:.time=.pch) $(@F:.time=.pch).new
+	  $(COUTFLAG)$(@F:.time=.)$(OBJEXT) -Fd$(@F:.time=.pdb).new -Fp$(@F:.time=.pch)
+	$(Q) $(IFCHANGE) "--timestamp=$@" $(@F:.time=.pdb) $(@F:.time=.pdb).new
 
 $(MJIT_PRECOMPILED_HEADER_NAME): $(TIMESTAMPDIR)/$(MJIT_PRECOMPILED_HEADER_NAME:.pch=).time
 
