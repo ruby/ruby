@@ -1394,6 +1394,8 @@ iseq_setup_insn(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 
     debugs("[compile step 3.4 (iseq_insert_nop_between_end_and_cont)]\n");
     iseq_insert_nop_between_end_and_cont(iseq);
+    if (compile_debug > 5)
+        dump_disasm_list(FIRST_ELEMENT(anchor));
 
     return COMPILE_OK;
 }
