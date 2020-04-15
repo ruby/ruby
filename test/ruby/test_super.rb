@@ -604,7 +604,7 @@ class TestSuper < Test::Unit::TestCase
     assert_equal :boo2, subklass.new.boo
   end
 
-  def test_super_attr_writer # Bug #16785
+  def test_super_attr_writer # [Bug #16785]
     writer_class = Class.new do
       attr_writer :test
     end
@@ -632,5 +632,32 @@ class TestSuper < Test::Unit::TestCase
 
     assert_equal 3, superwriter.instance_variable_get(:@test)
     assert_equal 4, inherited.instance_variable_get(:@test)
+  end
+
+  def test_super_attr_reader
+    writer_class = Class.new do
+      attr_reader :test
+    end
+    superwriter_class = Class.new(writer_class) do
+      def initialize
+        @test = 1 # index: 1
+      end
+
+      def test
+        super
+      end
+    end
+    inherited_class = Class.new(superwriter_class) do
+      def initialize
+        @a = nil
+        @test = 2 # index: 2
+      end
+    end
+
+    superwriter = superwriter_class.new
+    assert_equal 1, superwriter.test # set ic->index of superwriter_class#test to 1
+
+    inherited = inherited_class.new
+    assert_equal 2, inherited.test # it may read index=1 while it should be index=2
   end
 end
