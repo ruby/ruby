@@ -79,6 +79,12 @@ void rb_last_status_clear(void);
 static inline char **ARGVSTR2ARGV(VALUE argv_str);
 static inline size_t ARGVSTR2ARGC(VALUE argv_str);
 
+#ifdef HAVE_PWD_H
+VALUE rb_getlogin(void);
+VALUE rb_getpwdirnam_for_login(VALUE login);  /* read as: "get pwd db home dir by username for login" */
+VALUE rb_getpwdiruid(void);                   /* read as: "get pwd db home dir for getuid()" */
+#endif
+
 RUBY_SYMBOL_EXPORT_BEGIN
 /* process.c (export) */
 int rb_exec_async_signal_safe(const struct rb_execarg *e, char *errmsg, size_t errmsg_buflen);
