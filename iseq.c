@@ -2307,7 +2307,9 @@ rb_iseq_disasm_recursive(const rb_iseq_t *iseq, VALUE indent)
 VALUE
 rb_iseq_disasm(const rb_iseq_t *iseq)
 {
-    return rb_iseq_disasm_recursive(iseq, rb_str_new(0, 0));
+    VALUE str = rb_iseq_disasm_recursive(iseq, rb_str_new(0, 0));
+    rb_str_resize(str, RSTRING_LEN(str));
+    return str;
 }
 
 /*
