@@ -1423,6 +1423,13 @@ iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     debugs("[compile step 6 (update_catch_except_flags)] \n");
     update_catch_except_flags(iseq->body);
 
+#if VM_INSN_INFO_TABLE_IMPL == 2
+    if (iseq->body->insns_info.succ_index_table == NULL) {
+        debugs("[compile step 7 (rb_iseq_insns_info_encode_positions)] \n");
+        rb_iseq_insns_info_encode_positions(iseq);
+    }
+#endif
+
     if (compile_debug > 1) {
 	VALUE str = rb_iseq_disasm(iseq);
 	printf("%s\n", StringValueCStr(str));
