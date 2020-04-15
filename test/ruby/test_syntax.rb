@@ -1571,7 +1571,6 @@ eom
     assert_equal(1, eval("1 => a"))
     assert_equal([2,3], eval("13.divmod(5) => a,b; [a, b]"))
     assert_equal([2,3,2,3], eval("13.divmod(5) => a,b => c, d; [a, b, c, d]"))
-    assert_equal([2,3], eval("13.divmod(5)\n => a,b; [a, b]"))
     assert_equal(3, eval("1+2 => a"))
   end
 

@@ -8974,11 +8974,10 @@ parser_yylex(struct parser_params *p)
 		pushback(p, c);
 		if (space_seen) dispatch_scan_event(p, tSP);
 		goto retry;
-	      case '=':
 	      case '&':
 	      case '.': {
 		dispatch_delayed_token(p, tIGNORED_NL);
-		if (c == '=' ? peek(p, '>') : (peek(p, '.') == (c == '&'))) {
+		if (peek(p, '.') == (c == '&')) {
 		    pushback(p, c);
 		    dispatch_scan_event(p, tSP);
 		    goto retry;
