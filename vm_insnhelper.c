@@ -3231,9 +3231,18 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
             const struct rb_callcache *cc = vm_cc_new(klass, cme, vm_call_super_method);
             RB_OBJ_WRITE(reg_cfp->iseq, &cd->cc, cc);
         }
-        else if (cached_cme->def->type == VM_METHOD_TYPE_REFINED) {
-            // vm_call_refined (search_refined_method) assumes cc->call is vm_call_super_method on invokesuper.
-            vm_cc_call_set(cd->cc, vm_call_super_method);
+        else {
+            switch (cached_cme->def->type) {
+              // vm_call_refined (search_refined_method) assumes cc->call is vm_call_super_method on invokesuper
+              case VM_METHOD_TYPE_REFINED:
+              // cc->klass is superclass of a class of receiver. Checking cc->klass is not enough to invalidate IVC for the receiver class.
+              case VM_METHOD_TYPE_ATTRSET:
+              // TODO: case VM_METHOD_TYPE_IVAR:
+                vm_cc_call_set(cd->cc, vm_call_super_method); // invalidate fastpath
+                break;
+              default:
+                break; // use fastpath
+            }
         }
     }
 }

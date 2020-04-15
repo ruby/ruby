@@ -603,4 +603,34 @@ class TestSuper < Test::Unit::TestCase
     assert_equal :boo, subklass.new.baz
     assert_equal :boo2, subklass.new.boo
   end
+
+  def test_super_attr_writer # Bug #16785
+    writer_class = Class.new do
+      attr_writer :test
+    end
+    superwriter_class = Class.new(writer_class) do
+      def initialize
+        @test = 1 # index: 1
+      end
+
+      def test=(test)
+        super(test)
+      end
+    end
+    inherited_class = Class.new(superwriter_class) do
+      def initialize
+        @a = nil
+        @test = 2 # index: 2
+      end
+    end
+
+    superwriter = superwriter_class.new
+    superwriter.test = 3 # set ic->index of superwriter_class#test= to 1
+
+    inherited = inherited_class.new
+    inherited.test = 4 # it may set 4 to index=1 while it should be index=2
+
+    assert_equal 3, superwriter.instance_variable_get(:@test)
+    assert_equal 4, inherited.instance_variable_get(:@test)
+  end
 end
