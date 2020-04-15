@@ -438,3 +438,8 @@ tests.compact.each {|(insn, expr, *a)|
     assert_equal 'true', progn, 'trace_' + insn, *a
   end
 }
+
+assert_normal_exit("#{<<-"begin;"}\n#{<<-'end;'}")
+begin;
+  RubyVM::InstructionSequence.compile("", debug_level: 5)
+end;

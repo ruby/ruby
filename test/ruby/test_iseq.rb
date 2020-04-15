@@ -571,4 +571,12 @@ class TestISeq < Test::Unit::TestCase
     assert_not_nil(invokebuiltin)
     assert_equal([:func_ptr, :argc, :index, :name], invokebuiltin[1].keys)
   end
+
+  def test_iseq_option_debug_level
+    assert_raise(TypeError) {ISeq.compile("", debug_level: "")}
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      RubyVM::InstructionSequence.compile("", debug_level: 5)
+    end;
+  end
 end
