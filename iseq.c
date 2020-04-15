@@ -615,6 +615,7 @@ void
 rb_iseq_insns_info_encode_positions(const rb_iseq_t *iseq)
 {
 #if VM_INSN_INFO_TABLE_IMPL == 2
+    /* create succ_index_table */
     struct rb_iseq_constant_body *const body = iseq->body;
     int size = body->insns_info.size;
     int max_pos = body->iseq_size;
@@ -656,13 +657,6 @@ finish_iseq_build(rb_iseq_t *iseq)
     VALUE err = data->err_info;
     ISEQ_COMPILE_DATA_CLEAR(iseq);
     compile_data_free(data);
-
-#if VM_INSN_INFO_TABLE_IMPL == 2 /* succinct bitvector */
-    /* create succ_index_table */
-    if (body->insns_info.succ_index_table == NULL) {
-	rb_iseq_insns_info_encode_positions(iseq);
-    }
-#endif
 
 #if VM_CHECK_MODE > 0 && VM_INSN_INFO_TABLE_IMPL > 0
     validate_get_insn_info(iseq);
