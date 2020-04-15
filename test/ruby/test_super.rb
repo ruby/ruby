@@ -635,10 +635,10 @@ class TestSuper < Test::Unit::TestCase
   end
 
   def test_super_attr_reader
-    writer_class = Class.new do
+    reader_class = Class.new do
       attr_reader :test
     end
-    superwriter_class = Class.new(writer_class) do
+    superreader_class = Class.new(reader_class) do
       def initialize
         @test = 1 # index: 1
       end
@@ -647,15 +647,15 @@ class TestSuper < Test::Unit::TestCase
         super
       end
     end
-    inherited_class = Class.new(superwriter_class) do
+    inherited_class = Class.new(superreader_class) do
       def initialize
         @a = nil
         @test = 2 # index: 2
       end
     end
 
-    superwriter = superwriter_class.new
-    assert_equal 1, superwriter.test # set ic->index of superwriter_class#test to 1
+    superreader = superreader_class.new
+    assert_equal 1, superreader.test # set ic->index of superreader_class#test to 1
 
     inherited = inherited_class.new
     assert_equal 2, inherited.test # it may read index=1 while it should be index=2
