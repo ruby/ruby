@@ -1468,6 +1468,58 @@ class Reline::LineEditor
   end
   alias_method :history_search_backward, :ed_search_prev_history
 
+  private def ed_search_next_history(key, arg: 1)
+    substr = @line.slice(0, @byte_pointer)
+    if @history_pointer.nil?
+      return
+    elsif @history_pointer == (Reline::HISTORY.size - 1) and not substr.empty?
+      return
+    end
+    history = Reline::HISTORY.slice((@history_pointer + 1)..-1)
+    h_pointer = nil
+    line_no = nil
+    if @is_multiline
+      h_pointer = history.index { |h|
+        h.split("\n").each_with_index { |l, i|
+          if l.start_with?(substr)
+            line_no = i
+            break
+          end
+        }
+        not line_no.nil?
+      }
+    else
+      h_pointer = history.index { |l|
+        l.start_with?(substr)
+      }
+    end
+    h_pointer += @history_pointer + 1 if h_pointer and @history_pointer
+    return if h_pointer.nil? and not substr.empty?
+    @history_pointer = h_pointer
+    if @is_multiline
+      if @history_pointer.nil? and substr.empty?
+        @buffer_of_lines = []
+        @line_index = 0
+      else
+        @buffer_of_lines = Reline::HISTORY[@history_pointer].split("\n")
+        @line_index = line_no
+      end
+      @buffer_of_lines = [String.new(encoding: @encoding)] if @buffer_of_lines.empty?
+      @line = @buffer_of_lines.last
+      @rerender_all = true
+    else
+      if @history_pointer.nil? and substr.empty?
+        @line = ''
+      else
+        @line = Reline::HISTORY[@history_pointer]
+      end
+    end
+    @cursor_max = calculate_width(@line)
+    arg -= 1
+    ed_search_next_history(key, arg: arg) if arg > 0
+  end
+  alias_method :history_search_forward, :ed_search_next_history
+
   private def ed_prev_history(key, arg: 1)
     if @is_multiline and @line_index > 0
       @previous_line_index = @line_index
