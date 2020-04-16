@@ -24,11 +24,22 @@
 #include "ruby/3/compiler_since.h"
 #include "ruby/3/token_paste.h"
 
-/** Wraps (or simulates) `__has_builtin`. */
-#if defined(__has_builtin) && ! RUBY3_COMPILER_IS(Intel)
+#ifndef __has_builtin
+# /* Don't bother. */
+#elif RUBY3_COMPILER_IS(Intel)
 # /* :TODO:  Intel C  Compiler has  __has_builtin (since  19.1 maybe?),  and is
 #  * reportedly  broken.  We  have to  skip  them.  However  the situation  can
 #  * change.  They might improve someday.  We need to revisit here later. */
+#elif RUBY3_COMPILER_IS(GCC) && ! __has_builtin(__builtin_alloca)
+# /* FreeBSD's <sys/cdefs.h> defines its own *broken* version of __has_builtin.
+#  * Cygwin copied  that content to be  a victim of the  broken-ness.  We don't
+#  * take them into account. */
+#else
+# define RUBY3_HAVE___HAS_BUILTIN 1
+#endif
+
+/** Wraps (or simulates) `__has_builtin`. */
+#if defined(RUBY3_HAVE___HAS_BUILTIN)
 # define RUBY3_HAS_BUILTIN(_) __has_builtin(_)
 
 #elif RUBY3_COMPILER_IS(GCC)
