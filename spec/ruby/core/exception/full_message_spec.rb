@@ -37,7 +37,7 @@ describe "Exception#full_message" do
       e = RuntimeError.new("Some runtime error")
       e.backtrace.should == nil
       full_message = e.full_message(highlight: false, order: :top)
-      full_message.should include("#{__FILE__}:#{__LINE__-1}:in `")
+      full_message.should include("<internal:exception>:20:in `")
       full_message.should include("': Some runtime error (RuntimeError)\n")
     end
 
