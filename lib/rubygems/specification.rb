@@ -1961,7 +1961,7 @@ class Gem::Specification < Gem::BasicSpecification
     yaml_initialize coder.tag, coder.map
   end
 
-  eval <<-RB, binding, __FILE__, __LINE__ + 1
+  eval <<-RUBY, binding, __FILE__, __LINE__ + 1
     def set_nil_attributes_to_nil
       #{@@nil_attributes.map {|key| "@#{key} = nil" }.join "; "}
     end
@@ -1971,7 +1971,7 @@ class Gem::Specification < Gem::BasicSpecification
       #{@@non_nil_attributes.map {|key| "@#{key} = #{INITIALIZE_CODE_FOR_DEFAULTS[key]}" }.join ";"}
     end
     private :set_not_nil_attributes_to_default_values
-  RB
+  RUBY
 
   ##
   # Specification constructor. Assigns the default values to the attributes
