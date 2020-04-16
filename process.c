@@ -5585,7 +5585,7 @@ obj2uid(VALUE id
 #ifndef USE_GETPWNAM_R
 	    endpwent();
 #endif
-	    rb_raise(rb_eArgError, "can't find user for %s", usrname);
+            rb_raise(rb_eArgError, "can't find user for %"PRIsVALUE, id);
 	}
 	uid = pwptr->pw_uid;
 #ifndef USE_GETPWNAM_R
@@ -5664,7 +5664,7 @@ obj2gid(VALUE id
 #if !defined(USE_GETGRNAM_R) && defined(HAVE_ENDGRENT)
 	    endgrent();
 #endif
-	    rb_raise(rb_eArgError, "can't find group for %s", grpname);
+            rb_raise(rb_eArgError, "can't find group for %"PRIsVALUE, id);
 	}
 	gid = grptr->gr_gid;
 #if !defined(USE_GETGRNAM_R) && defined(HAVE_ENDGRENT)

@@ -1610,6 +1610,9 @@ class TestProcess < Test::Unit::TestCase
       if u = Etc.getpwuid(Process.uid)
         assert_equal(Process.uid, Process::UID.from_name(u.name), u.name)
       end
+      assert_raise_with_message(ArgumentError, /\u{4e0d 5b58 5728}/) {
+        Process::UID.from_name("\u{4e0d 5b58 5728}")
+      }
     end
   end
 
@@ -1618,6 +1621,9 @@ class TestProcess < Test::Unit::TestCase
       if g = Etc.getgrgid(Process.gid)
         assert_equal(Process.gid, Process::GID.from_name(g.name), g.name)
       end
+      assert_raise_with_message(ArgumentError, /\u{4e0d 5b58 5728}/) {
+        Process::GID.from_name("\u{4e0d 5b58 5728}")
+      }
     end
   end
 
