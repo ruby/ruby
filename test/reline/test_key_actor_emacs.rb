@@ -1625,7 +1625,7 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_line('')
   end
 
-  def test_ed_search_prev_history
+  def test_vi_search_prev
     Reline::HISTORY.concat(%w{abc 123 AAA})
     assert_line('')
     assert_byte_pointer_size('')
