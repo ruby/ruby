@@ -344,7 +344,7 @@ module Spec
     end
 
     def with_path_added(path)
-      with_path_as(path.to_s + ":" + ENV["PATH"]) do
+      with_path_as([path.to_s, ENV["PATH"]].join(File::PATH_SEPARATOR)) do
         yield
       end
     end
