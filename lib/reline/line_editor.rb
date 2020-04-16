@@ -1421,6 +1421,53 @@ class Reline::LineEditor
   end
   alias_method :forward_search_history, :vi_search_next
 
+  private def ed_search_prev_history(key, arg: 1)
+    history = nil
+    h_pointer = nil
+    line_no = nil
+    substr = @line.slice(0, @byte_pointer)
+    if @history_pointer.nil?
+      return if not @line.empty? and substr.empty?
+      history = Reline::HISTORY
+    elsif @history_pointer.zero?
+      history = nil
+      h_pointer = nil
+    else
+      history = Reline::HISTORY.slice(0, @history_pointer)
+    end
+    return if history.nil?
+    if @is_multiline
+      h_pointer = history.rindex { |h|
+        h.split("\n").each_with_index { |l, i|
+          if l.start_with?(substr)
+            line_no = i
+            break
+          end
+        }
+        not line_no.nil?
+      }
+    else
+      h_pointer = history.rindex { |l|
+        l.start_with?(substr)
+      }
+    end
+    return if h_pointer.nil?
+    @history_pointer = h_pointer
+    if @is_multiline
+      @buffer_of_lines = Reline::HISTORY[@history_pointer].split("\n")
+      @buffer_of_lines = [String.new(encoding: @encoding)] if @buffer_of_lines.empty?
+      @line_index = line_no
+      @line = @buffer_of_lines.last
+      @rerender_all = true
+    else
+      @line = Reline::HISTORY[@history_pointer]
+    end
+    @cursor_max = calculate_width(@line)
+    arg -= 1
+    ed_search_prev_history(key, arg: arg) if arg > 0
+  end
+  alias_method :history_search_backward, :ed_search_prev_history
+
   private def ed_prev_history(key, arg: 1)
     if @is_multiline and @line_index > 0
       @previous_line_index = @line_index

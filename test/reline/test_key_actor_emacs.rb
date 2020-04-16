@@ -1912,6 +1912,75 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     $VERBOSE = verbose
   end
 
+  def test_ed_search_prev_history
+    Reline::HISTORY.concat([
+      '12356', # old
+      '12aaa',
+      '12345' # new
+    ])
+    input_keys('123')
+    # The ed_search_prev_history doesn't have default binding
+    @line_editor.__send__(:ed_search_prev_history, "\C-p".ord)
+    assert_byte_pointer_size('123')
+    assert_cursor(3)
+    assert_cursor_max(5)
+    assert_line('12345')
+    @line_editor.__send__(:ed_search_prev_history, "\C-p".ord)
+    assert_byte_pointer_size('123')
+    assert_cursor(3)
+    assert_cursor_max(5)
+    assert_line('12356')
+    @line_editor.__send__(:ed_search_prev_history, "\C-p".ord)
+    assert_byte_pointer_size('123')
+    assert_cursor(3)
+    assert_cursor_max(5)
+    assert_line('12356')
+  end
+
+  def test_ed_search_prev_history_with_empty
+    Reline::HISTORY.concat([
+      '12356', # old
+      '12aaa',
+      '12345' # new
+    ])
+    # The ed_search_prev_history doesn't have default binding
+    @line_editor.__send__(:ed_search_prev_history, "\C-p".ord)
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(5)
+    assert_line('12345')
+    @line_editor.__send__(:ed_search_prev_history, "\C-p".ord)
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(5)
+    assert_line('12aaa')
+    @line_editor.__send__(:ed_search_prev_history, "\C-p".ord)
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(5)
+    assert_line('12356')
+    @line_editor.__send__(:ed_search_prev_history, "\C-p".ord)
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(5)
+    assert_line('12356')
+  end
+
+  def test_ed_search_prev_history_without_match
+    Reline::HISTORY.concat([
+      '12356', # old
+      '12aaa',
+      '12345' # new
+    ])
+    input_keys('ABC')
+    # The ed_search_prev_history doesn't have default binding
+    @line_editor.__send__(:ed_search_prev_history, "\C-p".ord)
+    assert_byte_pointer_size('ABC')
+    assert_cursor(3)
+    assert_cursor_max(3)
+    assert_line('ABC')
+  end
+
 =begin # TODO: move KeyStroke instance from Reline to LineEditor
   def test_key_delete
     input_keys('ab')
