@@ -9573,10 +9573,10 @@ gc_raise(VALUE exc, const char *fmt, ...)
         /* Not in a ruby thread */
         fprintf(stderr, "%s", "[FATAL] ");
         vfprintf(stderr, fmt, ap);
-        abort();
     }
 
     va_end(ap);
+    abort();
 }
 
 static void objspace_xfree(rb_objspace_t *objspace, void *ptr, size_t size);
