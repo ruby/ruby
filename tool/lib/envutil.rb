@@ -137,8 +137,10 @@ module EnvUtil
     args = [args] if args.kind_of?(String)
     pid = spawn(child_env, *precommand, rubybin, *args, **opt)
     in_c.close
-    out_c.close if capture_stdout
-    err_c.close if capture_stderr && capture_stderr != :merge_to_stdout
+    out_c&.close
+    out_c = nil
+    err_c&.close
+    err_c = nil
     if block_given?
       return yield in_p, out_p, err_p, pid
     else
