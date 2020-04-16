@@ -24,14 +24,13 @@
 #include "ruby/3/compiler_since.h"
 #include "ruby/3/token_paste.h"
 
-#ifndef __has_attribute
-# /* Don't bother. */
-#elif RUBY3_COMPILER_IS(GCC) && ! __has_attribute(pure)
-# /* FreeBSD's   <sys/cdefs.h>   defines   its    own   *broken*   version   of
-#  * __has_attribute.  Cygwin copied that content to be a victim of the broken-
-#  * ness.  We don't take them into account. */
-#else
-# define RUBY3_HAVE___HAS_ATTRIBUTE 1
+#if defined(__has_attribute)
+# if __has_attribute(pure) || RUBY3_COMPILER_IS(GCC)
+#  /* FreeBSD's   <sys/cdefs.h>   defines   its   own   *broken*   version   of
+#   * __has_attribute.   Cygwin copied  that  content  to be  a  victim of  the
+#   * broken-ness.  We don't take them into account. */
+#  define RUBY3_HAVE___HAS_ATTRIBUTE 1
+# endif
 #endif
 
 /** Wraps (or simulates) `__has_attribute`. */
