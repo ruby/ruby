@@ -6298,9 +6298,8 @@ unescape_ascii(unsigned int c)
 	return '\007';
       case 'e':
 	return 033;
-      default:
-	UNREACHABLE;
     }
+    UNREACHABLE_RETURN(-1);
 }
 
 static void
