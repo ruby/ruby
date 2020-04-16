@@ -342,6 +342,9 @@ class TestProcess < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, /fo=fo/) {
       system({"fo=fo"=>"ha"}, *ENVCOMMAND)
     }
+    assert_raise_with_message(ArgumentError, /\u{30c0}=\u{30e1}/) {
+      system({"\u{30c0}=\u{30e1}"=>"ha"}, *ENVCOMMAND)
+    }
   end
 
   def test_execopt_env_path

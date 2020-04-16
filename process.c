@@ -2325,7 +2325,7 @@ check_exec_env_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
 
     k = StringValueCStr(key);
     if (strchr(k, '='))
-        rb_raise(rb_eArgError, "environment name contains a equal : %s", k);
+        rb_raise(rb_eArgError, "environment name contains a equal : %"PRIsVALUE, key);
 
     if (!NIL_P(val))
         StringValueCStr(val);
