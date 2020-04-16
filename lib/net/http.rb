@@ -773,7 +773,7 @@ module Net   #:nodoc:
     # Net::WriteTimeout is not raised on Windows.
     attr_reader :write_timeout
 
-    # Maximum number of times to retry an idempotent request in case of
+    # Maximum number of times to retry a safe request in case of
     # Net::ReadTimeout, IOError, EOFError, Errno::ECONNRESET,
     # Errno::ECONNABORTED, Errno::EPIPE, OpenSSL::SSL::SSLError,
     # Timeout::Error.
@@ -1532,7 +1532,7 @@ module Net   #:nodoc:
       res
     end
 
-    IDEMPOTENT_METHODS_ = %w/GET HEAD PUT DELETE OPTIONS TRACE/ # :nodoc:
+    SAFE_METHODS_ = %w/GET HEAD OPTIONS/ # :nodoc:
 
     def transport_request(req)
       count = 0
@@ -1565,7 +1565,7 @@ module Net   #:nodoc:
              # avoid a dependency on OpenSSL
              defined?(OpenSSL::SSL) ? OpenSSL::SSL::SSLError : IOError,
              Timeout::Error => exception
-        if count < max_retries && IDEMPOTENT_METHODS_.include?(req.method)
+        if count < max_retries && SAFE_METHODS_.include?(req.method)
           count += 1
           @socket.close if @socket
           D "Conn close because of error #{exception}, and retry"
