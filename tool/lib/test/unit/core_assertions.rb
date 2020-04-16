@@ -291,6 +291,7 @@ eom
         args = args.dup
         args.insert((Hash === args.first ? 1 : 0), "-w", "--disable=gems", *$:.map {|l| "-I#{l}"})
         stdout, stderr, status = EnvUtil.invoke_ruby(args, src, capture_stdout, true, **opt)
+      ensure
         if res_c
           res_c.close
           res = res_p.read
@@ -298,6 +299,7 @@ eom
         else
           res = stdout
         end
+        raise if $!
         abort = status.coredump? || (status.signaled? && ABORT_SIGNALS.include?(status.termsig))
         assert(!abort, FailDesc[status, nil, stderr])
         self._assertions += res[/^assertions=(\d+)/, 1].to_i
