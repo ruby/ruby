@@ -338,6 +338,10 @@ class TestProcess < Test::Unit::TestCase
     ensure
       ENV["hmm"] = old
     end
+
+    assert_raise_with_message(ArgumentError, /fo=fo/) {
+      system({"fo=fo"=>"ha"}, *ENVCOMMAND)
+    }
   end
 
   def test_execopt_env_path
