@@ -1,0 +1,26 @@
+benchmark:
+  kwargs: |
+    begin
+      raise "benchmark"
+    rescue => e
+      e.full_message(highlight: true, order: :bottom)
+    end
+  nokwargs: |
+    begin
+      raise "benchmark"
+    rescue => e
+      e.full_message
+    end
+  highlight: |
+    begin
+      raise "benchmark"
+    rescue => e
+      e.full_message(highlight: true)
+    end
+  order: |
+    begin
+      raise "benchmark"
+    rescue => e
+      e.full_message(order: :bottom)
+    end
+loop_count: 10000

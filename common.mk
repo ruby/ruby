@@ -998,6 +998,7 @@ $(srcs_vpath)mjit_compile.inc: $(tooldir)/ruby_vm/views/mjit_compile.inc.erb $(i
 
 BUILTIN_RB_SRCS = \
 		$(srcdir)/ast.rb \
+		$(srcdir)/exception.rb \
 		$(srcdir)/gc.rb \
 		$(srcdir)/io.rb \
 		$(srcdir)/dir.rb \
@@ -5175,6 +5176,7 @@ error.$(OBJEXT): {$(VPATH)}defines.h
 error.$(OBJEXT): {$(VPATH)}encoding.h
 error.$(OBJEXT): {$(VPATH)}error.c
 error.$(OBJEXT): {$(VPATH)}eval_intern.h
+error.$(OBJEXT): {$(VPATH)}exception.rbinc
 error.$(OBJEXT): {$(VPATH)}id.h
 error.$(OBJEXT): {$(VPATH)}id_table.h
 error.$(OBJEXT): {$(VPATH)}intern.h
@@ -8201,6 +8203,7 @@ miniinit.$(OBJEXT): {$(VPATH)}config.h
 miniinit.$(OBJEXT): {$(VPATH)}defines.h
 miniinit.$(OBJEXT): {$(VPATH)}dir.rb
 miniinit.$(OBJEXT): {$(VPATH)}encoding.h
+miniinit.$(OBJEXT): {$(VPATH)}exception.rb
 miniinit.$(OBJEXT): {$(VPATH)}gc.rb
 miniinit.$(OBJEXT): {$(VPATH)}gem_prelude.rb
 miniinit.$(OBJEXT): {$(VPATH)}id.h

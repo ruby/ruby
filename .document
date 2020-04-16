@@ -12,6 +12,7 @@ prelude.rb
 rbconfig.rb
 array.rb
 ast.rb
+exception.rb
 dir.rb
 gc.rb
 io.rb
