@@ -1605,6 +1605,22 @@ class TestProcess < Test::Unit::TestCase
   rescue NotImplementedError
   end
 
+  if Process::UID.respond_to?(:from_name)
+    def test_uid_from_name
+      if u = Etc.getpwuid(Process.uid)
+        assert_equal(Process.uid, Process::UID.from_name(u.name), u.name)
+      end
+    end
+  end
+
+  if Process::GID.respond_to?(:from_name)
+    def test_gid_from_name
+      if g = Etc.getgrgid(Process.gid)
+        assert_equal(Process.gid, Process::GID.from_name(g.name), g.name)
+      end
+    end
+  end
+
   def test_uid_re_exchangeable_p
     r = Process::UID.re_exchangeable?
     assert_include([true, false], r)
