@@ -3958,7 +3958,7 @@ disable_child_handler_fork_child(struct child_handler_disabler_state *old, char 
 }
 
 COMPILER_WARNING_PUSH
-#ifdef __GNUC__
+#if __has_warning("-Wdeprecated-declarations") || RUBY3_COMPILER_IS(GCC)
 COMPILER_WARNING_IGNORED(-Wdeprecated-declarations)
 #endif
 static rb_pid_t
@@ -4076,7 +4076,7 @@ rb_fork_async_signal_safe(int *status,
 }
 
 COMPILER_WARNING_PUSH
-#ifdef __GNUC__
+#if __has_warning("-Wdeprecated-declarations") || RUBY3_COMPILER_IS(GCC)
 COMPILER_WARNING_IGNORED(-Wdeprecated-declarations)
 #endif
 rb_pid_t

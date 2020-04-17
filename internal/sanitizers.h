@@ -46,7 +46,7 @@
 # define ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(x) x
 #endif
 
-#if defined(NO_SANITIZE) && defined(__GNUC__) &&! defined(__clang__)
+#if defined(NO_SANITIZE) && RUBY3_COMPILER_IS(GCC)
 /* GCC warns about unknown sanitizer, which is annoying. */
 # include "internal/warnings.h"
 # undef NO_SANITIZE
