@@ -4692,11 +4692,6 @@ InitVM_Object(void)
     rb_define_method(rb_cNilClass, "nil?", rb_true, 0);
     rb_undef_alloc_func(rb_cNilClass);
     rb_undef_method(CLASS_OF(rb_cNilClass), "new");
-    /*
-     * An obsolete alias of +nil+
-     */
-    rb_define_global_const("NIL", Qnil);
-    rb_deprecate_constant(rb_cObject, "NIL");
 
     rb_define_method(rb_cModule, "freeze", rb_mod_freeze, 0);
     rb_define_method(rb_cModule, "===", rb_mod_eqq, 1);
@@ -4781,11 +4776,6 @@ InitVM_Object(void)
     rb_define_method(rb_cTrueClass, "===", rb_equal, 1);
     rb_undef_alloc_func(rb_cTrueClass);
     rb_undef_method(CLASS_OF(rb_cTrueClass), "new");
-    /*
-     * An obsolete alias of +true+
-     */
-    rb_define_global_const("TRUE", Qtrue);
-    rb_deprecate_constant(rb_cObject, "TRUE");
 
     rb_cFalseClass = rb_define_class("FalseClass", rb_cObject);
     rb_cFalseClass_to_s = rb_fstring_enc_lit("false", rb_usascii_encoding());
@@ -4798,11 +4788,6 @@ InitVM_Object(void)
     rb_define_method(rb_cFalseClass, "===", rb_equal, 1);
     rb_undef_alloc_func(rb_cFalseClass);
     rb_undef_method(CLASS_OF(rb_cFalseClass), "new");
-    /*
-     * An obsolete alias of +false+
-     */
-    rb_define_global_const("FALSE", Qfalse);
-    rb_deprecate_constant(rb_cObject, "FALSE");
 }
 
 #include "kernel.rbinc"
