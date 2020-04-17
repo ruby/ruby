@@ -32,6 +32,7 @@
 #include "builtin.h"
 
 #if !ARRAY_DEBUG
+# undef NDEBUG
 # define NDEBUG
 #endif
 #include "ruby_assert.h"

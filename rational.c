@@ -20,6 +20,7 @@
 #include <gmp.h>
 #endif
 
+#undef NDEBUG
 #define NDEBUG
 #include "id.h"
 #include "internal.h"

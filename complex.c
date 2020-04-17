@@ -15,6 +15,7 @@
 #include <ctype.h>
 #include <math.h>
 
+#undef NDEBUG
 #define NDEBUG
 #include "id.h"
 #include "internal.h"

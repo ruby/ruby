@@ -7,6 +7,7 @@
 #endif
 
 #if ID_TABLE_DEBUG == 0
+#undef NDEBUG
 #define NDEBUG
 #endif
 #include "ruby_assert.h"
