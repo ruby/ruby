@@ -163,7 +163,7 @@ Excluding feature bug fixes.
 * C API functions related to $SAFE have been removed.
   [[Feature #16131]]
 
-* C API header file `ruby/ruby.h` was split. [[GH-2991]] Should have no implact
+* C API header file `ruby/ruby.h` was split. [[GH-2991]] Should have no impact
   on extension libraries, but users might experience slow compilations.
 
 ## Implementation improvements
