@@ -152,6 +152,8 @@ Excluding feature bug fixes.
 * When writing to STDOUT redirected to a closed pipe, no broken pipe
   error message will be shown now.  [[Feature #14413]]
 
+* `TRUE`/`FALSE`/`NIL` constants are no longer defined.
+
 ## Stdlib compatibility issues
 
 Excluding feature bug fixes.
