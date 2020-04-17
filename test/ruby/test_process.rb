@@ -1616,7 +1616,7 @@ class TestProcess < Test::Unit::TestCase
     end
   end
 
-  if Process::GID.respond_to?(:from_name)
+  if Process::GID.respond_to?(:from_name) && !RUBY_PLATFORM.include?("android")
     def test_gid_from_name
       if g = Etc.getgrgid(Process.gid)
         assert_equal(Process.gid, Process::GID.from_name(g.name), g.name)
