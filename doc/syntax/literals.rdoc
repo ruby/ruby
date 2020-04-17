@@ -20,9 +20,6 @@ Literals create objects you can use in your program.  Literals include:
 +true+ is a true value.  All objects except +nil+ and +false+ evaluate to a
 true value in conditional expressions.
 
-(There are also the constants +TRUE+, +FALSE+ and +NIL+, but the lowercase
-literal forms are preferred.)
-
 == Numbers
 
 You can write integers of any size as follows:
