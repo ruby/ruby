@@ -154,6 +154,8 @@ class TestGemUninstaller < Gem::InstallerTestCase
   end
 
   def test_remove_symlinked_gem_home
+    skip "Symlinks not supported or not enabled" unless symlink_supported?
+
     Dir.mktmpdir("gem_home") do |dir|
       symlinked_gem_home = "#{dir}/#{File.basename(@gemhome)}"
 
