@@ -406,8 +406,8 @@ class TestEnv < Test::Unit::TestCase
 
   def check(as, bs)
     if IGNORE_CASE
-      as = as.map {|xs| xs.map {|x| x.upcase } }
-      bs = bs.map {|xs| xs.map {|x| x.upcase } }
+      as = as.map {|k, v| [k.upcase, v] }
+      bs = bs.map {|k, v| [k.upcase, v] }
     end
     assert_equal(as.sort, bs.sort)
   end
