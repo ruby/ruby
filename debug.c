@@ -44,6 +44,7 @@ const union {
     enum ruby_method_ids        method_ids;
     enum ruby_id_types          id_types;
     enum ruby_fl_type           fl_types;
+    enum ruby_fl_ushift         fl_ushift;
     enum ruby_encoding_consts   encoding_consts;
     enum ruby_coderange_type    enc_coderange_types;
     enum ruby_econv_flag_type   econv_flag_types;

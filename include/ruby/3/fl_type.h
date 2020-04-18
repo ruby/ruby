@@ -146,7 +146,7 @@
 /** @} */
 
 /* This is an enum because GDB wants it (rather than a macro) */
-enum { RUBY_FL_USHIFT = 12 };
+enum ruby_fl_ushift { RUBY_FL_USHIFT = 12 };
 
 /* > The expression that defines the value  of an enumeration constant shall be
  * > an integer constant expression that has a value representable as an `int`.

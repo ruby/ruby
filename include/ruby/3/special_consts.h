@@ -82,7 +82,7 @@ ruby_special_consts {
     RUBY_FIXNUM_FLAG    = 0x01, /* ...xxxx xxx1 */
     RUBY_FLONUM_MASK    = 0x03, /* ...0000 0011 */
     RUBY_FLONUM_FLAG    = 0x02, /* ...xxxx xx10 */
-    RUBY_SYMBOL_FLAG    = 0x0c  /* ...xxxx 1100 */
+    RUBY_SYMBOL_FLAG    = 0x0c, /* ...xxxx 1100 */
 #else
     RUBY_Qfalse         = 0x00, /* ...0000 0000 */
     RUBY_Qtrue          = 0x02, /* ...0000 0010 */
@@ -92,12 +92,11 @@ ruby_special_consts {
     RUBY_FIXNUM_FLAG    = 0x01, /* ...xxxx xxx1 */
     RUBY_FLONUM_MASK    = 0x00, /* any values ANDed with FLONUM_MASK cannot be FLONUM_FLAG */
     RUBY_FLONUM_FLAG    = 0x02, /* ...0000 0010 */
-    RUBY_SYMBOL_FLAG    = 0x0e  /* ...0000 1110 */
+    RUBY_SYMBOL_FLAG    = 0x0e, /* ...0000 1110 */
 #endif
-};
 
-/** Least significant 8 bits are reserved. */
-enum { RUBY_SPECIAL_SHIFT  = 8 };
+    RUBY_SPECIAL_SHIFT  = 8 /** Least significant 8 bits are reserved. */
+};
 
 RUBY3_ATTR_CONST()
 RUBY3_ATTR_CONSTEXPR(CXX11)
