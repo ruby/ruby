@@ -719,6 +719,16 @@ class TestJIT < Test::Unit::TestCase
     end
   end
 
+  def test_newarraykwsplat_on_stack
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "[nil, [{:type=>:development}]]\n", success_count: 1, insns: %i[newarraykwsplat])
+    begin;
+      def arr
+        [nil, [:type => :development]]
+      end
+      p arr
+    end;
+  end
+
   def test_local_stack_on_exception
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '3', success_count: 2)
     begin;

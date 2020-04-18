@@ -101,7 +101,7 @@
 %         # #define STACK_ADDR_FROM_TOP(n) (GET_SP()-(n))
 %         num = Regexp.last_match[:num]
         fprintf(f, <%= to_cstr.call(line.sub(/\bSTACK_ADDR_FROM_TOP\(([^)]+)\)/, '%s')) %>,
-                (status->local_stack_p ? "stack + (stack_size - (<%= num %>))" : "STACK_ADDR_FROM_TOP(<%= num %>)"));
+                (status->local_stack_p ? "(stack + (stack_size - (<%= num %>)))" : "STACK_ADDR_FROM_TOP(<%= num %>)"));
 %       when /\bTOPN\((?<num>[^)]+)\)/
 %         # #define TOPN(n) (*(GET_SP()-(n)-1))
 %         num = Regexp.last_match[:num]
