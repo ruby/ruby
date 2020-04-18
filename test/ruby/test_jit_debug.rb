@@ -8,9 +8,7 @@ return if /mswin/ =~ RUBY_PLATFORM
 
 class TestJITDebug < TestJIT
   def setup
-    unless JITSupport.supported?
-      skip 'JIT seems not supported on this platform'
-    end
+    super
     # let `#eval_with_jit` use --jit-debug
     @jit_debug = true
   end
