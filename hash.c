@@ -5336,17 +5336,21 @@ env_aset(VALUE nm, VALUE val)
 }
 
 static VALUE
-env_keys(void)
+env_keys(int raw)
 {
     char **env;
     VALUE ary;
+    rb_encoding *enc = raw ? 0 : rb_locale_encoding();
 
     ary = rb_ary_new();
     env = GET_ENVIRON(environ);
     while (*env) {
 	char *s = strchr(*env, '=');
 	if (s) {
-	    rb_ary_push(ary, env_str_new(*env, s-*env));
+            const char *p = *env;
+            size_t l = s - p;
+            VALUE e = raw ? rb_utf8_str_new(p, l) : env_enc_str_new(p, l, enc);
+            rb_ary_push(ary, e);
 	}
 	env++;
     }
@@ -5372,7 +5376,7 @@ env_keys(void)
 static VALUE
 env_f_keys(VALUE _)
 {
-    return env_keys();
+    return env_keys(FALSE);
 }
 
 static VALUE
@@ -5415,7 +5419,7 @@ env_each_key(VALUE ehash)
     long i;
 
     RETURN_SIZED_ENUMERATOR(ehash, 0, 0, rb_env_size);
-    keys = env_keys();
+    keys = env_keys(FALSE);
     for (i=0; i<RARRAY_LEN(keys); i++) {
 	rb_yield(RARRAY_AREF(keys, i));
     }
@@ -5574,7 +5578,7 @@ env_reject_bang(VALUE ehash)
     int del = 0;
 
     RETURN_SIZED_ENUMERATOR(ehash, 0, 0, rb_env_size);
-    keys = env_keys();
+    keys = env_keys(FALSE);
     RBASIC_CLEAR_CLASS(keys);
     for (i=0; i<RARRAY_LEN(keys); i++) {
 	VALUE val = rb_f_getenv(Qnil, RARRAY_AREF(keys, i));
@@ -5679,7 +5683,7 @@ env_select(VALUE ehash)
 
     RETURN_SIZED_ENUMERATOR(ehash, 0, 0, rb_env_size);
     result = rb_hash_new();
-    keys = env_keys();
+    keys = env_keys(FALSE);
     for (i = 0; i < RARRAY_LEN(keys); ++i) {
 	VALUE key = RARRAY_AREF(keys, i);
 	VALUE val = rb_f_getenv(Qnil, key);
@@ -5739,7 +5743,7 @@ env_select_bang(VALUE ehash)
     int del = 0;
 
     RETURN_SIZED_ENUMERATOR(ehash, 0, 0, rb_env_size);
-    keys = env_keys();
+    keys = env_keys(FALSE);
     RBASIC_CLEAR_CLASS(keys);
     for (i=0; i<RARRAY_LEN(keys); i++) {
 	VALUE val = rb_f_getenv(Qnil, RARRAY_AREF(keys, i));
@@ -5820,7 +5824,7 @@ rb_env_clear(void)
     VALUE keys;
     long i;
 
-    keys = env_keys();
+    keys = env_keys(TRUE);
     for (i=0; i<RARRAY_LEN(keys); i++) {
 	VALUE val = rb_f_getenv(Qnil, RARRAY_AREF(keys, i));
 	if (!NIL_P(val)) {
@@ -6395,7 +6399,7 @@ env_replace(VALUE env, VALUE hash)
     VALUE keys;
     long i;
 
-    keys = env_keys();
+    keys = env_keys(TRUE);
     if (env == hash) return env;
     hash = to_hash(hash);
     rb_hash_foreach(hash, env_replace_i, keys);
