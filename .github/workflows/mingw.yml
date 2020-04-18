@@ -2,10 +2,7 @@ name: MinGW
 on: [push, pull_request]
 
 # Notes:
-# Action ENV TEMP and TMP are short 8.3 paths, but the long path differs.
-#  Code uses TMPDIR, which is Ruby's 'first' check
-#
-# Console encoding causes issues, see test-all & test-spec steps
+# Actions console encoding causes issues, see test-all & test-spec steps
 #
 jobs:
   make:
@@ -46,11 +43,10 @@ jobs:
         shell: bash
         id: commit_info
       - name: Set up Ruby & MSYS2
-        uses: MSP-Greg/actions-ruby@master
+        uses: MSP-Greg/setup-ruby-pkgs@v1
         with:
-          ruby-version: 2.6.x
-          base: update
-          mingw: gdbm gmp libffi libyaml openssl ragel readline
+          ruby-version: 2.6
+          mingw: _upgrade_ gdbm gmp libffi libyaml openssl ragel readline
           msys2: automake1.16 bison
       - name: where check
         run: |
@@ -110,14 +106,12 @@ jobs:
         timeout-minutes: 5
         working-directory: build
         run: |
-          $env:TMPDIR = "$pwd/../temp"
           make test
 
       - name: test-all
         timeout-minutes: 50
         working-directory: build
         run: |
-          $env:TMPDIR = "$pwd/../temp"
           # Actions uses UTF8, causes test failures, similar to normal OS setup
           $PSDefaultParameterValues['*:Encoding'] = 'utf8'
           [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding("IBM437")
@@ -129,8 +123,7 @@ jobs:
         timeout-minutes: 10
         working-directory: src/spec/ruby
         run: |
-          $env:TMPDIR = "$pwd/../../../temp"
-          $env:PATH = "$pwd/../../../install/bin;$env:PATH"
+          $env:Path = "$pwd/../../../install/bin;$env:Path"
           # Actions uses UTF8, causes test failures, similar to normal OS setup
           $PSDefaultParameterValues['*:Encoding'] = 'utf8'
           [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding("IBM437")
