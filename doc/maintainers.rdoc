@@ -350,7 +350,7 @@ Zachary Scott (zzak)
 [minitest]
   https://github.com/seattlerb/minitest
 [power_assert]
-  https://github.com/k-tsj/power_assert
+  https://github.com/ruby/power_assert
 [rake]
   https://github.com/ruby/rake
 [test-unit]
