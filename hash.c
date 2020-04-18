@@ -4881,14 +4881,9 @@ env_name(volatile VALUE *s)
 
 static VALUE env_aset(VALUE nm, VALUE val);
 
-static VALUE
-env_delete(VALUE name)
+static void
+reset_by_modified_env(const char *nam)
 {
-    const char *nam, *val;
-
-    nam = env_name(name);
-    val = getenv(nam);
-
     /*
      * ENV['TZ'] = nil has a special meaning.
      * TZ is no longer considered up-to-date and ruby call tzset() as needed.
@@ -4898,6 +4893,15 @@ env_delete(VALUE name)
     if (ENVMATCH(nam, TZ_ENV)) {
         ruby_reset_timezone();
     }
+}
+
+static VALUE
+env_delete(VALUE name)
+{
+    const char *nam = env_name(name);
+    const char *val = getenv(nam);
+
+    reset_by_modified_env(nam);
 
     if (val) {
 	VALUE value = env_str_new2(val);
@@ -5327,9 +5331,7 @@ env_aset(VALUE nm, VALUE val)
     if (ENVMATCH(name, PATH_ENV)) {
 	RB_GC_GUARD(nm);
     }
-    else if (ENVMATCH(name, TZ_ENV)) {
-        ruby_reset_timezone();
-    }
+    reset_by_modified_env(name);
     return val;
 }
 
