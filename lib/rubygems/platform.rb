@@ -150,7 +150,7 @@ class Gem::Platform
 
     # cpu
     ([nil,'universal'].include?(@cpu) or [nil, 'universal'].include?(other.cpu) or @cpu == other.cpu or
-    (@cpu == 'arm' and other.cpu =~ /\Aarm/)) and
+    (@cpu == 'arm' and other.cpu.start_with?("arm"))) and
 
     # os
     @os == other.os and

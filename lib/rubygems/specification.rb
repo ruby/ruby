@@ -1151,7 +1151,7 @@ class Gem::Specification < Gem::BasicSpecification
 
   def self.normalize_yaml_input(input)
     result = input.respond_to?(:read) ? input.read : input
-    result = "--- " + result unless result =~ /\A--- /
+    result = "--- " + result unless result.start_with?("--- ")
     result = result.dup
     result.gsub!(/ !!null \n/, " \n")
     # date: 2011-04-26 00:00:00.000000000Z
@@ -2104,7 +2104,7 @@ class Gem::Specification < Gem::BasicSpecification
     end
 
     if @specification_version > CURRENT_SPECIFICATION_VERSION and
-        sym.to_s.end_with?("=")
+      sym.to_s.end_with?("=")
       warn "ignoring #{sym} loading #{full_name}" if $DEBUG
     else
       super
