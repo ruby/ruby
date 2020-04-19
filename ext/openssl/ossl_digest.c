@@ -362,43 +362,6 @@ Init_ossl_digest(void)
      *
      *   digest = OpenSSL::Digest.new('SHA256')
      *
-     * === Mapping between Digest class and sn/ln
-     *
-     * The sn (short names) and ln (long names) are defined in
-     * <openssl/object.h> and <openssl/obj_mac.h>. They are textual
-     * representations of ASN.1 OBJECT IDENTIFIERs. Each supported digest
-     * algorithm has an OBJECT IDENTIFIER associated to it and those again
-     * have short/long names assigned to them.
-     * E.g. the OBJECT IDENTIFIER for SHA-1 is 1.3.14.3.2.26 and its
-     * sn is "SHA1" and its ln is "sha1".
-     * ==== MD2
-     * * sn: MD2
-     * * ln: md2
-     * ==== MD4
-     * * sn: MD4
-     * * ln: md4
-     * ==== MD5
-     * * sn: MD5
-     * * ln: md5
-     * ==== SHA
-     * * sn: SHA
-     * * ln: SHA
-     * ==== SHA-1
-     * * sn: SHA1
-     * * ln: sha1
-     * ==== SHA-224
-     * * sn: SHA224
-     * * ln: sha224
-     * ==== SHA-256
-     * * sn: SHA256
-     * * ln: sha256
-     * ==== SHA-384
-     * * sn: SHA384
-     * * ln: sha384
-     * ==== SHA-512
-     * * sn: SHA512
-     * * ln: sha512
-     *
      * "Breaking" a message digest algorithm means defying its one-way
      * function characteristics, i.e. producing a collision or finding a way
      * to get to the original data by means that are more efficient than
