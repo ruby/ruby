@@ -127,6 +127,23 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     util_test_build_gem @gem
   end
 
+  def test_execute_rubyforge_project_warning
+    rubyforge_gemspec = File.join SPECIFICATIONS, "rubyforge-0.0.1.gemspec"
+
+    @cmd.options[:args] = [rubyforge_gemspec]
+
+    use_ui @ui do
+      Dir.chdir @tempdir do
+        @cmd.execute
+      end
+    end
+
+    error = @ui.error.split("\n")
+    assert_equal "WARNING:  rubyforge_project= is deprecated and ignored. Please remove this from your gemspec to ensure that your gem continues to build in the future.", error.shift
+    assert_equal "WARNING:  See https://guides.rubygems.org/specification-reference/ for help", error.shift
+    assert_equal [], error
+  end
+
   def test_execute_strict_with_warnings
     bad_gem = util_spec 'some_bad_gem' do |s|
       s.files = ['README.md']
