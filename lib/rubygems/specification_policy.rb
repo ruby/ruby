@@ -21,8 +21,6 @@ class Gem::SpecificationPolicy
     funding_uri
   ].freeze # :nodoc:
 
-  DEPRECATED_ATTRIBUTES = [:rubyforge_project].freeze #:nodoc:
-
   def initialize(specification)
     @warnings = 0
 
@@ -78,7 +76,7 @@ class Gem::SpecificationPolicy
 
     validate_dependencies
 
-    validate_deprecated_attributes
+    validate_removed_attributes
 
     if @warnings > 0
       if strict
@@ -413,9 +411,9 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
     warning "#{executable_path} is missing #! line"
   end
 
-  def validate_deprecated_attributes # :nodoc:
-    DEPRECATED_ATTRIBUTES.each do |attr|
-      warning("#{attr} is deprecated") unless @specification.send(attr).nil?
+  def validate_removed_attributes # :nodoc:
+    @specification.removed_method_calls.each do |attr|
+      warning("#{attr} is deprecated and ignored. Please remove this from your gemspec to ensure that your gem continues to build in the future.")
     end
   end
 
