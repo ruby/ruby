@@ -36,8 +36,8 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
     cipher.pkcs5_keyivgen(pass, salt, num, "MD5")
     s1 = cipher.update(pt) << cipher.final
 
-    d1 = num.times.inject(pass + salt) {|out, _| OpenSSL::Digest::MD5.digest(out) }
-    d2 = num.times.inject(d1 + pass + salt) {|out, _| OpenSSL::Digest::MD5.digest(out) }
+    d1 = num.times.inject(pass + salt) {|out, _| OpenSSL::Digest.digest('MD5', out) }
+    d2 = num.times.inject(d1 + pass + salt) {|out, _| OpenSSL::Digest.digest('MD5', out) }
     key = (d1 + d2)[0, 24]
     iv = (d1 + d2)[24, 8]
     cipher = new_encryptor("DES-EDE3-CBC", key: key, iv: iv)

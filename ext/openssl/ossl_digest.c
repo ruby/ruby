@@ -192,7 +192,7 @@ ossl_digest_reset(VALUE self)
  * be passed individually to the Digest instance.
  *
  * === Example
- *   digest = OpenSSL::Digest::SHA256.new
+ *   digest = OpenSSL::Digest.new('SHA256')
  *   digest.update('First input')
  *   digest << 'Second input' # equivalent to digest.update('Second input')
  *   result = digest.digest
@@ -248,7 +248,7 @@ ossl_digest_finish(int argc, VALUE *argv, VALUE self)
  * Returns the sn of this Digest algorithm.
  *
  * === Example
- *   digest = OpenSSL::Digest::SHA512.new
+ *   digest = OpenSSL::Digest.new('SHA512')
  *   puts digest.name # => SHA512
  *
  */
@@ -270,7 +270,7 @@ ossl_digest_name(VALUE self)
  * final message digest result.
  *
  * === Example
- *   digest = OpenSSL::Digest::SHA1.new
+ *   digest = OpenSSL::Digest.new('SHA1')
  *   puts digest.digest_length # => 20
  *
  */
@@ -294,7 +294,7 @@ ossl_digest_size(VALUE self)
  * consecutively.
  *
  * === Example
- *   digest = OpenSSL::Digest::SHA1.new
+ *   digest = OpenSSL::Digest.new('SHA1')
  *   puts digest.block_length # => 64
  */
 static VALUE
@@ -348,15 +348,19 @@ Init_ossl_digest(void)
      * the integrity of a signed document, it suffices to re-compute the hash
      * and verify that it is equal to that in the signature.
      *
-     * Among the supported message digest algorithms are:
-     * * SHA, SHA1, SHA224, SHA256, SHA384 and SHA512
-     * * MD2, MD4, MDC2 and MD5
-     * * RIPEMD160
+     * You can get a list of all digest algorithms supported on your system by
+     * running this command in your terminal:
      *
-     * For each of these algorithms, there is a sub-class of Digest that
-     * can be instantiated as simply as e.g.
+     *   openssl list -digest-algorithms
      *
-     *   digest = OpenSSL::Digest::SHA1.new
+     * Among the OpenSSL 1.1.1 supported message digest algorithms are:
+     * * SHA224, SHA256, SHA384, SHA512, SHA512-224 and SHA512-256
+     * * SHA3-224, SHA3-256, SHA3-384 and SHA3-512
+     * * BLAKE2s256 and BLAKE2b512
+     *
+     * Each of these algorithms can be instantiated using the name:
+     *
+     *   digest = OpenSSL::Digest.new('SHA256')
      *
      * === Mapping between Digest class and sn/ln
      *
@@ -406,7 +410,7 @@ Init_ossl_digest(void)
      * === Hashing a file
      *
      *   data = File.read('document')
-     *   sha256 = OpenSSL::Digest::SHA256.new
+     *   sha256 = OpenSSL::Digest.new('SHA256')
      *   digest = sha256.digest(data)
      *
      * === Hashing several pieces of data at once
@@ -414,7 +418,7 @@ Init_ossl_digest(void)
      *   data1 = File.read('file1')
      *   data2 = File.read('file2')
      *   data3 = File.read('file3')
-     *   sha256 = OpenSSL::Digest::SHA256.new
+     *   sha256 = OpenSSL::Digest.new('SHA256')
      *   sha256 << data1
      *   sha256 << data2
      *   sha256 << data3
@@ -423,7 +427,7 @@ Init_ossl_digest(void)
      * === Reuse a Digest instance
      *
      *   data1 = File.read('file1')
-     *   sha256 = OpenSSL::Digest::SHA256.new
+     *   sha256 = OpenSSL::Digest.new('SHA256')
      *   digest1 = sha256.digest(data1)
      *
      *   data2 = File.read('file2')

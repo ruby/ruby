@@ -161,7 +161,7 @@ private
   end
 
   def fingerprint(der)
-    Digest::MD5.hexdigest(der).upcase
+    Digest.hexdigest('MD5', der).upcase
   end
 end
 

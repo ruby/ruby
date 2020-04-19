@@ -14,7 +14,7 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
       ["keyUsage","keyCertSign, cRLSign",true],
       ["subjectKeyIdentifier","hash",false],
     ]
-    dgst = OpenSSL::Digest::SHA1.new
+    dgst = OpenSSL::Digest.new('SHA1')
     cert = OpenSSL::TestUtils.issue_cert(
       subj, key, s, exts, nil, nil, digest: dgst, not_before: now, not_after: now+3600)
 
@@ -178,7 +178,7 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
     assert_equal(OpenSSL::ASN1::OctetString, ext.value[1].class)
     extv = OpenSSL::ASN1.decode(ext.value[1].value)
     assert_equal(OpenSSL::ASN1::OctetString, extv.class)
-    sha1 = OpenSSL::Digest::SHA1.new
+    sha1 = OpenSSL::Digest.new('SHA1')
     sha1.update(pkey.value[1].value)
     assert_equal(sha1.digest, extv.value)
 
@@ -189,7 +189,7 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
     assert_equal(OpenSSL::ASN1::Null, pkey.value[0].value[1].class)
 
     assert_equal(OpenSSL::ASN1::BitString, sig_val.class)
-    cululated_sig = key.sign(OpenSSL::Digest::SHA1.new, tbs_cert.to_der)
+    cululated_sig = key.sign(OpenSSL::Digest.new('SHA1'), tbs_cert.to_der)
     assert_equal(cululated_sig, sig_val.value)
   end
 

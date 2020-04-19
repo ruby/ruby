@@ -37,8 +37,8 @@ class OpenSSL::TestPKeyDSA < OpenSSL::PKeyTestCase
     dsa512 = Fixtures.pkey("dsa512")
     data = "Sign me!"
     if defined?(OpenSSL::Digest::DSS1)
-      signature = dsa512.sign(OpenSSL::Digest::DSS1.new, data)
-      assert_equal true, dsa512.verify(OpenSSL::Digest::DSS1.new, signature, data)
+      signature = dsa512.sign(OpenSSL::Digest.new('DSS1'), data)
+      assert_equal true, dsa512.verify(OpenSSL::Digest.new('DSS1'), signature, data)
     end
 
     signature = dsa512.sign("SHA1", data)
@@ -56,7 +56,7 @@ class OpenSSL::TestPKeyDSA < OpenSSL::PKeyTestCase
   def test_sys_sign_verify
     key = Fixtures.pkey("dsa256")
     data = 'Sign me!'
-    digest = OpenSSL::Digest::SHA1.digest(data)
+    digest = OpenSSL::Digest.digest('SHA1', data)
     sig = key.syssign(digest)
     assert(key.sysverify(digest, sig))
   end

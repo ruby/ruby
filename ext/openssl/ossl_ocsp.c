@@ -1719,7 +1719,7 @@ Init_ossl_ocsp(void)
      * subject certificate so the CA knows which certificate we are asking
      * about:
      *
-     *   digest = OpenSSL::Digest::SHA1.new
+     *   digest = OpenSSL::Digest.new('SHA1')
      *   certificate_id =
      *     OpenSSL::OCSP::CertificateId.new subject, issuer, digest
      *

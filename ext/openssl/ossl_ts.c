@@ -1281,7 +1281,7 @@ Init_ossl_ts(void)
      *      #Assumes ts.p12 is a PKCS#12-compatible file with a private key
      *      #and a certificate that has an extended key usage of 'timeStamping'
      *      p12 = OpenSSL::PKCS12.new(File.open('ts.p12', 'rb'), 'pwd')
-     *      md = OpenSSL::Digest::SHA1.new
+     *      md = OpenSSL::Digest.new('SHA1')
      *      hash = md.digest(data) #some binary data to be timestamped
      *      req = OpenSSL::Timestamp::Request.new
      *      req.algorithm = 'SHA1'
@@ -1498,8 +1498,8 @@ Init_ossl_ts(void)
      * Must be an Array of String or OpenSSL::Digest subclass instances.
      *
      * call-seq:
-     *       factory.allowed_digests = ["sha1", OpenSSL::Digest::SHA256.new] -> [ "sha1", OpenSSL::Digest::SHA256.new ]
-     *       factory.allowed_digests                                         -> array or nil
+     *       factory.allowed_digests = ["sha1", OpenSSL::Digest.new('SHA256').new] -> [ "sha1", OpenSSL::Digest) ]
+     *       factory.allowed_digests                                               -> array or nil
      *
      */
     cTimestampFactory = rb_define_class_under(mTimestamp, "Factory", rb_cObject);

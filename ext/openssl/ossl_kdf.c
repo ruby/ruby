@@ -272,7 +272,7 @@ Init_ossl_kdf(void)
      *   # store this with the generated value
      *   salt = OpenSSL::Random.random_bytes(16)
      *   iter = 20_000
-     *   hash = OpenSSL::Digest::SHA256.new
+     *   hash = OpenSSL::Digest.new('SHA256')
      *   len = hash.digest_length
      *   # the final value to be stored
      *   value = OpenSSL::KDF.pbkdf2_hmac(pass, salt: salt, iterations: iter,

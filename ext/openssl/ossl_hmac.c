@@ -353,7 +353,7 @@ Init_ossl_hmac(void)
      *   data1 = File.read("file1")
      *   data2 = File.read("file2")
      *   key = "key"
-     *   digest = OpenSSL::Digest::SHA256.new
+     *   digest = OpenSSL::Digest.new('SHA256')
      *   hmac = OpenSSL::HMAC.new(key, digest)
      *   hmac << data1
      *   hmac << data2

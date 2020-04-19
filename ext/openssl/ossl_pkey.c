@@ -430,7 +430,7 @@ ossl_pkey_public_to_pem(VALUE self)
  *
  * == Example
  *   data = 'Sign me!'
- *   digest = OpenSSL::Digest::SHA256.new
+ *   digest = OpenSSL::Digest.new('SHA256')
  *   pkey = OpenSSL::PKey::RSA.new(2048)
  *   signature = pkey.sign(digest, data)
  */
@@ -484,7 +484,7 @@ ossl_pkey_sign(VALUE self, VALUE digest, VALUE data)
  *
  * == Example
  *   data = 'Sign me!'
- *   digest = OpenSSL::Digest::SHA256.new
+ *   digest = OpenSSL::Digest.new('SHA256')
  *   pkey = OpenSSL::PKey::RSA.new(2048)
  *   signature = pkey.sign(digest, data)
  *   pub_key = pkey.public_key

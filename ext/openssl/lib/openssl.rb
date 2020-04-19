@@ -31,8 +31,8 @@ module OpenSSL
   # the length of the secret. Returns +true+ if the strings are identical,
   # +false+ otherwise.
   def self.secure_compare(a, b)
-    hashed_a = OpenSSL::Digest::SHA256.digest(a)
-    hashed_b = OpenSSL::Digest::SHA256.digest(b)
+    hashed_a = OpenSSL::Digest.digest('SHA256', a)
+    hashed_b = OpenSSL::Digest.digest('SHA256', b)
     OpenSSL.fixed_length_secure_compare(hashed_a, hashed_b) && a == b
   end
 end

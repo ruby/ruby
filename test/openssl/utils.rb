@@ -126,7 +126,7 @@ module OpenSSL::TestUtils
     pkinfo    = tbscert.value[6]
     publickey = pkinfo.value[1]
     pkvalue   = publickey.value
-    digest = OpenSSL::Digest::SHA1.digest(pkvalue)
+    digest = OpenSSL::Digest.digest('SHA1', pkvalue)
     if hex
       digest.unpack("H2"*20).join(":").upcase
     else

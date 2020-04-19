@@ -739,7 +739,7 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  * To sign a document, a cryptographically secure hash of the document is
  * computed first, which is then signed using the private key.
  *
- *   digest = OpenSSL::Digest::SHA256.new
+ *   digest = OpenSSL::Digest.new('SHA256')
  *   signature = key.sign digest, document
  *
  * To validate the signature, again a hash of the document is computed and
@@ -747,7 +747,7 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  * compared to the hash just computed, if they are equal the signature was
  * valid.
  *
- *   digest = OpenSSL::Digest::SHA256.new
+ *   digest = OpenSSL::Digest.new('SHA256')
  *   if key.verify digest, signature, document
  *     puts 'Valid'
  *   else
@@ -782,7 +782,7 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *   salt = OpenSSL::Random.random_bytes 16
  *   iter = 20000
  *   key_len = cipher.key_len
- *   digest = OpenSSL::Digest::SHA256.new
+ *   digest = OpenSSL::Digest.new('SHA256')
  *
  *   key = OpenSSL::PKCS5.pbkdf2_hmac(pwd, salt, iter, key_len, digest)
  *   cipher.key = key
@@ -805,7 +805,7 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *   salt = ... # the one generated above
  *   iter = 20000
  *   key_len = cipher.key_len
- *   digest = OpenSSL::Digest::SHA256.new
+ *   digest = OpenSSL::Digest.new('SHA256')
  *
  *   key = OpenSSL::PKCS5.pbkdf2_hmac(pwd, salt, iter, key_len, digest)
  *   cipher.key = key
@@ -901,7 +901,7 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  * certificate.
  *
  *   cert.issuer = name
- *   cert.sign key, OpenSSL::Digest::SHA1.new
+ *   cert.sign key, OpenSSL::Digest.new('SHA1')
  *
  *   open 'certificate.pem', 'w' do |io| io.write cert.to_pem end
  *
@@ -977,7 +977,7 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *
  * Root CA certificates are self-signed.
  *
- *   ca_cert.sign ca_key, OpenSSL::Digest::SHA1.new
+ *   ca_cert.sign ca_key, OpenSSL::Digest.new('SHA1')
  *
  * The CA certificate is saved to disk so it may be distributed to all the
  * users of the keys this CA will sign.
@@ -995,7 +995,7 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *   csr.version = 0
  *   csr.subject = name
  *   csr.public_key = key.public_key
- *   csr.sign key, OpenSSL::Digest::SHA1.new
+ *   csr.sign key, OpenSSL::Digest.new('SHA1')
  *
  * A CSR is saved to disk and sent to the CA for signing.
  *
@@ -1039,7 +1039,7 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *   csr_cert.add_extension \
  *     extension_factory.create_extension('subjectKeyIdentifier', 'hash')
  *
- *   csr_cert.sign ca_key, OpenSSL::Digest::SHA1.new
+ *   csr_cert.sign ca_key, OpenSSL::Digest.new('SHA1')
  *
  *   open 'csr_cert.pem', 'w' do |io|
  *     io.write csr_cert.to_pem

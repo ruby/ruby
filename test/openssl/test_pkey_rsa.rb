@@ -7,7 +7,7 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
   def test_no_private_exp
     key = OpenSSL::PKey::RSA.new
     rsa = Fixtures.pkey("rsa2048")
-    key.set_key(rsa.n, rsa.e, nil) 
+    key.set_key(rsa.n, rsa.e, nil)
     key.set_factors(rsa.p, rsa.q)
     assert_raise(OpenSSL::PKey::RSAError){ key.private_encrypt("foo") }
     assert_raise(OpenSSL::PKey::RSAError){ key.private_decrypt("foo") }
@@ -119,8 +119,8 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
 
   def test_digest_state_irrelevant_sign
     key = Fixtures.pkey("rsa1024")
-    digest1 = OpenSSL::Digest::SHA1.new
-    digest2 = OpenSSL::Digest::SHA1.new
+    digest1 = OpenSSL::Digest.new('SHA1')
+    digest2 = OpenSSL::Digest.new('SHA1')
     data = 'Sign me!'
     digest1 << 'Change state of digest1'
     sig1 = key.sign(digest1, data)
@@ -130,8 +130,8 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
 
   def test_digest_state_irrelevant_verify
     key = Fixtures.pkey("rsa1024")
-    digest1 = OpenSSL::Digest::SHA1.new
-    digest2 = OpenSSL::Digest::SHA1.new
+    digest1 = OpenSSL::Digest.new('SHA1')
+    digest2 = OpenSSL::Digest.new('SHA1')
     data = 'Sign me!'
     sig = key.sign(digest1, data)
     digest1.reset

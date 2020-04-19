@@ -37,7 +37,7 @@ else
   ef.issuer_certificate = cert
   cert.add_extension ef.create_extension("authorityKeyIdentifier",
                                          "keyid:always,issuer:always")
-  cert.sign(key, OpenSSL::Digest::SHA1.new)
+  cert.sign(key, OpenSSL::Digest.new('SHA1'))
 end
 
 ctx = OpenSSL::SSL::SSLContext.new()

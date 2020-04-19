@@ -205,7 +205,7 @@ class OpenSSL::TestX509Certificate < OpenSSL::TestCase
   end
 
   def test_sign_and_verify_rsa_dss1
-    cert = issue_cert(@ca, @rsa2048, 1, [], nil, nil, digest: OpenSSL::Digest::DSS1.new)
+    cert = issue_cert(@ca, @rsa2048, 1, [], nil, nil, digest: OpenSSL::Digest.new('DSS1'))
     assert_equal(false, cert.verify(@rsa1024))
     assert_equal(true, cert.verify(@rsa2048))
     assert_equal(false, certificate_error_returns_false { cert.verify(@dsa256) })

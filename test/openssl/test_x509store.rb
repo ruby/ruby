@@ -72,16 +72,16 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
 
     revoke_info = []
     crl1   = issue_crl(revoke_info, 1, now, now+1800, [],
-                       ca1_cert, @rsa2048, OpenSSL::Digest::SHA1.new)
+                       ca1_cert, @rsa2048, OpenSSL::Digest.new('SHA1'))
     revoke_info = [ [2, now, 1], ]
     crl1_2 = issue_crl(revoke_info, 2, now, now+1800, [],
-                       ca1_cert, @rsa2048, OpenSSL::Digest::SHA1.new)
+                       ca1_cert, @rsa2048, OpenSSL::Digest.new('SHA1'))
     revoke_info = [ [20, now, 1], ]
     crl2   = issue_crl(revoke_info, 1, now, now+1800, [],
-                       ca2_cert, @rsa1024, OpenSSL::Digest::SHA1.new)
+                       ca2_cert, @rsa1024, OpenSSL::Digest.new('SHA1'))
     revoke_info = []
     crl2_2 = issue_crl(revoke_info, 2, now-100, now-1, [],
-                       ca2_cert, @rsa1024, OpenSSL::Digest::SHA1.new)
+                       ca2_cert, @rsa1024, OpenSSL::Digest.new('SHA1'))
 
     assert_equal(true, ca1_cert.verify(ca1_cert.public_key))   # self signed
     assert_equal(true, ca2_cert.verify(ca1_cert.public_key))   # issued by ca1
@@ -220,10 +220,10 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
 
     revoke_info = []
     crl1 = issue_crl(revoke_info, 1, now, now+1800, [],
-                     ca1_cert, @rsa2048, OpenSSL::Digest::SHA1.new)
+                     ca1_cert, @rsa2048, OpenSSL::Digest.new('SHA1'))
     revoke_info = [ [2, now, 1], ]
     crl2 = issue_crl(revoke_info, 2, now+1800, now+3600, [],
-                     ca1_cert, @rsa2048, OpenSSL::Digest::SHA1.new)
+                     ca1_cert, @rsa2048, OpenSSL::Digest.new('SHA1'))
     store.add_crl(crl1)
     assert_raise(OpenSSL::X509::StoreError){
       store.add_crl(crl2) # add CRL issued by same CA twice.
