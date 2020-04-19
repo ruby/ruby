@@ -422,7 +422,7 @@ class Gem::Installer
     @gem_dir = directory
     extract_files
   end
-  deprecate :unpack
+  rubygems_deprecate :unpack
 
   ##
   # The location of the spec file that is installed.

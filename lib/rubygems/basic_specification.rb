@@ -41,7 +41,7 @@ class Gem::BasicSpecification
   class << self
 
     extend Gem::Deprecate
-    deprecate :default_specifications_dir, "Gem.default_specifications_dir"
+    rubygems_deprecate :default_specifications_dir, "Gem.default_specifications_dir"
 
   end
 
