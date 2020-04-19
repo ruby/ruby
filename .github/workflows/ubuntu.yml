@@ -4,7 +4,7 @@ jobs:
   make:
     strategy:
       matrix:
-        test_task: [ "check", "test-bundler", "test-bundled-gems", "test-all TESTS=--repeat-count=2", "leaked-globals" ]
+        test_task: [ "check", "test-bundler", "test-bundled-gems", "test-all TESTS=--repeat-count=2", "leaked-globals", "test-monorepolized-gems"]
         os: [ubuntu-latest, ubuntu-16.04]
         exclude:
           - test_task: test-bundler
@@ -60,6 +60,10 @@ jobs:
           ./miniruby -e '(("a".."z").to_a+("A".."Z").to_a+("0".."9").to_a+%w[foo bar test zzz]).each{|basename|File.write("#{basename}.rb", "raise %(do not load #{basename}.rb)")}'
         working-directory: build
         if: matrix.test_task == 'check'
+      - name: Install Ruby
+        run: make install
+        working-directory: build
+        if: matrix.test_task == 'test-monorepolized-gems'
       - run: make $JOBS -s ${{ matrix.test_task }}
         working-directory: build
         env:

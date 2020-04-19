@@ -1332,6 +1332,9 @@ no-test-bundled-gems:
 test-bundled-gems-run: $(PREPARE_BUNDLED_GEMS)
 	$(Q) $(XRUBY) $(tooldir)/test-bundled-gems.rb
 
+test-monorepolized-gems:
+	ruby gems/test-monorepolized-gems.rb
+
 test-bundler-precheck: $(arch)-fake.rb programs
 
 yes-test-bundler-prepare: test-bundler-precheck

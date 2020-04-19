@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+IFS=$'\n\t'
+set -vx
+
+export BUNDLE_GEMFILE=`pwd`/Gemfile
+bundle exec rake test stdlib_test rubocop validate

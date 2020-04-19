@@ -3,6 +3,8 @@ set -euo pipefail
 IFS=$'\n\t'
 set -vx
 
+export BUNDLE_GEMFILE=`pwd`/Gemfile
+
 bundle install
 
 # Do any other automated setup that you need to do here
