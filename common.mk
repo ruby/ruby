@@ -100,6 +100,7 @@ COMMONOBJS    = array.$(OBJEXT) \
 		eval.$(OBJEXT) \
 		file.$(OBJEXT) \
 		gc.$(OBJEXT) \
+		gc_new.$(OBJEXT) \
 		hash.$(OBJEXT) \
 		inits.$(OBJEXT) \
 		io.$(OBJEXT) \
