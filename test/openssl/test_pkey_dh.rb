@@ -74,6 +74,13 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
     assert_equal dh2.g, dh.g
   end
 
+  def test_marshal
+    dh = Fixtures.pkey("dh1024")
+    deserialized = Marshal.load(Marshal.dump(dh))
+
+    assert_equal dh.to_der, deserialized.to_der
+  end
+
   private
 
   def assert_equal_params(dh1, dh2)

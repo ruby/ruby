@@ -24,8 +24,9 @@ Notable changes
 * Add `OpenSSL::SSL::SSLSocket.open` for opening a `TCPSocket` and
   returning an `OpenSSL::SSL::SSLSocket` for it.
   [[GitHub #225]](https://github.com/ruby/openssl/issues/225)
-* Support marshalling of `OpenSSL::X509` objects.
+* Support marshalling of `OpenSSL::X509` and `OpenSSL::PKey` objects.
   [[GitHub #281]](https://github.com/ruby/openssl/pull/281)
+  [[GitHub #363]](https://github.com/ruby/openssl/pull/363)
 * Add `OpenSSL.secure_compare` for timing safe string comparison for
   strings of possibly unequal length.
   [[GitHub #280]](https://github.com/ruby/openssl/pull/280)

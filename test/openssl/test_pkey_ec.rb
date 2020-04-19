@@ -52,6 +52,13 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
     assert_equal(true, ec.private?)
   end
 
+  def test_marshal
+    key = Fixtures.pkey("p256")
+    deserialized = Marshal.load(Marshal.dump(key))
+
+    assert_equal key.to_der, deserialized.to_der
+  end
+
   def test_check_key
     key = OpenSSL::PKey::EC.new("prime256v1").generate_key!
     assert_equal(true, key.check_key)

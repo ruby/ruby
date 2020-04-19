@@ -443,6 +443,13 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
     assert_not_equal key.params, key2.params
   end
 
+  def test_marshal
+    key = Fixtures.pkey("rsa2048")
+    deserialized = Marshal.load(Marshal.dump(key))
+
+    assert_equal key.to_der, deserialized.to_der
+  end
+
   private
   def assert_same_rsa(expected, key)
     check_component(expected, key, [:n, :e, :d, :p, :q, :dmp1, :dmq1, :iqmp])

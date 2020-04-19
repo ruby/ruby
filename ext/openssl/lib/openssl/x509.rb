@@ -12,24 +12,10 @@
 # (See the file 'LICENCE'.)
 #++
 
+require_relative 'marshal'
+
 module OpenSSL
   module X509
-    module Marshal
-      def self.included(base)
-        base.extend(ClassMethods)
-      end
-
-      module ClassMethods
-        def _load(string)
-          new(string)
-        end
-      end
-
-      def _dump(_level)
-        to_der
-      end
-    end
-
     class ExtensionFactory
       def create_extension(*arg)
         if arg.size > 1
@@ -57,7 +43,7 @@ module OpenSSL
     end
 
     class Extension
-      include Marshal
+      include OpenSSL::Marshal
 
       def ==(other)
         return false unless Extension === other
@@ -216,7 +202,7 @@ module OpenSSL
     end
 
     class Name
-      include Marshal
+      include OpenSSL::Marshal
 
       module RFC2253DN
         Special = ',=+<>#;'
@@ -321,7 +307,7 @@ module OpenSSL
     end
 
     class Attribute
-      include Marshal
+      include OpenSSL::Marshal
 
       def ==(other)
         return false unless Attribute === other
@@ -336,7 +322,7 @@ module OpenSSL
     end
 
     class Certificate
-      include Marshal
+      include OpenSSL::Marshal
       include Extension::SubjectKeyIdentifier
       include Extension::AuthorityKeyIdentifier
       include Extension::CRLDistributionPoints
@@ -355,7 +341,7 @@ module OpenSSL
     end
 
     class CRL
-      include Marshal
+      include OpenSSL::Marshal
       include Extension::AuthorityKeyIdentifier
 
       def ==(other)
@@ -372,7 +358,7 @@ module OpenSSL
     end
 
     class Request
-      include Marshal
+      include OpenSSL::Marshal
 
       def ==(other)
         return false unless Request === other

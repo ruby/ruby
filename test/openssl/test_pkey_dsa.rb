@@ -191,6 +191,13 @@ fWLOqqkzFeRrYMDzUpl36XktY6Yq8EJYlW9pCMmBVNy/dQ==
     assert_not_equal key.params, key2.params
   end
 
+  def test_marshal
+    key = Fixtures.pkey("dsa1024")
+    deserialized = Marshal.load(Marshal.dump(key))
+
+    assert_equal key.to_der, deserialized.to_der
+  end
+
   private
   def assert_same_dsa(expected, key)
     check_component(expected, key, [:p, :q, :g, :pub_key, :priv_key])
