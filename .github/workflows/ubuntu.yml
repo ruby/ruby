@@ -61,7 +61,7 @@ jobs:
         working-directory: build
         if: matrix.test_task == 'check'
       - name: Install Ruby
-        run: make install
+        run: sudo make install
         working-directory: build
         if: matrix.test_task == 'test-monorepolized-gems'
       - run: make $JOBS -s ${{ matrix.test_task }}
