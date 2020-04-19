@@ -6,7 +6,7 @@ require 'rubygems/deprecate'
 class Gem::Commands::QueryCommand < Gem::Command
 
   extend Gem::Deprecate
-  deprecate_command
+  rubygems_deprecate_command
 
   include Gem::QueryUtils
 

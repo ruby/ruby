@@ -51,7 +51,7 @@ module Gem::Deprecate
   # telling the user of +repl+ (unless +repl+ is :none) and the
   # Rubygems version that it is planned to go away.
 
-  def deprecate(name, replacement=:none)
+  def rubygems_deprecate(name, replacement=:none)
     class_eval do
       old = "_deprecated_#{name}"
       alias_method old, name
@@ -70,7 +70,7 @@ module Gem::Deprecate
   end
 
   # Deprecation method to deprecate Rubygems commands
-  def deprecate_command
+  def rubygems_deprecate_command
     class_eval do
       define_method "deprecated?" do
         true
@@ -86,6 +86,6 @@ module Gem::Deprecate
     end
   end
 
-  module_function :deprecate, :deprecate_command, :skip_during
+  module_function :rubygems_deprecate, :rubygems_deprecate_command, :skip_during
 
 end

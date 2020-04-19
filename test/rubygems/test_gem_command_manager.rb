@@ -281,7 +281,7 @@ class TestGemCommandManager < Gem::TestCase
     foo_command = Class.new(Gem::Command) do
       extend Gem::Deprecate
 
-      deprecate_command
+      rubygems_deprecate_command
 
       def execute
         say "pew pew!"
