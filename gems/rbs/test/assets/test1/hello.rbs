@@ -1,0 +1,22 @@
+class Kaigi::Conference
+  attr_reader talks: Array[Talk]
+
+  def initialize: () -> void
+  def speakers: -> Array[Speaker]
+
+  def each_speaker: () { (Speaker speaker) -> void } -> self
+end
+
+class Kaigi::Talk
+  attr_reader title: String
+  attr_reader speakers: Array[Speaker]
+
+  def initialize: (title: String title) -> void
+end
+
+class Kaigi::Speaker
+  attr_reader name: String
+  attr_reader email: String
+
+  def initialize: (name: String name, email: String email) -> void
+end

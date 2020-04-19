@@ -1,0 +1,89 @@
+#!/usr/bin/env ruby
+
+require "bundler/setup"
+require "ruby/signature"
+
+Members = Ruby::Signature::AST::Members
+
+def group(member)
+  case member
+  when Members::Include, Members::Extend, Members::Prepend
+    0
+  when Members::ClassVariable
+    -3
+  when Members::ClassInstanceVariable
+    -2
+  when Members::InstanceVariable
+    -1
+  when Members::AttrAccessor, Members::AttrWriter, Members::AttrReader
+    2
+  when Members::MethodDefinition
+    if member.singleton?
+      if member.name == :new
+        0.4
+      else
+        1
+      end
+    else
+      if member.name == :initialize
+        0.5
+      else
+        3
+      end
+    end
+  when Members::Alias
+    if member.singleton?
+      1
+    else
+      3
+    end
+  when Members::Private, Members::Public
+    -4
+  end
+end
+
+def key(member)
+  case member
+  when Members::Include, Members::Extend, Members::Prepend
+    member.name.to_s
+  when Members::ClassVariable, Members::ClassInstanceVariable, Members::InstanceVariable
+    member.name.to_s
+  when Members::AttrAccessor, Members::AttrWriter, Members::AttrReader
+    member.name.to_s
+  when Members::MethodDefinition
+    member.name.to_s
+  when Members::Alias
+    member.new_name.to_s
+  else
+    1
+  end
+end
+
+ARGV.map {|f| Pathname(f) }.each do |path|
+  puts "Opening #{path}..."
+
+  buffer = Ruby::Signature::Buffer.new(name: path, content: path.read)
+  sigs = Ruby::Signature::Parser.parse_signature(buffer)
+
+  sigs.each do |sig|
+    case sig
+    when Ruby::Signature::AST::Declarations::Class, Ruby::Signature::AST::Declarations::Module, Ruby::Signature::AST::Declarations::Interface
+      sig.members.sort! do |m1, m2|
+        group1 = group(m1)
+        group2 = group(m2)
+
+        if group1 == group2
+          key(m1) <=> key(m2)
+        else
+          group1 <=> group2
+        end
+      end
+    end
+  end
+
+  puts "Writing #{path}..."
+  path.open('w') do |out|
+    writer = Ruby::Signature::Writer.new(out: out)
+    writer.write sigs
+  end
+end

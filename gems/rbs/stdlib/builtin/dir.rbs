@@ -1,0 +1,413 @@
+# Objects of class Dir are directory streams representing directories in the
+# underlying file system. They provide a variety of ways to list directories and
+# their contents. See also File.
+#
+# The directory used in these examples contains the two regular files
+# (`config.h` and `main.rb`), the parent directory (`..`), and the directory
+# itself (`.`).
+#
+class Dir
+  include Enumerable[String, Dir]
+
+  # Returns a new directory object for the named directory.
+  #
+  # The optional *encoding* keyword argument specifies the encoding of the
+  # directory. If not specified, the filesystem encoding is used.
+  #
+  def initialize: (string, ?encoding: Encoding | string | nil) -> void
+
+  # Equivalent to calling `Dir.glob([string,...], 0)`.
+  #
+  def self.[]: (*string patterns, ?base: string) ?{ (String path) -> void } -> Array[String]
+
+  # Changes the current working directory of the process to the given string. When
+  # called without an argument, changes the directory to the value of the
+  # environment variable `HOME`, or `LOGDIR`. SystemCallError (probably
+  # Errno::ENOENT) if the target directory does not exist.
+  #
+  # If a block is given, it is passed the name of the new current directory, and
+  # the block is executed with that as the current directory. The original working
+  # directory is restored when the block exits. The return value of `chdir` is the
+  # value of the block. `chdir` blocks can be nested, but in a multi-threaded
+  # program an error will be raised if a thread attempts to open a `chdir` block
+  # while another thread has one open.
+  #
+  #     Dir.chdir("/var/spool/mail")
+  #     puts Dir.pwd
+  #     Dir.chdir("/tmp") do
+  #       puts Dir.pwd
+  #       Dir.chdir("/usr") do
+  #         puts Dir.pwd
+  #       end
+  #       puts Dir.pwd
+  #     end
+  #     puts Dir.pwd
+  #
+  # *produces:*
+  #
+  #     /var/spool/mail
+  #     /tmp
+  #     /usr
+  #     /tmp
+  #     /var/spool/mail
+  #
+  def self.chdir: (?string) -> void
+                | [U] (?string) { (String) -> U } -> U
+
+  # Returns an array containing all of the filenames except for "." and ".." in
+  # the given directory. Will raise a SystemCallError if the named directory
+  # doesn't exist.
+  #
+  # The optional *encoding* keyword argument specifies the encoding of the
+  # directory. If not specified, the filesystem encoding is used.
+  #
+  #     Dir.children("testdir")   #=> ["config.h", "main.rb"]
+  #
+  def self.children: (string dirname, ?encoding: string | Encoding | nil enc) -> Array[String]
+
+  # Changes this process's idea of the file system root. Only a privileged process
+  # may make this call. Not available on all platforms. On Unix systems, see
+  # `chroot(2)` for more information.
+  #
+  def self.chroot: (string) -> void
+
+  # Deletes the named directory. Raises a subclass of SystemCallError if the
+  # directory isn't empty.
+  #
+  def self.delete: (string) -> void
+
+  # Calls the block once for each entry except for "." and ".." in the named
+  # directory, passing the filename of each entry as a parameter to the block.
+  #
+  # If no block is given, an enumerator is returned instead.
+  #
+  #     Dir.each_child("testdir") {|x| puts "Got #{x}" }
+  #
+  # *produces:*
+  #
+  #     Got config.h
+  #     Got main.rb
+  #
+  def self.each_child: (string dirname, ?encoding: string | Encoding | nil enc) -> Enumerator[String, void]
+                     | (string dirname, ?encoding: string | Encoding | nil enc) { (String filename) -> void } -> void
+
+  # Returns `true` if the named file is an empty directory, `false` if it is not a
+  # directory or non-empty.
+  #
+  def self.empty?: (string path_name) -> bool
+
+  # Returns an array containing all of the filenames in the given directory. Will
+  # raise a SystemCallError if the named directory doesn't exist.
+  #
+  # The optional *encoding* keyword argument specifies the encoding of the
+  # directory. If not specified, the filesystem encoding is used.
+  #
+  #     Dir.entries("testdir")   #=> [".", "..", "config.h", "main.rb"]
+  #
+  def self.entries: (string dirname, ?encoding: Encoding | string | nil enc) -> ::Array[String]
+
+  # Returns `true` if the named file is a directory, `false` otherwise.
+  #
+  def self.exist?: (string file) -> bool
+
+  # Deprecated method. Don't use.
+  #
+  def self.exists?: (string file) -> bool
+
+  # Calls the block once for each entry in the named directory, passing the
+  # filename of each entry as a parameter to the block.
+  #
+  # If no block is given, an enumerator is returned instead.
+  #
+  #     Dir.foreach("testdir") {|x| puts "Got #{x}" }
+  #
+  # *produces:*
+  #
+  #     Got .
+  #     Got ..
+  #     Got config.h
+  #     Got main.rb
+  #
+  alias self.foreach self.each_child
+
+  # Returns the path to the current working directory of this process as a string.
+  #
+  #     Dir.chdir("/tmp")   #=> 0
+  #     Dir.getwd           #=> "/tmp"
+  #     Dir.pwd             #=> "/tmp"
+  #
+  def self.getwd: () -> String
+
+  # Expands `pattern`, which is a pattern string or an Array of pattern strings,
+  # and returns an array containing the matching filenames. If a block is given,
+  # calls the block once for each matching filename, passing the filename as a
+  # parameter to the block.
+  #
+  # The optional `base` keyword argument specifies the base directory for
+  # interpreting relative pathnames instead of the current working directory. As
+  # the results are not prefixed with the base directory name in this case, you
+  # will need to prepend the base directory name if you want real paths.
+  #
+  # Note that the pattern is not a regexp, it's closer to a shell glob. See
+  # File::fnmatch for the meaning of the `flags` parameter. Case sensitivity
+  # depends on your system (File::FNM_CASEFOLD is ignored), as does the order in
+  # which the results are returned.
+  #
+  # `*`
+  # :   Matches any file. Can be restricted by other values in the glob.
+  #     Equivalent to `/ .* /mx` in regexp.
+  #
+  #     `*`
+  # :       Matches all files
+  #     `c*`
+  # :       Matches all files beginning with `c`
+  #     `*c`
+  # :       Matches all files ending with `c`
+  #     `*c*`
+  # :       Match all files that have `c` in them (including at the beginning or
+  #         end).
+  #
+  #
+  #     Note, this will not match Unix-like hidden files (dotfiles).  In order to
+  #     include those in the match results, you must use the File::FNM_DOTMATCH
+  #     flag or something like `"{*,.*}"`.
+  #
+  # `**`
+  # :   Matches directories recursively.
+  #
+  # `?`
+  # :   Matches any one character. Equivalent to `/.{1}/` in regexp.
+  #
+  # `[set]`
+  # :   Matches any one character in `set`.  Behaves exactly like character sets
+  #     in Regexp, including set negation (`[^a-z]`).
+  #
+  # `{p,q}`
+  # :   Matches either literal `p` or literal `q`. Equivalent to pattern
+  #     alternation in regexp.
+  #
+  #     Matching literals may be more than one character in length.  More than two
+  #     literals may be specified.
+  #
+  # ` \\ `
+  # :   Escapes the next metacharacter.
+  #
+  #     Note that this means you cannot use backslash on windows as part of a
+  #     glob, i.e.  `Dir["c:\\foo*"]` will not work, use `Dir["c:/foo*"]` instead.
+  #
+  #
+  # Examples:
+  #
+  #     Dir["config.?"]                     #=> ["config.h"]
+  #     Dir.glob("config.?")                #=> ["config.h"]
+  #     Dir.glob("*.[a-z][a-z]")            #=> ["main.rb"]
+  #     Dir.glob("*.[^r]*")                 #=> ["config.h"]
+  #     Dir.glob("*.{rb,h}")                #=> ["main.rb", "config.h"]
+  #     Dir.glob("*")                       #=> ["config.h", "main.rb"]
+  #     Dir.glob("*", File::FNM_DOTMATCH)   #=> [".", "..", "config.h", "main.rb"]
+  #     Dir.glob(["*.rb", "*.h"])           #=> ["main.rb", "config.h"]
+  #
+  #     rbfiles = File.join("**", "*.rb")
+  #     Dir.glob(rbfiles)                   #=> ["main.rb",
+  #                                         #    "lib/song.rb",
+  #                                         #    "lib/song/karaoke.rb"]
+  #
+  #     Dir.glob(rbfiles, base: "lib")      #=> ["song.rb",
+  #                                         #    "song/karaoke.rb"]
+  #
+  #     libdirs = File.join("**", "lib")
+  #     Dir.glob(libdirs)                   #=> ["lib"]
+  #
+  #     librbfiles = File.join("**", "lib", "**", "*.rb")
+  #     Dir.glob(librbfiles)                #=> ["lib/song.rb",
+  #                                         #    "lib/song/karaoke.rb"]
+  #
+  #     librbfiles = File.join("**", "lib", "*.rb")
+  #     Dir.glob(librbfiles)                #=> ["lib/song.rb"]
+  #
+  def self.glob: (string | ::Array[string] pattern, ?Integer flags, ?base: string) -> ::Array[String]
+               | (string | ::Array[string] pattern, ?Integer flags, ?base: string) { (String) -> void } -> void
+
+  # Returns the home directory of the current user or the named user if given.
+  #
+  def self.home: (?string user) -> String
+
+  # Makes a new directory named by *string*, with permissions specified by the
+  # optional parameter *anInteger*. The permissions may be modified by the value
+  # of File::umask, and are ignored on NT. Raises a SystemCallError if the
+  # directory cannot be created. See also the discussion of permissions in the
+  # class documentation for File.
+  #
+  #     Dir.mkdir(File.join(Dir.home, ".foo"), 0700) #=> 0
+  #
+  def self.mkdir: (string, ?Integer permissions) -> void
+
+  # The optional *encoding* keyword argument specifies the encoding of the
+  # directory. If not specified, the filesystem encoding is used.
+  #
+  # With no block, `open` is a synonym for Dir::new. If a block is present, it is
+  # passed *aDir* as a parameter. The directory is closed at the end of the block,
+  # and Dir::open returns the value of the block.
+  #
+  def self.open: (string, ?encoding: Encoding | string | nil) -> Dir
+               | [U] (string, ?encoding: Encoding | string | nil) { (Dir) -> U } -> U
+
+  # Returns the path to the current working directory of this process as a string.
+  #
+  #     Dir.chdir("/tmp")   #=> 0
+  #     Dir.getwd           #=> "/tmp"
+  #     Dir.pwd             #=> "/tmp"
+  #
+  def self.pwd: () -> String
+
+  # Deletes the named directory. Raises a subclass of SystemCallError if the
+  # directory isn't empty.
+  #
+  alias self.rmdir self.delete
+
+  # Deletes the named directory. Raises a subclass of SystemCallError if the
+  # directory isn't empty.
+  #
+  alias self.unlink self.delete
+
+  public
+
+  # Returns an array containing all of the filenames except for "." and ".." in
+  # this directory.
+  #
+  #     d = Dir.new("testdir")
+  #     d.children   #=> ["config.h", "main.rb"]
+  #
+  def children: () -> Array[String]
+
+  # Closes the directory stream. Calling this method on closed Dir object is
+  # ignored since Ruby 2.3.
+  #
+  #     d = Dir.new("testdir")
+  #     d.close   #=> nil
+  #
+  def close: () -> void
+
+  # Calls the block once for each entry in this directory, passing the filename of
+  # each entry as a parameter to the block.
+  #
+  # If no block is given, an enumerator is returned instead.
+  #
+  #     d = Dir.new("testdir")
+  #     d.each  {|x| puts "Got #{x}" }
+  #
+  # *produces:*
+  #
+  #     Got .
+  #     Got ..
+  #     Got config.h
+  #     Got main.rb
+  #
+  def each: () { (String) -> void } -> self
+          | () -> ::Enumerator[String, self]
+
+  # Calls the block once for each entry except for "." and ".." in this directory,
+  # passing the filename of each entry as a parameter to the block.
+  #
+  # If no block is given, an enumerator is returned instead.
+  #
+  #     d = Dir.new("testdir")
+  #     d.each_child  {|x| puts "Got #{x}" }
+  #
+  # *produces:*
+  #
+  #     Got config.h
+  #     Got main.rb
+  #
+  def each_child: () { (String) -> void } -> self
+                | () -> ::Enumerator[String, self]
+
+  # Returns the file descriptor used in *dir*.
+  #
+  #     d = Dir.new("..")
+  #     d.fileno   #=> 8
+  #
+  # This method uses dirfd() function defined by POSIX 2008. NotImplementedError
+  # is raised on other platforms, such as Windows, which doesn't provide the
+  # function.
+  #
+  def fileno: () -> Integer
+
+  # Return a string describing this Dir object.
+  #
+  def inspect: () -> String
+
+  # Returns the path parameter passed to *dir*'s constructor.
+  #
+  #     d = Dir.new("..")
+  #     d.path   #=> ".."
+  #
+  def path: () -> String?
+
+  # Returns the current position in *dir*. See also Dir#seek.
+  #
+  #     d = Dir.new("testdir")
+  #     d.tell   #=> 0
+  #     d.read   #=> "."
+  #     d.tell   #=> 12
+  #
+  def pos: () -> Integer
+
+  # Synonym for Dir#seek, but returns the position parameter.
+  #
+  #     d = Dir.new("testdir")   #=> #<Dir:0x401b3c40>
+  #     d.read                   #=> "."
+  #     i = d.pos                #=> 12
+  #     d.read                   #=> ".."
+  #     d.pos = i                #=> 12
+  #     d.read                   #=> ".."
+  #
+  def pos=: (Integer pos) -> Integer
+
+  # Reads the next entry from *dir* and returns it as a string. Returns `nil` at
+  # the end of the stream.
+  #
+  #     d = Dir.new("testdir")
+  #     d.read   #=> "."
+  #     d.read   #=> ".."
+  #     d.read   #=> "config.h"
+  #
+  def read: () -> String?
+
+  # Repositions *dir* to the first entry.
+  #
+  #     d = Dir.new("testdir")
+  #     d.read     #=> "."
+  #     d.rewind   #=> #<Dir:0x401b3fb0>
+  #     d.read     #=> "."
+  #
+  def rewind: () -> self
+
+  # Seeks to a particular location in *dir*. *integer* must be a value returned by
+  # Dir#tell.
+  #
+  #     d = Dir.new("testdir")   #=> #<Dir:0x401b3c40>
+  #     d.read                   #=> "."
+  #     i = d.tell               #=> 12
+  #     d.read                   #=> ".."
+  #     d.seek(i)                #=> #<Dir:0x401b3c40>
+  #     d.read                   #=> ".."
+  #
+  def seek: (Integer) -> self
+
+  # Returns the current position in *dir*. See also Dir#seek.
+  #
+  #     d = Dir.new("testdir")
+  #     d.tell   #=> 0
+  #     d.read   #=> "."
+  #     d.tell   #=> 12
+  #
+  def tell: () -> Integer
+
+  # Returns the path parameter passed to *dir*'s constructor.
+  #
+  #     d = Dir.new("..")
+  #     d.path   #=> ".."
+  #
+  alias to_path path
+end

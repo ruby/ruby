@@ -1,0 +1,354 @@
+# [Module](https://ruby-doc.org/core-2.6.3/Module.html) to handle
+# processes.
+module Process
+  # Returns the name of the script being executed. The value is not affected
+  # by assigning a new value to $0.
+  # 
+  # This method first appeared in Ruby 2.1 to serve as a global variable
+  # free means to get the script name.
+  def self.argv0: () -> String
+
+  def self.clock_getres: (Symbol | Integer clock_id, ?Symbol unit) -> (Float | Integer)
+
+  def self.clock_gettime: (Symbol | Integer clock_id, ?Symbol unit) -> (Float | Integer)
+
+  def self.daemon: (?untyped nochdir, ?untyped noclose) -> Integer
+
+  def self.detach: (Integer pid) -> Thread
+
+  # Returns the effective group ID for this process. Not available on all
+  # platforms.
+  # 
+  # ```ruby
+  # Process.egid   #=> 500
+  # ```
+  def self.egid: () -> Integer
+
+  def self.egid=: (Integer arg0) -> Integer
+
+  # Returns the effective user ID for this process.
+  # 
+  # ```ruby
+  # Process.euid   #=> 501
+  # ```
+  def self.euid: () -> Integer
+
+  def self.euid=: (Integer arg0) -> Integer
+
+  def self.getpgid: (Integer pid) -> Integer
+
+  # Returns the process group ID for this process. Not available on all
+  # platforms.
+  # 
+  # ```ruby
+  # Process.getpgid(0)   #=> 25527
+  # Process.getpgrp      #=> 25527
+  # ```
+  def self.getpgrp: () -> Integer
+
+  def self.getpriority: (Integer kind, Integer arg0) -> Integer
+
+  def self.getrlimit: (Symbol | String | Integer resource) -> [ Integer, Integer ]
+
+  def self.getsid: (?Integer pid) -> Integer
+
+  # Returns the (real) group ID for this process.
+  # 
+  # ```ruby
+  # Process.gid   #=> 500
+  # ```
+  def self.gid: () -> Integer
+
+  def self.gid=: (Integer arg0) -> Integer
+
+  # Get an `Array` of the group IDs in the supplemental group access list
+  # for this process.
+  # 
+  # ```ruby
+  # Process.groups   #=> [27, 6, 10, 11]
+  # ```
+  # 
+  # Note that this method is just a wrapper of getgroups(2). This means that
+  # the following characteristics of the result completely depend on your
+  # system:
+  # 
+  #   - the result is sorted
+  # 
+  #   - the result includes effective GIDs
+  # 
+  #   - the result does not include duplicated GIDs
+  # 
+  # You can make sure to get a sorted unique
+  # [GID](https://ruby-doc.org/core-2.6.3/Process/GID.html) list of the
+  # current process by this expression:
+  # 
+  # ```ruby
+  # Process.groups.uniq.sort
+  # ```
+  def self.groups: () -> ::Array[Integer]
+
+  def self.groups=: (::Array[Integer] arg0) -> ::Array[Integer]
+
+  def self.initgroups: (String username, Integer gid) -> ::Array[Integer]
+
+  def self.kill: (Integer | Symbol | String signal, *Integer pids) -> Integer
+
+  # Returns the maximum number of gids allowed in the supplemental group
+  # access list.
+  # 
+  # ```ruby
+  # Process.maxgroups   #=> 32
+  # ```
+  def self.maxgroups: () -> Integer
+
+  def self.maxgroups=: (Integer arg0) -> Integer
+
+  # Returns the process id of this process. Not available on all platforms.
+  # 
+  # ```ruby
+  # Process.pid   #=> 27415
+  # ```
+  def self.pid: () -> Integer
+
+  # Returns the process id of the parent of this process. Returns
+  # untrustworthy value on Win32/64. Not available on all platforms.
+  # 
+  # ```ruby
+  # puts "I am #{Process.pid}"
+  # Process.fork { puts "Dad is #{Process.ppid}" }
+  # ```
+  # 
+  # *produces:*
+  # 
+  # ```ruby
+  # I am 27417
+  # Dad is 27417
+  # ```
+  def self.ppid: () -> Integer
+
+  def self.setpgid: (Integer pid, Integer arg0) -> Integer
+
+  def self.setpriority: (Integer kind, Integer arg0, Integer priority) -> Integer
+
+  def self.setproctitle: (String arg0) -> String
+
+  def self.setrlimit: (Symbol | String | Integer resource, Integer cur_limit, ?Integer max_limit) -> NilClass
+
+  # Establishes this process as a new session and process group leader, with
+  # no controlling tty. Returns the session id. Not available on all
+  # platforms.
+  # 
+  # ```ruby
+  # Process.setsid   #=> 27422
+  # ```
+  def self.setsid: () -> Integer
+
+  # Returns a `Tms` structure (see `Process::Tms` ) that contains user and
+  # system CPU times for this process, and also for children processes.
+  # 
+  # ```ruby
+  # t = Process.times
+  # [ t.utime, t.stime, t.cutime, t.cstime ]   #=> [0.0, 0.02, 0.00, 0.00]
+  # ```
+  def self.times: () -> Process::Tms
+
+  # Returns the (real) user ID of this process.
+  # 
+  # ```ruby
+  # Process.uid   #=> 501
+  # ```
+  def self.uid: () -> Integer
+
+  def self.uid=: (Integer user) -> Integer
+
+  def self.wait: (?Integer pid, ?Integer flags) -> Integer
+
+  def self.wait2: (?Integer pid, ?Integer flags) -> [ Integer, Process::Status ]
+
+  def self.waitall: () -> ::Array[[ Integer, Process::Status ]]
+
+  def self.waitpid: (?Integer pid, ?Integer flags) -> Integer
+
+  def self.waitpid2: (?Integer pid, ?Integer flags) -> [ Integer, Process::Status ]
+end
+
+Process::CLOCK_BOOTTIME: Integer
+
+Process::CLOCK_BOOTTIME_ALARM: Integer
+
+Process::CLOCK_MONOTONIC: Integer
+
+Process::CLOCK_MONOTONIC_COARSE: Integer
+
+Process::CLOCK_MONOTONIC_RAW: Integer
+
+Process::CLOCK_PROCESS_CPUTIME_ID: Integer
+
+Process::CLOCK_REALTIME: Integer
+
+Process::CLOCK_REALTIME_ALARM: Integer
+
+Process::CLOCK_REALTIME_COARSE: Integer
+
+Process::CLOCK_THREAD_CPUTIME_ID: Integer
+
+Process::PRIO_PGRP: Integer
+
+Process::PRIO_PROCESS: Integer
+
+Process::PRIO_USER: Integer
+
+Process::RLIMIT_AS: Integer
+
+Process::RLIMIT_CORE: Integer
+
+Process::RLIMIT_CPU: Integer
+
+Process::RLIMIT_DATA: Integer
+
+Process::RLIMIT_FSIZE: Integer
+
+Process::RLIMIT_MEMLOCK: Integer
+
+Process::RLIMIT_MSGQUEUE: Integer
+
+Process::RLIMIT_NICE: Integer
+
+Process::RLIMIT_NOFILE: Integer
+
+Process::RLIMIT_NPROC: Integer
+
+Process::RLIMIT_RSS: Integer
+
+Process::RLIMIT_RTPRIO: Integer
+
+Process::RLIMIT_RTTIME: Integer
+
+Process::RLIMIT_SIGPENDING: Integer
+
+Process::RLIMIT_STACK: Integer
+
+Process::RLIM_INFINITY: Integer
+
+Process::RLIM_SAVED_CUR: Integer
+
+Process::RLIM_SAVED_MAX: Integer
+
+Process::WNOHANG: Integer
+
+Process::WUNTRACED: Integer
+
+module Process::GID
+  def self.change_privilege: (Integer group) -> Integer
+
+  def self.eid: () -> Integer
+
+  def self.from_name: (String name) -> Integer
+
+  def self.grant_privilege: (Integer group) -> Integer
+
+  def self.re_exchange: () -> Integer
+
+  def self.re_exchangeable?: () -> bool
+
+  def self.rid: () -> Integer
+
+  def self.sid_available?: () -> bool
+
+  def self.switch: () -> Integer
+                 | [T] () { () -> T } -> T
+
+  def self.eid=: (Integer group) -> Integer
+end
+
+class Process::Status < Object
+  def &: (Integer num) -> Integer
+
+  def ==: (untyped other) -> bool
+
+  def >>: (Integer num) -> Integer
+
+  def coredump?: () -> bool
+
+  def exited?: () -> bool
+
+  def exitstatus: () -> Integer?
+
+  def inspect: () -> String
+
+  def pid: () -> Integer
+
+  def signaled?: () -> bool
+
+  def stopped?: () -> bool
+
+  def stopsig: () -> Integer?
+
+  def success?: () -> bool
+
+  def termsig: () -> Integer?
+
+  def to_i: () -> Integer
+
+  def to_s: () -> String
+end
+
+module Process::Sys
+  def self.geteuid: () -> Integer
+
+  def self.getgid: () -> Integer
+
+  def self.getuid: () -> Integer
+
+  def self.issetugid: () -> bool
+
+  def self.setegid: (Integer group) -> NilClass
+
+  def self.seteuid: (Integer user) -> NilClass
+
+  def self.setgid: (Integer group) -> NilClass
+
+  def self.setregid: (Integer rid, Integer eid) -> NilClass
+
+  def self.setresgid: (Integer rid, Integer eid, Integer sid) -> NilClass
+
+  def self.setresuid: (Integer rid, Integer eid, Integer sid) -> NilClass
+
+  def self.setreuid: (Integer rid, Integer eid) -> NilClass
+
+  def self.setrgid: (Integer group) -> NilClass
+
+  def self.setruid: (Integer user) -> NilClass
+
+  def self.setuid: (Integer user) -> NilClass
+end
+
+module Process::UID
+  def self.change_privilege: (Integer user) -> Integer
+
+  def self.eid: () -> Integer
+
+  def self.from_name: (String name) -> Integer
+
+  def self.grant_privilege: (Integer user) -> Integer
+
+  def self.re_exchange: () -> Integer
+
+  def self.re_exchangeable?: () -> bool
+
+  def self.rid: () -> Integer
+
+  def self.sid_available?: () -> bool
+
+  def self.switch: () -> Integer
+                 | [T] () { () -> T } -> T
+
+  def self.eid=: (Integer user) -> Integer
+end
+
+class Process::Tms < Struct[Float]
+end
+
+class Process::Waiter < Thread
+  def pid: () -> Integer
+end

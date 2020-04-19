@@ -1,0 +1,404 @@
+# The `Enumerable` mixin provides collection classes with several
+# traversal and searching methods, and with the ability to sort. The class
+# must provide a method `each`, which yields successive members of the
+# collection. If `Enumerable#max`, `#min`, or `#sort` is used, the
+# objects in the collection must also implement a meaningful `<=>`
+# operator, as these methods rely on an ordering between members of the
+# collection.
+module Enumerable[unchecked out Elem, out Return]: _Each[Elem, Return]
+  # Passes each element of the collection to the given block. The method
+  # returns `true` if the block never returns `false` or `nil` . If the
+  # block is not given, Ruby adds an implicit block of `{ |obj| obj }` which
+  # will cause [all?](Enumerable.downloaded.ruby_doc#method-i-all-3F) to
+  # return `true` when none of the collection members are `false` or `nil` .
+  # 
+  # If instead a pattern is supplied, the method returns whether `pattern
+  # === element` for every collection member.
+  # 
+  #     %w[ant bear cat].all? { |word| word.length >= 3 } #=> true
+  #     %w[ant bear cat].all? { |word| word.length >= 4 } #=> false
+  #     %w[ant bear cat].all?(/t/)                        #=> false
+  #     [1, 2i, 3.14].all?(Numeric)                       #=> true
+  #     [nil, true, 99].all?                              #=> false
+  #     [].all?                                           #=> true
+  def all?: () -> bool
+          | () { (Elem arg0) -> untyped } -> bool
+
+  # Passes each element of the collection to the given block. The method
+  # returns `true` if the block ever returns a value other than `false` or
+  # `nil` . If the block is not given, Ruby adds an implicit block of `{
+  # |obj| obj }` that will cause
+  # [any?](Enumerable.downloaded.ruby_doc#method-i-any-3F) to return `true`
+  # if at least one of the collection members is not `false` or `nil` .
+  # 
+  # If instead a pattern is supplied, the method returns whether `pattern
+  # === element` for any collection member.
+  # 
+  # ```ruby
+  # %w[ant bear cat].any? { |word| word.length >= 3 } #=> true
+  # %w[ant bear cat].any? { |word| word.length >= 4 } #=> true
+  # %w[ant bear cat].any?(/d/)                        #=> false
+  # [nil, true, 99].any?(Integer)                     #=> true
+  # [nil, true, 99].any?                              #=> true
+  # [].any?                                           #=> false
+  # ```
+  def `any?`: () -> bool
+            | () { (Elem arg0) -> untyped } -> bool
+
+  def collect: [U] () { (Elem arg0) -> U } -> ::Array[U]
+             | () -> ::Enumerator[Elem, Return]
+
+  def collect_concat: [U] () { (Elem arg0) -> ::Enumerator[U, untyped] } -> ::Array[U]
+
+  # Returns the number of items in `enum` through enumeration. If an
+  # argument is given, the number of items in `enum` that are equal to
+  # `item` are counted. If a block is given, it counts the number of
+  # elements yielding a true value.
+  # 
+  # ```ruby
+  # ary = [1, 2, 4, 2]
+  # ary.count               #=> 4
+  # ary.count(2)            #=> 2
+  # ary.count{ |x| x%2==0 } #=> 3
+  # ```
+  def count: () -> Integer
+           | (?untyped arg0) -> Integer
+           | () { (Elem arg0) -> untyped } -> Integer
+
+  def cycle: (?Integer n) { (Elem arg0) -> untyped } -> NilClass
+           | (?Integer n) -> ::Enumerator[Elem, Return]
+
+  def detect: (?Proc ifnone) { (Elem arg0) -> untyped } -> Elem?
+            | (?Proc ifnone) -> ::Enumerator[Elem, Return]
+
+  def drop: (Integer n) -> ::Array[Elem]
+
+  def drop_while: () { (Elem arg0) -> untyped } -> ::Array[Elem]
+                | () -> ::Enumerator[Elem, Return]
+
+  def each_cons: (Integer n) { (::Array[Elem] arg0) -> untyped } -> NilClass
+               | (Integer n) -> ::Enumerator[::Array[Elem], Return]
+
+  def each_with_index: () { (Elem arg0, Integer arg1) -> untyped } -> ::Enumerable[Elem, Return]
+                     | () -> ::Enumerator[[ Elem, Integer ], Return]
+
+  def each_with_object: [U] (U arg0) { (Elem arg0, untyped arg1) -> untyped } -> U
+                      | [U] (U arg0) -> ::Enumerator[[ Elem, U ], Return]
+
+  # Returns an array containing the items in *enum* .
+  # 
+  # ```ruby
+  # (1..7).to_a                       #=> [1, 2, 3, 4, 5, 6, 7]
+  # { 'a'=>1, 'b'=>2, 'c'=>3 }.to_a   #=> [["a", 1], ["b", 2], ["c", 3]]
+  # 
+  # require 'prime'
+  # Prime.entries 10                  #=> [2, 3, 5, 7]
+  # ```
+  def entries: () -> ::Array[Elem]
+
+  def find_all: () { (Elem arg0) -> untyped } -> ::Array[Elem]
+              | () -> ::Enumerator[Elem, Return]
+
+  alias select find_all
+  alias filter find_all
+
+  def find_index: (?untyped value) -> Integer?
+                | () { (Elem arg0) -> untyped } -> Integer?
+                | () -> ::Enumerator[Elem, Return]
+
+  # Returns the first element, or the first `n` elements, of the enumerable.
+  # If the enumerable is empty, the first form returns `nil`, and the
+  # second form returns an empty array.
+  # 
+  # ```ruby
+  # %w[foo bar baz].first     #=> "foo"
+  # %w[foo bar baz].first(2)  #=> ["foo", "bar"]
+  # %w[foo bar baz].first(10) #=> ["foo", "bar", "baz"]
+  # [].first                  #=> nil
+  # [].first(10)              #=> []
+  # ```
+  def first: () -> Elem?
+           | (?Integer n) -> ::Array[Elem]?
+
+  def grep: (untyped arg0) -> ::Array[Elem]
+          | [U] (untyped arg0) { (Elem arg0) -> U } -> ::Array[U]
+
+  def grep_v: (untyped arg0) -> ::Array[Integer]
+            | [U] (untyped arg0) { (Elem arg0) -> U } -> ::Array[U]
+
+  def group_by: [U] () { (Elem arg0) -> U } -> ::Hash[U, ::Array[Elem]]
+              | () -> ::Enumerator[Elem, Return]
+
+  def `include?`: (untyped arg0) -> bool
+
+  def inject: (untyped init, Symbol method) -> untyped
+            | (Symbol method) -> untyped
+            | [A] (A initial) { (Elem, A) -> A } -> Elem
+            | () { (Elem, Elem) -> Elem } -> Elem
+
+  # Returns the object in *enum* with the maximum value. The first form
+  # assumes all objects implement `Comparable` ; the second uses the block
+  # to return *a \<=\> b* .
+  # 
+  # ```ruby
+  # a = %w(albatross dog horse)
+  # a.max                                   #=> "horse"
+  # a.max { |a, b| a.length <=> b.length }  #=> "albatross"
+  # ```
+  # 
+  # If the `n` argument is given, maximum `n` elements are returned as an
+  # array, sorted in descending order.
+  # 
+  # ```ruby
+  # a = %w[albatross dog horse]
+  # a.max(2)                                  #=> ["horse", "dog"]
+  # a.max(2) {|a, b| a.length <=> b.length }  #=> ["albatross", "horse"]
+  # [5, 1, 3, 4, 2].max(3)                    #=> [5, 4, 3]
+  # ```
+  def max: () -> Elem?
+         | () { (Elem arg0, Elem arg1) -> Integer } -> Elem?
+         | (?Integer arg0) -> ::Array[Elem]
+         | (?Integer arg0) { (Elem arg0, Elem arg1) -> Integer } -> ::Array[Elem]
+
+  def max_by: () -> ::Enumerator[Elem, Return]
+            | () { (Elem arg0) -> (Comparable | ::Array[untyped]) } -> Elem?
+            | (?Integer arg0) -> ::Enumerator[Elem, Return]
+            | (?Integer arg0) { (Elem arg0) -> (Comparable | ::Array[untyped]) } -> ::Array[Elem]
+
+  # Returns the object in *enum* with the minimum value. The first form
+  # assumes all objects implement `Comparable` ; the second uses the block
+  # to return *a \<=\> b* .
+  # 
+  # ```ruby
+  # a = %w(albatross dog horse)
+  # a.min                                   #=> "albatross"
+  # a.min { |a, b| a.length <=> b.length }  #=> "dog"
+  # ```
+  # 
+  # If the `n` argument is given, minimum `n` elements are returned as a
+  # sorted array.
+  # 
+  # ```ruby
+  # a = %w[albatross dog horse]
+  # a.min(2)                                  #=> ["albatross", "dog"]
+  # a.min(2) {|a, b| a.length <=> b.length }  #=> ["dog", "horse"]
+  # [5, 1, 3, 4, 2].min(3)                    #=> [1, 2, 3]
+  # ```
+  def min: () -> Elem?
+         | () { (Elem arg0, Elem arg1) -> Integer } -> Elem?
+         | (?Integer arg0) -> ::Array[Elem]
+         | (?Integer arg0) { (Elem arg0, Elem arg1) -> Integer } -> ::Array[Elem]
+
+  def min_by: () -> ::Enumerator[Elem, Return]
+            | () { (Elem arg0) -> (Comparable | ::Array[untyped]) } -> Elem?
+            | (?Integer arg0) -> ::Enumerator[Elem, Return]
+            | (?Integer arg0) { (Elem arg0) -> (Comparable | ::Array[untyped]) } -> ::Array[Elem]
+
+  # Returns a two element array which contains the minimum and the maximum
+  # value in the enumerable. The first form assumes all objects implement
+  # `Comparable` ; the second uses the block to return *a \<=\> b* .
+  # 
+  # ```ruby
+  # a = %w(albatross dog horse)
+  # a.minmax                                  #=> ["albatross", "horse"]
+  # a.minmax { |a, b| a.length <=> b.length } #=> ["dog", "albatross"]
+  # ```
+  def minmax: () -> [ Elem?, Elem? ]
+            | () { (Elem arg0, Elem arg1) -> Integer } -> [ Elem?, Elem? ]
+
+  def minmax_by: () -> [ Elem?, Elem? ]
+               | () { (Elem arg0) -> (Comparable | ::Array[untyped]) } -> ::Enumerator[Elem, Return]
+
+  # Passes each element of the collection to the given block. The method
+  # returns `true` if the block never returns `true` for all elements. If
+  # the block is not given, `none?` will return `true` only if none of the
+  # collection members is true.
+  # 
+  # If instead a pattern is supplied, the method returns whether `pattern
+  # === element` for none of the collection members.
+  # 
+  # ```ruby
+  # %w{ant bear cat}.none? { |word| word.length == 5 } #=> true
+  # %w{ant bear cat}.none? { |word| word.length >= 4 } #=> false
+  # %w{ant bear cat}.none?(/d/)                        #=> true
+  # [1, 3.14, 42].none?(Float)                         #=> false
+  # [].none?                                           #=> true
+  # [nil].none?                                        #=> true
+  # [nil, false].none?                                 #=> true
+  # [nil, false, true].none?                           #=> false
+  # ```
+  def none?: () -> bool
+           | () { (Elem arg0) -> untyped } -> bool
+
+  # Passes each element of the collection to the given block. The method
+  # returns `true` if the block returns `true` exactly once. If the block is
+  # not given, `one?` will return `true` only if exactly one of the
+  # collection members is true.
+  # 
+  # If instead a pattern is supplied, the method returns whether `pattern
+  # === element` for exactly one collection member.
+  # 
+  # ```ruby
+  # %w{ant bear cat}.one? { |word| word.length == 4 }  #=> true
+  # %w{ant bear cat}.one? { |word| word.length > 4 }   #=> false
+  # %w{ant bear cat}.one? { |word| word.length < 4 }   #=> false
+  # %w{ant bear cat}.one?(/t/)                         #=> false
+  # [ nil, true, 99 ].one?                             #=> false
+  # [ nil, true, false ].one?                          #=> true
+  # [ nil, true, 99 ].one?(Integer)                    #=> true
+  # [].one?                                            #=> false
+  # ```
+  def one?: () -> bool
+          | () { (Elem arg0) -> untyped } -> bool
+
+  def partition: () { (Elem arg0) -> untyped } -> [ ::Array[Elem], ::Array[Elem] ]
+               | () -> ::Enumerator[Elem, Return]
+
+  def reject: () { (Elem arg0) -> untyped } -> ::Array[Elem]
+            | () -> ::Enumerator[Elem, Return]
+
+  def reverse_each: () { (Elem arg0) -> untyped } -> ::Enumerator[Elem, Return]
+                  | () -> ::Enumerator[Elem, Return]
+
+  # Returns an array containing the items in *enum* sorted.
+  # 
+  # Comparisons for the sort will be done using the items’ own `<=>`
+  # operator or using an optional code block.
+  # 
+  # The block must implement a comparison between `a` and `b` and return an
+  # integer less than 0 when `b` follows `a`, `0` when `a` and `b` are
+  # equivalent, or an integer greater than 0 when `a` follows `b` .
+  # 
+  # The result is not guaranteed to be stable. When the comparison of two
+  # elements returns `0`, the order of the elements is unpredictable.
+  # 
+  # ```ruby
+  # %w(rhea kea flea).sort           #=> ["flea", "kea", "rhea"]
+  # (1..10).sort { |a, b| b <=> a }  #=> [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
+  # ```
+  # 
+  # See also [\#sort\_by](Enumerable.downloaded.ruby_doc#method-i-sort_by).
+  # It implements a Schwartzian transform which is useful when key
+  # computation or comparison is expensive.
+  def sort: () -> ::Array[Elem]
+          | () { (Elem arg0, Elem arg1) -> Integer } -> ::Array[Elem]
+
+  def sort_by: () { (Elem arg0) -> (Comparable | ::Array[untyped]) } -> ::Array[Elem]
+             | () -> ::Enumerator[Elem, Return]
+
+  def take: (Integer n) -> ::Array[Elem]?
+
+  def take_while: () { (Elem arg0) -> untyped } -> ::Array[Elem]
+                | () -> ::Enumerator[Elem, Return]
+
+  # Implemented in C++
+  # Returns the result of interpreting *enum* as a list of `[key, value]`
+  # pairs.
+  # 
+  #     %i[hello world].each_with_index.to_h
+  #       # => {:hello => 0, :world => 1}
+  # 
+  # If a block is given, the results of the block on each element of the
+  # enum will be used as pairs.
+  # 
+  # ```ruby
+  # (1..5).to_h {|x| [x, x ** 2]}
+  #   #=> {1=>1, 2=>4, 3=>9, 4=>16, 5=>25}
+  # ```
+  def to_h: () -> ::Hash[untyped, untyped]
+
+  def each_slice: (Integer n) { (::Array[Elem] arg0) -> untyped } -> NilClass
+                | (Integer n) -> ::Enumerator[::Array[Elem], Return]
+
+  def find: (?Proc ifnone) { (Elem arg0) -> untyped } -> Elem?
+          | (?Proc ifnone) -> ::Enumerator[Elem, Return]
+
+  def flat_map: [U] () { (Elem arg0) -> U } -> U
+              | () -> ::Enumerator[Elem, Return]
+
+  def map: [U] () { (Elem arg0) -> U } -> ::Array[U]
+         | () -> ::Enumerator[Elem, Return]
+
+  def member?: (untyped arg0) -> bool
+
+  alias reduce inject
+
+  # Returns an array containing the items in *enum* .
+  # 
+  # ```ruby
+  # (1..7).to_a                       #=> [1, 2, 3, 4, 5, 6, 7]
+  # { 'a'=>1, 'b'=>2, 'c'=>3 }.to_a   #=> [["a", 1], ["b", 2], ["c", 3]]
+  # 
+  # require 'prime'
+  # Prime.entries 10                  #=> [2, 3, 5, 7]
+  # ```
+  def to_a: () -> ::Array[Elem]
+
+  # Returns a lazy enumerator, whose methods map/collect,
+  # flat\_map/collect\_concat, select/find\_all, reject, grep,
+  # [\#grep\_v](Enumerable.downloaded.ruby_doc#method-i-grep_v), zip, take,
+  # [\#take\_while](Enumerable.downloaded.ruby_doc#method-i-take_while),
+  # drop, and
+  # [\#drop\_while](Enumerable.downloaded.ruby_doc#method-i-drop_while)
+  # enumerate values only on an as-needed basis. However, if a block is
+  # given to zip, values are enumerated immediately.
+  # 
+  # 
+  # The following program finds pythagorean triples:
+  # 
+  # ```ruby
+  # def pythagorean_triples
+  #   (1..Float::INFINITY).lazy.flat_map {|z|
+  #     (1..z).flat_map {|x|
+  #       (x..z).select {|y|
+  #         x**2 + y**2 == z**2
+  #       }.map {|y|
+  #         [x, y, z]
+  #       }
+  #     }
+  #   }
+  # end
+  # # show first ten pythagorean triples
+  # p pythagorean_triples.take(10).force # take is lazy, so force is needed
+  # p pythagorean_triples.first(10)      # first is eager
+  # # show pythagorean triples less than 100
+  # p pythagorean_triples.take_while { |*, z| z < 100 }.force
+  # ```
+  def lazy: () -> Enumerator::Lazy[Elem, Return]
+
+  def uniq: () -> ::Array[Elem]
+          | () { (Elem item) -> untyped } -> ::Array[Elem]
+
+  def sum: () -> (Elem | Integer)
+         | [T] () { (Elem arg0) -> T } -> (Integer | T)
+         | [T] (?T arg0) -> (Elem | T)
+         | [U] (?U arg0) { (Elem arg0) -> U } -> U
+
+  def filter_map: [U] () { (Elem arg0) -> U? } -> ::Array[U]
+                | () -> ::Enumerator[Elem, Return]
+
+  def chain: (*self enumerables) -> ::Enumerator::Chain[Elem, ::Array[self]]
+
+  def tally: () -> ::Hash[Elem, Integer]
+
+  def each_entry: () -> ::Enumerator[Elem, Return]
+                | () { (Elem arg0) -> untyped } -> self
+
+  # variadic type parameter is not supported yet
+  # https://github.com/ruby/ruby-signature/issues/21
+  def zip: [Elem2, Return2] (::Enumerable[Elem2, Return2] enum) -> ::Array[[Elem, Elem2 | nil]]
+         | [U, Elem2, Return2] (::Enumerable[Elem2, Return2]) { ([Elem, Elem2 | nil]) -> U } -> nil
+
+  def chunk: () -> ::Enumerator[Elem, Return]
+           | [U] () { (Elem elt) -> U } -> ::Enumerator[[U, Array[Elem]], void]
+
+  def chunk_while: () { (Elem elt_before, Elem elt_after) -> bool } -> ::Enumerator[::Array[Elem], void]
+
+  def slice_when: () { (Elem elt_before, Elem elt_after) -> bool } -> ::Enumerator[::Array[Elem], void]
+
+  def slice_after: (untyped pattern) -> ::Enumerator[::Array[Elem], void]
+                 | () { (Elem elt) -> bool } -> ::Enumerator[::Array[Elem], void]
+
+  def slice_before: (untyped pattern) -> ::Enumerator[::Array[Elem], void]
+                  | () { (Elem elt) -> bool } -> ::Enumerator[::Array[Elem], void]
+end

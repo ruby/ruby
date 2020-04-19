@@ -1,0 +1,82 @@
+# The class of the singleton object `nil`.
+# 
+class NilClass
+  public
+
+  # And---Returns `false`. *obj* is always evaluated as it is the argument to a
+  # method call---there is no short-circuit evaluation in this case.
+  # 
+  def &: (untyped obj) -> bool
+
+  # Case Equality -- For class Object, effectively the same as calling `#==`, but
+  # typically overridden by descendants to provide meaningful semantics in `case`
+  # statements.
+  # 
+  def ===: (nil) -> true
+         | (untyped obj) -> bool
+
+  # Dummy pattern matching -- always returns nil.
+  # 
+  def =~: (untyped obj) -> nil
+
+  # Exclusive Or---If *obj* is `nil` or `false`, returns `false`; otherwise,
+  # returns `true`.
+  # 
+  def ^: (nil) -> false
+       | (false) -> false
+       | (untyped obj) -> bool
+
+  # Always returns the string "nil".
+  # 
+  def inspect: () -> "nil"
+
+  # Only the object *nil* responds `true` to `nil?`.
+  # 
+  def nil?: () -> bool
+
+  # Returns zero as a rational.  The optional argument `eps` is always ignored.
+  # 
+  def rationalize: (?untyped eps) -> Rational
+
+  # Always returns an empty array.
+  # 
+  #     nil.to_a   #=> []
+  # 
+  def to_a: () -> [ ]
+
+  # Returns zero as a complex.
+  # 
+  def to_c: () -> Complex
+
+  # Always returns zero.
+  # 
+  #     nil.to_f   #=> 0.0
+  # 
+  def to_f: () -> Float
+
+  # Always returns an empty hash.
+  # 
+  #     nil.to_h   #=> {}
+  # 
+  def to_h: () -> ::Hash[untyped, untyped]
+
+  # Always returns zero.
+  # 
+  #     nil.to_i   #=> 0
+  # 
+  def to_i: () -> 0
+
+  # Returns zero as a rational.
+  # 
+  def to_r: () -> Rational
+
+  # Always returns the empty string.
+  # 
+  def to_s: () -> ""
+
+  # Or---Returns `false` if *obj* is `nil` or `false`; `true` otherwise.
+  # 
+  def |: (nil) -> false
+       | (false) -> false
+       | (untyped obj) -> bool
+end

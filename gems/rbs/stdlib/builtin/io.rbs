@@ -1,0 +1,683 @@
+# The [IO](IO) class is the basis for all input and
+# output in Ruby. An I/O stream may be *duplexed* (that is,
+# bidirectional), and so may use more than one native operating system
+# stream.
+# 
+# Many of the examples in this section use the
+# [File](https://ruby-doc.org/core-2.6.3/File.html) class, the only
+# standard subclass of [IO](IO). The two classes are
+# closely associated. Like the
+# [File](https://ruby-doc.org/core-2.6.3/File.html) class, the Socket
+# library subclasses from [IO](IO) (such as TCPSocket
+# or UDPSocket).
+# 
+# The
+# [Kernel\#open](https://ruby-doc.org/core-2.6.3/Kernel.html#method-i-open)
+# method can create an [IO](IO) (or
+# [File](https://ruby-doc.org/core-2.6.3/File.html) ) object for these
+# types of arguments:
+# 
+#   - A plain string represents a filename suitable for the underlying
+#     operating system.
+# 
+#   - A string starting with `"|"` indicates a subprocess. The remainder
+#     of the string following the `"|"` is invoked as a process with
+#     appropriate input/output channels connected to it.
+# 
+#   - A string equal to `"|-"` will create another Ruby instance as a
+#     subprocess.
+# 
+# The [IO](IO) may be opened with different file modes
+# (read-only, write-only) and encodings for proper conversion. See
+# [::new](IO#method-c-new) for these options. See
+# [Kernel\#open](https://ruby-doc.org/core-2.6.3/Kernel.html#method-i-open)
+# for details of the various command formats described above.
+# 
+# [::popen](IO#method-c-popen), the Open3 library, or
+# Process\#spawn may also be used to communicate with subprocesses through
+# an [IO](IO).
+# 
+# Ruby will convert pathnames between different operating system
+# conventions if possible. For instance, on a Windows system the filename
+# `"/gumby/ruby/test.rb"` will be opened as `"\gumby\ruby\test.rb"` . When
+# specifying a Windows-style filename in a Ruby string, remember to escape
+# the backslashes:
+# 
+# ```ruby
+# "C:\\gumby\\ruby\\test.rb"
+# ```
+# 
+# Our examples here will use the Unix-style forward slashes;
+# File::ALT\_SEPARATOR can be used to get the platform-specific separator
+# character.
+# 
+# The global constant [ARGF](https://ruby-doc.org/core-2.6.3/ARGF.html)
+# (also accessible as `$<` ) provides an IO-like stream which allows
+# access to all files mentioned on the command line (or STDIN if no files
+# are mentioned).
+# [ARGF\#path](https://ruby-doc.org/core-2.6.3/ARGF.html#method-i-path)
+# and its alias
+# [ARGF\#filename](https://ruby-doc.org/core-2.6.3/ARGF.html#method-i-filename)
+# are provided to access the name of the file currently being read.
+# 
+# 
+# The io/console extension provides methods for interacting with the
+# console. The console can be accessed from IO.console or the standard
+# input/output/error [IO](IO) objects.
+# 
+# Requiring io/console adds the following methods:
+# 
+#   - IO::console
+# 
+#   - IO\#raw
+# 
+#   - IO\#raw\!
+# 
+#   - IO\#cooked
+# 
+#   - IO\#cooked\!
+# 
+#   - IO\#getch
+# 
+#   - IO\#echo=
+# 
+#   - IO\#echo?
+# 
+#   - IO\#noecho
+# 
+#   - IO\#winsize
+# 
+#   - IO\#winsize=
+# 
+#   - IO\#iflush
+# 
+#   - IO\#ioflush
+# 
+#   - IO\#oflush
+# 
+# Example:
+# 
+# ```ruby
+# require 'io/console'
+# rows, columns = $stdout.winsize
+# puts "Your screen is #{columns} wide and #{rows} tall"
+# ```
+class IO < Object
+  include File::Constants
+
+  include Enumerable[String, IO]
+
+  def <<: (untyped arg0) -> self
+
+  def advise: (Symbol arg0, ?Integer offset, ?Integer len) -> NilClass
+
+  def autoclose=: (bool arg0) -> bool
+
+  # Returns `true` if the underlying file descriptor of *ios* will be closed
+  # automatically at its finalization, otherwise `false` .
+  def autoclose?: () -> bool
+
+  # Puts *ios* into binary mode. Once a stream is in binary mode, it cannot
+  # be reset to nonbinary mode.
+  # 
+  #   - newline conversion disabled
+  # 
+  #   - encoding conversion disabled
+  # 
+  #   - content is treated as ASCII-8BIT
+  def binmode: () -> self
+
+  # Returns `true` if *ios* is binmode.
+  def binmode?: () -> bool
+
+  # Closes *ios* and flushes any pending writes to the operating system. The
+  # stream is unavailable for any further data operations; an `IOError` is
+  # raised if such an attempt is made. I/O streams are automatically closed
+  # when they are claimed by the garbage collector.
+  # 
+  # If *ios* is opened by `IO.popen`, `close` sets `$?` .
+  # 
+  # Calling this method on closed [IO](IO.downloaded.ruby_doc) object is
+  # just ignored since Ruby 2.3.
+  def close: () -> NilClass
+
+  def close_on_exec=: (bool arg0) -> bool
+
+  # Returns `true` if *ios* will be closed on exec.
+  # 
+  # ```ruby
+  # f = open("/dev/null")
+  # f.close_on_exec?                 #=> false
+  # f.close_on_exec = true
+  # f.close_on_exec?                 #=> true
+  # f.close_on_exec = false
+  # f.close_on_exec?                 #=> false
+  # ```
+  def close_on_exec?: () -> bool
+
+  # Closes the read end of a duplex I/O stream (i.e., one that contains both
+  # a read and a write stream, such as a pipe). Will raise an `IOError` if
+  # the stream is not duplexed.
+  # 
+  # ```ruby
+  # f = IO.popen("/bin/sh","r+")
+  # f.close_read
+  # f.readlines
+  # ```
+  # 
+  # *produces:*
+  # 
+  #     prog.rb:3:in `readlines': not opened for reading (IOError)
+  #      from prog.rb:3
+  # 
+  # Calling this method on closed [IO](IO.downloaded.ruby_doc) object is
+  # just ignored since Ruby 2.3.
+  def close_read: () -> NilClass
+
+  # Closes the write end of a duplex I/O stream (i.e., one that contains
+  # both a read and a write stream, such as a pipe). Will raise an `IOError`
+  # if the stream is not duplexed.
+  # 
+  # ```ruby
+  # f = IO.popen("/bin/sh","r+")
+  # f.close_write
+  # f.print "nowhere"
+  # ```
+  # 
+  # *produces:*
+  # 
+  #     prog.rb:3:in `write': not opened for writing (IOError)
+  #      from prog.rb:3:in `print'
+  #      from prog.rb:3
+  # 
+  # Calling this method on closed [IO](IO.downloaded.ruby_doc) object is
+  # just ignored since Ruby 2.3.
+  def close_write: () -> NilClass
+
+  # Returns `true` if *ios* is completely closed (for duplex streams, both
+  # reader and writer), `false` otherwise.
+  # 
+  # ```ruby
+  # f = File.new("testfile")
+  # f.close         #=> nil
+  # f.closed?       #=> true
+  # f = IO.popen("/bin/sh","r+")
+  # f.close_write   #=> nil
+  # f.closed?       #=> false
+  # f.close_read    #=> nil
+  # f.closed?       #=> true
+  # ```
+  def closed?: () -> bool
+
+  def each: (?String sep, ?Integer limit) { (String arg0) -> untyped } -> self
+          | (?String sep, ?Integer limit) -> ::Enumerator[String, self]
+
+  def each_byte: () { (Integer arg0) -> untyped } -> self
+               | () -> ::Enumerator[Integer, self]
+
+  def each_char: () { (String arg0) -> untyped } -> self
+               | () -> ::Enumerator[String, self]
+
+  def each_codepoint: () { (Integer arg0) -> untyped } -> self
+                    | () -> ::Enumerator[Integer, self]
+
+  # Returns true if *ios* is at end of file that means there are no more
+  # data to read. The stream must be opened for reading or an `IOError` will
+  # be raised.
+  # 
+  # ```ruby
+  # f = File.new("testfile")
+  # dummy = f.readlines
+  # f.eof   #=> true
+  # ```
+  # 
+  # If *ios* is a stream such as pipe or socket, `IO#eof?` blocks until the
+  # other end sends some data or closes it.
+  # 
+  # ```ruby
+  # r, w = IO.pipe
+  # Thread.new { sleep 1; w.close }
+  # r.eof?  #=> true after 1 second blocking
+  # 
+  # r, w = IO.pipe
+  # Thread.new { sleep 1; w.puts "a" }
+  # r.eof?  #=> false after 1 second blocking
+  # 
+  # r, w = IO.pipe
+  # r.eof?  # blocks forever
+  # ```
+  # 
+  # Note that `IO#eof?` reads data to the input byte buffer. So `IO#sysread`
+  # may not behave as you intend with `IO#eof?`, unless you call
+  # `IO#rewind` first (which is not available for some streams).
+  def eof: () -> bool
+
+  def fcntl: (Integer integer_cmd, String | Integer arg) -> Integer
+
+  # Immediately writes all buffered data in *ios* to disk.
+  # 
+  # If the underlying operating system does not support *fdatasync(2)* ,
+  # `IO#fsync` is called instead (which might raise a `NotImplementedError`
+  # ).
+  def fdatasync: () -> Integer?
+
+  # Returns an integer representing the numeric file descriptor for *ios* .
+  # 
+  # ```ruby
+  # $stdin.fileno    #=> 0
+  # $stdout.fileno   #=> 1
+  # ```
+  # 
+  # 
+  # 
+  # Also aliased as: [to\_i](IO.downloaded.ruby_doc#method-i-to_i)
+  def fileno: () -> Integer
+
+  # Flushes any buffered data within *ios* to the underlying operating
+  # system (note that this is Ruby internal buffering only; the OS may
+  # buffer the data as well).
+  # 
+  # ```ruby
+  # $stdout.print "no newline"
+  # $stdout.flush
+  # ```
+  # 
+  # *produces:*
+  # 
+  # ```ruby
+  # no newline
+  # ```
+  def flush: () -> self
+
+  # Immediately writes all buffered data in *ios* to disk. Note that `fsync`
+  # differs from using `IO#sync=` . The latter ensures that data is flushed
+  # from Ruby’s buffers, but does not guarantee that the underlying
+  # operating system actually writes it to disk.
+  # 
+  # `NotImplementedError` is raised if the underlying operating system does
+  # not support *fsync(2)* .
+  def fsync: () -> Integer?
+
+  # Gets the next 8-bit byte (0..255) from *ios* . Returns `nil` if called
+  # at end of file.
+  # 
+  # ```ruby
+  # f = File.new("testfile")
+  # f.getbyte   #=> 84
+  # f.getbyte   #=> 104
+  # ```
+  def getbyte: () -> Integer?
+
+  # Reads a one-character string from *ios* . Returns `nil` if called at end
+  # of file.
+  # 
+  # ```ruby
+  # f = File.new("testfile")
+  # f.getc   #=> "h"
+  # f.getc   #=> "e"
+  # ```
+  def getc: () -> String?
+
+  def gets: (?String sep, ?Integer limit) -> String?
+
+  def initialize: (Integer fd, ?Integer mode, ?Integer opt) -> void
+
+  # Return a string describing this [IO](IO.downloaded.ruby_doc) object.
+  def inspect: () -> String
+
+  # Returns the [Encoding](https://ruby-doc.org/core-2.6.3/Encoding.html) of
+  # the internal string if conversion is specified. Otherwise returns `nil`
+  # .
+  def internal_encoding: () -> Encoding
+
+  def ioctl: (Integer integer_cmd, String | Integer arg) -> Integer
+
+  # Returns `true` if *ios* is associated with a terminal device (tty),
+  # `false` otherwise.
+  # 
+  # ```ruby
+  # File.new("testfile").isatty   #=> false
+  # File.new("/dev/tty").isatty   #=> true
+  # ```
+  def isatty: () -> bool
+
+  # Returns the current line number in *ios* . The stream must be opened for
+  # reading. `lineno` counts the number of times
+  # [gets](IO.downloaded.ruby_doc#method-i-gets) is called rather than the
+  # number of newlines encountered. The two values will differ if
+  # [gets](IO.downloaded.ruby_doc#method-i-gets) is called with a separator
+  # other than newline.
+  # 
+  # Methods that use `$/` like [each](IO.downloaded.ruby_doc#method-i-each)
+  # , [lines](IO.downloaded.ruby_doc#method-i-lines) and
+  # [readline](IO.downloaded.ruby_doc#method-i-readline) will also increment
+  # `lineno` .
+  # 
+  # See also the `$.` variable.
+  # 
+  # ```ruby
+  # f = File.new("testfile")
+  # f.lineno   #=> 0
+  # f.gets     #=> "This is line one\n"
+  # f.lineno   #=> 1
+  # f.gets     #=> "This is line two\n"
+  # f.lineno   #=> 2
+  # ```
+  def lineno: () -> Integer
+
+  def lineno=: (Integer arg0) -> Integer
+
+  # Returns the process ID of a child process associated with *ios* . This
+  # will be set by `IO.popen` .
+  # 
+  # ```ruby
+  # pipe = IO.popen("-")
+  # if pipe
+  #   $stderr.puts "In parent, child pid is #{pipe.pid}"
+  # else
+  #   $stderr.puts "In child, pid is #{$$}"
+  # end
+  # ```
+  # 
+  # *produces:*
+  # 
+  #     In child, pid is 26209
+  #     In parent, child pid is 26209
+  def pid: () -> Integer
+
+  # Returns the current offset (in bytes) of *ios* .
+  # 
+  # ```ruby
+  # f = File.new("testfile")
+  # f.pos    #=> 0
+  # f.gets   #=> "This is line one\n"
+  # f.pos    #=> 17
+  # ```
+  def pos: () -> Integer
+
+  def pos=: (Integer arg0) -> Integer
+
+  def print: (*untyped arg0) -> NilClass
+
+  def printf: (String format_string, *untyped arg0) -> NilClass
+
+  def putc: (Numeric | String arg0) -> untyped
+
+  def puts: (*untyped arg0) -> NilClass
+
+  def read: (?Integer length, ?String outbuf) -> String?
+
+  def read_nonblock: (Integer len) -> String
+                   | (Integer len, ?String buf) -> String
+
+  # Reads a byte as with `IO#getbyte`, but raises an `EOFError` on end of
+  # file.
+  def readbyte: () -> Integer
+
+  # Reads a one-character string from *ios* . Raises an `EOFError` on end of
+  # file.
+  # 
+  # ```ruby
+  # f = File.new("testfile")
+  # f.readchar   #=> "h"
+  # f.readchar   #=> "e"
+  # ```
+  def readchar: () -> String
+
+  def readline: (?String sep, ?Integer limit) -> String
+
+  def readlines: (?String sep, ?Integer limit) -> ::Array[String]
+
+  def readpartial: (Integer maxlen) -> String
+                 | (Integer maxlen, ?String outbuf) -> String
+
+  def reopen: (IO other_IO_or_path) -> IO
+            | (String other_IO_or_path, ?String mode_str) -> IO
+
+  # Positions *ios* to the beginning of input, resetting `lineno` to zero.
+  # 
+  # ```ruby
+  # f = File.new("testfile")
+  # f.readline   #=> "This is line one\n"
+  # f.rewind     #=> 0
+  # f.lineno     #=> 0
+  # f.readline   #=> "This is line one\n"
+  # ```
+  # 
+  # Note that it cannot be used with streams such as pipes, ttys, and
+  # sockets.
+  def rewind: () -> Integer
+
+  def seek: (Integer amount, ?Integer whence) -> Integer
+
+  def set_encoding: (?String | Encoding ext_or_ext_int_enc) -> self
+                  | (?String | Encoding ext_or_ext_int_enc, ?String | Encoding int_enc) -> self
+
+  # Returns status information for *ios* as an object of type `File::Stat` .
+  # 
+  # ```ruby
+  # f = File.new("testfile")
+  # s = f.stat
+  # "%o" % s.mode   #=> "100644"
+  # s.blksize       #=> 4096
+  # s.atime         #=> Wed Apr 09 08:53:54 CDT 2003
+  # ```
+  def stat: () -> File::Stat
+
+  # Returns the current “sync mode” of *ios* . When sync mode is true, all
+  # output is immediately flushed to the underlying operating system and is
+  # not buffered by Ruby internally. See also `IO#fsync` .
+  # 
+  # ```ruby
+  # f = File.new("testfile")
+  # f.sync   #=> false
+  # ```
+  def sync: () -> bool
+
+  def sync=: (bool arg0) -> bool
+
+  def sysread: (Integer maxlen, String outbuf) -> String
+
+  def sysseek: (Integer amount, ?Integer whence) -> Integer
+
+  def syswrite: (String arg0) -> Integer
+
+  # Returns the current offset (in bytes) of *ios* .
+  # 
+  # ```ruby
+  # f = File.new("testfile")
+  # f.pos    #=> 0
+  # f.gets   #=> "This is line one\n"
+  # f.pos    #=> 17
+  # ```
+  def tell: () -> Integer
+
+  # Returns *ios* .
+  def to_io: () -> self
+
+  # Returns `true` if *ios* is associated with a terminal device (tty),
+  # `false` otherwise.
+  # 
+  # ```ruby
+  # File.new("testfile").isatty   #=> false
+  # File.new("/dev/tty").isatty   #=> true
+  # ```
+  def tty?: () -> bool
+
+  def ungetbyte: (String | Integer arg0) -> NilClass
+
+  def ungetc: (String arg0) -> NilClass
+
+  def write: (String arg0) -> Integer
+
+  def self.binread: (String name, ?Integer length, ?Integer offset) -> String
+
+  def self.binwrite: (String name, String arg0, ?Integer offset, ?external_encoding: String external_encoding, ?internal_encoding: String internal_encoding, ?encoding: String encoding, ?textmode: untyped textmode, ?binmode: untyped binmode, ?autoclose: untyped autoclose, ?mode: String mode) -> Integer
+
+  def self.copy_stream: (String | IO src, String | IO dst, ?Integer copy_length, ?Integer src_offset) -> Integer
+
+  def self.popen: (*untyped args) -> untyped
+
+  def self.read: (String name, ?Integer length, ?Integer offset, ?external_encoding: String external_encoding, ?internal_encoding: String internal_encoding, ?encoding: String encoding, ?textmode: untyped textmode, ?binmode: untyped binmode, ?autoclose: untyped autoclose, ?mode: String mode) -> String
+
+  def self.readlines: (String name, ?String sep, ?Integer limit, ?external_encoding: String external_encoding, ?internal_encoding: String internal_encoding, ?encoding: String encoding, ?textmode: untyped textmode, ?binmode: untyped binmode, ?autoclose: untyped autoclose, ?mode: String mode) -> ::Array[String]
+
+  def self.select: (::Array[IO]? read_array, ?::Array[IO]? write_array, ?::Array[IO]? error_array, ?Integer? timeout) -> ::Array[::Array[IO]]?
+
+  def self.sysopen: (String path, ?String mode, ?String perm) -> Integer
+
+  def self.try_convert: (untyped arg0) -> IO?
+
+  def self.write: (String name, String arg0, ?Integer offset, ?external_encoding: String external_encoding, ?internal_encoding: String internal_encoding, ?encoding: String encoding, ?textmode: untyped textmode, ?binmode: untyped binmode, ?autoclose: untyped autoclose, ?mode: String mode) -> Integer
+
+  def self.for_fd: (Integer fd, ?Integer mode, ?Integer opt) -> self
+
+  def bytes: () { (Integer arg0) -> untyped } -> self
+           | () -> ::Enumerator[Integer, self]
+
+  def chars: () { (String arg0) -> untyped } -> self
+           | () -> ::Enumerator[String, self]
+
+  def codepoints: () { (Integer arg0) -> untyped } -> self
+                | () -> ::Enumerator[Integer, self]
+
+  def each_line: (?String sep, ?Integer limit) { (String arg0) -> untyped } -> self
+               | (?String sep, ?Integer limit) -> ::Enumerator[String, self]
+
+  # Returns true if *ios* is at end of file that means there are no more
+  # data to read. The stream must be opened for reading or an `IOError` will
+  # be raised.
+  # 
+  # ```ruby
+  # f = File.new("testfile")
+  # dummy = f.readlines
+  # f.eof   #=> true
+  # ```
+  # 
+  # If *ios* is a stream such as pipe or socket, `IO#eof?` blocks until the
+  # other end sends some data or closes it.
+  # 
+  # ```ruby
+  # r, w = IO.pipe
+  # Thread.new { sleep 1; w.close }
+  # r.eof?  #=> true after 1 second blocking
+  # 
+  # r, w = IO.pipe
+  # Thread.new { sleep 1; w.puts "a" }
+  # r.eof?  #=> false after 1 second blocking
+  # 
+  # r, w = IO.pipe
+  # r.eof?  # blocks forever
+  # ```
+  # 
+  # Note that `IO#eof?` reads data to the input byte buffer. So `IO#sysread`
+  # may not behave as you intend with `IO#eof?`, unless you call
+  # `IO#rewind` first (which is not available for some streams).
+  def eof?: () -> bool
+
+  def lines: (?String sep, ?Integer limit) { (String arg0) -> untyped } -> self
+           | (?String sep, ?Integer limit) -> ::Enumerator[String, self]
+
+  # Alias for: [fileno](IO.downloaded.ruby_doc#method-i-fileno)
+  def to_i: () -> Integer
+end
+
+IO::APPEND: Integer
+
+IO::BINARY: Integer
+
+IO::CREAT: Integer
+
+IO::DIRECT: Integer
+
+IO::DSYNC: Integer
+
+IO::EXCL: Integer
+
+IO::FNM_CASEFOLD: Integer
+
+IO::FNM_DOTMATCH: Integer
+
+IO::FNM_EXTGLOB: Integer
+
+IO::FNM_NOESCAPE: Integer
+
+IO::FNM_PATHNAME: Integer
+
+IO::FNM_SHORTNAME: Integer
+
+IO::FNM_SYSCASE: Integer
+
+IO::LOCK_EX: Integer
+
+IO::LOCK_NB: Integer
+
+IO::LOCK_SH: Integer
+
+IO::LOCK_UN: Integer
+
+IO::NOATIME: Integer
+
+IO::NOCTTY: Integer
+
+IO::NOFOLLOW: Integer
+
+IO::NONBLOCK: Integer
+
+IO::NULL: String
+
+IO::RDONLY: Integer
+
+IO::RDWR: Integer
+
+IO::RSYNC: Integer
+
+IO::SEEK_CUR: Integer
+
+IO::SEEK_DATA: Integer
+
+IO::SEEK_END: Integer
+
+IO::SEEK_HOLE: Integer
+
+IO::SEEK_SET: Integer
+
+IO::SHARE_DELETE: Integer
+
+IO::SYNC: Integer
+
+IO::TMPFILE: Integer
+
+IO::TRUNC: Integer
+
+IO::WRONLY: Integer
+
+class IO::EAGAINWaitReadable < Errno::EAGAIN
+  include IO::WaitReadable
+end
+
+IO::EAGAINWaitReadable::Errno: Integer
+
+class IO::EAGAINWaitWritable < Errno::EAGAIN
+  include IO::WaitWritable
+end
+
+IO::EAGAINWaitWritable::Errno: Integer
+
+class IO::EINPROGRESSWaitReadable < Errno::EINPROGRESS
+  include IO::WaitReadable
+end
+
+IO::EINPROGRESSWaitReadable::Errno: Integer
+
+class IO::EINPROGRESSWaitWritable < Errno::EINPROGRESS
+  include IO::WaitWritable
+end
+
+IO::EINPROGRESSWaitWritable::Errno: Integer
+
+module IO::WaitReadable
+end
+
+module IO::WaitWritable
+end

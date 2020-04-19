@@ -1,0 +1,301 @@
+# Set implements a collection of unordered values with no duplicates. This is a
+# hybrid of Array's intuitive inter-operation facilities and Hash's fast lookup.
+#
+# Set is easy to use with Enumerable objects (implementing `each`). Most of the
+# initializer methods and binary operators accept generic Enumerable objects
+# besides sets and arrays.  An Enumerable object can be converted to Set using
+# the `to_set` method.
+#
+# Set uses Hash as storage, so you must note the following points:
+#
+# *   Equality of elements is determined according to Object#eql? and
+#     Object#hash.  Use Set#compare_by_identity to make a set compare its
+#     elements by their identity.
+# *   Set assumes that the identity of each element does not change while it is
+#     stored.  Modifying an element of a set will render the set to an
+#     unreliable state.
+# *   When a string is to be stored, a frozen copy of the string is stored
+#     instead unless the original string is already frozen.
+#
+#
+# ## Comparison
+#
+# The comparison operators <, >, <=, and >= are implemented as shorthand for the
+# {proper_,}{subset?,superset?} methods.  However, the <=> operator is
+# intentionally left out because not every pair of sets is comparable ({x, y}
+# vs. {x, z} for example).
+#
+# ## Example
+#
+#     require 'set'
+#     s1 = Set[1, 2]                        #=> #<Set: {1, 2}>
+#     s2 = [1, 2].to_set                    #=> #<Set: {1, 2}>
+#     s1 == s2                              #=> true
+#     s1.add("foo")                         #=> #<Set: {1, 2, "foo"}>
+#     s1.merge([2, 6])                      #=> #<Set: {1, 2, "foo", 6}>
+#     s1.subset?(s2)                        #=> false
+#     s2.subset?(s1)                        #=> true
+#
+# ## Contact
+#
+#     - Akinori MUSHA <knu@iDaemons.org> (current maintainer)
+#
+class Set[A]
+  # Creates a new set containing the elements of the given enumerable object.
+  #
+  # If a block is given, the elements of enum are preprocessed by the given block.
+  #
+  #     Set.new([1, 2])                       #=> #<Set: {1, 2}>
+  #     Set.new([1, 2, 1])                    #=> #<Set: {1, 2}>
+  #     Set.new([1, 'c', :s])                 #=> #<Set: {1, "c", :s}>
+  #     Set.new(1..5)                         #=> #<Set: {1, 2, 3, 4, 5}>
+  #     Set.new([1, 2, 3]) { |x| x * x }      #=> #<Set: {1, 4, 9}>
+  #
+  def initialize: (_Each[A, untyped]) -> untyped
+                | [X] (_Each[X, untyped]) { (X) -> A } -> untyped
+                | (?nil) -> untyped
+
+  # Creates a new set containing the given objects.
+  #
+  #     Set[1, 2]                   # => #<Set: {1, 2}>
+  #     Set[1, 2, 1]                # => #<Set: {1, 2}>
+  #     Set[1, 'c', :s]             # => #<Set: {1, "c", :s}>
+  #
+  def self.[]: [X] (*X) -> Set[X]
+
+  # Returns a new set containing elements common to the set and the given
+  # enumerable object.
+  #
+  #     Set[1, 3, 5] & Set[3, 2, 1]             #=> #<Set: {3, 1}>
+  #     Set['a', 'b', 'z'] & ['a', 'b', 'c']    #=> #<Set: {"a", "b"}>
+  #
+  def &: (_Each[A, untyped]) -> self
+
+  alias intersection &
+
+  # Returns a new set built by merging the set and the elements of the given
+  # enumerable object.
+  #
+  #     Set[1, 2, 3] | Set[2, 4, 5]         #=> #<Set: {1, 2, 3, 4, 5}>
+  #     Set[1, 5, 'z'] | (1..6)             #=> #<Set: {1, 5, "z", 2, 3, 4, 6}>
+  #
+  def |: (_Each[A, untyped]) -> self
+
+  alias union |
+
+  alias + |
+
+  # Returns a new set built by duplicating the set, removing every element that
+  # appears in the given enumerable object.
+  #
+  #     Set[1, 3, 5] - Set[1, 5]                #=> #<Set: {3}>
+  #     Set['a', 'b', 'z'] - ['a', 'c']         #=> #<Set: {"b", "z"}>
+  #
+  def -: (_Each[A, untyped]) -> self
+
+  alias difference -
+
+  # Adds the given object to the set and returns self.  Use `merge` to add many
+  # elements at once.
+  #
+  #     Set[1, 2].add(3)                    #=> #<Set: {1, 2, 3}>
+  #     Set[1, 2].add([3, 4])               #=> #<Set: {1, 2, [3, 4]}>
+  #     Set[1, 2].add(2)                    #=> #<Set: {1, 2}>
+  #
+  def add: (A) -> self
+
+  alias << add
+
+  # Adds the given object to the set and returns self.  If the object is already
+  # in the set, returns nil.
+  #
+  #     Set[1, 2].add?(3)                    #=> #<Set: {1, 2, 3}>
+  #     Set[1, 2].add?([3, 4])               #=> #<Set: {1, 2, [3, 4]}>
+  #     Set[1, 2].add?(2)                    #=> nil
+  #
+  def add?: (A) -> self?
+
+  # Returns true if the set contains the given object.
+  #
+  # Note that `include?` and `member?` do not test member equality using `==` as
+  # do other Enumerables.
+  #
+  # See also Enumerable#include?
+  #
+  def include?: (untyped) -> bool
+
+  alias member? include?
+
+  # Returns a new set containing elements exclusive between the set and the given
+  # enumerable object.  (set ^ enum) is equivalent to ((set | enum) - (set &
+  # enum)).
+  #
+  #     Set[1, 2] ^ Set[2, 3]                   #=> #<Set: {3, 1}>
+  #     Set[1, 'b', 'c'] ^ ['b', 'd']           #=> #<Set: {"d", 1, "c"}>
+  #
+  def ^: (_Each[A, untyped]) -> self
+
+  # Classifies the set by the return value of the given block and returns a hash
+  # of {value => set of elements} pairs.  The block is called once for each
+  # element of the set, passing the element as parameter.
+  #
+  #     require 'set'
+  #     files = Set.new(Dir.glob("*.rb"))
+  #     hash = files.classify { |f| File.mtime(f).year }
+  #     hash       #=> {2000=>#<Set: {"a.rb", "b.rb"}>,
+  #                #    2001=>#<Set: {"c.rb", "d.rb", "e.rb"}>,
+  #                #    2002=>#<Set: {"f.rb"}>}
+  #
+  # Returns an enumerator if no block is given.
+  #
+  def classify: [X] () { (A) -> X } -> Hash[X, self]
+
+  # Removes all elements and returns self.
+  #
+  #     set = Set[1, 'c', :s]             #=> #<Set: {1, "c", :s}>
+  #     set.clear                         #=> #<Set: {}>
+  #     set                               #=> #<Set: {}>
+  #
+  def clear: () -> self
+
+  # Replaces the elements with ones returned by collect(). Returns an enumerator
+  # if no block is given.
+  #
+  def collect!: () { (A) -> A } -> self
+
+  alias map! collect!
+
+  # Deletes the given object from the set and returns self.  Use `subtract` to
+  # delete many items at once.
+  #
+  def delete: (untyped) -> self
+
+  # Deletes the given object from the set and returns self.  If the object is not
+  # in the set, returns nil.
+  #
+  def delete?: (untyped) -> self?
+
+  # Deletes every element of the set for which block evaluates to true, and
+  # returns self. Returns an enumerator if no block is given.
+  #
+  def delete_if: () { (A) -> untyped } -> self
+
+  # Equivalent to Set#delete_if, but returns nil if no changes were made. Returns
+  # an enumerator if no block is given.
+  #
+  def reject!: () { (A) -> untyped } -> self
+
+  # Returns true if the set and the given set have no element in common.  This
+  # method is the opposite of `intersect?`.
+  #
+  #     Set[1, 2, 3].disjoint? Set[3, 4]   #=> false
+  #     Set[1, 2, 3].disjoint? Set[4, 5]   #=> true
+  #
+  def disjoint?: (self) -> bool
+
+  # Divides the set into a set of subsets according to the commonality defined by
+  # the given block.
+  #
+  # If the arity of the block is 2, elements o1 and o2 are in common if
+  # block.call(o1, o2) is true.  Otherwise, elements o1 and o2 are in common if
+  # block.call(o1) == block.call(o2).
+  #
+  #     require 'set'
+  #     numbers = Set[1, 3, 4, 6, 9, 10, 11]
+  #     set = numbers.divide { |i,j| (i - j).abs == 1 }
+  #     set        #=> #<Set: {#<Set: {1}>,
+  #                #           #<Set: {11, 9, 10}>,
+  #                #           #<Set: {3, 4}>,
+  #                #           #<Set: {6}>}>
+  #
+  # Returns an enumerator if no block is given.
+  #
+  def divide: () { (A, A) -> untyped } -> Set[self]
+            | () { (A) -> untyped } -> Set[self]
+
+  # Calls the given block once for each element in the set, passing the element as
+  # parameter.  Returns an enumerator if no block is given.
+  #
+  def each: () { (A) -> void } -> self
+
+  # Returns true if the set contains no elements.
+  #
+  def empty?: () -> bool
+
+  # Returns a new set that is a copy of the set, flattening each containing set
+  # recursively.
+  #
+  def flatten: () -> Set[untyped]
+
+  # Returns true if the set and the given set have at least one element in common.
+  #
+  #     Set[1, 2, 3].intersect? Set[4, 5]   #=> false
+  #     Set[1, 2, 3].intersect? Set[3, 4]   #=> true
+  #
+  def intersect?: () -> bool
+
+  # Deletes every element of the set for which block evaluates to false, and
+  # returns self. Returns an enumerator if no block is given.
+  #
+  def keep_if: () { (A) -> untyped } -> self
+
+  # Returns the number of elements.
+  #
+  def size: () -> Integer
+
+  alias length size
+
+  # Merges the elements of the given enumerable object to the set and returns
+  # self.
+  #
+  def merge: (_Each[A, untyped]) -> self
+
+  # Returns true if the set is a subset of the given set.
+  #
+  def subset?: (self) -> bool
+
+  def proper_subst?: (self) -> bool
+
+  # Returns true if the set is a superset of the given set.
+  #
+  def superset?: (self) -> bool
+
+  # Returns true if the set is a proper superset of the given set.
+  #
+  def proper_superset?: (self) -> bool
+
+  # Replaces the contents of the set with the contents of the given enumerable
+  # object and returns self.
+  #
+  #     set = Set[1, 'c', :s]             #=> #<Set: {1, "c", :s}>
+  #     set.replace([1, 2])               #=> #<Set: {1, 2}>
+  #     set                               #=> #<Set: {1, 2}>
+  #
+  def replace: (_Each[A, untyped]) -> self
+
+  # Resets the internal state after modification to existing elements and returns
+  # self.
+  #
+  # Elements will be reindexed and deduplicated.
+  #
+  def reset: () -> self
+
+  # Equivalent to Set#keep_if, but returns nil if no changes were made. Returns an
+  # enumerator if no block is given.
+  #
+  def select!: () { (A) -> untyped } -> self?
+
+  # Deletes every element that appears in the given enumerable object and returns
+  # self.
+  #
+  def subtract: (_Each[A, untyped]) -> self
+
+  # Converts the set to an array.  The order of elements is uncertain.
+  #
+  #     Set[1, 2].to_a                    #=> [1, 2]
+  #     Set[1, 'c', :s].to_a              #=> [1, "c", :s]
+  #
+  def to_a: () -> Array[A]
+
+  include Enumerable[A, self]
+end

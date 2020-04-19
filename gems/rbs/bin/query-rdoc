@@ -1,0 +1,103 @@
+#!/usr/bin/env ruby
+
+require "rdoc"
+
+def store_for_class(name, stores:)
+  stores.find do |store|
+    store.find_class_named(name) || store.find_module_named(name)
+  end
+end
+
+def format_comment(comment)
+  out = RDoc::Markup::Document.new
+  out << comment
+  formatter = RDoc::Markup::ToMarkdown.new
+  out.accept(formatter)
+end
+
+def comment_for_constant(name, stores:)
+  *class_components, const_name = name.split(/::/)
+  class_name = class_components.join("::")
+
+  klass = store_for_class(class_name, stores: stores)&.yield_self {|store|
+    store.find_class_named(class_name) || store.find_module_named(class_name)
+  }
+
+  constant = klass.constants.find do |const|
+    const.name == const_name
+  end
+
+  if constant&.documented?
+    format_comment(constant.comment)
+  end
+end
+
+def comment_for_class(class_name, stores:)
+  klass = store_for_class(class_name, stores: stores)&.yield_self {|store|
+    store.find_class_named(class_name) || store.find_module_named(class_name)
+  }
+
+  if klass&.documented?
+    format_comment(klass.comment)
+  end
+end
+
+def comment_for_method(klass, method, stores:)
+  method = store_for_class(klass, stores: stores)&.load_method(klass, method)
+
+  if method&.documented?
+    out = RDoc::Markup::Document.new
+
+    out << method.comment
+
+    if method.arglists
+      out << RDoc::Markup::Heading.new(1, "arglists 💪👽🚨 << Delete this section")
+      arglists = method.arglists.chomp.split("\n").map {|line| line + "\n" }
+      out << RDoc::Markup::Verbatim.new(*arglists)
+    end
+
+    out.accept(RDoc::Markup::ToMarkdown.new)
+  end
+rescue RDoc::Store::MissingFileError
+  nil
+end
+
+if ARGV.empty?
+  puts 'query-rdoc [subject]'
+  puts "  subject ::= ClassName         (class, module, or constant)"
+  puts "            | ClassName.method  (singleton method)"
+  puts "            | ClassName#method  (instance method)"
+  exit
+end
+
+stores = []
+RDoc::RI::Paths.each true, true, false, false do |path, type|
+  STDERR.puts "Loading store from #{path}..."
+  store = RDoc::RI::Store.new(path, type)
+  store.load_all
+  stores << store
+end
+
+subject = ARGV[0]
+
+case
+when match = subject.match(/(?<constant_name>[^#]+)#(?<method_name>.+)/)
+  STDERR.puts "Finding instance method #{match[:constant_name]} # #{match[:method_name]} ..."
+  comment = comment_for_method(match[:constant_name], "##{match[:method_name]}", stores: stores)
+when match = subject.match(/(?<constant_name>[^.]+)\.(?<method_name>.+)/)
+  STDERR.puts "Finding singleton method #{match[:constant_name]} . #{match[:method_name]} ..."
+  comment = comment_for_method(match[:constant_name], "::#{match[:method_name]}", stores: stores)
+else
+  STDERR.puts "Finding class/module/constant #{subject} ..."
+  comment = comment_for_class(subject, stores: stores) || comment_for_constant(subject, stores: stores)
+end
+
+if comment
+  STDERR.puts "Printing document..."
+  comment.each_line do |line|
+    puts "# #{line}"
+  end
+else
+  STDERR.puts "Nothing to print; failed to query the document..."
+  exit 1
+end

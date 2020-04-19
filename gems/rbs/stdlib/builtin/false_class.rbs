@@ -1,0 +1,40 @@
+# The global value `false` is the only instance of class FalseClass and
+# represents a logically false value in boolean expressions. The class provides
+# operators allowing `false` to participate correctly in logical expressions.
+# 
+class FalseClass
+  public
+
+  def !: () -> bool
+
+  # And---Returns `false`. *obj* is always evaluated as it is the argument to a
+  # method call---there is no short-circuit evaluation in this case.
+  # 
+  def &: (untyped obj) -> bool
+
+  # Case Equality -- For class Object, effectively the same as calling `#==`, but
+  # typically overridden by descendants to provide meaningful semantics in `case`
+  # statements.
+  # 
+  def ===: (false) -> true
+         | (untyped obj) -> bool
+
+  # Exclusive Or---If *obj* is `nil` or `false`, returns `false`; otherwise,
+  # returns `true`.
+  # 
+  def ^: (nil) -> false
+       | (false) -> false
+       | (untyped obj) -> bool
+
+  alias inspect to_s
+
+  # The string representation of `false` is "false".
+  # 
+  def to_s: () -> "false"
+
+  # Or---Returns `false` if *obj* is `nil` or `false`; `true` otherwise.
+  # 
+  def |: (nil) -> false
+       | (false) -> false
+       | (untyped obj) -> bool
+end

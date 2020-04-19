@@ -1,0 +1,46 @@
+# The global value `true` is the only instance of class TrueClass and represents
+# a logically true value in boolean expressions. The class provides operators
+# allowing `true` to be used in logical expressions.
+# 
+class TrueClass
+  public
+
+  def !: () -> bool
+
+  # And---Returns `false` if *obj* is `nil` or `false`, `true` otherwise.
+  # 
+  def &: (nil) -> false
+       | (false) -> false
+       | (untyped obj) -> bool
+
+  # Case Equality -- For class Object, effectively the same as calling `#==`, but
+  # typically overridden by descendants to provide meaningful semantics in `case`
+  # statements.
+  # 
+  def ===: (true) -> true
+         | (untyped obj) -> bool
+
+  # Exclusive Or---Returns `true` if *obj* is `nil` or `false`, `false` otherwise.
+  # 
+  def ^: (nil) -> true
+       | (false) -> true
+       | (untyped obj) -> bool
+
+  alias inspect to_s
+
+  # The string representation of `true` is "true".
+  # 
+  def to_s: () -> "true"
+
+  # Or---Returns `true`. As *obj* is an argument to a method call, it is always
+  # evaluated; there is no short-circuit evaluation in this case.
+  # 
+  #     true |  puts("or")
+  #     true || puts("logical or")
+  # 
+  # *produces:*
+  # 
+  #     or
+  # 
+  def |: (bool obj) -> bool
+end

@@ -1,0 +1,157 @@
+#!/usr/bin/env ruby
+
+require "bundler/setup"
+require "ruby/signature"
+require "rdoc"
+
+def store_for_class(name, stores:)
+  stores.find do |store|
+    store.find_class_named(name) || store.find_module_named(name)
+  end
+end
+
+def format_comment(comment)
+  out = RDoc::Markup::Document.new
+  out << comment
+  formatter = RDoc::Markup::ToMarkdown.new
+  out.accept(formatter)
+end
+
+def comment_for_constant(decl, stores:)
+  class_name = decl.name.namespace.to_type_name.to_s
+  klass = store_for_class(class_name, stores: stores)&.yield_self {|store|
+    store.find_class_named(class_name) || store.find_module_named(class_name)
+  }
+
+  if klass
+    constant = klass.constants.find do |const|
+      const.name == decl.name.name.to_s
+    end
+
+    if constant&.documented?
+      string = format_comment(constant.comment)
+      Ruby::Signature::AST::Comment.new(location: nil, string: string)
+    end
+  end
+end
+
+def comment_for_class(decl, stores:)
+  name = decl.name.to_s
+  klass = store_for_class(name, stores: stores)&.yield_self {|store|
+    store.find_class_named(name) || store.find_module_named(name)
+  }
+
+  if klass&.documented?
+    string = format_comment(klass.comment)
+    Ruby::Signature::AST::Comment.new(location: nil, string: string)
+  end
+end
+
+def comment_for_method(klass, method, stores:)
+  method = store_for_class(klass, stores: stores)&.load_method(klass, method)
+
+  if method&.documented?
+    out = RDoc::Markup::Document.new
+
+    out << method.comment
+
+    if method.arglists
+      out << RDoc::Markup::Heading.new(1, "arglists 💪👽🚨 << Delete this section")
+      arglists = method.arglists.chomp.split("\n").map {|line| line + "\n" }
+      out << RDoc::Markup::Verbatim.new(*arglists)
+    end
+
+    string = out.accept(RDoc::Markup::ToMarkdown.new)
+    Ruby::Signature::AST::Comment.new(location: nil, string: string)
+  end
+
+rescue RDoc::Store::MissingFileError
+  puts "  👺 No document found for #{klass}#{method}"
+  nil
+end
+
+if ARGV.empty?
+  puts 'annotate-with-rdoc [RBS files...]'
+  exit
+end
+
+def print_members(stores, klass_name, members)
+  members.each do |member|
+    case member
+    when Ruby::Signature::AST::Members::MethodDefinition
+      puts "    Processing #{member.name}..."
+
+      method_name = case
+                    when member.instance?
+                      "##{member.name}"
+                    when member.singleton?
+                      "::#{member.name}"
+                    end
+
+      comment = comment_for_method(klass_name, method_name, stores: stores)
+
+      unless comment
+        if member.instance? && member.name == :initialize
+          comment = comment_for_method(klass_name, '::new', stores: stores)
+        end
+      end
+
+      member.instance_variable_set(:@comment, comment)
+    when Ruby::Signature::AST::Members::AttrReader, Ruby::Signature::AST::Members::AttrAccessor, Ruby::Signature::AST::Members::AttrWriter
+      puts "    👻 Attributes not supported (#{klass_name})"
+    when Ruby::Signature::AST::Members::Alias
+      puts "    Processing #{member.new_name}(alias)..."
+      prefix = case
+               when member.instance?
+                 "#"
+               when member.singleton?
+                 "."
+               end
+      name = "#{prefix}#{member.new_name}"
+
+      comment = comment_for_method(klass_name, name, stores: stores)
+      member.instance_variable_set(:@comment, comment)
+    end
+  end
+end
+
+stores = []
+RDoc::RI::Paths.each true, true, false, false do |path, type|
+  puts "Loading store from #{path}..."
+  store = RDoc::RI::Store.new(path, type)
+  store.load_all
+  stores << store
+end
+
+ARGV.map {|f| Pathname(f) }.each do |path|
+  puts "Opening #{path}..."
+
+  buffer = Ruby::Signature::Buffer.new(name: path, content: path.read)
+  sigs = Ruby::Signature::Parser.parse_signature(buffer)
+
+  sigs.each do |decl|
+    case decl
+    when Ruby::Signature::AST::Declarations::Constant
+      puts "  Importing documentation for #{decl.name}..."
+      comment = comment_for_constant(decl, stores: stores)
+      decl.instance_variable_set(:@comment, comment)
+    when Ruby::Signature::AST::Declarations::Class, Ruby::Signature::AST::Declarations::Module
+      puts "  Importing documentation for #{decl.name}..."
+      comment = comment_for_class(decl, stores: stores)
+      decl.instance_variable_set(:@comment, comment)
+
+      print_members stores, decl.name.to_s, decl.members
+    when Ruby::Signature::AST::Declarations::Extension
+      puts "  Importing documentation for #{decl.name} (#{decl.extension_name})"
+
+      print_members stores, decl.name.to_s, decl.members
+    end
+  end
+
+  puts "Writing #{path}..."
+  path.open('w') do |out|
+    writer = Ruby::Signature::Writer.new(out: out)
+    writer.write sigs
+  end
+end
+

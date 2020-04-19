@@ -1,0 +1,39 @@
+interface _ToI
+  def to_i: -> Integer
+end
+
+interface _ToInt
+  def to_int: -> Integer
+end
+
+interface _ToS
+  def to_s: -> String
+end
+
+interface _ToStr
+  def to_str: () -> String
+end
+
+interface _ToHash[K, V]
+  def to_hash: () -> Hash[K, V]
+end
+
+interface _ToProc
+  def to_proc: () -> untyped
+end
+
+interface _ToPath
+  def to_path: () -> String
+end
+
+interface _Each[out A, out B]
+  def each: { (A) -> void } -> B
+end
+
+class BigDecimal
+end
+
+type int = Integer | _ToInt
+type real = Integer | Float | Rational
+
+type string = String | _ToStr

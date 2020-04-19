@@ -1,0 +1,9 @@
+module SecureRandom
+  def self.alphanumeric: (?Integer?) -> String
+  def self.base64: (?Integer?) -> String
+  def self.hex: (?Integer?) -> String
+  def self.random_bytes: (?Integer?) -> String
+  def self.random_number: (?Integer?) -> (Integer | Float)
+  def self.urlsafe_base64: (?Integer?, ?bool?) -> String
+  def self.uuid: () -> String
+end

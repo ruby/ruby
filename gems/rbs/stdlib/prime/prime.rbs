@@ -1,0 +1,188 @@
+# The set of all prime numbers.
+#
+# ## Example
+#
+#     Prime.each(100) do |prime|
+#       p prime  #=> 2, 3, 5, 7, 11, ...., 97
+#     end
+#
+# Prime is Enumerable:
+#
+#     Prime.first 5 # => [2, 3, 5, 7, 11]
+#
+# ## Retrieving the instance
+#
+# For convenience, each instance method of `Prime`.instance can be accessed as a
+# class method of `Prime`.
+#
+# e.g.
+#     Prime.instance.prime?(2)  #=> true
+#     Prime.prime?(2)           #=> true
+#
+# ## Generators
+#
+# A "generator" provides an implementation of enumerating pseudo-prime numbers
+# and it remembers the position of enumeration and upper bound. Furthermore, it
+# is an external iterator of prime enumeration which is compatible with an
+# Enumerator.
+#
+# `Prime`::`PseudoPrimeGenerator` is the base class for generators. There are
+# few implementations of generator.
+#
+# `Prime`::`EratosthenesGenerator`
+# :   Uses eratosthenes' sieve.
+# `Prime`::`TrialDivisionGenerator`
+# :   Uses the trial division method.
+# `Prime`::`Generator23`
+# :   Generates all positive integers which are not divisible by either 2 or 3.
+#     This sequence is very bad as a pseudo-prime sequence. But this is faster
+#     and uses much less memory than the other generators. So, it is suitable
+#     for factorizing an integer which is not large but has many prime factors.
+#     e.g. for Prime#prime? .
+#
+#
+class Prime
+  # Iterates the given block over all prime numbers.
+  #
+  # ## Parameters
+  #
+  # `ubound`
+  # :   Optional. An arbitrary positive number. The upper bound of enumeration.
+  #     The method enumerates prime numbers infinitely if `ubound` is nil.
+  # `generator`
+  # :   Optional. An implementation of pseudo-prime generator.
+  #
+  #
+  # ## Return value
+  #
+  # An evaluated value of the given block at the last time. Or an enumerator which
+  # is compatible to an `Enumerator` if no block given.
+  #
+  # ## Description
+  #
+  # Calls `block` once for each prime number, passing the prime as a parameter.
+  #
+  # `ubound`
+  # :   Upper bound of prime numbers. The iterator stops after it yields all prime
+  #     numbers p <= `ubound`.
+  #
+  def self?.each: (?Integer? ubound, ?PseudoPrimeGenerator generator) { (Integer) -> void } -> void
+                | (?Integer? ubound, ?PseudoPrimeGenerator generator) -> PseudoPrimeGenerator
+
+  # Re-composes a prime factorization and returns the product.
+  #
+  # ## Parameters
+  # `pd`
+  # :   Array of pairs of integers. The each internal pair consists of a prime
+  #     number -- a prime factor -- and a natural number -- an exponent.
+  #
+  #
+  # ## Example
+  # For `[[p_1, e_1], [p_2, e_2], ...., [p_n, e_n]]`, it returns:
+  #
+  #     p_1**e_1 * p_2**e_2 * .... * p_n**e_n.
+  #
+  #     Prime.int_from_prime_division([[2,2], [3,1]])  #=> 12
+  #
+  def self?.int_from_prime_division: (Array[[ Integer, Integer ]]) -> Integer
+
+  # Returns true if `value` is a prime number, else returns false.
+  #
+  # ## Parameters
+  #
+  # `value`
+  # :   an arbitrary integer to be checked.
+  # `generator`
+  # :   optional. A pseudo-prime generator.
+  #
+  def self?.prime?: (Integer value, ?PseudoPrimeGenerator generator) -> bool
+
+  # Returns the factorization of `value`.
+  #
+  # ## Parameters
+  # `value`
+  # :   An arbitrary integer.
+  # `generator`
+  # :   Optional. A pseudo-prime generator. `generator`.succ must return the next
+  #     pseudo-prime number in the ascending order. It must generate all prime
+  #     numbers, but may also generate non prime numbers too.
+  #
+  #
+  # ### Exceptions
+  # `ZeroDivisionError`
+  # :   when `value` is zero.
+  #
+  #
+  # ## Example
+  # For an arbitrary integer:
+  #
+  #     n = p_1**e_1 * p_2**e_2 * .... * p_n**e_n,
+  #
+  # prime_division(n) returns:
+  #
+  #     [[p_1, e_1], [p_2, e_2], ...., [p_n, e_n]].
+  #
+  #     Prime.prime_division(12) #=> [[2,2], [3,1]]
+  #
+  def self?.prime_division: (Integer, ?PseudoPrimeGenerator generator) -> Array[[ Integer, Integer ]]
+
+  # Returns the singleton instance.
+  #
+  def self.instance: () -> Prime
+end
+
+# An abstract class for enumerating pseudo-prime numbers.
+#
+# Concrete subclasses should override succ, next, rewind.
+#
+class Prime::PseudoPrimeGenerator
+  def initialize: (?Integer?) -> void
+
+  include Enumerable[Integer, void]
+
+  attr_accessor upper_bound (): Integer?
+
+  # Iterates the given block for each prime number.
+  #
+  def each: () { (Integer) -> void } -> void
+
+  # alias of `succ`.
+  #
+  def next: () -> Integer
+
+  # Rewinds the internal position for enumeration.
+  #
+  # See `Enumerator`#rewind.
+  #
+  def rewind: () -> void
+
+  def size: () -> Float
+
+  # returns the next pseudo-prime number, and move the internal position forward.
+  #
+  # `PseudoPrimeGenerator`#succ raises `NotImplementedError`.
+  #
+  def succ: () -> Integer
+end
+
+# An implementation of `PseudoPrimeGenerator`.
+# 
+# Uses `EratosthenesSieve`.
+# 
+class Prime::EratosthenesGenerator < PseudoPrimeGenerator
+end
+
+# An implementation of `PseudoPrimeGenerator` which uses a prime table generated
+# by trial division.
+# 
+class Prime::TrialDivisionGenerator < PseudoPrimeGenerator
+end
+
+# Generates all integers which are greater than 2 and are not divisible by
+# either 2 or 3.
+# 
+# This is a pseudo-prime generator, suitable on checking primality of an integer
+# by brute force method.
+# 
+class Prime::Generator23 < PseudoPrimeGenerator
+end

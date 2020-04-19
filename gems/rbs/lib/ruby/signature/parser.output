@@ -1,0 +1,5772 @@
+state 122 contains 1 reduce/reduce conflicts
+state 196 contains 1 reduce/reduce conflicts
+state 324 contains 1 shift/reduce conflicts
+state 338 contains 1 shift/reduce conflicts
+
+
+-------- Grammar --------
+
+rule 1 target: type_TYPE type eof
+rule 2 target: type_SIGNATURE signatures eof
+rule 3 target: type_METHODTYPE method_type eof
+rule 4 eof: 
+rule 5 eof: tEOF
+rule 6 signatures: 
+rule 7 signatures: signatures signature
+rule 8 signature: type_decl
+rule 9 signature: const_decl
+rule 10 signature: global_decl
+rule 11 signature: interface_decl
+rule 12 signature: module_decl
+rule 13 signature: class_decl
+rule 14 signature: extension_decl
+rule 15 start_new_scope: 
+rule 16 start_merged_scope: 
+rule 17 annotations: 
+rule 18 annotations: tANNOTATION annotations
+rule 19 extension_decl: annotations kEXTENSION start_new_scope class_name type_params kLPAREN extension_name kRPAREN class_members kEND
+rule 20 extension_name: tUIDENT
+rule 21 extension_name: tLIDENT
+rule 22 class_decl: annotations kCLASS start_new_scope class_name module_type_params super_class class_members kEND
+rule 23 super_class: 
+rule 24 super_class: kLT class_name
+rule 25 super_class: kLT class_name kLBRACKET type_list kRBRACKET
+rule 26 module_decl: annotations kMODULE start_new_scope class_name module_type_params module_self_type class_members kEND
+rule 27 module_decl: annotations kMODULE start_new_scope tUKEYWORD type class_members kEND
+rule 28 module_self_type: 
+rule 29 module_self_type: kCOLON type
+rule 30 class_members: 
+rule 31 class_members: class_members class_member
+rule 32 class_member: method_member
+rule 33 class_member: include_member
+rule 34 class_member: extend_member
+rule 35 class_member: prepend_member
+rule 36 class_member: var_type_member
+rule 37 class_member: attribute_member
+rule 38 class_member: kPUBLIC
+rule 39 class_member: kPRIVATE
+rule 40 class_member: alias_member
+rule 41 attribute_member: annotations kATTRREADER keyword type
+rule 42 attribute_member: annotations kATTRREADER method_name attr_var_opt kCOLON type
+rule 43 attribute_member: annotations kATTRWRITER keyword type
+rule 44 attribute_member: annotations kATTRWRITER method_name attr_var_opt kCOLON type
+rule 45 attribute_member: annotations kATTRACCESSOR keyword type
+rule 46 attribute_member: annotations kATTRACCESSOR method_name attr_var_opt kCOLON type
+rule 47 attr_var_opt: 
+rule 48 attr_var_opt: kLPAREN kRPAREN
+rule 49 attr_var_opt: kLPAREN tIVAR kRPAREN
+rule 50 var_type_member: tIVAR kCOLON type
+rule 51 var_type_member: tCLASSVAR kCOLON type
+rule 52 var_type_member: kSELF kDOT tIVAR kCOLON type
+rule 53 interface_decl: annotations kINTERFACE start_new_scope interface_name module_type_params interface_members kEND
+rule 54 interface_members: 
+rule 55 interface_members: interface_members interface_member
+rule 56 interface_member: method_member
+rule 57 interface_member: include_member
+rule 58 interface_member: alias_member
+rule 59 include_member: annotations kINCLUDE qualified_name
+rule 60 include_member: annotations kINCLUDE qualified_name kLBRACKET type_list kRBRACKET
+rule 61 extend_member: annotations kEXTEND qualified_name
+rule 62 extend_member: annotations kEXTEND qualified_name kLBRACKET type_list kRBRACKET
+rule 63 prepend_member: annotations kPREPEND qualified_name
+rule 64 prepend_member: annotations kPREPEND qualified_name kLBRACKET type_list kRBRACKET
+rule 65 method_member: annotations attributes kDEF method_kind def_name method_types
+rule 66 attributes: 
+rule 67 attributes: attributes kINCOMPATIBLE
+rule 68 method_kind: 
+rule 69 method_kind: kSELF kDOT
+rule 70 method_kind: kSELFQ kDOT
+rule 71 method_types: method_type
+rule 72 method_types: kSUPER
+rule 73 method_types: method_type kBAR method_types
+rule 74 method_type: start_merged_scope type_params params_opt block_opt kARROW simple_type
+rule 75 params_opt: 
+rule 76 params_opt: kLPAREN params kRPAREN
+rule 77 block_opt: 
+rule 78 block_opt: kLBRACE function_type kRBRACE
+rule 79 block_opt: kQUESTION kLBRACE function_type kRBRACE
+rule 80 def_name: keyword
+rule 81 def_name: method_name kCOLON
+rule 82 method_name: tOPERATOR
+rule 83 method_name: kAMP
+rule 84 method_name: kHAT
+rule 85 method_name: kSTAR
+rule 86 method_name: kLT
+rule 87 method_name: kEXCLAMATION
+rule 88 method_name: kSTAR2
+rule 89 method_name: kBAR
+rule 90 method_name: kOUT
+rule 91 method_name: kIN
+rule 92 method_name: method_name0
+rule 93 method_name: method_name0 kQUESTION
+rule 94 method_name: method_name0 kEXCLAMATION
+rule 95 method_name: tQUOTEDMETHOD
+rule 96 method_name: tQUOTEDIDENT
+rule 97 method_name: tWRITE_ATTR
+rule 98 method_name0: tUIDENT
+rule 99 method_name0: tLIDENT
+rule 100 method_name0: identifier_keywords
+rule 101 identifier_keywords: kCLASS
+rule 102 identifier_keywords: kVOID
+rule 103 identifier_keywords: kNIL
+rule 104 identifier_keywords: kTRUE
+rule 105 identifier_keywords: kFALSE
+rule 106 identifier_keywords: kANY
+rule 107 identifier_keywords: kUNTYPED
+rule 108 identifier_keywords: kTOP
+rule 109 identifier_keywords: kBOT
+rule 110 identifier_keywords: kINSTANCE
+rule 111 identifier_keywords: kBOOL
+rule 112 identifier_keywords: kSINGLETON
+rule 113 identifier_keywords: kTYPE
+rule 114 identifier_keywords: kMODULE
+rule 115 identifier_keywords: kPRIVATE
+rule 116 identifier_keywords: kPUBLIC
+rule 117 identifier_keywords: kEND
+rule 118 identifier_keywords: kINCLUDE
+rule 119 identifier_keywords: kEXTEND
+rule 120 identifier_keywords: kPREPEND
+rule 121 identifier_keywords: kATTRREADER
+rule 122 identifier_keywords: kATTRACCESSOR
+rule 123 identifier_keywords: kATTRWRITER
+rule 124 identifier_keywords: kDEF
+rule 125 identifier_keywords: kEXTENSION
+rule 126 identifier_keywords: kSELF
+rule 127 identifier_keywords: kINCOMPATIBLE
+rule 128 identifier_keywords: kUNCHECKED
+rule 129 module_type_params: 
+rule 130 module_type_params: kLBRACKET module_type_params0 kRBRACKET
+rule 131 module_type_params0: module_type_param
+rule 132 module_type_params0: module_type_params0 kCOMMA module_type_param
+rule 133 module_type_param: type_param_check type_param_variance tUIDENT
+rule 134 type_param_variance: 
+rule 135 type_param_variance: kOUT
+rule 136 type_param_variance: kIN
+rule 137 type_param_check: 
+rule 138 type_param_check: kUNCHECKED
+rule 139 type_params: 
+rule 140 type_params: kLBRACKET type_params0 kRBRACKET
+rule 141 type_params0: tUIDENT
+rule 142 type_params0: type_params0 kCOMMA tUIDENT
+rule 143 alias_member: annotations kALIAS method_name method_name
+rule 144 alias_member: annotations kALIAS kSELF kDOT method_name kSELF kDOT method_name
+rule 145 type_decl: annotations kTYPE qualified_name kEQ type
+rule 146 const_decl: class_name kCOLON type
+rule 147 const_decl: namespace tUKEYWORD type
+rule 148 global_decl: tGLOBALIDENT kCOLON type
+rule 149 type: simple_type
+rule 150 type: type kBAR type
+rule 151 type: type kAMP type
+rule 152 simple_type: kVOID
+rule 153 simple_type: kANY
+rule 154 simple_type: kUNTYPED
+rule 155 simple_type: kBOOL
+rule 156 simple_type: kNIL
+rule 157 simple_type: kTOP
+rule 158 simple_type: kBOT
+rule 159 simple_type: kSELF
+rule 160 simple_type: kSELFQ
+rule 161 simple_type: kINSTANCE
+rule 162 simple_type: kCLASS
+rule 163 simple_type: kTRUE
+rule 164 simple_type: kFALSE
+rule 165 simple_type: tINTEGER
+rule 166 simple_type: tSTRING
+rule 167 simple_type: tSYMBOL
+rule 168 simple_type: qualified_name
+rule 169 simple_type: qualified_name kLBRACKET type_list kRBRACKET
+rule 170 simple_type: kLBRACKET kRBRACKET
+rule 171 simple_type: kLBRACKET type_list kRBRACKET
+rule 172 simple_type: kLPAREN type kRPAREN
+rule 173 simple_type: kSINGLETON kLPAREN class_name kRPAREN
+rule 174 simple_type: kHAT function_type
+rule 175 simple_type: simple_type kQUESTION
+rule 176 simple_type: record_type
+rule 177 type_list: type
+rule 178 type_list: type_list kCOMMA type
+rule 179 record_type: kLBRACE record_fields kRBRACE
+rule 180 record_fields: record_field
+rule 181 record_fields: record_field kCOMMA record_fields
+rule 182 record_field: tSYMBOL kFATARROW type
+rule 183 record_field: tSTRING kFATARROW type
+rule 184 record_field: tINTEGER kFATARROW type
+rule 185 record_field: keyword type
+rule 186 keyword_name: keyword
+rule 187 keyword_name: identifier_keywords kCOLON
+rule 188 keyword: tLKEYWORD
+rule 189 keyword: tUKEYWORD
+rule 190 function_type: kLPAREN params kRPAREN kARROW simple_type
+rule 191 function_type: kARROW simple_type
+rule 192 params: required_positional kCOMMA params
+rule 193 params: required_positional
+rule 194 params: optional_positional_params
+rule 195 optional_positional_params: optional_positional kCOMMA optional_positional_params
+rule 196 optional_positional_params: optional_positional
+rule 197 optional_positional_params: rest_positional_param
+rule 198 rest_positional_param: rest_positional kCOMMA trailing_positional_params
+rule 199 rest_positional_param: rest_positional
+rule 200 rest_positional_param: trailing_positional_params
+rule 201 trailing_positional_params: required_positional kCOMMA trailing_positional_params
+rule 202 trailing_positional_params: required_positional
+rule 203 trailing_positional_params: keyword_params
+rule 204 keyword_params: 
+rule 205 keyword_params: required_keyword kCOMMA keyword_params
+rule 206 keyword_params: required_keyword
+rule 207 keyword_params: optional_keyword kCOMMA keyword_params
+rule 208 keyword_params: optional_keyword
+rule 209 keyword_params: rest_keyword
+rule 210 required_positional: type var_name_opt
+rule 211 optional_positional: kQUESTION type var_name_opt
+rule 212 rest_positional: kSTAR type var_name_opt
+rule 213 required_keyword: keyword_name type var_name_opt
+rule 214 optional_keyword: kQUESTION keyword_name type var_name_opt
+rule 215 rest_keyword: kSTAR2 type var_name_opt
+rule 216 var_name_opt: 
+rule 217 var_name_opt: tLIDENT
+rule 218 var_name_opt: tINTERFACEIDENT
+rule 219 var_name_opt: tQUOTEDIDENT
+rule 220 qualified_name: namespace simple_name
+rule 221 simple_name: tUIDENT
+rule 222 simple_name: tLIDENT
+rule 223 simple_name: tINTERFACEIDENT
+rule 224 interface_name: namespace tINTERFACEIDENT
+rule 225 class_name: namespace tUIDENT
+rule 226 namespace: 
+rule 227 namespace: kCOLON2
+rule 228 namespace: kCOLON2 tNAMESPACE
+rule 229 namespace: tNAMESPACE
+
+------- Symbols -------
+
+**Nonterminals, with rules where they appear
+
+  $start (78)
+    on right: 
+    on left : 
+  target (79)
+    on right: 
+    on left : 1 2 3
+  type (80)
+    on right: 1 27 29 41 42 43 44 45 46 50 51 52 145 146 147 148 150 151 172 177 178 182 183 184 185 210 211 212 213 214 215
+    on left : 149 150 151
+  eof (81)
+    on right: 1 2 3
+    on left : 4 5
+  signatures (82)
+    on right: 2 7
+    on left : 6 7
+  method_type (83)
+    on right: 3 71 73
+    on left : 74
+  signature (84)
+    on right: 7
+    on left : 8 9 10 11 12 13 14
+  type_decl (85)
+    on right: 8
+    on left : 145
+  const_decl (86)
+    on right: 9
+    on left : 146 147
+  global_decl (87)
+    on right: 10
+    on left : 148
+  interface_decl (88)
+    on right: 11
+    on left : 53
+  module_decl (89)
+    on right: 12
+    on left : 26 27
+  class_decl (90)
+    on right: 13
+    on left : 22
+  extension_decl (91)
+    on right: 14
+    on left : 19
+  start_new_scope (92)
+    on right: 19 22 26 27 53
+    on left : 15
+  start_merged_scope (93)
+    on right: 74
+    on left : 16
+  annotations (94)
+    on right: 18 19 22 26 27 41 42 43 44 45 46 53 59 60 61 62 63 64 65 143 144 145
+    on left : 17 18
+  class_name (95)
+    on right: 19 22 24 25 26 146 173
+    on left : 225
+  type_params (96)
+    on right: 19 74
+    on left : 139 140
+  extension_name (97)
+    on right: 19
+    on left : 20 21
+  class_members (98)
+    on right: 19 22 26 27 31
+    on left : 30 31
+  module_type_params (99)
+    on right: 22 26 53
+    on left : 129 130
+  super_class (100)
+    on right: 22
+    on left : 23 24 25
+  type_list (101)
+    on right: 25 60 62 64 169 171 178
+    on left : 177 178
+  module_self_type (102)
+    on right: 26
+    on left : 28 29
+  class_member (103)
+    on right: 31
+    on left : 32 33 34 35 36 37 38 39 40
+  method_member (104)
+    on right: 32 56
+    on left : 65
+  include_member (105)
+    on right: 33 57
+    on left : 59 60
+  extend_member (106)
+    on right: 34
+    on left : 61 62
+  prepend_member (107)
+    on right: 35
+    on left : 63 64
+  var_type_member (108)
+    on right: 36
+    on left : 50 51 52
+  attribute_member (109)
+    on right: 37
+    on left : 41 42 43 44 45 46
+  alias_member (110)
+    on right: 40 58
+    on left : 143 144
+  keyword (111)
+    on right: 41 43 45 80 185 186
+    on left : 188 189
+  method_name (112)
+    on right: 42 44 46 81 143 144
+    on left : 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97
+  attr_var_opt (113)
+    on right: 42 44 46
+    on left : 47 48 49
+  interface_name (114)
+    on right: 53
+    on left : 224
+  interface_members (115)
+    on right: 53 55
+    on left : 54 55
+  interface_member (116)
+    on right: 55
+    on left : 56 57 58
+  qualified_name (117)
+    on right: 59 60 61 62 63 64 145 168 169
+    on left : 220
+  attributes (118)
+    on right: 65 67
+    on left : 66 67
+  method_kind (119)
+    on right: 65
+    on left : 68 69 70
+  def_name (120)
+    on right: 65
+    on left : 80 81
+  method_types (121)
+    on right: 65 73
+    on left : 71 72 73
+  params_opt (122)
+    on right: 74
+    on left : 75 76
+  block_opt (123)
+    on right: 74
+    on left : 77 78 79
+  simple_type (124)
+    on right: 74 149 175 190 191
+    on left : 152 153 154 155 156 157 158 159 160 161 162 163 164 165 166 167 168 169 170 171 172 173 174 175 176
+  params (125)
+    on right: 76 190 192
+    on left : 192 193 194
+  function_type (126)
+    on right: 78 79 174
+    on left : 190 191
+  method_name0 (127)
+    on right: 92 93 94
+    on left : 98 99 100
+  identifier_keywords (128)
+    on right: 100 187
+    on left : 101 102 103 104 105 106 107 108 109 110 111 112 113 114 115 116 117 118 119 120 121 122 123 124 125 126 127 128
+  module_type_params0 (129)
+    on right: 130 132
+    on left : 131 132
+  module_type_param (130)
+    on right: 131 132
+    on left : 133
+  type_param_check (131)
+    on right: 133
+    on left : 137 138
+  type_param_variance (132)
+    on right: 133
+    on left : 134 135 136
+  type_params0 (133)
+    on right: 140 142
+    on left : 141 142
+  namespace (134)
+    on right: 147 220 224 225
+    on left : 226 227 228 229
+  record_type (135)
+    on right: 176
+    on left : 179
+  record_fields (136)
+    on right: 179 181
+    on left : 180 181
+  record_field (137)
+    on right: 180 181
+    on left : 182 183 184 185
+  keyword_name (138)
+    on right: 213 214
+    on left : 186 187
+  required_positional (139)
+    on right: 192 193 201 202
+    on left : 210
+  optional_positional_params (140)
+    on right: 194 195
+    on left : 195 196 197
+  optional_positional (141)
+    on right: 195 196
+    on left : 211
+  rest_positional_param (142)
+    on right: 197
+    on left : 198 199 200
+  rest_positional (143)
+    on right: 198 199
+    on left : 212
+  trailing_positional_params (144)
+    on right: 198 200 201
+    on left : 201 202 203
+  keyword_params (145)
+    on right: 203 205 207
+    on left : 204 205 206 207 208 209
+  required_keyword (146)
+    on right: 205 206
+    on left : 213
+  optional_keyword (147)
+    on right: 207 208
+    on left : 214
+  rest_keyword (148)
+    on right: 209
+    on left : 215
+  var_name_opt (149)
+    on right: 210 211 212 213 214 215
+    on left : 216 217 218 219
+  simple_name (150)
+    on right: 220
+    on left : 221 222 223
+
+**Terminals, with rules where they appear
+
+  $end (0) 
+  error (1) 
+  tUIDENT (2) 20 98 133 141 142 221 225
+  tLIDENT (3) 21 99 217 222
+  tNAMESPACE (4) 228 229
+  tINTERFACEIDENT (5) 218 223 224
+  tLKEYWORD (6) 188
+  tUKEYWORD (7) 27 147 189
+  tGLOBALIDENT (8) 148
+  tIVAR (9) 49 50 52
+  tCLASSVAR (10) 51
+  tANNOTATION (11) 18
+  tSTRING (12) 166 183
+  tSYMBOL (13) 167 182
+  tINTEGER (14) 165 184
+  tWRITE_ATTR (15) 97
+  kLPAREN (16) 19 48 49 76 172 173 190
+  kRPAREN (17) 19 48 49 76 172 173 190
+  kLBRACKET (18) 25 60 62 64 130 140 169 170 171
+  kRBRACKET (19) 25 60 62 64 130 140 169 170 171
+  kLBRACE (20) 78 79 179
+  kRBRACE (21) 78 79 179
+  kVOID (22) 102 152
+  kNIL (23) 103 156
+  kTRUE (24) 104 163
+  kFALSE (25) 105 164
+  kANY (26) 106 153
+  kUNTYPED (27) 107 154
+  kTOP (28) 108 157
+  kBOT (29) 109 158
+  kSELF (30) 52 69 126 144 159
+  kSELFQ (31) 70 160
+  kINSTANCE (32) 110 161
+  kCLASS (33) 22 101 162
+  kBOOL (34) 111 155
+  kSINGLETON (35) 112 173
+  kTYPE (36) 113 145
+  kDEF (37) 65 124
+  kMODULE (38) 26 27 114
+  kSUPER (39) 72
+  kPRIVATE (40) 39 115
+  kPUBLIC (41) 38 116
+  kALIAS (42) 143 144
+  kCOLON (43) 29 42 44 46 50 51 52 81 146 148 187
+  kCOLON2 (44) 227 228
+  kCOMMA (45) 132 142 178 181 192 195 198 201 205 207
+  kBAR (46) 73 89 150
+  kAMP (47) 83 151
+  kHAT (48) 84 174
+  kARROW (49) 74 190 191
+  kQUESTION (50) 79 93 175 211 214
+  kEXCLAMATION (51) 87 94
+  kSTAR (52) 85 212
+  kSTAR2 (53) 88 215
+  kFATARROW (54) 182 183 184
+  kEQ (55) 145
+  kDOT (56) 52 69 70 144
+  kLT (57) 24 25 86
+  kINTERFACE (58) 53
+  kEND (59) 19 22 26 27 53 117
+  kINCLUDE (60) 59 60 118
+  kEXTEND (61) 61 62 119
+  kATTRREADER (62) 41 42 121
+  kATTRWRITER (63) 43 44 123
+  kATTRACCESSOR (64) 45 46 122
+  tOPERATOR (65) 82
+  tQUOTEDMETHOD (66) 95
+  tQUOTEDIDENT (67) 96 219
+  kPREPEND (68) 63 64 120
+  kEXTENSION (69) 19 125
+  kINCOMPATIBLE (70) 67 127
+  type_TYPE (71) 1
+  type_SIGNATURE (72) 2
+  type_METHODTYPE (73) 3
+  tEOF (74) 5
+  kOUT (75) 90 135
+  kIN (76) 91 136
+  kUNCHECKED (77) 128 138
+
+--------- State ---------
+
+state 0
+
+
+  type_TYPE     shift, and go to state 2
+  type_SIGNATURE  shift, and go to state 3
+  type_METHODTYPE  shift, and go to state 4
+
+  target        go to state 1
+
+state 1
+
+
+  $end          shift, and go to state 5
+
+
+state 2
+
+   1) target : type_TYPE _ type eof
+
+  tNAMESPACE    shift, and go to state 33
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 8
+  kNIL          shift, and go to state 12
+  kTRUE         shift, and go to state 19
+  kFALSE        shift, and go to state 20
+  kANY          shift, and go to state 9
+  kUNTYPED      shift, and go to state 10
+  kTOP          shift, and go to state 13
+  kBOT          shift, and go to state 14
+  kSELF         shift, and go to state 15
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 17
+  kCLASS        shift, and go to state 18
+  kBOOL         shift, and go to state 11
+  kSINGLETON    shift, and go to state 27
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  $default      reduce using rule 226 (namespace)
+
+  type          go to state 6
+  simple_type   go to state 7
+  qualified_name  go to state 24
+  record_type   go to state 29
+  namespace     go to state 31
+
+state 3
+
+   2) target : type_SIGNATURE _ signatures eof
+
+  $default      reduce using rule 6 (signatures)
+
+  signatures    go to state 34
+
+state 4
+
+   3) target : type_METHODTYPE _ method_type eof
+
+  $default      reduce using rule 16 (start_merged_scope)
+
+  method_type   go to state 35
+  start_merged_scope  go to state 36
+
+state 5
+
+
+  $end          shift, and go to state 37
+
+
+state 6
+
+   1) target : type_TYPE type _ eof
+ 150) type : type _ kBAR type
+ 151) type : type _ kAMP type
+
+  kBAR          shift, and go to state 40
+  kAMP          shift, and go to state 41
+  tEOF          shift, and go to state 39
+  $default      reduce using rule 4 (eof)
+
+  eof           go to state 38
+
+state 7
+
+ 149) type : simple_type _
+ 175) simple_type : simple_type _ kQUESTION
+
+  kQUESTION     shift, and go to state 42
+  $default      reduce using rule 149 (type)
+
+
+state 8
+
+ 152) simple_type : kVOID _
+
+  $default      reduce using rule 152 (simple_type)
+
+
+state 9
+
+ 153) simple_type : kANY _
+
+  $default      reduce using rule 153 (simple_type)
+
+
+state 10
+
+ 154) simple_type : kUNTYPED _
+
+  $default      reduce using rule 154 (simple_type)
+
+
+state 11
+
+ 155) simple_type : kBOOL _
+
+  $default      reduce using rule 155 (simple_type)
+
+
+state 12
+
+ 156) simple_type : kNIL _
+
+  $default      reduce using rule 156 (simple_type)
+
+
+state 13
+
+ 157) simple_type : kTOP _
+
+  $default      reduce using rule 157 (simple_type)
+
+
+state 14
+
+ 158) simple_type : kBOT _
+
+  $default      reduce using rule 158 (simple_type)
+
+
+state 15
+
+ 159) simple_type : kSELF _
+
+  $default      reduce using rule 159 (simple_type)
+
+
+state 16
+
+ 160) simple_type : kSELFQ _
+
+  $default      reduce using rule 160 (simple_type)
+
+
+state 17
+
+ 161) simple_type : kINSTANCE _
+
+  $default      reduce using rule 161 (simple_type)
+
+
+state 18
+
+ 162) simple_type : kCLASS _
+
+  $default      reduce using rule 162 (simple_type)
+
+
+state 19
+
+ 163) simple_type : kTRUE _
+
+  $default      reduce using rule 163 (simple_type)
+
+
+state 20
+
+ 164) simple_type : kFALSE _
+
+  $default      reduce using rule 164 (simple_type)
+
+
+state 21
+
+ 165) simple_type : tINTEGER _
+
+  $default      reduce using rule 165 (simple_type)
+
+
+state 22
+
+ 166) simple_type : tSTRING _
+
+  $default      reduce using rule 166 (simple_type)
+
+
+state 23
+
+ 167) simple_type : tSYMBOL _
+
+  $default      reduce using rule 167 (simple_type)
+
+
+state 24
+
+ 168) simple_type : qualified_name _
+ 169) simple_type : qualified_name _ kLBRACKET type_list kRBRACKET
+
+  kLBRACKET     shift, and go to state 43
+  $default      reduce using rule 168 (simple_type)
+
+
+state 25
+
+ 170) simple_type : kLBRACKET _ kRBRACKET
+ 171) simple_type : kLBRACKET _ type_list kRBRACKET
+
+  tNAMESPACE    shift, and go to state 33
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kRBRACKET     shift, and go to state 45
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 8
+  kNIL          shift, and go to state 12
+  kTRUE         shift, and go to state 19
+  kFALSE        shift, and go to state 20
+  kANY          shift, and go to state 9
+  kUNTYPED      shift, and go to state 10
+  kTOP          shift, and go to state 13
+  kBOT          shift, and go to state 14
+  kSELF         shift, and go to state 15
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 17
+  kCLASS        shift, and go to state 18
+  kBOOL         shift, and go to state 11
+  kSINGLETON    shift, and go to state 27
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  $default      reduce using rule 226 (namespace)
+
+  simple_type   go to state 7
+  type          go to state 44
+  qualified_name  go to state 24
+  type_list     go to state 46
+  record_type   go to state 29
+  namespace     go to state 31
+
+state 26
+
+ 172) simple_type : kLPAREN _ type kRPAREN
+
+  tNAMESPACE    shift, and go to state 33
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 8
+  kNIL          shift, and go to state 12
+  kTRUE         shift, and go to state 19
+  kFALSE        shift, and go to state 20
+  kANY          shift, and go to state 9
+  kUNTYPED      shift, and go to state 10
+  kTOP          shift, and go to state 13
+  kBOT          shift, and go to state 14
+  kSELF         shift, and go to state 15
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 17
+  kCLASS        shift, and go to state 18
+  kBOOL         shift, and go to state 11
+  kSINGLETON    shift, and go to state 27
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  $default      reduce using rule 226 (namespace)
+
+  simple_type   go to state 7
+  type          go to state 47
+  qualified_name  go to state 24
+  record_type   go to state 29
+  namespace     go to state 31
+
+state 27
+
+ 173) simple_type : kSINGLETON _ kLPAREN class_name kRPAREN
+
+  kLPAREN       shift, and go to state 48
+
+
+state 28
+
+ 174) simple_type : kHAT _ function_type
+
+  kLPAREN       shift, and go to state 50
+  kARROW        shift, and go to state 51
+
+  function_type  go to state 49
+
+state 29
+
+ 176) simple_type : record_type _
+
+  $default      reduce using rule 176 (simple_type)
+
+
+state 30
+
+ 179) record_type : kLBRACE _ record_fields kRBRACE
+
+  tLKEYWORD     shift, and go to state 58
+  tUKEYWORD     shift, and go to state 59
+  tSTRING       shift, and go to state 55
+  tSYMBOL       shift, and go to state 54
+  tINTEGER      shift, and go to state 56
+
+  record_fields  go to state 52
+  record_field  go to state 53
+  keyword       go to state 57
+
+state 31
+
+ 220) qualified_name : namespace _ simple_name
+
+  tUIDENT       shift, and go to state 61
+  tLIDENT       shift, and go to state 62
+  tINTERFACEIDENT  shift, and go to state 63
+
+  simple_name   go to state 60
+
+state 32
+
+ 227) namespace : kCOLON2 _
+ 228) namespace : kCOLON2 _ tNAMESPACE
+
+  tNAMESPACE    shift, and go to state 64
+  $default      reduce using rule 227 (namespace)
+
+
+state 33
+
+ 229) namespace : tNAMESPACE _
+
+  $default      reduce using rule 229 (namespace)
+
+
+state 34
+
+   2) target : type_SIGNATURE signatures _ eof
+   7) signatures : signatures _ signature
+
+  tNAMESPACE    shift, and go to state 33
+  tGLOBALIDENT  shift, and go to state 78
+  tANNOTATION   shift, and go to state 74
+  kCOLON2       shift, and go to state 32
+  tEOF          shift, and go to state 39
+  $end          reduce using rule 4 (eof)
+  tUIDENT       reduce using rule 226 (namespace)
+  tUKEYWORD     reduce using rule 226 (namespace)
+  $default      reduce using rule 17 (annotations)
+
+  eof           go to state 65
+  signature     go to state 66
+  type_decl     go to state 67
+  const_decl    go to state 68
+  global_decl   go to state 69
+  interface_decl  go to state 70
+  module_decl   go to state 71
+  class_decl    go to state 72
+  extension_decl  go to state 73
+  annotations   go to state 75
+  class_name    go to state 76
+  namespace     go to state 77
+
+state 35
+
+   3) target : type_METHODTYPE method_type _ eof
+
+  tEOF          shift, and go to state 39
+  $default      reduce using rule 4 (eof)
+
+  eof           go to state 79
+
+state 36
+
+  74) method_type : start_merged_scope _ type_params params_opt block_opt kARROW simple_type
+
+  kLBRACKET     shift, and go to state 81
+  $default      reduce using rule 139 (type_params)
+
+  type_params   go to state 80
+
+state 37
+
+
+  $default      accept
+
+
+state 38
+
+   1) target : type_TYPE type eof _
+
+  $default      reduce using rule 1 (target)
+
+
+state 39
+
+   5) eof : tEOF _
+
+  $default      reduce using rule 5 (eof)
+
+
+state 40
+
+ 150) type : type kBAR _ type
+
+  tNAMESPACE    shift, and go to state 33
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 8
+  kNIL          shift, and go to state 12
+  kTRUE         shift, and go to state 19
+  kFALSE        shift, and go to state 20
+  kANY          shift, and go to state 9
+  kUNTYPED      shift, and go to state 10
+  kTOP          shift, and go to state 13
+  kBOT          shift, and go to state 14
+  kSELF         shift, and go to state 15
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 17
+  kCLASS        shift, and go to state 18
+  kBOOL         shift, and go to state 11
+  kSINGLETON    shift, and go to state 27
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  $default      reduce using rule 226 (namespace)
+
+  simple_type   go to state 7
+  type          go to state 82
+  qualified_name  go to state 24
+  record_type   go to state 29
+  namespace     go to state 31
+
+state 41
+
+ 151) type : type kAMP _ type
+
+  tNAMESPACE    shift, and go to state 33
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 8
+  kNIL          shift, and go to state 12
+  kTRUE         shift, and go to state 19
+  kFALSE        shift, and go to state 20
+  kANY          shift, and go to state 9
+  kUNTYPED      shift, and go to state 10
+  kTOP          shift, and go to state 13
+  kBOT          shift, and go to state 14
+  kSELF         shift, and go to state 15
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 17
+  kCLASS        shift, and go to state 18
+  kBOOL         shift, and go to state 11
+  kSINGLETON    shift, and go to state 27
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  $default      reduce using rule 226 (namespace)
+
+  simple_type   go to state 7
+  type          go to state 83
+  qualified_name  go to state 24
+  record_type   go to state 29
+  namespace     go to state 31
+
+state 42
+
+ 175) simple_type : simple_type kQUESTION _
+
+  $default      reduce using rule 175 (simple_type)
+
+
+state 43
+
+ 169) simple_type : qualified_name kLBRACKET _ type_list kRBRACKET
+
+  tNAMESPACE    shift, and go to state 33
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 8
+  kNIL          shift, and go to state 12
+  kTRUE         shift, and go to state 19
+  kFALSE        shift, and go to state 20
+  kANY          shift, and go to state 9
+  kUNTYPED      shift, and go to state 10
+  kTOP          shift, and go to state 13
+  kBOT          shift, and go to state 14
+  kSELF         shift, and go to state 15
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 17
+  kCLASS        shift, and go to state 18
+  kBOOL         shift, and go to state 11
+  kSINGLETON    shift, and go to state 27
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  $default      reduce using rule 226 (namespace)
+
+  simple_type   go to state 7
+  type          go to state 44
+  qualified_name  go to state 24
+  type_list     go to state 84
+  record_type   go to state 29
+  namespace     go to state 31
+
+state 44
+
+ 150) type : type _ kBAR type
+ 151) type : type _ kAMP type
+ 177) type_list : type _
+
+  kBAR          shift, and go to state 40
+  kAMP          shift, and go to state 41
+  $default      reduce using rule 177 (type_list)
+
+
+state 45
+
+ 170) simple_type : kLBRACKET kRBRACKET _
+
+  $default      reduce using rule 170 (simple_type)
+
+
+state 46
+
+ 171) simple_type : kLBRACKET type_list _ kRBRACKET
+ 178) type_list : type_list _ kCOMMA type
+
+  kRBRACKET     shift, and go to state 85
+  kCOMMA        shift, and go to state 86
+
+
+state 47
+
+ 150) type : type _ kBAR type
+ 151) type : type _ kAMP type
+ 172) simple_type : kLPAREN type _ kRPAREN
+
+  kRPAREN       shift, and go to state 87
+  kBAR          shift, and go to state 40
+  kAMP          shift, and go to state 41
+
+
+state 48
+
+ 173) simple_type : kSINGLETON kLPAREN _ class_name kRPAREN
+
+  tNAMESPACE    shift, and go to state 33
+  kCOLON2       shift, and go to state 32
+  $default      reduce using rule 226 (namespace)
+
+  class_name    go to state 88
+  namespace     go to state 89
+
+state 49
+
+ 174) simple_type : kHAT function_type _
+
+  $default      reduce using rule 174 (simple_type)
+
+
+state 50
+
+ 190) function_type : kLPAREN _ params kRPAREN kARROW simple_type
+
+  tNAMESPACE    shift, and go to state 33
+  tLKEYWORD     shift, and go to state 58
+  tUKEYWORD     shift, and go to state 59
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 91
+  kNIL          shift, and go to state 92
+  kTRUE         shift, and go to state 93
+  kFALSE        shift, and go to state 94
+  kANY          shift, and go to state 95
+  kUNTYPED      shift, and go to state 96
+  kTOP          shift, and go to state 97
+  kBOT          shift, and go to state 98
+  kSELF         shift, and go to state 115
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 99
+  kCLASS        shift, and go to state 90
+  kBOOL         shift, and go to state 100
+  kSINGLETON    shift, and go to state 101
+  kTYPE         shift, and go to state 102
+  kDEF          shift, and go to state 113
+  kMODULE       shift, and go to state 103
+  kPRIVATE      shift, and go to state 104
+  kPUBLIC       shift, and go to state 105
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  kQUESTION     shift, and go to state 132
+  kSTAR         shift, and go to state 133
+  kSTAR2        shift, and go to state 135
+  kEND          shift, and go to state 106
+  kINCLUDE      shift, and go to state 107
+  kEXTEND       shift, and go to state 108
+  kATTRREADER   shift, and go to state 110
+  kATTRWRITER   shift, and go to state 112
+  kATTRACCESSOR  shift, and go to state 111
+  kPREPEND      shift, and go to state 109
+  kEXTENSION    shift, and go to state 114
+  kINCOMPATIBLE  shift, and go to state 116
+  kUNCHECKED    shift, and go to state 117
+  kRPAREN       reduce using rule 204 (keyword_params)
+  $default      reduce using rule 226 (namespace)
+
+  simple_type   go to state 7
+  type          go to state 118
+  qualified_name  go to state 24
+  record_type   go to state 29
+  keyword       go to state 119
+  identifier_keywords  go to state 120
+  params        go to state 121
+  required_positional  go to state 122
+  optional_positional_params  go to state 123
+  optional_positional  go to state 124
+  rest_positional_param  go to state 125
+  rest_positional  go to state 126
+  trailing_positional_params  go to state 127
+  keyword_params  go to state 128
+  required_keyword  go to state 129
+  optional_keyword  go to state 130
+  rest_keyword  go to state 131
+  keyword_name  go to state 134
+  namespace     go to state 31
+
+state 51
+
+ 191) function_type : kARROW _ simple_type
+
+  tNAMESPACE    shift, and go to state 33
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 8
+  kNIL          shift, and go to state 12
+  kTRUE         shift, and go to state 19
+  kFALSE        shift, and go to state 20
+  kANY          shift, and go to state 9
+  kUNTYPED      shift, and go to state 10
+  kTOP          shift, and go to state 13
+  kBOT          shift, and go to state 14
+  kSELF         shift, and go to state 15
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 17
+  kCLASS        shift, and go to state 18
+  kBOOL         shift, and go to state 11
+  kSINGLETON    shift, and go to state 27
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  $default      reduce using rule 226 (namespace)
+
+  qualified_name  go to state 24
+  simple_type   go to state 136
+  record_type   go to state 29
+  namespace     go to state 31
+
+state 52
+
+ 179) record_type : kLBRACE record_fields _ kRBRACE
+
+  kRBRACE       shift, and go to state 137
+
+
+state 53
+
+ 180) record_fields : record_field _
+ 181) record_fields : record_field _ kCOMMA record_fields
+
+  kCOMMA        shift, and go to state 138
+  $default      reduce using rule 180 (record_fields)
+
+
+state 54
+
+ 182) record_field : tSYMBOL _ kFATARROW type
+
+  kFATARROW     shift, and go to state 139
+
+
+state 55
+
+ 183) record_field : tSTRING _ kFATARROW type
+
+  kFATARROW     shift, and go to state 140
+
+
+state 56
+
+ 184) record_field : tINTEGER _ kFATARROW type
+
+  kFATARROW     shift, and go to state 141
+
+
+state 57
+
+ 185) record_field : keyword _ type
+
+  tNAMESPACE    shift, and go to state 33
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 8
+  kNIL          shift, and go to state 12
+  kTRUE         shift, and go to state 19
+  kFALSE        shift, and go to state 20
+  kANY          shift, and go to state 9
+  kUNTYPED      shift, and go to state 10
+  kTOP          shift, and go to state 13
+  kBOT          shift, and go to state 14
+  kSELF         shift, and go to state 15
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 17
+  kCLASS        shift, and go to state 18
+  kBOOL         shift, and go to state 11
+  kSINGLETON    shift, and go to state 27
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  $default      reduce using rule 226 (namespace)
+
+  simple_type   go to state 7
+  type          go to state 142
+  qualified_name  go to state 24
+  record_type   go to state 29
+  namespace     go to state 31
+
+state 58
+
+ 188) keyword : tLKEYWORD _
+
+  $default      reduce using rule 188 (keyword)
+
+
+state 59
+
+ 189) keyword : tUKEYWORD _
+
+  $default      reduce using rule 189 (keyword)
+
+
+state 60
+
+ 220) qualified_name : namespace simple_name _
+
+  $default      reduce using rule 220 (qualified_name)
+
+
+state 61
+
+ 221) simple_name : tUIDENT _
+
+  $default      reduce using rule 221 (simple_name)
+
+
+state 62
+
+ 222) simple_name : tLIDENT _
+
+  $default      reduce using rule 222 (simple_name)
+
+
+state 63
+
+ 223) simple_name : tINTERFACEIDENT _
+
+  $default      reduce using rule 223 (simple_name)
+
+
+state 64
+
+ 228) namespace : kCOLON2 tNAMESPACE _
+
+  $default      reduce using rule 228 (namespace)
+
+
+state 65
+
+   2) target : type_SIGNATURE signatures eof _
+
+  $default      reduce using rule 2 (target)
+
+
+state 66
+
+   7) signatures : signatures signature _
+
+  $default      reduce using rule 7 (signatures)
+
+
+state 67
+
+   8) signature : type_decl _
+
+  $default      reduce using rule 8 (signature)
+
+
+state 68
+
+   9) signature : const_decl _
+
+  $default      reduce using rule 9 (signature)
+
+
+state 69
+
+  10) signature : global_decl _
+
+  $default      reduce using rule 10 (signature)
+
+
+state 70
+
+  11) signature : interface_decl _
+
+  $default      reduce using rule 11 (signature)
+
+
+state 71
+
+  12) signature : module_decl _
+
+  $default      reduce using rule 12 (signature)
+
+
+state 72
+
+  13) signature : class_decl _
+
+  $default      reduce using rule 13 (signature)
+
+
+state 73
+
+  14) signature : extension_decl _
+
+  $default      reduce using rule 14 (signature)
+
+
+state 74
+
+  18) annotations : tANNOTATION _ annotations
+
+  tANNOTATION   shift, and go to state 74
+  $default      reduce using rule 17 (annotations)
+
+  annotations   go to state 143
+
+state 75
+
+  19) extension_decl : annotations _ kEXTENSION start_new_scope class_name type_params kLPAREN extension_name kRPAREN class_members kEND
+  22) class_decl : annotations _ kCLASS start_new_scope class_name module_type_params super_class class_members kEND
+  26) module_decl : annotations _ kMODULE start_new_scope class_name module_type_params module_self_type class_members kEND
+  27) module_decl : annotations _ kMODULE start_new_scope tUKEYWORD type class_members kEND
+  53) interface_decl : annotations _ kINTERFACE start_new_scope interface_name module_type_params interface_members kEND
+ 145) type_decl : annotations _ kTYPE qualified_name kEQ type
+
+  kCLASS        shift, and go to state 145
+  kTYPE         shift, and go to state 148
+  kMODULE       shift, and go to state 146
+  kINTERFACE    shift, and go to state 147
+  kEXTENSION    shift, and go to state 144
+
+
+state 76
+
+ 146) const_decl : class_name _ kCOLON type
+
+  kCOLON        shift, and go to state 149
+
+
+state 77
+
+ 147) const_decl : namespace _ tUKEYWORD type
+ 225) class_name : namespace _ tUIDENT
+
+  tUIDENT       shift, and go to state 151
+  tUKEYWORD     shift, and go to state 150
+
+
+state 78
+
+ 148) global_decl : tGLOBALIDENT _ kCOLON type
+
+  kCOLON        shift, and go to state 152
+
+
+state 79
+
+   3) target : type_METHODTYPE method_type eof _
+
+  $default      reduce using rule 3 (target)
+
+
+state 80
+
+  74) method_type : start_merged_scope type_params _ params_opt block_opt kARROW simple_type
+
+  kLPAREN       shift, and go to state 154
+  $default      reduce using rule 75 (params_opt)
+
+  params_opt    go to state 153
+
+state 81
+
+ 140) type_params : kLBRACKET _ type_params0 kRBRACKET
+
+  tUIDENT       shift, and go to state 156
+
+  type_params0  go to state 155
+
+state 82
+
+ 150) type : type _ kBAR type
+ 150) type : type kBAR type _
+ 151) type : type _ kAMP type
+
+  kAMP          shift, and go to state 41
+  $default      reduce using rule 150 (type)
+
+
+state 83
+
+ 150) type : type _ kBAR type
+ 151) type : type _ kAMP type
+ 151) type : type kAMP type _
+
+  $default      reduce using rule 151 (type)
+
+
+state 84
+
+ 169) simple_type : qualified_name kLBRACKET type_list _ kRBRACKET
+ 178) type_list : type_list _ kCOMMA type
+
+  kRBRACKET     shift, and go to state 157
+  kCOMMA        shift, and go to state 86
+
+
+state 85
+
+ 171) simple_type : kLBRACKET type_list kRBRACKET _
+
+  $default      reduce using rule 171 (simple_type)
+
+
+state 86
+
+ 178) type_list : type_list kCOMMA _ type
+
+  tNAMESPACE    shift, and go to state 33
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 8
+  kNIL          shift, and go to state 12
+  kTRUE         shift, and go to state 19
+  kFALSE        shift, and go to state 20
+  kANY          shift, and go to state 9
+  kUNTYPED      shift, and go to state 10
+  kTOP          shift, and go to state 13
+  kBOT          shift, and go to state 14
+  kSELF         shift, and go to state 15
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 17
+  kCLASS        shift, and go to state 18
+  kBOOL         shift, and go to state 11
+  kSINGLETON    shift, and go to state 27
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  $default      reduce using rule 226 (namespace)
+
+  simple_type   go to state 7
+  type          go to state 158
+  qualified_name  go to state 24
+  record_type   go to state 29
+  namespace     go to state 31
+
+state 87
+
+ 172) simple_type : kLPAREN type kRPAREN _
+
+  $default      reduce using rule 172 (simple_type)
+
+
+state 88
+
+ 173) simple_type : kSINGLETON kLPAREN class_name _ kRPAREN
+
+  kRPAREN       shift, and go to state 159
+
+
+state 89
+
+ 225) class_name : namespace _ tUIDENT
+
+  tUIDENT       shift, and go to state 151
+
+
+state 90
+
+ 101) identifier_keywords : kCLASS _
+ 162) simple_type : kCLASS _
+
+  kCOLON        reduce using rule 101 (identifier_keywords)
+  $default      reduce using rule 162 (simple_type)
+
+
+state 91
+
+ 102) identifier_keywords : kVOID _
+ 152) simple_type : kVOID _
+
+  kCOLON        reduce using rule 102 (identifier_keywords)
+  $default      reduce using rule 152 (simple_type)
+
+
+state 92
+
+ 103) identifier_keywords : kNIL _
+ 156) simple_type : kNIL _
+
+  kCOLON        reduce using rule 103 (identifier_keywords)
+  $default      reduce using rule 156 (simple_type)
+
+
+state 93
+
+ 104) identifier_keywords : kTRUE _
+ 163) simple_type : kTRUE _
+
+  kCOLON        reduce using rule 104 (identifier_keywords)
+  $default      reduce using rule 163 (simple_type)
+
+
+state 94
+
+ 105) identifier_keywords : kFALSE _
+ 164) simple_type : kFALSE _
+
+  kCOLON        reduce using rule 105 (identifier_keywords)
+  $default      reduce using rule 164 (simple_type)
+
+
+state 95
+
+ 106) identifier_keywords : kANY _
+ 153) simple_type : kANY _
+
+  kCOLON        reduce using rule 106 (identifier_keywords)
+  $default      reduce using rule 153 (simple_type)
+
+
+state 96
+
+ 107) identifier_keywords : kUNTYPED _
+ 154) simple_type : kUNTYPED _
+
+  kCOLON        reduce using rule 107 (identifier_keywords)
+  $default      reduce using rule 154 (simple_type)
+
+
+state 97
+
+ 108) identifier_keywords : kTOP _
+ 157) simple_type : kTOP _
+
+  kCOLON        reduce using rule 108 (identifier_keywords)
+  $default      reduce using rule 157 (simple_type)
+
+
+state 98
+
+ 109) identifier_keywords : kBOT _
+ 158) simple_type : kBOT _
+
+  kCOLON        reduce using rule 109 (identifier_keywords)
+  $default      reduce using rule 158 (simple_type)
+
+
+state 99
+
+ 110) identifier_keywords : kINSTANCE _
+ 161) simple_type : kINSTANCE _
+
+  kCOLON        reduce using rule 110 (identifier_keywords)
+  $default      reduce using rule 161 (simple_type)
+
+
+state 100
+
+ 111) identifier_keywords : kBOOL _
+ 155) simple_type : kBOOL _
+
+  kCOLON        reduce using rule 111 (identifier_keywords)
+  $default      reduce using rule 155 (simple_type)
+
+
+state 101
+
+ 112) identifier_keywords : kSINGLETON _
+ 173) simple_type : kSINGLETON _ kLPAREN class_name kRPAREN
+
+  kLPAREN       shift, and go to state 48
+  $default      reduce using rule 112 (identifier_keywords)
+
+
+state 102
+
+ 113) identifier_keywords : kTYPE _
+
+  $default      reduce using rule 113 (identifier_keywords)
+
+
+state 103
+
+ 114) identifier_keywords : kMODULE _
+
+  $default      reduce using rule 114 (identifier_keywords)
+
+
+state 104
+
+ 115) identifier_keywords : kPRIVATE _
+
+  $default      reduce using rule 115 (identifier_keywords)
+
+
+state 105
+
+ 116) identifier_keywords : kPUBLIC _
+
+  $default      reduce using rule 116 (identifier_keywords)
+
+
+state 106
+
+ 117) identifier_keywords : kEND _
+
+  $default      reduce using rule 117 (identifier_keywords)
+
+
+state 107
+
+ 118) identifier_keywords : kINCLUDE _
+
+  $default      reduce using rule 118 (identifier_keywords)
+
+
+state 108
+
+ 119) identifier_keywords : kEXTEND _
+
+  $default      reduce using rule 119 (identifier_keywords)
+
+
+state 109
+
+ 120) identifier_keywords : kPREPEND _
+
+  $default      reduce using rule 120 (identifier_keywords)
+
+
+state 110
+
+ 121) identifier_keywords : kATTRREADER _
+
+  $default      reduce using rule 121 (identifier_keywords)
+
+
+state 111
+
+ 122) identifier_keywords : kATTRACCESSOR _
+
+  $default      reduce using rule 122 (identifier_keywords)
+
+
+state 112
+
+ 123) identifier_keywords : kATTRWRITER _
+
+  $default      reduce using rule 123 (identifier_keywords)
+
+
+state 113
+
+ 124) identifier_keywords : kDEF _
+
+  $default      reduce using rule 124 (identifier_keywords)
+
+
+state 114
+
+ 125) identifier_keywords : kEXTENSION _
+
+  $default      reduce using rule 125 (identifier_keywords)
+
+
+state 115
+
+ 126) identifier_keywords : kSELF _
+ 159) simple_type : kSELF _
+
+  kCOLON        reduce using rule 126 (identifier_keywords)
+  $default      reduce using rule 159 (simple_type)
+
+
+state 116
+
+ 127) identifier_keywords : kINCOMPATIBLE _
+
+  $default      reduce using rule 127 (identifier_keywords)
+
+
+state 117
+
+ 128) identifier_keywords : kUNCHECKED _
+
+  $default      reduce using rule 128 (identifier_keywords)
+
+
+state 118
+
+ 150) type : type _ kBAR type
+ 151) type : type _ kAMP type
+ 210) required_positional : type _ var_name_opt
+
+  tLIDENT       shift, and go to state 161
+  tINTERFACEIDENT  shift, and go to state 162
+  kBAR          shift, and go to state 40
+  kAMP          shift, and go to state 41
+  tQUOTEDIDENT  shift, and go to state 163
+  $default      reduce using rule 216 (var_name_opt)
+
+  var_name_opt  go to state 160
+
+state 119
+
+ 186) keyword_name : keyword _
+
+  $default      reduce using rule 186 (keyword_name)
+
+
+state 120
+
+ 187) keyword_name : identifier_keywords _ kCOLON
+
+  kCOLON        shift, and go to state 164
+
+
+state 121
+
+ 190) function_type : kLPAREN params _ kRPAREN kARROW simple_type
+
+  kRPAREN       shift, and go to state 165
+
+
+state 122
+
+ 192) params : required_positional _ kCOMMA params
+ 193) params : required_positional _
+ 201) trailing_positional_params : required_positional _ kCOMMA trailing_positional_params
+ 202) trailing_positional_params : required_positional _
+
+  kCOMMA        shift, and go to state 166
+  kRPAREN       [reduce using rule 202 (trailing_positional_params)]
+  $default      reduce using rule 193 (params)
+
+
+state 123
+
+ 194) params : optional_positional_params _
+
+  $default      reduce using rule 194 (params)
+
+
+state 124
+
+ 195) optional_positional_params : optional_positional _ kCOMMA optional_positional_params
+ 196) optional_positional_params : optional_positional _
+
+  kCOMMA        shift, and go to state 167
+  $default      reduce using rule 196 (optional_positional_params)
+
+
+state 125
+
+ 197) optional_positional_params : rest_positional_param _
+
+  $default      reduce using rule 197 (optional_positional_params)
+
+
+state 126
+
+ 198) rest_positional_param : rest_positional _ kCOMMA trailing_positional_params
+ 199) rest_positional_param : rest_positional _
+
+  kCOMMA        shift, and go to state 168
+  $default      reduce using rule 199 (rest_positional_param)
+
+
+state 127
+
+ 200) rest_positional_param : trailing_positional_params _
+
+  $default      reduce using rule 200 (rest_positional_param)
+
+
+state 128
+
+ 203) trailing_positional_params : keyword_params _
+
+  $default      reduce using rule 203 (trailing_positional_params)
+
+
+state 129
+
+ 205) keyword_params : required_keyword _ kCOMMA keyword_params
+ 206) keyword_params : required_keyword _
+
+  kCOMMA        shift, and go to state 169
+  $default      reduce using rule 206 (keyword_params)
+
+
+state 130
+
+ 207) keyword_params : optional_keyword _ kCOMMA keyword_params
+ 208) keyword_params : optional_keyword _
+
+  kCOMMA        shift, and go to state 170
+  $default      reduce using rule 208 (keyword_params)
+
+
+state 131
+
+ 209) keyword_params : rest_keyword _
+
+  $default      reduce using rule 209 (keyword_params)
+
+
+state 132
+
+ 211) optional_positional : kQUESTION _ type var_name_opt
+ 214) optional_keyword : kQUESTION _ keyword_name type var_name_opt
+
+  tNAMESPACE    shift, and go to state 33
+  tLKEYWORD     shift, and go to state 58
+  tUKEYWORD     shift, and go to state 59
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 91
+  kNIL          shift, and go to state 92
+  kTRUE         shift, and go to state 93
+  kFALSE        shift, and go to state 94
+  kANY          shift, and go to state 95
+  kUNTYPED      shift, and go to state 96
+  kTOP          shift, and go to state 97
+  kBOT          shift, and go to state 98
+  kSELF         shift, and go to state 115
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 99
+  kCLASS        shift, and go to state 90
+  kBOOL         shift, and go to state 100
+  kSINGLETON    shift, and go to state 101
+  kTYPE         shift, and go to state 102
+  kDEF          shift, and go to state 113
+  kMODULE       shift, and go to state 103
+  kPRIVATE      shift, and go to state 104
+  kPUBLIC       shift, and go to state 105
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  kEND          shift, and go to state 106
+  kINCLUDE      shift, and go to state 107
+  kEXTEND       shift, and go to state 108
+  kATTRREADER   shift, and go to state 110
+  kATTRWRITER   shift, and go to state 112
+  kATTRACCESSOR  shift, and go to state 111
+  kPREPEND      shift, and go to state 109
+  kEXTENSION    shift, and go to state 114
+  kINCOMPATIBLE  shift, and go to state 116
+  kUNCHECKED    shift, and go to state 117
+  $default      reduce using rule 226 (namespace)
+
+  simple_type   go to state 7
+  type          go to state 171
+  qualified_name  go to state 24
+  record_type   go to state 29
+  keyword       go to state 119
+  identifier_keywords  go to state 120
+  keyword_name  go to state 172
+  namespace     go to state 31
+
+state 133
+
+ 212) rest_positional : kSTAR _ type var_name_opt
+
+  tNAMESPACE    shift, and go to state 33
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 8
+  kNIL          shift, and go to state 12
+  kTRUE         shift, and go to state 19
+  kFALSE        shift, and go to state 20
+  kANY          shift, and go to state 9
+  kUNTYPED      shift, and go to state 10
+  kTOP          shift, and go to state 13
+  kBOT          shift, and go to state 14
+  kSELF         shift, and go to state 15
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 17
+  kCLASS        shift, and go to state 18
+  kBOOL         shift, and go to state 11
+  kSINGLETON    shift, and go to state 27
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  $default      reduce using rule 226 (namespace)
+
+  simple_type   go to state 7
+  type          go to state 173
+  qualified_name  go to state 24
+  record_type   go to state 29
+  namespace     go to state 31
+
+state 134
+
+ 213) required_keyword : keyword_name _ type var_name_opt
+
+  tNAMESPACE    shift, and go to state 33
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 8
+  kNIL          shift, and go to state 12
+  kTRUE         shift, and go to state 19
+  kFALSE        shift, and go to state 20
+  kANY          shift, and go to state 9
+  kUNTYPED      shift, and go to state 10
+  kTOP          shift, and go to state 13
+  kBOT          shift, and go to state 14
+  kSELF         shift, and go to state 15
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 17
+  kCLASS        shift, and go to state 18
+  kBOOL         shift, and go to state 11
+  kSINGLETON    shift, and go to state 27
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  $default      reduce using rule 226 (namespace)
+
+  simple_type   go to state 7
+  type          go to state 174
+  qualified_name  go to state 24
+  record_type   go to state 29
+  namespace     go to state 31
+
+state 135
+
+ 215) rest_keyword : kSTAR2 _ type var_name_opt
+
+  tNAMESPACE    shift, and go to state 33
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 8
+  kNIL          shift, and go to state 12
+  kTRUE         shift, and go to state 19
+  kFALSE        shift, and go to state 20
+  kANY          shift, and go to state 9
+  kUNTYPED      shift, and go to state 10
+  kTOP          shift, and go to state 13
+  kBOT          shift, and go to state 14
+  kSELF         shift, and go to state 15
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 17
+  kCLASS        shift, and go to state 18
+  kBOOL         shift, and go to state 11
+  kSINGLETON    shift, and go to state 27
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  $default      reduce using rule 226 (namespace)
+
+  simple_type   go to state 7
+  type          go to state 175
+  qualified_name  go to state 24
+  record_type   go to state 29
+  namespace     go to state 31
+
+state 136
+
+ 175) simple_type : simple_type _ kQUESTION
+ 191) function_type : kARROW simple_type _
+
+  kQUESTION     shift, and go to state 42
+  $default      reduce using rule 191 (function_type)
+
+
+state 137
+
+ 179) record_type : kLBRACE record_fields kRBRACE _
+
+  $default      reduce using rule 179 (record_type)
+
+
+state 138
+
+ 181) record_fields : record_field kCOMMA _ record_fields
+
+  tLKEYWORD     shift, and go to state 58
+  tUKEYWORD     shift, and go to state 59
+  tSTRING       shift, and go to state 55
+  tSYMBOL       shift, and go to state 54
+  tINTEGER      shift, and go to state 56
+
+  record_field  go to state 53
+  record_fields  go to state 176
+  keyword       go to state 57
+
+state 139
+
+ 182) record_field : tSYMBOL kFATARROW _ type
+
+  tNAMESPACE    shift, and go to state 33
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 8
+  kNIL          shift, and go to state 12
+  kTRUE         shift, and go to state 19
+  kFALSE        shift, and go to state 20
+  kANY          shift, and go to state 9
+  kUNTYPED      shift, and go to state 10
+  kTOP          shift, and go to state 13
+  kBOT          shift, and go to state 14
+  kSELF         shift, and go to state 15
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 17
+  kCLASS        shift, and go to state 18
+  kBOOL         shift, and go to state 11
+  kSINGLETON    shift, and go to state 27
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  $default      reduce using rule 226 (namespace)
+
+  simple_type   go to state 7
+  type          go to state 177
+  qualified_name  go to state 24
+  record_type   go to state 29
+  namespace     go to state 31
+
+state 140
+
+ 183) record_field : tSTRING kFATARROW _ type
+
+  tNAMESPACE    shift, and go to state 33
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 8
+  kNIL          shift, and go to state 12
+  kTRUE         shift, and go to state 19
+  kFALSE        shift, and go to state 20
+  kANY          shift, and go to state 9
+  kUNTYPED      shift, and go to state 10
+  kTOP          shift, and go to state 13
+  kBOT          shift, and go to state 14
+  kSELF         shift, and go to state 15
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 17
+  kCLASS        shift, and go to state 18
+  kBOOL         shift, and go to state 11
+  kSINGLETON    shift, and go to state 27
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  $default      reduce using rule 226 (namespace)
+
+  simple_type   go to state 7
+  type          go to state 178
+  qualified_name  go to state 24
+  record_type   go to state 29
+  namespace     go to state 31
+
+state 141
+
+ 184) record_field : tINTEGER kFATARROW _ type
+
+  tNAMESPACE    shift, and go to state 33
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 8
+  kNIL          shift, and go to state 12
+  kTRUE         shift, and go to state 19
+  kFALSE        shift, and go to state 20
+  kANY          shift, and go to state 9
+  kUNTYPED      shift, and go to state 10
+  kTOP          shift, and go to state 13
+  kBOT          shift, and go to state 14
+  kSELF         shift, and go to state 15
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 17
+  kCLASS        shift, and go to state 18
+  kBOOL         shift, and go to state 11
+  kSINGLETON    shift, and go to state 27
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  $default      reduce using rule 226 (namespace)
+
+  simple_type   go to state 7
+  type          go to state 179
+  qualified_name  go to state 24
+  record_type   go to state 29
+  namespace     go to state 31
+
+state 142
+
+ 150) type : type _ kBAR type
+ 151) type : type _ kAMP type
+ 185) record_field : keyword type _
+
+  kBAR          shift, and go to state 40
+  kAMP          shift, and go to state 41
+  $default      reduce using rule 185 (record_field)
+
+
+state 143
+
+  18) annotations : tANNOTATION annotations _
+
+  $default      reduce using rule 18 (annotations)
+
+
+state 144
+
+  19) extension_decl : annotations kEXTENSION _ start_new_scope class_name type_params kLPAREN extension_name kRPAREN class_members kEND
+
+  $default      reduce using rule 15 (start_new_scope)
+
+  start_new_scope  go to state 180
+
+state 145
+
+  22) class_decl : annotations kCLASS _ start_new_scope class_name module_type_params super_class class_members kEND
+
+  $default      reduce using rule 15 (start_new_scope)
+
+  start_new_scope  go to state 181
+
+state 146
+
+  26) module_decl : annotations kMODULE _ start_new_scope class_name module_type_params module_self_type class_members kEND
+  27) module_decl : annotations kMODULE _ start_new_scope tUKEYWORD type class_members kEND
+
+  $default      reduce using rule 15 (start_new_scope)
+
+  start_new_scope  go to state 182
+
+state 147
+
+  53) interface_decl : annotations kINTERFACE _ start_new_scope interface_name module_type_params interface_members kEND
+
+  $default      reduce using rule 15 (start_new_scope)
+
+  start_new_scope  go to state 183
+
+state 148
+
+ 145) type_decl : annotations kTYPE _ qualified_name kEQ type
+
+  tNAMESPACE    shift, and go to state 33
+  kCOLON2       shift, and go to state 32
+  $default      reduce using rule 226 (namespace)
+
+  qualified_name  go to state 184
+  namespace     go to state 31
+
+state 149
+
+ 146) const_decl : class_name kCOLON _ type
+
+  tNAMESPACE    shift, and go to state 33
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 8
+  kNIL          shift, and go to state 12
+  kTRUE         shift, and go to state 19
+  kFALSE        shift, and go to state 20
+  kANY          shift, and go to state 9
+  kUNTYPED      shift, and go to state 10
+  kTOP          shift, and go to state 13
+  kBOT          shift, and go to state 14
+  kSELF         shift, and go to state 15
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 17
+  kCLASS        shift, and go to state 18
+  kBOOL         shift, and go to state 11
+  kSINGLETON    shift, and go to state 27
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  $default      reduce using rule 226 (namespace)
+
+  type          go to state 185
+  simple_type   go to state 7
+  qualified_name  go to state 24
+  record_type   go to state 29
+  namespace     go to state 31
+
+state 150
+
+ 147) const_decl : namespace tUKEYWORD _ type
+
+  tNAMESPACE    shift, and go to state 33
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 8
+  kNIL          shift, and go to state 12
+  kTRUE         shift, and go to state 19
+  kFALSE        shift, and go to state 20
+  kANY          shift, and go to state 9
+  kUNTYPED      shift, and go to state 10
+  kTOP          shift, and go to state 13
+  kBOT          shift, and go to state 14
+  kSELF         shift, and go to state 15
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 17
+  kCLASS        shift, and go to state 18
+  kBOOL         shift, and go to state 11
+  kSINGLETON    shift, and go to state 27
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  $default      reduce using rule 226 (namespace)
+
+  type          go to state 186
+  simple_type   go to state 7
+  qualified_name  go to state 24
+  record_type   go to state 29
+  namespace     go to state 31
+
+state 151
+
+ 225) class_name : namespace tUIDENT _
+
+  $default      reduce using rule 225 (class_name)
+
+
+state 152
+
+ 148) global_decl : tGLOBALIDENT kCOLON _ type
+
+  tNAMESPACE    shift, and go to state 33
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 8
+  kNIL          shift, and go to state 12
+  kTRUE         shift, and go to state 19
+  kFALSE        shift, and go to state 20
+  kANY          shift, and go to state 9
+  kUNTYPED      shift, and go to state 10
+  kTOP          shift, and go to state 13
+  kBOT          shift, and go to state 14
+  kSELF         shift, and go to state 15
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 17
+  kCLASS        shift, and go to state 18
+  kBOOL         shift, and go to state 11
+  kSINGLETON    shift, and go to state 27
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  $default      reduce using rule 226 (namespace)
+
+  type          go to state 187
+  simple_type   go to state 7
+  qualified_name  go to state 24
+  record_type   go to state 29
+  namespace     go to state 31
+
+state 153
+
+  74) method_type : start_merged_scope type_params params_opt _ block_opt kARROW simple_type
+
+  kLBRACE       shift, and go to state 189
+  kQUESTION     shift, and go to state 190
+  $default      reduce using rule 77 (block_opt)
+
+  block_opt     go to state 188
+
+state 154
+
+  76) params_opt : kLPAREN _ params kRPAREN
+
+  tNAMESPACE    shift, and go to state 33
+  tLKEYWORD     shift, and go to state 58
+  tUKEYWORD     shift, and go to state 59
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 91
+  kNIL          shift, and go to state 92
+  kTRUE         shift, and go to state 93
+  kFALSE        shift, and go to state 94
+  kANY          shift, and go to state 95
+  kUNTYPED      shift, and go to state 96
+  kTOP          shift, and go to state 97
+  kBOT          shift, and go to state 98
+  kSELF         shift, and go to state 115
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 99
+  kCLASS        shift, and go to state 90
+  kBOOL         shift, and go to state 100
+  kSINGLETON    shift, and go to state 101
+  kTYPE         shift, and go to state 102
+  kDEF          shift, and go to state 113
+  kMODULE       shift, and go to state 103
+  kPRIVATE      shift, and go to state 104
+  kPUBLIC       shift, and go to state 105
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  kQUESTION     shift, and go to state 132
+  kSTAR         shift, and go to state 133
+  kSTAR2        shift, and go to state 135
+  kEND          shift, and go to state 106
+  kINCLUDE      shift, and go to state 107
+  kEXTEND       shift, and go to state 108
+  kATTRREADER   shift, and go to state 110
+  kATTRWRITER   shift, and go to state 112
+  kATTRACCESSOR  shift, and go to state 111
+  kPREPEND      shift, and go to state 109
+  kEXTENSION    shift, and go to state 114
+  kINCOMPATIBLE  shift, and go to state 116
+  kUNCHECKED    shift, and go to state 117
+  kRPAREN       reduce using rule 204 (keyword_params)
+  $default      reduce using rule 226 (namespace)
+
+  params        go to state 191
+  simple_type   go to state 7
+  type          go to state 118
+  qualified_name  go to state 24
+  record_type   go to state 29
+  keyword       go to state 119
+  identifier_keywords  go to state 120
+  required_positional  go to state 122
+  optional_positional_params  go to state 123
+  optional_positional  go to state 124
+  rest_positional_param  go to state 125
+  rest_positional  go to state 126
+  trailing_positional_params  go to state 127
+  keyword_params  go to state 128
+  required_keyword  go to state 129
+  optional_keyword  go to state 130
+  rest_keyword  go to state 131
+  keyword_name  go to state 134
+  namespace     go to state 31
+
+state 155
+
+ 140) type_params : kLBRACKET type_params0 _ kRBRACKET
+ 142) type_params0 : type_params0 _ kCOMMA tUIDENT
+
+  kRBRACKET     shift, and go to state 192
+  kCOMMA        shift, and go to state 193
+
+
+state 156
+
+ 141) type_params0 : tUIDENT _
+
+  $default      reduce using rule 141 (type_params0)
+
+
+state 157
+
+ 169) simple_type : qualified_name kLBRACKET type_list kRBRACKET _
+
+  $default      reduce using rule 169 (simple_type)
+
+
+state 158
+
+ 150) type : type _ kBAR type
+ 151) type : type _ kAMP type
+ 178) type_list : type_list kCOMMA type _
+
+  kBAR          shift, and go to state 40
+  kAMP          shift, and go to state 41
+  $default      reduce using rule 178 (type_list)
+
+
+state 159
+
+ 173) simple_type : kSINGLETON kLPAREN class_name kRPAREN _
+
+  $default      reduce using rule 173 (simple_type)
+
+
+state 160
+
+ 210) required_positional : type var_name_opt _
+
+  $default      reduce using rule 210 (required_positional)
+
+
+state 161
+
+ 217) var_name_opt : tLIDENT _
+
+  $default      reduce using rule 217 (var_name_opt)
+
+
+state 162
+
+ 218) var_name_opt : tINTERFACEIDENT _
+
+  $default      reduce using rule 218 (var_name_opt)
+
+
+state 163
+
+ 219) var_name_opt : tQUOTEDIDENT _
+
+  $default      reduce using rule 219 (var_name_opt)
+
+
+state 164
+
+ 187) keyword_name : identifier_keywords kCOLON _
+
+  $default      reduce using rule 187 (keyword_name)
+
+
+state 165
+
+ 190) function_type : kLPAREN params kRPAREN _ kARROW simple_type
+
+  kARROW        shift, and go to state 194
+
+
+state 166
+
+ 192) params : required_positional kCOMMA _ params
+ 201) trailing_positional_params : required_positional kCOMMA _ trailing_positional_params
+
+  tNAMESPACE    shift, and go to state 33
+  tLKEYWORD     shift, and go to state 58
+  tUKEYWORD     shift, and go to state 59
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 91
+  kNIL          shift, and go to state 92
+  kTRUE         shift, and go to state 93
+  kFALSE        shift, and go to state 94
+  kANY          shift, and go to state 95
+  kUNTYPED      shift, and go to state 96
+  kTOP          shift, and go to state 97
+  kBOT          shift, and go to state 98
+  kSELF         shift, and go to state 115
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 99
+  kCLASS        shift, and go to state 90
+  kBOOL         shift, and go to state 100
+  kSINGLETON    shift, and go to state 101
+  kTYPE         shift, and go to state 102
+  kDEF          shift, and go to state 113
+  kMODULE       shift, and go to state 103
+  kPRIVATE      shift, and go to state 104
+  kPUBLIC       shift, and go to state 105
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  kQUESTION     shift, and go to state 132
+  kSTAR         shift, and go to state 133
+  kSTAR2        shift, and go to state 135
+  kEND          shift, and go to state 106
+  kINCLUDE      shift, and go to state 107
+  kEXTEND       shift, and go to state 108
+  kATTRREADER   shift, and go to state 110
+  kATTRWRITER   shift, and go to state 112
+  kATTRACCESSOR  shift, and go to state 111
+  kPREPEND      shift, and go to state 109
+  kEXTENSION    shift, and go to state 114
+  kINCOMPATIBLE  shift, and go to state 116
+  kUNCHECKED    shift, and go to state 117
+  kRPAREN       reduce using rule 204 (keyword_params)
+  $default      reduce using rule 226 (namespace)
+
+  simple_type   go to state 7
+  type          go to state 118
+  qualified_name  go to state 24
+  record_type   go to state 29
+  keyword       go to state 119
+  identifier_keywords  go to state 120
+  required_positional  go to state 122
+  params        go to state 195
+  optional_positional_params  go to state 123
+  optional_positional  go to state 124
+  rest_positional_param  go to state 125
+  rest_positional  go to state 126
+  trailing_positional_params  go to state 196
+  keyword_params  go to state 128
+  required_keyword  go to state 129
+  optional_keyword  go to state 130
+  rest_keyword  go to state 131
+  keyword_name  go to state 134
+  namespace     go to state 31
+
+state 167
+
+ 195) optional_positional_params : optional_positional kCOMMA _ optional_positional_params
+
+  tNAMESPACE    shift, and go to state 33
+  tLKEYWORD     shift, and go to state 58
+  tUKEYWORD     shift, and go to state 59
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 91
+  kNIL          shift, and go to state 92
+  kTRUE         shift, and go to state 93
+  kFALSE        shift, and go to state 94
+  kANY          shift, and go to state 95
+  kUNTYPED      shift, and go to state 96
+  kTOP          shift, and go to state 97
+  kBOT          shift, and go to state 98
+  kSELF         shift, and go to state 115
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 99
+  kCLASS        shift, and go to state 90
+  kBOOL         shift, and go to state 100
+  kSINGLETON    shift, and go to state 101
+  kTYPE         shift, and go to state 102
+  kDEF          shift, and go to state 113
+  kMODULE       shift, and go to state 103
+  kPRIVATE      shift, and go to state 104
+  kPUBLIC       shift, and go to state 105
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  kQUESTION     shift, and go to state 132
+  kSTAR         shift, and go to state 133
+  kSTAR2        shift, and go to state 135
+  kEND          shift, and go to state 106
+  kINCLUDE      shift, and go to state 107
+  kEXTEND       shift, and go to state 108
+  kATTRREADER   shift, and go to state 110
+  kATTRWRITER   shift, and go to state 112
+  kATTRACCESSOR  shift, and go to state 111
+  kPREPEND      shift, and go to state 109
+  kEXTENSION    shift, and go to state 114
+  kINCOMPATIBLE  shift, and go to state 116
+  kUNCHECKED    shift, and go to state 117
+  kRPAREN       reduce using rule 204 (keyword_params)
+  $default      reduce using rule 226 (namespace)
+
+  simple_type   go to state 7
+  type          go to state 118
+  qualified_name  go to state 24
+  record_type   go to state 29
+  keyword       go to state 119
+  identifier_keywords  go to state 120
+  optional_positional  go to state 124
+  optional_positional_params  go to state 197
+  rest_positional_param  go to state 125
+  rest_positional  go to state 126
+  trailing_positional_params  go to state 127
+  required_positional  go to state 198
+  keyword_params  go to state 128
+  required_keyword  go to state 129
+  optional_keyword  go to state 130
+  rest_keyword  go to state 131
+  keyword_name  go to state 134
+  namespace     go to state 31
+
+state 168
+
+ 198) rest_positional_param : rest_positional kCOMMA _ trailing_positional_params
+
+  tNAMESPACE    shift, and go to state 33
+  tLKEYWORD     shift, and go to state 58
+  tUKEYWORD     shift, and go to state 59
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 91
+  kNIL          shift, and go to state 92
+  kTRUE         shift, and go to state 93
+  kFALSE        shift, and go to state 94
+  kANY          shift, and go to state 95
+  kUNTYPED      shift, and go to state 96
+  kTOP          shift, and go to state 97
+  kBOT          shift, and go to state 98
+  kSELF         shift, and go to state 115
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 99
+  kCLASS        shift, and go to state 90
+  kBOOL         shift, and go to state 100
+  kSINGLETON    shift, and go to state 101
+  kTYPE         shift, and go to state 102
+  kDEF          shift, and go to state 113
+  kMODULE       shift, and go to state 103
+  kPRIVATE      shift, and go to state 104
+  kPUBLIC       shift, and go to state 105
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  kQUESTION     shift, and go to state 200
+  kSTAR2        shift, and go to state 135
+  kEND          shift, and go to state 106
+  kINCLUDE      shift, and go to state 107
+  kEXTEND       shift, and go to state 108
+  kATTRREADER   shift, and go to state 110
+  kATTRWRITER   shift, and go to state 112
+  kATTRACCESSOR  shift, and go to state 111
+  kPREPEND      shift, and go to state 109
+  kEXTENSION    shift, and go to state 114
+  kINCOMPATIBLE  shift, and go to state 116
+  kUNCHECKED    shift, and go to state 117
+  kRPAREN       reduce using rule 204 (keyword_params)
+  $default      reduce using rule 226 (namespace)
+
+  simple_type   go to state 7
+  type          go to state 118
+  qualified_name  go to state 24
+  record_type   go to state 29
+  keyword       go to state 119
+  identifier_keywords  go to state 120
+  trailing_positional_params  go to state 199
+  required_positional  go to state 198
+  keyword_params  go to state 128
+  required_keyword  go to state 129
+  optional_keyword  go to state 130
+  rest_keyword  go to state 131
+  keyword_name  go to state 134
+  namespace     go to state 31
+
+state 169
+
+ 205) keyword_params : required_keyword kCOMMA _ keyword_params
+
+  tLKEYWORD     shift, and go to state 58
+  tUKEYWORD     shift, and go to state 59
+  kVOID         shift, and go to state 202
+  kNIL          shift, and go to state 203
+  kTRUE         shift, and go to state 204
+  kFALSE        shift, and go to state 205
+  kANY          shift, and go to state 206
+  kUNTYPED      shift, and go to state 207
+  kTOP          shift, and go to state 208
+  kBOT          shift, and go to state 209
+  kSELF         shift, and go to state 213
+  kINSTANCE     shift, and go to state 210
+  kCLASS        shift, and go to state 201
+  kBOOL         shift, and go to state 211
+  kSINGLETON    shift, and go to state 212
+  kTYPE         shift, and go to state 102
+  kDEF          shift, and go to state 113
+  kMODULE       shift, and go to state 103
+  kPRIVATE      shift, and go to state 104
+  kPUBLIC       shift, and go to state 105
+  kQUESTION     shift, and go to state 200
+  kSTAR2        shift, and go to state 135
+  kEND          shift, and go to state 106
+  kINCLUDE      shift, and go to state 107
+  kEXTEND       shift, and go to state 108
+  kATTRREADER   shift, and go to state 110
+  kATTRWRITER   shift, and go to state 112
+  kATTRACCESSOR  shift, and go to state 111
+  kPREPEND      shift, and go to state 109
+  kEXTENSION    shift, and go to state 114
+  kINCOMPATIBLE  shift, and go to state 116
+  kUNCHECKED    shift, and go to state 117
+  $default      reduce using rule 204 (keyword_params)
+
+  keyword       go to state 119
+  identifier_keywords  go to state 120
+  required_keyword  go to state 129
+  keyword_params  go to state 214
+  optional_keyword  go to state 130
+  rest_keyword  go to state 131
+  keyword_name  go to state 134
+
+state 170
+
+ 207) keyword_params : optional_keyword kCOMMA _ keyword_params
+
+  tLKEYWORD     shift, and go to state 58
+  tUKEYWORD     shift, and go to state 59
+  kVOID         shift, and go to state 202
+  kNIL          shift, and go to state 203
+  kTRUE         shift, and go to state 204
+  kFALSE        shift, and go to state 205
+  kANY          shift, and go to state 206
+  kUNTYPED      shift, and go to state 207
+  kTOP          shift, and go to state 208
+  kBOT          shift, and go to state 209
+  kSELF         shift, and go to state 213
+  kINSTANCE     shift, and go to state 210
+  kCLASS        shift, and go to state 201
+  kBOOL         shift, and go to state 211
+  kSINGLETON    shift, and go to state 212
+  kTYPE         shift, and go to state 102
+  kDEF          shift, and go to state 113
+  kMODULE       shift, and go to state 103
+  kPRIVATE      shift, and go to state 104
+  kPUBLIC       shift, and go to state 105
+  kQUESTION     shift, and go to state 200
+  kSTAR2        shift, and go to state 135
+  kEND          shift, and go to state 106
+  kINCLUDE      shift, and go to state 107
+  kEXTEND       shift, and go to state 108
+  kATTRREADER   shift, and go to state 110
+  kATTRWRITER   shift, and go to state 112
+  kATTRACCESSOR  shift, and go to state 111
+  kPREPEND      shift, and go to state 109
+  kEXTENSION    shift, and go to state 114
+  kINCOMPATIBLE  shift, and go to state 116
+  kUNCHECKED    shift, and go to state 117
+  $default      reduce using rule 204 (keyword_params)
+
+  keyword       go to state 119
+  identifier_keywords  go to state 120
+  required_keyword  go to state 129
+  optional_keyword  go to state 130
+  keyword_params  go to state 215
+  rest_keyword  go to state 131
+  keyword_name  go to state 134
+
+state 171
+
+ 150) type : type _ kBAR type
+ 151) type : type _ kAMP type
+ 211) optional_positional : kQUESTION type _ var_name_opt
+
+  tLIDENT       shift, and go to state 161
+  tINTERFACEIDENT  shift, and go to state 162
+  kBAR          shift, and go to state 40
+  kAMP          shift, and go to state 41
+  tQUOTEDIDENT  shift, and go to state 163
+  $default      reduce using rule 216 (var_name_opt)
+
+  var_name_opt  go to state 216
+
+state 172
+
+ 214) optional_keyword : kQUESTION keyword_name _ type var_name_opt
+
+  tNAMESPACE    shift, and go to state 33
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 8
+  kNIL          shift, and go to state 12
+  kTRUE         shift, and go to state 19
+  kFALSE        shift, and go to state 20
+  kANY          shift, and go to state 9
+  kUNTYPED      shift, and go to state 10
+  kTOP          shift, and go to state 13
+  kBOT          shift, and go to state 14
+  kSELF         shift, and go to state 15
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 17
+  kCLASS        shift, and go to state 18
+  kBOOL         shift, and go to state 11
+  kSINGLETON    shift, and go to state 27
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  $default      reduce using rule 226 (namespace)
+
+  simple_type   go to state 7
+  type          go to state 217
+  qualified_name  go to state 24
+  record_type   go to state 29
+  namespace     go to state 31
+
+state 173
+
+ 150) type : type _ kBAR type
+ 151) type : type _ kAMP type
+ 212) rest_positional : kSTAR type _ var_name_opt
+
+  tLIDENT       shift, and go to state 161
+  tINTERFACEIDENT  shift, and go to state 162
+  kBAR          shift, and go to state 40
+  kAMP          shift, and go to state 41
+  tQUOTEDIDENT  shift, and go to state 163
+  $default      reduce using rule 216 (var_name_opt)
+
+  var_name_opt  go to state 218
+
+state 174
+
+ 150) type : type _ kBAR type
+ 151) type : type _ kAMP type
+ 213) required_keyword : keyword_name type _ var_name_opt
+
+  tLIDENT       shift, and go to state 161
+  tINTERFACEIDENT  shift, and go to state 162
+  kBAR          shift, and go to state 40
+  kAMP          shift, and go to state 41
+  tQUOTEDIDENT  shift, and go to state 163
+  $default      reduce using rule 216 (var_name_opt)
+
+  var_name_opt  go to state 219
+
+state 175
+
+ 150) type : type _ kBAR type
+ 151) type : type _ kAMP type
+ 215) rest_keyword : kSTAR2 type _ var_name_opt
+
+  tLIDENT       shift, and go to state 161
+  tINTERFACEIDENT  shift, and go to state 162
+  kBAR          shift, and go to state 40
+  kAMP          shift, and go to state 41
+  tQUOTEDIDENT  shift, and go to state 163
+  $default      reduce using rule 216 (var_name_opt)
+
+  var_name_opt  go to state 220
+
+state 176
+
+ 181) record_fields : record_field kCOMMA record_fields _
+
+  $default      reduce using rule 181 (record_fields)
+
+
+state 177
+
+ 150) type : type _ kBAR type
+ 151) type : type _ kAMP type
+ 182) record_field : tSYMBOL kFATARROW type _
+
+  kBAR          shift, and go to state 40
+  kAMP          shift, and go to state 41
+  $default      reduce using rule 182 (record_field)
+
+
+state 178
+
+ 150) type : type _ kBAR type
+ 151) type : type _ kAMP type
+ 183) record_field : tSTRING kFATARROW type _
+
+  kBAR          shift, and go to state 40
+  kAMP          shift, and go to state 41
+  $default      reduce using rule 183 (record_field)
+
+
+state 179
+
+ 150) type : type _ kBAR type
+ 151) type : type _ kAMP type
+ 184) record_field : tINTEGER kFATARROW type _
+
+  kBAR          shift, and go to state 40
+  kAMP          shift, and go to state 41
+  $default      reduce using rule 184 (record_field)
+
+
+state 180
+
+  19) extension_decl : annotations kEXTENSION start_new_scope _ class_name type_params kLPAREN extension_name kRPAREN class_members kEND
+
+  tNAMESPACE    shift, and go to state 33
+  kCOLON2       shift, and go to state 32
+  $default      reduce using rule 226 (namespace)
+
+  class_name    go to state 221
+  namespace     go to state 89
+
+state 181
+
+  22) class_decl : annotations kCLASS start_new_scope _ class_name module_type_params super_class class_members kEND
+
+  tNAMESPACE    shift, and go to state 33
+  kCOLON2       shift, and go to state 32
+  $default      reduce using rule 226 (namespace)
+
+  class_name    go to state 222
+  namespace     go to state 89
+
+state 182
+
+  26) module_decl : annotations kMODULE start_new_scope _ class_name module_type_params module_self_type class_members kEND
+  27) module_decl : annotations kMODULE start_new_scope _ tUKEYWORD type class_members kEND
+
+  tNAMESPACE    shift, and go to state 33
+  tUKEYWORD     shift, and go to state 224
+  kCOLON2       shift, and go to state 32
+  $default      reduce using rule 226 (namespace)
+
+  class_name    go to state 223
+  namespace     go to state 89
+
+state 183
+
+  53) interface_decl : annotations kINTERFACE start_new_scope _ interface_name module_type_params interface_members kEND
+
+  tNAMESPACE    shift, and go to state 33
+  kCOLON2       shift, and go to state 32
+  $default      reduce using rule 226 (namespace)
+
+  interface_name  go to state 225
+  namespace     go to state 226
+
+state 184
+
+ 145) type_decl : annotations kTYPE qualified_name _ kEQ type
+
+  kEQ           shift, and go to state 227
+
+
+state 185
+
+ 146) const_decl : class_name kCOLON type _
+ 150) type : type _ kBAR type
+ 151) type : type _ kAMP type
+
+  kBAR          shift, and go to state 40
+  kAMP          shift, and go to state 41
+  $default      reduce using rule 146 (const_decl)
+
+
+state 186
+
+ 147) const_decl : namespace tUKEYWORD type _
+ 150) type : type _ kBAR type
+ 151) type : type _ kAMP type
+
+  kBAR          shift, and go to state 40
+  kAMP          shift, and go to state 41
+  $default      reduce using rule 147 (const_decl)
+
+
+state 187
+
+ 148) global_decl : tGLOBALIDENT kCOLON type _
+ 150) type : type _ kBAR type
+ 151) type : type _ kAMP type
+
+  kBAR          shift, and go to state 40
+  kAMP          shift, and go to state 41
+  $default      reduce using rule 148 (global_decl)
+
+
+state 188
+
+  74) method_type : start_merged_scope type_params params_opt block_opt _ kARROW simple_type
+
+  kARROW        shift, and go to state 228
+
+
+state 189
+
+  78) block_opt : kLBRACE _ function_type kRBRACE
+
+  kLPAREN       shift, and go to state 50
+  kARROW        shift, and go to state 51
+
+  function_type  go to state 229
+
+state 190
+
+  79) block_opt : kQUESTION _ kLBRACE function_type kRBRACE
+
+  kLBRACE       shift, and go to state 230
+
+
+state 191
+
+  76) params_opt : kLPAREN params _ kRPAREN
+
+  kRPAREN       shift, and go to state 231
+
+
+state 192
+
+ 140) type_params : kLBRACKET type_params0 kRBRACKET _
+
+  $default      reduce using rule 140 (type_params)
+
+
+state 193
+
+ 142) type_params0 : type_params0 kCOMMA _ tUIDENT
+
+  tUIDENT       shift, and go to state 232
+
+
+state 194
+
+ 190) function_type : kLPAREN params kRPAREN kARROW _ simple_type
+
+  tNAMESPACE    shift, and go to state 33
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 8
+  kNIL          shift, and go to state 12
+  kTRUE         shift, and go to state 19
+  kFALSE        shift, and go to state 20
+  kANY          shift, and go to state 9
+  kUNTYPED      shift, and go to state 10
+  kTOP          shift, and go to state 13
+  kBOT          shift, and go to state 14
+  kSELF         shift, and go to state 15
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 17
+  kCLASS        shift, and go to state 18
+  kBOOL         shift, and go to state 11
+  kSINGLETON    shift, and go to state 27
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  $default      reduce using rule 226 (namespace)
+
+  qualified_name  go to state 24
+  simple_type   go to state 233
+  record_type   go to state 29
+  namespace     go to state 31
+
+state 195
+
+ 192) params : required_positional kCOMMA params _
+
+  $default      reduce using rule 192 (params)
+
+
+state 196
+
+ 200) rest_positional_param : trailing_positional_params _
+ 201) trailing_positional_params : required_positional kCOMMA trailing_positional_params _
+
+  kRPAREN       [reduce using rule 201 (trailing_positional_params)]
+  $default      reduce using rule 200 (rest_positional_param)
+
+
+state 197
+
+ 195) optional_positional_params : optional_positional kCOMMA optional_positional_params _
+
+  $default      reduce using rule 195 (optional_positional_params)
+
+
+state 198
+
+ 201) trailing_positional_params : required_positional _ kCOMMA trailing_positional_params
+ 202) trailing_positional_params : required_positional _
+
+  kCOMMA        shift, and go to state 234
+  $default      reduce using rule 202 (trailing_positional_params)
+
+
+state 199
+
+ 198) rest_positional_param : rest_positional kCOMMA trailing_positional_params _
+
+  $default      reduce using rule 198 (rest_positional_param)
+
+
+state 200
+
+ 214) optional_keyword : kQUESTION _ keyword_name type var_name_opt
+
+  tLKEYWORD     shift, and go to state 58
+  tUKEYWORD     shift, and go to state 59
+  kVOID         shift, and go to state 202
+  kNIL          shift, and go to state 203
+  kTRUE         shift, and go to state 204
+  kFALSE        shift, and go to state 205
+  kANY          shift, and go to state 206
+  kUNTYPED      shift, and go to state 207
+  kTOP          shift, and go to state 208
+  kBOT          shift, and go to state 209
+  kSELF         shift, and go to state 213
+  kINSTANCE     shift, and go to state 210
+  kCLASS        shift, and go to state 201
+  kBOOL         shift, and go to state 211
+  kSINGLETON    shift, and go to state 212
+  kTYPE         shift, and go to state 102
+  kDEF          shift, and go to state 113
+  kMODULE       shift, and go to state 103
+  kPRIVATE      shift, and go to state 104
+  kPUBLIC       shift, and go to state 105
+  kEND          shift, and go to state 106
+  kINCLUDE      shift, and go to state 107
+  kEXTEND       shift, and go to state 108
+  kATTRREADER   shift, and go to state 110
+  kATTRWRITER   shift, and go to state 112
+  kATTRACCESSOR  shift, and go to state 111
+  kPREPEND      shift, and go to state 109
+  kEXTENSION    shift, and go to state 114
+  kINCOMPATIBLE  shift, and go to state 116
+  kUNCHECKED    shift, and go to state 117
+
+  keyword       go to state 119
+  identifier_keywords  go to state 120
+  keyword_name  go to state 172
+
+state 201
+
+ 101) identifier_keywords : kCLASS _
+
+  $default      reduce using rule 101 (identifier_keywords)
+
+
+state 202
+
+ 102) identifier_keywords : kVOID _
+
+  $default      reduce using rule 102 (identifier_keywords)
+
+
+state 203
+
+ 103) identifier_keywords : kNIL _
+
+  $default      reduce using rule 103 (identifier_keywords)
+
+
+state 204
+
+ 104) identifier_keywords : kTRUE _
+
+  $default      reduce using rule 104 (identifier_keywords)
+
+
+state 205
+
+ 105) identifier_keywords : kFALSE _
+
+  $default      reduce using rule 105 (identifier_keywords)
+
+
+state 206
+
+ 106) identifier_keywords : kANY _
+
+  $default      reduce using rule 106 (identifier_keywords)
+
+
+state 207
+
+ 107) identifier_keywords : kUNTYPED _
+
+  $default      reduce using rule 107 (identifier_keywords)
+
+
+state 208
+
+ 108) identifier_keywords : kTOP _
+
+  $default      reduce using rule 108 (identifier_keywords)
+
+
+state 209
+
+ 109) identifier_keywords : kBOT _
+
+  $default      reduce using rule 109 (identifier_keywords)
+
+
+state 210
+
+ 110) identifier_keywords : kINSTANCE _
+
+  $default      reduce using rule 110 (identifier_keywords)
+
+
+state 211
+
+ 111) identifier_keywords : kBOOL _
+
+  $default      reduce using rule 111 (identifier_keywords)
+
+
+state 212
+
+ 112) identifier_keywords : kSINGLETON _
+
+  $default      reduce using rule 112 (identifier_keywords)
+
+
+state 213
+
+ 126) identifier_keywords : kSELF _
+
+  $default      reduce using rule 126 (identifier_keywords)
+
+
+state 214
+
+ 205) keyword_params : required_keyword kCOMMA keyword_params _
+
+  $default      reduce using rule 205 (keyword_params)
+
+
+state 215
+
+ 207) keyword_params : optional_keyword kCOMMA keyword_params _
+
+  $default      reduce using rule 207 (keyword_params)
+
+
+state 216
+
+ 211) optional_positional : kQUESTION type var_name_opt _
+
+  $default      reduce using rule 211 (optional_positional)
+
+
+state 217
+
+ 150) type : type _ kBAR type
+ 151) type : type _ kAMP type
+ 214) optional_keyword : kQUESTION keyword_name type _ var_name_opt
+
+  tLIDENT       shift, and go to state 161
+  tINTERFACEIDENT  shift, and go to state 162
+  kBAR          shift, and go to state 40
+  kAMP          shift, and go to state 41
+  tQUOTEDIDENT  shift, and go to state 163
+  $default      reduce using rule 216 (var_name_opt)
+
+  var_name_opt  go to state 235
+
+state 218
+
+ 212) rest_positional : kSTAR type var_name_opt _
+
+  $default      reduce using rule 212 (rest_positional)
+
+
+state 219
+
+ 213) required_keyword : keyword_name type var_name_opt _
+
+  $default      reduce using rule 213 (required_keyword)
+
+
+state 220
+
+ 215) rest_keyword : kSTAR2 type var_name_opt _
+
+  $default      reduce using rule 215 (rest_keyword)
+
+
+state 221
+
+  19) extension_decl : annotations kEXTENSION start_new_scope class_name _ type_params kLPAREN extension_name kRPAREN class_members kEND
+
+  kLBRACKET     shift, and go to state 81
+  $default      reduce using rule 139 (type_params)
+
+  type_params   go to state 236
+
+state 222
+
+  22) class_decl : annotations kCLASS start_new_scope class_name _ module_type_params super_class class_members kEND
+
+  kLBRACKET     shift, and go to state 238
+  $default      reduce using rule 129 (module_type_params)
+
+  module_type_params  go to state 237
+
+state 223
+
+  26) module_decl : annotations kMODULE start_new_scope class_name _ module_type_params module_self_type class_members kEND
+
+  kLBRACKET     shift, and go to state 238
+  $default      reduce using rule 129 (module_type_params)
+
+  module_type_params  go to state 239
+
+state 224
+
+  27) module_decl : annotations kMODULE start_new_scope tUKEYWORD _ type class_members kEND
+
+  tNAMESPACE    shift, and go to state 33
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 8
+  kNIL          shift, and go to state 12
+  kTRUE         shift, and go to state 19
+  kFALSE        shift, and go to state 20
+  kANY          shift, and go to state 9
+  kUNTYPED      shift, and go to state 10
+  kTOP          shift, and go to state 13
+  kBOT          shift, and go to state 14
+  kSELF         shift, and go to state 15
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 17
+  kCLASS        shift, and go to state 18
+  kBOOL         shift, and go to state 11
+  kSINGLETON    shift, and go to state 27
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  $default      reduce using rule 226 (namespace)
+
+  type          go to state 240
+  simple_type   go to state 7
+  qualified_name  go to state 24
+  record_type   go to state 29
+  namespace     go to state 31
+
+state 225
+
+  53) interface_decl : annotations kINTERFACE start_new_scope interface_name _ module_type_params interface_members kEND
+
+  kLBRACKET     shift, and go to state 238
+  $default      reduce using rule 129 (module_type_params)
+
+  module_type_params  go to state 241
+
+state 226
+
+ 224) interface_name : namespace _ tINTERFACEIDENT
+
+  tINTERFACEIDENT  shift, and go to state 242
+
+
+state 227
+
+ 145) type_decl : annotations kTYPE qualified_name kEQ _ type
+
+  tNAMESPACE    shift, and go to state 33
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 8
+  kNIL          shift, and go to state 12
+  kTRUE         shift, and go to state 19
+  kFALSE        shift, and go to state 20
+  kANY          shift, and go to state 9
+  kUNTYPED      shift, and go to state 10
+  kTOP          shift, and go to state 13
+  kBOT          shift, and go to state 14
+  kSELF         shift, and go to state 15
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 17
+  kCLASS        shift, and go to state 18
+  kBOOL         shift, and go to state 11
+  kSINGLETON    shift, and go to state 27
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  $default      reduce using rule 226 (namespace)
+
+  type          go to state 243
+  simple_type   go to state 7
+  qualified_name  go to state 24
+  record_type   go to state 29
+  namespace     go to state 31
+
+state 228
+
+  74) method_type : start_merged_scope type_params params_opt block_opt kARROW _ simple_type
+
+  tNAMESPACE    shift, and go to state 33
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 8
+  kNIL          shift, and go to state 12
+  kTRUE         shift, and go to state 19
+  kFALSE        shift, and go to state 20
+  kANY          shift, and go to state 9
+  kUNTYPED      shift, and go to state 10
+  kTOP          shift, and go to state 13
+  kBOT          shift, and go to state 14
+  kSELF         shift, and go to state 15
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 17
+  kCLASS        shift, and go to state 18
+  kBOOL         shift, and go to state 11
+  kSINGLETON    shift, and go to state 27
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  $default      reduce using rule 226 (namespace)
+
+  simple_type   go to state 244
+  qualified_name  go to state 24
+  record_type   go to state 29
+  namespace     go to state 31
+
+state 229
+
+  78) block_opt : kLBRACE function_type _ kRBRACE
+
+  kRBRACE       shift, and go to state 245
+
+
+state 230
+
+  79) block_opt : kQUESTION kLBRACE _ function_type kRBRACE
+
+  kLPAREN       shift, and go to state 50
+  kARROW        shift, and go to state 51
+
+  function_type  go to state 246
+
+state 231
+
+  76) params_opt : kLPAREN params kRPAREN _
+
+  $default      reduce using rule 76 (params_opt)
+
+
+state 232
+
+ 142) type_params0 : type_params0 kCOMMA tUIDENT _
+
+  $default      reduce using rule 142 (type_params0)
+
+
+state 233
+
+ 175) simple_type : simple_type _ kQUESTION
+ 190) function_type : kLPAREN params kRPAREN kARROW simple_type _
+
+  kQUESTION     shift, and go to state 42
+  $default      reduce using rule 190 (function_type)
+
+
+state 234
+
+ 201) trailing_positional_params : required_positional kCOMMA _ trailing_positional_params
+
+  tNAMESPACE    shift, and go to state 33
+  tLKEYWORD     shift, and go to state 58
+  tUKEYWORD     shift, and go to state 59
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 91
+  kNIL          shift, and go to state 92
+  kTRUE         shift, and go to state 93
+  kFALSE        shift, and go to state 94
+  kANY          shift, and go to state 95
+  kUNTYPED      shift, and go to state 96
+  kTOP          shift, and go to state 97
+  kBOT          shift, and go to state 98
+  kSELF         shift, and go to state 115
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 99
+  kCLASS        shift, and go to state 90
+  kBOOL         shift, and go to state 100
+  kSINGLETON    shift, and go to state 101
+  kTYPE         shift, and go to state 102
+  kDEF          shift, and go to state 113
+  kMODULE       shift, and go to state 103
+  kPRIVATE      shift, and go to state 104
+  kPUBLIC       shift, and go to state 105
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  kQUESTION     shift, and go to state 200
+  kSTAR2        shift, and go to state 135
+  kEND          shift, and go to state 106
+  kINCLUDE      shift, and go to state 107
+  kEXTEND       shift, and go to state 108
+  kATTRREADER   shift, and go to state 110
+  kATTRWRITER   shift, and go to state 112
+  kATTRACCESSOR  shift, and go to state 111
+  kPREPEND      shift, and go to state 109
+  kEXTENSION    shift, and go to state 114
+  kINCOMPATIBLE  shift, and go to state 116
+  kUNCHECKED    shift, and go to state 117
+  kRPAREN       reduce using rule 204 (keyword_params)
+  $default      reduce using rule 226 (namespace)
+
+  simple_type   go to state 7
+  type          go to state 118
+  qualified_name  go to state 24
+  record_type   go to state 29
+  keyword       go to state 119
+  identifier_keywords  go to state 120
+  required_positional  go to state 198
+  trailing_positional_params  go to state 247
+  keyword_params  go to state 128
+  required_keyword  go to state 129
+  optional_keyword  go to state 130
+  rest_keyword  go to state 131
+  keyword_name  go to state 134
+  namespace     go to state 31
+
+state 235
+
+ 214) optional_keyword : kQUESTION keyword_name type var_name_opt _
+
+  $default      reduce using rule 214 (optional_keyword)
+
+
+state 236
+
+  19) extension_decl : annotations kEXTENSION start_new_scope class_name type_params _ kLPAREN extension_name kRPAREN class_members kEND
+
+  kLPAREN       shift, and go to state 248
+
+
+state 237
+
+  22) class_decl : annotations kCLASS start_new_scope class_name module_type_params _ super_class class_members kEND
+
+  kLT           shift, and go to state 250
+  $default      reduce using rule 23 (super_class)
+
+  super_class   go to state 249
+
+state 238
+
+ 130) module_type_params : kLBRACKET _ module_type_params0 kRBRACKET
+
+  kUNCHECKED    shift, and go to state 254
+  $default      reduce using rule 137 (type_param_check)
+
+  module_type_params0  go to state 251
+  module_type_param  go to state 252
+  type_param_check  go to state 253
+
+state 239
+
+  26) module_decl : annotations kMODULE start_new_scope class_name module_type_params _ module_self_type class_members kEND
+
+  kCOLON        shift, and go to state 256
+  $default      reduce using rule 28 (module_self_type)
+
+  module_self_type  go to state 255
+
+state 240
+
+  27) module_decl : annotations kMODULE start_new_scope tUKEYWORD type _ class_members kEND
+ 150) type : type _ kBAR type
+ 151) type : type _ kAMP type
+
+  kBAR          shift, and go to state 40
+  kAMP          shift, and go to state 41
+  $default      reduce using rule 30 (class_members)
+
+  class_members  go to state 257
+
+state 241
+
+  53) interface_decl : annotations kINTERFACE start_new_scope interface_name module_type_params _ interface_members kEND
+
+  $default      reduce using rule 54 (interface_members)
+
+  interface_members  go to state 258
+
+state 242
+
+ 224) interface_name : namespace tINTERFACEIDENT _
+
+  $default      reduce using rule 224 (interface_name)
+
+
+state 243
+
+ 145) type_decl : annotations kTYPE qualified_name kEQ type _
+ 150) type : type _ kBAR type
+ 151) type : type _ kAMP type
+
+  kBAR          shift, and go to state 40
+  kAMP          shift, and go to state 41
+  $default      reduce using rule 145 (type_decl)
+
+
+state 244
+
+  74) method_type : start_merged_scope type_params params_opt block_opt kARROW simple_type _
+ 175) simple_type : simple_type _ kQUESTION
+
+  kQUESTION     shift, and go to state 42
+  $default      reduce using rule 74 (method_type)
+
+
+state 245
+
+  78) block_opt : kLBRACE function_type kRBRACE _
+
+  $default      reduce using rule 78 (block_opt)
+
+
+state 246
+
+  79) block_opt : kQUESTION kLBRACE function_type _ kRBRACE
+
+  kRBRACE       shift, and go to state 259
+
+
+state 247
+
+ 201) trailing_positional_params : required_positional kCOMMA trailing_positional_params _
+
+  $default      reduce using rule 201 (trailing_positional_params)
+
+
+state 248
+
+  19) extension_decl : annotations kEXTENSION start_new_scope class_name type_params kLPAREN _ extension_name kRPAREN class_members kEND
+
+  tUIDENT       shift, and go to state 261
+  tLIDENT       shift, and go to state 262
+
+  extension_name  go to state 260
+
+state 249
+
+  22) class_decl : annotations kCLASS start_new_scope class_name module_type_params super_class _ class_members kEND
+
+  $default      reduce using rule 30 (class_members)
+
+  class_members  go to state 263
+
+state 250
+
+  24) super_class : kLT _ class_name
+  25) super_class : kLT _ class_name kLBRACKET type_list kRBRACKET
+
+  tNAMESPACE    shift, and go to state 33
+  kCOLON2       shift, and go to state 32
+  $default      reduce using rule 226 (namespace)
+
+  class_name    go to state 264
+  namespace     go to state 89
+
+state 251
+
+ 130) module_type_params : kLBRACKET module_type_params0 _ kRBRACKET
+ 132) module_type_params0 : module_type_params0 _ kCOMMA module_type_param
+
+  kRBRACKET     shift, and go to state 265
+  kCOMMA        shift, and go to state 266
+
+
+state 252
+
+ 131) module_type_params0 : module_type_param _
+
+  $default      reduce using rule 131 (module_type_params0)
+
+
+state 253
+
+ 133) module_type_param : type_param_check _ type_param_variance tUIDENT
+
+  kOUT          shift, and go to state 268
+  kIN           shift, and go to state 269
+  $default      reduce using rule 134 (type_param_variance)
+
+  type_param_variance  go to state 267
+
+state 254
+
+ 138) type_param_check : kUNCHECKED _
+
+  $default      reduce using rule 138 (type_param_check)
+
+
+state 255
+
+  26) module_decl : annotations kMODULE start_new_scope class_name module_type_params module_self_type _ class_members kEND
+
+  $default      reduce using rule 30 (class_members)
+
+  class_members  go to state 270
+
+state 256
+
+  29) module_self_type : kCOLON _ type
+
+  tNAMESPACE    shift, and go to state 33
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 8
+  kNIL          shift, and go to state 12
+  kTRUE         shift, and go to state 19
+  kFALSE        shift, and go to state 20
+  kANY          shift, and go to state 9
+  kUNTYPED      shift, and go to state 10
+  kTOP          shift, and go to state 13
+  kBOT          shift, and go to state 14
+  kSELF         shift, and go to state 15
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 17
+  kCLASS        shift, and go to state 18
+  kBOOL         shift, and go to state 11
+  kSINGLETON    shift, and go to state 27
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  $default      reduce using rule 226 (namespace)
+
+  type          go to state 271
+  simple_type   go to state 7
+  qualified_name  go to state 24
+  record_type   go to state 29
+  namespace     go to state 31
+
+state 257
+
+  27) module_decl : annotations kMODULE start_new_scope tUKEYWORD type class_members _ kEND
+  31) class_members : class_members _ class_member
+
+  tIVAR         shift, and go to state 284
+  tCLASSVAR     shift, and go to state 285
+  tANNOTATION   shift, and go to state 74
+  kSELF         shift, and go to state 286
+  kPRIVATE      shift, and go to state 281
+  kPUBLIC       shift, and go to state 280
+  kEND          shift, and go to state 272
+  $default      reduce using rule 17 (annotations)
+
+  class_member  go to state 273
+  method_member  go to state 274
+  include_member  go to state 275
+  extend_member  go to state 276
+  prepend_member  go to state 277
+  var_type_member  go to state 278
+  attribute_member  go to state 279
+  alias_member  go to state 282
+  annotations   go to state 283
+
+state 258
+
+  53) interface_decl : annotations kINTERFACE start_new_scope interface_name module_type_params interface_members _ kEND
+  55) interface_members : interface_members _ interface_member
+
+  tANNOTATION   shift, and go to state 74
+  kEND          shift, and go to state 287
+  $default      reduce using rule 17 (annotations)
+
+  interface_member  go to state 288
+  method_member  go to state 289
+  include_member  go to state 290
+  alias_member  go to state 291
+  annotations   go to state 292
+
+state 259
+
+  79) block_opt : kQUESTION kLBRACE function_type kRBRACE _
+
+  $default      reduce using rule 79 (block_opt)
+
+
+state 260
+
+  19) extension_decl : annotations kEXTENSION start_new_scope class_name type_params kLPAREN extension_name _ kRPAREN class_members kEND
+
+  kRPAREN       shift, and go to state 293
+
+
+state 261
+
+  20) extension_name : tUIDENT _
+
+  $default      reduce using rule 20 (extension_name)
+
+
+state 262
+
+  21) extension_name : tLIDENT _
+
+  $default      reduce using rule 21 (extension_name)
+
+
+state 263
+
+  22) class_decl : annotations kCLASS start_new_scope class_name module_type_params super_class class_members _ kEND
+  31) class_members : class_members _ class_member
+
+  tIVAR         shift, and go to state 284
+  tCLASSVAR     shift, and go to state 285
+  tANNOTATION   shift, and go to state 74
+  kSELF         shift, and go to state 286
+  kPRIVATE      shift, and go to state 281
+  kPUBLIC       shift, and go to state 280
+  kEND          shift, and go to state 294
+  $default      reduce using rule 17 (annotations)
+
+  class_member  go to state 273
+  method_member  go to state 274
+  include_member  go to state 275
+  extend_member  go to state 276
+  prepend_member  go to state 277
+  var_type_member  go to state 278
+  attribute_member  go to state 279
+  alias_member  go to state 282
+  annotations   go to state 283
+
+state 264
+
+  24) super_class : kLT class_name _
+  25) super_class : kLT class_name _ kLBRACKET type_list kRBRACKET
+
+  kLBRACKET     shift, and go to state 295
+  $default      reduce using rule 24 (super_class)
+
+
+state 265
+
+ 130) module_type_params : kLBRACKET module_type_params0 kRBRACKET _
+
+  $default      reduce using rule 130 (module_type_params)
+
+
+state 266
+
+ 132) module_type_params0 : module_type_params0 kCOMMA _ module_type_param
+
+  kUNCHECKED    shift, and go to state 254
+  $default      reduce using rule 137 (type_param_check)
+
+  module_type_param  go to state 296
+  type_param_check  go to state 253
+
+state 267
+
+ 133) module_type_param : type_param_check type_param_variance _ tUIDENT
+
+  tUIDENT       shift, and go to state 297
+
+
+state 268
+
+ 135) type_param_variance : kOUT _
+
+  $default      reduce using rule 135 (type_param_variance)
+
+
+state 269
+
+ 136) type_param_variance : kIN _
+
+  $default      reduce using rule 136 (type_param_variance)
+
+
+state 270
+
+  26) module_decl : annotations kMODULE start_new_scope class_name module_type_params module_self_type class_members _ kEND
+  31) class_members : class_members _ class_member
+
+  tIVAR         shift, and go to state 284
+  tCLASSVAR     shift, and go to state 285
+  tANNOTATION   shift, and go to state 74
+  kSELF         shift, and go to state 286
+  kPRIVATE      shift, and go to state 281
+  kPUBLIC       shift, and go to state 280
+  kEND          shift, and go to state 298
+  $default      reduce using rule 17 (annotations)
+
+  class_member  go to state 273
+  method_member  go to state 274
+  include_member  go to state 275
+  extend_member  go to state 276
+  prepend_member  go to state 277
+  var_type_member  go to state 278
+  attribute_member  go to state 279
+  alias_member  go to state 282
+  annotations   go to state 283
+
+state 271
+
+  29) module_self_type : kCOLON type _
+ 150) type : type _ kBAR type
+ 151) type : type _ kAMP type
+
+  kBAR          shift, and go to state 40
+  kAMP          shift, and go to state 41
+  $default      reduce using rule 29 (module_self_type)
+
+
+state 272
+
+  27) module_decl : annotations kMODULE start_new_scope tUKEYWORD type class_members kEND _
+
+  $default      reduce using rule 27 (module_decl)
+
+
+state 273
+
+  31) class_members : class_members class_member _
+
+  $default      reduce using rule 31 (class_members)
+
+
+state 274
+
+  32) class_member : method_member _
+
+  $default      reduce using rule 32 (class_member)
+
+
+state 275
+
+  33) class_member : include_member _
+
+  $default      reduce using rule 33 (class_member)
+
+
+state 276
+
+  34) class_member : extend_member _
+
+  $default      reduce using rule 34 (class_member)
+
+
+state 277
+
+  35) class_member : prepend_member _
+
+  $default      reduce using rule 35 (class_member)
+
+
+state 278
+
+  36) class_member : var_type_member _
+
+  $default      reduce using rule 36 (class_member)
+
+
+state 279
+
+  37) class_member : attribute_member _
+
+  $default      reduce using rule 37 (class_member)
+
+
+state 280
+
+  38) class_member : kPUBLIC _
+
+  $default      reduce using rule 38 (class_member)
+
+
+state 281
+
+  39) class_member : kPRIVATE _
+
+  $default      reduce using rule 39 (class_member)
+
+
+state 282
+
+  40) class_member : alias_member _
+
+  $default      reduce using rule 40 (class_member)
+
+
+state 283
+
+  41) attribute_member : annotations _ kATTRREADER keyword type
+  42) attribute_member : annotations _ kATTRREADER method_name attr_var_opt kCOLON type
+  43) attribute_member : annotations _ kATTRWRITER keyword type
+  44) attribute_member : annotations _ kATTRWRITER method_name attr_var_opt kCOLON type
+  45) attribute_member : annotations _ kATTRACCESSOR keyword type
+  46) attribute_member : annotations _ kATTRACCESSOR method_name attr_var_opt kCOLON type
+  59) include_member : annotations _ kINCLUDE qualified_name
+  60) include_member : annotations _ kINCLUDE qualified_name kLBRACKET type_list kRBRACKET
+  61) extend_member : annotations _ kEXTEND qualified_name
+  62) extend_member : annotations _ kEXTEND qualified_name kLBRACKET type_list kRBRACKET
+  63) prepend_member : annotations _ kPREPEND qualified_name
+  64) prepend_member : annotations _ kPREPEND qualified_name kLBRACKET type_list kRBRACKET
+  65) method_member : annotations _ attributes kDEF method_kind def_name method_types
+ 143) alias_member : annotations _ kALIAS method_name method_name
+ 144) alias_member : annotations _ kALIAS kSELF kDOT method_name kSELF kDOT method_name
+
+  kALIAS        shift, and go to state 306
+  kINCLUDE      shift, and go to state 302
+  kEXTEND       shift, and go to state 303
+  kATTRREADER   shift, and go to state 299
+  kATTRWRITER   shift, and go to state 300
+  kATTRACCESSOR  shift, and go to state 301
+  kPREPEND      shift, and go to state 304
+  $default      reduce using rule 66 (attributes)
+
+  attributes    go to state 305
+
+state 284
+
+  50) var_type_member : tIVAR _ kCOLON type
+
+  kCOLON        shift, and go to state 307
+
+
+state 285
+
+  51) var_type_member : tCLASSVAR _ kCOLON type
+
+  kCOLON        shift, and go to state 308
+
+
+state 286
+
+  52) var_type_member : kSELF _ kDOT tIVAR kCOLON type
+
+  kDOT          shift, and go to state 309
+
+
+state 287
+
+  53) interface_decl : annotations kINTERFACE start_new_scope interface_name module_type_params interface_members kEND _
+
+  $default      reduce using rule 53 (interface_decl)
+
+
+state 288
+
+  55) interface_members : interface_members interface_member _
+
+  $default      reduce using rule 55 (interface_members)
+
+
+state 289
+
+  56) interface_member : method_member _
+
+  $default      reduce using rule 56 (interface_member)
+
+
+state 290
+
+  57) interface_member : include_member _
+
+  $default      reduce using rule 57 (interface_member)
+
+
+state 291
+
+  58) interface_member : alias_member _
+
+  $default      reduce using rule 58 (interface_member)
+
+
+state 292
+
+  59) include_member : annotations _ kINCLUDE qualified_name
+  60) include_member : annotations _ kINCLUDE qualified_name kLBRACKET type_list kRBRACKET
+  65) method_member : annotations _ attributes kDEF method_kind def_name method_types
+ 143) alias_member : annotations _ kALIAS method_name method_name
+ 144) alias_member : annotations _ kALIAS kSELF kDOT method_name kSELF kDOT method_name
+
+  kALIAS        shift, and go to state 306
+  kINCLUDE      shift, and go to state 302
+  $default      reduce using rule 66 (attributes)
+
+  attributes    go to state 305
+
+state 293
+
+  19) extension_decl : annotations kEXTENSION start_new_scope class_name type_params kLPAREN extension_name kRPAREN _ class_members kEND
+
+  $default      reduce using rule 30 (class_members)
+
+  class_members  go to state 310
+
+state 294
+
+  22) class_decl : annotations kCLASS start_new_scope class_name module_type_params super_class class_members kEND _
+
+  $default      reduce using rule 22 (class_decl)
+
+
+state 295
+
+  25) super_class : kLT class_name kLBRACKET _ type_list kRBRACKET
+
+  tNAMESPACE    shift, and go to state 33
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 8
+  kNIL          shift, and go to state 12
+  kTRUE         shift, and go to state 19
+  kFALSE        shift, and go to state 20
+  kANY          shift, and go to state 9
+  kUNTYPED      shift, and go to state 10
+  kTOP          shift, and go to state 13
+  kBOT          shift, and go to state 14
+  kSELF         shift, and go to state 15
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 17
+  kCLASS        shift, and go to state 18
+  kBOOL         shift, and go to state 11
+  kSINGLETON    shift, and go to state 27
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  $default      reduce using rule 226 (namespace)
+
+  type_list     go to state 311
+  simple_type   go to state 7
+  type          go to state 44
+  qualified_name  go to state 24
+  record_type   go to state 29
+  namespace     go to state 31
+
+state 296
+
+ 132) module_type_params0 : module_type_params0 kCOMMA module_type_param _
+
+  $default      reduce using rule 132 (module_type_params0)
+
+
+state 297
+
+ 133) module_type_param : type_param_check type_param_variance tUIDENT _
+
+  $default      reduce using rule 133 (module_type_param)
+
+
+state 298
+
+  26) module_decl : annotations kMODULE start_new_scope class_name module_type_params module_self_type class_members kEND _
+
+  $default      reduce using rule 26 (module_decl)
+
+
+state 299
+
+  41) attribute_member : annotations kATTRREADER _ keyword type
+  42) attribute_member : annotations kATTRREADER _ method_name attr_var_opt kCOLON type
+
+  tUIDENT       shift, and go to state 328
+  tLIDENT       shift, and go to state 329
+  tLKEYWORD     shift, and go to state 58
+  tUKEYWORD     shift, and go to state 59
+  tWRITE_ATTR   shift, and go to state 327
+  kVOID         shift, and go to state 202
+  kNIL          shift, and go to state 203
+  kTRUE         shift, and go to state 204
+  kFALSE        shift, and go to state 205
+  kANY          shift, and go to state 206
+  kUNTYPED      shift, and go to state 207
+  kTOP          shift, and go to state 208
+  kBOT          shift, and go to state 209
+  kSELF         shift, and go to state 213
+  kINSTANCE     shift, and go to state 210
+  kCLASS        shift, and go to state 201
+  kBOOL         shift, and go to state 211
+  kSINGLETON    shift, and go to state 212
+  kTYPE         shift, and go to state 102
+  kDEF          shift, and go to state 113
+  kMODULE       shift, and go to state 103
+  kPRIVATE      shift, and go to state 104
+  kPUBLIC       shift, and go to state 105
+  kBAR          shift, and go to state 321
+  kAMP          shift, and go to state 315
+  kHAT          shift, and go to state 316
+  kEXCLAMATION  shift, and go to state 319
+  kSTAR         shift, and go to state 317
+  kSTAR2        shift, and go to state 320
+  kLT           shift, and go to state 318
+  kEND          shift, and go to state 106
+  kINCLUDE      shift, and go to state 107
+  kEXTEND       shift, and go to state 108
+  kATTRREADER   shift, and go to state 110
+  kATTRWRITER   shift, and go to state 112
+  kATTRACCESSOR  shift, and go to state 111
+  tOPERATOR     shift, and go to state 314
+  tQUOTEDMETHOD  shift, and go to state 325
+  tQUOTEDIDENT  shift, and go to state 326
+  kPREPEND      shift, and go to state 109
+  kEXTENSION    shift, and go to state 114
+  kINCOMPATIBLE  shift, and go to state 116
+  kOUT          shift, and go to state 322
+  kIN           shift, and go to state 323
+  kUNCHECKED    shift, and go to state 117
+
+  keyword       go to state 312
+  method_name   go to state 313
+  method_name0  go to state 324
+  identifier_keywords  go to state 330
+
+state 300
+
+  43) attribute_member : annotations kATTRWRITER _ keyword type
+  44) attribute_member : annotations kATTRWRITER _ method_name attr_var_opt kCOLON type
+
+  tUIDENT       shift, and go to state 328
+  tLIDENT       shift, and go to state 329
+  tLKEYWORD     shift, and go to state 58
+  tUKEYWORD     shift, and go to state 59
+  tWRITE_ATTR   shift, and go to state 327
+  kVOID         shift, and go to state 202
+  kNIL          shift, and go to state 203
+  kTRUE         shift, and go to state 204
+  kFALSE        shift, and go to state 205
+  kANY          shift, and go to state 206
+  kUNTYPED      shift, and go to state 207
+  kTOP          shift, and go to state 208
+  kBOT          shift, and go to state 209
+  kSELF         shift, and go to state 213
+  kINSTANCE     shift, and go to state 210
+  kCLASS        shift, and go to state 201
+  kBOOL         shift, and go to state 211
+  kSINGLETON    shift, and go to state 212
+  kTYPE         shift, and go to state 102
+  kDEF          shift, and go to state 113
+  kMODULE       shift, and go to state 103
+  kPRIVATE      shift, and go to state 104
+  kPUBLIC       shift, and go to state 105
+  kBAR          shift, and go to state 321
+  kAMP          shift, and go to state 315
+  kHAT          shift, and go to state 316
+  kEXCLAMATION  shift, and go to state 319
+  kSTAR         shift, and go to state 317
+  kSTAR2        shift, and go to state 320
+  kLT           shift, and go to state 318
+  kEND          shift, and go to state 106
+  kINCLUDE      shift, and go to state 107
+  kEXTEND       shift, and go to state 108
+  kATTRREADER   shift, and go to state 110
+  kATTRWRITER   shift, and go to state 112
+  kATTRACCESSOR  shift, and go to state 111
+  tOPERATOR     shift, and go to state 314
+  tQUOTEDMETHOD  shift, and go to state 325
+  tQUOTEDIDENT  shift, and go to state 326
+  kPREPEND      shift, and go to state 109
+  kEXTENSION    shift, and go to state 114
+  kINCOMPATIBLE  shift, and go to state 116
+  kOUT          shift, and go to state 322
+  kIN           shift, and go to state 323
+  kUNCHECKED    shift, and go to state 117
+
+  keyword       go to state 331
+  method_name   go to state 332
+  method_name0  go to state 324
+  identifier_keywords  go to state 330
+
+state 301
+
+  45) attribute_member : annotations kATTRACCESSOR _ keyword type
+  46) attribute_member : annotations kATTRACCESSOR _ method_name attr_var_opt kCOLON type
+
+  tUIDENT       shift, and go to state 328
+  tLIDENT       shift, and go to state 329
+  tLKEYWORD     shift, and go to state 58
+  tUKEYWORD     shift, and go to state 59
+  tWRITE_ATTR   shift, and go to state 327
+  kVOID         shift, and go to state 202
+  kNIL          shift, and go to state 203
+  kTRUE         shift, and go to state 204
+  kFALSE        shift, and go to state 205
+  kANY          shift, and go to state 206
+  kUNTYPED      shift, and go to state 207
+  kTOP          shift, and go to state 208
+  kBOT          shift, and go to state 209
+  kSELF         shift, and go to state 213
+  kINSTANCE     shift, and go to state 210
+  kCLASS        shift, and go to state 201
+  kBOOL         shift, and go to state 211
+  kSINGLETON    shift, and go to state 212
+  kTYPE         shift, and go to state 102
+  kDEF          shift, and go to state 113
+  kMODULE       shift, and go to state 103
+  kPRIVATE      shift, and go to state 104
+  kPUBLIC       shift, and go to state 105
+  kBAR          shift, and go to state 321
+  kAMP          shift, and go to state 315
+  kHAT          shift, and go to state 316
+  kEXCLAMATION  shift, and go to state 319
+  kSTAR         shift, and go to state 317
+  kSTAR2        shift, and go to state 320
+  kLT           shift, and go to state 318
+  kEND          shift, and go to state 106
+  kINCLUDE      shift, and go to state 107
+  kEXTEND       shift, and go to state 108
+  kATTRREADER   shift, and go to state 110
+  kATTRWRITER   shift, and go to state 112
+  kATTRACCESSOR  shift, and go to state 111
+  tOPERATOR     shift, and go to state 314
+  tQUOTEDMETHOD  shift, and go to state 325
+  tQUOTEDIDENT  shift, and go to state 326
+  kPREPEND      shift, and go to state 109
+  kEXTENSION    shift, and go to state 114
+  kINCOMPATIBLE  shift, and go to state 116
+  kOUT          shift, and go to state 322
+  kIN           shift, and go to state 323
+  kUNCHECKED    shift, and go to state 117
+
+  keyword       go to state 333
+  method_name   go to state 334
+  method_name0  go to state 324
+  identifier_keywords  go to state 330
+
+state 302
+
+  59) include_member : annotations kINCLUDE _ qualified_name
+  60) include_member : annotations kINCLUDE _ qualified_name kLBRACKET type_list kRBRACKET
+
+  tNAMESPACE    shift, and go to state 33
+  kCOLON2       shift, and go to state 32
+  $default      reduce using rule 226 (namespace)
+
+  qualified_name  go to state 335
+  namespace     go to state 31
+
+state 303
+
+  61) extend_member : annotations kEXTEND _ qualified_name
+  62) extend_member : annotations kEXTEND _ qualified_name kLBRACKET type_list kRBRACKET
+
+  tNAMESPACE    shift, and go to state 33
+  kCOLON2       shift, and go to state 32
+  $default      reduce using rule 226 (namespace)
+
+  qualified_name  go to state 336
+  namespace     go to state 31
+
+state 304
+
+  63) prepend_member : annotations kPREPEND _ qualified_name
+  64) prepend_member : annotations kPREPEND _ qualified_name kLBRACKET type_list kRBRACKET
+
+  tNAMESPACE    shift, and go to state 33
+  kCOLON2       shift, and go to state 32
+  $default      reduce using rule 226 (namespace)
+
+  qualified_name  go to state 337
+  namespace     go to state 31
+
+state 305
+
+  65) method_member : annotations attributes _ kDEF method_kind def_name method_types
+  67) attributes : attributes _ kINCOMPATIBLE
+
+  kDEF          shift, and go to state 338
+  kINCOMPATIBLE  shift, and go to state 339
+
+
+state 306
+
+ 143) alias_member : annotations kALIAS _ method_name method_name
+ 144) alias_member : annotations kALIAS _ kSELF kDOT method_name kSELF kDOT method_name
+
+  tUIDENT       shift, and go to state 328
+  tLIDENT       shift, and go to state 329
+  tWRITE_ATTR   shift, and go to state 327
+  kVOID         shift, and go to state 202
+  kNIL          shift, and go to state 203
+  kTRUE         shift, and go to state 204
+  kFALSE        shift, and go to state 205
+  kANY          shift, and go to state 206
+  kUNTYPED      shift, and go to state 207
+  kTOP          shift, and go to state 208
+  kBOT          shift, and go to state 209
+  kSELF         shift, and go to state 340
+  kINSTANCE     shift, and go to state 210
+  kCLASS        shift, and go to state 201
+  kBOOL         shift, and go to state 211
+  kSINGLETON    shift, and go to state 212
+  kTYPE         shift, and go to state 102
+  kDEF          shift, and go to state 113
+  kMODULE       shift, and go to state 103
+  kPRIVATE      shift, and go to state 104
+  kPUBLIC       shift, and go to state 105
+  kBAR          shift, and go to state 321
+  kAMP          shift, and go to state 315
+  kHAT          shift, and go to state 316
+  kEXCLAMATION  shift, and go to state 319
+  kSTAR         shift, and go to state 317
+  kSTAR2        shift, and go to state 320
+  kLT           shift, and go to state 318
+  kEND          shift, and go to state 106
+  kINCLUDE      shift, and go to state 107
+  kEXTEND       shift, and go to state 108
+  kATTRREADER   shift, and go to state 110
+  kATTRWRITER   shift, and go to state 112
+  kATTRACCESSOR  shift, and go to state 111
+  tOPERATOR     shift, and go to state 314
+  tQUOTEDMETHOD  shift, and go to state 325
+  tQUOTEDIDENT  shift, and go to state 326
+  kPREPEND      shift, and go to state 109
+  kEXTENSION    shift, and go to state 114
+  kINCOMPATIBLE  shift, and go to state 116
+  kOUT          shift, and go to state 322
+  kIN           shift, and go to state 323
+  kUNCHECKED    shift, and go to state 117
+
+  method_name0  go to state 324
+  identifier_keywords  go to state 330
+  method_name   go to state 341
+
+state 307
+
+  50) var_type_member : tIVAR kCOLON _ type
+
+  tNAMESPACE    shift, and go to state 33
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 8
+  kNIL          shift, and go to state 12
+  kTRUE         shift, and go to state 19
+  kFALSE        shift, and go to state 20
+  kANY          shift, and go to state 9
+  kUNTYPED      shift, and go to state 10
+  kTOP          shift, and go to state 13
+  kBOT          shift, and go to state 14
+  kSELF         shift, and go to state 15
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 17
+  kCLASS        shift, and go to state 18
+  kBOOL         shift, and go to state 11
+  kSINGLETON    shift, and go to state 27
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  $default      reduce using rule 226 (namespace)
+
+  type          go to state 342
+  simple_type   go to state 7
+  qualified_name  go to state 24
+  record_type   go to state 29
+  namespace     go to state 31
+
+state 308
+
+  51) var_type_member : tCLASSVAR kCOLON _ type
+
+  tNAMESPACE    shift, and go to state 33
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 8
+  kNIL          shift, and go to state 12
+  kTRUE         shift, and go to state 19
+  kFALSE        shift, and go to state 20
+  kANY          shift, and go to state 9
+  kUNTYPED      shift, and go to state 10
+  kTOP          shift, and go to state 13
+  kBOT          shift, and go to state 14
+  kSELF         shift, and go to state 15
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 17
+  kCLASS        shift, and go to state 18
+  kBOOL         shift, and go to state 11
+  kSINGLETON    shift, and go to state 27
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  $default      reduce using rule 226 (namespace)
+
+  type          go to state 343
+  simple_type   go to state 7
+  qualified_name  go to state 24
+  record_type   go to state 29
+  namespace     go to state 31
+
+state 309
+
+  52) var_type_member : kSELF kDOT _ tIVAR kCOLON type
+
+  tIVAR         shift, and go to state 344
+
+
+state 310
+
+  19) extension_decl : annotations kEXTENSION start_new_scope class_name type_params kLPAREN extension_name kRPAREN class_members _ kEND
+  31) class_members : class_members _ class_member
+
+  tIVAR         shift, and go to state 284
+  tCLASSVAR     shift, and go to state 285
+  tANNOTATION   shift, and go to state 74
+  kSELF         shift, and go to state 286
+  kPRIVATE      shift, and go to state 281
+  kPUBLIC       shift, and go to state 280
+  kEND          shift, and go to state 345
+  $default      reduce using rule 17 (annotations)
+
+  class_member  go to state 273
+  method_member  go to state 274
+  include_member  go to state 275
+  extend_member  go to state 276
+  prepend_member  go to state 277
+  var_type_member  go to state 278
+  attribute_member  go to state 279
+  alias_member  go to state 282
+  annotations   go to state 283
+
+state 311
+
+  25) super_class : kLT class_name kLBRACKET type_list _ kRBRACKET
+ 178) type_list : type_list _ kCOMMA type
+
+  kRBRACKET     shift, and go to state 346
+  kCOMMA        shift, and go to state 86
+
+
+state 312
+
+  41) attribute_member : annotations kATTRREADER keyword _ type
+
+  tNAMESPACE    shift, and go to state 33
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 8
+  kNIL          shift, and go to state 12
+  kTRUE         shift, and go to state 19
+  kFALSE        shift, and go to state 20
+  kANY          shift, and go to state 9
+  kUNTYPED      shift, and go to state 10
+  kTOP          shift, and go to state 13
+  kBOT          shift, and go to state 14
+  kSELF         shift, and go to state 15
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 17
+  kCLASS        shift, and go to state 18
+  kBOOL         shift, and go to state 11
+  kSINGLETON    shift, and go to state 27
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  $default      reduce using rule 226 (namespace)
+
+  type          go to state 347
+  simple_type   go to state 7
+  qualified_name  go to state 24
+  record_type   go to state 29
+  namespace     go to state 31
+
+state 313
+
+  42) attribute_member : annotations kATTRREADER method_name _ attr_var_opt kCOLON type
+
+  kLPAREN       shift, and go to state 349
+  $default      reduce using rule 47 (attr_var_opt)
+
+  attr_var_opt  go to state 348
+
+state 314
+
+  82) method_name : tOPERATOR _
+
+  $default      reduce using rule 82 (method_name)
+
+
+state 315
+
+  83) method_name : kAMP _
+
+  $default      reduce using rule 83 (method_name)
+
+
+state 316
+
+  84) method_name : kHAT _
+
+  $default      reduce using rule 84 (method_name)
+
+
+state 317
+
+  85) method_name : kSTAR _
+
+  $default      reduce using rule 85 (method_name)
+
+
+state 318
+
+  86) method_name : kLT _
+
+  $default      reduce using rule 86 (method_name)
+
+
+state 319
+
+  87) method_name : kEXCLAMATION _
+
+  $default      reduce using rule 87 (method_name)
+
+
+state 320
+
+  88) method_name : kSTAR2 _
+
+  $default      reduce using rule 88 (method_name)
+
+
+state 321
+
+  89) method_name : kBAR _
+
+  $default      reduce using rule 89 (method_name)
+
+
+state 322
+
+  90) method_name : kOUT _
+
+  $default      reduce using rule 90 (method_name)
+
+
+state 323
+
+  91) method_name : kIN _
+
+  $default      reduce using rule 91 (method_name)
+
+
+state 324
+
+  92) method_name : method_name0 _
+  93) method_name : method_name0 _ kQUESTION
+  94) method_name : method_name0 _ kEXCLAMATION
+
+  kQUESTION     shift, and go to state 350
+  kEXCLAMATION  shift, and go to state 351
+  kEXCLAMATION  [reduce using rule 92 (method_name)]
+  $default      reduce using rule 92 (method_name)
+
+
+state 325
+
+  95) method_name : tQUOTEDMETHOD _
+
+  $default      reduce using rule 95 (method_name)
+
+
+state 326
+
+  96) method_name : tQUOTEDIDENT _
+
+  $default      reduce using rule 96 (method_name)
+
+
+state 327
+
+  97) method_name : tWRITE_ATTR _
+
+  $default      reduce using rule 97 (method_name)
+
+
+state 328
+
+  98) method_name0 : tUIDENT _
+
+  $default      reduce using rule 98 (method_name0)
+
+
+state 329
+
+  99) method_name0 : tLIDENT _
+
+  $default      reduce using rule 99 (method_name0)
+
+
+state 330
+
+ 100) method_name0 : identifier_keywords _
+
+  $default      reduce using rule 100 (method_name0)
+
+
+state 331
+
+  43) attribute_member : annotations kATTRWRITER keyword _ type
+
+  tNAMESPACE    shift, and go to state 33
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 8
+  kNIL          shift, and go to state 12
+  kTRUE         shift, and go to state 19
+  kFALSE        shift, and go to state 20
+  kANY          shift, and go to state 9
+  kUNTYPED      shift, and go to state 10
+  kTOP          shift, and go to state 13
+  kBOT          shift, and go to state 14
+  kSELF         shift, and go to state 15
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 17
+  kCLASS        shift, and go to state 18
+  kBOOL         shift, and go to state 11
+  kSINGLETON    shift, and go to state 27
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  $default      reduce using rule 226 (namespace)
+
+  type          go to state 352
+  simple_type   go to state 7
+  qualified_name  go to state 24
+  record_type   go to state 29
+  namespace     go to state 31
+
+state 332
+
+  44) attribute_member : annotations kATTRWRITER method_name _ attr_var_opt kCOLON type
+
+  kLPAREN       shift, and go to state 349
+  $default      reduce using rule 47 (attr_var_opt)
+
+  attr_var_opt  go to state 353
+
+state 333
+
+  45) attribute_member : annotations kATTRACCESSOR keyword _ type
+
+  tNAMESPACE    shift, and go to state 33
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 8
+  kNIL          shift, and go to state 12
+  kTRUE         shift, and go to state 19
+  kFALSE        shift, and go to state 20
+  kANY          shift, and go to state 9
+  kUNTYPED      shift, and go to state 10
+  kTOP          shift, and go to state 13
+  kBOT          shift, and go to state 14
+  kSELF         shift, and go to state 15
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 17
+  kCLASS        shift, and go to state 18
+  kBOOL         shift, and go to state 11
+  kSINGLETON    shift, and go to state 27
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  $default      reduce using rule 226 (namespace)
+
+  type          go to state 354
+  simple_type   go to state 7
+  qualified_name  go to state 24
+  record_type   go to state 29
+  namespace     go to state 31
+
+state 334
+
+  46) attribute_member : annotations kATTRACCESSOR method_name _ attr_var_opt kCOLON type
+
+  kLPAREN       shift, and go to state 349
+  $default      reduce using rule 47 (attr_var_opt)
+
+  attr_var_opt  go to state 355
+
+state 335
+
+  59) include_member : annotations kINCLUDE qualified_name _
+  60) include_member : annotations kINCLUDE qualified_name _ kLBRACKET type_list kRBRACKET
+
+  kLBRACKET     shift, and go to state 356
+  $default      reduce using rule 59 (include_member)
+
+
+state 336
+
+  61) extend_member : annotations kEXTEND qualified_name _
+  62) extend_member : annotations kEXTEND qualified_name _ kLBRACKET type_list kRBRACKET
+
+  kLBRACKET     shift, and go to state 357
+  $default      reduce using rule 61 (extend_member)
+
+
+state 337
+
+  63) prepend_member : annotations kPREPEND qualified_name _
+  64) prepend_member : annotations kPREPEND qualified_name _ kLBRACKET type_list kRBRACKET
+
+  kLBRACKET     shift, and go to state 358
+  $default      reduce using rule 63 (prepend_member)
+
+
+state 338
+
+  65) method_member : annotations attributes kDEF _ method_kind def_name method_types
+
+  kSELF         shift, and go to state 360
+  kSELF         [reduce using rule 68 (method_kind)]
+  kSELFQ        shift, and go to state 361
+  $default      reduce using rule 68 (method_kind)
+
+  method_kind   go to state 359
+
+state 339
+
+  67) attributes : attributes kINCOMPATIBLE _
+
+  $default      reduce using rule 67 (attributes)
+
+
+state 340
+
+ 126) identifier_keywords : kSELF _
+ 144) alias_member : annotations kALIAS kSELF _ kDOT method_name kSELF kDOT method_name
+
+  kDOT          shift, and go to state 362
+  $default      reduce using rule 126 (identifier_keywords)
+
+
+state 341
+
+ 143) alias_member : annotations kALIAS method_name _ method_name
+
+  tUIDENT       shift, and go to state 328
+  tLIDENT       shift, and go to state 329
+  tWRITE_ATTR   shift, and go to state 327
+  kVOID         shift, and go to state 202
+  kNIL          shift, and go to state 203
+  kTRUE         shift, and go to state 204
+  kFALSE        shift, and go to state 205
+  kANY          shift, and go to state 206
+  kUNTYPED      shift, and go to state 207
+  kTOP          shift, and go to state 208
+  kBOT          shift, and go to state 209
+  kSELF         shift, and go to state 213
+  kINSTANCE     shift, and go to state 210
+  kCLASS        shift, and go to state 201
+  kBOOL         shift, and go to state 211
+  kSINGLETON    shift, and go to state 212
+  kTYPE         shift, and go to state 102
+  kDEF          shift, and go to state 113
+  kMODULE       shift, and go to state 103
+  kPRIVATE      shift, and go to state 104
+  kPUBLIC       shift, and go to state 105
+  kBAR          shift, and go to state 321
+  kAMP          shift, and go to state 315
+  kHAT          shift, and go to state 316
+  kEXCLAMATION  shift, and go to state 319
+  kSTAR         shift, and go to state 317
+  kSTAR2        shift, and go to state 320
+  kLT           shift, and go to state 318
+  kEND          shift, and go to state 106
+  kINCLUDE      shift, and go to state 107
+  kEXTEND       shift, and go to state 108
+  kATTRREADER   shift, and go to state 110
+  kATTRWRITER   shift, and go to state 112
+  kATTRACCESSOR  shift, and go to state 111
+  tOPERATOR     shift, and go to state 314
+  tQUOTEDMETHOD  shift, and go to state 325
+  tQUOTEDIDENT  shift, and go to state 326
+  kPREPEND      shift, and go to state 109
+  kEXTENSION    shift, and go to state 114
+  kINCOMPATIBLE  shift, and go to state 116
+  kOUT          shift, and go to state 322
+  kIN           shift, and go to state 323
+  kUNCHECKED    shift, and go to state 117
+
+  method_name0  go to state 324
+  identifier_keywords  go to state 330
+  method_name   go to state 363
+
+state 342
+
+  50) var_type_member : tIVAR kCOLON type _
+ 150) type : type _ kBAR type
+ 151) type : type _ kAMP type
+
+  kBAR          shift, and go to state 40
+  kAMP          shift, and go to state 41
+  $default      reduce using rule 50 (var_type_member)
+
+
+state 343
+
+  51) var_type_member : tCLASSVAR kCOLON type _
+ 150) type : type _ kBAR type
+ 151) type : type _ kAMP type
+
+  kBAR          shift, and go to state 40
+  kAMP          shift, and go to state 41
+  $default      reduce using rule 51 (var_type_member)
+
+
+state 344
+
+  52) var_type_member : kSELF kDOT tIVAR _ kCOLON type
+
+  kCOLON        shift, and go to state 364
+
+
+state 345
+
+  19) extension_decl : annotations kEXTENSION start_new_scope class_name type_params kLPAREN extension_name kRPAREN class_members kEND _
+
+  $default      reduce using rule 19 (extension_decl)
+
+
+state 346
+
+  25) super_class : kLT class_name kLBRACKET type_list kRBRACKET _
+
+  $default      reduce using rule 25 (super_class)
+
+
+state 347
+
+  41) attribute_member : annotations kATTRREADER keyword type _
+ 150) type : type _ kBAR type
+ 151) type : type _ kAMP type
+
+  kBAR          shift, and go to state 40
+  kAMP          shift, and go to state 41
+  $default      reduce using rule 41 (attribute_member)
+
+
+state 348
+
+  42) attribute_member : annotations kATTRREADER method_name attr_var_opt _ kCOLON type
+
+  kCOLON        shift, and go to state 365
+
+
+state 349
+
+  48) attr_var_opt : kLPAREN _ kRPAREN
+  49) attr_var_opt : kLPAREN _ tIVAR kRPAREN
+
+  tIVAR         shift, and go to state 367
+  kRPAREN       shift, and go to state 366
+
+
+state 350
+
+  93) method_name : method_name0 kQUESTION _
+
+  $default      reduce using rule 93 (method_name)
+
+
+state 351
+
+  94) method_name : method_name0 kEXCLAMATION _
+
+  $default      reduce using rule 94 (method_name)
+
+
+state 352
+
+  43) attribute_member : annotations kATTRWRITER keyword type _
+ 150) type : type _ kBAR type
+ 151) type : type _ kAMP type
+
+  kBAR          shift, and go to state 40
+  kAMP          shift, and go to state 41
+  $default      reduce using rule 43 (attribute_member)
+
+
+state 353
+
+  44) attribute_member : annotations kATTRWRITER method_name attr_var_opt _ kCOLON type
+
+  kCOLON        shift, and go to state 368
+
+
+state 354
+
+  45) attribute_member : annotations kATTRACCESSOR keyword type _
+ 150) type : type _ kBAR type
+ 151) type : type _ kAMP type
+
+  kBAR          shift, and go to state 40
+  kAMP          shift, and go to state 41
+  $default      reduce using rule 45 (attribute_member)
+
+
+state 355
+
+  46) attribute_member : annotations kATTRACCESSOR method_name attr_var_opt _ kCOLON type
+
+  kCOLON        shift, and go to state 369
+
+
+state 356
+
+  60) include_member : annotations kINCLUDE qualified_name kLBRACKET _ type_list kRBRACKET
+
+  tNAMESPACE    shift, and go to state 33
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 8
+  kNIL          shift, and go to state 12
+  kTRUE         shift, and go to state 19
+  kFALSE        shift, and go to state 20
+  kANY          shift, and go to state 9
+  kUNTYPED      shift, and go to state 10
+  kTOP          shift, and go to state 13
+  kBOT          shift, and go to state 14
+  kSELF         shift, and go to state 15
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 17
+  kCLASS        shift, and go to state 18
+  kBOOL         shift, and go to state 11
+  kSINGLETON    shift, and go to state 27
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  $default      reduce using rule 226 (namespace)
+
+  type_list     go to state 370
+  simple_type   go to state 7
+  type          go to state 44
+  qualified_name  go to state 24
+  record_type   go to state 29
+  namespace     go to state 31
+
+state 357
+
+  62) extend_member : annotations kEXTEND qualified_name kLBRACKET _ type_list kRBRACKET
+
+  tNAMESPACE    shift, and go to state 33
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 8
+  kNIL          shift, and go to state 12
+  kTRUE         shift, and go to state 19
+  kFALSE        shift, and go to state 20
+  kANY          shift, and go to state 9
+  kUNTYPED      shift, and go to state 10
+  kTOP          shift, and go to state 13
+  kBOT          shift, and go to state 14
+  kSELF         shift, and go to state 15
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 17
+  kCLASS        shift, and go to state 18
+  kBOOL         shift, and go to state 11
+  kSINGLETON    shift, and go to state 27
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  $default      reduce using rule 226 (namespace)
+
+  type_list     go to state 371
+  simple_type   go to state 7
+  type          go to state 44
+  qualified_name  go to state 24
+  record_type   go to state 29
+  namespace     go to state 31
+
+state 358
+
+  64) prepend_member : annotations kPREPEND qualified_name kLBRACKET _ type_list kRBRACKET
+
+  tNAMESPACE    shift, and go to state 33
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 8
+  kNIL          shift, and go to state 12
+  kTRUE         shift, and go to state 19
+  kFALSE        shift, and go to state 20
+  kANY          shift, and go to state 9
+  kUNTYPED      shift, and go to state 10
+  kTOP          shift, and go to state 13
+  kBOT          shift, and go to state 14
+  kSELF         shift, and go to state 15
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 17
+  kCLASS        shift, and go to state 18
+  kBOOL         shift, and go to state 11
+  kSINGLETON    shift, and go to state 27
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  $default      reduce using rule 226 (namespace)
+
+  type_list     go to state 372
+  simple_type   go to state 7
+  type          go to state 44
+  qualified_name  go to state 24
+  record_type   go to state 29
+  namespace     go to state 31
+
+state 359
+
+  65) method_member : annotations attributes kDEF method_kind _ def_name method_types
+
+  tUIDENT       shift, and go to state 328
+  tLIDENT       shift, and go to state 329
+  tLKEYWORD     shift, and go to state 58
+  tUKEYWORD     shift, and go to state 59
+  tWRITE_ATTR   shift, and go to state 327
+  kVOID         shift, and go to state 202
+  kNIL          shift, and go to state 203
+  kTRUE         shift, and go to state 204
+  kFALSE        shift, and go to state 205
+  kANY          shift, and go to state 206
+  kUNTYPED      shift, and go to state 207
+  kTOP          shift, and go to state 208
+  kBOT          shift, and go to state 209
+  kSELF         shift, and go to state 213
+  kINSTANCE     shift, and go to state 210
+  kCLASS        shift, and go to state 201
+  kBOOL         shift, and go to state 211
+  kSINGLETON    shift, and go to state 212
+  kTYPE         shift, and go to state 102
+  kDEF          shift, and go to state 113
+  kMODULE       shift, and go to state 103
+  kPRIVATE      shift, and go to state 104
+  kPUBLIC       shift, and go to state 105
+  kBAR          shift, and go to state 321
+  kAMP          shift, and go to state 315
+  kHAT          shift, and go to state 316
+  kEXCLAMATION  shift, and go to state 319
+  kSTAR         shift, and go to state 317
+  kSTAR2        shift, and go to state 320
+  kLT           shift, and go to state 318
+  kEND          shift, and go to state 106
+  kINCLUDE      shift, and go to state 107
+  kEXTEND       shift, and go to state 108
+  kATTRREADER   shift, and go to state 110
+  kATTRWRITER   shift, and go to state 112
+  kATTRACCESSOR  shift, and go to state 111
+  tOPERATOR     shift, and go to state 314
+  tQUOTEDMETHOD  shift, and go to state 325
+  tQUOTEDIDENT  shift, and go to state 326
+  kPREPEND      shift, and go to state 109
+  kEXTENSION    shift, and go to state 114
+  kINCOMPATIBLE  shift, and go to state 116
+  kOUT          shift, and go to state 322
+  kIN           shift, and go to state 323
+  kUNCHECKED    shift, and go to state 117
+
+  def_name      go to state 373
+  keyword       go to state 374
+  method_name   go to state 375
+  method_name0  go to state 324
+  identifier_keywords  go to state 330
+
+state 360
+
+  69) method_kind : kSELF _ kDOT
+
+  kDOT          shift, and go to state 376
+
+
+state 361
+
+  70) method_kind : kSELFQ _ kDOT
+
+  kDOT          shift, and go to state 377
+
+
+state 362
+
+ 144) alias_member : annotations kALIAS kSELF kDOT _ method_name kSELF kDOT method_name
+
+  tUIDENT       shift, and go to state 328
+  tLIDENT       shift, and go to state 329
+  tWRITE_ATTR   shift, and go to state 327
+  kVOID         shift, and go to state 202
+  kNIL          shift, and go to state 203
+  kTRUE         shift, and go to state 204
+  kFALSE        shift, and go to state 205
+  kANY          shift, and go to state 206
+  kUNTYPED      shift, and go to state 207
+  kTOP          shift, and go to state 208
+  kBOT          shift, and go to state 209
+  kSELF         shift, and go to state 213
+  kINSTANCE     shift, and go to state 210
+  kCLASS        shift, and go to state 201
+  kBOOL         shift, and go to state 211
+  kSINGLETON    shift, and go to state 212
+  kTYPE         shift, and go to state 102
+  kDEF          shift, and go to state 113
+  kMODULE       shift, and go to state 103
+  kPRIVATE      shift, and go to state 104
+  kPUBLIC       shift, and go to state 105
+  kBAR          shift, and go to state 321
+  kAMP          shift, and go to state 315
+  kHAT          shift, and go to state 316
+  kEXCLAMATION  shift, and go to state 319
+  kSTAR         shift, and go to state 317
+  kSTAR2        shift, and go to state 320
+  kLT           shift, and go to state 318
+  kEND          shift, and go to state 106
+  kINCLUDE      shift, and go to state 107
+  kEXTEND       shift, and go to state 108
+  kATTRREADER   shift, and go to state 110
+  kATTRWRITER   shift, and go to state 112
+  kATTRACCESSOR  shift, and go to state 111
+  tOPERATOR     shift, and go to state 314
+  tQUOTEDMETHOD  shift, and go to state 325
+  tQUOTEDIDENT  shift, and go to state 326
+  kPREPEND      shift, and go to state 109
+  kEXTENSION    shift, and go to state 114
+  kINCOMPATIBLE  shift, and go to state 116
+  kOUT          shift, and go to state 322
+  kIN           shift, and go to state 323
+  kUNCHECKED    shift, and go to state 117
+
+  method_name0  go to state 324
+  identifier_keywords  go to state 330
+  method_name   go to state 378
+
+state 363
+
+ 143) alias_member : annotations kALIAS method_name method_name _
+
+  $default      reduce using rule 143 (alias_member)
+
+
+state 364
+
+  52) var_type_member : kSELF kDOT tIVAR kCOLON _ type
+
+  tNAMESPACE    shift, and go to state 33
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 8
+  kNIL          shift, and go to state 12
+  kTRUE         shift, and go to state 19
+  kFALSE        shift, and go to state 20
+  kANY          shift, and go to state 9
+  kUNTYPED      shift, and go to state 10
+  kTOP          shift, and go to state 13
+  kBOT          shift, and go to state 14
+  kSELF         shift, and go to state 15
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 17
+  kCLASS        shift, and go to state 18
+  kBOOL         shift, and go to state 11
+  kSINGLETON    shift, and go to state 27
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  $default      reduce using rule 226 (namespace)
+
+  type          go to state 379
+  simple_type   go to state 7
+  qualified_name  go to state 24
+  record_type   go to state 29
+  namespace     go to state 31
+
+state 365
+
+  42) attribute_member : annotations kATTRREADER method_name attr_var_opt kCOLON _ type
+
+  tNAMESPACE    shift, and go to state 33
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 8
+  kNIL          shift, and go to state 12
+  kTRUE         shift, and go to state 19
+  kFALSE        shift, and go to state 20
+  kANY          shift, and go to state 9
+  kUNTYPED      shift, and go to state 10
+  kTOP          shift, and go to state 13
+  kBOT          shift, and go to state 14
+  kSELF         shift, and go to state 15
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 17
+  kCLASS        shift, and go to state 18
+  kBOOL         shift, and go to state 11
+  kSINGLETON    shift, and go to state 27
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  $default      reduce using rule 226 (namespace)
+
+  type          go to state 380
+  simple_type   go to state 7
+  qualified_name  go to state 24
+  record_type   go to state 29
+  namespace     go to state 31
+
+state 366
+
+  48) attr_var_opt : kLPAREN kRPAREN _
+
+  $default      reduce using rule 48 (attr_var_opt)
+
+
+state 367
+
+  49) attr_var_opt : kLPAREN tIVAR _ kRPAREN
+
+  kRPAREN       shift, and go to state 381
+
+
+state 368
+
+  44) attribute_member : annotations kATTRWRITER method_name attr_var_opt kCOLON _ type
+
+  tNAMESPACE    shift, and go to state 33
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 8
+  kNIL          shift, and go to state 12
+  kTRUE         shift, and go to state 19
+  kFALSE        shift, and go to state 20
+  kANY          shift, and go to state 9
+  kUNTYPED      shift, and go to state 10
+  kTOP          shift, and go to state 13
+  kBOT          shift, and go to state 14
+  kSELF         shift, and go to state 15
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 17
+  kCLASS        shift, and go to state 18
+  kBOOL         shift, and go to state 11
+  kSINGLETON    shift, and go to state 27
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  $default      reduce using rule 226 (namespace)
+
+  type          go to state 382
+  simple_type   go to state 7
+  qualified_name  go to state 24
+  record_type   go to state 29
+  namespace     go to state 31
+
+state 369
+
+  46) attribute_member : annotations kATTRACCESSOR method_name attr_var_opt kCOLON _ type
+
+  tNAMESPACE    shift, and go to state 33
+  tSTRING       shift, and go to state 22
+  tSYMBOL       shift, and go to state 23
+  tINTEGER      shift, and go to state 21
+  kLPAREN       shift, and go to state 26
+  kLBRACKET     shift, and go to state 25
+  kLBRACE       shift, and go to state 30
+  kVOID         shift, and go to state 8
+  kNIL          shift, and go to state 12
+  kTRUE         shift, and go to state 19
+  kFALSE        shift, and go to state 20
+  kANY          shift, and go to state 9
+  kUNTYPED      shift, and go to state 10
+  kTOP          shift, and go to state 13
+  kBOT          shift, and go to state 14
+  kSELF         shift, and go to state 15
+  kSELFQ        shift, and go to state 16
+  kINSTANCE     shift, and go to state 17
+  kCLASS        shift, and go to state 18
+  kBOOL         shift, and go to state 11
+  kSINGLETON    shift, and go to state 27
+  kCOLON2       shift, and go to state 32
+  kHAT          shift, and go to state 28
+  $default      reduce using rule 226 (namespace)
+
+  type          go to state 383
+  simple_type   go to state 7
+  qualified_name  go to state 24
+  record_type   go to state 29
+  namespace     go to state 31
+
+state 370
+
+  60) include_member : annotations kINCLUDE qualified_name kLBRACKET type_list _ kRBRACKET
+ 178) type_list : type_list _ kCOMMA type
+
+  kRBRACKET     shift, and go to state 384
+  kCOMMA        shift, and go to state 86
+
+
+state 371
+
+  62) extend_member : annotations kEXTEND qualified_name kLBRACKET type_list _ kRBRACKET
+ 178) type_list : type_list _ kCOMMA type
+
+  kRBRACKET     shift, and go to state 385
+  kCOMMA        shift, and go to state 86
+
+
+state 372
+
+  64) prepend_member : annotations kPREPEND qualified_name kLBRACKET type_list _ kRBRACKET
+ 178) type_list : type_list _ kCOMMA type
+
+  kRBRACKET     shift, and go to state 386
+  kCOMMA        shift, and go to state 86
+
+
+state 373
+
+  65) method_member : annotations attributes kDEF method_kind def_name _ method_types
+
+  kSUPER        shift, and go to state 389
+  $default      reduce using rule 16 (start_merged_scope)
+
+  method_types  go to state 387
+  method_type   go to state 388
+  start_merged_scope  go to state 36
+
+state 374
+
+  80) def_name : keyword _
+
+  $default      reduce using rule 80 (def_name)
+
+
+state 375
+
+  81) def_name : method_name _ kCOLON
+
+  kCOLON        shift, and go to state 390
+
+
+state 376
+
+  69) method_kind : kSELF kDOT _
+
+  $default      reduce using rule 69 (method_kind)
+
+
+state 377
+
+  70) method_kind : kSELFQ kDOT _
+
+  $default      reduce using rule 70 (method_kind)
+
+
+state 378
+
+ 144) alias_member : annotations kALIAS kSELF kDOT method_name _ kSELF kDOT method_name
+
+  kSELF         shift, and go to state 391
+
+
+state 379
+
+  52) var_type_member : kSELF kDOT tIVAR kCOLON type _
+ 150) type : type _ kBAR type
+ 151) type : type _ kAMP type
+
+  kBAR          shift, and go to state 40
+  kAMP          shift, and go to state 41
+  $default      reduce using rule 52 (var_type_member)
+
+
+state 380
+
+  42) attribute_member : annotations kATTRREADER method_name attr_var_opt kCOLON type _
+ 150) type : type _ kBAR type
+ 151) type : type _ kAMP type
+
+  kBAR          shift, and go to state 40
+  kAMP          shift, and go to state 41
+  $default      reduce using rule 42 (attribute_member)
+
+
+state 381
+
+  49) attr_var_opt : kLPAREN tIVAR kRPAREN _
+
+  $default      reduce using rule 49 (attr_var_opt)
+
+
+state 382
+
+  44) attribute_member : annotations kATTRWRITER method_name attr_var_opt kCOLON type _
+ 150) type : type _ kBAR type
+ 151) type : type _ kAMP type
+
+  kBAR          shift, and go to state 40
+  kAMP          shift, and go to state 41
+  $default      reduce using rule 44 (attribute_member)
+
+
+state 383
+
+  46) attribute_member : annotations kATTRACCESSOR method_name attr_var_opt kCOLON type _
+ 150) type : type _ kBAR type
+ 151) type : type _ kAMP type
+
+  kBAR          shift, and go to state 40
+  kAMP          shift, and go to state 41
+  $default      reduce using rule 46 (attribute_member)
+
+
+state 384
+
+  60) include_member : annotations kINCLUDE qualified_name kLBRACKET type_list kRBRACKET _
+
+  $default      reduce using rule 60 (include_member)
+
+
+state 385
+
+  62) extend_member : annotations kEXTEND qualified_name kLBRACKET type_list kRBRACKET _
+
+  $default      reduce using rule 62 (extend_member)
+
+
+state 386
+
+  64) prepend_member : annotations kPREPEND qualified_name kLBRACKET type_list kRBRACKET _
+
+  $default      reduce using rule 64 (prepend_member)
+
+
+state 387
+
+  65) method_member : annotations attributes kDEF method_kind def_name method_types _
+
+  $default      reduce using rule 65 (method_member)
+
+
+state 388
+
+  71) method_types : method_type _
+  73) method_types : method_type _ kBAR method_types
+
+  kBAR          shift, and go to state 392
+  $default      reduce using rule 71 (method_types)
+
+
+state 389
+
+  72) method_types : kSUPER _
+
+  $default      reduce using rule 72 (method_types)
+
+
+state 390
+
+  81) def_name : method_name kCOLON _
+
+  $default      reduce using rule 81 (def_name)
+
+
+state 391
+
+ 144) alias_member : annotations kALIAS kSELF kDOT method_name kSELF _ kDOT method_name
+
+  kDOT          shift, and go to state 393
+
+
+state 392
+
+  73) method_types : method_type kBAR _ method_types
+
+  kSUPER        shift, and go to state 389
+  $default      reduce using rule 16 (start_merged_scope)
+
+  method_type   go to state 388
+  method_types  go to state 394
+  start_merged_scope  go to state 36
+
+state 393
+
+ 144) alias_member : annotations kALIAS kSELF kDOT method_name kSELF kDOT _ method_name
+
+  tUIDENT       shift, and go to state 328
+  tLIDENT       shift, and go to state 329
+  tWRITE_ATTR   shift, and go to state 327
+  kVOID         shift, and go to state 202
+  kNIL          shift, and go to state 203
+  kTRUE         shift, and go to state 204
+  kFALSE        shift, and go to state 205
+  kANY          shift, and go to state 206
+  kUNTYPED      shift, and go to state 207
+  kTOP          shift, and go to state 208
+  kBOT          shift, and go to state 209
+  kSELF         shift, and go to state 213
+  kINSTANCE     shift, and go to state 210
+  kCLASS        shift, and go to state 201
+  kBOOL         shift, and go to state 211
+  kSINGLETON    shift, and go to state 212
+  kTYPE         shift, and go to state 102
+  kDEF          shift, and go to state 113
+  kMODULE       shift, and go to state 103
+  kPRIVATE      shift, and go to state 104
+  kPUBLIC       shift, and go to state 105
+  kBAR          shift, and go to state 321
+  kAMP          shift, and go to state 315
+  kHAT          shift, and go to state 316
+  kEXCLAMATION  shift, and go to state 319
+  kSTAR         shift, and go to state 317
+  kSTAR2        shift, and go to state 320
+  kLT           shift, and go to state 318
+  kEND          shift, and go to state 106
+  kINCLUDE      shift, and go to state 107
+  kEXTEND       shift, and go to state 108
+  kATTRREADER   shift, and go to state 110
+  kATTRWRITER   shift, and go to state 112
+  kATTRACCESSOR  shift, and go to state 111
+  tOPERATOR     shift, and go to state 314
+  tQUOTEDMETHOD  shift, and go to state 325
+  tQUOTEDIDENT  shift, and go to state 326
+  kPREPEND      shift, and go to state 109
+  kEXTENSION    shift, and go to state 114
+  kINCOMPATIBLE  shift, and go to state 116
+  kOUT          shift, and go to state 322
+  kIN           shift, and go to state 323
+  kUNCHECKED    shift, and go to state 117
+
+  method_name0  go to state 324
+  identifier_keywords  go to state 330
+  method_name   go to state 395
+
+state 394
+
+  73) method_types : method_type kBAR method_types _
+
+  $default      reduce using rule 73 (method_types)
+
+
+state 395
+
+ 144) alias_member : annotations kALIAS kSELF kDOT method_name kSELF kDOT method_name _
+
+  $default      reduce using rule 144 (alias_member)
+

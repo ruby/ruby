@@ -1,0 +1,1076 @@
+# A File is an abstraction of any file object accessible by the program and is
+# closely associated with class IO.  File includes the methods of module
+# FileTest as class methods, allowing you to write (for example)
+# `File.exist?("foo")`.
+#
+# In the description of File methods, *permission bits* are a platform-specific
+# set of bits that indicate permissions of a file. On Unix-based systems,
+# permissions are viewed as a set of three octets, for the owner, the group, and
+# the rest of the world. For each of these entities, permissions may be set to
+# read, write, or execute the file:
+#
+# The permission bits `0644` (in octal) would thus be interpreted as read/write
+# for owner, and read-only for group and other. Higher-order bits may also be
+# used to indicate the type of file (plain, directory, pipe, socket, and so on)
+# and various other special features. If the permissions are for a directory,
+# the meaning of the execute bit changes; when set the directory can be
+# searched.
+#
+# On non-Posix operating systems, there may be only the ability to make a file
+# read-only or read-write. In this case, the remaining permission bits will be
+# synthesized to resemble typical values. For instance, on Windows NT the
+# default permission bits are `0644`, which means read/write for owner,
+# read-only for all others. The only change that can be made is to make the file
+# read-only, which is reported as `0444`.
+#
+# Various constants for the methods in File can be found in File::Constants.
+#
+class File < IO
+  # Opens the file named by `filename` according to the given `mode` and returns a
+  # new File object.
+  #
+  # See IO.new for a description of `mode` and `opt`.
+  #
+  # If a file is being created, permission bits may be given in `perm`.  These
+  # mode and permission bits are platform dependent; on Unix systems, see open(2)
+  # and chmod(2) man pages for details.
+  #
+  # The new File object is buffered mode (or non-sync mode), unless `filename` is
+  # a tty. See IO#flush, IO#fsync, IO#fdatasync, and IO#sync= about sync mode.
+  #
+  # ### Examples
+  #
+  #     f = File.new("testfile", "r")
+  #     f = File.new("newfile",  "w+")
+  #     f = File.new("newfile", File::CREAT|File::TRUNC|File::RDWR, 0644)
+  #
+  def initialize: (string | _ToPath | int file_name, ?(string | int) mode, ?int perm) -> File
+
+  # Converts a pathname to an absolute pathname. Relative paths are referenced
+  # from the current working directory of the process unless *dir_string* is
+  # given, in which case it will be used as the starting point. If the given
+  # pathname starts with a ```~`'' it is NOT expanded, it is treated as a normal
+  # directory name.
+  #
+  #     File.absolute_path("~oracle/bin")       #=> "<relative_path>/~oracle/bin"
+  #
+  def self.absolute_path: (string | _ToPath file_name, ?(string | _ToPath) dir_string) -> String
+
+  # Returns `true` if `file_name` is an absolute path, and `false` otherwise.
+  #
+  #     File.absolute_path?("c:/foo")     #=> false (on Linux), true (on Windows)
+  #
+  # # arglists 💪👽🚨 << Delete this section
+  #     File.absolute_path?(file_name)  ->  true or false
+  #
+  def self.absolute_path?: (string | _ToPath file_name) -> bool
+
+  # Returns the last access time for the named file as a Time object.
+  #
+  # *file_name* can be an IO object.
+  #
+  #     File.atime("testfile")   #=> Wed Apr 09 08:51:48 CDT 2003
+  #
+  def self.atime: (string | _ToPath | IO file_name) -> Time
+
+  # Returns the last component of the filename given in *file_name* (after first
+  # stripping trailing separators), which can be formed using both File::SEPARATOR
+  # and File::ALT_SEPARATOR as the separator when File::ALT_SEPARATOR is not
+  # `nil`. If *suffix* is given and present at the end of *file_name*, it is
+  # removed. If *suffix* is ".*", any extension will be removed.
+  #
+  #     File.basename("/home/gumby/work/ruby.rb")          #=> "ruby.rb"
+  #     File.basename("/home/gumby/work/ruby.rb", ".rb")   #=> "ruby"
+  #     File.basename("/home/gumby/work/ruby.rb", ".*")    #=> "ruby"
+  #
+  def self.basename: (string | _ToPath file_name, ?string suffix) -> String
+
+  def self.birthtime: (string | _ToPath | IO file_name) -> Time
+
+  # Returns `true` if the named file is a block device.
+  #
+  # *file_name* can be an IO object.
+  #
+  def self.blockdev?: (string | _ToPath | IO file_name) -> bool
+
+  # Returns `true` if the named file is a character device.
+  #
+  # *file_name* can be an IO object.
+  #
+  def self.chardev?: (string | _ToPath | IO file_name) -> bool
+
+  # Changes permission bits on the named file(s) to the bit pattern represented by
+  # *mode_int*. Actual effects are operating system dependent (see the beginning
+  # of this section). On Unix systems, see `chmod(2)` for details. Returns the
+  # number of files processed.
+  #
+  #     File.chmod(0644, "testfile", "out")   #=> 2
+  #
+  def self.chmod: (int mode, *(string | _ToPath) file_name) -> Integer
+
+  # Changes the owner and group of the named file(s) to the given numeric owner
+  # and group id's. Only a process with superuser privileges may change the owner
+  # of a file. The current owner of a file may change the file's group to any
+  # group to which the owner belongs. A `nil` or -1 owner or group id is ignored.
+  # Returns the number of files processed.
+  #
+  #     File.chown(nil, 100, "testfile")
+  #
+  def self.chown: (int? owner, int? group, *(string | _ToPath) file_name) -> Integer
+
+  # Returns the change time for the named file (the time at which directory
+  # information about the file was changed, not the file itself).
+  #
+  # *file_name* can be an IO object.
+  #
+  # Note that on Windows (NTFS), returns creation time (birth time).
+  #
+  #     File.ctime("testfile")   #=> Wed Apr 09 08:53:13 CDT 2003
+  #
+  def self.ctime: (string | _ToPath | IO file_name) -> Time
+
+  # Deletes the named files, returning the number of names passed as arguments.
+  # Raises an exception on any error. Since the underlying implementation relies
+  # on the `unlink(2)` system call, the type of exception raised depends on its
+  # error type (see https://linux.die.net/man/2/unlink) and has the form of e.g.
+  # Errno::ENOENT.
+  #
+  # See also Dir::rmdir.
+  #
+  alias self.delete self.unlink
+
+  # Returns `true` if the named file is a directory, or a symlink that points at a
+  # directory, and `false` otherwise.
+  #
+  # *file_name* can be an IO object.
+  #
+  #     File.directory?(".")
+  #
+  def self.directory?: (string | _ToPath | IO path) -> bool
+
+  # Returns all components of the filename given in *file_name* except the last
+  # one (after first stripping trailing separators). The filename can be formed
+  # using both File::SEPARATOR and File::ALT_SEPARATOR as the separator when
+  # File::ALT_SEPARATOR is not `nil`.
+  #
+  #     File.dirname("/home/gumby/work/ruby.rb")   #=> "/home/gumby/work"
+  #
+  def self.dirname: (string | _ToPath file_name) -> String
+
+  # Returns `true` if the named file exists and has a zero size.
+  #
+  # *file_name* can be an IO object.
+  #
+  alias self.empty? self.zero?
+
+  # Returns `true` if the named file is executable by the effective user and group
+  # id of this process. See eaccess(3).
+  #
+  # Windows does not support execute permissions separately from read permissions.
+  # On Windows, a file is only considered executable if it ends in .bat, .cmd,
+  # .com, or .exe.
+  #
+  # Note that some OS-level security features may cause this to return true even
+  # though the file is not executable by the effective user/group.
+  #
+  def self.executable?: (string | _ToPath file_name) -> bool
+
+  # Returns `true` if the named file is executable by the real user and group id
+  # of this process. See access(3).
+  #
+  # Windows does not support execute permissions separately from read permissions.
+  # On Windows, a file is only considered executable if it ends in .bat, .cmd,
+  # .com, or .exe.
+  #
+  # Note that some OS-level security features may cause this to return true even
+  # though the file is not executable by the real user/group.
+  #
+  def self.executable_real?: (string | _ToPath file_name) -> bool
+
+  # Return `true` if the named file exists.
+  #
+  # *file_name* can be an IO object.
+  #
+  # "file exists" means that stat() or fstat() system call is successful.
+  #
+  def self.exist?: (string | _ToPath | IO file_name) -> bool
+
+  # Deprecated method. Don't use.
+  #
+  alias self.exists? self.exist?
+
+  # Converts a pathname to an absolute pathname. Relative paths are referenced
+  # from the current working directory of the process unless `dir_string` is
+  # given, in which case it will be used as the starting point. The given pathname
+  # may start with a ```~`'', which expands to the process owner's home directory
+  # (the environment variable `HOME` must be set correctly). ```~`*user*'' expands
+  # to the named user's home directory.
+  #
+  #     File.expand_path("~oracle/bin")           #=> "/home/oracle/bin"
+  #
+  # A simple example of using `dir_string` is as follows.
+  #     File.expand_path("ruby", "/usr/bin")      #=> "/usr/bin/ruby"
+  #
+  # A more complex example which also resolves parent directory is as follows.
+  # Suppose we are in bin/mygem and want the absolute path of lib/mygem.rb.
+  #
+  #     File.expand_path("../../lib/mygem.rb", __FILE__)
+  #     #=> ".../path/to/project/lib/mygem.rb"
+  #
+  # So first it resolves the parent of __FILE__, that is bin/, then go to the
+  # parent, the root of the project and appends `lib/mygem.rb`.
+  #
+  def self.expand_path: (string | _ToPath file_name, ?(string | _ToPath) dir_string) -> String
+
+  # Returns the extension (the portion of file name in `path` starting from the
+  # last period).
+  #
+  # If `path` is a dotfile, or starts with a period, then the starting dot is not
+  # dealt with the start of the extension.
+  #
+  # An empty string will also be returned when the period is the last character in
+  # `path`.
+  #
+  # On Windows, trailing dots are truncated.
+  #
+  #     File.extname("test.rb")         #=> ".rb"
+  #     File.extname("a/b/d/test.rb")   #=> ".rb"
+  #     File.extname(".a/b/d/test.rb")  #=> ".rb"
+  #     File.extname("foo.")            #=> "" on Windows
+  #     File.extname("foo.")            #=> "." on non-Windows
+  #     File.extname("test")            #=> ""
+  #     File.extname(".profile")        #=> ""
+  #     File.extname(".profile.sh")     #=> ".sh"
+  #
+  def self.extname: (string | _ToPath path) -> String
+
+  # Returns `true` if the named `file` exists and is a regular file.
+  #
+  # `file` can be an IO object.
+  #
+  # If the `file` argument is a symbolic link, it will resolve the symbolic link
+  # and use the file referenced by the link.
+  #
+  def self.file?: (string | _ToPath | IO file) -> bool
+
+  # Returns true if `path` matches against `pattern`.  The pattern is not a
+  # regular expression; instead it follows rules similar to shell filename
+  # globbing.  It may contain the following metacharacters:
+  #
+  # `*`
+  # :   Matches any file. Can be restricted by other values in the glob.
+  #     Equivalent to `/ .* /x` in regexp.
+  #
+  #     `*`
+  # :       Matches all files regular files
+  #     `c*`
+  # :       Matches all files beginning with `c`
+  #     `*c`
+  # :       Matches all files ending with `c`
+  #     `*c*`
+  # :       Matches all files that have `c` in them (including at the beginning or
+  #         end).
+  #
+  #
+  #     To match hidden files (that start with a `.` set the File::FNM_DOTMATCH
+  #     flag.
+  #
+  # `**`
+  # :   Matches directories recursively or files expansively.
+  #
+  # `?`
+  # :   Matches any one character. Equivalent to `/.{1}/` in regexp.
+  #
+  # `[set]`
+  # :   Matches any one character in `set`.  Behaves exactly like character sets
+  #     in Regexp, including set negation (`[^a-z]`).
+  #
+  # ` \ `
+  # :   Escapes the next metacharacter.
+  #
+  # `{a,b}`
+  # :   Matches pattern a and pattern b if File::FNM_EXTGLOB flag is enabled.
+  #     Behaves like a Regexp union (`(?:a|b)`).
+  #
+  #
+  # `flags` is a bitwise OR of the `FNM_XXX` constants. The same glob pattern and
+  # flags are used by Dir::glob.
+  #
+  # Examples:
+  #
+  #     File.fnmatch('cat',       'cat')        #=> true  # match entire string
+  #     File.fnmatch('cat',       'category')   #=> false # only match partial string
+  #
+  #     File.fnmatch('c{at,ub}s', 'cats')                    #=> false # { } isn't supported by default
+  #     File.fnmatch('c{at,ub}s', 'cats', File::FNM_EXTGLOB) #=> true  # { } is supported on FNM_EXTGLOB
+  #
+  #     File.fnmatch('c?t',     'cat')          #=> true  # '?' match only 1 character
+  #     File.fnmatch('c??t',    'cat')          #=> false # ditto
+  #     File.fnmatch('c*',      'cats')         #=> true  # '*' match 0 or more characters
+  #     File.fnmatch('c*t',     'c/a/b/t')      #=> true  # ditto
+  #     File.fnmatch('ca[a-z]', 'cat')          #=> true  # inclusive bracket expression
+  #     File.fnmatch('ca[^t]',  'cat')          #=> false # exclusive bracket expression ('^' or '!')
+  #
+  #     File.fnmatch('cat', 'CAT')                     #=> false # case sensitive
+  #     File.fnmatch('cat', 'CAT', File::FNM_CASEFOLD) #=> true  # case insensitive
+  #     File.fnmatch('cat', 'CAT', File::FNM_SYSCASE)  #=> true or false # depends on the system default
+  #
+  #     File.fnmatch('?',   '/', File::FNM_PATHNAME)  #=> false # wildcard doesn't match '/' on FNM_PATHNAME
+  #     File.fnmatch('*',   '/', File::FNM_PATHNAME)  #=> false # ditto
+  #     File.fnmatch('[/]', '/', File::FNM_PATHNAME)  #=> false # ditto
+  #
+  #     File.fnmatch('\?',   '?')                       #=> true  # escaped wildcard becomes ordinary
+  #     File.fnmatch('\a',   'a')                       #=> true  # escaped ordinary remains ordinary
+  #     File.fnmatch('\a',   '\a', File::FNM_NOESCAPE)  #=> true  # FNM_NOESCAPE makes '\' ordinary
+  #     File.fnmatch('[\?]', '?')                       #=> true  # can escape inside bracket expression
+  #
+  #     File.fnmatch('*',   '.profile')                      #=> false # wildcard doesn't match leading
+  #     File.fnmatch('*',   '.profile', File::FNM_DOTMATCH)  #=> true  # period by default.
+  #     File.fnmatch('.*',  '.profile')                      #=> true
+  #
+  #     rbfiles = '**' '/' '*.rb' # you don't have to do like this. just write in single string.
+  #     File.fnmatch(rbfiles, 'main.rb')                    #=> false
+  #     File.fnmatch(rbfiles, './main.rb')                  #=> false
+  #     File.fnmatch(rbfiles, 'lib/song.rb')                #=> true
+  #     File.fnmatch('**.rb', 'main.rb')                    #=> true
+  #     File.fnmatch('**.rb', './main.rb')                  #=> false
+  #     File.fnmatch('**.rb', 'lib/song.rb')                #=> true
+  #     File.fnmatch('*',           'dave/.profile')                      #=> true
+  #
+  #     pattern = '*' '/' '*'
+  #     File.fnmatch(pattern, 'dave/.profile', File::FNM_PATHNAME)  #=> false
+  #     File.fnmatch(pattern, 'dave/.profile', File::FNM_PATHNAME | File::FNM_DOTMATCH) #=> true
+  #
+  #     pattern = '**' '/' 'foo'
+  #     File.fnmatch(pattern, 'a/b/c/foo', File::FNM_PATHNAME)     #=> true
+  #     File.fnmatch(pattern, '/a/b/c/foo', File::FNM_PATHNAME)    #=> true
+  #     File.fnmatch(pattern, 'c:/a/b/c/foo', File::FNM_PATHNAME)  #=> true
+  #     File.fnmatch(pattern, 'a/.b/c/foo', File::FNM_PATHNAME)    #=> false
+  #     File.fnmatch(pattern, 'a/.b/c/foo', File::FNM_PATHNAME | File::FNM_DOTMATCH) #=> true
+  #
+  def self.fnmatch: (string pattern, string | _ToPath path, ?int flags) -> bool
+
+  # Returns true if `path` matches against `pattern`.  The pattern is not a
+  # regular expression; instead it follows rules similar to shell filename
+  # globbing.  It may contain the following metacharacters:
+  #
+  # `*`
+  # :   Matches any file. Can be restricted by other values in the glob.
+  #     Equivalent to `/ .* /x` in regexp.
+  #
+  #     `*`
+  # :       Matches all files regular files
+  #     `c*`
+  # :       Matches all files beginning with `c`
+  #     `*c`
+  # :       Matches all files ending with `c`
+  #     `*c*`
+  # :       Matches all files that have `c` in them (including at the beginning or
+  #         end).
+  #
+  #
+  #     To match hidden files (that start with a `.` set the File::FNM_DOTMATCH
+  #     flag.
+  #
+  # `**`
+  # :   Matches directories recursively or files expansively.
+  #
+  # `?`
+  # :   Matches any one character. Equivalent to `/.{1}/` in regexp.
+  #
+  # `[set]`
+  # :   Matches any one character in `set`.  Behaves exactly like character sets
+  #     in Regexp, including set negation (`[^a-z]`).
+  #
+  # ` \ `
+  # :   Escapes the next metacharacter.
+  #
+  # `{a,b}`
+  # :   Matches pattern a and pattern b if File::FNM_EXTGLOB flag is enabled.
+  #     Behaves like a Regexp union (`(?:a|b)`).
+  #
+  #
+  # `flags` is a bitwise OR of the `FNM_XXX` constants. The same glob pattern and
+  # flags are used by Dir::glob.
+  #
+  # Examples:
+  #
+  #     File.fnmatch('cat',       'cat')        #=> true  # match entire string
+  #     File.fnmatch('cat',       'category')   #=> false # only match partial string
+  #
+  #     File.fnmatch('c{at,ub}s', 'cats')                    #=> false # { } isn't supported by default
+  #     File.fnmatch('c{at,ub}s', 'cats', File::FNM_EXTGLOB) #=> true  # { } is supported on FNM_EXTGLOB
+  #
+  #     File.fnmatch('c?t',     'cat')          #=> true  # '?' match only 1 character
+  #     File.fnmatch('c??t',    'cat')          #=> false # ditto
+  #     File.fnmatch('c*',      'cats')         #=> true  # '*' match 0 or more characters
+  #     File.fnmatch('c*t',     'c/a/b/t')      #=> true  # ditto
+  #     File.fnmatch('ca[a-z]', 'cat')          #=> true  # inclusive bracket expression
+  #     File.fnmatch('ca[^t]',  'cat')          #=> false # exclusive bracket expression ('^' or '!')
+  #
+  #     File.fnmatch('cat', 'CAT')                     #=> false # case sensitive
+  #     File.fnmatch('cat', 'CAT', File::FNM_CASEFOLD) #=> true  # case insensitive
+  #     File.fnmatch('cat', 'CAT', File::FNM_SYSCASE)  #=> true or false # depends on the system default
+  #
+  #     File.fnmatch('?',   '/', File::FNM_PATHNAME)  #=> false # wildcard doesn't match '/' on FNM_PATHNAME
+  #     File.fnmatch('*',   '/', File::FNM_PATHNAME)  #=> false # ditto
+  #     File.fnmatch('[/]', '/', File::FNM_PATHNAME)  #=> false # ditto
+  #
+  #     File.fnmatch('\?',   '?')                       #=> true  # escaped wildcard becomes ordinary
+  #     File.fnmatch('\a',   'a')                       #=> true  # escaped ordinary remains ordinary
+  #     File.fnmatch('\a',   '\a', File::FNM_NOESCAPE)  #=> true  # FNM_NOESCAPE makes '\' ordinary
+  #     File.fnmatch('[\?]', '?')                       #=> true  # can escape inside bracket expression
+  #
+  #     File.fnmatch('*',   '.profile')                      #=> false # wildcard doesn't match leading
+  #     File.fnmatch('*',   '.profile', File::FNM_DOTMATCH)  #=> true  # period by default.
+  #     File.fnmatch('.*',  '.profile')                      #=> true
+  #
+  #     rbfiles = '**' '/' '*.rb' # you don't have to do like this. just write in single string.
+  #     File.fnmatch(rbfiles, 'main.rb')                    #=> false
+  #     File.fnmatch(rbfiles, './main.rb')                  #=> false
+  #     File.fnmatch(rbfiles, 'lib/song.rb')                #=> true
+  #     File.fnmatch('**.rb', 'main.rb')                    #=> true
+  #     File.fnmatch('**.rb', './main.rb')                  #=> false
+  #     File.fnmatch('**.rb', 'lib/song.rb')                #=> true
+  #     File.fnmatch('*',           'dave/.profile')                      #=> true
+  #
+  #     pattern = '*' '/' '*'
+  #     File.fnmatch(pattern, 'dave/.profile', File::FNM_PATHNAME)  #=> false
+  #     File.fnmatch(pattern, 'dave/.profile', File::FNM_PATHNAME | File::FNM_DOTMATCH) #=> true
+  #
+  #     pattern = '**' '/' 'foo'
+  #     File.fnmatch(pattern, 'a/b/c/foo', File::FNM_PATHNAME)     #=> true
+  #     File.fnmatch(pattern, '/a/b/c/foo', File::FNM_PATHNAME)    #=> true
+  #     File.fnmatch(pattern, 'c:/a/b/c/foo', File::FNM_PATHNAME)  #=> true
+  #     File.fnmatch(pattern, 'a/.b/c/foo', File::FNM_PATHNAME)    #=> false
+  #     File.fnmatch(pattern, 'a/.b/c/foo', File::FNM_PATHNAME | File::FNM_DOTMATCH) #=> true
+  #
+  alias self.fnmatch? self.fnmatch
+
+  # Identifies the type of the named file; the return string is one of ```file`'',
+  # ```directory`'', ```characterSpecial`'', ```blockSpecial`'', ```fifo`'',
+  # ```link`'', ```socket`'', or ```unknown`''.
+  #
+  #     File.ftype("testfile")            #=> "file"
+  #     File.ftype("/dev/tty")            #=> "characterSpecial"
+  #     File.ftype("/tmp/.X11-unix/X0")   #=> "socket"
+  #
+  def self.ftype: (string | _ToPath file_name) -> String
+
+  # Returns `true` if the named file exists and the effective group id of the
+  # calling process is the owner of the file. Returns `false` on Windows.
+  #
+  # *file_name* can be an IO object.
+  #
+  def self.grpowned?: (string | _ToPath | IO file_name) -> bool
+
+  # Returns `true` if the named files are identical.
+  #
+  # *file_1* and *file_2* can be an IO object.
+  #
+  #     open("a", "w") {}
+  #     p File.identical?("a", "a")      #=> true
+  #     p File.identical?("a", "./a")    #=> true
+  #     File.link("a", "b")
+  #     p File.identical?("a", "b")      #=> true
+  #     File.symlink("a", "c")
+  #     p File.identical?("a", "c")      #=> true
+  #     open("d", "w") {}
+  #     p File.identical?("a", "d")      #=> false
+  #
+  def self.identical?: (string | _ToPath | IO file_1, string | _ToPath | IO file_2) -> bool
+
+  # Returns a new string formed by joining the strings using `"/"`.
+  #
+  #     File.join("usr", "mail", "gumby")   #=> "usr/mail/gumby"
+  #
+  def self.join: (*string) -> String
+
+  # Equivalent to File::chmod, but does not follow symbolic links (so it will
+  # change the permissions associated with the link, not the file referenced by
+  # the link). Often not available.
+  #
+  def self.lchmod: (int mode, *(string | _ToPath) file_name) -> Integer
+
+  # Equivalent to File::chown, but does not follow symbolic links (so it will
+  # change the owner associated with the link, not the file referenced by the
+  # link). Often not available. Returns number of files in the argument list.
+  #
+  def self.lchown: (int? owner, int? group, *(string | _ToPath) file_name) -> Integer
+
+  # Creates a new name for an existing file using a hard link. Will not overwrite
+  # *new_name* if it already exists (raising a subclass of SystemCallError). Not
+  # available on all platforms.
+  #
+  #     File.link("testfile", ".testfile")   #=> 0
+  #     IO.readlines(".testfile")[0]         #=> "This is line one\n"
+  #
+  def self.link: (string | _ToPath old_name, string | _ToPath new_name) -> 0
+
+  # Same as File::stat, but does not follow the last symbolic link. Instead,
+  # reports on the link itself.
+  #
+  #     File.symlink("testfile", "link2test")   #=> 0
+  #     File.stat("testfile").size              #=> 66
+  #     File.lstat("link2test").size            #=> 8
+  #     File.stat("link2test").size             #=> 66
+  #
+  def self.lstat: (string | _ToPath file_name) -> File::Stat
+
+  # Sets the access and modification times of each named file to the first two
+  # arguments. If a file is a symlink, this method acts upon the link itself as
+  # opposed to its referent; for the inverse behavior, see File.utime. Returns the
+  # number of file names in the argument list.
+  #
+  def self.lutime: ((Time | Numeric) atime, (Time | Numeric) mtime, *(string | _ToPath) file_name) -> Integer
+
+  # Creates a FIFO special file with name *file_name*.  *mode* specifies the
+  # FIFO's permissions. It is modified by the process's umask in the usual way:
+  # the permissions of the created file are (mode & ~umask).
+  #
+  def self.mkfifo: ((string | _ToPath) file_name, ?int mode) -> 0
+
+  # Returns the modification time for the named file as a Time object.
+  #
+  # *file_name* can be an IO object.
+  #
+  #     File.mtime("testfile")   #=> Tue Apr 08 12:58:04 CDT 2003
+  #
+  def self.mtime: (string | _ToPath | IO file_name) -> Time
+
+  # Returns `true` if the named file exists and the effective used id of the
+  # calling process is the owner of the file.
+  #
+  # *file_name* can be an IO object.
+  #
+  def self.owned?: (string | _ToPath | IO file_name) -> bool
+
+  # Returns the string representation of the path
+  #
+  #     File.path("/dev/null")          #=> "/dev/null"
+  #     File.path(Pathname.new("/tmp")) #=> "/tmp"
+  #
+  def self.path: (string | _ToPath path) -> String
+
+  # Returns `true` if the named file is a pipe.
+  #
+  # *file_name* can be an IO object.
+  #
+  def self.pipe?: (string | _ToPath | IO file_name) -> bool
+
+  # Returns `true` if the named file is readable by the effective user and group
+  # id of this process. See eaccess(3).
+  #
+  # Note that some OS-level security features may cause this to return true even
+  # though the file is not readable by the effective user/group.
+  #
+  def self.readable?: (string | _ToPath file_name) -> bool
+
+  # Returns `true` if the named file is readable by the real user and group id of
+  # this process. See access(3).
+  #
+  # Note that some OS-level security features may cause this to return true even
+  # though the file is not readable by the real user/group.
+  #
+  def self.readable_real?: (string | _ToPath file_name) -> bool
+
+  # Returns the name of the file referenced by the given link. Not available on
+  # all platforms.
+  #
+  #     File.symlink("testfile", "link2test")   #=> 0
+  #     File.readlink("link2test")              #=> "testfile"
+  #
+  def self.readlink: (string | _ToPath link_name) -> String
+
+  # Returns the real (absolute) pathname of *pathname* in the actual filesystem.
+  # The real pathname doesn't contain symlinks or useless dots.
+  #
+  # If *dir_string* is given, it is used as a base directory for interpreting
+  # relative pathname instead of the current directory.
+  #
+  # The last component of the real pathname can be nonexistent.
+  #
+  def self.realdirpath: (string | _ToPath pathname, ?(string | _ToPath) dir_string) -> String
+
+  # Returns the real (absolute) pathname of *pathname* in the actual filesystem
+  # not containing symlinks or useless dots.
+  #
+  # If *dir_string* is given, it is used as a base directory for interpreting
+  # relative pathname instead of the current directory.
+  #
+  # All components of the pathname must exist when this method is called.
+  #
+  def self.realpath: (string | _ToPath pathname, ?(string | _ToPath) dir_string) -> String
+
+  # Renames the given file to the new name. Raises a SystemCallError if the file
+  # cannot be renamed.
+  #
+  #     File.rename("afile", "afile.bak")   #=> 0
+  #
+  def self.rename: (string | _ToPath old_name, string | _ToPath new_name) -> 0
+
+  # Returns `true` if the named file has the setgid bit set.
+  #
+  # *file_name* can be an IO object.
+  #
+  def self.setgid?: (string | _ToPath | IO file_name) -> bool
+
+  # Returns `true` if the named file has the setuid bit set.
+  #
+  # *file_name* can be an IO object.
+  #
+  def self.setuid?: (string | _ToPath | IO file_name) -> bool
+
+  # Returns the size of `file_name`.
+  #
+  # *file_name* can be an IO object.
+  #
+  def self.size: (string | _ToPath | IO file_name) -> Integer
+
+  # Returns `nil` if `file_name` doesn't exist or has zero size, the size of the
+  # file otherwise.
+  #
+  # *file_name* can be an IO object.
+  #
+  def self.size?: (string | _ToPath | IO file_name) -> Integer?
+
+  # Returns `true` if the named file is a socket.
+  #
+  # *file_name* can be an IO object.
+  #
+  def self.socket?: (string | _ToPath | IO file_name) -> bool
+
+  # Splits the given string into a directory and a file component and returns them
+  # in a two-element array. See also File::dirname and File::basename.
+  #
+  #     File.split("/home/gumby/.profile")   #=> ["/home/gumby", ".profile"]
+  #
+  def self.split: (string | _ToPath file_name) -> [String, String]
+
+  # Returns a File::Stat object for the named file (see File::Stat).
+  #
+  #     File.stat("testfile").mtime   #=> Tue Apr 08 12:58:04 CDT 2003
+  #
+  def self.stat: (string | _ToPath file_name) -> File::Stat
+
+  # Returns `true` if the named file has the sticky bit set.
+  #
+  # *file_name* can be an IO object.
+  #
+  def self.sticky?: (string | _ToPath | IO file_name) -> bool
+
+  # Creates a symbolic link called *new_name* for the existing file *old_name*.
+  # Raises a NotImplemented exception on platforms that do not support symbolic
+  # links.
+  #
+  #     File.symlink("testfile", "link2test")   #=> 0
+  #
+  def self.symlink: (string | _ToPath old_name, string | _ToPath new_name) -> 0
+
+  # Returns `true` if the named file is a symbolic link.
+  #
+  def self.symlink?: (string | _ToPath file_name) -> bool
+
+  # Truncates the file *file_name* to be at most *integer* bytes long. Not
+  # available on all platforms.
+  #
+  #     f = File.new("out", "w")
+  #     f.write("1234567890")     #=> 10
+  #     f.close                   #=> nil
+  #     File.truncate("out", 5)   #=> 0
+  #     File.size("out")          #=> 5
+  #
+  def self.truncate: (string | _ToPath file_name, int length) -> 0
+
+  # Returns the current umask value for this process. If the optional argument is
+  # given, set the umask to that value and return the previous value. Umask values
+  # are *subtracted* from the default permissions, so a umask of `0222` would make
+  # a file read-only for everyone.
+  #
+  #     File.umask(0006)   #=> 18
+  #     File.umask         #=> 6
+  #
+  def self.umask: (?int umask) -> Integer
+
+  # Deletes the named files, returning the number of names passed as arguments.
+  # Raises an exception on any error. Since the underlying implementation relies
+  # on the `unlink(2)` system call, the type of exception raised depends on its
+  # error type (see https://linux.die.net/man/2/unlink) and has the form of e.g.
+  # Errno::ENOENT.
+  #
+  # See also Dir::rmdir.
+  #
+  def self.unlink: (*(string | _ToPath) file_name) -> Integer
+
+  # Sets the access and modification times of each named file to the first two
+  # arguments. If a file is a symlink, this method acts upon its referent rather
+  # than the link itself; for the inverse behavior see File.lutime. Returns the
+  # number of file names in the argument list.
+  #
+  def self.utime: ((Time | Numeric) atime, (Time | Numeric) mtime, *(string | _ToPath) file_name) -> Integer
+
+  # If *file_name* is readable by others, returns an integer representing the file
+  # permission bits of *file_name*. Returns `nil` otherwise. The meaning of the
+  # bits is platform dependent; on Unix systems, see `stat(2)`.
+  #
+  # *file_name* can be an IO object.
+  #
+  #     File.world_readable?("/etc/passwd")           #=> 420
+  #     m = File.world_readable?("/etc/passwd")
+  #     sprintf("%o", m)                              #=> "644"
+  #
+  def self.world_readable?: (string | _ToPath | IO file_name) -> Integer?
+
+  # If *file_name* is writable by others, returns an integer representing the file
+  # permission bits of *file_name*. Returns `nil` otherwise. The meaning of the
+  # bits is platform dependent; on Unix systems, see `stat(2)`.
+  #
+  # *file_name* can be an IO object.
+  #
+  #     File.world_writable?("/tmp")                  #=> 511
+  #     m = File.world_writable?("/tmp")
+  #     sprintf("%o", m)                              #=> "777"
+  #
+  def self.world_writable?: (string | _ToPath | IO file_name) -> Integer?
+
+  # Returns `true` if the named file is writable by the effective user and group
+  # id of this process. See eaccess(3).
+  #
+  # Note that some OS-level security features may cause this to return true even
+  # though the file is not writable by the effective user/group.
+  #
+  def self.writable?: (string | _ToPath file_name) -> bool
+
+  # Returns `true` if the named file is writable by the real user and group id of
+  # this process. See access(3).
+  #
+  # Note that some OS-level security features may cause this to return true even
+  # though the file is not writable by the real user/group.
+  #
+  def self.writable_real?: (string | _ToPath file_name) -> bool
+
+  # Returns `true` if the named file exists and has a zero size.
+  #
+  # *file_name* can be an IO object.
+  #
+  def self.zero?: (string | _ToPath | IO file_name) -> bool
+
+  public
+
+  # Returns the last access time (a Time object) for *file*, or epoch if *file*
+  # has not been accessed.
+  #
+  #     File.new("testfile").atime   #=> Wed Dec 31 18:00:00 CST 1969
+  #
+  def atime: () -> Time
+
+  # Returns the birth time for *file*.
+  #
+  #     File.new("testfile").birthtime   #=> Wed Apr 09 08:53:14 CDT 2003
+  #
+  # If the platform doesn't have birthtime, raises NotImplementedError.
+  #
+  def birthtime: () -> Time
+
+  # Changes permission bits on *file* to the bit pattern represented by
+  # *mode_int*. Actual effects are platform dependent; on Unix systems, see
+  # `chmod(2)` for details. Follows symbolic links. Also see File#lchmod.
+  #
+  #     f = File.new("out", "w");
+  #     f.chmod(0644)   #=> 0
+  #
+  def chmod: (int mode) -> (0 | nil)
+
+  # Changes the owner and group of *file* to the given numeric owner and group
+  # id's. Only a process with superuser privileges may change the owner of a file.
+  # The current owner of a file may change the file's group to any group to which
+  # the owner belongs. A `nil` or -1 owner or group id is ignored. Follows
+  # symbolic links. See also File#lchown.
+  #
+  #     File.new("testfile").chown(502, 1000)
+  #
+  def chown: (int? owner, int? group) -> (0 | nil)
+
+  # Returns the change time for *file* (that is, the time directory information
+  # about the file was changed, not the file itself).
+  #
+  # Note that on Windows (NTFS), returns creation time (birth time).
+  #
+  #     File.new("testfile").ctime   #=> Wed Apr 09 08:53:14 CDT 2003
+  #
+  def ctime: () -> Time
+
+  # Locks or unlocks a file according to *locking_constant* (a logical *or* of the
+  # values in the table below). Returns `false` if File::LOCK_NB is specified and
+  # the operation would otherwise have blocked. Not available on all platforms.
+  #
+  # Locking constants (in class File):
+  #
+  #     LOCK_EX   | Exclusive lock. Only one process may hold an
+  #               | exclusive lock for a given file at a time.
+  #     ----------+------------------------------------------------
+  #     LOCK_NB   | Don't block when locking. May be combined
+  #               | with other lock options using logical or.
+  #     ----------+------------------------------------------------
+  #     LOCK_SH   | Shared lock. Multiple processes may each hold a
+  #               | shared lock for a given file at the same time.
+  #     ----------+------------------------------------------------
+  #     LOCK_UN   | Unlock.
+  #
+  # Example:
+  #
+  #     # update a counter using write lock
+  #     # don't use "w" because it truncates the file before lock.
+  #     File.open("counter", File::RDWR|File::CREAT, 0644) {|f|
+  #       f.flock(File::LOCK_EX)
+  #       value = f.read.to_i + 1
+  #       f.rewind
+  #       f.write("#{value}\n")
+  #       f.flush
+  #       f.truncate(f.pos)
+  #     }
+  #
+  #     # read the counter using read lock
+  #     File.open("counter", "r") {|f|
+  #       f.flock(File::LOCK_SH)
+  #       p f.read
+  #     }
+  #
+  def flock: (int locking_constant) -> (0 | false)
+
+  # Same as IO#stat, but does not follow the last symbolic link. Instead, reports
+  # on the link itself.
+  #
+  #     File.symlink("testfile", "link2test")   #=> 0
+  #     File.stat("testfile").size              #=> 66
+  #     f = File.new("link2test")
+  #     f.lstat.size                            #=> 8
+  #     f.stat.size                             #=> 66
+  #
+  def lstat: () -> (File::Stat | nil)
+
+  # Returns the modification time for *file*.
+  #
+  #     File.new("testfile").mtime   #=> Wed Apr 09 08:53:14 CDT 2003
+  #
+  def mtime: () -> Time
+
+  # Returns the pathname used to create *file* as a string. Does not normalize the
+  # name.
+  #
+  # The pathname may not point to the file corresponding to *file*. For instance,
+  # the pathname becomes void when the file has been moved or deleted.
+  #
+  # This method raises IOError for a *file* created using File::Constants::TMPFILE
+  # because they don't have a pathname.
+  #
+  #     File.new("testfile").path               #=> "testfile"
+  #     File.new("/tmp/../tmp/xxx", "w").path   #=> "/tmp/../tmp/xxx"
+  #
+  def path: () -> String
+
+  # Returns the size of *file* in bytes.
+  #
+  #     File.new("testfile").size   #=> 66
+  #
+  def size: () -> Integer
+
+  # Returns the pathname used to create *file* as a string. Does not normalize the
+  # name.
+  #
+  # The pathname may not point to the file corresponding to *file*. For instance,
+  # the pathname becomes void when the file has been moved or deleted.
+  #
+  # This method raises IOError for a *file* created using File::Constants::TMPFILE
+  # because they don't have a pathname.
+  #
+  #     File.new("testfile").path               #=> "testfile"
+  #     File.new("/tmp/../tmp/xxx", "w").path   #=> "/tmp/../tmp/xxx"
+  #
+  alias to_path path
+
+  # Truncates *file* to at most *integer* bytes. The file must be opened for
+  # writing. Not available on all platforms.
+  #
+  #     f = File.new("out", "w")
+  #     f.syswrite("1234567890")   #=> 10
+  #     f.truncate(5)              #=> 0
+  #     f.close()                  #=> nil
+  #     File.size("out")           #=> 5
+  #
+  def truncate: (int length) -> 0
+end
+
+# platform specific alternative separator
+#
+#
+File::ALT_SEPARATOR: String?
+
+# path list separator
+#
+#
+File::PATH_SEPARATOR: String
+
+# separates directory parts in path
+#
+#
+File::SEPARATOR: String
+
+# separates directory parts in path
+#
+#
+File::Separator: String
+
+module File::Constants
+end
+
+File::Constants::APPEND: Integer
+
+File::Constants::BINARY: Integer
+
+File::Constants::CREAT: Integer
+
+File::Constants::DIRECT: Integer
+
+File::Constants::DSYNC: Integer
+
+File::Constants::EXCL: Integer
+
+File::Constants::FNM_CASEFOLD: Integer
+
+File::Constants::FNM_DOTMATCH: Integer
+
+File::Constants::FNM_EXTGLOB: Integer
+
+File::Constants::FNM_NOESCAPE: Integer
+
+File::Constants::FNM_PATHNAME: Integer
+
+File::Constants::FNM_SHORTNAME: Integer
+
+File::Constants::FNM_SYSCASE: Integer
+
+File::Constants::LOCK_EX: Integer
+
+File::Constants::LOCK_NB: Integer
+
+File::Constants::LOCK_SH: Integer
+
+File::Constants::LOCK_UN: Integer
+
+File::Constants::NOATIME: Integer
+
+File::Constants::NOCTTY: Integer
+
+File::Constants::NOFOLLOW: Integer
+
+File::Constants::NONBLOCK: Integer
+
+File::Constants::NULL: String
+
+File::Constants::RDONLY: Integer
+
+File::Constants::RDWR: Integer
+
+File::Constants::RSYNC: Integer
+
+File::Constants::SHARE_DELETE: Integer
+
+File::Constants::SYNC: Integer
+
+File::Constants::TMPFILE: Integer
+
+File::Constants::TRUNC: Integer
+
+File::Constants::WRONLY: Integer
+
+class File::Stat < Object
+  include Comparable
+
+  def initialize: (String file) -> Object
+  def <=>: (File::Stat other) -> Integer?
+
+  def atime: () -> Time
+
+  def birthtime: () -> Time
+
+  def blksize: () -> Integer?
+
+  def blockdev?: () -> bool
+
+  def blocks: () -> Integer?
+
+  def chardev?: () -> bool
+
+  def ctime: () -> Time
+
+  def dev: () -> Integer
+
+  def dev_major: () -> Integer
+
+  def dev_minor: () -> Integer
+
+  def directory?: () -> bool
+
+  def executable?: () -> bool
+
+  def executable_real?: () -> bool
+
+  def file?: () -> bool
+
+  def ftype: () -> String
+
+  def gid: () -> Integer
+
+  def grpowned?: () -> bool
+
+  def ino: () -> Integer
+
+  def inspect: () -> String
+
+  def mode: () -> Integer
+
+  def mtime: () -> Time
+
+  def nlink: () -> Integer
+
+  def owned?: () -> bool
+
+  def pipe?: () -> bool
+
+  def rdev: () -> Integer?
+
+  def rdev_major: () -> Integer
+
+  def rdev_minor: () -> Integer
+
+  def read: (?Integer length, ?String outbuf) -> String
+
+  def readable?: () -> bool
+
+  def readable_real?: () -> bool
+
+  def setgid?: () -> bool
+
+  def setuid?: () -> bool
+
+  def size: () -> Integer
+
+  def socket?: () -> bool
+
+  def sticky?: () -> bool
+
+  def symlink?: () -> bool
+
+  def uid: () -> Integer
+
+  def world_readable?: () -> Integer?
+
+  def world_writable?: () -> Integer?
+
+  def writable?: () -> bool
+
+  def writable_real?: () -> bool
+
+  def zero?: () -> bool
+end

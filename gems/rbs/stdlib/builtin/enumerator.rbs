@@ -1,0 +1,260 @@
+# A class which allows both internal and external iteration.
+# 
+# An [Enumerator](Enumerator) can be created by the
+# following methods.
+# 
+#   - Kernel\#to\_enum
+# 
+#   - Kernel\#enum\_for
+# 
+#   - [::new](Enumerator#method-c-new)
+# 
+# Most methods have two forms: a block form where the contents are
+# evaluated for each item in the enumeration, and a non-block form which
+# returns a new [Enumerator](Enumerator) wrapping the
+# iteration.
+# 
+# ```ruby
+# enumerator = %w(one two three).each
+# puts enumerator.class # => Enumerator
+# 
+# enumerator.each_with_object("foo") do |item, obj|
+#   puts "#{obj}: #{item}"
+# end
+# 
+# # foo: one
+# # foo: two
+# # foo: three
+# 
+# enum_with_obj = enumerator.each_with_object("foo")
+# puts enum_with_obj.class # => Enumerator
+# 
+# enum_with_obj.each do |item, obj|
+#   puts "#{obj}: #{item}"
+# end
+# 
+# # foo: one
+# # foo: two
+# # foo: three
+# ```
+# 
+# This allows you to chain Enumerators together. For example, you can map
+# a list's elements to strings containing the index and the element as a
+# string via:
+# 
+# ```ruby
+# puts %w[foo bar baz].map.with_index { |w, i| "#{i}:#{w}" }
+# # => ["0:foo", "1:bar", "2:baz"]
+# ```
+# 
+# An [Enumerator](Enumerator) can also be used as an
+# external iterator. For example,
+# [\#next](Enumerator#method-i-next) returns the next
+# value of the iterator or raises
+# [StopIteration](https://ruby-doc.org/core-2.6.3/StopIteration.html) if
+# the [Enumerator](Enumerator) is at the end.
+# 
+# ```ruby
+# e = [1,2,3].each   # returns an enumerator object.
+# puts e.next   # => 1
+# puts e.next   # => 2
+# puts e.next   # => 3
+# puts e.next   # raises StopIteration
+# ```
+# 
+# You can use this to implement an internal iterator as follows:
+# 
+# ```ruby
+# def ext_each(e)
+#   while true
+#     begin
+#       vs = e.next_values
+#     rescue StopIteration
+#       return $!.result
+#     end
+#     y = yield(*vs)
+#     e.feed y
+#   end
+# end
+# 
+# o = Object.new
+# 
+# def o.each
+#   puts yield
+#   puts yield(1)
+#   puts yield(1, 2)
+#   3
+# end
+# 
+# # use o.each as an internal iterator directly.
+# puts o.each {|*x| puts x; [:b, *x] }
+# # => [], [:b], [1], [:b, 1], [1, 2], [:b, 1, 2], 3
+# 
+# # convert o.each to an external iterator for
+# # implementing an internal iterator.
+# puts ext_each(o.to_enum) {|*x| puts x; [:b, *x] }
+# # => [], [:b], [1], [:b, 1], [1, 2], [:b, 1, 2], 3
+# ```
+class Enumerator[unchecked out Elem, out Return] < Object
+  include Enumerable[Elem, Return]
+
+  def each: () { (Elem arg0) -> untyped } -> Return
+          | () -> self
+
+  def feed: (Elem arg0) -> NilClass
+
+  def initialize: (?Integer arg0) { (Enumerator::Yielder arg0) -> void } -> void
+
+  # Creates a printable version of *e* .
+  def inspect: () -> String
+
+  # Returns the next object in the enumerator, and move the internal
+  # position forward. When the position reached at the end,
+  # [StopIteration](https://ruby-doc.org/core-2.6.3/StopIteration.html) is
+  # raised.
+  # 
+  # 
+  # ```ruby
+  # a = [1,2,3]
+  # e = a.to_enum
+  # p e.next   #=> 1
+  # p e.next   #=> 2
+  # p e.next   #=> 3
+  # p e.next   #raises StopIteration
+  # ```
+  # 
+  # Note that enumeration sequence by `next` does not affect other
+  # non-external enumeration methods, unless the underlying iteration
+  # methods itself has side-effect, e.g.
+  # [IO\#each\_line](https://ruby-doc.org/core-2.6.3/IO.html#method-i-each_line)
+  # .
+  def next: () -> Elem
+
+  # Returns the next object as an array in the enumerator, and move the
+  # internal position forward. When the position reached at the end,
+  # [StopIteration](https://ruby-doc.org/core-2.6.3/StopIteration.html) is
+  # raised.
+  # 
+  # This method can be used to distinguish `yield` and `yield nil` .
+  # 
+  # 
+  # ```ruby
+  # o = Object.new
+  # def o.each
+  #   yield
+  #   yield 1
+  #   yield 1, 2
+  #   yield nil
+  #   yield [1, 2]
+  # end
+  # e = o.to_enum
+  # p e.next_values
+  # p e.next_values
+  # p e.next_values
+  # p e.next_values
+  # p e.next_values
+  # e = o.to_enum
+  # p e.next
+  # p e.next
+  # p e.next
+  # p e.next
+  # p e.next
+  # 
+  # ## yield args       next_values      next
+  # #  yield            []               nil
+  # #  yield 1          [1]              1
+  # #  yield 1, 2       [1, 2]           [1, 2]
+  # #  yield nil        [nil]            nil
+  # #  yield [1, 2]     [[1, 2]]         [1, 2]
+  # ```
+  # 
+  # Note that `next_values` does not affect other non-external enumeration
+  # methods unless underlying iteration method itself has side-effect, e.g.
+  # [IO\#each\_line](https://ruby-doc.org/core-2.6.3/IO.html#method-i-each_line)
+  # .
+  def next_values: () -> ::Array[Elem]
+
+  # Returns the next object in the enumerator, but doesn’t move the internal
+  # position forward. If the position is already at the end,
+  # [StopIteration](https://ruby-doc.org/core-2.6.3/StopIteration.html) is
+  # raised.
+  # 
+  # 
+  # ```ruby
+  # a = [1,2,3]
+  # e = a.to_enum
+  # p e.next   #=> 1
+  # p e.peek   #=> 2
+  # p e.peek   #=> 2
+  # p e.peek   #=> 2
+  # p e.next   #=> 2
+  # p e.next   #=> 3
+  # p e.peek   #raises StopIteration
+  # ```
+  def peek: () -> Elem
+
+  # Returns the next object as an array, similar to
+  # [\#next\_values](Enumerator.downloaded.ruby_doc#method-i-next_values),
+  # but doesn’t move the internal position forward. If the position is
+  # already at the end,
+  # [StopIteration](https://ruby-doc.org/core-2.6.3/StopIteration.html) is
+  # raised.
+  # 
+  # 
+  # ```ruby
+  # o = Object.new
+  # def o.each
+  #   yield
+  #   yield 1
+  #   yield 1, 2
+  # end
+  # e = o.to_enum
+  # p e.peek_values    #=> []
+  # e.next
+  # p e.peek_values    #=> [1]
+  # p e.peek_values    #=> [1]
+  # e.next
+  # p e.peek_values    #=> [1, 2]
+  # e.next
+  # p e.peek_values    # raises StopIteration
+  # ```
+  def peek_values: () -> ::Array[Elem]
+
+  # Rewinds the enumeration sequence to the beginning.
+  # 
+  # If the enclosed object responds to a “rewind” method, it is called.
+  def rewind: () -> self
+
+  # Returns the size of the enumerator, or `nil` if it can’t be calculated
+  # lazily.
+  # 
+  # ```ruby
+  # (1..100).to_a.permutation(4).size # => 94109400
+  # loop.size # => Float::INFINITY
+  # (1..100).drop_while.size # => nil
+  # ```
+  def size: () -> (Integer | Float)?
+
+  def with_index: (?Integer offset) { (Elem arg0, Integer arg1) -> untyped } -> Return
+                | (?Integer offset) -> ::Enumerator[[ Elem, Integer ], Return]
+
+  def with_object: [U] (U arg0) { (Elem arg0, U arg1) -> untyped } -> U
+                 | [U] (U arg0) -> ::Enumerator[[ Elem, U ], Return]
+end
+
+class Enumerator::Generator[out Elem, out Return] < Object
+  include Enumerable[Elem, Return]
+end
+
+class Enumerator::Lazy[out Elem, out Return] < Enumerator[Elem, Return]
+end
+
+class Enumerator::Yielder < Object
+  def <<: (*untyped arg0) -> void
+
+  def yield: (*untyped arg0) -> void
+end
+
+class Enumerator::Chain[out Elem, out Return] < Object
+  include Enumerable[Elem, Return]
+end

@@ -1,0 +1,13 @@
+class StringIO
+  def initialize: (?String, ?String) -> untyped
+  def puts: (*untyped) -> void
+  def readline: () -> String
+              | (String) -> String
+  def write: (String) -> void
+  def flush: () -> void
+  def string: -> String
+  def close_read: -> nil
+  def closed_read?: -> bool
+  def close_write: -> nil
+  def closed_write?: -> bool
+end

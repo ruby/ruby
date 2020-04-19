@@ -1,0 +1,7 @@
+#!/usr/bin/env ruby
+
+$LOAD_PATH << File.join(__dir__, "../lib")
+require "ruby/signature"
+require "ruby/signature/cli"
+
+Ruby::Signature::CLI.new(stdout: STDOUT, stderr: STDERR).run(ARGV.dup)
