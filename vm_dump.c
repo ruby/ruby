@@ -37,7 +37,7 @@
 #include "vm_core.h"
 
 
-/* see vm_insnhelper.h for the values */
+/* see vm_core.h for the values */
 #ifndef VMDEBUG
 #define VMDEBUG 0
 #endif
