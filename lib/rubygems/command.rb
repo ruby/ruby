@@ -456,9 +456,7 @@ class Gem::Command
     until extra.empty? do
       ex = []
       ex << extra.shift
-      if (!extra.first.to_s.empty? && !extra.first.to_s.start_with?("-"))
-        ex << extra.shift
-      end
+      ex << extra.shift if extra.first.to_s =~ /^[^-]/ # rubocop:disable Performance/StartWith
       result << ex if handles?(ex)
     end
 
