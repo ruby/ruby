@@ -6,4 +6,4 @@ benchmark:
     d = ''
     e = ''
     f = ''
-loop_count: 30000000
+loop_count: 300000000

@@ -14,4 +14,4 @@ prelude: |
 benchmark:
   vm_gc_wb_obj_promoted: |
     long_lived.foo = short_lived # write barrier
-loop_count: 30000000
+loop_count: 300000000
