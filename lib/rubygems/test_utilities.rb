@@ -49,7 +49,7 @@ class Gem::FakeFetcher
 
     path = path.to_s
     @paths << path
-    raise ArgumentError, 'need full URI' unless path =~ %r{^https?://}
+    raise ArgumentError, 'need full URI' unless path.start_with?("https://", "http://")
 
     unless @data.key? path
       raise Gem::RemoteFetcher::FetchError.new("no data for #{path}", path)
@@ -67,7 +67,7 @@ class Gem::FakeFetcher
     if data.respond_to?(:call)
       data.call
     else
-      if path.to_s =~ /gz$/ and not data.nil? and not data.empty?
+      if path.to_s.end_with?(".gz") and not data.nil? and not data.empty?
         data = Gem::Util.gunzip data
       end
       data
