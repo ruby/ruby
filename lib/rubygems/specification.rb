@@ -2104,7 +2104,7 @@ class Gem::Specification < Gem::BasicSpecification
     end
 
     if @specification_version > CURRENT_SPECIFICATION_VERSION and
-      sym.to_s =~ /=$/
+        sym.to_s.end_with?("=")
       warn "ignoring #{sym} loading #{full_name}" if $DEBUG
     else
       super
