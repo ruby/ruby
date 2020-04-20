@@ -590,12 +590,12 @@ class Time
     end
 
     #
-    # Parses +date+ as a dateTime defined by the XML Schema and converts it to
+    # Parses +time+ as a dateTime defined by the XML Schema and converts it to
     # a Time object.  The format is a restricted version of the format defined
     # by ISO 8601.
     #
-    # ArgumentError is raised if +date+ is not compliant with the format or if
-    # the Time class cannot represent specified date.
+    # ArgumentError is raised if +time+ is not compliant with the format or if
+    # the Time class cannot represent the specified time.
     #
     # See #xmlschema for more information on this format.
     #
@@ -606,14 +606,14 @@ class Time
     #
     # You must require 'time' to use this method.
     #
-    def xmlschema(date)
+    def xmlschema(time)
       if /\A\s*
           (-?\d+)-(\d\d)-(\d\d)
           T
           (\d\d):(\d\d):(\d\d)
           (\.\d+)?
           (Z|[+-]\d\d(?::?\d\d)?)?
-          \s*\z/ix =~ date
+          \s*\z/ix =~ time
         year = $1.to_i
         mon = $2.to_i
         day = $3.to_i
@@ -636,7 +636,7 @@ class Time
           self.local(year, mon, day, hour, min, sec, usec)
         end
       else
-        raise ArgumentError.new("invalid date: #{date.inspect}")
+        raise ArgumentError.new("invalid xmlschema format: #{time.inspect}")
       end
     end
     alias iso8601 xmlschema
