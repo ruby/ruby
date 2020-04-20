@@ -12,22 +12,11 @@ module RDoc::RI::Paths
 
   version = RbConfig::CONFIG['ruby_version']
 
-  BASE    = if RbConfig::CONFIG.key? 'ridir' then
-              File.join RbConfig::CONFIG['ridir'], version
-            else
-              File.join RbConfig::CONFIG['datadir'], 'ri', version
-            end
+  BASE    = File.join RbConfig::CONFIG['ridir'], version
 
-  homedir = begin
-              File.expand_path('~')
+  HOMEDIR = begin
+              File.expand_path('~/.rdoc')
             rescue ArgumentError
-            end
-
-  homedir ||= ENV['HOME'] ||
-              ENV['USERPROFILE'] || ENV['HOMEPATH'] # for 1.8 compatibility
-
-  HOMEDIR = if homedir then
-              File.join homedir, ".rdoc"
             end
   #:startdoc:
 
