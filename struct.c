@@ -326,15 +326,11 @@ static VALUE
 setup_struct(VALUE nstr, VALUE members, int keyword_init)
 {
     long i, len;
-    VALUE (*new_func)(int, const VALUE *, VALUE) = rb_class_new_instance;
-
-    if (keyword_init) new_func = struct_new_kw;
-
     members = struct_set_members(nstr, members);
 
     rb_define_alloc_func(nstr, struct_alloc);
-    rb_define_singleton_method(nstr, "new", new_func, -1);
-    rb_define_singleton_method(nstr, "[]", new_func, -1);
+    rb_define_singleton_method(nstr, "new", struct_new_kw, -1);
+    rb_define_singleton_method(nstr, "[]", struct_new_kw, -1);
     rb_define_singleton_method(nstr, "members", rb_struct_s_members_m, 0);
     rb_define_singleton_method(nstr, "inspect", rb_struct_s_inspect, 0);
     len = RARRAY_LEN(members);
