@@ -359,7 +359,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     @cmd.options[:previous_version] = Gem::Version.new '2.0.2'
 
     File.open 'History.txt', 'w' do |io|
-      io.puts <<-History_txt
+      io.puts <<-HISTORY_TXT
 # coding: UTF-8
 
 === #{Gem::VERSION} / 2013-03-26
@@ -377,7 +377,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
 
 * Bug fixes:
   * Yet more bugs fixed
-      History_txt
+      HISTORY_TXT
     end
 
     use_ui @ui do

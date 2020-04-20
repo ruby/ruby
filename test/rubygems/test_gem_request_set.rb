@@ -396,9 +396,9 @@ ruby "0"
     rs = Gem::RequestSet.new
 
     tf = Tempfile.open 'gem.deps.rb' do |io|
-      io.puts <<-gems_deps_rb
+      io.puts <<-GEMS_DEPS_RB
         gem "#{name}", :git => "#{repository}"
-      gems_deps_rb
+      GEMS_DEPS_RB
 
       io.flush
 
@@ -459,10 +459,10 @@ ruby "0"
     rs = Gem::RequestSet.new
 
     tf = Tempfile.open 'gem.deps.rb' do |io|
-      io.puts <<-gems_deps_rb
+      io.puts <<-GEMS_DEPS_RB
         gem "#{a_name}", :path => "#{a_directory}"
         gem "#{b_name}", :path => "#{b_directory}"
-      gems_deps_rb
+      GEMS_DEPS_RB
 
       io.flush
 

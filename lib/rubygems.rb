@@ -394,11 +394,11 @@ module Gem
           target[k] = v
         when Array
           unless Gem::Deprecate.skip
-            warn <<-eowarn
+            warn <<-EOWARN
 Array values in the parameter to `Gem.paths=` are deprecated.
 Please use a String or nil.
 An Array (#{env.inspect}) was passed in from #{caller[3]}
-            eowarn
+            EOWARN
           end
           target[k] = v.join File::PATH_SEPARATOR
         end

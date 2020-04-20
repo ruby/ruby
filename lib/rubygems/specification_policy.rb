@@ -326,19 +326,19 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
 
       if !Gem::Licenses.match?(license)
         suggestions = Gem::Licenses.suggestions(license)
-        message = <<-warning
+        message = <<-WARNING
 license value '#{license}' is invalid.  Use a license identifier from
 http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard license.
-        warning
+        WARNING
         message += "Did you mean #{suggestions.map { |s| "'#{s}'"}.join(', ')}?\n" unless suggestions.nil?
         warning(message)
       end
     end
 
-    warning <<-warning if licenses.empty?
+    warning <<-WARNING if licenses.empty?
 licenses is empty, but is recommended.  Use a license identifier from
 http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard license.
-    warning
+    WARNING
   end
 
   LAZY = '"FIxxxXME" or "TOxxxDO"'.gsub(/xxx/, '')

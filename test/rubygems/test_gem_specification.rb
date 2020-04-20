@@ -3122,10 +3122,10 @@ Please report a bug if this causes problems.
       @a1.validate
     end
 
-    assert_match <<-warning, @ui.error
+    assert_match <<-WARNING, @ui.error
 WARNING:  licenses is empty, but is recommended.  Use a license identifier from
 http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
-    warning
+    WARNING
   end
 
   def test_removed_methods
@@ -3151,10 +3151,10 @@ http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
       @a1.validate
     end
 
-    assert_match <<-warning, @ui.error
+    assert_match <<-WARNING, @ui.error
 WARNING:  license value 'BSD' is invalid.  Use a license identifier from
 http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
-    warning
+    WARNING
   end
 
   def test_validate_license_values_plus
@@ -3198,14 +3198,14 @@ http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
       @a1.validate
     end
 
-    assert_match <<-warning, @ui.error
+    assert_match <<-WARNING, @ui.error
 WARNING:  license value 'GPL-2.0+ FOO' is invalid.  Use a license identifier from
 http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
-    warning
-    assert_match <<-warning, @ui.error
+    WARNING
+    assert_match <<-WARNING, @ui.error
 WARNING:  license value 'GPL-2.0 FOO' is invalid.  Use a license identifier from
 http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
-    warning
+    WARNING
   end
 
   def test_validate_license_with_invalid_exception
@@ -3216,10 +3216,10 @@ http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
       @a1.validate
     end
 
-    assert_match <<-warning, @ui.error
+    assert_match <<-WARNING, @ui.error
 WARNING:  license value 'GPL-2.0+ WITH Autocofn-exception-2.0' is invalid.  Use a license identifier from
 http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
-    warning
+    WARNING
   end
 
   def test_validate_license_gives_suggestions
@@ -3230,11 +3230,11 @@ http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
       @a1.validate
     end
 
-    assert_match <<-warning, @ui.error
+    assert_match <<-WARNING, @ui.error
 WARNING:  license value 'ruby' is invalid.  Use a license identifier from
 http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
 Did you mean 'Ruby'?
-    warning
+    WARNING
   end
 
   def test_validate_empty_files
