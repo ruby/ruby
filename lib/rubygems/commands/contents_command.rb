@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require 'English'
 require 'rubygems/command'
 require 'rubygems/version_option'
 
@@ -106,7 +105,8 @@ prefix or only the files that are requireable.
     spec.files.map do |file|
       case file
       when /\A#{spec.bindir}\//
-        [RbConfig::CONFIG['bindir'], $POSTMATCH]
+        # $' is POSTMATCH
+        [RbConfig::CONFIG['bindir'], $']
       when /\.so\z/
         [RbConfig::CONFIG['archdir'], file]
       else
