@@ -162,14 +162,7 @@ typedef unsigned int rb_atomic_t;
 # if SIZEOF_VOIDP == SIZEOF_SIZE_T
 #   define ATOMIC_PTR_EXCHANGE(var, val) (void *)ATOMIC_SIZE_EXCHANGE(*(size_t *)&(var), (size_t)(val))
 # else
-#   define ATOMIC_PTR_EXCHANGE(var, val) ruby_atomic_ptr_exchange((const void **)&(var), (val))
-static inline void *
-ruby_atomic_ptr_exchange(const void **ptr, const void *val)
-{
-    const void *const old = *ptr;
-    *ptr = val;
-    return (void *)old;
-}
+#   error No atomic exchange for void*
 # endif
 #endif
 
@@ -177,14 +170,7 @@ ruby_atomic_ptr_exchange(const void **ptr, const void *val)
 # if SIZEOF_VOIDP == SIZEOF_SIZE_T
 #   define ATOMIC_PTR_CAS(var, oldval, val) (void *)ATOMIC_SIZE_CAS(*(size_t *)&(var), (size_t)(oldval), (size_t)(val))
 # else
-#   define ATOMIC_PTR_CAS(var, oldval, val) ruby_atomic_ptr_cas(&(var), (oldval), (val))
-static inline void *
-ruby_atomic_ptr_cas(const void **ptr, const void *oldval, const void *val)
-{
-    const void *const old = *ptr;
-    if (old == oldval) *ptr = val;
-    return (void *)old;
-}
+#   error No atomic compare-and-set for void*
 # endif
 #endif
 
@@ -192,14 +178,7 @@ ruby_atomic_ptr_cas(const void **ptr, const void *oldval, const void *val)
 # if SIZEOF_VALUE == SIZEOF_SIZE_T
 #   define ATOMIC_VALUE_EXCHANGE(var, val) ATOMIC_SIZE_EXCHANGE(*(size_t *)&(var), (size_t)(val))
 # else
-#   define ATOMIC_VALUE_EXCHANGE(var, val) ruby_atomic_value_exchange(&(var), (val))
-static inline VALUE
-ruby_atomic_value_exchange(VALUE *ptr, VALUE val)
-{
-    const VALUE old = *ptr;
-    *ptr = val;
-    return old;
-}
+#   error No atomic exchange for VALUE
 # endif
 #endif
 
@@ -207,14 +186,7 @@ ruby_atomic_value_exchange(VALUE *ptr, VALUE val)
 # if SIZEOF_VALUE == SIZEOF_SIZE_T
 #   define ATOMIC_VALUE_CAS(var, oldval, val) ATOMIC_SIZE_CAS(*(size_t *)&(var), (size_t)(oldval), (size_t)(val))
 # else
-#   define ATOMIC_VALUE_CAS(var, oldval, val) ruby_atomic_value_cas(&(var), (oldval), (val))
-static inline VALUE
-ruby_atomic_value_cas(VALUE *ptr, VALUE oldval, VALUE val)
-{
-    const VALUE old = *ptr;
-    if (old == oldval) *ptr = val;
-    return old;
-}
+#   error No atomic compare-and-set for VALUE
 # endif
 #endif
 
