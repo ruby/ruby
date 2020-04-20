@@ -299,6 +299,42 @@ ossl_pkey_initialize(VALUE self)
     return self;
 }
 
+/*
+ * call-seq:
+ *    pkey.oid -> string
+ *
+ * Returns the short name of the OID associated with _pkey_.
+ */
+static VALUE
+ossl_pkey_oid(VALUE self)
+{
+    EVP_PKEY *pkey;
+    int nid;
+
+    GetPKey(self, pkey);
+    nid = EVP_PKEY_id(pkey);
+    return rb_str_new_cstr(OBJ_nid2sn(nid));
+}
+
+/*
+ * call-seq:
+ *    pkey.inspect -> string
+ *
+ * Returns a string describing the PKey object.
+ */
+static VALUE
+ossl_pkey_inspect(VALUE self)
+{
+    EVP_PKEY *pkey;
+    int nid;
+
+    GetPKey(self, pkey);
+    nid = EVP_PKEY_id(pkey);
+    return rb_sprintf("#<%"PRIsVALUE":%p oid=%s>",
+                      rb_class_name(CLASS_OF(self)), (void *)self,
+                      OBJ_nid2sn(nid));
+}
+
 static VALUE
 do_pkcs8_export(int argc, VALUE *argv, VALUE self, int to_der)
 {
@@ -615,6 +651,8 @@ Init_ossl_pkey(void)
 
     rb_define_alloc_func(cPKey, ossl_pkey_alloc);
     rb_define_method(cPKey, "initialize", ossl_pkey_initialize, 0);
+    rb_define_method(cPKey, "oid", ossl_pkey_oid, 0);
+    rb_define_method(cPKey, "inspect", ossl_pkey_inspect, 0);
     rb_define_method(cPKey, "private_to_der", ossl_pkey_private_to_der, -1);
     rb_define_method(cPKey, "private_to_pem", ossl_pkey_private_to_pem, -1);
     rb_define_method(cPKey, "public_to_der", ossl_pkey_public_to_der, 0);
