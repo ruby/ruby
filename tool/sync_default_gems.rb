@@ -374,15 +374,11 @@ def sync_default_gems_with_commits(gem, range)
 
     if result.empty?
       skipped = true
-    elsif /^CONFLICT/ =~ result
+    elsif result.start_with?("CONFLICT")
       result = IO.popen(%W"git status --porcelain", &:readlines).each(&:chomp!)
-      ignore = result.map {|line| /^.U / =~ line and IGNORE_FILE_PATTERN =~ (name = $') and name}
+      ignore = result.map {|line| /^DU / =~ line and IGNORE_FILE_PATTERN =~ (name = $') and name}
       ignore.compact!
-      warn "Resetting #{ignore}"
-      unless ignore.empty?
-        system(*%W"git reset HEAD --", *ignore)
-        system(*%W"git checkout HEAD --", *ignore)
-      end
+      system(*%W"git reset", *ignore) unless ignore.empty?
       skipped = !system({"GIT_EDITOR"=>"true"}, *%W"git cherry-pick --no-edit --continue")
     end
 
