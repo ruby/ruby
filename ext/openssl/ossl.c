@@ -739,16 +739,14 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  * To sign a document, a cryptographically secure hash of the document is
  * computed first, which is then signed using the private key.
  *
- *   digest = OpenSSL::Digest.new('SHA256')
- *   signature = key.sign digest, document
+ *   signature = key.sign 'SHA256', document
  *
  * To validate the signature, again a hash of the document is computed and
  * the signature is decrypted using the public key. The result is then
  * compared to the hash just computed, if they are equal the signature was
  * valid.
  *
- *   digest = OpenSSL::Digest.new('SHA256')
- *   if key.verify digest, signature, document
+ *   if key.verify 'SHA256', signature, document
  *     puts 'Valid'
  *   else
  *     puts 'Invalid'
