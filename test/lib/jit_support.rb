@@ -9,9 +9,11 @@ module JITSupport
     %r[\A.*/bin/intel64/icc\b],
     %r[\A/opt/developerstudio\d+\.\d+/bin/cc\z],
   ]
+  # debian-riscv64: "gcc: internal compiler error: Segmentation fault signal terminated program cc1" https://rubyci.org/logs/rubyci.s3.amazonaws.com/debian-riscv64/ruby-master/log/20200420T083601Z.fail.html.gz
   # freebsd12: cc1 internal failure https://rubyci.org/logs/rubyci.s3.amazonaws.com/freebsd12/ruby-master/log/20200306T103003Z.fail.html.gz
   # rhel8: one or more PCH files were found, but they were invalid https://rubyci.org/logs/rubyci.s3.amazonaws.com/rhel8/ruby-master/log/20200306T153003Z.fail.html.gz
   PENDING_RUBYCI_NICKNAMES = %w[
+    debian-riscv64
     freebsd12
     rhel8
   ]
