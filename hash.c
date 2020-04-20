@@ -1863,6 +1863,16 @@ rb_hash_initialize(int argc, VALUE *argv, VALUE hash)
  *  Raises an exception if the argument count is odd and greater than 1:
  *
  *    Hash[0, 1, 2] # Raises ArgumentError (odd number of arguments for Hash)
+ *
+ *  Raises an exception if the argument is an array containing an element
+ *  that is not a 2-element array:
+ *
+ *    Hash[ [ :foo ] ] # Raises ArgumentError (wrong element type Symbol at 0 (expected array))
+ *
+ *  Raises an exception if the argument is an array containing an element
+ *  that is an array of size different from 2:
+ *
+ *    Hash[ [ [0, 1, 2] ] ] # Raises ArgumentError (invalid number of elements (3 for 1..2))
  */
 
 static VALUE
