@@ -362,7 +362,7 @@ rb_ec_error_print(rb_execution_context_t * volatile ec, volatile VALUE errinfo)
 	emesg = rb_get_message(errinfo);
     }
 
-    rb_error_write(errinfo, emesg, errat, Qnil, Qnil, Qnil);
+    rb_error_write(errinfo, emesg, errat, Qnil, Qnil, Qfalse);
 
     EC_POP_TAG();
     ec->errinfo = errinfo;
