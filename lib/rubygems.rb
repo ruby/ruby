@@ -551,33 +551,6 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   end
 
   ##
-  # Finds the user's home directory.
-  #--
-  # Some comments from the ruby-talk list regarding finding the home
-  # directory:
-  #
-  #   I have HOME, USERPROFILE and HOMEDRIVE + HOMEPATH. Ruby seems
-  #   to be depending on HOME in those code samples. I propose that
-  #   it should fallback to USERPROFILE and HOMEDRIVE + HOMEPATH (at
-  #   least on Win32).
-  #++
-  #--
-  #
-  #++
-
-  def self.find_home
-    Dir.home.dup
-  rescue
-    if Gem.win_platform?
-      File.expand_path File.join(ENV['HOMEDRIVE'] || ENV['SystemDrive'], '/')
-    else
-      File.expand_path "/"
-    end
-  end
-
-  private_class_method :find_home
-
-  ##
   # Top level install helper method. Allows you to install gems interactively:
   #
   #   % irb
