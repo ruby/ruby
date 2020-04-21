@@ -112,7 +112,7 @@ RUBY3_SYMBOL_EXPORT_END()
 #  * Static assertions  need such  integer constant  expressions as  defined in
 #  * ISO/IEC 9899:2018 section 6.7.10 paragraph #3.
 #  *
-#  * GCC nontheless constant-folds this into no-op, though. */
+#  * GCC nonetheless constant-folds this into no-op, though. */
 # define rb_scan_args_verify(fmt, varc) \
     (sizeof(char[1-2*(rb_scan_args_count(fmt)<0)])!=1 ? \
      rb_scan_args_bad_format(fmt) : \

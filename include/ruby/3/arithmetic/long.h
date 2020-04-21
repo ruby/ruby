@@ -136,7 +136,7 @@ ruby3_fix2long_by_shift(VALUE x)
     RUBY3_ASSERT_OR_ASSUME(RB_FIXNUM_P(x));
 
     /* :NOTE: VALUE can be wider than long.  If right shift is arithmetic, this
-     * is noticably faster than above. */
+     * is noticeably faster than above. */
     const SIGNED_VALUE y = x;
     const SIGNED_VALUE z = y >> 1;
     const long         w = RUBY3_CAST((long)z);

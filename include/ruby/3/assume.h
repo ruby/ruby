@@ -59,7 +59,7 @@
 # define RUBY3_UNREACHABLE() __assume(0)
 #endif
 
-/** Wraps (or simulates) `__asume`. */
+/** Wraps (or simulates) `__assume`. */
 #if RUBY3_COMPILER_SINCE(Intel, 13, 0, 0)
 # /* icc warnings are false positives.  Ignore them. */
 # /* "warning #2261: __assume expression with side effects discarded" */
