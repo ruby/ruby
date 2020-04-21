@@ -107,7 +107,7 @@ module Gem
   # The home directory for the user.
 
   def self.user_home
-    @user_home ||= find_home.untaint
+    @user_home ||= find_home.tap(&Gem::UNTAINT)
   end
 
   ##

@@ -1023,13 +1023,6 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   end
 
   ##
-  # The home directory for the user.
-
-  def self.user_home
-    @user_home ||= find_home.tap(&Gem::UNTAINT)
-  end
-
-  ##
   # Is this a windows platform?
 
   def self.win_platform?
