@@ -861,6 +861,36 @@ man/bundle-*,gemfile.*::
 
     {MIT License}[rdoc-label:label-MIT+License]
 
+benchmark/so_ackermann.rb::
+benchmark/so_array.rb::
+benchmark/so_binary_trees.rb::
+benchmark/so_concatenate.rb::
+benchmark/so_count_words.yml::
+benchmark/so_exception.rb::
+benchmark/so_fannkuch.rb::
+benchmark/so_fasta.rb::
+benchmark/so_k_nucleotide.yml::
+benchmark/so_lists.rb::
+benchmark/so_mandelbrot.rb::
+benchmark/so_matrix.rb::
+benchmark/so_meteor_contest.rb::
+benchmark/so_nbody.rb::
+benchmark/so_nested_loop.rb::
+benchmark/so_nsieve.rb::
+benchmark/so_nsieve_bits.rb::
+benchmark/so_object.rb::
+benchmark/so_partial_sums.rb::
+benchmark/so_pidigits.rb::
+benchmark/so_random.rb::
+benchmark/so_reverse_complement.yml::
+benchmark/so_sieve.rb::
+benchmark/so_spectralnorm.rb::
+
+  These files are very old copy of then-called "The Great Computer Language
+  Shootout".  LEGAL SITUATION OF THESE FILES ARE UNCLEAR because the original
+  site has been lost.  Upstream diverged to delete several benchmarks listed
+  above.
+
 == MIT License
 >>>
       Permission is hereby granted, free of charge, to any person obtaining
