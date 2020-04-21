@@ -182,8 +182,13 @@ Excluding feature bug fixes.
 * Taint deprecation warnings are now issued in regular mode in
   addition to verbose warning mode.  [[Feature #16131]]
 
+* When an exception is caught in the default handler, the error
+  message and backtrace are printed in order from the innermost.
+  [[Feature #8661]]
+
 
 [Bug #4352]:      https://bugs.ruby-lang.org/issues/4352
+[Feature #8661]:  https://bugs.ruby-lang.org/issues/8661
 [Feature #8709]:  https://bugs.ruby-lang.org/issues/8709
 [Feature #8948]:  https://bugs.ruby-lang.org/issues/8948
 [Feature #9573]:  https://bugs.ruby-lang.org/issues/9573
