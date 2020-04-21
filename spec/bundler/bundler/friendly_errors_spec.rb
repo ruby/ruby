@@ -27,7 +27,7 @@ RSpec.describe Bundler, "friendly errors" do
 
       bundle :install, :env => { "DEBUG" => "true" }
 
-      if Gem::VERSION >= "3.1.0.pre.1"
+      if Gem::VERSION >= "3.2.0.pre.1"
         expect(err).to include("Failed to load #{File.join(config_home, "gemrc")}")
       else
         expect(err).to include("Failed to load #{home(".gemrc")}")

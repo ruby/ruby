@@ -41,7 +41,7 @@ RSpec.describe Bundler::Env do
       end
 
       it "prints user path" do
-        if Gem::VERSION >= "3.1.0.pre.1"
+        if Gem::VERSION >= "3.2.0.pre.1"
           allow(Gem).to receive(:data_home) { "/a/b/c/.local/share" }
           out = described_class.report
           expect(out).to include("User Path   /a/b/c/.local/share/gem")
