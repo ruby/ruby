@@ -129,15 +129,22 @@ module Gem
   end
 
   ##
+  # Finds the user's config file
+
+  def self.find_config_file
+    gemrc = File.join Gem.user_home, '.gemrc'
+    if File.exist? gemrc
+      gemrc
+    else
+      File.join Gem.config_home, "gem", "gemrc"
+    end
+  end
+
+  ##
   # The path to standard location of the user's .gemrc file.
 
   def self.config_file
-    gemrc = File.join Gem.user_home, '.gemrc'
-    if File.exist? gemrc
-      @config_file ||= gemrc
-    else
-      @config_file ||= File.join Gem.config_home, "gem", "gemrc"
-    end
+    @config_file ||= find_config_file.untaint
   end
 
   ##
