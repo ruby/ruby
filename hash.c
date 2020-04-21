@@ -1841,7 +1841,7 @@ rb_hash_initialize(int argc, VALUE *argv, VALUE hash)
  *
  *  When argument <tt>hash_convertible_object</tt> is given,
  *  the argument must be a
- *  {Hash-convertible object}[doc/convertibles_rdoc.html#label-Hash-Convertible+Objects];
+ *  {Hash-convertible object}[doc/implicit_conversion_rdoc.html#label-Hash-Convertible+Objects];
  *  converts the object and returns the resulting \Hash object:
  *
  *    class Foo
@@ -1855,7 +1855,7 @@ rb_hash_initialize(int argc, VALUE *argv, VALUE hash)
  *
  *  Raises an exception if the argument count is 1,
  *  but the argument is not an array of 2-element arrays or a
- *  {Hash-convertible object}[doc/convertibles_rdoc.html#label-Hash-Convertible+Objects]:
+ *  {Hash-convertible object}[doc/implicit_conversion_rdoc.html#label-Hash-Convertible+Objects]:
  *
  *    Hash[:foo] # Raises ArgumentError (odd number of arguments
  *    Hash[ [ [:foo, 0, 1] ] ] # Raises ArgumentError (invalid number of elements (3 for 1..2))

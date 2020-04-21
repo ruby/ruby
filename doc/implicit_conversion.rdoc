@@ -1,9 +1,9 @@
-== Class-Convertible Objects
+== Implicit Conversion
 
 Some Ruby methods accept one or more objects
 that can be either:
 * <i>Of a given class</i>, and so accepted as is.
-* <i>Convertible to that class</i>, in which case
+* <i>Implicitly convertible to that class</i>, in which case
   the called method converts the object.
 
 For each of the relevant classes, the conversion is done by calling
