@@ -393,7 +393,7 @@ missing/procstat_vm.c::
 
 vsnprintf.c::
 
-  This file is under the {old-style BSD license}[label-Old-style+BSD+license].
+  This file is under the {old-style BSD license}[rdoc-label:label-Old-style+BSD+license].
 
   >>>
     Copyright (c) 1990, 1993
@@ -430,7 +430,7 @@ ext/sdbm/sdbm.h::
 
 missing/crypt.c::
 
-  This file is under the {old-style BSD license}[label-Old-style+BSD+license].
+  This file is under the {old-style BSD license}[rdoc-label:label-Old-style+BSD+license].
 
   >>>
     Copyright (c) 1989, 1993
@@ -441,7 +441,7 @@ missing/crypt.c::
 
 missing/setproctitle.c::
 
-  This file is under the {old-style BSD license}[label-Old-style+BSD+license].
+  This file is under the {old-style BSD license}[rdoc-label:label-Old-style+BSD+license].
 
   >>>
     Copyright 2003 Damien Miller
