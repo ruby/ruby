@@ -1156,13 +1156,11 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     if Exception.to_tty?
       assert_match(/\e/, message)
       message = message.gsub(/\e\[[\d;]*m/, '')
-      assert_operator(message, :start_with?, remark)
-      assert_operator(message, :end_with?, bottom)
     else
       assert_not_match(/\e/, message)
-      assert_operator(message, :start_with?, bottom)
-      assert_operator(message, :end_with?, top)
     end
+    assert_operator(message, :start_with?, bottom)
+    assert_operator(message, :end_with?, top)
   end
 
   def test_exception_in_message

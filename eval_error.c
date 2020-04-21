@@ -309,9 +309,9 @@ rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE highlig
 	errat = Qnil;
     }
     eclass = CLASS_OF(errinfo);
-    if (NIL_P(reverse) || NIL_P(highlight)) {
+    if (NIL_P(reverse)) reverse = Qfalse;
+    if (NIL_P(highlight)) {
 	VALUE tty = (VALUE)rb_stderr_tty_p();
-	if (NIL_P(reverse)) reverse = tty;
 	if (NIL_P(highlight)) highlight = tty;
     }
     if (reverse) {
