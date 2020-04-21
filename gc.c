@@ -9594,6 +9594,7 @@ ruby_memerror_body(void *dummy)
     return 0;
 }
 
+RUBY3_ATTR_MAYBE_UNUSED()
 static void
 ruby_memerror(void)
 {
@@ -9854,7 +9855,37 @@ objspace_malloc_fixup(rb_objspace_t *objspace, void *mem, size_t size)
     return mem;
 }
 
-#define TRY_WITH_GC(alloc) do { \
+#if defined(__GNUC__) /* && RUBY_DEBUG */
+#define RB_BUG_INSTEAD_OF_RB_MEMERROR
+#endif
+
+#ifdef RB_BUG_INSTEAD_OF_RB_MEMERROR
+#define TRY_WITH_GC(siz, expr) do {                          \
+        const gc_profile_record_flag gpr =                   \
+            GPR_FLAG_FULL_MARK           |                   \
+            GPR_FLAG_IMMEDIATE_MARK      |                   \
+            GPR_FLAG_IMMEDIATE_SWEEP     |                   \
+            GPR_FLAG_MALLOC;                                 \
+        objspace_malloc_gc_stress(objspace);                 \
+                                                             \
+        if (LIKELY((expr))) {                                \
+            /* Success on 1st try */                         \
+        }                                                    \
+        else if (!garbage_collect_with_gvl(objspace, gpr)) { \
+            /* @shyouhei thinks this doesn't happen */       \
+            rb_bug("TRY_WITH_GC: could not GC");             \
+        }                                                    \
+        else if ((expr)) {                                   \
+            /* Suucess on 2nd try */                         \
+        }                                                    \
+        else {                                               \
+            rb_bug("TRY_WITH_GC: could not allocate:"        \
+                   "%"PRIdSIZE" bytes for %s",               \
+                   siz, # expr);                             \
+        }                                                    \
+    } while (0)
+#else
+#define TRY_WITH_GC(siz, alloc) do { \
         objspace_malloc_gc_stress(objspace); \
 	if (!(alloc) && \
             (!garbage_collect_with_gvl(objspace, GPR_FLAG_FULL_MARK | \
@@ -9864,6 +9895,7 @@ objspace_malloc_fixup(rb_objspace_t *objspace, void *mem, size_t size)
 	    ruby_memerror(); \
 	} \
     } while (0)
+#endif
 
 /* these shouldn't be called directly.
  * objspace_* functinos do not check allocation size.
@@ -9874,7 +9906,7 @@ objspace_xmalloc0(rb_objspace_t *objspace, size_t size)
     void *mem;
 
     size = objspace_malloc_prepare(objspace, size);
-    TRY_WITH_GC(mem = malloc(size));
+    TRY_WITH_GC(size, mem = malloc(size));
     RB_DEBUG_COUNTER_INC(heap_xmalloc);
     return objspace_malloc_fixup(objspace, mem, size);
 }
@@ -9945,7 +9977,7 @@ objspace_xrealloc(rb_objspace_t *objspace, void *ptr, size_t new_size, size_t ol
 #endif
 
     old_size = objspace_malloc_size(objspace, ptr, old_size);
-    TRY_WITH_GC(mem = realloc(ptr, new_size));
+    TRY_WITH_GC(new_size, mem = realloc(ptr, new_size));
     new_size = objspace_malloc_size(objspace, mem, new_size);
 
 #if CALC_EXACT_MALLOC_SIZE
@@ -10127,7 +10159,7 @@ objspace_xcalloc(rb_objspace_t *objspace, size_t size)
     void *mem;
 
     size = objspace_malloc_prepare(objspace, size);
-    TRY_WITH_GC(mem = calloc1(size));
+    TRY_WITH_GC(size, mem = calloc1(size));
     return objspace_malloc_fixup(objspace, mem, size);
 }
 
