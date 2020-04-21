@@ -414,6 +414,30 @@ AC_CHECK_PROG(PKG_CONFIG, pkg-config, [pkg-config], [], [],
 # checks for UNIX variants that set C preprocessor variables
 AC_USE_SYSTEM_EXTENSIONS
 
+AC_MSG_CHECKING([whether it is Android])
+AC_TRY_COMPILE([
+	@%:@ifdef __ANDROID__
+	@%:@error android
+	@%:@endif
+], [],
+[AC_MSG_RESULT(no)],
+[
+	AC_MSG_RESULT(yes)
+	target_os=${target_os}-android
+	AC_MSG_CHECKING([for Android API version])
+	AC_TRY_COMPILE([
+		@%:@ifndef __ANDROID_API__
+		@%:@error android
+		@%:@endif
+	], [],
+	[AC_MSG_RESULT(defined by the compiler)],
+	[
+		rb_android_api=`getprop ro.build.version.sdk`
+		AC_MSG_RESULT($rb_android_api)
+		RUBY_APPEND_OPTIONS(CPPFLAGS, -D__ANDROID_API__=$rb_android_api)
+	])
+])
+
 AC_SUBST(RM, ['rm -f'])
 AC_SUBST(CP, ['cp'])
 RMDIRS='$(top_srcdir)/tool/rmdirs'
