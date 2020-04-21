@@ -215,4 +215,42 @@ class Reline::Config::Test < Reline::TestCase
     end
     ENV['INPUTRC'] = inputrc_backup
   end
+
+  def test_inputrc
+    inputrc_backup = ENV['INPUTRC']
+    expected = "#{@tmpdir}/abcde"
+    ENV['INPUTRC'] = expected
+    assert_equal expected, @config.inputrc_path
+    ENV['INPUTRC'] = inputrc_backup
+  end
+
+  def test_xdg_config_home
+    home_backup = ENV['HOME']
+    xdg_config_home_backup = ENV['XDG_CONFIG_HOME']
+    nonexistence_dir = '/the_nonexistence_dir!!!!!!'
+    xdg_config_home = File.expand_path("#{@tmpdir}/.config/example_dir")
+    expected = File.expand_path("#{xdg_config_home}/readline/inputrc")
+    FileUtils.mkdir_p(File.dirname(expected))
+    FileUtils.touch(expected)
+    ENV['HOME'] = nonexistence_dir
+    ENV['XDG_CONFIG_HOME'] = xdg_config_home
+    assert_equal expected, @config.inputrc_path
+    FileUtils.rm(expected)
+    ENV['XDG_CONFIG_HOME'] = xdg_config_home_backup
+    ENV['HOME'] = home_backup
+  end
+
+  def test_empty_xdg_config_home
+    home_backup = ENV['HOME']
+    xdg_config_home_backup = ENV['XDG_CONFIG_HOME']
+    ENV['HOME'] = @tmpdir
+    ENV['XDG_CONFIG_HOME'] = ''
+    expected = File.expand_path('~/.config/readline/inputrc')
+    FileUtils.mkdir_p(File.dirname(expected))
+    FileUtils.touch(expected)
+    assert_equal expected, @config.inputrc_path
+    FileUtils.rm(expected)
+    ENV['XDG_CONFIG_HOME'] = xdg_config_home_backup
+    ENV['HOME'] = home_backup
+  end
 end

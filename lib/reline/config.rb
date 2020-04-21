@@ -3,8 +3,6 @@ require 'pathname'
 class Reline::Config
   attr_reader :test_mode
 
-  DEFAULT_PATH = '~/.inputrc'
-
   KEYSEQ_PATTERN = /\\(?:C|Control)-[A-Za-z_]|\\(?:M|Meta)-[0-9A-Za-z_]|\\(?:C|Control)-(?:M|Meta)-[A-Za-z_]|\\(?:M|Meta)-(?:C|Control)-[A-Za-z_]|\\e|\\[\\\"\'abdfnrtv]|\\\d{1,3}|\\x\h{1,2}|./
 
   class InvalidInputrc < RuntimeError
@@ -86,14 +84,28 @@ class Reline::Config
   def inputrc_path
     case ENV['INPUTRC']
     when nil, ''
-      DEFAULT_PATH
     else
-      ENV['INPUTRC']
+      return File.expand_path(ENV['INPUTRC'])
+    end
+
+    # In the XDG Specification, if ~/.config/readline/inputrc exists, then
+    # ~/.inputrc should not be read, but for compatibility with GNU Readline,
+    # if ~/.inputrc exists, then it is given priority.
+    path = File.expand_path('~/.inputrc')
+    return path if File.exist?(path)
+
+    case ENV['XDG_CONFIG_HOME']
+    when nil, ''
+      path = File.expand_path('~/.config/readline/inputrc')
+      return path if File.exist?(path)
+    else
+      path = File.expand_path("#{ENV['XDG_CONFIG_HOME']}/readline/inputrc")
+      return path if File.exist?(path)
     end
   end
 
   def read(file = nil)
-    file ||= File.expand_path(inputrc_path)
+    file ||= inputrc_path
     begin
       if file.respond_to?(:readlines)
         lines = file.readlines
