@@ -27,8 +27,8 @@ module Kernel
     __builtin_rb_obj_clone2(freeze)
   end
 
-  private
-  
+  module_function
+
   #
   #  call-seq:
   #     Float(arg, exception: true)    -> float or nil
