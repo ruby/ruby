@@ -63,7 +63,6 @@ module Gem::Deprecate
                 ". It will be removed on or after %4d-%02d-01." % [year, month],
                 "\n#{target}#{name} called from #{Gem.location_of_caller.join(":")}",
         ]
-        warn "Gem::Deprecate#deprecate has been deprecated with no replacement and it will be removed in Rubygems 4.\n" unless Gem::Deprecate.skip
         warn "#{msg.join}." unless Gem::Deprecate.skip
         send old, *args, &block
       end

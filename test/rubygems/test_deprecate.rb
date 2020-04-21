@@ -112,7 +112,6 @@ class TestDeprecate < Gem::TestCase
     end
 
     assert_equal "", out
-    assert_match(/Gem::Deprecate#deprecate has been deprecated with no replacement and it will be removed in Rubygems 4\./, err)
     assert_match(/Thing#foo is deprecated; use bar instead\./, err)
     assert_match(/on or after 2099-03-01/, err)
   end
