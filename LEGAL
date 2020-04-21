@@ -12,10 +12,7 @@ ccan/check_type/check_type.h::
 ccan/container_of/container_of.h::
 ccan/str/str.h::
 
-  These files are licensed under the CC0.
-
-  >>>
-    https://creativecommons.org/choose/zero/
+  These files are licensed under the {CC0}[https://creativecommons.org/choose/zero/].
 
 ccan/list/list.h::
 
@@ -806,10 +803,7 @@ ext/win32ole/win32ole.c::
 
 lib/rdoc/generator/template/darkfish/css/fonts.css::
 
-  This file is licensed under the SIL Open Font License.
-
-  >>>
-    http://scripts.sil.org/OFL
+  This file is licensed under the {SIL Open Font License}[http://scripts.sil.org/OFL].
 
 spec/mspec::
 spec/ruby::
