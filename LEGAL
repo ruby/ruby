@@ -16,26 +16,7 @@ ccan/str/str.h::
 
 ccan/list/list.h::
 
-  This file is licensed under the MIT License.
-
-  >>>
-    Permission is hereby granted, free of charge, to any person obtaining a copy
-    of this software and associated documentation files (the "Software"), to deal
-    in the Software without restriction, including without limitation the rights
-    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-    copies of the Software, and to permit persons to whom the Software is
-    furnished to do so, subject to the following conditions:
-
-    The above copyright notice and this permission notice shall be included in
-    all copies or substantial portions of the Software.
-
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-    THE SOFTWARE.
+  This file is licensed under the {MIT License}[rdoc-label:label-MIT+License].
 
 include/ruby/onigmo.h::
 include/ruby/oniguruma.h::
@@ -843,8 +824,8 @@ test/rubygems::
   >>>
     RubyGems is copyrighted free software by Chad Fowler, Rich Kilmer, Jim
     Weirich and others.  You can redistribute it and/or modify it under
-    either the terms of the MIT license (see the file MIT.txt), or the
-    conditions below:
+    either the terms of the {MIT license}[rdoc-label:label-MIT+License], or the conditions
+    below:
 
     1. You may make and give away verbatim copies of the source form of the
        software without restriction, provided that you duplicate all of the
@@ -907,8 +888,10 @@ man/bundle-*,gemfile.*::
     Portions copyright (c) 2010 Andre Arko  
     Portions copyright (c) 2009 Engine Yard  
 
-    MIT License::
+    {MIT License}[rdoc-label:label-MIT+License]
 
+== MIT License
+>>>
       Permission is hereby granted, free of charge, to any person obtaining
       a copy of this software and associated documentation files (the
       "Software"), to deal in the Software without restriction, including
