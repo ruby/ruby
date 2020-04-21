@@ -9876,7 +9876,7 @@ objspace_malloc_fixup(rb_objspace_t *objspace, void *mem, size_t size)
             rb_bug("TRY_WITH_GC: could not GC");             \
         }                                                    \
         else if ((expr)) {                                   \
-            /* Suucess on 2nd try */                         \
+            /* Success on 2nd try */                         \
         }                                                    \
         else {                                               \
             rb_bug("TRY_WITH_GC: could not allocate:"        \
