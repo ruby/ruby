@@ -410,7 +410,8 @@ missing/dtoa.c::
     OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
     SUCH DAMAGE.
 
-win32/win32.{c,h}::
+win32/win32.c::
+include/ruby/win32.h::
 
   You can apply the Artistic License to these files. (or GPL,
   alternatively)
