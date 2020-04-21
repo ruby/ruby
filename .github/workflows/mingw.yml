@@ -39,6 +39,7 @@ jobs:
           git clone --single-branch --depth=50 --branch=${{ github.event.pull_request.head.ref }} https://github.com/${{ github.event.pull_request.head.repo.full_name }} src
           git -C src reset --hard ${{ github.event.pull_request.head.sha }}
         if: github.event_name == 'pull_request'
+        shell: bash
       - run: ./src/tool/actions-commit-info.sh
         shell: bash
         id: commit_info
