@@ -9642,6 +9642,9 @@ rb_memerror(void)
 	exc = ruby_vm_special_exception_copy(exc);
     }
     ec->errinfo = exc;
+#ifdef __INTEL_COMPILER
+    __builtin_trap(); /* Yes, icc has it.*/
+#endif
     EC_JUMP_TAG(ec, TAG_RAISE);
 }
 
