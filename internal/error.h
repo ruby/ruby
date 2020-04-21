@@ -46,6 +46,7 @@ typedef enum {
     RB_WARN_CATEGORY_EXPERIMENTAL,
 } rb_warning_category_t;
 
+extern long rb_backtrace_length_limit;
 extern VALUE rb_eEAGAIN;
 extern VALUE rb_eEWOULDBLOCK;
 extern VALUE rb_eEINPROGRESS;
