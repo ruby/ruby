@@ -1873,6 +1873,11 @@ rb_hash_initialize(int argc, VALUE *argv, VALUE hash)
  *  that is an array of size different from 2:
  *
  *    Hash[ [ [0, 1, 2] ] ] # Raises ArgumentError (invalid number of elements (3 for 1..2))
+ *
+ *  Raises an exception if any proposed key is not a valid key:
+ *
+ *    Hash[:foo, 0, BasicObject.new, 1] # Raises NoMethodError (undefined method `hash' for #<BasicObject:>)
+ *    Hash[ [ [:foo, 0], [BasicObject.new, 1] ] ] # Raises NoMethodError (undefined method `hash' for #<BasicObject:0x00000000064b1328>)
  */
 
 static VALUE
