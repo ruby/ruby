@@ -252,11 +252,14 @@ class TestGemRequire < Gem::TestCase
       stdlib one is already in $LOADED_FEATURES?. Reproducible by running the
       spaceship_specific_file test before this one" if java_platform?
 
-    lp = $LOAD_PATH.dup
-    lib_dir = File.expand_path(File.join(File.dirname(__FILE__), "../../lib"))
-    if File.exist?(lib_dir)
+    lib_dir = File.expand_path("../../lib", File.dirname(__FILE__))
+    if RbConfig::CONFIG["rubylibdir"] == lib_dir
+      # testing in the ruby repository where RubyGems' lib/ == stdlib lib/
+      # In that case we want to move the stdlib lib/ to still be after b-2 in $LOAD_PATH
+      lp = $LOAD_PATH.dup
       $LOAD_PATH.delete lib_dir
       $LOAD_PATH.push lib_dir
+      load_path_changed = true
     end
 
     require 'benchmark' # the stdlib
@@ -269,6 +272,7 @@ class TestGemRequire < Gem::TestCase
 
     # Activates a-1, but not b-1 and b-2
     assert_require 'test_gem_require_a'
+    assert_equal %w[a-1], loaded_spec_names
     assert $LOAD_PATH.include? a1.load_paths[0]
     refute $LOAD_PATH.include? b1.load_paths[0]
     refute $LOAD_PATH.include? b2.load_paths[0]
@@ -281,7 +285,10 @@ class TestGemRequire < Gem::TestCase
     # and that still exists in $LOAD_PATH (further down),
     # and as a result #gem_original_require returns false.
     refute require('benchmark'), "the benchmark stdlib should be recognized as already loaded"
+
     assert $LOAD_PATH.include? b2.load_paths[0]
+    assert $LOAD_PATH.index(b2.load_paths[0]) < $LOAD_PATH.index(RbConfig::CONFIG["rubylibdir"]),
+      "this test relies on the b-2 gem lib/ to be before stdlib to make sense"
 
     # We detected that we should activate b-2, so we did so, but
     # then #gem_original_require decided "I've already got some benchmark.rb" loaded.
@@ -290,7 +297,7 @@ class TestGemRequire < Gem::TestCase
 
     assert_equal %w[a-1 b-2], loaded_spec_names
   ensure
-    $LOAD_PATH.replace lp unless java_platform?
+    $LOAD_PATH.replace lp if load_path_changed
   end
 
   def test_already_activated_direct_conflict
