@@ -562,11 +562,11 @@ class TestGemRequire < Gem::TestCase
           File.write(dir + "/sub.rb", "#{prefix}warn 'uplevel', 'test', uplevel: 1\n")
           File.write(dir + "/main.rb", "require 'sub'\n")
           _, err = capture_subprocess_io do
-            system(*ruby_with_rubygems_in_load_path, "-w", "--disable=gems", "-C", dir, "-I.", "main.rb")
+            system(*ruby_with_rubygems_in_load_path, "-w", "--disable=gems", "-C", dir, "-I", dir, "main.rb")
           end
           assert_match(/main\.rb:1: warning: uplevel\ntest\n$/, err)
           _, err = capture_subprocess_io do
-            system(*ruby_with_rubygems_in_load_path, "-w", "--enable=gems", "-C", dir, "-I.", "main.rb")
+            system(*ruby_with_rubygems_in_load_path, "-w", "--enable=gems", "-C", dir, "-I", dir, "main.rb")
           end
           assert_match(/main\.rb:1: warning: uplevel\ntest\n$/, err)
         end
