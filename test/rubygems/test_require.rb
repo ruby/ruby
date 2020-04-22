@@ -259,20 +259,33 @@ class TestGemRequire < Gem::TestCase
       $LOAD_PATH.push lib_dir
     end
 
+    require 'benchmark' # the stdlib
+
     a1 = util_spec "a", "1", {"b" => ">= 1"}, "lib/test_gem_require_a.rb"
     b1 = util_spec "b", "1", nil, "lib/benchmark.rb"
     b2 = util_spec "b", "2", nil, "lib/benchmark.rb"
 
     install_specs b1, b2, a1
 
+    # Activates a-1, but not b-1 and b-2
     assert_require 'test_gem_require_a'
+    assert $LOAD_PATH.include? a1.load_paths[0]
+    refute $LOAD_PATH.include? b1.load_paths[0]
+    refute $LOAD_PATH.include? b2.load_paths[0]
+
     assert_equal unresolved_names, ["b (>= 1)"]
 
-    refute require('benchmark'), "benchmark should have already been loaded"
+    # The require('benchmark') below will activate b-2. However, its
+    # lib/benchmark.rb won't ever be loaded. The reason is MRI sees that even
+    # though b-2 is earlier in $LOAD_PATH it already loaded a benchmark.rb file
+    # and that still exists in $LOAD_PATH (further down),
+    # and as a result #gem_original_require returns false.
+    refute require('benchmark'), "the benchmark stdlib should be recognized as already loaded"
+    assert $LOAD_PATH.include? b2.load_paths[0]
 
     # We detected that we should activate b-2, so we did so, but
-    # then original_require decided "I've already got benchmark.rb" loaded.
-    # This case is fine because our lazy loading is provided exactly
+    # then #gem_original_require decided "I've already got some benchmark.rb" loaded.
+    # This case is fine because our lazy loading provided exactly
     # the same behavior as eager loading would have.
 
     assert_equal %w[a-1 b-2], loaded_spec_names
