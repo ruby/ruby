@@ -1,4 +1,4 @@
-== Implicit Conversion
+== Implicit Conversions
 
 Some Ruby methods accept one or more objects
 that can be either:
@@ -36,29 +36,32 @@ This class is Array-convertible:
 
 This class is not Array-convertible (no +to_ary+ method):
 
-    class NoToAry; end
+    class NotArrayConvertible; end
     a = []
-    a.replace(NoToAry.new) # Raises TypeError (no implicit conversion of NoToAry into Array)
+    # Raises TypeError (no implicit conversion of NotArrayConvertible into Array)
+    a.replace(NotArrayConvertible.new)
 
 This class is not Array-convertible (method +to_ary+ takes arguments):
 
-    class ToAryTakesArguments
+    class NotArrayConvertible
       def to_ary(x)
         [:foo, 'bar', baz = 2]
       end
     end
     a = []
-    a.replace(ToAryTakesArguments.new) # Raises ArgumentError (wrong number of arguments (given 0, expected 1))
+    # Raises ArgumentError (wrong number of arguments (given 0, expected 1))
+    a.replace(NotArrayConvertible.new)
 
 This class is not Array-convertible (method +to_ary+ returns non-Array):
 
-    class ToAryReturnsNonArray
+    class NotArrayConvertible
       def to_ary
         :foo
       end
     end
     a = []
-    a.replace(ToAryReturnsNonArray.new) # Raises TypeError (can't convert ToAryReturnsNonArray to Array (ToAryReturnsNonArray#to_ary gives Symbol))
+    # Raises TypeError (can't convert NotArrayConvertible to Array (NotArrayConvertible#to_ary gives Symbol))
+    a.replace(NotArrayConvertible.new)
 
 === Hash-Convertible Objects
 
@@ -82,29 +85,32 @@ This class is Hash-convertible:
 
 This class is not Hash-convertible (no +to_hash+ method):
 
-    class NoToHash; end
+    class NotHashConvertible; end
     h = {}
-    h.merge(NoToHash.new) # Raises TypeError (no implicit conversion of NoToHash into Hash)
+    # Raises TypeError (no implicit conversion of NotHashConvertible into Hash)
+    h.merge(NotHashConvertible.new)
 
 This class is not Hash-convertible (method +to_hash+ takes arguments):
 
-    class ToHashTakesArguments
+    class NotHashConvertible
       def to_hash(x)
         {foo: 0, bar: 1, baz: 2}
       end
     end
     h = {}
-    h.merge(ToHashTakesArguments.new) # Raises ArgumentError (wrong number of arguments (given 0, expected 1))
+    # Raises ArgumentError (wrong number of arguments (given 0, expected 1))
+    h.merge(NotHashConvertible.new)
 
 This class is not Hash-convertible (method +to_hash+ returns non-Hash):
 
-    class ToHashReturnsNonHash
+    class NotHashConvertible
       def to_hash
         :foo
       end
     end
     h = {}
-    h.merge(ToHashReturnsNonHash.new) # Raises TypeError (can't convert ToHashReturnsNonHash to Hash (ToHashReturnsNonHash#to_hash gives Symbol))
+    # Raises TypeError (can't convert NotHashConvertible to Hash (ToHashReturnsNonHash#to_hash gives Symbol))
+    h.merge(NotHashConvertible.new)
 
 === Integer-Convertible Objects
 
@@ -133,7 +139,8 @@ This class is not Integer-convertible (method +to_int+ takes arguments):
         3
       end
     end
-    Array.new(NotIntegerConvertible.new) # Raises ArgumentError (wrong number of arguments (given 0, expected 1))
+    # Raises ArgumentError (wrong number of arguments (given 0, expected 1))
+    Array.new(NotIntegerConvertible.new)
 
 This class is not Integer-convertible (method +to_int+ returns non-Integer):
 
@@ -142,7 +149,8 @@ This class is not Integer-convertible (method +to_int+ returns non-Integer):
         :foo
       end
     end
-    Array.new(NotIntegerConvertible.new) # Raises TypeError (can't convert NotIntegerConvertible to Integer (NotIntegerConvertible#to_int gives Symbol))
+    # Raises TypeError (can't convert NotIntegerConvertible to Integer (NotIntegerConvertible#to_int gives Symbol))
+    Array.new(NotIntegerConvertible.new)
 
 === String-Convertible Objects
 
@@ -165,23 +173,26 @@ This class is String-convertible:
 
 This class is not String-convertible (no +to_str+ method):
 
-    class NoToStr; end
-    String.new(NoToStr.new) # Raises TypeError (no implicit conversion of NoToStr into String)
+    class NotStringConvertible; end
+    # Raises TypeError (no implicit conversion of NotStringConvertible into String)
+    String.new(NotStringConvertible.new)
 
 This class is not String-convertible (method +to_str+ takes arguments):
 
-    class ToStrTakesArguments
+    class NotStringConvertible
       def to_str(x)
         'foo'
       end
     end
-    String.new(ToStrTakesArguments.new) # Raises ArgumentError (wrong number of arguments (given 0, expected 1))
+    # Raises ArgumentError (wrong number of arguments (given 0, expected 1))
+    String.new(NotStringConvertible.new)
 
 This class is not String-convertible (method +to_str+ returns non-String):
 
-    class ToStrReturnsNonString
+    class NotStringConvertible
       def to_str
         :foo
       end
     end
-    String.new(ToStrReturnsNonString.new) # Raises TypeError (can't convert ToStrReturnsNonString to String (ToStrReturnsNonString#to_str gives Symbol))
+    # Raises TypeError (can't convert NotStringConvertible to String (NotStringConvertible#to_str gives Symbol))
+    String.new(NotStringConvertible.new)

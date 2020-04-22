@@ -1811,8 +1811,8 @@ rb_hash_initialize(int argc, VALUE *argv, VALUE hash)
 /*
  *  call-seq:
  *    Hash[] -> new_empty_hash
- *    Hash[*keys_and_values] -> new_hash
  *    Hash[ [*2_element_arrays] ] -> new_hash
+ *    Hash[*objects] -> new_hash
  *    Hash[hash_convertible_object] -> new_hash
  *
  *  Returns a new \Hash object populated with the given objects, if any.
@@ -1826,18 +1826,18 @@ rb_hash_initialize(int argc, VALUE *argv, VALUE hash)
  *    h.default # => nil
  *    h.default_proc # => nil
  *
- *  When arguments <tt>*keys_and_values</tt> are given,
- *  the argument count must be an even number;
- *  returns a new \Hash object wherein each successive pair of arguments has become a key-value entry:
- *
- *    Hash[] # => {}
- *    Hash[:foo, 0, :bar, 1] # => {:foo=>0, :bar=>1}
- *
  *  When argument <tt>[*2_element_arrays]</tt> is given,
  *  each element of the outer array must be a 2-element array;
  *  returns a new \Hash object wherein each 2-element array forms a key-value entry:
  *
  *    Hash[ [ [:foo, 0], [:bar, 1] ] ] # => {:foo=>0, :bar=>1}
+ *
+ *  When arguments <tt>*objects</tt> are given,
+ *  the argument count must be an even number;
+ *  returns a new \Hash object wherein each successive pair of arguments has become a key-value entry:
+ *
+ *    Hash[] # => {}
+ *    Hash[:foo, 0, :bar, 1] # => {:foo=>0, :bar=>1}
  *
  *  When argument <tt>hash_convertible_object</tt> is given,
  *  the argument must be a
