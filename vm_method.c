@@ -936,7 +936,13 @@ search_method_protect(VALUE klass, ID id, VALUE *defined_class_ptr)
 MJIT_FUNC_EXPORTED const rb_method_entry_t *
 rb_method_entry(VALUE klass, ID id)
 {
-    return search_method(klass, id, NULL);
+    const rb_method_entry_t *me = search_method(klass, id, NULL);
+    if (me && me->def && me->def->type != VM_METHOD_TYPE_UNDEF) {
+        return me;
+    }
+    else {
+        return NULL;
+    }
 }
 
 static inline const rb_callable_method_entry_t *
