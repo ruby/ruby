@@ -144,7 +144,7 @@ module Gem
   # The path to standard location of the user's .gemrc file.
 
   def self.config_file
-    @config_file ||= find_config_file.untaint
+    @config_file ||= find_config_file.tap(&Gem::UNTAINT)
   end
 
   ##
