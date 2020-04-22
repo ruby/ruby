@@ -1419,7 +1419,6 @@ eom
     assert_valid_syntax('private def inc(x) = x + 1')
     assert_valid_syntax('private def obj.foo = 42')
     assert_valid_syntax('private def obj.inc(x) = x + 1')
-    assert_valid_syntax('private def obj.inc(x) = x + 1 => @x')
   end
 
   def test_methoddef_in_cond
