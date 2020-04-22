@@ -151,7 +151,7 @@ __EOC__
       # Include a file by relative path
       c1 = OpenSSL::Config.parse(include_file)
       assert_equal(["default", "sec-a", "sec-b", "sec-main"], c1.sections.sort)
-      assert_equal(["file-main", "file-a", "file-b"], c1["default"].keys)
+      assert_equal(["file-a", "file-b", "file-main"], c1["default"].keys.sort)
       assert_equal({"a" => "123"}, c1["sec-a"])
       assert_equal({"b" => "123"}, c1["sec-b"])
       assert_equal({"main" => "123", "key_outside_section" => "value_a"}, c1["sec-main"])
