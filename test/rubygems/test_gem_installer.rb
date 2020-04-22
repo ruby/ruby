@@ -2200,7 +2200,7 @@ gem 'other', version
   end
 
   def mask
-    0100755 & (~File.umask)
+    0100755
   end
 
 end

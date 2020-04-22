@@ -17,8 +17,13 @@ class TestGemCommandsBuildCommand < Gem::TestCase
 
     readme_file = File.join(@tempdir, 'README.md')
 
-    File.open readme_file, 'w' do |f|
-      f.write 'My awesome gem'
+    begin
+      umask_orig = File.umask(2)
+      File.open readme_file, 'w' do |f|
+        f.write 'My awesome gem'
+      end
+    ensure
+      File.umask(umask_orig)
     end
 
     @gem = util_spec 'some_gem' do |s|

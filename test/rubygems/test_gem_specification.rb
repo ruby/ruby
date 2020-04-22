@@ -3823,12 +3823,17 @@ end
       FileUtils.mkdir_p "test"
       FileUtils.mkdir_p "bin"
 
-      FileUtils.touch File.join("ext", "a", "extconf.rb")
-      FileUtils.touch File.join("lib", "code.rb")
-      FileUtils.touch File.join("test", "suite.rb")
+      begin
+        umask_orig = File.umask(2)
+        FileUtils.touch File.join("ext", "a", "extconf.rb")
+        FileUtils.touch File.join("lib", "code.rb")
+        FileUtils.touch File.join("test", "suite.rb")
 
-      File.open "bin/exec", "w", 0755 do |fp|
-        fp.puts "#!#{Gem.ruby}"
+        File.open "bin/exec", "w", 0755 do |fp|
+          fp.puts "#!#{Gem.ruby}"
+        end
+      ensure
+        File.umask(umask_orig)
       end
     end
   end
