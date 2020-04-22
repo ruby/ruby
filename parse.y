@@ -1114,7 +1114,7 @@ static int looking_at_eol_p(struct parser_params *p);
 %type <node> command_rhs arg_rhs
 %type <node> command_asgn mrhs mrhs_arg superclass block_call block_command
 %type <node> f_block_optarg f_block_opt
-%type <node> f_arglist f_arglist_opt f_args f_arg f_arg_item f_optarg f_marg f_marg_list f_margs f_rest_marg
+%type <node> f_arglist f_paren_args f_args f_arg f_arg_item f_optarg f_marg f_marg_list f_margs f_rest_marg
 %type <node> assoc_list assocs assoc undef_list backref string_dvar for_var
 %type <node> block_param opt_block_param block_param_def f_opt
 %type <node> f_kwarg f_kw f_block_kwarg f_block_kw
@@ -2445,7 +2445,7 @@ arg		: lhs '=' arg_rhs
 		    /*% %*/
 		    /*% ripper: ifop!($1, $3, $6) %*/
 		    }
-		| defn_head f_arglist_opt '=' arg
+		| defn_head f_paren_args '=' arg
 		    {
 			restore_defun(p, $<node>1->nd_defn);
 		    /*%%%*/
@@ -2454,7 +2454,7 @@ arg		: lhs '=' arg_rhs
 		    /*% ripper: def!(get_value($1), $2, $4) %*/
 			local_pop(p);
 		    }
-		| defs_head f_arglist_opt '=' arg
+		| defs_head f_paren_args '=' arg
 		    {
 			restore_defun(p, $<node>1->nd_defn);
 		    /*%%%*/
@@ -4888,18 +4888,7 @@ superclass	: '<'
 		    }
 		;
 
-f_arglist_opt	: f_arglist
-		| /* none */
-		    {
-		    /*%%%*/
-			$$ = new_args_tail(p, Qnone, Qnone, Qnone, &@0);
-			$$ = new_args(p, Qnone, Qnone, Qnone, Qnone, $$, &@0);
-		    /*% %*/
-		    /*% ripper: Qnil %*/
-		    }
-		;
-
-f_arglist	: '(' f_args rparen
+f_paren_args	: '(' f_args rparen
 		    {
 		    /*%%%*/
 			$$ = $2;
@@ -4923,6 +4912,9 @@ f_arglist	: '(' f_args rparen
 			SET_LEX_STATE(EXPR_BEG);
 			p->command_start = TRUE;
 		    }
+                ;
+
+f_arglist       : f_paren_args
 		|   {
 			$<ctxt>$ = p->ctxt;
 			p->ctxt.in_kwarg = 1;
