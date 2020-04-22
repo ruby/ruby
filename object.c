@@ -3813,32 +3813,11 @@ rb_Float(VALUE val)
     return rb_convert_to_float(val, TRUE);
 }
 
-/*
- *  call-seq:
- *     Float(arg, exception: true)    -> float or nil
- *
- *  Returns <i>arg</i> converted to a float. Numeric types are
- *  converted directly, and with exception to String and
- *  <code>nil</code> the rest are converted using
- *  <i>arg</i><code>.to_f</code>.  Converting a String with invalid
- *  characters will result in a ArgumentError.  Converting
- *  <code>nil</code> generates a TypeError.  Exceptions can be
- *  suppressed by passing <code>exception: false</code>.
- *
- *     Float(1)                 #=> 1.0
- *     Float("123.456")         #=> 123.456
- *     Float("123.0_badstring") #=> ArgumentError: invalid value for Float(): "123.0_badstring"
- *     Float(nil)               #=> TypeError: can't convert nil into Float
- *     Float("123.0_badstring", exception: false)  #=> nil
- */
-
 static VALUE
-rb_f_float(int argc, VALUE *argv, VALUE obj)
+rb_f_float(rb_execution_context_t *ec, VALUE obj, VALUE arg, VALUE opts)
 {
-    VALUE arg = Qnil, opts = Qnil;
-
-    rb_scan_args(argc, argv, "1:", &arg, &opts);
-    return rb_convert_to_float(arg, opts_exception_p(opts));
+    int exception = rb_bool_expected(opts, "exception");
+    return rb_convert_to_float(arg, exception);
 }
 
 static VALUE
@@ -4668,7 +4647,6 @@ InitVM_Object(void)
     rb_define_global_function("format", f_sprintf, -1);
 
     rb_define_global_function("Integer", rb_f_integer, -1);
-    rb_define_global_function("Float", rb_f_float, -1);
 
     rb_define_global_function("String", rb_f_string, 1);
     rb_define_global_function("Array", rb_f_array, 1);

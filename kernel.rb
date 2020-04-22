@@ -26,4 +26,28 @@ module Kernel
   def clone(freeze: nil)
     __builtin_rb_obj_clone2(freeze)
   end
+
+  module_function
+
+  #
+  #  call-seq:
+  #     Float(arg, exception: true)    -> float or nil
+  #
+  #  Returns <i>arg</i> converted to a float. Numeric types are
+  #  converted directly, and with exception to String and
+  #  <code>nil</code> the rest are converted using
+  #  <i>arg</i><code>.to_f</code>.  Converting a String with invalid
+  #  characters will result in a ArgumentError.  Converting
+  #  <code>nil</code> generates a TypeError.  Exceptions can be
+  #  suppressed by passing <code>exception: false</code>.
+  #
+  #     Float(1)                 #=> 1.0
+  #     Float("123.456")         #=> 123.456
+  #     Float("123.0_badstring") #=> ArgumentError: invalid value for Float(): "123.0_badstring"
+  #     Float(nil)               #=> TypeError: can't convert nil into Float
+  #     Float("123.0_badstring", exception: false)  #=> nil
+  #
+  def Float(arg, exception: true)
+    __builtin_rb_f_float(arg, exception)
+  end
 end
