@@ -1415,9 +1415,11 @@ eom
   end
 
   def test_methoddef_endless
-    assert_valid_syntax('private def foo = 42')
+    assert_syntax_error('private def foo = 42', /unexpected '='/)
+    assert_valid_syntax('private def foo() = 42')
     assert_valid_syntax('private def inc(x) = x + 1')
-    assert_valid_syntax('private def obj.foo = 42')
+    assert_syntax_error('private def obj.foo = 42', /unexpected '='/)
+    assert_valid_syntax('private def obj.foo() = 42')
     assert_valid_syntax('private def obj.inc(x) = x + 1')
     eval('def self.inc(x) = x + 1 => @x')
     assert_equal(:inc, @x)
