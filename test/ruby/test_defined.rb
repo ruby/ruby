@@ -123,6 +123,14 @@ class TestDefined < Test::Unit::TestCase
     assert_same(defined?(Foo), defined?(Array), feature7035)
   end
 
+  def test_defined_after_undef
+    x = Object.new
+    def x.foo; end
+    assert(defined?(x.foo))
+    x.instance_eval {undef :foo}
+    assert(!defined?(x.foo), "undefed method should not be defined?")
+  end
+
   class TestAutoloadedSuperclass
     autoload :A, "a"
   end

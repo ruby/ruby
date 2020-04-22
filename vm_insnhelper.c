@@ -3614,7 +3614,7 @@ vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_
 	VALUE klass = CLASS_OF(v);
 	const rb_method_entry_t *me = rb_method_entry(klass, SYM2ID(obj));
 
-	if (me) {
+	if (!UNDEFINED_METHOD_ENTRY_P(me)) {
 	    switch (METHOD_ENTRY_VISI(me)) {
 	      case METHOD_VISI_PRIVATE:
 		break;
