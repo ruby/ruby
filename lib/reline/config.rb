@@ -91,8 +91,8 @@ class Reline::Config
     # In the XDG Specification, if ~/.config/readline/inputrc exists, then
     # ~/.inputrc should not be read, but for compatibility with GNU Readline,
     # if ~/.inputrc exists, then it is given priority.
-    path = File.expand_path('~/.inputrc')
-    return path if File.exist?(path)
+    home_rc_path = File.expand_path('~/.inputrc')
+    return home_rc_path if File.exist?(home_rc_path)
 
     case ENV['XDG_CONFIG_HOME']
     when nil, ''
@@ -102,6 +102,8 @@ class Reline::Config
       path = File.expand_path("#{ENV['XDG_CONFIG_HOME']}/readline/inputrc")
       return path if File.exist?(path)
     end
+
+    return home_rc_path
   end
 
   def read(file = nil)

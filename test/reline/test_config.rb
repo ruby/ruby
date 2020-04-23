@@ -227,12 +227,11 @@ class Reline::Config::Test < Reline::TestCase
   def test_xdg_config_home
     home_backup = ENV['HOME']
     xdg_config_home_backup = ENV['XDG_CONFIG_HOME']
-    nonexistence_dir = '/the_nonexistence_dir!!!!!!'
     xdg_config_home = File.expand_path("#{@tmpdir}/.config/example_dir")
     expected = File.expand_path("#{xdg_config_home}/readline/inputrc")
     FileUtils.mkdir_p(File.dirname(expected))
     FileUtils.touch(expected)
-    ENV['HOME'] = nonexistence_dir
+    ENV['HOME'] = @tmpdir
     ENV['XDG_CONFIG_HOME'] = xdg_config_home
     assert_equal expected, @config.inputrc_path
     FileUtils.rm(expected)
