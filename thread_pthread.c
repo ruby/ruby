@@ -1622,7 +1622,7 @@ native_set_another_thread_name(rb_nativethread_id_t thread_id, VALUE name)
     char buf[thread_name_max];
     const char *s = "";
 # if !defined SET_ANOTHER_THREAD_NAME
-    if (pthread_equal(pthread_self(), thread_id)) return;
+    if (!pthread_equal(pthread_self(), thread_id)) return;
 # endif
     if (!NIL_P(name)) {
         long n;
