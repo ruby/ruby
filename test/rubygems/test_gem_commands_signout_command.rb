@@ -8,6 +8,7 @@ class TestGemCommandsSignoutCommand < Gem::TestCase
 
   def setup
     super
+    File.delete Gem.configuration.credentials_path if File.exist?(Gem.configuration.credentials_path)
     @cmd = Gem::Commands::SignoutCommand.new
   end
 

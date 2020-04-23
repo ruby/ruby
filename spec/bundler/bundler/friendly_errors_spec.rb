@@ -6,7 +6,10 @@ require "cgi"
 
 RSpec.describe Bundler, "friendly errors" do
   context "with invalid YAML in .gemrc" do
+    let(:config_home) { File.dirname(Gem.configuration.config_file_name) }
+
     before do
+      FileUtils.mkdir_p config_home
       File.open(Gem.configuration.config_file_name, "w") do |f|
         f.write "invalid: yaml: hah"
       end
@@ -24,7 +27,11 @@ RSpec.describe Bundler, "friendly errors" do
 
       bundle :install, :env => { "DEBUG" => "true" }
 
-      expect(err).to include("Failed to load #{home(".gemrc")}")
+      if Gem::VERSION >= "3.2.0.pre.1"
+        expect(err).to include("Failed to load #{File.join(config_home, "gemrc")}")
+      else
+        expect(err).to include("Failed to load #{home(".gemrc")}")
+      end
       expect(exitstatus).to eq(0) if exitstatus
     end
   end

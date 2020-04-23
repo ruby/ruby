@@ -120,6 +120,24 @@ module RDoc
     end
   end
 
+  def self.home
+    rdoc_dir = begin
+                File.expand_path('~/.rdoc')
+              rescue ArgumentError
+              end
+
+    if File.directory?(rdoc_dir)
+      rdoc_dir
+    else
+      # XDG
+      xdg_data_home = ENV["XDG_DATA_HOME"] || File.join(File.expand_path("~"), '.local', 'share')
+      unless File.exist?(xdg_data_home)
+        FileUtils.mkdir_p xdg_data_home
+      end
+      File.join xdg_data_home, "rdoc"
+    end
+  end
+
   autoload :RDoc,           'rdoc/rdoc'
 
   autoload :CrossReference, 'rdoc/cross_reference'

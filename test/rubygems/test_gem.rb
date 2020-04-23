@@ -1359,6 +1359,8 @@ class TestGem < Gem::TestCase
     parts = [@userhome, '.gem', Gem.ruby_engine]
     parts << RbConfig::CONFIG['ruby_version'] unless RbConfig::CONFIG['ruby_version'].empty?
 
+    FileUtils.mkdir_p File.join(parts)
+
     assert_equal File.join(parts), Gem.user_dir
   end
 

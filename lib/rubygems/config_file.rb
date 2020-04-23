@@ -261,7 +261,12 @@ if you believe they were disclosed to a third party.
   # Location of RubyGems.org credentials
 
   def credentials_path
-    File.join Gem.user_home, '.gem', 'credentials'
+    credentials = File.join Gem.user_home, '.gem', 'credentials'
+    if File.exist? credentials
+      credentials
+    else
+      File.join Gem.data_home, "gem", "credentials"
+    end
   end
 
   def load_api_keys
@@ -444,6 +449,10 @@ if you believe they were disclosed to a third party.
 
   # Writes out this config file, replacing its source.
   def write
+    unless File.exist?(File.dirname(config_file_name))
+      FileUtils.mkdir_p File.dirname(config_file_name)
+    end
+
     File.open config_file_name, 'w' do |io|
       io.write to_yaml
     end

@@ -271,10 +271,19 @@ module IRB # :nodoc:
     if irbrc = ENV["IRBRC"]
       yield proc{|rc| rc == "rc" ? irbrc : irbrc+rc}
     end
+    if xdg_config_home = ENV["XDG_CONFIG_HOME"]
+      irb_home = File.join(xdg_config_home, "irb")
+      unless File.exist? irb_home
+        require 'fileutils'
+        FileUtils.mkdir_p irb_home
+      end
+      yield proc{|rc| irb_home + "/irb#{rc}"}
+    end
     if home = ENV["HOME"]
       yield proc{|rc| home+"/.irb#{rc}"}
     end
     current_dir = Dir.pwd
+    yield proc{|rc| current_dir+"/.config/irb/irb#{rc}"}
     yield proc{|rc| current_dir+"/.irb#{rc}"}
     yield proc{|rc| current_dir+"/irb#{rc.sub(/\A_?/, '.')}"}
     yield proc{|rc| current_dir+"/_irb#{rc}"}

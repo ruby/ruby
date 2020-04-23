@@ -14,10 +14,7 @@ module RDoc::RI::Paths
 
   BASE    = File.join RbConfig::CONFIG['ridir'], version
 
-  HOMEDIR = begin
-              File.expand_path('~/.rdoc')
-            rescue ArgumentError
-            end
+  HOMEDIR = RDoc.home
   #:startdoc:
 
   ##
