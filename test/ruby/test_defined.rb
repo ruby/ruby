@@ -61,6 +61,14 @@ class TestDefined < Test::Unit::TestCase
     f.attrasgn_test { |v| assert(v) }
   end
 
+  def test_defined_undef
+    x = Object.new
+    def x.foo; end
+    assert(defined?(x.foo))
+    x.instance_eval {undef :foo}
+    assert(!defined?(x.foo), "undefed method should not be defined?")
+  end
+
   def test_defined_yield
     assert(defined_test)		# not iterator
     assert(!defined_test{})	        # called as iterator
