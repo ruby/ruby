@@ -1,0 +1,8 @@
+benchmark:
+  str2int: "Integer('42')"
+  str2int_true: "Integer('42', exception: true)"
+  str2int_false: "Integer('42', exception: false)"
+  float2int: "Integer(4.2)"
+  float2int_true: "Integer(4.2, exception: true)"
+  float2int_false: "Integer(4.2, exception: false)"
+loop_count: 10000

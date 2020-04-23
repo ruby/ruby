@@ -31,6 +31,41 @@ module Kernel
 
   #
   #  call-seq:
+  #     Integer(arg, base=0, exception: true)    -> integer or nil
+  #
+  #  Converts <i>arg</i> to an Integer.
+  #  Numeric types are converted directly (with floating point numbers
+  #  being truncated).  <i>base</i> (0, or between 2 and 36) is a base for
+  #  integer string representation.  If <i>arg</i> is a String,
+  #  when <i>base</i> is omitted or equals zero, radix indicators
+  #  (<code>0</code>, <code>0b</code>, and <code>0x</code>) are honored.
+  #  In any case, strings should be strictly conformed to numeric
+  #  representation. This behavior is different from that of
+  #  String#to_i.  Non string values will be converted by first
+  #  trying <code>to_int</code>, then <code>to_i</code>.
+  #
+  #  Passing <code>nil</code> raises a TypeError, while passing a String that
+  #  does not conform with numeric representation raises an ArgumentError.
+  #  This behavior can be altered by passing <code>exception: false</code>,
+  #  in this case a not convertible value will return <code>nil</code>.
+  #
+  #     Integer(123.999)    #=> 123
+  #     Integer("0x1a")     #=> 26
+  #     Integer(Time.new)   #=> 1204973019
+  #     Integer("0930", 10) #=> 930
+  #     Integer("111", 2)   #=> 7
+  #     Integer(nil)        #=> TypeError: can't convert nil into Integer
+  #     Integer("x")        #=> ArgumentError: invalid value for Integer(): "x"
+  #
+  #     Integer("x", exception: false)        #=> nil
+  #
+  #
+  def Integer(arg, base = 0, exception: true)
+    __builtin_rb_f_integer(arg, base, exception)
+  end
+
+  #
+  #  call-seq:
   #     Float(arg, exception: true)    -> float or nil
   #
   #  Returns <i>arg</i> converted to a float. Numeric types are

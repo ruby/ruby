@@ -3451,63 +3451,17 @@ rb_opts_exception_p(VALUE opts, int default_value)
 
 #define opts_exception_p(opts) rb_opts_exception_p((opts), TRUE)
 
-/*
- *  call-seq:
- *     Integer(arg, base=0, exception: true)    -> integer or nil
- *
- *  Converts <i>arg</i> to an Integer.
- *  Numeric types are converted directly (with floating point numbers
- *  being truncated).  <i>base</i> (0, or between 2 and 36) is a base for
- *  integer string representation.  If <i>arg</i> is a String,
- *  when <i>base</i> is omitted or equals zero, radix indicators
- *  (<code>0</code>, <code>0b</code>, and <code>0x</code>) are honored.
- *  In any case, strings should be strictly conformed to numeric
- *  representation. This behavior is different from that of
- *  String#to_i.  Non string values will be converted by first
- *  trying <code>to_int</code>, then <code>to_i</code>.
- *
- *  Passing <code>nil</code> raises a TypeError, while passing a String that
- *  does not conform with numeric representation raises an ArgumentError.
- *  This behavior can be altered by passing <code>exception: false</code>,
- *  in this case a not convertible value will return <code>nil</code>.
- *
- *     Integer(123.999)    #=> 123
- *     Integer("0x1a")     #=> 26
- *     Integer(Time.new)   #=> 1204973019
- *     Integer("0930", 10) #=> 930
- *     Integer("111", 2)   #=> 7
- *     Integer(nil)        #=> TypeError: can't convert nil into Integer
- *     Integer("x")        #=> ArgumentError: invalid value for Integer(): "x"
- *
- *     Integer("x", exception: false)        #=> nil
- *
- */
-
 static VALUE
-rb_f_integer(int argc, VALUE *argv, VALUE obj)
+rb_f_integer(rb_execution_context_t *ec, VALUE obj, VALUE arg, VALUE vbase, VALUE opts)
 {
-    VALUE arg = Qnil, opts = Qnil;
     int base = 0;
+    int exception = rb_bool_expected(opts, "exception");
 
-    if (argc > 1) {
-        int narg = 1;
-        VALUE vbase = rb_check_to_int(argv[1]);
-        if (!NIL_P(vbase)) {
-            base = NUM2INT(vbase);
-            narg = 2;
-        }
-        if (argc > narg) {
-            VALUE hash = rb_check_hash_type(argv[argc-1]);
-            if (!NIL_P(hash)) {
-                opts = rb_extract_keywords(&hash);
-                if (!hash) --argc;
-            }
-        }
+    if (!NIL_P(vbase) && FIXNUM_P(vbase)) {
+        base = NUM2INT(vbase);
     }
-    rb_check_arity(argc, 1, 2);
-    arg = argv[0];
 
-    return rb_convert_to_integer(arg, base, opts_exception_p(opts));
+    return rb_convert_to_integer(arg, base, exception);
 }
 
 static double
@@ -4645,8 +4599,6 @@ InitVM_Object(void)
 
     rb_define_global_function("sprintf", f_sprintf, -1);
     rb_define_global_function("format", f_sprintf, -1);
-
-    rb_define_global_function("Integer", rb_f_integer, -1);
 
     rb_define_global_function("String", rb_f_string, 1);
     rb_define_global_function("Array", rb_f_array, 1);
