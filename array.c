@@ -1555,13 +1555,15 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *     ary[index]                -> obj     or nil
  *     ary[start, length]        -> new_ary or nil
  *     ary[range]                -> new_ary or nil
+ *     ary[arith_sequence]       -> new_ary
  *     ary.slice(index)          -> obj     or nil
  *     ary.slice(start, length)  -> new_ary or nil
  *     ary.slice(range)          -> new_ary or nil
  *
  *  Element Reference --- Returns the element at +index+, or returns a
  *  subarray starting at the +start+ index and continuing for +length+
- *  elements, or returns a subarray specified by +range+ of indices.
+ *  elements, or returns a subarray specified by +range+ of indices, or
+ *  by Enumerator::ArithmeticSequence.
  *
  *  Negative indices count backward from the end of the array (-1 is the last
  *  element).  For +start+ and +range+ cases the starting index is just before
@@ -1574,10 +1576,17 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *     a[2] +  a[0] + a[1]    #=> "cab"
  *     a[6]                   #=> nil
  *     a[1, 2]                #=> [ "b", "c" ]
+ *     a[-3, 3]               #=> [ "c", "d", "e" ]
+ *
  *     a[1..3]                #=> [ "b", "c", "d" ]
  *     a[4..7]                #=> [ "e" ]
  *     a[6..10]               #=> nil
- *     a[-3, 3]               #=> [ "c", "d", "e" ]
+ *
+ *     a[(1..4).step(2)]      #=> [ "b", "d"]
+ *     a[(2..).step(2)]       #=> [ "c", "e"]
+ *     a[(1..4) % 2]          #=> [ "b", "d"]
+ *     a[5.step(by: -1)]      #=> [ "e", "d", "c", "b", "a" ]
+ *
  *     # special cases
  *     a[5]                   #=> nil
  *     a[6, 1]                #=> nil
@@ -1607,10 +1616,29 @@ rb_ary_aref2(VALUE ary, VALUE b, VALUE e)
     return rb_ary_subseq(ary, beg, len);
 }
 
+static VALUE
+less_than_len_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, len))
+{
+    return rb_int_gt(len, argv[0]);
+}
+
+static VALUE
+more_than_len_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, len))
+{
+    return rb_int_ge(argv[0], len);
+}
+
+static VALUE
+more_than_zero_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, dummy))
+{
+    return rb_int_ge(argv[0], INT2FIX(0));
+}
+
 MJIT_FUNC_EXPORTED VALUE
 rb_ary_aref1(VALUE ary, VALUE arg)
 {
-    long beg, len;
+    long beg, len, ilen;
+    VALUE indexes, step, retval;
 
     /* special case - speeding up */
     if (FIXNUM_P(arg)) {
@@ -1624,6 +1652,24 @@ rb_ary_aref1(VALUE ary, VALUE arg)
 	return Qnil;
       default:
 	return rb_ary_subseq(ary, beg, len);
+    }
+    if (rb_obj_is_kind_of(arg, rb_cArithSeq)) {
+        step = rb_funcall(arg, rb_intern("step"), 0);
+        if(RTEST(rb_int_gt(step, INT2FIX(0)))) {
+            indexes = rb_block_call(arg, rb_intern("take_while"), 0, 0, less_than_len_i, LONG2NUM(RARRAY_LEN(ary)));
+        } else {
+            indexes = rb_block_call(arg, rb_intern("take_while"), 0, 0, more_than_zero_i, 0);
+            indexes = rb_block_call(indexes, rb_intern("drop_while"), 0, 0, more_than_len_i, LONG2NUM(RARRAY_LEN(ary)));
+        }
+
+        ilen = RARRAY_LEN(indexes);
+        retval = rb_ary_new2(ilen);
+        for(int i=0; i < ilen; i++) {
+            ARY_SET(retval, i, RARRAY_AREF(ary, FIX2LONG(RARRAY_AREF(indexes, i))));
+        }
+        ARY_SET_LEN(retval, ilen);
+
+        return retval;
     }
     return rb_ary_entry(ary, NUM2LONG(arg));
 }
