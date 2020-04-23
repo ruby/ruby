@@ -1748,7 +1748,7 @@ set_proc_default(VALUE hash, VALUE proc)
  *  call-seq:
  *     Hash.new                          -> new_hash
  *     Hash.new(default_value)           -> new_hash
- *     Hash.new {|hash, key| block }     -> new_hash
+ *     Hash.new {|hash, key| ... }       -> new_hash
  *
  *  Returns a new empty Hash object.
  *
