@@ -6,7 +6,6 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'set'
 require 'rubygems/version'
 require 'rubygems/requirement'
 require 'rubygems/platform'
@@ -197,7 +196,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Tracking removed method calls to warn users during build time.
   REMOVED_METHODS = [:rubyforge_project=].freeze # :nodoc:
   def removed_method_calls
-    @removed_method_calls ||= Set.new
+    @removed_method_calls ||= []
   end
 
   ######################################################################
