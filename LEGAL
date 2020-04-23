@@ -282,6 +282,21 @@ enc/trans/JIS/UCS@SIP%JISX0213-2.src::
     Copyright (C) 2001 I'O, All Rights Reserved.  
     You can use, modify, distribute this table freely.
 
+enc/trans/ucm/glibc-BIG5-2.3.3.ucm::
+enc/trans/ucm/glibc-BIG5HKSCS-2.3.3.ucm::
+
+  >>>
+    Copyright (C) 2001-2005, International Business Machines
+    Corporation and others.  All Rights Reserved.
+
+enc/trans/ucm/windows-950-2000.ucm::
+enc/trans/ucm/windows-950_hkscs-2001.ucm::
+
+  >>>
+    Copyright (C) 2001-2002, International Business Machines
+    Corporation and others.  All Rights Reserved.
+
+
 configure::
 
   This file is free software.
