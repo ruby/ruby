@@ -527,7 +527,7 @@ module Test
             parallel = @options[:parallel]
             @options[:parallel] = false
             suites, rep = rep.partition {|r| r[:testcase] && r[:file] && r[:report].any? {|e| !e[2].is_a?(MiniTest::Skip)}}
-            suites.map {|r| r[:file]}.uniq.each {|file| require file}
+            suites.map {|r| File.realpath(r[:file])}.uniq.each {|file| require file}
             suites.map! {|r| eval("::"+r[:testcase])}
             del_status_line or puts
             unless suites.empty?
