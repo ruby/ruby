@@ -779,6 +779,7 @@ module MiniTest
     @@installed_at_exit ||= false
     @@out = $stdout
     @@after_tests = []
+    @@current_repeat_count = 0
 
     ##
     # A simple hook allowing you to run a block of code after _all_ of
