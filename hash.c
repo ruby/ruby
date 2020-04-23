@@ -1810,22 +1810,74 @@ rb_hash_initialize(int argc, VALUE *argv, VALUE hash)
 
 /*
  *  call-seq:
- *     Hash[ key, value, ... ]         -> new_hash
- *     Hash[ [ [key, value], ... ] ]   -> new_hash
- *     Hash[ object ]                  -> new_hash
+ *    Hash[] -> new_empty_hash
+ *    Hash[ [*2_element_arrays] ] -> new_hash
+ *    Hash[*objects] -> new_hash
+ *    Hash[hash_convertible_object] -> new_hash
  *
- *  Creates a new hash populated with the given objects.
+ *  Returns a new \Hash object populated with the given objects, if any.
  *
- *  Similar to the literal <code>{ _key_ => _value_, ... }</code>. In the first
- *  form, keys and values occur in pairs, so there must be an even number of
- *  arguments.
+ *  The initial default value and default proc are set to <tt>nil</tt>
+ *  (see {Default Values}[#class-Hash-label-Default+Values]):
  *
- *  The second and third form take a single argument which is either an array
- *  of key-value pairs or an object convertible to a hash.
+ *    h = Hash[]
+ *    h # => {}
+ *    h.class # => Hash
+ *    h.default # => nil
+ *    h.default_proc # => nil
  *
- *     Hash["a", 100, "b", 200]             #=> {"a"=>100, "b"=>200}
- *     Hash[ [ ["a", 100], ["b", 200] ] ]   #=> {"a"=>100, "b"=>200}
- *     Hash["a" => 100, "b" => 200]         #=> {"a"=>100, "b"=>200}
+ *  When argument <tt>[*2_element_arrays]</tt> is given,
+ *  each element of the outer array must be a 2-element array;
+ *  returns a new \Hash object wherein each 2-element array forms a key-value entry:
+ *
+ *    Hash[ [ [:foo, 0], [:bar, 1] ] ] # => {:foo=>0, :bar=>1}
+ *
+ *  When arguments <tt>*objects</tt> are given,
+ *  the argument count must be an even number;
+ *  returns a new \Hash object wherein each successive pair of arguments has become a key-value entry:
+ *
+ *    Hash[] # => {}
+ *    Hash[:foo, 0, :bar, 1] # => {:foo=>0, :bar=>1}
+ *
+ *  When argument <tt>hash_convertible_object</tt> is given,
+ *  the argument must be a
+ *  {Hash-convertible object}[doc/implicit_conversion_rdoc.html#label-Hash-Convertible+Objects];
+ *  converts the object and returns the resulting \Hash object:
+ *
+ *    class Foo
+ *      def to_hash
+ *        {foo: 0, bar: 1}
+ *      end
+ *    end
+ *    Hash[Foo.new] # => {:foo=>0, :bar=>1}
+ *
+ *  ---
+ *
+ *  Raises an exception if the argument count is 1,
+ *  but the argument is not an array of 2-element arrays or a
+ *  {Hash-convertible object}[doc/implicit_conversion_rdoc.html#label-Hash-Convertible+Objects]:
+ *
+ *    Hash[:foo] # Raises ArgumentError (odd number of arguments
+ *    Hash[ [ [:foo, 0, 1] ] ] # Raises ArgumentError (invalid number of elements (3 for 1..2))
+ *
+ *  Raises an exception if the argument count is odd and greater than 1:
+ *
+ *    Hash[0, 1, 2] # Raises ArgumentError (odd number of arguments for Hash)
+ *
+ *  Raises an exception if the argument is an array containing an element
+ *  that is not a 2-element array:
+ *
+ *    Hash[ [ :foo ] ] # Raises ArgumentError (wrong element type Symbol at 0 (expected array))
+ *
+ *  Raises an exception if the argument is an array containing an element
+ *  that is an array of size different from 2:
+ *
+ *    Hash[ [ [0, 1, 2] ] ] # Raises ArgumentError (invalid number of elements (3 for 1..2))
+ *
+ *  Raises an exception if any proposed key is not a valid key:
+ *
+ *    Hash[:foo, 0, BasicObject.new, 1] # Raises NoMethodError (undefined method `hash' for #<BasicObject:>)
+ *    Hash[ [ [:foo, 0], [BasicObject.new, 1] ] ] # Raises NoMethodError (undefined method `hash' for #<BasicObject:0x00000000064b1328>)
  */
 
 static VALUE
