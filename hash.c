@@ -6679,6 +6679,7 @@ env_update(VALUE env, VALUE hash)
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.delete(:bar) # => 1
  *    h # => {:foo=>0, :baz=>2}
+ *
  *  === Entry Order
  *
  *  A Hash object presents its entries in the order of their creation. This is seen in:
@@ -6717,7 +6718,7 @@ env_update(VALUE env, VALUE hash)
  *
  *  ==== Invalid \Hash Keys
  *
- *  An object that lacks method +hash+ cannot be a Hash key:
+ *  An object that lacks method #hash cannot be a \Hash key:
  *
  *    # Raises NoMethodError (undefined method `hash' for #<BasicObject>)
  *    {BasicObject.new => 0}
@@ -6735,7 +6736,7 @@ env_update(VALUE env, VALUE hash)
  *    h[a0] # => 0
  *    a0.hash # => 110002110
  *
- *  Modifying array element +a0[0]+ changes its hash value:
+ *  Modifying array element <tt>a0[0]</tt> changes its hash value:
  *
  *    a0[0] = :bam
  *    a0.hash # => 1069447059
@@ -6911,6 +6912,7 @@ env_update(VALUE env, VALUE hash)
  *
  *  You can set the default proc to +nil+, which restores control to the default value:
  *
+ *    h.delete(:nosuch)
  *    h.default_proc = nil
  *    h.default = false
  *    h[:nosuch] # => false
