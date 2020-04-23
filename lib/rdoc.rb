@@ -126,7 +126,7 @@ module RDoc
               rescue ArgumentError
               end
 
-    if File.exist?(rdoc_dir)
+    if File.directory?(rdoc_dir)
       rdoc_dir
     else
       # XDG
