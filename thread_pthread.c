@@ -1572,6 +1572,15 @@ setup_communication_pipe_internal(int pipes[2])
 # define SET_CURRENT_THREAD_NAME(name) prctl(PR_SET_NAME, name)
 #endif
 
+#if defined(__linux__)
+static const size_t thread_name_max = 16;
+#elif defined(__APPLE__)
+/* Undocumented, and main thread seems unlimited */
+static const size_t thread_name_max = 64;
+#else
+static const size_t thread_name_max = 16;
+#endif
+
 static VALUE threadptr_invoke_proc_location(rb_thread_t *th);
 
 static void
@@ -1584,14 +1593,14 @@ native_set_thread_name(rb_thread_t *th)
     }
     else if ((loc = threadptr_invoke_proc_location(th)) != Qnil) {
         char *name, *p;
-        char buf[16];
+        char buf[thread_name_max];
         size_t len;
         int n;
 
         name = RSTRING_PTR(RARRAY_AREF(loc, 0));
         p = strrchr(name, '/'); /* show only the basename of the path. */
         if (p && p[1])
-          name = p + 1;
+            name = p + 1;
 
         n = snprintf(buf, sizeof(buf), "%s:%d", name, NUM2INT(RARRAY_AREF(loc, 1)));
         rb_gc_force_recycle(loc); /* acts as a GC guard, too */
@@ -1606,15 +1615,30 @@ native_set_thread_name(rb_thread_t *th)
 #endif
 }
 
-static VALUE
+static void
 native_set_another_thread_name(rb_nativethread_id_t thread_id, VALUE name)
 {
-#ifdef SET_ANOTHER_THREAD_NAME
+#if defined SET_ANOTHER_THREAD_NAME || defined SET_CURRENT_THREAD_NAME
+    char buf[thread_name_max];
     const char *s = "";
-    if (!NIL_P(name)) s = RSTRING_PTR(name);
+# if !defined SET_ANOTHER_THREAD_NAME
+    if (pthread_equal(pthread_self(), thread_id)) return;
+# endif
+    if (!NIL_P(name)) {
+        long n;
+        RSTRING_GETMEM(name, s, n);
+        if (n >= (int)sizeof(buf)) {
+            memcpy(buf, s, sizeof(buf)-1);
+            buf[sizeof(buf)-1] = '\0';
+            s = buf;
+        }
+    }
+# if defined SET_ANOTHER_THREAD_NAME
     SET_ANOTHER_THREAD_NAME(thread_id, s);
+# elif defined SET_CURRENT_THREAD_NAME
+    SET_CURRENT_THREAD_NAME(s);
+# endif
 #endif
-    return name;
 }
 
 static void
