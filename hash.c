@@ -1748,7 +1748,7 @@ set_proc_default(VALUE hash, VALUE proc)
  *  call-seq:
  *     Hash.new                          -> new_hash
  *     Hash.new(default_value)           -> new_hash
- *     Hash.new { |hash, key| ... }      -> new_hash
+ *     Hash.new {|hash, key| ... }      -> new_hash
  *
  *  Returns a new empty Hash object.
  *
@@ -1860,7 +1860,7 @@ rb_hash_initialize(int argc, VALUE *argv, VALUE hash)
  *  but the argument is not an array of 2-element arrays or a
  *  {Hash-convertible object}[doc/implicit_conversion_rdoc.html#label-Hash-Convertible+Objects]:
  *
- *    # Raises ArgumentError (odd number of arguments
+ *    # Raises ArgumentError (odd number of arguments)
  *    Hash[:foo]
  *    # Raises ArgumentError (invalid number of elements (3 for 1..2))
  *    Hash[ [ [:foo, 0, 1] ] ]
