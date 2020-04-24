@@ -29,6 +29,8 @@ class Reline::History < Array
   end
 
   def push(*val)
+    # If history_size is zero, all histories are dropped.
+    return self if @config.history_size.zero?
     diff = size + val.size - @config.history_size
     if diff > 0
       if diff <= size
@@ -43,6 +45,8 @@ class Reline::History < Array
   end
 
   def <<(val)
+    # If history_size is zero, all histories are dropped.
+    return self if @config.history_size.zero?
     shift if size + 1 > @config.history_size
     super(String.new(val, encoding: Reline.encoding_system_needs))
   end

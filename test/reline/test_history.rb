@@ -242,6 +242,16 @@ class Reline::History::Test < Reline::TestCase
     end
   end
 
+  def test_history_size_zero
+    history = history_new(history_size: 0)
+    assert_equal 0, history.size
+    history << 'aa'
+    history << 'bb'
+    assert_equal 0, history.size
+    history.push(*%w{aa bb cc})
+    assert_equal 0, history.size
+  end
+
   private
 
   def history_new(history_size: 10)
