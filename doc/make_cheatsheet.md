@@ -52,22 +52,35 @@ $ make test-spec MSPECOPT=-Vfs
 
 ## How to run a part of the test suite
 
+### Runs a directory
 ```
-# Runs a directory
 $ make test-all TESTS=test/rubygems
 $ make test-all TESTS=rubygems
+```
 
-# Runs a file
+### Runs a file
+```
 $ make test-all TESTS=test/ruby/test_foo.rb
 $ make test-all TESTS=ruby/foo
+```
 
-# Runs a test whose name includes test_bar
+### Runs a test whose name includes test_bar
+```
 $ make test-all TESTS="test/ruby/test_foo.rb -n /test_bar/"
 ```
 
+### Runs a ruby-spec directory
+```
+$ make test-spec MSPECOPT=spec/ruby/core/foo
+```
+
+### Runs a ruby-spec file
 ```
 $ make test-spec MSPECOPT=spec/ruby/core/foo/bar_spec.rb
+```
 
+### Runs a bundler spec file
+```
 $ make test-bundler BUNDLER_SPECS=commands/exec_spec.rb:58
 ```
 
