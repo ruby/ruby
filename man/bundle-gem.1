@@ -65,7 +65,16 @@ Do not create a \fBLICENSE\.txt\fR (overrides \fB\-\-mit\fR specified in the glo
 .
 .TP
 \fB\-t\fR, \fB\-\-test=minitest\fR, \fB\-\-test=rspec\fR, \fB\-\-test=test\-unit\fR
-Specify the test framework that Bundler should use when generating the project\. Acceptable values are \fBminitest\fR, \fBrspec\fR and \fBtest\-unit\fR\. The \fBGEM_NAME\.gemspec\fR will be configured and a skeleton test/spec directory will be created based on this option\. If this option is unspecified, an interactive prompt will be displayed and the answer will be saved in Bundler\'s global config for future \fBbundle gem\fR use\. If no option is specified, the default testing framework is RSpec\.
+Specify the test framework that Bundler should use when generating the project\. Acceptable values are \fBminitest\fR, \fBrspec\fR and \fBtest\-unit\fR\. The \fBGEM_NAME\.gemspec\fR will be configured and a skeleton test/spec directory will be created based on this option\. Given no option is specified:
+.
+.IP
+When Bundler is configured to generate tests, this defaults to Bundler\'s global config setting \fBgem\.test\fR\.
+.
+.IP
+When Bundler is configured to not generate tests, an interactive prompt will be displayed and the answer will be used for the current rubygem project\.
+.
+.IP
+When Bundler is unconfigured, an interactive prompt will be displayed and the answer will be saved in Bundler\'s global config for future \fBbundle gem\fR use\.
 .
 .TP
 \fB\-e\fR, \fB\-\-edit[=EDITOR]\fR
