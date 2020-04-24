@@ -13,7 +13,6 @@ class TestRDocRIDriver < RDoc::TestCase
     FileUtils.mkdir_p @home_ri
 
     @orig_ri = ENV['RI']
-    @orig_home = ENV['HOME']
     ENV['HOME'] = @tmpdir
     @rdoc_home = File.join ENV["HOME"], ".rdoc"
     FileUtils.mkdir_p @rdoc_home
@@ -33,7 +32,6 @@ class TestRDocRIDriver < RDoc::TestCase
   end
 
   def teardown
-    ENV['HOME'] = @orig_home
     ENV['RI'] = @orig_ri
     FileUtils.rm_rf @tmpdir
 
