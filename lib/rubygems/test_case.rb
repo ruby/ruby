@@ -371,6 +371,8 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
     File.chmod 0600, temp_cred
 
     Gem.instance_variable_set :@user_home, nil
+    Gem.instance_variable_set :@cache_home, nil
+    Gem.instance_variable_set :@data_home, nil
     Gem.instance_variable_set :@gemdeps, nil
     Gem.instance_variable_set :@env_requirements_by_name, nil
     Gem.send :remove_instance_variable, :@ruby_version if
