@@ -94,14 +94,15 @@ class Reline::Config
     home_rc_path = File.expand_path('~/.inputrc')
     return home_rc_path if File.exist?(home_rc_path)
 
-    case ENV['XDG_CONFIG_HOME']
+    case path = ENV['XDG_CONFIG_HOME']
     when nil, ''
-      path = File.expand_path('~/.config/readline/inputrc')
-      return path if File.exist?(path)
     else
-      path = File.expand_path("#{ENV['XDG_CONFIG_HOME']}/readline/inputrc")
-      return path if File.exist?(path)
+      path = File.join(path, 'readline/inputrc')
+      return path if File.exist?(path) and path == File.expand_path(path)
     end
+
+    path = File.expand_path('~/.config/readline/inputrc')
+    return path if File.exist?(path)
 
     return home_rc_path
   end
