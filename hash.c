@@ -1787,7 +1787,7 @@ set_proc_default(VALUE hash, VALUE proc)
  *
  *  Raises an exception if both argument <tt>default_value</tt> and a block are given:
  *
- *    # Raises ArgumentError (wrong number of arguments (given 1, expected 0)) *
+ *    # Raises ArgumentError (wrong number of arguments (given 1, expected 0)):
  *    Hash.new(0) { }
  */
 
@@ -1860,34 +1860,34 @@ rb_hash_initialize(int argc, VALUE *argv, VALUE hash)
  *  but the argument is not an array of 2-element arrays or a
  *  {Hash-convertible object}[doc/implicit_conversion_rdoc.html#label-Hash-Convertible+Objects]:
  *
- *    # Raises ArgumentError (odd number of arguments for Hash)
+ *    # Raises ArgumentError (odd number of arguments for Hash):
  *    Hash[:foo]
- *    # Raises ArgumentError (invalid number of elements (3 for 1..2))
+ *    # Raises ArgumentError (invalid number of elements (3 for 1..2)):
  *    Hash[ [ [:foo, 0, 1] ] ]
  *
  *  Raises an exception if the argument count is odd and greater than 1:
  *
- *    # Raises ArgumentError (odd number of arguments for Hash)
+ *    # Raises ArgumentError (odd number of arguments for Hash):
  *    Hash[0, 1, 2]
  *
  *  Raises an exception if the argument is an array containing an element
  *  that is not a 2-element array:
  *
- *    # Raises ArgumentError (wrong element type Symbol at 0 (expected array))
+ *    # Raises ArgumentError (wrong element type Symbol at 0 (expected array)):
  *    Hash[ [ :foo ] ]
  *
  *  Raises an exception if the argument is an array containing an element
  *  that is an array of size different from 2:
  *
- *    # Raises ArgumentError (invalid number of elements (3 for 1..2))
+ *    # Raises ArgumentError (invalid number of elements (3 for 1..2)):
  *    Hash[ [ [0, 1, 2] ] ]
  *
  *  Raises an exception if any proposed key is not a valid key
  *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
  *
- *    # Raises NoMethodError (undefined method `hash' for #<BasicObject:>)
+ *    # Raises NoMethodError (undefined method `hash' for #<BasicObject:>):
  *    Hash[:foo, 0, BasicObject.new, 1]
- *    # Raises NoMethodError (undefined method `hash' for #<BasicObject:0x00000000064b1328>)
+ *    # Raises NoMethodError (undefined method `hash' for #<BasicObject:>):
  *    Hash[ [ [:foo, 0], [BasicObject.new, 1] ] ]
  */
 
@@ -2069,7 +2069,7 @@ rb_hash_rehash_i(VALUE key, VALUE value, VALUE arg)
  *  Raises an exception if called while an iterator is traversing the hash:
  *
  *    h = {foo: 0, bar: 1, baz: 2}
- *    # Raises RuntimeError (rehash during iteration)
+ *    # Raises RuntimeError (rehash during iteration):
  *    h.each { |x| h.rehash }
  */
 
@@ -6572,7 +6572,7 @@ env_update(VALUE env, VALUE hash)
  *  But it's an error to try the JSON-style syntax
  *  for a key that's not a bareword or a String:
  *
- *    # Raises SyntaxError (syntax error, unexpected ':', expecting =>)
+ *    # Raises SyntaxError (syntax error, unexpected ':', expecting =>):
  *    h = {0: 'zero'}
  *
  *  === Common Uses
@@ -6714,7 +6714,7 @@ env_update(VALUE env, VALUE hash)
  *
  *  An object that lacks method #hash cannot be a \Hash key:
  *
- *    # Raises NoMethodError (undefined method `hash' for #<BasicObject>)
+ *    # Raises NoMethodError (undefined method `hash' for #<BasicObject>):
  *    {BasicObject.new => 0}
  *
  *  ==== Modifying an Active \Hash Key
