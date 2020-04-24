@@ -69,6 +69,12 @@ $ make test-all TESTS=ruby/foo
 $ make test-all TESTS="test/ruby/test_foo.rb -n /test_bar/"
 ```
 
+### Runs a file or directory with GNU make
+```
+$ make test/ruby/test_foo.rb
+$ make test/ruby/test_foo.rb TESTOPTS="-n /test_bar/"
+```
+
 ### Runs a ruby-spec directory
 ```
 $ make test-spec MSPECOPT=spec/ruby/core/foo
@@ -77,6 +83,11 @@ $ make test-spec MSPECOPT=spec/ruby/core/foo
 ### Runs a ruby-spec file
 ```
 $ make test-spec MSPECOPT=spec/ruby/core/foo/bar_spec.rb
+```
+
+### Runs a ruby-spec file or directory with GNU make
+```
+$ make spec/ruby/core/foo/bar_spec.rb
 ```
 
 ### Runs a bundler spec file
