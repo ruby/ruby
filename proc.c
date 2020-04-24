@@ -3530,8 +3530,8 @@ rb_method_compose_to_left(VALUE self, VALUE g)
  *     meth >> g -> a_proc
  *
  *  Returns a proc that is the composition of this method and the given <i>g</i>.
- *  The returned proc takes a variable number of arguments, calls <i>g</i> with them
- *  then calls this method with the result.
+ *  The returned proc takes a variable number of arguments, calls this method
+ *  with them then calls <i>g</i> with the result.
  *
  *     def f(x)
  *       x * x
