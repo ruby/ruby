@@ -33,11 +33,11 @@ class TestRDocRIDriver < RDoc::TestCase
   end
 
   def teardown
-    super
-
     ENV['HOME'] = @orig_home
     ENV['RI'] = @orig_ri
     FileUtils.rm_rf @tmpdir
+
+    super
   end
 
   DUMMY_PAGER = ":;\n"

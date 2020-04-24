@@ -36,12 +36,12 @@ class TestRDocRIPaths < RDoc::TestCase
   end
 
   def teardown
-    super
-
     Gem.use_paths(*@orig_gem_path)
     Gem::Specification.reset
     FileUtils.rm_rf @tempdir
     ENV.replace(@orig_env)
+
+    super
   end
 
   def test_class_each

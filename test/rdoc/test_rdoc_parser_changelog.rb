@@ -14,6 +14,8 @@ class TestRDocParserChangeLog < RDoc::TestCase
 
   def teardown
     @tempfile.close!
+
+    super
   end
 
   def test_class_can_parse
