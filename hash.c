@@ -1748,7 +1748,7 @@ set_proc_default(VALUE hash, VALUE proc)
  *  call-seq:
  *     Hash.new                          -> new_hash
  *     Hash.new(default_value)           -> new_hash
- *     Hash.new {|hash, key| ... }      -> new_hash
+ *     Hash.new {|hash, key| block }      -> new_hash
  *
  *  Returns a new empty Hash object.
  *
@@ -1860,7 +1860,7 @@ rb_hash_initialize(int argc, VALUE *argv, VALUE hash)
  *  but the argument is not an array of 2-element arrays or a
  *  {Hash-convertible object}[doc/implicit_conversion_rdoc.html#label-Hash-Convertible+Objects]:
  *
- *    # Raises ArgumentError (odd number of arguments)
+ *    # Raises ArgumentError (odd number of arguments for Hash)
  *    Hash[:foo]
  *    # Raises ArgumentError (invalid number of elements (3 for 1..2))
  *    Hash[ [ [:foo, 0, 1] ] ]
@@ -2057,10 +2057,10 @@ rb_hash_rehash_i(VALUE key, VALUE value, VALUE arg)
  *  call-seq:
  *     hsh.rehash -> self
  *
- *  Rebuilds the hash index based on the current hash value for each key;
+ *  Rebuilds the hash table based on the current hash value for each key;
  *  returns <tt>self</tt>.
  *
- *  The index will have become invalid if the hash value of a key
+ *  The hash table will have become invalid if the hash value of a key
  *  has changed since the entry was created.
  *  See {Modifying an Active Hash Key}[#class-Hash-label-Modifying+an+Active+Hash+Key].
  *
@@ -6539,8 +6539,7 @@ env_update(VALUE env, VALUE hash)
 }
 
 /*
- *  A \Hash is a dictionary-like collection of key-value pairs
- *  whose keys are unique. (The values need not be unique.)
+ *  A \Hash maps each of its unique keys to a specific value.
  *
  *  A \Hash has certain similarities to an \Array, but:
  *  - An \Array index is always an \Integer.
@@ -6548,13 +6547,10 @@ env_update(VALUE env, VALUE hash)
  *
  *  === \Hash \Data Syntax
  *
- *  The older syntax for \Hash data uses the "hash rocket," <tt>=></tt>
- *  (known in some languages as the <i>fat comma.</i>):
+ *  The older syntax for \Hash data uses the "hash rocket," <tt>=></tt>:
  *
  *    h = {:foo => 0, :bar => 1, :baz => 2}
  *    h # => {:foo=>0, :bar=>1, :baz=>2}
- *
- *
  *
  *  Alternatively, but only for a \Hash key that's a \Symbol,
  *  you can use a newer JSON-style syntax,
@@ -6583,8 +6579,8 @@ env_update(VALUE env, VALUE hash)
  *
  *  You can use a \Hash to give names to objects:
  *
- *    matz = {name: 'Matz', language: 'Ruby'}
- *    matz # => {:name=>"Matz", :language=>"Ruby"}
+ *    person = {name: 'Matz', language: 'Ruby'}
+ *    person # => {:name=>"Matz", :language=>"Ruby"}
  *
  *  You can use a \Hash to give names to method arguments:
  *
@@ -6603,10 +6599,8 @@ env_update(VALUE env, VALUE hash)
  *    class Dev
  *      attr_accessor :name, :language
  *      def initialize(hash)
- *        hash.each_pair do |key, value|
- *          setter_method = "#{key}=".to_sym
- *          send(setter_method, value)
- *        end
+ *        self.name = hash[:name]
+ *        self.language = hash[:language]
  *      end
  *    end
  *    matz = Dev.new(name: 'Matz', language: 'Ruby')
@@ -6925,11 +6919,12 @@ env_update(VALUE env, VALUE hash)
  *
  *  This example chains methods #merge! and #compact!:
  *
- *  - <tt>merge!</tt> merges another Hash into <tt>h</tt>.
- *  - <tt>compact!</tt> removes <tt>nil</tt>valued entries from <tt>h</tt>.
+ *  - <tt>merge</tt> merges another \Hash into a copy of <tt>h</tt>.
+ *  - <tt>compact!</tt> removes <tt>nil</tt>valued entries from that copy.
  *
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h.merge!({bat: 3, bam: nil}).compact! # => {:foo=>0, :bar=>1, :baz=>2, :bat=>3}
+ *    h1 = h.merge!({bat: 3, bam: nil}).compact!
+ *    h1 # => {:foo=>0, :bar=>1, :baz=>2, :bat=>3}
  */
 
 void
