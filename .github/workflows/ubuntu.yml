@@ -48,7 +48,7 @@ jobs:
       - run: autoconf
         working-directory: src
       - run: mkdir build
-      - name: Run confiugre
+      - name: Run configure
         run: ../src/configure -C --disable-install-doc
         working-directory: build
       - run: make $JOBS
