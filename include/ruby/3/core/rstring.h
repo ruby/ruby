@@ -65,7 +65,7 @@ enum ruby_rstring_flags {
     RSTRING_FSTR            = RUBY_FL_USER17
 };
 
-enum {
+enum ruby_rstring_consts {
     RSTRING_EMBED_LEN_SHIFT = RUBY_FL_USHIFT + 2,
     RSTRING_EMBED_LEN_MAX   = RUBY3_EMBED_LEN_MAX_OF(char) - 1
 };

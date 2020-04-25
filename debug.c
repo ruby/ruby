@@ -48,10 +48,14 @@ const union {
     enum ruby_encoding_consts   encoding_consts;
     enum ruby_coderange_type    enc_coderange_types;
     enum ruby_econv_flag_type   econv_flag_types;
+    rb_econv_result_t           econv_result;
     enum ruby_robject_flags     robject_flags;
+    enum ruby_robject_consts    robject_consts;
     enum ruby_rmodule_flags     rmodule_flags;
     enum ruby_rstring_flags     rstring_flags;
+    enum ruby_rstring_consts    rstring_consts;
     enum ruby_rarray_flags      rarray_flags;
+    enum ruby_rarray_consts     rarray_consts;
     enum {
 	RUBY_FMODE_READABLE		= FMODE_READABLE,
 	RUBY_FMODE_WRITABLE		= FMODE_WRITABLE,

@@ -43,7 +43,7 @@
 
 enum ruby_robject_flags { ROBJECT_EMBED = RUBY_FL_USER1 };
 
-enum { ROBJECT_EMBED_LEN_MAX = RUBY3_EMBED_LEN_MAX_OF(VALUE) };
+enum ruby_robject_consts { ROBJECT_EMBED_LEN_MAX = RUBY3_EMBED_LEN_MAX_OF(VALUE) };
 
 struct RObject {
     struct RBasic basic;

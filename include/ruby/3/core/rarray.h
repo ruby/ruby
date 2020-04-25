@@ -79,7 +79,7 @@ enum ruby_rarray_flags {
 #endif
 };
 
-enum {
+enum ruby_rarray_consts {
     RARRAY_EMBED_LEN_SHIFT = RUBY_FL_USHIFT + 3,
     RARRAY_EMBED_LEN_MAX   = RUBY3_EMBED_LEN_MAX_OF(VALUE)
 };
