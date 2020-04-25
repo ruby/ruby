@@ -1447,13 +1447,7 @@ class Gem::Specification < Gem::BasicSpecification
     # HACK the #to_s is in here because RSpec has an Array of Arrays of
     # Strings for authors.  Need a way to disallow bad values on gemspec
     # generation.  (Probably won't happen.)
-    string = string.to_s
-
-    begin
-      Builder::XChar.encode string
-    rescue NameError, NoMethodError
-      string.to_xs
-    end
+    string.to_s
   end
 
   ##

@@ -1544,10 +1544,4 @@ begin
 rescue LoadError, Gem::LoadError
 end
 
-begin
-  gem 'builder'
-  require 'builder/xchar'
-rescue LoadError, Gem::LoadError
-end
-
 require 'rubygems/test_utilities'
