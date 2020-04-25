@@ -446,12 +446,12 @@ def update_default_gems(gem)
     end
     `git fetch ruby-core master --no-tags`
     unless `git branch`.match(/ruby\-core/)
-      `git co ruby-core/master`
+      `git checkout ruby-core/master`
       `git branch ruby-core`
     end
-    `git co ruby-core`
+    `git checkout ruby-core`
     `git rebase ruby-core/master`
-    `git co master`
+    `git checkout master`
     `git fetch origin master`
     `git rebase origin/master`
   end
