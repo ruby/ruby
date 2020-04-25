@@ -1746,9 +1746,9 @@ set_proc_default(VALUE hash, VALUE proc)
 
 /*
  *  call-seq:
- *     Hash.new                          -> new_hash
- *     Hash.new(default_value)           -> new_hash
- *     Hash.new {|hash, key| block }      -> new_hash
+ *     Hash.new                                        -> new_hash
+ *     Hash.new(default_value)                         -> new_hash
+ *     Hash.new{|hash, key| hash[key] = default_value} -> new_hash
  *
  *  Returns a new empty Hash object.
  *
@@ -2057,7 +2057,7 @@ rb_hash_rehash_i(VALUE key, VALUE value, VALUE arg)
  *  call-seq:
  *     hsh.rehash -> self
  *
- *  Rebuilds the hash table based on the current hash value for each key;
+ *  Rebuilds the hash table by recomputing the hash index for each key;
  *  returns <tt>self</tt>.
  *
  *  The hash table will have become invalid if the hash value of a key
@@ -6913,18 +6913,38 @@ env_update(VALUE env, VALUE hash)
  *
  *  === Chaining \Method Calls
  *
- *  Some \Hash instance methods return <tt>self</tt>.
- *  For those methods, you can "chain" method calls
+ *  For a method that returns a \Hash, you can "chain" method calls
  *  by following one method call with another.
  *
- *  This example chains methods #merge! and #compact!:
+ *  This example chains methods #merge and #compact:
  *
- *  - <tt>merge</tt> merges another \Hash into a copy of <tt>h</tt>.
- *  - <tt>compact!</tt> removes <tt>nil</tt>valued entries from that copy.
+ *    h = {foo: 0, bar: nil, baz: 2}
+ *    h1 = {bat: 3, bam: nil}
+ *    h1 = h.merge(h1).compact
+ *    h1 # => {:foo=>0, :baz=>2, :bat=>3}
  *
- *    h = {foo: 0, bar: 1, baz: 2}
- *    h1 = h.merge!({bat: 3, bam: nil}).compact!
- *    h1 # => {:foo=>0, :bar=>1, :baz=>2, :bat=>3}
+ *  Details:
+ *
+ *  - First method <tt>merge</tt> creates a copy of <tt>h</tt>,
+ *    merges <tt>h1</tt> into the copy, and returns
+ *      {foo=>0, bar=>nil, baz=>2, bat=>3, bam=>nil}
+ *  - Chained method <tt>compact</tt> creates a copy of that return value,
+ *    removes its <tt>nil</tt>-valued entries, and returns
+ *      {:foo=>0, :baz=>2, :bat=>3}
+ *
+ *  A series of chained methods need not begin with a method in \Hash.
+ *  This example chains methods Array#to_h and Hash#invert:
+ *
+ *    a = [[:foo, :bar], [1, 2]].to_h
+ *    a.to_h.invert # => {:bar=>:foo, 2=>1}
+ *
+ *  Details:
+ *
+ *  - First method Array#to_h converts <tt>a</tt> to a \Hash, and returns
+ *      {:foo=>:bar, 1=>2}
+ *  - Chained method Hash#invert creates copy of that return value,
+ *    inverts it, and  returns
+ *      {:bar=>:foo, 2=>1}
  */
 
 void
