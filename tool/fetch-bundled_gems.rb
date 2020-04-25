@@ -17,8 +17,9 @@ else
   puts "retrieving #{n} ..."
   system(*%W"git clone #{u} #{n}") or abort
 end
-unless system(*%W"git checkout #{v.sub(/\A(?=\d)/, 'v')}", chdir: n)
-  unless /\A\d/ =~ v and system(*%W"git checkout #{v}", chdir: n)
+checkout = %w"git checkout -c advice.detachedHead=false"
+unless system(*checkout, v.sub(/\A(?=\d)/, 'v'), chdir: n)
+  unless /\A\d/ =~ v and system(*checkout, v, chdir: n)
     abort
   end
 end
