@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 require 'rubygems/test_case'
-# require 'rubygems/builder'
-# require 'rubygems/package'
 require 'rubygems/deprecate'
 
 class TestDeprecate < Gem::TestCase
@@ -9,7 +7,6 @@ class TestDeprecate < Gem::TestCase
   def setup
     super
 
-    # Gem::Deprecate.saved_warnings.clear
     @original_skip = Gem::Deprecate.skip
     Gem::Deprecate.skip = false
   end
@@ -17,7 +14,6 @@ class TestDeprecate < Gem::TestCase
   def teardown
     super
 
-    # Gem::Deprecate.saved_warnings.clear
     Gem::Deprecate.skip = @original_skip
   end
 
