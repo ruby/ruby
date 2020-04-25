@@ -1616,29 +1616,80 @@ rb_ary_aref2(VALUE ary, VALUE b, VALUE e)
     return rb_ary_subseq(ary, beg, len);
 }
 
-static VALUE
-less_than_len_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, len))
+VALUE
+rb_ary_subseq_arith(VALUE ary, VALUE seq)
 {
-    return rb_int_gt(len, argv[0]);
-}
+    VALUE b, e, s, klass, result;
+    long beg, end, excl, step, len, source_i;
 
-static VALUE
-more_than_len_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, len))
-{
-    return rb_int_ge(argv[0], len);
-}
+    s = rb_funcall(seq, rb_intern("step"), 0, 0);
 
-static VALUE
-more_than_zero_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, dummy))
-{
-    return rb_int_ge(argv[0], INT2FIX(0));
+    if (!RB_TYPE_P(s, T_FIXNUM) && !RB_TYPE_P(s, T_BIGNUM)) {
+        rb_raise(rb_eTypeError, "wrong sequence step type %"PRIsVALUE" (expected Integer)",
+            rb_obj_class(s));
+    }
+
+    step = NUM2LONG(s);
+
+    len = RARRAY_LEN(ary);
+
+    // FIXME: The code below duplicates rb_range_beg_len from range.c,
+    // which could've been reused, but it explicitly prohibits
+    // ArithmeticSequence. Could be unified, probably.
+
+    b = rb_funcall(seq, rb_intern("begin"), 0, 0);
+    e = rb_funcall(seq, rb_intern("end"), 0, 0);
+    excl = RTEST(rb_funcall(seq, rb_intern("exclude_end?"), 0, 0));
+
+    beg = NIL_P(b) ? (step > 0 ? 0 : -1) : NUM2LONG(b);
+    end = NIL_P(e) ? (step > 0 ? -1 : 0) : NUM2LONG(e);
+    if (NIL_P(e)) excl = 0;
+
+    if (beg < 0) {
+        beg += len;
+        if (beg < 0)
+            return Qnil;
+    }
+
+    if (end < 0)
+        end += len;
+
+    if (end >= len)
+        end = len - 1;
+
+    klass = rb_obj_class(ary);
+    result = ary_new(klass, 0);
+
+    source_i = beg;
+
+    if (step < 0) {
+        if (beg < end) {
+            return result;
+        }
+        for(; source_i >= len; source_i += step);
+        for(;source_i >= end; source_i += step) {
+            if (!excl || source_i > end) {
+                rb_ary_push(result, RARRAY_AREF(ary, source_i));
+            }
+        }
+    } else {
+        if (beg > end) {
+            return result;
+        }
+        for(; source_i <= end; source_i += step) {
+            if (!excl || source_i < end) {
+                rb_ary_push(result, RARRAY_AREF(ary, source_i));
+            }
+        }
+    }
+
+    return result;
 }
 
 MJIT_FUNC_EXPORTED VALUE
 rb_ary_aref1(VALUE ary, VALUE arg)
 {
-    long beg, len, ilen;
-    VALUE indexes, step, retval;
+    long beg, len;
 
     /* special case - speeding up */
     if (FIXNUM_P(arg)) {
@@ -1654,22 +1705,7 @@ rb_ary_aref1(VALUE ary, VALUE arg)
 	return rb_ary_subseq(ary, beg, len);
     }
     if (rb_obj_is_kind_of(arg, rb_cArithSeq)) {
-        step = rb_funcall(arg, rb_intern("step"), 0);
-        if(RTEST(rb_int_gt(step, INT2FIX(0)))) {
-            indexes = rb_block_call(arg, rb_intern("take_while"), 0, 0, less_than_len_i, LONG2NUM(RARRAY_LEN(ary)));
-        } else {
-            indexes = rb_block_call(arg, rb_intern("take_while"), 0, 0, more_than_zero_i, 0);
-            indexes = rb_block_call(indexes, rb_intern("drop_while"), 0, 0, more_than_len_i, LONG2NUM(RARRAY_LEN(ary)));
-        }
-
-        ilen = RARRAY_LEN(indexes);
-        retval = rb_ary_new2(ilen);
-        for(int i=0; i < ilen; i++) {
-            ARY_SET(retval, i, RARRAY_AREF(ary, FIX2LONG(RARRAY_AREF(indexes, i))));
-        }
-        ARY_SET_LEN(retval, ilen);
-
-        return retval;
+        return rb_ary_subseq_arith(ary, arg);
     }
     return rb_ary_entry(ary, NUM2LONG(arg));
 }

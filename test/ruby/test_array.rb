@@ -397,20 +397,36 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[1, 2, 3], a[..-98])
     assert_equal(@cls[1, 2], a[...-98])
 
+    assert_nil(a[10, -3])
+
+    # Arithmetic sequence
+
     assert_equal(@cls[1, 3, 5, 7, 9], a[(0..8).step(2)])
-    assert_equal(@cls[21, 31, 41, 51, 61, 71, 81, 91], a[(20..).step(10)])
+    assert_equal(@cls[1, 3, 5, 7], a[(0...8).step(2)])
     assert_equal(@cls[6, 5, 4, 3, 2, 1], a[(5..0).step(-1)])
+    assert_equal(@cls[6, 5, 4, 3, 2], a[(5...0).step(-1)])
+    # Negative bounds
+    assert_equal(@cls[91, 93, 95, 97, 99], a[(90..-2).step(2)])
+    assert_equal(@cls[91, 93, 95, 97, 99], a[(-10..-2).step(2)])
+    assert_equal(@cls[99, 97, 95, 93, 91], a[(-2..-10).step(-2)])
+    assert_equal(@cls[], a[(-10..-2).step(-2)])
+    assert_equal(@cls[], a[(-10..0).step(2)])
+
+    # Open ranges
+    assert_equal(@cls[21, 31, 41, 51, 61, 71, 81, 91], a[(20..).step(10)])
+
+    # Step from number
     assert_equal(@cls[21, 31, 41, 51, 61, 71, 81, 91], a[20.step(by: 10)])
     assert_equal(@cls[21, 16, 11, 6, 1], a[20.step(by: -5)])
     assert_equal(@cls[81, 61, 41, 21, 1], a[200.step(by: -20)]) # start value out of bounds
 
-    assert_nil(a[10, -3])
     assert_equal [], a[10..7]
     assert_equal [], a[(0..8).step(-1)]
 
     assert_raise(TypeError) {a['cat']}
     assert_raise(ArgumentError) { [][0, 0, 0] }
     assert_raise(TypeError) { [][('a'..'z').step(2)] }
+    assert_raise(TypeError) { [][(0..5).step(2.5)] }
   end
 
   def test_ASET # '[]='
