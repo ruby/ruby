@@ -55,8 +55,6 @@ class TestGemSource < Gem::TestCase
   end
 
   def test_dependency_resolver_set_file_uri
-    skip 'install builder gem' unless defined? Builder::XChar
-
     Gem::Indexer.new(@tempdir).generate_index
 
     source = Gem::Source.new "file://#{@tempdir}/"
