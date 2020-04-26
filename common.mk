@@ -723,8 +723,10 @@ clean-spec: PHONY
 
 check: main test test-tool test-all test-spec
 	$(ECHO) check succeeded
-	-$(Q) if [ x"$(GIT)" != x ] && $(CHDIR) "$(srcdir)" && $(GIT) rev-parse > /dev/null 2>&1; then \
-	  set -x; $(GIT) --no-pager log --format=oneline -G "^ *# *include" origin/master..HEAD; \
+	-$(Q) if [ x"$(GIT)" != x ] && $(CHDIR) "$(srcdir)" && \
+	    b=`$(GIT) symbolic-ref --short HEAD 2>&1` && \
+	    u=`$(GIT) branch --list --format='%(upstream:short)' $$b`; then \
+	  set -x; $(GIT) --no-pager log --format=oneline -G "^ *# *include" $$u..HEAD --; \
 	fi
 check-ruby: test test-ruby
 
