@@ -360,7 +360,6 @@ class TestFiber < Test::Unit::TestCase
   end
 
   def test_stack_size
-    skip 'too unstable on Travis s390x-linux' if RUBY_PLATFORM == 's390x-linux'
     skip 'too unstable on riscv' if RUBY_PLATFORM =~ /riscv/
     h_default = eval(invoke_rec('p RubyVM::DEFAULT_PARAMS', nil, nil, false))
     h_0 = eval(invoke_rec('p RubyVM::DEFAULT_PARAMS', 0, 0, false))
