@@ -76,8 +76,6 @@
 #undef rb_str_cat_cstr
 #undef rb_fstring_cstr
 
-static VALUE rb_str_clear(VALUE str);
-
 VALUE rb_cString;
 VALUE rb_cSymbol;
 
