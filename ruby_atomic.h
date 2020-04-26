@@ -117,7 +117,7 @@ rb_atomic_fetch_add(volatile rb_atomic_t *var, rb_atomic_t val)
 static inline rb_atomic_t
 rb_atomic_fetch_sub(volatile rb_atomic_t *var, rb_atomic_t val)
 {
-    return atomic_sub_int_nv(var, val) + val;
+    return atomic_add_int_nv(var, (rb_atomic_t)(-(int)val)) + val;
 }
 
 # if defined(_LP64) || defined(_I32LPx)
