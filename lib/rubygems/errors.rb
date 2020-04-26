@@ -28,14 +28,15 @@ module Gem
   # superclass Gem::LoadError to catch all types of load errors.
   class MissingSpecError < Gem::LoadError
 
-    def initialize(name, requirement)
+    def initialize(name, requirement, extra_message=nil)
       @name        = name
       @requirement = requirement
+      @extra_message = extra_message
     end
 
     def message # :nodoc:
       build_message +
-        "Checked in 'GEM_PATH=#{Gem.path.join(File::PATH_SEPARATOR)}', execute `gem env` for more information"
+        "Checked in 'GEM_PATH=#{Gem.path.join(File::PATH_SEPARATOR)}' #{@extra_message}, execute `gem env` for more information"
     end
 
     private
