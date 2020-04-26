@@ -2161,6 +2161,22 @@ class TestModule < Test::Unit::TestCase
     assert_equal([:@@bar], m2.class_variables(false))
   end
 
+  def test_class_variable_in_dup_class
+    a = Class.new do
+      @@a = 'A'
+      def a=(x)
+        @@a = x
+      end
+      def a
+        @@a
+      end
+    end
+
+    b = a.dup
+    b.new.a = 'B'
+    assert_equal 'A', a.new.a, '[ruby-core:17019]'
+  end
+
   Bug6891 = '[ruby-core:47241]'
 
   def test_extend_module_with_protected_method
