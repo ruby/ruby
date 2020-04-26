@@ -1,21 +1,23 @@
 #ifndef RUBY_ATOMIC_H
 #define RUBY_ATOMIC_H
 
+/*
+ * - ATOMIC_CAS, ATOMIC_EXCHANGE, ATOMIC_FETCH_*:
+ *   return the old * value.
+ * - ATOMIC_ADD, ATOMIC_SUB, ATOMIC_INC, ATOMIC_DEC, ATOMIC_OR, ATOMIC_SET:
+ *   may be void.
+ */
 #if 0
 #elif defined HAVE_GCC_ATOMIC_BUILTINS
 typedef unsigned int rb_atomic_t;
-# define ATOMIC_SET(var, val)  (void)__atomic_exchange_n(&(var), (val), __ATOMIC_SEQ_CST)
-# define ATOMIC_INC(var) __atomic_fetch_add(&(var), 1, __ATOMIC_SEQ_CST)
-# define ATOMIC_DEC(var) __atomic_fetch_sub(&(var), 1, __ATOMIC_SEQ_CST)
+# define ATOMIC_FETCH_ADD(var, val) __atomic_fetch_add(&(var), (val), __ATOMIC_SEQ_CST)
+# define ATOMIC_FETCH_SUB(var, val) __atomic_fetch_sub(&(var), (val), __ATOMIC_SEQ_CST)
 # define ATOMIC_OR(var, val) __atomic_fetch_or(&(var), (val), __ATOMIC_SEQ_CST)
 # define ATOMIC_EXCHANGE(var, val) __atomic_exchange_n(&(var), (val), __ATOMIC_SEQ_CST)
 # define ATOMIC_CAS(var, oldval, newval) RB_GNUC_EXTENSION_BLOCK( \
    __typeof__(var) oldvaldup = (oldval); /* oldval should not be modified */ \
    __atomic_compare_exchange_n(&(var), &oldvaldup, (newval), 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST); \
    oldvaldup )
-
-# define ATOMIC_SIZE_ADD(var, val) __atomic_fetch_add(&(var), (val), __ATOMIC_SEQ_CST)
-# define ATOMIC_SIZE_SUB(var, val) __atomic_fetch_sub(&(var), (val), __ATOMIC_SEQ_CST)
 
 # define RUBY_ATOMIC_GENERIC_MACRO 1
 
@@ -25,15 +27,11 @@ typedef unsigned int rb_atomic_t;
  * http://gcc.gnu.org/onlinedocs/gcc/Atomic-Builtins.html */
 
 typedef unsigned int rb_atomic_t; /* Anything OK */
-# define ATOMIC_SET(var, val)  (void)__sync_lock_test_and_set(&(var), (val))
-# define ATOMIC_INC(var) __sync_fetch_and_add(&(var), 1)
-# define ATOMIC_DEC(var) __sync_fetch_and_sub(&(var), 1)
+# define ATOMIC_FETCH_ADD(var, val) __sync_fetch_and_add(&(var), (val))
+# define ATOMIC_FETCH_SUB(var, var) __sync_fetch_and_sub(&(var), (val))
 # define ATOMIC_OR(var, val) __sync_fetch_and_or(&(var), (val))
 # define ATOMIC_EXCHANGE(var, val) __sync_lock_test_and_set(&(var), (val))
 # define ATOMIC_CAS(var, oldval, newval) __sync_val_compare_and_swap(&(var), (oldval), (newval))
-
-# define ATOMIC_SIZE_ADD(var, val) __sync_fetch_and_add(&(var), (val))
-# define ATOMIC_SIZE_SUB(var, val) __sync_fetch_and_sub(&(var), (val))
 
 # define RUBY_ATOMIC_GENERIC_MACRO 1
 
@@ -46,6 +44,8 @@ typedef LONG rb_atomic_t;
 # define ATOMIC_SET(var, val) InterlockedExchange(&(var), (val))
 # define ATOMIC_INC(var) InterlockedIncrement(&(var))
 # define ATOMIC_DEC(var) InterlockedDecrement(&(var))
+# define ATOMIC_FETCH_ADD(var, val) InterlockedExchangeAdd(&(var), (val))
+# define ATOMIC_FETCH_SUB(var, val) InterlockedExchangeAdd(&(var), -(LONG)(val))
 #if defined __GNUC__
 # define ATOMIC_OR(var, val) __asm__("lock\n\t" "orl\t%1, %0" : "=m"(var) : "Ir"(val))
 #elif MSC_VERSION_BEFORE(1300)
@@ -98,12 +98,27 @@ rb_w32_atomic_cas(volatile rb_atomic_t *var, rb_atomic_t oldval, rb_atomic_t new
 #include <atomic.h>
 typedef unsigned int rb_atomic_t;
 
-# define ATOMIC_SET(var, val) (void)atomic_swap_uint(&(var), (val))
 # define ATOMIC_INC(var) atomic_inc_uint(&(var))
 # define ATOMIC_DEC(var) atomic_dec_uint(&(var))
+# define ATOMIC_FETCH_ADD(var, val) rb_atomic_fetch_add(&(var), (val))
+# define ATOMIC_FETCH_SUB(var, val) rb_atomic_fetch_sub(&(var), (val))
+# define ATOMIC_ADD(var, val) atomic_add_uint(&(var), (val))
+# define ATOMIC_SUB(var, val) atomic_sub_uint(&(var), (val))
 # define ATOMIC_OR(var, val) atomic_or_uint(&(var), (val))
 # define ATOMIC_EXCHANGE(var, val) atomic_swap_uint(&(var), (val))
 # define ATOMIC_CAS(var, oldval, newval) atomic_cas_uint(&(var), (oldval), (newval))
+
+static inline rb_atomic_t
+rb_atomic_fetch_add(volatile rb_atomic_t *var, rb_atomic_t val)
+{
+    return atomic_add_int_nv(var, val) - val;
+}
+
+static inline rb_atomic_t
+rb_atomic_fetch_sub(volatile rb_atomic_t *var, rb_atomic_t val)
+{
+    return atomic_sub_int_nv(var, val) + val;
+}
 
 # if defined(_LP64) || defined(_I32LPx)
 #  define ATOMIC_SIZE_ADD(var, val) atomic_add_long(&(var), (val))
@@ -124,6 +139,26 @@ typedef unsigned int rb_atomic_t;
 # error No atomic operation found
 #endif
 
+#ifndef ATOMIC_SET
+# define ATOMIC_SET(var, val) (void)ATOMIC_EXCHANGE(var, val)
+#endif
+
+#ifndef ATOMIC_ADD
+# define ATOMIC_ADD(var, val) (void)ATOMIC_FETCH_ADD(var, val)
+#endif
+
+#ifndef ATOMIC_SUB
+# define ATOMIC_SUB(var, val) (void)ATOMIC_FETCH_SUB(var, val)
+#endif
+
+#ifndef ATOMIC_INC
+# define ATOMIC_INC(var) ATOMIC_ADD(var, 1)
+#endif
+
+#ifndef ATOMIC_DEC
+# define ATOMIC_DEC(var) ATOMIC_SUB(var, 1)
+#endif
+
 #ifndef ATOMIC_SIZE_INC
 # define ATOMIC_SIZE_INC(var) ATOMIC_INC(var)
 #endif
@@ -138,6 +173,14 @@ typedef unsigned int rb_atomic_t;
 
 #ifndef ATOMIC_SIZE_CAS
 # define ATOMIC_SIZE_CAS(var, oldval, val) ATOMIC_CAS(var, oldval, val)
+#endif
+
+#ifndef ATOMIC_SIZE_ADD
+# define ATOMIC_SIZE_ADD(var, val) ATOMIC_ADD(var, val)
+#endif
+
+#ifndef ATOMIC_SIZE_SUB
+# define ATOMIC_SIZE_SUB(var, val) ATOMIC_SUB(var, val)
 #endif
 
 #if RUBY_ATOMIC_GENERIC_MACRO
