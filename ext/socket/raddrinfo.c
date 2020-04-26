@@ -1913,7 +1913,7 @@ addrinfo_to_sockaddr(VALUE self)
  * call-seq:
  *   addrinfo.canonname => string or nil
  *
- * returns the canonical name as an string.
+ * returns the canonical name as a string.
  *
  * nil is returned if no canonical name.
  *
