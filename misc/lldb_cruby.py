@@ -132,7 +132,10 @@ def lldb_inspect(debugger, target, result, val):
             result.write('T_STRING: %s' % flaginfo)
             tRString = target.FindFirstType("struct RString").GetPointerType()
             ptr, len = string2cstr(val.Cast(tRString))
-            append_command_output(debugger, "print *(const char (*)[%d])%0#x" % (len, ptr), result)
+            if len == 0:
+                result.write("(empty)\n")
+            else:
+                append_command_output(debugger, "print *(const char (*)[%d])%0#x" % (len, ptr), result)
         elif flType == RUBY_T_SYMBOL:
             result.write('T_SYMBOL: %s' % flaginfo)
             tRSymbol = target.FindFirstType("struct RSymbol").GetPointerType()
