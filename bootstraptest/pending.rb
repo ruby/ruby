@@ -31,13 +31,6 @@ assert_equal 'ok', %q{
   end
 }
 
-assert_normal_exit %q{
-  r = Range.allocate
-  def r.<=>(o) true end
-  r.instance_eval { initialize r, r }
-  r.inspect
-}
-
 # This randomly fails on mswin.
 assert_equal %q{[]}, %q{
   Thread.new{sleep}.backtrace
