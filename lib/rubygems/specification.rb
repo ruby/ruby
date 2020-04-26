@@ -1395,7 +1395,11 @@ class Gem::Specification < Gem::BasicSpecification
         raise e
       end
 
-      specs = spec_dep.to_specs
+      begin
+        specs = spec_dep.to_specs
+      rescue Gem::MissingSpecError => e
+        raise Gem::MissingSpecError.new(e.name, e.requirement, "at: #{self.spec_file}")
+      end
 
       if specs.size == 1
         specs.first.activate
