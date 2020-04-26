@@ -6920,8 +6920,8 @@ env_update(VALUE env, VALUE hash)
  *
  *    h = {foo: 0, bar: nil, baz: 2}
  *    h1 = {bat: 3, bam: nil}
- *    h1 = h.merge(h1).compact
- *    h1 # => {:foo=>0, :baz=>2, :bat=>3}
+ *    h2 = h.merge(h1).compact
+ *    h2 # => {:foo=>0, :baz=>2, :bat=>3}
  *
  *  Details:
  *
