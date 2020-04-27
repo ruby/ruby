@@ -324,13 +324,9 @@ By default, this RubyGems will install gem as:
       pem_files = pem_files_in path
 
       Dir.chdir path do
-        lib_files.each do |lib_file|
-          install_file lib_file, lib_dir
-        end
+        install_file_list(lib_files, lib_dir)
 
-        pem_files.each do |pem_file|
-          install_file pem_file, lib_dir
-        end
+        install_file_list(pem_files, lib_dir)
       end
     end
   end
@@ -633,6 +629,12 @@ abort "#{deprecation_message}"
   end
 
   private
+
+  def install_file_list(files, dest_dir)
+    files.each do |file|
+      install_file file, dest_dir
+    end
+  end
 
   def install_file(file, dest_dir)
     dest_file = File.join dest_dir, file
