@@ -324,9 +324,7 @@ By default, this RubyGems will install gem as:
       pem_files = pem_files_in path
 
       Dir.chdir path do
-        install_file_list(lib_files, lib_dir)
-
-        install_file_list(pem_files, lib_dir)
+        install_file_list(lib_files + pem_files, lib_dir)
       end
     end
   end
