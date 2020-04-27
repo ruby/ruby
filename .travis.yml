@@ -519,6 +519,7 @@ branches:
     - ruby_2_5
     - ruby_2_6
     - ruby_2_7
+    - bug/*
 
 # We want to be notified when something happens.
 notifications:
