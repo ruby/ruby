@@ -48,6 +48,7 @@ env:
     - GEMS_FOR_TEST='timezone tzinfo'
     - UPDATE_UNICODE="UNICODE_FILES=. UNICODE_PROPERTY_FILES=. UNICODE_AUXILIARY_FILES=. UNICODE_EMOJI_FILES=."
     - BEFORE_INSTALL=true
+    - SPEC_TEMP_DIR=/tmp/rubyspec_temp
     # https://github.com/travis-ci/travis-build/blob/e411371dda21430a60f61b8f3f57943d2fe4d344/lib/travis/build/bash/travis_apt_get_options.bash#L7
     - travis_apt_get_options='--allow-downgrades --allow-remove-essential --allow-change-held-packages'
     - travis_apt_get_options="-yq --no-install-suggests --no-install-recommends $travis_apt_get_options"
@@ -366,7 +367,7 @@ env:
     rvm: 2.5.7
     before_install:
     install:
-    before_script: chmod -R u+w spec/ruby
+    before_script: chmod -R a-w spec/ruby
     # -j randomly hangs.
     script: ruby -C spec/ruby ../mspec/bin/mspec .
     after_failure:
@@ -378,7 +379,7 @@ env:
     rvm: 2.7.0
     before_install:
     install:
-    before_script: chmod -R u+w spec/ruby
+    before_script: chmod -R a-w spec/ruby
     # -j randomly hangs.
     script: ruby -C spec/ruby ../mspec/bin/mspec .
     after_failure:
