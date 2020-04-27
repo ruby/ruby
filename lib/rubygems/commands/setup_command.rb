@@ -312,16 +312,6 @@ By default, this RubyGems will install gem as:
     end
   end
 
-  def install_file(file, dest_dir)
-    dest_file = File.join dest_dir, file
-    dest_dir = File.dirname dest_file
-    unless File.directory? dest_dir
-      mkdir_p dest_dir, :mode => 0755
-    end
-
-    install file, dest_file, :mode => options[:data_mode] || 0644
-  end
-
   def install_lib(lib_dir)
     libs = { 'RubyGems' => 'lib' }
     libs['Bundler'] = 'bundler/lib'
@@ -643,6 +633,16 @@ abort "#{deprecation_message}"
   end
 
   private
+
+  def install_file(file, dest_dir)
+    dest_file = File.join dest_dir, file
+    dest_dir = File.dirname dest_file
+    unless File.directory? dest_dir
+      mkdir_p dest_dir, :mode => 0755
+    end
+
+    install file, dest_file, :mode => options[:data_mode] || 0644
+  end
 
   def target_bin_path(bin_dir, bin_file)
     bin_file_formatted = if options[:format_executable]
