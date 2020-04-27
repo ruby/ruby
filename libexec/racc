@@ -88,7 +88,7 @@ def main
     debug_flags = Racc::DebugFlags.parse_option_string(flags)
   }
   #parser.on('--no-extensions', 'Run Racc without any Ruby extension.') {
-  #  Racc.const_set :Racc_No_Extentions, true
+  #  Racc.const_set :Racc_No_Extensions, true
   #}
   parser.on('--version', 'Prints version and quit.') {
     puts "racc version #{Racc::Version}"
