@@ -329,7 +329,7 @@ By default, this RubyGems will install gem as:
       say "Installing #{tool}" if @verbose
 
       lib_files = rb_files_in path
-      lib_files.concat(template_files) if tool == 'Bundler'
+      lib_files.concat(bundler_template_files) if tool == 'Bundler'
 
       pem_files = pem_files_in path
 
@@ -503,8 +503,7 @@ By default, this RubyGems will install gem as:
     end
   end
 
-  # for installation of bundler as default gems
-  def template_files
+  def bundler_template_files
     Dir.chdir "bundler/lib" do
       (Dir[File.join('bundler', 'templates', '**', '{*,.*}')]).
         select{|f| !File.directory?(f)}
