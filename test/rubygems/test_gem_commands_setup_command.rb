@@ -23,8 +23,8 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     FileUtils.mkdir_p 'bin'
     FileUtils.mkdir_p 'lib/rubygems/ssl_certs/rubygems.org'
 
-    File.open 'bin/gem', 'w' do
-      |io| io.puts '# gem'
+    File.open 'bin/gem', 'w' do |io|
+      io.puts '# gem'
     end
 
     File.open 'lib/rubygems.rb', 'w' do |io|
