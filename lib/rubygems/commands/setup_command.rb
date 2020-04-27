@@ -550,14 +550,7 @@ abort "#{deprecation_message}"
         file.start_with? 'defaults'
       end
 
-      Dir.chdir old_lib_dir do
-        to_remove.each do |file|
-          FileUtils.rm_f file
-
-          warn "unable to remove old file #{file} please remove it by hand" if
-            File.exist? file
-        end
-      end
+      remove_file_list(to_remove, old_lib_dir)
     end
   end
 
@@ -642,6 +635,17 @@ abort "#{deprecation_message}"
     end
 
     install file, dest_file, :mode => options[:data_mode] || 0644
+  end
+
+  def remove_file_list(files, dir)
+    Dir.chdir dir do
+      files.each do |file|
+        FileUtils.rm_f file
+
+        warn "unable to remove old file #{file} please remove it by hand" if
+          File.exist? file
+      end
+    end
   end
 
   def target_bin_path(bin_dir, bin_file)
