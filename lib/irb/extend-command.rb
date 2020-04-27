@@ -121,6 +121,10 @@ module IRB # :nodoc:
         [:help, NO_OVERRIDE],
       ],
 
+      [
+        :irb_info, :Info, "irb/cmd/info"
+      ],
+
     ]
 
     # Installs the default irb commands:
