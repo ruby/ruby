@@ -123,9 +123,9 @@ module Bundler
       end
 
       man_path = File.expand_path("../../../man", __FILE__)
-      # man files are located under the share directory with the default gems of bundler
-      man_path = File.expand_path("../../../../../share/man/man1", __FILE__) unless File.directory?(man_path)
-      man_pages = Hash[Dir.glob(File.join(man_path, "*")).grep(/.*\.\d*\Z/).collect do |f|
+      # man files are located under ruby's mandir with the default gems of bundler
+      man_path = RbConfig::CONFIG["mandir"] unless File.directory?(man_path)
+      man_pages = Hash[Dir.glob(File.join(man_path, "**", "*")).grep(/.*\.\d*\Z/).collect do |f|
         [File.basename(f, ".*"), f]
       end]
 
@@ -134,7 +134,7 @@ module Bundler
         if Bundler.which("man") && man_path !~ %r{^file:/.+!/META-INF/jruby.home/.+}
           Kernel.exec "man #{man_page}"
         else
-          puts File.read("#{man_path}/#{File.basename(man_page)}.txt")
+          puts File.read("#{File.dirname(man_page)}/#{File.basename(man_page)}.txt")
         end
       elsif command_path = Bundler.which("bundler-#{cli}")
         Kernel.exec(command_path, "--help")
