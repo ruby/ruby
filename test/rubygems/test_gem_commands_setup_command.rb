@@ -79,30 +79,6 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     end
   end
 
-  def gem_install(name)
-    gem = util_spec name do |s|
-      s.executables = [name]
-      s.files = %W[bin/#{name}]
-    end
-    write_file File.join @tempdir, 'bin', name do |f|
-      f.puts '#!/usr/bin/ruby'
-    end
-    install_gem gem
-    File.join @gemhome, 'bin', name
-  end
-
-  def gem_install_with_plugin(name)
-    gem = util_spec name do |s|
-      s.files = %W[lib/rubygems_plugin.rb]
-    end
-    write_file File.join @tempdir, 'lib', 'rubygems_plugin.rb' do |f|
-      f.puts "require '#{gem.plugins.first}'"
-    end
-    install_gem gem
-
-    File.join Gem.plugindir, "#{name}_plugin.rb"
-  end
-
   def test_execute_regenerate_binstubs
     gem_bin_path = gem_install 'a'
     write_file gem_bin_path do |io|
@@ -388,6 +364,30 @@ class TestGemCommandsSetupCommand < Gem::TestCase
   end
 
   private
+
+  def gem_install(name)
+    gem = util_spec name do |s|
+      s.executables = [name]
+      s.files = %W[bin/#{name}]
+    end
+    write_file File.join @tempdir, 'bin', name do |f|
+      f.puts '#!/usr/bin/ruby'
+    end
+    install_gem gem
+    File.join @gemhome, 'bin', name
+  end
+
+  def gem_install_with_plugin(name)
+    gem = util_spec name do |s|
+      s.files = %W[lib/rubygems_plugin.rb]
+    end
+    write_file File.join @tempdir, 'lib', 'rubygems_plugin.rb' do |f|
+      f.puts "require '#{gem.plugins.first}'"
+    end
+    install_gem gem
+
+    File.join Gem.plugindir, "#{name}_plugin.rb"
+  end
 
   def default_gem_bin_path
     gem_exec = sprintf Gem.default_exec_format, 'gem'
