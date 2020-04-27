@@ -36,7 +36,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     end
 
     File.open 'lib/rubygems/ssl_certs/rubygems.org/foo.pem', 'w' do |io|
-      io.puts 'PEM'
+      io.puts '# foo.pem'
     end
 
     FileUtils.mkdir_p 'bundler/exe'
