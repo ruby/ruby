@@ -9903,7 +9903,7 @@ objspace_malloc_fixup(rb_objspace_t *objspace, void *mem, size_t size)
 #endif
 
 /* these shouldn't be called directly.
- * objspace_* functinos do not check allocation size.
+ * objspace_* functions do not check allocation size.
  */
 static void *
 objspace_xmalloc0(rb_objspace_t *objspace, size_t size)
