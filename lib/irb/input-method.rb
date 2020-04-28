@@ -220,9 +220,11 @@ module IRB
 
       # For debug message
       def inspect
-        inputrc_path = File.expand_path(ENV['INPUTRC'] || '~/.inputrc')
         readline_impl = (defined?(Reline) && Readline == Reline) ? 'Reline' : 'ext/readline'
-        "ReadlineInputMethod with #{readline_impl} #{Readline::VERSION} and #{inputrc_path}"
+        str = "ReadlineInputMethod with #{readline_impl} #{Readline::VERSION}"
+        inputrc_path = File.expand_path(ENV['INPUTRC'] || '~/.inputrc')
+        str += " and #{inputrc_path}" if File.exist?(inputrc_path)
+        str
       end
     end
   rescue LoadError
@@ -323,12 +325,14 @@ module IRB
     # For debug message
     def inspect
       config = Reline::Config.new
+      str = "ReidlineInputMethod with Reline #{Reline::VERSION}"
       if config.respond_to?(:inputrc_path)
         inputrc_path = config.inputrc_path
       else
         inputrc_path = File.expand_path(ENV['INPUTRC'] || '~/.inputrc')
       end
-      "ReidlineInputMethod with Reline #{Reline::VERSION} and #{inputrc_path}"
+      str += " and #{inputrc_path}" if File.exist?(inputrc_path)
+      str
     end
   end
 end
