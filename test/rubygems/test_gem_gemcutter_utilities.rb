@@ -8,6 +8,9 @@ class TestGemGemcutterUtilities < Gem::TestCase
 
   def setup
     super
+
+    credential_setup
+
     # below needed for random testing, class property
     Gem.configuration.disable_default_gem_server = nil
 

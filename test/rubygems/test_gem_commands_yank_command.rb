@@ -7,6 +7,8 @@ class TestGemCommandsYankCommand < Gem::TestCase
   def setup
     super
 
+    credential_setup
+
     @cmd = Gem::Commands::YankCommand.new
     @cmd.options[:host] = 'http://example'
 
