@@ -70,13 +70,7 @@ The push command will use ~/.gem/credentials to authenticate to a server, but yo
   def send_gem(name)
     args = [:post, "api/v1/gems"]
 
-    gem_data = Gem::Package.new(name)
-
-    push_host = nil
-
-    if gem_data.spec.metadata.has_key?('allowed_push_host')
-      push_host = gem_data.spec.metadata['allowed_push_host']
-    end
+    _, push_host = get_hosts_for(name)
 
     @host ||= push_host
 
