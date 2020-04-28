@@ -1498,16 +1498,9 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
   end
 
   def test_block_variables
-    assert_equal("[fcall(proc,[],&block([],[void()]))]", parse("proc{|;y|}"))
-    if defined?(Process::RLIMIT_AS)
-      dir = File.dirname(__FILE__)
-      as = 100 * 1024 * 1024 # 100MB
-      as *= 2 if RubyVM::MJIT.enabled? # space for compiler
-      assert_in_out_err(%W(-I#{dir} -rdummyparser),
-                        "Process.setrlimit(Process::RLIMIT_AS,#{as}); "\
-                        "puts DummyParser.new('proc{|;y|!y}').parse",
-                        ["[fcall(proc,[],&block([],[unary(!,ref(y))]))]"], [], '[ruby-dev:39423]')
-    end
+    bug4159 = '[ruby-dev:39423]'
+    assert_equal("[fcall(proc,[],&block([],[void()]))]", parse("proc{|;y|}"), bug4159)
+    assert_equal("[fcall(proc,[],&block([],[unary(!,ref(y))]))]", parse("proc{|;y|!y}"), bug4159)
   end
 
   def test_unterminated_regexp
