@@ -9644,9 +9644,6 @@ rb_memerror(void)
 	exc = ruby_vm_special_exception_copy(exc);
     }
     ec->errinfo = exc;
-#ifdef __INTEL_COMPILER
-    __builtin_trap(); /* Yes, icc has it.*/
-#endif
     EC_JUMP_TAG(ec, TAG_RAISE);
 }
 
@@ -9860,7 +9857,7 @@ objspace_malloc_fixup(rb_objspace_t *objspace, void *mem, size_t size)
     return mem;
 }
 
-#if defined(__GNUC__) /* && RUBY_DEBUG */
+#if defined(__GNUC__) && RUBY_DEBUG
 #define RB_BUG_INSTEAD_OF_RB_MEMERROR
 #endif
 
