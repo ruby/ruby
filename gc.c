@@ -9596,6 +9596,7 @@ ruby_memerror_body(void *dummy)
     return 0;
 }
 
+NORETURN(static void ruby_memerror(void));
 RUBY3_ATTR_MAYBE_UNUSED()
 static void
 ruby_memerror(void)
@@ -9610,9 +9611,9 @@ ruby_memerror(void)
 	else {
 	    /* no ruby thread */
 	    fprintf(stderr, "[FATAL] failed to allocate memory\n");
-	    exit(EXIT_FAILURE);
 	}
     }
+    exit(EXIT_FAILURE);
 }
 
 void
