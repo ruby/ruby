@@ -937,10 +937,11 @@ rb_check_to_array(VALUE ary)
  *  call-seq:
  *    Array.try_convert(obj) -> new_array or nil
  *
- *  Tries to convert <tt>obj</tt> to an \Array.
+ *  Tries to convert +obj+ to an \Array.
  *
- *  When <tt>obj</tt> is an
- *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects],
+ *  When +obj+ is an
+ *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects]
+ *  (implements +to_ary+),
  *  returns the \Array object created by converting it:
  *
  *    class ToAryReturnsArray < Set
@@ -951,8 +952,7 @@ rb_check_to_array(VALUE ary)
  *    as = ToAryReturnsArray.new([:foo, :bar, :baz])
  *    Array.try_convert(as) # => [:foo, :bar, :baz]
  *
- *  Returns <tt>nil</tt> unless <tt>obj</tt> is an
- *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects]:
+ *  Returns +nil+ if +obj+ is not \Array-convertible:
  *
  *    Array.try_convert(:foo) # => nil
  */
@@ -969,17 +969,19 @@ rb_ary_s_try_convert(VALUE dummy, VALUE ary)
  *    Array.new(array) -> new_array
  *    Array.new(size) -> new_array
  *    Array.new(size, default_value) -> new_array
- *    Array.new(size) { |index| ... } -> new_array
+ *    Array.new(size) {|index| ... } -> new_array
  *
  *  Returns a new \Array.
  *
- *  Argument <tt>array</tt>, if given, must be an
- *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects].
+ *  Argument +array+, if given, must be an
+ *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects]
+ *  (implements +to_ary+).
  *
- *  Argument <tt>size</tt>, if given must be an
- *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
+ *  Argument +size+, if given must be an
+ *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects]
+ *  (implements +to_int+).
  *
- *  Argument <tt>default_value</tt> may be any object.
+ *  Argument +default_value+ may be any object.
  *
  *  ---
  *
@@ -988,41 +990,41 @@ rb_ary_s_try_convert(VALUE dummy, VALUE ary)
  *    a = Array.new
  *    a # => []
  *
- *  With no block and a single argument <tt>array</tt>,
- *  returns a new \Array formed from <tt>array</tt>:
+ *  With no block and a single argument +array+,
+ *  returns a new \Array formed from +array+:
  *
  *    a = Array.new([:foo, 'bar', 2])
  *    a.class # => Array
  *    a # => [:foo, "bar", 2]
  *
- *  With no block and a single argument <tt>size</tt>,
+ *  With no block and a single argument +size+,
  *  returns a new \Array of the given size
- *  whose elements are all <tt>nil</tt>:
+ *  whose elements are all +nil+:
  *
  *    a = Array.new(0)
  *    a # => []
  *    a = Array.new(3)
  *    a # => [nil, nil, nil]
  *
- *  With no block and arguments <tt>size</tt> and  <tt>default_value</tt>,
+ *  With no block and arguments +size+ and  +default_value+,
  *  returns an \Array of the given size;
- *  each element is that same <tt>default_value</tt>:
+ *  each element is that same +default_value+:
  *
  *    a = Array.new(3, 'x')
  *    a # => ['x', 'x', 'x']
  *    a[1].equal?(a[0]) # => true # Identity check.
  *    a[2].equal?(a[0]) # => true # Identity check.
  *
- *  With a block and argument <tt>size</tt>,
+ *  With a block and argument +size+,
  *  returns an \Array of the given size;
- *  the block is called with each successive integer <tt>index</tt>;
- *  the element for that <tt>index</tt> is the return value from the block:
+ *  the block is called with each successive integer +index+;
+ *  the element for that +index+ is the return value from the block:
  *
  *    a = Array.new(3) { |index| "Element #{index}" }
  *    a # => ["Element 0", "Element 1", "Element 2"]
  *
  *  With a block and no argument,
- *  or a single argument <tt>0</tt>,
+ *  or a single argument +0+,
  *  ignores the block and returns a new empty \Array:
  *
  *    a = Array.new(0) { |n| fail 'Cannot happen' }
@@ -1030,7 +1032,7 @@ rb_ary_s_try_convert(VALUE dummy, VALUE ary)
  *    a = Array.new { |n| fail 'Cannot happen' }
  *    a # => []
  *
- *  With a block and arguments <tt>size</tt> and <tt>default_value</tt>,
+ *  With a block and arguments +size+ and +default_value+,
  *  gives a warning message
  *  ('warning: block supersedes default value argument'),
  *  and assigns elements from the block's return values:
@@ -1039,7 +1041,7 @@ rb_ary_s_try_convert(VALUE dummy, VALUE ary)
  *
  *  ---
  *
- *  Raises an exception if <tt>size</tt> is a negative integer:
+ *  Raises an exception if +size+ is a negative integer:
  *
  *    # Raises ArgumentError (negative array size):
  *    Array.new(-1)
@@ -1048,10 +1050,8 @@ rb_ary_s_try_convert(VALUE dummy, VALUE ary)
  *    # Raises ArgumentError (negative array size):
  *    Array.new(-1) { |n| }
  *
- *  Raises an exception if the single argument is neither an
- *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects]
- *  nor an
- *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects]:
+ *  Raises an exception if the single argument is neither \Array-convertible
+ *  nor \Integer-convertible.
  *
  *    # Raises TypeError (no implicit conversion of Symbol into Integer):
  *    Array.new(:foo)
@@ -1238,14 +1238,14 @@ ary_take_first_or_last(int argc, const VALUE *argv, VALUE ary, enum ary_take_pos
  *  call-seq:
  *    ary << obj -> self
  *
- *  Appends <tt>obj</tt> to <tt>ary</tt>; returns <tt>self</tt>:
+ *  Appends +obj+ to +ary+; returns +self+:
  *
  *    a = [:foo, 'bar', 2]
  *    a1 = a << :baz
  *    a1 # => [:foo, "bar", 2, :baz]
  *    a1.equal?(a) # => true
  *
- *  Appends <tt>obj</tt> as one element, even if it is another \Array:
+ *  Appends +obj+ as one element, even if it is another \Array:
  *
  *    a = [:foo, 'bar', 2]
  *    a1 = a << [3, 4] # =>
@@ -1280,7 +1280,7 @@ rb_ary_cat(VALUE ary, const VALUE *argv, long len)
  *    ary.push(*objects)    -> self
  *    ary.append(*objects)  -> self
  *
- *  Appends each argument in <tt>*objects</tt> to <tt>ary</tt>;  returns <tt>self</tt>:
+ *  Appends each argument in +objects+ to the array;  returns +self+:
  *
  *    a = [:foo, 'bar', 2]
  *    a1 = a.push(:baz, :bat)
@@ -1324,30 +1324,30 @@ rb_ary_pop(VALUE ary)
  *    ary.pop -> obj or nil
  *    ary.pop(n) -> new_array
  *
- *  Removes and returns trailing elements from <tt>ary</tt>.
+ *  Removes and returns trailing elements from the array.
  *
- *  Argument <tt>n</tt>, if given, must be an
- *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
+ *  Argument +n+, if given, must be an
+ *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects]
+ *  (implements +to_int+).
  *
  *  ---
  *
- *  When no argument is given,
- *  removes and returns the last element in <tt>ary</tt>
- *  unless <tt>ary</tt> is empty:
+ *  When no argument is given and the array is not empty,
+ *  removes and returns the last element in the array:
  *
  *    a = [:foo, 'bar', 2]
  *    a.pop # => 2
  *    a # => [:foo, "bar"]
  *
- *  Returns <tt>nil</tt> if <tt>ary</tt> is empty:
+ *  Returns +nil+ if the array is empty:
  *
  *    a = []
  *    a.pop # => nil
  *
  *  ---
  *
- *  When argument <tt>n</tt> is given and <tt>0 <= n <= ary.size</tt>,
- *  removes and returns the last <tt>n</tt> elements in a new \Array:
+ *  When argument +n+ is given and is non-negative and in range,
+ *  removes and returns the last +n+ elements in a new \Array:
  *
  *    a = [:foo, 'bar', 2]
  *    a1 = a.pop(2)
@@ -1355,8 +1355,8 @@ rb_ary_pop(VALUE ary)
  *    a # => [:foo]
  *    a.pop(0) # => []
  *
- *  If <tt>n > ary.size</tt>,
- *  removes and returns all elements in <tt>ary</tt>:
+ *  If +n+ is positive and out of range,
+ *  removes and returns all elements:
  *
  *    a = [:foo, 'bar', 2]
  *    a1 = a.pop(50)
@@ -1366,14 +1366,13 @@ rb_ary_pop(VALUE ary)
  *
  *  ---
  *
- *  Raises an exception if <tt>n</tt> is negative:
+ *  Raises an exception if +n+ is negative:
  *
  *    a = [:foo, 'bar', 2]
  *    # Raises ArgumentError (negative array size):
  *    a1 = a.pop(-1)
  *
- *  Raises an exception if <tt>n</tt> is not an
- *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects]:
+ *  Raises an exception if +n+ is not \Integer-convertible (implements +to_int+).
  *
  *    a = [:foo, 'bar', 2]
  *    # Raises TypeError (no implicit conversion of String into Integer):
@@ -6711,12 +6710,32 @@ rb_ary_deconstruct(VALUE ary)
 }
 
 /*
- *  Arrays are ordered, integer-indexed collections of any object.
+ *  An \Array is an ordered, integer-indexed collection of objects,
+ *  called _elements_.  Any object may be an \Array element.
  *
- *  Array indexing starts at 0, as in C or Java.  A negative index is assumed
- *  to be relative to the end of the array---that is, an index of -1 indicates
- *  the last element of the array, -2 is the next to last element in the
- *  array, and so on.
+ *  == \Array Indexes
+ *
+ *  \Array indexing starts at 0, as in C or Java.
+ *
+ *  A positive index is an offset from the first element:
+ *  - Index 0 indicates the first element.
+ *  - Index 1 indicates the second element.
+ *  - ...
+ *
+ *  A negative index is an offset, backwards, from the end of the array:
+ *  - Index -1 indicates the last element.
+ *  - Index -2 indicates the next-to-last element.
+ *  - ...
+ *
+ *  A non-negative index is <i>in range</i> if it is smaller than
+ *  the size of the array.  For a 3-element array:
+ *  - Indexes 0 through 2 are in range.
+ *  - Index 3 is out of range.
+ *
+ *  A negative index is <i>in range</i> if its absolute value is
+ *  not larger than the size of the array.  For a 3-element array:
+ *  - Indexes -1 through -3 are in range.
+ *  - Index -4 is out of range.
  *
  *  == Creating Arrays
  *
@@ -6945,41 +6964,6 @@ rb_ary_deconstruct(VALUE ary)
  *     arr = [1, 2, 3, 4, 5, 6]
  *     arr.keep_if {|a| a < 4}   #=> [1, 2, 3]
  *     arr                       #=> [1, 2, 3]
- *
- *  == Chaining \Method Calls
- *
- *  For a method that returns an \Array, you can "chain" method calls
- *  by following one method call with another.
- *
- *  This example chains methods #append and #compact:
- *
- *    a = [:foo, 'bar', 2]
- *    a1 = [:baz, nil, :bam, nil]
- *    a2 = a.append(*a1).compact
- *    a2 # => [:foo, "bar", 2, :baz, :bam]
- *
- *  Details:
- *
- *  - First method <tt>merge</tt> creates a copy of <tt>a</tt>,
- *    appends (separately) each element of <tt>a1</tt> to the copy, and returns
- *      [:foo, "bar", 2, :baz, nil, :bam, nil]
- *  - Chained method <tt>compact</tt> creates a copy of that return value,
- *    removes its <tt>nil</tt>-valued entries, and returns
- *       [:foo, "bar", 2, :baz, :bam]
- *
- *  A series of chained methods need not begin with a method in \Array.
- *  This example chains methods Hash#to_a and Array#reverse:
- *
- *    h = {foo: 0, bar: 1, baz: 2}
- *    h.to_a.reverse # => [[:baz, 2], [:bar, 1], [:foo, 0]]
- *
- *  Details:
- *
- *  - First method Hash#to_a converts <tt>a</tt> to an \Array, and returns
- *      [[:foo, 0], [:bar, 1], [:baz, 2]]
- *  - Chained method Array#reverse creates copy of that return value,
- *    reversees it, and  returns
- *      [[:baz, 2], [:bar, 1], [:foo, 0]]
  */
 
 void
