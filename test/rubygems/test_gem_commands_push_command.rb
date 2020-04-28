@@ -6,6 +6,9 @@ class TestGemCommandsPushCommand < Gem::TestCase
 
   def setup
     super
+
+    credential_setup
+
     ENV["RUBYGEMS_HOST"] = nil
     Gem.host = Gem::DEFAULT_HOST
     Gem.configuration.disable_default_gem_server = false

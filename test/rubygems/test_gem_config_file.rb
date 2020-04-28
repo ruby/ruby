@@ -7,6 +7,8 @@ class TestGemConfigFile < Gem::TestCase
   def setup
     super
 
+    credential_setup
+
     @temp_conf = File.join @tempdir, '.gemrc'
 
     @cfg_args = %W[--config-file #{@temp_conf}]

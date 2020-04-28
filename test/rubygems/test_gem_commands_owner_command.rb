@@ -7,6 +7,8 @@ class TestGemCommandsOwnerCommand < Gem::TestCase
   def setup
     super
 
+    credential_setup
+
     ENV["RUBYGEMS_HOST"] = nil
     @stub_ui = Gem::MockGemUi.new
     @stub_fetcher = Gem::FakeFetcher.new
