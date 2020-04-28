@@ -8,6 +8,8 @@ class TestGemCommandsSigninCommand < Gem::TestCase
   def setup
     super
 
+    credential_setup
+
     Gem.configuration.rubygems_api_key = nil
     Gem.configuration.api_keys.clear
 
