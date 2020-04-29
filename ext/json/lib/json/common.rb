@@ -174,35 +174,37 @@ module JSON
   #
   # ---
   #
-  # * *array_class*: Defaults to Array
-  # * *max_nesting*: The maximum depth of nesting allowed in the parsed data
-  #   structures. Disable depth checking with :max_nesting => false. It
-  #   defaults to 100.
-  # * *object_class*: Defaults to Hash
-  # * *symbolize_names*: If set to true, returns symbols for the names
-  #   (keys) in a JSON object. Otherwise strings are returned. Strings are
-  #   the default.
-  # * *max_nesting*: The maximum depth of nesting allowed in the parsed data
-  #   structures. Disable depth checking with :max_nesting => false. It
-  #   defaults to 100.
-  #
-  # ---
-  #
   # Raises an exception if +source+ is not \String-convertible:
   #
-  #   Raises TypeError (no implicit conversion of Symbol into String):
+  #   # Raises TypeError (no implicit conversion of Symbol into String):
   #   JSON.parse(:foo)
   #
   # Raises an exception if +opts+ is not \Hash-convertible:
   #
-  #   Raises TypeError (no implicit conversion of Symbol into Hash):
+  #   # Raises TypeError (no implicit conversion of Symbol into Hash):
   #   JSON.parse(['foo'], :foo)
   #
   # Raises an exception if +source+ is not valid JSON:
   #
-  #   Raises JSON::ParserError (783: unexpected token at ''):
+  #   # Raises JSON::ParserError (783: unexpected token at ''):
   #   JSON.parse('')
   #
+  # _opts_ can have the following
+  # keys:
+  # * *max_nesting*: The maximum depth of nesting allowed in the parsed data
+  #   structures. Disable depth checking with :max_nesting => false. It
+  #   defaults to 100.
+  # * *allow_nan*: If set to true, allow NaN, Infinity and -Infinity in
+  #   defiance of RFC 7159 to be parsed by the Parser. This option defaults
+  #   to false.
+  # * *symbolize_names*: If set to true, returns symbols for the names
+  #   (keys) in a JSON object. Otherwise strings are returned. Strings are
+  #   the default.
+  # * *create_additions*: If set to false, the Parser doesn't create
+  #   additions even if a matching class and create_id was found. This option
+  #   defaults to false.
+  # * *object_class*: Defaults to Hash
+  # * *array_class*: Defaults to Array
   def parse(source, opts = {})
     Parser.new(source, **(opts||{})).parse
   end
@@ -253,17 +255,17 @@ module JSON
   #
   # Raises an exception if +source+ is not \String-convertible:
   #
-  #   Raises TypeError (no implicit conversion of Symbol into String):
+  #   # Raises TypeError (no implicit conversion of Symbol into String):
   #   JSON.parse!(:foo)
   #
   # Raises an exception if +opts+ is not \Hash-convertible:
   #
-  #   Raises TypeError (no implicit conversion of Symbol into Hash):
+  #   # Raises TypeError (no implicit conversion of Symbol into Hash):
   #   JSON.parse!(['foo'], :foo)
   #
   # Raises an exception if +source+ is not valid JSON:
   #
-  #   Raises JSON::ParserError (783: unexpected token at ''):
+  #   # Raises JSON::ParserError (783: unexpected token at ''):
   #   JSON.parse!('')
   #
   # Parse the JSON document _source_ into a Ruby data structure and return it.
