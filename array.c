@@ -667,7 +667,7 @@ rb_ary_freeze(VALUE ary)
 
 /* This can be used to take a snapshot of an array (with
    e.g. rb_ary_replace) and check later whether the array has been
-   modified from the snapshot.  The snapshot is cheap, though if
+   modified from the snapshot.  The snapshot is cheap, however if
    something does modify the array it will pay the cost of copying
    it.  If Array#pop or Array#shift has been called, the array will
    be still shared with the snapshot, but the array length will
@@ -968,7 +968,7 @@ rb_ary_s_try_convert(VALUE dummy, VALUE ary)
  *
  *  In the first form, if no arguments are sent, the new array will be empty.
  *  When a +size+ and an optional +default+ are sent, an array is created with
- *  +size+ copies of +default+.  Take notice that all elements will reference the
+ *  +size+ copies of +default+.  Note all elements will reference the
  *  same object +default+.
  *
  *  The second form creates a copy of the array passed as a parameter (the
@@ -1346,7 +1346,7 @@ rb_ary_shift(VALUE ary)
  *     ary.shift(n) -> new_ary
  *
  *  Removes the first element of +self+ and returns it (shifting all
- *  other elements down by one). Returns +nil+ if the array
+ *  other elements down by one).  Returns +nil+ if the array
  *  is empty.
  *
  *  If a number +n+ is given, returns an array of the first +n+ elements
@@ -1633,7 +1633,7 @@ rb_ary_aref1(VALUE ary, VALUE arg)
  *     ary.at(index)   ->   obj  or nil
  *
  *  Returns the element at +index+. A negative index counts from the end of
- *  +self+. Returns +nil+ if the index is out of range. See also
+ *  +self+.  Returns +nil+ if the index is out of range. See also
  *  Array#[].
  *
  *     a = [ "a", "b", "c", "d", "e" ]
@@ -5267,7 +5267,7 @@ flatten(VALUE ary, int level)
  *
  *  Flattens +self+ in place.
  *
- *  Returns +nil+ if no modifications were made (i.e., the array contains no
+ *  Returns +nil+ if no modifications were made (i.e. the array contains no
  *  subarrays.)
  *
  *  The optional +level+ argument determines the level of recursion to flatten.
@@ -6809,8 +6809,8 @@ rb_ary_deconstruct(VALUE ary)
  *     # prints: -9 -8 -7 -6 -5
  *     #=> [1, 2, 3, 4, 5]
  *
- *  Another sometimes useful iterator is #reverse_each which will iterate over
- *  the elements in the array in reverse order.
+ *  Another useful iterator is #reverse_each which iterates over
+ *  each element in the array, in reverse order.
  *
  *     words = %w[first second third fourth fifth sixth]
  *     str = ""
