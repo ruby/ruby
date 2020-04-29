@@ -25,6 +25,8 @@ class TestGemGemcutterUtilities < Gem::TestCase
     ENV['RUBYGEMS_HOST'] = nil
     Gem.configuration.rubygems_api_key = nil
 
+    credential_teardown
+
     super
   end
 
