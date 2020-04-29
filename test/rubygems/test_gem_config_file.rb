@@ -28,6 +28,8 @@ class TestGemConfigFile < Gem::TestCase
 
     ENV['GEMRC'] = @env_gemrc
 
+    credential_teardown
+
     super
   end
 

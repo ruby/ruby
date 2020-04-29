@@ -597,6 +597,7 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
 
   def test_execute_re_sign
     gem_path = File.join Gem.user_home, ".gem"
+    Dir.mkdir gem_path
 
     path = File.join @tempdir, 'cert.pem'
     Gem::Security.write EXPIRED_PUBLIC_CERT, path, 0600
@@ -627,6 +628,9 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
   end
 
   def test_execute_re_sign_with_cert_expiration_length_days
+    gem_path = File.join Gem.user_home, ".gem"
+    Dir.mkdir gem_path
+
     path = File.join @tempdir, 'cert.pem'
     Gem::Security.write EXPIRED_PUBLIC_CERT, path, 0600
 

@@ -40,6 +40,8 @@ class TestGemCommandsPushCommand < Gem::TestCase
   end
 
   def teardown
+    credential_teardown
+
     super
 
     singleton_gem_class.class_eval do
