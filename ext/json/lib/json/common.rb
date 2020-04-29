@@ -134,31 +134,139 @@ module JSON
 
   module_function
 
-  # Parse the JSON document _source_ into a Ruby data structure and return it.
+  # Argument +source+ must be a
+  # {String-convertible object}[doc/implicit_conversion_rdoc.html#label-String-Convertible+Objects]
+  # (implementing +to_str+).
   #
-  # _opts_ can have the following
-  # keys:
+  # Argument +opts+, if given, must be a
+  # {Hash-convertible object}[doc/implicit_conversion_rdoc.html#label-Hash-Convertible+Objects]
+  # (implementing +to_hash+), or must be a JSON::State object.
+  #
+  # ---
+  #
+  # Returns the Ruby data structure created by parsing the given +source+.
+  #
+  # ---
+  #
+  # When +source+ is a JSON array, returns a new \Array:
+  #   source = '["foo", 1.0, true, false, null]'
+  #   a = JSON.parse(source)
+  #   a # => ["foo", 1.0, true, false, nil]
+  #   a.class # => Array
+  #
+  # The JSON array may contain nested arrays and objects:
+  #   source = '[{"foo": 0, "bar": 1}, ["baz", 2]]'
+  #   a = JSON.parse(source)
+  #   a # => [{"foo"=>0, "bar"=>1}, ["baz", 2]]
+  #
+  # ---
+  #
+  # When +source+ is a JSON object, returns a new \Hash:
+  #   source = '{"a": "foo", "b": 1.0, "c": true, "d": false, "e": null}'
+  #   h = JSON.parse(source)
+  #   h # => {"a"=>"foo", "b"=>1.0, "c"=>true, "d"=>false, "e"=>nil}
+  #   h.class # => Hash
+  #
+  # The JSON object may contain nested arrays and objects:
+  #   source = '{"foo": {"bar": 1, "baz": 2}, "bat": [0, 1, 2]}'
+  #   h = JSON.parse(source)
+  #   h # => {"foo"=>{"bar"=>1, "baz"=>2}, "bat"=>[0, 1, 2]}
+  #
+  # ---
+  #
+  # * *array_class*: Defaults to Array
   # * *max_nesting*: The maximum depth of nesting allowed in the parsed data
   #   structures. Disable depth checking with :max_nesting => false. It
   #   defaults to 100.
-  # * *allow_nan*: If set to true, allow NaN, Infinity and -Infinity in
-  #   defiance of RFC 7159 to be parsed by the Parser. This option defaults
-  #   to false.
+  # * *object_class*: Defaults to Hash
   # * *symbolize_names*: If set to true, returns symbols for the names
   #   (keys) in a JSON object. Otherwise strings are returned. Strings are
   #   the default.
-  # * *create_additions*: If set to false, the Parser doesn't create
-  #   additions even if a matching class and create_id was found. This option
-  #   defaults to false.
-  # * *object_class*: Defaults to Hash
-  # * *array_class*: Defaults to Array
+  # * *max_nesting*: The maximum depth of nesting allowed in the parsed data
+  #   structures. Disable depth checking with :max_nesting => false. It
+  #   defaults to 100.
+  #
+  # ---
+  #
+  # Raises an exception if +source+ is not \String-convertible:
+  #
+  #   Raises TypeError (no implicit conversion of Symbol into String):
+  #   JSON.parse(:foo)
+  #
+  # Raises an exception if +opts+ is not \Hash-convertible:
+  #
+  #   Raises TypeError (no implicit conversion of Symbol into Hash):
+  #   JSON.parse(['foo'], :foo)
+  #
+  # Raises an exception if +source+ is not valid JSON:
+  #
+  #   Raises JSON::ParserError (783: unexpected token at ''):
+  #   JSON.parse('')
+  #
   def parse(source, opts = {})
     Parser.new(source, **(opts||{})).parse
   end
 
+  # Argument +source+ must be a
+  # {String-convertible object}[doc/implicit_conversion_rdoc.html#label-String-Convertible+Objects]
+  # (implementing +to_str+).
+  #
+  # Argument +opts+, if given, must be a
+  # {Hash-convertible object}[doc/implicit_conversion_rdoc.html#label-Hash-Convertible+Objects]
+  # (implementing +to_hash+), or must be a JSON::State object.
+  #
+  # ---
+  #
+  # Returns the Ruby data structure created by parsing the given +source+.
+  #
+  # Method +parse!+ has defaults that are more dangerous
+  # than those for method +parse+;
+  # it should be used only for trusted +source+ documents.
+  #
+  # ---
+  #
+  # When +source+ is a JSON array, returns a new \Array:
+  #   source = '["foo", 1.0, true, false, null]'
+  #   a = JSON.parse!(source)
+  #   a # => ["foo", 1.0, true, false, nil]
+  #   a.class # => Array
+  #
+  # The JSON array may contain nested arrays and objects:
+  #   source = '[{"foo": 0, "bar": 1}, ["baz", 2]]'
+  #   a = JSON.parse!(source)
+  #   a # => [{"foo"=>0, "bar"=>1}, ["baz", 2]]
+  #
+  # ---
+  #
+  # When +source+ is a JSON object, returns a new \Hash:
+  #   source = '{"a": "foo", "b": 1.0, "c": true, "d": false, "e": null}'
+  #   h = JSON.parse!(source)
+  #   h # => {"a"=>"foo", "b"=>1.0, "c"=>true, "d"=>false, "e"=>nil}
+  #   h.class # => Hash
+  #
+  # The JSON object may contain nested arrays and objects:
+  #   source = '{"foo": {"bar": 1, "baz": 2}, "bat": [0, 1, 2]}'
+  #   h = JSON.parse!(source)
+  #   h # => {"foo"=>{"bar"=>1, "baz"=>2}, "bat"=>[0, 1, 2]}
+  #
+  # ---
+  #
+  # Raises an exception if +source+ is not \String-convertible:
+  #
+  #   Raises TypeError (no implicit conversion of Symbol into String):
+  #   JSON.parse!(:foo)
+  #
+  # Raises an exception if +opts+ is not \Hash-convertible:
+  #
+  #   Raises TypeError (no implicit conversion of Symbol into Hash):
+  #   JSON.parse!(['foo'], :foo)
+  #
+  # Raises an exception if +source+ is not valid JSON:
+  #
+  #   Raises JSON::ParserError (783: unexpected token at ''):
+  #   JSON.parse!('')
+  #
   # Parse the JSON document _source_ into a Ruby data structure and return it.
-  # The bang version of the parse method defaults to the more dangerous values
-  # for the _opts_ hash, so be sure only to parse trusted _source_ documents.
   #
   # _opts_ can have the following keys:
   # * *max_nesting*: The maximum depth of nesting allowed in the parsed data
