@@ -6,33 +6,59 @@ require "cgi"
 
 RSpec.describe Bundler, "friendly errors" do
   context "with invalid YAML in .gemrc" do
-    let(:config_home) { File.dirname(Gem.configuration.config_file_name) }
-
-    before do
-      FileUtils.mkdir_p config_home
-      File.open(Gem.configuration.config_file_name, "w") do |f|
-        f.write "invalid: yaml: hah"
+    context "with the old ~/.gemrc" do
+      before do
+        File.open(home(".gemrc"), "w") do |f|
+          f.write "invalid: yaml: hah"
+        end
       end
-    end
 
-    after do
-      FileUtils.rm(Gem.configuration.config_file_name)
-    end
+      after do
+        FileUtils.rm(home(".gemrc"))
+      end
 
-    it "reports a relevant friendly error message" do
-      gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
-      G
+      it "reports a relevant friendly error message" do
+        gemfile <<-G
+          source "#{file_uri_for(gem_repo1)}"
+          gem "rack"
+        G
 
-      bundle :install, :env => { "DEBUG" => "true" }
+        bundle :install, :env => { "DEBUG" => "true" }
 
-      if Gem::VERSION >= "3.2.0.pre.1"
-        expect(err).to include("Failed to load #{File.join(config_home, "gemrc")}")
-      else
         expect(err).to include("Failed to load #{home(".gemrc")}")
+        expect(exitstatus).to eq(0) if exitstatus
       end
-      expect(exitstatus).to eq(0) if exitstatus
+    end
+
+    context "with XDG_CONFIG_HOME" do
+      let(:config_home) { File.dirname(Gem.configuration.config_file_name) }
+
+      before do
+        FileUtils.mkdir_p config_home
+        File.open(Gem.configuration.config_file_name, "w") do |f|
+          f.write "invalid: yaml: hah"
+        end
+      end
+
+      after do
+        FileUtils.rm(Gem.configuration.config_file_name)
+      end
+
+      it "reports a relevant friendly error message" do
+        gemfile <<-G
+          source "#{file_uri_for(gem_repo1)}"
+          gem "rack"
+        G
+
+        bundle :install, :env => { "DEBUG" => "true" }
+
+        if Gem::VERSION >= "3.2.0.pre.1"
+          expect(err).to include("Failed to load #{File.join(config_home, "gemrc")}")
+        else
+          expect(err).to include("Failed to load #{home(".gemrc")}")
+        end
+        expect(exitstatus).to eq(0) if exitstatus
+      end
     end
   end
 
