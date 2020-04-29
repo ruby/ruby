@@ -6910,41 +6910,6 @@ env_update(VALUE env, VALUE hash)
  *    h.default_proc = nil
  *    h.default = false
  *    h[:nosuch] # => false
- *
- *  === Chaining \Method Calls
- *
- *  For a method that returns a \Hash, you can "chain" method calls
- *  by following one method call with another.
- *
- *  This example chains methods #merge and #compact:
- *
- *    h = {foo: 0, bar: nil, baz: 2}
- *    h1 = {bat: 3, bam: nil}
- *    h2 = h.merge(h1).compact
- *    h2 # => {:foo=>0, :baz=>2, :bat=>3}
- *
- *  Details:
- *
- *  - First method <tt>merge</tt> creates a copy of <tt>h</tt>,
- *    merges <tt>h1</tt> into the copy, and returns
- *      {foo=>0, bar=>nil, baz=>2, bat=>3, bam=>nil}
- *  - Chained method <tt>compact</tt> creates a copy of that return value,
- *    removes its <tt>nil</tt>-valued entries, and returns
- *      {:foo=>0, :baz=>2, :bat=>3}
- *
- *  A series of chained methods need not begin with a method in \Hash.
- *  This example chains methods Array#to_h and Hash#invert:
- *
- *    a = [[:foo, :bar], [1, 2]].to_h
- *    a.to_h.invert # => {:bar=>:foo, 2=>1}
- *
- *  Details:
- *
- *  - First method Array#to_h converts <tt>a</tt> to a \Hash, and returns
- *      {:foo=>:bar, 1=>2}
- *  - Chained method Hash#invert creates copy of that return value,
- *    inverts it, and  returns
- *      {:bar=>:foo, 2=>1}
  */
 
 void
