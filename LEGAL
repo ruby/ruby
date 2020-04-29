@@ -348,8 +348,9 @@ tool/config.sub::
     of the GNU General Public License, version 3 ("GPLv3").
 
 parse.c::
+parse.h::
 
-  This file is licensed under the GPL, but is incorporated into Ruby and
+  These files are licensed under the GPL, but are incorporated into Ruby and
   redistributed under the terms of the Ruby license, as permitted by the
   exception to the GPL below.
 
