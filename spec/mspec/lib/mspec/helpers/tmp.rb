@@ -6,9 +6,9 @@
 SPEC_TEMP_DIR_PID = Process.pid
 SPEC_TEMP_DIR_LIST = []
 if tmpdir = ENV['SPEC_TEMP_DIR']
-  temppath = File.expand_path(tmpdir) + "/"
+  temppath = File.realdirpath(tmpdir) + "/"
 else
-  tmpdir = File.expand_path("rubyspec_temp")
+  tmpdir = File.realdirpath("rubyspec_temp")
   temppath = tmpdir + "/#{SPEC_TEMP_DIR_PID}"
   SPEC_TEMP_DIR_LIST << tmpdir
 end
