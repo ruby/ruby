@@ -1057,25 +1057,27 @@ class Matrix
   def *(m) # m is matrix or vector or number
     case(m)
     when Numeric
-      rows = @rows.collect {|row|
+      new_rows = @rows.collect {|row|
         row.collect {|e| e * m }
       }
-      return new_matrix rows, column_count
+      return new_matrix new_rows, column_count
     when Vector
       m = self.class.column_vector(m)
       r = self * m
       return r.column(0)
     when Matrix
       raise ErrDimensionMismatch if column_count != m.row_count
-
-      rows = Array.new(row_count) {|i|
-        Array.new(m.column_count) {|j|
-          (0 ... column_count).inject(0) do |vij, k|
-            vij + self[i, k] * m[k, j]
+      m_rows = m.rows
+      new_rows = rows.map do |row_i|
+        Array.new(m.column_count) do |j|
+          vij = 0
+          column_count.times do |k|
+            vij += row_i[k] * m_rows[k][j]
           end
-        }
-      }
-      return new_matrix rows, m.column_count
+          vij
+        end
+      end
+      return new_matrix new_rows, m.column_count
     else
       return apply_through_coercion(m, __method__)
     end
