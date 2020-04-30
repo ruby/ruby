@@ -17,12 +17,16 @@ module TestIRB
       Dir.chdir(@tmpdir)
       @home_backup = ENV["HOME"]
       ENV["HOME"] = @tmpdir
+      @default_encoding = [Encoding.default_external, Encoding.default_internal]
     end
 
     def teardown
       ENV["HOME"] = @home_backup
       Dir.chdir(@pwd)
       FileUtils.rm_rf(@tmpdir)
+      EnvUtil.suppress_warning {
+        Encoding.default_external, Encoding.default_internal = *@default_encoding
+      }
     end
 
     def test_irb_info_multiline
