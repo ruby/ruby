@@ -101,7 +101,7 @@ module TestIRB
       expected = %r{
         Ruby\sversion: .+\n
         IRB\sversion:\sirb .+\n
-        InputMethod:\sReadlineInputMethod\swith\s[^ ]+\s[^ ]+(?!\sand\s.+)\n
+        InputMethod:\sReadlineInputMethod\swith\s(?~.*\sand\s.+)\n
         \z
       }x
       assert_match expected, irb.context.main.irb_info.to_s
