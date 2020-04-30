@@ -2838,6 +2838,37 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
     end
   end
 
+  def test_validate_rake_extension_have_rake_dependency_warning
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      @a1.extensions = ['Rakefile']
+      File.write File.join(@tempdir, 'Rakefile'), ''
+
+      use_ui @ui do
+        @a1.validate
+      end
+
+      assert_match(/add rake as a dependency/, @ui.error)
+    end
+  end
+
+  def test_validate_rake_extension_have_rake_dependency_no_warning
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      @a1.extensions = ['Rakefile']
+      @a1.add_runtime_dependency 'rake'
+      File.write File.join(@tempdir, 'Rakefile'), ''
+
+      use_ui @ui do
+        @a1.validate
+      end
+
+      refute_match(/add rake as a dependency/, @ui.error)
+    end
+  end
+
   def test_validate_description
     util_setup_validate
 

@@ -1,3 +1,4 @@
+require 'rubygems/ext'
 require 'rubygems/user_interaction'
 
 class Gem::SpecificationPolicy
@@ -75,6 +76,8 @@ class Gem::SpecificationPolicy
     validate_values
 
     validate_dependencies
+
+    validate_extensions
 
     validate_removed_attributes
 
@@ -415,6 +418,17 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
     @specification.removed_method_calls.each do |attr|
       warning("#{attr} is deprecated and ignored. Please remove this from your gemspec to ensure that your gem continues to build in the future.")
     end
+  end
+
+  def validate_extensions # :nodoc:
+    builder = Gem::Ext::Builder.new(@specification)
+
+    rake_extension = @specification.extensions.any? {|s| builder.builder_for(s) == Gem::Ext::RakeBuilder }
+    rake_dependency = @specification.dependencies.any? {|d| d.name == 'rake'}
+
+    warning <<-WARNING if rake_extension && !rake_dependency
+You have specified rake based extension, but rake is not added as dependency. It is recommended to add rake as a dependency since there's no guarantee rake will be already installed.
+    WARNING
   end
 
   def warning(statement) # :nodoc:
