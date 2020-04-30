@@ -1088,23 +1088,6 @@ ruby_require_internal(const char *fname, unsigned int len)
 }
 
 VALUE
-rb_require_safe(VALUE fname, int safe)
-{
-    rb_warn("rb_require_safe will be removed in Ruby 3.0");
-    rb_execution_context_t *ec = GET_EC();
-    int result = require_internal(ec, fname, 1);
-
-    if (result > TAG_RETURN) {
-        EC_JUMP_TAG(ec, result);
-    }
-    if (result < 0) {
-        load_failed(fname);
-    }
-
-    return result ? Qtrue : Qfalse;
-}
-
-VALUE
 rb_require_string(VALUE fname)
 {
     rb_execution_context_t *ec = GET_EC();
