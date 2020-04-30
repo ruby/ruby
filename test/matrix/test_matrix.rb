@@ -800,4 +800,11 @@ class TestMatrix < Test::Unit::TestCase
     assert_equal false, @a3.unitary?
     assert_raise(Matrix::ErrDimensionMismatch) { @m1.unitary? }
   end
+
+  def test_orthogonal
+    assert_equal true, @rot.orthogonal?
+    assert_equal false, ((0+1i) * @rot).orthogonal?
+    assert_equal false, @a3.orthogonal?
+    assert_raise(Matrix::ErrDimensionMismatch) { @m1.orthogonal? }
+  end
 end

@@ -890,11 +890,12 @@ class Matrix
   #
   def orthogonal?
     raise ErrDimensionMismatch unless square?
-    rows.each_with_index do |row, i|
-      column_count.times do |j|
+
+    rows.each_with_index do |row_i, i|
+      rows.each_with_index do |row_j, j|
         s = 0
         row_count.times do |k|
-          s += row[k] * rows[k][j]
+          s += row_i[k] * row_j[k]
         end
         return false unless s == (i == j ? 1 : 0)
       end
