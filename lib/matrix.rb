@@ -1533,6 +1533,17 @@ class Matrix
   alias_method :conj, :conjugate
 
   #
+  # Returns the adjoint of the matrix.
+  #
+  #   Matrix[ [i,1],[2,-i] ].adjoint
+  #   #  => -i 2
+  #   #      1 i
+  #
+  def adjoint
+    conjugate.transpose
+  end
+
+  #
   # Returns the imaginary part of the matrix.
   #   Matrix[[Complex(1,2), Complex(0,1), 0], [1, 2, 3]]
   #   #  => 1+2i  i  0

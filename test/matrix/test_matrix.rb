@@ -807,4 +807,9 @@ class TestMatrix < Test::Unit::TestCase
     assert_equal false, @a3.orthogonal?
     assert_raise(Matrix::ErrDimensionMismatch) { @m1.orthogonal? }
   end
+
+  def test_adjoint
+    assert_equal(Matrix[[(1-2i), 1], [(0-1i), 2], [0, 3]], @c1.adjoint)
+    assert_equal(Matrix.empty(0,2), @e1.adjoint)
+  end
 end
