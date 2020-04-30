@@ -18,6 +18,7 @@ class TestMatrix < Test::Unit::TestCase
     @a3  = Matrix[[4, 1, -3], [0, 3, 7], [11, -4, 2]]
     @a5  = Matrix[[2, 0, 9, 3, 9], [8, 7, 0, 1, 9], [7, 5, 6, 6, 5], [0, 7, 8, 3, 0], [7, 8, 2, 3, 1]]
     @b3  = Matrix[[-7, 7, -10], [9, -3, -2], [-1, 3, 9]]
+    @rot = Matrix[[0, -1, 0], [1, 0, 0], [0, 0, -1]]
   end
 
   def test_matrix
@@ -791,5 +792,12 @@ class TestMatrix < Test::Unit::TestCase
     vectors = m.eigensystem.eigenvectors
     assert_in_epsilon(vectors[0][0], vectors[0][1])
     assert_in_epsilon(-4 * vectors[1][0], vectors[1][1])
+  end
+
+  def test_unitary?
+    assert_equal true, @rot.unitary?
+    assert_equal true, ((0+1i) * @rot).unitary?
+    assert_equal false, @a3.unitary?
+    assert_raise(Matrix::ErrDimensionMismatch) { @m1.unitary? }
   end
 end
