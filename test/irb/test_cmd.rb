@@ -31,6 +31,7 @@ module TestIRB
       IRB.setup(__FILE__, argv: [])
       IRB.conf[:USE_MULTILINE] = true
       IRB.conf[:USE_SINGLELINE] = false
+      IRB.conf[:VERBOSE] = false
       workspace = IRB::WorkSpace.new(self)
       irb = IRB::Irb.new(workspace)
       IRB.conf[:MAIN_CONTEXT] = irb.context
@@ -49,6 +50,7 @@ module TestIRB
       IRB.setup(__FILE__, argv: [])
       IRB.conf[:USE_MULTILINE] = false
       IRB.conf[:USE_SINGLELINE] = true
+      IRB.conf[:VERBOSE] = false
       workspace = IRB::WorkSpace.new(self)
       irb = IRB::Irb.new(workspace)
       IRB.conf[:MAIN_CONTEXT] = irb.context
@@ -70,6 +72,7 @@ module TestIRB
       IRB.setup(__FILE__, argv: [])
       IRB.conf[:USE_MULTILINE] = true
       IRB.conf[:USE_SINGLELINE] = false
+      IRB.conf[:VERBOSE] = false
       workspace = IRB::WorkSpace.new(self)
       irb = IRB::Irb.new(workspace)
       IRB.conf[:MAIN_CONTEXT] = irb.context
@@ -95,6 +98,7 @@ module TestIRB
       IRB.setup(__FILE__, argv: [])
       IRB.conf[:USE_MULTILINE] = false
       IRB.conf[:USE_SINGLELINE] = true
+      IRB.conf[:VERBOSE] = false
       workspace = IRB::WorkSpace.new(self)
       irb = IRB::Irb.new(workspace)
       IRB.conf[:MAIN_CONTEXT] = irb.context
