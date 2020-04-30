@@ -74,6 +74,7 @@ VALUE rb_to_hash_type(VALUE obj);
 VALUE rb_hash_key_str(VALUE);
 VALUE rb_hash_values(VALUE hash);
 VALUE rb_hash_rehash(VALUE hash);
+VALUE rb_obj_hash(VALUE obj);
 int rb_hash_add_new_element(VALUE hash, VALUE key, VALUE val);
 VALUE rb_hash_set_pair(VALUE hash, VALUE pair);
 int rb_hash_stlike_delete(VALUE hash, st_data_t *pkey, st_data_t *pval);

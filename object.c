@@ -26,6 +26,7 @@
 #include "internal/class.h"
 #include "internal/error.h"
 #include "internal/eval.h"
+#include "internal/hash.h"
 #include "internal/inits.h"
 #include "internal/numeric.h"
 #include "internal/object.h"
@@ -226,8 +227,6 @@ rb_obj_equal(VALUE obj1, VALUE obj2)
     if (obj1 == obj2) return Qtrue;
     return Qfalse;
 }
-
-VALUE rb_obj_hash(VALUE obj);
 
 /**
  *  call-seq:
