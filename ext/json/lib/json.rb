@@ -2,64 +2,235 @@
 require 'json/common'
 
 ##
-# = JavaScript Object Notation (JSON)
+# = JavaScript \Object Notation (\JSON)
 #
-# JSON is a lightweight data-interchange format. It is easy for us
-# humans to read and write. Plus, equally simple for machines to generate or parse.
-# JSON is completely language agnostic, making it the ideal interchange format.
+# \JSON is a lightweight data-interchange format.
 #
-# Built on two universally available structures:
+# A \JSON value is one of the following:
+# - Double-quoted text:  <tt>"foo"</tt>.
+# - Number:  +1+, +1.0+, +2.0e2+.
+# - Boolean:  +true+, +false+.
+# - Null: +null+.
+# - \Array: an ordered list of values, enclosed by square brackets; example:
 #
-# 1. A collection of name/value pairs. Often referred to as an _object_, hash table,
-#    record, struct, keyed list, or associative array.
-# 2. An ordered list of values. More commonly called an _array_, vector, sequence or
-#    list.
+#     ["foo", 1, 1.0, 2.0e2, true, false, null]
 #
-# To read more about JSON visit: http://json.org
+# - \Object: a collection of name/value pairs, enclosed by curly braces;
+#   each name is double-quoted text;
+#   the values may be any \JSON values;
+#   example:
 #
-# == Parsing JSON
+#     {"a": "foo", "b": 1, "c": 1.0, "d": 2.0e2, "e": true, "f": false, "g": null}
 #
-# To parse a JSON string received by another application or generated within
-# your existing application:
 #
+# \JSON arrays and objects may be nested (to any depth):
+#   {"foo": {"bar": 1, "baz": 2}, "bat": [0, 1, 2]}
+#   [{"foo": 0, "bar": 1}, ["baz", 2]]
+#
+# To read more about \JSON visit: http://json.org
+#
+# == Using \Module \JSON
+#
+# To make module \JSON available in your code, begin with:
 #   require 'json'
 #
-#   my_hash = JSON.parse('{"hello": "goodbye"}')
-#   puts my_hash["hello"] # => "goodbye"
+# All examples here assume that this has been done.
 #
-# Notice the extra quotes <tt>''</tt> around the hash notation. Ruby expects
-# the argument to be a string and can't convert objects like a hash or array.
+# === Parsing \JSON
 #
-# Ruby converts your string into a hash
+# You can parse a \String containing \JSON data using
+# either method JSON.parse or JSON.parse!.
 #
-# == Generating JSON
+# The difference between the two methods
+# is that JSON.parse! takes some performance shortcuts
+# that may not be safe in all cases;
+# use it only for data from trusted sources.
+# Use the safer method JSON.parse for less trusted sources.
+#
+# ==== Parsing a \JSON \Array
+#
+# When the \JSON source is an array, JSON.parse by default returns a new Ruby \Array:
+#   source = '["foo", 1, 1.0, 2.0e2, true, false, null]'
+#   a = JSON.parse(source)
+#   a # => ["foo", 1, 1.0, 200.0, true, false, nil]
+#   a.class # => Array
+#
+# The \JSON array may contain nested arrays and objects:
+#   source = '[{"foo": 0, "bar": 1}, ["baz", 2]]'
+#   JSON.parse(source) # => [{"foo"=>0, "bar"=>1}, ["baz", 2]]
+#
+# ==== Parsing a \JSON \Object
+#
+# When the \JSON source is an object, JSON.parse by default returns a new Ruby \Hash:
+#   source = '{"a": "foo", "b": 1, "c": 1.0, "d": 2.0e2, "e": true, "f": false, "g": null}'
+#   h = JSON.parse(source)
+#   h # => {"a"=>"foo", "b"=>1, "c"=>1.0, "d"=>200.0, "e"=>true, "f"=>false, "g"=>nil}
+#   h.class # => Hash
+#
+# The \JSON object may contain nested arrays and objects:
+#   source = '{"foo": {"bar": 1, "baz": 2}, "bat": [0, 1, 2]}'
+#   JSON.parse(source) # => {"foo"=>{"bar"=>1, "baz"=>2}, "bat"=>[0, 1, 2]}
+#
+# ==== Parsing \JSON Scalars
+#
+# When the \JSON source is a scalar, JSON.parse returns a scalar:
+#   s = JSON.parse('"foo"')
+#   s # => "foo"
+#   s.class # => String
+#   n = JSON.parse('1')
+#   n # => 1
+#   n.class # => Integer
+#   f = JSON.parse('1.0')
+#   f # => 1.0
+#   f.class # => Float
+#   f = JSON.parse('2.0e2')
+#   f # => 200
+#   f.class # => Flaot
+#   b = JSON.parse('true')
+#   b # => true
+#   b.class # => TrueClass
+#   b = JSON.parse('false')
+#   b # => false
+#   b.class # => FalseClass
+#   n = JSON.parse('null')
+#   n # => nil
+#   n.class # => NilClass
+#
+#
+# ==== Parsing Options
+#
+# Argument +opts+ is a \Hash object containing options for parsing.
+#
+# ---
+#
+# Option +:max_nesting+ specifies the maximum nesting depth allowed;
+# defaults to +100+; specify +false+ to disable depth checking.
+#
+# With the default:
+#   source = '[0, [1, [2, [3]]]]'
+#   a = JSON.parse(source)
+#   a # => [0, [1, [2, [3]]]]
+# Too deep:
+#   # Raises JSON::NestingError (nesting of 2 is too deep):
+#   a = JSON.parse(source, {:max_nesting: 1})
+# Bad value:
+#   # Raises TypeError (wrong argument type Symbol (expected Fixnum)):
+#   JSON.parse(source, {:max_nesting => :foo})
+#
+# ---
+#
+# Option +allow_nan+ specifies whether to allow
+# +NaN+, +Infinity+, and +-Infinity+ in +source+;
+# defaults to +false+.
+#
+# With the default:
+#   source = '[NaN]'
+#   # Raises JSON::ParserError (232: unexpected token at '[NaN]'):
+#   a = JSON.parse(source)
+#   source = '[Infinity]'
+#   # Raises JSON::ParserError (232: unexpected token at '[Infinity]'):
+#   a = JSON.parse(source)
+#   source = '[-Infinity]'
+#   # Raises JSON::ParserError (232: unexpected token at '[-Infinity]'):
+#   a = JSON.parse(source)
+# Allow:
+#   source = '[NaN, Infinity, -Infinity]'
+#   a = JSON.parse(source, {:allow_nan: true})
+#   a # => [NaN, Infinity, -Infinity]
+# With a truthy value:
+#   a = JSON.parse(source, {:allow_nan => :foo})
+#   a # => [NaN, Infinity, -Infinity]
+#
+# ---
+#
+# Option +symbolize_names* specifies whether to use Symbols or Strings
+# as keys in returned Hashes;
+# defaults to +false+ (use Strings).
+#
+# With the default:
+#   source = '{"a": "foo", "b": 1.0, "c": true, "d": false, "e": null}'
+#   h = JSON.parse(source)
+#   h # => {"a"=>"foo", "b"=>1.0, "c"=>true, "d"=>false, "e"=>nil}
+# Use Symbols:
+#   h = JSON.parse(source, {:symbolize_names: true})
+#   h # => {:a=>"foo", :b=>1.0, :c=>true, :d=>false, :e=>nil}
+#
+# ---
+#
+# Option +object_class+ specifies the Ruby class to be used
+# for each \JSON object;
+# defaults to \Hash.
+#
+# With the default:
+#   source = '{"a": "foo", "b": 1.0, "c": true, "d": false, "e": null}'
+#   h = JSON.parse(source)
+#   h.class # => Hash
+# Use class \OpenStruct:
+#   o = JSON.parse(source, {:object_class: OpenStruct})
+#   o # => #<OpenStruct a="foo", b=1.0, c=true, d=false, e=nil>
+# Try class \Object:
+#   # Raises NoMethodError (undefined method `[]=' for #<Object:>):
+#   JSON.parse(source, {:object_class: Object})
+# Bad value:
+#   # Raises TypeError (wrong argument type Symbol (expected Class)):
+#   JSON.parse(source, {:object_class: :foo})
+#
+# ---
+#
+# Option +array_class+ specifies the Ruby class to be used
+# for each \JSON array;
+# defaults to \Array.
+#
+# With the default:
+#   source = '["foo", 1.0, true, false, null]'
+#   a = JSON.parse(source)
+#   a.class # => Array
+# Use class \Set:
+#   s = JSON.parse(source, {:array_class: Set})
+#   s # => #<Set: {"foo", 1.0, true, false, nil}>
+# Try class \Object:
+#   # Raises NoMethodError (undefined method `<<' for #<Object:>):
+#   JSON.parse(source, {:array_class: Object})
+# Bad value:
+#   # Raises TypeError (wrong argument type Symbol (expected Class)):
+#   JSON.parse(source, {:array_class: :foo})
+#
+# ---
+#
+# Option +create_additions+
+#
+# === Generating \JSON
+#
+# You can parse a \String containing \JSON data using method
+# - <tt>JSON.generate(source, opts)
+# where
+# - +source+ is a Ruby data structure.
+# - +opts+ is a \Hash object containing options data.
+#
+# ---
+#
+# ==== Generating \JSON from a Ruby \Array:
+#
+# When +source+ is a Ruby \Array, JSON.generate returns a \JSON array:
+#   source = ['foo', 1, 1.0, true, false, nil]
+#
+#
 #
 # Creating a JSON string for communication or serialization is
 # just as simple.
 #
-#   require 'json'
+# Option +indent+ specifies the string to be used for indentation.
+# The default is the empty string <tt>''</tt>:
+#   source = '{"foo": {"bar": 1, "baz": 2}, "bat": [0, 1, 2]}'
+#   h = JSON.parse(source)
+#   h # => {"foo"=>{"bar"=>1, "baz"=>2}, "bat"=>[0, 1, 2]}
+# With two spaces:
+#   h = JSON.parse(source, {:indent => ''})
+#   h # => {"foo"=>{"bar"=>1, "baz"=>2}, "bat"=>[0, 1, 2]}
 #
-#   my_hash = {:hello => "goodbye"}
-#   puts JSON.generate(my_hash) # => "{\"hello\":\"goodbye\"}"
+# ---
 #
-# Or an alternative way:
-#
-#   require 'json'
-#   puts({:hello => "goodbye"}.to_json) # => "{\"hello\":\"goodbye\"}"
-#
-# <tt>JSON.generate</tt> only allows objects or arrays to be converted
-# to JSON syntax. <tt>to_json</tt>, however, accepts many Ruby classes
-# even though it acts only as a method for serialization:
-#
-#   require 'json'
-#
-#   1.to_json # => "1"
-#
-# The {#generate}[rdoc-ref:JSON#generate] method accepts a variety of options
-# to set the formatting of string output and defining what input is accepteable.
-# There are also shortcut methods pretty_generate (with a set of options to
-# generate human-readable multiline JSON) and fast_generate (with a set of
-# options to generate JSON faster at the price of disabling some checks).
+# Option +create_additions+ specifies whether to
 #
 # == Extended rendering and loading of Ruby objects
 #
