@@ -725,6 +725,12 @@ sprint_funcname(char *funcname, const struct rb_mjit_unit *unit)
     }
 }
 
+static const int c_file_access_mode =
+#ifdef O_BINARY
+    O_BINARY|
+#endif
+    O_WRONLY|O_EXCL|O_CREAT;
+
 #define append_str2(p, str, len) ((char *)memcpy((p), str, (len))+(len))
 #define append_str(p, str) append_str2(p, str, sizeof(str)-1)
 #define append_lit(p, str) append_str2(p, str, rb_strlen_lit(str))
@@ -873,12 +879,6 @@ compile_c_to_so(const char *c_file, const char *so_file)
 }
 
 static void compile_prelude(FILE *f);
-
-static const int c_file_access_mode =
-#ifdef O_BINARY
-    O_BINARY|
-#endif
-    O_WRONLY|O_EXCL|O_CREAT;
 
 static bool
 compile_compact_jit_code(char* c_file)
@@ -1145,7 +1145,10 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
 
     start_time = real_ms_time();
     success = compile_c_to_so(c_file, so_file);
-#ifndef _MSC_VER
+#ifdef _MSC_VER
+    if (!mjit_opts.save_temps)
+        remove_file(c_file);
+#else
     if (success) {
         // Always set c_file for compaction. The value is also used for lazy deletion.
         unit->c_file = strdup(c_file);
@@ -1153,9 +1156,9 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
             mjit_warning("failed to allocate memory to remember '%s' (%s), removing it...", c_file, strerror(errno));
         }
     }
-#endif
     if (!mjit_opts.save_temps && unit->c_file == NULL)
         remove_file(c_file);
+#endif
     end_time = real_ms_time();
 
     if (!success) {
