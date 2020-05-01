@@ -1572,14 +1572,17 @@ setup_communication_pipe_internal(int pipes[2])
 # define SET_CURRENT_THREAD_NAME(name) prctl(PR_SET_NAME, name)
 #endif
 
+enum {
+    THREAD_NAME_MAX =
 #if defined(__linux__)
-static const size_t thread_name_max = 16;
+    16
 #elif defined(__APPLE__)
 /* Undocumented, and main thread seems unlimited */
-static const size_t thread_name_max = 64;
+    64
 #else
-static const size_t thread_name_max = 16;
+    16
 #endif
+};
 
 static VALUE threadptr_invoke_proc_location(rb_thread_t *th);
 
@@ -1593,7 +1596,7 @@ native_set_thread_name(rb_thread_t *th)
     }
     else if ((loc = threadptr_invoke_proc_location(th)) != Qnil) {
         char *name, *p;
-        char buf[thread_name_max];
+        char buf[THREAD_NAME_MAX];
         size_t len;
         int n;
 
@@ -1619,7 +1622,7 @@ static void
 native_set_another_thread_name(rb_nativethread_id_t thread_id, VALUE name)
 {
 #if defined SET_ANOTHER_THREAD_NAME || defined SET_CURRENT_THREAD_NAME
-    char buf[thread_name_max];
+    char buf[THREAD_NAME_MAX];
     const char *s = "";
 # if !defined SET_ANOTHER_THREAD_NAME
     if (!pthread_equal(pthread_self(), thread_id)) return;
