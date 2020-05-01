@@ -256,7 +256,7 @@ compile_inlined_cancel_handler(FILE *f, const struct rb_iseq_constant_body *body
     }
     // We're not just returning Qundef here so that caller's normal cancel handler can
     // push back `stack` to `cfp->sp`.
-    fprintf(f, "    return vm_exec(ec, ec->cfp);\n");
+    fprintf(f, "    return vm_exec(ec, FALSE);\n");
 }
 
 // Print the block to cancel JIT execution.
