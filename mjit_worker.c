@@ -1023,8 +1023,10 @@ compile_prelude(FILE *f)
     const char *s = pch_file;
     const char *e = header_name_end(s);
 
+# ifndef _MSC_VER // Visual Studio doesn't expect macro changes around headers. Anyway we don't support compaction there...
     fprintf(f, "#ifndef MJIT_PCH\n");
     fprintf(f, "#define MJIT_PCH\n");
+# endif
     fprintf(f, "#include \"");
     // print pch_file except .gch for gcc, but keep .pch for mswin
     for (; s < e; s++) {
@@ -1035,7 +1037,9 @@ compile_prelude(FILE *f)
         fputc(*s, f);
     }
     fprintf(f, "\"\n");
+# ifndef _MSC_VER
     fprintf(f, "#endif\n");
+# endif
 #endif
 
 #ifdef _WIN32
