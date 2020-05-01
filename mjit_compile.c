@@ -55,6 +55,7 @@ struct compile_status {
     int cc_entries_index;
     // A pointer to root (i.e. not inlined) iseq being compiled.
     const struct rb_iseq_constant_body *compiled_iseq;
+    int compiled_id; // Just a copy of compiled_iseq->jit_unit->id
     // Mutated optimization levels
     struct rb_mjit_compile_info *compile_info;
     // If `inlined_iseqs[pos]` is not NULL, `mjit_compile_body` tries to inline ISeq there.
@@ -439,7 +440,7 @@ precompile_inlinable_iseqs(FILE *f, const rb_iseq_t *iseq, struct compile_status
                             RSTRING_PTR(child_iseq->body->location.label),
                             RSTRING_PTR(rb_iseq_path(child_iseq)), FIX2INT(child_iseq->body->location.first_lineno));
 
-                struct compile_status child_status = { .compiled_iseq = status->compiled_iseq };
+                struct compile_status child_status = { .compiled_iseq = status->compiled_iseq, .compiled_id = status->compiled_id };
                 INIT_COMPILE_STATUS(child_status, child_iseq->body, false);
                 child_status.inline_context = (struct inlined_call_context){
                     .orig_argc = vm_ci_argc(ci),
@@ -452,12 +453,12 @@ precompile_inlinable_iseqs(FILE *f, const rb_iseq_t *iseq, struct compile_status
                     return false;
                 }
 
-                fprintf(f, "ALWAYS_INLINE(static VALUE _mjit_inlined_%d(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE orig_self, const rb_iseq_t *original_iseq));\n", pos);
-                fprintf(f, "static inline VALUE\n_mjit_inlined_%d(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE orig_self, const rb_iseq_t *original_iseq)\n{\n", pos);
+                fprintf(f, "ALWAYS_INLINE(static VALUE _mjit%d_inlined_%d(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE orig_self, const rb_iseq_t *original_iseq));\n", status->compiled_id, pos);
+                fprintf(f, "static inline VALUE\n_mjit%d_inlined_%d(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE orig_self, const rb_iseq_t *original_iseq)\n{\n", status->compiled_id, pos);
                 fprintf(f, "    const VALUE *orig_pc = reg_cfp->pc;\n");
                 fprintf(f, "    const VALUE *orig_sp = reg_cfp->sp;\n");
                 bool success = mjit_compile_body(f, child_iseq, &child_status);
-                fprintf(f, "\n} /* end of _mjit_inlined_%d */\n\n", pos);
+                fprintf(f, "\n} /* end of _mjit%d_inlined_%d */\n\n", status->compiled_id, pos);
 
                 if (!success)
                     return false;
@@ -470,7 +471,7 @@ precompile_inlinable_iseqs(FILE *f, const rb_iseq_t *iseq, struct compile_status
 
 // Compile ISeq to C code in `f`. It returns true if it succeeds to compile.
 bool
-mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname)
+mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id)
 {
     // For performance, we verify stack size only on compilation time (mjit_compile.inc.erb) without --jit-debug
     if (!mjit_opts.debug) {
@@ -478,7 +479,7 @@ mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname)
         fprintf(f, "#define OPT_CHECKED_RUN 0\n\n");
     }
 
-    struct compile_status status = { .compiled_iseq = iseq->body };
+    struct compile_status status = { .compiled_iseq = iseq->body, .compiled_id = id };
     INIT_COMPILE_STATUS(status, iseq->body, true);
     if ((iseq->body->ci_size > 0 && status.cc_entries_index == -1)
         || (status.is_entries != NULL && !mjit_copy_cache_from_main_thread(iseq, status.is_entries))) {

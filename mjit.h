@@ -83,7 +83,7 @@ extern struct rb_mjit_compile_info* rb_mjit_iseq_compile_info(const struct rb_is
 extern void rb_mjit_recompile_iseq(const rb_iseq_t *iseq);
 RUBY_SYMBOL_EXPORT_END
 
-extern bool mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname);
+extern bool mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id);
 extern void mjit_init(const struct mjit_options *opts);
 extern void mjit_gc_start_hook(void);
 extern void mjit_gc_exit_hook(void);
