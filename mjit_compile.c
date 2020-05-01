@@ -396,6 +396,7 @@ inlinable_iseq_p(const struct rb_iseq_constant_body *body)
             alloca(sizeof(union iseq_inline_storage_entry) * body->is_size) : NULL, \
         .cc_entries_index = (body->ci_size > 0) ? \
             mjit_capture_cc_entries(status.compiled_iseq, body) : -1, \
+        .compiled_id = status.compiled_id, \
         .compiled_iseq = status.compiled_iseq, \
         .compile_info = compile_root_p ? \
             rb_mjit_iseq_compile_info(body) : alloca(sizeof(struct rb_mjit_compile_info)) \
