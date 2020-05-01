@@ -233,8 +233,8 @@ compile_inlined_cancel_handler(FILE *f, const struct rb_iseq_constant_body *body
     fprintf(f, "    rb_mjit_recompile_iseq(original_iseq);\n");
 
     // Swap pc/sp set on cancel with original pc/sp.
-    fprintf(f, "    const VALUE current_pc = reg_cfp->pc;\n");
-    fprintf(f, "    const VALUE current_sp = reg_cfp->sp;\n");
+    fprintf(f, "    const VALUE *current_pc = reg_cfp->pc;\n");
+    fprintf(f, "    VALUE *current_sp = reg_cfp->sp;\n");
     fprintf(f, "    reg_cfp->pc = orig_pc;\n");
     fprintf(f, "    reg_cfp->sp = orig_sp;\n\n");
 
@@ -457,7 +457,7 @@ precompile_inlinable_iseqs(FILE *f, const rb_iseq_t *iseq, struct compile_status
                 fprintf(f, "ALWAYS_INLINE(static VALUE _mjit%d_inlined_%d(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE orig_self, const rb_iseq_t *original_iseq));\n", status->compiled_id, pos);
                 fprintf(f, "static inline VALUE\n_mjit%d_inlined_%d(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE orig_self, const rb_iseq_t *original_iseq)\n{\n", status->compiled_id, pos);
                 fprintf(f, "    const VALUE *orig_pc = reg_cfp->pc;\n");
-                fprintf(f, "    const VALUE *orig_sp = reg_cfp->sp;\n");
+                fprintf(f, "    VALUE *orig_sp = reg_cfp->sp;\n");
                 bool success = mjit_compile_body(f, child_iseq, &child_status);
                 fprintf(f, "\n} /* end of _mjit%d_inlined_%d */\n\n", status->compiled_id, pos);
 
