@@ -191,7 +191,7 @@ free_list(struct rb_mjit_unit_list *list, bool close_handle_p)
             if (unit->handle && dlclose(unit->handle)) {
                 mjit_warning("failed to close handle for u%d: %s", unit->id, dlerror());
             }
-            clean_object_files(unit);
+            clean_temp_files(unit);
             free(unit);
         }
         else {
@@ -889,7 +889,7 @@ skip_cleaning_object_files(struct rb_mjit_unit_list *list)
     // No mutex for list, assuming MJIT worker does not exist yet since it's immediately after fork.
     list_for_each_safe(&list->head, unit, next, unode) {
 #ifndef _MSC_VER // Actually mswin does not reach here since it doesn't have fork
-        if (unit->o_file) unit->o_file_inherited_p = true;
+        if (unit->c_file) unit->c_file_inherited_p = true;
 #endif
 
 #if defined(_WIN32) // mswin doesn't reach here either. This is for MinGW.

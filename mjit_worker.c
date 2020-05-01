@@ -146,11 +146,11 @@ struct rb_mjit_unit {
     rb_iseq_t *iseq;
 #ifndef _MSC_VER
     // This value is always set for `compact_all_jit_code`. Also used for lazy deletion.
-    char *o_file;
+    char *c_file;
     // true if it's inherited from parent Ruby process and lazy deletion should be skipped.
-    // `o_file = NULL` can't be used to skip lazy deletion because `o_file` could be used
+    // `c_file = NULL` can't be used to skip lazy deletion because `c_file` could be used
     // by child for `compact_all_jit_code`.
-    bool o_file_inherited_p;
+    bool c_file_inherited_p;
 #endif
 #if defined(_WIN32)
     // DLL cannot be removed while loaded on Windows. If this is set, it'll be lazily deleted.
@@ -388,20 +388,20 @@ remove_file(const char *filename)
     }
 }
 
-// Lazily delete .o and/or .so files.
+// Lazily delete .c and/or .so files.
 static void
-clean_object_files(struct rb_mjit_unit *unit)
+clean_temp_files(struct rb_mjit_unit *unit)
 {
 #ifndef _MSC_VER
-    if (unit->o_file) {
-        char *o_file = unit->o_file;
+    if (unit->c_file) {
+        char *c_file = unit->c_file;
 
-        unit->o_file = NULL;
-        // For compaction, unit->o_file is always set when compilation succeeds.
+        unit->c_file = NULL;
+        // For compaction, unit->c_file is always set when compilation succeeds.
         // So save_temps needs to be checked here.
-        if (!mjit_opts.save_temps && !unit->o_file_inherited_p)
-            remove_file(o_file);
-        free(o_file);
+        if (!mjit_opts.save_temps && !unit->c_file_inherited_p)
+            remove_file(c_file);
+        free(c_file);
     }
 #endif
 
@@ -439,7 +439,7 @@ free_unit(struct rb_mjit_unit *unit)
     if (unit->handle && dlclose(unit->handle)) { // handle is NULL if it's in queue
         mjit_warning("failed to close handle for u%d: %s", unit->id, dlerror());
     }
-    clean_object_files(unit);
+    clean_temp_files(unit);
     free(unit);
 }
 
@@ -683,7 +683,7 @@ remove_so_file(const char *so_file, struct rb_mjit_unit *unit)
 {
 #if defined(_WIN32)
     // Windows can't remove files while it's used.
-    unit->so_file = strdup(so_file); // lazily delete on `clean_object_files()`
+    unit->so_file = strdup(so_file); // lazily delete on `clean_temp_files()`
     if (unit->so_file == NULL)
         mjit_warning("failed to allocate memory to lazily remove '%s': %s", so_file, strerror(errno));
 #else
@@ -844,44 +844,23 @@ make_pch(void)
     CRITICAL_SECTION_FINISH(3, "in make_pch");
 }
 
-// Compile .c file to .o file. It returns true if it succeeds. (non-mswin)
+// Compile .c file to .so file. It returns true if it succeeds. (non-mswin)
 static bool
-compile_c_to_o(const char *c_file, const char *o_file)
+compile_c_to_so(const char *c_file, const char *so_file)
 {
-    const char *files[] = {
-        "-o", o_file, c_file,
+    const char *options[] = {
+        "-o", so_file, c_file,
 # ifdef __clang__
         "-include-pch", pch_file,
 # endif
-        "-c", NULL
-    };
-
-    char **args = form_args(5, cc_common_args, CC_CODEFLAG_ARGS, cc_added_args, files, CC_LINKER_ARGS);
-    if (args == NULL)
-        return false;
-
-    int exit_code = exec_process(cc_path, args);
-    free(args);
-
-    if (exit_code != 0)
-        verbose(2, "compile_c_to_o: compile error: %d", exit_code);
-    return exit_code == 0;
-}
-
-// Link .o files to .so file. It returns true if it succeeds. (non-mswin)
-static bool
-link_o_to_so(const char **o_files, const char *so_file)
-{
-    const char *options[] = {
-        "-o", so_file,
 # ifdef _WIN32
         libruby_pathflag,
 # endif
         NULL
     };
 
-    char **args = form_args(7, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,
-            options, o_files, CC_LIBS, CC_DLDFLAGS_ARGS, CC_LINKER_ARGS);
+    char **args = form_args(6, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,
+            options, CC_LIBS, CC_DLDFLAGS_ARGS, CC_LINKER_ARGS);
     if (args == NULL)
         return false;
 
@@ -889,22 +868,52 @@ link_o_to_so(const char **o_files, const char *so_file)
     free(args);
 
     if (exit_code != 0)
-        verbose(2, "link_o_to_so: link error: %d", exit_code);
+        verbose(2, "compile_c_to_so: compile error: %d", exit_code);
     return exit_code == 0;
 }
 
-// Link all cached .o files and build a .so file. Reload all JIT func from it. This
-// allows to avoid JIT code fragmentation and improve performance to call JIT-ed code.
+static void compile_prelude(FILE *f);
+
+static const int c_file_access_mode =
+#ifdef O_BINARY
+    O_BINARY|
+#endif
+    O_WRONLY|O_EXCL|O_CREAT;
+
+static bool
+compile_compact_jit_code(char* c_file)
+{
+    FILE *f;
+    int fd = rb_cloexec_open(c_file, c_file_access_mode, 0600);
+    if (fd < 0 || (f = fdopen(fd, "w")) == NULL) {
+        int e = errno;
+        if (fd >= 0) (void)close(fd);
+        verbose(1, "Failed to fopen '%s', giving up JIT for it (%s)", c_file, strerror(e));
+        return false;
+    }
+
+    compile_prelude(f);
+
+    struct rb_mjit_unit *cur = 0;
+    list_for_each(&active_units.head, cur, unode) {
+        fprintf(f, "#include \"%s\"\n", cur->c_file);
+    }
+
+    fclose(f);
+    return true;
+}
+
+// Compile all cached .c files and build a single .so file. Reload all JIT func from it.
+// This improves the code locality for better performance in terms of iTLB and iCache.
 static void
 compact_all_jit_code(void)
 {
 # ifndef _WIN32 // This requires header transformation but we don't transform header on Windows for now
     struct rb_mjit_unit *unit, *cur = 0;
     double start_time, end_time;
+    static const char c_ext[] = ".c";
     static const char so_ext[] = DLEXT;
-    char so_file[MAXPATHLEN];
-    const char **o_files;
-    int i = 0;
+    char c_file[MAXPATHLEN], so_file[MAXPATHLEN];
 
     // Abnormal use case of rb_mjit_unit that doesn't have ISeq
     unit = calloc(1, sizeof(struct rb_mjit_unit)); // To prevent GC, don't use ZALLOC
@@ -912,24 +921,23 @@ compact_all_jit_code(void)
     unit->id = current_unit_num++;
     sprint_uniq_filename(so_file, (int)sizeof(so_file), unit->id, MJIT_TMP_PREFIX, so_ext);
 
-    // NULL-ending for form_args
-    o_files = alloca(sizeof(char *) * (active_units.length + 1));
-    o_files[active_units.length] = NULL;
-    CRITICAL_SECTION_START(3, "in compact_all_jit_code to guard .o files from unload_units");
-    list_for_each(&active_units.head, cur, unode) {
-        o_files[i] = cur->o_file;
-        i++;
-    }
+    sprint_uniq_filename(c_file, (int)sizeof(c_file), unit->id, MJIT_TMP_PREFIX, c_ext);
+    CRITICAL_SECTION_START(3, "in compact_all_jit_code to guard .c files from unload_units");
+    bool success = compile_compact_jit_code(c_file);
     in_compact = true;
-    CRITICAL_SECTION_FINISH(3, "in compact_all_jit_code to guard .o files from unload_units");
+    CRITICAL_SECTION_FINISH(3, "in compact_all_jit_code to guard .c files from unload_units");
 
     start_time = real_ms_time();
-    bool success = link_o_to_so(o_files, so_file);
+    if (success) {
+        success = compile_c_to_so(c_file, so_file);
+        if (!mjit_opts.save_temps)
+            remove_file(c_file);
+    }
     end_time = real_ms_time();
 
-    CRITICAL_SECTION_START(3, "in compact_all_jit_code to release .o files");
+    CRITICAL_SECTION_START(3, "in compact_all_jit_code to release .c files");
     in_compact = false;
-    CRITICAL_SECTION_FINISH(3, "in compact_all_jit_code to release .o files");
+    CRITICAL_SECTION_FINISH(3, "in compact_all_jit_code to release .c files");
 
     if (success) {
         void *handle = dlopen(so_file, RTLD_NOW);
@@ -963,7 +971,7 @@ compact_all_jit_code(void)
             }
         }
         CRITICAL_SECTION_FINISH(3, "in compact_all_jit_code to read list");
-        verbose(1, "JIT compaction (%.1fms): Compacted %d methods -> %s", end_time - start_time, active_units.length, so_file);
+        verbose(1, "JIT compaction (%.1fms): Compacted %d methods %s -> %s", end_time - start_time, active_units.length, c_file, so_file);
     }
     else {
         free(unit);
@@ -1015,6 +1023,8 @@ compile_prelude(FILE *f)
     const char *s = pch_file;
     const char *e = header_name_end(s);
 
+    fprintf(f, "#ifndef MJIT_PCH\n");
+    fprintf(f, "#define MJIT_PCH\n");
     fprintf(f, "#include \"");
     // print pch_file except .gch for gcc, but keep .pch for mswin
     for (; s < e; s++) {
@@ -1025,6 +1035,7 @@ compile_prelude(FILE *f)
         fputc(*s, f);
     }
     fprintf(f, "\"\n");
+    fprintf(f, "#endif\n");
 #endif
 
 #ifdef _WIN32
@@ -1046,11 +1057,6 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     int c_file_len = (int)sizeof(c_file_buff);
     static const char c_ext[] = ".c";
     static const char so_ext[] = DLEXT;
-    const int access_mode =
-#ifdef O_BINARY
-        O_BINARY|
-#endif
-        O_WRONLY|O_EXCL|O_CREAT;
 #ifndef _MSC_VER
     static const char o_ext[] = ".o";
     char *o_file;
@@ -1075,7 +1081,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
 
     sprint_funcname(funcname, unit);
 
-    fd = rb_cloexec_open(c_file, access_mode, 0600);
+    fd = rb_cloexec_open(c_file, c_file_access_mode, 0600);
     if (fd < 0 || (f = fdopen(fd, "w")) == NULL) {
         int e = errno;
         if (fd >= 0) (void)close(fd);
@@ -1138,25 +1144,20 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     }
 
     start_time = real_ms_time();
-#ifdef _MSC_VER
     success = compile_c_to_so(c_file, so_file);
-#else
-    // splitting .c -> .o step and .o -> .so step, to cache .o files in the future
-    if ((success = compile_c_to_o(c_file, o_file)) != false) {
-        success = link_o_to_so((const char *[]){ o_file, NULL }, so_file);
-
-        // Always set o_file for compaction. The value is also used for lazy deletion.
-        unit->o_file = strdup(o_file);
-        if (unit->o_file == NULL) {
-            mjit_warning("failed to allocate memory to remember '%s' (%s), removing it...", o_file, strerror(errno));
-            remove_file(o_file);
+#ifndef _MSC_VER
+    if (success) {
+        // Always set c_file for compaction. The value is also used for lazy deletion.
+        unit->c_file = strdup(c_file);
+        if (unit->c_file == NULL) {
+            mjit_warning("failed to allocate memory to remember '%s' (%s), removing it...", c_file, strerror(errno));
         }
     }
 #endif
+    if (!mjit_opts.save_temps && unit->c_file == NULL)
+        remove_file(c_file);
     end_time = real_ms_time();
 
-    if (!mjit_opts.save_temps)
-        remove_file(c_file);
     if (!success) {
         verbose(2, "Failed to generate so: %s", so_file);
         return (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC;

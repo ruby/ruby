@@ -696,7 +696,7 @@ class TestJIT < Test::Unit::TestCase
       debug_info = %Q[stdout:\n"""\n#{out}\n"""\n\nstderr:\n"""\n#{err}"""\n]
       assert_equal('012345678910', out, debug_info)
       compactions, errs = err.lines.partition do |l|
-        l.match?(/\AJIT compaction \(\d+\.\dms\): Compacted \d+ methods ->/)
+        l.match?(/\AJIT compaction \(\d+\.\dms\): Compacted \d+ methods /)
       end
       10.times do |i|
         assert_match(/\A#{JIT_SUCCESS_PREFIX}: mjit#{i}@\(eval\):/, errs[i], debug_info)
@@ -719,7 +719,7 @@ class TestJIT < Test::Unit::TestCase
         # "Permission Denied" error is preventing to remove so file on AppVeyor/RubyCI.
         skip 'Removing so file is randomly failing on AppVeyor/RubyCI mswin due to Permission Denied.'
       else
-        # verify .o files are deleted on unload_units
+        # verify .c files are deleted on unload_units
         assert_send([Dir, :empty?, dir], debug_info)
       end
     end
