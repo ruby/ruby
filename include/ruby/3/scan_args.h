@@ -380,7 +380,7 @@ rb_scan_args_set(int kw_flag, int argc, const VALUE *argv,
             argc, argvp, fmt,                                 \
             (sizeof((VALUE*[]){__VA_ARGS__})/sizeof(VALUE*)), \
             ((VALUE*[]){__VA_ARGS__})),                       \
-        (rb_scan_args)(argc, argvp, fmt, ## __VA_ARGS__))
+        (rb_scan_args)(argc, argvp, fmt, __VA_ARGS__))
 # define rb_scan_args_kw(kw_flag, argc, argvp, fmt, ...)      \
     __builtin_choose_expr(                                    \
         __builtin_constant_p(fmt),                            \
@@ -388,7 +388,7 @@ rb_scan_args_set(int kw_flag, int argc, const VALUE *argv,
             kw_flag, argc, argvp, fmt,                        \
             (sizeof((VALUE*[]){__VA_ARGS__})/sizeof(VALUE*)), \
             ((VALUE*[]){__VA_ARGS__})),                       \
-        (rb_scan_args_kw)(kw_flag, argc, argvp, fmt, ## __VA_ARGS__))
+        (rb_scan_args_kw)(kw_flag, argc, argvp, fmt, __VA_ARGS__ /**/))
 #endif
 
 #endif /* RUBY3_SCAN_ARGS_H */
