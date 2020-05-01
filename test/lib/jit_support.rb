@@ -56,7 +56,7 @@ module JITSupport
     return @supported if defined?(@supported)
     @supported = UNSUPPORTED_COMPILERS.all? do |regexp|
       !regexp.match?(RbConfig::CONFIG['MJIT_CC'])
-    end && RbConfig::CONFIG["MJIT_SUPPORT"] != 'no' && !PENDING_RUBYCI_NICKNAMES.include?(ENV['RUBYCI_NICKNAME']) && !vs120_pdb_corrupted? && /mingw/ !~ RUBY_PLATFORM # TODO: remove mingw exclusion after investigation
+    end && RbConfig::CONFIG["MJIT_SUPPORT"] != 'no' && !PENDING_RUBYCI_NICKNAMES.include?(ENV['RUBYCI_NICKNAME']) && !vs120_pdb_corrupted? && /mingw/ !~ RUBY_PLATFORM && /solaris/ !~ RUBY_PLATFORM # TODO: remove mingw / solaris exclusion after investigation
   end
 
   # AppVeyor's Visual Studio 2013 is known to spuriously generate broken pch / pdb, like:
