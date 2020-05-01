@@ -9,7 +9,7 @@ describe "Matrix.unitary?" do
   end
 
   ruby_version_is '2.8' do # matrix v0.3.0
-    it "returns false for non unitary matrix" do
+    it "returns true for non unitary matrix" do
       Matrix[[0, Complex(0, 1)], [Complex(0, -1), 0]].unitary?.should == true
     end
   end
