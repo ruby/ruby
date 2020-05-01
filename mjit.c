@@ -362,11 +362,7 @@ unload_units(void)
         free_unit(worst);
     }
 
-    if (units_num == active_units.length && mjit_opts.wait) {
-        mjit_opts.max_cache_size++; // avoid infinite loop on `rb_mjit_wait_call`. Note that --jit-wait is just for testing.
-        verbose(1, "No units can be unloaded -- incremented max-cache-size to %d for --jit-wait", mjit_opts.max_cache_size);
-    }
-    else {
+    if (units_num > active_units.length) {
         verbose(1, "Too many JIT code -- %d units unloaded", units_num - active_units.length);
     }
 }
@@ -389,8 +385,16 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_inf
     CRITICAL_SECTION_START(3, "in add_iseq_to_process");
     add_to_list(iseq->body->jit_unit, &unit_queue);
     if (active_units.length >= mjit_opts.max_cache_size) {
-        RB_DEBUG_COUNTER_INC(mjit_unload_units);
-        unload_units();
+        if (in_compact) {
+            verbose(1, "Too many JIT code, but skipped unloading units for JIT compaction");
+        } else {
+            RB_DEBUG_COUNTER_INC(mjit_unload_units);
+            unload_units();
+        }
+        if (active_units.length == mjit_opts.max_cache_size && mjit_opts.wait) { // Sometimes all methods may be in use
+            mjit_opts.max_cache_size++; // avoid infinite loop on `rb_mjit_wait_call`. Note that --jit-wait is just for testing.
+            verbose(1, "No units can be unloaded -- incremented max-cache-size to %d for --jit-wait", mjit_opts.max_cache_size);
+        }
     }
     verbose(3, "Sending wakeup signal to workers in mjit_add_iseq_to_process");
     rb_native_cond_broadcast(&mjit_worker_wakeup);

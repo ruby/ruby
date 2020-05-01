@@ -221,9 +221,11 @@ static rb_nativethread_cond_t mjit_worker_wakeup;
 // A thread conditional to wake up workers if at the end of GC.
 static rb_nativethread_cond_t mjit_gc_wakeup;
 // True when GC is working.
-static bool in_gc;
+static bool in_gc = false;
 // True when JIT is working.
-static bool in_jit;
+static bool in_jit = false;
+// True when JIT compaction is running.
+static bool in_compact = false;
 // Set to true to stop worker.
 static bool stop_worker_p;
 // Set to true if worker is stopped.
@@ -913,21 +915,21 @@ compact_all_jit_code(void)
     // NULL-ending for form_args
     o_files = alloca(sizeof(char *) * (active_units.length + 1));
     o_files[active_units.length] = NULL;
-    CRITICAL_SECTION_START(3, "in compact_all_jit_code to keep .o files");
+    CRITICAL_SECTION_START(3, "in compact_all_jit_code to guard .o files from unload_units");
     list_for_each(&active_units.head, cur, unode) {
         o_files[i] = cur->o_file;
         i++;
     }
+    in_compact = true;
+    CRITICAL_SECTION_FINISH(3, "in compact_all_jit_code to guard .o files from unload_units");
 
     start_time = real_ms_time();
     bool success = link_o_to_so(o_files, so_file);
     end_time = real_ms_time();
 
-    // TODO: Shrink this big critical section. For now, this is needed to prevent failure by missing .o files.
-    // This assumes that o -> so link doesn't take long time because the bottleneck, which is compiler optimization,
-    // is already done. But actually it takes about 500ms for 5,000 methods on my Linux machine, so it's better to
-    // finish this critical section before link_o_to_so by disabling unload_units.
-    CRITICAL_SECTION_FINISH(3, "in compact_all_jit_code to keep .o files");
+    CRITICAL_SECTION_START(3, "in compact_all_jit_code to release .o files");
+    in_compact = false;
+    CRITICAL_SECTION_FINISH(3, "in compact_all_jit_code to release .o files");
 
     if (success) {
         void *handle = dlopen(so_file, RTLD_NOW);

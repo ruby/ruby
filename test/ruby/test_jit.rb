@@ -14,6 +14,7 @@ class TestJIT < Test::Unit::TestCase
   ]
   MAX_CACHE_PATTERNS = [
     /\AJIT compaction \([^)]+\): .+\n\z/,
+    /\AToo many JIT code, but skipped unloading units for JIT compaction\n\z/,
     /\ANo units can be unloaded -- .+\n\z/,
   ]
 
@@ -700,8 +701,9 @@ class TestJIT < Test::Unit::TestCase
       10.times do |i|
         assert_match(/\A#{JIT_SUCCESS_PREFIX}: mjit#{i}@\(eval\):/, errs[i], debug_info)
       end
-      assert_equal("Too many JIT code -- 1 units unloaded\n", errs[10], debug_info)
-      assert_match(/\A#{JIT_SUCCESS_PREFIX}: mjit10@\(eval\):/, errs[11], debug_info)
+      assert_equal("Too many JIT code, but skipped unloading units for JIT compaction\n", errs[10], debug_info)
+      assert_equal("No units can be unloaded -- incremented max-cache-size to 11 for --jit-wait\n", errs[11], debug_info)
+      assert_match(/\A#{JIT_SUCCESS_PREFIX}: mjit10@\(eval\):/, errs[12], debug_info)
 
       # On --jit-wait, when the number of JIT-ed code reaches --jit-max-cache,
       # it should trigger compaction.
