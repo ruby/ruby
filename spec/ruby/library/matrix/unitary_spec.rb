@@ -8,14 +8,11 @@ describe "Matrix.unitary?" do
     Matrix[[1, 1, 0], [0, 1, 1], [1, 0, 1]].unitary?.should == false
   end
 
-  ruby_version_is '2.8' do # matrix v0.3.0
-    it "returns true for non unitary matrix" do
-      Matrix[[0, Complex(0, 1)], [Complex(0, -1), 0]].unitary?.should == true
-    end
-  end
-
   it "returns true for unitary matrices" do
     Matrix[[0, Complex(0, 1)], [Complex(0, 1), 0]].unitary?.should == true
+    version_is((Matrix::const_defined?(:VERSION) ? Matrix::VERSION : "0.1.0"), "0.3.0") do
+      Matrix[[0, Complex(0, 1)], [Complex(0, -1), 0]].unitary?.should == true
+    end
   end
 
   it "raises an error for rectangular matrices" do
