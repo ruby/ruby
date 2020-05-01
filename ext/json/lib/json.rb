@@ -11,14 +11,13 @@ require 'json/common'
 # - Number:  +1+, +1.0+, +2.0e2+.
 # - Boolean:  +true+, +false+.
 # - Null: +null+.
-# - \Array: an ordered list of values, enclosed by square brackets; example:
+# - \Array: an ordered list of values, enclosed by square brackets:
 #
 #     ["foo", 1, 1.0, 2.0e2, true, false, null]
 #
 # - \Object: a collection of name/value pairs, enclosed by curly braces;
 #   each name is double-quoted text;
-#   the values may be any \JSON values;
-#   example:
+#   the values may be any \JSON values:
 #
 #     {"a": "foo", "b": 1, "c": 1.0, "d": 2.0e2, "e": true, "f": false, "g": null}
 #
@@ -73,29 +72,35 @@ require 'json/common'
 #
 # ==== Parsing \JSON Scalars
 #
-# When the \JSON source is a scalar, JSON.parse returns a scalar:
+# When the \JSON source is a bare scalar (not an array or object),
+# JSON.parse returns a scalar.
+#
+# \String:
 #   s = JSON.parse('"foo"')
 #   s # => "foo"
 #   s.class # => String
+# \Integer:
 #   n = JSON.parse('1')
 #   n # => 1
 #   n.class # => Integer
+# \Float:
 #   f = JSON.parse('1.0')
 #   f # => 1.0
 #   f.class # => Float
 #   f = JSON.parse('2.0e2')
 #   f # => 200
-#   f.class # => Flaot
+#   f.class # => Float
+# Boolean:
 #   b = JSON.parse('true')
 #   b # => true
 #   b.class # => TrueClass
 #   b = JSON.parse('false')
 #   b # => false
 #   b.class # => FalseClass
+# Null:
 #   n = JSON.parse('null')
 #   n # => nil
 #   n.class # => NilClass
-#
 #
 # ==== Parsing Options
 #
@@ -112,10 +117,10 @@ require 'json/common'
 #   a # => [0, [1, [2, [3]]]]
 # Too deep:
 #   # Raises JSON::NestingError (nesting of 2 is too deep):
-#   a = JSON.parse(source, {:max_nesting: 1})
+#   a = JSON.parse(source, {max_nesting: 1})
 # Bad value:
 #   # Raises TypeError (wrong argument type Symbol (expected Fixnum)):
-#   JSON.parse(source, {:max_nesting => :foo})
+#   JSON.parse(source, {max_nesting: :foo})
 #
 # ---
 #
@@ -135,15 +140,15 @@ require 'json/common'
 #   a = JSON.parse(source)
 # Allow:
 #   source = '[NaN, Infinity, -Infinity]'
-#   a = JSON.parse(source, {:allow_nan: true})
+#   a = JSON.parse(source, {allow_nan: true})
 #   a # => [NaN, Infinity, -Infinity]
 # With a truthy value:
-#   a = JSON.parse(source, {:allow_nan => :foo})
+#   a = JSON.parse(source, {allow_nan: :foo})
 #   a # => [NaN, Infinity, -Infinity]
 #
 # ---
 #
-# Option +symbolize_names* specifies whether to use Symbols or Strings
+# Option +symbolize_names+ specifies whether to use Symbols or Strings
 # as keys in returned Hashes;
 # defaults to +false+ (use Strings).
 #
@@ -152,7 +157,7 @@ require 'json/common'
 #   h = JSON.parse(source)
 #   h # => {"a"=>"foo", "b"=>1.0, "c"=>true, "d"=>false, "e"=>nil}
 # Use Symbols:
-#   h = JSON.parse(source, {:symbolize_names: true})
+#   h = JSON.parse(source, {symbolize_names: true})
 #   h # => {:a=>"foo", :b=>1.0, :c=>true, :d=>false, :e=>nil}
 #
 # ---
@@ -166,14 +171,14 @@ require 'json/common'
 #   h = JSON.parse(source)
 #   h.class # => Hash
 # Use class \OpenStruct:
-#   o = JSON.parse(source, {:object_class: OpenStruct})
+#   o = JSON.parse(source, {object_class: OpenStruct})
 #   o # => #<OpenStruct a="foo", b=1.0, c=true, d=false, e=nil>
 # Try class \Object:
 #   # Raises NoMethodError (undefined method `[]=' for #<Object:>):
-#   JSON.parse(source, {:object_class: Object})
+#   JSON.parse(source, {object_class: Object})
 # Bad value:
 #   # Raises TypeError (wrong argument type Symbol (expected Class)):
-#   JSON.parse(source, {:object_class: :foo})
+#   JSON.parse(source, {object_class: :foo})
 #
 # ---
 #
@@ -186,14 +191,14 @@ require 'json/common'
 #   a = JSON.parse(source)
 #   a.class # => Array
 # Use class \Set:
-#   s = JSON.parse(source, {:array_class: Set})
+#   s = JSON.parse(source, {array_class: Set})
 #   s # => #<Set: {"foo", 1.0, true, false, nil}>
 # Try class \Object:
 #   # Raises NoMethodError (undefined method `<<' for #<Object:>):
-#   JSON.parse(source, {:array_class: Object})
+#   JSON.parse(source, {array_class: Object})
 # Bad value:
 #   # Raises TypeError (wrong argument type Symbol (expected Class)):
-#   JSON.parse(source, {:array_class: :foo})
+#   JSON.parse(source, {array_class: :foo})
 #
 # ---
 #
@@ -221,40 +226,150 @@ require 'json/common'
 #
 # Option +indent+ specifies the string to be used for indentation.
 # The default is the empty string <tt>''</tt>:
-#   source = '{"foo": {"bar": 1, "baz": 2}, "bat": [0, 1, 2]}'
+  #   source = '{"foo": {"bar": 1, "baz": 2}, "bat": [0, 1, 2]}'
 #   h = JSON.parse(source)
 #   h # => {"foo"=>{"bar"=>1, "baz"=>2}, "bat"=>[0, 1, 2]}
 # With two spaces:
-#   h = JSON.parse(source, {:indent => ''})
+#   h = JSON.parse(source, {indent: '  '})
 #   h # => {"foo"=>{"bar"=>1, "baz"=>2}, "bat"=>[0, 1, 2]}
 #
 # ---
 #
 # Option +create_additions+ specifies whether to
 #
-# == Extended rendering and loading of Ruby objects
+# == Generating \JSON with Additions
 #
-# JSON library provides optional _additions_ allowing to serialize and
-# deserialize Ruby classes without loosing their type.
+# === Built-in Additions
 #
-#   # without additions
-#   require "json"
-#   json = JSON.generate({range: 1..3, regex: /test/})
-#   # => '{"range":"1..3","regex":"(?-mix:test)"}'
-#   JSON.parse(json)
-#   # => {"range"=>"1..3", "regex"=>"(?-mix:test)"}
+# For certain classes, module \JSON offers optional _additions_.
+# Each addition provides enrichments for \JSON for a class.
 #
-#   # with additions
-#   require "json/add/range"
-#   require "json/add/regexp"
-#   json = JSON.generate({range: 1..3, regex: /test/})
-#   # => '{"range":{"json_class":"Range","a":[1,3,false]},"regex":{"json_class":"Regexp","o":0,"s":"test"}}'
-#   JSON.parse(json)
-#   # => {"range"=>{"json_class"=>"Range", "a"=>[1, 3, false]}, "regex"=>{"json_class"=>"Regexp", "o"=>0, "s"=>"test"}}
-#   JSON.load(json)
-#   # => {"range"=>1..3, "regex"=>/test/}
+# To reduce punctuation clutter, the examples below
+# show the generated \JSON via +puts+, rather than the usual +inspect+,
 #
-# See JSON.load for details.
+# ---
+#
+# \BigDecimal:
+#   value = BigDecimal(0) # 0.0
+# Without addition:
+#   JSON.generate(value) # "0.0"
+# With addition:
+#   require 'json/add/bigdecimal'
+#   JSON.generate(value) # {"json_class":"BigDecimal","b":"27:0.0"}
+#
+# ---
+#
+# \Complex:
+#   value = Complex(1+0i) # (1+0i)
+# Without addition:
+#   JSON.generate(value) # "0.0"
+# With addition:
+#   require 'json/add/complex'
+#   JSON.generate(value) # {"json_class":"Date","y":2020,"m":5,"d":1,"sg":2299161.0}
+#
+# ---
+#
+# \Date:
+#   value = Date.today # #<Date: 2020-05-01 ((2458971j,0s,0n),+0s,2299161j)>
+# Without addition:
+#   JSON.generate(value) # "2020-05-01"
+# With addition:
+#   require 'json/add/date'
+#   JSON.generate(value) # {"json_class":"Date","y":2020,"m":5,"d":1,"sg":2299161.0}
+#
+# ---
+#
+# \DateTime:
+#   value = DateTime.now # 2020-05-01T11:00:47-05:00
+# Without addition:
+#   JSON.generate(value) # "2020-05-01T11:00:47-05:00"
+# With addition:
+#   require 'json/add/date_time'
+#   JSON.generate(value) # {"json_class":"DateTime","y":2020,"m":5,"d":1,"H":11,"M":0,"S":47,"of":"-5/24","sg":2299161.0}
+#
+# ---
+#
+# \Exception (and its subclasses, including \RuntimeError):
+#   value0 = Exception.new('A message') # #<Exception: A message>
+#   value1 = RuntimeError.new('Another message') # #<RuntimeError: Another message>
+# Without addition:
+#   JSON.generate(value0) # "A message"
+#   JSON.generate(value1) # "Another message"
+# With addition:
+#   require 'json/add/exception'
+#   JSON.generate(value0) # {"json_class":"Exception","m":"A message","b":null}
+#   JSON.generate(value1) # {"json_class":"RuntimeError","m":"Another message","b":null}
+#
+# ---
+#
+# \OpenStruct:
+#   value = OpenStruct.new(name: 'Matz', language: 'Ruby') # #<OpenStruct name="Matz", language="Ruby">
+# Without addition:
+#   JSON.generate(value) # "#<OpenStruct name=\"Matz\", language=\"Ruby\">"
+# With addition:
+#   require 'json/add/ostruct'
+#   JSON.generate(value) # {"json_class":"OpenStruct","t":{"name":"Matz","language":"Ruby"}}
+#
+# ---
+#
+# \Range:
+#   value = Range.new(1, 3) # 1..3
+# Without addition:
+#   JSON.generate(value) # "1..3"
+# With addition:
+#   require 'json/add/range'
+#   JSON.generate(value) # {"json_class":"Range","a":[1,3,false]}
+#
+# ---
+#
+# \Rational:
+#   value = Rational.new(1, 3) # (1/3)
+# Without addition:
+#   JSON.generate(value) # "1/3"
+# With addition:
+#   require 'json/add/rational'
+#   JSON.generate(value) # {"json_class":"Rational","n":1,"d":3}
+#
+# ---
+#
+# \Regexp:
+#   value = Regexp.new('foo') # /foo/
+# Without addition:
+#   JSON.generate(value) # "(?-mix:foo)"
+# With addition:
+#   require 'json/add/regexp'
+#   JSON.generate(value) # {"json_class":"Regexp","o":0,"s":"foo"}
+#
+# ---
+#
+# \Set:
+#   value = Set.new([0, 1, 2]) # #<Set: {0, 1, 2}>
+# Without addition:
+#   JSON.generate(value) # "#<Set: {0, 1, 2}>"
+# With addition:
+#   require 'json/add/set'
+#   JSON.generate(value) # {"json_class":"Set","a":[0,1,2]}
+#
+# ---
+#
+# \Struct:
+#   value = Struct.new("Customer", :name, :address) # Struct::Customer
+# Without addition:
+#   JSON.generate(value) # "Struct::Customer"
+# With addition:
+#   require 'json/add/struct'
+#   JSON.generate(value) # "Struct::Customer"
+#
+# ---
+#
+# \Symbol:
+#   value = :foo # :foo
+# Without addition:
+#   JSON.generate(value) # :foo
+# With addition:
+#   require 'json/add/symbol'
+#   JSON.generate(value) # {"json_class":"Symbol","s":"foo"}
+#
 module JSON
   require 'json/version'
 
