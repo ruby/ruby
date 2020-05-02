@@ -9,6 +9,7 @@
 
 **********************************************************************/
 
+#include "gc_new.h"
 #include "internal/inits.h"
 #include "ruby.h"
 #include "builtin.h"
@@ -22,6 +23,9 @@ rb_call_inits(void)
 {
 #if USE_TRANSIENT_HEAP
     CALL(TransientHeap);
+#endif
+#if USE_NEW_HEAP
+    CALL(NewHeap);
 #endif
     CALL(vm_postponed_job);
     CALL(Method);

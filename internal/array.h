@@ -33,6 +33,8 @@ static inline VALUE rb_ary_entry_internal(VALUE ary, long offset);
 static inline bool ARY_PTR_USING_P(VALUE ary);
 static inline void RARY_TRANSIENT_SET(VALUE ary);
 static inline void RARY_TRANSIENT_UNSET(VALUE ary);
+static inline void RARY_NEW_HEAP_SET(VALUE ary);
+static inline void RARY_NEW_HEAP_UNSET(VALUE ary);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* array.c (export) */
@@ -83,6 +85,21 @@ RARY_TRANSIENT_UNSET(VALUE ary)
 {
 #if USE_TRANSIENT_HEAP
     FL_UNSET_RAW(ary, RARRAY_TRANSIENT_FLAG);
+#endif
+}
+static inline void
+RARY_NEW_HEAP_SET(VALUE ary)
+{
+#if USE_NEW_HEAP
+    FL_SET_RAW(ary, RARRAY_NEW_HEAP_FLAG);
+#endif
+}
+
+static inline void
+RARY_NEW_HEAP_UNSET(VALUE ary)
+{
+#if USE_NEW_HEAP
+    FL_UNSET_RAW(ary, RARRAY_NEW_HEAP_FLAG);
 #endif
 }
 

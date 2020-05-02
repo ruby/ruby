@@ -12,6 +12,7 @@
 **********************************************************************/
 
 #include "debug_counter.h"
+#include "gc_new.h"
 #include "id.h"
 #include "internal.h"
 #include "internal/array.h"
@@ -200,6 +201,7 @@ ary_verify_(VALUE ary, const char *file, int line)
     }
     else if (ARY_EMBED_P(ary)) {
         assert(!RARRAY_TRANSIENT_P(ary));
+        assert(!RARRAY_NEW_HEAP_P(ary));
         assert(!ARY_SHARED_P(ary));
         assert(RARRAY_LEN(ary) <= RARRAY_EMBED_LEN_MAX);
     }
@@ -316,26 +318,29 @@ ary_memcpy(VALUE ary, long beg, long argc, const VALUE *argv)
 static VALUE *
 ary_heap_alloc(VALUE ary, size_t capa)
 {
-    VALUE *ptr = rb_transient_heap_alloc(ary, sizeof(VALUE) * capa);
-
+#if USE_NEW_HEAP
+    VALUE *ptr = rb_new_heap_alloc(ary, sizeof(VALUE) * capa);
     if (ptr != NULL) {
-        RARY_TRANSIENT_SET(ary);
+        RARY_NEW_HEAP_SET(ary);
+        RARY_TRANSIENT_UNSET(ary);
     }
     else {
         RARY_TRANSIENT_UNSET(ary);
+        RARY_NEW_HEAP_UNSET(ary);
         ptr = ALLOC_N(VALUE, capa);
     }
-
+#endif
     return ptr;
 }
 
 static void
 ary_heap_free_ptr(VALUE ary, const VALUE *ptr, long size)
 {
-    if (RARRAY_TRANSIENT_P(ary)) {
+    if (RARRAY_NEW_HEAP_P(ary)) {
         /* ignore it */
-    }
-    else {
+    } else if (RARRAY_TRANSIENT_P(ary)) {
+        /* ignore it */
+    } else {
         ruby_sized_xfree((void *)ptr, size);
     }
 }
@@ -343,7 +348,9 @@ ary_heap_free_ptr(VALUE ary, const VALUE *ptr, long size)
 static void
 ary_heap_free(VALUE ary)
 {
-    if (RARRAY_TRANSIENT_P(ary)) {
+    if (RARRAY_NEW_HEAP_P(ary)) {
+        /* ignore it */
+    } else if (RARRAY_TRANSIENT_P(ary)) {
         RARY_TRANSIENT_UNSET(ary);
     }
     else {
@@ -356,23 +363,16 @@ ary_heap_realloc(VALUE ary, size_t new_capa)
 {
     size_t old_capa = ARY_HEAP_CAPA(ary);
 
-    if (RARRAY_TRANSIENT_P(ary)) {
-        if (new_capa <= old_capa) {
-            /* do nothing */
-        }
-        else {
-            VALUE *new_ptr = rb_transient_heap_alloc(ary, sizeof(VALUE) * new_capa);
-
-            if (new_ptr == NULL) {
-                new_ptr = ALLOC_N(VALUE, new_capa);
-                RARY_TRANSIENT_UNSET(ary);
-            }
-
-            MEMCPY(new_ptr, ARY_HEAP_PTR(ary), VALUE, old_capa);
-            ARY_SET_PTR(ary, new_ptr);
-        }
-    }
-    else {
+    if (RARRAY_NEW_HEAP_P(ary)) {
+      if (new_capa <= old_capa) {
+          /* do nothing */
+      }
+      else {
+          VALUE *new_ptr = ary_heap_alloc(ary, sizeof(VALUE) * new_capa);
+          MEMCPY(new_ptr, ARY_HEAP_PTR(ary), VALUE, old_capa);
+          ARY_SET_PTR(ary, new_ptr);
+      }
+    } else {
         SIZED_REALLOC_N(RARRAY(ary)->as.heap.ptr, VALUE, new_capa, old_capa);
     }
     ary_verify(ary);
@@ -421,6 +421,7 @@ rb_ary_transient_heap_evacuate(VALUE ary, int promote)
 void
 rb_ary_detransient(VALUE ary)
 {
+    assert(!RARRAY_NEW_HEAP_P(ary));
     assert(RARRAY_TRANSIENT_P(ary));
     rb_ary_transient_heap_evacuate_(ary, TRUE, TRUE);
 }
@@ -479,7 +480,9 @@ ary_shrink_capa(VALUE ary)
     long old_capa = ARY_HEAP_CAPA(ary);
     assert(!ARY_SHARED_P(ary));
     assert(old_capa >= capacity);
-    if (old_capa > capacity) ary_heap_realloc(ary, capacity);
+    if (old_capa > capacity) {
+      ary_heap_realloc(ary, capacity);
+    }
 
     ary_verify(ary);
 }
@@ -806,7 +809,10 @@ rb_ary_free(VALUE ary)
             RB_DEBUG_COUNTER_INC(obj_ary_extracapa);
         }
 
-        if (RARRAY_TRANSIENT_P(ary)) {
+        if (RARRAY_NEW_HEAP_P(ary)) {
+
+        }
+        else if (RARRAY_TRANSIENT_P(ary)) {
             RB_DEBUG_COUNTER_INC(obj_ary_transient);
         }
         else {
@@ -842,7 +848,7 @@ ary_discard(VALUE ary)
 {
     rb_ary_free(ary);
     RBASIC(ary)->flags |= RARRAY_EMBED_FLAG;
-    RBASIC(ary)->flags &= ~(RARRAY_EMBED_LEN_MASK | RARRAY_TRANSIENT_FLAG);
+    RBASIC(ary)->flags &= ~(RARRAY_EMBED_LEN_MASK | RARRAY_TRANSIENT_FLAG | RARRAY_NEW_HEAP_FLAG);
 }
 
 static VALUE
@@ -871,8 +877,10 @@ ary_make_shared(VALUE ary)
         VALUE vshared = (VALUE)shared;
 
         rb_ary_transient_heap_evacuate(ary, TRUE);
+        #if USE_NEW_HEAP
+          if (RARRAY_NEW_HEAP_P(ary)) RARY_NEW_HEAP_SET(vshared);
+        #endif
         ptr = ARY_HEAP_PTR(ary);
-
         FL_UNSET_EMBED(vshared);
         ARY_SET_LEN(vshared, capa);
         ARY_SET_PTR(vshared, ptr);
@@ -1141,6 +1149,9 @@ ary_make_partial(VALUE ary, VALUE klass, long offset, long len)
         ARY_SET_PTR(result, RARRAY_CONST_PTR_TRANSIENT(ary));
         ARY_SET_LEN(result, RARRAY_LEN(ary));
         rb_ary_set_shared(result, shared);
+        #if USE_NEW_HEAP
+          if (RARRAY_NEW_HEAP_P(shared)) RARY_NEW_HEAP_SET(result);
+        #endif
 
         ARY_INCREASE_PTR(result, offset);
         ARY_SET_LEN(result, len);

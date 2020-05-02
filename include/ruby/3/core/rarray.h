@@ -20,6 +20,7 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines struct ::RArray.
  */
+
 #include "ruby/3/arithmetic/long.h"
 #include "ruby/3/attr/artificial.h"
 #include "ruby/3/attr/constexpr.h"
@@ -39,6 +40,10 @@
 # define USE_TRANSIENT_HEAP 1
 #endif
 
+#ifndef USE_NEW_HEAP
+# define USE_NEW_HEAP 1
+#endif
+
 #define RARRAY(obj)            RUBY3_CAST((struct RArray *)(obj))
 #define RARRAY_EMBED_FLAG      RARRAY_EMBED_FLAG
 #define RARRAY_EMBED_LEN_MASK  RARRAY_EMBED_LEN_MASK
@@ -48,6 +53,11 @@
 # define RARRAY_TRANSIENT_FLAG RARRAY_TRANSIENT_FLAG
 #else
 # define RARRAY_TRANSIENT_FLAG 0
+#endif
+#if USE_NEW_HEAP
+# define RARRAY_NEW_HEAP_FLAG RARRAY_NEW_HEAP_FLAG
+#else
+# define RARRAY_NEW_HEAP_FLAG 0
 #endif
 #define RARRAY_LEN                 rb_array_len
 #define RARRAY_CONST_PTR           rb_array_const_ptr
@@ -65,6 +75,7 @@
 #define RARRAY_EMBED_LEN   RARRAY_EMBED_LEN
 #define RARRAY_LENINT      RARRAY_LENINT
 #define RARRAY_TRANSIENT_P RARRAY_TRANSIENT_P
+#define RARRAY_NEW_HEAP_P  RARRAY_NEW_HEAP_P
 #define RARRAY_ASET        RARRAY_ASET
 #define RARRAY_PTR         RARRAY_PTR
 /** @endcond */
@@ -76,6 +87,10 @@ enum ruby_rarray_flags {
 #if USE_TRANSIENT_HEAP
     ,
     RARRAY_TRANSIENT_FLAG  = RUBY_FL_USER13
+#endif
+#if USE_NEW_HEAP
+    ,
+    RARRAY_NEW_HEAP_FLAG  = RUBY_FL_USER15
 #endif
 };
 
@@ -156,6 +171,20 @@ RARRAY_TRANSIENT_P(VALUE ary)
 
 #if USE_TRANSIENT_HEAP
     return RB_FL_ANY_RAW(ary, RARRAY_TRANSIENT_FLAG);
+#else
+    return false;
+#endif
+}
+
+RUBY3_ATTR_PURE_ON_NDEBUG()
+RUBY3_ATTR_ARTIFICIAL()
+static inline bool
+RARRAY_NEW_HEAP_P(VALUE ary)
+{
+    RUBY3_ASSERT_TYPE(ary, RUBY_T_ARRAY);
+
+#if USE_NEW_HEAP
+    return RB_FL_ANY_RAW(ary, RARRAY_NEW_HEAP_FLAG);
 #else
     return false;
 #endif
