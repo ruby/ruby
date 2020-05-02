@@ -22,6 +22,7 @@
 
 #include "ruby/ruby.h"          /* for VALUE */
 #include "internal/imemo.h"     /* for RB_IMEMO_TMPBUF_PTR */
+#include "internal/warnings.h"  /* for COMPILER_WARNING_PUSH */
 
 #define RB_MAX_GROUPS (65536)
 
@@ -112,5 +113,16 @@ ARGVSTR2ARGC(VALUE argv_str)
         ;
     return i - 1;
 }
+
+COMPILER_WARNING_PUSH
+#if __has_warning("-Wdeprecated-declarations") || RUBY3_COMPILER_IS(GCC)
+COMPILER_WARNING_IGNORED(-Wdeprecated-declarations)
+#endif
+static inline rb_pid_t
+rb_fork(void)
+{
+    return fork();
+}
+COMPILER_WARNING_POP
 
 #endif /* INTERNAL_PROCESS_H */

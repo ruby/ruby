@@ -56,6 +56,7 @@
 #include "internal/missing.h"
 #include "internal/object.h"
 #include "internal/parse.h"
+#include "internal/process.h"
 #include "internal/variable.h"
 #include "mjit.h"
 #include "ruby/encoding.h"
@@ -1635,7 +1636,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 #ifdef HAVE_WORKING_FORK
                 int fds[2];
                 if (rb_pipe(fds) == 0) {
-                    rb_pid_t pid = fork();
+                    rb_pid_t pid = rb_fork();
                     if (pid > 0) {
                         /* exec PAGER with reading from child */
                         dup2(fds[0], 0);

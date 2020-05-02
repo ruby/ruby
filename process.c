@@ -3957,10 +3957,6 @@ disable_child_handler_fork_child(struct child_handler_disabler_state *old, char 
     return 0;
 }
 
-COMPILER_WARNING_PUSH
-#if __has_warning("-Wdeprecated-declarations") || RUBY3_COMPILER_IS(GCC)
-COMPILER_WARNING_IGNORED(-Wdeprecated-declarations)
-#endif
 static rb_pid_t
 retry_fork_async_signal_safe(int *status, int *ep,
         int (*chfunc)(void*, char *, size_t), void *charg,
@@ -3985,9 +3981,9 @@ retry_fork_async_signal_safe(int *status, int *ep,
         if (!has_privilege())
             pid = vfork();
         else
-            pid = fork();
+            pid = rb_fork();
 #else
-        pid = fork();
+        pid = rb_fork();
 #endif
         if (pid == 0) {/* fork succeed, child process */
             int ret;
@@ -4021,7 +4017,6 @@ retry_fork_async_signal_safe(int *status, int *ep,
             return -1;
     }
 }
-COMPILER_WARNING_POP
 
 static rb_pid_t
 fork_check_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg,
@@ -4075,10 +4070,6 @@ rb_fork_async_signal_safe(int *status,
     return fork_check_err(status, chfunc, charg, fds, errmsg, errmsg_buflen, 0);
 }
 
-COMPILER_WARNING_PUSH
-#if __has_warning("-Wdeprecated-declarations") || RUBY3_COMPILER_IS(GCC)
-COMPILER_WARNING_IGNORED(-Wdeprecated-declarations)
-#endif
 rb_pid_t
 rb_fork_ruby(int *status)
 {
@@ -4093,7 +4084,7 @@ rb_fork_ruby(int *status)
         if (mjit_enabled) mjit_pause(false); // Don't leave locked mutex to child. Note: child_handler must be enabled to pause MJIT.
 	disable_child_handler_before_fork(&old);
 	before_fork_ruby();
-	pid = fork();
+	pid = rb_fork();
 	err = errno;
         after_fork_ruby();
 	disable_child_handler_fork_parent(&old); /* yes, bad name */
@@ -4105,7 +4096,6 @@ rb_fork_ruby(int *status)
 	    return -1;
     }
 }
-COMPILER_WARNING_POP
 
 #endif
 
