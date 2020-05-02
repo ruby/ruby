@@ -56,20 +56,23 @@ describe :rbasic, shared: true do
 
   it "supports user flags" do
     obj, _ = @data.call
-    @specs.get_flags(obj).should == 0
-    @specs.set_flags(obj, 1 << 14 | 1 << 16).should == 1 << 14 | 1 << 16
-    @specs.get_flags(obj).should == 1 << 14 | 1 << 16
-    @specs.set_flags(obj, 0).should == 0
+    initial = @specs.get_flags(obj)
+    initial.should_not == 0
+    @specs.set_flags(obj, 1 << 14 | 1 << 16 | initial).should == 1 << 14 | 1 << 16 | initial
+    @specs.get_flags(obj).should == 1 << 14 | 1 << 16 | initial
+    @specs.set_flags(obj, initial).should == initial
   end
 
   it "supports copying the flags from one object over to the other" do
     obj1, obj2 = @data.call
-    @specs.set_flags(obj1, @taint | 1 << 14 | 1 << 16)
+    initial = @specs.get_flags(obj1)
+    @specs.get_flags(obj2).should == initial
+    @specs.set_flags(obj1, @taint | 1 << 14 | 1 << 16 | initial)
     @specs.copy_flags(obj2, obj1)
-    @specs.get_flags(obj2).should == @taint | 1 << 14 | 1 << 16
-    @specs.set_flags(obj1, 0)
+    @specs.get_flags(obj2).should == @taint | 1 << 14 | 1 << 16 | initial
+    @specs.set_flags(obj1, initial)
     @specs.copy_flags(obj2, obj1)
-    @specs.get_flags(obj2).should == 0
+    @specs.get_flags(obj2).should == initial
   end
 
   it "supports retrieving the (meta)class" do
