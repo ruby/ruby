@@ -96,6 +96,8 @@ callable_class_p(VALUE klass)
 #if VM_CHECK_MODE >= 2
     if (!klass) return FALSE;
     switch (RB_BUILTIN_TYPE(klass)) {
+      default:
+        break;
       case T_ICLASS:
 	if (!RB_TYPE_P(RCLASS_SUPER(klass), T_MODULE)) break;
       case T_MODULE:
