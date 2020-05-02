@@ -1518,14 +1518,14 @@ rb_hash_foreach(VALUE hash, rb_foreach_func *func, VALUE farg)
 {
     struct hash_foreach_arg arg;
 
-    if (RHASH_TABLE_EMPTY_P(hash))
-        return;
-    hash_iter_lev_inc(hash);
-    arg.hash = hash;
-    arg.func = (rb_foreach_func *)func;
-    arg.arg  = farg;
-    rb_ensure(hash_foreach_call, (VALUE)&arg, hash_foreach_ensure, hash);
-    hash_verify(hash);
+    if (!RHASH_TABLE_EMPTY_P(hash)) {
+        hash_iter_lev_inc(hash);
+        arg.hash = hash;
+        arg.func = (rb_foreach_func *)func;
+        arg.arg  = farg;
+        rb_ensure(hash_foreach_call, (VALUE)&arg, hash_foreach_ensure, hash);
+        hash_verify(hash);
+    }
 }
 
 static VALUE
