@@ -227,27 +227,21 @@ install:
     end
 
     assert_match(/\AERROR: Failed to build gem native extension.$/, e.message)
-
-    assert_equal "Building native extensions. This could take a while...\n",
-                 @ui.output
+    assert_equal "Building native extensions. This could take a while...\n", @ui.output
     assert_equal '', @ui.error
 
     gem_make_out = File.join @spec.extension_dir, 'gem_make.out'
     cmd_make_out = File.read(gem_make_out)
 
-    assert_match %r{#{Regexp.escape Gem.ruby}.* extconf\.rb},
-                 cmd_make_out
-    assert_match %r{: No such file},
-                 cmd_make_out
+    assert_match %r{#{Regexp.escape Gem.ruby}.* extconf\.rb}, cmd_make_out
+    assert_match %r{: No such file}, cmd_make_out
 
     refute_path_exists @spec.gem_build_complete_path
 
     skip "Gem.ruby is not the name of the binary being run in the end" \
       unless cmd_make_out.include? "#{Gem.ruby}:"
 
-    assert_match %r{#{Regexp.escape Gem.ruby}: No such file},
-                 cmd_make_out
-
+    assert_match %r{#{Regexp.escape Gem.ruby}: No such file}, cmd_make_out
     assert_equal cwd, Dir.pwd
   end
 
@@ -263,9 +257,7 @@ install:
     end
 
     assert_match(/^\s*No builder for extension ''$/, e.message)
-
-    assert_equal "Building native extensions. This could take a while...\n",
-                 @ui.output
+    assert_equal "Building native extensions. This could take a while...\n", @ui.output
     assert_equal '', @ui.error
 
     assert_equal "No builder for extension ''\n", File.read(gem_make_out)
