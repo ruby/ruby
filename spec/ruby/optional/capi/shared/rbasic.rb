@@ -56,7 +56,7 @@ describe :rbasic, shared: true do
 
   it "supports user flags" do
     obj, _ = @data.call
-    @specs.get_flags(obj) == 0
+    @specs.get_flags(obj).should == 0
     @specs.set_flags(obj, 1 << 14 | 1 << 16).should == 1 << 14 | 1 << 16
     @specs.get_flags(obj).should == 1 << 14 | 1 << 16
     @specs.set_flags(obj, 0).should == 0
