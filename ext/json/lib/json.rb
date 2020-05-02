@@ -236,13 +236,55 @@ require 'json/common'
 # ---
 #
 # Option +create_additions+ specifies whether to
+# XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #
-# == Generating \JSON with Additions
+# == \JSON Additions
+#
+# When you "round trip" a non-\String object from Ruby to \JSON and back,
+# you have a new \String, instead of the object you began with:
+#
+#   range = Range.new(0, 2)
+#   json = JSON.generate(range)
+#   json # => "\"0..2\""
+#   object = JSON.parse(json)
+#   object # => "0..2"
+#   object.class # => String
+#
+# You can use \JSON _additions_ to restore the original object.
+# The addition is an extension of a ruby class, so that:
+# - \JSON.generate stores more information in the \JSON string.
+# - \JSON.parse, called with option +create_additions,
+#   uses that information to create a proper Ruby object.
+#
+# This example generates \JSON from a \Range object,
+# then parses that \JSON to form a (new) \Range object:
+#   range = Range.new(0, 2)
+#   require 'json/add/range'
+#   json = JSON.generate(range)
+#   json # => "{\"json_class\":\"Range\",\"a\":[0,2,false]}"
+#   object = JSON.parse(json, create_additions: true)
+#   object # => 0..2
+#   object.class # => Range
+#
+# The \JSON module includes additions for certain classes.
+# You can also craft custom additions (see below).
 #
 # === Built-in Additions
 #
-# For certain classes, module \JSON offers optional _additions_.
-# Each addition provides enrichments for \JSON for a class.
+# The |JSON module includes additions for these classes:
+# - BigDecimal
+# - Complex
+# - Date
+# - DateTime
+# - Exception
+# - OpenStruct
+# - Range
+# - Rational
+# - Regexp
+# - Set
+# - Struct
+# - Symbol
+# - Time
 #
 # To reduce punctuation clutter, the examples below
 # show the generated \JSON via +puts+, rather than the usual +inspect+,
@@ -369,6 +411,8 @@ require 'json/common'
 # With addition:
 #   require 'json/add/symbol'
 #   JSON.generate(value) # {"json_class":"Symbol","s":"foo"}
+#
+# Custom Additions
 #
 module JSON
   require 'json/version'
