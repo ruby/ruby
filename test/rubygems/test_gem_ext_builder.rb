@@ -233,19 +233,20 @@ install:
     assert_equal '', @ui.error
 
     gem_make_out = File.join @spec.extension_dir, 'gem_make.out'
+    cmd_make_out = File.read(gem_make_out)
 
     assert_match %r{#{Regexp.escape Gem.ruby}.* extconf\.rb},
-                 File.read(gem_make_out)
+                 cmd_make_out
     assert_match %r{: No such file},
-                 File.read(gem_make_out)
+                 cmd_make_out
 
     refute_path_exists @spec.gem_build_complete_path
 
     skip "Gem.ruby is not the name of the binary being run in the end" \
-      unless File.read(gem_make_out).include? "#{Gem.ruby}:"
+      unless cmd_make_out.include? "#{Gem.ruby}:"
 
     assert_match %r{#{Regexp.escape Gem.ruby}: No such file},
-                 File.read(gem_make_out)
+                 cmd_make_out
 
     assert_equal cwd, Dir.pwd
   end
