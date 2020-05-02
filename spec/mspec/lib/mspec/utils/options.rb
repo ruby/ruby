@@ -274,6 +274,8 @@ class MSpecOptions
         config[:formatter] = SpinnerFormatter
       when 't', 'method'
         config[:formatter] = MethodFormatter
+      when 'e', 'stats'
+        config[:formatter] = StatsPerFileFormatter
       when 'y', 'yaml'
         config[:formatter] = YamlFormatter
       when 'p', 'profile'
@@ -300,6 +302,7 @@ class MSpecOptions
     doc "       m, summary               SummaryFormatter"
     doc "       a, *, spin               SpinnerFormatter"
     doc "       t, method                MethodFormatter"
+    doc "       e, stats                 StatsPerFileFormatter"
     doc "       y, yaml                  YamlFormatter"
     doc "       p, profile               ProfileFormatter"
     doc "       j, junit                 JUnitFormatter\n"
@@ -467,8 +470,6 @@ class MSpecOptions
   end
 
   def all
-    # Generated with:
-    # puts File.read(__FILE__).scan(/def (\w+).*\n\s*on\(/)
     configure {}
     targets
     formatters
@@ -481,6 +482,7 @@ class MSpecOptions
     repeat
     verbose
     interrupt
+    timeout
     verify
     action_filters
     actions

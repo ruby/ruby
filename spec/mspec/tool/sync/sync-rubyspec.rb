@@ -18,7 +18,7 @@ IMPLS = {
 MSPEC = ARGV.delete('--mspec')
 
 CHECK_LAST_MERGE = ENV['CHECK_LAST_MERGE'] != 'false'
-TEST_TRUNK = ENV['TEST_TRUNK'] != 'false'
+TEST_MASTER = ENV['TEST_MASTER'] != 'false'
 
 MSPEC_REPO = File.expand_path("../../..", __FILE__)
 raise MSPEC_REPO if !Dir.exist?(MSPEC_REPO) or !Dir.exist?("#{MSPEC_REPO}/.git")
@@ -172,7 +172,7 @@ def test_new_specs
 
     run_test[min_version]
     run_test[max_version]
-    run_test["trunk"] if TEST_TRUNK
+    run_test["master"] if TEST_MASTER
   end
 end
 

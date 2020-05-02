@@ -153,5 +153,7 @@ def ruby_cmd(code, opts = {})
     body = "-e #{code.inspect}"
   end
 
-  [RUBY_EXE, opts[:options], body, opts[:args]].compact.join(' ')
+  command = [RUBY_EXE, opts[:options], body, opts[:args]].compact.join(' ')
+  STDERR.puts "\nruby_cmd: #{command}" if ENV["DEBUG_MSPEC_RUBY_CMD"] == "true"
+  command
 end

@@ -4,25 +4,13 @@
 # directory is empty when the process exits.
 
 SPEC_TEMP_DIR_PID = Process.pid
-SPEC_TEMP_DIR_LIST = []
-if tmpdir = ENV['SPEC_TEMP_DIR']
-  temppath = File.realdirpath(tmpdir) + "/"
-else
-  tmpdir = File.realdirpath("rubyspec_temp")
-  temppath = tmpdir + "/#{SPEC_TEMP_DIR_PID}"
-  SPEC_TEMP_DIR_LIST << tmpdir
-end
-SPEC_TEMP_DIR_LIST << temppath
-SPEC_TEMP_DIR = temppath
+SPEC_TEMP_DIR = File.expand_path(ENV["SPEC_TEMP_DIR"] || "rubyspec_temp/#{SPEC_TEMP_DIR_PID}")
 SPEC_TEMP_UNIQUIFIER = "0"
 
 at_exit do
   begin
     if SPEC_TEMP_DIR_PID == Process.pid
-      while temppath = SPEC_TEMP_DIR_LIST.pop
-        next unless File.directory? temppath
-        Dir.delete temppath
-      end
+      Dir.delete SPEC_TEMP_DIR if File.directory? SPEC_TEMP_DIR
     end
   rescue SystemCallError
     STDERR.puts <<-EOM
@@ -30,7 +18,7 @@ at_exit do
 -----------------------------------------------------
 The rubyspec temp directory is not empty. Ensure that
 all specs are cleaning up temporary files:
-  #{temppath}
+  #{SPEC_TEMP_DIR}
 -----------------------------------------------------
 
     EOM
