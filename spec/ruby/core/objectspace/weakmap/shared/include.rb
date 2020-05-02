@@ -21,7 +21,7 @@ describe :weakmap_include?, shared: true do
   end
 
   ruby_version_is "2.7" do
-    ruby_bug "#16826", "2.7.0"..."2.8.1" do
+    ruby_bug "#16826", "2.7.0"..."2.7.2" do
       it "reports true if the pair exists and the value is nil" do
         map = ObjectSpace::WeakMap.new
         key = Object.new
