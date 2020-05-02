@@ -287,7 +287,7 @@ require 'json/common'
 #     With addition:     0..2 (Range)
 #
 # The \JSON module includes additions for certain classes.
-# You can also craft custom additions.  See {Custom Additions}[#module-JSON-label-Custom+Additions]
+# You can also craft custom additions.  See {Custom \JSON Additions}[#module-label-Custom+JSON+Additions]
 #
 # === Built-in Additions
 #
@@ -409,7 +409,70 @@ require 'json/common'
 #   ruby.class # Time
 #
 #
-# === Custom Additions
+# === Custom \JSON Additions
+#
+# In addition to the \JSON additions provided,
+# you can craft addition of your own,
+# either for Ruby built-in classes or for classes of your own.
+#
+# Here's a user-defined class +Foo+:
+#
+#   class Foo
+#     attr_accessor :bar, :baz
+#     def initialize(bar, baz)
+#       self.bar = bar
+#       self.baz = baz
+#     end
+#   end
+#
+# Here's the \JSON addition for it:
+#
+#   # Extend class Foo with JSON addition.
+#   class Foo
+#     # Serialize Foo object with its class name and arguments
+#     def to_json(*args)
+#       {
+#         JSON.create_id  => self.class.name,
+#         'a'             => [ bar, baz ]
+#       }.to_json(*args)
+#     end
+#     # Deserialize JSON string by constructing new Foo object with arguments.
+#     def self.json_create(object)
+#       new(*object['a'])
+#     end
+#   end
+#
+# Demonstration:
+#   require 'json'
+#   # This Foo object has no custom addition.
+#   foo0 = Foo.new(0, 1)
+#   json0 = JSON.generate(foo0)
+#   obj0 = JSON.parse(json0)
+#   # Lood the custom addition.
+#   require_relative 'foo_addition'
+#   # This foo has the custom addition.
+#   foo1 = Foo.new(0, 1)
+#   json1 = JSON.generate(foo1)
+#   obj1 = JSON.parse(json1, create_additions: true)
+#   #   Make a nice display.
+#   display = <<EOT
+#   Generated JSON:
+#     Without custom addition:  #{json0} (#{json0.class})
+#     With custom addition:     #{json1} (#{json1.class})
+#   Parsed JSON:
+#     Without custom addition:  #{obj0.inspect} (#{obj0.class})
+#     With custom addition:     #{obj1.inspect} (#{obj1.class})
+#   EOT
+#   puts display
+#
+# Output:
+#
+#   Generated JSON:
+#     Without custom addition:  "#<Foo:0x0000000006534e80>" (String)
+#     With custom addition:     {"json_class":"Foo","a":[0,1]} (String)
+#   Parsed JSON:
+#     Without custom addition:  "#<Foo:0x0000000006534e80>" (String)
+#     With custom addition:     #<Foo:0x0000000006473bb8 @bar=0, @baz=1> (Foo)
 #
 module JSON
   require 'json/version'
