@@ -40,7 +40,7 @@ describe :kernel_system, shared: true do
 
     $?.should be_an_instance_of Process::Status
     $?.pid.should be_kind_of(Integer)
-    $?.exitstatus.should == 127
+    $?.should_not.success?
   end
 
   it "does not write to stderr when command execution fails" do
