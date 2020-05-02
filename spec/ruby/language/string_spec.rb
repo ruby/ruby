@@ -32,6 +32,11 @@ describe "Ruby character strings" do
     "#@my_ip".should == 'xxx'
   end
 
+  it "does not interpolate invalid variable names" do
+    "#@".should == '#@'
+    "#$%".should == '#$%'
+  end
+
   it "has characters [.(=?!# end simple # interpolation" do
     "#@ip[".should == 'xxx['
     "#@ip.".should == 'xxx.'
@@ -260,6 +265,12 @@ describe "Ruby String literals" do
 end
 
 describe "Ruby String interpolation" do
+  it "permits an empty expression" do
+    s = "#{}" # rubocop:disable Lint/EmptyInterpolation
+    s.should.empty?
+    s.should_not.frozen?
+  end
+
   it "returns a string with the source encoding by default" do
     "a#{"b"}c".encoding.should == Encoding::BINARY
     eval('"a#{"b"}c"'.force_encoding("us-ascii")).encoding.should == Encoding::US_ASCII

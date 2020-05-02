@@ -10,7 +10,10 @@ describe "Matrix.unitary?" do
 
   it "returns true for unitary matrices" do
     Matrix[[0, Complex(0, 1)], [Complex(0, 1), 0]].unitary?.should == true
-    version_is((Matrix::const_defined?(:VERSION) ? Matrix::VERSION : "0.1.0"), "0.3.0") do
+  end
+
+  version_is((Matrix::const_defined?(:VERSION) ? Matrix::VERSION : "0.1.0"), "0.3.0") do
+    it "returns true for unitary matrices with a Complex and a negative #imag" do
       Matrix[[0, Complex(0, 1)], [Complex(0, -1), 0]].unitary?.should == true
     end
   end

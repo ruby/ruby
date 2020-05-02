@@ -164,7 +164,7 @@ module IOSpecs
       @io = io
     end
 
-    def read(size, buf=nil)
+    def read(size, buf)
       @io.read size, buf
     end
 
@@ -178,7 +178,7 @@ module IOSpecs
       @io = io
     end
 
-    def readpartial(size, buf=nil)
+    def readpartial(size, buf)
       @io.readpartial size, buf
     end
 

@@ -19,13 +19,13 @@ describe "Process.clock_getres" do
 
   # These are observed
 
-  platform_is_not :solaris, :aix, :openbsd, :android do
+  platform_is :linux, :darwin, :windows do
     it "with Process::CLOCK_REALTIME reports at least 1 microsecond" do
       Process.clock_getres(Process::CLOCK_REALTIME, :nanosecond).should <= 1_000
     end
   end
 
-  platform_is_not :aix, :openbsd, :android do
+  platform_is :linux, :darwin, :windows do
     it "with Process::CLOCK_MONOTONIC reports at least 1 microsecond" do
       Process.clock_getres(Process::CLOCK_MONOTONIC, :nanosecond).should <= 1_000
     end

@@ -153,4 +153,20 @@ describe "C-API Symbol function" do
       @s.rb_sym2str(:bacon).should == "bacon"
     end
   end
+
+  describe "rb_to_symbol" do
+    it "returns a Symbol for a Symbol" do
+      @s.rb_to_symbol(:foo).should == :foo
+    end
+
+    it "returns a Symbol for a String" do
+      @s.rb_to_symbol("foo").should == :foo
+    end
+
+    it "coerces to Symbol using to_str" do
+      o = mock('o')
+      o.should_receive(:to_str).and_return("foo")
+      @s.rb_to_symbol(o).should == :foo
+    end
+  end
 end

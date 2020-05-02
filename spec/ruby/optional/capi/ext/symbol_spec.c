@@ -75,6 +75,10 @@ VALUE symbol_spec_rb_sym2str(VALUE self, VALUE sym) {
   return rb_sym2str(sym);
 }
 
+VALUE symbol_spec_rb_to_symbol(VALUE self, VALUE val) {
+  return rb_to_symbol(val);
+}
+
 void Init_symbol_spec(void) {
   VALUE cls = rb_define_class("CApiSymbolSpecs", rb_cObject);
   rb_define_method(cls, "SYMBOL_P", symbol_spec_SYMBOL_P, 1);
@@ -93,6 +97,7 @@ void Init_symbol_spec(void) {
   rb_define_method(cls, "rb_is_const_id", symbol_spec_rb_is_const_id, 1);
   rb_define_method(cls, "rb_is_instance_id", symbol_spec_rb_is_instance_id, 1);
   rb_define_method(cls, "rb_sym2str", symbol_spec_rb_sym2str, 1);
+  rb_define_method(cls, "rb_to_symbol", symbol_spec_rb_to_symbol, 1);
 }
 
 #ifdef __cplusplus

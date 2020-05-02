@@ -37,6 +37,26 @@ static VALUE class_spec_rb_path_to_class(VALUE self, VALUE path) {
   return rb_path_to_class(path);
 }
 
+static VALUE class_spec_rb_class_instance_methods(int argc, VALUE* argv, VALUE self) {
+  VALUE mod = argv[0];
+  return rb_class_instance_methods(--argc, ++argv, mod);
+}
+
+static VALUE class_spec_rb_class_public_instance_methods(int argc, VALUE* argv, VALUE self) {
+  VALUE mod = argv[0];
+  return rb_class_public_instance_methods(--argc, ++argv, mod);
+}
+
+static VALUE class_spec_rb_class_protected_instance_methods(int argc, VALUE* argv, VALUE self) {
+  VALUE mod = argv[0];
+  return rb_class_protected_instance_methods(--argc, ++argv, mod);
+}
+
+static VALUE class_spec_rb_class_private_instance_methods(int argc, VALUE* argv, VALUE self) {
+  VALUE mod = argv[0];
+  return rb_class_private_instance_methods(--argc, ++argv, mod);
+}
+
 static VALUE class_spec_rb_class_new(VALUE self, VALUE super) {
   return rb_class_new(super);
 }
@@ -146,6 +166,10 @@ void Init_class_spec(void) {
   rb_define_method(cls, "rb_class2name", class_spec_rb_class2name, 1);
   rb_define_method(cls, "rb_path2class", class_spec_rb_path2class, 1);
   rb_define_method(cls, "rb_path_to_class", class_spec_rb_path_to_class, 1);
+  rb_define_method(cls, "rb_class_instance_methods", class_spec_rb_class_instance_methods, -1);
+  rb_define_method(cls, "rb_class_public_instance_methods", class_spec_rb_class_public_instance_methods, -1);
+  rb_define_method(cls, "rb_class_protected_instance_methods", class_spec_rb_class_protected_instance_methods, -1);
+  rb_define_method(cls, "rb_class_private_instance_methods", class_spec_rb_class_private_instance_methods, -1);
   rb_define_method(cls, "rb_class_new", class_spec_rb_class_new, 1);
   rb_define_method(cls, "rb_class_new_instance", class_spec_rb_class_new_instance, 3);
   rb_define_method(cls, "rb_class_real", class_spec_rb_class_real, 1);
