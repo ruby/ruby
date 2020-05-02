@@ -709,7 +709,7 @@ class Gem::Installer
     return if self.class.path_warning
 
     user_bin_dir = @bin_dir || Gem.bindir(gem_home)
-    user_bin_dir = user_bin_dir.gsub(File::SEPARATOR, File::ALT_SEPARATOR) if
+    user_bin_dir = user_bin_dir.tr(File::SEPARATOR, File::ALT_SEPARATOR) if
       File::ALT_SEPARATOR
 
     path = ENV['PATH']
