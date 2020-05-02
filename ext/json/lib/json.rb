@@ -256,163 +256,160 @@ require 'json/common'
 # - \JSON.parse, called with option +create_additions,
 #   uses that information to create a proper Ruby object.
 #
-# This example generates \JSON from a \Range object,
-# then parses that \JSON to form a (new) \Range object:
+# This example shows a \Range being generated into \JSON
+# and parsed back into Ruby, both without and with
+# the addition for \Range:
 #   range = Range.new(0, 2)
+#   # This passage does not use the addition for Range.
+#   json0 = JSON.generate(range)
+#   ruby0 = JSON.parse(json0)
+#   # This passage uses the addition for Range.
 #   require 'json/add/range'
-#   json = JSON.generate(range)
-#   json # => "{\"json_class\":\"Range\",\"a\":[0,2,false]}"
-#   object = JSON.parse(json, create_additions: true)
-#   object # => 0..2
-#   object.class # => Range
+#   json1 = JSON.generate(range)
+#   ruby1 = JSON.parse(json1, create_additions: true)
+#   # Make a nice display.
+#   display = <<EOT
+#   Generated JSON:
+#     Without addition:  #{json0} (#{json0.class})
+#     With addition:     #{json1} (#{json1.class})
+#   Parsed JSON:
+#     Without addition:  #{ruby0.inspect} (#{ruby0.class})
+#     With addition:     #{ruby1.inspect} (#{ruby1.class})
+#   EOT
+#   puts display
+#
+# This output shows the different results:
+#   Generated JSON:
+#     Without addition:  "0..2" (String)
+#     With addition:     {"json_class":"Range","a":[0,2,false]} (String)
+#   Parsed JSON:
+#     Without addition:  "0..2" (String)
+#     With addition:     0..2 (Range)
 #
 # The \JSON module includes additions for certain classes.
-# You can also craft custom additions (see below).
+# You can also craft custom additions.  See {Custom Additions}[#module-JSON-label-Custom+Additions]
 #
 # === Built-in Additions
 #
-# The |JSON module includes additions for these classes:
-# - BigDecimal
-# - Complex
-# - Date
-# - DateTime
-# - Exception
-# - OpenStruct
-# - Range
-# - Rational
-# - Regexp
-# - Set
-# - Struct
-# - Symbol
-# - Time
+# <table><tr><td>Foo</td></tr></table>
+#
+# The \JSON module includes additions for these classes:
+# - BigDecimal: <tt>require 'json/add/bigdecimal'</tt>
+# - Complex: <tt>require 'json/add/complex'</tt>
+# - Date: <tt>require 'json/add/date'</tt>
+# - DateTime: <tt>require 'json/add/date_time'</tt>
+# - Exception: <tt>require 'json/add/exception'</tt>
+# - OpenStruct: <tt>require 'json/add/ostruct'</tt>
+# - Range: <tt>require 'json/add/range'</tt>
+# - Rational: <tt>require 'json/add/rational'</tt>
+# - Regexp: <tt>require 'json/add/regexp'</tt>
+# - Set: <tt>require 'json/add/set'</tt>
+# - Struct: <tt>require 'json/add/struct'</tt>
+# - Symbol: <tt>require 'json/add/symbol'</tt>
+# - Time: <tt>require 'json/add/time'</tt>
 #
 # To reduce punctuation clutter, the examples below
 # show the generated \JSON via +puts+, rather than the usual +inspect+,
 #
-# ---
-#
 # \BigDecimal:
-#   value = BigDecimal(0) # 0.0
-# Without addition:
-#   JSON.generate(value) # "0.0"
-# With addition:
 #   require 'json/add/bigdecimal'
-#   JSON.generate(value) # {"json_class":"BigDecimal","b":"27:0.0"}
-#
-# ---
+#   value = BigDecimal(0) # 0.0
+#   json = JSON.generate(value) # {"json_class":"BigDecimal","b":"27:0.0"}
+#   ruby = JSON.parse(json, create_additions: true) # 0.0
 #
 # \Complex:
-#   value = Complex(1+0i) # (1+0i)
-# Without addition:
-#   JSON.generate(value) # "0.0"
-# With addition:
 #   require 'json/add/complex'
-#   JSON.generate(value) # {"json_class":"Date","y":2020,"m":5,"d":1,"sg":2299161.0}
-#
-# ---
+#   value = Complex(1+0i) # 1+0i
+#   json = JSON.generate(value) # {"json_class":"Complex","r":1,"i":0}
+#   ruby = JSON.parse(json, create_additions: true) # 1+0i
+#   ruby.class # Complex
 #
 # \Date:
-#   value = Date.today # #<Date: 2020-05-01 ((2458971j,0s,0n),+0s,2299161j)>
-# Without addition:
-#   JSON.generate(value) # "2020-05-01"
-# With addition:
 #   require 'json/add/date'
-#   JSON.generate(value) # {"json_class":"Date","y":2020,"m":5,"d":1,"sg":2299161.0}
-#
-# ---
+#   value = Date.today # 2020-05-02
+#   json = JSON.generate(value) # {"json_class":"Date","y":2020,"m":5,"d":2,"sg":2299161.0}
+#   ruby = JSON.parse(json, create_additions: true) # 2020-05-02
+#   ruby.class # Date
 #
 # \DateTime:
-#   value = DateTime.now # 2020-05-01T11:00:47-05:00
-# Without addition:
-#   JSON.generate(value) # "2020-05-01T11:00:47-05:00"
-# With addition:
 #   require 'json/add/date_time'
-#   JSON.generate(value) # {"json_class":"DateTime","y":2020,"m":5,"d":1,"H":11,"M":0,"S":47,"of":"-5/24","sg":2299161.0}
+#   value = DateTime.now # 2020-05-02T10:38:13-05:00
+#   json = JSON.generate(value) # {"json_class":"DateTime","y":2020,"m":5,"d":2,"H":10,"M":38,"S":13,"of":"-5/24","sg":2299161.0}
+#   ruby = JSON.parse(json, create_additions: true) # 2020-05-02T10:38:13-05:00
+#   ruby.class # DateTime
 #
-# ---
-#
-# \Exception (and its subclasses, including \RuntimeError):
-#   value0 = Exception.new('A message') # #<Exception: A message>
-#   value1 = RuntimeError.new('Another message') # #<RuntimeError: Another message>
-# Without addition:
-#   JSON.generate(value0) # "A message"
-#   JSON.generate(value1) # "Another message"
-# With addition:
+# \Exception (and its subclasses including \RuntimeError):
 #   require 'json/add/exception'
-#   JSON.generate(value0) # {"json_class":"Exception","m":"A message","b":null}
-#   JSON.generate(value1) # {"json_class":"RuntimeError","m":"Another message","b":null}
-#
-# ---
+#   value = Exception.new('A message') # A message
+#   json = JSON.generate(value) # {"json_class":"Exception","m":"A message","b":null}
+#   ruby = JSON.parse(json, create_additions: true) # A message
+#   ruby.class # Exception
+#   value = RuntimeError.new('Another message') # Another message
+#   json = JSON.generate(value) # {"json_class":"RuntimeError","m":"Another message","b":null}
+#   ruby = JSON.parse(json, create_additions: true) # Another message
+#   ruby.class # RuntimeError
 #
 # \OpenStruct:
-#   value = OpenStruct.new(name: 'Matz', language: 'Ruby') # #<OpenStruct name="Matz", language="Ruby">
-# Without addition:
-#   JSON.generate(value) # "#<OpenStruct name=\"Matz\", language=\"Ruby\">"
-# With addition:
 #   require 'json/add/ostruct'
-#   JSON.generate(value) # {"json_class":"OpenStruct","t":{"name":"Matz","language":"Ruby"}}
-#
-# ---
+#   value = OpenStruct.new(name: 'Matz', language: 'Ruby') # #<OpenStruct name="Matz", language="Ruby">
+#   json = JSON.generate(value) # {"json_class":"OpenStruct","t":{"name":"Matz","language":"Ruby"}}
+#   ruby = JSON.parse(json, create_additions: true) # #<OpenStruct name="Matz", language="Ruby">
+#   ruby.class # OpenStruct
 #
 # \Range:
-#   value = Range.new(1, 3) # 1..3
-# Without addition:
-#   JSON.generate(value) # "1..3"
-# With addition:
 #   require 'json/add/range'
-#   JSON.generate(value) # {"json_class":"Range","a":[1,3,false]}
-#
-# ---
+#   value = Range.new(0, 2) # 0..2
+#   json = JSON.generate(value) # {"json_class":"Range","a":[0,2,false]}
+#   ruby = JSON.parse(json, create_additions: true) # 0..2
+#   ruby.class # Range
 #
 # \Rational:
-#   value = Rational.new(1, 3) # (1/3)
-# Without addition:
-#   JSON.generate(value) # "1/3"
-# With addition:
 #   require 'json/add/rational'
-#   JSON.generate(value) # {"json_class":"Rational","n":1,"d":3}
-#
-# ---
+#   value = Rational(1, 3) # 1/3
+#   json = JSON.generate(value) # {"json_class":"Rational","n":1,"d":3}
+#   ruby = JSON.parse(json, create_additions: true) # 1/3
+#   ruby.class # Rational
 #
 # \Regexp:
-#   value = Regexp.new('foo') # /foo/
-# Without addition:
-#   JSON.generate(value) # "(?-mix:foo)"
-# With addition:
 #   require 'json/add/regexp'
-#   JSON.generate(value) # {"json_class":"Regexp","o":0,"s":"foo"}
-#
-# ---
+#   value = Regexp.new('foo') # (?-mix:foo)
+#   json = JSON.generate(value) # {"json_class":"Regexp","o":0,"s":"foo"}
+#   ruby = JSON.parse(json, create_additions: true) # (?-mix:foo)
+#   ruby.class # Regexp
 #
 # \Set:
-#   value = Set.new([0, 1, 2]) # #<Set: {0, 1, 2}>
-# Without addition:
-#   JSON.generate(value) # "#<Set: {0, 1, 2}>"
-# With addition:
 #   require 'json/add/set'
-#   JSON.generate(value) # {"json_class":"Set","a":[0,1,2]}
+#   value = Set.new([0, 1, 2]) # #<Set: {0, 1, 2}>
+#   json = JSON.generate(value) # {"json_class":"Set","a":[0,1,2]}
+#   ruby = JSON.parse(json, create_additions: true) # #<Set: {0, 1, 2}>
+#   ruby.class # Set
 #
 # ---
 #
 # \Struct:
-#   value = Struct.new("Customer", :name, :address) # Struct::Customer
-# Without addition:
-#   JSON.generate(value) # "Struct::Customer"
-# With addition:
 #   require 'json/add/struct'
-#   JSON.generate(value) # "Struct::Customer"
-#
-# ---
+#   Customer = Struct.new(:name, :address) # Customer
+#   value = Customer.new("Dave", "123 Main") # #<struct Customer name="Dave", address="123 Main">
+#   json = JSON.generate(value) # {"json_class":"Customer","v":["Dave","123 Main"]}
+#   ruby = JSON.parse(json, create_additions: true) # #<struct Customer name="Dave", address="123 Main">
+#   ruby.class # Customer
 #
 # \Symbol:
-#   value = :foo # :foo
-# Without addition:
-#   JSON.generate(value) # :foo
-# With addition:
 #   require 'json/add/symbol'
-#   JSON.generate(value) # {"json_class":"Symbol","s":"foo"}
+#   value = :foo # foo
+#   json = JSON.generate(value) # {"json_class":"Symbol","s":"foo"}
+#   ruby = JSON.parse(json, create_additions: true) # foo
+#   ruby.class # Symbol
 #
-# Custom Additions
+# \Time:
+#   require 'json/add/time'
+#   value = Time.now # 2020-05-02 11:28:26 -0500
+#   json = JSON.generate(value) # {"json_class":"Time","s":1588436906,"n":840560000}
+#   ruby = JSON.parse(json, create_additions: true) # 2020-05-02 11:28:26 -0500
+#   ruby.class # Time
+#
+#
+# === Custom Additions
 #
 module JSON
   require 'json/version'
