@@ -114,6 +114,7 @@ ARGVSTR2ARGC(VALUE argv_str)
     return i - 1;
 }
 
+#ifdef HAVE_WORKING_FORK
 COMPILER_WARNING_PUSH
 #if __has_warning("-Wdeprecated-declarations") || RUBY3_COMPILER_IS(GCC)
 COMPILER_WARNING_IGNORED(-Wdeprecated-declarations)
@@ -124,5 +125,6 @@ rb_fork(void)
     return fork();
 }
 COMPILER_WARNING_POP
+#endif
 
 #endif /* INTERNAL_PROCESS_H */
