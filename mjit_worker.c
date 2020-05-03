@@ -855,7 +855,8 @@ make_pch(void)
 }
 
 // Compile .c file to .so file. It returns true if it succeeds. (non-mswin)
-// Not compiling .c to .so directly because it fails on MinGW.
+// Not compiling .c to .so directly because it fails on MinGW, and this helps
+// to generate no .dSYM on macOS.
 static bool
 compile_c_to_so(const char *c_file, const char *so_file)
 {
