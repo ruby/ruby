@@ -865,7 +865,7 @@ compile_c_to_so(const char *c_file, const char *so_file)
         NULL
     };
 
-    char **args = form_args(6, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,
+    char **args = form_args(7, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS, cc_added_args,
             options, CC_LIBS, CC_DLDFLAGS_ARGS, CC_LINKER_ARGS);
     if (args == NULL)
         return false;
