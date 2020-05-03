@@ -372,7 +372,24 @@ ary_heap_realloc(VALUE ary, size_t new_capa)
           MEMCPY(new_ptr, ARY_HEAP_PTR(ary), VALUE, old_capa);
           ARY_SET_PTR(ary, new_ptr);
       }
-    } else {
+    }
+    else if (RARRAY_TRANSIENT_P(ary)) {
+        if (new_capa <= old_capa) {
+            /* do nothing */
+        }
+        else {
+            VALUE *new_ptr = rb_transient_heap_alloc(ary, sizeof(VALUE) * new_capa);
+
+            if (new_ptr == NULL) {
+                new_ptr = ALLOC_N(VALUE, new_capa);
+                RARY_TRANSIENT_UNSET(ary);
+            }
+
+            MEMCPY(new_ptr, ARY_HEAP_PTR(ary), VALUE, old_capa);
+            ARY_SET_PTR(ary, new_ptr);
+        }
+    }
+    else {
         SIZED_REALLOC_N(RARRAY(ary)->as.heap.ptr, VALUE, new_capa, old_capa);
     }
     ary_verify(ary);
@@ -480,9 +497,7 @@ ary_shrink_capa(VALUE ary)
     long old_capa = ARY_HEAP_CAPA(ary);
     assert(!ARY_SHARED_P(ary));
     assert(old_capa >= capacity);
-    if (old_capa > capacity) {
-      ary_heap_realloc(ary, capacity);
-    }
+    if (old_capa > capacity) ary_heap_realloc(ary, capacity);
 
     ary_verify(ary);
 }
@@ -881,6 +896,7 @@ ary_make_shared(VALUE ary)
           if (RARRAY_NEW_HEAP_P(ary)) RARY_NEW_HEAP_SET(vshared);
         #endif
         ptr = ARY_HEAP_PTR(ary);
+
         FL_UNSET_EMBED(vshared);
         ARY_SET_LEN(vshared, capa);
         ARY_SET_PTR(vshared, ptr);
