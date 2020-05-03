@@ -88,7 +88,7 @@ int_pair_to_real_exclusive(uint32_t a, uint32_t b)
     static const int a_shift = DBL_MANT_DIG < 64 ?
         (64-DBL_MANT_DIG)/2 : 0;
     static const int b_shift = DBL_MANT_DIG < 64 ?
-        (64-DBL_MANT_DIG)-a_shift : 0;
+        (65-DBL_MANT_DIG)/2 : 0;
     a >>= a_shift;
     b >>= b_shift;
     return (a*(double)(1ul<<(32-b_shift))+b)*dbl_reduce_scale;
