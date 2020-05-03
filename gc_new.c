@@ -23,9 +23,10 @@
 
 #define USE_NEW_HEAP 1
 
-#define NEW_HEAP_ALLOC_MAX (1024 * 2) /* 2 KB */
+#define NEW_HEAP_ALLOC_MAX 512 /* 512 B */
 #define NEW_HEAP_ALLOC_ALIGN RUBY_ALIGNOF(void *)
 #define NEW_HEAP_BLOCK_SIZE (1024 * 16) /* 16KB int16_t */
+#define NEW_HEAP_SIZE_CLASSES 64
 
 #define NEW_HEAP_DEBUG 0
 #define NEW_HEAP_DEBUG_INFINITE_BLOCK 1
@@ -33,9 +34,11 @@
 #define ROUND_UP(v, a)  (((size_t)(v) + (a) - 1) & ~((a) - 1))
 #define NEW_GC_ASSERT(expr) RUBY_ASSERT_MESG_WHEN(NEW_HEAP_DEBUG > 0, expr, #expr)
 
+typedef int64_t size_class_t;
+
 struct block {
   struct header {
-    int16_t size_class;
+    size_class_t size_class;
     int16_t size;
     struct block* next_block;
     int16_t index;
@@ -47,7 +50,7 @@ struct block {
 
 struct new_heap {
   int total_blocks;
-  struct block* used_blocks;
+  struct block* used_blocks[NEW_HEAP_SIZE_CLASSES];
   struct block* empty_blocks;
 };
 
@@ -80,20 +83,21 @@ new_heap_block_alloc(struct new_heap* heap)
                  -1, 0);
     if (block == MAP_FAILED) rb_bug("new_heap_block_alloc: err:%d\n", errno);
 //#endif
-    if (0) fprintf(stderr, "new_heap_block_alloc: %4d %p\n", heap->total_blocks, (void *)block);
     reset_block(block);
     return block;
 }
 
 static struct block *
-new_heap_allocatable_block(struct new_heap* heap)
+new_heap_allocatable_block(struct new_heap* heap, size_class_t size_class)
 {
     struct block *block;
 
 //#if NEW_HEAP_DEBUG_INFINITE_BLOCK
     block = new_heap_block_alloc(heap);
+    block->header.size_class = size_class;
     heap->total_blocks++;
 //#endif
+
 
     return block;
 }
@@ -101,16 +105,19 @@ new_heap_allocatable_block(struct new_heap* heap)
 static void
 connect_to_using_blocks(struct new_heap *heap, struct block *block)
 {
-    block->header.next_block = heap->used_blocks;
-    heap->used_blocks = block;
+    size_class_t size_class = block->header.size_class;
+    block->header.next_block = heap->used_blocks[size_class];
+    heap->used_blocks[size_class] = block;
 }
 
 void
 Init_NewHeap(void)
 {
     struct new_heap* heap = new_heap_get();
-    struct block* block = new_heap_allocatable_block(heap);
-    connect_to_using_blocks(heap, block);
+    for(size_class_t size_class = 0; size_class < NEW_HEAP_SIZE_CLASSES; size_class++) {
+      struct block* block = new_heap_allocatable_block(heap, size_class);
+      connect_to_using_blocks(heap, block);
+    }
 }
 
 void *
@@ -127,7 +134,8 @@ rb_new_heap_alloc(VALUE obj, size_t req_size)
         return NULL;
     }
 
-    struct block *block = heap->used_blocks;
+    size_class_t size_class = ROUND_UP(req_size, 8) / 8;
+    struct block *block = heap->used_blocks[size_class];
 
     while (block) {
         if (block->header.size - block->header.index >= (int32_t)size) {
@@ -136,7 +144,7 @@ rb_new_heap_alloc(VALUE obj, size_t req_size)
             return ptr;
         }
         else {
-            block = new_heap_allocatable_block(heap);
+            block = new_heap_allocatable_block(heap, size_class);
             if (block) connect_to_using_blocks(heap, block);
         }
     }
