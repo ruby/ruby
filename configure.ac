@@ -1991,6 +1991,8 @@ AC_CHECK_FUNCS(utimensat)
 AC_CHECK_FUNCS(utimes)
 AC_CHECK_FUNCS(wait4)
 AC_CHECK_FUNCS(waitpid)
+AC_CHECK_FUNCS(__cospi)
+AC_CHECK_FUNCS(__sinpi)
 
 AS_IF([test "x$ac_cv_member_struct_statx_stx_btime" = xyes],
     [AC_CHECK_FUNCS(statx)])
