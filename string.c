@@ -11337,8 +11337,8 @@ Init_String(void)
     rb_define_method(rb_cString, "match?", rb_str_match_m_p, -1);
     rb_define_method(rb_cString, "succ", rb_str_succ, 0);
     rb_define_method(rb_cString, "succ!", rb_str_succ_bang, 0);
-    rb_define_method(rb_cString, "next", rb_str_succ, 0);
-    rb_define_method(rb_cString, "next!", rb_str_succ_bang, 0);
+    rb_define_alias(rb_cString, "next", "succ");
+    rb_define_alias(rb_cString, "next!", "succ!");
     rb_define_method(rb_cString, "upto", rb_str_upto, -1);
     rb_define_method(rb_cString, "index", rb_str_index_m, -1);
     rb_define_method(rb_cString, "rindex", rb_str_rindex_m, -1);
