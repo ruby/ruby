@@ -2952,6 +2952,19 @@ dir_s_glob(rb_execution_context_t *ec, VALUE obj, VALUE str, VALUE rflags, VALUE
     return ary;
 }
 
+static VALUE set_encoding_kwargs(VALUE enc) {
+    static VALUE kw_hash;
+
+    if (!kw_hash) {
+    kw_hash = rb_hash_new();
+    }
+
+    rb_gc_register_mark_object(kw_hash);
+    rb_hash_aset(kw_hash, ID2SYM(rb_intern("encoding")), enc);
+
+    return kw_hash;
+}
+
 static VALUE
 dir_foreach(rb_execution_context_t *ec, VALUE io, VALUE path, VALUE enc)
 {
@@ -2962,13 +2975,7 @@ dir_foreach(rb_execution_context_t *ec, VALUE io, VALUE path, VALUE enc)
     if (NIL_P(enc)) {
     RETURN_ENUMERATOR(io, 1, argv);
     } else {
-    VALUE kw_hash = rb_hash_new();
-
-    rb_gc_register_mark_object(kw_hash);
-    rb_hash_aset(kw_hash, ID2SYM(rb_intern("encoding")), enc);
-    rb_obj_freeze(kw_hash);
-    argv[1] = kw_hash;
-
+    argv[1] = set_encoding_kwargs(enc);
     RETURN_ENUMERATOR_KW(io, 2, argv, RB_PASS_KEYWORDS);
     }
 
@@ -3010,13 +3017,7 @@ dir_s_each_child(rb_execution_context_t *ec, VALUE io, VALUE path, VALUE enc)
     if (NIL_P(enc)) {
     RETURN_ENUMERATOR(io, 1, argv);
     } else {
-    VALUE kw_hash = rb_hash_new();
-
-    rb_gc_register_mark_object(kw_hash);
-    rb_hash_aset(kw_hash, ID2SYM(rb_intern("encoding")), enc);
-    rb_obj_freeze(kw_hash);
-    argv[1] = kw_hash;
-
+    argv[1] = set_encoding_kwargs(enc);
     RETURN_ENUMERATOR_KW(io, 2, argv, RB_PASS_KEYWORDS);
     }
 
