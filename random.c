@@ -14,6 +14,7 @@
 #include <errno.h>
 #include <limits.h>
 #include <math.h>
+#include <float.h>
 #include <time.h>
 
 #ifdef HAVE_UNISTD_H
@@ -75,12 +76,22 @@ genrand_real(struct MT *mt)
     return int_pair_to_real_exclusive(a, b);
 }
 
+static const double dbl_reduce_scale = /* 2**(-DBL_MANT_DIG) */
+    (1.0
+     / (double)(DBL_MANT_DIG > 2*31 ? (1ul<<31) : 1.0)
+     / (double)(DBL_MANT_DIG > 1*31 ? (1ul<<31) : 1.0)
+     / (double)(1ul<<(DBL_MANT_DIG%31)));
+
 static double
 int_pair_to_real_exclusive(uint32_t a, uint32_t b)
 {
-    a >>= 5;
-    b >>= 6;
-    return(a*67108864.0+b)*(1.0/9007199254740992.0);
+    static const int a_shift = DBL_MANT_DIG < 64 ?
+        (64-DBL_MANT_DIG)/2 : 0;
+    static const int b_shift = DBL_MANT_DIG < 64 ?
+        (64-DBL_MANT_DIG)-a_shift : 0;
+    a >>= a_shift;
+    b >>= b_shift;
+    return (a*(double)(1ul<<(32-b_shift))+b)*dbl_reduce_scale;
 }
 
 /* generates a random number on [0,1] with 53-bit resolution*/
@@ -148,7 +159,7 @@ static double
 int_pair_to_real_inclusive(uint32_t a, uint32_t b)
 {
     double r;
-    enum {dig = 53};
+    enum {dig = DBL_MANT_DIG};
     enum {dig_u = dig-32, dig_r64 = 64-dig, bmask = ~(~0u<<(dig_r64))};
 #if defined HAVE_UINT128_T
     const uint128_t m = ((uint128_t)1 << dig) | 1;
@@ -163,7 +174,7 @@ int_pair_to_real_inclusive(uint32_t a, uint32_t b)
     b = (b >> dig_r64) + (((a >> dig_u) + (b & bmask)) >> dig_r64);
     r = (double)a * (1 << dig_u) + b;
 #endif
-    return ldexp(r, -dig);
+    return r * dbl_reduce_scale;
 }
 
 VALUE rb_cRandom;
