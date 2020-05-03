@@ -266,7 +266,11 @@ static char *libruby_pathflag;
 #if defined(__GNUC__) && \
      (!defined(__clang__) || \
       (defined(__clang__) && (defined(__FreeBSD__) || defined(__GLIBC__))))
-# define GCC_PIC_FLAGS "-Wfatal-errors", "-fPIC", "-shared", "-w", "-pipe",
+# ifdef __sun
+#  define GCC_PIC_FLAGS "-Winvalid-pch", "-fPIC", "-shared", "-w", "-pipe",
+# else
+#  define GCC_PIC_FLAGS "-Wfatal-errors", "-fPIC", "-shared", "-w", "-pipe",
+# endif
 # define MJIT_CFLAGS_PIPE 1
 #else
 # define GCC_PIC_FLAGS /* empty */
