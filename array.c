@@ -6908,7 +6908,7 @@ Init_Array(void)
     rb_define_alias(rb_cArray,  "size", "length");
     rb_define_method(rb_cArray, "empty?", rb_ary_empty_p, 0);
     rb_define_method(rb_cArray, "find_index", rb_ary_index, -1);
-    rb_define_method(rb_cArray, "index", rb_ary_index, -1);
+    rb_define_alias(rb_cArray, "index", "find_index");
     rb_define_method(rb_cArray, "rindex", rb_ary_rindex, -1);
     rb_define_method(rb_cArray, "join", rb_ary_join_m, -1);
     rb_define_method(rb_cArray, "reverse", rb_ary_reverse_m, 0);
