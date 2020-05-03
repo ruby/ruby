@@ -210,7 +210,11 @@ class Reline::Config
   def bind_variable(name, value)
     case name
     when 'history-size'
-      @history_size = value.to_i
+      begin
+        @history_size = Integer(value)
+      rescue ArgumentError
+        @history_size = 500
+      end
     when 'bell-style'
       @bell_style =
         case value
