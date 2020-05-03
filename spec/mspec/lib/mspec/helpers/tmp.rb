@@ -4,7 +4,14 @@
 # directory is empty when the process exits.
 
 SPEC_TEMP_DIR_PID = Process.pid
-SPEC_TEMP_DIR = File.expand_path(ENV["SPEC_TEMP_DIR"] || "rubyspec_temp/#{SPEC_TEMP_DIR_PID}")
+
+if spec_temp_dir = ENV["SPEC_TEMP_DIR"]
+  spec_temp_dir = File.realdirpath(spec_temp_dir)
+else
+  spec_temp_dir = "#{File.realpath(Dir.pwd)}/rubyspec_temp/#{SPEC_TEMP_DIR_PID}"
+end
+SPEC_TEMP_DIR = spec_temp_dir
+
 SPEC_TEMP_UNIQUIFIER = "0"
 
 at_exit do
