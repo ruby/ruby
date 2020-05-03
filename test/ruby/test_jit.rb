@@ -1179,7 +1179,7 @@ class TestJIT < Test::Unit::TestCase
     insns
   end
 
-  # `clang -g` on macOS creates a .dSYM file. Because it's only created on --jit-debug,
+  # `clang -g` on macOS creates a .dSYM directory. As it's only created on --jit-debug,
   # we're ignoring it for now. TODO: remove .dSYM file
   def leave_dsym?
     /darwin/ =~ RUBY_PLATFORM && @jit_debug

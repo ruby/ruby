@@ -54,21 +54,21 @@ module JITSupport
 
   def supported?
     return @supported if defined?(@supported)
-    @supported = UNSUPPORTED_COMPILERS.all? do |regexp|
+    @supported = RbConfig::CONFIG["MJIT_SUPPORT"] != 'no' && UNSUPPORTED_COMPILERS.all? do |regexp|
       !regexp.match?(RbConfig::CONFIG['MJIT_CC'])
-    end && RbConfig::CONFIG["MJIT_SUPPORT"] != 'no' && !PENDING_RUBYCI_NICKNAMES.include?(ENV['RUBYCI_NICKNAME']) && !vs120_pdb_corrupted? && /mingw/ !~ RUBY_PLATFORM && /solaris/ !~ RUBY_PLATFORM # TODO: remove mingw / solaris exclusion after investigation
+    end && !appveyor_pdb_corrupted? && !PENDING_RUBYCI_NICKNAMES.include?(ENV['RUBYCI_NICKNAME']) && /mingw/ !~ RUBY_PLATFORM && /solaris/ !~ RUBY_PLATFORM # TODO: remove mingw / solaris exclusion after investigation
   end
 
-  # AppVeyor's Visual Studio 2013 is known to spuriously generate broken pch / pdb, like:
+  # AppVeyor's Visual Studio 2013 / 2015 are known to spuriously generate broken pch / pdb, like:
   # error C2859: c:\projects\ruby\x64-mswin_120\include\ruby-2.8.0\x64-mswin64_120\rb_mjit_header-2.8.0.pdb
   # is not the pdb file that was used when this precompiled header was created, recreate the precompiled header.
   # https://ci.appveyor.com/project/ruby/ruby/builds/32159878/job/l2p38snw8yxxpp8h
   #
   # Until we figure out why, this allows us to skip testing JIT when it happens.
-  def vs120_pdb_corrupted?
+  def appveyor_pdb_corrupted?
     return false unless ENV.key?('APPVEYOR')
     stdout, _stderr, _status = eval_with_jit_without_retry('proc {}.call', verbose: 2, min_calls: 1)
-    stdout.include?('x64-mswin64_120') && stdout.include?('.pdb is not the pdb file that was used when this precompiled header was created, recreate the precompiled header.')
+    stdout.include?('.pdb is not the pdb file that was used when this precompiled header was created, recreate the precompiled header.')
   end
 
   def remove_mjit_logs(stderr)
