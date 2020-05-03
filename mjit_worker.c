@@ -1303,6 +1303,11 @@ mjit_copy_cache_from_main_thread(const rb_iseq_t *iseq, union iseq_inline_storag
 void
 mjit_worker(void)
 {
+    // Allow only `max_cache_size / 10` times (default: 10) of compaction.
+    // Note: GC of compacted code has not been implemented yet.
+    int max_compact_size = mjit_opts.max_cache_size / 10;
+    if (max_compact_size < 10) max_compact_size = 10;
+
 #ifndef _MSC_VER
     if (pch_status == PCH_NOT_READY) {
         make_pch();
@@ -1354,9 +1359,10 @@ mjit_worker(void)
             CRITICAL_SECTION_FINISH(3, "in jit func replace");
 
 #ifndef _MSC_VER
-            // Combine .o files to one .so and reload all jit_func to improve memory locality
-            if ((!mjit_opts.wait && unit_queue.length == 0 && active_units.length > 1)
-                || active_units.length == mjit_opts.max_cache_size) {
+            // Combine .o files to one .so and reload all jit_func to improve memory locality.
+            if (compact_units.length < max_compact_size
+                && ((!mjit_opts.wait && unit_queue.length == 0 && active_units.length > 1)
+                    || active_units.length == mjit_opts.max_cache_size)) {
                 compact_all_jit_code();
             }
 #endif
