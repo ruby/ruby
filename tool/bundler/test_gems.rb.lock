@@ -4,7 +4,7 @@ GEM
     artifice (0.6)
       rack-test
     builder (3.2.4)
-    compact_index (0.11.0)
+    compact_index (0.12.1)
     mustermann (1.1.1)
       ruby2_keywords (~> 0.0.1)
     rack (2.0.8)
@@ -29,7 +29,7 @@ PLATFORMS
 DEPENDENCIES
   artifice (~> 0.6.0)
   builder (~> 3.2)
-  compact_index (~> 0.11.0)
+  compact_index (~> 0.12.1)
   rack (= 2.0.8)
   rack-test (~> 1.1)
   rake (= 13.0.1)
