@@ -426,10 +426,7 @@ matrix:
   include:
     # Build every commit:
     - <<: *x86_64-linux
-    - <<: *arm64-linux
     - <<: *i686-linux
-    - <<: *arm32-linux
-    - <<: *s390x-linux
     - <<: *pedanticism
     - <<: *assertions
     - <<: *baseruby
@@ -437,6 +434,9 @@ matrix:
     - <<: *rubyspec27
     - <<: *dependency
     # Build every commit (Allowed Failures):
+    - <<: *arm32-linux
+    - <<: *arm64-linux
+    - <<: *s390x-linux
     - <<: *ASAN
     - <<: *MSAN
     - <<: *UBSAN
@@ -451,10 +451,11 @@ matrix:
     - <<: *CALL_THREADED_CODE
     - <<: *NO_THREADED_CODE
   allow_failures:
-    - name: -fsanitize=address
-    - name: -fsanitize=memory
     - name: arm32-linux
     - name: arm64-linux
+    - name: s390x-linux
+    - name: -fsanitize=address
+    - name: -fsanitize=memory
   fast_finish: true
 
 before_script:
