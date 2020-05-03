@@ -56,7 +56,7 @@ module JITSupport
     return @supported if defined?(@supported)
     @supported = RbConfig::CONFIG["MJIT_SUPPORT"] != 'no' && UNSUPPORTED_COMPILERS.all? do |regexp|
       !regexp.match?(RbConfig::CONFIG['MJIT_CC'])
-    end && !appveyor_pdb_corrupted? && !PENDING_RUBYCI_NICKNAMES.include?(ENV['RUBYCI_NICKNAME']) && /mingw/ !~ RUBY_PLATFORM # TODO: remove mingw exclusion after investigation
+    end && !appveyor_pdb_corrupted? && !PENDING_RUBYCI_NICKNAMES.include?(ENV['RUBYCI_NICKNAME'])
   end
 
   # AppVeyor's Visual Studio 2013 / 2015 are known to spuriously generate broken pch / pdb, like:
