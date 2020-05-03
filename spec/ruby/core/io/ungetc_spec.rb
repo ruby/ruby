@@ -74,10 +74,10 @@ describe "IO#ungetc" do
     touch(@empty)
 
     File.open(@empty) { |empty|
-      empty.eof?.should == true
+      empty.should.eof?
       empty.getc.should == nil
       empty.ungetc(100)
-      empty.eof?.should == false
+      empty.should_not.eof?
     }
   end
 

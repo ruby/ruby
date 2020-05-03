@@ -7,7 +7,7 @@ describe "FalseClass#to_s" do
 
   ruby_version_is "2.7" do
     it "returns a frozen string" do
-      false.to_s.frozen?.should == true
+      false.to_s.should.frozen?
     end
 
     it "always returns the same string" do

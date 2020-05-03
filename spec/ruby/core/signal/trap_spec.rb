@@ -155,7 +155,7 @@ platform_is_not :windows do
       out = ruby_exe(code)
       status = $?
       out.should == "nil\n"
-      status.signaled?.should == true
+      status.should.signaled?
       status.termsig.should be_kind_of(Integer)
       Signal.signame(status.termsig).should == "PIPE"
     end

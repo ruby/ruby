@@ -11,8 +11,8 @@ describe "String#swapcase" do
 
   ruby_version_is ''...'2.7' do
     it "taints resulting string when self is tainted" do
-      "".taint.swapcase.tainted?.should == true
-      "hello".taint.swapcase.tainted?.should == true
+      "".taint.swapcase.should.tainted?
+      "hello".taint.swapcase.should.tainted?
     end
   end
 

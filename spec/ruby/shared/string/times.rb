@@ -38,7 +38,7 @@ describe :string_times, shared: true do
         str.taint
 
         [0, 1, 2].each do |arg|
-          @object.call(str, arg).tainted?.should == true
+          @object.call(str, arg).should.tainted?
         end
       end
     end

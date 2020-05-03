@@ -203,9 +203,9 @@ platform_is_not :windows do
 
     it "does not return a frozen string" do
       home = "/rubyspec_home"
-      File.expand_path('~').frozen?.should == false
-      File.expand_path('~', '/tmp/gumby/ddd').frozen?.should == false
-      File.expand_path('~/a', '/tmp/gumby/ddd').frozen?.should == false
+      File.expand_path('~').should_not.frozen?
+      File.expand_path('~', '/tmp/gumby/ddd').should_not.frozen?
+      File.expand_path('~/a', '/tmp/gumby/ddd').should_not.frozen?
     end
   end
 

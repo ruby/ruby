@@ -10,7 +10,7 @@ describe "Enumerable#one?" do
   end
 
   it "always returns false on empty enumeration" do
-    @empty.one?.should == false
+    @empty.should_not.one?
     @empty.one? { true }.should == false
   end
 

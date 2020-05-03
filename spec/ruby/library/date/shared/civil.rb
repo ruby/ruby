@@ -5,7 +5,7 @@ describe :date_civil, shared: true do
     d.year.should == -4712
     d.month.should == 1
     d.day.should == 1
-    d.julian?.should == true
+    d.should.julian?
     d.jd.should == 0
   end
 
@@ -14,7 +14,7 @@ describe :date_civil, shared: true do
     d.year.should == 2000
     d.month.should == 3
     d.day.should == 5
-    d.julian?.should == false
+    d.should_not.julian?
     d.jd.should == 2451609
 
     # Should also work with years far in the past and future
@@ -23,14 +23,14 @@ describe :date_civil, shared: true do
     d.year.should == -9000
     d.month.should == 7
     d.day.should == 5
-    d.julian?.should == true
+    d.should.julian?
     d.jd.should == -1566006
 
     d = Date.send(@method, 9000, 10, 14)
     d.year.should == 9000
     d.month.should == 10
     d.day.should == 14
-    d.julian?.should == false
+    d.should_not.julian?
     d.jd.should == 5008529
 
   end

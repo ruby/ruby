@@ -6,18 +6,18 @@ ruby_version_is ''...'2.8' do
   describe "REXML::Node#parent?" do
     it "returns true for Elements" do
       e = REXML::Element.new("foo")
-      e.parent?.should == true
+      e.should.parent?
     end
 
     it "returns true for Documents" do
       e = REXML::Document.new
-      e.parent?.should == true
+      e.should.parent?
     end
 
     # This includes attributes, CDatas and declarations.
     it "returns false for Texts" do
       e = REXML::Text.new("foo")
-      e.parent?.should == false
+      e.should_not.parent?
     end
   end
 end

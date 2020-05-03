@@ -42,7 +42,7 @@ describe "Set#compare_by_identity" do
     set = Set.new.compare_by_identity
     set << :foo
     set.compare_by_identity.should equal(set)
-    set.compare_by_identity?.should == true
+    set.should.compare_by_identity?
     set.to_a.should == [:foo]
   end
 
@@ -124,20 +124,20 @@ end
 
 describe "Set#compare_by_identity?" do
   it "returns false by default" do
-    Set.new.compare_by_identity?.should == false
+    Set.new.should_not.compare_by_identity?
   end
 
   it "returns true once #compare_by_identity has been invoked on self" do
     set = Set.new
     set.compare_by_identity
-    set.compare_by_identity?.should == true
+    set.should.compare_by_identity?
   end
 
   it "returns true when called multiple times on the same set" do
     set = Set.new
     set.compare_by_identity
-    set.compare_by_identity?.should == true
-    set.compare_by_identity?.should == true
-    set.compare_by_identity?.should == true
+    set.should.compare_by_identity?
+    set.should.compare_by_identity?
+    set.should.compare_by_identity?
   end
 end

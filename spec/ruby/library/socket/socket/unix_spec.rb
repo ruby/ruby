@@ -38,7 +38,7 @@ with_feature :unix_socket do
           socket = sock
         end
 
-        socket.closed?.should == true
+        socket.should.closed?
       end
     end
   end

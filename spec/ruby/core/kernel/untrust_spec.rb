@@ -11,7 +11,7 @@ describe "Kernel#untrust" do
     it "sets the untrusted bit" do
       o = Object.new
       o.untrust
-      o.untrusted?.should == true
+      o.should.untrusted?
     end
 
     it "raises FrozenError on a trusted, frozen object" do

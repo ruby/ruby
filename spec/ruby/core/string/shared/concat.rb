@@ -41,13 +41,13 @@ describe :string_concat, shared: true do
 
   ruby_version_is ''...'2.7' do
     it "taints self if other is tainted" do
-      "x".send(@method, "".taint).tainted?.should == true
-      "x".send(@method, "y".taint).tainted?.should == true
+      "x".send(@method, "".taint).should.tainted?
+      "x".send(@method, "y".taint).should.tainted?
     end
 
     it "untrusts self if other is untrusted" do
-      "x".send(@method, "".untrust).untrusted?.should == true
-      "x".send(@method, "y".untrust).untrusted?.should == true
+      "x".send(@method, "".untrust).should.untrusted?
+      "x".send(@method, "y".untrust).should.untrusted?
     end
   end
 

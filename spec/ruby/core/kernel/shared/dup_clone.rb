@@ -59,8 +59,8 @@ describe :kernel_dup_clone, shared: true do
       o.taint
       o3 = o.send(@method)
 
-      o2.tainted?.should == false
-      o3.tainted?.should == true
+      o2.should_not.tainted?
+      o3.should.tainted?
     end
   end
 
@@ -78,8 +78,8 @@ describe :kernel_dup_clone, shared: true do
       o.untrust
       o3 = o.send(@method)
 
-      o2.untrusted?.should == false
-      o3.untrusted?.should == true
+      o2.should_not.untrusted?
+      o3.should.untrusted?
     end
   end
 

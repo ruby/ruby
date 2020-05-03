@@ -70,10 +70,10 @@ describe "String#delete" do
 
   ruby_version_is ''...'2.7' do
     it "taints result when self is tainted" do
-      "hello".taint.delete("e").tainted?.should == true
-      "hello".taint.delete("a-z").tainted?.should == true
+      "hello".taint.delete("e").should.tainted?
+      "hello".taint.delete("a-z").should.tainted?
 
-      "hello".delete("e".taint).tainted?.should == false
+      "hello".delete("e".taint).should_not.tainted?
     end
   end
 

@@ -5,7 +5,7 @@ require_relative 'shared/time_params'
 
 describe "Time#utc?" do
   it "returns true if time represents a time in UTC (GMT)" do
-    Time.now.utc?.should == false
+    Time.now.should_not.utc?
   end
 end
 

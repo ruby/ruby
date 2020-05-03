@@ -37,11 +37,11 @@ describe "Time#+" do
   end
 
   it "returns a UTC time if self is UTC" do
-    (Time.utc(2012) + 10).utc?.should == true
+    (Time.utc(2012) + 10).should.utc?
   end
 
   it "returns a non-UTC time if self is non-UTC" do
-    (Time.local(2012) + 10).utc?.should == false
+    (Time.local(2012) + 10).should_not.utc?
   end
 
   it "returns a time with the same fixed offset as self" do

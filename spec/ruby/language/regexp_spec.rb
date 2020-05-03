@@ -20,7 +20,7 @@ describe "Literal Regexps" do
 
   ruby_version_is "2.8" do
     it "is frozen" do
-      /Hello/.frozen?.should == true
+      /Hello/.should.frozen?
     end
   end
 

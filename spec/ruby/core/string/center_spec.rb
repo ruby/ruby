@@ -49,11 +49,11 @@ describe "String#center with length, padding" do
 
   ruby_version_is ''...'2.7' do
     it "taints result when self or padstr is tainted" do
-      "x".taint.center(4).tainted?.should == true
-      "x".taint.center(0).tainted?.should == true
-      "".taint.center(0).tainted?.should == true
-      "x".taint.center(4, "*").tainted?.should == true
-      "x".center(4, "*".taint).tainted?.should == true
+      "x".taint.center(4).should.tainted?
+      "x".taint.center(0).should.tainted?
+      "".taint.center(0).should.tainted?
+      "x".taint.center(4, "*").should.tainted?
+      "x".center(4, "*".taint).should.tainted?
     end
   end
 

@@ -5,13 +5,13 @@ require_relative 'fixtures/classes'
 describe "String#inspect" do
   ruby_version_is ''...'2.7' do
     it "taints the result if self is tainted" do
-      "foo".taint.inspect.tainted?.should == true
-      "foo\n".taint.inspect.tainted?.should == true
+      "foo".taint.inspect.should.tainted?
+      "foo\n".taint.inspect.should.tainted?
     end
 
     it "untrusts the result if self is untrusted" do
-      "foo".untrust.inspect.untrusted?.should == true
-      "foo\n".untrust.inspect.untrusted?.should == true
+      "foo".untrust.inspect.should.untrusted?
+      "foo\n".untrust.inspect.should.untrusted?
     end
   end
 

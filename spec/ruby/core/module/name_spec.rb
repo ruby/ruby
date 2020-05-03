@@ -122,7 +122,7 @@ describe "Module#name" do
 
   ruby_version_is "2.7" do
     it "returns a frozen String" do
-      ModuleSpecs.name.frozen?.should == true
+      ModuleSpecs.name.should.frozen?
     end
 
     it "always returns the same String for a given Module" do

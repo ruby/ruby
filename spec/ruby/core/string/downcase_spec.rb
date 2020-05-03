@@ -70,9 +70,9 @@ describe "String#downcase" do
 
   ruby_version_is ''...'2.7' do
     it "taints result when self is tainted" do
-      "".taint.downcase.tainted?.should == true
-      "x".taint.downcase.tainted?.should == true
-      "X".taint.downcase.tainted?.should == true
+      "".taint.downcase.should.tainted?
+      "x".taint.downcase.should.tainted?
+      "X".taint.downcase.should.tainted?
     end
   end
 

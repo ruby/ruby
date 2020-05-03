@@ -34,7 +34,7 @@ describe "ARGF.binmode" do
   it "sets the file's encoding to BINARY" do
     argf [@bin_file, @file1] do
       @argf.binmode
-      @argf.binmode?.should == true
+      @argf.should.binmode?
       @argf.gets.encoding.should == Encoding::BINARY
       @argf.skip
       @argf.read.encoding.should == Encoding::BINARY

@@ -41,7 +41,7 @@ describe 'TracePoint#disable' do
     begin
       trace.disable { enabled = trace.enabled? }
       enabled.should == false
-      trace.enabled?.should == true
+      trace.should.enabled?
     ensure
       trace.disable
     end
@@ -52,7 +52,7 @@ describe 'TracePoint#disable' do
     trace.enable
     begin
       trace.disable { 42 }.should == 42
-      trace.enabled?.should == true
+      trace.should.enabled?
     ensure
       trace.disable
     end
@@ -65,7 +65,7 @@ describe 'TracePoint#disable' do
       trace.disable do |*args|
         args.should == []
       end
-      trace.enabled?.should == true
+      trace.should.enabled?
     ensure
       trace.disable
     end

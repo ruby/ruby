@@ -319,8 +319,8 @@ describe "String#%" do
         subcls_format.taint
         format.taint
 
-        (format % universal).tainted?.should == true
-        (subcls_format % universal).tainted?.should == true
+        (format % universal).should.tainted?
+        (subcls_format % universal).should.tainted?
       end
     end
   end
@@ -583,12 +583,12 @@ describe "String#%" do
       obj = mock('x')
       def obj.inspect() "x".taint end
 
-      ("%p" % obj).tainted?.should == true
+      ("%p" % obj).should.tainted?
 
       obj = mock('x'); obj.taint
       def obj.inspect() "x" end
 
-      ("%p" % obj).tainted?.should == false
+      ("%p" % obj).should_not.tainted?
     end
   end
 
@@ -622,8 +622,8 @@ describe "String#%" do
 
   ruby_version_is ''...'2.7' do
     it "taints result for %s when argument is tainted" do
-      ("%s" % "x".taint).tainted?.should == true
-      ("%s" % mock('x').taint).tainted?.should == true
+      ("%s" % "x".taint).should.tainted?
+      ("%s" % mock('x').taint).should.tainted?
     end
   end
 
@@ -789,7 +789,7 @@ describe "String#%" do
 
     ruby_version_is ''...'2.7' do
       it "doesn't taint the result for #{format} when argument is tainted" do
-        (format % "5".taint).tainted?.should == false
+        (format % "5".taint).should_not.tainted?
       end
     end
   end

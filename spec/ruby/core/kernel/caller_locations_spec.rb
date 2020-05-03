@@ -7,7 +7,7 @@ describe 'Kernel#caller_locations' do
   end
 
   it 'returns an Array of caller locations' do
-    KernelSpecs::CallerLocationsTest.locations.empty?.should == false
+    KernelSpecs::CallerLocationsTest.locations.should_not.empty?
   end
 
   it 'returns an Array of caller locations using a custom offset' do

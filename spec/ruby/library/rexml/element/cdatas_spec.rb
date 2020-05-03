@@ -17,7 +17,7 @@ ruby_version_is ''...'2.8' do
     end
 
     it "freezes the returned array" do
-      @e.cdatas.frozen?.should == true
+      @e.cdatas.should.frozen?
     end
 
     it "returns an empty array if element has no cdata" do

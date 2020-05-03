@@ -39,6 +39,6 @@ describe "Module#included" do
 
   it "works with super using a singleton class" do
     ModuleSpecs::SingletonOnModuleCase::Bar.include ModuleSpecs::SingletonOnModuleCase::Foo
-    ModuleSpecs::SingletonOnModuleCase::Bar.included_called?.should == true
+    ModuleSpecs::SingletonOnModuleCase::Bar.should.included_called?
   end
 end

@@ -28,7 +28,7 @@ describe "File.open" do
   describe "with a block" do
     it "does not raise error when file is closed inside the block" do
       @fh = File.open(@file) { |fh| fh.close; fh }
-      @fh.closed?.should == true
+      @fh.should.closed?
     end
 
     it "invokes close on an opened file when exiting the block" do
@@ -485,7 +485,7 @@ describe "File.open" do
     File.size(@file).should > 0
     File.open(@file, "w+") do |f|
       f.pos.should == 0
-      f.eof?.should == true
+      f.should.eof?
     end
     File.size(@file).should == 0
   end
@@ -495,7 +495,7 @@ describe "File.open" do
     File.size(@file).should > 0
     File.open(@file, "rb+") do |f|
       f.pos.should == 0
-      f.eof?.should == false
+      f.should_not.eof?
     end
   end
 
@@ -504,7 +504,7 @@ describe "File.open" do
     File.size(@file).should > 0
     File.open(@file, "wb+") do |f|
       f.pos.should == 0
-      f.eof?.should == true
+      f.should.eof?
     end
     File.size(@file).should == 0
   end

@@ -58,9 +58,9 @@ describe "Array#sort" do
     b = ArraySpecs::MockForCompared.new
     c = ArraySpecs::MockForCompared.new
 
-    ArraySpecs::MockForCompared.compared?.should == false
+    ArraySpecs::MockForCompared.should_not.compared?
     [a, b, c].sort.should == [c, b, a]
-    ArraySpecs::MockForCompared.compared?.should == true
+    ArraySpecs::MockForCompared.should.compared?
   end
 
   it "does not deal with exceptions raised by unimplemented or incorrect #<=>" do
@@ -104,7 +104,7 @@ describe "Array#sort" do
 
   it "does not freezes self during being sorted" do
     a = [1, 2, 3]
-    a.sort { |x,y| a.frozen?.should == false; x <=> y }
+    a.sort { |x,y| a.should_not.frozen?; x <=> y }
   end
 
   it "returns the specified value when it would break in the given block" do
@@ -207,9 +207,9 @@ describe "Array#sort!" do
     b = ArraySpecs::MockForCompared.new
     c = ArraySpecs::MockForCompared.new
 
-    ArraySpecs::MockForCompared.compared?.should == false
+    ArraySpecs::MockForCompared.should_not.compared?
     [a, b, c].sort!.should == [c, b, a]
-    ArraySpecs::MockForCompared.compared?.should == true
+    ArraySpecs::MockForCompared.should.compared?
   end
 
   it "does not call #<=> on contained objects when invoked with a block" do

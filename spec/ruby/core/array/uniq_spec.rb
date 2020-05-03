@@ -87,8 +87,8 @@ describe "Array#uniq" do
       end
 
       a.uniq.should == a
-      a[0].tainted?.should == true
-      a[1].tainted?.should == true
+      a[0].should.tainted?
+      a[1].should.tainted?
 
       a = Array.new(2) do
         obj = mock('0')
@@ -106,8 +106,8 @@ describe "Array#uniq" do
       end
 
       a.uniq.size.should == 1
-      a[0].tainted?.should == true
-      a[1].tainted?.should == true
+      a[0].should.tainted?
+      a[1].should.tainted?
     end
   end
 

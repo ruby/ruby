@@ -189,11 +189,11 @@ describe "String#split with String" do
         ["", ".", " "].each do |pat|
           [-1, 0, 1, 2].each do |limit|
             str.dup.taint.split(pat).each do |x|
-              x.tainted?.should == true
+              x.should.tainted?
             end
 
             str.split(pat.dup.taint).each do |x|
-              x.tainted?.should == false
+              x.should_not.tainted?
             end
           end
         end

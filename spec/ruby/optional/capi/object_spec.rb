@@ -675,9 +675,9 @@ describe "CApiObject" do
     ruby_version_is ''...'2.7' do
       it "marks the object passed as tainted" do
         obj = ""
-        obj.tainted?.should == false
+        obj.should_not.tainted?
         @o.rb_obj_taint(obj)
-        obj.tainted?.should == true
+        obj.should.tainted?
       end
 
       it "raises a FrozenError if the object passed is frozen" do

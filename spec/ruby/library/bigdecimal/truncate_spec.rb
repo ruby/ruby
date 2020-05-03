@@ -58,9 +58,9 @@ describe "BigDecimal#truncate" do
   end
 
   it "returns NaN if self is NaN" do
-    @nan.truncate(-1).nan?.should == true
-    @nan.truncate(+1).nan?.should == true
-    @nan.truncate(0).nan?.should == true
+    @nan.truncate(-1).should.nan?
+    @nan.truncate(+1).should.nan?
+    @nan.truncate(0).should.nan?
   end
 
   it "returns Infinity if self is infinite" do

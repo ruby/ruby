@@ -10,13 +10,13 @@ describe "Enumerable#all?" do
   end
 
   it "always returns true on empty enumeration" do
-    @empty.all?.should == true
+    @empty.should.all?
     @empty.all? { nil }.should == true
 
-    [].all?.should == true
+    [].should.all?
     [].all? { false }.should == true
 
-    {}.all?.should == true
+    {}.should.all?
     {}.all? { nil }.should == true
   end
 
@@ -38,24 +38,24 @@ describe "Enumerable#all?" do
 
   describe "with no block" do
     it "returns true if no elements are false or nil" do
-      @enum.all?.should == true
-      @enum1.all?.should == true
-      @enum2.all?.should == false
+      @enum.should.all?
+      @enum1.should.all?
+      @enum2.should_not.all?
 
-      EnumerableSpecs::Numerous.new('a','b','c').all?.should == true
-      EnumerableSpecs::Numerous.new(0, "x", true).all?.should == true
+      EnumerableSpecs::Numerous.new('a','b','c').should.all?
+      EnumerableSpecs::Numerous.new(0, "x", true).should.all?
     end
 
     it "returns false if there are false or nil elements" do
-      EnumerableSpecs::Numerous.new(false).all?.should == false
-      EnumerableSpecs::Numerous.new(false, false).all?.should == false
+      EnumerableSpecs::Numerous.new(false).should_not.all?
+      EnumerableSpecs::Numerous.new(false, false).should_not.all?
 
-      EnumerableSpecs::Numerous.new(nil).all?.should == false
-      EnumerableSpecs::Numerous.new(nil, nil).all?.should == false
+      EnumerableSpecs::Numerous.new(nil).should_not.all?
+      EnumerableSpecs::Numerous.new(nil, nil).should_not.all?
 
-      EnumerableSpecs::Numerous.new(1, nil, 2).all?.should == false
-      EnumerableSpecs::Numerous.new(0, "x", false, true).all?.should == false
-      @enum2.all?.should == false
+      EnumerableSpecs::Numerous.new(1, nil, 2).should_not.all?
+      EnumerableSpecs::Numerous.new(0, "x", false, true).should_not.all?
+      @enum2.should_not.all?
     end
 
     it "gathers whole arrays as elements when each yields multiple" do

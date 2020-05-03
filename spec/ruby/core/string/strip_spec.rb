@@ -15,9 +15,9 @@ describe "String#strip" do
 
   ruby_version_is ''...'2.7' do
     it "taints the result when self is tainted" do
-      "".taint.strip.tainted?.should == true
-      "ok".taint.strip.tainted?.should == true
-      "  ok  ".taint.strip.tainted?.should == true
+      "".taint.strip.should.tainted?
+      "ok".taint.strip.should.tainted?
+      "  ok  ".taint.strip.should.tainted?
     end
   end
 end

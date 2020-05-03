@@ -6,14 +6,14 @@ describe 'String#-@' do
     output = -input
 
     output.should equal(input)
-    output.frozen?.should == true
+    output.should.frozen?
   end
 
   it 'returns a frozen copy if the String is not frozen' do
     input  = 'foo'
     output = -input
 
-    output.frozen?.should == true
+    output.should.frozen?
     output.should_not equal(input)
     output.should == 'foo'
   end

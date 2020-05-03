@@ -10,7 +10,7 @@ describe "Enumerable#none?" do
   end
 
   it "always returns true on empty enumeration" do
-    @empty.none?.should == true
+    @empty.should.none?
     @empty.none? { true }.should == true
   end
 

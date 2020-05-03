@@ -54,10 +54,10 @@ describe "String#tr_s" do
       ["h", "hello"].each do |str|
         tainted_str = str.dup.taint
 
-        tainted_str.tr_s("e", "a").tainted?.should == true
+        tainted_str.tr_s("e", "a").should.tainted?
 
-        str.tr_s("e".taint, "a").tainted?.should == false
-        str.tr_s("e", "a".taint).tainted?.should == false
+        str.tr_s("e".taint, "a").should_not.tainted?
+        str.tr_s("e", "a".taint).should_not.tainted?
       end
     end
   end

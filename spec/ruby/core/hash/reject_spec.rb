@@ -35,7 +35,7 @@ describe "Hash#reject" do
     ruby_version_is ''...'2.7' do
       it "does not taint the resulting hash" do
         h = { a: 1 }.taint
-        h.reject {false}.tainted?.should == false
+        h.reject {false}.should_not.tainted?
       end
     end
   end

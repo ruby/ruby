@@ -67,9 +67,9 @@ describe "String#upcase" do
 
   ruby_version_is ''...'2.7' do
     it "taints result when self is tainted" do
-      "".taint.upcase.tainted?.should == true
-      "X".taint.upcase.tainted?.should == true
-      "x".taint.upcase.tainted?.should == true
+      "".taint.upcase.should.tainted?
+      "X".taint.upcase.should.tainted?
+      "x".taint.upcase.should.tainted?
     end
   end
 

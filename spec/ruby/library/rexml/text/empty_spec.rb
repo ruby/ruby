@@ -5,11 +5,11 @@ ruby_version_is ''...'2.8' do
 
   describe "REXML::Text#empty?" do
     it "returns true if the text is empty" do
-      REXML::Text.new("").empty?.should == true
+      REXML::Text.new("").should.empty?
     end
 
     it "returns false if the text is not empty" do
-      REXML::Text.new("some_text").empty?.should == false
+      REXML::Text.new("some_text").should_not.empty?
     end
   end
 end

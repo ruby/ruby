@@ -15,7 +15,7 @@ end
 
 describe "Time.new with a utc_offset argument" do
   it "returns a non-UTC time" do
-    Time.new(2000, 1, 1, 0, 0, 0, 0).utc?.should == false
+    Time.new(2000, 1, 1, 0, 0, 0, 0).should_not.utc?
   end
 
   it "returns a Time with a UTC offset of the specified number of Integer seconds" do

@@ -24,20 +24,20 @@ describe "BasicSocket#read_nonblock" do
     platform_is :linux do
       it 'does not set the IO in nonblock mode' do
         require 'io/nonblock'
-        @r.nonblock?.should == false
+        @r.should_not.nonblock?
         IO.select([@r], nil, nil, 2)
         @r.read_nonblock(3).should == "aaa"
-        @r.nonblock?.should == false
+        @r.should_not.nonblock?
       end
     end
 
     platform_is_not :linux, :windows do
       it 'sets the IO in nonblock mode' do
         require 'io/nonblock'
-        @r.nonblock?.should == false
+        @r.should_not.nonblock?
         IO.select([@r], nil, nil, 2)
         @r.read_nonblock(3).should == "aaa"
-        @r.nonblock?.should == true
+        @r.should.nonblock?
       end
     end
   end

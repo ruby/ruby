@@ -55,7 +55,7 @@ describe :string_to_sym, shared: true do
 
   it "raises an EncodingError for UTF-8 String containing invalid bytes" do
     invalid_utf8 = "\xC3"
-    invalid_utf8.valid_encoding?.should == false
+    invalid_utf8.should_not.valid_encoding?
     -> {
       invalid_utf8.send(@method)
     }.should raise_error(EncodingError, /invalid/)

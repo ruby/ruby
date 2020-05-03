@@ -15,7 +15,7 @@ describe "Symbol#to_proc" do
   ruby_version_is ""..."2.8" do
     it "returns a Proc with #lambda? false" do
       pr = :to_s.to_proc
-      pr.lambda?.should == false
+      pr.should_not.lambda?
     end
 
     it "produces a Proc with arity -1" do
@@ -32,7 +32,7 @@ describe "Symbol#to_proc" do
   ruby_version_is "2.8" do
     it "returns a Proc with #lambda? true" do
       pr = :to_s.to_proc
-      pr.lambda?.should == true
+      pr.should.lambda?
     end
 
     it "produces a Proc with arity -2" do

@@ -5,18 +5,18 @@ require_relative 'fixtures/classes'
 describe "String#dump" do
   ruby_version_is ''...'2.7' do
     it "taints the result if self is tainted" do
-      "foo".taint.dump.tainted?.should == true
-      "foo\n".taint.dump.tainted?.should == true
+      "foo".taint.dump.should.tainted?
+      "foo\n".taint.dump.should.tainted?
     end
 
     it "untrusts the result if self is untrusted" do
-      "foo".untrust.dump.untrusted?.should == true
-      "foo\n".untrust.dump.untrusted?.should == true
+      "foo".untrust.dump.should.untrusted?
+      "foo\n".untrust.dump.should.untrusted?
     end
   end
 
   it "does not take into account if a string is frozen" do
-    "foo".freeze.dump.frozen?.should == false
+    "foo".freeze.dump.should_not.frozen?
   end
 
   it "returns a subclass instance" do

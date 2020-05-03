@@ -23,8 +23,8 @@ describe "String#delete_suffix" do
 
   ruby_version_is ''...'2.7' do
     it "taints resulting strings when other is tainted" do
-      'hello'.taint.delete_suffix('ello').tainted?.should == true
-      'hello'.taint.delete_suffix('').tainted?.should == true
+      'hello'.taint.delete_suffix('ello').should.tainted?
+      'hello'.taint.delete_suffix('').should.tainted?
     end
   end
 

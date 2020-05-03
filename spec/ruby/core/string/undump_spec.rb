@@ -5,16 +5,16 @@ require_relative 'fixtures/classes'
 describe "String#undump" do
   ruby_version_is ''...'2.7' do
     it "taints the result if self is tainted" do
-      '"foo"'.taint.undump.tainted?.should == true
+      '"foo"'.taint.undump.should.tainted?
     end
 
     it "untrusts the result if self is untrusted" do
-      '"foo"'.untrust.undump.untrusted?.should == true
+      '"foo"'.untrust.undump.should.untrusted?
     end
   end
 
   it "does not take into account if a string is frozen" do
-    '"foo"'.freeze.undump.frozen?.should == false
+    '"foo"'.freeze.undump.should_not.frozen?
   end
 
   it "always returns String instance" do

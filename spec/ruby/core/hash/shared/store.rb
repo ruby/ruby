@@ -50,7 +50,7 @@ describe :hash_store, shared: true do
     key << "bar"
 
     h.should == { "foo" => 0 }
-    h.keys[0].frozen?.should == true
+    h.keys[0].should.frozen?
   end
 
   it "doesn't duplicate and freeze already frozen string keys" do

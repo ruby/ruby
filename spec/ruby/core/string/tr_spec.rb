@@ -66,10 +66,10 @@ describe "String#tr" do
       ["h", "hello"].each do |str|
         tainted_str = str.dup.taint
 
-        tainted_str.tr("e", "a").tainted?.should == true
+        tainted_str.tr("e", "a").should.tainted?
 
-        str.tr("e".taint, "a").tainted?.should == false
-        str.tr("e", "a".taint).tainted?.should == false
+        str.tr("e".taint, "a").should_not.tainted?
+        str.tr("e", "a".taint).should_not.tainted?
       end
     end
   end

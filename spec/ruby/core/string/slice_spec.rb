@@ -99,8 +99,8 @@ describe "String#slice! with index, length" do
       str = "hello world"
       str.taint
 
-      str.slice!(0, 0).tainted?.should == true
-      str.slice!(2, 1).tainted?.should == true
+      str.slice!(0, 0).should.tainted?
+      str.slice!(2, 1).should.tainted?
     end
   end
 
@@ -191,8 +191,8 @@ describe "String#slice! Range" do
       str = "hello world"
       str.taint
 
-      str.slice!(0..0).tainted?.should == true
-      str.slice!(2..3).tainted?.should == true
+      str.slice!(0..0).should.tainted?
+      str.slice!(2..3).should.tainted?
     end
   end
 
@@ -288,14 +288,14 @@ describe "String#slice! with Regexp" do
         tainted_re = /./
         tainted_re.taint
 
-        str.slice!(tainted_re).tainted?.should == true
+        str.slice!(tainted_re).should.tainted?
       end
     end
 
     it "doesn't taint self when regexp is tainted" do
       s = "hello"
       s.slice!(/./.taint)
-      s.tainted?.should == false
+      s.should_not.tainted?
     end
   end
 
@@ -349,14 +349,14 @@ describe "String#slice! with Regexp, index" do
         tainted_re = /(.)(.)(.)/
         tainted_re.taint
 
-        str.slice!(tainted_re, 1).tainted?.should == true
+        str.slice!(tainted_re, 1).should.tainted?
       end
     end
 
     it "doesn't taint self when regexp is tainted" do
       s = "hello"
       s.slice!(/(.)(.)/.taint, 1)
-      s.tainted?.should == false
+      s.should_not.tainted?
     end
   end
 

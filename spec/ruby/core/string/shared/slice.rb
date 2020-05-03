@@ -85,9 +85,9 @@ describe :string_slice_index_length, shared: true do
       str = "hello world"
       str.taint
 
-      str.send(@method, 0,0).tainted?.should == true
-      str.send(@method, 0,1).tainted?.should == true
-      str.send(@method, 2,1).tainted?.should == true
+      str.send(@method, 0,0).should.tainted?
+      str.send(@method, 0,1).should.tainted?
+      str.send(@method, 2,1).should.tainted?
     end
   end
 
@@ -243,12 +243,12 @@ describe :string_slice_range, shared: true do
       str = "hello world"
       str.taint
 
-      str.send(@method, 0..0).tainted?.should == true
-      str.send(@method, 0...0).tainted?.should == true
-      str.send(@method, 0..1).tainted?.should == true
-      str.send(@method, 0...1).tainted?.should == true
-      str.send(@method, 2..3).tainted?.should == true
-      str.send(@method, 2..0).tainted?.should == true
+      str.send(@method, 0..0).should.tainted?
+      str.send(@method, 0...0).should.tainted?
+      str.send(@method, 0..1).should.tainted?
+      str.send(@method, 0...1).should.tainted?
+      str.send(@method, 2..3).should.tainted?
+      str.send(@method, 2..0).should.tainted?
     end
   end
 
@@ -338,7 +338,7 @@ describe :string_slice_regexp, shared: true do
           tainted_re = /./
           tainted_re.taint
 
-          str.send(@method, tainted_re).tainted?.should == true
+          str.send(@method, tainted_re).should.tainted?
         end
       end
 
@@ -395,9 +395,9 @@ describe :string_slice_regexp_index, shared: true do
         tainted_re = /(.)(.)(.)/
         tainted_re.taint
 
-        str.send(@method, tainted_re, 0).tainted?.should == true
-        str.send(@method, tainted_re, 1).tainted?.should == true
-        str.send(@method, tainted_re, -1).tainted?.should == true
+        str.send(@method, tainted_re, 0).should.tainted?
+        str.send(@method, tainted_re, 1).should.tainted?
+        str.send(@method, tainted_re, -1).should.tainted?
       end
     end
 

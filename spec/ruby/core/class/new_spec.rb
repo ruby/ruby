@@ -126,7 +126,7 @@ describe "Class#new" do
       end
     end
 
-    klass.new.initialized?.should == true
+    klass.new.should.initialized?
     klass.new(1, 2, 3).args.should == [1, 2, 3]
   end
 

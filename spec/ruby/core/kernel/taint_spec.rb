@@ -11,7 +11,7 @@ describe "Kernel#taint" do
     it "sets the tainted bit" do
       o = Object.new
       o.taint
-      o.tainted?.should == true
+      o.should.tainted?
     end
 
     it "raises FrozenError on an untainted, frozen object" do
@@ -27,20 +27,20 @@ describe "Kernel#taint" do
     it "has no effect on immediate values" do
       [nil, true, false].each do |v|
         v.taint
-        v.tainted?.should == false
+        v.should_not.tainted?
       end
     end
 
     it "no raises a RuntimeError on symbols" do
       v = :sym
       -> { v.taint }.should_not raise_error(RuntimeError)
-      v.tainted?.should == false
+      v.should_not.tainted?
     end
 
     it "no raises error on fixnum values" do
       [1].each do |v|
         -> { v.taint }.should_not raise_error(RuntimeError)
-        v.tainted?.should == false
+        v.should_not.tainted?
       end
     end
   end

@@ -14,8 +14,8 @@ describe "String#capitalize" do
 
   ruby_version_is ''...'2.7' do
     it "taints resulting string when self is tainted" do
-      "".taint.capitalize.tainted?.should == true
-      "hello".taint.capitalize.tainted?.should == true
+      "".taint.capitalize.should.tainted?
+      "hello".taint.capitalize.should.tainted?
     end
   end
 

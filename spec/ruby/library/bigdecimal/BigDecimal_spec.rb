@@ -41,7 +41,7 @@ describe "Kernel#BigDecimal" do
 
   it "ignores leading and trailing whitespace" do
     BigDecimal("  \t\n \r1234\t\r\n ").should == BigDecimal("1234")
-    BigDecimal("  \t\n \rNaN   \n").nan?.should == true
+    BigDecimal("  \t\n \rNaN   \n").should.nan?
     BigDecimal("  \t\n \rInfinity   \n").infinite?.should == 1
     BigDecimal("  \t\n \r-Infinity   \n").infinite?.should == -1
   end
@@ -100,42 +100,42 @@ describe "Kernel#BigDecimal" do
   end
 
   it "accepts NaN and [+-]Infinity" do
-    BigDecimal("NaN").nan?.should == true
+    BigDecimal("NaN").should.nan?
 
     pos_inf = BigDecimal("Infinity")
-    pos_inf.finite?.should == false
+    pos_inf.should_not.finite?
     pos_inf.should > 0
     pos_inf.should == BigDecimal("+Infinity")
 
     neg_inf = BigDecimal("-Infinity")
-    neg_inf.finite?.should == false
+    neg_inf.should_not.finite?
     neg_inf.should < 0
   end
 
   describe "accepts NaN and [+-]Infinity as Float values" do
     it "works without an explicit precision" do
-      BigDecimal(Float::NAN).nan?.should == true
+      BigDecimal(Float::NAN).should.nan?
 
       pos_inf = BigDecimal(Float::INFINITY)
-      pos_inf.finite?.should == false
+      pos_inf.should_not.finite?
       pos_inf.should > 0
       pos_inf.should == BigDecimal("+Infinity")
 
       neg_inf = BigDecimal(-Float::INFINITY)
-      neg_inf.finite?.should == false
+      neg_inf.should_not.finite?
       neg_inf.should < 0
     end
 
     it "works with an explicit precision" do
-      BigDecimal(Float::NAN, Float::DIG).nan?.should == true
+      BigDecimal(Float::NAN, Float::DIG).should.nan?
 
       pos_inf = BigDecimal(Float::INFINITY, Float::DIG)
-      pos_inf.finite?.should == false
+      pos_inf.should_not.finite?
       pos_inf.should > 0
       pos_inf.should == BigDecimal("+Infinity")
 
       neg_inf = BigDecimal(-Float::INFINITY, Float::DIG)
-      neg_inf.finite?.should == false
+      neg_inf.should_not.finite?
       neg_inf.should < 0
     end
   end

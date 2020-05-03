@@ -26,7 +26,7 @@ guard -> {
   describe "CVE-2020-10663 is resisted by" do
     it "only creating custom objects if passed create_additions: true or using JSON.load" do
       obj = JSONSpecs::MyClass.new("bar")
-      JSONSpecs::MyClass.json_creatable?.should == true
+      JSONSpecs::MyClass.should.json_creatable?
       json = JSON.dump(obj)
 
       JSON.parse(json, create_additions: true).class.should == JSONSpecs::MyClass

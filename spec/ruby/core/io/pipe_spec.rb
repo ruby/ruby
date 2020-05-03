@@ -44,8 +44,8 @@ describe "IO.pipe" do
       r, w = IO.pipe do |_r, _w|
         [_r, _w]
       end
-      r.closed?.should == true
-      w.closed?.should == true
+      r.should.closed?
+      w.should.closed?
     end
 
     it "closes both IO objects when the block raises" do
@@ -57,8 +57,8 @@ describe "IO.pipe" do
           raise RuntimeError
         end
       end.should raise_error(RuntimeError)
-      r.closed?.should == true
-      w.closed?.should == true
+      r.should.closed?
+      w.should.closed?
     end
 
     it "allows IO objects to be closed within the block" do
@@ -67,8 +67,8 @@ describe "IO.pipe" do
         _w.close
         [_r, _w]
       end
-      r.closed?.should == true
-      w.closed?.should == true
+      r.should.closed?
+      w.should.closed?
     end
   end
 end

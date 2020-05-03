@@ -10,13 +10,13 @@ describe "Enumerable#any?" do
   end
 
   it "always returns false on empty enumeration" do
-    @empty.any?.should == false
+    @empty.should_not.any?
     @empty.any? { nil }.should == false
 
-    [].any?.should == false
+    [].should_not.any?
     [].any? { false }.should == false
 
-    {}.any?.should == false
+    {}.should_not.any?
     {}.any? { nil }.should == false
   end
 
@@ -38,24 +38,24 @@ describe "Enumerable#any?" do
 
   describe "with no block" do
     it "returns true if any element is not false or nil" do
-      @enum.any?.should == true
-      @enum1.any?.should == true
-      @enum2.any?.should == true
-      EnumerableSpecs::Numerous.new(true).any?.should == true
-      EnumerableSpecs::Numerous.new('a','b','c').any?.should == true
-      EnumerableSpecs::Numerous.new('a','b','c', nil).any?.should == true
-      EnumerableSpecs::Numerous.new(1, nil, 2).any?.should == true
-      EnumerableSpecs::Numerous.new(1, false).any?.should == true
-      EnumerableSpecs::Numerous.new(false, nil, 1, false).any?.should == true
-      EnumerableSpecs::Numerous.new(false, 0, nil).any?.should == true
+      @enum.should.any?
+      @enum1.should.any?
+      @enum2.should.any?
+      EnumerableSpecs::Numerous.new(true).should.any?
+      EnumerableSpecs::Numerous.new('a','b','c').should.any?
+      EnumerableSpecs::Numerous.new('a','b','c', nil).should.any?
+      EnumerableSpecs::Numerous.new(1, nil, 2).should.any?
+      EnumerableSpecs::Numerous.new(1, false).should.any?
+      EnumerableSpecs::Numerous.new(false, nil, 1, false).should.any?
+      EnumerableSpecs::Numerous.new(false, 0, nil).should.any?
     end
 
     it "returns false if all elements are false or nil" do
-      EnumerableSpecs::Numerous.new(false).any?.should == false
-      EnumerableSpecs::Numerous.new(false, false).any?.should == false
-      EnumerableSpecs::Numerous.new(nil).any?.should == false
-      EnumerableSpecs::Numerous.new(nil, nil).any?.should == false
-      EnumerableSpecs::Numerous.new(nil, false, nil).any?.should == false
+      EnumerableSpecs::Numerous.new(false).should_not.any?
+      EnumerableSpecs::Numerous.new(false, false).should_not.any?
+      EnumerableSpecs::Numerous.new(nil).should_not.any?
+      EnumerableSpecs::Numerous.new(nil, nil).should_not.any?
+      EnumerableSpecs::Numerous.new(nil, false, nil).should_not.any?
     end
 
     it "gathers whole arrays as elements when each yields multiple" do

@@ -12,8 +12,8 @@ describe "String#reverse" do
 
   ruby_version_is ''...'2.7' do
     it "taints the result if self is tainted" do
-      "".taint.reverse.tainted?.should == true
-      "m".taint.reverse.tainted?.should == true
+      "".taint.reverse.should.tainted?
+      "m".taint.reverse.should.tainted?
     end
   end
 

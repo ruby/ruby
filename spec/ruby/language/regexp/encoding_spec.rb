@@ -121,11 +121,11 @@ describe "Regexps with encoding modifiers" do
     make_regexp = -> str { /#{str}/ }
 
     r = make_regexp.call("été".force_encoding(Encoding::UTF_8))
-    r.fixed_encoding?.should == true
+    r.should.fixed_encoding?
     r.encoding.should == Encoding::UTF_8
 
     r = make_regexp.call("abc".force_encoding(Encoding::UTF_8))
-    r.fixed_encoding?.should == false
+    r.should_not.fixed_encoding?
     r.encoding.should == Encoding::US_ASCII
   end
 end

@@ -11,6 +11,6 @@ describe "GC::Profiler.disable" do
 
   it "disables the profiler" do
     GC::Profiler.disable
-    GC::Profiler.enabled?.should == false
+    GC::Profiler.should_not.enabled?
   end
 end

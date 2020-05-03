@@ -283,7 +283,7 @@ describe "StringIO#reopen" do
       new_io = StringIO.new("tainted")
       new_io.taint
       @io.reopen(new_io)
-      @io.tainted?.should == true
+      @io.should.tainted?
     end
   end
 

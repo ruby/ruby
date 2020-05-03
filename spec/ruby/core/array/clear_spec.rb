@@ -16,7 +16,7 @@ describe "Array#clear" do
   it "leaves the Array empty" do
     a = [1]
     a.clear
-    a.empty?.should == true
+    a.should.empty?
     a.size.should == 0
   end
 

@@ -23,8 +23,8 @@ describe "String#delete_prefix" do
 
   ruby_version_is ''...'2.7' do
     it "taints resulting strings when other is tainted" do
-      'hello'.taint.delete_prefix('hell').tainted?.should == true
-      'hello'.taint.delete_prefix('').tainted?.should == true
+      'hello'.taint.delete_prefix('hell').should.tainted?
+      'hello'.taint.delete_prefix('').should.tainted?
     end
   end
 

@@ -15,28 +15,28 @@ describe :string_replace, shared: true do
       a = ""
       b = "".taint
       a.send(@method, b)
-      a.tainted?.should == true
+      a.should.tainted?
     end
 
     it "does not untaint self if other is untainted" do
       a = "".taint
       b = ""
       a.send(@method, b)
-      a.tainted?.should == true
+      a.should.tainted?
     end
 
     it "untrusts self if other is untrusted" do
       a = ""
       b = "".untrust
       a.send(@method, b)
-      a.untrusted?.should == true
+      a.should.untrusted?
     end
 
     it "does not trust self if other is trusted" do
       a = "".untrust
       b = ""
       a.send(@method, b)
-      a.untrusted?.should == true
+      a.should.untrusted?
     end
   end
 

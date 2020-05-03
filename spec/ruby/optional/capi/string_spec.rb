@@ -76,7 +76,7 @@ describe "C-API String function" do
 
       it "invalidates the code range" do
         @s.rb_str_set_len(@str, 4)
-        @str.ascii_only?.should == true
+        @str.should.ascii_only?
       end
 
       it "updates the string's attributes visible in C code" do
@@ -183,7 +183,7 @@ describe "C-API String function" do
 
     ruby_version_is ''...'2.7' do
       it "returns a non-tainted string" do
-        @s.rb_str_new("hello", 5).tainted?.should == false
+        @s.rb_str_new("hello", 5).should_not.tainted?
       end
     end
 
@@ -288,8 +288,8 @@ describe "C-API String function" do
       str2 = @s.rb_str_new4 str1
       str1.should == str2
       str1.should equal(str2)
-      str1.frozen?.should == true
-      str2.frozen?.should == true
+      str1.should.frozen?
+      str2.should.frozen?
     end
 
     it "returns a frozen copy of the string" do
@@ -297,7 +297,7 @@ describe "C-API String function" do
       str2 = @s.rb_str_new4 str1
       str1.should == str2
       str1.should_not equal(str2)
-      str2.frozen?.should == true
+      str2.should.frozen?
     end
   end
 

@@ -72,6 +72,6 @@ describe "ConditionVariable#signal" do
     # Check that both threads terminated without exception
     t1.join
     t2.join
-    m.locked?.should == false
+    m.should_not.locked?
   end
 end

@@ -16,9 +16,9 @@ describe "String#rstrip" do
 
   ruby_version_is ''...'2.7' do
     it "taints the result when self is tainted" do
-      "".taint.rstrip.tainted?.should == true
-      "ok".taint.rstrip.tainted?.should == true
-      "ok    ".taint.rstrip.tainted?.should == true
+      "".taint.rstrip.should.tainted?
+      "ok".taint.rstrip.should.tainted?
+      "ok    ".taint.rstrip.should.tainted?
     end
   end
 end

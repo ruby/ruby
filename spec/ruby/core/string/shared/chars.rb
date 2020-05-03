@@ -69,11 +69,11 @@ describe :string_chars, shared: true do
       str = "hello"
 
       str.send(@method) do |x|
-        x.tainted?.should == false
+        x.should_not.tainted?
       end
 
       str.dup.taint.send(@method) do |x|
-        x.tainted?.should == true
+        x.should.tainted?
       end
     end
   end

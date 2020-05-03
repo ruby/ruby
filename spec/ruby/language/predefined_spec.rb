@@ -53,10 +53,10 @@ describe "Predefined global $~" do
 
   it "is set to nil if the last match was unsuccessful" do
     /foo/ =~ 'foo'
-    $~.nil?.should == false
+    $~.should_not.nil?
 
     /foo/ =~ 'bar'
-    $~.nil?.should == true
+    $~.should.nil?
   end
 
   it "is set at the method-scoped level rather than block-scoped" do

@@ -68,7 +68,7 @@ describe :string_succ, shared: true do
   ruby_version_is ''...'2.7' do
     it "taints the result if self is tainted" do
       ["", "a", "z", "Z", "9", "\xFF", "\xFF\xFF"].each do |s|
-        s.taint.send(@method).tainted?.should == true
+        s.taint.send(@method).should.tainted?
       end
     end
   end

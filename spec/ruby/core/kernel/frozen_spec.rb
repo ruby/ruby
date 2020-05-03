@@ -6,8 +6,8 @@ describe "Kernel#frozen?" do
     o = mock('o')
     p = mock('p')
     p.freeze
-    o.frozen?.should == false
-    p.frozen?.should == true
+    o.should_not.frozen?
+    p.should.frozen?
   end
 
   describe "on true, false and nil" do

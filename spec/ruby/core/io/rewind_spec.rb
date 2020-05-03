@@ -21,7 +21,7 @@ describe "IO#rewind" do
   it "positions the instance to the beginning of input and clears EOF" do
     value = @io.read
     @io.rewind
-    @io.eof?.should == false
+    @io.should_not.eof?
     value.should == @io.read
   end
 

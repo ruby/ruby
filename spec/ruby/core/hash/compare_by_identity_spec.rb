@@ -33,7 +33,7 @@ describe "Hash#compare_by_identity" do
   it "has no effect on an already compare_by_identity hash" do
     @idh[:foo] = :bar
     @idh.compare_by_identity.should equal @idh
-    @idh.compare_by_identity?.should == true
+    @idh.should.compare_by_identity?
     @idh[:foo].should == :bar
   end
 

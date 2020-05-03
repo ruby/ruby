@@ -13,7 +13,7 @@ describe "Pathname.new" do
   ruby_version_is ''...'2.7' do
     it "is tainted if path is tainted" do
       path = '/usr/local/bin'.taint
-      Pathname.new(path).tainted?.should == true
+      Pathname.new(path).should.tainted?
     end
   end
 

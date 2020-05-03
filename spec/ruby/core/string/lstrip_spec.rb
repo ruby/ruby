@@ -16,9 +16,9 @@ describe "String#lstrip" do
 
   ruby_version_is ''...'2.7' do
     it "taints the result when self is tainted" do
-      "".taint.lstrip.tainted?.should == true
-      "ok".taint.lstrip.tainted?.should == true
-      "   ok".taint.lstrip.tainted?.should == true
+      "".taint.lstrip.should.tainted?
+      "ok".taint.lstrip.should.tainted?
+      "   ok".taint.lstrip.should.tainted?
     end
   end
 end

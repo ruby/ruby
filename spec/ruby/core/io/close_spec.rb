@@ -14,7 +14,7 @@ describe "IO#close" do
 
   it "closes the stream" do
     @io.close
-    @io.closed?.should == true
+    @io.should.closed?
   end
 
   it "returns nil" do

@@ -17,7 +17,7 @@ ruby_version_is ''...'2.8' do
     end
 
     it "returns a frozen object" do
-      @e.comments.frozen?.should == true
+      @e.comments.should.frozen?
     end
   end
 end

@@ -3,12 +3,12 @@ require 'matrix'
 
 describe "Matrix.orthogonal?" do
   it "returns false for non orthogonal matrices" do
-    Matrix[[0, 1], [1, 2]].orthogonal?.should == false
-    Matrix[[1, 1, 0], [0, 1, 1], [1, 0, 1]].orthogonal?.should == false
+    Matrix[[0, 1], [1, 2]].should_not.orthogonal?
+    Matrix[[1, 1, 0], [0, 1, 1], [1, 0, 1]].should_not.orthogonal?
   end
 
   it "returns true for orthogonal matrices" do
-    Matrix[[0, 1], [1, 0]].orthogonal?.should == true
+    Matrix[[0, 1], [1, 0]].should.orthogonal?
   end
 
   it "raises an error for rectangular matrices" do

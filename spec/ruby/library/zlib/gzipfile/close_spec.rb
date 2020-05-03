@@ -8,7 +8,7 @@ describe "Zlib::GzipFile#close" do
     Zlib::GzipWriter.wrap io do |gzio|
       gzio.close
 
-      gzio.closed?.should == true
+      gzio.should.closed?
 
       -> { gzio.orig_name }.should \
         raise_error(Zlib::GzipFile::Error, 'closed gzip stream')

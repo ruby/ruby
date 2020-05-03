@@ -17,7 +17,7 @@ describe :rbasic, shared: true do
     obj, _ = @data.call
     initial = @specs.get_flags(obj)
     @specs.set_flags(obj, @freeze | initial).should == @freeze | initial
-    obj.frozen?.should == true
+    obj.should.frozen?
   end
 
   ruby_version_is ""..."2.7" do
@@ -41,16 +41,16 @@ describe :rbasic, shared: true do
       obj, _ = @data.call
       initial = @specs.get_flags(obj)
       @specs.set_flags(obj, @taint | initial).should == @taint | initial
-      obj.tainted?.should == true
+      obj.should.tainted?
       @specs.set_flags(obj, initial).should == initial
-      obj.tainted?.should == false
+      obj.should_not.tainted?
       @specs.set_flags(obj, @freeze | initial).should == @freeze | initial
-      obj.frozen?.should == true
+      obj.should.frozen?
 
       obj, _ = @data.call
       @specs.set_flags(obj, @freeze | @taint | initial).should == @freeze | @taint | initial
-      obj.tainted?.should == true
-      obj.frozen?.should == true
+      obj.should.tainted?
+      obj.should.frozen?
     end
   end
 

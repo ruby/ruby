@@ -65,7 +65,7 @@ describe 'TracePoint#enable' do
         event_name.should equal(:line)
         args.should == []
       end
-      trace.enabled?.should == false
+      trace.should_not.enabled?
     end
 
     it 'enables trace object on calling with a block if it was already enabled' do
@@ -92,7 +92,7 @@ describe 'TracePoint#enable' do
         line_event = true
       }
       called.should == true
-      trace.enabled?.should == false
+      trace.should_not.enabled?
     end
   end
 

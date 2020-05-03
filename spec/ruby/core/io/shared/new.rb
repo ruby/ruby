@@ -148,22 +148,22 @@ describe :io_new, shared: true do
 
   it "sets binmode from mode string" do
     @io = IO.send(@method, @fd, 'wb')
-    @io.binmode?.should == true
+    @io.should.binmode?
   end
 
   it "does not set binmode without being asked" do
     @io = IO.send(@method, @fd, 'w')
-    @io.binmode?.should == false
+    @io.should_not.binmode?
   end
 
   it "sets binmode from :binmode option" do
     @io = IO.send(@method, @fd, 'w', binmode: true)
-    @io.binmode?.should == true
+    @io.should.binmode?
   end
 
   it "does not set binmode from false :binmode" do
     @io = IO.send(@method, @fd, 'w', binmode: false)
-    @io.binmode?.should == false
+    @io.should_not.binmode?
   end
 
   it "sets external encoding to binary with binmode in mode string" do
@@ -270,13 +270,13 @@ describe :io_new, shared: true do
 
   it "accepts an :autoclose option" do
     @io = IO.send(@method, @fd, 'w', autoclose: false)
-    @io.autoclose?.should == false
+    @io.should_not.autoclose?
     @io.autoclose = true
   end
 
   it "accepts any truthy option :autoclose" do
     @io = IO.send(@method, @fd, 'w', autoclose: 42)
-    @io.autoclose?.should == true
+    @io.should.autoclose?
   end
 end
 

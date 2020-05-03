@@ -33,11 +33,11 @@ describe "String#ljust with length, padding" do
 
   ruby_version_is ''...'2.7' do
     it "taints result when self or padstr is tainted" do
-      "x".taint.ljust(4).tainted?.should == true
-      "x".taint.ljust(0).tainted?.should == true
-      "".taint.ljust(0).tainted?.should == true
-      "x".taint.ljust(4, "*").tainted?.should == true
-      "x".ljust(4, "*".taint).tainted?.should == true
+      "x".taint.ljust(4).should.tainted?
+      "x".taint.ljust(0).should.tainted?
+      "".taint.ljust(0).should.tainted?
+      "x".taint.ljust(4, "*").should.tainted?
+      "x".ljust(4, "*".taint).should.tainted?
     end
   end
 

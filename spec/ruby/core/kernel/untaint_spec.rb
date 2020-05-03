@@ -11,7 +11,7 @@ describe "Kernel#untaint" do
     it "clears the tainted bit" do
       o = Object.new.taint
       o.untaint
-      o.tainted?.should == false
+      o.should_not.tainted?
     end
 
     it "raises FrozenError on a tainted, frozen object" do

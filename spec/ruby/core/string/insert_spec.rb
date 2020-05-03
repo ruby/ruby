@@ -44,12 +44,12 @@ describe "String#insert with index, other" do
   ruby_version_is ''...'2.7' do
     it "taints self if string to insert is tainted" do
       str = "abcd"
-      str.insert(0, "T".taint).tainted?.should == true
+      str.insert(0, "T".taint).should.tainted?
 
       str = "abcd"
       other = mock('T')
       def other.to_str() "T".taint end
-      str.insert(0, other).tainted?.should == true
+      str.insert(0, other).should.tainted?
     end
   end
 

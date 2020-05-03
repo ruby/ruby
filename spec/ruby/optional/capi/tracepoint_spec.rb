@@ -15,7 +15,7 @@ describe "CApiTracePointSpecs" do
     it "returns a tracepoint object" do
       @trace = @s.rb_tracepoint_new(7)
       @trace.should be_an_instance_of(TracePoint)
-      @trace.enabled?.should == false
+      @trace.should_not.enabled?
     end
 
     it "traces lines when given RUBY_EVENT_LINE" do
@@ -28,20 +28,20 @@ describe "CApiTracePointSpecs" do
   describe "rb_tracepoint_disable" do
     it "disables an enabled TracePoint" do
       @trace = @s.rb_tracepoint_new(9)
-      @trace.enabled?.should == false
+      @trace.should_not.enabled?
       @trace.enable
-      @trace.enabled?.should == true
+      @trace.should.enabled?
       @s.rb_tracepoint_disable(@trace).should == false
-      @trace.enabled?.should == false
+      @trace.should_not.enabled?
     end
   end
 
   describe "rb_tracepoint_enable" do
     it "enables a disabled TracePoint" do
       @trace = @s.rb_tracepoint_new(10)
-      @trace.enabled?.should == false
+      @trace.should_not.enabled?
       @s.rb_tracepoint_enable(@trace).should == true
-      @trace.enabled?.should == true
+      @trace.should.enabled?
     end
   end
 

@@ -361,7 +361,7 @@ describe "Multiple assignment" do
       end
       res = *obj
       res.should == [1,2]
-      res.frozen?.should == false
+      res.should_not.frozen?
     end
 
     it "consumes values for an anonymous splat" do

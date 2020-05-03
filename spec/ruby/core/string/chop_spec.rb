@@ -51,13 +51,13 @@ describe "String#chop" do
 
   ruby_version_is ''...'2.7' do
     it "taints result when self is tainted" do
-      "hello".taint.chop.tainted?.should == true
-      "".taint.chop.tainted?.should == true
+      "hello".taint.chop.should.tainted?
+      "".taint.chop.should.tainted?
     end
 
     it "untrusts result when self is untrusted" do
-      "hello".untrust.chop.untrusted?.should == true
-      "".untrust.chop.untrusted?.should == true
+      "hello".untrust.chop.should.untrusted?
+      "".untrust.chop.should.untrusted?
     end
   end
 

@@ -18,11 +18,11 @@ describe "String#[]= with Fixnum index" do
     it "taints self if other_str is tainted" do
       a = "hello"
       a[0] = "".taint
-      a.tainted?.should == true
+      a.should.tainted?
 
       a = "hello"
       a[0] = "x".taint
-      a.tainted?.should == true
+      a.should.tainted?
     end
   end
 
@@ -491,11 +491,11 @@ describe "String#[]= with Fixnum index, count" do
     it "taints self if other_str is tainted" do
       a = "hello"
       a[0, 0] = "".taint
-      a.tainted?.should == true
+      a.should.tainted?
 
       a = "hello"
       a[1, 4] = "x".taint
-      a.tainted?.should == true
+      a.should.tainted?
     end
   end
 

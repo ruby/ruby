@@ -14,7 +14,7 @@ describe "Time.at" do
     end
 
     it "returns a non-UTC Time" do
-      Time.at(1184027924).utc?.should == false
+      Time.at(1184027924).should_not.utc?
     end
 
     it "returns a subclass instance on a Time subclass" do
@@ -54,12 +54,12 @@ describe "Time.at" do
 
     it "returns a UTC time if the argument is UTC" do
       t = Time.now.getgm
-      Time.at(t).utc?.should == true
+      Time.at(t).should.utc?
     end
 
     it "returns a non-UTC time if the argument is non-UTC" do
       t = Time.now
-      Time.at(t).utc?.should == false
+      Time.at(t).should_not.utc?
     end
 
     it "returns a subclass instance" do

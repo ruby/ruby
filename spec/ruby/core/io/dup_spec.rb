@@ -51,16 +51,16 @@ end
     @i.close
     -> { @f.gets }.should_not raise_error(Exception)
 
-    @i.closed?.should == true
-    @f.closed?.should == false
+    @i.should.closed?
+    @f.should_not.closed?
   end
 
   it "allows closing the original IO without affecting the new one" do
     @f.close
     -> { @i.gets }.should_not raise_error(Exception)
 
-    @i.closed?.should == false
-    @f.closed?.should == true
+    @i.should_not.closed?
+    @f.should.closed?
   end
 
   it "raises IOError on closed stream" do
@@ -71,7 +71,7 @@ end
     @f.close_on_exec = true
     dup = @f.dup
     begin
-      dup.close_on_exec?.should == true
+      dup.should.close_on_exec?
     ensure
       dup.close
     end
@@ -79,7 +79,7 @@ end
     @f.close_on_exec = false
     dup = @f.dup
     begin
-      dup.close_on_exec?.should == true
+      dup.should.close_on_exec?
     ensure
       dup.close
     end

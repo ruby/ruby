@@ -16,12 +16,12 @@ describe "Logger#info?" do
 
   it "returns true if severity level allows info messages" do
     @logger.level = Logger::INFO
-    @logger.info?.should == true
+    @logger.should.info?
   end
 
   it "returns false if severity level does not allow info messages" do
     @logger.level = Logger::FATAL
-    @logger.info?.should == false
+    @logger.should_not.info?
   end
 end
 

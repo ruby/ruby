@@ -2,7 +2,7 @@ require_relative '../../spec_helper'
 
 describe "ENV.shift" do
   it "returns a pair and deletes it" do
-    ENV.empty?.should == false
+    ENV.should_not.empty?
     orig = ENV.to_hash
     begin
       pair = ENV.shift

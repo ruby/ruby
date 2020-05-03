@@ -7,8 +7,8 @@ describe "Kernel#tainted?" do
       o = mock('o')
       p = mock('p')
       p.taint
-      o.tainted?.should == false
-      p.tainted?.should == true
+      o.should_not.tainted?
+      p.should.tainted?
     end
   end
 end
