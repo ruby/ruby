@@ -5,6 +5,7 @@
 extern "C" {
 #endif
 
+static const VALUE VISIBLE_BITS = FL_TAINT | FL_FREEZE | ~(FL_USER0 - 1);
 
 VALUE rbasic_spec_taint_flag(VALUE self) {
   return INT2FIX(RUBY_FL_TAINT);
@@ -14,18 +15,27 @@ VALUE rbasic_spec_freeze_flag(VALUE self) {
   return INT2FIX(RUBY_FL_FREEZE);
 }
 
+static VALUE spec_get_flags(const struct RBasic *b) {
+  VALUE flags = b->flags & VISIBLE_BITS;
+  return INT2FIX(flags);
+}
+
+static VALUE spec_set_flags(struct RBasic *b, VALUE flags) {
+  flags &= VISIBLE_BITS;
+  b->flags = (b->flags & ~VISIBLE_BITS) | flags;
+  return INT2FIX(flags);
+}
+
 VALUE rbasic_spec_get_flags(VALUE self, VALUE val) {
-  return INT2FIX(RBASIC(val)->flags);
+  return spec_get_flags(RBASIC(val));
 }
 
 VALUE rbasic_spec_set_flags(VALUE self, VALUE val, VALUE flags) {
-  RBASIC(val)->flags = FIX2INT(flags);
-  return INT2FIX(RBASIC(val)->flags);
+  return spec_set_flags(RBASIC(val), FIX2INT(flags));
 }
 
 VALUE rbasic_spec_copy_flags(VALUE self, VALUE to, VALUE from) {
-  RBASIC(to)->flags = RBASIC(from)->flags;
-  return INT2FIX(RBASIC(to)->flags);
+  return spec_set_flags(RBASIC(to), RBASIC(from)->flags);
 }
 
 VALUE rbasic_spec_get_klass(VALUE self, VALUE val) {
@@ -33,17 +43,15 @@ VALUE rbasic_spec_get_klass(VALUE self, VALUE val) {
 }
 
 VALUE rbasic_rdata_spec_get_flags(VALUE self, VALUE structure) {
-  return INT2FIX(RDATA(structure)->basic.flags);
+  return spec_get_flags(&RDATA(structure)->basic);
 }
 
 VALUE rbasic_rdata_spec_set_flags(VALUE self, VALUE structure, VALUE flags) {
-  RDATA(structure)->basic.flags = FIX2INT(flags);
-  return INT2FIX(RDATA(structure)->basic.flags);
+  return spec_set_flags(&RDATA(structure)->basic, FIX2INT(flags));
 }
 
 VALUE rbasic_rdata_spec_copy_flags(VALUE self, VALUE to, VALUE from) {
-  RDATA(to)->basic.flags = RDATA(from)->basic.flags;
-  return INT2FIX(RDATA(to)->basic.flags);
+  return spec_set_flags(&RDATA(to)->basic, RDATA(from)->basic.flags);
 }
 
 VALUE rbasic_rdata_spec_get_klass(VALUE self, VALUE structure) {
