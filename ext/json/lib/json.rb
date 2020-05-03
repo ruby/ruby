@@ -111,109 +111,6 @@ require 'json/common'
 #   n # => nil
 #   n.class # => NilClass
 #
-# ==== Parsing Options
-#
-# Argument +opts+ is a \Hash object containing options for parsing.
-#
-# ---
-#
-# Option +:max_nesting+ specifies the maximum nesting depth allowed;
-# defaults to +100+; specify +false+ to disable depth checking.
-#
-# With the default:
-#   source = '[0, [1, [2, [3]]]]'
-#   a = JSON.parse(source)
-#   a # => [0, [1, [2, [3]]]]
-# Too deep:
-#   # Raises JSON::NestingError (nesting of 2 is too deep):
-#   a = JSON.parse(source, {max_nesting: 1})
-# Bad value:
-#   # Raises TypeError (wrong argument type Symbol (expected Fixnum)):
-#   JSON.parse(source, {max_nesting: :foo})
-#
-# ---
-#
-# Option +allow_nan+ specifies whether to allow
-# +NaN+, +Infinity+, and +-Infinity+ in +source+;
-# defaults to +false+.
-#
-# With the default:
-#   source = '[NaN]'
-#   # Raises JSON::ParserError (232: unexpected token at '[NaN]'):
-#   a = JSON.parse(source)
-#   source = '[Infinity]'
-#   # Raises JSON::ParserError (232: unexpected token at '[Infinity]'):
-#   a = JSON.parse(source)
-#   source = '[-Infinity]'
-#   # Raises JSON::ParserError (232: unexpected token at '[-Infinity]'):
-#   a = JSON.parse(source)
-# Allow:
-#   source = '[NaN, Infinity, -Infinity]'
-#   a = JSON.parse(source, {allow_nan: true})
-#   a # => [NaN, Infinity, -Infinity]
-# With a truthy value:
-#   a = JSON.parse(source, {allow_nan: :foo})
-#   a # => [NaN, Infinity, -Infinity]
-#
-# ---
-#
-# Option +symbolize_names+ specifies whether to use Symbols or Strings
-# as keys in returned Hashes;
-# defaults to +false+ (use Strings).
-#
-# With the default:
-#   source = '{"a": "foo", "b": 1.0, "c": true, "d": false, "e": null}'
-#   h = JSON.parse(source)
-#   h # => {"a"=>"foo", "b"=>1.0, "c"=>true, "d"=>false, "e"=>nil}
-# Use Symbols:
-#   h = JSON.parse(source, {symbolize_names: true})
-#   h # => {:a=>"foo", :b=>1.0, :c=>true, :d=>false, :e=>nil}
-#
-# ---
-#
-# Option +object_class+ specifies the Ruby class to be used
-# for each \JSON object;
-# defaults to \Hash.
-#
-# With the default:
-#   source = '{"a": "foo", "b": 1.0, "c": true, "d": false, "e": null}'
-#   h = JSON.parse(source)
-#   h.class # => Hash
-# Use class \OpenStruct:
-#   o = JSON.parse(source, {object_class: OpenStruct})
-#   o # => #<OpenStruct a="foo", b=1.0, c=true, d=false, e=nil>
-# Try class \Object:
-#   # Raises NoMethodError (undefined method `[]=' for #<Object:>):
-#   JSON.parse(source, {object_class: Object})
-# Bad value:
-#   # Raises TypeError (wrong argument type Symbol (expected Class)):
-#   JSON.parse(source, {object_class: :foo})
-#
-# ---
-#
-# Option +array_class+ specifies the Ruby class to be used
-# for each \JSON array;
-# defaults to \Array.
-#
-# With the default:
-#   source = '["foo", 1.0, true, false, null]'
-#   a = JSON.parse(source)
-#   a.class # => Array
-# Use class \Set:
-#   s = JSON.parse(source, {array_class: Set})
-#   s # => #<Set: {"foo", 1.0, true, false, nil}>
-# Try class \Object:
-#   # Raises NoMethodError (undefined method `<<' for #<Object:>):
-#   JSON.parse(source, {array_class: Object})
-# Bad value:
-#   # Raises TypeError (wrong argument type Symbol (expected Class)):
-#   JSON.parse(source, {array_class: :foo})
-#
-# ---
-#
-# Option +create_additions+ specifies whether to
-# XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-#
 # === Generating \JSON
 #
 # To generate a Ruby \String containing \JSON data,
@@ -327,8 +224,6 @@ require 'json/common'
 # You can also craft custom additions.  See {Custom \JSON Additions}[#module-label-Custom+JSON+Additions]
 #
 # === Built-in Additions
-#
-# <table><tr><td>Foo</td></tr></table>
 #
 # The \JSON module includes additions for these classes:
 # - BigDecimal: <tt>require 'json/add/bigdecimal'</tt>
@@ -449,8 +344,8 @@ require 'json/common'
 # === Custom \JSON Additions
 #
 # In addition to the \JSON additions provided,
-# you can craft addition of your own,
-# either for Ruby built-in classes or for classes of your own.
+# you can craft \JSON additions of your own,
+# either for Ruby built-in classes or for user-defined classes.
 #
 # Here's a user-defined class +Foo+:
 #
