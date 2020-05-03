@@ -5,7 +5,6 @@ return if ENV.key?('APPVEYOR')
 return if ENV.key?('RUBYCI_NICKNAME')
 return if ENV['RUBY_DEBUG']&.include?('ci') # ci.rvm.jp
 return if /mswin/ =~ RUBY_PLATFORM
-return if /darwin/ =~ RUBY_PLATFORM # TODO: remove this after investigation
 
 class TestJITDebug < TestJIT
   def setup
