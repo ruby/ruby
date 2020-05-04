@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or  `rbimpl`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -133,13 +133,13 @@ VALUE rb_str_succ(VALUE);
 
 RBIMPL_ATTR_NONNULL(())
 static inline long
-ruby3_strlen(const char *str)
+rbimpl_strlen(const char *str)
 {
     return RBIMPL_CAST((long)strlen(str));
 }
 
 static inline VALUE
-ruby3_str_new(const char *str, long len)
+rbimpl_str_new(const char *str, long len)
 {
     if /* constexpr */ (! RBIMPL_CONSTANT_P(str)) {
         return rb_str_new(str, len);
@@ -153,19 +153,19 @@ ruby3_str_new(const char *str, long len)
 }
 
 static inline VALUE
-ruby3_str_new_cstr(const char *str)
+rbimpl_str_new_cstr(const char *str)
 {
     if /* constexpr */ (! RBIMPL_CONSTANT_P(str)) {
         return rb_str_new_cstr(str);
     }
     else {
-        long len = ruby3_strlen(str);
+        long len = rbimpl_strlen(str);
         return rb_str_new_static(str, len);
     }
 }
 
 static inline VALUE
-ruby3_usascii_str_new(const char *str, long len)
+rbimpl_usascii_str_new(const char *str, long len)
 {
     if /* constexpr */ (! RBIMPL_CONSTANT_P(str)) {
         return rb_usascii_str_new(str, len);
@@ -179,7 +179,7 @@ ruby3_usascii_str_new(const char *str, long len)
 }
 
 static inline VALUE
-ruby3_utf8_str_new(const char *str, long len)
+rbimpl_utf8_str_new(const char *str, long len)
 {
     if /* constexpr */ (! RBIMPL_CONSTANT_P(str)) {
         return rb_utf8_str_new(str, len);
@@ -193,114 +193,114 @@ ruby3_utf8_str_new(const char *str, long len)
 }
 
 static inline VALUE
-ruby3_tainted_str_new_cstr(const char *str)
+rbimpl_tainted_str_new_cstr(const char *str)
 {
     if /* constexpr */ (! RBIMPL_CONSTANT_P(str)) {
         return rb_tainted_str_new_cstr(str);
     }
     else {
-        long len = ruby3_strlen(str);
+        long len = rbimpl_strlen(str);
         return rb_tainted_str_new(str, len);
     }
 }
 
 static inline VALUE
-ruby3_usascii_str_new_cstr(const char *str)
+rbimpl_usascii_str_new_cstr(const char *str)
 {
     if /* constexpr */ (! RBIMPL_CONSTANT_P(str)) {
         return rb_usascii_str_new_cstr(str);
     }
     else {
-        long len = ruby3_strlen(str);
+        long len = rbimpl_strlen(str);
         return rb_usascii_str_new_static(str, len);
     }
 }
 
 static inline VALUE
-ruby3_utf8_str_new_cstr(const char *str)
+rbimpl_utf8_str_new_cstr(const char *str)
 {
     if /* constexpr */ (! RBIMPL_CONSTANT_P(str)) {
         return rb_utf8_str_new_cstr(str);
     }
     else {
-        long len = ruby3_strlen(str);
+        long len = rbimpl_strlen(str);
         return rb_utf8_str_new_static(str, len);
     }
 }
 
 static inline VALUE
-ruby3_external_str_new_cstr(const char *str)
+rbimpl_external_str_new_cstr(const char *str)
 {
     if /* constexpr */ (! RBIMPL_CONSTANT_P(str)) {
         return rb_external_str_new_cstr(str);
     }
     else {
-        long len = ruby3_strlen(str);
+        long len = rbimpl_strlen(str);
         return rb_external_str_new(str, len);
     }
 }
 
 static inline VALUE
-ruby3_locale_str_new_cstr(const char *str)
+rbimpl_locale_str_new_cstr(const char *str)
 {
     if /* constexpr */ (! RBIMPL_CONSTANT_P(str)) {
         return rb_locale_str_new_cstr(str);
     }
     else {
-        long len = ruby3_strlen(str);
+        long len = rbimpl_strlen(str);
         return rb_locale_str_new(str, len);
     }
 }
 
 static inline VALUE
-ruby3_str_buf_new_cstr(const char *str)
+rbimpl_str_buf_new_cstr(const char *str)
 {
     if /* constexpr */ (! RBIMPL_CONSTANT_P(str)) {
         return rb_str_buf_new_cstr(str);
     }
     else {
-        long len = ruby3_strlen(str);
+        long len = rbimpl_strlen(str);
         VALUE buf = rb_str_buf_new(len);
         return rb_str_buf_cat(buf, str, len);
     }
 }
 
 static inline VALUE
-ruby3_str_cat_cstr(VALUE buf, const char *str)
+rbimpl_str_cat_cstr(VALUE buf, const char *str)
 {
     if /* constexpr */ (! RBIMPL_CONSTANT_P(str)) {
         return rb_str_cat_cstr(buf, str);
     }
     else {
-        long len = ruby3_strlen(str);
+        long len = rbimpl_strlen(str);
         return rb_str_cat(buf, str, len);
     }
 }
 
 static inline VALUE
-ruby3_exc_new_cstr(VALUE exc, const char *str)
+rbimpl_exc_new_cstr(VALUE exc, const char *str)
 {
     if /* constexpr */ (! RBIMPL_CONSTANT_P(str)) {
         return rb_exc_new_cstr(exc, str);
     }
     else {
-        long len = ruby3_strlen(str);
+        long len = rbimpl_strlen(str);
         return rb_exc_new(exc, str, len);
     }
 }
 
-#define rb_str_new ruby3_str_new
-#define rb_str_new_cstr ruby3_str_new_cstr
-#define rb_usascii_str_new ruby3_usascii_str_new
-#define rb_utf8_str_new ruby3_utf8_str_new
-#define rb_tainted_str_new_cstr ruby3_tainted_str_new_cstr
-#define rb_usascii_str_new_cstr ruby3_usascii_str_new_cstr
-#define rb_utf8_str_new_cstr ruby3_utf8_str_new_cstr
-#define rb_external_str_new_cstr ruby3_external_str_new_cstr
-#define rb_locale_str_new_cstr ruby3_locale_str_new_cstr
-#define rb_str_buf_new_cstr ruby3_str_buf_new_cstr
-#define rb_str_cat_cstr ruby3_str_cat_cstr
-#define rb_exc_new_cstr ruby3_exc_new_cstr
+#define rb_str_new rbimpl_str_new
+#define rb_str_new_cstr rbimpl_str_new_cstr
+#define rb_usascii_str_new rbimpl_usascii_str_new
+#define rb_utf8_str_new rbimpl_utf8_str_new
+#define rb_tainted_str_new_cstr rbimpl_tainted_str_new_cstr
+#define rb_usascii_str_new_cstr rbimpl_usascii_str_new_cstr
+#define rb_utf8_str_new_cstr rbimpl_utf8_str_new_cstr
+#define rb_external_str_new_cstr rbimpl_external_str_new_cstr
+#define rb_locale_str_new_cstr rbimpl_locale_str_new_cstr
+#define rb_str_buf_new_cstr rbimpl_str_buf_new_cstr
+#define rb_str_cat_cstr rbimpl_str_cat_cstr
+#define rb_exc_new_cstr rbimpl_exc_new_cstr
 #define rb_str_new2 rb_str_new_cstr
 #define rb_str_new3 rb_str_new_shared
 #define rb_str_new4 rb_str_new_frozen

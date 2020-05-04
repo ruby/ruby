@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or  `rbimpl`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -115,11 +115,11 @@ extern void *alloca();
 # define ALLOCA_N(type, n)                              \
     RBIMPL_CAST((type *)                                 \
         __builtin_alloca_with_align(                    \
-            ruby3_size_mul_or_raise(sizeof(type), (n)), \
+            rbimpl_size_mul_or_raise(sizeof(type), (n)), \
             RUBY_ALIGNOF(type) * CHAR_BIT))
 #else
 # define ALLOCA_N(type,n) \
-    RBIMPL_CAST((type *)alloca(ruby3_size_mul_or_raise(sizeof(type), (n))))
+    RBIMPL_CAST((type *)alloca(rbimpl_size_mul_or_raise(sizeof(type), (n))))
 #endif
 
 /* allocates _n_ bytes temporary buffer and stores VALUE including it
@@ -135,10 +135,10 @@ extern void *alloca();
          rb_alloc_tmp_buffer2(&(v), (n), sizeof(type))))
 #define RB_ALLOCV_END(v) rb_free_tmp_buffer(&(v))
 
-#define MEMZERO(p,type,n) memset((p), 0, ruby3_size_mul_or_raise(sizeof(type), (n)))
-#define MEMCPY(p1,p2,type,n) memcpy((p1), (p2), ruby3_size_mul_or_raise(sizeof(type), (n)))
-#define MEMMOVE(p1,p2,type,n) memmove((p1), (p2), ruby3_size_mul_or_raise(sizeof(type), (n)))
-#define MEMCMP(p1,p2,type,n) memcmp((p1), (p2), ruby3_size_mul_or_raise(sizeof(type), (n)))
+#define MEMZERO(p,type,n) memset((p), 0, rbimpl_size_mul_or_raise(sizeof(type), (n)))
+#define MEMCPY(p1,p2,type,n) memcpy((p1), (p2), rbimpl_size_mul_or_raise(sizeof(type), (n)))
+#define MEMMOVE(p1,p2,type,n) memmove((p1), (p2), rbimpl_size_mul_or_raise(sizeof(type), (n)))
+#define MEMCMP(p1,p2,type,n) memcmp((p1), (p2), rbimpl_size_mul_or_raise(sizeof(type), (n)))
 
 #define ALLOC_N    RB_ALLOC_N
 #define ALLOC      RB_ALLOC
@@ -150,7 +150,7 @@ extern void *alloca();
 #define ALLOCV_END RB_ALLOCV_END
 
 /* Expecting this struct to be eliminated by function inlinings */
-struct ruby3_size_mul_overflow_tag {
+struct rbimpl_size_mul_overflow_tag {
     bool left;
     size_t right;
 };
@@ -212,10 +212,10 @@ RBIMPL_ATTR_CONSTEXPR(CXX14) /* https://gcc.gnu.org/bugzilla/show_bug.cgi?id=705
 RBIMPL_ATTR_CONSTEXPR(CXX14) /* https://bugs.llvm.org/show_bug.cgi?id=37633 */
 #endif
 RBIMPL_ATTR_CONST()
-static inline struct ruby3_size_mul_overflow_tag
-ruby3_size_mul_overflow(size_t x, size_t y)
+static inline struct rbimpl_size_mul_overflow_tag
+rbimpl_size_mul_overflow(size_t x, size_t y)
 {
-    struct ruby3_size_mul_overflow_tag ret = { false,  0, };
+    struct rbimpl_size_mul_overflow_tag ret = { false,  0, };
 
 #if RBIMPL_HAS_BUILTIN(__builtin_mul_overflow)
     ret.left = __builtin_mul_overflow(x, y, &ret.right);
@@ -243,10 +243,10 @@ ruby3_size_mul_overflow(size_t x, size_t y)
 }
 
 static inline size_t
-ruby3_size_mul_or_raise(size_t x, size_t y)
+rbimpl_size_mul_or_raise(size_t x, size_t y)
 {
-    struct ruby3_size_mul_overflow_tag size =
-        ruby3_size_mul_overflow(x, y);
+    struct rbimpl_size_mul_overflow_tag size =
+        rbimpl_size_mul_overflow(x, y);
 
     if (RB_LIKELY(! size.left)) {
         return size.right;
@@ -261,7 +261,7 @@ static inline void *
 rb_alloc_tmp_buffer2(volatile VALUE *store, long count, size_t elsize)
 {
     return rb_alloc_tmp_buffer_with_count(
-        store, ruby3_size_mul_or_raise(count, elsize), count);
+        store, rbimpl_size_mul_or_raise(count, elsize), count);
 }
 
 RBIMPL_ATTR_NOALIAS()

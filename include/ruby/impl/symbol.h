@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or  `rbimpl`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -77,7 +77,7 @@ rb_intern_const(const char *str)
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_NONNULL(())
 static inline ID
-ruby3_intern_const(ID *ptr, const char *str)
+rbimpl_intern_const(ID *ptr, const char *str)
 {
     while (! *ptr) {
         *ptr = rb_intern_const(str);
@@ -90,13 +90,13 @@ ruby3_intern_const(ID *ptr, const char *str)
 #define RUBY_CONST_ID_CACHE(result, str)                \
     {                                                   \
         static ID rb_intern_id_cache;                   \
-        ruby3_intern_const(&rb_intern_id_cache, (str)); \
+        rbimpl_intern_const(&rb_intern_id_cache, (str)); \
         result rb_intern_id_cache;                      \
     }
 #define RUBY_CONST_ID(var, str) \
     do { \
-        static ID ruby3_id; \
-        (var) = ruby3_intern_const(&ruby3_id, (str)); \
+        static ID rbimpl_id; \
+        (var) = rbimpl_intern_const(&rbimpl_id, (str)); \
     } while (0)
 
 #if defined(HAVE_STMT_AND_DECL_IN_EXPR)
@@ -105,8 +105,8 @@ ruby3_intern_const(ID *ptr, const char *str)
 #define rb_intern(str) \
     (RBIMPL_CONSTANT_P(str) ? \
      __extension__ ({ \
-         static ID ruby3_id; \
-         ruby3_intern_const(&ruby3_id, (str)); \
+         static ID rbimpl_id; \
+         rbimpl_intern_const(&rbimpl_id, (str)); \
      }) : \
      (rb_intern)(str))
 #endif

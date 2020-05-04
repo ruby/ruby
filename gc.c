@@ -109,7 +109,7 @@
 #define rb_jmp_buf rb_jmpbuf_t
 #undef rb_data_object_wrap
 
-static inline struct ruby3_size_mul_overflow_tag
+static inline struct rbimpl_size_mul_overflow_tag
 size_add_overflow(size_t x, size_t y)
 {
     size_t z;
@@ -131,24 +131,24 @@ size_add_overflow(size_t x, size_t y)
     p = z < y;
 
 #endif
-    return (struct ruby3_size_mul_overflow_tag) { p, z, };
+    return (struct rbimpl_size_mul_overflow_tag) { p, z, };
 }
 
-static inline struct ruby3_size_mul_overflow_tag
+static inline struct rbimpl_size_mul_overflow_tag
 size_mul_add_overflow(size_t x, size_t y, size_t z) /* x * y + z */
 {
-    struct ruby3_size_mul_overflow_tag t = ruby3_size_mul_overflow(x, y);
-    struct ruby3_size_mul_overflow_tag u = size_add_overflow(t.right, z);
-    return (struct ruby3_size_mul_overflow_tag) { t.left || u.left, u.right };
+    struct rbimpl_size_mul_overflow_tag t = rbimpl_size_mul_overflow(x, y);
+    struct rbimpl_size_mul_overflow_tag u = size_add_overflow(t.right, z);
+    return (struct rbimpl_size_mul_overflow_tag) { t.left || u.left, u.right };
 }
 
-static inline struct ruby3_size_mul_overflow_tag
+static inline struct rbimpl_size_mul_overflow_tag
 size_mul_add_mul_overflow(size_t x, size_t y, size_t z, size_t w) /* x * y + z * w */
 {
-    struct ruby3_size_mul_overflow_tag t = ruby3_size_mul_overflow(x, y);
-    struct ruby3_size_mul_overflow_tag u = ruby3_size_mul_overflow(z, w);
-    struct ruby3_size_mul_overflow_tag v = size_add_overflow(t.right, u.right);
-    return (struct ruby3_size_mul_overflow_tag) { t.left || u.left || v.left, v.right };
+    struct rbimpl_size_mul_overflow_tag t = rbimpl_size_mul_overflow(x, y);
+    struct rbimpl_size_mul_overflow_tag u = rbimpl_size_mul_overflow(z, w);
+    struct rbimpl_size_mul_overflow_tag v = size_add_overflow(t.right, u.right);
+    return (struct rbimpl_size_mul_overflow_tag) { t.left || u.left || v.left, v.right };
 }
 
 PRINTF_ARGS(NORETURN(static void gc_raise(VALUE, const char*, ...)), 2, 3);
@@ -156,7 +156,7 @@ PRINTF_ARGS(NORETURN(static void gc_raise(VALUE, const char*, ...)), 2, 3);
 static inline size_t
 size_mul_or_raise(size_t x, size_t y, VALUE exc)
 {
-    struct ruby3_size_mul_overflow_tag t = ruby3_size_mul_overflow(x, y);
+    struct rbimpl_size_mul_overflow_tag t = rbimpl_size_mul_overflow(x, y);
     if (LIKELY(!t.left)) {
         return t.right;
     }
@@ -182,7 +182,7 @@ rb_size_mul_or_raise(size_t x, size_t y, VALUE exc)
 static inline size_t
 size_mul_add_or_raise(size_t x, size_t y, size_t z, VALUE exc)
 {
-    struct ruby3_size_mul_overflow_tag t = size_mul_add_overflow(x, y, z);
+    struct rbimpl_size_mul_overflow_tag t = size_mul_add_overflow(x, y, z);
     if (LIKELY(!t.left)) {
         return t.right;
     }
@@ -209,7 +209,7 @@ rb_size_mul_add_or_raise(size_t x, size_t y, size_t z, VALUE exc)
 static inline size_t
 size_mul_add_mul_or_raise(size_t x, size_t y, size_t z, size_t w, VALUE exc)
 {
-    struct ruby3_size_mul_overflow_tag t = size_mul_add_mul_overflow(x, y, z, w);
+    struct rbimpl_size_mul_overflow_tag t = size_mul_add_mul_overflow(x, y, z, w);
     if (LIKELY(!t.left)) {
         return t.right;
     }

@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or  `rbimpl`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -283,7 +283,7 @@ RB_FL_ALL(VALUE obj, VALUE flags)
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_ARTIFICIAL()
 static inline void
-ruby3_fl_set_raw_raw(struct RBasic *obj, VALUE flags)
+rbimpl_fl_set_raw_raw(struct RBasic *obj, VALUE flags)
 {
     obj->flags |= flags;
 }
@@ -293,7 +293,7 @@ static inline void
 RB_FL_SET_RAW(VALUE obj, VALUE flags)
 {
     RBIMPL_ASSERT_OR_ASSUME(RB_FL_ABLE(obj));
-    ruby3_fl_set_raw_raw(RBASIC(obj), flags);
+    rbimpl_fl_set_raw_raw(RBASIC(obj), flags);
 }
 
 RBIMPL_ATTR_ARTIFICIAL()
@@ -308,7 +308,7 @@ RB_FL_SET(VALUE obj, VALUE flags)
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_ARTIFICIAL()
 static inline void
-ruby3_fl_unset_raw_raw(struct RBasic *obj, VALUE flags)
+rbimpl_fl_unset_raw_raw(struct RBasic *obj, VALUE flags)
 {
     obj->flags &= ~flags;
 }
@@ -318,7 +318,7 @@ static inline void
 RB_FL_UNSET_RAW(VALUE obj, VALUE flags)
 {
     RBIMPL_ASSERT_OR_ASSUME(RB_FL_ABLE(obj));
-    ruby3_fl_unset_raw_raw(RBASIC(obj), flags);
+    rbimpl_fl_unset_raw_raw(RBASIC(obj), flags);
 }
 
 RBIMPL_ATTR_ARTIFICIAL()
@@ -333,7 +333,7 @@ RB_FL_UNSET(VALUE obj, VALUE flags)
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_ARTIFICIAL()
 static inline void
-ruby3_fl_reverse_raw_raw(struct RBasic *obj, VALUE flags)
+rbimpl_fl_reverse_raw_raw(struct RBasic *obj, VALUE flags)
 {
     obj->flags ^= flags;
 }
@@ -343,7 +343,7 @@ static inline void
 RB_FL_REVERSE_RAW(VALUE obj, VALUE flags)
 {
     RBIMPL_ASSERT_OR_ASSUME(RB_FL_ABLE(obj));
-    ruby3_fl_reverse_raw_raw(RBASIC(obj), flags);
+    rbimpl_fl_reverse_raw_raw(RBASIC(obj), flags);
 }
 
 RBIMPL_ATTR_ARTIFICIAL()
