@@ -1,5 +1,5 @@
-#ifndef RUBY3_INTERN_NUMERIC_H                       /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_INTERN_NUMERIC_H
+#ifndef RBIMPL_INTERN_NUMERIC_H                      /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_INTERN_NUMERIC_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -24,7 +24,7 @@
 #include "ruby/impl/value.h"
 #include "ruby/backward/2/attributes.h"
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 /* numeric.c */
 NORETURN(void rb_num_zerodiv(void));
@@ -37,6 +37,6 @@ VALUE rb_num2fix(VALUE);
 VALUE rb_fix2str(VALUE, int);
 CONSTFUNC(VALUE rb_dbl_cmp(double, double));
 
-RUBY3_SYMBOL_EXPORT_END()
+RBIMPL_SYMBOL_EXPORT_END()
 
-#endif /* RUBY3_INTERN_NUMERIC_H */
+#endif /* RBIMPL_INTERN_NUMERIC_H */

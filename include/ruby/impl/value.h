@@ -1,5 +1,5 @@
-#ifndef RUBY3_VALUE_H                                /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_VALUE_H
+#ifndef RBIMPL_VALUE_H                               /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_VALUE_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -30,9 +30,9 @@ typedef uintptr_t ID;
 # define SIGNED_VALUE intptr_t
 # define SIZEOF_VALUE SIZEOF_UINTPTR_T
 # undef PRI_VALUE_PREFIX
-# define RUBY3_VALUE_NULL UINTPTR_C(0)
-# define RUBY3_VALUE_ONE  UINTPTR_C(1)
-# define RUBY3_VALUE_FULL UINTPTR_MAX
+# define RBIMPL_VALUE_NULL UINTPTR_C(0)
+# define RBIMPL_VALUE_ONE  UINTPTR_C(1)
+# define RBIMPL_VALUE_FULL UINTPTR_MAX
 
 #elif SIZEOF_LONG == SIZEOF_VOIDP
 typedef unsigned long VALUE;
@@ -40,9 +40,9 @@ typedef unsigned long ID;
 # define SIGNED_VALUE long
 # define SIZEOF_VALUE SIZEOF_LONG
 # define PRI_VALUE_PREFIX "l"
-# define RUBY3_VALUE_NULL 0UL
-# define RUBY3_VALUE_ONE  1UL
-# define RUBY3_VALUE_FULL ULONG_MAX
+# define RBIMPL_VALUE_NULL 0UL
+# define RBIMPL_VALUE_ONE  1UL
+# define RBIMPL_VALUE_FULL ULONG_MAX
 
 #elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
 typedef unsigned LONG_LONG VALUE;
@@ -51,16 +51,16 @@ typedef unsigned LONG_LONG ID;
 # define LONG_LONG_VALUE 1
 # define SIZEOF_VALUE SIZEOF_LONG_LONG
 # define PRI_VALUE_PREFIX PRI_LL_PREFIX
-# define RUBY3_VALUE_NULL 0ULL
-# define RUBY3_VALUE_ONE  1ULL
-# define RUBY3_VALUE_FULL ULLONG_MAX
+# define RBIMPL_VALUE_NULL 0ULL
+# define RBIMPL_VALUE_ONE  1ULL
+# define RBIMPL_VALUE_FULL ULLONG_MAX
 
 #else
 # error ---->> ruby requires sizeof(void*) == sizeof(long) or sizeof(LONG_LONG) to be compiled. <<----
 #endif
 
-RUBY3_STATIC_ASSERT(sizeof_int, SIZEOF_INT == sizeof(int));
-RUBY3_STATIC_ASSERT(sizeof_long, SIZEOF_LONG == sizeof(long));
-RUBY3_STATIC_ASSERT(sizeof_long_long, SIZEOF_LONG_LONG == sizeof(LONG_LONG));
-RUBY3_STATIC_ASSERT(sizeof_voidp, SIZEOF_VOIDP == sizeof(void *));
-#endif /* RUBY3_VALUE_H */
+RBIMPL_STATIC_ASSERT(sizeof_int, SIZEOF_INT == sizeof(int));
+RBIMPL_STATIC_ASSERT(sizeof_long, SIZEOF_LONG == sizeof(long));
+RBIMPL_STATIC_ASSERT(sizeof_long_long, SIZEOF_LONG_LONG == sizeof(LONG_LONG));
+RBIMPL_STATIC_ASSERT(sizeof_voidp, SIZEOF_VOIDP == sizeof(void *));
+#endif /* RBIMPL_VALUE_H */

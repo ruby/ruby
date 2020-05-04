@@ -1,5 +1,5 @@
-#ifndef RUBY3_ROBJECT_H                              /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_ROBJECT_H
+#ifndef RBIMPL_ROBJECT_H                             /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_ROBJECT_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -33,7 +33,7 @@
 #include "ruby/impl/value.h"
 #include "ruby/impl/value_type.h"
 
-#define ROBJECT(obj)          RUBY3_CAST((struct RObject *)(obj))
+#define ROBJECT(obj)          RBIMPL_CAST((struct RObject *)(obj))
 #define ROBJECT_EMBED_LEN_MAX ROBJECT_EMBED_LEN_MAX
 #define ROBJECT_EMBED         ROBJECT_EMBED
 /** @cond INTERNAL_MACRO */
@@ -43,7 +43,7 @@
 
 enum ruby_robject_flags { ROBJECT_EMBED = RUBY_FL_USER1 };
 
-enum ruby_robject_consts { ROBJECT_EMBED_LEN_MAX = RUBY3_EMBED_LEN_MAX_OF(VALUE) };
+enum ruby_robject_consts { ROBJECT_EMBED_LEN_MAX = RBIMPL_EMBED_LEN_MAX_OF(VALUE) };
 
 struct RObject {
     struct RBasic basic;
@@ -57,12 +57,12 @@ struct RObject {
     } as;
 };
 
-RUBY3_ATTR_PURE_ON_NDEBUG()
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline uint32_t
 ROBJECT_NUMIV(VALUE obj)
 {
-    RUBY3_ASSERT_TYPE(obj, RUBY_T_OBJECT);
+    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
 
     if (RB_FL_ANY_RAW(obj, ROBJECT_EMBED)) {
         return ROBJECT_EMBED_LEN_MAX;
@@ -72,12 +72,12 @@ ROBJECT_NUMIV(VALUE obj)
     }
 }
 
-RUBY3_ATTR_PURE_ON_NDEBUG()
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline VALUE *
 ROBJECT_IVPTR(VALUE obj)
 {
-    RUBY3_ASSERT_TYPE(obj, RUBY_T_OBJECT);
+    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
 
     struct RObject *const ptr = ROBJECT(obj);
 
@@ -94,4 +94,4 @@ ROBJECT_IVPTR(VALUE obj)
      RCLASS_IV_INDEX_TBL(rb_obj_class(o)) : \
      ROBJECT(o)->as.heap.iv_index_tbl)
 
-#endif /* RUBY3_ROBJECT_H */
+#endif /* RBIMPL_ROBJECT_H */

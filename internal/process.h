@@ -116,7 +116,7 @@ ARGVSTR2ARGC(VALUE argv_str)
 
 #ifdef HAVE_WORKING_FORK
 COMPILER_WARNING_PUSH
-#if __has_warning("-Wdeprecated-declarations") || RUBY3_COMPILER_IS(GCC)
+#if __has_warning("-Wdeprecated-declarations") || RBIMPL_COMPILER_IS(GCC)
 COMPILER_WARNING_IGNORED(-Wdeprecated-declarations)
 #endif
 static inline rb_pid_t

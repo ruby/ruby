@@ -11,7 +11,7 @@
  */
 #include "ruby/impl/static_assert.h"
 #ifndef STATIC_ASSERT
-# define STATIC_ASSERT RUBY3_STATIC_ASSERT
+# define STATIC_ASSERT RBIMPL_STATIC_ASSERT
 #endif
 
 #endif /* INTERNAL_STATIC_ASSERT_H */

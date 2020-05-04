@@ -9603,7 +9603,7 @@ ruby_memerror_body(void *dummy)
 }
 
 NORETURN(static void ruby_memerror(void));
-RUBY3_ATTR_MAYBE_UNUSED()
+RBIMPL_ATTR_MAYBE_UNUSED()
 static void
 ruby_memerror(void)
 {

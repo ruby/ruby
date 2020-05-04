@@ -1,5 +1,5 @@
-#ifndef RUBY3_FL_TYPE_H                              /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_FL_TYPE_H
+#ifndef RBIMPL_FL_TYPE_H                             /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_FL_TYPE_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -38,47 +38,47 @@
 
 /** @cond INTERNAL_MACRO */
 #ifdef ENUM_OVER_INT
-# define RUBY3_WIDER_ENUM 1
+# define RBIMPL_WIDER_ENUM 1
 #elif SIZEOF_INT * CHAR_BIT > 12+19+1
-# define RUBY3_WIDER_ENUM 1
+# define RBIMPL_WIDER_ENUM 1
 #else
-# define RUBY3_WIDER_ENUM 0
+# define RBIMPL_WIDER_ENUM 0
 #endif
 /** @endcond */
 
-#define FL_SINGLETON    RUBY3_CAST((VALUE)RUBY_FL_SINGLETON)
-#define FL_WB_PROTECTED RUBY3_CAST((VALUE)RUBY_FL_WB_PROTECTED)
-#define FL_PROMOTED0    RUBY3_CAST((VALUE)RUBY_FL_PROMOTED0)
-#define FL_PROMOTED1    RUBY3_CAST((VALUE)RUBY_FL_PROMOTED1)
-#define FL_FINALIZE     RUBY3_CAST((VALUE)RUBY_FL_FINALIZE)
-#define FL_TAINT        RUBY3_CAST((VALUE)RUBY_FL_TAINT)
-#define FL_UNTRUSTED    RUBY3_CAST((VALUE)RUBY_FL_UNTRUSTED)
-#define FL_SEEN_OBJ_ID  RUBY3_CAST((VALUE)RUBY_FL_SEEN_OBJ_ID)
-#define FL_EXIVAR       RUBY3_CAST((VALUE)RUBY_FL_EXIVAR)
-#define FL_FREEZE       RUBY3_CAST((VALUE)RUBY_FL_FREEZE)
+#define FL_SINGLETON    RBIMPL_CAST((VALUE)RUBY_FL_SINGLETON)
+#define FL_WB_PROTECTED RBIMPL_CAST((VALUE)RUBY_FL_WB_PROTECTED)
+#define FL_PROMOTED0    RBIMPL_CAST((VALUE)RUBY_FL_PROMOTED0)
+#define FL_PROMOTED1    RBIMPL_CAST((VALUE)RUBY_FL_PROMOTED1)
+#define FL_FINALIZE     RBIMPL_CAST((VALUE)RUBY_FL_FINALIZE)
+#define FL_TAINT        RBIMPL_CAST((VALUE)RUBY_FL_TAINT)
+#define FL_UNTRUSTED    RBIMPL_CAST((VALUE)RUBY_FL_UNTRUSTED)
+#define FL_SEEN_OBJ_ID  RBIMPL_CAST((VALUE)RUBY_FL_SEEN_OBJ_ID)
+#define FL_EXIVAR       RBIMPL_CAST((VALUE)RUBY_FL_EXIVAR)
+#define FL_FREEZE       RBIMPL_CAST((VALUE)RUBY_FL_FREEZE)
 
-#define FL_USHIFT       RUBY3_CAST((VALUE)RUBY_FL_USHIFT)
+#define FL_USHIFT       RBIMPL_CAST((VALUE)RUBY_FL_USHIFT)
 
-#define FL_USER0        RUBY3_CAST((VALUE)RUBY_FL_USER0)
-#define FL_USER1        RUBY3_CAST((VALUE)RUBY_FL_USER1)
-#define FL_USER2        RUBY3_CAST((VALUE)RUBY_FL_USER2)
-#define FL_USER3        RUBY3_CAST((VALUE)RUBY_FL_USER3)
-#define FL_USER4        RUBY3_CAST((VALUE)RUBY_FL_USER4)
-#define FL_USER5        RUBY3_CAST((VALUE)RUBY_FL_USER5)
-#define FL_USER6        RUBY3_CAST((VALUE)RUBY_FL_USER6)
-#define FL_USER7        RUBY3_CAST((VALUE)RUBY_FL_USER7)
-#define FL_USER8        RUBY3_CAST((VALUE)RUBY_FL_USER8)
-#define FL_USER9        RUBY3_CAST((VALUE)RUBY_FL_USER9)
-#define FL_USER10       RUBY3_CAST((VALUE)RUBY_FL_USER10)
-#define FL_USER11       RUBY3_CAST((VALUE)RUBY_FL_USER11)
-#define FL_USER12       RUBY3_CAST((VALUE)RUBY_FL_USER12)
-#define FL_USER13       RUBY3_CAST((VALUE)RUBY_FL_USER13)
-#define FL_USER14       RUBY3_CAST((VALUE)RUBY_FL_USER14)
-#define FL_USER15       RUBY3_CAST((VALUE)RUBY_FL_USER15)
-#define FL_USER16       RUBY3_CAST((VALUE)RUBY_FL_USER16)
-#define FL_USER17       RUBY3_CAST((VALUE)RUBY_FL_USER17)
-#define FL_USER18       RUBY3_CAST((VALUE)RUBY_FL_USER18)
-#define FL_USER19       RUBY3_CAST((VALUE)(unsigned int)RUBY_FL_USER19)
+#define FL_USER0        RBIMPL_CAST((VALUE)RUBY_FL_USER0)
+#define FL_USER1        RBIMPL_CAST((VALUE)RUBY_FL_USER1)
+#define FL_USER2        RBIMPL_CAST((VALUE)RUBY_FL_USER2)
+#define FL_USER3        RBIMPL_CAST((VALUE)RUBY_FL_USER3)
+#define FL_USER4        RBIMPL_CAST((VALUE)RUBY_FL_USER4)
+#define FL_USER5        RBIMPL_CAST((VALUE)RUBY_FL_USER5)
+#define FL_USER6        RBIMPL_CAST((VALUE)RUBY_FL_USER6)
+#define FL_USER7        RBIMPL_CAST((VALUE)RUBY_FL_USER7)
+#define FL_USER8        RBIMPL_CAST((VALUE)RUBY_FL_USER8)
+#define FL_USER9        RBIMPL_CAST((VALUE)RUBY_FL_USER9)
+#define FL_USER10       RBIMPL_CAST((VALUE)RUBY_FL_USER10)
+#define FL_USER11       RBIMPL_CAST((VALUE)RUBY_FL_USER11)
+#define FL_USER12       RBIMPL_CAST((VALUE)RUBY_FL_USER12)
+#define FL_USER13       RBIMPL_CAST((VALUE)RUBY_FL_USER13)
+#define FL_USER14       RBIMPL_CAST((VALUE)RUBY_FL_USER14)
+#define FL_USER15       RBIMPL_CAST((VALUE)RUBY_FL_USER15)
+#define FL_USER16       RBIMPL_CAST((VALUE)RUBY_FL_USER16)
+#define FL_USER17       RBIMPL_CAST((VALUE)RUBY_FL_USER17)
+#define FL_USER18       RBIMPL_CAST((VALUE)RUBY_FL_USER18)
+#define FL_USER19       RBIMPL_CAST((VALUE)(unsigned int)RUBY_FL_USER19)
 
 #define ELTS_SHARED          RUBY_ELTS_SHARED
 #define RUBY_ELTS_SHARED     RUBY_ELTS_SHARED
@@ -157,7 +157,7 @@ enum ruby_fl_ushift { RUBY_FL_USHIFT = 12 };
  * that we do not support 16 bit `int` environment. */
 RB_GNUC_EXTENSION
 enum
-RUBY3_ATTR_FLAG_ENUM()
+RBIMPL_ATTR_FLAG_ENUM()
 ruby_fl_type {
     RUBY_FL_WB_PROTECTED = (1<<5),
     RUBY_FL_PROMOTED0    = (1<<5),
@@ -170,33 +170,33 @@ ruby_fl_type {
     RUBY_FL_EXIVAR       = (1<<10),
     RUBY_FL_FREEZE       = (1<<11),
 
-#define RUBY3_FL_USER_N(n) RUBY_FL_USER##n = (1<<(RUBY_FL_USHIFT+n))
-    RUBY3_FL_USER_N(0),
-    RUBY3_FL_USER_N(1),
-    RUBY3_FL_USER_N(2),
-    RUBY3_FL_USER_N(3),
-    RUBY3_FL_USER_N(4),
-    RUBY3_FL_USER_N(5),
-    RUBY3_FL_USER_N(6),
-    RUBY3_FL_USER_N(7),
-    RUBY3_FL_USER_N(8),
-    RUBY3_FL_USER_N(9),
-    RUBY3_FL_USER_N(10),
-    RUBY3_FL_USER_N(11),
-    RUBY3_FL_USER_N(12),
-    RUBY3_FL_USER_N(13),
-    RUBY3_FL_USER_N(14),
-    RUBY3_FL_USER_N(15),
-    RUBY3_FL_USER_N(16),
-    RUBY3_FL_USER_N(17),
-    RUBY3_FL_USER_N(18),
+#define RBIMPL_FL_USER_N(n) RUBY_FL_USER##n = (1<<(RUBY_FL_USHIFT+n))
+    RBIMPL_FL_USER_N(0),
+    RBIMPL_FL_USER_N(1),
+    RBIMPL_FL_USER_N(2),
+    RBIMPL_FL_USER_N(3),
+    RBIMPL_FL_USER_N(4),
+    RBIMPL_FL_USER_N(5),
+    RBIMPL_FL_USER_N(6),
+    RBIMPL_FL_USER_N(7),
+    RBIMPL_FL_USER_N(8),
+    RBIMPL_FL_USER_N(9),
+    RBIMPL_FL_USER_N(10),
+    RBIMPL_FL_USER_N(11),
+    RBIMPL_FL_USER_N(12),
+    RBIMPL_FL_USER_N(13),
+    RBIMPL_FL_USER_N(14),
+    RBIMPL_FL_USER_N(15),
+    RBIMPL_FL_USER_N(16),
+    RBIMPL_FL_USER_N(17),
+    RBIMPL_FL_USER_N(18),
 #if ENUM_OVER_INT
-    RUBY3_FL_USER_N(19),
+    RBIMPL_FL_USER_N(19),
 #else
-# define RUBY_FL_USER19 (RUBY3_VALUE_ONE<<(RUBY_FL_USHIFT+19))
+# define RUBY_FL_USER19 (RBIMPL_VALUE_ONE<<(RUBY_FL_USHIFT+19))
 #endif
-#undef RUBY3_FL_USER_N
-#undef RUBY3_WIDER_ENUM
+#undef RBIMPL_FL_USER_N
+#undef RBIMPL_WIDER_ENUM
 
     RUBY_ELTS_SHARED  = RUBY_FL_USER2,
     RUBY_FL_SINGLETON = RUBY_FL_USER0,
@@ -204,14 +204,14 @@ ruby_fl_type {
 
 enum { RUBY_FL_DUPPED = RUBY_T_MASK | RUBY_FL_EXIVAR | RUBY_FL_TAINT };
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 void rb_obj_infect(VALUE victim, VALUE carrier);
 void rb_freeze_singleton_class(VALUE klass);
-RUBY3_SYMBOL_EXPORT_END()
+RBIMPL_SYMBOL_EXPORT_END()
 
-RUBY3_ATTR_PURE_ON_NDEBUG()
-RUBY3_ATTR_ARTIFICIAL()
-RUBY3_ATTR_FORCEINLINE()
+RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_FORCEINLINE()
 static bool
 RB_FL_ABLE(VALUE obj)
 {
@@ -226,17 +226,17 @@ RB_FL_ABLE(VALUE obj)
     }
 }
 
-RUBY3_ATTR_PURE_ON_NDEBUG()
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline VALUE
 RB_FL_TEST_RAW(VALUE obj, VALUE flags)
 {
-    RUBY3_ASSERT_OR_ASSUME(RB_FL_ABLE(obj));
+    RBIMPL_ASSERT_OR_ASSUME(RB_FL_ABLE(obj));
     return RBASIC(obj)->flags & flags;
 }
 
-RUBY3_ATTR_PURE_ON_NDEBUG()
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline VALUE
 RB_FL_TEST(VALUE obj, VALUE flags)
 {
@@ -244,59 +244,59 @@ RB_FL_TEST(VALUE obj, VALUE flags)
         return RB_FL_TEST_RAW(obj, flags);
     }
     else {
-        return RUBY3_VALUE_NULL;
+        return RBIMPL_VALUE_NULL;
     }
 }
 
-RUBY3_ATTR_PURE_ON_NDEBUG()
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline bool
 RB_FL_ANY_RAW(VALUE obj, VALUE flags)
 {
     return RB_FL_TEST_RAW(obj, flags);
 }
 
-RUBY3_ATTR_PURE_ON_NDEBUG()
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline bool
 RB_FL_ANY(VALUE obj, VALUE flags)
 {
     return RB_FL_TEST(obj, flags);
 }
 
-RUBY3_ATTR_PURE_ON_NDEBUG()
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline bool
 RB_FL_ALL_RAW(VALUE obj, VALUE flags)
 {
     return RB_FL_TEST_RAW(obj, flags) == flags;
 }
 
-RUBY3_ATTR_PURE_ON_NDEBUG()
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline bool
 RB_FL_ALL(VALUE obj, VALUE flags)
 {
     return RB_FL_TEST(obj, flags) == flags;
 }
 
-RUBY3_ATTR_NOALIAS()
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_NOALIAS()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline void
 ruby3_fl_set_raw_raw(struct RBasic *obj, VALUE flags)
 {
     obj->flags |= flags;
 }
 
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline void
 RB_FL_SET_RAW(VALUE obj, VALUE flags)
 {
-    RUBY3_ASSERT_OR_ASSUME(RB_FL_ABLE(obj));
+    RBIMPL_ASSERT_OR_ASSUME(RB_FL_ABLE(obj));
     ruby3_fl_set_raw_raw(RBASIC(obj), flags);
 }
 
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline void
 RB_FL_SET(VALUE obj, VALUE flags)
 {
@@ -305,23 +305,23 @@ RB_FL_SET(VALUE obj, VALUE flags)
     }
 }
 
-RUBY3_ATTR_NOALIAS()
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_NOALIAS()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline void
 ruby3_fl_unset_raw_raw(struct RBasic *obj, VALUE flags)
 {
     obj->flags &= ~flags;
 }
 
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline void
 RB_FL_UNSET_RAW(VALUE obj, VALUE flags)
 {
-    RUBY3_ASSERT_OR_ASSUME(RB_FL_ABLE(obj));
+    RBIMPL_ASSERT_OR_ASSUME(RB_FL_ABLE(obj));
     ruby3_fl_unset_raw_raw(RBASIC(obj), flags);
 }
 
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline void
 RB_FL_UNSET(VALUE obj, VALUE flags)
 {
@@ -330,23 +330,23 @@ RB_FL_UNSET(VALUE obj, VALUE flags)
     }
 }
 
-RUBY3_ATTR_NOALIAS()
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_NOALIAS()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline void
 ruby3_fl_reverse_raw_raw(struct RBasic *obj, VALUE flags)
 {
     obj->flags ^= flags;
 }
 
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline void
 RB_FL_REVERSE_RAW(VALUE obj, VALUE flags)
 {
-    RUBY3_ASSERT_OR_ASSUME(RB_FL_ABLE(obj));
+    RBIMPL_ASSERT_OR_ASSUME(RB_FL_ABLE(obj));
     ruby3_fl_reverse_raw_raw(RBASIC(obj), flags);
 }
 
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline void
 RB_FL_REVERSE(VALUE obj, VALUE flags)
 {
@@ -355,8 +355,8 @@ RB_FL_REVERSE(VALUE obj, VALUE flags)
     }
 }
 
-RUBY3_ATTR_PURE_ON_NDEBUG()
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline bool
 RB_OBJ_TAINTABLE(VALUE obj)
 {
@@ -374,30 +374,30 @@ RB_OBJ_TAINTABLE(VALUE obj)
     }
 }
 
-RUBY3_ATTR_PURE_ON_NDEBUG()
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline VALUE
 RB_OBJ_TAINTED_RAW(VALUE obj)
 {
     return RB_FL_TEST_RAW(obj, RUBY_FL_TAINT);
 }
 
-RUBY3_ATTR_PURE_ON_NDEBUG()
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline bool
 RB_OBJ_TAINTED(VALUE obj)
 {
     return RB_FL_ANY(obj, RUBY_FL_TAINT);
 }
 
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline void
 RB_OBJ_TAINT_RAW(VALUE obj)
 {
     RB_FL_SET_RAW(obj, RUBY_FL_TAINT);
 }
 
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline void
 RB_OBJ_TAINT(VALUE obj)
 {
@@ -406,16 +406,16 @@ RB_OBJ_TAINT(VALUE obj)
     }
 }
 
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline void
 RB_OBJ_INFECT_RAW(VALUE dst, VALUE src)
 {
-    RUBY3_ASSERT_OR_ASSUME(RB_OBJ_TAINTABLE(dst));
-    RUBY3_ASSERT_OR_ASSUME(RB_FL_ABLE(src));
+    RBIMPL_ASSERT_OR_ASSUME(RB_OBJ_TAINTABLE(dst));
+    RBIMPL_ASSERT_OR_ASSUME(RB_FL_ABLE(src));
     RB_FL_SET_RAW(dst, RB_OBJ_TAINTED_RAW(src));
 }
 
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline void
 RB_OBJ_INFECT(VALUE dst, VALUE src)
 {
@@ -424,8 +424,8 @@ RB_OBJ_INFECT(VALUE dst, VALUE src)
     }
 }
 
-RUBY3_ATTR_PURE_ON_NDEBUG()
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_ARTIFICIAL()
 /* It is  intentional not to return  bool here. There  is a place in  ruby core
  * (namely class.c:singleton_class_of()) where return value of this function is
  * verbatimly passed to RB_FL_SET_RAW. */
@@ -435,8 +435,8 @@ RB_OBJ_FROZEN_RAW(VALUE obj)
     return RB_FL_TEST_RAW(obj, RUBY_FL_FREEZE);
 }
 
-RUBY3_ATTR_PURE_ON_NDEBUG()
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline bool
 RB_OBJ_FROZEN(VALUE obj)
 {
@@ -448,7 +448,7 @@ RB_OBJ_FROZEN(VALUE obj)
     }
 }
 
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline void
 RB_OBJ_FREEZE_RAW(VALUE obj)
 {
@@ -466,4 +466,4 @@ rb_obj_freeze_inline(VALUE x)
     }
 }
 
-#endif /* RUBY3_FL_TYPE_H */
+#endif /* RBIMPL_FL_TYPE_H */

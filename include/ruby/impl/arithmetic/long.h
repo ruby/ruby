@@ -1,5 +1,5 @@
-#ifndef RUBY3_ARITHMETIC_LONG_H                      /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_ARITHMETIC_LONG_H
+#ifndef RBIMPL_ARITHMETIC_LONG_H                     /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_ARITHMETIC_LONG_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -65,23 +65,23 @@
 #define RB_INT2FIX RB_INT2FIX
 /** @endcond */
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 
-RUBY3_ATTR_NORETURN()
-RUBY3_ATTR_COLD()
+RBIMPL_ATTR_NORETURN()
+RBIMPL_ATTR_COLD()
 void rb_out_of_int(SIGNED_VALUE num);
 
 long rb_num2long(VALUE num);
 unsigned long rb_num2ulong(VALUE num);
-RUBY3_SYMBOL_EXPORT_END()
+RBIMPL_SYMBOL_EXPORT_END()
 
-RUBY3_ATTR_CONST_ON_NDEBUG()
-RUBY3_ATTR_CONSTEXPR_ON_NDEBUG(CXX14)
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_CONST_ON_NDEBUG()
+RBIMPL_ATTR_CONSTEXPR_ON_NDEBUG(CXX14)
+RBIMPL_ATTR_ARTIFICIAL()
 static inline VALUE
 RB_INT2FIX(long i)
 {
-    RUBY3_ASSERT_OR_ASSUME(RB_FIXABLE(i));
+    RBIMPL_ASSERT_OR_ASSUME(RB_FIXABLE(i));
 
     /* :NOTE: VALUE can be wider than long.  As j being unsigned, 2j+1 is fully
      * defined. Also it can be compiled into a single LEA instruction. */
@@ -91,17 +91,17 @@ RB_INT2FIX(long i)
     const SIGNED_VALUE  m = l; /* Sign extend */
     const VALUE         n = m;
 
-    RUBY3_ASSERT_OR_ASSUME(RB_FIXNUM_P(n));
+    RBIMPL_ASSERT_OR_ASSUME(RB_FIXNUM_P(n));
     return n;
 }
 
 static inline int
 rb_long2int_inline(long n)
 {
-    int i = RUBY3_CAST((int)n);
+    int i = RBIMPL_CAST((int)n);
 
     if /* constexpr */ (sizeof(long) <= sizeof(int)) {
-        RUBY3_ASSUME(i == n);
+        RBIMPL_ASSUME(i == n);
     }
 
     if (i != n)
@@ -110,51 +110,51 @@ rb_long2int_inline(long n)
     return i;
 }
 
-RUBY3_ATTR_CONST_ON_NDEBUG()
-RUBY3_ATTR_CONSTEXPR_ON_NDEBUG(CXX14)
+RBIMPL_ATTR_CONST_ON_NDEBUG()
+RBIMPL_ATTR_CONSTEXPR_ON_NDEBUG(CXX14)
 static inline long
 ruby3_fix2long_by_idiv(VALUE x)
 {
-    RUBY3_ASSERT_OR_ASSUME(RB_FIXNUM_P(x));
+    RBIMPL_ASSERT_OR_ASSUME(RB_FIXNUM_P(x));
 
     /* :NOTE: VALUE  can be wider  than long.  (x-1)/2 never  overflows because
      * RB_FIXNUM_P(x)  holds.   Also it  has  no  portability issue  like  y>>1
      * below. */
     const SIGNED_VALUE y = x - RUBY_FIXNUM_FLAG;
     const SIGNED_VALUE z = y / 2;
-    const long         w = RUBY3_CAST((long)z);
+    const long         w = RBIMPL_CAST((long)z);
 
-    RUBY3_ASSERT_OR_ASSUME(RB_FIXABLE(w));
+    RBIMPL_ASSERT_OR_ASSUME(RB_FIXABLE(w));
     return w;
 }
 
-RUBY3_ATTR_CONST_ON_NDEBUG()
-RUBY3_ATTR_CONSTEXPR_ON_NDEBUG(CXX14)
+RBIMPL_ATTR_CONST_ON_NDEBUG()
+RBIMPL_ATTR_CONSTEXPR_ON_NDEBUG(CXX14)
 static inline long
 ruby3_fix2long_by_shift(VALUE x)
 {
-    RUBY3_ASSERT_OR_ASSUME(RB_FIXNUM_P(x));
+    RBIMPL_ASSERT_OR_ASSUME(RB_FIXNUM_P(x));
 
     /* :NOTE: VALUE can be wider than long.  If right shift is arithmetic, this
      * is noticeably faster than above. */
     const SIGNED_VALUE y = x;
     const SIGNED_VALUE z = y >> 1;
-    const long         w = RUBY3_CAST((long)z);
+    const long         w = RBIMPL_CAST((long)z);
 
-    RUBY3_ASSERT_OR_ASSUME(RB_FIXABLE(w));
+    RBIMPL_ASSERT_OR_ASSUME(RB_FIXABLE(w));
     return w;
 }
 
-RUBY3_ATTR_CONST()
-RUBY3_ATTR_CONSTEXPR(CXX11)
+RBIMPL_ATTR_CONST()
+RBIMPL_ATTR_CONSTEXPR(CXX11)
 static inline bool
 ruby3_right_shift_is_arithmetic_p(void)
 {
     return (-1 >> 1) == -1;
 }
 
-RUBY3_ATTR_CONST_ON_NDEBUG()
-RUBY3_ATTR_CONSTEXPR_ON_NDEBUG(CXX14)
+RBIMPL_ATTR_CONST_ON_NDEBUG()
+RBIMPL_ATTR_CONSTEXPR_ON_NDEBUG(CXX14)
 static inline long
 rb_fix2long(VALUE x)
 {
@@ -166,12 +166,12 @@ rb_fix2long(VALUE x)
     }
 }
 
-RUBY3_ATTR_CONST_ON_NDEBUG()
-RUBY3_ATTR_CONSTEXPR_ON_NDEBUG(CXX14)
+RBIMPL_ATTR_CONST_ON_NDEBUG()
+RBIMPL_ATTR_CONSTEXPR_ON_NDEBUG(CXX14)
 static inline unsigned long
 rb_fix2ulong(VALUE x)
 {
-    RUBY3_ASSERT_OR_ASSUME(RB_FIXNUM_P(x));
+    RBIMPL_ASSERT_OR_ASSUME(RB_FIXNUM_P(x));
     return rb_fix2long(x);
 }
 
@@ -224,21 +224,21 @@ rb_ulong2num_inline(unsigned long v)
  * VALUE does not fit into an enum (which must be a signed int).  But we cannot
  * break existing codes.
  */
-#if RUBY3_HAS_ATTR_CONSTEXPR_CXX14
+#if RBIMPL_HAS_ATTR_CONSTEXPR_CXX14
 # /* C++ can write constexpr as enum values. */
 
 #elif ! defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
 # undef INT2FIX
-# define INT2FIX(i) (RUBY3_CAST((VALUE)(i)) << 1 | RUBY_FIXNUM_FLAG)
+# define INT2FIX(i) (RBIMPL_CAST((VALUE)(i)) << 1 | RUBY_FIXNUM_FLAG)
 
 #else
 # undef INT2FIX
 # define INT2FIX(i)                                     \
     __builtin_choose_expr(                              \
         __builtin_constant_p(i),                        \
-        RUBY3_CAST((VALUE)(i)) << 1 | RUBY_FIXNUM_FLAG, \
+        RBIMPL_CAST((VALUE)(i)) << 1 | RUBY_FIXNUM_FLAG, \
         RB_INT2FIX(i))
 #endif
 /** @endcond */
 
-#endif /* RUBY3_ARITHMETIC_LONG_H */
+#endif /* RBIMPL_ARITHMETIC_LONG_H */

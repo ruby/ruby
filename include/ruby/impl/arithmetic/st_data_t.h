@@ -1,5 +1,5 @@
-#ifndef RUBY3_ARITHMERIC_ST_DATA_T_H                 /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_ARITHMERIC_ST_DATA_T_H
+#ifndef RBIMPL_ARITHMERIC_ST_DATA_T_H                /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_ARITHMERIC_ST_DATA_T_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -35,9 +35,9 @@
 #define RB_ST2FIX RB_ST2FIX
 /** @endcond */
 
-RUBY3_ATTR_CONST_ON_NDEBUG()
-RUBY3_ATTR_CONSTEXPR_ON_NDEBUG(CXX14)
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_CONST_ON_NDEBUG()
+RBIMPL_ATTR_CONSTEXPR_ON_NDEBUG(CXX14)
+RBIMPL_ATTR_ARTIFICIAL()
 /* See also [ruby-core:84395] [Bug #14218] [ruby-core:82687] [Bug #13877] */
 static inline VALUE
 RB_ST2FIX(st_data_t i)
@@ -51,9 +51,9 @@ RB_ST2FIX(st_data_t i)
         x |= RUBY_FIXNUM_MIN;
     }
 
-    RUBY3_ASSERT_OR_ASSUME(RB_FIXABLE(x));
-    unsigned long y = RUBY3_CAST((unsigned long)x);
+    RBIMPL_ASSERT_OR_ASSUME(RB_FIXABLE(x));
+    unsigned long y = RBIMPL_CAST((unsigned long)x);
     return RB_LONG2FIX(y);
 }
 
-#endif /* RUBY3_ARITHMERIC_ST_DATA_T_H */
+#endif /* RBIMPL_ARITHMERIC_ST_DATA_T_H */

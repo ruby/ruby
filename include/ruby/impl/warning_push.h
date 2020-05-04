@@ -1,5 +1,5 @@
-#ifndef RUBY3_WARNING_PUSH_H                         /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_WARNING_PUSH_H
+#ifndef RBIMPL_WARNING_PUSH_H                        /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_WARNING_PUSH_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -18,7 +18,7 @@
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
  *             extension libraries. They could be written in C++98.
- * @brief      Defines RUBY3_WARNING_PUSH.
+ * @brief      Defines RBIMPL_WARNING_PUSH.
  * @cond       INTERNAL_MACRO
  *
  * ### Q&A ###
@@ -33,59 +33,59 @@
  *
  *    ```CXX
  *    // NG -- foo's type  considered something like `unsigned int`.
- *    RUBY3_WARNING_PUSH
+ *    RBIMPL_WARNING_PUSH
  *    int foo(void);
- *    RUBY3_WARNING_POP
+ *    RBIMPL_WARNING_POP
  *
  *    // OK -- the macros are ignored by Doxygen.
- *    RUBY3_WARNING_PUSH()
+ *    RBIMPL_WARNING_PUSH()
  *    int foo(void);
- *    RUBY3_WARNING_POP()
+ *    RBIMPL_WARNING_POP()
  *    ```
  */
 #include "ruby/impl/compiler_is.h"
 #include "ruby/impl/compiler_since.h"
 
-#if RUBY3_COMPILER_SINCE(MSVC, 12, 0, 0)
+#if RBIMPL_COMPILER_SINCE(MSVC, 12, 0, 0)
 # /* Not sure exactly when but it seems VC++ 6.0 is a version with it.*/
-# define RUBY3_WARNING_PUSH()        __pragma(warning(push))
-# define RUBY3_WARNING_POP()         __pragma(warning(pop))
-# define RUBY3_WARNING_ERROR(flag)   __pragma(warning(error: flag))
-# define RUBY3_WARNING_IGNORED(flag) __pragma(warning(disable: flag))
+# define RBIMPL_WARNING_PUSH()        __pragma(warning(push))
+# define RBIMPL_WARNING_POP()         __pragma(warning(pop))
+# define RBIMPL_WARNING_ERROR(flag)   __pragma(warning(error: flag))
+# define RBIMPL_WARNING_IGNORED(flag) __pragma(warning(disable: flag))
 
-#elif RUBY3_COMPILER_SINCE(Intel, 13, 0, 0)
-# define RUBY3_WARNING_PUSH()        __pragma(warning(push))
-# define RUBY3_WARNING_POP()         __pragma(warning(pop))
-# define RUBY3_WARNING_ERROR(flag)   __pragma(warning(error: flag))
-# define RUBY3_WARNING_IGNORED(flag) __pragma(warning(disable: flag))
+#elif RBIMPL_COMPILER_SINCE(Intel, 13, 0, 0)
+# define RBIMPL_WARNING_PUSH()        __pragma(warning(push))
+# define RBIMPL_WARNING_POP()         __pragma(warning(pop))
+# define RBIMPL_WARNING_ERROR(flag)   __pragma(warning(error: flag))
+# define RBIMPL_WARNING_IGNORED(flag) __pragma(warning(disable: flag))
 
-#elif RUBY3_COMPILER_IS(Clang) || RUBY3_COMPILER_IS(Apple)
+#elif RBIMPL_COMPILER_IS(Clang) || RBIMPL_COMPILER_IS(Apple)
 # /* Not sure exactly when but it seems LLVM 2.6.0 is a version with it. */
-# define RUBY3_WARNING_PRAGMA0(x)    _Pragma(# x)
-# define RUBY3_WARNING_PRAGMA1(x)    RUBY3_WARNING_PRAGMA0(clang diagnostic x)
-# define RUBY3_WARNING_PRAGMA2(x, y) RUBY3_WARNING_PRAGMA1(x # y)
-# define RUBY3_WARNING_PUSH()        RUBY3_WARNING_PRAGMA1(push)
-# define RUBY3_WARNING_POP()         RUBY3_WARNING_PRAGMA1(pop)
-# define RUBY3_WARNING_ERROR(flag)   RUBY3_WARNING_PRAGMA2(error, flag)
-# define RUBY3_WARNING_IGNORED(flag) RUBY3_WARNING_PRAGMA2(ignored, flag)
+# define RBIMPL_WARNING_PRAGMA0(x)    _Pragma(# x)
+# define RBIMPL_WARNING_PRAGMA1(x)    RBIMPL_WARNING_PRAGMA0(clang diagnostic x)
+# define RBIMPL_WARNING_PRAGMA2(x, y) RBIMPL_WARNING_PRAGMA1(x # y)
+# define RBIMPL_WARNING_PUSH()        RBIMPL_WARNING_PRAGMA1(push)
+# define RBIMPL_WARNING_POP()         RBIMPL_WARNING_PRAGMA1(pop)
+# define RBIMPL_WARNING_ERROR(flag)   RBIMPL_WARNING_PRAGMA2(error, flag)
+# define RBIMPL_WARNING_IGNORED(flag) RBIMPL_WARNING_PRAGMA2(ignored, flag)
 
-#elif RUBY3_COMPILER_SINCE(GCC, 4, 6, 0)
+#elif RBIMPL_COMPILER_SINCE(GCC, 4, 6, 0)
 # /* https://gcc.gnu.org/onlinedocs/gcc-4.6.0/gcc/Diagnostic-Pragmas.html */
-# define RUBY3_WARNING_PRAGMA0(x)    _Pragma(# x)
-# define RUBY3_WARNING_PRAGMA1(x)    RUBY3_WARNING_PRAGMA0(GCC diagnostic x)
-# define RUBY3_WARNING_PRAGMA2(x, y) RUBY3_WARNING_PRAGMA1(x # y)
-# define RUBY3_WARNING_PUSH()        RUBY3_WARNING_PRAGMA1(push)
-# define RUBY3_WARNING_POP()         RUBY3_WARNING_PRAGMA1(pop)
-# define RUBY3_WARNING_ERROR(flag)   RUBY3_WARNING_PRAGMA2(error, flag)
-# define RUBY3_WARNING_IGNORED(flag) RUBY3_WARNING_PRAGMA2(ignored, flag)
+# define RBIMPL_WARNING_PRAGMA0(x)    _Pragma(# x)
+# define RBIMPL_WARNING_PRAGMA1(x)    RBIMPL_WARNING_PRAGMA0(GCC diagnostic x)
+# define RBIMPL_WARNING_PRAGMA2(x, y) RBIMPL_WARNING_PRAGMA1(x # y)
+# define RBIMPL_WARNING_PUSH()        RBIMPL_WARNING_PRAGMA1(push)
+# define RBIMPL_WARNING_POP()         RBIMPL_WARNING_PRAGMA1(pop)
+# define RBIMPL_WARNING_ERROR(flag)   RBIMPL_WARNING_PRAGMA2(error, flag)
+# define RBIMPL_WARNING_IGNORED(flag) RBIMPL_WARNING_PRAGMA2(ignored, flag)
 
 #else
 # /* :FIXME: improve here */
-# define RUBY3_WARNING_PUSH()        /* void */
-# define RUBY3_WARNING_POP()         /* void */
-# define RUBY3_WARNING_ERROR(flag)   /* void */
-# define RUBY3_WARNING_IGNORED(flag) /* void */
+# define RBIMPL_WARNING_PUSH()        /* void */
+# define RBIMPL_WARNING_POP()         /* void */
+# define RBIMPL_WARNING_ERROR(flag)   /* void */
+# define RBIMPL_WARNING_IGNORED(flag) /* void */
 #endif /* _MSC_VER */
 /** @endcond */
 
-#endif /* RUBY3_WARNING_PUSH_H */
+#endif /* RBIMPL_WARNING_PUSH_H */

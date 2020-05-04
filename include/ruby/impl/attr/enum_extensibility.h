@@ -1,5 +1,5 @@
-#ifndef RUBY3_ATTR_ENUM_EXTENSIBILITY_H              /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_ATTR_ENUM_EXTENSIBILITY_H
+#ifndef RBIMPL_ATTR_ENUM_EXTENSIBILITY_H             /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_ATTR_ENUM_EXTENSIBILITY_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -18,15 +18,15 @@
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
  *             extension libraries. They could be written in C++98.
- * @brief      #RUBY3_ATTR_ENUM_EXTENSIBILITY.
+ * @brief      #RBIMPL_ATTR_ENUM_EXTENSIBILITY.
  */
 #include "ruby/impl/has/attribute.h"
 
 /** Wraps (or simulates) `__attribute__((enum_extensibility))` */
-#if RUBY3_HAS_ATTRIBUTE(enum_extensibility)
-# define RUBY3_ATTR_ENUM_EXTENSIBILITY(_) __attribute__((__enum_extensibility__(_)))
+#if RBIMPL_HAS_ATTRIBUTE(enum_extensibility)
+# define RBIMPL_ATTR_ENUM_EXTENSIBILITY(_) __attribute__((__enum_extensibility__(_)))
 #else
-# define RUBY3_ATTR_ENUM_EXTENSIBILITY(_) /* void */
+# define RBIMPL_ATTR_ENUM_EXTENSIBILITY(_) /* void */
 #endif
 
-#endif /* RUBY3_ATTR_ENUM_EXTENSIBILITY_H */
+#endif /* RBIMPL_ATTR_ENUM_EXTENSIBILITY_H */

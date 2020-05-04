@@ -1,5 +1,5 @@
-#ifndef RUBY3_INTERN_BIGNUM_H                        /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_INTERN_BIGNUM_H
+#ifndef RBIMPL_INTERN_BIGNUM_H                       /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_INTERN_BIGNUM_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -30,7 +30,7 @@
 #include "ruby/impl/value.h"
 #include "ruby/backward/2/long_long.h"
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 /* bignum.c */
 VALUE rb_big_new(size_t, int);
@@ -100,6 +100,6 @@ size_t rb_absint_size(VALUE val, int *nlz_bits_ret);
 size_t rb_absint_numwords(VALUE val, size_t word_numbits, size_t *nlz_bits_ret);
 int rb_absint_singlebit_p(VALUE val);
 
-RUBY3_SYMBOL_EXPORT_END()
+RBIMPL_SYMBOL_EXPORT_END()
 
-#endif /* RUBY3_INTERN_BIGNUM_H */
+#endif /* RBIMPL_INTERN_BIGNUM_H */

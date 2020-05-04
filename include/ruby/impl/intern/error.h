@@ -1,5 +1,5 @@
-#ifndef RUBY3_INTERN_ERROR_H                         /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_INTERN_ERROR_H
+#ifndef RBIMPL_INTERN_ERROR_H                        /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_INTERN_ERROR_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -33,7 +33,7 @@
 #define rb_check_trusted_inline rb_check_trusted
 #define rb_check_arity          rb_check_arity
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 /* error.c */
 VALUE rb_exc_new(VALUE, const char*, long);
@@ -52,7 +52,7 @@ void rb_check_frozen(VALUE);
 void rb_check_trusted(VALUE);
 void rb_check_copyable(VALUE obj, VALUE orig);
 NORETURN(MJIT_STATIC void rb_error_arity(int, int, int));
-RUBY3_SYMBOL_EXPORT_END()
+RBIMPL_SYMBOL_EXPORT_END()
 
 /* Does anyone use this?  Remain not deleted for compatibility. */
 #define rb_check_frozen_internal(obj) do { \
@@ -79,4 +79,4 @@ rb_check_arity(int argc, int min, int max)
     return argc;
 }
 
-#endif /* RUBY3_INTERN_ERROR_H */
+#endif /* RBIMPL_INTERN_ERROR_H */

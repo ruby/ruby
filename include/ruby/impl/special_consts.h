@@ -1,5 +1,5 @@
-#ifndef RUBY3_SPECIAL_CONSTS_H                       /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_SPECIAL_CONSTS_H
+#ifndef RBIMPL_SPECIAL_CONSTS_H                      /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_SPECIAL_CONSTS_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -71,7 +71,7 @@
 
 /** special constants - i.e. non-zero and non-fixnum constants */
 enum
-RUBY3_ATTR_ENUM_EXTENSIBILITY(closed)
+RBIMPL_ATTR_ENUM_EXTENSIBILITY(closed)
 ruby_special_consts {
 #if USE_FLONUM
     RUBY_Qfalse         = 0x00, /* ...0000 0000 */
@@ -98,9 +98,9 @@ ruby_special_consts {
     RUBY_SPECIAL_SHIFT  = 8 /** Least significant 8 bits are reserved. */
 };
 
-RUBY3_ATTR_CONST()
-RUBY3_ATTR_CONSTEXPR(CXX11)
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_CONST()
+RBIMPL_ATTR_CONSTEXPR(CXX11)
+RBIMPL_ATTR_ARTIFICIAL()
 /*
  * :NOTE: ruby3_test HAS  to be `__attribute__((const))` in order  for clang to
  * properly deduce `__builtin_assume()`.
@@ -121,38 +121,38 @@ RB_TEST(VALUE obj)
     return obj & ~RUBY_Qnil;
 }
 
-RUBY3_ATTR_CONST()
-RUBY3_ATTR_CONSTEXPR(CXX11)
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_CONST()
+RBIMPL_ATTR_CONSTEXPR(CXX11)
+RBIMPL_ATTR_ARTIFICIAL()
 static inline bool
 RB_NIL_P(VALUE obj)
 {
     return obj == RUBY_Qnil;
 }
 
-RUBY3_ATTR_CONST()
-RUBY3_ATTR_CONSTEXPR(CXX11)
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_CONST()
+RBIMPL_ATTR_CONSTEXPR(CXX11)
+RBIMPL_ATTR_ARTIFICIAL()
 static inline bool
 RB_FIXNUM_P(VALUE obj)
 {
     return obj & RUBY_FIXNUM_FLAG;
 }
 
-RUBY3_ATTR_CONST()
-RUBY3_ATTR_CONSTEXPR(CXX14)
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_CONST()
+RBIMPL_ATTR_CONSTEXPR(CXX14)
+RBIMPL_ATTR_ARTIFICIAL()
 static inline bool
 RB_STATIC_SYM_P(VALUE obj)
 {
-    RUBY3_ATTR_CONSTEXPR(CXX14)
-    const VALUE mask = ~(RUBY3_VALUE_FULL << RUBY_SPECIAL_SHIFT);
+    RBIMPL_ATTR_CONSTEXPR(CXX14)
+    const VALUE mask = ~(RBIMPL_VALUE_FULL << RUBY_SPECIAL_SHIFT);
     return (obj & mask) == RUBY_SYMBOL_FLAG;
 }
 
-RUBY3_ATTR_CONST()
-RUBY3_ATTR_CONSTEXPR(CXX11)
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_CONST()
+RBIMPL_ATTR_CONSTEXPR(CXX11)
+RBIMPL_ATTR_ARTIFICIAL()
 static inline bool
 RB_FLONUM_P(VALUE obj)
 {
@@ -163,26 +163,26 @@ RB_FLONUM_P(VALUE obj)
 #endif
 }
 
-RUBY3_ATTR_CONST()
-RUBY3_ATTR_CONSTEXPR(CXX11)
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_CONST()
+RBIMPL_ATTR_CONSTEXPR(CXX11)
+RBIMPL_ATTR_ARTIFICIAL()
 static inline bool
 RB_IMMEDIATE_P(VALUE obj)
 {
     return obj & RUBY_IMMEDIATE_MASK;
 }
 
-RUBY3_ATTR_CONST()
-RUBY3_ATTR_CONSTEXPR(CXX11)
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_CONST()
+RBIMPL_ATTR_CONSTEXPR(CXX11)
+RBIMPL_ATTR_ARTIFICIAL()
 static inline bool
 RB_SPECIAL_CONST_P(VALUE obj)
 {
     return RB_IMMEDIATE_P(obj) || ! RB_TEST(obj);
 }
 
-RUBY3_ATTR_CONST()
-RUBY3_ATTR_CONSTEXPR(CXX11)
+RBIMPL_ATTR_CONST()
+RBIMPL_ATTR_CONSTEXPR(CXX11)
 /* This  function is  to mimic  old  rb_special_const_p macro  but have  anyone
  * actually used its return value?  Wasn't it just something no one needed? */
 static inline VALUE
@@ -195,10 +195,10 @@ rb_special_const_p(VALUE obj)
  * @cond INTERNAL_MACRO
  * See [ruby-dev:27513] for the following macros.
  */
-#define RUBY_Qfalse RUBY3_CAST((VALUE)RUBY_Qfalse)
-#define RUBY_Qtrue  RUBY3_CAST((VALUE)RUBY_Qtrue)
-#define RUBY_Qnil   RUBY3_CAST((VALUE)RUBY_Qnil)
-#define RUBY_Qundef RUBY3_CAST((VALUE)RUBY_Qundef)
+#define RUBY_Qfalse RBIMPL_CAST((VALUE)RUBY_Qfalse)
+#define RUBY_Qtrue  RBIMPL_CAST((VALUE)RUBY_Qtrue)
+#define RUBY_Qnil   RBIMPL_CAST((VALUE)RUBY_Qnil)
+#define RUBY_Qundef RBIMPL_CAST((VALUE)RUBY_Qundef)
 /** @endcond */
 
-#endif /* RUBY3_SPECIAL_CONSTS_H */
+#endif /* RBIMPL_SPECIAL_CONSTS_H */

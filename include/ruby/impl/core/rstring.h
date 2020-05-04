@@ -1,5 +1,5 @@
-#ifndef RUBY3_RSTRING_H                              /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_RSTRING_H
+#ifndef RBIMPL_RSTRING_H                             /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_RSTRING_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -32,7 +32,7 @@
 #include "ruby/impl/warning_push.h"
 #include "ruby/assert.h"
 
-#define RSTRING(obj)            RUBY3_CAST((struct RString *)(obj))
+#define RSTRING(obj)            RBIMPL_CAST((struct RString *)(obj))
 #define RSTRING_NOEMBED         RSTRING_NOEMBED
 #define RSTRING_EMBED_LEN_MASK  RSTRING_EMBED_LEN_MASK
 #define RSTRING_EMBED_LEN_SHIFT RSTRING_EMBED_LEN_SHIFT
@@ -67,7 +67,7 @@ enum ruby_rstring_flags {
 
 enum ruby_rstring_consts {
     RSTRING_EMBED_LEN_SHIFT = RUBY_FL_USHIFT + 2,
-    RSTRING_EMBED_LEN_MAX   = RUBY3_EMBED_LEN_MAX_OF(char) - 1
+    RSTRING_EMBED_LEN_MAX   = RBIMPL_EMBED_LEN_MAX_OF(char) - 1
 };
 
 struct RString {
@@ -85,7 +85,7 @@ struct RString {
     } as;
 };
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 VALUE rb_str_to_str(VALUE);
 VALUE rb_string_value(volatile VALUE*);
 char *rb_string_value_ptr(volatile VALUE*);
@@ -93,36 +93,36 @@ char *rb_string_value_cstr(volatile VALUE*);
 VALUE rb_str_export(VALUE);
 VALUE rb_str_export_locale(VALUE);
 
-RUBY3_ATTR_ERROR(("rb_check_safe_str() and Check_SafeStr() are obsolete; use StringValue() instead"))
+RBIMPL_ATTR_ERROR(("rb_check_safe_str() and Check_SafeStr() are obsolete; use StringValue() instead"))
 void rb_check_safe_str(VALUE);
-#define Check_SafeStr(v) rb_check_safe_str(RUBY3_CAST((VALUE)(v)))
-RUBY3_SYMBOL_EXPORT_END()
+#define Check_SafeStr(v) rb_check_safe_str(RBIMPL_CAST((VALUE)(v)))
+RBIMPL_SYMBOL_EXPORT_END()
 
-RUBY3_ATTR_PURE_ON_NDEBUG()
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline long
 RSTRING_EMBED_LEN(VALUE str)
 {
-    RUBY3_ASSERT_TYPE(str, RUBY_T_STRING);
-    RUBY3_ASSERT_OR_ASSUME(! RB_FL_ANY_RAW(str, RSTRING_NOEMBED));
+    RBIMPL_ASSERT_TYPE(str, RUBY_T_STRING);
+    RBIMPL_ASSERT_OR_ASSUME(! RB_FL_ANY_RAW(str, RSTRING_NOEMBED));
 
     VALUE f = RBASIC(str)->flags;
     f &= RSTRING_EMBED_LEN_MASK;
     f >>= RSTRING_EMBED_LEN_SHIFT;
-    return RUBY3_CAST((long)f);
+    return RBIMPL_CAST((long)f);
 }
 
-RUBY3_WARNING_PUSH()
-#if RUBY3_COMPILER_IS(Intel)
-RUBY3_WARNING_IGNORED(413)
+RBIMPL_WARNING_PUSH()
+#if RBIMPL_COMPILER_IS(Intel)
+RBIMPL_WARNING_IGNORED(413)
 #endif
 
-RUBY3_ATTR_PURE_ON_NDEBUG()
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline struct RString
 ruby3_rstring_getmem(VALUE str)
 {
-    RUBY3_ASSERT_TYPE(str, RUBY_T_STRING);
+    RBIMPL_ASSERT_TYPE(str, RUBY_T_STRING);
 
     if (RB_FL_ANY_RAW(str, RSTRING_NOEMBED)) {
         return *RSTRING(str);
@@ -136,17 +136,17 @@ ruby3_rstring_getmem(VALUE str)
     }
 }
 
-RUBY3_WARNING_POP()
+RBIMPL_WARNING_POP()
 
-RUBY3_ATTR_PURE_ON_NDEBUG()
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline long
 RSTRING_LEN(VALUE str)
 {
     return ruby3_rstring_getmem(str).as.heap.len;
 }
 
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline char *
 RSTRING_PTR(VALUE str)
 {
@@ -174,7 +174,7 @@ RSTRING_PTR(VALUE str)
     return ptr;
 }
 
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline char *
 RSTRING_END(VALUE str)
 {
@@ -193,7 +193,7 @@ RSTRING_END(VALUE str)
     return &buf.as.heap.ptr[buf.as.heap.len];
 }
 
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline int
 RSTRING_LENINT(VALUE str)
 {
@@ -212,4 +212,4 @@ RSTRING_LENINT(VALUE str)
     ((ptrvar) = RSTRING_PTR(str),           \
      (lenvar) = RSTRING_LEN(str))
 #endif /* HAVE_STMT_AND_DECL_IN_EXPR */
-#endif /* RUBY3_RSTRING_H */
+#endif /* RBIMPL_RSTRING_H */

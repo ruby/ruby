@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -23,16 +23,16 @@
 #include "ruby/impl/compiler_since.h"
 
 #ifndef GCC_VERSION_SINCE
-#define GCC_VERSION_SINCE(x, y, z) RUBY3_COMPILER_SINCE(GCC, (x), (y), (z))
+#define GCC_VERSION_SINCE(x, y, z) RBIMPL_COMPILER_SINCE(GCC, (x), (y), (z))
 #endif
 
 #ifndef GCC_VERSION_BEFORE
 #define GCC_VERSION_BEFORE(x, y, z) \
-     (RUBY3_COMPILER_BEFORE(GCC, (x), (y), (z)) || \
-     (RUBY3_COMPILER_IS(GCC)                    && \
-    ((RUBY3_COMPILER_VERSION_MAJOR == (x))      && \
-    ((RUBY3_COMPILER_VERSION_MINOR == (y))      && \
-     (RUBY3_COMPILER_VERSION_PATCH == (z))))))
+     (RBIMPL_COMPILER_BEFORE(GCC, (x), (y), (z)) || \
+     (RBIMPL_COMPILER_IS(GCC)                    && \
+    ((RBIMPL_COMPILER_VERSION_MAJOR == (x))      && \
+    ((RBIMPL_COMPILER_VERSION_MINOR == (y))      && \
+     (RBIMPL_COMPILER_VERSION_PATCH == (z))))))
 #endif
 
 #endif /* RUBY_BACKWARD2_GCC_VERSION_SINCE_H */

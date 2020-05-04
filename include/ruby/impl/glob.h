@@ -1,5 +1,5 @@
-#ifndef RUBY3_GLOB_H                                 /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_GLOB_H
+#ifndef RBIMPL_GLOB_H                                /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_GLOB_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -23,13 +23,13 @@
 #include "ruby/impl/dllexport.h"
 #include "ruby/impl/value.h"
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 typedef int ruby_glob_func(const char*,VALUE, void*);
 void rb_glob(const char*,void(*)(const char*,VALUE,void*),VALUE);
 int ruby_glob(const char*,int,ruby_glob_func*,VALUE);
 int ruby_brace_glob(const char*,int,ruby_glob_func*,VALUE);
 
-RUBY3_SYMBOL_EXPORT_END()
+RBIMPL_SYMBOL_EXPORT_END()
 
-#endif /* RUBY3_GLOB_H */
+#endif /* RBIMPL_GLOB_H */

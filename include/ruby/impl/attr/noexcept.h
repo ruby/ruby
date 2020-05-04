@@ -1,5 +1,5 @@
-#ifndef RUBY3_ATTR_NOEXCEPT_H                       /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_ATTR_NOEXCEPT_H
+#ifndef RBIMPL_ATTR_NOEXCEPT_H                       /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_ATTR_NOEXCEPT_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -18,7 +18,7 @@
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
  *             extension libraries. They could be written in C++98.
- * @brief      Defines #RUBY3_ATTR_NOEXCEPT.
+ * @brief      Defines #RBIMPL_ATTR_NOEXCEPT.
  *
  * This isn't actually an attribute in C++ but who cares...
  *
@@ -67,25 +67,25 @@
 /** Wraps (or simulates) C++11 `noexcept` */
 #if ! defined(__cplusplus)
 # /* Doesn't make sense. */
-# define RUBY3_ATTR_NOEXCEPT(_) /* void */
+# define RBIMPL_ATTR_NOEXCEPT(_) /* void */
 
-#elif RUBY3_HAS_FEATURE(cxx_noexcept)
-# define RUBY3_ATTR_NOEXCEPT(_) noexcept(noexcept(_))
+#elif RBIMPL_HAS_FEATURE(cxx_noexcept)
+# define RBIMPL_ATTR_NOEXCEPT(_) noexcept(noexcept(_))
 
 #elif defined(__GXX_EXPERIMENTAL_CXX0X__) && __GXX_EXPERIMENTAL_CXX0X__
-# define RUBY3_ATTR_NOEXCEPT(_) noexcept(noexcept(_))
+# define RBIMPL_ATTR_NOEXCEPT(_) noexcept(noexcept(_))
 
 #elif defined(__INTEL_CXX11_MODE__)
-# define RUBY3_ATTR_NOEXCEPT(_) noexcept(noexcept(_))
+# define RBIMPL_ATTR_NOEXCEPT(_) noexcept(noexcept(_))
 
-#elif RUBY3_COMPILER_SINCE(MSVC, 19, 0, 0)
-# define RUBY3_ATTR_NOEXCEPT(_) noexcept(noexcept(_))
+#elif RBIMPL_COMPILER_SINCE(MSVC, 19, 0, 0)
+# define RBIMPL_ATTR_NOEXCEPT(_) noexcept(noexcept(_))
 
 #elif __cplusplus >= 201103L
-# define RUBY3_ATTR_NOEXCEPT(_) noexcept(noexcept(_))
+# define RBIMPL_ATTR_NOEXCEPT(_) noexcept(noexcept(_))
 
 #else
-# define RUBY3_ATTR_NOEXCEPT(_) /* void */
+# define RBIMPL_ATTR_NOEXCEPT(_) /* void */
 #endif
 
-#endif /* RUBY3_ATTR_NOEXCEPT_H */
+#endif /* RBIMPL_ATTR_NOEXCEPT_H */

@@ -87,7 +87,7 @@ RARY_TRANSIENT_UNSET(VALUE ary)
 }
 
 #undef rb_ary_new_from_args
-#if RUBY3_HAS_WARNING("-Wgnu-zero-variadic-macro-arguments")
+#if RBIMPL_HAS_WARNING("-Wgnu-zero-variadic-macro-arguments")
 # /* Skip it; clang -pedantic doesn't like the following */
 #elif defined(__GNUC__) && defined(HAVE_VA_ARGS_MACRO)
 #define rb_ary_new_from_args(n, ...) \

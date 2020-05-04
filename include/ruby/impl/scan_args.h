@@ -1,5 +1,5 @@
-#ifndef RUBY3_SCAN_ARGS_H                            /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_SCAN_ARGS_H
+#ifndef RBIMPL_SCAN_ARGS_H                           /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_SCAN_ARGS_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -49,22 +49,22 @@
 /* rb_scan_args() format allows ':' for optional hash */
 #define HAVE_RB_SCAN_ARGS_OPTIONAL_HASH 1
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 int rb_scan_args(int, const VALUE*, const char*, ...);
 int rb_scan_args_kw(int, int, const VALUE*, const char*, ...);
 
-RUBY3_ATTR_ERROR(("bad scan arg format"))
+RBIMPL_ATTR_ERROR(("bad scan arg format"))
 void rb_scan_args_bad_format(const char*);
 
-RUBY3_ATTR_ERROR(("variable argument length doesn't match"))
+RBIMPL_ATTR_ERROR(("variable argument length doesn't match"))
 void rb_scan_args_length_mismatch(const char*,int);
 
-RUBY3_SYMBOL_EXPORT_END()
+RBIMPL_SYMBOL_EXPORT_END()
 
 /* If we could use constexpr the following macros could be inline functions
  * ... but sadly we cannot. */
 
-#define rb_scan_args_isdigit(c) (RUBY3_CAST((unsigned char)((c)-'0'))<10)
+#define rb_scan_args_isdigit(c) (RBIMPL_CAST((unsigned char)((c)-'0'))<10)
 
 #define rb_scan_args_count_end(fmt, ofs, vari) \
     ((fmt)[ofs] ? -1 : (vari))
@@ -101,9 +101,9 @@ RUBY3_SYMBOL_EXPORT_END()
 
 #define rb_scan_args_count(fmt) rb_scan_args_count_lead(fmt, 0, 0)
 
-#if RUBY3_HAS_ATTRIBUTE(diagnose_if)
+#if RBIMPL_HAS_ATTRIBUTE(diagnose_if)
 # /* Assertions done in the attribute. */
-# define rb_scan_args_verify(fmt, varc) RUBY3_ASSERT_NOTHING
+# define rb_scan_args_verify(fmt, varc) RBIMPL_ASSERT_NOTHING
 #else
 # /* At  one sight  it _seems_  the expressions  below could  be written  using
 #  * static assrtions.  The reality is no, they don't.  Because fmt is a string
@@ -118,7 +118,7 @@ RUBY3_SYMBOL_EXPORT_END()
      rb_scan_args_bad_format(fmt) : \
      sizeof(char[1-2*(rb_scan_args_count(fmt)!=(varc))])!=1 ? \
      rb_scan_args_length_mismatch(fmt, varc) : \
-     RUBY3_ASSERT_NOTHING)
+     RBIMPL_ASSERT_NOTHING)
 #endif
 
 static inline bool
@@ -136,49 +136,49 @@ rb_scan_args_keyword_p(int kw_flag, VALUE last)
     }
 }
 
-RUBY3_ATTR_FORCEINLINE()
+RBIMPL_ATTR_FORCEINLINE()
 static bool
 rb_scan_args_lead_p(const char *fmt)
 {
     return rb_scan_args_isdigit(fmt[0]);
 }
 
-RUBY3_ATTR_FORCEINLINE()
+RBIMPL_ATTR_FORCEINLINE()
 static int
 rb_scan_args_n_lead(const char *fmt)
 {
     return (rb_scan_args_lead_p(fmt) ? fmt[0]-'0' : 0);
 }
 
-RUBY3_ATTR_FORCEINLINE()
+RBIMPL_ATTR_FORCEINLINE()
 static bool
 rb_scan_args_opt_p(const char *fmt)
 {
     return (rb_scan_args_lead_p(fmt) && rb_scan_args_isdigit(fmt[1]));
 }
 
-RUBY3_ATTR_FORCEINLINE()
+RBIMPL_ATTR_FORCEINLINE()
 static int
 rb_scan_args_n_opt(const char *fmt)
 {
     return (rb_scan_args_opt_p(fmt) ? fmt[1]-'0' : 0);
 }
 
-RUBY3_ATTR_FORCEINLINE()
+RBIMPL_ATTR_FORCEINLINE()
 static int
 rb_scan_args_var_idx(const char *fmt)
 {
     return (!rb_scan_args_lead_p(fmt) ? 0 : !rb_scan_args_isdigit(fmt[1]) ? 1 : 2);
 }
 
-RUBY3_ATTR_FORCEINLINE()
+RBIMPL_ATTR_FORCEINLINE()
 static bool
 rb_scan_args_f_var(const char *fmt)
 {
     return (fmt[rb_scan_args_var_idx(fmt)]=='*');
 }
 
-RUBY3_ATTR_FORCEINLINE()
+RBIMPL_ATTR_FORCEINLINE()
 static int
 rb_scan_args_trail_idx(const char *fmt)
 {
@@ -186,7 +186,7 @@ rb_scan_args_trail_idx(const char *fmt)
     return idx+(fmt[idx]=='*');
 }
 
-RUBY3_ATTR_FORCEINLINE()
+RBIMPL_ATTR_FORCEINLINE()
 static int
 rb_scan_args_n_trail(const char *fmt)
 {
@@ -194,7 +194,7 @@ rb_scan_args_n_trail(const char *fmt)
     return (rb_scan_args_isdigit(fmt[idx]) ? fmt[idx]-'0' : 0);
 }
 
-RUBY3_ATTR_FORCEINLINE()
+RBIMPL_ATTR_FORCEINLINE()
 static int
 rb_scan_args_hash_idx(const char *fmt)
 {
@@ -202,14 +202,14 @@ rb_scan_args_hash_idx(const char *fmt)
     return idx+rb_scan_args_isdigit(fmt[idx]);
 }
 
-RUBY3_ATTR_FORCEINLINE()
+RBIMPL_ATTR_FORCEINLINE()
 static bool
 rb_scan_args_f_hash(const char *fmt)
 {
     return (fmt[rb_scan_args_hash_idx(fmt)]==':');
 }
 
-RUBY3_ATTR_FORCEINLINE()
+RBIMPL_ATTR_FORCEINLINE()
 static int
 rb_scan_args_block_idx(const char *fmt)
 {
@@ -217,7 +217,7 @@ rb_scan_args_block_idx(const char *fmt)
     return idx+(fmt[idx]==':');
 }
 
-RUBY3_ATTR_FORCEINLINE()
+RBIMPL_ATTR_FORCEINLINE()
 static bool
 rb_scan_args_f_block(const char *fmt)
 {
@@ -225,7 +225,7 @@ rb_scan_args_f_block(const char *fmt)
 }
 
 # if 0
-RUBY3_ATTR_FORCEINLINE()
+RBIMPL_ATTR_FORCEINLINE()
 static int
 rb_scan_args_end_idx(const char *fmt)
 {
@@ -255,14 +255,14 @@ rb_scan_args_end_idx(const char *fmt)
                      rb_scan_args_f_block(fmt), \
                      (rb_scan_args_verify(fmt, varc), vars), (char *)fmt, varc)
 
-RUBY3_ATTR_FORCEINLINE()
+RBIMPL_ATTR_FORCEINLINE()
 static int
 rb_scan_args_set(int kw_flag, int argc, const VALUE *argv,
                  int n_lead, int n_opt, int n_trail,
                  bool f_var, bool f_hash, bool f_block,
                  VALUE *vars[], RB_UNUSED_VAR(const char *fmt), RB_UNUSED_VAR(int varc))
-    RUBY3_ATTR_DIAGNOSE_IF(rb_scan_args_count(fmt) <  0,    "bad scan arg format",                    "error")
-    RUBY3_ATTR_DIAGNOSE_IF(rb_scan_args_count(fmt) != varc, "variable argument length doesn't match", "error")
+    RBIMPL_ATTR_DIAGNOSE_IF(rb_scan_args_count(fmt) <  0,    "bad scan arg format",                    "error")
+    RBIMPL_ATTR_DIAGNOSE_IF(rb_scan_args_count(fmt) != varc, "variable argument length doesn't match", "error")
 {
     int i, argi = 0, vari = 0;
     VALUE *var, hash = Qnil;
@@ -391,4 +391,4 @@ rb_scan_args_set(int kw_flag, int argc, const VALUE *argv,
         (rb_scan_args_kw)(kw_flag, argc, argvp, fmt, __VA_ARGS__ /**/))
 #endif
 
-#endif /* RUBY3_SCAN_ARGS_H */
+#endif /* RBIMPL_SCAN_ARGS_H */

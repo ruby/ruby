@@ -1,5 +1,5 @@
-#ifndef RUBY3_CAST_H                                 /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_CAST_H
+#ifndef RBIMPL_CAST_H                                /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_CAST_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -18,7 +18,7 @@
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
  *             extension libraries. They could be written in C++98.
- * @brief      Defines RUBY3_CAST.
+ * @brief      Defines RBIMPL_CAST.
  * @cond       INTERNAL_MACRO
  *
  * This casting macro makes sense only inside  of other macros that are part of
@@ -30,24 +30,24 @@
 #include "ruby/impl/warning_push.h"
 
 #if ! defined(__cplusplus)
-# define RUBY3_CAST(expr) (expr)
+# define RBIMPL_CAST(expr) (expr)
 
-#elif RUBY3_COMPILER_SINCE(GCC, 4, 6, 0)
+#elif RBIMPL_COMPILER_SINCE(GCC, 4, 6, 0)
 # /* g++ has -Wold-style-cast since 1997 or so, but its _Pragma is broken. */
 # /* See https://gcc.godbolt.org/z/XWhU6J */
-# define RUBY3_CAST(expr) (expr)
+# define RBIMPL_CAST(expr) (expr)
 # pragma GCC diagnostic ignored "-Wold-style-cast"
 
-#elif RUBY3_HAS_WARNING("-Wold-style-cast")
-# define RUBY3_CAST(expr)                   \
-    RUBY3_WARNING_PUSH()                    \
-    RUBY3_WARNING_IGNORED(-Wold-style-cast) \
+#elif RBIMPL_HAS_WARNING("-Wold-style-cast")
+# define RBIMPL_CAST(expr)                   \
+    RBIMPL_WARNING_PUSH()                    \
+    RBIMPL_WARNING_IGNORED(-Wold-style-cast) \
     (expr)                                  \
-    RUBY3_WARNING_POP()
+    RBIMPL_WARNING_POP()
 
 #else
-# define RUBY3_CAST(expr) (expr)
+# define RBIMPL_CAST(expr) (expr)
 #endif
 /** @endcond */
 
-#endif /* RUBY3_CAST_H */
+#endif /* RBIMPL_CAST_H */

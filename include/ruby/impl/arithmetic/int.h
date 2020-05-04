@@ -1,5 +1,5 @@
-#ifndef RUBY3_ARITHMETIC_INT_H                       /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_ARITHMETIC_INT_H
+#ifndef RBIMPL_ARITHMETIC_INT_H                      /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_ARITHMETIC_INT_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -51,14 +51,14 @@
 #define RB_FIX2UINT RB_FIX2UINT
 /** @endcond */
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 long rb_num2int(VALUE);
 long rb_fix2int(VALUE);
 unsigned long rb_num2uint(VALUE);
 unsigned long rb_fix2uint(VALUE);
-RUBY3_SYMBOL_EXPORT_END()
+RBIMPL_SYMBOL_EXPORT_END()
 
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline int
 RB_FIX2INT(VALUE x)
 {
@@ -66,7 +66,7 @@ RB_FIX2INT(VALUE x)
      * that is a desired behaviour but just preserve backwards compatilibily.
      */
 #if 0
-    RUBY3_ASSERT_OR_ASSUME(RB_FIXNUM_P(x));
+    RBIMPL_ASSERT_OR_ASSUME(RB_FIXNUM_P(x));
 #endif
     long ret;
 
@@ -77,7 +77,7 @@ RB_FIX2INT(VALUE x)
         ret = RB_FIX2LONG(x);
     }
 
-    return RUBY3_CAST((int)ret);
+    return RBIMPL_CAST((int)ret);
 }
 
 static inline int
@@ -95,10 +95,10 @@ rb_num2int_inline(VALUE x)
         ret = rb_num2int(x);
     }
 
-    return RUBY3_CAST((int)ret);
+    return RBIMPL_CAST((int)ret);
 }
 
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline unsigned int
 RB_NUM2UINT(VALUE x)
 {
@@ -111,15 +111,15 @@ RB_NUM2UINT(VALUE x)
         ret = RB_NUM2ULONG(x);
     }
 
-    return RUBY3_CAST((unsigned int)ret);
+    return RBIMPL_CAST((unsigned int)ret);
 }
 
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline unsigned int
 RB_FIX2UINT(VALUE x)
 {
 #if 0 /* Ditto for RB_FIX2INT. */
-    RUBY3_ASSERT_OR_ASSUME(RB_FIXNUM_P(x));
+    RBIMPL_ASSERT_OR_ASSUME(RB_FIXNUM_P(x));
 #endif
     unsigned long ret;
 
@@ -130,14 +130,14 @@ RB_FIX2UINT(VALUE x)
         ret = RB_FIX2ULONG(x);
     }
 
-    return RUBY3_CAST((unsigned int)ret);
+    return RBIMPL_CAST((unsigned int)ret);
 }
 
-RUBY3_WARNING_PUSH()
-#if RUBY3_COMPILER_IS(GCC)
-RUBY3_WARNING_IGNORED(-Wtype-limits) /* We can ignore them here. */
-#elif RUBY3_HAS_WARNING("-Wtautological-constant-out-of-range-compare")
-RUBY3_WARNING_IGNORED(-Wtautological-constant-out-of-range-compare)
+RBIMPL_WARNING_PUSH()
+#if RBIMPL_COMPILER_IS(GCC)
+RBIMPL_WARNING_IGNORED(-Wtype-limits) /* We can ignore them here. */
+#elif RBIMPL_HAS_WARNING("-Wtautological-constant-out-of-range-compare")
+RBIMPL_WARNING_IGNORED(-Wtautological-constant-out-of-range-compare)
 #endif
 
 static inline VALUE
@@ -158,6 +158,6 @@ rb_uint2num_inline(unsigned int v)
         return rb_uint2big(v);
 }
 
-RUBY3_WARNING_POP()
+RBIMPL_WARNING_POP()
 
-#endif /* RUBY3_ARITHMETIC_INT_H */
+#endif /* RBIMPL_ARITHMETIC_INT_H */

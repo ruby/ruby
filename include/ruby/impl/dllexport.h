@@ -1,5 +1,5 @@
-#ifndef RUBY3_DLLEXPORT_H                            /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_DLLEXPORT_H
+#ifndef RBIMPL_DLLEXPORT_H                           /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_DLLEXPORT_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -53,7 +53,7 @@
 
 #if ! defined(MJIT_HEADER)
 # define MJIT_FUNC_EXPORTED RUBY_FUNC_EXPORTED
-#elif ! RUBY3_COMPILER_IS(MSVC)
+#elif ! RBIMPL_COMPILER_IS(MSVC)
 # define MJIT_FUNC_EXPORTED RUBY_FUNC_EXPORTED
 #else
 # define MJIT_FUNC_EXPORTED static
@@ -74,19 +74,19 @@
 /** Shortcut macro equivalent to `RUBY_SYMBOL_EXPORT_BEGIN extern "C" {`.
  * \@shyouhei finds it handy. */
 #if defined(__DOXYGEN__)
-# define RUBY3_SYMBOL_EXPORT_BEGIN() /* void */
+# define RBIMPL_SYMBOL_EXPORT_BEGIN() /* void */
 #elif defined(__cplusplus)
-# define RUBY3_SYMBOL_EXPORT_BEGIN() RUBY_SYMBOL_EXPORT_BEGIN extern "C" {
+# define RBIMPL_SYMBOL_EXPORT_BEGIN() RUBY_SYMBOL_EXPORT_BEGIN extern "C" {
 #else
-# define RUBY3_SYMBOL_EXPORT_BEGIN() RUBY_SYMBOL_EXPORT_BEGIN
+# define RBIMPL_SYMBOL_EXPORT_BEGIN() RUBY_SYMBOL_EXPORT_BEGIN
 #endif
 
-/** Counterpart of #RUBY3_SYMBOL_EXPORT_BEGIN */
+/** Counterpart of #RBIMPL_SYMBOL_EXPORT_BEGIN */
 #if defined(__DOXYGEN__)
-# define RUBY3_SYMBOL_EXPORT_END() /* void */
+# define RBIMPL_SYMBOL_EXPORT_END() /* void */
 #elif defined(__cplusplus)
-# define RUBY3_SYMBOL_EXPORT_END() } RUBY_SYMBOL_EXPORT_END
+# define RBIMPL_SYMBOL_EXPORT_END() } RUBY_SYMBOL_EXPORT_END
 #else
-# define RUBY3_SYMBOL_EXPORT_END()   RUBY_SYMBOL_EXPORT_END
+# define RBIMPL_SYMBOL_EXPORT_END()   RUBY_SYMBOL_EXPORT_END
 #endif
-#endif /* RUBY3_DLLEXPORT_H */
+#endif /* RBIMPL_DLLEXPORT_H */

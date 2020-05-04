@@ -1,5 +1,5 @@
-#ifndef RUBY3_ATTR_FORCEINLINE_H                     /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_ATTR_FORCEINLINE_H
+#ifndef RBIMPL_ATTR_FORCEINLINE_H                    /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_ATTR_FORCEINLINE_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -18,7 +18,7 @@
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
  *             extension libraries. They could be written in C++98.
- * @brief      Defines #RUBY3_ATTR_FORCEINLINE.
+ * @brief      Defines #RBIMPL_ATTR_FORCEINLINE.
  */
 #include "ruby/impl/compiler_since.h"
 #include "ruby/impl/has/attribute.h"
@@ -29,12 +29,12 @@
  * `__forceinline` are mutually exclusive.  We have to mimic that behaviour for
  * non-MSVC compilers.
  */
-#if RUBY3_COMPILER_SINCE(MSVC, 12, 0, 0)
-# define RUBY3_ATTR_FORCEINLINE() __forceinline
-#elif RUBY3_HAS_ATTRIBUTE(always_inline)
-# define RUBY3_ATTR_FORCEINLINE() __attribute__((__always_inline__)) inline
+#if RBIMPL_COMPILER_SINCE(MSVC, 12, 0, 0)
+# define RBIMPL_ATTR_FORCEINLINE() __forceinline
+#elif RBIMPL_HAS_ATTRIBUTE(always_inline)
+# define RBIMPL_ATTR_FORCEINLINE() __attribute__((__always_inline__)) inline
 #else
-# define RUBY3_ATTR_FORCEINLINE() inline
+# define RBIMPL_ATTR_FORCEINLINE() inline
 #endif
 
-#endif /* RUBY3_ATTR_FORCEINLINE_H */
+#endif /* RBIMPL_ATTR_FORCEINLINE_H */

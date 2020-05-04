@@ -1,5 +1,5 @@
-#ifndef  RUBY3_INTERN_CONT_H                         /*-*-C++-*-vi:se ft=cpp:*/
-#define  RUBY3_INTERN_CONT_H
+#ifndef  RBIMPL_INTERN_CONT_H                        /*-*-C++-*-vi:se ft=cpp:*/
+#define  RBIMPL_INTERN_CONT_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -24,7 +24,7 @@
 #include "ruby/impl/value.h"
 #include "ruby/impl/iterator.h"
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 /* cont.c */
 VALUE rb_fiber_new(rb_block_call_func_t, VALUE);
@@ -35,6 +35,6 @@ VALUE rb_fiber_yield_kw(int argc, const VALUE *argv, int kw_splat);
 VALUE rb_fiber_current(void);
 VALUE rb_fiber_alive_p(VALUE);
 
-RUBY3_SYMBOL_EXPORT_END()
+RBIMPL_SYMBOL_EXPORT_END()
 
-#endif /* RUBY3_INTERN_CONT_H */
+#endif /* RBIMPL_INTERN_CONT_H */

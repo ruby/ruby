@@ -8,7 +8,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -48,25 +48,25 @@
 # define RUBY_NDEBUG 1
 #endif
 
-#define RUBY3_ASSERT_NOTHING RUBY3_CAST((void)0)
+#define RBIMPL_ASSERT_NOTHING RBIMPL_CAST((void)0)
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
-RUBY3_ATTR_NORETURN()
-RUBY3_ATTR_COLD()
+RBIMPL_SYMBOL_EXPORT_BEGIN()
+RBIMPL_ATTR_NORETURN()
+RBIMPL_ATTR_COLD()
 void rb_assert_failure(const char *file, int line, const char *name, const char *expr);
-RUBY3_SYMBOL_EXPORT_END()
+RBIMPL_SYMBOL_EXPORT_END()
 
 #ifdef RUBY_FUNCTION_NAME_STRING
-# define RUBY3_ASSERT_FUNC RUBY_FUNCTION_NAME_STRING
+# define RBIMPL_ASSERT_FUNC RUBY_FUNCTION_NAME_STRING
 #else
-# define RUBY3_ASSERT_FUNC RUBY3_CAST((const char *)0)
+# define RBIMPL_ASSERT_FUNC RBIMPL_CAST((const char *)0)
 #endif
 
 #define RUBY_ASSERT_FAIL(expr) \
-    rb_assert_failure(__FILE__, __LINE__, RUBY3_ASSERT_FUNC, #expr)
+    rb_assert_failure(__FILE__, __LINE__, RBIMPL_ASSERT_FUNC, #expr)
 
 #define RUBY_ASSERT_MESG(expr, mesg) \
-    (RB_LIKELY(expr) ? RUBY3_ASSERT_NOTHING : RUBY_ASSERT_FAIL(mesg))
+    (RB_LIKELY(expr) ? RBIMPL_ASSERT_NOTHING : RUBY_ASSERT_FAIL(mesg))
 
 #if RUBY_DEBUG
 # define RUBY_ASSERT_MESG_WHEN(cond, expr, mesg) RUBY_ASSERT_MESG((expr), mesg)
@@ -78,7 +78,7 @@ RUBY3_SYMBOL_EXPORT_END()
         __builtin_constant_p(cond), \
         __builtin_choose_expr(cond, \
             RUBY_ASSERT_MESG(expr, mesg), \
-            RUBY3_ASSERT_NOTHING), \
+            RBIMPL_ASSERT_NOTHING), \
         RUBY_ASSERT_MESG(!(cond) || (expr), mesg))
 #endif /* RUBY_DEBUG */
 
@@ -87,13 +87,13 @@ RUBY3_SYMBOL_EXPORT_END()
 #define RUBY_ASSERT_ALWAYS(expr) RUBY_ASSERT_MESG_WHEN(TRUE, expr, #expr)
 
 #if ! RUBY_NDEBUG
-# define RUBY3_ASSERT_OR_ASSUME(_) RUBY_ASSERT(_)
-#elif defined(RUBY3_HAVE___ASSUME)
-# define RUBY3_ASSERT_OR_ASSUME(_) RUBY3_ASSUME(_)
-#elif RUBY3_HAS_BUILTIN(__builtin_assume)
-# define RUBY3_ASSERT_OR_ASSUME(_) RUBY3_ASSUME(_)
+# define RBIMPL_ASSERT_OR_ASSUME(_) RUBY_ASSERT(_)
+#elif defined(RBIMPL_HAVE___ASSUME)
+# define RBIMPL_ASSERT_OR_ASSUME(_) RBIMPL_ASSUME(_)
+#elif RBIMPL_HAS_BUILTIN(__builtin_assume)
+# define RBIMPL_ASSERT_OR_ASSUME(_) RBIMPL_ASSUME(_)
 #else
-# define RUBY3_ASSERT_OR_ASSUME(_) /* void */
+# define RBIMPL_ASSERT_OR_ASSUME(_) /* void */
 #endif
 
 #endif /* RUBY_ASSERT_H */

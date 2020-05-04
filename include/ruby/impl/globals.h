@@ -1,5 +1,5 @@
-#ifndef RUBY3_GLOBALS_H                              /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_GLOBALS_H
+#ifndef RBIMPL_GLOBALS_H                             /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_GLOBALS_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -27,7 +27,7 @@
 #include "ruby/impl/value.h"
 #include "ruby/impl/value_type.h"
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 #define RUBY_INTEGER_UNIFICATION 1
 
@@ -119,7 +119,7 @@ RUBY_EXTERN VALUE rb_eMathDomainError;
 
 RUBY_EXTERN VALUE rb_stdin, rb_stdout, rb_stderr;
 
-RUBY3_ATTR_PURE()
+RBIMPL_ATTR_PURE()
 static inline VALUE
 rb_class_of(VALUE obj)
 {
@@ -146,7 +146,7 @@ rb_class_of(VALUE obj)
     }
 
 #if RUBY_NDEBUG
-    RUBY3_UNREACHABLE_RETURN(Qfalse);
+    RBIMPL_UNREACHABLE_RETURN(Qfalse);
 #else
     RUBY_ASSERT_FAIL(rb_class_of);
 #endif
@@ -154,6 +154,6 @@ rb_class_of(VALUE obj)
 
 #define CLASS_OF rb_class_of
 
-RUBY3_SYMBOL_EXPORT_END()
+RBIMPL_SYMBOL_EXPORT_END()
 
-#endif /* RUBY3_GLOBALS_H */
+#endif /* RBIMPL_GLOBALS_H */

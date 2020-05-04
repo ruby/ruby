@@ -1,5 +1,5 @@
-#ifndef RUBY3_RBASIC_H                               /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_RBASIC_H
+#ifndef RBIMPL_RBASIC_H                              /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_RBASIC_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -31,13 +31,13 @@
 #include "ruby/impl/value.h"
 #include "ruby/assert.h"
 
-#define RBASIC(obj)          RUBY3_CAST((struct RBasic *)(obj))
+#define RBASIC(obj)          RBIMPL_CAST((struct RBasic *)(obj))
 #define RBASIC_CLASS         RBASIC_CLASS
 #define RVALUE_EMBED_LEN_MAX RVALUE_EMBED_LEN_MAX
 
 /** @cond INTERNAL_MACRO */
-#define RUBY3_EMBED_LEN_MAX_OF(T) \
-    RUBY3_CAST((int)(sizeof(VALUE[RVALUE_EMBED_LEN_MAX]) / sizeof(T)))
+#define RBIMPL_EMBED_LEN_MAX_OF(T) \
+    RBIMPL_CAST((int)(sizeof(VALUE[RVALUE_EMBED_LEN_MAX]) / sizeof(T)))
 /** @endcond */
 
 enum ruby_rvalue_flags { RVALUE_EMBED_LEN_MAX = 3 };
@@ -50,10 +50,10 @@ RBasic {
 
 #ifdef __cplusplus
   public:
-    RUBY3_ATTR_CONSTEXPR(CXX11)
-    RUBY3_ATTR_ARTIFICIAL()
-    RUBY3_ATTR_FORCEINLINE()
-    RUBY3_ATTR_NOALIAS()
+    RBIMPL_ATTR_CONSTEXPR(CXX11)
+    RBIMPL_ATTR_ARTIFICIAL()
+    RBIMPL_ATTR_FORCEINLINE()
+    RBIMPL_ATTR_NOALIAS()
     /**
      * We need to define this explicit constructor because the field `klass` is
      * const-qualified above,  which effectively  defines the  implicit default
@@ -61,25 +61,25 @@ RBasic {
      * ourselves.
      */
     RBasic() :
-        flags(RUBY3_VALUE_NULL),
-        klass(RUBY3_VALUE_NULL)
+        flags(RBIMPL_VALUE_NULL),
+        klass(RBIMPL_VALUE_NULL)
     {
     }
 #endif
 };
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 VALUE rb_obj_hide(VALUE obj);
 VALUE rb_obj_reveal(VALUE obj, VALUE klass); /* do not use this API to change klass information */
-RUBY3_SYMBOL_EXPORT_END()
+RBIMPL_SYMBOL_EXPORT_END()
 
-RUBY3_ATTR_PURE_ON_NDEBUG()
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline VALUE
 RBASIC_CLASS(VALUE obj)
 {
-    RUBY3_ASSERT_OR_ASSUME(! RB_SPECIAL_CONST_P(obj));
+    RBIMPL_ASSERT_OR_ASSUME(! RB_SPECIAL_CONST_P(obj));
     return RBASIC(obj)->klass;
 }
 
-#endif /* RUBY3_RBASIC_H */
+#endif /* RBIMPL_RBASIC_H */
