@@ -339,24 +339,20 @@ module JSON
   # \JSON data in a more open format, using whitespace.
   # See also #pretty_generate.
   #
-  # Option +array_nl+ (\String) specifies a string (usually a newline)
-  # to be inserted after each \JSON array; defaults to the empty \String, <tt>''</tt>.
-  #
-  # Option +object_nl+ (\String) specifies a string (usually a newline)
-  # to be inserted after each \JSON object; defaults to the empty \String, <tt>''</tt>.
-  #
-  # Option +indent+ (\String) specifies the string (usually spaces) to be
-  # used for indentation; defaults to the empty \String, <tt>''</tt>;
-  # defaults to the empty \String, <tt>''</tt>;
-  # has no effect unless options +array_nl+ or +object_nl+ specify newlines.
-  #
-  # Option +space+ (\String) specifies a string (usually a space) to be
-  # inserted after the colon in each \JSON object's pair;
-  # defaults to the empty \String, <tt>''</tt>.
-  #
-  # Option +space_before+ (\String) specifies a string (usually a space) to be
-  # inserted before the colon in each \JSON object's pair;
-  # defaults to the empty \String, <tt>''</tt>.
+  # - Option +array_nl+ (\String) specifies a string (usually a newline)
+  #   to be inserted after each \JSON array; defaults to the empty \String, <tt>''</tt>.
+  # - Option +object_nl+ (\String) specifies a string (usually a newline)
+  #   to be inserted after each \JSON object; defaults to the empty \String, <tt>''</tt>.
+  # - Option +indent+ (\String) specifies the string (usually spaces) to be
+  #   used for indentation; defaults to the empty \String, <tt>''</tt>;
+  #   defaults to the empty \String, <tt>''</tt>;
+  #   has no effect unless options +array_nl+ or +object_nl+ specify newlines.
+  # - Option +space+ (\String) specifies a string (usually a space) to be
+  #   inserted after the colon in each \JSON object's pair;
+  #   defaults to the empty \String, <tt>''</tt>.
+  # - Option +space_before+ (\String) specifies a string (usually a space) to be
+  #   inserted before the colon in each \JSON object's pair;
+  #   defaults to the empty \String, <tt>''</tt>.
   #
   # In this example, +source+ is used first to generate the shortest
   # \JSON data (no whitespace), then again with all formatting options
@@ -388,6 +384,10 @@ module JSON
   #     "bad" : 1
   #     }
   #   }
+  #
+  # ---
+  #
+  # Raises an exception if any formatting is not a \String.
   #
   # ====== Other Options
   #
@@ -424,6 +424,24 @@ module JSON
   #   # Raises TypeError (can't convert Symbol into Hash):
   #   JSON.generate(source, :foo)
   #
+  # ---
+  #
+  # Raises an exception if +source+ is not a valid Ruby object:
+  #   # Raises NameError (uninitialized constant Foo):
+  #   JSON.generate(Foo)
+  #   # Raises NameError (undefined local variable or method `foo' for main:Object):
+  #   JSON.generate(foo)
+  #
+  # Raises an exception if +source+ contains circular references:
+  #   a = []; b = []; a.push(b); b.push(a)
+  #   # Raises JSON::NestingError (nesting of 100 is too deep):
+  #   JSON.generate(a)
+  #
+  # Raises an exception if +opts is not a
+  # {Hash-convertible object}[doc/implicit_conversion_rdoc.html#label-Hash-Convertible+Objects]
+  # (implementing +to_hash+):
+  #   # Raises TypeError (can't convert Symbol into Hash):
+  #   JSON.generate('x', :foo)
   def generate(obj, opts = nil)
     if State === opts
       state, opts = opts, nil
@@ -450,11 +468,16 @@ module JSON
   module_function :unparse
   # :startdoc:
 
-  # Generate a JSON document from the Ruby data structure _obj_ and return it.
-  # This method disables the checks for circles in Ruby objects.
+  # Arguments +obj+ and +opts+ here are the same as
+  # arguments +source+ and +opts+ in JSON.generate.
   #
-  # *WARNING*: Be careful not to pass any Ruby data structures with circles as
-  # _obj_ argument because this will cause JSON to go into an infinite loop.
+  # By default, generates \JSON data without checking
+  # for circular references in +obj+ (option +max_nesting+ set to +false+, disabled).
+  #
+  # Raises an exception if +source+ contains circular references:
+  #   a = []; b = []; a.push(b); b.push(a)
+  #   # Raises SystemStackError (stack level too deep):
+  #   JSON.fast_generate(a)
   def fast_generate(obj, opts = nil)
     if State === opts
       state, opts = opts, nil
@@ -480,12 +503,31 @@ module JSON
   module_function :fast_unparse
   # :startdoc:
 
-  # Generate a JSON document from the Ruby data structure _obj_ and return it.
-  # The returned document is a prettier form of the document returned by
-  # #unparse.
+  # Arguments +obj+ and +opts+ here are the same as
+  # arguments +source+ and +opts+ in JSON.generate.
   #
-  # The _opts_ argument can be used to configure the generator. See the
-  # generate method for a more detailed explanation.
+  # Default options are:
+  # - +indent+: '  ' (two spaces)
+  # - +space+: ' ' (one space)
+  # - +array_no+: "\n" (newline)
+  # - +object_nl+: "\n" (newline)
+  #
+  # Example:
+  #   source = {foo: [:bar, :baz], bat: {bam: 0, bad: 1}}
+  #   json = JSON.pretty_generate(source)
+  #   puts json
+  # Output:
+  #   {
+  #     "foo": [
+  #       "bar",
+  #       "baz"
+  #     ],
+  #     "bat": {
+  #       "bam": 0,
+  #       "bad": 1
+  #     }
+  #   }
+  #
   def pretty_generate(obj, opts = nil)
     if State === opts
       state, opts = opts, nil
