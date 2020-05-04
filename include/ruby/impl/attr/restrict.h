@@ -20,9 +20,9 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #RUBY3_ATTR_RESTRICT.
  */
-#include "ruby/3/compiler_since.h"
-#include "ruby/3/has/attribute.h"
-#include "ruby/3/token_paste.h"
+#include "ruby/impl/compiler_since.h"
+#include "ruby/impl/has/attribute.h"
+#include "ruby/impl/token_paste.h"
 
 /* :FIXME:  config.h  includes conflicting  `#define  restrict`.   MSVC can  be
  * detected  using  `RUBY3_COMPILER_SINCE()`, but  Clang  &  family cannot  use

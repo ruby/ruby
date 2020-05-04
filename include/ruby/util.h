@@ -10,8 +10,8 @@
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
  */
-#include "ruby/3/config.h"
-#include "ruby/3/dllexport.h"
+#include "ruby/impl/config.h"
+#include "ruby/impl/dllexport.h"
 #include "ruby/defines.h"
 
 #ifndef _

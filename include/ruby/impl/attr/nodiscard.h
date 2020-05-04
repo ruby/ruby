@@ -20,9 +20,9 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #RUBY3_ATTR_NODISCARD.
  */
-#include "ruby/3/has/attribute.h"
-#include "ruby/3/has/c_attribute.h"
-#include "ruby/3/has/cpp_attribute.h"
+#include "ruby/impl/has/attribute.h"
+#include "ruby/impl/has/c_attribute.h"
+#include "ruby/impl/has/cpp_attribute.h"
 
 /**
  * Wraps  (or simulates)  `[[nodiscard]]`.  In  C++  (at least  since C++20)  a

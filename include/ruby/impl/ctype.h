@@ -20,16 +20,16 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Our own, locale independent, character handling routines.
  */
-#include "ruby/3/config.h"
+#include "ruby/impl/config.h"
 
 #ifdef STDC_HEADERS
 # include <ctype.h>
 #endif
 
-#include "ruby/3/attr/artificial.h"
-#include "ruby/3/attr/const.h"
-#include "ruby/3/attr/constexpr.h"
-#include "ruby/3/dllexport.h"
+#include "ruby/impl/attr/artificial.h"
+#include "ruby/impl/attr/const.h"
+#include "ruby/impl/attr/constexpr.h"
+#include "ruby/impl/dllexport.h"
 
 #ifndef ISPRINT
 # define ISASCII  rb_isascii

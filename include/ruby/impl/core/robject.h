@@ -20,18 +20,18 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines struct ::RObject.
  */
-#include "ruby/3/config.h"
+#include "ruby/impl/config.h"
 
 #ifdef HAVE_STDINT_H
 # include <stdint.h>
 #endif
 
-#include "ruby/3/attr/artificial.h"
-#include "ruby/3/attr/pure.h"
-#include "ruby/3/cast.h"
-#include "ruby/3/fl_type.h"
-#include "ruby/3/value.h"
-#include "ruby/3/value_type.h"
+#include "ruby/impl/attr/artificial.h"
+#include "ruby/impl/attr/pure.h"
+#include "ruby/impl/cast.h"
+#include "ruby/impl/fl_type.h"
+#include "ruby/impl/value.h"
+#include "ruby/impl/value_type.h"
 
 #define ROBJECT(obj)          RUBY3_CAST((struct RObject *)(obj))
 #define ROBJECT_EMBED_LEN_MAX ROBJECT_EMBED_LEN_MAX

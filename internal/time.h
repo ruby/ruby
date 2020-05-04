@@ -9,7 +9,7 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Time.
  */
-#include "ruby/3/config.h"      /* for SIGNEDNESS_OF_TIME_T */
+#include "ruby/impl/config.h"      /* for SIGNEDNESS_OF_TIME_T */
 #include "internal/bits.h"      /* for SIGNED_INTEGER_MAX */
 #include "ruby/ruby.h"          /* for VALUE */
 

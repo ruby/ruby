@@ -20,9 +20,9 @@
  *             extension libraries. They could be written in C++98.
  * @brief      C-function backended Ruby-global variables.
  */
-#include "ruby/3/dllexport.h"
-#include "ruby/3/value.h"
-#include "ruby/3/attr/noreturn.h"
+#include "ruby/impl/dllexport.h"
+#include "ruby/impl/value.h"
+#include "ruby/impl/attr/noreturn.h"
 
 RUBY3_SYMBOL_EXPORT_BEGIN()
 

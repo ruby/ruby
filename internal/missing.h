@@ -9,7 +9,7 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header corresponding missing.
  */
-#include "ruby/3/config.h"      /* for HAVE_SETPROCTITLE */
+#include "ruby/impl/config.h"      /* for HAVE_SETPROCTITLE */
 
 /* missing/setproctitle.c */
 #ifndef HAVE_SETPROCTITLE

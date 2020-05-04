@@ -11,7 +11,7 @@
 
 **********************************************************************/
 
-#include "ruby/3/config.h"
+#include "ruby/impl/config.h"
 
 #ifdef _WIN32
 # include "ruby/ruby.h"
@@ -112,7 +112,7 @@
 # include <copyfile.h>
 #endif
 
-#include "ruby/3/stdbool.h"
+#include "ruby/impl/stdbool.h"
 #include "ccan/list/list.h"
 #include "dln.h"
 #include "encindex.h"

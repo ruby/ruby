@@ -23,9 +23,9 @@
  * Shyouhei  wonders:  why  there  is   no  SHORT2NUM,  given  there  are  both
  * #USHORT2NUM and #CHR2FIX?
  */
-#include "ruby/3/value.h"
-#include "ruby/3/dllexport.h"
-#include "ruby/3/special_consts.h"
+#include "ruby/impl/value.h"
+#include "ruby/impl/dllexport.h"
+#include "ruby/impl/special_consts.h"
 
 #define RB_NUM2SHORT  rb_num2short_inline
 #define RB_NUM2USHORT rb_num2ushort

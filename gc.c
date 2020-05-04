@@ -14,7 +14,7 @@
 #define rb_data_object_alloc rb_data_object_alloc
 #define rb_data_typed_object_alloc rb_data_typed_object_alloc
 
-#include "ruby/3/config.h"
+#include "ruby/impl/config.h"
 #ifdef _WIN32
 # include "ruby/ruby.h"
 #endif

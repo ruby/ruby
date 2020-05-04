@@ -20,16 +20,16 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Core data structures, definitions and manupulations.
  */
-#include "ruby/3/core/rarray.h"
-#include "ruby/3/core/rbasic.h"
-#include "ruby/3/core/rbignum.h"
-#include "ruby/3/core/rclass.h"
-#include "ruby/3/core/rdata.h"
-#include "ruby/3/core/rfile.h"
-#include "ruby/3/core/rhash.h"
-#include "ruby/3/core/robject.h"
-#include "ruby/3/core/rregexp.h"
-#include "ruby/3/core/rstring.h"
-#include "ruby/3/core/rstruct.h"
-#include "ruby/3/core/rtypeddata.h"
+#include "ruby/impl/core/rarray.h"
+#include "ruby/impl/core/rbasic.h"
+#include "ruby/impl/core/rbignum.h"
+#include "ruby/impl/core/rclass.h"
+#include "ruby/impl/core/rdata.h"
+#include "ruby/impl/core/rfile.h"
+#include "ruby/impl/core/rhash.h"
+#include "ruby/impl/core/robject.h"
+#include "ruby/impl/core/rregexp.h"
+#include "ruby/impl/core/rstring.h"
+#include "ruby/impl/core/rstruct.h"
+#include "ruby/impl/core/rtypeddata.h"
 #endif /* RUBY3_CORE_H */

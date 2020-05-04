@@ -12,7 +12,7 @@
 #define RUBY_VM_INSNS_INFO 1
 /* #define RUBY_MARK_FREE_DEBUG 1 */
 
-#include "ruby/3/config.h"
+#include "ruby/impl/config.h"
 
 #ifdef HAVE_DLADDR
 # include <dlfcn.h>

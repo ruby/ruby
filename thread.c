@@ -63,7 +63,7 @@
 
 /* for model 2 */
 
-#include "ruby/3/config.h"
+#include "ruby/impl/config.h"
 
 #ifdef __linux__
 // Normally,  gcc(1)  translates  calls to alloca() with inlined code.  This is not done when either the -ansi, -std=c89, -std=c99, or the -std=c11 option is given and the header <alloca.h> is not included.

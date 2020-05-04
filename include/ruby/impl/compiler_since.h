@@ -20,7 +20,7 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #RUBY3_COMPILER_SINCE.
  */
-#include "ruby/3/compiler_is.h"
+#include "ruby/impl/compiler_is.h"
 
 /**
  * @brief   Checks if the compiler is of given brand and is newer than or equal

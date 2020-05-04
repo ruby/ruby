@@ -20,12 +20,12 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Routines to manipulate struct ::RStruct.
  */
-#include "ruby/3/attr/artificial.h"
-#include "ruby/3/dllexport.h"
-#include "ruby/3/value.h"
-#include "ruby/3/value_type.h"
-#include "ruby/3/arithmetic/long.h"
-#include "ruby/3/arithmetic/int.h"
+#include "ruby/impl/attr/artificial.h"
+#include "ruby/impl/dllexport.h"
+#include "ruby/impl/value.h"
+#include "ruby/impl/value_type.h"
+#include "ruby/impl/arithmetic/long.h"
+#include "ruby/impl/arithmetic/int.h"
 #if !defined RUBY_EXPORT && !defined RUBY_NO_OLD_COMPATIBILITY
 # include "ruby/backward.h"
 #endif

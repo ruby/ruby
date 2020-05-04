@@ -10,7 +10,7 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Prototype for *.c in ./missing, and for missing timeval struct.
  */
-#include "ruby/3/config.h"
+#include "ruby/impl/config.h"
 
 #ifdef STDC_HEADERS
 # include <stddef.h>
@@ -38,7 +38,7 @@
 # include <ieeefp.h>
 #endif
 
-#include "ruby/3/dllexport.h"
+#include "ruby/impl/dllexport.h"
 
 #ifndef M_PI
 # define M_PI 3.14159265358979323846

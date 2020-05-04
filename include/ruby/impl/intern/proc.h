@@ -20,9 +20,9 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Public APIs related to ::rb_cProc.
  */
-#include "ruby/3/dllexport.h"
-#include "ruby/3/iterator.h"
-#include "ruby/3/value.h"
+#include "ruby/impl/dllexport.h"
+#include "ruby/impl/iterator.h"
+#include "ruby/impl/value.h"
 
 RUBY3_SYMBOL_EXPORT_BEGIN()
 

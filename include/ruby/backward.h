@@ -8,9 +8,9 @@
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
  */
-#include "ruby/3/core/rbasic.h"
-#include "ruby/3/value.h"
-#include "ruby/3/interpreter.h"
+#include "ruby/impl/core/rbasic.h"
+#include "ruby/impl/value.h"
+#include "ruby/impl/interpreter.h"
 #include "ruby/backward/2/attributes.h"
 
 #define RClass RClassDeprecated

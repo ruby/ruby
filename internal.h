@@ -10,7 +10,7 @@
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
  */
-#include "ruby/3/config.h"
+#include "ruby/impl/config.h"
 
 #ifdef __cplusplus
 # error not for C++

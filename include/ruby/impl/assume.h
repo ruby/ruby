@@ -25,11 +25,11 @@
  * - #RUBY3_ASSUME could fallback to #RUBY3_UNREACHABLE.
  * - #RUBY3_UNREACHABLE could fallback to #RUBY3_ASSUME.
  */
-#include "ruby/3/config.h"
-#include "ruby/3/cast.h"
-#include "ruby/3/compiler_since.h"
-#include "ruby/3/has/builtin.h"
-#include "ruby/3/warning_push.h"
+#include "ruby/impl/config.h"
+#include "ruby/impl/cast.h"
+#include "ruby/impl/compiler_since.h"
+#include "ruby/impl/has/builtin.h"
+#include "ruby/impl/warning_push.h"
 
 /** @cond INTERNAL_MACRO */
 #if RUBY3_COMPILER_SINCE(MSVC, 13, 10, 0)

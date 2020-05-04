@@ -1,5 +1,5 @@
 #define _POSIX_C_SOURCE 200809L
-#include "ruby/3/config.h"
+#include "ruby/impl/config.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

@@ -20,9 +20,9 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Signal handling APIs.
  */
-#include "ruby/3/config.h"      /* POSIX_SIGNAL / RETSIGTYPE */
-#include "ruby/3/dllexport.h"
-#include "ruby/3/value.h"
+#include "ruby/impl/config.h"      /* POSIX_SIGNAL / RETSIGTYPE */
+#include "ruby/impl/dllexport.h"
+#include "ruby/impl/value.h"
 
 RUBY3_SYMBOL_EXPORT_BEGIN()
 

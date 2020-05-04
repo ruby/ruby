@@ -20,18 +20,18 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #RUBY3_ALIGNAS / #RUBY3_ALIGNOF
  */
-#include "ruby/3/config.h"
+#include "ruby/impl/config.h"
 
 #ifdef HAVE_STDALIGN_H
 # include <stdalign.h>
 #endif
 
-#include "ruby/3/compiler_is.h"
-#include "ruby/3/compiler_since.h"
-#include "ruby/3/has/feature.h"
-#include "ruby/3/has/extension.h"
-#include "ruby/3/has/attribute.h"
-#include "ruby/3/has/declspec_attribute.h"
+#include "ruby/impl/compiler_is.h"
+#include "ruby/impl/compiler_since.h"
+#include "ruby/impl/has/feature.h"
+#include "ruby/impl/has/extension.h"
+#include "ruby/impl/has/attribute.h"
+#include "ruby/impl/has/declspec_attribute.h"
 
 /**
  * Wraps (or simulates) `alignas`. This is C++11's `alignas` and is _different_

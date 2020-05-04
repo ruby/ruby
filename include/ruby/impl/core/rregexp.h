@@ -20,13 +20,13 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines struct ::RRegexp.
  */
-#include "ruby/3/attr/artificial.h"
-#include "ruby/3/attr/pure.h"
-#include "ruby/3/cast.h"
-#include "ruby/3/core/rbasic.h"
-#include "ruby/3/core/rstring.h"
-#include "ruby/3/value.h"
-#include "ruby/3/value_type.h"
+#include "ruby/impl/attr/artificial.h"
+#include "ruby/impl/attr/pure.h"
+#include "ruby/impl/cast.h"
+#include "ruby/impl/core/rbasic.h"
+#include "ruby/impl/core/rstring.h"
+#include "ruby/impl/value.h"
+#include "ruby/impl/value_type.h"
 
 #define RREGEXP(obj)     RUBY3_CAST((struct RRegexp *)(obj))
 #define RREGEXP_PTR(obj) (RREGEXP(obj)->ptr)

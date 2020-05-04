@@ -20,7 +20,7 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #RUBY3_COMPILER_IS_Clang.
  */
-#include "ruby/3/compiler_is/apple.h"
+#include "ruby/impl/compiler_is/apple.h"
 
 #if ! defined(__clang__)
 # define RUBY3_COMPILER_IS_Clang 0

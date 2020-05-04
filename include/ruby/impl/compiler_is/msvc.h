@@ -20,8 +20,8 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #RUBY3_COMPILER_IS_MSVC.
  */
-#include "ruby/3/compiler_is/clang.h"
-#include "ruby/3/compiler_is/intel.h"
+#include "ruby/impl/compiler_is/clang.h"
+#include "ruby/impl/compiler_is/intel.h"
 
 #if ! defined(_MSC_VER)
 # define RUBY3_COMPILER_IS_MSVC 0

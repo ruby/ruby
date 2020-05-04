@@ -20,7 +20,7 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Memory management stuff.
  */
-#include "ruby/3/config.h"
+#include "ruby/impl/config.h"
 
 #ifdef STDC_HEADERS
 # include <stddef.h>
@@ -43,20 +43,20 @@
 # pragma intrinsic(_umul128)
 #endif
 
-#include "ruby/3/attr/alloc_size.h"
-#include "ruby/3/attr/const.h"
-#include "ruby/3/attr/constexpr.h"
-#include "ruby/3/attr/noalias.h"
-#include "ruby/3/attr/nonnull.h"
-#include "ruby/3/attr/noreturn.h"
-#include "ruby/3/attr/restrict.h"
-#include "ruby/3/attr/returns_nonnull.h"
-#include "ruby/3/cast.h"
-#include "ruby/3/dllexport.h"
-#include "ruby/3/has/builtin.h"
-#include "ruby/3/stdalign.h"
-#include "ruby/3/stdbool.h"
-#include "ruby/3/xmalloc.h"
+#include "ruby/impl/attr/alloc_size.h"
+#include "ruby/impl/attr/const.h"
+#include "ruby/impl/attr/constexpr.h"
+#include "ruby/impl/attr/noalias.h"
+#include "ruby/impl/attr/nonnull.h"
+#include "ruby/impl/attr/noreturn.h"
+#include "ruby/impl/attr/restrict.h"
+#include "ruby/impl/attr/returns_nonnull.h"
+#include "ruby/impl/cast.h"
+#include "ruby/impl/dllexport.h"
+#include "ruby/impl/has/builtin.h"
+#include "ruby/impl/stdalign.h"
+#include "ruby/impl/stdbool.h"
+#include "ruby/impl/xmalloc.h"
 #include "ruby/backward/2/limits.h"
 #include "ruby/backward/2/long_long.h"
 #include "ruby/backward/2/assume.h"

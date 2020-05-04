@@ -20,11 +20,11 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Public APIs to provide ::rb_fd_select().
  */
-#include "ruby/3/dosish.h"      /* for rb_w32_select */
-#include "ruby/3/attr/nonnull.h"
-#include "ruby/3/attr/pure.h"
-#include "ruby/3/attr/noalias.h"
-#include "ruby/3/dllexport.h"
+#include "ruby/impl/dosish.h"      /* for rb_w32_select */
+#include "ruby/impl/attr/nonnull.h"
+#include "ruby/impl/attr/pure.h"
+#include "ruby/impl/attr/noalias.h"
+#include "ruby/impl/dllexport.h"
 #include "ruby/assert.h"
 
 /**@cond INTERNAL_MACRO */

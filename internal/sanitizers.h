@@ -9,7 +9,7 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for ASAN / MSAN / etc.
  */
-#include "ruby/3/config.h"
+#include "ruby/impl/config.h"
 #include "internal/compilers.h" /* for __has_feature */
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
@@ -26,7 +26,7 @@
 # endif
 #endif
 
-#include "ruby/3/stdbool.h"     /* for bool */
+#include "ruby/impl/stdbool.h"     /* for bool */
 #include "ruby/ruby.h"          /* for VALUE */
 
 #if 0

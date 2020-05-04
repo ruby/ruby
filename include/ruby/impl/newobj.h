@@ -20,12 +20,12 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #NEWOBJ.
  */
-#include "ruby/3/cast.h"
-#include "ruby/3/core/rbasic.h"
-#include "ruby/3/dllexport.h"
-#include "ruby/3/fl_type.h"
-#include "ruby/3/special_consts.h"
-#include "ruby/3/value.h"
+#include "ruby/impl/cast.h"
+#include "ruby/impl/core/rbasic.h"
+#include "ruby/impl/dllexport.h"
+#include "ruby/impl/fl_type.h"
+#include "ruby/impl/special_consts.h"
+#include "ruby/impl/value.h"
 #include "ruby/assert.h"
 
 #define RB_NEWOBJ(obj,type) type *(obj) = RUBY3_CAST((type *)rb_newobj())

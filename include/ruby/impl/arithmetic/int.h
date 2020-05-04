@@ -20,18 +20,18 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Arithmetic conversion between C's `int` and Ruby's.
  */
-#include "ruby/3/config.h"
-#include "ruby/3/arithmetic/fixnum.h"
-#include "ruby/3/arithmetic/intptr_t.h"
-#include "ruby/3/arithmetic/long.h"
-#include "ruby/3/attr/artificial.h"
-#include "ruby/3/attr/const.h"
-#include "ruby/3/attr/constexpr.h"
-#include "ruby/3/compiler_is.h"
-#include "ruby/3/dllexport.h"
-#include "ruby/3/special_consts.h"
-#include "ruby/3/value.h"
-#include "ruby/3/warning_push.h"
+#include "ruby/impl/config.h"
+#include "ruby/impl/arithmetic/fixnum.h"
+#include "ruby/impl/arithmetic/intptr_t.h"
+#include "ruby/impl/arithmetic/long.h"
+#include "ruby/impl/attr/artificial.h"
+#include "ruby/impl/attr/const.h"
+#include "ruby/impl/attr/constexpr.h"
+#include "ruby/impl/compiler_is.h"
+#include "ruby/impl/dllexport.h"
+#include "ruby/impl/special_consts.h"
+#include "ruby/impl/value.h"
+#include "ruby/impl/warning_push.h"
 #include "ruby/assert.h"
 
 #define RB_INT2NUM  rb_int2num_inline

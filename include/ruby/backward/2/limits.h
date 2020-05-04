@@ -23,7 +23,7 @@
  * The macros in this header file are obsolescent.  Does anyone really need our
  * own definition of #CHAR_BIT today?
  */
-#include "ruby/3/config.h"
+#include "ruby/impl/config.h"
 
 #ifdef HAVE_LIMITS_H
 # include <limits.h>

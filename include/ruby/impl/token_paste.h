@@ -20,10 +20,10 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #RUBY3_TOKEN_PASTE.
  */
-#include "ruby/3/config.h"
-#include "ruby/3/compiler_since.h"
-#include "ruby/3/has/warning.h"
-#include "ruby/3/warning_push.h"
+#include "ruby/impl/config.h"
+#include "ruby/impl/compiler_since.h"
+#include "ruby/impl/has/warning.h"
+#include "ruby/impl/warning_push.h"
 
 /* :TODO: add your  compiler here.  There are many compilers  that can suppress
  * warnings via pragmas, but not all of them accept such things inside of `#if`

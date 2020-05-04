@@ -9,7 +9,7 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Rational.
  */
-#include "ruby/3/config.h"      /* for HAVE_LIBGMP */
+#include "ruby/impl/config.h"      /* for HAVE_LIBGMP */
 #include "ruby/ruby.h"          /* for struct RBasic */
 #include "internal/gc.h"        /* for RB_OBJ_WRITE */
 #include "internal/numeric.h"   /* for INT_POSITIVE_P */

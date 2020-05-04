@@ -20,10 +20,10 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #RUBY3_ATTR_NORETURN.
  */
-#include "ruby/3/compiler_since.h"
-#include "ruby/3/has/attribute.h"
-#include "ruby/3/has/cpp_attribute.h"
-#include "ruby/3/has/declspec_attribute.h"
+#include "ruby/impl/compiler_since.h"
+#include "ruby/impl/has/attribute.h"
+#include "ruby/impl/has/cpp_attribute.h"
+#include "ruby/impl/has/declspec_attribute.h"
 
 /** Wraps (or simulates) `[[noreturn]]` */
 #if RUBY3_COMPILER_SINCE(SunPro, 5, 10, 0)

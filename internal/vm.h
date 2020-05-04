@@ -9,7 +9,7 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for RubyVM.
  */
-#include "ruby/3/stdbool.h"         /* for bool */
+#include "ruby/impl/stdbool.h"         /* for bool */
 #include "internal/serial.h"        /* for rb_serial_t */
 #include "internal/static_assert.h" /* for STATIC_ASSERT */
 #include "ruby/ruby.h"              /* for ID */

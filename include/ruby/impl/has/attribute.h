@@ -20,9 +20,9 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #RUBY3_HAS_ATTRIBUTE.
  */
-#include "ruby/3/config.h"
-#include "ruby/3/compiler_since.h"
-#include "ruby/3/token_paste.h"
+#include "ruby/impl/config.h"
+#include "ruby/impl/compiler_since.h"
+#include "ruby/impl/token_paste.h"
 
 #if defined(__has_attribute)
 # if __has_attribute(pure) || RUBY3_COMPILER_IS(GCC)
