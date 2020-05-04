@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or  `rbimpl`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -245,7 +245,7 @@ RBIMPL_ATTR_PURE_ON_NDEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_FORCEINLINE()
 static bool
-ruby3_RB_TYPE_P_fastpath(VALUE obj, enum ruby_value_type t)
+rbimpl_RB_TYPE_P_fastpath(VALUE obj, enum ruby_value_type t)
 {
     if (t == RUBY_T_TRUE) {
         return obj == RUBY_Qtrue;
@@ -285,7 +285,7 @@ static inline bool
 RB_TYPE_P(VALUE obj, enum ruby_value_type t)
 {
     if (RBIMPL_CONSTANT_P(t)) {
-        return ruby3_RB_TYPE_P_fastpath(obj, t);
+        return rbimpl_RB_TYPE_P_fastpath(obj, t);
     }
     else {
         return t == rb_type(obj);
@@ -299,7 +299,7 @@ RB_TYPE_P(VALUE obj, enum ruby_value_type t)
 # undef RB_TYPE_P
 # define RB_TYPE_P(obj, t)                  \
     (RBIMPL_CONSTANT_P(t)                  ? \
-     ruby3_RB_TYPE_P_fastpath((obj), (t)) : \
+     rbimpl_RB_TYPE_P_fastpath((obj), (t)) : \
      (RB_TYPE_P)((obj), (t)))
 #endif
 
@@ -322,7 +322,7 @@ RB_TYPE_P(VALUE obj, enum ruby_value_type t)
 RBIMPL_ATTR_PURE()
 RBIMPL_ATTR_ARTIFICIAL()
 /* Defined in ruby/impl/core/rtypeddata.h */
-static inline bool ruby3_rtypeddata_p(VALUE obj);
+static inline bool rbimpl_rtypeddata_p(VALUE obj);
 
 RBIMPL_ATTR_ARTIFICIAL()
 static inline void
@@ -334,7 +334,7 @@ Check_Type(VALUE v, enum ruby_value_type t)
     else if (t != RUBY_T_DATA) {
         goto fastpath;
     }
-    else if (ruby3_rtypeddata_p(v)) {
+    else if (rbimpl_rtypeddata_p(v)) {
         /* The intention itself is not necessarily clear to me, but at least it
          * is  intentional   to  rule   out  typed   data  here.    See  commit
          * a7c32bf81d3391cfb78cfda278f469717d0fb794. */

@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or  `rbimpl`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -113,7 +113,7 @@ rb_long2int_inline(long n)
 RBIMPL_ATTR_CONST_ON_NDEBUG()
 RBIMPL_ATTR_CONSTEXPR_ON_NDEBUG(CXX14)
 static inline long
-ruby3_fix2long_by_idiv(VALUE x)
+rbimpl_fix2long_by_idiv(VALUE x)
 {
     RBIMPL_ASSERT_OR_ASSUME(RB_FIXNUM_P(x));
 
@@ -131,7 +131,7 @@ ruby3_fix2long_by_idiv(VALUE x)
 RBIMPL_ATTR_CONST_ON_NDEBUG()
 RBIMPL_ATTR_CONSTEXPR_ON_NDEBUG(CXX14)
 static inline long
-ruby3_fix2long_by_shift(VALUE x)
+rbimpl_fix2long_by_shift(VALUE x)
 {
     RBIMPL_ASSERT_OR_ASSUME(RB_FIXNUM_P(x));
 
@@ -148,7 +148,7 @@ ruby3_fix2long_by_shift(VALUE x)
 RBIMPL_ATTR_CONST()
 RBIMPL_ATTR_CONSTEXPR(CXX11)
 static inline bool
-ruby3_right_shift_is_arithmetic_p(void)
+rbimpl_right_shift_is_arithmetic_p(void)
 {
     return (-1 >> 1) == -1;
 }
@@ -158,11 +158,11 @@ RBIMPL_ATTR_CONSTEXPR_ON_NDEBUG(CXX14)
 static inline long
 rb_fix2long(VALUE x)
 {
-    if /* constexpr */ (ruby3_right_shift_is_arithmetic_p()) {
-        return ruby3_fix2long_by_shift(x);
+    if /* constexpr */ (rbimpl_right_shift_is_arithmetic_p()) {
+        return rbimpl_fix2long_by_shift(x);
     }
     else {
-        return ruby3_fix2long_by_idiv(x);
+        return rbimpl_fix2long_by_idiv(x);
     }
 }
 

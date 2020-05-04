@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or  `rbimpl`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -120,7 +120,7 @@ RBIMPL_WARNING_IGNORED(413)
 RBIMPL_ATTR_PURE_ON_NDEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
 static inline struct RString
-ruby3_rstring_getmem(VALUE str)
+rbimpl_rstring_getmem(VALUE str)
 {
     RBIMPL_ASSERT_TYPE(str, RUBY_T_STRING);
 
@@ -143,14 +143,14 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline long
 RSTRING_LEN(VALUE str)
 {
-    return ruby3_rstring_getmem(str).as.heap.len;
+    return rbimpl_rstring_getmem(str).as.heap.len;
 }
 
 RBIMPL_ATTR_ARTIFICIAL()
 static inline char *
 RSTRING_PTR(VALUE str)
 {
-    char *ptr = ruby3_rstring_getmem(str).as.heap.ptr;
+    char *ptr = rbimpl_rstring_getmem(str).as.heap.ptr;
 
     if (RB_UNLIKELY(! ptr)) {
         /* :BEWARE: @shyouhei thinks  that currently, there are  rooms for this
@@ -178,7 +178,7 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline char *
 RSTRING_END(VALUE str)
 {
-    struct RString buf = ruby3_rstring_getmem(str);
+    struct RString buf = rbimpl_rstring_getmem(str);
 
     if (RB_UNLIKELY(! buf.as.heap.ptr)) {
         /* Ditto. */
@@ -203,9 +203,9 @@ RSTRING_LENINT(VALUE str)
 #ifdef HAVE_STMT_AND_DECL_IN_EXPR
 # define RSTRING_GETMEM(str, ptrvar, lenvar) \
     __extension__ ({ \
-        struct RString ruby3_str = ruby3_rstring_getmem(str); \
-        (ptrvar) = ruby3_str.as.heap.ptr; \
-        (lenvar) = ruby3_str.as.heap.len; \
+        struct RString rbimpl_str = rbimpl_rstring_getmem(str); \
+        (ptrvar) = rbimpl_str.as.heap.ptr; \
+        (lenvar) = rbimpl_str.as.heap.len; \
     })
 #else
 # define RSTRING_GETMEM(str, ptrvar, lenvar) \
