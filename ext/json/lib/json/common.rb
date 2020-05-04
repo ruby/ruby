@@ -337,7 +337,7 @@ module JSON
   #
   # You can use these formatting options to generate
   # \JSON data in a more open format, using whitespace.
-  # See also #pretty_generate.
+  # See also JSON.pretty_generate.
   #
   # - Option +array_nl+ (\String) specifies a string (usually a newline)
   #   to be inserted after each \JSON array; defaults to the empty \String, <tt>''</tt>.
@@ -663,7 +663,7 @@ module JSON
     raise ArgumentError, "exceed depth limit"
   end
 
-  # Encodes string using Ruby's _String.encode_
+  # Encodes string using String.encode.
   def self.iconv(to, from, string)
     string.encode(to, from)
   end

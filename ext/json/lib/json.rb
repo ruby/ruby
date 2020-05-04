@@ -40,16 +40,16 @@ require 'json/common'
 #
 # You can parse a \String containing \JSON data using
 # either of two methods:
-# - JSON.parse(source, opts)
-# - JSON.parse!(source, opts)
+# - <tt>JSON.parse(source, opts)</tt>
+# - <tt>JSON.parse!(source, opts)</tt>
 #
 # where
-# - +source+ is a Ruby data structure.
+# - +source+ is a Ruby object.
 # - +opts+ is a \Hash object containing options data.
 #
 # The difference between the two methods
-# is that JSON.parse! takes some shortcuts
-# that may not be safe in all cases;
+# is that JSON.parse! omits some checks
+# and may not be safe for some +source+ data;
 # use it only for data from trusted sources.
 # Use the safer method JSON.parse for less trusted sources.
 #
