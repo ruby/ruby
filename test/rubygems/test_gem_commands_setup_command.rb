@@ -277,11 +277,13 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     engine_defaults_rb = File.join lib_rubygems_defaults, 'jruby.rb'
     os_defaults_rb     = File.join lib_rubygems_defaults, 'operating_system.rb'
 
+    old_gauntlet_rubygems_rb = File.join lib, 'gauntlet_rubygems.rb'
+
     old_builder_rb     = File.join lib_rubygems, 'builder.rb'
     old_format_rb      = File.join lib_rubygems, 'format.rb'
     old_bundler_c_rb   = File.join lib_bundler,  'c.rb'
 
-    files_that_go   = [old_builder_rb, old_format_rb, old_bundler_c_rb]
+    files_that_go   = [old_gauntlet_rubygems_rb, old_builder_rb, old_format_rb, old_bundler_c_rb]
     files_that_stay = [securerandom_rb, engine_defaults_rb, os_defaults_rb]
 
     create_dummy_files(files_that_go + files_that_stay)
