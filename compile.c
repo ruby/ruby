@@ -5635,7 +5635,6 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
          *       goto match_failed
          *     end
          *   end
-         *   true
          *   goto matched
          * type_error:
          *   FrozenCore.raise TypeError
@@ -5806,7 +5805,6 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
          *       end
          *     end
          *   end
-         *   true
          *   goto matched
          * type_error:
          *   FrozenCore.raise TypeError
