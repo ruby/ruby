@@ -493,6 +493,10 @@ onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc,
 #endif
 
   if ((to = onigenc_unicode_fold_lookup(code)) != 0) {
+    if (OnigCodePointCount(to->n) == 0) {
+      /* any codepoint should not be empty */
+      UNREACHABLE_RETURN(0);
+    }
     if (OnigCodePointCount(to->n) == 1) {
       OnigCodePoint orig_code = code;
 

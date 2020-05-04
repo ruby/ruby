@@ -1,12 +1,20 @@
 enum {
     tIGNORED_NL  = tLAST_TOKEN + 1,
+# define tIGNORED_NL ((enum yytokentype)tIGNORED_NL)
     tCOMMENT,
+# define tCOMMENT ((enum yytokentype)tCOMMENT)
     tEMBDOC_BEG,
+# define tEMBDOC_BEG ((enum yytokentype)tEMBDOC_BEG)
     tEMBDOC,
+# define tEMBDOC ((enum yytokentype)tEMBDOC)
     tEMBDOC_END,
+# define tEMBDOC_END ((enum yytokentype)tEMBDOC_END)
     tHEREDOC_BEG,
+# define tHEREDOC_BEG ((enum yytokentype)tHEREDOC_BEG)
     tHEREDOC_END,
-    k__END__
+# define tHEREDOC_END ((enum yytokentype)tHEREDOC_END)
+    k__END__,
+# define k__END__ ((enum yytokentype)k__END__)
 };
 
 typedef struct {
