@@ -20,16 +20,16 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines struct ::RString.
  */
-#include "ruby/3/config.h"
-#include "ruby/3/arithmetic/long.h"
-#include "ruby/3/attr/artificial.h"
-#include "ruby/3/attr/pure.h"
-#include "ruby/3/cast.h"
-#include "ruby/3/core/rbasic.h"
-#include "ruby/3/dllexport.h"
-#include "ruby/3/fl_type.h"
-#include "ruby/3/value_type.h"
-#include "ruby/3/warning_push.h"
+#include "ruby/impl/config.h"
+#include "ruby/impl/arithmetic/long.h"
+#include "ruby/impl/attr/artificial.h"
+#include "ruby/impl/attr/pure.h"
+#include "ruby/impl/cast.h"
+#include "ruby/impl/core/rbasic.h"
+#include "ruby/impl/dllexport.h"
+#include "ruby/impl/fl_type.h"
+#include "ruby/impl/value_type.h"
+#include "ruby/impl/warning_push.h"
 #include "ruby/assert.h"
 
 #define RSTRING(obj)            RUBY3_CAST((struct RString *)(obj))

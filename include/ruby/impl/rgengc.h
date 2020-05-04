@@ -24,12 +24,12 @@
  *             International  Symposium on  Memory Management  (ISMM 2019),  pp
  *             115-121, 2019. https://doi.org/10.1145/3315573.3329986
  */
-#include "ruby/3/attr/artificial.h"
-#include "ruby/3/attr/pure.h"
-#include "ruby/3/dllexport.h"
-#include "ruby/3/special_consts.h"
-#include "ruby/3/stdbool.h"
-#include "ruby/3/value.h"
+#include "ruby/impl/attr/artificial.h"
+#include "ruby/impl/attr/pure.h"
+#include "ruby/impl/dllexport.h"
+#include "ruby/impl/special_consts.h"
+#include "ruby/impl/stdbool.h"
+#include "ruby/impl/value.h"
 #include "ruby/assert.h"
 #include "ruby/backward/2/attributes.h"
 

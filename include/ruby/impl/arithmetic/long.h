@@ -28,19 +28,19 @@
  *      understand the difference of `int`  and `long` when they designed those
  *      macros.
  */
-#include "ruby/3/config.h"
-#include "ruby/3/arithmetic/fixnum.h"   /* FIXABLE */
-#include "ruby/3/arithmetic/intptr_t.h" /* rb_int2big etc.*/
-#include "ruby/3/assume.h"
-#include "ruby/3/attr/artificial.h"
-#include "ruby/3/attr/cold.h"
-#include "ruby/3/attr/const.h"
-#include "ruby/3/attr/constexpr.h"
-#include "ruby/3/attr/noreturn.h"
-#include "ruby/3/cast.h"
-#include "ruby/3/dllexport.h"
-#include "ruby/3/special_consts.h"      /* FIXNUM_FLAG */
-#include "ruby/3/value.h"
+#include "ruby/impl/config.h"
+#include "ruby/impl/arithmetic/fixnum.h"   /* FIXABLE */
+#include "ruby/impl/arithmetic/intptr_t.h" /* rb_int2big etc.*/
+#include "ruby/impl/assume.h"
+#include "ruby/impl/attr/artificial.h"
+#include "ruby/impl/attr/cold.h"
+#include "ruby/impl/attr/const.h"
+#include "ruby/impl/attr/constexpr.h"
+#include "ruby/impl/attr/noreturn.h"
+#include "ruby/impl/cast.h"
+#include "ruby/impl/dllexport.h"
+#include "ruby/impl/special_consts.h"      /* FIXNUM_FLAG */
+#include "ruby/impl/value.h"
 #include "ruby/assert.h"
 
 #define FIX2LONG     RB_FIX2LONG

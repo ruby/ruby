@@ -9,7 +9,7 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Complex.
  */
-#include "ruby/3/value.h"          /* for struct RBasic */
+#include "ruby/impl/value.h"          /* for struct RBasic */
 
 struct RComplex {
     struct RBasic basic;

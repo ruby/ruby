@@ -32,14 +32,14 @@
  *
  * Shyouhei stopped thinking.  Let them be as is.
  */
-#include "ruby/3/config.h"
+#include "ruby/impl/config.h"
 
 #ifdef STDC_HEADERS
 # include <stddef.h>
 #endif
 
-#include "ruby/3/dllexport.h"
-#include "ruby/3/value.h"
+#include "ruby/impl/dllexport.h"
+#include "ruby/impl/value.h"
 #if !defined RUBY_EXPORT && !defined RUBY_NO_OLD_COMPATIBILITY
 # include "ruby/backward.h"
 #endif

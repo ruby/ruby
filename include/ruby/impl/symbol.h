@@ -20,7 +20,7 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #rb_intern
  */
-#include "ruby/3/config.h"
+#include "ruby/impl/config.h"
 
 #ifdef HAVE_STDDEF_H
 # include <stddef.h>
@@ -30,14 +30,14 @@
 # include <string.h>
 #endif
 
-#include "ruby/3/attr/nonnull.h"
-#include "ruby/3/attr/pure.h"
-#include "ruby/3/attr/noalias.h"
-#include "ruby/3/cast.h"
-#include "ruby/3/constant_p.h"
-#include "ruby/3/dllexport.h"
-#include "ruby/3/has/builtin.h"
-#include "ruby/3/value.h"
+#include "ruby/impl/attr/nonnull.h"
+#include "ruby/impl/attr/pure.h"
+#include "ruby/impl/attr/noalias.h"
+#include "ruby/impl/cast.h"
+#include "ruby/impl/constant_p.h"
+#include "ruby/impl/dllexport.h"
+#include "ruby/impl/has/builtin.h"
+#include "ruby/impl/value.h"
 
 #define RB_ID2SYM      rb_id2sym
 #define RB_SYM2ID      rb_sym2id

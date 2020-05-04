@@ -20,9 +20,9 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Our own private printf(3).
  */
-#include "ruby/3/attr/format.h"
-#include "ruby/3/dllexport.h"
-#include "ruby/3/value.h"
+#include "ruby/impl/attr/format.h"
+#include "ruby/impl/dllexport.h"
+#include "ruby/impl/value.h"
 
 RUBY3_SYMBOL_EXPORT_BEGIN()
 

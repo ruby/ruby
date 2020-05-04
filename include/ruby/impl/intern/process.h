@@ -20,10 +20,10 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Public APIs related to ::rb_mProcess.
  */
-#include "ruby/3/attr/noreturn.h"
-#include "ruby/3/config.h"      /* rb_pid_t is defined here. */
-#include "ruby/3/dllexport.h"
-#include "ruby/3/value.h"
+#include "ruby/impl/attr/noreturn.h"
+#include "ruby/impl/config.h"      /* rb_pid_t is defined here. */
+#include "ruby/impl/dllexport.h"
+#include "ruby/impl/value.h"
 
 RUBY3_SYMBOL_EXPORT_BEGIN()
 

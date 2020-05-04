@@ -11,7 +11,7 @@
 
 **********************************************************************/
 
-#include "ruby/3/config.h"
+#include "ruby/impl/config.h"
 
 #ifdef HAVE_SYS_PRCTL_H
 #include <sys/prctl.h>

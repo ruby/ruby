@@ -10,7 +10,7 @@
  * @brief      Internal header corresponding util.c.
  * @warning    DO NOT ADD RANDOM GARBAGE HERE THIS FILE IS FOR util.c
  */
-#include "ruby/3/config.h"
+#include "ruby/impl/config.h"
 #include <stddef.h>             /* for size_t */
 
 #ifdef HAVE_SYS_TYPES_H

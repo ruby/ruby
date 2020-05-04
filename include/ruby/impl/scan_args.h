@@ -23,21 +23,21 @@
  * This  is a  beast.  It  statically analyses  the argument  spec string,  and
  * expands the assignment of variables into dedicated codes.
  */
-#include "ruby/3/attr/diagnose_if.h"
-#include "ruby/3/attr/error.h"
-#include "ruby/3/attr/forceinline.h"
-#include "ruby/3/attr/noreturn.h"
-#include "ruby/3/config.h"
-#include "ruby/3/dllexport.h"
-#include "ruby/3/has/attribute.h"
-#include "ruby/3/intern/array.h" /* rb_ary_new_from_values */
-#include "ruby/3/intern/error.h" /* rb_error_arity */
-#include "ruby/3/intern/hash.h"  /* rb_hash_dup */
-#include "ruby/3/intern/proc.h"  /* rb_block_proc */
-#include "ruby/3/iterator.h"     /* rb_block_given_p / rb_keyword_given_p */
-#include "ruby/3/static_assert.h"
-#include "ruby/3/stdbool.h"
-#include "ruby/3/value.h"
+#include "ruby/impl/attr/diagnose_if.h"
+#include "ruby/impl/attr/error.h"
+#include "ruby/impl/attr/forceinline.h"
+#include "ruby/impl/attr/noreturn.h"
+#include "ruby/impl/config.h"
+#include "ruby/impl/dllexport.h"
+#include "ruby/impl/has/attribute.h"
+#include "ruby/impl/intern/array.h" /* rb_ary_new_from_values */
+#include "ruby/impl/intern/error.h" /* rb_error_arity */
+#include "ruby/impl/intern/hash.h"  /* rb_hash_dup */
+#include "ruby/impl/intern/proc.h"  /* rb_block_proc */
+#include "ruby/impl/iterator.h"     /* rb_block_given_p / rb_keyword_given_p */
+#include "ruby/impl/static_assert.h"
+#include "ruby/impl/stdbool.h"
+#include "ruby/impl/value.h"
 #include "ruby/assert.h"
 
 #define RB_SCAN_ARGS_PASS_CALLED_KEYWORDS 0

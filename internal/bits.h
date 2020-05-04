@@ -26,7 +26,7 @@
  * @see        https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=_rotr64
  * @see        https://stackoverflow.com/a/776523
  */
-#include "ruby/3/config.h"
+#include "ruby/impl/config.h"
 #include <limits.h>             /* for CHAR_BITS */
 #include <stdint.h>             /* for uintptr_t */
 #include "internal/compilers.h" /* for MSC_VERSION_SINCE */

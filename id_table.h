@@ -1,6 +1,6 @@
 #ifndef RUBY_ID_TABLE_H
 #define RUBY_ID_TABLE_H 1
-#include "ruby/3/config.h"
+#include "ruby/impl/config.h"
 #include <stddef.h>
 #include "ruby/ruby.h"
 

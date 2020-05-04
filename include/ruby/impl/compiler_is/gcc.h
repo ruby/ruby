@@ -20,9 +20,9 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #RUBY3_COMPILER_IS_GCC.
  */
-#include "ruby/3/compiler_is/apple.h"
-#include "ruby/3/compiler_is/clang.h"
-#include "ruby/3/compiler_is/intel.h"
+#include "ruby/impl/compiler_is/apple.h"
+#include "ruby/impl/compiler_is/clang.h"
+#include "ruby/impl/compiler_is/intel.h"
 
 #if ! defined(__GNUC__)
 # define RUBY3_COMPILER_IS_GCC 0

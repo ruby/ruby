@@ -20,9 +20,9 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Public APIs related to ::rb_eException.
  */
-#include "ruby/3/dllexport.h"
-#include "ruby/3/value.h"
-#include "ruby/3/fl_type.h"
+#include "ruby/impl/dllexport.h"
+#include "ruby/impl/value.h"
+#include "ruby/impl/fl_type.h"
 #include "ruby/backward/2/assume.h"
 #include "ruby/backward/2/attributes.h"
 

@@ -20,8 +20,8 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #RUBY3_ATTR_PURE.
  */
-#include "ruby/3/compiler_since.h"
-#include "ruby/3/has/attribute.h"
+#include "ruby/impl/compiler_since.h"
+#include "ruby/impl/has/attribute.h"
 #include "ruby/assert.h"
 
 /** Wraps (or simulates) `__attribute__((pure))` */

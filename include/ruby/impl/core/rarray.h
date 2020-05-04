@@ -20,19 +20,19 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines struct ::RArray.
  */
-#include "ruby/3/arithmetic/long.h"
-#include "ruby/3/attr/artificial.h"
-#include "ruby/3/attr/constexpr.h"
-#include "ruby/3/attr/maybe_unused.h"
-#include "ruby/3/attr/pure.h"
-#include "ruby/3/cast.h"
-#include "ruby/3/core/rbasic.h"
-#include "ruby/3/dllexport.h"
-#include "ruby/3/fl_type.h"
-#include "ruby/3/rgengc.h"
-#include "ruby/3/stdbool.h"
-#include "ruby/3/value.h"
-#include "ruby/3/value_type.h"
+#include "ruby/impl/arithmetic/long.h"
+#include "ruby/impl/attr/artificial.h"
+#include "ruby/impl/attr/constexpr.h"
+#include "ruby/impl/attr/maybe_unused.h"
+#include "ruby/impl/attr/pure.h"
+#include "ruby/impl/cast.h"
+#include "ruby/impl/core/rbasic.h"
+#include "ruby/impl/dllexport.h"
+#include "ruby/impl/fl_type.h"
+#include "ruby/impl/rgengc.h"
+#include "ruby/impl/stdbool.h"
+#include "ruby/impl/value.h"
+#include "ruby/impl/value_type.h"
 #include "ruby/assert.h"
 
 #ifndef USE_TRANSIENT_HEAP

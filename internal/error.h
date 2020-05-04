@@ -9,10 +9,10 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Exception.
  */
-#include "ruby/3/config.h"
+#include "ruby/impl/config.h"
 #include <stdarg.h>             /* for va_list */
 #include "internal/string.h"    /* for rb_fstring_cstr */
-#include "ruby/3/stdbool.h"     /* for bool */
+#include "ruby/impl/stdbool.h"     /* for bool */
 #include "ruby/encoding.h"      /* for rb_encoding */
 #include "ruby/intern.h"        /* for rb_exc_raise */
 #include "ruby/ruby.h"          /* for enum ruby_value_type */

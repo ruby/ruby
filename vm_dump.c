@@ -8,7 +8,7 @@
 
 **********************************************************************/
 
-#include "ruby/3/config.h"
+#include "ruby/impl/config.h"
 
 #ifdef HAVE_UCONTEXT_H
 # include <ucontext.h>

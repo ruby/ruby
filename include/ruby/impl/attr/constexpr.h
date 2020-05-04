@@ -20,9 +20,9 @@
  *             extension libraries. They could be written in C++98.
  * @brief      #RUBY3_ATTR_CONSTEXPR.
  */
-#include "ruby/3/has/feature.h"
-#include "ruby/3/compiler_is.h"
-#include "ruby/3/token_paste.h"
+#include "ruby/impl/has/feature.h"
+#include "ruby/impl/compiler_is.h"
+#include "ruby/impl/token_paste.h"
 
 /** @cond INTERNAL_MACRO */
 #if ! defined(__cplusplus)

@@ -20,11 +20,11 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Public APIs related to ::rb_cEnumerator.
  */
-#include "ruby/3/dllexport.h"
-#include "ruby/3/intern/eval.h" /* rb_frame_this_func */
-#include "ruby/3/iterator.h"    /* rb_block_given_p */
-#include "ruby/3/symbol.h"
-#include "ruby/3/value.h"
+#include "ruby/impl/dllexport.h"
+#include "ruby/impl/intern/eval.h" /* rb_frame_this_func */
+#include "ruby/impl/iterator.h"    /* rb_block_given_p */
+#include "ruby/impl/symbol.h"
+#include "ruby/impl/value.h"
 
 RUBY3_SYMBOL_EXPORT_BEGIN()
 

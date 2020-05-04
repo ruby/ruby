@@ -9,10 +9,10 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for variables.
  */
-#include "ruby/3/config.h"
+#include "ruby/impl/config.h"
 #include <stddef.h>             /* for size_t */
 #include "constant.h"           /* for rb_const_entry_t */
-#include "ruby/3/stdbool.h"     /* for bool */
+#include "ruby/impl/stdbool.h"     /* for bool */
 #include "ruby/ruby.h"          /* for VALUE */
 
 /* global variable */

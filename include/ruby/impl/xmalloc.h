@@ -20,7 +20,7 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Declares ::ruby_xmalloc().
  */
-#include "ruby/3/config.h"
+#include "ruby/impl/config.h"
 
 #ifdef STDC_HEADERS
 # include <stddef.h>
@@ -30,12 +30,12 @@
 # include <stdlib.h>
 #endif
 
-#include "ruby/3/attr/alloc_size.h"
-#include "ruby/3/attr/nodiscard.h"
-#include "ruby/3/attr/noexcept.h"
-#include "ruby/3/attr/restrict.h"
-#include "ruby/3/attr/returns_nonnull.h"
-#include "ruby/3/dllexport.h"
+#include "ruby/impl/attr/alloc_size.h"
+#include "ruby/impl/attr/nodiscard.h"
+#include "ruby/impl/attr/noexcept.h"
+#include "ruby/impl/attr/restrict.h"
+#include "ruby/impl/attr/returns_nonnull.h"
+#include "ruby/impl/dllexport.h"
 
 #ifndef USE_GC_MALLOC_OBJ_INFO_DETAILS
 # define USE_GC_MALLOC_OBJ_INFO_DETAILS 0

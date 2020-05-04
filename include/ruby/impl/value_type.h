@@ -20,20 +20,20 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines enum ::ruby_value_type.
  */
-#include "ruby/3/assume.h"
-#include "ruby/3/attr/artificial.h"
-#include "ruby/3/attr/cold.h"
-#include "ruby/3/attr/enum_extensibility.h"
-#include "ruby/3/attr/forceinline.h"
-#include "ruby/3/attr/pure.h"
-#include "ruby/3/cast.h"
-#include "ruby/3/constant_p.h"
-#include "ruby/3/core/rbasic.h"
-#include "ruby/3/dllexport.h"
-#include "ruby/3/has/builtin.h"
-#include "ruby/3/special_consts.h"
-#include "ruby/3/stdbool.h"
-#include "ruby/3/value.h"
+#include "ruby/impl/assume.h"
+#include "ruby/impl/attr/artificial.h"
+#include "ruby/impl/attr/cold.h"
+#include "ruby/impl/attr/enum_extensibility.h"
+#include "ruby/impl/attr/forceinline.h"
+#include "ruby/impl/attr/pure.h"
+#include "ruby/impl/cast.h"
+#include "ruby/impl/constant_p.h"
+#include "ruby/impl/core/rbasic.h"
+#include "ruby/impl/dllexport.h"
+#include "ruby/impl/has/builtin.h"
+#include "ruby/impl/special_consts.h"
+#include "ruby/impl/stdbool.h"
+#include "ruby/impl/value.h"
 #include "ruby/assert.h"
 
 #if defined(T_DATA)
@@ -321,7 +321,7 @@ RB_TYPE_P(VALUE obj, enum ruby_value_type t)
 
 RUBY3_ATTR_PURE()
 RUBY3_ATTR_ARTIFICIAL()
-/* Defined in ruby/3/core/rtypeddata.h */
+/* Defined in ruby/impl/core/rtypeddata.h */
 static inline bool ruby3_rtypeddata_p(VALUE obj);
 
 RUBY3_ATTR_ARTIFICIAL()

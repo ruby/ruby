@@ -20,8 +20,8 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Debugging and tracing APIs.
  */
-#include "ruby/3/dllexport.h"
-#include "ruby/3/value.h"
+#include "ruby/impl/dllexport.h"
+#include "ruby/impl/value.h"
 
 RUBY3_SYMBOL_EXPORT_BEGIN()
 

@@ -21,8 +21,8 @@
  * @brief      Defines #RUBY3_STATIC_ASSERT.
  */
 #include <assert.h>
-#include "ruby/3/has/extension.h"
-#include "ruby/3/compiler_since.h"
+#include "ruby/impl/has/extension.h"
+#include "ruby/impl/compiler_since.h"
 
 /** @cond INTERNAL_MACRO */
 #if defined(__cplusplus) && defined(__cpp_static_assert)

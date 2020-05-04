@@ -20,9 +20,9 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Arithmetic conversion between C's `long long` and Ruby's.
  */
-#include "ruby/3/value.h"
-#include "ruby/3/dllexport.h"
-#include "ruby/3/special_consts.h"
+#include "ruby/impl/value.h"
+#include "ruby/impl/dllexport.h"
+#include "ruby/impl/special_consts.h"
 #include "ruby/backward/2/long_long.h"
 
 #define RB_LL2NUM  rb_ll2inum

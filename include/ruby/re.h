@@ -10,13 +10,13 @@
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
  */
-#include "ruby/3/config.h"
+#include "ruby/impl/config.h"
 #include <sys/types.h>
 #include <stdio.h>
 
 #include "ruby/regex.h"
-#include "ruby/3/core/rmatch.h"
-#include "ruby/3/dllexport.h"
+#include "ruby/impl/core/rmatch.h"
+#include "ruby/impl/dllexport.h"
 
 RUBY3_SYMBOL_EXPORT_BEGIN()
 

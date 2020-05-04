@@ -20,14 +20,14 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Arithmetic conversion between C's `char` and Ruby's.
  */
-#include "ruby/3/arithmetic/int.h"  /* NUM2INT is here, but */
-#include "ruby/3/arithmetic/long.h" /* INT2FIX is here.*/
-#include "ruby/3/attr/artificial.h"
-#include "ruby/3/attr/const.h"
-#include "ruby/3/attr/constexpr.h"
-#include "ruby/3/cast.h"
-#include "ruby/3/core/rstring.h"
-#include "ruby/3/value_type.h"
+#include "ruby/impl/arithmetic/int.h"  /* NUM2INT is here, but */
+#include "ruby/impl/arithmetic/long.h" /* INT2FIX is here.*/
+#include "ruby/impl/attr/artificial.h"
+#include "ruby/impl/attr/const.h"
+#include "ruby/impl/attr/constexpr.h"
+#include "ruby/impl/cast.h"
+#include "ruby/impl/core/rstring.h"
+#include "ruby/impl/value_type.h"
 
 #define RB_NUM2CHR rb_num2char_inline
 #define NUM2CHR    RB_NUM2CHR

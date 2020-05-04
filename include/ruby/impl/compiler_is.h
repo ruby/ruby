@@ -29,12 +29,12 @@
  */
 #define RUBY3_COMPILER_IS(cc) RUBY3_COMPILER_IS_ ## cc
 
-#include "ruby/3/compiler_is/apple.h"
-#include "ruby/3/compiler_is/clang.h"
-#include "ruby/3/compiler_is/gcc.h"
-#include "ruby/3/compiler_is/intel.h"
-#include "ruby/3/compiler_is/msvc.h"
-#include "ruby/3/compiler_is/sunpro.h"
+#include "ruby/impl/compiler_is/apple.h"
+#include "ruby/impl/compiler_is/clang.h"
+#include "ruby/impl/compiler_is/gcc.h"
+#include "ruby/impl/compiler_is/intel.h"
+#include "ruby/impl/compiler_is/msvc.h"
+#include "ruby/impl/compiler_is/sunpro.h"
 /* :TODO: Other possible compilers to support:
  *
  * - IBM  XL: recent  XL are  clang-backended  so some  tweaks like  we do  for

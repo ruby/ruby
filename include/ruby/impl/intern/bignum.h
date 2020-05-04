@@ -20,14 +20,14 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Public APIs related to so-called rb_cBignum.
  */
-#include "ruby/3/config.h"
+#include "ruby/impl/config.h"
 
 #ifdef STDC_HEADERS
 # include <stddef.h>
 #endif
 
-#include "ruby/3/dllexport.h"
-#include "ruby/3/value.h"
+#include "ruby/impl/dllexport.h"
+#include "ruby/impl/value.h"
 #include "ruby/backward/2/long_long.h"
 
 RUBY3_SYMBOL_EXPORT_BEGIN()

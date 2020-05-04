@@ -20,7 +20,7 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines ::VALUE and ::ID.
  */
-#include "ruby/3/static_assert.h"
+#include "ruby/impl/static_assert.h"
 #include "ruby/backward/2/long_long.h"
 #include "ruby/backward/2/limits.h"
 

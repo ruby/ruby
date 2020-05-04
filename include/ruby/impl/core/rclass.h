@@ -20,9 +20,9 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Routines to manipulate struct ::RClass.
  */
-#include "ruby/3/dllexport.h"
-#include "ruby/3/value.h"
-#include "ruby/3/cast.h"
+#include "ruby/impl/dllexport.h"
+#include "ruby/impl/value.h"
+#include "ruby/impl/cast.h"
 
 #define RMODULE_IS_OVERLAID              RMODULE_IS_OVERLAID
 #define RMODULE_IS_REFINEMENT            RMODULE_IS_REFINEMENT

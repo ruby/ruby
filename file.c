@@ -11,7 +11,7 @@
 
 **********************************************************************/
 
-#include "ruby/3/config.h"
+#include "ruby/impl/config.h"
 
 #ifdef _WIN32
 # include "missing/file.h"

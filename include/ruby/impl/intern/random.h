@@ -24,8 +24,8 @@
  *             generator", ACM  Trans. on  Modeling and Computer  Simulation, 8
  *             (1): pp 3-30, 1998.  https://doi.org/10.1145/272991.272995
  */
-#include "ruby/3/dllexport.h"
-#include "ruby/3/value.h"
+#include "ruby/impl/dllexport.h"
+#include "ruby/impl/value.h"
 
 RUBY3_SYMBOL_EXPORT_BEGIN()
 

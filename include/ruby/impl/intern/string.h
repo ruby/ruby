@@ -20,7 +20,7 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Public APIs related to ::rb_cString.
  */
-#include "ruby/3/config.h"
+#include "ruby/impl/config.h"
 
 #ifdef STDC_HEADERS
 # include <stddef.h>
@@ -34,12 +34,12 @@
 # include <stdint.h>
 #endif
 
-#include "ruby/3/attr/nonnull.h"
-#include "ruby/3/attr/pure.h"
-#include "ruby/3/constant_p.h"
-#include "ruby/3/dllexport.h"
-#include "ruby/3/value.h"
-#include "ruby/3/variable.h" /* rb_gvar_setter_t */
+#include "ruby/impl/attr/nonnull.h"
+#include "ruby/impl/attr/pure.h"
+#include "ruby/impl/constant_p.h"
+#include "ruby/impl/dllexport.h"
+#include "ruby/impl/value.h"
+#include "ruby/impl/variable.h" /* rb_gvar_setter_t */
 #include "ruby/st.h"         /* st_index_t */
 
 RUBY3_SYMBOL_EXPORT_BEGIN()

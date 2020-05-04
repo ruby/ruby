@@ -9,7 +9,7 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Regexp.
  */
-#include "ruby/3/stdbool.h"     /* for bool */
+#include "ruby/impl/stdbool.h"     /* for bool */
 #include "ruby/ruby.h"          /* for VALUE */
 
 /* re.c */

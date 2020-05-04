@@ -11,7 +11,7 @@
 
 **********************************************************************/
 
-#include "ruby/3/config.h"
+#include "ruby/impl/config.h"
 
 #include <ctype.h>
 #include <stdio.h>

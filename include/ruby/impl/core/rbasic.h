@@ -20,15 +20,15 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines struct ::RBasic.
  */
-#include "ruby/3/attr/artificial.h"
-#include "ruby/3/attr/constexpr.h"
-#include "ruby/3/attr/forceinline.h"
-#include "ruby/3/attr/noalias.h"
-#include "ruby/3/attr/pure.h"
-#include "ruby/3/cast.h"
-#include "ruby/3/dllexport.h"
-#include "ruby/3/special_consts.h"
-#include "ruby/3/value.h"
+#include "ruby/impl/attr/artificial.h"
+#include "ruby/impl/attr/constexpr.h"
+#include "ruby/impl/attr/forceinline.h"
+#include "ruby/impl/attr/noalias.h"
+#include "ruby/impl/attr/pure.h"
+#include "ruby/impl/cast.h"
+#include "ruby/impl/dllexport.h"
+#include "ruby/impl/special_consts.h"
+#include "ruby/impl/value.h"
 #include "ruby/assert.h"
 
 #define RBASIC(obj)          RUBY3_CAST((struct RBasic *)(obj))
