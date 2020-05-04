@@ -22,7 +22,8 @@ module JSON
     end
 
     # Returns the JSON parser class that is used by JSON. This is either
-    # JSON::Ext::Parser or JSON::Pure::Parser.
+    # JSON::Ext::Parser or JSON::Pure::Parser:
+    #   JSON.parser # => JSON::Ext::Parser
     attr_reader :parser
 
     # Set the JSON parser class _parser_ to be used by JSON.
@@ -87,15 +88,18 @@ module JSON
     end
 
     # Returns the JSON generator module that is used by JSON. This is
-    # either JSON::Ext::Generator or JSON::Pure::Generator.
+    # either JSON::Ext::Generator or JSON::Pure::Generator:
+    #   JSON.generator # => JSON::Ext::Generator
     attr_reader :generator
 
     # Returns the JSON generator state class that is used by JSON. This is
-    # either JSON::Ext::Generator::State or JSON::Pure::Generator::State.
+    # either JSON::Ext::Generator::State or JSON::Pure::Generator::State:
+    #   JSON.state # => JSON::Ext::Generator::State
     attr_accessor :state
 
     # This is create identifier, which is used to decide if the _json_create_
-    # hook of a class should be called. It defaults to 'json_class'.
+    # hook of a class should be called; initial value is +json_class+:
+    #   JSON.create_id # => "json_class"
     attr_accessor :create_id
   end
   self.create_id = 'json_class'
@@ -183,19 +187,16 @@ module JSON
   # ---
   #
   # Option +allow_nan+ (boolean) specifies whether to allow
-  # +NaN+, +Infinity+, and +-Infinity+ in +source+;
+  # NaN, Infinity, and MinusInfinity in +source+;
   # defaults to +false+.
   #
   # With the default, +false+:
-  #   source = '[NaN]'
-  #   # Raises JSON::ParserError (232: unexpected token at '[NaN]'):
-  #   a = JSON.parse(source)
-  #   source = '[Infinity]'
+  #   # Raises JSON::ParserError (225: unexpected token at '[NaN]'):
+  #   a = JSON.parse('[NaN]')
   #   # Raises JSON::ParserError (232: unexpected token at '[Infinity]'):
-  #   a = JSON.parse(source)
-  #   source = '[-Infinity]'
-  #   # Raises JSON::ParserError (232: unexpected token at '[-Infinity]'):
-  #   a = JSON.parse(source)
+  #   a = JSON.parse('[Infinity]')
+  #   # Raises JSON::ParserError (248: unexpected token at '[-Infinity]'):
+  #   a = JSON.parse('[-Infinity]')
   # Allow:
   #   source = '[NaN, Infinity, -Infinity]'
   #   a = JSON.parse(source, {allow_nan: true})
@@ -328,9 +329,9 @@ module JSON
   #   json # => "{\"foo\":0,\"bar\":\"s\",\"baz\":\"bat\"}"
   #
   # For examples of generating from other Ruby objects, see
-  # {Generating \JSON}[#module-JSON-label-Generating+JSON].
+  # {Generating \JSON from Other Objects}[#module-JSON-label-Generating+JSON+from+Other+Objects].
   #
-  # ====== Formatting Options
+  # ====== \JSON Format Options
   #
   # The default formatting options generate the most compact
   # \JSON data, all on one line and with no whitespace.
@@ -364,7 +365,7 @@ module JSON
   #   opts = {
   #     array_nl: "\n",
   #     object_nl: "\n",
-  #     indent: '  ',
+  #     indent+: '  ',
   #     space_before: ' ',
   #     space: ' '
   #   }
@@ -376,18 +377,18 @@ module JSON
   #   Open:
   #   {
   #     "foo" : [
-  #     "bar",
-  #     "baz"
+  #       "bar",
+  #       "baz"
   #   ],
   #     "bat" : {
-  #     "bam" : 0,
-  #     "bad" : 1
+  #       "bam" : 0,
+  #       "bad" : 1
   #     }
   #   }
   #
   # ---
   #
-  # Raises an exception if any formatting is not a \String.
+  # Raises an exception if any format option is not a \String.
   #
   # ====== Other Options
   #
@@ -397,14 +398,14 @@ module JSON
   #
   # With the default, +false+:
   #   # Raises JSON::GeneratorError (920: NaN not allowed in JSON):
-  #   JSON.generate(0.0/0)
+  #   JSON.generate(JSON::NaN)
   #   # Raises JSON::GeneratorError (917: Infinity not allowed in JSON):
-  #   JSON.generate(1.0/0)
+  #   JSON.generate(JSON::Infinity)
   #   # Raises JSON::GeneratorError (917: -Infinity not allowed in JSON):
-  #   JSON.generate(-1.0/0)
+  #   JSON.generate(JSON::MinusInfinity)
   #
   # Allow:
-  #   ruby = [0.0/0, 1.0/0, -1.0/0]
+  #   ruby = [JSON::NaN, JSON::Infinity, JSON::MinusInfinity]
   #   JSON.generate(ruby, allow_nan: true) # => "[NaN,Infinity,-Infinity]"
   #
   # ---
@@ -507,10 +508,12 @@ module JSON
   # arguments +source+ and +opts+ in JSON.generate.
   #
   # Default options are:
-  # - +indent+: '  ' (two spaces)
-  # - +space+: ' ' (one space)
-  # - +array_no+: "\n" (newline)
-  # - +object_nl+: "\n" (newline)
+  #   {
+  #     indent: '  ',   # Two spaces
+  #     space: ' ',     # One space
+  #     array_nl: "\n", # Newline
+  #     object_nl: "\n" # Newline
+  #   }
   #
   # Example:
   #   source = {foo: [:bar, :baz], bat: {bam: 0, bad: 1}}
@@ -558,6 +561,7 @@ module JSON
     #  :max_nesting: false
     #  :allow_nan:   true
     #  :allow_blank:  true
+    #  :create_additions: true
     attr_accessor :load_default_options
   end
   self.load_default_options = {
@@ -619,7 +623,6 @@ module JSON
     # The global default options for the JSON.dump method:
     #  :max_nesting: false
     #  :allow_nan:   true
-    #  :allow_blank: true
     attr_accessor :dump_default_options
   end
   self.dump_default_options = {
