@@ -165,7 +165,7 @@ typedef struct RNode {
 	long state;
 	struct rb_global_entry *entry;
 	struct rb_args_info *args;
-        struct rb_ary_pattern_info *apinfo;
+	struct rb_ary_pattern_info *apinfo;
 	VALUE value;
     } u3;
     rb_code_location_t nd_loc;
