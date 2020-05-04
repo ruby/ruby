@@ -1762,6 +1762,17 @@ name_err_mesg_equal(VALUE obj1, VALUE obj2)
 
 /* :nodoc: */
 static VALUE
+name_err_mesg_receiver_name(VALUE obj)
+{
+    if (RB_SPECIAL_CONST_P(obj)) return Qundef;
+    if (RB_BUILTIN_TYPE(obj) == T_MODULE || RB_BUILTIN_TYPE(obj) == T_CLASS) {
+        return rb_check_funcall(obj, rb_intern("name"), 0, 0);
+    }
+    return Qundef;
+}
+
+/* :nodoc: */
+static VALUE
 name_err_mesg_to_str(VALUE obj)
 {
     VALUE *ptr, mesg;
@@ -1788,7 +1799,9 @@ name_err_mesg_to_str(VALUE obj)
 	    d = FAKE_CSTR(&d_str, "false");
 	    break;
 	  default:
-	    d = rb_protect(rb_inspect, obj, &state);
+	    d = rb_protect(name_err_mesg_receiver_name, obj, &state);
+	    if (state || d == Qundef || d == Qnil)
+		d = rb_protect(rb_inspect, obj, &state);
 	    if (state)
 		rb_set_errinfo(Qnil);
 	    if (NIL_P(d) || RSTRING_LEN(d) > 65) {
