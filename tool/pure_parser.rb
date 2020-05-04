@@ -18,3 +18,4 @@ BEGIN {
   ARGV.push(file)
 }
 $_.sub!(/^%define\s+api\.pure/, '%pure-parser')
+$_.sub!(/^%define\s+.*/, '')
