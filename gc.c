@@ -8509,11 +8509,13 @@ gc_compact_stats(rb_objspace_t *objspace)
     VALUE moved = rb_hash_new();
 
     for (i=0; i<T_MASK; i++) {
-        rb_hash_aset(considered, type_sym(i), SIZET2NUM(objspace->rcompactor.considered_count_table[i]));
-    }
+        if(objspace->rcompactor.considered_count_table[i]) {
+            rb_hash_aset(considered, type_sym(i), SIZET2NUM(objspace->rcompactor.considered_count_table[i]));
+        }
 
-    for (i=0; i<T_MASK; i++) {
-        rb_hash_aset(moved, type_sym(i), SIZET2NUM(objspace->rcompactor.moved_count_table[i]));
+        if(objspace->rcompactor.moved_count_table[i]) {
+            rb_hash_aset(moved, type_sym(i), SIZET2NUM(objspace->rcompactor.moved_count_table[i]));
+        }
     }
 
     rb_hash_aset(h, ID2SYM(rb_intern("considered")), considered);
