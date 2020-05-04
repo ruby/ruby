@@ -168,9 +168,9 @@ require 'json/common'
 #
 # When +source+ is none of the above, JSON.generate returns
 # a \String containing a string representation of +source+:
-#   JSON.generate(:foo)
-#   JSON.generate(Complex(0, 0))
-#   JSON.generate(Dir.new('.'))
+#   JSON.generate(:foo) # => "\"foo\""
+#   JSON.generate(Complex(0, 0)) # => "\"0+0i\""
+#   JSON.generate(Dir.new('.')) # => "\"#<Dir:0x0000000006bb30b8>\""
 #
 # == \JSON Additions
 #
