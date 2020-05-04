@@ -4,12 +4,15 @@ require 'json/generic_object'
 
 module JSON
   class << self
-    # If _object_ is string-like, parse the string and return the parsed
-    # result as a Ruby data structure. Otherwise generate a JSON text from the
-    # Ruby data structure object and return it.
+    # If +object+ is a
+    # {String-convertible object}[doc/implicit_conversion_rdoc.html#label-String-Convertible+Objects]
+    # (implementing +to_str+), calls #parse with +object+ and +opts+:
+    #   json = '[0, 1, null]' # => [0, 1, nil]
+    #   JSON[json]
     #
-    # The _opts_ argument is passed through to generate/parse respectively.
-    # See generate and parse for their documentation.
+    # Otherwise, calls #generate with +object+ and +opts+:
+    #   ruby = [0, 1, nil] # => "[0,1,null]"
+    #   JSON[ruby]
     def [](object, opts = {})
       if object.respond_to? :to_str
         JSON.parse(object.to_str, opts)
@@ -163,8 +166,7 @@ module JSON
   #
   # ====== Options
   #
-  #
-  # Option +:max_nesting+ specifies the maximum nesting depth allowed;
+  # Option +:max_nesting+ (\Integer) specifies the maximum nesting depth allowed;
   # defaults to +100+; specify +false+ to disable depth checking.
   #
   # With the default, +false+:
@@ -180,7 +182,7 @@ module JSON
   #
   # ---
   #
-  # Option +allow_nan+ specifies whether to allow
+  # Option +allow_nan+ (boolean) specifies whether to allow
   # +NaN+, +Infinity+, and +-Infinity+ in +source+;
   # defaults to +false+.
   #
@@ -204,7 +206,7 @@ module JSON
   #
   # ---
   #
-  # Option +symbolize_names+ specifies whether returned \Hash keys
+  # Option +symbolize_names+ (boolean) specifies whether returned \Hash keys
   # should be Symbols;
   # defaults to +false+ (use Strings).
   #
@@ -218,7 +220,7 @@ module JSON
   #
   # ---
   #
-  # Option +object_class+ specifies the Ruby class to be used
+  # Option +object_class+ (\Class) specifies the Ruby class to be used
   # for each \JSON object;
   # defaults to \Hash.
   #
@@ -238,7 +240,7 @@ module JSON
   #
   # ---
   #
-  # Option +array_class+ specifies the Ruby class to be used
+  # Option +array_class+ (\Class) specifies the Ruby class to be used
   # for each \JSON array;
   # defaults to \Array.
   #
@@ -258,7 +260,7 @@ module JSON
   #
   # ---
   #
-  # Option +create_additions+ specifies whether to use \JSON additions in parsing.
+  # Option +create_additions+ (boolean) specifies whether to use \JSON additions in parsing.
   # See {\JSON Additions}[#module-JSON-label-JSON+Additions].
   #
   # ====== Exceptions
@@ -326,7 +328,71 @@ module JSON
   # For examples of generating from other Ruby objects, see
   # {Generating \JSON}[#module-JSON-label-Generating+JSON].
   #
-  # ====== Options
+  # ====== Formatting Options
+  #
+  # The default formatting options generate the most compact
+  # \JSON data, all on one line and with no whitespace.
+  #
+  # You can use these formatting options to generate
+  # \JSON data in a more open format, using whitespace.
+  # See also #pretty_generate.
+  #
+  # Option +array_nl+ (\String) specifies a string (usually a newline)
+  # to be inserted after each \JSON array; defaults to the empty \String, <tt>''</tt>.
+  #
+  # Option +object_nl+ (\String) specifies a string (usually a newline)
+  # to be inserted after each \JSON object; defaults to the empty \String, <tt>''</tt>.
+  #
+  # Option +indent+ (\String) specifies the string (usually spaces) to be
+  # used for indentation; defaults to the empty \String, <tt>''</tt>;
+  # defaults to the empty \String, <tt>''</tt>;
+  # has no effect unless options +array_nl+ or +object_nl+ specify newlines.
+  #
+  # Option +space+ (\String) specifies a string (usually a space) to be
+  # inserted after the colon in each \JSON object's pair;
+  # defaults to the empty \String, <tt>''</tt>.
+  #
+  # Option +space_before+ (\String) specifies a string (usually a space) to be
+  # inserted before the colon in each \JSON object's pair;
+  # defaults to the empty \String, <tt>''</tt>.
+  #
+  # In this example, +source+ is used first to generate the shortest
+  # \JSON data (no whitespace), then again with all formatting options
+  # specified:
+  #
+  #   source = {foo: [:bar, :baz], bat: {bam: 0, bad: 1}}
+  #   json = JSON.generate(source)
+  #   puts 'Compact:', json
+  #   opts = {
+  #     array_nl: "\n",
+  #     object_nl: "\n",
+  #     indent: '  ',
+  #     space_before: ' ',
+  #     space: ' '
+  #   }
+  #   puts 'Open:', JSON.generate(source, opts)
+  #
+  # Output:
+  #   Compact:
+  #   {"foo":["bar","baz"],"bat":{"bam":0,"bad":1}}
+  #   Open:
+  #   {
+  #     "foo" : [
+  #     "bar",
+  #     "baz"
+  #   ],
+  #     "bat" : {
+  #     "bam" : 0,
+  #     "bad" : 1
+  #     }
+  #   }
+  #
+  # * *allow_nan*: true if NaN, Infinity, and -Infinity should be
+  #   generated, otherwise an exception is thrown if these values are
+  #   encountered. This options defaults to false.
+  # * *max_nesting*: The maximum depth of nesting allowed in the data
+  #   structures from which JSON is to be generated. Disable depth checking
+  #   with <tt>max_nesting: false</tt>, it defaults to 100.
   #
   # The default options are set to create the shortest possible JSON text
   # in one line, check for circular data structures and do not allow NaN,
