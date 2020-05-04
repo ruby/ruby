@@ -604,6 +604,9 @@ abort "#{deprecation_message}"
 
       to_remove = old_lib_files - lib_files
 
+      gauntlet_rubygems = File.join(lib_dir, 'gauntlet_rubygems.rb')
+      to_remove << gauntlet_rubygems if File.exist? gauntlet_rubygems
+
       to_remove.delete_if do |file|
         file.start_with? 'defaults'
       end
