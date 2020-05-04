@@ -14,7 +14,7 @@
 #include "ruby/impl/event.h"
 #include "ruby/impl/value.h"
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 /* Note: This file contains experimental APIs. */
 /* APIs can be replaced at Ruby 2.0.1 or later */
@@ -98,6 +98,6 @@ typedef enum {
 void rb_add_event_hook2(rb_event_hook_func_t func, rb_event_flag_t events, VALUE data, rb_event_hook_flag_t hook_flag);
 void rb_thread_add_event_hook2(VALUE thval, rb_event_hook_func_t func, rb_event_flag_t events, VALUE data, rb_event_hook_flag_t hook_flag);
 
-RUBY3_SYMBOL_EXPORT_END()
+RBIMPL_SYMBOL_EXPORT_END()
 
 #endif /* RUBY_DEBUG_H */

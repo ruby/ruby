@@ -1,5 +1,5 @@
-#ifndef RUBY3_INTERN_RATIONAL_H                      /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_INTERN_RATIONAL_H
+#ifndef RBIMPL_INTERN_RATIONAL_H                     /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_INTERN_RATIONAL_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -24,7 +24,7 @@
 #include "ruby/impl/value.h"
 #include "ruby/impl/arithmetic/long.h" /* INT2FIX is here. */
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 /* rational.c */
 VALUE rb_rational_raw(VALUE, VALUE);
@@ -41,6 +41,6 @@ VALUE rb_rational_den(VALUE rat);
 VALUE rb_flt_rationalize_with_prec(VALUE, VALUE);
 VALUE rb_flt_rationalize(VALUE);
 
-RUBY3_SYMBOL_EXPORT_END()
+RBIMPL_SYMBOL_EXPORT_END()
 
-#endif /* RUBY3_INTERN_RATIONAL_H */
+#endif /* RBIMPL_INTERN_RATIONAL_H */

@@ -1,5 +1,5 @@
-#ifndef RUBY3_RMATCH_H                               /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_RMATCH_H
+#ifndef RBIMPL_RMATCH_H                              /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_RMATCH_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -29,7 +29,7 @@
 #include "ruby/impl/value_type.h"
 #include "ruby/assert.h"
 
-#define RMATCH(obj) RUBY3_CAST((struct RMatch *)(obj))
+#define RMATCH(obj) RBIMPL_CAST((struct RMatch *)(obj))
 /** @cond INTERNAL_MACRO */
 #define RMATCH_REGS RMATCH_REGS
 /** @endcond */
@@ -59,15 +59,15 @@ struct RMatch {
     VALUE regexp;  /* RRegexp */
 };
 
-RUBY3_ATTR_PURE_ON_NDEBUG()
-RUBY3_ATTR_RETURNS_NONNULL()
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_RETURNS_NONNULL()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline struct re_registers *
 RMATCH_REGS(VALUE match)
 {
-    RUBY3_ASSERT_TYPE(match, RUBY_T_MATCH);
-    RUBY3_ASSERT_OR_ASSUME(RMATCH(match)->rmatch != NULL);
+    RBIMPL_ASSERT_TYPE(match, RUBY_T_MATCH);
+    RBIMPL_ASSERT_OR_ASSUME(RMATCH(match)->rmatch != NULL);
     return &RMATCH(match)->rmatch->regs;
 }
 
-#endif /* RUBY3_RMATCH_H */
+#endif /* RBIMPL_RMATCH_H */

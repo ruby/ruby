@@ -1,5 +1,5 @@
-#ifndef RUBY3_INTERN_CLASS_H                         /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_INTERN_CLASS_H
+#ifndef RBIMPL_INTERN_CLASS_H                        /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_INTERN_CLASS_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -24,7 +24,7 @@
 #include "ruby/impl/value.h"
 #include "ruby/backward/2/stdarg.h"
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 /* class.c */
 VALUE rb_class_new(VALUE);
@@ -52,6 +52,6 @@ void rb_define_private_method(VALUE, const char*, VALUE (*)(ANYARGS), int);
 void rb_define_singleton_method(VALUE, const char*, VALUE(*)(ANYARGS), int);
 VALUE rb_singleton_class(VALUE);
 
-RUBY3_SYMBOL_EXPORT_END()
+RBIMPL_SYMBOL_EXPORT_END()
 
-#endif /* RUBY3_INTERN_CLASS_H */
+#endif /* RBIMPL_INTERN_CLASS_H */

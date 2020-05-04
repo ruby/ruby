@@ -72,7 +72,7 @@ struct timezone {
 };
 #endif
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 #ifndef HAVE_ACOSH
 RUBY_EXTERN double acosh(double);
@@ -261,6 +261,6 @@ RUBY_EXTERN void setproctitle(const char *fmt, ...);
 RUBY_EXTERN void explicit_bzero(void *b, size_t len);
 #endif
 
-RUBY3_SYMBOL_EXPORT_END()
+RBIMPL_SYMBOL_EXPORT_END()
 
 #endif /* RUBY_MISSING_H */

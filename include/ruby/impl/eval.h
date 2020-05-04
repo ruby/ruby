@@ -1,5 +1,5 @@
-#ifndef RUBY3_EVAL_H                                 /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_EVAL_H
+#ifndef RBIMPL_EVAL_H                                /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_EVAL_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -23,7 +23,7 @@
 #include "ruby/impl/dllexport.h"
 #include "ruby/impl/value.h"
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 VALUE rb_eval_string(const char*);
 VALUE rb_eval_string_protect(const char*, int*);
@@ -45,6 +45,6 @@ VALUE rb_current_receiver(void);
 int rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, VALUE *);
 VALUE rb_extract_keywords(VALUE *orighash);
 
-RUBY3_SYMBOL_EXPORT_END()
+RBIMPL_SYMBOL_EXPORT_END()
 
-#endif /* RUBY3_EVAL_H */
+#endif /* RBIMPL_EVAL_H */

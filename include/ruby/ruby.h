@@ -54,7 +54,7 @@
 #include "ruby/backward/2/rmodule.h"
 #include "ruby/backward/2/r_cast.h"
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 /* Module#methods, #singleton_methods and so on return Symbols */
 #define USE_SYMBOL_AS_METHOD_NAME 1
@@ -116,7 +116,7 @@ int ruby_native_thread_p(void);
 PRINTF_ARGS(int ruby_snprintf(char *str, size_t n, char const *fmt, ...), 3, 4);
 int ruby_vsnprintf(char *str, size_t n, char const *fmt, va_list ap);
 
-#if RUBY3_HAS_WARNING("-Wgnu-zero-variadic-macro-arguments")
+#if RBIMPL_HAS_WARNING("-Wgnu-zero-variadic-macro-arguments")
 # /* Skip it; clang -pedantic doesn't like the following */
 #elif defined(__GNUC__) && defined(HAVE_VA_ARGS_MACRO) && defined(__OPTIMIZE__)
 # define rb_yield_values(argc, ...) \
@@ -150,6 +150,6 @@ __extension__({ \
 # include "ruby/backward.h"
 #endif
 
-RUBY3_SYMBOL_EXPORT_END()
+RBIMPL_SYMBOL_EXPORT_END()
 
 #endif /* RUBY_RUBY_H */

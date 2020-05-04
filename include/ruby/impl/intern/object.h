@@ -1,5 +1,5 @@
-#ifndef RUBY3_INTERN_OBJECT_H                        /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_INTERN_OBJECT_H
+#ifndef RBIMPL_INTERN_OBJECT_H                       /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_INTERN_OBJECT_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -24,7 +24,7 @@
 #include "ruby/impl/dllexport.h"
 #include "ruby/impl/value.h"
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 #define RB_OBJ_INIT_COPY(obj, orig) \
     ((obj) != (orig) && (rb_obj_init_copy((obj), (orig)), 1))
@@ -46,27 +46,27 @@ VALUE rb_obj_dup(VALUE);
 VALUE rb_obj_init_copy(VALUE,VALUE);
 VALUE rb_obj_taint(VALUE);
 
-RUBY3_ATTR_PURE()
+RBIMPL_ATTR_PURE()
 VALUE rb_obj_tainted(VALUE);
 VALUE rb_obj_untaint(VALUE);
 VALUE rb_obj_untrust(VALUE);
 
-RUBY3_ATTR_PURE()
+RBIMPL_ATTR_PURE()
 VALUE rb_obj_untrusted(VALUE);
 VALUE rb_obj_trust(VALUE);
 VALUE rb_obj_freeze(VALUE);
 
-RUBY3_ATTR_PURE()
+RBIMPL_ATTR_PURE()
 VALUE rb_obj_frozen_p(VALUE);
 
 VALUE rb_obj_id(VALUE);
 VALUE rb_memory_id(VALUE);
 VALUE rb_obj_class(VALUE);
 
-RUBY3_ATTR_PURE()
+RBIMPL_ATTR_PURE()
 VALUE rb_class_real(VALUE);
 
-RUBY3_ATTR_PURE()
+RBIMPL_ATTR_PURE()
 VALUE rb_class_inherited_p(VALUE, VALUE);
 VALUE rb_class_superclass(VALUE);
 VALUE rb_class_get_superclass(VALUE);
@@ -85,6 +85,6 @@ VALUE rb_Hash(VALUE);
 double rb_cstr_to_dbl(const char*, int);
 double rb_str_to_dbl(VALUE, int);
 
-RUBY3_SYMBOL_EXPORT_END()
+RBIMPL_SYMBOL_EXPORT_END()
 
-#endif /* RUBY3_INTERN_OBJECT_H */
+#endif /* RBIMPL_INTERN_OBJECT_H */

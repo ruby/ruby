@@ -18,7 +18,7 @@
 #include "ruby/impl/core/rmatch.h"
 #include "ruby/impl/dllexport.h"
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 VALUE rb_reg_regcomp(VALUE);
 long rb_reg_search(VALUE, VALUE, long, int);
@@ -29,6 +29,6 @@ VALUE rb_reg_quote(VALUE);
 regex_t *rb_reg_prepare_re(VALUE re, VALUE str);
 int rb_reg_region_copy(struct re_registers *, const struct re_registers *);
 
-RUBY3_SYMBOL_EXPORT_END()
+RBIMPL_SYMBOL_EXPORT_END()
 
 #endif /* RUBY_RE_H */

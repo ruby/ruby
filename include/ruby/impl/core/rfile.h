@@ -1,5 +1,5 @@
-#ifndef RUBY3_RFILE_H                                /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_RFILE_H
+#ifndef RBIMPL_RFILE_H                               /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_RFILE_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -32,5 +32,5 @@ struct RFile {
     struct rb_io_t *fptr;
 };
 
-#define RFILE(obj) RUBY3_CAST((struct RFile *)(obj))
-#endif /* RUBY3_RFILE_H */
+#define RFILE(obj) RBIMPL_CAST((struct RFile *)(obj))
+#endif /* RBIMPL_RFILE_H */

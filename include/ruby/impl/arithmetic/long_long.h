@@ -1,5 +1,5 @@
-#ifndef RUBY3_ARITHMETIC_LONG_LONG_H                 /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_ARITHMETIC_LONG_LONG_H
+#ifndef RBIMPL_ARITHMETIC_LONG_LONG_H                /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_ARITHMETIC_LONG_LONG_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -34,12 +34,12 @@
 #define NUM2LL     RB_NUM2LL
 #define NUM2ULL    RB_NUM2ULL
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 VALUE rb_ll2inum(LONG_LONG);
 VALUE rb_ull2inum(unsigned LONG_LONG);
 LONG_LONG rb_num2ll(VALUE);
 unsigned LONG_LONG rb_num2ull(VALUE);
-RUBY3_SYMBOL_EXPORT_END()
+RBIMPL_SYMBOL_EXPORT_END()
 
 static inline LONG_LONG
 rb_num2ll_inline(VALUE x)
@@ -50,4 +50,4 @@ rb_num2ll_inline(VALUE x)
         return rb_num2ll(x);
 }
 
-#endif /* RUBY3_ARITHMETIC_LONG_LONG_H */
+#endif /* RBIMPL_ARITHMETIC_LONG_LONG_H */

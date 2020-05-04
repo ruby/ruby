@@ -1,5 +1,5 @@
-#ifndef RUBY3_INTERN_STRING_H                        /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_INTERN_STRING_H
+#ifndef RBIMPL_INTERN_STRING_H                       /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_INTERN_STRING_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -42,7 +42,7 @@
 #include "ruby/impl/variable.h" /* rb_gvar_setter_t */
 #include "ruby/st.h"         /* st_index_t */
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 /* string.c */
 VALUE rb_str_new(const char*, long);
@@ -125,26 +125,26 @@ VALUE rb_sym_to_s(VALUE);
 long rb_str_strlen(VALUE);
 VALUE rb_str_length(VALUE);
 long rb_str_offset(VALUE, long);
-RUBY3_ATTR_PURE()
+RBIMPL_ATTR_PURE()
 size_t rb_str_capacity(VALUE);
 VALUE rb_str_ellipsize(VALUE, long);
 VALUE rb_str_scrub(VALUE, VALUE);
 VALUE rb_str_succ(VALUE);
 
-RUBY3_ATTR_NONNULL(())
+RBIMPL_ATTR_NONNULL(())
 static inline long
 ruby3_strlen(const char *str)
 {
-    return RUBY3_CAST((long)strlen(str));
+    return RBIMPL_CAST((long)strlen(str));
 }
 
 static inline VALUE
 ruby3_str_new(const char *str, long len)
 {
-    if /* constexpr */ (! RUBY3_CONSTANT_P(str)) {
+    if /* constexpr */ (! RBIMPL_CONSTANT_P(str)) {
         return rb_str_new(str, len);
     }
-    else if  /* constexpr */ (! RUBY3_CONSTANT_P(len)) {
+    else if  /* constexpr */ (! RBIMPL_CONSTANT_P(len)) {
         return rb_str_new(str, len);
     }
     else {
@@ -155,7 +155,7 @@ ruby3_str_new(const char *str, long len)
 static inline VALUE
 ruby3_str_new_cstr(const char *str)
 {
-    if /* constexpr */ (! RUBY3_CONSTANT_P(str)) {
+    if /* constexpr */ (! RBIMPL_CONSTANT_P(str)) {
         return rb_str_new_cstr(str);
     }
     else {
@@ -167,10 +167,10 @@ ruby3_str_new_cstr(const char *str)
 static inline VALUE
 ruby3_usascii_str_new(const char *str, long len)
 {
-    if /* constexpr */ (! RUBY3_CONSTANT_P(str)) {
+    if /* constexpr */ (! RBIMPL_CONSTANT_P(str)) {
         return rb_usascii_str_new(str, len);
     }
-    else if  /* constexpr */ (! RUBY3_CONSTANT_P(len)) {
+    else if  /* constexpr */ (! RBIMPL_CONSTANT_P(len)) {
         return rb_usascii_str_new(str, len);
     }
     else {
@@ -181,10 +181,10 @@ ruby3_usascii_str_new(const char *str, long len)
 static inline VALUE
 ruby3_utf8_str_new(const char *str, long len)
 {
-    if /* constexpr */ (! RUBY3_CONSTANT_P(str)) {
+    if /* constexpr */ (! RBIMPL_CONSTANT_P(str)) {
         return rb_utf8_str_new(str, len);
     }
-    else if  /* constexpr */ (! RUBY3_CONSTANT_P(len)) {
+    else if  /* constexpr */ (! RBIMPL_CONSTANT_P(len)) {
         return rb_utf8_str_new(str, len);
     }
     else {
@@ -195,7 +195,7 @@ ruby3_utf8_str_new(const char *str, long len)
 static inline VALUE
 ruby3_tainted_str_new_cstr(const char *str)
 {
-    if /* constexpr */ (! RUBY3_CONSTANT_P(str)) {
+    if /* constexpr */ (! RBIMPL_CONSTANT_P(str)) {
         return rb_tainted_str_new_cstr(str);
     }
     else {
@@ -207,7 +207,7 @@ ruby3_tainted_str_new_cstr(const char *str)
 static inline VALUE
 ruby3_usascii_str_new_cstr(const char *str)
 {
-    if /* constexpr */ (! RUBY3_CONSTANT_P(str)) {
+    if /* constexpr */ (! RBIMPL_CONSTANT_P(str)) {
         return rb_usascii_str_new_cstr(str);
     }
     else {
@@ -219,7 +219,7 @@ ruby3_usascii_str_new_cstr(const char *str)
 static inline VALUE
 ruby3_utf8_str_new_cstr(const char *str)
 {
-    if /* constexpr */ (! RUBY3_CONSTANT_P(str)) {
+    if /* constexpr */ (! RBIMPL_CONSTANT_P(str)) {
         return rb_utf8_str_new_cstr(str);
     }
     else {
@@ -231,7 +231,7 @@ ruby3_utf8_str_new_cstr(const char *str)
 static inline VALUE
 ruby3_external_str_new_cstr(const char *str)
 {
-    if /* constexpr */ (! RUBY3_CONSTANT_P(str)) {
+    if /* constexpr */ (! RBIMPL_CONSTANT_P(str)) {
         return rb_external_str_new_cstr(str);
     }
     else {
@@ -243,7 +243,7 @@ ruby3_external_str_new_cstr(const char *str)
 static inline VALUE
 ruby3_locale_str_new_cstr(const char *str)
 {
-    if /* constexpr */ (! RUBY3_CONSTANT_P(str)) {
+    if /* constexpr */ (! RBIMPL_CONSTANT_P(str)) {
         return rb_locale_str_new_cstr(str);
     }
     else {
@@ -255,7 +255,7 @@ ruby3_locale_str_new_cstr(const char *str)
 static inline VALUE
 ruby3_str_buf_new_cstr(const char *str)
 {
-    if /* constexpr */ (! RUBY3_CONSTANT_P(str)) {
+    if /* constexpr */ (! RBIMPL_CONSTANT_P(str)) {
         return rb_str_buf_new_cstr(str);
     }
     else {
@@ -268,7 +268,7 @@ ruby3_str_buf_new_cstr(const char *str)
 static inline VALUE
 ruby3_str_cat_cstr(VALUE buf, const char *str)
 {
-    if /* constexpr */ (! RUBY3_CONSTANT_P(str)) {
+    if /* constexpr */ (! RBIMPL_CONSTANT_P(str)) {
         return rb_str_cat_cstr(buf, str);
     }
     else {
@@ -280,7 +280,7 @@ ruby3_str_cat_cstr(VALUE buf, const char *str)
 static inline VALUE
 ruby3_exc_new_cstr(VALUE exc, const char *str)
 {
-    if /* constexpr */ (! RUBY3_CONSTANT_P(str)) {
+    if /* constexpr */ (! RBIMPL_CONSTANT_P(str)) {
         return rb_exc_new_cstr(exc, str);
     }
     else {
@@ -321,6 +321,6 @@ ruby3_exc_new_cstr(VALUE exc, const char *str)
 #define rb_utf8_str_new_literal(str) rb_utf8_str_new_lit(str)
 #define rb_enc_str_new_literal(str, enc) rb_enc_str_new_lit(str, enc)
 
-RUBY3_SYMBOL_EXPORT_END()
+RBIMPL_SYMBOL_EXPORT_END()
 
-#endif /* RUBY3_INTERN_STRING_H */
+#endif /* RBIMPL_INTERN_STRING_H */

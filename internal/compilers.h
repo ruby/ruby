@@ -19,11 +19,11 @@
 #include "ruby/impl/has/warning.h"
 #include "ruby/backward/2/gcc_version_since.h"
 
-#define MSC_VERSION_SINCE(_)   RUBY3_COMPILER_SINCE(MSVC, (_) / 100, (_) % 100, 0)
-#define MSC_VERSION_BEFORE(_)  RUBY3_COMPILER_BEFORE(MSVC, (_) / 100, (_) % 100, 0)
+#define MSC_VERSION_SINCE(_)   RBIMPL_COMPILER_SINCE(MSVC, (_) / 100, (_) % 100, 0)
+#define MSC_VERSION_BEFORE(_)  RBIMPL_COMPILER_BEFORE(MSVC, (_) / 100, (_) % 100, 0)
 
 #ifndef __has_attribute
-# define __has_attribute(...) RUBY3_HAS_ATTRIBUTE(__VA_ARGS__)
+# define __has_attribute(...) RBIMPL_HAS_ATTRIBUTE(__VA_ARGS__)
 #endif
 
 #ifndef __has_c_attribute
@@ -33,23 +33,23 @@
 #endif
 
 #ifndef __has_declspec_attribute
-# define __has_declspec_attribute(...) RUBY3_HAS_DECLSPEC_ATTRIBUTE(__VA_ARGS__)
+# define __has_declspec_attribute(...) RBIMPL_HAS_DECLSPEC_ATTRIBUTE(__VA_ARGS__)
 #endif
 
 #ifndef __has_builtin
-# define __has_builtin(...) RUBY3_HAS_BUILTIN(__VA_ARGS__)
+# define __has_builtin(...) RBIMPL_HAS_BUILTIN(__VA_ARGS__)
 #endif
 
 #ifndef __has_feature
-# define __has_feature(...) RUBY3_HAS_FEATURE(__VA_ARGS__)
+# define __has_feature(...) RBIMPL_HAS_FEATURE(__VA_ARGS__)
 #endif
 
 #ifndef __has_extension
-# define __has_extension(...) RUBY3_HAS_EXTENSION(__VA_ARGS__)
+# define __has_extension(...) RBIMPL_HAS_EXTENSION(__VA_ARGS__)
 #endif
 
 #ifndef __has_warning
-# define __has_warning(...) RUBY3_HAS_WARNING(__VA_ARGS__)
+# define __has_warning(...) RBIMPL_HAS_WARNING(__VA_ARGS__)
 #endif
 
 #ifndef __GNUC__

@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -29,21 +29,21 @@
 #include "ruby/impl/has/warning.h"
 #include "ruby/impl/warning_push.h"
 
-#if RUBY3_HAS_WARNING("-Wc++11-long-long")
+#if RBIMPL_HAS_WARNING("-Wc++11-long-long")
 # define HAVE_TRUE_LONG_LONG 1
 # define LONG_LONG                           \
-    RUBY3_WARNING_PUSH()                     \
-    RUBY3_WARNING_IGNORED(-Wc++11-long-long) \
+    RBIMPL_WARNING_PUSH()                     \
+    RBIMPL_WARNING_IGNORED(-Wc++11-long-long) \
     long long                                \
-    RUBY3_WARNING_POP()
+    RBIMPL_WARNING_POP()
 
-#elif RUBY3_HAS_WARNING("-Wlong-long")
+#elif RBIMPL_HAS_WARNING("-Wlong-long")
 # define HAVE_TRUE_LONG_LONG 1
 # define LONG_LONG                     \
-    RUBY3_WARNING_PUSH()               \
-    RUBY3_WARNING_IGNORED(-Wlong-long) \
+    RBIMPL_WARNING_PUSH()               \
+    RBIMPL_WARNING_IGNORED(-Wlong-long) \
     long long                          \
-    RUBY3_WARNING_POP()
+    RBIMPL_WARNING_POP()
 
 #elif defined(HAVE_LONG_LONG)
 # define HAVE_TRUE_LONG_LONG 1
@@ -62,4 +62,4 @@
 # error Thank you!
 #endif
 
-#endif /* RUBY3_BACKWARD2_LONG_LONG_H */
+#endif /* RBIMPL_BACKWARD2_LONG_LONG_H */

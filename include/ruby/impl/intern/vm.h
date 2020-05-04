@@ -1,5 +1,5 @@
-#ifndef RUBY3_INTERN_VM_H                            /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_INTERN_VM_H
+#ifndef RBIMPL_INTERN_VM_H                           /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_INTERN_VM_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -24,7 +24,7 @@
 #include "ruby/impl/dllexport.h"
 #include "ruby/impl/value.h"
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 /* vm.c */
 int rb_sourceline(void);
@@ -61,7 +61,7 @@ int rb_method_basic_definition_p(VALUE, ID);
 int rb_obj_respond_to(VALUE, ID, int);
 int rb_respond_to(VALUE, ID);
 
-RUBY3_ATTR_NORETURN()
+RBIMPL_ATTR_NORETURN()
 VALUE rb_f_notimplement(int argc, const VALUE *argv, VALUE obj, VALUE marker);
 #if !defined(RUBY_EXPORT) && defined(_WIN32)
 RUBY_EXTERN VALUE (*const rb_f_notimplement_)(int, const VALUE *, VALUE, VALUE marker);
@@ -72,6 +72,6 @@ RUBY_EXTERN VALUE (*const rb_f_notimplement_)(int, const VALUE *, VALUE, VALUE m
 void rb_backtrace(void);
 VALUE rb_make_backtrace(void);
 
-RUBY3_SYMBOL_EXPORT_END()
+RBIMPL_SYMBOL_EXPORT_END()
 
-#endif /* RUBY3_INTERN_VM_H */
+#endif /* RBIMPL_INTERN_VM_H */

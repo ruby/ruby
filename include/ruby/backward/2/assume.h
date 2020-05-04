@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -26,12 +26,12 @@
 
 #undef  ASSUME             /* Kill config.h definition */
 #undef  UNREACHABLE        /* Kill config.h definition */
-#define ASSUME             RUBY3_ASSUME
-#define UNREACHABLE        RUBY3_UNREACHABLE()
-#define UNREACHABLE_RETURN RUBY3_UNREACHABLE_RETURN
+#define ASSUME             RBIMPL_ASSUME
+#define UNREACHABLE        RBIMPL_UNREACHABLE()
+#define UNREACHABLE_RETURN RBIMPL_UNREACHABLE_RETURN
 
 /* likely */
-#if RUBY3_HAS_BUILTIN(__builtin_expect)
+#if RBIMPL_HAS_BUILTIN(__builtin_expect)
 # define RB_LIKELY(x)   (__builtin_expect(!!(x), 1))
 # define RB_UNLIKELY(x) (__builtin_expect(!!(x), 0))
 

@@ -1,5 +1,5 @@
-#ifndef RUBY3_RCLASS_H                               /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_RCLASS_H
+#ifndef RBIMPL_RCLASS_H                              /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_RCLASS_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -28,7 +28,7 @@
 #define RMODULE_IS_REFINEMENT            RMODULE_IS_REFINEMENT
 #define RMODULE_INCLUDED_INTO_REFINEMENT RMODULE_INCLUDED_INTO_REFINEMENT
 
-#define RCLASS(obj)  RUBY3_CAST((struct RClass *)(obj))
+#define RCLASS(obj)  RBIMPL_CAST((struct RClass *)(obj))
 #define RMODULE      RCLASS
 #define RCLASS_SUPER rb_class_get_superclass
 
@@ -40,8 +40,8 @@ enum ruby_rmodule_flags {
 
 struct RClass; /* Opaque, declared here for RCLASS() macro. */
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 VALUE rb_class_get_superclass(VALUE);
-RUBY3_SYMBOL_EXPORT_END()
+RBIMPL_SYMBOL_EXPORT_END()
 
-#endif /* RUBY3_RCLASS_H */
+#endif /* RBIMPL_RCLASS_H */

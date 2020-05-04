@@ -1,5 +1,5 @@
-#ifndef RUBY3_HAS_EXTENSION_H                        /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_HAS_EXTENSION_H
+#ifndef RBIMPL_HAS_EXTENSION_H                       /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_HAS_EXTENSION_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -18,16 +18,16 @@
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
  *             extension libraries. They could be written in C++98.
- * @brief      Defines #RUBY3_HAS_EXTENSION.
+ * @brief      Defines #RBIMPL_HAS_EXTENSION.
  */
 #include "ruby/impl/has/feature.h"
 
 /** Wraps (or simulates) `__has_extension`. */
 #if defined(__has_extension)
-# define RUBY3_HAS_EXTENSION(_) __has_extension(_)
+# define RBIMPL_HAS_EXTENSION(_) __has_extension(_)
 #else
 # /* Pre-3.0 clang had __has_feature but not __has_extension. */
-# define RUBY3_HAS_EXTENSION(_) RUBY3_HAS_FEATURE(_)
+# define RBIMPL_HAS_EXTENSION(_) RBIMPL_HAS_FEATURE(_)
 #endif
 
-#endif /* RUBY3_HAS_EXTENSION_H */
+#endif /* RBIMPL_HAS_EXTENSION_H */

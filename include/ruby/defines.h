@@ -99,9 +99,9 @@
 #endif
 
 #if defined(__sparc)
-RUBY3_SYMBOL_EXPORT_BEGIN()
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 void rb_sparc_flush_register_windows(void);
-RUBY3_SYMBOL_EXPORT_END()
+RBIMPL_SYMBOL_EXPORT_END()
 # define FLUSH_REGISTER_WINDOWS rb_sparc_flush_register_windows()
 #else
 # define FLUSH_REGISTER_WINDOWS ((void)0)

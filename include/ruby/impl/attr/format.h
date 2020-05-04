@@ -1,5 +1,5 @@
-#ifndef RUBY3_ATTR_FORMAT_H                          /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_ATTR_FORMAT_H
+#ifndef RBIMPL_ATTR_FORMAT_H                         /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_ATTR_FORMAT_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -18,21 +18,21 @@
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
  *             extension libraries. They could be written in C++98.
- * @brief      Defines #RUBY3_ATTR_FORMAT.
+ * @brief      Defines #RBIMPL_ATTR_FORMAT.
  */
 #include "ruby/impl/has/attribute.h"
 
 /** Wraps (or simulates) `__attribute__((format))` */
-#if RUBY3_HAS_ATTRIBUTE(format)
-# define RUBY3_ATTR_FORMAT(x, y, z) __attribute__((__format__(x, y, z)))
+#if RBIMPL_HAS_ATTRIBUTE(format)
+# define RBIMPL_ATTR_FORMAT(x, y, z) __attribute__((__format__(x, y, z)))
 #else
-# define RUBY3_ATTR_FORMAT(x, y, z) /* void */
+# define RBIMPL_ATTR_FORMAT(x, y, z) /* void */
 #endif
 
 #if defined(__MINGW_PRINTF_FORMAT)
-# define RUBY3_PRINTF_FORMAT __MINGW_PRINTF_FORMAT
+# define RBIMPL_PRINTF_FORMAT __MINGW_PRINTF_FORMAT
 #else
-# define RUBY3_PRINTF_FORMAT __printf__
+# define RBIMPL_PRINTF_FORMAT __printf__
 #endif
 
-#endif /* RUBY3_ATTR_FORMAT_H */
+#endif /* RBIMPL_ATTR_FORMAT_H */

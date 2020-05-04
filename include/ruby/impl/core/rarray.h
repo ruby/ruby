@@ -1,5 +1,5 @@
-#ifndef RUBY3_RARRAY_H                               /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_RARRAY_H
+#ifndef RBIMPL_RARRAY_H                              /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_RARRAY_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -39,7 +39,7 @@
 # define USE_TRANSIENT_HEAP 1
 #endif
 
-#define RARRAY(obj)            RUBY3_CAST((struct RArray *)(obj))
+#define RARRAY(obj)            RBIMPL_CAST((struct RArray *)(obj))
 #define RARRAY_EMBED_FLAG      RARRAY_EMBED_FLAG
 #define RARRAY_EMBED_LEN_MASK  RARRAY_EMBED_LEN_MASK
 #define RARRAY_EMBED_LEN_MAX   RARRAY_EMBED_LEN_MAX
@@ -81,7 +81,7 @@ enum ruby_rarray_flags {
 
 enum ruby_rarray_consts {
     RARRAY_EMBED_LEN_SHIFT = RUBY_FL_USHIFT + 3,
-    RARRAY_EMBED_LEN_MAX   = RUBY3_EMBED_LEN_MAX_OF(VALUE)
+    RARRAY_EMBED_LEN_MAX   = RBIMPL_EMBED_LEN_MAX_OF(VALUE)
 };
 
 struct RArray {
@@ -104,33 +104,33 @@ struct RArray {
     } as;
 };
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 VALUE *rb_ary_ptr_use_start(VALUE ary);
 void rb_ary_ptr_use_end(VALUE a);
 #if USE_TRANSIENT_HEAP
 void rb_ary_detransient(VALUE a);
 #endif
-RUBY3_SYMBOL_EXPORT_END()
+RBIMPL_SYMBOL_EXPORT_END()
 
-RUBY3_ATTR_PURE_ON_NDEBUG()
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline long
 RARRAY_EMBED_LEN(VALUE ary)
 {
-    RUBY3_ASSERT_TYPE(ary, RUBY_T_ARRAY);
-    RUBY3_ASSERT_OR_ASSUME(RB_FL_ANY_RAW(ary, RARRAY_EMBED_FLAG));
+    RBIMPL_ASSERT_TYPE(ary, RUBY_T_ARRAY);
+    RBIMPL_ASSERT_OR_ASSUME(RB_FL_ANY_RAW(ary, RARRAY_EMBED_FLAG));
 
     VALUE f = RBASIC(ary)->flags;
     f &= RARRAY_EMBED_LEN_MASK;
     f >>= RARRAY_EMBED_LEN_SHIFT;
-    return RUBY3_CAST((long)f);
+    return RBIMPL_CAST((long)f);
 }
 
-RUBY3_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_PURE_ON_NDEBUG()
 static inline long
 rb_array_len(VALUE a)
 {
-    RUBY3_ASSERT_TYPE(a, RUBY_T_ARRAY);
+    RBIMPL_ASSERT_TYPE(a, RUBY_T_ARRAY);
 
     if (RB_FL_ANY_RAW(a, RARRAY_EMBED_FLAG)) {
         return RARRAY_EMBED_LEN(a);
@@ -140,19 +140,19 @@ rb_array_len(VALUE a)
     }
 }
 
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline int
 RARRAY_LENINT(VALUE ary)
 {
     return rb_long2int(RARRAY_LEN(ary));
 }
 
-RUBY3_ATTR_PURE_ON_NDEBUG()
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline bool
 RARRAY_TRANSIENT_P(VALUE ary)
 {
-    RUBY3_ASSERT_TYPE(ary, RUBY_T_ARRAY);
+    RBIMPL_ASSERT_TYPE(ary, RUBY_T_ARRAY);
 
 #if USE_TRANSIENT_HEAP
     return RB_FL_ANY_RAW(ary, RARRAY_TRANSIENT_FLAG);
@@ -161,12 +161,12 @@ RARRAY_TRANSIENT_P(VALUE ary)
 #endif
 }
 
-RUBY3_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_PURE_ON_NDEBUG()
 /* internal function. do not use this function */
 static inline const VALUE *
 rb_array_const_ptr_transient(VALUE a)
 {
-    RUBY3_ASSERT_TYPE(a, RUBY_T_ARRAY);
+    RBIMPL_ASSERT_TYPE(a, RUBY_T_ARRAY);
 
     if (RB_FL_ANY_RAW(a, RARRAY_EMBED_FLAG)) {
         return FIX_CONST_VALUE_PTR(RARRAY(a)->as.ary);
@@ -177,13 +177,13 @@ rb_array_const_ptr_transient(VALUE a)
 }
 
 #if ! USE_TRANSIENT_HEAP
-RUBY3_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_PURE_ON_NDEBUG()
 #endif
 /* internal function. do not use this function */
 static inline const VALUE *
 rb_array_const_ptr(VALUE a)
 {
-    RUBY3_ASSERT_TYPE(a, RUBY_T_ARRAY);
+    RBIMPL_ASSERT_TYPE(a, RUBY_T_ARRAY);
 
 #if USE_TRANSIENT_HEAP
     if (RARRAY_TRANSIENT_P(a)) {
@@ -196,10 +196,10 @@ rb_array_const_ptr(VALUE a)
 /* internal function. do not use this function */
 static inline VALUE *
 rb_array_ptr_use_start(VALUE a,
-                       RUBY3_ATTR_MAYBE_UNUSED()
+                       RBIMPL_ATTR_MAYBE_UNUSED()
                        int allow_transient)
 {
-    RUBY3_ASSERT_TYPE(a, RUBY_T_ARRAY);
+    RBIMPL_ASSERT_TYPE(a, RUBY_T_ARRAY);
 
 #if USE_TRANSIENT_HEAP
     if (!allow_transient) {
@@ -215,15 +215,15 @@ rb_array_ptr_use_start(VALUE a,
 /* internal function. do not use this function */
 static inline void
 rb_array_ptr_use_end(VALUE a,
-                     RUBY3_ATTR_MAYBE_UNUSED()
+                     RBIMPL_ATTR_MAYBE_UNUSED()
                      int allow_transient)
 {
-    RUBY3_ASSERT_TYPE(a, RUBY_T_ARRAY);
+    RBIMPL_ASSERT_TYPE(a, RUBY_T_ARRAY);
     rb_ary_ptr_use_end(a);
 }
 
-#define RUBY3_RARRAY_STMT(flag, ary, var, expr) do {        \
-    RUBY3_ASSERT_TYPE((ary), RUBY_T_ARRAY);                 \
+#define RBIMPL_RARRAY_STMT(flag, ary, var, expr) do {        \
+    RBIMPL_ASSERT_TYPE((ary), RUBY_T_ARRAY);                 \
     const VALUE ruby3_ary = (ary);                          \
     VALUE *var = rb_array_ptr_use_start(ruby3_ary, (flag)); \
     expr;                                                   \
@@ -233,20 +233,20 @@ rb_array_ptr_use_end(VALUE a,
 #define RARRAY_PTR_USE_START(a) rb_array_ptr_use_start(a, 0)
 #define RARRAY_PTR_USE_END(a) rb_array_ptr_use_end(a, 0)
 #define RARRAY_PTR_USE(ary, ptr_name, expr) \
-    RUBY3_RARRAY_STMT(0, ary, ptr_name, expr)
+    RBIMPL_RARRAY_STMT(0, ary, ptr_name, expr)
 
 #define RARRAY_PTR_USE_START_TRANSIENT(a) rb_array_ptr_use_start(a, 1)
 #define RARRAY_PTR_USE_END_TRANSIENT(a) rb_array_ptr_use_end(a, 1)
 #define RARRAY_PTR_USE_TRANSIENT(ary, ptr_name, expr) \
-    RUBY3_RARRAY_STMT(1, ary, ptr_name, expr)
+    RBIMPL_RARRAY_STMT(1, ary, ptr_name, expr)
 
 static inline VALUE *
 RARRAY_PTR(VALUE ary)
 {
-    RUBY3_ASSERT_TYPE(ary, RUBY_T_ARRAY);
+    RBIMPL_ASSERT_TYPE(ary, RUBY_T_ARRAY);
 
     VALUE tmp = RB_OBJ_WB_UNPROTECT_FOR(ARRAY, ary);
-    return RUBY3_CAST((VALUE *)RARRAY_CONST_PTR(tmp));
+    return RBIMPL_CAST((VALUE *)RARRAY_CONST_PTR(tmp));
 }
 
 static inline void
@@ -258,12 +258,12 @@ RARRAY_ASET(VALUE ary, long i, VALUE v)
 
 /* RARRAY_AREF is used as a lvalue.  Cannot be a function. */
 #if 0
-RUBY3_ATTR_PURE_ON_NDEBUG()
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline VALUE
 RARRAY_AREF(VALUE ary, long i)
 {
-    RUBY3_ASSERT_TYPE(ary, RUBY_T_ARRAY);
+    RBIMPL_ASSERT_TYPE(ary, RUBY_T_ARRAY);
 
     return RARRAY_CONST_PTR_TRANSIENT(ary)[i];
 }
@@ -272,4 +272,4 @@ RARRAY_AREF(VALUE ary, long i)
 # define RARRAY_AREF(a, i) RARRAY_CONST_PTR_TRANSIENT(a)[i]
 #endif
 
-#endif /* RUBY3_RARRAY_H */
+#endif /* RBIMPL_RARRAY_H */

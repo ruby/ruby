@@ -1,5 +1,5 @@
-#ifndef RUBY3_INTERN_ENUMERATOR_H                    /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_INTERN_ENUMERATOR_H
+#ifndef RBIMPL_INTERN_ENUMERATOR_H                   /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_INTERN_ENUMERATOR_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -26,7 +26,7 @@
 #include "ruby/impl/symbol.h"
 #include "ruby/impl/value.h"
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 typedef VALUE rb_enumerator_size_func(VALUE, VALUE, VALUE);
 
@@ -43,7 +43,7 @@ VALUE rb_enumeratorize_with_size(VALUE, VALUE, int, const VALUE *, rb_enumerator
 VALUE rb_enumeratorize_with_size_kw(VALUE, VALUE, int, const VALUE *, rb_enumerator_size_func *, int);
 int rb_arithmetic_sequence_extract(VALUE, rb_arithmetic_sequence_components_t *);
 
-RUBY3_SYMBOL_EXPORT_END()
+RBIMPL_SYMBOL_EXPORT_END()
 
 #ifndef RUBY_EXPORT
 # define rb_enumeratorize_with_size(obj, id, argc, argv, size_fn) \
@@ -76,4 +76,4 @@ RUBY3_SYMBOL_EXPORT_END()
 #define RETURN_ENUMERATOR_KW(obj, argc, argv, kw_splat) \
     RETURN_SIZED_ENUMERATOR_KW(obj, argc, argv, 0, kw_splat)
 
-#endif /* RUBY3_INTERN_ENUMERATOR_H */
+#endif /* RBIMPL_INTERN_ENUMERATOR_H */

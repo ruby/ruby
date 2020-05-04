@@ -17,7 +17,7 @@
 #define RB_NOGVL_INTR_FAIL       (0x1)
 #define RB_NOGVL_UBF_ASYNC_SAFE  (0x2)
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 void *rb_thread_call_with_gvl(void *(*func)(void *), void *data1);
 
@@ -37,6 +37,6 @@ void *rb_nogvl(void *(*func)(void *), void *data1,
 #define RUBY_CALL_WO_GVL_FLAG_SKIP_CHECK_INTS_AFTER 0x01
 #define RUBY_CALL_WO_GVL_FLAG_SKIP_CHECK_INTS_
 
-RUBY3_SYMBOL_EXPORT_END()
+RBIMPL_SYMBOL_EXPORT_END()
 
 #endif /* RUBY_THREAD_H */

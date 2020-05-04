@@ -1,5 +1,5 @@
-#ifndef RUBY3_INTERN_SELECT_POSIX_H                  /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_INTERN_SELECT_POSIX_H
+#ifndef RBIMPL_INTERN_SELECT_POSIX_H                 /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_INTERN_SELECT_POSIX_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -60,7 +60,7 @@ rb_fd_dup(rb_fdset_t *dst, const fd_set *src, int n)
     *dst = *src;
 }
 
-RUBY3_ATTR_PURE()
+RBIMPL_ATTR_PURE()
 /* :TODO: can this function be __attribute__((returns_nonnull)) or not? */
 static inline fd_set *
 rb_fd_ptr(rb_fdset_t *f)
@@ -68,7 +68,7 @@ rb_fd_ptr(rb_fdset_t *f)
     return f;
 }
 
-RUBY3_ATTR_CONST()
+RBIMPL_ATTR_CONST()
 static inline int
 rb_fd_max(const rb_fdset_t *f)
 {
@@ -79,4 +79,4 @@ rb_fd_max(const rb_fdset_t *f)
 #define rb_fd_init_copy(d, s) (*(d) = *(s))
 #define rb_fd_term(f)   ((void)(f))
 
-#endif /* RUBY3_INTERN_SELECT_POSIX_H */
+#endif /* RBIMPL_INTERN_SELECT_POSIX_H */

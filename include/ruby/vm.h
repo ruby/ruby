@@ -12,7 +12,7 @@
  */
 #include "ruby/impl/dllexport.h"
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 /* Place holder.
  *
@@ -44,6 +44,6 @@ int ruby_vm_destruct(ruby_vm_t *vm);
  */
 void ruby_vm_at_exit(void(*func)(ruby_vm_t *));
 
-RUBY3_SYMBOL_EXPORT_END()
+RBIMPL_SYMBOL_EXPORT_END()
 
 #endif /* RUBY_VM_H */

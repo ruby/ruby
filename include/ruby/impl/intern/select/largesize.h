@@ -1,5 +1,5 @@
-#ifndef RUBY3_INTERN_SELECT_LARGESIZE_H              /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_INTERN_SELECT_LARGESIZE_H
+#ifndef RBIMPL_INTERN_SELECT_LARGESIZE_H             /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_INTERN_SELECT_LARGESIZE_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -71,7 +71,7 @@ typedef struct {
     fd_set *fdset;
 } rb_fdset_t;
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 void rb_fd_init(rb_fdset_t *);
 void rb_fd_term(rb_fdset_t *);
 void rb_fd_zero(rb_fdset_t *);
@@ -81,10 +81,10 @@ int rb_fd_isset(int, const rb_fdset_t *);
 void rb_fd_copy(rb_fdset_t *, const fd_set *, int);
 void rb_fd_dup(rb_fdset_t *dst, const rb_fdset_t *src);
 int rb_fd_select(int, rb_fdset_t *, rb_fdset_t *, rb_fdset_t *, struct timeval *);
-RUBY3_SYMBOL_EXPORT_END()
+RBIMPL_SYMBOL_EXPORT_END()
 
-RUBY3_ATTR_NONNULL(())
-RUBY3_ATTR_PURE()
+RBIMPL_ATTR_NONNULL(())
+RBIMPL_ATTR_PURE()
 /* :TODO: can this function be __attribute__((returns_nonnull)) or not? */
 static inline fd_set *
 rb_fd_ptr(const rb_fdset_t *f)
@@ -92,12 +92,12 @@ rb_fd_ptr(const rb_fdset_t *f)
     return f->fdset;
 }
 
-RUBY3_ATTR_NONNULL(())
-RUBY3_ATTR_PURE()
+RBIMPL_ATTR_NONNULL(())
+RBIMPL_ATTR_PURE()
 static inline int
 rb_fd_max(const rb_fdset_t *f)
 {
     return f->maxfd;
 }
 
-#endif /* RUBY3_INTERN_SELECT_LARGESIZE_H */
+#endif /* RBIMPL_INTERN_SELECT_LARGESIZE_H */

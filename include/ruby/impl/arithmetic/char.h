@@ -1,5 +1,5 @@
-#ifndef RUBY3_ARITHMETIC_CHAR_H                      /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_ARITHMETIC_CHAR_H
+#ifndef RBIMPL_ARITHMETIC_CHAR_H                     /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_ARITHMETIC_CHAR_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -37,9 +37,9 @@
 #define RB_CHR2FIX RB_CHR2FIX
 /** @endcond */
 
-RUBY3_ATTR_CONST_ON_NDEBUG()
-RUBY3_ATTR_CONSTEXPR_ON_NDEBUG(CXX14)
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_CONST_ON_NDEBUG()
+RBIMPL_ATTR_CONSTEXPR_ON_NDEBUG(CXX14)
+RBIMPL_ATTR_ARTIFICIAL()
 static inline VALUE
 RB_CHR2FIX(unsigned char c)
 {
@@ -52,7 +52,7 @@ rb_num2char_inline(VALUE x)
     if (RB_TYPE_P(x, RUBY_T_STRING) && (RSTRING_LEN(x)>=1))
         return RSTRING_PTR(x)[0];
     else
-        return RUBY3_CAST((char)RB_NUM2INT(x));
+        return RBIMPL_CAST((char)RB_NUM2INT(x));
 }
 
-#endif /* RUBY3_ARITHMETIC_CHAR_H */
+#endif /* RBIMPL_ARITHMETIC_CHAR_H */

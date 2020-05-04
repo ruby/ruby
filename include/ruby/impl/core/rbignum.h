@@ -1,5 +1,5 @@
-#ifndef RUBY3_RBIGNUM_H                              /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_RBIGNUM_H
+#ifndef RBIMPL_RBIGNUM_H                             /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_RBIGNUM_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -32,20 +32,20 @@
 #define RBIGNUM_NEGATIVE_P RBIGNUM_NEGATIVE_P
 /** @endcond */
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 int rb_big_sign(VALUE num);
-RUBY3_SYMBOL_EXPORT_END()
+RBIMPL_SYMBOL_EXPORT_END()
 
 static inline bool
 RBIGNUM_POSITIVE_P(VALUE b) {
-    RUBY3_ASSERT_TYPE(b, RUBY_T_BIGNUM);
+    RBIMPL_ASSERT_TYPE(b, RUBY_T_BIGNUM);
     return RBIGNUM_SIGN(b);
 }
 
 static inline bool
 RBIGNUM_NEGATIVE_P(VALUE b) {
-    RUBY3_ASSERT_TYPE(b, RUBY_T_BIGNUM);
+    RBIMPL_ASSERT_TYPE(b, RUBY_T_BIGNUM);
     return ! RBIGNUM_POSITIVE_P(b);
 }
 
-#endif /* RUBY3_RBIGNUM_H */
+#endif /* RBIMPL_RBIGNUM_H */

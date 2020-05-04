@@ -16,7 +16,7 @@
 #include "ruby/oniguruma.h"
 #include "ruby/impl/dllexport.h"
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 enum ruby_encoding_consts {
     RUBY_ENCODING_INLINE_MAX = 127,
@@ -406,6 +406,6 @@ enum ruby_econv_flag_type {
 /* end of flags for rb_econv_convert */
 RUBY_ECONV_FLAGS_PLACEHOLDER};
 
-RUBY3_SYMBOL_EXPORT_END()
+RBIMPL_SYMBOL_EXPORT_END()
 
 #endif /* RUBY_ENCODING_H */

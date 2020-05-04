@@ -35,7 +35,7 @@
 #endif
 #endif
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 #define DECIMAL_SIZE_OF_BITS(n) (((n) * 3010 + 9998) / 9999)
 /* an approximation of ceil(n * log10(2)), up to 65536 at least */
@@ -67,6 +67,6 @@ double ruby_strtod(const char *, char **);
 
 void ruby_each_words(const char *, void (*)(const char*, int, void*), void *);
 
-RUBY3_SYMBOL_EXPORT_END()
+RBIMPL_SYMBOL_EXPORT_END()
 
 #endif /* RUBY_UTIL_H */

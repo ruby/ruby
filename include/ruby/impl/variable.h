@@ -1,5 +1,5 @@
-#ifndef RUBY3_VARIABLE_H                             /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_VARIABLE_H
+#ifndef RBIMPL_VARIABLE_H                            /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_VARIABLE_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -24,7 +24,7 @@
 #include "ruby/impl/value.h"
 #include "ruby/impl/attr/noreturn.h"
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 typedef VALUE rb_gvar_getter_t(ID id, VALUE *data);
 typedef void  rb_gvar_setter_t(VALUE val, ID id, VALUE *data);
@@ -42,7 +42,7 @@ rb_gvar_getter_t rb_gvar_var_getter;
 rb_gvar_setter_t rb_gvar_var_setter;
 rb_gvar_marker_t rb_gvar_var_marker;
 
-RUBY3_ATTR_NORETURN()
+RBIMPL_ATTR_NORETURN()
 rb_gvar_setter_t rb_gvar_readonly_setter;
 
 void rb_define_variable(const char*,VALUE*);
@@ -57,6 +57,6 @@ VALUE rb_gv_get(const char*);
 VALUE rb_iv_get(VALUE, const char*);
 VALUE rb_iv_set(VALUE, const char*, VALUE);
 
-RUBY3_SYMBOL_EXPORT_END()
+RBIMPL_SYMBOL_EXPORT_END()
 
-#endif /* RUBY3_VARIABLE_H */
+#endif /* RBIMPL_VARIABLE_H */

@@ -1,5 +1,5 @@
-#ifndef RUBY3_ARITHMETIC_GID_T_H                     /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_ARITHMETIC_GID_T_H
+#ifndef RBIMPL_ARITHMETIC_GID_T_H                    /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_ARITHMETIC_GID_T_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -31,4 +31,4 @@
 # define NUM2GIDT RB_NUM2LONG
 #endif
 
-#endif /* RUBY3_ARITHMETIC_GID_T_H */
+#endif /* RBIMPL_ARITHMETIC_GID_T_H */

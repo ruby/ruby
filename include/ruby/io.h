@@ -42,7 +42,7 @@
 #endif
 
 #include "ruby/impl/dllexport.h"
-RUBY3_SYMBOL_EXPORT_BEGIN()
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 PACKED_STRUCT_UNALIGNED(struct rb_io_buffer_t {
     char *ptr;                  /* off + len <= capa */
@@ -162,6 +162,6 @@ VALUE rb_stat_new(const struct stat *);
 
 /* gc.c */
 
-RUBY3_SYMBOL_EXPORT_END()
+RBIMPL_SYMBOL_EXPORT_END()
 
 #endif /* RUBY_IO_H */

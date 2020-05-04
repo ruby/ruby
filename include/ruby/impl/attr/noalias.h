@@ -1,5 +1,5 @@
-#ifndef RUBY3_ATTR_NOALIAS_H                         /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_ATTR_NOALIAS_H
+#ifndef RBIMPL_ATTR_NOALIAS_H                        /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_ATTR_NOALIAS_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -18,27 +18,27 @@
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
  *             extension libraries. They could be written in C++98.
- * @brief      Defines #RUBY3_ATTR_NOALIAS.
+ * @brief      Defines #RBIMPL_ATTR_NOALIAS.
  *
  * ### Q&A ###
  *
- * - Q: There  are   seemingly  similar  attributes   named  #RUBY3_ATTR_CONST,
- *      #RUBY3_ATTR_PURE, and #RUBY3_ATTR_NOALIAS.  What are the difference?
+ * - Q: There  are   seemingly  similar  attributes   named  #RBIMPL_ATTR_CONST,
+ *      #RBIMPL_ATTR_PURE, and #RBIMPL_ATTR_NOALIAS.  What are the difference?
  *
  * - A: Allowed operations are different.
  *
- *     - #RUBY3_ATTR_CONST ... Functions attributed by  this are not allowed to
+ *     - #RBIMPL_ATTR_CONST ... Functions attributed by  this are not allowed to
  *       read/write  _any_ pointers  at all  (there are  exceptional situations
  *       when  reading a  pointer is  possible but  forget that;  they are  too
  *       exceptional  to be  useful).  Just  remember that  everything pointer-
  *       related are NG.
  *
- *     - #RUBY3_ATTR_PURE  ...   Functions  attributed  by this  can  read  any
+ *     - #RBIMPL_ATTR_PURE  ...   Functions  attributed  by this  can  read  any
  *       nonvolatile pointers, but  no writes are allowed at  all.  The ability
  *       to read _any_ nonvolatile pointers  makes it possible to mark ::VALUE-
  *       taking functions as being pure, as long as they are read-only.
  *
- *     - #RUBY3_ATTR_NOALIAS ... Can both read/write, but only through pointers
+ *     - #RBIMPL_ATTR_NOALIAS ... Can both read/write, but only through pointers
  *       passed to  the function  as parameters.  This  is a  typical situation
  *       when you create  a C++ non-static member function  which only concerns
  *       `this`.  No  global variables are  allowed to read/write.  So  this is
@@ -49,10 +49,10 @@
 #include "ruby/impl/has/declspec_attribute.h"
 
 /** Wraps (or simulates) `__declspec((noalias))` */
-#if RUBY3_HAS_DECLSPEC_ATTRIBUTE(noalias)
-# define RUBY3_ATTR_NOALIAS() __declspec(noalias)
+#if RBIMPL_HAS_DECLSPEC_ATTRIBUTE(noalias)
+# define RBIMPL_ATTR_NOALIAS() __declspec(noalias)
 #else
-# define RUBY3_ATTR_NOALIAS() /* void */
+# define RBIMPL_ATTR_NOALIAS() /* void */
 #endif
 
-#endif /* RUBY3_ATTR_NOALIAS_H */
+#endif /* RBIMPL_ATTR_NOALIAS_H */

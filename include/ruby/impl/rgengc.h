@@ -1,5 +1,5 @@
-#ifndef RUBY3_RGENGC_H                               /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_RGENGC_H
+#ifndef RBIMPL_RGENGC_H                              /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_RGENGC_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -105,14 +105,14 @@
  * pointer in `a'.
  */
 #define RB_OBJ_WRITE(a, slot, b) \
-    RUBY3_CAST(rb_obj_write((VALUE)(a), (VALUE *)(slot), (VALUE)(b), __FILE__, __LINE__))
+    RBIMPL_CAST(rb_obj_write((VALUE)(a), (VALUE *)(slot), (VALUE)(b), __FILE__, __LINE__))
 /**
  * WB for new  reference from `a' to  `b'.  This doesn't write  any values, but
  * only  a WB  declaration.  `oldv'  is replaced  value with  `b' (not  used in
  * current Ruby).
  */
 #define RB_OBJ_WRITTEN(a, oldv, b) \
-    RUBY3_CAST(rb_obj_written((VALUE)(a), (VALUE)(oldv), (VALUE)(b), __FILE__, __LINE__))
+    RBIMPL_CAST(rb_obj_written((VALUE)(a), (VALUE)(oldv), (VALUE)(b), __FILE__, __LINE__))
 /** @} */
 
 #define OBJ_PROMOTED_RAW RB_OBJ_PROMOTED_RAW
@@ -129,25 +129,25 @@
 #define RB_OBJ_PROMOTED     RB_OBJ_PROMOTED
 /** @endcond */
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 void rb_gc_writebarrier(VALUE a, VALUE b);
 void rb_gc_writebarrier_unprotect(VALUE obj);
 #if USE_RGENGC_LOGGING_WB_UNPROTECT
 void rb_gc_unprotect_logging(void *objptr, const char *filename, int line);
 #endif
-RUBY3_SYMBOL_EXPORT_END()
+RBIMPL_SYMBOL_EXPORT_END()
 
-RUBY3_ATTR_PURE_ON_NDEBUG()
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline bool
 RB_OBJ_PROMOTED_RAW(VALUE obj)
 {
-    RUBY3_ASSERT_OR_ASSUME(RB_FL_ABLE(obj));
+    RBIMPL_ASSERT_OR_ASSUME(RB_FL_ABLE(obj));
     return RB_FL_ANY_RAW(obj,  RUBY_FL_PROMOTED);
 }
 
-RUBY3_ATTR_PURE_ON_NDEBUG()
-RUBY3_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_ARTIFICIAL()
 static inline bool
 RB_OBJ_PROMOTED(VALUE obj)
 {
@@ -163,7 +163,7 @@ static inline VALUE
 rb_obj_wb_unprotect(VALUE x, RB_UNUSED_VAR(const char *filename), RB_UNUSED_VAR(int line))
 {
 #if USE_RGENGC_LOGGING_WB_UNPROTECT
-    RGENGC_LOGGING_WB_UNPROTECT(RUBY3_CAST((void *)x), filename, line);
+    RGENGC_LOGGING_WB_UNPROTECT(RBIMPL_CAST((void *)x), filename, line);
 #endif
     rb_gc_writebarrier_unprotect(x);
     return x;
@@ -196,4 +196,4 @@ rb_obj_write(VALUE a, VALUE *slot, VALUE b, RB_UNUSED_VAR(const char *filename),
     return a;
 }
 
-#endif /* RUBY3_RGENGC_H */
+#endif /* RBIMPL_RGENGC_H */

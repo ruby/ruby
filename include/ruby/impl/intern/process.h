@@ -1,5 +1,5 @@
-#ifndef RUBY3_INTERN_PROCESS_H                       /*-*-C++-*-vi:se ft=cpp:*/
-#define RUBY3_INTERN_PROCESS_H
+#ifndef RBIMPL_INTERN_PROCESS_H                      /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_INTERN_PROCESS_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @warning    Symbols   prefixed   with   either  `RUBY3`   or   `ruby3`   are
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or   `ruby3`   are
  *             implementation details.   Don't take  them as canon.  They could
  *             rapidly appear then vanish.  The name (path) of this header file
  *             is also an  implementation detail.  Do not expect  it to persist
@@ -25,14 +25,14 @@
 #include "ruby/impl/dllexport.h"
 #include "ruby/impl/value.h"
 
-RUBY3_SYMBOL_EXPORT_BEGIN()
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 /* process.c */
 void rb_last_status_set(int status, rb_pid_t pid);
 VALUE rb_last_status_get(void);
 int rb_proc_exec(const char*);
 
-RUBY3_ATTR_NORETURN()
+RBIMPL_ATTR_NORETURN()
 VALUE rb_f_exec(int, const VALUE*);
 rb_pid_t rb_waitpid(rb_pid_t pid, int *status, int flags);
 void rb_syswait(rb_pid_t pid);
@@ -41,6 +41,6 @@ rb_pid_t rb_spawn_err(int, const VALUE*, char*, size_t);
 VALUE rb_proc_times(VALUE);
 VALUE rb_detach_process(rb_pid_t pid);
 
-RUBY3_SYMBOL_EXPORT_END()
+RBIMPL_SYMBOL_EXPORT_END()
 
-#endif /* RUBY3_INTERN_PROCESS_H */
+#endif /* RBIMPL_INTERN_PROCESS_H */
