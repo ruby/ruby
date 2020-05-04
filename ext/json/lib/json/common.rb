@@ -6,13 +6,13 @@ module JSON
   class << self
     # If +object+ is a
     # {String-convertible object}[doc/implicit_conversion_rdoc.html#label-String-Convertible+Objects]
-    # (implementing +to_str+), calls #parse with +object+ and +opts+:
-    #   json = '[0, 1, null]' # => [0, 1, nil]
-    #   JSON[json]
+    # (implementing +to_str+), calls JSON.parse with +object+ and +opts+:
+    #   json = '[0, 1, null]'
+    #   JSON[json]# => [0, 1, nil]
     #
-    # Otherwise, calls #generate with +object+ and +opts+:
-    #   ruby = [0, 1, nil] # => "[0,1,null]"
-    #   JSON[ruby]
+    # Otherwise, calls JSON.generate with +object+ and +opts+:
+    #   ruby = [0, 1, nil]
+    #   JSON[ruby] # => "[0,1,null]"
     def [](object, opts = {})
       if object.respond_to? :to_str
         JSON.parse(object.to_str, opts)
@@ -166,7 +166,7 @@ module JSON
   #
   # ====== Options
   #
-  # Option +:max_nesting+ (\Integer) specifies the maximum nesting depth allowed;
+  # Option +max_nesting+ (\Integer) specifies the maximum nesting depth allowed;
   # defaults to +100+; specify +false+ to disable depth checking.
   #
   # With the default, +false+:
@@ -308,6 +308,8 @@ module JSON
   #
   # Returns a \String containing the generated \JSON data.
   #
+  # See also JSON.fast_generate, JSON.pretty_generate.
+  #
   # ---
   #
   # When +source+ is an
@@ -387,33 +389,41 @@ module JSON
   #     }
   #   }
   #
-  # * *allow_nan*: true if NaN, Infinity, and -Infinity should be
-  #   generated, otherwise an exception is thrown if these values are
-  #   encountered. This options defaults to false.
-  # * *max_nesting*: The maximum depth of nesting allowed in the data
-  #   structures from which JSON is to be generated. Disable depth checking
-  #   with <tt>max_nesting: false</tt>, it defaults to 100.
+  # ====== Other Options
   #
-  # The default options are set to create the shortest possible JSON text
-  # in one line, check for circular data structures and do not allow NaN,
-  # Infinity, and -Infinity.
+  # Option +allow_nan+ (boolean) specifies whether
+  # +NaN+, +Infinity+, and <tt>-Infinity</tt> may be generated;
+  # defaults to +false+.
   #
-  # An _opts_ hash can have the following keys:
-  # * *indent*: a string used to indent levels (default: <tt>''</tt>),
-  # * *space*: a string that is put after a <tt>:</tt> pair delimiter (default: <tt>''</tt>),
-  # * *space_before*: a string that is put before a <tt>:</tt> pair delimiter (default: <tt>''</tt>),
-  # * *object_nl*: a string that is put at the end of a JSON object (default: <tt>''</tt>),
-  # * *array_nl*: a string that is put at the end of a JSON array (default: <tt>''</tt>),
-  # * *allow_nan*: true if NaN, Infinity, and -Infinity should be
-  #   generated, otherwise an exception is thrown if these values are
-  #   encountered. This options defaults to false.
-  # * *max_nesting*: The maximum depth of nesting allowed in the data
-  #   structures from which JSON is to be generated. Disable depth checking
-  #   with <tt>max_nesting: false</tt>, it defaults to 100.
+  # With the default, +false+:
+  #   # Raises JSON::GeneratorError (920: NaN not allowed in JSON):
+  #   JSON.generate(0.0/0)
+  #   # Raises JSON::GeneratorError (917: Infinity not allowed in JSON):
+  #   JSON.generate(1.0/0)
+  #   # Raises JSON::GeneratorError (917: -Infinity not allowed in JSON):
+  #   JSON.generate(-1.0/0)
   #
-  # See also the fast_generate for the fastest creation method with the least
-  # amount of sanity checks, and the pretty_generate method for some
-  # defaults for pretty output.
+  # Allow:
+  #   ruby = [0.0/0, 1.0/0, -1.0/0]
+  #   JSON.generate(ruby, allow_nan: true) # => "[NaN,Infinity,-Infinity]"
+  #
+  # ---
+  #
+  # Option +max_nesting+ (\Integer) specifies the maximum nesting depth
+  # in +source+; defaults to +100+.
+  #
+  # With the default, +100+:
+  #   source = [[[[[[0]]]]]]
+  #   JSON.generate(source) # => "[[[[[[0]]]]]]"
+  #
+  # Too deep:
+  #   # Raises JSON::NestingError (nesting of 2 is too deep):
+  #   JSON.generate(source, max_nesting: 2)
+  #
+  # Bad Value:
+  #   # Raises TypeError (can't convert Symbol into Hash):
+  #   JSON.generate(source, :foo)
+  #
   def generate(obj, opts = nil)
     if State === opts
       state, opts = opts, nil
