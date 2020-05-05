@@ -81,6 +81,14 @@
  *   puts e.next   # => 3
  *   puts e.next   # raises StopIteration
  *
+ * Note that enumeration sequence by +next+, +next_values+, +peek+ and
+ * +peek_values+ do not affect other non-external
+ * enumeration methods, unless the underlying iteration method itself has
+ * side-effect, e.g. IO#each_line.
+ *
+ * Moreover, implementation typically uses fibers so performance could be
+ * slower and exception stacktraces different than expected.
+ *
  * You can use this to implement an internal iterator as follows:
  *
  *   def ext_each(e)
@@ -804,6 +812,8 @@ get_next_values(VALUE obj, struct enumerator *e)
  * internal position forward.  When the position reached at the end,
  * StopIteration is raised.
  *
+ * See class-level notes about external iterators.
+ *
  * This method can be used to distinguish <code>yield</code> and <code>yield
  * nil</code>.
  *
@@ -836,10 +846,6 @@ get_next_values(VALUE obj, struct enumerator *e)
  *   #  yield 1, 2       [1, 2]           [1, 2]
  *   #  yield nil        [nil]            nil
  *   #  yield [1, 2]     [[1, 2]]         [1, 2]
- *
- * Note that +next_values+ does not affect other non-external enumeration
- * methods unless underlying iteration method itself has side-effect, e.g.
- * IO#each_line.
  *
  */
 
@@ -894,9 +900,7 @@ ary2sv(VALUE args, int dup)
  *   p e.next   #=> 3
  *   p e.next   #raises StopIteration
  *
- * Note that enumeration sequence by +next+ does not affect other non-external
- * enumeration methods, unless the underlying iteration methods itself has
- * side-effect, e.g. IO#each_line.
+ * See class-level notes about external iterators.
  *
  */
 
@@ -925,6 +929,8 @@ enumerator_peek_values(VALUE obj)
  * Returns the next object as an array, similar to Enumerator#next_values, but
  * doesn't move the internal position forward.  If the position is already at
  * the end, StopIteration is raised.
+ *
+ * See class-level notes about external iterators.
  *
  * === Example
  *
@@ -959,6 +965,8 @@ enumerator_peek_values_m(VALUE obj)
  * Returns the next object in the enumerator, but doesn't move the internal
  * position forward.  If the position is already at the end, StopIteration
  * is raised.
+ *
+ * See class-level notes about external iterators.
  *
  * === Example
  *
