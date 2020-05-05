@@ -154,8 +154,10 @@ case_equal(VALUE obj1, VALUE obj2) {
  * identity check using using C's == (same as BasicObject#equal?).
  * If that check fails, it calls #== dynamically.
  * This optimization actually affects semantics,
- * as Float::NAN == Float::NAN is false,
- * but rb_equal(Float::NAN, Float::NAN) is true!
+ * because when #== returns false for the same object obj,
+ * rb_equal(obj, obj) would still return true.
+ * This happens for Float::NAN, where Float::NAN == Float::NAN
+ * is false, but rb_equal(Float::NAN, Float::NAN) is true.
  */
 VALUE
 rb_equal(VALUE obj1, VALUE obj2)
