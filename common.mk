@@ -1121,8 +1121,9 @@ preludes: {$(srcdir)}golf_prelude.c
 	$(ECHO) making $@
 	$(Q) $(BASERUBY) $(tooldir)/mk_builtin_loader.rb $<
 
-builtin_binary.inc: $(PREP) $(BUILTIN_RB_SRCS) $(tooldir)/mk_builtin_binary.rb
-	$(Q) $(MINIRUBY) $(tooldir)/mk_builtin_binary.rb --cross=$(CROSS_COMPILING)
+builtin_binary.inc: $(PREP) $(BUILTIN_RB_SRCS) $(srcdir)/template/builtin_binary.inc.tmpl
+	$(Q) $(MINIRUBY) $(tooldir)/generic_erb.rb -c -o $@ \
+		$(srcdir)/template/builtin_binary.inc.tmpl -- --cross=$(CROSS_COMPILING)
 
 $(BUILTIN_RB_INCS): $(top_srcdir)/tool/mk_builtin_loader.rb
 
