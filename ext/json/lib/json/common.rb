@@ -92,12 +92,12 @@ module JSON
     #   JSON.generator # => JSON::Ext::Generator
     attr_reader :generator
 
-    # Returns the JSON generator state class that is used by JSON. This is
+    # Sets or Returns the JSON generator state class that is used by JSON. This is
     # either JSON::Ext::Generator::State or JSON::Pure::Generator::State:
     #   JSON.state # => JSON::Ext::Generator::State
     attr_accessor :state
 
-    # This is create identifier, which is used to decide if the _json_create_
+    # Sets or returns create identifier, which is used to decide if the _json_create_
     # hook of a class should be called; initial value is +json_class+:
     #   JSON.create_id # => "json_class"
     attr_accessor :create_id
@@ -155,15 +155,15 @@ module JSON
   #
   # When +source+ is a \JSON array, returns a Ruby \Array:
   #   source = '["foo", 1.0, true, false, null]'
-  #   a = JSON.parse(source)
-  #   a # => ["foo", 1.0, true, false, nil]
-  #   a.class # => Array
+  #   ruby = JSON.parse(source)
+  #   ruby # => ["foo", 1.0, true, false, nil]
+  #   ruby.class # => Array
   #
   # When +source+ is a \JSON object, returns a Ruby \Hash:
   #   source = '{"a": "foo", "b": 1.0, "c": true, "d": false, "e": null}'
-  #   h = JSON.parse(source)
-  #   h # => {"a"=>"foo", "b"=>1.0, "c"=>true, "d"=>false, "e"=>nil}
-  #   h.class # => Hash
+  #   ruby = JSON.parse(source)
+  #   ruby # => {"a"=>"foo", "b"=>1.0, "c"=>true, "d"=>false, "e"=>nil}
+  #   ruby.class # => Hash
   #
   # For examples of parsing for all \JSON data types, see
   # {Parsing \JSON}[#module-JSON-label-Parsing+JSON].
@@ -175,11 +175,11 @@ module JSON
   #
   # With the default, +false+:
   #   source = '[0, [1, [2, [3]]]]'
-  #   a = JSON.parse(source)
-  #   a # => [0, [1, [2, [3]]]]
+  #   ruby = JSON.parse(source)
+  #   ruby # => [0, [1, [2, [3]]]]
   # Too deep:
   #   # Raises JSON::NestingError (nesting of 2 is too deep):
-  #   a = JSON.parse(source, {max_nesting: 1})
+  #   JSON.parse(source, {max_nesting: 1})
   # Bad value:
   #   # Raises TypeError (wrong argument type Symbol (expected Fixnum)):
   #   JSON.parse(source, {max_nesting: :foo})
@@ -192,18 +192,18 @@ module JSON
   #
   # With the default, +false+:
   #   # Raises JSON::ParserError (225: unexpected token at '[NaN]'):
-  #   a = JSON.parse('[NaN]')
+  #   JSON.parse('[NaN]')
   #   # Raises JSON::ParserError (232: unexpected token at '[Infinity]'):
-  #   a = JSON.parse('[Infinity]')
+  #   JSON.parse('[Infinity]')
   #   # Raises JSON::ParserError (248: unexpected token at '[-Infinity]'):
-  #   a = JSON.parse('[-Infinity]')
+  #   JSON.parse('[-Infinity]')
   # Allow:
   #   source = '[NaN, Infinity, -Infinity]'
-  #   a = JSON.parse(source, {allow_nan: true})
-  #   a # => [NaN, Infinity, -Infinity]
+  #   ruby = JSON.parse(source, {allow_nan: true})
+  #   ruby # => [NaN, Infinity, -Infinity]
   # With a truthy value:
-  #   a = JSON.parse(source, {allow_nan: :foo})
-  #   a # => [NaN, Infinity, -Infinity]
+  #   ruby = JSON.parse(source, {allow_nan: :foo})
+  #   ruby # => [NaN, Infinity, -Infinity]
   #
   # ---
   #
@@ -213,11 +213,11 @@ module JSON
   #
   # With the default, +false+:
   #   source = '{"a": "foo", "b": 1.0, "c": true, "d": false, "e": null}'
-  #   h = JSON.parse(source)
-  #   h # => {"a"=>"foo", "b"=>1.0, "c"=>true, "d"=>false, "e"=>nil}
+  #   ruby = JSON.parse(source)
+  #   ruby # => {"a"=>"foo", "b"=>1.0, "c"=>true, "d"=>false, "e"=>nil}
   # Use Symbols:
-  #   h = JSON.parse(source, {symbolize_names: true})
-  #   h # => {:a=>"foo", :b=>1.0, :c=>true, :d=>false, :e=>nil}
+  #   ruby = JSON.parse(source, {symbolize_names: true})
+  #   ruby # => {:a=>"foo", :b=>1.0, :c=>true, :d=>false, :e=>nil}
   #
   # ---
   #
@@ -227,11 +227,11 @@ module JSON
   #
   # With the default, \Hash:
   #   source = '{"a": "foo", "b": 1.0, "c": true, "d": false, "e": null}'
-  #   h = JSON.parse(source)
-  #   h.class # => Hash
+  #   ruby = JSON.parse(source)
+  #   ruby.class # => Hash
   # Use class \OpenStruct:
-  #   o = JSON.parse(source, {object_class: OpenStruct})
-  #   o # => #<OpenStruct a="foo", b=1.0, c=true, d=false, e=nil>
+  #   ruby = JSON.parse(source, {object_class: OpenStruct})
+  #   ruby # => #<OpenStruct a="foo", b=1.0, c=true, d=false, e=nil>
   # Try class \Object:
   #   # Raises NoMethodError (undefined method `[]=' for #<Object:>):
   #   JSON.parse(source, {object_class: Object})
@@ -247,11 +247,11 @@ module JSON
   #
   # With the default, \Array:
   #   source = '["foo", 1.0, true, false, null]'
-  #   a = JSON.parse(source)
-  #   a.class # => Array
+  #   ruby = JSON.parse(source)
+  #   ruby.class # => Array
   # Use class \Set:
-  #   s = JSON.parse(source, {array_class: Set})
-  #   s # => #<Set: {"foo", 1.0, true, false, nil}>
+  #   ruby = JSON.parse(source, {array_class: Set})
+  #   ruby # => #<Set: {"foo", 1.0, true, false, nil}>
   # Try class \Object:
   #   # Raises NoMethodError (undefined method `<<' for #<Object:>):
   #   JSON.parse(source, {array_class: Object})
@@ -301,7 +301,7 @@ module JSON
     Parser.new(source, **(opts||{})).parse
   end
 
-  # Argument +source+ is the Ruby object to be converted to \JSON.
+  # Argument +obj+ is the Ruby object to be converted to \JSON.
   #
   # Argument +opts+, if given, contains options for the generation, and must be a
   # {Hash-convertible object}[doc/implicit_conversion_rdoc.html#label-Hash-Convertible+Objects]
@@ -313,19 +313,19 @@ module JSON
   #
   # ---
   #
-  # When +source+ is an
+  # When +obj+ is an
   # {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects]
   # (implementing +to_ary+), returns a \String containing a \JSON array:
-  #   source = ["foo", 1.0, true, false, nil]
-  #   json = JSON.generate(source)
+  #   obj = ["foo", 1.0, true, false, nil]
+  #   json = JSON.generate(obj)
   #   json # => "[\"foo\",1.0,true,false,null]"
   #   json.class # => String
   #
-  # When +source+ is a
+  # When +obj+ is a
   # {Hash-convertible object}[doc/implicit_conversion_rdoc.html#label-Hash-Convertible+Objects],
   # return a \String containing a \JSON object:
-  #   source = {foo: 0, bar: 's', baz: :bat}
-  #   json = JSON.generate(source)
+  #   obj = {foo: 0, bar: 's', baz: :bat}
+  #   json = JSON.generate(obj)
   #   json # => "{\"foo\":0,\"bar\":\"s\",\"baz\":\"bat\"}"
   #
   # For examples of generating from other Ruby objects, see
@@ -355,12 +355,12 @@ module JSON
   #   inserted before the colon in each \JSON object's pair;
   #   defaults to the empty \String, <tt>''</tt>.
   #
-  # In this example, +source+ is used first to generate the shortest
+  # In this example, +obj+ is used first to generate the shortest
   # \JSON data (no whitespace), then again with all formatting options
   # specified:
   #
-  #   source = {foo: [:bar, :baz], bat: {bam: 0, bad: 1}}
-  #   json = JSON.generate(source)
+  #   obj = {foo: [:bar, :baz], bat: {bam: 0, bad: 1}}
+  #   json = JSON.generate(obj)
   #   puts 'Compact:', json
   #   opts = {
   #     array_nl: "\n",
@@ -369,7 +369,7 @@ module JSON
   #     space_before: ' ',
   #     space: ' '
   #   }
-  #   puts 'Open:', JSON.generate(source, opts)
+  #   puts 'Open:', JSON.generate(obj, opts)
   #
   # Output:
   #   Compact:
@@ -411,29 +411,29 @@ module JSON
   # ---
   #
   # Option +max_nesting+ (\Integer) specifies the maximum nesting depth
-  # in +source+; defaults to +100+.
+  # in +obj+; defaults to +100+.
   #
   # With the default, +100+:
-  #   source = [[[[[[0]]]]]]
-  #   JSON.generate(source) # => "[[[[[[0]]]]]]"
+  #   obj = [[[[[[0]]]]]]
+  #   JSON.generate(obj) # => "[[[[[[0]]]]]]"
   #
   # Too deep:
   #   # Raises JSON::NestingError (nesting of 2 is too deep):
-  #   JSON.generate(source, max_nesting: 2)
+  #   JSON.generate(obj, max_nesting: 2)
   #
   # Bad Value:
   #   # Raises TypeError (can't convert Symbol into Hash):
-  #   JSON.generate(source, :foo)
+  #   JSON.generate(obj, :foo)
   #
   # ---
   #
-  # Raises an exception if +source+ is not a valid Ruby object:
+  # Raises an exception if +obj+ is not a valid Ruby object:
   #   # Raises NameError (uninitialized constant Foo):
   #   JSON.generate(Foo)
   #   # Raises NameError (undefined local variable or method `foo' for main:Object):
   #   JSON.generate(foo)
   #
-  # Raises an exception if +source+ contains circular references:
+  # Raises an exception if +obj+ contains circular references:
   #   a = []; b = []; a.push(b); b.push(a)
   #   # Raises JSON::NestingError (nesting of 100 is too deep):
   #   JSON.generate(a)
@@ -470,12 +470,12 @@ module JSON
   # :startdoc:
 
   # Arguments +obj+ and +opts+ here are the same as
-  # arguments +source+ and +opts+ in JSON.generate.
+  # arguments +obj+ and +opts+ in JSON.generate.
   #
   # By default, generates \JSON data without checking
   # for circular references in +obj+ (option +max_nesting+ set to +false+, disabled).
   #
-  # Raises an exception if +source+ contains circular references:
+  # Raises an exception if +obj+ contains circular references:
   #   a = []; b = []; a.push(b); b.push(a)
   #   # Raises SystemStackError (stack level too deep):
   #   JSON.fast_generate(a)
@@ -505,7 +505,7 @@ module JSON
   # :startdoc:
 
   # Arguments +obj+ and +opts+ here are the same as
-  # arguments +source+ and +opts+ in JSON.generate.
+  # arguments +obj+ and +opts+ in JSON.generate.
   #
   # Default options are:
   #   {
@@ -516,8 +516,8 @@ module JSON
   #   }
   #
   # Example:
-  #   source = {foo: [:bar, :baz], bat: {bam: 0, bad: 1}}
-  #   json = JSON.pretty_generate(source)
+  #   obj = {foo: [:bar, :baz], bat: {bam: 0, bad: 1}}
+  #   json = JSON.pretty_generate(obj)
   #   puts json
   # Output:
   #   {
@@ -557,11 +557,10 @@ module JSON
   # :startdoc:
 
   class << self
-    # The global default options for the JSON.load method:
-    #  :max_nesting: false
-    #  :allow_nan:   true
-    #  :allow_blank:  true
-    #  :create_additions: true
+    # Sets or returns default options for the JSON.load method.
+    # Initially:
+    #   opts = JSON.load_default_options
+    #   opts # => {:max_nesting=>false, :allow_nan=>true, :allow_blank=>true, :create_additions=>true}
     attr_accessor :load_default_options
   end
   self.load_default_options = {
@@ -620,9 +619,10 @@ module JSON
   module_function :restore
 
   class << self
-    # The global default options for the JSON.dump method:
-    #  :max_nesting: false
-    #  :allow_nan:   true
+    # Sets or returns the default options for the JSON.dump method.
+    # Initially:
+    #   opts = JSON.dump_default_options
+    #   opts # => {:max_nesting=>false, :allow_nan=>true}
     attr_accessor :dump_default_options
   end
   self.dump_default_options = {
