@@ -141,7 +141,22 @@ rb_obj_setup(VALUE obj, VALUE klass, VALUE type)
  * Same as \c Object#===, case equality.
  *++
  */
+static VALUE
+case_equal(VALUE obj1, VALUE obj2) {
+    /* The default implementation of #=== is
+     * to call #== with the rb_equal() optimization. */
+    return rb_equal(obj1, obj2);
+}
 
+/*!
+ * This function is an optimized version of calling #==.
+ * It checks equality between two objects by first doing a fast
+ * identity check using using C's == (same as BasicObject#equal?).
+ * If that check fails, it calls #== dynamically.
+ * This optimization actually affects semantics,
+ * as Float::NAN == Float::NAN is false,
+ * but rb_equal(Float::NAN, Float::NAN) is true!
+ */
 VALUE
 rb_equal(VALUE obj1, VALUE obj2)
 {
@@ -4598,7 +4613,7 @@ InitVM_Object(void)
     rb_define_private_method(rb_cModule, "method_undefined", rb_obj_dummy1, 1);
 
     rb_define_method(rb_mKernel, "nil?", rb_false, 0);
-    rb_define_method(rb_mKernel, "===", rb_equal, 1);
+    rb_define_method(rb_mKernel, "===", case_equal, 1);
     rb_define_method(rb_mKernel, "=~", rb_obj_match, 1);
     rb_define_method(rb_mKernel, "!~", rb_obj_not_match, 1);
     rb_define_method(rb_mKernel, "eql?", rb_obj_equal, 1);
@@ -4665,7 +4680,7 @@ InitVM_Object(void)
     rb_define_method(rb_cNilClass, "&", false_and, 1);
     rb_define_method(rb_cNilClass, "|", false_or, 1);
     rb_define_method(rb_cNilClass, "^", false_xor, 1);
-    rb_define_method(rb_cNilClass, "===", rb_equal, 1);
+    rb_define_method(rb_cNilClass, "===", case_equal, 1);
 
     rb_define_method(rb_cNilClass, "nil?", rb_true, 0);
     rb_undef_alloc_func(rb_cNilClass);
@@ -4751,7 +4766,7 @@ InitVM_Object(void)
     rb_define_method(rb_cTrueClass, "&", true_and, 1);
     rb_define_method(rb_cTrueClass, "|", true_or, 1);
     rb_define_method(rb_cTrueClass, "^", true_xor, 1);
-    rb_define_method(rb_cTrueClass, "===", rb_equal, 1);
+    rb_define_method(rb_cTrueClass, "===", case_equal, 1);
     rb_undef_alloc_func(rb_cTrueClass);
     rb_undef_method(CLASS_OF(rb_cTrueClass), "new");
 
@@ -4763,7 +4778,7 @@ InitVM_Object(void)
     rb_define_method(rb_cFalseClass, "&", false_and, 1);
     rb_define_method(rb_cFalseClass, "|", false_or, 1);
     rb_define_method(rb_cFalseClass, "^", false_xor, 1);
-    rb_define_method(rb_cFalseClass, "===", rb_equal, 1);
+    rb_define_method(rb_cFalseClass, "===", case_equal, 1);
     rb_undef_alloc_func(rb_cFalseClass);
     rb_undef_method(CLASS_OF(rb_cFalseClass), "new");
 }
