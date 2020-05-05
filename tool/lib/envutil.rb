@@ -244,7 +244,11 @@ module EnvUtil
 
   def labeled_module(name, &block)
     Module.new do
-      singleton_class.class_eval {define_method(:to_s) {name}; alias inspect to_s}
+      singleton_class.class_eval {
+        define_method(:to_s) {name}
+        alias inspect to_s
+        alias name to_s
+      }
       class_eval(&block) if block
     end
   end
@@ -252,7 +256,11 @@ module EnvUtil
 
   def labeled_class(name, superclass = Object, &block)
     Class.new(superclass) do
-      singleton_class.class_eval {define_method(:to_s) {name}; alias inspect to_s}
+      singleton_class.class_eval {
+        define_method(:to_s) {name}
+        alias inspect to_s
+        alias name to_s
+      }
       class_eval(&block) if block
     end
   end
