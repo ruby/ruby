@@ -133,7 +133,7 @@ module JSON
   # This exception is raised if a generator or unparser error occurs.
   class GeneratorError < JSONError; end
   # For backwards compatibility
-  UnparserError = GeneratorError
+  UnparserError = GeneratorError # :nodoc:
 
   # This exception is raised if the required unicode support is missing on the
   # system. Usually this means that the iconv library is not installed.
