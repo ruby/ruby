@@ -168,7 +168,7 @@ module JSON
   # For examples of parsing for all \JSON data types, see
   # {Parsing \JSON}[#module-JSON-label-Parsing+JSON].
   #
-  # ====== Options
+  # ====== Input Options
   #
   # Option +max_nesting+ (\Integer) specifies the maximum nesting depth allowed;
   # defaults to +100+; specify +false+ to disable depth checking.
@@ -205,7 +205,7 @@ module JSON
   #   ruby = JSON.parse(source, {allow_nan: :foo})
   #   ruby # => [NaN, Infinity, -Infinity]
   #
-  # ---
+  # ====== Output Options
   #
   # Option +symbolize_names+ (boolean) specifies whether returned \Hash keys
   # should be Symbols;
@@ -331,7 +331,42 @@ module JSON
   # For examples of generating from other Ruby objects, see
   # {Generating \JSON from Other Objects}[#module-JSON-label-Generating+JSON+from+Other+Objects].
   #
-  # ====== \JSON Format Options
+  # ====== Input Options
+  #
+  # Option +allow_nan+ (boolean) specifies whether
+  # +NaN+, +Infinity+, and <tt>-Infinity</tt> may be generated;
+  # defaults to +false+.
+  #
+  # With the default, +false+:
+  #   # Raises JSON::GeneratorError (920: NaN not allowed in JSON):
+  #   JSON.generate(JSON::NaN)
+  #   # Raises JSON::GeneratorError (917: Infinity not allowed in JSON):
+  #   JSON.generate(JSON::Infinity)
+  #   # Raises JSON::GeneratorError (917: -Infinity not allowed in JSON):
+  #   JSON.generate(JSON::MinusInfinity)
+  #
+  # Allow:
+  #   ruby = [JSON::NaN, JSON::Infinity, JSON::MinusInfinity]
+  #   JSON.generate(ruby, allow_nan: true) # => "[NaN,Infinity,-Infinity]"
+  #
+  # ---
+  #
+  # Option +max_nesting+ (\Integer) specifies the maximum nesting depth
+  # in +obj+; defaults to +100+.
+  #
+  # With the default, +100+:
+  #   obj = [[[[[[0]]]]]]
+  #   JSON.generate(obj) # => "[[[[[[0]]]]]]"
+  #
+  # Too deep:
+  #   # Raises JSON::NestingError (nesting of 2 is too deep):
+  #   JSON.generate(obj, max_nesting: 2)
+  #
+  # Bad Value:
+  #   # Raises TypeError (can't convert Symbol into Hash):
+  #   JSON.generate(obj, :foo)
+  #
+  # ====== Output Options
   #
   # The default formatting options generate the most compact
   # \JSON data, all on one line and with no whitespace.
@@ -388,44 +423,9 @@ module JSON
   #
   # ---
   #
-  # Raises an exception if any format option is not a \String.
+  # Raises an exception if any formatting option is not a \String.
   #
-  # ====== Other Options
-  #
-  # Option +allow_nan+ (boolean) specifies whether
-  # +NaN+, +Infinity+, and <tt>-Infinity</tt> may be generated;
-  # defaults to +false+.
-  #
-  # With the default, +false+:
-  #   # Raises JSON::GeneratorError (920: NaN not allowed in JSON):
-  #   JSON.generate(JSON::NaN)
-  #   # Raises JSON::GeneratorError (917: Infinity not allowed in JSON):
-  #   JSON.generate(JSON::Infinity)
-  #   # Raises JSON::GeneratorError (917: -Infinity not allowed in JSON):
-  #   JSON.generate(JSON::MinusInfinity)
-  #
-  # Allow:
-  #   ruby = [JSON::NaN, JSON::Infinity, JSON::MinusInfinity]
-  #   JSON.generate(ruby, allow_nan: true) # => "[NaN,Infinity,-Infinity]"
-  #
-  # ---
-  #
-  # Option +max_nesting+ (\Integer) specifies the maximum nesting depth
-  # in +obj+; defaults to +100+.
-  #
-  # With the default, +100+:
-  #   obj = [[[[[[0]]]]]]
-  #   JSON.generate(obj) # => "[[[[[[0]]]]]]"
-  #
-  # Too deep:
-  #   # Raises JSON::NestingError (nesting of 2 is too deep):
-  #   JSON.generate(obj, max_nesting: 2)
-  #
-  # Bad Value:
-  #   # Raises TypeError (can't convert Symbol into Hash):
-  #   JSON.generate(obj, :foo)
-  #
-  # ---
+  # ====== Exceptions
   #
   # Raises an exception if +obj+ is not a valid Ruby object:
   #   # Raises NameError (uninitialized constant Foo):

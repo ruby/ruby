@@ -40,7 +40,8 @@ require 'json/common'
 #
 # where
 # - +source+ is a Ruby object.
-# - +opts+ is a \Hash object containing options data.
+# - +opts+ is a \Hash object containing options
+#   that control both input allowed and output formatting.
 #
 # The difference between the two methods
 # is that JSON.parse! omits some checks
@@ -111,7 +112,8 @@ require 'json/common'
 # To generate a Ruby \String containing \JSON data,
 # use method <tt>JSON.generate(source, opts)</tt>, where
 # - +source+ is a Ruby object.
-# - +opts+ is a \Hash object containing options data.
+# - +opts+ is a \Hash object containing options
+#   that control both input allowed and output formatting.
 #
 # ==== Generating \JSON from Arrays
 #
