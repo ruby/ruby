@@ -1560,7 +1560,7 @@ rb_str_resurrect(VALUE str)
  *     String.new(str='', encoding: enc)    -> new_str
  *     String.new(str='', capacity: size)   -> new_str
  *
- *  If argument +str+ is given, it must be a
+ *  Argument +str+, if given, it must be a
  *  {String-convertible object}[doc/implicit_conversion_rdoc.html#label-String-Convertible+Objects]
  *  (implements +to_str).
  *
@@ -1573,11 +1573,14 @@ rb_str_resurrect(VALUE str)
  *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects]
  *  (implements +to_int+).
  *
+ *  The +str+, +encoding+, and +capacity+ arguments may all be used together:
+ *    String.new('hello', encoding: 'UTF-8', capacity: 25)
+ *
  *  Returns a new \String that is a copy of <i>str</i>.
  *
  *  ---
  *
- *  With no arguments, returns the empty string with encoding <tt>Encoding:ASCII-8BIT</tt>:
+ *  With no arguments, returns the empty string with the Encoding <tt>ASCII-8BIT</tt>:
  *    s = Str.new
  *    s # => ""
  *    s.encoding # => #<Encoding:ASCII-8BIT>
@@ -1588,6 +1591,9 @@ rb_str_resurrect(VALUE str)
  *    s # => "Que veut dire ça?"
  *    s.encoding # => #<Encoding:UTF-8>
  *
+ *  Literal strings like <tt>""</tt> or here-documents always use
+ *  {script encoding}[Encoding.html#class-Encoding-label-Script+encoding], unlike String.new.
+ *
  *  ---
  *
  *  With keyword +encoding+, returns a copy of +str+
@@ -1596,6 +1602,11 @@ rb_str_resurrect(VALUE str)
  *    s.encoding # => #<Encoding:US-ASCII>
  *    s = String.new('foo', encoding: 'ASCII')
  *    s.encoding # => #<Encoding:US-ASCII>
+ *
+ *  Note that these are equivalent:
+ *    s0 = String.new('foo', encoding: 'ASCII')
+ *    s1 = 'foo'.force_encoding('ASCII')
+ *    s0.encoding == s1.encoding # => true
  *
  *  ---
  *
@@ -1615,7 +1626,8 @@ rb_str_resurrect(VALUE str)
  *    # Raises TypeError (no implicit conversion of Integer into String):
  *    String.new(0)
  *
- *  Raises an exception if +encoding+ is not \String-convertible:
+ *  Raises an exception if +encoding+ is not \String-convertible
+ *  or an Encoding object:
  *    # Raises TypeError (no implicit conversion of Integer into String):
  *    String.new(encoding: 0)
  *
