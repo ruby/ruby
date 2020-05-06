@@ -1624,13 +1624,7 @@ false_and(VALUE obj, VALUE obj2)
  *  <code>nil</code> or <code>false</code>; <code>true</code> otherwise.
  */
 
-static VALUE
-false_or(VALUE obj, VALUE obj2)
-{
-    return RTEST(obj2)?Qtrue:Qfalse;
-}
-
-
+#define false_or true_and
 
 /*
  *  call-seq:
@@ -1643,11 +1637,7 @@ false_or(VALUE obj, VALUE obj2)
  *
  */
 
-static VALUE
-false_xor(VALUE obj, VALUE obj2)
-{
-    return RTEST(obj2)?Qtrue:Qfalse;
-}
+#define false_xor true_and
 
 /*
  * call-seq:
