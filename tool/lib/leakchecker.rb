@@ -35,19 +35,19 @@ class LeakChecker
     if IO.respond_to?(:console) and (m = IO.method(:console)).arity.nonzero?
       m[:close]
     end
-    fd_dir = "/proc/self/fd"
-    if File.directory?(fd_dir)
-      fds = Dir.open(fd_dir) {|d|
-        a = d.grep(/\A\d+\z/, &:to_i)
-        if d.respond_to? :fileno
-          a -= [d.fileno]
-        end
-        a
-      }
-      fds.sort
-    else
-      []
+    %w"/proc/self/fd /dev/fd".each do |fd_dir|
+      if File.directory?(fd_dir)
+        fds = Dir.open(fd_dir) {|d|
+          a = d.grep(/\A\d+\z/, &:to_i)
+          if d.respond_to? :fileno
+            a -= [d.fileno]
+          end
+          a
+        }
+        return fds.sort
+      end
     end
+    []
   end
 
   def check_fd_leak(test_name)
