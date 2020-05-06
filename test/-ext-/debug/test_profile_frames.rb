@@ -3,6 +3,16 @@ require 'test/unit'
 require '-test-/debug'
 
 class SampleClassForTestProfileFrames
+  class << self
+    attr_accessor :sample4
+  end
+
+  self.sample4 = Module.new do
+    def self.corge(block)
+      Sample2.new.baz(block)
+    end
+  end
+
   class Sample2
     def baz(block)
       instance_eval "def zab(block) block.call end"
@@ -10,8 +20,16 @@ class SampleClassForTestProfileFrames
     end
   end
 
+  module Sample3
+    class << self
+      def qux(block)
+        SampleClassForTestProfileFrames.sample4.corge(block)
+      end
+    end
+  end
+
   def self.bar(block)
-    Sample2.new.baz(block)
+    Sample3.qux(block)
   end
 
   def foo(block)
@@ -29,6 +47,8 @@ class TestProfileFrames < Test::Unit::TestCase
       "test_profile_frames",
       "zab",
       "baz",
+      "corge",
+      "qux",
       "bar",
       "foo",
       "test_profile_frames",
@@ -37,6 +57,8 @@ class TestProfileFrames < Test::Unit::TestCase
       "test_profile_frames",
       "zab",
       "baz",
+      "corge",
+      "qux",
       "bar",
       "foo",
       "test_profile_frames",
@@ -45,6 +67,8 @@ class TestProfileFrames < Test::Unit::TestCase
       "TestProfileFrames#test_profile_frames",
       "#{obj.inspect}.zab",
       "SampleClassForTestProfileFrames::Sample2#baz",
+      "#{SampleClassForTestProfileFrames.sample4.inspect}.corge",
+      "SampleClassForTestProfileFrames::Sample3.qux",
       "SampleClassForTestProfileFrames.bar",
       "SampleClassForTestProfileFrames#foo",
       "TestProfileFrames#test_profile_frames",
@@ -53,17 +77,21 @@ class TestProfileFrames < Test::Unit::TestCase
       TestProfileFrames,
       obj,
       SampleClassForTestProfileFrames::Sample2,
+      SampleClassForTestProfileFrames.sample4,
+      SampleClassForTestProfileFrames::Sample3,
       SampleClassForTestProfileFrames, # singleton method
       SampleClassForTestProfileFrames,
       TestProfileFrames,
     ]
     singleton_method_p = [
-      false, true, false, true, false, false, false,
+      false, true, false, true, true, true, false, false, false,
     ]
     method_names = [
       "test_profile_frames",
       "zab",
       "baz",
+      "corge",
+      "qux",
       "bar",
       "foo",
       "test_profile_frames",
@@ -72,14 +100,14 @@ class TestProfileFrames < Test::Unit::TestCase
       "TestProfileFrames#test_profile_frames",
       "#{obj.inspect}.zab",
       "SampleClassForTestProfileFrames::Sample2#baz",
+      "#{SampleClassForTestProfileFrames.sample4.inspect}.corge",
+      "SampleClassForTestProfileFrames::Sample3.qux",
       "SampleClassForTestProfileFrames.bar",
       "SampleClassForTestProfileFrames#foo",
       "TestProfileFrames#test_profile_frames",
     ]
-    paths = [ file=__FILE__, "(eval)", file, file, file, file ]
-    absolute_paths = [ file, nil, file, file, file, file ]
-
-    # pp frames
+    paths = [ file=__FILE__, "(eval)", file, file, file, file, file, file ]
+    absolute_paths = [ file, nil, file, file, file, file, file, file ]
 
     assert_equal(labels.size, frames.size)
 
