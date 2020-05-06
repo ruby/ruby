@@ -3913,21 +3913,22 @@ __END__
     end
   end
 
-  def test_select_leak
+  def test_select_memory_leak
     # avoid malloc arena explosion from glibc and jemalloc:
     env = {
       'MALLOC_ARENA_MAX' => '1',
       'MALLOC_ARENA_TEST' => '1',
       'MALLOC_CONF' => 'narenas:1',
     }
-    assert_no_memory_leak([env], <<-"end;", <<-"end;", rss: true, timeout: 60)
+    assert_no_memory_leak([env], "#{<<~"begin;"}\n#{<<~'else;'}", "#{<<~'end;'}", rss: true, timeout: 60)
+    begin;
       r, w = IO.pipe
       rset = [r]
       wset = [w]
       exc = StandardError.new(-"select used to leak on exception")
       exc.set_backtrace([])
       Thread.new { IO.select(rset, wset, nil, 0) }.join
-    end;
+    else;
       th = Thread.new do
         Thread.handle_interrupt(StandardError => :on_blocking) do
           begin

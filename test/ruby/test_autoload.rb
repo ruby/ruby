@@ -440,8 +440,9 @@ p Foo::Bar
     end
   end
 
-  def test_no_leak
-    assert_no_memory_leak([], '', <<~'end;', 'many autoloads', timeout: 60)
+  def test_no_memory_leak
+    assert_no_memory_leak([], '', "#{<<~"begin;"}\n#{<<~'end;'}", 'many autoloads', timeout: 60)
+    begin;
       200000.times do |i|
         m = Module.new
         m.instance_eval do
