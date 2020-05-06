@@ -141,12 +141,9 @@ rb_obj_setup(VALUE obj, VALUE klass, VALUE type)
  * Same as \c Object#===, case equality.
  *++
  */
-static VALUE
-case_equal(VALUE obj1, VALUE obj2) {
+#define case_equal rb_equal
     /* The default implementation of #=== is
      * to call #== with the rb_equal() optimization. */
-    return rb_equal(obj1, obj2);
-}
 
 /*!
  * This function is an optimized version of calling #==.
