@@ -474,8 +474,7 @@ precompile_inlinable_iseqs(FILE *f, const rb_iseq_t *iseq, struct compile_status
 bool
 mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id)
 {
-    // For performance, we verify stack size only on compilation time (mjit_compile.inc.erb) without --jit-debug
-    if (!mjit_opts.debug) {
+    if (false) { // Now always checking it for debugging.
         fprintf(f, "#undef OPT_CHECKED_RUN\n");
         fprintf(f, "#define OPT_CHECKED_RUN 0\n\n");
     }
