@@ -100,7 +100,7 @@ class LeakChecker
             next if /darwin/ =~ RUBY_PLATFORM and [0, -1].include?(s.dev)
             str << ' ' << s.inspect
           ensure
-            io.close
+            io&.close
           end
         end
         puts "Leaked file descriptor: #{test_name}: #{fd}#{str}"
