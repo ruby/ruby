@@ -137,9 +137,6 @@ rb_obj_setup(VALUE obj, VALUE klass, VALUE type)
  *  Case Equality -- For class Object, effectively the same as calling
  *  <code>#==</code>, but typically overridden by descendants to provide
  *  meaningful semantics in +case+ statements.
- *--
- * Same as \c Object#===, case equality.
- *++
  */
 #define case_equal rb_equal
     /* The default implementation of #=== is
