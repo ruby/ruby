@@ -89,6 +89,19 @@ class LeakChecker
           }.sort.each {|s|
             str << s
           }
+        else
+          begin
+            io = IO.for_fd(fd, autoclose: false)
+            s = io.stat
+          rescue Errno::EBADF
+            # something un-stat-able
+            next
+          else
+            next if /darwin/ =~ RUBY_PLATFORM and [0, -1].include?(s.dev)
+            str << ' ' << s.inspect
+          ensure
+            io.close
+          end
         end
         puts "Leaked file descriptor: #{test_name}: #{fd}#{str}"
         puts "  The IO was created at #{pos}" if pos
