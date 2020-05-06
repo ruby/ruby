@@ -542,16 +542,20 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
 
   def test_getcred_xucred
     return if /freebsd|darwin/ !~ RUBY_PLATFORM
-    Dir.mktmpdir {|d|
+    Dir.mktmpdir do |d|
       sockpath = "#{d}/sock"
       serv = Socket.unix_server_socket(sockpath)
-      Socket.unix(sockpath)
+      u = Socket.unix(sockpath)
       s, = serv.accept
       cred = s.getsockopt(0, Socket::LOCAL_PEERCRED)
       inspect = cred.inspect
       assert_match(/ euid=#{Process.euid} /, inspect)
       assert_match(/ \(xucred\)/, inspect)
-    }
+    ensure
+      s&.close
+      u&.close
+      serv&.close
+    end
   end
 
   def test_sendcred_ucred
