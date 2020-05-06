@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 class LeakChecker
+  @@try_lsof = nil # not-tried-yet
+
   def initialize
     @fd_info = find_fds
     @tempfile_info = find_tempfiles
@@ -74,7 +76,7 @@ class LeakChecker
         end
         (h[fd] ||= []) << [io, autoclose, inspect]
       }
-      fd_leaked.each {|fd|
+      fd_leaked.select! {|fd|
         str = ''.dup
         pos = nil
         if h[fd]
@@ -105,8 +107,13 @@ class LeakChecker
         end
         puts "Leaked file descriptor: #{test_name}: #{fd}#{str}"
         puts "  The IO was created at #{pos}" if pos
+        true
       }
-      #system("lsof -p #$$") if !fd_leaked.empty?
+      unless fd_leaked.empty?
+        unless @@try_lsof == false
+          @@try_lsof |= system("lsof -p #$$", out: MiniTest::Unit.output)
+        end
+      end
       h.each {|fd, list|
         next if list.length <= 1
         if 1 < list.count {|io, autoclose, inspect| autoclose }
