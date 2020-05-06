@@ -4590,6 +4590,7 @@ push_mark_stack(mark_stack_t *stack, VALUE data)
     switch (BUILTIN_TYPE(obj)) {
       case T_NIL:
       case T_FIXNUM:
+      case T_MOVED:
 	rb_bug("push_mark_stack() called for broken object");
 	break;
 
