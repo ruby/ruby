@@ -36,6 +36,8 @@
 #include "variable.h"
 #include "vm_core.h"
 
+typedef void rb_gvar_compact_t(void *var);
+
 static struct rb_id_table *rb_global_tbl;
 static ID autoload, classpath, tmp_classpath;
 static VALUE autoload_featuremap; /* feature => autoload_i */
@@ -316,6 +318,7 @@ struct rb_global_variable {
     rb_gvar_getter_t *getter;
     rb_gvar_setter_t *setter;
     rb_gvar_marker_t *marker;
+    rb_gvar_compact_t *compactor;
     struct trace_var *trace;
 };
 
@@ -333,6 +336,11 @@ rb_find_global_entry(ID id)
     return entry;
 }
 
+static void
+rb_gvar_undef_compactor(void *var)
+{
+}
+
 MJIT_FUNC_EXPORTED struct rb_global_entry*
 rb_global_entry(ID id)
 {
@@ -348,6 +356,7 @@ rb_global_entry(ID id)
 	var->getter = rb_gvar_undef_getter;
 	var->setter = rb_gvar_undef_setter;
 	var->marker = rb_gvar_undef_marker;
+	var->compactor = rb_gvar_undef_compactor;
 
 	var->block_trace = 0;
 	var->trace = 0;
@@ -364,6 +373,21 @@ rb_gvar_undef_getter(ID id, VALUE *_)
     return Qnil;
 }
 
+static void
+rb_gvar_val_compactor(void *_var)
+{
+    struct rb_global_variable *var = (struct rb_global_variable *)_var;
+
+    VALUE obj = (VALUE)var->data;
+
+    if (obj) {
+        VALUE new = rb_gc_location(obj);
+        if (new != obj) {
+            var->data = (void*)new;
+        }
+    }
+}
+
 void
 rb_gvar_undef_setter(VALUE val, ID id, VALUE *_)
 {
@@ -371,6 +395,7 @@ rb_gvar_undef_setter(VALUE val, ID id, VALUE *_)
     var->getter = rb_gvar_val_getter;
     var->setter = rb_gvar_val_setter;
     var->marker = rb_gvar_val_marker;
+    var->compactor = rb_gvar_val_compactor;
 
     var->data = (void*)val;
 }
@@ -397,7 +422,7 @@ void
 rb_gvar_val_marker(VALUE *var)
 {
     VALUE data = (VALUE)var;
-    if (data) rb_gc_mark(data);
+    if (data) rb_gc_mark_movable(data);
 }
 
 VALUE
@@ -446,6 +471,23 @@ rb_gc_mark_global_tbl(void)
 {
     if (rb_global_tbl)
         rb_id_table_foreach_values(rb_global_tbl, mark_global_entry, 0);
+}
+
+static enum rb_id_table_iterator_result
+update_global_entry(VALUE v, void *ignored)
+{
+    struct rb_global_entry *entry = (struct rb_global_entry *)v;
+    struct rb_global_variable *var = entry->var;
+
+    (*var->compactor)(var);
+    return ID_TABLE_CONTINUE;
+}
+
+void
+rb_gc_update_global_tbl(void)
+{
+    if (rb_global_tbl)
+        rb_id_table_foreach_values(rb_global_tbl, update_global_entry, 0);
 }
 
 static ID

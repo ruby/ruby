@@ -8491,6 +8491,7 @@ gc_update_references(rb_objspace_t * objspace)
     objspace_each_objects_without_setup(objspace, gc_ref_update, objspace);
     rb_vm_update_references(vm);
     rb_transient_heap_update_references();
+    rb_gc_update_global_tbl();
     global_symbols.ids = rb_gc_location(global_symbols.ids);
     global_symbols.dsymbol_fstr_hash = rb_gc_location(global_symbols.dsymbol_fstr_hash);
     gc_update_tbl_refs(objspace, objspace->obj_to_id_tbl);
