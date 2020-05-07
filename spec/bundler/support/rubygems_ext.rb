@@ -109,7 +109,10 @@ module Spec
     end
 
     def test_gemfile
-      Path.root.join("test_gems.rb")
+      gemfile = Path.root.join("test_gems.rb")
+      # for Ruby core repository
+      gemfile = Path.root.join("tool/bundler/test_gems.rb") unless File.exist?(gemfile)
+      gemfile
     end
 
     def test_lockfile
