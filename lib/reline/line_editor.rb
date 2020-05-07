@@ -1258,7 +1258,7 @@ class Reline::LineEditor
             if search_word.empty? and Reline.last_incremental_search
               search_word = Reline.last_incremental_search
             end
-            if @history_pointer # TODO
+            if @history_pointer
               case prev_search_key
               when "\C-r".ord
                 history_pointer_base = 0
