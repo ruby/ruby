@@ -123,7 +123,7 @@ location_mark_entry(rb_backtrace_location_t *fi)
     switch (fi->type) {
       case LOCATION_TYPE_ISEQ:
       case LOCATION_TYPE_ISEQ_CALCED:
-	rb_gc_mark((VALUE)fi->body.iseq.iseq);
+	rb_gc_mark_movable((VALUE)fi->body.iseq.iseq);
 	break;
       case LOCATION_TYPE_CFUNC:
       case LOCATION_TYPE_IFUNC:
@@ -417,8 +417,8 @@ backtrace_mark(void *ptr)
     for (i=0; i<s; i++) {
 	location_mark_entry(&bt->backtrace[i]);
     }
-    rb_gc_mark(bt->strary);
-    rb_gc_mark(bt->locary);
+    rb_gc_mark_movable(bt->strary);
+    rb_gc_mark_movable(bt->locary);
 }
 
 static void
@@ -427,6 +427,34 @@ backtrace_free(void *ptr)
    rb_backtrace_t *bt = (rb_backtrace_t *)ptr;
    if (bt->backtrace) ruby_xfree(bt->backtrace_base);
    ruby_xfree(bt);
+}
+
+static void
+location_update_entry(rb_backtrace_location_t *fi)
+{
+    switch (fi->type) {
+      case LOCATION_TYPE_ISEQ:
+      case LOCATION_TYPE_ISEQ_CALCED:
+	fi->body.iseq.iseq = (rb_iseq_t*)rb_gc_location((VALUE)fi->body.iseq.iseq);
+	break;
+      case LOCATION_TYPE_CFUNC:
+      case LOCATION_TYPE_IFUNC:
+      default:
+	break;
+    }
+}
+
+static void
+backtrace_update(void *ptr)
+{
+    rb_backtrace_t *bt = (rb_backtrace_t *)ptr;
+    size_t i, s = bt->backtrace_size;
+
+    for (i=0; i<s; i++) {
+	location_update_entry(&bt->backtrace[i]);
+    }
+    bt->strary = rb_gc_location(bt->strary);
+    bt->locary = rb_gc_location(bt->locary);
 }
 
 static size_t
@@ -438,7 +466,7 @@ backtrace_memsize(const void *ptr)
 
 static const rb_data_type_t backtrace_data_type = {
     "backtrace",
-    {backtrace_mark, backtrace_free, backtrace_memsize,},
+    {backtrace_mark, backtrace_free, backtrace_memsize, backtrace_update},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
