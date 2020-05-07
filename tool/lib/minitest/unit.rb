@@ -181,10 +181,12 @@ module MiniTest
     def _assertions= n # :nodoc:
       @_assertions = n
     end
+    alias assertions= _assertions=
 
     def _assertions # :nodoc:
       @_assertions ||= 0
     end
+    alias assertions _assertions
 
     ##
     # Fails unless +test+ is a true value.
