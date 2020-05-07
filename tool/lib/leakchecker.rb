@@ -237,23 +237,30 @@ class LeakChecker
   end
 
   def find_encodings
-    [Encoding.default_internal, Encoding.default_external]
+    {
+      'Encoding.default_internal' => Encoding.default_internal,
+      'Encoding.default_external' => Encoding.default_external,
+      'STDIN.internal_encoding' => STDIN.internal_encoding,
+      'STDIN.external_encoding' => STDIN.external_encoding,
+      'STDOUT.internal_encoding' => STDOUT.internal_encoding,
+      'STDOUT.external_encoding' => STDOUT.external_encoding,
+      'STDERR.internal_encoding' => STDERR.internal_encoding,
+      'STDERR.external_encoding' => STDERR.external_encoding,
+    }
   end
 
   def check_encodings(test_name)
-    old_internal, old_external = @encoding_info
-    new_internal, new_external = find_encodings
+    old_encoding_info = @encoding_info
+    @encoding_info = find_encodings
     leaked = false
-    if new_internal != old_internal
-      leaked = true
-      puts "Encoding.default_internal changed: #{test_name} : #{old_internal.inspect} to #{new_internal.inspect}"
+    @encoding_info.each do |key, new_encoding|
+      old_encoding = old_encoding_info[key]
+      if new_encoding != old_encoding
+        leaked = true
+        puts "#{key} changed: #{test_name} : #{old_encoding.inspect} to #{new_encoding.inspect}"
+      end
     end
-    if new_external != old_external
-      leaked = true
-      puts "Encoding.default_external changed: #{test_name} : #{old_external.inspect} to #{new_external.inspect}"
-    end
-    @encoding_info = [new_internal, new_external]
-    return leaked
+    leaked
   end
 
   WARNING_CATEGORIES = %i[deprecated experimental].freeze
