@@ -46,7 +46,7 @@ class Dir
   #     Got main.rb
   #
   #
-  def self.foreach(path, encoding: nil, &block)
+  def self.foreach(path, _encoding = nil, encoding: _encoding)
     __builtin_dir_foreach(path, encoding)
   end
 
@@ -90,7 +90,7 @@ class Dir
   #     Got main.rb
   #
   #
-  def self.each_child(path, encoding: nil)
+  def self.each_child(path, _encoding = nil, encoding: _encoding)
     __builtin_dir_s_each_child(path, encoding)
   end
 
