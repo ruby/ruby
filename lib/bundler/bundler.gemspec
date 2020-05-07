@@ -24,10 +24,10 @@ Gem::Specification.new do |s|
 
   if s.respond_to?(:metadata=)
     s.metadata = {
-      "bug_tracker_uri" => "https://github.com/rubygems/bundler/issues",
-      "changelog_uri" => "https://github.com/rubygems/bundler/blob/master/CHANGELOG.md",
+      "bug_tracker_uri" => "https://github.com/rubygems/rubygems/issues",
+      "changelog_uri" => "https://github.com/rubygems/rubygems/blob/master/bundler/CHANGELOG.md",
       "homepage_uri" => "https://bundler.io/",
-      "source_code_uri" => "https://github.com/rubygems/bundler/",
+      "source_code_uri" => "https://github.com/rubygems/rubygems/",
     }
   end
 

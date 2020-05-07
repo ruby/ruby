@@ -76,7 +76,7 @@ module Bundler
 
           I tried...
 
-        - **Have you read our issues document, https://github.com/rubygems/rubygems/blob/master/doc/contributing/ISSUES.md?**
+        - **Have you read our issues document, https://github.com/rubygems/rubygems/blob/master/bundler/doc/contributing/ISSUES.md?**
 
           ...
 
@@ -100,7 +100,7 @@ module Bundler
         #{issues_url(e)}
 
         If there aren't any reports for this error yet, please create copy and paste the report template above into a new issue. Don't forget to anonymize any private data! The new issue form is located at:
-        https://github.com/rubygems/rubygems/issues/new
+        https://github.com/rubygems/rubygems/issues/new?labels=Bundler
       EOS
     end
 
