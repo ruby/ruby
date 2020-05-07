@@ -232,6 +232,10 @@ def lldb_inspect(debugger, target, result, val):
             append_command_output(debugger, "p (node_type) %d" % nd_type, result)
             val = val.Cast(tRTypedData)
             append_command_output(debugger, "p *(struct RNode *) %0#x" % val.GetValueAsUnsigned(), result)
+        elif flType == RUBY_T_MOVED:
+            tRTypedData = target.FindFirstType("struct RMoved").GetPointerType()
+            val = val.Cast(tRTypedData)
+            append_command_output(debugger, "p *(struct RMoved *) %0#x" % val.GetValueAsUnsigned(), result)
         else:
             print("Not-handled type %0#x" % flType, file=result)
             print(val, file=result)
