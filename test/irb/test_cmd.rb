@@ -18,6 +18,7 @@ module TestIRB
       @home_backup = ENV["HOME"]
       ENV["HOME"] = @tmpdir
       @default_encoding = [Encoding.default_external, Encoding.default_internal]
+      IRB.instance_variable_get(:@CONF).clear
     end
 
     def teardown
