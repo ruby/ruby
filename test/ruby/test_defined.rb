@@ -23,7 +23,7 @@ class TestDefined < Test::Unit::TestCase
     return !defined?(yield)
   end
 
-  def test_defined_gloval_variable
+  def test_defined_global_variable
     $x = nil
 
     assert(defined?($x))		# global variable
