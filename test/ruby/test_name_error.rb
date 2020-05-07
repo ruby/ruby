@@ -127,4 +127,17 @@ class TestNameError < Test::Unit::TestCase
       -> {require ARGV[0]}.call
     end;
   end
+
+  def test_large_receiver_inspect
+    receiver = Class.new do
+      def self.inspect
+        'A' * 120
+      end
+    end
+
+    error = assert_raise(NameError) do
+      receiver::FOO
+    end
+    assert_equal "uninitialized constant #{'A' * 120}::FOO", error.message
+  end
 end
