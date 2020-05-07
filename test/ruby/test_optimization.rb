@@ -705,7 +705,7 @@ class TestRubyOptimization < Test::Unit::TestCase
       def foo &b
       end
       h1 = {}; h2 = {}
-      ObjectSpace.count_objects(h1) # reharsal
+      ObjectSpace.count_objects(h1) # rehearsal
       ObjectSpace.count_objects(h1)
       foo{}
       ObjectSpace.count_objects(h2)
