@@ -18,6 +18,7 @@ module TestIRB
       @home_backup = ENV["HOME"]
       ENV["HOME"] = @tmpdir
       @default_encoding = [Encoding.default_external, Encoding.default_internal]
+      @stdio_encodings = [STDIN, STDOUT, STDERR].map {|io| [io.external_encoding, io.internal_encoding] }
       IRB.instance_variable_get(:@CONF).clear
     end
 
@@ -27,6 +28,9 @@ module TestIRB
       FileUtils.rm_rf(@tmpdir)
       EnvUtil.suppress_warning {
         Encoding.default_external, Encoding.default_internal = *@default_encoding
+        [STDIN, STDOUT, STDERR].zip(@stdio_encodings) do |io, encs|
+          io.set_encoding(*encs)
+        end
       }
     end
 
