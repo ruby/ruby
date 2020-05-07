@@ -474,11 +474,6 @@ precompile_inlinable_iseqs(FILE *f, const rb_iseq_t *iseq, struct compile_status
 bool
 mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id)
 {
-    if (false) { // Now always checking it for debugging.
-        fprintf(f, "#undef OPT_CHECKED_RUN\n");
-        fprintf(f, "#define OPT_CHECKED_RUN 0\n\n");
-    }
-
     struct compile_status status = { .compiled_iseq = iseq->body, .compiled_id = id };
     INIT_COMPILE_STATUS(status, iseq->body, true);
     if ((iseq->body->ci_size > 0 && status.cc_entries_index == -1)
