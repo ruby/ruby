@@ -1791,7 +1791,7 @@ name_err_mesg_to_str(VALUE obj)
 	    d = rb_protect(rb_inspect, obj, &state);
 	    if (state)
 		rb_set_errinfo(Qnil);
-	    if (NIL_P(d) || RSTRING_LEN(d) > 65) {
+	    if (NIL_P(d)) {
 		d = rb_any_to_s(obj);
 	    }
 	    singleton = (RSTRING_LEN(d) > 0 && RSTRING_PTR(d)[0] == '#');
