@@ -767,6 +767,7 @@ module RbInstall
     def generate_bin_script(filename, bindir)
       return if same_bin_script?(filename, bindir)
       super
+      $installed_list.puts(File.join(without_destdir(bindir), filename)) if $installed_list
     end
 
     def same_bin_script?(filename, bindir)
@@ -776,6 +777,11 @@ module RbInstall
       rescue
       end
       false
+    end
+
+    def write_spec
+      super
+      $installed_list.puts(without_destdir(spec_file)) if $installed_list
     end
   end
 end
@@ -824,8 +830,8 @@ end
 def install_default_gem(dir, srcdir)
   gem_dir = Gem.default_dir
   install_dir = with_destdir(gem_dir)
-  Gem.ensure_default_gem_subdirectories(install_dir, $dir_mode)
   prepare "default gems from #{dir}", gem_dir
+  makedirs(Gem.ensure_default_gem_subdirectories(install_dir, $dir_mode).map {|d| File.join(gem_dir, d)})
 
   default_spec_dir = Gem.default_specifications_dir
 
@@ -870,8 +876,8 @@ end
 install?(:ext, :comm, :gem, :'bundled-gems') do
   gem_dir = Gem.default_dir
   install_dir = with_destdir(gem_dir)
-  Gem.ensure_gem_subdirectories(install_dir, $dir_mode)
   prepare "bundled gems", gem_dir
+  makedirs(Gem.ensure_gem_subdirectories(install_dir, $dir_mode).map {|d| File.join(gem_dir, d)})
   installed_gems = {}
   options = {
     :install_dir => install_dir,
@@ -910,6 +916,7 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
   end
   installed_gems, gems = Dir.glob(srcdir+'/gems/*.gem').partition {|gem| installed_gems.key?(File.basename(gem, '.gem'))}
   unless installed_gems.empty?
+    prepare "bundled gem cache", gem_dir+"/cache"
     install installed_gems, gem_dir+"/cache"
   end
   next if gems.empty?
