@@ -20,8 +20,8 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Arithmetic conversion between C's `mode_t` and Ruby's.
  */
-#include "ruby/impl/config.h"
-#include "ruby/impl/arithmetic/int.h"
+#include "ruby/internal/config.h"
+#include "ruby/internal/arithmetic/int.h"
 
 #ifndef NUM2MODET
 # define NUM2MODET RB_NUM2INT

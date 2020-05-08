@@ -21,7 +21,7 @@
  * @brief      Defines #RBIMPL_ATTR_FLAG_ENUM.
  * @see        https://clang.llvm.org/docs/AttributeReference.html#flag_enum
  */
-#include "ruby/impl/has/attribute.h"
+#include "ruby/internal/has/attribute.h"
 
 /** Wraps (or simulates) `__attribute__((flag_enum)` */
 #if RBIMPL_HAS_ATTRIBUTE(flag_enum)

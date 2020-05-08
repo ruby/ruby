@@ -20,12 +20,12 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Ruby-level global variables / constants, visible from C.
  */
-#include "ruby/impl/attr/pure.h"
-#include "ruby/impl/dllexport.h"
-#include "ruby/impl/fl_type.h"
-#include "ruby/impl/special_consts.h"
-#include "ruby/impl/value.h"
-#include "ruby/impl/value_type.h"
+#include "ruby/internal/attr/pure.h"
+#include "ruby/internal/dllexport.h"
+#include "ruby/internal/fl_type.h"
+#include "ruby/internal/special_consts.h"
+#include "ruby/internal/value.h"
+#include "ruby/internal/value_type.h"
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 

@@ -55,9 +55,9 @@
  *
  * So `rb_fd_set` doesn't reject file descriptors bigger than `FD_SETSIZE`.
  */
-#include "ruby/impl/attr/nonnull.h"
-#include "ruby/impl/attr/pure.h"
-#include "ruby/impl/dllexport.h"
+#include "ruby/internal/attr/nonnull.h"
+#include "ruby/internal/attr/pure.h"
+#include "ruby/internal/dllexport.h"
 
 /**@cond INTERNAL_MACRO */
 #define rb_fd_ptr rb_fd_ptr

@@ -353,7 +353,7 @@ RB_DEBUG_COUNTER(load_path_is_not_realpath)
 #ifndef RUBY_DEBUG_COUNTER_H
 #define RUBY_DEBUG_COUNTER_H 1
 
-#include "ruby/impl/config.h"
+#include "ruby/internal/config.h"
 #include <stddef.h>             /* for size_t */
 #include "ruby/ruby.h"          /* for VALUE */
 

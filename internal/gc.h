@@ -9,7 +9,7 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for GC.
  */
-#include "ruby/impl/config.h"
+#include "ruby/internal/config.h"
 
 #include <stddef.h>             /* for size_t */
 

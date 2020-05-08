@@ -43,8 +43,8 @@
  *    RBIMPL_WARNING_POP()
  *    ```
  */
-#include "ruby/impl/compiler_is.h"
-#include "ruby/impl/compiler_since.h"
+#include "ruby/internal/compiler_is.h"
+#include "ruby/internal/compiler_since.h"
 
 #if RBIMPL_COMPILER_SINCE(MSVC, 12, 0, 0)
 # /* Not sure exactly when but it seems VC++ 6.0 is a version with it.*/

@@ -9,7 +9,7 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Encoding::Converter.
  */
-#include "ruby/impl/config.h"
+#include "ruby/internal/config.h"
 #include <stddef.h>             /* for size_t */
 #include "ruby/ruby.h"          /* for VALUE */
 #include "ruby/encoding.h"      /* for rb_econv_t */

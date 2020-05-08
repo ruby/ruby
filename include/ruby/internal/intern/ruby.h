@@ -20,8 +20,8 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Process-global APIs.
  */
-#include "ruby/impl/dllexport.h"
-#include "ruby/impl/value.h"
+#include "ruby/internal/dllexport.h"
+#include "ruby/internal/value.h"
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 

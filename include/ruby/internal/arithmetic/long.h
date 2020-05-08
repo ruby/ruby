@@ -28,19 +28,19 @@
  *      understand the difference of `int`  and `long` when they designed those
  *      macros.
  */
-#include "ruby/impl/config.h"
-#include "ruby/impl/arithmetic/fixnum.h"   /* FIXABLE */
-#include "ruby/impl/arithmetic/intptr_t.h" /* rb_int2big etc.*/
-#include "ruby/impl/assume.h"
-#include "ruby/impl/attr/artificial.h"
-#include "ruby/impl/attr/cold.h"
-#include "ruby/impl/attr/const.h"
-#include "ruby/impl/attr/constexpr.h"
-#include "ruby/impl/attr/noreturn.h"
-#include "ruby/impl/cast.h"
-#include "ruby/impl/dllexport.h"
-#include "ruby/impl/special_consts.h"      /* FIXNUM_FLAG */
-#include "ruby/impl/value.h"
+#include "ruby/internal/config.h"
+#include "ruby/internal/arithmetic/fixnum.h"   /* FIXABLE */
+#include "ruby/internal/arithmetic/intptr_t.h" /* rb_int2big etc.*/
+#include "ruby/internal/assume.h"
+#include "ruby/internal/attr/artificial.h"
+#include "ruby/internal/attr/cold.h"
+#include "ruby/internal/attr/const.h"
+#include "ruby/internal/attr/constexpr.h"
+#include "ruby/internal/attr/noreturn.h"
+#include "ruby/internal/cast.h"
+#include "ruby/internal/dllexport.h"
+#include "ruby/internal/special_consts.h"      /* FIXNUM_FLAG */
+#include "ruby/internal/value.h"
 #include "ruby/assert.h"
 
 #define FIX2LONG     RB_FIX2LONG

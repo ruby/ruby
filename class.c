@@ -23,7 +23,7 @@
  * \{
  */
 
-#include "ruby/impl/config.h"
+#include "ruby/internal/config.h"
 #include <ctype.h>
 
 #include "constant.h"

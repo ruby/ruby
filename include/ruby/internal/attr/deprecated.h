@@ -20,12 +20,12 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #RBIMPL_ATTR_DEPRECATED.
  */
-#include "ruby/impl/compiler_since.h"
-#include "ruby/impl/has/attribute.h"
-#include "ruby/impl/has/c_attribute.h"
-#include "ruby/impl/has/cpp_attribute.h"
-#include "ruby/impl/has/declspec_attribute.h"
-#include "ruby/impl/has/extension.h"
+#include "ruby/internal/compiler_since.h"
+#include "ruby/internal/has/attribute.h"
+#include "ruby/internal/has/c_attribute.h"
+#include "ruby/internal/has/cpp_attribute.h"
+#include "ruby/internal/has/declspec_attribute.h"
+#include "ruby/internal/has/extension.h"
 
 /** Wraps (or simulates) `[[deprecated]]` */
 #if RBIMPL_HAS_EXTENSION(attribute_deprecated_with_message)

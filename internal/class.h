@@ -12,7 +12,7 @@
 #include "id_table.h"           /* for struct rb_id_table */
 #include "internal/gc.h"        /* for RB_OBJ_WRITE */
 #include "internal/serial.h"    /* for rb_serial_t */
-#include "ruby/impl/stdbool.h"     /* for bool */
+#include "ruby/internal/stdbool.h"     /* for bool */
 #include "ruby/intern.h"        /* for rb_alloc_func_t */
 #include "ruby/ruby.h"          /* for struct RBasic */
 

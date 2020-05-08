@@ -20,16 +20,16 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines struct ::RString.
  */
-#include "ruby/impl/config.h"
-#include "ruby/impl/arithmetic/long.h"
-#include "ruby/impl/attr/artificial.h"
-#include "ruby/impl/attr/pure.h"
-#include "ruby/impl/cast.h"
-#include "ruby/impl/core/rbasic.h"
-#include "ruby/impl/dllexport.h"
-#include "ruby/impl/fl_type.h"
-#include "ruby/impl/value_type.h"
-#include "ruby/impl/warning_push.h"
+#include "ruby/internal/config.h"
+#include "ruby/internal/arithmetic/long.h"
+#include "ruby/internal/attr/artificial.h"
+#include "ruby/internal/attr/pure.h"
+#include "ruby/internal/cast.h"
+#include "ruby/internal/core/rbasic.h"
+#include "ruby/internal/dllexport.h"
+#include "ruby/internal/fl_type.h"
+#include "ruby/internal/value_type.h"
+#include "ruby/internal/warning_push.h"
 #include "ruby/assert.h"
 
 #define RSTRING(obj)            RBIMPL_CAST((struct RString *)(obj))

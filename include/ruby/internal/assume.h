@@ -25,11 +25,11 @@
  * - #RBIMPL_ASSUME could fallback to #RBIMPL_UNREACHABLE.
  * - #RBIMPL_UNREACHABLE could fallback to #RBIMPL_ASSUME.
  */
-#include "ruby/impl/config.h"
-#include "ruby/impl/cast.h"
-#include "ruby/impl/compiler_since.h"
-#include "ruby/impl/has/builtin.h"
-#include "ruby/impl/warning_push.h"
+#include "ruby/internal/config.h"
+#include "ruby/internal/cast.h"
+#include "ruby/internal/compiler_since.h"
+#include "ruby/internal/has/builtin.h"
+#include "ruby/internal/warning_push.h"
 
 /** @cond INTERNAL_MACRO */
 #if RBIMPL_COMPILER_SINCE(MSVC, 13, 10, 0)

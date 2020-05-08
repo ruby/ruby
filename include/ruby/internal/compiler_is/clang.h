@@ -20,7 +20,7 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #RBIMPL_COMPILER_IS_Clang.
  */
-#include "ruby/impl/compiler_is/apple.h"
+#include "ruby/internal/compiler_is/apple.h"
 
 #if ! defined(__clang__)
 # define RBIMPL_COMPILER_IS_Clang 0

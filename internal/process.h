@@ -9,7 +9,7 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Process.
  */
-#include "ruby/impl/config.h"      /* for rb_pid_t */
+#include "ruby/internal/config.h"      /* for rb_pid_t */
 #include <stddef.h>             /* for size_t */
 
 #ifdef HAVE_SYS_TYPES_H

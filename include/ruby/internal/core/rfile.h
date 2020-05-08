@@ -20,8 +20,8 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines struct ::RFile.
  */
-#include "ruby/impl/core/rbasic.h"
-#include "ruby/impl/cast.h"
+#include "ruby/internal/core/rbasic.h"
+#include "ruby/internal/cast.h"
 
 /* rb_io_t is in ruby/io.h.  The header file has historically not been included
  * into ruby/ruby.h.  We follow that tradition. */

@@ -21,8 +21,8 @@
  * @brief      Defines #RBIMPL_STATIC_ASSERT.
  */
 #include <assert.h>
-#include "ruby/impl/has/extension.h"
-#include "ruby/impl/compiler_since.h"
+#include "ruby/internal/has/extension.h"
+#include "ruby/internal/compiler_since.h"
 
 /** @cond INTERNAL_MACRO */
 #if defined(__cplusplus) && defined(__cpp_static_assert)

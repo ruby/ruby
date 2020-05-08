@@ -20,7 +20,7 @@
  *             extension libraries. They could be written in C++98.
  * @brief      #RBIMPL_ATTR_ENUM_EXTENSIBILITY.
  */
-#include "ruby/impl/has/attribute.h"
+#include "ruby/internal/has/attribute.h"
 
 /** Wraps (or simulates) `__attribute__((enum_extensibility))` */
 #if RBIMPL_HAS_ATTRIBUTE(enum_extensibility)

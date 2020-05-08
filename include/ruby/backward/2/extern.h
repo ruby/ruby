@@ -20,7 +20,7 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines old #EXTERN
  */
-#include "ruby/impl/config.h"      /* for STRINGIZE */
+#include "ruby/internal/config.h"      /* for STRINGIZE */
 
 /**
  * @brief      Synonym of #RUBY_EXTERN.

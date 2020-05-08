@@ -20,7 +20,7 @@
 #define YYLTYPE rb_code_location_t
 #define YYLTYPE_IS_DECLARED 1
 
-#include "ruby/impl/config.h"
+#include "ruby/internal/config.h"
 
 #include <ctype.h>
 #include <errno.h>

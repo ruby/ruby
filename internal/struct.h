@@ -9,7 +9,7 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Struct.
  */
-#include "ruby/impl/stdbool.h"     /* for bool */
+#include "ruby/internal/stdbool.h"     /* for bool */
 #include "internal/gc.h"        /* for RB_OBJ_WRITE */
 #include "ruby/ruby.h"          /* for struct RBasic */
 

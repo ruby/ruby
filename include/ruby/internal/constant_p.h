@@ -26,7 +26,7 @@
  * @see https://bugs.llvm.org/show_bug.cgi?id=4898
  * @see https://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html
  */
-#include "ruby/impl/has/builtin.h"
+#include "ruby/internal/has/builtin.h"
 
 #if RBIMPL_HAS_BUILTIN(__builtin_constant_p)
 # define RBIMPL_CONSTANT_P(expr) __builtin_constant_p(expr)

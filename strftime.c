@@ -47,7 +47,7 @@
  * January 1996
  */
 
-#include "ruby/impl/config.h"
+#include "ruby/internal/config.h"
 
 #ifndef GAWK
 #include <stdio.h>

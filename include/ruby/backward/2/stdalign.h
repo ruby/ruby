@@ -20,7 +20,7 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #RUBY_ALIGNAS / #RUBY_ALIGNOF
  */
-#include "ruby/impl/stdalign.h"
+#include "ruby/internal/stdalign.h"
 
 #undef RUBY_ALIGNAS
 #undef RUBY_ALIGNOF

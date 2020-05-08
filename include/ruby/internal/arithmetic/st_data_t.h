@@ -20,13 +20,13 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Arithmetic conversion between C's `st_data_t` and Ruby's.
  */
-#include "ruby/impl/arithmetic/fixnum.h"
-#include "ruby/impl/arithmetic/long.h"
-#include "ruby/impl/attr/artificial.h"
-#include "ruby/impl/attr/const.h"
-#include "ruby/impl/attr/constexpr.h"
-#include "ruby/impl/cast.h"
-#include "ruby/impl/value.h"
+#include "ruby/internal/arithmetic/fixnum.h"
+#include "ruby/internal/arithmetic/long.h"
+#include "ruby/internal/attr/artificial.h"
+#include "ruby/internal/attr/const.h"
+#include "ruby/internal/attr/constexpr.h"
+#include "ruby/internal/cast.h"
+#include "ruby/internal/value.h"
 #include "ruby/assert.h"
 #include "ruby/st.h"
 

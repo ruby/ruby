@@ -20,7 +20,7 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #RBIMPL_ATTR_ERROR.
  */
-#include "ruby/impl/has/attribute.h"
+#include "ruby/internal/has/attribute.h"
 
 /** Wraps (or simulates) `__attribute__((error))` */
 #if RBIMPL_HAS_ATTRIBUTE(error)

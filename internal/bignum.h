@@ -9,14 +9,14 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Bignums.
  */
-#include "ruby/impl/config.h"      /* for HAVE_LIBGMP */
+#include "ruby/internal/config.h"      /* for HAVE_LIBGMP */
 #include <stddef.h>             /* for size_t */
 
 #ifdef HAVE_SYS_TYPES_H
 # include <sys/types.h>         /* for ssize_t (note: on Windows ssize_t is */
 #endif                          /* `#define`d in ruby/config.h) */
 
-#include "ruby/impl/stdbool.h"     /* for bool */
+#include "ruby/internal/stdbool.h"     /* for bool */
 #include "ruby/ruby.h"          /* for struct RBasic */
 
 #ifndef BDIGIT

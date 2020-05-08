@@ -20,10 +20,10 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Arithmetic conversion between C's `size_t` and Ruby's.
  */
-#include "ruby/impl/config.h"
-#include "ruby/impl/arithmetic/int.h"
-#include "ruby/impl/arithmetic/long.h"
-#include "ruby/impl/arithmetic/long_long.h"
+#include "ruby/internal/config.h"
+#include "ruby/internal/arithmetic/int.h"
+#include "ruby/internal/arithmetic/long.h"
+#include "ruby/internal/arithmetic/long_long.h"
 #include "ruby/backward/2/long_long.h"
 
 #if SIZEOF_SIZE_T == SIZEOF_LONG_LONG

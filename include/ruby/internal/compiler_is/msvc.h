@@ -20,8 +20,8 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #RBIMPL_COMPILER_IS_MSVC.
  */
-#include "ruby/impl/compiler_is/clang.h"
-#include "ruby/impl/compiler_is/intel.h"
+#include "ruby/internal/compiler_is/clang.h"
+#include "ruby/internal/compiler_is/intel.h"
 
 #if ! defined(_MSC_VER)
 # define RBIMPL_COMPILER_IS_MSVC 0

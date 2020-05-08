@@ -20,9 +20,9 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #RBIMPL_ATTR_RESTRICT.
  */
-#include "ruby/impl/compiler_since.h"
-#include "ruby/impl/has/attribute.h"
-#include "ruby/impl/token_paste.h"
+#include "ruby/internal/compiler_since.h"
+#include "ruby/internal/has/attribute.h"
+#include "ruby/internal/token_paste.h"
 
 /* :FIXME:  config.h  includes conflicting  `#define  restrict`.   MSVC can  be
  * detected  using `RBIMPL_COMPILER_SINCE()`,  but  Clang &  family cannot  use

@@ -9,7 +9,7 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header to suppres / mandate warnings.
  */
-#include "ruby/impl/warning_push.h"
+#include "ruby/internal/warning_push.h"
 #define COMPILER_WARNING_PUSH          RBIMPL_WARNING_PUSH()
 #define COMPILER_WARNING_POP           RBIMPL_WARNING_POP()
 #define COMPILER_WARNING_ERROR(flag)   RBIMPL_WARNING_ERROR(flag)

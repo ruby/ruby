@@ -11,7 +11,7 @@
 
 **********************************************************************/
 
-#include "ruby/impl/config.h"
+#include "ruby/internal/config.h"
 
 #include <math.h>
 #include <stdarg.h>

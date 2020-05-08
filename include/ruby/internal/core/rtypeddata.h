@@ -20,23 +20,23 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines struct ::RTypedData.
  */
-#include "ruby/impl/config.h"
+#include "ruby/internal/config.h"
 
 #ifdef STDC_HEADERS
 # include <stddef.h>
 #endif
 
-#include "ruby/impl/assume.h"
-#include "ruby/impl/attr/artificial.h"
-#include "ruby/impl/attr/pure.h"
-#include "ruby/impl/cast.h"
-#include "ruby/impl/core/rbasic.h"
-#include "ruby/impl/core/rdata.h"
-#include "ruby/impl/dllexport.h"
-#include "ruby/impl/error.h"
-#include "ruby/impl/fl_type.h"
-#include "ruby/impl/stdbool.h"
-#include "ruby/impl/value_type.h"
+#include "ruby/internal/assume.h"
+#include "ruby/internal/attr/artificial.h"
+#include "ruby/internal/attr/pure.h"
+#include "ruby/internal/cast.h"
+#include "ruby/internal/core/rbasic.h"
+#include "ruby/internal/core/rdata.h"
+#include "ruby/internal/dllexport.h"
+#include "ruby/internal/error.h"
+#include "ruby/internal/fl_type.h"
+#include "ruby/internal/stdbool.h"
+#include "ruby/internal/value_type.h"
 
 #define HAVE_TYPE_RB_DATA_TYPE_T     1
 #define HAVE_RB_DATA_TYPE_T_FUNCTION 1

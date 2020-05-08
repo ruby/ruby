@@ -67,16 +67,16 @@
  *      `__builtin_types_compatible_p`, and in doing  so we need to distinguish
  *      ::rb_f_notimplement from others, by type.
  */
-#include "ruby/impl/attr/maybe_unused.h"
-#include "ruby/impl/attr/nonnull.h"
-#include "ruby/impl/attr/weakref.h"
-#include "ruby/impl/cast.h"
-#include "ruby/impl/config.h"
-#include "ruby/impl/has/attribute.h"
-#include "ruby/impl/intern/class.h"
-#include "ruby/impl/intern/vm.h"
-#include "ruby/impl/method.h"
-#include "ruby/impl/value.h"
+#include "ruby/internal/attr/maybe_unused.h"
+#include "ruby/internal/attr/nonnull.h"
+#include "ruby/internal/attr/weakref.h"
+#include "ruby/internal/cast.h"
+#include "ruby/internal/config.h"
+#include "ruby/internal/has/attribute.h"
+#include "ruby/internal/intern/class.h"
+#include "ruby/internal/intern/vm.h"
+#include "ruby/internal/method.h"
+#include "ruby/internal/value.h"
 #include "ruby/backward/2/stdarg.h"
 
 #if defined(__cplusplus)

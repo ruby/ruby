@@ -20,7 +20,7 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines old #TRUE / #FALSE
  */
-#include "ruby/impl/stdbool.h"
+#include "ruby/internal/stdbool.h"
 
 #ifndef FALSE
 # define FALSE false

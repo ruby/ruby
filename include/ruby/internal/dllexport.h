@@ -20,8 +20,8 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Tewaking visibility of C variables/functions.
  */
-#include "ruby/impl/config.h"
-#include "ruby/impl/compiler_is.h"
+#include "ruby/internal/config.h"
+#include "ruby/internal/compiler_is.h"
 
 /* For MinGW, we need __declspec(dllimport) for RUBY_EXTERN on MJIT.
    mswin's RUBY_EXTERN already has that. See also: win32/Makefile.sub */

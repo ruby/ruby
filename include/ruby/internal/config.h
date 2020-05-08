@@ -26,7 +26,7 @@
 # include RUBY_EXTCONF_H
 #endif
 
-#include "ruby/impl/compiler_since.h"
+#include "ruby/internal/compiler_since.h"
 
 #if defined(__cplusplus)
 #/* __builtin_choose_expr and __builtin_types_compatible aren't available

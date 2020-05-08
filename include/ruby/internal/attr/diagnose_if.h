@@ -20,8 +20,8 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #RBIMPL_ATTR_DIAGNOSE_IF.
  */
-#include "ruby/impl/has/attribute.h"
-#include "ruby/impl/warning_push.h"
+#include "ruby/internal/has/attribute.h"
+#include "ruby/internal/warning_push.h"
 
 /** Wraps (or simulates) `__attribute__((diagnose_if))` */
 #if RBIMPL_COMPILER_BEFORE(Clang, 5, 0, 0)

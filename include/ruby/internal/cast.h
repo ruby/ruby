@@ -25,9 +25,9 @@
  * public headers.  They could be used  from C++, and C-style casts could issue
  * warnings.  Ruby internals are pure C so they should not bother.
  */
-#include "ruby/impl/compiler_since.h"
-#include "ruby/impl/has/warning.h"
-#include "ruby/impl/warning_push.h"
+#include "ruby/internal/compiler_since.h"
+#include "ruby/internal/has/warning.h"
+#include "ruby/internal/warning_push.h"
 
 #if ! defined(__cplusplus)
 # define RBIMPL_CAST(expr) (expr)

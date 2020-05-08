@@ -61,8 +61,8 @@
  *       Itanium C++ ABI has zero-cost  exception handling), but does impact on
  *       generated binary size.  This is bad.
  */
-#include "ruby/impl/compiler_since.h"
-#include "ruby/impl/has/feature.h"
+#include "ruby/internal/compiler_since.h"
+#include "ruby/internal/has/feature.h"
 
 /** Wraps (or simulates) C++11 `noexcept` */
 #if ! defined(__cplusplus)

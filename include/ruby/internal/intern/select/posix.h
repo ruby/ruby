@@ -20,7 +20,7 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Public APIs to provide ::rb_fd_select().
  */
-#include "ruby/impl/config.h"
+#include "ruby/internal/config.h"
 
 #ifdef HAVE_SYS_SELECT_H
 # include <sys/select.h>        /* for select(2) (modern POSIX) */
@@ -30,8 +30,8 @@
 # include <unistd.h>            /* for select(2) (archaic UNIX) */
 #endif
 
-#include "ruby/impl/attr/pure.h"
-#include "ruby/impl/attr/const.h"
+#include "ruby/internal/attr/pure.h"
+#include "ruby/internal/attr/const.h"
 
 typedef fd_set rb_fdset_t;
 

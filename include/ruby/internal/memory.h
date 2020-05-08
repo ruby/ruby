@@ -20,7 +20,7 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Memory management stuff.
  */
-#include "ruby/impl/config.h"
+#include "ruby/internal/config.h"
 
 #ifdef STDC_HEADERS
 # include <stddef.h>
@@ -43,20 +43,20 @@
 # pragma intrinsic(_umul128)
 #endif
 
-#include "ruby/impl/attr/alloc_size.h"
-#include "ruby/impl/attr/const.h"
-#include "ruby/impl/attr/constexpr.h"
-#include "ruby/impl/attr/noalias.h"
-#include "ruby/impl/attr/nonnull.h"
-#include "ruby/impl/attr/noreturn.h"
-#include "ruby/impl/attr/restrict.h"
-#include "ruby/impl/attr/returns_nonnull.h"
-#include "ruby/impl/cast.h"
-#include "ruby/impl/dllexport.h"
-#include "ruby/impl/has/builtin.h"
-#include "ruby/impl/stdalign.h"
-#include "ruby/impl/stdbool.h"
-#include "ruby/impl/xmalloc.h"
+#include "ruby/internal/attr/alloc_size.h"
+#include "ruby/internal/attr/const.h"
+#include "ruby/internal/attr/constexpr.h"
+#include "ruby/internal/attr/noalias.h"
+#include "ruby/internal/attr/nonnull.h"
+#include "ruby/internal/attr/noreturn.h"
+#include "ruby/internal/attr/restrict.h"
+#include "ruby/internal/attr/returns_nonnull.h"
+#include "ruby/internal/cast.h"
+#include "ruby/internal/dllexport.h"
+#include "ruby/internal/has/builtin.h"
+#include "ruby/internal/stdalign.h"
+#include "ruby/internal/stdbool.h"
+#include "ruby/internal/xmalloc.h"
 #include "ruby/backward/2/limits.h"
 #include "ruby/backward/2/long_long.h"
 #include "ruby/backward/2/assume.h"

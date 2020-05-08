@@ -20,8 +20,8 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #RBIMPL_ATTR_PURE.
  */
-#include "ruby/impl/compiler_since.h"
-#include "ruby/impl/has/attribute.h"
+#include "ruby/internal/compiler_since.h"
+#include "ruby/internal/has/attribute.h"
 #include "ruby/assert.h"
 
 /** Wraps (or simulates) `__attribute__((pure))` */

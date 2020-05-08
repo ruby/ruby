@@ -9,14 +9,14 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header absorbing C compipler differences.
  */
-#include "ruby/impl/compiler_since.h"
-#include "ruby/impl/has/attribute.h"
-#include "ruby/impl/has/builtin.h"
-#include "ruby/impl/has/c_attribute.h"
-#include "ruby/impl/has/declspec_attribute.h"
-#include "ruby/impl/has/extension.h"
-#include "ruby/impl/has/feature.h"
-#include "ruby/impl/has/warning.h"
+#include "ruby/internal/compiler_since.h"
+#include "ruby/internal/has/attribute.h"
+#include "ruby/internal/has/builtin.h"
+#include "ruby/internal/has/c_attribute.h"
+#include "ruby/internal/has/declspec_attribute.h"
+#include "ruby/internal/has/extension.h"
+#include "ruby/internal/has/feature.h"
+#include "ruby/internal/has/warning.h"
 #include "ruby/backward/2/gcc_version_since.h"
 
 #define MSC_VERSION_SINCE(_)   RBIMPL_COMPILER_SINCE(MSVC, (_) / 100, (_) % 100, 0)

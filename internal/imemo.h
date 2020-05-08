@@ -9,11 +9,11 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      IMEMO: Internal memo object.
  */
-#include "ruby/impl/config.h"
+#include "ruby/internal/config.h"
 #include <stddef.h>             /* for size_t */
 #include "internal/array.h"     /* for rb_ary_tmp_new_fill */
 #include "internal/gc.h"        /* for RB_OBJ_WRITE */
-#include "ruby/impl/stdbool.h"     /* for bool */
+#include "ruby/internal/stdbool.h"     /* for bool */
 #include "ruby/ruby.h"          /* for rb_block_call_func_t */
 
 #ifndef IMEMO_DEBUG

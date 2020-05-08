@@ -20,9 +20,9 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #RBIMPL_HAS_BUILTIN.
  */
-#include "ruby/impl/config.h"
-#include "ruby/impl/compiler_since.h"
-#include "ruby/impl/token_paste.h"
+#include "ruby/internal/config.h"
+#include "ruby/internal/compiler_since.h"
+#include "ruby/internal/token_paste.h"
 
 #if defined(__has_builtin)
 # if RBIMPL_COMPILER_IS(Intel)
