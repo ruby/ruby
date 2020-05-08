@@ -75,6 +75,8 @@ RSpec.describe "bundle update" do
     end
 
     it "notices when you change the repo url in the Gemfile" do
+      skip "some of monorepo issues" if Gem.win_platform?
+
       build_git "foo", :path => lib_path("foo_one")
       build_git "foo", :path => lib_path("foo_two")
 
@@ -131,10 +133,8 @@ RSpec.describe "bundle update" do
           s.add_dependency "submodule"
         end
 
-        Dir.chdir(lib_path("has_submodule-1.0")) do
-          sys_exec "git submodule add #{lib_path("submodule-1.0")} submodule-1.0"
-          `git commit -m "submodulator"`
-        end
+        sys_exec "git submodule add #{lib_path("submodule-1.0")} submodule-1.0", :dir => lib_path("has_submodule-1.0")
+        sys_exec "git commit -m \"submodulator\"", :dir => lib_path("has_submodule-1.0")
       end
 
       it "it unlocks the source when submodules are added to a git source" do
@@ -183,6 +183,8 @@ RSpec.describe "bundle update" do
     end
 
     it "errors with a message when the .git repo is gone" do
+      skip "some of monorepo issues" if Gem.win_platform?
+
       build_git "foo", "1.0"
 
       install_gemfile <<-G
@@ -214,24 +216,15 @@ RSpec.describe "bundle update" do
     end
 
     it "shows the previous version of the gem" do
-      build_git "rails", "3.0", :path => lib_path("rails")
+      skip "some of monorepo issues" if Gem.win_platform?
+
+      build_git "rails", "2.3.2", :path => lib_path("rails")
 
       install_gemfile <<-G
         gem "rails", :git => "#{lib_path("rails")}"
       G
 
-      lockfile <<-G
-        GIT
-          remote: #{lib_path("rails")}
-          specs:
-            rails (2.3.2)
-
-        PLATFORMS
-          #{generic_local_platform}
-
-        DEPENDENCIES
-          rails!
-      G
+      update_git "rails", "3.0", :path => lib_path("rails"), :gemspec => true
 
       bundle "update", :all => true
       expect(out).to include("Using rails 3.0 (was 2.3.2) from #{lib_path("rails")} (at master@#{revision_for(lib_path("rails"))[0..6]})")
@@ -259,14 +252,12 @@ RSpec.describe "bundle update" do
 
       bundle "update --source foo"
 
-      in_app_root do
-        run <<-RUBY
-          require 'foo'
-          puts "WIN" if defined?(FOO_PREV_REF)
-        RUBY
+      run <<-RUBY
+        require 'foo'
+        puts "WIN" if defined?(FOO_PREV_REF)
+      RUBY
 
-        expect(out).to eq("WIN")
-      end
+      expect(out).to eq("WIN")
     end
 
     it "unlocks gems that were originally pulled in by the source" do

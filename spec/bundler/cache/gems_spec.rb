@@ -7,7 +7,7 @@ RSpec.describe "bundle cache" do
         gem 'rack'
       G
 
-      system_gems "rack-1.0.0", :path => :bundle_path
+      system_gems "rack-1.0.0", :path => path
       bundle! :cache
     end
 
@@ -27,7 +27,7 @@ RSpec.describe "bundle cache" do
     end
 
     it "uses the cache as a source when installing gems with --local" do
-      system_gems [], :path => :bundle_path
+      system_gems [], :path => default_bundle_path
       bundle "install --local"
 
       expect(the_bundle).to include_gems("rack 1.0.0")
@@ -46,7 +46,7 @@ RSpec.describe "bundle cache" do
     end
 
     it "does not reinstall gems from the cache if they exist in the bundle" do
-      system_gems "rack-1.0.0", :path => :bundle_path
+      system_gems "rack-1.0.0", :path => default_bundle_path
 
       gemfile <<-G
         gem "rack"
@@ -69,17 +69,19 @@ RSpec.describe "bundle cache" do
 
       bundle "cache"
 
-      expect(bundled_app("Gemfile.lock")).to exist
+      expect(bundled_app_lock).to exist
     end
   end
 
   context "using system gems" do
     before { bundle! "config set path.system true" }
+    let(:path) { system_gem_path }
     it_behaves_like "when there are only gemsources"
   end
 
   context "installing into a local path" do
     before { bundle! "config set path ./.bundle" }
+    let(:path) { local_gem_path }
     it_behaves_like "when there are only gemsources"
   end
 
@@ -165,11 +167,11 @@ RSpec.describe "bundle cache" do
     end
 
     it "should not explode if the lockfile is not present" do
-      FileUtils.rm(bundled_app("Gemfile.lock"))
+      FileUtils.rm(bundled_app_lock)
 
       bundle :cache
 
-      expect(bundled_app("Gemfile.lock")).to exist
+      expect(bundled_app_lock).to exist
     end
   end
 

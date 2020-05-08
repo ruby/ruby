@@ -378,21 +378,18 @@ RSpec.describe "gemcutter's dependency API" do
         s.add_dependency "foo"
       end
       build_gem "missing"
-      # need to hit the limit
-      1.upto(Bundler::Source::Rubygems::API_REQUEST_LIMIT) do |i|
-        build_gem "gem#{i}"
-      end
 
       FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
     end
 
-    gemfile <<-G
+    api_request_limit = low_api_request_limit_for(gem_repo2)
+
+    install_gemfile! <<-G, :artifice => "endpoint_extra_missing", :env => { "BUNDLER_SPEC_API_REQUEST_LIMIT" => api_request_limit.to_s }
       source "#{source_uri}"
       source "#{source_uri}/extra"
       gem "back_deps"
     G
 
-    bundle :install, :artifice => "endpoint_extra_missing"
     expect(the_bundle).to include_gems "back_deps 1.0"
   end
 
@@ -402,22 +399,19 @@ RSpec.describe "gemcutter's dependency API" do
         s.add_dependency "foo"
       end
       build_gem "missing"
-      # need to hit the limit
-      1.upto(Bundler::Source::Rubygems::API_REQUEST_LIMIT) do |i|
-        build_gem "gem#{i}"
-      end
 
       FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
     end
 
-    gemfile <<-G
+    api_request_limit = low_api_request_limit_for(gem_repo2)
+
+    install_gemfile! <<-G, :artifice => "endpoint_extra_missing", :env => { "BUNDLER_SPEC_API_REQUEST_LIMIT" => api_request_limit.to_s }
       source "#{source_uri}"
       source "#{source_uri}/extra" do
         gem "back_deps"
       end
     G
 
-    bundle :install, :artifice => "endpoint_extra_missing"
     expect(the_bundle).to include_gems "back_deps 1.0"
   end
 
@@ -497,6 +491,8 @@ RSpec.describe "gemcutter's dependency API" do
   end
 
   it "installs the binstubs", :bundler => "< 3" do
+    skip "exec format error" if Gem.win_platform?
+
     gemfile <<-G
       source "#{source_uri}"
       gem "rack"
@@ -555,7 +551,7 @@ RSpec.describe "gemcutter's dependency API" do
     let(:user)     { "user" }
     let(:password) { "pass" }
     let(:basic_auth_source_uri) do
-      uri          = URI.parse(source_uri)
+      uri          = Bundler::URI.parse(source_uri)
       uri.user     = user
       uri.password = password
 
@@ -710,7 +706,7 @@ RSpec.describe "gemcutter's dependency API" do
         gem "rack"
       G
 
-      bundle :install, :env => { "RUBYOPT" => "-I#{bundled_app("broken_ssl")}" }
+      bundle :install, :env => { "RUBYOPT" => opt_add("-I#{bundled_app("broken_ssl")}", ENV["RUBYOPT"]) }
       expect(err).to include("OpenSSL")
     end
   end
@@ -736,25 +732,23 @@ RSpec.describe "gemcutter's dependency API" do
   end
 
   context ".gemrc with sources is present" do
-    before do
+    it "uses other sources declared in the Gemfile" do
       File.open(home(".gemrc"), "w") do |file|
         file.puts({ :sources => ["https://rubygems.org"] }.to_yaml)
       end
-    end
 
-    after do
-      home(".gemrc").rmtree
-    end
+      begin
+        gemfile <<-G
+          source "#{source_uri}"
+          gem 'rack'
+        G
 
-    it "uses other sources declared in the Gemfile" do
-      gemfile <<-G
-        source "#{source_uri}"
-        gem 'rack'
-      G
+        bundle "install", :artifice => "endpoint_marshal_fail"
 
-      bundle "install", :artifice => "endpoint_marshal_fail"
-
-      expect(exitstatus).to eq(0) if exitstatus
+        expect(exitstatus).to eq(0) if exitstatus
+      ensure
+        home(".gemrc").rmtree
+      end
     end
   end
 end

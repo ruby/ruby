@@ -24,6 +24,7 @@ RSpec.describe "bundle list" do
 
         gem "rack"
         gem "rspec", :group => [:test]
+        gem "rails", :group => [:production]
       G
     end
 
@@ -32,6 +33,7 @@ RSpec.describe "bundle list" do
         bundle! "list --without-group test"
 
         expect(out).to include("  * rack (1.0.0)")
+        expect(out).to include("  * rails (2.3.2)")
         expect(out).not_to include("  * rspec (1.2.7)")
       end
     end
@@ -43,6 +45,16 @@ RSpec.describe "bundle list" do
         expect(err).to eq "`random` group could not be found."
       end
     end
+
+    context "when multiple groups" do
+      it "prints the gems not in the specified groups" do
+        bundle! "list --without-group test production"
+
+        expect(out).to include("  * rack (1.0.0)")
+        expect(out).not_to include("  * rails (2.3.2)")
+        expect(out).not_to include("  * rspec (1.2.7)")
+      end
+    end
   end
 
   describe "with only-group option" do
@@ -52,6 +64,7 @@ RSpec.describe "bundle list" do
 
         gem "rack"
         gem "rspec", :group => [:test]
+        gem "rails", :group => [:production]
       G
     end
 
@@ -69,6 +82,16 @@ RSpec.describe "bundle list" do
         bundle "list --only-group random"
 
         expect(err).to eq "`random` group could not be found."
+      end
+    end
+
+    context "when multiple groups" do
+      it "prints the gems in the specified groups" do
+        bundle! "list --only-group default production"
+
+        expect(out).to include("  * rack (1.0.0)")
+        expect(out).to include("  * rails (2.3.2)")
+        expect(out).not_to include("  * rspec (1.2.7)")
       end
     end
   end

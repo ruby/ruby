@@ -28,8 +28,8 @@ RSpec.describe "bundle install with gemfile that uses eval_gemfile" do
 
   context "eval-ed Gemfile has relative-path gems" do
     before do
-      build_lib("a", :path => "gems/a")
-      create_file "nested/Gemfile-nested", <<-G
+      build_lib("a", :path => bundled_app("gems/a"))
+      create_file bundled_app("nested/Gemfile-nested"), <<-G
         gem "a", :path => "../gems/a"
       G
 

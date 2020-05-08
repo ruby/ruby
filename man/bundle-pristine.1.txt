@@ -1,4 +1,4 @@
-BUNDLE-PRISTINE(1)					    BUNDLE-PRISTINE(1)
+BUNDLE-PRISTINE(1)                                          BUNDLE-PRISTINE(1)
 
 
 
@@ -9,7 +9,7 @@ SYNOPSIS
        bundle pristine
 
 DESCRIPTION
-       pristine  restores  the	installed gems in the bundle to their pristine
+       pristine  restores  the  installed gems in the bundle to their pristine
        condition using the local gem cache from  RubyGems.  For  git  gems,  a
        forced checkout will be performed.
 
@@ -18,8 +18,8 @@ DESCRIPTION
        gem's git repository as if one were installing from scratch.
 
        Note:  the  Bundler  gem  cannot be restored to its original state with
-       pristine. One also cannot use bundle pristine on  gems  with  a	'path'
-       option  in  the	Gemfile,  because  bundler has no original copy it can
+       pristine. One also cannot use bundle pristine on  gems  with  a  'path'
+       option  in  the  Gemfile,  because  bundler has no original copy it can
        restore from.
 
        When is it practical to use bundle pristine?
@@ -35,10 +35,10 @@ DESCRIPTION
        --all cleans all installed gems for that Ruby version.
 
        If a developer forgets which gems in their project they might have been
-       debugging,  the Rubygems gem pristine [GEMNAME] command may be inconve-
-       nient. One can avoid waiting for gem pristine --all,  and  instead  run
-       bundle pristine.
+       debugging,   the   Rubygems  gem  pristine  [GEMNAME]  command  may  be
+       inconvenient. One can avoid waiting for gem pristine --all, and instead
+       run bundle pristine.
 
 
 
-				 January 2020		    BUNDLE-PRISTINE(1)
+                                   May 2020                 BUNDLE-PRISTINE(1)

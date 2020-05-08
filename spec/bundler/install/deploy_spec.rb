@@ -43,13 +43,12 @@ RSpec.describe "install with --deployment or --frozen" do
 
   it "still works if you are not in the app directory and specify --gemfile" do
     bundle! "install"
-    Dir.chdir tmp do
-      simulate_new_machine
-      bundle! :install,
-        forgotten_command_line_options(:gemfile => "#{tmp}/bundled_app/Gemfile",
-                                       :deployment => true,
-                                       :path => "vendor/bundle")
-    end
+    simulate_new_machine
+    bundle! :install,
+      forgotten_command_line_options(:gemfile => "#{tmp}/bundled_app/Gemfile",
+                                     :deployment => true,
+                                     :path => "vendor/bundle",
+                                     :dir => tmp)
     expect(the_bundle).to include_gems "rack 1.0"
   end
 
@@ -65,6 +64,8 @@ RSpec.describe "install with --deployment or --frozen" do
   end
 
   it "works when you bundle exec bundle" do
+    skip "doesn't find bundle" if Gem.win_platform?
+
     bundle! :install
     bundle "install --deployment"
     bundle! "exec bundle check"
@@ -332,6 +333,8 @@ RSpec.describe "install with --deployment or --frozen" do
     end
 
     it "explodes if you unpin a source" do
+      skip "some of monorepo issues" if Gem.win_platform?
+
       build_git "rack"
 
       install_gemfile <<-G
@@ -352,6 +355,8 @@ RSpec.describe "install with --deployment or --frozen" do
     end
 
     it "explodes if you unpin a source, leaving it pinned somewhere else" do
+      skip "some of monorepo issues" if Gem.win_platform?
+
       build_lib "foo", :path => lib_path("rack/foo")
       build_git "rack", :path => lib_path("rack")
 

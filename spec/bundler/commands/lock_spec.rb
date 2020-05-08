@@ -38,8 +38,8 @@ RSpec.describe "bundle lock" do
             actionpack (= 2.3.2)
             activerecord (= 2.3.2)
             activeresource (= 2.3.2)
-            rake (= 12.3.2)
-          rake (12.3.2)
+            rake (= 13.0.1)
+          rake (13.0.1)
           with_license (1.0)
 
       PLATFORMS
@@ -133,7 +133,7 @@ RSpec.describe "bundle lock" do
   end
 
   it "update specific gems using --update" do
-    lockfile @lockfile.gsub("2.3.2", "2.3.1").gsub("12.3.2", "10.0.1")
+    lockfile @lockfile.gsub("2.3.2", "2.3.1").gsub("13.0.1", "10.0.1")
 
     bundle "lock --update rails rake"
 
@@ -195,6 +195,8 @@ RSpec.describe "bundle lock" do
         gem 'foo'
         gem 'qux'
       G
+
+      allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
     end
 
     it "single gem updates dependent gem to minor" do
@@ -213,12 +215,15 @@ RSpec.describe "bundle lock" do
   it "supports adding new platforms" do
     bundle! "lock --add-platform java x86-mingw32"
 
+    allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
     lockfile = Bundler::LockfileParser.new(read_lockfile)
     expect(lockfile.platforms).to match_array(local_platforms.unshift(java, mingw).uniq)
   end
 
   it "supports adding the `ruby` platform" do
     bundle! "lock --add-platform ruby"
+
+    allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
     lockfile = Bundler::LockfileParser.new(read_lockfile)
     expect(lockfile.platforms).to match_array(local_platforms.unshift("ruby").uniq)
   end
@@ -231,6 +236,7 @@ RSpec.describe "bundle lock" do
   it "allows removing platforms" do
     bundle! "lock --add-platform java x86-mingw32"
 
+    allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
     lockfile = Bundler::LockfileParser.new(read_lockfile)
     expect(lockfile.platforms).to match_array(local_platforms.unshift(java, mingw).uniq)
 
@@ -245,7 +251,7 @@ RSpec.describe "bundle lock" do
     expect(err).to include("Removing all platforms from the bundle is not allowed")
   end
 
-  # from https://github.com/bundler/bundler/issues/4896
+  # from https://github.com/rubygems/bundler/issues/4896
   it "properly adds platforms when platform requirements come from different dependencies" do
     build_repo4 do
       build_gem "ffi", "1.9.14"

@@ -24,21 +24,24 @@ Gem::Specification.new do |s|
 
   if s.respond_to?(:metadata=)
     s.metadata = {
-      "bug_tracker_uri" => "https://github.com/bundler/bundler/issues",
-      "changelog_uri" => "https://github.com/bundler/bundler/blob/master/CHANGELOG.md",
+      "bug_tracker_uri" => "https://github.com/rubygems/bundler/issues",
+      "changelog_uri" => "https://github.com/rubygems/bundler/blob/master/CHANGELOG.md",
       "homepage_uri" => "https://bundler.io/",
-      "source_code_uri" => "https://github.com/bundler/bundler/",
+      "source_code_uri" => "https://github.com/rubygems/bundler/",
     }
   end
 
   s.required_ruby_version     = ">= 2.3.0"
   s.required_rubygems_version = ">= 2.5.2"
 
-  s.files = (Dir.glob("lib/bundler/**/*", File::FNM_DOTMATCH) + Dir.glob("man/bundler*") + Dir.glob("libexec/bundle*")).reject {|f| File.directory?(f) }
+  s.files = Dir.glob("{lib,man,exe}/**/*", File::FNM_DOTMATCH).reject {|f| File.directory?(f) }
 
-  s.files += ["lib/bundler.rb"]
+  # Include the CHANGELOG.md, LICENSE.md, README.md manually
+  s.files += %w[CHANGELOG.md LICENSE.md README.md]
+  # include the gemspec itself because warbler breaks w/o it
+  s.files += %w[bundler.gemspec]
 
-  s.bindir        = "libexec"
+  s.bindir        = "exe"
   s.executables   = %w[bundle bundler]
   s.require_paths = ["lib"]
 end

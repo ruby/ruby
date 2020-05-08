@@ -62,7 +62,7 @@ RSpec.describe "real world edgecases", :realworld => true, :sometimes => true do
   end
 
   it "is able to update a top-level dependency when there is a conflict on a shared transitive child" do
-    # from https://github.com/bundler/bundler/issues/5031
+    # from https://github.com/rubygems/bundler/issues/5031
 
     gemfile <<-G
       source "https://rubygems.org"
@@ -194,7 +194,7 @@ RSpec.describe "real world edgecases", :realworld => true, :sometimes => true do
     expect(lockfile).to include(rubygems_version("paperclip", "~> 5.1.0"))
   end
 
-  # https://github.com/bundler/bundler/issues/1500
+  # https://github.com/rubygems/bundler/issues/1500
   it "does not fail install because of gem plugins" do
     realworld_system_gems("open_gem --version 1.4.2", "rake --version 0.9.2")
     gemfile <<-G

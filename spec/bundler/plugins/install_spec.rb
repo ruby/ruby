@@ -155,6 +155,10 @@ RSpec.describe "bundler plugin install" do
   end
 
   context "Gemfile eval" do
+    before do
+      allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
+    end
+
     it "installs plugins listed in gemfile" do
       gemfile <<-G
         source '#{file_uri_for(gem_repo2)}'
@@ -245,6 +249,7 @@ RSpec.describe "bundler plugin install" do
 
   describe "local plugin" do
     it "is installed when inside an app" do
+      allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
       gemfile ""
       bundle "plugin install foo --source #{file_uri_for(gem_repo2)}"
 
@@ -287,21 +292,16 @@ RSpec.describe "bundler plugin install" do
         end
 
         # outside the app
-        Dir.chdir tmp
-        bundle "plugin install fubar --source #{file_uri_for(gem_repo2)}"
+        bundle "plugin install fubar --source #{file_uri_for(gem_repo2)}", :dir => tmp
       end
 
       it "inside the app takes precedence over global plugin" do
-        Dir.chdir bundled_app
-
         bundle "shout"
         expect(out).to eq("local_one")
       end
 
       it "outside the app global plugin is used" do
-        Dir.chdir tmp
-
-        bundle "shout"
+        bundle "shout", :dir => tmp
         expect(out).to eq("global_one")
       end
     end

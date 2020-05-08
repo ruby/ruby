@@ -79,7 +79,7 @@ class BundlerVCRHTTP < Net::HTTP
     end
 
     def read_stored_request(path)
-      contents = File.read(path)
+      contents = File.binread(path)
       headers = {}
       method = nil
       path = nil

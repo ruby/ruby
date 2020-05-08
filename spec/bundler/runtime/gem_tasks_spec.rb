@@ -29,7 +29,7 @@ RSpec.describe "require 'bundler/gem_tasks'" do
 
   it "includes the relevant tasks" do
     with_gem_path_as(Spec::Path.base_system_gems.to_s) do
-      sys_exec "#{rake} -T", "RUBYOPT" => "-I#{lib_dir}"
+      sys_exec "#{rake} -T", :env => { "RUBYOPT" => opt_add("-I#{lib_dir}", ENV["RUBYOPT"]) }
     end
 
     expect(err).to be_empty
@@ -47,7 +47,7 @@ RSpec.describe "require 'bundler/gem_tasks'" do
 
   it "defines a working `rake install` task" do
     with_gem_path_as(Spec::Path.base_system_gems.to_s) do
-      sys_exec "#{rake} install", "RUBYOPT" => "-I#{lib_dir}"
+      sys_exec "#{rake} install", :env => { "RUBYOPT" => opt_add("-I#{lib_dir}", ENV["RUBYOPT"]) }
     end
 
     expect(err).to be_empty
@@ -60,13 +60,11 @@ RSpec.describe "require 'bundler/gem_tasks'" do
   context "rake build when path has spaces" do
     before do
       spaced_bundled_app = tmp.join("bundled app")
-      FileUtils.mv bundled_app, spaced_bundled_app
-      Dir.chdir(spaced_bundled_app)
+      FileUtils.cp_r bundled_app, spaced_bundled_app
+      bundle! "exec rake build", :dir => spaced_bundled_app
     end
 
     it "still runs successfully" do
-      bundle! "exec rake build"
-
       expect(err).to be_empty
     end
   end

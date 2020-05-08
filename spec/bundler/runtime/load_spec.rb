@@ -7,6 +7,7 @@ RSpec.describe "Bundler.load" do
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
+      allow(Bundler::SharedHelpers).to receive(:pwd).and_return(bundled_app)
     end
 
     it "provides a list of the env dependencies" do
@@ -32,6 +33,7 @@ RSpec.describe "Bundler.load" do
         gem "rack"
       G
       bundle! :install
+      allow(Bundler::SharedHelpers).to receive(:pwd).and_return(bundled_app)
     end
 
     it "provides a list of the env dependencies" do
@@ -101,7 +103,7 @@ RSpec.describe "Bundler.load" do
         source "#{file_uri_for(gem_repo1)}"
         gem "activerecord"
       G
-
+      allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
       Bundler.load.specs.each do |spec|
         expect(spec.to_yaml).not_to match(/^\s+source:/)
         expect(spec.to_yaml).not_to match(/^\s+groups:/)

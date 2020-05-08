@@ -404,22 +404,19 @@ The checksum of /versions does not match the checksum provided by the server! So
         s.add_dependency "foo"
       end
       build_gem "missing"
-      # need to hit the limit
-      1.upto(Bundler::Source::Rubygems::API_REQUEST_LIMIT) do |i|
-        build_gem "gem#{i}"
-      end
 
       FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
     end
 
-    gemfile <<-G
+    api_request_limit = low_api_request_limit_for(gem_repo2)
+
+    install_gemfile! <<-G, :artifice => "compact_index_extra_missing", :env => { "BUNDLER_SPEC_API_REQUEST_LIMIT" => api_request_limit.to_s }
       source "#{source_uri}"
       source "#{source_uri}/extra" do
         gem "back_deps"
       end
     G
 
-    bundle! :install, :artifice => "compact_index_extra_missing"
     expect(the_bundle).to include_gems "back_deps 1.0"
   end
 
@@ -429,15 +426,13 @@ The checksum of /versions does not match the checksum provided by the server! So
         s.add_dependency "foo"
       end
       build_gem "missing"
-      # need to hit the limit
-      1.upto(Bundler::Source::Rubygems::API_REQUEST_LIMIT) do |i|
-        build_gem "gem#{i}"
-      end
 
       FileUtils.rm_rf Dir[gem_repo4("gems/foo-*.gem")]
     end
 
-    install_gemfile! <<-G, :artifice => "compact_index_extra_api_missing"
+    api_request_limit = low_api_request_limit_for(gem_repo4)
+
+    install_gemfile! <<-G, :artifice => "compact_index_extra_api_missing", :env => { "BUNDLER_SPEC_API_REQUEST_LIMIT" => api_request_limit.to_s }
       source "#{source_uri}"
       source "#{source_uri}/extra" do
         gem "back_deps"
@@ -523,6 +518,8 @@ The checksum of /versions does not match the checksum provided by the server! So
   end
 
   it "installs the binstubs", :bundler => "< 3" do
+    skip "exec format error" if Gem.win_platform?
+
     gemfile <<-G
       source "#{source_uri}"
       gem "rack"
@@ -581,7 +578,7 @@ The checksum of /versions does not match the checksum provided by the server! So
     let(:user)     { "user" }
     let(:password) { "pass" }
     let(:basic_auth_source_uri) do
-      uri          = URI.parse(source_uri)
+      uri          = Bundler::URI.parse(source_uri)
       uri.user     = user
       uri.password = password
 
@@ -736,7 +733,7 @@ The checksum of /versions does not match the checksum provided by the server! So
         gem "rack"
       G
 
-      bundle :install, :env => { "RUBYOPT" => "-I#{bundled_app("broken_ssl")}" }
+      bundle :install, :env => { "RUBYOPT" => opt_add("-I#{bundled_app("broken_ssl")}", ENV["RUBYOPT"]) }
       expect(err).to include("OpenSSL")
     end
   end
@@ -762,27 +759,29 @@ The checksum of /versions does not match the checksum provided by the server! So
   end
 
   context ".gemrc with sources is present" do
-    before do
+    it "uses other sources declared in the Gemfile" do
       File.open(home(".gemrc"), "w") do |file|
         file.puts({ :sources => ["https://rubygems.org"] }.to_yaml)
       end
-    end
 
-    after do
-      home(".gemrc").rmtree
-    end
+      begin
+        gemfile <<-G
+          source "#{source_uri}"
+          gem 'rack'
+        G
 
-    it "uses other sources declared in the Gemfile" do
-      gemfile <<-G
-        source "#{source_uri}"
-        gem 'rack'
-      G
+        bundle! :install, :artifice => "compact_index_forbidden"
 
-      bundle! :install, :artifice => "compact_index_forbidden"
+        expect(exitstatus).to eq(0) if exitstatus
+      ensure
+        home(".gemrc").rmtree
+      end
     end
   end
 
   it "performs partial update with a non-empty range" do
+    skip "HTTP_RANGE not set" if Gem.win_platform?
+
     gemfile <<-G
       source "#{source_uri}"
       gem 'rack', '0.9.1'
@@ -885,7 +884,7 @@ The checksum of /versions does not match the checksum provided by the server! So
     end
 
     it "raises when the checksum is the wrong length" do
-      install_gemfile <<-G, :artifice => "compact_index_wrong_gem_checksum", :env => { "BUNDLER_SPEC_RACK_CHECKSUM" => "checksum!" }
+      install_gemfile <<-G, :artifice => "compact_index_wrong_gem_checksum", :env => { "BUNDLER_SPEC_RACK_CHECKSUM" => "checksum!", "DEBUG" => "1" }, :verbose => true
         source "#{source_uri}"
         gem "rack"
       G
@@ -915,7 +914,7 @@ The checksum of /versions does not match the checksum provided by the server! So
       source "#{source_uri}"
       gem "rails"
     G
-    deps = [Gem::Dependency.new("rake", "= 12.3.2"),
+    deps = [Gem::Dependency.new("rake", "= 13.0.1"),
             Gem::Dependency.new("actionpack", "= 2.3.2"),
             Gem::Dependency.new("activerecord", "= 2.3.2"),
             Gem::Dependency.new("actionmailer", "= 2.3.2"),
@@ -933,7 +932,7 @@ Either installing with `--full-index` or running `bundle update rails` should fi
         gem "activemerchant"
       end
     G
-    gem_command! :uninstall, "activemerchant"
+    gem_command! "uninstall activemerchant"
     bundle! "update rails", :artifice => "compact_index"
     expect(lockfile.scan(/activemerchant \(/).size).to eq(1)
   end

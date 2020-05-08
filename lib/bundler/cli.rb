@@ -345,8 +345,8 @@ module Bundler
 
     desc "list", "List all gems in the bundle"
     method_option "name-only", :type => :boolean, :banner => "print only the gem names"
-    method_option "only-group", :type => :string, :banner => "print gems from a particular group"
-    method_option "without-group", :type => :string, :banner => "print all gems except from a group"
+    method_option "only-group", :type => :array, :default => [], :banner => "print gems from a given set of groups"
+    method_option "without-group", :type => :array, :default => [], :banner => "print all gems except from a given set of groups"
     method_option "paths", :type => :boolean, :banner => "print the path to each gem in the bundle"
     def list
       require_relative "cli/list"
@@ -570,8 +570,9 @@ module Bundler
     method_option :ext, :type => :boolean, :default => false, :desc => "Generate the boilerplate for C extension code"
     method_option :git, :type => :boolean, :default => true, :desc => "Initialize a git repo inside your library."
     method_option :mit, :type => :boolean, :desc => "Generate an MIT license file. Set a default with `bundle config set gem.mit true`."
+    method_option :rubocop, :type => :boolean, :desc => "Add rubocop to the generated Rakefile and gemspec. Set a default with `bundle config set gem.rubocop true`."
     method_option :test, :type => :string, :lazy_default => "rspec", :aliases => "-t", :banner => "rspec",
-                         :desc => "Generate a test directory for your library, either rspec or minitest. Set a default with `bundle config set gem.test rspec`."
+                         :desc => "Generate a test directory for your library, either rspec, minitest or test-unit. Set a default with `bundle config set gem.test rspec`."
     def gem(name)
     end
 
@@ -815,7 +816,7 @@ module Bundler
       option = current_command.options[name]
       flag_name = option.switch_name
 
-      name_index = ARGV.find {|arg| flag_name == arg }
+      name_index = ARGV.find {|arg| flag_name == arg.split("=")[0] }
       return unless name_index
 
       value = options[name]

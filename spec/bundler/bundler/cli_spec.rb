@@ -14,6 +14,8 @@ RSpec.describe "bundle executable" do
   end
 
   it "looks for a binary and executes it if it's named bundler-<task>" do
+    skip "obscure error" if Gem.win_platform?
+
     File.open(tmp("bundler-testtasks"), "w", 0o755) do |f|
       ruby = ENV["RUBY"] || "/usr/bin/env ruby"
       f.puts "#!#{ruby}\nputs 'Hello, world'\n"
@@ -91,7 +93,7 @@ RSpec.describe "bundle executable" do
 
   context "when ENV['BUNDLE_GEMFILE'] is set to an empty string" do
     it "ignores it" do
-      gemfile bundled_app("Gemfile"), <<-G
+      gemfile bundled_app_gemfile, <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem 'rack'
       G
@@ -104,7 +106,7 @@ RSpec.describe "bundle executable" do
 
   context "when ENV['RUBYGEMS_GEMDEPS'] is set" do
     it "displays a warning" do
-      gemfile bundled_app("Gemfile"), <<-G
+      gemfile bundled_app_gemfile, <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem 'rack'
       G
@@ -149,7 +151,7 @@ RSpec.describe "bundle executable" do
     before do
       bundle! "config set --global disable_version_check false"
 
-      simulate_bundler_version(bundler_version)
+      system_gems "bundler-#{bundler_version}"
       if latest_version
         info_path = home(".bundle/cache/compact_index/rubygems.org.443.29b0360b937aa4d161703e6160654e47/info/bundler")
         info_path.parent.mkpath
@@ -174,7 +176,7 @@ RSpec.describe "bundle executable" do
     context "when the latest version is greater than the current version" do
       let(:latest_version) { "222.0" }
       it "prints the version warning" do
-        bundle "fail"
+        bundle "fail", :system_bundler => true, :env => { "BUNDLER_SPEC_IGNORE_DEFAULT_BUNDLER_GEM" => "true" }
         expect(err).to start_with(<<-EOS.strip)
 The latest bundler is #{latest_version}, but you are currently running #{bundler_version}.
 To install the latest version, run `gem install bundler`
@@ -199,7 +201,7 @@ To install the latest version, run `gem install bundler`
       context "and is a pre-release" do
         let(:latest_version) { "222.0.0.pre.4" }
         it "prints the version warning" do
-          bundle "fail"
+          bundle "fail", :system_bundler => true, :env => { "BUNDLER_SPEC_IGNORE_DEFAULT_BUNDLER_GEM" => "true" }
           expect(err).to start_with(<<-EOS.strip)
 The latest bundler is #{latest_version}, but you are currently running #{bundler_version}.
 To install the latest version, run `gem install bundler --pre`

@@ -113,11 +113,12 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
       bundle! "install"
 
       expect(the_bundle).to include_gems "platform_specific 1.0 RUBY"
+      expect(the_bundle).to not_include_gems "nokogiri"
     end
   end
 
   it "allows specifying only-ruby-platform on windows with gemspec dependency" do
-    build_lib("foo", "1.0", :path => ".") do |s|
+    build_lib("foo", "1.0", :path => bundled_app) do |s|
       s.add_dependency "rack"
     end
 

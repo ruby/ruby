@@ -4,9 +4,12 @@ RSpec.describe Bundler::SharedHelpers do
   let(:ext_lock_double) { double(:ext_lock) }
 
   before do
+    pwd_stub
     allow(Bundler.rubygems).to receive(:ext_lock).and_return(ext_lock_double)
     allow(ext_lock_double).to receive(:synchronize) {|&block| block.call }
   end
+
+  let(:pwd_stub) { allow(subject).to receive(:pwd).and_return(bundled_app) }
 
   subject { Bundler::SharedHelpers }
 
@@ -77,7 +80,7 @@ RSpec.describe Bundler::SharedHelpers do
       let(:global_rubygems_dir) { Pathname.new(bundled_app) }
 
       before do
-        Dir.mkdir ".bundle"
+        Dir.mkdir bundled_app(".bundle")
         allow(Bundler.rubygems).to receive(:user_home).and_return(global_rubygems_dir)
       end
 
@@ -91,7 +94,7 @@ RSpec.describe Bundler::SharedHelpers do
       let(:expected_bundle_dir_path) { Pathname.new("#{bundled_app}/.bundle") }
 
       before do
-        Dir.mkdir ".bundle"
+        Dir.mkdir bundled_app(".bundle")
         allow(Bundler.rubygems).to receive(:user_home).and_return(global_rubygems_dir)
       end
 
@@ -109,7 +112,8 @@ RSpec.describe Bundler::SharedHelpers do
 
     shared_examples_for "correctly determines whether to return a Gemfile path" do
       context "currently in directory with a Gemfile" do
-        before { File.new("Gemfile", "w") }
+        before { FileUtils.touch(bundled_app_gemfile) }
+        after { FileUtils.rm(bundled_app_gemfile) }
 
         it "returns path of the bundle Gemfile" do
           expect(subject.in_bundle?).to eq("#{bundled_app}/Gemfile")
@@ -147,22 +151,24 @@ RSpec.describe Bundler::SharedHelpers do
   describe "#chdir" do
     let(:op_block) { proc { Dir.mkdir "nested_dir" } }
 
-    before { Dir.mkdir "chdir_test_dir" }
+    before { Dir.mkdir bundled_app("chdir_test_dir") }
 
     it "executes the passed block while in the specified directory" do
-      subject.chdir("chdir_test_dir", &op_block)
-      expect(Pathname.new("chdir_test_dir/nested_dir")).to exist
+      subject.chdir(bundled_app("chdir_test_dir"), &op_block)
+      expect(bundled_app("chdir_test_dir/nested_dir")).to exist
     end
   end
 
   describe "#pwd" do
+    let(:pwd_stub) { nil }
+
     it "returns the current absolute path" do
-      expect(subject.pwd).to eq(bundled_app)
+      expect(subject.pwd).to eq(root)
     end
   end
 
   describe "#with_clean_git_env" do
-    let(:with_clean_git_env_block) { proc { Dir.mkdir "with_clean_git_env_test_dir" } }
+    let(:with_clean_git_env_block) { proc { Dir.mkdir bundled_app("with_clean_git_env_test_dir") } }
 
     before do
       ENV["GIT_DIR"] = "ORIGINAL_ENV_GIT_DIR"
@@ -171,20 +177,20 @@ RSpec.describe Bundler::SharedHelpers do
 
     it "executes the passed block" do
       subject.with_clean_git_env(&with_clean_git_env_block)
-      expect(Pathname.new("with_clean_git_env_test_dir")).to exist
+      expect(bundled_app("with_clean_git_env_test_dir")).to exist
     end
 
     context "when a block is passed" do
       let(:with_clean_git_env_block) do
         proc do
-          Dir.mkdir "git_dir_test_dir" unless ENV["GIT_DIR"].nil?
-          Dir.mkdir "git_work_tree_test_dir" unless ENV["GIT_WORK_TREE"].nil?
+          Dir.mkdir bundled_app("git_dir_test_dir") unless ENV["GIT_DIR"].nil?
+          Dir.mkdir bundled_app("git_work_tree_test_dir") unless ENV["GIT_WORK_TREE"].nil?
         end end
 
       it "uses a fresh git env for execution" do
         subject.with_clean_git_env(&with_clean_git_env_block)
-        expect(Pathname.new("git_dir_test_dir")).to_not exist
-        expect(Pathname.new("git_work_tree_test_dir")).to_not exist
+        expect(bundled_app("git_dir_test_dir")).to_not exist
+        expect(bundled_app("git_work_tree_test_dir")).to_not exist
       end
     end
 
@@ -224,7 +230,7 @@ RSpec.describe Bundler::SharedHelpers do
     end
 
     shared_examples_for "ENV['PATH'] gets set correctly" do
-      before { Dir.mkdir ".bundle" }
+      before { Dir.mkdir bundled_app(".bundle") }
 
       it "ensures bundle bin path is in ENV['PATH']" do
         subject.set_bundle_environment
@@ -244,7 +250,7 @@ RSpec.describe Bundler::SharedHelpers do
       let(:ruby_lib_path) { "stubbed_ruby_lib_dir" }
 
       before do
-        allow(Bundler::SharedHelpers).to receive(:bundler_ruby_lib).and_return(ruby_lib_path)
+        allow(subject).to receive(:bundler_ruby_lib).and_return(ruby_lib_path)
       end
 
       it "ensures bundler's ruby version lib path is in ENV['RUBYLIB']" do
@@ -263,7 +269,7 @@ RSpec.describe Bundler::SharedHelpers do
     end
 
     it "ignores if bundler_ruby_lib is same as rubylibdir" do
-      allow(Bundler::SharedHelpers).to receive(:bundler_ruby_lib).and_return(RbConfig::CONFIG["rubylibdir"])
+      allow(subject).to receive(:bundler_ruby_lib).and_return(RbConfig::CONFIG["rubylibdir"])
 
       subject.set_bundle_environment
 
@@ -422,8 +428,8 @@ RSpec.describe Bundler::SharedHelpers do
       let(:file_op_block) { proc {|path| FileUtils.mkdir_p(path) } }
 
       it "performs the operation in the passed block" do
-        subject.filesystem_access("./test_dir", &file_op_block)
-        expect(Pathname.new("test_dir")).to exist
+        subject.filesystem_access(bundled_app("test_dir"), &file_op_block)
+        expect(bundled_app("test_dir")).to exist
       end
     end
 

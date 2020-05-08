@@ -1,4 +1,4 @@
-BUNDLE-INJECT(1)					      BUNDLE-INJECT(1)
+BUNDLE-INJECT(1)                                              BUNDLE-INJECT(1)
 
 
 
@@ -19,8 +19,8 @@ DESCRIPTION
 
 
 
-	   bundle install
-	   bundle inject 'rack' '> 0'
+           bundle install
+           bundle inject 'rack' '> 0'
 
 
 
@@ -29,4 +29,4 @@ DESCRIPTION
 
 
 
-				 January 2020		      BUNDLE-INJECT(1)
+                                   May 2020                   BUNDLE-INJECT(1)

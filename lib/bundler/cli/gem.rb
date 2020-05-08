@@ -12,6 +12,7 @@ module Bundler
     TEST_FRAMEWORK_VERSIONS = {
       "rspec" => "3.0",
       "minitest" => "5.0",
+      "test-unit" => "3.0",
     }.freeze
 
     attr_reader :options, :gem_name, :thor, :name, :target
@@ -62,7 +63,7 @@ module Bundler
       ensure_safe_gem_name(name, constant_array)
 
       templates = {
-        "Gemfile.tt" => "Gemfile",
+        "#{Bundler.preferred_gemfile_name}.tt" => Bundler.preferred_gemfile_name,
         "lib/newgem.rb.tt" => "lib/#{namespaced_path}.rb",
         "lib/newgem/version.rb.tt" => "lib/#{namespaced_path}/version.rb",
         "newgem.gemspec.tt" => "#{name}.gemspec",
@@ -92,15 +93,21 @@ module Bundler
             "spec/spec_helper.rb.tt" => "spec/spec_helper.rb",
             "spec/newgem_spec.rb.tt" => "spec/#{namespaced_path}_spec.rb"
           )
+          config[:test_task] = :spec
         when "minitest"
           templates.merge!(
-            "test/test_helper.rb.tt" => "test/test_helper.rb",
-            "test/newgem_test.rb.tt" => "test/#{namespaced_path}_test.rb"
+            "test/minitest/test_helper.rb.tt" => "test/test_helper.rb",
+            "test/minitest/newgem_test.rb.tt" => "test/#{namespaced_path}_test.rb"
           )
+          config[:test_task] = :test
+        when "test-unit"
+          templates.merge!(
+            "test/test-unit/test_helper.rb.tt" => "test/test_helper.rb",
+            "test/test-unit/newgem_test.rb.tt" => "test/#{namespaced_path}_test.rb"
+          )
+          config[:test_task] = :test
         end
       end
-
-      config[:test_task] = config[:test] == "minitest" ? "test" : "spec"
 
       if ask_and_set(:mit, "Do you want to license your code permissively under the MIT license?",
         "This means that any other developer or company will be legally allowed to use your code " \
@@ -122,6 +129,15 @@ module Bundler
         config[:coc] = true
         Bundler.ui.info "Code of conduct enabled in config"
         templates.merge!("CODE_OF_CONDUCT.md.tt" => "CODE_OF_CONDUCT.md")
+      end
+
+      if ask_and_set(:rubocop, "Do you want to add rubocop as a dependency for gems you generate?",
+        "RuboCop is a static code analyzer that has out-of-the-box rules for many " \
+        "of the guidelines in the community style guide. " \
+        "For more information, see the RuboCop docs (https://docs.rubocop.org/en/stable/) " \
+        "and the Ruby Style Guides (https://github.com/rubocop-hq/ruby-style-guide).")
+        config[:rubocop] = true
+        Bundler.ui.info "RuboCop enabled in config"
       end
 
       templates.merge!("exe/newgem.tt" => "exe/#{name}") if config[:exe]
@@ -199,9 +215,9 @@ module Bundler
 
       if test_framework.nil?
         Bundler.ui.confirm "Do you want to generate tests with your gem?"
-        result = Bundler.ui.ask "Type 'rspec' or 'minitest' to generate those test files now and " \
-          "in the future. rspec/minitest/(none):"
-        if result =~ /rspec|minitest/
+        result = Bundler.ui.ask "Type 'rspec', 'minitest' or 'test-unit' to generate those test files now and " \
+          "in the future. rspec/minitest/test-unit/(none):"
+        if result =~ /rspec|minitest|test-unit/
           test_framework = result
         else
           test_framework = false

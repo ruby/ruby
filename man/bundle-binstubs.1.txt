@@ -1,4 +1,4 @@
-BUNDLE-BINSTUBS(1)					    BUNDLE-BINSTUBS(1)
+BUNDLE-BINSTUBS(1)                                          BUNDLE-BINSTUBS(1)
 
 
 
@@ -13,8 +13,8 @@ DESCRIPTION
        small Ruby file (a binstub) that loads Bundler, runs the  command,  and
        puts  it  into  bin/. Binstubs are a shortcut-or alternative- to always
        using bundle exec. This gives you a file that can be run directly,  and
-       one  that  will always run the correct gem version used by the applica-
-       tion.
+       one  that  will  always  run  the  correct  gem  version  used  by  the
+       application.
 
        For example, if you run bundle binstubs rspec-core, Bundler will create
        the file bin/rspec. That file will contain enough code to load Bundler,
@@ -26,18 +26,18 @@ DESCRIPTION
 
 OPTIONS
        --force
-	      Overwrite existing binstubs if they exist.
+              Overwrite existing binstubs if they exist.
 
        --path The location to install the specified binstubs to. This defaults
-	      to bin.
+              to bin.
 
        --standalone
-	      Makes  binstubs  that  can work without depending on Rubygems or
-	      Bundler at runtime.
+              Makes  binstubs  that  can work without depending on Rubygems or
+              Bundler at runtime.
 
        --shebang
-	      Specify a different shebang executable  name  than  the  default
-	      (default 'ruby')
+              Specify a different shebang executable  name  than  the  default
+              (default 'ruby')
 
 BUNDLE INSTALL --BINSTUBS
        To  create  binstubs  for  all  the  gems in the bundle you can use the
@@ -45,4 +45,4 @@ BUNDLE INSTALL --BINSTUBS
 
 
 
-				 January 2020		    BUNDLE-BINSTUBS(1)
+                                   May 2020                 BUNDLE-BINSTUBS(1)

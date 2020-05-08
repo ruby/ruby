@@ -155,7 +155,7 @@ RSpec.describe "Bundler.require" do
       begin
         Bundler.require
       rescue LoadError => e
-        $stderr.puts "ZOMG LOAD ERROR: \#{e.message}"
+        warn "ZOMG LOAD ERROR: \#{e.message}"
       end
     RUBY
     run(cmd)
@@ -228,7 +228,7 @@ RSpec.describe "Bundler.require" do
         begin
           Bundler.require
         rescue LoadError => e
-          $stderr.puts "ZOMG LOAD ERROR" if e.message.include?("Could not open library 'libfuuu-1.0'")
+          warn "ZOMG LOAD ERROR" if e.message.include?("Could not open library 'libfuuu-1.0'")
         end
       RUBY
       run(cmd)
@@ -251,7 +251,7 @@ RSpec.describe "Bundler.require" do
         begin
           Bundler.require
         rescue LoadError => e
-          $stderr.puts "ZOMG LOAD ERROR: \#{e.message}"
+          warn "ZOMG LOAD ERROR: \#{e.message}"
         end
       RUBY
       run(cmd)
@@ -423,7 +423,7 @@ RSpec.describe "Bundler.require with platform specific dependencies" do
       source "#{file_uri_for(gem_repo1)}"
 
       platforms :#{not_local_tag} do
-        gem "fail", :require => "omgomg"
+        gem "platform_specific", :require => "omgomg"
       end
 
       gem "rack", "1.0.0"
@@ -434,6 +434,8 @@ RSpec.describe "Bundler.require with platform specific dependencies" do
   end
 
   it "requires gems pinned to multiple platforms, including the current one" do
+    skip "platform issues" if Gem.win_platform?
+
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
 

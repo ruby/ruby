@@ -75,16 +75,6 @@ module Spec
       end
     end
 
-    RSpec::Matchers.define :have_rubyopts do |*args|
-      args = args.flatten
-      args = args.first.split(/\s+/) if args.size == 1
-
-      match do |actual|
-        actual = actual.split(/\s+/) if actual.is_a?(String)
-        args.all? {|arg| actual.include?(arg) } && actual.uniq.size == actual.size
-      end
-    end
-
     RSpec::Matchers.define :be_sorted do
       diffable
       attr_reader :expected
@@ -214,11 +204,11 @@ module Spec
     end
 
     def lockfile_should_be(expected)
-      expect(bundled_app("Gemfile.lock")).to have_lockfile(expected)
+      expect(bundled_app_lock).to have_lockfile(expected)
     end
 
     def gemfile_should_be(expected)
-      expect(bundled_app("Gemfile")).to read_as(strip_whitespace(expected))
+      expect(bundled_app_gemfile).to read_as(strip_whitespace(expected))
     end
   end
 end

@@ -9,10 +9,10 @@ RSpec.describe Bundler::CompactIndexClient::Updater do
   let(:local_path) { Pathname("/tmp/localpath") }
   let(:remote_path) { double(:remote_path) }
 
-  subject(:updater) { described_class.new(fetcher) }
+  let!(:updater) { described_class.new(fetcher) }
 
   context "when the ETag header is missing" do
-    # Regression test for https://github.com/bundler/bundler/issues/5463
+    # Regression test for https://github.com/rubygems/bundler/issues/5463
 
     let(:response) { double(:response, :body => "") }
 
@@ -42,8 +42,6 @@ RSpec.describe Bundler::CompactIndexClient::Updater do
   end
 
   context "when bundler doesn't have permissions on Dir.tmpdir" do
-    let(:response) { double(:response, :body => "") }
-
     it "Errno::EACCES is raised" do
       allow(Dir).to receive(:mktmpdir) { raise Errno::EACCES }
 

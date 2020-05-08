@@ -74,15 +74,6 @@ module Bundler
       :x64_mingw_26 => Gem::Platform::X64_MINGW,
     }.freeze
 
-    REVERSE_PLATFORM_MAP = {}.tap do |reverse_platform_map|
-      PLATFORM_MAP.each do |key, value|
-        reverse_platform_map[value] ||= []
-        reverse_platform_map[value] << key
-      end
-
-      reverse_platform_map.each {|_, platforms| platforms.freeze }
-    end.freeze
-
     def initialize(name, version, options = {}, &blk)
       type = options["type"] || :runtime
       super(name, version, type)

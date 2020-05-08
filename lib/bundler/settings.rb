@@ -12,7 +12,6 @@ module Bundler
       allow_offline_install
       auto_clean_without_path
       auto_install
-      auto_config_jobs
       cache_all
       cache_all_platforms
       default_install_uses_path
@@ -22,7 +21,6 @@ module Bundler
       disable_exec_load
       disable_local_branch_check
       disable_multisource
-      disable_platform_warnings
       disable_shared_gems
       disable_version_check
       force_ruby_platform

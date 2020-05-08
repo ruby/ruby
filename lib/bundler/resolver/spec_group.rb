@@ -9,6 +9,7 @@ module Bundler
       attr_accessor :ignores_bundler_dependencies
 
       def initialize(all_specs)
+        @all_specs = all_specs
         raise ArgumentError, "cannot initialize with an empty value" unless exemplary_spec = all_specs.first
         @name = exemplary_spec.name
         @version = exemplary_spec.version
@@ -28,7 +29,7 @@ module Bundler
           lazy_spec = LazySpecification.new(name, version, s.platform, source)
           lazy_spec.dependencies.replace s.dependencies
           lazy_spec
-        end.compact
+        end.compact.uniq
       end
 
       def activate_platform!(platform)
@@ -37,13 +38,25 @@ module Bundler
         @activated_platforms << platform
       end
 
+      def copy_for(platform)
+        copied_sg = self.class.new(@all_specs)
+        copied_sg.ignores_bundler_dependencies = @ignores_bundler_dependencies
+        return nil unless copied_sg.for?(platform)
+        copied_sg.activate_platform!(platform)
+        copied_sg
+      end
+
+      def spec_for(platform)
+        @specs[platform]
+      end
+
       def for?(platform)
-        spec = @specs[platform]
-        !spec.nil?
+        !spec_for(platform).nil?
       end
 
       def to_s
-        @to_s ||= "#{name} (#{version})"
+        activated_platforms_string = sorted_activated_platforms.join(", ")
+        "#{name} (#{version}) (#{activated_platforms_string})"
       end
 
       def dependencies_for_activated_platforms
@@ -58,6 +71,7 @@ module Bundler
         return unless other.is_a?(SpecGroup)
         name == other.name &&
           version == other.version &&
+          sorted_activated_platforms == other.sorted_activated_platforms &&
           source == other.source
       end
 
@@ -65,11 +79,18 @@ module Bundler
         return unless other.is_a?(SpecGroup)
         name.eql?(other.name) &&
           version.eql?(other.version) &&
+          sorted_activated_platforms.eql?(other.sorted_activated_platforms) &&
           source.eql?(other.source)
       end
 
       def hash
-        to_s.hash ^ source.hash
+        name.hash ^ version.hash ^ sorted_activated_platforms.hash ^ source.hash
+      end
+
+    protected
+
+      def sorted_activated_platforms
+        @activated_platforms.sort_by(&:to_s)
       end
 
     private

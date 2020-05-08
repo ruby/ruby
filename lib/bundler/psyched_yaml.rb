@@ -26,12 +26,3 @@ module Bundler
     YamlLibrarySyntaxError = ::ArgumentError
   end
 end
-
-require_relative "deprecate"
-begin
-  Bundler::Deprecate.skip_during do
-    require "rubygems/safe_yaml"
-  end
-rescue LoadError
-  # it's OK if the file isn't there
-end

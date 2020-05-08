@@ -2,7 +2,6 @@
 
 require_relative "support/path"
 
-$:.unshift Spec::Path.spec_dir.to_s
 $:.unshift Spec::Path.lib_dir.to_s
 
 require "bundler/psyched_yaml"
@@ -15,14 +14,15 @@ if File.expand_path(__FILE__) =~ %r{([^\w/\.:\-])}
 end
 
 require "bundler"
-require "rspec"
+require "rspec/core"
+require "rspec/expectations"
+require "rspec/mocks"
 
 require_relative "support/builders"
 require_relative "support/filters"
 require_relative "support/helpers"
 require_relative "support/indexes"
 require_relative "support/matchers"
-require_relative "support/parallel"
 require_relative "support/permissions"
 require_relative "support/platforms"
 require_relative "support/sometimes"
@@ -49,6 +49,8 @@ RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure
   config.example_status_persistence_file_path = ".rspec_status"
 
+  config.silence_filter_announcements = !ENV["TEST_ENV_NUMBER"].nil?
+
   config.disable_monkey_patching!
 
   # Since failures cause us to keep a bunch of long strings in memory, stop
@@ -59,7 +61,6 @@ RSpec.configure do |config|
 
   config.bisect_runner = :shell
 
-  original_wd  = Dir.pwd
   original_env = ENV.to_hash
 
   config.expect_with :rspec do |c|
@@ -81,8 +82,7 @@ RSpec.configure do |config|
 
   config.before :suite do
     require_relative "support/rubygems_ext"
-    Spec::Rubygems.setup
-    ENV["RUBYOPT"] = "#{ENV["RUBYOPT"]} -r#{Spec::Path.spec_dir}/support/hax.rb"
+    Spec::Rubygems.test_setup
     ENV["BUNDLE_SPEC_RUN"] = "true"
     ENV["BUNDLE_USER_CONFIG"] = ENV["BUNDLE_USER_CACHE"] = ENV["BUNDLE_USER_PLUGIN"] = nil
     ENV["GEMRC"] = nil
@@ -105,7 +105,7 @@ RSpec.configure do |config|
     ENV.replace(original_env)
     reset!
     system_gems []
-    in_app_root
+
     @command_executions = []
 
     Bundler.ui.silence { example.run }
@@ -118,8 +118,6 @@ RSpec.configure do |config|
         message
       end
     end
-
-    Dir.chdir(original_wd)
   end
 
   config.after :suite do
