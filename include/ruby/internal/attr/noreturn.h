@@ -20,10 +20,10 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #RBIMPL_ATTR_NORETURN.
  */
-#include "ruby/impl/compiler_since.h"
-#include "ruby/impl/has/attribute.h"
-#include "ruby/impl/has/cpp_attribute.h"
-#include "ruby/impl/has/declspec_attribute.h"
+#include "ruby/internal/compiler_since.h"
+#include "ruby/internal/has/attribute.h"
+#include "ruby/internal/has/cpp_attribute.h"
+#include "ruby/internal/has/declspec_attribute.h"
 
 /** Wraps (or simulates) `[[noreturn]]` */
 #if RBIMPL_COMPILER_SINCE(SunPro, 5, 10, 0)

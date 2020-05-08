@@ -20,7 +20,7 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #RBIMPL_COMPILER_SINCE.
  */
-#include "ruby/impl/compiler_is.h"
+#include "ruby/internal/compiler_is.h"
 
 /**
  * @brief   Checks if the compiler is of given brand and is newer than or equal

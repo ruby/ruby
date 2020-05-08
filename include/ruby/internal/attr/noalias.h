@@ -46,7 +46,7 @@
  *       that has to  be passed to the function as  a pointer.  ::VALUE -taking
  *       functions thus cannot be attributed as such.
  */
-#include "ruby/impl/has/declspec_attribute.h"
+#include "ruby/internal/has/declspec_attribute.h"
 
 /** Wraps (or simulates) `__declspec((noalias))` */
 #if RBIMPL_HAS_DECLSPEC_ATTRIBUTE(noalias)

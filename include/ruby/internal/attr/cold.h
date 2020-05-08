@@ -20,8 +20,8 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #RBIMPL_ATTR_COLD.
  */
-#include "ruby/impl/compiler_is.h"
-#include "ruby/impl/has/attribute.h"
+#include "ruby/internal/compiler_is.h"
+#include "ruby/internal/has/attribute.h"
 
 /** Wraps (or simulates) `__attribute__((cold))` */
 #if RBIMPL_COMPILER_IS(SunPro)

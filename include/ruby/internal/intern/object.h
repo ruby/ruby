@@ -20,9 +20,9 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Public APIs related to ::rb_cObject.
  */
-#include "ruby/impl/attr/pure.h"
-#include "ruby/impl/dllexport.h"
-#include "ruby/impl/value.h"
+#include "ruby/internal/attr/pure.h"
+#include "ruby/internal/dllexport.h"
+#include "ruby/internal/value.h"
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 

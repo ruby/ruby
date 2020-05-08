@@ -11,9 +11,9 @@
 
 **********************************************************************/
 
-#include "ruby/impl/config.h"
+#include "ruby/internal/config.h"
 #include <stddef.h>
-#include "ruby/impl/stdbool.h"
+#include "ruby/internal/stdbool.h"
 #include "ccan/list/list.h"
 #include "constant.h"
 #include "debug_counter.h"

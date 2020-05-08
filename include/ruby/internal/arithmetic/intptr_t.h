@@ -20,14 +20,14 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Arithmetic conversion between C's `intptr_t` and Ruby's.
  */
-#include "ruby/impl/config.h"
+#include "ruby/internal/config.h"
 
 #ifdef HAVE_STDINT_H
 # include <stdint.h>
 #endif
 
-#include "ruby/impl/value.h"
-#include "ruby/impl/dllexport.h"
+#include "ruby/internal/value.h"
+#include "ruby/internal/dllexport.h"
 
 #define rb_int_new  rb_int2inum
 #define rb_uint_new rb_uint2inum

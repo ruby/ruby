@@ -11,7 +11,7 @@
  *             file COPYING are met.  Consult the file for details.
  */
 #include "ruby/intern.h"
-#include "ruby/impl/dllexport.h"
+#include "ruby/internal/dllexport.h"
 
 /* flags for rb_nogvl */
 #define RB_NOGVL_INTR_FAIL       (0x1)

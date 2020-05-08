@@ -34,7 +34,7 @@
  *      case it gets  vital to know where the inlining  happened in the callee.
  *      See also https://stackoverflow.com/a/21936099
  */
-#include "ruby/impl/has/attribute.h"
+#include "ruby/internal/has/attribute.h"
 
 /** Wraps (or simulates) `__attribute__((artificial))` */
 #if RBIMPL_HAS_ATTRIBUTE(artificial)

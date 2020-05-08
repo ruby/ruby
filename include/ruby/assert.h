@@ -20,11 +20,11 @@
  *             We assume C99  for ruby itself but we don't  assume languages of
  *             extension libraries. They could be written in C++98.
  */
-#include "ruby/impl/assume.h"
-#include "ruby/impl/attr/cold.h"
-#include "ruby/impl/attr/noreturn.h"
-#include "ruby/impl/cast.h"
-#include "ruby/impl/dllexport.h"
+#include "ruby/internal/assume.h"
+#include "ruby/internal/attr/cold.h"
+#include "ruby/internal/attr/noreturn.h"
+#include "ruby/internal/cast.h"
+#include "ruby/internal/dllexport.h"
 #include "ruby/backward/2/assume.h"
 
 #ifndef RUBY_DEBUG

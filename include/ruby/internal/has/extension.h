@@ -20,7 +20,7 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #RBIMPL_HAS_EXTENSION.
  */
-#include "ruby/impl/has/feature.h"
+#include "ruby/internal/has/feature.h"
 
 /** Wraps (or simulates) `__has_extension`. */
 #if defined(__has_extension)

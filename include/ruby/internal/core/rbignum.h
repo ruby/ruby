@@ -20,10 +20,10 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Routines to manipulate struct ::RBignum.
  */
-#include "ruby/impl/dllexport.h"
-#include "ruby/impl/value.h"
-#include "ruby/impl/value_type.h"
-#include "ruby/impl/stdbool.h"
+#include "ruby/internal/dllexport.h"
+#include "ruby/internal/value.h"
+#include "ruby/internal/value_type.h"
+#include "ruby/internal/stdbool.h"
 
 #define RBIGNUM_SIGN rb_big_sign
 

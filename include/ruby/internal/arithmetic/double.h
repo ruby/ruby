@@ -20,9 +20,9 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Arithmetic conversion between C's `double` and Ruby's.
  */
-#include "ruby/impl/attr/pure.h"
-#include "ruby/impl/dllexport.h"
-#include "ruby/impl/value.h"
+#include "ruby/internal/attr/pure.h"
+#include "ruby/internal/dllexport.h"
+#include "ruby/internal/value.h"
 
 #define NUM2DBL      rb_num2dbl
 #define RFLOAT_VALUE rb_float_value

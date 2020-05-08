@@ -9,10 +9,10 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for String.
  */
-#include "ruby/impl/config.h"
+#include "ruby/internal/config.h"
 #include <stddef.h>             /* for size_t */
 #include "internal/compilers.h" /* for __has_builtin */
-#include "ruby/impl/stdbool.h"     /* for bool */
+#include "ruby/internal/stdbool.h"     /* for bool */
 #include "ruby/encoding.h"      /* for rb_encoding */
 #include "ruby/ruby.h"          /* for VALUE */
 

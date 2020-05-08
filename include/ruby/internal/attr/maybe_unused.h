@@ -20,9 +20,9 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #RBIMPL_ATTR_MAYBE_UNUSED.
  */
-#include "ruby/impl/has/attribute.h"
-#include "ruby/impl/has/c_attribute.h"
-#include "ruby/impl/has/cpp_attribute.h"
+#include "ruby/internal/has/attribute.h"
+#include "ruby/internal/has/c_attribute.h"
+#include "ruby/internal/has/cpp_attribute.h"
 
 /** Wraps  (or simulates)  `[[maybe_unused]]` */
 #if RBIMPL_HAS_CPP_ATTRIBUTE(maybe_unused)

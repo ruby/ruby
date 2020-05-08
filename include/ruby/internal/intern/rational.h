@@ -20,9 +20,9 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Public APIs related to ::rb_cRational.
  */
-#include "ruby/impl/dllexport.h"
-#include "ruby/impl/value.h"
-#include "ruby/impl/arithmetic/long.h" /* INT2FIX is here. */
+#include "ruby/internal/dllexport.h"
+#include "ruby/internal/value.h"
+#include "ruby/internal/arithmetic/long.h" /* INT2FIX is here. */
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 

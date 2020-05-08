@@ -11,7 +11,7 @@
 
 #define _DEFAULT_SOURCE
 #define _BSD_SOURCE
-#include "ruby/impl/config.h"
+#include "ruby/internal/config.h"
 
 #include <errno.h>
 #include <float.h>

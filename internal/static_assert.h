@@ -9,7 +9,7 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      C11 shim for _Static_assert.
  */
-#include "ruby/impl/static_assert.h"
+#include "ruby/internal/static_assert.h"
 #ifndef STATIC_ASSERT
 # define STATIC_ASSERT RBIMPL_STATIC_ASSERT
 #endif

@@ -10,11 +10,11 @@
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
  */
-#include "ruby/impl/config.h"
+#include "ruby/internal/config.h"
 #include <stdarg.h>
 #include "ruby/ruby.h"
 #include "ruby/oniguruma.h"
-#include "ruby/impl/dllexport.h"
+#include "ruby/internal/dllexport.h"
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 

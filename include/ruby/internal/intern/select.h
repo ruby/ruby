@@ -22,22 +22,22 @@
  * @note       Functions  and  structs defined  in  this  header file  are  not
  *             necessarily ruby-specific.  They don't need ::VALUE etc.
  */
-#include "ruby/impl/config.h"
+#include "ruby/internal/config.h"
 
 #ifdef HAVE_SYS_TYPES_H
 # include <sys/types.h>         /* for NFDBITS (BSD Net/2) */
 #endif
 
-#include "ruby/impl/dllexport.h"
+#include "ruby/internal/dllexport.h"
 
 /* thread.c */
 #if defined(NFDBITS) && defined(HAVE_RB_FD_INIT)
-# include "ruby/impl/intern/select/largesize.h"
+# include "ruby/internal/intern/select/largesize.h"
 #elif defined(_WIN32)
-# include "ruby/impl/intern/select/win32.h"
+# include "ruby/internal/intern/select/win32.h"
 # define rb_fd_resize(n, f) ((void)(f))
 #else
-# include "ruby/impl/intern/select/posix.h"
+# include "ruby/internal/intern/select/posix.h"
 # define rb_fd_resize(n, f) ((void)(f))
 #endif
 

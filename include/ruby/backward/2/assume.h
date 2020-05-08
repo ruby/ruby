@@ -20,9 +20,9 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #ASSUME / #RB_LIKELY / #UNREACHABLE
  */
-#include "ruby/impl/config.h"
-#include "ruby/impl/assume.h"
-#include "ruby/impl/has/builtin.h"
+#include "ruby/internal/config.h"
+#include "ruby/internal/assume.h"
+#include "ruby/internal/has/builtin.h"
 
 #undef  ASSUME             /* Kill config.h definition */
 #undef  UNREACHABLE        /* Kill config.h definition */

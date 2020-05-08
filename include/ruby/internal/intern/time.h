@@ -20,14 +20,14 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Public APIs related to ::rb_cTime.
  */
-#include "ruby/impl/config.h"
+#include "ruby/internal/config.h"
 
 #ifdef HAVE_TIME_H
 # include <time.h>              /* for time_t */
 #endif
 
-#include "ruby/impl/dllexport.h"
-#include "ruby/impl/value.h"
+#include "ruby/internal/dllexport.h"
+#include "ruby/internal/value.h"
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 

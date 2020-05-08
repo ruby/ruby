@@ -20,8 +20,8 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Arithmetic conversion between C's `uid_t` and Ruby's.
  */
-#include "ruby/impl/config.h"
-#include "ruby/impl/arithmetic/long.h"
+#include "ruby/internal/config.h"
+#include "ruby/internal/arithmetic/long.h"
 
 #ifndef UIDT2NUM
 # define UIDT2NUM RB_LONG2NUM

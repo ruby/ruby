@@ -20,8 +20,8 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #RBIMPL_ATTR_FORCEINLINE.
  */
-#include "ruby/impl/compiler_since.h"
-#include "ruby/impl/has/attribute.h"
+#include "ruby/internal/compiler_since.h"
+#include "ruby/internal/has/attribute.h"
 
 /**
  * Wraps (or  simulates) `__forceinline`.  MSVC complains  on declarations like

@@ -20,21 +20,21 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines struct ::RData.
  */
-#include "ruby/impl/config.h"
+#include "ruby/internal/config.h"
 
 #ifdef STDC_HEADERS
 # include <stddef.h>
 #endif
 
-#include "ruby/impl/attr/deprecated.h"
-#include "ruby/impl/attr/warning.h"
-#include "ruby/impl/cast.h"
-#include "ruby/impl/core/rbasic.h"
-#include "ruby/impl/dllexport.h"
-#include "ruby/impl/fl_type.h"
-#include "ruby/impl/token_paste.h"
-#include "ruby/impl/value.h"
-#include "ruby/impl/value_type.h"
+#include "ruby/internal/attr/deprecated.h"
+#include "ruby/internal/attr/warning.h"
+#include "ruby/internal/cast.h"
+#include "ruby/internal/core/rbasic.h"
+#include "ruby/internal/dllexport.h"
+#include "ruby/internal/fl_type.h"
+#include "ruby/internal/token_paste.h"
+#include "ruby/internal/value.h"
+#include "ruby/internal/value_type.h"
 #include "ruby/defines.h"
 
 #ifdef RUBY_UNTYPED_DATA_WARNING

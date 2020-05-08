@@ -20,7 +20,7 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #RBIMPL_ATTR_RETURNS_NONNULL.
  */
-#include "ruby/impl/has/attribute.h"
+#include "ruby/internal/has/attribute.h"
 
 /** Wraps (or simulates) `__attribute__((returns_nonnull))` */
 #if defined(_Ret_nonnull_)

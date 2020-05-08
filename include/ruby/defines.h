@@ -10,7 +10,7 @@
  *             file COPYING are met.  Consult the file for details.
  */
 
-#include "ruby/impl/config.h"
+#include "ruby/internal/config.h"
 
 /* AC_INCLUDES_DEFAULT */
 #include <stdio.h>
@@ -67,9 +67,9 @@
 # include <setjmpex.h>
 #endif
 
-#include "ruby/impl/dllexport.h"
-#include "ruby/impl/dosish.h"
-#include "ruby/impl/xmalloc.h"
+#include "ruby/internal/dllexport.h"
+#include "ruby/internal/dosish.h"
+#include "ruby/internal/xmalloc.h"
 #include "ruby/backward/2/assume.h"
 #include "ruby/backward/2/attributes.h"
 #include "ruby/backward/2/bool.h"

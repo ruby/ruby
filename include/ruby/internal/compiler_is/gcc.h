@@ -20,9 +20,9 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #RBIMPL_COMPILER_IS_GCC.
  */
-#include "ruby/impl/compiler_is/apple.h"
-#include "ruby/impl/compiler_is/clang.h"
-#include "ruby/impl/compiler_is/intel.h"
+#include "ruby/internal/compiler_is/apple.h"
+#include "ruby/internal/compiler_is/clang.h"
+#include "ruby/internal/compiler_is/intel.h"
 
 #if ! defined(__GNUC__)
 # define RBIMPL_COMPILER_IS_GCC 0

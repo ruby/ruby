@@ -20,9 +20,9 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Public APIs related to names inside of a Ruby program.
  */
-#include "ruby/impl/attr/noreturn.h"
-#include "ruby/impl/dllexport.h"
-#include "ruby/impl/value.h"
+#include "ruby/internal/attr/noreturn.h"
+#include "ruby/internal/dllexport.h"
+#include "ruby/internal/value.h"
 #include "ruby/st.h"
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()

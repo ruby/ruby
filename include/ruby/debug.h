@@ -10,9 +10,9 @@
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
  */
-#include "ruby/impl/dllexport.h"
-#include "ruby/impl/event.h"
-#include "ruby/impl/value.h"
+#include "ruby/internal/dllexport.h"
+#include "ruby/internal/event.h"
+#include "ruby/internal/value.h"
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 

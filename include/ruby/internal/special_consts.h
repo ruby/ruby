@@ -24,12 +24,12 @@
  *             SIGPPL  Workshop   on  Programming  and   Programming  Languages
  *             (PPL2008), pp. 9-16, 2008.
  */
-#include "ruby/impl/attr/artificial.h"
-#include "ruby/impl/attr/const.h"
-#include "ruby/impl/attr/constexpr.h"
-#include "ruby/impl/attr/enum_extensibility.h"
-#include "ruby/impl/stdbool.h"
-#include "ruby/impl/value.h"
+#include "ruby/internal/attr/artificial.h"
+#include "ruby/internal/attr/const.h"
+#include "ruby/internal/attr/constexpr.h"
+#include "ruby/internal/attr/enum_extensibility.h"
+#include "ruby/internal/stdbool.h"
+#include "ruby/internal/value.h"
 
 #if defined(USE_FLONUM)
 # /* Take that. */

@@ -20,8 +20,8 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #RBIMPL_ATTR_NOINLINE.
  */
-#include "ruby/impl/has/attribute.h"
-#include "ruby/impl/has/declspec_attribute.h"
+#include "ruby/internal/has/attribute.h"
+#include "ruby/internal/has/declspec_attribute.h"
 
 /** Wraps (or simulates) `__declspec(noinline)` */
 #if RBIMPL_HAS_DECLSPEC_ATTRIBUTE(noinline)

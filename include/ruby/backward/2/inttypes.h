@@ -20,13 +20,13 @@
  *             extension libraries. They could be written in C++98.
  * @brief      C99 shim for `<inttypes.h>`
  */
-#include "ruby/impl/config.h"      /* PRI_LL_PREFIX etc. are here */
+#include "ruby/internal/config.h"      /* PRI_LL_PREFIX etc. are here */
 
 #ifdef HAVE_INTTYPES_H
 # include <inttypes.h>
 #endif
 
-#include "ruby/impl/value.h"       /* PRI_VALUE_PREFIX is here. */
+#include "ruby/internal/value.h"       /* PRI_VALUE_PREFIX is here. */
 
 #ifndef PRI_INT_PREFIX
 # define PRI_INT_PREFIX ""

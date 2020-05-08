@@ -9,7 +9,7 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for MJIT.
  */
-#include "ruby/impl/stdbool.h"     /* for bool */
+#include "ruby/internal/stdbool.h"     /* for bool */
 #include "ruby/ruby.h"          /* for VALUE */
 
 /* mjit.c */

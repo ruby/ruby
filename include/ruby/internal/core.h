@@ -20,16 +20,16 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Core data structures, definitions and manupulations.
  */
-#include "ruby/impl/core/rarray.h"
-#include "ruby/impl/core/rbasic.h"
-#include "ruby/impl/core/rbignum.h"
-#include "ruby/impl/core/rclass.h"
-#include "ruby/impl/core/rdata.h"
-#include "ruby/impl/core/rfile.h"
-#include "ruby/impl/core/rhash.h"
-#include "ruby/impl/core/robject.h"
-#include "ruby/impl/core/rregexp.h"
-#include "ruby/impl/core/rstring.h"
-#include "ruby/impl/core/rstruct.h"
-#include "ruby/impl/core/rtypeddata.h"
+#include "ruby/internal/core/rarray.h"
+#include "ruby/internal/core/rbasic.h"
+#include "ruby/internal/core/rbignum.h"
+#include "ruby/internal/core/rclass.h"
+#include "ruby/internal/core/rdata.h"
+#include "ruby/internal/core/rfile.h"
+#include "ruby/internal/core/rhash.h"
+#include "ruby/internal/core/robject.h"
+#include "ruby/internal/core/rregexp.h"
+#include "ruby/internal/core/rstring.h"
+#include "ruby/internal/core/rstruct.h"
+#include "ruby/internal/core/rtypeddata.h"
 #endif /* RBIMPL_CORE_H */

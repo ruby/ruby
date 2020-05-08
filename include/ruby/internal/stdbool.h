@@ -20,7 +20,7 @@
  *             extension libraries. They could be written in C++98.
  * @brief      C99 shim for <stdbool.h>
  */
-#include "ruby/impl/config.h"
+#include "ruby/internal/config.h"
 
 #if defined(__bool_true_false_are_defined)
 # /* Take that. */

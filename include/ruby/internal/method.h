@@ -20,8 +20,8 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Creation and modification of Ruby methods.
  */
-#include "ruby/impl/dllexport.h"
-#include "ruby/impl/value.h"
+#include "ruby/internal/dllexport.h"
+#include "ruby/internal/value.h"
 #include "ruby/backward/2/stdarg.h"
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()

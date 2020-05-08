@@ -20,19 +20,19 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines enum ::ruby_fl_type.
  */
-#include "ruby/impl/config.h"      /* for ENUM_OVER_INT */
-#include "ruby/impl/attr/artificial.h"
-#include "ruby/impl/attr/flag_enum.h"
-#include "ruby/impl/attr/forceinline.h"
-#include "ruby/impl/attr/noalias.h"
-#include "ruby/impl/attr/pure.h"
-#include "ruby/impl/cast.h"
-#include "ruby/impl/core/rbasic.h"
-#include "ruby/impl/dllexport.h"
-#include "ruby/impl/special_consts.h"
-#include "ruby/impl/stdbool.h"
-#include "ruby/impl/value.h"
-#include "ruby/impl/value_type.h"
+#include "ruby/internal/config.h"      /* for ENUM_OVER_INT */
+#include "ruby/internal/attr/artificial.h"
+#include "ruby/internal/attr/flag_enum.h"
+#include "ruby/internal/attr/forceinline.h"
+#include "ruby/internal/attr/noalias.h"
+#include "ruby/internal/attr/pure.h"
+#include "ruby/internal/cast.h"
+#include "ruby/internal/core/rbasic.h"
+#include "ruby/internal/dllexport.h"
+#include "ruby/internal/special_consts.h"
+#include "ruby/internal/stdbool.h"
+#include "ruby/internal/value.h"
+#include "ruby/internal/value_type.h"
 #include "ruby/assert.h"
 #include "ruby/defines.h"
 

@@ -9,7 +9,7 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for rb_serial_t.
  */
-#include "ruby/impl/config.h"      /* for HAVE_LONG_LONG */
+#include "ruby/internal/config.h"      /* for HAVE_LONG_LONG */
 #include "ruby/defines.h"       /* for LONG_LONG */
 
 #ifndef HAVE_LONG_LONG

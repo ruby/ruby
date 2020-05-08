@@ -20,13 +20,13 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines struct ::RMatch.
  */
-#include "ruby/impl/attr/artificial.h"
-#include "ruby/impl/attr/pure.h"
-#include "ruby/impl/attr/returns_nonnull.h"
-#include "ruby/impl/cast.h"
-#include "ruby/impl/core/rbasic.h"
-#include "ruby/impl/value.h"
-#include "ruby/impl/value_type.h"
+#include "ruby/internal/attr/artificial.h"
+#include "ruby/internal/attr/pure.h"
+#include "ruby/internal/attr/returns_nonnull.h"
+#include "ruby/internal/cast.h"
+#include "ruby/internal/core/rbasic.h"
+#include "ruby/internal/value.h"
+#include "ruby/internal/value_type.h"
 #include "ruby/assert.h"
 
 #define RMATCH(obj) RBIMPL_CAST((struct RMatch *)(obj))
