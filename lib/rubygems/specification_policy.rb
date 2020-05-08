@@ -1,4 +1,3 @@
-require 'rubygems/ext'
 require 'rubygems/user_interaction'
 
 class Gem::SpecificationPolicy
@@ -421,13 +420,14 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
   end
 
   def validate_extensions # :nodoc:
+    require 'rubygems/ext'
     builder = Gem::Ext::Builder.new(@specification)
 
     rake_extension = @specification.extensions.any? {|s| builder.builder_for(s) == Gem::Ext::RakeBuilder }
     rake_dependency = @specification.dependencies.any? {|d| d.name == 'rake'}
 
     warning <<-WARNING if rake_extension && !rake_dependency
-You have specified rake based extension, but rake is not added as dependency. It is recommended to add rake as a dependency since there's no guarantee rake will be already installed.
+You have specified rake based extension, but rake is not added as dependency. It is recommended to add rake as a dependency in gemspec since there's no guarantee rake will be already installed.
     WARNING
   end
 
