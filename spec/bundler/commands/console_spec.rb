@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe "bundle console", :bundler => "< 3" do
+RSpec.describe "bundle console", :bundler => "< 3", :readline => true do
   before :each do
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"

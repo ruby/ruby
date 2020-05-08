@@ -41,7 +41,7 @@ module Bundler
   private
 
     def gemfile
-      @gemfile ||= Bundler.settings[:init_gems_rb] ? "gems.rb" : "Gemfile"
+      @gemfile ||= Bundler.preferred_gemfile_name
     end
   end
 end

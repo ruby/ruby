@@ -71,6 +71,15 @@ module Bundler
         raise
       end
 
+      def unregister_plugin(name)
+        @commands.delete_if {|_, v| v == name }
+        @sources.delete_if {|_, v| v == name }
+        @hooks.each {|_, plugin_names| plugin_names.delete(name) }
+        @plugin_paths.delete(name)
+        @load_paths.delete(name)
+        save_index
+      end
+
       # Path of default index file
       def index_file
         Plugin.root.join("index")

@@ -31,7 +31,7 @@ RSpec.describe "bundle update" do
         exit!
       G
       bundle "update"
-      expect(bundled_app("Gemfile.lock")).to exist
+      expect(bundled_app_lock).to exist
     end
   end
 
@@ -54,7 +54,7 @@ RSpec.describe "bundle update" do
         exit!
       G
       bundle "update", :all => true
-      expect(bundled_app("Gemfile.lock")).to exist
+      expect(bundled_app_lock).to exist
     end
   end
 
@@ -681,8 +681,7 @@ RSpec.describe "bundle update" do
       G
 
       bundle! "update", :all => true
-      out.gsub!(/RubyGems [\d\.]+ is not threadsafe.*\n?/, "")
-      expect(out).to include "Resolving dependencies...\nBundle updated!"
+      expect(out).to match(/Resolving dependencies\.\.\.\.*\nBundle updated!/)
 
       update_repo4 do
         build_gem "foo", "2.0"
@@ -690,13 +689,7 @@ RSpec.describe "bundle update" do
 
       bundle! "update", :all => true
       out.sub!("Removing foo (1.0)\n", "")
-      out.gsub!(/RubyGems [\d\.]+ is not threadsafe.*\n?/, "")
-      expect(out).to include strip_whitespace(<<-EOS).strip
-        Resolving dependencies...
-        Fetching foo 2.0 (was 1.0)
-        Installing foo 2.0 (was 1.0)
-        Bundle updated
-      EOS
+      expect(out).to match(/Resolving dependencies\.\.\.\.*\nFetching foo 2\.0 \(was 1\.0\)\nInstalling foo 2\.0 \(was 1\.0\)\nBundle updated/)
     end
   end
 
@@ -831,6 +824,7 @@ RSpec.describe "bundle update --bundler" do
       source "#{file_uri_for(gem_repo4)}"
       gem "rack"
     G
+    allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
     lockfile lockfile.sub(/(^\s*)#{Bundler::VERSION}($)/, '\11.0.0\2')
 
     FileUtils.rm_r gem_repo4

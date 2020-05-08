@@ -346,7 +346,7 @@ module Bundler
           raise e
         end
 
-        # backwards compatibility shim, see https://github.com/bundler/bundler/issues/5102
+        # backwards compatibility shim, see https://github.com/rubygems/bundler/issues/5102
         kernel_class.send(:public, :gem) if Bundler.feature_flag.setup_makes_kernel_gem_public?
       end
     end
@@ -441,35 +441,6 @@ module Bundler
       replace_bin_path(specs_by_name)
 
       Gem.clear_paths
-    end
-
-    # This backports base_dir which replaces installation path
-    # RubyGems 1.8+
-    def backport_base_dir
-      redefine_method(Gem::Specification, :base_dir) do
-        return Gem.dir unless loaded_from
-        File.dirname File.dirname loaded_from
-      end
-    end
-
-    def backport_cache_file
-      redefine_method(Gem::Specification, :cache_dir) do
-        @cache_dir ||= File.join base_dir, "cache"
-      end
-
-      redefine_method(Gem::Specification, :cache_file) do
-        @cache_file ||= File.join cache_dir, "#{full_name}.gem"
-      end
-    end
-
-    def backport_spec_file
-      redefine_method(Gem::Specification, :spec_dir) do
-        @spec_dir ||= File.join base_dir, "specifications"
-      end
-
-      redefine_method(Gem::Specification, :spec_file) do
-        @spec_file ||= File.join spec_dir, "#{full_name}.gemspec"
-      end
     end
 
     def undo_replacements
@@ -602,10 +573,10 @@ module Bundler
 
     def backport_ext_builder_monitor
       # So we can avoid requiring "rubygems/ext" in its entirety
-      Gem.module_eval <<-RB, __FILE__, __LINE__ + 1
+      Gem.module_eval <<-RUBY, __FILE__, __LINE__ + 1
         module Ext
         end
-      RB
+      RUBY
 
       require "rubygems/ext/builder"
 

@@ -18,19 +18,19 @@ class CompactIndexPartialUpdate < CompactIndexAPI
     )
 
     # Verify a cached copy of the versions file exists
-    unless File.read(cached_versions_path).start_with?("created_at: ")
+    unless File.binread(cached_versions_path).start_with?("created_at: ")
       raise("Cached versions file should be present and have content")
     end
 
     # Verify that a partial request is made, starting from the index of the
     # final byte of the cached file.
-    unless env["HTTP_RANGE"] == "bytes=#{File.read(cached_versions_path).bytesize - 1}-"
+    unless env["HTTP_RANGE"] == "bytes=#{File.binread(cached_versions_path).bytesize - 1}-"
       raise("Range header should be present, and start from the index of the final byte of the cache.")
     end
 
     etag_response do
       # Return the exact contents of the cache.
-      File.read(cached_versions_path)
+      File.binread(cached_versions_path)
     end
   end
 end

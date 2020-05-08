@@ -1,0 +1,7 @@
+# frozen_string_literal: true
+
+source "https://rubygems.org"
+
+gem "demo", :path => "./demo"
+gem "jruby-jars", "~> 9.2"
+gem "warbler", "~> 2.0"

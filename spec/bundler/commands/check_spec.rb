@@ -18,8 +18,7 @@ RSpec.describe "bundle check" do
       gem "rails"
     G
 
-    Dir.chdir tmp
-    bundle "check --gemfile bundled_app/Gemfile"
+    bundle "check --gemfile bundled_app/Gemfile", :dir => tmp
     expect(out).to include("The Gemfile's dependencies are satisfied")
   end
 
@@ -29,11 +28,11 @@ RSpec.describe "bundle check" do
       gem "rails"
     G
 
-    FileUtils.rm("Gemfile.lock")
+    FileUtils.rm(bundled_app_lock)
 
     bundle "check"
 
-    expect(bundled_app("Gemfile.lock")).to exist
+    expect(bundled_app_lock).to exist
   end
 
   it "does not create a Gemfile.lock if --dry-run was passed" do
@@ -42,11 +41,11 @@ RSpec.describe "bundle check" do
       gem "rails"
     G
 
-    FileUtils.rm("Gemfile.lock")
+    FileUtils.rm(bundled_app_lock)
 
     bundle "check --dry-run"
 
-    expect(bundled_app("Gemfile.lock")).not_to exist
+    expect(bundled_app_lock).not_to exist
   end
 
   it "prints a generic error if the missing gems are unresolvable" do
@@ -145,7 +144,7 @@ RSpec.describe "bundle check" do
       end
     G
 
-    system_gems "rack-1.0.0", :path => :bundle_path
+    system_gems "rack-1.0.0", :path => default_bundle_path
 
     lockfile <<-G
       GEM
@@ -176,7 +175,7 @@ RSpec.describe "bundle check" do
       end
     G
 
-    system_gems "rack-1.0.0", :path => :bundle_path
+    system_gems "rack-1.0.0", :path => default_bundle_path
 
     lockfile <<-G
       GEM
@@ -232,7 +231,7 @@ RSpec.describe "bundle check" do
     G
 
     bundle! "install", forgotten_command_line_options(:deployment => true)
-    FileUtils.rm(bundled_app("Gemfile.lock"))
+    FileUtils.rm(bundled_app_lock)
 
     bundle :check
     expect(last_command).to be_failure

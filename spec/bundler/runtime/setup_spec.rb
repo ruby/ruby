@@ -159,7 +159,7 @@ RSpec.describe "Bundler.setup" do
         "/gems/actionpack-2.3.2/lib",
         "/gems/actionmailer-2.3.2/lib",
         "/gems/activesupport-2.3.2/lib",
-        "/gems/rake-12.3.2/lib"
+        "/gems/rake-13.0.1/lib"
       )
     end
 
@@ -218,7 +218,7 @@ RSpec.describe "Bundler.setup" do
       Bundler.setup
     R
 
-    expect(bundled_app("Gemfile.lock")).not_to exist
+    expect(bundled_app_lock).not_to exist
   end
 
   it "doesn't change the Gemfile.lock if the setup fails" do
@@ -227,7 +227,7 @@ RSpec.describe "Bundler.setup" do
       gem "rack"
     G
 
-    lockfile = File.read(bundled_app("Gemfile.lock"))
+    lockfile = File.read(bundled_app_lock)
 
     gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
@@ -241,7 +241,7 @@ RSpec.describe "Bundler.setup" do
       Bundler.setup
     R
 
-    expect(File.read(bundled_app("Gemfile.lock"))).to eq(lockfile)
+    expect(File.read(bundled_app_lock)).to eq(lockfile)
   end
 
   it "makes a Gemfile.lock if setup succeeds" do
@@ -250,12 +250,12 @@ RSpec.describe "Bundler.setup" do
       gem "rack"
     G
 
-    File.read(bundled_app("Gemfile.lock"))
+    File.read(bundled_app_lock)
 
-    FileUtils.rm(bundled_app("Gemfile.lock"))
+    FileUtils.rm(bundled_app_lock)
 
     run "1"
-    expect(bundled_app("Gemfile.lock")).to exist
+    expect(bundled_app_lock).to exist
   end
 
   describe "$BUNDLE_GEMFILE" do
@@ -460,7 +460,7 @@ RSpec.describe "Bundler.setup" do
     it "provides a good exception if the lockfile is unavailable" do
       bundle "install"
 
-      FileUtils.rm(bundled_app("Gemfile.lock"))
+      FileUtils.rm(bundled_app_lock)
 
       break_git!
 
@@ -489,15 +489,16 @@ RSpec.describe "Bundler.setup" do
     it "does not randomly change the path when specifying --path and the bundle directory becomes read only" do
       bundle! :install, forgotten_command_line_options(:path => "vendor/bundle")
 
-      with_read_only("**/*") do
+      with_read_only("#{bundled_app}/**/*") do
         expect(the_bundle).to include_gems "rack 1.0.0"
       end
     end
 
     it "finds git gem when default bundle path becomes read only" do
+      bundle "config set --local path .bundle"
       bundle "install"
 
-      with_read_only("#{Bundler.bundle_path}/**/*") do
+      with_read_only("#{bundled_app(".bundle")}/**/*") do
         expect(the_bundle).to include_gems "rack 1.0.0"
       end
     end
@@ -708,7 +709,7 @@ end
     end
 
     context "when the user has one set" do
-      before { ENV["MANPATH"] = "/foo:" }
+      before { ENV["MANPATH"] = "/foo#{File::PATH_SEPARATOR}" }
 
       it "adds the gem's man dir to the MANPATH" do
         install_gemfile! <<-G
@@ -717,7 +718,7 @@ end
         G
 
         run! "puts ENV['MANPATH']"
-        expect(out).to eq("#{default_bundle_path("gems/with_man-1.0/man")}:/foo")
+        expect(out).to eq("#{default_bundle_path("gems/with_man-1.0/man")}#{File::PATH_SEPARATOR}/foo")
       end
     end
 
@@ -793,6 +794,8 @@ end
     let(:full_name) { "bundler-#{Bundler::VERSION}" }
 
     before do
+      skip "symlink destination exists" if Gem.win_platform?
+
       FileUtils.ln_sf(gem_home, symlinked_gem_home)
       gems_dir = File.join(gem_home, "gems")
       specifications_dir = File.join(gem_home, "specifications")
@@ -863,11 +866,9 @@ end
         gem 'foo', '1.2.3', :path => 'vendor/foo'
       G
 
-      Dir.chdir(bundled_app.parent) do
-        run <<-R, :env => { "BUNDLE_GEMFILE" => bundled_app("Gemfile").to_s }
-          require 'foo'
-        R
-      end
+      run <<-R, :env => { "BUNDLE_GEMFILE" => bundled_app_gemfile.to_s }, :dir => bundled_app.parent
+        require 'foo'
+      R
       expect(err).to be_empty
     end
 
@@ -887,11 +888,9 @@ end
 
       bundle :install
 
-      Dir.chdir(bundled_app.parent) do
-        run <<-R, :env => { "BUNDLE_GEMFILE" => bundled_app("Gemfile").to_s }
-          require 'foo'
-        R
-      end
+      run <<-R, :env => { "BUNDLE_GEMFILE" => bundled_app_gemfile.to_s }, :dir => bundled_app.parent
+        require 'foo'
+      R
 
       expect(err).to be_empty
     end
@@ -1015,6 +1014,8 @@ end
     end
 
     it "error intelligently if the gemspec has a LoadError" do
+      skip "whitespace issue?" if Gem.win_platform?
+
       ref = update_git "bar", :gemspec => false do |s|
         s.write "bar.gemspec", "require 'foobarbaz'"
       end.ref_for("HEAD")
@@ -1202,11 +1203,13 @@ end
 
     describe "default gem activation" do
       let(:exemptions) do
-        if Gem::Version.new(Gem::VERSION) >= Gem::Version.new("2.7")
+        exempts = if Gem::Version.new(Gem::VERSION) >= Gem::Version.new("2.7")
           %w[did_you_mean]
         else
           %w[io-console openssl]
         end << "bundler"
+        exempts << "fiddle" if Gem.win_platform? && Gem::Version.new(Gem::VERSION) >= Gem::Version.new("2.7")
+        exempts
       end
 
       let(:activation_warning_hack) { strip_whitespace(<<-RUBY) }
@@ -1256,6 +1259,8 @@ end
       end
 
       it "activates no gems with bundle exec that is loaded" do
+        skip "not executable" if Gem.win_platform?
+
         install_gemfile! ""
         create_file("script.rb", "#!/usr/bin/env ruby\n\n#{code}")
         FileUtils.chmod(0o777, bundled_app("script.rb"))
@@ -1367,7 +1372,7 @@ end
     end
 
     it "takes care of requiring rubygems" do
-      sys_exec("#{Gem.ruby} -I#{lib_dir} -e \"puts require('bundler/setup')\"", "RUBYOPT" => "--disable=gems")
+      sys_exec("#{Gem.ruby} -I#{lib_dir} -rbundler/setup -e'puts true'", :env => { "RUBYOPT" => opt_add("--disable=gems", ENV["RUBYOPT"]) })
 
       expect(last_command.stdboth).to eq("true")
     end

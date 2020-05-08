@@ -32,6 +32,7 @@ RSpec.describe "bundle doctor" do
     before(:each) do
       stat = double("stat")
       unwritable_file = double("file")
+      allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
       allow(Find).to receive(:find).with(Bundler.bundle_path.to_s) { [unwritable_file] }
       allow(File).to receive(:stat).with(unwritable_file) { stat }
       allow(stat).to receive(:uid) { Process.uid }
@@ -72,6 +73,7 @@ RSpec.describe "bundle doctor" do
     before(:each) do
       @stat = double("stat")
       @unwritable_file = double("file")
+      allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
       allow(Find).to receive(:find).with(Bundler.bundle_path.to_s) { [@unwritable_file] }
       allow(File).to receive(:stat).with(@unwritable_file) { @stat }
     end
@@ -87,7 +89,7 @@ RSpec.describe "bundle doctor" do
       expect(@stdout.string).not_to include("No issues")
     end
 
-    context "when home contains files that are not owned by the current process" do
+    context "when home contains files that are not owned by the current process", :permissions do
       before(:each) do
         allow(@stat).to receive(:uid) { 0o0000 }
       end

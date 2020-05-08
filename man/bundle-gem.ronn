@@ -60,13 +60,13 @@ configuration file using the following names:
   Do not create a `LICENSE.txt` (overrides `--mit` specified in the global
   config).
 
-* `-t`, `--test=minitest`, `--test=rspec`:
+* `-t`, `--test=minitest`, `--test=rspec`, `--test=test-unit`:
   Specify the test framework that Bundler should use when generating the
-  project. Acceptable values are `minitest` and `rspec`. The `GEM_NAME.gemspec`
-  will be configured and a skeleton test/spec directory will be created based
-  on this option. If this option is unspecified, an interactive prompt will be
-  displayed and the answer will be saved in Bundler's global config for future
-  `bundle gem` use.
+  project. Acceptable values are `minitest`, `rspec` and `test-unit`. The
+  `GEM_NAME.gemspec` will be configured and a skeleton test/spec directory will
+  be created based on this option. If this option is unspecified, an interactive
+  prompt will be displayed and the answer will be saved in Bundler's global
+  config for future `bundle gem` use.
   If no option is specified, the default testing framework is RSpec.
 
 * `-e`, `--edit[=EDITOR]`:

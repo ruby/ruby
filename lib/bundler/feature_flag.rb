@@ -30,7 +30,6 @@ module Bundler
     settings_flag(:allow_bundler_dependency_conflicts) { bundler_3_mode? }
     settings_flag(:allow_offline_install) { bundler_3_mode? }
     settings_flag(:auto_clean_without_path) { bundler_3_mode? }
-    settings_flag(:auto_config_jobs) { bundler_3_mode? }
     settings_flag(:cache_all) { bundler_3_mode? }
     settings_flag(:default_install_uses_path) { bundler_3_mode? }
     settings_flag(:deployment_means_frozen) { bundler_3_mode? }

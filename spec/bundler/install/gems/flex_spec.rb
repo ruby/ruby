@@ -233,7 +233,7 @@ RSpec.describe "bundle flex_install" do
     it "does something" do
       expect do
         bundle "install"
-      end.not_to change { File.read(bundled_app("Gemfile.lock")) }
+      end.not_to change { File.read(bundled_app_lock) }
 
       expect(err).to include("rack = 0.9.1")
       expect(err).to include("locked at 1.0.0")

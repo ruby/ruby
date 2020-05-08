@@ -3,35 +3,35 @@
 RSpec.describe "bundle show", :bundler => "< 3" do
   context "with a standard Gemfile" do
     before :each do
-      install_gemfile <<-G
+      install_gemfile! <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rails"
       G
     end
 
     it "creates a Gemfile.lock if one did not exist" do
-      FileUtils.rm("Gemfile.lock")
+      FileUtils.rm(bundled_app_lock)
 
-      bundle "show"
+      bundle! "show"
 
-      expect(bundled_app("Gemfile.lock")).to exist
+      expect(bundled_app_lock).to exist
     end
 
     it "creates a Gemfile.lock when invoked with a gem name" do
-      FileUtils.rm("Gemfile.lock")
+      FileUtils.rm(bundled_app_lock)
 
-      bundle "show rails"
+      bundle! "show rails"
 
-      expect(bundled_app("Gemfile.lock")).to exist
+      expect(bundled_app_lock).to exist
     end
 
     it "prints path if gem exists in bundle" do
-      bundle "show rails"
+      bundle! "show rails"
       expect(out).to eq(default_bundle_path("gems", "rails-2.3.2").to_s)
     end
 
     it "prints path if gem exists in bundle (with --paths option)" do
-      bundle "show rails --paths"
+      bundle! "show rails --paths"
       expect(out).to eq(default_bundle_path("gems", "rails-2.3.2").to_s)
     end
 
@@ -45,7 +45,7 @@ RSpec.describe "bundle show", :bundler => "< 3" do
     end
 
     it "prints the path to the running bundler" do
-      bundle "show bundler"
+      bundle! "show bundler"
       expect(out).to eq(root.to_s)
     end
 
@@ -55,9 +55,9 @@ RSpec.describe "bundle show", :bundler => "< 3" do
     end
 
     it "prints path of all gems in bundle sorted by name" do
-      bundle "show --paths"
+      bundle! "show --paths"
 
-      expect(out).to include(default_bundle_path("gems", "rake-12.3.2").to_s)
+      expect(out).to include(default_bundle_path("gems", "rake-13.0.1").to_s)
       expect(out).to include(default_bundle_path("gems", "rails-2.3.2").to_s)
 
       # Gem names are the last component of their path.
@@ -66,7 +66,7 @@ RSpec.describe "bundle show", :bundler => "< 3" do
     end
 
     it "prints summary of gems" do
-      bundle "show --verbose"
+      bundle! "show --verbose"
 
       expect(out).to include <<~MSG
         * actionmailer (2.3.2)
@@ -77,7 +77,7 @@ RSpec.describe "bundle show", :bundler => "< 3" do
     end
 
     it "includes bundler in the summary of gems" do
-      bundle "show --verbose"
+      bundle! "show --verbose"
 
       expect(out).to include <<~MSG
         * bundler (#{Bundler::VERSION})
@@ -94,12 +94,12 @@ RSpec.describe "bundle show", :bundler => "< 3" do
     end
 
     it "prints out git info" do
-      install_gemfile <<-G
+      install_gemfile! <<-G
         gem "foo", :git => "#{lib_path("foo-1.0")}"
       G
       expect(the_bundle).to include_gems "foo 1.0"
 
-      bundle :show
+      bundle! :show
       expect(out).to include("foo (1.0 #{@git.ref_for("master", 6)}")
     end
 
@@ -109,28 +109,28 @@ RSpec.describe "bundle show", :bundler => "< 3" do
       end
       @revision = revision_for(lib_path("foo-1.0"))[0...6]
 
-      install_gemfile <<-G
+      install_gemfile! <<-G
         gem "foo", :git => "#{lib_path("foo-1.0")}", :branch => "omg"
       G
       expect(the_bundle).to include_gems "foo 1.0.omg"
 
-      bundle :show
+      bundle! :show
       expect(out).to include("foo (1.0 #{@git.ref_for("omg", 6)}")
     end
 
     it "doesn't print the branch when tied to a ref" do
       sha = revision_for(lib_path("foo-1.0"))
-      install_gemfile <<-G
+      install_gemfile! <<-G
         gem "foo", :git => "#{lib_path("foo-1.0")}", :ref => "#{sha}"
       G
 
-      bundle :show
+      bundle! :show
       expect(out).to include("foo (1.0 #{sha[0..6]})")
     end
 
     it "handles when a version is a '-' prerelease" do
       @git = build_git("foo", "1.0.0-beta.1", :path => lib_path("foo"))
-      install_gemfile <<-G
+      install_gemfile! <<-G
         gem "foo", "1.0.0-beta.1", :git => "#{lib_path("foo")}"
       G
       expect(the_bundle).to include_gems "foo 1.0.0.pre.beta.1"
@@ -143,13 +143,12 @@ RSpec.describe "bundle show", :bundler => "< 3" do
   context "in a fresh gem in a blank git repo" do
     before :each do
       build_git "foo", :path => lib_path("foo")
-      in_app_root_custom lib_path("foo")
-      File.open("Gemfile", "w") {|f| f.puts "gemspec" }
-      sys_exec "rm -rf .git && git init"
+      File.open(lib_path("foo/Gemfile"), "w") {|f| f.puts "gemspec" }
+      sys_exec "rm -rf .git && git init", :dir => lib_path("foo")
     end
 
     it "does not output git errors" do
-      bundle :show
+      bundle :show, :dir => lib_path("foo")
       expect(err_without_deprecations).to be_empty
     end
   end
@@ -161,26 +160,26 @@ RSpec.describe "bundle show", :bundler => "< 3" do
     G
 
     bundle "config set auto_install 1"
-    bundle :show
+    bundle! :show
     expect(out).to include("Installing foo 1.0")
   end
 
   context "with a valid regexp for gem name" do
-    it "presents alternatives" do
-      install_gemfile <<-G
+    it "presents alternatives", :readline do
+      install_gemfile! <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
         gem "rack-obama"
       G
 
-      bundle "show rac"
+      bundle! "show rac"
       expect(out).to eq "1 : rack\n2 : rack-obama\n0 : - exit -\n>"
     end
   end
 
   context "with an invalid regexp for gem name" do
     it "does not find the gem" do
-      install_gemfile <<-G
+      install_gemfile! <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rails"
       G
@@ -193,7 +192,7 @@ RSpec.describe "bundle show", :bundler => "< 3" do
   end
 
   context "--outdated option" do
-    # Regression test for https://github.com/bundler/bundler/issues/5375
+    # Regression test for https://github.com/rubygems/bundler/issues/5375
     before do
       build_repo2
     end

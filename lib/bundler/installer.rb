@@ -204,18 +204,7 @@ module Bundler
 
       return 1 unless can_install_in_parallel?
 
-      auto_config_jobs = Bundler.feature_flag.auto_config_jobs?
-      if jobs = Bundler.settings[:jobs]
-        if auto_config_jobs
-          jobs
-        else
-          [jobs.pred, 1].max
-        end
-      elsif auto_config_jobs
-        processor_count
-      else
-        1
-      end
+      Bundler.settings[:jobs] || processor_count
     end
 
     def processor_count

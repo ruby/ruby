@@ -75,8 +75,7 @@ module Bundler
 
         @gemspecs << spec
 
-        gem_platforms = Bundler::Dependency::REVERSE_PLATFORM_MAP[Bundler::GemHelpers.generic_local_platform]
-        gem spec.name, :name => spec.name, :path => path, :glob => glob, :platforms => gem_platforms
+        gem spec.name, :name => spec.name, :path => path, :glob => glob
 
         group(development_group) do
           spec.development_dependencies.each do |dep|

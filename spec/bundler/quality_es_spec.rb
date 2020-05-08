@@ -40,12 +40,10 @@ RSpec.describe "La biblioteca si misma" do
   it "mantiene la calidad de lenguaje de la documentación" do
     included = /ronn/
     error_messages = []
-    Dir.chdir(root) do
-      `git ls-files -z -- man`.split("\x0").each do |filename|
-        next unless filename =~ included
-        error_messages << check_for_expendable_words(filename)
-        error_messages << check_for_specific_pronouns(filename)
-      end
+    man_tracked_files.each do |filename|
+      next unless filename =~ included
+      error_messages << check_for_expendable_words(filename)
+      error_messages << check_for_specific_pronouns(filename)
     end
     expect(error_messages.compact).to be_well_formed
   end
@@ -53,12 +51,10 @@ RSpec.describe "La biblioteca si misma" do
   it "mantiene la calidad de lenguaje de oraciones usadas en el código fuente" do
     error_messages = []
     exempt = /vendor/
-    Dir.chdir(root) do
-      lib_tracked_files.split("\x0").each do |filename|
-        next if filename =~ exempt
-        error_messages << check_for_expendable_words(filename)
-        error_messages << check_for_specific_pronouns(filename)
-      end
+    lib_tracked_files.each do |filename|
+      next if filename =~ exempt
+      error_messages << check_for_expendable_words(filename)
+      error_messages << check_for_specific_pronouns(filename)
     end
     expect(error_messages.compact).to be_well_formed
   end

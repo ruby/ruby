@@ -35,7 +35,7 @@ RSpec.describe ".bundle/config" do
     end
   end
 
-  describe "location" do
+  describe "location with a gemfile" do
     before :each do
       gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
@@ -54,14 +54,23 @@ RSpec.describe ".bundle/config" do
 
     it "can provide a relative path with the environment variable" do
       FileUtils.mkdir_p bundled_app("omg")
-      Dir.chdir bundled_app("omg")
 
       ENV["BUNDLE_APP_CONFIG"] = "../foo"
-      bundle "install", forgotten_command_line_options(:path => "vendor/bundle")
+      bundle "install", forgotten_command_line_options(:path => "vendor/bundle").merge(:dir => bundled_app("omg"))
 
       expect(bundled_app(".bundle")).not_to exist
       expect(bundled_app("../foo/config")).to exist
-      expect(the_bundle).to include_gems "rack 1.0.0"
+      expect(the_bundle).to include_gems "rack 1.0.0", :dir => bundled_app("omg")
+    end
+  end
+
+  describe "location without a gemfile" do
+    it "works with an absolute path" do
+      ENV["BUNDLE_APP_CONFIG"] = tmp("foo/bar").to_s
+      bundle "config set --local path vendor/bundle"
+
+      expect(bundled_app(".bundle")).not_to exist
+      expect(tmp("foo/bar/config")).to exist
     end
   end
 
@@ -138,7 +147,7 @@ RSpec.describe ".bundle/config" do
     it "expands the path at time of setting" do
       bundle "config set --global local.foo .."
       run "puts Bundler.settings['local.foo']"
-      expect(out).to eq(File.expand_path(Dir.pwd + "/.."))
+      expect(out).to eq(File.expand_path(bundled_app.to_s + "/.."))
     end
 
     it "saves with parseable option" do
@@ -205,7 +214,7 @@ RSpec.describe ".bundle/config" do
     it "expands the path at time of setting" do
       bundle "config set --local local.foo .."
       run "puts Bundler.settings['local.foo']"
-      expect(out).to eq(File.expand_path(Dir.pwd + "/.."))
+      expect(out).to eq(File.expand_path(bundled_app.to_s + "/.."))
     end
 
     it "can be deleted with parseable option" do
@@ -484,7 +493,7 @@ RSpec.describe "setting gemfile via config" do
       G
 
       bundle "config set --local gemfile #{bundled_app("NotGemfile")}"
-      expect(File.exist?(".bundle/config")).to eq(true)
+      expect(File.exist?(bundled_app(".bundle/config"))).to eq(true)
 
       bundle "config list"
       expect(out).to include("NotGemfile")

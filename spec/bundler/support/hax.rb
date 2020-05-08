@@ -9,11 +9,6 @@ module Gem
     Gem.ruby = ENV["RUBY"]
   end
 
-  if version = ENV["BUNDLER_SPEC_RUBYGEMS_VERSION"]
-    remove_const(:VERSION) if const_defined?(:VERSION)
-    VERSION = version
-  end
-
   class Platform
     @local = new(ENV["BUNDLER_SPEC_PLATFORM"]) if ENV["BUNDLER_SPEC_PLATFORM"]
   end
@@ -27,16 +22,6 @@ module Gem
   end
 end
 
-if ENV["BUNDLER_SPEC_VERSION"]
-  require_relative "path"
-  require "#{Spec::Path.lib_dir}/bundler/version"
-
-  module Bundler
-    remove_const(:VERSION) if const_defined?(:VERSION)
-    VERSION = ENV["BUNDLER_SPEC_VERSION"].dup
-  end
-end
-
 if ENV["BUNDLER_SPEC_WINDOWS"] == "true"
   require_relative "path"
   require "#{Spec::Path.lib_dir}/bundler/constants"
@@ -47,22 +32,17 @@ if ENV["BUNDLER_SPEC_WINDOWS"] == "true"
   end
 end
 
-class Object
-  if ENV["BUNDLER_SPEC_RUBY_ENGINE"]
-    if RUBY_ENGINE != "jruby" && ENV["BUNDLER_SPEC_RUBY_ENGINE"] == "jruby"
-      begin
-        # this has to be done up front because psych will try to load a .jar
-        # if it thinks its on jruby
-        require "psych"
-      rescue LoadError
-        nil
+if ENV["BUNDLER_SPEC_API_REQUEST_LIMIT"]
+  require_relative "path"
+  require "#{Spec::Path.lib_dir}/bundler/source"
+  require "#{Spec::Path.lib_dir}/bundler/source/rubygems"
+
+  module Bundler
+    class Source
+      class Rubygems < Source
+        remove_const :API_REQUEST_LIMIT
+        API_REQUEST_LIMIT = ENV["BUNDLER_SPEC_API_REQUEST_LIMIT"].to_i
       end
     end
-
-    remove_const :RUBY_ENGINE
-    RUBY_ENGINE = ENV["BUNDLER_SPEC_RUBY_ENGINE"]
-
-    remove_const :RUBY_ENGINE_VERSION
-    RUBY_ENGINE_VERSION = ENV["BUNDLER_SPEC_RUBY_ENGINE_VERSION"]
   end
 end

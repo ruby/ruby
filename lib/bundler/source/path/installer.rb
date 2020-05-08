@@ -26,18 +26,16 @@ module Bundler
         end
 
         def post_install
-          SharedHelpers.chdir(@gem_dir) do
-            run_hooks(:pre_install)
+          run_hooks(:pre_install)
 
-            unless @disable_extensions
-              build_extensions
-              run_hooks(:post_build)
-            end
-
-            generate_bin unless spec.executables.nil? || spec.executables.empty?
-
-            run_hooks(:post_install)
+          unless @disable_extensions
+            build_extensions
+            run_hooks(:post_build)
           end
+
+          generate_bin unless spec.executables.nil? || spec.executables.empty?
+
+          run_hooks(:post_install)
         ensure
           Bundler.rm_rf(@tmp_dir) if Bundler.requires_sudo?
         end

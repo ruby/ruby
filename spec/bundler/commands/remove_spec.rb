@@ -54,7 +54,7 @@ RSpec.describe "bundle remove" do
 
         bundle "remove rack"
 
-        expect(err).to include("`rack` is not specified in #{bundled_app("Gemfile")} so it could not be removed.")
+        expect(err).to include("`rack` is not specified in #{bundled_app_gemfile} so it could not be removed.")
       end
     end
   end
@@ -91,7 +91,7 @@ RSpec.describe "bundle remove" do
 
         bundle "remove rails rack minitest"
 
-        expect(err).to include("`rack` is not specified in #{bundled_app("Gemfile")} so it could not be removed.")
+        expect(err).to include("`rack` is not specified in #{bundled_app_gemfile} so it could not be removed.")
         gemfile_should_be <<-G
           source "#{file_uri_for(gem_repo1)}"
 
@@ -436,7 +436,7 @@ RSpec.describe "bundle remove" do
 
         bundle "remove rack"
 
-        expect(err).to include("`rack` is not specified in #{bundled_app("Gemfile")} so it could not be removed.")
+        expect(err).to include("`rack` is not specified in #{bundled_app_gemfile} so it could not be removed.")
       end
     end
 

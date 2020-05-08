@@ -536,7 +536,7 @@ RSpec.describe "bundle clean" do
     expect(out).to include("rack (1.0.0)")
   end
 
-  describe "when missing permissions" do
+  describe "when missing permissions", :permissions do
     before { ENV["BUNDLE_PATH__SYSTEM"] = "true" }
     let(:system_cache_path) { system_gem_path("cache") }
     after do
@@ -585,11 +585,11 @@ RSpec.describe "bundle clean" do
     bundle "install"
 
     # mimic 7 length git revisions in Gemfile.lock
-    gemfile_lock = File.read(bundled_app("Gemfile.lock")).split("\n")
+    gemfile_lock = File.read(bundled_app_lock).split("\n")
     gemfile_lock.each_with_index do |line, index|
       gemfile_lock[index] = line[0..(11 + 7)] if line.include?("  revision:")
     end
-    lockfile(bundled_app("Gemfile.lock"), gemfile_lock.join("\n"))
+    lockfile(bundled_app_lock, gemfile_lock.join("\n"))
 
     bundle "config set path vendor/bundle"
     bundle "install"

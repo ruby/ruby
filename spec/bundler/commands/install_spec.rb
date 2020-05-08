@@ -17,7 +17,7 @@ RSpec.describe "bundle install with gem sources" do
       G
 
       expect(err).to include('StandardError, "FAIL"')
-      expect(bundled_app("Gemfile.lock")).not_to exist
+      expect(bundled_app_lock).not_to exist
     end
 
     it "creates a Gemfile.lock" do
@@ -26,7 +26,7 @@ RSpec.describe "bundle install with gem sources" do
         gem "rack"
       G
 
-      expect(bundled_app("Gemfile.lock")).to exist
+      expect(bundled_app_lock).to exist
     end
 
     it "does not create ./.bundle by default", :bundler => "< 3" do
@@ -66,13 +66,13 @@ RSpec.describe "bundle install with gem sources" do
         gem 'rack'
       G
 
-      lockfile = File.read(bundled_app("Gemfile.lock"))
+      lockfile = File.read(bundled_app_lock)
 
       install_gemfile <<-G
         raise StandardError, "FAIL"
       G
 
-      expect(File.read(bundled_app("Gemfile.lock"))).to eq(lockfile)
+      expect(File.read(bundled_app_lock)).to eq(lockfile)
     end
 
     it "does not touch the lockfile if nothing changed" do
@@ -81,7 +81,7 @@ RSpec.describe "bundle install with gem sources" do
         gem "rack"
       G
 
-      expect { run "1" }.not_to change { File.mtime(bundled_app("Gemfile.lock")) }
+      expect { run "1" }.not_to change { File.mtime(bundled_app_lock) }
     end
 
     it "fetches gems" do
@@ -176,7 +176,7 @@ RSpec.describe "bundle install with gem sources" do
     end
 
     it "does not reinstall any gem that is already available locally" do
-      system_gems "activesupport-2.3.2", :path => :bundle_path
+      system_gems "activesupport-2.3.2", :path => default_bundle_path
 
       build_repo2 do
         build_gem "activesupport", "2.3.2" do |s|
@@ -218,6 +218,8 @@ RSpec.describe "bundle install with gem sources" do
 
     describe "with a gem that installs multiple platforms" do
       it "installs gems for the local platform as first choice" do
+        skip "version is 1.0, not 1.0.0" if Gem.win_platform?
+
         install_gemfile <<-G
           source "#{file_uri_for(gem_repo1)}"
           gem "platform_specific"
@@ -318,7 +320,7 @@ RSpec.describe "bundle install with gem sources" do
       install_gemfile <<-G
       G
 
-      expect(File.exist?(bundled_app("Gemfile.lock"))).to eq(true)
+      expect(File.exist?(bundled_app_lock)).to eq(true)
     end
 
     context "throws a warning if a gem is added twice in Gemfile" do
@@ -372,6 +374,8 @@ RSpec.describe "bundle install with gem sources" do
     end
 
     it "gracefully handles error when rubygems server is unavailable" do
+      skip "networking issue" if Gem.win_platform?
+
       install_gemfile <<-G, :artifice => nil
         source "#{file_uri_for(gem_repo1)}"
         source "http://0.0.0.0:9384" do
@@ -500,23 +504,20 @@ RSpec.describe "bundle install with gem sources" do
   end
 
   describe "when Bundler root contains regex chars" do
-    before do
+    it "doesn't blow up" do
       root_dir = tmp("foo[]bar")
 
       FileUtils.mkdir_p(root_dir)
-      in_app_root_custom(root_dir)
-    end
 
-    it "doesn't blow up" do
       build_lib "foo"
       gemfile = <<-G
         gem 'foo', :path => "#{lib_path("foo-1.0")}"
       G
-      File.open("Gemfile", "w") do |file|
+      File.open("#{root_dir}/Gemfile", "w") do |file|
         file.puts gemfile
       end
 
-      bundle :install
+      bundle :install, :dir => root_dir
 
       expect(exitstatus).to eq(0) if exitstatus
     end
@@ -536,7 +537,7 @@ RSpec.describe "bundle install with gem sources" do
     end
   end
 
-  describe "when bundle path does not have write access" do
+  describe "when bundle path does not have write access", :permissions do
     before do
       FileUtils.mkdir_p(bundled_app("vendor"))
       gemfile <<-G

@@ -9,6 +9,8 @@ RSpec.describe "Running bin/* commands" do
   end
 
   it "runs the bundled command when in the bundle" do
+    skip "exec format error" if Gem.win_platform?
+
     bundle! "binstubs rack"
 
     build_gem "rack", "2.0", :to_system => true do |s|
@@ -20,6 +22,8 @@ RSpec.describe "Running bin/* commands" do
   end
 
   it "allows the location of the gem stubs to be specified" do
+    skip "created in bin :/" if Gem.win_platform?
+
     bundle! "binstubs rack", :path => "gbin"
 
     expect(bundled_app("bin")).not_to exist
@@ -30,6 +34,8 @@ RSpec.describe "Running bin/* commands" do
   end
 
   it "allows absolute paths as a specification of where to install bin stubs" do
+    skip "exec format error" if Gem.win_platform?
+
     bundle! "binstubs rack", :path => tmp("bin")
 
     gembin tmp("bin/rackup")
@@ -38,28 +44,32 @@ RSpec.describe "Running bin/* commands" do
 
   it "uses the default ruby install name when shebang is not specified" do
     bundle! "binstubs rack"
-    expect(File.open("bin/rackup").gets).to eq("#!/usr/bin/env #{RbConfig::CONFIG["ruby_install_name"]}\n")
+    expect(File.open(bundled_app("bin/rackup")).gets).to eq("#!/usr/bin/env #{RbConfig::CONFIG["ruby_install_name"]}\n")
   end
 
   it "allows the name of the shebang executable to be specified" do
+    skip "not created with custom name :/" if Gem.win_platform?
+
     bundle! "binstubs rack", :shebang => "ruby-foo"
-    expect(File.open("bin/rackup").gets).to eq("#!/usr/bin/env ruby-foo\n")
+    expect(File.open(bundled_app("bin/rackup")).gets).to eq("#!/usr/bin/env ruby-foo\n")
   end
 
   it "runs the bundled command when out of the bundle" do
+    skip "exec format error" if Gem.win_platform?
+
     bundle! "binstubs rack"
 
     build_gem "rack", "2.0", :to_system => true do |s|
       s.executables = "rackup"
     end
 
-    Dir.chdir(tmp) do
-      gembin "rackup"
-      expect(out).to eq("1.0.0")
-    end
+    gembin "rackup", :dir => tmp
+    expect(out).to eq("1.0.0")
   end
 
   it "works with gems in path" do
+    skip "exec format error" if Gem.win_platform?
+
     build_lib "rack", :path => lib_path("rack") do |s|
       s.executables = "rackup"
     end
@@ -94,12 +104,16 @@ RSpec.describe "Running bin/* commands" do
   end
 
   it "does not generate bin stubs if the option was not specified" do
+    skip "generated :/" if Gem.win_platform?
+
     bundle! "install"
 
     expect(bundled_app("bin/rackup")).not_to exist
   end
 
   it "allows you to stop installing binstubs", :bundler => "< 3" do
+    skip "delete permission error" if Gem.win_platform?
+
     bundle! "install --binstubs bin/"
     bundled_app("bin/rackup").rmtree
     bundle! "install --binstubs \"\""
@@ -143,6 +157,8 @@ RSpec.describe "Running bin/* commands" do
   end
 
   it "use BUNDLE_GEMFILE gemfile for binstub" do
+    skip "exec format error" if Gem.win_platform?
+
     # context with bin/bundler w/ default Gemfile
     bundle! "binstubs bundler"
 

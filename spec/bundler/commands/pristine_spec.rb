@@ -22,12 +22,14 @@ RSpec.describe "bundle pristine", :ruby_repo do
       source "#{file_uri_for(gem_repo2)}"
       gem "weakling"
       gem "very_simple_binary"
-      gem "foo", :git => "#{lib_path("foo")}"
+      gem "foo", :git => "#{lib_path("foo")}", :branch => "master"
       gem "git_with_ext", :git => "#{lib_path("git_with_ext")}"
       gem "bar", :path => "#{lib_path("bar")}"
 
       gemspec
     G
+
+    allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
   end
 
   context "when sourced from RubyGems" do
@@ -80,6 +82,19 @@ RSpec.describe "bundle pristine", :ruby_repo do
 
       bundle! "pristine"
       expect(changes_txt).not_to be_file
+    end
+
+    it "displays warning and ignores changes when a local config exists" do
+      spec = Bundler.definition.specs["foo"].first
+      bundle "config set local.#{spec.name} #{lib_path(spec.name)}"
+
+      changes_txt = Pathname.new(spec.full_gem_path).join("lib/changes.txt")
+      FileUtils.touch(changes_txt)
+      expect(changes_txt).to be_file
+
+      bundle "pristine"
+      expect(changes_txt).to be_file
+      expect(err).to include("Cannot pristine #{spec.name} (#{spec.version}#{spec.git_version}). Gem is locally overriden.")
     end
   end
 

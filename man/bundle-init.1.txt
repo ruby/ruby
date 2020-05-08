@@ -1,4 +1,4 @@
-BUNDLE-INIT(1)							BUNDLE-INIT(1)
+BUNDLE-INIT(1)                                                  BUNDLE-INIT(1)
 
 
 
@@ -9,16 +9,16 @@ SYNOPSIS
        bundle init [--gemspec=FILE]
 
 DESCRIPTION
-       Init  generates a default [Gemfile(5)][Gemfile(5)] in the current work-
-       ing directory. When adding a [Gemfile(5)][Gemfile(5)] to a gem  with  a
-       gemspec,  the  --gemspec  option will automatically add each dependency
-       listed in the gemspec  file  to	the  newly  created  [Gemfile(5)][Gem-
-       file(5)].
+       Init  generates  a  default  [Gemfile(5)][Gemfile(5)]  in  the  current
+       working directory. When adding a [Gemfile(5)][Gemfile(5)] to a gem with
+       a  gemspec, the --gemspec option will automatically add each dependency
+       listed    in    the    gemspec    file    to    the    newly    created
+       [Gemfile(5)][Gemfile(5)].
 
 OPTIONS
        --gemspec
-	      Use  the	specified  .gemspec  to  create  the [Gemfile(5)][Gem-
-	      file(5)]
+              Use     the     specified     .gemspec     to     create     the
+              [Gemfile(5)][Gemfile(5)]
 
 FILES
        Included in the default [Gemfile(5)][Gemfile(5)] generated is the  line
@@ -31,4 +31,4 @@ SEE ALSO
 
 
 
-				 January 2020			BUNDLE-INIT(1)
+                                   May 2020                     BUNDLE-INIT(1)

@@ -215,6 +215,8 @@ RSpec.describe "real source plugins" do
       build_repo2 do
         build_plugin "bundler-source-gitp" do |s|
           s.write "plugins.rb", <<-RUBY
+            require "open3"
+
             class SPlugin < Bundler::Plugin::API
               source "gitp"
 
@@ -254,9 +256,7 @@ RSpec.describe "real source plugins" do
                 mkdir_p(install_path.dirname)
                 rm_rf(install_path)
                 `git clone --no-checkout --quiet "\#{cache_path}" "\#{install_path}"`
-                Dir.chdir install_path do
-                  `git reset --hard \#{revision}`
-                end
+                Open3.capture2e("git reset --hard \#{revision}", :chdir => install_path)
 
                 spec_path = install_path.join("\#{spec.full_name}.gemspec")
                 spec_path.open("wb") {|f| f.write spec.to_ruby }
@@ -310,9 +310,8 @@ RSpec.describe "real source plugins" do
                   cache_repo
                 end
 
-                Dir.chdir cache_path do
-                  `git rev-parse --verify \#{@ref}`.strip
-                end
+                output, _status = Open3.capture2e("git rev-parse --verify \#{@ref}", :chdir => cache_path)
+                output.strip
               end
 
               def base_name

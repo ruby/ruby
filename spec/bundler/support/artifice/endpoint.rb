@@ -77,11 +77,11 @@ class Endpoint < Sinatra::Base
   end
 
   get "/fetch/actual/gem/:id" do
-    File.read("#{GEM_REPO}/quick/Marshal.4.8/#{params[:id]}")
+    File.binread("#{GEM_REPO}/quick/Marshal.4.8/#{params[:id]}")
   end
 
   get "/gems/:id" do
-    File.read("#{GEM_REPO}/gems/#{params[:id]}")
+    File.binread("#{GEM_REPO}/gems/#{params[:id]}")
   end
 
   get "/api/v1/dependencies" do
@@ -89,11 +89,11 @@ class Endpoint < Sinatra::Base
   end
 
   get "/specs.4.8.gz" do
-    File.read("#{GEM_REPO}/specs.4.8.gz")
+    File.binread("#{GEM_REPO}/specs.4.8.gz")
   end
 
   get "/prerelease_specs.4.8.gz" do
-    File.read("#{GEM_REPO}/prerelease_specs.4.8.gz")
+    File.binread("#{GEM_REPO}/prerelease_specs.4.8.gz")
   end
 end
 
