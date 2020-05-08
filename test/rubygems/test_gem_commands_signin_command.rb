@@ -17,8 +17,8 @@ class TestGemCommandsSigninCommand < Gem::TestCase
   end
 
   def teardown
-    credential_teardown
-
+    credentials_path = Gem.configuration.credentials_path
+    File.delete(credentials_path) if File.exist?(credentials_path)
     super
   end
 
