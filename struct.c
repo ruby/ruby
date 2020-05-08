@@ -659,7 +659,9 @@ rb_struct_initialize_m(int argc, const VALUE *argv, VALUE self)
 VALUE
 rb_struct_initialize(VALUE self, VALUE values)
 {
-    return rb_struct_initialize_m(RARRAY_LENINT(values), RARRAY_CONST_PTR(values), self);
+    rb_struct_initialize_m(RARRAY_LENINT(values), RARRAY_CONST_PTR(values), self);
+    RB_GC_GUARD(values);
+    return Qnil;
 }
 
 static VALUE *
