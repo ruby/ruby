@@ -39,6 +39,7 @@ def parse_args(argv = ARGV)
   $make = 'make'
   $mflags = []
   $install = []
+  $installed = {}
   $installed_list = nil
   $exclude = []
   $dryrun = false
@@ -170,9 +171,12 @@ def install(src, dest, options = {})
   options = options.clone
   strip = options.delete(:strip)
   options[:preserve] = true
+  srcs = Array(src).select {|s| !$installed[$made_dirs[dest] ? File.join(dest, s) : dest]}
+  return if srcs.empty?
+  src = srcs if Array === src
   d = with_destdir(dest)
   super(src, d, **options)
-  srcs = Array(src)
+  srcs.each {|s| $installed[$made_dirs[dest] ? File.join(dest, s) : dest] = true}
   if strip
     d = srcs.map {|s| File.join(d, File.basename(s))} if $made_dirs[dest]
     strip_file(d)
