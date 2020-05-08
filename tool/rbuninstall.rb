@@ -27,9 +27,10 @@ $_ = File.join($destdir, $_) if $destdir
 list << $_
 END {
   status = true
-  $\ = ors = (!$dryrun and $tty) ? "\e[K\r" : "\n"
+  $\ = nil
+  ors = (!$dryrun and $tty) ? "\e[K\r" : "\n"
   $files.each do |file|
-    print "rm #{file}"
+    print "rm #{file}#{ors}"
     unless $dryrun
       begin
         File.unlink(file)
@@ -45,7 +46,7 @@ END {
     unlink[dir] = true
   end
   while dir = $dirs.pop
-    print "rmdir #{dir}"
+    print "rmdir #{dir}#{ors}"
     unless $dryrun
       begin
         begin
@@ -65,7 +66,6 @@ END {
       end
     end
   end
-  $\ = nil
   print ors.chomp
   exit(status)
 }
