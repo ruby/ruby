@@ -46,6 +46,7 @@ END {
     unlink[dir] = true
   end
   while dir = $dirs.pop
+    dir = File.dirname(dir) while File.basename(dir) == '.'
     print "rmdir #{dir}#{ors}"
     unless $dryrun
       begin
