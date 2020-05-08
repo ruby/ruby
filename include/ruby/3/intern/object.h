@@ -30,6 +30,7 @@ RUBY3_SYMBOL_EXPORT_BEGIN()
     ((obj) != (orig) && (rb_obj_init_copy((obj), (orig)), 1))
 #define OBJ_INIT_COPY(obj, orig) RB_OBJ_INIT_COPY(obj, orig)
 
+VALUE rb_class_new_instance_pass_kw(int, const VALUE *, VALUE);
 VALUE rb_class_new_instance(int, const VALUE*, VALUE);
 VALUE rb_class_new_instance_kw(int, const VALUE*, VALUE, int);
 

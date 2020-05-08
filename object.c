@@ -2203,8 +2203,8 @@ rb_class_allocate_instance(VALUE klass)
  *
  */
 
-static VALUE
-rb_class_s_new(int argc, const VALUE *argv, VALUE klass)
+VALUE
+rb_class_new_instance_pass_kw(int argc, const VALUE *argv, VALUE klass)
 {
     VALUE obj;
 
@@ -4726,7 +4726,7 @@ InitVM_Object(void)
     rb_define_method(rb_cModule, "singleton_class?", rb_mod_singleton_p, 0);
 
     rb_define_method(rb_cClass, "allocate", rb_class_alloc_m, 0);
-    rb_define_method(rb_cClass, "new", rb_class_s_new, -1);
+    rb_define_method(rb_cClass, "new", rb_class_new_instance_pass_kw, -1);
     rb_define_method(rb_cClass, "initialize", rb_class_initialize, -1);
     rb_define_method(rb_cClass, "superclass", rb_class_superclass, 0);
     rb_define_alloc_func(rb_cClass, rb_class_s_alloc);
