@@ -317,24 +317,15 @@ rb_struct_s_inspect(VALUE klass)
 }
 
 static VALUE
-struct_new_kw(int argc, const VALUE *argv, VALUE klass)
-{
-    return rb_class_new_instance_kw(argc, argv, klass, RB_PASS_CALLED_KEYWORDS);
-}
-
-static VALUE
-setup_struct(VALUE nstr, VALUE members, int keyword_init)
+setup_struct(VALUE nstr, VALUE members)
 {
     long i, len;
-    VALUE (*new_func)(int, const VALUE *, VALUE) = rb_class_new_instance;
-
-    if (keyword_init) new_func = struct_new_kw;
 
     members = struct_set_members(nstr, members);
 
     rb_define_alloc_func(nstr, struct_alloc);
-    rb_define_singleton_method(nstr, "new", new_func, -1);
-    rb_define_singleton_method(nstr, "[]", new_func, -1);
+    rb_define_singleton_method(nstr, "new", rb_class_new_instance_pass_kw, -1);
+    rb_define_singleton_method(nstr, "[]", rb_class_new_instance_pass_kw, -1);
     rb_define_singleton_method(nstr, "members", rb_struct_s_members_m, 0);
     rb_define_singleton_method(nstr, "inspect", rb_struct_s_inspect, 0);
     len = RARRAY_LEN(members);
@@ -449,7 +440,7 @@ rb_struct_define(const char *name, ...)
 
     if (!name) st = anonymous_struct(rb_cStruct);
     else st = new_struct(rb_str_new2(name), rb_cStruct);
-    return setup_struct(st, ary, 0);
+    return setup_struct(st, ary);
 }
 
 VALUE
@@ -462,7 +453,7 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
     ary = struct_make_members_list(ar);
     va_end(ar);
 
-    return setup_struct(rb_define_class_under(outer, name, rb_cStruct), ary, 0);
+    return setup_struct(rb_define_class_under(outer, name, rb_cStruct), ary);
 }
 
 /*
@@ -581,7 +572,7 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
     else {
 	st = new_struct(name, klass);
     }
-    setup_struct(st, rest, (int)keyword_init);
+    setup_struct(st, rest);
     rb_ivar_set(st, id_keyword_init, keyword_init);
     if (rb_block_given_p()) {
         rb_mod_module_eval(0, 0, st);
