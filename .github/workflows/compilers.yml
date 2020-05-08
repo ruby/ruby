@@ -45,6 +45,7 @@ jobs:
       fail-fast: false
       matrix:
         entry:
+          - { key: default_cc, name: gcc-10,    value: gcc-10 }
           - { key: default_cc, name: gcc-9,     value: gcc-9 }
           - { key: default_cc, name: gcc-8,     value: gcc-8 }
           - { key: default_cc, name: gcc-7,     value: gcc-7 }
