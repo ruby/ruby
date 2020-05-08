@@ -18,12 +18,6 @@ class TestGemCommandsYankCommand < Gem::TestCase
     Gem.configuration.api_keys[:KEY] = 'other'
   end
 
-  def teardown
-    credential_teardown
-
-    super
-  end
-
   def test_handle_options
     @cmd.handle_options %w[a --version 1.0 --platform x86-darwin -k KEY --host HOST]
 
