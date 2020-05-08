@@ -10,9 +10,11 @@ class TestGemExtCmakeBuilder < Gem::TestCase
     # Details: https://github.com/rubygems/rubygems/issues/1270#issuecomment-177368340
     skip "CmakeBuilder doesn't work on Windows." if Gem.win_platform?
 
-    _, status = Open3.capture2e('cmake')
-
-    skip 'cmake not present' unless status.success?
+    begin
+      _, status = Open3.capture2e('cmake')
+    rescue Errno::ENOENT
+      skip 'cmake not present'
+    end
 
     @ext = File.join @tempdir, 'ext'
     @dest_path = File.join @tempdir, 'prefix'
