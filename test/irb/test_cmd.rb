@@ -74,10 +74,10 @@ module TestIRB
 
     def test_irb_info_multiline_without_rc_files
       inputrc_backup = ENV["INPUTRC"]
-      ENV["INPUTRC"] = "unkown_inpurc"
+      ENV["INPUTRC"] = "unknown_inpurc"
       ext_backup = IRB::IRBRC_EXT
       IRB.__send__(:remove_const, :IRBRC_EXT)
-      IRB.const_set(:IRBRC_EXT, "unkown_ext")
+      IRB.const_set(:IRBRC_EXT, "unknown_ext")
       IRB.setup(__FILE__, argv: [])
       IRB.conf[:USE_MULTILINE] = true
       IRB.conf[:USE_SINGLELINE] = false
@@ -100,10 +100,10 @@ module TestIRB
 
     def test_irb_info_singleline_without_rc_files
       inputrc_backup = ENV["INPUTRC"]
-      ENV["INPUTRC"] = "unkown_inpurc"
+      ENV["INPUTRC"] = "unknown_inpurc"
       ext_backup = IRB::IRBRC_EXT
       IRB.__send__(:remove_const, :IRBRC_EXT)
-      IRB.const_set(:IRBRC_EXT, "unkown_ext")
+      IRB.const_set(:IRBRC_EXT, "unknown_ext")
       IRB.setup(__FILE__, argv: [])
       IRB.conf[:USE_MULTILINE] = false
       IRB.conf[:USE_SINGLELINE] = true
