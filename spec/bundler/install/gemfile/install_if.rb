@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-describe "bundle install with install_if conditionals" do
+RSpec.describe "bundle install with install_if conditionals" do
   it "follows the install_if DSL" do
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
