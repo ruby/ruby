@@ -618,7 +618,7 @@ console_echo_p(VALUE io)
 
     GetOpenFile(io, fptr);
     fd = GetReadFD(fptr);
-    if (!getattr(fd, &t)) rb_sys_fail_str(fptr->pathv);
+    if (!getattr(fd, &t)) sys_fail_fptr(fptr);
     return echo_p(&t) ? Qtrue : Qfalse;
 }
 
