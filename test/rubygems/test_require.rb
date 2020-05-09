@@ -452,7 +452,29 @@ class TestGemRequire < Gem::TestCase
       puts Gem.loaded_specs["json"]
     RUBY
     output = Gem::Util.popen(*ruby_with_rubygems_in_load_path, "-e", cmd).strip
+    assert $?.success?
     refute_empty output
+  end
+
+  def test_realworld_upgraded_default_gem
+    testing_ruby_repo = !ENV["GEM_COMMAND"].nil?
+    skip "this test can't work under ruby-core setup" if testing_ruby_repo
+
+    newer_json = util_spec("json", "999.99.9", nil, ["lib/json.rb"])
+    install_gem newer_json
+
+    cmd = <<-RUBY
+      $stderr = $stdout
+      require "json"
+      puts Gem.loaded_specs["json"].version
+      puts $LOADED_FEATURES
+    RUBY
+    output = Gem::Util.popen({ 'GEM_HOME' => @gemhome }, *ruby_with_rubygems_in_load_path, "-e", cmd).strip
+    assert $?.success?
+    refute_empty output
+    assert_equal "999.99.9", output.lines[0].chomp
+    # Make sure only files from the newer json gem are loaded, and no files from the default json gem
+    assert_equal ["#{@gemhome}/gems/json-999.99.9/lib/json.rb"], output.lines.grep(%r{/gems/json-}).map(&:chomp)
   end
 
   def test_default_gem_and_normal_gem
