@@ -31,9 +31,13 @@ class TestIO_Console < Test::Unit::TestCase
   end
 
   def test_failed_path
-    skip unless Errno.const_defined?(:ENODEV)
+    exceptions = %i[ENODEV ENOTTY].map {|e|
+      Errno.const_get(e) if Errno.const_defined?(e)
+    }
+    exceptions.compact!
+    skip if exceptions.empty?
     File.open(IO::NULL) do |f|
-      e = assert_raise(Errno::ENODEV) do
+      e = assert_raise(*exceptions) do
         f.echo?
       end
       assert_include(e.message, IO::NULL)
