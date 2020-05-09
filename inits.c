@@ -17,7 +17,7 @@ static void Init_builtin_prelude(void);
 
 #define CALL(n) {void Init_##n(void); Init_##n();}
 
-#ifndef complex
+#ifdef complex
 #undef complex
 #endif
 
@@ -95,4 +95,6 @@ rb_call_inits(void)
 }
 #undef CALL
 
-#define complex _complex
+#ifndef complex
+#undef complex
+#endif
