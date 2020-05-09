@@ -89,8 +89,8 @@ rb_call_inits(void)
 #ifndef complex
 #undef complex
     BUILTIN(complex);
-#endif
 #define complex _complex
+#endif
     Init_builtin_prelude();
 }
 #undef CALL
