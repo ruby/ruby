@@ -26,6 +26,7 @@
 #include "internal/object.h"
 #include "internal/rational.h"
 #include "ruby_assert.h"
+#include "builtin.h"
 
 #define ZERO INT2FIX(0)
 #define ONE INT2FIX(1)
@@ -525,54 +526,28 @@ f_complex_new2(VALUE klass, VALUE x, VALUE y)
 static VALUE nucomp_convert(VALUE klass, VALUE a1, VALUE a2, int raise);
 static VALUE nucomp_s_convert(int argc, VALUE *argv, VALUE klass);
 
-/*
- * call-seq:
- *    Complex(x[, y], exception: true)  ->  numeric or nil
- *
- * Returns x+i*y;
- *
- *    Complex(1, 2)    #=> (1+2i)
- *    Complex('1+2i')  #=> (1+2i)
- *    Complex(nil)     #=> TypeError
- *    Complex(1, nil)  #=> TypeError
- *
- *    Complex(1, nil, exception: false)  #=> nil
- *    Complex('1+2', exception: false)   #=> nil
- *
- * Syntax of string form:
- *
- *   string form = extra spaces , complex , extra spaces ;
- *   complex = real part | [ sign ] , imaginary part
- *           | real part , sign , imaginary part
- *           | rational , "@" , rational ;
- *   real part = rational ;
- *   imaginary part = imaginary unit | unsigned rational , imaginary unit ;
- *   rational = [ sign ] , unsigned rational ;
- *   unsigned rational = numerator | numerator , "/" , denominator ;
- *   numerator = integer part | fractional part | integer part , fractional part ;
- *   denominator = digits ;
- *   integer part = digits ;
- *   fractional part = "." , digits , [ ( "e" | "E" ) , [ sign ] , digits ] ;
- *   imaginary unit = "i" | "I" | "j" | "J" ;
- *   sign = "-" | "+" ;
- *   digits = digit , { digit | "_" , digit };
- *   digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
- *   extra spaces = ? \s* ? ;
- *
- * See String#to_c.
- */
 static VALUE
-nucomp_f_complex(int argc, VALUE *argv, VALUE klass)
+nucomp_f_complex(rb_execution_context_t *ec, VALUE klass, VALUE args, VALUE opts)
 {
-    VALUE a1, a2, opts = Qnil;
+    VALUE a1, a2;
     int raise = TRUE;
+    long argc;
+    
+    argc = RARRAY_LEN(args);
 
-    if (rb_scan_args(argc, argv, "11:", &a1, &a2, &opts) == 1) {
+    rb_check_arity(rb_long2int(argc), 1, 2);
+
+    a1 = rb_ary_entry(args, 0);
+
+    if (argc == 1) {
         a2 = Qundef;
+    } else {
+        a2 = rb_ary_entry(args, 1);
     }
     if (!NIL_P(opts)) {
-        raise = rb_opts_exception_p(opts, raise);
+        raise = rb_bool_expected(opts, "exception");
     }
+
     if (argc > 0 && CLASS_OF(a1) == rb_cComplex && a2 == Qundef) {
         return a1;
     }
@@ -2354,8 +2329,6 @@ Init_Complex(void)
     rb_define_singleton_method(rb_cComplex, "rect", nucomp_s_new, -1);
     rb_define_singleton_method(rb_cComplex, "polar", nucomp_s_polar, -1);
 
-    rb_define_global_function("Complex", nucomp_f_complex, -1);
-
     rb_undef_methods_from(rb_cComplex, rb_mComparable);
     rb_undef_method(rb_cComplex, "%");
     rb_undef_method(rb_cComplex, "div");
@@ -2466,3 +2439,5 @@ Init_Complex(void)
 
     rb_provide("complex.so");	/* for backward compatibility */
 }
+
+#include "complex.rbinc"

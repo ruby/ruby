@@ -86,6 +86,11 @@ rb_call_inits(void)
     BUILTIN(warning);
     BUILTIN(array);
     BUILTIN(kernel);
+#ifndef complex
+#undef complex
+    BUILTIN(complex);
+#endif
+#define complex _complex
     Init_builtin_prelude();
 }
 #undef CALL

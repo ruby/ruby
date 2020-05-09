@@ -1007,6 +1007,7 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/trace_point.rb \
 		$(srcdir)/warning.rb \
 		$(srcdir)/array.rb \
+		$(srcdir)/complex.rb \
 		$(srcdir)/kernel.rb \
 		$(srcdir)/prelude.rb \
 		$(srcdir)/gem_prelude.rb \
@@ -3157,7 +3158,9 @@ complex.$(OBJEXT): {$(VPATH)}backward/2/r_cast.h
 complex.$(OBJEXT): {$(VPATH)}backward/2/rmodule.h
 complex.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 complex.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+complex.$(OBJEXT): {$(VPATH)}builtin.h
 complex.$(OBJEXT): {$(VPATH)}complex.c
+complex.$(OBJEXT): {$(VPATH)}complex.rbinc
 complex.$(OBJEXT): {$(VPATH)}config.h
 complex.$(OBJEXT): {$(VPATH)}defines.h
 complex.$(OBJEXT): {$(VPATH)}encoding.h
@@ -8199,6 +8202,7 @@ miniinit.$(OBJEXT): {$(VPATH)}backward/2/rmodule.h
 miniinit.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 miniinit.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 miniinit.$(OBJEXT): {$(VPATH)}builtin.h
+miniinit.$(OBJEXT): {$(VPATH)}complex.rb
 miniinit.$(OBJEXT): {$(VPATH)}config.h
 miniinit.$(OBJEXT): {$(VPATH)}defines.h
 miniinit.$(OBJEXT): {$(VPATH)}dir.rb

@@ -1,0 +1,8 @@
+benchmark:
+  complex: "Complex(1, 2)"
+  complex_exception_true: "Complex(1, 2, exception: true)"
+  complex_exception_false: "Complex(1, 2, exception: false)"
+  str_complex: "Complex('1+2i')"
+  str_complex_exception_true: "Complex('1+2i', exception: true)"
+  str_complex_exception_false: "Complex('1+2i', exception: false)"
+loop_count: 100000 
