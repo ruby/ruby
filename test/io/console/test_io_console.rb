@@ -29,6 +29,16 @@ class TestIO_Console < Test::Unit::TestCase
   def set_winsize_teardown
     trap(:TTOU, @old_ttou) if defined?(@old_ttou) and @old_ttou
   end
+
+  def test_failed_path
+    skip unless Errno.const_defined?(:ENODEV)
+    File.open(IO::NULL) do |f|
+      e = assert_raise(Errno::ENODEV) do
+        f.echo?
+      end
+      assert_include(e.message, IO::NULL)
+    end
+  end
 end
 
 defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
