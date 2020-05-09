@@ -31,11 +31,11 @@ module GC
   #  are not guaranteed to be future-compatible, and may be ignored if the
   #  underlying implementation does not support them.
   def self.start full_mark: true, immediate_mark: true, immediate_sweep: true
-    __builtin_gc_start_internal full_mark, immediate_mark, immediate_sweep
+    __intrinsic__.gc_start_internal full_mark, immediate_mark, immediate_sweep
   end
 
   def garbage_collect full_mark: true, immediate_mark: true, immediate_sweep: true
-    __builtin_gc_start_internal full_mark, immediate_mark, immediate_sweep
+    __intrinsic__.gc_start_internal full_mark, immediate_mark, immediate_sweep
   end
 
   #  call-seq:
@@ -49,7 +49,7 @@ module GC
   #     GC.enable    #=> false
   #
   def self.enable
-    __builtin_gc_enable
+    __intrinsic__.gc_enable
   end
 
   #  call-seq:
@@ -61,7 +61,7 @@ module GC
   #     GC.disable   #=> false
   #     GC.disable   #=> true
   def self.disable
-    __builtin_gc_disable
+    __intrinsic__.gc_disable
   end
 
   #  call-seq:
@@ -69,7 +69,7 @@ module GC
   #
   #  Returns current status of GC stress mode.
   def self.stress
-    __builtin_gc_stress_get
+    __intrinsic__.gc_stress_get
   end
 
   #  call-seq:
@@ -87,7 +87,7 @@ module GC
   #    0x02:: no immediate sweep
   #    0x04:: full mark after malloc/calloc/realloc
   def self.stress=(flag)
-    __builtin_gc_stress_set_m flag
+    __intrinsic__.gc_stress_set_m flag
   end
 
   #  call-seq:
@@ -97,7 +97,7 @@ module GC
   #
   #  It returns the number of times GC occurred since the process started.
   def self.count
-    __builtin_gc_count
+    __intrinsic__.gc_count
   end
 
   #  call-seq:
@@ -146,7 +146,7 @@ module GC
   #
   #  This method is only expected to work on C Ruby.
   def self.stat hash_or_key = nil
-    __builtin_gc_stat hash_or_key
+    __intrinsic__.gc_stat hash_or_key
   end
 
   #  call-seq:
@@ -160,11 +160,11 @@ module GC
   # it is overwritten and returned.
   # This is intended to avoid probe effect.
   def self.latest_gc_info hash_or_key = nil
-    __builtin_gc_latest_gc_info hash_or_key
+    __intrinsic__.gc_latest_gc_info hash_or_key
   end
 
   def self.compact
-    __builtin_rb_gc_compact
+    __intrinsic__.rb_gc_compact
   end
 
   # call-seq:
@@ -182,13 +182,13 @@ module GC
   # object, that object should be pushed on the mark stack, and will
   # make a SEGV.
   def self.verify_compaction_references(toward: nil, double_heap: false)
-    __builtin_gc_verify_compaction_references(toward, double_heap)
+    __intrinsic__.gc_verify_compaction_references(toward, double_heap)
   end
 end
 
 module ObjectSpace
   def garbage_collect full_mark: true, immediate_mark: true, immediate_sweep: true
-    __builtin_gc_start_internal full_mark, immediate_mark, immediate_sweep
+    __intrinsic__.gc_start_internal full_mark, immediate_mark, immediate_sweep
   end
 
   module_function :garbage_collect

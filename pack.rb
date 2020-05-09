@@ -131,7 +131,7 @@ class Array
   #   X            | ---     | back up a byte
   #   x            | ---     | null byte
   def pack(fmt, buffer: nil)
-    __builtin_pack_pack(fmt, buffer)
+    __intrinsic__.pack_pack(fmt, buffer)
   end
 end
 
@@ -254,7 +254,7 @@ class String
   # * Q_, Q!, q_, and q! are available since Ruby 2.1.
   # * I!<, i!<, I!>, and i!> are available since Ruby 1.9.3.
   def unpack(fmt)
-    __builtin_pack_unpack(fmt)
+    __intrinsic__.pack_unpack(fmt)
   end
 
   # call-seq:
@@ -278,6 +278,6 @@ class String
   # Thus unpack1 is convenient, makes clear the intention and signals
   # the expected return value to those reading the code.
   def unpack1(fmt)
-    __builtin_pack_unpack1(fmt)
+    __intrinsic__.pack_unpack1(fmt)
   end
 end

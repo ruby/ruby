@@ -13,7 +13,7 @@ class Array
   #
   #    a.shuffle!(random: Random.new(1))  #=> [1, 3, 2]
   def shuffle!(random: Random)
-    __builtin_rb_ary_shuffle_bang(random)
+    __intrinsic__.rb_ary_shuffle_bang(random)
   end
 
   # call-seq:
@@ -30,7 +30,7 @@ class Array
   #
   #    a.shuffle(random: Random.new(1))  #=> [1, 3, 2]
   def shuffle(random: Random)
-    __builtin_rb_ary_shuffle(random)
+    __intrinsic__.rb_ary_shuffle(random)
   end
 
   # call-seq:
@@ -57,6 +57,6 @@ class Array
   #    a.sample(random: Random.new(1))     #=> 6
   #    a.sample(4, random: Random.new(1))  #=> [6, 10, 9, 2]
   def sample(n = (ary = false), random: Random)
-    __builtin_rb_ary_sample(random, n, ary)
+    __intrinsic__.rb_ary_sample(random, n, ary)
   end
 end

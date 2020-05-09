@@ -93,7 +93,7 @@ class TracePoint
   # Access from other threads is also forbidden.
   #
   def self.new(*events)
-    __builtin_tracepoint_new_s(events)
+    __intrinsic__.tracepoint_new_s(events)
   end
 
   #  call-seq:
@@ -102,7 +102,7 @@ class TracePoint
   #  Return a string containing a human-readable TracePoint
   #  status.
   def inspect
-    __builtin_tracepoint_inspect
+    __intrinsic__.tracepoint_inspect
   end
 
   # call-seq:
@@ -115,7 +115,7 @@ class TracePoint
   #
   #  This method is only for debugging TracePoint itself.
   def self.stat
-    __builtin_tracepoint_stat_s
+    __intrinsic__.tracepoint_stat_s
   end
 
   # Document-method: trace
@@ -132,7 +132,7 @@ class TracePoint
   #	    trace.enabled? #=> true
   #
   def self.trace(*events)
-    __builtin_tracepoint_trace_s(events)
+    __intrinsic__.tracepoint_trace_s(events)
   end
 
   # call-seq:
@@ -193,7 +193,7 @@ class TracePoint
   #    #=> RuntimeError: access from outside
   #
   def enable(target: nil, target_line: nil, target_thread: nil)
-    __builtin_tracepoint_enable_m(target, target_line, target_thread)
+    __intrinsic__.tracepoint_enable_m(target, target_line, target_thread)
   end
 
   # call-seq:
@@ -229,7 +229,7 @@ class TracePoint
   #	trace.disable { p tp.lineno }
   #	#=> RuntimeError: access from outside
   def disable
-    __builtin_tracepoint_disable_m
+    __intrinsic__.tracepoint_disable_m
   end
 
   # call-seq:
@@ -237,40 +237,40 @@ class TracePoint
   #
   # The current status of the trace
   def enabled?
-    __builtin_tracepoint_enabled_p
+    __intrinsic__.tracepoint_enabled_p
   end
 
   # Type of event
   #
   # See TracePoint@Events for more information.
   def event
-    __builtin_tracepoint_attr_event
+    __intrinsic__.tracepoint_attr_event
   end
 
   # Line number of the event
   def lineno
-    __builtin_tracepoint_attr_lineno
+    __intrinsic__.tracepoint_attr_lineno
   end
 
   # Path of the file being run
   def path
-    __builtin_tracepoint_attr_path
+    __intrinsic__.tracepoint_attr_path
   end
 
   # Return the parameters definition of the method or block that the
   # current hook belongs to. Format is the same as for Method#parameters
   def parameters
-    __builtin_tracepoint_attr_parameters
+    __intrinsic__.tracepoint_attr_parameters
   end
 
   # Return the name at the definition of the method being called
   def method_id
-    __builtin_tracepoint_attr_method_id
+    __intrinsic__.tracepoint_attr_method_id
   end
 
   # Return the called name of the method being called
   def callee_id
-    __builtin_tracepoint_attr_callee_id
+    __intrinsic__.tracepoint_attr_callee_id
   end
 
   # Return class or module of the method being called.
@@ -306,12 +306,12 @@ class TracePoint
   # 	  C.foo
   # 	end
   def defined_class
-    __builtin_tracepoint_attr_defined_class
+    __intrinsic__.tracepoint_attr_defined_class
   end
 
   # Return the generated binding object from event
   def binding
-    __builtin_tracepoint_attr_binding
+    __intrinsic__.tracepoint_attr_binding
   end
 
   # Return the trace object during event
@@ -319,23 +319,23 @@ class TracePoint
   # Same as TracePoint#binding:
   #	trace.binding.eval('self')
   def self
-    __builtin_tracepoint_attr_self
+    __intrinsic__.tracepoint_attr_self
   end
 
   #  Return value from +:return+, +c_return+, and +b_return+ event
   def return_value
-    __builtin_tracepoint_attr_return_value
+    __intrinsic__.tracepoint_attr_return_value
   end
 
   # Value from exception raised on the +:raise+ event
   def raised_exception
-    __builtin_tracepoint_attr_raised_exception
+    __intrinsic__.tracepoint_attr_raised_exception
   end
 
   # Compiled source code (String) on *eval methods on the +:script_compiled+ event.
   # If loaded from a file, it will return nil.
   def eval_script
-    __builtin_tracepoint_attr_eval_script
+    __intrinsic__.tracepoint_attr_eval_script
   end
 
   # Compiled instruction sequence represented by a RubyVM::InstructionSequence instance
@@ -343,6 +343,6 @@ class TracePoint
   #
   # Note that this method is MRI specific.
   def instruction_sequence
-    __builtin_tracepoint_attr_instruction_sequence
+    __intrinsic__.tracepoint_attr_instruction_sequence
   end
 end

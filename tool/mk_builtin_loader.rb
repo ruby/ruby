@@ -113,7 +113,9 @@ def mk_builtin_header file
   ofile = "#{file}inc"
 
   # bs = { func_name => argc }
-  collect_builtin(base, RubyVM::InstructionSequence.compile_file(file, false).to_a, 'top', bs = {}, inlines = {})
+  code = File.read(file).gsub(/\b__intrinsic__\.(?=\w)/, '__builtin_')
+  iseq = RubyVM::InstructionSequence.compile(code, file, nil, nil, false)
+  collect_builtin(base, iseq.to_a, 'top', bs = {}, inlines = {})
 
   begin
     f = open(ofile, 'w')

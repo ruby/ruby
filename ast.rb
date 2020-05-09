@@ -32,7 +32,7 @@ class RubyVM
     #    RubyVM::AbstractSyntaxTree.parse("x = 1 + 2")
     #    # => #<RubyVM::AbstractSyntaxTree::Node:SCOPE@1:0-1:9>
     def self.parse string
-      __builtin_ast_s_parse string
+      __intrinsic__.ast_s_parse string
     end
 
     #  call-seq:
@@ -47,7 +47,7 @@ class RubyVM
     #     RubyVM::AbstractSyntaxTree.parse_file("my-app/app.rb")
     #     # => #<RubyVM::AbstractSyntaxTree::Node:SCOPE@1:0-31:3>
     def self.parse_file pathname
-      __builtin_ast_s_parse_file pathname
+      __intrinsic__.ast_s_parse_file pathname
     end
 
     #  call-seq:
@@ -66,7 +66,7 @@ class RubyVM
     #     RubyVM::AbstractSyntaxTree.of(method(:hello))
     #     # => #<RubyVM::AbstractSyntaxTree::Node:SCOPE@1:0-3:3>
     def self.of body
-      __builtin_ast_s_of body
+      __intrinsic__.ast_s_of body
     end
 
     # RubyVM::AbstractSyntaxTree::Node instances are created by parse methods in
@@ -88,7 +88,7 @@ class RubyVM
       #    call = lasgn.children[1]
       #    call.type # => :OPCALL
       def type
-        __builtin_ast_node_type
+        __intrinsic__.ast_node_type
       end
 
       #  call-seq:
@@ -96,7 +96,7 @@ class RubyVM
       #
       #  The line number in the source code where this AST's text began.
       def first_lineno
-        __builtin_ast_node_first_lineno
+        __intrinsic__.ast_node_first_lineno
       end
 
       #  call-seq:
@@ -104,7 +104,7 @@ class RubyVM
       #
       #  The column number in the source code where this AST's text began.
       def first_column
-        __builtin_ast_node_first_column
+        __intrinsic__.ast_node_first_column
       end
 
       #  call-seq:
@@ -112,7 +112,7 @@ class RubyVM
       #
       #  The line number in the source code where this AST's text ended.
       def last_lineno
-        __builtin_ast_node_last_lineno
+        __intrinsic__.ast_node_last_lineno
       end
 
       #  call-seq:
@@ -120,7 +120,7 @@ class RubyVM
       #
       #  The column number in the source code where this AST's text ended.
       def last_column
-        __builtin_ast_node_last_column
+        __intrinsic__.ast_node_last_column
       end
 
       #  call-seq:
@@ -131,7 +131,7 @@ class RubyVM
       #
       #  The returned array may contain other nodes or <code>nil</code>.
       def children
-        __builtin_ast_node_children
+        __intrinsic__.ast_node_children
       end
 
       #  call-seq:
@@ -139,7 +139,7 @@ class RubyVM
       #
       #  Returns debugging information about this node as a string.
       def inspect
-        __builtin_ast_node_inspect
+        __intrinsic__.ast_node_inspect
       end
     end
   end

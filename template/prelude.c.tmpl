@@ -74,6 +74,7 @@ class Prelude
           orig
         end
       end
+      line.gsub!(/\b__intrinsic__\.(?=\w)/, '__builtin_')
       lines << [line, comment]
     end
     result

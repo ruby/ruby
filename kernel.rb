@@ -24,7 +24,7 @@ module Kernel
   #  the class.
   #
   def clone(freeze: nil)
-    __builtin_rb_obj_clone2(freeze)
+    __intrinsic__.rb_obj_clone2(freeze)
   end
 
   module_function
@@ -48,6 +48,6 @@ module Kernel
   #     Float("123.0_badstring", exception: false)  #=> nil
   #
   def Float(arg, exception: true)
-    __builtin_rb_f_float(arg, exception)
+    __intrinsic__.rb_f_float(arg, exception)
   end
 end
