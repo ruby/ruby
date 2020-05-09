@@ -463,13 +463,16 @@ class TestGemRequire < Gem::TestCase
     newer_json = util_spec("json", "999.99.9", nil, ["lib/json.rb"])
     install_gem newer_json
 
-    cmd = <<-RUBY
+    path = "#{@tempdir}/test_realworld_upgraded_default_gem.rb"
+    code = <<-RUBY
       $stderr = $stdout
       require "json"
       puts Gem.loaded_specs["json"].version
       puts $LOADED_FEATURES
     RUBY
-    output = Gem::Util.popen({ 'GEM_HOME' => @gemhome }, *ruby_with_rubygems_in_load_path, "-e", cmd).strip
+    File.write(path, code)
+
+    output = Gem::Util.popen({ 'GEM_HOME' => @gemhome }, *ruby_with_rubygems_in_load_path, path).strip
     assert $?.success?
     refute_empty output
     assert_equal "999.99.9", output.lines[0].chomp
