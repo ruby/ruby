@@ -896,6 +896,13 @@ compile_c_to_so(const char *c_file, const char *so_file)
 
 static void compile_prelude(FILE *f);
 
+# ifndef _WIN32 // This requires header transformation but we don't transform header on Windows for now
+#  define USE_HEADER_TRANSFORMATION 1
+# else
+#  define USE_HEADER_TRANSFORMATION 0
+# endif
+
+# if USE_HEADER_TRANSFORMATION
 static bool
 compile_compact_jit_code(char* c_file)
 {
@@ -918,13 +925,14 @@ compile_compact_jit_code(char* c_file)
     fclose(f);
     return true;
 }
+# endif // USE_HEADER_TRANSFORMATION
 
 // Compile all cached .c files and build a single .so file. Reload all JIT func from it.
 // This improves the code locality for better performance in terms of iTLB and iCache.
 static void
 compact_all_jit_code(void)
 {
-# ifndef _WIN32 // This requires header transformation but we don't transform header on Windows for now
+# if USE_HEADER_TRANSFORMATION
     struct rb_mjit_unit *unit, *cur = 0;
     double start_time, end_time;
     static const char c_ext[] = ".c";
@@ -993,7 +1001,7 @@ compact_all_jit_code(void)
         free(unit);
         verbose(1, "JIT compaction failure (%.1fms): Failed to compact methods", end_time - start_time);
     }
-# endif // _WIN32
+# endif // USE_HEADER_TRANSFORMATION
 }
 
 #endif // _MSC_VER
