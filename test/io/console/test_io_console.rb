@@ -31,7 +31,7 @@ class TestIO_Console < Test::Unit::TestCase
   end
 
   def test_failed_path
-    exceptions = %i[ENODEV ENOTTY].map {|e|
+    exceptions = %i[ENODEV ENOTTY EBADF].map {|e|
       Errno.const_get(e) if Errno.const_defined?(e)
     }
     exceptions.compact!
