@@ -80,6 +80,8 @@ static ID id_getc, id_console, id_close, id_min, id_time, id_intr;
 static ID id_gets;
 #endif
 
+#define sys_fail_fptr(fptr) rb_sys_fail_str((fptr)->pathv)
+
 #ifndef HAVE_RB_F_SEND
 static ID id___send__;
 
@@ -410,9 +412,9 @@ console_set_raw(int argc, VALUE *argv, VALUE io)
 
     GetOpenFile(io, fptr);
     fd = GetReadFD(fptr);
-    if (!getattr(fd, &t)) rb_sys_fail(0);
+    if (!getattr(fd, &t)) sys_fail_fptr(fptr);
     set_rawmode(&t, optp);
-    if (!setattr(fd, &t)) rb_sys_fail(0);
+    if (!setattr(fd, &t)) sys_fail_fptr(fptr);
     return io;
 }
 
@@ -453,9 +455,9 @@ console_set_cooked(VALUE io)
 
     GetOpenFile(io, fptr);
     fd = GetReadFD(fptr);
-    if (!getattr(fd, &t)) rb_sys_fail(0);
+    if (!getattr(fd, &t)) sys_fail_fptr(fptr);
     set_cookedmode(&t, NULL);
-    if (!setattr(fd, &t)) rb_sys_fail(0);
+    if (!setattr(fd, &t)) sys_fail_fptr(fptr);
     return io;
 }
 
@@ -590,12 +592,12 @@ console_set_echo(VALUE io, VALUE f)
 
     GetOpenFile(io, fptr);
     fd = GetReadFD(fptr);
-    if (!getattr(fd, &t)) rb_sys_fail(0);
+    if (!getattr(fd, &t)) sys_fail_fptr(fptr);
     if (RTEST(f))
 	set_echo(&t, NULL);
     else
 	set_noecho(&t, NULL);
-    if (!setattr(fd, &t)) rb_sys_fail(0);
+    if (!setattr(fd, &t)) sys_fail_fptr(fptr);
     return io;
 }
 
@@ -616,7 +618,7 @@ console_echo_p(VALUE io)
 
     GetOpenFile(io, fptr);
     fd = GetReadFD(fptr);
-    if (!getattr(fd, &t)) rb_sys_fail(0);
+    if (!getattr(fd, &t)) rb_sys_fail_str(fptr->pathv);
     return echo_p(&t) ? Qtrue : Qfalse;
 }
 
@@ -700,7 +702,7 @@ console_conmode_get(VALUE io)
 
     GetOpenFile(io, fptr);
     fd = GetReadFD(fptr);
-    if (!getattr(fd, &t)) rb_sys_fail(0);
+    if (!getattr(fd, &t)) sys_fail_fptr(fptr);
 
     return conmode_new(cConmode, &t);
 }
@@ -724,7 +726,7 @@ console_conmode_set(VALUE io, VALUE mode)
     r = *t;
     GetOpenFile(io, fptr);
     fd = GetReadFD(fptr);
-    if (!setattr(fd, &r)) rb_sys_fail(0);
+    if (!setattr(fd, &r)) sys_fail_fptr(fptr);
 
     return mode;
 }
@@ -766,7 +768,7 @@ console_winsize(VALUE io)
 
     GetOpenFile(io, fptr);
     fd = GetWriteFD(fptr);
-    if (!getwinsize(fd, &ws)) rb_sys_fail(0);
+    if (!getwinsize(fd, &ws)) sys_fail_fptr(fptr);
     return rb_assoc_new(INT2NUM(winsize_row(&ws)), INT2NUM(winsize_col(&ws)));
 }
 
@@ -813,7 +815,7 @@ console_set_winsize(VALUE io, VALUE size)
     SET(xpixel);
     SET(ypixel);
 #undef SET
-    if (!setwinsize(fd, &ws)) rb_sys_fail(0);
+    if (!setwinsize(fd, &ws)) sys_fail_fptr(fptr);
 #elif defined _WIN32
     wh = (HANDLE)rb_w32_get_osfhandle(fd);
 #define SET(m) new##m = NIL_P(m) ? 0 : (unsigned short)NUM2UINT(m)
@@ -888,7 +890,7 @@ console_iflush(VALUE io)
     GetOpenFile(io, fptr);
     fd = GetReadFD(fptr);
 #if defined HAVE_TERMIOS_H || defined HAVE_TERMIO_H
-    if (tcflush(fd, TCIFLUSH)) rb_sys_fail(0);
+    if (tcflush(fd, TCIFLUSH)) sys_fail_fptr(fptr);
 #endif
     (void)fd;
     return io;
@@ -911,7 +913,7 @@ console_oflush(VALUE io)
     GetOpenFile(io, fptr);
     fd = GetWriteFD(fptr);
 #if defined HAVE_TERMIOS_H || defined HAVE_TERMIO_H
-    if (tcflush(fd, TCOFLUSH)) rb_sys_fail(0);
+    if (tcflush(fd, TCOFLUSH)) sys_fail_fptr(fptr);
 #endif
     (void)fd;
     return io;
@@ -938,11 +940,11 @@ console_ioflush(VALUE io)
     fd1 = GetReadFD(fptr);
     fd2 = GetWriteFD(fptr);
     if (fd2 != -1 && fd1 != fd2) {
-	if (tcflush(fd1, TCIFLUSH)) rb_sys_fail(0);
-	if (tcflush(fd2, TCOFLUSH)) rb_sys_fail(0);
+	if (tcflush(fd1, TCIFLUSH)) sys_fail_fptr(fptr);
+	if (tcflush(fd2, TCOFLUSH)) sys_fail_fptr(fptr);
     }
     else {
-	if (tcflush(fd1, TCIOFLUSH)) rb_sys_fail(0);
+	if (tcflush(fd1, TCIOFLUSH)) sys_fail_fptr(fptr);
     }
 #endif
     return io;
@@ -961,7 +963,7 @@ console_beep(VALUE io)
     MessageBeep(0);
 #else
     if (write(fd, "\a", 1) < 0)
-	rb_sys_fail(0);
+	sys_fail_fptr(fptr);
 #endif
     return io;
 }
