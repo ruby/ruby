@@ -75,7 +75,7 @@
 #endif
 
 /**
- * Wraps (or  simulates) `alignof`.   Unlike #RBIMPL_ALIGNAS,  we can  safely say
+ * Wraps (or simulates)  `alignof`.  Unlike #RBIMPL_ALIGNAS, we  can safely say
  * both C/C++ definitions are effective.
  */
 #if defined(__cplusplus) && RBIMPL_HAS_EXTENSION(cxx_alignof)

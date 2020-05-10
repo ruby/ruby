@@ -25,7 +25,7 @@
 #include "ruby/impl/token_paste.h"
 
 /* :FIXME:  config.h  includes conflicting  `#define  restrict`.   MSVC can  be
- * detected  using  `RBIMPL_COMPILER_SINCE()`, but  Clang  &  family cannot  use
+ * detected  using `RBIMPL_COMPILER_SINCE()`,  but  Clang &  family cannot  use
  * `__has_declspec_attribute()` which involves macro substitution. */
 
 /** Wraps (or simulates) `__declspec(restrict)` */
