@@ -12,6 +12,7 @@ class TestGemExtCmakeBuilder < Gem::TestCase
 
     begin
       _, status = Open3.capture2e('cmake')
+      skip 'cmake not present' unless status.success?
     rescue Errno::ENOENT
       skip 'cmake not present'
     end
