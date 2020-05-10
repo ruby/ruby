@@ -7,6 +7,20 @@ require 'digest'
 require_relative 'downloader'
 require_relative 'lib/colorize'
 
+class Vars < Hash
+  def pattern
+    /\$\((#{Regexp.union(keys)})\)/
+  end
+
+  def expand(str)
+    if empty?
+      str
+    else
+      str.gsub(pattern) {self[$1]}
+    end
+  end
+end
+
 class ExtLibs
   def initialize
     @colorize = Colorize.new
@@ -143,16 +157,21 @@ class ExtLibs
           $stdout.puts "downloading for #{list}"
           $stdout.flush
         end
+        vars = Vars.new
         extracted = false
         dest = File.dirname(list)
         url = chksums = nil
         IO.foreach(list) do |line|
           line.sub!(/\s*#.*/, '')
+          if /^(\w+)\s*=\s*(.*)/ =~ line
+            vars[$1] = vars.expand($2)
+            next
+          end
           if chksums
             chksums.concat(line.split)
           elsif /^\t/ =~ line
             if extracted and (mode == :all or mode == :patch)
-              patch, *args = line.split
+              patch, *args = line.split.map {|s| vars.expand(s)}
               do_patch(dest, patch, args)
             end
             next
@@ -163,7 +182,11 @@ class ExtLibs
             chksums.pop
             next
           end
-          next unless url
+          unless url
+            chksums = nil
+            next
+          end
+          url = vars.expand(url)
           begin
             extracted = do_command(mode, dest, url, cache_dir, chksums)
           rescue => e
