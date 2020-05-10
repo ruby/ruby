@@ -94,6 +94,36 @@ class ExtLibs
     $?.success? or raise "failed to patch #{patch}"
   end
 
+  def do_link(file, src, dest)
+    file = File.join(dest, file)
+    if (target = src).start_with?("/")
+      target = File.join([".."] * file.count("/"), src)
+    end
+    File.unlink(file) rescue nil
+    begin
+      File.symlink(target, file)
+    rescue
+    else
+      if $VERBOSE
+        $stdout.puts "linked #{target} to #{file}"
+        $stdout.flush
+      end
+      return
+    end
+    begin
+      src = src.sub(/\A\//, '')
+      File.copy_stream(src, file)
+    rescue
+      if $VERBOSE
+        $stdout.puts "failed to link #{src} to #{file}: #{$!.message}"
+      end
+    else
+      if $VERBOSE
+        $stdout.puts "copied #{src} to #{file}"
+      end
+    end
+  end
+
   def do_command(mode, dest, url, cache_dir, chksums)
     extracted = false
     base = /.*(?=\.tar(?:\.\w+)?\z)/
@@ -173,6 +203,12 @@ class ExtLibs
             if extracted and (mode == :all or mode == :patch)
               patch, *args = line.split.map {|s| vars.expand(s)}
               do_patch(dest, patch, args)
+            end
+            next
+          elsif /->/ =~ line
+            if extracted and (mode == :all or mode == :patch)
+              link, file = $`.strip, $'.strip
+              do_link(vars.expand(link), vars.expand(file), dest)
             end
             next
           else
