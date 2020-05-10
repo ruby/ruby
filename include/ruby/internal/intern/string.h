@@ -139,168 +139,132 @@ rbimpl_strlen(const char *str)
 }
 
 static inline VALUE
-rbimpl_str_new(const char *str, long len)
-{
-    if /* constexpr */ (! RBIMPL_CONSTANT_P(str)) {
-        return rb_str_new(str, len);
-    }
-    else if  /* constexpr */ (! RBIMPL_CONSTANT_P(len)) {
-        return rb_str_new(str, len);
-    }
-    else {
-        return rb_str_new_static(str, len);
-    }
-}
-
-static inline VALUE
 rbimpl_str_new_cstr(const char *str)
 {
-    if /* constexpr */ (! RBIMPL_CONSTANT_P(str)) {
-        return rb_str_new_cstr(str);
-    }
-    else {
-        long len = rbimpl_strlen(str);
-        return rb_str_new_static(str, len);
-    }
-}
-
-static inline VALUE
-rbimpl_usascii_str_new(const char *str, long len)
-{
-    if /* constexpr */ (! RBIMPL_CONSTANT_P(str)) {
-        return rb_usascii_str_new(str, len);
-    }
-    else if  /* constexpr */ (! RBIMPL_CONSTANT_P(len)) {
-        return rb_usascii_str_new(str, len);
-    }
-    else {
-        return rb_usascii_str_new_static(str, len);
-    }
-}
-
-static inline VALUE
-rbimpl_utf8_str_new(const char *str, long len)
-{
-    if /* constexpr */ (! RBIMPL_CONSTANT_P(str)) {
-        return rb_utf8_str_new(str, len);
-    }
-    else if  /* constexpr */ (! RBIMPL_CONSTANT_P(len)) {
-        return rb_utf8_str_new(str, len);
-    }
-    else {
-        return rb_utf8_str_new_static(str, len);
-    }
+    long len = rbimpl_strlen(str);
+    return rb_str_new_static(str, len);
 }
 
 static inline VALUE
 rbimpl_tainted_str_new_cstr(const char *str)
 {
-    if /* constexpr */ (! RBIMPL_CONSTANT_P(str)) {
-        return rb_tainted_str_new_cstr(str);
-    }
-    else {
-        long len = rbimpl_strlen(str);
-        return rb_tainted_str_new(str, len);
-    }
+    long len = rbimpl_strlen(str);
+    return rb_tainted_str_new(str, len);
 }
 
 static inline VALUE
 rbimpl_usascii_str_new_cstr(const char *str)
 {
-    if /* constexpr */ (! RBIMPL_CONSTANT_P(str)) {
-        return rb_usascii_str_new_cstr(str);
-    }
-    else {
-        long len = rbimpl_strlen(str);
-        return rb_usascii_str_new_static(str, len);
-    }
+    long len = rbimpl_strlen(str);
+    return rb_usascii_str_new_static(str, len);
 }
 
 static inline VALUE
 rbimpl_utf8_str_new_cstr(const char *str)
 {
-    if /* constexpr */ (! RBIMPL_CONSTANT_P(str)) {
-        return rb_utf8_str_new_cstr(str);
-    }
-    else {
-        long len = rbimpl_strlen(str);
-        return rb_utf8_str_new_static(str, len);
-    }
+    long len = rbimpl_strlen(str);
+    return rb_utf8_str_new_static(str, len);
 }
 
 static inline VALUE
 rbimpl_external_str_new_cstr(const char *str)
 {
-    if /* constexpr */ (! RBIMPL_CONSTANT_P(str)) {
-        return rb_external_str_new_cstr(str);
-    }
-    else {
-        long len = rbimpl_strlen(str);
-        return rb_external_str_new(str, len);
-    }
+    long len = rbimpl_strlen(str);
+    return rb_external_str_new(str, len);
 }
 
 static inline VALUE
 rbimpl_locale_str_new_cstr(const char *str)
 {
-    if /* constexpr */ (! RBIMPL_CONSTANT_P(str)) {
-        return rb_locale_str_new_cstr(str);
-    }
-    else {
-        long len = rbimpl_strlen(str);
-        return rb_locale_str_new(str, len);
-    }
+    long len = rbimpl_strlen(str);
+    return rb_locale_str_new(str, len);
 }
 
 static inline VALUE
 rbimpl_str_buf_new_cstr(const char *str)
 {
-    if /* constexpr */ (! RBIMPL_CONSTANT_P(str)) {
-        return rb_str_buf_new_cstr(str);
-    }
-    else {
-        long len = rbimpl_strlen(str);
-        VALUE buf = rb_str_buf_new(len);
-        return rb_str_buf_cat(buf, str, len);
-    }
+    long len = rbimpl_strlen(str);
+    VALUE buf = rb_str_buf_new(len);
+    return rb_str_buf_cat(buf, str, len);
 }
 
 static inline VALUE
 rbimpl_str_cat_cstr(VALUE buf, const char *str)
 {
-    if /* constexpr */ (! RBIMPL_CONSTANT_P(str)) {
-        return rb_str_cat_cstr(buf, str);
-    }
-    else {
-        long len = rbimpl_strlen(str);
-        return rb_str_cat(buf, str, len);
-    }
+    long len = rbimpl_strlen(str);
+    return rb_str_cat(buf, str, len);
 }
 
 static inline VALUE
 rbimpl_exc_new_cstr(VALUE exc, const char *str)
 {
-    if /* constexpr */ (! RBIMPL_CONSTANT_P(str)) {
-        return rb_exc_new_cstr(exc, str);
-    }
-    else {
-        long len = rbimpl_strlen(str);
-        return rb_exc_new(exc, str, len);
-    }
+    long len = rbimpl_strlen(str);
+    return rb_exc_new(exc, str, len);
 }
 
-#define rb_str_new rbimpl_str_new
-#define rb_str_new_cstr rbimpl_str_new_cstr
-#define rb_usascii_str_new rbimpl_usascii_str_new
-#define rb_utf8_str_new rbimpl_utf8_str_new
-#define rb_tainted_str_new_cstr rbimpl_tainted_str_new_cstr
-#define rb_usascii_str_new_cstr rbimpl_usascii_str_new_cstr
-#define rb_utf8_str_new_cstr rbimpl_utf8_str_new_cstr
-#define rb_external_str_new_cstr rbimpl_external_str_new_cstr
-#define rb_locale_str_new_cstr rbimpl_locale_str_new_cstr
-#define rb_str_buf_new_cstr rbimpl_str_buf_new_cstr
-#define rb_str_cat_cstr rbimpl_str_cat_cstr
-#define rb_exc_new_cstr rbimpl_exc_new_cstr
+#define rb_str_new(str, len)                    \
+    ((RBIMPL_CONSTANT_P(str) &&                 \
+      RBIMPL_CONSTANT_P(len) ?                  \
+      rb_str_new_static      :                  \
+      rb_str_new) ((str), (len)))
+
+#define rb_str_new_cstr(str)                    \
+    ((RBIMPL_CONSTANT_P(str) ?                  \
+      rbimpl_str_new_cstr    :                  \
+      rb_str_new_cstr) (str))
+
+#define rb_usascii_str_new(str, len)            \
+    ((RBIMPL_CONSTANT_P(str)    &&              \
+      RBIMPL_CONSTANT_P(len)    ?               \
+      rb_usascii_str_new_static :               \
+      rb_usascii_str_new) ((str), (len)))
+
+#define rb_utf8_str_new(str, len)               \
+    ((RBIMPL_CONSTANT_P(str) &&                 \
+      RBIMPL_CONSTANT_P(len) ?                  \
+      rb_utf8_str_new_static :                  \
+      rb_utf8_str_new) ((str), (len)))
+
+#define rb_tainted_str_new_cstr(str)            \
+    ((RBIMPL_CONSTANT_P(str)      ?             \
+      rbimpl_tainted_str_new_cstr :             \
+      rb_tainted_str_new_cstr) (str))
+
+#define rb_usascii_str_new_cstr(str)            \
+    ((RBIMPL_CONSTANT_P(str)      ?             \
+      rbimpl_usascii_str_new_cstr :             \
+      rb_usascii_str_new_cstr) (str))
+
+#define rb_utf8_str_new_cstr(str)               \
+    ((RBIMPL_CONSTANT_P(str)   ?                \
+      rbimpl_utf8_str_new_cstr :                \
+      rb_utf8_str_new_cstr) (str))
+
+#define rb_external_str_new_cstr(str)           \
+    ((RBIMPL_CONSTANT_P(str)       ?            \
+      rbimpl_external_str_new_cstr :            \
+      rb_external_str_new_cstr) (str))
+
+#define rb_locale_str_new_cstr(str)             \
+    ((RBIMPL_CONSTANT_P(str)     ?              \
+      rbimpl_locale_str_new_cstr :              \
+      rb_locale_str_new_cstr) (str))
+
+#define rb_str_buf_new_cstr(str)                \
+    ((RBIMPL_CONSTANT_P(str)  ?                 \
+      rbimpl_str_buf_new_cstr :                 \
+      rb_str_buf_new_cstr) (str))
+
+#define rb_str_cat_cstr(buf, str)               \
+    ((RBIMPL_CONSTANT_P(str) ?                  \
+      rbimpl_str_cat_cstr    :                  \
+      rb_str_cat_cstr) ((buf), (str)))
+
+#define rb_exc_new_cstr(exc, str)               \
+    ((RBIMPL_CONSTANT_P(str) ?                  \
+      rbimpl_exc_new_cstr    :                  \
+      rb_exc_new_cstr) ((exc), (str)))
+
 #define rb_str_new2 rb_str_new_cstr
 #define rb_str_new3 rb_str_new_shared
 #define rb_str_new4 rb_str_new_frozen
