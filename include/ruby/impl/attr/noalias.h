@@ -22,28 +22,28 @@
  *
  * ### Q&A ###
  *
- * - Q: There  are   seemingly  similar  attributes   named  #RBIMPL_ATTR_CONST,
+ * - Q: There  are  seemingly   similar  attributes  named  #RBIMPL_ATTR_CONST,
  *      #RBIMPL_ATTR_PURE, and #RBIMPL_ATTR_NOALIAS.  What are the difference?
  *
  * - A: Allowed operations are different.
  *
- *     - #RBIMPL_ATTR_CONST ... Functions attributed by  this are not allowed to
+ *     - #RBIMPL_ATTR_CONST ... Functions attributed by this are not allowed to
  *       read/write  _any_ pointers  at all  (there are  exceptional situations
  *       when  reading a  pointer is  possible but  forget that;  they are  too
  *       exceptional  to be  useful).  Just  remember that  everything pointer-
  *       related are NG.
  *
- *     - #RBIMPL_ATTR_PURE  ...   Functions  attributed  by this  can  read  any
+ *     - #RBIMPL_ATTR_PURE  ...   Functions attributed  by  this  can read  any
  *       nonvolatile pointers, but  no writes are allowed at  all.  The ability
  *       to read _any_ nonvolatile pointers  makes it possible to mark ::VALUE-
  *       taking functions as being pure, as long as they are read-only.
  *
- *     - #RBIMPL_ATTR_NOALIAS ... Can both read/write, but only through pointers
- *       passed to  the function  as parameters.  This  is a  typical situation
- *       when you create  a C++ non-static member function  which only concerns
- *       `this`.  No  global variables are  allowed to read/write.  So  this is
- *       not a  super-set of being pure.   If you want to  read something, that
- *       has  to be  passed  to the  function as  a  pointer.  ::VALUE  -taking
+ *     - #RBIMPL_ATTR_NOALIAS  ...  Can  both   read/write,  but  only  through
+ *       pointers  passed to  the function  as parameters.   This is  a typical
+ *       situation when you create a  C++ non-static member function which only
+ *       concerns `this`.  No  global variables are allowed  to read/write.  So
+ *       this is not a super-set of being pure.  If you want to read something,
+ *       that has to  be passed to the function as  a pointer.  ::VALUE -taking
  *       functions thus cannot be attributed as such.
  */
 #include "ruby/impl/has/declspec_attribute.h"

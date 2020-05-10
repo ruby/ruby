@@ -102,7 +102,7 @@ RBIMPL_ATTR_CONST()
 RBIMPL_ATTR_CONSTEXPR(CXX11)
 RBIMPL_ATTR_ARTIFICIAL()
 /*
- * :NOTE: rbimpl_test HAS  to be `__attribute__((const))` in order  for clang to
+ * :NOTE: rbimpl_test HAS to be  `__attribute__((const))` in order for clang to
  * properly deduce `__builtin_assume()`.
  */
 static inline bool
