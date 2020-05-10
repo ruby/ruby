@@ -1,9 +1,9 @@
 // -*- c -*-
-% ary = RubyVM.enum_for(:each_builtin).to_a
 // DO NOT MODIFY THIS FILE DIRECTLY.
 // auto-generated file by tool/generic_erb.rb
 // with template/builtin_binary.inc.tmpl
 % unless ARGV.include?('--corss=yes')
+%   ary = RubyVM.enum_for(:each_builtin).to_a
 %   ary.each{|feature, iseq|
 
 static const unsigned char <%= feature %>_bin[] = {
