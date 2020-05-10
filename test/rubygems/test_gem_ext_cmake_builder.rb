@@ -14,6 +14,14 @@ class TestGemExtCmakeBuilder < Gem::TestCase
       _, status = Open3.capture2e('cmake')
       skip 'cmake not present' unless status.success?
     rescue Errno::ENOENT
+      # Open3.capture2e with ENOENT with JIT enabled leaves a zombie process.
+      # TODO: avoid making the zombie on ENOENT with JIT
+      if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
+        begin
+          Process.waitall
+        rescue Errno::ECHILD
+        end
+      end
       skip 'cmake not present'
     end
 
