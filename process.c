@@ -4046,7 +4046,7 @@ fork_check_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg,
                       "only used by extensions");
             rb_protect(proc_syswait, (VALUE)pid, status);
         }
-        else if (!w) {
+        else if (!w || w == WAITPID_LOCK_ONLY) {
             rb_syswait(pid);
         }
         errno = err;

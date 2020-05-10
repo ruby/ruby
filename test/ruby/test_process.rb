@@ -2485,4 +2485,11 @@ EOS
     Process.wait spawn(RUBY, "-e", "exit 13")
     assert_same(Process.last_status, $?)
   end
+
+  def test_exec_failure_leaves_no_child
+    assert_raise(Errno::ENOENT) do
+      spawn('inexistent_command')
+    end
+    assert_empty(Process.waitall)
+  end
 end
