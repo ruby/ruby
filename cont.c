@@ -1610,6 +1610,8 @@ rollback_ensure_stack(VALUE self,rb_ensure_list_t *current,rb_ensure_entry_t *ta
     }
 }
 
+NORETURN(static VALUE rb_cont_call(int argc, VALUE *argv, VALUE contval));
+
 /*
  *  call-seq:
  *     cont.call(args, ...)
@@ -1648,7 +1650,7 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
     cont->value = make_passing_arg(argc, argv);
 
     cont_restore_0(cont, &contval);
-    return Qnil; /* unreachable */
+    UNREACHABLE_RETURN(Qnil);
 }
 
 /*********/

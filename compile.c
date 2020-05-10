@@ -10856,11 +10856,13 @@ ibf_dump_object_unsupported(struct ibf_dump *dump, VALUE obj)
     rb_raise(rb_eNotImpError, "ibf_dump_object_unsupported: %s", buff);
 }
 
+NORETURN(static VALUE ibf_load_object_unsupported(const struct ibf_load *load, const struct ibf_object_header *header, ibf_offset_t offset));
+
 static VALUE
 ibf_load_object_unsupported(const struct ibf_load *load, const struct ibf_object_header *header, ibf_offset_t offset)
 {
     rb_raise(rb_eArgError, "unsupported");
-    return Qnil;
+    UNREACHABLE_RETURN(Qnil);
 }
 
 static void

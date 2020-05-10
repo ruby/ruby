@@ -6328,6 +6328,7 @@ env_reject(VALUE _)
     return rb_hash_delete_if(env_to_hash());
 }
 
+NORETURN(static VALUE env_freeze(VALUE self));
 /*
  * call-seq:
  *   ENV.freeze
@@ -6339,7 +6340,7 @@ static VALUE
 env_freeze(VALUE self)
 {
     rb_raise(rb_eTypeError, "cannot freeze ENV");
-    return self; /* Not reached */
+    UNREACHABLE_RETURN(self);
 }
 
 /*

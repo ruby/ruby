@@ -2931,6 +2931,8 @@ rb_f_exec(int argc, const VALUE *argv)
     UNREACHABLE_RETURN(Qnil);
 }
 
+NORETURN(static VALUE f_exec(int c, const VALUE *a, VALUE _));
+
 /*
  *  call-seq:
  *     exec([env,] command... [,options])
@@ -3007,7 +3009,8 @@ rb_f_exec(int argc, const VALUE *argv)
 static VALUE
 f_exec(int c, const VALUE *a, VALUE _)
 {
-    return rb_f_exec(c, a);
+    rb_f_exec(c, a);
+    UNREACHABLE_RETURN(Qnil);
 }
 
 #define ERRMSG(str) do { if (errmsg && 0 < errmsg_buflen) strlcpy(errmsg, (str), errmsg_buflen); } while (0)
@@ -4175,6 +4178,7 @@ exit_status_code(VALUE status)
     return istatus;
 }
 
+NORETURN(static VALUE rb_f_exit_bang(int argc, VALUE *argv, VALUE obj));
 /*
  *  call-seq:
  *     Process.exit!(status=false)
@@ -4231,6 +4235,7 @@ rb_f_exit(int argc, const VALUE *argv)
     UNREACHABLE_RETURN(Qnil);
 }
 
+NORETURN(static VALUE f_exit(int c, const VALUE *a, VALUE _));
 /*
  *  call-seq:
  *     exit(status=true)
@@ -4275,7 +4280,8 @@ rb_f_exit(int argc, const VALUE *argv)
 static VALUE
 f_exit(int c, const VALUE *a, VALUE _)
 {
-    return rb_f_exit(c, a);
+    rb_f_exit(c, a);
+    UNREACHABLE_RETURN(Qnil);
 }
 
 /*
@@ -4314,10 +4320,12 @@ rb_f_abort(int argc, const VALUE *argv)
     UNREACHABLE_RETURN(Qnil);
 }
 
+NORETURN(static VALUE f_abort(int c, const VALUE *a, VALUE _));
 static VALUE
 f_abort(int c, const VALUE *a, VALUE _)
 {
-    return rb_f_abort(c, a);
+    rb_f_abort(c, a);
+    UNREACHABLE_RETURN(Qnil);
 }
 
 void

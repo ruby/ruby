@@ -1021,6 +1021,7 @@ enum_tally(VALUE obj)
     return enum_hashify(obj, 0, 0, tally_i);
 }
 
+NORETURN(static VALUE first_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, params)));
 static VALUE
 first_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, params))
 {

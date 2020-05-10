@@ -1437,6 +1437,7 @@ rb_condvar_broadcast(VALUE self)
     return self;
 }
 
+NORETURN(static VALUE undumpable(VALUE obj));
 /* :nodoc: */
 static VALUE
 undumpable(VALUE obj)

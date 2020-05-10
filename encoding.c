@@ -1302,12 +1302,13 @@ enc_compatible_p(VALUE klass, VALUE str1, VALUE str2)
     return rb_enc_from_encoding(enc);
 }
 
+NORETURN(static VALUE enc_s_alloc(VALUE klass));
 /* :nodoc: */
 static VALUE
 enc_s_alloc(VALUE klass)
 {
     rb_undefined_alloc(klass);
-    return Qnil;
+    UNREACHABLE_RETURN(Qnil);
 }
 
 /* :nodoc: */

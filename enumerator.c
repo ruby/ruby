@@ -2676,7 +2676,8 @@ lazy_with_index_proc(VALUE proc_entry, struct MEMO* result, VALUE memos, long me
     if (entry->proc) {
         rb_proc_call_with_block(entry->proc, 2, argv, Qnil);
         LAZY_MEMO_RESET_PACKED(result);
-    } else {
+    }
+    else {
         LAZY_MEMO_SET_VALUE(result, rb_ary_new_from_values(2, argv));
         LAZY_MEMO_SET_PACKED(result);
     }
@@ -2931,6 +2932,8 @@ producer_each_stop(VALUE dummy, VALUE exc)
     return rb_attr_get(exc, id_result);
 }
 
+NORETURN(static VALUE producer_each_i(VALUE obj));
+
 static VALUE
 producer_each_i(VALUE obj)
 {
@@ -2943,7 +2946,8 @@ producer_each_i(VALUE obj)
 
     if (init == Qundef) {
         curr = Qnil;
-    } else {
+    }
+    else {
         rb_yield(init);
         curr = init;
     }
@@ -2953,7 +2957,7 @@ producer_each_i(VALUE obj)
         rb_yield(curr);
     }
 
-    return Qnil;
+    UNREACHABLE_RETURN(Qnil);
 }
 
 /* :nodoc: */

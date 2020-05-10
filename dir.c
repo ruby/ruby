@@ -1966,13 +1966,15 @@ rb_glob_warning(const char *path, VALUE a, const void *enc, int error)
 }
 #endif
 
+NORETURN(static VALUE glob_func_error(VALUE val));
+
 static VALUE
 glob_func_error(VALUE val)
 {
     struct glob_error_args *arg = (struct glob_error_args *)val;
     VALUE path = rb_enc_str_new_cstr(arg->path, arg->enc);
     rb_syserr_fail_str(arg->error, path);
-    return Qnil;
+    UNREACHABLE_RETURN(Qnil);
 }
 
 static int

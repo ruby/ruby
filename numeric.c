@@ -479,6 +479,8 @@ rb_num_coerce_relop(VALUE x, VALUE y, ID func)
     return c;
 }
 
+NORETURN(static VALUE num_sadded(VALUE x, VALUE name));
+
 /*
  * :nodoc:
  *
