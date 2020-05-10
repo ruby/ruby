@@ -841,7 +841,7 @@ refine_sym_proc_call(RB_BLOCK_CALL_FUNC_ARGLIST(yielded_arg, callback_arg))
 {
     VALUE obj;
     ID mid;
-    const rb_callable_method_entry_t *me;
+    const rb_callable_method_entry_t *me = 0; /* for hidden object case */
     rb_execution_context_t *ec;
     const VALUE symbol = RARRAY_AREF(callback_arg, 0);
     const VALUE refinements = RARRAY_AREF(callback_arg, 1);
