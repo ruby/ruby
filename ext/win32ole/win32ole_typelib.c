@@ -822,6 +822,8 @@ foletypelib_inspect(VALUE self)
     return default_inspect(self, "WIN32OLE_TYPELIB");
 }
 
+VALUE cWIN32OLE_TYPELIB;
+
 void
 Init_win32ole_typelib(void)
 {

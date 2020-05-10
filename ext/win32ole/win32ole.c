@@ -3962,6 +3962,7 @@ check_nano_server(void)
     }
 }
 
+LCID cWIN32OLE_lcid;
 
 void
 Init_win32ole(void)

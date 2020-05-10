@@ -112,8 +112,8 @@ struct oledata {
     IDispatch *pDispatch;
 };
 
-VALUE cWIN32OLE;
-LCID cWIN32OLE_lcid;
+extern VALUE cWIN32OLE;
+extern LCID cWIN32OLE_lcid;
 
 struct oledata *oledata_get_struct(VALUE obj);
 LPWSTR ole_vstr2wc(VALUE vstr);
