@@ -116,9 +116,16 @@ class Reline::ANSI
       column = m[:column].to_i - 1
       row = m[:row].to_i - 1
     rescue Errno::ENOTTY
-      buf = @@output.pread(@@output.pos, 0)
-      row = buf.count("\n")
-      column = buf.rindex("\n") ? (buf.size - buf.rindex("\n")) - 1 : 0
+      begin
+        buf = @@output.pread(@@output.pos, 0)
+        row = buf.count("\n")
+        column = buf.rindex("\n") ? (buf.size - buf.rindex("\n")) - 1 : 0
+      rescue Errno::ESPIPE
+        # Just returns column 1 for ambiguous width because this I/O is not
+        # tty and can't seek.
+        row = 0
+        column = 1
+      end
     end
     Reline::CursorPos.new(column, row)
   end
