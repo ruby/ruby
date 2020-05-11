@@ -2674,7 +2674,7 @@ vm_call_alias(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_cal
     struct rb_callcache cc_body;
     struct rb_call_data cd_body = {
         .ci = cd->ci,
-        .cc = vm_cc_fill(&cc_body, Qundef, cme, NULL),
+        .cc = vm_cc_fill(&cc_body, Qundef, cme, 0),
     };
     return vm_call_method_each_type(ec, cfp, calling, &cd_body);
 }
@@ -2738,7 +2738,7 @@ vm_call_opt_send(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct
     cd.cc = vm_cc_fill(&cc_body,
                        Qundef,
                        rb_callable_method_entry_with_refinements(CLASS_OF(calling->recv), mid, NULL),
-                       NULL);
+                       0);
     if (missing_reason != 0) vm_cc_method_missing_reason_set(cd.cc, missing_reason);
     return vm_call_method(ec, reg_cfp, calling, (CALL_DATA)&cd);
 }
@@ -2850,7 +2850,7 @@ vm_call_zsuper(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_ca
     struct rb_callcache cc_body;
     struct rb_call_data cd_body = {
         .ci = cd->ci,
-        .cc = vm_cc_fill(&cc_body, Qundef, cme, NULL),
+        .cc = vm_cc_fill(&cc_body, Qundef, cme, 0),
     };
     return vm_call_method_each_type(ec, cfp, calling, &cd_body);
 
@@ -2964,7 +2964,7 @@ vm_call_refined(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_c
         struct rb_callcache cc_body;
         struct rb_call_data cd_body = {
             .ci = cd->ci,
-            .cc = vm_cc_fill(&cc_body, Qundef, cme, NULL),
+            .cc = vm_cc_fill(&cc_body, Qundef, cme, 0),
         };
         return vm_call_method(ec, cfp, calling, &cd_body);
     }

@@ -8228,7 +8228,7 @@ update_cc_tbl(rb_objspace_t *objspace, VALUE klass)
 {
     struct rb_id_table *tbl = RCLASS_CC_TBL(klass);
     if (tbl) {
-        rb_id_table_foreach_with_replace(tbl, update_cc_tbl_i, NULL, objspace);
+        rb_id_table_foreach_with_replace(tbl, update_cc_tbl_i, 0, objspace);
     }
 }
 
