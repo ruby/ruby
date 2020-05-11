@@ -15,11 +15,7 @@
 #include "ruby/internal/config.h"
 #include "ruby/defines.h"
 
-#ifdef HAVE_STDARG_PROTOTYPES
-# include <stdarg.h>
-#else
-# include <varargs.h>
-#endif
+#include <stdarg.h>
 
 #include "ruby/st.h"
 
