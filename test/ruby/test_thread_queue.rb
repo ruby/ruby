@@ -564,7 +564,7 @@ class TestThreadQueue < Test::Unit::TestCase
       skip 'This test fails too often on MinGW'
     end
 
-    assert_in_out_err([], <<-INPUT, %w(INT INT exit), [])
+    assert_in_out_err([], <<-INPUT, %w(INT INT exit), [], **{:timeout => 60})
       q = Queue.new
       trap(:INT){
         q.push 'INT'
