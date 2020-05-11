@@ -864,7 +864,7 @@ RSpec.describe "bundle clean" do
     expect(very_simple_binary_extensions_dir).not_to exist
   end
 
-  it "keeps git extension directories when excluded by group", :ruby_repo do
+  it "keeps git extension directories when excluded by group" do
     build_git "very_simple_git_binary", &:add_c_extension
 
     revision = revision_for(lib_path("very_simple_git_binary-1.0"))
