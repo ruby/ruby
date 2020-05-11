@@ -183,12 +183,12 @@ getblockparamproxy
 }
 
 /* Get value of special local variable ($~, $_, ..). */
+/* This is not a leaf because `$~ = MatchData.allocate; $&` can raise. */
 DEFINE_INSN
 getspecial
 (rb_num_t key, rb_num_t type)
 ()
 (VALUE val)
-/* `$~ = MatchData.allocate; $&` can raise. */
 // attr bool leaf = (type == 0) ? true : false;
 {
     val = vm_getspecial(ec, GET_LEP(), key, type);
@@ -205,12 +205,13 @@ setspecial
 }
 
 /* Get value of instance variable id of self. */
+/* This is not a leaf because "instance variable not initialized" warning can
+ * be hooked. */
 DEFINE_INSN
 getinstancevariable
 (ID id, IVC ic)
 ()
 (VALUE val)
-/* "instance variable not initialized" warning can be hooked. */
 // attr bool leaf = false; /* has rb_warning() */
 {
     val = vm_getinstancevariable(GET_SELF(), id, ic);
@@ -228,24 +229,25 @@ setinstancevariable
 }
 
 /* Get value of class variable id of klass as val. */
+/* This is no a leaf because "class variable access from toplevel" warning can
+ * be hooked. */
 DEFINE_INSN
 getclassvariable
 (ID id)
 ()
 (VALUE val)
-/* "class variable access from toplevel" warning can be hooked. */
 // attr bool leaf = false; /* has rb_warning() */
 {
     val = rb_cvar_get(vm_get_cvar_base(vm_get_cref(GET_EP()), GET_CFP(), 1), id);
 }
 
 /* Set value of class variable id of klass as val. */
+/* This is not a leaf (ditto for getcalassvariable). */
 DEFINE_INSN
 setclassvariable
 (ID id)
 (VALUE val)
 ()
-/* "class variable access from toplevel" warning can be hooked. */
 // attr bool leaf = false; /* has rb_warning() */
 {
     vm_ensure_not_refinement_module(GET_SELF());
@@ -256,28 +258,27 @@ setclassvariable
    are searched in the current scope. Otherwise, get constant under klass
    class or module.
  */
+/* This is no a leaf because it can kick autoload. */
 DEFINE_INSN
 getconstant
 (ID id)
 (VALUE klass, VALUE allow_nil)
 (VALUE val)
-/* getconstant can kick autoload */
 // attr bool leaf = false; /* has rb_autoload_load() */
 {
     val = vm_get_ev_const(ec, klass, id, allow_nil == Qtrue, 0);
 }
 
-/* Set constant variable id under cbase class or module.
- */
+/* Set constant variable id under cbase class or module. */
+/* Assigning an object to a constant is basically a leaf operation.
+ * The problem is, assigning a Module instance to a constant _names_
+ * that module.  Naming involves string manipulations, which are
+ * method calls.  Hence it is not a leaf in general. */
 DEFINE_INSN
 setconstant
 (ID id)
 (VALUE val, VALUE cbase)
 ()
-/* Assigning an object to a constant is basically a leaf operation.
- * The problem is, assigning a Module instance to a constant _names_
- * that module.  Naming involves string manipulations, which are
- * method calls. */
 // attr bool leaf = false; /* has StringValue() */
 {
     vm_check_if_namespace(cbase);
@@ -369,13 +370,13 @@ putstring
 }
 
 /* put concatenate strings */
+/* This instruction can concat UTF-8 and binary strings, resulting in
+ * Encoding::CompatibilityError. */
 DEFINE_INSN
 concatstrings
 (rb_num_t num)
 (...)
 (VALUE val)
-/* This instruction can concat UTF-8 and binary strings, resulting in
- * Encoding::CompatibilityError. */
 // attr bool leaf = false; /* has rb_enc_cr_str_buf_cat() */
 // attr rb_snum_t sp_inc = 1 - (rb_snum_t)num;
 {
@@ -405,13 +406,13 @@ freezestring
 /* compile str to Regexp and push it.
      opt is the option for the Regexp.
  */
+/* This instruction can raise RegexpError, thus can call
+ * RegexpError#initialize */
 DEFINE_INSN
 toregexp
 (rb_num_t opt, rb_num_t cnt)
 (...)
 (VALUE val)
-/* This instruction can raise RegexpError, thus can call
- * RegexpError#initialize */
 // attr bool leaf = false;
 // attr rb_snum_t sp_inc = 1 - (rb_snum_t)cnt;
 {
@@ -544,12 +545,13 @@ newhash
 }
 
 /* put new Range object.(Range.new(low, high, flag)) */
+/* This is not a leaf because rb_range_new() exercises "bad value for range"
+ * check. */
 DEFINE_INSN
 newrange
 (rb_num_t flag)
 (VALUE low, VALUE high)
 (VALUE val)
-/* rb_range_new() exercises "bad value for range" check. */
 // attr bool leaf = false; /* see also: range.c:range_init() */
 {
     val = rb_range_new(low, high, (int)flag);
@@ -848,27 +850,27 @@ opt_str_uminus
     }
 }
 
+/* This instruction typically has no funcalls.  But it compares array
+ * contents each other by nature.  That part could call methods when
+ * necessary.  No way to detect such method calls beforehand.  We
+ * cannot but mark it being not leaf. */
 DEFINE_INSN
 opt_newarray_max
 (rb_num_t num)
 (...)
 (VALUE val)
-/* This instruction typically has no funcalls.  But it compares array
- * contents each other by nature.  That part could call methods when
- * necessary.  No way to detect such method calls beforehand.  We
- * cannot but mark it being not leaf. */
 // attr bool leaf = false; /* has rb_funcall() */
 // attr rb_snum_t sp_inc = 1 - (rb_snum_t)num;
 {
     val = vm_opt_newarray_max(num, STACK_ADDR_FROM_TOP(num));
 }
 
+/* Same discussion as opt_newarray_max. */
 DEFINE_INSN
 opt_newarray_min
 (rb_num_t num)
 (...)
 (VALUE val)
-/* Same discussion as opt_newarray_max. */
 // attr bool leaf = false; /* has rb_funcall() */
 // attr rb_snum_t sp_inc = 1 - (rb_snum_t)num;
 {
@@ -918,14 +920,14 @@ invokeblock
 }
 
 /* return from this scope. */
+/* This is super surprising but when leaving from a frame, we check
+ * for interrupts.  If any, that should be executed on top of the
+ * current execution context.  This is a method call. */
 DEFINE_INSN
 leave
 ()
 (VALUE val)
 (VALUE val)
-/* This is super surprising but when leaving from a frame, we check
- * for interrupts.  If any, that should be executed on top of the
- * current execution context.  This is a method call. */
 // attr bool leaf = false; /* has rb_threadptr_execute_interrupts() */
 // attr bool handles_sp = true;
 {
@@ -954,12 +956,12 @@ leave
 /**********************************************************/
 
 /* longjump */
+/* This is not a leaf (ditto for leave). */
 DEFINE_INSN
 throw
 (rb_num_t throw_state)
 (VALUE throwobj)
 (VALUE val)
-/* Same discussion as leave. */
 // attr bool leaf = false; /* has rb_threadptr_execute_interrupts() */
 {
     val = vm_throw(ec, GET_CFP(), throw_state, throwobj);
@@ -972,12 +974,12 @@ throw
 /**********************************************************/
 
 /* set PC to (PC + dst). */
+/* This is not a leaf (ditto for leave). */
 DEFINE_INSN
 jump
 (OFFSET dst)
 ()
 ()
-/* Same discussion as leave. */
 // attr bool leaf = false; /* has rb_threadptr_execute_interrupts() */
 {
     RUBY_VM_CHECK_INTS(ec);
@@ -985,12 +987,12 @@ jump
 }
 
 /* if val is not false or nil, set PC to (PC + dst). */
+/* This is not a leaf (ditto for jump). */
 DEFINE_INSN
 branchif
 (OFFSET dst)
 (VALUE val)
 ()
-/* Same discussion as jump. */
 // attr bool leaf = false; /* has rb_threadptr_execute_interrupts() */
 {
     if (RTEST(val)) {
@@ -1000,12 +1002,12 @@ branchif
 }
 
 /* if val is false or nil, set PC to (PC + dst). */
+/* This is not a leaf (ditto for jump). */
 DEFINE_INSN
 branchunless
 (OFFSET dst)
 (VALUE val)
 ()
-/* Same discussion as jump. */
 // attr bool leaf = false; /* has rb_threadptr_execute_interrupts() */
 {
     if (!RTEST(val)) {
@@ -1015,12 +1017,12 @@ branchunless
 }
 
 /* if val is nil, set PC to (PC + dst). */
+/* This is not a leaf (ditto for jump). */
 DEFINE_INSN
 branchnil
 (OFFSET dst)
 (VALUE val)
 ()
-/* Same discussion as jump. */
 // attr bool leaf = false; /* has rb_threadptr_execute_interrupts() */
 {
     if (NIL_P(val)) {
@@ -1129,13 +1131,13 @@ opt_mult
 }
 
 /* optimized X/Y. */
+/* In case of division by zero, it raises. Thus
+ * ZeroDivisionError#initialize is called.  */
 DEFINE_INSN
 opt_div
 (CALL_DATA cd)
 (VALUE recv, VALUE obj)
 (VALUE val)
-/* In case of division by zero, it raises. Thus
- * ZeroDivisionError#initialize is called.  */
 // attr bool leaf = false;
 {
     val = vm_opt_div(recv, obj);
@@ -1146,12 +1148,12 @@ opt_div
 }
 
 /* optimized X%Y. */
+/* This is not a leaf (ditto for opt_div). */
 DEFINE_INSN
 opt_mod
 (CALL_DATA cd)
 (VALUE recv, VALUE obj)
 (VALUE val)
-/* Same discussion as opt_mod. */
 // attr bool leaf = false;
 {
     val = vm_opt_mod(recv, obj);
@@ -1246,14 +1248,14 @@ opt_ge
 }
 
 /* << */
+/* This instruction can append an integer, as a codepoint, into a
+ * string.  Then what happens if that codepoint does not exist in the
+ * string's encoding?  Of course an exception.  That's not a leaf. */
 DEFINE_INSN
 opt_ltlt
 (CALL_DATA cd)
 (VALUE recv, VALUE obj)
 (VALUE val)
-/* This instruction can append an integer, as a codepoint, into a
- * string.  Then what happens if that codepoint does not exist in the
- * string's encoding?  Of course an exception.  That's not a leaf. */
 // attr bool leaf = false; /* has "invalid codepoint" exception */
 {
     val = vm_opt_ltlt(recv, obj);
@@ -1292,15 +1294,15 @@ opt_or
 }
 
 /* [] */
+/* This is complicated.  In case of hash, vm_opt_aref() resorts to
+ * rb_hash_aref().  If `recv` has no `obj`, this function then yields
+ * default_proc.  This is a method call.  So opt_aref is
+ * (surprisingly) not leaf. */
 DEFINE_INSN
 opt_aref
 (CALL_DATA cd)
 (VALUE recv, VALUE obj)
 (VALUE val)
-/* This is complicated.  In case of hash, vm_opt_aref() resorts to
- * rb_hash_aref().  If `recv` has no `obj`, this function then yields
- * default_proc.  This is a method call.  So opt_aref is
- * (surprisingly) not leaf. */
 // attr bool leaf = false; /* has rb_funcall() */ /* calls #yield */
 {
     val = vm_opt_aref(recv, obj);
@@ -1311,13 +1313,13 @@ opt_aref
 }
 
 /* recv[obj] = set */
+/* This is another story than opt_aref.  When vm_opt_aset() resorts
+ * to rb_hash_aset(), which should call #hash for `obj`. */
 DEFINE_INSN
 opt_aset
 (CALL_DATA cd)
 (VALUE recv, VALUE obj, VALUE set)
 (VALUE val)
-/* This is another story than opt_aref.  When vm_opt_aset() resorts
- * to rb_hash_aset(), which should call #hash for `obj`. */
 // attr bool leaf = false; /* has rb_funcall() */ /* calls #hash */
 {
     val = vm_opt_aset(recv, obj, set);
@@ -1328,12 +1330,12 @@ opt_aset
 }
 
 /* recv[str] = set */
+/* This is not a leaf (ditto for opt_aset). */
 DEFINE_INSN
 opt_aset_with
 (VALUE key, CALL_DATA cd)
 (VALUE recv, VALUE val)
 (VALUE val)
-/* Same discussion as opt_aset. */
 // attr bool leaf = false; /* has rb_funcall() */ /* calls #hash */
 {
     VALUE tmp = vm_opt_aset_with(recv, key, val);
@@ -1351,12 +1353,12 @@ opt_aset_with
 }
 
 /* recv[str] */
+/* This is not a leaf (ditto for opt_aref). */
 DEFINE_INSN
 opt_aref_with
 (VALUE key, CALL_DATA cd)
 (VALUE recv)
 (VALUE val)
-/* Same discussion as opt_aref. */
 // attr bool leaf = false; /* has rb_funcall() */ /* calls #yield */
 {
     val = vm_opt_aref_with(recv, key);
