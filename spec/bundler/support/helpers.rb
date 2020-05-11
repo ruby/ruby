@@ -330,7 +330,7 @@ module Spec
 
         replace_version_file(version, dir: build_path) # rubocop:disable Style/HashSyntax
 
-        gem_command! "build bundler.gemspec", :dir => build_path
+        gem_command! "build #{shipped_gemspec}", :dir => build_path
 
         yield(bundler_path)
       ensure
