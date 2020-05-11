@@ -233,7 +233,7 @@ RSpec.describe "The library itself" do
     ]
     files_to_require = lib_tracked_files.grep(/\.rb$/) - exclusions
     files_to_require.reject! {|f| f.start_with?("lib/bundler/vendor") }
-    files_to_require.map! {|f| File.expand_path("../#{f}", __dir__) }
+    files_to_require.map! {|f| File.expand_path(root.join("#{f}"), __dir__) }
     sys_exec!("ruby -w") do |input, _, _|
       files_to_require.each do |f|
         input.puts "require '#{f}'"
