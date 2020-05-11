@@ -24,7 +24,7 @@ Gem::Specification.new do |s|
 
   if s.respond_to?(:metadata=)
     s.metadata = {
-      "bug_tracker_uri" => "https://github.com/rubygems/rubygems/issues",
+      "bug_tracker_uri" => "https://github.com/rubygems/rubygems/issues?q=is%3Aopen+is%3Aissue+label%3ABundler",
       "changelog_uri" => "https://github.com/rubygems/rubygems/blob/master/bundler/CHANGELOG.md",
       "homepage_uri" => "https://bundler.io/",
       "source_code_uri" => "https://github.com/rubygems/rubygems/",
