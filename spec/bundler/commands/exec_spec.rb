@@ -872,7 +872,7 @@ __FILE__: #{path.to_s.inspect}
         bundle! :install
       end
 
-      it "correctly shells out", :ruby_repo do
+      it "correctly shells out" do
         skip "https://github.com/rubygems/bundler/issues/6898" if Gem.win_platform?
 
         file = bundled_app("file_that_bundle_execs.rb")
