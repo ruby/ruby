@@ -1309,7 +1309,11 @@ VALUE
 rb_float_pow(VALUE x, VALUE y)
 {
     double dx, dy;
-    if (RB_TYPE_P(y, T_FIXNUM)) {
+    if (y == INT2FIX(2)) {
+	dx = RFLOAT_VALUE(x);
+        return DBL2NUM(dx * dx);
+    }
+    else if (RB_TYPE_P(y, T_FIXNUM)) {
 	dx = RFLOAT_VALUE(x);
 	dy = (double)FIX2LONG(y);
     }

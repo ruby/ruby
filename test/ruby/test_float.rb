@@ -305,6 +305,7 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(1.0, 1.0 ** (2**32))
     assert_equal(1.0, 1.0 ** 1.0)
     assert_raise(TypeError) { 1.0 ** nil }
+    assert_equal(9.0, 3.0 ** 2)
   end
 
   def test_eql
