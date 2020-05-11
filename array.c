@@ -4835,6 +4835,57 @@ rb_ary_union_multi(int argc, VALUE *argv, VALUE ary)
     return ary_union;
 }
 
+enum ary_take_minmax_flags
+{
+    ARY_TAKE_MIN = 0,
+    ARY_TAKE_MAX = 1
+};
+
+static VALUE
+rb_ary_max_or_min(int argc, VALUE *argv, VALUE ary, enum ary_take_minmax_flags flag)
+{
+    struct cmp_opt_data cmp_opt = { 0, 0 };
+    VALUE result = Qundef, v;
+    VALUE num;
+    long i;
+
+    if (rb_check_arity(argc, 0, 1) && !NIL_P(num = argv[0]))
+       return rb_nmin_run(ary, num, 0, flag, 1);
+
+    if (rb_block_given_p()) {
+        for (i = 0; i < RARRAY_LEN(ary); i++) {
+            v = RARRAY_AREF(ary, i);
+            if (flag) {
+                if (result == Qundef || rb_cmpint(rb_yield_values(2, v, result), v, result) > 0) {
+                    result = v;
+                }
+            }
+            else {
+                if (result == Qundef || rb_cmpint(rb_yield_values(2, v, result), v, result) < 0) {
+                    result = v;
+                }
+            }
+        }
+    }
+    else {
+        for (i = 0; i < RARRAY_LEN(ary); i++) {
+            v = RARRAY_AREF(ary, i);
+            if (flag) {
+                if (result == Qundef || OPTIMIZED_CMP(v, result, cmp_opt) > 0) {
+                    result = v;
+                }
+            }
+            else {
+                if (result == Qundef || OPTIMIZED_CMP(v, result, cmp_opt) < 0) {
+                    result = v;
+                }
+            }
+        }
+    }
+    if (result == Qundef) return Qnil;
+    return result;    
+}
+
 /*
  *  call-seq:
  *     ary.max                     -> obj
@@ -4860,32 +4911,7 @@ rb_ary_union_multi(int argc, VALUE *argv, VALUE ary)
 static VALUE
 rb_ary_max(int argc, VALUE *argv, VALUE ary)
 {
-    struct cmp_opt_data cmp_opt = { 0, 0 };
-    VALUE result = Qundef, v;
-    VALUE num;
-    long i;
-
-    if (rb_check_arity(argc, 0, 1) && !NIL_P(num = argv[0]))
-       return rb_nmin_run(ary, num, 0, 1, 1);
-
-    if (rb_block_given_p()) {
-	for (i = 0; i < RARRAY_LEN(ary); i++) {
-	   v = RARRAY_AREF(ary, i);
-	   if (result == Qundef || rb_cmpint(rb_yield_values(2, v, result), v, result) > 0) {
-	       result = v;
-	   }
-	}
-    }
-    else {
-	for (i = 0; i < RARRAY_LEN(ary); i++) {
-	   v = RARRAY_AREF(ary, i);
-	   if (result == Qundef || OPTIMIZED_CMP(v, result, cmp_opt) > 0) {
-	       result = v;
-	   }
-	}
-    }
-    if (result == Qundef) return Qnil;
-    return result;
+    return rb_ary_max_or_min(argc, argv, ary, ARY_TAKE_MAX);
 }
 
 /*
@@ -4913,32 +4939,7 @@ rb_ary_max(int argc, VALUE *argv, VALUE ary)
 static VALUE
 rb_ary_min(int argc, VALUE *argv, VALUE ary)
 {
-    struct cmp_opt_data cmp_opt = { 0, 0 };
-    VALUE result = Qundef, v;
-    VALUE num;
-    long i;
-
-    if (rb_check_arity(argc, 0, 1) && !NIL_P(num = argv[0]))
-       return rb_nmin_run(ary, num, 0, 0, 1);
-
-    if (rb_block_given_p()) {
-	for (i = 0; i < RARRAY_LEN(ary); i++) {
-	   v = RARRAY_AREF(ary, i);
-	   if (result == Qundef || rb_cmpint(rb_yield_values(2, v, result), v, result) < 0) {
-	       result = v;
-	   }
-	}
-    }
-    else {
-	for (i = 0; i < RARRAY_LEN(ary); i++) {
-	   v = RARRAY_AREF(ary, i);
-	   if (result == Qundef || OPTIMIZED_CMP(v, result, cmp_opt) < 0) {
-	       result = v;
-	   }
-	}
-    }
-    if (result == Qundef) return Qnil;
-    return result;
+    return rb_ary_max_or_min(argc, argv, ary, ARY_TAKE_MIN);
 }
 
 /*
