@@ -27,19 +27,10 @@ jobs:
         run: |
           git config --system core.autocrlf false
           git config --system core.eol lf
-      # Not using official actions/checkout@v2 because it's unstable.
-      - name: Checkout ruby
-        run: |
-          git clone --single-branch --shallow-since=yesterday --branch=${GITHUB_REF#refs/heads/} https://github.com/${{ github.repository }} src
-          git -C src reset --hard "$GITHUB_SHA"
-        if: github.event_name == 'push'
-        shell: bash
-      - name: Checkout a pull request
-        run: |
-          git clone --single-branch --depth=50 --branch=${{ github.event.pull_request.head.ref }} https://github.com/${{ github.event.pull_request.head.repo.full_name }} src
-          git -C src reset --hard ${{ github.event.pull_request.head.sha }}
-        if: github.event_name == 'pull_request'
-        shell: bash
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 128
+          path: src
       - run: ./src/tool/actions-commit-info.sh
         shell: bash
         id: commit_info
