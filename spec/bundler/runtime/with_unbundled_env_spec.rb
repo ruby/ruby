@@ -39,7 +39,7 @@ RSpec.describe "Bundler.with_env helpers" do
       end
     end
 
-    it "works with nested bundle exec invocations" do
+    it "works with nested bundle exec invocations", :ruby_repo do
       create_file("exe.rb", <<-'RUBY')
         count = ARGV.first.to_i
         exit if count < 0
@@ -202,7 +202,7 @@ RSpec.describe "Bundler.with_env helpers" do
       RUBY
     end
 
-    it "runs system inside with_clean_env" do
+    it "runs system inside with_clean_env", :ruby_repo do
       run_bundler_script({ "BUNDLE_FOO" => "bar" }, bundled_app("source.rb"))
       expect($?.exitstatus).to eq(42)
     end
@@ -217,7 +217,7 @@ RSpec.describe "Bundler.with_env helpers" do
       RUBY
     end
 
-    it "runs system inside with_unbundled_env" do
+    it "runs system inside with_unbundled_env", :ruby_repo do
       run_bundler_script({ "BUNDLE_FOO" => "bar" }, bundled_app("source.rb"))
       expect($?.exitstatus).to eq(42)
     end
