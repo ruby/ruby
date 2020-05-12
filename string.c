@@ -7926,6 +7926,35 @@ split_string(VALUE result, VALUE str, long beg, long len, long empty_count)
     return empty_count;
 }
 
+typedef enum {
+    SPLIT_TYPE_AWK, SPLIT_TYPE_STRING, SPLIT_TYPE_REGEXP, SPLIT_TYPE_CHARS
+} split_type_t;
+
+static split_type_t
+literal_split_pattern(VALUE spat, split_type_t default_type)
+{
+    rb_encoding *enc = STR_ENC_GET(spat);
+    const char *ptr;
+    long len;
+    RSTRING_GETMEM(spat, ptr, len);
+    if (len == 0) {
+        /* Special case - split into chars */
+        return SPLIT_TYPE_CHARS;
+    }
+    else if (rb_enc_asciicompat(enc)) {
+        if (len == 1 && ptr[0] == ' ') {
+            return SPLIT_TYPE_AWK;
+        }
+    }
+    else {
+        int l;
+        if (rb_enc_ascget(ptr, ptr + len, &l, enc) == ' ' && len == l) {
+            return SPLIT_TYPE_AWK;
+        }
+    }
+    return default_type;
+}
+
 /*
  *  call-seq:
  *     str.split(pattern=nil, [limit])                -> an_array
@@ -7987,7 +8016,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
     rb_encoding *enc;
     VALUE spat;
     VALUE limit;
-    enum {awk, string, regexp, chars} split_type;
+    split_type_t split_type;
     long beg, end, i = 0, empty_count = -1;
     int lim = 0;
     VALUE result, tmp;
@@ -8011,12 +8040,12 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
     if (NIL_P(limit) && !lim) empty_count = 0;
 
     enc = STR_ENC_GET(str);
-    split_type = regexp;
+    split_type = SPLIT_TYPE_REGEXP;
     if (!NIL_P(spat)) {
 	spat = get_pat_quoted(spat, 0);
     }
     else if (NIL_P(spat = rb_fs)) {
-	split_type = awk;
+	split_type = SPLIT_TYPE_AWK;
     }
     else if (!(spat = rb_fs_check(spat))) {
 	rb_raise(rb_eTypeError, "value of $; must be String or Regexp");
@@ -8024,28 +8053,25 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
     else {
         rb_warn("$; is set to non-nil value");
     }
-    if (split_type != awk) {
-	if (BUILTIN_TYPE(spat) == T_STRING) {
-	    rb_encoding *enc2 = STR_ENC_GET(spat);
+    if (split_type != SPLIT_TYPE_AWK) {
+        switch (BUILTIN_TYPE(spat)) {
+          case T_REGEXP:
+            rb_reg_options(spat); /* check if uninitialized */
+            tmp = RREGEXP_SRC(spat);
+            split_type = literal_split_pattern(tmp, SPLIT_TYPE_REGEXP);
+            if (split_type == SPLIT_TYPE_AWK) {
+                spat = tmp;
+                split_type = SPLIT_TYPE_STRING;
+            }
+            break;
 
+          case T_STRING:
 	    mustnot_broken(spat);
-	    split_type = string;
-	    if (RSTRING_LEN(spat) == 0) {
-		/* Special case - split into chars */
-                split_type = chars;
-	    }
-	    else if (rb_enc_asciicompat(enc2) == 1) {
-		if (RSTRING_LEN(spat) == 1 && RSTRING_PTR(spat)[0] == ' ') {
-		    split_type = awk;
-		}
-	    }
-	    else {
-		int l;
-		if (rb_enc_ascget(RSTRING_PTR(spat), RSTRING_END(spat), &l, enc2) == ' ' &&
-		    RSTRING_LEN(spat) == l) {
-		    split_type = awk;
-		}
-	    }
+            split_type = literal_split_pattern(spat, SPLIT_TYPE_STRING);
+            break;
+
+          default:
+            UNREACHABLE_RETURN(Qnil);
 	}
     }
 
@@ -8055,7 +8081,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
     beg = 0;
     char *ptr = RSTRING_PTR(str);
     char *eptr = RSTRING_END(str);
-    if (split_type == awk) {
+    if (split_type == SPLIT_TYPE_AWK) {
 	char *bptr = ptr;
 	int skip = 1;
 	unsigned int c;
@@ -8113,7 +8139,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 	    }
 	}
     }
-    else if (split_type == string) {
+    else if (split_type == SPLIT_TYPE_STRING) {
 	char *str_start = ptr;
 	char *substr_start = ptr;
 	char *sptr = RSTRING_PTR(spat);
@@ -8136,7 +8162,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 	}
 	beg = ptr - str_start;
     }
-    else if (split_type == chars) {
+    else if (split_type == SPLIT_TYPE_CHARS) {
         char *str_start = ptr;
         int n;
 
