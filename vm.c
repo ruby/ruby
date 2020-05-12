@@ -2488,10 +2488,20 @@ rb_execution_context_update(const rb_execution_context_t *ec)
 {
     /* update VM stack */
     if (ec->vm_stack) {
+        long i;
         VM_ASSERT(ec->cfp);
-
+        VALUE *p = ec->vm_stack;
+        VALUE *sp = ec->cfp->sp;
         rb_control_frame_t *cfp = ec->cfp;
         rb_control_frame_t *limit_cfp = (void *)(ec->vm_stack + ec->vm_stack_size);
+
+        for (i = 0; i < (long)(sp - p); i++) {
+            VALUE ref = p[i];
+            VALUE update = rb_gc_location(ref);
+            if (ref != update) {
+                p[i] = update;
+            }
+        }
 
         while (cfp != limit_cfp) {
             const VALUE *ep = cfp->ep;
