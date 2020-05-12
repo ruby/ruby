@@ -5128,7 +5128,7 @@ rb_exec_recursive_paired_outer(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VAL
 
 /*
  *  call-seq:
- *     thread.backtrace    -> array
+ *     thread.backtrace    -> array or nil
  *
  *  Returns the current backtrace of the target thread.
  *
