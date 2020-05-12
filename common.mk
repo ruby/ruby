@@ -1339,7 +1339,7 @@ test-bundler-precheck: programs
 
 yes-test-bundler-prepare: test-bundler-precheck
 	$(XRUBY) -C "$(srcdir)" bin/gem install --no-document \
-		--install-dir .bundle --conservative "rspec:~> 3.5" "rake:~> 13.0" "parallel_tests:~> 2.29"
+		--install-dir .bundle --conservative "rspec:~> 3.8" "rake:~> 13.0" "parallel_tests:~> 2.29"
 
 RSPECOPTS =
 BUNDLER_SPECS =
