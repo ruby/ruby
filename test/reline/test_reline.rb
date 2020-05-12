@@ -7,6 +7,12 @@ class Reline::Test < Reline::TestCase
   end
 
   def setup
+    Reline.output_modifier_proc = nil
+    Reline.completion_proc = nil
+    Reline.prompt_proc = nil
+    Reline.auto_indent_proc = nil
+    Reline.pre_input_hook = nil
+    Reline.dig_perfect_match_proc = nil
   end
 
   def teardown
