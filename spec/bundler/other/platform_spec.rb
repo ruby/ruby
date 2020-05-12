@@ -823,7 +823,7 @@ G
     end
   end
 
-  context "bundle exec" do
+  context "bundle exec", :ruby_repo do
     before do
       ENV["BUNDLER_FORCE_TTY"] = "true"
       system_gems "rack-1.0.0", "rack-0.9.1", :path => default_bundle_path
