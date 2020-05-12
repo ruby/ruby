@@ -19,6 +19,7 @@ VALUE rb_io_flush_raw(VALUE, int);
 size_t rb_io_memsize(const rb_io_t *);
 int rb_stderr_tty_p(void);
 void rb_io_fptr_finalize_internal(void *ptr);
+void rb_io_set_encoding_internal(VALUE io, VALUE ext_enc, VALUE int_enc);
 #ifdef rb_io_fptr_finalize
 # undef rb_io_fptr_finalize
 #endif

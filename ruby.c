@@ -2039,9 +2039,7 @@ load_file_internal(VALUE argp_v)
     int line_start = 1;
     rb_ast_t *ast = 0;
     rb_encoding *enc;
-    ID set_encoding;
 
-    CONST_ID(set_encoding, "set_encoding");
     if (script) {
 	VALUE c = 1;		/* something not nil */
 	VALUE line;
@@ -2052,7 +2050,7 @@ load_file_internal(VALUE argp_v)
 	int no_int_enc = !opt->intern.enc.name;
 
 	enc = rb_ascii8bit_encoding();
-	rb_funcall(f, set_encoding, 1, rb_enc_from_encoding(enc));
+	rb_io_set_encoding_internal(f, rb_enc_from_encoding(enc), Qnil);
 
 	if (opt->xflag) {
 	    line_start--;
@@ -2137,9 +2135,9 @@ load_file_internal(VALUE argp_v)
 	rb_enc_associate(f, enc);
 	return (VALUE)rb_parser_compile_string_path(parser, orig_fname, f, line_start);
     }
-    rb_funcall(f, set_encoding, 2, rb_enc_from_encoding(enc), rb_str_new_cstr("-"));
+    rb_io_set_encoding_internal(f, rb_enc_from_encoding(enc), Qfalse);
     ast = rb_parser_compile_file_path(parser, orig_fname, f, line_start);
-    rb_funcall(f, set_encoding, 1, rb_parser_encoding(parser));
+    rb_io_set_encoding_internal(f, rb_parser_encoding(parser), Qnil);
     if (script && rb_parser_end_seen_p(parser)) {
 	/*
 	 * DATA is a File that contains the data section of the executed file.

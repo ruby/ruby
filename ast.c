@@ -1,5 +1,6 @@
 /* indent-tabs-mode: nil */
 #include "internal.h"
+#include "internal/io.h"
 #include "internal/parse.h"
 #include "internal/symbol.h"
 #include "internal/warnings.h"
@@ -116,7 +117,7 @@ rb_ast_parse_file(VALUE path)
 
     FilePathValue(path);
     f = rb_file_open_str(path, "r");
-    rb_funcall(f, rb_intern("set_encoding"), 2, rb_enc_from_encoding(enc), rb_str_new_cstr("-"));
+    rb_io_set_encoding_internal(f, rb_enc_from_encoding(enc), Qfalse);
     ast = rb_parser_compile_file_path(ast_parse_new(), Qnil, f, 1);
     rb_io_close(f);
     return ast_parse_done(ast);
