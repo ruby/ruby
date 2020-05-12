@@ -15,6 +15,7 @@ class Reline::WithinPipeTest < Reline::TestCase
     Reline.input = STDIN
     Reline.output = STDOUT
     Reline.point = 0
+    Reline.delete_text
     @input_reader.close
     @writer.close
     @reader.close
