@@ -83,7 +83,7 @@ class TestCSVEncodings < Test::Unit::TestCase
         no_warnings do
           Encoding.default_external = encoding
         end
-        result = CSV.read(@temp_csv_path, "rb")[0][0]
+        result = CSV.read(@temp_csv_path)[0][0]
       ensure
         no_warnings do
           Encoding.default_external = default_external
