@@ -1,0 +1,31 @@
+====== Option +header_converters+
+
+Specifies a \String converter name or an \Array of converter names.
+
+Default value:
+  CSV::DEFAULT_OPTIONS.fetch(:header_converters) # => nil
+
+Identical in functionality to option {converters}[#class-CSV-label-Option+converters]
+except that:
+- The converters apply only to the header row.
+- The built-in header converters are +:downcase+ and +:symbol+.
+
+Examples:
+  str = <<-EOT
+  foo,0
+  bar,1
+  baz,2
+  EOT
+  headers = ['Name', 'Value']
+  # With no header converter
+  csv = CSV.parse(str, headers: headers)
+  csv.headers # => ["Name", "Value"]
+  # With header converter :downcase
+  csv = CSV.parse(str, headers: headers, header_converters: :downcase)
+  csv.headers # => ["name", "value"]
+  # With header converter :symbol
+  csv = CSV.parse(str, headers: headers, header_converters: :symbol)
+  csv.headers # => [:name, :value]
+  # With both
+  csv = CSV.parse(str, headers: headers, header_converters: [:downcase, :symbol])
+  csv.headers # => [:name, :value]

@@ -1,0 +1,45 @@
+====== Option +col_sep+
+
+Specifies the \String field separator to be used
+for both parsing and generating.
+The \String will be transcoded into the data's \Encoding before use.
+
+Default value:
+  CSV::DEFAULT_OPTIONS.fetch(:col_sep) # => "," (comma)
+
+For examples in this section:
+  ary = ['a', 'b', 'c']
+
+Using the default:
+  str = CSV.generate_line(line)
+  str # => "a,b,c\n"
+  ary = CSV.parse_line(str)
+  ary # => ["a", "b", "c"]
+
+Using +:+ (colon):
+  col_sep = ':'
+  str = CSV.generate_line(ary, col_sep: col_sep)
+  str # => "a:b:c\n"
+  ary = CSV.parse_line(str, col_sep: col_sep)
+  ary # => [["a", "b", "c"]]
+
+Using +::+ (two colons):
+  col_sep = '::'
+  str = CSV.generate_line(ary, col_sep: col_sep)
+  str # => "a::b::c\n"
+  ary = CSV.parse_line(str, col_sep: col_sep)
+  ary # => [["a", "b", "c"]]
+
+---
+
+Raises an exception if given the empty \String:
+  col_sep = ''
+  # Raises ArgumentError (:col_sep must be 1 or more characters: "")
+  CSV.parse_line("a:b:c\n", col_sep: col_sep)
+
+Raises an exception if the given value is not String-convertible:
+  col_sep = BasicObject.new
+  # Raises NoMethodError (undefined method `to_s' for #<BasicObject:>)
+  CSV.generate_line(line, col_sep: col_sep)
+  # Raises NoMethodError (undefined method `to_s' for #<BasicObject:>)
+  CSV.parse(str, col_sep: col_sep)

@@ -1,0 +1,45 @@
+====== Option +converters+
+
+Specifies a single field converter name or \Proc,
+or an \Array of field converter names and Procs.
+
+See {Field Converters}[#class-CSV-label-Field+Converters]
+
+Default value:
+  CSV::DEFAULT_OPTIONS.fetch(:converters) # => nil
+
+The value may be a single field converter name:
+  str = '1,2,3'
+  # Without a converter
+  ary = CSV.parse_line(str)
+  ary # => ["1", "2", "3"]
+  # With built-in converter :integer
+  ary = CSV.parse_line(str, converters: :integer)
+  ary # => [1, 2, 3]
+
+The value may be an \Array of field converter names:
+  str = '1,3.14159'
+  # Without converters
+  ary = CSV.parse_line(str)
+  ary # => ["1", "3.14159"]
+  # With built-in converters
+  ary = CSV.parse_line(str, converters: [:integer, :float])
+  ary # => [1, 3.14159]
+
+The value may be a \Proc custom converter:
+  str = ' foo  ,  bar  ,  baz  '
+  # Without a converter
+  ary = CSV.parse_line(str)
+  ary # => [" foo  ", "  bar  ", "  baz  "]
+  # With a custom converter
+  ary = CSV.parse_line(str, converters: proc {|field| field.strip })
+  ary # => ["foo", "bar", "baz"]
+
+See also {Custom Converters}[#class-CSV-label-Custom+Converters]
+
+---
+
+Raises an exception if the converter is not a converter name or a \Proc:
+  str = 'foo,0'
+  # Raises NoMethodError (undefined method `arity' for nil:NilClass)
+  CSV.parse(str, converters: :foo)

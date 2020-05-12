@@ -1,0 +1,32 @@
+====== Option +quote_char+
+
+Specifies the character (\String of length 1) used used to quote fields
+in both parsing and generating.
+This String will be transcoded into the data's \Encoding before use.
+
+Default value:
+  CSV::DEFAULT_OPTIONS.fetch(:quote_char) # => "\"" (backslash)
+
+This is useful for an application that incorrectly uses <tt>'</tt> (single-quote)
+to quote fields, instead of the correct <tt>"</tt> (double-quote).
+
+Using the default:
+  ary = ['a', 'b', '"c"', 'd']
+  str = CSV.generate_line(ary)
+  str # => "a,b,\"\"\"c\"\"\",d\n"
+  ary = CSV.parse_line(str)
+  ary # => ["a", "b", "\"c\"", "d"]
+
+Using <tt>'</tt> (single-quote):
+  quote_char = "'"
+  ary = ['a', 'b', '\'c\'', 'd']
+  str = CSV.generate_line(ary, quote_char: quote_char)
+  str # => "a,b,'''c''',d\n"
+  ary = CSV.parse_line(str, quote_char: quote_char)
+  ary # => [["a", "b", "'c'", "d"]]
+
+---
+
+Raises an exception if the \String length is greater than 1:
+  # Raises ArgumentError (:quote_char has to be nil or a single character String)
+  CSV.new('', quote_char: 'xx')

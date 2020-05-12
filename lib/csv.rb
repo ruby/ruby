@@ -103,7 +103,6 @@ require_relative "csv/writer"
 
 using CSV::MatchP if CSV.const_defined?(:MatchP)
 
-#
 # This class provides a complete interface to CSV files and data. It offers
 # tools to enable you to read and write to and from Strings or IO objects, as
 # needed.
@@ -179,9 +178,89 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 #   CSV($stderr)    { |csv_err| csv_err << %w{my data here} }  # to $stderr
 #   CSV($stdin)     { |csv_in|  csv_in.each { |row| p row } }  # from $stdin
 #
-# == Data Conversion
+# == Options
 #
-# === CSV with headers
+# The default values for options are:
+#   DEFAULT_OPTIONS = {
+#     # For both parsing and generating.
+#     col_sep:            ",",
+#     row_sep:            :auto,
+#     quote_char:         '"',
+#     # For parsing.
+#     field_size_limit:   nil,
+#     converters:         nil,
+#     unconverted_fields: nil,
+#     headers:            false,
+#     return_headers:     false,
+#     header_converters:  nil,
+#     skip_blanks:        false,
+#     skip_lines:         nil,
+#     liberal_parsing:    false,
+#     nil_value:          nil,
+#     empty_value:        "",
+#     # For generating.
+#     write_headers:      nil,
+#     quote_empty:        true,
+#     force_quotes:       false,
+#     write_converters:   nil,
+#     write_nil_value:    nil,
+#     write_empty_value:  "",
+#     strip:              false,
+#   }
+#
+# === Options for Parsing
+#
+# :include: ../doc/col_sep.rdoc
+#
+# :include: ../doc/row_sep.rdoc
+#
+# :include: ../doc/quote_char.rdoc
+#
+# :include: ../doc/field_size_limit.rdoc
+#
+# :include: ../doc/converters.rdoc
+#
+# :include: ../doc/unconverted_fields.rdoc
+#
+# :include: ../doc/headers.rdoc
+#
+# :include: ../doc/return_headers.rdoc
+#
+# :include: ../doc/header_converters.rdoc
+#
+# :include: ../doc/skip_blanks.rdoc
+#
+# :include: ../doc/skip_lines.rdoc
+#
+# :include: ../doc/liberal_parsing.rdoc
+#
+# :include: ../doc/nil_value.rdoc
+#
+# :include: ../doc/empty_value.rdoc
+#
+# === Options for Generating
+#
+# :include: ../doc/col_sep.rdoc
+#
+# :include: ../doc/row_sep.rdoc
+#
+# :include: ../doc/quote_char.rdoc
+#
+# :include: ../doc/write_headers.rdoc
+#
+# :include: ../doc/force_quotes.rdoc
+#
+# :include: ../doc/quote_empty.rdoc
+#
+# :include: ../doc/write_converters.rdoc
+#
+# :include: ../doc/write_nil_value.rdoc
+#
+# :include: ../doc/write_empty_value.rdoc
+#
+# :include: ../doc/strip.rdoc
+#
+# == CSV with headers
 #
 # CSV allows to specify column names of CSV file, whether they are in data, or
 # provided separately. If headers are specified, reading methods return an instance
@@ -203,22 +282,205 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 #   data = CSV.parse('Bob,Engineering,1000', headers: %i[name department salary])
 #   data.first      #=> #<CSV::Row name:"Bob" department:"Engineering" salary:"1000">
 #
-# === Typed data reading
+# == \CSV \Converters
 #
-# CSV allows to provide a set of data _converters_ e.g. transformations to try on input
-# data. Converter could be a symbol from CSV::Converters constant's keys, or lambda.
+# By default, each field parsed by \CSV is formed into a \String.
+# You can use a _converter_ to convert certain fields into other Ruby objects.
 #
-#   # Without any converters:
-#   CSV.parse('Bob,2018-03-01,100')
-#   #=> [["Bob", "2018-03-01", "100"]]
+# When you specify a converter for parsing,
+# each parsed field is passed to the converter;
+# its return value becomes the new value for the field.
+# A converter might, for example, convert an integer embedded in a \String
+# into a true \Integer.
+# (In fact, that's what built-in field converter +:integer+ does.)
 #
-#   # With built-in converters:
-#   CSV.parse('Bob,2018-03-01,100', converters: %i[numeric date])
-#   #=> [["Bob", #<Date: 2018-03-01>, 100]]
+# There are additional built-in \converters, and custom \converters are also supported.
 #
-#   # With custom converters:
-#   CSV.parse('Bob,2018-03-01,100', converters: [->(v) { Time.parse(v) rescue v }])
-#   #=> [["Bob", 2018-03-01 00:00:00 +0200, "100"]]
+# All \converters try to transcode fields to UTF-8 before converting.
+# The conversion will fail if the data cannot be transcoded, leaving the field unchanged.
+#
+# === Field \Converters
+#
+# There are three ways to use field \converters;
+# these examples use built-in field converter +:integer+,
+# which converts each parsed integer string to a true \Integer.
+#
+# Option +converters+ with a singleton parsing method:
+#   ary = CSV.parse_line('0,1,2', converters: :integer)
+#   ary # => [0, 1, 2]
+#
+# Option +converters+ with a new \CSV instance:
+#   csv = CSV.new('0,1,2', converters: :integer)
+#   # Field converters in effect:
+#   csv.converters # => [:integer]
+#   csv.shift # => [0, 1, 2]
+#
+# Method #convert adds a field converter to a \CSV instance:
+#   csv = CSV.new('0,1,2')
+#   # Add a converter.
+#   csv.convert(:integer)
+#   csv.converters # => [:integer]
+#   csv.shift # => [0, 1, 2]
+#
+# ---
+#
+# The built-in field \converters are in \Hash CSV::Converters.
+# The \Symbol keys there are the names of the \converters:
+#
+#   CSV::Converters.keys # => [:integer, :float, :numeric, :date, :date_time, :all]
+#
+# Converter +:integer+ converts each field that +Integer()+ accepts:
+#   data = '0,1,2,x'
+#   # Without the converter
+#   csv = CSV.parse_line(data)
+#   csv # => ["0", "1", "2", "x"]
+#   # With the converter
+#   csv = CSV.parse_line(data, converters: :integer)
+#   csv # => [0, 1, 2, "x"]
+#
+# Converter +:float+ converts each field that +Float()+ accepts:
+#   data = '1.0,3.14159,x'
+#   # Without the converter
+#   csv = CSV.parse_line(data)
+#   csv # => ["1.0", "3.14159", "x"]
+#   # With the converter
+#   csv = CSV.parse_line(data, converters: :float)
+#   csv # => [1.0, 3.14159, "x"]
+#
+# Converter +:numeric+ converts with both +:integer+ and +:float+..
+#
+# Converter +:date+ converts each field that +Date::parse()+ accepts:
+#   data = '2001-02-03,x'
+#   # Without the converter
+#   csv = CSV.parse_line(data)
+#   csv # => ["2001-02-03", "x"]
+#   # With the converter
+#   csv = CSV.parse_line(data, converters: :date)
+#   csv # => [#<Date: 2001-02-03 ((2451944j,0s,0n),+0s,2299161j)>, "x"]
+#
+# Converter +:date_time+ converts each field that +DateTime::parse() accepts:
+#   data = '2020-05-07T14:59:00-05:00,x'
+#   # Without the converter
+#   csv = CSV.parse_line(data)
+#   csv # => ["2020-05-07T14:59:00-05:00", "x"]
+#   # With the converter
+#   csv = CSV.parse_line(data, converters: :date_time)
+#   csv # => [#<DateTime: 2020-05-07T14:59:00-05:00 ((2458977j,71940s,0n),-18000s,2299161j)>, "x"]
+#
+# Converter +:numeric+ converts with both +:date_time+ and +:numeric+..
+#
+# As seen above, method #convert adds \converters to a \CSV instance,
+# and method #converters returns an \Array of the \converters in effect:
+#   csv = CSV.new('0,1,2')
+#   csv.converters # => []
+#   csv.convert(:integer)
+#   csv.converters # => [:integer]
+#   csv.convert(:date)
+#   csv.converters # => [:integer, :date]
+#
+# You can add a custom field converter to \Hash CSV::Converters:
+#   strip_converter = proc {|field| field.strip}
+#   CSV::Converters[:strip] = strip_converter
+#   CSV::Converters.keys # => [:integer, :float, :numeric, :date, :date_time, :all, :strip]
+#
+# Then use it to convert fields:
+#   str = ' foo , 0 '
+#   ary = CSV.parse_line(str, converters: :strip)
+#   ary # => ["foo", "0"]
+#
+# See {Custom Converters}[#class-CSV-label-Custom+Converters].
+#
+# === Header \Converters
+#
+# Header converters operate only on headers (and not on other rows).
+#
+# There are three ways to use header \converters;
+# these examples use built-in header converter +:dowhcase+,
+# which downcases each parsed header.
+#
+# Option +header_converters+ with a singleton parsing method:
+#   str = "Name,Count\nFoo,0\n,Bar,1\nBaz,2"
+#   tbl = CSV.parse(str, headers: true, header_converters: :downcase)
+#   tbl.class # => CSV::Table
+#   tbl.headers # => ["name", "count"]
+#
+# Option +header_converters+ with a new \CSV instance:
+#   csv = CSV.new(str, header_converters: :downcase)
+#   # Header converters in effect:
+#   csv.header_converters # => [:downcase]
+#   tbl = CSV.parse(str, headers: true)
+#   tbl.headers # => ["Name", "Count"]
+#
+# Method #header_convert adds a header converter to a \CSV instance:
+#   csv = CSV.new(str)
+#   # Add a header converter.
+#   csv.header_convert(:downcase)
+#   csv.header_converters # => [:downcase]
+#   tbl = CSV.parse(str, headers: true)
+#   tbl.headers # => ["Name", "Count"]
+#
+# ---
+#
+# The built-in header \converters are in \Hash CSV::Converters.
+# The \Symbol keys there are the names of the \converters:
+#
+#   CSV::HeaderConverters.keys # => [:downcase, :symbol]
+#
+# Converter +:downcase+ converts each header by downcasing it:
+#   str = "Name,Count\nFoo,0\n,Bar,1\nBaz,2"
+#   tbl = CSV.parse(str, headers: true, header_converters: :downcase)
+#   tbl.class # => CSV::Table
+#   tbl.headers # => ["name", "count"]
+#
+# Converter +:symbol+ by making it into a \Symbol:
+#   str = "Name,Count\nFoo,0\n,Bar,1\nBaz,2"
+#   tbl = CSV.parse(str, headers: true, header_converters: :symbol)
+#   tbl.headers # => [:name, :count]
+# Details:
+# - Strips leading and trailing whitespace.
+# - Downcases the header.
+# - Replaces embedded spaces with underscores.
+# - Removes non-word characters.
+# - Makes the string into a \Symbol.
+#
+# You can add a custom header converter to \Hash CSV::HeaderConverters:
+#   strip_converter = proc {|field| field.strip}
+#   CSV::HeaderConverters[:strip] = strip_converter
+#   CSV::HeaderConverters.keys # => [:downcase, :symbol, :strip]
+#
+# Then use it to convert headers:
+#   str = " Name , Value \nfoo,0\nbar,1\nbaz,2"
+#   tbl = CSV.parse(str, headers: true, header_converters: :strip)
+#   tbl.headers # => ["Name", "Value"]
+#
+# See {Custom Converters}[#class-CSV-label-Custom+Converters].
+#
+# === Custom \Converters
+#
+# You can define custom \converters.
+#
+# The \converter is a \Proc that is called with two arguments,
+# \String +field+ and CSV::FieldInfo +field_info+;
+# it returns a \String that will become the field value:
+#   converter = proc {|field, field_info| <some_string> }
+#
+# To illustrate:
+#   converter = proc {|field, field_info| p [field, field_info]; field}
+#   ary = CSV.parse_line('foo,0', converters: converter)
+#
+# Produces:
+#   ["foo", #<struct CSV::FieldInfo index=0, line=1, header=nil>]
+#   ["0", #<struct CSV::FieldInfo index=1, line=1, header=nil>]
+#
+# In each of the output lines:
+# - The first \Array element is the passed \String field.
+# - The second is a \FieldInfo structure containing information about the field:
+#   - The 0-based column index.
+#   - The 1-based line number.
+#   - The header for the column, if available.
+#
+# If the \converter does not need +field_info+, it can be omitted:
+#   converter = proc {|field| ... }
 #
 # == CSV and Character Encodings (M17n or Multilingualization)
 #
@@ -380,29 +642,13 @@ class CSV
                                            gsub(/\s+/, "_").to_sym
     }
   }
-
-  #
-  # The options used when no overrides are given by calling code. They are:
-  #
-  # <b><tt>:col_sep</tt></b>::            <tt>","</tt>
-  # <b><tt>:row_sep</tt></b>::            <tt>:auto</tt>
-  # <b><tt>:quote_char</tt></b>::         <tt>'"'</tt>
-  # <b><tt>:field_size_limit</tt></b>::   +nil+
-  # <b><tt>:converters</tt></b>::         +nil+
-  # <b><tt>:unconverted_fields</tt></b>:: +nil+
-  # <b><tt>:headers</tt></b>::            +false+
-  # <b><tt>:return_headers</tt></b>::     +false+
-  # <b><tt>:header_converters</tt></b>::  +nil+
-  # <b><tt>:skip_blanks</tt></b>::        +false+
-  # <b><tt>:force_quotes</tt></b>::       +false+
-  # <b><tt>:skip_lines</tt></b>::         +nil+
-  # <b><tt>:liberal_parsing</tt></b>::    +false+
-  # <b><tt>:quote_empty</tt></b>::        +true+
-  #
+  # Default values for method options.
   DEFAULT_OPTIONS = {
+    # For both parsing and generating.
     col_sep:            ",",
     row_sep:            :auto,
     quote_char:         '"',
+    # For parsing.
     field_size_limit:   nil,
     converters:         nil,
     unconverted_fields: nil,
@@ -410,10 +656,18 @@ class CSV
     return_headers:     false,
     header_converters:  nil,
     skip_blanks:        false,
-    force_quotes:       false,
     skip_lines:         nil,
     liberal_parsing:    false,
+    nil_value:          nil,
+    empty_value:        "",
+    # For generating.
+    write_headers:      nil,
     quote_empty:        true,
+    force_quotes:       false,
+    write_converters:   nil,
+    write_nil_value:    nil,
+    write_empty_value:  "",
+    strip:              false,
   }.freeze
 
   class << self
@@ -422,6 +676,9 @@ class CSV
     # instance will be cached and returned for all future calls to this method for
     # the same +data+ object (tested by Object#object_id()) with the same
     # +options+.
+    #
+    # See {Options for Parsing}[#class-CSV-label-Options+for+Parsing]
+    # and {Options for Generating}[#class-CSV-label-Options+for+Generating].
     #
     # If a block is given, the instance is passed to the block and the return
     # value becomes the return value of the block.
@@ -463,6 +720,9 @@ class CSV
     # <tt>:out_</tt> or <tt>:output_</tt> affect only +output+. All other keys
     # are assigned to both objects.
     #
+    # See {Options for Parsing}[#class-CSV-label-Options+for+Parsing]
+    # and {Options for Generating}[#class-CSV-label-Options+for+Generating].
+    #
     # The <tt>:output_row_sep</tt> +option+ defaults to
     # <tt>$INPUT_RECORD_SEPARATOR</tt> (<tt>$/</tt>).
     #
@@ -496,6 +756,8 @@ class CSV
     # pass a +path+ and any +options+ you wish to set for the read. Each row of
     # file will be passed to the provided +block+ in turn.
     #
+    # See {Options for Parsing}[#class-CSV-label-Options+for+Parsing].
+    #
     # The +options+ parameter can be anything CSV::new() understands. This method
     # also understands an additional <tt>:encoding</tt> parameter that you can use
     # to specify the Encoding of the data in the file to be read. You must provide
@@ -525,10 +787,11 @@ class CSV
     # Note that a passed String *is* modified by this method. Call dup() before
     # passing if you need a new String.
     #
-    # The +options+ parameter can be anything CSV::new() understands.  This method
-    # understands an additional <tt>:encoding</tt> parameter when not passed a
-    # String to set the base Encoding for the output.  CSV needs this hint if you
-    # plan to output non-ASCII compatible data.
+    # See {Options for Generating}[#class-CSV-label-Options+for+Generating].
+    #
+    # This method has one additional option: <tt>:encoding</tt>,
+    # which sets the base Encoding for the output if no no +str+ is specified.
+    # CSV needs this hint if you plan to output non-ASCII compatible data.
     #
     def generate(str=nil, **options)
       encoding = options[:encoding]
@@ -550,8 +813,9 @@ class CSV
     # This method is a shortcut for converting a single row (Array) into a CSV
     # String.
     #
-    # The +options+ parameter can be anything CSV::new() understands. This method
-    # understands an additional <tt>:encoding</tt> parameter to set the base
+    # See {Options for Generating}[#class-CSV-label-Options+for+Generating].
+    #
+    # This method accepts an additional option, <tt>:encoding</tt>, which sets the base
     # Encoding for the output. This method will try to guess your Encoding from
     # the first non-+nil+ field in +row+, if possible, but you may need to use
     # this parameter as a backup plan.
@@ -581,8 +845,9 @@ class CSV
     # as the primary interface for writing a CSV file.
     #
     # You must pass a +filename+ and may optionally add a +mode+ for Ruby's
-    # open(). You may also pass an optional Hash containing any +options+
-    # CSV::new() understands as the final argument.
+    # open().
+    #
+    # See {Options for Generating}[#class-CSV-label-Options+for+Generating].
     #
     # This method works like Ruby's open() call, in that it will pass a CSV object
     # to a provided block and close it when the block terminates, or it will
@@ -674,8 +939,8 @@ class CSV
     # provide a +block+ which will be called with each row of the String in turn,
     # or just use the returned Array of Arrays (when no +block+ is given).
     #
-    # You pass your +str+ to read from, and an optional +options+ containing
-    # anything CSV::new() understands.
+    # You pass your +str+ to read from, and an optional +options+.
+    # See {Options for Parsing}[#class-CSV-label-Options+for+Parsing].
     #
     def parse(str, **options, &block)
       csv = new(str, **options)
@@ -695,7 +960,7 @@ class CSV
     # an Array. Note that if +line+ contains multiple rows, anything beyond the
     # first row is ignored.
     #
-    # The +options+ parameter can be anything CSV::new() understands.
+    # See {Options for Parsing}[#class-CSV-label-Options+for+Parsing].
     #
     def parse_line(line, **options)
       new(line, **options).shift
@@ -703,7 +968,10 @@ class CSV
 
     #
     # Use to slurp a CSV file into an Array of Arrays. Pass the +path+ to the
-    # file and any +options+ CSV::new() understands. This method also understands
+    # file and +options+.
+    # See {Options for Parsing}[#class-CSV-label-Options+for+Parsing].
+    #
+    # This method also understands
     # an additional <tt>:encoding</tt> parameter that you can use to specify the
     # Encoding of the data in the file to be read. You must provide this unless
     # your data is in Encoding::default_external(). CSV will use this to determine
@@ -728,6 +996,7 @@ class CSV
     #                     converters:        :numeric,
     #                     header_converters: :symbol }.merge(options) )
     #
+    # See {Options for Parsing}[#class-CSV-label-Options+for+Parsing].
     def table(path, **options)
       default_options = {
         headers:           true,
@@ -750,171 +1019,8 @@ class CSV
   # reading). If you want it at the end (for writing), use CSV::generate().
   # If you want any other positioning, pass a preset StringIO object instead.
   #
-  # You may set any reading and/or writing preferences in the +options+ Hash.
-  # Available options are:
-  #
-  # <b><tt>:col_sep</tt></b>::            The String placed between each field.
-  #                                       This String will be transcoded into
-  #                                       the data's Encoding before parsing.
-  # <b><tt>:row_sep</tt></b>::            The String appended to the end of each
-  #                                       row. This can be set to the special
-  #                                       <tt>:auto</tt> setting, which requests
-  #                                       that CSV automatically discover this
-  #                                       from the data. Auto-discovery reads
-  #                                       ahead in the data looking for the next
-  #                                       <tt>"\r\n"</tt>, <tt>"\n"</tt>, or
-  #                                       <tt>"\r"</tt> sequence. A sequence
-  #                                       will be selected even if it occurs in
-  #                                       a quoted field, assuming that you
-  #                                       would have the same line endings
-  #                                       there. If none of those sequences is
-  #                                       found, +data+ is <tt>ARGF</tt>,
-  #                                       <tt>STDIN</tt>, <tt>STDOUT</tt>, or
-  #                                       <tt>STDERR</tt>, or the stream is only
-  #                                       available for output, the default
-  #                                       <tt>$INPUT_RECORD_SEPARATOR</tt>
-  #                                       (<tt>$/</tt>) is used. Obviously,
-  #                                       discovery takes a little time. Set
-  #                                       manually if speed is important. Also
-  #                                       note that IO objects should be opened
-  #                                       in binary mode on Windows if this
-  #                                       feature will be used as the
-  #                                       line-ending translation can cause
-  #                                       problems with resetting the document
-  #                                       position to where it was before the
-  #                                       read ahead. This String will be
-  #                                       transcoded into the data's Encoding
-  #                                       before parsing.
-  # <b><tt>:quote_char</tt></b>::         The character used to quote fields.
-  #                                       This has to be a single character
-  #                                       String. This is useful for
-  #                                       application that incorrectly use
-  #                                       <tt>'</tt> as the quote character
-  #                                       instead of the correct <tt>"</tt>.
-  #                                       CSV will always consider a double
-  #                                       sequence of this character to be an
-  #                                       escaped quote. This String will be
-  #                                       transcoded into the data's Encoding
-  #                                       before parsing.
-  # <b><tt>:field_size_limit</tt></b>::   This is a maximum size CSV will read
-  #                                       ahead looking for the closing quote
-  #                                       for a field. (In truth, it reads to
-  #                                       the first line ending beyond this
-  #                                       size.) If a quote cannot be found
-  #                                       within the limit CSV will raise a
-  #                                       MalformedCSVError, assuming the data
-  #                                       is faulty. You can use this limit to
-  #                                       prevent what are effectively DoS
-  #                                       attacks on the parser. However, this
-  #                                       limit can cause a legitimate parse to
-  #                                       fail and thus is set to +nil+, or off,
-  #                                       by default.
-  # <b><tt>:converters</tt></b>::         An Array of names from the Converters
-  #                                       Hash and/or lambdas that handle custom
-  #                                       conversion. A single converter
-  #                                       doesn't have to be in an Array. All
-  #                                       built-in converters try to transcode
-  #                                       fields to UTF-8 before converting.
-  #                                       The conversion will fail if the data
-  #                                       cannot be transcoded, leaving the
-  #                                       field unchanged.
-  # <b><tt>:unconverted_fields</tt></b>:: If set to +true+, an
-  #                                       unconverted_fields() method will be
-  #                                       added to all returned rows (Array or
-  #                                       CSV::Row) that will return the fields
-  #                                       as they were before conversion. Note
-  #                                       that <tt>:headers</tt> supplied by
-  #                                       Array or String were not fields of the
-  #                                       document and thus will have an empty
-  #                                       Array attached.
-  # <b><tt>:headers</tt></b>::            If set to <tt>:first_row</tt> or
-  #                                       +true+, the initial row of the CSV
-  #                                       file will be treated as a row of
-  #                                       headers. If set to an Array, the
-  #                                       contents will be used as the headers.
-  #                                       If set to a String, the String is run
-  #                                       through a call of CSV::parse_line()
-  #                                       with the same <tt>:col_sep</tt>,
-  #                                       <tt>:row_sep</tt>, and
-  #                                       <tt>:quote_char</tt> as this instance
-  #                                       to produce an Array of headers. This
-  #                                       setting causes CSV#shift() to return
-  #                                       rows as CSV::Row objects instead of
-  #                                       Arrays and CSV#read() to return
-  #                                       CSV::Table objects instead of an Array
-  #                                       of Arrays.
-  # <b><tt>:return_headers</tt></b>::     When +false+, header rows are silently
-  #                                       swallowed. If set to +true+, header
-  #                                       rows are returned in a CSV::Row object
-  #                                       with identical headers and
-  #                                       fields (save that the fields do not go
-  #                                       through the converters).
-  # <b><tt>:write_headers</tt></b>::      When +true+ and <tt>:headers</tt> is
-  #                                       set, a header row will be added to the
-  #                                       output.
-  # <b><tt>:header_converters</tt></b>::  Identical in functionality to
-  #                                       <tt>:converters</tt> save that the
-  #                                       conversions are only made to header
-  #                                       rows. All built-in converters try to
-  #                                       transcode headers to UTF-8 before
-  #                                       converting. The conversion will fail
-  #                                       if the data cannot be transcoded,
-  #                                       leaving the header unchanged.
-  # <b><tt>:skip_blanks</tt></b>::        When setting a +true+ value, CSV will
-  #                                       skip over any empty rows. Note that
-  #                                       this setting will not skip rows that
-  #                                       contain column separators, even if
-  #                                       the rows contain no actual data. If
-  #                                       you want to skip rows that contain
-  #                                       separators but no content, consider
-  #                                       using <tt>:skip_lines</tt>, or
-  #                                       inspecting fields.compact.empty? on
-  #                                       each row.
-  # <b><tt>:force_quotes</tt></b>::       When setting a +true+ value, CSV will
-  #                                       quote all CSV fields it creates.
-  # <b><tt>:skip_lines</tt></b>::         When setting an object responding to
-  #                                       <tt>match</tt>, every line matching
-  #                                       it is considered a comment and ignored
-  #                                       during parsing. When set to a String,
-  #                                       it is first converted to a Regexp.
-  #                                       When set to +nil+ no line is considered
-  #                                       a comment. If the passed object does
-  #                                       not respond to <tt>match</tt>,
-  #                                       <tt>ArgumentError</tt> is thrown.
-  # <b><tt>:liberal_parsing</tt></b>::    When setting a +true+ value, CSV will
-  #                                       attempt to parse input not conformant
-  #                                       with RFC 4180, such as double quotes
-  #                                       in unquoted fields.
-  # <b><tt>:nil_value</tt></b>::          When set an object, any values of an
-  #                                       empty field is replaced by the set
-  #                                       object, not nil.
-  # <b><tt>:empty_value</tt></b>::        When setting an object, any values of a
-  #                                       blank string field is replaced by
-  #                                       the set object.
-  # <b><tt>:quote_empty</tt></b>::        When setting a +true+ value, CSV will
-  #                                       quote empty values with double quotes.
-  #                                       When +false+, CSV will emit an
-  #                                       empty string for an empty field value.
-  # <b><tt>:write_converters</tt></b>::   Converts values on each line with the
-  #                                       specified <tt>Proc</tt> object(s),
-  #                                       which receive a <tt>String</tt> value
-  #                                       and return a <tt>String</tt> or +nil+
-  #                                       value.
-  #                                       When an array is specified, each
-  #                                       converter will be applied in order.
-  # <b><tt>:write_nil_value</tt></b>::    When a <tt>String</tt> value, +nil+
-  #                                       value(s) on each line will be replaced
-  #                                       with the specified value.
-  # <b><tt>:write_empty_value</tt></b>::  When a <tt>String</tt> or +nil+ value,
-  #                                       empty value(s) on each line will be
-  #                                       replaced with the specified value.
-  # <b><tt>:strip</tt></b>::              When setting a +true+ value, CSV will
-  #                                       strip " \t\f\v" around the values.
-  #                                       If you specify a string instead of
-  #                                       +true+, CSV will strip string. The
-  #                                       length of the string must be 1.
-  #
-  # See CSV::DEFAULT_OPTIONS for the default settings.
+  # See {Options for Parsing}[#class-CSV-label-Options+for+Parsing]
+  # and {Options for Generating}[#class-CSV-label-Options+for+Generating].
   #
   # Options cannot be overridden in the instance methods for performance reasons,
   # so be sure to set what you want here.
