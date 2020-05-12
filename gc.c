@@ -4800,14 +4800,13 @@ rb_gc_mark_values(long n, const VALUE *values)
 }
 
 static void
-gc_mark_and_pin_stack_values(rb_objspace_t *objspace, long n, const VALUE *values)
+gc_mark_stack_values(rb_objspace_t *objspace, long n, const VALUE *values)
 {
     long i;
 
     for (i=0; i<n; i++) {
-        /* skip MOVED objects that are on the stack */
-        if (is_markable_object(objspace, values[i]) && T_MOVED != BUILTIN_TYPE(values[i])) {
-            gc_mark_and_pin(objspace, values[i]);
+        if (is_markable_object(objspace, values[i])) {
+            gc_mark(objspace, values[i]);
         }
     }
 }
@@ -4816,7 +4815,7 @@ void
 rb_gc_mark_vm_stack_values(long n, const VALUE *values)
 {
     rb_objspace_t *objspace = &rb_objspace;
-    gc_mark_and_pin_stack_values(objspace, n, values);
+    gc_mark_stack_values(objspace, n, values);
 }
 
 static int
