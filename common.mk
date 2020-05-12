@@ -304,7 +304,7 @@ ext/extinit.c: $(srcdir)/template/extinit.c.tmpl
 	    $(srcdir)/template/extinit.c.tmpl $(EXTINITS)
 
 prog: program wprogram
-programs: $(PROGRAM) $(WPROGRAM)
+programs: $(PROGRAM) $(WPROGRAM) $(arch)-fake.rb
 
 $(PREP): $(MKFILES)
 
@@ -817,7 +817,7 @@ $(RBCONFIG): $(tooldir)/mkconfig.rb config.status $(srcdir)/version.h
 test-rubyspec: test-spec
 yes-test-rubyspec: yes-test-spec
 
-test-spec-precheck: $(arch)-fake.rb programs
+test-spec-precheck: programs
 
 test-spec: $(TEST_RUNNABLE)-test-spec
 yes-test-spec: test-spec-precheck
@@ -1315,7 +1315,7 @@ update-bundled_gems: PHONY
 	     "$(srcdir)/gems/bundled_gems" | \
 	"$(IFCHANGE)" "$(srcdir)/gems/bundled_gems" -
 
-test-bundled-gems-precheck: $(arch)-fake.rb programs
+test-bundled-gems-precheck: programs
 
 test-bundled-gems-fetch: $(PREP)
 	$(Q) $(BASERUBY) -C $(srcdir)/gems ../tool/fetch-bundled_gems.rb src bundled_gems
@@ -1335,7 +1335,7 @@ no-test-bundled-gems:
 test-bundled-gems-run: $(PREPARE_BUNDLED_GEMS)
 	$(Q) $(XRUBY) $(tooldir)/test-bundled-gems.rb
 
-test-bundler-precheck: $(arch)-fake.rb programs
+test-bundler-precheck: programs
 
 yes-test-bundler-prepare: test-bundler-precheck
 	$(XRUBY) -C "$(srcdir)" bin/gem install --no-document \
