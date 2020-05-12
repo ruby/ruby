@@ -122,6 +122,8 @@ end
 case
 when $mswin, $mingw, (ver && (ver <=> [3, 2]) >= 0)
   $defs << "-DUSE_FFI_CLOSURE_ALLOC=1"
+else
+  have_func('ffi_closure_alloc', ffi_header)
 end
 
 have_header 'sys/mman.h'
