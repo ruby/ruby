@@ -150,10 +150,13 @@ module BasetestReadline
 
   def test_completion_case_fold
     expected = [true, false, "string", {"a" => "b"}]
+    completion_case_fold = Readline.completion_case_fold
     expected.each do |e|
       Readline.completion_case_fold = e
       assert_equal(e, Readline.completion_case_fold)
     end
+  ensure
+    Readline.completion_case_fold = completion_case_fold
   end
 
   def test_completion_proc_empty_result
