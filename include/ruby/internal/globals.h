@@ -148,7 +148,7 @@ rb_class_of(VALUE obj)
 #if RUBY_NDEBUG
     RBIMPL_UNREACHABLE_RETURN(Qfalse);
 #else
-    RUBY_ASSERT_FAIL(rb_class_of);
+    RUBY_ASSERT_FAIL("unexpected type");
 #endif
 }
 

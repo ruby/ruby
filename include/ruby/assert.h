@@ -62,8 +62,8 @@ RBIMPL_SYMBOL_EXPORT_END()
 # define RBIMPL_ASSERT_FUNC RBIMPL_CAST((const char *)0)
 #endif
 
-#define RUBY_ASSERT_FAIL(expr) \
-    rb_assert_failure(__FILE__, __LINE__, RBIMPL_ASSERT_FUNC, #expr)
+#define RUBY_ASSERT_FAIL(mesg) \
+    rb_assert_failure(__FILE__, __LINE__, RBIMPL_ASSERT_FUNC, mesg)
 
 #define RUBY_ASSERT_MESG(expr, mesg) \
     (RB_LIKELY(expr) ? RBIMPL_ASSERT_NOTHING : RUBY_ASSERT_FAIL(mesg))
