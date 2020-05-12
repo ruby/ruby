@@ -122,6 +122,7 @@ end
 case
 when $mswin, $mingw, (ver && (ver <=> [3, 2]) >= 0)
   $defs << "-DUSE_FFI_CLOSURE_ALLOC=1"
+when (ver && (ver <=> [3, 1]) <= 0)
 else
   have_func('ffi_closure_alloc', ffi_header)
 end
