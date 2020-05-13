@@ -99,7 +99,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
         assert_equal ctx, ssl.context
         assert_equal random_port, ssl.io.local_address.ip_port
         ssl.puts "abc"; assert_equal "abc\n", ssl.gets
-      rescue Errno::EADDRINUSE
+      rescue Errno::EADDRINUSE, Errno::EACCES
       ensure
         ssl&.close
       end
