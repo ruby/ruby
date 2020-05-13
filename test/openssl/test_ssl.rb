@@ -189,34 +189,6 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     end
   end
 
-  def test_add_certificate_chain_file
-    # Create chain certificates file
-    certs = Tempfile.open { |f| f << @svr_cert.to_pem << @ca_cert.to_pem; f }
-    pkey = Tempfile.open { |f| f << @svr_key.to_pem; f }
-
-    ctx_proc = -> ctx {
-      # FIXME: This is a temporary test case written just to match the current
-      # state. ctx.add_certificate_chain_file should take two arguments.
-      ctx.add_certificate_chain_file(certs.path)
-      # # Unset values set by start_server
-      # ctx.cert = ctx.key = ctx.extra_chain_cert = nil
-      # assert_nothing_raised { ctx.add_certificate_chain_file(certs.path, pkey.path) }
-    }
-
-    start_server(ctx_proc: ctx_proc) { |port|
-      server_connect(port) { |ssl|
-        assert_equal @svr_cert.subject, ssl.peer_cert.subject
-        assert_equal [@svr_cert.subject, @ca_cert.subject],
-          ssl.peer_cert_chain.map(&:subject)
-
-        ssl.puts "abc"; assert_equal "abc\n", ssl.gets
-      }
-    }
-  ensure
-    certs&.unlink
-    pkey&.unlink
-  end
-
   def test_sysread_and_syswrite
     start_server { |port|
       server_connect(port) { |ssl|
