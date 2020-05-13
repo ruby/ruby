@@ -350,8 +350,8 @@ Init_ossl_hmac(void)
      *
      * === HMAC-SHA256 using incremental interface
      *
-     *   data1 = File.read("file1")
-     *   data2 = File.read("file2")
+     *   data1 = File.binread("file1")
+     *   data2 = File.binread("file2")
      *   key = "key"
      *   digest = OpenSSL::Digest.new('SHA256')
      *   hmac = OpenSSL::HMAC.new(key, digest)

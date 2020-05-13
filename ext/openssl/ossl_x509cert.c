@@ -730,7 +730,7 @@ Init_ossl_x509cert(void)
      * Certificate is capable of handling DER-encoded certificates and
      * certificates encoded in OpenSSL's PEM format.
      *
-     *   raw = File.read "cert.cer" # DER- or PEM-encoded
+     *   raw = File.binread "cert.cer" # DER- or PEM-encoded
      *   certificate = OpenSSL::X509::Certificate.new raw
      *
      * === Saving a certificate to a file
