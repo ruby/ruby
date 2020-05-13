@@ -11,6 +11,7 @@
 #include <sys/time.h>
 #endif
 
+#undef NDEBUG
 #define NDEBUG
 #include <assert.h>
 

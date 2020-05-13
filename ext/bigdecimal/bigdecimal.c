@@ -14,6 +14,7 @@
 #include "ruby/util.h"
 
 #ifndef BIGDECIMAL_DEBUG
+# undef NDEBUG
 # define NDEBUG
 #endif
 #include <assert.h>
