@@ -315,6 +315,9 @@ objid_hash(VALUE obj)
  * implementations of Ruby.  If you need a stable identifier across Ruby
  * invocations and implementations you will need to generate one with a custom
  * method.
+ *
+ * Certain core classes such as Integer use built-in hash calculations and
+ * do not call the #hash method when used as a hash key.
  *--
  * \private
  *++
