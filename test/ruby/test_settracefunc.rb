@@ -25,6 +25,22 @@ class TestSetTraceFunc < Test::Unit::TestCase
     Thread.current == @target_thread
   end
 
+  class UninitializedIVar
+    def foo; @not_initialize; end
+  end
+
+  def test_get_warning
+    event_infos = []
+    tp = TracePoint.new(:warning) do |event|
+      event_infos << [event.self, event.ivar_name, event.warning_type]
+    end
+    tp.enable
+    obj = UninitializedIVar.new
+    obj.foo
+    tp.disable
+    assert_equal [[obj, :@not_initialize, :uninitialized_ivar]], event_infos
+  end
+
   def test_c_call
     events = []
     name = "#{self.class}\##{__method__}"

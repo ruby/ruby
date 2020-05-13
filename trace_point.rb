@@ -273,6 +273,9 @@ class TracePoint
     __builtin_tracepoint_attr_callee_id
   end
 
+  alias :ivar_name :method_id
+  alias :warning_type :callee_id
+
   # Return class or module of the method being called.
   #
   #	class C; def foo; end; end

@@ -629,6 +629,7 @@ get_event_id(rb_event_flag_t event)
 	C(thread_end, THREAD_END);
 	C(fiber_switch, FIBER_SWITCH);
         C(script_compiled, SCRIPT_COMPILED);
+        C(warning, WARNING);
 #undef C
       default:
 	return 0;
@@ -764,6 +765,7 @@ symbol2event_flag(VALUE v)
     C(thread_end, THREAD_END);
     C(fiber_switch, FIBER_SWITCH);
     C(script_compiled, SCRIPT_COMPILED);
+    C(warning, WARNING);
 
     /* joke */
     C(a_call, A_CALL);

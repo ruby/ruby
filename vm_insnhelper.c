@@ -1111,8 +1111,11 @@ vm_getivar(VALUE obj, ID id, IVC ic, const struct rb_callcache *cc, int is_attr)
             return val;
         }
         else {
-            if (!is_attr && RTEST(ruby_verbose)) {
-                rb_warning("instance variable %"PRIsVALUE" not initialized", QUOTE_ID(id));
+            if (!is_attr) {
+                if (RTEST(ruby_verbose)) {
+                    rb_warning("instance variable %"PRIsVALUE" not initialized", QUOTE_ID(id));
+                }
+                EXEC_EVENT_HOOK(GET_EC(), RUBY_EVENT_WARNING, obj, id, rb_intern("uninitialized_ivar"), Qnil, Qnil);
             }
             return Qnil;
         }
