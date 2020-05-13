@@ -1563,7 +1563,7 @@ case 2:
 		case 34: goto tr2;
 		case 92: goto st3;
 	}
-	if ( 0 <= (*p) && (*p) <= 31 )
+	if ( 0 <= (signed char)(*p) && (*p) <= 31 )
 		goto st0;
 	goto st2;
 tr2:
@@ -1593,7 +1593,7 @@ st3:
 case 3:
 	if ( (*p) == 117 )
 		goto st4;
-	if ( 0 <= (*p) && (*p) <= 31 )
+	if ( 0 <= (signed char)(*p) && (*p) <= 31 )
 		goto st0;
 	goto st2;
 st4:
