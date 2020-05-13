@@ -1,4 +1,4 @@
-Version 2.2.0 (not yet released)
+Version 2.2.0
 =============
 
 Compatibility notes
