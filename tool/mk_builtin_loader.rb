@@ -1,8 +1,30 @@
+# Parse built-in script and make rbinc file
 
-def inline_text argc, prev_insn
+require 'ripper'
+
+def string_literal(lit, str = [])
+  while lit
+    case lit.first
+    when :string_concat, :string_embexpr, :string_content
+      _, *lit = lit
+      lit.each {|s| string_literal(s, str)}
+      return str
+    when :string_literal
+      _, lit = lit
+    when :@tstring_content
+      str << lit[1]
+      return str
+    else
+      raise "unexpected #{lit.first}"
+    end
+  end
+end
+
+def inline_text argc, arg1
   raise "argc (#{argc}) of inline! should be 1" unless argc == 1
-  raise "1st argument should be string literal" unless prev_insn[0] == :putstring
-  prev_insn[1].rstrip
+  arg1 = string_literal(arg1)
+  raise "1st argument should be string literal" unless arg1
+  arg1.join("").rstrip
 end
 
 def make_cfunc_name inlines, name, lineno
@@ -27,50 +49,56 @@ def make_cfunc_name inlines, name, lineno
   end
 end
 
-def collect_builtin base, iseq_ary, name, bs, inlines
-  case type = iseq_ary[9]
-  when :method
-    name = iseq_ary[5]
-  when :class
-    name = 'class'
-  else
-  end
-
-  code = iseq_ary[13] + iseq_ary[12]
-  params = iseq_ary[10]
-  prev_insn = nil
-  lineno = nil
-
-  code.each{|insn|
-    case insn
-    when Array
-      # ok
-    when Integer
-      lineno = insn
+def collect_builtin base, tree, name, bs, inlines
+  while tree
+    call = sep = mid = args = nil
+    case tree.first
+    when :def
+      tree = tree[3]
       next
-    else
+    when :defs
+      tree = tree[5]
       next
+    when :class
+      name = 'class'
+      tree = tree[3]
+      next
+    when :sclass, :module
+      name = 'class'
+      tree = tree[2]
+      next
+    when :method_add_arg
+      _, mid, (_, (_, args)) = tree
+      case mid.first
+      when :fcall
+        _, mid = mid
+      else
+        mid = nil
+      end
+    when :vcall
+      _, mid = tree
+    when :command               # FCALL
+      _, mid, (_, args) = tree
     end
-
-    next unless Array === insn
-    case insn[0]
-    when :send
-      ci = insn[1]
-      if /\A__builtin_(.+)/ =~ ci[:mid]
+    if mid
+      raise "unknown sexp: #{mid.inspect}" unless mid.first == :@ident
+      _, mid, (lineno,) = mid
+      if /\A__builtin_(.+)/ =~ mid
         cfunc_name = func_name = $1
-        argc = ci[:orig_argc]
+        args.pop unless (args ||= []).last
+        argc = args.size
 
         if /(.+)\!\z/ =~ func_name
           case $1
           when 'cstmt'
-            text = inline_text argc, prev_insn
+            text = inline_text argc, args.first
 
             func_name = "_bi#{inlines.size}"
             cfunc_name = make_cfunc_name(inlines, name, lineno)
             inlines[cfunc_name] = [lineno, text, params, func_name]
             argc -= 1
           when 'cexpr', 'cconst'
-            text = inline_text argc, prev_insn
+            text = inline_text argc, args.first
             code = "return #{text};"
 
             func_name = "_bi#{inlines.size}"
@@ -80,7 +108,7 @@ def collect_builtin base, iseq_ary, name, bs, inlines
             inlines[cfunc_name] = [lineno, code, params, func_name]
             argc -= 1
           when 'cinit'
-            text = inline_text argc, prev_insn
+            text = inline_text argc, args.first
             func_name = nil
             inlines[inlines.size] = [nil, [lineno, text, nil, nil]]
             argc -= 1
@@ -94,15 +122,14 @@ def collect_builtin base, iseq_ary, name, bs, inlines
 
         bs[func_name] = [argc, cfunc_name] if func_name
       end
-    else
-      insn[1..-1].each{|op|
-        if op.is_a?(Array) && op[0] == "YARVInstructionSequence/SimpleDataFormat"
-          collect_builtin base, op, name, bs, inlines
-        end
-      }
+      break unless tree = args
     end
-    prev_insn = insn
-  }
+
+    tree.each do |t|
+      collect_builtin base, t, name, bs, inlines if Array === t
+    end
+    break
+  end
 end
 # ruby mk_builtin_loader.rb TARGET_FILE.rb
 # #=> generate TARGET_FILE.rbinc
@@ -113,7 +140,7 @@ def mk_builtin_header file
   ofile = "#{file}inc"
 
   # bs = { func_name => argc }
-  collect_builtin(base, RubyVM::InstructionSequence.compile_file(file, false).to_a, 'top', bs = {}, inlines = {})
+  collect_builtin(base, Ripper.sexp(File.read(file)), 'top', bs = {}, inlines = {})
 
   begin
     f = open(ofile, 'w')
@@ -188,7 +215,6 @@ def mk_builtin_header file
       f.puts "  if (0) rb_builtin_function_check_arity#{argc}(#{cfunc_name});"
     }
     f.puts "COMPILER_WARNING_POP"
-
 
     f.puts
     f.puts "  // load"
