@@ -27,7 +27,7 @@ class ExtLibs
   end
 
   def cache_file(url, cache_dir)
-    Downloader.cache_file(url, nil, :cache_dir => cache_dir)
+    Downloader.cache_file(url, nil, cache_dir).to_path
   end
 
   def do_download(url, cache_dir)
