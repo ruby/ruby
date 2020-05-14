@@ -36,7 +36,7 @@ class TestSchedulerMutex < Test::Unit::TestCase
           Fiber.yield
         end
       end
-      
+
       assert_raise ThreadError do
         mutex.lock
       end

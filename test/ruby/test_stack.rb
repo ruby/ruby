@@ -52,13 +52,13 @@ class TestStack < Test::Unit::TestCase
 
   def test_vm_stack_size
     script = '$stdout.sync=true; def rec; print "."; rec; end; Fiber.new{rec}.resume'
-    
+
     size_default = invoke_ruby(script).bytesize
     assert_operator(size_default, :>, 0)
-    
+
     size_0 = invoke_ruby(script, vm_stack_size: 0).bytesize
     assert_operator(size_default, :>, size_0)
-    
+
     size_large = invoke_ruby(script, vm_stack_size: LARGE_VM_STACK_SIZE).bytesize
     assert_operator(size_default, :<, size_large)
   end
