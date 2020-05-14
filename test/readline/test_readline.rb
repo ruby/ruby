@@ -635,6 +635,8 @@ module BasetestReadline
   def test_completion_quote_character_completing_unquoted_argument
     return unless Readline.respond_to?(:completion_quote_character)
 
+    saved_completer_quote_characters = Readline.completer_quote_characters
+
     quote_character = "original value"
     Readline.completion_proc = -> (_) do
       quote_character = Readline.completion_quote_character
@@ -651,10 +653,14 @@ module BasetestReadline
     end
 
     assert_nil(quote_character)
+  ensure
+    Readline.completer_quote_characters = saved_completer_quote_characters if saved_completer_quote_characters
   end
 
   def test_completion_quote_character_completing_quoted_argument
     return unless Readline.respond_to?(:completion_quote_character)
+
+    saved_completer_quote_characters = Readline.completer_quote_characters
 
     quote_character = "original value"
     Readline.completion_proc = -> (_) do
@@ -672,6 +678,8 @@ module BasetestReadline
     end
 
     assert_equal("'", quote_character)
+  ensure
+    Readline.completer_quote_characters = saved_completer_quote_characters if saved_completer_quote_characters
   end
 
   def test_completion_quote_character_after_completion
@@ -681,6 +689,8 @@ module BasetestReadline
       omit 'This test does not succeed on Oracle Developer Studio for now'
     end
     omit 'Needs GNU Readline 6 or later' if /mswin|mingw/ =~ RUBY_PLATFORM and defined?(TestReadline) and kind_of?(TestReadline) and Readline::VERSION < '6.0'
+
+    saved_completer_quote_characters = Readline.completer_quote_characters
 
     Readline.completion_proc = -> (_) { [] }
     Readline.completer_quote_characters = "'\""
@@ -694,6 +704,8 @@ module BasetestReadline
     end
 
     assert_nil(Readline.completion_quote_character)
+  ensure
+    Readline.completer_quote_characters = saved_completer_quote_characters if saved_completer_quote_characters
   end
 
   private
