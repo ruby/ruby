@@ -455,11 +455,7 @@ retry:
 #endif
 
     rb_update_max_fd(fd);
-
-    if (rsock_cmsg_cloexec_state < 0)
-	rsock_cmsg_cloexec_state = rsock_detect_cloexec(fd);
-    if (rsock_cmsg_cloexec_state == 0 || fd <= 2)
-	rb_maygvl_fd_fix_cloexec(fd);
+    rb_maygvl_fd_fix_cloexec(fd);
 
     if (klass == Qnil)
 	return INT2FIX(fd);

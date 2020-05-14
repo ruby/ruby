@@ -24,7 +24,7 @@ describe "BasicSocket#read_nonblock" do
     platform_is :linux do
       it 'does not set the IO in nonblock mode' do
         require 'io/nonblock'
-        @r.should_not.nonblock?
+        @r.nonblock = false
         IO.select([@r], nil, nil, 2)
         @r.read_nonblock(3).should == "aaa"
         @r.should_not.nonblock?
@@ -34,7 +34,7 @@ describe "BasicSocket#read_nonblock" do
     platform_is_not :linux, :windows do
       it 'sets the IO in nonblock mode' do
         require 'io/nonblock'
-        @r.should_not.nonblock?
+        @r.nonblock = false
         IO.select([@r], nil, nil, 2)
         @r.read_nonblock(3).should == "aaa"
         @r.should.nonblock?
