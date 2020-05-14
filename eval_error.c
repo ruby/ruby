@@ -233,28 +233,42 @@ print_backtrace(const VALUE eclass, const VALUE errat, const VALUE str, int reve
     if (!NIL_P(errat)) {
 	long i;
 	long len = RARRAY_LEN(errat);
-        int skip = eclass == rb_eSysStackError;
 	const int threshold = 1000000000;
         int width = (len <= 1) ? INT_MIN : ((int)log10((double)(len > threshold ?
 					 ((len - 1) / threshold) :
 					 len - 1)) +
 		     (len < threshold ? 0 : 9) + 1);
 
-#define TRACE_MAX (TRACE_HEAD+TRACE_TAIL+5)
-#define TRACE_HEAD 8
-#define TRACE_TAIL 5
+        long skip_start = -1, skip_len = 0;
+
+        // skip for stackoverflow
+        if (eclass == rb_eSysStackError) {
+            long trace_head = 9;
+            long trace_tail = 4;
+            long trace_max = trace_head + trace_tail + 5;
+            if (len > trace_max) {
+                skip_start = trace_head;
+                skip_len = len - trace_max + 5;
+            }
+        }
+
+        // skip for explicit limit
+        if (rb_backtrace_length_limit >= 0 && len > rb_backtrace_length_limit + 1) {
+            skip_start = rb_backtrace_length_limit + 1;
+            skip_len = len - rb_backtrace_length_limit;
+        }
 
 	for (i = 1; i < len; i++) {
+	    if (i == skip_start) {
+		write_warn_str(str, rb_sprintf("\t ... %ld levels...\n", skip_len));
+		i += skip_len;
+                if (i >= len) break;
+	    }
 	    VALUE line = RARRAY_AREF(errat, reverse ? len - i : i);
 	    if (RB_TYPE_P(line, T_STRING)) {
 		VALUE bt = rb_str_new_cstr("\t");
 		if (reverse) rb_str_catf(bt, "%*ld: ", width, len - i);
 		write_warn_str(str, rb_str_catf(bt, "from %"PRIsVALUE"\n", line));
-	    }
-	    if (skip && i == TRACE_HEAD && len > TRACE_MAX) {
-		write_warn_str(str, rb_sprintf("\t ... %ld levels...\n",
-					  len - TRACE_HEAD - TRACE_TAIL));
-		i = len - TRACE_TAIL;
 	    }
 	}
     }
