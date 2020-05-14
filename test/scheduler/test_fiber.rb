@@ -24,6 +24,6 @@ class TestSchedulerFiber < Test::Unit::TestCase
     thread.join
 
     assert_not_empty scheduler.blocking
-    assert_match /test_fiber.rb:\d+:in `close'/, scheduler.blocking.last
+    assert_match(/test_fiber\.rb:\d+:in `close'/, scheduler.blocking.last)
   end
 end

@@ -18,15 +18,13 @@ class Scheduler
     @ios = ObjectSpace::WeakMap.new
   end
 
-  attr :fiber
-
   attr :readable
   attr :writable
   attr :waiting
   attr :blocking
 
   def next_timeout
-    fiber, timeout = @waiting.min_by{|key, value| value}
+    _fiber, timeout = @waiting.min_by{|key, value| value}
 
     if timeout
       offset = timeout - current_time
