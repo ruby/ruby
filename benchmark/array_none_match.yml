@@ -1,0 +1,6 @@
+prelude: |
+  ary = [1, 2, 3]
+benchmark:
+  none_match: |
+    ary.none? 3
+loop_count: 10000

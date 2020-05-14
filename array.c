@@ -6354,7 +6354,7 @@ rb_ary_none_p(int argc, VALUE *argv, VALUE ary)
             rb_warn("given block not used");
         }
         for (i = 0; i < RARRAY_LEN(ary); ++i) {
-            if (RTEST(rb_funcall(argv[0], idEqq, 1, RARRAY_AREF(ary, i)))) return Qfalse;
+            if (RTEST(rb_equal(argv[0], RARRAY_AREF(ary, i)))) return Qfalse;
         }
     }
     else if (!rb_block_given_p()) {
