@@ -920,6 +920,17 @@ set_defun_body(struct parser_params *p, NODE *n, NODE *args, NODE *body, const Y
     set_line_body(body, loc->beg_pos.lineno);
     return n;
 }
+
+static NODE *
+rescued_expr(struct parser_params *p, NODE *arg, NODE *rescue,
+	     const YYLTYPE *arg_loc, const YYLTYPE *mod_loc, const YYLTYPE *res_loc)
+{
+    YYLTYPE loc = code_loc_gen(mod_loc, res_loc);
+    rescue = NEW_RESBODY(0, remove_begin(rescue), 0, &loc);
+    loc.beg_pos = arg_loc->beg_pos;
+    return NEW_RESCUE(arg, rescue, 0, &loc);
+}
+
 #endif /* RIPPER */
 
 static void
@@ -2455,6 +2466,16 @@ arg		: lhs '=' arg_rhs
 		    /*% ripper: def!(get_value($1), $2, $4) %*/
 			local_pop(p);
 		    }
+		| defn_head f_paren_args '=' arg modifier_rescue arg
+		    {
+			restore_defun(p, $<node>1->nd_defn);
+		    /*%%%*/
+			$4 = rescued_expr(p, $4, $6, &@4, &@5, &@6);
+			$$ = set_defun_body(p, $1, $2, $4, &@$);
+		    /*% %*/
+		    /*% ripper: def!(get_value($1), $2, rescue_mod!($4, $6)) %*/
+			local_pop(p);
+		    }
 		| defs_head f_paren_args '=' arg
 		    {
 			restore_defun(p, $<node>1->nd_defn);
@@ -2464,6 +2485,18 @@ arg		: lhs '=' arg_rhs
 			$1 = get_value($1);
 		    %*/
 		    /*% ripper: defs!(AREF($1, 0), AREF($1, 1), AREF($1, 2), $2, $4) %*/
+			local_pop(p);
+		    }
+		| defs_head f_paren_args '=' arg modifier_rescue arg
+		    {
+			restore_defun(p, $<node>1->nd_defn);
+		    /*%%%*/
+			$4 = rescued_expr(p, $4, $6, &@4, &@5, &@6);
+			$$ = set_defun_body(p, $1, $2, $4, &@$);
+		    /*%
+			$1 = get_value($1);
+		    %*/
+		    /*% ripper: defs!(AREF($1, 0), AREF($1, 1), AREF($1, 2), $2, rescue_mod!($4, $6)) %*/
 			local_pop(p);
 		    }
 		| primary
@@ -2525,9 +2558,8 @@ arg_rhs 	: arg   %prec tOP_ASGN
 		| arg modifier_rescue arg
 		    {
 		    /*%%%*/
-			YYLTYPE loc = code_loc_gen(&@2, &@3);
 			value_expr($1);
-			$$ = NEW_RESCUE($1, NEW_RESBODY(0, remove_begin($3), 0, &loc), 0, &@$);
+			$$ = rescued_expr(p, $1, $3, &@1, &@2, &@3);
 		    /*% %*/
 		    /*% ripper: rescue_mod!($1, $3) %*/
 		    }
