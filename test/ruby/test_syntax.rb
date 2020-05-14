@@ -1423,6 +1423,12 @@ eom
     assert_valid_syntax('private def obj.inc(x) = x + 1')
     eval('def self.inc(x) = x + 1 => @x')
     assert_equal(:inc, @x)
+    k = Class.new do
+      class_eval('def rescued(x) = raise("to be caught") rescue "instance #{x}"')
+      class_eval('def self.rescued(x) = raise("to be caught") rescue "class #{x}"')
+    end
+    assert_equal("class ok", k.rescued("ok"))
+    assert_equal("instance ok", k.new.rescued("ok"))
   end
 
   def test_methoddef_in_cond
