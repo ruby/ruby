@@ -309,6 +309,7 @@ usage(const char *name, int help, int highlight, int columns)
 	M("--verbose",                              "", "turn on verbose mode and disable script from stdin"),
 	M("--version",                              "", "print the version number, then exit"),
 	M("--help",			            "", "show this message, -h for short message"),
+	M("--backtrace-limit=num",                  "", "limit the maximum length of backtrace"),
     };
     static const struct message dumps[] = {
 	M("insns",                  "", "instruction sequences"),
@@ -1423,6 +1424,12 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 		opt->dump |= DUMP_BIT(help);
 		goto switch_end;
 	    }
+            else if (is_option_with_arg("backtrace-limit", Qfalse, Qfalse)) {
+                char *e;
+                long n = strtol(s, &e, 10);
+                if (errno == ERANGE || n < 0 || *e) rb_raise(rb_eRuntimeError, "wrong limit for backtrace length");
+                rb_backtrace_length_limit = n;
+            }
 	    else {
 		rb_raise(rb_eRuntimeError,
 			 "invalid option --%s  (-h will show valid options)", s);
