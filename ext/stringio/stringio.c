@@ -1532,7 +1532,6 @@ strio_read(int argc, VALUE *argv, VALUE self)
     long len;
     int binary = 0;
 
-    rb_check_arity(argc, 0, 2);
     switch (argc) {
       case 2:
 	str = argv[1];
@@ -1572,6 +1571,8 @@ strio_read(int argc, VALUE *argv, VALUE self)
 	    len -= ptr->pos;
 	}
 	break;
+      default:
+        rb_error_arity(argc, 0, 2);
     }
     if (NIL_P(str)) {
 	rb_encoding *enc = binary ? rb_ascii8bit_encoding() : get_enc(ptr);

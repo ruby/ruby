@@ -5179,7 +5179,7 @@ static VALUE
 flatten(VALUE ary, int level)
 {
     long i;
-    VALUE stack, result, tmp, elt, vmemo;
+    VALUE stack, result, tmp = 0, elt, vmemo;
     st_table *memo;
     st_data_t id;
 
