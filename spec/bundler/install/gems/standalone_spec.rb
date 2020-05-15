@@ -21,7 +21,7 @@ RSpec.shared_examples "bundle install --standalone" do
         testrb << "\nrequire \"#{k}\""
         testrb << "\nputs #{k.upcase}"
       end
-      ruby testrb, :no_lib => true
+      ruby testrb
 
       expect(out).to eq(expected_gems.values.join("\n"))
     end
@@ -43,7 +43,7 @@ RSpec.shared_examples "bundle install --standalone" do
         testrb << "\nrequire \"#{k}\""
         testrb << "\nputs #{k.upcase}"
       end
-      ruby testrb, :no_lib => true, :dir => "#{bundled_app}2"
+      ruby testrb, :dir => "#{bundled_app}2"
 
       expect(out).to eq(expected_gems.values.join("\n"))
     end
@@ -68,7 +68,7 @@ RSpec.shared_examples "bundle install --standalone" do
     include_examples "common functionality"
   end
 
-  describe "with gems with native extension", :ruby_repo do
+  describe "with gems with native extension" do
     before do
       install_gemfile <<-G, forgotten_command_line_options(:path => bundled_app("bundle")).merge(:standalone => true, :dir => cwd)
         source "#{file_uri_for(gem_repo1)}"
@@ -165,7 +165,7 @@ RSpec.shared_examples "bundle install --standalone" do
     it "allows creating a standalone file with limited groups" do
       bundle! :install, forgotten_command_line_options(:path => bundled_app("bundle")).merge(:standalone => "default", :dir => cwd)
 
-      load_error_ruby <<-RUBY, "spec", :no_lib => true
+      load_error_ruby <<-RUBY, "spec"
         $:.unshift File.expand_path("bundle")
         require "bundler/setup"
 
@@ -181,7 +181,7 @@ RSpec.shared_examples "bundle install --standalone" do
     it "allows --without to limit the groups used in a standalone" do
       bundle! :install, forgotten_command_line_options(:path => bundled_app("bundle"), :without => "test").merge(:standalone => true, :dir => cwd)
 
-      load_error_ruby <<-RUBY, "spec", :no_lib => true
+      load_error_ruby <<-RUBY, "spec"
         $:.unshift File.expand_path("bundle")
         require "bundler/setup"
 
@@ -197,7 +197,7 @@ RSpec.shared_examples "bundle install --standalone" do
     it "allows --path to change the location of the standalone bundle" do
       bundle! "install", forgotten_command_line_options(:path => "path/to/bundle").merge(:standalone => true, :dir => cwd)
 
-      ruby <<-RUBY, :no_lib => true
+      ruby <<-RUBY
         $:.unshift File.expand_path("path/to/bundle")
         require "bundler/setup"
 
@@ -212,7 +212,7 @@ RSpec.shared_examples "bundle install --standalone" do
       bundle! :install, forgotten_command_line_options(:without => "test").merge(:dir => cwd)
       bundle! :install, forgotten_command_line_options(:path => bundled_app("bundle")).merge(:standalone => true, :dir => cwd)
 
-      load_error_ruby <<-RUBY, "spec", :no_lib => true
+      load_error_ruby <<-RUBY, "spec"
         $:.unshift File.expand_path("bundle")
         require "bundler/setup"
 

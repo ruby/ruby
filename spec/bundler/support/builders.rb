@@ -758,9 +758,9 @@ module Spec
 
         gem_path = File.expand_path("#{@spec.full_name}.gem", lib_path)
         if opts[:to_system]
-          @context.system_gems gem_path, :keep_path => true
+          @context.system_gems gem_path
         elsif opts[:to_bundle]
-          @context.system_gems gem_path, :path => @context.default_bundle_path, :keep_path => true
+          @context.system_gems gem_path, :path => @context.default_bundle_path
         else
           FileUtils.mv(gem_path, destination)
         end

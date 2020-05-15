@@ -1,9 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "support/path"
-
-$:.unshift Spec::Path.lib_dir.to_s
-
 require "bundler/psyched_yaml"
 require "bundler/vendored_fileutils"
 require "bundler/vendored_uri"
@@ -61,8 +57,6 @@ RSpec.configure do |config|
 
   config.bisect_runner = :shell
 
-  original_env = ENV.to_hash
-
   config.expect_with :rspec do |c|
     c.syntax = :expect
   end
@@ -90,39 +84,40 @@ RSpec.configure do |config|
     # Don't wrap output in tests
     ENV["THOR_COLUMNS"] = "10000"
 
-    original_env = ENV.to_hash
-
-    if ENV["RUBY"]
-      FileUtils.cp_r Spec::Path.bindir, File.join(Spec::Path.root, "lib", "exe")
-    end
+    extend(Spec::Helpers)
+    system_gems :bundler, :path => pristine_system_gem_path
   end
 
   config.before :all do
     build_repo1
+
+    reset_paths!
   end
 
   config.around :each do |example|
-    ENV.replace(original_env)
-    reset!
-    system_gems []
+    begin
+      FileUtils.cp_r pristine_system_gem_path, system_gem_path
 
-    @command_executions = []
+      with_gem_path_as(system_gem_path) do
+        @command_executions = []
 
-    Bundler.ui.silence { example.run }
+        Bundler.ui.silence { example.run }
 
-    all_output = @command_executions.map(&:to_s_verbose).join("\n\n")
-    if example.exception && !all_output.empty?
-      warn all_output unless config.formatters.grep(RSpec::Core::Formatters::DocumentationFormatter).empty?
-      message = example.exception.message + "\n\nCommands:\n#{all_output}"
-      (class << example.exception; self; end).send(:define_method, :message) do
-        message
+        all_output = @command_executions.map(&:to_s_verbose).join("\n\n")
+        if example.exception && !all_output.empty?
+          warn all_output unless config.formatters.grep(RSpec::Core::Formatters::DocumentationFormatter).empty?
+          message = example.exception.message + "\n\nCommands:\n#{all_output}"
+          (class << example.exception; self; end).send(:define_method, :message) do
+            message
+          end
+        end
       end
+    ensure
+      reset!
     end
   end
 
   config.after :suite do
-    if ENV["RUBY"]
-      FileUtils.rm_rf File.join(Spec::Path.root, "lib", "exe")
-    end
+    FileUtils.rm_r Spec::Path.pristine_system_gem_path
   end
 end

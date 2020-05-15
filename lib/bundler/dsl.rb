@@ -222,7 +222,6 @@ module Bundler
 
     def github(repo, options = {})
       raise ArgumentError, "GitHub sources require a block" unless block_given?
-      raise DeprecatedError, "The #github method has been removed" if Bundler.feature_flag.skip_default_git_sources?
       github_uri  = @git_sources["github"].call(repo)
       git_options = normalize_hash(options).merge("uri" => github_uri)
       git_source  = @sources.add_git_source(git_options)
@@ -283,8 +282,6 @@ module Bundler
   private
 
     def add_git_sources
-      return if Bundler.feature_flag.skip_default_git_sources?
-
       git_source(:github) do |repo_name|
         warn_deprecated_git_source(:github, <<-'RUBY'.strip, 'Change any "reponame" :github sources to "username/reponame".')
 "https://github.com/#{repo_name}.git"

@@ -39,7 +39,7 @@ RSpec.describe "Bundler.with_env helpers" do
       end
     end
 
-    it "works with nested bundle exec invocations", :ruby_repo do
+    it "works with nested bundle exec invocations" do
       create_file("exe.rb", <<-'RUBY')
         count = ARGV.first.to_i
         exit if count < 0
@@ -61,7 +61,7 @@ RSpec.describe "Bundler.with_env helpers" do
       EOS
     end
 
-    it "removes variables that bundler added", :ruby_repo do
+    it "removes variables that bundler added" do
       # Simulate bundler has not yet been loaded
       ENV.replace(ENV.to_hash.delete_if {|k, _v| k.start_with?(Bundler::EnvironmentPreserver::BUNDLER_PREFIX) })
 
@@ -89,11 +89,13 @@ RSpec.describe "Bundler.with_env helpers" do
         print #{modified_env}['RUBYOPT']
       RUBY
       ENV["RUBYOPT"] = "-W2 -rbundler/setup #{ENV["RUBYOPT"]}"
-      bundle_exec_ruby! bundled_app("source.rb"), :env => { "BUNDLER_SPEC_DISABLE_DEFAULT_BUNDLER_GEM" => "true" }
+      simulate_bundler_version_when_missing_prerelease_default_gem_activation do
+        bundle_exec_ruby! bundled_app("source.rb")
+      end
       expect(last_command.stdboth).not_to include("-rbundler/setup")
     end
 
-    it "should restore RUBYLIB", :ruby_repo do
+    it "should restore RUBYLIB" do
       create_file("source.rb", <<-RUBY)
         print #{modified_env}['RUBYLIB']
       RUBY
@@ -202,7 +204,7 @@ RSpec.describe "Bundler.with_env helpers" do
       RUBY
     end
 
-    it "runs system inside with_clean_env", :ruby_repo do
+    it "runs system inside with_clean_env" do
       run_bundler_script({ "BUNDLE_FOO" => "bar" }, bundled_app("source.rb"))
       expect($?.exitstatus).to eq(42)
     end
@@ -217,7 +219,7 @@ RSpec.describe "Bundler.with_env helpers" do
       RUBY
     end
 
-    it "runs system inside with_unbundled_env", :ruby_repo do
+    it "runs system inside with_unbundled_env" do
       run_bundler_script({ "BUNDLE_FOO" => "bar" }, bundled_app("source.rb"))
       expect($?.exitstatus).to eq(42)
     end

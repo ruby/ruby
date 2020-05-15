@@ -115,13 +115,18 @@ module Spec
         opts = names.last.is_a?(Hash) ? names.pop : {}
         source = opts.delete(:source)
         groups = Array(opts[:groups])
+        exclude_from_load_path = opts.delete(:exclude_from_load_path)
         groups << opts
         @errors = names.map do |name|
           name, version, platform = name.split(/\s+/)
           require_path = name == "bundler" ? "#{lib_dir}/bundler" : name.tr("-", "/")
           version_const = name == "bundler" ? "Bundler::VERSION" : Spec::Builders.constantize(name)
           begin
-            run! "require '#{require_path}.rb'; puts #{version_const}", *groups
+            code = []
+            code << "$LOAD_PATH.delete '#{exclude_from_load_path}'" if exclude_from_load_path
+            code << "require '#{require_path}.rb'"
+            code << "puts #{version_const}"
+            run! code.join("; "), *groups
           rescue StandardError => e
             next "#{name} is not installed:\n#{indent(e)}"
           end

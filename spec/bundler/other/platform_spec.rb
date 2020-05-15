@@ -823,7 +823,7 @@ G
     end
   end
 
-  context "bundle exec", :ruby_repo do
+  context "bundle exec" do
     before do
       ENV["BUNDLER_FORCE_TTY"] = "true"
       system_gems "rack-1.0.0", "rack-0.9.1", :path => default_bundle_path
@@ -1051,7 +1051,7 @@ G
 
       FileUtils.rm(bundled_app_lock)
 
-      ruby "require 'bundler/setup'"
+      ruby "require 'bundler/setup'", :env => { "BUNDLER_VERSION" => Bundler::VERSION }
 
       expect(bundled_app_lock).not_to exist
       should_be_ruby_version_incorrect
@@ -1068,7 +1068,7 @@ G
 
       FileUtils.rm(bundled_app_lock)
 
-      ruby "require 'bundler/setup'"
+      ruby "require 'bundler/setup'", :env => { "BUNDLER_VERSION" => Bundler::VERSION }
 
       expect(bundled_app_lock).not_to exist
       should_be_engine_incorrect
@@ -1085,7 +1085,7 @@ G
 
       FileUtils.rm(bundled_app_lock)
 
-      ruby "require 'bundler/setup'"
+      ruby "require 'bundler/setup'", :env => { "BUNDLER_VERSION" => Bundler::VERSION }
 
       expect(bundled_app_lock).not_to exist
       should_be_engine_version_incorrect
@@ -1102,7 +1102,7 @@ G
 
       FileUtils.rm(bundled_app_lock)
 
-      ruby "require 'bundler/setup'"
+      ruby "require 'bundler/setup'", :env => { "BUNDLER_VERSION" => Bundler::VERSION }
 
       expect(bundled_app_lock).not_to exist
       should_be_patchlevel_incorrect

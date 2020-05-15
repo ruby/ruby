@@ -89,10 +89,6 @@ RSpec.describe "Running bin/* commands" do
   end
 
   it "creates a bundle binstub" do
-    build_gem "bundler", Bundler::VERSION, :to_system => true do |s|
-      s.executables = "bundle"
-    end
-
     gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
       gem "bundler"

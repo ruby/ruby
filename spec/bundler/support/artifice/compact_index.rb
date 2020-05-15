@@ -2,11 +2,13 @@
 
 require_relative "endpoint"
 
-$LOAD_PATH.unshift Dir[base_system_gems.join("gems/compact_index*/lib")].first.to_s
+$LOAD_PATH.unshift Dir[Spec::Path.base_system_gems.join("gems/compact_index*/lib")].first.to_s
 require "compact_index"
 
 class CompactIndexAPI < Endpoint
   helpers do
+    include Spec::Path
+
     def load_spec(name, version, platform, gem_repo)
       full_name = "#{name}-#{version}"
       full_name += "-#{platform}" if platform != "ruby"
@@ -83,7 +85,7 @@ class CompactIndexAPI < Endpoint
                          nil
                        end
             CompactIndex::GemVersion.new(spec.version.version, spec.platform.to_s, checksum, nil,
-              deps, spec.required_ruby_version, spec.required_rubygems_version)
+              deps, spec.required_ruby_version.to_s, spec.required_rubygems_version.to_s)
           end
           CompactIndex::Gem.new(name, gem_versions)
         end

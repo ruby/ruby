@@ -98,7 +98,7 @@ RSpec.describe "bundle binstubs <gem>" do
 
     context "the bundle binstub" do
       before do
-        system_gems "bundler-#{system_bundler_version}"
+        pristine_system_gems "bundler-#{system_bundler_version}"
         build_repo2 do
           build_gem "prints_loaded_gems", "1.0" do |s|
             s.executables = "print_loaded_gems"

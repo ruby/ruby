@@ -1139,7 +1139,7 @@ RSpec.describe "bundle install with git sources" do
       expect(out).to include(Pathname.glob(default_bundle_path("bundler/gems/extensions/**/foo-1.0-*")).first.to_s)
     end
 
-    it "does not use old extension after ref changes", :ruby_repo do
+    it "does not use old extension after ref changes" do
       git_reader = build_git "foo", :no_default => true do |s|
         s.extensions = ["ext/extconf.rb"]
         s.write "ext/extconf.rb", <<-RUBY

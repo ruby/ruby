@@ -163,7 +163,7 @@ RSpec.describe Bundler::SharedHelpers do
     let(:pwd_stub) { nil }
 
     it "returns the current absolute path" do
-      expect(subject.pwd).to eq(root)
+      expect(subject.pwd).to eq(source_root)
     end
   end
 
@@ -242,7 +242,7 @@ RSpec.describe Bundler::SharedHelpers do
     shared_examples_for "ENV['RUBYOPT'] gets set correctly" do
       it "ensures -rbundler/setup is at the beginning of ENV['RUBYOPT']" do
         subject.set_bundle_environment
-        expect(ENV["RUBYOPT"].split(" ")).to start_with("-r#{lib_dir}/bundler/setup")
+        expect(ENV["RUBYOPT"].split(" ")).to start_with("-r#{source_lib_dir}/bundler/setup")
       end
     end
 

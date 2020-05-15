@@ -312,10 +312,6 @@ LIST OF AVAILABLE KEYS
        o   silence_root_warning   (BUNDLE_SILENCE_ROOT_WARNING):  Silence  the
            warning Bundler prints when installing gems as root.
 
-       o   skip_default_git_sources (BUNDLE_SKIP_DEFAULT_GIT_SOURCES): Whether
-           Bundler  should  skip  adding  default  git source shortcuts to the
-           Gemfile DSL.
-
        o   specific_platform  (BUNDLE_SPECIFIC_PLATFORM):  Allow  bundler   to
            resolve  for  the  specific  running  platform  and store it in the
            lockfile, instead of only using  a  generic  platform.  A  specific

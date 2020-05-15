@@ -242,7 +242,7 @@ RSpec.describe "bundler plugin install" do
         end
       RUBY
 
-      ruby code
+      ruby code, :env => { "BUNDLER_VERSION" => Bundler::VERSION }
       expect(local_plugin_gem("foo-1.0", "plugins.rb")).to exist
     end
   end

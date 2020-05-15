@@ -136,12 +136,12 @@ RSpec.describe "bundle install" do
 
       system_gems "bundler-99999999.99.1"
 
-      install_gemfile! <<-G, :system_bundler => true
+      install_gemfile! <<-G
         source "#{file_uri_for(gem_repo2)}"
         gem "rails", "3.0"
       G
 
-      bundle! "check", :system_bundler => true
+      bundle! "check"
       expect(out).to include("The Gemfile's dependencies are satisfied")
     end
 
@@ -150,12 +150,12 @@ RSpec.describe "bundle install" do
 
       system_gems "bundler-99999999.99.1"
 
-      install_gemfile! <<-G, :system_bundler => true
+      install_gemfile! <<-G
         source "#{file_uri_for(gem_repo2)}"
         gem "rails", "3.0"
       G
 
-      bundle! "check", :system_bundler => true
+      bundle! "check"
       expect(out).to include("The Gemfile's dependencies are satisfied")
     end
 

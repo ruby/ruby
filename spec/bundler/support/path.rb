@@ -5,56 +5,82 @@ require "rbconfig"
 
 module Spec
   module Path
+    def source_root
+      @source_root ||= Pathname.new(ruby_core? ? "../../../.." : "../../..").expand_path(__FILE__)
+    end
+
     def root
-      @root ||= Pathname.new(ruby_core? ? "../../../.." : "../../..").expand_path(__FILE__)
+      @root ||= system_gem_path("gems/bundler-#{Bundler::VERSION}")
     end
 
     def gemspec
-      @gemspec ||= root.join(ruby_core? ? "lib/bundler/bundler.gemspec" : "bundler.gemspec")
+      @gemspec ||= source_root.join(relative_gemspec)
+    end
+
+    def relative_gemspec
+      @relative_gemspec ||= ruby_core? ? "lib/bundler/bundler.gemspec" : "bundler.gemspec"
     end
 
     def gemspec_dir
       @gemspec_dir ||= gemspec.parent
     end
 
+    def loaded_gemspec
+      @loaded_gemspec ||= Gem::Specification.load(gemspec.to_s)
+    end
+
+    def test_gemfile
+      @test_gemfile ||= source_root.join(ruby_core? ? "tool/bundler/test_gems.rb" : "test_gems.rb")
+    end
+
+    def dev_gemfile
+      @dev_gemfile ||= source_root.join("dev_gems.rb")
+    end
+
     def bindir
-      @bindir ||= root.join(ruby_core? ? "libexec" : "exe")
+      @bindir ||= source_root.join(ruby_core? ? "libexec" : "exe")
+    end
+
+    def installed_bindir
+      @installed_bindir ||= system_gem_path("bin")
     end
 
     def gem_cmd
-      @gem_cmd ||= ruby_core? ? root.join("bin/gem") : "gem"
+      @gem_cmd ||= ruby_core? ? source_root.join("bin/gem") : "gem"
     end
 
     def gem_bin
       @gem_bin ||= ruby_core? ? ENV["GEM_COMMAND"] : "gem"
     end
 
+    def path
+      env_path = ENV["PATH"]
+      env_path = env_path.split(File::PATH_SEPARATOR).reject {|path| path == bindir.to_s }.join(File::PATH_SEPARATOR) if ruby_core?
+      env_path
+    end
+
     def spec_dir
-      @spec_dir ||= root.join(ruby_core? ? "spec/bundler" : "spec")
+      @spec_dir ||= source_root.join(ruby_core? ? "spec/bundler" : "spec")
     end
 
     def tracked_files
-      skip "not in git working directory" unless git_root_dir?
-      @tracked_files ||= sys_exec(ruby_core? ? "git ls-files -z -- lib/bundler lib/bundler.rb spec/bundler man/bundler*" : "git ls-files -z", :dir => root).split("\x0")
+      @tracked_files ||= git_ls_files(tracked_files_glob)
     end
 
     def shipped_files
-      skip "not in git working directory" unless git_root_dir?
-      @shipped_files ||= sys_exec(ruby_core? ? "git ls-files -z -- lib/bundler lib/bundler.rb man/bundler* libexec/bundle*" : "git ls-files -z -- lib man exe CHANGELOG.md LICENSE.md README.md bundler.gemspec", :dir => root).split("\x0")
+      @shipped_files ||= git_ls_files(shipped_files_glob)
     end
 
     def lib_tracked_files
-      skip "not in git working directory" unless git_root_dir?
-      @lib_tracked_files ||= sys_exec(ruby_core? ? "git ls-files -z -- lib/bundler lib/bundler.rb" : "git ls-files -z -- lib", :dir => root).split("\x0")
+      @lib_tracked_files ||= git_ls_files(lib_tracked_files_glob)
     end
 
     def man_tracked_files
-      skip "not in git working directory" unless git_root_dir?
-      @man_tracked_files ||= sys_exec(ruby_core? ? "git ls-files -z -- man/bundler*" : "git ls-files -z -- man", :dir => root).split("\x0")
+      @man_tracked_files ||= git_ls_files(man_tracked_files_glob)
     end
 
     def tmp(*path)
-      root.join("tmp", scope, *path)
+      source_root.join("tmp", scope, *path)
     end
 
     def scope
@@ -143,12 +169,20 @@ module Spec
       tmp("gems/system", *path)
     end
 
+    def pristine_system_gem_path
+      tmp("gems/base_system")
+    end
+
     def local_gem_path(*path, base: bundled_app)
       base.join(*[".bundle", Gem.ruby_engine, RbConfig::CONFIG["ruby_version"], *path].compact)
     end
 
     def lib_path(*args)
       tmp("libs", *args)
+    end
+
+    def source_lib_dir
+      source_root.join("lib")
     end
 
     def lib_dir
@@ -167,11 +201,23 @@ module Spec
       tmp "tmpdir", *args
     end
 
-    def replace_version_file(version, dir: root)
+    def replace_version_file(version, dir: source_root)
       version_file = File.expand_path("lib/bundler/version.rb", dir)
       contents = File.read(version_file)
       contents.sub!(/(^\s+VERSION\s*=\s*)"#{Gem::Version::VERSION_PATTERN}"/, %(\\1"#{version}"))
       File.open(version_file, "w") {|f| f << contents }
+    end
+
+    def replace_build_metadata(build_metadata, dir: source_root)
+      build_metadata_file = File.expand_path("lib/bundler/build_metadata.rb", dir)
+
+      ivars = build_metadata.sort.map do |k, v|
+        "    @#{k} = #{loaded_gemspec.send(:ruby_code, v)}"
+      end.join("\n")
+
+      contents = File.read(build_metadata_file)
+      contents.sub!(/^(\s+# begin ivars).+(^\s+# end ivars)/m, "\\1\n#{ivars}\n\\2")
+      File.open(build_metadata_file, "w") {|f| f << contents }
     end
 
     def ruby_core?
@@ -183,6 +229,29 @@ module Spec
       else
         @ruby_core
       end
+    end
+
+  private
+
+    def git_ls_files(glob)
+      skip "not in git working directory" unless git_root_dir?
+      sys_exec("git ls-files -z -- #{glob}", :dir => source_root).split("\x0")
+    end
+
+    def tracked_files_glob
+      ruby_core? ?  "lib/bundler lib/bundler.rb spec/bundler man/bundle*" : ""
+    end
+
+    def shipped_files_glob
+      ruby_core? ? "lib/bundler lib/bundler.rb man/bundle* man/gemfile* libexec/bundle*" : "lib man exe CHANGELOG.md LICENSE.md README.md bundler.gemspec"
+    end
+
+    def lib_tracked_files_glob
+      ruby_core? ? "lib/bundler lib/bundler.rb" : "lib"
+    end
+
+    def man_tracked_files_glob
+      ruby_core? ? "man/bundle* man/gemfile*" : "man"
     end
 
     extend self

@@ -112,7 +112,7 @@ RSpec.describe "Bundler.setup" do
       lp.map! {|p| p.sub(/^#{Regexp.union system_gem_path.to_s, default_bundle_path.to_s, lib_dir.to_s}/i, "") }
     end
 
-    it "puts loaded gems after -I and RUBYLIB", :ruby_repo do
+    it "puts loaded gems after -I and RUBYLIB" do
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
@@ -136,7 +136,7 @@ RSpec.describe "Bundler.setup" do
     end
 
     it "orders the load path correctly when there are dependencies" do
-      system_gems :bundler
+      bundle "config set path.system true"
 
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
@@ -755,7 +755,7 @@ end
     expect(out).to eq("yay")
   end
 
-  it "should clean $LOAD_PATH properly", :ruby_repo do
+  it "should clean $LOAD_PATH properly" do
     gem_name = "very_simple_binary"
     full_gem_name = gem_name + "-1.0"
     ext_dir = File.join(tmp("extensions", full_gem_name))
@@ -802,7 +802,7 @@ end
       Dir.mkdir(gems_dir)
       Dir.mkdir(specifications_dir)
 
-      FileUtils.ln_s(root, File.join(gems_dir, full_name))
+      FileUtils.ln_s(source_root, File.join(gems_dir, full_name))
 
       gemspec_content = File.binread(gemspec).
                 sub("Bundler::VERSION", %("#{Bundler::VERSION}")).
@@ -816,9 +816,9 @@ end
     it "should not remove itself from the LOAD_PATH and require a different copy of 'bundler/setup'" do
       install_gemfile ""
 
-      ruby <<-R, :env => { "GEM_PATH" => symlinked_gem_home }, :no_lib => true
+      ruby <<-R, :env => { "GEM_PATH" => symlinked_gem_home }
         TracePoint.trace(:class) do |tp|
-          if tp.path.include?("bundler") && !tp.path.start_with?("#{root}")
+          if tp.path.include?("bundler") && !tp.path.start_with?("#{source_root}")
             puts "OMG. Defining a class from another bundler at \#{tp.path}:\#{tp.lineno}"
           end
         end
@@ -1209,6 +1209,7 @@ end
           %w[io-console openssl]
         end << "bundler"
         exempts << "fiddle" if Gem.win_platform? && Gem::Version.new(Gem::VERSION) >= Gem::Version.new("2.7")
+        exempts << "uri" if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new("2.7")
         exempts
       end
 
@@ -1273,19 +1274,42 @@ end
           build_gem "net-http-pipeline", "1.0.1"
         end
 
-        system_gems "net-http-pipeline-1.0.1", :gem_repo => gem_repo4 do
-          gemfile <<-G
-            source "#{file_uri_for(gem_repo4)}"
-            gem "net-http-pipeline", "1.0.1"
-          G
+        system_gems "net-http-pipeline-1.0.1", :gem_repo => gem_repo4
 
-          bundle "config set --local path vendor/bundle"
+        gemfile <<-G
+          source "#{file_uri_for(gem_repo4)}"
+          gem "net-http-pipeline", "1.0.1"
+        G
 
-          bundle! :install
+        bundle "config set --local path vendor/bundle"
 
-          bundle! :check
+        bundle! :install
 
-          expect(out).to eq("The Gemfile's dependencies are satisfied")
+        bundle! :check
+
+        expect(out).to eq("The Gemfile's dependencies are satisfied")
+      end
+
+      # bundler respects paths specified direclty in RUBYLIB or RUBYOPT, and
+      # that happens when running ruby from the ruby-core setup. To
+      # workaround, we manually remove those for these tests when they would
+      # override the default gem.
+      def load_path_exclusions_hack_for(name)
+        if ruby_core?
+          ext_folder = source_root.join(".ext/common")
+          require_name = name.tr("-", "/")
+          if File.exist?(ext_folder.join("#{require_name}.rb"))
+            { :exclude_from_load_path => ext_folder.to_s }
+          else
+            lib_folder = source_root.join("lib")
+            if File.exist?(lib_folder.join("#{require_name}.rb"))
+              { :exclude_from_load_path => lib_folder.to_s }
+            else
+              {}
+            end
+          end
+        else
+          {}
         end
       end
 
@@ -1302,7 +1326,8 @@ end
             gem "#{g}", "999999"
           G
 
-          expect(the_bundle).to include_gem("#{g} 999999", :env => { "RUBYOPT" => activation_warning_hack_rubyopt })
+          opts = { :env => { "RUBYOPT" => activation_warning_hack_rubyopt } }
+          expect(the_bundle).to include_gem("#{g} 999999", opts.merge(load_path_exclusions_hack_for(g)))
         end
 
         it "activates older versions of #{g}" do
@@ -1317,7 +1342,8 @@ end
             gem "#{g}", "0.0.0.a"
           G
 
-          expect(the_bundle).to include_gem("#{g} 0.0.0.a", :env => { "RUBYOPT" => activation_warning_hack_rubyopt })
+          opts = { :env => { "RUBYOPT" => activation_warning_hack_rubyopt } }
+          expect(the_bundle).to include_gem("#{g} 0.0.0.a", opts.merge(load_path_exclusions_hack_for(g)))
         end
       end
     end

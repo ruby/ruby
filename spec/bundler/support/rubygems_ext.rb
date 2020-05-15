@@ -2,7 +2,7 @@
 
 require_relative "path"
 
-$LOAD_PATH.unshift(Spec::Path.lib_dir.to_s)
+$LOAD_PATH.unshift(Spec::Path.source_lib_dir.to_s)
 
 module Spec
   module Rubygems
@@ -59,7 +59,8 @@ module Spec
 
       ENV["BUNDLE_PATH"] = nil
       ENV["GEM_HOME"] = ENV["GEM_PATH"] = Path.base_system_gems.to_s
-      ENV["PATH"] = [Path.bindir, Path.system_gem_path.join("bin"), ENV["PATH"]].join(File::PATH_SEPARATOR)
+      ENV["PATH"] = [Path.system_gem_path.join("bin"), ENV["PATH"]].join(File::PATH_SEPARATOR)
+      ENV["PATH"] = [Path.bindir, ENV["PATH"]].join(File::PATH_SEPARATOR) if Path.ruby_core?
     end
 
     def install_test_deps
@@ -103,16 +104,13 @@ module Spec
       require "bundler"
       definition = Bundler::Definition.build(gemfile, lockfile, nil)
       definition.validate_runtime!
-      Bundler::Installer.install(Path.root, definition, :path => ENV["GEM_HOME"])
+      Bundler::Installer.install(Path.source_root, definition, :path => ENV["GEM_HOME"])
     ensure
       ENV["BUNDLE_GEMFILE"] = old_gemfile
     end
 
     def test_gemfile
-      gemfile = Path.root.join("test_gems.rb")
-      # for Ruby core repository
-      gemfile = Path.root.join("tool/bundler/test_gems.rb") unless File.exist?(gemfile)
-      gemfile
+      Path.test_gemfile
     end
 
     def test_lockfile
@@ -120,7 +118,7 @@ module Spec
     end
 
     def dev_gemfile
-      Path.root.join("dev_gems.rb")
+      Path.dev_gemfile
     end
 
     def dev_lockfile
