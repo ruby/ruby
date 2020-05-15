@@ -42,7 +42,6 @@ module Bundler
       setup_makes_kernel_gem_public
       silence_deprecations
       silence_root_warning
-      skip_default_git_sources
       specific_platform
       suppress_install_using_messages
       unlock_source_unlocks_spec

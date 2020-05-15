@@ -249,9 +249,6 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    be changed in the next major version.
 * `silence_root_warning` (`BUNDLE_SILENCE_ROOT_WARNING`):
    Silence the warning Bundler prints when installing gems as root.
-* `skip_default_git_sources` (`BUNDLE_SKIP_DEFAULT_GIT_SOURCES`):
-   Whether Bundler should skip adding default git source shortcuts to the
-   Gemfile DSL.
 * `specific_platform` (`BUNDLE_SPECIFIC_PLATFORM`):
    Allow bundler to resolve for the specific running platform and store it in
    the lockfile, instead of only using a generic platform.

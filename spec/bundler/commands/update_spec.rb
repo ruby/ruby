@@ -964,7 +964,7 @@ RSpec.describe "bundle update conservative" do
           isolated_owner
 
         BUNDLED WITH
-           1.13.0
+           #{Bundler::VERSION}
       L
     end
 

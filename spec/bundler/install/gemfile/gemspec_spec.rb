@@ -172,7 +172,7 @@ RSpec.describe "bundle install from an existing gemspec" do
       s.add_dependency "platform_specific"
     end
 
-    system_gems "platform_specific-1.0-java", :path => default_bundle_path, :keep_path => true
+    system_gems "platform_specific-1.0-java", :path => default_bundle_path
 
     install_gemfile! <<-G
       gemspec :path => '#{tmp.join("foo")}'
@@ -419,6 +419,8 @@ RSpec.describe "bundle install from an existing gemspec" do
             raise "wrong dependency type #{platform_specific_type}, can only be :development or :runtime"
           end
         end
+
+        bundle "config specific_platform false"
 
         %w[ruby jruby].each do |platform|
           simulate_platform(platform) do

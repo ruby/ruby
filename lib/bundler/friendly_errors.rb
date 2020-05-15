@@ -76,7 +76,7 @@ module Bundler
 
           I tried...
 
-        - **Have you read our issues document, https://github.com/rubygems/bundler/blob/master/doc/contributing/ISSUES.md?**
+        - **Have you read our issues document, https://github.com/rubygems/rubygems/blob/master/doc/contributing/ISSUES.md?**
 
           ...
 
@@ -100,7 +100,7 @@ module Bundler
         #{issues_url(e)}
 
         If there aren't any reports for this error yet, please create copy and paste the report template above into a new issue. Don't forget to anonymize any private data! The new issue form is located at:
-        https://github.com/rubygems/bundler/issues/new
+        https://github.com/rubygems/rubygems/issues/new
       EOS
     end
 
@@ -108,7 +108,7 @@ module Bundler
       message = exception.message.lines.first.tr(":", " ").chomp
       message = message.split("-").first if exception.is_a?(Errno)
       require "cgi"
-      "https://github.com/rubygems/bundler/search?q=" \
+      "https://github.com/rubygems/rubygems/search?q=" \
         "#{CGI.escape(message)}&type=Issues"
     end
   end

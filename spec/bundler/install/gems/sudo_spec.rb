@@ -145,6 +145,8 @@ RSpec.describe "when using sudo", :sudo => true do
       sudo "mkdir -p #{gem_home}"
       sudo "chmod ugo-w #{gem_home}"
 
+      system_gems :bundler, :path => gem_home
+
       gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack", '1.0'

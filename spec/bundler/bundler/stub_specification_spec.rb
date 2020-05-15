@@ -1,15 +1,13 @@
 # frozen_string_literal: true
 
 RSpec.describe Bundler::StubSpecification do
-  let(:gemspec) do
-    Gem::Specification.new do |s|
+  let(:with_bundler_stub_spec) do
+    gemspec = Gem::Specification.new do |s|
       s.name = "gemname"
       s.version = "1.0.0"
       s.loaded_from = __FILE__
     end
-  end
 
-  let(:with_bundler_stub_spec) do
     described_class.from_stub(gemspec)
   end
 

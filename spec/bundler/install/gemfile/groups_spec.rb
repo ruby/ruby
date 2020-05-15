@@ -352,16 +352,17 @@ RSpec.describe "bundle install with groups" do
   describe "when locked and installed with --without" do
     before(:each) do
       build_repo2
-      system_gems "rack-0.9.1" do
-        install_gemfile <<-G, forgotten_command_line_options(:without => "rack")
-          source "#{file_uri_for(gem_repo2)}"
-          gem "rack"
 
-          group :rack do
-            gem "rack_middleware"
-          end
-        G
-      end
+      system_gems "rack-0.9.1"
+
+      install_gemfile <<-G, forgotten_command_line_options(:without => "rack")
+        source "#{file_uri_for(gem_repo2)}"
+        gem "rack"
+
+        group :rack do
+          gem "rack_middleware"
+        end
+      G
     end
 
     it "uses the correct versions even if --without was used on the original" do

@@ -96,7 +96,7 @@ private
   def resolve_local_copy_path
     return expanded_source if source_is_path?
 
-    rubygems_path = root.join("tmp/rubygems")
+    rubygems_path = source_root.join("tmp/rubygems")
 
     unless rubygems_path.directory?
       rubygems_path.parent.mkpath
@@ -111,7 +111,7 @@ private
   end
 
   def expanded_source
-    @expanded_source ||= Pathname.new(@source).expand_path(root)
+    @expanded_source ||= Pathname.new(@source).expand_path(source_root)
   end
 
   def resolve_target_tag
