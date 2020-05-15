@@ -98,7 +98,7 @@ context switching points.
     sleep(n)
   end.resume
 
-We also introduce a new method which simplifes the creation of these
+We also introduce a new method which simplifies the creation of these
 non-blocking fibers:
 
   Fiber do
