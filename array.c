@@ -6281,7 +6281,7 @@ rb_ary_any_p(int argc, VALUE *argv, VALUE ary)
         if (rb_block_given_p()) {
             rb_warn("given block not used");
         }
-	for (i = 0; i < RARRAY_LEN(ary); ++i) {
+	for (i = 0; i < len; ++i) {
 	    if (RTEST(rb_funcall(argv[0], idEqq, 1, RARRAY_AREF(ary, i)))) return Qtrue;
 	}
     }
@@ -6291,7 +6291,7 @@ rb_ary_any_p(int argc, VALUE *argv, VALUE ary)
         }
     }
     else {
-	for (i = 0; i < RARRAY_LEN(ary); ++i) {
+	for (i = 0; i < len; ++i) {
 	    if (RTEST(rb_yield(RARRAY_AREF(ary, i)))) return Qtrue;
 	}
     }
