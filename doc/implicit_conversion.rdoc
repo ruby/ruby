@@ -28,7 +28,7 @@ This class is Array-convertible:
 
     class ArrayConvertible
       def to_ary
-        [:foo, 'bar', baz = 2]
+        [:foo, 'bar', 2]
       end
     end
     a = []
@@ -45,7 +45,7 @@ This class is not Array-convertible (method +to_ary+ takes arguments):
 
     class NotArrayConvertible
       def to_ary(x)
-        [:foo, 'bar', baz = 2]
+        [:foo, 'bar', 2]
       end
     end
     a = []

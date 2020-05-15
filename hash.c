@@ -1749,9 +1749,9 @@ set_proc_default(VALUE hash, VALUE proc)
 
 /*
  *  call-seq:
- *     Hash.new                          -> new_hash
- *     Hash.new(default_value)           -> new_hash
- *     Hash.new {|hash, key| block }     -> new_hash
+ *     Hash.new                                        -> new_hash
+ *     Hash.new(default_value)                         -> new_hash
+ *     Hash.new{|hash, key| hash[key] = default_value} -> new_hash
  *
  *  Returns a new empty Hash object.
  *
@@ -1786,9 +1786,12 @@ set_proc_default(VALUE hash, VALUE proc)
  *    h.default_proc.class # => Proc
  *    h[:nosuch] # => "Default value for nosuch"
  *
+ *  ---
+ *
  *  Raises an exception if both argument <tt>default_value</tt> and a block are given:
  *
- *    Hash.new(0) { } # Raises ArgumentError (wrong number of arguments (given 1, expected 0)) *
+ *    # Raises ArgumentError (wrong number of arguments (given 1, expected 0)):
+ *    Hash.new(0) { }
  */
 
 static VALUE
@@ -1860,27 +1863,35 @@ rb_hash_initialize(int argc, VALUE *argv, VALUE hash)
  *  but the argument is not an array of 2-element arrays or a
  *  {Hash-convertible object}[doc/implicit_conversion_rdoc.html#label-Hash-Convertible+Objects]:
  *
- *    Hash[:foo] # Raises ArgumentError (odd number of arguments
- *    Hash[ [ [:foo, 0, 1] ] ] # Raises ArgumentError (invalid number of elements (3 for 1..2))
+ *    # Raises ArgumentError (odd number of arguments for Hash):
+ *    Hash[:foo]
+ *    # Raises ArgumentError (invalid number of elements (3 for 1..2)):
+ *    Hash[ [ [:foo, 0, 1] ] ]
  *
  *  Raises an exception if the argument count is odd and greater than 1:
  *
- *    Hash[0, 1, 2] # Raises ArgumentError (odd number of arguments for Hash)
+ *    # Raises ArgumentError (odd number of arguments for Hash):
+ *    Hash[0, 1, 2]
  *
  *  Raises an exception if the argument is an array containing an element
  *  that is not a 2-element array:
  *
- *    Hash[ [ :foo ] ] # Raises ArgumentError (wrong element type Symbol at 0 (expected array))
+ *    # Raises ArgumentError (wrong element type Symbol at 0 (expected array)):
+ *    Hash[ [ :foo ] ]
  *
  *  Raises an exception if the argument is an array containing an element
  *  that is an array of size different from 2:
  *
- *    Hash[ [ [0, 1, 2] ] ] # Raises ArgumentError (invalid number of elements (3 for 1..2))
+ *    # Raises ArgumentError (invalid number of elements (3 for 1..2)):
+ *    Hash[ [ [0, 1, 2] ] ]
  *
- *  Raises an exception if any proposed key is not a valid key:
+ *  Raises an exception if any proposed key is not a valid key
+ *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
  *
- *    Hash[:foo, 0, BasicObject.new, 1] # Raises NoMethodError (undefined method `hash' for #<BasicObject:>)
- *    Hash[ [ [:foo, 0], [BasicObject.new, 1] ] ] # Raises NoMethodError (undefined method `hash' for #<BasicObject:0x00000000064b1328>)
+ *    # Raises NoMethodError (undefined method `hash' for #<BasicObject:>):
+ *    Hash[:foo, 0, BasicObject.new, 1]
+ *    # Raises NoMethodError (undefined method `hash' for #<BasicObject:>):
+ *    Hash[ [ [:foo, 0], [BasicObject.new, 1] ] ]
  */
 
 static VALUE
@@ -2047,22 +2058,22 @@ rb_hash_rehash_i(VALUE key, VALUE value, VALUE arg)
 
 /*
  *  call-seq:
- *     hsh.rehash -> hsh
+ *     hsh.rehash -> self
  *
- *  Rebuilds the hash based on the current hash values for each key. If
- *  values of key objects have changed since they were inserted, this
- *  method will reindex <i>hsh</i>. If Hash#rehash is
- *  called while an iterator is traversing the hash, a
- *  RuntimeError will be raised in the iterator.
+ *  Rebuilds the hash table by recomputing the hash index for each key;
+ *  returns <tt>self</tt>.
  *
- *     a = [ "a", "b" ]
- *     c = [ "c", "d" ]
- *     h = { a => 100, c => 300 }
- *     h[a]       #=> 100
- *     a[0] = "z"
- *     h[a]       #=> nil
- *     h.rehash   #=> {["z", "b"]=>100, ["c", "d"]=>300}
- *     h[a]       #=> 100
+ *  The hash table will have become invalid if the hash value of a key
+ *  has changed since the entry was created.
+ *  See {Modifying an Active Hash Key}[#class-Hash-label-Modifying+an+Active+Hash+Key].
+ *
+ *  ---
+ *
+ *  Raises an exception if called while an iterator is traversing the hash:
+ *
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    # Raises RuntimeError (rehash during iteration):
+ *    h.each { |x| h.rehash }
  */
 
 VALUE
@@ -6532,68 +6543,229 @@ env_update(VALUE env, VALUE hash)
 }
 
 /*
- *  A Hash is a dictionary-like collection of unique keys and their values.
- *  Also called associative arrays, they are similar to Arrays, but where an
- *  Array uses integers as its index, a Hash allows you to use any object
- *  type.
+ *  A \Hash maps each of its unique keys to a specific value.
  *
- *  Hashes enumerate their values in the order that the corresponding keys
- *  were inserted.
+ *  A \Hash has certain similarities to an \Array, but:
+ *  - An \Array index is always an \Integer.
+ *  - A \Hash key can be (almost) any object.
  *
- *  A Hash can be easily created by using its implicit form:
+ *  === \Hash \Data Syntax
  *
- *    grades = { "Jane Doe" => 10, "Jim Doe" => 6 }
+ *  The older syntax for \Hash data uses the "hash rocket," <tt>=></tt>:
  *
- *  Hashes allow an alternate syntax for keys that are symbols.
- *  Instead of
+ *    h = {:foo => 0, :bar => 1, :baz => 2}
+ *    h # => {:foo=>0, :bar=>1, :baz=>2}
  *
- *    options = { :font_size => 10, :font_family => "Arial" }
+ *  Alternatively, but only for a \Hash key that's a \Symbol,
+ *  you can use a newer JSON-style syntax,
+ *  where each bareword becomes a \Symbol:
  *
- *  You could write it as:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h # => {:foo=>0, :bar=>1, :baz=>2}
  *
- *    options = { font_size: 10, font_family: "Arial" }
+ *  You can also use a \String in place of a bareword:
  *
- *  Each named key is a symbol you can access in hash:
+ *    h = {'foo': 0, 'bar': 1, 'baz': 2}
+ *    h # => {:foo=>0, :bar=>1, :baz=>2}
  *
- *    options[:font_size]  # => 10
+ *  And you can mix the styles:
  *
- *  A Hash can also be created through its ::new method:
+ *    h = {foo: 0, :bar => 1, 'baz': 2}
+ *    h # => {:foo=>0, :bar=>1, :baz=>2}
  *
- *    grades = Hash.new
- *    grades["Dorothy Doe"] = 9
+ *  But it's an error to try the JSON-style syntax
+ *  for a key that's not a bareword or a String:
  *
- *  Accessing a value in a Hash requires using its key:
- *
- *    puts grades["Jane Doe"] # => 0
+ *    # Raises SyntaxError (syntax error, unexpected ':', expecting =>):
+ *    h = {0: 'zero'}
  *
  *  === Common Uses
  *
- *  Hashes are an easy way to represent data structures, such as
+ *  You can use a \Hash to give names to objects:
  *
- *    books         = {}
- *    books[:matz]  = "The Ruby Programming Language"
- *    books[:black] = "The Well-Grounded Rubyist"
+ *    person = {name: 'Matz', language: 'Ruby'}
+ *    person # => {:name=>"Matz", :language=>"Ruby"}
  *
- *  Hashes are also commonly used as a way to have named parameters in
- *  functions. Note that no brackets are used below. If a hash is the last
- *  argument on a method call, no braces are needed, thus creating a really
- *  clean interface:
+ *  You can use a \Hash to give names to method arguments:
  *
- *    Person.create(name: "John Doe", age: 27)
- *
- *    def self.create(params)
- *      @name = params[:name]
- *      @age  = params[:age]
+ *    def some_method(hash)
+ *      p hash
  *    end
+ *    some_method({foo: 0, bar: 1, baz: 2}) # => {:foo=>0, :bar=>1, :baz=>2}
  *
- *  === Hash Keys
+ *  Note: when the last argument in a method call is a \Hash,
+ *  the curly braces may be omitted:
  *
- *  Two objects refer to the same hash key when their <code>hash</code> value
+ *    some_method(foo: 0, bar: 1, baz: 2) # => {:foo=>0, :bar=>1, :baz=>2}
+ *
+ *  You can use a Hash to initialize an object:
+ *
+ *    class Dev
+ *      attr_accessor :name, :language
+ *      def initialize(hash)
+ *        self.name = hash[:name]
+ *        self.language = hash[:language]
+ *      end
+ *    end
+ *    matz = Dev.new(name: 'Matz', language: 'Ruby')
+ *    matz # => #<Dev: @name="Matz", @language="Ruby">
+ *
+ *  === Creating a \Hash
+ *
+ *  Here are three ways to create a \Hash:
+ *
+ *  - \Method <tt>Hash.new</tt>
+ *  - \Method <tt>Hash[]</tt>
+ *  - Literal form: <tt>{}</tt>.
+ *
+ *  ---
+ *
+ *  You can create a \Hash by calling method Hash.new.
+ *
+ *  Create an empty Hash:
+ *
+ *    h = Hash.new
+ *    h # => {}
+ *    h.class # => Hash
+ *
+ *  ---
+ *
+ *  You can create a \Hash by calling method Hash.[].
+ *
+ *  Create an empty Hash:
+ *
+ *    h = Hash[]
+ *    h # => {}
+ *
+ *  Create a \Hash with initial entries:
+ *
+ *    h = Hash[foo: 0, bar: 1, baz: 2]
+ *    h # => {:foo=>0, :bar=>1, :baz=>2}
+ *
+ *  ---
+ *
+ *  You can create a \Hash by using its literal form (curly braces).
+ *
+ *  Create an empty \Hash:
+ *
+ *    h = {}
+ *    h # => {}
+ *
+ *  Create a \Hash with initial entries:
+ *
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h # => {:foo=>0, :bar=>1, :baz=>2}
+ *
+ *
+ *  === \Hash Value Basics
+ *
+ *  The simplest way to retrieve a \Hash value (instance method #[]):
+ *
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h[:foo] # => 0
+ *
+ *  The simplest way to create or update a \Hash value (instance method #[]=):
+ *
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h[:bat] = 3 # => 3
+ *    h # => {:foo=>0, :bar=>1, :baz=>2, :bat=>3}
+ *    h[:foo] = 4 # => 4
+ *    h # => {:foo=>4, :bar=>1, :baz=>2, :bat=>3}
+ *
+ *  The simplest way to delete a Hash entry (instance method #delete):
+ *
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.delete(:bar) # => 1
+ *    h # => {:foo=>0, :baz=>2}
+ *
+ *  === Entry Order
+ *
+ *  A Hash object presents its entries in the order of their creation. This is seen in:
+ *
+ *  - Iterative methods such as <tt>each</tt>, <tt>each_key</tt>, <tt>each_pair</tt>, <tt>each_value</tt>.
+ *  - Other order-sensitive methods such as <tt>shift</tt>, <tt>keys</tt>, <tt>values</tt>.
+ *  - The String returned by method <tt>inspect</tt>.
+ *
+ *  A new Hash has its initial ordering per the given entries:
+ *
+ *    h = Hash[foo: 0, bar: 1]
+ *    h # => {:foo=>0, :bar=>1}
+ *
+ *  New entries are added at the end:
+ *
+ *    h[:baz] = 2
+ *    h # => {:foo=>0, :bar=>1, :baz=>2}
+ *
+ *  Updating a value does not affect the order:
+ *
+ *    h[:baz] = 3
+ *    h # => {:foo=>0, :bar=>1, :baz=>3}
+ *
+ *  But re-creating a deleted entry can affect the order:
+ *
+ *    h.delete(:foo)
+ *    h[:foo] = 5
+ *    h # => {:bar=>1, :baz=>3, :foo=>5}
+ *
+ *  === \Hash Keys
+ *
+ *  ==== \Hash Key Equivalence
+ *
+ *  Two objects are treated as the same hash key when their <code>hash</code> value
  *  is identical and the two objects are <code>eql?</code> to each other.
  *
- *  A user-defined class may be used as a hash key if the <code>hash</code>
+ *  ==== Invalid \Hash Keys
+ *
+ *  An object that lacks method #hash cannot be a \Hash key:
+ *
+ *    # Raises NoMethodError (undefined method `hash' for #<BasicObject>):
+ *    {BasicObject.new => 0}
+ *
+ *  ==== Modifying an Active \Hash Key
+ *
+ *  Modifying a \Hash key while it is in use damages the hash's index.
+ *
+ *  This \Hash has keys that are Arrays:
+ *
+ *    a0 = [ :foo, :bar ]
+ *    a1 = [ :baz, :bat ]
+ *    h = {a0 => 0, a1 => 1}
+ *    h.include?(a0) # => true
+ *    h[a0] # => 0
+ *    a0.hash # => 110002110
+ *
+ *  Modifying array element <tt>a0[0]</tt> changes its hash value:
+ *
+ *    a0[0] = :bam
+ *    a0.hash # => 1069447059
+ *
+ *  And damages the \Hash index:
+ *
+ *    h.include?(a0) # => false
+ *    h[a0] # => nil
+ *
+ *  You can repair the hash index using method +rehash+:
+ *
+ *    h.rehash # => {[:bam, :bar]=>0, [:baz, :bat]=>1}
+ *    h.include?(a0) # => true
+ *    h[a0] # => 0
+ *
+ *  A \String key is always safe.
+ *  That's because an unfrozen String
+ *  passed as a key will be replaced by a duplicated and frozen \String:
+ *
+ *    s = 'foo'
+ *    s.frozen? # => false
+ *    h = {s => 0}
+ *    first_key = h.keys.first
+ *    first_key.frozen? # => true
+ *    first_key.equal?(s) # => false
+ *
+ *  ==== User-Defined \Hash Keys
+ *
+ *  A user-defined class may be used as a \Hash key if the <code>hash</code>
  *  and <code>eql?</code> methods are overridden to provide meaningful
- *  behavior.  By default, separate instances refer to separate hash keys.
+ *  behavior.  By default, separate instances refer to separate \Hash keys.
  *
  *  A typical implementation of <code>hash</code> is based on the
  *  object's data while <code>eql?</code> is usually aliased to the overridden
@@ -6629,8 +6801,6 @@ env_update(VALUE env, VALUE hash)
  *    reviews[book2] = 'Nice and compact!'
  *
  *    reviews.length #=> 1
- *
- *  See also Object#hash and Object#eql?
  *
  *  === Default Values
  *
@@ -6740,6 +6910,7 @@ env_update(VALUE env, VALUE hash)
  *
  *  You can set the default proc to +nil+, which restores control to the default value:
  *
+ *    h.delete(:nosuch)
  *    h.default_proc = nil
  *    h.default = false
  *    h[:nosuch] # => false
