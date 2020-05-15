@@ -5,7 +5,9 @@ require 'timeout'
 
 class TestGemStreamUI < Gem::TestCase
 
-  SHORT_TIMEOUT = (defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?) ? 1.0 : 0.1 # increase timeout with MJIT for --jit-wait testing
+  # increase timeout with MJIT for --jit-wait testing
+  mjit_enabled = defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
+  SHORT_TIMEOUT = RUBY_ENGINE == "ruby" && !mjit_enabled ? 0.1 : 1.0
 
   module IsTty
     attr_accessor :tty
