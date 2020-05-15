@@ -6291,7 +6291,7 @@ rb_ary_any_p(int argc, VALUE *argv, VALUE ary)
         }
     }
     else {
-	for (i = 0; i < len; ++i) {
+	for (i = 0; i < RARRAY_LEN(ary); ++i) {
 	    if (RTEST(rb_yield(RARRAY_AREF(ary, i)))) return Qtrue;
 	}
     }
