@@ -34,6 +34,16 @@ begin
         prompt>
       EOC
     end
+
+    def test_autowrap
+      write('01234567890123456789012')
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        prompt> 0123456789012345678901
+        2
+      EOC
+    end
   end
 rescue LoadError, NameError
   # On Ruby repository, this test suit doesn't run because Ruby repo doesn't
