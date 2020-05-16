@@ -11,7 +11,6 @@ class TestGemPackageTask < Gem::TestCase
     Rake.application = Rake::Application.new
 
     @original_rake_fileutils_verbosity = RakeFileUtils.verbose_flag
-    RakeFileUtils.verbose_flag = false
   end
 
   def teardown
@@ -21,6 +20,8 @@ class TestGemPackageTask < Gem::TestCase
   end
 
   def test_gem_package
+    RakeFileUtils.verbose_flag = false
+
     gem = Gem::Specification.new do |g|
       g.name = "pkgr"
       g.version = "1.2.3"
@@ -47,6 +48,8 @@ class TestGemPackageTask < Gem::TestCase
   end
 
   def test_gem_package_with_current_platform
+    RakeFileUtils.verbose_flag = false
+
     gem = Gem::Specification.new do |g|
       g.name = "pkgr"
       g.version = "1.2.3"
@@ -60,6 +63,8 @@ class TestGemPackageTask < Gem::TestCase
   end
 
   def test_gem_package_with_ruby_platform
+    RakeFileUtils.verbose_flag = false
+
     gem = Gem::Specification.new do |g|
       g.name = "pkgr"
       g.version = "1.2.3"
@@ -73,6 +78,8 @@ class TestGemPackageTask < Gem::TestCase
   end
 
   def test_package_dir_path
+    RakeFileUtils.verbose_flag = false
+
     gem = Gem::Specification.new do |g|
       g.name = 'nokogiri'
       g.version = '1.5.0'
