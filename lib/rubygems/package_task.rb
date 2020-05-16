@@ -88,6 +88,7 @@ class Gem::PackageTask < Rake::PackageTask
     super gem.full_name, :noversion
     @gem_spec = gem
     @package_files += gem_spec.files if gem_spec.files
+    @fileutils_output = $stdout
   end
 
   ##
