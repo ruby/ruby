@@ -1376,7 +1376,7 @@ rb_locale_encindex(void)
 {
     int idx = rb_locale_charmap_index();
 
-    if (idx < 0) idx = ENCINDEX_ASCII;
+    if (idx < 0) idx = ENCINDEX_UTF_8;
 
     if (rb_enc_registered("locale") < 0) {
 # if defined _WIN32
