@@ -6,8 +6,8 @@
 #++
 
 require 'optparse'
-require 'rubygems/requirement'
-require 'rubygems/user_interaction'
+require_relative 'requirement'
+require_relative 'user_interaction'
 
 ##
 # Base class for all Gem commands.  When creating a new gem command, define
