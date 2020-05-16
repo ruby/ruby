@@ -118,7 +118,7 @@ class LeakChecker
         next if list.length <= 1
         if 1 < list.count {|io, autoclose, inspect| autoclose }
           str = list.map {|io, autoclose, inspect| " #{inspect}" + (autoclose ? "(autoclose)" : "") }.sort.join
-          puts "Multiple autoclose IO object for a file descriptor:#{str}"
+          puts "Multiple autoclose IO objects for a file descriptor in: #{test_name}: #{str}"
         end
       }
     end
