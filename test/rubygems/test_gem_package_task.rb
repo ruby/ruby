@@ -47,6 +47,34 @@ class TestGemPackageTask < Gem::TestCase
     end
   end
 
+  def test_gem_package_prints_to_stdout_by_default
+    gem = Gem::Specification.new do |g|
+      g.name = "pkgr"
+      g.version = "1.2.3"
+
+      g.authors = %w[author]
+      g.files = %w[x]
+      g.summary = 'summary'
+    end
+
+    pkg = Gem::PackageTask.new(gem) do |p|
+      p.package_files << "y"
+    end
+
+    assert_equal %w[x y], pkg.package_files
+
+    Dir.chdir @tempdir do
+      FileUtils.touch 'x'
+      FileUtils.touch 'y'
+
+      _, err = capture_io do
+        Rake.application['package'].invoke
+      end
+
+      assert_empty err
+    end
+  end
+
   def test_gem_package_with_current_platform
     RakeFileUtils.verbose_flag = false
 
