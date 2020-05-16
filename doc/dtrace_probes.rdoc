@@ -56,10 +56,16 @@ with when they are fired and the arguments they take:
     methodname name of the method about to be executed (a string)
     filename the file name where the method is _being called_ (a string)
     lineno the line number where the method is _being called_ (an int)
+    
+  *NOTE*: will only be fired if tracing is enabled, e.g. with: +TracePoint.new{}.enable+. 
+  See {ticket #14104}[https://bugs.ruby-lang.org/issues/14104] for more details.
 
 [ruby:::method-return(classname, methodname, filename, lineno);]
   This probe is fired just after a method has returned. The arguments are the
   same as "ruby:::method-entry".
+  
+  *NOTE*: will only be fired if tracing is enabled, e.g. with: +TracePoint.new{}.enable+. 
+  See {ticket #14104}[https://bugs.ruby-lang.org/issues/14104] for more details.
 
 [ruby:::cmethod-entry(classname, methodname, filename, lineno);]
   This probe is fired just before a C method is entered. The arguments are the
