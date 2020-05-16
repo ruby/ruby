@@ -2,7 +2,7 @@
 ##
 # Raised when there is an error while building extensions.
 
-require 'rubygems/exceptions'
+require_relative '../exceptions'
 
 class Gem::Ext::BuildError < Gem::InstallError
 end

@@ -420,7 +420,7 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
   end
 
   def validate_extensions # :nodoc:
-    require 'rubygems/ext'
+    require_relative 'ext'
     builder = Gem::Ext::Builder.new(@specification)
 
     rake_extension = @specification.extensions.any? {|s| builder.builder_for(s) == Gem::Ext::RakeBuilder }
