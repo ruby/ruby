@@ -1481,6 +1481,28 @@ ruby_init_prelude(void)
     rb_const_remove(rb_cObject, rb_intern_const("TMP_RUBY_PREFIX"));
 }
 
+void rb_call_builtin_inits(void);
+
+static void
+ruby_opt_init(ruby_cmdline_options_t *opt)
+{
+    if (opt->dump & dump_exit_bits) return;
+
+    if (opt->features.set & FEATURE_BIT(gems)) {
+        rb_define_module("Gem");
+        if (opt->features.set & FEATURE_BIT(did_you_mean)) {
+            rb_define_module("DidYouMean");
+        }
+    }
+
+    Init_ext(); /* load statically linked extensions before rubygems */
+    rb_call_builtin_inits();
+    ruby_init_prelude();
+
+    ruby_set_script_name(opt->script_name);
+    require_libraries(&opt->req_list);
+}
+
 static int
 opt_enc_index(VALUE enc_name)
 {
@@ -1851,14 +1873,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
             rb_ary_replace(vm->load_path_snapshot, load_path);
         }
     }
-    Init_ext();		/* load statically linked extensions before rubygems */
-    if (opt->features.set & FEATURE_BIT(gems)) {
-	rb_define_module("Gem");
-        if (opt->features.set & FEATURE_BIT(did_you_mean)) {
-	    rb_define_module("DidYouMean");
-	}
-    }
-    ruby_init_prelude();
+
     if (opt->features.mask & COMPILATION_FEATURES) {
 	VALUE option = rb_hash_new();
 #define SET_COMPILE_OPTION(h, o, name) \
@@ -1892,10 +1907,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	}
 #endif
 	rb_enc_associate(opt->e_script, eenc);
-	if (!(opt->dump & ~DUMP_BIT(version_v))) {
-	    ruby_set_script_name(opt->script_name);
-	    require_libraries(&opt->req_list);
-	}
+        ruby_opt_init(opt);
         ruby_set_script_name(progname);
 	rb_parser_set_options(parser, opt->do_print, opt->do_loop,
 			      opt->do_line, opt->do_split);
@@ -2122,10 +2134,7 @@ load_file_internal(VALUE argp_v)
         if (NIL_P(c)) {
 	    argp->f = f = Qnil;
 	}
-	if (!(opt->dump & ~DUMP_BIT(version_v))) {
-	    ruby_set_script_name(opt->script_name);
-	    require_libraries(&opt->req_list);	/* Why here? unnatural */
-	}
+        ruby_opt_init(opt);
     }
     if (opt->src.enc.index >= 0) {
 	enc = rb_enc_from_index(opt->src.enc.index);

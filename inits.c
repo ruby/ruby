@@ -75,7 +75,11 @@ rb_call_inits(void)
 
     // enable builtin loading
     CALL(builtin);
+}
 
+void
+rb_call_builtin_inits(void)
+{
 #define BUILTIN(n) CALL(builtin_##n)
     BUILTIN(gc);
     BUILTIN(io);
