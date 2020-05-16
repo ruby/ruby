@@ -68,7 +68,7 @@ RSpec.shared_examples "bundle install --standalone" do
     include_examples "common functionality"
   end
 
-  describe "with gems with native extension" do
+  describe "with gems with native extension", :ruby_repo do
     before do
       install_gemfile <<-G, forgotten_command_line_options(:path => bundled_app("bundle")).merge(:standalone => true, :dir => cwd)
         source "#{file_uri_for(gem_repo1)}"

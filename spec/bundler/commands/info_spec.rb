@@ -41,7 +41,7 @@ RSpec.describe "bundle info" do
       expect(err).to eq("Could not find gem 'missing'.")
     end
 
-    context "given a default gem shippped in ruby" do
+    context "given a default gem shippped in ruby", :ruby_repo do
       it "prints information about the default gem" do
         bundle! "info rdoc"
         expect(out).to include("* rdoc")

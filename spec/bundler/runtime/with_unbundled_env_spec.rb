@@ -39,7 +39,7 @@ RSpec.describe "Bundler.with_env helpers" do
       end
     end
 
-    it "works with nested bundle exec invocations" do
+    it "works with nested bundle exec invocations", :ruby_repo do
       create_file("exe.rb", <<-'RUBY')
         count = ARGV.first.to_i
         exit if count < 0
@@ -95,7 +95,7 @@ RSpec.describe "Bundler.with_env helpers" do
       expect(last_command.stdboth).not_to include("-rbundler/setup")
     end
 
-    it "should restore RUBYLIB" do
+    it "should restore RUBYLIB", :ruby_repo do
       create_file("source.rb", <<-RUBY)
         print #{modified_env}['RUBYLIB']
       RUBY
