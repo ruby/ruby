@@ -1,11 +1,7 @@
 # frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems'
-require 'bundler/errors'
-begin
-  require 'rubygems/package_task'
-rescue LoadError, Bundler::GemfileNotFound
-end
+require 'rubygems/package_task'
 
 class TestGemPackageTask < Gem::TestCase
 
@@ -81,4 +77,4 @@ class TestGemPackageTask < Gem::TestCase
     assert_equal 'pkg/nokogiri-1.5.0-java', pkg.package_dir_path
   end
 
-end if defined?(Rake::PackageTask)
+end
