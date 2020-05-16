@@ -829,7 +829,7 @@ G
       system_gems "rack-1.0.0", "rack-0.9.1", :path => default_bundle_path
     end
 
-    it "activates the correct gem when ruby version matches" do
+    it "activates the correct gem when ruby version matches", :ruby_repo do
       gemfile <<-G
         gem "rack", "0.9.1"
 
@@ -852,7 +852,7 @@ G
       expect(out).to include("0.9.1")
     end
 
-    it "fails when the ruby version doesn't match" do
+    it "fails when the ruby version doesn't match", :ruby_repo do
       gemfile <<-G
         gem "rack", "0.9.1"
 
@@ -863,7 +863,7 @@ G
       should_be_ruby_version_incorrect
     end
 
-    it "fails when the engine doesn't match" do
+    it "fails when the engine doesn't match", :ruby_repo do
       gemfile <<-G
         gem "rack", "0.9.1"
 
@@ -885,7 +885,7 @@ G
     #   should_be_engine_version_incorrect
     # end
 
-    it "fails when patchlevel doesn't match" do
+    it "fails when patchlevel doesn't match", :ruby_repo do
       gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
