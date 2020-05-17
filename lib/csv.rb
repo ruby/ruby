@@ -963,7 +963,7 @@ class CSV
     # See {Options for Parsing}[#class-CSV-label-Options+for+Parsing].
     #
     def parse_line(line, **options)
-      new(line, **options).shift
+      new(line, **options).each.first
     end
 
     #
