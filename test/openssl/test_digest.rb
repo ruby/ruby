@@ -54,7 +54,7 @@ class OpenSSL::TestDigest < OpenSSL::TestCase
   end
 
   def test_digest_constants
-    %w{MD4 MD5 RIPEMD160 SHA1 SHA224 SHA256 SHA384 SHA512}.each do |name|
+    %w{MD5 SHA1 SHA224 SHA256 SHA384 SHA512}.each do |name|
       assert_not_nil(OpenSSL::Digest.new(name))
       klass = OpenSSL::Digest.const_get(name.tr('-', '_'))
       assert_not_nil(klass.new)
