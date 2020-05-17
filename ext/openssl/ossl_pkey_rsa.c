@@ -47,125 +47,28 @@ VALUE eRSAError;
 /*
  * Private
  */
-struct rsa_blocking_gen_arg {
-    RSA *rsa;
-    BIGNUM *e;
-    int size;
-    BN_GENCB *cb;
-    int result;
-};
-
-static void *
-rsa_blocking_gen(void *arg)
-{
-    struct rsa_blocking_gen_arg *gen = (struct rsa_blocking_gen_arg *)arg;
-    gen->result = RSA_generate_key_ex(gen->rsa, gen->size, gen->e, gen->cb);
-    return 0;
-}
-
-static RSA *
-rsa_generate(int size, unsigned long exp)
-{
-    int i;
-    struct ossl_generate_cb_arg cb_arg = { 0 };
-    struct rsa_blocking_gen_arg gen_arg;
-    RSA *rsa = RSA_new();
-    BIGNUM *e = BN_new();
-    BN_GENCB *cb = BN_GENCB_new();
-
-    if (!rsa || !e || !cb) {
-	RSA_free(rsa);
-	BN_free(e);
-	BN_GENCB_free(cb);
-        ossl_raise(eRSAError, "malloc failure");
-    }
-    for (i = 0; i < (int)sizeof(exp) * 8; ++i) {
-	if (exp & (1UL << i)) {
-	    if (BN_set_bit(e, i) == 0) {
-		BN_free(e);
-		RSA_free(rsa);
-		BN_GENCB_free(cb);
-                ossl_raise(eRSAError, "BN_set_bit");
-	    }
-	}
-    }
-
-    if (rb_block_given_p())
-	cb_arg.yield = 1;
-    BN_GENCB_set(cb, ossl_generate_cb_2, &cb_arg);
-    gen_arg.rsa = rsa;
-    gen_arg.e = e;
-    gen_arg.size = size;
-    gen_arg.cb = cb;
-    if (cb_arg.yield == 1) {
-	/* we cannot release GVL when callback proc is supplied */
-	rsa_blocking_gen(&gen_arg);
-    } else {
-	/* there's a chance to unblock */
-	rb_thread_call_without_gvl(rsa_blocking_gen, &gen_arg, ossl_generate_cb_stop, &cb_arg);
-    }
-
-    BN_GENCB_free(cb);
-    BN_free(e);
-    if (!gen_arg.result) {
-	RSA_free(rsa);
-	if (cb_arg.state) {
-	    /* must clear OpenSSL error stack */
-	    ossl_clear_error();
-	    rb_jump_tag(cb_arg.state);
-	}
-        ossl_raise(eRSAError, "RSA_generate_key_ex");
-    }
-
-    return rsa;
-}
-
 /*
  * call-seq:
- *   RSA.generate(size)           => RSA instance
- *   RSA.generate(size, exponent) => RSA instance
+ *   RSA.new -> rsa
+ *   RSA.new(encoded_key [, passphrase]) -> rsa
+ *   RSA.new(encoded_key) { passphrase } -> rsa
+ *   RSA.new(size [, exponent]) -> rsa
  *
- * Generates an RSA keypair.  _size_ is an integer representing the desired key
- * size.  Keys smaller than 1024 should be considered insecure.  _exponent_ is
- * an odd number normally 3, 17, or 65537.
- */
-static VALUE
-ossl_rsa_s_generate(int argc, VALUE *argv, VALUE klass)
-{
-/* why does this method exist?  why can't initialize take an optional exponent? */
-    EVP_PKEY *pkey;
-    RSA *rsa;
-    VALUE size, exp;
-    VALUE obj;
-
-    rb_scan_args(argc, argv, "11", &size, &exp);
-    obj = rb_obj_alloc(klass);
-    GetPKey(obj, pkey);
-
-    rsa = rsa_generate(NUM2INT(size), NIL_P(exp) ? RSA_F4 : NUM2ULONG(exp));
-    if (!EVP_PKEY_assign_RSA(pkey, rsa)) {
-        RSA_free(rsa);
-        ossl_raise(eRSAError, "EVP_PKEY_assign_RSA");
-    }
-    return obj;
-}
-
-/*
- * call-seq:
- *   RSA.new(size [, exponent])        => RSA instance
- *   RSA.new(encoded_key)              => RSA instance
- *   RSA.new(encoded_key, pass_phrase) => RSA instance
+ * Generates or loads an \RSA keypair.
  *
- * Generates or loads an RSA keypair.  If an integer _key_size_ is given it
- * represents the desired key size.  Keys less than 1024 bits should be
- * considered insecure.
+ * If called without arguments, creates a new instance with no key components
+ * set. They can be set individually by #set_key, #set_factors, and
+ * #set_crt_params.
  *
- * A key can instead be loaded from an _encoded_key_ which must be PEM or DER
- * encoded.  A _pass_phrase_ can be used to decrypt the key.  If none is given
- * OpenSSL will prompt for the pass phrase.
+ * If called with a String, tries to parse as DER or PEM encoding of an \RSA key.
+ * Note that, if _passphrase_ is not specified but the key is encrypted with a
+ * passphrase, \OpenSSL will prompt for it.
+ * See also OpenSSL::PKey.read which can parse keys of any kinds.
  *
- * = Examples
+ * If called with a number, generates a new key pair. This form works as an
+ * alias of RSA.generate.
  *
+ * Examples:
  *   OpenSSL::PKey::RSA.new 2048
  *   OpenSSL::PKey::RSA.new File.read 'rsa.pem'
  *   OpenSSL::PKey::RSA.new File.read('rsa.pem'), 'my pass phrase'
@@ -179,14 +82,12 @@ ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
     VALUE arg, pass;
 
     GetPKey(self, pkey);
+    /* The RSA.new(size, generator) form is handled by lib/openssl/pkey.rb */
     rb_scan_args(argc, argv, "02", &arg, &pass);
     if (argc == 0) {
 	rsa = RSA_new();
         if (!rsa)
             ossl_raise(eRSAError, "RSA_new");
-    }
-    else if (RB_INTEGER_TYPE_P(arg)) {
-	rsa = rsa_generate(NUM2INT(arg), NIL_P(pass) ? RSA_F4 : NUM2ULONG(pass));
     }
     else {
 	pass = ossl_pem_passwd_value(pass);
@@ -832,7 +733,6 @@ Init_ossl_rsa(void)
      */
     cRSA = rb_define_class_under(mPKey, "RSA", cPKey);
 
-    rb_define_singleton_method(cRSA, "generate", ossl_rsa_s_generate, -1);
     rb_define_method(cRSA, "initialize", ossl_rsa_initialize, -1);
     rb_define_method(cRSA, "initialize_copy", ossl_rsa_initialize_copy, 1);
 
