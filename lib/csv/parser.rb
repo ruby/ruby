@@ -708,7 +708,7 @@ class CSV
     if SCANNER_TEST
       class UnoptimizedStringIO
         def initialize(string)
-          @io = StringIO.new(string)
+          @io = StringIO.new(string, "rb:#{string.encoding}")
         end
 
         def gets(*args)
