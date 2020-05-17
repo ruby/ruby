@@ -5,31 +5,26 @@ if defined?(OpenSSL) && defined?(OpenSSL::PKey::DSA)
 
 class OpenSSL::TestPKeyDSA < OpenSSL::PKeyTestCase
   def test_private
-    key = OpenSSL::PKey::DSA.new(256)
-    assert(key.private?)
+    key = Fixtures.pkey("dsa1024")
+    assert_equal true, key.private?
     key2 = OpenSSL::PKey::DSA.new(key.to_der)
-    assert(key2.private?)
+    assert_equal true, key2.private?
     key3 = key.public_key
-    assert(!key3.private?)
+    assert_equal false, key3.private?
     key4 = OpenSSL::PKey::DSA.new(key3.to_der)
-    assert(!key4.private?)
+    assert_equal false, key4.private?
   end
 
   def test_new
-    key = OpenSSL::PKey::DSA.new 256
+    key = OpenSSL::PKey::DSA.new(2048)
     pem  = key.public_key.to_pem
     OpenSSL::PKey::DSA.new pem
-    if $0 == __FILE__
-      assert_nothing_raised {
-        key = OpenSSL::PKey::DSA.new 2048
-      }
-    end
   end
 
   def test_new_break
-    assert_nil(OpenSSL::PKey::DSA.new(512) { break })
+    assert_nil(OpenSSL::PKey::DSA.new(2048) { break })
     assert_raise(RuntimeError) do
-      OpenSSL::PKey::DSA.new(512) { raise }
+      OpenSSL::PKey::DSA.new(2048) { raise }
     end
   end
 
@@ -184,7 +179,7 @@ fWLOqqkzFeRrYMDzUpl36XktY6Yq8EJYlW9pCMmBVNy/dQ==
   end
 
   def test_dup
-    key = OpenSSL::PKey::DSA.new(256)
+    key = Fixtures.pkey("dsa1024")
     key2 = key.dup
     assert_equal key.params, key2.params
     key2.set_pqg(key2.p + 1, key2.q, key2.g)

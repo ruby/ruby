@@ -88,6 +88,36 @@ module OpenSSL::PKey
 
   class DSA
     include OpenSSL::Marshal
+
+    class << self
+      # :call-seq:
+      #    DSA.generate(size) -> dsa
+      #
+      # Creates a new DSA instance by generating a private/public key pair
+      # from scratch.
+      #
+      # See also OpenSSL::PKey.generate_parameters and
+      # OpenSSL::PKey.generate_key.
+      #
+      # +size+::
+      #   The desired key size in bits.
+      def generate(size, &blk)
+        dsaparams = OpenSSL::PKey.generate_parameters("DSA", {
+          "dsa_paramgen_bits" => size,
+        }, &blk)
+        OpenSSL::PKey.generate_key(dsaparams)
+      end
+
+      # Handle DSA.new(size) form here; new(str) and new() forms
+      # are handled by #initialize
+      def new(*args, &blk) # :nodoc:
+        if args[0].is_a?(Integer)
+          generate(*args, &blk)
+        else
+          super
+        end
+      end
+    end
   end
 
   if defined?(EC)

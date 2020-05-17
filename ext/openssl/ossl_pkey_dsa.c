@@ -46,126 +46,39 @@ VALUE eDSAError;
 /*
  * Private
  */
-struct dsa_blocking_gen_arg {
-    DSA *dsa;
-    int size;
-    int *counter;
-    unsigned long *h;
-    BN_GENCB *cb;
-    int result;
-};
-
-static void *
-dsa_blocking_gen(void *arg)
-{
-    struct dsa_blocking_gen_arg *gen = (struct dsa_blocking_gen_arg *)arg;
-    gen->result = DSA_generate_parameters_ex(gen->dsa, gen->size, NULL, 0,
-					     gen->counter, gen->h, gen->cb);
-    return 0;
-}
-
-static DSA *
-dsa_generate(int size)
-{
-    struct ossl_generate_cb_arg cb_arg = { 0 };
-    struct dsa_blocking_gen_arg gen_arg;
-    DSA *dsa = DSA_new();
-    BN_GENCB *cb = BN_GENCB_new();
-    int counter;
-    unsigned long h;
-
-    if (!dsa || !cb) {
-        DSA_free(dsa);
-        BN_GENCB_free(cb);
-        ossl_raise(eDSAError, "malloc failure");
-    }
-
-    if (rb_block_given_p())
-	cb_arg.yield = 1;
-    BN_GENCB_set(cb, ossl_generate_cb_2, &cb_arg);
-    gen_arg.dsa = dsa;
-    gen_arg.size = size;
-    gen_arg.counter = &counter;
-    gen_arg.h = &h;
-    gen_arg.cb = cb;
-    if (cb_arg.yield == 1) {
-	/* we cannot release GVL when callback proc is supplied */
-	dsa_blocking_gen(&gen_arg);
-    } else {
-	/* there's a chance to unblock */
-	rb_thread_call_without_gvl(dsa_blocking_gen, &gen_arg, ossl_generate_cb_stop, &cb_arg);
-    }
-
-    BN_GENCB_free(cb);
-    if (!gen_arg.result) {
-	DSA_free(dsa);
-	if (cb_arg.state) {
-	    /* Clear OpenSSL error queue before re-raising. By the way, the
-	     * documentation of DSA_generate_parameters_ex() says the error code
-	     * can be obtained by ERR_get_error(), but the default
-	     * implementation, dsa_builtin_paramgen() doesn't put any error... */
-	    ossl_clear_error();
-	    rb_jump_tag(cb_arg.state);
-	}
-        ossl_raise(eDSAError, "DSA_generate_parameters_ex");
-    }
-
-    if (!DSA_generate_key(dsa)) {
-        DSA_free(dsa);
-        ossl_raise(eDSAError, "DSA_generate_key");
-    }
-
-    return dsa;
-}
-
-/*
- *  call-seq:
- *    DSA.generate(size) -> dsa
- *
- * Creates a new DSA instance by generating a private/public key pair
- * from scratch.
- *
- * === Parameters
- * * _size_ is an integer representing the desired key size.
- *
- */
-static VALUE
-ossl_dsa_s_generate(VALUE klass, VALUE size)
-{
-    EVP_PKEY *pkey;
-    DSA *dsa;
-    VALUE obj;
-
-    obj = rb_obj_alloc(klass);
-    GetPKey(obj, pkey);
-
-    dsa = dsa_generate(NUM2INT(size));
-    if (!EVP_PKEY_assign_DSA(pkey, dsa)) {
-        DSA_free(dsa);
-        ossl_raise(eDSAError, "EVP_PKEY_assign_DSA");
-    }
-    return obj;
-}
-
 /*
  *  call-seq:
  *    DSA.new -> dsa
- *    DSA.new(size) -> dsa
  *    DSA.new(string [, pass]) -> dsa
+ *    DSA.new(size) -> dsa
  *
  * Creates a new DSA instance by reading an existing key from _string_.
  *
- * === Parameters
- * * _size_ is an integer representing the desired key size.
- * * _string_ contains a DER or PEM encoded key.
- * * _pass_ is a string that contains an optional password.
+ * If called without arguments, creates a new instance with no key components
+ * set. They can be set individually by #set_pqg and #set_key.
  *
- * === Examples
- *  DSA.new -> dsa
- *  DSA.new(1024) -> dsa
- *  DSA.new(File.read('dsa.pem')) -> dsa
- *  DSA.new(File.read('dsa.pem'), 'mypassword') -> dsa
+ * If called with a String, tries to parse as DER or PEM encoding of a \DSA key.
+ * See also OpenSSL::PKey.read which can parse keys of any kinds.
  *
+ * If called with a number, generates random parameters and a key pair. This
+ * form works as an alias of DSA.generate.
+ *
+ * +string+::
+ *   A String that contains a DER or PEM encoded key.
+ * +pass+::
+ *   A String that contains an optional password.
+ * +size+::
+ *   See DSA.generate.
+ *
+ * Examples:
+ *   p OpenSSL::PKey::DSA.new(1024)
+ *   #=> #<OpenSSL::PKey::DSA:0x000055a8d6025bf0 oid=DSA>
+ *
+ *   p OpenSSL::PKey::DSA.new(File.read('dsa.pem'))
+ *   #=> #<OpenSSL::PKey::DSA:0x000055555d6b8110 oid=DSA>
+ *
+ *   p OpenSSL::PKey::DSA.new(File.read('dsa.pem'), 'mypassword')
+ *   #=> #<OpenSSL::PKey::DSA:0x0000556f973c40b8 oid=DSA>
  */
 static VALUE
 ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
@@ -176,14 +89,12 @@ ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
     VALUE arg, pass;
 
     GetPKey(self, pkey);
+    /* The DSA.new(size, generator) form is handled by lib/openssl/pkey.rb */
     rb_scan_args(argc, argv, "02", &arg, &pass);
     if (argc == 0) {
         dsa = DSA_new();
         if (!dsa)
             ossl_raise(eDSAError, "DSA_new");
-    }
-    else if (argc == 1 && RB_INTEGER_TYPE_P(arg)) {
-        dsa = dsa_generate(NUM2INT(arg));
     }
     else {
 	pass = ossl_pem_passwd_value(pass);
@@ -553,7 +464,6 @@ Init_ossl_dsa(void)
      */
     cDSA = rb_define_class_under(mPKey, "DSA", cPKey);
 
-    rb_define_singleton_method(cDSA, "generate", ossl_dsa_s_generate, 1);
     rb_define_method(cDSA, "initialize", ossl_dsa_initialize, -1);
     rb_define_method(cDSA, "initialize_copy", ossl_dsa_initialize_copy, 1);
 
