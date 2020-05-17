@@ -102,7 +102,7 @@ module Test
           (options[:filter] ||= []) << a
         end
 
-        opts.on '--test-order=random|alpha|sorted', [:random, :alpha, :sorted] do |a|
+        opts.on '--test-order=random|alpha|sorted|nosort', [:random, :alpha, :sorted, :nosort] do |a|
           MiniTest::Unit::TestCase.test_order = a
         end
       end

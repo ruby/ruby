@@ -1404,11 +1404,14 @@ module MiniTest
       end
 
       def self.test_suites # :nodoc:
+        suites = @@test_suites.keys
         case self.test_order
         when :random
-          @@test_suites.keys.shuffle
+          suites.shuffle
+        when :nosort
+          suites
         else
-          @@test_suites.keys.sort_by { |ts| ts.name.to_s }
+          suites.sort_by { |ts| ts.name.to_s }
         end
       end
 
@@ -1424,6 +1427,8 @@ module MiniTest
           methods.sort.sort_by { rand max }
         when :alpha, :sorted then
           methods.sort
+        when :nosort
+          methods
         else
           raise "Unknown test_order: #{self.test_order.inspect}"
         end
