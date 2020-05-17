@@ -109,7 +109,7 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 #
 # The most generic interface of the library is:
 #
-#    csv = CSV.new(string_or_io, **options)
+#    csv = CSV.new(io, **options)
 #
 #    # Reading: IO object should be open for read
 #    csv.read # => array of rows
@@ -809,19 +809,37 @@ class CSV
       csv.string        # return final String
     end
 
+    # :call-seq:
+    #   CSV.generate_line(ary)
+    #   CSV.generate_line(ary, **options)
     #
-    # This method is a shortcut for converting a single row (Array) into a CSV
-    # String.
+    # Returns the \String created by generating \CSV from +ary+
+    # using the specified +options+.
     #
-    # See {Options for Generating}[#class-CSV-label-Options+for+Generating].
+    # Argument +ary+ must be an \Array.
     #
-    # This method accepts an additional option, <tt>:encoding</tt>, which sets the base
-    # Encoding for the output. This method will try to guess your Encoding from
-    # the first non-+nil+ field in +row+, if possible, but you may need to use
-    # this parameter as a backup plan.
+    # Special options:
+    # * Option <tt>:row_sep</tt> defaults to <tt>$INPUT_RECORD_SEPARATOR</tt>
+    #   (<tt>$/</tt>).:
+    #     $INPUT_RECORD_SEPARATOR # => "\n"
+    # * This method accepts an additional option, <tt>:encoding</tt>, which sets the base
+    #   Encoding for the output. This method will try to guess your Encoding from
+    #   the first non-+nil+ field in +row+, if possible, but you may need to use
+    #   this parameter as a backup plan.
     #
-    # The <tt>:row_sep</tt> +option+ defaults to <tt>$INPUT_RECORD_SEPARATOR</tt>
-    # (<tt>$/</tt>) when calling this method.
+    # For other +options+,
+    # see {Options for Generating}[#class-CSV-label-Options+for+Generating].
+    #
+    # ---
+    #
+    # Returns the \String generated from an \Array:
+    #   CSV.generate_line(['foo', '0']) # => "foo,0\n"
+    #
+    # ---
+    #
+    # Raises an exception if +ary+ is not an \Array:
+    #   # Raises NoMethodError (undefined method `find' for :foo:Symbol)
+    #   CSV.generate_line(:foo)
     #
     def generate_line(row, **options)
       options = {row_sep: $INPUT_RECORD_SEPARATOR}.merge(options)
@@ -955,12 +973,41 @@ class CSV
       end
     end
 
+    # :call-seq:
+    #   CSV.parse_line(string)
+    #   CSV.parse_line(io)
+    #   CSV.parse_line(string, **options)
+    #   CSV.parse_line(io, **options)
     #
-    # This method is a shortcut for converting a single line of a CSV String into
-    # an Array. Note that if +line+ contains multiple rows, anything beyond the
-    # first row is ignored.
+    # Returns the new \Array created by parsing the first line of +string+ or +io+
+    # using the specified +options+.
     #
-    # See {Options for Parsing}[#class-CSV-label-Options+for+Parsing].
+    # Argument +string+ should be a \String object;
+    # it will be put into a new \StringIO object positioned at the beginning.
+    #
+    # Argument +io+ should be an \IO object; it will be positioned at the beginning.
+    #
+    # For +options+, see {Options for Parsing}[#class-CSV-label-Options+for+Parsing].
+    #
+    # ---
+    # Returns data from the first line from a String object:
+    #   CSV.parse_line('foo,0') # => ["foo", "0"]
+    #
+    # Returns data from the first line from a File object:
+    #   File.write('t.csv', 'foo,0')
+    #   CSV.parse_line(File.open('t.csv')) # => ["foo", "0"]
+    #
+    # Ignores lines after the first:
+    #   CSV.parse_line("foo,0\nbar,1\nbaz,2") # => ["foo", "0"]
+    #
+    # Returns +nil+ if the argument is an empty \String:
+    #   CSV.parse_line('') # => nil
+    #
+    # ---
+    #
+    # Raises an exception if the argument is +nil+:
+    #   # Raises ArgumentError (Cannot parse nil as CSV):
+    #   CSV.parse_line(nil)
     #
     def parse_line(line, **options)
       new(line, **options).each.first
@@ -1008,22 +1055,49 @@ class CSV
     end
   end
 
+  # :call-seq:
+  #   CSV.new(string)
+  #   CSV.new(io)
+  #   CSV.new(string, **options)
+  #   CSV.new(io, **options)
   #
-  # This constructor will wrap either a String or IO object passed in +data+ for
-  # reading and/or writing. In addition to the CSV instance methods, several IO
-  # methods are delegated. (See CSV::open() for a complete list.) If you pass
-  # a String for +data+, you can later retrieve it (after writing to it, for
-  # example) with CSV.string().
+  # Returns the new \CSV object created using +string+ or +io+
+  # and the specified +options+.
   #
-  # Note that a wrapped String will be positioned at the beginning (for
-  # reading). If you want it at the end (for writing), use CSV::generate().
-  # If you want any other positioning, pass a preset StringIO object instead.
+  # Argument +string+ should be a \String object;
+  # it will be put into a new \StringIO object positioned at the beginning.
   #
-  # See {Options for Parsing}[#class-CSV-label-Options+for+Parsing]
-  # and {Options for Generating}[#class-CSV-label-Options+for+Generating].
+  # Argument +io+ should be an \IO object; it will be positioned at the beginning.
   #
-  # Options cannot be overridden in the instance methods for performance reasons,
-  # so be sure to set what you want here.
+  # To position at the end, for appending, use method CSV.generate.
+  # For any other positioning, pass a preset StringIO object instead.
+  #
+  # In addition to the \CSV instance methods, several \IO
+  # methods are delegated. See CSV::open for a complete list.
+  #
+  # For +options+, see:
+  # * {Options for Parsing}[#class-CSV-label-Options+for+Parsing]
+  # * {Options for Generating}[#class-CSV-label-Options+for+Generating]
+  #
+  # For performance reasons, the options cannot be overridden
+  # in a \CSV object, so the options specified here will endure.
+  #
+  # ---
+  #
+  # Create a \CSV object from a \String object:
+  #   csv = CSV.new('foo,0')
+  #   csv # => #<CSV io_type:StringIO encoding:UTF-8 lineno:0 col_sep:"," row_sep:"\n" quote_char:"\"">
+  #
+  # Create a \CSV object from a \File object:
+  #   File.write('t.csv', 'foo,0')
+  #   csv = CSV.new(File.open('t.csv'))
+  #   csv # => #<CSV io_type:File io_path:"t.csv" encoding:UTF-8 lineno:0 col_sep:"," row_sep:"\n" quote_char:"\"">
+  #
+  # ---
+  #
+  # Raises an exception if the argument is +nil+:
+  #   # Raises ArgumentError (Cannot parse nil as CSV):
+  #   CSV.new(nil)
   #
   def initialize(data,
                  col_sep: ",",
