@@ -268,34 +268,6 @@ ossl_dh_get_params(VALUE self)
 
 /*
  *  call-seq:
- *     dh.to_text -> aString
- *
- * Prints all parameters of key to buffer
- * INSECURE: PRIVATE INFORMATIONS CAN LEAK OUT!!!
- * Don't use :-)) (I's up to you)
- */
-static VALUE
-ossl_dh_to_text(VALUE self)
-{
-    DH *dh;
-    BIO *out;
-    VALUE str;
-
-    GetDH(self, dh);
-    if (!(out = BIO_new(BIO_s_mem()))) {
-	ossl_raise(eDHError, NULL);
-    }
-    if (!DHparams_print(out, dh)) {
-	BIO_free(out);
-	ossl_raise(eDHError, NULL);
-    }
-    str = ossl_membio2str(out);
-
-    return str;
-}
-
-/*
- *  call-seq:
  *     dh.public_key -> aDH
  *
  * Returns a new DH instance that carries just the public information, i.e.
@@ -426,7 +398,6 @@ Init_ossl_dh(void)
     rb_define_method(cDH, "initialize_copy", ossl_dh_initialize_copy, 1);
     rb_define_method(cDH, "public?", ossl_dh_is_public, 0);
     rb_define_method(cDH, "private?", ossl_dh_is_private, 0);
-    rb_define_method(cDH, "to_text", ossl_dh_to_text, 0);
     rb_define_method(cDH, "export", ossl_dh_export, 0);
     rb_define_alias(cDH, "to_pem", "export");
     rb_define_alias(cDH, "to_s", "export");

@@ -589,36 +589,6 @@ ossl_rsa_get_params(VALUE self)
 
 /*
  * call-seq:
- *   rsa.to_text => String
- *
- * THIS METHOD IS INSECURE, PRIVATE INFORMATION CAN LEAK OUT!!!
- *
- * Dumps all parameters of a keypair to a String
- *
- * Don't use :-)) (It's up to you)
- */
-static VALUE
-ossl_rsa_to_text(VALUE self)
-{
-    RSA *rsa;
-    BIO *out;
-    VALUE str;
-
-    GetRSA(self, rsa);
-    if (!(out = BIO_new(BIO_s_mem()))) {
-	ossl_raise(eRSAError, NULL);
-    }
-    if (!RSA_print(out, rsa, 0)) { /* offset = 0 */
-	BIO_free(out);
-	ossl_raise(eRSAError, NULL);
-    }
-    str = ossl_membio2str(out);
-
-    return str;
-}
-
-/*
- * call-seq:
  *    rsa.public_key -> RSA
  *
  * Makes new RSA instance containing the public key from the private key.
@@ -738,7 +708,6 @@ Init_ossl_rsa(void)
 
     rb_define_method(cRSA, "public?", ossl_rsa_is_public, 0);
     rb_define_method(cRSA, "private?", ossl_rsa_is_private, 0);
-    rb_define_method(cRSA, "to_text", ossl_rsa_to_text, 0);
     rb_define_method(cRSA, "export", ossl_rsa_export, -1);
     rb_define_alias(cRSA, "to_pem", "export");
     rb_define_alias(cRSA, "to_s", "export");

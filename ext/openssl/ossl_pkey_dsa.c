@@ -266,34 +266,6 @@ ossl_dsa_get_params(VALUE self)
 
 /*
  *  call-seq:
- *    dsa.to_text -> aString
- *
- * Prints all parameters of key to buffer
- * INSECURE: PRIVATE INFORMATIONS CAN LEAK OUT!!!
- * Don't use :-)) (I's up to you)
- */
-static VALUE
-ossl_dsa_to_text(VALUE self)
-{
-    DSA *dsa;
-    BIO *out;
-    VALUE str;
-
-    GetDSA(self, dsa);
-    if (!(out = BIO_new(BIO_s_mem()))) {
-	ossl_raise(eDSAError, NULL);
-    }
-    if (!DSA_print(out, dsa, 0)) { /* offset = 0 */
-	BIO_free(out);
-	ossl_raise(eDSAError, NULL);
-    }
-    str = ossl_membio2str(out);
-
-    return str;
-}
-
-/*
- *  call-seq:
  *    dsa.public_key -> aDSA
  *
  * Returns a new DSA instance that carries just the public key information.
@@ -469,7 +441,6 @@ Init_ossl_dsa(void)
 
     rb_define_method(cDSA, "public?", ossl_dsa_is_public, 0);
     rb_define_method(cDSA, "private?", ossl_dsa_is_private, 0);
-    rb_define_method(cDSA, "to_text", ossl_dsa_to_text, 0);
     rb_define_method(cDSA, "export", ossl_dsa_export, -1);
     rb_define_alias(cDSA, "to_pem", "export");
     rb_define_alias(cDSA, "to_s", "export");

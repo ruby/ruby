@@ -539,6 +539,43 @@ ossl_pkey_inspect(VALUE self)
                       OBJ_nid2sn(nid));
 }
 
+/*
+ * call-seq:
+ *    pkey.to_text -> string
+ *
+ * Dumps key parameters, public key, and private key components contained in
+ * the key into a human-readable text.
+ *
+ * This is intended for debugging purpose.
+ *
+ * See also the man page EVP_PKEY_print_private(3).
+ */
+static VALUE
+ossl_pkey_to_text(VALUE self)
+{
+    EVP_PKEY *pkey;
+    BIO *bio;
+
+    GetPKey(self, pkey);
+    if (!(bio = BIO_new(BIO_s_mem())))
+        ossl_raise(ePKeyError, "BIO_new");
+
+    if (EVP_PKEY_print_private(bio, pkey, 0, NULL) == 1)
+        goto out;
+    OSSL_BIO_reset(bio);
+    if (EVP_PKEY_print_public(bio, pkey, 0, NULL) == 1)
+        goto out;
+    OSSL_BIO_reset(bio);
+    if (EVP_PKEY_print_params(bio, pkey, 0, NULL) == 1)
+        goto out;
+
+    BIO_free(bio);
+    ossl_raise(ePKeyError, "EVP_PKEY_print_params");
+
+  out:
+    return ossl_membio2str(bio);
+}
+
 VALUE
 ossl_pkey_export_traditional(int argc, VALUE *argv, VALUE self, int to_der)
 {
@@ -1077,6 +1114,7 @@ Init_ossl_pkey(void)
     rb_define_method(cPKey, "initialize", ossl_pkey_initialize, 0);
     rb_define_method(cPKey, "oid", ossl_pkey_oid, 0);
     rb_define_method(cPKey, "inspect", ossl_pkey_inspect, 0);
+    rb_define_method(cPKey, "to_text", ossl_pkey_to_text, 0);
     rb_define_method(cPKey, "private_to_der", ossl_pkey_private_to_der, -1);
     rb_define_method(cPKey, "private_to_pem", ossl_pkey_private_to_pem, -1);
     rb_define_method(cPKey, "public_to_der", ossl_pkey_public_to_der, 0);

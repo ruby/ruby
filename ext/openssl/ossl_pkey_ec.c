@@ -412,32 +412,6 @@ ossl_ec_key_to_der(VALUE self)
     else
         return ossl_pkey_export_spki(self, 1);
 }
-
-/*
- *  call-seq:
- *     key.to_text   => String
- *
- *  See the OpenSSL documentation for EC_KEY_print()
- */
-static VALUE ossl_ec_key_to_text(VALUE self)
-{
-    EC_KEY *ec;
-    BIO *out;
-    VALUE str;
-
-    GetEC(self, ec);
-    if (!(out = BIO_new(BIO_s_mem()))) {
-	ossl_raise(eECError, "BIO_new(BIO_s_mem())");
-    }
-    if (!EC_KEY_print(out, ec, 0)) {
-	BIO_free(out);
-	ossl_raise(eECError, "EC_KEY_print");
-    }
-    str = ossl_membio2str(out);
-
-    return str;
-}
-
 /*
  *  call-seq:
  *     key.generate_key!   => self
@@ -1601,7 +1575,6 @@ void Init_ossl_ec(void)
     rb_define_method(cEC, "export", ossl_ec_key_export, -1);
     rb_define_alias(cEC, "to_pem", "export");
     rb_define_method(cEC, "to_der", ossl_ec_key_to_der, 0);
-    rb_define_method(cEC, "to_text", ossl_ec_key_to_text, 0);
 
 
     rb_define_alloc_func(cEC_GROUP, ossl_ec_group_alloc);
