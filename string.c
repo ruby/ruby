@@ -1579,7 +1579,7 @@ rb_str_resurrect(VALUE str)
  *  ---
  *
  *  With no arguments, returns the empty string with the Encoding <tt>ASCII-8BIT</tt>:
- *    s = Str.new
+ *    s = String.new
  *    s # => ""
  *    s.encoding # => #<Encoding:ASCII-8BIT>
  *
@@ -1611,12 +1611,12 @@ rb_str_resurrect(VALUE str)
  *  With keyword +capacity+, returns a copy of +str+;
  *  the given +capacity+ may set the size of the internal buffer,
  *  which may affect performance:
- *    String.new(capacity: 1) # => "
- *    String.new(capacity: 4096) # => "
+ *    String.new(capacity: 1) # => ""
+ *    String.new(capacity: 4096) # => ""
  *
  *  No exception is raised for zero or negative values:
- *    String.new(capacity: 0) # => "
- *    String.new(capacity: -1) # => "
+ *    String.new(capacity: 0) # => ""
+ *    String.new(capacity: -1) # => ""
  *
  *  ---
  *
