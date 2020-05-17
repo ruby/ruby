@@ -50,7 +50,7 @@ class CSV
       fields.collect.with_index do |field, index|
         if field.nil?
           field = @nil_value
-        elsif field.empty?
+        elsif field.is_a?(String) and field.empty?
           field = @empty_value unless @empty_value_is_empty_string
         end
         @converters.each do |converter|
