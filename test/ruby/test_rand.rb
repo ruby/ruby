@@ -2,14 +2,13 @@
 require 'test/unit'
 
 class TestRand < Test::Unit::TestCase
-  def assert_random_int(ws, m, init = 0)
+  def assert_random_int(m, init = 0, iterate: 5)
     srand(init)
     rnds = [Random.new(init)]
     rnds2 = [rnds[0].dup]
     rnds3 = [rnds[0].dup]
-    ws.each_with_index do |w, i|
-      w = w.to_i
-      assert_equal(w, rand(m))
+    iterate.times do |i|
+      w = rand(m)
       rnds.each do |rnd|
         assert_equal(w, rnd.rand(m))
       end
@@ -27,133 +26,97 @@ class TestRand < Test::Unit::TestCase
   end
 
   def test_mt
-    assert_random_int(%w(1067595299  955945823  477289528 4107218783 4228976476),
-                      0x100000000, 0x00000456_00000345_00000234_00000123)
+    assert_random_int(0x100000000, 0x00000456_00000345_00000234_00000123)
   end
 
   def test_0x3fffffff
-    assert_random_int(%w(209652396 398764591 924231285 404868288 441365315),
-                      0x3fffffff)
+    assert_random_int(0x3fffffff)
   end
 
   def test_0x40000000
-    assert_random_int(%w(209652396 398764591 924231285 404868288 441365315),
-                      0x40000000)
+    assert_random_int(0x40000000)
   end
 
   def test_0x40000001
-    assert_random_int(%w(209652396 398764591 924231285 441365315 192771779),
-                      0x40000001)
+    assert_random_int(0x40000001)
   end
 
   def test_0xffffffff
-    assert_random_int(%w(2357136044 2546248239 3071714933 3626093760 2588848963),
-                      0xffffffff)
+    assert_random_int(0xffffffff)
   end
 
   def test_0x100000000
-    assert_random_int(%w(2357136044 2546248239 3071714933 3626093760 2588848963),
-                      0x100000000)
+    assert_random_int(0x100000000)
   end
 
   def test_0x100000001
-    assert_random_int(%w(2546248239 1277901399 243580376 1171049868 2051556033),
-                      0x100000001)
+    assert_random_int(0x100000001)
   end
 
   def test_rand_0x100000000
-    assert_random_int(%w(4119812344 3870378946 80324654 4294967296 410016213),
-                      0x100000001, 311702798)
+    assert_random_int(0x100000001, 311702798)
   end
 
   def test_0x1000000000000
-    assert_random_int(%w(11736396900911
-                         183025067478208
-                         197104029029115
-                         130583529618791
-                         180361239846611),
-                      0x1000000000000)
+    assert_random_int(0x1000000000000)
   end
 
   def test_0x1000000000001
-    assert_random_int(%w(187121911899765
-                         197104029029115
-                         180361239846611
-                         236336749852452
-                         208739549485656),
-                      0x1000000000001)
+    assert_random_int(0x1000000000001)
   end
 
   def test_0x3fffffffffffffff
-    assert_random_int(%w(900450186894289455
-                         3969543146641149120
-                         1895649597198586619
-                         827948490035658087
-                         3203365596207111891),
-                      0x3fffffffffffffff)
+    assert_random_int(0x3fffffffffffffff)
   end
 
   def test_0x4000000000000000
-    assert_random_int(%w(900450186894289455
-                         3969543146641149120
-                         1895649597198586619
-                         827948490035658087
-                         3203365596207111891),
-                      0x4000000000000000)
+    assert_random_int(0x4000000000000000)
   end
 
   def test_0x4000000000000001
-    assert_random_int(%w(900450186894289455
-                         3969543146641149120
-                         1895649597198586619
-                         827948490035658087
-                         2279347887019741461),
-                      0x4000000000000001)
+    assert_random_int(0x4000000000000001)
   end
 
   def test_0x10000000000
-    ws = %w(455570294424 1073054410371 790795084744 2445173525 1088503892627)
-    assert_random_int(ws, 0x10000000000, 3)
+    assert_random_int(0x10000000000, 3)
   end
 
   def test_0x10000
-    ws = %w(2732 43567 42613 52416 45891)
-    assert_random_int(ws, 0x10000)
+    assert_random_int(0x10000)
+  end
+
+  def assert_same_numbers(type, *nums)
+    nums.each do |n|
+      assert_instance_of(type, n)
+    end
+    x = nums.shift
+    nums.each do |n|
+      assert_equal(x, n)
+    end
+    x
   end
 
   def test_types
-    srand(0)
-    rnd = Random.new(0)
-    assert_equal(44, rand(100.0))
-    assert_equal(44, rnd.rand(100))
-    assert_equal(1245085576965981900420779258691, rand((2**100).to_f))
-    assert_equal(1245085576965981900420779258691, rnd.rand(2**100))
-    assert_equal(914679880601515615685077935113, rand(-(2**100).to_f))
-
-    srand(0)
-    rnd = Random.new(0)
-    assert_equal(997707939797331598305742933184, rand(2**100))
-    assert_equal(997707939797331598305742933184, rnd.rand(2**100))
-    assert_in_delta(0.602763376071644, rand((2**100).coerce(0).first),
-                    0.000000000000001)
-    assert_raise(ArgumentError) {rnd.rand((2**100).coerce(0).first)}
-
-    srand(0)
-    rnd = Random.new(0)
-    assert_in_delta(0.548813503927325, rand(nil),
-                    0.000000000000001)
-    assert_in_delta(0.548813503927325, rnd.rand(),
-                    0.000000000000001)
-    srand(0)
-    rnd = Random.new(0)
     o = Object.new
-    def o.to_int; 100; end
-    assert_equal(44, rand(o))
-    assert_equal(44, rnd.rand(o))
-    assert_equal(47, rand(o))
-    assert_equal(47, rnd.rand(o))
-    assert_equal(64, rand(o))
-    assert_equal(64, rnd.rand(o))
+    class << o
+      def to_int; 100; end
+      def class; Integer; end
+    end
+
+    srand(0)
+    nums = [100.0, (2**100).to_f, (2**100), o, o, o].map do |m|
+      k = Integer
+      assert_kind_of(k, x = rand(m), m.inspect)
+      [m, k, x]
+    end
+    assert_kind_of(Integer, rand(-(2**100).to_f))
+
+    srand(0)
+    rnd = Random.new(0)
+    rnd2 = Random.new(0)
+    nums.each do |m, k, x|
+      assert_same_numbers(m.class, Random.rand(m), rnd.rand(m), rnd2.rand(m))
+    end
   end
 
   def test_srand
@@ -163,10 +126,13 @@ class TestRand < Test::Unit::TestCase
 
     srand(2**100)
     rnd = Random.new(2**100)
-    %w(3258412053).each {|w|
-      assert_equal(w.to_i, rand(0x100000000))
-      assert_equal(w.to_i, rnd.rand(0x100000000))
-    }
+    r = 3.times.map do
+      assert_same_numbers(Integer, rand(0x100000000), rnd.rand(0x100000000))
+    end
+    srand(2**100)
+    r.each do |n|
+      assert_same_numbers(Integer, n, rand(0x100000000))
+    end
   end
 
   def test_shuffle
@@ -177,17 +143,17 @@ class TestRand < Test::Unit::TestCase
   end
 
   def test_big_seed
-    assert_random_int(%w(2757555016), 0x100000000, 2**1000000-1)
+    assert_random_int(0x100000000, 2**1000000-1)
   end
 
   def test_random_gc
     r = Random.new(0)
-    %w(2357136044 2546248239 3071714933).each do |w|
-      assert_equal(w.to_i, r.rand(0x100000000))
+    3.times do
+      assert_kind_of(Integer, r.rand(0x100000000))
     end
     GC.start
-    %w(3626093760 2588848963 3684848379).each do |w|
-      assert_equal(w.to_i, r.rand(0x100000000))
+    3.times do
+      assert_kind_of(Integer, r.rand(0x100000000))
     end
   end
 
@@ -223,18 +189,12 @@ class TestRand < Test::Unit::TestCase
   def test_random_dup
     r1 = Random.new(0)
     r2 = r1.dup
-    %w(2357136044 2546248239 3071714933).each do |w|
-      assert_equal(w.to_i, r1.rand(0x100000000))
-    end
-    %w(2357136044 2546248239 3071714933).each do |w|
-      assert_equal(w.to_i, r2.rand(0x100000000))
+    3.times do
+      assert_same_numbers(Integer, r1.rand(0x100000000), r2.rand(0x100000000))
     end
     r2 = r1.dup
-    %w(3626093760 2588848963 3684848379).each do |w|
-      assert_equal(w.to_i, r1.rand(0x100000000))
-    end
-    %w(3626093760 2588848963 3684848379).each do |w|
-      assert_equal(w.to_i, r2.rand(0x100000000))
+    3.times do
+      assert_same_numbers(Integer, r1.rand(0x100000000), r2.rand(0x100000000))
     end
   end
 
@@ -343,50 +303,33 @@ END
   end
 
   def test_random_bytes
-    assert_random_bytes(Random.new(0))
-  end
-
-  def assert_random_bytes(r)
     srand(0)
+    r = Random.new(0)
+
     assert_equal("", r.bytes(0))
     assert_equal("", Random.bytes(0))
-    x = "\xAC".force_encoding("ASCII-8BIT")
-    assert_equal(x, r.bytes(1))
+
+    x = r.bytes(1)
+    assert_equal(1, x.bytesize)
     assert_equal(x, Random.bytes(1))
-    x = "/\xAA\xC4\x97u\xA6\x16\xB7\xC0\xCC".force_encoding("ASCII-8BIT")
-    assert_equal(x, r.bytes(10))
+
+    x = r.bytes(10)
+    assert_equal(10, x.bytesize)
     assert_equal(x, Random.bytes(10))
   end
 
   def test_random_range
     srand(0)
     r = Random.new(0)
-    %w(9 5 8).each {|w|
-      assert_equal(w.to_i, rand(5..9))
-      assert_equal(w.to_i, r.rand(5..9))
-    }
-    %w(-237 731 383).each {|w|
-      assert_equal(w.to_i, rand(-1000..1000))
-      assert_equal(w.to_i, r.rand(-1000..1000))
-    }
-    %w(1267650600228229401496703205382
-       1267650600228229401496703205384
-       1267650600228229401496703205383).each do |w|
-      assert_equal(w.to_i, rand(2**100+5..2**100+9))
-      assert_equal(w.to_i, r.rand(2**100+5..2**100+9))
-    end
-
-    v = rand(3.1..4)
-    assert_instance_of(Float, v, '[ruby-core:24679]')
-    assert_include(3.1..4, v)
-
-    v = r.rand(3.1..4)
-    assert_instance_of(Float, v, '[ruby-core:24679]')
-    assert_include(3.1..4, v)
-
     now = Time.now
-    assert_equal(now, rand(now..now))
-    assert_equal(now, r.rand(now..now))
+    [5..9, -1000..1000, 2**100+5..2**100+9, 3.1..4, now..(now+2)].each do |range|
+      3.times do
+        x = rand(range)
+        assert_instance_of(range.first.class, x)
+        assert_equal(x, r.rand(range))
+        assert_include(range, x)
+      end
+    end
   end
 
   def test_random_float
@@ -560,7 +503,8 @@ END
   end
 
   def test_default_seed
-    assert_separately([], <<-End)
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
       seed = Random::DEFAULT::seed
       rand1 = Random::DEFAULT::rand
       rand2 = Random.new(seed).rand
@@ -569,7 +513,7 @@ END
       srand seed
       rand3 = rand
       assert_equal(rand1, rand3)
-    End
+    end;
   end
 
   def test_urandom
