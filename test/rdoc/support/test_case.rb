@@ -76,7 +76,7 @@ class RDoc::TestCase < Test::Unit::TestCase
   # Abstract test-case teardown
 
   def teardown
-    ENV["HOME"] = @orig_home
+    ENV["HOME"] = @orig_home if defined?(@orig_home)
 
     super
   end
