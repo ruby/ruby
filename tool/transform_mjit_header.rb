@@ -27,7 +27,9 @@ module MJITHeader
   # These macros are relied on this script's transformation
   PREFIXED_MACROS = [
     'ALWAYS_INLINE',
+    'COLDFUNC',
     'inline',
+    'RBIMPL_ATTR_COLD',
   ]
 
   # For MinGW's ras.h. Those macros have its name in its definition and can't be preprocessed multiple times.
@@ -60,6 +62,15 @@ module MJITHeader
     'vm_opt_aref_with',
     'vm_opt_aset_with',
     'vm_opt_not',
+  ]
+
+  COLD_FUNCTIONS = %w[
+    setup_parameters_complex
+    vm_call_iseq_setup
+    vm_call_iseq_setup_2
+    vm_call_iseq_setup_tailcall
+    vm_call_method_each_type
+    vm_ic_update
   ]
 
   # Return start..stop of last decl in CODE ending STOP
@@ -254,6 +265,11 @@ while (decl_range = MJITHeader.find_decl(code, stop_pos))
   if MJITHeader::IGNORED_FUNCTIONS.include?(decl_name) && /#{MJITHeader::FUNC_HEADER_REGEXP}{/.match(decl)
     transform_logs[:def_to_decl] << decl_name
     code[decl_range] = decl.sub(/{.+}/m, ';')
+  elsif MJITHeader::COLD_FUNCTIONS.include?(decl_name) && match = /#{MJITHeader::FUNC_HEADER_REGEXP}{/.match(decl)
+    header = match[0].sub(/{\z/, '').strip
+    header = "static #{header.sub(/\A((static|inline) )+/, '')}"
+    decl[match.begin(0)...match.end(0)] = '{' # remove header
+    code[decl_range] = "\nCOLDFUNC #{header} #{decl}"
   elsif MJITHeader::ALWAYS_INLINED_FUNCTIONS.include?(decl_name) && match = /#{MJITHeader::FUNC_HEADER_REGEXP}{/.match(decl)
     header = match[0].sub(/{\z/, '').strip
     header = "static inline #{header.sub(/\A((static|inline) )+/, '')}"
