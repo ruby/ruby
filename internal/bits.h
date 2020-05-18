@@ -456,7 +456,7 @@ ntz_int32(uint32_t x)
 
 #elif MSC_VERSION_SINCE(1400)
     /* :FIXME: Is there any way to issue TZCNT instead of BSF, apart from using
-     *         assembly?  Because issueing LZCNT seems possible (see nlz.h). */
+     *         assembly?  Because issuing LZCNT seems possible (see nlz.h). */
     unsigned long r;
     return _BitScanForward(&r, x) ? (int)r : 32;
 
