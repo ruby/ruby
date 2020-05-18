@@ -618,13 +618,6 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     return unless defined?(gem)
 
     begin
-      gem 'psych', '>= 2.0.0'
-    rescue Gem::LoadError
-      # It's OK if the user does not have the psych gem installed.  We will
-      # attempt to require the stdlib version
-    end
-
-    begin
       # Try requiring the gem version *or* stdlib version of psych.
       require 'psych'
     rescue ::LoadError
