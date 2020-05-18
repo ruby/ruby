@@ -118,17 +118,12 @@ fastpath_applied_iseq_p(const CALL_INFO ci, const CALL_CACHE cc, const rb_iseq_t
 static bool
 maybe_special_const_class_p(const VALUE klass)
 {
-    if (klass == rb_cFalseClass
+    return klass == rb_cFalseClass
         || klass == rb_cNilClass
         || klass == rb_cTrueClass
         || klass == rb_cInteger
         || klass == rb_cSymbol
-        || klass == rb_cFloat) {
-        return true;
-    }
-    else {
-        return false;
-    }
+        || klass == rb_cFloat;
 }
 
 static int
