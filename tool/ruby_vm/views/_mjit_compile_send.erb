@@ -34,9 +34,11 @@
         fprintf(f, "{\n");
 
 % # JIT: Invalidate call cache if it requires vm_search_method. This allows to inline some of following things.
+        bool opt_class_of = !maybe_special_const_class_p(captured_cc->klass); // If true, use RBASIC_CLASS instead of CLASS_OF to reduce code size
         fprintf(f, "    const struct rb_callcache *cc = (const struct rb_callcache *)0x%"PRIxVALUE";\n", (VALUE)captured_cc);
         fprintf(f, "    const rb_callable_method_entry_t *cc_cme = (const rb_callable_method_entry_t *)0x%"PRIxVALUE";\n", (VALUE)vm_cc_cme(captured_cc));
-        fprintf(f, "    if (UNLIKELY(!vm_cc_valid_p(cc, cc_cme, CLASS_OF(stack[%d])))) {\n", b->stack_size + sp_inc - 1);
+        fprintf(f, "    const VALUE recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+        fprintf(f, "    if (UNLIKELY(%s || !vm_cc_valid_p(cc, cc_cme, %s(recv)))) {\n", opt_class_of ? "RB_SPECIAL_CONST_P(recv)" : "false", opt_class_of ? "RBASIC_CLASS" : "CLASS_OF");
         fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
         fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
         fprintf(f, "        goto send_cancel;\n");

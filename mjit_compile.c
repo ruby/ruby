@@ -114,6 +114,23 @@ fastpath_applied_iseq_p(const CALL_INFO ci, const CALL_CACHE cc, const rb_iseq_t
         && vm_call_iseq_optimizable_p(ci, cc); // CC_SET_FASTPATH condition
 }
 
+// Return true if an object of the klass may be a special const. See: rb_class_of
+static bool
+maybe_special_const_class_p(const VALUE klass)
+{
+    if (klass == rb_cFalseClass
+        || klass == rb_cNilClass
+        || klass == rb_cTrueClass
+        || klass == rb_cInteger
+        || klass == rb_cSymbol
+        || klass == rb_cFloat) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
 static int
 compile_case_dispatch_each(VALUE key, VALUE value, VALUE arg)
 {
