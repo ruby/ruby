@@ -1505,6 +1505,10 @@ static VALUE ossl_ec_point_mul(int argc, VALUE *argv, VALUE self)
 	if (EC_POINT_mul(group, point_result, bn_g, point_self, bn, ossl_bn_ctx) != 1)
 	    ossl_raise(eEC_POINT, NULL);
     } else {
+#if OPENSSL_VERSION_MAJOR+0 >= 3 || defined(LIBRESSL_VERSION_NUMBER)
+        rb_raise(rb_eNotImpError, "calling #mul with arrays is not" \
+                 "supported by this OpenSSL version");
+#else
 	/*
 	 * bignums | arg1[0] | arg1[1] | arg1[2] | ...
 	 * points  | self    | arg2[0] | arg2[1] | ...
@@ -1518,6 +1522,9 @@ static VALUE ossl_ec_point_mul(int argc, VALUE *argv, VALUE self)
 	Check_Type(arg2, T_ARRAY);
 	if (RARRAY_LEN(arg1) != RARRAY_LEN(arg2) + 1) /* arg2 must be 1 larger */
 	    ossl_raise(rb_eArgError, "bns must be 1 longer than points; see the documentation");
+
+        rb_warning("OpenSSL::PKey::EC::Point#mul(ary, ary) is deprecated; " \
+                   "use #mul(bn) form instead");
 
 	num = RARRAY_LEN(arg1);
 	bns_tmp = rb_ary_tmp_new(num);
@@ -1544,6 +1551,7 @@ static VALUE ossl_ec_point_mul(int argc, VALUE *argv, VALUE self)
 
 	ALLOCV_END(tmp_b);
 	ALLOCV_END(tmp_p);
+#endif
     }
 
     return result;
