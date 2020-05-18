@@ -73,7 +73,12 @@ module Fiddle
     #
     #   MyStruct = Fiddle::CStructBuilder.create(Fiddle::CUnion, types, members)
     #
-    #   obj = MyStruct.allocate
+    #   obj = MyStruct.malloc
+    #   begin
+    #     ...
+    #   ensure
+    #     Fiddle.free obj.to_ptr
+    #   end
     #
     def create(klass, types, members)
       new_class = Class.new(klass){
@@ -112,7 +117,7 @@ module Fiddle
 
     # Allocates a C struct with the +types+ provided.
     #
-    # When the instance is garbage collected, the C function +func+ is called.
+    # See Fiddle::Pointer.malloc for memory management issues.
     def CStructEntity.malloc(types, func = nil)
       addr = Fiddle.malloc(CStructEntity.size(types))
       CStructEntity.new(addr, types, func)
@@ -267,7 +272,7 @@ module Fiddle
 
     # Allocates a C union the +types+ provided.
     #
-    # When the instance is garbage collected, the C function +func+ is called.
+    # See Fiddle::Pointer.malloc for memory management issues.
     def CUnionEntity.malloc(types, func=nil)
       addr = Fiddle.malloc(CUnionEntity.size(types))
       CUnionEntity.new(addr, types, func)

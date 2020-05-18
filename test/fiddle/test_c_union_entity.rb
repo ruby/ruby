@@ -21,7 +21,7 @@ module Fiddle
     end
 
     def test_set_ctypes
-      union = CUnionEntity.malloc [TYPE_INT, TYPE_LONG]
+      union = CUnionEntity.malloc [TYPE_INT, TYPE_LONG], Fiddle::RUBY_FREE
       union.assign_names %w[int long]
 
       # this test is roundabout because the stored ctypes are not accessible

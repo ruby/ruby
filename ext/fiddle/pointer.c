@@ -193,14 +193,34 @@ rb_fiddle_ptr_initialize(int argc, VALUE argv[], VALUE self)
 
 /*
  * call-seq:
- *
  *    Fiddle::Pointer.malloc(size, freefunc = nil)  => fiddle pointer instance
+ *
+ * == Examples
+ *
+ *    # Relying on the garbage collector - may lead to unlimited memory allocated before freeing any, but safe
+ *    pointer = Fiddle::Pointer.malloc(size, Fiddle::RUBY_FREE)
+ *    ...
+ *
+ *    # Manual freeing
+ *    pointer = Fiddle::Pointer.malloc(size)
+ *    begin
+ *      ...
+ *    ensure
+ *      Fiddle.free pointer
+ *    end
+ *
+ *    # No free function and no call to free - the native memory will leak if the pointer is garbage collected
+ *    pointer = Fiddle::Pointer.malloc(size)
+ *    ...
  *
  * Allocate +size+ bytes of memory and associate it with an optional
  * +freefunc+ that will be called when the pointer is garbage collected.
- *
  * +freefunc+ must be an address pointing to a function or an instance of
- * Fiddle::Function
+ * +Fiddle::Function+. Using +freefunc+ may lead to unlimited memory being
+ * allocated before any is freed as the native memory the pointer references
+ * does not contribute to triggering the Ruby garbage collector. Consider
+ * manually freeing the memory as illustrated above. You cannot combine
+ * the techniques as this may lead to a double-free.
  */
 static VALUE
 rb_fiddle_ptr_s_malloc(int argc, VALUE argv[], VALUE klass)
