@@ -40,6 +40,6 @@ module Kernel
   #    baz.rb:6: warning: invalid call to foo
   #
   def warn(*msgs, uplevel: nil)
-    __builtin_rb_warn_m(msgs, uplevel)
+    __builtin.rb_warn_m(msgs, uplevel)
   end
 end
