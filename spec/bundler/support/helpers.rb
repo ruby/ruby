@@ -576,5 +576,11 @@ module Spec
       end
       port
     end
+
+  private
+
+    def git_root_dir?
+      root.to_s == `git rev-parse --show-toplevel`.chomp
+    end
   end
 end
