@@ -44,7 +44,7 @@ module IRB # :nodoc:
     @CONF[:IRB_RC] = nil
 
     @CONF[:USE_SINGLELINE] = false unless defined?(ReadlineInputMethod)
-    @CONF[:USE_COLORIZE] = true
+    @CONF[:USE_COLORIZE] = !ENV['NO_COLOR']
     @CONF[:INSPECT_MODE] = true
     @CONF[:USE_TRACER] = false
     @CONF[:USE_LOADER] = false
@@ -301,11 +301,11 @@ module IRB # :nodoc:
         break
       end
     end
+
     load_path.collect! do |path|
       /\A\.\// =~ path ? path : File.expand_path(path)
     end
     $LOAD_PATH.unshift(*load_path)
-
   end
 
   # running config
