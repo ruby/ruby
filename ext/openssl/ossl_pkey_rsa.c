@@ -231,138 +231,6 @@ ossl_rsa_to_der(VALUE self)
 
 /*
  * call-seq:
- *   rsa.public_encrypt(string)          => String
- *   rsa.public_encrypt(string, padding) => String
- *
- * Encrypt _string_ with the public key.  _padding_ defaults to PKCS1_PADDING.
- * The encrypted string output can be decrypted using #private_decrypt.
- */
-static VALUE
-ossl_rsa_public_encrypt(int argc, VALUE *argv, VALUE self)
-{
-    RSA *rsa;
-    const BIGNUM *rsa_n;
-    int buf_len, pad;
-    VALUE str, buffer, padding;
-
-    GetRSA(self, rsa);
-    RSA_get0_key(rsa, &rsa_n, NULL, NULL);
-    if (!rsa_n)
-	ossl_raise(eRSAError, "incomplete RSA");
-    rb_scan_args(argc, argv, "11", &buffer, &padding);
-    pad = (argc == 1) ? RSA_PKCS1_PADDING : NUM2INT(padding);
-    StringValue(buffer);
-    str = rb_str_new(0, RSA_size(rsa));
-    buf_len = RSA_public_encrypt(RSTRING_LENINT(buffer), (unsigned char *)RSTRING_PTR(buffer),
-				 (unsigned char *)RSTRING_PTR(str), rsa, pad);
-    if (buf_len < 0) ossl_raise(eRSAError, NULL);
-    rb_str_set_len(str, buf_len);
-
-    return str;
-}
-
-/*
- * call-seq:
- *   rsa.public_decrypt(string)          => String
- *   rsa.public_decrypt(string, padding) => String
- *
- * Decrypt _string_, which has been encrypted with the private key, with the
- * public key.  _padding_ defaults to PKCS1_PADDING.
- */
-static VALUE
-ossl_rsa_public_decrypt(int argc, VALUE *argv, VALUE self)
-{
-    RSA *rsa;
-    const BIGNUM *rsa_n;
-    int buf_len, pad;
-    VALUE str, buffer, padding;
-
-    GetRSA(self, rsa);
-    RSA_get0_key(rsa, &rsa_n, NULL, NULL);
-    if (!rsa_n)
-	ossl_raise(eRSAError, "incomplete RSA");
-    rb_scan_args(argc, argv, "11", &buffer, &padding);
-    pad = (argc == 1) ? RSA_PKCS1_PADDING : NUM2INT(padding);
-    StringValue(buffer);
-    str = rb_str_new(0, RSA_size(rsa));
-    buf_len = RSA_public_decrypt(RSTRING_LENINT(buffer), (unsigned char *)RSTRING_PTR(buffer),
-				 (unsigned char *)RSTRING_PTR(str), rsa, pad);
-    if (buf_len < 0) ossl_raise(eRSAError, NULL);
-    rb_str_set_len(str, buf_len);
-
-    return str;
-}
-
-/*
- * call-seq:
- *   rsa.private_encrypt(string)          => String
- *   rsa.private_encrypt(string, padding) => String
- *
- * Encrypt _string_ with the private key.  _padding_ defaults to PKCS1_PADDING.
- * The encrypted string output can be decrypted using #public_decrypt.
- */
-static VALUE
-ossl_rsa_private_encrypt(int argc, VALUE *argv, VALUE self)
-{
-    RSA *rsa;
-    const BIGNUM *rsa_n;
-    int buf_len, pad;
-    VALUE str, buffer, padding;
-
-    GetRSA(self, rsa);
-    RSA_get0_key(rsa, &rsa_n, NULL, NULL);
-    if (!rsa_n)
-	ossl_raise(eRSAError, "incomplete RSA");
-    if (!RSA_PRIVATE(self, rsa))
-	ossl_raise(eRSAError, "private key needed.");
-    rb_scan_args(argc, argv, "11", &buffer, &padding);
-    pad = (argc == 1) ? RSA_PKCS1_PADDING : NUM2INT(padding);
-    StringValue(buffer);
-    str = rb_str_new(0, RSA_size(rsa));
-    buf_len = RSA_private_encrypt(RSTRING_LENINT(buffer), (unsigned char *)RSTRING_PTR(buffer),
-				  (unsigned char *)RSTRING_PTR(str), rsa, pad);
-    if (buf_len < 0) ossl_raise(eRSAError, NULL);
-    rb_str_set_len(str, buf_len);
-
-    return str;
-}
-
-/*
- * call-seq:
- *   rsa.private_decrypt(string)          => String
- *   rsa.private_decrypt(string, padding) => String
- *
- * Decrypt _string_, which has been encrypted with the public key, with the
- * private key.  _padding_ defaults to PKCS1_PADDING.
- */
-static VALUE
-ossl_rsa_private_decrypt(int argc, VALUE *argv, VALUE self)
-{
-    RSA *rsa;
-    const BIGNUM *rsa_n;
-    int buf_len, pad;
-    VALUE str, buffer, padding;
-
-    GetRSA(self, rsa);
-    RSA_get0_key(rsa, &rsa_n, NULL, NULL);
-    if (!rsa_n)
-	ossl_raise(eRSAError, "incomplete RSA");
-    if (!RSA_PRIVATE(self, rsa))
-	ossl_raise(eRSAError, "private key needed.");
-    rb_scan_args(argc, argv, "11", &buffer, &padding);
-    pad = (argc == 1) ? RSA_PKCS1_PADDING : NUM2INT(padding);
-    StringValue(buffer);
-    str = rb_str_new(0, RSA_size(rsa));
-    buf_len = RSA_private_decrypt(RSTRING_LENINT(buffer), (unsigned char *)RSTRING_PTR(buffer),
-				  (unsigned char *)RSTRING_PTR(str), rsa, pad);
-    if (buf_len < 0) ossl_raise(eRSAError, NULL);
-    rb_str_set_len(str, buf_len);
-
-    return str;
-}
-
-/*
- * call-seq:
  *    rsa.sign_pss(digest, data, salt_length:, mgf1_hash:) -> String
  *
  * Signs _data_ using the Probabilistic Signature Scheme (RSA-PSS) and returns
@@ -657,10 +525,6 @@ Init_ossl_rsa(void)
     rb_define_alias(cRSA, "to_pem", "export");
     rb_define_alias(cRSA, "to_s", "export");
     rb_define_method(cRSA, "to_der", ossl_rsa_to_der, 0);
-    rb_define_method(cRSA, "public_encrypt", ossl_rsa_public_encrypt, -1);
-    rb_define_method(cRSA, "public_decrypt", ossl_rsa_public_decrypt, -1);
-    rb_define_method(cRSA, "private_encrypt", ossl_rsa_private_encrypt, -1);
-    rb_define_method(cRSA, "private_decrypt", ossl_rsa_private_decrypt, -1);
     rb_define_method(cRSA, "sign_pss", ossl_rsa_sign_pss, -1);
     rb_define_method(cRSA, "verify_pss", ossl_rsa_verify_pss, -1);
 
@@ -677,11 +541,6 @@ Init_ossl_rsa(void)
     rb_define_method(cRSA, "set_crt_params", ossl_rsa_set_crt_params, 3);
 
     rb_define_method(cRSA, "params", ossl_rsa_get_params, 0);
-
-    DefRSAConst(PKCS1_PADDING);
-    DefRSAConst(SSLV23_PADDING);
-    DefRSAConst(NO_PADDING);
-    DefRSAConst(PKCS1_OAEP_PADDING);
 
 /*
  * TODO: Test it
