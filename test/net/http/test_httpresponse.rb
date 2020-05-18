@@ -411,6 +411,21 @@ EOS
     assert_equal(nil, res.message)
   end
 
+  def test_http2_status_line
+    io = dummy_io(<<EOS)
+HTTP/2 200
+Content-Length: 5
+Connection: close
+
+hello
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+    assert_equal('2', res.http_version)
+    assert_equal('200', res.code)
+    assert_equal(nil, res.message)
+  end
+
   def test_raises_exception_with_missing_reason
     io = dummy_io(<<EOS)
 HTTP/1.1 404
