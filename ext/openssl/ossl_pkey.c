@@ -1025,6 +1025,145 @@ ossl_pkey_derive(int argc, VALUE *argv, VALUE self)
 }
 
 /*
+ * call-seq:
+ *    pkey.encrypt(data [, options]) -> string
+ *
+ * Performs a public key encryption operation using +pkey+.
+ *
+ * See #decrypt for the reverse operation.
+ *
+ * Added in version 3.0. See also the man page EVP_PKEY_encrypt(3).
+ *
+ * +data+::
+ *   A String to be encrypted.
+ * +options+::
+ *   A Hash that contains algorithm specific control operations to \OpenSSL.
+ *   See OpenSSL's man page EVP_PKEY_CTX_ctrl_str(3) for details.
+ *
+ * Example:
+ *   pkey = OpenSSL::PKey.generate_key("RSA", rsa_keygen_bits: 2048)
+ *   data = "secret data"
+ *   encrypted = pkey.encrypt(data, rsa_padding_mode: "oaep")
+ *   decrypted = pkey.decrypt(data, rsa_padding_mode: "oaep")
+ *   p decrypted #=> "secret data"
+ */
+static VALUE
+ossl_pkey_encrypt(int argc, VALUE *argv, VALUE self)
+{
+    EVP_PKEY *pkey;
+    EVP_PKEY_CTX *ctx;
+    VALUE data, options, str;
+    size_t outlen;
+    int state;
+
+    GetPKey(self, pkey);
+    rb_scan_args(argc, argv, "11", &data, &options);
+    StringValue(data);
+
+    ctx = EVP_PKEY_CTX_new(pkey, /* engine */NULL);
+    if (!ctx)
+        ossl_raise(ePKeyError, "EVP_PKEY_CTX_new");
+    if (EVP_PKEY_encrypt_init(ctx) <= 0) {
+        EVP_PKEY_CTX_free(ctx);
+        ossl_raise(ePKeyError, "EVP_PKEY_encrypt_init");
+    }
+    if (!NIL_P(options)) {
+        pkey_ctx_apply_options(ctx, options, &state);
+        if (state) {
+            EVP_PKEY_CTX_free(ctx);
+            rb_jump_tag(state);
+        }
+    }
+    if (EVP_PKEY_encrypt(ctx, NULL, &outlen,
+                         (unsigned char *)RSTRING_PTR(data),
+                         RSTRING_LEN(data)) <= 0) {
+        EVP_PKEY_CTX_free(ctx);
+        ossl_raise(ePKeyError, "EVP_PKEY_encrypt");
+    }
+    if (outlen > LONG_MAX) {
+        EVP_PKEY_CTX_free(ctx);
+        rb_raise(ePKeyError, "encrypted data would be too large");
+    }
+    str = ossl_str_new(NULL, (long)outlen, &state);
+    if (state) {
+        EVP_PKEY_CTX_free(ctx);
+        rb_jump_tag(state);
+    }
+    if (EVP_PKEY_encrypt(ctx, (unsigned char *)RSTRING_PTR(str), &outlen,
+                         (unsigned char *)RSTRING_PTR(data),
+                         RSTRING_LEN(data)) <= 0) {
+        EVP_PKEY_CTX_free(ctx);
+        ossl_raise(ePKeyError, "EVP_PKEY_encrypt");
+    }
+    EVP_PKEY_CTX_free(ctx);
+    rb_str_set_len(str, outlen);
+    return str;
+}
+
+/*
+ * call-seq:
+ *    pkey.decrypt(data [, options]) -> string
+ *
+ * Performs a public key decryption operation using +pkey+.
+ *
+ * See #encrypt for a description of the parameters and an example.
+ *
+ * Added in version 3.0. See also the man page EVP_PKEY_decrypt(3).
+ */
+static VALUE
+ossl_pkey_decrypt(int argc, VALUE *argv, VALUE self)
+{
+    EVP_PKEY *pkey;
+    EVP_PKEY_CTX *ctx;
+    VALUE data, options, str;
+    size_t outlen;
+    int state;
+
+    GetPKey(self, pkey);
+    rb_scan_args(argc, argv, "11", &data, &options);
+    StringValue(data);
+
+    ctx = EVP_PKEY_CTX_new(pkey, /* engine */NULL);
+    if (!ctx)
+        ossl_raise(ePKeyError, "EVP_PKEY_CTX_new");
+    if (EVP_PKEY_decrypt_init(ctx) <= 0) {
+        EVP_PKEY_CTX_free(ctx);
+        ossl_raise(ePKeyError, "EVP_PKEY_decrypt_init");
+    }
+    if (!NIL_P(options)) {
+        pkey_ctx_apply_options(ctx, options, &state);
+        if (state) {
+            EVP_PKEY_CTX_free(ctx);
+            rb_jump_tag(state);
+        }
+    }
+    if (EVP_PKEY_decrypt(ctx, NULL, &outlen,
+                         (unsigned char *)RSTRING_PTR(data),
+                         RSTRING_LEN(data)) <= 0) {
+        EVP_PKEY_CTX_free(ctx);
+        ossl_raise(ePKeyError, "EVP_PKEY_decrypt");
+    }
+    if (outlen > LONG_MAX) {
+        EVP_PKEY_CTX_free(ctx);
+        rb_raise(ePKeyError, "decrypted data would be too large");
+    }
+    str = ossl_str_new(NULL, (long)outlen, &state);
+    if (state) {
+        EVP_PKEY_CTX_free(ctx);
+        rb_jump_tag(state);
+    }
+    if (EVP_PKEY_decrypt(ctx, (unsigned char *)RSTRING_PTR(str), &outlen,
+                         (unsigned char *)RSTRING_PTR(data),
+                         RSTRING_LEN(data)) <= 0) {
+        EVP_PKEY_CTX_free(ctx);
+        ossl_raise(ePKeyError, "EVP_PKEY_decrypt");
+    }
+    EVP_PKEY_CTX_free(ctx);
+    rb_str_set_len(str, outlen);
+    return str;
+}
+
+/*
  * INIT
  */
 void
@@ -1124,6 +1263,8 @@ Init_ossl_pkey(void)
     rb_define_method(cPKey, "sign", ossl_pkey_sign, -1);
     rb_define_method(cPKey, "verify", ossl_pkey_verify, -1);
     rb_define_method(cPKey, "derive", ossl_pkey_derive, -1);
+    rb_define_method(cPKey, "encrypt", ossl_pkey_encrypt, -1);
+    rb_define_method(cPKey, "decrypt", ossl_pkey_decrypt, -1);
 
     id_private_q = rb_intern("private?");
 

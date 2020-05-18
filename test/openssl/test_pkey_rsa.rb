@@ -173,6 +173,40 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
     }
   end
 
+  def test_encrypt_decrypt
+    rsapriv = Fixtures.pkey("rsa-1")
+    rsapub = dup_public(rsapriv)
+
+    # Defaults to PKCS #1 v1.5
+    raw = "data"
+    enc = rsapub.encrypt(raw)
+    assert_equal raw, rsapriv.decrypt(enc)
+
+    # Invalid options
+    assert_raise(OpenSSL::PKey::PKeyError) {
+      rsapub.encrypt(raw, { "nonexistent" => "option" })
+    }
+  end
+
+  def test_encrypt_decrypt_legacy
+    rsapriv = Fixtures.pkey("rsa-1")
+    rsapub = dup_public(rsapriv)
+
+    # Defaults to PKCS #1 v1.5
+    raw = "data"
+    enc_legacy = rsapub.public_encrypt(raw)
+    assert_equal raw, rsapriv.decrypt(enc_legacy)
+    enc_new = rsapub.encrypt(raw)
+    assert_equal raw, rsapriv.private_decrypt(enc_new)
+
+    # OAEP with default parameters
+    raw = "data"
+    enc_legacy = rsapub.public_encrypt(raw, OpenSSL::PKey::RSA::PKCS1_OAEP_PADDING)
+    assert_equal raw, rsapriv.decrypt(enc_legacy, { "rsa_padding_mode" => "oaep" })
+    enc_new = rsapub.encrypt(raw, { "rsa_padding_mode" => "oaep" })
+    assert_equal raw, rsapriv.private_decrypt(enc_legacy, OpenSSL::PKey::RSA::PKCS1_OAEP_PADDING)
+  end
+
   def test_export
     rsa1024 = Fixtures.pkey("rsa1024")
     key = OpenSSL::PKey::RSA.new
