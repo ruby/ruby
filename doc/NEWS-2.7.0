@@ -238,8 +238,7 @@ sufficient information, see the ChangeLog file or Redmine
   as an endless range.
 
 * Access and setting of <code>$SAFE</code> will now always display a warning.
-  <code>$SAFE</code> will become a normal global variable in Ruby 3.0.
-  [Feature #16131]
+  <code>$SAFE</code> will become a normal global variable in Ruby 3.0.  [Feature #16131]
 
 * <code>Object#{taint,untaint,trust,untrust}</code> and related functions in the C-API
   no longer have an effect (all objects are always considered untainted), and will now
