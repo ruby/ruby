@@ -7034,6 +7034,7 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
     NODE *args_node = node->nd_args;
 
     if (UNLIKELY(iseq_has_builtin_function_table(iseq)) &&
+        (type == NODE_VCALL || type == NODE_FCALL) &&
         (builtin_func = iseq_builtin_function_name(mid)) != NULL) {
 
         if (parent_block != NULL) {
