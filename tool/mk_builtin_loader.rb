@@ -72,7 +72,7 @@ end
 
 def collect_builtin base, tree, name, bs, inlines, params = nil
   while tree
-    call = sep = mid = args = nil
+    call = recv = sep = mid = args = nil
     case tree.first
     when :def
       params = collect_params(tree[2])
@@ -93,6 +93,8 @@ def collect_builtin base, tree, name, bs, inlines, params = nil
     when :method_add_arg
       _, mid, (_, (_, args)) = tree
       case mid.first
+      when :call
+        _, recv, sep, mid = mid
       when :fcall
         _, mid = mid
       else
@@ -102,12 +104,27 @@ def collect_builtin base, tree, name, bs, inlines, params = nil
       _, mid = tree
     when :command               # FCALL
       _, mid, (_, args) = tree
+    when :call, :command_call   # CALL
+      _, recv, sep, mid, (_, args) = tree
     end
     if mid
       raise "unknown sexp: #{mid.inspect}" unless mid.first == :@ident
       _, mid, (lineno,) = mid
-      if /\A__builtin_(.+)/ =~ mid
-        cfunc_name = func_name = $1
+      if recv
+        func_name = nil
+        case recv.first
+        when :vcall
+          _, recv = recv
+          if recv.first == :@ident and recv[1] == "__builtin"
+            func_name = mid.to_s
+          end
+        end
+        collect_builtin(base, recv, name, bs, inlines) unless func_name
+      else
+        func_name = mid[/\A__builtin_(.+)/, 1]
+      end
+      if func_name
+        cfunc_name = func_name
         args.pop unless (args ||= []).last
         argc = args.size
 

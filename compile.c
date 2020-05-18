@@ -7039,18 +7039,30 @@ iseq_builtin_function_lookup(const rb_iseq_t *iseq, const char *name)
 }
 
 static const char *
-iseq_builtin_function_name(ID mid)
+iseq_builtin_function_name(const enum node_type type, const NODE *recv, ID mid)
 {
     const char *name = rb_id2name(mid);
     static const char prefix[] = "__builtin_";
     const size_t prefix_len = sizeof(prefix) - 1;
 
-    if (UNLIKELY(strncmp(prefix, name, prefix_len) == 0)) {
-        return &name[prefix_len];
+    if (type == NODE_CALL) {
+        if (recv) {
+            switch (nd_type(recv)) {
+              case NODE_VCALL:
+                if (recv->nd_mid == rb_intern("__builtin")) {
+                    return name;
+                }
+                break;
+              default: break;
+            }
+        }
     }
-    else {
-        return NULL;
+    else if (type == NODE_VCALL || type == NODE_FCALL) {
+        if (UNLIKELY(strncmp(prefix, name, prefix_len) == 0)) {
+            return &name[prefix_len];
+        }
     }
+    return NULL;
 }
 
 static int
@@ -7204,8 +7216,7 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
     NODE *args_node = node->nd_args;
 
     if (UNLIKELY(iseq_has_builtin_function_table(iseq)) &&
-        (type == NODE_VCALL || type == NODE_FCALL) &&
-        (builtin_func = iseq_builtin_function_name(mid)) != NULL) {
+        (builtin_func = iseq_builtin_function_name(type, node->nd_recv, mid)) != NULL) {
 
         if (parent_block != NULL) {
             COMPILE_ERROR(iseq, line, "should not call builtins here.");
