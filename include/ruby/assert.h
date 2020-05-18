@@ -31,18 +31,9 @@
 # define RUBY_DEBUG 0
 #endif
 
-/*
- * Pro tip: `!!NDEBUG-1` expands to...
- *
- * - `!!(-1)`  (== `!0`  ==  `1`) when NDEBUG is defined to be empty,
- * - `(!!0)-1` (== `0-1` == `-1`) when NDEBUG is defined as 0, and
- * - `(!!n)-1` (== `1-1` ==  `0`) when NDEBUG is defined as something else.
- */
 #if defined(RUBY_NDEBUG)
 # /* Take that. */
 #elif ! defined(NDEBUG)
-# define RUBY_NDEBUG 0
-#elif !!NDEBUG-1 < 0
 # define RUBY_NDEBUG 0
 #else
 # define RUBY_NDEBUG 1
