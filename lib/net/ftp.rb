@@ -689,8 +689,6 @@ module Net
               yield(buf) if block_given?
             end
             conn.shutdown(Socket::SHUT_WR)
-            conn.read_timeout = 1
-            conn.read
           ensure
             conn.close if conn
           end
@@ -725,8 +723,6 @@ module Net
               yield(buf) if block_given?
             end
             conn.shutdown(Socket::SHUT_WR)
-            conn.read_timeout = 1
-            conn.read
           ensure
             conn.close if conn
           end
