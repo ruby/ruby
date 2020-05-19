@@ -1978,6 +1978,8 @@ rb_check_hash_type(VALUE hash)
  *    s.respond_to?(:to_hash) # => false
  *    Hash.try_convert(s) # => nil
  *
+ *  ---
+ *
  *  Raises an exception unless <tt>obj.to_hash</tt> returns a Hash object:
  *    class BadToHash
  *      def to_hash
@@ -2150,16 +2152,22 @@ rb_hash_stlike_lookup(VALUE hash, st_data_t key, st_data_t *pval)
 
 /*
  *  call-seq:
- *     hsh[key]    ->  value
+ *    hsh[key] -> value
  *
- *  Element Reference---Retrieves the <i>value</i> object corresponding
- *  to the <i>key</i> object. If not found, returns the default value (see
- *  Hash::new for details).
+ *  Returns the value associated with the given +key+, if found:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h[:foo] # => 0
  *
- *     h = { "a" => 100, "b" => 200 }
- *     h["a"]   #=> 100
- *     h["c"]   #=> nil
- *
+ *  If +key+ is not found, returns a default value
+ *  (see {Default Values}[#class-Hash-label-Default+Values]):
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h[:nosuch] # => nil
+ *  ---
+ *  Raises an exception if +key+ is invalid
+ *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
+ *    h = {}
+ *    # Raises NoMethodError (undefined method `to_s' for #<BasicObject:>):
+ *    h[BasicObject.new]
  */
 
 VALUE
