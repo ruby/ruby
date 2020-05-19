@@ -2162,12 +2162,7 @@ rb_hash_stlike_lookup(VALUE hash, st_data_t key, st_data_t *pval)
  *  (see {Default Values}[#class-Hash-label-Default+Values]):
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h[:nosuch] # => nil
- *  ---
- *  Raises an exception if +key+ is invalid
- *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
- *    h = {}
- *    # Raises NoMethodError (undefined method `to_s' for #<BasicObject:>):
- *    h[BasicObject.new]
+ *
  */
 
 VALUE
@@ -2204,31 +2199,52 @@ rb_hash_lookup(VALUE hash, VALUE key)
 
 /*
  *  call-seq:
- *     hsh.fetch(key [, default] )       -> obj
- *     hsh.fetch(key) {| key | block }   -> obj
+ *    hash.fetch(key) -> value
+ *    hash.fetch(key, default) -> value
+ *    hash.fetch(key) { |key| ... } -> value
  *
- *  Returns a value from the hash for the given key. If the key can't be
- *  found, there are several options: With no other arguments, it will
- *  raise a KeyError exception; if <i>default</i> is given,
- *  then that will be returned; if the optional code block is specified,
- *  then that will be run and its result returned.
+ *  Returns the value for the given +key+.
  *
- *     h = { "a" => 100, "b" => 200 }
- *     h.fetch("a")                            #=> 100
- *     h.fetch("z", "go fish")                 #=> "go fish"
- *     h.fetch("z") { |el| "go fish, #{el}"}   #=> "go fish, z"
+ *  ---
  *
- *  The following example shows that an exception is raised if the key
- *  is not found and a default value is not supplied.
+ *  When neither +default+ nor a block given:
+ *  * If +key+ is found, returns its associated value.
+ *  * Otherwise, raises an exception:
+ *      h = {foo: 0, bar: 1, baz: 2}
+ *      h.fetch(:bar) # => 1
+ *      # Raises KeyError (key not found: :nosuch):
+ *      h.fetch(:nosuch)
  *
- *     h = { "a" => 100, "b" => 200 }
- *     h.fetch("z")
+ *  When +default+ is given, but no block:
+ *  * If +key+ is found, returns its associated value.
+ *  * Otherwise, returns the given +default+:
+ *      h = {foo: 0, bar: 1, baz: 2}
+ *      h.fetch(:bar, :default) # => 1
+ *      h.fetch(:nosuch, :default) # => :default
  *
- *  <em>produces:</em>
+ *  When a block is given, but no +default+:
+ *  * If +key+ is found, returns its associated value.
+ *  * Otherwise, calls the block with +key+, and returns the block's return value.
+ *      h = {foo: 0, bar: 1, baz: 2}
+ *      h.fetch(:bar) { |key| fail 'Ignored'} # => 1
+ *      h.fetch(:nosuch) { |key| "Value for #{key}"} # => "Value for nosuch"
  *
- *     prog.rb:2:in `fetch': key not found (KeyError)
- *      from prog.rb:2
+ *  When both +default+ and a block are given:
+ *  * Ignores +default+ and issues a warning: 'block supersedes default value argument'.
+ *  * If +key+ is found, returns its associated value.
+ *  * Otherwise, calls the block with +key+, and returns the block's return value.
+ *      h = {foo: 0, bar: 1, baz: 2}
+ *      h.fetch(:bar, :default) { |key| fail 'Ignored'} # => 1
+ *      h.fetch(:nosuch, :default) { |key| "Value for #{key}"} # => "Value for nosuch"
  *
+ *  ---
+ *
+ *  Raises an exception if +key+ is invalid
+ *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    # Raises NoMethodError (undefined method `hash' for #<BasicObject:>):
+
+ *    h.fetch(BasicObject.new)
  */
 
 static VALUE
