@@ -152,6 +152,8 @@ AC_ARG_PROGRAM
 
 dnl Checks for programs.
 
+optflags_was_set=${optflags:+set} # :NOTE: ${...:+...} is defined in POSIX.
+
 cflagspat=
 test -z "$optflags" ||
     cflagspat="$cflagspat;s|"`eval echo '"'"${optflags}"'"' | sed 's/[[][|.*]]/\\&/g;s/^ */ /;s/ *$/ /'`'| |g'
@@ -605,6 +607,16 @@ AC_COMPILE_IFELSE([
 @%:@endif],[])], [
     RUBY_TRY_CFLAGS(-erroff=E_STATEMENT_NOT_REACHED, [
         RUBY_APPEND_OPTIONS(rb_cv_warnflags, -erroff=E_STATEMENT_NOT_REACHED)])],[])
+
+AC_ARG_ENABLE(debug,
+    AS_HELP_STRING([--enable-debug], [Enable assertions etc.]),
+    [enable_debug=$enableval],
+    [AS_IF([test -z "$optflags_was_set"],
+        [enable_debug=no],
+        [enable_debug="honour passed environment variable"])])
+AS_CASE(["$enable_debug"],
+    [yes], [RUBY_APPEND_OPTIONS(optflags, -DRUBY_DEBUG=1 -UNDEBUG)],
+    [no],  [RUBY_APPEND_OPTIONS(optflags, -DRUBY_DEBUG=0 -DNDEBUG)])
 
 AC_ARG_WITH(compress-debug-sections,
 	AS_HELP_STRING([--with-compress-debug-sections=type],
