@@ -382,6 +382,17 @@ class TestGemRequire < Gem::TestCase
     assert_equal 0, times_called
   end
 
+  def test_second_gem_require_does_not_resolve_path_manually_before_going_through_standard_require
+    a1 = util_spec "a", "1", nil, "lib/test_gem_require_a.rb"
+    install_gem a1
+
+    assert_require "test_gem_require_a"
+
+    stub(:gem_original_require, ->(path) { assert_equal "test_gem_require_a", path }) do
+      require "test_gem_require_a"
+    end
+  end
+
   def test_realworld_default_gem
     testing_ruby_repo = !ENV["GEM_COMMAND"].nil?
     skip "this test can't work under ruby-core setup" if testing_ruby_repo || java_platform?
