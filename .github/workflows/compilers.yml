@@ -84,6 +84,7 @@ jobs:
           - { key: append_configure, name: disable-jit-support,  value: '--disable-jit-support' }
           - { key: append_configure, name: disable-dln,          value: '--disable-dln' }
           - { key: append_configure, name: disable-rubygems,     value: '--disable-rubygems' }
+          - { key: append_configure, name: enable-debug,         value: '--enable-debug' }
 
           - { key: cppflags, name: OPT_THREADED_CODE=1,            value: '-DOPT_THREADED_CODE=1' }
           - { key: cppflags, name: OPT_THREADED_CODE=2,            value: '-DOPT_THREADED_CODE=2' }
