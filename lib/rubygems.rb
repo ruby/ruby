@@ -590,7 +590,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
     index = $LOAD_PATH.index RbConfig::CONFIG['sitelibdir']
 
-    index
+    index || 0
   end
 
   ##
@@ -607,15 +607,8 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   def self.add_to_load_path(*paths)
     @activated_gem_paths = activated_gem_paths + paths.size
 
-    insert_index = load_path_insert_index
-
-    if insert_index
-      # gem directories must come after -I and ENV['RUBYLIB']
-      $LOAD_PATH.insert(insert_index, *paths)
-    else
-      # we are probably testing in core, -I and RUBYLIB don't apply
-      $LOAD_PATH.unshift(*paths)
-    end
+    # gem directories must come after -I and ENV['RUBYLIB']
+    $LOAD_PATH.insert(Gem.load_path_insert_index, *paths)
   end
 
   @yaml_loaded = false
