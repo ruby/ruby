@@ -2,12 +2,12 @@
 /* before stdio.h in ruby/define.h */
 # define MINGW_HAS_SECURE_API 1
 #endif
+#include <wchar.h>
 #include "ruby/ruby.h"
 #include "ruby/encoding.h"
 #include "internal.h"
 #include "internal/error.h"
 #include <winbase.h>
-#include <wchar.h>
 #include <shlwapi.h>
 #include "win32/file.h"
 
