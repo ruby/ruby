@@ -634,9 +634,9 @@ module Net
             while data = conn.read(blocksize)
               yield(data)
             end
-            conn.shutdown(Socket::SHUT_WR)
+            conn.shutdown(Socket::SHUT_WR) rescue nil
             conn.read_timeout = 1
-            conn.read
+            conn.read rescue nil
           ensure
             conn.close if conn
           end
@@ -659,9 +659,9 @@ module Net
             while line = conn.gets
               yield(line.sub(/\r?\n\z/, ""), !line.match(/\n\z/).nil?)
             end
-            conn.shutdown(Socket::SHUT_WR)
+            conn.shutdown(Socket::SHUT_WR) rescue nil
             conn.read_timeout = 1
-            conn.read
+            conn.read rescue nil
           ensure
             conn.close if conn
           end
@@ -688,9 +688,9 @@ module Net
               conn.write(buf)
               yield(buf) if block_given?
             end
-            conn.shutdown(Socket::SHUT_WR)
+            conn.shutdown(Socket::SHUT_WR) rescue nil
             conn.read_timeout = 1
-            conn.read
+            conn.read rescue nil
           ensure
             conn.close if conn
           end
@@ -724,9 +724,9 @@ module Net
               conn.write(buf)
               yield(buf) if block_given?
             end
-            conn.shutdown(Socket::SHUT_WR)
+            conn.shutdown(Socket::SHUT_WR) rescue nil
             conn.read_timeout = 1
-            conn.read
+            conn.read rescue nil
           ensure
             conn.close if conn
           end
