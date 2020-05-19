@@ -43,8 +43,9 @@ module Kernel
     # https://github.com/rubygems/rubygems/pull/1868
     resolved_path = begin
       rp = nil
+      load_path_check_index = Gem.load_path_insert_index - Gem.activated_gem_paths
       Gem.suffixes.each do |s|
-        $LOAD_PATH[0...Gem.load_path_insert_index - Gem.activated_gem_paths].each do |lp|
+        $LOAD_PATH[0...load_path_check_index].each do |lp|
           safe_lp = lp.dup.tap(&Gem::UNTAINT)
           begin
             if File.symlink? safe_lp # for backward compatibility
