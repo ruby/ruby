@@ -1685,7 +1685,7 @@ rb_ary_aref(int argc, const VALUE *argv, VALUE ary)
     return rb_ary_aref1(ary, argv[0]);
 }
 
-VALUE
+static VALUE
 rb_ary_aref2(VALUE ary, VALUE b, VALUE e)
 {
     long beg = NUM2LONG(b);
