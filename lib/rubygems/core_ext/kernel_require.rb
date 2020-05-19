@@ -47,7 +47,7 @@ module Kernel
         load_path_insert_index = Gem.load_path_insert_index
         break unless load_path_insert_index
 
-        $LOAD_PATH[0...load_path_insert_index].each do |lp|
+        $LOAD_PATH[0...load_path_insert_index - Gem.activated_gem_paths].each do |lp|
           safe_lp = lp.dup.tap(&Gem::UNTAINT)
           begin
             if File.symlink? safe_lp # for backward compatibility
