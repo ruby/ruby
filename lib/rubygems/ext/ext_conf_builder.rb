@@ -5,15 +5,14 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'fileutils'
-require 'tempfile'
 require 'shellwords'
 
 class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
 
-  FileEntry = FileUtils::Entry_ # :nodoc:
-
   def self.build(extension, dest_path, results, args=[], lib_dir=nil)
+    require 'fileutils'
+    require 'tempfile'
+
     tmp_dest = Dir.mktmpdir(".gem.", ".")
 
     # Some versions of `mktmpdir` return absolute paths, which will break make
@@ -71,7 +70,7 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
             FileUtils.cp_r entries, lib_dir, :remove_destination => true
           end
 
-          FileEntry.new(tmp_dest).traverse do |ent|
+          FileUtils::Entry_.new(tmp_dest).traverse do |ent|
             destent = ent.class.new(dest_path, ent.rel)
             destent.exist? or FileUtils.mv(ent.path, destent.path)
           end
