@@ -90,7 +90,7 @@ RBIMPL_SYMBOL_EXPORT_END()
 # define RBIMPL_ASSERT_OR_ASSUME(_) RUBY_ASSERT(_)
 #elif defined(RBIMPL_HAVE___ASSUME)
 # define RBIMPL_ASSERT_OR_ASSUME(_) RBIMPL_ASSUME(_)
-#elif RBIMPL_HAS_BUILTIN(__builtin_assume)
+#elif RBIMPL_HAS_BUILTIN(__builtin_assume) && RBIMPL_COMPILER_SINCE(Clang, 7, 0, 0)
 # define RBIMPL_ASSERT_OR_ASSUME(_) RBIMPL_ASSUME(_)
 #else
 # define RBIMPL_ASSERT_OR_ASSUME(_) /* void */
