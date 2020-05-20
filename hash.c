@@ -2763,7 +2763,7 @@ rb_hash_values_at(int argc, VALUE *argv, VALUE hash)
  *   h.fetch_values("cow", "bird") { |k| k.upcase } #=> ["bovine", "BIRD"]
  */
 
-VALUE
+static VALUE
 rb_hash_fetch_values(int argc, VALUE *argv, VALUE hash)
 {
     VALUE result = rb_ary_new2(argc);
