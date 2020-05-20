@@ -2060,7 +2060,7 @@ rb_hash_rehash_i(VALUE key, VALUE value, VALUE arg)
 
 /*
  *  call-seq:
- *     hsh.rehash -> self
+ *     hash.rehash -> self
  *
  *  Rebuilds the hash table by recomputing the hash index for each key;
  *  returns <tt>self</tt>.
@@ -2152,7 +2152,7 @@ rb_hash_stlike_lookup(VALUE hash, st_data_t key, st_data_t *pval)
 
 /*
  *  call-seq:
- *    hsh[key] -> value
+ *    hash[key] -> value
  *
  *  Returns the value associated with the given +key+, if found:
  *    h = {foo: 0, bar: 1, baz: 2}
@@ -2291,23 +2291,23 @@ rb_hash_fetch(VALUE hash, VALUE key)
 
 /*
  *  call-seq:
- *     hsh.default(key=nil)   -> obj
+ *    hash.default -> value
+ *    hash.default(key) -> value
  *
- *  Returns the default value, the value that would be returned by
- *  <i>hsh</i>[<i>key</i>] if <i>key</i> did not exist in <i>hsh</i>.
- *  See also Hash::new and Hash#default=.
+ *  With no argument, returns the current default value:
+ *    h = {}
+ *    h.default # => nil
+ *    h.default = false
+ *    h.default # => false
  *
- *     h = Hash.new                            #=> {}
- *     h.default                               #=> nil
- *     h.default(2)                            #=> nil
+ *  With +key+ given, returns the default value for +key+,
+ *  regardless of whether that key exists:
+ *    h = {}
+ *    h.default(:nosuch) # => nil
  *
- *     h = Hash.new("cat")                     #=> {}
- *     h.default                               #=> "cat"
- *     h.default(2)                            #=> "cat"
+ *  The returned value will be determined either by the default proc or by the default value.
+ *  See {Default Values}[#class-Hash-label-Default+Values].
  *
- *     h = Hash.new {|h,k| h[k] = k.to_i*10}   #=> {}
- *     h.default                               #=> nil
- *     h.default(2)                            #=> 20
  */
 
 static VALUE
@@ -2326,22 +2326,15 @@ rb_hash_default(int argc, VALUE *argv, VALUE hash)
 
 /*
  *  call-seq:
- *     hsh.default = obj     -> obj
+ *    hash.default = value -> value
  *
- *  Sets the default value, the value returned for a key that does not
- *  exist in the hash. It is not possible to set the default to a
- *  Proc that will be executed on each key lookup.
+ *  Sets the default value to +value+, returning +value+:
+ *    h = {}
+ *    h.default # => nil
+ *    h.default = false # => false
+ *    h.default # => false
  *
- *     h = { "a" => 100, "b" => 200 }
- *     h.default = "Go fish"
- *     h["a"]     #=> 100
- *     h["z"]     #=> "Go fish"
- *     # This doesn't do what you might hope...
- *     h.default = proc do |hash, key|
- *       hash[key] = key + key
- *     end
- *     h[2]       #=> #<Proc:0x401b3948@-:6>
- *     h["cat"]   #=> #<Proc:0x401b3948@-:6>
+ *  See {Default Values}[#class-Hash-label-Default+Values].
  */
 
 static VALUE
