@@ -32,7 +32,13 @@
 #endif
 
 #if RUBY_DEBUG > 0 && defined(NDEBUG)
-#warning NDEBUG is ignored because RUBY_DEBUG>0.
+#if defined(_MSC_VER)
+# pragma message("NDEBUG is ignored because RUBY_DEBUG>0.")
+#elif defined(__GNUC__)
+# pragma GCC warning "NDEBUG is ignored because RUBY_DEBUG>0."
+#else 
+# error NDEBUG is ignored because RUBY_DEBUG>0.
+#endif
 #endif
 
 /*
