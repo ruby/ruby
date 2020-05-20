@@ -73,7 +73,7 @@ VALUE rb_obj_hide(VALUE obj);
 VALUE rb_obj_reveal(VALUE obj, VALUE klass); /* do not use this API to change klass information */
 RBIMPL_SYMBOL_EXPORT_END()
 
-RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
 static inline VALUE
 RBASIC_CLASS(VALUE obj)

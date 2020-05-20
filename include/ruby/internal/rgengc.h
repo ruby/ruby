@@ -137,7 +137,7 @@ void rb_gc_unprotect_logging(void *objptr, const char *filename, int line);
 #endif
 RBIMPL_SYMBOL_EXPORT_END()
 
-RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
 static inline bool
 RB_OBJ_PROMOTED_RAW(VALUE obj)
@@ -146,7 +146,7 @@ RB_OBJ_PROMOTED_RAW(VALUE obj)
     return RB_FL_ANY_RAW(obj,  RUBY_FL_PROMOTED);
 }
 
-RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
 static inline bool
 RB_OBJ_PROMOTED(VALUE obj)

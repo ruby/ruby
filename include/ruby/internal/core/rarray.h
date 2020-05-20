@@ -112,7 +112,7 @@ void rb_ary_detransient(VALUE a);
 #endif
 RBIMPL_SYMBOL_EXPORT_END()
 
-RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
 static inline long
 RARRAY_EMBED_LEN(VALUE ary)
@@ -126,7 +126,7 @@ RARRAY_EMBED_LEN(VALUE ary)
     return RBIMPL_CAST((long)f);
 }
 
-RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 static inline long
 rb_array_len(VALUE a)
 {
@@ -147,7 +147,7 @@ RARRAY_LENINT(VALUE ary)
     return rb_long2int(RARRAY_LEN(ary));
 }
 
-RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
 static inline bool
 RARRAY_TRANSIENT_P(VALUE ary)
@@ -161,7 +161,7 @@ RARRAY_TRANSIENT_P(VALUE ary)
 #endif
 }
 
-RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 /* internal function. do not use this function */
 static inline const VALUE *
 rb_array_const_ptr_transient(VALUE a)
@@ -177,7 +177,7 @@ rb_array_const_ptr_transient(VALUE a)
 }
 
 #if ! USE_TRANSIENT_HEAP
-RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 #endif
 /* internal function. do not use this function */
 static inline const VALUE *
@@ -258,7 +258,7 @@ RARRAY_ASET(VALUE ary, long i, VALUE v)
 
 /* RARRAY_AREF is used as a lvalue.  Cannot be a function. */
 #if 0
-RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
 static inline VALUE
 RARRAY_AREF(VALUE ary, long i)

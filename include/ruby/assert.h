@@ -31,6 +31,10 @@
 # define RUBY_DEBUG 0
 #endif
 
+#if RUBY_DEBUG > 0 && defined(NDEBUG)
+#warning NDEBUG is ignored because RUBY_DEBUG>0.
+#endif
+
 /*
  * Pro tip: `!!NDEBUG-1` expands to...
  *
@@ -82,11 +86,12 @@ RBIMPL_SYMBOL_EXPORT_END()
         RUBY_ASSERT_MESG(!(cond) || (expr), mesg))
 #endif /* RUBY_DEBUG */
 
-#define RUBY_ASSERT(expr) RUBY_ASSERT_MESG_WHEN((!RUBY_NDEBUG+0), expr, #expr)
+#define RUBY_ASSERT(expr)            RUBY_ASSERT_MESG_WHEN(FALSE, expr, #expr)
+#define RUBY_ASSERT_NDEBUG(expr)     RUBY_ASSERT_MESG_WHEN(RUBY_NDEBUG, expr, #expr)
 #define RUBY_ASSERT_WHEN(cond, expr) RUBY_ASSERT_MESG_WHEN(cond, expr, #expr)
-#define RUBY_ASSERT_ALWAYS(expr) RUBY_ASSERT_MESG_WHEN(TRUE, expr, #expr)
+#define RUBY_ASSERT_ALWAYS(expr)     RUBY_ASSERT_MESG_WHEN(TRUE, expr, #expr)
 
-#if ! RUBY_NDEBUG
+#if RUBY_DEBUG
 # define RBIMPL_ASSERT_OR_ASSUME(_) RUBY_ASSERT(_)
 #elif defined(RBIMPL_HAVE___ASSUME)
 # define RBIMPL_ASSERT_OR_ASSUME(_) RBIMPL_ASSUME(_)
