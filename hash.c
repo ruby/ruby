@@ -1978,6 +1978,8 @@ rb_check_hash_type(VALUE hash)
  *    s.respond_to?(:to_hash) # => false
  *    Hash.try_convert(s) # => nil
  *
+ *  ---
+ *
  *  Raises an exception unless <tt>obj.to_hash</tt> returns a Hash object:
  *    class BadToHash
  *      def to_hash
@@ -2058,7 +2060,7 @@ rb_hash_rehash_i(VALUE key, VALUE value, VALUE arg)
 
 /*
  *  call-seq:
- *     hsh.rehash -> self
+ *     hash.rehash -> self
  *
  *  Rebuilds the hash table by recomputing the hash index for each key;
  *  returns <tt>self</tt>.
@@ -2150,15 +2152,16 @@ rb_hash_stlike_lookup(VALUE hash, st_data_t key, st_data_t *pval)
 
 /*
  *  call-seq:
- *     hsh[key]    ->  value
+ *    hash[key] -> value
  *
- *  Element Reference---Retrieves the <i>value</i> object corresponding
- *  to the <i>key</i> object. If not found, returns the default value (see
- *  Hash::new for details).
+ *  Returns the value associated with the given +key+, if found:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h[:foo] # => 0
  *
- *     h = { "a" => 100, "b" => 200 }
- *     h["a"]   #=> 100
- *     h["c"]   #=> nil
+ *  If +key+ is not found, returns a default value
+ *  (see {Default Values}[#class-Hash-label-Default+Values]):
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h[:nosuch] # => nil
  *
  */
 
@@ -2196,31 +2199,52 @@ rb_hash_lookup(VALUE hash, VALUE key)
 
 /*
  *  call-seq:
- *     hsh.fetch(key [, default] )       -> obj
- *     hsh.fetch(key) {| key | block }   -> obj
+ *    hash.fetch(key) -> value
+ *    hash.fetch(key, default) -> value
+ *    hash.fetch(key) { |key| ... } -> value
  *
- *  Returns a value from the hash for the given key. If the key can't be
- *  found, there are several options: With no other arguments, it will
- *  raise a KeyError exception; if <i>default</i> is given,
- *  then that will be returned; if the optional code block is specified,
- *  then that will be run and its result returned.
+ *  Returns the value for the given +key+.
  *
- *     h = { "a" => 100, "b" => 200 }
- *     h.fetch("a")                            #=> 100
- *     h.fetch("z", "go fish")                 #=> "go fish"
- *     h.fetch("z") { |el| "go fish, #{el}"}   #=> "go fish, z"
+ *  ---
  *
- *  The following example shows that an exception is raised if the key
- *  is not found and a default value is not supplied.
+ *  When neither +default+ nor a block given:
+ *  * If +key+ is found, returns its associated value.
+ *  * Otherwise, raises an exception:
+ *      h = {foo: 0, bar: 1, baz: 2}
+ *      h.fetch(:bar) # => 1
+ *      # Raises KeyError (key not found: :nosuch):
+ *      h.fetch(:nosuch)
  *
- *     h = { "a" => 100, "b" => 200 }
- *     h.fetch("z")
+ *  When +default+ is given, but no block:
+ *  * If +key+ is found, returns its associated value.
+ *  * Otherwise, returns the given +default+:
+ *      h = {foo: 0, bar: 1, baz: 2}
+ *      h.fetch(:bar, :default) # => 1
+ *      h.fetch(:nosuch, :default) # => :default
  *
- *  <em>produces:</em>
+ *  When a block is given, but no +default+:
+ *  * If +key+ is found, returns its associated value.
+ *  * Otherwise, calls the block with +key+, and returns the block's return value.
+ *      h = {foo: 0, bar: 1, baz: 2}
+ *      h.fetch(:bar) { |key| fail 'Ignored'} # => 1
+ *      h.fetch(:nosuch) { |key| "Value for #{key}"} # => "Value for nosuch"
  *
- *     prog.rb:2:in `fetch': key not found (KeyError)
- *      from prog.rb:2
+ *  When both +default+ and a block are given:
+ *  * Ignores +default+ and issues a warning: 'block supersedes default value argument'.
+ *  * If +key+ is found, returns its associated value.
+ *  * Otherwise, calls the block with +key+, and returns the block's return value.
+ *      h = {foo: 0, bar: 1, baz: 2}
+ *      h.fetch(:bar, :default) { |key| fail 'Ignored'} # => 1
+ *      h.fetch(:nosuch, :default) { |key| "Value for #{key}"} # => "Value for nosuch"
  *
+ *  ---
+ *
+ *  Raises an exception if +key+ is invalid
+ *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    # Raises NoMethodError (undefined method `hash' for #<BasicObject:>):
+
+ *    h.fetch(BasicObject.new)
  */
 
 static VALUE
@@ -2267,23 +2291,23 @@ rb_hash_fetch(VALUE hash, VALUE key)
 
 /*
  *  call-seq:
- *     hsh.default(key=nil)   -> obj
+ *    hash.default -> value
+ *    hash.default(key) -> value
  *
- *  Returns the default value, the value that would be returned by
- *  <i>hsh</i>[<i>key</i>] if <i>key</i> did not exist in <i>hsh</i>.
- *  See also Hash::new and Hash#default=.
+ *  With no argument, returns the current default value:
+ *    h = {}
+ *    h.default # => nil
+ *    h.default = false
+ *    h.default # => false
  *
- *     h = Hash.new                            #=> {}
- *     h.default                               #=> nil
- *     h.default(2)                            #=> nil
+ *  With +key+ given, returns the default value for +key+,
+ *  regardless of whether that key exists:
+ *    h = {}
+ *    h.default(:nosuch) # => nil
  *
- *     h = Hash.new("cat")                     #=> {}
- *     h.default                               #=> "cat"
- *     h.default(2)                            #=> "cat"
+ *  The returned value will be determined either by the default proc or by the default value.
+ *  See {Default Values}[#class-Hash-label-Default+Values].
  *
- *     h = Hash.new {|h,k| h[k] = k.to_i*10}   #=> {}
- *     h.default                               #=> nil
- *     h.default(2)                            #=> 20
  */
 
 static VALUE
@@ -2302,22 +2326,15 @@ rb_hash_default(int argc, VALUE *argv, VALUE hash)
 
 /*
  *  call-seq:
- *     hsh.default = obj     -> obj
+ *    hash.default = value -> value
  *
- *  Sets the default value, the value returned for a key that does not
- *  exist in the hash. It is not possible to set the default to a
- *  Proc that will be executed on each key lookup.
+ *  Sets the default value to +value+, returning +value+:
+ *    h = {}
+ *    h.default # => nil
+ *    h.default = false # => false
+ *    h.default # => false
  *
- *     h = { "a" => 100, "b" => 200 }
- *     h.default = "Go fish"
- *     h["a"]     #=> 100
- *     h["z"]     #=> "Go fish"
- *     # This doesn't do what you might hope...
- *     h.default = proc do |hash, key|
- *       hash[key] = key + key
- *     end
- *     h[2]       #=> #<Proc:0x401b3948@-:6>
- *     h["cat"]   #=> #<Proc:0x401b3948@-:6>
+ *  See {Default Values}[#class-Hash-label-Default+Values].
  */
 
 static VALUE
