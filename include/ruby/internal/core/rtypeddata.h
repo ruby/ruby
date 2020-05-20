@@ -136,12 +136,12 @@ rbimpl_rtypeddata_p(VALUE obj)
     return RTYPEDDATA(obj)->typed_flag == 1;
 }
 
-RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
 static inline bool
 RTYPEDDATA_P(VALUE obj)
 {
-#if ! RUBY_NDEBUG
+#if RUBY_DEBUG
     if (RB_UNLIKELY(! RB_TYPE_P(obj, RUBY_T_DATA))) {
         Check_Type(obj, RUBY_T_DATA);
         RBIMPL_UNREACHABLE_RETURN(false);
@@ -151,13 +151,13 @@ RTYPEDDATA_P(VALUE obj)
     return rbimpl_rtypeddata_p(obj);
 }
 
-RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
 /* :TODO: can this function be __attribute__((returns_nonnull)) or not? */
 static inline const struct rb_data_type_struct *
 RTYPEDDATA_TYPE(VALUE obj)
 {
-#if ! RUBY_NDEBUG
+#if RUBY_DEBUG
     if (RB_UNLIKELY(! RTYPEDDATA_P(obj))) {
         rb_unexpected_type(obj, RUBY_T_DATA);
         RBIMPL_UNREACHABLE_RETURN(NULL);

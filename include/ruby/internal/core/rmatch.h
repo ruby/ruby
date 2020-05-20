@@ -59,7 +59,7 @@ struct RMatch {
     VALUE regexp;  /* RRegexp */
 };
 
-RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_RETURNS_NONNULL()
 RBIMPL_ATTR_ARTIFICIAL()
 static inline struct re_registers *

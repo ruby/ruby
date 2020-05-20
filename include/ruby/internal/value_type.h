@@ -95,7 +95,7 @@
 #define RB_TYPE_P         RB_TYPE_P
 #define Check_Type        Check_Type
 
-#if RUBY_NDEBUG
+#if !RUBY_DEBUG
 # define RBIMPL_ASSERT_TYPE(v, t) RBIMPL_ASSERT_OR_ASSUME(RB_TYPE_P((v), (t)))
 #else
 # define RBIMPL_ASSERT_TYPE Check_Type
@@ -147,7 +147,7 @@ RBIMPL_ATTR_COLD()
 void rb_check_type(VALUE obj, int t);
 RBIMPL_SYMBOL_EXPORT_END()
 
-RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
 static inline enum ruby_value_type
 RB_BUILTIN_TYPE(VALUE obj)
@@ -158,7 +158,7 @@ RB_BUILTIN_TYPE(VALUE obj)
     return RBIMPL_CAST((enum ruby_value_type)ret);
 }
 
-RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 static inline bool
 rb_integer_type_p(VALUE obj)
 {
@@ -173,7 +173,7 @@ rb_integer_type_p(VALUE obj)
     }
 }
 
-RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 static inline enum ruby_value_type
 rb_type(VALUE obj)
 {
@@ -204,7 +204,7 @@ rb_type(VALUE obj)
     }
 }
 
-RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
 static inline bool
 RB_FLOAT_TYPE_P(VALUE obj)
@@ -220,7 +220,7 @@ RB_FLOAT_TYPE_P(VALUE obj)
     }
 }
 
-RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
 static inline bool
 RB_DYNAMIC_SYM_P(VALUE obj)
@@ -233,7 +233,7 @@ RB_DYNAMIC_SYM_P(VALUE obj)
     }
 }
 
-RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
 static inline bool
 RB_SYMBOL_P(VALUE obj)
@@ -241,7 +241,7 @@ RB_SYMBOL_P(VALUE obj)
     return RB_STATIC_SYM_P(obj) || RB_DYNAMIC_SYM_P(obj);
 }
 
-RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_FORCEINLINE()
 static bool
@@ -279,7 +279,7 @@ rbimpl_RB_TYPE_P_fastpath(VALUE obj, enum ruby_value_type t)
     }
 }
 
-RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
 static inline bool
 RB_TYPE_P(VALUE obj, enum ruby_value_type t)

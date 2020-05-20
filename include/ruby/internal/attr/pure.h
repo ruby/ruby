@@ -33,11 +33,11 @@
 # define RBIMPL_ATTR_PURE() /* void */
 #endif
 
-/** Enables #RBIMPL_ATTR_PURE iff. #RUBY_NDEBUG. */
-#if RUBY_NDEBUG
-# define RBIMPL_ATTR_PURE_ON_NDEBUG() RBIMPL_ATTR_PURE()
+/** Enables #RBIMPL_ATTR_PURE iff. !RUBY_DEBUG. */
+#if !RUBY_DEBUG
+# define RBIMPL_ATTR_PURE_UNLESS_DEBUG() RBIMPL_ATTR_PURE()
 #else
-# define RBIMPL_ATTR_PURE_ON_NDEBUG() /* void */
+# define RBIMPL_ATTR_PURE_UNLESS_DEBUG() /* void */
 #endif
 
 #endif /* RBIMPL_ATTR_PURE_H */

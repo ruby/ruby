@@ -145,7 +145,7 @@ rb_class_of(VALUE obj)
         return rb_cFloat;
     }
 
-#if RUBY_NDEBUG
+#if !RUBY_DEBUG
     RBIMPL_UNREACHABLE_RETURN(Qfalse);
 #else
     RUBY_ASSERT_FAIL("unexpected type");
