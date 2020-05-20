@@ -269,6 +269,7 @@ rb_scan_args_set(int kw_flag, int argc, const VALUE *argv,
 #define rb_scan_args_next_param() vars[vari++]
     const int n_mand = n_lead + n_trail;
 
+    /* capture an option hash - phase 1: pop from the argv */
     if (f_hash && argc > 0) {
         VALUE last = argv[argc - 1];
         if (rb_scan_args_keyword_p(kw_flag, last)) {
@@ -282,13 +283,14 @@ rb_scan_args_set(int kw_flag, int argc, const VALUE *argv,
     }
 
     /* capture leading mandatory arguments */
-    for (i = n_lead; i-- > 0; ) {
+    for (i = 0; i < n_lead; i++) {
         var = rb_scan_args_next_param();
         if (var) *var = argv[argi];
         argi++;
     }
+
     /* capture optional arguments */
-    for (i = n_opt; i-- > 0; ) {
+    for (i = 0; i < n_opt; i++) {
         var = rb_scan_args_next_param();
         if (argi < argc - n_trail) {
             if (var) *var = argv[argi];
@@ -298,6 +300,7 @@ rb_scan_args_set(int kw_flag, int argc, const VALUE *argv,
             if (var) *var = Qnil;
         }
     }
+
     /* capture variable length arguments */
     if (f_var) {
         int n_var = argc - argi - n_trail;
@@ -311,17 +314,20 @@ rb_scan_args_set(int kw_flag, int argc, const VALUE *argv,
             if (var) *var = rb_ary_new();
         }
     }
+
     /* capture trailing mandatory arguments */
-    for (i = n_trail; i-- > 0; ) {
+    for (i = 0; i < n_trail; i++) {
         var = rb_scan_args_next_param();
         if (var) *var = argv[argi];
         argi++;
     }
+
     /* capture an option hash - phase 2: assignment */
     if (f_hash) {
         var = rb_scan_args_next_param();
         if (var) *var = hash;
     }
+
     /* capture iterator block */
     if (f_block) {
         var = rb_scan_args_next_param();
@@ -333,12 +339,12 @@ rb_scan_args_set(int kw_flag, int argc, const VALUE *argv,
         }
     }
 
-    if (argi < argc) {
-      argc_error:
-        rb_error_arity(argc, n_mand, f_var ? UNLIMITED_ARGUMENTS : n_mand + n_opt);
+    if (argi == argc) {
+        return argc;
     }
 
-    return argc;
+  argc_error:
+    rb_error_arity(argc, n_mand, f_var ? UNLIMITED_ARGUMENTS : n_mand + n_opt);
 #undef rb_scan_args_next_param
 }
 
