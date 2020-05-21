@@ -409,7 +409,7 @@ rb_cloexec_pipe(int descriptors[2])
         return result;
 
 #ifdef __CYGWIN__
-    if (ret == 0 && descriptors[1] == -1) {
+    if (result == 0 && descriptors[1] == -1) {
         close(descriptors[0]);
         descriptors[0] = -1;
         errno = ENFILE;
