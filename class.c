@@ -2060,6 +2060,7 @@ rb_scan_args_assign(const struct rb_scan_args_t *arg, int argc, const VALUE *con
     const bool f_hash = arg->f_hash;
     const bool f_block = arg->f_block;
 
+    /* capture an option hash - phase 1: pop from the argv */
     if (f_hash && argc > 0) {
         VALUE last = argv[argc - 1];
         if (rb_scan_args_keyword_p(kw_flag, last)) {
@@ -2073,13 +2074,13 @@ rb_scan_args_assign(const struct rb_scan_args_t *arg, int argc, const VALUE *con
     }
 
     /* capture leading mandatory arguments */
-    for (i = n_lead; i-- > 0; ) {
+    for (i = 0; i < n_lead; i++) {
         var = rb_scan_args_next_param();
         if (var) *var = argv[argi];
 	argi++;
     }
     /* capture optional arguments */
-    for (i = n_opt; i-- > 0; ) {
+    for (i = 0; i < n_opt; i++) {
         var = rb_scan_args_next_param();
         if (argi < argc - n_trail) {
             if (var) *var = argv[argi];
@@ -2103,7 +2104,7 @@ rb_scan_args_assign(const struct rb_scan_args_t *arg, int argc, const VALUE *con
 	}
     }
     /* capture trailing mandatory arguments */
-    for (i = n_trail; i-- > 0; ) {
+    for (i = 0; i < n_trail; i++) {
         var = rb_scan_args_next_param();
         if (var) *var = argv[argi];
 	argi++;
@@ -2124,29 +2125,31 @@ rb_scan_args_assign(const struct rb_scan_args_t *arg, int argc, const VALUE *con
 	}
     }
 
-    if (argi < argc) {
-      argc_error:
-        return -(argc + 1);
+    if (argi == argc) {
+        return argc;
     }
 
-    return argc;
+  argc_error:
+    return -(argc + 1);
 #undef rb_scan_args_next_param
 }
 
 static int
 rb_scan_args_result(const struct rb_scan_args_t *const arg, int argc)
 {
-    if (argc < 0) {
-        const int n_lead = arg->n_lead;
-        const int n_opt = arg->n_opt;
-        const int n_trail = arg->n_trail;
-        const int n_mand = n_lead + n_trail;
-        const bool f_var = arg->f_var;
-        argc = -argc - 1;
-        rb_error_arity(argc, n_mand, f_var ? UNLIMITED_ARGUMENTS : n_mand + n_opt);
+    const int n_lead = arg->n_lead;
+    const int n_opt = arg->n_opt;
+    const int n_trail = arg->n_trail;
+    const int n_mand = n_lead + n_trail;
+    const bool f_var = arg->f_var;
+
+    if (argc >= 0) {
+        return argc;
     }
 
-    return argc;
+    argc = -argc - 1;
+    rb_error_arity(argc, n_mand, f_var ? UNLIMITED_ARGUMENTS : n_mand + n_opt);
+    UNREACHABLE_RETURN(-1);
 }
 
 #undef rb_scan_args
