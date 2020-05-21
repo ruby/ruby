@@ -295,6 +295,10 @@ module WEBrick
       return FakeProxyURI
     end
 
+    def create_net_http(uri, upstream)
+      Net::HTTP.new(uri.host, uri.port, upstream.host, upstream.port)
+    end
+
     def perform_proxy_request(req, res, req_class, body_stream = nil)
       uri = req.request_uri
       path = uri.path.dup
@@ -303,7 +307,7 @@ module WEBrick
       upstream = setup_upstream_proxy_authentication(req, res, header)
 
       body_tmp = []
-      http = Net::HTTP.new(uri.host, uri.port, upstream.host, upstream.port)
+      http = create_net_http(uri, upstream)
       req_fib = Fiber.new do
         http.start do
           if @config[:ProxyTimeout]
