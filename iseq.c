@@ -1993,6 +1993,7 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
 		CALL_FLAG(KWARG);
 		CALL_FLAG(KW_SPLAT);
                 CALL_FLAG(KW_SPLAT_MUT);
+                CALL_FLAG(DISCARDED);
 		CALL_FLAG(OPT_SEND); /* maybe not reachable */
 		rb_ary_push(ary, rb_ary_join(flags, rb_str_new2("|")));
 	    }
