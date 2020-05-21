@@ -345,6 +345,7 @@ rb_scan_args_set(int kw_flag, int argc, const VALUE *argv,
 
   argc_error:
     rb_error_arity(argc, n_mand, f_var ? UNLIMITED_ARGUMENTS : n_mand + n_opt);
+    UNREACHABLE_RETURN(-1);
 #undef rb_scan_args_next_param
 }
 
