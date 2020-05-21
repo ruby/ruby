@@ -2819,7 +2819,7 @@ select_i(VALUE key, VALUE value, VALUE result)
  *  Hash#filter is an alias for Hash#select.
  */
 
-VALUE
+static VALUE
 rb_hash_select(VALUE hash)
 {
     VALUE result;
