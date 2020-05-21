@@ -15,7 +15,6 @@ RSpec.describe "require 'bundler/gem_tasks'" do
 
     bundled_app("Rakefile").open("w") do |f|
       f.write <<-RAKEFILE
-        $:.unshift("#{lib_dir}")
         require "bundler/gem_tasks"
       RAKEFILE
     end
@@ -28,8 +27,8 @@ RSpec.describe "require 'bundler/gem_tasks'" do
   end
 
   it "includes the relevant tasks" do
-    with_gem_path_as(Spec::Path.base_system_gems.to_s) do
-      sys_exec "#{rake} -T", :env => { "RUBYOPT" => opt_add("-I#{lib_dir}", ENV["RUBYOPT"]) }
+    with_gem_path_as(base_system_gems.to_s) do
+      sys_exec "#{rake} -T", :env => { "GEM_HOME" => system_gem_path.to_s }
     end
 
     expect(err).to be_empty
@@ -46,8 +45,8 @@ RSpec.describe "require 'bundler/gem_tasks'" do
   end
 
   it "defines a working `rake install` task" do
-    with_gem_path_as(Spec::Path.base_system_gems.to_s) do
-      sys_exec "#{rake} install", :env => { "RUBYOPT" => opt_add("-I#{lib_dir}", ENV["RUBYOPT"]) }
+    with_gem_path_as(base_system_gems.to_s) do
+      sys_exec "#{rake} install", :env => { "GEM_HOME" => system_gem_path.to_s }
     end
 
     expect(err).to be_empty
@@ -69,9 +68,27 @@ RSpec.describe "require 'bundler/gem_tasks'" do
     end
   end
 
+  context "bundle path configured locally" do
+    before do
+      bundle "config set path vendor/bundle"
+    end
+
+    it "works" do
+      install_gemfile! <<-G
+        source "#{file_uri_for(gem_repo1)}"
+
+        gem "rake"
+      G
+
+      bundle! "exec rake -T"
+
+      expect(err).to be_empty
+    end
+  end
+
   it "adds 'pkg' to rake/clean's CLOBBER" do
-    with_gem_path_as(Spec::Path.base_system_gems.to_s) do
-      sys_exec! %(#{rake} -e 'load "Rakefile"; puts CLOBBER.inspect')
+    with_gem_path_as(base_system_gems.to_s) do
+      sys_exec! %(#{rake} -e 'load "Rakefile"; puts CLOBBER.inspect'), :env => { "GEM_HOME" => system_gem_path.to_s }
     end
     expect(out).to eq '["pkg"]'
   end

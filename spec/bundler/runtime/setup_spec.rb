@@ -767,13 +767,11 @@ end
     G
 
     ruby <<-R
-      if Gem::Specification.method_defined? :extension_dir
-        s = Gem::Specification.find_by_name '#{gem_name}'
-        s.extension_dir = '#{ext_dir}'
+      s = Gem::Specification.find_by_name '#{gem_name}'
+      s.extension_dir = '#{ext_dir}'
 
-        # Don't build extensions.
-        s.class.send(:define_method, :build_extensions) { nil }
-      end
+      # Don't build extensions.
+      s.class.send(:define_method, :build_extensions) { nil }
 
       require '#{lib_dir}/bundler'
       gem '#{gem_name}'

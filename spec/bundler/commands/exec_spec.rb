@@ -930,5 +930,24 @@ __FILE__: #{path.to_s.inspect}
         expect(err).to include("custom openssl should not be loaded")
       end
     end
+
+    context "with a git gem that includes extensions" do
+      before do
+        build_git "simple_git_binary", &:add_c_extension
+        bundle! "config set --local path .bundle"
+        install_gemfile! <<-G
+          gem "simple_git_binary", :git => '#{lib_path("simple_git_binary-1.0")}'
+        G
+      end
+
+      it "allows calling bundle install" do
+        bundle! "exec bundle install"
+      end
+
+      it "allows calling bundle install after removing gem.build_complete" do
+        FileUtils.rm_rf Dir[bundled_app(".bundle/**/gem.build_complete")]
+        bundle! "exec #{Gem.ruby} -S bundle install"
+      end
+    end
   end
 end

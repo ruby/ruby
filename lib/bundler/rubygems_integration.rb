@@ -102,11 +102,6 @@ module Bundler
       end.flatten(1)
     end
 
-    def spec_extension_dir(spec)
-      return unless spec.respond_to?(:extension_dir)
-      spec.extension_dir
-    end
-
     def stub_set_spec(stub, spec)
       stub.instance_variable_set(:@spec, spec)
     end
@@ -221,11 +216,6 @@ module Bundler
 
     def bin_path(gem, bin, ver)
       Gem.bin_path(gem, bin, ver)
-    end
-
-    def preserve_paths
-      # this is a no-op outside of RubyGems 1.8
-      yield
     end
 
     def loaded_gem_paths

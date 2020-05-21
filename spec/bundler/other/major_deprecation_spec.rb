@@ -314,17 +314,18 @@ RSpec.describe "major deprecations" do
     end
 
     {
-      :clean => true,
-      :deployment => true,
-      :frozen => true,
-      :"no-cache" => true,
-      :"no-prune" => true,
-      :path => "vendor/bundle",
-      :shebang => "ruby27",
-      :system => true,
-      :without => "development",
-      :with => "development",
-    }.each do |name, value|
+      "clean" => ["clean", true],
+      "deployment" => ["deployment", true],
+      "frozen" => ["frozen", true],
+      "no-cache" => ["no_cache", true],
+      "no-prune" => ["no_prune", true],
+      "path" => ["path", "vendor/bundle"],
+      "shebang" => ["shebang", "ruby27"],
+      "system" => ["system", true],
+      "without" => ["without", "development"],
+      "with" => ["with", "development"],
+    }.each do |name, expectations|
+      option_name, value = *expectations
       flag_name = "--#{name}"
 
       context "with the #{flag_name} flag" do
@@ -338,7 +339,7 @@ RSpec.describe "major deprecations" do
             "The `#{flag_name}` flag is deprecated because it relies on " \
             "being remembered across bundler invocations, which bundler " \
             "will no longer do in future versions. Instead please use " \
-            "`bundle config set #{name} '#{value}'`, and stop using this flag"
+            "`bundle config set #{option_name} '#{value}'`, and stop using this flag"
           )
         end
 
