@@ -710,7 +710,7 @@ class TestRubyOptimization < Test::Unit::TestCase
       foo{}
       ObjectSpace.count_objects(h2)
 
-      assert_equal 0, h2[:TOTAL] - h1[:TOTAL]
+      assert_equal 0, h2[:T_DATA] - h1[:T_DATA] # Proc is T_DATA
     END
   end
 
