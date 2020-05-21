@@ -68,29 +68,29 @@ REMEMBERING OPTIONS
        foo or --without production, are remembered between commands and  saved
        to your local application's configuration (normally, ./.bundle/config).
 
-       However, this will be changed in bundler 3, so it's better not to  rely
-       on  this  behavior. If these options must be remembered, it's better to
+       However,  this will be changed in bundler 3, so it's better not to rely
+       on this behavior. If these options must be remembered, it's  better  to
        set them using bundle config (e.g., bundle config set path foo).
 
        The options that can be configured are:
 
-       bin    Creates  a  directory  (defaults  to  ~/bin)   and   place   any
+       bin    Creates   a   directory   (defaults  to  ~/bin)  and  place  any
               executables  from  the  gem  there.  These  executables  run  in
               Bundler's context. If used, you might add this directory to your
-              environment's  PATH  variable.  For  instance,  if the rails gem
+              environment's PATH variable. For  instance,  if  the  rails  gem
               comes with a rails executable, this flag will create a bin/rails
-              executable  that  ensures that all referred dependencies will be
+              executable that ensures that all referred dependencies  will  be
               resolved using the bundled gems.
 
        deployment
-              In deployment mode,  Bundler  will  'roll-out'  the  bundle  for
-              production  use. Please check carefully if you want to have this
+              In  deployment  mode,  Bundler  will  'roll-out'  the bundle for
+              production use. Please check carefully if you want to have  this
               option enabled in development or test environments.
 
-       path   The location to install the specified gems to. This defaults  to
-              Rubygems'  setting.  Bundler shares this location with Rubygems,
-              gem install ... will have gem installed there,  too.  Therefore,
-              gems  installed  without  a  --path  ... setting will show up by
+       path   The  location to install the specified gems to. This defaults to
+              Rubygems' setting. Bundler shares this location  with  Rubygems,
+              gem  install  ... will have gem installed there, too. Therefore,
+              gems installed without a --path ...  setting  will  show  up  by
               calling gem list. Accordingly, gems installed to other locations
               will not get listed.
 
@@ -98,15 +98,15 @@ REMEMBERING OPTIONS
               A space-separated list of groups referencing gems to skip during
               installation.
 
-       with   A space-separated list of groups  referencing  gems  to  include
+       with   A  space-separated  list  of  groups referencing gems to include
               during installation.
 
 BUILD OPTIONS
-       You  can use bundle config to give Bundler the flags to pass to the gem
+       You can use bundle config to give Bundler the flags to pass to the  gem
        installer every time bundler tries to install a particular gem.
 
-       A very common example, the mysql gem, requires Snow  Leopard  users  to
-       pass  configuration  flags  to gem install to specify where to find the
+       A  very  common  example, the mysql gem, requires Snow Leopard users to
+       pass configuration flags to gem install to specify where  to  find  the
        mysql_config executable.
 
 
@@ -115,7 +115,7 @@ BUILD OPTIONS
 
 
 
-       Since the specific location of that executable can change from  machine
+       Since  the specific location of that executable can change from machine
        to machine, you can specify these flags on a per-machine basis.
 
 
@@ -124,44 +124,44 @@ BUILD OPTIONS
 
 
 
-       After  running  this  command,  every time bundler needs to install the
+       After running this command, every time bundler  needs  to  install  the
        mysql gem, it will pass along the flags you specified.
 
 CONFIGURATION KEYS
-       Configuration keys in bundler have two forms: the  canonical  form  and
+       Configuration  keys  in  bundler have two forms: the canonical form and
        the environment variable form.
 
-       For   instance,   passing  the  --without  flag  to  bundle  install(1)
-       bundle-install.1.html prevents Bundler from installing  certain  groups
-       specified   in   the   Gemfile(5).   Bundler  persists  this  value  in
-       app/.bundle/config so that calls to Bundler.setup do not  try  to  find
+       For  instance,  passing  the  --without  flag  to   bundle   install(1)
+       bundle-install.1.html  prevents  Bundler from installing certain groups
+       specified  in  the  Gemfile(5).  Bundler   persists   this   value   in
+       app/.bundle/config  so  that  calls to Bundler.setup do not try to find
        gems from the Gemfile that you didn't install. Additionally, subsequent
-       calls to bundle install(1) bundle-install.1.html remember this  setting
+       calls  to bundle install(1) bundle-install.1.html remember this setting
        and skip those groups.
 
-       The  canonical  form of this configuration is "without". To convert the
-       canonical form to the environment variable  form,  capitalize  it,  and
-       prepend   BUNDLE_.  The  environment  variable  form  of  "without"  is
+       The canonical form of this configuration is "without". To  convert  the
+       canonical  form  to  the  environment variable form, capitalize it, and
+       prepend  BUNDLE_.  The  environment  variable  form  of  "without"   is
        BUNDLE_WITHOUT.
 
-       Any periods in  the  configuration  keys  must  be  replaced  with  two
-       underscores   when   setting   it   via   environment   variables.  The
-       configuration  key  local.rack   becomes   the   environment   variable
+       Any  periods  in  the  configuration  keys  must  be  replaced with two
+       underscores  when   setting   it   via   environment   variables.   The
+       configuration   key   local.rack   becomes   the  environment  variable
        BUNDLE_LOCAL__RACK.
 
 LIST OF AVAILABLE KEYS
-       The  following  is  a list of all configuration keys and their purpose.
-       You  can  learn  more  about  their  operation  in  bundle   install(1)
+       The following is a list of all configuration keys  and  their  purpose.
+       You   can  learn  more  about  their  operation  in  bundle  install(1)
        bundle-install.1.html.
 
        o   allow_bundler_dependency_conflicts
-           (BUNDLE_ALLOW_BUNDLER_DEPENDENCY_CONFLICTS):  Allow  resolving   to
-           specifications   that   have   dependencies  on  bundler  that  are
+           (BUNDLE_ALLOW_BUNDLER_DEPENDENCY_CONFLICTS):   Allow  resolving  to
+           specifications  that  have  dependencies  on   bundler   that   are
            incompatible with the running Bundler version.
 
        o   allow_deployment_source_credential_changes
-           (BUNDLE_ALLOW_DEPLOYMENT_SOURCE_CREDENTIAL_CHANGES):     When    in
-           deployment mode, allow changing the credentials to a gem's  source.
+           (BUNDLE_ALLOW_DEPLOYMENT_SOURCE_CREDENTIAL_CHANGES):    When     in
+           deployment  mode, allow changing the credentials to a gem's source.
            Ex:               https://some.host.com/gems/path/               ->
            https://user_name:password@some.host.com/gems/path
 
@@ -169,64 +169,64 @@ LIST OF AVAILABLE KEYS
            to use cached data when installing without network access.
 
        o   auto_clean_without_path           (BUNDLE_AUTO_CLEAN_WITHOUT_PATH):
-           Automatically run bundle clean after installing  when  an  explicit
+           Automatically  run  bundle  clean after installing when an explicit
            path has not been set and Bundler is not installing into the system
            gems.
 
-       o   auto_install  (BUNDLE_AUTO_INSTALL):   Automatically   run   bundle
+       o   auto_install   (BUNDLE_AUTO_INSTALL):   Automatically   run  bundle
            install when gems are missing.
 
-       o   bin  (BUNDLE_BIN):  Install  executables from gems in the bundle to
+       o   bin (BUNDLE_BIN): Install executables from gems in  the  bundle  to
            the specified directory. Defaults to false.
 
-       o   cache_all (BUNDLE_CACHE_ALL): Cache all gems,  including  path  and
+       o   cache_all  (BUNDLE_CACHE_ALL):  Cache  all gems, including path and
            git gems.
 
-       o   cache_all_platforms  (BUNDLE_CACHE_ALL_PLATFORMS):  Cache  gems for
+       o   cache_all_platforms (BUNDLE_CACHE_ALL_PLATFORMS):  Cache  gems  for
            all platforms.
 
-       o   cache_path (BUNDLE_CACHE_PATH): The  directory  that  bundler  will
-           place  cached gems in when running bundle package, and that bundler
+       o   cache_path  (BUNDLE_CACHE_PATH):  The  directory  that bundler will
+           place cached gems in when running bundle package, and that  bundler
            will look in when installing gems. Defaults to vendor/cache.
 
-       o   clean (BUNDLE_CLEAN):  Whether  Bundler  should  run  bundle  clean
+       o   clean  (BUNDLE_CLEAN):  Whether  Bundler  should  run  bundle clean
            automatically after bundle install.
 
-       o   console  (BUNDLE_CONSOLE):  The console that bundle console starts.
+       o   console (BUNDLE_CONSOLE): The console that bundle  console  starts.
            Defaults to irb.
 
        o   default_install_uses_path       (BUNDLE_DEFAULT_INSTALL_USES_PATH):
-           Whether  a  bundle  install  without  an  explicit  --path argument
+           Whether a  bundle  install  without  an  explicit  --path  argument
            defaults to installing gems in .bundle.
 
-       o   deployment (BUNDLE_DEPLOYMENT): Disallow changes  to  the  Gemfile.
-           When  the Gemfile is changed and the lockfile has not been updated,
+       o   deployment  (BUNDLE_DEPLOYMENT):  Disallow  changes to the Gemfile.
+           When the Gemfile is changed and the lockfile has not been  updated,
            running Bundler commands will be blocked.
 
        o   disable_checksum_validation   (BUNDLE_DISABLE_CHECKSUM_VALIDATION):
-           Allow  installing  gems  even  if  they  do  not match the checksum
+           Allow installing gems even  if  they  do  not  match  the  checksum
            provided by RubyGems.
 
        o   disable_exec_load  (BUNDLE_DISABLE_EXEC_LOAD):  Stop  Bundler  from
            using load to launch an executable in-process in bundle exec.
 
        o   disable_local_branch_check     (BUNDLE_DISABLE_LOCAL_BRANCH_CHECK):
-           Allow Bundler  to  use  a  local  git  override  without  a  branch
+           Allow  Bundler  to  use  a  local  git  override  without  a branch
            specified in the Gemfile.
 
-       o   disable_multisource    (BUNDLE_DISABLE_MULTISOURCE):    When   set,
+       o   disable_multisource   (BUNDLE_DISABLE_MULTISOURCE):    When    set,
            Gemfiles containing multiple sources will produce errors instead of
            warnings. Use bundle config unset disable_multisource to unset.
 
        o   disable_shared_gems (BUNDLE_DISABLE_SHARED_GEMS): Stop Bundler from
            accessing gems installed to RubyGems' normal location.
 
-       o   disable_version_check (BUNDLE_DISABLE_VERSION_CHECK): Stop  Bundler
-           from   checking   if  a  newer  Bundler  version  is  available  on
+       o   disable_version_check  (BUNDLE_DISABLE_VERSION_CHECK): Stop Bundler
+           from  checking  if  a  newer  Bundler  version  is   available   on
            rubygems.org.
 
-       o   force_ruby_platform   (BUNDLE_FORCE_RUBY_PLATFORM):   Ignore    the
-           current  machine's platform and install only ruby platform gems. As
+       o   force_ruby_platform    (BUNDLE_FORCE_RUBY_PLATFORM):   Ignore   the
+           current machine's platform and install only ruby platform gems.  As
            a result, gems with native extensions will be compiled from source.
 
        o   frozen  (BUNDLE_FROZEN):  Disallow changes to the Gemfile. When the
