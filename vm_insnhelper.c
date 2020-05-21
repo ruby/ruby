@@ -1573,8 +1573,14 @@ vm_search_cc(VALUE klass, const struct rb_callinfo *ci)
 
         if (ccs == NULL) {
             VM_ASSERT(cc_tbl != NULL);
-            ccs = vm_ccs_create(klass, cme);
-            rb_id_table_insert(cc_tbl, mid, (VALUE)ccs);
+            if (LIKELY(rb_id_table_lookup(cc_tbl, mid, (VALUE*)&ccs))) {
+                // rb_callable_method_entry() prepares ccs.
+            }
+            else {
+                // TODO: required?
+                ccs = vm_ccs_create(klass, cme);
+                rb_id_table_insert(cc_tbl, mid, (VALUE)ccs);
+            }
         }
         vm_ccs_push(klass, ccs, ci, cc);
 
