@@ -47,15 +47,13 @@ module Gem
       full_require_paths
     end
 
-    if method_defined?(:extension_dir)
-      alias_method :rg_extension_dir, :extension_dir
-      def extension_dir
-        @bundler_extension_dir ||= if source.respond_to?(:extension_dir_name)
-          unique_extension_dir = [source.extension_dir_name, File.basename(full_gem_path)].uniq.join("-")
-          File.expand_path(File.join(extensions_dir, unique_extension_dir))
-        else
-          rg_extension_dir
-        end
+    alias_method :rg_extension_dir, :extension_dir
+    def extension_dir
+      @bundler_extension_dir ||= if source.respond_to?(:extension_dir_name)
+        unique_extension_dir = [source.extension_dir_name, File.basename(full_gem_path)].uniq.join("-")
+        File.expand_path(File.join(extensions_dir, unique_extension_dir))
+      else
+        rg_extension_dir
       end
     end
 
