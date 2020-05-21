@@ -5,19 +5,8 @@ require 'rubygems/package_task'
 
 class TestGemPackageTask < Gem::TestCase
 
-  def setup
-    super
-
-    @original_rake_fileutils_verbosity = RakeFileUtils.verbose_flag
-  end
-
-  def teardown
-    RakeFileUtils.verbose_flag = @original_rake_fileutils_verbosity
-
-    super
-  end
-
   def test_gem_package
+    original_rake_fileutils_verbosity = RakeFileUtils.verbose_flag
     RakeFileUtils.verbose_flag = false
 
     gem = Gem::Specification.new do |g|
@@ -45,6 +34,8 @@ class TestGemPackageTask < Gem::TestCase
 
       assert_path_exists 'pkg/pkgr-1.2.3.gem'
     end
+  ensure
+    RakeFileUtils.verbose_flag = original_rake_fileutils_verbosity
   end
 
   def test_gem_package_prints_to_stdout_by_default
@@ -78,8 +69,6 @@ class TestGemPackageTask < Gem::TestCase
   end
 
   def test_gem_package_with_current_platform
-    RakeFileUtils.verbose_flag = false
-
     gem = Gem::Specification.new do |g|
       g.name = "pkgr"
       g.version = "1.2.3"
@@ -93,8 +82,6 @@ class TestGemPackageTask < Gem::TestCase
   end
 
   def test_gem_package_with_ruby_platform
-    RakeFileUtils.verbose_flag = false
-
     gem = Gem::Specification.new do |g|
       g.name = "pkgr"
       g.version = "1.2.3"
@@ -108,8 +95,6 @@ class TestGemPackageTask < Gem::TestCase
   end
 
   def test_package_dir_path
-    RakeFileUtils.verbose_flag = false
-
     gem = Gem::Specification.new do |g|
       g.name = 'nokogiri'
       g.version = '1.5.0'
