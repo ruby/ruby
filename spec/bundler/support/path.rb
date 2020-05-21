@@ -234,7 +234,6 @@ module Spec
   private
 
     def git_ls_files(glob)
-      skip "not in git working directory" unless git_root_dir?
       sys_exec("git ls-files -z -- #{glob}", :dir => source_root).split("\x0")
     end
 
