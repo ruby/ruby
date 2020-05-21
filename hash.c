@@ -2854,7 +2854,7 @@ keep_if_i(VALUE key, VALUE value, VALUE hash)
  *  Hash#filter! is an alias for Hash#select!.
  */
 
-VALUE
+static VALUE
 rb_hash_select_bang(VALUE hash)
 {
     st_index_t n;
