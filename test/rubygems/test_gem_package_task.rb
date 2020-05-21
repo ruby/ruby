@@ -8,8 +8,6 @@ class TestGemPackageTask < Gem::TestCase
   def setup
     super
 
-    Rake.application = Rake::Application.new
-
     @original_rake_fileutils_verbosity = RakeFileUtils.verbose_flag
   end
 
@@ -30,6 +28,8 @@ class TestGemPackageTask < Gem::TestCase
       g.files = %w[x]
       g.summary = 'summary'
     end
+
+    Rake.application = Rake::Application.new
 
     pkg = Gem::PackageTask.new(gem) do |p|
       p.package_files << "y"
@@ -57,22 +57,24 @@ class TestGemPackageTask < Gem::TestCase
       g.summary = 'summary'
     end
 
-    pkg = Gem::PackageTask.new(gem) do |p|
-      p.package_files << "y"
-    end
+    _, err = capture_io do
+      Rake.application = Rake::Application.new
 
-    assert_equal %w[x y], pkg.package_files
-
-    Dir.chdir @tempdir do
-      FileUtils.touch 'x'
-      FileUtils.touch 'y'
-
-      _, err = capture_io do
-        Rake.application['package'].invoke
+      pkg = Gem::PackageTask.new(gem) do |p|
+        p.package_files << "y"
       end
 
-      assert_empty err
+      assert_equal %w[x y], pkg.package_files
+
+      Dir.chdir @tempdir do
+        FileUtils.touch 'x'
+        FileUtils.touch 'y'
+
+        Rake.application['package'].invoke
+      end
     end
+
+    assert_empty err
   end
 
   def test_gem_package_with_current_platform
