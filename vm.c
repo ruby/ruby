@@ -2250,7 +2250,33 @@ rb_vm_update_references(void *ptr)
 {
     if (ptr) {
         rb_vm_t *vm = ptr;
+        rb_thread_t *th = 0;
+
         rb_gc_update_tbl_refs(vm->frozen_strings);
+
+        list_for_each(&vm->living_threads, th, vmlt_node) {
+            th->self = rb_gc_location(th->self);
+        }
+
+        vm->thgroup_default = rb_gc_location(vm->thgroup_default);
+        vm->mark_object_ary = rb_gc_location(vm->mark_object_ary);
+
+        vm->load_path = rb_gc_location(vm->load_path);
+        vm->load_path_snapshot = rb_gc_location(vm->load_path_snapshot);
+
+        if (vm->load_path_check_cache) {
+            vm->load_path_check_cache = rb_gc_location(vm->load_path_check_cache);
+        }
+
+        vm->expanded_load_path = rb_gc_location(vm->expanded_load_path);
+        vm->loaded_features = rb_gc_location(vm->loaded_features);
+        vm->loaded_features_snapshot = rb_gc_location(vm->loaded_features_snapshot);
+        vm->top_self = rb_gc_location(vm->top_self);
+        vm->orig_progname = rb_gc_location(vm->orig_progname);
+
+        if (vm->coverages) {
+            vm->coverages = rb_gc_location(vm->coverages);
+        }
     }
 }
 
@@ -2265,11 +2291,11 @@ rb_vm_mark(void *ptr)
         long i, len;
         const VALUE *obj_ary;
 
-	list_for_each(&vm->living_threads, th, vmlt_node) {
-	    rb_gc_mark(th->self);
-	}
-	rb_gc_mark(vm->thgroup_default);
-	rb_gc_mark(vm->mark_object_ary);
+        list_for_each(&vm->living_threads, th, vmlt_node) {
+            rb_gc_mark_movable(th->self);
+        }
+        rb_gc_mark_movable(vm->thgroup_default);
+        rb_gc_mark_movable(vm->mark_object_ary);
 
         len = RARRAY_LEN(vm->mark_object_ary);
         obj_ary = RARRAY_CONST_PTR(vm->mark_object_ary);
@@ -2286,15 +2312,15 @@ rb_vm_mark(void *ptr)
             obj_ary++;
         }
 
-	rb_gc_mark(vm->load_path);
-	rb_gc_mark(vm->load_path_snapshot);
-	RUBY_MARK_UNLESS_NULL(vm->load_path_check_cache);
-	rb_gc_mark(vm->expanded_load_path);
-	rb_gc_mark(vm->loaded_features);
-	rb_gc_mark(vm->loaded_features_snapshot);
-	rb_gc_mark(vm->top_self);
-        rb_gc_mark(vm->orig_progname);
-	RUBY_MARK_UNLESS_NULL(vm->coverages);
+        rb_gc_mark_movable(vm->load_path);
+        rb_gc_mark_movable(vm->load_path_snapshot);
+        RUBY_MARK_MOVABLE_UNLESS_NULL(vm->load_path_check_cache);
+        rb_gc_mark_movable(vm->expanded_load_path);
+        rb_gc_mark_movable(vm->loaded_features);
+        rb_gc_mark_movable(vm->loaded_features_snapshot);
+        rb_gc_mark_movable(vm->top_self);
+        rb_gc_mark_movable(vm->orig_progname);
+        RUBY_MARK_MOVABLE_UNLESS_NULL(vm->coverages);
         /* Prevent classes from moving */
         rb_mark_tbl(vm->defined_module_hash);
 
@@ -2509,11 +2535,12 @@ rb_execution_context_update(const rb_execution_context_t *ec)
             cfp->iseq = (rb_iseq_t *)rb_gc_location((VALUE)cfp->iseq);
             cfp->block_code = (void *)rb_gc_location((VALUE)cfp->block_code);
 
-            if (!VM_ENV_LOCAL_P(ep)) {
-                VALUE *prev_ep = (VALUE *)VM_ENV_PREV_EP(ep);
-                if (VM_ENV_FLAGS(prev_ep, VM_ENV_FLAG_ESCAPED)) {
-                    prev_ep[VM_ENV_DATA_INDEX_ENV] = rb_gc_location(prev_ep[VM_ENV_DATA_INDEX_ENV]);
+            while (!VM_ENV_LOCAL_P(ep)) {
+                if (VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED)) {
+                    VM_FORCE_WRITE(&ep[VM_ENV_DATA_INDEX_ENV], rb_gc_location(ep[VM_ENV_DATA_INDEX_ENV]));
+                    VM_FORCE_WRITE(&ep[VM_ENV_DATA_INDEX_ME_CREF], rb_gc_location(ep[VM_ENV_DATA_INDEX_ME_CREF]));
                 }
+                ep = VM_ENV_PREV_EP(ep);
             }
 
             cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
@@ -2548,12 +2575,13 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
             rb_gc_mark_movable((VALUE)cfp->iseq);
             rb_gc_mark_movable((VALUE)cfp->block_code);
 
-	    if (!VM_ENV_LOCAL_P(ep)) {
-		const VALUE *prev_ep = VM_ENV_PREV_EP(ep);
-		if (VM_ENV_FLAGS(prev_ep, VM_ENV_FLAG_ESCAPED)) {
-                    rb_gc_mark_movable(prev_ep[VM_ENV_DATA_INDEX_ENV]);
+            while (!VM_ENV_LOCAL_P(ep)) {
+		if (VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED)) {
+                    rb_gc_mark_movable(ep[VM_ENV_DATA_INDEX_ENV]);
+                    rb_gc_mark(ep[VM_ENV_DATA_INDEX_ME_CREF]);
 		}
-	    }
+                ep = VM_ENV_PREV_EP(ep);
+            }
 
 	    cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
 	}
