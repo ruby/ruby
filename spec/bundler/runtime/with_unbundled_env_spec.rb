@@ -61,7 +61,7 @@ RSpec.describe "Bundler.with_env helpers" do
       EOS
     end
 
-    it "removes variables that bundler added" do
+    it "removes variables that bundler added", :ruby_repo do
       # Simulate bundler has not yet been loaded
       ENV.replace(ENV.to_hash.delete_if {|k, _v| k.start_with?(Bundler::EnvironmentPreserver::BUNDLER_PREFIX) })
 

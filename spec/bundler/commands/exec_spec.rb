@@ -931,7 +931,7 @@ __FILE__: #{path.to_s.inspect}
       end
     end
 
-    context "with a git gem that includes extensions" do
+    context "with a git gem that includes extensions", :ruby_repo do
       before do
         build_git "simple_git_binary", &:add_c_extension
         bundle! "config set --local path .bundle"

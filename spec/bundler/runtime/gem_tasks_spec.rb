@@ -44,7 +44,7 @@ RSpec.describe "require 'bundler/gem_tasks'" do
     expect(exitstatus).to eq(0) if exitstatus
   end
 
-  it "defines a working `rake install` task" do
+  it "defines a working `rake install` task", :ruby_repo do
     with_gem_path_as(base_system_gems.to_s) do
       sys_exec "#{rake} install", :env => { "GEM_HOME" => system_gem_path.to_s }
     end
@@ -56,7 +56,7 @@ RSpec.describe "require 'bundler/gem_tasks'" do
     expect(err).to be_empty
   end
 
-  context "rake build when path has spaces" do
+  context "rake build when path has spaces", :ruby_repo do
     before do
       spaced_bundled_app = tmp.join("bundled app")
       FileUtils.cp_r bundled_app, spaced_bundled_app
@@ -73,7 +73,7 @@ RSpec.describe "require 'bundler/gem_tasks'" do
       bundle "config set path vendor/bundle"
     end
 
-    it "works" do
+    it "works", :ruby_repo do
       install_gemfile! <<-G
         source "#{file_uri_for(gem_repo1)}"
 
