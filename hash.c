@@ -2881,7 +2881,7 @@ rb_hash_select_bang(VALUE hash)
  *  See also Hash#select!.
  */
 
-VALUE
+static VALUE
 rb_hash_keep_if(VALUE hash)
 {
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
