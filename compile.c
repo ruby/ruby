@@ -9721,12 +9721,13 @@ static VALUE
 pinned_list_new(long size)
 {
     struct pinned_list * ptr;
+    VALUE obj_list =
+        TypedData_Make_Struct(0, struct pinned_list, &pinned_list_type, ptr);
 
-    ptr = xmalloc(sizeof(struct pinned_list));
-    ptr->size = size;
     ptr->buffer = xcalloc(size, sizeof(VALUE));
+    ptr->size = size;
 
-    return TypedData_Wrap_Struct(0, &pinned_list_type, ptr);
+    return obj_list;
 }
 
 static ibf_offset_t
