@@ -140,7 +140,7 @@ CC_SET_FASTPATH(const struct rb_callcache *cc, vm_call_handler func, bool enable
 
 #if VM_CHECK_MODE > 0
 #define SETUP_CANARY() \
-    VALUE *canary; \
+    VALUE *canary = 0; \
     if (leaf) { \
         canary = GET_SP(); \
         SET_SV(vm_stack_canary); \
