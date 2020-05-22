@@ -2801,6 +2801,46 @@ ci_argc_set(const rb_iseq_t *iseq, const struct rb_callinfo *ci, int argc)
     return nci;
 }
 
+static inline bool
+is_effectively_pop(const LINK_ELEMENT *e)
+{
+    while (e) {
+        switch (e->type) {
+          case ISEQ_ELEMENT_INSN:
+            if (IS_INSN_ID(e, nop)) {
+          case ISEQ_ELEMENT_ANCHOR:
+          case ISEQ_ELEMENT_LABEL:
+          case ISEQ_ELEMENT_TRACE:
+                e = e->next;
+            }
+            else if (IS_INSN_ID(e, jump)) {
+                e = get_destination_insn((INSN *)e);
+            }
+            else if (IS_INSN_ID(e, pop)) {
+                return true;
+            }
+            else {
+          case ISEQ_ELEMENT_ADJUST:
+                return false;
+            }
+        }
+    }
+    return false;
+}
+
+/* There are situations when the instruction have multiple call info.  We are
+ * interested in the last one here. */
+static inline int
+insn_ci_index(enum ruby_vminsn_type i)
+{
+    for (int j = insn_len(i) - 2; j >= 0; j--) {
+        if (insn_op_types(i)[j] == TS_CALLDATA) {
+            return j;
+        }
+    }
+    return -1;
+}
+
 static int
 iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcallopt)
 {
@@ -3316,6 +3356,21 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                 RB_OBJ_WRITTEN(iseq, Qundef, ci);
 	    }
 	}
+    }
+
+    /* This could be done right at the place when ADD_SEND/ADD_CALL are issued,
+     * instead of this later stage.  But they are scatterd accross the entire
+     * compiler routines.  It is difficult to cover everything needed then. */
+    {
+        int i = insn_ci_index(INSN_OF(iobj));
+
+        if (i >= 0 && is_effectively_pop(iobj->link.next)) {
+            const struct rb_callinfo *ci;
+
+            ci = (const struct rb_callinfo *)OPERAND_AT(iobj, i);
+            ci = ci_flag_set(iseq, ci, VM_CALL_DISCARDED);
+            OPERAND_AT(iobj, i) = (VALUE)ci;
+        }
     }
 
     if (IS_INSN_ID(iobj, dup)) {
