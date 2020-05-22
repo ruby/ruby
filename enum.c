@@ -1763,7 +1763,7 @@ min_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *     enum.min(n) { |a, b| block } -> array
  *
  *  Returns the object in _enum_ with the minimum value. The
- *  first form assumes all objects implement Comparable;
+ *  first form assumes all objects implement <code><=></code>;
  *  the second uses the block to return <em>a <=> b</em>.
  *
  *     a = %w(albatross dog horse)
@@ -1855,7 +1855,7 @@ max_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *     enum.max(n) { |a, b| block } -> array
  *
  *  Returns the object in _enum_ with the maximum value. The
- *  first form assumes all objects implement Comparable;
+ *  first form assumes all objects implement <code><=></code>;
  *  the second uses the block to return <em>a <=> b</em>.
  *
  *     a = %w(albatross dog horse)
@@ -2014,7 +2014,7 @@ minmax_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, _memo))
  *
  *  Returns a two element array which contains the minimum and the
  *  maximum value in the enumerable.  The first form assumes all
- *  objects implement Comparable; the second uses the
+ *  objects implement <code><=></code>; the second uses the
  *  block to return <em>a <=> b</em>.
  *
  *     a = %w(albatross dog horse)
