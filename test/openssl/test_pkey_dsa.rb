@@ -48,12 +48,31 @@ class OpenSSL::TestPKeyDSA < OpenSSL::PKeyTestCase
     assert_equal false, dsa512.verify("SHA256", signature1, data)
   end
 
-  def test_sys_sign_verify
-    key = Fixtures.pkey("dsa256")
+  def test_sign_verify_raw
+    key = Fixtures.pkey("dsa512")
     data = 'Sign me!'
     digest = OpenSSL::Digest.digest('SHA1', data)
+
+    invalid_sig = key.sign_raw(nil, digest.succ)
+    malformed_sig = "*" * invalid_sig.bytesize
+
+    # Sign by #syssign
     sig = key.syssign(digest)
-    assert(key.sysverify(digest, sig))
+    assert_equal true, key.sysverify(digest, sig)
+    assert_equal false, key.sysverify(digest, invalid_sig)
+    assert_raise(OpenSSL::PKey::DSAError) { key.sysverify(digest, malformed_sig) }
+    assert_equal true, key.verify_raw(nil, sig, digest)
+    assert_equal false, key.verify_raw(nil, invalid_sig, digest)
+    assert_raise(OpenSSL::PKey::PKeyError) { key.verify_raw(nil, malformed_sig, digest) }
+
+    # Sign by #sign_raw
+    sig = key.sign_raw(nil, digest)
+    assert_equal true, key.sysverify(digest, sig)
+    assert_equal false, key.sysverify(digest, invalid_sig)
+    assert_raise(OpenSSL::PKey::DSAError) { key.sysverify(digest, malformed_sig) }
+    assert_equal true, key.verify_raw(nil, sig, digest)
+    assert_equal false, key.verify_raw(nil, invalid_sig, digest)
+    assert_raise(OpenSSL::PKey::PKeyError) { key.verify_raw(nil, malformed_sig, digest) }
   end
 
   def test_DSAPrivateKey
