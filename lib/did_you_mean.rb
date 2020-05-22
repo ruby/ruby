@@ -6,6 +6,7 @@ require_relative 'did_you_mean/spell_checkers/name_error_checkers'
 require_relative 'did_you_mean/spell_checkers/method_name_checker'
 require_relative 'did_you_mean/spell_checkers/key_error_checker'
 require_relative 'did_you_mean/spell_checkers/null_checker'
+require_relative 'did_you_mean/spell_checkers/require_path_checker'
 require_relative 'did_you_mean/formatters/plain_formatter'
 require_relative 'did_you_mean/tree_spell_checker'
 
@@ -95,8 +96,9 @@ module DidYouMean
   correct_error NameError, NameErrorCheckers
   correct_error KeyError, KeyErrorChecker
   correct_error NoMethodError, MethodNameChecker
+  correct_error LoadError, RequirePathChecker if RUBY_VERSION >= '2.8.0'
 
-  # Returns the currenctly set formatter. By default, it is set to +DidYouMean::Formatter+.
+  # Returns the currently set formatter. By default, it is set to +DidYouMean::Formatter+.
   def self.formatter
     @@formatter
   end

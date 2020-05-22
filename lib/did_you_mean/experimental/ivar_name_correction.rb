@@ -1,22 +1,11 @@
 # frozen-string-literal: true
 
-require_relative '../../did_you_mean'
+require_relative '../../did_you_mean/spell_checker'
+require_relative '../../did_you_mean/spell_checkers/method_name_checker'
 
 module DidYouMean
   module Experimental #:nodoc:
-    class IvarNameCheckerBuilder #:nodoc:
-      attr_reader :original_checker
-
-      def initialize(original_checker) #:nodoc:
-        @original_checker = original_checker
-      end
-
-      def new(no_method_error) #:nodoc:
-        IvarNameChecker.new(no_method_error, original_checker: @original_checker)
-      end
-    end
-
-    class IvarNameChecker #:nodoc:
+    class IvarNameChecker < ::DidYouMean::MethodNameChecker #:nodoc:
       REPLS = {
         "(irb)" => -> { Readline::HISTORY.to_a.last }
       }
@@ -29,10 +18,10 @@ module DidYouMean
         end
       end
 
-      attr_reader :original_checker
+      attr_reader :location, :ivar_names
 
-      def initialize(no_method_error, original_checker: )
-        @original_checker = original_checker.new(no_method_error)
+      def initialize(no_method_error)
+        super(no_method_error)
 
         @location   = no_method_error.backtrace_locations.first
         @ivar_names = no_method_error.frame_binding.receiver.instance_variables
@@ -41,22 +30,22 @@ module DidYouMean
       end
 
       def corrections
-        original_checker.corrections + ivar_name_corrections
+        super + ivar_name_corrections
       end
 
       def ivar_name_corrections
-        @ivar_name_corrections ||= SpellChecker.new(dictionary: @ivar_names).correct(receiver_name.to_s)
+        @ivar_name_corrections ||= SpellChecker.new(dictionary: ivar_names).correct(receiver_name.to_s)
       end
 
       private
 
       def receiver_name
-        return unless @original_checker.receiver.nil?
+        return unless receiver.nil?
 
-        abs_path = @location.absolute_path
-        lineno   = @location.lineno
+        abs_path = location.absolute_path
+        lineno   = location.lineno
 
-        /@(\w+)*\.#{@original_checker.method_name}/ =~ line(abs_path, lineno).to_s && $1
+        /@(\w+)*\.#{method_name}/ =~ line(abs_path, lineno).to_s && $1
       end
 
       def line(abs_path, lineno)
@@ -71,6 +60,6 @@ module DidYouMean
     end
   end
 
-  NameError.send(:attr, :frame_binding)
-  SPELL_CHECKERS['NoMethodError'] = Experimental::IvarNameCheckerBuilder.new(SPELL_CHECKERS['NoMethodError'])
+  NoMethodError.send(:attr, :frame_binding)
+  SPELL_CHECKERS['NoMethodError'] = Experimental::IvarNameChecker
 end

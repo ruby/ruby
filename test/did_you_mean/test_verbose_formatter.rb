@@ -3,6 +3,7 @@ require_relative './helper'
 class VerboseFormatterTest < Test::Unit::TestCase
   def setup
     require_relative File.join(DidYouMean::TestHelper.root, 'verbose')
+
     DidYouMean.formatter = DidYouMean::VerboseFormatter.new
   end
 
