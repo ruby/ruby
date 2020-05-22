@@ -132,11 +132,11 @@ def sync_default_gems(gem)
 
   case gem
   when "rubygems"
-    rm_rf(%w[lib/rubygems* test/rubygems])
+    rm_rf(%w[lib/rubygems lib/rubygems.rb test/rubygems])
     cp_r(Dir.glob("#{upstream}/lib/rubygems*"), "lib")
     cp_r("#{upstream}/test/rubygems", "test")
   when "bundler"
-    rm_rf(%w[lib/bundler* libexec/bundler libexec/bundle spec/bundler man/bundle* man/gemfile*])
+    rm_rf(%w[lib/bundler lib/bundler.rb libexec/bundler libexec/bundle spec/bundler man/bundle* man/gemfile*])
     cp_r(Dir.glob("#{upstream}/bundler/lib/bundler*"), "lib")
     cp_r(Dir.glob("#{upstream}/bundler/exe/bundle*"), "libexec")
     cp_r("#{upstream}/bundler/bundler.gemspec", "lib/bundler")
@@ -144,7 +144,7 @@ def sync_default_gems(gem)
     cp_r(Dir.glob("#{upstream}/bundler/man/*.{1,5,1\.txt,5\.txt,ronn}"), "man")
     rm_rf(%w[spec/bundler/support/artifice/vcr_cassettes])
   when "rdoc"
-    rm_rf(%w[lib/rdoc* test/rdoc libexec/rdoc libexec/ri])
+    rm_rf(%w[lib/rdoc lib/rdoc.rb test/rdoc libexec/rdoc libexec/ri])
     cp_r(Dir.glob("#{upstream}/lib/rdoc*"), "lib")
     cp_r("#{upstream}/test/rdoc", "test")
     cp_r("#{upstream}/rdoc.gemspec", "lib/rdoc")
@@ -153,7 +153,7 @@ def sync_default_gems(gem)
     rm_rf(%w[lib/rdoc/markdown.kpeg lib/rdoc/markdown/literals.kpeg lib/rdoc/rd/block_pager.ry lib/rdoc/rd/inline_parser.ry])
     `git checkout lib/rdoc/.document`
   when "reline"
-    rm_rf(%w[lib/reline* test/reline])
+    rm_rf(%w[lib/reline lib/reline.rb test/reline])
     cp_r(Dir.glob("#{upstream}/lib/reline*"), "lib")
     cp_r("#{upstream}/test/reline", "test")
     cp_r("#{upstream}/reline.gemspec", "lib/reline")
@@ -248,7 +248,7 @@ def sync_default_gems(gem)
     rm_rf(%w["ext/strscan/regenc.h ext/strscan/regint.h"])
     `git checkout ext/strscan/depend`
   when "racc"
-    rm_rf(%w[lib/racc* ext/racc test/racc])
+    rm_rf(%w[lib/racc lib/racc.rb ext/racc test/racc])
     cp_r(Dir.glob("#{upstream}/lib/racc*"), "lib")
     mkdir_p("ext/racc/cparse")
     cp_r(Dir.glob("#{upstream}/ext/racc/cparse/*"), "ext/racc/cparse")
@@ -316,7 +316,7 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/readline-ext.gemspec", "ext/readline")
     `git checkout ext/readline/depend`
   when "did_you_mean"
-    rm_rf(%w[lib/did_you_mean* test/did_you_mean])
+    rm_rf(%w[lib/did_you_mean lib/did_you_mean.rb test/did_you_mean])
     cp_r(Dir.glob("#{upstream}/lib/did_you_mean*"), "lib")
     cp_r("#{upstream}/did_you_mean.gemspec", "lib/did_you_mean")
     cp_r("#{upstream}/test", "test/did_you_mean")
