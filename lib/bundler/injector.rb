@@ -183,7 +183,7 @@ module Bundler
       # remove lines which match the regex
       new_gemfile = IO.readlines(gemfile_path).reject {|line| line.match(patterns) }
 
-      # remove lone \n and append them with other strings
+      # remove line \n and append them with other strings
       new_gemfile.each_with_index do |_line, index|
         if new_gemfile[index + 1] == "\n"
           new_gemfile[index] += new_gemfile[index + 1]
