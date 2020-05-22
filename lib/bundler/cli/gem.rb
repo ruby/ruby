@@ -177,6 +177,12 @@ module Bundler
 
       Bundler.ui.info "Gem '#{name}' was successfully created. " \
         "For more information on making a RubyGem visit https://bundler.io/guides/creating_gem.html"
+
+      if options[:test] == Bundler.settings["gem.test"]
+        Bundler.ui.info "Bundler is configured to generate test files for #{Bundler.settings["gem.test"]}, "\
+                        "so -t is not needed if you want to continue using it. " \
+                        "This setting can be changed anytime with bundle config gem.test."
+      end
     rescue Errno::EEXIST => e
       raise GenericSystemCallError.new(e, "There was a conflict while creating the new gem.")
     end
@@ -216,9 +222,7 @@ module Bundler
       if test_framework.to_s.empty?
         Bundler.ui.confirm "Do you want to generate tests with your gem?"
         result = Bundler.ui.ask "Type 'rspec', 'minitest' or 'test-unit' to generate those test files now. \n" \
-                                "If Bundler is configured to not generate test files, your choice will only be applied to this instance. \n" \
-                                "Otherwise, future bundle gem calls will use your choice, so -t is not needed if your choice will be the same. \n" \
-                                "This setting can be changed anytime with bundle config gem.test <value>. rspec/minitest/test-unit/(none):"
+                                "#{test_framework_help_info} rspec/minitest/test-unit/(none):"
         if result =~ /rspec|minitest|test-unit/
           test_framework = result
         else
@@ -231,6 +235,15 @@ module Bundler
       end
 
       test_framework
+    end
+
+    def test_framework_help_info
+      if Bundler.settings["gem.test"] == false
+        "Your choice will only be applied to this gem."
+      else
+        "Future bundle gem calls will use your choice. " \
+        "This setting can be changed anytime with bundle config gem.test."
+      end
     end
 
     def bundler_dependency_version
