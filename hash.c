@@ -2347,18 +2347,16 @@ rb_hash_set_default(VALUE hash, VALUE ifnone)
 
 /*
  *  call-seq:
- *     hsh.default_proc -> anObject
+ *    hash.default_proc -> proc or nil
  *
- *  If Hash::new was invoked with a block, return that
- *  block, otherwise return <code>nil</code>.
+ *  Returns the default proc:
+ *    h = {}
+ *    h.default_proc # => nil
+ *    h.default_proc = proc { |hash, key| "Default value for #{key}" }
+ *    h.default_proc.class # => Proc
  *
- *     h = Hash.new {|h,k| h[k] = k*k }   #=> {}
- *     p = h.default_proc                 #=> #<Proc:0x401b3d08@-:1>
- *     a = []                             #=> []
- *     p.call(a, 2)
- *     a                                  #=> [nil, nil, 4]
+ *  See {Default Values}[#class-Hash-label-Default+Values].
  */
-
 
 static VALUE
 rb_hash_default_proc(VALUE hash)
@@ -2371,15 +2369,22 @@ rb_hash_default_proc(VALUE hash)
 
 /*
  *  call-seq:
- *     hsh.default_proc = proc_obj or nil
+ *    hash.default_proc = proc -> proc
  *
- *  Sets the default proc to be executed on each failed key lookup.
+ *  Sets the default proc to +proc+:
+ *    h = {}
+ *    h.default_proc # => nil
+ *    h.default_proc = proc { |hash, key| "Default value for #{key}" }
+ *    h.default_proc.class # => Proc
+ *    h.default_proc = nil
+ *    h.default_proc # => nil
  *
- *     h.default_proc = proc do |hash, key|
- *       hash[key] = key + key
- *     end
- *     h[2]       #=> 4
- *     h["cat"]   #=> "catcat"
+ *  See {Default Values}[#class-Hash-label-Default+Values].
+ *
+ *  ---
+ *  Raises an exception if +proc+ is not a \Proc:
+ *    # Raises TypeError (wrong default_proc type Integer (expected Proc)):
+ *    h.default_proc = 1
  */
 
 VALUE
@@ -2417,16 +2422,16 @@ key_i(VALUE key, VALUE value, VALUE arg)
 
 /*
  *  call-seq:
- *     hsh.key(value)    -> key
+ *    hash.key(value) -> key or nil
  *
- *  Returns the key of an occurrence of a given value. If the value is
- *  not found, returns <code>nil</code>.
+ *  Returns the key for the first-found entry with the given +value+
+ *  (see {Entry Order}[#class-Hash-label-Entry+Order]):
+ *    h = {foo: 0, bar: 2, baz: 2}
+ *    h.key(0) # => :foo
+ *    h.key(2) # => :bar
  *
- *     h = { "a" => 100, "b" => 200, "c" => 300, "d" => 300 }
- *     h.key(200)   #=> "b"
- *     h.key(300)   #=> "c"
- *     h.key(999)   #=> nil
- *
+ *  Returns nil if so such value is found:
+ *    h.key(:nosuch) # => nil
  */
 
 static VALUE
