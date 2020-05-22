@@ -479,28 +479,6 @@ class TestModule < Test::Unit::TestCase
     assert_raise(ArgumentError) { Module.new { include } }
   end
 
-  def test_gc_prepend_chain
-    assert_separately([], <<-EOS)
-      10000.times { |i|
-        m1 = Module.new do
-          def foo; end
-        end
-        m2 = Module.new do
-          prepend m1
-          def bar; end
-        end
-        m3 = Module.new do
-          def baz; end
-          prepend m2
-        end
-        Class.new do
-          prepend m3
-        end
-      }
-      GC.start
-    EOS
-  end
-
   def test_include_into_module_already_included
     c = Class.new{def foo; [:c] end}
     modules = lambda do ||
@@ -560,16 +538,6 @@ class TestModule < Test::Unit::TestCase
     mixins << JSON::Ext::Generator::GeneratorMethods::String if defined?(JSON::Ext::Generator::GeneratorMethods::String)
     assert_equal([Kernel], Object.included_modules - mixins)
     assert_equal([Comparable, Kernel], String.included_modules - mixins)
-  end
-
-  def test_included_modules_with_prepend
-    m1 = Module.new
-    m2 = Module.new
-    m3 = Module.new
-
-    m2.prepend m1
-    m3.include m2
-    assert_equal([m1, m2], m3.included_modules)
   end
 
   def test_instance_methods
@@ -2073,33 +2041,6 @@ class TestModule < Test::Unit::TestCase
     assert_not_include(im, c1, bug8025)
     assert_not_include(im, c2, bug8025)
     assert_include(im, mixin, bug8025)
-  end
-
-  def test_prepended_module_with_super_and_alias
-    bug16736 = '[Bug #16736]'
-
-    a = labeled_class("A") do
-      def m; "A"; end
-    end
-    m = labeled_module("M") do
-      prepend Module.new
-
-      def self.included(base)
-        base.alias_method :base_m, :m
-      end
-
-      def m
-        super + "M"
-      end
-
-      def m2
-        base_m
-      end
-    end
-    b = labeled_class("B", a) do
-      include m
-    end
-    assert_equal("AM", b.new.m2, bug16736)
   end
 
   def test_prepend_super_in_alias

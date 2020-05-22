@@ -2815,11 +2815,9 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	break;
       case T_ICLASS:
 	/* Basically , T_ICLASS shares table with the module */
-        if (FL_TEST(obj, RICLASS_IS_ORIGIN) &&
-                !FL_TEST(obj, RICLASS_ORIGIN_SHARED_MTBL)) {
-            /* Method table is not shared for origin iclasses of classes */
-            rb_id_table_free(RCLASS_M_TBL(obj));
-        }
+	if (FL_TEST(obj, RICLASS_IS_ORIGIN)) {
+	    rb_id_table_free(RCLASS_M_TBL(obj));
+	}
 	if (RCLASS_CALLABLE_M_TBL(obj) != NULL) {
 	    rb_id_table_free(RCLASS_CALLABLE_M_TBL(obj));
 	}
@@ -3913,8 +3911,7 @@ obj_memsize_of(VALUE obj, int use_all_types)
 	}
 	break;
       case T_ICLASS:
-        if (FL_TEST(obj, RICLASS_IS_ORIGIN) &&
-                !FL_TEST(obj, RICLASS_ORIGIN_SHARED_MTBL)) {
+	if (FL_TEST(obj, RICLASS_IS_ORIGIN)) {
 	    if (RCLASS_M_TBL(obj)) {
 		size += rb_id_table_memsize(RCLASS_M_TBL(obj));
 	    }
@@ -5435,8 +5432,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 	break;
 
       case T_ICLASS:
-        if (FL_TEST(obj, RICLASS_IS_ORIGIN) &&
-                !FL_TEST(obj, RICLASS_ORIGIN_SHARED_MTBL)) {
+	if (FL_TEST(obj, RICLASS_IS_ORIGIN)) {
 	    mark_m_tbl(objspace, RCLASS_M_TBL(obj));
 	}
         if (RCLASS_SUPER(obj)) {
@@ -8300,8 +8296,7 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
         break;
 
       case T_ICLASS:
-        if (FL_TEST(obj, RICLASS_IS_ORIGIN) &&
-                !FL_TEST(obj, RICLASS_ORIGIN_SHARED_MTBL)) {
+        if (FL_TEST(obj, RICLASS_IS_ORIGIN)) {
             update_m_tbl(objspace, RCLASS_M_TBL(obj));
         }
         if (RCLASS_SUPER((VALUE)obj)) {
