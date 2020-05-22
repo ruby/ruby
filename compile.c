@@ -2804,28 +2804,20 @@ ci_argc_set(const rb_iseq_t *iseq, const struct rb_callinfo *ci, int argc)
 static inline bool
 is_effectively_pop(const LINK_ELEMENT *e)
 {
-    while (e) {
-        switch (e->type) {
-          case ISEQ_ELEMENT_INSN:
-            if (IS_INSN_ID(e, nop)) {
-          case ISEQ_ELEMENT_ANCHOR:
-          case ISEQ_ELEMENT_LABEL:
-          case ISEQ_ELEMENT_TRACE:
-                e = e->next;
-            }
-            else if (IS_INSN_ID(e, jump)) {
-                e = get_destination_insn((INSN *)e);
-            }
-            else if (IS_INSN_ID(e, pop)) {
-                return true;
-            }
-            else {
-          case ISEQ_ELEMENT_ADJUST:
-                return false;
-            }
+    switch (e->type) {
+      case ISEQ_ELEMENT_ANCHOR:
+      case ISEQ_ELEMENT_LABEL:
+      case ISEQ_ELEMENT_TRACE:  return is_effectively_pop(e->next);
+      case ISEQ_ELEMENT_ADJUST: return false;
+      case ISEQ_ELEMENT_INSN:
+        switch (INSN_OF(e)) {
+          default:       return false;
+          case BIN(pop): return true;
+          case BIN(nop): return is_effectively_pop(e->next);
+          case BIN(jump):
+            return is_effectively_pop(get_destination_insn((INSN *)e));
         }
     }
-    return false;
 }
 
 /* There are situations when the instruction have multiple call info.  We are
