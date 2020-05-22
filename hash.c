@@ -2504,20 +2504,43 @@ rb_hash_delete(VALUE hash, VALUE key)
 
 /*
  *  call-seq:
- *     hsh.delete(key)                   -> value
- *     hsh.delete(key) {| key | block }  -> value
+ *    hash.delete(key) -> value or nil
+ *    hash.delete(key) { |key| ... } -<value
  *
- *  Deletes the key-value pair and returns the value from <i>hsh</i> whose
- *  key is equal to <i>key</i>. If the key is not found, it returns
- *  <em>nil</em>. If the optional code block is given and the
- *  key is not found, pass in the key and return the result of
- *  <i>block</i>.
+ *  Deletes the entry for the given +key+
+ *  and returns its associated value.
  *
- *     h = { "a" => 100, "b" => 200 }
- *     h.delete("a")                              #=> 100
- *     h.delete("z")                              #=> nil
- *     h.delete("z") { |el| "#{el} not found" }   #=> "z not found"
+ *  ---
  *
+ *  If no block is given and +key+ is found, deletes the entry and returns the associated value:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.delete(:bar) # => 1
+ *    h # => {:foo=>0, :baz=>2}
+ *
+ *  If no block given and +key+ is not found, returns +nil+:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.delete(:nosuch) # => nil
+ *    h # => {:foo=>0, :bar=>1, :baz=>2}
+ *
+ *  If a block is given and +key+ is found, ignores the block,
+ *  deletes the entry, and returns the associated value:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.delete(:baz) { |key| fail 'Will never happen'} # => 2
+ *    h # => {:foo=>0, :bar=>1}
+ *
+ *  If a block is given and +key+ is not found,
+ *  calls the block and returns the block's return value:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.delete(:nosuch) { |key| "Key #{key} not found" } # => "Key nosuch not found"
+ *    h # => {:foo=>0, :bar=>1, :baz=>2}
+ *
+ *  ---
+ *
+ *  Raises an exception if +key+ is invalid
+ *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    # Raises NoMethodError (undefined method `hash' for #<BasicObject:>):
+ *    h.delete(BasicObject.new)
  */
 
 static VALUE
@@ -2558,15 +2581,19 @@ shift_i_safe(VALUE key, VALUE value, VALUE arg)
 
 /*
  *  call-seq:
- *     hsh.shift -> anArray or obj
+ *    hash.shift -> [key, value] or default_value
  *
- *  Removes a key-value pair from <i>hsh</i> and returns it as the
- *  two-item array <code>[</code> <i>key, value</i> <code>]</code>, or
- *  the hash's default value if the hash is empty.
+ *  Removes the first hash entry
+ *  (see {Entry Order}[#class-Hash-label-Entry+Order]);
+ *  returns a 2-element Array containing the removed key and value:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.shift # => [:foo, 0]
+ *    h # => {:bar=>1, :baz=>2}
  *
- *     h = { 1 => "a", 2 => "b", 3 => "c" }
- *     h.shift   #=> [1, "a"]
- *     h         #=> {2=>"b", 3=>"c"}
+ *  Returns the default value if the hash is empty
+ *  (see {Default Values}[#class-Hash-label-Default+Values]):
+ *    h = {}
+ *    h.shift # => nil
  */
 
 static VALUE
@@ -2625,17 +2652,30 @@ hash_enum_size(VALUE hash, VALUE args, VALUE eobj)
 
 /*
  *  call-seq:
- *     hsh.delete_if {| key, value | block }  -> hsh
- *     hsh.delete_if                          -> an_enumerator
+ *    hash.delete_if {|key, value| ... } -> self
+ *    hash.delete_if -> new_enumerator
  *
- *  Deletes every key-value pair from <i>hsh</i> for which <i>block</i>
- *  evaluates to <code>true</code>.
+ *  If a block given, calls the block with each key-value pair;
+ *  deletes each entry for which the block returns a truthy value;
+ *  returns +self+:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h1 = h.delete_if { |key, value| value > 0 }
+ *    h1 # => {:foo=>0}
+ *    h1.equal?(h) # => true #  Identity check
  *
- *  If no block is given, an enumerator is returned instead.
+ *  If no block given, returns a new \Enumerator:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    e = h.delete_if # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:delete_if>
+ *    h1 = e.each { |key, value| value > 0 }
+ *    h1 # => {:foo=>0}
+ *    h1.equal?(h) # => true #  Identity check
  *
- *     h = { "a" => 100, "b" => 200, "c" => 300 }
- *     h.delete_if {|key, value| key >= "b" }   #=> {"a"=>100}
+ *  ----
  *
+ *  Raises an exception if the block attempts to add a new key:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    # Raises RuntimeError (can't add a new key into hash during iteration):
+ *    h.delete_if { |key, value| h[:new_key] = 3 }
  */
 
 VALUE
@@ -2651,11 +2691,34 @@ rb_hash_delete_if(VALUE hash)
 
 /*
  *  call-seq:
- *     hsh.reject! {| key, value | block }  -> hsh or nil
- *     hsh.reject!                          -> an_enumerator
+ *    hash.reject! {|key, value| ... } -> self or nil
+ *    hash.reject! -> new_enumerator
  *
- *  Equivalent to Hash#delete_if, but returns
- *  <code>nil</code> if no changes were made.
+ *  Returns +self+, whose remaining entries are those
+ *  for which the block returns +false+ or +nil+:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h1 = h.reject! {|key, value| value < 2 }
+ *    h1 # => {:baz=>2}
+ *    h1.equal?(h) # => true # Identity check
+ *
+ *  Returns +nil+ if no entries are removed:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.reject! {|key, value| value > 2 } # => nil
+ *    h # => {:foo=>0, :bar=>1, :baz=>2}
+ *
+ *  Returns a new \Enumerator if no block given:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    e = h.reject! # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:reject!>
+ *    h1 = e.each {|key, value| key.start_with?('b') }
+ *    h1 # => {:foo=>0}
+ *    h1.equal?(h) # => true # Identity check
+ *
+ *  ---
+ *
+ *  Raises an exception if the block attempts to add a new key:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    # Raises RuntimeError (can't add a new key into hash during iteration):
+ *    h.reject! { |key, value| h[:new_Key] = 3 }
  */
 
 VALUE
@@ -2683,16 +2746,20 @@ reject_i(VALUE key, VALUE value, VALUE result)
 
 /*
  *  call-seq:
- *     hsh.reject {|key, value| block}   -> a_hash
- *     hsh.reject                        -> an_enumerator
+ *    hash.reject {|key, value| ... } -> new_hash
+ *    hash.reject -> new_enumerator
  *
- *  Returns a new hash consisting of entries for which the block returns false.
+ *  Returns a new \Hash object whose entries are all those
+ *  from +self+ for which the block returns +false+ or +nil+:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h1 = h.reject {|key, value| key.start_with?('b') }
+ *    h1 # => {:foo=>0}
  *
- *  If no block is given, an enumerator is returned instead.
- *
- *     h = { "a" => 100, "b" => 200, "c" => 300 }
- *     h.reject {|k,v| k < "b"}  #=> {"b" => 200, "c" => 300}
- *     h.reject {|k,v| v > 100}  #=> {"a" => 100}
+ *  Returns a new Enumerator if no block given:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    e = h.reject # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:reject>
+ *    h1 = e.each {|key, value| key.start_with?('b') }
+ *    h1 # => {:foo=>0}
  */
 
 VALUE
