@@ -333,8 +333,6 @@ RSpec.describe "install with --deployment or --frozen" do
     end
 
     it "explodes if you unpin a source" do
-      skip "some of monorepo issues" if Gem.win_platform?
-
       build_git "rack"
 
       install_gemfile <<-G
@@ -355,8 +353,6 @@ RSpec.describe "install with --deployment or --frozen" do
     end
 
     it "explodes if you unpin a source, leaving it pinned somewhere else" do
-      skip "some of monorepo issues" if Gem.win_platform?
-
       build_lib "foo", :path => lib_path("rack/foo")
       build_git "rack", :path => lib_path("rack")
 
