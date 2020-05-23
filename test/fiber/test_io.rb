@@ -2,7 +2,7 @@
 require 'test/unit'
 require_relative 'scheduler'
 
-class TestSchedulerIO < Test::Unit::TestCase
+class TestFiberIO < Test::Unit::TestCase
   MESSAGE = "Hello World"
 
   def test_read

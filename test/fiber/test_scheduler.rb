@@ -2,7 +2,7 @@
 require 'test/unit'
 require_relative 'scheduler'
 
-class TestSchedulerFiber < Test::Unit::TestCase
+class TestFiberScheduler < Test::Unit::TestCase
   def test_fiber_without_scheduler
     # Cannot create fiber without scheduler.
     assert_raise RuntimeError do

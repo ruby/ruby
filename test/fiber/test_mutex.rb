@@ -2,7 +2,7 @@
 require 'test/unit'
 require_relative 'scheduler'
 
-class TestSchedulerMutex < Test::Unit::TestCase
+class TestFiberMutex < Test::Unit::TestCase
   def test_mutex_synchronize
     mutex = Mutex.new
 

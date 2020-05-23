@@ -2,7 +2,7 @@
 require 'test/unit'
 require_relative 'scheduler'
 
-class TestSchedulerSleep < Test::Unit::TestCase
+class TestFiberSleep < Test::Unit::TestCase
   ITEMS = [0, 1, 2, 3, 4]
 
   def test_sleep

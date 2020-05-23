@@ -7,7 +7,7 @@ require 'openssl'
 require 'test/unit'
 require_relative 'scheduler'
 
-class TestSchedulerHTTP < Test::Unit::TestCase
+class TestFiberHTTP < Test::Unit::TestCase
   def test_get
     Thread.new do
       scheduler = Scheduler.new

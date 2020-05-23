@@ -3,7 +3,7 @@ require 'test/unit'
 require 'socket'
 require_relative 'scheduler'
 
-class TestSchedulerEnumerator < Test::Unit::TestCase
+class TestFiberEnumerator < Test::Unit::TestCase
   MESSAGE = "Hello World"
 
   def test_read_characters
