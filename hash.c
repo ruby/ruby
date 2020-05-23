@@ -2762,7 +2762,7 @@ reject_i(VALUE key, VALUE value, VALUE result)
  *    h1 # => {:foo=>0}
  */
 
-VALUE
+static VALUE
 rb_hash_reject(VALUE hash)
 {
     VALUE result;
