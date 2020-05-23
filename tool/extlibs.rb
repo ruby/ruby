@@ -99,6 +99,7 @@ class ExtLibs
     if (target = src).start_with?("/")
       target = File.join([".."] * file.count("/"), src)
     end
+    return unless File.exist?(File.expand_path(target, File.dirname(file)))
     File.unlink(file) rescue nil
     begin
       File.symlink(target, file)
