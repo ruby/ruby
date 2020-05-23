@@ -2824,7 +2824,7 @@ rb_hash_slice(int argc, VALUE *argv, VALUE hash)
  *   h.values_at("cow", "cat")  #=> ["bovine", "feline"]
  */
 
-VALUE
+static VALUE
 rb_hash_values_at(int argc, VALUE *argv, VALUE hash)
 {
     VALUE result = rb_ary_new2(argc);
