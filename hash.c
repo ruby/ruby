@@ -4287,7 +4287,7 @@ assoc_i(VALUE key, VALUE val, VALUE arg)
  *     h.assoc("foo")      #=> nil
  */
 
-VALUE
+static VALUE
 rb_hash_assoc(VALUE hash, VALUE key)
 {
     st_table *table;
