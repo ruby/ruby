@@ -1,15 +1,18 @@
 # frozen_string_literal: true
 
-begin
-  require_relative "lib/fiddle/version"
-rescue LoadError
-  # for Ruby core repository
-  require_relative "version"
+source_version = ["", "ext/fiddle/"].find do |dir|
+  begin
+    break File.open(File.join(__dir__, "#{dir}lib/fiddle/version.rb")) {|f|
+      f.gets("\n  VERSION = ")
+      f.gets[/\s*"(.+)"/, 1]
+    }
+  rescue Errno::ENOENT
+  end
 end
 
 Gem::Specification.new do |spec|
   spec.name          = "fiddle"
-  spec.version       = Fiddle::VERSION
+  spec.version       = source_version
   spec.authors       = ["Aaron Patterson", "SHIBATA Hiroshi"]
   spec.email         = ["aaron@tenderlovemaking.com", "hsbt@ruby-lang.org"]
 
