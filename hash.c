@@ -2382,6 +2382,7 @@ rb_hash_default_proc(VALUE hash)
  *  See {Default Values}[#class-Hash-label-Default+Values].
  *
  *  ---
+ *
  *  Raises an exception if +proc+ is not a \Proc:
  *    # Raises TypeError (wrong default_proc type Integer (expected Proc)):
  *    h.default_proc = 1
@@ -2755,7 +2756,7 @@ reject_i(VALUE key, VALUE value, VALUE result)
  *    h1 = h.reject {|key, value| key.start_with?('b') }
  *    h1 # => {:foo=>0}
  *
- *  Returns a new Enumerator if no block given:
+ *  Returns a new \Enumerator if no block given:
  *    h = {foo: 0, bar: 1, baz: 2}
  *    e = h.reject # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:reject>
  *    h1 = e.each {|key, value| key.start_with?('b') }
@@ -2783,13 +2784,21 @@ rb_hash_reject(VALUE hash)
 
 /*
  *  call-seq:
- *     hsh.slice(*keys) -> a_hash
+ *    hash.slice(*keys) -> new_hash
  *
- *  Returns a hash containing only the given keys and their values.
+ *  Returns a new \Hash object containing the entries for the given +keys+:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h1 = h.slice(:baz, :foo)
+ *    h1 # => {:baz=>2, :foo=>0}
+ *    h1.equal?(h) # => false
  *
- *     h = { a: 100, b: 200, c: 300 }
- *     h.slice(:a)           #=> {:a=>100}
- *     h.slice(:b, :c, :d)   #=> {:b=>200, :c=>300}
+ *  ---
+ *
+ *  Raises an exception if any given key is invalid
+ *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    # Raises NoMethodError (undefined method `hash' for #<BasicObject:>):
+ *    h.slice(:foo, BasicObject.new)
  */
 
 static VALUE
@@ -2814,14 +2823,24 @@ rb_hash_slice(int argc, VALUE *argv, VALUE hash)
 }
 
 /*
- * call-seq:
- *   hsh.values_at(key, ...)   -> array
+ *  call-seq:
+ *    hash.values_at(*keys) -> new_array
  *
- * Return an array containing the values associated with the given keys.
- * Also see Hash.select.
+ *  Returns a new \Array containing values for the given +keys+:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.values_at(:foo, :baz) # => [0, 2]
  *
- *   h = { "cat" => "feline", "dog" => "canine", "cow" => "bovine" }
- *   h.values_at("cow", "cat")  #=> ["bovine", "feline"]
+ *  Returns an empty Array if no arguments given:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.values_at # => []
+ *
+ *  ---
+ *
+ *  Raises an exception if any given key is invalid
+ *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    # Raises NoMethodError (undefined method `hash' for #<BasicObject:>)
+ *    h.values_at(BasicObject.new)
  */
 
 VALUE
@@ -2837,19 +2856,35 @@ rb_hash_values_at(int argc, VALUE *argv, VALUE hash)
 }
 
 /*
- * call-seq:
- *   hsh.fetch_values(key, ...)                 -> array
- *   hsh.fetch_values(key, ...) { |key| block } -> array
+ *  call-seq:
+ *    hash.fetch_values(*keys) -> new_array
+ *    hash.fetch_values(*keys) {|key| ... } -> new_array
  *
- * Returns an array containing the values associated with the given keys
- * but also raises KeyError when one of keys can't be found.
- * Also see Hash#values_at and Hash#fetch.
+ *  Returns a new \Array containing the values associated with the given keys *keys:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.fetch_values(:baz, :foo) # => [2, 0]
  *
- *   h = { "cat" => "feline", "dog" => "canine", "cow" => "bovine" }
+ *  Returns a new empty \Array if no arguments given:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.fetch_values # => []
  *
- *   h.fetch_values("cow", "cat")                   #=> ["bovine", "feline"]
- *   h.fetch_values("cow", "bird")                  # raises KeyError
- *   h.fetch_values("cow", "bird") { |k| k.upcase } #=> ["bovine", "BIRD"]
+ *  When a block given, calls the block with each missing key,
+ *  treating the block's return value as the value for that key:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    values = h.fetch_values(:bar, :foo, :bad, :bam) {|key| key.to_s}
+ *    values # => [1, 0, "bad", "bam"]
+ *
+ *  ---
+ *
+ *  Raises an exception if any given key is not found:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.fetch_values(:baz, :nosuch) # Raises KeyError (key not found: :nosuch)
+ *
+ *  Raises an exception if any given key is invalid
+ *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    # Raises NoMethodError (undefined method `hash' for #<BasicObject:>):
+ *    h.fetch_values(:baz, BasicObject.new)
  */
 
 static VALUE
@@ -2875,20 +2910,32 @@ select_i(VALUE key, VALUE value, VALUE result)
 
 /*
  *  call-seq:
- *     hsh.select {|key, value| block}   -> a_hash
- *     hsh.select                        -> an_enumerator
- *     hsh.filter {|key, value| block}   -> a_hash
- *     hsh.filter                        -> an_enumerator
- *
- *  Returns a new hash consisting of entries for which the block returns true.
- *
- *  If no block is given, an enumerator is returned instead.
- *
- *     h = { "a" => 100, "b" => 200, "c" => 300 }
- *     h.select {|k,v| k > "a"}  #=> {"b" => 200, "c" => 300}
- *     h.select {|k,v| v < 200}  #=> {"a" => 100}
+ *    hash.select {|key, value| ... } -> new_hash
+ *    hash.select -> new_enumerator
+ *    hash.filter {|key, value| ... } -> new_hash
+ *    hash.filter -> new_enumerator
  *
  *  Hash#filter is an alias for Hash#select.
+ *
+ *  Returns a new \Hash object whose entries are those for which the block returns a truthy value:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h1 = h.select {|key, value| value < 2 }
+ *    h1 # => {:foo=>0, :bar=>1}
+ *    h1.equal?(h) # => false
+ *
+ *  Returns a new \Enumerator if no block given:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    e = h.select # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:select>
+ *    h1 = e.each {|key, value| value < 2 }
+ *    h1 # => {:foo=>0, :bar=>1}
+ *    h1.equal?(h) # => false
+ *
+ *  ---
+ *
+ *  Raises an exception if the block attempts to add a new key:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    # Raises RuntimeError (can't add a new key into hash during iteration):
+ *    h.select {|key, value| h[:new_key] = 3 }
  */
 
 static VALUE
@@ -2915,15 +2962,37 @@ keep_if_i(VALUE key, VALUE value, VALUE hash)
 
 /*
  *  call-seq:
- *     hsh.select! {| key, value | block }  -> hsh or nil
- *     hsh.select!                          -> an_enumerator
- *     hsh.filter! {| key, value | block }  -> hsh or nil
- *     hsh.filter!                          -> an_enumerator
- *
- *  Equivalent to Hash#keep_if, but returns
- *  +nil+ if no changes were made.
+ *    hash.select! {|key, value| ... } -> self or nil
+ *    hash.select! -> new_enumerator
+ *    hash.filter! {|key, value| ... } -> self or nil
+ *    hash.filter! -> new_enumerator
  *
  *  Hash#filter! is an alias for Hash#select!.
+ *
+ *  Returns +self+, whose entries are those for which the block returns a truthy value:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h1 = h.select! {|key, value| value < 2 }
+ *    h # => {:foo=>0, :bar=>1}
+ *    h1.equal?(h) # => true
+ *
+ *  Returns +nil+ if no entries were removed:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.select! {|key, value| value < 3} # => nil
+ *    h # => {:foo=>0, :bar=>1, :baz=>2}
+ *
+ *  Returns a new \Enumerator if no block given:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    e = h.select!  # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:select!>
+ *    h1 = e.each { |key, value| value < 2 }
+ *    h1 # => {:foo=>0, :bar=>1}
+ *    h1.equal?(h) # => true
+ *
+ *  ---
+ *
+ *  Raises an exception if the block attempts to add a new key:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    # Raises RuntimeError (can't add a new key into hash during iteration)
+ *    h.select! {|key, value| h[:new_key] = 3 }
  */
 
 static VALUE
@@ -6775,7 +6844,7 @@ env_update(VALUE env, VALUE hash)
  *  - Other order-sensitive methods such as <tt>shift</tt>, <tt>keys</tt>, <tt>values</tt>.
  *  - The String returned by method <tt>inspect</tt>.
  *
- *  A new Hash has its initial ordering per the given entries:
+ *  A new \Hash has its initial ordering per the given entries:
  *
  *    h = Hash[foo: 0, bar: 1]
  *    h # => {:foo=>0, :bar=>1}
