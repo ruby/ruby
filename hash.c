@@ -2721,7 +2721,7 @@ rb_hash_delete_if(VALUE hash)
  *    h.reject! { |key, value| h[:new_Key] = 3 }
  */
 
-VALUE
+static VALUE
 rb_hash_reject_bang(VALUE hash)
 {
     st_index_t n;
