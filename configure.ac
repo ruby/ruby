@@ -406,7 +406,7 @@ AS_IF([test "$cross_compiling:$ac_cv_prog_DTRACE" = no: -a -n "$ac_tool_prefix"]
 AC_CHECK_PROGS(DOT, dot)
 AC_CHECK_PROGS(DOXYGEN, doxygen)
 
-AC_CHECK_PROG(PKG_CONFIG, pkg-config, [pkg-config], [], [],
+AC_CHECK_TOOL(PKG_CONFIG, pkg-config, [pkg-config], [], [],
     [`"$as_dir/$ac_word$ac_exec_ext" --print-errors --version > /dev/null 2>&1 || echo "$as_dir/$ac_word$ac_exec_ext"`])
 
 # checks for UNIX variants that set C preprocessor variables
