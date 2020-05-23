@@ -4348,7 +4348,7 @@ rassoc_i(VALUE key, VALUE val, VALUE arg)
  *     a.rassoc("four")   #=> nil
  */
 
-VALUE
+static VALUE
 rb_hash_rassoc(VALUE hash, VALUE obj)
 {
     VALUE args[2];
