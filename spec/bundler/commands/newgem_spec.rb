@@ -611,7 +611,7 @@ RSpec.describe "bundle gem" do
       it_behaves_like "test framework is present"
     end
 
-    context "gem.test set to rspec and --test with no arguments" do
+    context "gem.test set to rspec and --test with no arguments", :hint_text do
       before do
         bundle "config set gem.test rspec"
         bundle! "gem #{gem_name} --test"
@@ -627,39 +627,42 @@ RSpec.describe "bundle gem" do
         hint = "Bundler is configured to generate test files for rspec, "\
                "so -t is not needed if you want to continue using it. " \
                "This setting can be changed anytime with `bundle config gem.test`."
-        expect(last_command.stdout).to match(hint)
+        expect(out).to match(hint)
       end
 
       it_behaves_like "test framework is present"
     end
 
-    context "gem.test setting set to false and --test with no arguments" do
+    context "gem.test setting set to false and --test with no arguments", :hint_text do
       before do
         bundle "config set gem.test false"
         bundle! "gem #{gem_name} --test"
       end
 
       it "asks to generate test files" do
-        expect(last_command.stdout).to match("Do you want to generate tests with your gem?")
+        expect(out).to match("Do you want to generate tests with your gem?")
       end
 
       it "hints that the choice will only be applied to the current gem" do
-        hint = "Your choice will only be applied to this gem."
-        expect(last_command.stdout).to match(hint)
+        expect(out).to match("Your choice will only be applied to this gem.")
       end
 
       it_behaves_like "test framework is absent"
     end
 
-    context "gem.test setting not set and --test with no arguments" do
+    context "gem.test setting not set and --test with no arguments", :hint_text do
       before do
         bundle! "gem #{gem_name} --test"
+      end
+
+      it "asks to generate test files" do
+        expect(out).to match("Do you want to generate tests with your gem?")
       end
 
       it "hints that the choice will be applied to future bundle gem calls" do
         hint = "Future `bundle gem` calls will use your choice. " \
                "This setting can be changed anytime with `bundle config gem.test`."
-        expect(last_command.stdout).to match(hint)
+        expect(out).to match(hint)
       end
 
       it_behaves_like "test framework is absent"
