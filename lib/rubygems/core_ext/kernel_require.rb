@@ -41,7 +41,6 @@ module Kernel
 
     if spec = Gem.find_unresolved_default_spec(path)
       # Ensure -I beats a default gem
-      # https://github.com/rubygems/rubygems/pull/1868
       resolved_path = begin
         rp = nil
         load_path_check_index = Gem.load_path_insert_index - Gem.activated_gem_paths
