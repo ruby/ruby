@@ -221,8 +221,9 @@ module Bundler
 
       if test_framework.to_s.empty?
         Bundler.ui.confirm "Do you want to generate tests with your gem?"
-        result = Bundler.ui.ask "Type 'rspec', 'minitest' or 'test-unit' to generate those test files now. \n" \
-                                "#{test_framework_hint} rspec/minitest/test-unit/(none):"
+        Bundler.ui.info test_framework_hint
+        result = Bundler.ui.ask "Type 'rspec', 'minitest' or 'test-unit' to generate those test files now. " \
+                                "rspec/minitest/test-unit/(none):"
         if result =~ /rspec|minitest|test-unit/
           test_framework = result
         else
