@@ -1382,7 +1382,7 @@ refinement_superclass(VALUE superclass)
 {
     if (RB_TYPE_P(superclass, T_MODULE)) {
 	/* FIXME: Should ancestors of superclass be used here? */
-	return rb_include_class_new(superclass, rb_cBasicObject);
+        return rb_include_class_new(RCLASS_ORIGIN(superclass), rb_cBasicObject);
     }
     else {
 	return superclass;
@@ -1556,7 +1556,7 @@ rb_mod_refine(VALUE module, VALUE klass)
 
     ensure_class_or_module(klass);
     if (RB_TYPE_P(klass, T_MODULE)) {
-        FL_SET(klass, RCLASS_REFINED_BY_ANY);
+        rb_ensure_origin(klass);
     }
     CONST_ID(id_refinements, "__refinements__");
     refinements = rb_attr_get(module, id_refinements);

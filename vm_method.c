@@ -694,10 +694,13 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
     struct rb_id_table *mtbl;
     st_data_t data;
     int make_refined = 0;
+    VALUE orig_klass;
 
     if (NIL_P(klass)) {
 	klass = rb_cObject;
     }
+    orig_klass = klass;
+
     if (!FL_TEST(klass, FL_SINGLETON) &&
 	type != VM_METHOD_TYPE_NOTIMPLEMENTED &&
 	type != VM_METHOD_TYPE_ZSUPER) {
@@ -723,6 +726,9 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
     }
     else {
 	klass = RCLASS_ORIGIN(klass);
+        if (klass != orig_klass) {
+            rb_clear_method_cache(orig_klass, mid);
+        }
     }
     mtbl = RCLASS_M_TBL(klass);
 
@@ -799,7 +805,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
     VM_ASSERT(me->def != NULL);
 
     /* check optimized method override by a prepended module */
-    if (RB_TYPE_P(klass, T_MODULE)) {
+    if (RB_TYPE_P(orig_klass, T_MODULE)) {
 	check_override_opt_method(klass, (VALUE)mid);
     }
 
@@ -1191,6 +1197,9 @@ remove_method(VALUE klass, ID mid)
 			  klass, ID2SYM(mid));
     }
 
+    if (klass != self) {
+        rb_clear_method_cache(self, mid);
+    }
     rb_clear_method_cache(klass, mid);
     rb_id_table_delete(RCLASS_M_TBL(klass), mid);
 

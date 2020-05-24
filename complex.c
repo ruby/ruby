@@ -2356,7 +2356,7 @@ Init_Complex(void)
 
     rb_define_global_function("Complex", nucomp_f_complex, -1);
 
-    rb_undef_methods_from(rb_cComplex, rb_mComparable);
+    rb_undef_methods_from(rb_cComplex, RCLASS_ORIGIN(rb_mComparable));
     rb_undef_method(rb_cComplex, "%");
     rb_undef_method(rb_cComplex, "div");
     rb_undef_method(rb_cComplex, "divmod");

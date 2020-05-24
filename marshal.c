@@ -531,10 +531,13 @@ w_extended(VALUE klass, struct dump_arg *arg, int check)
 	klass = RCLASS_SUPER(klass);
     }
     while (BUILTIN_TYPE(klass) == T_ICLASS) {
-	VALUE path = rb_class_name(RBASIC(klass)->klass);
-	w_byte(TYPE_EXTENDED, arg);
-	w_unique(path, arg);
-	klass = RCLASS_SUPER(klass);
+        if (!FL_TEST(klass, RICLASS_IS_ORIGIN) ||
+                BUILTIN_TYPE(RBASIC(klass)->klass) != T_MODULE) {
+            VALUE path = rb_class_name(RBASIC(klass)->klass);
+            w_byte(TYPE_EXTENDED, arg);
+            w_unique(path, arg);
+        }
+        klass = RCLASS_SUPER(klass);
     }
 }
 

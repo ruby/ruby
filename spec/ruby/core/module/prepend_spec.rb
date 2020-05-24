@@ -128,17 +128,34 @@ describe "Module#prepend" do
     c.dup.new.should be_kind_of(m)
   end
 
-  it "keeps the module in the chain when dupping an intermediate module" do
-    m1 = Module.new { def calc(x) x end }
-    m2 = Module.new { prepend(m1) }
-    c1 = Class.new { prepend(m2) }
-    m2dup = m2.dup
-    m2dup.ancestors.should == [m2dup,m1,m2]
-    c2 = Class.new { prepend(m2dup) }
-    c1.ancestors[0,3].should == [m1,m2,c1]
-    c1.new.should be_kind_of(m1)
-    c2.ancestors[0,4].should == [m2dup,m1,m2,c2]
-    c2.new.should be_kind_of(m1)
+  ruby_version_is '0'...'2.8' do
+    it "keeps the module in the chain when dupping an intermediate module" do
+      m1 = Module.new { def calc(x) x end }
+      m2 = Module.new { prepend(m1) }
+      c1 = Class.new { prepend(m2) }
+      m2dup = m2.dup
+      m2dup.ancestors.should == [m2dup,m1,m2]
+      c2 = Class.new { prepend(m2dup) }
+      c1.ancestors[0,3].should == [m1,m2,c1]
+      c1.new.should be_kind_of(m1)
+      c2.ancestors[0,4].should == [m2dup,m1,m2,c2]
+      c2.new.should be_kind_of(m1)
+    end
+  end
+
+  ruby_version_is '2.8' do
+    it "uses only new module when dupping the module" do
+      m1 = Module.new { def calc(x) x end }
+      m2 = Module.new { prepend(m1) }
+      c1 = Class.new { prepend(m2) }
+      m2dup = m2.dup
+      m2dup.ancestors.should == [m1,m2dup]
+      c2 = Class.new { prepend(m2dup) }
+      c1.ancestors[0,3].should == [m1,m2,c1]
+      c1.new.should be_kind_of(m1)
+      c2.ancestors[0,3].should == [m1,m2dup,c2]
+      c2.new.should be_kind_of(m1)
+    end
   end
 
   it "depends on prepend_features to add the module" do
