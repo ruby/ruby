@@ -316,26 +316,9 @@ class_init_copy_check(VALUE clone, VALUE orig)
     }
 }
 
-/* :nodoc: */
-VALUE
-rb_mod_init_copy(VALUE clone, VALUE orig)
+static void
+copy_tables(VALUE clone, VALUE orig)
 {
-    /* cloned flag is refer at constant inline cache
-     * see vm_get_const_key_cref() in vm_insnhelper.c
-     */
-    FL_SET(clone, RCLASS_CLONED);
-    FL_SET(orig , RCLASS_CLONED);
-
-    if (RB_TYPE_P(clone, T_CLASS)) {
-	class_init_copy_check(clone, orig);
-    }
-    if (!OBJ_INIT_COPY(clone, orig)) return clone;
-    if (!FL_TEST(CLASS_OF(clone), FL_SINGLETON)) {
-	RBASIC_SET_CLASS(clone, rb_singleton_class_clone(orig));
-	rb_singleton_class_attached(RBASIC(clone)->klass, (VALUE)clone);
-    }
-    RCLASS_SET_SUPER(clone, RCLASS_SUPER(orig));
-    RCLASS_EXT(clone)->allocator = RCLASS_EXT(orig)->allocator;
     if (RCLASS_IV_TBL(clone)) {
 	st_free_table(RCLASS_IV_TBL(clone));
 	RCLASS_IV_TBL(clone) = 0;
@@ -363,12 +346,103 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
 	arg.klass = clone;
 	rb_id_table_foreach(RCLASS_CONST_TBL(orig), clone_const_i, &arg);
     }
+}
+
+/* :nodoc: */
+VALUE
+rb_mod_init_copy(VALUE clone, VALUE orig)
+{
+    /* cloned flag is refer at constant inline cache
+     * see vm_get_const_key_cref() in vm_insnhelper.c
+     */
+    FL_SET(clone, RCLASS_CLONED);
+    FL_SET(orig , RCLASS_CLONED);
+
+    if (RB_TYPE_P(clone, T_CLASS)) {
+        class_init_copy_check(clone, orig);
+    }
+    if (!OBJ_INIT_COPY(clone, orig)) return clone;
+    if (!FL_TEST(CLASS_OF(clone), FL_SINGLETON)) {
+        RBASIC_SET_CLASS(clone, rb_singleton_class_clone(orig));
+        rb_singleton_class_attached(RBASIC(clone)->klass, (VALUE)clone);
+    }
+    RCLASS_EXT(clone)->allocator = RCLASS_EXT(orig)->allocator;
+    copy_tables(clone, orig);
     if (RCLASS_M_TBL(orig)) {
 	struct clone_method_arg arg;
 	arg.old_klass = orig;
 	arg.new_klass = clone;
 	RCLASS_M_TBL_INIT(clone);
 	rb_id_table_foreach(RCLASS_M_TBL(orig), clone_method_i, &arg);
+    }
+
+    if (RCLASS_ORIGIN(orig) == orig) {
+        RCLASS_SET_SUPER(clone, RCLASS_SUPER(orig));
+    }
+    else {
+        VALUE p = RCLASS_SUPER(orig);
+        VALUE orig_origin = RCLASS_ORIGIN(orig);
+        VALUE prev_clone_p = clone;
+        VALUE origin_stack = rb_ary_tmp_new(2);
+        VALUE origin[2];
+        VALUE clone_p = 0;
+        long origin_len;
+        int add_subclass;
+        VALUE clone_origin;
+
+        rb_ensure_origin(clone);
+        clone_origin = RCLASS_ORIGIN(clone);
+
+        while (p && p != orig_origin) {
+            if (BUILTIN_TYPE(p) != T_ICLASS) {
+                rb_bug("non iclass between module/class and origin");
+            }
+            clone_p = class_alloc(RBASIC(p)->flags, RBASIC(p)->klass);
+            RCLASS_SET_SUPER(prev_clone_p, clone_p);
+            prev_clone_p = clone_p;
+            RCLASS_M_TBL(clone_p) = RCLASS_M_TBL(p);
+            RCLASS_CONST_TBL(clone_p) = RCLASS_CONST_TBL(p);
+            RCLASS_IV_TBL(clone_p) = RCLASS_IV_TBL(p);
+            RCLASS_EXT(clone_p)->allocator = RCLASS_EXT(p)->allocator;
+            if (RB_TYPE_P(clone, T_CLASS)) {
+                RCLASS_SET_INCLUDER(clone_p, clone);
+            }
+            add_subclass = TRUE;
+            if (p != RCLASS_ORIGIN(p)) {
+                origin[0] = clone_p;
+                origin[1] = RCLASS_ORIGIN(p);
+                rb_ary_cat(origin_stack, origin, 2);
+            }
+            else if ((origin_len = RARRAY_LEN(origin_stack)) > 1 &&
+                     RARRAY_AREF(origin_stack, origin_len - 1) == p) {
+                RCLASS_SET_ORIGIN(RARRAY_AREF(origin_stack, (origin_len -= 2)), clone_p);
+                RICLASS_SET_ORIGIN_SHARED_MTBL(clone_p);
+                rb_ary_resize(origin_stack, origin_len);
+                add_subclass = FALSE;
+            }
+            if (add_subclass) {
+                rb_module_add_to_subclasses_list(RBASIC(p)->klass, clone_p);
+            }
+            p = RCLASS_SUPER(p);
+        }
+
+        if (p == orig_origin) {
+            if (clone_p) {
+                RCLASS_SET_SUPER(clone_p, clone_origin);
+                RCLASS_SET_SUPER(clone_origin, RCLASS_SUPER(orig_origin));
+            }
+            copy_tables(clone_origin, orig_origin);
+            if (RCLASS_M_TBL(orig_origin)) {
+                struct clone_method_arg arg;
+                arg.old_klass = orig;
+                arg.new_klass = clone;
+                RCLASS_M_TBL_INIT(clone_origin);
+                rb_id_table_foreach(RCLASS_M_TBL(orig_origin), clone_method_i, &arg);
+            }
+        }
+        else {
+            rb_bug("no origin for class that has origin");
+        }
     }
 
     return clone;
@@ -912,8 +986,6 @@ add_refined_method_entry_i(ID key, VALUE value, void *data)
     return ID_TABLE_CONTINUE;
 }
 
-static void ensure_origin(VALUE klass);
-
 static enum rb_id_table_iterator_result
 clear_module_cache_i(ID id, VALUE val, void *data)
 {
@@ -931,9 +1003,7 @@ include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super)
     struct rb_id_table *const klass_m_tbl = RCLASS_M_TBL(RCLASS_ORIGIN(klass));
     VALUE original_klass = klass;
 
-    if (FL_TEST(module, RCLASS_REFINED_BY_ANY)) {
-        ensure_origin(module);
-    }
+    rb_ensure_origin(module);
 
     while (module) {
 	int superclass_seen = FALSE;
@@ -1046,8 +1116,8 @@ move_refined_method(ID key, VALUE value, void *data)
     }
 }
 
-static void
-ensure_origin(VALUE klass)
+void
+rb_ensure_origin(VALUE klass)
 {
     VALUE origin = RCLASS_ORIGIN(klass);
     if (origin == klass) {
@@ -1068,7 +1138,7 @@ rb_prepend_module(VALUE klass, VALUE module)
     int changed = 0;
 
     ensure_includable(klass, module);
-    ensure_origin(klass);
+    rb_ensure_origin(klass);
     changed = include_modules_at(klass, klass, module, FALSE);
     if (changed < 0)
 	rb_raise(rb_eArgError, "cyclic prepend detected");
@@ -1142,7 +1212,7 @@ rb_mod_include_p(VALUE mod, VALUE mod2)
 
     Check_Type(mod2, T_MODULE);
     for (p = RCLASS_SUPER(mod); p; p = RCLASS_SUPER(p)) {
-	if (BUILTIN_TYPE(p) == T_ICLASS) {
+        if (BUILTIN_TYPE(p) == T_ICLASS && !FL_TEST(p, RICLASS_IS_ORIGIN)) {
 	    if (RBASIC(p)->klass == mod2) return Qtrue;
 	}
     }

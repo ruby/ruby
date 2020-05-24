@@ -479,6 +479,19 @@ class TestModule < Test::Unit::TestCase
     assert_raise(ArgumentError) { Module.new { include } }
   end
 
+  def test_prepend_works_with_duped_classes
+    m = Module.new
+    a = Class.new do
+      def b; 2 end
+      prepend m
+    end
+    a2 = a.dup.new
+    a.class_eval do
+      def b; 1 end
+    end
+    assert_equal(2, a2.b)
+  end
+
   def test_gc_prepend_chain
     assert_separately([], <<-EOS)
       10000.times { |i|
@@ -499,6 +512,30 @@ class TestModule < Test::Unit::TestCase
       }
       GC.start
     EOS
+  end
+
+  def test_refine_module_then_include
+    assert_separately([], "#{<<~"end;"}\n")
+      module M
+      end
+      class C
+        include M
+      end
+      module RefinementBug
+        refine M do
+          def refined_method
+            :rm
+          end
+        end
+      end
+      using RefinementBug
+
+      class A
+        include M
+      end
+
+      assert_equal(:rm, C.new.refined_method)
+    end;
   end
 
   def test_include_into_module_already_included

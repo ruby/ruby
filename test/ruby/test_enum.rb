@@ -279,6 +279,25 @@ class TestEnumerable < Test::Unit::TestCase
     end;
   end
 
+  def test_refine_Enumerable_then_include
+    assert_separately([], "#{<<~"end;"}\n")
+      module RefinementBug
+        refine Enumerable do
+          def refined_method
+            :rm
+          end
+        end
+      end
+      using RefinementBug
+
+      class A
+        include Enumerable
+      end
+
+      assert_equal(:rm, [].refined_method)
+    end;
+  end
+
   def test_partition
     assert_equal([[1, 3, 1], [2, 2]], @obj.partition {|x| x % 2 == 1 })
     cond = ->(x, i) { x % 2 == 1 }
