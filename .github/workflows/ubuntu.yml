@@ -6,6 +6,7 @@ jobs:
       matrix:
         test_task: [ "check", "test-bundler", "test-bundled-gems", "test-all TESTS=--repeat-count=2", "leaked-globals" ]
         os: [ubuntu-latest, ubuntu-16.04]
+        debug: ["", "-DRUBY_DEBUG"]
         exclude:
           - test_task: test-bundler
             os: ubuntu-16.04
@@ -42,7 +43,7 @@ jobs:
         working-directory: src
       - run: mkdir build
       - name: Run configure
-        run: ../src/configure -C --disable-install-doc
+        run: ../src/configure -C --disable-install-doc DEFS=${{ matrix.debug }}
         working-directory: build
       - run: make $JOBS
         working-directory: build
