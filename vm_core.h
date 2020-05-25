@@ -239,6 +239,7 @@ union iseq_inline_storage_entry {
 };
 
 struct rb_calling_info {
+    VALUE flags;
     VALUE block_handler;
     VALUE recv;
     int argc;

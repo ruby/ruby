@@ -46,6 +46,7 @@ MJIT_FUNC_EXPORTED VALUE
 rb_vm_call0(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE *argv, const rb_callable_method_entry_t *me, int kw_splat)
 {
     struct rb_calling_info calling = {
+        .flags = RBIMPL_VALUE_NULL, /* or ... ? */
         .block_handler = VM_BLOCK_HANDLER_NONE,
         .recv = recv,
         .argc = argc,

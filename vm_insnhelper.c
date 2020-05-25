@@ -2334,7 +2334,7 @@ vm_call_iseq_setup_normal(rb_execution_context_t *ec, rb_control_frame_t *cfp, s
     VALUE *sp = argv + param_size;
     cfp->sp = argv - 1 /* recv */;
 
-    vm_push_frame(ec, iseq, VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL, calling->recv,
+    vm_push_frame(ec, iseq, calling->flags | VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL, calling->recv,
                   calling->block_handler, (VALUE)me,
                   iseq->body->iseq_encoded + opt_pc, sp,
                   local_size - param_size,
@@ -2381,7 +2381,7 @@ vm_call_iseq_setup_tailcall(rb_execution_context_t *ec, rb_control_frame_t *cfp,
 	*sp++ = src_argv[i];
     }
 
-    vm_push_frame(ec, iseq, VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL | finish_flag,
+    vm_push_frame(ec, iseq, calling->flags | VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL | finish_flag,
 		  calling->recv, calling->block_handler, (VALUE)me,
 		  iseq->body->iseq_encoded + opt_pc, sp,
 		  iseq->body->local_table_size - iseq->body->param.size,
@@ -4157,7 +4157,9 @@ vm_sendish(
     int argc = vm_ci_argc(ci);
     VALUE recv = TOPN(argc);
     struct rb_calling_info calling;
+    VALUE flags = vm_ci_flag(ci);
 
+    calling.flags = VM_FRAME_FLAG_DISCARDED * !!(flags & VM_CALL_DISCARDED);
     calling.block_handler = block_handler;
     calling.kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
     calling.recv = recv;
