@@ -40,7 +40,7 @@ class TestGemPackageTask < Gem::TestCase
 
       Rake.application['package'].invoke
 
-      assert_path_exists 'pkg/pkgr-1.2.3.gem'
+      assert_path_exist 'pkg/pkgr-1.2.3.gem'
     end
   ensure
     RakeFileUtils.verbose_flag = original_rake_fileutils_verbosity

@@ -1473,7 +1473,7 @@ dependencies: []
     skip "extensions don't quite work on jruby" if Gem.java_platform?
     ext_spec
 
-    refute_path_exists @ext.extension_dir, 'sanity check'
+    assert_path_not_exist @ext.extension_dir, 'sanity check'
     refute_empty @ext.extensions, 'sanity check'
 
     extconf_rb = File.join @ext.gem_dir, @ext.extensions.first
@@ -1491,7 +1491,7 @@ dependencies: []
 
     @ext.build_extensions
 
-    assert_path_exists @ext.extension_dir
+    assert_path_exist @ext.extension_dir
   end
 
   def test_default_spec_stub_is_marked_default
@@ -1520,7 +1520,7 @@ dependencies: []
     @ext.build_extensions
 
     gem_make_out = File.join @ext.extension_dir, 'gem_make.out'
-    refute_path_exists gem_make_out
+    assert_path_not_exist gem_make_out
   end
 
   def test_build_extensions_default_gem
@@ -1541,7 +1541,7 @@ dependencies: []
 
     spec.build_extensions
 
-    refute_path_exists spec.extension_dir
+    assert_path_not_exist spec.extension_dir
   end
 
   def test_build_extensions_error
@@ -1582,7 +1582,7 @@ dependencies: []
     FileUtils.chmod 0555, File.join(@ext.base_dir, 'extensions')
 
     @ext.build_extensions
-    refute_path_exists @ext.extension_dir
+    assert_path_not_exist @ext.extension_dir
   ensure
     unless ($DEBUG or win_platform? or Process.uid.zero? or Gem.java_platform?)
       FileUtils.chmod 0755, File.join(@ext.base_dir, 'extensions')
@@ -1616,18 +1616,18 @@ dependencies: []
     @ext.build_extensions
 
     gem_make_out = File.join @ext.extension_dir, 'gem_make.out'
-    refute_path_exists gem_make_out
+    assert_path_not_exist gem_make_out
   ensure
     FileUtils.chmod 0755, @gemhome
   end
 
   def test_build_extensions_none
-    refute_path_exists @a1.extension_dir, 'sanity check'
+    assert_path_not_exist @a1.extension_dir, 'sanity check'
     assert_empty @a1.extensions, 'sanity check'
 
     @a1.build_extensions
 
-    refute_path_exists @a1.extension_dir
+    assert_path_not_exist @a1.extension_dir
   end
 
   def test_build_extensions_preview
@@ -1654,7 +1654,7 @@ dependencies: []
     @ext.build_extensions
 
     gem_make_out = File.join @ext.extension_dir, 'gem_make.out'
-    assert_path_exists gem_make_out
+    assert_path_exist gem_make_out
   end
 
   def test_contains_requirable_file_eh

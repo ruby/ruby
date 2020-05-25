@@ -392,7 +392,7 @@ class TestGemDependencyInstaller < Gem::TestCase
 
     assert_equal %w[f-1], inst.installed_gems.map {|s| s.full_name }
 
-    assert_path_exists e1.extension_dir
+    assert_path_exist e1.extension_dir
   end
 
   def test_install_dependency_old

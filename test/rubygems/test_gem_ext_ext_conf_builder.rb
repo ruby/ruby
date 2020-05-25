@@ -114,7 +114,7 @@ class TestGemExtExtConfBuilder < Gem::TestCase
     assert_match(File.join(@dest_path, 'mkmf.log'), output[4])
     assert_includes(output, "To see why this extension failed to compile, please check the mkmf.log which can be found here:\n")
 
-    assert_path_exists File.join @dest_path, 'mkmf.log'
+    assert_path_exist File.join @dest_path, 'mkmf.log'
   end
 
   def test_class_build_extconf_success_without_warning
@@ -134,7 +134,7 @@ class TestGemExtExtConfBuilder < Gem::TestCase
 
     refute_includes(output, "To see why this extension failed to compile, please check the mkmf.log which can be found here:\n")
 
-    assert_path_exists File.join @dest_path, 'mkmf.log'
+    assert_path_exist File.join @dest_path, 'mkmf.log'
   end
 
   def test_class_build_unconventional
