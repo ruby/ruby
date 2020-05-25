@@ -68,7 +68,7 @@ module Spec
     end
 
     def shipped_files
-      @shipped_files ||= git_ls_files(shipped_files_glob)
+      @shipped_files ||= loaded_gemspec.files
     end
 
     def lib_tracked_files
@@ -231,18 +231,20 @@ module Spec
       end
     end
 
+    def git_commit_sha
+      ruby_core_tarball? ? "unknown" : sys_exec("git rev-parse --short HEAD", :dir => source_root).strip
+    end
+
   private
 
     def git_ls_files(glob)
-      sys_exec("git ls-files -z -- #{glob}", :dir => source_root).split("\x0")
+      skip "Not running on a git context, since running tests from a tarball" if ruby_core_tarball?
+
+      sys_exec!("git ls-files -z -- #{glob}", :dir => source_root).split("\x0")
     end
 
     def tracked_files_glob
       ruby_core? ? "lib/bundler lib/bundler.rb spec/bundler man/bundle*" : ""
-    end
-
-    def shipped_files_glob
-      ruby_core? ? "lib/bundler lib/bundler.rb man/bundle* man/gemfile* libexec/bundle*" : "lib man exe CHANGELOG.md LICENSE.md README.md bundler.gemspec"
     end
 
     def lib_tracked_files_glob
@@ -251,6 +253,14 @@ module Spec
 
     def man_tracked_files_glob
       ruby_core? ? "man/bundle* man/gemfile*" : "man"
+    end
+
+    def git_root
+      ruby_core? ? source_root : source_root.parent
+    end
+
+    def ruby_core_tarball?
+      !git_root.join(".git").directory?
     end
 
     extend self

@@ -216,7 +216,7 @@ RSpec.describe "The library itself" do
   end
 
   it "ships the correct set of files" do
-    git_list = shipped_files
+    git_list = git_ls_files(ruby_core? ? "lib/bundler lib/bundler.rb man/bundle* man/gemfile* libexec/bundle*" : "lib man exe CHANGELOG.md LICENSE.md README.md bundler.gemspec")
 
     gem_list = loaded_gemspec.files
 
