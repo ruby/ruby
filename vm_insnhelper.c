@@ -3386,8 +3386,9 @@ vm_yield_setup_args(rb_execution_context_t *ec, const rb_iseq_t *iseq, const int
 static VALUE
 vm_invoke_iseq_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
 		     struct rb_calling_info *calling, const struct rb_callinfo *ci,
-		     int is_lambda, const struct rb_captured_block *captured)
+                     int is_lambda, VALUE block_handler)
 {
+    const struct rb_captured_block *captured = VM_BH_TO_ISEQ_BLOCK(block_handler);
     const rb_iseq_t *iseq = rb_iseq_check(captured->code.iseq);
     const int arg_size = iseq->body->param.size;
     VALUE * const rsp = GET_SP() - calling->argc;
@@ -3409,10 +3410,11 @@ vm_invoke_iseq_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
 static VALUE
 vm_invoke_symbol_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
 		       struct rb_calling_info *calling, const struct rb_callinfo *ci,
-		       VALUE symbol)
+                       VALUE block_handler)
 {
     VALUE val;
     int argc;
+    VALUE symbol = VM_BH_TO_SYMBOL(block_handler);
     CALLER_SETUP_ARG(ec->cfp, calling, ci);
     argc = calling->argc;
     val = vm_yield_with_symbol(ec, symbol, argc, STACK_ADDR_FROM_TOP(argc), calling->kw_splat, calling->block_handler);
@@ -3423,10 +3425,11 @@ vm_invoke_symbol_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
 static VALUE
 vm_invoke_ifunc_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
 		      struct rb_calling_info *calling, const struct rb_callinfo *ci,
-		      const struct rb_captured_block *captured)
+                      VALUE block_handler)
 {
     VALUE val;
     int argc;
+    const struct rb_captured_block *captured = VM_BH_TO_IFUNC_BLOCK(block_handler);
     CALLER_SETUP_ARG(ec->cfp, calling, ci);
     CALLER_REMOVE_EMPTY_KW_SPLAT(ec->cfp, calling, ci);
     argc = calling->argc;
@@ -3463,21 +3466,15 @@ vm_invoke_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
   again:
     switch (vm_block_handler_type(block_handler)) {
       case block_handler_type_iseq:
-	{
-	    const struct rb_captured_block *captured = VM_BH_TO_ISEQ_BLOCK(block_handler);
-	    return vm_invoke_iseq_block(ec, reg_cfp, calling, ci, is_lambda, captured);
-	}
+        return vm_invoke_iseq_block(ec, reg_cfp, calling, ci, is_lambda, block_handler);
       case block_handler_type_ifunc:
-	{
-	    const struct rb_captured_block *captured = VM_BH_TO_IFUNC_BLOCK(block_handler);
-	    return vm_invoke_ifunc_block(ec, reg_cfp, calling, ci, captured);
-	}
+        return vm_invoke_ifunc_block(ec, reg_cfp, calling, ci, block_handler);
       case block_handler_type_proc:
 	is_lambda = block_proc_is_lambda(VM_BH_TO_PROC(block_handler));
 	block_handler = vm_proc_to_block_handler(VM_BH_TO_PROC(block_handler));
 	goto again;
       case block_handler_type_symbol:
-	return vm_invoke_symbol_block(ec, reg_cfp, calling, ci, VM_BH_TO_SYMBOL(block_handler));
+        return vm_invoke_symbol_block(ec, reg_cfp, calling, ci, block_handler);
     }
     VM_UNREACHABLE(vm_invoke_block: unreachable);
     return Qnil;
