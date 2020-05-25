@@ -318,6 +318,7 @@ RSpec.describe "major deprecations" do
       "deployment" => ["deployment", true],
       "frozen" => ["frozen", true],
       "no-cache" => ["no_cache", true],
+      "no-deployment" => ["deployment", false],
       "no-prune" => ["no_prune", true],
       "path" => ["path", "vendor/bundle"],
       "shebang" => ["shebang", "ruby27"],

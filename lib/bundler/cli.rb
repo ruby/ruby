@@ -254,6 +254,8 @@ module Bundler
         remembered_flag_deprecation(option)
       end
 
+      remembered_negative_flag_deprecation("no-deployment")
+
       require_relative "cli/install"
       Bundler.settings.temporary(:no_install => false) do
         Install.new(options.dup).run
@@ -812,10 +814,22 @@ module Bundler
       nil
     end
 
+    def remembered_negative_flag_deprecation(name)
+      positive_name = name.gsub(/\Ano-/, "")
+      option = current_command.options[positive_name]
+      flag_name = "--no-" + option.switch_name.gsub(/\A--/, "")
+
+      flag_deprecation(positive_name, flag_name, option)
+    end
+
     def remembered_flag_deprecation(name)
       option = current_command.options[name]
       flag_name = option.switch_name
 
+      flag_deprecation(name, flag_name, option)
+    end
+
+    def flag_deprecation(name, flag_name, option)
       name_index = ARGV.find {|arg| flag_name == arg.split("=")[0] }
       return unless name_index
 
