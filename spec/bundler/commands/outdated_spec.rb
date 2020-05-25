@@ -537,7 +537,7 @@ RSpec.describe "bundle outdated" do
 
   context "after bundle install --deployment", :bundler => "< 3" do
     before do
-      install_gemfile <<-G, forgotten_command_line_options(:deployment => true)
+      install_gemfile <<-G, :deployment => true
         source "#{file_uri_for(gem_repo2)}"
 
         gem "rack"
