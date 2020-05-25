@@ -738,8 +738,11 @@ defineclass
 
     rb_iseq_check(class_iseq);
 
+    /* if next instruction is pop (likely), we can skip a part of the execution. */
+    VALUE flag = CURRENT_INSN_IS(pop) * VM_FRAME_FLAG_DISCARDED;
+
     /* enter scope */
-    vm_push_frame(ec, class_iseq, VM_FRAME_MAGIC_CLASS | VM_ENV_FLAG_LOCAL, klass,
+    vm_push_frame(ec, class_iseq, flag | VM_FRAME_MAGIC_CLASS | VM_ENV_FLAG_LOCAL, klass,
 		  GET_BLOCK_HANDLER(),
 		  (VALUE)vm_cref_push(ec, klass, NULL, FALSE),
 		  class_iseq->body->iseq_encoded, GET_SP(),
