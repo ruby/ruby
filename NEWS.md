@@ -112,6 +112,14 @@ Outstanding ones only.
 
 Outstanding ones only.
 
+* RubyGems
+
+    * Update to RubyGems 3.2.0.pre1
+
+* Bundler
+
+    * Update to Bundler 2.2.0.dev
+
 * Net::HTTP
 
     * New method
