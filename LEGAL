@@ -7,7 +7,7 @@ All the files in this distribution are covered under either the Ruby's
 license (see the file COPYING) or public-domain except some files
 mentioned below.
 
-addr2line.c::
+[addr2line.c]
 
   A part of this file is from FreeBSD.
 
@@ -47,65 +47,65 @@ addr2line.c::
 	@(#)subr_prf.c	8.3 (Berkeley) 1/21/94
 
 
-ccan/build_assert/build_assert.h::
-ccan/check_type/check_type.h::
-ccan/container_of/container_of.h::
-ccan/str/str.h::
+[ccan/build_assert/build_assert.h]
+[ccan/check_type/check_type.h]
+[ccan/container_of/container_of.h]
+[ccan/str/str.h]
 
   These files are licensed under the {CC0}[https://creativecommons.org/choose/zero/].
 
-ccan/list/list.h::
+[ccan/list/list.h]
 
   This file is licensed under the {MIT License}[rdoc-label:label-MIT+License].
 
-include/ruby/onigmo.h::
-include/ruby/oniguruma.h::
-regcomp.c::
-regenc.c::
-regenc.h::
-regerror.c::
-regexec.c::
-regint.h::
-regparse.c::
-regparse.h::
-enc/ascii.c::
-enc/big5.c::
-enc/cp949.c::
-enc/emacs_mule.c::
-enc/encdb.c::
-enc/euc_jp.c::
-enc/euc_kr.c::
-enc/euc_tw.c::
-enc/gb18030.c::
-enc/gb2312.c::
-enc/gbk.c::
-enc/iso_8859_1.c::
-enc/iso_8859_10.c::
-enc/iso_8859_11.c::
-enc/iso_8859_13.c::
-enc/iso_8859_14.c::
-enc/iso_8859_15.c::
-enc/iso_8859_16.c::
-enc/iso_8859_2.c::
-enc/iso_8859_3.c::
-enc/iso_8859_4.c::
-enc/iso_8859_5.c::
-enc/iso_8859_6.c::
-enc/iso_8859_7.c::
-enc/iso_8859_8.c::
-enc/iso_8859_9.c::
-enc/koi8_r.c::
-enc/koi8_u.c::
-enc/shift_jis.c::
-enc/unicode.c::
-enc/us_ascii.c::
-enc/utf_16be.c::
-enc/utf_16le.c::
-enc/utf_32be.c::
-enc/utf_32le.c::
-enc/utf_8.c::
-enc/windows_1251.c::
-enc/windows_31j.c::
+[include/ruby/onigmo.h]
+[include/ruby/oniguruma.h]
+[regcomp.c]
+[regenc.c]
+[regenc.h]
+[regerror.c]
+[regexec.c]
+[regint.h]
+[regparse.c]
+[regparse.h]
+[enc/ascii.c]
+[enc/big5.c]
+[enc/cp949.c]
+[enc/emacs_mule.c]
+[enc/encdb.c]
+[enc/euc_jp.c]
+[enc/euc_kr.c]
+[enc/euc_tw.c]
+[enc/gb18030.c]
+[enc/gb2312.c]
+[enc/gbk.c]
+[enc/iso_8859_1.c]
+[enc/iso_8859_10.c]
+[enc/iso_8859_11.c]
+[enc/iso_8859_13.c]
+[enc/iso_8859_14.c]
+[enc/iso_8859_15.c]
+[enc/iso_8859_16.c]
+[enc/iso_8859_2.c]
+[enc/iso_8859_3.c]
+[enc/iso_8859_4.c]
+[enc/iso_8859_5.c]
+[enc/iso_8859_6.c]
+[enc/iso_8859_7.c]
+[enc/iso_8859_8.c]
+[enc/iso_8859_9.c]
+[enc/koi8_r.c]
+[enc/koi8_u.c]
+[enc/shift_jis.c]
+[enc/unicode.c]
+[enc/us_ascii.c]
+[enc/utf_16be.c]
+[enc/utf_16le.c]
+[enc/utf_32be.c]
+[enc/utf_32le.c]
+[enc/utf_8.c]
+[enc/windows_1251.c]
+[enc/windows_31j.c]
 
   Onigmo (Oniguruma-mod) LICENSE
 
@@ -169,8 +169,8 @@ enc/windows_31j.c::
     When this software is partly used or it is distributed with Ruby,
     this of Ruby follows the license of Ruby.
 
-enc/windows_1250.c::
-enc/windows_1252.c::
+[enc/windows_1250.c]
+[enc/windows_1252.c]
 
   >>>
     Copyright (c) 2006-2007  Byte      <byte AT mail DOT kna DOT ru>
@@ -198,10 +198,10 @@ enc/windows_1252.c::
     OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
     SUCH DAMAGE.
 
-enc/cesu_8.c::
-enc/windows_1253.c::
-enc/windows_1254.c::
-enc/windows_1257.c::
+[enc/cesu_8.c]
+[enc/windows_1253.c]
+[enc/windows_1254.c]
+[enc/windows_1257.c]
 
   >>>
     Copyright (c) 2002-2007  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
@@ -228,10 +228,10 @@ enc/windows_1257.c::
     OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
     SUCH DAMAGE.
 
-enc/trans/GB/GB12345%UCS.src::
-enc/trans/GB/UCS%GB12345.src::
-enc/trans/GB/GB2312%UCS.src::
-enc/trans/GB/UCS%GB2312.src::
+[enc/trans/GB/GB12345%UCS.src]
+[enc/trans/GB/UCS%GB12345.src]
+[enc/trans/GB/GB2312%UCS.src]
+[enc/trans/GB/UCS%GB2312.src]
 
   These files have this explanatory texts.
 
@@ -243,12 +243,12 @@ enc/trans/GB/UCS%GB2312.src::
     files for any particular purpose, and has ceased to publish the files many
     years ago.
 
-enc/trans/JIS/JISX0201-KANA%UCS.src::
-enc/trans/JIS/JISX0208\@1990%UCS.src::
-enc/trans/JIS/JISX0212%UCS.src::
-enc/trans/JIS/UCS%JISX0201-KANA.src::
-enc/trans/JIS/UCS%JISX0208@1990.src::
-enc/trans/JIS/UCS%JISX0212.src::
+[enc/trans/JIS/JISX0201-KANA%UCS.src]
+[enc/trans/JIS/JISX0208\@1990%UCS.src]
+[enc/trans/JIS/JISX0212%UCS.src]
+[enc/trans/JIS/UCS%JISX0201-KANA.src]
+[enc/trans/JIS/UCS%JISX0208@1990.src]
+[enc/trans/JIS/UCS%JISX0212.src]
 
   These files are copyrighted as the following.
 
@@ -257,10 +257,10 @@ enc/trans/JIS/UCS%JISX0212.src::
 
     For terms of use, see http://www.unicode.org/terms_of_use.html
 
-enc/trans/JIS/JISX0213-1%UCS@BMP.src::
-enc/trans/JIS/JISX0213-1%UCS@SIP.src::
-enc/trans/JIS/JISX0213-2%UCS@BMP.src::
-enc/trans/JIS/JISX0213-2%UCS@SIP.src::
+[enc/trans/JIS/JISX0213-1%UCS@BMP.src]
+[enc/trans/JIS/JISX0213-1%UCS@SIP.src]
+[enc/trans/JIS/JISX0213-2%UCS@BMP.src]
+[enc/trans/JIS/JISX0213-2%UCS@SIP.src]
 
   These files are copyrighted as the following.
 
@@ -270,10 +270,10 @@ enc/trans/JIS/JISX0213-2%UCS@SIP.src::
     Copyright (C) 2006 Project X0213, All Rights Reserved.  
     You can use, modify, distribute this table freely.
 
-enc/trans/JIS/UCS@BMP%JISX0213-1.src::
-enc/trans/JIS/UCS@BMP%JISX0213-2.src::
-enc/trans/JIS/UCS@SIP%JISX0213-1.src::
-enc/trans/JIS/UCS@SIP%JISX0213-2.src::
+[enc/trans/JIS/UCS@BMP%JISX0213-1.src]
+[enc/trans/JIS/UCS@BMP%JISX0213-2.src]
+[enc/trans/JIS/UCS@SIP%JISX0213-1.src]
+[enc/trans/JIS/UCS@SIP%JISX0213-2.src]
 
   These files are copyrighted as the following.
 
@@ -282,22 +282,22 @@ enc/trans/JIS/UCS@SIP%JISX0213-2.src::
     Copyright (C) 2001 I'O, All Rights Reserved.  
     You can use, modify, distribute this table freely.
 
-enc/trans/ucm/glibc-BIG5-2.3.3.ucm::
-enc/trans/ucm/glibc-BIG5HKSCS-2.3.3.ucm::
+[enc/trans/ucm/glibc-BIG5-2.3.3.ucm]
+[enc/trans/ucm/glibc-BIG5HKSCS-2.3.3.ucm]
 
   >>>
     Copyright (C) 2001-2005, International Business Machines
     Corporation and others.  All Rights Reserved.
 
-enc/trans/ucm/windows-950-2000.ucm::
-enc/trans/ucm/windows-950_hkscs-2001.ucm::
+[enc/trans/ucm/windows-950-2000.ucm]
+[enc/trans/ucm/windows-950_hkscs-2001.ucm]
 
   >>>
     Copyright (C) 2001-2002, International Business Machines
     Corporation and others.  All Rights Reserved.
 
 
-configure::
+[configure]
 
   This file is free software.
 
@@ -307,7 +307,7 @@ configure::
     This configure script is free software; the Free Software Foundation
     gives unlimited permission to copy, distribute and modify it.
 
-aclocal.m4::
+[aclocal.m4]
 
   This file is free software.
 
@@ -318,8 +318,8 @@ aclocal.m4::
     gives unlimited permission to copy and/or distribute it,
     with or without modifications, as long as this notice is preserved.
 
-tool/config.guess::
-tool/config.sub::
+[tool/config.guess]
+[tool/config.sub]
 
   As long as you distribute these files with the file configure, they
   are covered under the Ruby's license.
@@ -347,8 +347,8 @@ tool/config.sub::
     program.  This Exception is an additional permission under section 7
     of the GNU General Public License, version 3 ("GPLv3").
 
-parse.c::
-parse.h::
+[parse.c]
+[parse.h]
 
   These files are licensed under the GPL, but are incorporated into Ruby and
   redistributed under the terms of the Ruby license, as permitted by the
@@ -383,7 +383,7 @@ parse.h::
     This special exception was added by the Free Software Foundation in
     version 2.2 of Bison.
 
-missing/dtoa.c::
+[missing/dtoa.c]
 
   This file is under these licenses.
 
@@ -426,8 +426,8 @@ missing/dtoa.c::
     OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
     SUCH DAMAGE.
 
-win32/win32.c::
-include/ruby/win32.h::
+[win32/win32.c]
+[include/ruby/win32.h]
 
   You can apply the Artistic License to these files. (or GPL,
   alternatively)
@@ -438,7 +438,7 @@ include/ruby/win32.h::
     You may distribute under the terms of either the GNU General Public
     License or the Artistic License, as specified in the perl README file.
 
-missing/mt19937.c::
+[missing/mt19937.c]
 
   This file is under the new-style BSD license.
 
@@ -488,7 +488,7 @@ missing/mt19937.c::
 
   The Wayback Machine url: http://web.archive.org/web/19990429082237/http://www.math.keio.ac.jp/matumoto/emt.html
 
-missing/procstat_vm.c::
+[missing/procstat_vm.c]
 
   This file is under the new-style BSD license.
 
@@ -519,7 +519,7 @@ missing/procstat_vm.c::
 
     $FreeBSD: head/usr.bin/procstat/procstat_vm.c 261780 2014-02-11 21:57:37Z jhb $
 
-vsnprintf.c::
+[vsnprintf.c]
 
   This file is under the {old-style BSD license}[rdoc-label:label-Old-style+BSD+license].
 
@@ -530,33 +530,33 @@ vsnprintf.c::
     This code is derived from software contributed to Berkeley by
     Chris Torek.
 
-st.c::
-strftime.c::
-include/ruby/st.h::
-missing/acosh.c::
-missing/alloca.c::
-missing/dup2.c::
-missing/erf.c::
-missing/finite.c::
-missing/hypot.c::
-missing/isinf.c::
-missing/isnan.c::
-missing/lgamma_r.c::
-missing/memcmp.c::
-missing/memmove.c::
-missing/strchr.c::
-missing/strerror.c::
-missing/strstr.c::
-missing/tgamma.c::
-ext/date/date_strftime.c::
-ext/digest/sha1/sha1.c::
-ext/digest/sha1/sha1.h::
-ext/sdbm/_sdbm.c::
-ext/sdbm/sdbm.h::
+[st.c]
+[strftime.c]
+[include/ruby/st.h]
+[missing/acosh.c]
+[missing/alloca.c]
+[missing/dup2.c]
+[missing/erf.c]
+[missing/finite.c]
+[missing/hypot.c]
+[missing/isinf.c]
+[missing/isnan.c]
+[missing/lgamma_r.c]
+[missing/memcmp.c]
+[missing/memmove.c]
+[missing/strchr.c]
+[missing/strerror.c]
+[missing/strstr.c]
+[missing/tgamma.c]
+[ext/date/date_strftime.c]
+[ext/digest/sha1/sha1.c]
+[ext/digest/sha1/sha1.h]
+[ext/sdbm/_sdbm.c]
+[ext/sdbm/sdbm.h]
 
   These files are all under public domain.
 
-missing/crypt.c::
+[missing/crypt.c]
 
   This file is under the {old-style BSD license}[rdoc-label:label-Old-style+BSD+license].
 
@@ -567,7 +567,7 @@ missing/crypt.c::
     This code is derived from software contributed to Berkeley by
     Tom Truscott.
 
-missing/setproctitle.c::
+[missing/setproctitle.c]
 
   This file is under the {old-style BSD license}[rdoc-label:label-Old-style+BSD+license].
 
@@ -577,8 +577,8 @@ missing/setproctitle.c::
     Copyright (c) 1988, 1993  
     The Regents of the University of California.  All rights reserved.
 
-missing/strlcat.c::
-missing/strlcpy.c::
+[missing/strlcat.c]
+[missing/strlcpy.c]
 
   These files are under an ISC-style license.
 
@@ -597,7 +597,7 @@ missing/strlcpy.c::
     ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-missing/langinfo.c::
+[missing/langinfo.c]
 
   This file is from http://www.cl.cam.ac.uk/~mgk25/ucs/langinfo.c.
   Ruby uses a modified version. The file contains the following
@@ -609,8 +609,8 @@ missing/langinfo.c::
     for any purpose and without fee is hereby granted. The author
     disclaims all warranties with regard to this software.
 
-ext/digest/md5/md5.c::
-ext/digest/md5/md5.h::
+[ext/digest/md5/md5.c]
+[ext/digest/md5/md5.h]
 
   These files are under the following license.  Ruby uses modified
   versions of them.
@@ -637,8 +637,8 @@ ext/digest/md5/md5.h::
     L. Peter Deutsch
     ghost@aladdin.com
 
-ext/digest/rmd160/rmd160.c::
-ext/digest/rmd160/rmd160.h::
+[ext/digest/rmd160/rmd160.c]
+[ext/digest/rmd160/rmd160.h]
 
   These files have the following copyright information, and by the
   author we are allowed to use it under the new-style BSD license.
@@ -651,8 +651,8 @@ ext/digest/rmd160/rmd160.h::
     Copyright (c) Katholieke Universiteit Leuven
     1996, All Rights Reserved
 
-ext/digest/sha2/sha2.c::
-ext/digest/sha2/sha2.h::
+[ext/digest/sha2/sha2.c]
+[ext/digest/sha2/sha2.h]
 
   These files are under the new-style BSD license.
 
@@ -683,7 +683,7 @@ ext/digest/sha2/sha2.h::
     OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
     SUCH DAMAGE.
 
-ext/json/generator/generator.c::
+[ext/json/generator/generator.c]
 
   The file contains the following copyright notice.
 
@@ -708,9 +708,9 @@ ext/json/generator/generator.c::
       for internal or external distribution as long as this notice
       remains attached.
 
-ext/nkf/nkf-utf8/config.h::
-ext/nkf/nkf-utf8/nkf.c::
-ext/nkf/nkf-utf8/utf8tbl.c::
+[ext/nkf/nkf-utf8/config.h]
+[ext/nkf/nkf-utf8/nkf.c]
+[ext/nkf/nkf-utf8/utf8tbl.c]
 
   These files are under the following license.  So to speak, it is
   copyrighted semi-public-domain software.
@@ -726,8 +726,8 @@ ext/nkf/nkf-utf8/utf8tbl.c::
     You don't have to ask before copying, redistribution or publishing.
     THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE.
 
-ext/psych::
-test/psych::
+[ext/psych]
+[test/psych]
 
   The files under these directories are under the following license, except for
   ext/psych/yaml.
@@ -753,7 +753,7 @@ test/psych::
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 
-ext/psych/yaml::
+[ext/psych/yaml]
 
   The files under this directory are under the following license.
 
@@ -778,7 +778,7 @@ ext/psych/yaml::
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 
-ext/pty/pty.c::
+[ext/pty/pty.c]
 
   >>>
     C) Copyright 1998 by Akinori Ito.
@@ -792,9 +792,9 @@ ext/pty/pty.c::
     limited to warranty of fitness of purpose, or merchantability, or
     results obtained from use of this software.
 
-ext/socket/addrinfo.h::
-ext/socket/getaddrinfo.c::
-ext/socket/getnameinfo.c::
+[ext/socket/addrinfo.h]
+[ext/socket/getaddrinfo.c]
+[ext/socket/getnameinfo.c]
 
   These files are under the new-style BSD license.
 
@@ -826,7 +826,7 @@ ext/socket/getnameinfo.c::
     OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
     SUCH DAMAGE.
 
-ext/win32ole/win32ole.c::
+[ext/win32ole/win32ole.c]
 
   You can apply the Artistic License to this file. (or GPL,
   alternatively)
@@ -844,12 +844,12 @@ ext/win32ole/win32ole.c::
 
   The Wayback Machine url: http://web.archive.org/web/19970607104352/http://www.activeware.com:80/
 
-lib/rdoc/generator/template/darkfish/css/fonts.css::
+[lib/rdoc/generator/template/darkfish/css/fonts.css]
 
   This file is licensed under the {SIL Open Font License}[http://scripts.sil.org/OFL].
 
-spec/mspec::
-spec/ruby::
+[spec/mspec]
+[spec/ruby]
 
   The files under these directories are under the following license.
 
@@ -877,9 +877,9 @@ spec/ruby::
     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
     OTHER DEALINGS IN THE SOFTWARE.
 
-lib/rubygems.rb::
-lib/rubygems::
-test/rubygems::
+[lib/rubygems.rb]
+[lib/rubygems]
+[test/rubygems]
 
   RubyGems is under the following license.
 
@@ -938,11 +938,11 @@ test/rubygems::
        WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
        PURPOSE.
 
-lib/bundler::
-lib/bundler.rb::
-lib/bundler.gemspec::
-spec/bundler::
-man/bundle-*,gemfile.*::
+[lib/bundler]
+[lib/bundler.rb]
+[lib/bundler.gemspec]
+[spec/bundler]
+[man/bundle-*,gemfile.*]
 
   Bundler is under the following license.
 
@@ -952,30 +952,30 @@ man/bundle-*,gemfile.*::
 
     {MIT License}[rdoc-label:label-MIT+License]
 
-benchmark/so_ackermann.rb::
-benchmark/so_array.rb::
-benchmark/so_binary_trees.rb::
-benchmark/so_concatenate.rb::
-benchmark/so_count_words.yml::
-benchmark/so_exception.rb::
-benchmark/so_fannkuch.rb::
-benchmark/so_fasta.rb::
-benchmark/so_k_nucleotide.yml::
-benchmark/so_lists.rb::
-benchmark/so_mandelbrot.rb::
-benchmark/so_matrix.rb::
-benchmark/so_meteor_contest.rb::
-benchmark/so_nbody.rb::
-benchmark/so_nested_loop.rb::
-benchmark/so_nsieve.rb::
-benchmark/so_nsieve_bits.rb::
-benchmark/so_object.rb::
-benchmark/so_partial_sums.rb::
-benchmark/so_pidigits.rb::
-benchmark/so_random.rb::
-benchmark/so_reverse_complement.yml::
-benchmark/so_sieve.rb::
-benchmark/so_spectralnorm.rb::
+[benchmark/so_ackermann.rb]
+[benchmark/so_array.rb]
+[benchmark/so_binary_trees.rb]
+[benchmark/so_concatenate.rb]
+[benchmark/so_count_words.yml]
+[benchmark/so_exception.rb]
+[benchmark/so_fannkuch.rb]
+[benchmark/so_fasta.rb]
+[benchmark/so_k_nucleotide.yml]
+[benchmark/so_lists.rb]
+[benchmark/so_mandelbrot.rb]
+[benchmark/so_matrix.rb]
+[benchmark/so_meteor_contest.rb]
+[benchmark/so_nbody.rb]
+[benchmark/so_nested_loop.rb]
+[benchmark/so_nsieve.rb]
+[benchmark/so_nsieve_bits.rb]
+[benchmark/so_object.rb]
+[benchmark/so_partial_sums.rb]
+[benchmark/so_pidigits.rb]
+[benchmark/so_random.rb]
+[benchmark/so_reverse_complement.yml]
+[benchmark/so_sieve.rb]
+[benchmark/so_spectralnorm.rb]
 
   These files are very old copy of then-called "The Great Computer Language
   Shootout".  LEGAL SITUATION OF THESE FILES ARE UNCLEAR because the original

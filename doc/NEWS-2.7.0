@@ -280,17 +280,17 @@ See also Warning in {Core classes updates}[#label-Core+classes+updates+-28outsta
 
 === Core classes updates (outstanding ones only)
 
-Array::
+[Array]
 
-  New methods::
+  [New methods]
 
     * Added Array#intersection. [Feature #16155]
 
     * Added Array#minmax, with a faster implementation than Enumerable#minmax. [Bug #15929]
 
-Comparable::
+[Comparable]
 
-  Modified method::
+  [Modified method]
 
     * Comparable#clamp now accepts a Range argument. [Feature #14784]
 
@@ -302,29 +302,29 @@ Comparable::
          3.clamp(..2)  #=> 2
 
 
-Complex::
+[Complex]
 
-  New method::
+  [New method]
 
     * Added Complex#<=>.
       So <code>0 <=> 0i</code> will not raise NoMethodError. [Bug #15857]
 
-Dir::
+[Dir]
 
-  Modified methods::
+  [Modified methods]
 
     * Dir.glob and Dir.[] no longer allow NUL-separated glob pattern.
       Use Array instead.  [Feature #14643]
 
-Encoding::
+[Encoding]
 
-  New encoding::
+  [New encoding]
 
     * Added new encoding CESU-8. [Feature #15931]
 
-Enumerable::
+[Enumerable]
 
-  New methods::
+  [New methods]
 
     * Added Enumerable#filter_map.  [Feature #15323]
 
@@ -334,9 +334,9 @@ Enumerable::
 
         ["A", "B", "C", "B", "A"].tally #=> {"A"=>2, "B"=>2, "C"=>1}
 
-Enumerator::
+[Enumerator]
 
-  New methods::
+  [New methods]
 
     * Added Enumerator.produce to generate an Enumerator from any custom
       data transformation.  [Feature #14781]
@@ -357,34 +357,34 @@ Enumerator::
       can be directly passed to another method as a block
       argument.  [Feature #15618]
 
-Fiber::
+[Fiber]
 
-  New method::
+  [New method]
 
     * Added Fiber#raise that behaves like Fiber#resume but raises an
       exception on the resumed fiber.  [Feature #10344]
 
-File::
+[File]
 
-  Modified method::
+  [Modified method]
 
     * File.extname now returns a dot string for names ending with a dot on
       non-Windows platforms.  [Bug #15267]
 
           File.extname("foo.") #=> "."
 
-FrozenError::
+[FrozenError]
 
-  New method::
+  [New method]
 
     * Added FrozenError#receiver to return the frozen object on which
       modification was attempted.  To set this object when raising
       FrozenError in Ruby code, FrozenError.new accepts a +:receiver+
       option.  [Feature #15751]
 
-GC::
+[GC]
 
-  New method::
+  [New method]
 
     * Added GC.compact method for compacting the heap.
       This function compacts live objects in the heap so that fewer pages may
@@ -393,16 +393,16 @@ GC::
       Details on the algorithm and caveats can be found here:
       https://bugs.ruby-lang.org/issues/15626
 
-IO::
+[IO]
 
-  New method::
+  [New method]
 
     * Added IO#set_encoding_by_bom to check the BOM and set the external
       encoding.  [Bug #15210]
 
-Integer::
+[Integer]
 
-  Modified method::
+  [Modified method]
 
     * Integer#[] now supports range operations.  [Feature #8842]
 
@@ -411,15 +411,15 @@ Integer::
          0b01001100[2...6] #=> 0b0011
          #   ^^^^
 
-Method::
+[Method]
 
-  Modified method::
+  [Modified method]
 
     * Method#inspect shows more information. [Feature #14145]
 
-Module::
+[Module]
 
-  New methods::
+  [New methods]
 
     * Added Module#const_source_location to retrieve the location where a
       constant is defined.  [Feature #10771]
@@ -429,7 +429,7 @@ Module::
       all arguments to another method in a way that can be backwards
       compatible with older Ruby versions.  [Bug #16154]
 
-  Modified methods::
+  [Modified methods]
 
     * Module#autoload? now takes an +inherit+ optional argument, like
       Module#const_defined?.  [Feature #15777]
@@ -438,53 +438,53 @@ Module::
       always the same for a given Module. This change is
       experimental. [Feature #16150]
 
-NilClass / TrueClass / FalseClass::
+[NilClass / TrueClass / FalseClass]
 
-  Modified methods::
+  [Modified methods]
 
     * NilClass#to_s, TrueClass#to_s, and FalseClass#to_s now always return a
       frozen String. The returned String is always the same for each of these
       values. This change is experimental. [Feature #16150]
 
-ObjectSpace::WeakMap::
+[ObjectSpace::WeakMap]
 
-  Modified method::
+  [Modified method]
 
     * ObjectSpace::WeakMap#[]= now accepts special objects as either key or
       values.  [Feature #16035]
 
-Proc::
+[Proc]
 
-  New method::
+  [New method]
 
     * Added Proc#ruby2_keywords for marking the proc as passing keyword
       arguments through a regular argument splat, useful when delegating
       all arguments to another method or proc in a way that can be backwards
       compatible with older Ruby versions.  [Feature #16404]
 
-Range::
+[Range]
 
-  New method::
+  [New method]
 
     * Added Range#minmax, with a faster implementation than Enumerable#minmax.
       It returns a maximum that now corresponds to Range#max. [Bug #15807]
 
-  Modified method::
+  [Modified method]
 
     * Range#=== now uses Range#cover? for String arguments, too (in Ruby 2.6, it was
       changed from Range#include? for all types except strings). [Bug #15449]
 
 
-RubyVM::
+[RubyVM]
 
-  Removed method::
+  [Removed method]
 
     * +RubyVM.resolve_feature_path+ moved to
       <code>$LOAD_PATH.resolve_feature_path</code>.  [Feature #15903] [Feature #15230]
 
-String::
+[String]
 
-  Unicode::
+  [Unicode]
 
     * Update Unicode version and Emoji version from 11.0.0 to
       12.0.0.  [Feature #15321]
@@ -494,28 +494,28 @@ String::
 
     * Update Unicode Emoji version to 12.1. [Feature #16272]
 
-Symbol::
+[Symbol]
 
-  New methods::
+  [New methods]
 
     * Added Symbol#start_with? and Symbol#end_with? methods.  [Feature #16348]
 
-Time::
+[Time]
 
-  New methods::
+  [New methods]
 
     * Added Time#ceil method.  [Feature #15772]
 
     * Added Time#floor method.  [Feature #15653]
 
-  Modified method::
+  [Modified method]
 
     * Time#inspect is separated from Time#to_s and it shows
       the time's sub second.  [Feature #15958]
 
-UnboundMethod::
+[UnboundMethod]
 
-  New method::
+  [New method]
 
     * Added UnboundMethod#bind_call method.  [Feature #15955]
 
@@ -541,51 +541,51 @@ UnboundMethod::
           p Foo.instance_method(:add_1).bind(obj).call(1) #=> 2
           p Foo.instance_method(:add_1).bind_call(obj, 1) #=> 2
 
-Warning::
+[Warning]
 
-  New methods::
+  [New methods]
 
     * Added Warning.[] and Warning.[]= to manage emitting/suppressing
       some categories of warnings.  [Feature #16345] [Feature #16420]
 
-$LOAD_PATH::
+[$LOAD_PATH]
 
-  New method::
+  [New method]
 
     * Added <code>$LOAD_PATH.resolve_feature_path</code>.  [Feature #15903] [Feature #15230]
 
 === Stdlib updates (outstanding ones only)
 
-Bundler::
+[Bundler]
 
   * Upgrade to Bundler 2.1.2.
     See https://github.com/bundler/bundler/releases/tag/v2.1.2
 
-CGI::
+[CGI]
 
   * CGI.escapeHTML becomes 2~5x faster when there is at least one escaped character.
     See https://github.com/ruby/ruby/pull/2226
 
-CSV::
+[CSV]
 
   * Upgrade to 3.1.2.
     See https://github.com/ruby/csv/blob/master/NEWS.md.
 
-Date::
+[Date]
 
   * Date.jisx0301, Date#jisx0301, and Date.parse support the new Japanese
     era.  [Feature #15742]
 
-Delegator::
+[Delegator]
 
   * Object#DelegateClass accepts a block and module_evals it in the context
     of the returned class, similar to Class.new and Struct.new.
 
-ERB::
+[ERB]
 
   * Prohibit marshaling ERB instance.
 
-IRB::
+[IRB]
 
   * Introduce syntax highlighting inspired by the Pry gem to Binding#irb
     source lines, REPL input, and inspect output of some core-class objects.
@@ -596,25 +596,25 @@ IRB::
 
   * Enable auto indent and save/load history by default.
 
-JSON::
+[JSON]
 
   * Upgrade to 2.3.0.
 
-Net::FTP::
+[Net::FTP]
 
   * Add Net::FTP#features to check available features, and Net::FTP#option to
     enable/disable each of them.  [Feature #15964]
 
-Net::HTTP::
+[Net::HTTP]
 
   * Add +ipaddr+ optional parameter to Net::HTTP#start to replace the address for
     the TCP/IP connection. [Feature #5180]
 
-Net::IMAP::
+[Net::IMAP]
 
   * Add Server Name Indication (SNI) support.  [Feature #15594]
 
-open-uri::
+[open-uri]
 
   * Warn open-uri's "open" method at Kernel.
     Use URI.open instead.  [Misc #15893]
@@ -622,7 +622,7 @@ open-uri::
   * The default charset of "text/*" media type is UTF-8 instead of
     ISO-8859-1.  [Bug #15933]
 
-OptionParser::
+[OptionParser]
 
   * Now show "Did you mean?" for unknown options.  [Feature #16256]
 
@@ -643,38 +643,38 @@ OptionParser::
       Did you mean?  baz
                      bar
 
-Pathname::
+[Pathname]
 
   * Pathname.glob now delegates 3 arguments to Dir.glob
     to accept +base+ keyword. [Feature #14405]
 
-Racc::
+[Racc]
 
   * Merge 1.4.15 from upstream repository and added cli of racc.
 
-Reline::
+[Reline]
 
   * New stdlib that is compatible with the readline stdlib but is
     implemented in pure Ruby. It also provides a multiline editing mode.
 
-REXML::
+[REXML]
 
   * Upgrade to 3.2.3.
     See https://github.com/ruby/rexml/blob/master/NEWS.md.
 
-RSS::
+[RSS]
 
   * Upgrade to RSS 0.2.8.
     See https://github.com/ruby/rss/blob/master/NEWS.md.
 
-RubyGems::
+[RubyGems]
 
   * Upgrade to RubyGems 3.1.2.
     * https://github.com/rubygems/rubygems/releases/tag/v3.1.0
     * https://github.com/rubygems/rubygems/releases/tag/v3.1.1
     * https://github.com/rubygems/rubygems/releases/tag/v3.1.2
 
-StringScanner::
+[StringScanner]
 
   * Upgrade to 1.0.3.
     See https://github.com/ruby/strscan/blob/master/NEWS.md.
@@ -690,10 +690,10 @@ StringScanner::
   * ThreadsWait (thwait gem)
   * E2MM (e2mmap gem)
 
-Proc::
+[Proc]
   * The Proc#to_s format was changed. [Feature #16101]
 
-Range::
+[Range]
   * Range#minmax used to iterate on the range to determine the maximum.
     It now uses the same algorithm as Range#max. In rare cases (e.g.
     ranges of Floats or Strings), this may yield different results. [Bug #15807]
@@ -723,14 +723,14 @@ Range::
     * yaml
 * The <tt>did_you_mean</tt> gem has been promoted up to a default gem from a bundled gem
 
-pathname::
+[pathname]
 
   * Kernel#Pathname when called with a Pathname argument now returns
     the argument instead of creating a new Pathname. This is more
     similar to other Kernel methods, but can break code that modifies
     the return value and expects the argument not to be modified.
 
-profile.rb, Profiler__::
+[profile.rb, Profiler__]
 
   * Removed from standard library. It was unmaintained since Ruby 2.0.0.
 
@@ -750,7 +750,7 @@ profile.rb, Profiler__::
 
 === Implementation improvements
 
-Fiber::
+[Fiber]
 
   * Allow selecting different coroutine implementations by using
     +--with-coroutine=+, e.g.
@@ -764,23 +764,23 @@ Fiber::
     performance improvement was measured in micro-benchmarks.
     https://github.com/ruby/ruby/pull/2224
 
-File::
+[File]
   * File.realpath now uses realpath(3) on many platforms, which can
     significantly improve performance. [Feature #15797]
 
-Hash::
+[Hash]
   * Change data structure of small Hash objects. [Feature #15602]
 
-Monitor::
+[Monitor]
   * Monitor class is written in C-extension. [Feature #16255]
 
-Thread::
+[Thread]
 
   * VM stack memory allocation is now combined with native thread stack,
     improving thread allocation performance and reducing allocation related
     failures. Around 10x performance improvement was measured in micro-benchmarks.
 
-JIT::
+[JIT]
 
   * JIT-ed code is recompiled to less-optimized code when an optimization assumption is invalidated.
 
@@ -791,13 +791,13 @@ JIT::
 
   * The default value of +--jit-min-calls+ is changed from 5 to 10,000.
 
-RubyVM::
+[RubyVM]
 
   * Per-call-site method cache, which has been there since around 1.9, was
     improved: cache hit rate raised from 89% to 94%.
     See https://github.com/ruby/ruby/pull/2583
 
-RubyVM::InstructionSequence::
+[RubyVM::InstructionSequence]
 
   * RubyVM::InstructionSequence#to_binary method generates compiled binary.
     The binary size is reduced. [Feature #16163]
