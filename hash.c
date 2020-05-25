@@ -3011,15 +3011,28 @@ rb_hash_select_bang(VALUE hash)
 
 /*
  *  call-seq:
- *     hsh.keep_if {| key, value | block }  -> hsh
- *     hsh.keep_if                          -> an_enumerator
+ *    hash.keep_if {|key, value| ... } -> self
+ *    hash.keep_if -> new_enumerator
  *
- *  Deletes every key-value pair from <i>hsh</i> for which <i>block</i>
- *  evaluates to +false+.
+ *  Calls the block for each key-value pair;
+ *  retains the entry if the block returns a truthy value;
+ *  deletes the entry otherwise; returns +self+.
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h1 = h.keep_if { |key, value| key.start_with?('b') }
+ *    h1 # => {:bar=>1, :baz=>2}
+ *    h1.object_id == h.object_id # => true
  *
- *  If no block is given, an enumerator is returned instead.
+ *  Returns a new \Enumerator if no block given:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    e = h.keep_if # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:keep_if>
+ *    h1 = e.each { |key, value| key.start_with?('b') }
+ *    h1 # => {:bar=>1, :baz=>2}
+ *    h1.object_id == h.object_id # => true
  *
- *  See also Hash#select!.
+ *  Raises an exception if the block attempts to add a new key:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    # Raises RuntimeError (can't add a new key into hash during iteration):
+ *    h.keep_if { |key, value| h[:new_key] = 3 }
  */
 
 static VALUE
@@ -3041,13 +3054,12 @@ clear_i(VALUE key, VALUE value, VALUE dummy)
 
 /*
  *  call-seq:
- *     hsh.clear -> hsh
+ *    hash.clear -> self
  *
- *  Removes all key-value pairs from <i>hsh</i>.
- *
- *     h = { "a" => 100, "b" => 200 }   #=> {"a"=>100, "b"=>200}
- *     h.clear                          #=> {}
- *
+ *  Removes all hash entries; returns +self+:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h1 = h.clear # => {}
+ *    h1.equal?(h) # => true # Identity check
  */
 
 VALUE
@@ -3108,29 +3120,36 @@ NOINSERT_UPDATE_CALLBACK(hash_aset_str)
 
 /*
  *  call-seq:
- *     hsh[key] = value        -> value
- *     hsh.store(key, value)   -> value
+ *    hash[key] = value -> value
+ *    hash.store(key, value)
  *
- *  == Element Assignment
+ *  Associates the given +value+ with the given +key+, and returns +value+.
  *
- *  Associates the value given by +value+ with the key given by +key+.
+ *  If the given +key+ exists, replaces its value with the given +value+;
+ *  the ordering is not affected
+ *  (see {Entry Order}[#class-Hash-label-Entry+Order]):
+ *    h = {foo: 0, bar: 1}
+ *    h[:foo] = 2 # => 2
+ *    h.store(:bar, 3) # => 3
+ *    h # => {:foo=>2, :bar=>3}
  *
- *     h = { "a" => 100, "b" => 200 }
- *     h["a"] = 9
- *     h["c"] = 4
- *     h   #=> {"a"=>9, "b"=>200, "c"=>4}
- *     h.store("d", 42) #=> 42
- *     h   #=> {"a"=>9, "b"=>200, "c"=>4, "d"=>42}
+ *  If +key+ does not exist, adds the +key+ and +value+;
+ *  the new entry is last in the order
+ *  (see {Entry Order}[#class-Hash-label-Entry+Order]):
+ *    h = {foo: 0, bar: 1}
+ *    h[:baz] = 2 # => 2
+ *    h.store(:bat, 3) # => 3
+ *    h # => {:foo=>0, :bar=>1, :baz=>2, :bat=>3}
  *
- *  +key+ should not have its value changed while it is in use as a key (an
- *  <tt>unfrozen String</tt> passed as a key will be duplicated and frozen).
+ *  ---
  *
- *     a = "a"
- *     b = "b".freeze
- *     h = { a => 100, b => 200 }
- *     h.key(100).equal? a #=> false
- *     h.key(200).equal? b #=> true
- *
+ *  Raises an exception if +key+ is invalid
+ *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
+ *    h = {foo: 0, bar: 1}
+ *    # Raises NoMethodError (undefined method `hash' for #<BasicObject>)
+ *    h[BasicObject.new] = 2
+ *    # Raises NoMethodError (undefined method `hash' for #<BasicObject>)
+ *    h.store(BasicObject.new, 2)
  */
 
 VALUE
@@ -3156,14 +3175,21 @@ rb_hash_aset(VALUE hash, VALUE key, VALUE val)
 
 /*
  *  call-seq:
- *     hsh.replace(other_hash) -> hsh
+ *    hash.replace(other_hash) -> self
  *
- *  Replaces the contents of <i>hsh</i> with the contents of
- *  <i>other_hash</i>.
+ *  Replaces the entire contents of +self+ with the contents of +other_hash+;
+ *  returns +self+:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h1 = h.replace({bat: 3, bam: 4})
+ *    h1 # => {:bat=>3, :bam=>4}
+ *    h1.equal?(h) # => true # Identity check
  *
- *     h = { "a" => 100, "b" => 200 }
- *     h.replace({ "c" => 300, "d" => 400 })   #=> {"c"=>300, "d"=>400}
+ *  ---
  *
+ *  Raises an exception if other_hash is not a Hash-convertible object:
+ *    h = {}
+ *    # Raises TypeError (no implicit conversion of Symbol into Hash):
+ *    h.replace(:not_a_hash)
  */
 
 static VALUE
@@ -3206,16 +3232,12 @@ rb_hash_replace(VALUE hash, VALUE hash2)
 
 /*
  *  call-seq:
- *     hsh.length    ->  integer
- *     hsh.size      ->  integer
+ *     hash.length -> integer
+ *     hash.size -> integer
  *
- *  Returns the number of key-value pairs in the hash.
- *
- *     h = { "d" => 100, "a" => 200, "v" => 300, "e" => 400 }
- *     h.size          #=> 4
- *     h.delete("a")   #=> 200
- *     h.size          #=> 3
- *     h.length        #=> 3
+ *  Returns the count of entries in +self+:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.length # => 3
  *
  *  Hash#length is an alias for Hash#size.
  */
@@ -3234,12 +3256,11 @@ rb_hash_size_num(VALUE hash)
 
 /*
  *  call-seq:
- *     hsh.empty?    -> true or false
+ *    hash.empty? → true or false
  *
- *  Returns <code>true</code> if <i>hsh</i> contains no key-value pairs.
- *
- *     {}.empty?   #=> true
- *
+ *  Returns +true+ if there are no hash entries, +false+ otherwise:
+ *    {}.empty? # => true
+ *    {foo: 0, bar: 1, baz: 2}.empty? # => false
  */
 
 static VALUE
