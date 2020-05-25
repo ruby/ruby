@@ -36,7 +36,7 @@ unless Gem.java_platform? # jruby can't require the simple_gem file
       @package.extract_files @destination
 
       extracted = File.join @destination, 'lib/foo.rb'
-      assert_path_exists extracted
+      assert_path_exist extracted
 
       mask = 0100644 & (~File.umask)
 

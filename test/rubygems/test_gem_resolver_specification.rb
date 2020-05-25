@@ -26,7 +26,7 @@ class TestGemResolverSpecification < Gem::TestCase
 
     a_spec.install :install_dir => gemhome
 
-    assert_path_exists File.join gemhome, 'gems', a.full_name
+    assert_path_exist File.join gemhome, 'gems', a.full_name
 
     expected = File.join gemhome, 'specifications', a.spec_name
 

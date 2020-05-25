@@ -667,8 +667,8 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
     wait_for_child_process_to_exit
 
-    assert_path_exists File.join(a2.doc_dir, 'ri')
-    assert_path_exists File.join(a2.doc_dir, 'rdoc')
+    assert_path_exist File.join(a2.doc_dir, 'ri')
+    assert_path_exist File.join(a2.doc_dir, 'rdoc')
   end
 
   def test_execute_rdoc_with_path
@@ -704,7 +704,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
     wait_for_child_process_to_exit
 
-    assert_path_exists 'whatever/doc/a-2', 'documentation not installed'
+    assert_path_exist 'whatever/doc/a-2', 'documentation not installed'
   end
 
   def test_execute_saves_build_args
@@ -739,7 +739,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
     end
 
     path = a2.build_info_file
-    assert_path_exists path
+    assert_path_exist path
 
     assert_equal args, a2.build_args
   end

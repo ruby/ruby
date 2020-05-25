@@ -106,7 +106,7 @@ class TestGem < Gem::TestCase
 
     assert_equal %w[a-1], installed.map {|spec| spec.full_name }
 
-    assert_path_exists File.join(gemhome2, 'gems', 'a-1')
+    assert_path_exist File.join(gemhome2, 'gems', 'a-1')
   end
 
   def test_self_install_in_rescue
@@ -692,12 +692,12 @@ class TestGem < Gem::TestCase
 
     Gem.ensure_gem_subdirectories @gemhome
 
-    assert_path_exists File.join @gemhome, 'build_info'
-    assert_path_exists File.join @gemhome, 'cache'
-    assert_path_exists File.join @gemhome, 'doc'
-    assert_path_exists File.join @gemhome, 'extensions'
-    assert_path_exists File.join @gemhome, 'gems'
-    assert_path_exists File.join @gemhome, 'specifications'
+    assert_path_exist File.join @gemhome, 'build_info'
+    assert_path_exist File.join @gemhome, 'cache'
+    assert_path_exist File.join @gemhome, 'doc'
+    assert_path_exist File.join @gemhome, 'extensions'
+    assert_path_exist File.join @gemhome, 'gems'
+    assert_path_exist File.join @gemhome, 'specifications'
   end
 
   def test_self_ensure_gem_directories_permissions

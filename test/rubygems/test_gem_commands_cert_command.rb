@@ -83,7 +83,7 @@ class TestGemCommandsCertCommand < Gem::TestCase
 
     cert_path = @trust_dir.cert_path PUBLIC_CERT
 
-    assert_path_exists cert_path
+    assert_path_exist cert_path
 
     assert_equal "Added '/CN=nobody/DC=example'\n", @ui.output
     assert_empty @ui.error
@@ -138,8 +138,8 @@ Added '/CN=alternate/DC=example'
     assert_empty output
     assert_empty @build_ui.error
 
-    assert_path_exists File.join(@tempdir, 'gem-private_key.pem')
-    assert_path_exists File.join(@tempdir, 'gem-public_cert.pem')
+    assert_path_exist File.join(@tempdir, 'gem-private_key.pem')
+    assert_path_exist File.join(@tempdir, 'gem-public_cert.pem')
   end
 
   def test_execute_build_bad_email_address
@@ -159,8 +159,8 @@ Added '/CN=alternate/DC=example'
       assert_equal "Invalid email address #{email}",
         e.message
 
-      refute_path_exists File.join(@tempdir, 'gem-private_key.pem')
-      refute_path_exists File.join(@tempdir, 'gem-public_cert.pem')
+      assert_path_not_exist File.join(@tempdir, 'gem-private_key.pem')
+      assert_path_not_exist File.join(@tempdir, 'gem-public_cert.pem')
     end
   end
 
@@ -195,8 +195,8 @@ Added '/CN=alternate/DC=example'
     assert_empty output
     assert_empty @build_ui.error
 
-    assert_path_exists File.join(@tempdir, 'gem-private_key.pem')
-    assert_path_exists File.join(@tempdir, 'gem-public_cert.pem')
+    assert_path_exist File.join(@tempdir, 'gem-private_key.pem')
+    assert_path_exist File.join(@tempdir, 'gem-public_cert.pem')
 
     pem = File.read("#{@tempdir}/gem-public_cert.pem")
     cert = OpenSSL::X509::Certificate.new(pem)
@@ -232,8 +232,8 @@ Added '/CN=alternate/DC=example'
 
     end
 
-    refute_path_exists File.join(@tempdir, 'gem-private_key.pem')
-    refute_path_exists File.join(@tempdir, 'gem-public_cert.pem')
+    assert_path_not_exist File.join(@tempdir, 'gem-private_key.pem')
+    assert_path_not_exist File.join(@tempdir, 'gem-public_cert.pem')
   end
 
   def test_execute_build_key
@@ -254,8 +254,8 @@ Added '/CN=alternate/DC=example'
     assert_empty output
     assert_empty @ui.error
 
-    assert_path_exists File.join(@tempdir, 'gem-public_cert.pem')
-    refute_path_exists File.join(@tempdir, 'gem-private_key.pem')
+    assert_path_exist File.join(@tempdir, 'gem-public_cert.pem')
+    assert_path_not_exist File.join(@tempdir, 'gem-private_key.pem')
   end
 
   def test_execute_build_encrypted_key
@@ -276,7 +276,7 @@ Added '/CN=alternate/DC=example'
     assert_empty output
     assert_empty @ui.error
 
-    assert_path_exists File.join(@tempdir, 'gem-public_cert.pem')
+    assert_path_exist File.join(@tempdir, 'gem-public_cert.pem')
   end
 
   def test_execute_certificate
@@ -346,7 +346,7 @@ Added '/CN=alternate/DC=example'
 
     cert_path = @trust_dir.cert_path PUBLIC_CERT
 
-    assert_path_exists cert_path
+    assert_path_exist cert_path
 
     @cmd.handle_options %W[--remove nobody]
 
@@ -357,7 +357,7 @@ Added '/CN=alternate/DC=example'
     assert_equal "Removed '/CN=nobody/DC=example'\n", @ui.output
     assert_equal '', @ui.error
 
-    refute_path_exists cert_path
+    assert_path_not_exist cert_path
   end
 
   def test_execute_remove_multiple
@@ -367,8 +367,8 @@ Added '/CN=alternate/DC=example'
     public_path = @trust_dir.cert_path PUBLIC_CERT
     alternate_path = @trust_dir.cert_path ALTERNATE_CERT
 
-    assert_path_exists public_path
-    assert_path_exists alternate_path
+    assert_path_exist public_path
+    assert_path_exist alternate_path
 
     @cmd.handle_options %W[--remove example]
 
@@ -384,8 +384,8 @@ Removed '/CN=nobody/DC=example'
     assert_equal expected, @ui.output
     assert_equal '', @ui.error
 
-    refute_path_exists public_path
-    refute_path_exists alternate_path
+    assert_path_not_exist public_path
+    assert_path_not_exist alternate_path
   end
 
   def test_execute_remove_twice
@@ -395,8 +395,8 @@ Removed '/CN=nobody/DC=example'
     public_path = @trust_dir.cert_path PUBLIC_CERT
     alternate_path = @trust_dir.cert_path ALTERNATE_CERT
 
-    assert_path_exists public_path
-    assert_path_exists alternate_path
+    assert_path_exist public_path
+    assert_path_exist alternate_path
 
     @cmd.handle_options %W[--remove nobody --remove alternate]
 
@@ -412,8 +412,8 @@ Removed '/CN=alternate/DC=example'
     assert_equal expected, @ui.output
     assert_equal '', @ui.error
 
-    refute_path_exists public_path
-    refute_path_exists alternate_path
+    assert_path_not_exist public_path
+    assert_path_not_exist alternate_path
   end
 
   def test_execute_sign

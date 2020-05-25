@@ -50,8 +50,8 @@ class TestGemCommandsCheckCommand < Gem::TestCase
 
     FileUtils.rm b.spec_file
 
-    assert_path_exists b.gem_dir
-    refute_path_exists b.spec_file
+    assert_path_exist b.gem_dir
+    assert_path_not_exist b.spec_file
 
     Gem.use_paths @gemhome
 
@@ -61,7 +61,7 @@ class TestGemCommandsCheckCommand < Gem::TestCase
       end
     end
 
-    refute_path_exists b.gem_dir
-    refute_path_exists b.spec_file
+    assert_path_not_exist b.gem_dir
+    assert_path_not_exist b.spec_file
   end
 end

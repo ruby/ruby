@@ -141,7 +141,7 @@ class Gem::TestCase < Test::Unit::TestCase
 
   def assert_directory_exists(path, msg = nil)
     msg = build_message(msg, "Expected path '#{path}' to be a directory")
-    assert_path_exists path
+    assert_path_exist path
     assert File.directory?(path), msg
   end
 

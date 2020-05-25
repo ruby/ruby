@@ -184,7 +184,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
     assert_equal 'hello', data
 
-    refute_path_exists path
+    assert_path_not_exist path
   end
 
   def util_fuck_with_fetcher(data, blow = false)

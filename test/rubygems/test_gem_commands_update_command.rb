@@ -211,7 +211,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
     @cmd.execute
 
-    refute_path_exists Gem.plugindir, "Plugins folder not removed when updating rubygems to pre-3.2"
+    assert_path_not_exist Gem.plugindir, "Plugins folder not removed when updating rubygems to pre-3.2"
   end
 
   def test_execute_system_specific_newer_than_or_equal_to_3_2_leaves_plugins_dir_alone
@@ -239,8 +239,8 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
     @cmd.execute
 
-    assert_path_exists Gem.plugindir, "Plugin folder removed when updating rubygems to post-3.2"
-    assert_path_exists plugin_file, "Plugin removed when updating rubygems to post-3.2"
+    assert_path_exist Gem.plugindir, "Plugin folder removed when updating rubygems to post-3.2"
+    assert_path_exist plugin_file, "Plugin removed when updating rubygems to post-3.2"
   end
 
   def test_execute_system_specifically_to_latest_version
@@ -384,7 +384,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
     a2 = @specs['a-2']
 
-    assert_path_exists File.join(a2.doc_dir, 'rdoc')
+    assert_path_exist File.join(a2.doc_dir, 'rdoc')
   end
 
   def test_execute_named

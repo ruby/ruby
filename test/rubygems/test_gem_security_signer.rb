@@ -165,7 +165,7 @@ toqvglr0kdbknSRRjBVLK6tsgr07aLT9gNP7mTW2PA==
     expired_path =
       File.join Gem.user_home, '.gem', "gem-public_cert.pem.expired.#{expiry}"
 
-    assert_path_exists expired_path
+    assert_path_exist expired_path
     assert_equal EXPIRED_CERT.to_pem, File.read(expired_path)
   end
 

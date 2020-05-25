@@ -84,7 +84,7 @@ class TestGemRDoc < Gem::TestCase
     refute @hook.rdoc_installed?
     refute @hook.ri_installed?
 
-    assert_path_exists @a.doc_dir
+    assert_path_exist @a.doc_dir
   end
 
   def test_remove_unwritable
@@ -113,7 +113,7 @@ class TestGemRDoc < Gem::TestCase
   def test_setup
     @hook.setup
 
-    assert_path_exists @a.doc_dir
+    assert_path_exist @a.doc_dir
   end
 
   def test_setup_unwritable
