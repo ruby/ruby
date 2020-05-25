@@ -51,7 +51,7 @@ jobs:
         working-directory: src
       - run: mkdir build
       - name: Run configure
-        run: ../src/configure -C --disable-install-doc DEFS=${{ matrix.debug }}
+        run: ../src/configure -C --disable-install-doc cppflags=${{ matrix.debug }}
         working-directory: build
       - run: make $JOBS
         working-directory: build
