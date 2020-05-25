@@ -56,7 +56,7 @@ class TestGemPackageTask < Gem::TestCase
       g.summary = 'summary'
     end
 
-    _, err = capture_io do
+    _, err = capture_output do
       Rake.application = Rake::Application.new
 
       pkg = Gem::PackageTask.new(gem) do |p|
