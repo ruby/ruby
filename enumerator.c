@@ -1365,7 +1365,7 @@ yielder_yield_push(VALUE obj, VALUE arg)
 }
 
 /*
- * Returns a Proc object that takes an argument and yields it.
+ * Returns a Proc object that takes arguments and yields them.
  *
  * This method is implemented so that a Yielder object can be directly
  * passed to another method as a block argument.
