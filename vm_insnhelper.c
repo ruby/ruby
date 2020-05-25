@@ -3499,7 +3499,7 @@ vm_invoke_iseq_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
     SET_SP(rsp);
 
     vm_push_frame(ec, iseq,
-		  VM_FRAME_MAGIC_BLOCK | (is_lambda ? VM_FRAME_FLAG_LAMBDA : 0),
+                  calling->flags | VM_FRAME_MAGIC_BLOCK | (is_lambda ? VM_FRAME_FLAG_LAMBDA : 0),
 		  captured->self,
 		  VM_GUARDED_PREV_EP(captured->ep), 0,
 		  iseq->body->iseq_encoded + opt_pc,
