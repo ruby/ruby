@@ -726,7 +726,7 @@ dump_thread(void *arg)
 			if (pSymFromAddr(ph, addr, &displacement, info)) {
 			    if (GetModuleFileName((HANDLE)(uintptr_t)pSymGetModuleBase64(ph, addr), libpath, sizeof(libpath)))
 				fprintf(stderr, "%s", libpath);
-			    fprintf(stderr, "(%s+0x%I64x)",
+			    fprintf(stderr, "(%s+0x%"PRI_64_PREFIX"x)",
 				    info->Name, displacement);
 			}
 			fprintf(stderr, " [0x%p]", (void *)(VALUE)addr);
