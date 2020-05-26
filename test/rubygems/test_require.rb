@@ -509,6 +509,33 @@ class TestGemRequire < Gem::TestCase
     assert_equal %w[default-3.0], loaded_spec_names
   end
 
+  def test_normal_gems_with_overridden_load_error_message
+    normal_gem_spec = util_spec("normal", "3.0", nil, "lib/normal/gem.rb")
+
+    install_specs(normal_gem_spec)
+
+    File.write("require_with_overridden_load_error_message.rb", <<-RUBY)
+      LoadError.class_eval do
+        def message
+          "Overridden message"
+        end
+      end
+
+      require 'normal/gem'
+    RUBY
+
+    require "open3"
+
+    output, exit_status = Open3.capture2e(
+      { "GEM_HOME" => Gem.paths.home },
+      *ruby_with_rubygems_in_load_path,
+      "-r",
+      "./require_with_overridden_load_error_message.rb"
+    )
+
+    assert exit_status.success?, "Require failed due to #{output}"
+  end
+
   def test_default_gem_prerelease
     default_gem_spec = new_default_spec("default", "2.0.0",
                                         nil, "default/gem.rb")
