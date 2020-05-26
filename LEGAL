@@ -12,9 +12,11 @@ mentioned below.
   A part of this file is from FreeBSD.
 
   >>>
-    Copyright (c) 1986, 1988, 1991, 1993
-	The Regents of the University of California.  All rights reserved.
+    Copyright (c) 1986, 1988, 1991, 1993::
+    The Regents of the University of California.  All rights reserved.
+
     (c) UNIX System Laboratories, Inc.
+
     All or some portions of this file are derived from material licensed
     to the University of California by American Telephone and Telegraph
     Co. or Unix System Laboratories, Inc. and are reproduced herein with
@@ -110,8 +112,8 @@ mentioned below.
   Onigmo (Oniguruma-mod) LICENSE
 
   >>>
-    Copyright (c) 2002-2009  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>  
-    Copyright (c) 2011-2014  K.Takata  <kentkt AT csc DOT jp>  
+    Copyright (c) 2002-2009::  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
+    Copyright (c) 2011-2014::  K.Takata  <kentkt AT csc DOT jp>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -138,7 +140,7 @@ mentioned below.
   Oniguruma LICENSE
 
   >>>
-    Copyright (c) 2002-2009  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>  
+    Copyright (c) 2002-2009::  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -173,8 +175,8 @@ mentioned below.
 [enc/windows_1252.c]
 
   >>>
-    Copyright (c) 2006-2007  Byte      <byte AT mail DOT kna DOT ru>
-                             K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
+    Copyright (c) 2006-2007::  Byte      <byte AT mail DOT kna DOT ru>
+                               K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -204,7 +206,7 @@ mentioned below.
 [enc/windows_1257.c]
 
   >>>
-    Copyright (c) 2002-2007  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
+    Copyright (c) 2002-2007::  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -265,9 +267,9 @@ mentioned below.
   These files are copyrighted as the following.
 
   >>>
-    Copyright (C) 2001 earthian@tama.or.jp, All Rights Reserved.  
-    Copyright (C) 2001 I'O, All Rights Reserved.  
-    Copyright (C) 2006 Project X0213, All Rights Reserved.  
+    Copyright (C) 2001:: earthian@tama.or.jp, All Rights Reserved.
+    Copyright (C) 2001:: I'O, All Rights Reserved.
+    Copyright (C) 2006:: Project X0213, All Rights Reserved.
     You can use, modify, distribute this table freely.
 
 [enc/trans/JIS/UCS@BMP%JISX0213-1.src]
@@ -278,23 +280,23 @@ mentioned below.
   These files are copyrighted as the following.
 
   >>>
-    Copyright (C) 2001 earthian@tama.or.jp, All Rights Reserved.  
-    Copyright (C) 2001 I'O, All Rights Reserved.  
+    Copyright (C) 2001:: earthian@tama.or.jp, All Rights Reserved.
+    Copyright (C) 2001:: I'O, All Rights Reserved.
     You can use, modify, distribute this table freely.
 
 [enc/trans/ucm/glibc-BIG5-2.3.3.ucm]
 [enc/trans/ucm/glibc-BIG5HKSCS-2.3.3.ucm]
 
   >>>
-    Copyright (C) 2001-2005, International Business Machines
-    Corporation and others.  All Rights Reserved.
+    Copyright (C) 2001-2005:: International Business Machines
+                              Corporation and others.  All Rights Reserved.
 
 [enc/trans/ucm/windows-950-2000.ucm]
 [enc/trans/ucm/windows-950_hkscs-2001.ucm]
 
   >>>
-    Copyright (C) 2001-2002, International Business Machines
-    Corporation and others.  All Rights Reserved.
+    Copyright (C) 2001-2002:: International Business Machines
+                              Corporation and others.  All Rights Reserved.
 
 
 [configure]
@@ -302,7 +304,7 @@ mentioned below.
   This file is free software.
 
   >>>
-    Copyright (C) 1992-1996, 1998-2012 Free Software Foundation, Inc.
+    Copyright (C) 1992-1996, 1998-2012:: Free Software Foundation, Inc.
 
     This configure script is free software; the Free Software Foundation
     gives unlimited permission to copy, distribute and modify it.
@@ -312,7 +314,7 @@ mentioned below.
   This file is free software.
 
   >>>
-    Copyright (C) 1996-2020 Free Software Foundation, Inc.
+    Copyright (C) 1996-2020:: Free Software Foundation, Inc.
 
     This file is free software; the Free Software Foundation
     gives unlimited permission to copy and/or distribute it,
@@ -325,7 +327,7 @@ mentioned below.
   are covered under the Ruby's license.
 
   >>>
-    Copyright 1992-2018 Free Software Foundation, Inc.
+    Copyright 1992-2018:: Free Software Foundation, Inc.
 
     This file is free software; you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -355,7 +357,7 @@ mentioned below.
   exception to the GPL below.
 
   >>>
-    Copyright (C) 1984, 1989-1990, 2000-2015, 2018 Free Software Foundation, Inc.
+    Copyright (C) 1984, 1989-1990, 2000-2015, 2018:: Free Software Foundation, Inc.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -388,7 +390,7 @@ mentioned below.
   This file is under these licenses.
 
   >>>
-    Copyright (c) 1991, 2000, 2001 by Lucent Technologies.
+    Copyright (c) 1991, 2000, 2001:: by Lucent Technologies.
 
     Permission to use, copy, modify, and distribute this software for any
     purpose without fee is hereby granted, provided that this entire notice
@@ -402,8 +404,8 @@ mentioned below.
     OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.
 
   >>>
-    Copyright (c) 2004-2008 David Schultz <das@FreeBSD.ORG>  
-    All rights reserved.
+    Copyright (c) 2004-2008:: David Schultz <das@FreeBSD.ORG>
+                              All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
     modification, are permitted provided that the following conditions
@@ -433,7 +435,7 @@ mentioned below.
   alternatively)
 
   >>>
-    Copyright (c) 1993, Intergraph Corporation
+    Copyright (c) 1993:: Intergraph Corporation
 
     You may distribute under the terms of either the GNU General Public
     License or the Artistic License, as specified in the perl README file.
@@ -443,7 +445,7 @@ mentioned below.
   This file is under the new-style BSD license.
 
   >>>
-    A C-program for MT19937, with initialization improved 2002/2/10.
+    A C-program for MT19937, with initialization improved 2002/2/10.::
     Coded by Takuji Nishimura and Makoto Matsumoto.  
     This is a faster version by taking Shawn Cokus's optimization,
     Matthe Bellew's simplification, Isaku Wada's real version.
@@ -451,8 +453,8 @@ mentioned below.
     Before using, initialize the state by using init_genrand(seed)
     or init_by_array(init_key, key_length).
 
-    Copyright (C) 1997 - 2002, Makoto Matsumoto and Takuji Nishimura,
-    All rights reserved.
+    Copyright (C) 1997 - 2002:: Makoto Matsumoto and Takuji Nishimura,
+                                All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
     modification, are permitted provided that the following conditions
@@ -493,8 +495,8 @@ mentioned below.
   This file is under the new-style BSD license.
 
   >>>
-    Copyright (c) 2007 Robert N. M. Watson  
-    All rights reserved.
+    Copyright (c) 2007:: Robert N. M. Watson
+                         All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
     modification, are permitted provided that the following conditions
@@ -524,7 +526,7 @@ mentioned below.
   This file is under the {old-style BSD license}[rdoc-label:label-Old-style+BSD+license].
 
   >>>
-    Copyright (c) 1990, 1993  
+    Copyright (c) 1990, 1993::
     The Regents of the University of California.  All rights reserved.
 
     This code is derived from software contributed to Berkeley by
@@ -561,7 +563,7 @@ mentioned below.
   This file is under the {old-style BSD license}[rdoc-label:label-Old-style+BSD+license].
 
   >>>
-    Copyright (c) 1989, 1993  
+    Copyright (c) 1989, 1993::
     The Regents of the University of California.  All rights reserved.
 
     This code is derived from software contributed to Berkeley by
@@ -572,9 +574,9 @@ mentioned below.
   This file is under the {old-style BSD license}[rdoc-label:label-Old-style+BSD+license].
 
   >>>
-    Copyright 2003 Damien Miller  
-    Copyright (c) 1983, 1995-1997 Eric P. Allman  
-    Copyright (c) 1988, 1993  
+    Copyright 2003:: Damien Miller
+    Copyright (c) 1983, 1995-1997:: Eric P. Allman
+    Copyright (c) 1988, 1993::
     The Regents of the University of California.  All rights reserved.
 
 [missing/strlcat.c]
@@ -583,7 +585,7 @@ mentioned below.
   These files are under an ISC-style license.
 
   >>>
-    Copyright (c) 1998, 2015 Todd C. Miller <Todd.Miller@courtesan.com>
+    Copyright (c) 1998, 2015:: Todd C. Miller <Todd.Miller@courtesan.com>
 
     Permission to use, copy, modify, and distribute this software for any
     purpose with or without fee is hereby granted, provided that the above
@@ -604,7 +606,7 @@ mentioned below.
   author/copyright notice:
 
   >>>
-    Markus.Kuhn@cl.cam.ac.uk -- 2002-03-11  
+    Markus.Kuhn@cl.cam.ac.uk -- 2002-03-11::
     Permission to use, copy, modify, and distribute this software
     for any purpose and without fee is hereby granted. The author
     disclaims all warranties with regard to this software.
@@ -616,7 +618,7 @@ mentioned below.
   versions of them.
 
   >>>
-    Copyright (C) 1999, 2000 Aladdin Enterprises.  All rights reserved.
+    Copyright (C) 1999, 2000:: Aladdin Enterprises.  All rights reserved.
 
     This software is provided 'as-is', without any express or implied
     warranty.  In no event will the authors be held liable for any damages
@@ -648,7 +650,7 @@ mentioned below.
               (Arranged for libc by Todd C. Miller)
     DATE::    1 March 1996
 
-    Copyright (c) Katholieke Universiteit Leuven
+    Copyright (c):: Katholieke Universiteit Leuven
     1996, All Rights Reserved
 
 [ext/digest/sha2/sha2.c]
@@ -657,7 +659,7 @@ mentioned below.
   These files are under the new-style BSD license.
 
   >>>
-    Copyright 2000 Aaron D. Gifford.  All rights reserved.
+    Copyright 2000:: Aaron D. Gifford.  All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
     modification, are permitted provided that the following conditions
@@ -688,7 +690,7 @@ mentioned below.
   The file contains the following copyright notice.
 
   >>>
-    Copyright 2001-2004 Unicode, Inc.
+    Copyright 2001-2004:: Unicode, Inc.
 
     Disclaimer::
 
@@ -716,7 +718,7 @@ mentioned below.
   copyrighted semi-public-domain software.
 
   >>>
-    Copyright (C) 1987, Fujitsu LTD. (Itaru ICHIKAWA)
+    Copyright (C) 1987:: Fujitsu LTD. (Itaru ICHIKAWA)
 
     Everyone is permitted to do anything on this program
     including copying, modifying, improving,
@@ -733,7 +735,7 @@ mentioned below.
   ext/psych/yaml.
 
   >>>
-    Copyright 2009 Aaron Patterson, et al.
+    Copyright 2009:: Aaron Patterson, et al.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy of
     this software and associated documentation files (the 'Software'), to deal in
@@ -758,7 +760,7 @@ mentioned below.
   The files under this directory are under the following license.
 
   >>>
-    Copyright (c) 2006 Kirill Simonov
+    Copyright (c) 2006:: Kirill Simonov
 
     Permission is hereby granted, free of charge, to any person obtaining a copy of
     this software and associated documentation files (the "Software"), to deal in
@@ -781,7 +783,7 @@ mentioned below.
 [ext/pty/pty.c]
 
   >>>
-    C) Copyright 1998 by Akinori Ito.
+    C) Copyright 1998:: by Akinori Ito.
 
     This software may be redistributed freely for this purpose, in full
     or in part, provided that this entire copyright notice is included
@@ -799,7 +801,7 @@ mentioned below.
   These files are under the new-style BSD license.
 
   >>>
-    Copyright (C) 1995, 1996, 1997, 1998, and 1999 WIDE Project.
+    Copyright (C) 1995, 1996, 1997, 1998, and 1999:: WIDE Project.
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -832,10 +834,10 @@ mentioned below.
   alternatively)
 
   >>>
-    (c) 1995 Microsoft Corporation. All rights reserved.
+    (c) 1995:: Microsoft Corporation. All rights reserved.
     Developed by ActiveWare Internet Corp., http://www.ActiveWare.com
 
-    Other modifications Copyright (c) 1997, 1998 by Gurusamy Sarathy
+    Other modifications Copyright (c) 1997, 1998:: by Gurusamy Sarathy
     <gsar@umich.edu> and Jan Dubois <jan.dubois@ibm.net>
 
     You may distribute under the terms of either the GNU General Public
@@ -854,7 +856,7 @@ mentioned below.
   The files under these directories are under the following license.
 
   >>>
-    Copyright (c) 2008 Engine Yard, Inc. All rights reserved.
+    Copyright (c) 2008:: Engine Yard, Inc. All rights reserved.
 
     Permission is hereby granted, free of charge, to any person
     obtaining a copy of this software and associated documentation
@@ -947,8 +949,8 @@ mentioned below.
   Bundler is under the following license.
 
   >>>
-    Portions copyright (c) 2010 Andre Arko  
-    Portions copyright (c) 2009 Engine Yard  
+    Portions copyright (c) 2010:: Andre Arko
+    Portions copyright (c) 2009:: Engine Yard
 
     {MIT License}[rdoc-label:label-MIT+License]
 
