@@ -20,8 +20,6 @@ jobs:
             debug: -DRUBY_DEBUG
           - test_task: "test-all TESTS=--repeat-count=2"
             debug: -DRUBY_DEBUG
-          - test_task: "test-all TESTS=--repeat-count=2"
-            debug: -DRUBY_DEBUG
           - test_task: leaked-globals
             debug: -DRUBY_DEBUG
       fail-fast: false
