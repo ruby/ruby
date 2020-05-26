@@ -264,6 +264,7 @@ rb_alloc_tmp_buffer2(volatile VALUE *store, long count, size_t elsize)
         store, rbimpl_size_mul_or_raise(count, elsize), count);
 }
 
+#ifndef __MINGW32__
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_NONNULL((1))
 RBIMPL_ATTR_RETURNS_NONNULL()
@@ -282,5 +283,6 @@ ruby_nonempty_memcpy(void *dest, const void *src, size_t n)
 }
 #undef memcpy
 #define memcpy ruby_nonempty_memcpy
+#endif
 
 #endif /* RBIMPL_MEMORY_H */
