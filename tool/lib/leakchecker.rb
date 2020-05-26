@@ -4,6 +4,7 @@ class LeakChecker
 
   def initialize
     @fd_info = find_fds
+    @@skip = false
     @tempfile_info = find_tempfiles
     @thread_info = find_threads
     @env_info = find_env
@@ -63,7 +64,7 @@ class LeakChecker
       }
     end
     fd_leaked = live2 - live1
-    if !fd_leaked.empty?
+    if !@@skip && !fd_leaked.empty?
       leaked = true
       h = {}
       ObjectSpace.each_object(IO) {|io|
@@ -123,6 +124,7 @@ class LeakChecker
       }
     end
     @fd_info = live2
+    @@skip = false
     return leaked
   end
 
@@ -289,5 +291,9 @@ class LeakChecker
       output.set_encoding(nil, nil)
     end
     output.puts(*a)
+  end
+
+  def self.skip
+    @@skip = true
   end
 end
