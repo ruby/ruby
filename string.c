@@ -9727,7 +9727,7 @@ rb_str_crypt(VALUE str, VALUE salt)
  *     "a".ord         #=> 97
  */
 
-VALUE
+static VALUE
 rb_str_ord(VALUE s)
 {
     unsigned int c;
