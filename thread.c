@@ -3468,7 +3468,7 @@ rb_thread_variable_get(VALUE thread, VALUE key)
  */
 
 static VALUE
-rb_thread_variable_set(VALUE thread, VALUE id, VALUE val)
+rb_thread_variable_set(VALUE thread, VALUE key, VALUE val)
 {
     VALUE locals;
 
@@ -3477,7 +3477,7 @@ rb_thread_variable_set(VALUE thread, VALUE id, VALUE val)
     }
 
     locals = rb_thread_local_storage(thread);
-    return rb_hash_aset(locals, rb_to_symbol(id), val);
+    return rb_hash_aset(locals, rb_to_symbol(key), val);
 }
 
 /*
@@ -3667,16 +3667,13 @@ static VALUE
 rb_thread_variable_p(VALUE thread, VALUE key)
 {
     VALUE locals;
-    ID id = rb_check_id(&key);
-
-    if (!id) return Qfalse;
 
     if (LIKELY(!THREAD_LOCAL_STORAGE_INITIALISED_P(thread))) {
         return Qfalse;
     }
     locals = rb_thread_local_storage(thread);
 
-    if (rb_hash_lookup(locals, ID2SYM(id)) != Qnil) {
+    if (rb_hash_lookup(locals, rb_to_symbol(key)) != Qnil) {
         return Qtrue;
     }
     else {

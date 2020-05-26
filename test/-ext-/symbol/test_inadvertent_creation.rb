@@ -255,7 +255,7 @@ module Test_Symbol
       Thread.current.thread_variable_set(:test, nil)
       name = noninterned_name
       assert_not_send([Thread.current, :thread_variable?, name])
-      assert_not_interned(name)
+      assert_not_pinneddown(name)
     end
 
     def test_enumerable_inject_op
