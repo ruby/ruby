@@ -3386,7 +3386,7 @@ vm_yield_setup_args(rb_execution_context_t *ec, const rb_iseq_t *iseq, const int
 static VALUE
 vm_invoke_iseq_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
 		     struct rb_calling_info *calling, const struct rb_callinfo *ci,
-                     int is_lambda, VALUE block_handler)
+                     bool is_lambda, VALUE block_handler)
 {
     const struct rb_captured_block *captured = VM_BH_TO_ISEQ_BLOCK(block_handler);
     const rb_iseq_t *iseq = rb_iseq_check(captured->code.iseq);
@@ -3410,7 +3410,7 @@ vm_invoke_iseq_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
 static VALUE
 vm_invoke_symbol_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
 		       struct rb_calling_info *calling, const struct rb_callinfo *ci,
-                       VALUE block_handler)
+                       MAYBE_UNUSED(bool is_lambda), VALUE block_handler)
 {
     VALUE val;
     int argc;
@@ -3425,7 +3425,7 @@ vm_invoke_symbol_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
 static VALUE
 vm_invoke_ifunc_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
 		      struct rb_calling_info *calling, const struct rb_callinfo *ci,
-                      VALUE block_handler)
+                      MAYBE_UNUSED(bool is_lambda), VALUE block_handler)
 {
     VALUE val;
     int argc;
@@ -3460,7 +3460,7 @@ vm_proc_to_block_handler(VALUE procval)
 static VALUE
 vm_invoke_proc_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
                      struct rb_calling_info *calling, const struct rb_callinfo *ci,
-                     VALUE block_handler)
+                     MAYBE_UNUSED(bool is_lambda), VALUE block_handler)
 {
     return vm_invoke_block(ec, reg_cfp, calling, ci,
         block_proc_is_lambda(VM_BH_TO_PROC(block_handler)),
@@ -3476,11 +3476,11 @@ vm_invoke_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
       case block_handler_type_iseq:
         return vm_invoke_iseq_block(ec, reg_cfp, calling, ci, is_lambda, block_handler);
       case block_handler_type_ifunc:
-        return vm_invoke_ifunc_block(ec, reg_cfp, calling, ci, block_handler);
+        return vm_invoke_ifunc_block(ec, reg_cfp, calling, ci, is_lambda, block_handler);
       case block_handler_type_proc:
-        return vm_invoke_proc_block(ec, reg_cfp, calling, ci, block_handler);
+        return vm_invoke_proc_block(ec, reg_cfp, calling, ci, is_lambda, block_handler);
       case block_handler_type_symbol:
-        return vm_invoke_symbol_block(ec, reg_cfp, calling, ci, block_handler);
+        return vm_invoke_symbol_block(ec, reg_cfp, calling, ci, is_lambda, block_handler);
     }
     VM_UNREACHABLE(vm_invoke_block: unreachable);
     return Qnil;
