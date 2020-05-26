@@ -107,6 +107,9 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 # tools to enable you to read and write to and from Strings or IO objects, as
 # needed.
 #
+# All examples here assume prior execution of:
+#   require 'csv'
+#
 # The most generic interface of the library is:
 #
 #    csv = CSV.new(io, **options)
@@ -752,20 +755,78 @@ class CSV
     end
 
     #
-    # This method is intended as the primary interface for reading CSV files. You
-    # pass a +path+ and any +options+ you wish to set for the read. Each row of
-    # file will be passed to the provided +block+ in turn.
+    # :call-seq:
+    #   foreach(path, mode='r', **options) {|row| ... ) -> integer or nil
+    #   foreach(io, mode='r', **options {|row| ... ) -> integer or nil
+    #   foreach(path, mode='r', **options) -> new_enumerator
+    #   foreach(io, mode='r', **options -> new_enumerator
     #
-    # See {Options for Parsing}[#class-CSV-label-Options+for+Parsing].
+    # Calls the block with each row read from source +path+ or +io+.
+    # Returns an integer, or, if there were no rows, +nil+.
     #
-    # The +options+ parameter can be anything CSV::new() understands. This method
-    # also understands an additional <tt>:encoding</tt> parameter that you can use
-    # to specify the Encoding of the data in the file to be read. You must provide
-    # this unless your data is in Encoding::default_external(). CSV will use this
-    # to determine how to parse the data. You may provide a second Encoding to
-    # have the data transcoded as it is read. For example,
-    # <tt>encoding: "UTF-32BE:UTF-8"</tt> would read UTF-32BE data from the file
-    # but transcode it to UTF-8 before CSV parses it.
+    # * Argument +path+, if given, must be the path to a file.
+    # * Argument +io+, if given, must be an \IO object opened for reading.
+    # * Argument +mode+, if given, must be a \File mode
+    #   See {Open Mode}[IO.html#method-c-new-label-Open+Mode].
+    # * Arguments <tt>**options</tt> must be keyword options.
+    #   See {Options for Parsing}[#class-CSV-label-Options+for+Parsing].
+    # * This method optionally accepts an additional <tt>:encoding</tt> option
+    #   that you can use to specify the Encoding of the data read from +path+ or +io+.
+    #   You must provide this unless your data is in the encoding
+    #   given by <tt>Encoding::default_external</tt>.
+    #   Parsing will use this to determine how to parse the data.
+    #   You may provide a second Encoding to
+    #   have the data transcoded as it is read. For example,
+    #     encoding: 'UTF-32BE:UTF-8'
+    #   would read +UTF-32BE+ data from the file
+    #   but transcode it to +UTF-8+ before parsing.
+    #
+    # ---
+    #
+    # These examples assume prior execution of:
+    #   string = "foo,0\nbar,1\nbaz,2\n"
+    #   path = 't.csv'
+    #   File.write(path, string)
+    #   io = File.open(path)
+    #
+    # Read rows from a file at +path+:
+    #   CSV.foreach(path) {|row| p row } # => 21
+    # Output:
+    #   ["foo", "0"]
+    #   ["bar", "1"]
+    #   ["baz", "2"]
+    #
+    # Read rows from an \IO object:
+    #   CSV.foreach(io) {|row| p row } # => 21
+    # Output:
+    #   ["foo", "0"]
+    #   ["bar", "1"]
+    #   ["baz", "2"]
+    #
+    # Returns a new \Enumerator if no block given:
+    #   CSV.foreach(path) # => #<Enumerator: CSV:foreach("t.csv", "r")>
+    #   CSV.foreach(io) # => #<Enumerator: CSV:foreach(#<File:t.csv>, "r")>
+    #
+    # Issues a warning if an encoding is unsupported:
+    #   CSV.foreach(io, encoding: 'foo:bar') {|row| } # => 21
+    # Output:
+    #   warning: Unsupported encoding foo ignored
+    #   warning: Unsupported encoding bar ignored
+    #
+    # ---
+    #
+    # Raises an exception if +path+ is a \String, but not the path to a readable file:
+    #   # Raises Errno::ENOENT (No such file or directory @ rb_sysopen - nosuch.csv):
+    #   CSV.foreach('nosuch.csv') {|row| }
+    #
+    # Raises an exception if +io+ is an \IO object, but not open for reading:
+    #   io = File.open(path, 'w') {|row| }
+    #   # Raises TypeError (no implicit conversion of nil into String):
+    #   CSV.foreach(io) {|row| }
+    #
+    # Raises an exception if +mode+ is invalid:
+    #   # Raises IOError (not opened for reading):
+    #   CSV.foreach(path, 'w') {|row| }
     #
     def foreach(path, mode="r", **options, &block)
       return to_enum(__method__, path, mode, **options) unless block_given?
@@ -776,22 +837,62 @@ class CSV
 
     #
     # :call-seq:
-    #   generate( str, **options ) { |csv| ... }
-    #   generate( **options ) { |csv| ... }
+    #   generate(csv_string, **options) {|csv| ... }
+    #   generate(**options) {|csv| ... }
     #
-    # This method wraps a String you provide, or an empty default String, in a
-    # CSV object which is passed to the provided block. You can use the block to
-    # append CSV rows to the String and when the block exits, the final String
-    # will be returned.
+    # * Argument +csv_string+, if given, must be a \String object;
+    #   defaults to a new empty \String.
+    # * Arguments +options+, if given, should be parsing options.
+    #   See {Options for Parsing}[#class-CSV-label-Options+for+Parsing].
     #
-    # Note that a passed String *is* modified by this method. Call dup() before
-    # passing if you need a new String.
+    # ---
     #
-    # See {Options for Generating}[#class-CSV-label-Options+for+Generating].
+    # Creates a new \CSV object via <tt>CSV.new(csv_string, **options)</tt>;
+    # calls the block with the \CSV object, which the block may modify;
+    # returns the \String generated from the \CSV object.
+    #
+    # Note that a passed \String *is* modified by this method.
+    # Pass <tt>csv_string</tt>.dup if the \String must be preserved.
     #
     # This method has one additional option: <tt>:encoding</tt>,
     # which sets the base Encoding for the output if no no +str+ is specified.
     # CSV needs this hint if you plan to output non-ASCII compatible data.
+    #
+    # ---
+    #
+    # Add lines:
+    #   input_string = "foo,0\nbar,1\nbaz,2\n"
+    #   output_string = CSV.generate(input_string) do |csv|
+    #     csv << ['bat', 3]
+    #     csv << ['bam', 4]
+    #   end
+    #   output_string # => "foo,0\nbar,1\nbaz,2\nbat,3\nbam,4\n"
+    #   input_string # => "foo,0\nbar,1\nbaz,2\nbat,3\nbam,4\n"
+    #   output_string.equal?(input_string) # => true # Same string, modified
+    #
+    # Add lines into new string, preserving old string:
+    #   input_string = "foo,0\nbar,1\nbaz,2\n"
+    #   output_string = CSV.generate(input_string.dup) do |csv|
+    #     csv << ['bat', 3]
+    #     csv << ['bam', 4]
+    #   end
+    #   output_string # => "foo,0\nbar,1\nbaz,2\nbat,3\nbam,4\n"
+    #   input_string # => "foo,0\nbar,1\nbaz,2\n"
+    #   output_string.equal?(input_string) # => false # Different strings
+    #
+    # Create lines from nothing:
+    #   output_string = CSV.generate do |csv|
+    #     csv << ['foo', 0]
+    #     csv << ['bar', 1]
+    #     csv << ['baz', 2]
+    #   end
+    #   output_string # => "foo,0\nbar,1\nbaz,2\n"
+    #
+    # ---
+    #
+    # Raises an exception if +csv_string+ is not a \String object:
+    #   # Raises TypeError (no implicit conversion of Integer into String)
+    #   CSV.generate(0)
     #
     def generate(str=nil, **options)
       encoding = options[:encoding]
@@ -865,7 +966,7 @@ class CSV
     # You must pass a +filename+ and may optionally add a +mode+ for Ruby's
     # open().
     #
-    # See {Options for Generating}[#class-CSV-label-Options+for+Generating].
+    # See {Options for Parsing}[#class-CSV-label-Options+for+Parsing].
     #
     # This method works like Ruby's open() call, in that it will pass a CSV object
     # to a provided block and close it when the block terminates, or it will
