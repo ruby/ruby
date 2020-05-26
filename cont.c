@@ -2261,8 +2261,8 @@ rb_fiber_m_resume(int argc, VALUE *argv, VALUE fiber)
  *     fiber.raise(exception [, string [, array]]) -> obj
  *
  *  Raises an exception in the fiber at the point at which the last
- *  Fiber.yield was called, or at the start if neither +resume+
- *  nor +raise+ were called before.
+ *  +Fiber.yield+ was called. If the fiber has not been started or has
+ *  already run to completion, raises +FiberError+.
  *
  *  With no arguments, raises a +RuntimeError+. With a single +String+
  *  argument, raises a +RuntimeError+ with the string as a message.  Otherwise,
