@@ -2839,7 +2839,7 @@ rb_hash_slice(int argc, VALUE *argv, VALUE hash)
  *  Raises an exception if any given key is invalid
  *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
  *    h = {foo: 0, bar: 1, baz: 2}
- *    # Raises NoMethodError (undefined method `hash' for #<BasicObject:>)
+ *    # Raises NoMethodError (undefined method `hash' for #<BasicObject:>):
  *    h.values_at(BasicObject.new)
  */
 
@@ -3146,9 +3146,9 @@ NOINSERT_UPDATE_CALLBACK(hash_aset_str)
  *  Raises an exception if +key+ is invalid
  *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
  *    h = {foo: 0, bar: 1}
- *    # Raises NoMethodError (undefined method `hash' for #<BasicObject>)
+ *    # Raises NoMethodError (undefined method `hash' for #<BasicObject>):
  *    h[BasicObject.new] = 2
- *    # Raises NoMethodError (undefined method `hash' for #<BasicObject>)
+ *    # Raises NoMethodError (undefined method `hash' for #<BasicObject>):
  *    h.store(BasicObject.new, 2)
  */
 
@@ -3256,7 +3256,7 @@ rb_hash_size_num(VALUE hash)
 
 /*
  *  call-seq:
- *    hash.empty? → true or false
+ *    hash.empty? -> true or false
  *
  *  Returns +true+ if there are no hash entries, +false+ otherwise:
  *    {}.empty? # => true
