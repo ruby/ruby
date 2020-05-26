@@ -1003,8 +1003,8 @@ class RDoc::Context < RDoc::CodeObject
   # TODO remove this later
 
   def instance_method_list
-    @instance_methods ||= method_list.reject { |a| a.singleton }
     warn '#instance_method_list is obsoleted, please use #instance_methods'
+    @instance_methods ||= method_list.reject { |a| a.singleton }
   end
 
   ##
