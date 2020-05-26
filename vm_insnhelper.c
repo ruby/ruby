@@ -3472,18 +3472,18 @@ vm_invoke_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
                 struct rb_calling_info *calling, const struct rb_callinfo *ci,
                 bool is_lambda, VALUE block_handler)
 {
+    auto VALUE (*func)(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
+                       struct rb_calling_info *calling, const struct rb_callinfo *ci,
+                       bool is_lambda, VALUE block_handler);
+
     switch (vm_block_handler_type(block_handler)) {
-      case block_handler_type_iseq:
-        return vm_invoke_iseq_block(ec, reg_cfp, calling, ci, is_lambda, block_handler);
-      case block_handler_type_ifunc:
-        return vm_invoke_ifunc_block(ec, reg_cfp, calling, ci, is_lambda, block_handler);
-      case block_handler_type_proc:
-        return vm_invoke_proc_block(ec, reg_cfp, calling, ci, is_lambda, block_handler);
-      case block_handler_type_symbol:
-        return vm_invoke_symbol_block(ec, reg_cfp, calling, ci, is_lambda, block_handler);
+      case block_handler_type_iseq:   func = vm_invoke_iseq_block;   break;
+      case block_handler_type_ifunc:  func = vm_invoke_ifunc_block;  break;
+      case block_handler_type_proc:   func = vm_invoke_proc_block;   break;
+      case block_handler_type_symbol: func = vm_invoke_symbol_block; break;
     }
-    VM_UNREACHABLE(vm_invoke_block: unreachable);
-    return Qnil;
+
+    return func(ec, reg_cfp, calling, ci, is_lambda, block_handler);
 }
 
 static VALUE
