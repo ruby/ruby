@@ -57,6 +57,19 @@ class TestNameError < Test::Unit::TestCase
     assert_equal(:X, e.name)
   end
 
+  def test_info_const_name
+    mod = Module.new do
+      def self.name
+        "ModuleName"
+      end
+
+      def self.inspect
+        raise "<unusable info>"
+      end
+    end
+    assert_raise_with_message(NameError, /ModuleName/) {mod::DOES_NOT_EXIST}
+  end
+
   def test_info_method
     obj = PrettyObject.new
 
