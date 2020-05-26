@@ -632,8 +632,13 @@ install?(:local, :comm, :man) do
       class << (w = [])
         alias print push
       end
-      open(mdoc) {|r| Mdoc2Man.mdoc2man(r, w)}
-      w = w.join("")
+      if File.basename(mdoc).start_with?('bundle') ||
+         File.basename(mdoc).start_with?('gemfile')
+        w = File.read(mdoc)
+      else
+        open(mdoc) {|r| Mdoc2Man.mdoc2man(r, w)}
+        w = w.join("")
+      end
       if compress
         require 'tmpdir'
         Dir.mktmpdir("man") {|d|
