@@ -2725,7 +2725,7 @@ vm_call_opt_send(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct
     return vm_call_method(ec, reg_cfp, calling, (CALL_DATA)&cd);
 }
 
-static inline VALUE vm_invoke_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling, const struct rb_callinfo *ci, VALUE block_handler);
+static inline VALUE vm_invoke_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling, const struct rb_callinfo *ci, bool is_lambda, VALUE block_handler);
 
 NOINLINE(static VALUE
 	 vm_invoke_block_opt_call(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
@@ -2741,7 +2741,7 @@ vm_invoke_block_opt_call(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp
     if (argc > 0) MEMMOVE(&TOPN(argc), &TOPN(argc-1), VALUE, argc);
     DEC_SP(1);
 
-    return vm_invoke_block(ec, reg_cfp, calling, ci, block_handler);
+    return vm_invoke_block(ec, reg_cfp, calling, ci, false, block_handler);
 }
 
 static VALUE
@@ -3457,22 +3457,28 @@ vm_proc_to_block_handler(VALUE procval)
     return Qundef;
 }
 
+static VALUE
+vm_invoke_proc_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
+                     struct rb_calling_info *calling, const struct rb_callinfo *ci,
+                     VALUE block_handler)
+{
+    return vm_invoke_block(ec, reg_cfp, calling, ci,
+        block_proc_is_lambda(VM_BH_TO_PROC(block_handler)),
+        vm_proc_to_block_handler(VM_BH_TO_PROC(block_handler)));
+}
+
 static inline VALUE
 vm_invoke_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
-		struct rb_calling_info *calling, const struct rb_callinfo *ci, VALUE block_handler)
+                struct rb_calling_info *calling, const struct rb_callinfo *ci,
+                bool is_lambda, VALUE block_handler)
 {
-    int is_lambda = FALSE;
-
-  again:
     switch (vm_block_handler_type(block_handler)) {
       case block_handler_type_iseq:
         return vm_invoke_iseq_block(ec, reg_cfp, calling, ci, is_lambda, block_handler);
       case block_handler_type_ifunc:
         return vm_invoke_ifunc_block(ec, reg_cfp, calling, ci, block_handler);
       case block_handler_type_proc:
-	is_lambda = block_proc_is_lambda(VM_BH_TO_PROC(block_handler));
-	block_handler = vm_proc_to_block_handler(VM_BH_TO_PROC(block_handler));
-	goto again;
+        return vm_invoke_proc_block(ec, reg_cfp, calling, ci, block_handler);
       case block_handler_type_symbol:
         return vm_invoke_symbol_block(ec, reg_cfp, calling, ci, block_handler);
     }
@@ -4040,7 +4046,7 @@ vm_invokeblock_i(
         rb_vm_localjump_error("no block given (yield)", Qnil, 0);
     }
     else {
-        return vm_invoke_block(ec, GET_CFP(), calling, ci, block_handler);
+        return vm_invoke_block(ec, GET_CFP(), calling, ci, false, block_handler);
     }
 }
 
