@@ -148,7 +148,7 @@ module Kernel
     RUBYGEMS_ACTIVATION_MONITOR.enter
 
     begin
-      if load_error.message.end_with?(path) and Gem.try_activate(path)
+      if load_error.path == path and Gem.try_activate(path)
         require_again = true
       end
     ensure
