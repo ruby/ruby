@@ -125,6 +125,15 @@ class ExtLibs
     end
   end
 
+  def do_exec(command, dir, dest)
+    dir = dir ? File.join(dest, dir) : dest
+    if $VERBOSE
+      $stdout.puts "running #{command.dump} under #{dir}"
+      $stdout.flush
+    end
+    system(command, chdir: dir) or raise "failed #{command.dump}"
+  end
+
   def do_command(mode, dest, url, cache_dir, chksums)
     extracted = false
     base = /.*(?=\.tar(?:\.\w+)?\z)/
@@ -204,6 +213,13 @@ class ExtLibs
             if extracted and (mode == :all or mode == :patch)
               patch, *args = line.split.map {|s| vars.expand(s)}
               do_patch(dest, patch, args)
+            end
+            next
+          elsif /^!\s*(?:chdir:\s*([^|\s]+)\|\s*)?(.*)/ =~ line
+            if extracted and (mode == :all or mode == :patch)
+              command = vars.expand($2.strip)
+              chdir = $1 and chdir = vars.expand(chdir)
+              do_exec(command, chdir, dest)
             end
             next
           elsif /->/ =~ line
