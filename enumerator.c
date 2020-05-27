@@ -2996,7 +2996,7 @@ producer_size(VALUE obj, VALUE args, VALUE eobj)
  *   enclosing_section = ancestors.find { |n| n.type == :section }
  *
  * Using ::produce together with Enumerable methods like Enumerable#detect,
- * Enumerable#slice, Enumerable#take_while can provide Enumerator-based alternatives
+ * Enumerable#slice_after, Enumerable#take_while can provide Enumerator-based alternatives
  * for +while+ and +until+ cycles:
  *
  *   # Find next Tuesday
