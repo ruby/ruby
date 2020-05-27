@@ -3412,14 +3412,39 @@ vm_invoke_symbol_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
 		       struct rb_calling_info *calling, const struct rb_callinfo *ci,
                        MAYBE_UNUSED(bool is_lambda), VALUE block_handler)
 {
-    VALUE val;
-    int argc;
-    VALUE symbol = VM_BH_TO_SYMBOL(block_handler);
-    CALLER_SETUP_ARG(ec->cfp, calling, ci);
-    argc = calling->argc;
-    val = vm_yield_with_symbol(ec, symbol, argc, STACK_ADDR_FROM_TOP(argc), calling->kw_splat, calling->block_handler);
-    POPN(argc);
-    return val;
+    int argc = calling->argc;
+
+    if (argc < 1) {
+        rb_raise(rb_eArgError, "no receiver given");
+    }
+    else if (argc > 1) {
+        /* E.g. when argc == 3
+         *
+         *   |      |        |      |  TOPN
+         *   |      |        +------+
+         *   |      |  +---> | arg1 |   -1
+         *   +------+  |     +------+
+         *   | arg1 | -+ +-> | arg0 |    0
+         *   +------+    |   +------+
+         *   | arg0 | ---+   |  BH  |    1
+         *   +------+        +------+
+         *   | recv |        | recv |    2
+         * --+------+--------+------+------
+         *
+         * INC_SP is done immediately below.
+         */
+        MEMMOVE(&TOPN(argc - 3), &TOPN(argc - 2), VALUE, argc - 1);
+    }
+
+    TOPN(argc - 2) = VM_BH_TO_SYMBOL(block_handler);
+    calling->recv = TOPN(argc - 1);
+    INC_SP(1);
+    return vm_call_opt_send(ec, reg_cfp, calling,
+        &(struct rb_call_data) {
+            .ci = ci,
+            .cc = NULL,
+        }
+    );
 }
 
 static VALUE
