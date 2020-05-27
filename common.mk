@@ -712,7 +712,7 @@ clean-capi distclean-capi realclean-capi:
 	@echo $(@:-capi=ing) capi
 	$(Q)$(RMALL) $(CAPIOUT)
 
-clean-platform:
+clean-platform distclean-platform realclean-platform:
 	$(Q) $(RM) $(PLATFORM_D)
 	-$(Q) $(RMDIR) $(PLATFORM_DIR) 2> $(NULL) || $(NULLCMD)
 
