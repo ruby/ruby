@@ -111,6 +111,38 @@ mjit_target_iseq_p(struct rb_iseq_constant_body *body)
         && body->iseq_size < JIT_ISEQ_SIZE_THRESHOLD;
 }
 
+#ifdef MJIT_HEADER
+NOINLINE(static COLDFUNC VALUE mjit_exec_slowpath(rb_execution_context_t *ec, const rb_iseq_t *iseq, struct rb_iseq_constant_body *body));
+#else
+static inline VALUE mjit_exec_slowpath(rb_execution_context_t *ec, const rb_iseq_t *iseq, struct rb_iseq_constant_body *body);
+#endif
+static VALUE
+mjit_exec_slowpath(rb_execution_context_t *ec, const rb_iseq_t *iseq, struct rb_iseq_constant_body *body)
+{
+    uintptr_t func_i = (uintptr_t)(body->jit_func);
+    ASSUME(func_i <= LAST_JIT_ISEQ_FUNC);
+    switch ((enum rb_mjit_iseq_func)func_i) {
+      case NOT_ADDED_JIT_ISEQ_FUNC:
+        RB_DEBUG_COUNTER_INC(mjit_exec_not_added);
+        if (body->total_calls == mjit_opts.min_calls && mjit_target_iseq_p(body)) {
+            rb_mjit_add_iseq_to_process(iseq);
+            if (UNLIKELY(mjit_opts.wait)) {
+                return rb_mjit_wait_call(ec, body);
+            }
+        }
+        break;
+      case NOT_READY_JIT_ISEQ_FUNC:
+        RB_DEBUG_COUNTER_INC(mjit_exec_not_ready);
+        break;
+      case NOT_COMPILED_JIT_ISEQ_FUNC:
+        RB_DEBUG_COUNTER_INC(mjit_exec_not_compiled);
+        break;
+      default: // to avoid warning with LAST_JIT_ISEQ_FUNC
+        break;
+    }
+    return Qundef;
+}
+
 // Try to execute the current iseq in ec.  Use JIT code if it is ready.
 // If it is not, add ISEQ to the compilation queue and return Qundef.
 static inline VALUE
@@ -118,8 +150,6 @@ mjit_exec(rb_execution_context_t *ec)
 {
     const rb_iseq_t *iseq;
     struct rb_iseq_constant_body *body;
-    long unsigned total_calls;
-    mjit_func_t func;
 
     if (!mjit_call_p)
         return Qundef;
@@ -127,43 +157,23 @@ mjit_exec(rb_execution_context_t *ec)
 
     iseq = ec->cfp->iseq;
     body = iseq->body;
-    total_calls = ++body->total_calls;
+    body->total_calls++;
 
-    func = body->jit_func;
-    uintptr_t func_i = (uintptr_t)func;
-    if (UNLIKELY(func_i <= LAST_JIT_ISEQ_FUNC)) {
+    mjit_func_t func = body->jit_func;
+    if (UNLIKELY((uintptr_t)func <= LAST_JIT_ISEQ_FUNC)) {
 #     ifdef MJIT_HEADER
         RB_DEBUG_COUNTER_INC(mjit_frame_JT2VM);
 #     else
         RB_DEBUG_COUNTER_INC(mjit_frame_VM2VM);
 #     endif
-        ASSUME(func_i <= LAST_JIT_ISEQ_FUNC);
-        switch ((enum rb_mjit_iseq_func)func_i) {
-          case NOT_ADDED_JIT_ISEQ_FUNC:
-            RB_DEBUG_COUNTER_INC(mjit_exec_not_added);
-            if (total_calls == mjit_opts.min_calls && mjit_target_iseq_p(body)) {
-                rb_mjit_add_iseq_to_process(iseq);
-                if (UNLIKELY(mjit_opts.wait)) {
-                    return rb_mjit_wait_call(ec, body);
-                }
-            }
-            return Qundef;
-          case NOT_READY_JIT_ISEQ_FUNC:
-            RB_DEBUG_COUNTER_INC(mjit_exec_not_ready);
-            return Qundef;
-          case NOT_COMPILED_JIT_ISEQ_FUNC:
-            RB_DEBUG_COUNTER_INC(mjit_exec_not_compiled);
-            return Qundef;
-          default: // to avoid warning with LAST_JIT_ISEQ_FUNC
-            break;
-        }
+        return mjit_exec_slowpath(ec, iseq, body);
     }
 
-#   ifdef MJIT_HEADER
-      RB_DEBUG_COUNTER_INC(mjit_frame_JT2JT);
-#   else
-      RB_DEBUG_COUNTER_INC(mjit_frame_VM2JT);
-#   endif
+# ifdef MJIT_HEADER
+    RB_DEBUG_COUNTER_INC(mjit_frame_JT2JT);
+# else
+    RB_DEBUG_COUNTER_INC(mjit_frame_VM2JT);
+# endif
     RB_DEBUG_COUNTER_INC(mjit_exec_call_func);
     return func(ec, ec->cfp);
 }
