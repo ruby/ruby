@@ -455,8 +455,8 @@ rb_mjit_iseq_compile_info(const struct rb_iseq_constant_body *body)
     return &body->jit_unit->compile_info;
 }
 
-void
-rb_mjit_recompile_iseq(const rb_iseq_t *iseq)
+static void
+mjit_recompile(const rb_iseq_t *iseq)
 {
     if ((uintptr_t)iseq->body->jit_func <= (uintptr_t)LAST_JIT_ISEQ_FUNC)
         return;
@@ -474,6 +474,38 @@ rb_mjit_recompile_iseq(const rb_iseq_t *iseq)
     if (UNLIKELY(mjit_opts.wait)) {
         mjit_wait(iseq->body);
     }
+}
+
+// Recompile iseq, disabling send optimization
+void
+rb_mjit_recompile_send(const rb_iseq_t *iseq)
+{
+    rb_mjit_iseq_compile_info(iseq->body)->disable_send_cache = true;
+    mjit_recompile(iseq);
+}
+
+// Recompile iseq, disabling ivar optimization
+void
+rb_mjit_recompile_ivar(const rb_iseq_t *iseq)
+{
+    rb_mjit_iseq_compile_info(iseq->body)->disable_ivar_cache = true;
+    mjit_recompile(iseq);
+}
+
+// Recompile iseq, disabling exivar optimization
+void
+rb_mjit_recompile_exivar(const rb_iseq_t *iseq)
+{
+    rb_mjit_iseq_compile_info(iseq->body)->disable_exivar_cache = true;
+    mjit_recompile(iseq);
+}
+
+// Recompile iseq, disabling method inlining
+void
+rb_mjit_recompile_inlining(const rb_iseq_t *iseq)
+{
+    rb_mjit_iseq_compile_info(iseq->body)->disable_inlining = true;
+    mjit_recompile(iseq);
 }
 
 extern VALUE ruby_archlibdir_path, ruby_prefix_path;

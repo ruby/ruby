@@ -241,8 +241,7 @@ compile_inlined_cancel_handler(FILE *f, const struct rb_iseq_constant_body *body
 {
     fprintf(f, "\ncancel:\n");
     fprintf(f, "    RB_DEBUG_COUNTER_INC(mjit_cancel);\n");
-    fprintf(f, "    rb_mjit_iseq_compile_info(original_iseq->body)->disable_inlining = true;\n");
-    fprintf(f, "    rb_mjit_recompile_iseq(original_iseq);\n");
+    fprintf(f, "    rb_mjit_recompile_inlining(original_iseq);\n");
 
     // Swap pc/sp set on cancel with original pc/sp.
     fprintf(f, "    const VALUE *current_pc = reg_cfp->pc;\n");
@@ -282,20 +281,17 @@ compile_cancel_handler(FILE *f, const struct rb_iseq_constant_body *body, struct
 
     fprintf(f, "\nsend_cancel:\n");
     fprintf(f, "    RB_DEBUG_COUNTER_INC(mjit_cancel_send_inline);\n");
-    fprintf(f, "    rb_mjit_iseq_compile_info(original_iseq->body)->disable_send_cache = true;\n");
-    fprintf(f, "    rb_mjit_recompile_iseq(original_iseq);\n");
+    fprintf(f, "    rb_mjit_recompile_send(original_iseq);\n");
     fprintf(f, "    goto cancel;\n");
 
     fprintf(f, "\nivar_cancel:\n");
     fprintf(f, "    RB_DEBUG_COUNTER_INC(mjit_cancel_ivar_inline);\n");
-    fprintf(f, "    rb_mjit_iseq_compile_info(original_iseq->body)->disable_ivar_cache = true;\n");
-    fprintf(f, "    rb_mjit_recompile_iseq(original_iseq);\n");
+    fprintf(f, "    rb_mjit_recompile_ivar(original_iseq);\n");
     fprintf(f, "    goto cancel;\n");
 
     fprintf(f, "\nexivar_cancel:\n");
     fprintf(f, "    RB_DEBUG_COUNTER_INC(mjit_cancel_exivar_inline);\n");
-    fprintf(f, "    rb_mjit_iseq_compile_info(original_iseq->body)->disable_exivar_cache = true;\n");
-    fprintf(f, "    rb_mjit_recompile_iseq(original_iseq);\n");
+    fprintf(f, "    rb_mjit_recompile_exivar(original_iseq);\n");
     fprintf(f, "    goto cancel;\n");
 
     fprintf(f, "\ncancel:\n");
