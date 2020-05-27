@@ -80,4 +80,15 @@ class TestWhileuntil < Test::Unit::TestCase
     end
     assert_operator(i, :>, 4)
   end
+
+  def test_return_until_unless
+    assert_separately([], <<-EOS)
+      def self.f
+        x = false
+        y = (return 1 until x unless x)
+        y
+      end
+      assert_equal 1, f
+    EOS
+  end
 end

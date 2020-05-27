@@ -2907,6 +2907,14 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	remove_unreachable_chunk(iseq, iobj->link.next);
     }
 
+#if 0
+    /* Disabling this optimization due to misoptimization of:
+     * 
+     *   def f;x = false; y = (return until x unless x);end;f
+     * 
+     * which leads to a stack consistency error or crash.
+     * See [Bug #16695]
+     */
     if (IS_INSN_ID(iobj, branchif) ||
 	IS_INSN_ID(iobj, branchnil) ||
 	IS_INSN_ID(iobj, branchunless)) {
@@ -3049,6 +3057,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
             }
         }
     }
+#endif
 
     if (IS_INSN_ID(iobj, pop)) {
 	/*
