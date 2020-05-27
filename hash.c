@@ -1888,9 +1888,9 @@ rb_hash_initialize(int argc, VALUE *argv, VALUE hash)
  *  Raises an exception if any proposed key is not a valid key
  *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
  *
- *    # Raises NoMethodError (undefined method `hash' for #<BasicObject:>):
+ *    # Raises NoMethodError (undefined method `hash' for #<BasicObject>):
  *    Hash[:foo, 0, BasicObject.new, 1]
- *    # Raises NoMethodError (undefined method `hash' for #<BasicObject:>):
+ *    # Raises NoMethodError (undefined method `hash' for #<BasicObject>):
  *    Hash[ [ [:foo, 0], [BasicObject.new, 1] ] ]
  */
 
@@ -2242,7 +2242,7 @@ rb_hash_lookup(VALUE hash, VALUE key)
  *  Raises an exception if +key+ is invalid
  *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
  *    h = {foo: 0, bar: 1, baz: 2}
- *    # Raises NoMethodError (undefined method `hash' for #<BasicObject:>):
+ *    # Raises NoMethodError (undefined method `hash' for #<BasicObject>):
 
  *    h.fetch(BasicObject.new)
  */
@@ -2540,7 +2540,7 @@ rb_hash_delete(VALUE hash, VALUE key)
  *  Raises an exception if +key+ is invalid
  *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
  *    h = {foo: 0, bar: 1, baz: 2}
- *    # Raises NoMethodError (undefined method `hash' for #<BasicObject:>):
+ *    # Raises NoMethodError (undefined method `hash' for #<BasicObject>):
  *    h.delete(BasicObject.new)
  */
 
@@ -2797,7 +2797,7 @@ rb_hash_reject(VALUE hash)
  *  Raises an exception if any given key is invalid
  *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
  *    h = {foo: 0, bar: 1, baz: 2}
- *    # Raises NoMethodError (undefined method `hash' for #<BasicObject:>):
+ *    # Raises NoMethodError (undefined method `hash' for #<BasicObject>):
  *    h.slice(:foo, BasicObject.new)
  */
 
@@ -2839,7 +2839,7 @@ rb_hash_slice(int argc, VALUE *argv, VALUE hash)
  *  Raises an exception if any given key is invalid
  *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
  *    h = {foo: 0, bar: 1, baz: 2}
- *    # Raises NoMethodError (undefined method `hash' for #<BasicObject:>):
+ *    # Raises NoMethodError (undefined method `hash' for #<BasicObject>):
  *    h.values_at(BasicObject.new)
  */
 
@@ -2883,7 +2883,7 @@ rb_hash_values_at(int argc, VALUE *argv, VALUE hash)
  *  Raises an exception if any given key is invalid
  *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
  *    h = {foo: 0, bar: 1, baz: 2}
- *    # Raises NoMethodError (undefined method `hash' for #<BasicObject:>):
+ *    # Raises NoMethodError (undefined method `hash' for #<BasicObject>):
  *    h.fetch_values(:baz, BasicObject.new)
  */
 
@@ -3278,21 +3278,35 @@ each_value_i(VALUE key, VALUE value, VALUE _)
 
 /*
  *  call-seq:
- *     hsh.each_value {| value | block } -> hsh
- *     hsh.each_value                    -> an_enumerator
+ *    hash.each_value {|value| ... } -> self
+ *    hash.each_value -> new_enumerator
  *
- *  Calls <i>block</i> once for each key in <i>hsh</i>, passing the
- *  value as a parameter.
+ *  Calls the given block with each value; returns +self+:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h1 = h.each_value {|value| puts value }
+ *    h1 # => {:foo=>0, :bar=>1, :baz=>2}
+ *    h1.equal?(h) # => true # Identity check
+ *  Output:
+ *    0
+ *    1
+ *    2
  *
- *  If no block is given, an enumerator is returned instead.
+ *  Returns an \Enumerator if no block given:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    e = h.each_value # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:each_value>
+ *    h1 = e.each {|value| puts value }
+ *    h1 # => {:foo=>0, :bar=>1, :baz=>2}
+ *  Output:
+ *    0
+ *    1
+ *    2
  *
- *     h = { "a" => 100, "b" => 200 }
- *     h.each_value {|value| puts value }
+ *  ---
  *
- *  <em>produces:</em>
- *
- *     100
- *     200
+ *  Raises an exception if the block attempts to add a new key:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    # Raises RuntimeError (can't add a new key into hash during iteration):
+ *    h.each_value {|value| h[:new_key] = 3 }
  */
 
 static VALUE
@@ -3312,21 +3326,35 @@ each_key_i(VALUE key, VALUE value, VALUE _)
 
 /*
  *  call-seq:
- *     hsh.each_key {| key | block } -> hsh
- *     hsh.each_key                  -> an_enumerator
+ *    hash.each_key {|key| ... } -> self
+ *    hash.each_key -> new_enumerator
  *
- *  Calls <i>block</i> once for each key in <i>hsh</i>, passing the key
- *  as a parameter.
+ *  Calls the given block with each key; returns +self+:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h1 = h.each_key {|key| puts key }
+ *    h1 # => {:foo=>0, :bar=>1, :baz=>2}
+ *    h1.equal?(h) # => true # Identity check
+ *  Output:
+ *    foo
+ *    bar
+ *    baz
  *
- *  If no block is given, an enumerator is returned instead.
+ *  Returns an \Enumerator if no block given:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    e = h.each_key # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:each_key>
+ *    h1 = e.each {|key| puts key }
+ *    h1 # => {:foo=>0, :bar=>1, :baz=>2}
+ *  Output:
+ *    foo
+ *    bar
+ *    baz
  *
- *     h = { "a" => 100, "b" => 200 }
- *     h.each_key {|key| puts key }
+ *  ---
  *
- *  <em>produces:</em>
- *
- *     a
- *     b
+ *  Raises an exception if the block attempts to add a new key:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    # Raises RuntimeError (can't add a new key into hash during iteration):
+ *    h.each_key {|key| h[:new_key] = 3 }
  */
 static VALUE
 rb_hash_each_key(VALUE hash)
@@ -3355,24 +3383,37 @@ each_pair_i_fast(VALUE key, VALUE value, VALUE _)
 
 /*
  *  call-seq:
- *     hsh.each      {| key, value | block } -> hsh
- *     hsh.each_pair {| key, value | block } -> hsh
- *     hsh.each                              -> an_enumerator
- *     hsh.each_pair                         -> an_enumerator
+ *    hash.each {|key, value| ... } -> self
+ *    hash.each_pair {|key, value| ... } -> self
+ *    hash.each -> new_enumerator
+ *    hash.each_pair -> new_enumerator
  *
- *  Calls <i>block</i> once for each key in <i>hsh</i>, passing the key-value
- *  pair as parameters.
+ *  Calls the given block with each key-value pair, returning self:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h1 = h.each_pair {|key, value| puts "#{key}: #{value}"}
+ *    h1 # => {:foo=>0, :bar=>1, :baz=>2}
+ *    h1.equal?(h) # => true # Identity check
+ *  Output:
+ *    foo: 0
+ *    bar: 1
+ *    baz: 2
  *
- *  If no block is given, an enumerator is returned instead.
+ *  Returns an \Enumerator if no block given:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    e = h.each_pair # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:each_pair>
+ *    h1 = e.each {|key, value| puts "#{key}: #{value}"}
+ *    h1 # => {:foo=>0, :bar=>1, :baz=>2}
+ *  Output:
+ *    foo: 0
+ *    bar: 1
+ *    baz: 2
  *
- *     h = { "a" => 100, "b" => 200 }
- *     h.each {|key, value| puts "#{key} is #{value}" }
+ *  ---
  *
- *  <em>produces:</em>
- *
- *     a is 100
- *     b is 200
- *
+ *  Raises an exception if the block attempts to add a new key:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    # Raises RuntimeError (can't add a new key into hash during iteration)
+ *    h.each_pair {|key, value| h[:new_key] = 3 }
  */
 
 static VALUE
@@ -3418,20 +3459,41 @@ transform_keys_i(VALUE key, VALUE value, VALUE result)
 
 /*
  *  call-seq:
- *     hsh.transform_keys {|key| block } -> new_hash
- *     hsh.transform_keys                -> an_enumerator
+ *    hash.transform_keys {|key| ... } -> new_hash
+ *    hash.transform_keys -> new_enumerator
  *
- *  Returns a new hash with the results of running the block once for
- *  every key.
- *  This method does not change the values.
+ *  Returns a new \Hash object; each entry has:
+ *  * A key provided by the block.
+ *  * The value from +self+.
  *
- *     h = { a: 1, b: 2, c: 3 }
- *     h.transform_keys {|k| k.to_s }  #=> { "a" => 1, "b" => 2, "c" => 3 }
- *     h.transform_keys(&:to_s)        #=> { "a" => 1, "b" => 2, "c" => 3 }
- *     h.transform_keys.with_index {|k, i| "#{k}.#{i}" }
- *                                     #=> { "a.0" => 1, "b.1" => 2, "c.2" => 3 }
+ *  Transform keys:
+ *      h = {foo: 0, bar: 1, baz: 2}
+ *      h1 = h.transform_keys {|key| key.to_s }
+ *      h1 # => {"foo"=>0, "bar"=>1, "baz"=>2}
  *
- *  If no block is given, an enumerator is returned instead.
+ *  Overwrites values for duplicate keys:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h1 = h.transform_keys {|key| :bat }
+ *    h1 # => {:bat=>2}
+ *
+ *  Returns a new \Enumerator if no block given:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    e = h.transform_keys # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:transform_keys>
+ *    h1 = e.each { |key| key.to_s }
+ *    h1 # => {"foo"=>0, "bar"=>1, "baz"=>2}
+ *
+ *  ---
+ *
+ *  Raises an exception if the block returns an invalid key
+ *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    # Raises NoMethodError (undefined method `hash' for #<BasicObject>)
+ *    h.transform_keys {|key| BasicObject.new }
+ *
+ *  Raises an exception if the block attempts to add a new key:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    # Raises RuntimeError (can't add a new key into hash during iteration)
+ *    h.transform_keys {|key| h[:new_key] = 3 }
  */
 static VALUE
 rb_hash_transform_keys(int argc, VALUE *argv, VALUE hash)
@@ -3465,20 +3527,38 @@ static VALUE rb_hash_flatten(int argc, VALUE *argv, VALUE hash);
 
 /*
  *  call-seq:
- *     hsh.transform_keys! {|key| block } -> hsh
- *     hsh.transform_keys!                -> an_enumerator
+ *    hash.transform_keys! {|key| ... } -> self
+ *    hash.transform_keys! -> new_enumerator
  *
- *  Invokes the given block once for each key in <i>hsh</i>, replacing it
- *  with the new key returned by the block, and then returns <i>hsh</i>.
- *  This method does not change the values.
+ *  Returns +self+ with new keys provided by the block:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h1 = h.transform_keys! {|key| key.to_s }
+ *    h1 # => {"foo"=>0, "bar"=>1, "baz"=>2}
+ *    h1.equal?(h) # => true # Identity check
  *
- *     h = { a: 1, b: 2, c: 3 }
- *     h.transform_keys! {|k| k.to_s }  #=> { "a" => 1, "b" => 2, "c" => 3 }
- *     h.transform_keys!(&:to_sym)      #=> { a: 1, b: 2, c: 3 }
- *     h.transform_keys!.with_index {|k, i| "#{k}.#{i}" }
- *                                      #=> { "a.0" => 1, "b.1" => 2, "c.2" => 3 }
+ *  Overwrites values for duplicate keys:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h1 = h.transform_keys! {|key| :bat }
+ *    h1 # => {:bat=>2}
  *
- *  If no block is given, an enumerator is returned instead.
+ *  Allows the block to add a new entry:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h1 = h.transform_keys! {|key| h[:new_key] = key.to_s }
+ *    h1 # => {:new_key=>"baz", "foo"=>0, "bar"=>1, "baz"=>2}
+ *
+ *  Returns a new \Enumerator if no block given:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    e = h.transform_keys! # => #<Enumerator: {"foo"=>0, "bar"=>1, "baz"=>2}:transform_keys!>
+ *    h1 = e.each { |key| key.to_s }
+ *    h1 # => {"foo"=>0, "bar"=>1, "baz"=>2}
+ *
+ *  ---
+ *
+ *  Raises an exception if the block returns an invalid key
+ *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    # Raises NoMethodError (undefined method `hash' for #<BasicObject>)
+ *    h.transform_keys! {|key| BasicObject.new }
  */
 static VALUE
 rb_hash_transform_keys_bang(int argc, VALUE *argv, VALUE hash)
@@ -3538,20 +3618,28 @@ transform_values_foreach_replace(st_data_t *key, st_data_t *value, st_data_t arg
 
 /*
  *  call-seq:
- *     hsh.transform_values {|value| block } -> new_hash
- *     hsh.transform_values                  -> an_enumerator
+ *    hash.transform_values {|value| ... } -> new_hash
+ *    hash.transform_values -> new_enumerator
  *
- *  Returns a new hash with the results of running the block once for
- *  every value.
- *  This method does not change the keys.
+ *  Returns a new \Hash object; each entry has:
+ *  * A key from +self+.
+ *  * A value provided by the block.
  *
- *     h = { a: 1, b: 2, c: 3 }
- *     h.transform_values {|v| v * v + 1 }  #=> { a: 2, b: 5, c: 10 }
- *     h.transform_values(&:to_s)           #=> { a: "1", b: "2", c: "3" }
- *     h.transform_values.with_index {|v, i| "#{v}.#{i}" }
- *                                          #=> { a: "1.0", b: "2.1", c: "3.2" }
+ *  Transform values:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h1 = h.transform_values {|value| value * 100}
+ *    h1 # => {:foo=>0, :bar=>100, :baz=>200}
  *
- *  If no block is given, an enumerator is returned instead.
+ *  Ignores an attempt in the block to add a new key:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h1 = h.transform_values {|value| h[:new_key] = 3; value * 100 }
+ *    h1 # => {:foo=>0, :bar=>100, :baz=>200}
+ *
+ *  Returns a new \Enumerator if no block given:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    e = h.transform_values # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:transform_values>
+ *    h1 = e.each { |value| value * 100}
+ *    h1 # => {:foo=>0, :bar=>100, :baz=>200}
  */
 static VALUE
 rb_hash_transform_values(VALUE hash)
@@ -3570,20 +3658,25 @@ rb_hash_transform_values(VALUE hash)
 
 /*
  *  call-seq:
- *     hsh.transform_values! {|value| block } -> hsh
- *     hsh.transform_values!                  -> an_enumerator
+ *    hash.transform_values! {|value| ... } -> self
+ *    hash.transform_values! -> new_enumerator
  *
- *  Invokes the given block once for each value in <i>hsh</i>, replacing it
- *  with the new value returned by the block, and then returns <i>hsh</i>.
- *  This method does not change the keys.
+ *  Returns +self+, whose keys are unchanged, and whose values are determined by the given block.
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h1 = h.transform_values! {|value| value * 100}
+ *    h1 # => {:foo=>0, :bar=>100, :baz=>200}
+ *    h1.equal?(h) # => true # Identity check
  *
- *     h = { a: 1, b: 2, c: 3 }
- *     h.transform_values! {|v| v * v + 1 }  #=> { a: 2, b: 5, c: 10 }
- *     h.transform_values!(&:to_s)           #=> { a: "2", b: "5", c: "10" }
- *     h.transform_values!.with_index {|v, i| "#{v}.#{i}" }
- *                                           #=> { a: "2.0", b: "5.1", c: "10.2" }
+ *  Allows the block to add a new entry:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h1 = h.transform_values! {|value| h[:new_key] = 3; value * 100 }
+ *    h1 # => {:foo=>0, :bar=>100, :baz=>200, :new_key=>3}
  *
- *  If no block is given, an enumerator is returned instead.
+ *  Returns a new \Enumerator if no block given:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    e = h.transform_values! # => #<Enumerator: {:foo=>0, :bar=>100, :baz=>200}:transform_values!>
+ *    h1 = e.each {|value| value * 100}
+ *    h1 # => {:foo=>0, :bar=>100, :baz=>200}
  */
 static VALUE
 rb_hash_transform_values_bang(VALUE hash)
