@@ -36,7 +36,7 @@
 # pragma message("NDEBUG is ignored because RUBY_DEBUG>0.")
 #elif defined(__GNUC__)
 # pragma GCC warning "NDEBUG is ignored because RUBY_DEBUG>0."
-#else 
+#else
 # error NDEBUG is ignored because RUBY_DEBUG>0.
 #endif
 #endif
