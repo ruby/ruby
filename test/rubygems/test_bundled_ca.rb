@@ -26,7 +26,7 @@ class TestBundledCA < Gem::TestCase
   end
 
   def assert_https(host)
-    self.assertions += 1
+    assert true
     http = Net::HTTP.new(host, 443)
     http.use_ssl = true
     http.verify_mode = OpenSSL::SSL::VERIFY_PEER
