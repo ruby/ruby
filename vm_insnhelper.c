@@ -65,6 +65,9 @@ ec_stack_overflow(rb_execution_context_t *ec, int setup)
 }
 
 NORETURN(static void vm_stackoverflow(void));
+#ifdef MJIT_HEADER
+NOINLINE(static COLDFUNC void vm_stackoverflow(void));
+#endif
 
 static void
 vm_stackoverflow(void)
