@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "gem_parser"
-
 module Bundler
   class CompactIndexClient
     class Cache
@@ -94,9 +92,19 @@ module Bundler
         header ? lines[header + 1..-1] : lines
       end
 
-      def parse_gem(line)
-        @gem_parser ||= GemParser.new
-        @gem_parser.parse(line)
+      def parse_gem(string)
+        version_and_platform, rest = string.split(" ", 2)
+        version, platform = version_and_platform.split("-", 2)
+        dependencies, requirements = rest.split("|", 2).map {|s| s.split(",") } if rest
+        dependencies = dependencies ? dependencies.map {|d| parse_dependency(d) } : []
+        requirements = requirements ? requirements.map {|r| parse_dependency(r) } : []
+        [version, platform, dependencies, requirements]
+      end
+
+      def parse_dependency(string)
+        dependency = string.split(":")
+        dependency[-1] = dependency[-1].split("&") if dependency.size > 1
+        dependency
       end
 
       def info_roots
