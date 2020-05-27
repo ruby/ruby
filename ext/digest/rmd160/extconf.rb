@@ -10,7 +10,7 @@ $defs << "-DNDEBUG" << "-DHAVE_CONFIG_H"
 
 $objs = [ "rmd160init.#{$OBJEXT}" ]
 
-digest_conf("rmd160", "ripemd", "RIPEMD160")
+digest_conf("rmd160")
 
 have_header("sys/cdefs.h")
 

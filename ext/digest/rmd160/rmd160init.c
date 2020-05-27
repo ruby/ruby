@@ -3,11 +3,7 @@
 
 #include <ruby/ruby.h>
 #include "../digest.h"
-#if defined(RMD160_USE_OPENSSL)
-#include "rmd160ossl.h"
-#else
 #include "rmd160.h"
-#endif
 
 static const rb_digest_metadata_t rmd160 = {
     RUBY_DIGEST_API_VERSION,

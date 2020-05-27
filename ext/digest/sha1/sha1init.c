@@ -3,9 +3,7 @@
 
 #include <ruby/ruby.h>
 #include "../digest.h"
-#if defined(SHA1_USE_OPENSSL)
-#include "sha1ossl.h"
-#elif defined(SHA1_USE_COMMONDIGEST)
+#if defined(SHA1_USE_COMMONDIGEST)
 #include "sha1cc.h"
 #else
 #include "sha1.h"
