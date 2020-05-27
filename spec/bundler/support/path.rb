@@ -238,7 +238,7 @@ module Spec
     end
 
     def tracked_files_glob
-      ruby_core? ?  "lib/bundler lib/bundler.rb spec/bundler man/bundle*" : ""
+      ruby_core? ? "lib/bundler lib/bundler.rb spec/bundler man/bundle*" : ""
     end
 
     def shipped_files_glob
