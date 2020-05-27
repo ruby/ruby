@@ -96,7 +96,5 @@ $(RUBYDEF): $(LIBRUBY_A) $(PREP) $(RBCONFIG)
 
 clean-local::
 	@$(RM) $(RUBYDEF)
-
-clean-local::
 	@$(RM) $(RUBY_EXP) $(RCFILES:.rc=.res.@OBJEXT@)
 	@$(RM) $(RCFILES)
