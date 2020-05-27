@@ -11,4 +11,4 @@ https://ftp.osuosl.org/pub/blfs/conglomeration/libffi/$(pkg).tar.gz \
 $(pkg)/config.guess -> /tool/config.guess
 $(pkg)/config.sub -> /tool/config.sub
 
-! chdir: $(pkg)| autoconf
+! chdir: $(pkg)| autoconf || exit 0
