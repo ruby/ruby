@@ -194,6 +194,15 @@ RSpec.describe "bundle gem" do
     end
   end
 
+  shared_examples_for "CI config is absent" do
+    it "does not create any CI files" do
+      expect(bundled_app("#{gem_name}/.github/workflows/main.yml")).to_not exist
+      expect(bundled_app("#{gem_name}/.travis.yml")).to_not exist
+      expect(bundled_app("#{gem_name}/.gitlab-ci.yml")).to_not exist
+      expect(bundled_app("#{gem_name}/.circleci/config.yml")).to_not exist
+    end
+  end
+
   shared_examples_for "test framework is present" do
     it "creates a .travis.yml file to test the library against the current Ruby version on Travis CI" do
       expect(bundled_app("#{gem_name}/.travis.yml").read).to match(/- #{RUBY_VERSION}/)
