@@ -164,7 +164,7 @@ module Bundler
       # need to nil them out first to get around validation for backwards compatibility
       Bundler.settings.set_command_option :without, nil
       Bundler.settings.set_command_option :with,    nil
-      Bundler.settings.set_command_option :without, without - with
+      Bundler.settings.set_command_option :without, without
       Bundler.settings.set_command_option :with,    with
     end
 
