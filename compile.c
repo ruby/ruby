@@ -5171,12 +5171,12 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
 {
     VALUE ret;
     if (argn && nd_type(argn) == NODE_BLOCK_PASS) {
+        unsigned int dup_rest = 1;
         DECL_ANCHOR(arg_block);
         INIT_ANCHOR(arg_block);
         NO_CHECK(COMPILE(arg_block, "block", argn->nd_body));
 
         *flag |= VM_CALL_ARGS_BLOCKARG;
-        ret = setup_args_core(iseq, args, argn->nd_head, 0, flag, keywords);
 
         if (LIST_INSN_SIZE_ONE(arg_block)) {
             LINK_ELEMENT *elem = FIRST_ELEMENT(arg_block);
@@ -5185,8 +5185,10 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
                 if (iobj->insn_id == BIN(getblockparam)) {
                     iobj->insn_id = BIN(getblockparamproxy);
                 }
+                dup_rest = 0;
             }
         }
+        ret = setup_args_core(iseq, args, argn->nd_head, dup_rest, flag, keywords);
         ADD_SEQ(args, arg_block);
     }
     else {
