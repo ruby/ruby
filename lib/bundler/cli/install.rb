@@ -150,20 +150,16 @@ module Bundler
 
       check_for_group_conflicts_in_cli_options
 
-      Bundler.settings.set_command_option :with, nil if options[:with] == []
-      Bundler.settings.set_command_option :without, nil if options[:without] == []
-
       with = options.fetch(:with, [])
       with |= Bundler.settings[:with].map(&:to_s)
       with -= options[:without] if options[:without]
+      with = nil if options[:with] == []
 
       without = options.fetch(:without, [])
       without |= Bundler.settings[:without].map(&:to_s)
       without -= options[:with] if options[:with]
+      without = nil if options[:without] == []
 
-      # need to nil them out first to get around validation for backwards compatibility
-      Bundler.settings.set_command_option :without, nil
-      Bundler.settings.set_command_option :with,    nil
       Bundler.settings.set_command_option :without, without
       Bundler.settings.set_command_option :with,    with
     end
