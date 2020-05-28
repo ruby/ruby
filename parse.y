@@ -2568,6 +2568,32 @@ paren_args	: '(' opt_call_args rparen
 		    /*% %*/
 		    /*% ripper: arg_paren!(escape_Qundef($2)) %*/
 		    }
+		| '(' args ',' args_forward rparen
+		    {
+			if (!local_id(p, idFWD_REST) ||
+#if idFWD_KWREST
+			    !local_id(p, idFWD_KWREST) ||
+#endif
+			    !local_id(p, idFWD_BLOCK)) {
+			    compile_error(p, "unexpected ...");
+			    $$ = Qnone;
+			}
+			else {
+			/*%%%*/
+			    NODE *splat = NEW_SPLAT(NEW_LVAR(idFWD_REST, &@4), &@4);
+#if idFWD_KWREST
+			    NODE *kwrest = list_append(p, NEW_LIST(0, &@4), NEW_LVAR(idFWD_KWREST, &@4));
+#endif
+			    NODE *block = NEW_BLOCK_PASS(NEW_LVAR(idFWD_BLOCK, &@4), &@4);
+			    $$ = rest_arg_append(p, $2, splat, &@$);
+#if idFWD_KWREST
+			    $$ = arg_append(p, $$, new_hash(p, kwrest, &@4), &@4);
+#endif
+			    $$ = arg_blk_pass($$, block);
+			/*% %*/
+			/*% ripper: arg_paren!(args_add!($2, $4)) %*/
+			}
+		    }
 		| '(' args_forward rparen
 		    {
 			if (!local_id(p, idFWD_REST) ||
@@ -4911,6 +4937,21 @@ f_paren_args	: '(' f_args rparen
 			$$ = $2;
 		    /*% %*/
 		    /*% ripper: paren!($2) %*/
+			SET_LEX_STATE(EXPR_BEG);
+			p->command_start = TRUE;
+		    }
+		| '(' f_arg ',' args_forward rparen
+		    {
+			arg_var(p, idFWD_REST);
+#if idFWD_KWREST
+			arg_var(p, idFWD_KWREST);
+#endif
+			arg_var(p, idFWD_BLOCK);
+		    /*%%%*/
+			$$ = new_args_tail(p, Qnone, idFWD_KWREST, idFWD_BLOCK, &@4);
+			$$ = new_args(p, $2, Qnone, idFWD_REST, Qnone, $$, &@4);
+		    /*% %*/
+		    /*% ripper: paren!(params_new($2, Qnone, $4, Qnone, Qnone, Qnone, Qnone)) %*/
 			SET_LEX_STATE(EXPR_BEG);
 			p->command_start = TRUE;
 		    }
