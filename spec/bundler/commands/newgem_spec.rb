@@ -217,10 +217,6 @@ RSpec.describe "bundle gem" do
       expect(bundled_app("#{gem_name}/test/#{require_path}.rb")).to_not exist
       expect(bundled_app("#{gem_name}/test/test_helper.rb")).to_not exist
     end
-
-    it "does not create a .travis.yml file" do
-      expect(bundled_app("#{gem_name}/.travis.yml")).to_not exist
-    end
   end
 
   context "README.md", :readline do
