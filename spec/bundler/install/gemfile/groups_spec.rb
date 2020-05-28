@@ -138,7 +138,7 @@ RSpec.describe "bundle install with groups" do
         ENV["BUNDLE_WITHOUT"] = nil
       end
 
-      it "clears without when passed an empty list" do
+      it "clears --without when passed an empty list" do
         bundle :install, forgotten_command_line_options(:without => "emo")
 
         bundle :install, forgotten_command_line_options(:without => "")
@@ -176,7 +176,7 @@ RSpec.describe "bundle install with groups" do
         ENV["BUNDLE_WITH"] = nil
       end
 
-      it "clears with when passed an empty list" do
+      it "clears --with when passed an empty list" do
         bundle :install, forgotten_command_line_options(:with => "debugging")
         bundle :install, forgotten_command_line_options(:with => "")
         expect(the_bundle).not_to include_gems "thin 1.0"
