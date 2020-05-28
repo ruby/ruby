@@ -152,7 +152,7 @@ RSpec.describe "bundle cache" do
         gem 'rack'
       D
 
-      bundle! :cache, forgotten_command_line_options(:path => bundled_app("test"))
+      bundle! "cache --path #{bundled_app("test")}"
 
       expect(the_bundle).to include_gems "rack 1.0.0"
       expect(bundled_app("test/vendor/cache/")).to exist
