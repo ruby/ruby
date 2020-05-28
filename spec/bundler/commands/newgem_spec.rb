@@ -203,12 +203,6 @@ RSpec.describe "bundle gem" do
     end
   end
 
-  shared_examples_for "test framework is present" do
-    it "creates a .travis.yml file to test the library against the current Ruby version on Travis CI" do
-      expect(bundled_app("#{gem_name}/.travis.yml").read).to match(/- #{RUBY_VERSION}/)
-    end
-  end
-
   shared_examples_for "test framework is absent" do
     it "does not create any test framework files" do
       expect(bundled_app("#{gem_name}/.rspec")).to_not exist
@@ -463,8 +457,6 @@ RSpec.describe "bundle gem" do
       it "creates a default test which fails" do
         expect(bundled_app("#{gem_name}/spec/#{require_path}_spec.rb").read).to include("expect(false).to eq(true)")
       end
-
-      it_behaves_like "test framework is present"
     end
 
     context "gem.test setting set to rspec" do
@@ -478,8 +470,6 @@ RSpec.describe "bundle gem" do
         expect(bundled_app("#{gem_name}/spec/#{require_path}_spec.rb")).to exist
         expect(bundled_app("#{gem_name}/spec/spec_helper.rb")).to exist
       end
-
-      it_behaves_like "test framework is present"
     end
 
     context "gem.test setting set to rspec and --test is set to minitest" do
@@ -492,8 +482,6 @@ RSpec.describe "bundle gem" do
         expect(bundled_app("#{gem_name}/test/#{require_path}_test.rb")).to exist
         expect(bundled_app("#{gem_name}/test/test_helper.rb")).to exist
       end
-
-      it_behaves_like "test framework is present"
     end
 
     context "--test parameter set to minitest" do
@@ -526,8 +514,6 @@ RSpec.describe "bundle gem" do
       it "creates a default test which fails" do
         expect(bundled_app("#{gem_name}/test/#{require_path}_test.rb").read).to include("assert false")
       end
-
-      it_behaves_like "test framework is present"
     end
 
     context "gem.test setting set to minitest" do
@@ -552,8 +538,6 @@ RSpec.describe "bundle gem" do
 
         expect(bundled_app("#{gem_name}/Rakefile").read).to eq(rakefile)
       end
-
-      it_behaves_like "test framework is present"
     end
 
     context "--test parameter set to test-unit" do
@@ -586,8 +570,6 @@ RSpec.describe "bundle gem" do
       it "creates a default test which fails" do
         expect(bundled_app("#{gem_name}/test/#{require_path}_test.rb").read).to include("assert_equal(\"expected\", \"actual\")")
       end
-
-      it_behaves_like "test framework is present"
     end
 
     context "--ci with no arugment" do
@@ -700,8 +682,6 @@ RSpec.describe "bundle gem" do
 
         expect(bundled_app("#{gem_name}/Rakefile").read).to eq(rakefile)
       end
-
-      it_behaves_like "test framework is present"
     end
 
     context "gem.test set to rspec and --test with no arguments", :hint_text do
@@ -722,8 +702,6 @@ RSpec.describe "bundle gem" do
                "This setting can be changed anytime with `bundle config gem.test`."
         expect(out).to match(hint)
       end
-
-      it_behaves_like "test framework is present"
     end
 
     context "gem.test setting set to false and --test with no arguments", :hint_text do
