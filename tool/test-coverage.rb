@@ -44,7 +44,7 @@ def save_coverage_data(res1)
     if cov[:methods]
       h = {}
       cov[:methods].each do |(klass, *key), count|
-        h[[klass.inspect, *key]] = count
+        h[[klass.name, *key]] = count
       end
       cov[:methods].replace h
     end
