@@ -263,10 +263,10 @@ module Bundler
       if ci_template.nil?
         Bundler.ui.confirm "Do you want to set up automated testing for your gem? " \
           "Continuous integration services make it easy to see if pull requests have passing tests " \
-          "before you merge them. Bundler supports these services:"\
-          "* Circle CI:      https://circleci.com/\n" \
-          "* Github Actions: https://github.com/features/actions\n" \
-          "* Gitlab CI:      https://docs.gitlab.com/ee/ci/\n" \
+          "before you merge them. Bundler supports these services:" \
+          "* CircleCI:       https://circleci.com/\n" \
+          "* GitHub Actions: https://github.com/features/actions\n" \
+          "* GitLab CI:      https://docs.gitlab.com/ee/ci/\n" \
           "* Travis CI:      https://travis-ci.org/\n" \
           "\n"
 
