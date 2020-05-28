@@ -3214,7 +3214,7 @@ rb_reg_match(VALUE re, VALUE str)
  *	/^[A-Z]*$/ === "HELLO" #=> true
  */
 
-VALUE
+static VALUE
 rb_reg_eqq(VALUE re, VALUE str)
 {
     long start;
