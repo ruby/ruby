@@ -92,7 +92,7 @@ jobs:
           - { key: cppflags, name: NDEBUG,                         value: '-DNDEBUG' }
           - { key: cppflags, name: RUBY_DEBUG,                     value: '-DRUBY_DEBUG' }
           - { key: cppflags, name: ARRAY_DEBUG,                    value: '-DARRAY_DEBUG' }
-          - { key: cppflags, name: BUGNUM_DEBUG,                   value: '-DBUGNUM_DEBUG' }
+          - { key: cppflags, name: BIGNUM_DEBUG,                   value: '-DBIGNUM_DEBUG' }
           - { key: cppflags, name: CCAN_LIST_DEBUG,                value: '-DCCAN_LIST_DEBUG' }
           - { key: cppflags, name: CPDEBUG=-1,                     value: '-DCPDEBUG=-1' }
           - { key: cppflags, name: ENC_DEBUG,                      value: '-DENC_DEBUG' }

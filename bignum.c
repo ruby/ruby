@@ -2906,7 +2906,10 @@ bary_divmod(BDIGIT *qds, size_t qn, BDIGIT *rds, size_t rn, const BDIGIT *xds, s
 }
 
 
-#define BIGNUM_DEBUG 0
+#ifndef BIGNUM_DEBUG
+# define BIGNUM_DEBUG (0+RUBY_DEBUG)
+#endif
+
 #if BIGNUM_DEBUG
 #define ON_DEBUG(x) do { x; } while (0)
 static void
