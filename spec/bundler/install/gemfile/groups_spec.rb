@@ -126,16 +126,6 @@ RSpec.describe "bundle install with groups" do
         expect(the_bundle).to include_gems "activesupport 2.3.2", :groups => [:default]
       end
 
-      it "still works on a different machine and excludes gems" do
-        bundle :install, forgotten_command_line_options(:without => "emo")
-
-        simulate_new_machine
-        bundle :install, forgotten_command_line_options(:without => "emo")
-
-        expect(the_bundle).to include_gems "rack 1.0.0", :groups => [:default]
-        expect(the_bundle).not_to include_gems "activesupport 2.3.5", :groups => [:default]
-      end
-
       it "still works when BUNDLE_WITHOUT is set" do
         ENV["BUNDLE_WITHOUT"] = "emo"
 
