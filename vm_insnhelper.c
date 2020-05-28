@@ -2679,6 +2679,7 @@ vm_call_symbol(
 {
     ASSUME(calling->argc >= 0);
     /* Also assumes CALLER_SETUP_ARG is already done. */
+
     enum method_missing_reason missing_reason = MISSING_NOENTRY;
     int argc = calling->argc;
     VALUE recv = calling->recv;
@@ -2687,10 +2688,12 @@ vm_call_symbol(
     int flags = VM_CALL_FCALL |
                 VM_CALL_OPT_SEND |
                 (calling->kw_splat ? VM_CALL_KW_SPLAT : 0);
+
     if (UNLIKELY(! mid)) {
         mid = idMethodMissing;
         missing_reason = ci_missing_reason(ci);
         ec->method_missing_reason = missing_reason;
+
         /* E.g. when argc == 2
          *
          *   |      |        |      |  TOPN
@@ -2708,6 +2711,7 @@ vm_call_symbol(
         INC_SP(1);
         MEMMOVE(&TOPN(i - 1), &TOPN(i), VALUE, i);
         argc = ++calling->argc;
+
         if (rb_method_basic_definition_p(klass, idMethodMissing)) {
             /* Inadvertent symbol creation shall be forbidden, see [Feature #5112] */
             TOPN(i) = symbol;
@@ -2715,12 +2719,14 @@ vm_call_symbol(
             const VALUE *argv = STACK_ADDR_FROM_TOP(argc);
             VALUE exc = rb_make_no_method_exception(
                 rb_eNoMethodError, 0, recv, argc, argv, priv);
+
             rb_exc_raise(exc);
         }
         else {
             TOPN(i) = rb_str_intern(symbol);
         }
     }
+
     return vm_call_method(ec, reg_cfp, calling, &(struct rb_call_data) {
         .ci = vm_ci_new_runtime(mid, flags, argc, vm_ci_kwarg(ci)),
         .cc = &(struct rb_callcache) {
