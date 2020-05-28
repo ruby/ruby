@@ -572,6 +572,85 @@ RSpec.describe "bundle gem" do
       end
     end
 
+    context "gem.test setting set to test-unit" do
+      before do
+        bundle "config set gem.test test-unit"
+        bundle "gem #{gem_name}"
+      end
+
+      it "creates a default rake task to run the test suite" do
+        rakefile = strip_whitespace <<-RAKEFILE
+          require "bundler/gem_tasks"
+          require "rake/testtask"
+
+          Rake::TestTask.new(:test) do |t|
+            t.libs << "test"
+            t.libs << "lib"
+            t.test_files = FileList["test/**/*_test.rb"]
+          end
+
+          task :default => :test
+        RAKEFILE
+
+        expect(bundled_app("#{gem_name}/Rakefile").read).to eq(rakefile)
+      end
+    end
+
+    context "gem.test set to rspec and --test with no arguments", :hint_text do
+      before do
+        bundle "config set gem.test rspec"
+        bundle! "gem #{gem_name} --test"
+      end
+
+      it "builds spec skeleton" do
+        expect(bundled_app("#{gem_name}/.rspec")).to exist
+        expect(bundled_app("#{gem_name}/spec/#{require_path}_spec.rb")).to exist
+        expect(bundled_app("#{gem_name}/spec/spec_helper.rb")).to exist
+      end
+
+      it "hints that --test is not needed" do
+        hint = "Bundler is configured to generate test files for rspec, "\
+               "so -t is not needed if you want to continue using it. " \
+               "This setting can be changed anytime with `bundle config gem.test`."
+        expect(out).to match(hint)
+      end
+    end
+
+    context "gem.test setting set to false and --test with no arguments", :hint_text do
+      before do
+        bundle "config set gem.test false"
+        bundle! "gem #{gem_name} --test"
+      end
+
+      it "asks to generate test files" do
+        expect(out).to match("Do you want to generate tests with your gem?")
+      end
+
+      it "hints that the choice will only be applied to the current gem" do
+        expect(out).to match("Your choice will only be applied to this gem.")
+      end
+
+      it_behaves_like "test framework is absent"
+    end
+
+    context "gem.test setting not set and --test with no arguments", :hint_text do
+      before do
+        bundle! "gem #{gem_name} --test"
+      end
+
+      it "asks to generate test files" do
+        expect(out).to match("Do you want to generate tests with your gem?")
+      end
+
+      it "hints that the choice will be applied to future bundle gem calls" do
+        hint = "Future `bundle gem` calls will use your choice. " \
+               "This setting can be changed anytime with `bundle config gem.test`."
+        expect(out).to match(hint)
+      end
+
+      it_behaves_like "test framework is absent"
+    end
+
     context "--ci with no arugment" do
       it "does not generate any CI config" do
         bundle "gem #{gem_name}"
@@ -658,85 +737,6 @@ RSpec.describe "bundle gem" do
 
         expect(bundled_app("#{gem_name}/.circleci/config.yml")).to exist
       end
-    end
-
-    context "gem.test setting set to test-unit" do
-      before do
-        bundle "config set gem.test test-unit"
-        bundle "gem #{gem_name}"
-      end
-
-      it "creates a default rake task to run the test suite" do
-        rakefile = strip_whitespace <<-RAKEFILE
-          require "bundler/gem_tasks"
-          require "rake/testtask"
-
-          Rake::TestTask.new(:test) do |t|
-            t.libs << "test"
-            t.libs << "lib"
-            t.test_files = FileList["test/**/*_test.rb"]
-          end
-
-          task :default => :test
-        RAKEFILE
-
-        expect(bundled_app("#{gem_name}/Rakefile").read).to eq(rakefile)
-      end
-    end
-
-    context "gem.test set to rspec and --test with no arguments", :hint_text do
-      before do
-        bundle "config set gem.test rspec"
-        bundle! "gem #{gem_name} --test"
-      end
-
-      it "builds spec skeleton" do
-        expect(bundled_app("#{gem_name}/.rspec")).to exist
-        expect(bundled_app("#{gem_name}/spec/#{require_path}_spec.rb")).to exist
-        expect(bundled_app("#{gem_name}/spec/spec_helper.rb")).to exist
-      end
-
-      it "hints that --test is not needed" do
-        hint = "Bundler is configured to generate test files for rspec, "\
-               "so -t is not needed if you want to continue using it. " \
-               "This setting can be changed anytime with `bundle config gem.test`."
-        expect(out).to match(hint)
-      end
-    end
-
-    context "gem.test setting set to false and --test with no arguments", :hint_text do
-      before do
-        bundle "config set gem.test false"
-        bundle! "gem #{gem_name} --test"
-      end
-
-      it "asks to generate test files" do
-        expect(out).to match("Do you want to generate tests with your gem?")
-      end
-
-      it "hints that the choice will only be applied to the current gem" do
-        expect(out).to match("Your choice will only be applied to this gem.")
-      end
-
-      it_behaves_like "test framework is absent"
-    end
-
-    context "gem.test setting not set and --test with no arguments", :hint_text do
-      before do
-        bundle! "gem #{gem_name} --test"
-      end
-
-      it "asks to generate test files" do
-        expect(out).to match("Do you want to generate tests with your gem?")
-      end
-
-      it "hints that the choice will be applied to future bundle gem calls" do
-        hint = "Future `bundle gem` calls will use your choice. " \
-               "This setting can be changed anytime with `bundle config gem.test`."
-        expect(out).to match(hint)
-      end
-
-      it_behaves_like "test framework is absent"
     end
 
     context "--edit option" do
