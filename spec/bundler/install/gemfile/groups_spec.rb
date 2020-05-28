@@ -157,19 +157,19 @@ RSpec.describe "bundle install with groups" do
         expect(the_bundle).not_to include_gems "thin 1.0"
       end
 
-      it "does install gems from the optional group when requested" do
+      it "installs gems from the optional group when requested" do
         bundle :install, forgotten_command_line_options(:with => "debugging")
         expect(the_bundle).to include_gems "thin 1.0"
       end
 
-      it "does install gems from the previously requested group" do
+      it "installs gems from the previously requested group" do
         bundle :install, forgotten_command_line_options(:with => "debugging")
         expect(the_bundle).to include_gems "thin 1.0"
         bundle :install
         expect(the_bundle).to include_gems "thin 1.0"
       end
 
-      it "does install gems from the optional groups requested with BUNDLE_WITH" do
+      it "installs gems from the optional groups requested with BUNDLE_WITH" do
         ENV["BUNDLE_WITH"] = "debugging"
         bundle :install
         expect(the_bundle).to include_gems "thin 1.0"
@@ -182,13 +182,13 @@ RSpec.describe "bundle install with groups" do
         expect(the_bundle).not_to include_gems "thin 1.0"
       end
 
-      it "does remove groups from without when passed at --with", :bundler => "< 3" do
+      it "removes groups from without when passed at --with", :bundler => "< 3" do
         bundle :install, forgotten_command_line_options(:without => "emo")
         bundle :install, forgotten_command_line_options(:with => "emo")
         expect(the_bundle).to include_gems "activesupport 2.3.5"
       end
 
-      it "does remove groups from with when passed at --without", :bundler => "< 3" do
+      it "removes groups from with when passed at --without", :bundler => "< 3" do
         bundle :install, forgotten_command_line_options(:with => "debugging")
         bundle :install, forgotten_command_line_options(:without => "debugging")
         expect(the_bundle).not_to include_gem "thin 1.0"
@@ -219,12 +219,12 @@ RSpec.describe "bundle install with groups" do
         expect(the_bundle).not_to include_gems "activesupport 2.3.5"
       end
 
-      it "does have no effect when listing a not optional group in with" do
+      it "has no effect when listing a not optional group in with" do
         bundle :install, forgotten_command_line_options(:with => "emo")
         expect(the_bundle).to include_gems "activesupport 2.3.5"
       end
 
-      it "does have no effect when listing an optional group in without" do
+      it "has no effect when listing an optional group in without" do
         bundle :install, forgotten_command_line_options(:without => "debugging")
         expect(the_bundle).not_to include_gems "thin 1.0"
       end
