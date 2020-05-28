@@ -70,7 +70,7 @@ RSpec.describe "bundle install with groups" do
     end
   end
 
-  describe "installing --without" do
+  describe "without option" do
     describe "with gems assigned to a single group" do
       before :each do
         gemfile <<-G
@@ -339,7 +339,7 @@ RSpec.describe "bundle install with groups" do
     end
   end
 
-  describe "when locked and installed with --without" do
+  describe "when locked and installed with `without` option" do
     before(:each) do
       build_repo2
 
