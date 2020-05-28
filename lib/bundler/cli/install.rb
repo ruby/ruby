@@ -12,8 +12,6 @@ module Bundler
 
       warn_if_root
 
-      normalize_groups
-
       Bundler::SharedHelpers.set_env "RB_USER_INSTALL", "1" if Bundler::FREEBSD
 
       # Disable color in deployment mode
@@ -165,6 +163,14 @@ module Bundler
 
       options[:with]    = with
       options[:without] = without
+
+      unless Bundler.settings[:without] == options[:without] && Bundler.settings[:with] == options[:with]
+        # need to nil them out first to get around validation for backwards compatibility
+        Bundler.settings.set_command_option :without, nil
+        Bundler.settings.set_command_option :with,    nil
+        Bundler.settings.set_command_option :without, options[:without] - options[:with]
+        Bundler.settings.set_command_option :with,    options[:with]
+      end
     end
 
     def normalize_settings
@@ -191,13 +197,7 @@ module Bundler
 
       Bundler.settings.set_command_option_if_given :clean, options["clean"]
 
-      unless Bundler.settings[:without] == options[:without] && Bundler.settings[:with] == options[:with]
-        # need to nil them out first to get around validation for backwards compatibility
-        Bundler.settings.set_command_option :without, nil
-        Bundler.settings.set_command_option :with,    nil
-        Bundler.settings.set_command_option :without, options[:without] - options[:with]
-        Bundler.settings.set_command_option :with,    options[:with]
-      end
+      normalize_groups
 
       options[:force] = options[:redownload]
     end
