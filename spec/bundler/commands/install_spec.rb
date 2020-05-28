@@ -278,16 +278,16 @@ RSpec.describe "bundle install with gem sources" do
       end
 
       it "allows running bundle install --system without deleting foo", :bundler => "< 3" do
-        bundle "install", forgotten_command_line_options(:path => "vendor")
-        bundle "install", forgotten_command_line_options(:system => true)
+        bundle "install --path vendor"
+        bundle "install --system"
         FileUtils.rm_rf(bundled_app("vendor"))
         expect(the_bundle).to include_gems "rack 1.0"
       end
 
       it "allows running bundle install --system after deleting foo", :bundler => "< 3" do
-        bundle "install", forgotten_command_line_options(:path => "vendor")
+        bundle "install --path vendor"
         FileUtils.rm_rf(bundled_app("vendor"))
-        bundle "install", forgotten_command_line_options(:system => true)
+        bundle "install --system"
         expect(the_bundle).to include_gems "rack 1.0"
       end
     end
