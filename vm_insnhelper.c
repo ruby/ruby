@@ -2672,15 +2672,74 @@ ci_missing_reason(const struct rb_callinfo *ci)
 }
 
 static VALUE
+vm_call_symbol(
+    rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
+    struct rb_calling_info *calling, const struct rb_callinfo *ci,
+    VALUE symbol)
+{
+    ASSUME(calling->argc >= 0);
+    /* Also assumes CALLER_SETUP_ARG is already done. */
+    enum method_missing_reason missing_reason = MISSING_NOENTRY;
+    int argc = calling->argc;
+    VALUE recv = calling->recv;
+    VALUE klass = CLASS_OF(recv);
+    ID mid = rb_check_id(&symbol);
+    int flags = VM_CALL_FCALL |
+                VM_CALL_OPT_SEND |
+                (calling->kw_splat ? VM_CALL_KW_SPLAT : 0);
+    if (UNLIKELY(! mid)) {
+        mid = idMethodMissing;
+        missing_reason = ci_missing_reason(ci);
+        ec->method_missing_reason = missing_reason;
+        /* E.g. when argc == 2
+         *
+         *   |      |        |      |  TOPN
+         *   |      |        +------+
+         *   |      |  +---> | arg1 |    0
+         *   +------+  |     +------+
+         *   | arg1 | -+ +-> | arg0 |    1
+         *   +------+    |   +------+
+         *   | arg0 | ---+   | sym  |    2
+         *   +------+        +------+
+         *   | recv |        | recv |    3
+         * --+------+--------+------+------
+         */
+        int i = argc;
+        INC_SP(1);
+        MEMMOVE(&TOPN(i - 1), &TOPN(i), VALUE, i);
+        argc = ++calling->argc;
+        if (rb_method_basic_definition_p(klass, idMethodMissing)) {
+            /* Inadvertent symbol creation shall be forbidden, see [Feature #5112] */
+            TOPN(i) = symbol;
+            int priv = vm_ci_flag(ci) & (VM_CALL_FCALL | VM_CALL_VCALL);
+            const VALUE *argv = STACK_ADDR_FROM_TOP(argc);
+            VALUE exc = rb_make_no_method_exception(
+                rb_eNoMethodError, 0, recv, argc, argv, priv);
+            rb_exc_raise(exc);
+        }
+        else {
+            TOPN(i) = rb_str_intern(symbol);
+        }
+    }
+    return vm_call_method(ec, reg_cfp, calling, &(struct rb_call_data) {
+        .ci = vm_ci_new_runtime(mid, flags, argc, vm_ci_kwarg(ci)),
+        .cc = &(struct rb_callcache) {
+            .flags = T_IMEMO | (imemo_callcache << FL_USHIFT) | VM_CALLCACHE_UNMARKABLE,
+            .klass = klass,
+            .cme_  = rb_callable_method_entry_with_refinements(klass, mid, NULL),
+            .call_ = 0,
+            .aux_.method_missing_reason = missing_reason,
+        },
+    });
+}
+
+static VALUE
 vm_call_opt_send(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling, struct rb_call_data *orig_cd)
 {
     RB_DEBUG_COUNTER_INC(ccf_opt_send);
 
     int i;
     VALUE sym;
-    ID mid;
-    struct rb_call_data cd;
-    enum method_missing_reason missing_reason = 0;
 
     CALLER_SETUP_ARG(reg_cfp, calling, orig_cd->ci);
 
@@ -2689,40 +2748,30 @@ vm_call_opt_send(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct
     if (calling->argc == 0) {
 	rb_raise(rb_eArgError, "no method name given");
     }
-
-    sym = TOPN(i);
-
-    if (!(mid = rb_check_id(&sym))) {
-	if (rb_method_basic_definition_p(CLASS_OF(calling->recv), idMethodMissing)) {
-	    VALUE exc =
-		rb_make_no_method_exception(rb_eNoMethodError, 0, calling->recv,
-					    rb_long2int(calling->argc), &TOPN(i),
-                                            vm_ci_flag(orig_cd->ci) & (VM_CALL_FCALL|VM_CALL_VCALL));
-	    rb_exc_raise(exc);
-	}
-	TOPN(i) = rb_str_intern(sym);
-        mid = idMethodMissing;
-        missing_reason = ci_missing_reason(orig_cd->ci);
-        ec->method_missing_reason = missing_reason;
-    }
     else {
+        sym = TOPN(i);
+        /* E.g. when i == 2
+         *
+         *   |      |        |      |  TOPN
+         *   +------+        |      |
+         *   | arg1 | ---+   |      |    0
+         *   +------+    |   +------+
+         *   | arg0 | -+ +-> | arg1 |    1
+         *   +------+  |     +------+
+         *   | sym  |  +---> | arg0 |    2
+         *   +------+        +------+
+         *   | recv |        | recv |    3
+         * --+------+--------+------+------
+         */
 	/* shift arguments */
 	if (i > 0) {
 	    MEMMOVE(&TOPN(i), &TOPN(i-1), VALUE, i);
 	}
 	calling->argc -= 1;
 	DEC_SP(1);
-    }
 
-    unsigned int new_flag = VM_CALL_FCALL | VM_CALL_OPT_SEND | (calling->kw_splat ? VM_CALL_KW_SPLAT : 0);
-    cd.ci = vm_ci_new_runtime(mid, new_flag, 0 /* not accessed (calling->argc is used) */, vm_ci_kwarg(orig_cd->ci));
-    struct rb_callcache cc_body;
-    cd.cc = vm_cc_fill(&cc_body,
-                       Qundef,
-                       rb_callable_method_entry_with_refinements(CLASS_OF(calling->recv), mid, NULL),
-                       0);
-    if (missing_reason != 0) vm_cc_method_missing_reason_set(cd.cc, missing_reason);
-    return vm_call_method(ec, reg_cfp, calling, (CALL_DATA)&cd);
+        return vm_call_symbol(ec, reg_cfp, calling, orig_cd->ci, sym);
+    }
 }
 
 static inline VALUE vm_invoke_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling, const struct rb_callinfo *ci, bool is_lambda, VALUE block_handler);
@@ -3412,39 +3461,15 @@ vm_invoke_symbol_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
 		       struct rb_calling_info *calling, const struct rb_callinfo *ci,
                        MAYBE_UNUSED(bool is_lambda), VALUE block_handler)
 {
-    int argc = calling->argc;
-
-    if (argc < 1) {
+    if (calling->argc < 1) {
         rb_raise(rb_eArgError, "no receiver given");
     }
-    else if (argc > 1) {
-        /* E.g. when argc == 3
-         *
-         *   |      |        |      |  TOPN
-         *   |      |        +------+
-         *   |      |  +---> | arg1 |   -1
-         *   +------+  |     +------+
-         *   | arg1 | -+ +-> | arg0 |    0
-         *   +------+    |   +------+
-         *   | arg0 | ---+   |  BH  |    1
-         *   +------+        +------+
-         *   | recv |        | recv |    2
-         * --+------+--------+------+------
-         *
-         * INC_SP is done immediately below.
-         */
-        MEMMOVE(&TOPN(argc - 3), &TOPN(argc - 2), VALUE, argc - 1);
+    else {
+        VALUE symbol = VM_BH_TO_SYMBOL(block_handler);
+        CALLER_SETUP_ARG(reg_cfp, calling, ci);
+        calling->recv = TOPN(--calling->argc);
+        return vm_call_symbol(ec, reg_cfp, calling, ci, symbol);
     }
-
-    TOPN(argc - 2) = VM_BH_TO_SYMBOL(block_handler);
-    calling->recv = TOPN(argc - 1);
-    INC_SP(1);
-    return vm_call_opt_send(ec, reg_cfp, calling,
-        &(struct rb_call_data) {
-            .ci = ci,
-            .cc = NULL,
-        }
-    );
 }
 
 static VALUE
