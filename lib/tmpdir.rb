@@ -86,7 +86,7 @@ class Dir
     }
     if block_given?
       begin
-        yield path
+        yield path.dup
       ensure
         unless base
           stat = File.stat(File.dirname(path))
