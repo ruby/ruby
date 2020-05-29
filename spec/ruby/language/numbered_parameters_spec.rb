@@ -32,19 +32,38 @@ ruby_version_is "2.7" do
       }.should raise_error(SyntaxError, /numbered parameter is already used in.+ outer block here/m)
     end
 
-    it "can be overwritten with local variable" do
-      suppress_warning do
-        eval <<~CODE
-          _1 = 0
-          proc { _1 }.call("a").should == 0
-        CODE
+    ruby_version_is '2.7'...'2.8' do
+      it "can be overwritten with local variable" do
+        suppress_warning do
+          eval <<~CODE
+            _1 = 0
+            proc { _1 }.call("a").should == 0
+          CODE
+        end
+      end
+
+      it "warns when numbered parameter is overriten with local variable" do
+        -> {
+          eval("_1 = 0")
+        }.should complain(/warning: `_1' is reserved for numbered parameter; consider another name/)
       end
     end
 
-    it "warns when numbered parameter is overriten with local variable" do
-      -> {
-        eval("_1 = 0")
-      }.should complain(/warning: `_1' is reserved for numbered parameter; consider another name/)
+    ruby_version_is '2.8' do
+      it "cannot be overwritten with local variable" do
+        -> {
+          eval <<~CODE
+            _1 = 0
+            proc { _1 }.call("a").should == 0
+          CODE
+        }.should raise_error(SyntaxError, /_1 is reserved for numbered parameter/)
+      end
+
+      it "errors when numbered parameter is overriten with local variable" do
+        -> {
+          eval("_1 = 0")
+        }.should raise_error(SyntaxError, /_1 is reserved for numbered parameter/)
+      end
     end
 
     it "raises SyntaxError when block parameters are specified explicitly" do
