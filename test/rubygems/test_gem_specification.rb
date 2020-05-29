@@ -3141,6 +3141,17 @@ http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
     WARNING
   end
 
+  def test_validate_license_in_a_non_packaging_context
+    util_setup_validate
+
+    use_ui @ui do
+      @a1.licenses.clear
+      @a1.validate(false)
+    end
+
+    assert_empty @ui.error
+  end
+
   def test_removed_methods
     assert_equal Gem::Specification::REMOVED_METHODS, [:rubyforge_project=]
   end

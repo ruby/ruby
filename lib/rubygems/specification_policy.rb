@@ -44,7 +44,7 @@ class Gem::SpecificationPolicy
   def validate(strict = false)
     validate_required!
 
-    validate_optional(strict)
+    validate_optional(strict) if packaging || strict
 
     true
   end
