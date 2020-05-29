@@ -309,8 +309,7 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
             end
 
     unless Array === val and val.all? {|x| x.kind_of?(klass)}
-      raise(Gem::InvalidSpecificationException,
-            "#{field} must be an Array of #{klass}")
+      error "#{field} must be an Array of #{klass}"
     end
   end
 
