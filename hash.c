@@ -2586,7 +2586,7 @@ shift_i_safe(VALUE key, VALUE value, VALUE arg)
  *
  *  Removes the first hash entry
  *  (see {Entry Order}[#class-Hash-label-Entry+Order]);
- *  returns a 2-element Array containing the removed key and value:
+ *  returns a 2-element \Array containing the removed key and value:
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.shift # => [:foo, 0]
  *    h # => {:bar=>1, :baz=>2}
@@ -3700,13 +3700,12 @@ to_a_i(VALUE key, VALUE value, VALUE ary)
 
 /*
  *  call-seq:
- *     hsh.to_a -> array
+ *    hash.to_a -> new_array
  *
- *  Converts <i>hsh</i> to a nested array of <code>[</code> <i>key,
- *  value</i> <code>]</code> arrays.
- *
- *     h = { "c" => 300, "a" => 100, "d" => 400, "c" => 300  }
- *     h.to_a   #=> [["c", 300], ["a", 100], ["d", 400]]
+ *  Returns a new \Array of 2-element \Array objects;
+ *  each nested \Array contains the key and value for a hash entry:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.to_a # => [[:foo, 0], [:bar, 1], [:baz, 2]]
  */
 
 static VALUE
@@ -3754,14 +3753,14 @@ inspect_hash(VALUE hash, VALUE dummy, int recur)
 }
 
 /*
- * call-seq:
- *   hsh.to_s     -> string
- *   hsh.inspect  -> string
+ *  call-seq:
+ *    hash.to_s -> new_string
  *
- * Return the contents of this hash as a string.
+ *  Returns a new \String containing the hash entries:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.to_s # => "{:foo=>0, :bar=>1, :baz=>2}"
  *
- *     h = { "c" => 300, "a" => 100, "d" => 400, "c" => 300  }
- *     h.to_s   #=> "{\"c\"=>300, \"a\"=>100, \"d\"=>400}"
+ *  Hash#to_s is an alias for Hash#inspect.
  */
 
 static VALUE
@@ -3773,12 +3772,15 @@ rb_hash_inspect(VALUE hash)
 }
 
 /*
- * call-seq:
- *    hsh.to_hash   => hsh
+ *  call-seq:
+ *    hash.to_hash -> self
  *
- * Returns +self+.
+ *  Returns +self+:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h1 = h.to_hash
+ *    h1 # => {:foo=>0, :bar=>1, :baz=>2}
+ *    h1.equal?(h) # => true # Identity check
  */
-
 static VALUE
 rb_hash_to_hash(VALUE hash)
 {
@@ -3820,14 +3822,55 @@ rb_hash_to_h_block(VALUE hash)
 
 /*
  *  call-seq:
- *     hsh.to_h                         -> hsh or new_hash
- *     hsh.to_h {|key, value| block }   -> new_hash
+ *    hash.to_h -> self or new_hash
+ *    hash.to_h {|key, value| ... } -> new_hash
  *
- *  Returns +self+. If called on a subclass of Hash, converts
- *  the receiver to a Hash object.
+ *  For an instance of \Hash, returns +self+:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h1 = h.to_h
+ *    h1 # => {:foo=>0, :bar=>1, :baz=>2}
+ *    h1.equal?(h) #  => true # Identity check
  *
- *  If a block is given, the results of the block on each pair of
- *  the receiver will be used as pairs.
+ *  For a subclass of \Hash, returns a new \Hash
+ *  containing the content of +self+:
+ *    class MyHash < Hash; end
+ *    h = MyHash[foo: 0, bar: 1, baz: 2]
+ *    h # => {:foo=>0, :bar=>1, :baz=>2}
+ *    h.class # => MyHash
+ *    h1 = h.to_h
+ *    h1 # => {:foo=>0, :bar=>1, :baz=>2}
+ *    h1.class # => Hash
+ *
+ *  When a block is given, returns a new \Hash object
+ *  whose content is based on the block;
+ *  the block should return a 2-element Array object
+ *  specifying the key-value pair to be included in the returned Array:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h1 = h.to_h {|key, value| [value, key] }
+ *    h1 # => {0=>:foo, 1=>:bar, 2=>:baz}
+ *
+ *  ---
+ *
+ *  Raises an exception if the block does not return an \Array:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    # Raises TypeError (wrong element type Symbol (expected array)):
+ *    h1 = h.to_h {|key, value| :array }
+ *
+ *  Raises an exception if the block returns an \Array of size different from 2:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    # Raises ArgumentError (element has wrong array length (expected 2, was 3)):
+ *    h1 = h.to_h {|key, value| [0, 1, 2] }
+ *
+ *  Raises an exception if the block returns an invalid key
+ *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *   # Raises NoMethodError (undefined method `hash' for #<BasicObject>)
+ *    h1 = h.to_h {|key, value| [BasicObject.new, 0] }
+ *
+ *  Raises an exception if the block attempts to add a new key:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    # Raises RuntimeError (can't add a new key into hash during iteration):
+ *    h.to_h {|key, value| h[:new_key] = 3 }
  */
 
 static VALUE
@@ -3852,14 +3895,11 @@ keys_i(VALUE key, VALUE value, VALUE ary)
 
 /*
  *  call-seq:
- *     hsh.keys    -> array
+ *  hash.keys -> new_array
  *
- *  Returns a new array populated with the keys from this hash. See also
- *  Hash#values.
- *
- *     h = { "a" => 100, "b" => 200, "c" => 300, "d" => 400 }
- *     h.keys   #=> ["a", "b", "c", "d"]
- *
+ *  Returns a new \Array containing all keys in +self+:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.keys # => [:foo, :bar, :baz]
  */
 
 MJIT_FUNC_EXPORTED VALUE
@@ -3899,14 +3939,11 @@ values_i(VALUE key, VALUE value, VALUE ary)
 
 /*
  *  call-seq:
- *     hsh.values    -> array
+ *    hash.values -> new_array
  *
- *  Returns a new array populated with the values from <i>hsh</i>. See
- *  also Hash#keys.
- *
- *     h = { "a" => 100, "b" => 200, "c" => 300 }
- *     h.values   #=> [100, 200, 300]
- *
+ *  Returns a new \Array containing all values in +self+:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.values # => [0, 1, 2]
  */
 
 VALUE
@@ -3934,6 +3971,7 @@ rb_hash_values(VALUE hash)
         }
 	rb_ary_set_len(values, size);
     }
+
     else {
 	rb_hash_foreach(hash, values_i, values);
     }
@@ -3943,21 +3981,24 @@ rb_hash_values(VALUE hash)
 
 /*
  *  call-seq:
- *     hsh.has_key?(key)    -> true or false
- *     hsh.include?(key)    -> true or false
- *     hsh.key?(key)        -> true or false
- *     hsh.member?(key)     -> true or false
+ *    hash.include?(key) -> true or false
+ *    hash.has_key?(key) -> true or false
+ *    hash.key?(key) -> true or false
+ *    hash.member?(key) -> true or false
+
+ *  Methods #has_key?, #key?, and #member? are aliases for \#include?.
  *
- *  Returns <code>true</code> if the given key is present in <i>hsh</i>.
+ *  Returns +true+ if +key+ is a key in +self+, otherwise +false+:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.include?(:bar) # => true
+ *    h.include?(:nosuch) # => false
  *
- *     h = { "a" => 100, "b" => 200 }
- *     h.has_key?("a")   #=> true
- *     h.has_key?("z")   #=> false
+ *  ---
  *
- *  Note that #include? and #member? do not test member
- *  equality using <code>==</code> as do other Enumerables.
- *
- *  See also Enumerable#include?
+ *  Raises an exception if +key+ is invalid
+ *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
+ *    # Raises NoMethodError (undefined method `hash' for #<BasicObject>):
+ *    h.include?(BasicObject.new)
  */
 
 MJIT_FUNC_EXPORTED VALUE
@@ -3985,15 +4026,12 @@ rb_hash_search_value(VALUE key, VALUE value, VALUE arg)
 
 /*
  *  call-seq:
- *     hsh.has_value?(value)    -> true or false
- *     hsh.value?(value)        -> true or false
+ *    hash.has_value?(value) -> true or false
  *
- *  Returns <code>true</code> if the given value is present for some key
- *  in <i>hsh</i>.
- *
- *     h = { "a" => 100, "b" => 200 }
- *     h.value?(100)   #=> true
- *     h.value?(999)   #=> false
+ *  Returns +true+ if +value+ is a value in +self+, otherwise +false+:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.has_value?(1) # => true
+ *    h.has_value?(123) # => false
  */
 
 static VALUE
@@ -5841,7 +5879,7 @@ env_each_value(VALUE ehash)
  *   ENV.each_pair { |name, value| block } -> ENV
  *   ENV.each_pair                         -> an_enumerator
  *
- * Yields each environment variable name and its value as a 2-element Array:
+ * Yields each environment variable name and its value as a 2-element \Array:
  *   h = {}
  *   ENV.each_pair { |name, value| h[name] = value } # => ENV
  *   h # => {"bar"=>"1", "foo"=>"0"}
