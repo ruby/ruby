@@ -1669,17 +1669,6 @@ vm_method_cfunc_is(const rb_iseq_t *iseq, CALL_DATA cd, VALUE recv, VALUE (*func
     return check_cfunc(vm_cc_cme(cd->cc), func);
 }
 
-static VALUE
-opt_equal_fallback(const rb_iseq_t *iseq, VALUE recv, VALUE obj, CALL_DATA cd)
-{
-    if (vm_method_cfunc_is(iseq, cd, recv, rb_obj_equal)) {
-	return recv == obj ? Qtrue : Qfalse;
-    }
-
-    return Qundef;
-}
-
-#define BUILTIN_CLASS_P(x, k) (!SPECIAL_CONST_P(x) && RBASIC_CLASS(x) == k)
 #define EQ_UNREDEFINED_P(t) BASIC_OP_UNREDEFINED_P(BOP_EQ, t##_REDEFINED_OP_FLAG)
 
 static inline bool
@@ -1711,83 +1700,64 @@ FLONUM_2_P(VALUE a, VALUE b)
 #endif
 }
 
-/* 1: compare by identity, 0: not applicable, -1: redefined */
-static inline int
-comparable_by_identity(VALUE recv, VALUE obj)
+static VALUE
+opt_equality(const rb_iseq_t *cd_owner, VALUE recv, VALUE obj, CALL_DATA cd)
 {
-    if (FIXNUM_2_P(recv, obj)) {
-	return (EQ_UNREDEFINED_P(INTEGER) != 0) * 2 - 1;
+    if (FIXNUM_2_P(recv, obj) && EQ_UNREDEFINED_P(INTEGER)) {
+        goto compare_by_identity;
     }
-    if (FLONUM_2_P(recv, obj)) {
-	return (EQ_UNREDEFINED_P(FLOAT) != 0) * 2 - 1;
+    else if (FLONUM_2_P(recv, obj) && EQ_UNREDEFINED_P(FLOAT)) {
+        goto compare_by_identity;
     }
-    if (SYMBOL_P(recv) && SYMBOL_P(obj)) {
-	return (EQ_UNREDEFINED_P(SYMBOL) != 0) * 2 - 1;
+    else if (STATIC_SYM_P(recv) && STATIC_SYM_P(obj) && EQ_UNREDEFINED_P(SYMBOL)) {
+        goto compare_by_identity;
     }
-    return 0;
-}
+    else if (SPECIAL_CONST_P(recv)) {
+        goto compare_by_funcall;
+    }
+    else if (RBASIC_CLASS(recv) == rb_cFloat && RB_FLOAT_TYPE_P(obj) && EQ_UNREDEFINED_P(FLOAT)) {
+        double a = RFLOAT_VALUE(recv);
+        double b = RFLOAT_VALUE(obj);
 
-static
-#ifndef NO_BIG_INLINE
-inline
+#if MSC_VERSION_BEFORE(1300)
+        if (isnan(a)) {
+            return Qfalse;
+        }
+        else if (isnan(b)) {
+            return Qfalse;
+        }
+        else
 #endif
-VALUE
-opt_eq_func(const rb_iseq_t *iseq, VALUE recv, VALUE obj, CALL_DATA cd)
-{
-    switch (comparable_by_identity(recv, obj)) {
-      case 1:
-	return (recv == obj) ? Qtrue : Qfalse;
-      case -1:
-	goto fallback;
+        if (a == b) {
+            return Qtrue;
+        }
+        else {
+            return Qfalse;
+        }
     }
-    if (0) {
-    }
-    else if (BUILTIN_CLASS_P(recv, rb_cFloat)) {
-	if (EQ_UNREDEFINED_P(FLOAT)) {
-	    return rb_float_equal(recv, obj);
-	}
-    }
-    else if (BUILTIN_CLASS_P(recv, rb_cString) && EQ_UNREDEFINED_P(STRING)) {
-        if (recv == obj) return Qtrue;
-        if (RB_TYPE_P(obj, T_STRING)) {
-            return rb_str_eql_internal(recv, obj);
+    else if (RBASIC_CLASS(recv) == rb_cString && EQ_UNREDEFINED_P(STRING)) {
+        if (recv == obj) {
+            return Qtrue;
+        }
+        else if (RB_TYPE_P(obj, T_STRING)) {
+            return rb_str_eql_internal(obj, recv);
         }
     }
 
-  fallback:
-    return opt_equal_fallback(iseq, recv, obj, cd);
-}
-
-static
-#ifndef NO_BIG_INLINE
-inline
-#endif
-VALUE
-opt_eql_func(VALUE recv, VALUE obj, CALL_DATA cd)
-{
-    switch (comparable_by_identity(recv, obj)) {
-      case 1:
-	return (recv == obj) ? Qtrue : Qfalse;
-      case -1:
-	goto fallback;
-    }
-    if (0) {
-    }
-    else if (BUILTIN_CLASS_P(recv, rb_cFloat)) {
-	if (EQ_UNREDEFINED_P(FLOAT)) {
-	    return rb_float_eql(recv, obj);
-	}
-    }
-    else if (BUILTIN_CLASS_P(recv, rb_cString)) {
-	if (EQ_UNREDEFINED_P(STRING)) {
-	    return rb_str_eql(recv, obj);
-	}
+  compare_by_funcall:
+    if (! vm_method_cfunc_is(cd_owner, cd, recv, rb_obj_equal)) {
+        return Qundef;
     }
 
-  fallback:
-    return opt_equal_fallback(NULL, recv, obj, cd);
+  compare_by_identity:
+    if (recv == obj) {
+        return Qtrue;
+    }
+    else {
+        return Qfalse;
+    }
 }
-#undef BUILTIN_CLASS_P
+
 #undef EQ_UNREDEFINED_P
 
 #define vm_ci_new_id(mid) vm_ci_new_runtime(mid, 0, 0, NULL)
@@ -1802,14 +1772,14 @@ rb_equal_opt(VALUE obj1, VALUE obj2)
     }
 
     struct rb_call_data cd = { .ci = ci, .cc = vm_cc_empty() };
-    return opt_eq_func(NULL, obj1, obj2, &cd);
+    return opt_equality(NULL, obj1, obj2, &cd);
 }
 
 VALUE
 rb_eql_opt(VALUE obj1, VALUE obj2)
 {
     struct rb_call_data cd = { .ci = vm_ci_new_id(idEqlP), .cc = vm_cc_empty() };
-    return opt_eql_func(obj1, obj2, &cd);
+    return opt_equality(NULL, obj1, obj2, &cd);
 }
 
 extern VALUE rb_vm_call0(rb_execution_context_t *ec, VALUE, ID, int, const VALUE*, const rb_callable_method_entry_t *, int kw_splat);
@@ -4448,7 +4418,7 @@ static VALUE
 vm_opt_neq(const rb_iseq_t *iseq, CALL_DATA cd, CALL_DATA cd_eq, VALUE recv, VALUE obj)
 {
     if (vm_method_cfunc_is(iseq, cd, recv, rb_obj_not_equal)) {
-        VALUE val = opt_eq_func(iseq, recv, obj, cd_eq);
+        VALUE val = opt_equality(iseq, recv, obj, cd_eq);
 
 	if (val != Qundef) {
 	    return RTEST(val) ? Qfalse : Qtrue;
