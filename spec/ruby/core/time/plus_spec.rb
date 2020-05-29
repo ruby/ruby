@@ -7,12 +7,12 @@ describe "Time#+" do
   end
 
   it "is a commutative operator" do
-    (Time.at(1.1) + 0.9).should == Time.at(0.9) + 1.1
+    (Time.at(1.1r) + 0.9r).should == Time.at(0.9r) + 1.1r
   end
 
   it "adds a negative Float" do
     t = Time.at(100) + -1.3
-    t.usec.should == 699999
+    [700000, 699999].should include t.usec
     t.to_i.should == 98
   end
 

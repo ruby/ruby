@@ -524,6 +524,11 @@ num_exact(VALUE v)
     else if (RB_TYPE_P(v, T_STRING)) {
         goto typeerror;
     }
+    else if (RB_TYPE_P(v, T_FLOAT)) {
+        v = rb_funcall(v, rb_intern("rationalize"), 0);
+        if (RB_TYPE_P(v, T_RATIONAL)) goto rational;
+        goto typeerror;
+    }
     else {
         if ((tmp = rb_check_funcall(v, idTo_r, 0, NULL)) != Qundef) {
             /* test to_int method availability to reject non-Numeric
@@ -2840,6 +2845,9 @@ time_s_at(int argc, VALUE *argv, VALUE klass)
     wideval_t timew;
 
     argc = rb_scan_args(argc, argv, "12:", &time, &t, &unit, &opts);
+    if (RB_TYPE_P(time, T_FLOAT)) {
+        time = rb_funcall(time, idTo_r, 0);
+    }
     if (get_tmopt(opts, vals)) {
         zone = vals[0];
     }

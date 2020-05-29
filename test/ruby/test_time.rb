@@ -575,7 +575,7 @@ class TestTime < Test::Unit::TestCase
     t2000 = get_t2000 + 1/10000000000r
     assert_equal("2000-01-01 00:00:00 1/10000000000 UTC", t2000.inspect)
     t2000 = get_t2000 + 0.1
-    assert_equal("2000-01-01 00:00:00 3602879701896397/36028797018963968 UTC", t2000.inspect)
+    assert_equal("2000-01-01 00:00:00.1 UTC", t2000.inspect)
 
     t2000 = get_t2000
     t2000 = t2000.localtime(9*3600)
