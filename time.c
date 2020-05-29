@@ -4140,7 +4140,7 @@ time_inspect(VALUE time)
 
     GetTimeval(time, tobj);
     str = strftimev("%Y-%m-%d %H:%M:%S", time, rb_usascii_encoding());
-    subsec = w2v(wmod(tobj->timew, WINT2FIXWV(TIME_SCALE)));
+    subsec = rb_to_int(w2v(wmod(tobj->timew, WINT2FIXWV(TIME_SCALE))));
     if (FIXNUM_P(subsec) && FIX2LONG(subsec) == 0) {
     }
     else if (FIXNUM_P(subsec) && FIX2LONG(subsec) < TIME_SCALE) {
