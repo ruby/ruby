@@ -45,7 +45,8 @@ RSpec.describe ".bundle/config" do
 
     it "can be moved with an environment variable" do
       ENV["BUNDLE_APP_CONFIG"] = tmp("foo/bar").to_s
-      bundle "install", forgotten_command_line_options(:path => "vendor/bundle")
+      bundle "config --local path vendor/bundle"
+      bundle "install"
 
       expect(bundled_app(".bundle")).not_to exist
       expect(tmp("foo/bar/config")).to exist
@@ -56,7 +57,8 @@ RSpec.describe ".bundle/config" do
       FileUtils.mkdir_p bundled_app("omg")
 
       ENV["BUNDLE_APP_CONFIG"] = "../foo"
-      bundle "install", forgotten_command_line_options(:path => "vendor/bundle").merge(:dir => bundled_app("omg"))
+      bundle "config --local path vendor/bundle"
+      bundle "install", :dir => bundled_app("omg")
 
       expect(bundled_app(".bundle")).not_to exist
       expect(bundled_app("../foo/config")).to exist

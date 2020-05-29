@@ -270,7 +270,8 @@ RSpec.describe "bundle exec" do
   end
 
   it "handles gems installed with --without", :ruby_repo do
-    install_gemfile <<-G, forgotten_command_line_options(:without => "middleware")
+    bundle "config --local without middleware"
+    install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
       gem "rack" # rack 0.9.1 and 1.0 exist
 

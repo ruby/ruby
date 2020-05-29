@@ -44,11 +44,9 @@ RSpec.describe "install with --deployment or --frozen" do
   it "still works if you are not in the app directory and specify --gemfile" do
     bundle! "install"
     simulate_new_machine
-    bundle! :install,
-      forgotten_command_line_options(:gemfile => "#{tmp}/bundled_app/Gemfile",
-                                     :deployment => true,
-                                     :path => "vendor/bundle",
-                                     :dir => tmp)
+    bundle "config --local deployment true"
+    bundle "config --local path vendor/bundle"
+    bundle! "install --gemfile #{tmp}/bundled_app/Gemfile", :dir => tmp
     expect(the_bundle).to include_gems "rack 1.0"
   end
 
@@ -60,7 +58,9 @@ RSpec.describe "install with --deployment or --frozen" do
       end
     G
     bundle! :install
-    bundle! :install, forgotten_command_line_options(:deployment => true, :without => "test")
+    bundle "config --local deployment true"
+    bundle "config --local without test"
+    bundle! :install
   end
 
   it "works when you bundle exec bundle", :ruby_repo do
@@ -80,7 +80,8 @@ RSpec.describe "install with --deployment or --frozen" do
     G
 
     bundle! :install
-    bundle! :install, forgotten_command_line_options(:deployment => true)
+    bundle "config --local deployment true"
+    bundle! :install
   end
 
   it "works when there are credentials in the source URL" do
@@ -90,7 +91,8 @@ RSpec.describe "install with --deployment or --frozen" do
       gem "rack-obama", ">= 1.0"
     G
 
-    bundle! :install, forgotten_command_line_options(:deployment => true).merge(:artifice => "endpoint_strict_basic_authentication")
+    bundle "config --local deployment true"
+    bundle! :install, :artifice => "endpoint_strict_basic_authentication"
   end
 
   it "works with sources given by a block" do
@@ -100,14 +102,16 @@ RSpec.describe "install with --deployment or --frozen" do
       end
     G
 
-    bundle! :install, forgotten_command_line_options(:deployment => true)
+    bundle "config --local deployment true"
+    bundle! :install
 
     expect(the_bundle).to include_gems "rack 1.0"
   end
 
   context "when replacing a host with the same host with credentials" do
     before do
-      bundle! "install", forgotten_command_line_options(:path => "vendor/bundle")
+      bundle "config --local path vendor/bundle"
+      bundle! "install"
       gemfile <<-G
       source "http://user_name:password@localgemserver.test/"
       gem "rack"
@@ -210,7 +214,8 @@ RSpec.describe "install with --deployment or --frozen" do
         gem "rack-obama"
       G
 
-      bundle :install, forgotten_command_line_options(:deployment => true)
+      bundle "config --local deployment true"
+      bundle :install
       expect(err).to include("deployment mode")
       expect(err).to include("You have added to the Gemfile")
       expect(err).to include("* rack-obama")
@@ -228,7 +233,10 @@ RSpec.describe "install with --deployment or --frozen" do
       expect(the_bundle).to include_gems "path_gem 1.0"
       FileUtils.rm_r lib_path("path_gem-1.0")
 
-      bundle! :install, forgotten_command_line_options(:path => ".bundle", :without => "development", :deployment => true).merge(:env => { "DEBUG" => "1" })
+      bundle "config --local path .bundle"
+      bundle "config --local without development"
+      bundle "config --local deployment true"
+      bundle! :install, :env => { "DEBUG" => "1" }
       run! "puts :WIN"
       expect(out).to eq("WIN")
     end
@@ -243,7 +251,9 @@ RSpec.describe "install with --deployment or --frozen" do
       expect(the_bundle).to include_gems "path_gem 1.0"
       FileUtils.rm_r lib_path("path_gem-1.0")
 
-      bundle :install, forgotten_command_line_options(:path => ".bundle", :deployment => true)
+      bundle "config --local path .bundle"
+      bundle "config --local deployment true"
+      bundle :install
       expect(err).to include("The path `#{lib_path("path_gem-1.0")}` does not exist.")
     end
 
@@ -313,7 +323,8 @@ RSpec.describe "install with --deployment or --frozen" do
         gem "activesupport"
       G
 
-      bundle :install, forgotten_command_line_options(:deployment => true)
+      bundle "config --local deployment true"
+      bundle :install
       expect(err).to include("deployment mode")
       expect(err).to include("You have added to the Gemfile:\n* activesupport\n\n")
       expect(err).to include("You have deleted from the Gemfile:\n* rack")
@@ -326,7 +337,8 @@ RSpec.describe "install with --deployment or --frozen" do
         gem "rack", :git => "git://hubz.com"
       G
 
-      bundle :install, forgotten_command_line_options(:deployment => true)
+      bundle "config --local deployment true"
+      bundle :install
       expect(err).to include("deployment mode")
       expect(err).to include("You have added to the Gemfile:\n* source: git://hubz.com (at master)")
       expect(err).not_to include("You have changed in the Gemfile")
@@ -345,7 +357,8 @@ RSpec.describe "install with --deployment or --frozen" do
         gem "rack"
       G
 
-      bundle :install, forgotten_command_line_options(:deployment => true)
+      bundle "config --local deployment true"
+      bundle :install
       expect(err).to include("deployment mode")
       expect(err).to include("You have deleted from the Gemfile:\n* source: #{lib_path("rack-1.0")} (at master@#{revision_for(lib_path("rack-1.0"))[0..6]}")
       expect(err).not_to include("You have added to the Gemfile")
@@ -368,7 +381,8 @@ RSpec.describe "install with --deployment or --frozen" do
         gem "foo", :git => "#{lib_path("rack")}"
       G
 
-      bundle :install, forgotten_command_line_options(:deployment => true)
+      bundle "config --local deployment true"
+      bundle :install
       expect(err).to include("deployment mode")
       expect(err).to include("You have changed in the Gemfile:\n* rack from `no specified source` to `#{lib_path("rack")} (at master@#{revision_for(lib_path("rack"))[0..6]})`")
       expect(err).not_to include("You have added to the Gemfile")

@@ -215,7 +215,8 @@ RSpec.describe "bundler plugin install" do
           gem 'rack', "1.0.0"
         G
 
-        install_gemfile! <<-G, forgotten_command_line_options(:deployment => true)
+        bundle "config --local deployment true"
+        install_gemfile! <<-G
           source '#{file_uri_for(gem_repo2)}'
           plugin 'foo'
           gem 'rack', "1.0.0"
