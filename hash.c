@@ -3833,10 +3833,10 @@ rb_hash_to_h_block(VALUE hash)
  *
  *  For a subclass of \Hash, returns a new \Hash
  *  containing the content of +self+:
- *    class H < Hash; end
- *    h = H[foo: 0, bar: 1, baz: 2]
+ *    class MyHash < Hash; end
+ *    h = MyHash[foo: 0, bar: 1, baz: 2]
  *    h # => {:foo=>0, :bar=>1, :baz=>2}
- *    h.class # => H
+ *    h.class # => MyHash
  *    h1 = h.to_h
  *    h1 # => {:foo=>0, :bar=>1, :baz=>2}
  *    h1.class # => Hash
@@ -3981,19 +3981,24 @@ rb_hash_values(VALUE hash)
 
 /*
  *  call-seq:
+ *    hash.include?(key) -> true or false
  *    hash.has_key?(key) -> true or false
+ *    hash.key?(key) -> true or false
+ *    hash.member?(key) -> true or false
+
+ *  Methods #has_key?, #key?, and #member? are aliases for \#include?.
  *
  *  Returns +true+ if +key+ is a key in +self+, otherwise +false+:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h.has_key?(:bar) # => true
- *    h.has_key?(:nosuch) # => false
+ *    h.include?(:bar) # => true
+ *    h.include?(:nosuch) # => false
  *
  *  ---
  *
  *  Raises an exception if +key+ is invalid
  *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
  *    # Raises NoMethodError (undefined method `hash' for #<BasicObject>):
- *    h.has_key?(BasicObject.new)
+ *    h.include?(BasicObject.new)
  */
 
 MJIT_FUNC_EXPORTED VALUE
