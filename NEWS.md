@@ -108,6 +108,14 @@ Outstanding ones only.
         * Symbol#to_proc now returns a lambda Proc.
           [[Feature #16260]]
 
+* GC
+
+    * Modified method
+
+        * GC.start now takes an option `compact: true` to compact the heap.
+          For example `GC.start(compact: true)` will have the same effect as
+          `GC.compact`.
+
 ## Stdlib updates
 
 Outstanding ones only.
