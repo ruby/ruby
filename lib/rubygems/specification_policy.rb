@@ -37,6 +37,9 @@ class Gem::SpecificationPolicy
   #
   # Raises InvalidSpecificationException if the spec does not pass the
   # checks.
+  #
+  # It also performs some validations that do not raise but print warning
+  # messages instead.
 
   def validate(strict = false)
     validate_nil_attributes
