@@ -767,6 +767,7 @@ class Resolv
         end
 
         def sender(msg, data, host, port=Port)
+          host = Addrinfo.ip(host).ip_address
           lazy_initialize
           sock = @socks_hash[host.index(':') ? "::" : "0.0.0.0"]
           return nil if !sock
