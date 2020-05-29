@@ -325,9 +325,13 @@ rb_iseq_mark(const rb_iseq_t *iseq)
         if (body->call_data) {
             struct rb_call_data *cds = (struct rb_call_data *)body->call_data;
             for (unsigned int i=0; i<body->ci_size; i++) {
-                rb_gc_mark_movable((VALUE)cds[i].ci);
+                const struct rb_callinfo *ci = cds[i].ci;
                 const struct rb_callcache *cc = cds[i].cc;
-                if (cc && vm_cc_markable(cds[i].cc)) {
+
+                if (vm_ci_markable(ci)) {
+                    rb_gc_mark_movable((VALUE)ci);
+                }
+                if (cc && vm_cc_markable(cc)) {
                     rb_gc_mark_movable((VALUE)cc);
                     // TODO: check enable
                 }
