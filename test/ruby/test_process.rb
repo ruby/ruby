@@ -1621,9 +1621,15 @@ class TestProcess < Test::Unit::TestCase
       if g = Etc.getgrgid(Process.gid)
         assert_equal(Process.gid, Process::GID.from_name(g.name), g.name)
       end
-      assert_raise_with_message(ArgumentError, /\u{4e0d 5b58 5728}/) {
-        Process::GID.from_name("\u{4e0d 5b58 5728}")
-      }
+      expected_excs = [ArgumentError]
+      expected_excs << Errno::ENOENT if defined?(Errno::ENOENT)
+      expected_excs << Errno::ESRCH if defined?(Errno::ESRCH) # WSL 2 actually raises Errno::ESRCH
+      expected_excs << Errno::EBADF if defined?(Errno::EBADF)
+      expected_excs << Errno::EPERM if defined?(Errno::EPERM)
+      exc = assert_raise(*expected_excs) do
+        Process::GID.from_name("\u{4e0d 5b58 5728}") # fu son zai ("absent" in Kanji)
+      end
+      assert_match(/\u{4e0d 5b58 5728}/, exc.message) if exc.is_a?(ArgumentError)
     end
   end
 
