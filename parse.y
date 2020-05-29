@@ -12079,8 +12079,8 @@ static void
 numparam_name(struct parser_params *p, ID id)
 {
     if (!NUMPARAM_ID_P(id)) return;
-    rb_warn1("`_%d' is reserved for numbered parameter; consider another name",
-	     WARN_I(NUMPARAM_ID_TO_IDX(id)));
+    compile_error(p, "_%d is reserved for numbered parameter",
+        NUMPARAM_ID_TO_IDX(id));
 }
 
 static void
