@@ -123,7 +123,8 @@ RSpec.describe "bundle check" do
       gem "rack", :group => :foo
     G
 
-    bundle :install, forgotten_command_line_options(:without => "foo")
+    bundle "config --local without foo"
+    bundle :install
 
     gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
@@ -230,7 +231,8 @@ RSpec.describe "bundle check" do
       gem "foo"
     G
 
-    bundle! "install", forgotten_command_line_options(:deployment => true)
+    bundle "config --local deployment true"
+    bundle! "install"
     FileUtils.rm(bundled_app_lock)
 
     bundle :check

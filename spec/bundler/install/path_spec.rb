@@ -14,7 +14,8 @@ RSpec.describe "bundle install" do
     end
 
     it "does not use available system gems with bundle --path vendor/bundle", :bundler => "< 3" do
-      bundle! :install, forgotten_command_line_options(:path => "vendor/bundle")
+      bundle "config --local path vendor/bundle"
+      bundle! :install
       expect(the_bundle).to include_gems "rack 1.0.0"
     end
 
@@ -22,14 +23,16 @@ RSpec.describe "bundle install" do
       dir = bundled_app("bun++dle")
       dir.mkpath
 
-      bundle! :install, forgotten_command_line_options(:path => dir.join("vendor/bundle")).merge(:dir => dir)
+      bundle "config --local path #{dir.join("vendor/bundle")}"
+      bundle! :install, :dir => dir
       expect(out).to include("installed into `./vendor/bundle`")
 
       dir.rmtree
     end
 
     it "prints a warning to let the user know what has happened with bundle --path vendor/bundle" do
-      bundle! :install, forgotten_command_line_options(:path => "vendor/bundle")
+      bundle "config --local path vendor/bundle"
+      bundle! :install
       expect(out).to include("gems are installed into `./vendor/bundle`")
     end
 
@@ -98,7 +101,8 @@ RSpec.describe "bundle install" do
       context "when set via #{type}" do
         it "installs gems to a path if one is specified" do
           set_bundle_path(type, bundled_app("vendor2").to_s)
-          bundle! :install, forgotten_command_line_options(:path => "vendor/bundle")
+          bundle "config --local path vendor/bundle"
+          bundle! :install
 
           expect(vendored_gems("gems/rack-1.0.0")).to be_directory
           expect(bundled_app("vendor2")).not_to be_directory
@@ -147,7 +151,8 @@ RSpec.describe "bundle install" do
     end
 
     it "sets BUNDLE_PATH as the first argument to bundle install" do
-      bundle! :install, forgotten_command_line_options(:path => "./vendor/bundle")
+      bundle "config --local path ./vendor/bundle"
+      bundle! :install
 
       expect(vendored_gems("gems/rack-1.0.0")).to be_directory
       expect(the_bundle).to include_gems "rack 1.0.0"
@@ -156,7 +161,8 @@ RSpec.describe "bundle install" do
     it "disables system gems when passing a path to install" do
       # This is so that vendored gems can be distributed to others
       build_gem "rack", "1.1.0", :to_system => true
-      bundle! :install, forgotten_command_line_options(:path => "./vendor/bundle")
+      bundle "config --local path ./vendor/bundle"
+      bundle! :install
 
       expect(vendored_gems("gems/rack-1.0.0")).to be_directory
       expect(the_bundle).to include_gems "rack 1.0.0"
@@ -172,7 +178,8 @@ RSpec.describe "bundle install" do
         gem "very_simple_binary"
       G
 
-      bundle! :install, forgotten_command_line_options(:path => "./vendor/bundle")
+      bundle "config --local path ./vendor/bundle"
+      bundle! :install
 
       expect(vendored_gems("gems/very_simple_binary-1.0")).to be_directory
       expect(vendored_gems("extensions")).to be_directory
@@ -183,7 +190,8 @@ RSpec.describe "bundle install" do
       run "require 'very_simple_binary_c'"
       expect(err).to include("Bundler::GemNotFound")
 
-      bundle :install, forgotten_command_line_options(:path => "./vendor/bundle")
+      bundle "config --local path ./vendor/bundle"
+      bundle :install
 
       expect(vendored_gems("gems/very_simple_binary-1.0")).to be_directory
       expect(vendored_gems("extensions")).to be_directory
@@ -202,7 +210,8 @@ RSpec.describe "bundle install" do
         gem "rack"
       G
 
-      bundle :install, forgotten_command_line_options(:path => "bundle")
+      bundle "config --local path bundle"
+      bundle :install
       expect(err).to include("file already exists")
     end
   end

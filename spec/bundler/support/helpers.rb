@@ -130,21 +130,6 @@ module Spec
     end
     bang :bundle
 
-    def forgotten_command_line_options(options)
-      options = options.map do |k, v|
-        v = '""' if v && v.to_s.empty?
-        [k, v]
-      end
-      options.each do |k, v|
-        if v.nil?
-          bundle! "config unset #{k}"
-        else
-          bundle! "config set --local #{k} #{v}"
-        end
-      end
-      {}
-    end
-
     def bundler(cmd, options = {})
       options[:bundle_bin] = system_gem_path.join("bin/bundler")
       bundle(cmd, options)
