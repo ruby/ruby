@@ -678,14 +678,17 @@ rb_load_protect(VALUE fname, int wrap, int *pstate)
  *  call-seq:
  *     load(filename, wrap=false)   -> true
  *
- *  Loads and executes the Ruby
- *  program in the file _filename_. If the filename does not
- *  resolve to an absolute path, the file is searched for in the library
- *  directories listed in <code>$:</code>. If the optional _wrap_
- *  parameter is +true+, the loaded script will be executed
- *  under an anonymous module, protecting the calling program's global
- *  namespace. In no circumstance will any local variables in the loaded
- *  file be propagated to the loading environment.
+ *  Loads and executes the Ruby program in the file _filename_.
+ *
+ *  If the filename neither resolve to an absolute path, or start with
+ *  './' or '../', the file is searched for in the library directories
+ *  listed in <code>$:</code>.
+ *
+ *  If the optional _wrap_ parameter is +true+, the loaded script will
+ *  be executed under an anonymous module, protecting the calling
+ *  program's global namespace. In no circumstance will any local
+ *  variables in the loaded file be propagated to the loading
+ *  environment.
  */
 
 static VALUE
@@ -783,8 +786,9 @@ load_unlock(const char *ftptr, int done)
  *  Loads the given +name+, returning +true+ if successful and +false+ if the
  *  feature is already loaded.
  *
- *  If the filename does not resolve to an absolute path, it will be searched
- *  for in the directories listed in <code>$LOAD_PATH</code> (<code>$:</code>).
+ *  If the filename neither resolve to an absolute path, or start with
+ *  './' or '../', it will be searched for in the directories listed
+ *  in <code>$LOAD_PATH</code> (<code>$:</code>).
  *
  *  If the filename has the extension ".rb", it is loaded as a source file; if
  *  the extension is ".so", ".o", or ".dll", or the default shared library
