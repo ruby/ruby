@@ -651,7 +651,7 @@ RSpec.describe "bundle gem" do
       it_behaves_like "test framework is absent"
     end
 
-    context "--ci with no arugment" do
+    context "--ci with no argument" do
       it "does not generate any CI config" do
         bundle "gem #{gem_name}"
 
