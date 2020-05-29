@@ -33,8 +33,7 @@ class Gem::SpecificationPolicy
   attr_accessor :packaging
 
   ##
-  # Checks that the specification contains all required fields, and does a
-  # very basic sanity check.
+  # Does a sanity check on the specification.
   #
   # Raises InvalidSpecificationException if the spec does not pass the
   # checks.
