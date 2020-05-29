@@ -77,8 +77,11 @@ void rb_obj_info_dump(VALUE obj);
 void rb_obj_info_dump_loc(VALUE obj, const char *file, int line, const char *func);
 
 /* debug.c */
+
+RUBY_SYMBOL_EXPORT_BEGIN
 void ruby_debug_breakpoint(void);
 PRINTF_ARGS(void ruby_debug_printf(const char*, ...), 1, 2);
+RUBY_SYMBOL_EXPORT_END
 
 // show obj data structure without any side-effect
 #define rp(obj) rb_obj_info_dump_loc((VALUE)(obj), __FILE__, __LINE__, RUBY_FUNCTION_NAME_STRING)
