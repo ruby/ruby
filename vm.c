@@ -386,7 +386,13 @@ rb_serial_t ruby_vm_global_method_state = 1;
 rb_serial_t ruby_vm_global_constant_state = 1;
 rb_serial_t ruby_vm_class_serial = 1;
 
-static const struct rb_callcache *vm_empty_cc;
+static const struct rb_callcache vm_empty_cc = {
+    .flags = (T_IMEMO | (imemo_callcache << FL_USHIFT) | VM_CALLCACHE_UNMARKABLE),
+    .klass = Qfalse,
+    .cme_ = NULL,
+    .call_ = vm_call_general,
+    .aux_.v = 0,
+};
 
 static void thread_free(void *ptr);
 
@@ -3424,10 +3430,6 @@ Init_vm_objects(void)
     vm->frozen_strings = st_init_table_with_size(&rb_fstring_hash_type, 10000);
 
     rb_objspace_gc_enable(vm->objspace);
-
-    vm_empty_cc = vm_cc_new(0, NULL, vm_call_general);
-    FL_SET_RAW((VALUE)vm_empty_cc, VM_CALLCACHE_UNMARKABLE);
-    rb_gc_register_mark_object((VALUE)vm_empty_cc);
 }
 
 /* top self */
@@ -3799,7 +3801,7 @@ vm_collect_usage_register(int reg, int isset)
 MJIT_FUNC_EXPORTED const struct rb_callcache *
 rb_vm_empty_cc(void)
 {
-    return vm_empty_cc;
+    return &vm_empty_cc;
 }
 
 #endif /* #ifndef MJIT_HEADER */

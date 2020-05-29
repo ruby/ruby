@@ -37,7 +37,7 @@ extern VALUE rb_make_no_method_exception(VALUE exc, VALUE format, VALUE obj,
                                          int argc, const VALUE *argv, int priv);
 
 #ifndef MJIT_HEADER
-static const struct rb_callcache *vm_empty_cc;
+static const struct rb_callcache vm_empty_cc;
 #endif
 
 /* control stack frame */
@@ -1571,8 +1571,8 @@ vm_search_cc(VALUE klass, const struct rb_callinfo *ci)
 
     if (cme == NULL) {
         // undef or not found: can't cache the information
-        VM_ASSERT(vm_cc_cme(vm_empty_cc) == NULL);
-        return vm_empty_cc;
+        VM_ASSERT(vm_cc_cme(&vm_empty_cc) == NULL);
+        return &vm_empty_cc;
     }
     else {
         const struct rb_callcache *cc = vm_cc_new(klass, cme, vm_call_general);
@@ -1636,7 +1636,7 @@ vm_search_method_fastpath(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
 #ifdef MJIT_HEADER
             rb_vm_empty_cc();
 #else
-            vm_empty_cc;
+            &vm_empty_cc;
 #endif
         RB_DEBUG_COUNTER_INC(mc_inline_miss_invalidated);
     }
@@ -1776,20 +1776,26 @@ opt_equality(const rb_iseq_t *cd_owner, VALUE recv, VALUE obj, CALL_DATA cd)
 
 #undef EQ_UNREDEFINED_P
 
+#ifndef MJIT_HEADER
+
 #define vm_ci_new_id(mid) vm_ci_new_runtime(mid, 0, 0, NULL)
+#define VM_CI_NEW_ID(mid) \
+    ((const struct rb_callinfo *)\
+     ((((VALUE)(mid)) << CI_EMBED_ID_SHFT) | RUBY_FIXNUM_FLAG))
 
 VALUE
 rb_equal_opt(VALUE obj1, VALUE obj2)
 {
-    static const struct rb_callinfo *ci = NULL;
-    if (ci == NULL) {
-        ci = vm_ci_new_id(idEq);
-        rb_gc_register_mark_object((VALUE)ci);
-    }
+    STATIC_ASSERT(idEq_is_embeddable, VM_CI_EMBEDDABLE_P(idEq, 0, 1, 0));
 
-    struct rb_call_data cd = { .ci = ci, .cc = vm_cc_empty() };
+    static struct rb_call_data cd = {
+        .ci = VM_CI_NEW_ID(idEq),
+        .cc = &vm_empty_cc,
+    };
+
     return opt_equality(NULL, obj1, obj2, &cd);
 }
+#endif
 
 VALUE
 rb_eql_opt(VALUE obj1, VALUE obj2)
