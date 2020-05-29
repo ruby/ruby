@@ -1168,7 +1168,7 @@ opt_eq
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
-    val = opt_eq_func(GET_ISEQ(), recv, obj, cd);
+    val = opt_equality(GET_ISEQ(), recv, obj, cd);
 
     if (val == Qundef) {
         CALL_SIMPLE_METHOD();
