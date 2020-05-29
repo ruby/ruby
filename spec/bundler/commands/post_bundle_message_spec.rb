@@ -22,31 +22,25 @@ RSpec.describe "post bundle message" do
   let(:bundle_show_message)        { Bundler::VERSION.split(".").first.to_i < 3 ? bundle_show_system_message : bundle_show_path_message }
 
   describe "for fresh bundle install" do
-    it "without any options" do
+    it "shows proper messages according to the configured groups" do
       bundle :install
       expect(out).to include(bundle_show_message)
       expect(out).not_to include("Gems in the group")
       expect(out).to include(bundle_complete_message)
       expect(out).to include(installed_gems_stats)
-    end
 
-    it "with --without one group" do
       bundle! :install, forgotten_command_line_options(:without => "emo")
       expect(out).to include(bundle_show_message)
       expect(out).to include("Gems in the group emo were not installed")
       expect(out).to include(bundle_complete_message)
       expect(out).to include(installed_gems_stats)
-    end
 
-    it "with --without two groups" do
       bundle! :install, forgotten_command_line_options(:without => "emo test")
       expect(out).to include(bundle_show_message)
       expect(out).to include("Gems in the groups emo and test were not installed")
       expect(out).to include(bundle_complete_message)
       expect(out).to include("4 Gemfile dependencies, 3 gems now installed.")
-    end
 
-    it "with --without more groups" do
       bundle! :install, forgotten_command_line_options(:without => "emo obama test")
       expect(out).to include(bundle_show_message)
       expect(out).to include("Gems in the groups emo, obama and test were not installed")
@@ -54,45 +48,43 @@ RSpec.describe "post bundle message" do
       expect(out).to include("4 Gemfile dependencies, 2 gems now installed.")
     end
 
-    describe "with --path and" do
+    describe "with `path` configured" do
       let(:bundle_path) { "./vendor" }
 
-      it "without any options" do
+      it "shows proper messages according to the configured groups" do
         bundle! :install, forgotten_command_line_options(:path => "vendor")
         expect(out).to include(bundle_show_path_message)
         expect(out).to_not include("Gems in the group")
         expect(out).to include(bundle_complete_message)
-      end
 
-      it "with --without one group" do
         bundle! :install, forgotten_command_line_options(:without => "emo", :path => "vendor")
         expect(out).to include(bundle_show_path_message)
         expect(out).to include("Gems in the group emo were not installed")
         expect(out).to include(bundle_complete_message)
-      end
 
-      it "with --without two groups" do
         bundle! :install, forgotten_command_line_options(:without => "emo test", :path => "vendor")
         expect(out).to include(bundle_show_path_message)
         expect(out).to include("Gems in the groups emo and test were not installed")
         expect(out).to include(bundle_complete_message)
-      end
 
-      it "with --without more groups" do
         bundle! :install, forgotten_command_line_options(:without => "emo obama test", :path => "vendor")
         expect(out).to include(bundle_show_path_message)
         expect(out).to include("Gems in the groups emo, obama and test were not installed")
         expect(out).to include(bundle_complete_message)
       end
+    end
 
-      it "with an absolute --path inside the cwd" do
+    describe "with an absolute `path` inside the cwd configured" do
+      it "shows proper messages according to the configured groups" do
         bundle! :install, forgotten_command_line_options(:path => bundled_app("cache"))
         expect(out).to include("Bundled gems are installed into `./cache`")
         expect(out).to_not include("Gems in the group")
         expect(out).to include(bundle_complete_message)
       end
+    end
 
-      it "with an absolute --path outside the cwd" do
+    describe "with `path` configured to an absolute path outside the cwd" do
+      it "shows proper messages according to the configured groups" do
         bundle! :install, forgotten_command_line_options(:path => tmp("not_bundled_app"))
         expect(out).to include("Bundled gems are installed into `#{tmp("not_bundled_app")}`")
         expect(out).to_not include("Gems in the group")
@@ -180,27 +172,21 @@ The source does not contain any versions of 'not-a-gem'
   end
 
   describe "for bundle update" do
-    it "without any options" do
+    it "shows proper messages according to the configured groups" do
       bundle! :update, :all => true
       expect(out).not_to include("Gems in the groups")
       expect(out).to include(bundle_updated_message)
-    end
 
-    it "with --without one group" do
       bundle! :install, forgotten_command_line_options(:without => "emo")
       bundle! :update, :all => true
       expect(out).to include("Gems in the group emo were not updated")
       expect(out).to include(bundle_updated_message)
-    end
 
-    it "with --without two groups" do
       bundle! :install, forgotten_command_line_options(:without => "emo test")
       bundle! :update, :all => true
       expect(out).to include("Gems in the groups emo and test were not updated")
       expect(out).to include(bundle_updated_message)
-    end
 
-    it "with --without more groups" do
       bundle! :install, forgotten_command_line_options(:without => "emo obama test")
       bundle! :update, :all => true
       expect(out).to include("Gems in the groups emo, obama and test were not updated")

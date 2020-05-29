@@ -279,7 +279,7 @@ RSpec.describe "install with --deployment or --frozen" do
       expect(err).not_to include("You have changed in the Gemfile")
     end
 
-    it "installs gems by default to vendor/bundle when `--deployment` is set via an environment variable", :bundler => "< 3" do
+    it "installs gems by default to vendor/bundle when deployment mode is set via an environment variable", :bundler => "< 3" do
       ENV["BUNDLE_DEPLOYMENT"] = "true"
       bundle "install"
       expect(out).to include("vendor/bundle")

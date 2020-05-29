@@ -1032,7 +1032,7 @@ RSpec.describe "bundle install with git sources" do
     end
   end
 
-  describe "bundle install --deployment with git sources" do
+  describe "bundle install with deployment mode configured and git sources" do
     it "works" do
       build_git "valim", :path => lib_path("valim")
 
