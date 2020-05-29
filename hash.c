@@ -3754,11 +3754,11 @@ inspect_hash(VALUE hash, VALUE dummy, int recur)
 
 /*
  *  call-seq:
- *    hash.to_s -> new_string
+ *    hash.inspect -> new_string
  *
  *  Returns a new \String containing the hash entries:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h.to_s # => "{:foo=>0, :bar=>1, :baz=>2}"
+ *    h.inspect # => "{:foo=>0, :bar=>1, :baz=>2}"
  *
  *  Hash#to_s is an alias for Hash#inspect.
  */
@@ -4128,26 +4128,35 @@ hash_equal(VALUE hash1, VALUE hash2, int eql)
 
 /*
  *  call-seq:
- *     hsh == other_hash    -> true or false
+ *    hash == other_hash -> true or false
  *
- *  Equality---Two hashes are equal if they each contain the same number
- *  of keys and if each key-value pair is equal to (according to
- *  Object#==) the corresponding elements in the other hash.
+ *  Returns +true+ if all of the following are true:
+ *  * +other_hash+ is a \Hash object.
+ *  * +hash+ and +other_hash+ have the same keys (regardless of order).
+ *  * For each key +key+, <tt>hash[key] == other_hash[key]</tt>.
  *
- *     h1 = { "a" => 1, "c" => 2 }
- *     h2 = { 7 => 35, "c" => 2, "a" => 1 }
- *     h3 = { "a" => 1, "c" => 2, 7 => 35 }
- *     h4 = { "a" => 1, "d" => 2, "f" => 35 }
- *     h1 == h2   #=> false
- *     h2 == h3   #=> true
- *     h3 == h4   #=> false
+ *  Otherwise, returns +false+.
  *
- *  The orders of each hashes are not compared.
+ *  Equal:
+ *    h1 = {foo: 0, bar: 1, baz: 2}
+ *    h2 = {foo: 0, bar: 1, baz: 2}
+ *    h1 == h2 # => true
+ *    h3 = {baz: 2, bar: 1, foo: 0}
+ *    h1 == h3 # => true
+*
+ *  Not equal because of class:
+ *    h1 = {foo: 0, bar: 1, baz: 2}
+ *    h1 == 1 # false
  *
- *     h1 = { "a" => 1, "c" => 2 }
- *     h2 = { "c" => 2, "a" => 1 }
- *     h1 == h2   #=> true
+ *  Not equal because of different keys:
+ *    h1 = {foo: 0, bar: 1, baz: 2}
+ *    h2 = {foo: 0, bar: 1, zab: 2}
+ *    h1 == h2 # => false
  *
+ *  Not equal because of different values:
+ *    h1 = {foo: 0, bar: 1, baz: 2}
+ *    h2 = {foo: 0, bar: 1, baz: 3}
+ *    h1 == h2 # => false
  */
 
 static VALUE
@@ -4158,11 +4167,35 @@ rb_hash_equal(VALUE hash1, VALUE hash2)
 
 /*
  *  call-seq:
- *     hash.eql?(other)  -> true or false
+ *    hash.eql? other_hash -> true or false
  *
- *  Returns <code>true</code> if <i>hash</i> and <i>other</i> are
- *  both hashes with the same content.
- *  The orders of each hashes are not compared.
+ *  Returns +true+ if all of the following are true:
+ *  * +other_hash+ is a \Hash object.
+ *  * +hash+ and +other_hash+ have the same keys (regardless of order).
+ *  * For each key +key+, <tt>h[key] eql? other_hash[key]</tt>.
+ *
+ *  Otherwise, returns +false+.
+ *
+ *  Equal:
+ *    h1 = {foo: 0, bar: 1, baz: 2}
+ *    h2 = {foo: 0, bar: 1, baz: 2}
+ *    h1.eql? h2 # => true
+ *    h3 = {baz: 2, bar: 1, foo: 0}
+ *    h1.eql? h3 # => true
+ *
+ *  Not equal because of class:
+ *    h1 = {foo: 0, bar: 1, baz: 2}
+ *    h1.eql? 1 # false
+ *
+ *  Not equal because of different keys:
+ *    h1 = {foo: 0, bar: 1, baz: 2}
+ *    h2 = {foo: 0, bar: 1, zab: 2}
+ *    h1.eql? h2 # => false
+ *
+ *  Not equal because of different values:
+ *    h1 = {foo: 0, bar: 1, baz: 2}
+ *    h2 = {foo: 0, bar: 1, baz: 3}
+ *    h1.eql? h2 # => false
  */
 
 static VALUE
@@ -4185,12 +4218,18 @@ hash_i(VALUE key, VALUE val, VALUE arg)
 
 /*
  *  call-seq:
- *     hsh.hash   -> integer
+ *    hash.hash -> an_integer
  *
- *  Compute a hash-code for this hash. Two hashes with the same content
- *  will have the same hash code (and will compare using <code>eql?</code>).
+ *  Returns the \Integer hash value for the hash:
+ *    h1 = {foo: 0, bar: 1, baz: 2}
+ *    h1.hash.class # => Integer
  *
- *  See also Object#hash.
+ *  Two \Hash objects have the same hash value if their content is the same
+ *  (regardless or order):
+ *    h1 = {foo: 0, bar: 1, baz: 2}
+ *    h2 = {baz: 2, bar: 1, foo: 0}
+ *    h2.hash == h1.hash # => true
+ *    h2.eql? h1 # => true
  */
 
 static VALUE
@@ -4215,32 +4254,25 @@ rb_hash_invert_i(VALUE key, VALUE value, VALUE hash)
 
 /*
  *  call-seq:
- *     hsh.invert -> new_hash
+ *    hash.invert -> new_hash
  *
- *  Returns a new hash created by using <i>hsh</i>'s values as keys, and
- *  the keys as values.
- *  If a key with the same value already exists in the <i>hsh</i>, then
- *  the last one defined will be used, the earlier value(s) will be discarded.
+ *  Returns a new \Hash object with the each key-value pair reversed:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h1 = h.invert
+ *    h1 # => {0=>:foo, 1=>:bar, 2=>:baz}
  *
- *     h = { "n" => 100, "m" => 100, "y" => 300, "d" => 200, "a" => 0 }
- *     h.invert   #=> {0=>"a", 100=>"m", 200=>"d", 300=>"y"}
+ *  Overwrites any repeated new keys:
+ *  (see {Entry Order}[#class-Hash-label-Entry+Order]):
+ *    h = {foo: 0, bar: 0, baz: 0}
+ *    h.invert # => {0=>:baz}
  *
- *  If there is no key with the same value, Hash#invert is involutive.
+ *  ---
  *
- *    h = { a: 1, b: 3, c: 4 }
- *    h.invert.invert == h #=> true
- *
- *  The condition, no key with the same value, can be tested by comparing
- *  the size of inverted hash.
- *
- *    # no key with the same value
- *    h = { a: 1, b: 3, c: 4 }
- *    h.size == h.invert.size #=> true
- *
- *    # two (or more) keys has the same value
- *    h = { a: 1, b: 3, c: 1 }
- *    h.size == h.invert.size #=> false
- *
+ *  Raises an exception if any value cannot be a key
+ *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
+ *    h = {foo: 0, bar: 1, baz: BasicObject.new}
+ *    # Raises NoMethodError (undefined method `hash' for #<BasicObject>):
+ *    h.invert
  */
 
 static VALUE
@@ -4304,45 +4336,75 @@ rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
 
 /*
  *  call-seq:
- *     hsh.merge!(other_hash1, other_hash2, ...)              -> hsh
- *     hsh.update(other_hash1, other_hash2, ...)              -> hsh
- *     hsh.merge!(other_hash1, other_hash2, ...) {|key, oldval, newval| block}
- *                                                            -> hsh
- *     hsh.update(other_hash1, other_hash2, ...) {|key, oldval, newval| block}
- *                                                            -> hsh
+ *    hash.merge! -> self
+ *    hash.merge!(*other_hashes) -> self
+ *    hash.merge!(*other_hashes) { |key, old_value, new_value| ... } -> self
  *
- *  Adds the contents of the given hashes to the receiver.
+ *  Each argument in +other_hashes+ must be
+ *  a {Hash-convertible object}[doc/implicit_conversion_rdoc.html#label-Hash-Convertible+Objects].
  *
- *  If no block is given, entries with duplicate keys are overwritten
- *  with the values from each +other_hash+ successively,
- *  otherwise the value for each duplicate key is determined by
- *  calling the block with the key, its value in the receiver and
- *  its value in each +other_hash+.
+ *  \Method #update is an alias for \#merge!.
  *
- *     h1 = { "a" => 100, "b" => 200 }
- *     h1.merge!          #=> {"a"=>100, "b"=>200}
- *     h1                 #=> {"a"=>100, "b"=>200}
+ *  ---
  *
- *     h1 = { "a" => 100, "b" => 200 }
- *     h2 = { "b" => 246, "c" => 300 }
- *     h1.merge!(h2)      #=> {"a"=>100, "b"=>246, "c"=>300}
- *     h1                 #=> {"a"=>100, "b"=>246, "c"=>300}
+ *  With arguments and no block:
+ *  * Returns +self+, after the given hashes are merged into it.
+ *  * The given hashes are merged left to right.
+ *  * Each new entry is added at the end.
+ *  * Each duplicate-key entry's value overwrites the previous value.
  *
- *     h1 = { "a" => 100, "b" => 200 }
- *     h2 = { "b" => 246, "c" => 300 }
- *     h3 = { "b" => 357, "d" => 400 }
- *     h1.merge!(h2, h3)
- *                        #=> {"a"=>100, "b"=>357, "c"=>300, "d"=>400}
- *     h1                 #=> {"a"=>100, "b"=>357, "c"=>300, "d"=>400}
+ *  Example:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h1 = {bat: 3, bar: 4}
+ *    h2 = {bam: 5, bat:6}
+ *    h3 = h.merge!(h1, h2) # => {:foo=>0, :bar=>4, :baz=>2, :bat=>6, :bam=>5}
+ *    h3.equal?(h) # => true # Identity check
  *
- *     h1 = { "a" => 100, "b" => 200 }
- *     h2 = { "b" => 246, "c" => 300 }
- *     h3 = { "b" => 357, "d" => 400 }
- *     h1.merge!(h2, h3) {|key, v1, v2| v1 }
- *                        #=> {"a"=>100, "b"=>200, "c"=>300, "d"=>400}
- *     h1                 #=> {"a"=>100, "b"=>200, "c"=>300, "d"=>400}
+ *  ---
  *
- *  Hash#update is an alias for Hash#merge!.
+ *  With arguments and a block:
+ *  * Returns +self+, after the given hashes are merged.
+ *  *  The given hashes are merged left to right.
+ *  *  Each new-key entry is added at the end.
+ *  *  For each duplicate key:
+ *     * Calls the block with the key and the old and new values.
+ *     * The block's return value becomes the new value for the entry.
+ *
+ *  Example:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h1 = {bat: 3, bar: 4}
+ *    h2 = {bam: 5, bat:6}
+ *    h3 = h.merge!(h1, h2) { |key, old_value, new_value| old_value + new_value }
+ *    h3 # => {:foo=>0, :bar=>5, :baz=>2, :bat=>9, :bam=>5}
+ *    h3.equal?(h) # => true # Identity check
+ *
+ *  Allows the block to add a new key:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h1 = {bat: 3, bar: 4}
+ *    h2 = {bam: 5, bat:6}
+ *    h3 = h.merge!(h1, h2) { |key, old_value, new_value| h[:new_key] = 10 }
+ *    h3 # => {:foo=>0, :bar=>10, :baz=>2, :bat=>10, :new_key=>10, :bam=>5}
+ *    h3.equal?(h) # => true # Identity check
+ *
+ *  ---
+ *
+ *  With no arguments:
+ *  * Returns +self+, unmodified.
+ *  * The block, if given, is ignored.
+ *
+ *  Example:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.merge # => {:foo=>0, :bar=>1, :baz=>2}
+ *    h1 = h.merge! { |key, old_value, new_value| fail 'Cannot happen' }
+ *    h1 # => {:foo=>0, :bar=>1, :baz=>2}
+ *    h1.equal?(h) # => true # Identity check
+ *
+ *  ---
+ *
+ *  Raises an exception if any given argument is not a Hash-convertible object:
+ *    h = {}
+ *    # Raises TypeError (no implicit conversion of Integer into Hash):
+ *    h.merge!(1)
  */
 
 static VALUE
@@ -4420,33 +4482,76 @@ rb_hash_update_by(VALUE hash1, VALUE hash2, rb_hash_update_func *func)
 
 /*
  *  call-seq:
- *     hsh.merge(other_hash1, other_hash2, ...)           -> new_hash
- *     hsh.merge(other_hash1, other_hash2, ...) {|key, oldval, newval| block}
- *                                                        -> new_hash
+ *    hash.merge -> new_copy_of_hash
+ *    hash.merge(*other_hashes) -> new_hash
+ *    hash.merge(*other_hashes) { |key, old_value, new_value| ... } -> new_hash
  *
- *  Returns a new hash that combines the contents of the receiver and
- *  the contents of the given hashes.
+ *  Each argument in +other_hashes+ must be
+ *  a {Hash-convertible object}[doc/implicit_conversion_rdoc.html#label-Hash-Convertible+Objects].
  *
- *  If no block is given, entries with duplicate keys are overwritten
- *  with the values from each +other_hash+ successively,
- *  otherwise the value for each duplicate key is determined by
- *  calling the block with the key, its value in the receiver and
- *  its value in each +other_hash+.
+ *  ---
  *
- *  When called without any argument, returns a copy of the receiver.
+ *  With arguments and no block:
+ *  * Returns a new \Hash object that is the merge of +self+ and each given hash.
+ *  * The given hashes are merged left to right.
+ *  * Each new-key entry is added at the end.
+ *  * Each duplicate-key entry's value overwrites the previous value.
  *
- *     h1 = { "a" => 100, "b" => 200 }
- *     h2 = { "b" => 246, "c" => 300 }
- *     h3 = { "b" => 357, "d" => 400 }
- *     h1.merge          #=> {"a"=>100, "b"=>200}
- *     h1.merge(h2)      #=> {"a"=>100, "b"=>246, "c"=>300}
- *     h1.merge(h2, h3)  #=> {"a"=>100, "b"=>357, "c"=>300, "d"=>400}
- *     h1.merge(h2) {|key, oldval, newval| newval - oldval}
- *                       #=> {"a"=>100, "b"=>46,  "c"=>300}
- *     h1.merge(h2, h3) {|key, oldval, newval| newval - oldval}
- *                       #=> {"a"=>100, "b"=>311, "c"=>300, "d"=>400}
- *     h1                #=> {"a"=>100, "b"=>200}
+ *  Example:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h1 = {bat: 3, bar: 4}
+ *    h2 = {bam: 5, bat:6}
+ *    h3 = h.merge(h1, h2)
+ *    h3 # => {:foo=>0, :bar=>4, :baz=>2, :bat=>6, :bam=>5}
+ *    h3.equal?(h) # => false # Identity check
  *
+ *  ---
+ *
+ *  With arguments and a block:
+ *  * Returns a new \Hash object that is the merge of +self+ and each given hash.
+ *  * The given hashes are merged left to right.
+ *  * Each new-key entry is added at the end.
+ *  * For each duplicate key:
+ *    * Calls the block with the key and the old and new values.
+ *    * The block's return value becomes the new value for the entry.
+ *
+ *  Example:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h1 = {bat: 3, bar: 4}
+ *    h2 = {bam: 5, bat:6}
+ *    h3 = h.merge(h1, h2) { |key, old_value, new_value| old_value + new_value }
+ *    h3 # => {:foo=>0, :bar=>5, :baz=>2, :bat=>9, :bam=>5}
+ *    h3.equal?(h) # => false # Identity check
+ *
+ *  Ignores an attempt in the block to add a new key:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h1 = {bat: 3, bar: 4}
+ *    h2 = {bam: 5, bat:6}
+ *    h3 = h.merge(h1, h2) { |key, old_value, new_value| h[:new_key] = 10 }
+ *    h3 # => {:foo=>0, :bar=>10, :baz=>2, :bat=>10, :bam=>5}
+ *    h3.equal?(h) # => false # Identity check
+ *
+ *  ---
+ *
+ *  With no arguments:
+ *  * Returns a copy of +self+.
+ *  * The block, if given, is ignored.
+ *
+ *  Example:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h1 = h.merge
+ *    h1 # => {:foo=>0, :bar=>1, :baz=>2}
+ *    h1.equal?(h) # => false # Identity check
+ *    h2 = h.merge { |key, old_value, new_value| fail 'Cannot happen' }
+ *    h2 # => {:foo=>0, :bar=>1, :baz=>2}
+ *    h2.equal?(h) # => false # Identity check
+ *
+ *  ---
+ *
+ *  Raises an exception if any given argument is not a Hash-convertible object:
+ *    h = {}
+ *    # Raises TypeError (no implicit conversion of Integer into Hash):
+ *    h.merge(1)
  */
 
 static VALUE
@@ -4496,16 +4601,23 @@ assoc_i(VALUE key, VALUE val, VALUE arg)
 
 /*
  *  call-seq:
- *     hash.assoc(obj)   ->  an_array  or  nil
+ *    hash.assoc(key) -> new_array or nil
  *
- *  Searches through the hash comparing _obj_ with the key using <code>==</code>.
- *  Returns the key-value pair (two elements array) or +nil+
- *  if no match is found.  See Array#assoc.
+ *  If the given +key+ is found, returns a 2-element \Array containing that key and its value:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.assoc(:bar) # => [:bar, 1]
  *
- *     h = {"colors"  => ["red", "blue", "green"],
- *          "letters" => ["a", "b", "c" ]}
- *     h.assoc("letters")  #=> ["letters", ["a", "b", "c"]]
- *     h.assoc("foo")      #=> nil
+ *  Returns +nil+ if key +key+ is not found:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.assoc(:nosuch)
+ *
+ *  ---
+ *
+ *  Raises an exception if +key+ is invalid (see Invalid Hash Keys)
+ *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    # Raises NoMethodError (undefined method `hash' for #<BasicObject>)
+ *    h.assoc(BasicObject.new)
  */
 
 VALUE
@@ -4558,15 +4670,17 @@ rassoc_i(VALUE key, VALUE val, VALUE arg)
 
 /*
  *  call-seq:
- *     hash.rassoc(obj) -> an_array or nil
+ *    hash.rassoc(value) -> new_array or nil
  *
- *  Searches through the hash comparing _obj_ with the value using <code>==</code>.
- *  Returns the first key-value pair (two-element array) that matches. See
- *  also Array#rassoc.
+ *  Returns a new 2-element \Array consisting of the key and value
+ *  of the first-found entry whose value is <tt>==</tt> to value
+ *  (see {Entry Order}[#class-Hash-label-Entry+Order]):
+ *    h = {foo: 0, bar: 1, baz: 1}
+ *    h.rassoc(1) # => [:bar, 1]
  *
- *     a = {1=> "one", 2 => "two", 3 => "three", "ii" => "two"}
- *     a.rassoc("two")    #=> [2, "two"]
- *     a.rassoc("four")   #=> nil
+ *  Returns nil if no such value found:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.rassoc(3) # => nil
  */
 
 VALUE
