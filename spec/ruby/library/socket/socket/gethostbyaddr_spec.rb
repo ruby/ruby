@@ -113,7 +113,7 @@ describe 'Socket.gethostbyaddr' do
           Socket.gethostbyaddr(@addr, :INET6).should be_an_instance_of(Array)
         end
 
-        platform_is_not :windows do
+        platform_is_not :windows, :wsl do
           it 'raises SocketError when the address is not supported by the family' do
             -> { Socket.gethostbyaddr(@addr, :INET) }.should raise_error(SocketError)
           end
