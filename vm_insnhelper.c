@@ -3528,9 +3528,9 @@ vm_invoke_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
                 struct rb_calling_info *calling, const struct rb_callinfo *ci,
                 bool is_lambda, VALUE block_handler)
 {
-    auto VALUE (*func)(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
-                       struct rb_calling_info *calling, const struct rb_callinfo *ci,
-                       bool is_lambda, VALUE block_handler);
+    VALUE (*func)(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
+                  struct rb_calling_info *calling, const struct rb_callinfo *ci,
+                  bool is_lambda, VALUE block_handler);
 
     switch (vm_block_handler_type(block_handler)) {
       case block_handler_type_iseq:   func = vm_invoke_iseq_block;   break;
