@@ -127,7 +127,9 @@ class Gem::SpecificationPolicy
   end
 
   ##
-  # Implementation for Specification#validate_dependencies
+  # Checks that dependencies use requirements as we recommend.  Warnings are
+  # issued when dependencies are open-ended or overly strict for semantic
+  # versioning.
 
   def validate_dependencies # :nodoc:
     # NOTE: see REFACTOR note in Gem::Dependency about types - this might be brittle
