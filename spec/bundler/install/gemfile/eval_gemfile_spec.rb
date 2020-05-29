@@ -45,7 +45,7 @@ RSpec.describe "bundle install with gemfile that uses eval_gemfile" do
 
     # Make sure that we are properly comparing path based gems between the
     # parsed lockfile and the evaluated gemfile.
-    it "bundles with --deployment" do
+    it "bundles with deployment mode configured" do
       bundle! :install
       bundle! :install, forgotten_command_line_options(:deployment => true)
     end

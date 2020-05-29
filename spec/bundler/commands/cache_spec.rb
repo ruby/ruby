@@ -242,7 +242,7 @@ RSpec.describe "bundle cache" do
     end
   end
 
-  context "with --frozen" do
+  context "with frozen configured" do
     before do
       gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"

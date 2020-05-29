@@ -155,7 +155,7 @@ RSpec.describe "real source plugins" do
         expect(the_bundle).to include_gems("a-path-gem 1.0")
       end
 
-      it "copies repository to vendor cache and uses it even when installed with bundle --path" do
+      it "copies repository to vendor cache and uses it even when installed with `path` configured" do
         bundle! :install, forgotten_command_line_options(:path => "vendor/bundle")
         bundle "config set cache_all true"
         bundle! :cache

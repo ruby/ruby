@@ -178,7 +178,7 @@ RSpec.shared_examples "bundle install --standalone" do
       expect(err).to eq("ZOMG LOAD ERROR")
     end
 
-    it "allows --without to limit the groups used in a standalone" do
+    it "allows `without` configuration to limit the groups used in a standalone" do
       bundle! :install, forgotten_command_line_options(:path => bundled_app("bundle"), :without => "test").merge(:standalone => true, :dir => cwd)
 
       load_error_ruby <<-RUBY, "spec"
@@ -194,7 +194,7 @@ RSpec.shared_examples "bundle install --standalone" do
       expect(err).to eq("ZOMG LOAD ERROR")
     end
 
-    it "allows --path to change the location of the standalone bundle" do
+    it "allows `path` configuration to change the location of the standalone bundle" do
       bundle! "install", forgotten_command_line_options(:path => "path/to/bundle").merge(:standalone => true, :dir => cwd)
 
       ruby <<-RUBY
@@ -208,7 +208,7 @@ RSpec.shared_examples "bundle install --standalone" do
       expect(out).to eq("2.3.2")
     end
 
-    it "allows remembered --without to limit the groups used in a standalone" do
+    it "allows `without` to limit the groups used in a standalone" do
       bundle! :install, forgotten_command_line_options(:without => "test").merge(:dir => cwd)
       bundle! :install, forgotten_command_line_options(:path => bundled_app("bundle")).merge(:standalone => true, :dir => cwd)
 

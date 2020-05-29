@@ -555,7 +555,7 @@ RSpec.describe "bundle install from an existing gemspec" do
       expect(the_bundle).to include_gems "foo 1.0.0", "rack 1.0.0"
     end
 
-    it "installs the ruby platform gemspec and skips dev deps with --without development" do
+    it "installs the ruby platform gemspec and skips dev deps with `without development` configured" do
       simulate_platform "ruby"
 
       install_gemfile! <<-G, forgotten_command_line_options(:without => "development")
