@@ -680,9 +680,9 @@ rb_load_protect(VALUE fname, int wrap, int *pstate)
  *
  *  Loads and executes the Ruby program in the file _filename_.
  *
- *  If the filename neither resolve to an absolute path, or start with
- *  './' or '../', the file is searched for in the library directories
- *  listed in <code>$:</code>.
+ *  If the filename neither resolves to an absolute path nor starts with
+ *  './' or '../', the file will be searched for in the library
+ *  directories listed in <code>$LOAD_PATH</code> (<code>$:</code>).
  *
  *  If the optional _wrap_ parameter is +true+, the loaded script will
  *  be executed under an anonymous module, protecting the calling
@@ -786,9 +786,9 @@ load_unlock(const char *ftptr, int done)
  *  Loads the given +name+, returning +true+ if successful and +false+ if the
  *  feature is already loaded.
  *
- *  If the filename neither resolve to an absolute path, or start with
- *  './' or '../', it will be searched for in the directories listed
- *  in <code>$LOAD_PATH</code> (<code>$:</code>).
+ *  If the filename neither resolves to an absolute path nor starts with
+ *  './' or '../', the file will be searched for in the library
+ *  directories listed in <code>$LOAD_PATH</code> (<code>$:</code>).
  *
  *  If the filename has the extension ".rb", it is loaded as a source file; if
  *  the extension is ".so", ".o", or ".dll", or the default shared library
