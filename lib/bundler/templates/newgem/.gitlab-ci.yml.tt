@@ -4,6 +4,6 @@ before_script:
   - gem install bundler -v <%= Bundler::VERSION %>
   - bundle install
 
-example_job:
+test:
   script:
-    - bundle exec rake
+    - bundle exec rake test
