@@ -2,7 +2,7 @@ require_relative '../../../../spec_helper'
 require 'net/http'
 require_relative 'fixtures/http_server'
 
-describe "Net::HTTP.get when passed URI" do
+describe "Net::HTTP.get" do
   before :each do
     NetHTTPSpecs.start_server
     @port = NetHTTPSpecs.port
