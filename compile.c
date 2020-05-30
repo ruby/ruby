@@ -1117,7 +1117,7 @@ APPEND_LIST(ISEQ_ARG_DECLARE LINK_ANCHOR *const anc1, LINK_ANCHOR *const anc2)
 
 #if CPDEBUG && 0
 static void
-debug_list(ISEQ_ARG_DECLARE LINK_ANCHOR *const anchor)
+debug_list(ISEQ_ARG_DECLARE LINK_ANCHOR *const anchor, LINK_ELEMENT *cur)
 {
     LINK_ELEMENT *list = FIRST_ELEMENT(anchor);
     printf("----\n");
@@ -1130,14 +1130,14 @@ debug_list(ISEQ_ARG_DECLARE LINK_ANCHOR *const anchor)
     }
     printf("----\n");
 
-    dump_disasm_list(anchor->anchor.next);
+    dump_disasm_list_with_cursor(anchor->anchor.next, cur, 0);
     verify_list("debug list", anchor);
 }
 #if CPDEBUG < 0
-#define debug_list(anc) debug_list(iseq, (anc))
+#define debug_list(anc, cur) debug_list(iseq, (anc), (cur))
 #endif
 #else
-#define debug_list(anc) ((void)0)
+#define debug_list(anc, cur) ((void)0)
 #endif
 
 static TRACE *
@@ -2323,7 +2323,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 			xfree(generated_iseq);
 			xfree(insns_info);
 			xfree(positions);
-			debug_list(anchor);
+			debug_list(anchor, list);
 			COMPILE_ERROR(iseq, adjust->line_no,
 				      "iseq_set_sequence: adjust bug to %d %d < %d",
 				      label_no, orig_sp, sp);
