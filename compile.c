@@ -2816,7 +2816,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
             ELEM_INSERT_NEXT(&iobj->link, &pop->link);
 	    goto again;
 	}
-       else if (IS_INSN(iobj->link.prev) &&
+        else if (IS_INSN(iobj->link.prev) &&
                  (piobj = (INSN *)iobj->link.prev) &&
 		 (IS_INSN_ID(piobj, branchif) ||
 		  IS_INSN_ID(piobj, branchunless))) {
