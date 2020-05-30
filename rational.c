@@ -965,15 +965,6 @@ nurat_fdiv(VALUE self, VALUE other)
     return rb_funcall(div, idTo_f, 0);
 }
 
-inline static VALUE
-f_odd_p(VALUE integer)
-{
-    if (rb_funcall(integer, '%', 1, INT2FIX(2)) != INT2FIX(0)) {
-	return Qtrue;
-    }
-    return Qfalse;
-}
-
 /*
  * call-seq:
  *    rat ** numeric  ->  numeric
@@ -1008,7 +999,7 @@ rb_rational_pow(VALUE self, VALUE other)
 		return f_rational_new_bang1(CLASS_OF(self), ONE);
 	    }
 	    else if (f_minus_one_p(dat->num) && RB_INTEGER_TYPE_P(other)) {
-		return f_rational_new_bang1(CLASS_OF(self), INT2FIX(f_odd_p(other) ? -1 : 1));
+		return f_rational_new_bang1(CLASS_OF(self), INT2FIX(rb_int_odd_p(other) ? -1 : 1));
 	    }
 	    else if (INT_ZERO_P(dat->num)) {
 		if (rb_num_negative_p(other)) {
