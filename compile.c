@@ -1125,7 +1125,7 @@ debug_list(ISEQ_ARG_DECLARE LINK_ANCHOR *const anchor)
 	   anchor->anchor.next, anchor->last);
     while (list) {
 	printf("curr: %p, next: %p, prev: %p, type: %d\n", list, list->next,
-	       list->prev, FIX2INT(list->type));
+	       list->prev, (int)list->type);
 	list = list->next;
     }
     printf("----\n");
