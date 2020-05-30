@@ -60,6 +60,8 @@ f_add(VALUE x, VALUE y)
 	return x;
     if (FIXNUM_ZERO_P(x))
 	return y;
+    if (RB_INTEGER_TYPE_P(x))
+        return rb_int_plus(x, y);
     return rb_funcall(x, '+', 1, y);
 }
 
@@ -78,6 +80,10 @@ f_lt_p(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x) && FIXNUM_P(y))
 	return (SIGNED_VALUE)x < (SIGNED_VALUE)y;
+    if (RB_INTEGER_TYPE_P(x)) {
+        VALUE r = rb_int_cmp(x, y);
+        if (!NIL_P(r)) return rb_int_negative_p(r);
+    }
     return RTEST(rb_funcall(x, '<', 1, y));
 }
 
@@ -137,11 +143,13 @@ f_to_i(VALUE x)
     return rb_funcall(x, id_to_i, 0);
 }
 
-inline static VALUE
+inline static int
 f_eqeq_p(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x) && FIXNUM_P(y))
 	return x == y;
+    if (RB_INTEGER_TYPE_P(x))
+        return RTEST(rb_int_equal(x, y));
     return (int)rb_equal(x, y);
 }
 
