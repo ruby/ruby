@@ -739,6 +739,55 @@ RSpec.describe "bundle gem" do
       end
     end
 
+    context "gem.ci set to github and --ci with no arguments", :hint_text do
+      before do
+        bundle "config set gem.ci github"
+        bundle! "gem #{gem_name} --ci"
+      end
+
+      it "generates a GitHub Actions config file" do
+        expect(bundled_app("#{gem_name}/.github/workflows/main.yml")).to exist
+      end
+
+      it "hints that --ci is not needed" do
+        hint = "Bundler is configured to generate CI files for github, "\
+               "so --ci is not needed if you want to continue using it. " \
+               "This setting can be changed anytime with `bundle config gem.ci`."
+        expect(out).to match(hint)
+      end
+    end
+
+    context "gem.ci setting set to false and --ci with no arguments", :hint_text do
+      before do
+        bundle "config set gem.ci false"
+        bundle! "gem #{gem_name} --ci"
+      end
+
+      it "asks to setup CI" do
+        expect(out).to match("Do you want to set up automated testing for your gem?")
+      end
+
+      it "hints that the choice will only be applied to the current gem" do
+        expect(out).to match("Your choice will only be applied to this gem.")
+      end
+    end
+
+    context "gem.ci setting not set and --ci with no arguments", :hint_text do
+      before do
+        bundle! "gem #{gem_name} --ci"
+      end
+
+      it "asks to setup CI" do
+        expect(out).to match("Do you want to set up automated testing for your gem?")
+      end
+
+      it "hints that the choice will be applied to future bundle gem calls" do
+        hint = "Future `bundle gem` calls will use your choice. " \
+               "This setting can be changed anytime with `bundle config gem.ci`."
+        expect(out).to match(hint)
+      end
+    end
+
     context "--edit option" do
       it "opens the generated gemspec in the user's text editor" do
         output = bundle "gem #{gem_name} --edit=echo"

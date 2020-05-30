@@ -193,6 +193,12 @@ module Bundler
                         "so -t is not needed if you want to continue using it. " \
                         "This setting can be changed anytime with `bundle config gem.test`."
       end
+
+      if options[:ci] == Bundler.settings["gem.ci"]
+        Bundler.ui.info "Bundler is configured to generate CI files for #{Bundler.settings["gem.ci"]}, "\
+                        "so --ci is not needed if you want to continue using it. " \
+                        "This setting can be changed anytime with `bundle config gem.ci`."
+      end
     rescue Errno::EEXIST => e
       raise GenericSystemCallError.new(e, "There was a conflict while creating the new gem.")
     end
@@ -231,8 +237,9 @@ module Bundler
 
       if test_framework.to_s.empty?
         Bundler.ui.confirm "Do you want to generate tests with your gem?"
-        Bundler.ui.info test_framework_hint
-        result = Bundler.ui.ask "Type 'rspec', 'minitest' or 'test-unit' to generate those test files now. " \
+        Bundler.ui.info hint_text("test")
+
+        result = Bundler.ui.ask "Enter a framework name to generate those test files now. " \
                                 "rspec/minitest/test-unit/(none):"
         if result =~ /rspec|minitest|test-unit/
           test_framework = result
@@ -248,30 +255,31 @@ module Bundler
       test_framework
     end
 
-    def test_framework_hint
-      if Bundler.settings["gem.test"] == false
+    def hint_text(setting)
+      if Bundler.settings["gem.#{setting}"] == false
         "Your choice will only be applied to this gem."
       else
         "Future `bundle gem` calls will use your choice. " \
-        "This setting can be changed anytime with `bundle config gem.test`."
+        "This setting can be changed anytime with `bundle config gem.#{setting}`."
       end
     end
 
     def ask_and_set_ci
       ci_template = options[:ci] || Bundler.settings["gem.ci"]
 
-      if ci_template.nil?
+      if ci_template.to_s.empty?
         Bundler.ui.confirm "Do you want to set up automated testing for your gem? " \
           "Continuous integration services make it easy to see if pull requests have passing tests " \
-          "before you merge them. Bundler supports these services:" \
+          "before you merge them. Bundler supports these services:\n" \
           "* CircleCI:       https://circleci.com/\n" \
           "* GitHub Actions: https://github.com/features/actions\n" \
           "* GitLab CI:      https://docs.gitlab.com/ee/ci/\n" \
           "* Travis CI:      https://travis-ci.org/\n" \
           "\n"
+        Bundler.ui.info hint_text("ci")
 
-        result = Bundler.ui.ask "Enter a service name to generate a CI configuration now and " \
-          "in the future. github/travis/gitlab/circle/(none):"
+        result = Bundler.ui.ask "Enter a service name to generate a CI configuration now. " \
+                                "github/travis/gitlab/circle/(none):"
         if result =~ /github|travis|gitlab|circle/
           ci_template = result
         else
