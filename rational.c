@@ -771,8 +771,8 @@ rb_rational_plus(VALUE self, VALUE other)
  *    Rational(9, 8)  - 4                #=> (-23/8)
  *    Rational(20, 9) - 9.8              #=> -7.577777777777778
  */
-static VALUE
-nurat_sub(VALUE self, VALUE other)
+VALUE
+rb_rational_minus(VALUE self, VALUE other)
 {
     if (RB_INTEGER_TYPE_P(other)) {
 	{
@@ -2731,7 +2731,7 @@ Init_Rational(void)
 
     rb_define_method(rb_cRational, "-@", rb_rational_uminus, 0);
     rb_define_method(rb_cRational, "+", rb_rational_plus, 1);
-    rb_define_method(rb_cRational, "-", nurat_sub, 1);
+    rb_define_method(rb_cRational, "-", rb_rational_minus, 1);
     rb_define_method(rb_cRational, "*", rb_rational_mul, 1);
     rb_define_method(rb_cRational, "/", nurat_div, 1);
     rb_define_method(rb_cRational, "quo", nurat_div, 1);
