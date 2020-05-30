@@ -165,8 +165,8 @@ module Bundler
         spec_install.state = :installed
         spec_install.post_install_message = message unless message.nil?
       else
-        spec_install.state = :failed
         spec_install.error = "#{message}\n\n#{require_tree_for_spec(spec_install.spec)}"
+        spec_install.state = :failed
       end
       Plugin.hook(Plugin::Events::GEM_AFTER_INSTALL, spec_install)
       spec_install
