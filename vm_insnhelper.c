@@ -3517,11 +3517,15 @@ vm_proc_to_block_handler(VALUE procval)
 static VALUE
 vm_invoke_proc_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
                      struct rb_calling_info *calling, const struct rb_callinfo *ci,
-                     MAYBE_UNUSED(bool is_lambda), VALUE block_handler)
+                     bool is_lambda, VALUE block_handler)
 {
-    return vm_invoke_block(ec, reg_cfp, calling, ci,
-        block_proc_is_lambda(VM_BH_TO_PROC(block_handler)),
-        vm_proc_to_block_handler(VM_BH_TO_PROC(block_handler)));
+    while (vm_block_handler_type(block_handler) == block_handler_type_proc) {
+        VALUE proc = VM_BH_TO_PROC(block_handler);
+        is_lambda = block_proc_is_lambda(proc);
+        block_handler = vm_proc_to_block_handler(proc);
+    }
+
+    return vm_invoke_block(ec, reg_cfp, calling, ci, is_lambda, block_handler);
 }
 
 static inline VALUE
