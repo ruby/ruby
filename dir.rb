@@ -12,12 +12,12 @@ class Dir
   # directory is closed at the end of the block, and Dir::open returns
   # the value of the block.
   def self.open(name, encoding: nil, &block)
-    dir = __builtin.dir_s_open(name, encoding)
+    dir = Primitive.dir_s_open(name, encoding)
     if block
       begin
         yield dir
       ensure
-        __builtin.dir_s_close(dir)
+        Primitive.dir_s_close(dir)
       end
     else
       dir
@@ -32,7 +32,7 @@ class Dir
   # The optional <i>encoding</i> keyword argument specifies the encoding of the directory.
   # If not specified, the filesystem encoding is used.
   def initialize(name, encoding: nil)
-    __builtin.dir_initialize(name, encoding)
+    Primitive.dir_initialize(name, encoding)
   end
 
   #    Dir[ string [, string ...] [, base: path] [, sort: true] ] -> array
@@ -40,7 +40,7 @@ class Dir
   # Equivalent to calling
   # <code>Dir.glob([</code><i>string,...</i><code>], 0)</code>.
   def self.[](*args, base: nil, sort: true)
-    __builtin.dir_s_aref(args, base, sort)
+    Primitive.dir_s_aref(args, base, sort)
   end
 
   #    Dir.glob( pattern, [flags], [base: path] [, sort: true] )                       -> array
@@ -133,6 +133,6 @@ class Dir
   #    librbfiles = File.join("**", "lib", "*.rb")
   #    Dir.glob(librbfiles)                #=> ["lib/song.rb"]
   def self.glob(pattern, _flags = 0, flags: _flags, base: nil, sort: true)
-    __builtin.dir_s_glob(pattern, flags, base, sort)
+    Primitive.dir_s_glob(pattern, flags, base, sort)
   end
 end
