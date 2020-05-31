@@ -7045,7 +7045,8 @@ iseq_builtin_function_name(const enum node_type type, const NODE *recv, ID mid)
     static const char prefix[] = "__builtin_";
     const size_t prefix_len = sizeof(prefix) - 1;
 
-    if (type == NODE_CALL) {
+    switch (type) {
+      case NODE_CALL:
         if (recv) {
             switch (nd_type(recv)) {
               case NODE_VCALL:
@@ -7053,14 +7054,22 @@ iseq_builtin_function_name(const enum node_type type, const NODE *recv, ID mid)
                     return name;
                 }
                 break;
+              case NODE_CONST:
+                if (recv->nd_vid == rb_intern("Primitive")) {
+                    return name;
+                }
+                break;
               default: break;
             }
         }
-    }
-    else if (type == NODE_VCALL || type == NODE_FCALL) {
+        break;
+      case NODE_VCALL:
+      case NODE_FCALL:
         if (UNLIKELY(strncmp(prefix, name, prefix_len) == 0)) {
             return &name[prefix_len];
         }
+        break;
+      default: break;
     }
     return NULL;
 }

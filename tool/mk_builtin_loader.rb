@@ -113,6 +113,11 @@ def collect_builtin base, tree, name, bs, inlines, params = nil
       if recv
         func_name = nil
         case recv.first
+        when :var_ref
+          _, recv = recv
+          if recv.first == :@const and recv[1] == "Primitive"
+            func_name = mid.to_s
+          end
         when :vcall
           _, recv = recv
           if recv.first == :@ident and recv[1] == "__builtin"
