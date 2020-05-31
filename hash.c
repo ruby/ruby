@@ -2506,7 +2506,7 @@ rb_hash_delete(VALUE hash, VALUE key)
 /*
  *  call-seq:
  *    hash.delete(key) -> value or nil
- *    hash.delete(key) { |key| ... } -<value
+ *    hash.delete(key) { |key| ... } -> value
  *
  *  Deletes the entry for the given +key+
  *  and returns its associated value.
