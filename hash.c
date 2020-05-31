@@ -4128,12 +4128,12 @@ hash_equal(VALUE hash1, VALUE hash2, int eql)
 
 /*
  *  call-seq:
- *    hash == other_hash -> true or false
+ *    hash == object -> true or false
  *
  *  Returns +true+ if all of the following are true:
- *  * +other_hash+ is a \Hash object.
- *  * +hash+ and +other_hash+ have the same keys (regardless of order).
- *  * For each key +key+, <tt>hash[key] == other_hash[key]</tt>.
+ *  * +object+ is a \Hash object.
+ *  * +hash+ and +object+ have the same keys (regardless of order).
+ *  * For each key +key+, <tt>hash[key] == object[key]</tt>.
  *
  *  Otherwise, returns +false+.
  *
@@ -4167,12 +4167,12 @@ rb_hash_equal(VALUE hash1, VALUE hash2)
 
 /*
  *  call-seq:
- *    hash.eql? other_hash -> true or false
+ *    hash.eql? object -> true or false
  *
  *  Returns +true+ if all of the following are true:
- *  * +other_hash+ is a \Hash object.
- *  * +hash+ and +other_hash+ have the same keys (regardless of order).
- *  * For each key +key+, <tt>h[key] eql? other_hash[key]</tt>.
+ *  * +object+ is a \Hash object.
+ *  * +hash+ and +object+ have the same keys (regardless of order).
+ *  * For each key +key+, <tt>h[key] eql? object[key]</tt>.
  *
  *  Otherwise, returns +false+.
  *
@@ -4220,11 +4220,11 @@ hash_i(VALUE key, VALUE val, VALUE arg)
  *  call-seq:
  *    hash.hash -> an_integer
  *
- *  Returns the \Integer hash value for the hash:
+ *  Returns the \Integer hash-code for the hash:
  *    h1 = {foo: 0, bar: 1, baz: 2}
  *    h1.hash.class # => Integer
  *
- *  Two \Hash objects have the same hash value if their content is the same
+ *  Two \Hash objects have the same hash-code if their content is the same
  *  (regardless or order):
  *    h1 = {foo: 0, bar: 1, baz: 2}
  *    h2 = {baz: 2, bar: 1, foo: 0}
@@ -4256,7 +4256,7 @@ rb_hash_invert_i(VALUE key, VALUE value, VALUE hash)
  *  call-seq:
  *    hash.invert -> new_hash
  *
- *  Returns a new \Hash object with the each key-value pair reversed:
+ *  Returns a new \Hash object with the each key-value pair inverted:
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h1 = h.invert
  *    h1 # => {0=>:foo, 1=>:bar, 2=>:baz}
@@ -4339,6 +4339,8 @@ rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
  *    hash.merge! -> self
  *    hash.merge!(*other_hashes) -> self
  *    hash.merge!(*other_hashes) { |key, old_value, new_value| ... } -> self
+ *
+ *  Merges each of +other_hashes+ into +self+; returns +self+.
  *
  *  Each argument in +other_hashes+ must be
  *  a {Hash-convertible object}[doc/implicit_conversion_rdoc.html#label-Hash-Convertible+Objects].
@@ -4482,9 +4484,12 @@ rb_hash_update_by(VALUE hash1, VALUE hash2, rb_hash_update_func *func)
 
 /*
  *  call-seq:
- *    hash.merge -> new_copy_of_hash
+ *    hash.merge -> copy_of_self
  *    hash.merge(*other_hashes) -> new_hash
  *    hash.merge(*other_hashes) { |key, old_value, new_value| ... } -> new_hash
+ *
+ *  Returns the new \Hash formed by merging each of +other_hashes+
+ *  into a copy of +self+.
  *
  *  Each argument in +other_hashes+ must be
  *  a {Hash-convertible object}[doc/implicit_conversion_rdoc.html#label-Hash-Convertible+Objects].
@@ -4492,8 +4497,8 @@ rb_hash_update_by(VALUE hash1, VALUE hash2, rb_hash_update_func *func)
  *  ---
  *
  *  With arguments and no block:
- *  * Returns a new \Hash object that is the merge of +self+ and each given hash.
- *  * The given hashes are merged left to right.
+ *  * Returns the new \Hash object formed by merging each successive
+ *    \Hash in +other_hashes+ into +self+.
  *  * Each new-key entry is added at the end.
  *  * Each duplicate-key entry's value overwrites the previous value.
  *
