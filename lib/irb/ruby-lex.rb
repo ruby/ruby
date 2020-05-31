@@ -30,6 +30,18 @@ class RubyLex
     @prompt = nil
   end
 
+  def self.compile_with_errors_suppressed(code)
+    begin
+      result = yield code
+    rescue ArgumentError => e
+      if e.message.match?(/unknown encoding name/) && code.match?(/\A(?<shebang>#.*\n)?#\s*coding\s*:.*(?<nl>\n)?/)
+        code = code.gsub(/\A(?<shebang>#.*\n)?#\s*coding\s*:.*(?<nl>\n)?/, "\\k<shebang>#\\k<nl>")
+        retry
+      end
+    end
+    result
+  end
+
   # io functions
   def set_input(io, p = nil, &block)
     @io = io
@@ -76,7 +88,10 @@ class RubyLex
 
   def ripper_lex_without_warning(code)
     verbose, $VERBOSE = $VERBOSE, nil
-    tokens = Ripper.lex(code)
+    tokens = nil
+    self.class.compile_with_errors_suppressed(code) do |inner_code|
+      tokens = Ripper.lex(inner_code)
+    end
     $VERBOSE = verbose
     tokens
   end
@@ -210,7 +225,9 @@ class RubyLex
       when 'jruby'
         JRuby.compile_ir(code)
       else
-        RubyVM::InstructionSequence.compile(code)
+        self.class.compile_with_errors_suppressed(code) do |inner_code|
+          RubyVM::InstructionSequence.compile(inner_code)
+        end
       end
     rescue EncodingError
       # This is for a hash with invalid encoding symbol, {"\xAE": 1}
