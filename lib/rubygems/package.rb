@@ -42,6 +42,7 @@
 # #files are the files in the .gem tar file, not the Ruby files in the gem
 # #extract_files and #contents automatically call #verify
 
+require "rubygems"
 require 'rubygems/security'
 require 'rubygems/specification'
 require 'rubygems/user_interaction'

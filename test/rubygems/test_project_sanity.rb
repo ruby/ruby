@@ -12,4 +12,10 @@ class TestProjectSanity < Minitest::Test
     assert status.success?, "Expected Manifest.txt to be up to date, but it's not. Run `rake update_manifest` to sync it."
   end
 
+  def test_require_rubygems_package
+    _, status = Open3.capture2e("ruby -v --disable-gems -I 'lib' -e 'require \"rubygems/package\"'")
+
+    assert status.success?
+  end
+
 end
