@@ -86,4 +86,27 @@ describe 'Thread::Backtrace::Location#path' do
       end
     end
   end
+
+  context "canonicalization" do
+    platform_is_not :windows do
+      before :each do
+        @file = fixture(__FILE__, "path.rb")
+        @symlink = tmp("symlink.rb")
+        File.symlink(@file, @symlink)
+        ScratchPad.record []
+      end
+
+      after :each do
+        rm_r @symlink
+      end
+
+      it "returns a non-canonical path with symlinks, the same as __FILE__" do
+        realpath = File.realpath(@symlink)
+        realpath.should_not == @symlink
+
+        load @symlink
+        ScratchPad.recorded.should == [@symlink, @symlink]
+      end
+    end
+  end
 end

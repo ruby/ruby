@@ -293,4 +293,34 @@ describe "C-API Util function" do
     end
   end
 
+  # ruby/util.h redefines strtod as a macro calling ruby_strtod
+
+  describe "strtod" do
+    it "converts a string to a double and returns the remaining string" do
+      d, s = @o.strtod("14.25test")
+      d.should == 14.25
+      s.should == "test"
+    end
+
+    it "returns 0 and the full string if there's no numerical value" do
+      d, s = @o.strtod("test")
+      d.should == 0
+      s.should == "test"
+    end
+  end
+
+  describe "ruby_strtod" do
+    it "converts a string to a double and returns the remaining string" do
+      d, s = @o.ruby_strtod("14.25test")
+      d.should == 14.25
+      s.should == "test"
+    end
+
+    it "returns 0 and the full string if there's no numerical value" do
+      d, s = @o.ruby_strtod("test")
+      d.should == 0
+      s.should == "test"
+    end
+  end
+
 end

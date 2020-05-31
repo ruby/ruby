@@ -71,8 +71,11 @@ describe "Integer#>> (with n >> m)" do
     it "calls #to_int to convert the argument to an Integer" do
       obj = mock("2")
       obj.should_receive(:to_int).and_return(2)
-
       (8 >> obj).should == 2
+
+      obj = mock("to_int_bignum")
+      obj.should_receive(:to_int).and_return(bignum_value)
+      (8 >> obj).should == 0
     end
 
     it "raises a TypeError when #to_int does not return an Integer" do

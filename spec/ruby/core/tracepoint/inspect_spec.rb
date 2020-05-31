@@ -10,6 +10,7 @@ describe 'TracePoint#inspect' do
     inspect = nil
     line = nil
     TracePoint.new(:line) { |tp|
+      next unless TracePointSpec.target_thread?
       inspect ||= tp.inspect
     }.enable do
       line = __LINE__
@@ -22,6 +23,7 @@ describe 'TracePoint#inspect' do
     inspect = nil
     line = nil
     TracePoint.new(:class) { |tp|
+      next unless TracePointSpec.target_thread?
       inspect ||= tp.inspect
     }.enable do
       line = __LINE__ + 1

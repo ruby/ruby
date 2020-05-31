@@ -131,6 +131,29 @@ describe "C-API Encoding function" do
     end
   end
 
+  describe "rb_enc_precise_mbclen" do
+    it "returns the correct length for single byte characters" do
+      @s.rb_enc_precise_mbclen("hello", 7).should == 1
+      @s.rb_enc_precise_mbclen("hello", 5).should == 1
+      @s.rb_enc_precise_mbclen("hello", 1).should == 1
+      @s.rb_enc_precise_mbclen("hello", 0).should == -2
+      @s.rb_enc_precise_mbclen("hello", -1).should == -2
+      @s.rb_enc_precise_mbclen("hello", -5).should == -2
+    end
+
+    it "returns the correct length for multi-byte characters" do
+      @s.rb_enc_precise_mbclen("ésumé", 2).should == 2
+      @s.rb_enc_precise_mbclen("ésumé", 3).should == 2
+      @s.rb_enc_precise_mbclen("ésumé", 0).should == -2
+      @s.rb_enc_precise_mbclen("ésumé", 1).should == -2
+      @s.rb_enc_precise_mbclen("あ", 20).should == 3
+      @s.rb_enc_precise_mbclen("あ", 3).should == 3
+      @s.rb_enc_precise_mbclen("あ", 2).should == -2
+      @s.rb_enc_precise_mbclen("あ", 0).should == -2
+      @s.rb_enc_precise_mbclen("あ", -2).should == -2
+    end
+  end
+
   describe "rb_obj_encoding" do
     it "returns the encoding associated with an object" do
       str = "abc".encode Encoding::BINARY
@@ -170,6 +193,26 @@ describe "C-API Encoding function" do
       xEE = [0xEE].pack('C').force_encoding('utf-8')
       result = @s.rb_enc_str_new(xEE, 1, Encoding::US_ASCII)
       result.encoding.should equal(Encoding::US_ASCII)
+    end
+  end
+
+  describe "rb_enc_str_new_cstr" do
+    it "creates a new ruby string from a c string literal" do
+      result = @s.rb_enc_str_new_cstr_constant(Encoding::US_ASCII)
+      result.should  == "test string literal"
+      result.encoding.should == Encoding::US_ASCII
+    end
+
+    it "creates a new ruby string from a c string variable" do
+      result = @s.rb_enc_str_new_cstr("test string", Encoding::US_ASCII)
+      result.should == "test string"
+      result.encoding.should == Encoding::US_ASCII
+    end
+
+    it "when null encoding is given with a c string literal, it creates a new ruby string with ASCII_8BIT encoding" do
+      result = @s.rb_enc_str_new_cstr_constant(nil)
+      result.should == "test string literal"
+      result.encoding.should == Encoding::ASCII_8BIT
     end
   end
 
@@ -214,6 +257,17 @@ describe "C-API Encoding function" do
         result = @s.rb_enc_str_coderange([0xEE].pack('C').force_encoding("us-ascii"))
         result.should == :coderange_broken
       end
+    end
+  end
+
+  describe "MBCLEN_CHARFOUND_P" do
+    it "returns non-zero for valid character" do
+      @s.MBCLEN_CHARFOUND_P("a".ord).should == 1
+    end
+
+    it "returns zero for invalid characters" do
+      @s.MBCLEN_CHARFOUND_P(0).should == 0
+      @s.MBCLEN_CHARFOUND_P(-1).should == 0
     end
   end
 
@@ -495,6 +549,23 @@ describe "C-API Encoding function" do
 
     it "returns false for a non-ASCII string" do
       @s.rb_enc_str_asciionly_p("hüllo").should be_false
+    end
+  end
+
+  describe "rb_uv_to_utf8" do
+    it 'converts a Unicode codepoint to a UTF-8 C string' do
+      str = ' ' * 6
+      {
+        0  => "\x01",
+        0x7f => "\xC2\x80",
+        0x7ff => "\xE0\xA0\x80",
+        0xffff => "\xF0\x90\x80\x80",
+        0x1fffff => "\xF8\x88\x80\x80\x80",
+        0x3ffffff => "\xFC\x84\x80\x80\x80\x80",
+      }.each do |num, result|
+        len = @s.rb_uv_to_utf8(str, num + 1)
+        str[0..len-1].should == result
+      end
     end
   end
 end

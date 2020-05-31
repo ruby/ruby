@@ -382,6 +382,16 @@ describe "C-API String function" do
     end
   end
 
+  describe "rb_str_cat_cstr" do
+    it "concatenates a C string literal to a ruby string" do
+      @s.rb_str_cat_cstr_constant("Your house is on fire").should == "Your house is on fire?"
+    end
+
+    it "concatenates a variable C string to a ruby string" do
+      @s.rb_str_cat_cstr("Your house is on fire", "?").should == "Your house is on fire?"
+    end
+  end
+
   describe "rb_str_cmp" do
     it "returns 0 if two strings are identical" do
       @s.rb_str_cmp("ppp", "ppp").should == 0
@@ -451,6 +461,25 @@ describe "C-API String function" do
 
     it "converts a C string to a Fixnum strictly" do
       -> { @s.rb_cstr_to_inum("1234a", 10, true) }.should raise_error(ArgumentError)
+    end
+  end
+
+  describe "rb_fstring" do
+    it 'returns self if the String is frozen' do
+      input  = 'foo'.freeze
+      output = @s.rb_fstring(input)
+
+      output.should equal(input)
+      output.should.frozen?
+    end
+
+    it 'returns a frozen copy if the String is not frozen' do
+      input  = 'foo'
+      output = @s.rb_fstring(input)
+
+      output.should.frozen?
+      output.should_not equal(input)
+      output.should == 'foo'
     end
   end
 

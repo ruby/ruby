@@ -5,6 +5,7 @@ describe 'TracePoint#defined_class' do
   it 'returns class or module of the method being called' do
     last_class_name = nil
     TracePoint.new(:call) do |tp|
+      next unless TracePointSpec.target_thread?
       last_class_name = tp.defined_class
     end.enable do
       TracePointSpec::B.new.foo

@@ -294,6 +294,32 @@ describe "Module#autoload" do
       ScratchPad.recorded.should == [nil, nil]
       @check.call.should == ["constant", nil]
     end
+
+    it "does not raise an error if the autoload constant was not defined" do
+      module ModuleSpecs::Autoload
+        autoload :RequiredDirectlyNoConstant, fixture(__FILE__, "autoload_required_directly_no_constant.rb")
+      end
+      @path = fixture(__FILE__, "autoload_required_directly_no_constant.rb")
+      @remove << :RequiredDirectlyNoConstant
+      @check = -> {
+        [
+            defined?(ModuleSpecs::Autoload::RequiredDirectlyNoConstant),
+            ModuleSpecs::Autoload.constants(false).include?(:RequiredDirectlyNoConstant),
+            ModuleSpecs::Autoload.const_defined?(:RequiredDirectlyNoConstant),
+            ModuleSpecs::Autoload.autoload?(:RequiredDirectlyNoConstant)
+        ]
+      }
+      ScratchPad.record @check
+      @check.call.should == ["constant", true, true, @path]
+      $:.push File.dirname(@path)
+      begin
+        require "autoload_required_directly_no_constant.rb"
+      ensure
+        $:.pop
+      end
+      ScratchPad.recorded.should == [nil, true, false, nil]
+      @check.call.should == [nil, true, false, nil]
+    end
   end
 
   describe "after the autoload is triggered by require" do

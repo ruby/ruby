@@ -58,6 +58,26 @@ describe "TCPServer#accept" do
     t.join
   end
 
+  it "is automatically retried when interrupted by SIGVTALRM" do
+    t = Thread.new do
+      client = @server.accept
+      value = client.read(2)
+      client.close
+      value
+    end
+
+    Thread.pass while t.status and t.status != "sleep"
+    # Thread#backtrace uses SIGVTALRM on TruffleRuby and potentially other implementations.
+    # Sending a signal to a thread is not possible with Ruby APIs.
+    t.backtrace.join("\n").should.include?("in `accept'")
+
+    socket = TCPSocket.new('127.0.0.1', @port)
+    socket.write("OK")
+    socket.close
+
+    t.value.should == "OK"
+  end
+
   it "raises an IOError if the socket is closed" do
     @server.close
     -> { @server.accept }.should raise_error(IOError)

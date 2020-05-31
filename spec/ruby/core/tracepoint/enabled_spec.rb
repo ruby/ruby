@@ -1,4 +1,5 @@
 require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe 'TracePoint#enabled?' do
   it 'returns true when current status of the trace is enable' do

@@ -29,33 +29,35 @@ describe 'Thread::Backtrace::Location#absolute_path' do
     end
   end
 
-  platform_is_not :windows do
-    before :each do
-      @file = fixture(__FILE__, "absolute_path.rb")
-      @symlink = tmp("symlink.rb")
-      File.symlink(@file, @symlink)
-      ScratchPad.record []
-    end
+  context "canonicalization" do
+    platform_is_not :windows do
+      before :each do
+        @file = fixture(__FILE__, "absolute_path.rb")
+        @symlink = tmp("symlink.rb")
+        File.symlink(@file, @symlink)
+        ScratchPad.record []
+      end
 
-    after :each do
-      rm_r @symlink
-    end
+      after :each do
+        rm_r @symlink
+      end
 
-    it "returns a canonical path without symlinks, even when __FILE__ does not" do
-      realpath = File.realpath(@symlink)
-      realpath.should_not == @symlink
+      it "returns a canonical path without symlinks, even when __FILE__ does not" do
+        realpath = File.realpath(@symlink)
+        realpath.should_not == @symlink
 
-      load @symlink
-      ScratchPad.recorded.should == [@symlink, realpath]
-    end
+        load @symlink
+        ScratchPad.recorded.should == [@symlink, realpath]
+      end
 
-    it "returns a canonical path without symlinks, even when __FILE__ is removed" do
-      realpath = File.realpath(@symlink)
-      realpath.should_not == @symlink
+      it "returns a canonical path without symlinks, even when __FILE__ is removed" do
+        realpath = File.realpath(@symlink)
+        realpath.should_not == @symlink
 
-      ScratchPad << -> { rm_r(@symlink) }
-      load @symlink
-      ScratchPad.recorded.should == [@symlink, realpath]
+        ScratchPad << -> { rm_r(@symlink) }
+        load @symlink
+        ScratchPad.recorded.should == [@symlink, realpath]
+      end
     end
   end
 end

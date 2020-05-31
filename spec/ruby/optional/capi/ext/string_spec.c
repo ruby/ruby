@@ -49,6 +49,12 @@ VALUE string_spec_rb_str_set_len_RSTRING_LEN(VALUE self, VALUE str, VALUE len) {
   return INT2FIX(RSTRING_LEN(str));
 }
 
+VALUE rb_fstring(VALUE str); /* internal.h, used in ripper */
+
+VALUE string_spec_rb_str_fstring(VALUE self, VALUE str) {
+  return rb_fstring(str);
+}
+
 VALUE string_spec_rb_str_buf_new(VALUE self, VALUE len, VALUE str) {
   VALUE buf;
 
@@ -91,6 +97,14 @@ VALUE string_spec_rb_str_cat(VALUE self, VALUE str) {
 
 VALUE string_spec_rb_str_cat2(VALUE self, VALUE str) {
   return rb_str_cat2(str, "?");
+}
+
+VALUE string_spec_rb_str_cat_cstr(VALUE self, VALUE str, VALUE other) {
+  return rb_str_cat_cstr(str, StringValueCStr(other));
+}
+
+VALUE string_spec_rb_str_cat_cstr_constant(VALUE self, VALUE str) {
+  return rb_str_cat_cstr(str, "?");
 }
 
 VALUE string_spec_rb_str_cmp(VALUE self, VALUE str1, VALUE str2) {
@@ -452,6 +466,7 @@ void Init_string_spec(void) {
   VALUE cls = rb_define_class("CApiStringSpecs", rb_cObject);
   rb_define_method(cls, "rb_cstr2inum", string_spec_rb_cstr2inum, 2);
   rb_define_method(cls, "rb_cstr_to_inum", string_spec_rb_cstr_to_inum, 3);
+  rb_define_method(cls, "rb_fstring", string_spec_rb_str_fstring, 1);
   rb_define_method(cls, "rb_str2inum", string_spec_rb_str2inum, 2);
   rb_define_method(cls, "rb_str_append", string_spec_rb_str_append, 2);
   rb_define_method(cls, "rb_str_buf_new", string_spec_rb_str_buf_new, 2);
@@ -462,6 +477,8 @@ void Init_string_spec(void) {
   rb_define_method(cls, "rb_str_buf_cat", string_spec_rb_str_buf_cat, 1);
   rb_define_method(cls, "rb_str_cat", string_spec_rb_str_cat, 1);
   rb_define_method(cls, "rb_str_cat2", string_spec_rb_str_cat2, 1);
+  rb_define_method(cls, "rb_str_cat_cstr", string_spec_rb_str_cat_cstr, 2);
+  rb_define_method(cls, "rb_str_cat_cstr_constant", string_spec_rb_str_cat_cstr_constant, 1);
   rb_define_method(cls, "rb_str_cmp", string_spec_rb_str_cmp, 2);
   rb_define_method(cls, "rb_str_conv_enc", string_spec_rb_str_conv_enc, 3);
   rb_define_method(cls, "rb_str_conv_enc_opts", string_spec_rb_str_conv_enc_opts, 5);

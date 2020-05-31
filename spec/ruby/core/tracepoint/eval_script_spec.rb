@@ -13,6 +13,7 @@ ruby_version_is "2.6" do
       CODE
 
       TracePoint.new(:script_compiled) do |e|
+        next unless TracePointSpec.target_thread?
         ScratchPad << e.eval_script
       end.enable do
         eval script

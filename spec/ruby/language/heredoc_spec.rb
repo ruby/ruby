@@ -86,6 +86,13 @@ HERE
 
   it "selects the least-indented line and removes its indentation from all the lines" do
     require_relative 'fixtures/squiggly_heredoc'
+    SquigglyHeredocSpecs.least_indented_on_the_first_line.should == "a\n  b\n    c\n"
     SquigglyHeredocSpecs.least_indented_on_the_last_line.should == "    a\n  b\nc\n"
+  end
+
+  it "selects the least-indented line and removes its indentation from all the lines for <<~'identifier'" do
+    require_relative 'fixtures/squiggly_heredoc'
+    SquigglyHeredocSpecs.least_indented_on_the_first_line_single.should == "a\n  b\n    c\n"
+    SquigglyHeredocSpecs.least_indented_on_the_last_line_single.should == "    a\n  b\nc\n"
   end
 end

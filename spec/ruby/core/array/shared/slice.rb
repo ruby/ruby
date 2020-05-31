@@ -466,6 +466,12 @@ describe :array_slice, shared: true do
 
     obj = 8e19
     -> { array.send(@method, obj) }.should raise_error(RangeError)
+
+    # boundary value when longs are 64 bits
+    -> { array.send(@method, 2.0**63) }.should raise_error(RangeError)
+
+    # just under the boundary value when longs are 64 bits
+    array.send(@method, max_long.to_f.prev_float).should == nil
   end
 
   it "raises a RangeError when the length is out of range of Fixnum" do

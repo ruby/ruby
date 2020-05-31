@@ -60,15 +60,16 @@ describe "Net::HTTP.get" do
         Thread.current.report_on_exception = false
         Net::HTTP.get("127.0.0.1", '/', server.connect_address.ip_port)
       end
+
+      socket = server_thread.value
       Thread.pass until client_thread.stop?
 
-      [server_thread, client_thread]
+      [socket, client_thread]
     end
 
     it "propagates exceptions interrupting the thread and does not replace it with Zlib::BufError" do
       my_exception = Class.new(RuntimeError)
-      server_thread, client_thread = start_threads
-      socket = server_thread.value
+      socket, client_thread = start_threads
       begin
         client_thread.raise my_exception, "my exception"
         -> { client_thread.value }.should raise_error(my_exception)
@@ -79,8 +80,7 @@ describe "Net::HTTP.get" do
 
     ruby_version_is "2.8" do # https://bugs.ruby-lang.org/issues/13882#note-6
       it "lets the kill Thread exception goes through and does not replace it with Zlib::BufError" do
-        server_thread, client_thread = start_threads
-        socket = server_thread.value
+        socket, client_thread = start_threads
         begin
           client_thread.kill
           client_thread.value.should == nil
