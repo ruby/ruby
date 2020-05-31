@@ -239,8 +239,7 @@ module Bundler
         Bundler.ui.confirm "Do you want to generate tests with your gem?"
         Bundler.ui.info hint_text("test")
 
-        result = Bundler.ui.ask "Enter a framework name to generate those test files now. " \
-                                "rspec/minitest/test-unit/(none):"
+        result = Bundler.ui.ask "Enter a test framework. rspec/minitest/test-unit/(none):"
         if result =~ /rspec|minitest|test-unit/
           test_framework = result
         else
@@ -268,9 +267,8 @@ module Bundler
       ci_template = options[:ci] || Bundler.settings["gem.ci"]
 
       if ci_template.to_s.empty?
-        Bundler.ui.confirm "Do you want to set up automated testing for your gem? " \
-          "Continuous integration services make it easy to see if pull requests have passing tests " \
-          "before you merge them. Bundler supports these services:\n" \
+        Bundler.ui.confirm "Do you want to set up continuous integration for your gem? " \
+          "Supported services:\n" \
           "* CircleCI:       https://circleci.com/\n" \
           "* GitHub Actions: https://github.com/features/actions\n" \
           "* GitLab CI:      https://docs.gitlab.com/ee/ci/\n" \
@@ -278,8 +276,7 @@ module Bundler
           "\n"
         Bundler.ui.info hint_text("ci")
 
-        result = Bundler.ui.ask "Enter a service name to generate a CI configuration now. " \
-                                "github/travis/gitlab/circle/(none):"
+        result = Bundler.ui.ask "Enter a CI service. github/travis/gitlab/circle/(none):"
         if result =~ /github|travis|gitlab|circle/
           ci_template = result
         else

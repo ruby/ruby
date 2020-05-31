@@ -764,7 +764,7 @@ RSpec.describe "bundle gem" do
       end
 
       it "asks to setup CI" do
-        expect(out).to match("Do you want to set up automated testing for your gem?")
+        expect(out).to match("Do you want to set up continuous integration for your gem?")
       end
 
       it "hints that the choice will only be applied to the current gem" do
@@ -778,7 +778,7 @@ RSpec.describe "bundle gem" do
       end
 
       it "asks to setup CI" do
-        expect(out).to match("Do you want to set up automated testing for your gem?")
+        expect(out).to match("Do you want to set up continuous integration for your gem?")
       end
 
       it "hints that the choice will be applied to future bundle gem calls" do
