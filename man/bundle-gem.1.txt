@@ -83,7 +83,7 @@ OPTIONS
               displayed  and  the  answer  will  be  saved in Bundler's global
               config for future bundle gem use.
 
-       --ci, --test=github, --test=travis, --test=gitlab, --test=circle
+       --ci, --ci=github, --ci=travis, --ci=gitlab, --ci=circle
               Specify the continuous integration service that  Bundler  should
               use  when  generating the project. Acceptable values are github,
               travis,  gitlab  and  circle.  A  configuration  file  will   be
