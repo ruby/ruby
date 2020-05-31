@@ -1644,13 +1644,15 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *     ary[index]                -> obj     or nil
  *     ary[start, length]        -> new_ary or nil
  *     ary[range]                -> new_ary or nil
+ *     ary[arith_sequence]       -> new_ary
  *     ary.slice(index)          -> obj     or nil
  *     ary.slice(start, length)  -> new_ary or nil
  *     ary.slice(range)          -> new_ary or nil
  *
  *  Element Reference --- Returns the element at +index+, or returns a
  *  subarray starting at the +start+ index and continuing for +length+
- *  elements, or returns a subarray specified by +range+ of indices.
+ *  elements, or returns a subarray specified by +range+ of indices, or
+ *  by Enumerator::ArithmeticSequence.
  *
  *  Negative indices count backward from the end of the array (-1 is the last
  *  element).  For +start+ and +range+ cases the starting index is just before
@@ -1663,10 +1665,17 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *     a[2] +  a[0] + a[1]    #=> "cab"
  *     a[6]                   #=> nil
  *     a[1, 2]                #=> [ "b", "c" ]
+ *     a[-3, 3]               #=> [ "c", "d", "e" ]
+ *
  *     a[1..3]                #=> [ "b", "c", "d" ]
  *     a[4..7]                #=> [ "e" ]
  *     a[6..10]               #=> nil
- *     a[-3, 3]               #=> [ "c", "d", "e" ]
+ *
+ *     a[(1..4).step(2)]      #=> [ "b", "d"]
+ *     a[(2..).step(2)]       #=> [ "c", "e"]
+ *     a[(1..4) % 2]          #=> [ "b", "d"]
+ *     a[5.step(by: -1)]      #=> [ "e", "d", "c", "b", "a" ]
+ *
  *     # special cases
  *     a[5]                   #=> nil
  *     a[6, 1]                #=> nil
@@ -1696,6 +1705,76 @@ rb_ary_aref2(VALUE ary, VALUE b, VALUE e)
     return rb_ary_subseq(ary, beg, len);
 }
 
+VALUE
+rb_ary_subseq_arith(VALUE ary, VALUE seq)
+{
+    VALUE b, e, s, klass, result;
+    long beg, end, excl, step, len, source_i;
+
+    s = rb_funcall(seq, rb_intern("step"), 0, 0);
+
+    if (!RB_TYPE_P(s, T_FIXNUM) && !RB_TYPE_P(s, T_BIGNUM)) {
+        rb_raise(rb_eTypeError, "wrong sequence step type %"PRIsVALUE" (expected Integer)",
+            rb_obj_class(s));
+    }
+
+    step = NUM2LONG(s);
+
+    len = RARRAY_LEN(ary);
+
+    // FIXME: The code below duplicates rb_range_beg_len from range.c,
+    // which could've been reused, but it explicitly prohibits
+    // ArithmeticSequence. Could be unified, probably.
+
+    b = rb_funcall(seq, rb_intern("begin"), 0, 0);
+    e = rb_funcall(seq, rb_intern("end"), 0, 0);
+    excl = RTEST(rb_funcall(seq, rb_intern("exclude_end?"), 0, 0));
+
+    beg = NIL_P(b) ? (step > 0 ? 0 : -1) : NUM2LONG(b);
+    end = NIL_P(e) ? (step > 0 ? -1 : 0) : NUM2LONG(e);
+    if (NIL_P(e)) excl = 0;
+
+    if (beg < 0) {
+        beg += len;
+        if (beg < 0)
+            return Qnil;
+    }
+
+    if (end < 0)
+        end += len;
+
+    if (end >= len)
+        end = len - 1;
+
+    klass = rb_obj_class(ary);
+    result = ary_new(klass, 0);
+
+    source_i = beg;
+
+    if (step < 0) {
+        if (beg < end) {
+            return result;
+        }
+        for(; source_i >= len; source_i += step);
+        for(;source_i >= end; source_i += step) {
+            if (!excl || source_i > end) {
+                rb_ary_push(result, RARRAY_AREF(ary, source_i));
+            }
+        }
+    } else {
+        if (beg > end) {
+            return result;
+        }
+        for(; source_i <= end; source_i += step) {
+            if (!excl || source_i < end) {
+                rb_ary_push(result, RARRAY_AREF(ary, source_i));
+            }
+        }
+    }
+
+    return result;
+}
+
 MJIT_FUNC_EXPORTED VALUE
 rb_ary_aref1(VALUE ary, VALUE arg)
 {
@@ -1713,6 +1792,9 @@ rb_ary_aref1(VALUE ary, VALUE arg)
 	return Qnil;
       default:
 	return rb_ary_subseq(ary, beg, len);
+    }
+    if (rb_obj_is_kind_of(arg, rb_cArithSeq)) {
+        return rb_ary_subseq_arith(ary, arg);
     }
     return rb_ary_entry(ary, NUM2LONG(arg));
 }
