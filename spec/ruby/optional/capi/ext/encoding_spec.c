@@ -166,8 +166,13 @@ static VALUE encoding_spec_rb_enc_str_new_cstr(VALUE self, VALUE str, VALUE enc)
 }
 
 static VALUE encoding_spec_rb_enc_str_new_cstr_constant(VALUE self, VALUE enc) {
-  rb_encoding *e = NIL_P(enc) ? NULL : rb_to_encoding(enc);
-  return rb_enc_str_new_cstr("test string literal", e);
+  if (NIL_P(enc)) {
+    rb_encoding *e = NULL;
+    return rb_enc_str_new_static("test string literal", strlen("test string literal"), e);
+  } else {
+    rb_encoding *e = rb_to_encoding(enc);
+    return rb_enc_str_new_cstr("test string literal", e);
+  }
 }
 
 static VALUE encoding_spec_rb_enc_str_new(VALUE self, VALUE str, VALUE len, VALUE enc) {
