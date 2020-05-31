@@ -2708,6 +2708,7 @@ vm_call_symbol(
          * --+------+--------+------+------
          */
         int i = argc;
+        CHECK_VM_STACK_OVERFLOW(reg_cfp, 1);
         INC_SP(1);
         MEMMOVE(&TOPN(i - 1), &TOPN(i), VALUE, i);
         argc = ++calling->argc;
