@@ -49,6 +49,7 @@ class LeakChecker
     check_env
     check_argv
     check_encodings
+    check_tracepoints
     GC.start if !@leaks.empty?
     @leaks.empty?
   end
@@ -257,6 +258,14 @@ class LeakChecker
       leak "Encoding.default_external changed: #{old_external.inspect} to #{new_external.inspect}"
     end
     @encoding_info = [new_internal, new_external]
+  end
+
+  def check_tracepoints
+    ObjectSpace.each_object(TracePoint) do |tp|
+      if tp.enabled?
+        leak "TracePoint is still enabled: #{tp.inspect}"
+      end
+    end
   end
 
   def leak(message)

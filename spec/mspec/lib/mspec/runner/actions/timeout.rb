@@ -37,7 +37,7 @@ class TimeoutAction
             if elapsed > @timeout
               STDERR.puts "\n#{@current_state.description}"
               STDERR.flush
-              abort "Example took #{now - @started}s, which is longer than the timeout of #{@timeout}s"
+              abort "Example took longer than the configured timeout of #{@timeout}s"
             end
           end
         end
