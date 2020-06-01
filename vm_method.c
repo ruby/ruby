@@ -714,7 +714,9 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
 	}
     }
 
-    rb_class_modify_check(klass);
+    if (type != VM_METHOD_TYPE_REFINED) {
+       rb_class_modify_check(klass);
+    }
 
     if (FL_TEST(klass, RMODULE_IS_REFINEMENT)) {
 	VALUE refined_class = rb_refinement_module_get_refined_class(klass);
