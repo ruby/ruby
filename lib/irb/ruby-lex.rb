@@ -34,8 +34,9 @@ class RubyLex
     begin
       result = yield code
     rescue ArgumentError => e
-      if e.message.match?(/unknown encoding name/) && code.match?(/\A(?<shebang>#.*\n)?#\s*coding\s*:.*(?<nl>\n)?/)
-        code = code.gsub(/\A(?<shebang>#.*\n)?#\s*coding\s*:.*(?<nl>\n)?/, "\\k<shebang>#\\k<nl>")
+      magic_comment_regexp = /\A(?<shebang>#.*\n)?#\s*(?:encoding|coding)\s*:.*(?<nl>\n)?/
+      if e.message.match?(/unknown encoding name/) && code.match?(magic_comment_regexp)
+        code = code.gsub(magic_comment_regexp, "\\k<shebang>#\\k<nl>")
         retry
       end
     end
