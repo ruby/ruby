@@ -9365,6 +9365,10 @@ parser_yylex(struct parser_params *p)
 		if (p->lex.paren_nest == 0 && looking_at_eol_p(p)) {
 		    rb_warn0("... at EOL, should be parenthesized?");
 		}
+		else if (p->lex.lpar_beg >= 0 && p->lex.lpar_beg+1 == p->lex.paren_nest) {
+		    if (IS_lex_state_for(last_state, EXPR_LABEL))
+			return tDOT3;
+		}
 		return is_beg ? tBDOT3 : tDOT3;
 	    }
 	    pushback(p, c);
