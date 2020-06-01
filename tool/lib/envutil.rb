@@ -72,7 +72,7 @@ module EnvUtil
   end
   module_function :timeout
 
-  def terminate(pid, signal = :TERM, pgroup = nil, reprieve = 1)
+  def terminate(pid, signal = :TERM, pgroup = nil, reprieve = 3)
     reprieve = apply_timeout_scale(reprieve) if reprieve
 
     signals = Array(signal).select do |sig|
