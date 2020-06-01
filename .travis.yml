@@ -253,7 +253,6 @@ env:
 
   - &i686-linux
     name: i686-linux
-    dist: bionic
     compiler: gcc-8
     env:
       - GCC_FLAGS=-m32
@@ -267,6 +266,7 @@ env:
     #       - ubuntu-toolchain-r-test
     before_install:
       - tool/travis_retry.sh sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
+      - tool/travis_retry.sh sudo dpkg --add-architecture i386
       - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
       - >-
         tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install
@@ -275,16 +275,16 @@ env:
         g++-8-multilib
         libstdc++-8-dev:i386
         libffi-dev:i386
-        libffi6:i386
+        libffi7:i386
         libgdbm-dev:i386
-        libgdbm5:i386
+        libgdbm6:i386
         libncurses5-dev:i386
         libncurses5:i386
         libncursesw5-dev:i386
-        libreadline-dev:i386
-        libreadline7:i386
+        libreadline8-dev:i386
+        libreadline8:i386
         libssl-dev:i386
-        libssl1.0.0:i386
+        libssl1.1:i386
         linux-libc-dev:i386
         zlib1g-dev:i386
         zlib1g:i386
