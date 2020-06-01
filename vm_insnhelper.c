@@ -2682,6 +2682,17 @@ aliased_callable_method_entry(const rb_callable_method_entry_t *me)
     return cme;
 }
 
+#define VM_CI_ON_STACK(mid_, flags_, argc_, kwarg_) \
+    (struct rb_callinfo) {                          \
+        .flags = T_IMEMO |                          \
+            (imemo_callinfo << FL_USHIFT) |         \
+            VM_CALLINFO_NOT_UNDER_GC,               \
+        .mid   = mid_,                              \
+        .flag  = flags_,                            \
+        .argc  = argc_,                             \
+        .kwarg = kwarg_,                            \
+    }
+
 #define VM_CC_ON_STACK(clazz, call, aux, cme) \
     (struct rb_callcache) {                   \
         .flags = T_IMEMO |                    \
@@ -2771,14 +2782,11 @@ vm_call_symbol(
     }
 
     return vm_call_method(ec, reg_cfp, calling, &(struct rb_call_data) {
-        .ci = vm_ci_new_runtime(mid, flags, argc, vm_ci_kwarg(ci)),
-        .cc = &(struct rb_callcache) {
-            .flags = T_IMEMO | (imemo_callcache << FL_USHIFT) | VM_CALLCACHE_UNMARKABLE,
-            .klass = klass,
-            .cme_  = rb_callable_method_entry_with_refinements(klass, mid, NULL),
-            .call_ = 0,
-            .aux_.method_missing_reason = missing_reason,
-        },
+        .ci = &VM_CI_ON_STACK(mid, flags, argc, vm_ci_kwarg(ci)),
+        .cc = &VM_CC_ON_STACK(klass, vm_call_general, {
+                .method_missing_reason = missing_reason
+              },
+              rb_callable_method_entry_with_refinements(klass, mid, NULL)),
     });
 }
 
