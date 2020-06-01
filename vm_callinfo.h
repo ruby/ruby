@@ -251,6 +251,17 @@ vm_ci_markable(const struct rb_callinfo *ci)
     }
 }
 
+#define VM_CI_ON_STACK(mid_, flags_, argc_, kwarg_) \
+    (struct rb_callinfo) {                          \
+        .flags = T_IMEMO |                          \
+            (imemo_callinfo << FL_USHIFT) |         \
+            VM_CALLINFO_NOT_UNDER_GC,               \
+        .mid   = mid_,                              \
+        .flag  = flags_,                            \
+        .argc  = argc_,                             \
+        .kwarg = kwarg_,                            \
+    }
+
 typedef VALUE (*vm_call_handler)(
     struct rb_execution_context_struct *ec,
     struct rb_control_frame_struct *cfp,
@@ -290,22 +301,16 @@ vm_cc_new(VALUE klass,
     return cc;
 }
 
-static inline const struct rb_callcache *
-vm_cc_fill(struct rb_callcache *cc,
-           VALUE klass,
-           const struct rb_callable_method_entry_struct *cme,
-           vm_call_handler call)
-{
-    struct rb_callcache cc_body = {
-        .flags = T_IMEMO | (imemo_callcache << FL_USHIFT) | VM_CALLCACHE_UNMARKABLE,
-        .klass = klass,
-        .cme_ = cme,
-        .call_ = call,
-        .aux_.v = 0,
-    };
-    MEMCPY(cc, &cc_body, struct rb_callcache, 1);
-    return cc;
-}
+#define VM_CC_ON_STACK(clazz, call, aux, cme) \
+    (struct rb_callcache) {                   \
+        .flags = T_IMEMO |                    \
+            (imemo_callcache << FL_USHIFT) |  \
+            VM_CALLCACHE_UNMARKABLE,          \
+        .klass = clazz,                       \
+        .cme_  = cme,                         \
+        .call_ = call,                        \
+        .aux_  = aux,                         \
+    }
 
 static inline bool
 vm_cc_class_check(const struct rb_callcache *cc, VALUE klass)
