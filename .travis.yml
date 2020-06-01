@@ -281,7 +281,7 @@ env:
         libncurses5-dev:i386
         libncurses5:i386
         libncursesw5-dev:i386
-        libreadline8-dev:i386
+        libreadline-dev:i386
         libreadline8:i386
         libssl-dev:i386
         libssl1.1:i386
