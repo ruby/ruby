@@ -2405,6 +2405,39 @@ class TestRefinement < Test::Unit::TestCase
     end
   end
 
+  def test_refine_frozen_class
+    singleton_class.instance_variable_set(:@x, self)
+    class << self
+      c = Class.new do
+        def foo
+          :cfoo
+        end
+      end
+      foo = Module.new do
+        refine c do
+          def foo
+            :rfoo
+          end
+        end
+      end
+      using foo
+      @x.assert_equal(:rfoo, c.new.foo)
+      c.freeze
+      foo.module_eval do
+        refine c do
+          def foo
+            :rfoo2
+          end
+          def bar
+            :rbar
+          end
+        end
+      end
+      @x.assert_equal(:rfoo2, c.new.foo)
+      @x.assert_equal(:rbar, c.new.bar, '[ruby-core:71391] [Bug #11669]')
+    end
+  end
+
   private
 
   def eval_using(mod, s)
