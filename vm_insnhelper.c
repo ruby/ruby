@@ -2884,20 +2884,12 @@ vm_call_method_missing_body(rb_execution_context_t *ec, rb_control_frame_t *reg_
     RB_DEBUG_COUNTER_INC(ccf_method_missing);
 
     VALUE *argv = STACK_ADDR_FROM_TOP(calling->argc);
-    struct rb_call_data cd;
     unsigned int argc;
 
     CALLER_SETUP_ARG(reg_cfp, calling, orig_ci);
     argc = calling->argc + 1;
 
     unsigned int flag = VM_CALL_FCALL | VM_CALL_OPT_SEND | (calling->kw_splat ? VM_CALL_KW_SPLAT : 0);
-    cd.ci = vm_ci_new_runtime(idMethodMissing, flag, argc, vm_ci_kwarg(orig_ci));
-    struct rb_callcache cc_body;
-    cd.cc = vm_cc_fill(&cc_body,
-                       Qundef,
-                       rb_callable_method_entry_without_refinements(CLASS_OF(calling->recv), idMethodMissing, NULL),
-                       vm_call_general);
-
     calling->argc = argc;
 
     /* shift arguments: m(a, b, c) #=> method_missing(:m, a, b, c) */
@@ -2910,7 +2902,11 @@ vm_call_method_missing_body(rb_execution_context_t *ec, rb_control_frame_t *reg_
     INC_SP(1);
 
     ec->method_missing_reason = reason;
-    return vm_call_method(ec, reg_cfp, calling, &cd);
+    return vm_call_method(ec, reg_cfp, calling, &(struct rb_call_data) {
+        .ci = &VM_CI_ON_STACK(idMethodMissing, flag, argc, vm_ci_kwarg(orig_ci)),
+        .cc = &VM_CC_ON_STACK(Qundef, vm_call_general, { 0 },
+            rb_callable_method_entry_without_refinements(CLASS_OF(calling->recv), idMethodMissing, NULL)),
+    });
 }
 
 static VALUE
