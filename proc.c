@@ -1255,6 +1255,66 @@ rb_proc_get_iseq(VALUE self, int *is_proc)
 }
 
 static VALUE
+proc_eq(VALUE self, VALUE other)
+{
+    const rb_proc_t *self_proc, *other_proc;
+    const struct rb_block *self_block, *other_block;
+    const struct rb_captured_block *self_cblock, *other_cblock;
+
+    if (rb_obj_class(self) !=  rb_obj_class(other)) {
+        return Qfalse;
+    }
+
+    GetProcPtr(self, self_proc);
+    GetProcPtr(other, other_proc);
+
+    if (self_proc->is_from_method != other_proc->is_from_method ||
+            self_proc->is_lambda != other_proc->is_lambda) {
+        return Qfalse;
+    }
+
+    self_block = &self_proc->block;
+    other_block = &other_proc->block;
+
+    if (vm_block_type(self_block) != vm_block_type(other_block)) {
+        return Qfalse;
+    }
+
+    switch (vm_block_type(self_block)) {
+      case block_type_iseq:
+        if (self_block->as.captured.ep != \
+                other_block->as.captured.ep ||
+                self_block->as.captured.code.iseq != \
+                other_block->as.captured.code.iseq) {
+            return Qfalse;
+                
+        }
+        break;
+      case block_type_ifunc:
+        if (self_block->as.captured.ep != \
+                other_block->as.captured.ep ||
+                self_block->as.captured.code.ifunc != \
+                other_block->as.captured.code.ifunc) {
+            return Qfalse;
+                
+        }
+        break;
+      case block_type_proc:
+        if (self_block->as.proc != other_block->as.proc) {
+            return Qfalse;
+        }
+        break;
+      case block_type_symbol:
+        if (self_block->as.symbol != other_block->as.symbol) {
+            return Qfalse;
+        }
+        break;
+    }
+
+    return Qtrue;
+}
+
+static VALUE
 iseq_location(const rb_iseq_t *iseq)
 {
     VALUE loc[2];
@@ -3970,6 +4030,8 @@ Init_Proc(void)
     rb_define_method(rb_cProc, "curry", proc_curry, -1);
     rb_define_method(rb_cProc, "<<", proc_compose_to_left, 1);
     rb_define_method(rb_cProc, ">>", proc_compose_to_right, 1);
+    rb_define_method(rb_cProc, "==", proc_eq, 1);
+    rb_define_method(rb_cProc, "eql?", proc_eq, 1);
     rb_define_method(rb_cProc, "source_location", rb_proc_location, 0);
     rb_define_method(rb_cProc, "parameters", rb_proc_parameters, 0);
     rb_define_method(rb_cProc, "ruby2_keywords", proc_ruby2_keywords, 0);

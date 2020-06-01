@@ -137,6 +137,14 @@ class TestProc < Test::Unit::TestCase
     lambda { x }
   end
 
+  def m_nest0(&block)
+    block
+  end
+
+  def m_nest(&block)
+    [m_nest0(&block), m_nest0(&block)]
+  end
+
   def test_eq
     a = m(1)
     b = m(2)
@@ -148,6 +156,8 @@ class TestProc < Test::Unit::TestCase
     a = lambda {|x| lambda {} }.call(1)
     b = lambda {}
     assert_not_equal(a, b, "[ruby-dev:22601]")
+
+    assert_equal(*m_nest{}, "[ruby-core:84583] Feature #14627")
   end
 
   def test_block_par
