@@ -1784,8 +1784,6 @@ opt_equality(const rb_iseq_t *cd_owner, VALUE recv, VALUE obj, CALL_DATA cd)
 #undef EQ_UNREDEFINED_P
 
 #ifndef MJIT_HEADER
-
-#define vm_ci_new_id(mid) vm_ci_new_runtime(mid, 0, 0, NULL)
 #define VM_CI_NEW_ID(mid) \
     ((const struct rb_callinfo *)\
      ((((VALUE)(mid)) << CI_EMBED_ID_SHFT) | RUBY_FIXNUM_FLAG))
@@ -1802,14 +1800,20 @@ rb_equal_opt(VALUE obj1, VALUE obj2)
 
     return opt_equality(NULL, obj1, obj2, &cd);
 }
-#endif
 
 VALUE
 rb_eql_opt(VALUE obj1, VALUE obj2)
 {
-    struct rb_call_data cd = { .ci = vm_ci_new_id(idEqlP), .cc = vm_cc_empty() };
+    STATIC_ASSERT(idEqlP_is_embeddable, VM_CI_EMBEDDABLE_P(idEqlP, 0, 1, 0));
+
+    static struct rb_call_data cd = {
+        .ci = VM_CI_NEW_ID(idEqlP),
+        .cc = &vm_empty_cc,
+    };
+
     return opt_equality(NULL, obj1, obj2, &cd);
 }
+#endif
 
 extern VALUE rb_vm_call0(rb_execution_context_t *ec, VALUE, ID, int, const VALUE*, const rb_callable_method_entry_t *, int kw_splat);
 
