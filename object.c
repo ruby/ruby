@@ -2392,7 +2392,7 @@ rb_mod_attr_reader(int argc, VALUE *argv, VALUE klass)
  * \todo can be static?
  *++
  */
-VALUE
+static VALUE
 rb_mod_attr(int argc, VALUE *argv, VALUE klass)
 {
     if (argc == 2 && (argv[1] == Qtrue || argv[1] == Qfalse)) {
