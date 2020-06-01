@@ -3042,12 +3042,10 @@ vm_call_refined(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_c
     const rb_callable_method_entry_t *cme = search_refined_method(ec, cfp, cd);
 
     if (cme != NULL) {
-        struct rb_callcache cc_body;
-        struct rb_call_data cd_body = {
+        return vm_call_method(ec, cfp, calling, &(struct rb_call_data) {
             .ci = cd->ci,
-            .cc = vm_cc_fill(&cc_body, Qundef, cme, 0),
-        };
-        return vm_call_method(ec, cfp, calling, &cd_body);
+            .cc = &VM_CC_ON_STACK(Qundef, vm_call_general, { 0 }, cme),
+        });
     }
     else {
         return vm_call_method_nome(ec, cfp, calling, cd);
