@@ -678,7 +678,7 @@ rb_obj_init_copy(VALUE obj, VALUE orig)
  * \param[in] orig    the object to be dup from.
  *++
  **/
-VALUE
+static VALUE
 rb_obj_init_dup_clone(VALUE obj, VALUE orig)
 {
     rb_funcall(obj, id_init_copy, 1, orig);
