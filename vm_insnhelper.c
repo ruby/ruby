@@ -2682,28 +2682,6 @@ aliased_callable_method_entry(const rb_callable_method_entry_t *me)
     return cme;
 }
 
-#define VM_CI_ON_STACK(mid_, flags_, argc_, kwarg_) \
-    (struct rb_callinfo) {                          \
-        .flags = T_IMEMO |                          \
-            (imemo_callinfo << FL_USHIFT) |         \
-            VM_CALLINFO_NOT_UNDER_GC,               \
-        .mid   = mid_,                              \
-        .flag  = flags_,                            \
-        .argc  = argc_,                             \
-        .kwarg = kwarg_,                            \
-    }
-
-#define VM_CC_ON_STACK(clazz, call, aux, cme) \
-    (struct rb_callcache) {                   \
-        .flags = T_IMEMO |                    \
-            (imemo_callcache << FL_USHIFT) |  \
-            VM_CALLCACHE_UNMARKABLE,          \
-        .klass = clazz,                       \
-        .cme_  = cme,                         \
-        .call_ = call,                        \
-        .aux_  = aux,                         \
-    }
-
 static VALUE
 vm_call_alias(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, struct rb_call_data *cd)
 {

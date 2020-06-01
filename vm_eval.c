@@ -45,12 +45,20 @@ static VALUE vm_call0_body(rb_execution_context_t* ec, struct rb_calling_info *c
 MJIT_FUNC_EXPORTED VALUE
 rb_vm_call0(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE *argv, const rb_callable_method_entry_t *me, int kw_splat)
 {
-    struct rb_calling_info calling = { Qundef, recv, argc, kw_splat, };
-    const struct rb_callinfo *ci = vm_ci_new_runtime(id, kw_splat ? VM_CALL_KW_SPLAT : 0, argc, NULL);
-    struct rb_callcache cc_body;
-    const struct rb_callcache *cc = vm_cc_fill(&cc_body, 0, me, vm_call_general);
-    struct rb_call_data cd = { ci, cc, };
-    return vm_call0_body(ec, &calling, &cd, argv);
+    return vm_call0_body(
+        ec,
+        &(struct rb_calling_info) {
+            .block_handler = VM_BLOCK_HANDLER_NONE,
+            .recv = recv,
+            .argc = argc,
+            .kw_splat = kw_splat,
+        },
+        &(struct rb_call_data) {
+            .ci = &VM_CI_ON_STACK(id, kw_splat ? VM_CALL_KW_SPLAT : 0, argc, NULL),
+            .cc = &VM_CC_ON_STACK(Qfalse, vm_call_general, { 0 }, me),
+        },
+        argv
+    );
 }
 
 static VALUE
