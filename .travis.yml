@@ -253,7 +253,8 @@ env:
 
   - &i686-linux
     name: i686-linux
-    compiler: gcc-9
+    dist: bionic
+    compiler: gcc-8
     env:
       - GCC_FLAGS=-m32
       - CXX='g++-8 -m32'
@@ -269,19 +270,19 @@ env:
       - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
       - >-
         tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install
-        gcc-9-multilib
+        gcc-8-multilib
         g++-8
         g++-8-multilib
         libstdc++-8-dev:i386
         libffi-dev:i386
         libffi6:i386
         libgdbm-dev:i386
-        libgdbm3:i386
+        libgdbm5:i386
         libncurses5-dev:i386
         libncurses5:i386
         libncursesw5-dev:i386
-        libreadline6-dev:i386
-        libreadline6:i386
+        libreadline-dev:i386
+        libreadline7:i386
         libssl-dev:i386
         libssl1.0.0:i386
         linux-libc-dev:i386
