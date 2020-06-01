@@ -1143,7 +1143,7 @@ static int looking_at_eol_p(struct parser_params *p);
 %type <id>   cname fname op f_rest_arg f_block_arg opt_f_block_arg f_norm_arg f_bad_arg
 %type <id>   f_kwrest f_label f_arg_asgn call_op call_op2 reswords relop dot_or_colon
 %type <id>   p_kwrest p_kwnorest p_any_kwrest p_kw_label
-%type <id>   f_no_kwarg f_any_kwrest args_forward
+%type <id>   f_no_kwarg f_any_kwrest args_forward excessed_comma
 %token END_OF_INPUT 0	"end-of-input"
 %token <id> '.'
 /* escaped chars, should be ignored otherwise */
@@ -3474,6 +3474,16 @@ opt_block_args_tail : ',' block_args_tail
 		    }
 		;
 
+excessed_comma	: ','
+		    {
+			/* magic number for rest_id in iseq_set_arguments() */
+		    /*%%%*/
+			$$ = NODE_SPECIAL_EXCESSIVE_COMMA;
+		    /*% %*/
+		    /*% ripper: excessed_comma! %*/
+		    }
+		;
+
 block_param	: f_arg ',' f_block_optarg ',' f_rest_arg opt_block_args_tail
 		    {
 			$$ = new_args(p, $1, $3, $5, Qnone, $6, &@$);
@@ -3494,13 +3504,10 @@ block_param	: f_arg ',' f_block_optarg ',' f_rest_arg opt_block_args_tail
 		    {
 			$$ = new_args(p, $1, Qnone, $3, Qnone, $4, &@$);
 		    }
-		| f_arg ','
+		| f_arg excessed_comma
 		    {
-		    /*%%%*/
-			/* magic number for rest_id in iseq_set_arguments() */
-			$$ = new_args(p, $1, Qnone, NODE_SPECIAL_EXCESSIVE_COMMA, Qnone, new_args_tail(p, Qnone, Qnone, Qnone, &@1), &@$);
-		    /*% %*/
-		    /*% ripper: new_args(p, $1, Qnone, excessed_comma!, Qnone, new_args_tail(p, Qnone, Qnone, Qnone, NULL), NULL) %*/
+			$$ = new_args_tail(p, Qnone, Qnone, Qnone, &@2);
+			$$ = new_args(p, $1, Qnone, $2, Qnone, $$, &@$);
 		    }
 		| f_arg ',' f_rest_arg ',' f_arg opt_block_args_tail
 		    {
