@@ -960,6 +960,11 @@ class CSV
     #   open( filename, mode = "rb", **options )
     #   open( filename, **options )
     #
+    # possible options elements:
+    #   hash form:
+    #     :undef => :replace # replace undefined conversion
+    #     :replace => string # replacement string ("?" or "\uFFFD" if not specified)
+    #
     # This method opens an IO object, and wraps that with CSV. This is intended
     # as the primary interface for writing a CSV file.
     #
@@ -1021,6 +1026,8 @@ class CSV
       # wrap a File opened with the remaining +args+ with no newline
       # decorator
       file_opts = {universal_newline: false}.merge(options)
+      options.delete(:undef)
+      options.delete(:replace)
 
       begin
         f = File.open(filename, mode, **file_opts)

@@ -125,6 +125,28 @@ class TestCSVInterfaceRead < Test::Unit::TestCase
     end
   end
 
+  def test_open_with_undef_replace
+    # U+00B7 Middle Dot
+    CSV.open(@input.path, "w", encoding: Encoding::CP932, undef: :replace) do |rows|
+      rows << ["\u00B7"]
+    end
+    CSV.open(@input.path, encoding: Encoding::CP932) do |csv|
+      assert_equal([["?"]],
+                   csv.to_a)
+    end
+  end
+
+  def test_open_with_undef_replace_and_replace_string
+    # U+00B7 Middle Dot
+    CSV.open(@input.path, "w", encoding: Encoding::CP932, undef: :replace, replace: "X") do |rows|
+      rows << ["\u00B7"]
+    end
+    CSV.open(@input.path, encoding: Encoding::CP932) do |csv|
+      assert_equal([["X"]],
+                   csv.to_a)
+    end
+  end
+
   def test_parse
     assert_equal(@rows,
                  CSV.parse(@data, col_sep: "\t", row_sep: "\r\n"))
