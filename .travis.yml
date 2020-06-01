@@ -21,7 +21,7 @@ language: c
 
 os: linux
 
-dist: xenial
+dist: focal
 
 git:
   quiet: true
@@ -58,52 +58,45 @@ env:
     script:
       - $SETARCH make -s test TESTOPTS="${TESTOPTS=$JOBS -q --tty=no}"
 
-  - &gcc-8
-    compiler: gcc-8
-    # # Not using addon to control retries
-    # addons:
-    #   apt:
-    #     sources:
-    #       - ubuntu-toolchain-r-test
+  - &gcc-9
+    compiler: gcc-9
     before_install:
-      - bash -cx "${BEFORE_INSTALL}"
-      - tool/travis_retry.sh sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
       - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
       - >-
         tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install
         ccache
-        gcc-8
-        g++-8
+        gcc-9
+        g++-9
         libffi-dev
         libgdbm-dev
         libncurses5-dev
         libncursesw5-dev
-        libreadline6-dev
+        libreadline-dev
         libssl-dev
         libyaml-dev
         openssl
         zlib1g-dev
 
-  - &clang-8
-    compiler: clang-8
+  - &clang-10
+    compiler: clang-10
     addons:
       apt:
         # Not doing this manually unlike other sources, because it has been stable.
         sources:
-          - llvm-toolchain-xenial-8
+          - llvm-toolchain-xenial-10
         config:
           retries: true
     before_install:
       - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
       - >-
         tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install
-        clang-8
-        llvm-8-tools
+        clang-10
+        llvm-10-tools
         libffi-dev
         libgdbm-dev
         libncurses5-dev
         libncursesw5-dev
-        libreadline6-dev
+        libreadline8-dev
         libssl-dev
         libyaml-dev
         openssl
@@ -113,21 +106,145 @@ env:
 
   - &x86_64-linux
     name: x86_64-linux
-    <<: *gcc-8
+    <<: *gcc-9
 
   - &arm64-linux
     name: arm64-linux
     arch: arm64
-    <<: *gcc-8
+    <<: *gcc-9
 
   - &s390x-linux
     name: s390x-linux
     arch: s390x
-    <<: *gcc-8
+    <<: *gcc-9
+
+  - &jemalloc
+    name: --with-jemalloc
+    <<: *gcc-9
+    <<: *cron-only
+    env:
+      - CONFIG_FLAG='--with-gmp --with-jemalloc --with-valgrind'
+
+  - &assertions
+    name: RUBY_DEBUG=1
+    <<: *gcc-9
+    #<<: *cron-only
+    <<: *make-test-only
+    env:
+      - GEMS_FOR_TEST=
+      - cppflags='-DRUBY_DEBUG -DVM_CHECK_MODE=1 -DTRANSIENT_HEAP_CHECK_MODE -DRGENGC_CHECK_MODE -DENC_DEBUG'
+
+  - &VM_CHECK_MODE
+    name: VM_CHECK_MODE=3
+    <<: *gcc-9
+    <<: *cron-only
+    <<: *make-test-only
+    env:
+      - GEMS_FOR_TEST=
+      - cppflags=-DVM_CHECK_MODE=0x0003
+
+  - &SUPPORT_JOKE
+    name: SUPPORT_JOKE
+    <<: *gcc-9
+    <<: *cron-only
+    <<: *make-test-only
+    env:
+      - BEFORE_INSTALL="sed vm_opts.h -e 's/OPT_SUPPORT_JOKE *0/OPT_SUPPORT_JOKE 1/' -i"
+
+  - &CPDEBUG
+    name: CPDEBUG
+    <<: *gcc-9
+    <<: *cron-only
+    <<: *make-test-only
+    env:
+      - cppflags=-DCPDEBUG
+
+  - &WITH_COROUTINE_UCONTEXT
+    name: COROUTINE=ucontext
+    <<: *gcc-9
+    <<: *cron-only
+    env:
+      - CONFIG_FLAG='--with-coroutine=ucontext'
+
+  - &WITH_COROUTINE_COPY
+    name: COROUTINE=copy
+    <<: *gcc-9
+    <<: *cron-only
+    env:
+      - CONFIG_FLAG='--with-coroutine=copy'
+
+  - &TOKEN_THREADED_CODE
+    name: TOKEN_THREADED_CODE
+    <<: *gcc-9
+    <<: *cron-only
+    <<: *make-test-only
+    env:
+      - GEMS_FOR_TEST=
+      - cppflags=-DOPT_THREADED_CODE=1
+
+  - &CALL_THREADED_CODE
+    name: CALL_THREADED_CODE
+    <<: *gcc-9
+    <<: *cron-only
+    <<: *make-test-only
+    env:
+      - GEMS_FOR_TEST=
+      - cppflags=-DOPT_THREADED_CODE=2
+
+  - &NO_THREADED_CODE
+    name: NO_THREADED_CODE
+    <<: *gcc-9
+    <<: *cron-only
+    <<: *make-test-only
+    env:
+      - GEMS_FOR_TEST=
+      - cppflags=-DOPT_THREADED_CODE=3
+
+  - &ASAN
+    name: -fsanitize=address
+    <<: *clang-8
+    #<<: *cron-only
+    <<: *make-test-only
+    env:
+      - GEMS_FOR_TEST=
+      - ASAN_OPTIONS=detect_leaks=0
+      - cflags='-U_FORTIFY_SOURCE -march=native -fsanitize=address -fno-omit-frame-pointer -fPIC'
+      - debugflags=-ggdb3
+      - optflags=-O1
+      - LD=clang-8
+      - LDFLAGS='-fsanitize=address -fPIC'
+      - CONFIG_FLAG='--with-out-ext=openssl --without-gmp --without-jemalloc --without-valgrind'
+
+  - &MSAN
+    name: -fsanitize=memory
+    <<: *clang-8
+    #<<: *cron-only
+    <<: *make-test-only
+    env:
+      - GEMS_FOR_TEST=
+      - cflags='-U_FORTIFY_SOURCE -fsanitize=memory -fsanitize-memory-track-origins=2 -fno-omit-frame-pointer -fPIC'
+      - optflags=-O1
+      - LD=clang-8
+      - LDFLAGS='-fsanitize=memory -fPIC'
+      - CONFIG_FLAG='--with-out-ext=openssl --without-gmp --without-jemalloc --without-valgrind'
+
+  - &UBSAN
+    name: -fsanitize=undefined
+    <<: *clang-8
+    #<<: *cron-only
+    <<: *make-test-only
+    env:
+      - GEMS_FOR_TEST=
+      - cflags='-U_FORTIFY_SOURCE -fsanitize=undefined,integer,nullability -fno-sanitize=implicit-integer-sign-change,unsigned-integer-overflow'
+      - cppflags=-DUNALIGNED_WORD_ACCESS=0
+      - debugflags=-ggdb3
+      - optflags='-O1 -march=native'
+      - LD=clang-8
+      - LDFLAGS='-fsanitize=undefined,integer,nullability -fno-sanitize=implicit-integer-sign-change,unsigned-integer-overflow'
 
   - &i686-linux
     name: i686-linux
-    compiler: gcc-8
+    compiler: gcc-9
     env:
       - GCC_FLAGS=-m32
       - CXX='g++-8 -m32'
@@ -143,7 +260,7 @@ env:
       - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
       - >-
         tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install
-        gcc-8-multilib
+        gcc-9-multilib
         g++-8
         g++-8-multilib
         libstdc++-8-dev:i386
@@ -182,17 +299,112 @@ env:
         libffi-dev:armhf
         libffi6:armhf
         libgdbm-dev:armhf
-        libgdbm3:armhf
+        libgdbm6:armhf
         libncurses5-dev:armhf
         libncurses5:armhf
         libncursesw5-dev:armhf
-        libreadline6-dev:armhf
-        libreadline6:armhf
+        libreadline8-dev:armhf
+        libreadline8:armhf
         libssl-dev:armhf
         libssl1.0.0:armhf
         linux-libc-dev:armhf
         zlib1g-dev:armhf
         zlib1g:armhf
+
+  - &pedanticism
+    name: -std=c99 -pedantic
+    compiler: clang
+    <<: *make-test-only
+    env:
+      - GEMS_FOR_TEST=
+      - GCC_FLAGS='-std=c99 -Werror=pedantic -pedantic-errors'
+      - CONFIG_FLAG=
+      - JOBS=
+      - >-
+        warnflags='
+        -Wall
+        -Wextra
+        -Werror=deprecated-declarations
+        -Werror=division-by-zero
+        -Werror=extra-tokens
+        -Werror=implicit-function-declaration
+        -Werror=implicit-int
+        -Werror=pointer-arith
+        -Werror=shorten-64-to-32
+        -Werror=write-strings
+        -Wmissing-noreturn
+        -Wno-constant-logical-operand
+        -Wno-missing-field-initializers
+        -Wno-overlength-strings
+        -Wno-parentheses-equality
+        -Wno-self-assign
+        -Wno-tautological-compare
+        -Wno-unused-local-typedef
+        -Wno-unused-parameter
+        -Wunused-variable'
+      - LDFLAGS=-Wno-unused-command-line-argument
+
+  - &spec-on-old-ruby
+    language: ruby
+    before_install:
+    install:
+    before_script: chmod -R u+w spec/ruby
+    # -j randomly hangs.
+    script: ruby -C spec/ruby ../mspec/bin/mspec .
+
+  - &rubyspec25
+    name: Check ruby/spec version guards on Ruby 2.5
+    rvm: 2.5.7
+    <<: *spec-on-old-ruby
+    after_failure:
+      - echo "ruby/spec failed on Ruby 2.5. This is likely because of a missing ruby_version_is guard, please add it. See spec/README.md."
+
+  - &rubyspec27
+    name: Check ruby/spec version guards on Ruby 2.7
+    rvm: 2.7.0
+    <<: *spec-on-old-ruby
+    after_failure:
+      - echo "ruby/spec failed on Ruby 2.7. This is likely because of a missing ruby_version_is guard, please add it. See spec/README.md."
+
+  - &baseruby
+    name: "BASERUBY: Ruby 2.2"
+    <<: *gcc-9
+    <<: *make-test-only
+    language: ruby
+    rvm: 2.2
+
+  - &dependency
+    name: Check dependencies in makefiles
+    language: ruby
+    before_install:
+    install:
+    before_script:
+      - |-
+        ruby -e 'new = []
+          Dir.glob("ext/**/extconf.rb") {|ex|
+            unless File.exist?(dep = File.dirname(ex)+"/depend")
+              puts "Adding "+dep
+              File.copy_stream("template/depend.tmpl", dep)
+              new << dep
+            end
+          }
+          exec("git", "add", *new) unless new.empty?'
+      - git diff --cached
+      - "> config.status"
+      - "> .rbconfig.time"
+      - sed -f tool/prereq.status template/Makefile.in common.mk > Makefile
+      - make touch-unicode-files
+      - make -s $JOBS $UPDATE_UNICODE up
+      - make -s $JOBS srcs
+      - rm -f config.status Makefile rbconfig.rb .rbconfig.time
+      - $SETARCH ./configure -C --disable-install-doc --prefix=$RUBY_PREFIX --disable-rubygems 'optflags=-O0' 'debugflags=-save-temps=obj -g'
+      - ruby tool/update-deps --fix
+    script:
+      - git diff --no-ext-diff --ignore-submodules --exit-code
+    after_failure:
+      - echo "Dependencies need to update"
+    env:
+      - CONFIG_FLAG=
 
 matrix:
   include:
