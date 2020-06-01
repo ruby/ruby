@@ -21,7 +21,7 @@ language: c
 
 os: linux
 
-dist: xenial
+dist: focal
 
 git:
   quiet: true
@@ -61,57 +61,50 @@ env:
     script:
       - $SETARCH make -s test TESTOPTS="${TESTOPTS=$JOBS -q --tty=no}"
 
-  - &gcc-8
-    compiler: gcc-8
-    # # Not using addon to control retries
-    # addons:
-    #   apt:
-    #     sources:
-    #       - ubuntu-toolchain-r-test
+  - &gcc-9
+    compiler: gcc
     before_install:
-      - bash -cx "${BEFORE_INSTALL}"
-      - tool/travis_retry.sh sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
       - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
       - >-
         tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install
         ccache
-        gcc-8
-        g++-8
+        gcc
+        g++
         libffi-dev
         libgdbm-dev
         libgmp-dev
         libjemalloc-dev
         libncurses5-dev
         libncursesw5-dev
-        libreadline6-dev
+        libreadline-dev
         libssl-dev
         libyaml-dev
         openssl
         valgrind
         zlib1g-dev
 
-  - &clang-8
-    compiler: clang-8
+  - &clang-10
+    compiler: clang-10
     addons:
       apt:
         # Not doing this manually unlike other sources, because it has been stable.
         sources:
-          - llvm-toolchain-xenial-8
+          - llvm-toolchain-xenial-10
         config:
           retries: true
     before_install:
       - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
       - >-
         tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install
-        clang-8
-        llvm-8-tools
+        clang-10
+        llvm-10-tools
         libffi-dev
         libgdbm-dev
         libgmp-dev
         libjemalloc-dev
         libncurses5-dev
         libncursesw5-dev
-        libreadline6-dev
+        libreadline-dev
         libssl-dev
         libyaml-dev
         openssl
@@ -122,28 +115,28 @@ env:
 
   - &x86_64-linux
     name: x86_64-linux
-    <<: *gcc-8
+    <<: *gcc-9
 
   - &arm64-linux
     name: arm64-linux
     arch: arm64
-    <<: *gcc-8
+    <<: *gcc-9
 
   - &s390x-linux
     name: s390x-linux
     arch: s390x
-    <<: *gcc-8
+    <<: *gcc-9
 
   - &jemalloc
     name: --with-jemalloc
-    <<: *gcc-8
+    <<: *gcc-9
     <<: *cron-only
     env:
       - CONFIG_FLAG='--with-gmp --with-jemalloc --with-valgrind'
 
   - &assertions
     name: RUBY_DEBUG=1
-    <<: *gcc-8
+    <<: *gcc-9
     #<<: *cron-only
     <<: *make-test-only
     env:
@@ -152,7 +145,7 @@ env:
 
   - &VM_CHECK_MODE
     name: VM_CHECK_MODE=3
-    <<: *gcc-8
+    <<: *gcc-9
     <<: *cron-only
     <<: *make-test-only
     env:
@@ -161,7 +154,7 @@ env:
 
   - &SUPPORT_JOKE
     name: SUPPORT_JOKE
-    <<: *gcc-8
+    <<: *gcc-9
     <<: *cron-only
     <<: *make-test-only
     env:
@@ -169,7 +162,7 @@ env:
 
   - &CPDEBUG
     name: CPDEBUG
-    <<: *gcc-8
+    <<: *gcc-9
     <<: *cron-only
     <<: *make-test-only
     env:
@@ -177,21 +170,21 @@ env:
 
   - &WITH_COROUTINE_UCONTEXT
     name: COROUTINE=ucontext
-    <<: *gcc-8
+    <<: *gcc-9
     <<: *cron-only
     env:
       - CONFIG_FLAG='--with-coroutine=ucontext'
 
   - &WITH_COROUTINE_COPY
     name: COROUTINE=copy
-    <<: *gcc-8
+    <<: *gcc-9
     <<: *cron-only
     env:
       - CONFIG_FLAG='--with-coroutine=copy'
 
   - &TOKEN_THREADED_CODE
     name: TOKEN_THREADED_CODE
-    <<: *gcc-8
+    <<: *gcc-9
     <<: *cron-only
     <<: *make-test-only
     env:
@@ -200,7 +193,7 @@ env:
 
   - &CALL_THREADED_CODE
     name: CALL_THREADED_CODE
-    <<: *gcc-8
+    <<: *gcc-9
     <<: *cron-only
     <<: *make-test-only
     env:
@@ -209,7 +202,7 @@ env:
 
   - &NO_THREADED_CODE
     name: NO_THREADED_CODE
-    <<: *gcc-8
+    <<: *gcc-9
     <<: *cron-only
     <<: *make-test-only
     env:
@@ -218,7 +211,7 @@ env:
 
   - &ASAN
     name: -fsanitize=address
-    <<: *clang-8
+    <<: *clang-10
     #<<: *cron-only
     <<: *make-test-only
     env:
@@ -227,26 +220,26 @@ env:
       - cflags='-U_FORTIFY_SOURCE -march=native -fsanitize=address -fno-omit-frame-pointer -fPIC'
       - debugflags=-ggdb3
       - optflags=-O1
-      - LD=clang-8
+      - LD=clang-10
       - LDFLAGS='-fsanitize=address -fPIC'
       - CONFIG_FLAG='--with-out-ext=openssl --without-gmp --without-jemalloc --without-valgrind'
 
   - &MSAN
     name: -fsanitize=memory
-    <<: *clang-8
+    <<: *clang-10
     #<<: *cron-only
     <<: *make-test-only
     env:
       - GEMS_FOR_TEST=
       - cflags='-U_FORTIFY_SOURCE -fsanitize=memory -fsanitize-memory-track-origins=2 -fno-omit-frame-pointer -fPIC'
       - optflags=-O1
-      - LD=clang-8
+      - LD=clang-10
       - LDFLAGS='-fsanitize=memory -fPIC'
       - CONFIG_FLAG='--with-out-ext=openssl --without-gmp --without-jemalloc --without-valgrind'
 
   - &UBSAN
     name: -fsanitize=undefined
-    <<: *clang-8
+    <<: *clang-10
     #<<: *cron-only
     <<: *make-test-only
     env:
@@ -255,12 +248,12 @@ env:
       - cppflags=-DUNALIGNED_WORD_ACCESS=0
       - debugflags=-ggdb3
       - optflags='-O1 -march=native'
-      - LD=clang-8
+      - LD=clang-10
       - LDFLAGS='-fsanitize=undefined,integer,nullability -fno-sanitize=implicit-integer-sign-change,unsigned-integer-overflow'
 
   - &i686-linux
     name: i686-linux
-    compiler: gcc-8
+    compiler: gcc-9
     env:
       - GCC_FLAGS=-m32
       - CXX='g++-8 -m32'
@@ -276,7 +269,7 @@ env:
       - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
       - >-
         tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install
-        gcc-8-multilib
+        gcc-9-multilib
         g++-8
         g++-8-multilib
         libstdc++-8-dev:i386
@@ -311,18 +304,17 @@ env:
         ccache
         crossbuild-essential-armhf
         libc6:armhf
-        libstdc++-5-dev:armhf
         libffi-dev:armhf
-        libffi6:armhf
+        libffi7:armhf
         libgdbm-dev:armhf
-        libgdbm3:armhf
+        libgdbm6:armhf
         libncurses5-dev:armhf
         libncurses5:armhf
         libncursesw5-dev:armhf
-        libreadline6-dev:armhf
-        libreadline6:armhf
+        libreadline-dev:armhf
+        libreadline8:armhf
         libssl-dev:armhf
-        libssl1.0.0:armhf
+        libssl1.1:armhf
         linux-libc-dev:armhf
         zlib1g-dev:armhf
         zlib1g:armhf
@@ -384,7 +376,7 @@ env:
 
   - &baseruby
     name: "BASERUBY: Ruby 2.2"
-    <<: *gcc-8
+    <<: *gcc-9
     <<: *make-test-only
     language: ruby
     rvm: 2.2
