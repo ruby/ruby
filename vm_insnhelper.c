@@ -3468,10 +3468,7 @@ vm_yield_setup_args(rb_execution_context_t *ec, const rb_iseq_t *iseq, const int
     calling->block_handler = block_handler;
     calling->kw_splat = kw_splat;
     calling->recv = Qundef;
-    struct rb_callinfo dummy_ci = {
-        .flags = T_IMEMO | (imemo_callinfo << FL_USHIFT),
-        .flag = (VALUE)(kw_splat ? VM_CALL_KW_SPLAT : 0),
-    };
+    struct rb_callinfo dummy_ci = VM_CI_ON_STACK(0, (kw_splat ? VM_CALL_KW_SPLAT : 0), 0, 0);
 
     return vm_callee_setup_block_arg(ec, calling, &dummy_ci, iseq, argv, arg_setup_type);
 }
