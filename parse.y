@@ -642,7 +642,11 @@ static int  local_id(struct parser_params *p, ID id);
 static int  local_id_ref(struct parser_params*, ID, ID **);
 #ifndef RIPPER
 static ID   internal_id(struct parser_params*);
+static NODE *new_args_forward_call(struct parser_params*, NODE*, const YYLTYPE*, const YYLTYPE*);
+static NODE *new_args_forward_def(struct parser_params*, NODE*, const YYLTYPE*);
 #endif
+static int check_forwarding_args(struct parser_params*);
+static void add_forwarding_args(struct parser_params *p);
 
 static const struct vtable *dyna_push(struct parser_params *);
 static void dyna_pop(struct parser_params*, const struct vtable *);
@@ -2570,53 +2574,24 @@ paren_args	: '(' opt_call_args rparen
 		    }
 		| '(' args ',' args_forward rparen
 		    {
-			if (!local_id(p, idFWD_REST) ||
-#if idFWD_KWREST
-			    !local_id(p, idFWD_KWREST) ||
-#endif
-			    !local_id(p, idFWD_BLOCK)) {
-			    compile_error(p, "unexpected ...");
+			if (!check_forwarding_args(p)) {
 			    $$ = Qnone;
 			}
 			else {
 			/*%%%*/
-			    NODE *splat = NEW_SPLAT(NEW_LVAR(idFWD_REST, &@4), &@4);
-#if idFWD_KWREST
-			    NODE *kwrest = list_append(p, NEW_LIST(0, &@4), NEW_LVAR(idFWD_KWREST, &@4));
-#endif
-			    NODE *block = NEW_BLOCK_PASS(NEW_LVAR(idFWD_BLOCK, &@4), &@4);
-			    $$ = rest_arg_append(p, $2, splat, &@$);
-#if idFWD_KWREST
-			    $$ = arg_append(p, $$, new_hash(p, kwrest, &@4), &@4);
-#endif
-			    $$ = arg_blk_pass($$, block);
+			    $$ = new_args_forward_call(p, $2, &@4, &@$);
 			/*% %*/
 			/*% ripper: arg_paren!(args_add!($2, $4)) %*/
 			}
 		    }
 		| '(' args_forward rparen
 		    {
-			if (!local_id(p, idFWD_REST) ||
-#if idFWD_KWREST
-			    !local_id(p, idFWD_KWREST) ||
-#endif
-			    !local_id(p, idFWD_BLOCK)) {
-			    compile_error(p, "unexpected ...");
+			if (!check_forwarding_args(p)) {
 			    $$ = Qnone;
 			}
 			else {
 			/*%%%*/
-			    NODE *splat = NEW_SPLAT(NEW_LVAR(idFWD_REST, &@2), &@2);
-#if idFWD_KWREST
-			    NODE *kwrest = list_append(p, NEW_LIST(0, &@2), NEW_LVAR(idFWD_KWREST, &@2));
-#endif
-			    NODE *block = NEW_BLOCK_PASS(NEW_LVAR(idFWD_BLOCK, &@2), &@2);
-#if idFWD_KWREST
-			    $$ = arg_append(p, splat, new_hash(p, kwrest, &@2), &@2);
-#else
-			    $$ = splat;
-#endif
-			    $$ = arg_blk_pass($$, block);
+			    $$ = new_args_forward_call(p, 0, &@2, &@$);
 			/*% %*/
 			/*% ripper: arg_paren!($2) %*/
 			}
@@ -4942,14 +4917,9 @@ f_paren_args	: '(' f_args rparen
 		    }
 		| '(' f_arg ',' args_forward rparen
 		    {
-			arg_var(p, idFWD_REST);
-#if idFWD_KWREST
-			arg_var(p, idFWD_KWREST);
-#endif
-			arg_var(p, idFWD_BLOCK);
+			add_forwarding_args(p);
 		    /*%%%*/
-			$$ = new_args_tail(p, Qnone, idFWD_KWREST, idFWD_BLOCK, &@4);
-			$$ = new_args(p, $2, Qnone, idFWD_REST, Qnone, $$, &@4);
+			$$ = new_args_forward_def(p, $2, &@$);
 		    /*% %*/
 		    /*% ripper: paren!(params!($2, Qnone, $4, Qnone, Qnone, Qnone, Qnone)) %*/
 			SET_LEX_STATE(EXPR_BEG);
@@ -4957,14 +4927,9 @@ f_paren_args	: '(' f_args rparen
 		    }
 		| '(' args_forward rparen
 		    {
-			arg_var(p, idFWD_REST);
-#if idFWD_KWREST
-			arg_var(p, idFWD_KWREST);
-#endif
-			arg_var(p, idFWD_BLOCK);
+			add_forwarding_args(p);
 		    /*%%%*/
-			$$ = new_args_tail(p, Qnone, idFWD_KWREST, idFWD_BLOCK, &@2);
-			$$ = new_args(p, Qnone, Qnone, idFWD_REST, Qnone, $$, &@2);
+			$$ = new_args_forward_def(p, 0, &@$);
 		    /*% %*/
 		    /*% ripper: paren!(params!(Qnone, Qnone, $2, Qnone, Qnone, Qnone, Qnone)) %*/
 			SET_LEX_STATE(EXPR_BEG);
@@ -12048,6 +12013,52 @@ local_id(struct parser_params *p, ID id)
 {
     return local_id_ref(p, id, NULL);
 }
+
+static int
+check_forwarding_args(struct parser_params *p)
+{
+    if (local_id(p, idFWD_REST) &&
+#if idFWD_KWREST
+        local_id(p, idFWD_KWREST) &&
+#endif
+        local_id(p, idFWD_BLOCK)) return TRUE;
+    compile_error(p, "unexpected ...");
+    return FALSE;
+}
+
+static void
+add_forwarding_args(struct parser_params *p)
+{
+    arg_var(p, idFWD_REST);
+#if idFWD_KWREST
+    arg_var(p, idFWD_KWREST);
+#endif
+    arg_var(p, idFWD_BLOCK);
+}
+
+#ifndef RIPPER
+static NODE *
+new_args_forward_call(struct parser_params *p, NODE *leading, const YYLTYPE *loc, const YYLTYPE *argsloc)
+{
+    NODE *splat = NEW_SPLAT(NEW_LVAR(idFWD_REST, loc), loc);
+#if idFWD_KWREST
+    NODE *kwrest = list_append(p, NEW_LIST(0, loc), NEW_LVAR(idFWD_KWREST, loc));
+#endif
+    NODE *block = NEW_BLOCK_PASS(NEW_LVAR(idFWD_BLOCK, loc), loc);
+    NODE *args = leading ? rest_arg_append(p, leading, splat, argsloc) : splat;
+#if idFWD_KWREST
+    args = arg_append(p, splat, new_hash(p, kwrest, loc), loc);
+#endif
+    return arg_blk_pass(args, block);
+}
+
+static NODE *
+new_args_forward_def(struct parser_params *p, NODE *leading, const YYLTYPE *loc)
+{
+    NODE *n = new_args_tail(p, Qnone, idFWD_KWREST, idFWD_BLOCK, loc);
+    return new_args(p, leading, Qnone, idFWD_REST, Qnone, n, loc);
+}
+#endif
 
 static NODE *
 numparam_push(struct parser_params *p)
