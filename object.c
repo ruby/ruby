@@ -974,7 +974,7 @@ rb_class_search_ancestor(VALUE cl, VALUE c)
  *++
  */
 
-VALUE
+static VALUE
 rb_obj_tap(VALUE obj)
 {
     rb_yield(obj);
