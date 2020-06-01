@@ -178,4 +178,4 @@ RUBYGEMS PLUGINS
 
 
 
-                                   May 2020                     BUNDLE-EXEC(1)
+                                   June 2020                    BUNDLE-EXEC(1)
