@@ -3181,12 +3181,10 @@ vm_call_method(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_ca
 		else {
 		    /* caching method info to dummy cc */
 		    VM_ASSERT(vm_cc_cme(cc) != NULL);
-                    struct rb_callcache cc_body;
-                    struct rb_call_data cd_body = {
+                    return vm_call_method_each_type(ec, cfp, calling, &(struct rb_call_data) {
                         .ci = ci,
-                        .cc = vm_cc_fill(&cc_body, cc->klass, vm_cc_cme(cc), vm_cc_call(cc)),
-                    };
-                    return vm_call_method_each_type(ec, cfp, calling, &cd_body);
+                        .cc = &VM_CC_ON_STACK(cc->klass, vm_cc_call(cc), { 0 }, vm_cc_cme(cc)),
+                    });
 		}
 	    }
             return vm_call_method_each_type(ec, cfp, calling, cd);
