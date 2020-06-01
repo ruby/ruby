@@ -9,6 +9,7 @@
 ************************************************/
 
 #include "rubysocket.h"
+#include <pthread.h>
 
 #if defined(INET6) && (defined(LOOKUP_ORDER_HACK_INET) || defined(LOOKUP_ORDER_HACK_INET6))
 #define LOOKUP_ORDERS (sizeof(lookup_order_table) / sizeof(lookup_order_table[0]))
@@ -180,10 +181,24 @@ struct getaddrinfo_arg
     const char *service;
     const struct addrinfo *hints;
     struct addrinfo **res;
+    int ret;
 };
 
 static void *
-nogvl_getaddrinfo(void *arg)
+nogvl_getaddrinfo_join(void *arg) {
+    pthread_t *th = arg;
+    return (void *)(VALUE)pthread_join(*th, NULL);
+}
+
+static void *
+nogvl_getaddrinfo_cancel(void *arg) {
+    pthread_t *th = arg;
+    pthread_cancel(*th);
+    return NULL;
+}
+
+void *
+getaddrinfo_fn(void *arg)
 {
     int ret;
     struct getaddrinfo_arg *ptr = arg;
@@ -195,7 +210,8 @@ nogvl_getaddrinfo(void *arg)
     if (ret == EAI_SYSTEM && errno == ENOENT)
 	ret = EAI_NONAME;
 #endif
-    return (void *)(VALUE)ret;
+    ptr->ret = ret;
+    return NULL;
 }
 #endif
 
@@ -327,7 +343,17 @@ rb_getaddrinfo(const char *node, const char *service,
         arg.service = service;
         arg.hints = hints;
         arg.res = &ai;
-        ret = (int)(VALUE)rb_thread_call_without_gvl(nogvl_getaddrinfo, &arg, RUBY_UBF_IO, 0);
+
+        pthread_t th;
+        if (pthread_create(&th, NULL, getaddrinfo_fn, &arg)) {
+            return 1;
+        }
+
+        int join_ret = (int)(VALUE)rb_thread_call_without_gvl(nogvl_getaddrinfo_join, &th, (rb_unblock_function_t *)nogvl_getaddrinfo_cancel, &th);
+        if (join_ret) {
+            return 1;
+        }
+        ret = arg.ret;
 #endif
     }
 
