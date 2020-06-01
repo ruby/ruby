@@ -79,7 +79,7 @@ module EnvUtil
       DEFAULT_SIGNALS[sig.to_s] or
         DEFAULT_SIGNALS[Signal.signame(sig)] rescue false
     end
-    signals |= [:ABRT, :KILL]
+    signals |= [:SEGV, :ABRT, :KILL]
     case pgroup
     when 0, true
       pgroup = -pid
