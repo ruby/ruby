@@ -103,6 +103,24 @@ describe "NoMethodError#message" do
       message.should include test_class.inspect
     end
   end
+
+  ruby_version_is "2.8" do
+    it "uses #name to display the receiver if it is a class or a module" do
+      klass = Class.new { def self.name; "MyClass"; end }
+      begin
+        klass.foo
+      rescue NoMethodError => error
+        error.message.lines.first.should == "undefined method `foo' for MyClass:Class\n"
+      end
+
+      mod = Module.new { def self.name; "MyModule"; end }
+      begin
+        mod.foo
+      rescue NoMethodError => error
+        error.message.lines.first.should == "undefined method `foo' for MyModule:Module\n"
+      end
+    end
+  end
 end
 
 describe "NoMethodError#dup" do
