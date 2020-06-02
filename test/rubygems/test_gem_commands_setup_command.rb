@@ -28,6 +28,8 @@ class TestGemCommandsSetupCommand < Gem::TestCase
       bundler/exe/bundle
       bundler/lib/bundler.rb
       bundler/lib/bundler/b.rb
+      bundler/lib/bundler/templates/.circleci/config.yml
+      bundler/lib/bundler/templates/.travis.yml
       bundler/man/bundle-b.1
       bundler/man/bundle-b.1.txt
       bundler/man/gemfile.5
@@ -184,6 +186,9 @@ class TestGemCommandsSetupCommand < Gem::TestCase
 
       assert_path_exists File.join(dir, 'bundler.rb')
       assert_path_exists File.join(dir, 'bundler/b.rb')
+
+      assert_path_exists File.join(dir, 'bundler/templates/.circleci/config.yml')
+      assert_path_exists File.join(dir, 'bundler/templates/.travis.yml')
     end
   end
 

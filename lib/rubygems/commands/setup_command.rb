@@ -547,7 +547,7 @@ By default, this RubyGems will install gem as:
 
   def bundler_template_files
     Dir.chdir "bundler/lib" do
-      Dir[File.join('bundler', 'templates', '**', '{*,.*}')].
+      Dir.glob(File.join('bundler', 'templates', '**', '*'), File::FNM_DOTMATCH).
         select{|f| !File.directory?(f)}
     end
   end
