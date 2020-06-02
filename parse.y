@@ -2912,17 +2912,7 @@ primary		: literal
 		    /*% %*/
 		    /*% ripper: method_add_block!($1, $2) %*/
 		    }
-		| tLAMBDA
-		    {
-			token_info_push(p, "->", &@1);
-		    }
-		  lambda
-		    {
-			$$ = $3;
-                    /*%%%*/
-                        nd_set_first_loc($$, @1.beg_pos);
-                    /*% %*/
-		    }
+		| lambda
 		| k_if expr_value then
 		  compstmt
 		  if_tail
@@ -3605,10 +3595,10 @@ bvar		: tIDENTIFIER
 		    }
 		;
 
-lambda		:   {
-			$<vars>$ = dyna_push(p);
-		    }
+lambda		: tLAMBDA
 		    {
+			token_info_push(p, "->", &@1);
+			$<vars>1 = dyna_push(p);
 			$<num>$ = p->lex.lpar_beg;
 			p->lex.lpar_beg = p->lex.paren_nest;
 		    }
@@ -3636,6 +3626,7 @@ lambda		:   {
                             $$ = NEW_LAMBDA($5, $7, &loc);
                             nd_set_line($$->nd_body, @7.end_pos.lineno);
                             nd_set_line($$, @5.end_pos.lineno);
+			    nd_set_first_loc($$, @1.beg_pos);
                         }
 		    /*% %*/
 		    /*% ripper: lambda!($5, $7) %*/
@@ -4347,17 +4338,7 @@ p_primitive	: literal
 		    /*% %*/
 		    /*% ripper: var_ref!($1) %*/
 		    }
-		| tLAMBDA
-		    {
-			token_info_push(p, "->", &@1);
-		    }
-		  lambda
-		    {
-			$$ = $3;
-		    /*%%%*/
-			nd_set_first_loc($$, @1.beg_pos);
-		    /*% %*/
-		    }
+		| lambda
 		;
 
 p_variable	: tIDENTIFIER
