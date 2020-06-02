@@ -193,12 +193,6 @@ module Bundler
                         "so -t is not needed if you want to continue using it. " \
                         "This setting can be changed anytime with `bundle config gem.test`."
       end
-
-      if options[:ci] == Bundler.settings["gem.ci"]
-        Bundler.ui.info "Bundler is configured to generate CI files for #{Bundler.settings["gem.ci"]}, "\
-                        "so --ci is not needed if you want to continue using it. " \
-                        "This setting can be changed anytime with `bundle config gem.ci`."
-      end
     rescue Errno::EEXIST => e
       raise GenericSystemCallError.new(e, "There was a conflict while creating the new gem.")
     end
@@ -286,6 +280,10 @@ module Bundler
 
       if Bundler.settings["gem.ci"].nil?
         Bundler.settings.set_global("gem.ci", ci_template)
+      end
+
+      if options[:ci] == Bundler.settings["gem.ci"]
+        Bundler.ui.info "#{options[:ci]} is already configured, ignoring --ci flag."
       end
 
       ci_template
