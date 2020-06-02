@@ -112,7 +112,7 @@ module Bundler
       when "github"
         templates.merge!(".github/workflows/main.yml.tt" => ".github/workflows/main.yml")
       when "travis"
-        templates.merge!("travis.yml.tt" => ".travis.yml")
+        templates.merge!(".travis.yml.tt" => ".travis.yml")
       when "gitlab"
         templates.merge!(".gitlab-ci.yml.tt" => ".gitlab-ci.yml")
       when "circle"
