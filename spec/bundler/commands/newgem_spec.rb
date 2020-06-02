@@ -749,11 +749,8 @@ RSpec.describe "bundle gem" do
         expect(bundled_app("#{gem_name}/.github/workflows/main.yml")).to exist
       end
 
-      it "hints that --ci is not needed" do
-        hint = "Bundler is configured to generate CI files for github, "\
-               "so --ci is not needed if you want to continue using it. " \
-               "This setting can be changed anytime with `bundle config gem.ci`."
-        expect(out).to match(hint)
+      it "hints that --ci is already configured" do
+        expect(out).to match("github is already configured, ignoring --ci flag.")
       end
     end
 
