@@ -547,7 +547,7 @@ By default, this RubyGems will install gem as:
 
   def bundler_template_files
     Dir.chdir "bundler/lib" do
-      (Dir[File.join('bundler', 'templates', '**', '{*,.*}')]).
+      Dir[File.join('bundler', 'templates', '**', '{*,.*}')].
         select{|f| !File.directory?(f)}
     end
   end
@@ -555,7 +555,7 @@ By default, this RubyGems will install gem as:
   # for cleanup old bundler files
   def template_files_in(dir)
     Dir.chdir dir do
-      (Dir[File.join('templates', '**', '{*,.*}')]).
+      Dir[File.join('templates', '**', '{*,.*}')].
         select{|f| !File.directory?(f)}
     end
   end
