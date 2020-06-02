@@ -2506,7 +2506,7 @@ rb_hash_delete(VALUE hash, VALUE key)
 /*
  *  call-seq:
  *    hash.delete(key) -> value or nil
- *    hash.delete(key) { |key| ... } -> value
+ *    hash.delete(key) { |key| ... } -<value
  *
  *  Deletes the entry for the given +key+
  *  and returns its associated value.
@@ -4713,18 +4713,43 @@ flatten_i(VALUE key, VALUE val, VALUE ary)
 
 /*
  *  call-seq:
- *     hash.flatten -> an_array
- *     hash.flatten(level) -> an_array
+ *     hash.flatten -> new_array
+ *     hash.flatten(level) -> new_array
  *
- *  Returns a new array that is a one-dimensional flattening of this
- *  hash. That is, for every key or value that is an array, extract
- *  its elements into the new array.  Unlike Array#flatten, this
- *  method does not flatten recursively by default.  The optional
- *  <i>level</i> argument determines the level of recursion to flatten.
+ *  Argument +level+, if given, must be an
+ *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
  *
- *     a =  {1=> "one", 2 => [2,"two"], 3 => "three"}
- *     a.flatten    # => [1, "one", 2, [2, "two"], 3, "three"]
- *     a.flatten(2) # => [1, "one", 2, 2, "two", 3, "three"]
+ *  Returns a new \Array object that is a 1-dimensional flattening of +self+.
+ *
+ *  ---
+ *
+ *  By default, nested Arrays are not flattened:
+ *    h = {foo: 0, bar: [:bat, 3], baz: 2}
+ *    h.flatten # => [:foo, 0, :bar, [:bat, 3], :baz, 2]
+ *
+ *  Takes the depth of recursive flattening from argument +level+:
+ *    h = {foo: 0, bar: [:bat, [:baz, [:bat, ]]]}
+ *    h.flatten(1) # => [:foo, 0, :bar, [:bat, [:baz, [:bat]]]]
+ *    h.flatten(2) # => [:foo, 0, :bar, :bat, [:baz, [:bat]]]
+ *    h.flatten(3) # => [:foo, 0, :bar, :bat, :baz, [:bat]]
+ *    h.flatten(4) # => [:foo, 0, :bar, :bat, :baz, :bat]
+ *
+ *  When +level+ is negative, flattens all nested Arrays:
+ *    h = {foo: 0, bar: [:bat, [:baz, [:bat, ]]]}
+ *    h.flatten(-1) # => [:foo, 0, :bar, :bat, :baz, :bat]
+ *    h.flatten(-2) # => [:foo, 0, :bar, :bat, :baz, :bat]
+ *
+ *  When +level+ is zero, returns the equivalent of #to_a :
+ *    h = {foo: 0, bar: [:bat, 3], baz: 2}
+ *    h.flatten(0) # => [[:foo, 0], [:bar, [:bat, 3]], [:baz, 2]]
+ *    h.flatten(0) == h.to_a # => true
+ *
+ *  ---
+ *
+ *  Raises an exception if +level+ is not an \Integer-convertible object:
+ *    h = {foo: 0, bar: [:bat, 3], baz: 2}
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    h.flatten(:nosuch)
  */
 
 static VALUE
@@ -4780,14 +4805,12 @@ set_if_not_nil(VALUE key, VALUE value, VALUE hash)
 
 /*
  *  call-seq:
- *     hsh.compact -> new_hash
+ *    hash.compact -> new_hash
  *
- *  Returns a new hash with the nil values/key pairs removed
- *
- *     h = { a: 1, b: false, c: nil }
- *     h.compact     #=> { a: 1, b: false }
- *     h             #=> { a: 1, b: false, c: nil }
- *
+ *  Returns a copy of +self+ with all +nil+-valued entries removed:
+ *    h = {foo: 0, bar: nil, baz: 2, bat: nil}
+ *    h1 = h.compact
+ *    h1 # => {:foo=>0, :baz=>2}
  */
 
 static VALUE
@@ -4802,14 +4825,18 @@ rb_hash_compact(VALUE hash)
 
 /*
  *  call-seq:
- *     hsh.compact! -> hsh or nil
+ *    hash.compact! -> self or nil
  *
- *  Removes all nil values from the hash.
- *  Returns nil if no changes were made, otherwise returns the hash.
+ *  Returns +self+ with all +nil+-valued entries removed:
+ *    h = {foo: 0, bar: nil, baz: 2, bat: nil}
+ *    h1 = h.compact!
+ *    h1 # => {:foo=>0, :baz=>2}
+ *    h1.equal?(h) # => true
  *
- *     h = { a: 1, b: false, c: nil }
- *     h.compact!     #=> { a: 1, b: false }
- *
+ *  Returns +nil+ if no entries were removed:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.compact! # => nil
+ *    h # => {:foo=>0, :bar=>1, :baz=>2}
  */
 
 static VALUE
@@ -4830,18 +4857,32 @@ static st_table *rb_init_identtable_with_size(st_index_t size);
 
 /*
  *  call-seq:
- *     hsh.compare_by_identity -> hsh
+ *    hash.compare_by_identity -> self
  *
- *  Makes <i>hsh</i> compare its keys by their identity, i.e. it
- *  will consider exact same objects as same keys.
+ *  Sets +self+ to consider only identity in comparing keys;
+ *  two keys are considered the same only if they are the same object;
+ *  returns +self+.
  *
- *     h1 = { "a" => 100, "b" => 200, :c => "c" }
- *     h1["a"]        #=> 100
- *     h1.compare_by_identity
- *     h1.compare_by_identity? #=> true
- *     h1["a".dup]    #=> nil  # different objects.
- *     h1[:c]         #=> "c"  # same symbols are all same.
+ *  By default, these two object are considered to be the same key,
+ *  and therefore overwrite:
+ *    s0 = 'x'
+ *    s1 = 'x'
+ *    s0.equal?(s0) # => false
+ *    h = {}
+ *    h.compare_by_identity? # => false
+ *    h[s0] = 0
+ *    h[s1] = 1
+ *    h # => {"x"=>1}
  *
+ *  After calling \#compare_by_identity, the keys are considered to be different,
+ *  and therefore do not overwrite:
+ *    h = {}
+ *    h1 = h.compare_by_identity # => {}
+ *    h1.equal?(h) # => true
+ *    h.compare_by_identity? # => true
+ *    h[s0] = 0
+ *    h[s1] = 1
+ *    h # => {"x"=>0, "x"=>1}
  */
 
 static VALUE
@@ -4870,11 +4911,13 @@ rb_hash_compare_by_id(VALUE hash)
 
 /*
  *  call-seq:
- *     hsh.compare_by_identity? -> true or false
+ *    hash.compare_by_identity? -> true or false
  *
- *  Returns <code>true</code> if <i>hsh</i> will compare its keys by
- *  their identity.  Also see Hash#compare_by_identity.
- *
+ *  Returns +true+ if #compare_by_identity has been called, +false+ otherwise:
+ *    h = {}
+ *    h.compare_by_identity? # false
+ *    h.compare_by_identity
+ *    h.compare_by_identity? # true
  */
 
 MJIT_FUNC_EXPORTED VALUE
@@ -4943,10 +4986,42 @@ any_p_i_pattern(VALUE key, VALUE value, VALUE arg)
 
 /*
  *  call-seq:
- *     hsh.any? [{ |(key, value)| block }]   -> true or false
- *     hsh.any?(pattern)                     -> true or false
+ *    hash.any? -> true or false
+ *    hash.any?(object) -> true or false
+ *    hash.any? {|key, value| ... } -> true or false
  *
- *  See also Enumerable#any?
+ *  Returns +true+ if any element satisfies a given criterion;
+ *  +false+ otherwise.
+ *
+ *  ---
+ *
+ *  With no argument and no block,
+ *  returns +true+ if +self+ is non-empty; +false+ if empty:
+ *    {}.any? # => false
+ *    {nil => false}.any? # => true
+ *
+ *  With argument +object+ and no block,
+ *  returns +true+ if for any key +key+
+ *  <tt>h.assoc(key) == object</tt>:
+ *   h = {foo: 0, bar: 1, baz: 2}
+ *   h.any?([:bar, 1]) # => true
+ *   h.any?([:bar, 0]) # => false
+ *   h.any?([:baz, 1]) # => false
+ *
+ *  With no argument and a block,
+ *  calls the block with each key-value pair;
+ *  returns +true+ if the block returns any truthy value,
+ *  +false+ otherwise:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.any? {|key, value| value < 3 } # => true
+ *    h.any? {|key, value| value > 3 } # => false
+ *
+ *  With argument +object+ and a block,
+ *  issues a warning ('given block not used') and ignores the block:
+ *   h = {foo: 0, bar: 1, baz: 2}
+ *   h.any?([:bar, 1]) # => true
+ *   h.any?([:bar, 0]) # => false
+ *   h.any?([:baz, 1]) # => false
  */
 
 static VALUE
@@ -4979,22 +5054,54 @@ rb_hash_any_p(int argc, VALUE *argv, VALUE hash)
 }
 
 /*
- * call-seq:
- *   hsh.dig(key, ...)                 -> object
+ *  call-seq:
+ *    hash.dig(*keys) -> value
  *
- * Extracts the nested value specified by the sequence of <i>key</i>
- * objects by calling +dig+ at each step, returning +nil+ if any
- * intermediate step is +nil+.
+ *  Returns the value for a specified object in nested objects.
  *
- *   h = { foo: {bar: {baz: 1}}}
+ *  For nested objects:
+ *  - For each key in +keys+, calls method \#dig on a receiver.
+ *  - The first receiver is +self+.
+ *  - Each successive receiver is the value returned by the previous call to \#dig.
+ *  - The value finally returned is the value returned by the last call to \#dig.
  *
- *   h.dig(:foo, :bar, :baz)     #=> 1
- *   h.dig(:foo, :zot, :xyz)     #=> nil
+ *  Examples:
+ *    h = {foo: 0}
+ *    h.dig(:foo) # => 0
  *
- *   g = { foo: [10, 11, 12] }
- *   g.dig(:foo, 1)              #=> 11
- *   g.dig(:foo, 1, 0)           #=> TypeError: Integer does not have #dig method
- *   g.dig(:foo, :bar)           #=> TypeError: no implicit conversion of Symbol into Integer
+ *    h = {foo: {bar: 1}}
+ *    h.dig(:foo, :bar) # => 1
+ *
+ *    h = {foo: {bar: {baz: 2}}}
+ *    h.dig(:foo, :bar, :baz) # => 2
+ *
+ *  Returns +nil+ if any key is not found:
+ *    h = { foo: {bar: {baz: 2}}}
+ *    h.dig(:foo, :nosuch) # => nil
+ *
+ *  The nested objects may include any that respond to \#dig.  See:
+ *  - Hash#dig
+ *  - Array#dig
+ *  - Struct#dig
+ *  - OpenStruct#dig
+ *  - CSV::Table#dig
+ *  - CSV::Row#dig
+ *
+ *  Example:
+ *    h = {foo: {bar: [:a, :b, :c]}}
+ *    h.dig(:foo, :bar, 2) # => :c
+ *
+ *  ---
+ *
+ *  Raises an exception if any given key is invalid
+ *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
+ *    # Raises NoMethodError (undefined method `hash' for #<BasicObject>)
+ *    h.dig(BasicObject.new)
+ *
+ *  Raises an exception if any receiver does not respond to \#dig:
+ *    h = { foo: 1 }
+ *    # Raises TypeError: Integer does not have #dig method
+ *    h.dig(:foo, 1)
  */
 
 static VALUE
