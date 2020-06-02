@@ -59,6 +59,7 @@ class TestDefined < Test::Unit::TestCase
     f = Foo.new
     assert_nil(defined?(f.foo))         # protected method
     f.bar(f) { |v| assert(v) }
+    f.bar(Class.new(Foo).new) { |v| assert(v, "inherited protected method") }
   end
 
   def test_defined_undefined_method
