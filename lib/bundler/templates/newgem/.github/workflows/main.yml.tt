@@ -8,10 +8,10 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Set up Ruby
-      uses: actions/setup-ruby@v1
+      uses: ruby/setup-ruby@v1
       with:
-        ruby-version: <%= ::Gem::Version.new(RUBY_VERSION).segments[0..1].join(".") %>.x
-    - name: Build and test with Rake
+        ruby-version: <%= RUBY_VERSION %>
+    - name: Run tests
       run: |
         gem install bundler -v <%= Bundler::VERSION %>
         bundle install
