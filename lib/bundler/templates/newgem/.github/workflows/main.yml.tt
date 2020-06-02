@@ -11,7 +11,7 @@ jobs:
       uses: ruby/setup-ruby@v1
       with:
         ruby-version: <%= RUBY_VERSION %>
-    - name: Run tests
+    - name: Run the default task
       run: |
         gem install bundler -v <%= Bundler::VERSION %>
         bundle install

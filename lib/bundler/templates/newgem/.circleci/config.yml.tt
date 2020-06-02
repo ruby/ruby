@@ -6,8 +6,8 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Run tests
+          name: Run the default task
           command: |
             gem install bundler -v <%= Bundler::VERSION %>
             bundle install
-            bundle exec rake test
+            bundle exec rake
