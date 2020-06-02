@@ -42,21 +42,42 @@ class TestDefined < Test::Unit::TestCase
     assert(defined?(File::Constants))	# nested constant
   end
 
-  def test_defined_method
+  def test_defined_public_method
     assert(defined?(Object.new))	# method
     assert(defined?(Object::new))	# method
+  end
+
+  def test_defined_private_method
     assert(!defined?(Object.print))	# private method
+  end
+
+  def test_defined_operator
     assert(defined?(1 == 2))		# operator expression
+  end
+
+  def test_defined_protected_method
     f = Foo.new
     assert_nil(defined?(f.foo))         # protected method
     f.bar(f) { |v| assert(v) }
+  end
+
+  def test_defined_undefined_method
+    f = Foo.new
     assert_nil(defined?(f.quux))        # undefined method
+  end
+
+  def test_defined_undefined_argument
+    f = Foo.new
     assert_nil(defined?(f.baz(x)))      # undefined argument
     x = 0
     assert(defined?(f.baz(x)))
     assert_nil(defined?(f.quux(x)))
     assert(defined?(print(x)))
     assert_nil(defined?(quux(x)))
+  end
+
+  def test_defined_attrasgn
+    f = Foo.new
     assert(defined?(f.attr = 1))
     f.attrasgn_test { |v| assert(v) }
   end
