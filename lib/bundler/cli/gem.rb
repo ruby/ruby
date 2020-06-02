@@ -187,12 +187,6 @@ module Bundler
 
       Bundler.ui.info "Gem '#{name}' was successfully created. " \
         "For more information on making a RubyGem visit https://bundler.io/guides/creating_gem.html"
-
-      if options[:test] == Bundler.settings["gem.test"]
-        Bundler.ui.info "Bundler is configured to generate test files for #{Bundler.settings["gem.test"]}, "\
-                        "so -t is not needed if you want to continue using it. " \
-                        "This setting can be changed anytime with `bundle config gem.test`."
-      end
     rescue Errno::EEXIST => e
       raise GenericSystemCallError.new(e, "There was a conflict while creating the new gem.")
     end
@@ -243,6 +237,10 @@ module Bundler
 
       if Bundler.settings["gem.test"].nil?
         Bundler.settings.set_global("gem.test", test_framework)
+      end
+
+      if options[:test] == Bundler.settings["gem.test"]
+        Bundler.ui.info "#{options[:test]} is already configured, ignoring --test flag."
       end
 
       test_framework
