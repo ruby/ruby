@@ -555,7 +555,7 @@ By default, this RubyGems will install gem as:
   # for cleanup old bundler files
   def template_files_in(dir)
     Dir.chdir dir do
-      Dir[File.join('templates', '**', '{*,.*}')].
+      Dir.glob(File.join('templates', '**', '*'), File::FNM_DOTMATCH).
         select{|f| !File.directory?(f)}
     end
   end
