@@ -608,11 +608,8 @@ RSpec.describe "bundle gem" do
         expect(bundled_app("#{gem_name}/spec/spec_helper.rb")).to exist
       end
 
-      it "hints that --test is not needed" do
-        hint = "Bundler is configured to generate test files for rspec, "\
-               "so -t is not needed if you want to continue using it. " \
-               "This setting can be changed anytime with `bundle config gem.test`."
-        expect(out).to match(hint)
+      it "hints that --test is already configured" do
+        expect(out).to match("rspec is already configured, ignoring --test flag.")
       end
     end
 
