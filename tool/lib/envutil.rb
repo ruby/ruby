@@ -72,20 +72,28 @@ module EnvUtil
   end
   module_function :timeout
 
-  def terminate(pid, signal = :TERM, pgroup = nil, reprieve = 3)
+  def terminate(pid, signal = :TERM, pgroup = nil, reprieve = 1)
     reprieve = apply_timeout_scale(reprieve) if reprieve
 
     signals = Array(signal).select do |sig|
       DEFAULT_SIGNALS[sig.to_s] or
         DEFAULT_SIGNALS[Signal.signame(sig)] rescue false
     end
-    signals |= [:SEGV, :ABRT, :KILL]
+    signals |= [:ABRT, :KILL]
     case pgroup
     when 0, true
       pgroup = -pid
     when nil, false
       pgroup = pid
     end
+
+    if /darwin/ =~ RUBY_PLATFORM
+      # sudo -n: --non-interactive
+      # lldb -p: attach
+      #      -o: run command
+      puts `sudo -n lldb -p #{pid} --batch -o "bt all" -o "call rb_vmdebug_stack_dump_all_threads()" -o quit`
+    end
+
     while signal = signals.shift
       begin
         Process.kill signal, pgroup
