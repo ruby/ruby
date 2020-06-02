@@ -1304,10 +1304,15 @@ rb_method_boundp(VALUE klass, ID id, int ex)
     }
 
     if (me != NULL) {
-        if ((ex & ~BOUND_RESPONDS) &&
-	    ((METHOD_ENTRY_VISI(me) == METHOD_VISI_PRIVATE) ||
-	     ((ex & BOUND_RESPONDS) && (METHOD_ENTRY_VISI(me) == METHOD_VISI_PROTECTED)))) {
-	    return 0;
+        if (ex & ~BOUND_RESPONDS) {
+            switch (METHOD_ENTRY_VISI(me)) {
+              case METHOD_VISI_PRIVATE:
+                return 0;
+              case METHOD_VISI_PROTECTED:
+                if (ex & BOUND_RESPONDS) return 0;
+              default:
+                break;
+            }
 	}
 
 	if (me->def->type == VM_METHOD_TYPE_NOTIMPLEMENTED) {
