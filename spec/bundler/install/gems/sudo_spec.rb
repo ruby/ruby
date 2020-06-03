@@ -8,7 +8,7 @@ RSpec.describe "when using sudo", :sudo => true do
       end
 
       before do
-        bundle! "config set path.system true"
+        bundle "config set path.system true"
         subdir.mkpath
         sudo "chmod u-w #{subdir}"
       end
@@ -32,7 +32,7 @@ RSpec.describe "when using sudo", :sudo => true do
 
   describe "and GEM_HOME is owned by root" do
     before :each do
-      bundle! "config set path.system true"
+      bundle "config set path.system true"
       chown_system_gems_to_root
     end
 
@@ -141,7 +141,7 @@ RSpec.describe "when using sudo", :sudo => true do
 
   describe "and GEM_HOME is not writable" do
     it "installs" do
-      bundle! "config set path.system true"
+      bundle "config set path.system true"
       gem_home = tmp("sudo_gem_home")
       sudo "mkdir -p #{gem_home}"
       sudo "chmod ugo-w #{gem_home}"

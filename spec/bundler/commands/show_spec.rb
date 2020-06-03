@@ -12,7 +12,7 @@ RSpec.describe "bundle show", :bundler => "< 3" do
     it "creates a Gemfile.lock if one did not exist" do
       FileUtils.rm(bundled_app_lock)
 
-      bundle! "show"
+      bundle "show"
 
       expect(bundled_app_lock).to exist
     end
@@ -20,18 +20,18 @@ RSpec.describe "bundle show", :bundler => "< 3" do
     it "creates a Gemfile.lock when invoked with a gem name" do
       FileUtils.rm(bundled_app_lock)
 
-      bundle! "show rails"
+      bundle "show rails"
 
       expect(bundled_app_lock).to exist
     end
 
     it "prints path if gem exists in bundle" do
-      bundle! "show rails"
+      bundle "show rails"
       expect(out).to eq(default_bundle_path("gems", "rails-2.3.2").to_s)
     end
 
     it "prints path if gem exists in bundle (with --paths option)" do
-      bundle! "show rails --paths"
+      bundle "show rails --paths"
       expect(out).to eq(default_bundle_path("gems", "rails-2.3.2").to_s)
     end
 
@@ -45,7 +45,7 @@ RSpec.describe "bundle show", :bundler => "< 3" do
     end
 
     it "prints the path to the running bundler" do
-      bundle! "show bundler"
+      bundle "show bundler"
       expect(out).to eq(root.to_s)
     end
 
@@ -55,7 +55,7 @@ RSpec.describe "bundle show", :bundler => "< 3" do
     end
 
     it "prints path of all gems in bundle sorted by name" do
-      bundle! "show --paths"
+      bundle "show --paths"
 
       expect(out).to include(default_bundle_path("gems", "rake-13.0.1").to_s)
       expect(out).to include(default_bundle_path("gems", "rails-2.3.2").to_s)
@@ -66,7 +66,7 @@ RSpec.describe "bundle show", :bundler => "< 3" do
     end
 
     it "prints summary of gems" do
-      bundle! "show --verbose"
+      bundle "show --verbose"
 
       expect(out).to include <<~MSG
         * actionmailer (2.3.2)
@@ -77,7 +77,7 @@ RSpec.describe "bundle show", :bundler => "< 3" do
     end
 
     it "includes bundler in the summary of gems" do
-      bundle! "show --verbose"
+      bundle "show --verbose"
 
       expect(out).to include <<~MSG
         * bundler (#{Bundler::VERSION})
@@ -99,7 +99,7 @@ RSpec.describe "bundle show", :bundler => "< 3" do
       G
       expect(the_bundle).to include_gems "foo 1.0"
 
-      bundle! :show
+      bundle :show
       expect(out).to include("foo (1.0 #{@git.ref_for("master", 6)}")
     end
 
@@ -114,7 +114,7 @@ RSpec.describe "bundle show", :bundler => "< 3" do
       G
       expect(the_bundle).to include_gems "foo 1.0.omg"
 
-      bundle! :show
+      bundle :show
       expect(out).to include("foo (1.0 #{@git.ref_for("omg", 6)}")
     end
 
@@ -124,7 +124,7 @@ RSpec.describe "bundle show", :bundler => "< 3" do
         gem "foo", :git => "#{lib_path("foo-1.0")}", :ref => "#{sha}"
       G
 
-      bundle! :show
+      bundle :show
       expect(out).to include("foo (1.0 #{sha[0..6]})")
     end
 
@@ -135,7 +135,7 @@ RSpec.describe "bundle show", :bundler => "< 3" do
       G
       expect(the_bundle).to include_gems "foo 1.0.0.pre.beta.1"
 
-      bundle! :show
+      bundle :show
       expect(out).to include("foo (1.0.0.pre.beta.1")
     end
   end
@@ -160,7 +160,7 @@ RSpec.describe "bundle show", :bundler => "< 3" do
     G
 
     bundle "config set auto_install 1"
-    bundle! :show
+    bundle :show
     expect(out).to include("Installing foo 1.0")
   end
 
@@ -172,7 +172,7 @@ RSpec.describe "bundle show", :bundler => "< 3" do
         gem "rack-obama"
       G
 
-      bundle! "show rac"
+      bundle "show rac"
       expect(out).to eq "1 : rack\n2 : rack-obama\n0 : - exit -\n>"
     end
   end
@@ -211,9 +211,9 @@ RSpec.describe "bundle show", :bundler => "< 3" do
         end
       end
 
-      bundle! "show --outdated"
+      bundle "show --outdated"
 
-      bundle! "install"
+      bundle "install"
       expect(the_bundle).to include_gem("rails 2.3.2")
     end
   end

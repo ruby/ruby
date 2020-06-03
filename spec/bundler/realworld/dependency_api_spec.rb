@@ -24,7 +24,7 @@ RSpec.describe "gemcutter's dependency API", :realworld => true do
       @t.run
 
       wait_for_server("127.0.0.1", port)
-      bundle! "config set timeout 1"
+      bundle "config set timeout 1"
     end
 
     after do

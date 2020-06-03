@@ -38,7 +38,7 @@ RSpec.describe "installing a gem with native extensions", :ruby_repo do
     G
 
     bundle "config set build.c_extension --with-c_extension=hello"
-    bundle! "install"
+    bundle "install"
 
     expect(out).to include("Installing c_extension 1.0 with native extensions")
 
@@ -75,7 +75,7 @@ RSpec.describe "installing a gem with native extensions", :ruby_repo do
       C
     end
 
-    bundle! "config set build.c_extension --with-c_extension=hello"
+    bundle "config set build.c_extension --with-c_extension=hello"
 
     install_gemfile! <<-G
       gem "c_extension", :git => #{lib_path("c_extension-1.0").to_s.dump}
@@ -121,8 +121,8 @@ RSpec.describe "installing a gem with native extensions", :ruby_repo do
       build_git "gems", :path => lib_path("gems"), :gemspec => false
     end
 
-    bundle! "config set build.c_extension_one --with-c_extension_one=one"
-    bundle! "config set build.c_extension_two --with-c_extension_two=two"
+    bundle "config set build.c_extension_one --with-c_extension_one=one"
+    bundle "config set build.c_extension_two --with-c_extension_two=two"
 
     # 1st time, require only one gem -- only one of the extensions gets built.
     install_gemfile! <<-G
@@ -168,7 +168,7 @@ RSpec.describe "installing a gem with native extensions", :ruby_repo do
       C
     end
 
-    bundle! "config set build.c_extension --with-c_extension=hello --with-c_extension_bundle-dir=hola"
+    bundle "config set build.c_extension --with-c_extension=hello --with-c_extension_bundle-dir=hola"
 
     install_gemfile! <<-G
       gem "c_extension", :git => #{lib_path("c_extension-1.0").to_s.dump}

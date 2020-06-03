@@ -482,14 +482,14 @@ RSpec.describe "Bundler.setup" do
 
     it "works even when the cache directory has been deleted" do
       bundle "config --local path vendor/bundle"
-      bundle! :install
+      bundle :install
       FileUtils.rm_rf vendored_gems("cache")
       expect(the_bundle).to include_gems "rack 1.0.0"
     end
 
     it "does not randomly change the path when specifying --path and the bundle directory becomes read only" do
       bundle "config --local path vendor/bundle"
-      bundle! :install
+      bundle :install
 
       with_read_only("#{bundled_app}/**/*") do
         expect(the_bundle).to include_gems "rack 1.0.0"
@@ -518,7 +518,7 @@ RSpec.describe "Bundler.setup" do
       G
 
       bundle %(config set local.rack #{lib_path("local-rack")})
-      bundle! :install
+      bundle :install
 
       FileUtils.rm_rf(lib_path("local-rack"))
       run "require 'rack'", :raise_on_error => false
@@ -536,7 +536,7 @@ RSpec.describe "Bundler.setup" do
       G
 
       bundle %(config set local.rack #{lib_path("local-rack")})
-      bundle! :install
+      bundle :install
 
       gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
@@ -558,7 +558,7 @@ RSpec.describe "Bundler.setup" do
       G
 
       bundle %(config set local.rack #{lib_path("local-rack")})
-      bundle! :install
+      bundle :install
 
       gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
@@ -971,7 +971,7 @@ end
 
   describe "with system gems in the bundle" do
     before :each do
-      bundle! "config set path.system true"
+      bundle "config set path.system true"
       system_gems "rack-1.0.0"
 
       install_gemfile <<-G
@@ -1258,7 +1258,7 @@ end
       it "activates no gems with bundle exec" do
         install_gemfile! ""
         create_file("script.rb", code)
-        bundle! "exec ruby ./script.rb", :env => { "RUBYOPT" => activation_warning_hack_rubyopt }
+        bundle "exec ruby ./script.rb", :env => { "RUBYOPT" => activation_warning_hack_rubyopt }
         expect(out).to eq("{}")
       end
 
@@ -1268,7 +1268,7 @@ end
         install_gemfile! ""
         create_file("script.rb", "#!/usr/bin/env ruby\n\n#{code}")
         FileUtils.chmod(0o777, bundled_app("script.rb"))
-        bundle! "exec ./script.rb", :artifice => nil, :env => { "RUBYOPT" => activation_warning_hack_rubyopt }
+        bundle "exec ./script.rb", :artifice => nil, :env => { "RUBYOPT" => activation_warning_hack_rubyopt }
         expect(out).to eq("{}")
       end
 
@@ -1286,9 +1286,9 @@ end
 
         bundle "config set --local path vendor/bundle"
 
-        bundle! :install
+        bundle :install
 
-        bundle! :check
+        bundle :check
 
         expect(out).to eq("The Gemfile's dependencies are satisfied")
       end

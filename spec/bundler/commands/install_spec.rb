@@ -35,7 +35,7 @@ RSpec.describe "bundle install with gem sources" do
         gem "rack"
       G
 
-      bundle! :install # can't use install_gemfile since it sets retry
+      bundle :install # can't use install_gemfile since it sets retry
       expect(bundled_app(".bundle")).not_to exist
     end
 
@@ -45,7 +45,7 @@ RSpec.describe "bundle install with gem sources" do
         gem "rack"
       G
 
-      bundle! :install, :env => { "BUNDLE_PATH__SYSTEM" => "true" } # can't use install_gemfile since it sets retry
+      bundle :install, :env => { "BUNDLE_PATH__SYSTEM" => "true" } # can't use install_gemfile since it sets retry
       expect(bundled_app(".bundle")).not_to exist
     end
 
@@ -562,11 +562,11 @@ RSpec.describe "bundle install with gem sources" do
         gem "rack"
       G
       bundle "config --local path bundle"
-      bundle! "install", :standalone => true
+      bundle "install", :standalone => true
     end
 
     it "includes the standalone path" do
-      bundle! "binstubs rack", :standalone => true
+      bundle "binstubs rack", :standalone => true
       standalone_line = File.read(bundled_app("bin/rackup")).each_line.find {|line| line.include? "$:.unshift" }.strip
       expect(standalone_line).to eq %($:.unshift File.expand_path "../../bundle", path.realpath)
     end

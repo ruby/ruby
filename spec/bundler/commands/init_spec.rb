@@ -2,7 +2,7 @@
 
 RSpec.describe "bundle init" do
   it "generates a Gemfile" do
-    bundle! :init
+    bundle :init
     expect(out).to include("Writing new Gemfile")
     expect(bundled_app_gemfile).to be_file
   end
@@ -28,11 +28,11 @@ RSpec.describe "bundle init" do
     let(:subdir) { "child_dir" }
 
     it "lets users generate a Gemfile in a child directory" do
-      bundle! :init
+      bundle :init
 
       FileUtils.mkdir bundled_app(subdir)
 
-      bundle! :init, :dir => bundled_app(subdir)
+      bundle :init, :dir => bundled_app(subdir)
 
       expect(out).to include("Writing new Gemfile")
       expect(bundled_app("#{subdir}/Gemfile")).to be_file
@@ -99,7 +99,7 @@ RSpec.describe "bundle init" do
     before { bundle "config set init_gems_rb true" }
 
     it "generates a gems.rb" do
-      bundle! :init
+      bundle :init
       expect(out).to include("Writing new gems.rb")
       expect(bundled_app("gems.rb")).to be_file
     end
@@ -125,11 +125,11 @@ RSpec.describe "bundle init" do
       let(:subdir) { "child_dir" }
 
       it "lets users generate a Gemfile in a child directory" do
-        bundle! :init
+        bundle :init
 
         FileUtils.mkdir bundled_app(subdir)
 
-        bundle! :init, :dir => bundled_app(subdir)
+        bundle :init, :dir => bundled_app(subdir)
 
         expect(out).to include("Writing new gems.rb")
         expect(bundled_app("#{subdir}/gems.rb")).to be_file

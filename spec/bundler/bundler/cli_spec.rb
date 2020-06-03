@@ -81,7 +81,7 @@ RSpec.describe "bundle executable" do
 
   context "with no arguments" do
     it "prints a concise help message", :bundler => "3" do
-      bundle! ""
+      bundle ""
       expect(err).to be_empty
       expect(out).to include("Bundler version #{Bundler::VERSION}").
         and include("\n\nBundler commands:\n\n").
@@ -123,7 +123,7 @@ RSpec.describe "bundle executable" do
   context "with --verbose" do
     it "prints the running command" do
       gemfile ""
-      bundle! "info bundler", :verbose => true
+      bundle "info bundler", :verbose => true
       expect(out).to start_with("Running `bundle info bundler --verbose` with bundler #{Bundler::VERSION}")
     end
 
@@ -149,7 +149,7 @@ RSpec.describe "bundle executable" do
     let(:bundler_version) { "2.0" }
     let(:latest_version) { nil }
     before do
-      bundle! "config set --global disable_version_check false"
+      bundle "config set --global disable_version_check false"
 
       pristine_system_gems "bundler-#{bundler_version}"
       if latest_version
@@ -184,13 +184,13 @@ To install the latest version, run `gem install bundler`
       end
 
       context "and disable_version_check is set" do
-        before { bundle! "config set disable_version_check true", :env => { "BUNDLER_VERSION" => bundler_version } }
+        before { bundle "config set disable_version_check true", :env => { "BUNDLER_VERSION" => bundler_version } }
         include_examples "no warning"
       end
 
       context "running a parseable command" do
         it "prints no warning" do
-          bundle! "config get --parseable foo", :env => { "BUNDLER_VERSION" => bundler_version }
+          bundle "config get --parseable foo", :env => { "BUNDLER_VERSION" => bundler_version }
           expect(last_command.stdboth).to eq ""
 
           bundle "platform --ruby", :env => { "BUNDLER_VERSION" => bundler_version }, :raise_on_error => false

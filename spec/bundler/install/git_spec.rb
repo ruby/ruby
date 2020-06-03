@@ -31,7 +31,7 @@ RSpec.describe "bundle install" do
 
       update_git "foo", "4.0", :path => lib_path("foo"), :gemspec => true
 
-      bundle! :update, :all => true
+      bundle :update, :all => true
       expect(out).to include("Using foo 2.0 (was 1.0) from #{file_uri_for(lib_path("foo"))} (at master~2@#{rev2})")
       expect(the_bundle).to include_gems "foo 2.0", :source => "git@#{lib_path("foo")}"
     end
@@ -59,7 +59,7 @@ RSpec.describe "bundle install" do
 
       bundle "config --local path vendor/bundle"
       bundle "config --local without development"
-      bundle! :install
+      bundle :install
 
       expect(out).to include("Bundle complete!")
     end

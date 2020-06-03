@@ -232,7 +232,7 @@ G
            #{Bundler::VERSION}
       L
 
-      bundle! "platform --ruby"
+      bundle "platform --ruby"
       expect(out).to eq("ruby 1.0.0p127")
     end
 
@@ -241,7 +241,7 @@ G
         ruby ">= 1.8.7"
       G
 
-      bundle! "platform --ruby"
+      bundle "platform --ruby"
       expect(out).to eq("ruby 1.8.7")
     end
 
@@ -250,7 +250,7 @@ G
         ruby ">= 1.8.7", "< 2.0.0"
       G
 
-      bundle! "platform --ruby"
+      bundle "platform --ruby"
       expect(out).to eq("ruby 1.8.7")
     end
   end
@@ -696,7 +696,7 @@ G
         #{ruby_version_correct_engineless}
       G
 
-      bundle! :cache
+      bundle :cache
       expect(bundled_app("vendor/cache/rack-1.0.0.gem")).to exist
     end
 
@@ -1148,7 +1148,7 @@ G
     end
 
     it "returns list of outdated gems when the ruby version matches for any engine", :jruby do
-      bundle! :install
+      bundle :install
       update_repo2 do
         build_gem "activesupport", "3.0"
         update_git "foo", :path => lib_path("foo")

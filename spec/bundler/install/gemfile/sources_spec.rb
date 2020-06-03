@@ -95,20 +95,20 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end
 
       it "installs the gems without any warning" do
-        bundle! :install
+        bundle :install
         expect(out).not_to include("Warning")
         expect(the_bundle).to include_gems("rack-obama 1.0.0")
         expect(the_bundle).to include_gems("rack 1.0.0", :source => "remote1")
       end
 
       it "can cache and deploy" do
-        bundle! :cache
+        bundle :cache
 
         expect(bundled_app("vendor/cache/rack-1.0.0.gem")).to exist
         expect(bundled_app("vendor/cache/rack-obama-1.0.gem")).to exist
 
         bundle "config --local deployment true"
-        bundle! :install
+        bundle :install
 
         expect(the_bundle).to include_gems("rack-obama 1.0.0", "rack 1.0.0")
       end
@@ -190,11 +190,11 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
           context "when disable_multisource is set" do
             before do
-              bundle! "config set disable_multisource true"
+              bundle "config set disable_multisource true"
             end
 
             it "installs from the same source without any warning" do
-              bundle! :install
+              bundle :install
 
               expect(out).not_to include("Warning: the gem 'rack' was found in multiple sources.")
               expect(err).not_to include("Warning: the gem 'rack' was found in multiple sources.")
@@ -202,7 +202,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
               # when there is already a lock file, and the gems are missing, so try again
               system_gems []
-              bundle! :install
+              bundle :install
 
               expect(out).not_to include("Warning: the gem 'rack' was found in multiple sources.")
               expect(err).not_to include("Warning: the gem 'rack' was found in multiple sources.")
@@ -307,7 +307,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
     context "when a top-level gem has an indirect dependency" do
       context "when disable_multisource is set" do
         before do
-          bundle! "config set disable_multisource true"
+          bundle "config set disable_multisource true"
         end
 
         before do
@@ -444,9 +444,9 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end
 
       it "does not unlock the non-path gem after install" do
-        bundle! :install
+        bundle :install
 
-        bundle! %(exec ruby -e 'puts "OK"')
+        bundle %(exec ruby -e 'puts "OK"')
 
         expect(out).to include("OK")
       end
@@ -487,7 +487,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
       G
 
       bundle "config --local path ../gems/system"
-      bundle! :install
+      bundle :install
 
       # And then we add some new versions...
       update_repo4 do
@@ -535,7 +535,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end
 
       it "does not re-resolve" do
-        bundle! :install, :verbose => true
+        bundle :install, :verbose => true
         expect(out).to include("using resolution from the lockfile")
         expect(out).not_to include("re-resolving dependencies")
       end
@@ -583,7 +583,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
         G
 
         # But we should still be able to find rack 2.0.1.1.forked and install it
-        bundle! :install
+        bundle :install
       end
     end
   end

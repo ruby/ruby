@@ -105,7 +105,7 @@ RSpec.describe "bundle outdated" do
 
   describe "with --verbose option" do
     it "shows the location of the latest version's gemspec if installed" do
-      bundle! "config set clean false"
+      bundle "config set clean false"
 
       update_repo2 { build_gem "activesupport", "3.0" }
       update_repo2 { build_gem "terranova", "9" }
@@ -279,7 +279,7 @@ RSpec.describe "bundle outdated" do
         build_gem "activesupport", "2.3.4"
       end
 
-      bundle! "config set clean false"
+      bundle "config set clean false"
 
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo2)}"
@@ -565,7 +565,7 @@ RSpec.describe "bundle outdated" do
         gem "rack"
         gem "foo"
       G
-      bundle! "config set deployment true"
+      bundle "config set deployment true"
     end
 
     it "outputs a helpful message about being in deployment mode" do

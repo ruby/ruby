@@ -51,7 +51,7 @@ RSpec.describe "require 'bundler/gem_tasks'" do
 
     expect(err).to be_empty
 
-    bundle! "exec rake install"
+    bundle "exec rake install"
 
     expect(err).to be_empty
   end
@@ -60,7 +60,7 @@ RSpec.describe "require 'bundler/gem_tasks'" do
     before do
       spaced_bundled_app = tmp.join("bundled app")
       FileUtils.cp_r bundled_app, spaced_bundled_app
-      bundle! "exec rake build", :dir => spaced_bundled_app
+      bundle "exec rake build", :dir => spaced_bundled_app
     end
 
     it "still runs successfully" do
@@ -80,7 +80,7 @@ RSpec.describe "require 'bundler/gem_tasks'" do
         gem "rake"
       G
 
-      bundle! "exec rake -T"
+      bundle "exec rake -T"
 
       expect(err).to be_empty
     end

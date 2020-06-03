@@ -87,13 +87,13 @@ RSpec.describe "bundle install with groups" do
 
       it "installs gems in the default group" do
         bundle "config --local without emo"
-        bundle! :install
+        bundle :install
         expect(the_bundle).to include_gems "rack 1.0.0", :groups => [:default]
       end
 
       it "respects global `without` configuration, but does not save it locally" do
         bundle "config without emo"
-        bundle! :install
+        bundle :install
         expect(the_bundle).to include_gems "rack 1.0.0", :groups => [:default]
         bundle "config list"
         expect(out).not_to include("Set for your local app (#{bundled_app(".bundle/config")}): [:emo]")
@@ -115,7 +115,7 @@ RSpec.describe "bundle install with groups" do
 
       it "does not say it installed gems from the excluded group" do
         bundle "config --local without emo"
-        bundle! :install
+        bundle :install
         expect(out).not_to include("activesupport")
       end
 
@@ -218,13 +218,13 @@ RSpec.describe "bundle install with groups" do
       it "allows the BUNDLE_WITH setting to override BUNDLE_WITHOUT" do
         ENV["BUNDLE_WITH"] = "debugging"
 
-        bundle! :install
+        bundle :install
         expect(the_bundle).to include_gem "thin 1.0"
 
         ENV["BUNDLE_WITHOUT"] = "debugging"
         expect(the_bundle).to include_gem "thin 1.0"
 
-        bundle! :install
+        bundle :install
         expect(the_bundle).to include_gem "thin 1.0"
       end
 
@@ -260,13 +260,13 @@ RSpec.describe "bundle install with groups" do
 
       it "installs gems in the default group" do
         bundle "config --local without emo lolercoaster"
-        bundle! :install
+        bundle :install
         expect(the_bundle).to include_gems "rack 1.0.0"
       end
 
       it "installs the gem if any of its groups are installed" do
         bundle "config --local without emo"
-        bundle! :install
+        bundle :install
         expect(the_bundle).to include_gems "rack 1.0.0", "activesupport 2.3.5"
       end
 
@@ -321,13 +321,13 @@ RSpec.describe "bundle install with groups" do
 
       it "installs gems in the default group" do
         bundle "config --local without emo lolercoaster"
-        bundle! :install
+        bundle :install
         expect(the_bundle).to include_gems "rack 1.0.0"
       end
 
       it "installs the gem if any of its groups are installed" do
         bundle "config --local without emo"
-        bundle! :install
+        bundle :install
         expect(the_bundle).to include_gems "rack 1.0.0", "activesupport 2.3.5"
       end
     end
@@ -389,7 +389,7 @@ RSpec.describe "bundle install with groups" do
     it "does not hit the remote a second time" do
       FileUtils.rm_rf gem_repo2
       bundle "config --local without rack"
-      bundle! :install, :verbose => true
+      bundle :install, :verbose => true
       expect(last_command.stdboth).not_to match(/fetching/i)
     end
   end
