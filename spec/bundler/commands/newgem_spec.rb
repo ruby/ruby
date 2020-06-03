@@ -461,7 +461,7 @@ RSpec.describe "bundle gem" do
 
     context "gem.test setting set to rspec" do
       before do
-        bundle "config set gem.test rspec"
+        bundle! "config set gem.test rspec"
         bundle! "gem #{gem_name}"
       end
 
@@ -474,7 +474,7 @@ RSpec.describe "bundle gem" do
 
     context "gem.test setting set to rspec and --test is set to minitest" do
       before do
-        bundle "config set gem.test rspec"
+        bundle! "config set gem.test rspec"
         bundle! "gem #{gem_name} --test=minitest"
       end
 
@@ -486,7 +486,7 @@ RSpec.describe "bundle gem" do
 
     context "--test parameter set to minitest" do
       before do
-        bundle "gem #{gem_name} --test=minitest"
+        bundle! "gem #{gem_name} --test=minitest"
       end
 
       it "depends on a specific version of minitest" do
@@ -518,7 +518,7 @@ RSpec.describe "bundle gem" do
 
     context "gem.test setting set to minitest" do
       before do
-        bundle "config set gem.test minitest"
+        bundle! "config set gem.test minitest"
         bundle! "gem #{gem_name}"
       end
 
@@ -542,7 +542,7 @@ RSpec.describe "bundle gem" do
 
     context "--test parameter set to test-unit" do
       before do
-        bundle "gem #{gem_name} --test=test-unit"
+        bundle! "gem #{gem_name} --test=test-unit"
       end
 
       it "depends on a specific version of test-unit" do
@@ -574,8 +574,8 @@ RSpec.describe "bundle gem" do
 
     context "gem.test setting set to test-unit" do
       before do
-        bundle "config set gem.test test-unit"
-        bundle "gem #{gem_name}"
+        bundle! "config set gem.test test-unit"
+        bundle! "gem #{gem_name}"
       end
 
       it "creates a default rake task to run the test suite" do
@@ -598,7 +598,7 @@ RSpec.describe "bundle gem" do
 
     context "gem.test set to rspec and --test with no arguments", :hint_text do
       before do
-        bundle "config set gem.test rspec"
+        bundle! "config set gem.test rspec"
         bundle! "gem #{gem_name} --test"
       end
 
@@ -615,7 +615,7 @@ RSpec.describe "bundle gem" do
 
     context "gem.test setting set to false and --test with no arguments", :hint_text do
       before do
-        bundle "config set gem.test false"
+        bundle! "config set gem.test false"
         bundle! "gem #{gem_name} --test"
       end
 
@@ -650,7 +650,7 @@ RSpec.describe "bundle gem" do
 
     context "--ci with no argument" do
       it "does not generate any CI config" do
-        bundle "gem #{gem_name}"
+        bundle! "gem #{gem_name}"
 
         expect(bundled_app("#{gem_name}/.github/workflows/main.yml")).to_not exist
         expect(bundled_app("#{gem_name}/.travis.yml")).to_not exist
@@ -661,7 +661,7 @@ RSpec.describe "bundle gem" do
 
     context "--ci set to github" do
       it "generates a GitHub Actions config file" do
-        bundle "gem #{gem_name} --ci=github"
+        bundle! "gem #{gem_name} --ci=github"
 
         expect(bundled_app("#{gem_name}/.github/workflows/main.yml")).to exist
       end
@@ -669,7 +669,7 @@ RSpec.describe "bundle gem" do
 
     context "--ci set to gitlab" do
       it "generates a GitLab CI config file" do
-        bundle "gem #{gem_name} --ci=gitlab"
+        bundle! "gem #{gem_name} --ci=gitlab"
 
         expect(bundled_app("#{gem_name}/.gitlab-ci.yml")).to exist
       end
@@ -677,7 +677,7 @@ RSpec.describe "bundle gem" do
 
     context "--ci set to circle" do
       it "generates a CircleCI config file" do
-        bundle "gem #{gem_name} --ci=circle"
+        bundle! "gem #{gem_name} --ci=circle"
 
         expect(bundled_app("#{gem_name}/.circleci/config.yml")).to exist
       end
@@ -685,7 +685,7 @@ RSpec.describe "bundle gem" do
 
     context "--ci set to travis" do
       it "generates a Travis CI config file" do
-        bundle "gem #{gem_name} --ci=travis"
+        bundle! "gem #{gem_name} --ci=travis"
 
         expect(bundled_app("#{gem_name}/.travis.yml")).to exist
       end
@@ -702,8 +702,8 @@ RSpec.describe "bundle gem" do
 
     context "gem.ci setting set to github" do
       it "generates a GitHub Actions config file" do
-        bundle "config set gem.ci github"
-        bundle "gem #{gem_name}"
+        bundle! "config set gem.ci github"
+        bundle! "gem #{gem_name}"
 
         expect(bundled_app("#{gem_name}/.github/workflows/main.yml")).to exist
       end
@@ -711,8 +711,8 @@ RSpec.describe "bundle gem" do
 
     context "gem.ci setting set to travis" do
       it "generates a Travis CI config file" do
-        bundle "config set gem.ci travis"
-        bundle "gem #{gem_name}"
+        bundle! "config set gem.ci travis"
+        bundle! "gem #{gem_name}"
 
         expect(bundled_app("#{gem_name}/.travis.yml")).to exist
       end
@@ -720,8 +720,8 @@ RSpec.describe "bundle gem" do
 
     context "gem.ci setting set to gitlab" do
       it "generates a GitLab CI config file" do
-        bundle "config set gem.ci gitlab"
-        bundle "gem #{gem_name}"
+        bundle! "config set gem.ci gitlab"
+        bundle! "gem #{gem_name}"
 
         expect(bundled_app("#{gem_name}/.gitlab-ci.yml")).to exist
       end
@@ -729,8 +729,8 @@ RSpec.describe "bundle gem" do
 
     context "gem.ci setting set to circle" do
       it "generates a CircleCI config file" do
-        bundle "config set gem.ci circle"
-        bundle "gem #{gem_name}"
+        bundle! "config set gem.ci circle"
+        bundle! "gem #{gem_name}"
 
         expect(bundled_app("#{gem_name}/.circleci/config.yml")).to exist
       end
@@ -738,7 +738,7 @@ RSpec.describe "bundle gem" do
 
     context "gem.ci set to github and --ci with no arguments", :hint_text do
       before do
-        bundle "config set gem.ci github"
+        bundle! "config set gem.ci github"
         bundle! "gem #{gem_name} --ci"
       end
 
@@ -753,7 +753,7 @@ RSpec.describe "bundle gem" do
 
     context "gem.ci setting set to false and --ci with no arguments", :hint_text do
       before do
-        bundle "config set gem.ci false"
+        bundle! "config set gem.ci false"
         bundle! "gem #{gem_name} --ci"
       end
 
@@ -784,7 +784,7 @@ RSpec.describe "bundle gem" do
 
     context "--edit option" do
       it "opens the generated gemspec in the user's text editor" do
-        output = bundle "gem #{gem_name} --edit=echo"
+        output = bundle! "gem #{gem_name} --edit=echo"
         gemspec_path = File.join(bundled_app, gem_name, "#{gem_name}.gemspec")
         expect(output).to include("echo \"#{gemspec_path}\"")
       end
@@ -1002,7 +1002,7 @@ Usage: "bundle gem NAME [OPTIONS]"
     it "asks about MIT license" do
       global_config "BUNDLE_GEM__TEST" => "false", "BUNDLE_GEM__COC" => "false", "BUNDLE_GEM__CI" => "false", "BUNDLE_GEM__RUBOCOP" => "false"
 
-      bundle "config list"
+      bundle! "config list"
 
       bundle! "gem foobar" do |input, _, _|
         input.puts "yes"
