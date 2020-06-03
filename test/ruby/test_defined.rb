@@ -301,4 +301,32 @@ class TestDefined < Test::Unit::TestCase
   def test_top_level_constant_not_defined
     assert_nil(defined?(TestDefined::Object))
   end
+
+  class RefinedClass
+  end
+
+  module RefiningModule
+    refine RefinedClass do
+      def pub
+      end
+    end
+
+    def self.call_without_using(x = RefinedClass.new)
+      defined?(x.pub)
+    end
+
+    using self
+
+    def self.call_with_using(x = RefinedClass.new)
+      defined?(x.pub)
+    end
+  end
+
+  def test_defined_refined_call_without_using
+    assert(!RefiningModule.call_without_using, "refined public method without using")
+  end
+
+  def test_defined_refined_call_with_using
+    assert(RefiningModule.call_with_using, "refined public method with using")
+  end
 end

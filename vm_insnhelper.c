@@ -3660,7 +3660,7 @@ vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_
 	break;
       case DEFINED_METHOD:{
 	VALUE klass = CLASS_OF(v);
-	const rb_method_entry_t *me = rb_method_entry(klass, SYM2ID(obj));
+	const rb_method_entry_t *me = rb_method_entry_with_refinements(klass, SYM2ID(obj), NULL);
 
 	if (me) {
 	    switch (METHOD_ENTRY_VISI(me)) {
