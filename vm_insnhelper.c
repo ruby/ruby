@@ -1653,12 +1653,19 @@ vm_search_method(VALUE cd_owner, struct rb_call_data *cd, VALUE recv)
 static inline int
 check_cfunc(const rb_callable_method_entry_t *me, VALUE (*func)())
 {
-    if (me && me->def->type == VM_METHOD_TYPE_CFUNC &&
-	me->def->body.cfunc.func == func) {
-	return 1;
+    if (! me) {
+        return false;
     }
     else {
-	return 0;
+        VM_ASSERT(IMEMO_TYPE_P(me, imemo_ment));
+        VM_ASSERT(callable_method_entry_p(me));
+        VM_ASSERT(me->def);
+        if (me->def->type != VM_METHOD_TYPE_CFUNC) {
+            return false;
+        }
+        else {
+            return me->def->body.cfunc.func == func;
+        }
     }
 }
 
