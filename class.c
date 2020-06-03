@@ -1141,6 +1141,13 @@ rb_prepend_module(VALUE klass, VALUE module)
     if (changed) {
 	rb_vm_check_redefinition_by_prepend(klass);
     }
+    if (RB_TYPE_P(klass, T_MODULE)) {
+        rb_subclass_entry_t *iclass = RCLASS_EXT(klass)->subclasses;
+        while (iclass) {
+            include_modules_at(iclass->klass, iclass->klass, module, FALSE);
+            iclass = iclass->next;
+        }
+    }
 }
 
 /*
