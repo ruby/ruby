@@ -87,14 +87,19 @@ module EnvUtil
       pgroup = pid
     end
 
-    if /darwin/ =~ RUBY_PLATFORM
-      # sudo -n: --non-interactive
-      # lldb -p: attach
-      #      -o: run command
-      puts `sudo -n lldb -p #{pid} --batch -o "bt all" -o "call rb_vmdebug_stack_dump_all_threads()" -o quit`
-    end
+    lldb = true if /darwin/ =~ RUBY_PLATFORM
 
     while signal = signals.shift
+
+      if lldb and [:ABRT, :KILL].include?(signal)
+        lldb = false
+        # sudo -n: --non-interactive
+        # lldb -p: attach
+        #      -o: run command
+        system(*%W[sudo -n lldb -p #{pid} --batch -o bt\ all -o call\ rb_vmdebug_stack_dump_all_threads() -o quit])
+        true
+      end
+
       begin
         Process.kill signal, pgroup
       rescue Errno::EINVAL
@@ -108,6 +113,8 @@ module EnvUtil
         begin
           Timeout.timeout(reprieve) {Process.wait(pid)}
         rescue Timeout::Error
+        else
+          break
         end
       end
     end
