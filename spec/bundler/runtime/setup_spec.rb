@@ -670,7 +670,7 @@ RSpec.describe "Bundler.setup" do
       gem "rack"
     G
 
-    run! <<-R
+    run <<-R
       File.open(File.join(Gem.dir, "specifications", "broken.gemspec"), "w") do |f|
         f.write <<-RUBY
 # -*- encoding: utf-8 -*-
@@ -685,7 +685,7 @@ end
       end
     R
 
-    run! <<-R
+    run <<-R
       puts "WIN"
     R
 
@@ -722,7 +722,7 @@ end
           gem "with_man"
         G
 
-        run! "puts ENV['MANPATH']"
+        run "puts ENV['MANPATH']"
         expect(out).to eq("#{default_bundle_path("gems/with_man-1.0/man")}#{File::PATH_SEPARATOR}/foo")
       end
     end
@@ -736,7 +736,7 @@ end
           gem "with_man"
         G
 
-        run! "puts ENV['MANPATH']"
+        run "puts ENV['MANPATH']"
         expect(out).to eq(default_bundle_path("gems/with_man-1.0/man").to_s)
       end
     end

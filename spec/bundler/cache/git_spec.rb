@@ -93,7 +93,7 @@ RSpec.describe "bundle cache with git" do
     expect(bundled_app("vendor/cache/foo-1.0-#{old_ref}")).not_to exist
 
     FileUtils.rm_rf lib_path("foo-1.0")
-    run! "require 'foo'"
+    run "require 'foo'"
     expect(out).to eq("CACHE")
   end
 

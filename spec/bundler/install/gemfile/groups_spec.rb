@@ -122,7 +122,7 @@ RSpec.describe "bundle install with groups" do
       it "allows Bundler.setup for specific groups" do
         bundle "config --local without emo"
         bundle :install
-        run!("require 'rack'; puts RACK", :default)
+        run("require 'rack'; puts RACK", :default)
         expect(out).to eq("1.0.0")
       end
 

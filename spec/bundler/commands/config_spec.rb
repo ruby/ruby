@@ -92,7 +92,7 @@ RSpec.describe ".bundle/config" do
 
     it "can also be set explicitly" do
       bundle "config set --global foo global"
-      run! "puts Bundler.settings[:foo]"
+      run "puts Bundler.settings[:foo]"
       expect(out).to eq("global")
     end
 

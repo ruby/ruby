@@ -375,7 +375,7 @@ RSpec.describe "Bundler.require" do
       gem "rack"
     G
 
-    run! <<-R
+    run <<-R
       path = File.join(Gem.dir, "specifications", "rack-1.0.0.gemspec")
       contents = File.read(path)
       contents = contents.lines.to_a.insert(-2, "\n  raise 'broken gemspec'\n").join
@@ -384,7 +384,7 @@ RSpec.describe "Bundler.require" do
       end
     R
 
-    run! <<-R
+    run <<-R
       Bundler.require
       puts "WIN"
     R
@@ -399,7 +399,7 @@ RSpec.describe "Bundler.require" do
       gem "foo", :git => "#{lib_path("foo-1.0")}"
     G
 
-    run! <<-R
+    run <<-R
       path = Gem.loaded_specs["foo"].loaded_from
       contents = File.read(path)
       contents = contents.lines.to_a.insert(-2, "\n  raise 'broken gemspec'\n").join
@@ -408,7 +408,7 @@ RSpec.describe "Bundler.require" do
       end
     R
 
-    run! <<-R
+    run <<-R
       Bundler.require
       puts "WIN"
     R

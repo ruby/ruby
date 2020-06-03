@@ -921,7 +921,7 @@ __FILE__: #{path.to_s.inspect}
           expect(bundle("exec #{file}", :artifice => nil, :env => env)).to eq(expected)
           expect(bundle("exec bundle exec #{file}", :artifice => nil, :env => env)).to eq(expected)
           expect(bundle("exec ruby #{file}", :artifice => nil, :env => env)).to eq(expected)
-          expect(run!(file.read, :artifice => nil, :env => env)).to eq(expected)
+          expect(run(file.read, :artifice => nil, :env => env)).to eq(expected)
         end
 
         skip "ruby_core has openssl and rubygems in the same folder, and this test needs rubygems require but default openssl not in a directly added entry in $LOAD_PATH" if ruby_core?
