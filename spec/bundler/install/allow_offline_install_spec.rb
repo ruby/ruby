@@ -15,7 +15,7 @@ RSpec.describe "bundle install with :allow_offline_install" do
     end
 
     it "still fails when the network is down" do
-      install_gemfile <<-G, :artifice => "fail"
+      install_gemfile <<-G, :artifice => "fail", :raise_on_error => false
         source "http://testgemserver.local"
         gem "rack-obama"
       G

@@ -36,7 +36,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end
 
       it "fails", :bundler => "3" do
-        bundle :install
+        bundle :instal, :raise_on_error => false
         expect(err).to include("Each source after the first must include a block")
         expect(exitstatus).to eq(4) if exitstatus
       end
@@ -52,17 +52,17 @@ RSpec.describe "bundle install with gems on multiple sources" do
           gem "rack-obama"
           gem "rack", "1.0.0" # force it to install the working version in repo1
         G
-
-        bundle :install
       end
 
       it "warns about ambiguous gems, but installs anyway", :bundler => "2" do
+        bundle :install
         expect(err).to include("Warning: the gem 'rack' was found in multiple sources.")
         expect(err).to include("Installed from: #{file_uri_for(gem_repo1)}")
         expect(the_bundle).to include_gems("rack-obama 1.0.0", "rack 1.0.0", :source => "remote1")
       end
 
       it "fails", :bundler => "3" do
+        bundle :install, :raise_on_error => false
         expect(err).to include("Each source after the first must include a block")
         expect(exitstatus).to eq(4) if exitstatus
       end
@@ -246,17 +246,17 @@ RSpec.describe "bundle install with gems on multiple sources" do
                 gem "depends_on_rack"
               end
             G
-
-            bundle :install
           end
 
           it "installs from the other source and warns about ambiguous gems", :bundler => "2" do
+            bundle :install
             expect(err).to include("Warning: the gem 'rack' was found in multiple sources.")
             expect(err).to include("Installed from: #{file_uri_for(gem_repo2)}")
             expect(the_bundle).to include_gems("depends_on_rack 1.0.1", "rack 1.0.0")
           end
 
           it "fails", :bundler => "3" do
+            bundle :install, :raise_on_error => false
             expect(err).to include("Each source after the first must include a block")
             expect(exitstatus).to eq(4) if exitstatus
           end
@@ -296,7 +296,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
           end
 
           it "fails", :bundler => "3" do
-            bundle :install
+            bundle :install, :raise_on_error => false
             expect(err).to include("Each source after the first must include a block")
             expect(exitstatus).to eq(4) if exitstatus
           end
@@ -356,7 +356,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
           end
 
           it "does not find the dependency" do
-            bundle :install
+            bundle :install, :raise_on_error => false
             expect(err).to include("Could not find gem 'rack', which is required by gem 'depends_on_rack', in any of the relevant sources")
           end
         end
@@ -396,7 +396,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end
 
       it "does not install the gem" do
-        bundle :install
+        bundle :install, :raise_on_error => false
         expect(err).to include("Could not find gem 'not_in_repo1'")
       end
     end
@@ -629,7 +629,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
         build_gem "rack"
       end
 
-      install_gemfile <<-G
+      install_gemfile <<-G, :raise_on_error => false
         source "#{file_uri_for(gem_repo4)}"
         source "#{file_uri_for(gem_repo1)}" do
           gem "thin"

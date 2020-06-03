@@ -184,8 +184,8 @@ RSpec.describe "bundle flex_install" do
     end
 
     it "does not install gems whose dependencies are not met" do
-      bundle :install
-      ruby <<-RUBY
+      bundle :install, :raise_on_error => false
+      ruby <<-RUBY, :raise_on_error => false
         require 'bundler/setup'
       RUBY
       expect(err).to match(/could not find gem 'rack-obama/i)
@@ -210,7 +210,7 @@ RSpec.describe "bundle flex_install" do
         the gems in your Gemfile, which may resolve the conflict.
       E
 
-      bundle :install, :retry => 0
+      bundle :install, :retry => 0, :raise_on_error => false
       expect(err).to end_with(nice_error)
     end
   end
@@ -232,7 +232,7 @@ RSpec.describe "bundle flex_install" do
 
     it "does something" do
       expect do
-        bundle "install"
+        bundle "install", :raise_on_error => false
       end.not_to change { File.read(bundled_app_lock) }
 
       expect(err).to include("rack = 0.9.1")
@@ -341,7 +341,7 @@ RSpec.describe "bundle flex_install" do
       G
 
       # upgrade Rails to 3.0.0 and then install again
-      install_gemfile <<-G
+      install_gemfile <<-G, :raise_on_error => false
         source "#{file_uri_for(gem_repo2)}"
         gem "rails", "3.0.0"
         gem "capybara", "0.3.9"

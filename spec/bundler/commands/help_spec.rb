@@ -72,7 +72,7 @@ RSpec.describe "bundle help" do
 
   it "has helpful output when using --help flag for a non-existent command" do
     with_fake_man do
-      bundle "instill -h"
+      bundle "instill -h", :raise_on_error => false
     end
     expect(err).to include('Could not find command "instill".')
   end

@@ -84,7 +84,7 @@ RSpec.describe "bundle lock" do
   end
 
   it "does not fetch remote specs when using the --local option" do
-    bundle "lock --update --local"
+    bundle "lock --update --local", :raise_on_error => false
 
     expect(err).to match(/sources listed in your Gemfile|installed locally/)
   end
@@ -143,7 +143,7 @@ RSpec.describe "bundle lock" do
   it "errors when updating a missing specific gems using --update" do
     lockfile @lockfile
 
-    bundle "lock --update blahblah"
+    bundle "lock --update blahblah", :raise_on_error => false
     expect(err).to eq("Could not find gem 'blahblah'.")
 
     expect(read_lockfile).to eq(@lockfile)
@@ -247,7 +247,7 @@ RSpec.describe "bundle lock" do
   end
 
   it "errors when removing all platforms" do
-    bundle "lock --remove-platform #{local_platforms.join(" ")}"
+    bundle "lock --remove-platform #{local_platforms.join(" ")}", :raise_on_error => false
     expect(err).to include("Removing all platforms from the bundle is not allowed")
   end
 

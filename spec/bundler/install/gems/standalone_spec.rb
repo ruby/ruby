@@ -106,7 +106,7 @@ RSpec.shared_examples "bundle install --standalone" do
         G
       end
       bundle "config --local path #{bundled_app("bundle")}"
-      install_gemfile <<-G, :standalone => true, :dir => cwd
+      install_gemfile <<-G, :standalone => true, :dir => cwd, :raise_on_error => false
         gem "bar", :git => "#{lib_path("bar-1.0")}"
       G
     end

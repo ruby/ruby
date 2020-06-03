@@ -164,7 +164,7 @@ RSpec.describe "bundle pristine", :ruby_repo do
     end
 
     it "raises when one of them is not in the lockfile" do
-      bundle "pristine abcabcabc"
+      bundle "pristine abcabcabc", :raise_on_error => false
       expect(err).to include("Could not find gem 'abcabcabc'.")
     end
   end

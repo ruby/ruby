@@ -21,7 +21,7 @@ RSpec.describe "gemcutter's dependency API" do
       gem " sinatra"
     G
 
-    bundle :install, :artifice => "endpoint"
+    bundle :install, :artifice => "endpoint", :raise_on_error => false
     expect(err).to include("' sinatra' is not a valid gem name because it contains whitespace.")
   end
 
@@ -219,7 +219,7 @@ RSpec.describe "gemcutter's dependency API" do
       gem "rack"
     G
 
-    bundle :install, :artifice => "endpoint_redirect"
+    bundle :install, :artifice => "endpoint_redirect", :raise_on_error => false
     expect(err).to match(/Too many redirects/)
   end
 
@@ -591,7 +591,7 @@ RSpec.describe "gemcutter's dependency API" do
         gem "rack"
       G
 
-      bundle :install, :artifice => "endpoint_500"
+      bundle :install, :artifice => "endpoint_500", :raise_on_error => false
       expect(out).not_to include("#{user}:#{password}")
     end
 
@@ -665,14 +665,14 @@ RSpec.describe "gemcutter's dependency API" do
       end
 
       it "shows instructions if auth is not provided for the source" do
-        bundle :install, :artifice => "endpoint_strict_basic_authentication"
+        bundle :install, :artifice => "endpoint_strict_basic_authentication", :raise_on_error => false
         expect(err).to include("bundle config set #{source_hostname} username:password")
       end
 
       it "fails if authentication has already been provided, but failed" do
         bundle "config set #{source_hostname} #{user}:wrong"
 
-        bundle :install, :artifice => "endpoint_strict_basic_authentication"
+        bundle :install, :artifice => "endpoint_strict_basic_authentication", :raise_on_error => false
         expect(err).to include("Bad username or password")
       end
     end
@@ -711,7 +711,7 @@ RSpec.describe "gemcutter's dependency API" do
         gem "rack"
       G
 
-      bundle :install, :env => { "RUBYOPT" => opt_add("-I#{bundled_app("broken_ssl")}", ENV["RUBYOPT"]) }
+      bundle :install, :env => { "RUBYOPT" => opt_add("-I#{bundled_app("broken_ssl")}", ENV["RUBYOPT"]) }, :raise_on_error => false
       expect(err).to include("OpenSSL")
     end
   end
@@ -731,7 +731,7 @@ RSpec.describe "gemcutter's dependency API" do
         gem "rack"
       G
 
-      bundle :install
+      bundle :install, :raise_on_error => false
       expect(err).to match(/could not verify the SSL certificate/i)
     end
   end

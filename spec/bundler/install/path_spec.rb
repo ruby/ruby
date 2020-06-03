@@ -37,7 +37,7 @@ RSpec.describe "bundle install" do
     end
 
     it "disallows --path vendor/bundle --system", :bundler => "< 3" do
-      bundle "install --path vendor/bundle --system"
+      bundle "install --path vendor/bundle --system", :raise_on_error => false
       expect(err).to include("Please choose only one option.")
       expect(exitstatus).to eq(15) if exitstatus
     end
@@ -187,7 +187,7 @@ RSpec.describe "bundle install" do
 
       vendored_gems("extensions").rmtree
 
-      run "require 'very_simple_binary_c'"
+      run "require 'very_simple_binary_c'", :raise_on_error => false
       expect(err).to include("Bundler::GemNotFound")
 
       bundle "config --local path ./vendor/bundle"
@@ -211,7 +211,7 @@ RSpec.describe "bundle install" do
       G
 
       bundle "config --local path bundle"
-      bundle :install
+      bundle :install, :raise_on_error => false
       expect(err).to include("file already exists")
     end
   end

@@ -326,7 +326,7 @@ RSpec.describe "bundle clean" do
       gem "rack", "1.0.0"
     G
 
-    bundle :clean
+    bundle :clean, :raise_on_error => false
 
     expect(exitstatus).to eq(15) if exitstatus
     expect(err).to include("--force")
@@ -560,7 +560,7 @@ RSpec.describe "bundle clean" do
 
       FileUtils.chmod(0o500, system_cache_path)
 
-      bundle :clean, :force => true
+      bundle :clean, :force => true, :raise_on_error => false
 
       expect(err).to include(system_gem_path.to_s)
       expect(err).to include("grant write permissions")

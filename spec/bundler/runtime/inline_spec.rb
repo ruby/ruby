@@ -59,7 +59,7 @@ RSpec.describe "bundler/inline#gemfile" do
     expect(out).to eq("two")
     expect(exitstatus).to be_zero if exitstatus
 
-    script <<-RUBY
+    script <<-RUBY, :raise_on_error => false
       gemfile do
         path "#{lib_path}" do
           gem "eleven"
@@ -130,7 +130,7 @@ RSpec.describe "bundler/inline#gemfile" do
   end
 
   it "raises an exception if passed unknown arguments" do
-    script <<-RUBY
+    script <<-RUBY, :raise_on_error => false
       gemfile(true, :arglebargle => true) do
         path "#{lib_path}"
         gem "two"

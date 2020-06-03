@@ -94,7 +94,7 @@ RSpec.describe "major deprecations" do
 
   describe "bundle update --quiet" do
     it "does not print any deprecations" do
-      bundle :update, :quiet => true
+      bundle :update, :quiet => true, :raise_on_error => false
       expect(deprecations).to be_empty
     end
   end
@@ -106,7 +106,7 @@ RSpec.describe "major deprecations" do
         gem "rack"
       G
 
-      bundle "check --path vendor/bundle"
+      bundle "check --path vendor/bundle", :raise_on_error => false
     end
 
     it "should print a deprecation warning", :bundler => "2" do
@@ -128,7 +128,7 @@ RSpec.describe "major deprecations" do
         gem "rack"
       G
 
-      bundle "check --path=vendor/bundle"
+      bundle "check --path=vendor/bundle", :raise_on_error => false
     end
 
     it "should print a deprecation warning", :bundler => "2" do
@@ -563,7 +563,7 @@ The :gist git source is deprecated, and will be removed in the future. Add this 
 
   context "bundle console" do
     before do
-      bundle "console"
+      bundle "console", :raise_on_error => false
     end
 
     it "prints a deprecation warning", :bundler => "2" do

@@ -205,12 +205,12 @@ RSpec.describe "bundle install with groups" do
 
       it "removes groups from with when passed at --without", :bundler => "< 3" do
         bundle "config --local with debugging"
-        bundle "install --without debugging"
+        bundle "install --without debugging", :raise_on_error => false
         expect(the_bundle).not_to include_gem "thin 1.0"
       end
 
       it "errors out when passing a group to with and without via CLI flags", :bundler => "< 3" do
-        bundle "install --with emo debugging --without emo"
+        bundle "install --with emo debugging --without emo", :raise_on_error => false
         expect(last_command).to be_failure
         expect(err).to include("The offending groups are: emo")
       end

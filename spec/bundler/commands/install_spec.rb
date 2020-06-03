@@ -12,7 +12,7 @@ RSpec.describe "bundle install with gem sources" do
     end
 
     it "does not make a lockfile if the install fails" do
-      install_gemfile <<-G
+      install_gemfile <<-G, :raise_on_error => false
         raise StandardError, "FAIL"
       G
 
@@ -68,7 +68,7 @@ RSpec.describe "bundle install with gem sources" do
 
       lockfile = File.read(bundled_app_lock)
 
-      install_gemfile <<-G
+      install_gemfile <<-G, :raise_on_error => false
         raise StandardError, "FAIL"
       G
 
@@ -115,7 +115,7 @@ RSpec.describe "bundle install with gem sources" do
     end
 
     it "raises an appropriate error when gems are specified using symbols" do
-      install_gemfile(<<-G)
+      install_gemfile <<-G, :raise_on_error => false
         source "#{file_uri_for(gem_repo1)}"
         gem :rack
       G
@@ -309,7 +309,7 @@ RSpec.describe "bundle install with gem sources" do
     end
 
     it "gives a useful error if no sources are set" do
-      install_gemfile <<-G
+      install_gemfile <<-G, :raise_on_error => false
         gem "rack"
       G
 
@@ -325,7 +325,7 @@ RSpec.describe "bundle install with gem sources" do
 
     context "throws a warning if a gem is added twice in Gemfile" do
       it "without version requirements" do
-        install_gemfile <<-G
+        install_gemfile <<-G, :raise_on_error => false
           source "#{file_uri_for(gem_repo2)}"
           gem "rack"
           gem "rack"
@@ -337,7 +337,7 @@ RSpec.describe "bundle install with gem sources" do
       end
 
       it "with same versions" do
-        install_gemfile <<-G
+        install_gemfile <<-G, :raise_on_error => false
           source "#{file_uri_for(gem_repo2)}"
           gem "rack", "1.0"
           gem "rack", "1.0"
@@ -351,7 +351,7 @@ RSpec.describe "bundle install with gem sources" do
 
     context "throws an error if a gem is added twice in Gemfile" do
       it "when version of one dependency is not specified" do
-        install_gemfile <<-G
+        install_gemfile <<-G, :raise_on_error => false
           source "#{file_uri_for(gem_repo2)}"
           gem "rack"
           gem "rack", "1.0"
@@ -362,7 +362,7 @@ RSpec.describe "bundle install with gem sources" do
       end
 
       it "when different versions of both dependencies are specified" do
-        install_gemfile <<-G
+        install_gemfile <<-G, :raise_on_error => false
           source "#{file_uri_for(gem_repo2)}"
           gem "rack", "1.0"
           gem "rack", "1.1"
@@ -376,7 +376,7 @@ RSpec.describe "bundle install with gem sources" do
     it "gracefully handles error when rubygems server is unavailable" do
       skip "networking issue" if Gem.win_platform?
 
-      install_gemfile <<-G, :artifice => nil
+      install_gemfile <<-G, :artifice => nil, :raise_on_error => false
         source "#{file_uri_for(gem_repo1)}"
         source "http://0.0.0.0:9384" do
           gem 'foo'
@@ -400,7 +400,7 @@ RSpec.describe "bundle install with gem sources" do
         build_gem "ruby-ajp", "1.0.0"
       end
 
-      install_gemfile <<-G, :full_index => true
+      install_gemfile <<-G, :full_index => true, :raise_on_error => false
         source "#{file_uri_for(gem_repo2)}"
 
         gem "ajp-rails", "0.0.0"
@@ -441,7 +441,7 @@ RSpec.describe "bundle install with gem sources" do
 
     context "and using an unsupported Ruby version" do
       it "prints an error" do
-        install_gemfile <<-G
+        install_gemfile <<-G, :raise_on_error => false
           ::RUBY_VERSION = '2.0.1'
           ruby '~> 2.2'
         G
@@ -530,7 +530,7 @@ RSpec.describe "bundle install with gem sources" do
         gem 'rack'
       G
 
-      bundle :install, :quiet => true
+      bundle :install, :quiet => true, :raise_on_error => false
       expect(err).to include("Could not find gem 'rack'")
       expect(err).to_not include("Your Gemfile has no gem server sources")
     end
@@ -549,7 +549,7 @@ RSpec.describe "bundle install with gem sources" do
       FileUtils.chmod(0o500, bundled_app("vendor"))
 
       bundle "config --local path vendor"
-      bundle :install
+      bundle :install, :raise_on_error => false
       expect(err).to include(bundled_app("vendor").to_s)
       expect(err).to include("grant write permissions")
     end
@@ -581,7 +581,7 @@ RSpec.describe "bundle install with gem sources" do
     end
 
     it "should display a helpful message explaining how to fix it" do
-      bundle :install, :env => { "BUNDLE_RUBYGEMS__ORG" => "user:pass{word" }
+      bundle :install, :env => { "BUNDLE_RUBYGEMS__ORG" => "user:pass{word" }, :raise_on_error => false
       expect(exitstatus).to eq(17) if exitstatus
       expect(err).to eq("Please CGI escape your usernames and passwords before " \
                         "setting them for authentication.")

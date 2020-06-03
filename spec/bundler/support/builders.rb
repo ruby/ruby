@@ -721,7 +721,7 @@ module Spec
         end
         super(options.merge(:path => libpath, :gemspec => update_gemspec, :source => source))
         @context.git("add *", libpath)
-        @context.git("commit -m BUMP", libpath)
+        @context.git("commit -m BUMP", libpath, :raise_on_error => false)
       end
     end
 

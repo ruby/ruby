@@ -21,7 +21,7 @@ RSpec.describe "compact index api" do
       gem " sinatra"
     G
 
-    bundle :install, :artifice => "compact_index"
+    bundle :install, :artifice => "compact_index", :raise_on_error => false
     expect(err).to include("' sinatra' is not a valid gem name because it contains whitespace.")
   end
 
@@ -229,7 +229,7 @@ The checksum of /versions does not match the checksum provided by the server! So
       gem "rack"
     G
 
-    bundle :install, :artifice => "compact_index_redirects"
+    bundle :install, :artifice => "compact_index_redirects", :raise_on_error => false
     expect(err).to match(/Too many redirects/)
   end
 
@@ -617,7 +617,7 @@ The checksum of /versions does not match the checksum provided by the server! So
         gem "rack"
       G
 
-      bundle :install, :artifice => "endpoint_500"
+      bundle :install, :artifice => "endpoint_500", :raise_on_error => false
       expect(out).not_to include("#{user}:#{password}")
     end
 
@@ -691,14 +691,14 @@ The checksum of /versions does not match the checksum provided by the server! So
       end
 
       it "shows instructions if auth is not provided for the source" do
-        bundle :install, :artifice => "compact_index_strict_basic_authentication"
+        bundle :install, :artifice => "compact_index_strict_basic_authentication", :raise_on_error => false
         expect(err).to include("bundle config set #{source_hostname} username:password")
       end
 
       it "fails if authentication has already been provided, but failed" do
         bundle "config set #{source_hostname} #{user}:wrong"
 
-        bundle :install, :artifice => "compact_index_strict_basic_authentication"
+        bundle :install, :artifice => "compact_index_strict_basic_authentication", :raise_on_error => false
         expect(err).to include("Bad username or password")
       end
     end
@@ -737,7 +737,7 @@ The checksum of /versions does not match the checksum provided by the server! So
         gem "rack"
       G
 
-      bundle :install, :env => { "RUBYOPT" => opt_add("-I#{bundled_app("broken_ssl")}", ENV["RUBYOPT"]) }
+      bundle :install, :env => { "RUBYOPT" => opt_add("-I#{bundled_app("broken_ssl")}", ENV["RUBYOPT"]) }, :raise_on_error => false
       expect(err).to include("OpenSSL")
     end
   end
@@ -757,7 +757,7 @@ The checksum of /versions does not match the checksum provided by the server! So
         gem "rack"
       G
 
-      bundle :install
+      bundle :install, :raise_on_error => false
       expect(err).to match(/could not verify the SSL certificate/i)
     end
   end
@@ -856,7 +856,7 @@ The checksum of /versions does not match the checksum provided by the server! So
   end
 
   it "fails gracefully when the source URI has an invalid scheme" do
-    install_gemfile <<-G
+    install_gemfile <<-G, :raise_on_error => false
       source "htps://rubygems.org"
       gem "rack"
     G
@@ -868,7 +868,7 @@ The checksum of /versions does not match the checksum provided by the server! So
 
   describe "checksum validation" do
     it "raises when the checksum does not match" do
-      install_gemfile <<-G, :artifice => "compact_index_wrong_gem_checksum"
+      install_gemfile <<-G, :artifice => "compact_index_wrong_gem_checksum", :raise_on_error => false
         source "#{source_uri}"
         gem "rack"
       G
@@ -888,7 +888,7 @@ The checksum of /versions does not match the checksum provided by the server! So
     end
 
     it "raises when the checksum is the wrong length" do
-      install_gemfile <<-G, :artifice => "compact_index_wrong_gem_checksum", :env => { "BUNDLER_SPEC_RACK_CHECKSUM" => "checksum!", "DEBUG" => "1" }, :verbose => true
+      install_gemfile <<-G, :artifice => "compact_index_wrong_gem_checksum", :env => { "BUNDLER_SPEC_RACK_CHECKSUM" => "checksum!", "DEBUG" => "1" }, :verbose => true, :raise_on_error => false
         source "#{source_uri}"
         gem "rack"
       G
@@ -914,7 +914,7 @@ The checksum of /versions does not match the checksum provided by the server! So
   end
 
   it "doesn't explode when the API dependencies are wrong" do
-    install_gemfile <<-G, :artifice => "compact_index_wrong_dependencies", :env => { "DEBUG" => "true" }
+    install_gemfile <<-G, :artifice => "compact_index_wrong_dependencies", :env => { "DEBUG" => "true" }, :raise_on_error => false
       source "#{source_uri}"
       gem "rails"
     G

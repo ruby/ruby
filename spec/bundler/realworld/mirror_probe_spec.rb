@@ -71,7 +71,7 @@ RSpec.describe "fetching dependencies with a not available mirror", :realworld =
         gem 'weakling'
       G
 
-      bundle :install, :artifice => nil
+      bundle :install, :artifice => nil, :raise_on_error => false
 
       expect(out).to include("Fetching source index from #{mirror}")
       expect(err).to include("Retrying fetcher due to error (2/4): Bundler::HTTPError Could not fetch specs from #{mirror}")
@@ -86,7 +86,7 @@ RSpec.describe "fetching dependencies with a not available mirror", :realworld =
         gem 'weakling'
       G
 
-      bundle :install, :artifice => nil
+      bundle :install, :artifice => nil, :raise_on_error => false
 
       expect(out).to include "Fetching source index from #{mirror}/"
       expect(err).to include <<-EOS.strip
@@ -109,7 +109,7 @@ Could not fetch specs from #{mirror}/
         gem 'weakling'
       G
 
-      bundle :install, :artifice => nil
+      bundle :install, :artifice => nil, :raise_on_error => false
 
       expect(out).to include("Fetching source index from #{mirror}")
       expect(err).to include("Retrying fetcher due to error (2/4): Bundler::HTTPError Could not fetch specs from #{mirror}")

@@ -65,7 +65,7 @@ RSpec.describe "bundle install with explicit source paths" do
     username = "some_unexisting_user"
     relative_path = lib_path("foo-1.0").relative_path_from(Pathname.new("/home/#{username}").expand_path)
 
-    install_gemfile <<-G
+    install_gemfile <<-G, :raise_on_error => false
       gem 'foo', :path => "~#{username}/#{relative_path}"
     G
     expect(err).to match("There was an error while trying to use the path `~#{username}/#{relative_path}`.")
@@ -223,7 +223,7 @@ RSpec.describe "bundle install with explicit source paths" do
       G
     end
 
-    install_gemfile <<-G
+    install_gemfile <<-G, :raise_on_error => false
       gem "foo", :path => "#{lib_path("foo-1.0")}"
     G
 
@@ -306,7 +306,7 @@ RSpec.describe "bundle install with explicit source paths" do
       s.write "bar.gemspec", build_spec("bar", "1.0").first.to_ruby
     end
 
-    install_gemfile <<-G
+    install_gemfile <<-G, :raise_on_error => false
       gemspec :path => "#{lib_path("foo")}"
     G
 
@@ -709,8 +709,7 @@ RSpec.describe "bundle install with explicit source paths" do
         H
       end
 
-      bundle :install,
-        :requires => [lib_path("install_hooks.rb")]
+      bundle :install, :requires => [lib_path("install_hooks.rb")], :raise_on_error => false
       expect(err).to include("failed for foo-1.0")
     end
 

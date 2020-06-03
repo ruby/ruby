@@ -139,7 +139,7 @@ RSpec.describe "bundle cache with path" do
       gem "baz", :path => '#{lib_path("baz-1.0")}'
     G
 
-    bundle "cache --no-all"
+    bundle "cache --no-all", :raise_on_error => false
     expect(bundled_app("vendor/cache/baz-1.0")).not_to exist
   end
 end

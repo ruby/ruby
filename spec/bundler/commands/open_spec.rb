@@ -30,7 +30,7 @@ RSpec.describe "bundle open" do
     end
 
     it "complains if gem not in bundle" do
-      bundle "open missing", :env => { "EDITOR" => "echo editor", "VISUAL" => "", "BUNDLER_EDITOR" => "" }
+      bundle "open missing", :env => { "EDITOR" => "echo editor", "VISUAL" => "", "BUNDLER_EDITOR" => "" }, :raise_on_error => false
       expect(err).to match(/could not find gem 'missing'/i)
     end
 
@@ -48,7 +48,7 @@ RSpec.describe "bundle open" do
     end
 
     it "suggests alternatives for similar-sounding gems" do
-      bundle "open Rails", :env => { "EDITOR" => "echo editor", "VISUAL" => "", "BUNDLER_EDITOR" => "" }
+      bundle "open Rails", :env => { "EDITOR" => "echo editor", "VISUAL" => "", "BUNDLER_EDITOR" => "" }, :raise_on_error => false
       expect(err).to match(/did you mean rails\?/i)
     end
 
@@ -87,7 +87,7 @@ RSpec.describe "bundle open" do
     end
 
     it "opens the editor with a clean env" do
-      bundle "open", :env => { "EDITOR" => "sh -c 'env'", "VISUAL" => "", "BUNDLER_EDITOR" => "" }
+      bundle "open", :env => { "EDITOR" => "sh -c 'env'", "VISUAL" => "", "BUNDLER_EDITOR" => "" }, :raise_on_error => false
       expect(out).not_to include("BUNDLE_GEMFILE=")
     end
   end

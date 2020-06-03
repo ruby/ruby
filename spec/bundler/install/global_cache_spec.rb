@@ -111,7 +111,7 @@ RSpec.describe "global gem caching" do
 
         expect(source_global_cache("rack-1.0.0.gem")).to exist
         expect(source2_global_cache("rack-0.9.1.gem")).to exist
-        bundle :install, :artifice => "compact_index_no_gem"
+        bundle :install, :artifice => "compact_index_no_gem", :raise_on_error => false
         expect(err).to include("Internal Server Error 500")
         # rack 1.0.0 is not installed and rack 0.9.1 is not
         expect(the_bundle).not_to include_gems "rack 1.0.0"
@@ -124,7 +124,7 @@ RSpec.describe "global gem caching" do
 
         expect(source_global_cache("rack-1.0.0.gem")).to exist
         expect(source2_global_cache("rack-0.9.1.gem")).to exist
-        bundle :install, :artifice => "compact_index_no_gem"
+        bundle :install, :artifice => "compact_index_no_gem", :raise_on_error => false
         expect(err).to include("Internal Server Error 500")
         # rack 0.9.1 is not installed and rack 1.0.0 is not
         expect(the_bundle).not_to include_gems "rack 0.9.1"
