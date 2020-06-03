@@ -16,7 +16,7 @@ RSpec.describe "global gem caching" do
     end
 
     it "caches gems into the global cache on download" do
-      install_gemfile! <<-G, :artifice => "compact_index"
+      install_gemfile <<-G, :artifice => "compact_index"
         source "#{source}"
         gem "rack"
       G
@@ -29,7 +29,7 @@ RSpec.describe "global gem caching" do
       source_global_cache.mkpath
       FileUtils.cp(gem_repo1("gems/rack-1.0.0.gem"), source_global_cache("rack-1.0.0.gem"))
 
-      install_gemfile! <<-G, :artifice => "compact_index_no_gem"
+      install_gemfile <<-G, :artifice => "compact_index_no_gem"
         source "#{source}"
         gem "rack"
       G
@@ -39,7 +39,7 @@ RSpec.describe "global gem caching" do
 
     describe "when the same gem from different sources is installed" do
       it "should use the appropriate one from the global cache" do
-        install_gemfile! <<-G, :artifice => "compact_index"
+        install_gemfile <<-G, :artifice => "compact_index"
           source "#{source}"
           gem "rack"
         G
@@ -49,7 +49,7 @@ RSpec.describe "global gem caching" do
         expect(source_global_cache("rack-1.0.0.gem")).to exist
         # rack 1.0.0 is not installed and it is in the global cache
 
-        install_gemfile! <<-G, :artifice => "compact_index"
+        install_gemfile <<-G, :artifice => "compact_index"
           source "#{source2}"
           gem "rack", "0.9.1"
         G
@@ -134,7 +134,7 @@ RSpec.describe "global gem caching" do
 
     describe "when installing gems from a different directory" do
       it "uses the global cache as a source" do
-        install_gemfile! <<-G, :artifice => "compact_index"
+        install_gemfile <<-G, :artifice => "compact_index"
           source "#{source}"
           gem "rack"
           gem "activesupport"
@@ -150,7 +150,7 @@ RSpec.describe "global gem caching" do
         expect(the_bundle).not_to include_gems "rack 1.0.0"
         expect(the_bundle).not_to include_gems "activesupport 2.3.5"
 
-        install_gemfile! <<-G, :artifice => "compact_index_no_gem"
+        install_gemfile <<-G, :artifice => "compact_index_no_gem"
           source "#{source}"
           gem "rack"
         G
@@ -193,7 +193,7 @@ RSpec.describe "global gem caching" do
       build_lib "very_simple_path_binary", &:add_c_extension
       revision = revision_for(lib_path("very_simple_git_binary-1.0"))[0, 12]
 
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
 
         gem "very_simple_binary"

@@ -544,7 +544,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
   context "when a gem is installed to system gems" do
     before do
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
@@ -590,7 +590,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
   describe "source changed to one containing a higher version of a dependency" do
     before do
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
 
         gem "rack"

@@ -370,7 +370,7 @@ RSpec.describe "Bundler.require" do
   end
 
   it "does not load rubygems gemspecs that are used" do
-    install_gemfile! <<-G
+    install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
       gem "rack"
     G
@@ -395,7 +395,7 @@ RSpec.describe "Bundler.require" do
   it "does not load git gemspecs that are used" do
     build_git "foo"
 
-    install_gemfile! <<-G
+    install_gemfile <<-G
       gem "foo", :git => "#{lib_path("foo-1.0")}"
     G
 

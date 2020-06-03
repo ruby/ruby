@@ -75,7 +75,7 @@ RSpec.describe "bundle install with gemfile that uses eval_gemfile" do
         source "#{file_uri_for(gem_repo1)}"
         eval_gemfile "other/Gemfile"
       G
-      install_gemfile! "eval_gemfile File.expand_path('Gemfile-alt')"
+      install_gemfile "eval_gemfile File.expand_path('Gemfile-alt')"
 
       expect(the_bundle).to include_gem "rack 1.0.0"
     end

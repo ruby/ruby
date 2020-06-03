@@ -95,7 +95,7 @@ RSpec.describe "bundle install across platforms" do
 
     simulate_platform java
 
-    install_gemfile! <<-G
+    install_gemfile <<-G
       source "#{file_uri_for(gem_repo4)}"
 
       gem "empyrean", "0.1.0"
@@ -242,7 +242,7 @@ RSpec.describe "bundle install across platforms" do
       build_gem "CFPropertyList"
     end
 
-    install_gemfile! <<-G
+    install_gemfile <<-G
       source "#{file_uri_for(gem_repo2)}"
 
       gem "facter"

@@ -225,7 +225,7 @@ RSpec.describe "bundle install with git sources" do
         s.write("lib/foo.rb", "raise 'FAIL'")
       end
 
-      install_gemfile! <<-G
+      install_gemfile <<-G
         git "#{lib_path("foo-1.0")}", :ref => "refs/bundler/1" do
           gem "foo"
         end
@@ -241,7 +241,7 @@ RSpec.describe "bundle install with git sources" do
     end
 
     it "works when the revision is a non-head ref and it was previously downloaded" do
-      install_gemfile! <<-G
+      install_gemfile <<-G
         git "#{lib_path("foo-1.0")}" do
           gem "foo"
         end
@@ -259,7 +259,7 @@ RSpec.describe "bundle install with git sources" do
         s.write("lib/foo.rb", "raise 'FAIL'")
       end
 
-      install_gemfile! <<-G
+      install_gemfile <<-G
         git "#{lib_path("foo-1.0")}", :ref => "refs/bundler/1" do
           gem "foo"
         end
@@ -279,7 +279,7 @@ RSpec.describe "bundle install with git sources" do
 
       bundle "config set global_gem_cache true"
 
-      install_gemfile! <<-G
+      install_gemfile <<-G
         git "#{lib_path("foo-1.0")}" do
           gem "foo"
         end
@@ -446,7 +446,7 @@ RSpec.describe "bundle install with git sources" do
         s.write "lib/rack.rb", "puts :LOCAL"
       end
 
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "master"
       G

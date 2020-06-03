@@ -594,7 +594,7 @@ G
     end
 
     it "prints path if ruby version is correct" do
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rails"
 
@@ -606,7 +606,7 @@ G
     end
 
     it "prints path if ruby version is correct for any engine", :jruby do
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rails"
 
@@ -689,7 +689,7 @@ G
     end
 
     it "copies the .gem file to vendor/cache when ruby version matches for any engine", :jruby do
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem 'rack'
 
@@ -748,7 +748,7 @@ G
 
   context "bundle pack" do
     before do
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem 'rack'
       G
@@ -766,7 +766,7 @@ G
     end
 
     it "copies the .gem file to vendor/cache when ruby version matches any engine", :jruby do
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem 'rack'
 

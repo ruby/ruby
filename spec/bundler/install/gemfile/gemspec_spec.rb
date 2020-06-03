@@ -138,7 +138,7 @@ RSpec.describe "bundle install from an existing gemspec" do
       s.add_dependency "rack"
     end
 
-    install_gemfile! <<-G
+    install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
       gemspec :path => '#{tmp.join("foo")}'
     G
@@ -157,7 +157,7 @@ RSpec.describe "bundle install from an existing gemspec" do
       s.add_development_dependency "thin"
     end
 
-    install_gemfile! <<-G
+    install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
       gemspec :path => '#{tmp.join("foo")}'
     G
@@ -175,7 +175,7 @@ RSpec.describe "bundle install from an existing gemspec" do
 
     system_gems "platform_specific-1.0-java", :path => default_bundle_path
 
-    install_gemfile! <<-G
+    install_gemfile <<-G
       gemspec :path => '#{tmp.join("foo")}'
     G
 
@@ -209,7 +209,7 @@ RSpec.describe "bundle install from an existing gemspec" do
       f.write "#{gemspec.strip}.tap { gem 'rack-obama'; require 'rack/obama' }"
     end
 
-    install_gemfile! <<-G
+    install_gemfile <<-G
       gemspec
     G
 
@@ -247,7 +247,7 @@ RSpec.describe "bundle install from an existing gemspec" do
       build_gem "foo", "0.0.1"
     end
 
-    install_gemfile! <<-G
+    install_gemfile <<-G
       source "#{file_uri_for(gem_repo2)}"
       gem "deps"
       gemspec :path => '#{tmp.join("foo")}', :name => 'foo'
@@ -280,7 +280,7 @@ RSpec.describe "bundle install from an existing gemspec" do
           s.add_dependency "activesupport", ">= 1"
         end
 
-        install_gemfile! <<-G
+        install_gemfile <<-G
           source "#{file_uri_for(gem_repo1)}"
           gemspec
         G
@@ -549,7 +549,7 @@ RSpec.describe "bundle install from an existing gemspec" do
     it "installs the ruby platform gemspec" do
       simulate_platform "ruby"
 
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gemspec :path => '#{tmp.join("foo")}', :name => 'foo'
       G
@@ -561,7 +561,7 @@ RSpec.describe "bundle install from an existing gemspec" do
       simulate_platform "ruby"
 
       bundle "config --local without development"
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gemspec :path => '#{tmp.join("foo")}', :name => 'foo'
       G

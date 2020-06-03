@@ -5,7 +5,7 @@ RSpec.describe "major deprecations" do
 
   describe "Bundler" do
     before do
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
@@ -290,7 +290,7 @@ RSpec.describe "major deprecations" do
 
     it "should print a proper warning, and use gems.rb" do
       create_file "gems.rb"
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
@@ -374,7 +374,7 @@ RSpec.describe "major deprecations" do
   context "when Bundler.setup is run in a ruby script" do
     before do
       create_file "gems.rb"
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack", :group => :test
       G
@@ -482,7 +482,7 @@ The :gist git source is deprecated, and will be removed in the future. Add this 
 
   context "bundle show" do
     before do
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G

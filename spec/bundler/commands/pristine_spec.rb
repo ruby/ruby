@@ -18,7 +18,7 @@ RSpec.describe "bundle pristine", :ruby_repo do
       build_lib "bar", :path => lib_path("bar")
     end
 
-    install_gemfile! <<-G
+    install_gemfile <<-G
       source "#{file_uri_for(gem_repo2)}"
       gem "weakling"
       gem "very_simple_binary"

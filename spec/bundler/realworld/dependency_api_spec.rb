@@ -34,7 +34,7 @@ RSpec.describe "gemcutter's dependency API", :realworld => true do
     end
 
     it "times out and falls back on the modern index" do
-      install_gemfile! <<-G, :artifice => nil
+      install_gemfile <<-G, :artifice => nil
         source "#{@server_uri}"
         gem "rack"
       G

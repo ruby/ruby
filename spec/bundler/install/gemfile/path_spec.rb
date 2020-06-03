@@ -727,7 +727,7 @@ RSpec.describe "bundle install with explicit source paths" do
         s.write("lib/rubygems_plugin.rb", "FileUtils.touch('#{bar_file}')")
       end
 
-      install_gemfile! <<-G
+      install_gemfile <<-G
         gem "foo", :path => "#{lib_path("foo-1.0")}"
         gem "bar", :path => "#{lib_path("bar-1.0")}"
       G

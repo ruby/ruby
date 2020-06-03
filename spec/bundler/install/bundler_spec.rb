@@ -132,7 +132,7 @@ RSpec.describe "bundle install" do
     end
 
     it "does not cause a conflict if new dependencies in the Gemfile require older dependencies than the lockfile" do
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo2)}"
         gem 'rails', "2.3.2"
       G
@@ -151,7 +151,7 @@ RSpec.describe "bundle install" do
 
       system_gems "bundler-99999999.99.1"
 
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo2)}"
         gem "rails", "3.0"
       G
@@ -165,7 +165,7 @@ RSpec.describe "bundle install" do
 
       system_gems "bundler-99999999.99.1"
 
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo2)}"
         gem "rails", "3.0"
       G
@@ -184,7 +184,7 @@ RSpec.describe "bundle install" do
           end
         end
 
-        install_gemfile! <<-G
+        install_gemfile <<-G
           source "#{file_uri_for(gem_repo4)}"
           gem "requires_nonexistant_bundler"
         G

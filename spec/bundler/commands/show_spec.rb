@@ -3,7 +3,7 @@
 RSpec.describe "bundle show", :bundler => "< 3" do
   context "with a standard Gemfile" do
     before :each do
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rails"
       G
@@ -94,7 +94,7 @@ RSpec.describe "bundle show", :bundler => "< 3" do
     end
 
     it "prints out git info" do
-      install_gemfile! <<-G
+      install_gemfile <<-G
         gem "foo", :git => "#{lib_path("foo-1.0")}"
       G
       expect(the_bundle).to include_gems "foo 1.0"
@@ -109,7 +109,7 @@ RSpec.describe "bundle show", :bundler => "< 3" do
       end
       @revision = revision_for(lib_path("foo-1.0"))[0...6]
 
-      install_gemfile! <<-G
+      install_gemfile <<-G
         gem "foo", :git => "#{lib_path("foo-1.0")}", :branch => "omg"
       G
       expect(the_bundle).to include_gems "foo 1.0.omg"
@@ -120,7 +120,7 @@ RSpec.describe "bundle show", :bundler => "< 3" do
 
     it "doesn't print the branch when tied to a ref" do
       sha = revision_for(lib_path("foo-1.0"))
-      install_gemfile! <<-G
+      install_gemfile <<-G
         gem "foo", :git => "#{lib_path("foo-1.0")}", :ref => "#{sha}"
       G
 
@@ -130,7 +130,7 @@ RSpec.describe "bundle show", :bundler => "< 3" do
 
     it "handles when a version is a '-' prerelease" do
       @git = build_git("foo", "1.0.0-beta.1", :path => lib_path("foo"))
-      install_gemfile! <<-G
+      install_gemfile <<-G
         gem "foo", "1.0.0-beta.1", :git => "#{lib_path("foo")}"
       G
       expect(the_bundle).to include_gems "foo 1.0.0.pre.beta.1"
@@ -166,7 +166,7 @@ RSpec.describe "bundle show", :bundler => "< 3" do
 
   context "with a valid regexp for gem name" do
     it "presents alternatives", :readline do
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
         gem "rack-obama"
@@ -179,7 +179,7 @@ RSpec.describe "bundle show", :bundler => "< 3" do
 
   context "with an invalid regexp for gem name" do
     it "does not find the gem" do
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rails"
       G
@@ -198,7 +198,7 @@ RSpec.describe "bundle show", :bundler => "< 3" do
     end
 
     it "doesn't update gems to newer versions" do
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo2)}"
         gem "rails"
       G

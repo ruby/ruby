@@ -248,11 +248,11 @@ RSpec.describe "bundle flex_install" do
   describe "when adding a new source" do
     it "updates the lockfile", :bundler => "< 3" do
       build_repo2
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         source "#{file_uri_for(gem_repo2)}"
         gem "rack"
@@ -278,12 +278,12 @@ RSpec.describe "bundle flex_install" do
 
     it "updates the lockfile", :bundler => "3" do
       build_repo2
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
 
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         source "#{file_uri_for(gem_repo2)}" do
         end

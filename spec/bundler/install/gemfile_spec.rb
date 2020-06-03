@@ -64,7 +64,7 @@ RSpec.describe "bundle install" do
 
   context "with engine specified in symbol", :jruby do
     it "does not raise any error parsing Gemfile" do
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         ruby "#{RUBY_VERSION}", :engine => :jruby, :engine_version => "#{RUBY_ENGINE_VERSION}"
       G
@@ -73,7 +73,7 @@ RSpec.describe "bundle install" do
     end
 
     it "installation succeeds" do
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         ruby "#{RUBY_VERSION}", :engine => :jruby, :engine_version => "#{RUBY_ENGINE_VERSION}"
         gem "rack"

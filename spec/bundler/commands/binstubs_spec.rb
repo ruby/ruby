@@ -44,7 +44,7 @@ RSpec.describe "bundle binstubs <gem>" do
     end
 
     it "allows installing all binstubs" do
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rails"
       G
@@ -109,7 +109,7 @@ RSpec.describe "bundle binstubs <gem>" do
             R
           end
         end
-        install_gemfile! <<-G
+        install_gemfile <<-G
           source "#{file_uri_for(gem_repo2)}"
           gem "rack"
           gem "prints_loaded_gems"

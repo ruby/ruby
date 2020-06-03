@@ -89,7 +89,7 @@ RSpec.describe "ruby requirement" do
   end
 
   it "allows requirements with trailing whitespace" do
-    install_gemfile! <<-G
+    install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
       ruby "#{RUBY_VERSION}\\n \t\\n"
       gem "rack"

@@ -200,7 +200,7 @@ RSpec.describe "bundle add" do
 
   describe "when a gem is added which is already specified in Gemfile with version" do
     it "shows an error when added with different version requirement" do
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo2)}"
         gem "rack", "1.0"
       G
@@ -212,7 +212,7 @@ RSpec.describe "bundle add" do
     end
 
     it "shows error when added without version requirements" do
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo2)}"
         gem "rack", "1.0"
       G
@@ -227,7 +227,7 @@ RSpec.describe "bundle add" do
 
   describe "when a gem is added which is already specified in Gemfile without version" do
     it "shows an error when added with different version requirement" do
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo2)}"
         gem "rack"
       G

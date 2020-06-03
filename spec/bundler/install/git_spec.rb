@@ -5,7 +5,7 @@ RSpec.describe "bundle install" do
     it "displays the revision hash of the gem repository", :bundler => "< 3" do
       build_git "foo", "1.0", :path => lib_path("foo")
 
-      install_gemfile! <<-G
+      install_gemfile <<-G
         gem "foo", :git => "#{file_uri_for(lib_path("foo"))}"
       G
 
@@ -22,7 +22,7 @@ RSpec.describe "bundle install" do
       rev2 = revision_for(lib_path("foo"))[0..6]
       update_git "foo", "3.0", :path => lib_path("foo"), :gemspec => true
 
-      install_gemfile! <<-G
+      install_gemfile <<-G
         gem "foo", :git => "#{file_uri_for(lib_path("foo"))}", :ref => "master~2"
       G
 
@@ -71,7 +71,7 @@ RSpec.describe "bundle install" do
         build_git "gems", :path => lib_path("gems"), :gemspec => false
       end
 
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo2)}"
         gem "foo", :git => "#{file_uri_for(lib_path("gems"))}", :glob => "foo/*.gemspec"
         gem "zebra", :git => "#{file_uri_for(lib_path("gems"))}", :glob => "zebra/*.gemspec"
