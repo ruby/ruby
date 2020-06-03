@@ -1603,11 +1603,18 @@ rb_vm_search_method_slowpath(VALUE cd_owner, struct rb_call_data *cd, VALUE klas
 {
     const struct rb_callcache *cc = vm_search_cc(klass, cd->ci);
 
-    if (cd_owner) {
-        RB_OBJ_WRITE(cd_owner, &cd->cc, cc);
+    VM_ASSERT(cc);
+    VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
+
+    if (! cd_owner) {
+        cd->cc = cc;
+    }
+    else if (cc == &vm_empty_cc) {
+        cd->cc = cc;
     }
     else {
-        cd->cc = cc;
+        VM_ASSERT(vm_cc_markable(cc));
+        RB_OBJ_WRITE(cd_owner, &cd->cc, cc);
     }
 
     VM_ASSERT(cc == vm_cc_empty() || cc->klass == klass);
