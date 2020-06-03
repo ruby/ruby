@@ -33,6 +33,9 @@ jobs:
       - name: Install libraries with chocolatey
         run: |
           choco install --no-progress openssl winflexbison3
+      - name: git config
+        run: |
+          git config --system advice.detachedHead 0
       - uses: actions/checkout@v2
         with:
           path: src

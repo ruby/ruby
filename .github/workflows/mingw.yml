@@ -28,6 +28,7 @@ jobs:
         run: |
           git config --system core.autocrlf false
           git config --system core.eol lf
+          git config --system advice.detachedHead 0
       - uses: actions/checkout@v2
         with:
           path: src
