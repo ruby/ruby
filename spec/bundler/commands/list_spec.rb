@@ -3,7 +3,7 @@
 RSpec.describe "bundle list" do
   context "with name-only and paths option" do
     it "raises an error" do
-      bundle "list --name-only --paths"
+      bundle "list --name-only --paths", :raise_on_error => false
 
       expect(err).to eq "The `--name-only` and `--paths` options cannot be used together"
     end
@@ -11,7 +11,7 @@ RSpec.describe "bundle list" do
 
   context "with without-group and only-group option" do
     it "raises an error" do
-      bundle "list --without-group dev --only-group test"
+      bundle "list --without-group dev --only-group test", :raise_on_error => false
 
       expect(err).to eq "The `--only-group` and `--without-group` options cannot be used together"
     end
@@ -40,7 +40,7 @@ RSpec.describe "bundle list" do
 
     context "when group is not found" do
       it "raises an error" do
-        bundle "list --without-group random"
+        bundle "list --without-group random", :raise_on_error => false
 
         expect(err).to eq "`random` group could not be found."
       end
@@ -79,7 +79,7 @@ RSpec.describe "bundle list" do
 
     context "when group is not found" do
       it "raises an error" do
-        bundle "list --only-group random"
+        bundle "list --only-group random", :raise_on_error => false
 
         expect(err).to eq "`random` group could not be found."
       end

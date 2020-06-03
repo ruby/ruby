@@ -255,7 +255,7 @@ RSpec.describe "bundle cache" do
 
     subject do
       bundle "config --local frozen true"
-      bundle :cache
+      bundle :cache, :raise_on_error => false
     end
 
     it "tries to install with frozen" do

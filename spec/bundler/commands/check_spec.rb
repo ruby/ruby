@@ -56,7 +56,7 @@ RSpec.describe "bundle check" do
       gem "rails"
     G
 
-    bundle :check
+    bundle :check, :raise_on_error => false
     expect(err).to include("Bundler can't satisfy your Gemfile's dependencies.")
   end
 
@@ -66,7 +66,7 @@ RSpec.describe "bundle check" do
       gem "rails"
     G
 
-    bundle :check
+    bundle :check, :raise_on_error => false
     expect(exitstatus).to be > 0 if exitstatus
     expect(err).to include("Bundler can't satisfy your Gemfile's dependencies.")
   end
@@ -83,7 +83,7 @@ RSpec.describe "bundle check" do
       gem "rails_pinned_to_old_activesupport"
     G
 
-    bundle :check
+    bundle :check, :raise_on_error => false
     expect(err).to include("Bundler can't satisfy your Gemfile's dependencies.")
   end
 
@@ -127,7 +127,7 @@ RSpec.describe "bundle check" do
       gem "rack"
     G
 
-    bundle "check"
+    bundle "check", :raise_on_error => false
     expect(err).to include("* rack (1.0.0)")
     expect(exitstatus).to eq(1) if exitstatus
   end
@@ -195,13 +195,13 @@ RSpec.describe "bundle check" do
   end
 
   it "outputs an error when the default Gemfile is not found" do
-    bundle :check
+    bundle :check, :raise_on_error => false
     expect(exitstatus).to eq(10) if exitstatus
     expect(err).to include("Could not locate Gemfile")
   end
 
   it "does not output fatal error message" do
-    bundle :check
+    bundle :check, :raise_on_error => false
     expect(exitstatus).to eq(10) if exitstatus
     expect(err).not_to include("Unfortunately, a fatal error has occurred. ")
   end
@@ -216,7 +216,7 @@ RSpec.describe "bundle check" do
     bundle! "install"
     FileUtils.rm(bundled_app_lock)
 
-    bundle :check
+    bundle :check, :raise_on_error => false
     expect(last_command).to be_failure
   end
 
@@ -250,7 +250,7 @@ RSpec.describe "bundle check" do
           gem "rails"
         G
 
-        bundle "check --path vendor/bundle"
+        bundle "check --path vendor/bundle", :raise_on_error => false
       end
 
       it "returns false" do
@@ -278,7 +278,7 @@ RSpec.describe "bundle check" do
 
     it "shows what is missing with the current Gemfile if it is not satisfied" do
       simulate_new_machine
-      bundle :check
+      bundle :check, :raise_on_error => false
       expect(err).to match(/The following gems are missing/)
       expect(err).to include("* rack (1.0")
     end
@@ -333,7 +333,7 @@ RSpec.describe "bundle check" do
     context "is older" do
       it "does not change the lock" do
         lockfile lock_with("1.10.1")
-        bundle :check
+        bundle :check, :raise_on_error => false
         lockfile_should_be lock_with("1.10.1")
       end
     end

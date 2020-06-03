@@ -50,7 +50,7 @@ RSpec.describe "bundle show", :bundler => "< 3" do
     end
 
     it "complains if gem not in bundle" do
-      bundle "show missing"
+      bundle "show missing", :raise_on_error => false
       expect(err).to match(/could not find gem 'missing'/i)
     end
 
@@ -186,7 +186,7 @@ RSpec.describe "bundle show", :bundler => "< 3" do
 
       invalid_regexp = "[]"
 
-      bundle "show #{invalid_regexp}"
+      bundle "show #{invalid_regexp}", :raise_on_error => false
       expect(err).to include("Could not find gem '#{invalid_regexp}'.")
     end
   end

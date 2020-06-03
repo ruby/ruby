@@ -439,7 +439,7 @@ E
       bundle! "config set --local foo 4.1"
       expect(out).to eq "You are replacing the current local value of foo, which is currently \"4\""
 
-      bundle "config set --global --local foo 5"
+      bundle "config set --global --local foo 5", :raise_on_error => false
       expect(last_command).to be_failure
       expect(err).to eq "The options global and local were specified. Please only use one of the switches at a time."
     end
@@ -479,7 +479,7 @@ E
       expect(out).to eq ""
       expect(bundle!("config get foo")).to eq "Settings for `foo` in order of priority. The top value will be used\nYou have not configured a value for `foo`"
 
-      bundle "config unset foo --local --global"
+      bundle "config unset foo --local --global", :raise_on_error => false
       expect(last_command).to be_failure
       expect(err).to eq "The options global and local were specified. Please only use one of the switches at a time."
     end

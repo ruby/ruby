@@ -3,7 +3,7 @@
 RSpec.describe "bundle install" do
   context "with duplicated gems" do
     it "will display a warning" do
-      install_gemfile <<-G
+      install_gemfile <<-G, :raise_on_error => false
         gem 'rails', '~> 4.0.0'
         gem 'rails', '~> 4.0.0'
       G
@@ -57,7 +57,7 @@ RSpec.describe "bundle install" do
         gem "rack", :lib => "rack"
       G
 
-      bundle :install
+      bundle :install, :raise_on_error => false
       expect(err).to match(/You passed :lib as an option for gem 'rack', but it is invalid/)
     end
   end

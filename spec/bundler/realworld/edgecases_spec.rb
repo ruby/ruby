@@ -337,7 +337,7 @@ RSpec.describe "real world edgecases", :realworld => true, :sometimes => true do
   end
 
   it "outputs a helpful error message when gems have invalid gemspecs" do
-    install_gemfile <<-G, :standalone => true
+    install_gemfile <<-G, :standalone => true, :raise_on_error => false
       source 'https://rubygems.org'
       gem "resque-scheduler", "2.2.0"
       gem "redis-namespace", "1.6.0" # for a consistent resolution including ruby 2.3.0

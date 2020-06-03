@@ -135,7 +135,7 @@ RSpec.describe "Bundler.require" do
       end
     G
 
-    run "Bundler.require"
+    run "Bundler.require", :raise_on_error => false
     expect(err).to match("error while trying to load the gem 'faulty'")
     expect(err).to match("Gem Internal Error Message")
   end

@@ -9,7 +9,7 @@ RSpec.describe "bundler plugin install" do
   end
 
   it "shows proper message when gem in not found in the source" do
-    bundle "plugin install no-foo --source #{file_uri_for(gem_repo1)}"
+    bundle "plugin install no-foo --source #{file_uri_for(gem_repo1)}", :raise_on_error => false
 
     expect(err).to include("Could not find")
     plugin_should_not_be_installed("no-foo")
@@ -147,7 +147,7 @@ RSpec.describe "bundler plugin install" do
     end
 
     it "raises an error when both git and local git sources are specified" do
-      bundle "plugin install foo --local_git /phony/path/project --git git@gitphony.com:/repo/project"
+      bundle "plugin install foo --local_git /phony/path/project --git git@gitphony.com:/repo/project", :raise_on_error => false
 
       expect(exitstatus).not_to eq(0) if exitstatus
       expect(err).to eq("Remote and local plugin git sources can't be both specified")

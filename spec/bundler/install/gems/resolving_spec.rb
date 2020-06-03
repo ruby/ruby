@@ -207,7 +207,7 @@ RSpec.describe "bundle install with install-time dependencies" do
         it "raises an error during resolution" do
           skip "ruby requirement includes platform and it shouldn't" if Gem.win_platform?
 
-          install_gemfile <<-G, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
+          install_gemfile <<-G, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }, :raise_on_error => false
             source "http://localgemserver.test/"
             ruby #{ruby_requirement}
             gem 'require_ruby'
@@ -256,7 +256,7 @@ RSpec.describe "bundle install with install-time dependencies" do
         end
       end
 
-      install_gemfile <<-G
+      install_gemfile <<-G, :raise_on_error => false
         source "#{file_uri_for(gem_repo2)}"
         gem 'require_rubygems'
       G

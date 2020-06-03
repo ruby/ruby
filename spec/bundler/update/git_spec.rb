@@ -189,7 +189,7 @@ RSpec.describe "bundle update" do
 
       lib_path("foo-1.0").join(".git").rmtree
 
-      bundle :update, :all => true
+      bundle :update, :all => true, :raise_on_error => false
       expect(err).to include(lib_path("foo-1.0").to_s).
         and match(/Git error: command `git fetch.+has failed/)
     end

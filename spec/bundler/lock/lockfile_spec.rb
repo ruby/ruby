@@ -1207,7 +1207,7 @@ RSpec.describe "the lockfile format" do
   end
 
   it "raises if two different versions are used" do
-    install_gemfile <<-G
+    install_gemfile <<-G, :raise_on_error => false
       source "#{file_uri_for(gem_repo1)}/"
       gem "rack", "1.0"
       gem "rack", "1.1"
@@ -1218,7 +1218,7 @@ RSpec.describe "the lockfile format" do
   end
 
   it "raises if two different sources are used" do
-    install_gemfile <<-G
+    install_gemfile <<-G, :raise_on_error => false
       source "#{file_uri_for(gem_repo1)}/"
       gem "rack"
       gem "rack", :git => "git://hubz.com"
@@ -1369,7 +1369,7 @@ RSpec.describe "the lockfile format" do
         rack_middleware
     L
 
-    install_gemfile <<-G
+    install_gemfile <<-G, :raise_on_error => false
       source "#{file_uri_for(gem_repo1)}"
       gem "rack_middleware"
     G
@@ -1467,7 +1467,7 @@ RSpec.describe "the lockfile format" do
          #{Bundler::VERSION}
     L
 
-    install_gemfile(<<-G)
+    install_gemfile <<-G, :raise_on_error => false
       source "#{file_uri_for(gem_repo1)}/"
       gem "rack"
     G

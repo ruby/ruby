@@ -804,22 +804,22 @@ RSpec.describe "bundle gem" do
     end
 
     it "fails gracefully with a ." do
-      bundle "gem foo.gemspec"
+      bundle "gem foo.gemspec", :raise_on_error => false
       expect(err).to end_with("Invalid gem name foo.gemspec -- `Foo.gemspec` is an invalid constant name")
     end
 
     it "fails gracefully with a ^" do
-      bundle "gem ^"
+      bundle "gem ^", :raise_on_error => false
       expect(err).to end_with("Invalid gem name ^ -- `^` is an invalid constant name")
     end
 
     it "fails gracefully with a space" do
-      bundle "gem 'foo bar'"
+      bundle "gem 'foo bar'", :raise_on_error => false
       expect(err).to end_with("Invalid gem name foo bar -- `Foo bar` is an invalid constant name")
     end
 
     it "fails gracefully when multiple names are passed" do
-      bundle "gem foo bar baz"
+      bundle "gem foo bar baz", :raise_on_error => false
       expect(err).to eq(<<-E.strip)
 ERROR: "bundle gem" was called with arguments ["foo", "bar", "baz"]
 Usage: "bundle gem NAME [OPTIONS]"
@@ -829,7 +829,7 @@ Usage: "bundle gem NAME [OPTIONS]"
 
   describe "#ensure_safe_gem_name", :readline do
     before do
-      bundle "gem #{subject}"
+      bundle "gem #{subject}", :raise_on_error => false
     end
 
     context "with an existing const name" do
@@ -901,7 +901,7 @@ Usage: "bundle gem NAME [OPTIONS]"
   context "on conflicts with a previously created file", :readline do
     it "should fail gracefully" do
       FileUtils.touch(bundled_app("conflict-foobar"))
-      bundle "gem conflict-foobar"
+      bundle "gem conflict-foobar", :raise_on_error => false
       expect(err).to include("Errno::ENOTDIR")
       expect(exitstatus).to eql(32) if exitstatus
     end

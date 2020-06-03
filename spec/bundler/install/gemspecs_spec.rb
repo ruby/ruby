@@ -109,7 +109,7 @@ RSpec.describe "bundle install" do
         s.required_ruby_version = "#{RUBY_VERSION}.#{RUBY_PATCHLEVEL}"
       end
 
-      install_gemfile <<-G
+      install_gemfile <<-G, :raise_on_error => false
         ruby '#{RUBY_VERSION}', :engine_version => '#{RUBY_VERSION}', :engine => 'ruby', :patchlevel => '#{RUBY_PATCHLEVEL}'
         gemspec
       G
@@ -123,7 +123,7 @@ RSpec.describe "bundle install" do
         s.required_ruby_version = "#{RUBY_VERSION}.#{patchlevel}"
       end
 
-      install_gemfile <<-G
+      install_gemfile <<-G, :raise_on_error => false
         ruby '#{RUBY_VERSION}', :engine_version => '#{RUBY_VERSION}', :engine => 'ruby', :patchlevel => '#{patchlevel}'
         gemspec
       G
@@ -140,7 +140,7 @@ RSpec.describe "bundle install" do
         s.required_ruby_version = version
       end
 
-      install_gemfile <<-G
+      install_gemfile <<-G, :raise_on_error => false
         ruby '#{version}', :engine_version => '#{version}', :engine => 'ruby'
         gemspec
       G

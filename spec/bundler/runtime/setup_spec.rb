@@ -90,7 +90,7 @@ RSpec.describe "Bundler.setup" do
     end
 
     it "handles multiple non-additive invocations" do
-      ruby <<-RUBY
+      ruby <<-RUBY, :raise_on_error => false
         require '#{lib_dir}/bundler'
         Bundler.setup(:default, :test)
         Bundler.setup(:default)
@@ -212,7 +212,7 @@ RSpec.describe "Bundler.setup" do
       gem "rack"
     G
 
-    ruby <<-R
+    ruby <<-R, :raise_on_error => false
       require '#{lib_dir}/bundler'
 
       Bundler.setup
@@ -235,7 +235,7 @@ RSpec.describe "Bundler.setup" do
       gem "nosuchgem", "10.0"
     G
 
-    ruby <<-R
+    ruby <<-R, :raise_on_error => false
       require '#{lib_dir}/bundler'
 
       Bundler.setup
@@ -434,7 +434,7 @@ RSpec.describe "Bundler.setup" do
     end
 
     it "provides a useful exception when the git repo is not checked out yet" do
-      run "1"
+      run "1", :raise_on_error => false
       expect(err).to match(/the git source #{lib_path('rack-1.0.0')} is not yet checked out. Please run `bundle install`/i)
     end
 
@@ -475,7 +475,7 @@ RSpec.describe "Bundler.setup" do
         end
       R
 
-      run "puts 'FAIL'"
+      run "puts 'FAIL'", :raise_on_error => false
 
       expect(err).not_to include "This is not the git you are looking for"
     end
@@ -521,7 +521,7 @@ RSpec.describe "Bundler.setup" do
       bundle! :install
 
       FileUtils.rm_rf(lib_path("local-rack"))
-      run "require 'rack'"
+      run "require 'rack'", :raise_on_error => false
       expect(err).to match(/Cannot use local override for rack-0.8 because #{Regexp.escape(lib_path('local-rack').to_s)} does not exist/)
     end
 
@@ -543,7 +543,7 @@ RSpec.describe "Bundler.setup" do
         gem "rack", :git => "#{lib_path("rack-0.8")}"
       G
 
-      run "require 'rack'"
+      run "require 'rack'", :raise_on_error => false
       expect(err).to match(/because :branch is not specified in Gemfile/)
     end
 
@@ -565,7 +565,7 @@ RSpec.describe "Bundler.setup" do
         gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "changed"
       G
 
-      run "require 'rack'"
+      run "require 'rack'", :raise_on_error => false
       expect(err).to match(/is using branch master but Gemfile specifies changed/)
     end
 
@@ -585,7 +585,7 @@ RSpec.describe "Bundler.setup" do
       G
 
       bundle %(config set local.rack #{lib_path("local-rack")})
-      run "require 'rack'"
+      run "require 'rack'", :raise_on_error => false
       expect(err).to match(/is using branch master but Gemfile specifies nonexistant/)
     end
   end
@@ -1022,7 +1022,7 @@ end
       ref = update_git "bar", :gemspec => false do |s|
         s.write "bar.gemspec", "require 'foobarbaz'"
       end.ref_for("HEAD")
-      bundle :install
+      bundle :install, :raise_on_error => false
 
       expect(err.lines.map(&:chomp)).to include(
         a_string_starting_with("[!] There was an error while loading `bar.gemspec`:"),
@@ -1374,7 +1374,7 @@ end
         gem "rack"
       G
 
-      ruby <<-RUBY
+      ruby <<-RUBY, :raise_on_error => false
         require "#{lib_dir}/bundler/setup"
         Object.new.gem "rack"
         puts "FAIL"
@@ -1390,7 +1390,7 @@ end
         gem "rack"
       G
 
-      ruby <<-RUBY
+      ruby <<-RUBY, :raise_on_error => false
         require "#{lib_dir}/bundler/setup"
         Object.new.require "rack"
         puts "FAIL"

@@ -32,7 +32,7 @@ RSpec.describe "bundle install" do
     it "causes a conflict if explicitly requesting a different version" do
       bundle "config set force_ruby_platform true"
 
-      install_gemfile <<-G
+      install_gemfile <<-G, :raise_on_error => false
         source "#{file_uri_for(gem_repo2)}"
         gem "rails", "3.0"
         gem "bundler", "0.9.2"
@@ -93,7 +93,7 @@ RSpec.describe "bundle install" do
     it "causes a conflict if child dependencies conflict" do
       bundle "config set force_ruby_platform true"
 
-      install_gemfile <<-G
+      install_gemfile <<-G, :raise_on_error => false
         source "#{file_uri_for(gem_repo2)}"
         gem "activemerchant"
         gem "rails_pinned_to_old_activesupport"
@@ -114,7 +114,7 @@ RSpec.describe "bundle install" do
     it "causes a conflict if a child dependency conflicts with the Gemfile" do
       bundle "config set force_ruby_platform true"
 
-      install_gemfile <<-G
+      install_gemfile <<-G, :raise_on_error => false
         source "#{file_uri_for(gem_repo2)}"
         gem "rails_pinned_to_old_activesupport"
         gem "activesupport", "2.3.5"

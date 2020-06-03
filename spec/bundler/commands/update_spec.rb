@@ -30,7 +30,7 @@ RSpec.describe "bundle update" do
         gem "rack-obama"
         exit!
       G
-      bundle "update"
+      bundle "update", :raise_on_error => false
       expect(bundled_app_lock).to exist
     end
   end
@@ -53,7 +53,7 @@ RSpec.describe "bundle update" do
         gem "rack-obama"
         exit!
       G
-      bundle "update", :all => true
+      bundle "update", :all => true, :raise_on_error => false
       expect(bundled_app_lock).to exist
     end
   end
@@ -76,13 +76,13 @@ RSpec.describe "bundle update" do
 
     it "errors when passed nothing" do
       install_gemfile! ""
-      bundle :update
+      bundle :update, :raise_on_error => false
       expect(err).to eq("To update everything, pass the `--all` flag.")
     end
 
     it "errors when passed --all and another option" do
       install_gemfile! ""
-      bundle "update --all foo"
+      bundle "update --all foo", :raise_on_error => false
       expect(err).to eq("Cannot specify --all along with specific options.")
     end
 
@@ -113,11 +113,11 @@ RSpec.describe "bundle update" do
 
   describe "with an unknown dependency" do
     it "should inform the user" do
-      bundle "update halting-problem-solver"
+      bundle "update halting-problem-solver", :raise_on_error => false
       expect(err).to include "Could not find gem 'halting-problem-solver'"
     end
     it "should suggest alternatives" do
-      bundle "update platformspecific"
+      bundle "update platformspecific", :raise_on_error => false
       expect(err).to include "Did you mean platform_specific?"
     end
   end
@@ -282,7 +282,7 @@ RSpec.describe "bundle update" do
   describe "in a frozen bundle" do
     it "should fail loudly", :bundler => "< 3" do
       bundle! "install --deployment"
-      bundle "update", :all => true
+      bundle "update", :all => true, :raise_on_error => false
 
       expect(last_command).to be_failure
       expect(err).to match(/You are trying to install in deployment mode after changing.your Gemfile/m)
@@ -291,14 +291,14 @@ RSpec.describe "bundle update" do
 
     it "should suggest different command when frozen is set globally", :bundler => "< 3" do
       bundle! "config set --global frozen 1"
-      bundle "update", :all => true
+      bundle "update", :all => true, :raise_on_error => false
       expect(err).to match(/You are trying to install in deployment mode after changing.your Gemfile/m).
         and match(/freeze \nby running `bundle config unset frozen`./m)
     end
 
     it "should suggest different command when frozen is set globally", :bundler => "3" do
       bundle! "config set --global deployment true"
-      bundle "update", :all => true
+      bundle "update", :all => true, :raise_on_error => false
       expect(err).to match(/You are trying to install in deployment mode after changing.your Gemfile/m).
         and match(/freeze \nby running `bundle config unset deployment`./m)
     end
@@ -631,7 +631,7 @@ RSpec.describe "bundle update when a gem depends on a newer version of bundler" 
   end
 
   it "should explain that bundler conflicted", :bundler => "< 3" do
-    bundle "update", :all => true
+    bundle "update", :all => true, :raise_on_error => false
     expect(last_command.stdboth).not_to match(/in snapshot/i)
     expect(err).to match(/current Bundler version/i).
       and match(/perhaps you need to update bundler/i)
@@ -699,7 +699,7 @@ RSpec.describe "bundle update" do
       gem "activesupport"
     G
 
-    bundle "update nonexisting"
+    bundle "update nonexisting", :raise_on_error => false
     expect(err).to include("This Bundle hasn't been installed yet. Run `bundle install` to update and install the bundled gems.")
     expect(exitstatus).to eq(22) if exitstatus
   end
@@ -777,7 +777,7 @@ RSpec.describe "bundle update --ruby" do
       G
     end
     it "shows a helpful error message" do
-      bundle "update --ruby"
+      bundle "update --ruby", :raise_on_error => false
 
       expect(err).to include("Your Ruby version is 2.2.2, but your Gemfile specified ~> 2.1.0")
     end
@@ -1006,7 +1006,7 @@ RSpec.describe "bundle update conservative" do
     end
 
     it "raises if too many flags are provided" do
-      bundle "update --patch --minor", :all => true
+      bundle "update --patch --minor", :all => true, :raise_on_error => false
 
       expect(err).to eq "Provide only one of the following options: minor, patch"
     end

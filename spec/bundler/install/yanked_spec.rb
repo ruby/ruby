@@ -22,7 +22,7 @@ RSpec.context "when installing a bundle that includes yanked gems" do
 
     L
 
-    install_gemfile <<-G
+    install_gemfile <<-G, :raise_on_error => false
       source "#{file_uri_for(gem_repo4)}"
       gem "foo", "10.0.0"
     G
@@ -33,7 +33,7 @@ RSpec.context "when installing a bundle that includes yanked gems" do
   it "throws the original error when only the Gemfile specifies a gem version that doesn't exist" do
     bundle "config set force_ruby_platform true"
 
-    install_gemfile <<-G
+    install_gemfile <<-G, :raise_on_error => false
       source "#{file_uri_for(gem_repo4)}"
       gem "foo", "10.0.0"
     G
@@ -63,7 +63,7 @@ RSpec.context "when using gem before installing" do
         rack (= 0.9.1)
     L
 
-    bundle :list
+    bundle :list, :raise_on_error => false
 
     expect(err).to include("Could not find rack-0.9.1 in any of the sources")
     expect(err).to_not include("Your bundle is locked to rack (0.9.1), but that version could not be found in any of the sources listed in your Gemfile.")
