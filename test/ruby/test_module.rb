@@ -587,6 +587,28 @@ class TestModule < Test::Unit::TestCase
     m1.include m2
     m1.include m3
     assert_equal([:m1, :sc, :m2, :m3, :c], o.foo)
+
+    m1, m2, m3, sc, o = modules.call
+    assert_equal([:sc, :c], o.foo)
+    sc.prepend m1
+    assert_equal([:m1, :sc, :c], o.foo)
+    m1.prepend m2
+    assert_equal([:m2, :m1, :sc, :c], o.foo)
+    m2.prepend m3
+    assert_equal([:m3, :m2, :m1, :sc, :c], o.foo)
+    m1, m2, m3, sc, o = modules.call
+    sc.include m1
+    assert_equal([:sc, :m1, :c], o.foo)
+    sc.prepend m2
+    assert_equal([:m2, :sc, :m1, :c], o.foo)
+    sc.prepend m3
+    assert_equal([:m3, :m2, :sc, :m1, :c], o.foo)
+    m1, m2, m3, sc, o = modules.call
+    sc.include m1
+    assert_equal([:sc, :m1, :c], o.foo)
+    m2.prepend m3
+    m1.include m2
+    assert_equal([:sc, :m1, :m3, :m2, :c], o.foo)
   end
 
   def test_included_modules
