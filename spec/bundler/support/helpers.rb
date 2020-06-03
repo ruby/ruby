@@ -23,12 +23,6 @@ module Spec
       Gem.clear_paths
     end
 
-    def self.bang(method)
-      define_method("#{method}!") do |*args, &blk|
-        send(method, *args, &blk)
-      end
-    end
-
     def the_bundle(*args)
       TheBundle.new(*args)
     end
@@ -65,7 +59,6 @@ module Spec
       setup = "require '#{lib_dir}/bundler' ; Bundler.ui.silence { Bundler.setup(#{groups}) }"
       ruby([setup, cmd].join(" ; "), opts)
     end
-    bang :run
 
     def load_error_run(ruby, name, *args)
       cmd = <<-RUBY
@@ -125,7 +118,6 @@ module Spec
       cmd = "#{ruby_cmd} #{bundle_bin} #{cmd}#{args}"
       sys_exec(cmd, { :env => env, :dir => dir, :raise_on_error => raise_on_error }, &block)
     end
-    bang :bundle
 
     def bundler(cmd, options = {})
       options[:bundle_bin] = system_gem_path.join("bin/bundler")
@@ -137,7 +129,6 @@ module Spec
       escaped_ruby = RUBY_PLATFORM == "java" ? ruby.shellescape.dump : ruby.shellescape
       sys_exec(%(#{ruby_cmd} -w -e #{escaped_ruby}), options)
     end
-    bang :ruby
 
     def load_error_ruby(ruby, name, opts = {})
       ruby(<<-R)
@@ -173,7 +164,6 @@ module Spec
       options[:env] = env
       sys_exec("#{Path.gem_bin} #{command}", options)
     end
-    bang :gem_command
 
     def rake
       "#{Gem.ruby} -S #{ENV["GEM_PATH"]}/bin/rake"
@@ -210,7 +200,6 @@ module Spec
 
       command_execution.stdout
     end
-    bang :sys_exec
 
     def config(config = nil, path = bundled_app(".bundle/config"))
       return YAML.load_file(path) unless config
@@ -267,7 +256,6 @@ module Spec
       opts[:retry] ||= 0
       bundle :install, opts
     end
-    bang :install_gemfile
 
     def lock_gemfile(*args)
       gemfile(*args)
