@@ -31,7 +31,7 @@ RSpec.describe "bundle update" do
         gem "rails", :git => "#{lib_path("rails")}"
       G
 
-      bundle! "update rails"
+      bundle "update rails"
       expect(the_bundle).to include_gems "rails 3.0", "activesupport 3.0"
     end
 

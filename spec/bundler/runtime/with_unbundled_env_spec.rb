@@ -3,7 +3,7 @@
 RSpec.describe "Bundler.with_env helpers" do
   def bundle_exec_ruby!(args, options = {})
     build_bundler_context options
-    bundle! "exec '#{Gem.ruby}' #{args}", options
+    bundle "exec '#{Gem.ruby}' #{args}", options
   end
 
   def build_bundler_context(options = {})

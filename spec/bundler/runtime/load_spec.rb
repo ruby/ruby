@@ -32,7 +32,7 @@ RSpec.describe "Bundler.load" do
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
-      bundle! :install
+      bundle :install
       allow(Bundler::SharedHelpers).to receive(:pwd).and_return(bundled_app)
     end
 

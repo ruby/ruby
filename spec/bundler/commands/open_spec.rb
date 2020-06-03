@@ -69,7 +69,7 @@ RSpec.describe "bundle open" do
 
     it "allows selecting exit from many match gems", :readline do
       env = { "EDITOR" => "echo editor", "VISUAL" => "echo visual", "BUNDLER_EDITOR" => "echo bundler_editor" }
-      bundle! "open active", :env => env do |input, _, _|
+      bundle "open active", :env => env do |input, _, _|
         input.puts "0"
       end
     end

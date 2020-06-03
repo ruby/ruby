@@ -78,7 +78,7 @@ RSpec.describe "bundle lock" do
   it "writes a lockfile when there is an outdated lockfile using --update" do
     lockfile @lockfile.gsub("2.3.2", "2.3.1")
 
-    bundle! "lock --update"
+    bundle "lock --update"
 
     expect(read_lockfile).to eq(@lockfile)
   end
@@ -156,9 +156,9 @@ RSpec.describe "bundle lock" do
       gem "thin"
       gem "rack_middleware", :group => "test"
     G
-    bundle! "config set without test"
-    bundle! "config set path .bundle"
-    bundle! "lock"
+    bundle "config set without test"
+    bundle "config set path .bundle"
+    bundle "lock"
     expect(bundled_app(".bundle")).not_to exist
   end
 
@@ -213,7 +213,7 @@ RSpec.describe "bundle lock" do
   end
 
   it "supports adding new platforms" do
-    bundle! "lock --add-platform java x86-mingw32"
+    bundle "lock --add-platform java x86-mingw32"
 
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
     lockfile = Bundler::LockfileParser.new(read_lockfile)
@@ -221,7 +221,7 @@ RSpec.describe "bundle lock" do
   end
 
   it "supports adding the `ruby` platform" do
-    bundle! "lock --add-platform ruby"
+    bundle "lock --add-platform ruby"
 
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
     lockfile = Bundler::LockfileParser.new(read_lockfile)
@@ -234,13 +234,13 @@ RSpec.describe "bundle lock" do
   end
 
   it "allows removing platforms" do
-    bundle! "lock --add-platform java x86-mingw32"
+    bundle "lock --add-platform java x86-mingw32"
 
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
     lockfile = Bundler::LockfileParser.new(read_lockfile)
     expect(lockfile.platforms).to match_array(local_platforms.unshift(java, mingw).uniq)
 
-    bundle! "lock --remove-platform java"
+    bundle "lock --remove-platform java"
 
     lockfile = Bundler::LockfileParser.new(read_lockfile)
     expect(lockfile.platforms).to match_array(local_platforms.unshift(mingw).uniq)
@@ -288,7 +288,7 @@ RSpec.describe "bundle lock" do
       gem "gssapi"
     G
 
-    simulate_platform(mingw) { bundle! :lock }
+    simulate_platform(mingw) { bundle :lock }
 
     lockfile_should_be <<-G
       GEM
@@ -313,7 +313,7 @@ RSpec.describe "bundle lock" do
          #{Bundler::VERSION}
     G
 
-    simulate_platform(rb) { bundle! :lock }
+    simulate_platform(rb) { bundle :lock }
 
     lockfile_should_be <<-G
       GEM
@@ -353,14 +353,14 @@ RSpec.describe "bundle lock" do
     end
 
     it "does not implicitly update" do
-      bundle! "lock"
+      bundle "lock"
 
       expect(read_lockfile).to eq(@lockfile)
     end
 
     it "accounts for changes in the gemfile" do
       gemfile gemfile.gsub('"foo"', '"foo", "2.0"')
-      bundle! "lock"
+      bundle "lock"
 
       expect(read_lockfile).to eq(@lockfile.sub("foo (1.0)", "foo (2.0)").sub(/foo$/, "foo (= 2.0)"))
     end

@@ -56,7 +56,7 @@ RSpec.shared_examples "bundle install --standalone" do
         gem "rails"
       G
       bundle "config --local path #{bundled_app("bundle")}"
-      bundle! :install, :standalone => true, :dir => cwd
+      bundle :install, :standalone => true, :dir => cwd
     end
 
     let(:expected_gems) do
@@ -127,7 +127,7 @@ RSpec.shared_examples "bundle install --standalone" do
         gem "devise", :git => "#{lib_path("devise-1.0")}"
       G
       bundle "config --local path #{bundled_app("bundle")}"
-      bundle! :install, :standalone => true, :dir => cwd
+      bundle :install, :standalone => true, :dir => cwd
     end
 
     let(:expected_gems) do
@@ -155,7 +155,7 @@ RSpec.shared_examples "bundle install --standalone" do
         end
       G
       bundle "config --local path #{bundled_app("bundle")}"
-      bundle! :install, :standalone => true, :dir => cwd
+      bundle :install, :standalone => true, :dir => cwd
     end
 
     let(:expected_gems) do
@@ -169,7 +169,7 @@ RSpec.shared_examples "bundle install --standalone" do
 
     it "allows creating a standalone file with limited groups" do
       bundle "config --local path #{bundled_app("bundle")}"
-      bundle! :install, :standalone => "default", :dir => cwd
+      bundle :install, :standalone => "default", :dir => cwd
 
       load_error_ruby <<-RUBY, "spec"
         $:.unshift File.expand_path("bundle")
@@ -187,7 +187,7 @@ RSpec.shared_examples "bundle install --standalone" do
     it "allows `without` configuration to limit the groups used in a standalone" do
       bundle "config --local path #{bundled_app("bundle")}"
       bundle "config --local without test"
-      bundle! :install, :standalone => true, :dir => cwd
+      bundle :install, :standalone => true, :dir => cwd
 
       load_error_ruby <<-RUBY, "spec"
         $:.unshift File.expand_path("bundle")
@@ -204,7 +204,7 @@ RSpec.shared_examples "bundle install --standalone" do
 
     it "allows `path` configuration to change the location of the standalone bundle" do
       bundle "config --local path path/to/bundle"
-      bundle! "install", :standalone => true, :dir => cwd
+      bundle "install", :standalone => true, :dir => cwd
 
       ruby <<-RUBY
         $:.unshift File.expand_path("path/to/bundle")
@@ -219,9 +219,9 @@ RSpec.shared_examples "bundle install --standalone" do
 
     it "allows `without` to limit the groups used in a standalone" do
       bundle "config --local without test"
-      bundle! :install, :dir => cwd
+      bundle :install, :dir => cwd
       bundle "config --local path #{bundled_app("bundle")}"
-      bundle! :install, :standalone => true, :dir => cwd
+      bundle :install, :standalone => true, :dir => cwd
 
       load_error_ruby <<-RUBY, "spec"
         $:.unshift File.expand_path("bundle")
@@ -247,7 +247,7 @@ RSpec.shared_examples "bundle install --standalone" do
           gem "rails"
         G
         bundle "config --local path #{bundled_app("bundle")}"
-        bundle! :install, :standalone => true, :artifice => "endpoint", :dir => cwd
+        bundle :install, :standalone => true, :artifice => "endpoint", :dir => cwd
       end
 
       let(:expected_gems) do
@@ -268,7 +268,7 @@ RSpec.shared_examples "bundle install --standalone" do
         gem "rails"
       G
       bundle "config --local path #{bundled_app("bundle")}"
-      bundle! :install, :standalone => true, :binstubs => true, :dir => cwd
+      bundle :install, :standalone => true, :binstubs => true, :dir => cwd
     end
 
     let(:expected_gems) do

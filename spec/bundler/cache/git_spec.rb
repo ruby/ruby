@@ -59,8 +59,8 @@ RSpec.describe "bundle cache with git" do
     G
 
     bundle "config set cache_all true"
-    bundle! :cache
-    bundle! :cache
+    bundle :cache
+    bundle :cache
 
     expect(out).to include "Updating files in vendor/cache"
     FileUtils.rm_rf lib_path("foo-1.0")
@@ -85,9 +85,9 @@ RSpec.describe "bundle cache with git" do
     ref = git.ref_for("master", 11)
     expect(ref).not_to eq(old_ref)
 
-    bundle! "update", :all => true
+    bundle "update", :all => true
     bundle "config set cache_all true"
-    bundle! :cache
+    bundle :cache
 
     expect(bundled_app("vendor/cache/foo-1.0-#{ref}")).to exist
     expect(bundled_app("vendor/cache/foo-1.0-#{old_ref}")).not_to exist
@@ -106,7 +106,7 @@ RSpec.describe "bundle cache with git" do
     G
 
     bundle "config set cache_all true"
-    bundle! :cache
+    bundle :cache
 
     update_git "foo" do |s|
       s.write "lib/foo.rb", "puts :CACHE"
@@ -225,13 +225,13 @@ RSpec.describe "bundle cache with git" do
     gemfile <<-G
       gem "foo", :git => '#{lib_path("foo-1.0")}'
     G
-    bundle! "config set cache_all true"
-    bundle! :cache, "all-platforms" => true, :install => false, :path => "./vendor/cache"
+    bundle "config set cache_all true"
+    bundle :cache, "all-platforms" => true, :install => false, :path => "./vendor/cache"
 
     simulate_new_machine
     with_path_as "" do
-      bundle! "config set deployment true"
-      bundle! :install, :local => true
+      bundle "config set deployment true"
+      bundle :install, :local => true
       expect(the_bundle).to include_gem "foo 1.0"
     end
   end

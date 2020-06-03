@@ -36,17 +36,17 @@ RSpec.describe "install in deployment or frozen mode" do
 
     it "doesn't mess up a subsequent `bundle install` after you try to deploy without a lock" do
       bundle "install --deployment", :raise_on_error => false
-      bundle! :install
+      bundle :install
       expect(the_bundle).to include_gems "rack 1.0"
     end
   end
 
   it "still works if you are not in the app directory and specify --gemfile" do
-    bundle! "install"
+    bundle "install"
     simulate_new_machine
     bundle "config --local deployment true"
     bundle "config --local path vendor/bundle"
-    bundle! "install --gemfile #{tmp}/bundled_app/Gemfile", :dir => tmp
+    bundle "install --gemfile #{tmp}/bundled_app/Gemfile", :dir => tmp
     expect(the_bundle).to include_gems "rack 1.0"
   end
 
@@ -57,19 +57,19 @@ RSpec.describe "install in deployment or frozen mode" do
         gem "foo", :git => "#{lib_path("foo-1.0")}"
       end
     G
-    bundle! :install
+    bundle :install
     bundle "config --local deployment true"
     bundle "config --local without test"
-    bundle! :install
+    bundle :install
   end
 
   it "works when you bundle exec bundle" do
     skip "doesn't find bundle" if Gem.win_platform?
 
-    bundle! :install
+    bundle :install
     bundle "config --local deployment true"
     bundle :install
-    bundle! "exec bundle check", :env => { "PATH" => path }
+    bundle "exec bundle check", :env => { "PATH" => path }
   end
 
   it "works when using path gems from the same path and the version is specified" do
@@ -80,9 +80,9 @@ RSpec.describe "install in deployment or frozen mode" do
       gem "bar", :path => "#{lib_path("nested")}"
     G
 
-    bundle! :install
+    bundle :install
     bundle "config --local deployment true"
-    bundle! :install
+    bundle :install
   end
 
   it "works when there are credentials in the source URL" do
@@ -93,7 +93,7 @@ RSpec.describe "install in deployment or frozen mode" do
     G
 
     bundle "config --local deployment true"
-    bundle! :install, :artifice => "endpoint_strict_basic_authentication"
+    bundle :install, :artifice => "endpoint_strict_basic_authentication"
   end
 
   it "works with sources given by a block" do
@@ -104,7 +104,7 @@ RSpec.describe "install in deployment or frozen mode" do
     G
 
     bundle "config --local deployment true"
-    bundle! :install
+    bundle :install
 
     expect(the_bundle).to include_gems "rack 1.0"
   end
@@ -112,7 +112,7 @@ RSpec.describe "install in deployment or frozen mode" do
   context "when replacing a host with the same host with credentials" do
     before do
       bundle "config --local path vendor/bundle"
-      bundle! "install"
+      bundle "install"
       gemfile <<-G
       source "http://user_name:password@localgemserver.test/"
       gem "rack"
@@ -131,7 +131,7 @@ RSpec.describe "install in deployment or frozen mode" do
         rack
       G
 
-      bundle! "config set --local deployment true"
+      bundle "config set --local deployment true"
     end
 
     it "prevents the replace by default" do
@@ -141,17 +141,17 @@ RSpec.describe "install in deployment or frozen mode" do
     end
 
     context "when allow_deployment_source_credential_changes is true" do
-      before { bundle! "config set allow_deployment_source_credential_changes true" }
+      before { bundle "config set allow_deployment_source_credential_changes true" }
 
       it "allows the replace" do
-        bundle! :install
+        bundle :install
 
         expect(out).to match(/Bundle complete!/)
       end
     end
 
     context "when allow_deployment_source_credential_changes is false" do
-      before { bundle! "config set allow_deployment_source_credential_changes false" }
+      before { bundle "config set allow_deployment_source_credential_changes false" }
 
       it "prevents the replace" do
         bundle :install, :raise_on_error => false
@@ -183,29 +183,29 @@ RSpec.describe "install in deployment or frozen mode" do
 
   describe "with an existing lockfile" do
     before do
-      bundle! "install"
+      bundle "install"
     end
 
     it "installs gems by default to vendor/bundle", :bundler => "< 3" do
-      bundle! "install --deployment"
+      bundle "install --deployment"
       expect(out).to include("vendor/bundle")
     end
 
     it "installs gems to custom path if specified", :bundler => "< 3" do
-      bundle! "install --path vendor/bundle2 --deployment"
+      bundle "install --path vendor/bundle2 --deployment"
       expect(out).to include("vendor/bundle2")
     end
 
     it "works with the --deployment flag if you didn't change anything", :bundler => "< 3" do
-      bundle! "install --deployment"
+      bundle "install --deployment"
     end
 
     it "works with the --frozen flag if you didn't change anything", :bundler => "< 3" do
-      bundle! "install --frozen"
+      bundle "install --frozen"
     end
 
     it "works with BUNDLE_FROZEN if you didn't change anything" do
-      bundle! :install, :env => { "BUNDLE_FROZEN" => "true" }
+      bundle :install, :env => { "BUNDLE_FROZEN" => "true" }
     end
 
     it "explodes with the --deployment flag if you make a change and don't check in the lockfile" do
@@ -237,7 +237,7 @@ RSpec.describe "install in deployment or frozen mode" do
       bundle "config --local path .bundle"
       bundle "config --local without development"
       bundle "config --local deployment true"
-      bundle! :install, :env => { "DEBUG" => "1" }
+      bundle :install, :env => { "DEBUG" => "1" }
       run! "puts :WIN"
       expect(out).to eq("WIN")
     end
@@ -391,9 +391,9 @@ RSpec.describe "install in deployment or frozen mode" do
     end
 
     it "remembers that the bundle is frozen at runtime" do
-      bundle! :lock
+      bundle :lock
 
-      bundle! "config set --local deployment true"
+      bundle "config set --local deployment true"
 
       gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
@@ -422,19 +422,19 @@ You have deleted from the Gemfile:
         gem "foo", :path => "#{lib_path("foo")}"
       G
 
-      bundle! :install
+      bundle :install
       expect(the_bundle).to include_gems "foo 1.0"
 
       bundle "config set cache_all true"
-      bundle! :cache
+      bundle :cache
       expect(bundled_app("vendor/cache/foo")).to be_directory
 
-      bundle! "install --local"
+      bundle "install --local"
       expect(out).to include("Updating files in vendor/cache")
 
       simulate_new_machine
-      bundle! "config set --local deployment true"
-      bundle! "install --verbose"
+      bundle "config set --local deployment true"
+      bundle "install --verbose"
       expect(out).not_to include("You are trying to install in deployment mode after changing your Gemfile")
       expect(out).not_to include("You have added to the Gemfile")
       expect(out).not_to include("You have deleted from the Gemfile")

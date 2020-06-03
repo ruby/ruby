@@ -132,7 +132,7 @@ RSpec.describe "bundle install with explicit source paths" do
     G
 
     bundle "config --local frozen true"
-    bundle! :install
+    bundle :install
     expect(exitstatus).to eq(0) if exitstatus
   end
 
@@ -185,7 +185,7 @@ RSpec.describe "bundle install with explicit source paths" do
 
     build_lib "omg", "1.0", :path => lib_path("omg")
 
-    bundle! :install, :env => { "BUNDLE_BUNDLE_ONLY_UPDATE_TO_NEWER_VERSIONS" => "true" }
+    bundle :install, :env => { "BUNDLE_BUNDLE_ONLY_UPDATE_TO_NEWER_VERSIONS" => "true" }
 
     expect(the_bundle).to include_gems "omg 1.0"
   end

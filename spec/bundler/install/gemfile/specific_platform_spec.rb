@@ -69,7 +69,7 @@ RSpec.describe "bundle install with specific_platform enabled" do
 
     it "caches both the universal-darwin and ruby gems when --all-platforms is passed" do
       gemfile(google_protobuf)
-      bundle! "package --all-platforms"
+      bundle "package --all-platforms"
       expect([cached_gem("google-protobuf-3.0.0.alpha.5.0.5.1"), cached_gem("google-protobuf-3.0.0.alpha.5.0.5.1-universal-darwin")]).
         to all(exist)
     end
@@ -95,7 +95,7 @@ RSpec.describe "bundle install with specific_platform enabled" do
 
       it "adds the foreign platform" do
         install_gemfile!(google_protobuf)
-        bundle! "lock --add-platform=#{x64_mingw}"
+        bundle "lock --add-platform=#{x64_mingw}"
 
         expect(the_bundle.locked_gems.platforms).to eq([rb, x64_mingw, pl("x86_64-darwin-15")])
         expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[
@@ -107,7 +107,7 @@ RSpec.describe "bundle install with specific_platform enabled" do
 
       it "falls back on plain ruby when that version doesnt have a platform-specific gem" do
         install_gemfile!(google_protobuf)
-        bundle! "lock --add-platform=#{java}"
+        bundle "lock --add-platform=#{java}"
 
         expect(the_bundle.locked_gems.platforms).to eq([java, rb, pl("x86_64-darwin-15")])
         expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[

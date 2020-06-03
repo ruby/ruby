@@ -21,7 +21,7 @@ RSpec.describe "bundle remove" do
         gem "rack"
       G
 
-      bundle! "remove rack --install"
+      bundle "remove rack --install"
 
       expect(out).to include("rack was removed.")
       expect(the_bundle).to_not include_gems "rack"
@@ -37,7 +37,7 @@ RSpec.describe "bundle remove" do
           gem "rack"
         G
 
-        bundle! "remove rack"
+        bundle "remove rack"
 
         expect(out).to include("rack was removed.")
         gemfile_should_be <<-G
@@ -57,7 +57,7 @@ RSpec.describe "bundle remove" do
             gem 'nokogiri'
           G
 
-          bundle! "remove rack"
+          bundle "remove rack"
 
           expect(out).to include("rack was removed.")
           gemfile_should_be <<-G
@@ -93,7 +93,7 @@ RSpec.describe "bundle remove" do
           gem "rails"
         G
 
-        bundle! "remove rack rails"
+        bundle "remove rack rails"
 
         expect(out).to include("rack was removed.")
         expect(out).to include("rails was removed.")
@@ -135,7 +135,7 @@ RSpec.describe "bundle remove" do
         gem "rack", :group => [:dev]
       G
 
-      bundle! "remove rack"
+      bundle "remove rack"
 
       expect(out).to include("rack was removed.")
       gemfile_should_be <<-G
@@ -155,7 +155,7 @@ RSpec.describe "bundle remove" do
           end
         G
 
-        bundle! "remove rspec"
+        bundle "remove rspec"
 
         expect(out).to include("rspec was removed.")
         gemfile_should_be <<-G
@@ -175,7 +175,7 @@ RSpec.describe "bundle remove" do
           end
         G
 
-        bundle! "remove rack"
+        bundle "remove rack"
 
         expect(out).to include("rack was removed.")
         gemfile_should_be <<-G
@@ -201,7 +201,7 @@ RSpec.describe "bundle remove" do
           end
         G
 
-        bundle! "remove rspec"
+        bundle "remove rspec"
 
         expect(out).to include("rspec was removed.")
         gemfile_should_be <<-G
@@ -220,7 +220,7 @@ RSpec.describe "bundle remove" do
           end
         G
 
-        bundle! "remove rspec"
+        bundle "remove rspec"
 
         expect(out).to include("rspec was removed.")
         gemfile_should_be <<-G
@@ -243,7 +243,7 @@ RSpec.describe "bundle remove" do
           end
         G
 
-        bundle! "remove rspec"
+        bundle "remove rspec"
 
         expect(out).to include("rspec was removed.")
         gemfile_should_be <<-G
@@ -266,7 +266,7 @@ RSpec.describe "bundle remove" do
           end
         G
 
-        bundle! "remove rspec"
+        bundle "remove rspec"
 
         expect(out).to include("rspec was removed.")
         gemfile_should_be <<-G
@@ -289,7 +289,7 @@ RSpec.describe "bundle remove" do
           end
         G
 
-        bundle! "remove rspec"
+        bundle "remove rspec"
 
         expect(out).to include("rspec was removed.")
         gemfile_should_be <<-G
@@ -316,7 +316,7 @@ RSpec.describe "bundle remove" do
           end
         G
 
-        bundle! "remove rspec"
+        bundle "remove rspec"
 
         expect(out).to include("rspec was removed.")
         gemfile_should_be <<-G
@@ -360,7 +360,7 @@ RSpec.describe "bundle remove" do
           gem "minitest"
         G
 
-        bundle! "remove rails rack rspec minitest"
+        bundle "remove rails rack rspec minitest"
 
         expect(out).to include("rails was removed.")
         expect(out).to include("minitest was removed.")
@@ -392,9 +392,9 @@ RSpec.describe "bundle remove" do
         end
       G
 
-      bundle! "install"
+      bundle "install"
 
-      bundle! "remove rspec"
+      bundle "remove rspec"
 
       expect(out).to include("rspec was removed.")
       gemfile_should_be <<-G
@@ -420,7 +420,7 @@ RSpec.describe "bundle remove" do
           gem "rack"
         G
 
-        bundle! "remove rack"
+        bundle "remove rack"
 
         expect(out).to include("rack was removed.")
       end
@@ -438,7 +438,7 @@ RSpec.describe "bundle remove" do
           eval_gemfile "Gemfile-other"
         G
 
-        bundle! "remove rack"
+        bundle "remove rack"
 
         expect(bundled_app("Gemfile-other").read).to_not include("gem \"rack\"")
         expect(out).to include("rack was removed.")
@@ -553,7 +553,7 @@ RSpec.describe "bundle remove" do
           gem"rack"
         G
 
-        bundle! "remove rack"
+        bundle "remove rack"
 
         expect(out).to include("rack was removed.")
         expect(bundled_app("Gemfile-other").read).to_not include("gem \"rack\"")
@@ -571,7 +571,7 @@ RSpec.describe "bundle remove" do
         end
       G
 
-      bundle! "remove rack"
+      bundle "remove rack"
 
       expect(out).to include("rack was removed.")
       gemfile_should_be <<-G
@@ -590,7 +590,7 @@ RSpec.describe "bundle remove" do
         end
       G
 
-      bundle! "remove rack"
+      bundle "remove rack"
 
       expect(out).to include("rack was removed.")
       gemfile_should_be <<-G
@@ -611,7 +611,7 @@ RSpec.describe "bundle remove" do
         gemspec :path => '#{tmp.join("foo")}', :name => 'foo'
       G
 
-      bundle! "remove foo"
+      bundle "remove foo"
 
       expect(out).to include("foo could not be removed.")
     end

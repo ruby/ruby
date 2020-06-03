@@ -13,13 +13,13 @@ RSpec.describe "bundle info" do
     it "creates a Gemfile.lock when invoked with a gem name" do
       FileUtils.rm(bundled_app_lock)
 
-      bundle! "info rails"
+      bundle "info rails"
 
       expect(bundled_app_lock).to exist
     end
 
     it "prints information if gem exists in bundle" do
-      bundle! "info rails"
+      bundle "info rails"
       expect(out).to include "* rails (2.3.2)
 \tSummary: This is just a fake gem for testing
 \tHomepage: http://example.com
@@ -27,12 +27,12 @@ RSpec.describe "bundle info" do
     end
 
     it "prints path if gem exists in bundle" do
-      bundle! "info rails --path"
+      bundle "info rails --path"
       expect(out).to eq(default_bundle_path("gems", "rails-2.3.2").to_s)
     end
 
     it "prints the path to the running bundler" do
-      bundle! "info bundler --path"
+      bundle "info bundler --path"
       expect(out).to eq(root.to_s)
     end
 
@@ -52,7 +52,7 @@ RSpec.describe "bundle info" do
 
     context "given a default gem shippped in ruby", :ruby_repo do
       it "prints information about the default gem" do
-        bundle! "info rdoc"
+        bundle "info rdoc"
         expect(out).to include("* rdoc")
         expect(out).to include("Default Gem: yes")
       end
@@ -60,7 +60,7 @@ RSpec.describe "bundle info" do
 
     context "given a gem with metadata" do
       it "prints the gem metadata" do
-        bundle! "info has_metadata"
+        bundle "info has_metadata"
         expect(out).to include "* has_metadata (1.0)
 \tSummary: This is just a fake gem for testing
 \tHomepage: http://example.com
@@ -101,7 +101,7 @@ RSpec.describe "bundle info" do
       G
       expect(the_bundle).to include_gems "foo 1.0"
 
-      bundle! "info foo"
+      bundle "info foo"
       expect(out).to include("foo (1.0 #{@git.ref_for("master", 6)}")
     end
 
@@ -116,7 +116,7 @@ RSpec.describe "bundle info" do
       G
       expect(the_bundle).to include_gems "foo 1.0.omg"
 
-      bundle! "info foo"
+      bundle "info foo"
       expect(out).to include("foo (1.0 #{@git.ref_for("omg", 6)}")
     end
 
@@ -126,7 +126,7 @@ RSpec.describe "bundle info" do
         gem "foo", :git => "#{lib_path("foo-1.0")}", :ref => "#{sha}"
       G
 
-      bundle! "info foo"
+      bundle "info foo"
       expect(out).to include("foo (1.0 #{sha[0..6]})")
     end
 
@@ -137,7 +137,7 @@ RSpec.describe "bundle info" do
       G
       expect(the_bundle).to include_gems "foo 1.0.0.pre.beta.1"
 
-      bundle! "info foo"
+      bundle "info foo"
       expect(out).to include("foo (1.0.0.pre.beta.1")
     end
   end
@@ -150,7 +150,7 @@ RSpec.describe "bundle info" do
         gem "rack-obama"
       G
 
-      bundle! "info rac"
+      bundle "info rac"
       expect(out).to eq "1 : rack\n2 : rack-obama\n0 : - exit -\n>"
     end
   end

@@ -152,7 +152,7 @@ RSpec.describe "bundle add" do
 
   describe "with --optimistic" do
     it "adds optimistic version" do
-      bundle! "add 'foo' --optimistic"
+      bundle "add 'foo' --optimistic"
       expect(bundled_app_gemfile.read).to include %(gem "foo", ">= 2.0")
       expect(the_bundle).to include_gems "foo 2.0"
     end
@@ -160,7 +160,7 @@ RSpec.describe "bundle add" do
 
   describe "with --strict option" do
     it "adds strict version" do
-      bundle! "add 'foo' --strict"
+      bundle "add 'foo' --strict"
       expect(bundled_app_gemfile.read).to include %(gem "foo", "= 2.0")
       expect(the_bundle).to include_gems "foo 2.0"
     end
@@ -168,7 +168,7 @@ RSpec.describe "bundle add" do
 
   describe "with no option" do
     it "adds pessimistic version" do
-      bundle! "add 'foo'"
+      bundle "add 'foo'"
       expect(bundled_app_gemfile.read).to include %(gem "foo", "~> 2.0")
       expect(the_bundle).to include_gems "foo 2.0"
     end
@@ -184,7 +184,7 @@ RSpec.describe "bundle add" do
 
   context "multiple gems" do
     it "adds multiple gems to gemfile" do
-      bundle! "add bar baz"
+      bundle "add bar baz"
 
       expect(bundled_app_gemfile.read).to match(/gem "bar", "~> 0.12.3"/)
       expect(bundled_app_gemfile.read).to match(/gem "baz", "~> 1.2"/)
@@ -242,7 +242,7 @@ RSpec.describe "bundle add" do
 
   describe "when a gem is added and cache exists" do
     it "caches all new dependencies added for the specified gem" do
-      bundle! :cache
+      bundle :cache
 
       bundle "add 'rack' --version=1.0.0"
       expect(bundled_app("vendor/cache/rack-1.0.0.gem")).to exist

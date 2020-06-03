@@ -93,9 +93,9 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
       gem "platform_specific"
     G
 
-    bundle! "config set force_ruby_platform true"
+    bundle "config set force_ruby_platform true"
 
-    bundle! "install"
+    bundle "install"
 
     expect(the_bundle).to include_gems "nokogiri 1.4.2", "platform_specific 1.0 RUBY"
   end
@@ -108,9 +108,9 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
         gem "platform_specific"
       G
 
-      bundle! "config set force_ruby_platform true"
+      bundle "config set force_ruby_platform true"
 
-      bundle! "install"
+      bundle "install"
 
       expect(the_bundle).to include_gems "platform_specific 1.0 RUBY"
       expect(the_bundle).to not_include_gems "nokogiri"
@@ -126,11 +126,11 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
       source "#{file_uri_for(gem_repo1)}"
       gemspec
     G
-    bundle! :lock
+    bundle :lock
 
     simulate_windows do
-      bundle! "config set force_ruby_platform true"
-      bundle! "install"
+      bundle "config set force_ruby_platform true"
+      bundle "install"
 
       expect(the_bundle).to include_gems "rack 1.0"
     end

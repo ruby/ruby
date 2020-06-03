@@ -45,9 +45,9 @@ RSpec.describe "bundle pristine", :ruby_repo do
     end
 
     it "does not delete the bundler gem" do
-      bundle! "install"
-      bundle! "pristine"
-      bundle! "-v"
+      bundle "install"
+      bundle "pristine"
+      bundle "-v"
 
       expected = if Bundler::VERSION < "3.0"
         "Bundler version"
@@ -68,7 +68,7 @@ RSpec.describe "bundle pristine", :ruby_repo do
       File.open(changed_file, "a") {|f| f.puts diff }
       expect(File.read(changed_file)).to include(diff)
 
-      bundle! "pristine"
+      bundle "pristine"
       expect(File.read(changed_file)).to_not include(diff)
     end
 
@@ -79,7 +79,7 @@ RSpec.describe "bundle pristine", :ruby_repo do
       FileUtils.touch(changes_txt)
       expect(changes_txt).to be_file
 
-      bundle! "pristine"
+      bundle "pristine"
       expect(changes_txt).not_to be_file
     end
 
@@ -153,7 +153,7 @@ RSpec.describe "bundle pristine", :ruby_repo do
       FileUtils.touch(weakling_changes_txt)
       expect(weakling_changes_txt).to be_file
 
-      bundle! "pristine foo bar weakling"
+      bundle "pristine foo bar weakling"
 
       expect(err).to include("Cannot pristine bar (1.0). Gem is sourced from local path.")
       expect(out).to include("Installing weakling 1.0")
@@ -178,7 +178,7 @@ RSpec.describe "bundle pristine", :ruby_repo do
     # This just verifies that the generated Makefile from the c_ext gem makes
     # use of the build_args from the bundle config
     it "applies the config when installing the gem" do
-      bundle! "pristine"
+      bundle "pristine"
 
       makefile_contents = File.read(c_ext_dir.join("Makefile").to_s)
       expect(makefile_contents).to match(/libpath =.*#{c_ext_dir}/)
@@ -195,7 +195,7 @@ RSpec.describe "bundle pristine", :ruby_repo do
     # This just verifies that the generated Makefile from the c_ext gem makes
     # use of the build_args from the bundle config
     it "applies the config when installing the gem" do
-      bundle! "pristine"
+      bundle "pristine"
 
       makefile_contents = File.read(c_ext_dir.join("Makefile").to_s)
       expect(makefile_contents).to match(/libpath =.*#{c_ext_dir}/)

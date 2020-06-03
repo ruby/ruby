@@ -157,11 +157,11 @@ RSpec.describe "bundle exec" do
       gem "rack_two", "1.0.0"
     G
 
-    bundle! "exec rackup"
+    bundle "exec rackup"
 
     expect(out).to eq("0.9.1")
 
-    bundle! "exec rackup", :dir => bundled_app2
+    bundle "exec rackup", :dir => bundled_app2
     expect(out).to eq("1.0.0")
   end
 
@@ -178,7 +178,7 @@ RSpec.describe "bundle exec" do
       end
 
       it "uses version provided by ruby" do
-        bundle! "exec irb --version"
+        bundle "exec irb --version"
 
         expect(out).to include(default_irb_version)
       end
@@ -203,7 +203,7 @@ RSpec.describe "bundle exec" do
       end
 
       it "uses version specified" do
-        bundle! "exec irb --version"
+        bundle "exec irb --version"
 
         expect(out).to eq(specified_irb_version)
         expect(err).to be_empty
@@ -231,7 +231,7 @@ RSpec.describe "bundle exec" do
           gem "gem_depending_on_old_irb"
         G
 
-        bundle! "exec irb --version"
+        bundle "exec irb --version"
       end
 
       it "uses resolved version" do
@@ -260,7 +260,7 @@ RSpec.describe "bundle exec" do
       gem "rack_two", "1.0.0"
     G
 
-    bundle! "exec rackup"
+    bundle "exec rackup"
 
     expect(last_command.stderr).to eq(
       "Bundler is using a binstub that was created for a different gem (rack).\n" \
@@ -354,13 +354,13 @@ RSpec.describe "bundle exec" do
   end
 
   it "raises a helpful error when exec'ing to something outside of the bundle" do
-    bundle! "config set clean false" # want to keep the rackup binstub
+    bundle "config set clean false" # want to keep the rackup binstub
     install_gemfile! <<-G
       source "#{file_uri_for(gem_repo1)}"
       gem "with_license"
     G
     [true, false].each do |l|
-      bundle! "config set disable_exec_load #{l}"
+      bundle "config set disable_exec_load #{l}"
       bundle "exec rackup", :raise_on_error => false
       expect(err).to include "can't find executable rackup for gem rack. rack is not currently included in the bundle, perhaps you meant to add it to your Gemfile?"
     end
@@ -598,8 +598,8 @@ RSpec.describe "bundle exec" do
       end
       Bundler.rubygems.extend(Monkey)
       G
-      bundle! "config set path.system true"
-      bundle! "install"
+      bundle "config set path.system true"
+      bundle "install"
       bundle "exec ruby -e '`bundle -v`; puts $?.success?'", :env => { "BUNDLER_VERSION" => Bundler::VERSION }
       expect(out).to match("true")
     end
@@ -827,7 +827,7 @@ __FILE__: #{path.to_s.inspect}
         it "receives the signal" do
           skip "https://github.com/rubygems/bundler/issues/6898" if Gem.win_platform?
 
-          bundle!("exec #{path}") do |_, o, thr|
+          bundle("exec #{path}") do |_, o, thr|
             o.gets # Consumes 'Started' and ensures that thread has started
             Process.kill("INT", thr.pid)
           end
@@ -854,7 +854,7 @@ __FILE__: #{path.to_s.inspect}
             Signal.trap(n, "IGNORE")
           end
 
-          bundle!("exec #{path}")
+          bundle("exec #{path}")
 
           expect(out).to eq(test_signals.count.to_s)
         end
@@ -870,7 +870,7 @@ __FILE__: #{path.to_s.inspect}
           gem "rack"
         G
         bundle "config set path vendor/bundler"
-        bundle! :install
+        bundle :install
       end
 
       it "correctly shells out" do
@@ -882,7 +882,7 @@ __FILE__: #{path.to_s.inspect}
           puts `bundle exec echo foo`
         RUBY
         file.chmod(0o777)
-        bundle! "exec #{file}", :env => { "PATH" => path }
+        bundle "exec #{file}", :env => { "PATH" => path }
         expect(out).to eq("foo")
       end
     end
@@ -918,9 +918,9 @@ __FILE__: #{path.to_s.inspect}
 
         env = { "PATH" => path }
         aggregate_failures do
-          expect(bundle!("exec #{file}", :artifice => nil, :env => env)).to eq(expected)
-          expect(bundle!("exec bundle exec #{file}", :artifice => nil, :env => env)).to eq(expected)
-          expect(bundle!("exec ruby #{file}", :artifice => nil, :env => env)).to eq(expected)
+          expect(bundle("exec #{file}", :artifice => nil, :env => env)).to eq(expected)
+          expect(bundle("exec bundle exec #{file}", :artifice => nil, :env => env)).to eq(expected)
+          expect(bundle("exec ruby #{file}", :artifice => nil, :env => env)).to eq(expected)
           expect(run!(file.read, :artifice => nil, :env => env)).to eq(expected)
         end
 
@@ -934,19 +934,19 @@ __FILE__: #{path.to_s.inspect}
     context "with a git gem that includes extensions", :ruby_repo do
       before do
         build_git "simple_git_binary", &:add_c_extension
-        bundle! "config set --local path .bundle"
+        bundle "config set --local path .bundle"
         install_gemfile! <<-G
           gem "simple_git_binary", :git => '#{lib_path("simple_git_binary-1.0")}'
         G
       end
 
       it "allows calling bundle install" do
-        bundle! "exec bundle install"
+        bundle "exec bundle install"
       end
 
       it "allows calling bundle install after removing gem.build_complete" do
         FileUtils.rm_rf Dir[bundled_app(".bundle/**/gem.build_complete")]
-        bundle! "exec #{Gem.ruby} -S bundle install"
+        bundle "exec #{Gem.ruby} -S bundle install"
       end
     end
   end

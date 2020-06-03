@@ -49,7 +49,7 @@ RSpec.describe "bundle binstubs <gem>" do
         gem "rails"
       G
 
-      bundle! :binstubs, :all => true
+      bundle :binstubs, :all => true
 
       expect(bundled_app("bin/rails")).to exist
       expect(bundled_app("bin/rake")).to exist
@@ -114,7 +114,7 @@ RSpec.describe "bundle binstubs <gem>" do
           gem "rack"
           gem "prints_loaded_gems"
         G
-        bundle! "binstubs bundler rack prints_loaded_gems"
+        bundle "binstubs bundler rack prints_loaded_gems"
       end
 
       let(:system_bundler_version) { Bundler::VERSION }
@@ -326,8 +326,8 @@ RSpec.describe "bundle binstubs <gem>" do
         gem "rails"
       G
 
-      bundle! "binstubs rack", :path => "exec"
-      bundle! :install
+      bundle "binstubs rack", :path => "exec"
+      bundle :install
 
       expect(bundled_app("exec/rails")).to exist
     end
@@ -342,18 +342,18 @@ RSpec.describe "bundle binstubs <gem>" do
     end
 
     it "generates a standalone binstub" do
-      bundle! "binstubs rack --standalone"
+      bundle "binstubs rack --standalone"
       expect(bundled_app("bin/rackup")).to exist
     end
 
     it "generates a binstub that does not depend on rubygems or bundler" do
-      bundle! "binstubs rack --standalone"
+      bundle "binstubs rack --standalone"
       expect(File.read(bundled_app("bin/rackup"))).to_not include("Gem.bin_path")
     end
 
     context "when specified --path option" do
       it "generates a standalone binstub at the given path" do
-        bundle! "binstubs rack --standalone --path foo"
+        bundle "binstubs rack --standalone --path foo"
         expect(bundled_app("foo/rackup")).to exist
       end
     end

@@ -143,7 +143,7 @@ RSpec.describe "bundle install from an existing gemspec" do
       gemspec :path => '#{tmp.join("foo")}'
     G
 
-    bundle! "install", :verbose => true
+    bundle "install", :verbose => true
 
     message = "Found no changes, using resolution from the lockfile"
     expect(out.scan(message).size).to eq(1)
@@ -162,7 +162,7 @@ RSpec.describe "bundle install from an existing gemspec" do
       gemspec :path => '#{tmp.join("foo")}'
     G
 
-    bundle! "install", :verbose => true
+    bundle "install", :verbose => true
 
     message = "Found no changes, using resolution from the lockfile"
     expect(out.scan(message).size).to eq(1)
@@ -179,7 +179,7 @@ RSpec.describe "bundle install from an existing gemspec" do
       gemspec :path => '#{tmp.join("foo")}'
     G
 
-    bundle! "update --bundler", :verbose => true
+    bundle "update --bundler", :verbose => true
     expect(the_bundle).to include_gems "foo 1.0", "platform_specific 1.0 JAVA"
   end
 
@@ -268,7 +268,7 @@ RSpec.describe "bundle install from an existing gemspec" do
 
     build_lib "omg", "1.0", :path => lib_path("omg")
 
-    bundle! :install, :env => { "BUNDLE_BUNDLE_ONLY_UPDATE_TO_NEWER_VERSIONS" => "true" }
+    bundle :install, :env => { "BUNDLE_BUNDLE_ONLY_UPDATE_TO_NEWER_VERSIONS" => "true" }
 
     expect(the_bundle).to include_gems "omg 1.0"
   end

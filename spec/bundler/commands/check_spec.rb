@@ -95,13 +95,13 @@ RSpec.describe "bundle check" do
       end
     G
 
-    bundle! "install --without foo"
-    bundle! "check"
+    bundle "install --without foo"
+    bundle "check"
     expect(out).to include("The Gemfile's dependencies are satisfied")
   end
 
   it "uses the without setting" do
-    bundle! "config set without foo"
+    bundle "config set without foo"
     install_gemfile! <<-G
       source "#{file_uri_for(gem_repo1)}"
       group :foo do
@@ -109,7 +109,7 @@ RSpec.describe "bundle check" do
       end
     G
 
-    bundle! "check"
+    bundle "check"
     expect(out).to include("The Gemfile's dependencies are satisfied")
   end
 
@@ -213,7 +213,7 @@ RSpec.describe "bundle check" do
     G
 
     bundle "config --local deployment true"
-    bundle! "install"
+    bundle "install"
     FileUtils.rm(bundled_app_lock)
 
     bundle :check, :raise_on_error => false
@@ -233,13 +233,13 @@ RSpec.describe "bundle check" do
       end
 
       it "returns success" do
-        bundle! "check --path vendor/bundle"
+        bundle "check --path vendor/bundle"
         expect(out).to include("The Gemfile's dependencies are satisfied")
       end
 
       it "should write to .bundle/config" do
         bundle "check --path vendor/bundle"
-        bundle! "check"
+        bundle "check"
       end
     end
 
@@ -324,7 +324,7 @@ RSpec.describe "bundle check" do
     context "is newer" do
       it "does not change the lock but warns" do
         lockfile lock_with(Bundler::VERSION.succ)
-        bundle! :check
+        bundle :check
         expect(err).to include("the running version of Bundler (#{Bundler::VERSION}) is older than the version that created the lockfile (#{Bundler::VERSION.succ})")
         lockfile_should_be lock_with(Bundler::VERSION.succ)
       end
