@@ -406,7 +406,7 @@ module Spec
       @_build_repo = File.basename(path)
       yield
       with_gem_path_as Path.base_system_gems do
-        gem_command! :generate_index, :dir => path
+        gem_command :generate_index, :dir => path
       end
     ensure
       @_build_path = nil
@@ -753,7 +753,7 @@ module Spec
         elsif opts[:skip_validation]
           @context.gem_command "build --force #{@spec.name}", :dir => lib_path
         else
-          @context.gem_command! "build #{@spec.name}", :dir => lib_path
+          @context.gem_command "build #{@spec.name}", :dir => lib_path
         end
 
         gem_path = File.expand_path("#{@spec.full_name}.gem", lib_path)
