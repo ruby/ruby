@@ -21,7 +21,6 @@ jobs:
           sudo /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate
       - uses: actions/checkout@v2
         with:
-          fetch-depth: 128
           path: src
       - run: ./src/tool/actions-commit-info.sh
         id: commit_info
