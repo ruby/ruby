@@ -2,7 +2,7 @@
 
 require "open3"
 
-class TestProjectSanity < Minitest::Test
+class TestProjectSanity < Gem::TestCase
 
   def test_manifest_is_up_to_date
     skip unless File.exist?(File.expand_path("../../../Rakefile", __FILE__))
@@ -13,9 +13,11 @@ class TestProjectSanity < Minitest::Test
   end
 
   def test_require_rubygems_package
-    _, status = Open3.capture2e("ruby -v --disable-gems -I 'lib' -e 'require \"rubygems/package\"'")
+    require "rubygems/test_case"
 
-    assert status.success?
+    err, status = Open3.capture2e(*ruby_with_rubygems_in_load_path, "--disable-gems", "-e", "'require \"rubygems/package\"'")
+
+    assert status.success?, err
   end
 
 end
