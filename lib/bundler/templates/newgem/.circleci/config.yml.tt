@@ -8,6 +8,6 @@ jobs:
       - run:
           name: Run tests
           command: |
-            gem install bundler -v <%= Bundler::Version %>
+            gem install bundler -v <%= Bundler::VERSION %>
             bundle install
             bundle exec rake test
