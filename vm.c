@@ -386,7 +386,15 @@ rb_serial_t ruby_vm_global_method_state = 1;
 rb_serial_t ruby_vm_global_constant_state = 1;
 rb_serial_t ruby_vm_class_serial = 1;
 
-static const struct rb_callcache vm_empty_cc = VM_CC_ON_STACK(0, vm_call_general, { 0 }, 0);
+static const struct rb_callcache vm_empty_cc = {
+    .flags = T_IMEMO | (imemo_callcache << FL_USHIFT) | VM_CALLCACHE_UNMARKABLE,
+    .klass = Qfalse,
+    .cme_  = NULL,
+    .call_ = vm_call_general,
+    .aux_  = {
+        .v = Qfalse,
+    }
+};
 
 static void thread_free(void *ptr);
 
