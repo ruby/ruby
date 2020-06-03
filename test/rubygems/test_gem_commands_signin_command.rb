@@ -23,7 +23,7 @@ class TestGemCommandsSigninCommand < Gem::TestCase
   end
 
   def test_execute_when_not_already_signed_in
-    sign_in_ui = util_capture() { @cmd.execute }
+    sign_in_ui = util_capture { @cmd.execute }
     assert_match %r{Signed in.}, sign_in_ui.output
   end
 
