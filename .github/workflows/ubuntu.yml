@@ -54,7 +54,6 @@ jobs:
           sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev libgdbm-dev bison autoconf ruby
       - uses: actions/checkout@v2
         with:
-          fetch-depth: 128
           path: src
       - run: ./src/tool/actions-commit-info.sh
         id: commit_info

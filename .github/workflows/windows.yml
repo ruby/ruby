@@ -39,7 +39,6 @@ jobs:
           choco install --no-progress openssl winflexbison3
       - uses: actions/checkout@v2
         with:
-          fetch-depth: 128
           path: src
       - run: ./src/tool/actions-commit-info.sh
         shell: bash
