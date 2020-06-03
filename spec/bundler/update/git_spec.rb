@@ -165,7 +165,7 @@ RSpec.describe "bundle update" do
           end
         G
 
-        run! "require 'submodule'"
+        run "require 'submodule'"
         expect(out).to eq("GIT")
 
         install_gemfile <<-G
@@ -175,7 +175,7 @@ RSpec.describe "bundle update" do
           end
         G
 
-        run! "require 'submodule'"
+        run "require 'submodule'"
         expect(out).to eq("GEM")
       end
     end

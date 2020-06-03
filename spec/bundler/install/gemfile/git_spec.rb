@@ -232,7 +232,7 @@ RSpec.describe "bundle install with git sources" do
       G
       expect(err).to be_empty
 
-      run! <<-RUBY
+      run <<-RUBY
         require 'foo'
         puts "WIN" if defined?(FOO)
       RUBY
@@ -266,7 +266,7 @@ RSpec.describe "bundle install with git sources" do
       G
       expect(err).to be_empty
 
-      run! <<-RUBY
+      run <<-RUBY
         require 'foo'
         puts "WIN" if defined?(FOO)
       RUBY
@@ -453,7 +453,7 @@ RSpec.describe "bundle install with git sources" do
 
       bundle %(config set local.rack #{lib_path("local-rack")})
       bundle :install
-      run! "require 'rack'"
+      run "require 'rack'"
       expect(out).to eq("LOCAL")
     end
 
@@ -1135,7 +1135,7 @@ RSpec.describe "bundle install with git sources" do
       R
       expect(out).to eq("YES")
 
-      run! <<-R
+      run <<-R
         puts $:.grep(/ext/)
       R
       expect(out).to include(Pathname.glob(default_bundle_path("bundler/gems/extensions/**/foo-1.0-*")).first.to_s)
@@ -1223,7 +1223,7 @@ In Gemfile:
         gem "foo", :git => "#{lib_path("foo-1.0")}"
       G
 
-      run! <<-R
+      run <<-R
         require 'foo'
         puts FOO
       R
@@ -1236,7 +1236,7 @@ In Gemfile:
         gem "foo", :git => "#{lib_path("foo-1.0")}"
       G
 
-      run! <<-R
+      run <<-R
         require 'foo'
         puts FOO
       R
@@ -1265,7 +1265,7 @@ In Gemfile:
         gem "foo", :git => "#{lib_path("foo-1.0")}"
       G
 
-      run! <<-R
+      run <<-R
         require 'foo'
         puts FOO
       R
@@ -1279,7 +1279,7 @@ In Gemfile:
         gem "foo", :git => "#{lib_path("foo-1.0")}"
       G
 
-      run! <<-R
+      run <<-R
         require 'foo'
         puts FOO
       R
@@ -1307,7 +1307,7 @@ In Gemfile:
         gem "foo", :git => "#{lib_path("foo-1.0")}"
       G
 
-      run! <<-R
+      run <<-R
         require 'foo'
         puts FOO
       R
@@ -1323,7 +1323,7 @@ In Gemfile:
         gem "foo", :git => "#{lib_path("foo-1.0")}", :branch => "branch2"
       G
 
-      run! <<-R
+      run <<-R
         require 'foo'
         puts FOO
       R
@@ -1334,7 +1334,7 @@ In Gemfile:
       update_git("foo")
       bundle "update foo"
 
-      run! <<-R
+      run <<-R
         require 'foo'
         puts FOO
       R

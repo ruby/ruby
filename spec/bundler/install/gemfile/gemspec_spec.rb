@@ -255,7 +255,7 @@ RSpec.describe "bundle install from an existing gemspec" do
 
     expect(the_bundle).to include_gems "foo 1.0.0"
 
-    run! "Gem.finish_resolve; puts 'WIN'"
+    run "Gem.finish_resolve; puts 'WIN'"
     expect(out).to eq("WIN")
   end
 

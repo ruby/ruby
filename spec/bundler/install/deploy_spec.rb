@@ -238,7 +238,7 @@ RSpec.describe "install in deployment or frozen mode" do
       bundle "config --local without development"
       bundle "config --local deployment true"
       bundle :install, :env => { "DEBUG" => "1" }
-      run! "puts :WIN"
+      run "puts :WIN"
       expect(out).to eq("WIN")
     end
 

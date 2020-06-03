@@ -209,7 +209,7 @@ RSpec.describe "global gem caching" do
       cached_extensions = Pathname.glob(home(".bundle", "cache", "extensions", "*", "*", "*", "*", "*")).sort
       expect(cached_extensions).to eq [gem_binary_cache, git_binary_cache].sort
 
-      run! <<-R
+      run <<-R
         require 'very_simple_binary_c'; puts ::VERY_SIMPLE_BINARY_IN_C
         require 'very_simple_git_binary_c'; puts ::VERY_SIMPLE_GIT_BINARY_IN_C
       R
@@ -225,7 +225,7 @@ RSpec.describe "global gem caching" do
 
       expect(Dir[home(".bundle", "cache", "extensions", "**", "*binary_c*")]).to all(end_with(".rb"))
 
-      run! <<-R
+      run <<-R
         require 'very_simple_binary_c'
         require 'very_simple_git_binary_c'
       R

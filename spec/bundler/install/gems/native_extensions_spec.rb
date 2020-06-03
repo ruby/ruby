@@ -83,7 +83,7 @@ RSpec.describe "installing a gem with native extensions", :ruby_repo do
 
     expect(err).to_not include("warning: conflicting chdir during another chdir block")
 
-    run! "Bundler.require; puts CExtension.new.its_true"
+    run "Bundler.require; puts CExtension.new.its_true"
     expect(out).to eq("true")
   end
 
@@ -135,7 +135,7 @@ RSpec.describe "installing a gem with native extensions", :ruby_repo do
       gem "c_extension_two", :git => #{lib_path("gems").to_s.dump}
     G
 
-    run! "Bundler.require; puts CExtension_one.new.value; puts CExtension_two.new.value"
+    run "Bundler.require; puts CExtension_one.new.value; puts CExtension_two.new.value"
     expect(out).to eq("one\ntwo")
   end
 
@@ -174,7 +174,7 @@ RSpec.describe "installing a gem with native extensions", :ruby_repo do
       gem "c_extension", :git => #{lib_path("c_extension-1.0").to_s.dump}
     G
 
-    run! "Bundler.require; puts CExtension.new.its_true"
+    run "Bundler.require; puts CExtension.new.its_true"
     expect(out).to eq("true")
   end
 end
