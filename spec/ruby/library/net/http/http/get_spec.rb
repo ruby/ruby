@@ -25,6 +25,7 @@ describe "Net::HTTP.get" do
   end
 end
 
+quarantine! do # These specs fail frequently with CHECK_LEAKS=true
 describe "Net::HTTP.get" do
   describe "when reading gzipped contents" do
     def start_threads
@@ -90,4 +91,5 @@ describe "Net::HTTP.get" do
       end
     end
   end
+end
 end
