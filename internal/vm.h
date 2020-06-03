@@ -95,6 +95,12 @@ MJIT_SYMBOL_EXPORT_BEGIN
 void rb_vm_search_method_slowpath(VALUE cd_owner, struct rb_call_data *cd, VALUE klass);
 MJIT_SYMBOL_EXPORT_END
 
+/* vm_method.c */
+struct rb_execution_context_struct;
+MJIT_SYMBOL_EXPORT_BEGIN
+int rb_ec_obj_respond_to(struct rb_execution_context_struct *ec, VALUE obj, ID id, int priv);
+MJIT_SYMBOL_EXPORT_END
+
 /* vm_dump.c */
 void rb_print_backtrace(void);
 

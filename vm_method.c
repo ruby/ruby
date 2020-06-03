@@ -2358,6 +2358,12 @@ int
 rb_obj_respond_to(VALUE obj, ID id, int priv)
 {
     rb_execution_context_t *ec = GET_EC();
+    return rb_ec_obj_respond_to(ec, obj, id, priv);
+}
+
+int
+rb_ec_obj_respond_to(rb_execution_context_t *ec, VALUE obj, ID id, int priv)
+{
     VALUE klass = CLASS_OF(obj);
     int ret = vm_respond_to(ec, klass, obj, id, priv);
     if (ret == -1) ret = basic_obj_respond_to(ec, obj, id, !priv);

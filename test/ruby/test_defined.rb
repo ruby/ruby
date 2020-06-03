@@ -309,10 +309,19 @@ class TestDefined < Test::Unit::TestCase
     refine RefinedClass do
       def pub
       end
+
+      private
+
+      def priv
+      end
     end
 
     def self.call_without_using(x = RefinedClass.new)
       defined?(x.pub)
+    end
+
+    def self.vcall_without_using(x = RefinedClass.new)
+      x.instance_eval {defined?(priv)}
     end
 
     using self
@@ -320,13 +329,25 @@ class TestDefined < Test::Unit::TestCase
     def self.call_with_using(x = RefinedClass.new)
       defined?(x.pub)
     end
+
+    def self.vcall_with_using(x = RefinedClass.new)
+      x.instance_eval {defined?(priv)}
+    end
   end
 
   def test_defined_refined_call_without_using
     assert(!RefiningModule.call_without_using, "refined public method without using")
   end
 
+  def test_defined_refined_vcall_without_using
+    assert(!RefiningModule.vcall_without_using, "refined private method without using")
+  end
+
   def test_defined_refined_call_with_using
     assert(RefiningModule.call_with_using, "refined public method with using")
+  end
+
+  def test_defined_refined_vcall_with_using
+    assert(RefiningModule.vcall_with_using, "refined private method with using")
   end
 end
