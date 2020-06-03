@@ -81,7 +81,7 @@ RSpec.describe "Bundler.load" do
         gem "activesupport", :group => :test
       G
 
-      ruby! <<-RUBY
+      ruby <<-RUBY
         require "#{lib_dir}/bundler"
         Bundler.setup :default
         Bundler.require :default

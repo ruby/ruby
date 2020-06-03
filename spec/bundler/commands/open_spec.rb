@@ -94,7 +94,7 @@ RSpec.describe "bundle open" do
 
   context "when opening a default gem" do
     let(:default_gems) do
-      ruby!(<<-RUBY).split("\n")
+      ruby(<<-RUBY).split("\n")
         if Gem::Specification.is_a?(Enumerable)
           puts Gem::Specification.select(&:default_gem?).map(&:name)
         end

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 RSpec.describe "Bundler.with_env helpers" do
-  def bundle_exec_ruby!(args, options = {})
+  def bundle_exec_ruby(args, options = {})
     build_bundler_context options
     bundle "exec '#{Gem.ruby}' #{args}", options
   end
@@ -23,7 +23,7 @@ RSpec.describe "Bundler.with_env helpers" do
       RUBY
       path = `getconf PATH`.strip + "#{File::PATH_SEPARATOR}/foo"
       with_path_as(path) do
-        bundle_exec_ruby!(bundled_app("source.rb").to_s)
+        bundle_exec_ruby(bundled_app("source.rb").to_s)
         expect(last_command.stdboth).to eq(path)
       end
     end
@@ -34,7 +34,7 @@ RSpec.describe "Bundler.with_env helpers" do
       RUBY
       gem_path = ENV["GEM_PATH"] + "#{File::PATH_SEPARATOR}/foo"
       with_gem_path_as(gem_path) do
-        bundle_exec_ruby!(bundled_app("source.rb").to_s)
+        bundle_exec_ruby(bundled_app("source.rb").to_s)
         expect(last_command.stdboth).to eq(gem_path)
       end
     end
@@ -52,7 +52,7 @@ RSpec.describe "Bundler.with_env helpers" do
       path = `getconf PATH`.strip + File::PATH_SEPARATOR + File.dirname(Gem.ruby)
       with_path_as(path) do
         build_bundler_context
-        bundle_exec_ruby!("#{bundled_app("exe.rb")} 2")
+        bundle_exec_ruby("#{bundled_app("exe.rb")} 2")
       end
       expect(err).to eq <<-EOS.strip
 2 false
@@ -65,11 +65,11 @@ RSpec.describe "Bundler.with_env helpers" do
       # Simulate bundler has not yet been loaded
       ENV.replace(ENV.to_hash.delete_if {|k, _v| k.start_with?(Bundler::EnvironmentPreserver::BUNDLER_PREFIX) })
 
-      original = ruby!('puts ENV.to_a.map {|e| e.join("=") }.sort.join("\n")')
+      original = ruby('puts ENV.to_a.map {|e| e.join("=") }.sort.join("\n")')
       create_file("source.rb", <<-RUBY)
         puts Bundler.original_env.to_a.map {|e| e.join("=") }.sort.join("\n")
       RUBY
-      bundle_exec_ruby! bundled_app("source.rb")
+      bundle_exec_ruby bundled_app("source.rb")
       expect(out).to eq original
     end
   end
@@ -80,7 +80,7 @@ RSpec.describe "Bundler.with_env helpers" do
         print #{modified_env}.has_key?('BUNDLE_PATH')
       RUBY
       ENV["BUNDLE_PATH"] = "./foo"
-      bundle_exec_ruby! bundled_app("source.rb")
+      bundle_exec_ruby bundled_app("source.rb")
       expect(last_command.stdboth).to include "false"
     end
 
@@ -90,7 +90,7 @@ RSpec.describe "Bundler.with_env helpers" do
       RUBY
       ENV["RUBYOPT"] = "-W2 -rbundler/setup #{ENV["RUBYOPT"]}"
       simulate_bundler_version_when_missing_prerelease_default_gem_activation do
-        bundle_exec_ruby! bundled_app("source.rb")
+        bundle_exec_ruby bundled_app("source.rb")
       end
       expect(last_command.stdboth).not_to include("-rbundler/setup")
     end
@@ -101,7 +101,7 @@ RSpec.describe "Bundler.with_env helpers" do
       RUBY
       ENV["RUBYLIB"] = lib_dir.to_s + File::PATH_SEPARATOR + "/foo"
       ENV["BUNDLER_ORIG_RUBYLIB"] = lib_dir.to_s + File::PATH_SEPARATOR + "/foo-original"
-      bundle_exec_ruby! bundled_app("source.rb")
+      bundle_exec_ruby bundled_app("source.rb")
       expect(last_command.stdboth).to include("/foo-original")
     end
 
@@ -111,7 +111,7 @@ RSpec.describe "Bundler.with_env helpers" do
       RUBY
       ENV["MANPATH"] = "/foo"
       ENV["BUNDLER_ORIG_MANPATH"] = "/foo-original"
-      bundle_exec_ruby! bundled_app("source.rb")
+      bundle_exec_ruby bundled_app("source.rb")
       expect(last_command.stdboth).to include("/foo-original")
     end
   end

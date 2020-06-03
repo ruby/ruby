@@ -2,7 +2,7 @@
 
 RSpec.describe "real world edgecases", :realworld => true, :sometimes => true do
   def rubygems_version(name, requirement)
-    ruby! <<-RUBY
+    ruby <<-RUBY
       require "#{spec_dir}/support/artifice/vcr"
       require "#{lib_dir}/bundler"
       require "#{lib_dir}/bundler/source/rubygems/remote"

@@ -107,7 +107,7 @@ RSpec.describe "Bundler.setup" do
 
   context "load order" do
     def clean_load_path(lp)
-      without_bundler_load_path = ruby!("puts $LOAD_PATH").split("\n")
+      without_bundler_load_path = ruby("puts $LOAD_PATH").split("\n")
       lp -= without_bundler_load_path
       lp.map! {|p| p.sub(/^#{Regexp.union system_gem_path.to_s, default_bundle_path.to_s, lib_dir.to_s}/i, "") }
     end
@@ -143,7 +143,7 @@ RSpec.describe "Bundler.setup" do
         gem "rails"
       G
 
-      ruby! <<-RUBY
+      ruby <<-RUBY
         require '#{lib_dir}/bundler'
         Bundler.setup
         puts $LOAD_PATH
@@ -171,7 +171,7 @@ RSpec.describe "Bundler.setup" do
         gem "terranova"
       G
 
-      ruby! <<-RUBY
+      ruby <<-RUBY
         require '#{lib_dir}/bundler/setup'
         puts $LOAD_PATH
       RUBY
@@ -1158,14 +1158,14 @@ end
 
     context "is not present" do
       it "does not change the lock" do
-        expect { ruby! "require '#{lib_dir}/bundler/setup'" }.not_to change { lockfile }
+        expect { ruby "require '#{lib_dir}/bundler/setup'" }.not_to change { lockfile }
       end
     end
 
     context "is newer" do
       let(:ruby_version) { "5.5.5" }
       it "does not change the lock or warn" do
-        expect { ruby! "require '#{lib_dir}/bundler/setup'" }.not_to change { lockfile }
+        expect { ruby "require '#{lib_dir}/bundler/setup'" }.not_to change { lockfile }
         expect(out).to be_empty
         expect(err).to be_empty
       end
@@ -1174,7 +1174,7 @@ end
     context "is older" do
       let(:ruby_version) { "1.0.0" }
       it "does not change the lock" do
-        expect { ruby! "require '#{lib_dir}/bundler/setup'" }.not_to change { lockfile }
+        expect { ruby "require '#{lib_dir}/bundler/setup'" }.not_to change { lockfile }
       end
     end
   end
@@ -1195,7 +1195,7 @@ end
 
     it "does not load openssl" do
       install_gemfile ""
-      ruby! <<-RUBY
+      ruby <<-RUBY
         require "#{lib_dir}/bundler/setup"
         puts defined?(OpenSSL) || "undefined"
         require "openssl"
@@ -1251,7 +1251,7 @@ end
 
       it "activates no gems with -rbundler/setup" do
         install_gemfile ""
-        ruby! code, :env => { "RUBYOPT" => activation_warning_hack_rubyopt + " -r#{lib_dir}/bundler/setup" }
+        ruby code, :env => { "RUBYOPT" => activation_warning_hack_rubyopt + " -r#{lib_dir}/bundler/setup" }
         expect(out).to eq("{}")
       end
 
@@ -1359,7 +1359,7 @@ end
         gem "rack"
       G
 
-      ruby! <<-RUBY
+      ruby <<-RUBY
         require "#{lib_dir}/bundler/setup"
         Object.new.gem "rack"
         puts Gem.loaded_specs["rack"].full_name
