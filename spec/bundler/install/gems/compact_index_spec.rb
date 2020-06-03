@@ -936,7 +936,7 @@ Either installing with `--full-index` or running `bundle update rails` should fi
         gem "activemerchant"
       end
     G
-    gem_command! "uninstall activemerchant"
+    gem_command "uninstall activemerchant"
     bundle "update rails", :artifice => "compact_index"
     expect(lockfile.scan(/activemerchant \(/).size).to eq(1)
   end

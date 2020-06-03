@@ -295,7 +295,7 @@ module Spec
     def install_gem(path)
       raise "OMG `#{path}` does not exist!" unless File.exist?(path)
 
-      gem_command! "install --no-document --ignore-dependencies '#{path}'"
+      gem_command "install --no-document --ignore-dependencies '#{path}'"
     end
 
     def with_built_bundler(version = nil)
@@ -323,7 +323,7 @@ module Spec
 
         replace_build_metadata(build_metadata, dir: build_path) # rubocop:disable Style/HashSyntax
 
-        gem_command! "build #{relative_gemspec}", :dir => build_path
+        gem_command "build #{relative_gemspec}", :dir => build_path
 
         yield(bundler_path)
       ensure
@@ -411,7 +411,7 @@ module Spec
 
       with_gem_path_as(system_gem_path) do
         gems.each do |gem|
-          gem_command! "install --no-document #{gem}"
+          gem_command "install --no-document #{gem}"
         end
       end
     end
