@@ -4827,7 +4827,7 @@ rb_hash_compact(VALUE hash)
  *  call-seq:
  *    hash.compact! -> self or nil
  *
- *  Returns +self+ with all +nil+-valued entries removed:
+ *  Returns +self+ with all its +nil+-valued entries removed (in place):
  *    h = {foo: 0, bar: nil, baz: 2, bat: nil}
  *    h1 = h.compact!
  *    h1 # => {:foo=>0, :baz=>2}
@@ -4864,7 +4864,7 @@ static st_table *rb_init_identtable_with_size(st_index_t size);
  *  returns +self+.
  *
  *  By default, these two object are considered to be the same key,
- *  and therefore overwrite:
+ *  so +s1+ will overwrite +s0+:
  *    s0 = 'x'
  *    s1 = 'x'
  *    s0.equal?(s0) # => false
@@ -4875,7 +4875,7 @@ static st_table *rb_init_identtable_with_size(st_index_t size);
  *    h # => {"x"=>1}
  *
  *  After calling \#compare_by_identity, the keys are considered to be different,
- *  and therefore do not overwrite:
+ *  and therefore do not overwrite each other:
  *    h = {}
  *    h1 = h.compare_by_identity # => {}
  *    h1.equal?(h) # => true
