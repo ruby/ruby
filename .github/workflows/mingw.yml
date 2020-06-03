@@ -29,7 +29,6 @@ jobs:
           git config --system core.eol lf
       - uses: actions/checkout@v2
         with:
-          fetch-depth: 128
           path: src
       - run: ./src/tool/actions-commit-info.sh
         shell: bash

@@ -151,7 +151,6 @@ jobs:
       - run: mkdir build
       - uses: actions/checkout@v2
         with:
-          fetch-depth: 128
           path: src
       - run: autoconf
         working-directory: src
