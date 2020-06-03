@@ -1784,19 +1784,22 @@ opt_equality(const rb_iseq_t *cd_owner, VALUE recv, VALUE obj, CALL_DATA cd)
 #undef EQ_UNREDEFINED_P
 
 #ifndef MJIT_HEADER
-#define VM_CI_NEW_ID(mid) \
-    ((const struct rb_callinfo *)\
-     ((((VALUE)(mid)) << CI_EMBED_ID_SHFT) | RUBY_FIXNUM_FLAG))
-
 VALUE
 rb_equal_opt(VALUE obj1, VALUE obj2)
 {
     STATIC_ASSERT(idEq_is_embeddable, VM_CI_EMBEDDABLE_P(idEq, 0, 1, 0));
 
+#if USE_EMBED_CI
     static struct rb_call_data cd = {
-        .ci = VM_CI_NEW_ID(idEq),
+        .ci = vm_ci_new_id(idEq, 0, 1, 0),
         .cc = &vm_empty_cc,
     };
+#else
+    struct rb_call_data cd = {
+        .ci = &VM_CI_ON_STACK(idEq, 0, 1, 0),
+        .cc = &vm_empty_cc,
+    };
+#endif
 
     return opt_equality(NULL, obj1, obj2, &cd);
 }
@@ -1806,10 +1809,17 @@ rb_eql_opt(VALUE obj1, VALUE obj2)
 {
     STATIC_ASSERT(idEqlP_is_embeddable, VM_CI_EMBEDDABLE_P(idEqlP, 0, 1, 0));
 
+#if USE_EMBED_CI
     static struct rb_call_data cd = {
-        .ci = VM_CI_NEW_ID(idEqlP),
+        .ci = vm_ci_new_id(idEqlP, 0, 1, 0),
         .cc = &vm_empty_cc,
     };
+#else
+    struct rb_call_data cd = {
+        .ci = &VM_CI_ON_STACK(idEqlP, 0, 1, 0),
+        .cc = &vm_empty_cc,
+    };
+#endif
 
     return opt_equality(NULL, obj1, obj2, &cd);
 }

@@ -187,18 +187,20 @@ vm_ci_dump(const struct rb_callinfo *ci)
      ((argc) & ~CI_EMBED_ARGC_MASK) ? false :      \
       (kwarg)                       ? false : true)
 
+#define vm_ci_new_id(mid, flag, argc, must_zero) \
+    ((const struct rb_callinfo *)                \
+     ((((VALUE)(mid )) << CI_EMBED_ID_SHFT)   |  \
+      (((VALUE)(flag)) << CI_EMBED_FLAG_SHFT) |  \
+      (((VALUE)(argc)) << CI_EMBED_ARGC_SHFT) |  \
+      RUBY_FIXNUM_FLAG))
+
 static inline const struct rb_callinfo *
 vm_ci_new_(ID mid, unsigned int flag, unsigned int argc, const struct rb_callinfo_kwarg *kwarg, const char *file, int line)
 {
 #if USE_EMBED_CI
     if (VM_CI_EMBEDDABLE_P(mid, flag, argc, kwarg)) {
-        VALUE embed_ci =
-          RUBY_FIXNUM_FLAG                    |
-          ((VALUE)argc << CI_EMBED_ARGC_SHFT) |
-          ((VALUE)flag << CI_EMBED_FLAG_SHFT) |
-          ((VALUE)mid  << CI_EMBED_ID_SHFT);
         RB_DEBUG_COUNTER_INC(ci_packed);
-        return (const struct rb_callinfo *)embed_ci;
+        return vm_ci_new_id(mid, flag, argc, kwarg);
     }
 #endif
 
