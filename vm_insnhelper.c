@@ -3651,11 +3651,8 @@ vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_
       }
       case DEFINED_FUNC:
 	klass = CLASS_OF(v);
-	if (rb_method_boundp(klass, SYM2ID(obj), 0)) {
+	if (rb_ec_obj_respond_to(ec, v, SYM2ID(obj), TRUE)) {
 	    expr_type = DEFINED_METHOD;
-	}
-	else {
-	    expr_type = check_respond_to_missing(obj, v);
 	}
 	break;
       case DEFINED_METHOD:{
