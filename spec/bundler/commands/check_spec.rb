@@ -102,7 +102,7 @@ RSpec.describe "bundle check" do
 
   it "uses the without setting" do
     bundle "config set without foo"
-    install_gemfile! <<-G
+    install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
       group :foo do
         gem "rack"
@@ -207,7 +207,7 @@ RSpec.describe "bundle check" do
   end
 
   it "fails when there's no lock file and frozen is set" do
-    install_gemfile! <<-G
+    install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
       gem "foo"
     G

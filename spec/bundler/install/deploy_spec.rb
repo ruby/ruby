@@ -97,7 +97,7 @@ RSpec.describe "install in deployment or frozen mode" do
   end
 
   it "works with sources given by a block" do
-    install_gemfile! <<-G
+    install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}" do
         gem "rack"
       end
@@ -226,7 +226,7 @@ RSpec.describe "install in deployment or frozen mode" do
 
     it "works if a path gem is missing but is in a without group" do
       build_lib "path_gem"
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rake"
         gem "path_gem", :path => "#{lib_path("path_gem-1.0")}", :group => :development
@@ -244,7 +244,7 @@ RSpec.describe "install in deployment or frozen mode" do
 
     it "explodes if a path gem is missing" do
       build_lib "path_gem"
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rake"
         gem "path_gem", :path => "#{lib_path("path_gem-1.0")}", :group => :development
@@ -418,7 +418,7 @@ You have deleted from the Gemfile:
   context "with path in Gemfile and packed" do
     it "works fine after bundle package and bundle install --local" do
       build_lib "foo", :path => lib_path("foo")
-      install_gemfile! <<-G
+      install_gemfile <<-G
         gem "foo", :path => "#{lib_path("foo")}"
       G
 

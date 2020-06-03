@@ -620,7 +620,7 @@ RSpec.describe "the lockfile format" do
   it "serializes pinned path sources to the lockfile even when packaging" do
     build_lib "foo"
 
-    install_gemfile! <<-G
+    install_gemfile <<-G
       gem "foo", :path => "#{lib_path("foo-1.0")}"
     G
 
@@ -1048,7 +1048,7 @@ RSpec.describe "the lockfile format" do
 
     simulate_platform "universal-java-16"
 
-    install_gemfile! <<-G
+    install_gemfile <<-G
       source "#{file_uri_for(gem_repo2)}"
       gem "platform_specific"
     G
@@ -1079,7 +1079,7 @@ RSpec.describe "the lockfile format" do
 
     simulate_platform "universal-java-16"
 
-    install_gemfile! <<-G
+    install_gemfile <<-G
       source "#{file_uri_for(gem_repo2)}"
       gem "platform_specific"
     G

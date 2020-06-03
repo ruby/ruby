@@ -557,7 +557,7 @@ RSpec.describe "bundle install with gem sources" do
 
   context "after installing with --standalone" do
     before do
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G

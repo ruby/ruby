@@ -54,7 +54,7 @@ RSpec.describe "bundle cache with git" do
   it "runs twice without exploding" do
     build_git "foo"
 
-    install_gemfile! <<-G
+    install_gemfile <<-G
       gem "foo", :git => '#{lib_path("foo-1.0")}'
     G
 

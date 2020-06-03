@@ -210,13 +210,13 @@ RSpec.describe "bundler plugin install" do
 
     context "in deployment mode" do
       it "installs plugins" do
-        install_gemfile! <<-G
+        install_gemfile <<-G
           source '#{file_uri_for(gem_repo2)}'
           gem 'rack', "1.0.0"
         G
 
         bundle "config --local deployment true"
-        install_gemfile! <<-G
+        install_gemfile <<-G
           source '#{file_uri_for(gem_repo2)}'
           plugin 'foo'
           gem 'rack', "1.0.0"

@@ -128,12 +128,12 @@ RSpec.describe "bundle executable" do
     end
 
     it "doesn't print defaults" do
-      install_gemfile! "", :verbose => true
+      install_gemfile "", :verbose => true
       expect(out).to start_with("Running `bundle install --retry 0 --verbose` with bundler #{Bundler::VERSION}")
     end
 
     it "doesn't print defaults" do
-      install_gemfile! "", :verbose => true
+      install_gemfile "", :verbose => true
       expect(out).to start_with("Running `bundle install --retry 0 --verbose` with bundler #{Bundler::VERSION}")
     end
   end

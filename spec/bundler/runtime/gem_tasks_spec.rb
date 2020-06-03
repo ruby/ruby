@@ -19,7 +19,7 @@ RSpec.describe "require 'bundler/gem_tasks'" do
       RAKEFILE
     end
 
-    install_gemfile! <<-G
+    install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
 
       gem "rake"
@@ -74,7 +74,7 @@ RSpec.describe "require 'bundler/gem_tasks'" do
     end
 
     it "works", :ruby_repo do
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
 
         gem "rake"

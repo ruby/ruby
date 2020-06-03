@@ -366,14 +366,14 @@ RSpec.describe "bundle clean" do
   it "does not call clean automatically when using system gems" do
     bundle "config set path.system true"
 
-    install_gemfile! <<-G
+    install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
 
       gem "thin"
       gem "rack"
     G
 
-    install_gemfile! <<-G
+    install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
 
       gem "rack"
@@ -430,7 +430,7 @@ RSpec.describe "bundle clean" do
   it "automatically cleans when path has not been set", :bundler => "3" do
     build_repo2
 
-    install_gemfile! <<-G
+    install_gemfile <<-G
       source "#{file_uri_for(gem_repo2)}"
 
       gem "foo"

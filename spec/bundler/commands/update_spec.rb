@@ -75,19 +75,19 @@ RSpec.describe "bundle update" do
     before { bundle "config set update_requires_all_flag true" }
 
     it "errors when passed nothing" do
-      install_gemfile! ""
+      install_gemfile ""
       bundle :update, :raise_on_error => false
       expect(err).to eq("To update everything, pass the `--all` flag.")
     end
 
     it "errors when passed --all and another option" do
-      install_gemfile! ""
+      install_gemfile ""
       bundle "update --all foo", :raise_on_error => false
       expect(err).to eq("Cannot specify --all along with specific options.")
     end
 
     it "updates everything when passed --all" do
-      install_gemfile! ""
+      install_gemfile ""
       bundle "update --all"
       expect(out).to include("Bundle updated!")
     end
@@ -153,7 +153,7 @@ RSpec.describe "bundle update" do
           end
         end
 
-        install_gemfile! <<-G
+        install_gemfile <<-G
           source "#{file_uri_for(gem_repo4)}"
           gem "slim-rails"
           gem "slim_lint"
@@ -179,7 +179,7 @@ RSpec.describe "bundle update" do
           build_gem "b", "2.0"
         end
 
-        install_gemfile! <<-G
+        install_gemfile <<-G
           source "#{file_uri_for(gem_repo4)}"
           gem "a"
           gem "b"
@@ -306,7 +306,7 @@ RSpec.describe "bundle update" do
 
   describe "with --source option" do
     it "should not update gems not included in the source that happen to have the same name", :bundler => "< 3" do
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo2)}"
         gem "activesupport"
       G
@@ -317,7 +317,7 @@ RSpec.describe "bundle update" do
     end
 
     it "should not update gems not included in the source that happen to have the same name", :bundler => "3" do
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo2)}"
         gem "activesupport"
       G
@@ -456,7 +456,7 @@ RSpec.describe "bundle update in more complicated situations" do
   end
 
   it "will warn when some explicitly updated gems are not updated" do
-    install_gemfile! <<-G
+    install_gemfile <<-G
       source "#{file_uri_for(gem_repo2)}"
 
       gem "thin"
@@ -476,7 +476,7 @@ RSpec.describe "bundle update in more complicated situations" do
   it "will not warn when an explicitly updated git gem changes sha but not version" do
     build_git "foo"
 
-    install_gemfile! <<-G
+    install_gemfile <<-G
       gem "foo", :git => '#{lib_path("foo-1.0")}'
     G
 
@@ -492,7 +492,7 @@ RSpec.describe "bundle update in more complicated situations" do
   it "will not warn when changing gem sources but not versions" do
     build_git "rack"
 
-    install_gemfile! <<-G
+    install_gemfile <<-G
       gem "rack", :git => '#{lib_path("rack-1.0")}'
     G
 
@@ -674,7 +674,7 @@ RSpec.describe "bundle update" do
         build_gem "foo"
       end
 
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo4)}"
         gem "bar"
         gem "foo"
@@ -819,7 +819,7 @@ RSpec.describe "bundle update --bundler" do
       build_gem "rack", "1.0"
     end
 
-    install_gemfile! <<-G
+    install_gemfile <<-G
       source "#{file_uri_for(gem_repo4)}"
       gem "rack"
     G

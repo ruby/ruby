@@ -49,7 +49,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
     G
 
     simulate_platform "x86-darwin-10"
-    install_gemfile! <<-G
+    install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
       gem "nokogiri"
     G
@@ -75,7 +75,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
 
     simulate_platform "x86-darwin-100"
 
-    install_gemfile! <<-G
+    install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
       gem "nokogiri"
       gem "platform_specific"
@@ -87,7 +87,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
   it "allows specifying only-ruby-platform" do
     simulate_platform "java"
 
-    install_gemfile! <<-G
+    install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
       gem "nokogiri"
       gem "platform_specific"
@@ -102,7 +102,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
 
   it "allows specifying only-ruby-platform on windows with dependency platforms" do
     simulate_windows do
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "nokogiri", :platforms => [:mingw, :mswin, :x64_mingw, :jruby]
         gem "platform_specific"
@@ -159,7 +159,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
           requires_platform_specific
       L
 
-      install_gemfile! <<-G, :verbose => true
+      install_gemfile <<-G, :verbose => true
         source "#{file_uri_for(gem_repo2)}"
         gem "requires_platform_specific"
       G

@@ -164,7 +164,7 @@ RSpec.describe "Bundler.setup" do
     end
 
     it "falls back to order the load path alphabetically for backwards compatibility" do
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "weakling"
         gem "duradura"
@@ -665,7 +665,7 @@ RSpec.describe "Bundler.setup" do
   end
 
   it "does not load all gemspecs" do
-    install_gemfile! <<-G
+    install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
       gem "rack"
     G
@@ -717,7 +717,7 @@ end
       before { ENV["MANPATH"] = "/foo#{File::PATH_SEPARATOR}" }
 
       it "adds the gem's man dir to the MANPATH" do
-        install_gemfile! <<-G
+        install_gemfile <<-G
           source "#{file_uri_for(gem_repo4)}"
           gem "with_man"
         G
@@ -731,7 +731,7 @@ end
       before { ENV.delete("MANPATH") }
 
       it "adds the gem's man dir to the MANPATH" do
-        install_gemfile! <<-G
+        install_gemfile <<-G
           source "#{file_uri_for(gem_repo4)}"
           gem "with_man"
         G
@@ -1194,7 +1194,7 @@ end
     end
 
     it "does not load openssl" do
-      install_gemfile! ""
+      install_gemfile ""
       ruby! <<-RUBY
         require "#{lib_dir}/bundler/setup"
         puts defined?(OpenSSL) || "undefined"
@@ -1250,13 +1250,13 @@ end
       RUBY
 
       it "activates no gems with -rbundler/setup" do
-        install_gemfile! ""
+        install_gemfile ""
         ruby! code, :env => { "RUBYOPT" => activation_warning_hack_rubyopt + " -r#{lib_dir}/bundler/setup" }
         expect(out).to eq("{}")
       end
 
       it "activates no gems with bundle exec" do
-        install_gemfile! ""
+        install_gemfile ""
         create_file("script.rb", code)
         bundle "exec ruby ./script.rb", :env => { "RUBYOPT" => activation_warning_hack_rubyopt }
         expect(out).to eq("{}")
@@ -1265,7 +1265,7 @@ end
       it "activates no gems with bundle exec that is loaded" do
         skip "not executable" if Gem.win_platform?
 
-        install_gemfile! ""
+        install_gemfile ""
         create_file("script.rb", "#!/usr/bin/env ruby\n\n#{code}")
         FileUtils.chmod(0o777, bundled_app("script.rb"))
         bundle "exec ./script.rb", :artifice => nil, :env => { "RUBYOPT" => activation_warning_hack_rubyopt }
@@ -1324,7 +1324,7 @@ end
             build_gem g, "999999"
           end
 
-          install_gemfile! <<-G
+          install_gemfile <<-G
             source "#{file_uri_for(gem_repo4)}"
             gem "#{g}", "999999"
           G
@@ -1340,7 +1340,7 @@ end
             build_gem g, "0.0.0.a"
           end
 
-          install_gemfile! <<-G
+          install_gemfile <<-G
             source "#{file_uri_for(gem_repo4)}"
             gem "#{g}", "0.0.0.a"
           G
@@ -1369,7 +1369,7 @@ end
     end
 
     it "keeps Kernel#gem private", :bundler => "3" do
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
@@ -1385,7 +1385,7 @@ end
     end
 
     it "keeps Kernel#require private" do
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G

@@ -7,7 +7,7 @@ RSpec.describe "bundle install with :allow_offline_install" do
 
   context "with no cached data locally" do
     it "still installs" do
-      install_gemfile! <<-G, :artifice => "compact_index"
+      install_gemfile <<-G, :artifice => "compact_index"
         source "http://testgemserver.local"
         gem "rack-obama"
       G
@@ -29,7 +29,7 @@ RSpec.describe "bundle install with :allow_offline_install" do
       system_gems ["rack-1.0.0"], :path => default_bundle_path
 
       bundle "config set clean false"
-      install_gemfile! <<-G, :artifice => "compact_index"
+      install_gemfile <<-G, :artifice => "compact_index"
         source "http://testgemserver.local"
         gem "rack-obama"
         gem "rack", "< 1.0"
@@ -74,7 +74,7 @@ RSpec.describe "bundle install with :allow_offline_install" do
 
       git = build_git "a", "1.0.0", :path => lib_path("a")
       update_git("a", :path => git.path, :branch => "new_branch")
-      install_gemfile! <<-G
+      install_gemfile <<-G
         gem "a", :git => #{git.path.to_s.dump}
       G
 
@@ -83,7 +83,7 @@ RSpec.describe "bundle install with :allow_offline_install" do
       expect(the_bundle).to be_locked
 
       break_git_remote_ops! do
-        install_gemfile! <<-G
+        install_gemfile <<-G
           gem "a", :git => #{git.path.to_s.dump}, :branch => "new_branch"
         G
       end

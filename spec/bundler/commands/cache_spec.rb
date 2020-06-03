@@ -222,7 +222,7 @@ RSpec.describe "bundle cache" do
       end
 
       bundle "config --local without wo"
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "file:#{gem_repo1}"
         gem "rack"
         group :wo do
@@ -295,7 +295,7 @@ RSpec.describe "bundle install with gem sources" do
 
     it "does not hit the remote at all" do
       build_repo2
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo2)}"
         gem "rack"
       G

@@ -51,7 +51,7 @@ RSpec.describe "compact index api" do
       build_gem "Rack", "0.1"
     end
 
-    install_gemfile! <<-G, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+    install_gemfile <<-G, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
       source "#{source_uri}"
       gem "rack", "1.0"
       gem "Rack", "0.1"
@@ -265,7 +265,7 @@ The checksum of /versions does not match the checksum provided by the server! So
       #{source_uri}/info/rack
     EOS
 
-    install_gemfile! <<-G, :artifice => "compact_index", :verbose => true
+    install_gemfile <<-G, :artifice => "compact_index", :verbose => true
       source "#{source_uri}"
       gem "rack"
     G
@@ -299,7 +299,7 @@ The checksum of /versions does not match the checksum provided by the server! So
       FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
     end
 
-    install_gemfile! <<-G, :artifice => "compact_index_extra", :verbose => true
+    install_gemfile <<-G, :artifice => "compact_index_extra", :verbose => true
       source "#{source_uri}"
       source "#{source_uri}/extra" do
         gem "back_deps"
@@ -414,7 +414,7 @@ The checksum of /versions does not match the checksum provided by the server! So
 
     api_request_limit = low_api_request_limit_for(gem_repo2)
 
-    install_gemfile! <<-G, :artifice => "compact_index_extra_missing", :env => { "BUNDLER_SPEC_API_REQUEST_LIMIT" => api_request_limit.to_s }.merge(env_for_missing_prerelease_default_gem_activation)
+    install_gemfile <<-G, :artifice => "compact_index_extra_missing", :env => { "BUNDLER_SPEC_API_REQUEST_LIMIT" => api_request_limit.to_s }.merge(env_for_missing_prerelease_default_gem_activation)
       source "#{source_uri}"
       source "#{source_uri}/extra" do
         gem "back_deps"
@@ -436,7 +436,7 @@ The checksum of /versions does not match the checksum provided by the server! So
 
     api_request_limit = low_api_request_limit_for(gem_repo4)
 
-    install_gemfile! <<-G, :artifice => "compact_index_extra_api_missing", :env => { "BUNDLER_SPEC_API_REQUEST_LIMIT" => api_request_limit.to_s }.merge(env_for_missing_prerelease_default_gem_activation)
+    install_gemfile <<-G, :artifice => "compact_index_extra_api_missing", :env => { "BUNDLER_SPEC_API_REQUEST_LIMIT" => api_request_limit.to_s }.merge(env_for_missing_prerelease_default_gem_activation)
       source "#{source_uri}"
       source "#{source_uri}/extra" do
         gem "back_deps"
@@ -898,7 +898,7 @@ The checksum of /versions does not match the checksum provided by the server! So
 
     it "does not raise when disable_checksum_validation is set" do
       bundle "config set disable_checksum_validation true"
-      install_gemfile! <<-G, :artifice => "compact_index_wrong_gem_checksum"
+      install_gemfile <<-G, :artifice => "compact_index_wrong_gem_checksum"
         source "#{source_uri}"
         gem "rack"
       G
@@ -906,7 +906,7 @@ The checksum of /versions does not match the checksum provided by the server! So
   end
 
   it "works when cache dir is world-writable" do
-    install_gemfile! <<-G, :artifice => "compact_index"
+    install_gemfile <<-G, :artifice => "compact_index"
       File.umask(0000)
       source "#{source_uri}"
       gem "rack"
@@ -930,7 +930,7 @@ Either installing with `--full-index` or running `bundle update rails` should fi
   end
 
   it "does not duplicate specs in the lockfile when updating and a dependency is not installed" do
-    install_gemfile! <<-G, :artifice => "compact_index"
+    install_gemfile <<-G, :artifice => "compact_index"
       source "#{source_uri}" do
         gem "rails"
         gem "activemerchant"

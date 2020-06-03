@@ -2,7 +2,7 @@
 
 RSpec.describe "Running bin/* commands" do
   before :each do
-    install_gemfile! <<-G
+    install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
       gem "rack"
     G
@@ -140,7 +140,7 @@ RSpec.describe "Running bin/* commands" do
   end
 
   it "rewrites bins on binstubs (to maintain backwards compatibility)" do
-    install_gemfile! <<-G
+    install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
       gem "rack"
     G

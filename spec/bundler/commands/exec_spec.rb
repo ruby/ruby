@@ -355,7 +355,7 @@ RSpec.describe "bundle exec" do
 
   it "raises a helpful error when exec'ing to something outside of the bundle" do
     bundle "config set clean false" # want to keep the rackup binstub
-    install_gemfile! <<-G
+    install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
       gem "with_license"
     G
@@ -895,7 +895,7 @@ __FILE__: #{path.to_s.inspect}
         skip "https://github.com/rubygems/bundler/issues/6898" if Gem.win_platform?
         skip "openssl isn't a default gem" if expected.empty?
 
-        install_gemfile! "" # must happen before installing the broken system gem
+        install_gemfile "" # must happen before installing the broken system gem
 
         build_repo4 do
           build_gem "openssl", openssl_version do |s|
@@ -935,7 +935,7 @@ __FILE__: #{path.to_s.inspect}
       before do
         build_git "simple_git_binary", &:add_c_extension
         bundle "config set --local path .bundle"
-        install_gemfile! <<-G
+        install_gemfile <<-G
           gem "simple_git_binary", :git => '#{lib_path("simple_git_binary-1.0")}'
         G
       end
