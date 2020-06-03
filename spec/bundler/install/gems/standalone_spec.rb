@@ -290,7 +290,7 @@ RSpec.shared_examples "bundle install --standalone" do
       skip "exec format error" if Gem.win_platform?
 
       require "tmpdir"
-      sys_exec!(%(#{bundled_app("bin/rails")} -v), :dir => Dir.tmpdir)
+      sys_exec(%(#{bundled_app("bin/rails")} -v), :dir => Dir.tmpdir)
       expect(out).to eq("2.3.2")
     end
 
@@ -302,7 +302,7 @@ RSpec.shared_examples "bundle install --standalone" do
       symlink = File.join(symlink_dir, "rails")
 
       File.symlink(bundled_app("bin/rails"), symlink)
-      sys_exec!("#{symlink} -v")
+      sys_exec("#{symlink} -v")
       expect(out).to eq("2.3.2")
     end
 
