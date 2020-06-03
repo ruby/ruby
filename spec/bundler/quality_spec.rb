@@ -235,7 +235,7 @@ RSpec.describe "The library itself" do
     files_to_require.reject! {|f| f.start_with?("lib/bundler/vendor") }
     files_to_require.map! {|f| File.expand_path(f, source_root) }
     files_to_require.sort!
-    sys_exec!("ruby -w") do |input, _, _|
+    sys_exec("ruby -w") do |input, _, _|
       files_to_require.each do |f|
         input.puts "require '#{f}'"
       end

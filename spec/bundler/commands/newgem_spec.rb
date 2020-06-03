@@ -249,7 +249,7 @@ RSpec.describe "bundle gem" do
       load_paths = [lib_dir, spec_dir]
       load_path_str = "-I#{load_paths.join(File::PATH_SEPARATOR)}"
 
-      sys_exec! "#{Gem.ruby} #{load_path_str} #{bindir.join("bundle")} gem #{gem_name}", :env => { "PATH" => "" }
+      sys_exec "#{Gem.ruby} #{load_path_str} #{bindir.join("bundle")} gem #{gem_name}", :env => { "PATH" => "" }
     end
 
     it "creates the gem without the need for git" do
