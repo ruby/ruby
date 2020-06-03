@@ -34,7 +34,7 @@ RSpec.describe "double checking sources", :realworld => true, :sometimes => true
       end
     RUBY
 
-    ruby! cmd
-    ruby! cmd
+    ruby cmd
+    ruby cmd
   end
 end
