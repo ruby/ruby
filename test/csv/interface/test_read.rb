@@ -135,6 +135,36 @@ class TestCSVInterfaceRead < Test::Unit::TestCase
     end
   end
 
+  def test_open_with_invalid_nil
+    CSV.open(@input.path, "w", encoding: Encoding::CP932, invalid: nil) do |rows|
+      error = assert_raise(Encoding::InvalidByteSequenceError) do
+        rows << ["\x82\xa0"]
+      end
+      assert_equal('"\x82" on UTF-8',
+                   error.message)
+    end
+  end
+
+  def test_open_with_invalid_replace
+    CSV.open(@input.path, "w", encoding: Encoding::CP932, invalid: :replace) do |rows|
+      rows << ["\x82\xa0".force_encoding(Encoding::UTF_8)]
+    end
+    CSV.open(@input.path, encoding: Encoding::CP932) do |csv|
+      assert_equal([["??"]],
+                   csv.to_a)
+    end
+  end
+
+  def test_open_with_invalid_replace_and_replace_string
+    CSV.open(@input.path, "w", encoding: Encoding::CP932, invalid: :replace, replace: "X") do |rows|
+      rows << ["\x82\xa0".force_encoding(Encoding::UTF_8)]
+    end
+    CSV.open(@input.path, encoding: Encoding::CP932) do |csv|
+      assert_equal([["XX"]],
+                   csv.to_a)
+    end
+  end
+
   def test_open_with_undef_replace
     # U+00B7 Middle Dot
     CSV.open(@input.path, "w", encoding: Encoding::CP932, undef: :replace) do |rows|
