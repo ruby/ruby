@@ -342,21 +342,8 @@ vm_cc_valid_p(const struct rb_callcache *cc, const rb_callable_method_entry_t *c
     }
 }
 
-#ifndef MJIT_HEADER
-extern const struct rb_callcache *vm_empty_cc;
-#else
 extern const struct rb_callcache *rb_vm_empty_cc(void);
-#endif
-
-static inline const struct rb_callcache *
-vm_cc_empty(void)
-{
-#ifndef MJIT_HEADER
-    return vm_empty_cc;
-#else
-    return rb_vm_empty_cc();
-#endif
-}
+#define vm_cc_empty() rb_vm_empty_cc()
 
 /* callcache: mutete */
 
