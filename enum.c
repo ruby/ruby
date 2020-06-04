@@ -3701,7 +3701,7 @@ slicewhen_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
  *  Creates an enumerator for each chunked elements.
  *  The beginnings of chunks are defined by the block.
  *
- *  This method split each chunk using adjacent elements,
+ *  This method splits each chunk using adjacent elements,
  *  _elt_before_ and _elt_after_,
  *  in the receiver enumerator.
  *  This method split chunks between _elt_before_ and _elt_after_ where
@@ -3780,7 +3780,7 @@ enum_slice_when(VALUE enumerable)
  *  Creates an enumerator for each chunked elements.
  *  The beginnings of chunks are defined by the block.
  *
- *  This method split each chunk using adjacent elements,
+ *  This method splits each chunk using adjacent elements,
  *  _elt_before_ and _elt_after_,
  *  in the receiver enumerator.
  *  This method split chunks between _elt_before_ and _elt_after_ where
