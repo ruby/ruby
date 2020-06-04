@@ -235,24 +235,6 @@ module Spec
 
     def git_ls_files(glob)
       sys_exec("git ls-files -z -- #{glob}", :dir => source_root).split("\x0")
-    ensure
-      if err == "fatal: not a git repository (or any of the parent directories): .git"
-        @command_executions.pop # Remove failed "git ls-files"
-        Dir.chdir(source_root) do
-          files = []
-          Dir.glob(glob.shellsplit) do |path|
-            if File.directory?(path)
-              Dir.glob("#{path}/**/{*,.*}") do |sub_path|
-                next if File.directory?(sub_path)
-                files << sub_path
-              end
-            else
-              files << path
-            end
-          end
-          return files.uniq
-        end
-      end
     end
 
     def tracked_files_glob
