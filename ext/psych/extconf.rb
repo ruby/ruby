@@ -7,7 +7,23 @@ require 'fileutils'
 
 dir_config 'libyaml'
 
-if enable_config("bundled-libyaml", false) || !(find_header('yaml.h') && find_library('yaml', 'yaml_get_version'))
+bundle = enable_config("bundled-libyaml") do
+  save = [$INCFLAGS, $LIBPATH, $libs].map(&:dup)
+  pkg =
+    case
+    when !find_header('yaml.h')
+      false
+    when !find_library('yaml', 'yaml_get_version')
+      false
+    else
+      # new struct in 0.2.5
+      !have_type('yaml_anchors_t', 'yaml.h')
+    end
+  Logging.message((pkg ? "Use" : "Not use") + " packaged libyaml\n")
+  $INCFLAGS, $LIBPATH, $libs = *save unless pkg
+  !pkg
+end
+if bundle
   # Embed libyaml since we could not find it.
 
   $VPATH << "$(srcdir)/yaml"
