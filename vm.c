@@ -386,7 +386,7 @@ rb_serial_t ruby_vm_global_method_state = 1;
 rb_serial_t ruby_vm_global_constant_state = 1;
 rb_serial_t ruby_vm_class_serial = 1;
 
-const struct rb_callcache *vm_empty_cc;
+static const struct rb_callcache *vm_empty_cc;
 
 static void thread_free(void *ptr);
 
