@@ -12,7 +12,7 @@ jobs:
     env:
       TESTOPTS: '-q --tty=no'
       RUN_OPTS: '--disable-gems --jit-warnings ${{ matrix.jit_opts }}'
-      GITPULLOPTIONS: --no-tags
+      GITPULLOPTIONS: --no-tags origin ${{github.ref}}
     steps:
       - name: Install libraries
         run: |

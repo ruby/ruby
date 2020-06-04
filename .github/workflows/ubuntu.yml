@@ -24,7 +24,7 @@ jobs:
             debug: -DRUBY_DEBUG
       fail-fast: false
     env:
-      GITPULLOPTIONS: --no-tags
+      GITPULLOPTIONS: --no-tags origin ${{github.ref}}
     runs-on: ${{ matrix.os }}
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     steps:

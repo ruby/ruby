@@ -4055,7 +4055,7 @@ AC_CONFIG_FILES(Makefile:template/Makefile.in, [
 	    VCS='echo cannot'
 	])
 	AS_CASE("$VCS",
-		['$(GIT)'|git], [VCSUP='$(VCS) pull $(GITPULLOPTIONS)'],
+		['$(GIT)'|git], [VCSUP='$(VCS) pull --rebase $(GITPULLOPTIONS)'],
 		[VCSUP='$(VCS)'])
 	sed -n \
 	    -e '[/^@%:@define \(RUBY_RELEASE_[A-Z]*\) \([0-9][0-9]*\)/]{' \
