@@ -156,7 +156,7 @@ class CSV
         else
           field = String(field)  # Stringify fields
           # represent empty fields as empty quoted fields
-          if (@quote_empty and field.empty?) or @quotable_pattern.match?(field)
+          if (@quote_empty and field.empty?) or (field.valid_encoding? and @quotable_pattern.match?(field))
             quote_field(field)
           else
             field  # unquoted field

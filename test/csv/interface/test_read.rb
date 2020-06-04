@@ -125,6 +125,16 @@ class TestCSVInterfaceRead < Test::Unit::TestCase
     end
   end
 
+  def test_open_invalid_byte_sequence_in_utf_8
+    CSV.open(@input.path, "w", encoding: Encoding::CP932) do |rows|
+      error = assert_raise(Encoding::InvalidByteSequenceError) do
+        rows << ["\x82\xa0"]
+      end
+      assert_equal('"\x82" on UTF-8',
+                   error.message)
+    end
+  end
+
   def test_open_with_undef_replace
     # U+00B7 Middle Dot
     CSV.open(@input.path, "w", encoding: Encoding::CP932, undef: :replace) do |rows|
