@@ -250,7 +250,7 @@ module Bundler
     def install
       SharedHelpers.major_deprecation(2, "The `--force` option has been renamed to `--redownload`") if ARGV.include?("--force")
 
-      %w[clean deployment frozen no-cache no-prune path shebang system without with].each do |option|
+      %w[clean deployment frozen no-prune path shebang system without with].each do |option|
         remembered_flag_deprecation(option)
       end
 
