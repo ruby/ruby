@@ -329,10 +329,9 @@ module Spec
 
         replace_version_file(version, dir: build_path) # rubocop:disable Style/HashSyntax
 
-        sys_exec("git rev-parse --short HEAD", :dir => source_root)
         build_metadata = {
           :built_at => loaded_gemspec.date.utc.strftime("%Y-%m-%d"),
-          :git_commit_sha => exitstatus.zero? ? out.strip : "unknown",
+          :git_commit_sha => sys_exec("git rev-parse --short HEAD", :dir => source_root).strip,
         }
 
         replace_build_metadata(build_metadata, dir: build_path) # rubocop:disable Style/HashSyntax
