@@ -585,7 +585,7 @@ module Net   #:nodoc:
     # _opt_     :: optional hash
     #
     # _opt_ sets following values by its accessor.
-    # The keys are ipaddr, ca_file, ca_path, cert, cert_store, ciphers,
+    # The keys are ipaddr, ca_file, ca_path, cert, cert_store, ciphers, keep_alive_timeout,
     # close_on_empty_response, key, open_timeout, read_timeout, write_timeout, ssl_timeout,
     # ssl_version, use_ssl, verify_callback, verify_depth and verify_mode.
     # If you set :use_ssl as true, you can use https and default value of
