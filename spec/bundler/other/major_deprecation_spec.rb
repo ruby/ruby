@@ -317,7 +317,6 @@ RSpec.describe "major deprecations" do
       "clean" => ["clean", true],
       "deployment" => ["deployment", true],
       "frozen" => ["frozen", true],
-      "no-cache" => ["no_cache", true],
       "no-deployment" => ["deployment", false],
       "no-prune" => ["no_prune", true],
       "path" => ["path", "vendor/bundle"],
