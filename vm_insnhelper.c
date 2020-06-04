@@ -2685,11 +2685,13 @@ aliased_callable_method_entry(const rb_callable_method_entry_t *me)
 static VALUE
 vm_call_alias(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, struct rb_call_data *cd)
 {
-    return vm_call_method_each_type(ec, cfp, calling, &(struct rb_call_data) {
+    struct rb_call_data aliased = {
         .ci = cd->ci,
         .cc = &VM_CC_ON_STACK(Qundef, vm_call_general, { 0 },
             aliased_callable_method_entry(vm_cc_cme(cd->cc))),
-    });
+    };
+
+    return vm_call_method_each_type(ec, cfp, calling, &aliased);
 }
 
 static enum method_missing_reason
@@ -2759,13 +2761,15 @@ vm_call_symbol(
         }
     }
 
-    return vm_call_method(ec, reg_cfp, calling, &(struct rb_call_data) {
+    struct rb_call_data cd = {
         .ci = &VM_CI_ON_STACK(mid, flags, argc, vm_ci_kwarg(ci)),
         .cc = &VM_CC_ON_STACK(klass, vm_call_general, {
                 .method_missing_reason = missing_reason
               },
               rb_callable_method_entry_with_refinements(klass, mid, NULL)),
-    });
+    };
+
+    return vm_call_method(ec, reg_cfp, calling, &cd);
 }
 
 static VALUE
@@ -2880,11 +2884,13 @@ vm_call_method_missing_body(rb_execution_context_t *ec, rb_control_frame_t *reg_
     INC_SP(1);
 
     ec->method_missing_reason = reason;
-    return vm_call_method(ec, reg_cfp, calling, &(struct rb_call_data) {
+    struct rb_call_data cd = {
         .ci = &VM_CI_ON_STACK(idMethodMissing, flag, argc, vm_ci_kwarg(orig_ci)),
         .cc = &VM_CC_ON_STACK(Qundef, vm_call_general, { 0 },
             rb_callable_method_entry_without_refinements(CLASS_OF(calling->recv), idMethodMissing, NULL)),
-    });
+    };
+
+    return vm_call_method(ec, reg_cfp, calling, &cd);
 }
 
 static VALUE
@@ -2909,10 +2915,12 @@ vm_call_zsuper(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_ca
         cme = refined_method_callable_without_refinement(cme);
     }
 
-    return vm_call_method_each_type(ec, cfp, calling, &(struct rb_call_data) {
+    struct rb_call_data zsuper = {
         .ci = cd->ci,
         .cc = &VM_CC_ON_STACK(Qundef, vm_call_general, { 0 }, cme),
-    });
+    };
+
+    return vm_call_method_each_type(ec, cfp, calling, &zsuper);
 }
 
 static inline VALUE
@@ -3017,13 +3025,14 @@ search_refined_method(rb_execution_context_t *ec, rb_control_frame_t *cfp, struc
 static VALUE
 vm_call_refined(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, struct rb_call_data *cd)
 {
-    const rb_callable_method_entry_t *cme = search_refined_method(ec, cfp, cd);
+    struct rb_call_data refined = {
+        .ci = cd->ci,
+        .cc = &VM_CC_ON_STACK(Qundef, vm_call_general, { 0 },
+                              search_refined_method(ec, cfp, cd)),
+    };
 
-    if (cme != NULL) {
-        return vm_call_method(ec, cfp, calling, &(struct rb_call_data) {
-            .ci = cd->ci,
-            .cc = &VM_CC_ON_STACK(Qundef, vm_call_general, { 0 }, cme),
-        });
+    if (vm_cc_cme(refined.cc)) {
+        return vm_call_method(ec, cfp, calling, &refined);
     }
     else {
         return vm_call_method_nome(ec, cfp, calling, cd);
@@ -3160,10 +3169,12 @@ vm_call_method(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_ca
 		    /* caching method info to dummy cc */
 		    VM_ASSERT(vm_cc_cme(cc) != NULL);
                     const struct rb_callcache cc_on_stack = *cc;
-                    return vm_call_method_each_type(ec, cfp, calling, &(struct rb_call_data) {
+                    struct rb_call_data dummy = {
                         .ci = ci,
                         .cc = &cc_on_stack,
-                    });
+                    };
+
+                    return vm_call_method_each_type(ec, cfp, calling, &dummy);
 		}
 	    }
             return vm_call_method_each_type(ec, cfp, calling, cd);
