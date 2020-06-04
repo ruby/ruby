@@ -1753,7 +1753,7 @@ set_proc_default(VALUE hash, VALUE proc)
  *     Hash.new(default_value)                         -> new_hash
  *     Hash.new{|hash, key| hash[key] = default_value} -> new_hash
  *
- *  Returns a new empty Hash object.
+ *  Returns a new empty \Hash object.
  *
  *  The initial default value and initial default proc for the new hash
  *  depend on which form above was used. See {Default Values}[#class-Hash-label-Default+Values].
@@ -1980,7 +1980,7 @@ rb_check_hash_type(VALUE hash)
  *
  *  ---
  *
- *  Raises an exception unless <tt>obj.to_hash</tt> returns a Hash object:
+ *  Raises an exception unless <tt>obj.to_hash</tt> returns a \Hash object:
  *    class BadToHash
  *      def to_hash
  *        1
@@ -3843,8 +3843,8 @@ rb_hash_to_h_block(VALUE hash)
  *
  *  When a block is given, returns a new \Hash object
  *  whose content is based on the block;
- *  the block should return a 2-element Array object
- *  specifying the key-value pair to be included in the returned Array:
+ *  the block should return a 2-element \Array object
+ *  specifying the key-value pair to be included in the returned \Array:
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h1 = h.to_h {|key, value| [value, key] }
  *    h1 # => {0=>:foo, 1=>:bar, 2=>:baz}
@@ -5135,17 +5135,22 @@ hash_le(VALUE hash1, VALUE hash2)
 }
 
 /*
- * call-seq:
- *   hash <= other -> true or false
+ *  call-seq:
+ *    hash <= other_hash -> true or false
  *
- * Returns <code>true</code> if <i>hash</i> is subset of
- * <i>other</i> or equals to <i>other</i>.
+ *  Returns +true+ if +hash+ is a subset of +other_hash+, +false+ otherwise:
+ *    h1 = {foo: 0, bar: 1}
+ *    h2 = {foo: 0, bar: 1, baz: 2}
+ *    h1 <= h2 # => true
+ *    h2 <= h1 # => false
+ *    h1 <= h1 # => true
  *
- *    h1 = {a:1, b:2}
- *    h2 = {a:1, b:2, c:3}
- *    h1 <= h2   #=> true
- *    h2 <= h1   #=> false
- *    h1 <= h1   #=> true
+ *  ---
+ *
+ *  Raises an exception if +other_hash+ is not a
+ *  {Hash-convertible object}[doc/implicit_conversion_rdoc.html#label-Hash-Convertible+Objects]:
+ *    h = {}
+ *    h <= 1 # Raises TypeError (no implicit conversion of Integer into Hash)
  */
 static VALUE
 rb_hash_le(VALUE hash, VALUE other)
@@ -5156,17 +5161,22 @@ rb_hash_le(VALUE hash, VALUE other)
 }
 
 /*
- * call-seq:
- *   hash < other -> true or false
+ *  call-seq:
+ *    hash < other_hash -> true or false
  *
- * Returns <code>true</code> if <i>hash</i> is subset of
- * <i>other</i>.
+ *  Returns +true+ if +hash+ is a proper subset of +other_hash+, +false+ otherwise:
+ *    h1 = {foo: 0, bar: 1}
+ *    h2 = {foo: 0, bar: 1, baz: 2}
+ *    h1 < h2 # => true
+ *    h2 < h1 # => false
+ *    h1 < h1 # => false
  *
- *    h1 = {a:1, b:2}
- *    h2 = {a:1, b:2, c:3}
- *    h1 < h2    #=> true
- *    h2 < h1    #=> false
- *    h1 < h1    #=> false
+ *  ---
+ *
+ *  Raises an exception if +other_hash+ is not a
+ *  {Hash-convertible object}[doc/implicit_conversion_rdoc.html#label-Hash-Convertible+Objects]:
+ *    h = {}
+ *    h < 1 # Raises TypeError (no implicit conversion of Integer into Hash)
  */
 static VALUE
 rb_hash_lt(VALUE hash, VALUE other)
@@ -5177,17 +5187,22 @@ rb_hash_lt(VALUE hash, VALUE other)
 }
 
 /*
- * call-seq:
- *   hash >= other -> true or false
+ *  call-seq:
+ *    hash >= other_hash -> true or false
  *
- * Returns <code>true</code> if <i>other</i> is subset of
- * <i>hash</i> or equals to <i>hash</i>.
+ *  Returns +true+ if +hash+ is a superset of +other_hash+, +false+ otherwise:
+ *    h1 = {foo: 0, bar: 1, baz: 2}
+ *    h2 = {foo: 0, bar: 1}
+ *    h1 >= h2 # => true
+ *    h2 >= h1 # => false
+ *    h1 >= h1 # => true
  *
- *    h1 = {a:1, b:2}
- *    h2 = {a:1, b:2, c:3}
- *    h1 >= h2   #=> false
- *    h2 >= h1   #=> true
- *    h1 >= h1   #=> true
+ *  ---
+ *
+ *  Raises an exception if +other_hash+ is not a
+ *  {Hash-convertible object}[doc/implicit_conversion_rdoc.html#label-Hash-Convertible+Objects]:
+ *    h = {}
+ *    h >= 1 # Raises TypeError (no implicit conversion of Integer into Hash)
  */
 static VALUE
 rb_hash_ge(VALUE hash, VALUE other)
@@ -5198,17 +5213,22 @@ rb_hash_ge(VALUE hash, VALUE other)
 }
 
 /*
- * call-seq:
- *   hash > other -> true or false
+ *  call-seq:
+ *    hash > other_hash -> true or false
  *
- * Returns <code>true</code> if <i>other</i> is subset of
- * <i>hash</i>.
+ *  Returns +true+ if +hash+ is a proper superset of +other_hash+, +false+ otherwise:
+ *    h1 = {foo: 0, bar: 1, baz: 2}
+ *    h2 = {foo: 0, bar: 1}
+ *    h1 > h2 # => true
+ *    h2 > h1 # => false
+ *    h1 > h1 # => false
  *
- *    h1 = {a:1, b:2}
- *    h2 = {a:1, b:2, c:3}
- *    h1 > h2    #=> false
- *    h2 > h1    #=> true
- *    h1 > h1    #=> false
+ *  ---
+ *
+ *  Raises an exception if +other_hash+ is not a
+ *  {Hash-convertible object}[doc/implicit_conversion_rdoc.html#label-Hash-Convertible+Objects]:
+ *    h = {}
+ *    h > 1 # Raises TypeError (no implicit conversion of Integer into Hash)
  */
 static VALUE
 rb_hash_gt(VALUE hash, VALUE other)
@@ -5226,17 +5246,16 @@ hash_proc_call(RB_BLOCK_CALL_FUNC_ARGLIST(key, hash))
 }
 
 /*
- * call-seq:
- *   hash.to_proc -> proc
+ *  call-seq:
+ *    hash.to_proc -> proc
  *
- * Returns a Proc which maps keys to values.
- *
- *   h = {a:1, b:2}
- *   hp = h.to_proc
- *   hp.call(:a)          #=> 1
- *   hp.call(:b)          #=> 2
- *   hp.call(:c)          #=> nil
- *   [:a, :b, :c].map(&h) #=> [1, 2, nil]
+ *  Returns a \Proc object that maps a key to its value:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    proc = h.to_proc
+ *    proc.class # => Proc
+ *    proc.call(:foo) # => 0
+ *    proc.call(:bar) # => 1
+ *    proc.call(:nosuch) # => nil
  */
 static VALUE
 rb_hash_to_proc(VALUE hash)
@@ -6236,7 +6255,7 @@ env_delete_if(VALUE ehash)
  * Returns +nil+ in the Array for each name that is not an ENV name:
  *   ENV.values_at('foo', 'bat', 'bar', 'bam') # => ["0", nil, "1", nil]
  *
- * Returns an empty Array if no names given:
+ * Returns an empty \Array if no names given:
  *   ENV.values_at() # => []
  *
  * Raises an exception if any name is invalid.
@@ -7134,7 +7153,7 @@ env_update(VALUE env, VALUE hash)
  *
  *    some_method(foo: 0, bar: 1, baz: 2) # => {:foo=>0, :bar=>1, :baz=>2}
  *
- *  You can use a Hash to initialize an object:
+ *  You can use a \Hash to initialize an object:
  *
  *    class Dev
  *      attr_accessor :name, :language
@@ -7208,7 +7227,7 @@ env_update(VALUE env, VALUE hash)
  *    h[:foo] = 4 # => 4
  *    h # => {:foo=>4, :bar=>1, :baz=>2, :bat=>3}
  *
- *  The simplest way to delete a Hash entry (instance method #delete):
+ *  The simplest way to delete a \Hash entry (instance method #delete):
  *
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.delete(:bar) # => 1
@@ -7216,11 +7235,11 @@ env_update(VALUE env, VALUE hash)
  *
  *  === Entry Order
  *
- *  A Hash object presents its entries in the order of their creation. This is seen in:
+ *  A \Hash object presents its entries in the order of their creation. This is seen in:
  *
  *  - Iterative methods such as <tt>each</tt>, <tt>each_key</tt>, <tt>each_pair</tt>, <tt>each_value</tt>.
  *  - Other order-sensitive methods such as <tt>shift</tt>, <tt>keys</tt>, <tt>values</tt>.
- *  - The String returned by method <tt>inspect</tt>.
+ *  - The \String returned by method <tt>inspect</tt>.
  *
  *  A new \Hash has its initial ordering per the given entries:
  *
@@ -7247,7 +7266,7 @@ env_update(VALUE env, VALUE hash)
  *
  *  ==== \Hash Key Equivalence
  *
- *  Two objects are treated as the same hash key when their <code>hash</code> value
+ *  Two objects are treated as the same \hash key when their <code>hash</code> value
  *  is identical and the two objects are <code>eql?</code> to each other.
  *
  *  ==== Invalid \Hash Keys
@@ -7287,7 +7306,7 @@ env_update(VALUE env, VALUE hash)
  *    h[a0] # => 0
  *
  *  A \String key is always safe.
- *  That's because an unfrozen String
+ *  That's because an unfrozen \String
  *  passed as a key will be replaced by a duplicated and frozen \String:
  *
  *    s = 'foo'
