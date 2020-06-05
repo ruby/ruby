@@ -36,6 +36,10 @@ extern int rb_method_definition_eq(const rb_method_definition_t *d1, const rb_me
 extern VALUE rb_make_no_method_exception(VALUE exc, VALUE format, VALUE obj,
                                          int argc, const VALUE *argv, int priv);
 
+#ifndef MJIT_HEADER
+static const struct rb_callcache *vm_empty_cc;
+#endif
+
 /* control stack frame */
 
 static rb_control_frame_t *vm_get_ruby_level_caller_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *cfp);
@@ -1567,8 +1571,8 @@ vm_search_cc(VALUE klass, const struct rb_callinfo *ci)
 
     if (cme == NULL) {
         // undef or not found: can't cache the information
-        VM_ASSERT(vm_cc_cme(vm_cc_empty()) == NULL);
-        return vm_cc_empty();
+        VM_ASSERT(vm_cc_cme(vm_empty_cc) == NULL);
+        return vm_empty_cc;
     }
     else {
         const struct rb_callcache *cc = vm_cc_new(klass, cme, vm_call_general);
@@ -1628,7 +1632,12 @@ vm_search_method_fastpath(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
                       vm_cc_cme(cc)->called_id == vm_ci_mid(cd->ci)); // cme->called_id == ci->mid
             return;
         }
-        cd->cc = vm_cc_empty();
+        cd->cc =
+#ifdef MJIT_HEADER
+            rb_vm_empty_cc();
+#else
+            vm_empty_cc;
+#endif
         RB_DEBUG_COUNTER_INC(mc_inline_miss_invalidated);
     }
     else {
