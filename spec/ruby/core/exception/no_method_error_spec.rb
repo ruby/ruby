@@ -110,14 +110,14 @@ describe "NoMethodError#message" do
       begin
         klass.foo
       rescue NoMethodError => error
-        error.message.lines.first.should == "undefined method `foo' for MyClass:Class\n"
+        error.message.lines.first.should == "undefined method `foo' for MyClass:Class"
       end
 
       mod = Module.new { def self.name; "MyModule"; end }
       begin
         mod.foo
       rescue NoMethodError => error
-        error.message.lines.first.should == "undefined method `foo' for MyModule:Module\n"
+        error.message.lines.first.should == "undefined method `foo' for MyModule:Module"
       end
     end
   end
