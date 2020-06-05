@@ -4,6 +4,7 @@ reconfig config.status: export MAKE:=$(MAKE)
 override gnumake_recursive := $(if $(findstring n,$(firstword $(MFLAGS))),,+)
 override mflags := $(filter-out -j%,$(MFLAGS))
 MSPECOPT += $(if $(filter -j%,$(MFLAGS)),-j)
+nproc = $(subst -j,,$(filter -j%,$(MFLAGS)))
 
 CHECK_TARGETS := great exam love check test check% test% btest%
 # expand test targets, and those dependents
@@ -90,6 +91,8 @@ sudo-precheck: test yes-test-testframework no-test-testframework
 install-prereq: sudo-precheck
 yes-test-all no-test-all: install
 endif
+yes-test-bundler-parallel: PARALLELRSPECOPTS += $(if $(nproc),-n$(shell expr $(nproc) + $(nproc) / 2))
+
 # Cross reference needs to parse all files at once
 love install reinstall: RDOCFLAGS = --force-update
 
