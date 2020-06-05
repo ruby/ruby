@@ -1353,7 +1353,7 @@ PARALLELRSPECOPTS = --runtime-log $(srcdir)/tmp/parallel_runtime_rspec.log
 test-bundler-parallel: $(TEST_RUNNABLE)-test-bundler-parallel
 yes-test-bundler-parallel: yes-test-bundler-prepare
 	$(XRUBY) -C $(srcdir) -Ispec/bundler .bundle/bin/parallel_rspec \
-		-o "--require $(srcdir)/spec/bundler/spec_helper --require $(srcdir)/spec/bundler/support/parallel" \
+		-o "--require $(srcdir)/spec/bundler/spec_helper \
 		$(PARALLELRSPECOPTS) spec/bundler/$(BUNDLER_SPECS)
 no-test-bundler-parallel:
 
