@@ -151,6 +151,7 @@ class TestGemRequire < Gem::TestCase
 
   def test_dash_i_respects_default_library_extension_priority
     skip "extensions don't quite work on jruby" if Gem.java_platform?
+    skip "not installed yet" unless RbConfig::TOPDIR
 
     dash_i_ext_arg = util_install_extension_file('a')
     dash_i_lib_arg = util_install_ruby_file('a')
@@ -251,6 +252,8 @@ class TestGemRequire < Gem::TestCase
       this test, somehow require will load the benchmark in b, and ignore that the
       stdlib one is already in $LOADED_FEATURES?. Reproducible by running the
       spaceship_specific_file test before this one" if java_platform?
+
+    skip "not installed yet" unless RbConfig::TOPDIR
 
     lib_dir = File.expand_path("../../lib", File.dirname(__FILE__))
     rubylibdir = File.realdirpath(RbConfig::CONFIG["rubylibdir"])
