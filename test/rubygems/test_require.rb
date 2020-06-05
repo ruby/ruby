@@ -253,7 +253,8 @@ class TestGemRequire < Gem::TestCase
       spaceship_specific_file test before this one" if java_platform?
 
     lib_dir = File.expand_path("../../lib", File.dirname(__FILE__))
-    if RbConfig::CONFIG["rubylibdir"] == lib_dir
+    rubylibdir = File.realdirpath(RbConfig::CONFIG["rubylibdir"])
+    if rubylibdir == lib_dir
       # testing in the ruby repository where RubyGems' lib/ == stdlib lib/
       # In that case we want to move the stdlib lib/ to still be after b-2 in $LOAD_PATH
       lp = $LOAD_PATH.dup
@@ -286,9 +287,13 @@ class TestGemRequire < Gem::TestCase
     # and as a result #gem_original_require returns false.
     refute require('benchmark'), "the benchmark stdlib should be recognized as already loaded"
 
-    assert $LOAD_PATH.include? b2.load_paths[0]
-    assert $LOAD_PATH.index(b2.load_paths[0]) < $LOAD_PATH.index(RbConfig::CONFIG["rubylibdir"]),
-      "this test relies on the b-2 gem lib/ to be before stdlib to make sense"
+    assert_includes $LOAD_PATH, b2.load_paths[0]
+    assert_includes $LOAD_PATH, rubylibdir
+    message = proc {
+      "this test relies on the b-2 gem lib/ to be before stdlib to make sense\n" +
+      $LOAD_PATH.pretty_inspect
+    }
+    assert_operator $LOAD_PATH.index(b2.load_paths[0]), :<, $LOAD_PATH.index(rubylibdir), message
 
     # We detected that we should activate b-2, so we did so, but
     # then #gem_original_require decided "I've already got some benchmark.rb" loaded.
