@@ -511,7 +511,7 @@ class IMAPTest < Test::Unit::TestCase
           sock_addr: sock.addr,
           sock_peeraddr: sock.peeraddr,
           t: Process.clock_gettime(Process::CLOCK_MONOTONIC),
-          sockets: ObjectSpace.each_object(BasicSocket).map{|s| [s.inspect, connect_address: s.connect_address.inspect, local_address: s.local_address.inspect, remote_address: (s.remote_address rescue nil).inspect] },
+          sockets: ObjectSpace.each_object(BasicSocket).map{|s| [s.inspect, connect_address: (s.connect_address rescue nil).inspect, local_address: (s.local_address rescue nil).inspect, remote_address: (s.remote_address rescue nil).inspect] },
         }
         sock.close
         h[:in_start_server_sock_closed] = {
