@@ -1473,6 +1473,13 @@ vm_ccs_create(VALUE klass, const rb_callable_method_entry_t *cme)
 static void
 vm_ccs_push(VALUE klass, struct rb_class_cc_entries *ccs, const struct rb_callinfo *ci, const struct rb_callcache *cc)
 {
+    if (! vm_cc_markable(cc)) {
+        return;
+    }
+    else if (! vm_ci_markable(ci)) {
+        return;
+    }
+
     if (UNLIKELY(ccs->len == ccs->capa)) {
         const int nsize = ccs->capa * 2;
         struct rb_class_cc_entries_entry *nents = ALLOC_N(struct rb_class_cc_entries_entry, nsize);
