@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe "install with --deployment or --frozen" do
+RSpec.describe "install in deployment or frozen mode" do
   before do
     gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
@@ -67,7 +67,8 @@ RSpec.describe "install with --deployment or --frozen" do
     skip "doesn't find bundle" if Gem.win_platform?
 
     bundle! :install
-    bundle "install --deployment"
+    bundle "config --local deployment true"
+    bundle :install
     bundle! "exec bundle check", :env => { "PATH" => path }
   end
 

@@ -126,7 +126,8 @@ RSpec.describe "bundle install from an existing gemspec" do
     # ghost pass in future, and will only catch a regression if the message
     # doesn't change. Exit codes should be used correctly (they can be more
     # than just 0 and 1).
-    output = bundle("install --deployment", :dir => tmp.join("foo"))
+    bundle "config set --local deployment true"
+    output = bundle("install", :dir => tmp.join("foo"))
     expect(output).not_to match(/You have added to the Gemfile/)
     expect(output).not_to match(/You have deleted from the Gemfile/)
     expect(output).not_to match(/install in deployment mode after changing/)
