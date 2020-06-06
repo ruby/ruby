@@ -210,21 +210,6 @@ RSpec.describe "bundle check" do
     expect(err).not_to include("Unfortunately, a fatal error has occurred. ")
   end
 
-  it "should not crash when called multiple times on a new machine" do
-    gemfile <<-G
-      gem 'rails', '3.0.0.beta3'
-      gem 'paperclip', :git => 'git://github.com/thoughtbot/paperclip.git'
-    G
-
-    simulate_new_machine
-    bundle "check"
-    last_out = out
-    3.times do
-      bundle :check
-      expect(out).to eq(last_out)
-    end
-  end
-
   it "fails when there's no lock file and frozen is set" do
     install_gemfile! <<-G
       source "#{file_uri_for(gem_repo1)}"
