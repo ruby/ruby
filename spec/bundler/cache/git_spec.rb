@@ -31,7 +31,7 @@ RSpec.describe "bundle cache with git" do
     expect(the_bundle).to include_gems "foo 1.0"
   end
 
-  it "copies repository to vendor cache and uses it even when installed with bundle --path" do
+  it "copies repository to vendor cache and uses it even when configured with `path`" do
     git = build_git "foo"
     ref = git.ref_for("master", 11)
 
@@ -39,7 +39,8 @@ RSpec.describe "bundle cache with git" do
       gem "foo", :git => '#{lib_path("foo-1.0")}'
     G
 
-    bundle "install --path vendor/bundle"
+    bundle "config set --local path vendor/bundle"
+    bundle "install"
     bundle "config set cache_all true"
     bundle :cache
 

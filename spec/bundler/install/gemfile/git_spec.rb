@@ -124,7 +124,8 @@ RSpec.describe "bundle install with git sources" do
     end
 
     it "still works after moving the application directory" do
-      bundle "install --path vendor/bundle"
+      bundle "config --local path vendor/bundle"
+      bundle "install"
 
       FileUtils.mv bundled_app, tmp("bundled_app.bck")
 
@@ -132,7 +133,8 @@ RSpec.describe "bundle install with git sources" do
     end
 
     it "can still install after moving the application directory" do
-      bundle "install --path vendor/bundle"
+      bundle "config --local path vendor/bundle"
+      bundle "install"
 
       FileUtils.mv bundled_app, tmp("bundled_app.bck")
 
