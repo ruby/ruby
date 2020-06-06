@@ -55,26 +55,30 @@ class TestNoMethodError < Test::Unit::TestCase
     error = NoMethodError.new("Message", :foo)
     assert_raise(ArgumentError) {error.receiver}
 
-    msg = defined?(DidYouMean.formatter) ?
-      "Message\nDid you mean?  for" : "Message"
+    msg = "Message"
 
     error = NoMethodError.new("Message", :foo, receiver: receiver)
-    assert_equal([msg, :foo, receiver],
-                 [error.message, error.name, error.receiver])
+    assert_match msg, error.message
+    assert_equal :foo, error.name
+    assert_equal receiver, error.receiver
 
     error = NoMethodError.new("Message", :foo, [1, 2])
     assert_raise(ArgumentError) {error.receiver}
 
     error = NoMethodError.new("Message", :foo, [1, 2], receiver: receiver)
-    assert_equal([msg, :foo, [1, 2], receiver],
-                 [error.message, error.name, error.args, error.receiver])
+    assert_match msg, error.message
+    assert_equal :foo, error.name
+    assert_equal [1, 2], error.args
+    assert_equal receiver, error.receiver
 
     error = NoMethodError.new("Message", :foo, [1, 2], true)
     assert_raise(ArgumentError) {error.receiver}
 
     error = NoMethodError.new("Message", :foo, [1, 2], true, receiver: receiver)
-    assert_equal([:foo, [1, 2], true, receiver],
-                 [error.name, error.args, error.private_call?, error.receiver])
+    assert_equal :foo, error.name
+    assert_equal [1, 2], error.args
+    assert_equal receiver, error.receiver
+    assert error.private_call?, "private_call? was false."
   end
 
   def test_message_encoding
