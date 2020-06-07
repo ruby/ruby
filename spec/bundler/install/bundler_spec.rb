@@ -131,6 +131,21 @@ RSpec.describe "bundle install" do
       expect(err).to include(nice_error)
     end
 
+    it "does not cause a conflict if new dependencies in the Gemfile require older dependencies than the lockfile" do
+      install_gemfile! <<-G
+        source "#{file_uri_for(gem_repo2)}"
+        gem 'rails', "2.3.2"
+      G
+
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo2)}"
+        gem "rails_fail"
+      G
+
+      expect(out).to include("Installing activesupport 1.2.3 (was 2.3.2)")
+      expect(err).to be_empty
+    end
+
     it "can install dependencies with newer bundler version with system gems" do
       bundle! "config set path.system true"
 
