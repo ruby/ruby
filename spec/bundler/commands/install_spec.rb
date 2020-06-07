@@ -313,7 +313,6 @@ RSpec.describe "bundle install with gem sources" do
         gem "rack"
       G
 
-      bundle :install
       expect(err).to include("Your Gemfile has no gem server sources")
     end
 
@@ -384,7 +383,6 @@ RSpec.describe "bundle install with gem sources" do
         end
       G
 
-      bundle :install, :artifice => nil
       expect(err).to include("Could not fetch specs from http://0.0.0.0:9384/")
       expect(err).not_to include("file://")
     end
