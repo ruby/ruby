@@ -105,11 +105,12 @@ RSpec.describe "when using sudo", :sudo => true do
 
   describe "and BUNDLE_PATH is not writable" do
     before do
-      sudo "chmod ugo-w #{default_bundle_path}"
+      bundle "config set --local path .bundle"
+      sudo "chmod ugo-w .bundle"
     end
 
     after do
-      sudo "chmod ugo+w #{default_bundle_path}"
+      sudo "chmod ugo+w .bundle"
     end
 
     it "installs" do
@@ -118,7 +119,7 @@ RSpec.describe "when using sudo", :sudo => true do
         gem "rack", '1.0'
       G
 
-      expect(default_bundle_path("gems/rack-1.0.0")).to exist
+      expect(local_gem_path("gems/rack-1.0.0")).to exist
       expect(the_bundle).to include_gems "rack 1.0"
     end
 
