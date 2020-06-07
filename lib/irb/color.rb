@@ -155,8 +155,8 @@ module IRB # :nodoc:
         pos = [1, 0]
 
         verbose, $VERBOSE = $VERBOSE, nil
-        RubyLex.compile_with_errors_suppressed(code) do |inner_code|
-          lexer = Ripper::Lexer.new(inner_code)
+        RubyLex.compile_with_errors_suppressed(code) do |inner_code, line_no|
+          lexer = Ripper::Lexer.new(inner_code, '(ripper)', line_no)
           if lexer.respond_to?(:scan) # Ruby 2.7+
             lexer.scan.each do |elem|
               str = elem.tok

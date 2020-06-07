@@ -31,14 +31,13 @@ class RubyLex
   end
 
   def self.compile_with_errors_suppressed(code)
+    line_no = 1
     begin
-      result = yield code
+      result = yield code, line_no
     rescue ArgumentError => e
-      magic_comment_regexp = /\A(?<shebang>#.*\n)?#\s*(?:encoding|coding)\s*:.*(?<nl>\n)?/
-      if e.message.match?(/unknown encoding name/) && code.match?(magic_comment_regexp)
-        code = code.gsub(magic_comment_regexp, "\\k<shebang>#\\k<nl>")
-        retry
-      end
+      code = ";\n#{code}"
+      line_no = 0
+      result = yield code, line_no
     end
     result
   end
@@ -90,8 +89,8 @@ class RubyLex
   def ripper_lex_without_warning(code)
     verbose, $VERBOSE = $VERBOSE, nil
     tokens = nil
-    self.class.compile_with_errors_suppressed(code) do |inner_code|
-      tokens = Ripper.lex(inner_code)
+    self.class.compile_with_errors_suppressed(code) do |inner_code, line_no|
+      tokens = Ripper.lex(inner_code, '-', line_no)
     end
     $VERBOSE = verbose
     tokens
@@ -226,8 +225,8 @@ class RubyLex
       when 'jruby'
         JRuby.compile_ir(code)
       else
-        self.class.compile_with_errors_suppressed(code) do |inner_code|
-          RubyVM::InstructionSequence.compile(inner_code)
+        self.class.compile_with_errors_suppressed(code) do |inner_code, line_no|
+          RubyVM::InstructionSequence.compile(inner_code, nil, nil, line_no)
         end
       end
     rescue EncodingError
