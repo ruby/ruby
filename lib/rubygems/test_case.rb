@@ -357,6 +357,7 @@ class Gem::TestCase < Minitest::Test
 
     ENV['HOME'] = @userhome
     Gem.instance_variable_set :@user_home, nil
+    Gem.instance_variable_set :@data_home, nil
     Gem.instance_variable_set :@gemdeps, nil
     Gem.instance_variable_set :@env_requirements_by_name, nil
     Gem.send :remove_instance_variable, :@ruby_version if
