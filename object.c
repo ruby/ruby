@@ -550,11 +550,11 @@ rb_obj_clone(VALUE obj)
  *	s1.extend(Foo) #=> #<Klass:0x401b3a38>
  *	s1.foo #=> "foo"
  *
- *	s2 = s1.clone #=> #<Klass:0x401b3a38>
+ *	s2 = s1.clone #=> #<Klass:0x401be280>
  *	s2.foo #=> "foo"
  *
- *	s3 = s1.dup #=> #<Klass:0x401b3a38>
- *	s3.foo #=> NoMethodError: undefined method `foo' for #<Klass:0x401b3a38>
+ *	s3 = s1.dup #=> #<Klass:0x401c1084>
+ *	s3.foo #=> NoMethodError: undefined method `foo' for #<Klass:0x401c1084>
  *--
  * Equivalent to \c Object\#dup in Ruby
  *++
