@@ -2230,10 +2230,22 @@ method_clone(VALUE self)
  */
 
 
+/*  Document-method: Method#[]
+ *
+ *  call-seq:
+ *     meth[args, ...]         -> obj
+ *
+ *  Invokes the <i>meth</i> with the specified arguments, returning the
+ *  method's return value, like #call.
+ *
+ *     m = 12.method("+")
+ *     m[3]         #=> 15
+ *     m[20]        #=> 32
+ */
+
 /*
  *  call-seq:
  *     meth.call(args, ...)    -> obj
- *     meth[args, ...]         -> obj
  *
  *  Invokes the <i>meth</i> with the specified arguments, returning the
  *  method's return value.
@@ -3479,8 +3491,8 @@ rb_method_compose_to_left(VALUE self, VALUE g)
  *     meth >> g -> a_proc
  *
  *  Returns a proc that is the composition of this method and the given <i>g</i>.
- *  The returned proc takes a variable number of arguments, calls <i>g</i> with them
- *  then calls this method with the result.
+ *  The returned proc takes a variable number of arguments, calls this method
+ *  with them then calls <i>g</i> with the result.
  *
  *     def f(x)
  *       x * x
