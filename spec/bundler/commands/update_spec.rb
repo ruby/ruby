@@ -694,7 +694,7 @@ RSpec.describe "bundle update" do
   end
 
   it "shows error message when Gemfile.lock is not preset and gem is specified" do
-    install_gemfile <<-G
+    gemfile <<-G
       source "#{file_uri_for(gem_repo2)}"
       gem "activesupport"
     G
