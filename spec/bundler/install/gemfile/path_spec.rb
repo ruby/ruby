@@ -610,7 +610,7 @@ RSpec.describe "bundle install with explicit source paths" do
 
     it "switches the source when the gem existed in rubygems and the path was already being used for another gem" do
       build_lib "foo", "1.0", :path => lib_path("foo")
-      build_gem "bar", "1.0", :to_system => true do |s|
+      build_gem "bar", "1.0", :to_bundle => true do |s|
         s.write "lib/bar.rb", "raise 'fail'"
       end
 
