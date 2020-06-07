@@ -712,12 +712,11 @@ RSpec.describe "bundle update --ruby" do
         ::RUBY_PATCHLEVEL = 100
         ruby '~> 2.1.0'
     G
-    bundle "update --ruby"
   end
 
   context "when the Gemfile removes the ruby" do
     before do
-      install_gemfile <<-G
+      gemfile <<-G
           ::RUBY_VERSION = '2.1.4'
           ::RUBY_PATCHLEVEL = 222
       G
@@ -742,7 +741,7 @@ RSpec.describe "bundle update --ruby" do
 
   context "when the Gemfile specified an updated Ruby version" do
     before do
-      install_gemfile <<-G
+      gemfile <<-G
           ::RUBY_VERSION = '2.1.4'
           ::RUBY_PATCHLEVEL = 222
           ruby '~> 2.1.0'
@@ -771,7 +770,7 @@ RSpec.describe "bundle update --ruby" do
 
   context "when a different Ruby is being used than has been versioned" do
     before do
-      install_gemfile <<-G
+      gemfile <<-G
           ::RUBY_VERSION = '2.2.2'
           ::RUBY_PATCHLEVEL = 505
           ruby '~> 2.1.0'
@@ -786,7 +785,7 @@ RSpec.describe "bundle update --ruby" do
 
   context "when updating Ruby version and Gemfile `ruby`" do
     before do
-      install_gemfile <<-G
+      gemfile <<-G
           ::RUBY_VERSION = '1.8.3'
           ::RUBY_PATCHLEVEL = 55
           ruby '~> 1.8.0'
