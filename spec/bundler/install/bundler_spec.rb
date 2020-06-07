@@ -96,7 +96,7 @@ RSpec.describe "bundle install" do
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo2)}"
         gem "activemerchant"
-        gem "rails_fail"
+        gem "rails_pinned_to_old_activesupport"
       G
 
       nice_error = <<-E.strip.gsub(/^ {8}/, "")
@@ -105,7 +105,7 @@ RSpec.describe "bundle install" do
             activemerchant was resolved to 1.0, which depends on
               activesupport (>= 2.0.0)
 
-            rails_fail was resolved to 1.0, which depends on
+            rails_pinned_to_old_activesupport was resolved to 1.0, which depends on
               activesupport (= 1.2.3)
       E
       expect(err).to include(nice_error)
@@ -116,7 +116,7 @@ RSpec.describe "bundle install" do
 
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo2)}"
-        gem "rails_fail"
+        gem "rails_pinned_to_old_activesupport"
         gem "activesupport", "2.3.5"
       G
 
@@ -125,7 +125,7 @@ RSpec.describe "bundle install" do
           In Gemfile:
             activesupport (= 2.3.5)
 
-            rails_fail was resolved to 1.0, which depends on
+            rails_pinned_to_old_activesupport was resolved to 1.0, which depends on
               activesupport (= 1.2.3)
       E
       expect(err).to include(nice_error)
@@ -139,7 +139,7 @@ RSpec.describe "bundle install" do
 
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo2)}"
-        gem "rails_fail"
+        gem "rails_pinned_to_old_activesupport"
       G
 
       expect(out).to include("Installing activesupport 1.2.3 (was 2.3.2)")

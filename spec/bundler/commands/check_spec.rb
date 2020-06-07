@@ -78,13 +78,13 @@ RSpec.describe "bundle check" do
     G
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
-      gem 'rails_fail'
+      gem 'rails_pinned_to_old_activesupport'
     G
 
     gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
       gem "rails"
-      gem "rails_fail"
+      gem "rails_pinned_to_old_activesupport"
     G
 
     bundle :check
