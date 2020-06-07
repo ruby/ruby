@@ -76,10 +76,6 @@ RSpec.describe "bundle check" do
       source "#{file_uri_for(gem_repo1)}"
       gem 'rails'
     G
-    install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
-      gem 'rails_pinned_to_old_activesupport'
-    G
 
     gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
