@@ -279,13 +279,13 @@ RSpec.describe "Bundler.setup" do
     end
 
     context "an absolute path is not provided" do
-      it "uses BUNDLE_GEMFILE to locate the gemfile if present" do
+      it "uses BUNDLE_GEMFILE to locate the gemfile if present and doesn't fail in deployment mode" do
         gemfile <<-G
           source "#{file_uri_for(gem_repo1)}"
         G
 
         bundle "install"
-        bundle "install --deployment"
+        bundle "config set --local deployment true"
 
         ENV["BUNDLE_GEMFILE"] = "Gemfile"
         ruby <<-R
