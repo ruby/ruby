@@ -576,7 +576,7 @@ RSpec.describe "bundle exec" do
         G
       end
 
-      install_gemfile <<-G
+      gemfile <<-G
         gem "foo", :path => "#{lib_path("foo-1.0")}"
       G
 
