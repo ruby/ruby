@@ -13,7 +13,7 @@ RSpec.describe "bundle add" do
 
     build_git "foo", "2.0"
 
-    install_gemfile! <<-G
+    gemfile <<-G
       source "#{file_uri_for(gem_repo2)}"
       gem "weakling", "~> 0.0.1"
     G
