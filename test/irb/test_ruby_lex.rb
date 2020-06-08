@@ -152,5 +152,31 @@ module TestIRB
         assert_indenting(lines, row.new_line_spaces, true)
       end
     end
+
+    def test_incomplete_emacs_coding_magic_comment
+      input_with_correct_indents = [
+        Row.new(%q(# -*- coding: u), nil, 0),
+      ]
+
+      lines = []
+      input_with_correct_indents.each do |row|
+        lines << row.content
+        assert_indenting(lines, row.current_line_spaces, false)
+        assert_indenting(lines, row.new_line_spaces, true)
+      end
+    end
+
+    def test_incomplete_vim_coding_magic_comment
+      input_with_correct_indents = [
+        Row.new(%q(# vim:set fileencoding=u), nil, 0),
+      ]
+
+      lines = []
+      input_with_correct_indents.each do |row|
+        lines << row.content
+        assert_indenting(lines, row.current_line_spaces, false)
+        assert_indenting(lines, row.new_line_spaces, true)
+      end
+    end
   end
 end
