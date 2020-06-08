@@ -780,7 +780,7 @@ test: test-short
 # $ make test-all TESTOPTS="--help" displays more detail
 # for example, make test-all TESTOPTS="-j2 -v -n test-name -- test-file-name"
 test-all: $(TEST_RUNNABLE)-test-all
-yes-test-all: programs PHONY
+yes-test-all: main PHONY
 	$(gnumake_recursive)$(Q)$(exec) $(RUNRUBY) "$(TESTSDIR)/runner.rb" --ruby="$(RUNRUBY)" $(TEST_EXCLUDES) $(TESTOPTS) $(TESTS)
 TESTS_BUILD = mkmf
 no-test-all: PHONY
@@ -817,7 +817,7 @@ $(RBCONFIG): $(tooldir)/mkconfig.rb config.status $(srcdir)/version.h
 test-rubyspec: test-spec
 yes-test-rubyspec: yes-test-spec
 
-test-spec-precheck: programs
+test-spec-precheck: main
 
 test-spec: $(TEST_RUNNABLE)-test-spec
 yes-test-spec: test-spec-precheck
@@ -1316,12 +1316,17 @@ update-bundled_gems: PHONY
 	     "$(srcdir)/gems/bundled_gems" | \
 	"$(IFCHANGE)" "$(srcdir)/gems/bundled_gems" -
 
-test-bundled-gems-precheck: programs
+test-bundled-gems-precheck: $(TEST_RUNNABLE)-test-bundled-gems-precheck
+yes-test-bundled-gems-precheck: main
+no-test-bundled-gems-precheck:
 
 test-bundled-gems-fetch: $(PREP)
 	$(Q) $(BASERUBY) -C $(srcdir)/gems ../tool/fetch-bundled_gems.rb src bundled_gems
 
 test-bundled-gems-prepare: test-bundled-gems-precheck test-bundled-gems-fetch
+test-bundled-gems-prepare: $(TEST_RUNNABLE)-test-bundled-gems-prepare
+no-test-bundled-gems-prepare: no-test-bundled-gems-precheck
+yes-test-bundled-gems-prepare: yes-test-bundled-gems-precheck
 	$(XRUBY) -C "$(srcdir)" bin/gem install --no-document \
 		--install-dir .bundle --conservative "bundler" "minitest:~> 5" 'test-unit' 'rake' 'hoe' 'yard' 'pry' 'packnga' 'rexml'
 
@@ -1336,9 +1341,12 @@ no-test-bundled-gems:
 test-bundled-gems-run: $(PREPARE_BUNDLED_GEMS)
 	$(Q) $(XRUBY) $(tooldir)/test-bundled-gems.rb
 
-test-bundler-precheck: programs
+test-bundler-precheck: $(TEST_RUNNABLE)-test-bundler-precheck
+no-test-bundler-precheck:
+yes-test-bundler-precheck: main
 
-yes-test-bundler-prepare: test-bundler-precheck
+no-test-bundler-prepare: no-test-bundler-precheck
+yes-test-bundler-prepare: yes-test-bundler-precheck
 	$(XRUBY) -C "$(srcdir)" bin/gem install --no-document \
 		--install-dir .bundle --conservative "rspec:~> 3.8" "rake:~> 13.0" "parallel_tests:~> 2.29"
 
