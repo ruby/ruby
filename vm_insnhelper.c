@@ -1799,15 +1799,14 @@ rb_equal_opt(VALUE obj1, VALUE obj2)
 #if USE_EMBED_CI
     static struct rb_call_data cd = {
         .ci = vm_ci_new_id(idEq, 0, 1, 0),
-        .cc = &vm_empty_cc,
     };
 #else
     struct rb_call_data cd = {
         .ci = &VM_CI_ON_STACK(idEq, 0, 1, 0),
-        .cc = &vm_empty_cc,
     };
 #endif
 
+    cd.cc = &vm_empty_cc;
     return opt_equality(NULL, obj1, obj2, &cd);
 }
 
@@ -1819,15 +1818,14 @@ rb_eql_opt(VALUE obj1, VALUE obj2)
 #if USE_EMBED_CI
     static struct rb_call_data cd = {
         .ci = vm_ci_new_id(idEqlP, 0, 1, 0),
-        .cc = &vm_empty_cc,
     };
 #else
     struct rb_call_data cd = {
         .ci = &VM_CI_ON_STACK(idEqlP, 0, 1, 0),
-        .cc = &vm_empty_cc,
     };
 #endif
 
+    cd.cc = &vm_empty_cc;
     return opt_equality(NULL, obj1, obj2, &cd);
 }
 #endif
