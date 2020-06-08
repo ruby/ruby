@@ -2522,7 +2522,7 @@ cc_table_mark(rb_objspace_t *objspace, VALUE klass)
 }
 
 static enum rb_id_table_iterator_result
-cc_table_free_i(ID id, VALUE ccs_ptr, void *data_ptr)
+cc_table_free_i(VALUE ccs_ptr, void *data_ptr)
 {
     struct cc_tbl_i_data *data = data_ptr;
     struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_ptr;
@@ -2542,7 +2542,7 @@ cc_table_free(rb_objspace_t *objspace, VALUE klass, bool alive)
             .klass = klass,
             .alive = alive,
         };
-        rb_id_table_foreach(cc_tbl, cc_table_free_i, &data);
+        rb_id_table_foreach_values(cc_tbl, cc_table_free_i, &data);
         rb_id_table_free(cc_tbl);
     }
 }
