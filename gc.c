@@ -8020,7 +8020,7 @@ gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free)
     gc_report(4, objspace, "Moving object: %p -> %p\n", (void*)scan, (void *)free);
 
     GC_ASSERT(BUILTIN_TYPE(scan) != T_NONE);
-    GC_ASSERT(BUILTIN_TYPE(free) == T_NONE);
+    GC_ASSERT(RVALUE_MARKED(free) == FALSE);
 
     /* Save off bits for current object. */
     marked = rb_objspace_marked_object_p((VALUE)src);
