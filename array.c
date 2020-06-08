@@ -660,9 +660,9 @@ ary_ensure_room_for_push(VALUE ary, long add_len)
  *    a.frozen? # => true
  *    a1.equal?(a) # => true # Returned self
  *
- *  Raises an exception for an attempt to modify +self+:
+ *  An attempt to modify a frozen \Array raises an exception:
  *    # Raises FrozenError (can't modify frozen Array: [:foo, "bar", 2]):
- *    a.push(:foo)
+ *    [:foo, 'bar', 2].freeze.push(:foo)
  */
 
 VALUE
@@ -1285,6 +1285,13 @@ rb_ary_cat(VALUE ary, const VALUE *argv, long len)
  *    array.push(*objects) -> self
  *    array.append(*objects) -> self
  *
+ *  Appends trailing elements. #append is an alias for \#push.
+
+ *  See also:
+ *  - #pop:  Removes and returns trailing elements.
+ *  - #shift:  Removes and returns leading elements.
+ *  - #unshift:  Prepends leading elements.
+ *
  *  Appends each argument in +objects+ to +self+;  returns +self+:
  *    a = [:foo, 'bar', 2]
  *    a1 = a.push(:baz, :bat)
@@ -1328,7 +1335,12 @@ rb_ary_pop(VALUE ary)
  *    array.pop -> object or nil
  *    array.pop(n) -> new_array
  *
- *  Removes and returns trailing elements from the array.
+ *  Removes and returns trailing elements.
+ *
+ *  See also:
+ *  - #push:  Appends trailing elements.
+ *  - #shift:  Removes and returns leading elements.
+ *  - #unshift:  Prepends leading elements.
  *
  *  Argument +n+, if given, must be an
  *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects]
@@ -1439,17 +1451,19 @@ rb_ary_shift(VALUE ary)
  *     array.shift -> object or nil
  *     array.shift(n) -> new_array
  *
- *  Removes and returns leading elements of +self+;
- *  shifts elements down so that the first remaining
- *  element is at index 0.
+ *  Removes and returns leading elements.
+ *
+ *  See also:
+ *  - #push:  Appends trailing elements.
+ *  - #pop:  Removes and returns trailing elements.
+ *  - #unshift:  Prepends leading elements.
  *
  *  Argument +n+, if given, must be an
  *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects]
  *
  *  ---
  *
- *  When no argument is given,
- *  removes and returns the first element:
+ *  When no argument is given, removes and returns the first element:
  *    a = [:foo, 'bar', 2]
  *    a.shift # => :foo
  *    a # => ['bar', 2]
@@ -1471,8 +1485,7 @@ rb_ary_shift(VALUE ary)
  *    a.shift(3) # => [:foo, 'bar', 2]
  *    a # => []
  *
- *  If +n+ is 0, returns a new empty \Array;
- *  +self+ is unmodified:
+ *  If +n+ is 0, returns a new empty \Array; +self+ is unmodified:
  *    a = [:foo, 'bar', 2]
  *    a.shift(0) # => []
  *    a # => [:foo, 'bar', 2]
@@ -1609,7 +1622,12 @@ ary_ensure_room_for_unshift(VALUE ary, int argc)
  *    array.unshift(*objects) -> self
  *    array.prepend(*objects) -> self
  *
- *  #prepend is an alias for \#unshift.
+ *  Prepends leading elements. #prepend is an alias for \#unshift.
+ *
+ *  See also:
+ *  - #push:  Appends trailing elements.
+ *  - #pop:  Removes and returns trailing elements.
+ *  - #shift:  Removes and returns leading elements.
  *
  *  Prepends the given +objects+ to +self+:
  *    a = [:foo, 'bar', 2]
@@ -1857,6 +1875,7 @@ rb_ary_at(VALUE ary, VALUE pos)
  *    array.first(n) -> new_array
  *
  *  Returns elements from +self+; does not modify +self+.
+ *  See also #last.
  *
  *  Argument +n+, if given, must be an
  *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
@@ -1915,6 +1934,7 @@ rb_ary_first(int argc, VALUE *argv, VALUE ary)
  *    array.last(n) -> new_array
  *
  *  Returns elements from +self+; +self+ is not modified.
+ *  See also #first.
  *
  *  Argument +n+, if given, must be an
  *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
