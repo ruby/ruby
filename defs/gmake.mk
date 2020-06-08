@@ -350,7 +350,7 @@ benchmark/%: miniruby$(EXEEXT) update-benchmark-driver PHONY
 	$(Q)$(BASERUBY) -rrubygems -I$(srcdir)/benchmark/lib $(srcdir)/benchmark/benchmark-driver/exe/benchmark-driver \
 	            --executables="compare-ruby::$(COMPARE_RUBY) -I$(EXTOUT)/common --disable-gem" \
 	            --executables="built-ruby::$(BENCH_RUBY) --disable-gem" \
-	            $(srcdir)/$@ $(OPTS)
+	            $(srcdir)/$@ $(BENCH_OPTS) $(OPTS)
 
 clean-srcs-ext::
 	$(Q)$(RM) $(patsubst $(srcdir)/%,%,$(EXT_SRCS))

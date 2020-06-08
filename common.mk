@@ -1204,6 +1204,7 @@ bisect-ruby: PHONY
 
 COMPARE_RUBY = $(BASERUBY)
 BENCH_RUBY = $(RUNRUBY)
+BENCH_OPTS = --output=markdown --output-compare
 ITEM =
 ARGS = $$(find $(srcdir)/benchmark -maxdepth 1 -name '$(ITEM)' -o -name '*$(ITEM)*.yml' -o -name '*$(ITEM)*.rb' | sort)
 OPTS =
@@ -1213,7 +1214,7 @@ benchmark: miniruby$(EXEEXT) update-benchmark-driver PHONY
 	$(BASERUBY) -rrubygems -I$(srcdir)/benchmark/lib $(srcdir)/benchmark/benchmark-driver/exe/benchmark-driver \
 	            --executables="compare-ruby::$(COMPARE_RUBY) -I$(EXTOUT)/common --disable-gem" \
 	            --executables="built-ruby::$(BENCH_RUBY) --disable-gem" \
-	            $(ARGS) $(OPTS)
+	            $(BENCH_OPTS) $(ARGS) $(OPTS)
 
 run.gdb:
 	echo set breakpoint pending on         > run.gdb
