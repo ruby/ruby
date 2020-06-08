@@ -1,14 +1,14 @@
 # -*- encoding: utf-8 -*-
 # frozen_string_literal: true
 
-lib_path = File.expand_path('lib', __dir__)
-$LOAD_PATH.unshift lib_path if File.exist?(lib_path)
-
-require 'psych/versions'
+version_module = Module.new do
+  version_rb = File.join(__dir__, "lib/psych/versions.rb")
+  module_eval(File.read(version_rb), version_rb)
+end
 
 Gem::Specification.new do |s|
   s.name = "psych"
-  s.version = Psych::VERSION
+  s.version = version_module::Psych::VERSION
   s.authors = ["Aaron Patterson", "SHIBATA Hiroshi", "Charles Oliver Nutter"]
   s.email = ["aaron@tenderlovemaking.com", "hsbt@ruby-lang.org", "headius@headius.com"]
   s.summary = "Psych is a YAML parser and emitter"
