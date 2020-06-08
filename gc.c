@@ -8406,7 +8406,7 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
 {
     RVALUE *any = RANY(obj);
 
-    gc_report(4, objspace, "update-refs: %p ->", (void *)obj);
+    gc_report(4, objspace, "update-refs: %p ->\n", (void *)obj);
 
     switch (BUILTIN_TYPE(obj)) {
       case T_CLASS:
@@ -8555,7 +8555,7 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
 
     UPDATE_IF_MOVED(objspace, RBASIC(obj)->klass);
 
-    gc_report(4, objspace, "update-refs: %p <-", (void *)obj);
+    gc_report(4, objspace, "update-refs: %p <-\n", (void *)obj);
 }
 
 static int
