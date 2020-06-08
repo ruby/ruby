@@ -284,7 +284,7 @@ module Bundler
         if uri =~ %r{^\w+://(\w+@)?}
           # Downcase the domain component of the URI
           # and strip off a trailing slash, if one is present
-          input = Bundler::URI.parse(uri).normalize.to_s.sub(%r{/$}, "")
+          input = URI.parse(uri).normalize.to_s.sub(%r{/$}, "")
         else
           # If there is no URI scheme, assume it is an ssh/git URI
           input = uri

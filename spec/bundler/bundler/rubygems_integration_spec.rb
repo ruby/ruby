@@ -44,7 +44,7 @@ RSpec.describe Bundler::RubygemsIntegration do
   describe "#download_gem" do
     let(:bundler_retry) { double(Bundler::Retry) }
     let(:retry) { double("Bundler::Retry") }
-    let(:uri) {  Bundler::URI.parse("https://foo.bar") }
+    let(:uri) {  URI.parse("https://foo.bar") }
     let(:path) { Gem.path.first }
     let(:spec) do
       spec = Bundler::RemoteSpecification.new("Foo", Gem::Version.new("2.5.2"),
@@ -73,7 +73,7 @@ RSpec.describe Bundler::RubygemsIntegration do
     let(:prerelease_specs_response) { Marshal.dump(["prerelease_specs"]) }
 
     context "when a rubygems source mirror is set" do
-      let(:orig_uri) { Bundler::URI("http://zombo.com") }
+      let(:orig_uri) { URI("http://zombo.com") }
       let(:remote_with_mirror) { double("remote", :uri => uri, :original_uri => orig_uri) }
 
       it "sets the 'X-Gemfile-Source' header containing the original source" do

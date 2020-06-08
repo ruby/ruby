@@ -5,7 +5,7 @@ require "bundler/compact_index_client"
 
 RSpec.describe Bundler::Fetcher::CompactIndex do
   let(:downloader)  { double(:downloader) }
-  let(:display_uri) { Bundler::URI("http://sampleuri.com") }
+  let(:display_uri) { URI("http://sampleuri.com") }
   let(:remote)      { double(:remote, :cache_slug => "lsjdf", :uri => display_uri) }
   let(:compact_index) { described_class.new(downloader, remote, display_uri) }
 

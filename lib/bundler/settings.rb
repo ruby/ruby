@@ -149,7 +149,7 @@ module Bundler
     def mirror_for(uri)
       if uri.is_a?(String)
         require_relative "vendored_uri"
-        uri = Bundler::URI(uri)
+        uri = URI(uri)
       end
 
       gem_mirrors.for(uri.to_s).uri
@@ -421,7 +421,7 @@ module Bundler
       end
       uri = "#{uri}/" unless uri.end_with?("/")
       require_relative "vendored_uri"
-      uri = Bundler::URI(uri)
+      uri = URI(uri)
       unless uri.absolute?
         raise ArgumentError, format("Gem sources must be absolute. You provided '%s'.", uri)
       end
