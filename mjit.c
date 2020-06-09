@@ -1082,7 +1082,7 @@ mjit_mark_cc_entries(const struct rb_iseq_constant_body *const body)
         // It must be `body->jit_unit->cc_entries_size` instead of `body->ci_size` to mark children's cc_entries
         for (unsigned int i = 0; i < body->jit_unit->cc_entries_size; i++) {
             const struct rb_callcache *cc = cc_entries[i];
-            if (cc != NULL) {
+            if (cc != NULL && vm_cc_markable(cc)) {
                 // Pin `cc` and `cc->cme` against GC.compact as their addresses may be written in JIT-ed code.
                 rb_gc_mark((VALUE)cc);
                 rb_gc_mark((VALUE)vm_cc_cme(cc));
