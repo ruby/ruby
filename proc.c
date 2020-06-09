@@ -1554,7 +1554,6 @@ mnew_internal(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
     struct METHOD *data;
     VALUE method;
     rb_method_visibility_t visi = METHOD_VISI_UNDEF;
-    VALUE orig_klass = klass;
 
   again:
     if (UNDEFINED_METHOD_ENTRY_P(me)) {
@@ -1573,22 +1572,12 @@ mnew_internal(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
     }
     if (me->def->type == VM_METHOD_TYPE_ZSUPER) {
 	if (me->defined_class) {
-            klass = RCLASS_SUPER(RCLASS_ORIGIN(me->defined_class));
+            VALUE klass = RCLASS_SUPER(RCLASS_ORIGIN(me->defined_class));
 	    id = me->def->original_id;
             me = (rb_method_entry_t *)rb_callable_method_entry_with_refinements(klass, id, &iclass);
 	}
 	else {
-            VALUE tmp_klass, owner_super;
-            int seen = 0;
-            owner_super = RCLASS_SUPER(me->owner);
-
-            for(tmp_klass = owner_super; tmp_klass; tmp_klass = RCLASS_SUPER(tmp_klass)) {
-                if (tmp_klass == klass) {
-                    seen = 1;
-                    break;
-                }
-            }
-            klass = seen ? RCLASS_SUPER(klass) : owner_super;
+            VALUE klass = RCLASS_SUPER(RCLASS_ORIGIN(me->owner));
 	    id = me->def->original_id;
 	    me = rb_method_entry_without_refinements(klass, id, &iclass);
 	}
@@ -1598,7 +1587,7 @@ mnew_internal(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
     method = TypedData_Make_Struct(mclass, struct METHOD, &method_data_type, data);
 
     RB_OBJ_WRITE(method, &data->recv, obj);
-    RB_OBJ_WRITE(method, &data->klass, orig_klass);
+    RB_OBJ_WRITE(method, &data->klass, klass);
     RB_OBJ_WRITE(method, &data->iclass, iclass);
     RB_OBJ_WRITE(method, &data->me, me);
 
