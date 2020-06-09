@@ -4920,20 +4920,20 @@ rb_f_spawn(int argc, VALUE *argv, VALUE _)
 static VALUE
 rb_f_sleep(int argc, VALUE *argv, VALUE _)
 {
+    time_t beg = time(0);
     VALUE scheduler = rb_current_thread_scheduler();
 
     if (scheduler != Qnil) {
-        VALUE result = rb_funcallv(scheduler, rb_intern("wait_sleep"), argc, argv);
-        return RTEST(result);
-    }
-
-    time_t beg = time(0);
-    if (argc == 0) {
-	rb_thread_sleep_forever();
+        rb_funcallv(scheduler, rb_intern("wait_sleep"), argc, argv);
     }
     else {
-	rb_check_arity(argc, 0, 1);
-	rb_thread_wait_for(rb_time_interval(argv[0]));
+        if (argc == 0) {
+            rb_thread_sleep_forever();
+        }
+        else {
+            rb_check_arity(argc, 0, 1);
+            rb_thread_wait_for(rb_time_interval(argv[0]));
+        }
     }
 
     time_t end = time(0) - beg;
