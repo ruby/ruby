@@ -4938,7 +4938,7 @@ rb_f_sleep(int argc, VALUE *argv, VALUE _)
 
     time_t end = time(0) - beg;
 
-    return INT2FIX(end);
+    return TIMET2NUM(end);
 }
 
 
