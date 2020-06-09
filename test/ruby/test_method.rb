@@ -1197,8 +1197,8 @@ class TestMethod < Test::Unit::TestCase
 
       ::Object.prepend(M2)
 
-       m = Object.instance_method(:x)
-       assert_equal M, m.owner
+      m = Object.instance_method(:x)
+      assert_equal M, m.owner
     end;
   end
 
