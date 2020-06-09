@@ -701,11 +701,11 @@ class TestRubyOptimization < Test::Unit::TestCase
 
   def test_block_parameter_should_not_create_objects
     assert_separately [], <<-END
-      #
       def foo &b
       end
       h1 = {}; h2 = {}
       ObjectSpace.count_objects(h1) # rehearsal
+      GC.start; GC.disable          # to disable GC while foo{}
       ObjectSpace.count_objects(h1)
       foo{}
       ObjectSpace.count_objects(h2)
