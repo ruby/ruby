@@ -14,7 +14,7 @@ class TestFiberSleep < Test::Unit::TestCase
 
       5.times do |i|
         Fiber do
-          assert(sleep(i/100.0) >= 0)
+          assert_operator sleep(i/100.0), :>=, 0
           items << i
         end
       end
@@ -41,7 +41,7 @@ class TestFiberSleep < Test::Unit::TestCase
 
     thread.join
 
-    assert(seconds >= 2, "actual: %p" % seconds)
+    assert_operator seconds, :>=, 2, "actual: %p" % seconds
   end
 
 end
