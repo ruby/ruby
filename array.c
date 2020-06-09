@@ -651,12 +651,18 @@ ary_ensure_room_for_push(VALUE ary, long add_len)
 
 /*
  *  call-seq:
- *      ary.freeze -> ary
+ *    array.freeze -> self
  *
- *  Calls Object#freeze on +ary+ to prevent any further
- *  modification. A RuntimeError will be raised if a modification
- *  attempt is made.
+ *  Freezes +self+; returns +self+:
+ *    a = []
+ *    a.frozen? # => false
+ *    a1 = a.freeze # => []
+ *    a.frozen? # => true
+ *    a1.equal?(a) # => true # Returned self
  *
+ *  An attempt to modify a frozen \Array raises an exception:
+ *    # Raises FrozenError (can't modify frozen Array: [:foo, "bar", 2]):
+ *    [:foo, 'bar', 2].freeze.push(:foo)
  */
 
 VALUE
@@ -935,11 +941,11 @@ rb_check_to_array(VALUE ary)
 
 /*
  *  call-seq:
- *    Array.try_convert(obj) -> new_array or nil
+ *    Array.try_convert(object) -> new_array or nil
  *
- *  Tries to convert +obj+ to an \Array.
+ *  Tries to convert +object+ to an \Array.
  *
- *  When +obj+ is an
+ *  When +object+ is an
  *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects]
  *  (implements +to_ary+),
  *  returns the \Array object created by converting it:
@@ -952,7 +958,7 @@ rb_check_to_array(VALUE ary)
  *    as = ToAryReturnsArray.new([:foo, :bar, :baz])
  *    Array.try_convert(as) # => [:foo, :bar, :baz]
  *
- *  Returns +nil+ if +obj+ is not \Array-convertible:
+ *  Returns +nil+ if +object+ is not \Array-convertible:
  *
  *    Array.try_convert(:foo) # => nil
  */
@@ -1236,16 +1242,15 @@ ary_take_first_or_last(int argc, const VALUE *argv, VALUE ary, enum ary_take_pos
 
 /*
  *  call-seq:
- *    ary << obj -> self
+ *    array << object -> self
  *
- *  Appends +obj+ to +ary+; returns +self+:
- *
+ *  Appends +object+ to +self+; returns +self+:
  *    a = [:foo, 'bar', 2]
  *    a1 = a << :baz
  *    a1 # => [:foo, "bar", 2, :baz]
- *    a1.equal?(a) # => true
+ *    a1.equal?(a) # => true # Returned self
  *
- *  Appends +obj+ as one element, even if it is another \Array:
+ *  Appends +object+ as one element, even if it is another \Array:
  *
  *    a = [:foo, 'bar', 2]
  *    a1 = a << [3, 4] # =>
@@ -1277,15 +1282,21 @@ rb_ary_cat(VALUE ary, const VALUE *argv, long len)
 
 /*
  *  call-seq:
- *    ary.push(*objects)    -> self
- *    ary.append(*objects)  -> self
+ *    array.push(*objects) -> self
+ *    array.append(*objects) -> self
  *
- *  Appends each argument in +objects+ to the array;  returns +self+:
+ *  Appends trailing elements. #append is an alias for \#push.
+
+ *  See also:
+ *  - #pop:  Removes and returns trailing elements.
+ *  - #shift:  Removes and returns leading elements.
+ *  - #unshift:  Prepends leading elements.
  *
+ *  Appends each argument in +objects+ to +self+;  returns +self+:
  *    a = [:foo, 'bar', 2]
  *    a1 = a.push(:baz, :bat)
  *    a1 # => [:foo, "bar", 2, :baz, :bat]
- *    a1.equal?(a) # => true
+ *    a1.equal?(a) # => true # Returned self
  *
  *  Appends each argument as one element, even if it is another \Array:
  *
@@ -1321,10 +1332,15 @@ rb_ary_pop(VALUE ary)
 
 /*
  *  call-seq:
- *    ary.pop -> obj or nil
- *    ary.pop(n) -> new_array
+ *    array.pop -> object or nil
+ *    array.pop(n) -> new_array
  *
- *  Removes and returns trailing elements from the array.
+ *  Removes and returns trailing elements.
+ *
+ *  See also:
+ *  - #push:  Appends trailing elements.
+ *  - #shift:  Removes and returns leading elements.
+ *  - #unshift:  Prepends leading elements.
  *
  *  Argument +n+, if given, must be an
  *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects]
@@ -1347,6 +1363,7 @@ rb_ary_pop(VALUE ary)
  *  ---
  *
  *  When argument +n+ is given and is non-negative and in range,
+ *
  *  removes and returns the last +n+ elements in a new \Array:
  *
  *    a = [:foo, 'bar', 2]
@@ -1372,7 +1389,7 @@ rb_ary_pop(VALUE ary)
  *    # Raises ArgumentError (negative array size):
  *    a1 = a.pop(-1)
  *
- *  Raises an exception if +n+ is not \Integer-convertible (implements +to_int+).
+ *  Raises an exception if +n+ is not \Integer-convertible (implements +to_int+):
  *
  *    a = [:foo, 'bar', 2]
  *    # Raises TypeError (no implicit conversion of String into Integer):
@@ -1431,25 +1448,60 @@ rb_ary_shift(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.shift    -> obj or nil
- *     ary.shift(n) -> new_ary
+ *     array.shift -> object or nil
+ *     array.shift(n) -> new_array
  *
- *  Removes the first element of +self+ and returns it (shifting all
- *  other elements down by one). Returns +nil+ if the array
- *  is empty.
+ *  Removes and returns leading elements.
  *
- *  If a number +n+ is given, returns an array of the first +n+ elements
- *  (or less) just like <code>array.slice!(0, n)</code> does. With +ary+
- *  containing only the remainder elements, not including what was shifted to
- *  +new_ary+. See also Array#unshift for the opposite effect.
+ *  See also:
+ *  - #push:  Appends trailing elements.
+ *  - #pop:  Removes and returns trailing elements.
+ *  - #unshift:  Prepends leading elements.
  *
- *     args = [ "-m", "-q", "filename" ]
- *     args.shift     #=> "-m"
- *     args           #=> ["-q", "filename"]
+ *  Argument +n+, if given, must be an
+ *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects]
  *
- *     args = [ "-m", "-q", "filename" ]
- *     args.shift(2)  #=> ["-m", "-q"]
- *     args           #=> ["filename"]
+ *  ---
+ *
+ *  When no argument is given, removes and returns the first element:
+ *    a = [:foo, 'bar', 2]
+ *    a.shift # => :foo
+ *    a # => ['bar', 2]
+ *
+ *  Returns +nil+ if +self+ is empty:
+ *    [].shift # => nil
+ *
+ *  ---
+ *
+ *  When argument +n+ is given, removes the first +n+ elements;
+ *  returns those elements in a new \Array:
+ *    a = [:foo, 'bar', 2]
+ *    a.shift(2) # => [:foo, 'bar']
+ *    a # => [2]
+ *
+ *  If +n+ is as large as or larger than <tt>self.length</tt>,
+ *  removes all elements; returns those elements in a new \Array:
+ *    a = [:foo, 'bar', 2]
+ *    a.shift(3) # => [:foo, 'bar', 2]
+ *    a # => []
+ *
+ *  If +n+ is 0, returns a new empty \Array; +self+ is unmodified:
+ *    a = [:foo, 'bar', 2]
+ *    a.shift(0) # => []
+ *    a # => [:foo, 'bar', 2]
+ *
+ *  ---
+ *
+ *  Raises an exception if +n+ is negative:
+ *    a = [:foo, 'bar', 2]
+ *    # Raises ArgumentError (negative array size):
+ *    a1 = a.shift(-1)
+ *
+ *  Raises an exception if +n+ is not an
+ *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects]:
+ *    a = [:foo, 'bar', 2]
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    a.shift(:foo)
  */
 
 static VALUE
@@ -1567,15 +1619,21 @@ ary_ensure_room_for_unshift(VALUE ary, int argc)
 
 /*
  *  call-seq:
- *     ary.unshift(obj, ...)  -> ary
- *     ary.prepend(obj, ...)  -> ary
+ *    array.unshift(*objects) -> self
+ *    array.prepend(*objects) -> self
  *
- *  Prepends objects to the front of +self+, moving other elements upwards.
- *  See also Array#shift for the opposite effect.
+ *  Prepends leading elements. #prepend is an alias for \#unshift.
  *
- *     a = [ "b", "c", "d" ]
- *     a.unshift("a")   #=> ["a", "b", "c", "d"]
- *     a.unshift(1, 2)  #=> [ 1, 2, "a", "b", "c", "d"]
+ *  See also:
+ *  - #push:  Appends trailing elements.
+ *  - #pop:  Removes and returns trailing elements.
+ *  - #shift:  Removes and returns leading elements.
+ *
+ *  Prepends the given +objects+ to +self+:
+ *    a = [:foo, 'bar', 2]
+ *    a1 = a.unshift(:bam, :bat)
+ *    a1 # => [:bam, :bat, :foo, "bar", 2]
+ *    a1.equal?(a) # => true # Returned self
  */
 
 static VALUE
@@ -1641,38 +1699,106 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
 
 /*
  *  call-seq:
- *     ary[index]                -> obj     or nil
- *     ary[start, length]        -> new_ary or nil
- *     ary[range]                -> new_ary or nil
- *     ary.slice(index)          -> obj     or nil
- *     ary.slice(start, length)  -> new_ary or nil
- *     ary.slice(range)          -> new_ary or nil
+ *    array[index] -> object or nil
+ *    array[start, length] -> object or nil
+ *    array[range] → object or nil
+ *    array.slice(index) -> object or nil
+ *    array.slice(start, length) -> object or nil
+ *    array.slice(range) → object or nil
  *
- *  Element Reference --- Returns the element at +index+, or returns a
- *  subarray starting at the +start+ index and continuing for +length+
- *  elements, or returns a subarray specified by +range+ of indices.
+ *  Returns elements from +self+; does not modify +self+.
  *
- *  Negative indices count backward from the end of the array (-1 is the last
- *  element).  For +start+ and +range+ cases the starting index is just before
- *  an element.  Additionally, an empty array is returned when the starting
- *  index for an element range is at the end of the array.
+ *  - Arguments +index+, +start+, and +length+, if given, must be
+ *    {Integer-convertible objects}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
+ *  - Argument +range+, if given, must be a \Range object.
  *
- *  Returns +nil+ if the index (or starting index) are out of range.
+ *  ---
  *
- *     a = [ "a", "b", "c", "d", "e" ]
- *     a[2] +  a[0] + a[1]    #=> "cab"
- *     a[6]                   #=> nil
- *     a[1, 2]                #=> [ "b", "c" ]
- *     a[1..3]                #=> [ "b", "c", "d" ]
- *     a[4..7]                #=> [ "e" ]
- *     a[6..10]               #=> nil
- *     a[-3, 3]               #=> [ "c", "d", "e" ]
- *     # special cases
- *     a[5]                   #=> nil
- *     a[6, 1]                #=> nil
- *     a[5, 1]                #=> []
- *     a[5..10]               #=> []
+ *  When a single argument +index+ is given, returns the element at offset +index+:
+ *    a = [:foo, 'bar', 2]
+ *    a[0] # => :foo
+ *    a[2] # => 2
+ *    a # => [:foo, "bar", 2]
  *
+ *  If +index+ is negative, counts relative to the end of +self+:
+ *    a = [:foo, 'bar', 2]
+ *    a[-1] # => 2
+ *    a[-2] # => "bar"
+ *
+ *  If +index+ is out of range, returns +nil+:
+ *    a = [:foo, 'bar', 2]
+ *    a[50] # => nil
+ *    a[-50] # => nil
+ *
+ *  ---
+ *
+ *  When two arguments +start+ and +length+ are given,
+ *  returns a new \Array of size +length+ containing successive elements beginning at offset +start+:
+ *    a = [:foo, 'bar', 2]
+ *    a[0, 2] # => [:foo, "bar"]
+ *    a[1, 2] # => ["bar", 2]
+ *
+ *  If <tt>start + length</tt> is greater than <tt>self.length</tt>,
+ *  returns all elements from offset +start+ to the end:
+ *    a = [:foo, 'bar', 2]
+ *    a[0, 4] # => [:foo, "bar", 2]
+ *    a[1, 3] # => ["bar", 2]
+ *    a[2, 2] # => [2]
+ *
+ *  If <tt>start == self.size</tt> and <tt>length >= 0</tt>,
+ *  returns a new empty \Array:
+ *    a = [:foo, 'bar', 2]
+ *    a[a.size, 0] # => []
+ *    a[a.size, 50] # => []
+ *
+ *  If +length+ is negative, returns +nil+:
+ *    a = [:foo, 'bar', 2]
+ *    a[2, -1] # => nil
+ *    a[1, -2] # => nil
+ *
+ *  ---
+ *
+ *  When a single argument +range+ is given,
+ *  treats <tt>range.min</tt> as +start+ above
+ *  and <tt>range.size</tt> as +length+ above:
+ *    a = [:foo, 'bar', 2]
+ *    a[0..1] # => [:foo, "bar"]
+ *    a[1..2] # => ["bar", 2]
+ *
+ *  Special case: If <tt>range.start == a.size</tt>, returns a new empty \Array:
+ *    a = [:foo, 'bar', 2]
+ *    a[a.size..0] # => []
+ *    a[a.size..50] # => []
+ *    a[a.size..-1] # => []
+ *    a[a.size..-50] # => []
+ *
+ *  If <tt>range.end</tt> is negative, calculates the end index from the end:
+ *    a = [:foo, 'bar', 2]
+ *    a[0..-1] # => [:foo, "bar", 2]
+ *    a[0..-2] # => [:foo, "bar"]
+ *    a[0..-3] # => [:foo]
+ *    a[0..-4] # => []
+ *
+ *  If <tt>range.start</tt> is negative, calculates the start index from the end:
+ *    a = [:foo, 'bar', 2]
+ *    a[-1..2] # => [2]
+ *    a[-2..2] # => ["bar", 2]
+ *    a[-3..2] # => [:foo, "bar", 2]
+ *
+ *  ---
+ *
+ *  Raises an exception if given a single argument
+ *  that is not an \Integer-convertible object or a \Range object:
+ *    a = [:foo, 'bar', 2]
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    a[:foo]
+ *
+ *  Raises an exception if given two arguments that are not both \Integer-convertible objects:
+ *    a = [:foo, 'bar', 2]
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    a[:foo, 3]
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    a[1, :bar]
  */
 
 VALUE
@@ -1719,15 +1845,22 @@ rb_ary_aref1(VALUE ary, VALUE arg)
 
 /*
  *  call-seq:
- *     ary.at(index)   ->   obj  or nil
+ *    array.at(index) -> object
  *
- *  Returns the element at +index+. A negative index counts from the end of
- *  +self+. Returns +nil+ if the index is out of range. See also
- *  Array#[].
+ *  Argument +index+ must be an
+ *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
  *
- *     a = [ "a", "b", "c", "d", "e" ]
- *     a.at(0)     #=> "a"
- *     a.at(-1)    #=> "e"
+ *  Returns the element at offset +index+; does not modify +self+.
+ *    a = [:foo, 'bar', 2]
+ *    a.at(0) # => :foo
+ *    a.at(2) # => 2
+ *
+ *  ---
+ *
+ *  Raises an exception if +index+ is not an \Integer-convertible object:
+ *    a = [:foo, 'bar', 2]
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    a.at(:foo)
  */
 
 VALUE
@@ -1738,19 +1871,51 @@ rb_ary_at(VALUE ary, VALUE pos)
 
 /*
  *  call-seq:
- *     ary.first     ->   obj or nil
- *     ary.first(n)  ->   new_ary
+ *    array.first -> object or nil
+ *    array.first(n) -> new_array
  *
- *  Returns the first element, or the first +n+ elements, of the array.
- *  If the array is empty, the first form returns +nil+, and the
- *  second form returns an empty array. See also Array#last for
- *  the opposite effect.
+ *  Returns elements from +self+; does not modify +self+.
+ *  See also #last.
  *
- *     a = [ "q", "r", "s", "t" ]
- *     a.first     #=> "q"
- *     a.first(2)  #=> ["q", "r"]
+ *  Argument +n+, if given, must be an
+ *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
+ *
+ *  ---
+ *
+ *  When no argument is given, returns the first element:
+ *    a = [:foo, 'bar', 2]
+ *    a.first # => :foo
+ *    a # => [:foo, "bar", 2]
+ *
+ *  If +self+ is empty, returns +nil+:
+ *    [].first # => nil
+ *
+ *  ---
+ *
+ *  When argument +n+ is given, returns the first +n+ elements in a new \Array:
+ *    a = [:foo, 'bar', 2]
+ *    a.first(2) # => [:foo, "bar"]
+ *
+ *  If <tt>n >= ary.size</tt>, returns all elements:
+ *    a = [:foo, 'bar', 2]
+ *    a.first(50) # => [:foo, "bar", 2]
+ *
+ *  If <tt>n == 0</tt> returns an new empty \Array:
+ *    a = [:foo, 'bar', 2]
+ *    a.first(0) # []
+ *
+ *  ---
+ *
+ *  Raises an exception if +n+ is negative:
+ *    a = [:foo, 'bar', 2]
+ *    # Raises ArgumentError (negative array size):
+ *    a.first(-1)
+ *
+ *  Raises an exception if +n+ is not an \Integer-convertible object:
+ *    a = [:foo, 'bar', 2]
+ *    # Raises TypeError (no implicit conversion of String into Integer):
+ *    a.first(:X)
  */
-
 static VALUE
 rb_ary_first(int argc, VALUE *argv, VALUE ary)
 {
@@ -1765,17 +1930,50 @@ rb_ary_first(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *     ary.last     ->  obj or nil
- *     ary.last(n)  ->  new_ary
+ *    array.last  -> object or nil
+ *    array.last(n) -> new_array
  *
- *  Returns the last element(s) of +self+. If the array is empty,
- *  the first form returns +nil+.
+ *  Returns elements from +self+; +self+ is not modified.
+ *  See also #first.
  *
- *  See also Array#first for the opposite effect.
+ *  Argument +n+, if given, must be an
+ *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
  *
- *     a = [ "w", "x", "y", "z" ]
- *     a.last     #=> "z"
- *     a.last(2)  #=> ["y", "z"]
+ *  ---
+ *
+ *  When no argument is given, returns the last element:
+ *    a = [:foo, 'bar', 2]
+ *    a.last # => 2
+ *    a # => [:foo, "bar", 2]
+ *
+ *  If +self+ is empty, returns +nil+:
+ *    [].last # => nil
+ *
+ *  ---
+ *
+ *  When argument +n+ is given, returns the last +n+ elements in a new \Array:
+ *    a = [:foo, 'bar', 2]
+ *    a.last(2) # => ["bar", 2]
+ *
+ *  If <tt>n >= ary.size</tt>, returns all elements:
+ *    a = [:foo, 'bar', 2]
+ *    a.last(50) # => [:foo, "bar", 2]
+ *
+ *  If <tt>n == 0</tt>, returns an new empty \Array:
+ *    a = [:foo, 'bar', 2]
+ *    a.last(0) # []
+ *
+ *  ---
+ *
+ *  Raises an exception if +n+ is negative:
+ *    a = [:foo, 'bar', 2]
+ *    # Raises ArgumentError (negative array size):
+ *    a.last(-1)
+ *
+ *  Raises an exception if +n+ is not an \Integer-convertible object:
+ *    a = [:foo, 'bar', 2]
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    a.last(:X)
  */
 
 VALUE
