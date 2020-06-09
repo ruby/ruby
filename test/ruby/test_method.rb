@@ -1181,6 +1181,27 @@ class TestMethod < Test::Unit::TestCase
     assert_separately [], "RubyVM::InstructionSequence.compile_option = {trace_instruction: false}\n" + body
   end
 
+  def test_zsuper_private_override_instance_method
+    assert_separately(%w(--disable-gems), <<-'end;', timeout: 30)
+      # Bug #16942 [ruby-core:98691]
+      module M
+        def x
+        end
+      end
+
+      module M2
+        prepend Module.new
+        include M
+        private :x
+      end
+
+      ::Object.prepend(M2)
+
+      m = Object.instance_method(:x)
+      assert_equal M, m.owner
+    end;
+  end
+
   def test_eqq
     assert_operator(0.method(:<), :===, 5)
     assert_not_operator(0.method(:<), :===, -5)

@@ -1572,12 +1572,12 @@ mnew_internal(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
     }
     if (me->def->type == VM_METHOD_TYPE_ZSUPER) {
 	if (me->defined_class) {
-	    VALUE klass = RCLASS_SUPER(RCLASS_ORIGIN(me->defined_class));
+            VALUE klass = RCLASS_SUPER(RCLASS_ORIGIN(me->defined_class));
 	    id = me->def->original_id;
             me = (rb_method_entry_t *)rb_callable_method_entry_with_refinements(klass, id, &iclass);
 	}
 	else {
-	    VALUE klass = RCLASS_SUPER(me->owner);
+            VALUE klass = RCLASS_SUPER(RCLASS_ORIGIN(me->owner));
 	    id = me->def->original_id;
 	    me = rb_method_entry_without_refinements(klass, id, &iclass);
 	}
