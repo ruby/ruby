@@ -989,40 +989,41 @@ class CSV
     # <tt>"rb:UTF-32BE:UTF-8"</tt> would read UTF-32BE data from the file but
     # transcode it to UTF-8 before CSV parses it.
     #
-    # An opened CSV object will delegate to many IO methods for convenience. You
-    # may call:
-    #
-    # * binmode()
-    # * binmode?()
-    # * close()
-    # * close_read()
-    # * close_write()
-    # * closed?()
-    # * eof()
-    # * eof?()
-    # * external_encoding()
-    # * fcntl()
-    # * fileno()
-    # * flock()
-    # * flush()
-    # * fsync()
-    # * internal_encoding()
-    # * ioctl()
-    # * isatty()
-    # * path()
-    # * pid()
-    # * pos()
-    # * pos=()
-    # * reopen()
-    # * seek()
-    # * stat()
-    # * sync()
-    # * sync=()
-    # * tell()
-    # * to_i()
-    # * to_io()
-    # * truncate()
-    # * tty?()
+    # For convenience, an opened CSV object will delegate to many methods in class IO.
+    # (A few have wrapper "guard code" in \CSV.) You may call:
+    # * IO#binmode
+    # * #binmode?
+    # * IO#close
+    # * IO#close_read
+    # * IO#close_write
+    # * IO#closed?
+    # * #eof
+    # * #eof?
+    # * IO#external_encoding
+    # * IO#fcntl
+    # * IO#fileno
+    # * #flock
+    # * IO#flush
+    # * IO#fsync
+    # * IO#internal_encoding
+    # * #ioctl
+    # * IO#isatty
+    # * #path
+    # * IO#pid
+    # * IO#pos
+    # * IO#pos=
+    # * IO#reopen
+    # * #rewind
+    # * IO#seek
+    # * #stat
+    # * IO#string
+    # * IO#sync
+    # * IO#sync=
+    # * IO#tell
+    # * #to_i
+    # * #to_io
+    # * IO#truncate
+    # * IO#tty?
     #
     def open(filename, mode="r", **options)
       # wrap a File opened with the remaining +args+ with no newline
