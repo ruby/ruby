@@ -75,7 +75,7 @@ jobs:
       - name: download unicode, gems, etc
         working-directory: build
         run: |
-          $jobs = [int]$env:NUMBER_OF_PROCESSORS * 2
+          $jobs = [int](2 * $env:NUMBER_OF_PROCESSORS)
           make -j $jobs update-unicode
           make -j $jobs update-gems
 
@@ -83,7 +83,7 @@ jobs:
         timeout-minutes: 40
         working-directory: build
         run: |
-          $jobs = [int]$env:NUMBER_OF_PROCESSORS * 2
+          $jobs = [int](2 * $env:NUMBER_OF_PROCESSORS)
           make -j $jobs
 
       - name: make install
@@ -109,7 +109,7 @@ jobs:
           $PSDefaultParameterValues['*:Encoding'] = 'utf8'
           [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding("IBM437")
           [Console]::InputEncoding  = [System.Text.Encoding]::GetEncoding("IBM437")
-          $jobs = [int]$env:NUMBER_OF_PROCESSORS * 2
+          $jobs = [int](1.5 * $env:NUMBER_OF_PROCESSORS)
           make test-all TESTOPTS="-j $jobs --retry --job-status=normal --show-skip --timeout-scale=1.5"
 
       - name: test-spec
