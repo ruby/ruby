@@ -13,6 +13,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Install libraries
+      run: |
+        set -x
+        sudo apt-get update -q || :
+        sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev libgdbm-dev bison autoconf ruby
+
     - name: Checkout repository
       uses: actions/checkout@v2
       with:
