@@ -14,7 +14,7 @@ class TestFiberSleep < Test::Unit::TestCase
 
       5.times do |i|
         Fiber do
-          sleep(i/100.0)
+          assert(sleep(i/100.0) >= 0)
           items << i
         end
       end
@@ -27,4 +27,21 @@ class TestFiberSleep < Test::Unit::TestCase
 
     assert_equal ITEMS, items
   end
+
+  def test_sleep_returns_seconds_slept
+    seconds = nil
+
+    thread = Thread.new do
+      scheduler = Scheduler.new
+      Thread.current.scheduler = scheduler
+      Fiber do
+        seconds = sleep(2)
+      end
+    end
+
+    thread.join
+
+    assert(seconds >= 2, "actual: %p" % seconds)
+  end
+
 end
