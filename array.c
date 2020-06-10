@@ -2003,11 +2003,11 @@ rb_ary_last(int argc, const VALUE *argv, VALUE ary)
  *  ---
  *
  *  With the single argument +index+, returns the element at offset +index+:
- *    a = [:foo, 'bar', baz = 2]
+ *    a = [:foo, 'bar', 2]
  *    a.fetch(1) # => "bar"
  *
  *  If +index+ is negative, counts from the end of the array:
- *    a = [:foo, 'bar', baz = 2]
+ *    a = [:foo, 'bar', 2]
  *    a.fetch(-1) # => 2
  *    a.fetch(-2) # => "bar"
  *
@@ -2016,7 +2016,7 @@ rb_ary_last(int argc, const VALUE *argv, VALUE ary)
  *  With arguments +index+ and +default_value+,
  *  returns the element at offset +index+ if index is in range,
  *  otherwise returns +default_value+:
- *    a = [:foo, 'bar', baz = 2]
+ *    a = [:foo, 'bar', 2]
  *    a.fetch(1, nil) # => "bar"
  *    a.fetch(50, nil) # => nil
  *
@@ -2026,19 +2026,19 @@ rb_ary_last(int argc, const VALUE *argv, VALUE ary)
  *  returns the element at offset +index+ if index is in range
  *  (and the block is not called); otherwise calls the block with index and returns its return value:
  *
- *    a = [:foo, 'bar', baz = 2]
+ *    a = [:foo, 'bar', 2]
  *    a.fetch(1) { |index| raise 'Cannot happen' } # => "bar"
  *    a.fetch(50) { |index| "Value for #{index}" } # => "Value for 50"
  *
  *  ---
  *
  *  Raises an exception if +index+ is not an \Integer-convertible object.
- *    a = [:foo, 'bar', baz = 2]
+ *    a = [:foo, 'bar', 2]
  *    # Raises TypeError (no implicit conversion of Symbol into Integer):
  *    a.fetch(:foo)
  *
  *  Raises an exception if +index+ is out of range and neither default_value nor a block given:
- *    a = [:foo, 'bar', baz = 2]
+ *    a = [:foo, 'bar', 2]
  *    # Raises IndexError (index 50 outside of array bounds: -3...3):
  *    a.fetch(50)
  */
@@ -2081,17 +2081,18 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
  *    array.find_index -> new_enumerator
  *
  *  Array#index is an alias for Array#find_index.
+ *  See also Array#rindex.
  *
  *  ---
  *
  *  When argument +object+ is given but no block,
  *  returns the index of the first element +element+
  *  for which <tt>object == element</tt>:
- *    a = [:foo, 'bar', baz = 2, 'bar']
+ *    a = [:foo, 'bar', 2, 'bar']
  *    a.index('bar') # => 1
  *
  *  Returns +nil+ if no such element found:
- *    a = [:foo, 'bar', baz = 2]
+ *    a = [:foo, 'bar', 2]
  *    a.index(:nosuch) # => nil
  *
  *  ---
@@ -2099,17 +2100,17 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
  *  When both argument +object+ and a block are given,
  *  calls the block with each successive element;
  *  returns the index of the first element for which the block returns a truthy value:
- *    a = [:foo, 'bar', baz = 2, 'bar']
+ *    a = [:foo, 'bar', 2, 'bar']
  *    a.index { |element| element == 'bar' } # => 1
  *
  *  Returns +nil+ if the block never returns a truthy value:
- *    a = [:foo, 'bar', baz = 2]
+ *    a = [:foo, 'bar', 2]
  *    a.index { |element| element == :X } # => nil
  *
  *  ---
  *
  *  When neither an argument nor a block is given, returns a new Enumerator:
- *    a = [:foo, 'bar', baz = 2]
+ *    a = [:foo, 'bar', 2]
  *    e = a.index
  *    e # => #<Enumerator: [:foo, "bar", 2]:index>
  *    e.each { |element| element == 'bar' } # => 1
@@ -2118,7 +2119,7 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
  *
  *  When both an argument and a block given, gives a warning (warning: given block not used)
  *  and ignores the block:
- *    a = [:foo, 'bar', baz = 2, 'bar']
+ *    a = [:foo, 'bar', 2, 'bar']
  *    index = a.index('bar') { raise 'Cannot happen' }
  *    index # => 1
  */
@@ -2153,26 +2154,50 @@ rb_ary_index(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *     ary.rindex(obj)             ->  int or nil
- *     ary.rindex {|item| block}   ->  int or nil
- *     ary.rindex                  ->  Enumerator
+ *    array.rindex(object) -> integer or nil
+ *    array.rindex {|element| ... } -> integer or nil
+ *    array.rindex -> new_enumerator
  *
- *  Returns the _index_ of the last object in +self+ <code>==</code> to +obj+.
+ *  Returns the index of the last element for which <tt>object == element</tt>.
  *
- *  If a block is given instead of an argument, returns the _index_ of the
- *  first object for which the block returns +true+, starting from the last
- *  object.
+ *  ---
  *
- *  Returns +nil+ if no match is found.
+ *  When argument +object+ is given but no block, returns the index of the last such element found:
+ *    a = [:foo, 'bar', 2, 'bar']
+ *    a.rindex('bar') # => 3
  *
- *  See also Array#index.
+ *  Returns +nil+ if no such object found:
+ *    a = [:foo, 'bar', 2]
+ *    a.rindex(:nosuch) # => nil
  *
- *  If neither block nor argument is given, an Enumerator is returned instead.
+ *  ---
  *
- *     a = [ "a", "b", "b", "b", "c" ]
- *     a.rindex("b")             #=> 3
- *     a.rindex("z")             #=> nil
- *     a.rindex {|x| x == "b"}   #=> 3
+ *  When a block is given but no argument, calls the block with each successive element;
+ *  returns the index of the last element for which the block returns a truthy value:
+ *    a = [:foo, 'bar', 2, 'bar']
+ *    a.rindex {|element| element == 'bar' } # => 3
+ *
+ *  Returns +nil+ if the block never returns a truthy value:
+ *
+ *    a = [:foo, 'bar', 2]
+ *    a.rindex {|element| element == :X } # => nil
+ *
+ *  ---
+ *
+ *  When neither an argument nor a block is given, returns a new \Enumerator:
+ *
+ *    a = [:foo, 'bar', 2, 'bar']
+ *    e = a.rindex
+ *    e # => #<Enumerator: [:foo, "bar", 2, "bar"]:rindex>
+ *    e.each { |element| element == 'bar' } # => 3
+ *
+ *  ---
+ *
+ *  When both an argument and a block given, gives a warning (warning: given block not used)
+ *  and ignores the block:
+ *    a = [:foo, 'bar', 2, 'bar']
+ *    index = a.rindex('bar') { raise 'Cannot happen' }
+ *    index # => 3
  */
 
 static VALUE
@@ -2351,37 +2376,143 @@ rb_ary_resize(VALUE ary, long len)
 
 /*
  *  call-seq:
- *     ary[index]         = obj                      ->  obj
- *     ary[start, length] = obj or other_ary or nil  ->  obj or other_ary or nil
- *     ary[range]         = obj or other_ary or nil  ->  obj or other_ary or nil
+ *    array[index] = object -> object
+ *    array[start, length] = object -> object
+ *    array[range] = object -> object
  *
- *  Element Assignment --- Sets the element at +index+, or replaces a subarray
- *  from the +start+ index for +length+ elements, or replaces a subarray
- *  specified by the +range+ of indices.
+ *  Assigns elements in +self+; returns the given +object+.
  *
- *  If indices are greater than the current capacity of the array, the array
- *  grows automatically.  Elements are inserted into the array at +start+ if
- *  +length+ is zero.
+ *  - Arguments +index+, +start+, and +length+, if given, must be
+ *    {Integer-convertible objects}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
+ *  - Argument +range+, if given, must be a \Range object.
+ *  - If +object+ is an
+ *    {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects]
+ *    it will be converted to an \Array.
  *
- *  Negative indices will count backward from the end of the array.  For
- *  +start+ and +range+ cases the starting index is just before an element.
+ *  ---
  *
- *  An IndexError is raised if a negative index points past the beginning of
- *  the array.
+ *  When +index+ is given, assigns +object+ to an element in +self+.
  *
- *  See also Array#push, and Array#unshift.
+ *  If +index+ is non-negative, assigns +object+ the element at offset +index+:
+ *    a = [:foo, 'bar', 2]
+ *    a[0] = 'foo' # => "foo"
+ *    a # => ["foo", "bar", 2]
  *
- *     a = Array.new
- *     a[4] = "4";                 #=> [nil, nil, nil, nil, "4"]
- *     a[0, 3] = [ 'a', 'b', 'c' ] #=> ["a", "b", "c", nil, "4"]
- *     a[1..2] = [ 1, 2 ]          #=> ["a", 1, 2, nil, "4"]
- *     a[0, 2] = "?"               #=> ["?", 2, nil, "4"]
- *     a[0..2] = "A"               #=> ["A", "4"]
- *     a[-1]   = "Z"               #=> ["A", "Z"]
- *     a[1..-1] = nil              #=> ["A", nil]
- *     a[1..-1] = []               #=> ["A"]
- *     a[0, 0] = [ 1, 2 ]          #=> [1, 2, "A"]
- *     a[3, 0] = "B"               #=> [1, 2, "A", "B"]
+ *  If +index+ is greater than <tt>self.length</tt>, extends the array:
+ *    a = [:foo, 'bar', 2]
+ *    a[7] = 'foo' # => "foo"
+ *    a # => [:foo, "bar", 2, nil, nil, nil, nil, "foo"]
+ *
+ *  If +index+ is negative, counts backward from the end of the array:
+ *    a = [:foo, 'bar', 2]
+ *    a[-1] = 'two' # => "two"
+ *    a # => [:foo, "bar", "two"]
+ *
+ *  ---
+ *
+ *  When +start+ and +length+ are given and +object+ is not an Array-convertible object,
+ *  removes <tt>length - 1</tt> elements beginning at offset +start+,
+ *  and assigns +object+ at offset +start+:
+ *    a = [:foo, 'bar', 2]
+ *    a[0, 2] = 'foo' # => "foo"
+ *    a # => ["foo", 2]
+ *
+ *  If +start+ is negative, counts backward from the end of the array:
+ *    a = [:foo, 'bar', 2]
+ *    a[-2, 2] = 'foo' # => "foo"
+ *    a # => [:foo, "foo"]
+ *
+ *  If +start+ is non-negative and outside the array (<tt> >= self.size</tt>),
+ *  extends the array with +nil+, assigns +object+ at offset +start+,
+ *  and ignores +length+:
+ *    a = [:foo, 'bar', 2]
+ *    a[6, 50] = 'foo' # => "foo"
+ *    a # => [:foo, "bar", 2, nil, nil, nil, "foo"]
+ *
+ *  If +length+ is zero, shifts elements at and following offset +start+
+ *  and assigns +object+ at offset +start+:
+ *    a = [:foo, 'bar', 2]
+ *    a[1, 0] = 'foo' # => "foo"
+ *    a # => [:foo, "foo", "bar", 2]
+ *
+ *  If +length+ is too large for the existing array, does not extend the array:
+ *    a = [:foo, 'bar', 2]
+ *    a[1, 5] = 'foo' # => "foo"
+ *    a # => [:foo, "foo"]
+ *
+ *  ---
+ *
+ *  When +range+ is given and +object+ is an \Array-convertible object,
+ *  removes <tt>length - 1</tt> elements beginning at offset +start+,
+ *  and assigns +object+ at offset +start+:
+ *    a = [:foo, 'bar', 2]
+ *    a[0..1] = 'foo' # => "foo"
+ *    a # => ["foo", 2]
+ *
+ *  if <tt>range.begin</tt> is negative, counts backward from the end of the array:
+ *    a = [:foo, 'bar', 2]
+ *    a[-2..2] = 'foo' # => "foo"
+ *    a # => [:foo, "foo"]
+ *
+ *  If the array length is less than <tt>range.begin</tt>,
+ *  assigns +object+ at offset <tt>range.begin</tt>, and ignores +length+:
+ *    a = [:foo, 'bar', 2]
+ *    a[6..50] = 'foo' # => "foo"
+ *    a # => [:foo, "bar", 2, nil, nil, nil, "foo"]
+ *
+ *  If <tt>range.end</tt> is zero, shifts elements at and following offset +start+
+ *  and assigns +object+ at offset +start+:
+ *    a = [:foo, 'bar', 2]
+ *    a[1..0] = 'foo' # => "foo"
+ *    a # => [:foo, "foo", "bar", 2]
+ *
+ *  If <tt>range.end</tt> is negative, assigns +object+ at offset +start+,
+ *  retains <tt>range.end.abs -1</tt> elements past that, and removes those beyond:
+ *    a = [:foo, 'bar', 2]
+ *    a[1..-1] = 'foo' # => "foo"
+ *    a # => [:foo, "foo"]
+ *    a = [:foo, 'bar', 2]
+ *    a[1..-2] = 'foo' # => "foo"
+ *    a # => [:foo, "foo", 2]
+ *    a = [:foo, 'bar', 2]
+ *    a[1..-3] = 'foo' # => "foo"
+ *    a # => [:foo, "foo", "bar", 2]
+ *    a = [:foo, 'bar', 2]
+ *
+ *  If <tt>range.end</tt> is too large for the existing array, does not extend the array:
+ *    a = [:foo, 'bar', 2]
+ *    a[1..5] = 'foo' # => "foo"
+ *    a # => [:foo, "foo"]
+ *
+ *  ---
+ *
+ *  Raises an exception if given a single argument
+ *  that is not an \Integer-convertible object or a \Range:
+ *    a = [:foo, 'bar', 2]
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    a[:nosuch] = 'two'
+ *
+ *  Raises an exception if given two arguments that are not both \Integer-convertible objects:
+ *    a = [:foo, 'bar', 2]
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    a[:nosuch, 2] = 'two'
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    a[0, :nosuch] = 'two'
+ *
+ *  Raises an exception if a negative +index+ is out of range:
+ *    a = [:foo, 'bar', 2]
+ *    # Raises IndexError (index -4 too small for array; minimum: -3):
+ *    a[-4] = 'two'
+ *
+ *  Raises an exception if +start+ is too small for the array:
+ *    a = [:foo, 'bar', 2]
+ *    # Raises IndexError (index -5 too small for array; minimum: -3):
+ *    a[-5, 2] = 'foo'
+ *
+ *  Raises an exception if +length+ is negative:
+ *    a = [:foo, 'bar', 2]
+ *    # Raises IndexError (negative length (-1)):
+ *    a[1, -1] = 'foo'
  */
 
 static VALUE
