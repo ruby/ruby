@@ -1033,9 +1033,9 @@ rb_ary_s_try_convert(VALUE dummy, VALUE ary)
  *  or a single argument +0+,
  *  ignores the block and returns a new empty \Array:
  *
- *    a = Array.new(0) { |n| fail 'Cannot happen' }
+ *    a = Array.new(0) { |n| raise 'Cannot happen' }
  *    a # => []
- *    a = Array.new { |n| fail 'Cannot happen' }
+ *    a = Array.new { |n| raise 'Cannot happen' }
  *    a # => []
  *
  *  With a block and arguments +size+ and +default_value+,
@@ -1991,26 +1991,56 @@ rb_ary_last(int argc, const VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *     ary.fetch(index)                    -> obj
- *     ary.fetch(index, default)           -> obj
- *     ary.fetch(index) {|index| block}    -> obj
+ *    array.fetch(index) -> element
+ *    array.fetch(index, default_value) -> element
+ *    array.fetch(index) {|index| ... } -> element
  *
- *  Tries to return the element at position +index+, but throws an IndexError
- *  exception if the referenced +index+ lies outside of the array bounds.  This
- *  error can be prevented by supplying a second argument, which will act as a
- *  +default+ value.
+ *  Returns the element at offset  +index+.
  *
- *  Alternatively, if a block is given it will only be executed when an
- *  invalid +index+ is referenced.
+ *  Argument +index+ must be an
+ *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects]
  *
- *  Negative values of +index+ count from the end of the array.
+ *  ---
  *
- *     a = [ 11, 22, 33, 44 ]
- *     a.fetch(1)               #=> 22
- *     a.fetch(-1)              #=> 44
- *     a.fetch(4, 'cat')        #=> "cat"
- *     a.fetch(100) {|i| puts "#{i} is out of bounds"}
- *                              #=> "100 is out of bounds"
+ *  With the single argument +index+, returns the element at offset +index+:
+ *    a = [:foo, 'bar', baz = 2]
+ *    a.fetch(1) # => "bar"
+ *
+ *  If +index+ is negative, counts from the end of the array:
+ *    a = [:foo, 'bar', baz = 2]
+ *    a.fetch(-1) # => 2
+ *    a.fetch(-2) # => "bar"
+ *
+ *  ---
+ *
+ *  With arguments +index+ and +default_value+,
+ *  returns the element at offset +index+ if index is in range,
+ *  otherwise returns +default_value+:
+ *    a = [:foo, 'bar', baz = 2]
+ *    a.fetch(1, nil) # => "bar"
+ *    a.fetch(50, nil) # => nil
+ *
+ *  ---
+ *
+ *  With argument +index+ and a block,
+ *  returns the element at offset +index+ if index is in range
+ *  (and the block is not called); otherwise calls the block with index and returns its return value:
+ *
+ *    a = [:foo, 'bar', baz = 2]
+ *    a.fetch(1) { |index| raise 'Cannot happen' } # => "bar"
+ *    a.fetch(50) { |index| "Value for #{index}" } # => "Value for 50"
+ *
+ *  ---
+ *
+ *  Raises an exception if +index+ is not an \Integer-convertible object.
+ *    a = [:foo, 'bar', baz = 2]
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    a.fetch(:foo)
+ *
+ *  Raises an exception if +index+ is out of range and neither default_value nor a block given:
+ *    a = [:foo, 'bar', baz = 2]
+ *    # Raises IndexError (index 50 outside of array bounds: -3...3):
+ *    a.fetch(50)
  */
 
 static VALUE
@@ -2043,30 +2073,54 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *     ary.find_index(obj)             ->  int or nil
- *     ary.find_index {|item| block}  ->  int or nil
- *     ary.find_index                  ->  Enumerator
- *     ary.index(obj)             ->  int or nil
- *     ary.index {|item| block}   ->  int or nil
- *     ary.index                  ->  Enumerator
- *
- *  Returns the _index_ of the first object in +ary+ such that the object is
- *  <code>==</code> to +obj+.
- *
- *  If a block is given instead of an argument, returns the _index_ of the
- *  first object for which the block returns +true+.  Returns +nil+ if no
- *  match is found.
- *
- *  See also Array#rindex.
- *
- *  An Enumerator is returned if neither a block nor argument is given.
- *
- *     a = [ "a", "b", "c" ]
- *     a.index("b")              #=> 1
- *     a.index("z")              #=> nil
- *     a.index {|x| x == "b"}    #=> 1
+ *    array.index(object) -> integer or nil
+ *    array.index {|element| ... } -> integer or nil
+ *    array.index -> new_enumerator
+ *    array.find_index(object) -> integer or nil
+ *    array.find_index {|element| ... } -> integer or nil
+ *    array.find_index -> new_enumerator
  *
  *  Array#index is an alias for Array#find_index.
+ *
+ *  ---
+ *
+ *  When argument +object+ is given but no block,
+ *  returns the index of the first element +element+
+ *  for which <tt>object == element</tt>:
+ *    a = [:foo, 'bar', baz = 2, 'bar']
+ *    a.index('bar') # => 1
+ *
+ *  Returns +nil+ if no such element found:
+ *    a = [:foo, 'bar', baz = 2]
+ *    a.index(:nosuch) # => nil
+ *
+ *  ---
+ *
+ *  When both argument +object+ and a block are given,
+ *  calls the block with each successive element;
+ *  returns the index of the first element for which the block returns a truthy value:
+ *    a = [:foo, 'bar', baz = 2, 'bar']
+ *    a.index { |element| element == 'bar' } # => 1
+ *
+ *  Returns +nil+ if the block never returns a truthy value:
+ *    a = [:foo, 'bar', baz = 2]
+ *    a.index { |element| element == :X } # => nil
+ *
+ *  ---
+ *
+ *  When neither an argument nor a block is given, returns a new Enumerator:
+ *    a = [:foo, 'bar', baz = 2]
+ *    e = a.index
+ *    e # => #<Enumerator: [:foo, "bar", 2]:index>
+ *    e.each { |element| element == 'bar' } # => 1
+ *
+ *  ---
+ *
+ *  When both an argument and a block given, gives a warning (warning: given block not used)
+ *  and ignores the block:
+ *    a = [:foo, 'bar', baz = 2, 'bar']
+ *    index = a.index('bar') { raise 'Cannot happen' }
+ *    index # => 1
  */
 
 static VALUE
