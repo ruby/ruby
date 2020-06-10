@@ -11514,6 +11514,8 @@ const char *
 rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 {
     int pos = 0;
+    void *poisoned = asan_poisoned_object_p(obj);
+    asan_unpoison_object(obj, false);
 
 #define BUFF_ARGS buff + pos, buff_size - pos
 #define APPENDF(f) if ((pos += snprintf f) >= buff_size) goto end
@@ -11744,6 +11746,10 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 #undef C
     }
   end:
+    if (poisoned) {
+        asan_poison_object(obj);
+    }
+
     return buff;
 #undef APPENDF
 #undef BUFF_ARGS
