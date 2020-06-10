@@ -3143,6 +3143,9 @@ rb_cvar_set(VALUE klass, ID id, VALUE val)
 	target = tmp;
     }
 
+    if (RB_TYPE_P(target, T_ICLASS)) {
+        target = RBASIC(target)->klass;
+    }
     check_before_mod_set(target, id, val, "class variable");
     if (!RCLASS_IV_TBL(target)) {
 	RCLASS_IV_TBL(target) = st_init_numtable();

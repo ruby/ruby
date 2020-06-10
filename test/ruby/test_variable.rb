@@ -35,6 +35,16 @@ class TestVariable < Test::Unit::TestCase
     end
   end
 
+  def test_setting_class_variable_on_module_through_inheritance
+    mod = Module.new
+    mod.class_variable_set(:@@foo, 1)
+    mod.freeze
+    c = Class.new { include(mod) }
+    assert_raise(FrozenError) { c.class_variable_set(:@@foo, 2) }
+    assert_raise(FrozenError) { c.class_eval("@@foo = 2") }
+    assert_equal(1, c.class_variable_get(:@@foo))
+  end
+
   def test_singleton_class_included_class_variable
     c = Class.new
     c.extend(Olympians)
