@@ -26,16 +26,17 @@ module GC
   #
   #  Use full_mark: false to perform a minor GC.
   #  Use immediate_sweep: false to defer sweeping (use lazy sweep).
+  #  Use compact: true to compact the heap (it implies a full mark and sweep).
   #
   #  Note: These keyword arguments are implementation and version dependent. They
   #  are not guaranteed to be future-compatible, and may be ignored if the
   #  underlying implementation does not support them.
   def self.start full_mark: true, immediate_mark: true, immediate_sweep: true
-    Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep
+    Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep, false
   end
 
   def garbage_collect full_mark: true, immediate_mark: true, immediate_sweep: true
-    Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep
+    Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep, false
   end
 
   #  call-seq:
@@ -188,7 +189,7 @@ end
 
 module ObjectSpace
   def garbage_collect full_mark: true, immediate_mark: true, immediate_sweep: true
-    Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep
+    Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep, false
   end
 
   module_function :garbage_collect
