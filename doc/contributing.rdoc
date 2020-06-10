@@ -260,8 +260,8 @@ run tests.
 * autoconf - 2.67 or later, preferably 2.69.
 * bison - 2.0 or later, preferably 3.4.
 * gperf - 3.0.3 or later, preferably 3.1.
-* ruby - Ruby itself is prerequisite in order to build Ruby from source. It
-  can be 1.8.
+* ruby - Ruby itself is prerequisite in order to build Ruby from source.
+  You should use [a maintained version of Ruby](https://www.ruby-lang.org/en/downloads/).
 
 You should also have access to development headers for the following
 libraries, but these are not required:
