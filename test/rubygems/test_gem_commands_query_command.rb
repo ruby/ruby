@@ -644,7 +644,7 @@ a (2 universal-darwin, 1 ruby x86-linux)
   end
 
   def test_execute_show_default_gems
-    spec_fetcher { |fetcher| fetcher.spec 'a', 2 }
+    spec_fetcher {|fetcher| fetcher.spec 'a', 2 }
 
     a1 = new_default_spec 'a', 1
     install_default_specs a1

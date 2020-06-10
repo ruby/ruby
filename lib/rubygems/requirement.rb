@@ -12,18 +12,18 @@ require "rubygems/deprecate"
 class Gem::Requirement
 
   OPS = { #:nodoc:
-    "="  =>  lambda { |v, r| v == r },
-    "!=" =>  lambda { |v, r| v != r },
-    ">"  =>  lambda { |v, r| v >  r },
-    "<"  =>  lambda { |v, r| v <  r },
-    ">=" =>  lambda { |v, r| v >= r },
-    "<=" =>  lambda { |v, r| v <= r },
-    "~>" =>  lambda { |v, r| v >= r && v.release < r.bump }
+    "="  =>  lambda {|v, r| v == r },
+    "!=" =>  lambda {|v, r| v != r },
+    ">"  =>  lambda {|v, r| v >  r },
+    "<"  =>  lambda {|v, r| v <  r },
+    ">=" =>  lambda {|v, r| v >= r },
+    "<=" =>  lambda {|v, r| v <= r },
+    "~>" =>  lambda {|v, r| v >= r && v.release < r.bump }
   }.freeze
 
   SOURCE_SET_REQUIREMENT = Struct.new(:for_lockfile).new "!" # :nodoc:
 
-  quoted = OPS.keys.map { |k| Regexp.quote k }.join "|"
+  quoted = OPS.keys.map {|k| Regexp.quote k }.join "|"
   PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{Gem::Version::VERSION_PATTERN})\\s*".freeze # :nodoc:
 
   ##
@@ -137,7 +137,7 @@ class Gem::Requirement
     if requirements.empty?
       @requirements = [DefaultRequirement]
     else
-      @requirements = requirements.map! { |r| self.class.parse r }
+      @requirements = requirements.map! {|r| self.class.parse r }
     end
   end
 
@@ -148,7 +148,7 @@ class Gem::Requirement
     new = new.flatten
     new.compact!
     new.uniq!
-    new = new.map { |r| self.class.parse r }
+    new = new.map {|r| self.class.parse r }
 
     @requirements.concat new
   end
@@ -188,7 +188,7 @@ class Gem::Requirement
   end
 
   def as_list # :nodoc:
-    requirements.map { |op, version| "#{op} #{version}" }
+    requirements.map {|op, version| "#{op} #{version}" }
   end
 
   def hash # :nodoc:
@@ -233,7 +233,7 @@ class Gem::Requirement
   # are prereleases
 
   def prerelease?
-    requirements.any? { |r| r.last.prerelease? }
+    requirements.any? {|r| r.last.prerelease? }
   end
 
   def pretty_print(q) # :nodoc:
@@ -249,7 +249,7 @@ class Gem::Requirement
     raise ArgumentError, "Need a Gem::Version: #{version.inspect}" unless
       Gem::Version === version
     # #28965: syck has a bug with unquoted '=' YAML.loading as YAML::DefaultKey
-    requirements.all? { |op, rv| (OPS[op] || OPS["="]).call version, rv }
+    requirements.all? {|op, rv| (OPS[op] || OPS["="]).call version, rv }
   end
 
   alias :=== :satisfied_by?
@@ -285,7 +285,7 @@ class Gem::Requirement
   protected
 
   def _tilde_requirements
-    requirements.select { |r| r.first == "~>" }
+    requirements.select {|r| r.first == "~>" }
   end
 
   private

@@ -504,7 +504,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
     gem_specifications = @gemdeps ? Gem.loaded_specs.values : Gem::Specification.stubs
 
-    files.concat gem_specifications.map { |spec|
+    files.concat gem_specifications.map {|spec|
       spec.matches_for_glob("#{glob}#{Gem.suffix_pattern}")
     }.flatten
 
@@ -519,7 +519,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     glob_with_suffixes = "#{glob}#{Gem.suffix_pattern}"
     $LOAD_PATH.map do |load_path|
       Gem::Util.glob_files_in_dir(glob_with_suffixes, load_path)
-    end.flatten.select { |file| File.file? file.tap(&Gem::UNTAINT) }
+    end.flatten.select {|file| File.file? file.tap(&Gem::UNTAINT) }
   end
 
   ##
@@ -539,7 +539,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
     files = find_files_from_load_path glob if check_load_path
 
-    files.concat Gem::Specification.latest_specs(true).map { |spec|
+    files.concat Gem::Specification.latest_specs(true).map {|spec|
       spec.matches_for_glob("#{glob}#{Gem.suffix_pattern}")
     }.flatten
 
@@ -1014,7 +1014,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     paths.flatten!
     paths.compact!
     hash = { "GEM_HOME" => home, "GEM_PATH" => paths.empty? ? home : paths.join(File::PATH_SEPARATOR) }
-    hash.delete_if { |_, v| v.nil? }
+    hash.delete_if {|_, v| v.nil? }
     self.paths = hash
   end
 
@@ -1024,7 +1024,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   def self.win_platform?
     if @@win_platform.nil?
       ruby_platform = RbConfig::CONFIG['host_os']
-      @@win_platform = !!WIN_PATTERNS.find { |r| ruby_platform =~ r }
+      @@win_platform = !!WIN_PATTERNS.find {|r| ruby_platform =~ r }
     end
 
     @@win_platform
@@ -1101,7 +1101,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
     if path == "-"
       Gem::Util.traverse_parents Dir.pwd do |directory|
-        dep_file = GEM_DEP_FILES.find { |f| File.file?(f) }
+        dep_file = GEM_DEP_FILES.find {|f| File.file?(f) }
 
         next unless dep_file
 
@@ -1212,7 +1212,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     #
 
     def register_default_spec(spec)
-      extended_require_paths = spec.require_paths.map {|f| f + "/"}
+      extended_require_paths = spec.require_paths.map {|f| f + "/" }
       new_format = extended_require_paths.any? {|path| spec.files.any? {|f| f.start_with? path } }
 
       if new_format

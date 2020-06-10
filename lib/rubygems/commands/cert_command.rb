@@ -186,7 +186,7 @@ class Gem::Commands::CertCommand < Gem::Command
       subject = certificate.subject.to_s
       subject.downcase.index filter
     end.sort_by do |certificate, _|
-      certificate.subject.to_a.map { |name, data,| [name, data] }
+      certificate.subject.to_a.map {|name, data,| [name, data] }
     end.each do |certificate, path|
       yield certificate, path
     end

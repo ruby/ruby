@@ -390,8 +390,8 @@ class TestGemRequirement < Gem::TestCase
     r2 = req('2.0', '1.0')
     assert_equal r1.hash, r2.hash
 
-    r1 = req('1.0', '2.0').tap { |r| r.concat(['3.0']) }
-    r2 = req('3.0', '1.0').tap { |r| r.concat(['2.0']) }
+    r1 = req('1.0', '2.0').tap {|r| r.concat(['3.0']) }
+    r2 = req('3.0', '1.0').tap {|r| r.concat(['2.0']) }
     assert_equal r1.hash, r2.hash
   end
 

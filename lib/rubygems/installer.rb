@@ -410,7 +410,7 @@ class Gem::Installer
 
   def installation_satisfies_dependency?(dependency)
     return true if @options[:development] and dependency.type == :development
-    return true if installed_specs.detect { |s| dependency.matches_spec? s }
+    return true if installed_specs.detect {|s| dependency.matches_spec? s }
     return false if @only_install_dir
     not dependency.matching_specs.empty?
   end
@@ -584,7 +584,7 @@ class Gem::Installer
   def shebang(bin_file_name)
     ruby_name = RbConfig::CONFIG['ruby_install_name'] if @env_shebang
     path = File.join gem_dir, spec.bindir, bin_file_name
-    first_line = File.open(path, "rb") {|file| file.gets} || ""
+    first_line = File.open(path, "rb") {|file| file.gets } || ""
 
     if first_line.start_with?("#!")
       # Preserve extra words on shebang line, like "-w".  Thanks RPA.

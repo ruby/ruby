@@ -66,7 +66,7 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
           if Gem.install_extension_in_lib and lib_dir
             FileUtils.mkdir_p lib_dir
             entries = Dir.entries(tmp_dest) - %w[. ..]
-            entries = entries.map { |entry| File.join tmp_dest, entry }
+            entries = entries.map {|entry| File.join tmp_dest, entry }
             FileUtils.cp_r entries, lib_dir, :remove_destination => true
           end
 

@@ -720,7 +720,7 @@ end
       version
     ]
 
-    actual_value = Gem::Specification.attribute_names.map { |a| a.to_s }.sort
+    actual_value = Gem::Specification.attribute_names.map {|a| a.to_s }.sort
 
     assert_equal expected_value, actual_value
   end
@@ -1113,13 +1113,13 @@ dependencies: []
     install_specs @a1
 
     assert_includes Gem::Specification.all_names, 'a-1'
-    assert_includes Gem::Specification.stubs.map { |s| s.full_name }, 'a-1'
+    assert_includes Gem::Specification.stubs.map {|s| s.full_name }, 'a-1'
 
     uninstall_gem @a1
     Gem::Specification.reset
 
     refute_includes Gem::Specification.all_names, 'a-1'
-    refute_includes Gem::Specification.stubs.map { |s| s.full_name }, 'a-1'
+    refute_includes Gem::Specification.stubs.map {|s| s.full_name }, 'a-1'
   end
 
   def test_self_remove_spec_removed
@@ -1134,7 +1134,7 @@ dependencies: []
     Gem::Specification.reset
 
     refute_includes Gem::Specification.all_names, 'a-1'
-    refute_includes Gem::Specification.stubs.map { |s| s.full_name }, 'a-1'
+    refute_includes Gem::Specification.stubs.map {|s| s.full_name }, 'a-1'
   end
 
   def test_self_stubs_for_lazy_loading
@@ -1146,14 +1146,14 @@ dependencies: []
     save_gemspec('a-1', '1', dir_standard_specs){|s| s.name = 'a' }
     save_gemspec('b-1', '1', dir_standard_specs){|s| s.name = 'b' }
 
-    assert_equal ['a-1'], Gem::Specification.stubs_for('a').map { |s| s.full_name }
+    assert_equal ['a-1'], Gem::Specification.stubs_for('a').map {|s| s.full_name }
     assert_equal 1, Gem::Specification.class_variable_get(:@@stubs_by_name).length
-    assert_equal ['b-1'], Gem::Specification.stubs_for('b').map { |s| s.full_name }
+    assert_equal ['b-1'], Gem::Specification.stubs_for('b').map {|s| s.full_name }
     assert_equal 2, Gem::Specification.class_variable_get(:@@stubs_by_name).length
 
     assert_equal(
-      Gem::Specification.stubs_for('a').map { |s| s.object_id },
-      Gem::Specification.stubs_for('a').map { |s| s.object_id }
+      Gem::Specification.stubs_for('a').map {|s| s.object_id },
+      Gem::Specification.stubs_for('a').map {|s| s.object_id }
     )
 
     Gem.loaded_specs.delete 'a'
@@ -1179,7 +1179,7 @@ dependencies: []
 
     #create specs
     platforms.each do |plat|
-      spec = Gem::Specification.new(gem, v) { |s| s.platform = plat }
+      spec = Gem::Specification.new(gem, v) {|s| s.platform = plat }
       File.open File.join(user_spec_dir, "#{gem}-#{v}-#{plat}.gemspec"), 'w' do |io|
         io.write spec.to_ruby
       end
@@ -1370,12 +1370,12 @@ dependencies: []
       awesome.add_dependency :gem_name
     end
 
-    assert_equal %w[true gem_name], gem.dependencies.map { |dep| dep.name }
+    assert_equal %w[true gem_name], gem.dependencies.map {|dep| dep.name }
   end
 
   def test_add_dependency_from_existing_dependency
     dep  = Gem::Dependency.new("existing_dep", Gem::Requirement.new('> 1'), :runtime)
-    spec = Gem::Specification.new { |s| s.add_dependency dep }
+    spec = Gem::Specification.new {|s| s.add_dependency dep }
     assert_equal dep, spec.dependencies.first
   end
 
@@ -1384,7 +1384,7 @@ dependencies: []
       awesome.add_development_dependency "monkey"
     end
 
-    monkey = gem.dependencies.detect { |d| d.name == "monkey" }
+    monkey = gem.dependencies.detect {|d| d.name == "monkey" }
     assert_equal(:development, monkey.type)
   end
 
@@ -1482,7 +1482,7 @@ dependencies: []
     default = new_default_spec 'default', 2
     install_default_gems default
 
-    stub = Gem::Specification.stubs.find { |s| s.name == 'default' }
+    stub = Gem::Specification.stubs.find {|s| s.name == 'default' }
     assert_predicate stub, :default_gem?
 
     stub = Gem::Specification.find_all_by_name('default').first
@@ -2330,7 +2330,7 @@ dependencies: []
 
     expected = %w[rake jabber4r pqa]
 
-    assert_equal expected, @c1.runtime_dependencies.map { |d| d.name }
+    assert_equal expected, @c1.runtime_dependencies.map {|d| d.name }
   end
 
   def test_spaceship_name
@@ -3040,8 +3040,8 @@ Please report a bug if this causes problems.
 
     specification.define_singleton_method(:find_all_by_name) do |dep_name|
       [
-        specification.new { |s| s.name = "z", s.version = Gem::Version.new("1") },
-        specification.new { |s| s.name = "z", s.version = Gem::Version.new("2") }
+        specification.new {|s| s.name = "z", s.version = Gem::Version.new("1") },
+        specification.new {|s| s.name = "z", s.version = Gem::Version.new("2") }
       ]
     end
 

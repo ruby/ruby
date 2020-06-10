@@ -66,7 +66,7 @@ class TestGemCommandsSigninCommand < Gem::TestCase
   end
 
   def test_execute_with_valid_creds_set_for_default_host
-    util_capture {@cmd.execute}
+    util_capture { @cmd.execute }
 
     api_key     = 'a5fdbb6ba150cbb83aad2bb2fede64cf040453903'
     credentials = YAML.load_file Gem.configuration.credentials_path

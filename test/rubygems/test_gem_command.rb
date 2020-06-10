@@ -34,7 +34,7 @@ class TestGemCommand < Gem::TestCase
 
   def test_self_add_specific_extra_args
     added_args = %w[--all]
-    @cmd.add_option('--all') { |v,o| }
+    @cmd.add_option('--all') {|v,o| }
 
     Gem::Command.add_specific_extra_args @cmd_name, added_args
 

@@ -44,9 +44,9 @@ To install the missing version, run `gem install bundler:#{vr.first}`
   def self.filter!(specs)
     return unless bundler_version = self.bundler_version
 
-    specs.reject! { |spec| spec.version.segments.first != bundler_version.segments.first }
+    specs.reject! {|spec| spec.version.segments.first != bundler_version.segments.first }
 
-    exact_match_index = specs.find_index { |spec| spec.version == bundler_version }
+    exact_match_index = specs.find_index {|spec| spec.version == bundler_version }
     return unless exact_match_index
 
     specs.unshift(specs.delete_at(exact_match_index))
@@ -86,7 +86,7 @@ To install the missing version, run `gem install bundler:#{vr.first}`
     unless gemfile
       begin
         Gem::Util.traverse_parents(Dir.pwd) do |directory|
-          next unless gemfile = Gem::GEM_DEP_FILES.find { |f| File.file?(f.tap(&Gem::UNTAINT)) }
+          next unless gemfile = Gem::GEM_DEP_FILES.find {|f| File.file?(f.tap(&Gem::UNTAINT)) }
 
           gemfile = File.join directory, gemfile
           break

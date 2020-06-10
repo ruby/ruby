@@ -59,14 +59,14 @@ use with other commands.
 
     ss, = fetcher.spec_for_dependency dependency
 
-    ss.map { |spec, _| spec }
+    ss.map {|spec, _| spec }
   end
 
   def fetch_specs(name_pattern, dependency) # :nodoc:
     specs = []
 
     if local?
-      specs.concat Gem::Specification.stubs.find_all { |spec|
+      specs.concat Gem::Specification.stubs.find_all {|spec|
         name_pattern =~ spec.name and
           dependency.requirement.satisfied_by? spec.version
       }.map(&:to_spec)
@@ -92,7 +92,7 @@ use with other commands.
   def display_pipe(specs) # :nodoc:
     specs.each do |spec|
       unless spec.dependencies.empty?
-        spec.dependencies.sort_by { |dep| dep.name }.each do |dep|
+        spec.dependencies.sort_by {|dep| dep.name }.each do |dep|
           say "#{dep.name} --version '#{dep.requirement}'"
         end
       end
@@ -156,7 +156,7 @@ use with other commands.
     response = String.new
     response << '  ' * level + "Gem #{spec.full_name}\n"
     unless spec.dependencies.empty?
-      spec.dependencies.sort_by { |dep| dep.name }.each do |dep|
+      spec.dependencies.sort_by {|dep| dep.name }.each do |dep|
         response << '  ' * level + "  #{dep}\n"
       end
     end
@@ -168,11 +168,11 @@ use with other commands.
 
     ss, _ = fetcher.spec_for_dependency dependency
 
-    ss.map { |s,o| s }
+    ss.map {|s,o| s }
   end
 
   def reverse_dependencies(specs) # :nodoc:
-    reverse = Hash.new { |h, k| h[k] = [] }
+    reverse = Hash.new {|h, k| h[k] = [] }
 
     return reverse unless options[:reverse_dependencies]
 

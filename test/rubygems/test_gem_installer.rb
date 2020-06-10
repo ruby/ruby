@@ -721,7 +721,7 @@ gem 'other', version
     installer.generate_bin
 
     default_shebang = Gem.ruby
-    shebang_line = open("#{@gemhome}/bin/executable") { |f| f.readlines.first }
+    shebang_line = open("#{@gemhome}/bin/executable") {|f| f.readlines.first }
     assert_match(/\A#!/, shebang_line)
     assert_match(/#{default_shebang}/, shebang_line)
   end
@@ -1383,7 +1383,7 @@ gem 'other', version
       installer.install
     end
 
-    expected = File.join @spec.full_require_paths.find { |path|
+    expected = File.join @spec.full_require_paths.find {|path|
       File.exist? File.join path, 'b.rb'
     }, 'b.rb'
     assert_equal expected, @spec.matches_for_glob('b.rb').first

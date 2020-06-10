@@ -198,7 +198,7 @@ class Gem::Package
     @build_time      = Gem.source_date_epoch
     @checksums       = {}
     @contents        = nil
-    @digests         = Hash.new { |h, algorithm| h[algorithm] = {} }
+    @digests         = Hash.new {|h, algorithm| h[algorithm] = {} }
     @files           = nil
     @security_policy = security_policy
     @signatures      = {}
@@ -219,7 +219,7 @@ class Gem::Package
   def add_checksums(tar)
     Gem.load_yaml
 
-    checksums_by_algorithm = Hash.new { |h, algorithm| h[algorithm] = {} }
+    checksums_by_algorithm = Hash.new {|h, algorithm| h[algorithm] = {} }
 
     @checksums.each do |name, digests|
       digests.each do |algorithm, digest|
@@ -582,10 +582,10 @@ EOM
         )
 
       @spec.signing_key = nil
-      @spec.cert_chain = @signer.cert_chain.map { |cert| cert.to_s }
+      @spec.cert_chain = @signer.cert_chain.map {|cert| cert.to_s }
     else
       @signer = Gem::Security::Signer.new nil, nil, passphrase
-      @spec.cert_chain = @signer.cert_chain.map { |cert| cert.to_pem } if
+      @spec.cert_chain = @signer.cert_chain.map {|cert| cert.to_pem } if
         @signer.cert_chain
     end
   end

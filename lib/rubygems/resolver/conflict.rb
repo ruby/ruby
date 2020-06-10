@@ -55,7 +55,7 @@ class Gem::Resolver::Conflict
     activated   = @activated.spec.full_name
     dependency  = @failed_dep.dependency
     requirement = dependency.requirement
-    alternates  = dependency.matching_specs.map { |spec| spec.full_name }
+    alternates  = dependency.matching_specs.map {|spec| spec.full_name }
 
     unless alternates.empty?
       matching = <<-MATCHING.chomp

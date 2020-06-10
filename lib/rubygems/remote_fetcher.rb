@@ -106,7 +106,7 @@ class Gem::RemoteFetcher
 
     return if found.empty?
 
-    spec, source = found.max_by { |(s,_)| s.version }
+    spec, source = found.max_by {|(s,_)| s.version }
 
     download spec, source.uri
   end
@@ -212,7 +212,7 @@ class Gem::RemoteFetcher
   def fetch_http(uri, last_modified = nil, head = false, depth = 0)
     fetch_type = head ? Net::HTTP::Head : Net::HTTP::Get
     response   = request uri, fetch_type, last_modified do |req|
-      headers.each { |k,v| req.add_field(k,v) }
+      headers.each {|k,v| req.add_field(k,v) }
     end
 
     case response
@@ -327,7 +327,7 @@ class Gem::RemoteFetcher
   end
 
   def close_all
-    @pools.each_value {|pool| pool.close_all}
+    @pools.each_value {|pool| pool.close_all }
   end
 
   private

@@ -107,7 +107,7 @@ command to remove old versions.
 
     updated = update_gems gems_to_update
 
-    updated_names = updated.map { |spec| spec.name }
+    updated_names = updated.map {|spec| spec.name }
     not_updated_names = options[:args].uniq - updated_names
 
     if updated.empty?
@@ -126,7 +126,7 @@ command to remove old versions.
 
     spec_tuples, errors = fetcher.search_for_dependency dependency
 
-    error = errors.find { |e| e.respond_to? :exception }
+    error = errors.find {|e| e.respond_to? :exception }
 
     raise error if error
 
@@ -231,7 +231,7 @@ command to remove old versions.
   end
 
   def update_gem(name, version = Gem::Requirement.default)
-    return if @updated.any? { |spec| spec.name == name }
+    return if @updated.any? {|spec| spec.name == name }
 
     update_options = options.dup
     update_options[:prerelease] = version.prerelease?
@@ -292,7 +292,7 @@ command to remove old versions.
 
     highest_installed_gems.each do |l_name, l_spec|
       next if not gem_names.empty? and
-              gem_names.none? { |name| name == l_spec.name }
+              gem_names.none? {|name| name == l_spec.name }
 
       highest_remote_tup = highest_remote_name_tuple l_spec
       highest_remote_ver = highest_remote_tup.version

@@ -184,7 +184,7 @@ class Gem::RequestSet
       if req.installed?
         req.spec.spec.build_extensions
 
-        if @always_install.none? { |spec| spec == req.spec.spec }
+        if @always_install.none? {|spec| spec == req.spec.spec }
           yield req, nil if block_given?
           next
         end
@@ -269,7 +269,7 @@ class Gem::RequestSet
     gem_home, ENV['GEM_HOME'] = ENV['GEM_HOME'], dir
 
     existing = force ? [] : specs_in(dir)
-    existing.delete_if { |s| @always_install.include? s }
+    existing.delete_if {|s| @always_install.include? s }
 
     dir = File.expand_path dir
 
@@ -283,7 +283,7 @@ class Gem::RequestSet
     sorted_requests.each do |request|
       spec = request.spec
 
-      if existing.find { |s| s.full_name == spec.full_name }
+      if existing.find {|s| s.full_name == spec.full_name }
         yield request, nil if block_given?
         next
       end
@@ -386,7 +386,7 @@ class Gem::RequestSet
       q.text 'sets:'
 
       q.breakable
-      q.pp @sets.map { |set| set.class }
+      q.pp @sets.map {|set| set.class }
     end
   end
 
@@ -440,7 +440,7 @@ class Gem::RequestSet
   end
 
   def specs
-    @specs ||= @requests.map { |r| r.full_spec }
+    @specs ||= @requests.map {|r| r.full_spec }
   end
 
   def specs_in(dir)

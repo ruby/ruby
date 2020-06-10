@@ -231,7 +231,7 @@ class Gem::Version
   def bump
     @@bump[self] ||= begin
                        segments = self.segments
-                       segments.pop while segments.any? { |s| String === s }
+                       segments.pop while segments.any? {|s| String === s }
                        segments.pop if segments.size > 1
 
                        segments[-1] = segments[-1].succ
@@ -310,7 +310,7 @@ class Gem::Version
   def release
     @@release[self] ||= if prerelease?
                           segments = self.segments
-                          segments.pop while segments.any? { |s| String === s }
+                          segments.pop while segments.any? {|s| String === s }
                           self.class.new segments.join('.')
                         else
                           self
@@ -327,7 +327,7 @@ class Gem::Version
   def approximate_recommendation
     segments = self.segments
 
-    segments.pop    while segments.any? { |s| String === s }
+    segments.pop    while segments.any? {|s| String === s }
     segments.pop    while segments.size > 2
     segments.push 0 while segments.size < 2
 

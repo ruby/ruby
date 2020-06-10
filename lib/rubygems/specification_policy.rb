@@ -154,7 +154,7 @@ class Gem::SpecificationPolicy
 
   def validate_duplicate_dependencies # :nodoc:
     # NOTE: see REFACTOR note in Gem::Dependency about types - this might be brittle
-    seen = Gem::Dependency::TYPES.inject({}) { |types, type| types.merge({ type => {}}) }
+    seen = Gem::Dependency::TYPES.inject({}) {|types, type| types.merge({ type => {}}) }
 
     error_messages = []
     @specification.dependencies.each do |dep|
@@ -215,7 +215,7 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
       end
     end
     if warning_messages.any?
-      warning_messages.each { |warning_message| warning warning_message }
+      warning_messages.each {|warning_message| warning warning_message }
     end
   end
 
@@ -292,7 +292,7 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
   def validate_non_files
     return unless packaging
 
-    non_files = @specification.files.reject {|x| File.file?(x) || File.symlink?(x)}
+    non_files = @specification.files.reject {|x| File.file?(x) || File.symlink?(x) }
 
     unless non_files.empty?
       error "[\"#{non_files.join "\", \""}\"] are not files"
@@ -338,7 +338,7 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
               String
             end
 
-    unless Array === val and val.all? {|x| x.kind_of?(klass)}
+    unless Array === val and val.all? {|x| x.kind_of?(klass) }
       error "#{field} must be an Array of #{klass}"
     end
   end
@@ -369,7 +369,7 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
 license value '#{license}' is invalid.  Use a license identifier from
 http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard license.
         WARNING
-        message += "Did you mean #{suggestions.map { |s| "'#{s}'"}.join(', ')}?\n" unless suggestions.nil?
+        message += "Did you mean #{suggestions.map {|s| "'#{s}'" }.join(', ')}?\n" unless suggestions.nil?
         warning(message)
       end
     end
@@ -433,7 +433,7 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
       validate_shebang_line_in(executable)
     end
 
-    @specification.files.select { |f| File.symlink?(f) }.each do |file|
+    @specification.files.select {|f| File.symlink?(f) }.each do |file|
       warning "#{file} is a symlink, which is not supported on all platforms"
     end
   end
@@ -461,7 +461,7 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
     builder = Gem::Ext::Builder.new(@specification)
 
     rake_extension = @specification.extensions.any? {|s| builder.builder_for(s) == Gem::Ext::RakeBuilder }
-    rake_dependency = @specification.dependencies.any? {|d| d.name == 'rake'}
+    rake_dependency = @specification.dependencies.any? {|d| d.name == 'rake' }
 
     warning <<-WARNING if rake_extension && !rake_dependency
 You have specified rake based extension, but rake is not added as dependency. It is recommended to add rake as a dependency in gemspec since there's no guarantee rake will be already installed.

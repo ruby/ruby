@@ -442,8 +442,8 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
     logger  = WEBrick::Log.new nil, WEBrick::BasicLog::FATAL
     @server = WEBrick::HTTPServer.new :DoNotListen => true, :Logger => logger
 
-    @spec_dirs = @gem_dirs.map { |gem_dir| File.join gem_dir, 'specifications' }
-    @spec_dirs.reject! { |spec_dir| !File.directory? spec_dir }
+    @spec_dirs = @gem_dirs.map {|gem_dir| File.join gem_dir, 'specifications' }
+    @spec_dirs.reject! {|spec_dir| !File.directory? spec_dir }
 
     reset_gems
 
@@ -458,7 +458,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
 
   def uri_encode(str)
     str.gsub(URI::UNSAFE) do |match|
-      match.each_byte.map { |c| sprintf('%%%02X', c.ord) }.join
+      match.each_byte.map {|c| sprintf('%%%02X', c.ord) }.join
     end
   end
 
@@ -615,11 +615,11 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
         }
       end
 
-      deps = deps.sort_by { |dep| [dep["name"].downcase, dep["version"]] }
+      deps = deps.sort_by {|dep| [dep["name"].downcase, dep["version"]] }
       deps.last["is_last"] = true unless deps.empty?
 
       # executables
-      executables = spec.executables.sort.collect { |exec| {"executable" => exec} }
+      executables = spec.executables.sort.collect {|exec| {"executable" => exec} }
       executables = nil if executables.empty?
       executables.last["is_last"] = true if executables
 
@@ -668,7 +668,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
       "version" => Gem::VERSION,
     }
 
-    specs = specs.sort_by { |spec| [spec["name"].downcase, spec["version"]] }
+    specs = specs.sort_by {|spec| [spec["name"].downcase, spec["version"]] }
     specs.last["is_last"] = true
 
     # tag all specs with first_name_entry
@@ -869,7 +869,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
     listeners = @server.listeners.map{|l| l.addr[2] }
 
     # TODO: 0.0.0.0 == any, not localhost.
-    host = listeners.any?{|l| l == '0.0.0.0'} ? 'localhost' : listeners.first
+    host = listeners.any?{|l| l == '0.0.0.0' } ? 'localhost' : listeners.first
 
     say "Launching browser to http://#{host}:#{@port}"
 

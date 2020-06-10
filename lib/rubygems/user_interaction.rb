@@ -323,7 +323,7 @@ class Gem::StreamUI
 
   def _gets_noecho
     require_io_console
-    @ins.noecho {@ins.gets}
+    @ins.noecho { @ins.gets }
   end
 
   ##

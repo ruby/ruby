@@ -60,7 +60,7 @@ class Gem::Validator
   # TODO needs further cleanup
 
   def alien(gems=[])
-    errors = Hash.new { |h,k| h[k] = {} }
+    errors = Hash.new {|h,k| h[k] = {} }
 
     Gem::Specification.each do |spec|
       next unless gems.include? spec.name unless gems.empty?

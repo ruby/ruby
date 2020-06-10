@@ -130,7 +130,7 @@ module Kernel
 
       # Ok, now find a gem that has no conflicts, starting
       # at the highest version.
-      valid = found_specs.find { |s| !s.has_conflicts? }
+      valid = found_specs.find {|s| !s.has_conflicts? }
 
       unless valid
         le = Gem::LoadError.new "unable to find a version of '#{names.first}' to activate"

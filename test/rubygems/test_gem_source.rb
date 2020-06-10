@@ -123,7 +123,7 @@ class TestGemSource < Gem::TestCase
   end
 
   def test_load_specs
-    released = @source.load_specs(:released).map { |spec| spec.full_name }
+    released = @source.load_specs(:released).map {|spec| spec.full_name }
     assert_equal %W[a-2 a-1 b-2], released
 
     cache_dir = File.join Gem.spec_cache_dir, 'gems.example.com%80'

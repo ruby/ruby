@@ -175,7 +175,7 @@ prefix or only the files that are requireable.
 
     if Gem.configuration.verbose
       say "\nDirectories searched:"
-      @spec_dirs.sort.each { |dir| say dir }
+      @spec_dirs.sort.each {|dir| say dir }
     end
 
     return nil

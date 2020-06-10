@@ -15,7 +15,7 @@ class TestGemResolverInstallerSet < Gem::TestCase
 
     set.add_always_install dep('a')
 
-    assert_equal %w[a-2], set.always_install.map { |s| s.full_name }
+    assert_equal %w[a-2], set.always_install.map {|s| s.full_name }
 
     e = assert_raises Gem::UnsatisfiableDependencyError do
       set.add_always_install dep('b')
@@ -49,7 +49,7 @@ class TestGemResolverInstallerSet < Gem::TestCase
 
     set.add_always_install dep('a')
 
-    assert_equal %w[a-1], set.always_install.map { |s| s.full_name }
+    assert_equal %w[a-1], set.always_install.map {|s| s.full_name }
   end
 
   def test_add_always_install_prerelease
@@ -62,7 +62,7 @@ class TestGemResolverInstallerSet < Gem::TestCase
 
     set.add_always_install dep('a')
 
-    assert_equal %w[a-1], set.always_install.map { |s| s.full_name }
+    assert_equal %w[a-1], set.always_install.map {|s| s.full_name }
   end
 
   def test_add_always_install_prerelease_only
@@ -93,7 +93,7 @@ class TestGemResolverInstallerSet < Gem::TestCase
 
     req = Gem::Resolver::DependencyRequest.new dep('a'), nil
 
-    assert_equal %w[a-1], set.find_all(req).map { |spec| spec.full_name }
+    assert_equal %w[a-1], set.find_all(req).map {|spec| spec.full_name }
   end
 
   def test_consider_local_eh
@@ -149,7 +149,7 @@ class TestGemResolverInstallerSet < Gem::TestCase
 
     req = Gem::Resolver::DependencyRequest.new dep('a'), nil
 
-    assert_equal %w[a-2], set.find_all(req).map { |spec| spec.full_name }
+    assert_equal %w[a-2], set.find_all(req).map {|spec| spec.full_name }
   end
 
   def test_find_all_prerelease
@@ -162,12 +162,12 @@ class TestGemResolverInstallerSet < Gem::TestCase
 
     req = Gem::Resolver::DependencyRequest.new dep('a'), nil
 
-    assert_equal %w[a-1], set.find_all(req).map { |spec| spec.full_name }
+    assert_equal %w[a-1], set.find_all(req).map {|spec| spec.full_name }
 
     req = Gem::Resolver::DependencyRequest.new dep('a', '>= 0.a'), nil
 
     assert_equal %w[a-1 a-1.a],
-                 set.find_all(req).map { |spec| spec.full_name }.sort
+                 set.find_all(req).map {|spec| spec.full_name }.sort
   end
 
   def test_load_spec

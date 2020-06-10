@@ -50,7 +50,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
     end
     @gda.gemspec
     assert_equal %w[ foo bar ].sort, @set.dependencies.map(&:name).sort
-    bar = @set.dependencies.find { |d| d.name == 'bar' }
+    bar = @set.dependencies.find {|d| d.name == 'bar' }
     assert_equal [["<", Gem::Version.create('1.6.4')],
                   [">=", Gem::Version.create('1.6.0')]], bar.requirement.requirements.sort
   end
@@ -490,7 +490,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
       groups = @gda.send :gem_group, 'a', :group => :b, :groups => [:c, :d]
     end
 
-    assert_equal [:a, :b, :c, :d], groups.sort_by { |group| group.to_s }
+    assert_equal [:a, :b, :c, :d], groups.sort_by {|group| group.to_s }
   end
 
   def test_gemspec

@@ -276,7 +276,7 @@ class Gem::BasicSpecification
   def matches_for_glob(glob) # TODO: rename?
     glob = File.join(self.lib_dirs_glob, glob)
 
-    Dir[glob].map { |f| f.tap(&Gem::UNTAINT) } # FIX our tests are broken, run w/ SAFE=1
+    Dir[glob].map {|f| f.tap(&Gem::UNTAINT) } # FIX our tests are broken, run w/ SAFE=1
   end
 
   ##
@@ -335,12 +335,12 @@ class Gem::BasicSpecification
   def have_file?(file, suffixes)
     return true if raw_require_paths.any? do |path|
       base = File.join(gems_dir, full_name, path.tap(&Gem::UNTAINT), file).tap(&Gem::UNTAINT)
-      suffixes.any? { |suf| File.file? base + suf }
+      suffixes.any? {|suf| File.file? base + suf }
     end
 
     if have_extensions?
       base = File.join extension_dir, file
-      suffixes.any? { |suf| File.file? base + suf }
+      suffixes.any? {|suf| File.file? base + suf }
     else
       false
     end

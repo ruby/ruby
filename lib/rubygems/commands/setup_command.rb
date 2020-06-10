@@ -217,7 +217,7 @@ By default, this RubyGems will install gem as:
     say
 
     say "RubyGems installed the following executables:"
-    say bin_file_names.map { |name| "\t#{name}\n" }
+    say bin_file_names.map {|name| "\t#{name}\n" }
     say
 
     unless bin_file_names.grep(/#{File::SEPARATOR}gem$/)
@@ -548,7 +548,7 @@ By default, this RubyGems will install gem as:
   def bundler_template_files
     Dir.chdir "bundler/lib" do
       Dir.glob(File.join('bundler', 'templates', '**', '*'), File::FNM_DOTMATCH).
-        select{|f| !File.directory?(f)}
+        select{|f| !File.directory?(f) }
     end
   end
 
@@ -556,7 +556,7 @@ By default, this RubyGems will install gem as:
   def template_files_in(dir)
     Dir.chdir dir do
       Dir.glob(File.join('templates', '**', '*'), File::FNM_DOTMATCH).
-        select{|f| !File.directory?(f)}
+        select{|f| !File.directory?(f) }
     end
   end
 

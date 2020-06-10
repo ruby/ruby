@@ -187,7 +187,7 @@ class TestGemSourceGit < Gem::TestCase
     source.cache
 
     e = assert_raises Gem::Exception do
-      capture_subprocess_io {source.rev_parse}
+      capture_subprocess_io { source.rev_parse }
     end
 
     assert_equal "unable to find reference nonexistent in #{@repository}",
@@ -244,7 +244,7 @@ class TestGemSourceGit < Gem::TestCase
       specs = source.specs
     end
 
-    assert_equal %w[a-1 b-1], specs.map { |spec| spec.full_name }
+    assert_equal %w[a-1 b-1], specs.map {|spec| spec.full_name }
 
     a_spec = specs.shift
 
