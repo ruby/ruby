@@ -2226,7 +2226,7 @@ rb_hash_lookup(VALUE hash, VALUE key)
  *  * If +key+ is found, returns its associated value.
  *  * Otherwise, calls the block with +key+, and returns the block's return value.
  *      h = {foo: 0, bar: 1, baz: 2}
- *      h.fetch(:bar) { |key| fail 'Ignored'} # => 1
+ *      h.fetch(:bar) { |key| raise 'Ignored'} # => 1
  *      h.fetch(:nosuch) { |key| "Value for #{key}"} # => "Value for nosuch"
  *
  *  When both +default+ and a block are given:
@@ -2234,7 +2234,7 @@ rb_hash_lookup(VALUE hash, VALUE key)
  *  * If +key+ is found, returns its associated value.
  *  * Otherwise, calls the block with +key+, and returns the block's return value.
  *      h = {foo: 0, bar: 1, baz: 2}
- *      h.fetch(:bar, :default) { |key| fail 'Ignored'} # => 1
+ *      h.fetch(:bar, :default) { |key| raise 'Ignored'} # => 1
  *      h.fetch(:nosuch, :default) { |key| "Value for #{key}"} # => "Value for nosuch"
  *
  *  ---
@@ -2526,7 +2526,7 @@ rb_hash_delete(VALUE hash, VALUE key)
  *  If a block is given and +key+ is found, ignores the block,
  *  deletes the entry, and returns the associated value:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h.delete(:baz) { |key| fail 'Will never happen'} # => 2
+ *    h.delete(:baz) { |key| raise 'Will never happen'} # => 2
  *    h # => {:foo=>0, :bar=>1}
  *
  *  If a block is given and +key+ is not found,
@@ -4397,7 +4397,7 @@ rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
  *  Example:
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.merge # => {:foo=>0, :bar=>1, :baz=>2}
- *    h1 = h.merge! { |key, old_value, new_value| fail 'Cannot happen' }
+ *    h1 = h.merge! { |key, old_value, new_value| raise 'Cannot happen' }
  *    h1 # => {:foo=>0, :bar=>1, :baz=>2}
  *    h1.equal?(h) # => true # Identity check
  *
@@ -4547,7 +4547,7 @@ rb_hash_update_by(VALUE hash1, VALUE hash2, rb_hash_update_func *func)
  *    h1 = h.merge
  *    h1 # => {:foo=>0, :bar=>1, :baz=>2}
  *    h1.equal?(h) # => false # Identity check
- *    h2 = h.merge { |key, old_value, new_value| fail 'Cannot happen' }
+ *    h2 = h.merge { |key, old_value, new_value| raise 'Cannot happen' }
  *    h2 # => {:foo=>0, :bar=>1, :baz=>2}
  *    h2.equal?(h) # => false # Identity check
  *
@@ -5553,7 +5553,7 @@ env_delete(VALUE name)
  * If a block given and the environment variable exists,
  * deletes the environment variable and returns its value (ignoring the block):
  *   ENV['foo'] = '0'
- *   ENV.delete('foo') { |name| fail 'ignored' } # => "0"
+ *   ENV.delete('foo') { |name| raise 'ignored' } # => "0"
  * Raises an exception if +name+ is invalid.
  * See {Invalid Names and Values}[#class-ENV-label-Invalid+Names+and+Values].
  */

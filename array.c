@@ -1033,9 +1033,9 @@ rb_ary_s_try_convert(VALUE dummy, VALUE ary)
  *  or a single argument +0+,
  *  ignores the block and returns a new empty \Array:
  *
- *    a = Array.new(0) { |n| fail 'Cannot happen' }
+ *    a = Array.new(0) { |n| raise 'Cannot happen' }
  *    a # => []
- *    a = Array.new { |n| fail 'Cannot happen' }
+ *    a = Array.new { |n| raise 'Cannot happen' }
  *    a # => []
  *
  *  With a block and arguments +size+ and +default_value+,
@@ -2018,7 +2018,7 @@ rb_ary_last(int argc, const VALUE *argv, VALUE ary)
  *  otherwise returns +default_value+:
  *    a = [:foo, 'bar', baz = 2]
  *    a.fetch(1, nil) # => "bar"
- *     a.fetch(50, nil) # => nil
+ *    a.fetch(50, nil) # => nil
  *
  *  ---
  *
@@ -2027,7 +2027,7 @@ rb_ary_last(int argc, const VALUE *argv, VALUE ary)
  *  (and the block is not called); otherwise calls the block with index and returns its return value:
  *
  *    a = [:foo, 'bar', baz = 2]
- *    a.fetch(1) { |index| fail 'Cannot happen' } # => "bar"
+ *    a.fetch(1) { |index| raise 'Cannot happen' } # => "bar"
  *    a.fetch(50) { |index| "Value for #{index}" } # => "Value for 50"
  *
  *  ---
@@ -2097,7 +2097,7 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
  *  ---
  *
  *  When both argument +object+ and a block are given,
- *  calls the block with each successive element element;
+ *  calls the block with each successive element;
  *  returns the index of the first element for which the block returns a truthy value:
  *    a = [:foo, 'bar', baz = 2, 'bar']
  *    a.index { |element| element == 'bar' } # => 1
@@ -2119,7 +2119,7 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
  *  When both an argument and a block given, gives a warning (warning: given block not used)
  *  and ignores the block:
  *    a = [:foo, 'bar', baz = 2, 'bar']
- *    index = a.index('bar') { fail 'Cannot happen' }
+ *    index = a.index('bar') { raise 'Cannot happen' }
  *    index # => 1
  */
 
