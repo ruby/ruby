@@ -53,11 +53,9 @@ class TestProc < Test::Unit::TestCase
     assert_equal(5, x)
   end
 
-  def assert_arity(n)
+  def assert_arity(n, &block)
     meta = class << self; self; end
-    b = assert_warn(/Capturing the given block using Proc\.new is deprecated/) do
-      Proc.new
-    end
+    b = Proc.new(&block)
     meta.class_eval {
       remove_method(:foo_arity) if method_defined?(:foo_arity)
       define_method(:foo_arity, b)
@@ -1431,16 +1429,6 @@ class TestProc < Test::Unit::TestCase
       def m(&blk) blk.call; end
       m {}
     end;
-  end
-
-  def method_for_test_proc_without_block_for_symbol
-    assert_warn(/Capturing the given block using Kernel#proc is deprecated/) do
-      binding.eval('proc')
-    end
-  end
-
-  def test_proc_without_block_for_symbol
-    assert_equal('1', method_for_test_proc_without_block_for_symbol(&:to_s).call(1), '[Bug #14782]')
   end
 
   def test_compose

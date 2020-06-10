@@ -48,7 +48,7 @@ describe "Kernel#proc" do
     end
   end
 
-  ruby_version_is "2.7" do
+  ruby_version_is "2.7" ... "2.8" do
     it "can be created when called with no block" do
       def some_method
         proc

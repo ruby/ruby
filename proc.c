@@ -21,10 +21,6 @@
 #include "iseq.h"
 #include "vm_core.h"
 
-/* Proc.new with no block will raise an exception in the future
- * versions */
-#define PROC_NEW_REQUIRES_BLOCK 0
-
 #if !defined(__GNUC__) || __GNUC__ < 5 || defined(__MINGW32__)
 # define NO_CLOBBERED(v) (*(volatile VALUE *)&(v))
 #else
@@ -757,25 +753,7 @@ proc_new(VALUE klass, int8_t is_lambda, int8_t kernel)
     VALUE block_handler;
 
     if ((block_handler = rb_vm_frame_block_handler(cfp)) == VM_BLOCK_HANDLER_NONE) {
-#if !PROC_NEW_REQUIRES_BLOCK
-	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
-
-	if ((block_handler = rb_vm_frame_block_handler(cfp)) != VM_BLOCK_HANDLER_NONE) {
-	    if (is_lambda) {
-                rb_raise(rb_eArgError, proc_without_block);
-            }
-            else {
-                const char *name = kernel ? "Kernel#proc" : "Proc.new";
-                rb_warn_deprecated("Capturing the given block using %s",
-                                   "`&block`", name);
-	    }
-	}
-#else
-	if (0);
-#endif
-	else {
-	    rb_raise(rb_eArgError, proc_without_block);
-	}
+        rb_raise(rb_eArgError, proc_without_block);
     }
 
     /* block is in cf */
@@ -2084,25 +2062,7 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
     name = argv[0];
     id = rb_check_id(&name);
     if (argc == 1) {
-#if PROC_NEW_REQUIRES_BLOCK
 	body = rb_block_lambda();
-#else
-	const rb_execution_context_t *ec = GET_EC();
-	VALUE block_handler = rb_vm_frame_block_handler(ec->cfp);
-	if (block_handler == VM_BLOCK_HANDLER_NONE) rb_raise(rb_eArgError, proc_without_block);
-
-	switch (vm_block_handler_type(block_handler)) {
-	  case block_handler_type_proc:
-	    body = VM_BH_TO_PROC(block_handler);
-	    break;
-	  case block_handler_type_symbol:
-	    body = rb_sym_to_proc(VM_BH_TO_SYMBOL(block_handler));
-	    break;
-	  case block_handler_type_iseq:
-	  case block_handler_type_ifunc:
-	    body = rb_vm_make_lambda(ec, VM_BH_TO_CAPT_BLOCK(block_handler), rb_cProc);
-	}
-#endif
     }
     else {
 	body = argv[1];
