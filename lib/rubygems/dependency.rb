@@ -322,13 +322,13 @@ class Gem::Dependency
   def to_spec
     matches = self.to_specs.compact
 
-    active = matches.find { |spec| spec.activated? }
+    active = matches.find {|spec| spec.activated? }
     return active if active
 
     return matches.first if prerelease?
 
     # Move prereleases to the end of the list for >= 0 requirements
-    pre, matches = matches.partition { |spec| spec.version.prerelease? }
+    pre, matches = matches.partition {|spec| spec.version.prerelease? }
     matches += pre if requirement == Gem::Requirement.default
 
     matches.first

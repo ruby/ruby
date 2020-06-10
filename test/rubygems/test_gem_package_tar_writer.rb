@@ -202,7 +202,7 @@ class TestGemPackageTarWriter < Gem::Package::TarTestCase
   end
 
   def test_add_file_simple_data
-    @tar_writer.add_file_simple("lib/foo/bar", 0, 10) { |f| f.write @data }
+    @tar_writer.add_file_simple("lib/foo/bar", 0, 10) {|f| f.write @data }
     @tar_writer.flush
 
     assert_equal @data + ("\0" * (512 - @data.size)),

@@ -43,7 +43,7 @@ class TestGemCommandsInstallCommand < Gem::TestCase
       end
     end
 
-    assert_equal %w[a-2], @cmd.installed_specs.map { |spec| spec.full_name }
+    assert_equal %w[a-2], @cmd.installed_specs.map {|spec| spec.full_name }
   end
 
   def test_execute_explicit_version_includes_prerelease
@@ -65,7 +65,7 @@ class TestGemCommandsInstallCommand < Gem::TestCase
       end
     end
 
-    assert_equal %w[a-2.a], @cmd.installed_specs.map { |spec| spec.full_name }
+    assert_equal %w[a-2.a], @cmd.installed_specs.map {|spec| spec.full_name }
   end
 
   def test_execute_local
@@ -91,7 +91,7 @@ class TestGemCommandsInstallCommand < Gem::TestCase
       end
     end
 
-    assert_equal %w[a-2], @cmd.installed_specs.map { |spec| spec.full_name }
+    assert_equal %w[a-2], @cmd.installed_specs.map {|spec| spec.full_name }
 
     assert_match "1 gem installed", @ui.output
   end
@@ -182,7 +182,7 @@ ERROR:  Could not find a valid gem 'bar' (= 0.5) (required by 'foo' (>= 0)) in a
       end
     end
 
-    assert_equal %w[a-2 b-2.a c-3], @cmd.installed_specs.map { |spec| spec.full_name }.sort
+    assert_equal %w[a-2 b-2.a c-3], @cmd.installed_specs.map {|spec| spec.full_name }.sort
 
     assert_match "3 gems installed", @ui.output
   end
@@ -449,7 +449,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       end
     end
 
-    assert_equal %w[a-1], @cmd.installed_specs.map { |spec| spec.full_name }
+    assert_equal %w[a-1], @cmd.installed_specs.map {|spec| spec.full_name }
   end
 
   def test_execute_prerelease_wins_over_previous_ver
@@ -467,7 +467,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       end
     end
 
-    assert_equal %w[a-2.a], @cmd.installed_specs.map { |spec| spec.full_name }
+    assert_equal %w[a-2.a], @cmd.installed_specs.map {|spec| spec.full_name }
   end
 
   def test_execute_with_version_specified_by_colon
@@ -484,7 +484,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       end
     end
 
-    assert_equal %w[a-1], @cmd.installed_specs.map { |spec| spec.full_name }
+    assert_equal %w[a-1], @cmd.installed_specs.map {|spec| spec.full_name }
   end
 
   def test_execute_prerelease_skipped_when_non_pre_available
@@ -502,7 +502,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       end
     end
 
-    assert_equal %w[a-2], @cmd.installed_specs.map { |spec| spec.full_name }
+    assert_equal %w[a-2], @cmd.installed_specs.map {|spec| spec.full_name }
   end
 
   def test_execute_rdoc
@@ -627,7 +627,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       end
     end
 
-    assert_equal %w[a-2], @cmd.installed_specs.map { |spec| spec.full_name }
+    assert_equal %w[a-2], @cmd.installed_specs.map {|spec| spec.full_name }
 
     assert_match "1 gem installed", @ui.output
   end
@@ -647,7 +647,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       end
     end
 
-    assert_equal %w[a-2], @cmd.installed_specs.map { |spec| spec.full_name }
+    assert_equal %w[a-2], @cmd.installed_specs.map {|spec| spec.full_name }
 
     assert_match "1 gem installed", @ui.output
   end
@@ -688,7 +688,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       end
     end
 
-    assert_equal %w[a-1], @cmd.installed_specs.map { |spec| spec.full_name }
+    assert_equal %w[a-1], @cmd.installed_specs.map {|spec| spec.full_name }
 
     assert_match "1 gem installed", @ui.output
 
@@ -722,7 +722,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       end
     end
 
-    assert_equal %w[a-2 b-2], @cmd.installed_specs.map { |spec| spec.full_name }
+    assert_equal %w[a-2 b-2], @cmd.installed_specs.map {|spec| spec.full_name }
 
     assert_match "2 gems installed", @ui.output
   end
@@ -764,7 +764,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       end
     end
 
-    assert_equal %w[a-1 b-1], @cmd.installed_specs.map { |spec| spec.full_name }
+    assert_equal %w[a-1 b-1], @cmd.installed_specs.map {|spec| spec.full_name }
   end
 
   def test_execute_conservative
@@ -790,7 +790,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       end
     end
 
-    assert_equal %w[b-2], @cmd.installed_specs.map { |spec| spec.full_name }
+    assert_equal %w[b-2], @cmd.installed_specs.map {|spec| spec.full_name }
 
     assert_equal "", @ui.error
     assert_match "1 gem installed", @ui.output
@@ -812,7 +812,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
     @cmd.install_gem 'a', '>= 0'
 
-    assert_equal %w[a-2], @cmd.installed_specs.map { |s| s.full_name }
+    assert_equal %w[a-2], @cmd.installed_specs.map {|s| s.full_name }
 
     assert done_installing, 'documentation was not generated'
   end
@@ -826,7 +826,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
     @cmd.install_gem 'a', '>= 0'
 
-    assert_equal %w[a-2], @cmd.installed_specs.map { |spec| spec.full_name }
+    assert_equal %w[a-2], @cmd.installed_specs.map {|spec| spec.full_name }
   end
 
   def test_install_gem_ignore_dependencies_remote_platform_local
@@ -843,7 +843,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
     @cmd.install_gem 'a', '>= 0'
 
-    assert_equal %W[a-3-#{local}], @cmd.installed_specs.map { |spec| spec.full_name }
+    assert_equal %W[a-3-#{local}], @cmd.installed_specs.map {|spec| spec.full_name }
   end
 
   def test_install_gem_ignore_dependencies_specific_file
@@ -857,7 +857,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
     @cmd.install_gem File.join(@tempdir, spec.file_name), nil
 
-    assert_equal %w[a-2], @cmd.installed_specs.map { |s| s.full_name }
+    assert_equal %w[a-2], @cmd.installed_specs.map {|s| s.full_name }
   end
 
   def test_parses_requirement_from_gemname
@@ -927,7 +927,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       end
     end
 
-    assert_equal %w[a-2], @cmd.installed_specs.map { |spec| spec.full_name }
+    assert_equal %w[a-2], @cmd.installed_specs.map {|spec| spec.full_name }
 
     assert_match "1 gem installed", @ui.output
 
@@ -954,7 +954,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       end
     end
 
-    assert_equal %w[], @cmd.installed_specs.map { |spec| spec.full_name }
+    assert_equal %w[], @cmd.installed_specs.map {|spec| spec.full_name }
 
     assert_match "Using a (2)", @ui.output
     assert File.exist?("#{@gemdeps}.lock")
@@ -978,7 +978,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       end
     end
 
-    assert_equal %w[], @cmd.installed_specs.map { |spec| spec.full_name }
+    assert_equal %w[], @cmd.installed_specs.map {|spec| spec.full_name }
 
     assert_match "Using a (2)", @ui.output
     assert !File.exist?("#{@gemdeps}.lock")
@@ -1003,7 +1003,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       end
     end
 
-    assert_equal %w[], @cmd.installed_specs.map { |spec| spec.full_name }
+    assert_equal %w[], @cmd.installed_specs.map {|spec| spec.full_name }
 
     assert_match "Using a (1)", @ui.output
   end
@@ -1025,7 +1025,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       end
     end
 
-    assert_equal %w[a-2], @cmd.installed_specs.map { |spec| spec.full_name }
+    assert_equal %w[a-2], @cmd.installed_specs.map {|spec| spec.full_name }
 
     assert_match "Installing a (2)", @ui.output
   end
@@ -1048,7 +1048,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       end
     end
 
-    names = @cmd.installed_specs.map { |spec| spec.full_name }
+    names = @cmd.installed_specs.map {|spec| spec.full_name }
 
     assert_equal %w[q-1.0 r-2.0], names
 
@@ -1075,7 +1075,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       end
     end
 
-    names = @cmd.installed_specs.map { |spec| spec.full_name }
+    names = @cmd.installed_specs.map {|spec| spec.full_name }
 
     assert_equal %w[r-2.0], names
 
@@ -1102,7 +1102,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       end
     end
 
-    names = @cmd.installed_specs.map { |spec| spec.full_name }
+    names = @cmd.installed_specs.map {|spec| spec.full_name }
 
     assert_equal %w[q-1.0 r-2.0], names
 
@@ -1134,7 +1134,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       end
     end
 
-    names = @cmd.installed_specs.map { |spec| spec.full_name }
+    names = @cmd.installed_specs.map {|spec| spec.full_name }
 
     assert_equal %w[q-1.0 r-2.0], names
 
@@ -1169,7 +1169,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       end
     end
 
-    names = @cmd.installed_specs.map { |spec| spec.full_name }
+    names = @cmd.installed_specs.map {|spec| spec.full_name }
 
     assert_equal %w[r-2.0], names
 

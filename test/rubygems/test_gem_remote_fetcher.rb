@@ -712,7 +712,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       assert_fetch_s3 url, '20f974027db2f3cd6193565327a7c73457a138efb1a63ea248d185ce6827d41b'
     end
   ensure
-    ENV.each_key {|key| ENV.delete(key) if key.start_with?('AWS')}
+    ENV.each_key {|key| ENV.delete(key) if key.start_with?('AWS') }
     Gem.configuration[:s3_source] = nil
   end
 
@@ -728,7 +728,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       assert_fetch_s3 url, '4afc3010757f1fd143e769f1d1dabd406476a4fc7c120e9884fd02acbb8f26c9', nil, 'us-west-2'
     end
   ensure
-    ENV.each_key {|key| ENV.delete(key) if key.start_with?('AWS')}
+    ENV.each_key {|key| ENV.delete(key) if key.start_with?('AWS') }
     Gem.configuration[:s3_source] = nil
   end
 
@@ -744,7 +744,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       assert_fetch_s3 url, '935160a427ef97e7630f799232b8f208c4a4e49aad07d0540572a2ad5fe9f93c', 'testtoken'
     end
   ensure
-    ENV.each_key {|key| ENV.delete(key) if key.start_with?('AWS')}
+    ENV.each_key {|key| ENV.delete(key) if key.start_with?('AWS') }
     Gem.configuration[:s3_source] = nil
   end
 
@@ -1102,7 +1102,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       :Logger          => null_logger,
       :AccessLog       => null_logger
     )
-    s.mount_proc("/kill") { |req, res| s.shutdown }
+    s.mount_proc("/kill") {|req, res| s.shutdown }
     s.mount_proc("/yaml") do |req, res|
       if req["X-Captain"]
         res.body = req["X-Captain"]

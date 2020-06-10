@@ -68,7 +68,7 @@ class Gem::PathSupport
       gem_path = default_path
     end
 
-    gem_path.map { |path| expand(path) }.uniq
+    gem_path.map {|path| expand(path) }.uniq
   end
 
   # Return the default Gem path

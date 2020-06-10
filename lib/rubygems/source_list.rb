@@ -90,7 +90,7 @@ class Gem::SourceList
   # Yields each source URI in the list.
 
   def each
-    @sources.each { |s| yield s.uri.to_s }
+    @sources.each {|s| yield s.uri.to_s }
   end
 
   ##
@@ -115,7 +115,7 @@ class Gem::SourceList
   # Returns an Array of source URI Strings.
 
   def to_a
-    @sources.map { |x| x.uri.to_s }
+    @sources.map {|x| x.uri.to_s }
   end
 
   alias_method :to_ary, :to_a
@@ -135,7 +135,7 @@ class Gem::SourceList
     if other.kind_of? Gem::Source
       @sources.include? other
     else
-      @sources.find { |x| x.uri.to_s == other.to_s }
+      @sources.find {|x| x.uri.to_s == other.to_s }
     end
   end
 
@@ -146,7 +146,7 @@ class Gem::SourceList
     if source.kind_of? Gem::Source
       @sources.delete source
     else
-      @sources.delete_if { |x| x.uri.to_s == source.to_s }
+      @sources.delete_if {|x| x.uri.to_s == source.to_s }
     end
   end
 

@@ -365,7 +365,7 @@ class Gem::Indexer
     end
 
     specs = map_gems_to_specs updated_gems
-    prerelease, released = specs.partition { |s| s.version.prerelease? }
+    prerelease, released = specs.partition {|s| s.version.prerelease? }
 
     files = build_marshal_gemspecs specs
 

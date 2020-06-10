@@ -52,7 +52,7 @@ class TestGemRequire < Gem::TestCase
     foo1 = File.join lp1, 'foo.rb'
 
     FileUtils.mkdir_p lp1
-    File.open(foo1, 'w') { |f| f.write "class Object; HELLO = 'foo1' end" }
+    File.open(foo1, 'w') {|f| f.write "class Object; HELLO = 'foo1' end" }
 
     lp = $LOAD_PATH.dup
 
@@ -64,7 +64,7 @@ class TestGemRequire < Gem::TestCase
     foo2 = File.join lp2, 'foo.rb'
 
     FileUtils.mkdir_p lp2
-    File.open(foo2, 'w') { |f| f.write "class Object; HELLO = 'foo2' end" }
+    File.open(foo2, 'w') {|f| f.write "class Object; HELLO = 'foo2' end" }
 
     $LOAD_PATH.unshift lp2
     refute_require 'foo'
@@ -89,7 +89,7 @@ class TestGemRequire < Gem::TestCase
     c_rb = File.join dash_i_arg, 'b', 'c.rb'
 
     FileUtils.mkdir_p File.dirname c_rb
-    File.open(c_rb, 'w') { |f| f.write "class Object; HELLO = 'world' end" }
+    File.open(c_rb, 'w') {|f| f.write "class Object; HELLO = 'world' end" }
 
     lp = $LOAD_PATH.dup
 
@@ -131,7 +131,7 @@ class TestGemRequire < Gem::TestCase
     c_rb = File.join dash_i_arg, 'c', 'c.rb'
 
     FileUtils.mkdir_p File.dirname c_rb
-    File.open(c_rb, 'w') { |f| f.write "class Object; HELLO = 'world' end" }
+    File.open(c_rb, 'w') {|f| f.write "class Object; HELLO = 'world' end" }
 
     assert_require 'test_gem_require_a'
 
@@ -421,8 +421,8 @@ class TestGemRequire < Gem::TestCase
   def test_require_doesnt_traverse_development_dependencies
     a = util_spec("a#{$$}", "1", nil, "lib/a#{$$}.rb")
     z = util_spec("z", "1", "w" => "> 0")
-    w1 = util_spec("w", "1") { |s| s.add_development_dependency "non-existent" }
-    w2 = util_spec("w", "2") { |s| s.add_development_dependency "non-existent" }
+    w1 = util_spec("w", "1") {|s| s.add_development_dependency "non-existent" }
+    w2 = util_spec("w", "2") {|s| s.add_development_dependency "non-existent" }
 
     install_specs a, w1, w2, z
 
@@ -736,7 +736,7 @@ class TestGemRequire < Gem::TestCase
     a_rb = File.join dash_i_lib_arg, "#{name}.rb"
 
     FileUtils.mkdir_p File.dirname a_rb
-    File.open(a_rb, 'w') { |f| f.write "# #{name}.rb" }
+    File.open(a_rb, 'w') {|f| f.write "# #{name}.rb" }
 
     dash_i_lib_arg
   end

@@ -120,7 +120,7 @@ class TestGemBundlerVersionFinder < Gem::TestCase
 
   def test_filter
     versions = %w[1 1.0 1.0.1.1 2 2.a 2.0 2.1.1 3 3.a 3.0 3.1.1]
-    specs = versions.map { |v| util_spec("bundler", v) }
+    specs = versions.map {|v| util_spec("bundler", v) }
 
     assert_equal %w[1 1.0 1.0.1.1 2 2.a 2.0 2.1.1 3 3.a 3.0 3.1.1], util_filter_specs(specs).map(&:version).map(&:to_s)
 

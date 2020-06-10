@@ -434,7 +434,7 @@ if you believe they were disclosed to a third party.
     yaml_hash[:ssl_client_cert] =
       @hash[:ssl_client_cert] if @hash.key? :ssl_client_cert
 
-    keys = yaml_hash.keys.map { |key| key.to_s }
+    keys = yaml_hash.keys.map {|key| key.to_s }
     keys << 'debug'
     re = Regexp.union(*keys)
 

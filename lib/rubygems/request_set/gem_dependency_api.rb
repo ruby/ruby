@@ -206,7 +206,7 @@ class Gem::RequestSet::GemDependencyAPI
     @git_set            = @set.git_set
     @git_sources        = {}
     @installing         = false
-    @requires           = Hash.new { |h, name| h[name] = [] }
+    @requires           = Hash.new {|h, name| h[name] = [] }
     @vendor_set         = @set.vendor_set
     @source_set         = @set.source_set
     @gem_sources        = {}

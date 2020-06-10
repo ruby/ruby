@@ -269,7 +269,7 @@ class Gem::TestCase < Minitest::Test
       end
     end
 
-    assert scan_make_command_lines(output).any? { |line|
+    assert scan_make_command_lines(output).any? {|line|
       make = parse_make_command_line(line)
 
       if make[:targets].include?(target)
@@ -425,9 +425,9 @@ class Gem::TestCase < Minitest::Test
     $LOAD_PATH.replace @orig_LOAD_PATH if @orig_LOAD_PATH
     if @orig_LOADED_FEATURES
       if @orig_LOAD_PATH
-        paths = @orig_LOAD_PATH.map {|path| File.join(File.expand_path(path), "/")}
+        paths = @orig_LOAD_PATH.map {|path| File.join(File.expand_path(path), "/") }
         ($LOADED_FEATURES - @orig_LOADED_FEATURES).each do |feat|
-          unless paths.any? {|path| feat.start_with?(path)}
+          unless paths.any? {|path| feat.start_with?(path) }
             $LOADED_FEATURES.delete(feat)
           end
         end
@@ -791,7 +791,7 @@ class Gem::TestCase < Minitest::Test
   ensure
     prefix = File.dirname(__FILE__) + "/"
     new_features = ($LOADED_FEATURES - old_loaded_features)
-    old_loaded_features.concat(new_features.select {|f| f.rindex(prefix, 0)})
+    old_loaded_features.concat(new_features.select {|f| f.rindex(prefix, 0) })
     $LOADED_FEATURES.replace old_loaded_features
   end
 
@@ -1014,7 +1014,7 @@ Also, a list:
 
     spec_fetcher = Gem::SpecFetcher.fetcher
 
-    prerelease, all = all_specs.partition { |spec| spec.version.prerelease? }
+    prerelease, all = all_specs.partition {|spec| spec.version.prerelease? }
     latest = Gem::Specification._latest_specs all_specs
 
     spec_fetcher.specs[@uri] = []
@@ -1036,7 +1036,7 @@ Also, a list:
     unless Gem::RemoteFetcher === @fetcher
       v = Gem.marshal_version
 
-      specs = all.map { |spec| spec.name_tuple }
+      specs = all.map {|spec| spec.name_tuple }
       s_zip = util_gzip Marshal.dump Gem::NameTuple.to_basic specs
 
       latest_specs = latest.map do |spec|
@@ -1045,7 +1045,7 @@ Also, a list:
 
       l_zip = util_gzip Marshal.dump Gem::NameTuple.to_basic latest_specs
 
-      prerelease_specs = prerelease.map { |spec| spec.name_tuple }
+      prerelease_specs = prerelease.map {|spec| spec.name_tuple }
       p_zip = util_gzip Marshal.dump Gem::NameTuple.to_basic prerelease_specs
 
       @fetcher.data["#{@gem_repo}specs.#{v}.gz"]            = s_zip
@@ -1441,7 +1441,7 @@ Also, a list:
     # Finds all gems matching +dep+ in this set.
 
     def find_all(dep)
-      @specs.find_all { |s| dep.match? s, @prerelease }
+      @specs.find_all {|s| dep.match? s, @prerelease }
     end
 
     ##

@@ -26,7 +26,7 @@ class Gem::NameTuple
   # NameTuple objects.
 
   def self.from_list(list)
-    list.map { |t| new(*t) }
+    list.map {|t| new(*t) }
   end
 
   ##
@@ -34,7 +34,7 @@ class Gem::NameTuple
   # [name, version, platform] tuples.
 
   def self.to_basic(list)
-    list.map { |t| t.to_a }
+    list.map {|t| t.to_a }
   end
 
   ##

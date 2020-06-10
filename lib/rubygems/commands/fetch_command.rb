@@ -57,11 +57,11 @@ then repackaging it.
         Gem::SpecFetcher.fetcher.spec_for_dependency dep
 
       if platform
-        filtered = specs_and_sources.select { |s,| s.platform == platform }
+        filtered = specs_and_sources.select {|s,| s.platform == platform }
         specs_and_sources = filtered unless filtered.empty?
       end
 
-      spec, source = specs_and_sources.max_by { |s,| s.version }
+      spec, source = specs_and_sources.max_by {|s,| s.version }
 
       if spec.nil?
         show_lookup_failure gem_name, version, errors, options[:domain]
