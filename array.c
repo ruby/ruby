@@ -2479,7 +2479,8 @@ rb_ary_resize(VALUE ary, long len)
  *    a # => [:foo, "foo", "bar", 2]
  *    a = [:foo, 'bar', 2]
  *
- *  If <tt>range.end</tt> is too large for the existing array, does not extend the array:
+ *  If <tt>range.end</tt> is too large for the existing array,
+ *  replaces array elements, but does not extend the array with +nil+ values:
  *    a = [:foo, 'bar', 2]
  *    a[1..5] = 'foo' # => "foo"
  *    a # => [:foo, "foo"]
