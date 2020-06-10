@@ -3183,7 +3183,8 @@ vm_call_method(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_ca
 		else {
 		    /* caching method info to dummy cc */
 		    VM_ASSERT(vm_cc_cme(cc) != NULL);
-                    const struct rb_callcache cc_on_stack = *cc;
+                    struct rb_callcache cc_on_stack = *cc;
+                    FL_SET_RAW((VALUE)&cc_on_stack, VM_CALLCACHE_UNMARKABLE);
                     struct rb_call_data dummy = {
                         .ci = ci,
                         .cc = &cc_on_stack,
