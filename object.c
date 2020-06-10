@@ -2957,7 +2957,7 @@ rb_obj_ivar_get(VALUE obj, VALUE iv)
  *     obj.instance_variable_set(string, obj)    -> obj
  *
  *  Sets the instance variable named by <i>symbol</i> to the given
- *  object. This may circumvent the the encapsulation intended by
+ *  object. This may circumvent the encapsulation intended by
  *  the author of the class, so it should be used with care.
  *  The variable does not have to exist prior to this call.
  *  If the instance variable name is passed as a string, that string
