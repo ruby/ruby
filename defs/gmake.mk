@@ -343,8 +343,8 @@ test_%.rb test/%: programs PHONY
 spec/bundler/%: PHONY
 	$(Q)$(exec) $(XRUBY) -C $(srcdir) -Ispec/bundler .bundle/bin/rspec --require spec_helper $(RSPECOPTS) $@
 
-spec/bundler spec/bundler/: PHONY
-	$(MAKE) $(mflags) test-bundler-parallel
+spec/bundler spec/bundler/: test-bundler-parallel
+	$(Q)$(NULLCMD)
 
 spec/%: programs exts PHONY
 	$(RUNRUBY) -r./$(arch)-fake $(srcdir)/spec/mspec/bin/mspec-run -B $(srcdir)/spec/default.mspec $(SPECOPTS) $(patsubst %,$(srcdir)/%,$@)
