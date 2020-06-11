@@ -339,8 +339,7 @@ class TestIterator < Test::Unit::TestCase
     marity_test(:marity_test)
     marity_test(:p)
 
-    lambda(&method(:assert)).call(true)
-    lambda(&get_block{|a,n| assert(a,n)}).call(true, "marity")
+    get_block{|a,n| assert(a,n)}.call(true, "marity")
   end
 
   def foo

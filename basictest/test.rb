@@ -1425,9 +1425,6 @@ marity_test(:test_ok)
 marity_test(:marity_test)
 marity_test(:p)
 
-lambda(&method(:test_ok)).call(true)
-lambda(&block_get{|a,n| test_ok(a,n)}).call(true, 2)
-
 class ITER_TEST1
    def a
      block_given?
