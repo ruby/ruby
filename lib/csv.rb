@@ -181,6 +181,44 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 #   CSV($stderr)    { |csv_err| csv_err << %w{my data here} }  # to $stderr
 #   CSV($stdin)     { |csv_in|  csv_in.each { |row| p row } }  # from $stdin
 #
+# == Delegated Methods
+#
+# For convenience, a CSV object will delegate to many methods in class IO.
+# (A few have wrapper "guard code" in \CSV.) You may call:
+# * IO#binmode
+# * #binmode?
+# * IO#close
+# * IO#close_read
+# * IO#close_write
+# * IO#closed?
+# * #eof
+# * #eof?
+# * IO#external_encoding
+# * IO#fcntl
+# * IO#fileno
+# * #flock
+# * IO#flush
+# * IO#fsync
+# * IO#internal_encoding
+# * #ioctl
+# * IO#isatty
+# * #path
+# * IO#pid
+# * IO#pos
+# * IO#pos=
+# * IO#reopen
+# * #rewind
+# * IO#seek
+# * #stat
+# * IO#string
+# * IO#sync
+# * IO#sync=
+# * IO#tell
+# * #to_i
+# * #to_io
+# * IO#truncate
+# * IO#tty?
+#
 # == Options
 #
 # The default values for options are:
@@ -674,18 +712,47 @@ class CSV
   }.freeze
 
   class << self
+    # :call-seq:
+    #   instance(string, **options)
+    #   instance(io = $stdout, **options)
+    #   instance(string, **options) {|csv| ... }
+    #   instance(io = $stdout, **options) {|csv| ... }
     #
-    # This method will return a CSV instance, just like CSV::new(), but the
-    # instance will be cached and returned for all future calls to this method for
-    # the same +data+ object (tested by Object#object_id()) with the same
-    # +options+.
+    # Creates or retrieves cached \CSV objects.
+    # For arguments and options, see CSV.new.
     #
-    # See {Options for Parsing}[#class-CSV-label-Options+for+Parsing]
-    # and {Options for Generating}[#class-CSV-label-Options+for+Generating].
+    # ---
     #
-    # If a block is given, the instance is passed to the block and the return
-    # value becomes the return value of the block.
+    # With no block given, returns a \CSV object.
     #
+    # The first call to +instance+ creates and caches a \CSV object:
+    #   s0 = 's0'
+    #   csv0 = CSV.instance(s0)
+    #   csv0.class # => CSV
+    #
+    # Subsequent calls to +instance+ with that _same_ +string+ or +io+
+    # retrieve that same cached object:
+    #   csv1 = CSV.instance(s0)
+    #   csv1.class # => CSV
+    #   csv1.equal?(csv0) # => true # Same CSV object
+    #
+    # A subsequent call to +instance+ with a _different_ +string+ or +io+
+    # creates and caches a _different_ \CSV object.
+    #   s1 = 's1'
+    #   csv2 = CSV.instance(s1)
+    #   csv2.equal?(csv0) # => false # Different CSV object
+    #
+    # All the cached objects remains available:
+    #   csv3 = CSV.instance(s0)
+    #   csv3.equal?(csv0) # true # Same CSV object
+    #   csv4 = CSV.instance(s1)
+    #   csv4.equal?(csv2) # true # Same CSV object
+    #
+    # ---
+    #
+    # When a block is given, calls the block with the created or retrieved
+    # \CSV object; returns the block's return value:
+    #   CSV.instance(s0) {|csv| :foo } # => :foo
     def instance(data = $stdout, **options)
       # create a _signature_ for this method call, data object and options
       sig = [data.object_id] +
@@ -989,42 +1056,6 @@ class CSV
     # <tt>"rb:UTF-32BE:UTF-8"</tt> would read UTF-32BE data from the file but
     # transcode it to UTF-8 before CSV parses it.
     #
-    # For convenience, an opened CSV object will delegate to many methods in class IO.
-    # (A few have wrapper "guard code" in \CSV.) You may call:
-    # * IO#binmode
-    # * #binmode?
-    # * IO#close
-    # * IO#close_read
-    # * IO#close_write
-    # * IO#closed?
-    # * #eof
-    # * #eof?
-    # * IO#external_encoding
-    # * IO#fcntl
-    # * IO#fileno
-    # * #flock
-    # * IO#flush
-    # * IO#fsync
-    # * IO#internal_encoding
-    # * #ioctl
-    # * IO#isatty
-    # * #path
-    # * IO#pid
-    # * IO#pos
-    # * IO#pos=
-    # * IO#reopen
-    # * #rewind
-    # * IO#seek
-    # * #stat
-    # * IO#string
-    # * IO#sync
-    # * IO#sync=
-    # * IO#tell
-    # * #to_i
-    # * #to_io
-    # * IO#truncate
-    # * IO#tty?
-    #
     def open(filename, mode="r", **options)
       # wrap a File opened with the remaining +args+ with no newline
       # decorator
@@ -1094,11 +1125,12 @@ class CSV
     # Returns the new \Array created by parsing the first line of +string+ or +io+
     # using the specified +options+.
     #
-    # Argument +string+ should be a \String object;
-    # it will be put into a new \StringIO object positioned at the beginning.
-    #
-    # Argument +io+ should be an \IO object; it will be positioned at the beginning.
-    #
+    # - Argument +string+ should be a \String object;
+    #   it will be put into a new StringIO object positioned at the beginning.
+    # - Argument +io+ should be an IO object, positioned at the beginning.
+    #   To position at the end, for appending, use method CSV.generate.
+    #   For any other positioning, pass a preset \StringIO object instead.
+    # - Argument +options+: see {Options for Generating}[#class-CSV-label-Options+for+Generating]
     # For +options+, see {Options for Parsing}[#class-CSV-label-Options+for+Parsing].
     #
     # ---
@@ -1176,23 +1208,19 @@ class CSV
   # Returns the new \CSV object created using +string+ or +io+
   # and the specified +options+.
   #
-  # Argument +string+ should be a \String object;
-  # it will be put into a new \StringIO object positioned at the beginning.
+  # - Argument +string+ should be a \String object;
+  #   it will be put into a new StringIO object positioned at the beginning.
+  # - Argument +io+ should be an IO object, positioned at the beginning.
+  #   To position at the end, for appending, use method CSV.generate.
+  #   For any other positioning, pass a preset StringIO object instead.
+  # - Argument +options+: See:
+  #   * {Options for Parsing}[#class-CSV-label-Options+for+Parsing]
+  #   * {Options for Generating}[#class-CSV-label-Options+for+Generating]
+  #   For performance reasons, the options cannot be overridden
+  #   in a \CSV object, so those specified here will endure.
   #
-  # Argument +io+ should be an \IO object; it will be positioned at the beginning.
-  #
-  # To position at the end, for appending, use method CSV.generate.
-  # For any other positioning, pass a preset StringIO object instead.
-  #
-  # In addition to the \CSV instance methods, several \IO
-  # methods are delegated. See CSV::open for a complete list.
-  #
-  # For +options+, see:
-  # * {Options for Parsing}[#class-CSV-label-Options+for+Parsing]
-  # * {Options for Generating}[#class-CSV-label-Options+for+Generating]
-  #
-  # For performance reasons, the options cannot be overridden
-  # in a \CSV object, so the options specified here will endure.
+  # In addition to the \CSV instance methods, several \IO methods are delegated.
+  # See {Delegated Methods}[#class-CSV-label-Delegated+Methods].
   #
   # ---
   #
