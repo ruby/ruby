@@ -2563,18 +2563,18 @@ fixnum:
  *
  *  When +index+ is non-negative, inserts all given +objects+
  *  before the element at offset +index+:
- *    a = [:foo, 'bar', baz = 2]
+ *    a = [:foo, 'bar', 2]
  *    a1 = a.insert(1, :bat, :bam)
  *    a # => [:foo, :bat, :bam, "bar", 2]
  *    a1.object_id == a.object_id # => true
  *
  *  Extends the array if +index+ is beyond the array (<tt>index >= self.size</tt>):
- *    a = [:foo, 'bar', baz = 2]
+ *    a = [:foo, 'bar', 2]
  *    a.insert(5, :bat, :bam)
  *    a # => [:foo, "bar", 2, nil, nil, :bat, :bam]
  *
  *  Does nothing if no objects given:
- *    a = [:foo, 'bar', baz = 2]
+ *    a = [:foo, 'bar', 2]
  *    a.insert(1)
  *    a.insert(50)
  *    a.insert(-50)
@@ -2584,19 +2584,19 @@ fixnum:
  *
  *  When +index+ is negative, inserts all given +objects+
  *  _after_ the element at offset <tt>index+self.size</tt>:
- *    a = [:foo, 'bar', baz = 2]
+ *    a = [:foo, 'bar', 2]
  *    a.insert(-2, :bat, :bam)
  *    a # => [:foo, "bar", :bat, :bam, 2]
  *
  *  ---
  *
  *  Raises an exception if +index+ is not an Integer-convertible object:
- *    a = [:foo, 'bar', baz = 2, 'bar']
+ *    a = [:foo, 'bar', 2, 'bar']
  *    # Raises TypeError (no implicit conversion of Symbol into Integer):
  *    a.insert(:foo)
  *
  *  Raises an exception if +index+ is too small (<tt>index+self.size < 0</tt>):
- *    a = [:foo, 'bar', baz = 2]
+ *    a = [:foo, 'bar', 2]
  *    # Raises IndexError (index -5 too small for array; minimum: -4):
  *    a.insert(-5, :bat, :bam)
  */
@@ -2645,7 +2645,7 @@ ary_enum_length(VALUE ary, VALUE args, VALUE eobj)
  *
  *  When a block given, passes each successive array element to the block;
  *  returns +self+:
- *    a = [:foo, 'bar', baz = 2]
+ *    a = [:foo, 'bar', 2]
  *    a1 = a.each {|element|  puts "#{element.class} #{element}" }
  *    a1.equal?(a) # => true # Returned self
  *
@@ -2655,7 +2655,7 @@ ary_enum_length(VALUE ary, VALUE args, VALUE eobj)
  *    Integer 2
  *
  *  Allows the array to be modified during iteration:
- *    a = [:foo, 'bar', baz = 2]
+ *    a = [:foo, 'bar', 2]
  *    a.each {|element| puts element; a.clear if element.to_s.start_with?('b') }
  *    a # => []
  *
@@ -2666,7 +2666,7 @@ ary_enum_length(VALUE ary, VALUE args, VALUE eobj)
  *  ---
  *
  *  When no block given, returns a new \Enumerator:
- *    a = [:foo, 'bar', baz = 2]
+ *    a = [:foo, 'bar', 2]
  *    e = a.each
  *    e # => #<Enumerator: [:foo, "bar", 2]:each>
  *    a1 = e.each { |element|  puts "#{element.class} #{element}" }
@@ -2700,7 +2700,7 @@ rb_ary_each(VALUE ary)
  *
  *  When a block given, passes each successive array index to the block;
  *  returns +self+:
- *    a = [:foo, 'bar', baz = 2]
+ *    a = [:foo, 'bar', 2]
  *    a1 = a.each_index {|index|  puts "#{index} #{a[index]}" }
  *    a1.equal?(a) # => true # Returned self
  *
@@ -2710,7 +2710,7 @@ rb_ary_each(VALUE ary)
  *    2 2
  *
  *  Allows the array to be modified during iteration:
- *    a = [:foo, 'bar', baz = 2]
+ *    a = [:foo, 'bar', 2]
  *    a.each_index {|index| puts index; a.clear if index > 0 }
  *    a # => []
  *
@@ -2721,7 +2721,7 @@ rb_ary_each(VALUE ary)
  *  ---
  *
  *  When no block given, returns a new \Enumerator:
- *    a = [:foo, 'bar', baz = 2]
+ *    a = [:foo, 'bar', 2]
  *    e = a.each_index
  *    e # => #<Enumerator: [:foo, "bar", 2]:each_index>
  *    a1 = e.each {|index|  puts "#{index} #{a[index]}"}
@@ -2755,7 +2755,7 @@ rb_ary_each_index(VALUE ary)
  *
  *  When a block given, passes, in reverse order, each element to the block;
  *  returns +self+:
- *    a = [:foo, 'bar', baz = 2]
+ *    a = [:foo, 'bar', 2]
  *    a1 = a.reverse_each {|element|  puts "#{element.class} #{element}" }
  *    a1.equal?(a) # => true # Returned self
  *
@@ -2765,7 +2765,7 @@ rb_ary_each_index(VALUE ary)
  *    Symbol foo
  *
  *  Allows the array to be modified during iteration:
- *    a = [:foo, 'bar', baz = 2]
+ *    a = [:foo, 'bar', 2]
  *    a.reverse_each {|element| puts element; a.clear if element.to_s.start_with?('b') }
  *    a # => []
  *
@@ -2776,7 +2776,7 @@ rb_ary_each_index(VALUE ary)
  *  ---
  *
  *  When no block given, returns a new \Enumerator:
- *    a = [:foo, 'bar', baz = 2]
+ *    a = [:foo, 'bar', 2]
  *    e = a.reverse_each
  *    e # => #<Enumerator: [:foo, "bar", 2]:reverse_each>
  *    a1 = e.each { |element|  puts "#{element.class} #{element}" }
@@ -2809,7 +2809,7 @@ rb_ary_reverse_each(VALUE ary)
  *    array.length -> an_integer
  *
  *  Returns the count of elements in the array:
- *    a = [:foo, 'bar', baz = 2]
+ *    a = [:foo, 'bar', 2]
  *    a.length # => 3
  *    [].length # => 0
  */
@@ -2828,7 +2828,7 @@ rb_ary_length(VALUE ary)
  *  Returns +true+ if the count of elements in the array is zero,
  *  +false+ otherwise:
  *    [].empty? # => true
- *    [:foo, 'bar', baz = 2].empty? # => false
+ *    [:foo, 'bar', 2].empty? # => false
  */
 
 static VALUE
