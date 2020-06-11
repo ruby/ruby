@@ -2427,7 +2427,8 @@ iseq_set_exception_table(rb_iseq_t *iseq)
     unsigned int tlen, i;
     struct iseq_catch_table_entry *entry;
 
-    if (NIL_P(ISEQ_COMPILE_DATA(iseq)->catch_table_ary)) goto no_catch_table;
+    iseq->body->catch_table = NULL;
+    if (NIL_P(ISEQ_COMPILE_DATA(iseq)->catch_table_ary)) return COMPILE_OK;
     tlen = (int)RARRAY_LEN(ISEQ_COMPILE_DATA(iseq)->catch_table_ary);
     tptr = RARRAY_CONST_PTR_TRANSIENT(ISEQ_COMPILE_DATA(iseq)->catch_table_ary);
 
@@ -2463,10 +2464,6 @@ iseq_set_exception_table(rb_iseq_t *iseq)
 	}
 	iseq->body->catch_table = table;
 	RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->catch_table_ary, 0); /* free */
-    }
-    else {
-        no_catch_table:
-          iseq->body->catch_table = NULL;
     }
 
     return COMPILE_OK;
