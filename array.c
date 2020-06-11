@@ -2412,6 +2412,22 @@ rb_ary_resize(VALUE ary, long len)
     return ary;
 }
 
+static VALUE
+ary_aset_by_rb_ary_store(VALUE ary, long key, VALUE val)
+{
+    rb_ary_store(ary, key, val);
+    return val;
+}
+
+static VALUE
+ary_aset_by_rb_ary_splice(VALUE ary, long beg, long len, VALUE val)
+{
+    VALUE rpl = rb_ary_to_ary(val);
+    rb_ary_splice(ary, beg, len, RARRAY_CONST_PTR_TRANSIENT(rpl), RARRAY_LEN(rpl));
+    RB_GC_GUARD(rpl);
+    return val;
+}
+
 /*
  *  call-seq:
  *    array[index] = object -> object
@@ -2558,33 +2574,25 @@ static VALUE
 rb_ary_aset(int argc, VALUE *argv, VALUE ary)
 {
     long offset, beg, len;
-    VALUE rpl;
 
+    rb_check_arity(argc, 2, 3);
+    rb_ary_modify_check(ary);
     if (argc == 3) {
-	rb_ary_modify_check(ary);
 	beg = NUM2LONG(argv[0]);
 	len = NUM2LONG(argv[1]);
-	goto range;
+        return ary_aset_by_rb_ary_splice(ary, beg, len, argv[2]);
     }
-    rb_check_arity(argc, 2, 2);
-    rb_ary_modify_check(ary);
     if (FIXNUM_P(argv[0])) {
 	offset = FIX2LONG(argv[0]);
-	goto fixnum;
+        return ary_aset_by_rb_ary_store(ary, offset, argv[1]);
     }
     if (rb_range_beg_len(argv[0], &beg, &len, RARRAY_LEN(ary), 1)) {
 	/* check if idx is Range */
-      range:
-	rpl = rb_ary_to_ary(argv[argc-1]);
-        rb_ary_splice(ary, beg, len, RARRAY_CONST_PTR_TRANSIENT(rpl), RARRAY_LEN(rpl));
-	RB_GC_GUARD(rpl);
-	return argv[argc-1];
+        return ary_aset_by_rb_ary_splice(ary, beg, len, argv[1]);
     }
 
     offset = NUM2LONG(argv[0]);
-fixnum:
-    rb_ary_store(ary, offset, argv[1]);
-    return argv[1];
+    return ary_aset_by_rb_ary_store(ary, offset, argv[1]);
 }
 
 /*
