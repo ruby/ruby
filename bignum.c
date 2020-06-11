@@ -4094,10 +4094,7 @@ rb_int_parse_cstr(const char *str, ssize_t len, char **endp, size_t *ndigits,
     } while (0)
 
     if (!str) {
-      bad:
-	if (endp) *endp = (char *)str;
-	if (ndigits) *ndigits = num_digits;
-	return z;
+        goto bad;
     }
     if (len && (flags & RB_INT_PARSE_SIGN)) {
 	while (ISSPACE(*str)) ADV(1);
@@ -4261,6 +4258,11 @@ rb_int_parse_cstr(const char *str, ssize_t len, char **endp, size_t *ndigits,
     }
 
     return bignorm(z);
+
+  bad:
+    if (endp) *endp = (char *)str;
+    if (ndigits) *ndigits = num_digits;
+    return z;
 }
 
 static VALUE
