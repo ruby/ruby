@@ -2469,12 +2469,7 @@ bary_mul_karatsuba_branch(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, 
 {
     /* normal multiplication when x is small */
     if (xn < KARATSUBA_MUL_DIGITS) {
-      normal:
-        if (xds == yds && xn == yn)
-            bary_sq_fast(zds, zn, xds, xn);
-        else
-            bary_short_mul(zds, zn, xds, xn, yds, yn);
-        return;
+        goto normal;
     }
 
     /* normal multiplication when x or y is a sparse bignum */
@@ -2492,6 +2487,15 @@ bary_mul_karatsuba_branch(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, 
 
     /* multiplication by karatsuba method */
     bary_mul_karatsuba(zds, zn, xds, xn, yds, yn, wds, wn);
+    return;
+
+  normal:
+    if (xds == yds && xn == yn) {
+        bary_sq_fast(zds, zn, xds, xn);
+    }
+    else {
+        bary_short_mul(zds, zn, xds, xn, yds, yn);
+    }
 }
 
 static void
