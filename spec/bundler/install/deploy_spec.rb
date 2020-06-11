@@ -63,7 +63,7 @@ RSpec.describe "install with --deployment or --frozen" do
     bundle! :install
   end
 
-  it "works when you bundle exec bundle", :ruby_repo do
+  it "works when you bundle exec bundle" do
     skip "doesn't find bundle" if Gem.win_platform?
 
     bundle! :install

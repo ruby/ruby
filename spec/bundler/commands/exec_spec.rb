@@ -6,7 +6,7 @@ RSpec.describe "bundle exec" do
     system_gems(system_gems_to_install, :path => default_bundle_path)
   end
 
-  it "works with --gemfile flag", :ruby_repo do
+  it "works with --gemfile flag" do
     create_file "CustomGemfile", <<-G
       gem "rack", "1.0.0"
     G
@@ -15,7 +15,7 @@ RSpec.describe "bundle exec" do
     expect(out).to eq("1.0.0")
   end
 
-  it "activates the correct gem", :ruby_repo do
+  it "activates the correct gem" do
     gemfile <<-G
       gem "rack", "0.9.1"
     G
@@ -24,7 +24,7 @@ RSpec.describe "bundle exec" do
     expect(out).to eq("0.9.1")
   end
 
-  it "works when the bins are in ~/.bundle", :ruby_repo do
+  it "works when the bins are in ~/.bundle" do
     install_gemfile <<-G
       gem "rack"
     G
@@ -33,7 +33,7 @@ RSpec.describe "bundle exec" do
     expect(out).to eq("1.0.0")
   end
 
-  it "works when running from a random directory", :ruby_repo do
+  it "works when running from a random directory" do
     install_gemfile <<-G
       gem "rack"
     G
@@ -67,7 +67,7 @@ RSpec.describe "bundle exec" do
     expect(out).to eq(Gem::VERSION)
   end
 
-  it "respects custom process title when loading through ruby" do
+  it "respects custom process title when loading through ruby", :ruby_repo do
     skip "https://github.com/rubygems/bundler/issues/6898" if Gem.win_platform?
 
     script_that_changes_its_own_title_and_checks_if_picked_up_by_ps_unix_utility = <<~'RUBY'
@@ -269,7 +269,7 @@ RSpec.describe "bundle exec" do
     )
   end
 
-  it "handles gems installed with --without", :ruby_repo do
+  it "handles gems installed with --without" do
     bundle "config --local without middleware"
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
@@ -354,7 +354,7 @@ RSpec.describe "bundle exec" do
     expect(err).to include("bundler: exec needs a command to run")
   end
 
-  it "raises a helpful error when exec'ing to something outside of the bundle", :ruby_repo do
+  it "raises a helpful error when exec'ing to something outside of the bundle" do
     bundle! "config set clean false" # want to keep the rackup binstub
     install_gemfile! <<-G
       source "#{file_uri_for(gem_repo1)}"
@@ -458,7 +458,7 @@ RSpec.describe "bundle exec" do
   end
 
   describe "with gem executables" do
-    describe "run from a random directory", :ruby_repo do
+    describe "run from a random directory" do
       before(:each) do
         install_gemfile <<-G
           gem "rack"
@@ -588,7 +588,7 @@ RSpec.describe "bundle exec" do
   end
 
   describe "with gems bundled for deployment" do
-    it "works when calling bundler from another script", :ruby_repo do
+    it "works when calling bundler from another script" do
       skip "https://github.com/rubygems/bundler/issues/6898" if Gem.win_platform?
 
       gemfile <<-G
@@ -874,7 +874,7 @@ __FILE__: #{path.to_s.inspect}
         bundle! :install
       end
 
-      it "correctly shells out", :ruby_repo do
+      it "correctly shells out" do
         skip "https://github.com/rubygems/bundler/issues/6898" if Gem.win_platform?
 
         file = bundled_app("file_that_bundle_execs.rb")
