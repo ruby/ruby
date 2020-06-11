@@ -2940,6 +2940,34 @@ ary_join_0(VALUE ary, VALUE sep, long max, VALUE result)
 }
 
 static void
+ary_join_1_str(VALUE dst, VALUE src, int *first)
+{
+    rb_str_buf_append(dst, src);
+    if (*first) {
+        rb_enc_copy(dst, src);
+        *first = FALSE;
+    }
+}
+
+static void
+ary_join_1_ary(VALUE obj, VALUE ary, VALUE sep, VALUE result, VALUE val, int *first)
+{
+    if (val == ary) {
+        rb_raise(rb_eArgError, "recursive array join");
+    }
+    else {
+        VALUE args[4];
+
+        *first = FALSE;
+        args[0] = val;
+        args[1] = sep;
+        args[2] = result;
+        args[3] = (VALUE)first;
+        rb_exec_recursive(recursive_join, obj, (VALUE)args);
+    }
+}
+
+static void
 ary_join_1(VALUE obj, VALUE ary, VALUE sep, long i, VALUE result, int *first)
 {
     VALUE val, tmp;
@@ -2950,44 +2978,19 @@ ary_join_1(VALUE obj, VALUE ary, VALUE sep, long i, VALUE result, int *first)
 
 	val = RARRAY_AREF(ary, i);
 	if (RB_TYPE_P(val, T_STRING)) {
-	  str_join:
-	    rb_str_buf_append(result, val);
-	    if (*first) {
-		rb_enc_copy(result, val);
-		*first = FALSE;
-	    }
+            ary_join_1_str(result, val, first);
 	}
 	else if (RB_TYPE_P(val, T_ARRAY)) {
-	    obj = val;
-	  ary_join:
-	    if (val == ary) {
-		rb_raise(rb_eArgError, "recursive array join");
-	    }
-	    else {
-		VALUE args[4];
-
-		*first = FALSE;
-		args[0] = val;
-		args[1] = sep;
-		args[2] = result;
-		args[3] = (VALUE)first;
-		rb_exec_recursive(recursive_join, obj, (VALUE)args);
-	    }
+            ary_join_1_ary(val, ary, sep, result, val, first);
 	}
-	else {
-	    tmp = rb_check_string_type(val);
-	    if (!NIL_P(tmp)) {
-		val = tmp;
-		goto str_join;
-	    }
-	    tmp = rb_check_array_type(val);
-	    if (!NIL_P(tmp)) {
-		obj = val;
-		val = tmp;
-		goto ary_join;
-	    }
-	    val = rb_obj_as_string(val);
-	    goto str_join;
+        else if (!NIL_P(tmp = rb_check_string_type(val))) {
+            ary_join_1_str(result, tmp, first);
+        }
+        else if (!NIL_P(tmp = rb_check_array_type(val))) {
+            ary_join_1_ary(val, ary, sep, result, tmp, first);
+        }
+        else {
+            ary_join_1_str(result, rb_obj_as_string(val), first);
 	}
     }
 }
