@@ -3927,35 +3927,35 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *co
       case NODE_LAMBDA:
 	/* printf("useless condition eliminate (%s)\n",  ruby_node_name(nd_type(cond))); */
 	ADD_INSNL(ret, nd_line(cond), jump, then_label);
-	break;
+        return COMPILE_OK;
       case NODE_FALSE:
       case NODE_NIL:
 	/* printf("useless condition eliminate (%s)\n", ruby_node_name(nd_type(cond))); */
 	ADD_INSNL(ret, nd_line(cond), jump, else_label);
-	break;
+        return COMPILE_OK;
       case NODE_LIST:
       case NODE_ARGSCAT:
       case NODE_DREGX:
       case NODE_DSTR:
 	CHECK(COMPILE_POPPED(ret, "branch condition", cond));
 	ADD_INSNL(ret, nd_line(cond), jump, then_label);
-	break;
+        return COMPILE_OK;
       case NODE_FLIP2:
 	CHECK(compile_flip_flop(iseq, ret, cond, TRUE, then_label, else_label));
-	break;
+        return COMPILE_OK;
       case NODE_FLIP3:
 	CHECK(compile_flip_flop(iseq, ret, cond, FALSE, then_label, else_label));
-	break;
+        return COMPILE_OK;
       case NODE_DEFINED:
 	CHECK(compile_defined_expr(iseq, ret, cond, Qfalse));
-	goto branch;
+        break;
       default:
 	CHECK(COMPILE(ret, "branch condition", cond));
-      branch:
-	ADD_INSNL(ret, nd_line(cond), branchunless, else_label);
-	ADD_INSNL(ret, nd_line(cond), jump, then_label);
-	break;
+        break;
     }
+
+    ADD_INSNL(ret, nd_line(cond), branchunless, else_label);
+    ADD_INSNL(ret, nd_line(cond), jump, then_label);
     return COMPILE_OK;
 }
 
