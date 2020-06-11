@@ -29,9 +29,7 @@ class TestVariable < Test::Unit::TestCase
     @@rule = "Cronus"			# modifies @@rule in Gods
     include Olympians
     def ruler4
-      EnvUtil.suppress_warning {
-        @@rule
-      }
+      @@rule
     end
   end
 
@@ -117,7 +115,7 @@ class TestVariable < Test::Unit::TestCase
     atlas = Titans.new
     assert_equal("Cronus", atlas.ruler0)
     assert_equal("Zeus", atlas.ruler3)
-    assert_equal("Cronus", atlas.ruler4)
+    assert_raise(RuntimeError) { atlas.ruler4 }
     assert_nothing_raised do
       class << Gods
         defined?(@@rule) && @@rule
