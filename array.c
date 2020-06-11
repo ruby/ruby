@@ -1567,27 +1567,26 @@ rb_ary_behead(VALUE ary, long n)
 }
 
 static VALUE
-ary_ensure_room_for_unshift(VALUE ary, int argc)
+make_room_for_unshift(VALUE ary, const VALUE *head, VALUE *sharedp, int argc, long capa, long len)
+{
+    if (head - sharedp < argc) {
+        long room = capa - len - argc;
+        room -= room >> 4;
+        MEMMOVE((VALUE *)sharedp + argc + room, head, VALUE, len);
+        head = sharedp + argc + room;
+    }
+    ARY_SET_PTR(ary, head - argc);
+    assert(ARY_SHARED_ROOT_OCCUPIED(ARY_SHARED_ROOT(ary)));
+    ary_verify(ary);
+    return ARY_SHARED_ROOT(ary);
+}
+static VALUE
+ary_modify_for_unshift(VALUE ary, int argc)
 {
     long len = RARRAY_LEN(ary);
     long new_len = len + argc;
     long capa;
     const VALUE *head, *sharedp;
-
-    if (len > ARY_MAX_SIZE - argc) {
-	rb_raise(rb_eIndexError, "index %ld too big", new_len);
-    }
-
-    if (ARY_SHARED_P(ary)) {
-        VALUE shared_root = ARY_SHARED_ROOT(ary);
-        capa = RARRAY_LEN(shared_root);
-        if (ARY_SHARED_ROOT_OCCUPIED(shared_root) && capa > new_len) {
-            rb_ary_modify_check(ary);
-            head = RARRAY_CONST_PTR_TRANSIENT(ary);
-            sharedp = RARRAY_CONST_PTR_TRANSIENT(shared_root);
-	    goto makeroom_if_need;
-	}
-    }
 
     rb_ary_modify(ary);
     capa = ARY_CAPA(ary);
@@ -1604,21 +1603,7 @@ ary_ensure_room_for_unshift(VALUE ary, int argc)
 	ary_make_shared(ary);
 
         head = sharedp = RARRAY_CONST_PTR_TRANSIENT(ary);
-	goto makeroom;
-      makeroom_if_need:
-	if (head - sharedp < argc) {
-	    long room;
-	  makeroom:
-	    room = capa - new_len;
-	    room -= room >> 4;
-	    MEMMOVE((VALUE *)sharedp + argc + room, head, VALUE, len);
-	    head = sharedp + argc + room;
-	}
-	ARY_SET_PTR(ary, head - argc);
-        assert(ARY_SHARED_ROOT_OCCUPIED(ARY_SHARED_ROOT(ary)));
-
-        ary_verify(ary);
-        return ARY_SHARED_ROOT(ary);
+        return make_room_for_unshift(ary, head, (void *)sharedp, argc, capa, len);
     }
     else {
 	/* sliding items */
@@ -1628,6 +1613,34 @@ ary_ensure_room_for_unshift(VALUE ary, int argc)
 
         ary_verify(ary);
 	return ary;
+    }
+}
+static VALUE
+ary_ensure_room_for_unshift(VALUE ary, int argc)
+{
+    long len = RARRAY_LEN(ary);
+    long new_len = len + argc;
+    if (len > ARY_MAX_SIZE - argc) {
+        rb_raise(rb_eIndexError, "index %ld too big", new_len);
+    }
+    else if (! ARY_SHARED_P(ary)) {
+        return ary_modify_for_unshift(ary, argc);
+    }
+    else {
+        VALUE shared_root = ARY_SHARED_ROOT(ary);
+        long capa = RARRAY_LEN(shared_root);
+        if (! ARY_SHARED_ROOT_OCCUPIED(shared_root)) {
+            return ary_modify_for_unshift(ary, argc);
+        }
+        else if (new_len > capa) {
+            return ary_modify_for_unshift(ary, argc);
+        }
+        else {
+            rb_ary_modify_check(ary);
+            const VALUE * head = RARRAY_CONST_PTR_TRANSIENT(ary);
+            void *sharedp = (void *)RARRAY_CONST_PTR_TRANSIENT(shared_root);
+            return make_room_for_unshift(ary, head, sharedp, argc, capa, len);
+        }
     }
 }
 
