@@ -3105,7 +3105,7 @@ cvar_overtaken(VALUE front, VALUE target, ID id)
     if (front && target != front) {
 	st_data_t did = (st_data_t)id;
 
-        if (RTEST(ruby_verbose) && original_module(front) != original_module(target)) {
+        if (original_module(front) != original_module(target)) {
             rb_raise(rb_eRuntimeError,
                      "class variable % "PRIsVALUE" of %"PRIsVALUE" is overtaken by %"PRIsVALUE"",
 		       ID2SYM(id), rb_class_name(original_module(front)),
