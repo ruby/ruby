@@ -1290,7 +1290,7 @@ module FileUtils
 
     def entries
       opts = {}
-      opts[:encoding] = ::Encoding::UTF_8 if fu_windows?
+      opts[:encoding] = path.encoding
 
       files = if Dir.respond_to?(:children)
         Dir.children(path, **opts)

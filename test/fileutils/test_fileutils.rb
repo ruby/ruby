@@ -741,6 +741,17 @@ class TestFileUtils < Test::Unit::TestCase
     assert_file_not_exist 'tmp/tmpdir3'
   end
 
+  def test_remove_entry_cjk_path
+    dir = "tmpdir\u3042"
+    my_rm_rf dir
+
+    Dir.mkdir dir
+    File.write("#{dir}/\u3042.txt", "test_remove_entry_cjk_path")
+
+    remove_entry dir
+    assert_file_not_exist dir
+  end
+
   def test_remove_entry_secure
     check_singleton :remove_entry_secure
 
