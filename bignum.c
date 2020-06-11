@@ -6712,7 +6712,6 @@ rb_big_aref(VALUE x, VALUE y)
 	    return INT2FIX(0);
 	bigtrunc(y);
 	if (BIGSIZE(y) > sizeof(size_t)) {
-	  out_of_range:
 	    return BIGNUM_SIGN(x) ? INT2FIX(0) : INT2FIX(1);
 	}
 #if SIZEOF_SIZE_T <= SIZEOF_LONG
@@ -6730,7 +6729,8 @@ rb_big_aref(VALUE x, VALUE y)
     s2 = shift%BITSPERDIG;
     bit = (BDIGIT)1 << s2;
 
-    if (s1 >= BIGNUM_LEN(x)) goto out_of_range;
+    if (s1 >= BIGNUM_LEN(x))
+        return BIGNUM_SIGN(x) ? INT2FIX(0) : INT2FIX(1);
 
     xds = BDIGITS(x);
     if (BIGNUM_POSITIVE_P(x))
