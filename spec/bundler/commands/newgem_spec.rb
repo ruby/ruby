@@ -585,6 +585,94 @@ RSpec.describe "bundle gem" do
       it_behaves_like "test framework is present"
     end
 
+    context "--ci with no arugment" do
+      it "does not generate any CI config" do
+        bundle "gem #{gem_name}"
+
+        expect(bundled_app("#{gem_name}/.github/workflows/main.yml")).to_not exist
+        expect(bundled_app("#{gem_name}/.travis.yml")).to_not exist
+        expect(bundled_app("#{gem_name}/.gitlab-ci.yml")).to_not exist
+        expect(bundled_app("#{gem_name}/.circleci/config.yml")).to_not exist
+      end
+    end
+
+    context "--ci set to github" do
+      it "generates a Github Actions config file" do
+        bundle "gem #{gem_name} --ci=github"
+
+        expect(bundled_app("#{gem_name}/.github/workflows/main.yml")).to exist
+      end
+    end
+
+    context "--ci set to gitlab" do
+      it "generates a Gitlab Ci config file" do
+        bundle "gem #{gem_name} --ci=gitlab"
+
+        expect(bundled_app("#{gem_name}/.gitlab-ci.yml")).to exist
+      end
+    end
+
+    context "--ci set to circle" do
+      it "generates a Circle Ci config file" do
+        bundle "gem #{gem_name} --ci=circle"
+
+        expect(bundled_app("#{gem_name}/.circleci/config.yml")).to exist
+      end
+    end
+
+    context "--ci set to travis" do
+      it "generates a Travis Ci config file" do
+        bundle "gem #{gem_name} --ci=travis"
+
+        expect(bundled_app("#{gem_name}/.travis.yml")).to exist
+      end
+    end
+
+    context "gem.ci setting set to none" do
+      it "doesnt generate any CI config" do
+        expect(bundled_app("#{gem_name}/.github/workflows/main.yml")).to_not exist
+        expect(bundled_app("#{gem_name}/.travis.yml")).to_not exist
+        expect(bundled_app("#{gem_name}/.gitlab-ci.yml")).to_not exist
+        expect(bundled_app("#{gem_name}/.circleci/config.yml")).to_not exist
+      end
+    end
+
+    context "gem.ci setting set to github" do
+      it "generates a Github Actions config file" do
+        bundle "config set gem.ci github"
+        bundle "gem #{gem_name}"
+
+        expect(bundled_app("#{gem_name}/.github/workflows/main.yml")).to exist
+      end
+    end
+
+    context "gem.ci setting set to travis" do
+      it "generates a Travis config file" do
+        bundle "config set gem.ci travis"
+        bundle "gem #{gem_name}"
+
+        expect(bundled_app("#{gem_name}/.travis.yml")).to exist
+      end
+    end
+
+    context "gem.ci setting set to gitlab" do
+      it "generates a Gitlab config file" do
+        bundle "config set gem.ci gitlab"
+        bundle "gem #{gem_name}"
+
+        expect(bundled_app("#{gem_name}/.gitlab-ci.yml")).to exist
+      end
+    end
+
+    context "gem.ci setting set to circleci" do
+      it "generates a CircleCI config file" do
+        bundle "config set gem.ci circle"
+        bundle "gem #{gem_name}"
+
+        expect(bundled_app("#{gem_name}/.circleci/config.yml")).to exist
+      end
+    end
+
     context "gem.test setting set to test-unit" do
       before do
         bundle "config set gem.test test-unit"
@@ -875,8 +963,18 @@ Usage: "bundle gem NAME [OPTIONS]"
       expect(bundled_app("foobar/Gemfile").read).to include('gem "rspec"')
     end
 
+    it "asks about CI service" do
+      global_config "BUNDLE_GEM__TEST" => "false", "BUNDLE_GEM__MIT" => "false", "BUNDLE_GEM__COC" => "false", "BUNDLE_GEM__RUBOCOP" => "false"
+
+      bundle! "gem foobar" do |input, _, _|
+        input.puts "github"
+      end
+
+      expect(bundled_app("foobar/.github/workflows/main.yml")).to exist
+    end
+
     it "asks about MIT license" do
-      global_config "BUNDLE_GEM__TEST" => "false", "BUNDLE_GEM__COC" => "false"
+      global_config "BUNDLE_GEM__TEST" => "false", "BUNDLE_GEM__COC" => "false", "BUNDLE_GEM__CI" => "false", "BUNDLE_GEM__RUBOCOP" => "false"
 
       bundle "config list"
 
@@ -888,7 +986,7 @@ Usage: "bundle gem NAME [OPTIONS]"
     end
 
     it "asks about CoC" do
-      global_config "BUNDLE_GEM__MIT" => "false", "BUNDLE_GEM__TEST" => "false"
+      global_config "BUNDLE_GEM__MIT" => "false", "BUNDLE_GEM__TEST" => "false", "BUNDLE_GEM__CI" => "false", "BUNDLE_GEM__RUBOCOP" => "false"
 
       bundle! "gem foobar" do |input, _, _|
         input.puts "yes"

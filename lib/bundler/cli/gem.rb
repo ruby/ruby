@@ -84,8 +84,6 @@ module Bundler
         config[:test] = test_framework
         config[:test_framework_version] = TEST_FRAMEWORK_VERSIONS[test_framework]
 
-        templates.merge!("travis.yml.tt" => ".travis.yml")
-
         case test_framework
         when "rspec"
           templates.merge!(
@@ -106,6 +104,25 @@ module Bundler
             "test/test-unit/newgem_test.rb.tt" => "test/#{namespaced_path}_test.rb"
           )
           config[:test_task] = :test
+        end
+      end
+
+      if ci_template = ask_and_set_ci
+        config[:ci] = ci_template
+
+        case ci_template
+        when "github"
+          templates.merge!(".github/workflows/main.yml.tt" => ".github/workflows/main.yml")
+          config[:ci] = "github"
+        when "travis"
+          templates.merge!("travis.yml.tt" => ".travis.yml")
+          config[:ci] = "travis"
+        when "gitlab"
+          templates.merge!(".gitlab-ci.yml.tt" => ".gitlab-ci.yml")
+          config[:ci] = "gitlab"
+        when "circle"
+          templates.merge!(".circleci/config.yml.tt" => ".circleci/config.yml")
+          config[:ci] = "circleci"
         end
       end
 
@@ -245,6 +262,35 @@ module Bundler
         "Future `bundle gem` calls will use your choice. " \
         "This setting can be changed anytime with `bundle config gem.test`."
       end
+    end
+
+    def ask_and_set_ci
+      ci_template = options[:ci] || Bundler.settings["gem.ci"]
+
+      if ci_template.nil?
+        Bundler.ui.confirm "Do you want to add Continuous Integration to your gem? " \
+        "Adding a CI service to your project helps ensure your project is well tested " \
+        "before shipping your gem to users. Bundler recommends several different services for testing "\
+        "your code. For more information about each service, see:\n" \
+        "* Travis CI:      https://travis-ci.org/\n" \
+        "* Github Actions: https://github.com/features/actions\n" \
+        "* Circle CI:      https://circleci.com/\n" \
+        "* Gitlab CI:      https://docs.gitlab.com/ee/ci/\n\n"
+
+        result = Bundler.ui.ask "Type 'github', 'travis', 'gitlab' or 'circle' to generate those test files now and " \
+          "in the future. github/travis/gitlab/circle/(none):"
+        if result =~ /github|travis|gitlab|circle/
+          ci_template = result
+        else
+          ci_template = false
+        end
+      end
+
+      if Bundler.settings["gem.ci"].nil?
+        Bundler.settings.set_global("gem.ci", ci_template)
+      end
+
+      ci_template
     end
 
     def bundler_dependency_version
