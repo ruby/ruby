@@ -3771,12 +3771,12 @@ str2big_scan_digits(const char *s, const char *str, int base, int badcheck, size
 	return TRUE;
     }
 
-    if (badcheck && *str == '_') goto bad;
+    if (badcheck && *str == '_') return FALSE;
 
     while ((c = *str++) != 0) {
 	if (c == '_') {
 	    if (nondigit) {
-		if (badcheck) goto bad;
+                if (badcheck) return FALSE;
 		break;
 	    }
 	    nondigit = (char) c;
@@ -3791,7 +3791,7 @@ str2big_scan_digits(const char *s, const char *str, int base, int badcheck, size
 	}
 	if (len > 0 && !--len) break;
     }
-    if (badcheck && nondigit) goto bad;
+    if (badcheck && nondigit) return FALSE;
     if (badcheck && len) {
 	str--;
 	while (*str && ISSPACE(*str)) {
@@ -3799,7 +3799,6 @@ str2big_scan_digits(const char *s, const char *str, int base, int badcheck, size
 	    if (len > 0 && !--len) break;
 	}
 	if (len && *str) {
-	  bad:
 	    return FALSE;
 	}
     }
