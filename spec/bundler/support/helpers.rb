@@ -171,6 +171,9 @@ module Spec
     end
 
     def gem_command(command, options = {})
+      env = options[:env] || {}
+      env["RUBYOPT"] = opt_add("-r#{spec_dir}/support/hax.rb", env["RUBYOPT"] || ENV["RUBYOPT"])
+      options[:env] = env
       sys_exec("#{Path.gem_bin} #{command}", options)
     end
     bang :gem_command
