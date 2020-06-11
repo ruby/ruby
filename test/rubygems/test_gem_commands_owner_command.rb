@@ -19,6 +19,12 @@ class TestGemCommandsOwnerCommand < Gem::TestCase
     @cmd = Gem::Commands::OwnerCommand.new
   end
 
+  def teardown
+    credential_teardown
+
+    super
+  end
+
   def test_show_owners
     response = <<EOF
 ---

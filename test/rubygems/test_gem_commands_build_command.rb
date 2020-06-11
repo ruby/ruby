@@ -398,6 +398,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     skip 'openssl is missing' unless defined?(OpenSSL::SSL) && !java_platform?
 
     gem_path = File.join Gem.user_home, ".gem"
+    Dir.mkdir gem_path
 
     Gem::Security.trust_dir
 
@@ -441,6 +442,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     skip 'openssl is missing' unless defined?(OpenSSL::SSL) && !java_platform?
 
     gem_path = File.join Gem.user_home, ".gem"
+    Dir.mkdir gem_path
 
     Gem::Security.trust_dir
 
