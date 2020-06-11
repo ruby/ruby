@@ -2745,7 +2745,6 @@ optimize_checktype(rb_iseq_t *iseq, INSN *iobj)
     if (!ciobj || !IS_INSN_ID(ciobj, checktype)) return FALSE;
     niobj = (INSN *)get_next_insn(ciobj);
     if (!niobj) {
-      no_branch:
 	/* TODO: putobject true/false */
 	return FALSE;
     }
@@ -2761,7 +2760,7 @@ optimize_checktype(rb_iseq_t *iseq, INSN *iobj)
 	}
 	break;
       default:
-	goto no_branch;
+        return FALSE;
     }
     line = ciobj->insn_info.line_no;
     if (!dest) {
