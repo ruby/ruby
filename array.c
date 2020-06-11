@@ -4183,6 +4183,37 @@ rb_ary_delete_at_m(VALUE ary, VALUE pos)
     return rb_ary_delete_at(ary, NUM2LONG(pos));
 }
 
+static VALUE
+ary_slice_bang_by_rb_ary_splice(VALUE ary, long pos, long len)
+{
+    const long orig_len = RARRAY_LEN(ary);
+
+    if (len < 0) {
+        return Qnil;
+    }
+    else if (pos < -orig_len) {
+        return Qnil;
+    }
+    else if (pos < 0) {
+        pos += orig_len;
+    }
+    else if (orig_len < pos) {
+        return Qnil;
+    }
+    else if (orig_len < pos + len) {
+        len = orig_len - pos;
+    }
+    if (len == 0) {
+        return rb_ary_new2(0);
+    }
+    else {
+        VALUE arg2 = rb_ary_new4(len, RARRAY_CONST_PTR_TRANSIENT(ary)+pos);
+        RBASIC_SET_CLASS(arg2, rb_obj_class(ary));
+        rb_ary_splice(ary, pos, len, 0, 0);
+        return arg2;
+    }
+}
+
 /*
  *  call-seq:
  *     ary.slice!(index)         -> obj or nil
@@ -4207,39 +4238,24 @@ rb_ary_delete_at_m(VALUE ary, VALUE pos)
 static VALUE
 rb_ary_slice_bang(int argc, VALUE *argv, VALUE ary)
 {
-    VALUE arg1, arg2;
-    long pos, len, orig_len;
+    VALUE arg1;
+    long pos, len;
 
     rb_ary_modify_check(ary);
+    rb_check_arity(argc, 1, 2);
+    arg1 = argv[0];
+
     if (argc == 2) {
 	pos = NUM2LONG(argv[0]);
 	len = NUM2LONG(argv[1]);
-      delete_pos_len:
-	if (len < 0) return Qnil;
-	orig_len = RARRAY_LEN(ary);
-	if (pos < 0) {
-	    pos += orig_len;
-	    if (pos < 0) return Qnil;
-	}
-	else if (orig_len < pos) return Qnil;
-	if (orig_len < pos + len) {
-	    len = orig_len - pos;
-	}
-	if (len == 0) return rb_ary_new2(0);
-        arg2 = rb_ary_new4(len, RARRAY_CONST_PTR_TRANSIENT(ary)+pos);
-	RBASIC_SET_CLASS(arg2, rb_obj_class(ary));
-	rb_ary_splice(ary, pos, len, 0, 0);
-	return arg2;
+        return ary_slice_bang_by_rb_ary_splice(ary, pos, len);
     }
-
-    rb_check_arity(argc, 1, 2);
-    arg1 = argv[0];
 
     if (!FIXNUM_P(arg1)) {
 	switch (rb_range_beg_len(arg1, &pos, &len, RARRAY_LEN(ary), 0)) {
 	  case Qtrue:
 	    /* valid range */
-	    goto delete_pos_len;
+            return ary_slice_bang_by_rb_ary_splice(ary, pos, len);
 	  case Qnil:
 	    /* invalid range */
 	    return Qnil;
