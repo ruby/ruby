@@ -855,6 +855,19 @@ rb_block_lambda(void)
 static VALUE
 f_lambda(VALUE _)
 {
+    VALUE block_handler = rb_vm_frame_block_handler(GET_EC()->cfp);
+
+    if (block_handler != VM_BLOCK_HANDLER_NONE) {
+        switch (vm_block_handler_type(block_handler)) {
+          case block_handler_type_proc:
+          case block_handler_type_symbol:
+          case block_handler_type_ifunc:
+            rb_warn_deprecated("lambda without a literal block", "the proc without lambda");
+          default:
+            break;
+        }
+    }
+
     return rb_block_lambda();
 }
 
