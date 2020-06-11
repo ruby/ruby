@@ -9318,7 +9318,7 @@ Init_date_core(void)
      */
     rb_define_const(cDate, "GREGORIAN", DBL2NUM(GREGORIAN));
 
-    rb_define_alloc_func(cDate, d_lite_s_alloc_simple);
+    rb_define_alloc_func(cDate, d_lite_s_alloc_complex);
 
 #ifndef NDEBUG
     rb_define_private_method(CLASS_OF(cDate), "_valid_jd?",
@@ -9368,6 +9368,7 @@ Init_date_core(void)
     rb_define_singleton_method(cDate, "jd", date_s_jd, -1);
     rb_define_singleton_method(cDate, "ordinal", date_s_ordinal, -1);
     rb_define_singleton_method(cDate, "civil", date_s_civil, -1);
+    rb_define_singleton_method(cDate, "new", date_s_civil, -1);
     rb_define_singleton_method(cDate, "commercial", date_s_commercial, -1);
 
 #ifndef NDEBUG
@@ -9395,7 +9396,6 @@ Init_date_core(void)
     rb_define_singleton_method(cDate, "_jisx0301", date_s__jisx0301, 1);
     rb_define_singleton_method(cDate, "jisx0301", date_s_jisx0301, -1);
 
-    rb_define_method(cDate, "initialize", date_initialize, -1);
     rb_define_method(cDate, "initialize_copy", d_lite_initialize_copy, 1);
 
 #ifndef NDEBUG
