@@ -6531,22 +6531,8 @@ compile_break(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
 	    ADD_INSN(ret, line, putnil);
 	}
     }
-    else if (iseq->body->type == ISEQ_TYPE_BLOCK) {
-      break_by_insn:
-	/* escape from block */
-	CHECK(COMPILE(ret, "break val (block)", node->nd_stts));
-        ADD_INSN1(ret, line, throw, INT2FIX(throw_flag | TAG_BREAK));
-	if (popped) {
-	    ADD_INSN(ret, line, pop);
-	}
-    }
-    else if (iseq->body->type == ISEQ_TYPE_EVAL) {
-      break_in_eval:
-	COMPILE_ERROR(ERROR_ARGS "Can't escape from eval with break");
-	return COMPILE_NG;
-    }
     else {
-	const rb_iseq_t *ip = iseq->body->parent_iseq;
+        const rb_iseq_t *ip = iseq;
 
 	while (ip) {
 	    if (!ISEQ_COMPILE_DATA(ip)) {
@@ -6556,16 +6542,26 @@ compile_break(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
 
 	    if (ISEQ_COMPILE_DATA(ip)->redo_label != 0) {
                 throw_flag = VM_THROW_NO_ESCAPE_FLAG;
-		goto break_by_insn;
 	    }
 	    else if (ip->body->type == ISEQ_TYPE_BLOCK) {
-		goto break_by_insn;
+                throw_flag = 0;
 	    }
 	    else if (ip->body->type == ISEQ_TYPE_EVAL) {
-		goto break_in_eval;
+                COMPILE_ERROR(ERROR_ARGS "Can't escape from eval with break");
+                return COMPILE_NG;
 	    }
+            else {
+                ip = ip->body->parent_iseq;
+                continue;
+            }
 
-	    ip = ip->body->parent_iseq;
+            /* escape from block */
+            CHECK(COMPILE(ret, "break val (block)", node->nd_stts));
+            ADD_INSN1(ret, line, throw, INT2FIX(throw_flag | TAG_BREAK));
+            if (popped) {
+                ADD_INSN(ret, line, pop);
+            }
+            return COMPILE_OK;
 	}
 	COMPILE_ERROR(ERROR_ARGS "Invalid break");
 	return COMPILE_NG;
