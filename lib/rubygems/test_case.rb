@@ -298,11 +298,14 @@ class Gem::TestCase < Minitest::Test
     super
 
     @orig_env = ENV.to_hash
+    @tmp = File.expand_path("tmp")
+
+    Dir.mkdir @tmp
 
     ENV['GEM_VENDOR'] = nil
     ENV['GEMRC'] = nil
     ENV['SOURCE_DATE_EPOCH'] = nil
-    ENV["TMPDIR"] = File.expand_path("tmp")
+    ENV["TMPDIR"] = @tmp
 
     @current_dir = Dir.pwd
     @fetcher     = nil
@@ -319,7 +322,7 @@ class Gem::TestCase < Minitest::Test
     @tempdir = File.join(tmpdir, "test_rubygems_#{$$}")
     @tempdir.tap(&Gem::UNTAINT)
 
-    FileUtils.mkdir_p @tempdir
+    FileUtils.mkdir @tempdir
 
     @orig_SYSTEM_WIDE_CONFIG_FILE = Gem::ConfigFile::SYSTEM_WIDE_CONFIG_FILE
     Gem::ConfigFile.send :remove_const, :SYSTEM_WIDE_CONFIG_FILE
@@ -445,7 +448,7 @@ class Gem::TestCase < Minitest::Test
 
     Dir.chdir @current_dir
 
-    FileUtils.rm_rf @tempdir
+    FileUtils.rm_rf @tmp
 
     ENV.replace(@orig_env)
 
