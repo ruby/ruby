@@ -20,12 +20,12 @@ describe "IO#ioctl" do
       end
     end
 
-    it "raises an Errno error when ioctl fails" do
+    it "raises a system call error when ioctl fails" do
       File.open(__FILE__, 'r') do |f|
         -> {
           # TIOCGWINSZ in /usr/include/asm-generic/ioctls.h
           f.ioctl 0x5413, nil
-        }.should raise_error(Errno::ENOTTY)
+        }.should raise_error(SystemCallError)
       end
     end
   end
