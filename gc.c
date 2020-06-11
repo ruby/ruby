@@ -4207,26 +4207,25 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
                 asan_unpoison_object(vp, false);
 		if (bitset & 1) {
                     switch (BUILTIN_TYPE(vp)) {
-		      default: { /* majority case */
-			  gc_report(2, objspace, "page_sweep: free %p\n", (void *)p);
+		      default: /* majority case */
+                        gc_report(2, objspace, "page_sweep: free %p\n", (void *)p);
 #if RGENGC_CHECK_MODE
-			  if (!is_full_marking(objspace)) {
-                              if (RVALUE_OLD_P(vp)) rb_bug("page_sweep: %p - old while minor GC.", (void *)p);
-                              if (rgengc_remembered_sweep(objspace, vp)) rb_bug("page_sweep: %p - remembered.", (void *)p);
-			  }
+                        if (!is_full_marking(objspace)) {
+                            if (RVALUE_OLD_P(vp)) rb_bug("page_sweep: %p - old while minor GC.", (void *)p);
+                            if (rgengc_remembered_sweep(objspace, vp)) rb_bug("page_sweep: %p - remembered.", (void *)p);
+                        }
 #endif
-                          if (obj_free(objspace, vp)) {
-			      final_slots++;
-			  }
-			  else {
-			      (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
-                              heap_page_add_freeobj(objspace, sweep_page, vp);
-                              gc_report(3, objspace, "page_sweep: %s is added to freelist\n", obj_info(vp));
-			      freed_slots++;
-                              asan_poison_object(vp);
-			  }
-			  break;
-		      }
+                        if (obj_free(objspace, vp)) {
+                            final_slots++;
+                        }
+                        else {
+                            (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
+                            heap_page_add_freeobj(objspace, sweep_page, vp);
+                            gc_report(3, objspace, "page_sweep: %s is added to freelist\n", obj_info(vp));
+                            freed_slots++;
+                            asan_poison_object(vp);
+                        }
+                        break;
 
 			/* minor cases */
 		      case T_ZOMBIE:
