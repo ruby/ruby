@@ -1778,26 +1778,25 @@ singleton_class_of(VALUE obj)
 {
     VALUE klass;
 
-    if (FIXNUM_P(obj) || FLONUM_P(obj) || STATIC_SYM_P(obj)) {
-      no_singleton:
+    switch (TYPE(obj)) {
+      case T_FIXNUM:
+      case T_BIGNUM:
+      case T_FLOAT:
+      case T_SYMBOL:
 	rb_raise(rb_eTypeError, "can't define singleton");
-    }
-    if (SPECIAL_CONST_P(obj)) {
+
+      case T_FALSE:
+      case T_TRUE:
+      case T_NIL:
 	klass = special_singleton_class_of(obj);
 	if (NIL_P(klass))
 	    rb_bug("unknown immediate %p", (void *)obj);
 	return klass;
-    }
-    else {
-	switch (BUILTIN_TYPE(obj)) {
-	  case T_FLOAT: case T_BIGNUM: case T_SYMBOL:
-	    goto no_singleton;
-	  case T_STRING:
-	    if (FL_TEST_RAW(obj, RSTRING_FSTR)) goto no_singleton;
-	    break;
-          default:
-            break;
-	}
+
+      case T_STRING:
+        if (FL_TEST_RAW(obj, RSTRING_FSTR)) {
+            rb_raise(rb_eTypeError, "can't define singleton");
+        }
     }
 
     klass = RBASIC(obj)->klass;
