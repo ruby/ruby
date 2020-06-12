@@ -11562,12 +11562,9 @@ ibf_dump_object_object(struct ibf_dump *dump, VALUE obj)
     IBF_W_ALIGN(ibf_offset_t);
     current_offset = ibf_dump_pos(dump);
 
-    if (SPECIAL_CONST_P(obj)) {
-        if (RB_TYPE_P(obj, T_SYMBOL) ||
-            RB_TYPE_P(obj, T_FLOAT)) {
-            obj_header.internal = FALSE;
-            goto dump_object;
-        }
+    if (SPECIAL_CONST_P(obj) &&
+        ! (RB_TYPE_P(obj, T_SYMBOL) ||
+           RB_TYPE_P(obj, T_FLOAT))) {
         obj_header.special_const = TRUE;
         obj_header.frozen = TRUE;
         obj_header.internal = TRUE;
@@ -11575,8 +11572,7 @@ ibf_dump_object_object(struct ibf_dump *dump, VALUE obj)
         ibf_dump_write_small_value(dump, obj);
     }
     else {
-        obj_header.internal = (RBASIC_CLASS(obj) == 0) ? TRUE : FALSE;
-      dump_object:
+        obj_header.internal = SPECIAL_CONST_P(obj) ? FALSE : (RBASIC_CLASS(obj) == 0) ? TRUE : FALSE;
         obj_header.special_const = FALSE;
         obj_header.frozen = FL_TEST(obj, FL_FREEZE) ? TRUE : FALSE;
         ibf_dump_object_object_header(dump, obj_header);
