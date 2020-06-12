@@ -145,11 +145,15 @@ class TestGc < Test::Unit::TestCase
     assert_equal :newobj, GC.latest_gc_info[:gc_by]
     eom
 
+    GC.latest_gc_info(h = {}) # allocate hash and rehearsal
     GC.start
     GC.start
-    assert_equal :force, GC.latest_gc_info[:major_by] if use_rgengc?
-    assert_equal :method, GC.latest_gc_info[:gc_by]
-    assert_equal true, GC.latest_gc_info[:immediate_sweep]
+    GC.start
+    GC.latest_gc_info(h)
+
+    assert_equal :force,  h[:major_by] if use_rgengc?
+    assert_equal :method, h[:gc_by]
+    assert_equal true,    h[:immediate_sweep]
 
     GC.stress = true
     assert_equal :force, GC.latest_gc_info[:major_by]
