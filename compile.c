@@ -7290,16 +7290,10 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
             if (bf == NULL) {
                 if (strcmp("cstmt!", builtin_func) == 0 ||
                     strcmp("cexpr!", builtin_func) == 0) {
-                  inlinec:;
-                    int inline_index = GET_VM()->builtin_inline_index++;
-                    snprintf(inline_func, 0x20, "_bi%d", inline_index);
-                    builtin_func = inline_func;
-                    args_node = NULL;
-                    goto retry;
+                    // ok
                 }
                 else if (strcmp("cconst!", builtin_func) == 0) {
                     cconst = true;
-                    goto inlinec;
                 }
                 else if (strcmp("cinit!", builtin_func) == 0) {
                     // ignore
@@ -7311,14 +7305,19 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
                     iseq->body->builtin_inline_p = true;
                     return COMPILE_OK;
                 }
-
-                if (1) {
+                else if (1) {
                     rb_bug("can't find builtin function:%s", builtin_func);
                 }
                 else {
                     COMPILE_ERROR(ERROR_ARGS "can't find builtin function:%s", builtin_func);
+                    return COMPILE_NG;
                 }
-                return COMPILE_NG;
+
+                int inline_index = GET_VM()->builtin_inline_index++;
+                snprintf(inline_func, 0x20, "_bi%d", inline_index);
+                builtin_func = inline_func;
+                args_node = NULL;
+                goto retry;
             }
 
             if (cconst) {
