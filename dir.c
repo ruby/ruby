@@ -2182,6 +2182,7 @@ glob_opendir(ruby_glob_entries_t *ent, DIR *dirp, int flags, rb_encoding *enc)
     MEMZERO(ent, ruby_glob_entries_t, 1);
     if (flags & FNM_GLOB_NOSORT) {
         ent->nosort.dirp = dirp;
+        return ent;
     }
     else {
         void *newp;
@@ -2202,10 +2203,7 @@ glob_opendir(ruby_glob_entries_t *ent, DIR *dirp, int flags, rb_encoding *enc)
 	while ((dp = READDIR(dirp, enc)) != NULL) {
             rb_dirent_t *rdp = dirent_copy(dp, NULL);
             if (!rdp) {
-              nomem:
-                glob_dir_finish(ent, 0);
-                closedir(dirp);
-                return NULL;
+                goto nomem;
             }
             if (count >= capacity) {
                 capacity += 256;
@@ -2226,8 +2224,13 @@ glob_opendir(ruby_glob_entries_t *ent, DIR *dirp, int flags, rb_encoding *enc)
         }
         ruby_qsort(ent->sort.entries, ent->sort.count, sizeof(ent->sort.entries[0]),
                    glob_sort_cmp, NULL);
+        return ent;
+
+      nomem:
+        glob_dir_finish(ent, 0);
+        closedir(dirp);
+        return NULL;
     }
-    return ent;
 }
 
 static rb_dirent_t *
