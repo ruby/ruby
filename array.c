@@ -2991,22 +2991,46 @@ rb_ary_join(VALUE ary, VALUE sep)
 
 /*
  *  call-seq:
- *     ary.join(separator=$,)    -> str
+ *    array.join ->new_string
+ *    array.join(separator = nil) -> new_string
  *
- *  Returns a string created by converting each element of the array to
- *  a string, separated by the given +separator+.
- *  If the +separator+ is +nil+, it uses current <code>$,</code>.
- *  If both the +separator+ and <code>$,</code> are +nil+,
- *  it uses an empty string.
+ *  Returns the new \String formed by joining the array elements after conversion.
+ *  For each element +element+
+ *  - Uses <tt>element.to_s</tt> if +element+ is not a <tt>kind_of?(Array)</tt>.
+ *  - Uses recursive <tt>element.join(separator)</tt> if +element+ is a <tt>kind_of?(Array)</tt>.
  *
- *     [ "a", "b", "c" ].join        #=> "abc"
- *     [ "a", "b", "c" ].join("-")   #=> "a-b-c"
+ *  Argument +separator+, if given, must be a
+ *  {String-convertible object}[doc/implicit_conversion_rdoc.html#label-String-Convertible+Objects].
  *
- *  For nested arrays, join is applied recursively:
+ *  ---
  *
- *     [ "a", [1, 2, [:x, :y]], "b" ].join("-")   #=> "a-1-2-x-y-b"
+ *  With no argument, joins using the output field separator, <tt>$,</tt>:
+ *    a = [:foo, 'bar', 2]
+ *    $, # => nil
+ *    a.join # => "foobar2"
+ *
+ *  With argument +separator+, joins using that separator:
+ *    a = [:foo, 'bar', 2]
+ *    a.join("\n") # => "foo\nbar\n2"
+ *
+ *  ---
+ *
+ *  Joins recursively for nested Arrays:
+ *   a = [:foo, [:bar, [:baz, :bat]]]
+ *   a.join # => "foobarbazbat"
+ *
+ *  ---
+ *
+ *  Raises an exception if +separator+ is not a String-convertible object:
+ *    a = [:foo, 'bar', 2]
+ *    # Raises TypeError (no implicit conversion of Symbol into String):
+ *    a.join(:foo)
+ *
+ *  Raises an exception if any element lacks instance method +#to_s+:
+ *    a = [:foo, 'bar', 2, BasicObject.new]
+ *    # Raises NoMethodError (undefined method `to_s' for #<BasicObject>):
+ *    a.join
  */
-
 static VALUE
 rb_ary_join_m(int argc, VALUE *argv, VALUE ary)
 {
@@ -3042,13 +3066,18 @@ inspect_ary(VALUE ary, VALUE dummy, int recur)
 
 /*
  *  call-seq:
- *     ary.inspect  -> string
- *     ary.to_s     -> string
+ *    array.inspect -> new_string
+ *    array.to_s => new_string
  *
- *  Creates a string representation of +self+, by calling #inspect
- *  on each element.
+ *  Returns the new String formed by calling method <tt>#inspect</tt>
+ *  on each array element:
+ *    a = [:foo, 'bar', 2]
+ *    a.inspect  # => "[:foo, \"bar\", 2]"
  *
- *     [ "a", "b", "c" ].to_s     #=> "[\"a\", \"b\", \"c\"]"
+ *  Raises an exception if any element lacks instance method <tt>#inspect</tt>:
+ *    a = [:foo, 'bar', 2, BasicObject.new]
+ *    a.inspect
+ *    # Raises NoMethodError (undefined method `inspect' for #<BasicObject>)
  */
 
 static VALUE
@@ -3066,11 +3095,21 @@ rb_ary_to_s(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.to_a     -> ary
+ *    to_a -> self or new_array
  *
- *  Returns +self+.
+ *  Returns +self+ if <tt>self.instance_of?(Array)</tt>:
+ *    a = [:foo, 'bar', 2]
+ *    a1 = a.to_a
+ *    a1 # => [:foo, "bar", 2]
+ *    a1.equal?(a) # => true # Returned self
  *
- *  If called on a subclass of Array, converts the receiver to an Array object.
+ *  If +self+ is a subclass of \Array, returns the new \Array
+ *  formed by converting +self+ to an \Array:
+ *    class MyArray < Array; end
+ *    a = MyArray.new([:foo, 'bar', 2])
+ *    a1 = a.to_a
+ *    a1 # => [:foo, "bar", 2]
+ *    a1.class # => Array
  */
 
 static VALUE
