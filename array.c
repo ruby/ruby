@@ -2403,7 +2403,7 @@ rb_ary_resize(VALUE ary, long len)
  *    a[7] = 'foo' # => "foo"
  *    a # => [:foo, "bar", 2, nil, nil, nil, nil, "foo"]
  *
- *  If +index+ is negative, counts backward from the end of the array:
+ *  If +index+ is negative, counts backwards from the end of the array:
  *    a = [:foo, 'bar', 2]
  *    a[-1] = 'two' # => "two"
  *    a # => [:foo, "bar", "two"]
@@ -2417,7 +2417,7 @@ rb_ary_resize(VALUE ary, long len)
  *    a[0, 2] = 'foo' # => "foo"
  *    a # => ["foo", 2]
  *
- *  If +start+ is negative, counts backward from the end of the array:
+ *  If +start+ is negative, counts backwards from the end of the array:
  *    a = [:foo, 'bar', 2]
  *    a[-2, 2] = 'foo' # => "foo"
  *    a # => [:foo, "foo"]
@@ -2449,7 +2449,7 @@ rb_ary_resize(VALUE ary, long len)
  *    a[0..1] = 'foo' # => "foo"
  *    a # => ["foo", 2]
  *
- *  if <tt>range.begin</tt> is negative, counts backward from the end of the array:
+ *  if <tt>range.begin</tt> is negative, counts backwards from the end of the array:
  *    a = [:foo, 'bar', 2]
  *    a[-2..2] = 'foo' # => "foo"
  *    a # => [:foo, "foo"]
@@ -2551,18 +2551,54 @@ fixnum:
 
 /*
  *  call-seq:
- *     ary.insert(index, obj...)  -> ary
+ *    array.insert(index, *objects) -> self
  *
- *  Inserts the given values before the element with the given +index+.
+ *  Inserts given +objects+ before or after the element at +offset+ index;
+ *  returns +self+.
  *
- *  Negative indices count backwards from the end of the array, where +-1+ is
- *  the last element. If a negative index is used, the given values will be
- *  inserted after that element, so using an index of +-1+ will insert the
- *  values at the end of the array.
+ *  Argument +index+ must be an
+ *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
  *
- *     a = %w{ a b c d }
- *     a.insert(2, 99)         #=> ["a", "b", 99, "c", "d"]
- *     a.insert(-2, 1, 2, 3)   #=> ["a", "b", 99, "c", 1, 2, 3, "d"]
+ *  ---
+ *
+ *  When +index+ is non-negative, inserts all given +objects+
+ *  before the element at offset +index+:
+ *    a = [:foo, 'bar', 2]
+ *    a1 = a.insert(1, :bat, :bam)
+ *    a # => [:foo, :bat, :bam, "bar", 2]
+ *    a1.object_id == a.object_id # => true
+ *
+ *  Extends the array if +index+ is beyond the array (<tt>index >= self.size</tt>):
+ *    a = [:foo, 'bar', 2]
+ *    a.insert(5, :bat, :bam)
+ *    a # => [:foo, "bar", 2, nil, nil, :bat, :bam]
+ *
+ *  Does nothing if no objects given:
+ *    a = [:foo, 'bar', 2]
+ *    a.insert(1)
+ *    a.insert(50)
+ *    a.insert(-50)
+ *    a # => [:foo, "bar", 2]
+ *
+ *  ---
+ *
+ *  When +index+ is negative, inserts all given +objects+
+ *  _after_ the element at offset <tt>index+self.size</tt>:
+ *    a = [:foo, 'bar', 2]
+ *    a.insert(-2, :bat, :bam)
+ *    a # => [:foo, "bar", :bat, :bam, 2]
+ *
+ *  ---
+ *
+ *  Raises an exception if +index+ is not an Integer-convertible object:
+ *    a = [:foo, 'bar', 2, 'bar']
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    a.insert(:foo)
+ *
+ *  Raises an exception if +index+ is too small (<tt>index+self.size < 0</tt>):
+ *    a = [:foo, 'bar', 2]
+ *    # Raises IndexError (index -5 too small for array; minimum: -4):
+ *    a.insert(-5, :bat, :bam)
  */
 
 static VALUE
@@ -2600,20 +2636,45 @@ ary_enum_length(VALUE ary, VALUE args, VALUE eobj)
 
 /*
  *  call-seq:
- *     ary.each {|item| block}    -> ary
- *     ary.each                   -> Enumerator
+ *    array.each {|element| ... } -> self
+ *    array.each -> Enumerator
  *
- *  Calls the given block once for each element in +self+, passing that element
- *  as a parameter.  Returns the array itself.
+ *  Iterates over array elements.
  *
- *  If no block is given, an Enumerator is returned.
+ *  ---
  *
- *     a = [ "a", "b", "c" ]
- *     a.each {|x| print x, " -- " }
+ *  When a block given, passes each successive array element to the block;
+ *  returns +self+:
+ *    a = [:foo, 'bar', 2]
+ *    a1 = a.each {|element|  puts "#{element.class} #{element}" }
+ *    a1.equal?(a) # => true # Returned self
  *
- *  produces:
+ *  Output:
+ *    Symbol foo
+ *    String bar
+ *    Integer 2
  *
- *     a -- b -- c --
+ *  Allows the array to be modified during iteration:
+ *    a = [:foo, 'bar', 2]
+ *    a.each {|element| puts element; a.clear if element.to_s.start_with?('b') }
+ *    a # => []
+ *
+ *  Output:
+ *    foo
+ *    bar
+ *
+ *  ---
+ *
+ *  When no block given, returns a new \Enumerator:
+ *    a = [:foo, 'bar', 2]
+ *    e = a.each
+ *    e # => #<Enumerator: [:foo, "bar", 2]:each>
+ *    a1 = e.each { |element|  puts "#{element.class} #{element}" }
+ *
+ *  Output:
+ *    Symbol foo
+ *    String bar
+ *    Integer 2
  */
 
 VALUE
@@ -2630,20 +2691,45 @@ rb_ary_each(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.each_index {|index| block}    -> ary
- *     ary.each_index                    -> Enumerator
+ *    array.each_index {|index| ... } -> self
+ *    array.each_index -> Enumerator
  *
- *  Same as Array#each, but passes the +index+ of the element instead of the
- *  element itself.
+ *  Iterates over array indexes.
  *
- *  An Enumerator is returned if no block is given.
+ *  ---
  *
- *     a = [ "a", "b", "c" ]
- *     a.each_index {|x| print x, " -- " }
+ *  When a block given, passes each successive array index to the block;
+ *  returns +self+:
+ *    a = [:foo, 'bar', 2]
+ *    a1 = a.each_index {|index|  puts "#{index} #{a[index]}" }
+ *    a1.equal?(a) # => true # Returned self
  *
- *  produces:
+ *  Output:
+ *    0 foo
+ *    1 bar
+ *    2 2
  *
- *     0 -- 1 -- 2 --
+ *  Allows the array to be modified during iteration:
+ *    a = [:foo, 'bar', 2]
+ *    a.each_index {|index| puts index; a.clear if index > 0 }
+ *    a # => []
+ *
+ *  Output:
+ *    0
+ *    1
+ *
+ *  ---
+ *
+ *  When no block given, returns a new \Enumerator:
+ *    a = [:foo, 'bar', 2]
+ *    e = a.each_index
+ *    e # => #<Enumerator: [:foo, "bar", 2]:each_index>
+ *    a1 = e.each {|index|  puts "#{index} #{a[index]}"}
+ *
+ *  Output:
+ *    0 foo
+ *    1 bar
+ *    2 2
  */
 
 static VALUE
@@ -2660,17 +2746,44 @@ rb_ary_each_index(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.reverse_each {|item| block}    -> ary
- *     ary.reverse_each                   -> Enumerator
+ *    array.reverse_each {|element| ... } -> self
+ *    array.reverse_each -> Enumerator
  *
- *  Same as Array#each, but traverses +self+ in reverse order.
+ *  Iterates backwards over array elements.
  *
- *     a = [ "a", "b", "c" ]
- *     a.reverse_each {|x| print x, " " }
+ *  ---
  *
- *  produces:
+ *  When a block given, passes, in reverse order, each element to the block;
+ *  returns +self+:
+ *    a = [:foo, 'bar', 2]
+ *    a1 = a.reverse_each {|element|  puts "#{element.class} #{element}" }
+ *    a1.equal?(a) # => true # Returned self
  *
- *     c b a
+ *  Output:
+ *    Integer 2
+ *    String bar
+ *    Symbol foo
+ *
+ *  Allows the array to be modified during iteration:
+ *    a = [:foo, 'bar', 2]
+ *    a.reverse_each {|element| puts element; a.clear if element.to_s.start_with?('b') }
+ *    a # => []
+ *
+ *  Output:
+ *    2
+ *    bar
+ *
+ *  ---
+ *
+ *  When no block given, returns a new \Enumerator:
+ *    a = [:foo, 'bar', 2]
+ *    e = a.reverse_each
+ *    e # => #<Enumerator: [:foo, "bar", 2]:reverse_each>
+ *    a1 = e.each { |element|  puts "#{element.class} #{element}" }
+ *  Output:
+ *    Integer 2
+ *    String bar
+ *    Symbol foo
  */
 
 static VALUE
@@ -2693,12 +2806,12 @@ rb_ary_reverse_each(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.length -> int
+ *    array.length -> an_integer
  *
- *  Returns the number of elements in +self+. May be zero.
- *
- *     [ 1, 2, 3, 4, 5 ].length   #=> 5
- *     [].length                  #=> 0
+ *  Returns the count of elements in the array:
+ *    a = [:foo, 'bar', 2]
+ *    a.length # => 3
+ *    [].length # => 0
  */
 
 static VALUE
@@ -2710,11 +2823,12 @@ rb_ary_length(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.empty?   -> true or false
+ *    array.empty?  -> true or false
  *
- *  Returns +true+ if +self+ contains no elements.
- *
- *     [].empty?   #=> true
+ *  Returns +true+ if the count of elements in the array is zero,
+ *  +false+ otherwise:
+ *    [].empty? # => true
+ *    [:foo, 'bar', 2].empty? # => false
  */
 
 static VALUE
