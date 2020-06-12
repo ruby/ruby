@@ -550,6 +550,13 @@ do-install-gem: $(PROGRAM) pre-install-gem
 post-install-gem::
 	@$(NULLCMD)
 
+install-dbg: pre-install-dbg do-install-dbg post-install-dbg
+pre-install-dbg::
+do-install-dbg: $(PROGRAM) pre-install-dbg
+	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=dbg
+post-install-dbg::
+	@$(NULLCMD)
+
 rdoc: PHONY main
 	@echo Generating RDoc documentation
 	$(Q) $(RDOC) --ri --op "$(RDOCOUT)" $(RDOC_GEN_OPTS) $(RDOCFLAGS) "$(srcdir)"

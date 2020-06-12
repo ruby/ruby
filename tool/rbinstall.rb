@@ -149,7 +149,9 @@ end
 
 $install_procs = Hash.new {[]}
 def install?(*types, &block)
-  $install_procs[:all] <<= block
+  unless types.delete(:nodefault)
+    $install_procs[:all] <<= block
+  end
   types.each do |type|
     $install_procs[type] <<= block
   end
@@ -482,7 +484,12 @@ _=_\\
 =end
 EOS
 
-installer = Struct.new(:ruby_shebang, :ruby_bin, :ruby_install_name, :stub, :trans)
+installer = Struct.new(:ruby_shebang, :ruby_bin, :ruby_install_name, :stub, :trans) do
+  def transform(name)
+    RbConfig.expand(trans[name])
+  end
+end
+
 $script_installer = Class.new(installer) do
   ruby_shebang = File.join(bindir, ruby_install_name)
   if File::ALT_SEPARATOR
@@ -527,7 +534,7 @@ $script_installer = Class.new(installer) do
   end
 
   def install(src, cmd)
-    cmd = cmd.sub(/[^\/]*\z/m) {|n| RbConfig.expand(trans[n])}
+    cmd = cmd.sub(/[^\/]*\z/m) {|n| transform(n)}
 
     shebang, body = open(src, "rb") do |f|
       next f.gets, f.read
@@ -653,6 +660,20 @@ install?(:local, :comm, :man) do
       open_for_install(destfile, $data_mode) {w}
     end
   end
+end
+
+install?(:dbg, :nodefault) do
+  prepare "debugger commands", bindir
+  prepare "debugger scripts", rubylibdir
+  conf = RbConfig::MAKEFILE_CONFIG.merge({"prefix"=>"${prefix#/}"})
+  Dir.glob(File.join(srcdir, "template/ruby-*db.in")) do |src|
+    cmd = $script_installer.transform(File.basename(src, ".in"))
+    open_for_install(File.join(bindir, cmd), $script_mode) {
+      RbConfig.expand(File.read(src), conf)
+    }
+  end
+  install File.join(srcdir, "misc/lldb_cruby.py"), File.join(rubylibdir, "lldb_cruby.py")
+  install File.join(srcdir, ".gdbinit"), File.join(rubylibdir, "gdbinit")
 end
 
 module RbInstall
