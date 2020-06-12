@@ -6651,11 +6651,6 @@ compile_next(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
 	    ADD_INSN(ret, line, putnil);
 	}
     }
-    else if (iseq->body->type == ISEQ_TYPE_EVAL) {
-      next_in_eval:
-	COMPILE_ERROR(ERROR_ARGS "Can't escape from eval with next");
-	return COMPILE_NG;
-    }
     else {
 	const rb_iseq_t *ip = iseq;
 
@@ -6674,7 +6669,8 @@ compile_next(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
 		break;
 	    }
 	    else if (ip->body->type == ISEQ_TYPE_EVAL) {
-		goto next_in_eval;
+                COMPILE_ERROR(ERROR_ARGS "Can't escape from eval with next");
+                return COMPILE_NG;
 	    }
 
 	    ip = ip->body->parent_iseq;
