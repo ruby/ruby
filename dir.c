@@ -1705,10 +1705,7 @@ glob_make_pattern(const char *p, const char *e, int flags, rb_encoding *enc)
 
     tmp = GLOB_ALLOC(struct glob_pattern);
     if (!tmp) {
-      error:
-	*tail = 0;
-	glob_free_pattern(list);
-	return 0;
+        goto error;
     }
     tmp->type = dirsep ? MATCH_DIR : MATCH_ALL;
     tmp->str = 0;
@@ -1716,6 +1713,11 @@ glob_make_pattern(const char *p, const char *e, int flags, rb_encoding *enc)
     tmp->next = 0;
 
     return list;
+
+  error:
+    *tail = 0;
+    glob_free_pattern(list);
+    return 0;
 }
 
 static void
