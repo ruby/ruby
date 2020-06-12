@@ -202,8 +202,6 @@ module Bundler
         return jobs
       end
 
-      return 1 unless can_install_in_parallel?
-
       Bundler.settings[:jobs] || processor_count
     end
 
@@ -261,10 +259,6 @@ module Bundler
             ", so the dependency is being ignored"
         end
       end
-    end
-
-    def can_install_in_parallel?
-      true
     end
 
     def install_in_parallel(size, standalone, force = false)
