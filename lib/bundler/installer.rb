@@ -202,7 +202,14 @@ module Bundler
         return jobs
       end
 
-      Bundler.settings[:jobs] || processor_count
+      if jobs = Bundler.settings[:jobs]
+        return jobs
+      end
+
+      # Parallelization has some issues on Windows, so it's not yet the default
+      return 1 if Gem.win_platform?
+
+      processor_count
     end
 
     def processor_count
