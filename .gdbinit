@@ -156,12 +156,12 @@ define rp
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_HASH
     printf "%sT_HASH%s: ", $color_type, $color_end,
-    if (((struct RHash *)($arg0))->basic->flags & RHASH_ST_TABLE_FLAG)
+    if (((struct RHash *)($arg0))->basic.flags & RHASH_ST_TABLE_FLAG)
       printf "st len=%ld ", ((struct RHash *)($arg0))->as.st->num_entries
     else
       printf "li len=%ld bound=%ld ", \
-        ((((struct RHash *)($arg0))->basic->flags & RHASH_AR_TABLE_SIZE_MASK) >> RHASH_AR_TABLE_SIZE_SHIFT), \
-        ((((struct RHash *)($arg0))->basic->flags & RHASH_AR_TABLE_BOUND_MASK) >> RHASH_AR_TABLE_BOUND_SHIFT)
+        ((((struct RHash *)($arg0))->basic.flags & RHASH_AR_TABLE_SIZE_MASK) >> RHASH_AR_TABLE_SIZE_SHIFT), \
+        ((((struct RHash *)($arg0))->basic.flags & RHASH_AR_TABLE_BOUND_MASK) >> RHASH_AR_TABLE_BOUND_SHIFT)
     end
     print (struct RHash *)($arg0)
   else
