@@ -1722,16 +1722,16 @@ class TestFileUtils < Test::Unit::TestCase
     o.extend(FileUtils)
     o.singleton_class.send(:public, :chdir)
     o.freeze
-    orig_stdout = $stdout
-    $stdout = StringIO.new
+    orig_stderr = $stderr
+    $stderr = StringIO.new
     o.chdir('.', verbose: true){}
-    $stdout.rewind
-    assert_equal(<<-END, $stdout.read)
+    $stderr.rewind
+    assert_equal(<<-END, $stderr.read)
 cd .
 cd -
     END
   ensure
-    $stdout = orig_stdout if orig_stdout
+    $stderr = orig_stderr if orig_stderr
   end
 
   def test_getwd
