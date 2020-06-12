@@ -1747,19 +1747,15 @@ rb_undef_methods_from(VALUE klass, VALUE super)
  * \{
  */
 
-#define SPECIAL_SINGLETON(x,c) do {\
-    if (obj == (x)) {\
-	return (c);\
-    }\
-} while (0)
-
 static inline VALUE
 special_singleton_class_of(VALUE obj)
 {
-    SPECIAL_SINGLETON(Qnil, rb_cNilClass);
-    SPECIAL_SINGLETON(Qfalse, rb_cFalseClass);
-    SPECIAL_SINGLETON(Qtrue, rb_cTrueClass);
-    return Qnil;
+    switch (obj) {
+      case Qnil:   return rb_cNilClass;
+      case Qfalse: return rb_cFalseClass;
+      case Qtrue:  return rb_cTrueClass;
+      default:     return Qnil;
+    }
 }
 
 VALUE
