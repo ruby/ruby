@@ -815,8 +815,10 @@ ossl_pkey_sign(VALUE self, VALUE digest, VALUE data)
         EVP_MD_CTX_free(ctx);
         ossl_raise(ePKeyError, "EVP_DigestSign");
     }
-    if (siglen > LONG_MAX)
+    if (siglen > LONG_MAX) {
+        EVP_MD_CTX_free(ctx);
         rb_raise(ePKeyError, "signature would be too large");
+    }
     sig = ossl_str_new(NULL, (long)siglen, &state);
     if (state) {
         EVP_MD_CTX_free(ctx);
@@ -837,8 +839,10 @@ ossl_pkey_sign(VALUE self, VALUE digest, VALUE data)
         EVP_MD_CTX_free(ctx);
         ossl_raise(ePKeyError, "EVP_DigestSignFinal");
     }
-    if (siglen > LONG_MAX)
+    if (siglen > LONG_MAX) {
+        EVP_MD_CTX_free(ctx);
         rb_raise(ePKeyError, "signature would be too large");
+    }
     sig = ossl_str_new(NULL, (long)siglen, &state);
     if (state) {
         EVP_MD_CTX_free(ctx);
