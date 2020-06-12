@@ -136,7 +136,7 @@ define rp
       printf "%sT_ARRAY%s: len=%ld ", $color_type, $color_end, $len
       if ($flags & RUBY_FL_USER2)
 	printf "(shared) shared="
-	output/x ((struct RArray*)($arg0))->as.heap.aux.shared
+	output/x ((struct RArray*)($arg0))->as.heap.aux.shared_root
 	printf " "
       else
 	printf "(ownership) capa=%ld ", ((struct RArray*)($arg0))->as.heap.aux.capa
