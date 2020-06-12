@@ -1,8 +1,11 @@
 # frozen_string_literal: true
+require 'rubygems/deprecate'
+
 ##
 # This module contains various utility methods as module methods.
 
 module Gem::Util
+
   ##
   # Zlib::GzipReader wrapper that unzips +data+.
 
@@ -65,6 +68,14 @@ module Gem::Util
       cmds = command.dup
     end
     system(*(cmds << opt))
+  end
+
+  class << self
+
+    extend Gem::Deprecate
+
+    rubygems_deprecate :silent_system
+
   end
 
   ##
