@@ -6708,12 +6708,7 @@ compile_redo(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
 	    ADD_INSN(ret, line, putnil);
 	}
     }
-    else if (iseq->body->type == ISEQ_TYPE_EVAL) {
-      redo_in_eval:
-	COMPILE_ERROR(ERROR_ARGS "Can't escape from eval with redo");
-	return COMPILE_NG;
-    }
-    else if (ISEQ_COMPILE_DATA(iseq)->start_label) {
+    else if (iseq->body->type == ISEQ_TYPE_EVAL && ISEQ_COMPILE_DATA(iseq)->start_label) {
 	LABEL *splabel = NEW_LABEL(0);
 
 	debugs("redo in block");
@@ -6743,7 +6738,8 @@ compile_redo(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
 		break;
 	    }
 	    else if (ip->body->type == ISEQ_TYPE_EVAL) {
-		goto redo_in_eval;
+                COMPILE_ERROR(ERROR_ARGS "Can't escape from eval with redo");
+                return COMPILE_NG;
 	    }
 
 	    ip = ip->body->parent_iseq;
