@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # frozen_string_literal: true
 #++
 # Copyright (C) 2004 Mauricio Julio Fernández Pradier
