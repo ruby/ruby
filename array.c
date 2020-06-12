@@ -1573,15 +1573,18 @@ make_room_for_unshift(VALUE ary, const VALUE *head, VALUE *sharedp, int argc, lo
 {
     if (head - sharedp < argc) {
         long room = capa - len - argc;
+
         room -= room >> 4;
         MEMMOVE((VALUE *)sharedp + argc + room, head, VALUE, len);
         head = sharedp + argc + room;
     }
     ARY_SET_PTR(ary, head - argc);
     assert(ARY_SHARED_ROOT_OCCUPIED(ARY_SHARED_ROOT(ary)));
+
     ary_verify(ary);
     return ARY_SHARED_ROOT(ary);
 }
+
 static VALUE
 ary_modify_for_unshift(VALUE ary, int argc)
 {
@@ -1617,11 +1620,13 @@ ary_modify_for_unshift(VALUE ary, int argc)
 	return ary;
     }
 }
+
 static VALUE
 ary_ensure_room_for_unshift(VALUE ary, int argc)
 {
     long len = RARRAY_LEN(ary);
     long new_len = len + argc;
+
     if (len > ARY_MAX_SIZE - argc) {
         rb_raise(rb_eIndexError, "index %ld too big", new_len);
     }
@@ -1631,6 +1636,7 @@ ary_ensure_room_for_unshift(VALUE ary, int argc)
     else {
         VALUE shared_root = ARY_SHARED_ROOT(ary);
         long capa = RARRAY_LEN(shared_root);
+
         if (! ARY_SHARED_ROOT_OCCUPIED(shared_root)) {
             return ary_modify_for_unshift(ary, argc);
         }
@@ -1638,9 +1644,10 @@ ary_ensure_room_for_unshift(VALUE ary, int argc)
             return ary_modify_for_unshift(ary, argc);
         }
         else {
-            rb_ary_modify_check(ary);
             const VALUE * head = RARRAY_CONST_PTR_TRANSIENT(ary);
             void *sharedp = (void *)RARRAY_CONST_PTR_TRANSIENT(shared_root);
+
+            rb_ary_modify_check(ary);
             return make_room_for_unshift(ary, head, sharedp, argc, capa, len);
         }
     }
