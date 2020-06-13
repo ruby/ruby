@@ -418,6 +418,9 @@ def DelegateClass(superclass, &block)
   klass.define_singleton_method :protected_instance_methods do |all=true|
     super(all) | superclass.protected_instance_methods
   end
+  klass.define_singleton_method :instance_methods do |all=true|
+    super(all) | superclass.instance_methods
+  end
   klass.module_eval(&block) if block
   return klass
 end

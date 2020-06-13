@@ -131,6 +131,12 @@ class TestDelegateClass < Test::Unit::TestCase
     assert_equal([:parent_protected, :parent_protected_added], (Child.new(Parent.new).protected_methods - ignores).sort)
   end
 
+  def test_instance_methods
+    ignores = Object.instance_methods | Delegator.instance_methods
+    assert_equal([:parent_protected, :parent_protected_added, :parent_public, :parent_public_added], (Child.instance_methods - ignores).sort)
+    assert_equal([:parent_protected, :parent_protected_added, :parent_public, :parent_public_added], (Child.new(Parent.new).methods - ignores).sort)
+  end
+
   class IV < DelegateClass(Integer)
     attr_accessor :var
 
