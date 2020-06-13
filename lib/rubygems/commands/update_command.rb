@@ -262,6 +262,11 @@ command to remove old versions.
   # Update RubyGems software to the latest version.
 
   def update_rubygems
+    if Gem.disable_system_update_message
+      alert_error Gem.disable_system_update_message
+      return
+    end
+
     check_update_arguments
 
     version, requirement = rubygems_target_version
