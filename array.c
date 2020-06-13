@@ -2992,7 +2992,7 @@ rb_ary_join(VALUE ary, VALUE sep)
 /*
  *  call-seq:
  *    array.join ->new_string
- *    array.join(separator = nil) -> new_string
+ *    array.join(separator = $,) -> new_string
  *
  *  Returns the new \String formed by joining the array elements after conversion.
  *  For each element +element+
@@ -3107,6 +3107,7 @@ rb_ary_to_s(VALUE ary)
  *  formed by converting +self+ to an \Array:
  *    class MyArray < Array; end
  *    a = MyArray.new([:foo, 'bar', 2])
+ *    a.class # => MyArray
  *    a1 = a.to_a
  *    a1 # => [:foo, "bar", 2]
  *    a1.class # => Array
