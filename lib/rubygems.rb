@@ -1188,6 +1188,12 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   class << self
 
     ##
+    # RubyGems distributors (like operating system package managers) can
+    # disable RubyGems update by setting this to error message printed to
+    # end-users on gem update --system instead of actual update.
+    attr_accessor :disable_system_update_message
+
+    ##
     # Hash of loaded Gem::Specification keyed by name
 
     attr_reader :loaded_specs

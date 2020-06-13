@@ -238,6 +238,23 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
                  @ui.error
   end
 
+  def test_execute_system_with_disabled_update
+    old_disable_system_update_message = Gem.disable_system_update_message
+    Gem.disable_system_update_message = "Please use package manager instead."
+
+    @cmd.options[:args] = []
+    @cmd.options[:system] = true
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    assert_empty @ui.output
+    assert_equal "ERROR:  Please use package manager instead.\n", @ui.error
+  ensure
+    Gem.disable_system_update_message = old_disable_system_update_message
+  end
+
   # before:
   #   a1 -> c1.2
   # after:
