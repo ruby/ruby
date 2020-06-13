@@ -33,7 +33,7 @@ describe "Kernel.lambda" do
 
   it "returns the passed Proc if given an existing Proc" do
     some_proc = proc {}
-    l = lambda(&some_proc)
+    l = suppress_warning {lambda(&some_proc)}
     l.should equal(some_proc)
     l.lambda?.should be_false
   end
@@ -55,7 +55,7 @@ describe "Kernel.lambda" do
 
   it "does not create lambda-style Procs when captured with #method" do
     kernel_lambda = method(:lambda)
-    l = kernel_lambda.call { 42 }
+    l = suppress_warning {kernel_lambda.call { 42 }}
     l.lambda?.should be_false
     l.call(:extra).should == 42
   end

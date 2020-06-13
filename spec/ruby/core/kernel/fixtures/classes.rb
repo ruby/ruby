@@ -350,7 +350,7 @@ module KernelSpecs
 
     module Ampersand
       def lambda(&block)
-        super(&block)
+        suppress_warning {super(&block)}
       end
     end
 
