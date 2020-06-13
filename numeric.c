@@ -3280,9 +3280,6 @@ int_even_p(VALUE num)
     else if (RB_TYPE_P(num, T_BIGNUM)) {
 	return rb_big_even_p(num);
     }
-    else if (rb_funcall(num, '%', 1, INT2FIX(2)) == INT2FIX(0)) {
-	return Qtrue;
-    }
     return Qfalse;
 }
 
