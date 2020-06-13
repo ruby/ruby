@@ -4951,7 +4951,7 @@ f_paren_args	: '(' f_args rparen
 			$$ = new_args_tail(p, Qnone, idFWD_KWREST, idFWD_BLOCK, &@4);
 			$$ = new_args(p, $2, Qnone, idFWD_REST, Qnone, $$, &@4);
 		    /*% %*/
-		    /*% ripper: paren!(params_new($2, Qnone, $4, Qnone, Qnone, Qnone, Qnone)) %*/
+		    /*% ripper: paren!(params!($2, Qnone, $4, Qnone, Qnone, Qnone, Qnone)) %*/
 			SET_LEX_STATE(EXPR_BEG);
 			p->command_start = TRUE;
 		    }
@@ -4966,13 +4966,13 @@ f_paren_args	: '(' f_args rparen
 			$$ = new_args_tail(p, Qnone, idFWD_KWREST, idFWD_BLOCK, &@2);
 			$$ = new_args(p, Qnone, Qnone, idFWD_REST, Qnone, $$, &@2);
 		    /*% %*/
-		    /*% ripper: paren!(params_new(Qnone, Qnone, $2, Qnone, Qnone, Qnone, Qnone)) %*/
+		    /*% ripper: paren!(params!(Qnone, Qnone, $2, Qnone, Qnone, Qnone, Qnone)) %*/
 			SET_LEX_STATE(EXPR_BEG);
 			p->command_start = TRUE;
 		    }
                 ;
 
-f_arglist       : f_paren_args
+f_arglist	: f_paren_args
 		|   {
 			$<ctxt>$ = p->ctxt;
 			p->ctxt.in_kwarg = 1;
