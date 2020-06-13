@@ -2243,6 +2243,8 @@ EOF
   end
 
   def test_getbinaryfile_command_injection
+    # http://ci.rvm.jp/results/trunk-mjit-wait@silicon-docker/3001181
+    skip 'This has been too unstable with --jit-wait' if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
     skip "| is not allowed in filename on Windows" if windows?
     [false, true].each do |resume|
       commands = []
