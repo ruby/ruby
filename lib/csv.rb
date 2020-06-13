@@ -832,7 +832,7 @@ class CSV
     # Returns an integer, or, if there were no rows, +nil+.
     #
     # * Argument +path+, if given, must be the path to a file.
-    # * Argument +io+, if given, must be an \IO object opened for reading.
+    # :include: ../doc/argument_io.rdoc
     # * Argument +mode+, if given, must be a \File mode
     #   See {Open Mode}[IO.html#method-c-new-label-Open+Mode].
     # * Arguments <tt>**options</tt> must be keyword options.
@@ -854,7 +854,6 @@ class CSV
     #   string = "foo,0\nbar,1\nbaz,2\n"
     #   path = 't.csv'
     #   File.write(path, string)
-    #   io = File.open(path)
     #
     # Read rows from a file at +path+:
     #   CSV.foreach(path) {|row| p row } # => 21
@@ -864,7 +863,7 @@ class CSV
     #   ["baz", "2"]
     #
     # Read rows from an \IO object:
-    #   CSV.foreach(io) {|row| p row } # => 21
+    #   CSV.foreach(File.open(path)) {|row| p row } # => 21
     # Output:
     #   ["foo", "0"]
     #   ["bar", "1"]
@@ -872,10 +871,10 @@ class CSV
     #
     # Returns a new \Enumerator if no block given:
     #   CSV.foreach(path) # => #<Enumerator: CSV:foreach("t.csv", "r")>
-    #   CSV.foreach(io) # => #<Enumerator: CSV:foreach(#<File:t.csv>, "r")>
+    #   CSV.foreach(File.open(path)) # => #<Enumerator: CSV:foreach(#<File:t.csv>, "r")>
     #
     # Issues a warning if an encoding is unsupported:
-    #   CSV.foreach(io, encoding: 'foo:bar') {|row| } # => 21
+    #   CSV.foreach(File.open(path), encoding: 'foo:bar') {|row| } # => 21
     # Output:
     #   warning: Unsupported encoding foo ignored
     #   warning: Unsupported encoding bar ignored
@@ -892,8 +891,8 @@ class CSV
     #   CSV.foreach(io) {|row| }
     #
     # Raises an exception if +mode+ is invalid:
-    #   # Raises IOError (not opened for reading):
-    #   CSV.foreach(path, 'w') {|row| }
+    #   # Raises ArgumentError (invalid access mode nosuch):
+    #   CSV.foreach(path, 'nosuch') {|row| }
     #
     def foreach(path, mode="r", **options, &block)
       return to_enum(__method__, path, mode, **options) unless block_given?
@@ -1022,10 +1021,10 @@ class CSV
 
     #
     # :call-seq:
-    #   open( filename, mode = "rb", **options ) { |faster_csv| ... }
-    #   open( filename, **options ) { |faster_csv| ... }
-    #   open( filename, mode = "rb", **options )
-    #   open( filename, **options )
+    #   open(file_path, mode = "rb", **options ) -> new_csv
+    #   open(io, mode = "rb", **options ) -> new_csv
+    #   open(file_path, mode = "rb", **options ) { |csv| ... } -> new_csv
+    #   open(io, mode = "rb", **options ) { |csv| ... } -> new_csv
     #
     # possible options elements:
     #   hash form:
@@ -1034,28 +1033,63 @@ class CSV
     #     :undef => :replace   # replace undefined conversion
     #     :replace => string   # replacement string ("?" or "\uFFFD" if not specified)
     #
-    # This method opens an IO object, and wraps that with CSV. This is intended
-    # as the primary interface for writing a CSV file.
+    # * Argument +path+, if given, must be the path to a file.
+    # :include: ../doc/argument_io.rdoc
+    # * Argument +mode+, if given, must be a \File mode
+    #   See {Open Mode}[IO.html#method-c-new-label-Open+Mode].
+    # * Arguments <tt>**options</tt> must be keyword options.
+    #   See {Options for Generating}[#class-CSV-label-Options+for+Generating].
+    # * This method optionally accepts an additional <tt>:encoding</tt> option
+    #   that you can use to specify the Encoding of the data read from +path+ or +io+.
+    #   You must provide this unless your data is in the encoding
+    #   given by <tt>Encoding::default_external</tt>.
+    #   Parsing will use this to determine how to parse the data.
+    #   You may provide a second Encoding to
+    #   have the data transcoded as it is read. For example,
+    #     encoding: 'UTF-32BE:UTF-8'
+    #   would read +UTF-32BE+ data from the file
+    #   but transcode it to +UTF-8+ before parsing.
     #
-    # You must pass a +filename+ and may optionally add a +mode+ for Ruby's
-    # open().
+    # ---
     #
-    # See {Options for Parsing}[#class-CSV-label-Options+for+Parsing].
+    # These examples assume prior execution of:
+    #   string = "foo,0\nbar,1\nbaz,2\n"
+    #   path = 't.csv'
+    #   File.write(path, string)
     #
-    # This method works like Ruby's open() call, in that it will pass a CSV object
-    # to a provided block and close it when the block terminates, or it will
-    # return the CSV object when no block is provided. (*Note*: This is different
-    # from the Ruby 1.8 CSV library which passed rows to the block. Use
-    # CSV::foreach() for that behavior.)
+    # ---
     #
-    # You must provide a +mode+ with an embedded Encoding designator unless your
-    # data is in Encoding::default_external(). CSV will check the Encoding of the
-    # underlying IO object (set by the +mode+ you pass) to determine how to parse
-    # the data. You may provide a second Encoding to have the data transcoded as
-    # it is read just as you can with a normal call to IO::open(). For example,
-    # <tt>"rb:UTF-32BE:UTF-8"</tt> would read UTF-32BE data from the file but
-    # transcode it to UTF-8 before CSV parses it.
+    # With no block given, returns a new \CSV object.
     #
+    # Create a \CSV object using a file path:
+    #   csv = CSV.open(path)
+    #   csv # => #<CSV io_type:File io_path:"t.csv" encoding:UTF-8 lineno:0 col_sep:"," row_sep:"\r\n" quote_char:"\"">
+    #
+    # Create a \CSV object using an open \File:
+    #   csv = CSV.open(File.open(path))
+    #   csv # => #<CSV io_type:File io_path:"t.csv" encoding:UTF-8 lineno:0 col_sep:"," row_sep:"\r\n" quote_char:"\"">
+    #
+    # ---
+    #
+    # With a block given, calls the block with the created \CSV object:
+    #
+    # Using a file path:
+    #   csv = CSV.open(path) {|csv| p csv}
+    #   csv # => #<CSV io_type:File io_path:"t.csv" encoding:UTF-8 lineno:0 col_sep:"," row_sep:"\r\n" quote_char:"\"">
+    # Output:
+    #   #<CSV io_type:File io_path:"t.csv" encoding:UTF-8 lineno:0 col_sep:"," row_sep:"\r\n" quote_char:"\"">
+    #
+    # Using an open \File:
+    #   csv = CSV.open(File.open(path)) {|csv| p csv}
+    #   csv # => #<CSV io_type:File io_path:"t.csv" encoding:UTF-8 lineno:0 col_sep:"," row_sep:"\r\n" quote_char:"\"">
+    # Output:
+    #   #<CSV io_type:File io_path:"t.csv" encoding:UTF-8 lineno:0 col_sep:"," row_sep:"\r\n" quote_char:"\"">
+    #
+    # ---
+    #
+    # Raises an exception if the argument is not a \String object or \IO object:
+    #   # Raises TypeError (no implicit conversion of Symbol into String)
+    #   CSV.open(:foo)
     def open(filename, mode="r", **options)
       # wrap a File opened with the remaining +args+ with no newline
       # decorator
@@ -1093,16 +1127,60 @@ class CSV
 
     #
     # :call-seq:
-    #   parse( str, **options ) { |row| ... }
-    #   parse( str, **options )
+    #   parse(string) -> array_of_arrays
+    #   parse(io) -> array_of_arrays
+    #   parse(string, **options) {|row| ... } -> integer
+    #   parse(io, **options) {|row| ... } -> integer
     #
-    # This method can be used to easily parse CSV out of a String. You may either
-    # provide a +block+ which will be called with each row of the String in turn,
-    # or just use the returned Array of Arrays (when no +block+ is given).
+    # Parses +string+ or +io+ using the specified +options+.
     #
-    # You pass your +str+ to read from, and an optional +options+.
-    # See {Options for Parsing}[#class-CSV-label-Options+for+Parsing].
+    # - Argument +string+ should be a \String object;
+    #   it will be put into a new StringIO object positioned at the beginning.
+    # :include: ../doc/argument_io.rdoc
+    # - Argument +options+: see {Options for Parsing}[#class-CSV-label-Options+for+Parsing]
     #
+    # These examples assume prior execution of:
+    #   string = "foo,0\nbar,1\nbaz,2\n"
+    #   path = 't.csv'
+    #   File.write(path, string)
+    #
+    # ---
+    #
+    # With no block given, returns an \Array of Arrays formed from the source.
+    #
+    # Parse a \String:
+    #   a_of_a = CSV.parse(string)
+    #   a_of_a # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
+    #
+    # Parse an open \File:
+    #   a_of_a = CSV.parse(File.open(path))
+    #   a_of_a # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
+    #
+    # ---
+    #
+    # With a block given, calls the block with each parsed row:
+    #
+    # Parse a \String:
+    #   CSV.parse(string) {|row| p row } # => 18
+    #
+    # Output:
+    #   ["foo", "0"]
+    #   ["bar", "1"]
+    #   ["baz", "2"]
+    #
+    # Parse an open \File:
+    #   CSV.parse(File.open(path)) {|row| p row } # => 18
+    #
+    # Output:
+    #   ["foo", "0"]
+    #   ["bar", "1"]
+    #   ["baz", "2"]
+    #
+    # ---
+    #
+    # Raises an exception if the argument is not a \String object or \IO object:
+    #   # Raises NoMethodError (undefined method `close' for :foo:Symbol)
+    #   CSV.parse(:foo)
     def parse(str, **options, &block)
       csv = new(str, **options)
 
@@ -1127,11 +1205,10 @@ class CSV
     #
     # - Argument +string+ should be a \String object;
     #   it will be put into a new StringIO object positioned at the beginning.
-    # - Argument +io+ should be an IO object, positioned at the beginning.
+    # :include: ../doc/argument_io.rdoc
     #   To position at the end, for appending, use method CSV.generate.
     #   For any other positioning, pass a preset \StringIO object instead.
-    # - Argument +options+: see {Options for Generating}[#class-CSV-label-Options+for+Generating]
-    # For +options+, see {Options for Parsing}[#class-CSV-label-Options+for+Parsing].
+    # - Argument +options+: see {Options for Parsing}[#class-CSV-label-Options+for+Parsing]
     #
     # ---
     # Returns data from the first line from a String object:
@@ -1210,9 +1287,7 @@ class CSV
   #
   # - Argument +string+ should be a \String object;
   #   it will be put into a new StringIO object positioned at the beginning.
-  # - Argument +io+ should be an IO object, positioned at the beginning.
-  #   To position at the end, for appending, use method CSV.generate.
-  #   For any other positioning, pass a preset StringIO object instead.
+  # :include: ../doc/argument_io.rdoc
   # - Argument +options+: See:
   #   * {Options for Parsing}[#class-CSV-label-Options+for+Parsing]
   #   * {Options for Generating}[#class-CSV-label-Options+for+Generating]
