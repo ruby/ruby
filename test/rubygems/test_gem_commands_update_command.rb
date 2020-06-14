@@ -245,8 +245,10 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     @cmd.options[:args] = []
     @cmd.options[:system] = true
 
-    use_ui @ui do
-      @cmd.execute
+    assert_raises Gem::MockGemUi::TermError do
+      use_ui @ui do
+        @cmd.execute
+      end
     end
 
     assert_empty @ui.output

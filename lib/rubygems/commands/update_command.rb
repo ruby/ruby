@@ -264,7 +264,7 @@ command to remove old versions.
   def update_rubygems
     if Gem.disable_system_update_message
       alert_error Gem.disable_system_update_message
-      return
+      terminate_interaction 1
     end
 
     check_update_arguments
