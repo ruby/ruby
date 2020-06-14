@@ -28,7 +28,7 @@ RSpec.describe "bundle update" do
       end
 
       install_gemfile <<-G
-        gem "rails", :git => "#{lib_path("rails")}"
+        gem "rails", :git => "#{file_uri_for(lib_path("rails"))}"
       G
 
       bundle "update rails"
@@ -61,7 +61,7 @@ RSpec.describe "bundle update" do
       end
 
       install_gemfile <<-G
-        gem "foo", :git => "#{lib_path("foo")}"
+        gem "foo", :git => "#{file_uri_for(lib_path("foo"))}"
         gem "bar"
       G
 
@@ -79,17 +79,17 @@ RSpec.describe "bundle update" do
       build_git "foo", :path => lib_path("foo_two")
 
       install_gemfile <<-G
-        gem "foo", "1.0", :git => "#{lib_path("foo_one")}"
+        gem "foo", "1.0", :git => "#{file_uri_for(lib_path("foo_one"))}"
       G
 
       FileUtils.rm_rf lib_path("foo_one")
 
       install_gemfile <<-G
-        gem "foo", "1.0", :git => "#{lib_path("foo_two")}"
+        gem "foo", "1.0", :git => "#{file_uri_for(lib_path("foo_two"))}"
       G
 
       expect(err).to be_empty
-      expect(out).to include("Fetching #{lib_path}/foo_two")
+      expect(out).to include("Fetching #{file_uri_for(lib_path)}/foo_two")
       expect(out).to include("Bundle complete!")
     end
 
@@ -184,7 +184,7 @@ RSpec.describe "bundle update" do
       build_git "foo", "1.0"
 
       install_gemfile <<-G
-        gem "foo", :git => "#{lib_path("foo-1.0")}"
+        gem "foo", :git => "#{file_uri_for(lib_path("foo-1.0"))}"
       G
 
       lib_path("foo-1.0").join(".git").rmtree
@@ -203,7 +203,7 @@ RSpec.describe "bundle update" do
 
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
-        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "master"
+        gem "rack", :git => "#{file_uri_for(lib_path("rack-0.8"))}", :branch => "master"
       G
 
       bundle %(config set local.rack #{lib_path("local-rack")})
@@ -215,13 +215,13 @@ RSpec.describe "bundle update" do
       build_git "rails", "2.3.2", :path => lib_path("rails")
 
       install_gemfile <<-G
-        gem "rails", :git => "#{lib_path("rails")}"
+        gem "rails", :git => "#{file_uri_for(lib_path("rails"))}"
       G
 
       update_git "rails", "3.0", :path => lib_path("rails"), :gemspec => true
 
       bundle "update", :all => true
-      expect(out).to include("Using rails 3.0 (was 2.3.2) from #{lib_path("rails")} (at master@#{revision_for(lib_path("rails"))[0..6]})")
+      expect(out).to include("Using rails 3.0 (was 2.3.2) from #{file_uri_for(lib_path("rails"))} (at master@#{revision_for(lib_path("rails"))[0..6]})")
     end
   end
 
