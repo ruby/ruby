@@ -735,8 +735,6 @@ class FTPTest < Test::Unit::TestCase
   end
 
   def test_getbinaryfile
-    # http://ci.rvm.jp/logfiles/brlog.trunk-mjit-wait.20200326-025942
-    skip 'This has been too unstable with --jit-wait' if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
     commands = []
     binary_data = (0..0xff).map {|i| i.chr}.join * 4 * 3
     server = create_ftp_server { |sock|
@@ -764,6 +762,7 @@ class FTPTest < Test::Unit::TestCase
     begin
       begin
         ftp = Net::FTP.new
+        ftp.read_timeout *= 5 if RubyVM::MJIT.enabled? # for --jit-wait
         ftp.connect(SERVER_ADDR, server.port)
         ftp.login
         assert_match(/\AUSER /, commands.shift)
@@ -808,6 +807,7 @@ class FTPTest < Test::Unit::TestCase
     begin
       begin
         ftp = Net::FTP.new
+        ftp.read_timeout *= 5 if RubyVM::MJIT.enabled? # for --jit-wait
         ftp.connect(SERVER_ADDR, server.port)
         ftp.login
         assert_match(/\AUSER /, commands.shift)
@@ -2185,8 +2185,6 @@ EOF
 
   def test_abort_tls
     return unless defined?(OpenSSL)
-    # http://ci.rvm.jp/results/trunk-mjit-wait@silicon-docker/2789353
-    skip 'This is unstable with --jit-wait. TODO: debug it' if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
 
     commands = []
     server = create_ftp_server { |sock|
@@ -2222,6 +2220,7 @@ EOF
         ftp = Net::FTP.new(SERVER_NAME,
                            port: server.port,
                            ssl: { ca_file: CA_FILE })
+        ftp.read_timeout *= 5 if RubyVM::MJIT.enabled? # for --jit-wait
         assert_equal("AUTH TLS\r\n", commands.shift)
         assert_equal("PBSZ 0\r\n", commands.shift)
         assert_equal("PROT P\r\n", commands.shift)
@@ -2243,8 +2242,6 @@ EOF
   end
 
   def test_getbinaryfile_command_injection
-    # http://ci.rvm.jp/results/trunk-mjit-wait@silicon-docker/3001181
-    skip 'This has been too unstable with --jit-wait' if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
     skip "| is not allowed in filename on Windows" if windows?
     [false, true].each do |resume|
       commands = []
@@ -2276,7 +2273,7 @@ EOF
           begin
             ftp = Net::FTP.new
             ftp.resume = resume
-            ftp.read_timeout = (defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?) ? 5 : 0.2 # use large timeout for --jit-wait
+            ftp.read_timeout = (defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?) ? 300 : 0.2 # use large timeout for --jit-wait
             ftp.connect(SERVER_ADDR, server.port)
             ftp.login
             assert_match(/\AUSER /, commands.shift)
