@@ -1008,6 +1008,7 @@ $(srcs_vpath)mjit_compile.inc: $(tooldir)/ruby_vm/views/mjit_compile.inc.erb $(i
 BUILTIN_RB_SRCS = \
 		$(srcdir)/ast.rb \
 		$(srcdir)/gc.rb \
+		$(srcdir)/integer.rb \
 		$(srcdir)/io.rb \
 		$(srcdir)/dir.rb \
 		$(srcdir)/pack.rb \
@@ -8087,6 +8088,7 @@ miniinit.$(OBJEXT): {$(VPATH)}encoding.h
 miniinit.$(OBJEXT): {$(VPATH)}gc.rb
 miniinit.$(OBJEXT): {$(VPATH)}gem_prelude.rb
 miniinit.$(OBJEXT): {$(VPATH)}id.h
+miniinit.$(OBJEXT): {$(VPATH)}integer.rb
 miniinit.$(OBJEXT): {$(VPATH)}intern.h
 miniinit.$(OBJEXT): {$(VPATH)}internal.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/anyargs.h
@@ -8921,12 +8923,15 @@ numeric.$(OBJEXT): {$(VPATH)}backward/2/r_cast.h
 numeric.$(OBJEXT): {$(VPATH)}backward/2/rmodule.h
 numeric.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 numeric.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+numeric.$(OBJEXT): {$(VPATH)}builtin.h
 numeric.$(OBJEXT): {$(VPATH)}config.h
 numeric.$(OBJEXT): {$(VPATH)}constant.h
 numeric.$(OBJEXT): {$(VPATH)}defines.h
 numeric.$(OBJEXT): {$(VPATH)}encoding.h
 numeric.$(OBJEXT): {$(VPATH)}id.h
 numeric.$(OBJEXT): {$(VPATH)}id_table.h
+numeric.$(OBJEXT): {$(VPATH)}integer.rb
+numeric.$(OBJEXT): {$(VPATH)}integer.rbinc
 numeric.$(OBJEXT): {$(VPATH)}intern.h
 numeric.$(OBJEXT): {$(VPATH)}internal.h
 numeric.$(OBJEXT): {$(VPATH)}internal/anyargs.h
