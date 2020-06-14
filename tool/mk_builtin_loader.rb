@@ -49,11 +49,26 @@ def make_cfunc_name inlines, name, lineno
   end
 end
 
-def collect_builtin base, tree, name, bs, inlines
+def collect_params tree
+  while tree
+    case tree.first
+    when :params
+      idents = (tree[1] || []) + (tree[2] || []).map(&:first)
+      return idents.map { |ident| ident[1].to_sym }
+    when :paren
+      tree = tree[1]
+    else
+      raise "unknown sexp: #{tree.first}"
+    end
+  end
+end
+
+def collect_builtin base, tree, name, bs, inlines, params = nil
   while tree
     call = sep = mid = args = nil
     case tree.first
     when :def
+      params = collect_params(tree[2])
       tree = tree[3]
       next
     when :defs
@@ -126,7 +141,7 @@ def collect_builtin base, tree, name, bs, inlines
     end
 
     tree.each do |t|
-      collect_builtin base, t, name, bs, inlines if Array === t
+      collect_builtin base, t, name, bs, inlines, params if Array === t
     end
     break
   end
