@@ -28,7 +28,7 @@ RSpec.describe "bundle help" do
   end
 
   it "looks for a binary and executes it with --help option if it's named bundler-<task>" do
-    skip "obscure error" if Gem.win_platform?
+    skip "Could not find command testtasks, probably because not a windows friendly executable" if Gem.win_platform?
 
     File.open(tmp("bundler-testtasks"), "w", 0o755) do |f|
       f.puts "#!/usr/bin/env ruby\nputs ARGV.join(' ')\n"
