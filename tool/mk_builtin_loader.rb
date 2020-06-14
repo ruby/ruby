@@ -79,6 +79,7 @@ def collect_builtin base, tree, name, bs, inlines, params = nil
       tree = tree[3]
       next
     when :defs
+      params = collect_params(tree[4])
       tree = tree[5]
       next
     when :class
