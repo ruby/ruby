@@ -5618,6 +5618,8 @@ compile_case2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_no
 
 static int iseq_compile_pattern_match(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, LABEL *unmatched, int in_alt_pattern, int deconstructed_pos);
 
+static int iseq_compile_array_deconstruct(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, LABEL *deconstruct, LABEL *deconstructed, LABEL *match_failed, LABEL *type_error, int deconstructed_pos);
+
 static int
 iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, LABEL *matched, LABEL *unmatched, int in_alt_pattern, int deconstructed_pos)
 {
@@ -5708,52 +5710,8 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
             ADD_INSNL(ret, line, branchunless, match_failed);
         }
 
-        // NOTE: this optimization allows us to re-use the #deconstruct value
-        // (or its absence).
-        // `deconstructed_pos` contains the distance to the stack relative location
-        // where the value is stored.
-        if (deconstructed_pos) {
-            // If value is nil then we haven't tried to deconstruct
-            ADD_INSN1(ret, line, topn, INT2FIX(deconstructed_pos));
-            ADD_INSNL(ret, line, branchnil, deconstruct);
+        CHECK(iseq_compile_array_deconstruct(iseq, ret, node, deconstruct, deconstructed, match_failed, type_error, deconstructed_pos));
 
-            // If false then the value is not deconstructable
-            ADD_INSN1(ret, line, topn, INT2FIX(deconstructed_pos));
-            ADD_INSNL(ret, line, branchunless, match_failed);
-
-            // Drop value, add deconstructed to the stack and jump
-            ADD_INSN(ret, line, pop);
-            ADD_INSN1(ret, line, topn, INT2FIX(deconstructed_pos - 1));
-            ADD_INSNL(ret, line, jump, deconstructed);
-        } else {
-            ADD_INSNL(ret, line, jump, deconstruct);
-        }
-
-        ADD_LABEL(ret, deconstruct);
-        ADD_INSN(ret, line, dup);
-        ADD_INSN1(ret, line, putobject, ID2SYM(rb_intern("deconstruct")));
-        ADD_SEND(ret, line, idRespond_to, INT2FIX(1));
-
-        // Cache the result of respond_to? (in case it's false is stays there, if true — it's overwritten after #deconstruct)
-        if (deconstructed_pos) {
-            ADD_INSN1(ret, line, setn, INT2FIX(deconstructed_pos + 1));
-        }
-
-        ADD_INSNL(ret, line, branchunless, match_failed);
-
-        ADD_SEND(ret, line, rb_intern("deconstruct"), INT2FIX(0));
-
-        // Cache the result (if it's cacheable — currently, only top-level array patterns)
-        if (deconstructed_pos) {
-            ADD_INSN1(ret, line, setn, INT2FIX(deconstructed_pos));
-        }
-
-        ADD_INSN(ret, line, dup);
-        ADD_INSN1(ret, line, checktype, INT2FIX(T_ARRAY));
-        ADD_INSNL(ret, line, branchunless, type_error);
-        ADD_INSNL(ret, line, jump, deconstructed);
-
-        ADD_LABEL(ret, deconstructed);
         ADD_INSN(ret, line, dup);
         ADD_SEND(ret, line, idLength, INT2FIX(0));
         ADD_INSN1(ret, line, putobject, INT2FIX(min_argc));
@@ -5880,9 +5838,11 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
         const NODE *args = fpinfo->args;
         const int args_num = fpinfo->args ? rb_long2int(fpinfo->args->nd_alen) : 0;
 
-        LABEL *match_failed, *type_error;
+        LABEL *match_failed, *type_error, *deconstruct, *deconstructed;
         match_failed = NEW_LABEL(line);
         type_error = NEW_LABEL(line);
+        deconstruct = NEW_LABEL(line);
+        deconstructed = NEW_LABEL(line);
 
         if (node->nd_pconst) {
             ADD_INSN(ret, line, dup);
@@ -5891,16 +5851,7 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
             ADD_INSNL(ret, line, branchunless, match_failed);
         }
 
-        ADD_INSN(ret, line, dup);
-        ADD_INSN1(ret, line, putobject, ID2SYM(rb_intern("deconstruct")));
-        ADD_SEND(ret, line, idRespond_to, INT2FIX(1));
-        ADD_INSNL(ret, line, branchunless, match_failed);
-
-        ADD_SEND(ret, line, rb_intern("deconstruct"), INT2FIX(0));
-
-        ADD_INSN(ret, line, dup);
-        ADD_INSN1(ret, line, checktype, INT2FIX(T_ARRAY));
-        ADD_INSNL(ret, line, branchunless, type_error);
+        CHECK(iseq_compile_array_deconstruct(iseq, ret, node, deconstruct, deconstructed, match_failed, type_error, deconstructed_pos));
 
         ADD_INSN(ret, line, dup);
         ADD_SEND(ret, line, idLength, INT2FIX(0));
@@ -5940,7 +5891,7 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
                 }
                 ADD_SEND(ret, line, idAREF, INT2FIX(1));
 
-                CHECK(iseq_compile_pattern_match(iseq, ret, args->nd_head, next_loop, in_alt_pattern));
+                CHECK(iseq_compile_pattern_match(iseq, ret, args->nd_head, next_loop, in_alt_pattern, FALSE));
                 args = args->nd_next;
             }
 
@@ -5949,7 +5900,7 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
                 ADD_INSN1(ret, line, putobject, INT2FIX(0));
                 ADD_INSN1(ret, line, topn, INT2FIX(2));
                 ADD_SEND(ret, line, idAREF, INT2FIX(2));
-                CHECK(iseq_compile_pattern_match(iseq, ret, fpinfo->pre_rest_arg, find_failed, in_alt_pattern));
+                CHECK(iseq_compile_pattern_match(iseq, ret, fpinfo->pre_rest_arg, find_failed, in_alt_pattern, FALSE));
             }
             if (NODE_NAMED_REST_P(fpinfo->post_rest_arg)) {
                 ADD_INSN1(ret, line, topn, INT2FIX(3));
@@ -5958,7 +5909,7 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
                 ADD_SEND(ret, line, idPLUS, INT2FIX(1));
                 ADD_INSN1(ret, line, topn, INT2FIX(3));
                 ADD_SEND(ret, line, idAREF, INT2FIX(2));
-                CHECK(iseq_compile_pattern_match(iseq, ret, fpinfo->post_rest_arg, find_failed, in_alt_pattern));
+                CHECK(iseq_compile_pattern_match(iseq, ret, fpinfo->post_rest_arg, find_failed, in_alt_pattern, FALSE));
             }
             ADD_INSNL(ret, line, jump, find_succeeded);
 
@@ -6292,6 +6243,61 @@ iseq_compile_pattern_match(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *
     LABEL *fin = NEW_LABEL(nd_line(node));
     CHECK(iseq_compile_pattern_each(iseq, ret, node, fin, unmatched, in_alt_pattern, deconstructed_pos));
     ADD_LABEL(ret, fin);
+    return COMPILE_OK;
+}
+
+static int
+iseq_compile_array_deconstruct(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, LABEL *deconstruct, LABEL *deconstructed, LABEL *match_failed, LABEL *type_error, int deconstructed_pos)
+{
+    const int line = nd_line(node);
+
+    // NOTE: this optimization allows us to re-use the #deconstruct value
+    // (or its absence).
+    // `deconstructed_pos` contains the distance to the stack relative location
+    // where the value is stored.
+    if (deconstructed_pos) {
+        // If value is nil then we haven't tried to deconstruct
+        ADD_INSN1(ret, line, topn, INT2FIX(deconstructed_pos));
+        ADD_INSNL(ret, line, branchnil, deconstruct);
+
+        // If false then the value is not deconstructable
+        ADD_INSN1(ret, line, topn, INT2FIX(deconstructed_pos));
+        ADD_INSNL(ret, line, branchunless, match_failed);
+
+        // Drop value, add deconstructed to the stack and jump
+        ADD_INSN(ret, line, pop);
+        ADD_INSN1(ret, line, topn, INT2FIX(deconstructed_pos - 1));
+        ADD_INSNL(ret, line, jump, deconstructed);
+    } else {
+        ADD_INSNL(ret, line, jump, deconstruct);
+    }
+
+    ADD_LABEL(ret, deconstruct);
+    ADD_INSN(ret, line, dup);
+    ADD_INSN1(ret, line, putobject, ID2SYM(rb_intern("deconstruct")));
+    ADD_SEND(ret, line, idRespond_to, INT2FIX(1));
+
+    // Cache the result of respond_to? (in case it's false is stays there, if true — it's overwritten after #deconstruct)
+    if (deconstructed_pos) {
+        ADD_INSN1(ret, line, setn, INT2FIX(deconstructed_pos + 1));
+    }
+
+    ADD_INSNL(ret, line, branchunless, match_failed);
+
+    ADD_SEND(ret, line, rb_intern("deconstruct"), INT2FIX(0));
+
+    // Cache the result (if it's cacheable — currently, only top-level array patterns)
+    if (deconstructed_pos) {
+        ADD_INSN1(ret, line, setn, INT2FIX(deconstructed_pos));
+    }
+
+    ADD_INSN(ret, line, dup);
+    ADD_INSN1(ret, line, checktype, INT2FIX(T_ARRAY));
+    ADD_INSNL(ret, line, branchunless, type_error);
+    ADD_INSNL(ret, line, jump, deconstructed);
+
+    ADD_LABEL(ret, deconstructed);
+
     return COMPILE_OK;
 }
 
