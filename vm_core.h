@@ -418,6 +418,7 @@ struct rb_iseq_constant_body {
     unsigned int stack_max; /* for stack overflow check */
 
     char catch_except_p; /* If a frame of this ISeq may catch exception, set TRUE */
+    bool builtin_inline_p; // This ISeq's builtin func is safe to be inlined by MJIT
 
 #if USE_MJIT
     /* The following fields are MJIT related info.  */

@@ -135,6 +135,12 @@ def collect_builtin base, tree, name, bs, inlines, params = nil
 
         if /(.+)\!\z/ =~ func_name
           case $1
+          when 'attr'
+            text = inline_text(argc, args.first)
+            if text != 'inline'
+              raise "Only 'inline' is allowed to be annotated (but got: '#{text}')"
+            end
+            break
           when 'cstmt'
             text = inline_text argc, args.first
 
