@@ -4048,10 +4048,9 @@ p_expr_basic	: p_value
 			$$ = new_array_pattern_tail(p, Qnone, 0, 0, Qnone, &@$);
 			$$ = new_array_pattern(p, $1, Qnone, $$, &@$);
 		    }
-		| tLBRACK {$<tbl>$ = push_pktbl(p);} p_args rbracket
+		| tLBRACK p_args rbracket
 		    {
-			pop_pktbl(p, $<tbl>2);
-			$$ = new_array_pattern(p, Qnone, Qnone, $3, &@$);
+			$$ = new_array_pattern(p, Qnone, Qnone, $2, &@$);
 		    }
 		| tLBRACK rbracket
 		    {
