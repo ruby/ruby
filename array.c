@@ -1701,10 +1701,10 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *  call-seq:
  *    array[index] -> object or nil
  *    array[start, length] -> object or nil
- *    array[range] → object or nil
+ *    array[range] -> object or nil
  *    array.slice(index) -> object or nil
  *    array.slice(start, length) -> object or nil
- *    array.slice(range) → object or nil
+ *    array.slice(range) -> object or nil
  *
  *  Returns elements from +self+; does not modify +self+.
  *
