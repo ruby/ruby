@@ -67,17 +67,17 @@ RSpec.describe "bundle exec" do
     expect(out).to eq(Gem::VERSION)
   end
 
-  it "respects custom process title when loading through ruby", :ruby_repo do
+  it "respects custom process title when loading through ruby" do
     skip "https://github.com/rubygems/bundler/issues/6898" if Gem.win_platform?
 
     script_that_changes_its_own_title_and_checks_if_picked_up_by_ps_unix_utility = <<~'RUBY'
-      Process.setproctitle("1-2-3-4-5-6-7-8-9-10-11-12-13-14-15")
+      Process.setproctitle("1-2-3-4-5-6-7")
       puts `ps -ocommand= -p#{$$}`
     RUBY
     create_file "Gemfile"
     create_file "a.rb", script_that_changes_its_own_title_and_checks_if_picked_up_by_ps_unix_utility
     bundle "exec ruby a.rb"
-    expect(out).to eq("1-2-3-4-5-6-7-8-9-10-11-12-13-14-15")
+    expect(out).to eq("1-2-3-4-5-6-7")
   end
 
   it "accepts --verbose" do
