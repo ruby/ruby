@@ -1,13 +1,5 @@
 # sync following repositories to ruby repository
 #
-# Usage:
-# git clone from the upstream repository and copy from the upstream repository with cp -rf. It's lost the git commits.
-# $ ruby tool/sync_default_gems.rb rubygems
-# pick the single commit from the upstream repository.
-# $ ruby tool/sync_default_gems.rb rubygems 97e9768612
-# pick the commits range from the upstream repository
-# $ ruby tool/sync_default_gems.rb rubygems 97e9768612..9e53702832
-#
 # * https://github.com/rubygems/rubygems
 # * https://github.com/ruby/rdoc
 # * https://github.com/ruby/reline
@@ -466,6 +458,21 @@ when "up"
   end
 when "all"
   $repositories.keys.each{|gem| sync_default_gems(gem.to_s)}
+when nil, "-h", "--help"
+    puts <<-HELP
+\e[1mSync with upstream code of default libraries\e[0m
+
+\e[1mImport a default library through `git clone` and `cp -rf` (git commits are lost)\e[0m
+  ruby #$0 rubygems
+
+\e[1mPick a single commit from the upstream repository\e[0m
+  ruby #$0 rubygems 97e9768612
+
+\e[1mPick a commit range from the upstream repository\e[0m
+  ruby #$0 rubygems 97e9768612..9e53702832
+    HELP
+
+  exit
 else
   if ARGV[1]
     sync_default_gems_with_commits(ARGV[0], ARGV[1])
