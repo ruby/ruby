@@ -412,6 +412,43 @@ eot
       [:@int, "0", [1, 5]],
       [:in, [:aryptn, nil, nil, nil, nil], [[:void_stmt]], nil]],
 
+    [__LINE__, %q{ 0 in [*, a, *] }] =>
+    [:case,
+      [:@int, "0", [1, 0]],
+      [:in,
+        [:fndptn,
+          nil,
+          [:var_field, nil],
+          [[:var_field, [:@ident, "a", [1, 9]]]],
+          [:var_field, nil]],
+        nil,
+        nil]],
+
+    [__LINE__, %q{ 0 in [*a, b, *c] }] =>
+    [:case,
+      [:@int, "0", [1, 0]],
+      [:in,
+        [:fndptn,
+          nil,
+          [:var_field, [:@ident, "a", [1, 7]]],
+          [[:var_field, [:@ident, "b", [1, 10]]]],
+          [:var_field, [:@ident, "c", [1, 14]]]],
+        nil,
+        nil]],
+
+    [__LINE__, %q{ 0 in A(*a, b, c, *d) }] =>
+    [:case,
+      [:@int, "0", [1, 0]],
+      [:in,
+        [:fndptn,
+          [:var_ref, [:@const, "A", [1, 5]]],
+          [:var_field, [:@ident, "a", [1, 8]]],
+          [[:var_field, [:@ident, "b", [1, 11]]],
+            [:var_field, [:@ident, "c", [1, 14]]]],
+          [:var_field, [:@ident, "d", [1, 18]]]],
+        nil,
+        nil]],
+
     [__LINE__, %q{ case 0; in {a: 0}; end }] =>
     [:case,
       [:@int, "0", [1, 5]],

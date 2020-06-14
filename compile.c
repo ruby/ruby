@@ -5752,6 +5752,173 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
 
         break;
       }
+      case NODE_FNDPTN: {
+        /*
+         *   if pattern.has_constant_node?
+         *     unless pattern.constant === obj
+         *       goto match_failed
+         *     end
+         *   end
+         *   unless obj.respond_to?(:deconstruct)
+         *     goto match_failed
+         *   end
+         *   d = obj.deconstruct
+         *   unless Array === d
+         *     goto type_error
+         *   end
+         *   unless d.length >= pattern.args_num
+         *     goto match_failed
+         *   end
+         *
+         *   begin
+         *     len = d.length
+         *     limit = d.length - pattern.args_num
+         *     i = 0
+         *     while i <= limit
+         *       if pattern.args_num.times.all? {|j| pattern.args[j].match?(d[i+j]) }
+         *         if pattern.has_pre_rest_arg_id
+         *           unless pattern.pre_rest_arg.match?(d[0, i])
+         *             goto find_failed
+         *           end
+         *         end
+         *         if pattern.has_post_rest_arg_id
+         *           unless pattern.post_rest_arg.match?(d[i+pattern.args_num, len])
+         *             goto find_failed
+         *           end
+         *         end
+         *         goto find_succeeded
+         *       end
+         *       i+=1
+         *     end
+         *   find_failed:
+         *     goto match_failed
+         *   find_succeeded:
+         *   end
+         *
+         *   goto matched
+         * type_error:
+         *   FrozenCore.raise TypeError
+         * match_failed:
+         *   goto unmatched
+         */
+        struct rb_fnd_pattern_info *fpinfo = node->nd_fpinfo;
+        const NODE *args = fpinfo->args;
+        const int args_num = fpinfo->args ? rb_long2int(fpinfo->args->nd_alen) : 0;
+
+        LABEL *match_failed, *type_error;
+        match_failed = NEW_LABEL(line);
+        type_error = NEW_LABEL(line);
+
+        if (node->nd_pconst) {
+            ADD_INSN(ret, line, dup);
+            CHECK(COMPILE(ret, "constant", node->nd_pconst));
+            ADD_INSN1(ret, line, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_CASE));
+            ADD_INSNL(ret, line, branchunless, match_failed);
+        }
+
+        ADD_INSN(ret, line, dup);
+        ADD_INSN1(ret, line, putobject, ID2SYM(rb_intern("deconstruct")));
+        ADD_SEND(ret, line, idRespond_to, INT2FIX(1));
+        ADD_INSNL(ret, line, branchunless, match_failed);
+
+        ADD_SEND(ret, line, rb_intern("deconstruct"), INT2FIX(0));
+
+        ADD_INSN(ret, line, dup);
+        ADD_INSN1(ret, line, checktype, INT2FIX(T_ARRAY));
+        ADD_INSNL(ret, line, branchunless, type_error);
+
+        ADD_INSN(ret, line, dup);
+        ADD_SEND(ret, line, idLength, INT2FIX(0));
+        ADD_INSN1(ret, line, putobject, INT2FIX(args_num));
+        ADD_SEND(ret, line, idGE, INT2FIX(1));
+        ADD_INSNL(ret, line, branchunless, match_failed);
+
+        {
+            LABEL *while_begin = NEW_LABEL(nd_line(node));
+            LABEL *next_loop = NEW_LABEL(nd_line(node));
+            LABEL *find_succeeded = NEW_LABEL(line);
+            LABEL *find_failed = NEW_LABEL(nd_line(node));
+            int j;
+
+            ADD_INSN(ret, line, dup); /* allocate stack for len */
+            ADD_SEND(ret, line, idLength, INT2FIX(0));
+
+            ADD_INSN(ret, line, dup); /* allocate stack for limit */
+            ADD_INSN1(ret, line, putobject, INT2FIX(args_num));
+            ADD_SEND(ret, line, idMINUS, INT2FIX(1));
+
+            ADD_INSN1(ret, line, putobject, INT2FIX(0)); /* allocate stack for i */
+
+            ADD_LABEL(ret, while_begin);
+
+            ADD_INSN(ret, line, dup);
+            ADD_INSN1(ret, line, topn, INT2FIX(2));
+            ADD_SEND(ret, line, idLE, INT2FIX(1));
+            ADD_INSNL(ret, line, branchunless, find_failed);
+
+            for (j = 0; j < args_num; j++) {
+                ADD_INSN1(ret, line, topn, INT2FIX(3));
+                ADD_INSN1(ret, line, topn, INT2FIX(1));
+                if (j != 0) {
+                    ADD_INSN1(ret, line, putobject, INT2FIX(j));
+                    ADD_SEND(ret, line, idPLUS, INT2FIX(1));
+                }
+                ADD_SEND(ret, line, idAREF, INT2FIX(1));
+
+                CHECK(iseq_compile_pattern_match(iseq, ret, args->nd_head, next_loop, in_alt_pattern));
+                args = args->nd_next;
+            }
+
+            if (NODE_NAMED_REST_P(fpinfo->pre_rest_arg)) {
+                ADD_INSN1(ret, line, topn, INT2FIX(3));
+                ADD_INSN1(ret, line, putobject, INT2FIX(0));
+                ADD_INSN1(ret, line, topn, INT2FIX(2));
+                ADD_SEND(ret, line, idAREF, INT2FIX(2));
+                CHECK(iseq_compile_pattern_match(iseq, ret, fpinfo->pre_rest_arg, find_failed, in_alt_pattern));
+            }
+            if (NODE_NAMED_REST_P(fpinfo->post_rest_arg)) {
+                ADD_INSN1(ret, line, topn, INT2FIX(3));
+                ADD_INSN1(ret, line, topn, INT2FIX(1));
+                ADD_INSN1(ret, line, putobject, INT2FIX(args_num));
+                ADD_SEND(ret, line, idPLUS, INT2FIX(1));
+                ADD_INSN1(ret, line, topn, INT2FIX(3));
+                ADD_SEND(ret, line, idAREF, INT2FIX(2));
+                CHECK(iseq_compile_pattern_match(iseq, ret, fpinfo->post_rest_arg, find_failed, in_alt_pattern));
+            }
+            ADD_INSNL(ret, line, jump, find_succeeded);
+
+            ADD_LABEL(ret, next_loop);
+            ADD_INSN1(ret, line, putobject, INT2FIX(1));
+            ADD_SEND(ret, line, idPLUS, INT2FIX(1));
+            ADD_INSNL(ret, line, jump, while_begin);
+
+            ADD_LABEL(ret, find_failed);
+            ADD_INSN(ret, line, pop);
+            ADD_INSN(ret, line, pop);
+            ADD_INSN(ret, line, pop);
+            ADD_INSNL(ret, line, jump, match_failed);
+
+            ADD_LABEL(ret, find_succeeded);
+            ADD_INSN(ret, line, pop);
+            ADD_INSN(ret, line, pop);
+            ADD_INSN(ret, line, pop);
+        }
+
+        ADD_INSN(ret, line, pop);
+        ADD_INSNL(ret, line, jump, matched);
+
+        ADD_LABEL(ret, type_error);
+        ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+        ADD_INSN1(ret, line, putobject, rb_eTypeError);
+        ADD_INSN1(ret, line, putobject, rb_fstring_lit("deconstruct must return Array"));
+        ADD_SEND(ret, line, id_core_raise, INT2FIX(2));
+
+        ADD_LABEL(ret, match_failed);
+        ADD_INSN(ret, line, pop);
+        ADD_INSNL(ret, line, jump, unmatched);
+
+        break;
+      }
       case NODE_HSHPTN: {
         /*
          *   keys = nil

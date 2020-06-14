@@ -736,6 +736,63 @@ END
     end
   end
 
+  def test_find_pattern
+    [0, 1, 2] in [*, 1 => a, *]
+    assert_equal(1, a)
+
+    [0, 1, 2] in [*a, 1 => b, *c]
+    assert_equal([0], a)
+    assert_equal(1, b)
+    assert_equal([2], c)
+
+    assert_block do
+      case [0, 1, 2]
+      in [*, 9, *]
+        false
+      else
+        true
+      end
+    end
+
+    assert_block do
+      case [0, 1, 2]
+      in [*, Integer, String, *]
+        false
+      else
+        true
+      end
+    end
+
+    [0, 1, 2] in [*a, 1 => b, 2 => c, *d]
+    assert_equal([0], a)
+    assert_equal(1, b)
+    assert_equal(2, c)
+    assert_equal([], d)
+
+    case [0, 1, 2]
+    in *, 1 => a, *;
+        assert_equal(1, a)
+    end
+
+    assert_block do
+      case [0, 1, 2]
+      in String(*, 1, *)
+        false
+      in Array(*, 1, *)
+        true
+      end
+    end
+
+    assert_block do
+      case [0, 1, 2]
+      in String[*, 1, *]
+        false
+      in Array[*, 1, *]
+        true
+      end
+    end
+  end
+
   def test_hash_pattern
     assert_block do
       [{}, C.new({})].all? do |i|

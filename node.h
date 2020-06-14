@@ -123,6 +123,7 @@ enum node_type {
     NODE_LAMBDA,
     NODE_ARYPTN,
     NODE_HSHPTN,
+    NODE_FNDPTN,
     NODE_LAST
 };
 
@@ -166,6 +167,7 @@ typedef struct RNode {
 	struct rb_global_entry *entry;
 	struct rb_args_info *args;
 	struct rb_ary_pattern_info *apinfo;
+	struct rb_fnd_pattern_info *fpinfo;
 	VALUE value;
     } u3;
     rb_code_location_t nd_loc;
@@ -277,6 +279,8 @@ typedef struct RNode {
 #define nd_pkwrestarg u3.node
 
 #define nd_apinfo u3.apinfo
+
+#define nd_fpinfo u3.fpinfo
 
 #define NEW_NODE(t,a0,a1,a2,loc) rb_node_newnode((t),(VALUE)(a0),(VALUE)(a1),(VALUE)(a2),loc)
 #define NEW_NODE_WITH_LOCALS(t,a1,a2,loc) node_newnode_with_locals(p, (t),(VALUE)(a1),(VALUE)(a2),loc)
@@ -453,6 +457,13 @@ struct rb_ary_pattern_info {
     NODE *pre_args;
     NODE *rest_arg;
     NODE *post_args;
+    VALUE imemo;
+};
+
+struct rb_fnd_pattern_info {
+    NODE *pre_rest_arg;
+    NODE *args;
+    NODE *post_rest_arg;
     VALUE imemo;
 };
 

@@ -1053,6 +1053,27 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         F_NODE(nd_apinfo->post_args, "post arguments");
         return;
 
+      case NODE_FNDPTN:
+        ANN("find pattern");
+        ANN("format: [nd_pconst](*[pre_rest_arg], args, ..., *[post_rest_arg])");
+        F_NODE(nd_pconst, "constant");
+        if (NODE_NAMED_REST_P(node->nd_fpinfo->pre_rest_arg)) {
+            F_NODE(nd_fpinfo->pre_rest_arg, "pre rest argument");
+        }
+        else {
+            F_MSG(nd_fpinfo->pre_rest_arg, "pre rest argument", "NODE_SPECIAL_NO_NAME_REST (rest argument without name)");
+        }
+        F_NODE(nd_fpinfo->args, "arguments");
+
+        LAST_NODE;
+        if (NODE_NAMED_REST_P(node->nd_fpinfo->post_rest_arg)) {
+            F_NODE(nd_fpinfo->post_rest_arg, "post rest argument");
+        }
+        else {
+            F_MSG(nd_fpinfo->post_rest_arg, "post rest argument", "NODE_SPECIAL_NO_NAME_REST (rest argument without name)");
+        }
+        return;
+
       case NODE_HSHPTN:
         ANN("hash pattern");
         ANN("format: [nd_pconst]([nd_pkwargs], ..., **[nd_pkwrestarg])");
@@ -1204,6 +1225,7 @@ rb_ast_newnode(rb_ast_t *ast, enum node_type type)
       case NODE_ARGS:
       case NODE_SCOPE:
       case NODE_ARYPTN:
+      case NODE_FNDPTN:
         return ast_newnode_in_bucket(&nb->markable);
       default:
         return ast_newnode_in_bucket(&nb->unmarkable);
@@ -1271,6 +1293,12 @@ mark_ast_value(void *ctx, NODE * node)
             rb_gc_mark_movable(apinfo->imemo);
             break;
         }
+      case NODE_FNDPTN:
+        {
+            struct rb_fnd_pattern_info *fpinfo = node->nd_fpinfo;
+            rb_gc_mark_movable(fpinfo->imemo);
+            break;
+        }
       case NODE_ARGS:
         {
             struct rb_args_info *args = node->nd_ainfo;
@@ -1309,6 +1337,12 @@ update_ast_value(void *ctx, NODE * node)
         {
             struct rb_ary_pattern_info *apinfo = node->nd_apinfo;
             apinfo->imemo = rb_gc_location(apinfo->imemo);
+            break;
+        }
+      case NODE_FNDPTN:
+        {
+            struct rb_fnd_pattern_info *fpinfo = node->nd_fpinfo;
+            fpinfo->imemo = rb_gc_location(fpinfo->imemo);
             break;
         }
       case NODE_ARGS:

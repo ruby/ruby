@@ -38,6 +38,18 @@ sufficient information, see the ChangeLog file or Redmine
   instead of a warning. yield in a class definition outside of a method
   is now a SyntaxError instead of a LocalJumpError.  [[Feature #15575]]
 
+* Find pattern is added. [[Feature #16828]]
+
+    ```ruby
+    case ["a", 1, "b", "c", 2, "d", "e", "f", 3]
+    in [*pre, String => x, String => y, *post]
+      p pre  #=> ["a", 1]
+      p x    #=> "b"
+      p y    #=> "c"
+      p post #=> [2, "d", "e", "f", 3]
+    end
+    ```
+
 * Rightward assignment statement is added.  [EXPERIMENTAL]
   [[Feature #15921]]
 

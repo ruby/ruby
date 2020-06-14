@@ -599,6 +599,19 @@ node_children(rb_ast_t *ast, NODE *node)
                                         rest,
                                         NEW_CHILD(ast, apinfo->post_args));
         }
+      case NODE_FNDPTN:
+        {
+            struct rb_fnd_pattern_info *fpinfo = node->nd_fpinfo;
+            VALUE pre_rest = NODE_NAMED_REST_P(fpinfo->pre_rest_arg) ? NEW_CHILD(ast, fpinfo->pre_rest_arg) :
+                                                                       ID2SYM(rb_intern("NODE_SPECIAL_NO_NAME_REST"));
+            VALUE post_rest = NODE_NAMED_REST_P(fpinfo->post_rest_arg) ? NEW_CHILD(ast, fpinfo->post_rest_arg) :
+                                                                         ID2SYM(rb_intern("NODE_SPECIAL_NO_NAME_REST"));
+            return rb_ary_new_from_args(4,
+                                        NEW_CHILD(ast, node->nd_pconst),
+                                        pre_rest,
+                                        NEW_CHILD(ast, fpinfo->args),
+                                        post_rest);
+        }
       case NODE_HSHPTN:
         {
             VALUE kwrest = node->nd_pkwrestarg == NODE_SPECIAL_NO_REST_KEYWORD ? ID2SYM(rb_intern("NODE_SPECIAL_NO_REST_KEYWORD")) :

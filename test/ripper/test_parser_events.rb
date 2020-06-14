@@ -1548,6 +1548,12 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal true, thru_aryptn
   end
 
+  def test_fndptn
+    thru_fndptn = false
+    parse('case 0; in [*,0,*]; end', :on_fndptn) {thru_fndptn = true}
+    assert_equal true, thru_fndptn
+  end
+
   def test_hshptn
     thru_hshptn = false
     parse('case 0; in {a:}; end', :on_hshptn) {thru_hshptn = true}
