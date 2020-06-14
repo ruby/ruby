@@ -830,13 +830,11 @@ new_array_pattern(struct parser_params *p, VALUE constant, VALUE pre_arg, VALUE 
 {
     NODE *t = (NODE *)aryptn;
     struct rb_ary_pattern_info *apinfo = t->nd_apinfo;
-    VALUE pre_args = Qnil, rest_arg = Qnil, post_args = Qnil;
+    VALUE pre_args, rest_arg, post_args;
 
-    if (apinfo) {
-        pre_args = rb_ary_entry(apinfo->imemo, 0);
-        rest_arg = rb_ary_entry(apinfo->imemo, 1);
-        post_args = rb_ary_entry(apinfo->imemo, 2);
-    }
+    pre_args = rb_ary_entry(apinfo->imemo, 0);
+    rest_arg = rb_ary_entry(apinfo->imemo, 1);
+    post_args = rb_ary_entry(apinfo->imemo, 2);
 
     if (!NIL_P(pre_arg)) {
 	if (!NIL_P(pre_args)) {
@@ -878,13 +876,11 @@ new_find_pattern(struct parser_params *p, VALUE constant, VALUE fndptn, const YY
 {
     NODE *t = (NODE *)fndptn;
     struct rb_fnd_pattern_info *fpinfo = t->nd_fpinfo;
-    VALUE pre_rest_arg = Qnil, args = Qnil, post_rest_arg = Qnil;
+    VALUE pre_rest_arg, args, post_rest_arg;
 
-    if (fpinfo) {
-        pre_rest_arg = rb_ary_entry(fpinfo->imemo, 0);
-        args = rb_ary_entry(fpinfo->imemo, 1);
-        post_rest_arg = rb_ary_entry(fpinfo->imemo, 2);
-    }
+    pre_rest_arg = rb_ary_entry(fpinfo->imemo, 0);
+    args = rb_ary_entry(fpinfo->imemo, 1);
+    post_rest_arg = rb_ary_entry(fpinfo->imemo, 2);
 
     return dispatch4(fndptn, constant, pre_rest_arg, args, post_rest_arg);
 }
