@@ -53,8 +53,15 @@ def collect_params tree
   while tree
     case tree.first
     when :params
-      idents = (tree[1] || []) + (tree[2] || []).map(&:first)
-      return idents.map { |ident| ident[1].to_sym }
+      params = []
+      _, mand, opt, rest, post, kwds, kwrest, block = tree
+      mand.each {|_, v| params << v.to_sym} if mand
+      opt.each {|(_, v), | params << v.to_sym} if opt
+      params << rest[1][1].to_sym if rest
+      post.each {|_, v| params << v.to_sym} if post
+      params << kwrest[1][1].to_sym if kwrest
+      params << block[1][1].to_sym if block
+      return params
     when :paren
       tree = tree[1]
     else
