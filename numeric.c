@@ -3276,11 +3276,12 @@ int_even_p(VALUE num)
 	if ((num & 2) == 0) {
 	    return Qtrue;
 	}
+        return Qfalse;
     }
-    else if (RB_TYPE_P(num, T_BIGNUM)) {
+    else {
+        assert(RB_TYPE_P(num, T_BIGNUM));
 	return rb_big_even_p(num);
     }
-    return Qfalse;
 }
 
 /*
