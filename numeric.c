@@ -3252,14 +3252,12 @@ rb_int_odd_p(VALUE num)
 	if (num & 2) {
 	    return Qtrue;
 	}
+        return Qfalse;
     }
-    else if (RB_TYPE_P(num, T_BIGNUM)) {
+    else {
+        assert(RB_TYPE_P(num, T_BIGNUM));
 	return rb_big_odd_p(num);
     }
-    else if (rb_funcall(num, '%', 1, INT2FIX(2)) != INT2FIX(0)) {
-	return Qtrue;
-    }
-    return Qfalse;
 }
 
 /*
