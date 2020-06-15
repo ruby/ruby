@@ -806,44 +806,37 @@ static VALUE
 make_exception(int argc, const VALUE *argv, int isstr)
 {
     VALUE mesg, exc;
-    int n;
 
     mesg = Qnil;
     switch (argc) {
       case 0:
-	break;
+        return Qnil;
       case 1:
 	exc = argv[0];
-	if (NIL_P(exc))
-	    break;
-	if (isstr) {
+        if (isstr &&! NIL_P(exc)) {
 	    mesg = rb_check_string_type(exc);
 	    if (!NIL_P(mesg)) {
 		mesg = rb_exc_new3(rb_eRuntimeError, mesg);
-		break;
 	    }
 	}
-	n = 0;
-	goto exception_call;
 
       case 2:
       case 3:
-	exc = argv[0];
-	n = 1;
-      exception_call:
-	mesg = rb_check_funcall(exc, idException, n, argv+1);
-	if (mesg == Qundef) {
-	    rb_raise(rb_eTypeError, "exception class/object expected");
-	}
 	break;
       default:
         rb_error_arity(argc, 0, 3);
     }
-    if (argc > 0) {
-	if (!rb_obj_is_kind_of(mesg, rb_eException))
-	    rb_raise(rb_eTypeError, "exception object expected");
-	if (argc > 2)
-	    set_backtrace(mesg, argv[2]);
+    if (NIL_P(mesg)) {
+        mesg = rb_check_funcall(argv[0], idException, argc != 1, &argv[1]);
+    }
+    if (mesg == Qundef) {
+        rb_raise(rb_eTypeError, "exception class/object expected");
+    }
+    if (!rb_obj_is_kind_of(mesg, rb_eException)) {
+        rb_raise(rb_eTypeError, "exception object expected");
+    }
+    if (argc == 3) {
+        set_backtrace(mesg, argv[2]);
     }
 
     return mesg;
