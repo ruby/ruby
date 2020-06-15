@@ -641,16 +641,19 @@ setup_exception(rb_execution_context_t *ec, int tag, volatile VALUE mesg, VALUE 
     }
 
     if (rb_ec_set_raised(ec)) {
-      fatal:
-	ec->errinfo = exception_error;
-	rb_ec_reset_raised(ec);
-	EC_JUMP_TAG(ec, TAG_FATAL);
+        goto fatal;
     }
 
     if (tag != TAG_FATAL) {
 	RUBY_DTRACE_HOOK(RAISE, rb_obj_classname(ec->errinfo));
 	EXEC_EVENT_HOOK(ec, RUBY_EVENT_RAISE, ec->cfp->self, 0, 0, 0, mesg);
     }
+    return;
+
+  fatal:
+    ec->errinfo = exception_error;
+    rb_ec_reset_raised(ec);
+    EC_JUMP_TAG(ec, TAG_FATAL);
 }
 
 /*! \private */
