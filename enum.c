@@ -3853,6 +3853,7 @@ sum_iter_normalize_memo(struct enum_sum_memo *memo)
     assert(FIXABLE(memo->n));
     memo->v = rb_fix_plus(LONG2FIX(memo->n), memo->v);
     memo->n = 0;
+
     /* r can be an Integer when mathn is loaded */
     switch (TYPE(memo->r)) {
       case T_FIXNUM:   memo->v = rb_fix_plus(memo->r, memo->v);      break;
@@ -3863,6 +3864,7 @@ sum_iter_normalize_memo(struct enum_sum_memo *memo)
     }
     memo->r = Qundef;
 }
+
 static void
 sum_iter_fixnum(VALUE i, struct enum_sum_memo *memo)
 {
@@ -3872,11 +3874,13 @@ sum_iter_fixnum(VALUE i, struct enum_sum_memo *memo)
         memo->n = 0;
     }
 }
+
 static void
 sum_iter_bignum(VALUE i, struct enum_sum_memo *memo)
 {
     memo->v = rb_big_plus(i, memo->v);
 }
+
 static void
 sum_iter_rational(VALUE i, struct enum_sum_memo *memo)
 {
@@ -3887,11 +3891,13 @@ sum_iter_rational(VALUE i, struct enum_sum_memo *memo)
         memo->r = rb_rational_plus(memo->r, i);
     }
 }
+
 static void
 sum_iter_some_value(VALUE i, struct enum_sum_memo *memo)
 {
     memo->v = rb_funcallv(memo->v, idPLUS, 1, &i);
 }
+
 static void
 sum_iter_Kahan_Babuska(VALUE i, struct enum_sum_memo *memo)
 {
@@ -3900,6 +3906,7 @@ sum_iter_Kahan_Babuska(VALUE i, struct enum_sum_memo *memo)
      * See http://link.springer.com/article/10.1007/s00607-005-0139-x
      */
     double x;
+
     switch (TYPE(i)) {
       case T_FLOAT:    x = RFLOAT_VALUE(i); break;
       case T_FIXNUM:   x = FIX2LONG(i);     break;
@@ -3911,7 +3918,9 @@ sum_iter_Kahan_Babuska(VALUE i, struct enum_sum_memo *memo)
         sum_iter_some_value(i, memo);
         return;
     }
+
     double f = memo->f;
+
     if (isnan(f)) {
         return;
     }
@@ -3927,8 +3936,10 @@ sum_iter_Kahan_Babuska(VALUE i, struct enum_sum_memo *memo)
     else if (isinf(f)) {
         return;
     }
+
     double c = memo->c;
     double t = f + x;
+
     if (fabs(f) >= fabs(x)) {
         c += ((f - t) + x);
     }
@@ -3936,9 +3947,11 @@ sum_iter_Kahan_Babuska(VALUE i, struct enum_sum_memo *memo)
         c += ((x - t) + f);
     }
     f = t;
+
     memo->f = f;
     memo->c = c;
 }
+
 static void
 sum_iter(VALUE i, struct enum_sum_memo *memo)
 {
@@ -3946,6 +3959,7 @@ sum_iter(VALUE i, struct enum_sum_memo *memo)
     if (memo->block_given) {
         i = rb_yield(i);
     }
+
     if (memo->float_value) {
         sum_iter_Kahan_Babuska(i, memo);
     }
