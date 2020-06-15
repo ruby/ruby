@@ -924,9 +924,7 @@ search_required(VALUE fname, volatile VALUE *path, feature_func rb_feature_p)
 
       default:
 	if (ft) {
-	  statically_linked:
-	    if (loading) *path = rb_filesystem_str_new_cstr(loading);
-	    return ft;
+            goto statically_linked;
 	}
         /* fall through */
       case 1:
@@ -936,6 +934,10 @@ search_required(VALUE fname, volatile VALUE *path, feature_func rb_feature_p)
 	*path = tmp;
     }
     return type ? 's' : 'r';
+
+  statically_linked:
+    if (loading) *path = rb_filesystem_str_new_cstr(loading);
+    return ft;
 }
 
 static void
