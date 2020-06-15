@@ -5541,8 +5541,7 @@ rb_io_modestr_fmode(const char *modestr)
 	fmode |= FMODE_WRITABLE | FMODE_APPEND | FMODE_CREATE;
 	break;
       default:
-      error:
-	rb_raise(rb_eArgError, "invalid access mode %s", modestr);
+        goto error;
     }
 
     while (*m) {
@@ -5576,6 +5575,9 @@ rb_io_modestr_fmode(const char *modestr)
         goto error;
 
     return fmode;
+
+  error:
+    rb_raise(rb_eArgError, "invalid access mode %s", modestr);
 }
 
 int
