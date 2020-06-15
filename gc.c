@@ -6456,15 +6456,15 @@ gc_marks_finish(rb_objspace_t *objspace)
 		if (objspace->profile.count - objspace->rgengc.last_major_gc < RVALUE_OLD_AGE) {
 		    full_marking = TRUE;
 		    /* do not update last_major_gc, because full marking is not done. */
-		    goto increment;
+                    /* goto increment; */
 		}
 		else {
 		    gc_report(1, objspace, "gc_marks_finish: next is full GC!!)\n");
 		    objspace->rgengc.need_major_gc |= GPR_FLAG_MAJOR_BY_NOFREE;
 		}
 	    }
-	    else {
-	      increment:
+            if (full_marking) {
+              /* increment: */
 		gc_report(1, objspace, "gc_marks_finish: heap_set_increment!!\n");
 		heap_set_increment(objspace, heap_extend_pages(objspace, sweep_slots, total_slots));
 		heap_increment(objspace, heap);
