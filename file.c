@@ -5299,14 +5299,7 @@ rb_f_test(int argc, VALUE *argv, VALUE _)
     if (argc == 0) rb_check_arity(argc, 2, 3);
     cmd = NUM2CHR(argv[0]);
     if (cmd == 0) {
-      unknown:
-	/* unknown command */
-	if (ISPRINT(cmd)) {
-	    rb_raise(rb_eArgError, "unknown command '%s%c'", cmd == '\'' || cmd == '\\' ? "\\" : "", cmd);
-	}
-	else {
-	    rb_raise(rb_eArgError, "unknown command \"\\x%02X\"", cmd);
-	}
+        goto unknown;
     }
     if (strchr("bcdefgGkloOprRsSuwWxXz", cmd)) {
 	CHECK(1);
@@ -5432,7 +5425,14 @@ rb_f_test(int argc, VALUE *argv, VALUE _)
 	    return Qfalse;
 	}
     }
-    goto unknown;
+  unknown:
+    /* unknown command */
+    if (ISPRINT(cmd)) {
+        rb_raise(rb_eArgError, "unknown command '%s%c'", cmd == '\'' || cmd == '\\' ? "\\" : "", cmd);
+    }
+    else {
+        rb_raise(rb_eArgError, "unknown command \"\\x%02X\"", cmd);
+    }
 }
 
 
