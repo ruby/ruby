@@ -9681,19 +9681,19 @@ caller_location(VALUE *path, VALUE *realpath)
 
 typedef struct {
     VALUE arg;
-    rb_insn_func_t func;
+    VALUE func;
     int line;
 } accessor_args;
 
 static const rb_iseq_t *
-method_for_self(VALUE name, VALUE arg, rb_insn_func_t func,
+method_for_self(VALUE name, VALUE arg, const struct rb_builtin_function *func,
                 void (*build)(rb_iseq_t *, LINK_ANCHOR *, const void *))
 {
     VALUE path, realpath;
     accessor_args acc;
 
     acc.arg = arg;
-    acc.func = func;
+    acc.func = (VALUE)func;
     acc.line = caller_location(&path, &realpath);
     struct rb_iseq_new_with_callback_callback_func *ifunc =
         rb_iseq_new_with_callback_new_callback(build, &acc);
@@ -9714,7 +9714,7 @@ for_self_aref(rb_iseq_t *iseq, LINK_ANCHOR *ret, const void *a)
     body->param.size = 0;
 
     ADD_INSN1(ret, line, putobject, args->arg);
-    ADD_INSN1(ret, line, opt_call_c_function, (VALUE)args->func);
+    ADD_INSN1(ret, line, invokebuiltin, args->func);
 }
 
 static void
@@ -9731,24 +9731,23 @@ for_self_aset(rb_iseq_t *iseq, LINK_ANCHOR *ret, const void *a)
 
     ADD_GETLOCAL(ret, line, numberof(vars)-1, 0);
     ADD_INSN1(ret, line, putobject, args->arg);
-    ADD_INSN1(ret, line, opt_call_c_function, (VALUE)args->func);
-    ADD_INSN(ret, line, pop);
+    ADD_INSN1(ret, line, invokebuiltin, args->func);
 }
 
 /*
  * func (index) -> (value)
  */
 const rb_iseq_t *
-rb_method_for_self_aref(VALUE name, VALUE arg, rb_insn_func_t func)
+rb_method_for_self_aref(VALUE name, VALUE arg, const struct rb_builtin_function *func)
 {
     return method_for_self(name, arg, func, for_self_aref);
 }
 
 /*
- * func (index, value) -> (index, value)
+ * func (index, value) -> (value)
  */
 const rb_iseq_t *
-rb_method_for_self_aset(VALUE name, VALUE arg, rb_insn_func_t func)
+rb_method_for_self_aset(VALUE name, VALUE arg, const struct rb_builtin_function *func)
 {
     return method_for_self(name, arg, func, for_self_aset);
 }
