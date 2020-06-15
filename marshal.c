@@ -1739,8 +1739,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    }
 	    v = r_object0(arg, 0, extmod);
 	    if (rb_special_const_p(v) || RB_TYPE_P(v, T_OBJECT) || RB_TYPE_P(v, T_CLASS)) {
-	      format_error:
-		rb_raise(rb_eArgError, "dump format error (user class)");
+                goto format_error;
 	    }
 	    if (RB_TYPE_P(v, T_MODULE) || !RTEST(rb_class_inherited_p(c, RBASIC(v)->klass))) {
 		VALUE tmp = rb_obj_alloc(c);
@@ -1750,6 +1749,9 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    RBASIC_SET_CLASS(v, c);
 	}
 	break;
+
+      format_error:
+        rb_raise(rb_eArgError, "dump format error (user class)");
 
       case TYPE_NIL:
 	v = Qnil;
