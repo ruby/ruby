@@ -3716,6 +3716,7 @@ id2ref(VALUE objid)
     VALUE orig;
     void *p0;
 
+    objid = rb_to_int(objid);
     if (FIXNUM_P(objid) || rb_big_size(objid) <= SIZEOF_VOIDP) {
         ptr = NUM2PTR(objid);
         if (ptr == Qtrue) return Qtrue;
