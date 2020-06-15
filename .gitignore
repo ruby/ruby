@@ -27,7 +27,6 @@
 *.swp
 *.yarb
 *~
-.*-*
 .*.list
 .*.time
 .DS_Store
@@ -60,6 +59,8 @@ lcov*.info
 /build*/
 /COPYING.LIB
 /ChangeLog
+/.downloaded-cache
+/.top-enc.mk
 /Doxyfile
 /GNUmakefile
 /README.atheos
@@ -191,6 +192,7 @@ lcov*.info
 
 # /ext/ripper/
 /ext/ripper/eventids1.c
+/ext/ripper/.eventids2-check
 /ext/ripper/eventids2table.c
 /ext/ripper/ripper.*
 /ext/ripper/ids1
