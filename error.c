@@ -908,23 +908,23 @@ rb_check_typeddata(VALUE obj, const rb_data_type_t *data_type)
     const char *etype;
 
     if (!RB_TYPE_P(obj, T_DATA)) {
-      wrong_type:
-	etype = builtin_class_name(obj);
-	if (!etype)
-	    rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected %s)",
-		     rb_obj_class(obj), data_type->wrap_struct_name);
-      wrong_datatype:
-	rb_raise(rb_eTypeError, "wrong argument type %s (expected %s)",
-		 etype, data_type->wrap_struct_name);
+        etype = builtin_class_name(obj);
     }
-    if (!RTYPEDDATA_P(obj)) {
-	goto wrong_type;
+    else if (!RTYPEDDATA_P(obj)) {
+        etype = builtin_class_name(obj);
     }
     else if (!rb_typeddata_inherited_p(RTYPEDDATA_TYPE(obj), data_type)) {
-	etype = RTYPEDDATA_TYPE(obj)->wrap_struct_name;
-	goto wrong_datatype;
+        etype = RTYPEDDATA_TYPE(obj)->wrap_struct_name;
     }
-    return DATA_PTR(obj);
+    else {
+        return DATA_PTR(obj);
+    }
+
+    /* rb_obj_classname() cannot be used.  A class name can be non-ASCII. */
+    const char *expected = data_type->wrap_struct_name;
+    VALUE actual = (etype) ? rb_str_new_cstr(etype) : rb_obj_class(obj);
+    rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected %s)",
+             actual, expected);
 }
 
 /* exception classes */
