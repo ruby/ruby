@@ -863,7 +863,10 @@ class CSV
     #   ["baz", "2"]
     #
     # Read rows from an \IO object:
-    #   CSV.foreach(File.open(path)) {|row| p row } # => 21
+    #   File.open(path) do |file|
+    #     CSV.foreach(file) {|row| p row } # => 21
+    #   end
+    #
     # Output:
     #   ["foo", "0"]
     #   ["bar", "1"]
@@ -1023,8 +1026,8 @@ class CSV
     # :call-seq:
     #   open(file_path, mode = "rb", **options ) -> new_csv
     #   open(io, mode = "rb", **options ) -> new_csv
-    #   open(file_path, mode = "rb", **options ) { |csv| ... } -> new_csv
-    #   open(io, mode = "rb", **options ) { |csv| ... } -> new_csv
+    #   open(file_path, mode = "rb", **options ) { |csv| ... } -> object
+    #   open(io, mode = "rb", **options ) { |csv| ... } -> object
     #
     # possible options elements:
     #   hash form:
@@ -1071,7 +1074,8 @@ class CSV
     #
     # ---
     #
-    # With a block given, calls the block with the created \CSV object:
+    # With a block given, calls the block with the created \CSV object;
+    # returns the block's return value:
     #
     # Using a file path:
     #   csv = CSV.open(path) {|csv| p csv}
