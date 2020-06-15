@@ -753,7 +753,7 @@ static const char builtin_types[][10] = {
     "Array",
     "Hash",
     "Struct",
-    "Bignum",
+    "Integer",
     "File",
     "Data",			/* internal use: wrapped C pointers */
     "MatchData",		/* data of $~ */
@@ -764,7 +764,7 @@ static const char builtin_types[][10] = {
     "true",
     "false",
     "Symbol",			/* :symbol */
-    "Fixnum",
+    "Integer",
     "undef",			/* internal use: #undef; should not happen */
     "",				/* 0x17 */
     "",				/* 0x18 */
