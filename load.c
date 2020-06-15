@@ -480,9 +480,7 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const c
     }
     if (st_get_key(loading_tbl, (st_data_t)feature, &data)) {
 	if (fn) *fn = (const char*)data;
-      loading:
-	if (!ext) return 'u';
-	return !IS_RBEXT(ext) ? 's' : 'r';
+        goto loading;
     }
     else {
 	VALUE bufstr;
@@ -514,6 +512,10 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const c
 	rb_str_resize(bufstr, 0);
     }
     return 0;
+
+  loading:
+    if (!ext) return 'u';
+    return !IS_RBEXT(ext) ? 's' : 'r';
 }
 
 int
