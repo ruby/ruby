@@ -1407,7 +1407,18 @@ module MiniTest
         suites = @@test_suites.keys
         case self.test_order
         when :random
-          suites.shuffle
+          # shuffle test suites based on CRC32 of their names
+          salt = "\n" + rand(1 << 32).to_s
+          crc_tbl = (0..255).map do |i|
+            (0..7).inject(i) {|c,| (c & 1 == 1) ? (0xEDB88320 ^ (c >> 1)) : (c >> 1) }
+          end
+          suites = suites.sort_by do |suite|
+            crc32 = 0xffffffff
+            (suite.name + salt).bytes do |data|
+              crc32 = crc_tbl[(crc32 ^ data) & 0xff] ^ (crc32 >> 8)
+            end
+            crc32 ^ 0xffffffff
+          end
         when :nosort
           suites
         else
