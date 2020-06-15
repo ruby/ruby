@@ -1288,14 +1288,13 @@ rb_hash_transient_heap_evacuate(VALUE hash, int promote)
             return;
         }
         HASH_ASSERT(old_tab != NULL);
+        if (! promote) {
+            new_tab = rb_transient_heap_alloc(hash, sizeof(ar_table));
+            if (new_tab == NULL) promote = true;
+        }
         if (promote) {
-          promote:
             new_tab = ruby_xmalloc(sizeof(ar_table));
             RHASH_UNSET_TRANSIENT_FLAG(hash);
-        }
-        else {
-            new_tab = rb_transient_heap_alloc(hash, sizeof(ar_table));
-            if (new_tab == NULL) goto promote;
         }
         *new_tab = *old_tab;
         hash_ar_table_set(hash, new_tab);
