@@ -456,7 +456,6 @@ void
 rb_class_modify_check(VALUE klass)
 {
     if (SPECIAL_CONST_P(klass)) {
-      noclass:
 	Check_Type(klass, T_CLASS);
     }
     if (OBJ_FROZEN(klass)) {
@@ -489,7 +488,7 @@ rb_class_modify_check(VALUE klass)
 		desc = "class";
 		break;
 	      default:
-		goto noclass;
+                Check_Type(klass, T_CLASS);
 	    }
 	}
         rb_frozen_error_raise(klass, "can't modify frozen %s: %"PRIsVALUE, desc, klass);
