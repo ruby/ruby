@@ -20,6 +20,7 @@
 #include "internal/symbol.h"
 #include "transient_heap.h"
 #include "vm_core.h"
+#include "builtin.h"
 
 /* only for struct[:field] access */
 enum {
@@ -27,8 +28,8 @@ enum {
     AREF_HASH_THRESHOLD = 10
 };
 
-const rb_iseq_t *rb_method_for_self_aref(VALUE name, VALUE arg, rb_insn_func_t func);
-const rb_iseq_t *rb_method_for_self_aset(VALUE name, VALUE arg, rb_insn_func_t func);
+const rb_iseq_t *rb_method_for_self_aref(VALUE name, VALUE arg, const struct rb_builtin_function *func);
+const rb_iseq_t *rb_method_for_self_aset(VALUE name, VALUE arg, const struct rb_builtin_function *func);
 
 VALUE rb_cStruct;
 static ID id_members, id_back_members, id_keyword_init;
@@ -288,11 +289,41 @@ new_struct(VALUE name, VALUE super)
     return rb_define_class_id_under(super, id, super);
 }
 
+NORETURN(static void invalid_struct_pos(VALUE s, VALUE idx));
+
+static inline long
+struct_pos_num(VALUE s, VALUE idx)
+{
+    long i = NUM2INT(idx);
+    if (i < 0 || i >= RSTRUCT_LEN(s)) invalid_struct_pos(s, idx);
+    return i;
+}
+
+static VALUE
+opt_struct_aref(rb_execution_context_t *ec, VALUE self, VALUE idx)
+{
+    long i = struct_pos_num(self, idx);
+    return RSTRUCT_GET(self, i);
+}
+
+static VALUE
+opt_struct_aset(rb_execution_context_t *ec, VALUE self, VALUE val, VALUE idx)
+{
+    long i = struct_pos_num(self, idx);
+    rb_struct_modify(self);
+    RSTRUCT_SET(self, i, val);
+    return val;
+}
+
+static const struct rb_builtin_function struct_aref_builtin =
+    RB_BUILTIN_FUNCTION(0, struct_aref, opt_struct_aref, 1);
+static const struct rb_builtin_function struct_aset_builtin =
+    RB_BUILTIN_FUNCTION(1, struct_aref, opt_struct_aset, 2);
+
 static void
 define_aref_method(VALUE nstr, VALUE name, VALUE off)
 {
-    rb_control_frame_t *FUNC_FASTCALL(rb_vm_opt_struct_aref)(rb_execution_context_t *, rb_control_frame_t *);
-    const rb_iseq_t *iseq = rb_method_for_self_aref(name, off, rb_vm_opt_struct_aref);
+    const rb_iseq_t *iseq = rb_method_for_self_aref(name, off, &struct_aref_builtin);
 
     rb_add_method_iseq(nstr, SYM2ID(name), iseq, NULL, METHOD_VISI_PUBLIC);
 }
@@ -300,8 +331,7 @@ define_aref_method(VALUE nstr, VALUE name, VALUE off)
 static void
 define_aset_method(VALUE nstr, VALUE name, VALUE off)
 {
-    rb_control_frame_t *FUNC_FASTCALL(rb_vm_opt_struct_aset)(rb_execution_context_t *, rb_control_frame_t *);
-    const rb_iseq_t *iseq = rb_method_for_self_aset(name, off, rb_vm_opt_struct_aset);
+    const rb_iseq_t *iseq = rb_method_for_self_aset(name, off, &struct_aset_builtin);
 
     rb_add_method_iseq(nstr, SYM2ID(name), iseq, NULL, METHOD_VISI_PUBLIC);
 }
@@ -1023,7 +1053,6 @@ rb_struct_pos(VALUE s, VALUE *name)
     }
 }
 
-NORETURN(static void invalid_struct_pos(VALUE s, VALUE idx));
 static void
 invalid_struct_pos(VALUE s, VALUE idx)
 {
