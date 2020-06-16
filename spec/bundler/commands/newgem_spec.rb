@@ -326,6 +326,7 @@ RSpec.describe "bundle gem" do
       expect(bundled_app("#{gem_name}/lib/#{require_path}.rb")).to exist
       expect(bundled_app("#{gem_name}/lib/#{require_path}/version.rb")).to exist
       expect(bundled_app("#{gem_name}/.gitignore")).to exist
+      expect(bundled_app("#{gem_name}/.rubocop.yml")).to exist
 
       expect(bundled_app("#{gem_name}/bin/setup")).to exist
       expect(bundled_app("#{gem_name}/bin/console")).to exist
@@ -382,6 +383,12 @@ RSpec.describe "bundle gem" do
       bundle "gem #{gem_name}"
 
       expect(bundled_app("#{gem_name}/lib/#{require_path}.rb").read).to match(/class Error < StandardError; end$/)
+    end
+
+    it "creates a default .rubocop.yml" do
+      bundle "gem #{gem_name}"
+
+      expect(bundled_app("#{gem_name}/.rubocop.yml")).to exist
     end
 
     it "runs rake without problems" do
