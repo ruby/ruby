@@ -176,8 +176,8 @@ static VALUE fix_rshift(long, unsigned long);
 static VALUE int_pow(long x, unsigned long y);
 static VALUE int_even_p(VALUE x);
 static int int_round_zero_p(VALUE num, int ndigits);
-VALUE rb_int_floor(VALUE num, int ndigits);
-VALUE rb_int_ceil(VALUE num, int ndigits);
+static VALUE rb_int_floor(VALUE num, int ndigits);
+static VALUE rb_int_ceil(VALUE num, int ndigits);
 static VALUE flo_to_i(VALUE num);
 static int float_round_overflow(int ndigits, int binexp);
 static int float_round_underflow(int ndigits, int binexp);
@@ -2148,7 +2148,7 @@ rb_int_round(VALUE num, int ndigits, enum ruby_num_rounding_mode mode)
     return n;
 }
 
-VALUE
+static VALUE
 rb_int_floor(VALUE num, int ndigits)
 {
     VALUE f;
@@ -2171,7 +2171,7 @@ rb_int_floor(VALUE num, int ndigits)
     return rb_int_minus(num, rb_int_modulo(num, f));
 }
 
-VALUE
+static VALUE
 rb_int_ceil(VALUE num, int ndigits)
 {
     VALUE f;
