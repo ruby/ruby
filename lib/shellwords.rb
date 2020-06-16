@@ -28,7 +28,7 @@
 # cause an ArgumentError.
 #
 #   argv = "they all ran after the farmer's wife".shellsplit
-#        #=> ArgumentError: Unmatched double quote: ...
+#        #=> ArgumentError: Unmatched quote: ...
 #
 # Shellwords also provides methods that do the opposite.
 # Shellwords.escape, or its alias, String#shellescape, escapes
@@ -90,7 +90,7 @@ module Shellwords
     field = String.new
     line.scan(/\G\s*(?>([^\s\\\'\"]+)|'([^\']*)'|"((?:[^\"\\]|\\.)*)"|(\\.?)|(\S))(\s|\z)?/m) do
       |word, sq, dq, esc, garbage, sep|
-      raise ArgumentError, "Unmatched double quote: #{line.inspect}" if garbage
+      raise ArgumentError, "Unmatched quote: #{line.inspect}" if garbage
       # 2.2.3 Double-Quotes:
       #
       #   The <backslash> shall retain its special meaning as an
