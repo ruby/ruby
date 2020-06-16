@@ -827,15 +827,13 @@ rb_obj_inspect(VALUE obj)
 static VALUE
 class_or_module_required(VALUE c)
 {
-    if (SPECIAL_CONST_P(c)) goto not_class;
-    switch (BUILTIN_TYPE(c)) {
+    switch (OBJ_BUILTIN_TYPE(c)) {
       case T_MODULE:
       case T_CLASS:
       case T_ICLASS:
 	break;
 
       default:
-      not_class:
 	rb_raise(rb_eTypeError, "class or module required");
     }
     return c;
