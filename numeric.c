@@ -4041,13 +4041,7 @@ int_pow(long x, unsigned long y)
     do {
 	while (y % 2 == 0) {
 	    if (!FIT_SQRT_LONG(x)) {
-		VALUE v;
-	      bignum:
-		v = rb_big_pow(rb_int2big(x), LONG2NUM(y));
-		if (RB_FLOAT_TYPE_P(v)) /* infinity due to overflow */
-		    return v;
-		if (z != 1) v = rb_big_mul(rb_int2big(neg ? -z : z), v);
-		return v;
+                goto bignum;
 	    }
 	    x = x * x;
 	    y >>= 1;
@@ -4061,6 +4055,14 @@ int_pow(long x, unsigned long y)
     } while (--y);
     if (neg) z = -z;
     return LONG2NUM(z);
+
+    VALUE v;
+  bignum:
+    v = rb_big_pow(rb_int2big(x), LONG2NUM(y));
+    if (RB_FLOAT_TYPE_P(v)) /* infinity due to overflow */
+        return v;
+    if (z != 1) v = rb_big_mul(rb_int2big(neg ? -z : z), v);
+    return v;
 }
 
 VALUE
