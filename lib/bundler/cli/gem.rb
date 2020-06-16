@@ -148,6 +148,7 @@ module Bundler
         "and the Ruby Style Guides (https://github.com/rubocop-hq/ruby-style-guide).")
         config[:rubocop] = true
         Bundler.ui.info "RuboCop enabled in config"
+        templates.merge!("rubocop.yml.tt" => ".rubocop.yml")
       end
 
       templates.merge!("exe/newgem.tt" => "exe/#{name}") if config[:exe]

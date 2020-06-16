@@ -169,6 +169,10 @@ RSpec.describe "bundle gem" do
       rubocop_dep = builder.dependencies.find {|d| d.name == "rubocop" }
       expect(rubocop_dep).not_to be_nil
     end
+
+    it "generates a default .rubocop.yml" do
+      expect(bundled_app("#{gem_name}/.rubocop.yml")).to exist
+    end
   end
 
   shared_examples_for "--no-rubocop flag" do
@@ -191,6 +195,10 @@ RSpec.describe "bundle gem" do
       builder.dependencies
       rubocop_dep = builder.dependencies.find {|d| d.name == "rubocop" }
       expect(rubocop_dep).to be_nil
+    end
+
+    it "doesn't generate a default .rubocop.yml" do
+      expect(bundled_app("#{gem_name}/.rubocop.yml")).to_not exist
     end
   end
 
