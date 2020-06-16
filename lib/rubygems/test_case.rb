@@ -1531,24 +1531,4 @@ Also, a list:
 
 end
 
-# require dependencies that are not discoverable once GEM_HOME and GEM_PATH
-# are wiped
-begin
-  gem 'rake'
-rescue Gem::LoadError
-end
-
-begin
-  require 'rake/packagetask'
-rescue LoadError
-end
-
-begin
-  gem 'rdoc'
-  require 'rdoc'
-
-  require 'rubygems/rdoc'
-rescue LoadError, Gem::LoadError
-end
-
 require 'rubygems/test_utilities'
