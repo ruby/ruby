@@ -243,23 +243,7 @@ signm2signo(VALUE *sig_ptr, int negative, int exit, int *prefix_ptr)
 	    prefix += signame_prefix_len;
     }
     if (len <= (long)prefix) {
-      unsupported:
-	if (prefix == signame_prefix_len) {
-	    prefix = 0;
-	}
-	else if (prefix > signame_prefix_len) {
-	    prefix -= signame_prefix_len;
-	    len -= prefix;
-	    vsig = rb_str_subseq(vsig, prefix, len);
-	    prefix = 0;
-	}
-	else {
-	    len -= prefix;
-	    vsig = rb_str_subseq(vsig, prefix, len);
-	    prefix = signame_prefix_len;
-	}
-	rb_raise(rb_eArgError, "unsupported signal `%.*s%"PRIsVALUE"'",
-		 prefix, signame_prefix, vsig);
+        goto unsupported;
     }
 
     if (prefix_ptr) *prefix_ptr = prefix;
@@ -272,7 +256,24 @@ signm2signo(VALUE *sig_ptr, int negative, int exit, int *prefix_ptr)
 	    return negative ? -sigs->signo : sigs->signo;
 	}
     }
-    goto unsupported;
+
+  unsupported:
+    if (prefix == signame_prefix_len) {
+        prefix = 0;
+    }
+    else if (prefix > signame_prefix_len) {
+        prefix -= signame_prefix_len;
+        len -= prefix;
+        vsig = rb_str_subseq(vsig, prefix, len);
+        prefix = 0;
+    }
+    else {
+        len -= prefix;
+        vsig = rb_str_subseq(vsig, prefix, len);
+        prefix = signame_prefix_len;
+    }
+    rb_raise(rb_eArgError, "unsupported signal `%.*s%"PRIsVALUE"'",
+             prefix, signame_prefix, vsig);
 }
 
 static const char*
