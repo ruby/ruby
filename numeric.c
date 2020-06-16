@@ -4009,6 +4009,25 @@ rb_int_positive_pow(long x, unsigned long y)
 }
 
 static VALUE
+fix_pow_inverted(VALUE x, VALUE minusb)
+{
+    if (x == INT2FIX(0)) {
+        rb_num_zerodiv();
+    }
+    else {
+        VALUE y = rb_int_pow(x, minusb);
+
+        if (RB_FLOAT_TYPE_P(y)) {
+            double d = pow((double)FIX2LONG(x), RFLOAT_VALUE(y));
+            return DBL2NUM(1.0 / d);
+        }
+        else {
+            return rb_rational_raw(INT2FIX(1), y);
+        }
+    }
+}
+
+static VALUE
 fix_pow(VALUE x, VALUE y)
 {
     long a = FIX2LONG(x);
@@ -4017,18 +4036,8 @@ fix_pow(VALUE x, VALUE y)
 	long b = FIX2LONG(y);
 
 	if (a == 1) return INT2FIX(1);
-	if (a == -1) {
-	    if (b % 2 == 0)
-		return INT2FIX(1);
-	    else
-		return INT2FIX(-1);
-	}
-	if (b < 0) {
-	    if (a == 0) rb_num_zerodiv();
-            y = rb_int_pow(x, LONG2NUM(-b));
-            goto inverted;
-	}
-
+        if (a == -1) return INT2FIX(b % 2 ? -1 : 1);
+        if (b <  0) return fix_pow_inverted(x, fix_uminus(y));
 	if (b == 0) return INT2FIX(1);
 	if (b == 1) return x;
 	if (a == 0) return INT2FIX(0);
@@ -4036,20 +4045,8 @@ fix_pow(VALUE x, VALUE y)
     }
     else if (RB_TYPE_P(y, T_BIGNUM)) {
 	if (a == 1) return INT2FIX(1);
-	if (a == -1) {
-	    if (int_even_p(y)) return INT2FIX(1);
-	    else return INT2FIX(-1);
-	}
-	if (BIGNUM_NEGATIVE_P(y)) {
-	    if (a == 0) rb_num_zerodiv();
-            y = rb_int_pow(x, rb_big_uminus(y));
-          inverted:
-            if (RB_FLOAT_TYPE_P(y)) {
-                double d = pow((double)a, RFLOAT_VALUE(y));
-                return DBL2NUM(1.0 / d);
-            }
-            return rb_rational_raw(INT2FIX(1), y);
-	}
+        if (a == -1) return INT2FIX(int_even_p(y) ? 1 : -1);
+        if (BIGNUM_NEGATIVE_P(y)) return fix_pow_inverted(x, rb_big_uminus(y));
 	if (a == 0) return INT2FIX(0);
 	x = rb_int2big(FIX2LONG(x));
 	return rb_big_pow(x, y);
@@ -4061,11 +4058,9 @@ fix_pow(VALUE x, VALUE y)
 	    return DBL2NUM(dy < 0 ? HUGE_VAL : 0.0);
 	}
 	if (a == 1) return DBL2NUM(1.0);
-	{
-	    if (a < 0 && dy != round(dy))
-                return rb_dbl_complex_new_polar_pi(pow(-(double)a, dy), dy);
-	    return DBL2NUM(pow((double)a, dy));
-	}
+        if (a < 0 && dy != round(dy))
+            return rb_dbl_complex_new_polar_pi(pow(-(double)a, dy), dy);
+        return DBL2NUM(pow((double)a, dy));
     }
     else {
 	return rb_num_coerce_bin(x, y, idPow);
