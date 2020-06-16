@@ -985,18 +985,21 @@ flo_to_s(VALUE flt)
 	memcpy(ptr -= decpt, buf, digs);
     }
     else {
-      exp:
-	if (digs > 1) {
-	    memmove(buf + 2, buf + 1, digs - 1);
-	}
-	else {
-	    buf[2] = '0';
-	    digs++;
-	}
-	buf[1] = '.';
-	rb_str_cat(s, buf, digs + 1);
-	rb_str_catf(s, "e%+03d", decpt - 1);
+        goto exp;
     }
+    return s;
+
+  exp:
+    if (digs > 1) {
+        memmove(buf + 2, buf + 1, digs - 1);
+    }
+    else {
+        buf[2] = '0';
+        digs++;
+    }
+    buf[1] = '.';
+    rb_str_cat(s, buf, digs + 1);
+    rb_str_catf(s, "e%+03d", decpt - 1);
     return s;
 }
 
