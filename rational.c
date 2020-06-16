@@ -2440,24 +2440,27 @@ parse_rat(const char *s, const char *const e, int strict, int raise)
     if (nexp != ZERO) {
         if (INT_NEGATIVE_P(nexp)) {
             VALUE mul;
-            if (!FIXNUM_P(nexp)) {
-              overflow:
-                return sign == '-' ? DBL2NUM(-HUGE_VAL) : DBL2NUM(HUGE_VAL);
+            if (FIXNUM_P(nexp)) {
+                mul = f_expt10(LONG2NUM(-FIX2LONG(nexp)));
+                if (! RB_FLOAT_TYPE_P(mul)) {
+                    num = rb_int_mul(num, mul);
+                    goto reduce;
+                }
             }
-            mul = f_expt10(LONG2NUM(-FIX2LONG(nexp)));
-            if (RB_FLOAT_TYPE_P(mul)) goto overflow;
-            num = rb_int_mul(num, mul);
+            return sign == '-' ? DBL2NUM(-HUGE_VAL) : DBL2NUM(HUGE_VAL);
         }
         else {
             VALUE div;
-            if (!FIXNUM_P(nexp)) {
-              underflow:
-                return sign == '-' ? DBL2NUM(-0.0) : DBL2NUM(+0.0);
+            if (FIXNUM_P(nexp)) {
+                div = f_expt10(nexp);
+                if (! RB_FLOAT_TYPE_P(div)) {
+                    den = rb_int_mul(den, div);
+                    goto reduce;
+                }
             }
-            div = f_expt10(nexp);
-            if (RB_FLOAT_TYPE_P(div)) goto underflow;
-            den = rb_int_mul(den, div);
+            return sign == '-' ? DBL2NUM(-0.0) : DBL2NUM(+0.0);
         }
+      reduce:
         nurat_reduce(&num, &den);
     }
 
