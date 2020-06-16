@@ -1133,6 +1133,8 @@ class CSV
     # :call-seq:
     #   parse(string) -> array_of_arrays
     #   parse(io) -> array_of_arrays
+    #   parse(string, headers: ..., **options) -> csv_table
+    #   parse(io, headers: ..., **options) -> csv_table
     #   parse(string, **options) {|row| ... } -> integer
     #   parse(io, **options) {|row| ... } -> integer
     #
@@ -1148,6 +1150,10 @@ class CSV
     #   path = 't.csv'
     #   File.write(path, string)
     #
+    # ====== Without Option +headers+
+    #
+    # Without option +headers+, returns an \Array of Arrays or an integer.
+    #
     # ---
     #
     # With no block given, returns an \Array of Arrays formed from the source.
@@ -1157,7 +1163,9 @@ class CSV
     #   a_of_a # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
     #
     # Parse an open \File:
-    #   a_of_a = CSV.parse(File.open(path))
+    #   a_of_a = File.open(path) do |file|
+    #     CSV.parse(file)
+    #   end
     #   a_of_a # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
     #
     # ---
@@ -1173,12 +1181,56 @@ class CSV
     #   ["baz", "2"]
     #
     # Parse an open \File:
-    #   CSV.parse(File.open(path)) {|row| p row } # => 18
+    #   File.open(path) do |file|
+    #     CSV.parse(file) {|row| p row } # => 18
+    #   end
     #
     # Output:
     #   ["foo", "0"]
     #   ["bar", "1"]
     #   ["baz", "2"]
+    #
+    # ====== With Option +headers+
+    #
+    # With {option +headers+}[#class-CSV-label-Option+headers],
+    # returns a new CSV::Table object or an integer.
+    #
+    # ---
+    #
+    # With no block given, returns a CSV::Table object formed from the source.
+    #
+    # Parse a \String:
+    #   csv_table = CSV.parse(string, headers: ['Name', 'Count'])
+    #   csv_table # => #<CSV::Table mode:col_or_row row_count:5>
+    #
+    # Parse an open \File:
+    #   csv_table = File.open(path) do |file|
+    #     CSV.parse(file, headers: ['Name', 'Count'])
+    #   end
+    #   csv_table # => #<CSV::Table mode:col_or_row row_count:4>
+    #
+    # ---
+    #
+    # With a block given, calls the block with each parsed row,
+    # which has been formed into a CSV::Row object:
+    #
+    # Parse a \String:
+    #   CSV.parse(string, headers: ['Name', 'Count']) {|row| p row } # => 18
+    #
+    # Output:
+    #   # <CSV::Row "Name":"foo" "Count":"0">
+    #   # <CSV::Row "Name":"bar" "Count":"1">
+    #   # <CSV::Row "Name":"baz" "Count":"2">
+    #
+    # Parse an open \File:
+    #   File.open(path) do |file|
+    #     CSV.parse(file, headers: ['Name', 'Count']) {|row| p row } # => 18
+    #   end
+    #
+    # Output:
+    #   # <CSV::Row "Name":"foo" "Count":"0">
+    #   # <CSV::Row "Name":"bar" "Count":"1">
+    #   # <CSV::Row "Name":"baz" "Count":"2">
     #
     # ---
     #
