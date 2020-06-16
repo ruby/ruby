@@ -3132,22 +3132,32 @@ rb_ary_to_a(VALUE ary)
  *    array.to_h {|item| ... } -> new_hash
  *
  *  Returns a new \Hash formed from +self+.
- *  Each element in +self+ must be a 2-element \Array.
- *  ---
  *
- *  When no block given, returns a new \Hash
- *  wherein each 2-element \Array in +self+
- *  becomes a key-value pair in the returned \Hash:
+ *  In all the forms below, each 2-element \Array
+ *  is formed into a key-value pair in the new \Hash:
+ *  - The first element itself is never allowed to become the key;
+ *    to prevent that, if necessary, an automatically-created
+ *    copy becomes the key instead.
+ *  - The value may be any object, including the second element itself.
+ *
+ *  ====== \Array of 2-Element Arrays
+ *
+ *  When +self+ is an \Array of 2-element sub-arrays,
+ *  each sub-array is formed into a key-value pair in the new \Hash.
+ *
+ *  When no block is given, returns a new \Hash:
  *    [].to_h # => {}
  *    a = [['foo', 'zero'], ['bar', 'one'], ['baz', 'two']]
  *    h = a.to_h
  *    h # => {"foo"=>"zero", "bar"=>"one", "baz"=>"two"}
+ *    h.keys.first.equal?(a.first.first) # => false # Key is a copy
+ *    h.values.first.equal?(a.first.last) # => true # Value is not a copy
  *
  *  ---
  *
  *  When a block is given, calls the block with each 2-element \Array;
- *  the block must return a 2-element array whose two elements
- *  become a key-value pair in the returned \Hash:
+ *  the block must return a 2-element \Array whose two elements
+ *  form a key-value pair in the returned \Hash:
  *    a = [['foo', 'zero'], ['bar', 'one'], ['baz', 'two']]
  *    h = a.to_h {|item| [item[0].upcase, item[1].upcase] }
  *    h # => {"FOO"=>"ZERO", "BAR"=>"ONE", "BAZ"=>"TWO"}
@@ -3156,12 +3166,33 @@ rb_ary_to_a(VALUE ary)
  *  any object from +self+ that is to become a _value_ is <i>not a copy</i>:
  *    a = [['foo', 'zero'], ['bar', 'one'], ['baz', 'two']]
  *    h = a.to_h {|item| item }
- *    h.keys.first.equal?(a.first.first) # => false # Copy
- *    h.values.first.equal?(a.first.last) # => true # Not a copy
+ *    h.keys.first.equal?(a.first.first) # => false # Key is a copy
+ *    h.values.first.equal?(a.first.last) # => true # Value is not a copy
+ *
+ *  ====== Other Arrays
+ *
+ *  When +self+ is not an \Array of 2-element Arrays,
+ *  a block is required.
+ *
+ *  Calls the block with each array element;
+ *  the block must return a 2-element \Array whose two elements
+ *  form a key-value pair in the returned \Hash:
+ *    a = ['foo', 'bar', 'baz']
+ *    h = a.to_h {|item| [item.upcase, item]}
+ *    h # => {"FOO"=>"foo", "BAR"=>"bar", "BAZ"=>"baz"}
+ *
+ *  As before, any object from +self+ that is to become a _key_ is a _copy_:
+ *  any object from +self+ that is to become a _value_ is <i>not a copy</i>:
+ *    a = ['foo', 'bar', 'baz']
+ *    h = a.to_h {|item| [item, item]}
+ *    h # => {"foo"=>"foo", "bar"=>"bar", "baz"=>"baz"}
+ *    h.keys.first.equal?(a.first) # => false # Key is a copy
+ *    h.values.first.equal?(a.first) # => true # Value is not a copy
  *
  *  ---
  *
- *  Raises an exception if any element in +self+ is not a 2-element \Array:
+ *  Raises an exception if no block is given
+ *  and any element in +self+ is not a 2-element \Array:
  *    # Raises TypeError (wrong element type Symbol at 0 (expected array):
  *    [:foo].to_h
  *    # Raises ArgumentError (wrong array length at 0 (expected 2, was 1)):
