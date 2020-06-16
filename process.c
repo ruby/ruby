@@ -1886,8 +1886,7 @@ check_exec_redirect_fd(VALUE v, int iskey)
         fd = fptr->fd;
     }
     else {
-      wrong:
-        rb_raise(rb_eArgError, "wrong exec redirect");
+        goto wrong;
     }
     if (fd < 0) {
         rb_raise(rb_eArgError, "negative file descriptor");
@@ -1898,6 +1897,9 @@ check_exec_redirect_fd(VALUE v, int iskey)
     }
 #endif
     return INT2FIX(fd);
+
+  wrong:
+    rb_raise(rb_eArgError, "wrong exec redirect");
 }
 
 static VALUE
