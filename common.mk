@@ -13168,7 +13168,6 @@ struct.$(OBJEXT): {$(VPATH)}backward/2/r_cast.h
 struct.$(OBJEXT): {$(VPATH)}backward/2/rmodule.h
 struct.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 struct.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
-struct.$(OBJEXT): {$(VPATH)}builtin.h
 struct.$(OBJEXT): {$(VPATH)}config.h
 struct.$(OBJEXT): {$(VPATH)}defines.h
 struct.$(OBJEXT): {$(VPATH)}encoding.h
