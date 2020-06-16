@@ -3229,8 +3229,6 @@ proc_binding(VALUE self)
 	GetProcPtr(block->as.proc, proc);
 	block = &proc->block;
 	goto again;
-      case block_type_symbol:
-	goto error;
       case block_type_ifunc:
 	{
 	    const struct vm_ifunc *ifunc = block->as.captured.code.ifunc;
@@ -3247,12 +3245,11 @@ proc_binding(VALUE self)
 		RB_OBJ_WRITE(env, &env->iseq, empty);
 		break;
 	    }
-	    else {
-	      error:
-		rb_raise(rb_eArgError, "Can't create Binding from C level Proc");
-		return Qnil;
-	    }
 	}
+        /* FALLTHROUGH */
+      case block_type_symbol:
+        rb_raise(rb_eArgError, "Can't create Binding from C level Proc");
+        UNREACHABLE_RETURN(Qnil);
     }
 
     bindval = rb_binding_alloc(rb_cBinding);
