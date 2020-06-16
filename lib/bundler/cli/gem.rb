@@ -79,7 +79,6 @@ module Bundler
       ]
 
       templates.merge!("gitignore.tt" => ".gitignore") if Bundler.git_present?
-      templates.merge!("rubocop.yml.tt" => ".rubocop.yml")
 
       if test_framework = ask_and_set_test_framework
         config[:test] = test_framework
