@@ -55,10 +55,7 @@ jobs:
       - name: Run configure
         run: ../src/configure -C --disable-install-doc cppflags=${{ matrix.debug }}
         working-directory: build
-      - name: Update include files
-        run: |
-          make $JOBS touch-unicode-files
-          make $JOBS -o update-src up
+      - run: make $JOBS incs
         working-directory: build
       - run: make $JOBS
         working-directory: build

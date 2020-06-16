@@ -164,10 +164,7 @@ jobs:
             ${default_configure} \
             ${append_configure} \
             --with-gcc="${default_cc} ${append_cc}"
-      - name: Update include files
-        run: |
-          $make touch-unicode-files
-          $make $UPDATE_UNICODE -o update-src incs
+      - run: $make incs
         working-directory: build
       - run: $make
         working-directory: build

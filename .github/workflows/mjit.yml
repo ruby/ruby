@@ -41,10 +41,7 @@ jobs:
       - name: Run configure
         run: ../src/configure -C --disable-install-doc
         working-directory: build
-      - name: Update include files
-        run: |
-          make touch-unicode-files
-          make $JOBS -o update-src incs
+      - run: make $JOBS incs
         working-directory: build
       - run: make $JOBS
         working-directory: build
