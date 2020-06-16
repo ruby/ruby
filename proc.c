@@ -1989,27 +1989,38 @@ rb_obj_public_method(VALUE obj, VALUE vid)
 VALUE
 rb_obj_singleton_method(VALUE obj, VALUE vid)
 {
-    const rb_method_entry_t *me;
     VALUE klass = rb_singleton_class_get(obj);
     ID id = rb_check_id(&vid);
 
-    if (NIL_P(klass) || NIL_P(klass = RCLASS_ORIGIN(klass))) {
-      undef:
-	rb_name_err_raise("undefined singleton method `%1$s' for `%2$s'",
-			  obj, vid);
+    if (NIL_P(klass)) {
+        /* goto undef; */
     }
-    if (!id) {
+    else if (NIL_P(klass = RCLASS_ORIGIN(klass))) {
+        /* goto undef; */
+    }
+    else if (! id) {
         VALUE m = mnew_missing_by_name(klass, obj, &vid, FALSE, rb_cMethod);
         if (m) return m;
-	goto undef;
+        /* else goto undef; */
     }
-    me = rb_method_entry_at(klass, id);
-    if (UNDEFINED_METHOD_ENTRY_P(me) ||
-	UNDEFINED_REFINED_METHOD_P(me->def)) {
-	vid = ID2SYM(id);
-	goto undef;
+    else {
+        const rb_method_entry_t *me = rb_method_entry_at(klass, id);
+        vid = ID2SYM(id);
+
+        if (UNDEFINED_METHOD_ENTRY_P(me)) {
+            /* goto undef; */
+        }
+        else if (UNDEFINED_REFINED_METHOD_P(me->def)) {
+            /* goto undef; */
+        }
+        else {
+            return mnew_from_me(me, klass, klass, obj, id, rb_cMethod, FALSE);
+        }
     }
-    return mnew_from_me(me, klass, klass, obj, id, rb_cMethod, FALSE);
+
+  /* undef: */
+    rb_name_err_raise("undefined singleton method `%1$s' for `%2$s'",
+                      obj, vid);
 }
 
 /*
