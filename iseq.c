@@ -866,7 +866,7 @@ rb_iseq_new_with_callback(
     rb_iseq_compile_callback(iseq, ifunc);
     finish_iseq_build(iseq);
 
-    return iseq_translate(iseq);
+    return iseq;
 }
 
 const rb_iseq_t *
