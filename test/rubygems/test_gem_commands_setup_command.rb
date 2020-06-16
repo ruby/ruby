@@ -125,6 +125,8 @@ class TestGemCommandsSetupCommand < Gem::TestCase
   end
 
   def test_execute_informs_about_installed_executables
+    @cmd.options[:document] = []
+
     use_ui @ui do
       @cmd.execute
     end
