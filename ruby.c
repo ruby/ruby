@@ -911,9 +911,7 @@ feature_option(const char *str, int len, void *arg, const unsigned int enable)
     if (NAME_MATCH_P(#bit, str, len)) {set |= mask = FEATURE_BIT(bit); FEATURE_FOUND;}
     EACH_FEATURES(SET_FEATURE, ;);
     if (NAME_MATCH_P("all", str, len)) {
-      found:
-        FEATURE_SET_TO(*argp, mask, (mask & enable));
-	return;
+        goto found;
     }
 #if AMBIGUOUS_FEATURE_NAMES
     if (matched == 1) goto found;
@@ -933,6 +931,11 @@ feature_option(const char *str, int len, void *arg, const unsigned int enable)
     rb_warn("unknown argument for --%s: `%.*s'",
 	    enable ? "enable" : "disable", len, str);
     rb_warn("features are [%.*s].", (int)strlen(list), list);
+    return;
+
+  found:
+    FEATURE_SET_TO(*argp, mask, (mask & enable));
+    return;
 }
 
 static void
