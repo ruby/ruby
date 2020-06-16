@@ -3129,7 +3129,7 @@ rb_ary_to_a(VALUE ary)
 /*
  *  call-seq:
  *    array.to_h -> new_hash
- *    array.to_h {|2_element_array| ... } -> new_hash
+ *    array.to_h {|item| ... } -> new_hash
  *
  *  Returns a new \Hash formed from +self+.
  *  Each element in +self+ must be a 2-element \Array.
@@ -3149,13 +3149,13 @@ rb_ary_to_a(VALUE ary)
  *  the block must return a 2-element array whose two elements
  *  become a key-value pair in the returned \Hash:
  *    a = [['foo', 'zero'], ['bar', 'one'], ['baz', 'two']]
- *    h = a.to_h {|array| [array[0].upcase, array[1].upcase] }
+ *    h = a.to_h {|item| [item[0].upcase, item[1].upcase] }
  *    h # => {"FOO"=>"ZERO", "BAR"=>"ONE", "BAZ"=>"TWO"}
  *
  *  Any object from +self+ that is to become a _key_ is a _copy_:
  *  any object from +self+ that is to become a _value_ is <i>not a copy</i>:
  *    a = [['foo', 'zero'], ['bar', 'one'], ['baz', 'two']]
- *    h = a.to_h {|array| array }
+ *    h = a.to_h {|item| item }
  *    h.keys.first.equal?(a.first.first) # => false # Copy
  *    h.values.first.equal?(a.first.last) # => true # Not a copy
  *
@@ -3199,24 +3199,12 @@ rb_ary_to_h(VALUE ary)
 
 /*
  *  call-seq:
- *    array.to_ary -> self or new_array
+ *    array.to_ary -> self
  *
- *  When <tt>self.instance_of?(Array)</tt>, returns +self+:
+ *  Returns +self+:
  *    a = [:foo, 'bar', 2]
- *    a.instance_of?(Array) # => true
  *    a1 = a.to_ary
  *    a1.equal?(a) # => true # Returned self
- *
- *  Otherwise, when <tt>self.kind_of?(Array)</tt>,
- *  returns a new \Array containing the actual elements (not copies) of +self+:
- *    class MyArray < Array; end
- *    a = MyArray.new(['foo', 'bar', 'two'])
- *    a.instance_of?(Array) # => false
- *    a.kind_of?(Array) # => true
- *    a1 = a.to_ary
- *    a1.class # => Array # Not MyArray
- *    a1 == a # => true
- *    a1.first.equal?(a.first) # => true # Not a copy
  */
 
 static VALUE
