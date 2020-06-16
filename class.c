@@ -915,7 +915,7 @@ rb_include_class_new(VALUE module, VALUE super)
     if (BUILTIN_TYPE(module) == T_ICLASS) {
 	module = RBASIC(module)->klass;
     }
-    assert(!RB_TYPE_P(module, T_ICLASS));
+    RUBY_ASSERT(!RB_TYPE_P(module, T_ICLASS));
     if (!RCLASS_IV_TBL(module)) {
 	RCLASS_IV_TBL(module) = st_init_numtable();
     }
