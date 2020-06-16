@@ -55,8 +55,9 @@ jobs:
           call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           set YACC=win_bison
           echo on
-          nmake up
-          nmake extract-gems
+          nmake touch-unicode-files
+          nmake incs
+          nmake extract-extlibs
           nmake
         working-directory: build
         shell: cmd

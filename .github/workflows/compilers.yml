@@ -164,15 +164,15 @@ jobs:
             ${default_configure} \
             ${append_configure} \
             --with-gcc="${default_cc} ${append_cc}"
-      - run: $make incs
+      - name: Update include files
+        run: |
+          $make touch-unicode-files
+          $make $UPDATE_UNICODE -o update-src incs
         working-directory: build
       - run: $make
         working-directory: build
       - run: $make test
         working-directory: build
-      - run: $make $UPDATE_UNICODE up
-        working-directory: build
-        if: "matrix.entry.name == '-O3'"
       - run: $make install
         working-directory: build
         if: "matrix.entry.name == '-O3'"

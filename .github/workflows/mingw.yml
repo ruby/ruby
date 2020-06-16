@@ -72,11 +72,16 @@ jobs:
           # Write-Host "-------------------------------------- config.log"
           # Get-Content ./config.log | foreach {Write-Output $_}
 
-      - name: download unicode, gems, etc
+      - name: update
         working-directory: build
         run: |
           $jobs = [int](2 * $env:NUMBER_OF_PROCESSORS)
-          make -j $jobs update-unicode
+          make -j $jobs incs
+
+      - name: download gems
+        working-directory: build
+        run: |
+          $jobs = [int](2 * $env:NUMBER_OF_PROCESSORS)
           make -j $jobs update-gems
 
       - name: make all
