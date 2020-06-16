@@ -915,6 +915,7 @@ rb_include_class_new(VALUE module, VALUE super)
     if (BUILTIN_TYPE(module) == T_ICLASS) {
 	module = RBASIC(module)->klass;
     }
+    RUBY_ASSERT(!RB_TYPE_P(module, T_ICLASS));
     if (!RCLASS_IV_TBL(module)) {
 	RCLASS_IV_TBL(module) = st_init_numtable();
     }
@@ -925,12 +926,7 @@ rb_include_class_new(VALUE module, VALUE super)
     RCLASS_CONST_TBL(klass) = RCLASS_CONST_TBL(module);
 
     RCLASS_SET_SUPER(klass, super);
-    if (RB_TYPE_P(module, T_ICLASS)) {
-	RBASIC_SET_CLASS(klass, RBASIC(module)->klass);
-    }
-    else {
-	RBASIC_SET_CLASS(klass, module);
-    }
+    RBASIC_SET_CLASS(klass, module);
 
     return (VALUE)klass;
 }
