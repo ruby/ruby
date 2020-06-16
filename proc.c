@@ -1865,7 +1865,7 @@ rb_method_name_error(VALUE klass, VALUE str)
 {
 #define MSG(s) rb_fstring_lit("undefined method `%1$s' for"s" `%2$s'")
     VALUE c = klass;
-    VALUE s;
+    VALUE s = Qundef;
 
     if (FL_TEST(c, FL_SINGLETON)) {
 	VALUE obj = rb_ivar_get(klass, attached);
@@ -1878,13 +1878,11 @@ rb_method_name_error(VALUE klass, VALUE str)
           default:
 	    break;
 	}
-	goto normal_class;
     }
     else if (RB_TYPE_P(c, T_MODULE)) {
 	s = MSG(" module");
     }
-    else {
-      normal_class:
+    if (s == Qundef) {
 	s = MSG(" class");
     }
     rb_name_err_raise_str(s, c, str);
