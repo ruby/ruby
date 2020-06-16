@@ -429,11 +429,8 @@ class Gem::TestCase < Minitest::Test
     $LOAD_PATH.replace @orig_LOAD_PATH if @orig_LOAD_PATH
     if @orig_LOADED_FEATURES
       if @orig_LOAD_PATH
-        paths = @orig_LOAD_PATH.map {|path| File.join(File.expand_path(path), "/") }
         ($LOADED_FEATURES - @orig_LOADED_FEATURES).each do |feat|
-          unless paths.any? {|path| feat.start_with?(path) }
-            $LOADED_FEATURES.delete(feat)
-          end
+          $LOADED_FEATURES.delete(feat) if feat.start_with?(@tmp)
         end
       else
         $LOADED_FEATURES.replace @orig_LOADED_FEATURES
