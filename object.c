@@ -3530,13 +3530,7 @@ rb_cstr_to_dbl_raise(const char *p, int badcheck, int raise, int *error)
     }
     if (p == end) {
         if (badcheck) {
-          bad:
-            if (raise)
-                rb_invalid_str(q, "Float()");
-            else {
-                if (error) *error = 1;
-                return 0.0;
-            }
+            goto bad;
         }
         return d;
     }
@@ -3611,6 +3605,14 @@ rb_cstr_to_dbl_raise(const char *p, int badcheck, int raise, int *error)
         rb_raise(rb_eArgError, "Float %.*s%s out of range", w, q, ellipsis);
     }
     return d;
+
+  bad:
+    if (raise)
+        rb_invalid_str(q, "Float()");
+    else {
+        if (error) *error = 1;
+        return 0.0;
+    }
 }
 
 /*!
