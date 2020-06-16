@@ -1085,21 +1085,19 @@ rb_rational_pow(VALUE self, VALUE other)
 VALUE
 rb_rational_cmp(VALUE self, VALUE other)
 {
-    if (RB_INTEGER_TYPE_P(other)) {
+    switch (TYPE(other)) {
+      case T_FIXNUM:
+      case T_BIGNUM:
 	{
 	    get_dat1(self);
 
 	    if (dat->den == LONG2FIX(1))
 		return rb_int_cmp(dat->num, other); /* c14n */
 	    other = f_rational_new_bang1(CLASS_OF(self), other);
-	    goto other_is_rational;
+            /* FALLTHROUGH */
 	}
-    }
-    else if (RB_FLOAT_TYPE_P(other)) {
-	return rb_dbl_cmp(nurat_to_double(self), RFLOAT_VALUE(other));
-    }
-    else if (RB_TYPE_P(other, T_RATIONAL)) {
-	other_is_rational:
+
+      case T_RATIONAL:
 	{
 	    VALUE num1, num2;
 
@@ -1116,8 +1114,11 @@ rb_rational_cmp(VALUE self, VALUE other)
 	    }
 	    return rb_int_cmp(rb_int_minus(num1, num2), ZERO);
 	}
-    }
-    else {
+
+      case T_FLOAT:
+        return rb_dbl_cmp(nurat_to_double(self), RFLOAT_VALUE(other));
+
+      default:
 	return rb_num_coerce_cmp(self, other, rb_intern("<=>"));
     }
 }
