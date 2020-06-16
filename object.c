@@ -3362,32 +3362,34 @@ rb_convert_to_integer(VALUE val, int base, int raise_exception)
 {
     VALUE tmp;
 
+    if (base) {
+        tmp = rb_check_string_type(val);
+
+        if (! NIL_P(tmp)) {
+            val =  tmp;
+        }
+        else if (! raise_exception) {
+            return Qnil;
+        }
+        else {
+            rb_raise(rb_eArgError, "base specified for non string value");
+        }
+    }
     if (RB_FLOAT_TYPE_P(val)) {
-        double f;
-        if (base != 0) goto arg_error;
-        f = RFLOAT_VALUE(val);
+        double f = RFLOAT_VALUE(val);
         if (!raise_exception && !isfinite(f)) return Qnil;
         if (FIXABLE(f)) return LONG2FIX((long)f);
         return rb_dbl2big(f);
     }
     else if (RB_INTEGER_TYPE_P(val)) {
-        if (base != 0) goto arg_error;
         return val;
     }
     else if (RB_TYPE_P(val, T_STRING)) {
         return rb_str_convert_to_inum(val, base, TRUE, raise_exception);
     }
     else if (NIL_P(val)) {
-        if (base != 0) goto arg_error;
         if (!raise_exception) return Qnil;
         rb_raise(rb_eTypeError, "can't convert nil into Integer");
-    }
-    if (base != 0) {
-        tmp = rb_check_string_type(val);
-        if (!NIL_P(tmp)) return rb_str_convert_to_inum(tmp, base, TRUE, raise_exception);
-      arg_error:
-        if (!raise_exception) return Qnil;
-        rb_raise(rb_eArgError, "base specified for non string value");
     }
 
     tmp = rb_protect(rb_check_to_int, val, NULL);
