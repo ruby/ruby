@@ -110,13 +110,13 @@ module Bundler
       config[:ci] = ask_and_set_ci
       case config[:ci]
       when "github"
-        templates.merge!(".github/workflows/main.yml.tt" => ".github/workflows/main.yml")
+        templates.merge!("github/workflows/main.yml.tt" => ".github/workflows/main.yml")
       when "travis"
-        templates.merge!(".travis.yml.tt" => ".travis.yml")
+        templates.merge!("travis.yml.tt" => ".travis.yml")
       when "gitlab"
-        templates.merge!(".gitlab-ci.yml.tt" => ".gitlab-ci.yml")
+        templates.merge!("gitlab-ci.yml.tt" => ".gitlab-ci.yml")
       when "circle"
-        templates.merge!(".circleci/config.yml.tt" => ".circleci/config.yml")
+        templates.merge!("circleci/config.yml.tt" => ".circleci/config.yml")
       end
 
       if ask_and_set(:mit, "Do you want to license your code permissively under the MIT license?",
