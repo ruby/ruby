@@ -5,8 +5,7 @@ require 'webrick'
 begin
   require 'webrick/https'
 rescue LoadError => e
-  raise unless (e.respond_to?(:path) && e.path == 'openssl') ||
-               e.message =~ / -- openssl$/
+  raise unless e.path == 'openssl'
 end
 
 unless defined?(OpenSSL::SSL)
