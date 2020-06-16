@@ -22,11 +22,6 @@
 
 require 'rubygems'
 require 'rubygems/package'
-begin
-  gem 'rake'
-rescue Gem::LoadError
-end
-
 require 'rake/packagetask'
 
 ##
