@@ -1934,7 +1934,7 @@ check_exec_redirect(VALUE key, VALUE val, struct rb_execarg *eargp)
 
     switch (TYPE(val)) {
       case T_SYMBOL:
-        if (!(id = rb_check_id(&val))) goto wrong_symbol;
+        id = rb_check_id(&val);
         if (id == id_close) {
             param = Qnil;
             eargp->fd_close = check_exec_redirect1(eargp->fd_close, key, param);
@@ -1952,7 +1952,6 @@ check_exec_redirect(VALUE key, VALUE val, struct rb_execarg *eargp)
             eargp->fd_dup2 = check_exec_redirect1(eargp->fd_dup2, key, param);
         }
         else {
-	  wrong_symbol:
             rb_raise(rb_eArgError, "wrong exec redirect symbol: %"PRIsVALUE,
                                    val);
         }
