@@ -541,14 +541,14 @@ bind_local_variable_get(VALUE bindval, VALUE sym)
     GetBindingPtr(bindval, bind);
 
     env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
-    if ((ptr = get_local_variable_ptr(&env, lid)) == NULL) {
-	sym = ID2SYM(lid);
-      undefined:
-	rb_name_err_raise("local variable `%1$s' is not defined for %2$s",
-			  bindval, sym);
+    if ((ptr = get_local_variable_ptr(&env, lid)) != NULL) {
+        return *ptr;
     }
 
-    return *ptr;
+    sym = ID2SYM(lid);
+  undefined:
+    rb_name_err_raise("local variable `%1$s' is not defined for %2$s",
+                      bindval, sym);
 }
 
 /*
