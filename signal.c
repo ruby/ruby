@@ -1209,6 +1209,14 @@ trap_handler(VALUE *cmd, int sig)
 	    *cmd = command;
 	    RSTRING_GETMEM(command, cptr, len);
 	    switch (len) {
+              sig_ign:
+                func = SIG_IGN;
+                *cmd = Qtrue;
+                break;
+              sig_dfl:
+                func = default_handler(sig);
+                *cmd = 0;
+                break;
 	      case 0:
                 goto sig_ign;
 		break;
@@ -1223,14 +1231,10 @@ trap_handler(VALUE *cmd, int sig)
                 break;
 	      case 7:
 		if (memcmp(cptr, "SIG_IGN", 7) == 0) {
-sig_ign:
-                    func = SIG_IGN;
-                    *cmd = Qtrue;
+                    goto sig_ign;
 		}
 		else if (memcmp(cptr, "SIG_DFL", 7) == 0) {
-sig_dfl:
-                    func = default_handler(sig);
-                    *cmd = 0;
+                    goto sig_dfl;
 		}
 		else if (memcmp(cptr, "DEFAULT", 7) == 0) {
                     goto sig_dfl;
