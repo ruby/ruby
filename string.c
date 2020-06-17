@@ -2975,9 +2975,7 @@ rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
         ptr_cr != ENC_CODERANGE_7BIT) {
 	str_enc = rb_enc_from_index(str_encindex);
 	ptr_enc = rb_enc_from_index(ptr_encindex);
-      incompatible:
-        rb_raise(rb_eEncCompatError, "incompatible character encodings: %s and %s",
-		 rb_enc_name(str_enc), rb_enc_name(ptr_enc));
+        goto incompatible;
     }
 
     if (str_cr == ENC_CODERANGE_UNKNOWN) {
@@ -3013,6 +3011,10 @@ rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
     str_buf_cat(str, ptr, len);
     ENCODING_CODERANGE_SET(str, res_encindex, res_cr);
     return str;
+
+  incompatible:
+    rb_raise(rb_eEncCompatError, "incompatible character encodings: %s and %s",
+             rb_enc_name(str_enc), rb_enc_name(ptr_enc));
 }
 
 VALUE
