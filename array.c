@@ -3103,8 +3103,7 @@ rb_ary_to_s(VALUE ary)
  *    a1 = a.to_a
  *    a1.equal?(a) # => true # Returned self
  *
- *  Otherwise, when <tt>self.kind_of?(Array)</tt>,
- *  returns a new \Array containing the elements of +self+:
+ *  Otherwise, returns a new \Array containing the elements of +self+:
  *    class MyArray < Array; end
  *    a = MyArray.new(['foo', 'bar', 'two'])
  *    a.instance_of?(Array) # => false
