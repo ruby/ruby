@@ -16,8 +16,7 @@
 } -%>
 %
 % unsupported_insns = [
-%   'defineclass',         # low priority
-%   'opt_call_c_function', # low priority
+%   'defineclass', # low priority
 % ]
 %
 % opt_send_without_block = RubyVM::Instructions.find { |i| i.name == 'opt_send_without_block' }

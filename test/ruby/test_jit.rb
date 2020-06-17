@@ -22,7 +22,6 @@ class TestJIT < Test::Unit::TestCase
   TEST_PENDING_INSNS = RubyVM::INSTRUCTION_NAMES.select { |n| n.start_with?('trace_') }.map(&:to_sym) + [
     # not supported yet
     :defineclass,
-    :opt_call_c_function,
 
     # to be tested
     :invokebuiltin,
@@ -611,10 +610,6 @@ class TestJIT < Test::Unit::TestCase
   def test_compile_insn_opt_regexpmatch2
     assert_compile_once("/true/ =~ 'true'", result_inspect: '0', insns: %i[opt_regexpmatch2])
     assert_compile_once("'true' =~ /true/", result_inspect: '0', insns: %i[opt_regexpmatch2])
-  end
-
-  def test_compile_insn_opt_call_c_function
-    skip "support this in opt_call_c_function (low priority)"
   end
 
   def test_compile_insn_opt_invokebuiltin_delegate_leave

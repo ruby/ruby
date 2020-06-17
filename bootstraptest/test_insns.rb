@@ -412,8 +412,6 @@ tests = [
     class String; def =~ other; true; end; end
     'true' =~ /true/
   },
-
-  [ 'opt_call_c_function', 'Struct.new(:x).new.x = true', ],
 ]
 
 # normal path
