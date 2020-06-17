@@ -3864,15 +3864,13 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
 static VALUE
 rb_str_match(VALUE x, VALUE y)
 {
-    if (SPECIAL_CONST_P(y)) goto generic;
-    switch (BUILTIN_TYPE(y)) {
+    switch (OBJ_BUILTIN_TYPE(y)) {
       case T_STRING:
 	rb_raise(rb_eTypeError, "type mismatch: String given");
 
       case T_REGEXP:
 	return rb_reg_match(y, x);
 
-      generic:
       default:
 	return rb_funcall(y, idEqTilde, 1, x);
     }
