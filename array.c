@@ -3097,22 +3097,21 @@ rb_ary_to_s(VALUE ary)
  *  call-seq:
  *    to_a -> self or new_array
  *
- *  When <tt>self.instance_of?(Array)</tt>, returns +self+:
+ *  When +self+ is an instance of \Array, returns +self+:
  *    a = [:foo, 'bar', 2]
  *    a.instance_of?(Array) # => true
  *    a1 = a.to_a
  *    a1.equal?(a) # => true # Returned self
  *
  *  Otherwise, when <tt>self.kind_of?(Array)</tt>,
- *  returns a new \Array containing the actual elements (not copies) of +self+:
+ *  returns a new \Array containing the elements of +self+:
  *    class MyArray < Array; end
  *    a = MyArray.new(['foo', 'bar', 'two'])
  *    a.instance_of?(Array) # => false
  *    a.kind_of?(Array) # => true
  *    a1 = a.to_a
+ *    a1 # => ["foo", "bar", "two"]
  *    a1.class # => Array # Not MyArray
- *    a1 == a # => true
- *    a1.first.equal?(a.first) # => true # Not a copy
  */
 
 static VALUE
@@ -3134,11 +3133,7 @@ rb_ary_to_a(VALUE ary)
  *  Returns a new \Hash formed from +self+.
  *
  *  In all the forms below, each 2-element \Array
- *  is formed into a key-value pair in the new \Hash:
- *  - The first element itself is never allowed to become the key;
- *    to prevent that, if necessary, an automatically-created
- *    copy becomes the key instead.
- *  - The value may be any object, including the second element itself.
+ *  is formed into a key-value pair in the new \Hash.
  *
  *  ====== \Array of 2-Element Arrays
  *
@@ -3150,8 +3145,6 @@ rb_ary_to_a(VALUE ary)
  *    a = [['foo', 'zero'], ['bar', 'one'], ['baz', 'two']]
  *    h = a.to_h
  *    h # => {"foo"=>"zero", "bar"=>"one", "baz"=>"two"}
- *    h.keys.first.equal?(a.first.first) # => false # Key is a copy
- *    h.values.first.equal?(a.first.last) # => true # Value is not a copy
  *
  *  ---
  *
@@ -3161,13 +3154,6 @@ rb_ary_to_a(VALUE ary)
  *    a = [['foo', 'zero'], ['bar', 'one'], ['baz', 'two']]
  *    h = a.to_h {|item| [item[0].upcase, item[1].upcase] }
  *    h # => {"FOO"=>"ZERO", "BAR"=>"ONE", "BAZ"=>"TWO"}
- *
- *  Any object from +self+ that is to become a _key_ is a _copy_:
- *  any object from +self+ that is to become a _value_ is <i>not a copy</i>:
- *    a = [['foo', 'zero'], ['bar', 'one'], ['baz', 'two']]
- *    h = a.to_h {|item| item }
- *    h.keys.first.equal?(a.first.first) # => false # Key is a copy
- *    h.values.first.equal?(a.first.last) # => true # Value is not a copy
  *
  *  ====== Other Arrays
  *
@@ -3180,14 +3166,6 @@ rb_ary_to_a(VALUE ary)
  *    a = ['foo', 'bar', 'baz']
  *    h = a.to_h {|item| [item.upcase, item]}
  *    h # => {"FOO"=>"foo", "BAR"=>"bar", "BAZ"=>"baz"}
- *
- *  As before, any object from +self+ that is to become a _key_ is a _copy_:
- *  any object from +self+ that is to become a _value_ is <i>not a copy</i>:
- *    a = ['foo', 'bar', 'baz']
- *    h = a.to_h {|item| [item, item]}
- *    h # => {"foo"=>"foo", "bar"=>"bar", "baz"=>"baz"}
- *    h.keys.first.equal?(a.first) # => false # Key is a copy
- *    h.values.first.equal?(a.first) # => true # Value is not a copy
  *
  *  ---
  *
@@ -3274,12 +3252,11 @@ rb_ary_reverse(VALUE ary)
  *  call-seq:
  *    array.reverse! -> self
  *
- *  Returns +self+ with elements (not copies) in reverse order:
+ *  Reverses +self+ in place:
  *    a = ['foo', 'bar', 'two']
  *    a1 = a.reverse!
  *    a1 # => ["two", "bar", "foo"]
  *    a1.equal?(a) # => true # Returned self
- *    a1.first.equal?(a.first) # => true # Not a copy
  */
 
 static VALUE
@@ -3292,11 +3269,10 @@ rb_ary_reverse_bang(VALUE ary)
  *  call-seq:
  *    array.reverse -> new_array
  *
- *  Returns a new \Array whose elements (not copies) are in reverse order:
+ *  Returns a new \Array whose elements are in reverse order:
  *    a = ['foo', 'bar', 'two']
  *    a1 = a.reverse
  *    a1 # => ["two", "bar", "foo"]
- *    a1.first.equal?(a.last) # => true # Not a copy
  */
 
 static VALUE
