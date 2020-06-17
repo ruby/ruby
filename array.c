@@ -3132,40 +3132,19 @@ rb_ary_to_a(VALUE ary)
  *
  *  Returns a new \Hash formed from +self+.
  *
- *  In all the forms below, each 2-element \Array
- *  is formed into a key-value pair in the new \Hash.
+ *  When a block is given, calls the block with each array element;
+ *  the block must return a 2-element \Array whose two elements
+ *  form a key-value pair in the returned \Hash:
+ *    a = ['foo', :bar, 1, [2, 3], {baz: 4}]
+ *    h = a.to_h {|item| [item, item] }
+ *    h # => {"foo"=>"foo", :bar=>:bar, 1=>1, [2, 3]=>[2, 3], {:baz=>4}=>{:baz=>4}}
  *
- *  ====== \Array of 2-Element Arrays
- *
- *  When +self+ is an \Array of 2-element sub-arrays,
- *  each sub-array is formed into a key-value pair in the new \Hash.
- *
- *  When no block is given, returns a new \Hash:
+ *  When no block is given, +self+ must be an \Array of 2-element sub-arrays,
+ *  each sub-array is formed into a key-value pair in the new \Hash:
  *    [].to_h # => {}
  *    a = [['foo', 'zero'], ['bar', 'one'], ['baz', 'two']]
  *    h = a.to_h
  *    h # => {"foo"=>"zero", "bar"=>"one", "baz"=>"two"}
- *
- *  ---
- *
- *  When a block is given, calls the block with each 2-element \Array;
- *  the block must return a 2-element \Array whose two elements
- *  form a key-value pair in the returned \Hash:
- *    a = [['foo', 'zero'], ['bar', 'one'], ['baz', 'two']]
- *    h = a.to_h {|item| [item[0].upcase, item[1].upcase] }
- *    h # => {"FOO"=>"ZERO", "BAR"=>"ONE", "BAZ"=>"TWO"}
- *
- *  ====== Other Arrays
- *
- *  When +self+ is not an \Array of 2-element Arrays,
- *  a block is required.
- *
- *  Calls the block with each array element;
- *  the block must return a 2-element \Array whose two elements
- *  form a key-value pair in the returned \Hash:
- *    a = ['foo', 'bar', 'baz']
- *    h = a.to_h {|item| [item.upcase, item]}
- *    h # => {"FOO"=>"foo", "BAR"=>"bar", "BAZ"=>"baz"}
  *
  *  ---
  *
