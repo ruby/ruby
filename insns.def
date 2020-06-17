@@ -1455,7 +1455,7 @@ opt_regexpmatch2
 }
 
 /* call native compiled method */
-DEFINE_INSN
+DEFINE_INSN_IF(SUPPORT_CALL_C_FUNCTION)
 opt_call_c_function
 (rb_insn_func_t funcptr)
 ()
