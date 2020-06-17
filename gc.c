@@ -19,6 +19,15 @@
 # include "ruby/ruby.h"
 #endif
 
+#include <signal.h>
+
+#define sighandler_t ruby_sighandler_t
+
+#ifndef _WIN32
+#include <unistd.h>
+#include <sys/mman.h>
+#endif
+
 #include <setjmp.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -4191,6 +4200,12 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page,
 {
     struct heap_page * cursor = heap->compact_cursor;
 
+    if(mprotect(GET_PAGE_BODY(cursor->start), HEAP_PAGE_SIZE, PROT_READ | PROT_WRITE)) {
+        rb_bug("Couldn't unprotect page %p", (void *)GET_PAGE_BODY(cursor->start));
+    } else {
+        gc_report(5, objspace, "Unprotecting page in move %p\n", (void *)GET_PAGE_BODY(cursor->start));
+    }
+
     while(1) {
 	bits_t *mark_bits = cursor->mark_bits;
         RVALUE * p = cursor->start;
@@ -4208,6 +4223,11 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page,
                     if (bits & 1) {
                         if (gc_is_moveable_obj(objspace, (VALUE)p)) {
                             heap->moved_list = gc_move(objspace, (VALUE)p, vp, heap->moved_list);
+                            if(mprotect(GET_PAGE_BODY(cursor->start), HEAP_PAGE_SIZE, PROT_NONE)) {
+                                rb_bug("Couldn't protect page %p", (void *)GET_PAGE_BODY(cursor->start));
+                            } else {
+                                gc_report(5, objspace, "Protecting page in move %p\n", (void *)GET_PAGE_BODY(cursor->start));
+                            }
                             return 1;
                         }
                     }
@@ -4230,7 +4250,46 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page,
         }
     }
 
+    /* Assume this page has moved objects on it, and protect the page */
+    if(mprotect(GET_PAGE_BODY(cursor->start), HEAP_PAGE_SIZE, PROT_NONE)) {
+        rb_bug("Couldn't protect page %p", (void *)GET_PAGE_BODY(cursor->start));
+    } else {
+        gc_report(5, objspace, "Protecting page in move %p\n", (void *)GET_PAGE_BODY(cursor->start));
+    }
     return 0;
+}
+
+static void
+gc_unprotect_pages(rb_objspace_t *objspace, rb_heap_t *heap)
+{
+    struct heap_page *cursor = heap->compact_cursor;
+    while(cursor) {
+        if(mprotect(GET_PAGE_BODY(cursor->start), HEAP_PAGE_SIZE, PROT_READ | PROT_WRITE)) {
+            rb_bug("Couldn't unprotect page %p", (void *)GET_PAGE_BODY(cursor->start));
+        } else {
+            gc_report(5, objspace, "Unprotecting page %p\n", (void *)GET_PAGE_BODY(cursor->start));
+        }
+        cursor = list_next(&heap->pages, cursor, page_node);
+    }
+}
+
+static void gc_update_references(rb_objspace_t * objspace);
+static void gc_unlink_moved_list(rb_objspace_t *objspace, VALUE moved_list_head);
+
+static struct sigaction old_handler;
+
+static void
+gc_compact_finish(rb_objspace_t *objspace, rb_heap_t *heap)
+{
+    gc_unprotect_pages(objspace, heap);
+    heap->compact_cursor = NULL;
+    gc_update_references(objspace);
+    gc_unlink_moved_list(objspace, heap_eden->moved_list);
+    heap_eden->moved_list = Qfalse;
+    rb_clear_constant_cache();
+    objspace->flags.compact = 0;
+    objspace->flags.during_compacting = FALSE;
+    sigaction(SIGSEGV, &old_handler, NULL);
 }
 
 static inline int
@@ -4246,7 +4305,8 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
     sweep_page->flags.before_sweep = FALSE;
     if (heap->compact_cursor && sweep_page == heap->compact_cursor) {
         /* The compaction cursor and sweep page met, so we need to quit compacting */
-        heap->compact_cursor = NULL;
+        gc_report(5, objspace, "Quit compacting, mark and compact cursor met\n");
+        gc_compact_finish(objspace, heap);
     }
 
     p = sweep_page->start; pend = p + sweep_page->total_slots;
@@ -4287,8 +4347,9 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
                                   if (try_move(objspace, heap, sweep_page, vp)) {
                                       moved_slots++;
                                   } else {
-                                      heap->compact_cursor = NULL;
+                                      gc_report(5, objspace, "Quit compacting, couldn't find an object to move\n");
                                       heap_page_add_freeobj(objspace, sweep_page, vp);
+                                      gc_compact_finish(objspace, heap);
                                   }
                               } else {
                                   heap_page_add_freeobj(objspace, sweep_page, vp);
@@ -4319,7 +4380,8 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
                             if (try_move(objspace, heap, sweep_page, vp)) {
                                 moved_slots++;
                             } else {
-                                heap->compact_cursor = NULL;
+                                gc_report(5, objspace, "Quit compacting, couldn't find an object to move\n");
+                                gc_compact_finish(objspace, heap);
                             }
                         }
                         empty_slots++; /* already freed */
@@ -4546,26 +4608,29 @@ gc_sweep_continue(rb_objspace_t *objspace, rb_heap_t *heap)
 }
 
 static void
-gc_compact_start(rb_objspace_t *objspace, rb_heap_t *heap)
+read_barrier_handler(int sig, siginfo_t * info, void * data)
 {
-    heap->compact_cursor = list_tail(&heap->pages, struct heap_page, page_node);
-    objspace->profile.compact_count++;
-    heap->moved_list = Qfalse;
+    fprintf(stderr, "Attempt to access memory at address %p\n", info->si_addr);
+    rb_bug_for_fatal_signal(old_handler.sa_handler, sig, 0, "Inside read barrier");
 }
 
-static void gc_update_references(rb_objspace_t * objspace);
-static void gc_unlink_moved_list(rb_objspace_t *objspace, VALUE moved_list_head);
-
 static void
-gc_compact_finish(rb_objspace_t *objspace, rb_heap_t *heap)
+gc_compact_start(rb_objspace_t *objspace, rb_heap_t *heap)
 {
-    heap->compact_cursor = NULL;
-    gc_update_references(objspace);
-    rb_clear_constant_cache();
-    gc_unlink_moved_list(objspace, heap->moved_list);
+    struct heap_page * cursor = list_tail(&heap->pages, struct heap_page, page_node);
+    heap->compact_cursor = cursor;
+
+    /* Set up read barrier for pages containing MOVED objects */
+    struct sigaction action;
+    memset(&action, 0, sizeof(struct sigaction));
+    sigemptyset(&action.sa_mask);
+    action.sa_sigaction = read_barrier_handler;
+    action.sa_flags = SA_SIGINFO | SA_ONSTACK;
+
+    sigaction(SIGSEGV, &action, &old_handler);
+
+    objspace->profile.compact_count++;
     heap->moved_list = Qfalse;
-    objspace->flags.compact = 0;
-    objspace->flags.during_compacting = FALSE;
 }
 
 static void
