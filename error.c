@@ -1022,7 +1022,7 @@ exc_initialize(int argc, VALUE *argv, VALUE exc)
  *  Document-method: exception
  *
  *  call-seq:
- *     exc.exception(string)  ->  an_exception or exc
+ *     exc.exception([string])  ->  an_exception or exc
  *
  *  With no argument, or if the argument is the same as the receiver,
  *  return the receiver. Otherwise, create a new
