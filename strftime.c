@@ -266,8 +266,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 	static const char ampm[][3] = { "AM", "PM", };
 
 	if (format == NULL || format_len == 0 || vtm == NULL) {
-	err:
-		return 0;
+                goto err;
 	}
 
 	if (enc &&
@@ -911,6 +910,9 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 	rb_str_set_len(ftime, len);
 	rb_str_resize(ftime, len);
 	return ftime;
+
+err:
+        return 0;
 }
 
 static size_t
