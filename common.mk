@@ -299,7 +299,7 @@ build-ext: $(EXTS_MK)
 exts-note: $(EXTS_MK)
 	$(Q)$(MAKE) $(EXTS_NOTE)
 
-ext/extinit.c: $(srcdir)/template/extinit.c.tmpl
+ext/extinit.c: $(srcdir)/template/extinit.c.tmpl $(PREP)
 	$(Q)$(MINIRUBY) $(tooldir)/generic_erb.rb -o $@ -c \
 	    $(srcdir)/template/extinit.c.tmpl $(EXTINITS)
 
