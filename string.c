@@ -3821,9 +3821,7 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
 	pos = len;
     }
 
-    if (SPECIAL_CONST_P(sub)) goto generic;
-    switch (BUILTIN_TYPE(sub)) {
-      case T_REGEXP:
+    if (RB_TYPE_P(sub, T_REGEXP)) {
 	/* enc = rb_get_check(str, sub); */
 	pos = str_offset(RSTRING_PTR(str), RSTRING_END(str), pos,
 			 enc, single_byte_optimizable(str));
@@ -3831,24 +3829,11 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
 	pos = rb_reg_search(sub, str, pos, 1);
 	pos = rb_str_sublen(str, pos);
 	if (pos >= 0) return LONG2NUM(pos);
-	break;
-
-      generic:
-      default: {
-	VALUE tmp;
-
-	tmp = rb_check_string_type(sub);
-	if (NIL_P(tmp)) {
-	    rb_raise(rb_eTypeError, "type mismatch: %s given",
-		     rb_obj_classname(sub));
-	}
-	sub = tmp;
-      }
-	/* fall through */
-      case T_STRING:
+    }
+    else {
+        StringValue(sub);
 	pos = rb_str_rindex(str, sub, pos);
 	if (pos >= 0) return LONG2NUM(pos);
-	break;
     }
     return Qnil;
 }
