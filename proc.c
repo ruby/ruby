@@ -1817,7 +1817,6 @@ rb_method_name_error(VALUE klass, VALUE str)
 	  case T_MODULE:
 	  case T_CLASS:
 	    c = obj;
-	    s = MSG("");
             break;
           default:
 	    break;
