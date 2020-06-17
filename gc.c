@@ -841,7 +841,7 @@ struct heap_page {
 #define GET_PAGE_HEADER(x) (&GET_PAGE_BODY(x)->header)
 #define GET_HEAP_PAGE(x)   (GET_PAGE_HEADER(x)->page)
 
-#define NUM_IN_PAGE(p)   (((bits_t)(p) & HEAP_PAGE_ALIGN_MASK)/sizeof(RVALUE))
+#define NUM_IN_PAGE(p)   ((((bits_t)(p) - sizeof(struct heap_page_header)) & HEAP_PAGE_ALIGN_MASK)/sizeof(RVALUE))
 #define BITMAP_INDEX(p)  (NUM_IN_PAGE(p) / BITS_BITLENGTH )
 #define BITMAP_OFFSET(p) (NUM_IN_PAGE(p) & (BITS_BITLENGTH-1))
 #define BITMAP_BIT(p)    ((bits_t)1 << BITMAP_OFFSET(p))
@@ -1771,6 +1771,8 @@ heap_page_allocate(rb_objspace_t *objspace)
 	limit = (HEAP_PAGE_SIZE - (int)((VALUE)start - (VALUE)page_body))/(int)sizeof(RVALUE);
     }
     end = start + limit;
+
+    GC_ASSERT(NUM_IN_PAGE(start) == 0);
 
     /* setup heap_pages_sorted */
     lo = 0;
