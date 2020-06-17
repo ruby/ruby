@@ -1,10 +1,6 @@
 # frozen_string_literal: true
 
 RSpec.describe "bundle binstubs <gem>" do
-  before do
-    skip "https://github.com/rubygems/bundler/issues/6894" if Gem.win_platform?
-  end
-
   context "when the gem exists in the lockfile" do
     it "sets up the binstub" do
       install_gemfile <<-G
@@ -79,6 +75,7 @@ RSpec.describe "bundle binstubs <gem>" do
 
     context "when generating bundle binstub outside bundler" do
       it "should abort" do
+        skip "Unknown issue" if Gem.win_platform?
         install_gemfile <<-G
           source "#{file_uri_for(gem_repo1)}"
           gem "rack"
