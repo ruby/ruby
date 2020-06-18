@@ -210,6 +210,10 @@ Excluding feature bug fixes.
 
 * `TRUE`/`FALSE`/`NIL` constants are no longer defined.
 
+* SDBM have been removed from ruby standard library.
+
+    * The issues of sdbm will handle at https://github.com/ruby/sdbm
+
 ## Stdlib compatibility issues
 
 Excluding feature bug fixes.
