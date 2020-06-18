@@ -149,6 +149,17 @@ class TestOpen3 < Test::Unit::TestCase
     }
   end
 
+  def test_popen2e_noblock
+    i, o, t = Open3.popen2e(RUBY, '-e', 'STDOUT.print STDIN.read')
+    i.print "baz"
+    i.close
+    assert_equal("baz", o.read)
+  ensure
+    i.close
+    o.close
+    t.join
+  end
+
   def test_capture3
     o, e, s = Open3.capture3(RUBY, '-e', 'i=STDIN.read; print i+"o"; STDOUT.flush; STDERR.print i+"e"', :stdin_data=>"i")
     assert_equal("io", o)
