@@ -4942,17 +4942,12 @@ rb_str_slice_bang(int argc, VALUE *argv, VALUE str)
 	else if (nth >= regs->num_regs) return Qnil;
 	beg = BEG(nth);
 	len = END(nth) - beg;
-      subseq:
-        result = rb_str_new_with_class(str, RSTRING_PTR(str)+beg, len);
-	rb_enc_cr_str_copy_for_substr(result, str);
+        goto subseq;
     }
     else if (argc == 2) {
 	beg = NUM2LONG(indx);
 	len = NUM2LONG(argv[1]);
-      num_index:
-	if (!(p = rb_str_subpos(str, beg, &len))) return Qnil;
-	beg = p - RSTRING_PTR(str);
-	goto subseq;
+        goto num_index;
     }
     else if (FIXNUM_P(indx)) {
 	beg = FIX2LONG(indx);
@@ -4966,6 +4961,7 @@ rb_str_slice_bang(int argc, VALUE *argv, VALUE str)
 	if (beg == -1) return Qnil;
 	len = RSTRING_LEN(indx);
 	result = rb_str_dup(indx);
+        goto squash;
     }
     else {
 	switch (rb_range_beg_len(indx, &beg, &len, str_strlen(str, NULL), 0)) {
@@ -4979,6 +4975,15 @@ rb_str_slice_bang(int argc, VALUE *argv, VALUE str)
 	}
     }
 
+  num_index:
+    if (!(p = rb_str_subpos(str, beg, &len))) return Qnil;
+    beg = p - RSTRING_PTR(str);
+
+  subseq:
+    result = rb_str_new_with_class(str, RSTRING_PTR(str)+beg, len);
+    rb_enc_cr_str_copy_for_substr(result, str);
+
+  squash:
     if (len > 0) {
 	if (beg == 0) {
 	    rb_str_drop_bytes(str, len);
