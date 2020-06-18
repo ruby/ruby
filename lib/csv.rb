@@ -825,6 +825,8 @@ class CSV
     # :call-seq:
     #   foreach(path, mode='r', **options) {|row| ... ) -> integer or nil
     #   foreach(io, mode='r', **options {|row| ... ) -> integer or nil
+    #   foreach(path, mode='r', headers: ..., **options) {|row| ... ) -> integer or nil
+    #   foreach(io, mode='r', headers: ..., **options {|row| ... ) -> integer or nil
     #   foreach(path, mode='r', **options) -> new_enumerator
     #   foreach(io, mode='r', **options -> new_enumerator
     #
@@ -848,7 +850,9 @@ class CSV
     #   would read +UTF-32BE+ data from the file
     #   but transcode it to +UTF-8+ before parsing.
     #
-    # ---
+    # ====== Without Option +headers+
+    #
+    # Without option +headers+, returns each row as an \Array object.
     #
     # These examples assume prior execution of:
     #   string = "foo,0\nbar,1\nbaz,2\n"
@@ -882,6 +886,34 @@ class CSV
     #   warning: Unsupported encoding foo ignored
     #   warning: Unsupported encoding bar ignored
     #
+    # ====== With Option +headers+
+    #
+    # With {option +headers+}[#class-CSV-label-Option+headers],
+    # returns each row as a CSV::Row object.
+    #
+    # These examples assume prior execution of:
+    #   string = "Name,Count\nfoo,0\nbar,1\nbaz,2\n"
+    #   path = 't.csv'
+    #   File.write(path, string)
+    #
+    # Read rows from a file at +path+:
+    #   CSV.foreach(path, headers: true) {|row| p row } # => 21
+    #
+    # Output:
+    #   #<CSV::Row "Name":"foo" "Count":"0">
+    #   #<CSV::Row "Name":"bar" "Count":"1">
+    #   #<CSV::Row "Name":"baz" "Count":"2">
+    #
+    # Read rows from an \IO object:
+    #   File.open(path) do |file|
+    #     CSV.foreach(file, headers: true) {|row| p row } # => 21
+    #   end
+    #
+    # Output:
+    #   #<CSV::Row "Name":"foo" "Count":"0">
+    #   #<CSV::Row "Name":"bar" "Count":"1">
+    #   #<CSV::Row "Name":"baz" "Count":"2">
+    #
     # ---
     #
     # Raises an exception if +path+ is a \String, but not the path to a readable file:
@@ -911,8 +943,8 @@ class CSV
     #
     # * Argument +csv_string+, if given, must be a \String object;
     #   defaults to a new empty \String.
-    # * Arguments +options+, if given, should be parsing options.
-    #   See {Options for Parsing}[#class-CSV-label-Options+for+Parsing].
+    # * Arguments +options+, if given, should be generating options.
+    #   See {Options for Generating}[#class-CSV-label-Options+for+Generating].
     #
     # ---
     #
@@ -1145,14 +1177,14 @@ class CSV
     # :include: ../doc/argument_io.rdoc
     # - Argument +options+: see {Options for Parsing}[#class-CSV-label-Options+for+Parsing]
     #
+    # ====== Without Option +headers+
+    #
+    # Without option +headers+, returns an \Array of Arrays or an integer.
+    #
     # These examples assume prior execution of:
     #   string = "foo,0\nbar,1\nbaz,2\n"
     #   path = 't.csv'
     #   File.write(path, string)
-    #
-    # ====== Without Option +headers+
-    #
-    # Without option +headers+, returns an \Array of Arrays or an integer.
     #
     # ---
     #
@@ -1194,6 +1226,11 @@ class CSV
     #
     # With {option +headers+}[#class-CSV-label-Option+headers],
     # returns a new CSV::Table object or an integer.
+    #
+    # These examples assume prior execution of:
+    #   string = "Name,Count\nfoo,0\nbar,1\nbaz,2\n"
+    #   path = 't.csv'
+    #   File.write(path, string)
     #
     # ---
     #
