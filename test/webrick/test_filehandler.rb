@@ -294,7 +294,8 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
       config = { :DocumentRoot => dir }
       TestWEBrick.start_httpserver(config) do |server, addr, port, log|
         http = Net::HTTP.new(addr, port)
-        req = Net::HTTP::Get.new("/%E3%81%82.txt")
+        filesystem_path = "\u3042".encode("filesystem").bytes.map {|b| "%%%X" % b }.join
+        req = Net::HTTP::Get.new("/#{ filesystem_path }.txt")
         http.request(req){|res| assert_equal("200", res.code, log.call + "\nFilesystem encoding is #{Encoding.find('filesystem')}") }
       end
     end
