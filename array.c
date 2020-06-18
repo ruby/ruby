@@ -3097,20 +3097,20 @@ rb_ary_to_s(VALUE ary)
  *  call-seq:
  *    to_a -> self or new_array
  *
- *  Returns +self+ if <tt>self.instance_of?(Array)</tt>:
+ *  When +self+ is an instance of \Array, returns +self+:
  *    a = [:foo, 'bar', 2]
+ *    a.instance_of?(Array) # => true
  *    a1 = a.to_a
- *    a1 # => [:foo, "bar", 2]
  *    a1.equal?(a) # => true # Returned self
  *
- *  If +self+ is a subclass of \Array, returns the new \Array
- *  formed by converting +self+ to an \Array:
+ *  Otherwise, returns a new \Array containing the elements of +self+:
  *    class MyArray < Array; end
- *    a = MyArray.new([:foo, 'bar', 2])
- *    a.class # => MyArray
+ *    a = MyArray.new(['foo', 'bar', 'two'])
+ *    a.instance_of?(Array) # => false
+ *    a.kind_of?(Array) # => true
  *    a1 = a.to_a
- *    a1 # => [:foo, "bar", 2]
- *    a1.class # => Array
+ *    a1 # => ["foo", "bar", "two"]
+ *    a1.class # => Array # Not MyArray
  */
 
 static VALUE
@@ -3126,20 +3126,38 @@ rb_ary_to_a(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.to_h                  -> hash
- *     ary.to_h {|item| block }  -> hash
+ *    array.to_h -> new_hash
+ *    array.to_h {|item| ... } -> new_hash
  *
- *  Returns the result of interpreting <i>ary</i> as an array of
- *  <tt>[key, value]</tt> pairs.
+ *  Returns a new \Hash formed from +self+.
  *
- *     [[:foo, :bar], [1, 2]].to_h
- *       # => {:foo => :bar, 1 => 2}
+ *  When a block is given, calls the block with each array element;
+ *  the block must return a 2-element \Array whose two elements
+ *  form a key-value pair in the returned \Hash:
+ *    a = ['foo', :bar, 1, [2, 3], {baz: 4}]
+ *    h = a.to_h {|item| [item, item] }
+ *    h # => {"foo"=>"foo", :bar=>:bar, 1=>1, [2, 3]=>[2, 3], {:baz=>4}=>{:baz=>4}}
  *
- *  If a block is given, the results of the block on each element of
- *  the array will be used as pairs.
+ *  When no block is given, +self+ must be an \Array of 2-element sub-arrays,
+ *  each sub-array is formed into a key-value pair in the new \Hash:
+ *    [].to_h # => {}
+ *    a = [['foo', 'zero'], ['bar', 'one'], ['baz', 'two']]
+ *    h = a.to_h
+ *    h # => {"foo"=>"zero", "bar"=>"one", "baz"=>"two"}
  *
- *     ["foo", "bar"].to_h {|s| [s.ord, s]}
- *       # => {102=>"foo", 98=>"bar"}
+ *  ---
+ *
+ *  Raises an exception if no block is given
+ *  and any element in +self+ is not a 2-element \Array:
+ *    # Raises TypeError (wrong element type Symbol at 0 (expected array):
+ *    [:foo].to_h
+ *    # Raises ArgumentError (wrong array length at 0 (expected 2, was 1)):
+ *    [[:foo]].to_h
+ *
+ *  Raises an exception if for some 2-element \Array +element+ in +self+,
+ *  <tt>element.first</tt> would be an invalid hash key:
+ *    # Raises NoMethodError (undefined method `hash' for #<BasicObject:>):
+ *    [[BasicObject.new, 0]].to_h
  */
 
 static VALUE
@@ -3168,9 +3186,12 @@ rb_ary_to_h(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.to_ary -> ary
+ *    array.to_ary -> self
  *
- *  Returns +self+.
+ *  Returns +self+:
+ *    a = [:foo, 'bar', 2]
+ *    a1 = a.to_ary
+ *    a1.equal?(a) # => true # Returned self
  */
 
 static VALUE
@@ -3207,13 +3228,13 @@ rb_ary_reverse(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.reverse!   -> ary
+ *    array.reverse! -> self
  *
- *  Reverses +self+ in place.
- *
- *     a = [ "a", "b", "c" ]
- *     a.reverse!       #=> ["c", "b", "a"]
- *     a                #=> ["c", "b", "a"]
+ *  Reverses +self+ in place:
+ *    a = ['foo', 'bar', 'two']
+ *    a1 = a.reverse!
+ *    a1 # => ["two", "bar", "foo"]
+ *    a1.equal?(a) # => true # Returned self
  */
 
 static VALUE
@@ -3224,12 +3245,12 @@ rb_ary_reverse_bang(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.reverse    -> new_ary
+ *    array.reverse -> new_array
  *
- *  Returns a new array containing +self+'s elements in reverse order.
- *
- *     [ "a", "b", "c" ].reverse   #=> ["c", "b", "a"]
- *     [ 1 ].reverse               #=> [1]
+ *  Returns a new \Array whose elements are in reverse order:
+ *    a = ['foo', 'bar', 'two']
+ *    a1 = a.reverse
+ *    a1 # => ["two", "bar", "foo"]
  */
 
 static VALUE
