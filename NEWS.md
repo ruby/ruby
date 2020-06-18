@@ -84,12 +84,24 @@ Outstanding ones only.
         * Dir.glob and Dir.[] now sort the results by default, and
           accept `sort:` keyword option.  [[Feature #8709]]
 
+* ENV
+
+    * New method
+
+        * ENV.except, which returns a hash excluding the given keys
+          and their values.  [[Feature #15822]]
+
 * Hash
 
     * Modified method
 
         * Hash#transform_keys now accepts a hash that maps keys to new
           keys.  [[Feature #16274]]
+
+    * New method
+
+        * Hash#except, which returns a hash excluding the given keys
+          and their values.  [[Feature #15822]]
 
 * Kernel
 
@@ -227,3 +239,4 @@ Excluding feature bug fixes.
 [Feature #16746]: https://bugs.ruby-lang.org/issues/16746
 [Feature #16754]: https://bugs.ruby-lang.org/issues/16754
 [GH-2991]:        https://github.com/ruby/ruby/pull/2991
+[Feature #15822]: https://bugs.ruby-lang.org/issues/15822
