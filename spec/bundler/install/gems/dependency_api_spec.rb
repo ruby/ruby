@@ -496,8 +496,6 @@ RSpec.describe "gemcutter's dependency API" do
   end
 
   it "installs the binstubs", :bundler => "< 3" do
-    skip "exec format error" if Gem.win_platform?
-
     gemfile <<-G
       source "#{source_uri}"
       gem "rack"
