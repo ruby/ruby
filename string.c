@@ -9645,8 +9645,7 @@ rb_str_crypt(VALUE str, VALUE salt)
     mustnot_wchar(str);
     mustnot_wchar(salt);
     if (RSTRING_LEN(salt) < 2) {
-      short_salt:
-	rb_raise(rb_eArgError, "salt too short (need >=2 bytes)");
+        goto short_salt;
     }
 
     s = StringValueCStr(str);
@@ -9677,6 +9676,9 @@ rb_str_crypt(VALUE str, VALUE salt)
     result = rb_str_new_cstr(res);
     CRYPT_END();
     return result;
+
+  short_salt:
+    rb_raise(rb_eArgError, "salt too short (need >=2 bytes)");
 }
 
 
