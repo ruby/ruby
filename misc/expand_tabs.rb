@@ -96,7 +96,6 @@ DEFAULT_GEM_EXTS = %w[
   json
   openssl
   psych
-  sdbm
   stringio
   strscan
   zlib

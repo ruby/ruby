@@ -71,7 +71,6 @@ class TestExtLibs < Test::Unit::TestCase
   check_existence "rbconfig/sizeof"
   #check_existence "readline" # depend on libreadline
   check_existence "ripper"
-  check_existence "sdbm"
   check_existence "socket"
   check_existence "stringio"
   check_existence "strscan"
