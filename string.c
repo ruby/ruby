@@ -4796,15 +4796,7 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
 {
     long idx, beg;
 
-    if (FIXNUM_P(indx)) {
-	idx = FIX2LONG(indx);
-      num_index:
-	rb_str_splice(str, idx, 1, val);
-	return val;
-    }
-
-    if (SPECIAL_CONST_P(indx)) goto generic;
-    switch (BUILTIN_TYPE(indx)) {
+    switch (TYPE(indx)) {
       case T_REGEXP:
 	rb_str_subpat_set(str, indx, INT2FIX(0), val);
 	return val;
@@ -4818,7 +4810,6 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
 	rb_str_splice(str, beg, str_strlen(indx, NULL), val);
 	return val;
 
-      generic:
       default:
 	/* check if indx is Range */
 	{
@@ -4828,8 +4819,12 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
 		return val;
 	    }
 	}
+        /* FALLTHROUGH */
+
+      case T_FIXNUM:
 	idx = NUM2LONG(indx);
-	goto num_index;
+        rb_str_splice(str, idx, 1, val);
+        return val;
     }
 }
 
