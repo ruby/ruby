@@ -4772,14 +4772,10 @@ rb_str_subpat_set(VALUE str, VALUE re, VALUE backref, VALUE val)
     match = rb_backref_get();
     nth = rb_reg_backref_number(match, backref);
     regs = RMATCH_REGS(match);
-    if (nth >= regs->num_regs) {
-      out_of_range:
+    if ((nth >= regs->num_regs) || ((nth < 0) && (-nth >= regs->num_regs))) {
 	rb_raise(rb_eIndexError, "index %d out of regexp", nth);
     }
     if (nth < 0) {
-	if (-nth >= regs->num_regs) {
-	    goto out_of_range;
-	}
 	nth += regs->num_regs;
     }
 
