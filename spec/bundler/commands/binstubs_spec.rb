@@ -75,7 +75,6 @@ RSpec.describe "bundle binstubs <gem>" do
 
     context "when generating bundle binstub outside bundler" do
       it "should abort" do
-        skip "Unknown issue" if Gem.win_platform?
         install_gemfile <<-G
           source "#{file_uri_for(gem_repo1)}"
           gem "rack"
@@ -285,8 +284,7 @@ RSpec.describe "bundle binstubs <gem>" do
         G
 
         bundle "binstubs rack --shebang jruby"
-
-        expect(File.open(bundled_app("bin/rackup")).gets).to eq("#!/usr/bin/env jruby\n")
+        expect(File.readlines(bundled_app("bin/rackup")).first).to eq("#!/usr/bin/env jruby\n")
       end
     end
   end

@@ -281,14 +281,10 @@ RSpec.shared_examples "bundle install --standalone" do
     include_examples "common functionality"
 
     it "creates stubs that use the standalone load path" do
-      skip "exec format error" if Gem.win_platform?
-
       expect(sys_exec("bin/rails -v").chomp).to eql "2.3.2"
     end
 
     it "creates stubs that can be executed from anywhere" do
-      skip "exec format error" if Gem.win_platform?
-
       require "tmpdir"
       sys_exec(%(#{bundled_app("bin/rails")} -v), :dir => Dir.tmpdir)
       expect(out).to eq("2.3.2")
