@@ -1288,34 +1288,58 @@ class CSV
     end
 
     # :call-seq:
-    #   CSV.parse_line(string)
-    #   CSV.parse_line(io)
-    #   CSV.parse_line(string, **options)
-    #   CSV.parse_line(io, **options)
+    #   CSV.parse_line(string) -> new_array or nil
+    #   CSV.parse_line(io) -> new_array or nil
+    #   CSV.parse_line(string, **options) -> new_array or nil
+    #   CSV.parse_line(io, **options) -> new_array or nil
+    #   CSV.parse_line(string, headers: true, **options) -> csv_row or nil
+    #   CSV.parse_line(io, headers: true, **options) -> csv_row or nil
     #
-    # Returns the new \Array created by parsing the first line of +string+ or +io+
+    # Returns the data created by parsing the first line of +string+ or +io+
     # using the specified +options+.
     #
     # - Argument +string+ should be a \String object;
     #   it will be put into a new StringIO object positioned at the beginning.
     # :include: ../doc/argument_io.rdoc
-    #   To position at the end, for appending, use method CSV.generate.
-    #   For any other positioning, pass a preset \StringIO object instead.
     # - Argument +options+: see {Options for Parsing}[#class-CSV-label-Options+for+Parsing]
     #
-    # ---
-    # Returns data from the first line from a String object:
-    #   CSV.parse_line('foo,0') # => ["foo", "0"]
+    # ====== Without Option +headers+
     #
-    # Returns data from the first line from a File object:
-    #   File.write('t.csv', 'foo,0')
-    #   CSV.parse_line(File.open('t.csv')) # => ["foo", "0"]
+    # Without option +headers+, returns the first row as a new \Array.
     #
-    # Ignores lines after the first:
-    #   CSV.parse_line("foo,0\nbar,1\nbaz,2") # => ["foo", "0"]
+    # These examples assume prior execution of:
+    #   string = "foo,0\nbar,1\nbaz,2\n"
+    #   path = 't.csv'
+    #   File.write(path, string)
+    #
+    # Parse the first line from a \String object:
+    #   CSV.parse_line(string) # => ["foo", "0"]
+    #
+    # Parse the first line from a File object:
+    #   File.open(path) do |file|
+    #     CSV.parse_line(file) # => ["foo", "0"]
+    #   end # => ["foo", "0"]
     #
     # Returns +nil+ if the argument is an empty \String:
     #   CSV.parse_line('') # => nil
+    #
+    # ====== With Option +headers+
+    #
+    # With {option +headers+}[#class-CSV-label-Option+headers],
+    # returns the first row as a CSV::Row object.
+    #
+    # These examples assume prior execution of:
+    #   string = "Name,Count\nfoo,0\nbar,1\nbaz,2\n"
+    #   path = 't.csv'
+    #   File.write(path, string)
+    #
+    # Parse the first line from a \String object:
+    #   CSV.parse_line(string, headers: true) # => #<CSV::Row "Name":"foo" "Count":"0">
+    #
+    # Parse the first line from a File object:
+    #   File.open(path) do |file|
+    #     CSV.parse_line(file, headers: true)
+    #   end # => #<CSV::Row "Name":"foo" "Count":"0">
     #
     # ---
     #
