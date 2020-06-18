@@ -294,16 +294,7 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
       config = { :DocumentRoot => dir }
       TestWEBrick.start_httpserver(config) do |server, addr, port, log|
         http = Net::HTTP.new(addr, port)
-        filesystem_path = "\u3042"
-        case Encoding.find('filesystem')
-        when Encoding::US_ASCII, Encoding::ASCII_8BIT
-        else
-          begin
-            filesystem_path = "\u3042".encode("filesystem")
-          rescue Encoding::UndefinedConversionError
-          end
-        end
-        req = Net::HTTP::Get.new("/#{ filesystem_path.bytes.map {|b| "%%%X" % b }.join }.txt")
+        req = Net::HTTP::Get.new("/%E3%81%82.txt")
         http.request(req){|res| assert_equal("200", res.code, log.call + "\nFilesystem encoding is #{Encoding.find('filesystem')}") }
       end
     end

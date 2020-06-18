@@ -36,17 +36,12 @@ module WEBrick
 
       def initialize(server, local_path)
         super(server, local_path)
-        @local_path = local_path
+        @local_path = local_path.dup.force_encoding("UTF-8")
       end
 
       # :stopdoc:
 
       def do_GET(req, res)
-        case enc = Encoding.find('filesystem')
-        when Encoding::US_ASCII, Encoding::ASCII_8BIT
-        else
-          @local_path = @local_path.dup.force_encoding(enc)
-        end
         st = File::stat(@local_path)
         mtime = st.mtime
         res['etag'] = sprintf("%x-%x-%x", st.ino, st.size, st.mtime.to_i)
