@@ -13,7 +13,6 @@
 # * https://github.com/ruby/webrick
 # * https://github.com/ruby/dbm
 # * https://github.com/ruby/gdbm
-# * https://github.com/ruby/sdbm
 # * https://github.com/ruby/etc
 # * https://github.com/ruby/date
 # * https://github.com/ruby/zlib
@@ -74,7 +73,6 @@ $repositories = {
   webrick: 'ruby/webrick',
   dbm: 'ruby/dbm',
   gdbm: 'ruby/gdbm',
-  sdbm: 'ruby/sdbm',
   etc: 'ruby/etc',
   date: 'ruby/date',
   zlib: 'ruby/zlib',
@@ -201,12 +199,6 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/test/gdbm", "test")
     cp_r("#{upstream}/gdbm.gemspec", "ext/gdbm")
     `git checkout ext/gdbm/depend ext/gdbm/README`
-  when "sdbm"
-    rm_rf(%w[ext/sdbm test/sdbm])
-    cp_r("#{upstream}/ext/sdbm", "ext")
-    cp_r("#{upstream}/test/sdbm", "test")
-    cp_r("#{upstream}/sdbm.gemspec", "ext/sdbm")
-    `git checkout ext/sdbm/depend`
   when "etc"
     rm_rf(%w[ext/etc test/etc])
     cp_r("#{upstream}/ext/etc", "ext")
