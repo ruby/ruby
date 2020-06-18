@@ -1485,7 +1485,7 @@ rb_ary_shift(VALUE ary)
  *    a.shift(3) # => [:foo, 'bar', 2]
  *    a # => []
  *
- *  If +n+ is 0, returns a new empty \Array; +self+ is unmodified:
+ *  If +n+ is zero, returns a new empty \Array; +self+ is unmodified:
  *    a = [:foo, 'bar', 2]
  *    a.shift(0) # => []
  *    a # => [:foo, 'bar', 2]
@@ -3310,19 +3310,58 @@ rb_ary_rotate(VALUE ary, long cnt)
 
 /*
  *  call-seq:
- *     ary.rotate!(count=1)   -> ary
+ *    array.rotate! -> self
+ *    array.rotate!(count) -> self
  *
- *  Rotates +self+ in place so that the element at +count+ comes first, and
- *  returns +self+.
+ *  Rotates +self+ in place by moving elements from one end to the other; returns +self+.
  *
- *  If +count+ is negative then it rotates in the opposite direction, starting
- *  from the end of the array where +-1+ is the last element.
+ *  Argument +count+, if given, must be an
+ *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
  *
- *     a = [ "a", "b", "c", "d" ]
- *     a.rotate!        #=> ["b", "c", "d", "a"]
- *     a                #=> ["b", "c", "d", "a"]
- *     a.rotate!(2)     #=> ["d", "a", "b", "c"]
- *     a.rotate!(-3)    #=> ["a", "b", "c", "d"]
+ *  ---
+ *
+ *  When no argument given, rotates the first element to the last position:
+ *    a = [:foo, 'bar', 2, 'bar']
+ *    a1 = a.rotate!
+ *    a1 # => ["bar", 2, "bar", :foo]
+ *    a1.equal?(a1) # => true # Retruned self
+ *
+ *  ---
+ *
+ *  When given a non-negative +count+, rotates +count+ elements from the beginning to the end:
+ *    a = [:foo, 'bar', 2]
+ *    a.rotate!(2)
+ *    a # => [2, :foo, "bar"]
+ *
+ *  If +count+ is large, uses <tt>count % ary.size</tt> as the count:
+ *    a = [:foo, 'bar', 2]
+ *    a.rotate!(20)
+ *    a # => [2, :foo, "bar"]
+ *
+ *  If +count+ is zero, returns +self+ unmodified:
+ *    a = [:foo, 'bar', 2]
+ *    a.rotate!(0)
+ *    a # => [:foo, "bar", 2]
+ *
+ *  ---
+ *
+ *  When given a negative +count+, rotates in the opposite direction,
+ *  from end to beginning:
+ *    a = [:foo, 'bar', 2]
+ *    a.rotate!(-2)
+ *    a # => ["bar", 2, :foo]
+ *
+ *  If +count+ is small, uses <tt>count % ary.size</tt> as the count:
+ *    a = [:foo, 'bar', 2]
+ *    a.rotate!(-5)
+ *    a # => ["bar", 2, :foo]
+ *
+ *  ---
+ *
+ *  Raises an exception if +count+ is not an Integer-convertible object:
+ *    a = [:foo, 'bar', 2]
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    a1 = a.rotate!(:foo)
  */
 
 static VALUE
@@ -3335,19 +3374,59 @@ rb_ary_rotate_bang(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *     ary.rotate(count=1)    -> new_ary
+ *    array.rotate -> new_array
+ *    array.rotate(count) -> new_array
  *
- *  Returns a new array by rotating +self+ so that the element at +count+ is
- *  the first element of the new array.
+ *  Returns a new \Array formed from +self+ with elements
+ *  rotated from one end to the other.
  *
- *  If +count+ is negative then it rotates in the opposite direction, starting
- *  from the end of +self+ where +-1+ is the last element.
+ *  Argument +count+, if given, must be an
+ *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
  *
- *     a = [ "a", "b", "c", "d" ]
- *     a.rotate         #=> ["b", "c", "d", "a"]
- *     a                #=> ["a", "b", "c", "d"]
- *     a.rotate(2)      #=> ["c", "d", "a", "b"]
- *     a.rotate(-3)     #=> ["b", "c", "d", "a"]
+ *  ---
+ *  When no argument given, returns a new \Array that is like +self+,
+ *  except that the first element has been rotated to the last position:
+ *    a = [:foo, 'bar', baz = 2, 'bar']
+ *    a1 = a.rotate
+ *    a1 # => ["bar", 2, "bar", :foo]
+ *
+ *  ---
+ *
+ *  When given a non-negative +count+,
+ *  returns a new \Array with +count+ elements rotated from the beginning to the end:
+ *    a = [:foo, 'bar', baz = 2]
+ *    a1 = a.rotate(2)
+ *    a1 # => [2, :foo, "bar"]
+ *
+ *  If +count+ is large, uses <tt>count % ary.size</tt> as the count:
+ *    a = [:foo, 'bar', baz = 2]
+ *    a1 = a.rotate(20)
+ *    a1 # => [2, :foo, "bar"]
+ *
+ *  If +count+ is zero, returns a copy of +self+, unmodified:
+ *    a = [:foo, 'bar', baz = 2]
+ *    a1 = a.rotate(0)
+ *    a1 # => [:foo, "bar", 2]
+ *
+ *  ---
+ *
+ *  When given a negative +count+, rotates in the opposite direction,
+ *  from end to beginning:
+ *    a = [:foo, 'bar', baz = 2]
+ *    a1 = a.rotate(-2)
+ *    a1 # => ["bar", 2, :foo]
+ *
+ *  If +count+ is small, uses <tt>count % ary.size</tt> as the count:
+ *    a = [:foo, 'bar', baz = 2]
+ *    a1 = a.rotate(-5)
+ *    a1 # => ["bar", 2, :foo]
+ *
+ *  ---
+ *
+ *  Raises an exception if +count+ is not an Integer-convertible object:
+ *    a = [:foo, 'bar', baz = 2]
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    a1 = a.rotate(:foo)
  */
 
 static VALUE
@@ -3431,26 +3510,49 @@ sort_2(const void *ap, const void *bp, void *dummy)
 
 /*
  *  call-seq:
- *     ary.sort!                   -> ary
- *     ary.sort! {|a, b| block}    -> ary
+ *    array.sort! -> self
+ *    array.sort! {|a, b| ... } -> self
  *
- *  Sorts +self+ in place.
+ *  Returns +self+ with its elements sorted.
  *
- *  Comparisons for the sort will be done using the <code><=></code> operator
- *  or using an optional code block.
+ *  ---
  *
- *  The block must implement a comparison between +a+ and +b+ and return
- *  an integer less than 0 when +b+ follows +a+, +0+ when +a+ and +b+
- *  are equivalent, or an integer greater than 0 when +a+ follows +b+.
+ *  With no block, compares elements using operator <tt><=></tt>
+ *  (see Comparable):
+ *    a = 'abcde'.split('').shuffle
+ *    a # => ["e", "b", "d", "a", "c"]
+ *    a.sort!
+ *    a # => ["a", "b", "c", "d", "e"]
  *
- *  The result is not guaranteed to be stable.  When the comparison of two
- *  elements returns +0+, the order of the elements is unpredictable.
+ *  ---
  *
- *     ary = [ "d", "a", "e", "c", "b" ]
- *     ary.sort!                     #=> ["a", "b", "c", "d", "e"]
- *     ary.sort! {|a, b| b <=> a}    #=> ["e", "d", "c", "b", "a"]
+ *  With a block, calls the block with each element pair;
+ *  for each element pair +a+ and +b+, the block should return an integer:
+ *  - Negative when +b+ is to follow +a+.
+ *  - Zero when +a+ and +b+ are equivalent.
+ *  - Positive when +a+ is to follow +b+.
  *
- *  See also Enumerable#sort_by.
+ *  Example:
+ *    a = 'abcde'.split('').shuffle
+ *    a # => ["e", "b", "d", "a", "c"]
+ *    a.sort! {|a, b| a <=> b }
+ *    a # => ["a", "b", "c", "d", "e"]
+ *    a.sort! {|a, b| b <=> a }
+ *    a # => ["e", "d", "c", "b", "a"]
+ *
+ *  When the block returns zero, the order for +a+ and +b+ is indeterminate,
+ *  and may be unstable:
+ *    a = 'abcde'.split('').shuffle
+ *    a # => ["e", "b", "d", "a", "c"]
+ *    a.sort! {|a, b| 0 }
+ *    a # => ["d", "e", "c", "a", "b"]
+ *
+ *  ---
+ *
+ *  Raises an exception if the block returns a non-Integer:
+ *    a = 'abcde'.split('').shuffle
+ *    # Raises ArgumentError (comparison of Symbol with 0 failed):
+ *    a1 = a.sort! {|a, b| :foo }
  */
 
 VALUE
@@ -3515,31 +3617,49 @@ rb_ary_sort_bang(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.sort                   -> new_ary
- *     ary.sort {|a, b| block}    -> new_ary
+ *    array.sort -> new_array
+ *    arrsy.sort {|a, b| ... } -> new_array
  *
- *  Returns a new array created by sorting +self+.
+ *  Returns a new \Array whose elements are those from +self+, sorted.
  *
- *  Comparisons for the sort will be done using the <code><=></code> operator
- *  or using an optional code block.
+ *  ---
  *
- *  The block must implement a comparison between +a+ and +b+ and return
- *  an integer less than 0 when +b+ follows +a+, +0+ when +a+ and +b+
- *  are equivalent, or an integer greater than 0 when +a+ follows +b+.
+ *  With no block, compares elements using operator <tt><=></tt>
+ *  (see Comparable):
+ *    a = 'abcde'.split('').shuffle
+ *    a # => ["e", "b", "d", "a", "c"]
+ *    a1 = a.sort
+ *    a1 # => ["a", "b", "c", "d", "e"]
  *
- *  The result is not guaranteed to be stable.  When the comparison of two
- *  elements returns +0+, the order of the elements is unpredictable.
+ *  ---
  *
- *     ary = [ "d", "a", "e", "c", "b" ]
- *     ary.sort                     #=> ["a", "b", "c", "d", "e"]
- *     ary.sort {|a, b| b <=> a}    #=> ["e", "d", "c", "b", "a"]
+ *  With a block, calls the block with each element pair;
+ *  for each element pair +a+ and +b+, the block should return an integer:
+ *  - Negative when +b+ is to follow +a+.
+ *  - Zero when +a+ and +b+ are equivalent.
+ *  - Positive when +a+ is to follow +b+.
  *
- *  To produce the reverse order, the following can also be used
- *  (and may be faster):
+ *  Example:
+ *    a = 'abcde'.split('').shuffle
+ *    a # => ["e", "b", "d", "a", "c"]
+ *    a1 = a.sort {|a, b| a <=> b }
+ *    a1 # => ["a", "b", "c", "d", "e"]
+ *    a2 = a.sort {|a, b| b <=> a }
+ *    a2 # => ["e", "d", "c", "b", "a"]
  *
- *    ary.sort.reverse!             #=> ["e", "d", "c", "b", "a"]
+ *  When the block returns zero, the order for +a+ and +b+ is indeterminate,
+ *  and may be unstable:
+ *    a = 'abcde'.split('').shuffle
+ *    a # => ["e", "b", "d", "a", "c"]
+ *    a1 = a.sort {|a, b| 0 }
+ *    a1 # =>  ["c", "e", "b", "d", "a"]
  *
- *  See also Enumerable#sort_by.
+ *  ---
+ *
+ *  Raises an exception if the block returns a non-Integer:
+ *    a = 'abcde'.split('').shuffle
+ *    # Raises ArgumentError (comparison of Symbol with 0 failed):
+ *    a1 = a.sort {|a, b| :foo }
  */
 
 VALUE
@@ -3554,55 +3674,99 @@ static VALUE rb_ary_bsearch_index(VALUE ary);
 
 /*
  *  call-seq:
- *     ary.bsearch {|x| block }  -> elem
+ *    array.bsearch {|element| ... } -> object
+ *    array.bsearch -> new_enumerator
  *
- *  By using binary search, finds a value from this array which meets
- *  the given condition in O(log n) where n is the size of the array.
+ *  Returns an element from +self+ selected by a binary search.
+ *  +self+ should be sorted, but this is not checked.
  *
- *  You can use this method in two modes: a find-minimum mode and
- *  a find-any mode.  In either case, the elements of the array must be
- *  monotone (or sorted) with respect to the block.
+ *  There are two search modes:
+ *  - <b>Find-minimum mode</b>: the block should return +true+ or +false+.
+ *  - <b>Find-any mode</b>: the block should return a numeric value.
  *
- *  In find-minimum mode (this is a good choice for typical use cases),
- *  the block must always return true or false, and there must be an index i
- *  (0 <= i <= ary.size) so that:
+ *  The block should not mix the modes by and sometimes returning +true+ or +false+
+ *  and sometimes returning a numeric value, but this is not checked.
  *
- *  - the block returns false for any element whose index is less than
- *    i, and
- *  - the block returns true for any element whose index is greater
- *    than or equal to i.
+ *  ====== Find-Minimum Mode
  *
- *  This method returns the i-th element.  If i is equal to ary.size,
- *  it returns nil.
+ *  In find-minimum mode, the block always returns +true+ or +false+.
+ *  The further requirement (though not checked) is that
+ *  there are no indexes +i+ and +j+ such that:
+ *  - <tt>0 <= i < j <= self.size</tt>.
+ *  - The block returns +true+ for <tt>self[i]</tt> and +false+ for <tt>self[j]</tt>.
  *
- *     ary = [0, 4, 7, 10, 12]
- *     ary.bsearch {|x| x >=   4 } #=> 4
- *     ary.bsearch {|x| x >=   6 } #=> 7
- *     ary.bsearch {|x| x >=  -1 } #=> 0
- *     ary.bsearch {|x| x >= 100 } #=> nil
+ *  In find-minimum mode, method bsearch returns the first element for which the block returns true.
  *
- *  In find-any mode (this behaves like libc's bsearch(3)), the block
- *  must always return a number, and there must be two indices i and j
- *  (0 <= i <= j <= ary.size) so that:
+ *  Examples:
+ *    a = [0, 4, 7, 10, 12]
+ *    a.bsearch {|x| x >= 4 } # => 4
+ *    a.bsearch {|x| x >= 6 } # => 7
+ *    a.bsearch {|x| x >= -1 } # => 0
+ *    a.bsearch {|x| x >= 100 } # => nil
  *
- *  - the block returns a positive number for ary[k] if 0 <= k < i,
- *  - the block returns zero for ary[k] if i <= k < j, and
- *  - the block returns a negative number for ary[k] if
- *    j <= k < ary.size.
+ *  Less formally: the block is such that all +false+-evaluating elements
+ *  precede all +true+-evaluating elements.
  *
- *  Under this condition, this method returns any element whose index
- *  is within i...j.  If i is equal to j (i.e., there is no element
- *  that satisfies the block), this method returns nil.
+ *  These make sense as blocks in find-minimum mode:
+ *    a = [0, 4, 7, 10, 12]
+ *    a.map {|x| x >= 4 } # => [false, true, true, true, true]
+ *    a.map {|x| x >= 6 } # => [false, false, true, true, true]
+ *    a.map {|x| x >= -1 } # => [true, true, true, true, true]
+ *    a.map {|x| x >= 100 } # => [false, false, false, false, false]
  *
- *     ary = [0, 4, 7, 10, 12]
- *     # try to find v such that 4 <= v < 8
- *     ary.bsearch {|x| 1 - x / 4 } #=> 4 or 7
- *     # try to find v such that 8 <= v < 10
- *     ary.bsearch {|x| 4 - x / 2 } #=> nil
+ *  This would not make sense:
+ *    a = [0, 4, 7, 10, 12]
+ *    a.map {|x| x == 7 } # => [false, false, true, false, false]
  *
- *  You must not mix the two modes at a time; the block must always
- *  return either true/false, or always return a number.  It is
- *  undefined which value is actually picked up at each iteration.
+ *  ====== Find-Any Mode
+ *
+ *  In find-any mode, the block always returns a numeric value.
+ *  The further requirement (though not checked) is that
+ *  there are no indexes +i+ and +j+ such that:
+ *  - <tt>0 <= i < j <= self.size</tt>.
+ *  - The block returns a negative value for <tt>self[i]</tt>
+ *    and a positive value for <tt>self[j]</tt>.
+ *  - The block returns a negative value for <tt>self[i]</tt> and zero <tt>self[j]</tt>.
+ *  - The block returns zero for <tt>self[i]</tt> and a positive value for <tt>self[j]</tt>.
+ *
+ *  In find-any mode, method bsearch returns some element
+ *  for which the block returns zero, or +nil+> if no such element is found.
+ *
+ *  Examples:
+ *    a = [0, 4, 7, 10, 12]
+ *    a.bsearch {|element| 7 <=> element } # => 7
+ *    a.bsearch {|element| -1 <=> element } # => nil
+ *    a.bsearch {|element| 5 <=> element } # => nil
+ *    a.bsearch {|element| 15 <=> element } # => nil
+ *
+ *  Less formally: the block is such that:
+ *  - All positive-evaluating elements precede all zero-evaluating elements.
+ *  - All positive-evaluating elements precede all negative-evaluating elements.
+ *  - All zero-evaluating elements precede all negative-evaluating elements.
+ *
+ *  These make sense as blocks in find-any mode:
+ *    a = [0, 4, 7, 10, 12]
+ *    a.map {|element| 7 <=> element } # => [1, 1, 0, -1, -1]
+ *    a.map {|element| -1 <=> element } # => [-1, -1, -1, -1, -1]
+ *    a.map {|element| 5 <=> element } # => [1, 1, -1, -1, -1]
+ *    a.map {|element| 15 <=> element } # => [1, 1, 1, 1, 1]
+ *
+ *  This would not make sense:
+ *    a = [0, 4, 7, 10, 12]
+ *    a.map {|element| element <=> 7 } # => [-1, -1, 0, 1, 1]
+ *
+ *  ---
+ *
+ *  Returns an enumerator if no block given:
+ *    a = [0, 4, 7, 10, 12]
+ *    a.bsearch # => #<Enumerator: [0, 4, 7, 10, 12]:bsearch>
+ *
+ *  ---
+ *
+ *  Raises an exception if the block returns an invalid value:
+ *    a = 'abcde'.split('').shuffle
+ *    # Raises TypeError (wrong argument type Symbol (must be numeric, true, false or nil)):
+ *    a.bsearch {|element| :foo }
  */
 
 static VALUE
@@ -3618,15 +3782,11 @@ rb_ary_bsearch(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.bsearch_index {|x| block }  -> int or nil
+ *    array.bsearch_index {|element| ... } -> integer or nil
+ *    array.bsearch_index -> new_enumerator
  *
- *  By using binary search, finds an index of a value from this array which
- *  meets the given condition in O(log n) where n is the size of the array.
- *
- *  It supports two modes, depending on the nature of the block. They are
- *  exactly the same as in the case of the #bsearch method, with the only difference
- *  being that this method returns the index of the element instead of the
- *  element itself. For more details consult the documentation for #bsearch.
+ *  Searches +self+ as described at method #bsearch,
+ *  but returns the _index_ of the found element instead of the element itself.
  */
 
 static VALUE
