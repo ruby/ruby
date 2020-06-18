@@ -14,6 +14,15 @@ sufficient information, see the ChangeLog file or Redmine
   Code that resulted in deprecation warnings in Ruby 2.7 will now
   result in ArgumentError or different behavior. [[Feature #14183]]
 
+* Arguments forwarding (`...`) now supports leading arguments.
+  [[Feature #16378]]
+
+    ```ruby
+    def method_missing(meth, ...)
+      send(:"do_#{meth}", ...)
+    end
+    ```
+
 * Procs accepting a single rest argument and keywords are no longer
   subject to autosplatting.  This now matches the behavior of Procs
   accepting a single rest argument and no keywords.
@@ -32,6 +41,7 @@ sufficient information, see the ChangeLog file or Redmine
     ```
 
 * $SAFE is now a normal global variable with no special behavior.
+  C-API methods related to $SAFE have been removed.
   [[Feature #16131]]
 
 * yield in singleton class definitions in methods is now a SyntaxError
@@ -49,6 +59,12 @@ sufficient information, see the ChangeLog file or Redmine
       p post #=> [2, "d", "e", "f", 3]
     end
     ```
+
+* When a class variable is overtaken by the same definition in an
+  ancestor class/module, a RuntimeError is now raised (previously,
+  it only issued a warning in verbose mode.  Additionally, accessing a
+  class variable from the toplevel scope is now a RuntimeError.
+  [[Bug #14541]]
 
 * Rightward assignment statement is added.  [EXPERIMENTAL]
   [[Feature #15921]]
@@ -111,19 +127,27 @@ Outstanding ones only.
           #initialize_clone with the `freeze: false` keyword.
           [[Bug #14266]]
 
+        * Kernel#clone when called with `freeze: true` keyword will call
+          #initialize_clone with the `freeze: true` keyword, and will
+          return a frozen copy even if the receiver is unfrozen.
+          [[Feature #16175]]
+
         * Kernel#eval when called with two arguments will use "(eval)"
           for `__FILE__` and 1 for `__LINE__` in the evaluated code.
           [[Bug #4352]]
+
+        * Kernel#lambda now warns if called without a literal block.
+          [[Feature #15973]]
 
 * Module
 
     * Modified method
 
-        * Module#include now includes the arguments in modules and
-          classes that have already included or prepended the receiver,
-          mirroring the behavior if the arguments were included in the
-          receiver before the other modules and classes included or
-          prepended the receiver.  [[Feature #9573]]
+        * Module#include and #prepend now affect classes and modules that
+          have already included or prepended the receiver, mirroring the
+          behavior if the arguments were included in the receiver before
+          the other modules and classes included or prepended the receiver.
+          [[Feature #9573]]
 
 * Symbol
 
