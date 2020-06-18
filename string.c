@@ -8960,6 +8960,37 @@ rb_str_chop(VALUE str)
     return rb_str_subseq(str, 0, chopped_length(str));
 }
 
+static long
+smart_chomp(VALUE str, const char *e, const char *p)
+{
+    rb_encoding *enc = rb_enc_get(str);
+    if (rb_enc_mbminlen(enc) > 1) {
+        const char *pp = rb_enc_left_char_head(p, e-rb_enc_mbminlen(enc), e, enc);
+        if (rb_enc_is_newline(pp, e, enc)) {
+            e = pp;
+        }
+        pp = e - rb_enc_mbminlen(enc);
+        if (pp >= p) {
+            pp = rb_enc_left_char_head(p, pp, e, enc);
+            if (rb_enc_ascget(pp, e, 0, enc) == '\r') {
+                e = pp;
+            }
+        }
+    }
+    else {
+        switch (*(e-1)) { /* not e[-1] to get rid of VC bug */
+          case '\n':
+            if (--e > p && *(e-1) == '\r') {
+                --e;
+            }
+            break;
+          case '\r':
+            --e;
+            break;
+        }
+    }
+    return e - p;
+}
 
 static long
 chompped_length(VALUE str, VALUE rs)
@@ -8974,34 +9005,7 @@ chompped_length(VALUE str, VALUE rs)
     if (len == 0) return 0;
     e = p + len;
     if (rs == rb_default_rs) {
-      smart_chomp:
-	enc = rb_enc_get(str);
-	if (rb_enc_mbminlen(enc) > 1) {
-	    pp = rb_enc_left_char_head(p, e-rb_enc_mbminlen(enc), e, enc);
-	    if (rb_enc_is_newline(pp, e, enc)) {
-		e = pp;
-	    }
-	    pp = e - rb_enc_mbminlen(enc);
-	    if (pp >= p) {
-		pp = rb_enc_left_char_head(p, pp, e, enc);
-		if (rb_enc_ascget(pp, e, 0, enc) == '\r') {
-		    e = pp;
-		}
-	    }
-	}
-	else {
-	    switch (*(e-1)) { /* not e[-1] to get rid of VC bug */
-	      case '\n':
-		if (--e > p && *(e-1) == '\r') {
-		    --e;
-		}
-		break;
-	      case '\r':
-		--e;
-		break;
-	    }
-	}
-	return e - p;
+        return smart_chomp(str, e, p);
     }
 
     enc = rb_enc_get(str);
@@ -9037,11 +9041,11 @@ chompped_length(VALUE str, VALUE rs)
     if (rslen == rb_enc_mbminlen(enc)) {
 	if (rslen == 1) {
 	    if (newline == '\n')
-		goto smart_chomp;
+                return smart_chomp(str, e, p);
 	}
 	else {
 	    if (rb_enc_is_newline(rsptr, rsptr+rslen, enc))
-		goto smart_chomp;
+                return smart_chomp(str, e, p);
 	}
     }
 
