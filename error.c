@@ -1003,7 +1003,8 @@ exc_init(VALUE exc, VALUE mesg)
 
 /*
  * call-seq:
- *    Exception.new(msg = nil)   ->  exception
+ *    Exception.new(msg = nil)        ->  exception
+ *    Exception.exception(msg = nil)  ->  exception
  *
  *  Construct a new Exception object, optionally passing in
  *  a message.
