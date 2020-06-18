@@ -4729,14 +4729,10 @@ rb_str_update(VALUE str, long beg, long len, VALUE val)
     enc = rb_enc_check(str, val);
     slen = str_strlen(str, enc); /* rb_enc_check */
 
-    if (slen < beg) {
-      out_of_range:
+    if ((slen < beg) || ((beg < 0) && (beg + slen < 0))) {
 	rb_raise(rb_eIndexError, "index %ld out of string", beg);
     }
     if (beg < 0) {
-	if (beg + slen < 0) {
-	    goto out_of_range;
-	}
 	beg += slen;
     }
     assert(beg >= 0);
