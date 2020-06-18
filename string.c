@@ -5009,8 +5009,7 @@ get_pat(VALUE pat)
 {
     VALUE val;
 
-    if (SPECIAL_CONST_P(pat)) goto to_string;
-    switch (BUILTIN_TYPE(pat)) {
+    switch (OBJ_BUILTIN_TYPE(pat)) {
       case T_REGEXP:
 	return pat;
 
@@ -5018,7 +5017,6 @@ get_pat(VALUE pat)
 	break;
 
       default:
-      to_string:
 	val = rb_check_string_type(pat);
 	if (NIL_P(val)) {
 	    Check_Type(pat, T_REGEXP);
