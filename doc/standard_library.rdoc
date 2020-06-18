@@ -102,7 +102,6 @@ JSON:: Implements Javascript Object Notation for Ruby
 OpenSSL:: Provides SSL, TLS and general purpose cryptography for Ruby
 Psych:: A YAML parser and emitter for Ruby
 Readline:: Provides an interface for GNU Readline and Edit Line (libedit)
-SDBM:: Provides a simple file-based key-value store with String keys and values
 StringIO:: Pseudo I/O on String objects
 StringScanner:: Provides lexical scanning operations on a String
 Zlib:: Ruby interface for the zlib compression/decompression library

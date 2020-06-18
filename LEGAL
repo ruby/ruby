@@ -446,7 +446,7 @@ mentioned below.
 
   >>>
     A C-program for MT19937, with initialization improved 2002/2/10.::
-    Coded by Takuji Nishimura and Makoto Matsumoto.  
+    Coded by Takuji Nishimura and Makoto Matsumoto.
     This is a faster version by taking Shawn Cokus's optimization,
     Matthe Bellew's simplification, Isaku Wada's real version.
 
@@ -553,8 +553,6 @@ mentioned below.
 [ext/date/date_strftime.c]
 [ext/digest/sha1/sha1.c]
 [ext/digest/sha1/sha1.h]
-[ext/sdbm/_sdbm.c]
-[ext/sdbm/sdbm.h]
 
   These files are all under public domain.
 
