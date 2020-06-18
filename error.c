@@ -1003,7 +1003,8 @@ exc_init(VALUE exc, VALUE mesg)
 
 /*
  * call-seq:
- *    Exception.new(msg = nil)   ->  exception
+ *    Exception.new(msg = nil)        ->  exception
+ *    Exception.exception(msg = nil)  ->  exception
  *
  *  Construct a new Exception object, optionally passing in
  *  a message.
@@ -2572,7 +2573,7 @@ void
 Init_Exception(void)
 {
     rb_eException   = rb_define_class("Exception", rb_cObject);
-    rb_define_singleton_method(rb_eException, "exception", rb_class_new_instance, -1);
+    rb_define_alias(rb_singleton_class(rb_eException), "exception", "new");
     rb_define_singleton_method(rb_eException, "to_tty?", exc_s_to_tty_p, 0);
     rb_define_method(rb_eException, "exception", exc_exception, -1);
     rb_define_method(rb_eException, "initialize", exc_initialize, -1);
