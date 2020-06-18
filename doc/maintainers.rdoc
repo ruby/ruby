@@ -328,10 +328,6 @@ Zachary Scott (zzak)
   TAKAO Kouji (kouji)
   https://github.com/ruby/readline-ext
   http:://rubygems.org/gems/readline-ext
-[ext/sdbm]
-  Yukihiro Matsumoto (matz)
-  https://github.com/ruby/sdbm
-  https://rubygems.org/gems/sdbm
 [ext/stringio]
   Nobuyuki Nakada (nobu)
   https://github.com/ruby/stringio
