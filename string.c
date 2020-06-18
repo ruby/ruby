@@ -7119,8 +7119,8 @@ trnext(struct tr *t, rb_encoding *enc)
     int n;
 
     for (;;) {
+      nextpart:
 	if (!t->gen) {
-nextpart:
 	    if (t->p == t->pend) return -1;
 	    if (rb_enc_ascget(t->p, t->pend, &n, enc) == '\\' && t->p + n < t->pend) {
 		t->p += n;
