@@ -294,7 +294,7 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
       config = { :DocumentRoot => dir }
       TestWEBrick.start_httpserver(config) do |server, addr, port, log|
         http = Net::HTTP.new(addr, port)
-        case enc = Encoding.find('filesystem')
+        case Encoding.find('filesystem')
         when Encoding::US_ASCII, Encoding::ASCII_8BIT
           filesystem_path = "\u3042"
         else
