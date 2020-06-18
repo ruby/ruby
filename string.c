@@ -9939,8 +9939,7 @@ rb_str_partition(VALUE str, VALUE sep)
     if (RB_TYPE_P(sep, T_REGEXP)) {
 	pos = rb_reg_search(sep, str, 0, 0);
 	if (pos < 0) {
-	  failed:
-	    return rb_ary_new3(3, rb_str_dup(str), str_new_empty(str), str_new_empty(str));
+            goto failed;
 	}
 	sep = rb_str_subpat(str, sep, INT2FIX(0));
     }
@@ -9952,6 +9951,9 @@ rb_str_partition(VALUE str, VALUE sep)
 		          sep,
 		          rb_str_subseq(str, pos+RSTRING_LEN(sep),
 					     RSTRING_LEN(str)-pos-RSTRING_LEN(sep)));
+
+  failed:
+    return rb_ary_new3(3, rb_str_dup(str), str_new_empty(str), str_new_empty(str));
 }
 
 /*
