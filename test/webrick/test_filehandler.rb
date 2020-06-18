@@ -260,7 +260,7 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
       http = Net::HTTP.new(addr, port)
       if windows?
         root = config[:DocumentRoot].tr("/", "\\")
-        fname = IO.popen(%W[dir /x #{root}\\webrick_long_filename.cgi], &:read)
+        fname = IO.popen(%W[dir /x #{root}\\webrick_long_filename.cgi], encoding: "binary", &:read)
         fname.sub!(/\A.*$^$.*$^$/m, '')
         if fname
           fname = fname[/\s(w.+?cgi)\s/i, 1]
