@@ -279,7 +279,7 @@ $(EXTS_MK): ext/configure-ext.mk $(srcdir)/template/exts.mk.tmpl \
 		EXTLDFLAGS="$(EXTLDFLAGS)" srcdir="$(srcdir)"
 	$(ECHO) generating makefile $@
 	$(Q)$(MINIRUBY) $(tooldir)/generic_erb.rb -o $@ -c \
-	    $(srcdir)/template/exts.mk.tmpl --gnumake=$(gnumake)
+	    $(srcdir)/template/exts.mk.tmpl --gnumake=$(gnumake) --configure-exts=ext/configure-ext.mk
 
 ext/configure-ext.mk: $(PREP) all-incs $(MKFILES) $(RBCONFIG) $(LIBRUBY) \
 		$(srcdir)/template/configure-ext.mk.tmpl
