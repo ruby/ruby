@@ -603,37 +603,43 @@ static int branch_coverage_valid_p(rb_iseq_t *iseq, int first_line)
     return 1;
 }
 
-static VALUE decl_branch_base(rb_iseq_t *iseq, int first_line, int first_column, int last_line, int last_column, const char *type)
+static VALUE decl_branch_base(rb_iseq_t *iseq, const NODE *node, const char *type)
 {
-    if (!branch_coverage_valid_p(iseq, first_line)) return Qundef;
+    const int first_lineno = nd_first_lineno(node), first_column = nd_first_column(node);
+    const int last_lineno = nd_last_lineno(node), last_column = nd_last_column(node);
+
+    if (!branch_coverage_valid_p(iseq, first_lineno)) return Qundef;
 
     VALUE structure = RARRAY_AREF(ISEQ_BRANCH_COVERAGE(iseq), 0);
     VALUE branches = rb_ary_tmp_new(5);
     rb_ary_push(structure, branches);
     rb_ary_push(branches, ID2SYM(rb_intern(type)));
-    rb_ary_push(branches, INT2FIX(first_line));
+    rb_ary_push(branches, INT2FIX(first_lineno));
     rb_ary_push(branches, INT2FIX(first_column));
-    rb_ary_push(branches, INT2FIX(last_line));
+    rb_ary_push(branches, INT2FIX(last_lineno));
     rb_ary_push(branches, INT2FIX(last_column));
 
     return branches;
 }
 
-static void add_trace_branch_coverage(rb_iseq_t *iseq, LINK_ANCHOR *const seq, int first_line, int first_column, int last_line, int last_column, const char *type, VALUE branches)
+static void add_trace_branch_coverage(rb_iseq_t *iseq, LINK_ANCHOR *const seq, const NODE *node, const char *type, VALUE branches)
 {
-    if (!branch_coverage_valid_p(iseq, first_line)) return;
+    const int first_lineno = nd_first_lineno(node), first_column = nd_first_column(node);
+    const int last_lineno = nd_last_lineno(node), last_column = nd_last_column(node);
+
+    if (!branch_coverage_valid_p(iseq, first_lineno)) return;
 
     VALUE counters = RARRAY_AREF(ISEQ_BRANCH_COVERAGE(iseq), 1);
     long counter_idx = RARRAY_LEN(counters);
     rb_ary_push(counters, INT2FIX(0));
     rb_ary_push(branches, ID2SYM(rb_intern(type)));
-    rb_ary_push(branches, INT2FIX(first_line));
+    rb_ary_push(branches, INT2FIX(first_lineno));
     rb_ary_push(branches, INT2FIX(first_column));
-    rb_ary_push(branches, INT2FIX(last_line));
+    rb_ary_push(branches, INT2FIX(last_lineno));
     rb_ary_push(branches, INT2FIX(last_column));
     rb_ary_push(branches, INT2FIX(counter_idx));
     ADD_TRACE_WITH_DATA(seq, RUBY_EVENT_COVERAGE_BRANCH, counter_idx);
-    ADD_INSN(seq, last_line, nop);
+    ADD_INSN(seq, last_lineno, nop);
 }
 
 #define ISEQ_LAST_LINE(iseq) (ISEQ_COMPILE_DATA(iseq)->last_line)
@@ -5299,10 +5305,6 @@ compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int 
     const NODE *const node_else = type == NODE_IF ? node->nd_else : node->nd_body;
 
     const int line = nd_line(node);
-    const int lineno = nd_first_lineno(node);
-    const int column = nd_first_column(node);
-    const int last_lineno = nd_last_lineno(node);
-    const int last_column = nd_last_column(node);
     DECL_ANCHOR(cond_seq);
     DECL_ANCHOR(then_seq);
     DECL_ANCHOR(else_seq);
@@ -5347,7 +5349,7 @@ compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int 
     ADD_SEQ(ret, cond_seq);
 
     if (then_label->refcnt && else_label->refcnt) {
-	branches = decl_branch_base(iseq, lineno, column, last_lineno, last_column, type == NODE_IF ? "if" : "unless");
+	branches = decl_branch_base(iseq, node, type == NODE_IF ? "if" : "unless");
     }
 
     if (then_label->refcnt) {
@@ -5356,10 +5358,7 @@ compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int 
 	    add_trace_branch_coverage(
                 iseq,
 		ret,
-		node_body ? nd_first_lineno(node_body) : lineno,
-		node_body ? nd_first_column(node_body) : column,
-		node_body ? nd_last_lineno(node_body) : last_lineno,
-		node_body ? nd_last_column(node_body) : last_column,
+                node_body ? node_body : node,
 		type == NODE_IF ? "then" : "else",
 		branches);
 	    end_label = NEW_LABEL(line);
@@ -5374,10 +5373,7 @@ compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int 
 	    add_trace_branch_coverage(
                 iseq,
 		ret,
-		node_else ? nd_first_lineno(node_else) : lineno,
-		node_else ? nd_first_column(node_else) : column,
-		node_else ? nd_last_lineno(node_else) : last_lineno,
-		node_else ? nd_last_column(node_else) : last_column,
+                node_else ? node_else : node,
 		type == NODE_IF ? "else" : "then",
 		branches);
 	}
@@ -5402,7 +5398,7 @@ compile_case(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_nod
     DECL_ANCHOR(cond_seq);
     int only_special_literals = 1;
     VALUE literals = rb_hash_new();
-    int line, lineno, column, last_lineno, last_column;
+    int line;
     enum node_type type;
     VALUE branches = Qfalse;
 
@@ -5414,16 +5410,12 @@ compile_case(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_nod
 
     CHECK(COMPILE(head, "case base", node->nd_head));
 
-    branches = decl_branch_base(iseq, nd_first_lineno(node), nd_first_column(node), nd_last_lineno(node), nd_last_column(node), "case");
+    branches = decl_branch_base(iseq, node, "case");
 
     node = node->nd_body;
     EXPECT_NODE("NODE_CASE", node, NODE_WHEN, COMPILE_NG);
     type = nd_type(node);
     line = nd_line(node);
-    lineno = nd_first_lineno(node);
-    column = nd_first_column(node);
-    last_lineno = nd_last_lineno(node);
-    last_column = nd_last_column(node);
 
     endlabel = NEW_LABEL(line);
     elselabel = NEW_LABEL(line);
@@ -5439,10 +5431,7 @@ compile_case(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_nod
 	add_trace_branch_coverage(
                 iseq,
 		body_seq,
-		node->nd_body ? nd_first_lineno(node->nd_body) : lineno,
-		node->nd_body ? nd_first_column(node->nd_body) : column,
-		node->nd_body ? nd_last_lineno(node->nd_body) : last_lineno,
-		node->nd_body ? nd_last_column(node->nd_body) : last_column,
+                node->nd_body ? node->nd_body : node,
 		"when",
 		branches);
 	CHECK(COMPILE_(body_seq, "when body", node->nd_body, popped));
@@ -5475,16 +5464,12 @@ compile_case(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_nod
 	}
 	type = nd_type(node);
 	line = nd_line(node);
-	lineno = nd_first_lineno(node);
-	column = nd_first_column(node);
-	last_lineno = nd_last_lineno(node);
-	last_column = nd_last_column(node);
     }
     /* else */
     if (node) {
 	ADD_LABEL(cond_seq, elselabel);
 	ADD_INSN(cond_seq, line, pop);
-	add_trace_branch_coverage(iseq, cond_seq, nd_first_lineno(node), nd_first_column(node), nd_last_lineno(node), nd_last_column(node), "else", branches);
+	add_trace_branch_coverage(iseq, cond_seq, node, "else", branches);
 	CHECK(COMPILE_(cond_seq, "else", node, popped));
 	ADD_INSNL(cond_seq, line, jump, endlabel);
     }
@@ -5492,7 +5477,7 @@ compile_case(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_nod
 	debugs("== else (implicit)\n");
 	ADD_LABEL(cond_seq, elselabel);
 	ADD_INSN(cond_seq, nd_line(orig_node), pop);
-	add_trace_branch_coverage(iseq, cond_seq, nd_first_lineno(orig_node), nd_first_column(orig_node), nd_last_lineno(orig_node), nd_last_column(orig_node), "else", branches);
+	add_trace_branch_coverage(iseq, cond_seq, orig_node, "else", branches);
 	if (!popped) {
 	    ADD_INSN(cond_seq, nd_line(orig_node), putnil);
 	}
@@ -5522,26 +5507,19 @@ compile_case2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_no
     DECL_ANCHOR(body_seq);
     VALUE branches = Qfalse;
 
-    branches = decl_branch_base(iseq, nd_first_lineno(orig_node), nd_first_column(orig_node), nd_last_lineno(orig_node), nd_last_column(orig_node), "case");
+    branches = decl_branch_base(iseq, orig_node, "case");
 
     INIT_ANCHOR(body_seq);
     endlabel = NEW_LABEL(nd_line(node));
 
     while (node && nd_type(node) == NODE_WHEN) {
 	const int line = nd_line(node);
-	const int lineno = nd_first_lineno(node);
-	const int column = nd_first_column(node);
-	const int last_lineno = nd_last_lineno(node);
-	const int last_column = nd_last_column(node);
 	LABEL *l1 = NEW_LABEL(line);
 	ADD_LABEL(body_seq, l1);
 	add_trace_branch_coverage(
                 iseq,
 		body_seq,
-		node->nd_body ? nd_first_lineno(node->nd_body) : lineno,
-		node->nd_body ? nd_first_column(node->nd_body) : column,
-		node->nd_body ? nd_last_lineno(node->nd_body) : last_lineno,
-		node->nd_body ? nd_last_column(node->nd_body) : last_column,
+		node->nd_body ? node->nd_body : node,
 		"when",
 		branches);
 	CHECK(COMPILE_(body_seq, "when", node->nd_body, popped));
@@ -5580,10 +5558,7 @@ compile_case2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_no
     add_trace_branch_coverage(
         iseq,
 	ret,
-	node ? nd_first_lineno(node) : nd_first_lineno(orig_node),
-	node ? nd_first_column(node) : nd_first_column(orig_node),
-	node ? nd_last_lineno(node) : nd_last_lineno(orig_node),
-	node ? nd_last_column(node) : nd_last_column(orig_node),
+        node ? node : orig_node,
 	"else",
 	branches);
     CHECK(COMPILE_(ret, "else", node, popped));
@@ -6242,7 +6217,7 @@ compile_case3(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_no
     DECL_ANCHOR(head);
     DECL_ANCHOR(body_seq);
     DECL_ANCHOR(cond_seq);
-    int line, lineno, column, last_lineno, last_column;
+    int line;
     enum node_type type;
     VALUE branches = 0;
 
@@ -6252,16 +6227,12 @@ compile_case3(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_no
 
     CHECK(COMPILE(head, "case base", node->nd_head));
 
-    branches = decl_branch_base(iseq, nd_first_lineno(node), nd_first_column(node), nd_last_lineno(node), nd_last_column(node), "case");
+    branches = decl_branch_base(iseq, node, "case");
 
     node = node->nd_body;
     EXPECT_NODE("NODE_CASE3", node, NODE_IN, COMPILE_NG);
     type = nd_type(node);
     line = nd_line(node);
-    lineno = nd_first_lineno(node);
-    column = nd_first_column(node);
-    last_lineno = nd_last_lineno(node);
-    last_column = nd_last_column(node);
 
     endlabel = NEW_LABEL(line);
     elselabel = NEW_LABEL(line);
@@ -6277,10 +6248,7 @@ compile_case3(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_no
         add_trace_branch_coverage(
             iseq,
             body_seq,
-            node->nd_body ? nd_first_lineno(node->nd_body) : lineno,
-            node->nd_body ? nd_first_column(node->nd_body) : column,
-            node->nd_body ? nd_last_lineno(node->nd_body) : last_lineno,
-            node->nd_body ? nd_last_column(node->nd_body) : last_column,
+            node->nd_body ? node->nd_body : node,
             "in",
             branches);
         CHECK(COMPILE_(body_seq, "in body", node->nd_body, popped));
@@ -6305,23 +6273,19 @@ compile_case3(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_no
         }
         type = nd_type(node);
         line = nd_line(node);
-        lineno = nd_first_lineno(node);
-        column = nd_first_column(node);
-        last_lineno = nd_last_lineno(node);
-        last_column = nd_last_column(node);
     }
     /* else */
     if (node) {
         ADD_LABEL(cond_seq, elselabel);
         ADD_INSN(cond_seq, line, pop);
-        add_trace_branch_coverage(iseq, cond_seq, nd_first_lineno(node), nd_first_column(node), nd_last_lineno(node), nd_last_column(node), "else", branches);
+        add_trace_branch_coverage(iseq, cond_seq, node, "else", branches);
         CHECK(COMPILE_(cond_seq, "else", node, popped));
         ADD_INSNL(cond_seq, line, jump, endlabel);
     }
     else {
         debugs("== else (implicit)\n");
         ADD_LABEL(cond_seq, elselabel);
-        add_trace_branch_coverage(iseq, cond_seq, nd_first_lineno(orig_node), nd_first_column(orig_node), nd_last_lineno(orig_node), nd_last_column(orig_node), "else", branches);
+        add_trace_branch_coverage(iseq, cond_seq, orig_node, "else", branches);
         ADD_INSN1(cond_seq, nd_line(orig_node), putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
         ADD_INSN1(cond_seq, nd_line(orig_node), putobject, rb_eNoMatchingPatternError);
         ADD_INSN1(cond_seq, nd_line(orig_node), topn, INT2FIX(2));
@@ -6344,10 +6308,7 @@ static int
 compile_loop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped, const enum node_type type)
 {
     const int line = (int)nd_line(node);
-    const int lineno = nd_first_lineno(node);
-    const int column = nd_first_column(node);
-    const int last_lineno = nd_last_lineno(node);
-    const int last_column = nd_last_column(node);
+
     LABEL *prev_start_label = ISEQ_COMPILE_DATA(iseq)->start_label;
     LABEL *prev_end_label = ISEQ_COMPILE_DATA(iseq)->end_label;
     LABEL *prev_redo_label = ISEQ_COMPILE_DATA(iseq)->redo_label;
@@ -6383,14 +6344,11 @@ compile_loop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
     if (tmp_label) ADD_LABEL(ret, tmp_label);
 
     ADD_LABEL(ret, redo_label);
-    branches = decl_branch_base(iseq, lineno, column, last_lineno, last_column, type == NODE_WHILE ? "while" : "until");
+    branches = decl_branch_base(iseq, node, type == NODE_WHILE ? "while" : "until");
     add_trace_branch_coverage(
         iseq,
 	ret,
-	node->nd_body ? nd_first_lineno(node->nd_body) : lineno,
-	node->nd_body ? nd_first_column(node->nd_body) : column,
-	node->nd_body ? nd_last_lineno(node->nd_body) : last_lineno,
-	node->nd_body ? nd_last_column(node->nd_body) : last_column,
+        node->nd_body ? node->nd_body : node,
 	"body",
 	branches);
     CHECK(COMPILE_POPPED(ret, "while body", node->nd_body));
@@ -6959,15 +6917,13 @@ static LABEL *
 qcall_branch_start(rb_iseq_t *iseq, LINK_ANCHOR *const recv, VALUE *branches, const NODE *node, int line)
 {
     LABEL *else_label = NEW_LABEL(line);
-    const int first_lineno = nd_first_lineno(node), first_column = nd_first_column(node);
-    const int last_lineno = nd_last_lineno(node), last_column = nd_last_column(node);
     VALUE br = 0;
 
-    br = decl_branch_base(iseq, first_lineno, first_column, last_lineno, last_column, "&.");
+    br = decl_branch_base(iseq, node, "&.");
     *branches = br;
     ADD_INSN(recv, line, dup);
     ADD_INSNL(recv, line, branchnil, else_label);
-    add_trace_branch_coverage(iseq, recv, first_lineno, first_column, last_lineno, last_column, "then", br);
+    add_trace_branch_coverage(iseq, recv, node, "then", br);
     return else_label;
 }
 
@@ -6979,8 +6935,7 @@ qcall_branch_end(rb_iseq_t *iseq, LINK_ANCHOR *const ret, LABEL *else_label, VAL
     end_label = NEW_LABEL(line);
     ADD_INSNL(ret, line, jump, end_label);
     ADD_LABEL(ret, else_label);
-    add_trace_branch_coverage(iseq, ret, nd_first_lineno(node), nd_first_column(node), nd_last_lineno(node), nd_last_column(node),
-                              "else", branches);
+    add_trace_branch_coverage(iseq, ret, node, "else", branches);
     ADD_LABEL(ret, end_label);
 }
 
