@@ -17,7 +17,7 @@ opt = OptionParser.new do |o|
   o.order!(ARGV)
 end
 contpat = /(?>(?>[^\\\n]|\\.)*\\\n)*(?>[^\\\n]|\\.)*/
-Dir.glob("{ext,gems}/*/exts.mk") do |e|
+Dir.glob("{ext,.bundle/gems}/*/exts.mk") do |e|
   gem = /\Agems(?=\/)/ =~ e
   s = File.read(e)
   s.scan(/^(extensions|SUBMAKEOPTS|EXT[A-Z]+|MFLAGS|NOTE_[A-Z]+)[ \t]*=[ \t]*(#{contpat})$/o) do |n, v|

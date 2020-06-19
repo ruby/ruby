@@ -16,7 +16,7 @@ srcdir ||= File.dirname(File.dirname(__FILE__))
 exts = {}
 [
   ["exts", "ext", "--extstatic $(EXTSTATIC)"],
-  ["gems", "gems", "--no-extstatic"],
+  ["gems", ".bundle/gems", "--no-extstatic"],
 ].each do |t, d, o|
   exts[t] = [o, Dir.glob("#{srcdir}/#{d}/*/").map {|n| n[(srcdir.size+1)..-2]}]
 end
