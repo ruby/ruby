@@ -324,8 +324,17 @@ module WEBrick
       end
 
       def set_filename(req, res)
-        res.filename = @root.b
+        res.filename = @root
         path_info = req.path_info.scan(%r|/[^/]*|)
+        begin
+          path_info.map! do |path|
+            path.force_encoding('filesystem').encode(@root.encoding)
+          end
+        rescue EncodingError
+          path_info.map! do |path|
+            path.force_encoding(@root.encoding)
+          end
+        end
 
         path_info.unshift("")  # dummy for checking @root dir
         while base = path_info.first
