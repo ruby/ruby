@@ -261,9 +261,7 @@ rb_path_to_class(VALUE pathname)
 	    pbeg = p;
 	}
 	if (!id) {
-	  undefined_class:
-	    rb_raise(rb_eArgError, "undefined class/module % "PRIsVALUE,
-		     rb_str_subseq(pathname, 0, p-path));
+            goto undefined_class;
 	}
 	c = rb_const_search(c, id, TRUE, FALSE, FALSE);
 	if (c == Qundef) goto undefined_class;
@@ -275,6 +273,10 @@ rb_path_to_class(VALUE pathname)
     RB_GC_GUARD(pathname);
 
     return c;
+
+  undefined_class:
+    rb_raise(rb_eArgError, "undefined class/module % "PRIsVALUE,
+             rb_str_subseq(pathname, 0, p-path));
 }
 
 VALUE
