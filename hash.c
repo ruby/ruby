@@ -5428,8 +5428,12 @@ env_enc_str_new(const char *ptr, long len, rb_encoding *enc)
     rb_encoding *internal = rb_default_internal_encoding();
     const int ecflags = ECONV_INVALID_REPLACE | ECONV_UNDEF_REPLACE;
     rb_encoding *utf8 = rb_utf8_encoding();
-    VALUE str = rb_enc_str_new(NULL, 0, (internal ? internal : enc));
-    if (NIL_P(rb_str_cat_conv_enc_opts(str, 0, ptr, len, utf8, ecflags, Qnil))) {
+    rb_encoding *str_enc = internal ? internal : enc;
+    VALUE str = rb_enc_str_new(NULL, 0, str_enc);
+    if (rb_enc_to_index(str_enc) == rb_utf8_encindex()) {
+        rb_str_cat(str, ptr, len);
+    }
+    else if (NIL_P(rb_str_cat_conv_enc_opts(str, 0, ptr, len, utf8, ecflags, Qnil))) {
         rb_str_initialize(str, ptr, len, NULL);
     }
 #else
