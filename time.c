@@ -3345,63 +3345,63 @@ find_time_t(struct tm *tptr, int utc_p, time_t *tp)
 
     return NULL;
 
-          found:
-	    if (!utc_p) {
-		/* If localtime is nonmonotonic, another result may exist. */
-		time_t guess2;
-		if (find_dst) {
-		    guess2 = guess - 2 * 60 * 60;
-		    tm = LOCALTIME(&guess2, result);
-		    if (tm) {
-			if (tptr->tm_hour != (tm->tm_hour + 2) % 24 ||
-			    tptr->tm_min != tm->tm_min ||
-			    tptr->tm_sec != tm->tm_sec) {
-			    guess2 -= (tm->tm_hour - tptr->tm_hour) * 60 * 60 +
-				      (tm->tm_min - tptr->tm_min) * 60 +
-				      (tm->tm_sec - tptr->tm_sec);
-			    if (tptr->tm_mday != tm->tm_mday)
-				guess2 += 24 * 60 * 60;
-			    if (guess != guess2) {
-				tm = LOCALTIME(&guess2, result);
-				if (tm && tmcmp(tptr, tm) == 0) {
-				    if (guess < guess2)
-					*tp = guess;
-				    else
-					*tp = guess2;
-                                    return NULL;
-				}
-			    }
-			}
-		    }
-		}
-		else {
-		    guess2 = guess + 2 * 60 * 60;
-		    tm = LOCALTIME(&guess2, result);
-		    if (tm) {
-			if ((tptr->tm_hour + 2) % 24 != tm->tm_hour ||
-			    tptr->tm_min != tm->tm_min ||
-			    tptr->tm_sec != tm->tm_sec) {
-			    guess2 -= (tm->tm_hour - tptr->tm_hour) * 60 * 60 +
-				      (tm->tm_min - tptr->tm_min) * 60 +
-				      (tm->tm_sec - tptr->tm_sec);
-			    if (tptr->tm_mday != tm->tm_mday)
-				guess2 -= 24 * 60 * 60;
-			    if (guess != guess2) {
-				tm = LOCALTIME(&guess2, result);
-				if (tm && tmcmp(tptr, tm) == 0) {
-				    if (guess < guess2)
-					*tp = guess2;
-				    else
-					*tp = guess;
-                                    return NULL;
-				}
-			    }
-			}
-		    }
-		}
-	    }
-            *tp = guess;
-            return NULL;
+  found:
+    if (!utc_p) {
+        /* If localtime is nonmonotonic, another result may exist. */
+        time_t guess2;
+        if (find_dst) {
+            guess2 = guess - 2 * 60 * 60;
+            tm = LOCALTIME(&guess2, result);
+            if (tm) {
+                if (tptr->tm_hour != (tm->tm_hour + 2) % 24 ||
+                    tptr->tm_min != tm->tm_min ||
+                    tptr->tm_sec != tm->tm_sec) {
+                    guess2 -= (tm->tm_hour - tptr->tm_hour) * 60 * 60 +
+                        (tm->tm_min - tptr->tm_min) * 60 +
+                        (tm->tm_sec - tptr->tm_sec);
+                    if (tptr->tm_mday != tm->tm_mday)
+                        guess2 += 24 * 60 * 60;
+                    if (guess != guess2) {
+                        tm = LOCALTIME(&guess2, result);
+                        if (tm && tmcmp(tptr, tm) == 0) {
+                            if (guess < guess2)
+                                *tp = guess;
+                            else
+                                *tp = guess2;
+                            return NULL;
+                        }
+                    }
+                }
+            }
+        }
+        else {
+            guess2 = guess + 2 * 60 * 60;
+            tm = LOCALTIME(&guess2, result);
+            if (tm) {
+                if ((tptr->tm_hour + 2) % 24 != tm->tm_hour ||
+                    tptr->tm_min != tm->tm_min ||
+                    tptr->tm_sec != tm->tm_sec) {
+                    guess2 -= (tm->tm_hour - tptr->tm_hour) * 60 * 60 +
+                        (tm->tm_min - tptr->tm_min) * 60 +
+                        (tm->tm_sec - tptr->tm_sec);
+                    if (tptr->tm_mday != tm->tm_mday)
+                        guess2 -= 24 * 60 * 60;
+                    if (guess != guess2) {
+                        tm = LOCALTIME(&guess2, result);
+                        if (tm && tmcmp(tptr, tm) == 0) {
+                            if (guess < guess2)
+                                *tp = guess2;
+                            else
+                                *tp = guess;
+                            return NULL;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    *tp = guess;
+    return NULL;
 
   out_of_range:
     return "time out of range";
