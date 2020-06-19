@@ -3351,7 +3351,7 @@ rb_ary_rotate(VALUE ary, long cnt)
  *    a.rotate!(-2)
  *    a # => ["bar", 2, :foo]
  *
- *  If +count+ is small, uses <tt>count % ary.size</tt> as the count:
+ *  If +count+ is small (far from zero), uses <tt>count % ary.size</tt> as the count:
  *    a = [:foo, 'bar', 2]
  *    a.rotate!(-5)
  *    a # => ["bar", 2, :foo]
@@ -3386,7 +3386,7 @@ rb_ary_rotate_bang(int argc, VALUE *argv, VALUE ary)
  *  ---
  *  When no argument given, returns a new \Array that is like +self+,
  *  except that the first element has been rotated to the last position:
- *    a = [:foo, 'bar', baz = 2, 'bar']
+ *    a = [:foo, 'bar', 2, 'bar']
  *    a1 = a.rotate
  *    a1 # => ["bar", 2, "bar", :foo]
  *
@@ -3394,17 +3394,17 @@ rb_ary_rotate_bang(int argc, VALUE *argv, VALUE ary)
  *
  *  When given a non-negative +count+,
  *  returns a new \Array with +count+ elements rotated from the beginning to the end:
- *    a = [:foo, 'bar', baz = 2]
+ *    a = [:foo, 'bar', 2]
  *    a1 = a.rotate(2)
  *    a1 # => [2, :foo, "bar"]
  *
  *  If +count+ is large, uses <tt>count % ary.size</tt> as the count:
- *    a = [:foo, 'bar', baz = 2]
+ *    a = [:foo, 'bar', 2]
  *    a1 = a.rotate(20)
  *    a1 # => [2, :foo, "bar"]
  *
  *  If +count+ is zero, returns a copy of +self+, unmodified:
- *    a = [:foo, 'bar', baz = 2]
+ *    a = [:foo, 'bar', 2]
  *    a1 = a.rotate(0)
  *    a1 # => [:foo, "bar", 2]
  *
@@ -3412,19 +3412,19 @@ rb_ary_rotate_bang(int argc, VALUE *argv, VALUE ary)
  *
  *  When given a negative +count+, rotates in the opposite direction,
  *  from end to beginning:
- *    a = [:foo, 'bar', baz = 2]
+ *    a = [:foo, 'bar', 2]
  *    a1 = a.rotate(-2)
  *    a1 # => ["bar", 2, :foo]
  *
- *  If +count+ is small, uses <tt>count % ary.size</tt> as the count:
- *    a = [:foo, 'bar', baz = 2]
+ *  If +count+ is small (far from zero), uses <tt>count % ary.size</tt> as the count:
+ *    a = [:foo, 'bar', 2]
  *    a1 = a.rotate(-5)
  *    a1 # => ["bar", 2, :foo]
  *
  *  ---
  *
  *  Raises an exception if +count+ is not an Integer-convertible object:
- *    a = [:foo, 'bar', baz = 2]
+ *    a = [:foo, 'bar', 2]
  *    # Raises TypeError (no implicit conversion of Symbol into Integer):
  *    a1 = a.rotate(:foo)
  */
@@ -3513,7 +3513,7 @@ sort_2(const void *ap, const void *bp, void *dummy)
  *    array.sort! -> self
  *    array.sort! {|a, b| ... } -> self
  *
- *  Returns +self+ with its elements sorted.
+ *  Returns +self+ with its elements sorted in place.
  *
  *  ---
  *
@@ -3618,9 +3618,11 @@ rb_ary_sort_bang(VALUE ary)
 /*
  *  call-seq:
  *    array.sort -> new_array
- *    arrsy.sort {|a, b| ... } -> new_array
+ *    array.sort {|a, b| ... } -> new_array
  *
  *  Returns a new \Array whose elements are those from +self+, sorted.
+ *
+ *  See also Enumerable#sort_by.
  *
  *  ---
  *
@@ -3680,6 +3682,9 @@ static VALUE rb_ary_bsearch_index(VALUE ary);
  *  Returns an element from +self+ selected by a binary search.
  *  +self+ should be sorted, but this is not checked.
  *
+ *  By using binary search, finds a value from this array which meets
+ *  the given condition in <tt>O(log n)</tt> where +n+ is the size of the array.
+ *
  *  There are two search modes:
  *  - <b>Find-minimum mode</b>: the block should return +true+ or +false+.
  *  - <b>Find-any mode</b>: the block should return a numeric value.
@@ -3730,7 +3735,7 @@ static VALUE rb_ary_bsearch_index(VALUE ary);
  *  - The block returns zero for <tt>self[i]</tt> and a positive value for <tt>self[j]</tt>.
  *
  *  In find-any mode, method bsearch returns some element
- *  for which the block returns zero, or +nil+> if no such element is found.
+ *  for which the block returns zero, or +nil+ if no such element is found.
  *
  *  Examples:
  *    a = [0, 4, 7, 10, 12]
