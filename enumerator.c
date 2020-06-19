@@ -3421,6 +3421,65 @@ rb_arithmetic_sequence_extract(VALUE obj, rb_arithmetic_sequence_components_t *c
     return 0;
 }
 
+VALUE
+rb_arithmetic_sequence_beg_len_step(VALUE obj, long *begp, long *lenp, long *stepp, long len, int err)
+{
+    RUBY_ASSERT(begp != NULL);
+    RUBY_ASSERT(lenp != NULL);
+    RUBY_ASSERT(stepp != NULL);
+
+    rb_arithmetic_sequence_components_t aseq;
+    if (!rb_arithmetic_sequence_extract(obj, &aseq)) {
+        return Qfalse;
+    }
+
+    long beg = NIL_P(aseq.begin) ? 0 : NUM2LONG(aseq.begin);
+    long end = NIL_P(aseq.end) ? -1 : NUM2LONG(aseq.end);
+    long step = NIL_P(aseq.step) ? 1 : NUM2LONG(aseq.step);
+    int excl = NIL_P(aseq.end) ? 0 : aseq.exclude_end;
+
+    const long orig_beg = beg;
+    const long orig_end = end;
+
+    if (beg < 0) {
+        beg += len;
+        if (beg < 0)
+            goto out_of_range;
+    }
+    if (end < 0)
+        end += len;
+    if (!excl)
+        ++end;  // include end point
+
+    if (err == 0 || err == 2) {
+        if (beg > len)
+            goto out_of_range;
+        if (end > len)
+            end = len;
+    }
+    len = end - beg;
+    if (len < 0)
+        len = 0;
+
+    *begp = beg;
+    *lenp = len;
+    *stepp = step;
+    return Qtrue;
+
+  out_of_range:
+    if (err) {
+        if (rb_obj_is_kind_of(obj, rb_cRange)) {
+            rb_raise(rb_eRangeError, "%ld..%s%ld out of range",
+                    orig_beg, excl ? "." : "", orig_end);
+        }
+        else {
+            rb_raise(rb_eRangeError, "(%ld..%s%ld)%%%ld out of range",
+                    orig_beg, excl ? "." : "", orig_end, step);
+        }
+    }
+    return Qnil;
+}
+
 /*
  * call-seq:
  *   aseq.first -> num or nil

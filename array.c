@@ -1141,6 +1141,52 @@ ary_make_partial(VALUE ary, VALUE klass, long offset, long len)
 }
 
 static VALUE
+ary_make_partial_step(VALUE ary, VALUE klass, long offset, long len, long step)
+{
+    assert(offset >= 0);
+    assert(len >= 0);
+    assert(offset+len <= RARRAY_LEN(ary));
+    assert(step != 0);
+
+    const long orig_len = len;
+
+    if ((step > 0 && step >= len) || (step < 0 && (step < -len))) {
+        VALUE result = ary_new(klass, 1);
+        VALUE *ptr = (VALUE *)ARY_EMBED_PTR(result);
+        *ptr = RARRAY_AREF(ary, offset);
+        ARY_SET_EMBED_LEN(result, len);
+        return result;
+    }
+
+    long ustep = (step < 0) ? -step : step;
+    len = (len + ustep - 1) / ustep;
+
+    long i;
+    long j = offset + ((step > 0) ? 0 : (orig_len - 1));
+    VALUE result = ary_new(klass, len);
+    if (len <= RARRAY_EMBED_LEN_MAX) {
+        VALUE *ptr = (VALUE *)ARY_EMBED_PTR(result);
+        for (i = 0; i < len; ++i) {
+            *ptr++ = RARRAY_AREF(ary, j);
+            j += step;
+        }
+        ARY_SET_EMBED_LEN(result, len);
+    }
+    else {
+        const VALUE *values = RARRAY_CONST_PTR_TRANSIENT(ary);
+        RARRAY_PTR_USE_TRANSIENT(result, ptr, {
+            for (i = 0; i < len; ++i) {
+                RB_OBJ_WRITE(result, ptr+i, values[j]);
+                j += step;
+            }
+        });
+        ARY_SET_LEN(result, len);
+    }
+
+    return result;
+}
+
+static VALUE
 ary_make_shared_copy(VALUE ary)
 {
     return ary_make_partial(ary, rb_obj_class(ary), 0, RARRAY_LEN(ary));
@@ -1571,7 +1617,7 @@ rb_ary_entry(VALUE ary, long offset)
 }
 
 VALUE
-rb_ary_subseq(VALUE ary, long beg, long len)
+rb_ary_subseq_step(VALUE ary, long beg, long len, long step)
 {
     VALUE klass;
     long alen = RARRAY_LEN(ary);
@@ -1584,8 +1630,18 @@ rb_ary_subseq(VALUE ary, long beg, long len)
     }
     klass = rb_obj_class(ary);
     if (len == 0) return ary_new(klass, 0);
+    if (step == 0)
+        rb_raise(rb_eArgError, "slice step cannot be zero");
+    if (step == 1)
+        return ary_make_partial(ary, klass, beg, len);
+    else
+        return ary_make_partial_step(ary, klass, beg, len, step);
+}
 
-    return ary_make_partial(ary, klass, beg, len);
+VALUE
+rb_ary_subseq(VALUE ary, long beg, long len)
+{
+    return rb_ary_subseq_step(ary, beg, len, 1);
 }
 
 static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
@@ -1595,6 +1651,11 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *    array[index] -> object or nil
  *    array[start, length] -> object or nil
  *    array[range] -> object or nil
+ *    array[aseq] -> object or nil
+ *    array.slice(index) -> object or nil
+ *    array.slice(start, length) -> object or nil
+ *    array.slice(range) -> object or nil
+ *    array.slice(aseq) -> object or nil
  *
  *  Returns elements from +self+; does not modify +self+.
  *
@@ -1651,6 +1712,19 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *    a[-3..2] # => [:foo, "bar", 2]
  *
  *  If <tt>range.start</tt> is larger than the array size, returns +nil+.
+ *    a = [:foo, 'bar', 2]
+ *    a[4..1] # => nil
+ *    a[4..0] # => nil
+ *    a[4..-1] # => nil
+ *
+ *  When a single argument +aseq+ is given,
+ *  ...(to be described)
+ *
+ *  Raises an exception if given a single argument
+ *  that is not an \Integer-convertible object or a \Range object:
+ *    a = [:foo, 'bar', 2]
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    a[:foo]
  *
  *  Array#slice is an alias for Array#[].
  */
@@ -1679,21 +1753,22 @@ rb_ary_aref2(VALUE ary, VALUE b, VALUE e)
 MJIT_FUNC_EXPORTED VALUE
 rb_ary_aref1(VALUE ary, VALUE arg)
 {
-    long beg, len;
+    long beg, len, step;
 
     /* special case - speeding up */
     if (FIXNUM_P(arg)) {
 	return rb_ary_entry(ary, FIX2LONG(arg));
     }
-    /* check if idx is Range */
-    switch (rb_range_beg_len(arg, &beg, &len, RARRAY_LEN(ary), 0)) {
+    /* check if idx is Range or ArithmeticSequence */
+    switch (rb_arithmetic_sequence_beg_len_step(arg, &beg, &len, &step, RARRAY_LEN(ary), 0)) {
       case Qfalse:
-	break;
+        break;
       case Qnil:
-	return Qnil;
+        return Qnil;
       default:
-	return rb_ary_subseq(ary, beg, len);
+        return rb_ary_subseq_step(ary, beg, len, step);
     }
+
     return rb_ary_entry(ary, NUM2LONG(arg));
 }
 

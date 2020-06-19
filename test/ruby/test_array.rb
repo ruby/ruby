@@ -1496,8 +1496,22 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[10, 11, 12], a.slice(-91..-89))
     assert_equal(@cls[10, 11, 12], a.slice(-91..-89))
 
+    assert_equal(@cls[5, 8, 11], a.slice((4..12)%3))
+    assert_equal(@cls[95, 97, 99], a.slice((94..)%2))
+    assert_equal(@cls[1, 4, 7], a.slice((..7)%3))
+    assert_equal(@cls[3, 6, 9], a.slice((-98..-90)%3))
+    assert_equal(@cls[11, 8, 5], a.slice((-98..-90)% -3))
+
+    idx = ((3..90) % 2).to_a
+    assert_equal(@cls[*a.values_at(*idx)], a.slice((3..90)%2))
+    idx = 90.step(3, -2).to_a
+    assert_equal(@cls[*a.values_at(*idx)], a.slice((3..90)% -2))
+
+    # Edge cases: It might be good to modify the behaviors of the followings.
     assert_nil(a.slice(-101..-1))
     assert_nil(a.slice(-101..))
+    assert_nil(a.slice((-101..-1)%2))
+    assert_nil(a.slice((-101..)%2))
 
     assert_nil(a.slice(10, -3))
     assert_equal @cls[], a.slice(10..7)
@@ -2414,7 +2428,6 @@ class TestArray < Test::Unit::TestCase
 
   def test_aref
     assert_raise(ArgumentError) { [][0, 0, 0] }
-    assert_raise(TypeError) { [][(1..10).step(2)] }
   end
 
   def test_fetch
