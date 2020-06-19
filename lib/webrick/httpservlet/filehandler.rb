@@ -36,7 +36,7 @@ module WEBrick
 
       def initialize(server, local_path)
         super(server, local_path)
-        @local_path = local_path.dup.force_encoding("UTF-8")
+        @local_path = local_path
       end
 
       # :stopdoc:
