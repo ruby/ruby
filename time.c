@@ -1967,10 +1967,8 @@ vtm_add_offset(struct vtm *vtm, VALUE off, int sign)
             vtm->subsecx = subv(vtm->subsecx, INT2FIX(TIME_SCALE));
             sec += 1;
         }
-        goto not_zero_sec;
     }
     if (sec) {
-      not_zero_sec:
         /* If sec + subsec == 0, don't change vtm->sec.
          * It may be 60 which is a leap second. */
         sec += vtm->sec;
