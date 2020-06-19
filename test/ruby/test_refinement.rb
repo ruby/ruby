@@ -2406,6 +2406,7 @@ class TestRefinement < Test::Unit::TestCase
   end
 
   def test_refine_frozen_class
+    verbose_bak, $VERBOSE = $VERBOSE, nil
     singleton_class.instance_variable_set(:@x, self)
     class << self
       c = Class.new do
@@ -2436,6 +2437,8 @@ class TestRefinement < Test::Unit::TestCase
       @x.assert_equal(:rfoo2, c.new.foo)
       @x.assert_equal(:rbar, c.new.bar, '[ruby-core:71391] [Bug #11669]')
     end
+  ensure
+    $VERBOSE = verbose_bak
   end
 
   private
