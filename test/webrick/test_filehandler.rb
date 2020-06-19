@@ -288,9 +288,9 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
     end
   end
 
-  def test_cjk_in_path
-    Dir.mktmpdir("\u3042") do |dir|
-      File.write("#{dir}/\u3042.txt", "test_cjk_in_path")
+  def test_multibyte_char_in_path
+    Dir.mktmpdir("\u00a7") do |dir|
+      File.write("#{dir}/\u00a7.txt", "test_multibyte_char_in_path")
       begin
         dir = dir.encode('filesystem')
       rescue EncodingError
@@ -300,9 +300,9 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
       TestWEBrick.start_httpserver(config) do |server, addr, port, log|
         http = Net::HTTP.new(addr, port)
         begin
-          path = "/\u3042.txt".encode('filesystem')
+          path = "/\u00a7.txt".encode('filesystem')
         rescue EncodingError
-          path = "/\u3042.txt".force_encoding(Encoding::ASCII_8BIT)
+          path = "/\u00a7.txt".force_encoding(Encoding::ASCII_8BIT)
         end
         req = Net::HTTP::Get.new(WEBrick::HTTPUtils::escape(path))
         http.request(req){|res| assert_equal("200", res.code, log.call + "\nFilesystem encoding is #{Encoding.find('filesystem')}") }
