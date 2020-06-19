@@ -532,6 +532,8 @@ RSpec.describe "bundle gem" do
 
       it "creates a default rake task to run the test suite" do
         rakefile = strip_whitespace <<-RAKEFILE
+          # frozen_string_literal: true
+
           require "bundler/gem_tasks"
           require "rake/testtask"
 
@@ -588,6 +590,8 @@ RSpec.describe "bundle gem" do
 
       it "creates a default rake task to run the test suite" do
         rakefile = strip_whitespace <<-RAKEFILE
+          # frozen_string_literal: true
+
           require "bundler/gem_tasks"
           require "rake/testtask"
 
@@ -887,10 +891,12 @@ RSpec.describe "bundle gem" do
 
       it "depends on compile task for build" do
         rakefile = strip_whitespace <<-RAKEFILE
+          # frozen_string_literal: true
+
           require "bundler/gem_tasks"
           require "rake/extensiontask"
 
-          task :build => :compile
+          task build: :compile
 
           Rake::ExtensionTask.new("#{gem_name}") do |ext|
             ext.lib_dir = "lib/#{gem_name}"
@@ -985,6 +991,8 @@ Usage: "bundle gem NAME [OPTIONS]"
 
       expect(bundled_app("foobar/spec/spec_helper.rb")).to exist
       rakefile = strip_whitespace <<-RAKEFILE
+        # frozen_string_literal: true
+
         require "bundler/gem_tasks"
         require "rspec/core/rake_task"
 
