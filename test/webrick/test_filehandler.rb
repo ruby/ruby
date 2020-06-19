@@ -291,6 +291,11 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
   def test_cjk_in_path
     Dir.mktmpdir("\u3042") do |dir|
       File.write("#{dir}/\u3042.txt", "test_cjk_in_path")
+      begin
+        dir = dir.encode('filesystem')
+      rescue EncodingError
+        dir = dir.b
+      end
       config = { :DocumentRoot => dir }
       TestWEBrick.start_httpserver(config) do |server, addr, port, log|
         http = Net::HTTP.new(addr, port)

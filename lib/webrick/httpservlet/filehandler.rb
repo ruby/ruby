@@ -212,6 +212,14 @@ module WEBrick
 
       # :stopdoc:
 
+      def set_filesystem_encoding(str)
+        if Encoding.find('filesystem') == Encoding::US_ASCII
+          str.b
+        else
+          str.dup.force_encoding('filesystem')
+        end
+      end
+
       def service(req, res)
         # if this class is mounted on "/" and /~username is requested.
         # we're going to override path information before invoking service.
@@ -325,16 +333,7 @@ module WEBrick
 
       def set_filename(req, res)
         res.filename = @root
-        path_info = req.path_info.scan(%r|/[^/]*|)
-        begin
-          path_info.map! do |path|
-            path.force_encoding('filesystem').encode(@root.encoding)
-          end
-        rescue EncodingError
-          path_info.map! do |path|
-            path.force_encoding(@root.encoding)
-          end
-        end
+        path_info = set_filesystem_encoding(req.path_info).scan(%r|/[^/]*|)
 
         path_info.unshift("")  # dummy for checking @root dir
         while base = path_info.first
