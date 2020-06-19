@@ -2047,7 +2047,6 @@ make_econv_exception(rb_econv_t *ec)
         size_t readagain_len = ec->last_error.readagain_len;
         VALUE bytes2 = Qnil;
         VALUE dumped2;
-        int idx;
         if (ec->last_error.result == econv_incomplete_input) {
             mesg = rb_sprintf("incomplete %s on %s",
                     StringValueCStr(dumped),
@@ -2071,17 +2070,7 @@ make_econv_exception(rb_econv_t *ec)
         rb_ivar_set(exc, rb_intern("error_bytes"), bytes);
         rb_ivar_set(exc, rb_intern("readagain_bytes"), bytes2);
         rb_ivar_set(exc, rb_intern("incomplete_input"), ec->last_error.result == econv_incomplete_input ? Qtrue : Qfalse);
-
-      set_encs:
-        rb_ivar_set(exc, rb_intern("source_encoding_name"), rb_str_new2(ec->last_error.source_encoding));
-        rb_ivar_set(exc, rb_intern("destination_encoding_name"), rb_str_new2(ec->last_error.destination_encoding));
-        idx = rb_enc_find_index(ec->last_error.source_encoding);
-        if (0 <= idx)
-            rb_ivar_set(exc, rb_intern("source_encoding"), rb_enc_from_encoding(rb_enc_from_index(idx)));
-        idx = rb_enc_find_index(ec->last_error.destination_encoding);
-        if (0 <= idx)
-            rb_ivar_set(exc, rb_intern("destination_encoding"), rb_enc_from_encoding(rb_enc_from_index(idx)));
-        return exc;
+        goto set_encs;
     }
     if (ec->last_error.result == econv_undefined_conversion) {
         VALUE bytes = rb_str_new((const char *)ec->last_error.error_bytes_start,
@@ -2133,6 +2122,17 @@ make_econv_exception(rb_econv_t *ec)
         goto set_encs;
     }
     return Qnil;
+
+  set_encs:
+    rb_ivar_set(exc, rb_intern("source_encoding_name"), rb_str_new2(ec->last_error.source_encoding));
+    rb_ivar_set(exc, rb_intern("destination_encoding_name"), rb_str_new2(ec->last_error.destination_encoding));
+    int idx = rb_enc_find_index(ec->last_error.source_encoding);
+    if (0 <= idx)
+        rb_ivar_set(exc, rb_intern("source_encoding"), rb_enc_from_encoding(rb_enc_from_index(idx)));
+    idx = rb_enc_find_index(ec->last_error.destination_encoding);
+    if (0 <= idx)
+        rb_ivar_set(exc, rb_intern("destination_encoding"), rb_enc_from_encoding(rb_enc_from_index(idx)));
+    return exc;
 }
 
 static void
