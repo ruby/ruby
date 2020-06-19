@@ -298,7 +298,7 @@ module WEBrick
       end
 
       def exec_handler(req, res)
-        raise HTTPStatus::NotFound, "`#{req.path}' not found" unless @root
+        raise HTTPStatus::NotFound, "`#{req.path}' not found." unless @root
         if set_filename(req, res)
           handler = get_handler(req, res)
           call_callback(:HandlerCallback, req, res)
