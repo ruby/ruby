@@ -316,7 +316,11 @@ rb_enc_symname_type(const char *name, long len, rb_encoding *enc, unsigned int a
 
       default:
 	type = rb_sym_constant_char_p(m, e-m, enc) ? ID_CONST : ID_LOCAL;
-      id:
+        goto id;
+    }
+    goto stophere;
+
+  id:
 	if (m >= e || (*m != '_' && !ISALPHA(*m) && ISASCII(*m))) {
 	    if (len > 1 && *(e-1) == '=') {
 		type = rb_enc_symname_type(name, len-1, enc, allowed_attrset);
@@ -325,7 +329,7 @@ rb_enc_symname_type(const char *name, long len, rb_encoding *enc, unsigned int a
 	    return -1;
 	}
 	while (m < e && is_identchar(m, e, enc)) m += rb_enc_mbclen(m, e, enc);
-	if (m >= e) break;
+        if (m >= e) goto stophere;
 	switch (*m) {
 	  case '!': case '?':
 	    if (type == ID_GLOBAL || type == ID_CLASS || type == ID_INSTANCE) return -1;
@@ -339,8 +343,8 @@ rb_enc_symname_type(const char *name, long len, rb_encoding *enc, unsigned int a
 	    ++m;
 	    break;
 	}
-	break;
-    }
+
+  stophere:
     return m == e ? type : -1;
 }
 
