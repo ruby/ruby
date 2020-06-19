@@ -333,7 +333,7 @@ module WEBrick
 
       def set_filename(req, res)
         res.filename = @root
-        path_info = set_filesystem_encoding(req.path_info).scan(%r|/[^/]*|)
+        path_info = req.path_info.scan(%r|/[^/]*|).map{|path| set_filesystem_encoding(path) }
 
         path_info.unshift("")  # dummy for checking @root dir
         while base = path_info.first
