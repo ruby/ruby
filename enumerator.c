@@ -3410,11 +3410,8 @@ rb_arithmetic_sequence_extract(VALUE obj, rb_arithmetic_sequence_components_t *c
         component->exclude_end = arith_seq_exclude_end_p(obj);
         return 1;
     }
-    else if (rb_obj_is_kind_of(obj, rb_cRange)) {
-        component->begin = RANGE_BEG(obj);
-        component->end   = RANGE_END(obj);
+    else if (rb_range_values(obj, &component->begin, &component->end, &component->exclude_end)) {
         component->step  = INT2FIX(1);
-        component->exclude_end = RTEST(RANGE_EXCL(obj));
         return 1;
     }
 
