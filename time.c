@@ -3265,8 +3265,8 @@ find_time_t(struct tm *tptr, int utc_p, time_t *tp)
     status = 1;
 
     while (guess_lo + 1 < guess_hi) {
+      binsearch:
         if (status == 0) {
-          binsearch:
             guess = guess_lo / 2 + guess_hi / 2;
             if (guess <= guess_lo)
                 guess = guess_lo + 1;
@@ -3315,6 +3315,36 @@ find_time_t(struct tm *tptr, int utc_p, time_t *tp)
             DEBUG_REPORT_GUESSRANGE;
         }
         else {
+            goto found;
+        }
+    }
+
+    /* Given argument has no corresponding time_t. Let's extrapolate. */
+    /*
+     *  `Seconds Since the Epoch' in SUSv3:
+     *  tm_sec + tm_min*60 + tm_hour*3600 + tm_yday*86400 +
+     *  (tm_year-70)*31536000 + ((tm_year-69)/4)*86400 -
+     *  ((tm_year-1)/100)*86400 + ((tm_year+299)/400)*86400
+     */
+
+    tptr_tm_yday = calc_tm_yday(tptr->tm_year, tptr->tm_mon, tptr->tm_mday);
+
+    *tp = guess_lo +
+          ((tptr->tm_year - tm_lo.tm_year) * 365 +
+           DIV((tptr->tm_year-69), 4) -
+           DIV((tptr->tm_year-1), 100) +
+           DIV((tptr->tm_year+299), 400) -
+           DIV((tm_lo.tm_year-69), 4) +
+           DIV((tm_lo.tm_year-1), 100) -
+           DIV((tm_lo.tm_year+299), 400) +
+           tptr_tm_yday -
+           tm_lo.tm_yday) * 86400 +
+          (tptr->tm_hour - tm_lo.tm_hour) * 3600 +
+          (tptr->tm_min - tm_lo.tm_min) * 60 +
+          (tptr->tm_sec - (tm_lo.tm_sec == 60 ? 59 : tm_lo.tm_sec));
+
+    return NULL;
+
           found:
 	    if (!utc_p) {
 		/* If localtime is nonmonotonic, another result may exist. */
@@ -3372,34 +3402,6 @@ find_time_t(struct tm *tptr, int utc_p, time_t *tp)
 	    }
             *tp = guess;
             return NULL;
-	}
-    }
-
-    /* Given argument has no corresponding time_t. Let's extrapolate. */
-    /*
-     *  `Seconds Since the Epoch' in SUSv3:
-     *  tm_sec + tm_min*60 + tm_hour*3600 + tm_yday*86400 +
-     *  (tm_year-70)*31536000 + ((tm_year-69)/4)*86400 -
-     *  ((tm_year-1)/100)*86400 + ((tm_year+299)/400)*86400
-     */
-
-    tptr_tm_yday = calc_tm_yday(tptr->tm_year, tptr->tm_mon, tptr->tm_mday);
-
-    *tp = guess_lo +
-          ((tptr->tm_year - tm_lo.tm_year) * 365 +
-           DIV((tptr->tm_year-69), 4) -
-           DIV((tptr->tm_year-1), 100) +
-           DIV((tptr->tm_year+299), 400) -
-           DIV((tm_lo.tm_year-69), 4) +
-           DIV((tm_lo.tm_year-1), 100) -
-           DIV((tm_lo.tm_year+299), 400) +
-           tptr_tm_yday -
-           tm_lo.tm_yday) * 86400 +
-          (tptr->tm_hour - tm_lo.tm_hour) * 3600 +
-          (tptr->tm_min - tm_lo.tm_min) * 60 +
-          (tptr->tm_sec - (tm_lo.tm_sec == 60 ? 59 : tm_lo.tm_sec));
-
-    return NULL;
 
   out_of_range:
     return "time out of range";
