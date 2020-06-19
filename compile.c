@@ -595,12 +595,17 @@ APPEND_ELEM(ISEQ_ARG_DECLARE LINK_ANCHOR *const anchor, LINK_ELEMENT *before, LI
 #define APPEND_ELEM(anchor, before, elem) APPEND_ELEM(iseq, (anchor), (before), (elem))
 #endif
 
+static int branch_coverage_valid_p(rb_iseq_t *iseq, int first_line)
+{
+    if (!ISEQ_COVERAGE(iseq)) return 0;
+    if (!ISEQ_BRANCH_COVERAGE(iseq)) return 0;
+    if (first_line <= 0) return 0;
+    return 1;
+}
+
 static VALUE decl_branch_base(rb_iseq_t *iseq, int first_line, int first_column, int last_line, int last_column, const char *type)
 {
-    // check if branch coverage is enabled
-    if (!ISEQ_COVERAGE(iseq)) return Qundef;
-    if (!ISEQ_BRANCH_COVERAGE(iseq)) return Qundef;
-    if (first_line <= 0) return Qundef;
+    if (!branch_coverage_valid_p(iseq, first_line)) return Qundef;
 
     VALUE structure = RARRAY_AREF(ISEQ_BRANCH_COVERAGE(iseq), 0);
     VALUE branches = rb_ary_tmp_new(5);
@@ -616,10 +621,7 @@ static VALUE decl_branch_base(rb_iseq_t *iseq, int first_line, int first_column,
 
 static void add_trace_branch_coverage(rb_iseq_t *iseq, LINK_ANCHOR *const seq, int first_line, int first_column, int last_line, int last_column, const char *type, VALUE branches)
 {
-    // check if branch coverage is enabled
-    if (!ISEQ_COVERAGE(iseq)) return;
-    if (!ISEQ_BRANCH_COVERAGE(iseq)) return;
-    if (first_line <= 0) return;
+    if (!branch_coverage_valid_p(iseq, first_line)) return;
 
     VALUE counters = RARRAY_AREF(ISEQ_BRANCH_COVERAGE(iseq), 1);
     long counter_idx = RARRAY_LEN(counters);
