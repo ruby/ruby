@@ -5328,8 +5328,7 @@ time_mload(VALUE time, VALUE str)
     StringValue(str);
     buf = (unsigned char *)RSTRING_PTR(str);
     if (RSTRING_LEN(str) < base_dump_size) {
-      invalid_format:
-	rb_raise(rb_eTypeError, "marshaled time format differ");
+        goto invalid_format;
     }
 
     p = s = 0;
@@ -5432,6 +5431,9 @@ end_submicro: ;
     }
 
     return time;
+
+  invalid_format:
+    rb_raise(rb_eTypeError, "marshaled time format differ");
 }
 
 /* :nodoc: */
