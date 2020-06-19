@@ -1330,45 +1330,56 @@ rb_range_values(VALUE range, VALUE *begp, VALUE *endp, int *exclp)
 }
 
 VALUE
-rb_range_beg_len(VALUE range, long *begp, long *lenp, long len, int err)
+rb_range_component_beg_len(VALUE b, VALUE e, int excl,
+                           long *begp, long *lenp, long len, int err)
 {
     long beg, end;
-    VALUE b, e;
-    int excl;
 
-    if (!rb_range_values(range, &b, &e, &excl))
-	return Qfalse;
     beg = NIL_P(b) ? 0 : NUM2LONG(b);
     end = NIL_P(e) ? -1 : NUM2LONG(e);
     if (NIL_P(e)) excl = 0;
     if (beg < 0) {
-	beg += len;
-	if (beg < 0)
-	    goto out_of_range;
+        beg += len;
+        if (beg < 0)
+            goto out_of_range;
     }
     if (end < 0)
-	end += len;
+        end += len;
     if (!excl)
-	end++;			/* include end point */
+        end++;			/* include end point */
     if (err == 0 || err == 2) {
-	if (beg > len)
-	    goto out_of_range;
-	if (end > len)
-	    end = len;
+        if (beg > len)
+            goto out_of_range;
+        if (end > len)
+            end = len;
     }
     len = end - beg;
     if (len < 0)
-	len = 0;
+        len = 0;
 
     *begp = beg;
     *lenp = len;
     return Qtrue;
 
   out_of_range:
-    if (err) {
-	rb_raise(rb_eRangeError, "%+"PRIsVALUE" out of range", range);
-    }
     return Qnil;
+}
+
+VALUE
+rb_range_beg_len(VALUE range, long *begp, long *lenp, long len, int err)
+{
+    VALUE b, e;
+    int excl;
+
+    if (!rb_range_values(range, &b, &e, &excl))
+        return Qfalse;
+
+    VALUE res = rb_range_component_beg_len(b, e, excl, begp, lenp, len, err);
+    if (NIL_P(res) && err) {
+        rb_raise(rb_eRangeError, "%+"PRIsVALUE" out of range", range);
+    }
+
+    return res;
 }
 
 /*
