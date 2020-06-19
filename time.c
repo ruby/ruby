@@ -2079,8 +2079,7 @@ utc_offset_arg(VALUE arg)
         int n = 0;
         char *s = RSTRING_PTR(tmp);
         if (!rb_enc_str_asciicompat_p(tmp)) {
-	  invalid_utc_offset:
-            return Qnil;
+            goto invalid_utc_offset;
 	}
 	switch (RSTRING_LEN(tmp)) {
           case 1:
@@ -2131,6 +2130,8 @@ utc_offset_arg(VALUE arg)
     else {
         return num_exact(arg);
     }
+  invalid_utc_offset:
+    return Qnil;
 }
 
 static void
