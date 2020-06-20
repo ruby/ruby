@@ -272,6 +272,11 @@ class Time
     # Takes a string representation of a Time and attempts to parse it
     # using a heuristic.
     #
+    # This method **does not** function as a validator.  If the input
+    # string does not match valid formats strictly, you may get a
+    # cryptic result.  Should consider to use `Time.strptime` instead
+    # of this method as possible.
+    #
     #     require 'time'
     #
     #     Time.parse("2010-10-31") #=> 2010-10-31 00:00:00 -0500
