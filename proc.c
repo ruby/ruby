@@ -1286,7 +1286,6 @@ proc_eq(VALUE self, VALUE other)
                 self_block->as.captured.code.iseq != \
                 other_block->as.captured.code.iseq) {
             return Qfalse;
-                
         }
         break;
       case block_type_ifunc:
@@ -1295,7 +1294,6 @@ proc_eq(VALUE self, VALUE other)
                 self_block->as.captured.code.ifunc != \
                 other_block->as.captured.code.ifunc) {
             return Qfalse;
-                
         }
         break;
       case block_type_proc:
