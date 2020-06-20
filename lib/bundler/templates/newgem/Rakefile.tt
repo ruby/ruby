@@ -36,4 +36,4 @@ Rake::ExtensionTask.new("<%= config[:underscored_name] %>") do |ext|
 end
 
 <% end -%>
-task :default => <%= default_task_names.size == 1 ? default_task_names.first.inspect : default_task_names.inspect %>
+task default: <%= default_task_names.size == 1 ? default_task_names.first.inspect : default_task_names.inspect %>

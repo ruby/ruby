@@ -155,9 +155,10 @@ RSpec.describe "bundle gem" do
     it "generates a gem skeleton with rubocop" do
       gem_skeleton_assertions
       expect(bundled_app("test-gem/Rakefile")).to read_as(
-        include('require "rubocop/rake_task"').
+        include('# frozen_string_literal: true').
+        and(include('require "rubocop/rake_task"').
         and(include("RuboCop::RakeTask.new").
-        and(match(/:default.+:rubocop/)))
+        and(match(/default:.+:rubocop/))))
       )
     end
 
@@ -182,7 +183,6 @@ RSpec.describe "bundle gem" do
       realworld_system_gems gems, :path => path
       bundle "install", :dir => bundled_app("#{gem_name}")
       bundle "exec rubocop", :dir => bundled_app("#{gem_name}")
-
       expect($?.exitstatus).to eq(0) if exitstatus
     end
   end
@@ -555,7 +555,7 @@ RSpec.describe "bundle gem" do
             t.test_files = FileList["test/**/*_test.rb"]
           end
 
-          task :default => :test
+          task default: :test
         RAKEFILE
 
         expect(bundled_app("#{gem_name}/Rakefile").read).to eq(rakefile)
@@ -613,7 +613,7 @@ RSpec.describe "bundle gem" do
             t.test_files = FileList["test/**/*_test.rb"]
           end
 
-          task :default => :test
+          task default: :test
         RAKEFILE
 
         expect(bundled_app("#{gem_name}/Rakefile").read).to eq(rakefile)
@@ -914,7 +914,7 @@ RSpec.describe "bundle gem" do
             ext.lib_dir = "lib/#{gem_name}"
           end
 
-          task :default => [:clobber, :compile]
+          task default: [:clobber, :compile]
         RAKEFILE
 
         expect(bundled_app("#{gem_name}/Rakefile").read).to eq(rakefile)
@@ -1010,7 +1010,7 @@ Usage: "bundle gem NAME [OPTIONS]"
 
         RSpec::Core::RakeTask.new(:spec)
 
-        task :default => :spec
+        task default: :spec
       RAKEFILE
 
       expect(bundled_app("foobar/Rakefile").read).to eq(rakefile)
