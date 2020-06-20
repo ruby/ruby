@@ -1259,7 +1259,6 @@ proc_eq(VALUE self, VALUE other)
 {
     const rb_proc_t *self_proc, *other_proc;
     const struct rb_block *self_block, *other_block;
-    const struct rb_captured_block *self_cblock, *other_cblock;
 
     if (rb_obj_class(self) !=  rb_obj_class(other)) {
         return Qfalse;
