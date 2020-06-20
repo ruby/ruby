@@ -4349,7 +4349,8 @@ date_s__parse_internal(int argc, VALUE *argv, VALUE klass)
  *
  * This method **does not** function as a validator.  If the input
  * string does not match valid formats strictly, you may get a cryptic
- * result.
+ * result.  Should consider to use `Date._strptime` or
+ * `DateTime._strptime` instead of this method as possible.
  *
  * If the optional second argument is true and the detected year is in
  * the range "00" to "99", considers the year a 2-digit form and makes
@@ -4372,7 +4373,8 @@ date_s__parse(int argc, VALUE *argv, VALUE klass)
  *
  * This method **does not** function as a validator.  If the input
  * string does not match valid formats strictly, you may get a cryptic
- * result.
+ * result.  Should consider to use `Date.strptime` instead of this
+ * method as possible.
  *
  * If the optional second argument is true and the detected year is in
  * the range "00" to "99", considers the year a 2-digit form and makes
@@ -8012,7 +8014,8 @@ datetime_s_strptime(int argc, VALUE *argv, VALUE klass)
  *
  * This method **does not** function as a validator.  If the input
  * string does not match valid formats strictly, you may get a cryptic
- * result.
+ * result.  Should consider to use `DateTime.strptime` instead of this
+ * method as possible.
  *
  * If the optional second argument is true and the detected year is in
  * the range "00" to "99", makes it full.
