@@ -4345,8 +4345,11 @@ date_s__parse_internal(int argc, VALUE *argv, VALUE klass)
  *    Date._parse(string[, comp=true])  ->  hash
  *
  * Parses the given representation of date and time, and returns a
- * hash of parsed elements.  This method does not function as a
- * validator.
+ * hash of parsed elements.
+ *
+ * This method **does not** function as a validator.  If the input
+ * string does not match valid formats strictly, you may get a cryptic
+ * result.
  *
  * If the optional second argument is true and the detected year is in
  * the range "00" to "99", considers the year a 2-digit form and makes
@@ -4365,7 +4368,11 @@ date_s__parse(int argc, VALUE *argv, VALUE klass)
  *    Date.parse(string='-4712-01-01'[, comp=true[, start=Date::ITALY]])  ->  date
  *
  * Parses the given representation of date and time, and creates a
- * date object.  This method does not function as a validator.
+ * date object.
+ *
+ * This method **does not** function as a validator.  If the input
+ * string does not match valid formats strictly, you may get a cryptic
+ * result.
  *
  * If the optional second argument is true and the detected year is in
  * the range "00" to "99", considers the year a 2-digit form and makes
@@ -8001,7 +8008,11 @@ datetime_s_strptime(int argc, VALUE *argv, VALUE klass)
  *    DateTime.parse(string='-4712-01-01T00:00:00+00:00'[, comp=true[, start=Date::ITALY]])  ->  datetime
  *
  * Parses the given representation of date and time, and creates a
- * DateTime object.  This method does not function as a validator.
+ * DateTime object.
+ *
+ * This method **does not** function as a validator.  If the input
+ * string does not match valid formats strictly, you may get a cryptic
+ * result.
  *
  * If the optional second argument is true and the detected year is in
  * the range "00" to "99", makes it full.
