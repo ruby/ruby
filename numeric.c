@@ -39,6 +39,7 @@
 #include "internal/variable.h"
 #include "ruby/encoding.h"
 #include "ruby/util.h"
+#include "builtin.h"
 
 /* use IEEE 64bit values if not defined */
 #ifndef FLT_RADIX
@@ -769,19 +770,26 @@ num_abs(VALUE num)
 static VALUE
 num_zero_p(VALUE num)
 {
+    if (rb_equal(num, INT2FIX(0))) {
+        return Qtrue;
+    }
+    return Qfalse;
+}
+
+static VALUE
+int_zero_p(VALUE num)
+{
     if (FIXNUM_P(num)) {
 	if (FIXNUM_ZERO_P(num)) {
 	    return Qtrue;
 	}
     }
-    else if (RB_TYPE_P(num, T_BIGNUM)) {
+    else {
+        assert(RB_TYPE_P(num, T_BIGNUM));
 	if (rb_bigzero_p(num)) {
 	    /* this should not happen usually */
 	    return Qtrue;
 	}
-    }
-    else if (rb_equal(num, INT2FIX(0))) {
-	return Qtrue;
     }
     return Qfalse;
 }
@@ -3307,7 +3315,7 @@ static VALUE
 int_anybits_p(VALUE num, VALUE mask)
 {
     mask = rb_to_int(mask);
-    return num_zero_p(rb_int_and(num, mask)) ? Qfalse : Qtrue;
+    return int_zero_p(rb_int_and(num, mask)) ? Qfalse : Qtrue;
 }
 
 /*
@@ -3321,7 +3329,7 @@ static VALUE
 int_nobits_p(VALUE num, VALUE mask)
 {
     mask = rb_to_int(mask);
-    return num_zero_p(rb_int_and(num, mask));
+    return int_zero_p(rb_int_and(num, mask));
 }
 
 /*
@@ -4722,7 +4730,7 @@ int_aref1(VALUE num, VALUE arg)
             if (!RTEST(num_negative_p(end))) {
                 if (!excl) end = rb_int_plus(end, INT2FIX(1));
                 VALUE mask = generate_mask(end);
-                if (RTEST(num_zero_p(rb_int_and(num, mask)))) {
+                if (RTEST(int_zero_p(rb_int_and(num, mask)))) {
                     return INT2FIX(0);
                 }
                 else {
@@ -5844,3 +5852,5 @@ rb_float_new(double d)
 {
     return rb_float_new_inline(d);
 }
+
+#include "integer.rbinc"

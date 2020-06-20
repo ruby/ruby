@@ -980,7 +980,7 @@ class TestJIT < Test::Unit::TestCase
   def test_frame_omitted_inlining
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "true\ntrue\ntrue\n", success_count: 1, min_calls: 2)
     begin;
-      class Numeric
+      class Integer
         remove_method :zero?
         def zero?
           self == 0

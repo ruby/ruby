@@ -214,6 +214,8 @@ Excluding feature bug fixes.
 
     * The issues of sdbm will handle at https://github.com/ruby/sdbm
 
+* `Integer#zero?` overrides `Numeric#zero?` for optimization.
+
 ## Stdlib compatibility issues
 
 Excluding feature bug fixes.
