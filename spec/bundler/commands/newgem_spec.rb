@@ -155,7 +155,7 @@ RSpec.describe "bundle gem" do
     it "generates a gem skeleton with rubocop" do
       gem_skeleton_assertions
       expect(bundled_app("test-gem/Rakefile")).to read_as(
-        include('# frozen_string_literal: true').
+        include("# frozen_string_literal: true").
         and(include('require "rubocop/rake_task"').
         and(include("RuboCop::RakeTask.new").
         and(match(/default:.+:rubocop/))))
@@ -176,11 +176,11 @@ RSpec.describe "bundle gem" do
     end
 
     it "run rubocop inside the generated gem with no offenses" do
-      prepare_gemspec(bundled_app("#{gem_name}", "#{gem_name}.gemspec"))
+      prepare_gemspec(bundled_app(gem_name, "#{gem_name}.gemspec"))
       gems = ["rake", "rubocop"]
-      path = Bundler.feature_flag.default_install_uses_path? ? local_gem_path(:base => bundled_app("#{gem_name}")) : system_gem_path
+      path = Bundler.feature_flag.default_install_uses_path? ? local_gem_path(:base => bundled_app(gem_name)) : system_gem_path
       realworld_system_gems gems, :path => path
-      bundle "exec rubocop --ignore-parent-exclusion", :dir => bundled_app("#{gem_name}")
+      bundle "exec rubocop --ignore-parent-exclusion", :dir => bundled_app(gem_name)
       expect($?.exitstatus).to eq(0) if exitstatus
     end
   end
