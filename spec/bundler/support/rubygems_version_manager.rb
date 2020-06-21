@@ -75,7 +75,6 @@ private
   def switch_local_copy_if_needed
     return unless local_copy_switch_needed?
 
-    sys_exec("git remote update", :dir => local_copy_path)
     sys_exec("git checkout #{target_tag}", :dir => local_copy_path)
 
     ENV["RGV"] = local_copy_path.to_s
