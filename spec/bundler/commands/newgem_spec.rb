@@ -175,14 +175,15 @@ RSpec.describe "bundle gem" do
       expect(bundled_app("#{gem_name}/.rubocop.yml")).to exist
     end
 
-    it "run rubocop inside the generated gem with no offenses" do
+    it "runs rubocop inside the generated gem with no offenses" do
+      skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
       prepare_gemspec(bundled_app(gem_name, "#{gem_name}.gemspec"))
       rubocop_version = RUBY_VERSION > "2.4" ? "0.85.1" : "0.80.1"
       gems = ["rake", "rubocop -v #{rubocop_version}"]
       path = Bundler.feature_flag.default_install_uses_path? ? local_gem_path(:base => bundled_app(gem_name)) : system_gem_path
       realworld_system_gems gems, :path => path
       bundle "exec rubocop --config .rubocop.yml", :dir => bundled_app(gem_name)
-      expect($?.exitstatus).to eq(0) if exitstatus
+      expect(err).to be_empty
     end
   end
 
