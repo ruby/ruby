@@ -177,7 +177,8 @@ RSpec.describe "bundle gem" do
 
     it "run rubocop inside the generated gem with no offenses" do
       prepare_gemspec(bundled_app(gem_name, "#{gem_name}.gemspec"))
-      gems = ["rake", "rubocop -v 0.80.1"]
+      rubocop_version = RUBY_VERSION > "2.4" ? "0.85.1" : "0.80.1"
+      gems = ["rake", "rubocop -v #{rubocop_version}"]
       path = Bundler.feature_flag.default_install_uses_path? ? local_gem_path(:base => bundled_app(gem_name)) : system_gem_path
       realworld_system_gems gems, :path => path
       bundle "exec rubocop --config .rubocop.yml", :dir => bundled_app(gem_name)
