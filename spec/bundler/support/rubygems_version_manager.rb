@@ -108,7 +108,7 @@ private
 
     unless rubygems_path.directory?
       rubygems_path.parent.mkpath
-      sys_exec("git clone https://github.com/rubygems/rubygems.git #{rubygems_path}")
+      sys_exec("git clone .. #{rubygems_path}", :dir => source_root)
     end
 
     rubygems_path
