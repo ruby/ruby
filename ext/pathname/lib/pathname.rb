@@ -581,8 +581,8 @@ class Pathname    # * FileUtils *
   # exist.
   #
   # See FileUtils.mkpath and FileUtils.mkdir_p
-  def mkpath
-    FileUtils.mkpath(@path)
+  def mkpath(mode: nil)
+    FileUtils.mkpath(@path, mode: mode)
     nil
   end
 

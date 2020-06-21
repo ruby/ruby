@@ -1429,10 +1429,22 @@ class TestPathname < Test::Unit::TestCase
     }
   end
 
+  def assert_mode(val, mask, path, mesg = nil)
+    st = File.stat(path)
+    assert_equal(val.to_s(8), (st.mode & mask).to_s(8), st.inspect)
+  end
+
   def test_mkpath
     with_tmpchdir('rubytest-pathname') {|dir|
       Pathname("a/b/c/d").mkpath
       assert_file.directory?("a/b/c/d")
+      unless File.stat(dir).world_readable?
+        # mktmpdir should make unreadable
+        Pathname("x/y/z").mkpath(mode: 0775)
+        assert_mode(0775, 0777, "x")
+        assert_mode(0775, 0777, "x/y")
+        assert_mode(0775, 0777, "x/y/z")
+      end
     }
   end
 
