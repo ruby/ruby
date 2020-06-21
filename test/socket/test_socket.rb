@@ -160,14 +160,27 @@ class TestSocket < Test::Unit::TestCase
     }
   end
 
-  def random_port
+  def port_in_use?(host, port)
+    TCPServer.open(host, port).close
+    false
+  rescue Errno::EADDRINUSE, Errno::EACCES
+    true
+  end
+  private :port_in_use?
+
+  def random_port(host = '127.0.0.1')
     # IANA suggests dynamic port for 49152 to 65535
     # http://www.iana.org/assignments/port-numbers
-    49152 + rand(65535-49152+1)
+    begin
+      port = rand(49152..65535)
+    end while port_in_use? host, port
+    port
   end
 
   def errors_addrinuse
-    [Errno::EADDRINUSE]
+    # Window CI fails with "Errno::EACCES: Permission denied - bind(2) for 0.0.0.0:49721"
+    (ENV['CI'] && RUBY_PLATFORM.match?(/mingw|mswin/)) ?
+      [Errno::EADDRINUSE, Errno::EACCES] : [Errno::EADDRINUSE]
   end
 
   def test_tcp_server_sockets
