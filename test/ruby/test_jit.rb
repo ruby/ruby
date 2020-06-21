@@ -613,7 +613,7 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_opt_invokebuiltin_delegate_leave
-    skip 'ld SEGVs for this' if ENV['RUBYCI_NICKNAME'] == 'rhel_zlinux'
+    skip 'ld SEGVs for this' if RUBY_PLATFORM.start_with?("s390x-")
     insns = collect_insns(RubyVM::InstructionSequence.of("\x00".method(:unpack)).to_a)
     mark_tested_insn(:opt_invokebuiltin_delegate_leave, used_insns: insns)
     assert_eval_with_jit('print "\x00".unpack("c")', stdout: '[0]', success_count: 1)
