@@ -24,6 +24,12 @@ class RubygemsVersionManager
 
   def assert_system_features_not_loaded!
     at_exit do
+      errors = if $?.nil?
+        ""
+      else
+        all_commands_output
+      end
+
       rubylibdir = RbConfig::CONFIG["rubylibdir"]
 
       rubygems_path = rubylibdir + "/rubygems"
@@ -38,8 +44,10 @@ class RubygemsVersionManager
       end
 
       if bad_loaded_features.any?
-        raise "the following features were incorrectly loaded:\n#{bad_loaded_features.join("\n")}"
+        errors += "the following features were incorrectly loaded:\n#{bad_loaded_features.join("\n")}"
       end
+
+      raise errors unless errors.empty?
     end
   end
 
