@@ -177,7 +177,7 @@ RSpec.describe "bundle gem" do
 
     it "run rubocop inside the generated gem with no offenses" do
       prepare_gemspec(bundled_app(gem_name, "#{gem_name}.gemspec"))
-      gems = ["rake", "rubocop"]
+      gems = ["rake", "rubocop -v 0.80.1"]
       path = Bundler.feature_flag.default_install_uses_path? ? local_gem_path(:base => bundled_app(gem_name)) : system_gem_path
       realworld_system_gems gems, :path => path
       bundle "exec rubocop --ignore-parent-exclusion", :dir => bundled_app(gem_name)
