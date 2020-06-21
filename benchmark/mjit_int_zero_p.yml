@@ -1,0 +1,36 @@
+prelude: |
+  def mjit_zero?(int)
+    int.zero?
+  end
+
+  def mjit_eq_0(int)
+    int == 0
+  end
+
+  def warmup(sym, int)
+    if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
+      jit_min_calls = 10000
+      i = 0
+      while i < jit_min_calls
+        send(sym, int)
+        i += 1
+      end
+      RubyVM::MJIT.pause
+    end
+  end
+
+benchmark:
+  - name: 0.zero?
+    prelude: warmup(:mjit_zero?, 0)
+    script: mjit_zero?(0)
+  - name: 1.zero?
+    prelude: warmup(:mjit_zero?, 1)
+    script: mjit_zero?(1)
+  - name: 0 == 0
+    prelude: warmup(:mjit_eq_0, 0)
+    script: mjit_eq_0(0)
+  - name: 1 == 0
+    prelude: warmup(:mjit_eq_0, 1)
+    script: mjit_eq_0(1)
+
+loop_count: 40000000

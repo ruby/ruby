@@ -374,7 +374,12 @@ inlinable_iseq_p(const struct rb_iseq_constant_body *body)
         //   * Do not require `cfp->sp` motion
         //   * Do not move `cfp->pc`
         //   * Do not read any `cfp->pc`
-        if (insn != BIN(leave) && insn_may_depend_on_sp_or_pc(insn, body->iseq_encoded + (pos + 1)))
+        if (insn == BIN(invokebuiltin) || insn == BIN(opt_invokebuiltin_delegate) || insn == BIN(opt_invokebuiltin_delegate_leave)) {
+            // builtin insn's inlinability is handled by `Primitive.attr! 'inline'` per iseq
+            if (!body->builtin_inline_p)
+                return false;
+        }
+        else if (insn != BIN(leave) && insn_may_depend_on_sp_or_pc(insn, body->iseq_encoded + (pos + 1)))
             return false;
         // At this moment, `cfp->ep` in an inlined method is not working.
         switch (insn) {

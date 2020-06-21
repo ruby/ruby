@@ -7274,6 +7274,11 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
                     GET_VM()->builtin_inline_index++;
                     return COMPILE_OK;
                 }
+                else if (strcmp("attr!", builtin_func) == 0) {
+                    // There's only "inline" attribute for now
+                    iseq->body->builtin_inline_p = true;
+                    return COMPILE_OK;
+                }
 
                 if (1) {
                     rb_bug("can't find builtin function:%s", builtin_func);
@@ -10815,6 +10820,7 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     ibf_dump_write_small_value(dump, body->ci_size);
     ibf_dump_write_small_value(dump, body->stack_max);
     ibf_dump_write_small_value(dump, body->catch_except_p);
+    ibf_dump_write_small_value(dump, body->builtin_inline_p);
 
 #undef IBF_BODY_OFFSET
 
@@ -10920,6 +10926,7 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     const unsigned int ci_size = (unsigned int)ibf_load_small_value(load, &reading_pos);
     const unsigned int stack_max = (unsigned int)ibf_load_small_value(load, &reading_pos);
     const char catch_except_p = (char)ibf_load_small_value(load, &reading_pos);
+    const bool builtin_inline_p = (bool)ibf_load_small_value(load, &reading_pos);
 
 #undef IBF_BODY_OFFSET
 
@@ -10958,6 +10965,7 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     load_body->location.code_location.end_pos.lineno = location_code_location_end_pos_lineno;
     load_body->location.code_location.end_pos.column = location_code_location_end_pos_column;
     load_body->catch_except_p = catch_except_p;
+    load_body->builtin_inline_p = builtin_inline_p;
 
     load_body->is_entries           = ZALLOC_N(union iseq_inline_storage_entry, is_size);
                                       ibf_load_ci_entries(load, ci_entries_offset, ci_size, &load_body->call_data);
