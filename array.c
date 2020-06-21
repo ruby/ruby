@@ -5813,6 +5813,12 @@ rb_ary_min(int argc, VALUE *argv, VALUE ary)
     return result;
 }
 
+#define SWAP_VALUE(a, b) do { \
+    VALUE t = a; \
+    a = b; \
+    b = t; \
+} while (0)
+
 /*
  *  call-seq:
  *     ary.minmax                       -> [obj, obj]
@@ -5830,7 +5836,61 @@ rb_ary_minmax(VALUE ary)
     if (rb_block_given_p()) {
         return rb_call_super(0, NULL);
     }
-    return rb_assoc_new(rb_ary_min(0, 0, ary), rb_ary_max(0, 0, ary));
+
+    struct cmp_opt_data cmp_opt = { 0, 0 };
+    VALUE a, b, vmin = Qundef, vmax = Qundef;
+    long n = RARRAY_LEN(ary);
+    long i = 0;
+    if (n == 0) {
+        vmin = vmax = Qnil;
+    }
+    else if (n % 2) {
+        vmin = vmax = RARRAY_AREF(ary, 0);
+        i = 1;
+    }
+    else {
+        vmin = RARRAY_AREF(ary, 0);
+        vmax = RARRAY_AREF(ary, 1);
+        switch (OPTIMIZED_CMP(vmin, vmax, cmp_opt)) {
+          case 0:
+            vmax = vmin;
+            break;
+          case 1:
+            SWAP_VALUE(vmin, vmax);
+            // fall through
+          default:
+            break;
+        }
+        i = 2;
+        n = RARRAY_LEN(ary);
+    }
+    if (i < n) {
+        while (i + 1 < RARRAY_LEN(ary)) {
+            a = RARRAY_AREF(ary, i++);
+            b = RARRAY_AREF(ary, i++);
+            if (OPTIMIZED_CMP(a, b, cmp_opt) > 0) {
+                SWAP_VALUE(a, b);
+            }
+            if (OPTIMIZED_CMP(vmin, a, cmp_opt) > 0) {
+                vmin = a;
+            }
+            if (OPTIMIZED_CMP(vmax, b, cmp_opt) < 0) {
+                vmax = b;
+            }
+        }
+        // If some items added into ary during the above while loop,
+        // one item may remain to be compared.
+        if (i < RARRAY_LEN(ary)) {
+            a = RARRAY_AREF(ary, i);
+            if (OPTIMIZED_CMP(vmin, a, cmp_opt) > 0) {
+                vmin = a;
+            }
+            if (OPTIMIZED_CMP(vmax, a, cmp_opt) < 0) {
+                vmax = a;
+            }
+        }
+    }
+    return rb_assoc_new(vmin, vmax);
 }
 
 static int
