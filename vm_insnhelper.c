@@ -4969,7 +4969,7 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE *p
 }
 
 #if VM_CHECK_MODE > 0
-static NORETURN( NOINLINE( COLDFUNC
+NORETURN( NOINLINE( COLDFUNC
 void vm_canary_is_found_dead(enum ruby_vminsn_type i, VALUE c)));
 
 void
