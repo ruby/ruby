@@ -88,6 +88,7 @@ EOS
         :ok
       end
       io = Net::BufferedIO.new(r)
+      io.read_timeout *= 5 if RubyVM::MJIT.enabled? # for --jit-wait
       res = Net::HTTPResponse.read_new(io)
       nr = 0
       res.reading_body io, true do
