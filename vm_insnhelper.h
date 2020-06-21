@@ -158,8 +158,8 @@ CC_SET_FASTPATH(const struct rb_callcache *cc, vm_call_handler func, bool enable
         } \
     }
 #else
-#define SETUP_CANARY(cond)       /* void */
-#define CHECK_CANARY(cond, insn) /* void */
+#define SETUP_CANARY(cond)       if (cond) {} else {}
+#define CHECK_CANARY(cond, insn) if (cond) {(void)(insn);}
 #endif
 
 /**********************************************************/
