@@ -573,9 +573,9 @@ class Pathname    # * FileUtils *
   # exist.
   #
   # See FileUtils.mkpath and FileUtils.mkdir_p
-  def mkpath
+  def mkpath(mode: nil)
     require 'fileutils'
-    FileUtils.mkpath(@path)
+    FileUtils.mkpath(@path, mode: mode)
     nil
   end
 
