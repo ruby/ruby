@@ -180,7 +180,7 @@ RSpec.describe "bundle gem" do
       gems = ["rake", "rubocop -v 0.80.1"]
       path = Bundler.feature_flag.default_install_uses_path? ? local_gem_path(:base => bundled_app(gem_name)) : system_gem_path
       realworld_system_gems gems, :path => path
-      bundle "exec rubocop --ignore-parent-exclusion", :dir => bundled_app(gem_name)
+      bundle "exec rubocop --config .rubocop.yml", :dir => bundled_app(gem_name)
       expect($?.exitstatus).to eq(0) if exitstatus
     end
   end
