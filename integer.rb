@@ -5,6 +5,6 @@ class Integer
   # Returns +true+ if +num+ has a zero value.
   def zero?
     Primitive.attr! 'inline'
-    Primitive.cexpr! 'int_zero_p(self);'
+    Primitive.cexpr! 'int_zero_p(self)'
   end
 end
