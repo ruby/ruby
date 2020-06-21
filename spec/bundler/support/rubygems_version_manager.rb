@@ -107,7 +107,6 @@ private
     rubygems_path = source_root.join("tmp/rubygems")
 
     unless rubygems_path.directory?
-      rubygems_path.parent.mkpath
       sys_exec("git clone .. #{rubygems_path}", :dir => source_root)
     end
 
