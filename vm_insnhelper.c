@@ -3584,6 +3584,7 @@ vm_invoke_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
       case block_handler_type_ifunc:  func = vm_invoke_ifunc_block;  break;
       case block_handler_type_proc:   func = vm_invoke_proc_block;   break;
       case block_handler_type_symbol: func = vm_invoke_symbol_block; break;
+      default: rb_bug("vm_invoke_block: unreachable");
     }
 
     return func(ec, reg_cfp, calling, ci, is_lambda, block_handler);
