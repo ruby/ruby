@@ -5165,10 +5165,13 @@ lookup_builtin_invoker(int argc)
 }
 
 static inline VALUE
-invoke_bf(rb_execution_context_t *ec, rb_control_frame_t *cfp, const struct rb_builtin_function* bf, const VALUE *argv)
+invoke_bf(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const struct rb_builtin_function* bf, const VALUE *argv)
 {
-    VALUE self = cfp->self;
-    return (*lookup_builtin_invoker(bf->argc))(ec, self, argv, (rb_insn_func_t)bf->func_ptr);
+    const bool canary_p = reg_cfp->iseq->body->builtin_inline_p; // Verify an assumption of `Primitive.attr! 'inline'`
+    SETUP_CANARY(canary_p);
+    VALUE ret = (*lookup_builtin_invoker(bf->argc))(ec, reg_cfp->self, argv, (rb_insn_func_t)bf->func_ptr);
+    CHECK_CANARY(canary_p, BIN(invokebuiltin));
+    return ret;
 }
 
 static VALUE

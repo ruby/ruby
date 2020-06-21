@@ -139,27 +139,27 @@ CC_SET_FASTPATH(const struct rb_callcache *cc, vm_call_handler func, bool enable
 /**********************************************************/
 
 #if VM_CHECK_MODE > 0
-#define SETUP_CANARY() \
+#define SETUP_CANARY(cond) \
     VALUE *canary = 0; \
-    if (leaf) { \
+    if (cond) { \
         canary = GET_SP(); \
         SET_SV(vm_stack_canary); \
     } \
     else {\
         SET_SV(Qfalse); /* cleanup */ \
     }
-#define CHECK_CANARY() \
-    if (leaf) { \
+#define CHECK_CANARY(cond, insn) \
+    if (cond) { \
         if (*canary == vm_stack_canary) { \
             *canary = Qfalse; /* cleanup */ \
         } \
         else { \
-            vm_canary_is_found_dead(INSN_ATTR(bin), *canary); \
+            vm_canary_is_found_dead(insn, *canary); \
         } \
     }
 #else
-#define SETUP_CANARY()          /* void */
-#define CHECK_CANARY()          /* void */
+#define SETUP_CANARY(cond)       /* void */
+#define CHECK_CANARY(cond, insn) /* void */
 #endif
 
 /**********************************************************/
