@@ -6,9 +6,6 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'rubygems/version'
-require 'rubygems/requirement'
-require 'rubygems/platform'
 require 'rubygems/deprecate'
 require 'rubygems/basic_specification'
 require 'rubygems/stub_specification'

@@ -7,7 +7,6 @@
 
 require 'rubygems'
 require 'rubygems/command_manager'
-require 'rubygems/config_file'
 require 'rubygems/deprecate'
 
 ##
