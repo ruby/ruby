@@ -39,6 +39,7 @@ Dir.glob("{ext,.bundle/gems}/*/exts.mk") do |e|
     else
       macros[n] = m | v
     end
+    break if n == "old_extensions"
   end
   if gem
     r = ""
