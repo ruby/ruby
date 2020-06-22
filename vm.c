@@ -2083,10 +2083,16 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state,
 		}
 	    }
 	}
-	else if (state == TAG_BREAK && !escape_cfp) {
-	    type = CATCH_TYPE_BREAK;
+        else if ((state == TAG_BREAK && !escape_cfp) ||
+                 (state == TAG_REDO) ||
+                 (state == TAG_NEXT)) {
+            type = (const enum catch_type[TAG_MASK]) {
+                [TAG_BREAK]  = CATCH_TYPE_BREAK,
+                [TAG_NEXT]   = CATCH_TYPE_NEXT,
+                [TAG_REDO]   = CATCH_TYPE_REDO,
+                /* otherwise = dontcare */
+            }[state];
 
-	  search_restart_point:
 	    ct = cfp->iseq->body->catch_table;
 	    if (ct) for (i = 0; i < ct->size; i++) {
 		entry = UNALIGNED_MEMBER_PTR(ct, entries[i]);
@@ -2115,14 +2121,6 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state,
 		    }
 		}
 	    }
-	}
-	else if (state == TAG_REDO) {
-	    type = CATCH_TYPE_REDO;
-	    goto search_restart_point;
-	}
-	else if (state == TAG_NEXT) {
-	    type = CATCH_TYPE_NEXT;
-	    goto search_restart_point;
 	}
 	else {
 	    ct = cfp->iseq->body->catch_table;
