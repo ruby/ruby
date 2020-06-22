@@ -530,7 +530,10 @@ typedef struct gc_profile_record {
 struct RMoved {
     VALUE flags;
     VALUE destination;
-    VALUE next;
+    union {
+        struct list_node node;
+        struct list_head head;
+    } as;
 };
 
 #if defined(_MSC_VER) || defined(__CYGWIN__)
@@ -7614,7 +7617,7 @@ gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
 }
 
 static VALUE
-gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, VALUE moved_list)
+gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, struct RMoved * moved_list)
 {
     int marked;
     int wb_unprotected;
@@ -7692,7 +7695,7 @@ gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, VALUE moved_list)
     /* Assign forwarding address */
     src->as.moved.flags = T_MOVED;
     src->as.moved.destination = (VALUE)dest;
-    src->as.moved.next = moved_list;
+    list_add(&moved_list->as.head, &src->as.moved.as.node);
     GC_ASSERT(BUILTIN_TYPE((VALUE)dest) != T_NONE);
 
     return (VALUE)src;
@@ -7822,15 +7825,13 @@ allocate_page_list(rb_objspace_t *objspace, page_compare_func_t *comparator)
     return page_list;
 }
 
-static VALUE
-gc_compact_heap(rb_objspace_t *objspace, page_compare_func_t *comparator)
+static void
+gc_compact_heap(rb_objspace_t *objspace, page_compare_func_t *comparator, struct RMoved * moved_list)
 {
     struct heap_cursor free_cursor;
     struct heap_cursor scan_cursor;
     struct heap_page **page_list;
-    VALUE moved_list;
 
-    moved_list = Qfalse;
     memset(objspace->rcompactor.considered_count_table, 0, T_MASK * sizeof(size_t));
     memset(objspace->rcompactor.moved_count_table, 0, T_MASK * sizeof(size_t));
 
@@ -7891,7 +7892,7 @@ gc_compact_heap(rb_objspace_t *objspace, page_compare_func_t *comparator)
             GC_ASSERT(BUILTIN_TYPE((VALUE)scan_cursor.slot) != T_NONE);
             GC_ASSERT(BUILTIN_TYPE((VALUE)scan_cursor.slot) != T_MOVED);
 
-            moved_list = gc_move(objspace, (VALUE)scan_cursor.slot, (VALUE)free_cursor.slot, moved_list);
+            gc_move(objspace, (VALUE)scan_cursor.slot, (VALUE)free_cursor.slot, moved_list);
 
             GC_ASSERT(BUILTIN_TYPE((VALUE)free_cursor.slot) != T_MOVED);
             GC_ASSERT(BUILTIN_TYPE((VALUE)free_cursor.slot) != T_NONE);
@@ -7902,8 +7903,6 @@ gc_compact_heap(rb_objspace_t *objspace, page_compare_func_t *comparator)
         }
     }
     free(page_list);
-
-    return moved_list;
 }
 
 static void
@@ -8614,30 +8613,28 @@ gc_check_references_for_moved(rb_objspace_t *objspace)
 }
 
 static void
-gc_unlink_moved_list(rb_objspace_t *objspace, VALUE moved_list_head)
+gc_unlink_moved_list(rb_objspace_t *objspace, struct RMoved * moved_list_head)
 {
     /* For each moved slot */
-    while (moved_list_head) {
-        VALUE next_moved;
-        struct heap_page *page;
+    struct RMoved * obj = NULL, *next;
+    list_for_each_safe(&RMOVED(moved_list_head)->as.head, obj, next, as.node) {
+        if (obj != moved_list_head) {
+            struct heap_page *page;
 
-        page = GET_HEAP_PAGE(moved_list_head);
-        next_moved = RMOVED(moved_list_head)->next;
+            page = GET_HEAP_PAGE((VALUE)obj);
 
-        /* clear the memory for that moved slot */
-        RMOVED(moved_list_head)->flags = 0;
-        RMOVED(moved_list_head)->destination = 0;
-        RMOVED(moved_list_head)->next = 0;
-        page->free_slots++;
-        heap_page_add_freeobj(objspace, page, moved_list_head);
+            /* clear the memory for that moved slot */
+            memset(obj, 0, sizeof(VALUE));
+            page->free_slots++;
+            heap_page_add_freeobj(objspace, page, (VALUE)obj);
 
-        if (page->free_slots == page->total_slots && heap_pages_freeable_pages > 0) {
-            heap_pages_freeable_pages--;
-            heap_unlink_page(objspace, heap_eden, page);
-            heap_add_page(objspace, heap_tomb, page);
+            if (page->free_slots == page->total_slots && heap_pages_freeable_pages > 0) {
+                heap_pages_freeable_pages--;
+                heap_unlink_page(objspace, heap_eden, page);
+                heap_add_page(objspace, heap_tomb, page);
+            }
+            objspace->profile.total_freed_objects++;
         }
-        objspace->profile.total_freed_objects++;
-        moved_list_head = next_moved;
     }
 }
 
@@ -8659,14 +8656,16 @@ gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_doubl
         heap_add_pages(objspace, heap_eden, heap_allocated_pages);
     }
 
-    VALUE moved_list_head;
+    struct RMoved moved_list_head;
+    list_head_init(&moved_list_head.as.head);
+
     VALUE disabled = rb_objspace_gc_disable(objspace);
 
     if (use_toward_empty) {
-        moved_list_head = gc_compact_heap(objspace, compare_free_slots);
+        gc_compact_heap(objspace, compare_free_slots, &moved_list_head);
     }
     else {
-        moved_list_head = gc_compact_heap(objspace, compare_pinned);
+        gc_compact_heap(objspace, compare_pinned, &moved_list_head);
     }
     heap_eden->freelist = NULL;
 
@@ -8681,7 +8680,7 @@ gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_doubl
     heap_eden->free_pages = NULL;
     heap_eden->using_page = NULL;
 
-    gc_unlink_moved_list(objspace, moved_list_head);
+    gc_unlink_moved_list(objspace, &moved_list_head);
 
     /* Add any eden pages with free slots back to the free pages list */
     struct heap_page *page = NULL;
