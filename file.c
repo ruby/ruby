@@ -6203,12 +6203,6 @@ path_check_0(VALUE path, int execpath)
 }
 #endif
 
-#if ENABLE_PATH_CHECK
-#define fpath_check(path) path_check_0((path), FALSE)
-#else
-#define fpath_check(path) 1
-#endif
-
 int
 rb_path_check(const char *path)
 {
