@@ -1080,23 +1080,7 @@ vm_getivar(VALUE obj, ID id, IVC ic, const struct rb_callcache *cc, int is_attr)
             iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
             numiv = ROBJECT_NUMIV(obj);
             ivptr = ROBJECT_IVPTR(obj);
-
-          fill:
-	    if (iv_index_tbl) {
-		if (st_lookup(iv_index_tbl, id, &index)) {
-                    if (!is_attr) {
-                        ic->index = index;
-                        ic->ic_serial = RCLASS_SERIAL(RBASIC(obj)->klass);
-                    }
-                    else { /* call_info */
-                        vm_cc_attr_index_set(cc, (int)index + 1);
-                    }
-
-                    if (index < numiv) {
-                        val = ivptr[index];
-		    }
-		}
-	    }
+            goto fill;
 	}
         else if (FL_TEST_RAW(obj, FL_EXIVAR)) {
             struct gen_ivtbl *ivtbl;
@@ -1107,10 +1091,30 @@ vm_getivar(VALUE obj, ID id, IVC ic, const struct rb_callcache *cc, int is_attr)
                 iv_index_tbl = RCLASS_IV_INDEX_TBL(rb_obj_class(obj));
                 goto fill;
             }
+            else {
+                goto ret;
+            }
         }
         else {
             // T_CLASS / T_MODULE
             goto general_path;
+        }
+
+      fill:
+        if (iv_index_tbl) {
+            if (st_lookup(iv_index_tbl, id, &index)) {
+                if (!is_attr) {
+                    ic->index = index;
+                    ic->ic_serial = RCLASS_SERIAL(RBASIC(obj)->klass);
+                }
+                else { /* call_info */
+                    vm_cc_attr_index_set(cc, (int)index + 1);
+                }
+
+                if (index < numiv) {
+                    val = ivptr[index];
+                }
+            }
         }
 
       ret:
