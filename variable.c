@@ -3335,9 +3335,7 @@ rb_mod_remove_cvar(VALUE mod, VALUE name)
     st_data_t val, n = id;
 
     if (!id) {
-      not_defined:
-	rb_name_err_raise("class variable %1$s not defined for %2$s",
-			  mod, name);
+        goto not_defined;
     }
     rb_check_frozen(mod);
     if (RCLASS_IV_TBL(mod) && st_delete(RCLASS_IV_TBL(mod), &n, &val)) {
@@ -3346,7 +3344,9 @@ rb_mod_remove_cvar(VALUE mod, VALUE name)
     if (rb_cvar_defined(mod, id)) {
 	rb_name_err_raise("cannot remove %1$s for %2$s", mod, ID2SYM(id));
     }
-    goto not_defined;
+  not_defined:
+    rb_name_err_raise("class variable %1$s not defined for %2$s",
+                      mod, name);
 }
 
 VALUE
