@@ -949,29 +949,22 @@ iv_index_tbl_newsize(struct ivar_update *ivup)
 static int
 generic_ivar_update(st_data_t *k, st_data_t *v, st_data_t u, int existing)
 {
-    VALUE obj = (VALUE)*k;
     struct ivar_update *ivup = (struct ivar_update *)u;
-    uint32_t newsize;
-    int ret = ST_CONTINUE;
-    struct gen_ivtbl *ivtbl;
+    struct gen_ivtbl *ivtbl = 0;
 
     if (existing) {
 	ivtbl = (struct gen_ivtbl *)*v;
-	if (ivup->index >= ivtbl->numiv) {
-	    goto resize;
-	}
-	ret = ST_STOP;
+        if (ivup->index < ivtbl->numiv) {
+            ivup->u.ivtbl = ivtbl;
+            return ST_STOP;
+        }
     }
-    else {
-	FL_SET(obj, FL_EXIVAR);
-	ivtbl = 0;
-resize:
-	newsize = iv_index_tbl_newsize(ivup);
-	ivtbl = gen_ivtbl_resize(ivtbl, newsize);
-	*v = (st_data_t)ivtbl;
-    }
+    FL_SET((VALUE)*k, FL_EXIVAR);
+    uint32_t newsize = iv_index_tbl_newsize(ivup);
+    ivtbl = gen_ivtbl_resize(ivtbl, newsize);
+    *v = (st_data_t)ivtbl;
     ivup->u.ivtbl = ivtbl;
-    return ret;
+    return ST_CONTINUE;
 }
 
 static VALUE
