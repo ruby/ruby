@@ -771,9 +771,6 @@ class TestFileUtils < Test::Unit::TestCase
 
     remove_entry dir
     assert_file_not_exist dir
-  rescue MiniTest::Assertion
-    STDERR.puts Dir.glob("#{dir}/**/*").inspect
-    raise
   end
 
   def test_remove_entry_secure

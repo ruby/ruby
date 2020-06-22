@@ -1557,7 +1557,15 @@ module FileUtils
     def join(dir, base)
       return File.path(dir) if not base or base == '.'
       return File.path(base) if not dir or dir == '.'
-      File.join(dir, base)
+      begin
+        File.join(dir, base)
+      rescue EncodingError
+        if fu_windows?
+          File.join(dir.encode(::Encoding::UTF_8), base.encode(::Encoding::UTF_8))
+        else
+          raise
+        end
+      end
     end
 
     if File::ALT_SEPARATOR
