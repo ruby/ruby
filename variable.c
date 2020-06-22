@@ -1494,12 +1494,7 @@ rb_copy_generic_ivar(VALUE clone, VALUE obj)
     rb_check_frozen(clone);
 
     if (!FL_TEST(obj, FL_EXIVAR)) {
-      clear:
-        if (FL_TEST(clone, FL_EXIVAR)) {
-            rb_free_generic_ivar(clone);
-            FL_UNSET(clone, FL_EXIVAR);
-        }
-        return;
+        goto clear;
     }
     if (gen_ivtbl_get(obj, &ivtbl)) {
 	struct givar_copy c;
@@ -1525,6 +1520,13 @@ rb_copy_generic_ivar(VALUE clone, VALUE obj)
 	 * no need to free
 	 */
 	st_insert(generic_iv_tbl, (st_data_t)clone, (st_data_t)c.ivtbl);
+    }
+    return;
+
+  clear:
+    if (FL_TEST(clone, FL_EXIVAR)) {
+        rb_free_generic_ivar(clone);
+        FL_UNSET(clone, FL_EXIVAR);
     }
 }
 
