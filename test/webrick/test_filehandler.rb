@@ -289,23 +289,33 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
   end
 
   def test_multibyte_char_in_path
-    Dir.mktmpdir("\u00a7") do |dir|
-      File.write("#{dir}/\u00a7.txt", "test_multibyte_char_in_path")
-      begin
-        dir = dir.encode('filesystem')
-      rescue EncodingError
-        dir = dir.b
-      end
-      config = { :DocumentRoot => dir }
+    c = "\u00a7"
+    begin
+      c = c.encode('filesystem')
+    rescue EncodingError
+      c = c.b
+    end
+    Dir.mktmpdir(c) do |dir|
+      basename = "#{c}.txt"
+      File.write("#{dir}/#{basename}", "test_multibyte_char_in_path")
+      Dir.mkdir("#{dir}/#{c}")
+      File.write("#{dir}/#{c}/#{basename}", "nested")
+      config = {
+        :DocumentRoot => dir,
+        :DirectoryIndex => [basename],
+      }
       TestWEBrick.start_httpserver(config) do |server, addr, port, log|
         http = Net::HTTP.new(addr, port)
-        begin
-          path = "/\u00a7.txt".encode('filesystem')
-        rescue EncodingError
-          path = "/\u00a7.txt".force_encoding(Encoding::ASCII_8BIT)
-        end
+        path = "/#{basename}"
         req = Net::HTTP::Get.new(WEBrick::HTTPUtils::escape(path))
         http.request(req){|res| assert_equal("200", res.code, log.call + "\nFilesystem encoding is #{Encoding.find('filesystem')}") }
+        path = "/#{c}/#{basename}"
+        req = Net::HTTP::Get.new(WEBrick::HTTPUtils::escape(path))
+        http.request(req){|res| assert_equal("200", res.code, log.call) }
+        req = Net::HTTP::Get.new('/')
+        http.request(req){|res|
+          assert_equal("test_multibyte_char_in_path", res.body, log.call)
+        }
       end
     end
   end
