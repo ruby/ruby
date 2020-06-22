@@ -1,3 +1,4 @@
+type: lib/benchmark_driver/runner/mjit
 prelude: |
   def mjit_send_cfunc
     self.class

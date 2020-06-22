@@ -1,3 +1,4 @@
+type: lib/benchmark_driver/runner/mjit
 prelude: |
   def leave
     nil
