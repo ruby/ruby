@@ -1333,8 +1333,6 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   autoload :Specification,      File.expand_path('rubygems/specification', __dir__)
   autoload :Util,               File.expand_path('rubygems/util', __dir__)
   autoload :Version,            File.expand_path('rubygems/version', __dir__)
-
-  require "rubygems/specification"
 end
 
 require 'rubygems/exceptions'

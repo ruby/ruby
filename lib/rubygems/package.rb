@@ -43,7 +43,6 @@
 
 require "rubygems"
 require 'rubygems/security'
-require 'rubygems/specification'
 require 'rubygems/user_interaction'
 require 'zlib'
 
