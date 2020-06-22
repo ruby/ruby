@@ -51,7 +51,11 @@ class TestFileUtils < Test::Unit::TestCase
     end
 
     def check_have_symlink?
-      File.symlink "", ""
+      Dir.mktmpdir do |dir|
+        Dir.chdir(dir) do
+          File.symlink "symlink", "symlink"
+        end
+      end
     rescue NotImplementedError, Errno::EACCES
       return false
     rescue
