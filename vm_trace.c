@@ -1455,7 +1455,7 @@ tracepoint_inspect(rb_execution_context_t *ec, VALUE self)
 	    {
 		VALUE sym = rb_tracearg_method_id(trace_arg);
 		if (NIL_P(sym))
-		    goto default_inspect;
+                    break;
 		return rb_sprintf("#<TracePoint:%"PRIsVALUE"@%"PRIsVALUE":%d in `%"PRIsVALUE"'>",
 				  rb_tracearg_event(trace_arg),
 				  rb_tracearg_path(trace_arg),
@@ -1477,12 +1477,12 @@ tracepoint_inspect(rb_execution_context_t *ec, VALUE self)
 			      rb_tracearg_event(trace_arg),
 			      rb_tracearg_self(trace_arg));
 	  default:
-	  default_inspect:
-	    return rb_sprintf("#<TracePoint:%"PRIsVALUE"@%"PRIsVALUE":%d>",
-			      rb_tracearg_event(trace_arg),
-			      rb_tracearg_path(trace_arg),
-			      FIX2INT(rb_tracearg_lineno(trace_arg)));
+            break;
 	}
+        return rb_sprintf("#<TracePoint:%"PRIsVALUE"@%"PRIsVALUE":%d>",
+                          rb_tracearg_event(trace_arg),
+                          rb_tracearg_path(trace_arg),
+                          FIX2INT(rb_tracearg_lineno(trace_arg)));
     }
     else {
 	return rb_sprintf("#<TracePoint:%s>", tp->tracing ? "enabled" : "disabled");
