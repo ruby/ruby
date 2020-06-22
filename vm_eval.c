@@ -820,8 +820,7 @@ method_missing(VALUE obj, ID id, int argc, const VALUE *argv, enum method_missin
     ec->method_missing_reason = call_status;
 
     if (id == idMethodMissing) {
-      missing:
-	raise_method_missing(ec, argc, argv, obj, call_status | MISSING_MISSING);
+        goto missing;
     }
 
     nargv = ALLOCV_N(VALUE, work, argc + 1);
@@ -845,6 +844,8 @@ method_missing(VALUE obj, ID id, int argc, const VALUE *argv, enum method_missin
     result = rb_vm_call_kw(ec, obj, idMethodMissing, argc, argv, me, kw_splat);
     if (work) ALLOCV_END(work);
     return result;
+  missing:
+    raise_method_missing(ec, argc, argv, obj, call_status | MISSING_MISSING);
 }
 
 #ifndef MJIT_HEADER
