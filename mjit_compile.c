@@ -97,9 +97,9 @@ captured_cc_entries(const struct compile_status *status)
 
 // Returns true if call cache is still not obsoleted and vm_cc_cme(cc)->def->type is available.
 static bool
-has_valid_method_type(CALL_CACHE cc)
+has_valid_method_type(CALL_CACHE cc, rb_method_type_t type)
 {
-    return vm_cc_cme(cc) != NULL;
+    return vm_cc_cme(cc) != NULL && vm_cc_cme(cc)->def->type == type;
 }
 
 // Returns true if iseq can use fastpath for setup, otherwise NULL. This becomes true in the same condition
@@ -439,9 +439,8 @@ precompile_inlinable_iseqs(FILE *f, const rb_iseq_t *iseq, struct compile_status
             const struct rb_callcache *cc = captured_cc_entries(status)[call_data_index(cd, body)]; // use copy to avoid race condition
 
             const rb_iseq_t *child_iseq;
-            if (has_valid_method_type(cc) &&
+            if (has_valid_method_type(cc, VM_METHOD_TYPE_ISEQ) &&
                 !(vm_ci_flag(ci) & VM_CALL_TAILCALL) && // inlining only non-tailcall path
-                vm_cc_cme(cc)->def->type == VM_METHOD_TYPE_ISEQ &&
                 fastpath_applied_iseq_p(ci, cc, child_iseq = def_iseq_ptr(vm_cc_cme(cc)->def)) &&
                 // CC_SET_FASTPATH in vm_callee_setup_arg
                 inlinable_iseq_p(child_iseq->body)) {
