@@ -632,8 +632,7 @@ rb_method_call_status(rb_execution_context_t *ec, const rb_callable_method_entry
     rb_method_visibility_t visi;
 
     if (UNDEFINED_METHOD_ENTRY_P(me)) {
-      undefined:
-	return scope == CALL_VCALL ? MISSING_VCALL : MISSING_NOENTRY;
+        goto undefined;
     }
     if (me->def->type == VM_METHOD_TYPE_REFINED) {
 	me = rb_resolve_refined_method_callable(Qnil, me);
@@ -667,6 +666,8 @@ rb_method_call_status(rb_execution_context_t *ec, const rb_callable_method_entry
     }
 
     return MISSING_NONE;
+  undefined:
+    return scope == CALL_VCALL ? MISSING_VCALL : MISSING_NOENTRY;
 }
 
 
