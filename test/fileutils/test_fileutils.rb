@@ -770,7 +770,10 @@ class TestFileUtils < Test::Unit::TestCase
     File.write("#{dir}/#{c}.txt", "test_remove_entry_multibyte_path")
 
     remove_entry dir
-    assert_file_not_exist dir
+    assert_no_file_exist dir
+  rescue MiniTest::Assertion
+    STDERR.puts Dir.glob("#{dir}/**").inspect
+    raise
   end
 
   def test_remove_entry_secure
