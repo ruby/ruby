@@ -756,6 +756,23 @@ class TestFileUtils < Test::Unit::TestCase
     assert_file_not_exist dir
   end
 
+  def test_remove_entry_multibyte_path
+    c = "\u00a7"
+    begin
+      c = c.encode('filesystem')
+    rescue EncodingError
+      c = c.b
+    end
+    dir = "tmpdir#{c}"
+    my_rm_rf dir
+
+    Dir.mkdir dir
+    File.write("#{dir}/#{c}.txt", "test_remove_entry_multibyte_path")
+
+    remove_entry dir
+    assert_file_not_exist dir
+  end
+
   def test_remove_entry_secure
     check_singleton :remove_entry_secure
 
