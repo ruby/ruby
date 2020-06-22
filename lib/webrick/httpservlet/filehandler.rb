@@ -213,10 +213,11 @@ module WEBrick
       # :stopdoc:
 
       def set_filesystem_encoding(str)
-        if Encoding.find('filesystem') == Encoding::US_ASCII
+        enc = Encoding.find('filesystem')
+        if enc == Encoding::US_ASCII
           str.b
         else
-          str.dup.force_encoding('filesystem')
+          str.dup.force_encoding(enc)
         end
       end
 
@@ -333,10 +334,11 @@ module WEBrick
 
       def set_filename(req, res)
         res.filename = @root
-        path_info = req.path_info.scan(%r|/[^/]*|).map{|path| set_filesystem_encoding(path) }
+        path_info = req.path_info.scan(%r|/[^/]*|)
 
         path_info.unshift("")  # dummy for checking @root dir
         while base = path_info.first
+          base = set_filesystem_encoding(base)
           break if base == "/"
           break unless File.directory?(File.expand_path(res.filename + base))
           shift_path_info(req, res, path_info)
@@ -344,6 +346,7 @@ module WEBrick
         end
 
         if base = path_info.first
+          base = set_filesystem_encoding(base)
           if base == "/"
             if file = search_index_file(req, res)
               shift_path_info(req, res, path_info, file)
@@ -372,7 +375,7 @@ module WEBrick
 
       def shift_path_info(req, res, path_info, base=nil)
         tmp = path_info.shift
-        base = base || tmp
+        base = base || set_filesystem_encoding(tmp)
         req.path_info = path_info.join
         req.script_name << base
         res.filename = File.expand_path(res.filename + base)
