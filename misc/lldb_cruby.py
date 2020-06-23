@@ -176,13 +176,14 @@ def lldb_inspect(debugger, target, result, val):
         elif flType == RUBY_T_BIGNUM:
             tRBignum = target.FindFirstType("struct RBignum").GetPointerType()
             val = val.Cast(tRBignum)
+            sign = '+' if (flags & RUBY_FL_USER1) != 0 else '-'
             if flags & RUBY_FL_USER2:
                 len = ((flags & (RUBY_FL_USER3|RUBY_FL_USER4|RUBY_FL_USER5)) >> (RUBY_FL_USHIFT+3))
-                print("T_BIGNUM: len=%d (embed)" % len, file=result)
+                print("T_BIGNUM: sign=%s len=%d (embed)" % (sign, len), file=result)
                 append_command_output(debugger, "print ((struct RBignum *) %0#x)->as.ary" % val.GetValueAsUnsigned(), result)
             else:
                 len = val.GetValueForExpressionPath("->as.heap.len").GetValueAsSigned()
-                print("T_BIGNUM: len=%d" % len, file=result)
+                print("T_BIGNUM: sign=%s len=%d" % (sign, len), file=result)
                 print(val.Dereference(), file=result)
                 append_command_output(debugger, "expression -Z %x -fx -- (const BDIGIT*)((struct RBignum*)%d)->as.heap.digits" % (len, val.GetValueAsUnsigned()), result)
                 # append_command_output(debugger, "x ((struct RBignum *) %0#x)->as.heap.digits / %d" % (val.GetValueAsUnsigned(), len), result)
