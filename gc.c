@@ -1754,7 +1754,7 @@ heap_page_allocate(rb_objspace_t *objspace)
     int limit = HEAP_PAGE_OBJ_LIMIT;
 
     /* assign heap_page body (contains heap_page_header and RVALUEs) */
-    page_body = (struct heap_page_body *)rb_aligned_malloc(HEAP_PAGE_ALIGN, HEAP_PAGE_SIZE);
+    page_body = (struct heap_page_body *)rb_aligned_malloc(HEAP_PAGE_ALIGN, HEAP_PAGE_ALIGN);
     if (page_body == 0) {
 	rb_memerror();
     }
