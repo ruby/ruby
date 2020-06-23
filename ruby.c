@@ -1005,34 +1005,45 @@ set_option_encoding_once(const char *type, VALUE *name, const char *e, long elen
 static void
 setup_mjit_options(const char *s, struct mjit_options *mjit_opt)
 {
+#define opt_match(s, l, name) \
+    ((((l) > rb_strlen_lit(name)) ? (s)[rb_strlen_lit(name)] == '=' : \
+      (l) == rb_strlen_lit(name)) && \
+     memcmp((s), name, rb_strlen_lit(name)) == 0 && \
+     (((s) += rb_strlen_lit(name)), 1))
+#define opt_match_noarg(s, l, name) \
+    opt_match(s, l, name) && (*(s) ? (rb_warn("argument to --jit-" name " is ignored"), 1) : 1)
+#define opt_match_arg(s, l, name) \
+    opt_match(s, l, name) && (*(s) ? 1 : (rb_raise(rb_eRuntimeError, "--jit-" name " needs an argument"), 0))
+    if (*s != '-') return;
+    const size_t l = strlen(++s);
     if (*s == 0) return;
-    else if (strcmp(s, "-warnings") == 0) {
+    else if (opt_match_noarg(s, l, "warnings")) {
         mjit_opt->warnings = 1;
     }
-    else if (strncmp(s, "-debug=", 7) == 0) {
-        mjit_opt->debug_flags = strdup(s + 7);
+    else if (opt_match(s, l, "debug")) {
+        if (*s)
+            mjit_opt->debug_flags = strdup(s + 1);
+        else
+            mjit_opt->debug = 1;
     }
-    else if (strcmp(s, "-debug") == 0) {
-        mjit_opt->debug = 1;
-    }
-    else if (strcmp(s, "-wait") == 0) {
+    else if (opt_match_noarg(s, l, "wait")) {
         mjit_opt->wait = 1;
     }
-    else if (strcmp(s, "-save-temps") == 0) {
+    else if (opt_match_noarg(s, l, "save-temps")) {
         mjit_opt->save_temps = 1;
     }
-    else if (strncmp(s, "-verbose=", 9) == 0) {
-        mjit_opt->verbose = atoi(s + 9);
+    else if (opt_match(s, l, "verbose")) {
+        mjit_opt->verbose = *s ? atoi(s + 1) : 1;
     }
-    else if (strncmp(s, "-max-cache=", 11) == 0) {
-        mjit_opt->max_cache_size = atoi(s + 11);
+    else if (opt_match_arg(s, l, "max-cache")) {
+        mjit_opt->max_cache_size = atoi(s + 1);
     }
-    else if (strncmp(s, "-min-calls=", 11) == 0) {
-        mjit_opt->min_calls = atoi(s + 11);
+    else if (opt_match_arg(s, l, "min-calls")) {
+        mjit_opt->min_calls = atoi(s + 1);
     }
     else {
         rb_raise(rb_eRuntimeError,
-                 "invalid MJIT option `%s' (--help will show valid MJIT options)", s + 1);
+                 "invalid MJIT option `%s' (--help will show valid MJIT options)", s);
     }
 }
 #endif
