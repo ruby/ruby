@@ -6155,7 +6155,7 @@ rb_is_absolute_path(const char *path)
 
 #if ENABLE_PATH_CHECK
 static int
-path_check_0(VALUE path, int execpath)
+path_check_0(VALUE path)
 {
     struct stat st;
     const char *p0 = StringValueCStr(path);
@@ -6183,12 +6183,12 @@ path_check_0(VALUE path, int execpath)
 #endif
 	if (STAT(p0, &st) == 0 && S_ISDIR(st.st_mode) && (st.st_mode & S_IWOTH)
 #ifdef S_ISVTX
-	    && !(p && execpath && (st.st_mode & S_ISVTX))
+	    && !(p && (st.st_mode & S_ISVTX))
 #endif
 	    && !access(p0, W_OK)) {
-	    rb_enc_warn(enc, "Insecure world writable dir %s in %sPATH, mode 0%"
+	    rb_enc_warn(enc, "Insecure world writable dir %s in PATH, mode 0%"
 			PRI_MODET_PREFIX"o",
-			p0, (execpath ? "" : "LOAD_"), st.st_mode);
+			p0, st.st_mode);
 	    if (p) *p = '/';
 	    RB_GC_GUARD(path);
 	    return 0;
@@ -6218,7 +6218,7 @@ rb_path_check(const char *path)
     if (!p) p = pend;
 
     for (;;) {
-	if (!path_check_0(rb_str_new(p0, p - p0), TRUE)) {
+	if (!path_check_0(rb_str_new(p0, p - p0))) {
 	    return 0;		/* not safe */
 	}
 	p0 = p + 1;
