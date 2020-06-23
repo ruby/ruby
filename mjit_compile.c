@@ -17,6 +17,7 @@
 #include "internal.h"
 #include "internal/compile.h"
 #include "internal/hash.h"
+#include "internal/object.h"
 #include "internal/variable.h"
 #include "mjit.h"
 #include "vm_core.h"
@@ -97,9 +98,16 @@ captured_cc_entries(const struct compile_status *status)
 
 // Returns true if call cache is still not obsoleted and vm_cc_cme(cc)->def->type is available.
 static bool
-has_valid_method_type(CALL_CACHE cc, rb_method_type_t type)
+has_valid_method_type(CALL_CACHE cc)
 {
-    return vm_cc_cme(cc) != NULL && vm_cc_cme(cc)->def->type == type;
+    return vm_cc_cme(cc) != NULL;
+}
+
+// Returns true if MJIT thinks this cc's opt_* insn may fallback to opt_send_without_block.
+static bool
+has_cache_for_send(CALL_CACHE cc, bool cfunc_cached)
+{
+    return has_valid_method_type(cc) && (!cfunc_cached || vm_cc_cme(cc)->def->type != VM_METHOD_TYPE_CFUNC);
 }
 
 // Returns true if iseq can use fastpath for setup, otherwise NULL. This becomes true in the same condition
@@ -439,8 +447,9 @@ precompile_inlinable_iseqs(FILE *f, const rb_iseq_t *iseq, struct compile_status
             const struct rb_callcache *cc = captured_cc_entries(status)[call_data_index(cd, body)]; // use copy to avoid race condition
 
             const rb_iseq_t *child_iseq;
-            if (has_valid_method_type(cc, VM_METHOD_TYPE_ISEQ) &&
+            if (has_valid_method_type(cc) &&
                 !(vm_ci_flag(ci) & VM_CALL_TAILCALL) && // inlining only non-tailcall path
+                vm_cc_cme(cc)->def->type == VM_METHOD_TYPE_ISEQ &&
                 fastpath_applied_iseq_p(ci, cc, child_iseq = def_iseq_ptr(vm_cc_cme(cc)->def)) &&
                 // CC_SET_FASTPATH in vm_callee_setup_arg
                 inlinable_iseq_p(child_iseq->body)) {
