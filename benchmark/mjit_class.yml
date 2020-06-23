@@ -1,0 +1,11 @@
+type: lib/benchmark_driver/runner/mjit
+prelude: |
+  def mjit_class(obj)
+    obj.class
+  end
+
+benchmark:
+  - mjit_class(self)
+  - mjit_class(1)
+
+loop_count: 40000000
