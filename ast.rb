@@ -6,10 +6,10 @@ class RubyVM
   # abstract syntax trees. The nodes in the tree
   # are instances of RubyVM::AbstractSyntaxTree::Node.
   #
-  # This class is MRI specific as it exposes implementation details
+  # This module is MRI specific as it exposes implementation details
   # of the MRI abstract syntax tree.
   #
-  # This class is experimental and its API is not stable, therefore it might
+  # This module is experimental and its API is not stable, therefore it might
   # change without notice. As examples, the order of children nodes is not
   # guaranteed, the number of children nodes might change, there is no way to
   # access children nodes by name, etc.
