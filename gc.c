@@ -1761,6 +1761,14 @@ heap_page_allocate(rb_objspace_t *objspace)
 
     /* assign heap_page entry */
     page = calloc1(sizeof(struct heap_page));
+
+    assert((getpagesize() * 4) == HEAP_PAGE_ALIGN);
+    intptr_t page_body_end = (intptr_t)page_body + (getpagesize() * 4);
+
+    if ((intptr_t)page > (intptr_t)page_body && (intptr_t)page < page_body_end) {
+        rb_bug("heap page shares OS pages with body!");
+    }
+
     if (page == 0) {
         rb_aligned_free(page_body);
 	rb_memerror();
