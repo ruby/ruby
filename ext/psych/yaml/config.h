@@ -44,7 +44,7 @@
 #define PACKAGE_NAME "yaml"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "yaml 0.2.1"
+#define PACKAGE_STRING "yaml 0.2.5"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "yaml"
@@ -53,13 +53,13 @@
 #define PACKAGE_URL ""
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "0.2.1"
+#define PACKAGE_VERSION "0.2.5"
 
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1
 
 /* Version number of package */
-#define VERSION "0.2.1"
+#define VERSION "0.2.5"
 
 /* Define the major version number. */
 #define YAML_VERSION_MAJOR 0
@@ -68,10 +68,10 @@
 #define YAML_VERSION_MINOR 2
 
 /* Define the patch version number. */
-#define YAML_VERSION_PATCH 1
+#define YAML_VERSION_PATCH 5
 
 /* Define the version string. */
-#define YAML_VERSION_STRING "0.2.1"
+#define YAML_VERSION_STRING "0.2.5"
 
 /* Define to empty if `const' does not conform to ANSI C. */
 /* #undef const */
