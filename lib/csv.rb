@@ -251,55 +251,55 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 #
 # === Options for Parsing
 #
-# :include: ../doc/col_sep.rdoc
+# :include: ../doc/options/common/col_sep.rdoc
 #
-# :include: ../doc/row_sep.rdoc
+# :include: ../doc/options/common/row_sep.rdoc
 #
-# :include: ../doc/quote_char.rdoc
+# :include: ../doc/options/common/quote_char.rdoc
 #
-# :include: ../doc/field_size_limit.rdoc
+# :include: ../doc/options/parsing/field_size_limit.rdoc
 #
-# :include: ../doc/converters.rdoc
+# :include: ../doc/options/parsing/converters.rdoc
 #
-# :include: ../doc/unconverted_fields.rdoc
+# :include: ../doc/options/parsing/unconverted_fields.rdoc
 #
-# :include: ../doc/headers.rdoc
+# :include: ../doc/options/parsing/headers.rdoc
 #
-# :include: ../doc/return_headers.rdoc
+# :include: ../doc/options/parsing/return_headers.rdoc
 #
-# :include: ../doc/header_converters.rdoc
+# :include: ../doc/options/parsing/header_converters.rdoc
 #
-# :include: ../doc/skip_blanks.rdoc
+# :include: ../doc/options/parsing/skip_blanks.rdoc
 #
-# :include: ../doc/skip_lines.rdoc
+# :include: ../doc/options/parsing/skip_lines.rdoc
 #
-# :include: ../doc/liberal_parsing.rdoc
+# :include: ../doc/options/parsing/strip.rdoc
 #
-# :include: ../doc/nil_value.rdoc
+# :include: ../doc/options/parsing/liberal_parsing.rdoc
 #
-# :include: ../doc/empty_value.rdoc
+# :include: ../doc/options/parsing/nil_value.rdoc
+#
+# :include: ../doc/options/parsing/empty_value.rdoc
 #
 # === Options for Generating
 #
-# :include: ../doc/col_sep.rdoc
+# :include: ../doc/options/common/col_sep.rdoc
 #
-# :include: ../doc/row_sep.rdoc
+# :include: ../doc/options/common/row_sep.rdoc
 #
-# :include: ../doc/quote_char.rdoc
+# :include: ../doc/options/common/quote_char.rdoc
 #
-# :include: ../doc/write_headers.rdoc
+# :include: ../doc/options/generating/write_headers.rdoc
 #
-# :include: ../doc/force_quotes.rdoc
+# :include: ../doc/options/generating/force_quotes.rdoc
 #
-# :include: ../doc/quote_empty.rdoc
+# :include: ../doc/options/generating/quote_empty.rdoc
 #
-# :include: ../doc/write_converters.rdoc
+# :include: ../doc/options/generating/write_converters.rdoc
 #
-# :include: ../doc/write_nil_value.rdoc
+# :include: ../doc/options/generating/write_nil_value.rdoc
 #
-# :include: ../doc/write_empty_value.rdoc
-#
-# :include: ../doc/strip.rdoc
+# :include: ../doc/options/generating/write_empty_value.rdoc
 #
 # == CSV with headers
 #
@@ -834,7 +834,7 @@ class CSV
     # Returns an integer, or, if there were no rows, +nil+.
     #
     # * Argument +path+, if given, must be the path to a file.
-    # :include: ../doc/argument_io.rdoc
+    # :include: ../doc/arguments/io.rdoc
     # * Argument +mode+, if given, must be a \File mode
     #   See {Open Mode}[IO.html#method-c-new-label-Open+Mode].
     # * Arguments <tt>**options</tt> must be keyword options.
@@ -1069,7 +1069,7 @@ class CSV
     #     :replace => string   # replacement string ("?" or "\uFFFD" if not specified)
     #
     # * Argument +path+, if given, must be the path to a file.
-    # :include: ../doc/argument_io.rdoc
+    # :include: ../doc/arguments/io.rdoc
     # * Argument +mode+, if given, must be a \File mode
     #   See {Open Mode}[IO.html#method-c-new-label-Open+Mode].
     # * Arguments <tt>**options</tt> must be keyword options.
@@ -1174,7 +1174,7 @@ class CSV
     #
     # - Argument +string+ should be a \String object;
     #   it will be put into a new StringIO object positioned at the beginning.
-    # :include: ../doc/argument_io.rdoc
+    # :include: ../doc/arguments/io.rdoc
     # - Argument +options+: see {Options for Parsing}[#class-CSV-label-Options+for+Parsing]
     #
     # ====== Without Option +headers+
@@ -1300,7 +1300,7 @@ class CSV
     #
     # - Argument +string+ should be a \String object;
     #   it will be put into a new StringIO object positioned at the beginning.
-    # :include: ../doc/argument_io.rdoc
+    # :include: ../doc/arguments/io.rdoc
     # - Argument +options+: see {Options for Parsing}[#class-CSV-label-Options+for+Parsing]
     #
     # ====== Without Option +headers+
@@ -1404,7 +1404,7 @@ class CSV
   #
   # - Argument +string+ should be a \String object;
   #   it will be put into a new StringIO object positioned at the beginning.
-  # :include: ../doc/argument_io.rdoc
+  # :include: ../doc/arguments/io.rdoc
   # - Argument +options+: See:
   #   * {Options for Parsing}[#class-CSV-label-Options+for+Parsing]
   #   * {Options for Generating}[#class-CSV-label-Options+for+Generating]
