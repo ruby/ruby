@@ -816,7 +816,7 @@ make_exception(int argc, const VALUE *argv, int isstr)
         if (isstr &&! NIL_P(exc)) {
 	    mesg = rb_check_string_type(exc);
 	    if (!NIL_P(mesg)) {
-		mesg = rb_exc_new3(rb_eRuntimeError, mesg);
+                return rb_exc_new3(rb_eRuntimeError, mesg);
 	    }
 	}
 
