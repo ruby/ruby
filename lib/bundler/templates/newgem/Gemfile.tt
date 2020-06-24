@@ -13,5 +13,5 @@ gem "rake-compiler"
 gem "<%= config[:test] %>", "~> <%= config[:test_framework_version] %>"
 <%- end -%>
 <%- if config[:rubocop] -%>
-gem "rubocop"
+gem "rubocop", "~> 0.80"
 <%- end -%>
