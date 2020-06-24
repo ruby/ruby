@@ -62,10 +62,7 @@ private
 
     require "rbconfig"
 
-    ruby = File.join(RbConfig::CONFIG["bindir"], RbConfig::CONFIG["ruby_install_name"])
-    ruby << RbConfig::CONFIG["EXEEXT"]
-
-    cmd = [ruby, $0, *ARGV].compact
+    cmd = [RbConfig.ruby, $0, *ARGV].compact
 
     ENV["RUBYOPT"] = opt_add("-I#{local_copy_path.join("lib")}", opt_remove("--disable-gems", ENV["RUBYOPT"]))
 
