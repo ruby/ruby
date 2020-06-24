@@ -6708,7 +6708,7 @@ compile_redo(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
 	    ADD_INSN(ret, line, putnil);
 	}
     }
-    else if (iseq->body->type == ISEQ_TYPE_EVAL && ISEQ_COMPILE_DATA(iseq)->start_label) {
+    else if (iseq->body->type != ISEQ_TYPE_EVAL && ISEQ_COMPILE_DATA(iseq)->start_label) {
 	LABEL *splabel = NEW_LABEL(0);
 
 	debugs("redo in block");
