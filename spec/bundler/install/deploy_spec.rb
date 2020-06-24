@@ -23,7 +23,7 @@ RSpec.describe "install in deployment or frozen mode" do
       bundle "install --deployment --system", :raise_on_error => false
       expect(err).to include("You have specified both --deployment")
       expect(err).to include("Please choose only one option")
-      expect(exitstatus).to eq(15) if exitstatus
+      expect(exitstatus).to eq(15)
     end
 
     it "disallows --deployment --path --system" do
@@ -31,7 +31,7 @@ RSpec.describe "install in deployment or frozen mode" do
       expect(err).to include("You have specified both --path")
       expect(err).to include("as well as --system")
       expect(err).to include("Please choose only one option")
-      expect(exitstatus).to eq(15) if exitstatus
+      expect(exitstatus).to eq(15)
     end
 
     it "doesn't mess up a subsequent `bundle install` after you try to deploy without a lock" do

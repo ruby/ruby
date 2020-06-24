@@ -1055,7 +1055,7 @@ Usage: "bundle gem NAME [OPTIONS]"
       FileUtils.touch(bundled_app("conflict-foobar"))
       bundle "gem conflict-foobar", :raise_on_error => false
       expect(err).to include("Errno::ENOTDIR")
-      expect(exitstatus).to eql(32) if exitstatus
+      expect(exitstatus).to eql(32)
     end
   end
 

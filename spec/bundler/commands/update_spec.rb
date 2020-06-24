@@ -701,7 +701,7 @@ RSpec.describe "bundle update" do
 
     bundle "update nonexisting", :raise_on_error => false
     expect(err).to include("This Bundle hasn't been installed yet. Run `bundle install` to update and install the bundled gems.")
-    expect(exitstatus).to eq(22) if exitstatus
+    expect(exitstatus).to eq(22)
   end
 end
 

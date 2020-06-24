@@ -327,7 +327,7 @@ RSpec.describe "bundle clean" do
 
     bundle :clean, :raise_on_error => false
 
-    expect(exitstatus).to eq(15) if exitstatus
+    expect(exitstatus).to eq(15)
     expect(err).to include("--force")
   end
 

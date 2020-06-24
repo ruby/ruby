@@ -66,7 +66,7 @@ RSpec.describe "bundle check" do
     G
 
     bundle :check, :raise_on_error => false
-    expect(exitstatus).to be > 0 if exitstatus
+    expect(exitstatus).to be > 0
     expect(err).to include("Bundler can't satisfy your Gemfile's dependencies.")
   end
 
@@ -128,7 +128,7 @@ RSpec.describe "bundle check" do
 
     bundle "check", :raise_on_error => false
     expect(err).to include("* rack (1.0.0)")
-    expect(exitstatus).to eq(1) if exitstatus
+    expect(exitstatus).to eq(1)
   end
 
   it "ignores missing gems restricted to other platforms" do
@@ -195,13 +195,13 @@ RSpec.describe "bundle check" do
 
   it "outputs an error when the default Gemfile is not found" do
     bundle :check, :raise_on_error => false
-    expect(exitstatus).to eq(10) if exitstatus
+    expect(exitstatus).to eq(10)
     expect(err).to include("Could not locate Gemfile")
   end
 
   it "does not output fatal error message" do
     bundle :check, :raise_on_error => false
-    expect(exitstatus).to eq(10) if exitstatus
+    expect(exitstatus).to eq(10)
     expect(err).not_to include("Unfortunately, a fatal error has occurred. ")
   end
 
@@ -253,7 +253,7 @@ RSpec.describe "bundle check" do
       end
 
       it "returns false" do
-        expect(exitstatus).to eq(1) if exitstatus
+        expect(exitstatus).to eq(1)
         expect(err).to match(/The following gems are missing/)
       end
     end

@@ -309,7 +309,7 @@ RSpec.describe "bundle install with explicit source paths" do
       gemspec :path => "#{lib_path("foo")}"
     G
 
-    expect(exitstatus).to eq(15) if exitstatus
+    expect(exitstatus).to eq(15)
     expect(err).to match(/There are multiple gemspecs/)
   end
 

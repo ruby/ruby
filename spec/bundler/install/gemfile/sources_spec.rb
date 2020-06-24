@@ -38,7 +38,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
       it "fails", :bundler => "3" do
         bundle :instal, :raise_on_error => false
         expect(err).to include("Each source after the first must include a block")
-        expect(exitstatus).to eq(4) if exitstatus
+        expect(exitstatus).to eq(4)
       end
     end
 
@@ -64,7 +64,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
       it "fails", :bundler => "3" do
         bundle :install, :raise_on_error => false
         expect(err).to include("Each source after the first must include a block")
-        expect(exitstatus).to eq(4) if exitstatus
+        expect(exitstatus).to eq(4)
       end
     end
   end
@@ -258,7 +258,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
           it "fails", :bundler => "3" do
             bundle :install, :raise_on_error => false
             expect(err).to include("Each source after the first must include a block")
-            expect(exitstatus).to eq(4) if exitstatus
+            expect(exitstatus).to eq(4)
           end
         end
 
@@ -298,7 +298,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
           it "fails", :bundler => "3" do
             bundle :install, :raise_on_error => false
             expect(err).to include("Each source after the first must include a block")
-            expect(exitstatus).to eq(4) if exitstatus
+            expect(exitstatus).to eq(4)
           end
         end
       end

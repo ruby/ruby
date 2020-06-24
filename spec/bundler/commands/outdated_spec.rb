@@ -68,7 +68,7 @@ RSpec.describe "bundle outdated" do
 
       bundle "outdated", :raise_on_error => false
 
-      expect(exitstatus).to_not be_zero if exitstatus
+      expect(exitstatus).to_not be_zero
     end
 
     it "returns success exit status if no outdated gems present" do
@@ -517,7 +517,7 @@ RSpec.describe "bundle outdated" do
 
     it "returns non-zero exit code" do
       bundle "outdated invalid_gem_name", :raise_on_error => false
-      expect(exitstatus).to_not be_zero if exitstatus
+      expect(exitstatus).to_not be_zero
     end
   end
 
