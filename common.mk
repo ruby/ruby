@@ -8514,6 +8514,7 @@ mjit_compile.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 mjit_compile.$(OBJEXT): $(top_srcdir)/internal/gc.h
 mjit_compile.$(OBJEXT): $(top_srcdir)/internal/hash.h
 mjit_compile.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+mjit_compile.$(OBJEXT): $(top_srcdir)/internal/object.h
 mjit_compile.$(OBJEXT): $(top_srcdir)/internal/serial.h
 mjit_compile.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 mjit_compile.$(OBJEXT): $(top_srcdir)/internal/variable.h
@@ -9266,6 +9267,7 @@ object.$(OBJEXT): {$(VPATH)}internal/value_type.h
 object.$(OBJEXT): {$(VPATH)}internal/variable.h
 object.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 object.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
+object.$(OBJEXT): {$(VPATH)}kernel.rb
 object.$(OBJEXT): {$(VPATH)}kernel.rbinc
 object.$(OBJEXT): {$(VPATH)}missing.h
 object.$(OBJEXT): {$(VPATH)}object.c
