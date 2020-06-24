@@ -6105,7 +6105,7 @@ yycompile0(VALUE arg)
     if (!compile_for_eval && !NIL_P(p->ruby_sourcefile_string)) {
 	p->debug_lines = debug_lines(p->ruby_sourcefile_string);
 	if (p->debug_lines && p->ruby_sourceline > 0) {
-	    VALUE str = STR_NEW0();
+	    VALUE str = rb_default_rs;
 	    n = p->ruby_sourceline;
 	    do {
 		rb_ary_push(p->debug_lines, str);
