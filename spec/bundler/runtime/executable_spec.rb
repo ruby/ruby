@@ -163,7 +163,6 @@ RSpec.describe "Running bin/* commands" do
     # run binstub for non default Gemfile
     gembin "foo"
 
-    expect(exitstatus).to eq(0) if exitstatus
     expect(out).to eq("1.0")
   end
 end

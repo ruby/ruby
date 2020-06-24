@@ -315,7 +315,6 @@ RSpec.describe "bundle clean" do
     bundle "install"
 
     bundle :clean
-    expect(exitstatus).to eq(0) if exitstatus
   end
 
   it "displays an error when used without --path" do
@@ -623,7 +622,6 @@ RSpec.describe "bundle clean" do
 
     sys_exec "foo"
 
-    expect(exitstatus).to eq(0) if exitstatus
     expect(out).to eq("1.0")
   end
 

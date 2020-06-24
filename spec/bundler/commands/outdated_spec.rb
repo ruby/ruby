@@ -73,8 +73,6 @@ RSpec.describe "bundle outdated" do
 
     it "returns success exit status if no outdated gems present" do
       bundle "outdated"
-
-      expect(exitstatus).to be_zero if exitstatus
     end
 
     it "adds gem group to dependency output when repo is updated" do

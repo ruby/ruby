@@ -420,7 +420,6 @@ RSpec.describe "bundle install with gem sources" do
 
         gem 'foo'
       G
-      expect(exitstatus).to eq(0) if exitstatus
     end
 
     it "doesn't blow up when the global .bundle/config is empty" do
@@ -432,7 +431,6 @@ RSpec.describe "bundle install with gem sources" do
 
         gem 'foo'
       G
-      expect(exitstatus).to eq(0) if exitstatus
     end
   end
 
@@ -517,8 +515,6 @@ RSpec.describe "bundle install with gem sources" do
       end
 
       bundle :install, :dir => root_dir
-
-      expect(exitstatus).to eq(0) if exitstatus
     end
   end
 

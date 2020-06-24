@@ -21,6 +21,5 @@ RSpec.describe "bundle install with win32-generated lockfile" do
 
       gem "rack"
     G
-    expect(exitstatus).to eq(0) if exitstatus
   end
 end
