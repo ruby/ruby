@@ -27,10 +27,12 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
 
   def warning(str)
     parse(str, :warning) {|e, *args| return args}
+    assert(false, "warning expected")
   end
 
   def warn(str)
     parse(str, :warn) {|e, *args| return args}
+    assert(false, "warning expected")
   end
 
   def test_program
