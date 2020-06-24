@@ -23,6 +23,14 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+#ifdef _WIN32
+static inline int getpagesize(void) {
+    SYSTEM_INFO si;
+    GetSystemInfo(&si);
+    return si.dwPageSize;
+}
+#endif
+
 #ifndef HAVE_MALLOC_USABLE_SIZE
 # ifdef _WIN32
 #  define HAVE_MALLOC_USABLE_SIZE
