@@ -1253,7 +1253,7 @@ ary_take_first_or_last(int argc, const VALUE *argv, VALUE ary, enum ary_take_pos
  *  Appends +object+ as one element, even if it is another \Array:
  *
  *    a = [:foo, 'bar', 2]
- *    a1 = a << [3, 4] # =>
+ *    a1 = a << [3, 4]
  *    a1 # => [:foo, "bar", 2, [3, 4]]
  */
 
@@ -4051,7 +4051,7 @@ append_values_at_single(VALUE result, VALUE ary, long olen, VALUE idx)
  *
  *  For each negative +index+, counts backward from the end of the array:
  *    a = [:foo, 'bar', 2]
- *    a.values_at(-1, -3) # => [:foo, 2] # => [2, :foo]
+ *    a.values_at(-1, -3) # => [2, :foo]
  *
  *  Assigns +nil+ for an +index+ that is too small:
  *    a = [:foo, 'bar', 2]
