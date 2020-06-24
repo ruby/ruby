@@ -138,7 +138,7 @@ RSpec.describe "bundle cache" do
       G
 
       bundle :cache, :raise_on_error => false
-      expect(exitstatus).to_not eq(0) if exitstatus
+      expect(exitstatus).to_not eq(0)
       expect(err).to include("builtin_gem-1.0.2 is built in to Ruby, and can't be cached")
     end
   end

@@ -266,7 +266,7 @@ RSpec.describe "bundle cache" do
         gem "rack-obama"
       G
       subject
-      expect(exitstatus).to eq(16) if exitstatus
+      expect(exitstatus).to eq(16)
       expect(err).to include("deployment mode")
       expect(err).to include("You have added to the Gemfile")
       expect(err).to include("* rack-obama")
