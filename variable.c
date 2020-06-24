@@ -277,6 +277,7 @@ rb_path_to_class(VALUE pathname)
   undefined_class:
     rb_raise(rb_eArgError, "undefined class/module % "PRIsVALUE,
              rb_str_subseq(pathname, 0, p-path));
+    UNREACHABLE_RETURN(Qundef);
 }
 
 VALUE
@@ -3347,6 +3348,7 @@ rb_mod_remove_cvar(VALUE mod, VALUE name)
   not_defined:
     rb_name_err_raise("class variable %1$s not defined for %2$s",
                       mod, name);
+    UNREACHABLE_RETURN(Qundef);
 }
 
 VALUE

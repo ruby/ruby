@@ -5433,6 +5433,7 @@ rb_f_test(int argc, VALUE *argv, VALUE _)
     else {
         rb_raise(rb_eArgError, "unknown command \"\\x%02X\"", cmd);
     }
+    UNREACHABLE_RETURN(Qundef);
 }
 
 

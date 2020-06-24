@@ -274,6 +274,7 @@ signm2signo(VALUE *sig_ptr, int negative, int exit, int *prefix_ptr)
     }
     rb_raise(rb_eArgError, "unsupported signal `%.*s%"PRIsVALUE"'",
              prefix, signame_prefix, vsig);
+    UNREACHABLE_RETURN(0);
 }
 
 static const char*

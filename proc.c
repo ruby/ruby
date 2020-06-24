@@ -549,6 +549,7 @@ bind_local_variable_get(VALUE bindval, VALUE sym)
   undefined:
     rb_name_err_raise("local variable `%1$s' is not defined for %2$s",
                       bindval, sym);
+    UNREACHABLE_RETURN(Qundef);
 }
 
 /*
@@ -2021,6 +2022,7 @@ rb_obj_singleton_method(VALUE obj, VALUE vid)
   /* undef: */
     rb_name_err_raise("undefined singleton method `%1$s' for `%2$s'",
                       obj, vid);
+    UNREACHABLE_RETURN(Qundef);
 }
 
 /*

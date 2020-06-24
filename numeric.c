@@ -4076,6 +4076,7 @@ fix_pow_inverted(VALUE x, VALUE minusb)
 {
     if (x == INT2FIX(0)) {
         rb_num_zerodiv();
+        UNREACHABLE_RETURN(Qundef);
     }
     else {
         VALUE y = rb_int_pow(x, minusb);

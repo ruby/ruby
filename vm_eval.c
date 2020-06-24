@@ -846,6 +846,7 @@ method_missing(VALUE obj, ID id, int argc, const VALUE *argv, enum method_missin
     return result;
   missing:
     raise_method_missing(ec, argc, argv, obj, call_status | MISSING_MISSING);
+    UNREACHABLE_RETURN(Qundef);
 }
 
 #ifndef MJIT_HEADER

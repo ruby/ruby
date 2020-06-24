@@ -3015,6 +3015,7 @@ rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
   incompatible:
     rb_raise(rb_eEncCompatError, "incompatible character encodings: %s and %s",
              rb_enc_name(str_enc), rb_enc_name(ptr_enc));
+    UNREACHABLE_RETURN(Qundef);
 }
 
 VALUE
@@ -9679,6 +9680,7 @@ rb_str_crypt(VALUE str, VALUE salt)
 
   short_salt:
     rb_raise(rb_eArgError, "salt too short (need >=2 bytes)");
+    UNREACHABLE_RETURN(Qundef);
 }
 
 

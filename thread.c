@@ -5175,6 +5175,7 @@ exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pairid, VALUE
     rb_raise(rb_eTypeError, "invalid inspect_tbl pair_list "
              "for %+"PRIsVALUE" in %+"PRIsVALUE,
              sym, rb_thread_current());
+    UNREACHABLE_RETURN(Qundef);
 }
 
 /*

@@ -836,6 +836,7 @@ range_each_bignum_endless(VALUE beg)
     for (;; beg = rb_big_plus(beg, INT2FIX(1))) {
         rb_yield(beg);
     }
+    UNREACHABLE;
 }
 
 RBIMPL_ATTR_NORETURN()
@@ -847,6 +848,7 @@ range_each_fixnum_endless(VALUE beg)
     }
 
     range_each_bignum_endless(LONG2NUM(RUBY_FIXNUM_MAX + 1));
+    UNREACHABLE;
 }
 
 static VALUE
