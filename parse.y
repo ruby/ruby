@@ -1053,6 +1053,7 @@ static void token_info_setup(token_info *ptinfo, const char *ptr, const rb_code_
 static void token_info_push(struct parser_params*, const char *token, const rb_code_location_t *loc);
 static void token_info_pop(struct parser_params*, const char *token, const rb_code_location_t *loc);
 static void token_info_warn(struct parser_params *p, const char *token, token_info *ptinfo_beg, int same, const rb_code_location_t *loc);
+static void token_info_drop(struct parser_params *p, const char *token, rb_code_position_t beg_pos);
 
 #define WARN_EOL(tok) \
     (looking_at_eol_p(p) ? \
@@ -2493,6 +2494,7 @@ arg		: lhs '=' arg_rhs
 		    }
 		| defn_head f_paren_args '=' arg
 		    {
+			token_info_drop(p, "def", @1.beg_pos);
 			restore_defun(p, $<node>1->nd_defn);
 		    /*%%%*/
 			$$ = set_defun_body(p, $1, $2, $4, &@$);
@@ -2502,6 +2504,7 @@ arg		: lhs '=' arg_rhs
 		    }
 		| defn_head f_paren_args '=' arg modifier_rescue arg
 		    {
+			token_info_drop(p, "def", @1.beg_pos);
 			restore_defun(p, $<node>1->nd_defn);
 		    /*%%%*/
 			$4 = rescued_expr(p, $4, $6, &@4, &@5, &@6);
@@ -5763,6 +5766,26 @@ token_info_pop(struct parser_params *p, const char *token, const rb_code_locatio
 
     /* indentation check of matched keywords (begin..end, if..end, etc.) */
     token_info_warn(p, token, ptinfo_beg, 1, loc);
+    ruby_sized_xfree(ptinfo_beg, sizeof(*ptinfo_beg));
+}
+
+static void
+token_info_drop(struct parser_params *p, const char *token, rb_code_position_t beg_pos)
+{
+    token_info *ptinfo_beg = p->token_info;
+
+    if (!ptinfo_beg) return;
+    p->token_info = ptinfo_beg->next;
+
+    if (ptinfo_beg->beg.lineno != beg_pos.lineno ||
+	ptinfo_beg->beg.column != beg_pos.column ||
+	strcmp(ptinfo_beg->token, token)) {
+	compile_error(p, "token position mismatch: %d:%d:%s expected but %d:%d:%s",
+		      beg_pos.lineno, beg_pos.column, token,
+		      ptinfo_beg->beg.lineno, ptinfo_beg->beg.column,
+		      ptinfo_beg->token);
+    }
+
     ruby_sized_xfree(ptinfo_beg, sizeof(*ptinfo_beg));
 }
 

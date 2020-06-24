@@ -26,13 +26,21 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
   end
 
   def warning(str)
-    parse(str, :warning) {|e, *args| return args}
-    assert(false, "warning expected")
+    tree = parse(str, :warning) {|e, *args| return args}
+    if block_given?
+      yield tree
+    else
+      assert(false, "warning expected")
+    end
   end
 
   def warn(str)
-    parse(str, :warn) {|e, *args| return args}
-    assert(false, "warning expected")
+    tree = parse(str, :warn) {|e, *args| return args}
+    if block_given?
+      yield tree
+    else
+      assert(false, "warning expected")
+    end
   end
 
   def test_program
@@ -1552,6 +1560,10 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     fmt, tokend, tokbeg, line = assert_warning("") {break warn("if true\n  end\n")}
     assert_match(/mismatched indentations/, fmt)
     assert_equal(["if", "end", 1], [tokbeg, tokend, line])
+    result = assert_warning("") {
+      warn("begin\n" "  def f() = nil\n" "end\n") {break :ok}
+    }
+    assert_equal(:ok, result)
   end
 
   def test_in
