@@ -773,8 +773,6 @@ The checksum of /versions does not match the checksum provided by the server! So
         G
 
         bundle :install, :artifice => "compact_index_forbidden"
-
-        expect(exitstatus).to eq(0) if exitstatus
       ensure
         home(".gemrc").rmtree
       end

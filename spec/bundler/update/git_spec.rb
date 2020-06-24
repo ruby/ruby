@@ -112,7 +112,6 @@ RSpec.describe "bundle update" do
       G
 
       bundle "update", :all => true
-      expect(exitstatus).to eq(0) if exitstatus
     end
 
     describe "with submodules" do

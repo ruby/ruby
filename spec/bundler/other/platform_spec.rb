@@ -387,7 +387,6 @@ G
       G
 
       bundle :check
-      expect(exitstatus).to eq(0) if exitstatus
       expect(out).to match(/\AResolving dependencies\.\.\.\.*\nThe Gemfile's dependencies are satisfied\z/)
     end
 
@@ -405,7 +404,6 @@ G
       G
 
       bundle :check
-      expect(exitstatus).to eq(0) if exitstatus
       expect(out).to match(/\AResolving dependencies\.\.\.\.*\nThe Gemfile's dependencies are satisfied\z/)
     end
 

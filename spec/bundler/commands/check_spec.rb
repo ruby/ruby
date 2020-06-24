@@ -8,7 +8,6 @@ RSpec.describe "bundle check" do
     G
 
     bundle :check
-    expect(exitstatus).to eq(0) if exitstatus
     expect(out).to include("The Gemfile's dependencies are satisfied")
   end
 
@@ -272,7 +271,6 @@ RSpec.describe "bundle check" do
     it "returns success when the Gemfile is satisfied" do
       bundle :install
       bundle :check
-      expect(exitstatus).to eq(0) if exitstatus
       expect(out).to include("The Gemfile's dependencies are satisfied")
     end
 

@@ -25,7 +25,6 @@ RSpec.describe "bundle executable" do
       bundle "testtasks"
     end
 
-    expect(exitstatus).to be_zero if exitstatus
     expect(out).to eq("Hello, world")
   end
 

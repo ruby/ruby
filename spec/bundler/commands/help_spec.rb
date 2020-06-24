@@ -38,7 +38,6 @@ RSpec.describe "bundle help" do
       bundle "help testtasks"
     end
 
-    expect(exitstatus).to be_zero if exitstatus
     expect(out).to eq("--help")
   end
 

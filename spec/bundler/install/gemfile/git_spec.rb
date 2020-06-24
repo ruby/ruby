@@ -912,7 +912,6 @@ RSpec.describe "bundle install with git sources" do
 
     bundle "install"
     bundle "install"
-    expect(exitstatus).to eq(0) if exitstatus
   end
 
   it "prints a friendly error if a file blocks the git repo" do
@@ -1358,7 +1357,6 @@ In Gemfile:
         end
       G
 
-      expect(exitstatus).to eq(0) if exitstatus
       expect(ENV["GIT_DIR"]).to eq("bar")
       expect(ENV["GIT_WORK_TREE"]).to eq("bar")
     end

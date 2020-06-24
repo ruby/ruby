@@ -133,7 +133,6 @@ RSpec.describe "bundle install with explicit source paths" do
 
     bundle "config --local frozen true"
     bundle :install
-    expect(exitstatus).to eq(0) if exitstatus
   end
 
   it "installs dependencies from the path even if a newer gem is available elsewhere" do
@@ -421,7 +420,6 @@ RSpec.describe "bundle install with explicit source paths" do
     install_gemfile <<-G
       gem "bar", "1.0.0", path: "vendor/bar", require: "bar/nyard"
     G
-    expect(exitstatus).to eq(0) if exitstatus
   end
 
   context "existing lockfile" do

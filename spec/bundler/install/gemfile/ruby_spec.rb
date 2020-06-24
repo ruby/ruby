@@ -22,7 +22,6 @@ RSpec.describe "ruby requirement" do
       gem "rack-obama"
     G
 
-    expect(exitstatus).to eq(0) if exitstatus
     expect(the_bundle).to include_gems "rack-obama 1.0"
   end
 

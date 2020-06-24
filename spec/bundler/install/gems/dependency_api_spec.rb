@@ -747,8 +747,6 @@ RSpec.describe "gemcutter's dependency API" do
         G
 
         bundle "install", :artifice => "endpoint_marshal_fail"
-
-        expect(exitstatus).to eq(0) if exitstatus
       ensure
         home(".gemrc").rmtree
       end
