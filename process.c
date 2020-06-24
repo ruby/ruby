@@ -1900,6 +1900,7 @@ check_exec_redirect_fd(VALUE v, int iskey)
 
   wrong:
     rb_raise(rb_eArgError, "wrong exec redirect");
+    UNREACHABLE_RETURN(Qundef);
 }
 
 static VALUE

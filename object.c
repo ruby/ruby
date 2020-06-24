@@ -2574,6 +2574,7 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
 
   wrong_name:
     rb_name_err_raise(wrong_constant_name, mod, name);
+    UNREACHABLE_RETURN(Qundef);
 }
 
 /*
@@ -2752,6 +2753,7 @@ rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
 
   wrong_name:
     rb_name_err_raise(wrong_constant_name, mod, name);
+    UNREACHABLE_RETURN(Qundef);
 }
 
 /*
@@ -2904,6 +2906,7 @@ rb_mod_const_source_location(int argc, VALUE *argv, VALUE mod)
 
   wrong_name:
     rb_name_err_raise(wrong_constant_name, mod, name);
+    UNREACHABLE_RETURN(Qundef);
 }
 
 /*
@@ -3607,8 +3610,10 @@ rb_cstr_to_dbl_raise(const char *p, int badcheck, int raise, int *error)
     return d;
 
   bad:
-    if (raise)
+    if (raise) {
         rb_invalid_str(q, "Float()");
+        UNREACHABLE_RETURN(nan(""));
+    }
     else {
         if (error) *error = 1;
         return 0.0;

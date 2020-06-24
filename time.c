@@ -5434,6 +5434,7 @@ end_submicro: ;
 
   invalid_format:
     rb_raise(rb_eTypeError, "marshaled time format differ");
+    UNREACHABLE_RETURN(Qundef);
 }
 
 /* :nodoc: */

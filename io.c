@@ -4199,6 +4199,7 @@ rb_io_each_codepoint(VALUE io)
 
   invalid:
     rb_raise(rb_eArgError, "invalid byte sequence in %s", rb_enc_name(enc));
+    UNREACHABLE_RETURN(Qundef);
 }
 
 /*
@@ -5578,6 +5579,7 @@ rb_io_modestr_fmode(const char *modestr)
 
   error:
     rb_raise(rb_eArgError, "invalid access mode %s", modestr);
+    UNREACHABLE_RETURN(Qundef);
 }
 
 int

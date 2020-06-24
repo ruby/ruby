@@ -930,6 +930,7 @@ rb_check_typeddata(VALUE obj, const rb_data_type_t *data_type)
     const char *expected = data_type->wrap_struct_name;
     rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected %s)",
              actual, expected);
+    UNREACHABLE_RETURN(NULL);
 }
 
 /* exception classes */
