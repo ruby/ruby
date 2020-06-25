@@ -343,7 +343,7 @@ test_%.rb test/%: programs PHONY
 spec/bundler/%: PHONY
 	$(Q)$(exec) $(XRUBY) -C $(srcdir) -Ispec/bundler .bundle/bin/rspec --require spec_helper $(RSPECOPTS) $@
 
-spec/bundler spec/bundler/: test-bundler-parallel
+spec/bundler: test-bundler-parallel
 	$(Q)$(NULLCMD)
 
 spec/%: programs exts PHONY
