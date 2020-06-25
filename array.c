@@ -1287,7 +1287,7 @@ rb_ary_cat(VALUE ary, const VALUE *argv, long len)
  *
  *  Appends trailing elements.
  *
- *  Array#append is an alias for \Array#push.
+ *  Array#append is an alias for Array#push.
 
  *  See also:
  *  - #pop:  Removes and returns trailing elements.
@@ -1295,15 +1295,25 @@ rb_ary_cat(VALUE ary, const VALUE *argv, long len)
  *  - #unshift:  Prepends leading elements.
  *
  *  Appends each argument in +objects+ to +self+;  returns +self+:
+ *    # Using push
  *    a = [:foo, 'bar', 2]
  *    a1 = a.push(:baz, :bat)
  *    a1 # => [:foo, "bar", 2, :baz, :bat]
  *    a1.equal?(a) # => true # Returned self
+ *    # Using append
+ *    a = [:foo, 'bar', 2]
+ *    a1 = a.append(:baz, :bat)
+ *    a1 # => [:foo, "bar", 2, :baz, :bat]
+ *    a1.equal?(a) # => true # Returned self
  *
  *  Appends each argument as one element, even if it is another \Array:
- *
+ *    # Using push
  *    a = [:foo, 'bar', 2]
  *    a1 = a.push([:baz, :bat], [:bam, :bad])
+ *    a1 # => [:foo, "bar", 2, [:baz, :bat], [:bam, :bad]]
+ *    # Using append
+ *    a = [:foo, 'bar', 2]
+ *    a1 = a.append([:baz, :bat], [:bam, :bad])
  *    a1 # => [:foo, "bar", 2, [:baz, :bat], [:bam, :bad]]
  */
 
@@ -1626,7 +1636,7 @@ ary_ensure_room_for_unshift(VALUE ary, int argc)
  *
  *  Prepends leading elements.
  *
- *  Array#prepend is an alias for \Array#unshift.
+ *  Array#prepend is an alias for Array#unshift.
  *
  *  See also:
  *  - #push:  Appends trailing elements.
@@ -1634,8 +1644,14 @@ ary_ensure_room_for_unshift(VALUE ary, int argc)
  *  - #shift:  Removes and returns leading elements.
  *
  *  Prepends the given +objects+ to +self+:
+ *    # Using unshift
  *    a = [:foo, 'bar', 2]
  *    a1 = a.unshift(:bam, :bat)
+ *    a1 # => [:bam, :bat, :foo, "bar", 2]
+ *    a1.equal?(a) # => true # Returned self
+ *    # Using prepend
+ *    a = [:foo, 'bar', 2]
+ *    a1 = a.prepend(:bam, :bat)
  *    a1 # => [:bam, :bat, :foo, "bar", 2]
  *    a1.equal?(a) # => true # Returned self
  */
@@ -1719,90 +1735,164 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *  ---
  *
  *  When a single argument +index+ is given, returns the element at offset +index+:
+ *    # Using []
  *    a = [:foo, 'bar', 2]
  *    a[0] # => :foo
  *    a[2] # => 2
  *    a # => [:foo, "bar", 2]
+ *    # Using slice
+ *    a = [:foo, 'bar', 2]
+ *    a.slice(0) # => :foo
+ *    a.slice(2) # => 2
+ *    a # => [:foo, "bar", 2]
  *
  *  If +index+ is negative, counts relative to the end of +self+:
+ *    # Using []
  *    a = [:foo, 'bar', 2]
  *    a[-1] # => 2
  *    a[-2] # => "bar"
+ *    # Using slice
+ *    a = [:foo, 'bar', 2]
+ *    a.slice(-1) # => 2
+ *    a.slice(-2) # => "bar"
  *
  *  If +index+ is out of range, returns +nil+:
+ *    # Using []
  *    a = [:foo, 'bar', 2]
  *    a[50] # => nil
  *    a[-50] # => nil
+ *    # Using slice
+ *    a = [:foo, 'bar', 2]
+ *    a.slice(50) # => nil
+ *    a.slice(-50) # => nil
  *
  *  ---
  *
  *  When two arguments +start+ and +length+ are given,
  *  returns a new \Array of size +length+ containing successive elements beginning at offset +start+:
+ *    # Using []
  *    a = [:foo, 'bar', 2]
  *    a[0, 2] # => [:foo, "bar"]
  *    a[1, 2] # => ["bar", 2]
+ *    # Using slice
+ *    a = [:foo, 'bar', 2]
+ *    a.slice(0, 2) # => [:foo, "bar"]
+ *    a.slice(1, 2) # => ["bar", 2]
  *
  *  If <tt>start + length</tt> is greater than <tt>self.length</tt>,
  *  returns all elements from offset +start+ to the end:
+ *    # Using []
  *    a = [:foo, 'bar', 2]
  *    a[0, 4] # => [:foo, "bar", 2]
  *    a[1, 3] # => ["bar", 2]
  *    a[2, 2] # => [2]
+ *    # Using slice
+ *    a = [:foo, 'bar', 2]
+ *    a.slice(0, 4) # => [:foo, "bar", 2]
+ *    a.slice(1, 3) # => ["bar", 2]
+ *    a.slice(2, 2) # => [2]
  *
  *  If <tt>start == self.size</tt> and <tt>length >= 0</tt>,
  *  returns a new empty \Array:
+ *    # Using []
  *    a = [:foo, 'bar', 2]
  *    a[a.size, 0] # => []
  *    a[a.size, 50] # => []
+ *    # Using slice
+ *    a = [:foo, 'bar', 2]
+ *    a.slice(a.size, 0) # => []
+ *    a.slice(a.size, 50) # => []
  *
  *  If +length+ is negative, returns +nil+:
+ *    # Using []
  *    a = [:foo, 'bar', 2]
  *    a[2, -1] # => nil
  *    a[1, -2] # => nil
+ *    # Using slice
+ *    a = [:foo, 'bar', 2]
+ *    a.slice(2, -1) # => nil
+ *    a.slice(1, -2) # => nil
  *
  *  ---
  *
  *  When a single argument +range+ is given,
  *  treats <tt>range.min</tt> as +start+ above
  *  and <tt>range.size</tt> as +length+ above:
+ *    # Using  []
  *    a = [:foo, 'bar', 2]
  *    a[0..1] # => [:foo, "bar"]
  *    a[1..2] # => ["bar", 2]
+ *    # Using  skuce
+ *    a = [:foo, 'bar', 2]
+ *    a.slice(0..1) # => [:foo, "bar"]
+ *    a.slice(1..2) # => ["bar", 2]
  *
  *  Special case: If <tt>range.start == a.size</tt>, returns a new empty \Array:
+ *    # Using []
  *    a = [:foo, 'bar', 2]
  *    a[a.size..0] # => []
  *    a[a.size..50] # => []
  *    a[a.size..-1] # => []
  *    a[a.size..-50] # => []
+ *    # Using slice
+ *    a = [:foo, 'bar', 2]
+ *    a.slice(a.size..0) # => []
+ *    a.slice(a.size..50) # => []
+ *    a.slice(a.size..-1) # => []
+ *    a.slice(a.size..-50) # => []
  *
  *  If <tt>range.end</tt> is negative, calculates the end index from the end:
+ *    # Using []
  *    a = [:foo, 'bar', 2]
  *    a[0..-1] # => [:foo, "bar", 2]
  *    a[0..-2] # => [:foo, "bar"]
  *    a[0..-3] # => [:foo]
  *    a[0..-4] # => []
+ *    # Using slice
+ *    a = [:foo, 'bar', 2]
+ *    a.slice(0..-1) # => [:foo, "bar", 2]
+ *    a.slice(0..-2) # => [:foo, "bar"]
+ *    a.slice(0..-3) # => [:foo]
+ *    a.slice(0..-4) # => []
  *
  *  If <tt>range.start</tt> is negative, calculates the start index from the end:
+ *    # Using []
  *    a = [:foo, 'bar', 2]
  *    a[-1..2] # => [2]
  *    a[-2..2] # => ["bar", 2]
  *    a[-3..2] # => [:foo, "bar", 2]
+ *    # Using slice
+ *    a = [:foo, 'bar', 2]
+ *    a.slice(-1..2) # => [2]
+ *    a.slice(-2..2) # => ["bar", 2]
+ *    a.slice(-3..2) # => [:foo, "bar", 2]
  *
  *  ---
  *
  *  Raises an exception if given a single argument
  *  that is not an \Integer-convertible object or a \Range object:
+ *    # Using []
  *    a = [:foo, 'bar', 2]
  *    # Raises TypeError (no implicit conversion of Symbol into Integer):
  *    a[:foo]
+ *    # Using slice
+ *    a = [:foo, 'bar', 2]
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    a.slice(:foo)
  *
  *  Raises an exception if given two arguments that are not both \Integer-convertible objects:
+ *    # Using []
  *    a = [:foo, 'bar', 2]
  *    # Raises TypeError (no implicit conversion of Symbol into Integer):
  *    a[:foo, 3]
  *    # Raises TypeError (no implicit conversion of Symbol into Integer):
  *    a[1, :bar]
+ *    # Using slice
+ *    a = [:foo, 'bar', 2]
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    a.slice(:foo, 3)
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    a.slice(1, :bar)
  */
 
 VALUE
@@ -2084,6 +2174,9 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
  *    array.find_index {|element| ... } -> integer or nil
  *    array.find_index -> new_enumerator
  *
+ *  Returns an element of +self+ determined by the given +object+
+ *  or the given block.
+ *
  *  Array#find_index is an alias for Array#index.
  *  See also Array#rindex.
  *
@@ -2094,10 +2187,12 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
  *  for which <tt>object == element</tt>:
  *    a = [:foo, 'bar', 2, 'bar']
  *    a.index('bar') # => 1
+ *    a.find_index('bar') # => 1
  *
  *  Returns +nil+ if no such element found:
  *    a = [:foo, 'bar', 2]
  *    a.index(:nosuch) # => nil
+ *    a.find_index(:nosuch) # => nil
  *
  *  ---
  *
@@ -2106,16 +2201,21 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
  *  returns the index of the first element for which the block returns a truthy value:
  *    a = [:foo, 'bar', 2, 'bar']
  *    a.index { |element| element == 'bar' } # => 1
+ *    a.find_index { |element| element == 'bar' } # => 1
  *
  *  Returns +nil+ if the block never returns a truthy value:
  *    a = [:foo, 'bar', 2]
  *    a.index { |element| element == :X } # => nil
+ *    a.find_index { |element| element == :X } # => nil
  *
  *  ---
  *
  *  When neither an argument nor a block is given, returns a new Enumerator:
  *    a = [:foo, 'bar', 2]
  *    e = a.index
+ *    e # => #<Enumerator: [:foo, "bar", 2]:index>
+ *    e.each { |element| element == 'bar' } # => 1
+ *    e = a.find_index
  *    e # => #<Enumerator: [:foo, "bar", 2]:index>
  *    e.each { |element| element == 'bar' } # => 1
  *
@@ -2125,6 +2225,8 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
  *  and ignores the block:
  *    a = [:foo, 'bar', 2, 'bar']
  *    index = a.index('bar') { raise 'Cannot happen' }
+ *    index # => 1
+ *    index = a.find_index('bar') { raise 'Cannot happen' }
  *    index # => 1
  */
 
@@ -2811,11 +2913,18 @@ rb_ary_reverse_each(VALUE ary)
 /*
  *  call-seq:
  *    array.length -> an_integer
+ *    array.size -> an_integer
+ *
+ *  Array#size is an alias for Array.length.
  *
  *  Returns the count of elements in the array:
  *    a = [:foo, 'bar', 2]
+ *    # Using length
  *    a.length # => 3
  *    [].length # => 0
+ *    # Using size
+ *    a.size # => 3
+ *    [].size # => 0
  */
 
 static VALUE
@@ -3073,10 +3182,15 @@ inspect_ary(VALUE ary, VALUE dummy, int recur)
  *    array.inspect -> new_string
  *    array.to_s => new_string
  *
- *  Returns the new String formed by calling method <tt>#inspect</tt>
+ *  Array#to_s is an alias for Array#inspect.
+
+ *  Returns the new \String formed by calling method <tt>#inspect</tt>
  *  on each array element:
  *    a = [:foo, 'bar', 2]
- *    a.inspect  # => "[:foo, \"bar\", 2]"
+ *    a.inspect # => "[:foo, \"bar\", 2]"
+ *    a.to_s # => "[:foo, \"bar\", 2]"
+ *
+ *  ---
  *
  *  Raises an exception if any element lacks instance method <tt>#inspect</tt>:
  *    a = [:foo, 'bar', 2, BasicObject.new]
@@ -3903,6 +4017,10 @@ rb_ary_sort_by_bang(VALUE ary)
  *  Calls the block, if given, with each element of +self+;
  *  returns a new \Array whose elements are the return values from the block:
  *    a = [:foo, 'bar', 2]
+ *    # Using map
+ *    a1 = a.map {|element| element.class }
+ *    a1 # => [Symbol, String, Integer]
+ *    # Using collect
  *    a1 = a.collect {|element| element.class }
  *    a1 # => [Symbol, String, Integer]
  *
@@ -3910,6 +4028,10 @@ rb_ary_sort_by_bang(VALUE ary)
  *
  *  Returns a new \Enumerator if no block given:
  *    a = [:foo, 'bar', 2]
+ *    # Using map
+ *    a1 = a.map
+ *    a1 # => #<Enumerator: [:foo, "bar", 2]:collect>
+ *    # Using collect
  *    a1 = a.collect
  *    a1 # => #<Enumerator: [:foo, "bar", 2]:collect>
  */
@@ -3941,6 +4063,11 @@ rb_ary_collect(VALUE ary)
  *  Calls the block, if given, with each element;
  *  replaces the element with the block's return value:
  *    a = [:foo, 'bar', 2]
+ *    # Using map!
+ *    a1 = a.map! { |element| element.class }
+ *    a1 # => [Symbol, String, Integer]
+ *    a1.equal?(a) # => true # Returned self
+ *    # Using collect!
  *    a1 = a.collect! { |element| element.class }
  *    a1 # => [Symbol, String, Integer]
  *    a1.equal?(a) # => true # Returned self
@@ -3949,6 +4076,10 @@ rb_ary_collect(VALUE ary)
  *
  *  Returns a new \Enumerator if no block given:
  *    a = [:foo, 'bar', 2]
+ *    # Using map!
+ *    a1 = a.map!
+ *    a1 # => #<Enumerator: [:foo, "bar", 2]:collect!>
+ *    # Using collect!
  *    a1 = a.collect!
  *    a1 # => #<Enumerator: [:foo, "bar", 2]:collect!>
  */
@@ -4095,7 +4226,11 @@ rb_ary_values_at(int argc, VALUE *argv, VALUE ary)
  *  returns a new \Array containing those elements of +self+
  *  for which the block returns a truthy value:
  *    a = [:foo, 'bar', 2, :bam]
+ *    # Using select
  *    a1 = a.select {|element| element.to_s.start_with?('b') }
+ *    a1 # => ["bar", :bam]
+ *    # Using filter
+ *    a1 = a.filter {|element| element.to_s.start_with?('b') }
  *    a1 # => ["bar", :bam]
  *
  *  ---
@@ -4103,6 +4238,7 @@ rb_ary_values_at(int argc, VALUE *argv, VALUE ary)
  *  Returns a new \Enumerator if no block given:
  *    a = [:foo, 'bar', 2, :bam]
  *    a.select # => #<Enumerator: [:foo, "bar", 2, :bam]:select>
+ *    a.filter # => #<Enumerator: [:foo, "bar", 2, :bam]:select>
  */
 
 static VALUE
@@ -4179,19 +4315,26 @@ select_bang_ensure(VALUE a)
  *
  *  Returns +self+ if any elements were removed:
  *    a = [:foo, 'bar', 2, :bam]
+ *    # Using select!
  *    a1 = a.select! {|element| element.to_s.start_with?('b') }
+ *    a1 # => ["bar", :bam]
+ *    a1.equal?(a) # => true # Returned self
+ *    # Using filter!
+ *    a1 = a.filter! {|element| element.to_s.start_with?('b') }
  *    a1 # => ["bar", :bam]
  *    a1.equal?(a) # => true # Returned self
  *
  *  Returns +nil+ if no elements were removed:
  *    a = [:foo, 'bar', 2, :bam]
  *    a.select! { |element| element.kind_of?(Object) } # => nil
+ *    a.filter! { |element| element.kind_of?(Object) } # => nil
  *
  *  ---
  *
  *  Returns a new \Enumerator if no block given:
  *    a = [:foo, 'bar', 2, :bam]
  *    a.select! # => #<Enumerator: [:foo, "bar", 2, :bam]:select!>
+ *    a.filter! # => #<Enumerator: [:foo, "bar", 2, :bam]:select!>
  */
 
 static VALUE
