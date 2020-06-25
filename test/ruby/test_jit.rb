@@ -1007,6 +1007,10 @@ class TestJIT < Test::Unit::TestCase
     end;
   end
 
+  def test_builtin_frame_omitted_inlining
+    assert_eval_with_jit('0.zero?; 0.zero?; 3.times { p 0.zero? }', stdout: "true\ntrue\ntrue\n", success_count: 1, min_calls: 2)
+  end
+
   def test_program_counter_with_regexpmatch
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "aa", success_count: 1)
     begin;
