@@ -243,12 +243,6 @@ module JSON
   # Use class \Set:
   #   ruby = JSON.parse(source, {array_class: Set})
   #   ruby # => #<Set: {"foo", 1.0, true, false, nil}>
-  # Try class \Object:
-  #   # Raises NoMethodError (undefined method `<<' for #<Object:>):
-  #   JSON.parse(source, {array_class: Object})
-  # Bad value:
-  #   # Raises TypeError (wrong argument type Symbol (expected Class)):
-  #   JSON.parse(source, {array_class: :foo})
   #
   # ---
   #
@@ -256,16 +250,6 @@ module JSON
   # See {\JSON Additions}[#module-JSON-label-JSON+Additions].
   #
   # ====== Exceptions
-  #
-  # Raises an exception if +source+ is not \String-convertible:
-  #
-  #   # Raises TypeError (no implicit conversion of Symbol into String):
-  #   JSON.parse(:foo)
-  #
-  # Raises an exception if +opts+ is not \Hash-convertible:
-  #
-  #   # Raises TypeError (no implicit conversion of Symbol into Hash):
-  #   JSON.parse(['foo'], :foo)
   #
   # Raises an exception if +source+ is not valid JSON:
   #
@@ -277,7 +261,7 @@ module JSON
   end
 
   # Calls
-  #   JSON.parse(source, opts)
+  #   parse(source, opts)
   # with +source+ and possibly modified +opts+.
   #
   # Differences from JSON.parse:
