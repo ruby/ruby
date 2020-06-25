@@ -12,7 +12,8 @@ When +row_sep+ is a \String, that \String becomes the row separator.
 The String will be transcoded into the data's Encoding before use.
 
 Using <tt>"\n"</tt>:
-  str = CSV.generate do |csv|
+  row_sep = "\n"
+  str = CSV.generate(row_sep: row_sep) do |csv|
     csv << [:foo, 0]
     csv << [:bar, 1]
     csv << [:baz, 2]
@@ -57,20 +58,28 @@ Using <tt>''</tt> (empty string):
 ---
 
 When +row_sep+ is the \Symbol +:auto+ (the default),
-invokes auto-discovery of the row separator.
-
-Auto-discovery reads ahead in the data looking for the next <tt>\r\n</tt>, +\n+, or +\r+ sequence.
-The sequence will be selected even if it occurs in a quoted field,
-assuming that you would have the same line endings there.
-
-  row_sep = :auto
-  str = CSV.generate(row_sep: row_sep) do |csv|
+generating uses <tt>"\n"</tt> as the row separator:
+  str = CSV.generate do |csv|
     csv << [:foo, 0]
     csv << [:bar, 1]
     csv << [:baz, 2]
   end
   str # => "foo,0\nbar,1\nbaz,2\n"
-  ary = CSV.parse(str, row_sep: row_sep)
+
+Parsing, on the other hand, invokes auto-discovery of the row separator.
+
+Auto-discovery reads ahead in the data looking for the next <tt>\r\n</tt>, +\n+, or +\r+ sequence.
+The sequence will be selected even if it occurs in a quoted field,
+assuming that you would have the same line endings there.
+
+Example:
+  str = CSV.generate do |csv|
+    csv << [:foo, 0]
+    csv << [:bar, 1]
+    csv << [:baz, 2]
+  end
+  str # => "foo,0\nbar,1\nbaz,2\n"
+  ary = CSV.parse(str)
   ary # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
 
 The default <tt>$INPUT_RECORD_SEPARATOR</tt> (<tt>$/</tt>) is used
@@ -86,6 +95,6 @@ Obviously, discovery takes a little time. Set manually if speed is important. Al
 Raises an exception if the given value is not String-convertible:
   row_sep = BasicObject.new
   # Raises NoMethodError (undefined method `to_s' for #<BasicObject:>)
-  CSV.generate_line(ary, row_sep: row_sep)
+  CSV.generate(ary, row_sep: row_sep)
   # Raises NoMethodError (undefined method `to_s' for #<BasicObject:>)
   CSV.parse(str, row_sep: row_sep)
