@@ -150,8 +150,8 @@ require 'json/common'
 #
 # When the source is a Ruby \Integer or \Float, JSON.generate returns
 # a \String containing a \JSON number:
-#   JSON.generate(Integer(0)) # => "0""
-#   JSON.generate(Float(1.0)) # => "1.0"
+#   JSON.generate(42) # => "42"
+#   JSON.generate(0.42) # => "0.42"
 #
 # When the source is a Ruby \String, JSON.generate returns
 # a \String containing a \JSON string (with double-quotes):

@@ -201,9 +201,6 @@ module JSON
   #   source = '[NaN, Infinity, -Infinity]'
   #   ruby = JSON.parse(source, {allow_nan: true})
   #   ruby # => [NaN, Infinity, -Infinity]
-  # With a truthy value:
-  #   ruby = JSON.parse(source, {allow_nan: :foo})
-  #   ruby # => [NaN, Infinity, -Infinity]
   #
   # ====== Output Options
   #
@@ -232,12 +229,6 @@ module JSON
   # Use class \OpenStruct:
   #   ruby = JSON.parse(source, {object_class: OpenStruct})
   #   ruby # => #<OpenStruct a="foo", b=1.0, c=true, d=false, e=nil>
-  # Try class \Object:
-  #   # Raises NoMethodError (undefined method `[]=' for #<Object:>):
-  #   JSON.parse(source, {object_class: Object})
-  # Bad value:
-  #   # Raises TypeError (wrong argument type Symbol (expected Class)):
-  #   JSON.parse(source, {object_class: :foo})
   #
   # ---
   #
@@ -319,7 +310,6 @@ module JSON
   #   obj = ["foo", 1.0, true, false, nil]
   #   json = JSON.generate(obj)
   #   json # => "[\"foo\",1.0,true,false,null]"
-  #   json.class # => String
   #
   # When +obj+ is a
   # {Hash-convertible object}[doc/implicit_conversion_rdoc.html#label-Hash-Convertible+Objects],
@@ -346,7 +336,7 @@ module JSON
   #   JSON.generate(JSON::MinusInfinity)
   #
   # Allow:
-  #   ruby = [JSON::NaN, JSON::Infinity, JSON::MinusInfinity]
+  #   ruby = [Float::NaN, Float::Infinity, Float::MinusInfinity]
   #   JSON.generate(ruby, allow_nan: true) # => "[NaN,Infinity,-Infinity]"
   #
   # ---
@@ -361,10 +351,6 @@ module JSON
   # Too deep:
   #   # Raises JSON::NestingError (nesting of 2 is too deep):
   #   JSON.generate(obj, max_nesting: 2)
-  #
-  # Bad Value:
-  #   # Raises TypeError (can't convert Symbol into Hash):
-  #   JSON.generate(obj, :foo)
   #
   # ====== Output Options
   #
@@ -427,22 +413,11 @@ module JSON
   #
   # ====== Exceptions
   #
-  # Raises an exception if +obj+ is not a valid Ruby object:
-  #   # Raises NameError (uninitialized constant Foo):
-  #   JSON.generate(Foo)
-  #   # Raises NameError (undefined local variable or method `foo' for main:Object):
-  #   JSON.generate(foo)
-  #
   # Raises an exception if +obj+ contains circular references:
   #   a = []; b = []; a.push(b); b.push(a)
   #   # Raises JSON::NestingError (nesting of 100 is too deep):
   #   JSON.generate(a)
   #
-  # Raises an exception if +opts is not a
-  # {Hash-convertible object}[doc/implicit_conversion_rdoc.html#label-Hash-Convertible+Objects]
-  # (implementing +to_hash+):
-  #   # Raises TypeError (can't convert Symbol into Hash):
-  #   JSON.generate('x', :foo)
   def generate(obj, opts = nil)
     if State === opts
       state, opts = opts, nil
