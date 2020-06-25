@@ -205,5 +205,34 @@ module TestIRB
         assert_indenting(lines, row.new_line_spaces, true)
       end
     end
+
+    def test_oneliner_method_definition
+      input_with_correct_indents = [
+        Row.new(%q(class A), nil, 2),
+        Row.new(%q(  def foo0), nil, 4),
+        Row.new(%q(    3), nil, 4),
+        Row.new(%q(  end), 2, 2),
+        Row.new(%q(  def foo1()), nil, 4),
+        Row.new(%q(    3), nil, 4),
+        Row.new(%q(  end), 2, 2),
+        Row.new(%q(  def foo2(a, b)), nil, 4),
+        Row.new(%q(    a + b), nil, 4),
+        Row.new(%q(  end), 2, 2),
+        Row.new(%q(  def foo3 a, b), nil, 4),
+        Row.new(%q(    a + b), nil, 4),
+        Row.new(%q(  end), 2, 2),
+        Row.new(%q(  def bar0() = 3), nil, 2),
+        Row.new(%q(  def bar1(a) = a), nil, 2),
+        Row.new(%q(  def bar2(a, b) = a + b), nil, 2),
+        Row.new(%q(end), 0, 0),
+      ]
+
+      lines = []
+      input_with_correct_indents.each do |row|
+        lines << row.content
+        assert_indenting(lines, row.current_line_spaces, false)
+        assert_indenting(lines, row.new_line_spaces, true)
+      end
+    end
   end
 end
