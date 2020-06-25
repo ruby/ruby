@@ -238,89 +238,138 @@ rb_sym_constant_char_p(const char *name, long nlen, rb_encoding *enc)
 #define IDSET_ATTRSET_FOR_SYNTAX ((1U<<ID_LOCAL)|(1U<<ID_CONST))
 #define IDSET_ATTRSET_FOR_INTERN (~(~0U<<(1<<ID_SCOPE_SHIFT)) & ~(1U<<ID_ATTRSET))
 
-int
-rb_enc_symname_type(const char *name, long len, rb_encoding *enc, unsigned int allowed_attrset)
+struct enc_synmane_type_leading_chars_tag {
+    const enum { invalid, stophere, needmore, } kind;
+    const enum ruby_id_types type;
+    const long nread;
+};
+
+#define t struct enc_synmane_type_leading_chars_tag
+
+static struct enc_synmane_type_leading_chars_tag
+enc_synmane_type_leading_chars(const char *name, long len, const rb_encoding *enc, int allowed_attrset)
 {
     const char *m = name;
     const char *e = m + len;
-    int type = ID_JUNK;
 
-    if (!rb_enc_asciicompat(enc)) return -1;
-    if (!m || len <= 0) return -1;
+    if (! rb_enc_asciicompat(enc)) {
+        return (t) { invalid, 0, 0, };
+    }
+    else if (! m) {
+        return (t) { invalid, 0, 0, };
+    }
+    else if ( len <= 0 ) {
+        return (t) { invalid, 0, 0, };
+    }
     switch (*m) {
       case '\0':
-	return -1;
+        return (t) { invalid, 0, 0, };
 
       case '$':
-	type = ID_GLOBAL;
-	if (is_special_global_name(++m, e, enc)) return type;
-	goto id;
+        if (is_special_global_name(++m, e, enc)) {
+            return (t) { stophere, ID_GLOBAL, len, };
+        }
+        else {
+            return (t) { needmore, ID_GLOBAL, 1, };
+        }
 
       case '@':
-	type = ID_INSTANCE;
-	if (*++m == '@') {
-	    ++m;
-	    type = ID_CLASS;
-	}
-	goto id;
+        switch (*++m) {
+          default:  return (t) { needmore, ID_INSTANCE, 1, };
+          case '@': return (t) { needmore, ID_CLASS,    2, };
+        }
 
       case '<':
 	switch (*++m) {
-	  case '<': ++m; break;
-	  case '=': if (*++m == '>') ++m; break;
-	  default: break;
+          default:  return (t) { stophere, ID_JUNK, 1, };
+          case '<': return (t) { stophere, ID_JUNK, 2, };
+          case '=':
+            switch (*++m) {
+              default:  return (t) { stophere, ID_JUNK, 2, };
+              case '>': return (t) { stophere, ID_JUNK, 3, };
+            }
 	}
-	break;
 
       case '>':
 	switch (*++m) {
-	  case '>': case '=': ++m; break;
+          default:            return (t) { stophere, ID_JUNK, 1, };
+          case '>': case '=': return (t) { stophere, ID_JUNK, 2, };
 	}
-	break;
 
       case '=':
 	switch (*++m) {
-	  case '~': ++m; break;
-	  case '=': if (*++m == '=') ++m; break;
-	  default: return -1;
+          default:  return (t) { invalid,  0,       1, };
+          case '~': return (t) { stophere, ID_JUNK, 2, };
+          case '=':
+            switch (*++m) {
+              default:  return (t) { stophere, ID_JUNK, 2, };
+              case '=': return (t) { stophere, ID_JUNK, 3, };
+            }
 	}
-	break;
 
       case '*':
-	if (*++m == '*') ++m;
-	break;
+        switch (*++m) {
+          default:  return (t) { stophere, ID_JUNK, 1, };
+          case '*': return (t) { stophere, ID_JUNK, 2, };
+        }
 
       case '+': case '-':
-	if (*++m == '@') ++m;
-	break;
+        switch (*++m) {
+          default:  return (t) { stophere, ID_JUNK, 1, };
+          case '@': return (t) { stophere, ID_JUNK, 2, };
+        }
 
       case '|': case '^': case '&': case '/': case '%': case '~': case '`':
-	++m;
-	break;
+        return (t) { stophere, ID_JUNK, 1, };
 
       case '[':
-	if (m[1] != ']') goto id;
-	++m;
-	if (*++m == '=') ++m;
-	break;
+        switch (*++m) {
+          default: return (t) { needmore, ID_JUNK, 0, };
+          case ']':
+            switch (*++m) {
+              default:  return (t) { stophere, ID_JUNK, 2, };
+              case '=': return (t) { stophere, ID_JUNK, 3, };
+            }
+        }
 
       case '!':
-	if (len == 1) return ID_JUNK;
 	switch (*++m) {
-	  case '=': case '~': ++m; break;
+          case '=': case '~': return (t) { stophere, ID_JUNK, 2, };
 	  default:
-	    if (allowed_attrset & (1U << ID_JUNK)) goto id;
-	    return -1;
+            if (allowed_attrset & (1U << ID_JUNK)) {
+                return (t) { needmore, ID_JUNK, 1, };
+            }
+            else {
+                return (t) { stophere, ID_JUNK, 1, };
+            }
 	}
-	break;
 
       default:
-	type = rb_sym_constant_char_p(m, e-m, enc) ? ID_CONST : ID_LOCAL;
-        goto id;
+        if (rb_sym_constant_char_p(name, len, enc)) {
+            return (t) { needmore, ID_CONST, 0, };
+        }
+        else {
+            return (t) { needmore, ID_LOCAL, 0, };
+        }
     }
-    goto stophere;
+}
+#undef t
 
-  id:
+int
+rb_enc_symname_type(const char *name, long len, rb_encoding *enc, unsigned int allowed_attrset)
+{
+    const struct enc_synmane_type_leading_chars_tag f =
+        enc_synmane_type_leading_chars(name, len, enc, allowed_attrset);
+    const char *m = name + f.nread;
+    const char *e = name + len;
+    int type = (int)f.type;
+
+    switch (f.kind) {
+      case invalid:  return -1;
+      case stophere: goto stophere;
+      case needmore: break;
+    }
+
     if (m >= e || (*m != '_' && !ISALPHA(*m) && ISASCII(*m))) {
         if (len > 1 && *(e-1) == '=') {
             type = rb_enc_symname_type(name, len-1, enc, allowed_attrset);
