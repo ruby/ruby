@@ -10,6 +10,8 @@ prelude: |
   ary10000 = 10000.times.to_a.shuffle
   ary20000 = 20000.times.to_a.shuffle
   ary50000 = 50000.times.to_a.shuffle
+  ary100000 = 100000.times.to_a.shuffle
+  ary1000000 = 1000000.times.to_a.shuffle
 
 benchmark:
   ary2.minmax: ary2.minmax
@@ -23,5 +25,7 @@ benchmark:
   ary10000.minmax: ary10000.minmax
   ary20000.minmax: ary20000.minmax
   ary50000.minmax: ary50000.minmax
+  ary100000.minmax: ary100000.minmax
+  ary1000000.minmax: ary1000000.minmax
 
 loop_count: 10000

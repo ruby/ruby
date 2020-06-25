@@ -5819,6 +5819,126 @@ rb_ary_min(int argc, VALUE *argv, VALUE ary)
     b = t; \
 } while (0)
 
+static VALUE
+ary_minmax_generic(VALUE ary, long i, VALUE vmin, VALUE vmax)
+{
+    RUBY_ASSERT(i > 0 && i < RARRAY_LEN(ary));
+
+    VALUE v;
+    while (i < RARRAY_LEN(ary)) {
+        v = RARRAY_AREF(ary, i++);
+        if (rb_cmpint(rb_funcallv(vmin, id_cmp, 1, &v), vmin, v) > 0) {
+            vmin = v;
+        }
+        if (rb_cmpint(rb_funcallv(vmax, id_cmp, 1, &v), vmax, v) < 0) {
+            vmax = v;
+        }
+    }
+
+    return rb_assoc_new(vmin, vmax);
+}
+
+static VALUE
+ary_minmax_opt_fixnum(VALUE ary, long i, VALUE vmin, VALUE vmax)
+{
+    const long n = RARRAY_LEN(ary);
+    RUBY_ASSERT(i > 0 && i < n);
+    RUBY_ASSERT(i % 2 == 0);
+    RUBY_ASSERT(FIXNUM_P(vmin));
+    RUBY_ASSERT(FIXNUM_P(vmax));
+
+    VALUE a, b;
+    while (i + 1 < n) {
+        a = RARRAY_AREF(ary, i++);
+        b = RARRAY_AREF(ary, i++);
+
+        if (FIXNUM_P(a) && FIXNUM_P(b)) {
+            if ((long)a > (long)b) {
+                SWAP_VALUE(a, b);
+            }
+            if ((long)vmin > (long)a) {
+                vmin = a;
+            }
+            if ((long)vmax < (long)b) {
+                vmax = b;
+            }
+        }
+        else {
+            return ary_minmax_generic(ary, i - 2, vmin, vmax);
+        }
+    }
+
+    return rb_assoc_new(vmin, vmax);
+}
+
+static VALUE
+ary_minmax_opt_float(VALUE ary, long i, VALUE vmin, VALUE vmax)
+{
+    // rb_float_cmp does not call rb_funcall if both two arguments are Float,
+    // so we can assume the size of array is not changed in this function.
+    const long n = RARRAY_LEN(ary);
+    RUBY_ASSERT(i > 0 && i < n);
+    RUBY_ASSERT(i % 2 == 0);
+    RUBY_ASSERT(RB_FLOAT_TYPE_P(vmin));
+    RUBY_ASSERT(RB_FLOAT_TYPE_P(vmax));
+
+    VALUE a, b;
+    while (i + 1 < n) {
+        a = RARRAY_AREF(ary, i++);
+        b = RARRAY_AREF(ary, i++);
+
+        if (RB_FLOAT_TYPE_P(a) && RB_FLOAT_TYPE_P(b)) {
+            if (rb_float_cmp(a, b) > 0) {
+                SWAP_VALUE(a, b);
+            }
+            if (rb_float_cmp(vmin, a) > 0) {
+                vmin = a;
+            }
+            if (rb_float_cmp(vmax, b) < 0) {
+                vmax = b;
+            }
+        }
+        else {
+            return ary_minmax_generic(ary, i - 2, vmin, vmax);
+        }
+    }
+
+    return rb_assoc_new(vmin, vmax);
+}
+
+static VALUE
+ary_minmax_opt_string(VALUE ary, long i, VALUE vmin, VALUE vmax)
+{
+    const long n = RARRAY_LEN(ary);
+    RUBY_ASSERT(i > 0 && i < n);
+    RUBY_ASSERT(i % 2 == 0);
+    RUBY_ASSERT(STRING_P(vmin));
+    RUBY_ASSERT(STRING_P(vmax));
+
+    VALUE a, b;
+    while (i + 1 < n) {
+        a = RARRAY_AREF(ary, i++);
+        b = RARRAY_AREF(ary, i++);
+
+        if (STRING_P(a) && STRING_P(b)) {
+            if (rb_str_cmp(a, b) > 0) {
+                SWAP_VALUE(a, b);
+            }
+            if (rb_str_cmp(vmin, a) > 0) {
+                vmin = a;
+            }
+            if (rb_str_cmp(vmax, b) < 0) {
+                vmax = b;
+            }
+        }
+        else {
+            return ary_minmax_generic(ary, i - 2, vmin, vmax);
+        }
+    }
+
+    return rb_assoc_new(vmin, vmax);
+}
+
 /*
  *  call-seq:
  *     ary.minmax                       -> [obj, obj]
@@ -5838,7 +5958,7 @@ rb_ary_minmax(VALUE ary)
     }
 
     struct cmp_opt_data cmp_opt = { 0, 0 };
-    VALUE a, b, vmin = Qundef, vmax = Qundef;
+    VALUE vmin = Qundef, vmax = Qundef;
     long n = RARRAY_LEN(ary);
     long i = 0;
     if (n == 0) {
@@ -5865,29 +5985,17 @@ rb_ary_minmax(VALUE ary)
         n = RARRAY_LEN(ary);
     }
     if (i < n) {
-        while (i + 1 < RARRAY_LEN(ary)) {
-            a = RARRAY_AREF(ary, i++);
-            b = RARRAY_AREF(ary, i++);
-            if (OPTIMIZED_CMP(a, b, cmp_opt) > 0) {
-                SWAP_VALUE(a, b);
-            }
-            if (OPTIMIZED_CMP(vmin, a, cmp_opt) > 0) {
-                vmin = a;
-            }
-            if (OPTIMIZED_CMP(vmax, b, cmp_opt) < 0) {
-                vmax = b;
-            }
+        if (FIXNUM_P(vmin) && FIXNUM_P(vmax) && CMP_OPTIMIZABLE(cmp_opt, Integer)) {
+            return ary_minmax_opt_fixnum(ary, i, vmin, vmax);
         }
-        // If some items added into ary during the above while loop,
-        // one item may remain to be compared.
-        if (i < RARRAY_LEN(ary)) {
-            a = RARRAY_AREF(ary, i);
-            if (OPTIMIZED_CMP(vmin, a, cmp_opt) > 0) {
-                vmin = a;
-            }
-            if (OPTIMIZED_CMP(vmax, a, cmp_opt) < 0) {
-                vmax = a;
-            }
+        else if (STRING_P(vmin) && STRING_P(vmax) && CMP_OPTIMIZABLE(cmp_opt, String)) {
+            return ary_minmax_opt_string(ary, i, vmin, vmax);
+        }
+        else if (RB_FLOAT_TYPE_P(vmin) && RB_FLOAT_TYPE_P(vmax) && CMP_OPTIMIZABLE(cmp_opt, Float)) {
+            return ary_minmax_opt_float(ary, i, vmin, vmax);
+        }
+        else {
+            return ary_minmax_generic(ary, i, vmin, vmax);
         }
     }
     return rb_assoc_new(vmin, vmax);
