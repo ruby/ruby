@@ -82,7 +82,6 @@ DESC
     "test/testscanner.rb", "web/racc.en.rhtml", "web/racc.ja.rhtml"
   ]
   s.require_paths = ["lib"]
-  s.rubygems_version = "3.1.0.pre1"
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.rdoc_options = ["--main", "README.rdoc"]
   s.extra_rdoc_files = [
