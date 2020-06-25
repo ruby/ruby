@@ -3295,6 +3295,7 @@ find_time_t(struct tm *tptr, int utc_p, time_t *tp)
                 if (guess <= guess_lo) fprintf(stderr, "too small guess: %ld <= %ld\n", guess, guess_lo);
                 if (guess_hi <= guess) fprintf(stderr, "too big guess: %ld <= %ld\n", guess_hi, guess);
 #endif
+                status = 0;
                 goto binsearch;
             }
         }
