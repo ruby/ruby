@@ -2225,12 +2225,12 @@ glob_opendir(ruby_glob_entries_t *ent, DIR *dirp, int flags, rb_encoding *enc)
         ruby_qsort(ent->sort.entries, ent->sort.count, sizeof(ent->sort.entries[0]),
                    glob_sort_cmp, NULL);
         return ent;
-
-      nomem:
-        glob_dir_finish(ent, 0);
-        closedir(dirp);
-        return NULL;
     }
+
+  nomem:
+    glob_dir_finish(ent, 0);
+    closedir(dirp);
+    return NULL;
 }
 
 static rb_dirent_t *
