@@ -82,7 +82,7 @@ require 'json/common'
 #
 # \String:
 #   ruby = JSON.parse('"foo"')
-#   ruby # => "foo"
+#   ruby # => 'foo'
 #   ruby.class # => String
 # \Integer:
 #   ruby = JSON.parse('1')
@@ -121,13 +121,13 @@ require 'json/common'
 # a \String containing a \JSON array:
 #   ruby = [0, 's', :foo]
 #   json = JSON.generate(ruby)
-#   json # => "[0,\"s\",\"foo\"]"
+#   json # => '[0,"s","foo"]'
 #
 # The Ruby \Array array may contain nested arrays, hashes, and scalars
 # to any depth:
 #   ruby = [0, [1, 2], {foo: 3, bar: 4}]
 #   json = JSON.generate(ruby)
-#   json # => "[0,[1,2],{\"foo\":3,\"bar\":4}]"
+#   json # => '[0,[1,2],{"foo":3,"bar":4}]'
 #
 # ==== Generating \JSON from Hashes
 #
@@ -135,13 +135,13 @@ require 'json/common'
 # a \String containing a \JSON object:
 #   ruby = {foo: 0, bar: 's', baz: :bat}
 #   json = JSON.generate(ruby)
-#   json # => "{\"foo\":0,\"bar\":\"s\",\"baz\":\"bat\"}"
+#   json # => '{"foo":0,"bar":"s","baz":"bat"}'
 #
 # The Ruby \Hash array may contain nested arrays, hashes, and scalars
 # to any depth:
 #   ruby = {foo: [0, 1], bar: {baz: 2, bat: 3}, bam: :bad}
 #   json = JSON.generate(ruby)
-#   json # => "{\"foo\":[0,1],\"bar\":{\"baz\":2,\"bat\":3},\"bam\":\"bad\"}"
+#   json # => '{"foo":[0,1],"bar":{"baz":2,"bat":3},"bam":"bad"}'
 #
 # ==== Generating \JSON from Other Objects
 #
@@ -150,24 +150,24 @@ require 'json/common'
 #
 # When the source is a Ruby \Integer or \Float, JSON.generate returns
 # a \String containing a \JSON number:
-#   JSON.generate(42) # => "42"
-#   JSON.generate(0.42) # => "0.42"
+#   JSON.generate(42) # => '42'
+#   JSON.generate(0.42) # => '0.42'
 #
 # When the source is a Ruby \String, JSON.generate returns
 # a \String containing a \JSON string (with double-quotes):
-#   JSON.generate('A string') # => "\"A string\""
+#   JSON.generate('A string') # => '"A string"'
 #
 # When the source is +true+, +false+ or +nil+, JSON.generate returns
 # a \String containing the corresponding \JSON token:
-#   JSON.generate(true) # => "true"
-#   JSON.generate(false) # => "false"
-#   JSON.generate(nil) # => "null"
+#   JSON.generate(true) # => 'true'
+#   JSON.generate(false) # => 'false'
+#   JSON.generate(nil) # => 'null'
 #
 # When the source is none of the above, JSON.generate returns
 # a \String containing a \JSON string representation of the source:
-#   JSON.generate(:foo) # => "\"foo\""
-#   JSON.generate(Complex(0, 0)) # => "\"0+0i\""
-#   JSON.generate(Dir.new('.')) # => "\"#<Dir:0x0000000006bb30b8>\""
+#   JSON.generate(:foo) # => '"foo"'
+#   JSON.generate(Complex(0, 0)) # => '"0+0i"'
+#   JSON.generate(Dir.new('.')) # => '"#<Dir>"'
 #
 # == \JSON Additions
 #
@@ -175,9 +175,9 @@ require 'json/common'
 # you have a new \String, instead of the object you began with:
 #   ruby0 = Range.new(0, 2)
 #   json = JSON.generate(ruby0)
-#   json # => "\"0..2\""
+#   json # => '0..2"'
 #   ruby1 = JSON.parse(json)
-#   ruby1 # => "0..2"
+#   ruby1 # => '0..2'
 #   ruby1.class # => String
 #
 # You can use \JSON _additions_ to preserve the original object.

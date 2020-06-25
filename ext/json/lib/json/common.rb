@@ -12,7 +12,7 @@ module JSON
     #
     # Otherwise, calls JSON.generate with +object+ and +opts+:
     #   ruby = [0, 1, nil]
-    #   JSON[ruby] # => "[0,1,null]"
+    #   JSON[ruby] # => '[0,1,null]'
     def [](object, opts = {})
       if object.respond_to? :to_str
         JSON.parse(object.to_str, opts)
@@ -99,7 +99,7 @@ module JSON
 
     # Sets or returns create identifier, which is used to decide if the _json_create_
     # hook of a class should be called; initial value is +json_class+:
-    #   JSON.create_id # => "json_class"
+    #   JSON.create_id # => 'json_class'
     attr_accessor :create_id
   end
   self.create_id = 'json_class'
@@ -309,14 +309,14 @@ module JSON
   # (implementing +to_ary+), returns a \String containing a \JSON array:
   #   obj = ["foo", 1.0, true, false, nil]
   #   json = JSON.generate(obj)
-  #   json # => "[\"foo\",1.0,true,false,null]"
+  #   json # => '["foo",1.0,true,false,null]'
   #
   # When +obj+ is a
   # {Hash-convertible object}[doc/implicit_conversion_rdoc.html#label-Hash-Convertible+Objects],
   # return a \String containing a \JSON object:
   #   obj = {foo: 0, bar: 's', baz: :bat}
   #   json = JSON.generate(obj)
-  #   json # => "{\"foo\":0,\"bar\":\"s\",\"baz\":\"bat\"}"
+  #   json # => '{"foo":0,"bar":"s","baz":"bat"}'
   #
   # For examples of generating from other Ruby objects, see
   # {Generating \JSON from Other Objects}[#module-JSON-label-Generating+JSON+from+Other+Objects].
@@ -337,7 +337,7 @@ module JSON
   #
   # Allow:
   #   ruby = [Float::NaN, Float::Infinity, Float::MinusInfinity]
-  #   JSON.generate(ruby, allow_nan: true) # => "[NaN,Infinity,-Infinity]"
+  #   JSON.generate(ruby, allow_nan: true) # => '[NaN,Infinity,-Infinity]'
   #
   # ---
   #
@@ -346,7 +346,7 @@ module JSON
   #
   # With the default, +100+:
   #   obj = [[[[[[0]]]]]]
-  #   JSON.generate(obj) # => "[[[[[[0]]]]]]"
+  #   JSON.generate(obj) # => '[[[[[[0]]]]]]'
   #
   # Too deep:
   #   # Raises JSON::NestingError (nesting of 2 is too deep):
