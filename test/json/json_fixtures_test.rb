@@ -3,7 +3,7 @@ require 'test_helper'
 
 class JSONFixturesTest < Test::Unit::TestCase
   def setup
-    fixtures = File.join(File.dirname(__FILE__), 'fixtures/{fail,pass}.json')
+    fixtures = File.join(File.dirname(__FILE__), 'fixtures/{fail,pass}*.json')
     passed, failed = Dir[fixtures].partition { |f| f['pass'] }
     @passed = passed.inject([]) { |a, f| a << [ f, File.read(f) ] }.sort
     @failed = failed.inject([]) { |a, f| a << [ f, File.read(f) ] }.sort
@@ -28,5 +28,10 @@ class JSONFixturesTest < Test::Unit::TestCase
         JSON.parse(source)
       end
     end
+  end
+
+  def test_sanity
+    assert(@passed.size > 5)
+    assert(@failed.size > 20)
   end
 end
