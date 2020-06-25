@@ -449,6 +449,8 @@ node_children(rb_ast_t *ast, NODE *node)
         return rb_ary_new_from_node_args(ast, 0);
       case NODE_HASH:
         return rb_ary_new_from_node_args(ast, 1, node->nd_head);
+      case NODE_STRUCT:
+        return rb_ary_new_from_node_args(ast, 1, node->nd_head);
       case NODE_YIELD:
         return rb_ary_new_from_node_args(ast, 1, node->nd_head);
       case NODE_LVAR:
