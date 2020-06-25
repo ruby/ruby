@@ -844,6 +844,6 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
 
   # TODO: remove this typo name at RubyGems 3.0
 
-  Gem::RequestSet::GemDepedencyAPI = self # :nodoc:
+  Gem::RequestSet::GemDependencyAPI = self # :nodoc:
 
 end
