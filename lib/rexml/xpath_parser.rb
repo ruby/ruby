@@ -363,7 +363,7 @@ module REXML
               elsif (node.node_type == :element)
                 namespaces = node.namespaces
               else
-                namespaces = node.element.namesapces
+                namespaces = node.element.namespaces
               end
               if (node.namespace == namespaces[prefix])
                 new_nodeset << node
