@@ -248,12 +248,11 @@ class Gem::Specification < Gem::BasicSpecification
   #   require 'rake'
   #   spec.files = FileList['lib/**/*.rb',
   #                         'bin/*',
-  #                         '[A-Z]*',
-  #                         'test/**/*'].to_a
+  #                         '[A-Z]*'].to_a
   #
   #   # or without Rake...
   #   spec.files = Dir['lib/**/*.rb'] + Dir['bin/*']
-  #   spec.files += Dir['[A-Z]*'] + Dir['test/**/*']
+  #   spec.files += Dir['[A-Z]*']
   #   spec.files.reject! { |fn| fn.include? "CVS" }
 
   def files
