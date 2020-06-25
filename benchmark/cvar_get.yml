@@ -1,0 +1,24 @@
+prelude: |
+  def make_tree(height)
+    head = Module.new
+    head.class_variable_set(:@@foo, 1)
+    height.times do
+      new_head = Module.new
+      new_head.include(head)
+      head = new_head
+    end
+    head.class_eval("def self.foo; @@foo; end")
+    head
+  end
+  zero = make_tree(0)
+  five = make_tree(5)
+  ten = make_tree(10)
+  thirty = make_tree(30)
+  hundred = make_tree(100)
+benchmark:
+  get_class_variable_direct: zero.foo
+  get_class_variable_five_away: five.foo
+  get_class_variable_ten_away: ten.foo
+  get_class_variable_thirty_away: thirty.foo
+  get_class_variable_hundred_away: hundred.foo
+loop_count: 500_000

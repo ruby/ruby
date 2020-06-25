@@ -2312,6 +2312,10 @@ imemo_memsize(VALUE obj)
       case imemo_memo:
       case imemo_parser_strterm:
         break;
+      case imemo_method_table:
+      case imemo_constant_table:
+        size += rb_managed_id_table_memsize((struct rb_managed_id_table *)obj);
+        break;
       default:
         /* unreachable */
         break;
@@ -2433,13 +2437,6 @@ free_const_entry_i(VALUE value, void *data)
     rb_const_entry_t *ce = (rb_const_entry_t *)value;
     xfree(ce);
     return ID_TABLE_CONTINUE;
-}
-
-void
-rb_free_const_table(struct rb_id_table *tbl)
-{
-    rb_id_table_foreach_values(tbl, free_const_entry_i, 0);
-    rb_id_table_free(tbl);
 }
 
 // alive: if false, target pointers can be freed already.
@@ -2642,13 +2639,9 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
       case T_MODULE:
       case T_CLASS:
         mjit_remove_class_serial(RCLASS_SERIAL(obj));
-	rb_id_table_free(RCLASS_M_TBL(obj));
         cc_table_free(objspace, obj, FALSE);
 	if (RCLASS_IV_TBL(obj)) {
 	    st_free_table(RCLASS_IV_TBL(obj));
-	}
-	if (RCLASS_CONST_TBL(obj)) {
-	    rb_free_const_table(RCLASS_CONST_TBL(obj));
 	}
 	if (RCLASS_IV_INDEX_TBL(obj)) {
 	    st_free_table(RCLASS_IV_INDEX_TBL(obj));
@@ -2817,12 +2810,6 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
       case T_MOVED:
 	break;
       case T_ICLASS:
-	/* Basically , T_ICLASS shares table with the module */
-        if (FL_TEST(obj, RICLASS_IS_ORIGIN) &&
-                !FL_TEST(obj, RICLASS_ORIGIN_SHARED_MTBL)) {
-            /* Method table is not shared for origin iclasses of classes */
-            rb_id_table_free(RCLASS_M_TBL(obj));
-        }
 	if (RCLASS_CALLABLE_M_TBL(obj) != NULL) {
 	    rb_id_table_free(RCLASS_CALLABLE_M_TBL(obj));
 	}
@@ -2924,6 +2911,15 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
             break;
           case imemo_callcache:
             RB_DEBUG_COUNTER_INC(obj_imemo_callcache);
+            break;
+          case imemo_constant_table:
+            {
+                struct rb_managed_id_table *table = (struct rb_managed_id_table *)obj;
+                rb_id_table_foreach_values(&table->table, free_const_entry_i, NULL);
+            }
+            /* fall through */
+          case imemo_method_table:
+            rb_id_table_deallocate((struct rb_managed_id_table *)obj);
             break;
 	  default:
             /* unreachable */
@@ -3898,9 +3894,6 @@ obj_memsize_of(VALUE obj, int use_all_types)
       case T_MODULE:
       case T_CLASS:
 	if (RCLASS_EXT(obj)) {
-            if (RCLASS_M_TBL(obj)) {
-                size += rb_id_table_memsize(RCLASS_M_TBL(obj));
-            }
 	    if (RCLASS_IV_TBL(obj)) {
 		size += st_memsize(RCLASS_IV_TBL(obj));
 	    }
@@ -3910,19 +3903,10 @@ obj_memsize_of(VALUE obj, int use_all_types)
 	    if (RCLASS(obj)->ptr->iv_tbl) {
 		size += st_memsize(RCLASS(obj)->ptr->iv_tbl);
 	    }
-	    if (RCLASS(obj)->ptr->const_tbl) {
-		size += rb_id_table_memsize(RCLASS(obj)->ptr->const_tbl);
-	    }
 	    size += sizeof(rb_classext_t);
 	}
 	break;
       case T_ICLASS:
-        if (FL_TEST(obj, RICLASS_IS_ORIGIN) &&
-                !FL_TEST(obj, RICLASS_ORIGIN_SHARED_MTBL)) {
-	    if (RCLASS_M_TBL(obj)) {
-		size += rb_id_table_memsize(RCLASS_M_TBL(obj));
-	    }
-	}
 	break;
       case T_STRING:
 	size += rb_str_memsize(obj);
@@ -4995,6 +4979,7 @@ mark_method_entry_i(VALUE me, void *data)
     return ID_TABLE_CONTINUE;
 }
 
+// TODO: we won't need this if we also make RCLASS_CALLABLE_M_TBL a managed table
 static void
 mark_m_tbl(rb_objspace_t *objspace, struct rb_id_table *tbl)
 {
@@ -5012,13 +4997,6 @@ mark_const_entry_i(VALUE value, void *data)
     gc_mark(objspace, ce->value);
     gc_mark(objspace, ce->file);
     return ID_TABLE_CONTINUE;
-}
-
-static void
-mark_const_tbl(rb_objspace_t *objspace, struct rb_id_table *tbl)
-{
-    if (!tbl) return;
-    rb_id_table_foreach_values(tbl, mark_const_entry_i, objspace);
 }
 
 #if STACK_GROW_DIRECTION < 0
@@ -5379,6 +5357,18 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
             gc_mark(objspace, (VALUE)vm_cc_cme(cc));
         }
         return;
+      case imemo_method_table:
+        {
+            struct rb_managed_id_table *managed_table = (struct rb_managed_id_table *)obj;
+            rb_id_table_foreach_values(&managed_table->table, mark_method_entry_i, objspace);
+        }
+        return;
+      case imemo_constant_table:
+        {
+            struct rb_managed_id_table *managed_table = (struct rb_managed_id_table *)obj;
+            rb_id_table_foreach_values(&managed_table->table, mark_const_entry_i, objspace);
+        }
+        return;
 #if VM_CHECK_MODE > 0
       default:
 	VM_UNREACHABLE(gc_mark_imemo);
@@ -5431,21 +5421,19 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
         }
 	if (!RCLASS_EXT(obj)) break;
 
-        mark_m_tbl(objspace, RCLASS_M_TBL(obj));
+        gc_mark(objspace, (VALUE)RCLASS_M_TBL(obj));
+        gc_mark(objspace, (VALUE)RCLASS_CONST_TBL(obj));
         cc_table_mark(objspace, obj);
         mark_tbl_no_pin(objspace, RCLASS_IV_TBL(obj));
-	mark_const_tbl(objspace, RCLASS_CONST_TBL(obj));
 	break;
 
       case T_ICLASS:
-        if (FL_TEST(obj, RICLASS_IS_ORIGIN) &&
-                !FL_TEST(obj, RICLASS_ORIGIN_SHARED_MTBL)) {
-	    mark_m_tbl(objspace, RCLASS_M_TBL(obj));
-	}
         if (RCLASS_SUPER(obj)) {
             gc_mark(objspace, RCLASS_SUPER(obj));
         }
 	if (!RCLASS_EXT(obj)) break;
+        gc_mark(objspace, (VALUE)RCLASS_M_TBL(obj));
+        gc_mark(objspace, (VALUE)RCLASS_CONST_TBL(obj));
 	mark_m_tbl(objspace, RCLASS_CALLABLE_M_TBL(obj));
         cc_table_mark(objspace, obj);
 	break;
@@ -8078,6 +8066,48 @@ gc_update_values(rb_objspace_t *objspace, long n, VALUE *values)
     }
 }
 
+static enum rb_id_table_iterator_result
+check_id_table_move(ID id, VALUE value, void *data)
+{
+    rb_objspace_t *objspace = (rb_objspace_t *)data;
+
+    if (gc_object_moved_p(objspace, (VALUE)value)) {
+        return ID_TABLE_REPLACE;
+    }
+
+    return ID_TABLE_CONTINUE;
+}
+
+
+static enum rb_id_table_iterator_result
+update_id_table(ID *key, VALUE * value, void *data, int existing)
+{
+    rb_objspace_t *objspace = (rb_objspace_t *)data;
+
+    if (gc_object_moved_p(objspace, (VALUE)*value)) {
+        *value = rb_gc_location((VALUE)*value);
+    }
+
+    return ID_TABLE_CONTINUE;
+}
+
+static enum rb_id_table_iterator_result
+update_const_table_i(VALUE value, void *data)
+{
+    rb_const_entry_t *ce = (rb_const_entry_t *)value;
+    rb_objspace_t * objspace = (rb_objspace_t *)data;
+
+    if (gc_object_moved_p(objspace, ce->value)) {
+        ce->value = rb_gc_location(ce->value);
+    }
+
+    if (gc_object_moved_p(objspace, ce->file)) {
+        ce->file = rb_gc_location(ce->file);
+    }
+
+    return ID_TABLE_CONTINUE;
+}
+
 static void
 gc_ref_update_imemo(rb_objspace_t *objspace, VALUE obj)
 {
@@ -8126,6 +8156,18 @@ gc_ref_update_imemo(rb_objspace_t *objspace, VALUE obj)
             TYPED_UPDATE_IF_MOVED(objspace, struct rb_callable_method_entry_struct *, cc->cme_);
         }
         break;
+      case imemo_method_table:
+        {
+            struct rb_managed_id_table *method_table = (struct rb_managed_id_table *)obj;
+            rb_id_table_foreach_with_replace(&method_table->table, check_id_table_move, update_id_table, objspace);
+        }
+        break;
+      case imemo_constant_table:
+        {
+            struct rb_managed_id_table *constant_table = (struct rb_managed_id_table *)obj;
+            rb_id_table_foreach_values(&constant_table->table, update_const_table_i, objspace);
+        }
+        break;
       case imemo_parser_strterm:
       case imemo_tmpbuf:
       case imemo_callinfo:
@@ -8134,18 +8176,6 @@ gc_ref_update_imemo(rb_objspace_t *objspace, VALUE obj)
         rb_bug("not reachable %d", imemo_type(obj));
         break;
     }
-}
-
-static enum rb_id_table_iterator_result
-check_id_table_move(ID id, VALUE value, void *data)
-{
-    rb_objspace_t *objspace = (rb_objspace_t *)data;
-
-    if (gc_object_moved_p(objspace, (VALUE)value)) {
-        return ID_TABLE_REPLACE;
-    }
-
-    return ID_TABLE_CONTINUE;
 }
 
 /* Returns the new location of an object, if it moved.  Otherwise returns
@@ -8179,18 +8209,6 @@ rb_gc_location(VALUE value)
     }
 
     return destination;
-}
-
-static enum rb_id_table_iterator_result
-update_id_table(ID *key, VALUE * value, void *data, int existing)
-{
-    rb_objspace_t *objspace = (rb_objspace_t *)data;
-
-    if (gc_object_moved_p(objspace, (VALUE)*value)) {
-        *value = rb_gc_location((VALUE)*value);
-    }
-
-    return ID_TABLE_CONTINUE;
 }
 
 static void
@@ -8234,30 +8252,6 @@ update_cc_tbl(rb_objspace_t *objspace, VALUE klass)
     }
 }
 
-static enum rb_id_table_iterator_result
-update_const_table(VALUE value, void *data)
-{
-    rb_const_entry_t *ce = (rb_const_entry_t *)value;
-    rb_objspace_t * objspace = (rb_objspace_t *)data;
-
-    if (gc_object_moved_p(objspace, ce->value)) {
-        ce->value = rb_gc_location(ce->value);
-    }
-
-    if (gc_object_moved_p(objspace, ce->file)) {
-        ce->file = rb_gc_location(ce->file);
-    }
-
-    return ID_TABLE_CONTINUE;
-}
-
-static void
-update_const_tbl(rb_objspace_t *objspace, struct rb_id_table *tbl)
-{
-    if (!tbl) return;
-    rb_id_table_foreach_values(tbl, update_const_table, objspace);
-}
-
 static void
 update_subclass_entries(rb_objspace_t *objspace, rb_subclass_entry_t *entry)
 {
@@ -8289,24 +8283,22 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
             UPDATE_IF_MOVED(objspace, RCLASS(obj)->super);
         }
         if (!RCLASS_EXT(obj)) break;
-        update_m_tbl(objspace, RCLASS_M_TBL(obj));
+        UPDATE_IF_MOVED(objspace, RCLASS_M_TBL(obj));
+        UPDATE_IF_MOVED(objspace, RCLASS_CONST_TBL(obj));
         update_cc_tbl(objspace, obj);
 
         gc_update_tbl_refs(objspace, RCLASS_IV_TBL(obj));
 
         update_class_ext(objspace, RCLASS_EXT(obj));
-        update_const_tbl(objspace, RCLASS_CONST_TBL(obj));
         break;
 
       case T_ICLASS:
-        if (FL_TEST(obj, RICLASS_IS_ORIGIN) &&
-                !FL_TEST(obj, RICLASS_ORIGIN_SHARED_MTBL)) {
-            update_m_tbl(objspace, RCLASS_M_TBL(obj));
-        }
         if (RCLASS_SUPER((VALUE)obj)) {
             UPDATE_IF_MOVED(objspace, RCLASS(obj)->super);
         }
         if (!RCLASS_EXT(obj)) break;
+        UPDATE_IF_MOVED(objspace, RCLASS_M_TBL(obj));
+        UPDATE_IF_MOVED(objspace, RCLASS_CONST_TBL(obj));
         if (RCLASS_IV_TBL(obj)) {
             gc_update_tbl_refs(objspace, RCLASS_IV_TBL(obj));
         }
@@ -11677,6 +11669,8 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
                 IMEMO_NAME(parser_strterm);
                 IMEMO_NAME(callinfo);
                 IMEMO_NAME(callcache);
+                IMEMO_NAME(method_table);
+                IMEMO_NAME(constant_table);
 #undef IMEMO_NAME
 	      default: UNREACHABLE;
 	    }

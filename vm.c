@@ -1655,7 +1655,7 @@ void
 rb_vm_check_redefinition_by_prepend(VALUE klass)
 {
     if (!vm_redefinition_check_flag(klass)) return;
-    rb_id_table_foreach(RCLASS_M_TBL(RCLASS_ORIGIN(klass)), check_redefined_method, (void *)klass);
+    rb_id_table_foreach(&RCLASS_M_TBL(RCLASS_ORIGIN(klass))->table, check_redefined_method, (void *)klass);
 }
 
 static void

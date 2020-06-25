@@ -15,12 +15,30 @@ enum rb_id_table_iterator_result {
     ID_TABLE_ITERATOR_RESULT_END
 };
 
+typedef struct rb_id_item item_t;
+struct rb_id_table {
+    int capa;
+    int num;
+    item_t *items;
+    int used;
+};
+
+/* id_table imemo */
+struct rb_managed_id_table {
+    VALUE flags;
+    struct rb_id_table table;
+};
+
 struct rb_id_table *rb_id_table_create(size_t size);
+struct rb_id_table *rb_id_table_init(struct rb_id_table *tbl, int capa);
+struct rb_managed_id_table *rb_new_managed_id_table(int memo_type, size_t capa);
 void rb_id_table_free(struct rb_id_table *tbl);
+void rb_id_table_deallocate(struct rb_managed_id_table *tbl);
 void rb_id_table_clear(struct rb_id_table *tbl);
 
 size_t rb_id_table_size(const struct rb_id_table *tbl);
 size_t rb_id_table_memsize(const struct rb_id_table *tbl);
+size_t rb_managed_id_table_memsize(const struct rb_managed_id_table *tbl);
 
 int rb_id_table_insert(struct rb_id_table *tbl, ID id, VALUE val);
 int rb_id_table_lookup(struct rb_id_table *tbl, ID id, VALUE *valp);

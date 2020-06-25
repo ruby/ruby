@@ -174,8 +174,8 @@ class_alloc(VALUE flags, VALUE klass)
     obj->ptr = ZALLOC(rb_classext_t);
     /* ZALLOC
       RCLASS_IV_TBL(obj) = 0;
-      RCLASS_CONST_TBL(obj) = 0;
-      RCLASS_M_TBL(obj) = 0;
+      RCLASS_SET_CONST_TBL(obj, NULL);
+      RCLASS_SET_M_TBL(obj, NULL);
       RCLASS_IV_INDEX_TBL(obj) = 0;
       RCLASS_SET_SUPER((VALUE)obj, 0);
       RCLASS_EXT(obj)->subclasses = NULL;
@@ -193,7 +193,7 @@ class_alloc(VALUE flags, VALUE klass)
 static void
 RCLASS_M_TBL_INIT(VALUE c)
 {
-    RCLASS_M_TBL(c) = rb_id_table_create(0);
+    RCLASS_SET_M_TBL(c, rb_new_managed_id_table(imemo_method_table, 0));
 }
 
 /*!
@@ -279,27 +279,18 @@ clone_method_i(ID key, VALUE value, void *data)
     return ID_TABLE_CONTINUE;
 }
 
-struct clone_const_arg {
-    VALUE klass;
-    struct rb_id_table *tbl;
-};
-
-static int
-clone_const(ID key, const rb_const_entry_t *ce, struct clone_const_arg *arg)
-{
-    rb_const_entry_t *nce = ALLOC(rb_const_entry_t);
-    MEMCPY(nce, ce, rb_const_entry_t, 1);
-    RB_OBJ_WRITTEN(arg->klass, Qundef, ce->value);
-    RB_OBJ_WRITTEN(arg->klass, Qundef, ce->file);
-
-    rb_id_table_insert(arg->tbl, key, (VALUE)nce);
-    return ID_TABLE_CONTINUE;
-}
-
 static enum rb_id_table_iterator_result
 clone_const_i(ID key, VALUE value, void *data)
 {
-    return clone_const(key, (const rb_const_entry_t *)value, data);
+    struct rb_managed_id_table *constant_table = data;
+    const rb_const_entry_t *ce = (const rb_const_entry_t *)value;
+    rb_const_entry_t *nce = ALLOC(rb_const_entry_t);
+
+    *nce = *ce;
+    rb_id_table_insert(&constant_table->table, key, (VALUE)nce);
+    RB_OBJ_WRITTEN(constant_table, Qundef, ce->value);
+    RB_OBJ_WRITTEN(constant_table, Qundef, ce->file);
+    return ID_TABLE_CONTINUE;
 }
 
 static void
@@ -323,11 +314,8 @@ copy_tables(VALUE clone, VALUE orig)
 	st_free_table(RCLASS_IV_TBL(clone));
 	RCLASS_IV_TBL(clone) = 0;
     }
-    if (RCLASS_CONST_TBL(clone)) {
-	rb_free_const_table(RCLASS_CONST_TBL(clone));
-	RCLASS_CONST_TBL(clone) = 0;
-    }
-    RCLASS_M_TBL(clone) = 0;
+    RCLASS_SET_CONST_TBL(clone, NULL);
+    RCLASS_SET_M_TBL(clone, NULL);
     if (RCLASS_IV_TBL(orig)) {
 	st_data_t id;
 
@@ -340,11 +328,9 @@ copy_tables(VALUE clone, VALUE orig)
 	st_delete(RCLASS_IV_TBL(clone), &id, 0);
     }
     if (RCLASS_CONST_TBL(orig)) {
-	struct clone_const_arg arg;
-
-	arg.tbl = RCLASS_CONST_TBL(clone) = rb_id_table_create(0);
-	arg.klass = clone;
-	rb_id_table_foreach(RCLASS_CONST_TBL(orig), clone_const_i, &arg);
+        struct rb_managed_id_table *clone_const_table = rb_new_managed_id_table(imemo_constant_table, 0);
+        RCLASS_SET_CONST_TBL(clone, clone_const_table);
+        rb_id_table_foreach(&RCLASS_CONST_TBL(orig)->table, clone_const_i, clone_const_table);
     }
 }
 
@@ -373,7 +359,7 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
 	arg.old_klass = orig;
 	arg.new_klass = clone;
 	RCLASS_M_TBL_INIT(clone);
-	rb_id_table_foreach(RCLASS_M_TBL(orig), clone_method_i, &arg);
+        rb_id_table_foreach(&RCLASS_M_TBL(orig)->table, clone_method_i, &arg);
     }
 
     if (RCLASS_ORIGIN(orig) == orig) {
@@ -400,9 +386,8 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
             clone_p = class_alloc(RBASIC(p)->flags, RBASIC(p)->klass);
             RCLASS_SET_SUPER(prev_clone_p, clone_p);
             prev_clone_p = clone_p;
-            RCLASS_M_TBL(clone_p) = RCLASS_M_TBL(p);
-            RCLASS_CONST_TBL(clone_p) = RCLASS_CONST_TBL(p);
-            RCLASS_IV_TBL(clone_p) = RCLASS_IV_TBL(p);
+            RCLASS_SET_M_TBL(clone_p, RCLASS_M_TBL(p));
+            RCLASS_SET_CONST_TBL(clone_p, RCLASS_CONST_TBL(p));
             RCLASS_EXT(clone_p)->allocator = RCLASS_EXT(p)->allocator;
             if (RB_TYPE_P(clone, T_CLASS)) {
                 RCLASS_SET_INCLUDER(clone_p, clone);
@@ -416,7 +401,6 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
             else if ((origin_len = RARRAY_LEN(origin_stack)) > 1 &&
                      RARRAY_AREF(origin_stack, origin_len - 1) == p) {
                 RCLASS_SET_ORIGIN(RARRAY_AREF(origin_stack, (origin_len -= 2)), clone_p);
-                RICLASS_SET_ORIGIN_SHARED_MTBL(clone_p);
                 rb_ary_resize(origin_stack, origin_len);
                 add_subclass = FALSE;
             }
@@ -437,7 +421,7 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
                 arg.old_klass = orig;
                 arg.new_klass = clone;
                 RCLASS_M_TBL_INIT(clone_origin);
-                rb_id_table_foreach(RCLASS_M_TBL(orig_origin), clone_method_i, &arg);
+                rb_id_table_foreach(&RCLASS_M_TBL(orig_origin)->table, clone_method_i, &arg);
             }
         }
         else {
@@ -478,10 +462,9 @@ rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
 	    rb_iv_tbl_copy(clone, klass);
 	}
 	if (RCLASS_CONST_TBL(klass)) {
-	    struct clone_const_arg arg;
-	    arg.tbl = RCLASS_CONST_TBL(clone) = rb_id_table_create(0);
-	    arg.klass = clone;
-	    rb_id_table_foreach(RCLASS_CONST_TBL(klass), clone_const_i, &arg);
+            struct rb_managed_id_table *clone_const_table = rb_new_managed_id_table(imemo_constant_table, 0);
+            RCLASS_SET_CONST_TBL(clone, clone_const_table);
+            rb_id_table_foreach(&RCLASS_CONST_TBL(klass)->table, clone_const_i, clone_const_table);
 	}
 	if (attach != Qundef) {
 	    rb_singleton_class_attached(clone, attach);
@@ -491,7 +474,7 @@ rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
 	    struct clone_method_arg arg;
 	    arg.old_klass = klass;
 	    arg.new_klass = clone;
-	    rb_id_table_foreach(RCLASS_M_TBL(klass), clone_method_i, &arg);
+            rb_id_table_foreach(&RCLASS_M_TBL(klass)->table, clone_method_i, &arg);
 	}
 	rb_singleton_class_attached(RBASIC(clone)->klass, clone);
 	FL_SET(clone, FL_SINGLETON);
@@ -908,22 +891,17 @@ rb_include_class_new(VALUE module, VALUE super)
 {
     VALUE klass = class_alloc(T_ICLASS, rb_cClass);
 
-    RCLASS_M_TBL(OBJ_WB_UNPROTECT(klass)) =
-      RCLASS_M_TBL(OBJ_WB_UNPROTECT(module)); /* TODO: unprotected? */
+    RCLASS_SET_M_TBL(klass, RCLASS_M_TBL(module));
 
     RCLASS_SET_ORIGIN(klass, klass);
     if (BUILTIN_TYPE(module) == T_ICLASS) {
 	module = RBASIC(module)->klass;
     }
     RUBY_ASSERT(!RB_TYPE_P(module, T_ICLASS));
-    if (!RCLASS_IV_TBL(module)) {
-	RCLASS_IV_TBL(module) = st_init_numtable();
-    }
     if (!RCLASS_CONST_TBL(module)) {
-	RCLASS_CONST_TBL(module) = rb_id_table_create(0);
+        RCLASS_SET_CONST_TBL(module, rb_new_managed_id_table(imemo_constant_table, 0));
     }
-    RCLASS_IV_TBL(klass) = RCLASS_IV_TBL(module);
-    RCLASS_CONST_TBL(klass) = RCLASS_CONST_TBL(module);
+    RCLASS_SET_CONST_TBL(klass, RCLASS_CONST_TBL(module));
 
     RCLASS_SET_SUPER(klass, super);
     RBASIC_SET_CLASS(klass, module);
@@ -996,7 +974,7 @@ include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super)
     VALUE p, iclass, origin_stack = 0;
     int method_changed = 0, constant_changed = 0, add_subclass;
     long origin_len;
-    struct rb_id_table *const klass_m_tbl = RCLASS_M_TBL(RCLASS_ORIGIN(klass));
+    struct rb_managed_id_table *const klass_m_tbl = RCLASS_M_TBL(RCLASS_ORIGIN(klass));
     VALUE original_klass = klass;
 
     rb_ensure_origin(module);
@@ -1004,6 +982,7 @@ include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super)
     while (module) {
 	int superclass_seen = FALSE;
 	struct rb_id_table *tbl;
+        struct rb_managed_id_table *managed_table;
 
 	if (klass_m_tbl && klass_m_tbl == RCLASS_M_TBL(module))
 	    return -1;
@@ -1027,8 +1006,8 @@ include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super)
         VALUE super_class = RCLASS_SUPER(c);
 
         // invalidate inline method cache
-        tbl = RMODULE_M_TBL(module);
-        if (tbl && rb_id_table_size(tbl)) {
+        managed_table = RMODULE_M_TBL(module);
+        if (managed_table && rb_id_table_size(tbl = &managed_table->table)) {
             if (search_super) { // include
                 if (super_class && !RB_TYPE_P(super_class, T_MODULE)) {
                     rb_id_table_foreach(tbl, clear_module_cache_i, (void *)super_class);
@@ -1055,7 +1034,6 @@ include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super)
         else if (origin_stack && (origin_len = RARRAY_LEN(origin_stack)) > 1 &&
                  RARRAY_AREF(origin_stack, origin_len - 1) == module) {
             RCLASS_SET_ORIGIN(RARRAY_AREF(origin_stack, (origin_len -= 2)), iclass);
-            RICLASS_SET_ORIGIN_SHARED_MTBL(iclass);
             rb_ary_resize(origin_stack, origin_len);
             add_subclass = FALSE;
         }
@@ -1070,12 +1048,12 @@ include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super)
 	    VALUE refined_class =
 		rb_refinement_module_get_refined_class(klass);
 
-            rb_id_table_foreach(RMODULE_M_TBL(module), add_refined_method_entry_i, (void *)refined_class);
+            rb_id_table_foreach(&RMODULE_M_TBL(module)->table, add_refined_method_entry_i, (void *)refined_class);
 	    FL_SET(c, RMODULE_INCLUDED_INTO_REFINEMENT);
 	}
 
-	tbl = RMODULE_CONST_TBL(module);
-	if (tbl && rb_id_table_size(tbl)) constant_changed = 1;
+        managed_table = RCLASS_CONST_TBL(module);
+        if (managed_table && rb_id_table_size(&managed_table->table)) constant_changed = 1;
       skip:
 	module = RCLASS_SUPER(module);
     }
@@ -1090,20 +1068,21 @@ move_refined_method(ID key, VALUE value, void *data)
 {
     rb_method_entry_t *me = (rb_method_entry_t *) value;
     VALUE klass = (VALUE)data;
-    struct rb_id_table *tbl = RCLASS_M_TBL(klass);
+    struct rb_managed_id_table *tbl = RCLASS_M_TBL(klass);
 
     if (me->def->type == VM_METHOD_TYPE_REFINED) {
 	if (me->def->body.refined.orig_me) {
 	    const rb_method_entry_t *orig_me = me->def->body.refined.orig_me, *new_me;
 	    RB_OBJ_WRITE(me, &me->def->body.refined.orig_me, NULL);
 	    new_me = rb_method_entry_clone(me);
-	    rb_id_table_insert(tbl, key, (VALUE)new_me);
-	    RB_OBJ_WRITTEN(klass, Qundef, new_me);
+            rb_id_table_insert(&tbl->table, key, (VALUE)new_me);
+            RB_OBJ_WRITTEN(tbl, Qundef, new_me);
 	    rb_method_entry_copy(me, orig_me);
 	    return ID_TABLE_CONTINUE;
 	}
 	else {
-	    rb_id_table_insert(tbl, key, (VALUE)me);
+            rb_id_table_insert(&tbl->table, key, (VALUE)me);
+            RB_OBJ_WRITTEN(tbl, Qundef, me);
 	    return ID_TABLE_DELETE;
 	}
     }
@@ -1118,13 +1097,12 @@ rb_ensure_origin(VALUE klass)
     VALUE origin = RCLASS_ORIGIN(klass);
     if (origin == klass) {
 	origin = class_alloc(T_ICLASS, klass);
-	OBJ_WB_UNPROTECT(origin); /* TODO: conservative shading. Need more survey. */
 	RCLASS_SET_SUPER(origin, RCLASS_SUPER(klass));
 	RCLASS_SET_SUPER(klass, origin);
 	RCLASS_SET_ORIGIN(klass, origin);
-	RCLASS_M_TBL(origin) = RCLASS_M_TBL(klass);
+        RCLASS_SET_M_TBL(origin, RCLASS_M_TBL(klass));
 	RCLASS_M_TBL_INIT(klass);
-	rb_id_table_foreach(RCLASS_M_TBL(origin), move_refined_method, (void *)klass);
+        rb_id_table_foreach(&RCLASS_M_TBL(origin)->table, move_refined_method, (void *)klass);
     }
 }
 
@@ -1337,9 +1315,9 @@ method_entry_i(ID key, VALUE value, void *data)
 static void
 add_instance_method_list(VALUE mod, struct method_entry_arg *me_arg)
 {
-    struct rb_id_table *m_tbl = RCLASS_M_TBL(mod);
+    struct rb_managed_id_table *m_tbl = RCLASS_M_TBL(mod);
     if (!m_tbl) return;
-    rb_id_table_foreach(m_tbl, method_entry_i, me_arg);
+    rb_id_table_foreach(&m_tbl->table, method_entry_i, me_arg);
 }
 
 static bool
@@ -1595,7 +1573,7 @@ rb_obj_singleton_methods(int argc, const VALUE *argv, VALUE obj)
 {
     VALUE ary, klass, origin;
     struct method_entry_arg me_arg;
-    struct rb_id_table *mtbl;
+    struct rb_managed_id_table *mtbl;
     int recur = TRUE;
 
     if (rb_check_arity(argc, 0, 1)) recur = RTEST(argv[0]);
@@ -1607,12 +1585,12 @@ rb_obj_singleton_methods(int argc, const VALUE *argv, VALUE obj)
     me_arg.list = st_init_numtable();
     me_arg.recur = recur;
     if (klass && FL_TEST(klass, FL_SINGLETON)) {
-	if ((mtbl = RCLASS_M_TBL(origin)) != 0) rb_id_table_foreach(mtbl, method_entry_i, &me_arg);
+        if ((mtbl = RCLASS_M_TBL(origin)) != 0) rb_id_table_foreach(&mtbl->table, method_entry_i, &me_arg);
 	klass = RCLASS_SUPER(klass);
     }
     if (recur) {
 	while (klass && (FL_TEST(klass, FL_SINGLETON) || RB_TYPE_P(klass, T_ICLASS))) {
-	    if (klass != origin && (mtbl = RCLASS_M_TBL(klass)) != 0) rb_id_table_foreach(mtbl, method_entry_i, &me_arg);
+            if (klass != origin && (mtbl = RCLASS_M_TBL(klass)) != 0) rb_id_table_foreach(&mtbl->table, method_entry_i, &me_arg);
 	    klass = RCLASS_SUPER(klass);
 	}
     }
@@ -1733,9 +1711,9 @@ undef_method_i(ID name, VALUE value, void *data)
 void
 rb_undef_methods_from(VALUE klass, VALUE super)
 {
-    struct rb_id_table *mtbl = RCLASS_M_TBL(super);
+    struct rb_managed_id_table *mtbl = RCLASS_M_TBL(super);
     if (mtbl) {
-	rb_id_table_foreach(mtbl, undef_method_i, (void *)klass);
+        rb_id_table_foreach(&mtbl->table, undef_method_i, (void *)klass);
     }
 }
 
@@ -2268,7 +2246,7 @@ rb_scan_args_kw(int kw_flag, int argc, const VALUE *argv, const char *fmt, ...)
 int
 rb_class_has_methods(VALUE c)
 {
-    return rb_id_table_size(RCLASS_M_TBL(c)) == 0 ? FALSE : TRUE;
+    return rb_id_table_size(&RCLASS_M_TBL(c)->table) == 0 ? FALSE : TRUE;
 }
 
 /*!

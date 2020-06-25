@@ -45,6 +45,8 @@ enum imemo_type {
     imemo_parser_strterm = 10,
     imemo_callinfo       = 11,
     imemo_callcache      = 12,
+    imemo_method_table   = 13,
+    imemo_constant_table = 14,
 };
 
 /* CREF (Class REFerence) is defined in method.h */

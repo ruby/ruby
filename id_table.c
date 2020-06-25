@@ -1,6 +1,7 @@
 /* This file is included by symbol.c */
 
 #include "id_table.h"
+#include "internal/imemo.h"
 
 #ifndef ID_TABLE_DEBUG
 #define ID_TABLE_DEBUG 0
@@ -11,6 +12,8 @@
 #define NDEBUG
 #endif
 #include "ruby_assert.h"
+
+STATIC_ASSERT(managed_table_not_too_big, sizeof(struct rb_managed_id_table) <= SIZEOF_VALUE * 5);
 
 typedef rb_id_serial_t id_key_t;
 
@@ -30,19 +33,12 @@ id2key(ID id)
    uses mark-bit on collisions - need extra 1 bit,
    ID is strictly 3 bits larger than rb_id_serial_t */
 
-typedef struct rb_id_item {
+struct rb_id_item {
     id_key_t key;
 #if SIZEOF_VALUE == 8
     int      collision;
 #endif
     VALUE    val;
-} item_t;
-
-struct rb_id_table {
-    int capa;
-    int num;
-    int used;
-    item_t *items;
 };
 
 #if SIZEOF_VALUE == 8
@@ -80,14 +76,14 @@ round_capa(int capa)
     return (capa + 1) << 2;
 }
 
-static struct rb_id_table *
+struct rb_id_table *
 rb_id_table_init(struct rb_id_table *tbl, int capa)
 {
     MEMZERO(tbl, struct rb_id_table, 1);
     if (capa > 0) {
 	capa = round_capa(capa);
-	tbl->capa = (int)capa;
 	tbl->items = ZALLOC_N(item_t, capa);
+        tbl->capa = (int)capa;
     }
     return tbl;
 }
@@ -97,6 +93,21 @@ rb_id_table_create(size_t capa)
 {
     struct rb_id_table *tbl = ALLOC(struct rb_id_table);
     return rb_id_table_init(tbl, (int)capa);
+}
+
+struct rb_managed_id_table *
+rb_new_managed_id_table(int memo_type, size_t capa)
+{
+    struct rb_managed_id_table *table = (struct rb_managed_id_table *)rb_imemo_new(memo_type, 0, 0, 0, 0);
+    rb_id_table_init(&table->table, (int)capa);
+    return table;
+}
+
+void
+rb_id_table_deallocate(struct rb_managed_id_table *tbl)
+{
+    xfree(tbl->table.items);
+    MEMZERO(&tbl->table, struct rb_id_table, 1);
 }
 
 void
@@ -124,6 +135,12 @@ size_t
 rb_id_table_memsize(const struct rb_id_table *tbl)
 {
     return sizeof(item_t) * tbl->capa + sizeof(struct rb_id_table);
+}
+
+size_t
+rb_managed_id_table_memsize(const struct rb_managed_id_table *tbl)
+{
+    return sizeof(item_t) * tbl->table.capa;
 }
 
 static int

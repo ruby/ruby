@@ -43,7 +43,7 @@ static ID autoload, classpath, tmp_classpath;
 static VALUE autoload_featuremap; /* feature => autoload_i */
 
 static void check_before_mod_set(VALUE, ID, VALUE, const char *);
-static void setup_const_entry(rb_const_entry_t *, VALUE, VALUE, rb_const_flag_t);
+static void setup_const_entry(rb_const_entry_t *, struct rb_managed_id_table *, VALUE, rb_const_flag_t);
 static VALUE rb_const_search(VALUE klass, ID id, int exclude, int recurse, int visibility);
 static st_table *generic_iv_tbl;
 
@@ -1797,6 +1797,14 @@ rb_mod_const_missing(VALUE klass, VALUE name)
     UNREACHABLE_RETURN(Qnil);
 }
 
+static VALUE
+original_module(VALUE c)
+{
+    if (RB_TYPE_P(c, T_ICLASS))
+	return RBASIC(c)->klass;
+    return c;
+}
+
 static void
 autoload_mark(void *ptr)
 {
@@ -1837,6 +1845,7 @@ autoload_data(VALUE mod, ID id)
     struct st_table *tbl;
     st_data_t val;
 
+    mod = original_module(mod);
     if (!st_lookup(RCLASS_IV_TBL(mod), autoload, &val) ||
 	    !(tbl = check_autoload_table((VALUE)val)) ||
 	    !st_lookup(tbl, (st_data_t)id, &val)) {
@@ -2385,7 +2394,7 @@ rb_const_search_from(VALUE klass, ID id, int exclude, int recurse, int visibilit
 
 	while ((ce = rb_const_lookup(tmp, id))) {
 	    if (visibility && RB_CONST_PRIVATE_P(ce)) {
-		if (BUILTIN_TYPE(tmp) == T_ICLASS) tmp = RBASIC(tmp)->klass;
+                tmp = original_module(tmp);
 		GET_EC()->private_const_reference = tmp;
 		return Qundef;
 	    }
@@ -2545,7 +2554,7 @@ rb_const_remove(VALUE mod, ID id)
 
     rb_check_frozen(mod);
     ce = rb_const_lookup(mod, id);
-    if (!ce || !rb_id_table_delete(RCLASS_CONST_TBL(mod), id)) {
+    if (!ce || !rb_id_table_delete(&RCLASS_CONST_TBL(mod)->table, id)) {
 	if (rb_const_defined_at(mod, id)) {
 	    rb_name_err_raise("cannot remove %2$s::%1$s",
 			      mod, ID2SYM(id));
@@ -2596,13 +2605,13 @@ rb_local_constants_i(ID const_name, VALUE const_value, void *ary)
 static VALUE
 rb_local_constants(VALUE mod)
 {
-    struct rb_id_table *tbl = RCLASS_CONST_TBL(mod);
+    struct rb_managed_id_table *tbl = RCLASS_CONST_TBL(mod);
     VALUE ary;
 
     if (!tbl) return rb_ary_new2(0);
 
-    ary = rb_ary_new2(rb_id_table_size(tbl));
-    rb_id_table_foreach(tbl, rb_local_constants_i, (void *)ary);
+    ary = rb_ary_new2(rb_id_table_size(&tbl->table));
+    rb_id_table_foreach(&tbl->table, rb_local_constants_i, (void *)ary);
     return ary;
 }
 
@@ -2614,7 +2623,7 @@ rb_mod_const_at(VALUE mod, void *data)
 	tbl = st_init_numtable();
     }
     if (RCLASS_CONST_TBL(mod)) {
-	rb_id_table_foreach(RCLASS_CONST_TBL(mod), sv_i, tbl);
+        rb_id_table_foreach(&RCLASS_CONST_TBL(mod)->table, sv_i, tbl);
     }
     return tbl;
 }
@@ -2789,13 +2798,13 @@ set_namespace_path_i(ID id, VALUE v, void *payload)
 static void
 set_namespace_path(VALUE named_namespace, VALUE namespace_path)
 {
-    struct rb_id_table *const_table = RCLASS_CONST_TBL(named_namespace);
+    struct rb_managed_id_table *const_table = RCLASS_CONST_TBL(named_namespace);
     if (!RCLASS_IV_TBL(named_namespace)) {
         RCLASS_IV_TBL(named_namespace) = st_init_numtable();
     }
     rb_class_ivar_set(named_namespace, classpath, namespace_path);
     if (const_table) {
-        rb_id_table_foreach(const_table, set_namespace_path_i, &namespace_path);
+        rb_id_table_foreach(&const_table->table, set_namespace_path_i, &namespace_path);
     }
 }
 
@@ -2803,7 +2812,6 @@ void
 rb_const_set(VALUE klass, ID id, VALUE val)
 {
     rb_const_entry_t *ce;
-    struct rb_id_table *tbl = RCLASS_CONST_TBL(klass);
 
     if (NIL_P(klass)) {
 	rb_raise(rb_eTypeError, "no class/module to define constant %"PRIsVALUE"",
@@ -2811,12 +2819,13 @@ rb_const_set(VALUE klass, ID id, VALUE val)
     }
 
     check_before_mod_set(klass, id, val, "constant");
-    if (!tbl) {
-	RCLASS_CONST_TBL(klass) = tbl = rb_id_table_create(0);
+    if (!RCLASS_CONST_TBL(klass)) {
+        struct rb_managed_id_table *table = rb_new_managed_id_table(imemo_constant_table, 0);
+        RCLASS_SET_CONST_TBL(klass, table);
 	rb_clear_constant_cache();
 	ce = ZALLOC(rb_const_entry_t);
-	rb_id_table_insert(tbl, id, (VALUE)ce);
-	setup_const_entry(ce, klass, val, CONST_PUBLIC);
+        rb_id_table_insert(&table->table, id, (VALUE)ce);
+        setup_const_entry(ce, table, val, CONST_PUBLIC);
     }
     else {
         struct autoload_const ac = {
@@ -2875,11 +2884,11 @@ const_tbl_update(struct autoload_const *ac)
     VALUE klass = ac->mod;
     VALUE val = ac->value;
     ID id = ac->id;
-    struct rb_id_table *tbl = RCLASS_CONST_TBL(klass);
+    struct rb_managed_id_table *tbl = RCLASS_CONST_TBL(klass);
     rb_const_flag_t visibility = ac->flag;
     rb_const_entry_t *ce;
 
-    if (rb_id_table_lookup(tbl, id, &value)) {
+    if (rb_id_table_lookup(&tbl->table, id, &value)) {
 	ce = (rb_const_entry_t *)value;
 	if (ce->value == Qundef) {
 	    struct autoload_data_i *ele = current_autoload_data(klass, id, &ac);
@@ -2894,8 +2903,8 @@ const_tbl_update(struct autoload_const *ac)
                 /* otherwise autoloaded constant, allow to override */
                 autoload_delete(klass, id);
                 ce->flag = visibility;
-                RB_OBJ_WRITE(klass, &ce->value, val);
-                RB_OBJ_WRITE(klass, &ce->file, ac->file);
+                RB_OBJ_WRITE(tbl, &ce->value, val);
+                RB_OBJ_WRITE(tbl, &ce->file, ac->file);
                 ce->line = ac->line;
             }
             return;
@@ -2914,24 +2923,24 @@ const_tbl_update(struct autoload_const *ac)
 	    }
 	}
 	rb_clear_constant_cache();
-	setup_const_entry(ce, klass, val, visibility);
+        setup_const_entry(ce, tbl, val, visibility);
     }
     else {
 	rb_clear_constant_cache();
 
 	ce = ZALLOC(rb_const_entry_t);
-	rb_id_table_insert(tbl, id, (VALUE)ce);
-	setup_const_entry(ce, klass, val, visibility);
+        rb_id_table_insert(&tbl->table, id, (VALUE)ce);
+        setup_const_entry(ce, tbl, val, visibility);
     }
 }
 
 static void
-setup_const_entry(rb_const_entry_t *ce, VALUE klass, VALUE val,
+setup_const_entry(rb_const_entry_t *ce, struct rb_managed_id_table *owning_table, VALUE val,
 		  rb_const_flag_t visibility)
 {
     ce->flag = visibility;
-    RB_OBJ_WRITE(klass, &ce->value, val);
-    RB_OBJ_WRITE(klass, &ce->file, rb_source_location(&ce->line));
+    RB_OBJ_WRITE(owning_table, &ce->value, val);
+    RB_OBJ_WRITE(owning_table, &ce->file, rb_source_location(&ce->line));
 }
 
 void
@@ -3072,17 +3081,10 @@ rb_mod_deprecate_constant(int argc, const VALUE *argv, VALUE obj)
     return obj;
 }
 
-static VALUE
-original_module(VALUE c)
-{
-    if (RB_TYPE_P(c, T_ICLASS))
-	return RBASIC(c)->klass;
-    return c;
-}
-
 static int
 cvar_lookup_at(VALUE klass, ID id, st_data_t *v)
 {
+    klass = original_module(klass);
     if (!RCLASS_IV_TBL(klass)) return 0;
     return st_lookup(RCLASS_IV_TBL(klass), (st_data_t)id, v);
 }
@@ -3103,16 +3105,11 @@ static void
 cvar_overtaken(VALUE front, VALUE target, ID id)
 {
     if (front && target != front) {
-	st_data_t did = (st_data_t)id;
-
         if (original_module(front) != original_module(target)) {
             rb_raise(rb_eRuntimeError,
                      "class variable % "PRIsVALUE" of %"PRIsVALUE" is overtaken by %"PRIsVALUE"",
 		       ID2SYM(id), rb_class_name(original_module(front)),
 		       rb_class_name(original_module(target)));
-	}
-	if (BUILTIN_TYPE(front) == T_CLASS) {
-	    st_delete(RCLASS_IV_TBL(front), &did, 0);
 	}
     }
 }
@@ -3143,9 +3140,7 @@ rb_cvar_set(VALUE klass, ID id, VALUE val)
 	target = tmp;
     }
 
-    if (RB_TYPE_P(target, T_ICLASS)) {
-        target = RBASIC(target)->klass;
-    }
+    target = original_module(target);
     check_before_mod_set(target, id, val, "class variable");
     if (!RCLASS_IV_TBL(target)) {
 	RCLASS_IV_TBL(target) = st_init_numtable();
@@ -3229,6 +3224,7 @@ mod_cvar_at(VALUE mod, void *data)
     if (!tbl) {
 	tbl = st_init_numtable();
     }
+    mod = original_module(mod);
     if (RCLASS_IV_TBL(mod)) {
 	st_foreach_safe(RCLASS_IV_TBL(mod), cv_i, (st_data_t)tbl);
     }
@@ -3402,10 +3398,10 @@ rb_iv_tbl_copy(VALUE dst, VALUE src)
 MJIT_FUNC_EXPORTED rb_const_entry_t *
 rb_const_lookup(VALUE klass, ID id)
 {
-    struct rb_id_table *tbl = RCLASS_CONST_TBL(klass);
+    struct rb_managed_id_table *tbl = RCLASS_CONST_TBL(klass);
     VALUE val;
 
-    if (tbl && rb_id_table_lookup(tbl, id, &val)) {
+    if (tbl && rb_id_table_lookup(&tbl->table, id, &val)) {
 	return (rb_const_entry_t *)val;
     }
     return 0;

@@ -37,9 +37,9 @@ struct rb_classext_struct {
     struct st_table *iv_index_tbl;
     struct st_table *iv_tbl;
 #if SIZEOF_SERIAL_T == SIZEOF_VALUE /* otherwise m_tbl is in struct RClass */
-    struct rb_id_table *m_tbl;
+    struct rb_managed_id_table *m_tbl;
 #endif
-    struct rb_id_table *const_tbl;
+    struct rb_managed_id_table *const_tbl;
     struct rb_id_table *callable_m_tbl;
     struct rb_id_table *cc_tbl; /* ID -> [[ci, cc1], cc2, ...] */
     struct rb_subclass_entry *subclasses;
@@ -68,7 +68,7 @@ struct RClass {
     rb_serial_t class_serial;
 #else
     /* Class serial does not fit into struct RClass. Place m_tbl instead. */
-    struct rb_id_table *m_tbl;
+    struct rb_managed_id_table *m_tbl;
 #endif
 };
 
@@ -78,11 +78,13 @@ typedef struct rb_classext_struct rb_classext_t;
 #define RCLASS_EXT(c) (RCLASS(c)->ptr)
 #define RCLASS_IV_TBL(c) (RCLASS_EXT(c)->iv_tbl)
 #define RCLASS_CONST_TBL(c) (RCLASS_EXT(c)->const_tbl)
+#define RCLASS_SET_CONST_TBL(c, tbl) (RB_OBJ_WRITE(c, &RCLASS_CONST_TBL(c), tbl))
 #if SIZEOF_SERIAL_T == SIZEOF_VALUE
 # define RCLASS_M_TBL(c) (RCLASS_EXT(c)->m_tbl)
 #else
 # define RCLASS_M_TBL(c) (RCLASS(c)->m_tbl)
 #endif
+#define RCLASS_SET_M_TBL(c, tbl) (RB_OBJ_WRITE(c, &RCLASS_M_TBL(c), tbl))
 #define RCLASS_CALLABLE_M_TBL(c) (RCLASS_EXT(c)->callable_m_tbl)
 #define RCLASS_CC_TBL(c) (RCLASS_EXT(c)->cc_tbl)
 #define RCLASS_IV_INDEX_TBL(c) (RCLASS_EXT(c)->iv_index_tbl)
@@ -97,7 +99,6 @@ typedef struct rb_classext_struct rb_classext_t;
 
 #define RICLASS_IS_ORIGIN FL_USER5
 #define RCLASS_CLONED     FL_USER6
-#define RICLASS_ORIGIN_SHARED_MTBL FL_USER8
 
 /* class.c */
 void rb_class_subclass_add(VALUE super, VALUE klass);
@@ -122,7 +123,6 @@ void rb_undef_methods_from(VALUE klass, VALUE super);
 void rb_ensure_origin(VALUE klass);
 
 static inline void RCLASS_SET_ORIGIN(VALUE klass, VALUE origin);
-static inline void RICLASS_SET_ORIGIN_SHARED_MTBL(VALUE iclass);
 static inline VALUE RCLASS_SUPER(VALUE klass);
 static inline VALUE RCLASS_SET_SUPER(VALUE klass, VALUE super);
 static inline void RCLASS_SET_INCLUDER(VALUE iclass, VALUE klass);
@@ -137,12 +137,6 @@ RCLASS_SET_ORIGIN(VALUE klass, VALUE origin)
 {
     RB_OBJ_WRITE(klass, &RCLASS_ORIGIN(klass), origin);
     if (klass != origin) FL_SET(origin, RICLASS_IS_ORIGIN);
-}
-
-static inline void
-RICLASS_SET_ORIGIN_SHARED_MTBL(VALUE iclass)
-{
-    FL_SET(iclass, RICLASS_ORIGIN_SHARED_MTBL);
 }
 
 static inline void

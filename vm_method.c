@@ -75,13 +75,13 @@ vm_mtbl_dump(VALUE klass, ID target_mid)
 
         if (RCLASS_M_TBL(klass)) {
             if (target_mid != 0) {
-                if (rb_id_table_lookup(RCLASS_M_TBL(klass), target_mid, (VALUE *)&me)) {
+                if (rb_id_table_lookup(&RCLASS_M_TBL(klass)->table, target_mid, (VALUE *)&me)) {
                     rp_m("  [MTBL] ", me);
                 }
             }
             else {
                 fprintf(stderr, "  ## RCLASS_M_TBL (%p)\n", (void *)RCLASS_M_TBL(klass));
-                rb_id_table_foreach(RCLASS_M_TBL(klass), vm_cme_dump_i, NULL);
+                rb_id_table_foreach(&RCLASS_M_TBL(klass)->table, vm_cme_dump_i, NULL);
             }
         }
         else {
@@ -175,9 +175,9 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
                     VM_ASSERT(BUILTIN_TYPE(owner) == T_CLASS);
                     rb_callable_method_entry_t *new_cme =
                       (rb_callable_method_entry_t *)rb_method_entry_clone((const rb_method_entry_t *)cme);
-                    struct rb_id_table *mtbl = RCLASS_M_TBL(RCLASS_ORIGIN(owner));
-                    rb_id_table_insert(mtbl, mid, (VALUE)new_cme);
-                    RB_OBJ_WRITTEN(owner, cme, new_cme);
+                    struct rb_managed_id_table *mtbl = RCLASS_M_TBL(RCLASS_ORIGIN(owner));
+                    rb_id_table_insert(&mtbl->table, mid, (VALUE)new_cme);
+                    RB_OBJ_WRITTEN(mtbl, cme, new_cme);
                 }
                 vm_me_invalidate_cache((rb_callable_method_entry_t *)cme);
                 RB_DEBUG_COUNTER_INC(cc_invalidate_tree_cme);
@@ -632,9 +632,9 @@ static inline rb_method_entry_t *
 lookup_method_table(VALUE klass, ID id)
 {
     st_data_t body;
-    struct rb_id_table *m_tbl = RCLASS_M_TBL(klass);
+    struct rb_managed_id_table *m_tbl = RCLASS_M_TBL(klass);
 
-    if (rb_id_table_lookup(m_tbl, id, &body)) {
+    if (rb_id_table_lookup(&m_tbl->table, id, &body)) {
 	return (rb_method_entry_t *) body;
     }
     else {
@@ -691,7 +691,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
 		     rb_method_type_t type, rb_method_definition_t *def, ID original_id, void *opts)
 {
     rb_method_entry_t *me;
-    struct rb_id_table *mtbl;
+    struct rb_managed_id_table *mtbl;
     st_data_t data;
     int make_refined = 0;
     VALUE orig_klass;
@@ -735,7 +735,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
     mtbl = RCLASS_M_TBL(klass);
 
     /* check re-definition */
-    if (rb_id_table_lookup(mtbl, mid, &data)) {
+    if (rb_id_table_lookup(&mtbl->table, mid, &data)) {
 	rb_method_entry_t *old_me = (rb_method_entry_t *)data;
 	rb_method_definition_t *old_def = old_me->def;
 
@@ -801,8 +801,8 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
 	make_method_entry_refined(klass, me);
     }
 
-    rb_id_table_insert(mtbl, mid, (VALUE)me);
-    RB_OBJ_WRITTEN(klass, Qundef, (VALUE)me);
+    rb_id_table_insert(&mtbl->table, mid, (VALUE)me);
+    RB_OBJ_WRITTEN(mtbl, Qundef, (VALUE)me);
 
     VM_ASSERT(me->def != NULL);
 
@@ -972,6 +972,7 @@ prepare_callable_method_entry(VALUE defined_class, ID id, const rb_method_entry_
                 }
                 cme = rb_method_entry_complement_defined_class(me, me->called_id, defined_class);
                 rb_id_table_insert(mtbl, id, (VALUE)cme);
+                RB_OBJ_WRITTEN(defined_class, Qundef, cme);
                 VM_ASSERT(callable_method_entry_p(cme));
             }
             else {
@@ -1191,7 +1192,7 @@ remove_method(VALUE klass, ID mid)
 	rb_warn("removing `%s' may cause serious problems", rb_id2name(mid));
     }
 
-    if (!rb_id_table_lookup(RCLASS_M_TBL(klass), mid, &data) ||
+    if (!rb_id_table_lookup(&RCLASS_M_TBL(klass)->table, mid, &data) ||
 	!(me = (rb_method_entry_t *)data) ||
 	(!me->def || me->def->type == VM_METHOD_TYPE_UNDEF) ||
         UNDEFINED_REFINED_METHOD_P(me->def)) {
@@ -1203,7 +1204,7 @@ remove_method(VALUE klass, ID mid)
         rb_clear_method_cache(self, mid);
     }
     rb_clear_method_cache(klass, mid);
-    rb_id_table_delete(RCLASS_M_TBL(klass), mid);
+    rb_id_table_delete(&RCLASS_M_TBL(klass)->table, mid);
 
     rb_vm_check_redefinition_opt_method(me, klass);
 
