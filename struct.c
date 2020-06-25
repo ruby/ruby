@@ -139,7 +139,6 @@ struct_set_members(VALUE klass, VALUE /* frozen hidden array */ members)
     }
     rb_ivar_set(klass, id_members, members);
     rb_ivar_set(klass, id_back_members, back);
-
     return members;
 }
 
@@ -470,6 +469,14 @@ rb_struct_define(const char *name, ...)
 
     if (!name) st = anonymous_struct(rb_cStruct);
     else st = new_struct(rb_str_new2(name), rb_cStruct);
+    return setup_struct(st, ary);
+}
+
+VALUE
+rb_struct_define_syms(long num, VALUE *names)
+{
+    VALUE ary = rb_ary_new_from_values(num, names);
+    VALUE st = anonymous_struct(rb_cStruct);
     return setup_struct(st, ary);
 }
 

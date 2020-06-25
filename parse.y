@@ -532,6 +532,8 @@ static NODE *opt_arg_append(NODE*, NODE*);
 static NODE *kwd_append(NODE*, NODE*);
 
 static NODE *new_hash(struct parser_params *p, NODE *hash, const YYLTYPE *loc);
+static NODE *new_struct(struct parser_params *p, NODE *st, const YYLTYPE *loc);
+
 static NODE *new_unique_key_hash(struct parser_params *p, NODE *hash, const YYLTYPE *loc);
 
 static NODE *new_defined(struct parser_params *p, NODE *expr, const YYLTYPE *loc);
@@ -906,6 +908,7 @@ new_find_pattern_tail(struct parser_params *p, VALUE pre_rest_arg, VALUE args, V
 }
 
 #define new_hash(p,h,l) rb_ary_new_from_args(0)
+#define new_struct(p,h,l) rb_ary_new_from_args(0)
 
 static VALUE
 new_unique_key_hash(struct parser_params *p, VALUE ary, const YYLTYPE *loc)
@@ -1166,7 +1169,8 @@ static int looking_at_eol_p(struct parser_params *p);
 %type <node> command_asgn mrhs mrhs_arg superclass block_call block_command
 %type <node> f_block_optarg f_block_opt
 %type <node> f_arglist f_paren_args f_args f_arg f_arg_item f_optarg f_marg f_marg_list f_margs f_rest_marg
-%type <node> assoc_list assocs assoc undef_list backref string_dvar for_var
+%type <node> assoc_list assocs assoc kw_assoc_list kw_assocs kw_assoc
+%type <node> undef_list backref string_dvar for_var
 %type <node> block_param opt_block_param block_param_def f_opt
 %type <node> f_kwarg f_kw f_block_kwarg f_block_kw
 %type <node> bv_decls opt_bv_decl bvar
@@ -2893,6 +2897,14 @@ primary		: literal
 		    /*% %*/
 		    /*% ripper: hash!(escape_Qundef($2)) %*/
 		    }
+                | '$' tLBRACE kw_assoc_list '}'
+                    {
+		    /*%%%*/
+                        $$ = new_struct(p, $3, &@$);
+                        $$->nd_brace = TRUE;
+		    /*% %*/
+		    /*% ripper: struct!(escape_Qundef($3)) %*/
+                    }
 		| k_return
 		    {
 		    /*%%%*/
@@ -5532,6 +5544,40 @@ assoc		: arg_value tASSOC arg_value
 		    /*% ripper: assoc_splat!($2) %*/
 		    }
 		;
+
+kw_assoc_list	: kw_assocs trailer
+		    {
+		    /*%%%*/
+			$$ = $1;
+		    /*% %*/
+		    /*% ripper: assoclist_from_args!($1) %*/
+		    }
+		;
+kw_assocs	: kw_assoc
+		    /*% ripper[brace]: rb_ary_new3(1, get_value($1)) %*/
+		| kw_assocs ',' kw_assoc
+		    {
+		    /*%%%*/
+			NODE *assocs = $1;
+			NODE *tail = $3;
+			if (!assocs) {
+			    assocs = tail;
+			}
+			else if (tail) {
+			    assocs = list_concat(assocs, tail);
+			}
+			$$ = assocs;
+		    /*% %*/
+		    /*% ripper: rb_ary_push($1, get_value($3)) %*/
+		    }
+		;
+kw_assoc	: tLABEL arg_value
+		    {
+		    /*%%%*/
+			$$ = list_append(p, NEW_LIST(NEW_LIT(ID2SYM($1), &@1), &@$), $2);
+		    /*% %*/
+		    /*% ripper: assoc_new!($1, $2) %*/
+		    }
 
 operation	: tIDENTIFIER
 		| tCONSTANT
@@ -9643,8 +9689,16 @@ parser_yylex(struct parser_params *p)
 	return parse_percent(p, space_seen, last_state);
 
       case '$':
-	return parse_gvar(p, last_state);
-
+        c = nextc(p);
+        if (c != '{') {
+            pushback(p, c);
+            return parse_gvar(p, last_state);
+        }
+        else {
+            pushback(p, c);
+            SET_LEX_STATE(EXPR_ARG|EXPR_LABELED);
+            return '$';
+        }
       case '@':
 	return parse_atmark(p, last_state);
 
@@ -11778,6 +11832,13 @@ new_hash(struct parser_params *p, NODE *hash, const YYLTYPE *loc)
 {
     if (hash) hash = remove_duplicate_keys(p, hash);
     return NEW_HASH(hash, loc);
+}
+
+static NODE *
+new_struct(struct parser_params *p, NODE *st, const YYLTYPE *loc)
+{
+    if (st) st = remove_duplicate_keys(p, st);
+    return NEW_STRUCT(st, loc);
 }
 #endif
 

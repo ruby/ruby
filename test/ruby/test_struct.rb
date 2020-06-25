@@ -466,6 +466,13 @@ module TestStruct
     }
   end
 
+  def test_struct_literal
+    s = ${a: 1, b: 2, c: 3}
+    assert_equal(1, s.a)
+    assert_equal(2, s.b)
+    assert_equal(3, s.c)
+  end
+
   class TopStruct < Test::Unit::TestCase
     include TestStruct
 

@@ -4436,6 +4436,47 @@ compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popp
     return 1;
 }
 
+VALUE rb_struct_define_syms(long num, VALUE *names); // struct.c
+
+static int
+compile_struct(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popped)
+{
+    int line = (int)nd_line(node);
+    NODE *list = node->nd_head;
+    int n = 0, i = 0;
+    VALUE *syms;
+    INSN *iobj;
+
+    if (!popped) {
+        ADD_INSN1(ret, line, putobject, Qnil);
+        iobj = LAST_ELEMENT(ret);
+    }
+
+    // check length
+    while (list) {
+        n++;
+        list = list->nd_next->nd_next;
+    }
+    syms = ALLOC_N(VALUE, n);
+    list = node->nd_head;
+    while (list) {
+        NODE *key = list->nd_head;
+        syms[i++] = key->nd_lit;
+        list = list->nd_next;
+        NODE *val = list->nd_head;
+        list = list->nd_next;
+
+        CHECK(COMPILE_(ret, "struct value", val, popped));
+    }
+
+    if (!popped) {
+        VALUE klass = rb_struct_define_syms(n, syms);
+        iobj->operands[0] = klass;
+        ADD_SEND(ret, line, rb_intern("new"), INT2FIX(n));
+    }
+    return 1;
+}
+
 VALUE
 rb_node_case_when_optimizable_literal(const NODE *const node)
 {
@@ -8123,6 +8164,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
       }
       case NODE_HASH:
         CHECK(compile_hash(iseq, ret, node, popped) >= 0);
+        break;
+      case NODE_STRUCT:
+        CHECK(compile_struct(iseq, ret, node, popped) >= 0);
         break;
       case NODE_RETURN:
 	CHECK(compile_return(iseq, ret, node, popped));

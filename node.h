@@ -67,6 +67,7 @@ enum node_type {
     NODE_ZLIST,
     NODE_VALUES,
     NODE_HASH,
+    NODE_STRUCT,
     NODE_RETURN,
     NODE_YIELD,
     NODE_LVAR,
@@ -315,6 +316,7 @@ typedef struct RNode {
 #define NEW_LIST(a,loc) NEW_NODE(NODE_LIST,a,1,0,loc)
 #define NEW_ZLIST(loc) NEW_NODE(NODE_ZLIST,0,0,0,loc)
 #define NEW_HASH(a,loc)  NEW_NODE(NODE_HASH,a,0,0,loc)
+#define NEW_STRUCT(a,loc)  NEW_NODE(NODE_STRUCT,a,0,0,loc)
 #define NEW_MASGN(l,r,loc)   NEW_NODE(NODE_MASGN,l,0,r,loc)
 #define NEW_GASGN(v,val,loc) NEW_NODE(NODE_GASGN,v,val,rb_global_entry(v),loc)
 #define NEW_LASGN(v,val,loc) NEW_NODE(NODE_LASGN,v,val,0,loc)
