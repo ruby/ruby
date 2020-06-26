@@ -471,6 +471,12 @@ module TestStruct
     assert_equal(1, s.a)
     assert_equal(2, s.b)
     assert_equal(3, s.c)
+
+    h = {}
+    # only allows "key: expr" form
+    assert_raise(SyntaxError){ eval '${a: 1, **h}'    }
+    assert_raise(SyntaxError){ eval '${:a => 2}'      }
+    assert_raise(SyntaxError){ eval "${'foo-bar': 2}" }
   end
 
   class TopStruct < Test::Unit::TestCase
