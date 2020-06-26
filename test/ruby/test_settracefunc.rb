@@ -2296,7 +2296,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
   def test_tracepoint_opt_invokebuiltin_delegate_leave
     code = 'puts RubyVM::InstructionSequence.of("\x00".method(:unpack)).disasm'
     out = EnvUtil.invoke_ruby(['-e', code], '', true).first
-    assert_match /^0000 opt_invokebuiltin_delegate_leave /, out
+    assert_match(/^0000 opt_invokebuiltin_delegate_leave /, out)
 
     event = eval(EnvUtil.invoke_ruby(['-e', <<~'EOS'], '', true).first)
       TracePoint.new(:return) do |tp|
