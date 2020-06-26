@@ -3963,9 +3963,7 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *co
     return COMPILE_OK;
 }
 
-#define HASH_NO_BRACE 0
 #define HASH_BRACE 1
-#define METHOD_CALL_KEYWORDS 2
 
 static int
 keyword_node_p(const NODE *const node)
