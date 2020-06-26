@@ -4449,7 +4449,7 @@ compile_struct(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int po
 
     if (!popped) {
         ADD_INSN1(ret, line, putobject, Qnil);
-        iobj = LAST_ELEMENT(ret);
+        iobj = (INSN *)LAST_ELEMENT(ret);
     }
 
     // check length
