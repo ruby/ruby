@@ -239,8 +239,8 @@ Excluding feature bug fixes.
   a keyword splat to a method that accepts specific keywords
   does not allocate a hash.
 
-* `super` is optimized when the same type of method is called in the previous call,
-  when it's not refinements or an attr reader or writer.
+* `super` is optimized when the same type of method is called in the previous call
+  if it's not refinements or an attr reader or writer.
 
 ### JIT
 
