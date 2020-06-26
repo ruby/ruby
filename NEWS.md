@@ -230,6 +230,10 @@ Excluding feature bug fixes.
 
 ## Implementation improvements
 
+* New method cache mechanism for Ractor [[Feature #16614]]
+
+  * TODO: ko1 will write details
+
 * The number of hashes allocated when using a keyword splat in
   a method call has been reduced to a maximum of 1, and passing
   a keyword splat to a method that accepts specific keywords
@@ -297,3 +301,4 @@ Excluding feature bug fixes.
 [Bug #14541]:     https://bugs.ruby-lang.org/issues/14541
 [Feature #16175]: https://bugs.ruby-lang.org/issues/16175
 [Feature #15973]: https://bugs.ruby-lang.org/issues/15973
+[Feature #16614]: https://bugs.ruby-lang.org/issues/16614
