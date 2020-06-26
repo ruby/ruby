@@ -490,6 +490,7 @@ static int iseq_set_exception_table(rb_iseq_t *iseq);
 static int iseq_set_optargs_table(rb_iseq_t *iseq);
 
 static int compile_defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, VALUE needstr);
+static int compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int method_call_keywords, int popped);
 
 /*
  * To make Array to LinkedList, use link_anchor
@@ -4050,12 +4051,7 @@ compile_args(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node,
                 len--;
             }
             else {
-                /* Bad Hack: temporarily mark hash node with flag so compile_hash
-                 * can compile call differently.
-                */
-                node->nd_head->nd_brace = METHOD_CALL_KEYWORDS;
-                NO_CHECK(COMPILE_(ret, "array element", node->nd_head, FALSE));
-                node->nd_head->nd_brace = HASH_NO_BRACE;
+                compile_hash(iseq, ret, node->nd_head, TRUE, FALSE);
             }
         }
         else {
@@ -4246,10 +4242,9 @@ static_literal_node_pair_p(const NODE *node, const rb_iseq_t *iseq)
 }
 
 static int
-compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popped)
+compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int method_call_keywords, int popped)
 {
     int line = (int)nd_line(node);
-    int method_call_keywords = node->nd_brace == METHOD_CALL_KEYWORDS;
 
     node = node->nd_head;
 
@@ -8122,7 +8117,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	break;
       }
       case NODE_HASH:
-        CHECK(compile_hash(iseq, ret, node, popped) >= 0);
+        CHECK(compile_hash(iseq, ret, node, FALSE, popped) >= 0);
         break;
       case NODE_RETURN:
 	CHECK(compile_return(iseq, ret, node, popped));
