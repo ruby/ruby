@@ -600,6 +600,13 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	F_NODE(nd_head, "contents");
 	return;
 
+      case NODE_STRUCT:
+        ANN("Anonymous Struct constructor");
+        ANN("format: { [nd_head] }");
+        ANN("example: ${ a: 1, b: 2 }");
+        F_NODE(nd_head, "contents");
+        return;
+
       case NODE_YIELD:
 	ANN("yield invocation");
 	ANN("format: yield [nd_head]");
