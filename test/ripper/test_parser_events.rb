@@ -762,6 +762,12 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal true, thru_hash
   end
 
+  def test_struct
+    thru_struct = false
+    parse('${a: 1, b: 2}', :on_struct){thru_struct = true}
+    assert_equal true, thru_struct
+  end
+
   def test_if
     thru_if = false
     parse('if false; end', :on_if) {thru_if = true}
