@@ -23,3 +23,5 @@ benchmark:
     loop_count: 40000000
   - script: mjit_eq(1, nil)
     loop_count: 8000000
+  - script: mjit_eq(nil, 1)
+    loop_count: 8000000

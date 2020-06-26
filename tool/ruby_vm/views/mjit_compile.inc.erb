@@ -29,12 +29,6 @@
 %     insn.expr.expr.lines.any? { |l| l.match(/\A\s+CALL_SIMPLE_METHOD\(\);\s+\z/) }
 % end.map(&:name)
 %
-% # These insns cache cfunc in cc under optimized circumstances. They don't generate opt_send when cfunc is cached.
-% cfunc_insns = [
-%   'opt_nil_p',
-%   'opt_not',
-% ]
-%
 % # Available variables and macros in JIT-ed function:
 % #   ec: the first argument of _mjitXXX
 % #   reg_cfp: the second argument of _mjitXXX
@@ -62,7 +56,7 @@ switch (insn) {
 %   when *send_compatible_opt_insns
 %     # To avoid cancel, just emit `opt_send_without_block` instead of `opt_*` insn if call cache is populated.
 %     cd_index = insn.opes.index { |o| o.fetch(:type) == 'CALL_DATA' }
-      if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[<%= cd_index %>], body)], <%= cfunc_insns.include?(insn.name) %>)) {
+      if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[<%= cd_index %>], body)], BIN(<%= insn.name %>))) {
 <%=       render 'mjit_compile_send', locals: { insn: opt_send_without_block } -%>
 <%=       render 'mjit_compile_insn', locals: { insn: opt_send_without_block } -%>
           break;

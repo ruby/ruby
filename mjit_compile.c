@@ -105,9 +105,11 @@ has_valid_method_type(CALL_CACHE cc)
 
 // Returns true if MJIT thinks this cc's opt_* insn may fallback to opt_send_without_block.
 static bool
-has_cache_for_send(CALL_CACHE cc, bool cfunc_cached)
+has_cache_for_send(CALL_CACHE cc, int insn)
 {
-    return has_valid_method_type(cc) && (!cfunc_cached || vm_cc_cme(cc)->def->type != VM_METHOD_TYPE_CFUNC);
+    extern bool rb_vm_opt_cfunc_p(CALL_CACHE cc, int insn);
+    return has_valid_method_type(cc) &&
+        !(vm_cc_cme(cc)->def->type == VM_METHOD_TYPE_CFUNC && rb_vm_opt_cfunc_p(cc, insn));
 }
 
 // Returns true if iseq can use fastpath for setup, otherwise NULL. This becomes true in the same condition
