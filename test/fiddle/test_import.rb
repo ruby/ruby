@@ -110,7 +110,7 @@ module Fiddle
       assert_equal(SIZEOF_LONG_LONG, LIBC.sizeof("long long")) if defined?(SIZEOF_LONG_LONG)
     end
 
-    Fiddle.constants.grep(/\ATYPE_(?!VOID\z)(.*)/) do
+    Fiddle.constants.grep(/\ATYPE_(?!VOID|VARIADIC\z)(.*)/) do
       type = $&
       size = Fiddle.const_get("SIZEOF_#{$1}")
       name = $1.sub(/P\z/,"*").gsub(/_(?!T\z)/, " ").downcase

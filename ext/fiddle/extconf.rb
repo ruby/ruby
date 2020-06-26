@@ -127,6 +127,8 @@ else
   have_func('ffi_closure_alloc', ffi_header)
 end
 
+have_func('ffi_prep_cif_var', ffi_header)
+
 have_header 'sys/mman.h'
 
 if have_header "dlfcn.h"

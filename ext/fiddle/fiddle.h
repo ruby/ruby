@@ -115,6 +115,7 @@
 #endif
 #define TYPE_FLOAT 7
 #define TYPE_DOUBLE 8
+#define TYPE_VARIADIC 9
 
 #define ALIGN_OF(type) offsetof(struct {char align_c; type align_x;}, align_x)
 

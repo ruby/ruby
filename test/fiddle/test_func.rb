@@ -79,5 +79,36 @@ module Fiddle
       EnvUtil.under_gc_stress {qsort.call(buff, buff.size, 1, cb)}
       assert_equal("1349", buff, bug4929)
     end
+
+    def test_snprintf
+      snprintf = Function.new(@libc["snprintf"],
+                              [
+                                TYPE_VOIDP,
+                                TYPE_SIZE_T,
+                                TYPE_VOIDP,
+                                TYPE_VARIADIC,
+                              ],
+                              TYPE_INT)
+      output_buffer = " " * 1024
+      output = Pointer[output_buffer]
+
+      written = snprintf.call(output,
+                              output.size,
+                              "int: %d, string: %.*s\n",
+                              TYPE_INT, -29,
+                              TYPE_INT, 4,
+                              TYPE_VOIDP, "Hello")
+      assert_equal("int: -29, string: Hell\n",
+                   output_buffer[0, written])
+
+      written = snprintf.call(output,
+                              output.size,
+                              "string: %.*s, uint: %u\n",
+                              TYPE_INT, 2,
+                              TYPE_VOIDP, "Hello",
+                              TYPE_INT, 29)
+      assert_equal("string: He, uint: 29\n",
+                   output_buffer[0, written])
+    end
   end
 end if defined?(Fiddle)
