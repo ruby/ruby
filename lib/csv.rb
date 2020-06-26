@@ -1352,36 +1352,52 @@ class CSV
     end
 
     #
-    # Use to slurp a CSV file into an Array of Arrays. Pass the +path+ to the
-    # file and +options+.
-    # See {Options for Parsing}[#class-CSV-label-Options+for+Parsing].
+    # :call-seq:
+    #   read(source, **options) -> array_of_arrays
+    #   read(source, headers: true, **options) -> csv_table
     #
-    # This method also understands
-    # an additional <tt>:encoding</tt> parameter that you can use to specify the
-    # Encoding of the data in the file to be read. You must provide this unless
-    # your data is in Encoding::default_external(). CSV will use this to determine
-    # how to parse the data. You may provide a second Encoding to have the data
-    # transcoded as it is read. For example,
-    # <tt>encoding: "UTF-32BE:UTF-8"</tt> would read UTF-32BE data from the file
-    # but transcode it to UTF-8 before CSV parses it.
+    # Opens the given +source+ with the given +options+ (see CSV.open),
+    # reads the source (see CSV#read), and returns the result,
+    # which will be either an \Array of Arrays or a CSV::Table.
     #
+    # Without headers:
+    #   string = "foo,0\nbar,1\nbaz,2\n"
+    #   path = 't.csv'
+    #   File.write(path, string)
+    #   CSV.read(path) # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
+    #
+    # With headers:
+    #   string = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+    #   path = 't.csv'
+    #   File.write(path, string)
+    #   CSV.read(path, headers: true) # => #<CSV::Table mode:col_or_row row_count:4>
     def read(path, **options)
       open(path, **options) { |csv| csv.read }
     end
 
-    # Alias for CSV::read().
+    # :call-seq:
+    #   CSV.readlines(source, **options)
+    #
+    # Alias for CSV.read.
     def readlines(path, **options)
       read(path, **options)
     end
 
+    # :call-seq:
+    #   CSV.table(source, **options)
     #
-    # A shortcut for:
+    # Calls CSV.read with +source+, +options+, and certain default options:
+    # - +headers+: +true+
+    # - +converbers+: +:numeric+
+    # - +header_converters+: +:symbol+
     #
-    #   CSV.read( path, { headers:           true,
-    #                     converters:        :numeric,
-    #                     header_converters: :symbol }.merge(options) )
+    # Returns a CSV::Table object.
     #
-    # See {Options for Parsing}[#class-CSV-label-Options+for+Parsing].
+    # Example:
+    #   string = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+    #   path = 't.csv'
+    #   File.write(path, string)
+    #   CSV.table(path # => #<CSV::Table mode:col_or_row row_count:4>
     def table(path, **options)
       default_options = {
         headers:           true,
@@ -1793,11 +1809,28 @@ class CSV
     parser_enumerator.each(&block)
   end
 
+  # :call-seq:
+  #     read
   #
-  # Slurps the remaining rows and returns an Array of Arrays.
+  # Forms the remaining rows from +self+ into:
+  # - A CSV::Table object, if headers are in use.
+  # - An Array of Arrays, otherwise.
   #
   # The data source must be open for reading.
   #
+  # Without headers:
+  #   string = "foo,0\nbar,1\nbaz,2\n"
+  #   path = 't.csv'
+  #   File.write(path, string)
+  #   csv = CSV.open(path)
+  #   csv.read # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
+  #
+  # With headers:
+  #   string = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+  #   path = 't.csv'
+  #   File.write(path, string)
+  #   csv = CSV.open(path, headers: true)
+  #   csv.read # => #<CSV::Table mode:col_or_row row_count:4>
   def read
     rows = to_a
     if parser.use_headers?
