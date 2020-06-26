@@ -2299,7 +2299,6 @@ class TestSetTraceFunc < Test::Unit::TestCase
     assert_match /^0000 opt_invokebuiltin_delegate_leave /, out
 
     event = eval(EnvUtil.invoke_ruby(['-e', <<~'EOS'], '', true).first)
-      set_trace_func(proc {}); set_trace_func(nil) # Is it okay that this is required?
       TracePoint.new(:return) do |tp|
         p [tp.event, tp.method_id]
       end.enable do
