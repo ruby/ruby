@@ -19,14 +19,14 @@ VALUE cFiddleFunction;
 #define Check_Max_Args_Long(name, len) \
     Check_Max_Args_(name, len, "l")
 #define Check_Max_Args_(name, len, fmt) \
-    if ((size_t)(len) < MAX_ARGS) { \
-	/* OK */ \
-    } \
-    else { \
-	rb_raise(rb_eTypeError, \
-		 name" is so large that it can cause integer overflow (%"fmt"d)", \
-		 (len)); \
-    }
+    do { \
+        if ((size_t)(len) >= MAX_ARGS) { \
+            rb_raise(rb_eTypeError, \
+                     "%s is so large " \
+                     "that it can cause integer overflow (%"fmt"d)", \
+                     (name), (len)); \
+        } \
+    } while (0)
 
 static void
 deallocate(void *p)
