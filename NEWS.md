@@ -235,6 +235,28 @@ Excluding feature bug fixes.
   a keyword splat to a method that accepts specific keywords
   does not allocate a hash.
 
+* `super` is optimized when the same type of method is called in the previous call,
+  when it's not refinements or an attr reader or writer.
+
+### JIT
+
+* Native functions shared by multiple methods are deduplicated on JIT compaction.
+
+* Decrease code size of hot paths by some optimizations and partitioning cold paths.
+
+* Not only pure Ruby methods but also some C methods skip pushing a method frame.
+
+  * `Kernel#class`, `Integer#zero?`
+
+* Always generate appropriate code for `==`, `nil?`, and `!` calls depending on
+  a receiver class.
+
+* Optimize instance variable access in some core classes like Hash and their subclasses
+
+* Eliminate VM register access on a method return
+
+* Optimize C method call a little
+
 ## Miscellaneous changes
 
 * Methods using `ruby2_keywords` will no longer keep empty keyword
