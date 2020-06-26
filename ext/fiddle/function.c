@@ -31,9 +31,9 @@ VALUE cFiddleFunction;
 static void
 deallocate(void *p)
 {
-    ffi_cif *ptr = p;
-    if (ptr->arg_types) xfree(ptr->arg_types);
-    xfree(ptr);
+    ffi_cif *cif = p;
+    if (cif->arg_types) xfree(cif->arg_types);
+    xfree(cif);
 }
 
 static size_t
