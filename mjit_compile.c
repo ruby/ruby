@@ -459,10 +459,10 @@ precompile_inlinable_iseqs(FILE *f, const rb_iseq_t *iseq, struct compile_status
 
                 if (mjit_opts.verbose >= 1) // print beforehand because ISeq may be GCed during copy job.
                     fprintf(stderr, "JIT inline: %s@%s:%d => %s@%s:%d\n",
-                            RSTRING_PTR(iseq->body->location.label),
-                            RSTRING_PTR(rb_iseq_path(iseq)), FIX2INT(iseq->body->location.first_lineno),
                             RSTRING_PTR(child_iseq->body->location.label),
-                            RSTRING_PTR(rb_iseq_path(child_iseq)), FIX2INT(child_iseq->body->location.first_lineno));
+                            RSTRING_PTR(rb_iseq_path(child_iseq)), FIX2INT(child_iseq->body->location.first_lineno),
+                            RSTRING_PTR(iseq->body->location.label),
+                            RSTRING_PTR(rb_iseq_path(iseq)), FIX2INT(iseq->body->location.first_lineno));
 
                 struct compile_status child_status = { .compiled_iseq = status->compiled_iseq, .compiled_id = status->compiled_id };
                 INIT_COMPILE_STATUS(child_status, child_iseq->body, false);
