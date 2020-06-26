@@ -1,6 +1,8 @@
 #include <fiddle.h>
 #include <ruby/thread.h>
 
+#include <stdbool.h>
+
 #ifdef PRIsVALUE
 # define RB_OBJ_CLASSNAME(obj) rb_obj_class(obj)
 # define RB_OBJ_STRING(obj) (obj)
