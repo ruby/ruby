@@ -81,7 +81,12 @@ module Fiddle
     end
 
     def test_snprintf
-      snprintf = Function.new(@libc["snprintf"],
+      if Fiddle::WINDOWS
+        snprintf_name = "_snprintf"
+      else
+        snprintf_name = "snprintf"
+      end
+      snprintf = Function.new(@libc[snprintf_name],
                               [
                                 TYPE_VOIDP,
                                 TYPE_SIZE_T,
