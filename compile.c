@@ -4457,7 +4457,7 @@ compile_struct(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int po
         n++;
         list = list->nd_next->nd_next;
     }
-    syms = ALLOC_N(VALUE, n);
+    syms = ALLOCA_N(VALUE, n);
     list = node->nd_head;
     while (list) {
         NODE *key = list->nd_head;
