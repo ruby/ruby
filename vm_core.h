@@ -600,6 +600,7 @@ typedef struct rb_vm_struct {
     VALUE loaded_features_snapshot;
     struct st_table *loaded_features_index;
     struct st_table *loading_table;
+    VALUE anonymous_struct_literal_cache;
 
     /* signal */
     struct {

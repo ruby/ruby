@@ -472,6 +472,16 @@ module TestStruct
     assert_equal(2, s.b)
     assert_equal(3, s.c)
 
+    s1 = ${a: 1, b: 2, c: 3}
+    s2 = ${a: 1, b: 2, c: 3}
+    assert s1 == s2
+
+    s3 = ${a: 1, c: 3, b: 2}
+    s4 = ${d: 4}
+
+    assert_equal false, s1 == s3
+    assert_equal false, s1 == s4
+
     h = {}
     # only allows "key: expr" form
     assert_raise(SyntaxError){ eval '${a: 1, **h}'    }
