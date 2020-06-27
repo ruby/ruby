@@ -6271,7 +6271,7 @@ iseq_compile_array_deconstruct(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NO
     ADD_INSN1(ret, line, putobject, ID2SYM(rb_intern("deconstruct")));
     ADD_SEND(ret, line, idRespond_to, INT2FIX(1));
 
-    // Cache the result of respond_to? (in case it's false is stays there, if true — it's overwritten after #deconstruct)
+    // Cache the result of respond_to? (in case it's false is stays there, if true - it's overwritten after #deconstruct)
     if (deconstructed_pos) {
         ADD_INSN1(ret, line, setn, INT2FIX(deconstructed_pos + 1));
     }
@@ -6280,7 +6280,7 @@ iseq_compile_array_deconstruct(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NO
 
     ADD_SEND(ret, line, rb_intern("deconstruct"), INT2FIX(0));
 
-    // Cache the result (if it's cacheable — currently, only top-level array patterns)
+    // Cache the result (if it's cacheable - currently, only top-level array patterns)
     if (deconstructed_pos) {
         ADD_INSN1(ret, line, setn, INT2FIX(deconstructed_pos));
     }
