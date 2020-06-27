@@ -1734,10 +1734,12 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_min
+    assert_equal(3, [3].min)
     assert_equal(1, [1, 2, 3, 1, 2].min)
     assert_equal(3, [1, 2, 3, 1, 2].min {|a,b| b <=> a })
     cond = ->((a, ia), (b, ib)) { (b <=> a).nonzero? or ia <=> ib }
     assert_equal([3, 2], [1, 2, 3, 1, 2].each_with_index.min(&cond))
+    assert_equal(1.0, [3.0, 1.0, 2.0].min)
     ary = %w(albatross dog horse)
     assert_equal("albatross", ary.min)
     assert_equal("dog", ary.min {|a,b| a.length <=> b.length })
