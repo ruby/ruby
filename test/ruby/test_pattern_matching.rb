@@ -1296,7 +1296,7 @@ END
       case CDeconstructCache.new([[[0]]])
       in [[1]]
       in [[*a]]
-        true
+        a == [0]
       end
     end
 
@@ -1318,8 +1318,8 @@ END
 
     assert_block do
       case CDeconstructCache.new([[0]])
-      in [1] => one
-      in [0] => zero
+      in [1] => _
+      in [0] => _
         true
       end
     end
@@ -1346,7 +1346,7 @@ END
       in [*, String => x, *]
         false
       in [*, Symbol => x, *]
-        true
+        x == :a
       end
     end
   end
