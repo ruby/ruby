@@ -13,11 +13,11 @@ class TestNotImplement < Test::Unit::TestCase
 
   def test_respond_to_lchmod
     assert_include(File.methods, :lchmod)
-    if /linux/ =~ RUBY_PLATFORM
-      assert_equal(false, File.respond_to?(:lchmod))
-    end
-    if /freebsd/ =~ RUBY_PLATFORM
+    case RUBY_PLATFORM
+    when /freebsd/, /linux-musl/
       assert_equal(true, File.respond_to?(:lchmod))
+    when /linux/
+      assert_equal(false, File.respond_to?(:lchmod))
     end
   end
 
@@ -57,9 +57,14 @@ class TestNotImplement < Test::Unit::TestCase
         File.open(f, "w") {}
         File.symlink f, g
         newmode = 0444
-        File.lchmod newmode, "#{d}/g"
-        snew = File.lstat(g)
-        assert_equal(newmode, snew.mode & 0777)
+        begin
+          File.lchmod newmode, "#{d}/g"
+        rescue Errno::EOPNOTSUPP
+          skip $!
+        else
+          snew = File.lstat(g)
+          assert_equal(newmode, snew.mode & 0777)
+        end
       }
     end
   end
