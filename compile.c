@@ -6261,7 +6261,8 @@ iseq_compile_array_deconstruct(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NO
         ADD_INSN(ret, line, pop);
         ADD_INSN1(ret, line, topn, INT2FIX(deconstructed_pos - 1));
         ADD_INSNL(ret, line, jump, deconstructed);
-    } else {
+    }
+    else {
         ADD_INSNL(ret, line, jump, deconstruct);
     }
 
