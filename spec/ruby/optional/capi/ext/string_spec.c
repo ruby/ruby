@@ -443,7 +443,7 @@ static VALUE string_spec_rb_usascii_str_new_lit(VALUE self) {
 }
 
 static VALUE string_spec_rb_usascii_str_new_lit_non_ascii(VALUE self) {
-  return rb_usascii_str_new_lit("r\u00E9sum\u00E9");
+  return rb_usascii_str_new_lit("r\xc3\xa9sum\xc3\xa9");
 }
 
 static VALUE string_spec_rb_usascii_str_new_cstr(VALUE self, VALUE str) {
