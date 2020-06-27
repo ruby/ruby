@@ -15,6 +15,10 @@ Layout/TrailingEmptyLines:
   Exclude:
     - library/coverage/fixtures/some_class.rb
 
+Layout/SpaceInLambdaLiteral:
+  Enabled: true
+  EnforcedStyle: require_space
+
 Lint:
   Enabled: true
 

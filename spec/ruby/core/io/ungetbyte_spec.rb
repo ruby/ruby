@@ -66,6 +66,10 @@ describe "IO#ungetbyte" do
     end
   end
 
+  it "raises IOError on stream not opened for reading" do
+    -> { STDOUT.ungetbyte(42) }.should raise_error(IOError, "not opened for reading")
+  end
+
   it "raises an IOError if the IO is closed" do
     @io.close
     -> { @io.ungetbyte(42) }.should raise_error(IOError)

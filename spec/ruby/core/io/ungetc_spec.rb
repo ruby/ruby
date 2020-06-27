@@ -136,6 +136,10 @@ describe "IO#ungetc" do
     @io.ungetc(100).should be_nil
   end
 
+  it "raises IOError on stream not opened for reading" do
+    -> { STDOUT.ungetc(100) }.should raise_error(IOError, "not opened for reading")
+  end
+
   it "raises IOError on closed stream" do
     @io.getc
     @io.close

@@ -162,6 +162,14 @@ static VALUE array_spec_rb_ary_shift(VALUE self, VALUE array) {
   return rb_ary_shift(array);
 }
 
+static VALUE array_spec_rb_ary_sort(VALUE self, VALUE array) {
+  return rb_ary_sort(array);
+}
+
+static VALUE array_spec_rb_ary_sort_bang(VALUE self, VALUE array) {
+  return rb_ary_sort_bang(array);
+}
+
 static VALUE array_spec_rb_ary_store(VALUE self, VALUE array, VALUE offset, VALUE value) {
   rb_ary_store(array, FIX2INT(offset), value);
 
@@ -272,6 +280,8 @@ void Init_array_spec(void) {
   rb_define_method(cls, "rb_ary_reverse", array_spec_rb_ary_reverse, 1);
   rb_define_method(cls, "rb_ary_rotate", array_spec_rb_ary_rotate, 2);
   rb_define_method(cls, "rb_ary_shift", array_spec_rb_ary_shift, 1);
+  rb_define_method(cls, "rb_ary_sort", array_spec_rb_ary_sort, 1);
+  rb_define_method(cls, "rb_ary_sort_bang", array_spec_rb_ary_sort_bang, 1);
   rb_define_method(cls, "rb_ary_store", array_spec_rb_ary_store, 3);
   rb_define_method(cls, "rb_ary_concat", array_spec_rb_ary_concat, 2);
   rb_define_method(cls, "rb_ary_plus", array_spec_rb_ary_plus, 2);

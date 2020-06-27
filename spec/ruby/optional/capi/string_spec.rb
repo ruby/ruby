@@ -218,6 +218,20 @@ describe "C-API String function" do
     end
   end
 
+  describe "rb_usascii_str_new_lit" do
+    it "returns a US-ASCII string of the correct characters" do
+      str = @s.rb_usascii_str_new_lit
+      str.should == "nokogiri"
+      str.encoding.should == Encoding::US_ASCII
+    end
+
+    it "returns US-ASCII string for non-US-ASCII string literal" do
+      str = @s.rb_usascii_str_new_lit_non_ascii
+      str.should == "r\xC3\xA9sum\xC3\xA9".force_encoding(Encoding::US_ASCII)
+      str.encoding.should == Encoding::US_ASCII
+    end
+  end
+
   describe "rb_usascii_str_new_cstr" do
     it "creates a new String with US-ASCII Encoding" do
       str = "abc".force_encoding("us-ascii")
@@ -389,6 +403,16 @@ describe "C-API String function" do
 
     it "concatenates a variable C string to a ruby string" do
       @s.rb_str_cat_cstr("Your house is on fire", "?").should == "Your house is on fire?"
+    end
+  end
+
+  describe "rb_enc_str_buf_cat" do
+    it "concatenates a C string literal to a ruby string with the given encoding" do
+      input = "hello ".force_encoding(Encoding::US_ASCII)
+      result = @s.rb_enc_str_buf_cat(input, "résumé", Encoding::UTF_8)
+      result.should == "hello résumé"
+      result.encoding.should == Encoding::UTF_8
+      result.object_id.should == input.object_id
     end
   end
 

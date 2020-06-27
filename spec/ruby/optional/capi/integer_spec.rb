@@ -272,4 +272,19 @@ describe "CApiIntegerSpecs" do
       end
     end
   end
+
+  describe "rb_int_positive_pow" do
+    it "raises an integer to given power" do
+      @s.rb_int_positive_pow(2, 3).should == 8
+    end
+
+    it "raises a negative integer to given power" do
+      @s.rb_int_positive_pow(-2, 3).should == -8
+      @s.rb_int_positive_pow(-2, 4).should == 16
+    end
+
+    it "overflows for large inputs" do
+      @s.rb_int_positive_pow(8, 23).should == 590295810358705651712
+    end
+  end
 end

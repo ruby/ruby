@@ -13,6 +13,12 @@ static VALUE integer_spec_rb_integer_pack(VALUE self, VALUE value,
   return INT2FIX(result);
 }
 
+VALUE rb_int_positive_pow(long x, unsigned long y); /* internal.h, used in ripper */
+
+static VALUE integer_spec_rb_int_positive_pow(VALUE self, VALUE a, VALUE b){
+  return rb_int_positive_pow(FIX2INT(a), FIX2INT(b));
+}
+
 void Init_integer_spec(void) {
   VALUE cls = rb_define_class("CApiIntegerSpecs", rb_cObject);
   rb_define_const(cls, "MSWORD", INT2NUM(INTEGER_PACK_MSWORD_FIRST));
@@ -27,6 +33,7 @@ void Init_integer_spec(void) {
   rb_define_const(cls, "NEGATIVE", INT2NUM(INTEGER_PACK_NEGATIVE));
 
   rb_define_method(cls, "rb_integer_pack", integer_spec_rb_integer_pack, 6);
+  rb_define_method(cls, "rb_int_positive_pow", integer_spec_rb_int_positive_pow, 2);
 }
 
 #ifdef __cplusplus
