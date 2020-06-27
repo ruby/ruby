@@ -86,7 +86,12 @@ module Fiddle
       else
         snprintf_name = "snprintf"
       end
-      snprintf = Function.new(@libc[snprintf_name],
+      begin
+        snprintf_pointer = @libc[snprintf_name]
+      rescue Fiddle::DLError
+        skip "Can't find #{snprintf_name}: #{$!.message}"
+      end
+      snprintf = Function.new(snprintf_pointer,
                               [
                                 TYPE_VOIDP,
                                 TYPE_SIZE_T,
