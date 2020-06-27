@@ -35,6 +35,9 @@ BRIGHT_RED = "\e[31;1m"
 BRIGHT_YELLOW = "\e[33;1m"
 RESET = "\e[0m"
 
+# git filter-branch --subdirectory-filter works fine for our use case
+ENV['FILTER_BRANCH_SQUELCH_WARNING'] = '1'
+
 class RubyImplementation
   attr_reader :name
 
