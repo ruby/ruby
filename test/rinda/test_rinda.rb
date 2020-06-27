@@ -382,7 +382,7 @@ module TupleSpaceTestModule
     template = nil
     taker = Thread.new do
       assert_raise(Rinda::RequestCanceledError) do
-        @ts.take([:take, nil], read_timeout) do |t|
+        @ts.take([:take, nil], 10) do |t|
           template = t
           Thread.new do
             template.cancel
@@ -402,6 +402,7 @@ module TupleSpaceTestModule
   end
 
   def test_cancel_02
+    skip 'this test is unstable with --jit-wait' if RubyVM::MJIT.enabled?
     entry = @ts.write([:removeme, 1])
     assert_equal([[:removeme, 1]], @ts.read_all([nil, nil]))
     entry.cancel
@@ -410,7 +411,7 @@ module TupleSpaceTestModule
     template = nil
     reader = Thread.new do
       assert_raise(Rinda::RequestCanceledError) do
-        @ts.read([:take, nil], read_timeout) do |t|
+        @ts.read([:take, nil], 10) do |t|
           template = t
           Thread.new do
             template.cancel
@@ -468,12 +469,6 @@ module TupleSpaceTestModule
     sleep(2)
     assert(tuple.expired?)
     assert(!tuple.alive?)
-  end
-
-  private
-
-  def read_timeout
-    RubyVM::MJIT.enabled? ? 300 : 10 # for --jit-wait
   end
 end
 
