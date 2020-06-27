@@ -1535,6 +1535,12 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_match(/encountered/, fmt)
   end
 
+  def test_warn_mismatched_indentations
+    fmt, tokend, tokbeg, line = assert_warning("") {break warn("if true\n  end\n")}
+    assert_match(/mismatched indentations/, fmt)
+    assert_equal(["if", "end", 1], [tokbeg, tokend, line])
+  end
+
   def test_in
     thru_in = false
     parse('case 0; in 0; end', :on_in) {thru_in = true}
