@@ -37,7 +37,7 @@ unless have_libffi
     Dir.glob("#{$srcdir}/libffi-*/").each{|dir| FileUtils.rm_rf(dir)}
     extlibs.run(["--cache=#{cache_dir}", ext_dir])
   end
-  if bundle
+  if bundle != false
     libffi_package_name = Dir.glob("#{$srcdir}/libffi-*/")
                             .map {|n| File.basename(n)}
                             .max_by {|n| n.scan(/\d+/).map(&:to_i)}
