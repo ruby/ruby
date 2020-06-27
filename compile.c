@@ -5697,8 +5697,8 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
         }
 
         ADD_INSN(ret, line, dup);
-        ADD_INSN1(ret, line, putobject, ID2SYM(rb_intern("deconstruct")));
-        ADD_SEND(ret, line, idRespond_to, INT2FIX(1));
+        ADD_INSN3(ret, line, defined, INT2FIX(DEFINED_METHOD),
+                  ID2SYM(rb_intern("deconstruct")), Qfalse);
         ADD_INSNL(ret, line, branchunless, match_failed);
 
         ADD_SEND(ret, line, rb_intern("deconstruct"), INT2FIX(0));
@@ -6030,8 +6030,8 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
         }
 
         ADD_INSN(ret, line, dup);
-        ADD_INSN1(ret, line, putobject, ID2SYM(rb_intern("deconstruct_keys")));
-        ADD_SEND(ret, line, idRespond_to, INT2FIX(1));
+        ADD_INSN3(ret, line, defined, INT2FIX(DEFINED_METHOD),
+                  ID2SYM(rb_intern("deconstruct_keys")), Qfalse);
         ADD_INSNL(ret, line, branchunless, match_failed);
 
         if (NIL_P(keys)) {
