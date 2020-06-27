@@ -3217,42 +3217,6 @@ rb_num2ull(VALUE val)
  *
  */
 
-/*
- *  call-seq:
- *     int.to_i    ->  integer
- *     int.to_int  ->  integer
- *
- *  Since +int+ is already an Integer, returns +self+.
- *
- *  #to_int is an alias for #to_i.
- */
-
-static VALUE
-int_to_i(VALUE num)
-{
-    return num;
-}
-
-/*
- *  call-seq:
- *     int.integer?  ->  true
- *
- *  Since +int+ is already an Integer, this always returns +true+.
- */
-
-static VALUE
-int_int_p(VALUE num)
-{
-    return Qtrue;
-}
-
-/*
- *  call-seq:
- *     int.odd?  ->  true or false
- *
- *  Returns +true+ if +int+ is an odd number.
- */
-
 VALUE
 rb_int_odd_p(VALUE num)
 {
@@ -3267,13 +3231,6 @@ rb_int_odd_p(VALUE num)
 	return rb_big_odd_p(num);
     }
 }
-
-/*
- *  call-seq:
- *     int.even?  ->  true or false
- *
- *  Returns +true+ if +int+ is an even number.
- */
 
 static VALUE
 int_even_p(VALUE num)
@@ -3465,26 +3422,6 @@ int_chr(int argc, VALUE *argv, VALUE num)
     if (!enc) enc = rb_ascii8bit_encoding();
   decode:
     return rb_enc_uint_chr(i, enc);
-}
-
-/*
- *  call-seq:
- *     int.ord  ->  self
- *
- *  Returns the +int+ itself.
- *
- *     97.ord   #=> 97
- *
- *  This method is intended for compatibility to character literals
- *  in Ruby 1.9.
- *
- *  For example, <code>?a.ord</code> returns 97 both in 1.8 and 1.9.
- */
-
-static VALUE
-int_ord(VALUE num)
-{
-    return num;
 }
 
 /*
@@ -5644,9 +5581,6 @@ Init_Numeric(void)
 
     rb_define_method(rb_cInteger, "to_s", int_to_s, -1);
     rb_define_alias(rb_cInteger, "inspect", "to_s");
-    rb_define_method(rb_cInteger, "integer?", int_int_p, 0);
-    rb_define_method(rb_cInteger, "odd?", rb_int_odd_p, 0);
-    rb_define_method(rb_cInteger, "even?", int_even_p, 0);
     rb_define_method(rb_cInteger, "allbits?", int_allbits_p, 1);
     rb_define_method(rb_cInteger, "anybits?", int_anybits_p, 1);
     rb_define_method(rb_cInteger, "nobits?", int_nobits_p, 1);
@@ -5657,9 +5591,6 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "next", int_succ, 0);
     rb_define_method(rb_cInteger, "pred", int_pred, 0);
     rb_define_method(rb_cInteger, "chr", int_chr, -1);
-    rb_define_method(rb_cInteger, "ord", int_ord, 0);
-    rb_define_method(rb_cInteger, "to_i", int_to_i, 0);
-    rb_define_method(rb_cInteger, "to_int", int_to_i, 0);
     rb_define_method(rb_cInteger, "to_f", int_to_f, 0);
     rb_define_method(rb_cInteger, "floor", int_floor, -1);
     rb_define_method(rb_cInteger, "ceil", int_ceil, -1);
@@ -5682,9 +5613,6 @@ Init_Numeric(void)
 
     rb_define_method(rb_cInteger, "pow", rb_int_powm, -1); /* in bignum.c */
 
-    rb_define_method(rb_cInteger, "abs", rb_int_abs, 0);
-    rb_define_method(rb_cInteger, "magnitude", rb_int_abs, 0);
-
     rb_define_method(rb_cInteger, "===", rb_int_equal, 1);
     rb_define_method(rb_cInteger, "==", rb_int_equal, 1);
     rb_define_method(rb_cInteger, ">", rb_int_gt, 1);
@@ -5702,7 +5630,6 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, ">>", rb_int_rshift, 1);
 
     rb_define_method(rb_cInteger, "size", int_size, 0);
-    rb_define_method(rb_cInteger, "bit_length", rb_int_bit_length, 0);
     rb_define_method(rb_cInteger, "digits", rb_int_digits, -1);
 
     /* An obsolete class, use Integer */
