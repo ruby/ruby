@@ -141,6 +141,9 @@ module JSON
 
   module_function
 
+  # :call-seq:
+  #   JSON.parse(source, opts) -> object
+  #
   # Argument +source+ contains the \String to be parsed. It must be a
   # {String-convertible object}[doc/implicit_conversion_rdoc.html#label-String-Convertible+Objects]
   # (implementing +to_str+), and must contain valid \JSON data.
@@ -260,6 +263,9 @@ module JSON
     Parser.new(source, **(opts||{})).parse
   end
 
+  # :call-seq:
+  #   JSON.parse!(source, opts) -> object
+  #
   # Calls
   #   parse(source, opts)
   # with +source+ and possibly modified +opts+.
@@ -276,6 +282,9 @@ module JSON
     Parser.new(source, **(opts||{})).parse
   end
 
+  # :call-seq:
+  #   JSON.generate(obj, opts = nil) -> new_string
+  #
   # Argument +obj+ is the Ruby object to be converted to \JSON.
   #
   # Argument +opts+, if given, contains options for the generation, and must be a
@@ -463,6 +472,9 @@ module JSON
   module_function :fast_unparse
   # :startdoc:
 
+  # :call-seq:
+  #   JSON.pretty_generate(obj, opts = nil) -> new_string
+  #
   # Arguments +obj+ and +opts+ here are the same as
   # arguments +obj+ and +opts+ in JSON.generate.
   #
