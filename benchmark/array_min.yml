@@ -1,0 +1,31 @@
+prelude: |
+  ary2 = 2.times.to_a.shuffle
+  ary10 = 10.times.to_a.shuffle
+  ary100 = 100.times.to_a.shuffle
+  ary500 = 500.times.to_a.shuffle
+  ary1000 = 1000.times.to_a.shuffle
+  ary2000 = 2500.times.to_a.shuffle
+  ary3000 = 2500.times.to_a.shuffle
+  ary5000 = 5000.times.to_a.shuffle
+  ary10000 = 10000.times.to_a.shuffle
+  ary20000 = 20000.times.to_a.shuffle
+  ary50000 = 50000.times.to_a.shuffle
+  ary100000 = 100000.times.to_a.shuffle
+  ary1000000 = 1000000.times.to_a.shuffle
+
+benchmark:
+  ary2.min: ary2.min
+  ary10.min: ary10.min
+  ary100.min: ary100.min
+  ary500.min: ary500.min
+  ary1000.min: ary1000.min
+  ary2000.min: ary2000.min
+  ary3000.min: ary3000.min
+  ary5000.min: ary5000.min
+  ary10000.min: ary10000.min
+  ary20000.min: ary20000.min
+  ary50000.min: ary50000.min
+  ary100000.min: ary100000.min
+  ary1000000.min: ary1000000.min
+
+loop_count: 10000

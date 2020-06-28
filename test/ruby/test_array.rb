@@ -1781,6 +1781,7 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_minmax
+    assert_equal([3, 3], [3].minmax)
     assert_equal([1, 3], [1, 2, 3, 1, 2].minmax)
     assert_equal([3, 1], [1, 2, 3, 1, 2].minmax {|a,b| b <=> a })
     cond = ->((a, ia), (b, ib)) { (b <=> a).nonzero? or ia <=> ib }
