@@ -130,7 +130,7 @@ module WEBrick
       aki = ef.create_extension("authorityKeyIdentifier",
                                 "keyid:always,issuer:always")
       cert.add_extension(aki)
-      cert.sign(rsa, OpenSSL::Digest::SHA256.new)
+      cert.sign(rsa, "SHA256")
 
       return [ cert, rsa ]
     end
