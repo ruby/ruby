@@ -769,33 +769,61 @@ class CSV
       end
     end
 
-    #
     # :call-seq:
-    #   filter( **options ) { |row| ... }
-    #   filter( input, **options ) { |row| ... }
-    #   filter( input, output, **options ) { |row| ... }
+    #   filter(**options) {|row| ... }
+    #   filter(in_string, **options) {|row| ... }
+    #   filter(in_io, **options) {|row| ... }
+    #   filter(in_string, out_string, **options) {|row| ... }
+    #   filter(in_string, out_io, **options) {|row| ... }
+    #   filter(in_io, out_string, **options) {|row| ... }
+    #   filter(in_io, out_io, **options) {|row| ... }
     #
-    # This method is a convenience for building Unix-like filters for CSV data.
-    # Each row is yielded to the provided block which can alter it as needed.
-    # After the block returns, the row is appended to +output+ altered or not.
+    # Reads \CSV input and writes \CSV output.
     #
-    # The +input+ and +output+ arguments can be anything CSV::new() accepts
-    # (generally String or IO objects). If not given, they default to
-    # <tt>ARGF</tt> and <tt>$stdout</tt>.
+    # For each input row:
+    # - Forms the data into:
+    #   - A CSV::Row object, if headers are in use.
+    #   - An \Array of Arrays, otherwise.
+    # - Calls the block with that object.
+    # - Appends the block's return value to the output.
     #
-    # The +options+ parameter is also filtered down to CSV::new() after some
-    # clever key parsing. Any key beginning with <tt>:in_</tt> or
-    # <tt>:input_</tt> will have that leading identifier stripped and will only
-    # be used in the +options+ Hash for the +input+ object. Keys starting with
-    # <tt>:out_</tt> or <tt>:output_</tt> affect only +output+. All other keys
-    # are assigned to both objects.
+    # Arguments:
+    # * \CSV source:
+    #   * Argument +in_string+, if given, should be a \String object;
+    #     it will be put into a new StringIO object positioned at the beginning.
+    #   * Argument +in_io+, if given, should be an IO object that is
+    #     open for reading; on return, the IO object will be closed.
+    #   * If neither  +in_string+ nor +in_io+ is given,
+    #     the input stream defaults to {ARGF}[https://ruby-doc.org/core/ARGF.html].
+    # * \CSV output:
+    #   * Argument +out_string+, if given, should be a \String object;
+    #     it will be put into a new StringIO object positioned at the beginning.
+    #   * Argument +out_io+, if given, should be an IO object that is
+    #     ppen for writing; on return, the IO object will be closed.
+    #   * If neither +out_string+ nor +out_io+ is given,
+    #     the output stream defaults to <tt>$stdout</tt>.
+    # * Argument +options+ should be keyword arguments.
+    #   - Each argument name that is prefixed with +in_+ or +input_+
+    #     is stripped of its prefix and is treated as an option
+    #     for parsing the input.
+    #     Option +input_row_sep+ defaults to <tt>$INPUT_RECORD_SEPARATOR</tt>.
+    #   - Each argument name that is prefixed with +out_+ or +output_+
+    #     is stripped of its prefix and is treated as an option
+    #     for generating the output.
+    #     Option +output_row_sep+ defaults to <tt>$INPUT_RECORD_SEPARATOR</tt>.
+    #   - Each argument not prefixed as above is treated as an option
+    #     both for parsing the input and for generating the output.
+    #   - See {Options for Parsing}[#class-CSV-label-Options+for+Parsing]
+    #     and {Options for Generating}[#class-CSV-label-Options+for+Generating].
     #
-    # See {Options for Parsing}[#class-CSV-label-Options+for+Parsing]
-    # and {Options for Generating}[#class-CSV-label-Options+for+Generating].
-    #
-    # The <tt>:output_row_sep</tt> +option+ defaults to
-    # <tt>$INPUT_RECORD_SEPARATOR</tt> (<tt>$/</tt>).
-    #
+    # Example:
+    #   in_string = "foo,0\nbar,1\nbaz,2\n"
+    #   out_string = ''
+    #   CSV.filter(in_string, out_string) do |row|
+    #     row[0] = row[0].upcase
+    #     row[1] *= 4
+    #   end
+    #   out_string # => "FOO,0000\nBAR,1111\nBAZ,2222\n"
     def filter(input=nil, output=nil, **options)
       # parse options for input, output, or both
       in_options, out_options = Hash.new, {row_sep: $INPUT_RECORD_SEPARATOR}
@@ -823,15 +851,14 @@ class CSV
 
     #
     # :call-seq:
-    #   foreach(path, mode='r', **options) {|row| ... ) -> integer or nil
-    #   foreach(io, mode='r', **options {|row| ... ) -> integer or nil
-    #   foreach(path, mode='r', headers: ..., **options) {|row| ... ) -> integer or nil
-    #   foreach(io, mode='r', headers: ..., **options {|row| ... ) -> integer or nil
+    #   foreach(path, mode='r', **options) {|row| ... )
+    #   foreach(io, mode='r', **options {|row| ... )
+    #   foreach(path, mode='r', headers: ..., **options) {|row| ... )
+    #   foreach(io, mode='r', headers: ..., **options {|row| ... )
     #   foreach(path, mode='r', **options) -> new_enumerator
     #   foreach(io, mode='r', **options -> new_enumerator
     #
     # Calls the block with each row read from source +path+ or +io+.
-    # Returns an integer, or, if there were no rows, +nil+.
     #
     # * Argument +path+, if given, must be the path to a file.
     # :include: ../doc/arguments/io.rdoc
@@ -860,7 +887,7 @@ class CSV
     #   File.write(path, string)
     #
     # Read rows from a file at +path+:
-    #   CSV.foreach(path) {|row| p row } # => 21
+    #   CSV.foreach(path) {|row| p row }
     # Output:
     #   ["foo", "0"]
     #   ["bar", "1"]
@@ -868,7 +895,7 @@ class CSV
     #
     # Read rows from an \IO object:
     #   File.open(path) do |file|
-    #     CSV.foreach(file) {|row| p row } # => 21
+    #     CSV.foreach(file) {|row| p row }
     #   end
     #
     # Output:
@@ -881,7 +908,7 @@ class CSV
     #   CSV.foreach(File.open(path)) # => #<Enumerator: CSV:foreach(#<File:t.csv>, "r")>
     #
     # Issues a warning if an encoding is unsupported:
-    #   CSV.foreach(File.open(path), encoding: 'foo:bar') {|row| } # => 21
+    #   CSV.foreach(File.open(path), encoding: 'foo:bar') {|row| }
     # Output:
     #   warning: Unsupported encoding foo ignored
     #   warning: Unsupported encoding bar ignored
@@ -897,7 +924,7 @@ class CSV
     #   File.write(path, string)
     #
     # Read rows from a file at +path+:
-    #   CSV.foreach(path, headers: true) {|row| p row } # => 21
+    #   CSV.foreach(path, headers: true) {|row| p row }
     #
     # Output:
     #   #<CSV::Row "Name":"foo" "Count":"0">
@@ -906,7 +933,7 @@ class CSV
     #
     # Read rows from an \IO object:
     #   File.open(path) do |file|
-    #     CSV.foreach(file, headers: true) {|row| p row } # => 21
+    #     CSV.foreach(file, headers: true) {|row| p row }
     #   end
     #
     # Output:
@@ -1167,8 +1194,8 @@ class CSV
     #   parse(io) -> array_of_arrays
     #   parse(string, headers: ..., **options) -> csv_table
     #   parse(io, headers: ..., **options) -> csv_table
-    #   parse(string, **options) {|row| ... } -> integer
-    #   parse(io, **options) {|row| ... } -> integer
+    #   parse(string, **options) {|row| ... }
+    #   parse(io, **options) {|row| ... }
     #
     # Parses +string+ or +io+ using the specified +options+.
     #
@@ -1179,7 +1206,7 @@ class CSV
     #
     # ====== Without Option +headers+
     #
-    # Without option +headers+, returns an \Array of Arrays or an integer.
+    # Without {option +headers+}[#class-CSV-label-Option+headers] case.
     #
     # These examples assume prior execution of:
     #   string = "foo,0\nbar,1\nbaz,2\n"
@@ -1205,7 +1232,7 @@ class CSV
     # With a block given, calls the block with each parsed row:
     #
     # Parse a \String:
-    #   CSV.parse(string) {|row| p row } # => 18
+    #   CSV.parse(string) {|row| p row }
     #
     # Output:
     #   ["foo", "0"]
@@ -1214,7 +1241,7 @@ class CSV
     #
     # Parse an open \File:
     #   File.open(path) do |file|
-    #     CSV.parse(file) {|row| p row } # => 18
+    #     CSV.parse(file) {|row| p row }
     #   end
     #
     # Output:
@@ -1224,8 +1251,7 @@ class CSV
     #
     # ====== With Option +headers+
     #
-    # With {option +headers+}[#class-CSV-label-Option+headers],
-    # returns a new CSV::Table object or an integer.
+    # With {option +headers+}[#class-CSV-label-Option+headers] case.
     #
     # These examples assume prior execution of:
     #   string = "Name,Count\nfoo,0\nbar,1\nbaz,2\n"
@@ -1252,7 +1278,7 @@ class CSV
     # which has been formed into a CSV::Row object:
     #
     # Parse a \String:
-    #   CSV.parse(string, headers: ['Name', 'Count']) {|row| p row } # => 18
+    #   CSV.parse(string, headers: ['Name', 'Count']) {|row| p row }
     #
     # Output:
     #   # <CSV::Row "Name":"foo" "Count":"0">
@@ -1261,7 +1287,7 @@ class CSV
     #
     # Parse an open \File:
     #   File.open(path) do |file|
-    #     CSV.parse(file, headers: ['Name', 'Count']) {|row| p row } # => 18
+    #     CSV.parse(file, headers: ['Name', 'Count']) {|row| p row }
     #   end
     #
     # Output:
