@@ -1018,7 +1018,7 @@ class TestGemPackage < Gem::Package::TarTestCase
         bogus_data = Gem::Util.gzip 'hello'
         fake_signer = Class.new do
           def digest_name; 'SHA512'; end
-          def digest_algorithm; Digest(:SHA512); end
+          def digest_algorithm; Digest(:SHA512).new; end
           def key; 'key'; end
           def sign(*); 'fake_sig'; end
         end

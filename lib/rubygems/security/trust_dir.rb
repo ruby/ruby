@@ -25,7 +25,7 @@ class Gem::Security::TrustDir
     @dir = dir
     @permissions = permissions
 
-    @digester = Gem::Security::DIGEST_ALGORITHM
+    @digester = Gem::Security.create_digest
   end
 
   ##

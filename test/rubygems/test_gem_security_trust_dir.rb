@@ -17,7 +17,7 @@ class TestGemSecurityTrustDir < Gem::TestCase
   end
 
   def test_cert_path
-    digest = Gem::Security::DIGEST_ALGORITHM.hexdigest PUBLIC_CERT.subject.to_s
+    digest = OpenSSL::Digest.hexdigest Gem::Security::DIGEST_NAME, PUBLIC_CERT.subject.to_s
 
     expected = File.join @dest_dir, "cert-#{digest}.pem"
 
@@ -41,7 +41,7 @@ class TestGemSecurityTrustDir < Gem::TestCase
   end
 
   def test_name_path
-    digest = Gem::Security::DIGEST_ALGORITHM.hexdigest PUBLIC_CERT.subject.to_s
+    digest = OpenSSL::Digest.hexdigest Gem::Security::DIGEST_NAME, PUBLIC_CERT.subject.to_s
 
     expected = File.join @dest_dir, "cert-#{digest}.pem"
 
