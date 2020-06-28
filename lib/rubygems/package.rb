@@ -358,12 +358,7 @@ EOM
                  end
 
     algorithms.each do |algorithm|
-      digester =
-        if defined?(OpenSSL::Digest)
-          OpenSSL::Digest.new algorithm
-        else
-          Digest.const_get(algorithm).new
-        end
+      digester = Gem::Security.create_digest(algorithm)
 
       digester << entry.read(16384) until entry.eof?
 

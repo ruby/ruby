@@ -75,7 +75,7 @@ class Gem::Security::Policy
 
   def check_data(public_key, digest, signature, data)
     raise Gem::Security::Exception, "invalid signature" unless
-      public_key.verify digest.new, signature, data.digest
+      public_key.verify digest, signature, data.digest
 
     true
   end
@@ -223,7 +223,7 @@ class Gem::Security::Policy
     end
 
     opt       = @opt
-    digester  = Gem::Security::DIGEST_ALGORITHM
+    digester  = Gem::Security.create_digest
     trust_dir = opt[:trust_dir]
     time      = Time.now
 
