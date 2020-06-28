@@ -200,6 +200,10 @@ def mk_builtin_header file
     f = open(File.basename(ofile), 'w')
   end
   begin
+    if File::ALT_SEPARATOR
+      file = file.tr(File::ALT_SEPARATOR, File::SEPARATOR)
+      ofile = ofile.tr(File::ALT_SEPARATOR, File::SEPARATOR)
+    end
     f.puts "// -*- c -*-"
     f.puts "// DO NOT MODIFY THIS FILE DIRECTLY."
     f.puts "// auto-generated file"
@@ -213,10 +217,6 @@ def mk_builtin_header file
     f.puts
     lineno = 11
     line_file = file
-    if File::ALT_SEPARATOR
-      line_file = line_file.tr(File::ALT_SEPARATOR, File::SEPARATOR)
-      ofile = ofile.tr(File::ALT_SEPARATOR, File::SEPARATOR)
-    end
 
     inlines.each{|cfunc_name, (body_lineno, text, params, func_name)|
       if String === cfunc_name
