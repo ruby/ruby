@@ -204,6 +204,7 @@ def mk_builtin_header file
       file = file.tr(File::ALT_SEPARATOR, File::SEPARATOR)
       ofile = ofile.tr(File::ALT_SEPARATOR, File::SEPARATOR)
     end
+    lineno = __LINE__
     f.puts "// -*- c -*-"
     f.puts "// DO NOT MODIFY THIS FILE DIRECTLY."
     f.puts "// auto-generated file"
@@ -215,7 +216,7 @@ def mk_builtin_header file
     f.puts '#include "builtin.h"                /* for RB_BUILTIN_FUNCTION */'
     f.puts 'struct rb_execution_context_struct; /* in vm_core.h */'
     f.puts
-    lineno = 11
+    lineno = __LINE__ - lineno - 1
     line_file = file
 
     inlines.each{|cfunc_name, (body_lineno, text, params, func_name)|
