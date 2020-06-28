@@ -1758,10 +1758,12 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_max
+    assert_equal(1, [1].max)
     assert_equal(3, [1, 2, 3, 1, 2].max)
     assert_equal(1, [1, 2, 3, 1, 2].max {|a,b| b <=> a })
     cond = ->((a, ia), (b, ib)) { (b <=> a).nonzero? or ia <=> ib }
     assert_equal([1, 3], [1, 2, 3, 1, 2].each_with_index.max(&cond))
+    assert_equal(3.0, [1.0, 3.0, 2.0].max)
     ary = %w(albatross dog horse)
     assert_equal("horse", ary.max)
     assert_equal("albatross", ary.max {|a,b| a.length <=> b.length })
