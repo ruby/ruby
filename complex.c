@@ -341,7 +341,6 @@ f_zero_p(VALUE x)
 
 #define f_nonzero_p(x) (!f_zero_p(x))
 
-VALUE rb_flo_is_finite_p(VALUE num);
 inline static int
 f_finite_p(VALUE x)
 {
