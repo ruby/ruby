@@ -6177,6 +6177,95 @@ rb_ary_union_multi(int argc, VALUE *argv, VALUE ary)
     return ary_union;
 }
 
+static VALUE
+ary_max_generic(VALUE ary, long i, VALUE vmax)
+{
+    RUBY_ASSERT(i > 0 && i < RARRAY_LEN(ary));
+
+    VALUE v;
+    for (; i < RARRAY_LEN(ary); ++i) {
+        v = RARRAY_AREF(ary, i);
+
+        if (rb_cmpint(rb_funcallv(vmax, id_cmp, 1, &v), vmax, v) < 0) {
+            vmax = v;
+        }
+    }
+
+    return vmax;
+}
+
+static VALUE
+ary_max_opt_fixnum(VALUE ary, long i, VALUE vmax)
+{
+    const long n = RARRAY_LEN(ary);
+    RUBY_ASSERT(i > 0 && i < n);
+    RUBY_ASSERT(FIXNUM_P(vmax));
+
+    VALUE v;
+    for (; i < n; ++i) {
+        v = RARRAY_AREF(ary, i);
+
+        if (FIXNUM_P(v)) {
+            if ((long)vmax < (long)v) {
+                vmax = v;
+            }
+        }
+        else {
+            return ary_max_generic(ary, i, vmax);
+        }
+    }
+
+    return vmax;
+}
+
+static VALUE
+ary_max_opt_float(VALUE ary, long i, VALUE vmax)
+{
+    const long n = RARRAY_LEN(ary);
+    RUBY_ASSERT(i > 0 && i < n);
+    RUBY_ASSERT(RB_FLOAT_TYPE_P(vmax));
+
+    VALUE v;
+    for (; i < n; ++i) {
+        v = RARRAY_AREF(ary, i);
+
+        if (RB_FLOAT_TYPE_P(v)) {
+            if (rb_float_cmp(vmax, v) < 0) {
+                vmax = v;
+            }
+        }
+        else {
+            return ary_max_generic(ary, i, vmax);
+        }
+    }
+
+    return vmax;
+}
+
+static VALUE
+ary_max_opt_string(VALUE ary, long i, VALUE vmax)
+{
+    const long n = RARRAY_LEN(ary);
+    RUBY_ASSERT(i > 0 && i < n);
+    RUBY_ASSERT(STRING_P(vmax));
+
+    VALUE v;
+    for (; i < n; ++i) {
+        v = RARRAY_AREF(ary, i);
+
+        if (STRING_P(v)) {
+            if (rb_str_cmp(vmax, v) < 0) {
+                vmax = v;
+            }
+        }
+        else {
+            return ary_max_generic(ary, i, vmax);
+        }
+    }
+
+    return vmax;
+}
+
 /*
  *  call-seq:
  *     ary.max                     -> obj
@@ -6210,6 +6299,7 @@ rb_ary_max(int argc, VALUE *argv, VALUE ary)
     if (rb_check_arity(argc, 0, 1) && !NIL_P(num = argv[0]))
        return rb_nmin_run(ary, num, 0, 1, 1);
 
+    const long n = RARRAY_LEN(ary);
     if (rb_block_given_p()) {
 	for (i = 0; i < RARRAY_LEN(ary); i++) {
 	   v = RARRAY_AREF(ary, i);
@@ -6218,13 +6308,22 @@ rb_ary_max(int argc, VALUE *argv, VALUE ary)
 	   }
 	}
     }
-    else {
-	for (i = 0; i < RARRAY_LEN(ary); i++) {
-	   v = RARRAY_AREF(ary, i);
-	   if (result == Qundef || OPTIMIZED_CMP(v, result, cmp_opt) > 0) {
-	       result = v;
-	   }
-	}
+    else if (n > 0) {
+        result = RARRAY_AREF(ary, 0);
+        if (n > 1) {
+            if (FIXNUM_P(result) && CMP_OPTIMIZABLE(cmp_opt, Integer)) {
+                return ary_max_opt_fixnum(ary, 1, result);
+            }
+            else if (STRING_P(result) && CMP_OPTIMIZABLE(cmp_opt, String)) {
+                return ary_max_opt_string(ary, 1, result);
+            }
+            else if (RB_FLOAT_TYPE_P(result) && CMP_OPTIMIZABLE(cmp_opt, Float)) {
+                return ary_max_opt_float(ary, 1, result);
+            }
+            else {
+                return ary_max_generic(ary, 1, result);
+            }
+        }
     }
     if (result == Qundef) return Qnil;
     return result;
