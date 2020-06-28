@@ -81,6 +81,9 @@ module Fiddle
     end
 
     def test_snprintf
+      unless Fiddle.const_defined?("TYPE_VARIADIC")
+        skip "libffi doesn't support variadic arguments"
+      end
       if Fiddle::WINDOWS
         snprintf_name = "_snprintf"
       else
