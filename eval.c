@@ -489,6 +489,7 @@ rb_class_modify_check(VALUE klass)
 		break;
 	      default:
                 Check_Type(klass, T_CLASS);
+                UNREACHABLE;
 	    }
 	}
         rb_frozen_error_raise(klass, "can't modify frozen %s: %"PRIsVALUE, desc, klass);
