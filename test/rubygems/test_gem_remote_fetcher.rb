@@ -9,7 +9,7 @@ rescue LoadError => e
 end
 
 unless defined?(OpenSSL::SSL)
-  warn 'Skipping Gem::Request tests.  openssl not found.'
+  warn 'Skipping Gem::RemoteFetcher tests.  openssl not found.'
 end
 
 require 'rubygems/remote_fetcher'
