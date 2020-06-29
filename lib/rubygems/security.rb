@@ -341,14 +341,7 @@ module Gem::Security
   ##
   # Used internally to select the signing digest from all computed digests
 
-  DIGEST_NAME = # :nodoc:
-    if defined?(OpenSSL::Digest::SHA256)
-      'SHA256'
-    elsif defined?(OpenSSL::Digest::SHA1)
-      'SHA1'
-    else
-      'SHA512'
-    end
+  DIGEST_NAME = 'SHA256' # :nodoc:
 
   ##
   # Algorithm for creating the key pair used to sign gems
