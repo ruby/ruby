@@ -2431,6 +2431,9 @@ end
   end
 
   def test_to_ruby_with_rsa_key
+    require 'rubygems/openssl'
+    skip 'openssl is missing' unless defined?(OpenSSL::PKey::RSA)
+
     rsa_key = OpenSSL::PKey::RSA.new(2048)
     @a2.signing_key = rsa_key
     ruby_code = @a2.to_ruby

@@ -1,6 +1,12 @@
 # frozen_string_literal: true
 require 'rubygems/test_case'
 require 'net/http'
+require 'rubygems/openssl'
+
+unless defined?(OpenSSL::SSL)
+  warn 'Skipping bundled certificates tests.  openssl not found.'
+end
+
 require 'rubygems/request'
 
 # = Testing Bundled CA
@@ -52,4 +58,4 @@ class TestBundledCA < Gem::TestCase
   def test_accessing_new_index
     assert_https('fastly.rubygems.org')
   end
-end
+end if defined?(OpenSSL::SSL)
