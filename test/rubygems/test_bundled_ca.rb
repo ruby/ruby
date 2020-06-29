@@ -8,7 +8,7 @@ require 'rubygems/request'
 # The tested hosts are explained in detail here: https://github.com/rubygems/rubygems/commit/5e16a5428f973667cabfa07e94ff939e7a83ebd9
 #
 
-if ENV["CI"] || ENV["TEST_SSL"]
+if ENV["CI"]
   class TestBundledCA < Gem::TestCase
     THIS_FILE = File.expand_path __FILE__
 
