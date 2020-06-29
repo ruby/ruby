@@ -10,6 +10,14 @@ module OpenSSL
       OpenSSL.fixed_length_secure_compare(self.digest, other.digest)
     end
 
+    # :call-seq:
+    #    hmac.base64digest -> string
+    #
+    # Returns the authentication code an a Base64-encoded string.
+    def base64digest
+      [digest].pack("m0")
+    end
+
     class << self
       # :call-seq:
       #    HMAC.digest(digest, key, data) -> aString
@@ -47,6 +55,23 @@ module OpenSSL
         hmac = new(key, digest)
         hmac << data
         hmac.hexdigest
+      end
+
+      # :call-seq:
+      #    HMAC.base64digest(digest, key, data) -> aString
+      #
+      # Returns the authentication code as a Base64-encoded string. The _digest_
+      # parameter specifies the digest algorithm to use. This may be a String
+      # representing the algorithm name or an instance of OpenSSL::Digest.
+      #
+      # === Example
+      #  key = 'key'
+      #  data = 'The quick brown fox jumps over the lazy dog'
+      #
+      #  hmac = OpenSSL::HMAC.base64digest('SHA1', key, data)
+      #  #=> "3nybhbi3iqa8ino29wqQcBydtNk="
+      def base64digest(digest, key, data)
+        [digest(digest, key, data)].pack("m0")
       end
     end
   end
