@@ -1,6 +1,6 @@
 require 'base64'
 require 'digest'
-require 'openssl'
+require 'rubygems/openssl'
 
 ##
 # S3URISigner implements AWS SigV4 for S3 Source to avoid a dependency on the aws-sdk-* gems
