@@ -2820,7 +2820,7 @@ rb_const_set(VALUE klass, ID id, VALUE val)
 
     check_before_mod_set(klass, id, val, "constant");
     if (!RCLASS_CONST_TBL(klass)) {
-        struct rb_managed_id_table *table = rb_new_managed_id_table(imemo_constant_table, 0);
+        struct rb_managed_id_table *table = rb_managed_id_table_new(imemo_constant_table, 0);
         RCLASS_SET_CONST_TBL(klass, table);
 	rb_clear_constant_cache();
 	ce = ZALLOC(rb_const_entry_t);

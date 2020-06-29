@@ -16,6 +16,7 @@
 STATIC_ASSERT(managed_table_not_too_big, sizeof(struct rb_managed_id_table) <= SIZEOF_VALUE * 5);
 
 typedef rb_id_serial_t id_key_t;
+typedef struct rb_id_item item_t;
 
 static inline ID
 key2id(id_key_t key)
@@ -96,7 +97,7 @@ rb_id_table_create(size_t capa)
 }
 
 struct rb_managed_id_table *
-rb_new_managed_id_table(int memo_type, size_t capa)
+rb_managed_id_table_new(int memo_type, size_t capa)
 {
     struct rb_managed_id_table *table = (struct rb_managed_id_table *)rb_imemo_new(memo_type, 0, 0, 0, 0);
     rb_id_table_init(&table->table, (int)capa);
@@ -104,7 +105,7 @@ rb_new_managed_id_table(int memo_type, size_t capa)
 }
 
 void
-rb_id_table_deallocate(struct rb_managed_id_table *tbl)
+rb_managed_id_table_free(struct rb_managed_id_table *tbl)
 {
     xfree(tbl->table.items);
     MEMZERO(&tbl->table, struct rb_id_table, 1);

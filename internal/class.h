@@ -36,10 +36,10 @@ struct rb_subclass_entry {
 struct rb_classext_struct {
     struct st_table *iv_index_tbl;
     struct st_table *iv_tbl;
-#if SIZEOF_SERIAL_T == SIZEOF_VALUE /* otherwise m_tbl is in struct RClass */
-    struct rb_managed_id_table *m_tbl;
+#if SIZEOF_SERIAL_T == SIZEOF_VALUE /* otherwise m_table is in struct RClass */
+    struct rb_managed_id_table *m_table;
 #endif
-    struct rb_managed_id_table *const_tbl;
+    struct rb_managed_id_table *const_table;
     struct rb_id_table *callable_m_tbl;
     struct rb_id_table *cc_tbl; /* ID -> [[ci, cc1], cc2, ...] */
     struct rb_subclass_entry *subclasses;
@@ -67,8 +67,8 @@ struct RClass {
     /* Class serial is as wide as VALUE.  Place it here. */
     rb_serial_t class_serial;
 #else
-    /* Class serial does not fit into struct RClass. Place m_tbl instead. */
-    struct rb_managed_id_table *m_tbl;
+    /* Class serial does not fit into struct RClass. Place m_table instead. */
+    struct rb_managed_id_table *m_table;
 #endif
 };
 
@@ -77,12 +77,12 @@ typedef struct rb_classext_struct rb_classext_t;
 
 #define RCLASS_EXT(c) (RCLASS(c)->ptr)
 #define RCLASS_IV_TBL(c) (RCLASS_EXT(c)->iv_tbl)
-#define RCLASS_CONST_TBL(c) (RCLASS_EXT(c)->const_tbl)
+#define RCLASS_CONST_TBL(c) (RCLASS_EXT(c)->const_table)
 #define RCLASS_SET_CONST_TBL(c, tbl) (RB_OBJ_WRITE(c, &RCLASS_CONST_TBL(c), tbl))
 #if SIZEOF_SERIAL_T == SIZEOF_VALUE
-# define RCLASS_M_TBL(c) (RCLASS_EXT(c)->m_tbl)
+# define RCLASS_M_TBL(c) (RCLASS_EXT(c)->m_table)
 #else
-# define RCLASS_M_TBL(c) (RCLASS(c)->m_tbl)
+# define RCLASS_M_TBL(c) (RCLASS(c)->m_table)
 #endif
 #define RCLASS_SET_M_TBL(c, tbl) (RB_OBJ_WRITE(c, &RCLASS_M_TBL(c), tbl))
 #define RCLASS_CALLABLE_M_TBL(c) (RCLASS_EXT(c)->callable_m_tbl)

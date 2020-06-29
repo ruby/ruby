@@ -193,7 +193,7 @@ class_alloc(VALUE flags, VALUE klass)
 static void
 RCLASS_M_TBL_INIT(VALUE c)
 {
-    RCLASS_SET_M_TBL(c, rb_new_managed_id_table(imemo_method_table, 0));
+    RCLASS_SET_M_TBL(c, rb_managed_id_table_new(imemo_method_table, 0));
 }
 
 /*!
@@ -328,7 +328,7 @@ copy_tables(VALUE clone, VALUE orig)
 	st_delete(RCLASS_IV_TBL(clone), &id, 0);
     }
     if (RCLASS_CONST_TBL(orig)) {
-        struct rb_managed_id_table *clone_const_table = rb_new_managed_id_table(imemo_constant_table, 0);
+        struct rb_managed_id_table *clone_const_table = rb_managed_id_table_new(imemo_constant_table, 0);
         RCLASS_SET_CONST_TBL(clone, clone_const_table);
         rb_id_table_foreach(&RCLASS_CONST_TBL(orig)->table, clone_const_i, clone_const_table);
     }
@@ -462,7 +462,7 @@ rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
 	    rb_iv_tbl_copy(clone, klass);
 	}
 	if (RCLASS_CONST_TBL(klass)) {
-            struct rb_managed_id_table *clone_const_table = rb_new_managed_id_table(imemo_constant_table, 0);
+            struct rb_managed_id_table *clone_const_table = rb_managed_id_table_new(imemo_constant_table, 0);
             RCLASS_SET_CONST_TBL(clone, clone_const_table);
             rb_id_table_foreach(&RCLASS_CONST_TBL(klass)->table, clone_const_i, clone_const_table);
 	}
@@ -899,7 +899,7 @@ rb_include_class_new(VALUE module, VALUE super)
     }
     RUBY_ASSERT(!RB_TYPE_P(module, T_ICLASS));
     if (!RCLASS_CONST_TBL(module)) {
-        RCLASS_SET_CONST_TBL(module, rb_new_managed_id_table(imemo_constant_table, 0));
+        RCLASS_SET_CONST_TBL(module, rb_managed_id_table_new(imemo_constant_table, 0));
     }
     RCLASS_SET_CONST_TBL(klass, RCLASS_CONST_TBL(module));
 

@@ -2919,7 +2919,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
             }
             /* fall through */
           case imemo_method_table:
-            rb_id_table_deallocate((struct rb_managed_id_table *)obj);
+            rb_managed_id_table_free((struct rb_managed_id_table *)obj);
             break;
 	  default:
             /* unreachable */
