@@ -42,7 +42,7 @@
 
 /** Wraps (or simulates) `__builtin_unreachable`. */
 #if RBIMPL_HAS_BUILTIN(__builtin_unreachable)
-# define RBIMPL_UNREACHABLE_RETURN(_) (__builtin_unreachable(), (_))
+# define RBIMPL_UNREACHABLE_RETURN(_) __builtin_unreachable()
 
 #elif defined(RBIMPL_HAVE___ASSUME)
 # define RBIMPL_UNREACHABLE_RETURN(_) return (__assume(0), (_))
