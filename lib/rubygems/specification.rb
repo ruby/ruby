@@ -2411,7 +2411,7 @@ class Gem::Specification < Gem::BasicSpecification
   # still have their default values are omitted.
 
   def to_ruby
-    require 'openssl'
+    require_relative 'openssl'
     mark_version
     result = []
     result << "# -*- encoding: utf-8 -*-"
@@ -2451,7 +2451,7 @@ class Gem::Specification < Gem::BasicSpecification
       next if handled.include? attr_name
       current_value = self.send(attr_name)
       if current_value != default_value(attr_name) || self.class.required_attribute?(attr_name)
-        result << "  s.#{attr_name} = #{ruby_code current_value}" unless current_value.is_a?(OpenSSL::PKey::RSA)
+        result << "  s.#{attr_name} = #{ruby_code current_value}" unless defined?(OpenSSL::PKey::RSA) && current_value.is_a?(OpenSSL::PKey::RSA)
       end
     end
 
