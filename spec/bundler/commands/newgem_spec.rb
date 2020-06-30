@@ -914,7 +914,7 @@ RSpec.describe "bundle gem" do
             ext.lib_dir = "lib/#{gem_name}"
           end
 
-          task default: [:clobber, :compile]
+          task default: %i[clobber compile]
         RAKEFILE
 
         expect(bundled_app("#{gem_name}/Rakefile").read).to eq(rakefile)
