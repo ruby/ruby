@@ -64,6 +64,7 @@
             fprintf(f, "    {\n");
             fprintf(f, "        VALUE val;\n");
             fprintf(f, "        struct rb_calling_info calling;\n");
+            fprintf(f, "        calling.flags = %d;\n", VM_FRAME_FLAG_DISCARDED * !!(vm_ci_flag(ci) & VM_CALL_DISCARDED));
 % if insn.name == 'send'
             fprintf(f, "        calling.block_handler = vm_caller_setup_arg_block(ec, reg_cfp, (const struct rb_callinfo *)0x%"PRIxVALUE", (rb_iseq_t *)0x%"PRIxVALUE", FALSE);\n", (VALUE)ci, (VALUE)blockiseq);
 % else
