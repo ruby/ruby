@@ -123,4 +123,60 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
     assert_equal @json, JSON(@hash)
     assert_equal @hash, JSON(@json)
   end
+
+  def test_load_file
+    test_load_shared(:load_file)
+  end
+
+  def test_load_file!
+    test_load_shared(:load_file!)
+  end
+
+  def test_load_file_with_option
+    test_load_file_with_option_shared(:load_file)
+  end
+
+  def test_load_file_with_option!
+    test_load_file_with_option_shared(:load_file!)
+  end
+
+  private
+
+  def test_load_shared(method_name)
+    temp_file_containing(@json) do |filespec|
+      assert_equal JSON.public_send(method_name, filespec), @hash
+    end
+  end
+
+  def test_load_file_with_option_shared(method_name)
+    temp_file_containing(@json) do |filespec|
+      parsed_object = JSON.public_send(method_name, filespec, symbolize_names: true)
+      key_classes = parsed_object.keys.map(&:class)
+      assert_true key_classes.include?(Symbol) && (! key_classes.include?(String))
+    end
+  end
+
+  # Copied and slightly modified from https://github.com/keithrbennett/trick_bag
+  # (https://github.com/keithrbennett/trick_bag/blob/master/lib/trick_bag/io/temp_files.rb).
+  #
+  # For the easy creation and deletion of a temp file populated with text,
+  # wrapped around the code block you provide.
+  #
+  # @param text the text to write to the temporary file
+  # @param file_prefix optional prefix for the temporary file's name
+  # @yield filespec of the temporary file
+  def temp_file_containing(text, file_prefix = '')
+    raise "This method must be called with a code block." unless block_given?
+
+    filespec = nil
+    begin
+      Tempfile.open(file_prefix) do |file|
+        file << text
+        filespec = file.path
+      end
+      yield(filespec)
+    ensure
+      File.delete(filespec) if filespec && File.exist?(filespec)
+    end
+    end
 end
