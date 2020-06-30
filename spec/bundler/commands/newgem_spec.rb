@@ -212,35 +212,35 @@ RSpec.describe "bundle gem" do
     end
   end
 
-  it "has no rubocop offenses when using --rubocop flag" do
+  it "has no rubocop offenses when using --rubocop flag", :readline do
     skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
     bundle "gem #{gem_name} --rubocop"
     bundle_exec_rubocop
     expect(err).to be_empty
   end
 
-  it "has no rubocop offenses when using --ext and --rubocop flag" do
+  it "has no rubocop offenses when using --ext and --rubocop flag", :readline do
     skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
     bundle "gem #{gem_name} --ext --rubocop"
     bundle_exec_rubocop
     expect(err).to be_empty
   end
 
-  it "has no rubocop offenses when using --ext, --test=minitest, and --rubocop flag" do
+  it "has no rubocop offenses when using --ext, --test=minitest, and --rubocop flag", :readline do
     skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
     bundle "gem #{gem_name} --ext --test=minitest --rubocop"
     bundle_exec_rubocop
     expect(err).to be_empty
   end
 
-  it "has no rubocop offenses when using --ext, --test=rspec, and --rubocop flag" do
+  it "has no rubocop offenses when using --ext, --test=rspec, and --rubocop flag", :readline do
     skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
     bundle "gem #{gem_name} --ext --test=rspec --rubocop"
     bundle_exec_rubocop
     expect(err).to be_empty
   end
 
-  it "has no rubocop offenses when using --ext, --ext=test-unit, and --rubocop flag" do
+  it "has no rubocop offenses when using --ext, --ext=test-unit, and --rubocop flag", :readline do
     skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
     bundle "gem #{gem_name} --ext --test=test-unit --rubocop"
     bundle_exec_rubocop
