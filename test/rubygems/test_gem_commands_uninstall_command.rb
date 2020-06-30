@@ -361,6 +361,7 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     end
 
     assert_equal %w[default-1], Gem::Specification.all_names.sort
+    assert_equal "INFO:  Uninstalled all gems in #{@gemhome}", @ui.output.split("\n").last
   end
 
   def test_execute_outside_gem_home

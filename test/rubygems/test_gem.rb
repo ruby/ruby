@@ -161,10 +161,8 @@ class TestGem < Gem::TestCase
 
   def test_self_install_permissions_with_format_executable_and_non_standard_ruby_install_name
     Gem::Installer.exec_format = nil
-    with_clean_path_to_ruby do
-      ruby_install_name 'ruby27' do
-        assert_self_install_permissions(format_executable: true)
-      end
+    ruby_install_name 'ruby27' do
+      assert_self_install_permissions(format_executable: true)
     end
   ensure
     Gem::Installer.exec_format = nil
@@ -308,6 +306,21 @@ class TestGem < Gem::TestCase
     Gem.finish_resolve
 
     assert_equal %w(a-1 b-2 c-1), loaded_spec_names
+  end
+
+  def test_activate_bin_path_in_debug_mode
+    a1 = util_spec 'a', '1' do |s|
+      s.executables = ['exec']
+    end
+
+    install_specs a1
+
+    output, status = Open3.capture2e(
+      { "GEM_HOME" => Gem.paths.home, "DEBUG_RESOLVER" => "1" },
+      Gem.ruby, "-I", File.expand_path("../../lib", __dir__), "-e", "\"Gem.activate_bin_path('a', 'exec', '>= 0')\""
+    )
+
+    assert status.success?, output
   end
 
   def test_activate_bin_path_gives_proper_error_for_bundler
@@ -1024,21 +1037,17 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_ruby_escaping_spaces_in_path
-    with_clean_path_to_ruby do
-      with_bindir_and_exeext("C:/Ruby 1.8/bin", ".exe") do
-        ruby_install_name "ruby" do
-          assert_equal "\"C:/Ruby 1.8/bin/ruby.exe\"", Gem.ruby
-        end
+    with_bindir_and_exeext("C:/Ruby 1.8/bin", ".exe") do
+      ruby_install_name "ruby" do
+        assert_equal "\"C:/Ruby 1.8/bin/ruby.exe\"", Gem.ruby
       end
     end
   end
 
   def test_self_ruby_path_without_spaces
-    with_clean_path_to_ruby do
-      with_bindir_and_exeext("C:/Ruby18/bin", ".exe") do
-        ruby_install_name "ruby" do
-          assert_equal "C:/Ruby18/bin/ruby.exe", Gem.ruby
-        end
+    with_bindir_and_exeext("C:/Ruby18/bin", ".exe") do
+      ruby_install_name "ruby" do
+        assert_equal "C:/Ruby18/bin/ruby.exe", Gem.ruby
       end
     end
   end
@@ -1090,10 +1099,18 @@ class TestGem < Gem::TestCase
     util_restore_RUBY_VERSION
   end
 
-  def test_self_ruby_version_with_prerelease
+  def test_self_ruby_version_with_svn_prerelease
     util_set_RUBY_VERSION '2.6.0', -1, 63539, 'ruby 2.6.0preview2 (2018-05-31 trunk 63539) [x86_64-linux]'
 
     assert_equal Gem::Version.new('2.6.0.preview2'), Gem.ruby_version
+  ensure
+    util_restore_RUBY_VERSION
+  end
+
+  def test_self_ruby_version_with_git_prerelease
+    util_set_RUBY_VERSION '2.7.0', -1, 'b563439274a402e33541f5695b1bfd4ac1085638', 'ruby 2.7.0preview3 (2019-11-23 master b563439274) [x86_64-linux]'
+
+    assert_equal Gem::Version.new('2.7.0.preview3'), Gem.ruby_version
   ensure
     util_restore_RUBY_VERSION
   end
@@ -1106,10 +1123,18 @@ class TestGem < Gem::TestCase
     util_restore_RUBY_VERSION
   end
 
-  def test_self_ruby_version_with_trunk
+  def test_self_ruby_version_with_svn_trunk
     util_set_RUBY_VERSION '1.9.2', -1, 23493, 'ruby 1.9.2dev (2009-05-20 trunk 23493) [x86_64-linux]'
 
     assert_equal Gem::Version.new('1.9.2.dev'), Gem.ruby_version
+  ensure
+    util_restore_RUBY_VERSION
+  end
+
+  def test_self_ruby_version_with_git_master
+    util_set_RUBY_VERSION '2.7.0', -1, '5de284ec78220e75643f89b454ce999da0c1c195', 'ruby 2.7.0dev (2019-12-23T01:37:30Z master 5de284ec78) [x86_64-linux]'
+
+    assert_equal Gem::Version.new('2.7.0.dev'), Gem.ruby_version
   ensure
     util_restore_RUBY_VERSION
   end
@@ -1731,6 +1756,18 @@ class TestGem < Gem::TestCase
     assert_nil              Gem.find_unresolved_default_spec("README")
   end
 
+  def test_register_default_spec_old_style_with_folder_starting_with_lib
+    Gem.clear_default_specs
+
+    old_style = Gem::Specification.new do |spec|
+      spec.files = ["libexec/bundle", "foo.rb", "bar.rb"]
+    end
+
+    Gem.register_default_spec old_style
+
+    assert_equal old_style, Gem.find_unresolved_default_spec("foo.rb")
+  end
+
   def test_use_gemdeps
     gem_deps_file = 'gem.deps.rb'.tap(&Gem::UNTAINT)
     spec = util_spec 'a', 1
@@ -1903,16 +1940,38 @@ You may need to `gem install -g` to install missing gems
     assert platform_defaults.is_a? Hash
   end
 
-  def ruby_install_name(name)
-    orig_RUBY_INSTALL_NAME = RbConfig::CONFIG['ruby_install_name']
-    RbConfig::CONFIG['ruby_install_name'] = name
+  # Ensure that `Gem.source_date_epoch` is consistent even if
+  # $SOURCE_DATE_EPOCH has not been set.
+  def test_default_source_date_epoch_doesnt_change
+    old_epoch = ENV['SOURCE_DATE_EPOCH']
+    ENV['SOURCE_DATE_EPOCH'] = nil
 
-    yield
+    # Unfortunately, there is no real way to test this aside from waiting
+    # enough for `Time.now.to_i` to change -- which is a whole second.
+    #
+    # Fortunately, we only need to do this once.
+    a = Gem.source_date_epoch
+    sleep 1
+    b = Gem.source_date_epoch
+    assert_equal a, b
   ensure
-    if orig_RUBY_INSTALL_NAME
-      RbConfig::CONFIG['ruby_install_name'] = orig_RUBY_INSTALL_NAME
-    else
-      RbConfig::CONFIG.delete 'ruby_install_name'
+    ENV['SOURCE_DATE_EPOCH'] = old_epoch
+  end
+
+  def ruby_install_name(name)
+    with_clean_path_to_ruby do
+      orig_RUBY_INSTALL_NAME = RbConfig::CONFIG['ruby_install_name']
+      RbConfig::CONFIG['ruby_install_name'] = name
+
+      begin
+        yield
+      ensure
+        if orig_RUBY_INSTALL_NAME
+          RbConfig::CONFIG['ruby_install_name'] = orig_RUBY_INSTALL_NAME
+        else
+          RbConfig::CONFIG.delete 'ruby_install_name'
+        end
+      end
     end
   end
 
@@ -1922,16 +1981,6 @@ You may need to `gem install -g` to install missing gems
         yield
       end
     end
-  end
-
-  def with_clean_path_to_ruby
-    orig_ruby = Gem.ruby
-
-    Gem.instance_variable_set :@ruby, nil
-
-    yield
-  ensure
-    Gem.instance_variable_set :@ruby, orig_ruby
   end
 
   def with_plugin(path)

@@ -23,7 +23,7 @@ class Gem::Resolver::APISet < Gem::Resolver::Set
   ##
   # Creates a new APISet that will retrieve gems from +uri+ using the RubyGems
   # API URL +dep_uri+ which is described at
-  # http://guides.rubygems.org/rubygems-org-api
+  # https://guides.rubygems.org/rubygems-org-api
 
   def initialize(dep_uri = 'https://rubygems.org/api/v1/dependencies')
     super()

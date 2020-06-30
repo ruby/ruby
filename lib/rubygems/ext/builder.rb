@@ -68,7 +68,9 @@ class Gem::Ext::Builder
       results << (command.respond_to?(:shelljoin) ? command.shelljoin : command)
 
       require "open3"
-      output, status = Open3.capture2e(*command)
+      # Set $SOURCE_DATE_EPOCH for the subprocess.
+      env = {'SOURCE_DATE_EPOCH' => Gem.source_date_epoch_string}
+      output, status = Open3.capture2e(env, *command)
       if verbose
         puts output
       else

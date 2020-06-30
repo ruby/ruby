@@ -83,6 +83,11 @@ end
   def setup
     super
 
+    # Setting `@default_source_date_epoch` to `nil` effectively resets the
+    # value used for `Gem.source_date_epoch` whenever `$SOURCE_DATE_EPOCH`
+    # is not set.
+    Gem.instance_variable_set(:'@default_source_date_epoch', nil)
+
     @a1 = util_spec 'a', '1' do |s|
       s.executable = 'exec'
       s.test_file = 'test/suite.rb'
@@ -939,7 +944,7 @@ dependencies: []
     assert_equal File.join(@tempdir, 'a-2.gemspec'), spec.loaded_from
   end
 
-  if RUBY_VERSION < '2.7'
+  if RUBY_ENGINE == 'ruby' and RUBY_VERSION < '2.7'
     def test_self_load_tainted
       full_path = @a2.spec_file
       write_file full_path do |io|
@@ -2784,7 +2789,7 @@ end
     add_runtime_dependency 'l', '~> 1.2', '> 1.2.3'
 #{w}:  open-ended dependency on o (>= 0) is not recommended
   use a bounded requirement, such as '~> x.y'
-#{w}:  See http://guides.rubygems.org/specification-reference/ for help
+#{w}:  See https://guides.rubygems.org/specification-reference/ for help
       EXPECTED
 
       assert_equal expected, @ui.error, 'warning'
@@ -2816,7 +2821,7 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
       end
 
       assert_equal <<-EXPECTED, @ui.error
-#{w}:  See http://guides.rubygems.org/specification-reference/ for help
+#{w}:  See https://guides.rubygems.org/specification-reference/ for help
       EXPECTED
     end
   end
@@ -2927,7 +2932,7 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
       end
     end
 
-    assert_match 'See http://guides.rubygems.org/specification-reference/ for help', @ui.error
+    assert_match 'See https://guides.rubygems.org/specification-reference/ for help', @ui.error
   end
 
   def test_validate_executables
@@ -3100,7 +3105,7 @@ Please report a bug if this causes problems.
 
       assert_equal '"ftp://rubygems.org" is not a valid HTTP URI', e.message
 
-      @a1.homepage = 'http://rubygems.org'
+      @a1.homepage = 'https://rubygems.org/'
       assert_equal true, @a1.validate
 
       @a1.homepage = 'https://rubygems.org'
@@ -3121,6 +3126,21 @@ Please report a bug if this causes problems.
 WARNING:  licenses is empty, but is recommended.  Use a license identifier from
 http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
     warning
+  end
+
+  def test_removed_methods
+    assert_equal Gem::Specification::REMOVED_METHODS, [:rubyforge_project=]
+  end
+
+  def test_validate_removed_rubyforge_project
+    util_setup_validate
+
+    use_ui @ui do
+      @a1.rubyforge_project = 'invalid-attribute'
+      @a1.validate
+    end
+
+    assert_match "rubyforge_project= is deprecated", @ui.error
   end
 
   def test_validate_license_values
@@ -3430,7 +3450,7 @@ Did you mean 'Ruby'?
       @a1.validate
     end
 
-    assert_match 'See http://guides.rubygems.org/specification-reference/ for help', @ui.error
+    assert_match 'See https://guides.rubygems.org/specification-reference/ for help', @ui.error
   end
 
   def test_version

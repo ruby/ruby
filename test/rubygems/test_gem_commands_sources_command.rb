@@ -247,7 +247,7 @@ source http://gems.example.com/ already present in the cache
   end
 
   def test_execute_add_http_rubygems_org
-    http_rubygems_org = 'http://rubygems.org'
+    http_rubygems_org = 'http://rubygems.org/'
 
     spec_fetcher do |fetcher|
       fetcher.spec 'a', 1
@@ -266,6 +266,44 @@ source http://gems.example.com/ already present in the cache
       specs_dump_gz.string
 
     @cmd.handle_options %W[--add #{http_rubygems_org}]
+
+    ui = Gem::MockGemUi.new "n"
+
+    use_ui ui do
+      assert_raises Gem::MockGemUi::TermError do
+        @cmd.execute
+      end
+    end
+
+    assert_equal [@gem_repo], Gem.sources
+
+    expected = <<-EXPECTED
+    EXPECTED
+
+    assert_equal expected, @ui.output
+    assert_empty @ui.error
+  end
+
+  def test_execute_add_https_rubygems_org
+    https_rubygems_org = 'https://rubygems.org/'
+
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a', 1
+    end
+
+    specs = Gem::Specification.map do |spec|
+      [spec.name, spec.version, spec.original_platform]
+    end
+
+    specs_dump_gz = StringIO.new
+    Zlib::GzipWriter.wrap specs_dump_gz do |io|
+      Marshal.dump specs, io
+    end
+
+    @fetcher.data["#{https_rubygems_org}/specs.#{@marshal_version}.gz"] =
+      specs_dump_gz.string
+
+    @cmd.handle_options %W[--add #{https_rubygems_org}]
 
     ui = Gem::MockGemUi.new "n"
 

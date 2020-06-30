@@ -183,6 +183,58 @@ DEPENDENCIES
     assert_path_exists File.join @gemhome, 'specifications', 'b-1.gemspec'
   end
 
+  def test_install_from_gemdeps_complex_dependencies
+    quick_gem("z", 1)
+    quick_gem("z", "1.0.1")
+    quick_gem("z", "1.0.2")
+    quick_gem("z", "1.0.3")
+    quick_gem("z", 2)
+
+    spec_fetcher do |fetcher|
+      fetcher.download "z", 1
+    end
+
+    rs = Gem::RequestSet.new
+    installed = []
+
+    File.open 'Gemfile.lock', 'w' do |io|
+      io.puts <<-LOCKFILE
+GEM
+  remote: #{@gem_repo}
+  specs:
+    z (1)
+
+PLATFORMS
+  #{Gem::Platform::RUBY}
+
+DEPENDENCIES
+  z (~> 1.0, >= 1.0.1)
+      LOCKFILE
+    end
+
+    File.open 'testo.gemspec', 'w' do |io|
+      io.puts <<-LOCKFILE
+Gem::Specification.new do |spec|
+  spec.name = 'testo'
+  spec.version = '1.0.0'
+  spec.add_dependency('z', '~> 1.0', '>= 1.0.1')
+end
+      LOCKFILE
+    end
+
+    File.open 'Gemfile', 'w' do |io|
+      io.puts("gemspec")
+    end
+
+    rs.install_from_gemdeps :gemdeps => 'Gemfile' do |req, installer|
+      installed << req.full_name
+    end
+
+    assert_includes installed, 'z-1.0.3'
+
+    assert_path_exists File.join @gemhome, 'specifications', 'z-1.0.3.gemspec'
+  end
+
   def test_install_from_gemdeps_version_mismatch
     spec_fetcher do |fetcher|
       fetcher.gem 'a', 2

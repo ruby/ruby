@@ -11,7 +11,7 @@ class Gem::Resolver::APISpecification < Gem::Resolver::Specification
   # Creates an APISpecification for the given +set+ from the rubygems.org
   # +api_data+.
   #
-  # See http://guides.rubygems.org/rubygems-org-api/#misc_methods for the
+  # See https://guides.rubygems.org/rubygems-org-api/#misc_methods for the
   # format of the +api_data+.
 
   def initialize(set, api_data)
