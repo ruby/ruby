@@ -282,6 +282,16 @@ module JSON
     Parser.new(source, **(opts||{})).parse
   end
 
+  # Parses the content of a file (see parse method documentation for more information).
+  def load_file(filespec, opts = {})
+    parse(File.read(filespec), opts)
+  end
+
+  # Parses the content of a file (see parse! method documentation for more information).
+  def load_file!(filespec, opts = {})
+    parse!(File.read(filespec), opts)
+  end
+
   # :call-seq:
   #   JSON.generate(obj, opts = nil) -> new_string
   #
