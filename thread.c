@@ -5423,6 +5423,16 @@ rb_thread_backtrace_locations_m(int argc, VALUE *argv, VALUE thval)
     return rb_vm_thread_backtrace_locations(argc, argv, thval);
 }
 
+void
+Init_Thread_Mutex()
+{
+    rb_thread_t *th = GET_THREAD();
+
+    rb_native_mutex_initialize(&th->vm->waitpid_lock);
+    rb_native_mutex_initialize(&th->vm->workqueue_lock);
+    rb_native_mutex_initialize(&th->interrupt_lock);
+}
+
 /*
  *  Document-class: ThreadError
  *
@@ -5542,9 +5552,6 @@ Init_Thread(void)
 	    /* acquire global vm lock */
             rb_global_vm_lock_t *gvl = rb_ractor_gvl(th->ractor);
 	    gvl_acquire(gvl, th);
-            rb_native_mutex_initialize(&th->vm->waitpid_lock);
-            rb_native_mutex_initialize(&th->vm->workqueue_lock);
-            rb_native_mutex_initialize(&th->interrupt_lock);
 
 	    th->pending_interrupt_queue = rb_ary_tmp_new(0);
 	    th->pending_interrupt_queue_checked = 0;
