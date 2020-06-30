@@ -47,12 +47,7 @@ VALUE eEC_GROUP;
 VALUE cEC_POINT;
 VALUE eEC_POINT;
 
-static ID s_GFp;
-static ID s_GFp_simple;
-static ID s_GFp_mont;
-static ID s_GFp_nist;
-static ID s_GF2m;
-static ID s_GF2m_simple;
+static ID s_GFp, s_GF2m;
 
 static ID ID_uncompressed;
 static ID ID_compressed;
@@ -580,19 +575,10 @@ ec_group_new(const EC_GROUP *group)
  * call-seq:
  *   OpenSSL::PKey::EC::Group.new(ec_group)
  *   OpenSSL::PKey::EC::Group.new(pem_or_der_encoded)
- *   OpenSSL::PKey::EC::Group.new(ec_method)
  *   OpenSSL::PKey::EC::Group.new(:GFp, bignum_p, bignum_a, bignum_b)
  *   OpenSSL::PKey::EC::Group.new(:GF2m, bignum_p, bignum_a, bignum_b)
  *
  * Creates a new EC::Group object.
- *
- * _ec_method_ is a symbol that represents an EC_METHOD. Currently the following
- * are supported:
- *
- * * :GFp_simple
- * * :GFp_mont
- * * :GFp_nist
- * * :GF2m_simple
  *
  * If the first argument is :GFp or :GF2m, creates a new curve with given
  * parameters.
@@ -608,29 +594,7 @@ static VALUE ossl_ec_group_initialize(int argc, VALUE *argv, VALUE self)
 
     switch (rb_scan_args(argc, argv, "13", &arg1, &arg2, &arg3, &arg4)) {
     case 1:
-        if (SYMBOL_P(arg1)) {
-            const EC_METHOD *method = NULL;
-            ID id = SYM2ID(arg1);
-
-            if (id == s_GFp_simple) {
-                method = EC_GFp_simple_method();
-            } else if (id == s_GFp_mont) {
-                method = EC_GFp_mont_method();
-            } else if (id == s_GFp_nist) {
-                method = EC_GFp_nist_method();
-#if !defined(OPENSSL_NO_EC2M)
-            } else if (id == s_GF2m_simple) {
-                method = EC_GF2m_simple_method();
-#endif
-            }
-
-            if (method) {
-                if ((group = EC_GROUP_new(method)) == NULL)
-                    ossl_raise(eEC_GROUP, "EC_GROUP_new");
-            } else {
-                ossl_raise(rb_eArgError, "unknown symbol, must be :GFp_simple, :GFp_mont, :GFp_nist or :GF2m_simple");
-            }
-        } else if (rb_obj_is_kind_of(arg1, cEC_GROUP)) {
+        if (rb_obj_is_kind_of(arg1, cEC_GROUP)) {
             const EC_GROUP *arg1_group;
 
             GetECGroup(arg1, arg1_group);
@@ -1592,10 +1556,6 @@ void Init_ossl_ec(void)
 
     s_GFp = rb_intern("GFp");
     s_GF2m = rb_intern("GF2m");
-    s_GFp_simple = rb_intern("GFp_simple");
-    s_GFp_mont = rb_intern("GFp_mont");
-    s_GFp_nist = rb_intern("GFp_nist");
-    s_GF2m_simple = rb_intern("GF2m_simple");
 
     ID_uncompressed = rb_intern("uncompressed");
     ID_compressed = rb_intern("compressed");
