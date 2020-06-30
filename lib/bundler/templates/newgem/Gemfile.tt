@@ -9,9 +9,11 @@ gem "rake", "~> 13.0"
 <%- if config[:ext] -%>
 gem "rake-compiler"
 <%- end -%>
+
 <%- if config[:test] -%>
 gem "<%= config[:test] %>", "~> <%= config[:test_framework_version] %>"
 <%- end -%>
+
 <%- if config[:rubocop] -%>
 gem "rubocop", "~> 0.80"
 <%- end -%>
