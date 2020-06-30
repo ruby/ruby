@@ -10,6 +10,15 @@ RSpec.describe "bundle gem" do
     expect(bundled_app("#{gem_name}/lib/#{require_path}/version.rb")).to exist
   end
 
+  def bundle_exec_rubocop
+    prepare_gemspec(bundled_app(gem_name, "#{gem_name}.gemspec"))
+    rubocop_version = RUBY_VERSION > "2.4" ? "0.85.1" : "0.80.1"
+    gems = ["minitest", "rake", "rake-compiler", "rspec", "rubocop -v #{rubocop_version}", "test-unit"]
+    path = Bundler.feature_flag.default_install_uses_path? ? local_gem_path(:base => bundled_app(gem_name)) : system_gem_path
+    realworld_system_gems gems, :path => path
+    bundle "exec rubocop --config .rubocop.yml", :dir => bundled_app(gem_name)
+  end
+
   let(:generated_gemspec) { Bundler.load_gemspec_uncached(bundled_app(gem_name).join("#{gem_name}.gemspec")) }
 
   let(:gem_name) { "mygem" }
@@ -174,17 +183,6 @@ RSpec.describe "bundle gem" do
     it "generates a default .rubocop.yml" do
       expect(bundled_app("#{gem_name}/.rubocop.yml")).to exist
     end
-
-    it "runs rubocop inside the generated gem with no offenses" do
-      skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
-      prepare_gemspec(bundled_app(gem_name, "#{gem_name}.gemspec"))
-      rubocop_version = RUBY_VERSION > "2.4" ? "0.85.1" : "0.80.1"
-      gems = ["rake", "rubocop -v #{rubocop_version}"]
-      path = Bundler.feature_flag.default_install_uses_path? ? local_gem_path(:base => bundled_app(gem_name)) : system_gem_path
-      realworld_system_gems gems, :path => path
-      bundle "exec rubocop --config .rubocop.yml", :dir => bundled_app(gem_name)
-      expect(err).to be_empty
-    end
   end
 
   shared_examples_for "--no-rubocop flag" do
@@ -212,6 +210,41 @@ RSpec.describe "bundle gem" do
     it "doesn't generate a default .rubocop.yml" do
       expect(bundled_app("#{gem_name}/.rubocop.yml")).to_not exist
     end
+  end
+
+  it "has no rubocop offenses when using --rubocop flag" do
+    skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
+    bundle "gem #{gem_name} --rubocop"
+    bundle_exec_rubocop
+    expect(err).to be_empty
+  end
+
+  it "has no rubocop offenses when using --ext and --rubocop flag" do
+    skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
+    bundle "gem #{gem_name} --ext --rubocop"
+    bundle_exec_rubocop
+    expect(err).to be_empty
+  end
+
+  it "has no rubocop offenses when using --ext, --test=minitest, and --rubocop flag" do
+    skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
+    bundle "gem #{gem_name} --ext --test=minitest --rubocop"
+    bundle_exec_rubocop
+    expect(err).to be_empty
+  end
+
+  it "has no rubocop offenses when using --ext, --test=rspec, and --rubocop flag" do
+    skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
+    bundle "gem #{gem_name} --ext --test=rspec --rubocop"
+    bundle_exec_rubocop
+    expect(err).to be_empty
+  end
+
+  it "has no rubocop offenses when using --ext, --ext=test-unit, and --rubocop flag" do
+    skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
+    bundle "gem #{gem_name} --ext --test=test-unit --rubocop"
+    bundle_exec_rubocop
+    expect(err).to be_empty
   end
 
   shared_examples_for "CI config is absent" do
