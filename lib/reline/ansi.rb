@@ -100,7 +100,7 @@ class Reline::ANSI
 
   def self.cursor_pos
     begin
-      res = ''.dup
+      res = +''
       m = nil
       @@input.raw do |stdin|
         @@output << "\e[6n"
