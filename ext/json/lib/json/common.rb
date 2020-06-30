@@ -144,15 +144,15 @@ module JSON
   # :call-seq:
   #   JSON.parse(source, opts) -> object
   #
+  # Returns the Ruby objects created by parsing the given +source+.
+  #
   # Argument +source+ contains the \String to be parsed. It must be a
   # {String-convertible object}[doc/implicit_conversion_rdoc.html#label-String-Convertible+Objects]
   # (implementing +to_str+), and must contain valid \JSON data.
   #
   # Argument +opts+, if given, contains options for the parsing, and must be a
-  # {Hash-convertible object}[doc/implicit_conversion_rdoc.html#label-Hash-Convertible+Objects]
-  # (implementing +to_hash+).
-  #
-  # Returns the Ruby objects created by parsing the given +source+.
+  # {Hash-convertible object}[doc/implicit_conversion_rdoc.html#label-Hash+Convertible+Objects].
+  # See {Parsing Options}[#module-JSON-label-Parsing+Options].
   #
   # ---
   #
@@ -170,87 +170,6 @@ module JSON
   #
   # For examples of parsing for all \JSON data types, see
   # {Parsing \JSON}[#module-JSON-label-Parsing+JSON].
-  #
-  # ====== Input Options
-  #
-  # Option +max_nesting+ (\Integer) specifies the maximum nesting depth allowed;
-  # defaults to +100+; specify +false+ to disable depth checking.
-  #
-  # With the default, +false+:
-  #   source = '[0, [1, [2, [3]]]]'
-  #   ruby = JSON.parse(source)
-  #   ruby # => [0, [1, [2, [3]]]]
-  # Too deep:
-  #   # Raises JSON::NestingError (nesting of 2 is too deep):
-  #   JSON.parse(source, {max_nesting: 1})
-  # Bad value:
-  #   # Raises TypeError (wrong argument type Symbol (expected Fixnum)):
-  #   JSON.parse(source, {max_nesting: :foo})
-  #
-  # ---
-  #
-  # Option +allow_nan+ (boolean) specifies whether to allow
-  # NaN, Infinity, and MinusInfinity in +source+;
-  # defaults to +false+.
-  #
-  # With the default, +false+:
-  #   # Raises JSON::ParserError (225: unexpected token at '[NaN]'):
-  #   JSON.parse('[NaN]')
-  #   # Raises JSON::ParserError (232: unexpected token at '[Infinity]'):
-  #   JSON.parse('[Infinity]')
-  #   # Raises JSON::ParserError (248: unexpected token at '[-Infinity]'):
-  #   JSON.parse('[-Infinity]')
-  # Allow:
-  #   source = '[NaN, Infinity, -Infinity]'
-  #   ruby = JSON.parse(source, {allow_nan: true})
-  #   ruby # => [NaN, Infinity, -Infinity]
-  #
-  # ====== Output Options
-  #
-  # Option +symbolize_names+ (boolean) specifies whether returned \Hash keys
-  # should be Symbols;
-  # defaults to +false+ (use Strings).
-  #
-  # With the default, +false+:
-  #   source = '{"a": "foo", "b": 1.0, "c": true, "d": false, "e": null}'
-  #   ruby = JSON.parse(source)
-  #   ruby # => {"a"=>"foo", "b"=>1.0, "c"=>true, "d"=>false, "e"=>nil}
-  # Use Symbols:
-  #   ruby = JSON.parse(source, {symbolize_names: true})
-  #   ruby # => {:a=>"foo", :b=>1.0, :c=>true, :d=>false, :e=>nil}
-  #
-  # ---
-  #
-  # Option +object_class+ (\Class) specifies the Ruby class to be used
-  # for each \JSON object;
-  # defaults to \Hash.
-  #
-  # With the default, \Hash:
-  #   source = '{"a": "foo", "b": 1.0, "c": true, "d": false, "e": null}'
-  #   ruby = JSON.parse(source)
-  #   ruby.class # => Hash
-  # Use class \OpenStruct:
-  #   ruby = JSON.parse(source, {object_class: OpenStruct})
-  #   ruby # => #<OpenStruct a="foo", b=1.0, c=true, d=false, e=nil>
-  #
-  # ---
-  #
-  # Option +array_class+ (\Class) specifies the Ruby class to be used
-  # for each \JSON array;
-  # defaults to \Array.
-  #
-  # With the default, \Array:
-  #   source = '["foo", 1.0, true, false, null]'
-  #   ruby = JSON.parse(source)
-  #   ruby.class # => Array
-  # Use class \Set:
-  #   ruby = JSON.parse(source, {array_class: Set})
-  #   ruby # => #<Set: {"foo", 1.0, true, false, nil}>
-  #
-  # ---
-  #
-  # Option +create_additions+ (boolean) specifies whether to use \JSON additions in parsing.
-  # See {\JSON Additions}[#module-JSON-label-JSON+Additions].
   #
   # ====== Exceptions
   #
@@ -295,15 +214,15 @@ module JSON
   # :call-seq:
   #   JSON.generate(obj, opts = nil) -> new_string
   #
-  # Argument +obj+ is the Ruby object to be converted to \JSON.
-  #
-  # Argument +opts+, if given, contains options for the generation, and must be a
-  # {Hash-convertible object}[doc/implicit_conversion_rdoc.html#label-Hash-Convertible+Objects]
-  # (implementing +to_hash+).
-  #
   # Returns a \String containing the generated \JSON data.
   #
   # See also JSON.fast_generate, JSON.pretty_generate.
+  #
+  # Argument +obj+ is the Ruby object to be converted to \JSON.
+  #
+  # Argument +opts+, if given, contains options for the generation, and must be a
+  # {Hash-convertible object}[doc/implicit_conversion_rdoc.html#label-Hash-Convertible+Objects].
+  # See {Generating Options}[#module-JSON-label-Generating+Options].
   #
   # ---
   #
@@ -323,92 +242,6 @@ module JSON
   #
   # For examples of generating from other Ruby objects, see
   # {Generating \JSON from Other Objects}[#module-JSON-label-Generating+JSON+from+Other+Objects].
-  #
-  # ====== Input Options
-  #
-  # Option +allow_nan+ (boolean) specifies whether
-  # +NaN+, +Infinity+, and <tt>-Infinity</tt> may be generated;
-  # defaults to +false+.
-  #
-  # With the default, +false+:
-  #   # Raises JSON::GeneratorError (920: NaN not allowed in JSON):
-  #   JSON.generate(JSON::NaN)
-  #   # Raises JSON::GeneratorError (917: Infinity not allowed in JSON):
-  #   JSON.generate(JSON::Infinity)
-  #   # Raises JSON::GeneratorError (917: -Infinity not allowed in JSON):
-  #   JSON.generate(JSON::MinusInfinity)
-  #
-  # Allow:
-  #   ruby = [Float::NaN, Float::Infinity, Float::MinusInfinity]
-  #   JSON.generate(ruby, allow_nan: true) # => '[NaN,Infinity,-Infinity]'
-  #
-  # ---
-  #
-  # Option +max_nesting+ (\Integer) specifies the maximum nesting depth
-  # in +obj+; defaults to +100+.
-  #
-  # With the default, +100+:
-  #   obj = [[[[[[0]]]]]]
-  #   JSON.generate(obj) # => '[[[[[[0]]]]]]'
-  #
-  # Too deep:
-  #   # Raises JSON::NestingError (nesting of 2 is too deep):
-  #   JSON.generate(obj, max_nesting: 2)
-  #
-  # ====== Output Options
-  #
-  # The default formatting options generate the most compact
-  # \JSON data, all on one line and with no whitespace.
-  #
-  # You can use these formatting options to generate
-  # \JSON data in a more open format, using whitespace.
-  # See also JSON.pretty_generate.
-  #
-  # - Option +array_nl+ (\String) specifies a string (usually a newline)
-  #   to be inserted after each \JSON array; defaults to the empty \String, <tt>''</tt>.
-  # - Option +object_nl+ (\String) specifies a string (usually a newline)
-  #   to be inserted after each \JSON object; defaults to the empty \String, <tt>''</tt>.
-  # - Option +indent+ (\String) specifies the string (usually spaces) to be
-  #   used for indentation; defaults to the empty \String, <tt>''</tt>;
-  #   defaults to the empty \String, <tt>''</tt>;
-  #   has no effect unless options +array_nl+ or +object_nl+ specify newlines.
-  # - Option +space+ (\String) specifies a string (usually a space) to be
-  #   inserted after the colon in each \JSON object's pair;
-  #   defaults to the empty \String, <tt>''</tt>.
-  # - Option +space_before+ (\String) specifies a string (usually a space) to be
-  #   inserted before the colon in each \JSON object's pair;
-  #   defaults to the empty \String, <tt>''</tt>.
-  #
-  # In this example, +obj+ is used first to generate the shortest
-  # \JSON data (no whitespace), then again with all formatting options
-  # specified:
-  #
-  #   obj = {foo: [:bar, :baz], bat: {bam: 0, bad: 1}}
-  #   json = JSON.generate(obj)
-  #   puts 'Compact:', json
-  #   opts = {
-  #     array_nl: "\n",
-  #     object_nl: "\n",
-  #     indent+: '  ',
-  #     space_before: ' ',
-  #     space: ' '
-  #   }
-  #   puts 'Open:', JSON.generate(obj, opts)
-  #
-  # Output:
-  #   Compact:
-  #   {"foo":["bar","baz"],"bat":{"bam":0,"bad":1}}
-  #   Open:
-  #   {
-  #     "foo" : [
-  #       "bar",
-  #       "baz"
-  #   ],
-  #     "bat" : {
-  #       "bam" : 0,
-  #       "bad" : 1
-  #     }
-  #   }
   #
   # ---
   #
