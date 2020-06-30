@@ -49,6 +49,15 @@ class OpenSSL::TestHMAC < OpenSSL::TestCase
     refute_equal h1, h2.digest
     refute_equal h1, h3
   end
+
+  def test_singleton_methods
+    # RFC 2202 2. Test Cases for HMAC-MD5
+    key = ["0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b"].pack("H*")
+    digest = OpenSSL::HMAC.digest("MD5", key, "Hi There")
+    assert_equal ["9294727a3638bb1c13f48ef8158bfc9d"].pack("H*"), digest
+    hexdigest = OpenSSL::HMAC.hexdigest("MD5", key, "Hi There")
+    assert_equal "9294727a3638bb1c13f48ef8158bfc9d", hexdigest
+  end
 end
 
 end
