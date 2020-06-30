@@ -14,7 +14,13 @@ module Gem::Util
     require 'stringio'
     data = StringIO.new(data, 'r')
 
-    unzipped = Zlib::GzipReader.new(data).read
+    gzip_reader = begin
+                    Zlib::GzipReader.new(data)
+                  rescue Zlib::GzipFile::Error => e
+                    raise e.class, e.inspect, e.backtrace
+                  end
+
+    unzipped = gzip_reader.read
     unzipped.force_encoding Encoding::BINARY
     unzipped
   end

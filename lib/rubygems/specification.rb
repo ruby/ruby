@@ -193,6 +193,12 @@ class Gem::Specification < Gem::BasicSpecification
   @@spec_with_requirable_file = {}
   @@active_stub_with_requirable_file = {}
 
+  # Tracking removed method calls to warn users during build time.
+  REMOVED_METHODS = [:rubyforge_project=].freeze # :nodoc:
+  def removed_method_calls
+    @removed_method_calls ||= []
+  end
+
   ######################################################################
   # :section: Required gemspec attributes
 
@@ -725,14 +731,6 @@ class Gem::Specification < Gem::BasicSpecification
   # Allows deinstallation of gems with legacy platforms.
 
   attr_writer :original_platform # :nodoc:
-
-  ##
-  # Deprecated and ignored.
-  #
-  # Formerly used to set rubyforge project.
-
-  attr_writer :rubyforge_project
-  deprecate :rubyforge_project=, :none,       2019, 12
 
   ##
   # The Gem::Specification version of this gemspec.
@@ -2107,9 +2105,15 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
+  # Track removed method calls to warn about during build time.
   # Warn about unknown attributes while loading a spec.
 
   def method_missing(sym, *a, &b) # :nodoc:
+    if REMOVED_METHODS.include?(sym)
+      removed_method_calls << sym
+      return
+    end
+
     if @specification_version > CURRENT_SPECIFICATION_VERSION and
       sym.to_s =~ /=$/
       warn "ignoring #{sym} loading #{full_name}" if $DEBUG

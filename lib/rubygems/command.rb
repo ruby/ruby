@@ -646,7 +646,7 @@ basic help message containing pointers to more information.
                                  http://localhost:8808/
                                  with info about installed gems
   Further information:
-    http://guides.rubygems.org
+    https://guides.rubygems.org
   HELP
 
   # :startdoc:
