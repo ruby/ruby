@@ -1096,7 +1096,7 @@ static VALUE cState_generate(VALUE self, VALUE obj)
  *   generated, otherwise an exception is thrown, if these values are
  *   encountered. This options defaults to false.
  * * *ascii_only*: true if only ASCII characters should be generated. This
- *   ontions defaults to false.
+ *   option defaults to false.
  * * *buffer_initial_length*: sets the initial length of the generator's
  *   internal buffer.
  */
