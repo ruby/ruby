@@ -255,8 +255,6 @@ module Bundler
       require "rubygems/security"
       require_relative "psyched_yaml"
       gem_from_path(path, security_policies[policy]).spec
-    rescue Gem::Package::FormatError
-      raise GemspecError, "Could not read gem at #{path}. It may be corrupted."
     rescue Exception, Gem::Exception, Gem::Security::Exception => e # rubocop:disable Lint/RescueException
       if e.is_a?(Gem::Security::Exception) ||
           e.message =~ /unknown trust policy|unsigned gem/i ||
