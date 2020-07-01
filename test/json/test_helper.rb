@@ -1,12 +1,12 @@
 case ENV['JSON']
 when 'pure'
-  $:.unshift File.join(__dir__, '../lib')
+  $:.unshift 'lib'
   require 'json/pure'
 when 'ext'
-  $:.unshift File.join(__dir__, '../ext'), File.join(__dir__, '../lib')
+  $:.unshift 'ext', 'lib'
   require 'json/ext'
 else
-  $:.unshift File.join(__dir__, '../ext'), File.join(__dir__, '../lib')
+  $:.unshift 'ext', 'lib'
   require 'json'
 end
 

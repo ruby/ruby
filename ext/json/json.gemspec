@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |s|
   s.name = "json"
-  s.version = "2.3.0"
+  s.version = "2.3.1"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.require_paths = ["lib"]
@@ -135,5 +135,5 @@ Gem::Specification.new do |s|
   s.test_files = ["tests/test_helper.rb"]
 
   s.add_development_dependency("rake", [">= 0"])
-  s.add_development_dependency("test-unit", ["~> 2.0"])
+  s.add_development_dependency("test-unit", [">= 2.0", "< 4.0"])
 end
