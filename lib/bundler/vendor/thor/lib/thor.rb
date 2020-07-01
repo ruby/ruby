@@ -344,13 +344,6 @@ class Bundler::Thor
       command && disable_required_check.include?(command.name.to_sym)
     end
 
-    def deprecation_warning(message) #:nodoc:
-      unless ENV['THOR_SILENCE_DEPRECATION']
-        warn "Deprecation warning: #{message}\n" +
-          'You can silence deprecations warning by setting the environment variable THOR_SILENCE_DEPRECATION.'
-      end
-    end
-
   protected
 
     def stop_on_unknown_option #:nodoc:

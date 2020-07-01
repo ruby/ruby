@@ -27,8 +27,12 @@ module Spec
       TheBundle.new(*args)
     end
 
+    def command_executions
+      @command_executions ||= []
+    end
+
     def last_command
-      @command_executions.last || raise("There is no last command")
+      command_executions.last || raise("There is no last command")
     end
 
     def out
@@ -189,16 +193,34 @@ module Spec
         stderr_read_thread = Thread.new { stderr.read }
         command_execution.stdout = stdout_read_thread.value.strip
         command_execution.stderr = stderr_read_thread.value.strip
-        command_execution.exitstatus = wait_thr && wait_thr.value.exitstatus
-      end
 
-      (@command_executions ||= []) << command_execution
+        status = wait_thr.value
+        command_execution.exitstatus = if status.exited?
+          status.exitstatus
+        elsif status.signaled?
+          128 + status.termsig
+        end
+      end
 
       unless options[:raise_on_error] == false || command_execution.success?
-        raise "Invoking #{cmd} failed!"
+        raise <<~ERROR
+
+          Invoking `#{cmd}` failed with output:
+          ----------------------------------------------------------------------
+          #{command_execution.stdboth}
+          ----------------------------------------------------------------------
+        ERROR
       end
 
+      command_executions << command_execution
+
       command_execution.stdout
+    end
+
+    def all_commands_output
+      return [] if command_executions.empty?
+
+      "\n\nCommands:\n#{command_executions.map(&:to_s_verbose).join("\n\n")}"
     end
 
     def config(config = nil, path = bundled_app(".bundle/config"))
@@ -264,18 +286,22 @@ module Spec
       bundle :lock, opts
     end
 
-    def install_gems(*gems)
+    def system_gems(*gems)
+      gems = gems.flatten
       options = gems.last.is_a?(Hash) ? gems.pop : {}
-      gem_repo = options.fetch(:gem_repo) { gem_repo1 }
-      gems.each do |g|
-        gem_name = g.to_s
-        if gem_name.start_with?("bundler")
-          version = gem_name.match(/\Abundler-(?<version>.*)\z/)[:version] if gem_name != "bundler"
-          with_built_bundler(version) {|gem_path| install_gem(gem_path) }
-        elsif gem_name =~ %r{\A(?:[a-zA-Z]:)?/.*\.gem\z}
-          install_gem(gem_name)
-        else
-          install_gem("#{gem_repo}/gems/#{gem_name}.gem")
+      path = options.fetch(:path, system_gem_path)
+      with_gem_path_as(path) do
+        gem_repo = options.fetch(:gem_repo, gem_repo1)
+        gems.each do |g|
+          gem_name = g.to_s
+          if gem_name.start_with?("bundler")
+            version = gem_name.match(/\Abundler-(?<version>.*)\z/)[:version] if gem_name != "bundler"
+            with_built_bundler(version) {|gem_path| install_gem(gem_path) }
+          elsif gem_name =~ %r{\A(?:[a-zA-Z]:)?/.*\.gem\z}
+            install_gem(gem_name)
+          else
+            install_gem("#{gem_repo}/gems/#{gem_name}.gem")
+          end
         end
       end
     end
@@ -384,20 +410,12 @@ module Spec
       system_gems(*gems)
     end
 
-    def system_gems(*gems)
-      opts = gems.last.is_a?(Hash) ? gems.last : {}
-      path = opts.fetch(:path, system_gem_path)
-      gems = gems.flatten
-
-      with_gem_path_as(path) do
-        install_gems(*gems)
-      end
-    end
-
     def realworld_system_gems(*gems)
       gems = gems.flatten
+      opts = gems.last.is_a?(Hash) ? gems.pop : {}
+      path = opts.fetch(:path, system_gem_path)
 
-      with_gem_path_as(system_gem_path) do
+      with_gem_path_as(path) do
         gems.each do |gem|
           gem_command "install --no-document #{gem}"
         end
@@ -494,11 +512,11 @@ module Spec
       process_file(pathname) do |line|
         case line
         when /spec\.metadata\["(?:allowed_push_host|homepage_uri|source_code_uri|changelog_uri)"\]/, /spec\.homepage/
-          line.gsub(/\=.*$/, "= 'http://example.org'")
+          line.gsub(/\=.*$/, '= "http://example.org"')
         when /spec\.summary/
-          line.gsub(/\=.*$/, "= %q{A short summary of my new gem.}")
+          line.gsub(/\=.*$/, '= "A short summary of my new gem."')
         when /spec\.description/
-          line.gsub(/\=.*$/, "= %q{A longer description of my new gem.}")
+          line.gsub(/\=.*$/, '= "A longer description of my new gem."')
         else
           line
         end
