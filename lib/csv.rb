@@ -103,85 +103,164 @@ require_relative "csv/writer"
 
 using CSV::MatchP if CSV.const_defined?(:MatchP)
 
-# This class provides a complete interface to CSV files and data. It offers
-# tools to enable you to read and write to and from Strings or IO objects, as
-# needed.
+# == \CSV
+# \CSV (comma-separated variables) data is a text representation of a table:
+# - A _row_ _separator_ delimits table rows.
+#   A common row separator is the newline character <tt>"\n"</tt>.
+# - A _column_ _separator_ delimits fields in a row.
+#   A common column separator is the comma character <tt>","</tt>.
 #
-# All examples here assume prior execution of:
+# This \CSV \String, with row separator <tt>"\n"</tt>
+# and column separator <tt>","</tt>,
+# has three rows and two columns:
+#   "foo,0\nbar,1\nbaz,2\n"
+#
+# Despite the name \CSV, a \CSV representation can use different separators.
+#
+# == \Class \CSV
+#
+# Class \CSV provides methods for:
+# - Parsing \CSV data from a \String object, a \File (via its file path), or an \IO object.
+# - Generating \CSV data to a \String object.
+#
+# To make \CSV available:
 #   require 'csv'
 #
-# The most generic interface of the library is:
+# All examples here assume that this has been done.
 #
-#    csv = CSV.new(io, **options)
+# == Keeping It Simple
 #
-#    # Reading: IO object should be open for read
-#    csv.read # => array of rows
-#    # or
-#    csv.each do |row|
-#      # ...
-#    end
-#    # or
-#    row = csv.shift
+# A \CSV object has dozens of instance methods that offer fine-grained control
+# of parsing and generating \CSV data.
+# For many needs, though, simpler approaches will do.
 #
-#    # Writing: IO object should be open for write
-#    csv << row
+# This section summarizes the singleton methods in \CSV
+# that allow you to parse and generate without explicitly
+# creating \CSV objects.
+# For details, follow the links.
 #
-# There are several specialized class methods for one-statement reading or writing,
-# described in the Specialized Methods section.
+# === Simple Parsing
 #
-# If a String is passed into ::new, it is internally wrapped into a StringIO object.
+# Parsing methods commonly return either of:
+# - An \Array of Arrays of Strings:
+#   - The outer \Array is the entire "table".
+#   - Each inner \Array is a row.
+#   - Each \String is a field.
+# - A CSV::Table object.  For details, see
+#   {\CSV with Headers}[#class-CSV-label-CSV+with+Headers].
 #
-# +options+ can be used for specifying the particular CSV flavor (column
-# separators, row separators, value quoting and so on), and for data conversion,
-# see Data Conversion section for the description of the latter.
+# ==== Parsing a \String
 #
-# == Specialized Methods
+# The input to be parsed can be a string:
+#   string = "foo,0\nbar,1\nbaz,2\n"
 #
-# === Reading
+# \Method CSV.parse returns the entire \CSV data:
+#   CSV.parse(string) # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
 #
-#   # From a file: all at once
-#   arr_of_rows = CSV.read("path/to/file.csv", **options)
-#   # iterator-style:
-#   CSV.foreach("path/to/file.csv", **options) do |row|
-#     # ...
+# \Method CSV.parse_line returns only the first row:
+#   CSV.parse_line(string) # => ["foo", "0"]
+#
+# \CSV extends class \String with instance method String#parse_csv,
+# which also returns only the first row:
+#   string.parse_csv # => ["foo", "0"]
+#
+# ==== Parsing Via a \File Path
+#
+# The input to be parsed can be in a file:
+#   string = "foo,0\nbar,1\nbaz,2\n"
+#   path = 't.csv'
+#   File.write(path, string)
+#
+# \Method CSV.read returns the entire \CSV data:
+#  CSV.read(path) # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
+#
+# \Method CSV.foreach iterates, passing each row to the given block:
+#  CSV.foreach(path) do |row|
+#    p row
+#  end
+# Output:
+#   ["foo", "0"]
+#   ["bar", "1"]
+#   ["baz", "2"]
+#
+# \Method CSV.table returns the entire \CSV data as a CSV::Table object:
+#   CSV.table(path) # => #<CSV::Table mode:col_or_row row_count:3>
+#
+# ==== Parsing from an Open \IO Stream
+#
+# The input to be parsed can be in an open \IO stream:
+#
+# \Method CSV.read returns the entire \CSV data:
+#   File.open(path) do |file|
+#     CSV.read(file)
+#   end # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
+#
+# As does method CSV.parse:
+#   File.open(path) do |file|
+#     CSV.parse(file)
+#   end # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
+#
+# \Method CSV.parse_line returns only the first row:
+#   File.open(path) do |file|
+#    CSV.parse_line(file)
+#   end # => ["foo", "0"]
+#
+# \Method CSV.foreach iterates, passing each row to the given block:
+#   File.open(path) do |file|
+#     CSV.foreach(file) do |row|
+#       p row
+#     end
 #   end
+# Output:
+#   ["foo", "0"]
+#   ["bar", "1"]
+#   ["baz", "2"]
 #
-#   # From a string
-#   arr_of_rows = CSV.parse("CSV,data,String", **options)
-#   # or
-#   CSV.parse("CSV,data,String", **options) do |row|
-#     # ...
+# \Method CSV.table returns the entire \CSV data as a CSV::Table object:
+#   File.open(path) do |file|
+#     CSV.table(file)
+#   end # => #<CSV::Table mode:col_or_row row_count:3>
+#
+# === Simple Generating
+#
+# \Method CSV.generate returns a \String;
+# this example uses method CSV#<< to append the rows
+# that are to be generated:
+#   output_string = CSV.generate do |csv|
+#     csv << ['foo', 0]
+#     csv << ['bar', 1]
+#     csv << ['baz', 2]
 #   end
+#   output_string # => "foo,0\nbar,1\nbaz,2\n"
 #
-# === Writing
+# \Method CSV.generate_line returns a \String containing the single row
+# constructed from an \Array:
+#   CSV.generate_line(['foo', '0']) # => "foo,0\n"
 #
-#   # To a file
-#   CSV.open("path/to/file.csv", "wb") do |csv|
-#     csv << ["row", "of", "CSV", "data"]
-#     csv << ["another", "row"]
-#     # ...
+# \CSV extends class \Array with instance method <tt>Array#to_csv</tt>,
+# which forms an \Array into a \String:
+#   ['foo', '0'].to_csv # => "foo,0\n"
+#
+# === "Filtering" \CSV
+#
+# \Method CSV.filter provides a Unix-style filter for \CSV data.
+# The input data is processed to form the output data:
+#   in_string = "foo,0\nbar,1\nbaz,2\n"
+#   out_string = ''
+#   CSV.filter(in_string, out_string) do |row|
+#     row[0] = row[0].upcase
+#     row[1] *= 4
 #   end
+#   out_string # => "FOO,0000\nBAR,1111\nBAZ,2222\n"
 #
-#   # To a String
-#   csv_string = CSV.generate do |csv|
-#     csv << ["row", "of", "CSV", "data"]
-#     csv << ["another", "row"]
-#     # ...
-#   end
+# == \CSV Objects
 #
-# === Shortcuts
+# There are three ways to create a \CSV object:
+# - \Method CSV.new returns a new \CSV object.
+# - \Method CSV.instance returns a new or cached \CSV object.
+# - \Method \CSV() also returns a new or cached \CSV object.
 #
-#   # Core extensions for converting one line
-#   csv_string = ["CSV", "data"].to_csv   # to CSV
-#   csv_array  = "CSV,String".parse_csv   # from CSV
-#
-#   # CSV() method
-#   CSV             { |csv_out| csv_out << %w{my data here} }  # to $stdout
-#   CSV(csv = "")   { |csv_str| csv_str << %w{my data here} }  # to a String
-#   CSV($stderr)    { |csv_err| csv_err << %w{my data here} }  # to $stderr
-#   CSV($stdin)     { |csv_in|  csv_in.each { |row| p row } }  # from $stdin
-#
-# == Delegated Methods
+# === Delegated Methods
 #
 # For convenience, a CSV object will delegate to many methods in class IO.
 # (A few have wrapper "guard code" in \CSV.) You may call:
@@ -219,7 +298,7 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 # * IO#truncate
 # * IO#tty?
 #
-# == Options
+# === Options
 #
 # The default values for options are:
 #   DEFAULT_OPTIONS = {
@@ -249,7 +328,7 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 #     strip:              false,
 #   }
 #
-# === Options for Parsing
+# ==== Options for Parsing
 #
 # :include: ../doc/options/common/col_sep.rdoc
 #
@@ -281,7 +360,7 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 #
 # :include: ../doc/options/parsing/empty_value.rdoc
 #
-# === Options for Generating
+# ==== Options for Generating
 #
 # :include: ../doc/options/common/col_sep.rdoc
 #
@@ -301,7 +380,7 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 #
 # :include: ../doc/options/generating/write_empty_value.rdoc
 #
-# == CSV with headers
+# === \CSV with Headers
 #
 # CSV allows to specify column names of CSV file, whether they are in data, or
 # provided separately. If headers are specified, reading methods return an instance
@@ -323,7 +402,7 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 #   data = CSV.parse('Bob,Engineering,1000', headers: %i[name department salary])
 #   data.first      #=> #<CSV::Row name:"Bob" department:"Engineering" salary:"1000">
 #
-# == \CSV \Converters
+# === \CSV \Converters
 #
 # By default, each field parsed by \CSV is formed into a \String.
 # You can use a _converter_ to convert certain fields into other Ruby objects.
@@ -340,7 +419,7 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 # All \converters try to transcode fields to UTF-8 before converting.
 # The conversion will fail if the data cannot be transcoded, leaving the field unchanged.
 #
-# === Field \Converters
+# ==== Field \Converters
 #
 # There are three ways to use field \converters;
 # these examples use built-in field converter +:integer+,
@@ -431,7 +510,7 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 #
 # See {Custom Converters}[#class-CSV-label-Custom+Converters].
 #
-# === Header \Converters
+# ==== Header \Converters
 #
 # Header converters operate only on headers (and not on other rows).
 #
@@ -496,7 +575,7 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 #
 # See {Custom Converters}[#class-CSV-label-Custom+Converters].
 #
-# === Custom \Converters
+# ==== Custom \Converters
 #
 # You can define custom \converters.
 #
@@ -523,7 +602,7 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 # If the \converter does not need +field_info+, it can be omitted:
 #   converter = proc {|field| ... }
 #
-# == CSV and Character Encodings (M17n or Multilingualization)
+# === CSV and Character Encodings (M17n or Multilingualization)
 #
 # This new CSV parser is m17n savvy.  The parser works in the Encoding of the IO
 # or String object being read from or written to. Your data is never transcoded
@@ -1423,7 +1502,7 @@ class CSV
     #   string = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
     #   path = 't.csv'
     #   File.write(path, string)
-    #   CSV.table(path # => #<CSV::Table mode:col_or_row row_count:4>
+    #   CSV.table(path) # => #<CSV::Table mode:col_or_row row_count:4>
     def table(path, **options)
       default_options = {
         headers:           true,
