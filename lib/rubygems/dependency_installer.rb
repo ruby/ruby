@@ -5,7 +5,6 @@ require 'rubygems/package'
 require 'rubygems/installer'
 require 'rubygems/spec_fetcher'
 require 'rubygems/user_interaction'
-require 'rubygems/source'
 require 'rubygems/available_set'
 require 'rubygems/deprecate'
 
