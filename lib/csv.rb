@@ -260,7 +260,14 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 # - \Method CSV.instance returns a new or cached \CSV object.
 # - \Method \CSV() also returns a new or cached \CSV object.
 #
-# === Delegated Methods
+# === Instance Methods
+#
+# \CSV has three groups of instance methods:
+# - Its own internally defined instance methods.
+# - Methods included by module Enumerable.
+# - Methods delegated to class IO. See below.
+#
+# ==== Delegated Methods
 #
 # For convenience, a CSV object will delegate to many methods in class IO.
 # (A few have wrapper "guard code" in \CSV.) You may call:
