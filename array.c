@@ -1285,10 +1285,10 @@ rb_ary_cat(VALUE ary, const VALUE *argv, long len)
  *    array.push(*objects) -> self
  *    array.append(*objects) -> self
  *
+ *  Array#append is an alias for \Array#push.
+ *
  *  Appends trailing elements.
  *
- *  Array#append is an alias for \Array#push.
-
  *  See also:
  *  - #pop:  Removes and returns trailing elements.
  *  - #shift:  Removes and returns leading elements.
@@ -1658,9 +1658,9 @@ ary_ensure_room_for_unshift(VALUE ary, int argc)
  *    array.unshift(*objects) -> self
  *    array.prepend(*objects) -> self
  *
- *  Prepends leading elements.
+ *  Array#prepend is an alias for Array#unshift.
  *
- *  Array#prepend is an alias for \Array#unshift.
+ *  Prepends leading elements.
  *
  *  See also:
  *  - #push:  Appends trailing elements.
@@ -1822,6 +1822,12 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *    a[-1..2] # => [2]
  *    a[-2..2] # => ["bar", 2]
  *    a[-3..2] # => [:foo, "bar", 2]
+ *
+ *  If <tt>range.start</tt> is larger than the array size, returns +nil+:
+ *    a = [:foo, 'bar', 2]
+ *    a[4..1] # => nil
+ *    a[4..0] # => nil
+ *    a[4..-1] # => nil
  *
  *  ---
  *
@@ -2120,6 +2126,8 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
  *
  *  Array#find_index is an alias for Array#index.
  *  See also Array#rindex.
+ *
+ *  Returns the index of a specified element.
  *
  *  ---
  *
@@ -3118,10 +3126,12 @@ inspect_ary(VALUE ary, VALUE dummy, int recur)
  *    array.inspect -> new_string
  *    array.to_s => new_string
  *
- *  Returns the new String formed by calling method <tt>#inspect</tt>
+ *  Array#to_s is an alias for Array#inspect.
+ *
+ *  Returns the new \String formed by calling method <tt>#inspect</tt>
  *  on each array element:
  *    a = [:foo, 'bar', 2]
- *    a.inspect  # => "[:foo, \"bar\", 2]"
+ *    a.inspect # => "[:foo, \"bar\", 2]"
  *
  *  Raises an exception if any element lacks instance method <tt>#inspect</tt>:
  *    a = [:foo, 'bar', 2, BasicObject.new]
@@ -4254,19 +4264,19 @@ rb_ary_select_bang(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.keep_if {|item| block}   -> ary
- *     ary.keep_if                  -> Enumerator
+ *    array.keep_if {|element| ... } -> self
+ *    array.keep_if -> new_enumeration
  *
- *  Deletes every element of +self+ for which the given block evaluates to
- *  +false+, and returns +self+.
+ *  Retains those elements for which the block returns a truthy value;
+ *  deletes all other elements; returns +self+:
+ *    a = [:foo, 'bar', 2, :bam]
+ *    a1 = a.keep_if {|element| element.to_s.start_with?('b') }
+ *    a1 # => ["bar", :bam]
+ *    a1.equal?(a) # => true # Returned self
  *
- *  If no block is given, an Enumerator is returned instead.
- *
- *     a = %w[ a b c d e f ]
- *     a.keep_if {|v| v =~ /[aeiou]/ }    #=> ["a", "e"]
- *     a                                  #=> ["a", "e"]
- *
- *  See also Array#select!.
+ *  Returns a new \Enumerator if no block given:
+ *    a = [:foo, 'bar', 2, :bam]
+ *    a.keep_if # => #<Enumerator: [:foo, "bar", 2, :bam]:keep_if>
  */
 
 static VALUE
@@ -4292,22 +4302,42 @@ ary_resize_smaller(VALUE ary, long len)
 
 /*
  *  call-seq:
- *     ary.delete(obj)            -> item or nil
- *     ary.delete(obj) {block}    -> item or result of block
+ *    array.delete(obj) -> deleted_object
+ *    array.delete {|obj| ... } -> deleted_object or block_return
  *
- *  Deletes all items from +self+ that are equal to +obj+.
+ *  Removes zero or more elements from +self+; returns +self+.
  *
- *  Returns the last deleted item, or +nil+ if no matching item is found.
+ *  ---
  *
- *  If the optional code block is given, the result of the block is returned if
- *  the item is not found.  (To remove +nil+ elements and get an informative
- *  return value, use Array#compact!)
+ *  When no block is given,
+ *  removes from +self+ each element +ele+ such <tt>that ele == obj</tt>;
+ *  returns the last deleted element:
+ *    s1 = 'bar'; s2 = 'bar'
+ *    a = [:foo, s1, 2, s2]
+ *    deleted_obj = a.delete('bar')
+ *    a # => [:foo, 2]
+ *    deleted_obj.equal?(s2) # => true # Returned self
  *
- *     a = [ "a", "b", "b", "b", "c" ]
- *     a.delete("b")                   #=> "b"
- *     a                               #=> ["a", "c"]
- *     a.delete("z")                   #=> nil
- *     a.delete("z") {"not found"}     #=> "not found"
+ *  Returns +nil+ if no elements removed:
+ *    a = [:foo, 'bar', 2]
+ *    a.delete(:nosuch) # => nil
+ *
+ *  ---
+ *
+ *  When a block is given,
+ *  removes from +self+ each element +ele+ such <tt>that ele == obj</tt>.
+ *
+ *  If any such elements are found, ignores the block
+ *  and returns the last deleted element:
+ *    s1 = 'bar'; s2 = 'bar'
+ *    a = [:foo, s1, 2, s2]
+ *    deleted_obj = a.delete('bar') {|obj| fail 'Cannot happen' }
+ *    a # => [:foo, 2]
+ *    deleted_obj.object_id == s2.object_id # => true
+ *
+ *  If no such elements are found, returns the block's return value:
+ *    a = [:foo, 'bar', 2]
+ *    a.delete(:nosuch) {|obj| "#{obj} not found" } # => "nosuch not found"
  */
 
 VALUE
@@ -4387,18 +4417,43 @@ rb_ary_delete_at(VALUE ary, long pos)
 }
 
 /*
- *  call-seq:
- *     ary.delete_at(index)  -> obj or nil
+ *  call-seq
+ :
+ *    array.delete_at(index) -> deleted_object or nil
  *
- *  Deletes the element at the specified +index+, returning that element, or
- *  +nil+ if the +index+ is out of range.
+ *  Deletes an element from +self+, per the given +index+.
  *
- *  See also Array#slice!
+ *  The given +index+ must be an
+ *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
  *
- *     a = ["ant", "bat", "cat", "dog"]
- *     a.delete_at(2)    #=> "cat"
- *     a                 #=> ["ant", "bat", "dog"]
- *     a.delete_at(99)   #=> nil
+ *  ---
+ *
+ *  When +index+ is non-negative, deletes the element at offset +index+:
+ *    a = [:foo, 'bar', 2]
+ *    a.delete_at(1) # => "bar"
+ *    a # => [:foo, 2]
+ *
+ *  If index is too large, returns nil:
+ *    a = [:foo, 'bar', 2]
+ *    a.delete_at(5) # => nil
+ *
+ *  ---
+ *
+ *  When +index+ is negative, counts backward from the end of the array:
+ *    a = [:foo, 'bar', 2]
+ *    a.delete_at(-2) # => "bar"
+ *    a # => [:foo, 2]
+ *
+ *  If +index+ is too small (far from zero), returns nil:
+ *    a = [:foo, 'bar', 2]
+ *    a.delete_at(-5) # => nil
+ *
+ *  ---
+ *
+ *  Raises an exception if index is not an Integer-convertible object:
+ *    a = [:foo, 'bar', 2]
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    a.delete_at(:foo)
  */
 
 static VALUE
@@ -4440,23 +4495,109 @@ ary_slice_bang_by_rb_ary_splice(VALUE ary, long pos, long len)
 
 /*
  *  call-seq:
- *     ary.slice!(index)         -> obj or nil
- *     ary.slice!(start, length) -> new_ary or nil
- *     ary.slice!(range)         -> new_ary or nil
+ *    array.slice!(n) -> obj or nil
+ *    array.slice!(start, length) -> new_array or nil
+ *    array.slice!(range) -> new_array or nil
  *
- *  Deletes the element(s) given by an +index+ (optionally up to +length+
- *  elements) or by a +range+.
+ *  Removes and returns elements from +self+.
  *
- *  Returns the deleted object (or objects), or +nil+ if the +index+ is out of
- *  range.
+ *  - Argument +n+, if given must be an \Integer object.
+ *  - Arguments +start+ and +length+, if given must be \Integer objects.
+ *  - Argument +range+, if given, must be a \Range object.
  *
- *     a = [ "a", "b", "c" ]
- *     a.slice!(1)     #=> "b"
- *     a               #=> ["a", "c"]
- *     a.slice!(-1)    #=> "c"
- *     a               #=> ["a"]
- *     a.slice!(100)   #=> nil
- *     a               #=> ["a"]
+ *  ---
+ *
+ *  When the only argument is an \Integer +n+,
+ *  removes and returns the _nth_ element in +self+:
+ *    a = [:foo, 'bar', 2]
+ *    a.slice!(1) # => "bar"
+ *    a # => [:foo, 2]
+ *
+ *  If +n+ is negative, counts backwards from the end of +self+:
+ *    a = [:foo, 'bar', 2]
+ *    a.slice!(-1) # => 2
+ *    a # => [:foo, "bar"]
+ *
+ *  If +n+ is out of range, returns +nil+:
+ *    a = [:foo, 'bar', 2]
+ *    a.slice!(50) # => nil
+ *    a.slice!(-50) # => nil
+ *    a # => [:foo, "bar", 2]
+ *
+ *  ---
+ *
+ *  When the only arguments are Integers +start+ and +length+,
+ *  removes +length+ elements from +self+ beginning at offset  +start+;
+ *  returns the deleted objects in a new Array:
+ *    a = [:foo, 'bar', 2]
+ *    a.slice!(0, 2) # => [:foo, "bar"]
+ *    a # => [2]
+ *
+ *  If <tt>start + length</tt> exceeds the array size,
+ *  removes and returns all elements from offset +start+ to the end:
+ *    a = [:foo, 'bar', 2]
+ *    a.slice!(1, 50) # => ["bar", 2]
+ *    a # => [:foo]
+ *
+ *  If <tt>start == a.size</tt> and +length+ is non-negative,
+ *  returns a new empty \Array:
+ *    a = [:foo, 'bar', 2]
+ *    a.slice!(a.size, 0) # => []
+ *    a.slice!(a.size, 50) # => []
+ *    a # => [:foo, "bar", 2]
+ *
+ *  If +length+ is negative, returns +nil+:
+ *    a = [:foo, 'bar', 2]
+ *    a.slice!(2, -1) # => nil
+ *    a.slice!(1, -2) # => nil
+ *    a # => [:foo, "bar", 2]
+ *
+ *  ---
+ *
+ *  When the only argument is a \Range object +range+,
+ *  treats <tt>range.min</tt> as +start+ above and <tt>range.size</tt> as +length+ above:
+ *    a = [:foo, 'bar', 2]
+ *     a.slice!(1..2) # => ["bar", 2]
+ *    a # => [:foo]
+ *
+ *  If <tt>range.start == a.size</tt>, returns a new empty \Array:
+ *    a = [:foo, 'bar', 2]
+ *    a.slice!(a.size..0) # => []
+ *    a.slice!(a.size..50) # => []
+ *    a.slice!(a.size..-1) # => []
+ *    a.slice!(a.size..-50) # => []
+ *    a # => [:foo, "bar", 2]
+ *
+ *  If <tt>range.start</tt> is larger than the array size, returns +nil+:
+ *    a = [:foo, 'bar', 2]
+ *    a.slice!(4..1) # => nil
+ *    a.slice!(4..0) # => nil
+ *    a.slice!(4..-1) # => nil
+ *
+ *  If <tt>range.end</tt> is negative, counts backwards from the end of the array:
+ *    a = [:foo, 'bar', 2]
+ *    a.slice!(0..-2) # => [:foo, "bar"]
+ *    a # => [2]
+ *
+ *  If <tt>range.start</tt> is negative,
+ *  calculates the start index backwards from the end of the array:
+ *    a = [:foo, 'bar', 2]
+ *    a.slice!(-2..2) # => ["bar", 2]
+ *    a # => [:foo]
+ *
+ *  ---
+ *
+ *  Raises an exception if given a single argument that is not an \Integer or a \Range:
+ *    a = [:foo, 'bar', 2]
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    a.slice!(:foo)
+ *
+ *  Raises an exception if given two arguments that are not both Integers:
+ *    a = [:foo, 'bar', 2]
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    a.slice!(:foo, 3)
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    a.slice!(1, :bar)
  */
 
 static VALUE
