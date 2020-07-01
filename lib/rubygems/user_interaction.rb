@@ -5,7 +5,6 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'rubygems/util'
 require 'rubygems/deprecate'
 require 'rubygems/text'
 
