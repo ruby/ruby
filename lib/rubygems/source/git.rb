@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require 'rubygems/util'
 
 ##
 # A git gem for use in a gem dependencies file.
