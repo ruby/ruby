@@ -93,18 +93,24 @@ class TestGc < Test::Unit::TestCase
 
     stat, count = {}, {}
     GC.start
-    GC.stat(stat)
-    ObjectSpace.count_objects(count)
     # repeat same methods invocation for cache object creation.
-    GC.stat(stat)
-    ObjectSpace.count_objects(count)
+    i, j, k = true, true, false
+    while i do
+      i, j, k = j, k, i
+      GC.stat(stat)
+      ObjectSpace.count_objects(count)
+    end
     assert_equal(count[:TOTAL]-count[:FREE], stat[:heap_live_slots])
     assert_equal(count[:FREE], stat[:heap_free_slots])
 
     # measure again without GC.start
     1000.times{ "a" + "b" }
-    GC.stat(stat)
-    ObjectSpace.count_objects(count)
+    i, j, k = true, true, false
+    while i do
+      i, j, k = j, k, i
+      GC.stat(stat)
+      ObjectSpace.count_objects(count)
+    end
     assert_equal(count[:FREE], stat[:heap_free_slots])
   end
 
