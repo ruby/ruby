@@ -602,7 +602,7 @@ RSpec.describe "Bundler.setup" do
         end
       G
 
-      install_gems "activesupport-2.3.5"
+      system_gems "activesupport-2.3.5"
 
       expect(the_bundle).to include_gems "activesupport 2.3.2", :groups => :default
     end
@@ -618,7 +618,7 @@ RSpec.describe "Bundler.setup" do
         end
       G
 
-      install_gems "activesupport-2.3.5"
+      system_gems "activesupport-2.3.5"
 
       expect(the_bundle).to include_gems "activesupport 2.3.2"
     end
@@ -765,7 +765,7 @@ end
     full_gem_name = gem_name + "-1.0"
     ext_dir = File.join(tmp("extensions", full_gem_name))
 
-    install_gems full_gem_name
+    system_gems full_gem_name
 
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
