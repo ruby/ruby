@@ -1,4 +1,4 @@
-<% comment = if current.respond_to? :comment_location then
+<%- comment = if current.respond_to? :comment_location then
                current.comment_location
              else
                current.comment
@@ -10,9 +10,9 @@
   <h3>Table of Contents</h3>
 
   <ul class="link-list" role="directory">
-<%   table.each do |heading| %>
+<%-   table.each do |heading| -%>
     <li><a href="#<%= heading.label current %>"><%= heading.plain_html %></a>
-<%   end %>
+<%-   end -%>
   </ul>
 </div>
-<% end %>
+<%- end -%>
