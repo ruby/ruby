@@ -372,49 +372,6 @@ EOT
         assert(1.0/f == -Float::INFINITY, "#{f} is not -0.0")
       end
 
-      # pattern_list is an array which contains regexp and :*.
-      # :* means any sequence.
-      #
-      # pattern_list is anchored.
-      # Use [:*, regexp, :*] for non-anchored match.
-      def assert_pattern_list(pattern_list, actual, message=nil)
-        rest = actual
-        anchored = true
-        pattern_list.each_with_index {|pattern, i|
-          if pattern == :*
-            anchored = false
-          else
-            if anchored
-              match = /\A#{pattern}/.match(rest)
-            else
-              match = pattern.match(rest)
-            end
-            unless match
-              msg = message(msg) {
-                expect_msg = "Expected #{mu_pp pattern}\n"
-                if /\n[^\n]/ =~ rest
-                  actual_mesg = +"to match\n"
-                  rest.scan(/.*\n+/) {
-                    actual_mesg << '  ' << $&.inspect << "+\n"
-                  }
-                  actual_mesg.sub!(/\+\n\z/, '')
-                else
-                  actual_mesg = "to match " + mu_pp(rest)
-                end
-                actual_mesg << "\nafter #{i} patterns with #{actual.length - rest.length} characters"
-                expect_msg + actual_mesg
-              }
-              assert false, msg
-            end
-            rest = match.post_match
-            anchored = true
-          end
-        }
-        if anchored
-          assert_equal("", rest)
-        end
-      end
-
       def assert_all_assertions_foreach(msg = nil, *keys, &block)
         all = AllFailures.new
         all.foreach(*keys, &block)
