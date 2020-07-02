@@ -662,7 +662,7 @@ rb_obj_init_copy(VALUE obj, VALUE orig)
  * \param[in] orig    the object to be dup from.
  *++
  **/
-VALUE
+static VALUE
 rb_obj_init_dup_clone(VALUE obj, VALUE orig)
 {
     rb_funcall(obj, id_init_copy, 1, orig);
@@ -956,7 +956,7 @@ rb_class_search_ancestor(VALUE cl, VALUE c)
  *++
  */
 
-VALUE
+static VALUE
 rb_obj_tap(VALUE obj)
 {
     rb_yield(obj);
@@ -2374,7 +2374,7 @@ rb_mod_attr_reader(int argc, VALUE *argv, VALUE klass)
  * \todo can be static?
  *++
  */
-VALUE
+static VALUE
 rb_mod_attr(int argc, VALUE *argv, VALUE klass)
 {
     if (argc == 2 && (argv[1] == Qtrue || argv[1] == Qfalse)) {
