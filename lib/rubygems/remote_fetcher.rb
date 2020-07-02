@@ -126,6 +126,7 @@ class Gem::RemoteFetcher
     gem_file_name = File.basename spec.cache_file
     local_gem_path = File.join cache_dir, gem_file_name
 
+    require "fileutils"
     FileUtils.mkdir_p cache_dir rescue nil unless File.exist? cache_dir
 
     source_uri = parse_uri(source_uri)
