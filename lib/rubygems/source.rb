@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-autoload :FileUtils, 'fileutils'
 
 require "rubygems/text"
 ##
