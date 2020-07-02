@@ -23,8 +23,7 @@ class Integer
   #
   #  Since +int+ is already an Integer, this always returns +true+.
   def integer?
-    Primitive.attr! 'inline'
-    Primitive.cexpr! 'Qtrue'
+    return true
   end
 
   def magnitude
@@ -53,8 +52,7 @@ class Integer
   #
   #  For example, <code>?a.ord</code> returns 97 both in 1.8 and 1.9.
   def ord
-    Primitive.attr! 'inline'
-    Primitive.cexpr! 'self'
+    return self
   end
 
   #  call-seq:
@@ -64,8 +62,7 @@ class Integer
   #
   #  #to_int is an alias for #to_i.
   def to_i
-    Primitive.attr! 'inline'
-    Primitive.cexpr! 'self'
+    return self
   end
 
   #  call-seq:
@@ -73,8 +70,7 @@ class Integer
   #
   #  Since +int+ is already an Integer, returns +self+.
   def to_int
-    Primitive.attr! 'inline'
-    Primitive.cexpr! 'self'
+    return self
   end
 
   # call-seq:
