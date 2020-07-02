@@ -4303,14 +4303,14 @@ ary_resize_smaller(VALUE ary, long len)
 /*
  *  call-seq:
  *    array.delete(obj) -> deleted_object
- *    array.delete {|obj| ... } -> deleted_object or block_return
+ *    array.delete {|nosuch| ... } -> deleted_object or block_return
  *
  *  Removes zero or more elements from +self+; returns +self+.
  *
  *  ---
  *
  *  When no block is given,
- *  removes from +self+ each element +ele+ such <tt>that ele == obj</tt>;
+ *  removes from +self+ each element +ele+ such that <tt>ele == obj</tt>;
  *  returns the last deleted element:
  *    s1 = 'bar'; s2 = 'bar'
  *    a = [:foo, s1, 2, s2]
@@ -4325,7 +4325,7 @@ ary_resize_smaller(VALUE ary, long len)
  *  ---
  *
  *  When a block is given,
- *  removes from +self+ each element +ele+ such <tt>that ele == obj</tt>.
+ *  removes from +self+ each element +ele+ such that <tt>ele == obj</tt>.
  *
  *  If any such elements are found, ignores the block
  *  and returns the last deleted element:
@@ -4417,8 +4417,7 @@ rb_ary_delete_at(VALUE ary, long pos)
 }
 
 /*
- *  call-seq
- :
+ *  call-seq:
  *    array.delete_at(index) -> deleted_object or nil
  *
  *  Deletes an element from +self+, per the given +index+.
