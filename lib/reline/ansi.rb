@@ -67,6 +67,9 @@ class Reline::ANSI
     end
     c = @@input.raw(intr: true, &:getbyte)
     (c == 0x16 && @@input.raw(min: 0, tim: 0, &:getbyte)) || c
+  rescue Errno::EIO
+    # Maybe the I/O has been closed.
+    nil
   end
 
   def self.ungetc(c)

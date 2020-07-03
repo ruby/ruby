@@ -243,6 +243,8 @@ module Reline
           break if line_editor.finished?
         end
         Reline::IOGate.move_cursor_column(0)
+      rescue Errno::EIO
+        # Maybe the I/O has been closed.
       rescue StandardError => e
         line_editor.finalize
         Reline::IOGate.deprep(otio)
