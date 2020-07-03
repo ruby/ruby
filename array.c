@@ -4677,17 +4677,24 @@ ary_reject_bang(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.reject! {|item| block}    -> ary or nil
- *     ary.reject!                   -> Enumerator
+ *    array.reject! {|element| ... } -> self or nil
+ *    array.reject! -> new_enumerator
  *
- *  Deletes every element of +self+ for which the block evaluates to +true+,
- *  if no changes were made returns +nil+.
+ *  Removes each element for which the block returns a truthy value.
  *
- *  The array may not be changed instantly every time the block is called.
+ *  Returns +self+ if any elements removed:
+ *    a = [:foo, 'bar', 2, 'bat']
+ *    a1 = a.reject! {|element| element.to_s.start_with?('b') }
+ *    a1 # => [:foo, 2]
+ *    a1.equal?(a) # => true # Returned self
  *
- *  See also Enumerable#reject and Array#delete_if.
+ *  Returns +nil+ if no elements removed:
+ *    a = [:foo, 'bar', 2]
+ *    a.reject! {|element| false } # => nil
  *
- *  If no block is given, an Enumerator is returned instead.
+ *  Returns a new \Enumerator if no block given:
+ *    a = [:foo, 'bar', 2]
+ *    a.reject! # => #<Enumerator: [:foo, "bar", 2]:reject!>
  */
 
 static VALUE
@@ -4700,15 +4707,18 @@ rb_ary_reject_bang(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.reject  {|item| block }  -> new_ary
- *     ary.reject                   -> Enumerator
+ *    array.reject {|element| ... } -> new_array
+ *    array.reject -> new_enumerator
  *
- *  Returns a new array containing the items in +self+ for which the given
- *  block is not +true+. The ordering of non-rejected elements is maintained.
+ *  Returns a new \Array whose elements are all those from +self+
+ *  for which the block returns +false+ or +nil+:
+ *    a = [:foo, 'bar', 2, 'bat']
+ *    a1 = a.reject { |element| element.to_s.start_with?('b') }
+ *    a1 # => [:foo, 2]
  *
- *  See also Array#delete_if
- *
- *  If no block is given, an Enumerator is returned instead.
+ *  Returns a new \Enumerator if no block given:
+ *     a = [:foo, 'bar', 2]
+ *     a.reject # => #<Enumerator: [:foo, "bar", 2]:reject>
  */
 
 static VALUE
@@ -4724,20 +4734,19 @@ rb_ary_reject(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.delete_if {|item| block}    -> ary
- *     ary.delete_if                   -> Enumerator
+ *    array.delete_if {|element| ... } -> self
+ *    array.delete_if -> Enumerator
  *
- *  Deletes every element of +self+ for which block evaluates to +true+.
+ *  Removes each element in +self+ for which the block returns a truthy value;
+ *  returns +self+:
+ *    a = [:foo, 'bar', 2, 'bat']
+ *    a1 = a.delete_if {|element| element.to_s.start_with?('b') }
+ *    a1 # => [:foo, 2]
+ *    a1.equal?(a) # => true # Returned self
  *
- *  The array is changed instantly every time the block is called, not after
- *  the iteration is over.
- *
- *  See also Array#reject!
- *
- *  If no block is given, an Enumerator is returned instead.
- *
- *     scores = [ 97, 42, 75 ]
- *     scores.delete_if {|score| score < 80 }   #=> [97]
+ *  Returns a new \Enumerator if no block given:
+ *    a = [:foo, 'bar', 2]
+ *    a.delete_if # => #<Enumerator: [:foo, "bar", 2]:delete_if>
  */
 
 static VALUE
@@ -4778,26 +4787,67 @@ take_items(VALUE obj, long n)
 
 /*
  *  call-seq:
- *     ary.zip(arg, ...)                  -> new_ary
- *     ary.zip(arg, ...) {|arr| block}    -> nil
+ *    array.zip(*other_arrays) -> new_array
+ *    array.zip(*other_arrays) {|other_array| ... } -> nil
  *
- *  Converts any arguments to arrays, then merges elements of +self+ with
- *  corresponding elements from each argument.
+ *  Each object in +other_arrays+ must be an
+ *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects].
  *
- *  This generates a sequence of <code>ary.size</code> _n_-element arrays,
- *  where _n_ is one more than the count of arguments.
+ *  ---
  *
- *  If the size of any argument is less than the size of the initial array,
- *  +nil+ values are supplied.
+ *  When no block given, returns a new \Array +new_array+ of size <tt>self.size</tt>
+ *  whose elements are Arrays.
  *
- *  If a block is given, it is invoked for each output +array+, otherwise an
- *  array of arrays is returned.
+ *  Each nested array <tt>new_array[n]</tt> is of size <tt>other_arrays.size+1</tt>,
+ *  and contains:
+ *  - The _nth_ element of +self+.
+ *  - The _nth_ element of each of the +other_arrays+.
  *
- *     a = [ 4, 5, 6 ]
- *     b = [ 7, 8, 9 ]
- *     [1, 2, 3].zip(a, b)   #=> [[1, 4, 7], [2, 5, 8], [3, 6, 9]]
- *     [1, 2].zip(a, b)      #=> [[1, 4, 7], [2, 5, 8]]
- *     a.zip([1, 2], [8])    #=> [[4, 1, 8], [5, 2, nil], [6, nil, nil]]
+ *  If all +other_arrays+ and +self+ are the same size:
+ *    a = [:a0, :a1, :a2, :a3]
+ *    b = [:b0, :b1, :b2, :b3]
+ *    c = [:c0, :c1, :c2, :c3]
+ *    d = a.zip(b, c)
+ *    d # => [[:a0, :b0, :c0], [:a1, :b1, :c1], [:a2, :b2, :c2], [:a3, :b3, :c3]]
+ *
+ *  If any array in +other_arrays+ is smaller than +self+,
+ *  fills to <tt>self.size</tt> with +nil+:
+ *    a = [:a0, :a1, :a2, :a3]
+ *    b = [:b0, :b1, :b2]
+ *    c = [:c0, :c1]
+ *    d = a.zip(b, c)
+ *    d # => [[:a0, :b0, :c0], [:a1, :b1, :c1], [:a2, :b2, nil], [:a3, nil, nil]]
+ *
+ *  If any array in +other_arrays+ is larger than +self+,
+ *  its trailing elements are ignored:
+ *    a = [:a0, :a1, :a2, :a3]
+ *    b = [:b0, :b1, :b2, :b3, :b4]
+ *    c = [:c0, :c1, :c2, :c3, :c4, :c5]
+ *    d = a.zip(b, c)
+ *    d # => [[:a0, :b0, :c0], [:a1, :b1, :c1], [:a2, :b2, :c2], [:a3, :b3, :c3]]
+ *
+ *  ---
+ *
+ *  When a block is given, calls the block with each of the sub-arrays (formed as above); returns nil
+ *    a = [:a0, :a1, :a2, :a3]
+ *    b = [:b0, :b1, :b2, :b3]
+ *    c = [:c0, :c1, :c2, :c3]
+ *    a.zip(b, c) {|sub_array| p sub_array} # => nil
+ *
+ *  Output:
+ *    [:a0, :b0, :c0]
+ *    [:a1, :b1, :c1]
+ *    [:a2, :b2, :c2]
+ *    [:a3, :b3, :c3]
+ *
+ *  ---
+ *
+ *  Raises an exception if any object in +other_arrays+ is not an Array-convertible object:
+ *    a = [:a0, :a1, :a2, :a3]
+ *    b = [:b0, :b1, :b2, :b3]
+ *    c = [:c0, :c1, :c2, :c3]
+ *    # Raises TypeError (wrong argument type Symbol (must respond to :each)):
+ *    d = a.zip(a, b, c, :foo)
  */
 
 static VALUE
@@ -4860,15 +4910,27 @@ rb_ary_zip(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *     ary.transpose -> new_ary
+ *    array.transpose -> new_array
  *
- *  Assumes that +self+ is an array of arrays and transposes the rows and
- *  columns.
+ *  Transposes the rows and columns in an array of arrays.
  *
- *     a = [[1,2], [3,4], [5,6]]
- *     a.transpose   #=> [[1, 3, 5], [2, 4, 6]]
+ *  Each element in +self+ must be an
+ *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects].
  *
- *  If the length of the subarrays don't match, an IndexError is raised.
+ *    a = [[:a0, :a1], [:b0, :b1], [:c0, :c1]]
+ *    a.transpose # => [[:a0, :b0, :c0], [:a1, :b1, :c1]]
+ *
+ *  ---
+ *
+ *  Raises an exception if any element in +self+ is not an Array-convertible object:
+ *    a = [[:a0, :a1], [:b0, :b1], :foo]
+ *    # Raises TypeError (no implicit conversion of Symbol into Array):
+ *    a.transpose
+ *
+ *  Raises an exception if the elements in +self+ are of differing sizes:
+ *    a = [[:a0, :a1], [:b0, :b1], [:c0, :c1, :c2]]
+ *    # Raises IndexError (element size differs (3 should be 2)):
+ *    a.transpose
  */
 
 static VALUE
@@ -4901,15 +4963,33 @@ rb_ary_transpose(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.replace(other_ary)  -> ary
- *     ary.initialize_copy(other_ary)	-> ary
+ *    array.replace(other_array) -> self
  *
- *  Replaces the contents of +self+ with the contents of +other_ary+,
- *  truncating or expanding if necessary.
+ *  Replaces the content of +self+ with the content of +other_array+; returns +self+.
  *
- *     a = [ "a", "b", "c", "d", "e" ]
- *     a.replace([ "x", "y", "z" ])   #=> ["x", "y", "z"]
- *     a                              #=> ["x", "y", "z"]
+ *  Argument +other_array+ must be an
+ *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects].
+ *
+ *  ---
+ *
+ *  Replaces the content of +self+ with the content of +other_array+:
+ *    a = [:foo, 'bar', 2]
+ *    a1 = a.replace(['foo', :bar, 3])
+ *    a1 # => ["foo", :bar, 3]
+ *    a1.equal?(a) # => true # Returned self
+ *
+ *  Ignores the size of +self+:
+ *
+ *    a = [:foo, 'bar', 2]
+ *    a.replace([]) # => []
+ *    a.replace([:foo, 'bar', 2]) # => [:foo, "bar", 2]
+ *
+ *  ---
+ *
+ *  Raises an exception if +other_array+ is not an Array-convertible object:
+ *    a = [:foo, 'bar', 2]
+ *    # Raises TypeError (no implicit conversion of Symbol into Array):
+ *    a.replace(:foo)
  */
 
 VALUE
@@ -4955,12 +5035,13 @@ rb_ary_replace(VALUE copy, VALUE orig)
 
 /*
  *  call-seq:
- *     ary.clear    -> ary
+ *     array.clear -> self
  *
- *  Removes all elements from +self+.
- *
- *     a = [ "a", "b", "c", "d", "e" ]
- *     a.clear    #=> [ ]
+ *  Removes all elements from +self+:
+ *    a = [:foo, 'bar', 2]
+ *    a1 = a.clear
+ *    a1 # => []
+ *    a1.equal?(a) # => true # Returned self
  */
 
 VALUE
