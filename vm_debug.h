@@ -31,7 +31,7 @@ void ruby_set_debug_option(const char *str);
 RUBY_SYMBOL_EXPORT_END
 
 #ifndef USE_RUBY_DEBUG_LOG
-#define USE_RUBY_DEBUG_LOG (1 && RUBY_DEVEL)
+#define USE_RUBY_DEBUG_LOG (0 && RUBY_DEVEL)
 #endif
 
 /* RUBY_DEBUG_LOG: Logging debug information mechanism
