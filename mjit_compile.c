@@ -59,6 +59,9 @@ struct compile_status {
     int compiled_id; // Just a copy of compiled_iseq->jit_unit->id
     // Mutated optimization levels
     struct rb_mjit_compile_info *compile_info;
+    bool merge_ivar_guards_p; // If true, merge guards of ivar accesses
+    rb_serial_t ivar_serial; // ic_serial of IVC in is_entries (used only when merge_ivar_guards_p)
+    st_index_t max_ivar_index; // Max IVC index in is_entries (used only when merge_ivar_guards_p)
     // If `inlined_iseqs[pos]` is not NULL, `mjit_compile_body` tries to inline ISeq there.
     const struct rb_iseq_constant_body **inlined_iseqs;
     struct inlined_call_context inline_context;
@@ -338,6 +341,20 @@ mjit_compile_body(FILE *f, const rb_iseq_t *iseq, struct compile_status *status)
     fprintf(f, "    static const VALUE *const original_body_iseq = (VALUE *)0x%"PRIxVALUE";\n",
             (VALUE)body->iseq_encoded);
 
+    // Generate merged ivar guards first if needed
+    if (!status->compile_info->disable_ivar_cache && status->merge_ivar_guards_p) {
+        fprintf(f, "    if (UNLIKELY(!(RB_TYPE_P(GET_SELF(), T_OBJECT) && (rb_serial_t)%"PRI_SERIALT_PREFIX"u == RCLASS_SERIAL(RBASIC(GET_SELF())->klass) &&", status->ivar_serial);
+        if (status->max_ivar_index >= ROBJECT_EMBED_LEN_MAX) {
+            fprintf(f, "%"PRIuSIZE" < ROBJECT_NUMIV(GET_SELF())", status->max_ivar_index); // index < ROBJECT_NUMIV(obj) && !RB_FL_ANY_RAW(obj, ROBJECT_EMBED)
+        }
+        else {
+            fprintf(f, "ROBJECT_EMBED_LEN_MAX == ROBJECT_NUMIV(GET_SELF())"); // index < ROBJECT_NUMIV(obj) && RB_FL_ANY_RAW(obj, ROBJECT_EMBED)
+        }
+        fprintf(f, "))) {\n");
+        fprintf(f, "        goto ivar_cancel;\n");
+        fprintf(f, "    }\n");
+    }
+
     // Simulate `opt_pc` in setup_parameters_complex. Other PCs which may be passed by catch tables
     // are not considered since vm_exec doesn't call mjit_exec for catch tables.
     if (body->param.flags.has_opt) {
@@ -409,6 +426,45 @@ inlinable_iseq_p(const struct rb_iseq_constant_body *body)
     return true;
 }
 
+static void
+init_ivar_compile_status(const struct rb_iseq_constant_body *body, struct compile_status *status)
+{
+    int num_ivars = 0;
+    unsigned int pos = 0;
+    status->max_ivar_index = 0;
+    status->ivar_serial = 0;
+
+    while (pos < body->iseq_size) {
+#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
+        int insn = rb_vm_insn_addr2insn((void *)body->iseq_encoded[pos]);
+#else
+        int insn = (int)body->iseq_encoded[pos];
+#endif
+        if (insn == BIN(getinstancevariable) || insn == BIN(setinstancevariable)) {
+            IVC ic = (IVC)body->iseq_encoded[pos+2];
+            IVC ic_copy = &(status->is_entries + ((union iseq_inline_storage_entry *)ic - body->is_entries))->iv_cache;
+            if (ic_copy->ic_serial) { // Only initialized (ic_serial > 0) IVCs are optimized
+                num_ivars++;
+
+                if (status->max_ivar_index < ic_copy->index) {
+                    status->max_ivar_index = ic_copy->index;
+                }
+
+                if (status->ivar_serial == 0) {
+                    status->ivar_serial = ic_copy->ic_serial;
+                }
+                else if (status->ivar_serial != ic_copy->ic_serial) {
+                    // Multiple classes have used this ISeq. Give up assuming one serial.
+                    status->merge_ivar_guards_p = false;
+                    return;
+                }
+            }
+        }
+        pos += insn_len(insn);
+    }
+    status->merge_ivar_guards_p = status->ivar_serial > 0 && num_ivars >= 2;
+}
+
 // This needs to be macro instead of a function because it's using `alloca`.
 #define INIT_COMPILE_STATUS(status, body, compile_root_p) do { \
     status = (struct compile_status){ \
@@ -476,6 +532,7 @@ precompile_inlinable_iseqs(FILE *f, const rb_iseq_t *iseq, struct compile_status
                     || (child_status.is_entries != NULL && !mjit_copy_cache_from_main_thread(child_iseq, child_status.is_entries))) {
                     return false;
                 }
+                init_ivar_compile_status(child_iseq->body, &child_status);
 
                 fprintf(f, "ALWAYS_INLINE(static VALUE _mjit%d_inlined_%d(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE orig_self, const rb_iseq_t *original_iseq));\n", status->compiled_id, pos);
                 fprintf(f, "static inline VALUE\n_mjit%d_inlined_%d(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE orig_self, const rb_iseq_t *original_iseq)\n{\n", status->compiled_id, pos);
@@ -503,6 +560,7 @@ mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id)
         || (status.is_entries != NULL && !mjit_copy_cache_from_main_thread(iseq, status.is_entries))) {
         return false;
     }
+    init_ivar_compile_status(iseq->body, &status);
 
     if (!status.compile_info->disable_send_cache && !status.compile_info->disable_inlining) {
         if (!precompile_inlinable_iseqs(f, iseq, &status))
