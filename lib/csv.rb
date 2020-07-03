@@ -337,9 +337,29 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 #
 # ==== Options for Parsing
 #
-# :include: ../doc/options/common/col_sep.rdoc
+# Options for parsing, described in detail below, include:
+# - +row_sep+: Specifies the row separator; used to delimit rows.
+# - +col_sep+: Specifies the column separator; used to delimit fields.
+# - +quote_char+: Specifies the quote character; used to quote fields.
+# - +field_size_limit+: Specifies the maximum field size allowed.
+# - +converters+: Specifies the field converters to be used.
+# - +unconverted_fields+: Specifies whether unconverted fields are to be available.
+# - +headers+: Specifies whether data contains headers,
+#   or specifies the headers themselves.
+# - +return_headers+: Specifies whether headers are to be returned.
+# - +header_converters+: Specifies the header converters to be used.
+# - +skip_blanks+: Specifies whether blanks lines are to be ignored.
+# - +skip_lines+: Specifies how comments lines are to be recognized.
+# - +strip+: Specifies whether leading and trailing whitespace are
+#   to be stripped from fields..
+# - +liberal_parsing+: Specifies whether \CSV should attempt to parse
+#   non-compliant data.
+# - +nil_value+: Specifies the object that is to be substituted for each null (no-text) field.
+# - +empty_value+: Specifies the object that is to be substituted for each empty field.
 #
 # :include: ../doc/options/common/row_sep.rdoc
+#
+# :include: ../doc/options/common/col_sep.rdoc
 #
 # :include: ../doc/options/common/quote_char.rdoc
 #
@@ -369,9 +389,20 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 #
 # ==== Options for Generating
 #
-# :include: ../doc/options/common/col_sep.rdoc
+# Options for generating, described in detail below, include:
+# - +row_sep+: Specifies the row separator; used to delimit rows.
+# - +col_sep+: Specifies the column separator; used to delimit fields.
+# - +quote_char+: Specifies the quote character; used to quote fields.
+# - +write_headers+: Specifies whether headers are to be written.
+# - +force_quotes+: Specifies whether each output field is to be quoted.
+# - +quote_empty+: Specifies whether each empty output field is to be quoted.
+# - +write_converters+: Specifies the field converters to be used in writing.
+# - +write_nil_value+: Specifies the object that is to be substituted for each +nil+-valued field.
+# - +write_empty_value+: Specifies the object that is to be substituted for each empty field.
 #
 # :include: ../doc/options/common/row_sep.rdoc
+#
+# :include: ../doc/options/common/col_sep.rdoc
 #
 # :include: ../doc/options/common/quote_char.rdoc
 #
@@ -1211,11 +1242,11 @@ class CSV
     #
     # Create a \CSV object using a file path:
     #   csv = CSV.open(path)
-    #   csv # => #<CSV io_type:File io_path:"t.csv" encoding:UTF-8 lineno:0 col_sep:"," row_sep:"\r\n" quote_char:"\"">
+    #   csv # => #<CSV io_type:File io_path:"t.csv" encoding:UTF-8 lineno:0 col_sep:"," row_sep:"\n" quote_char:"\"">
     #
     # Create a \CSV object using an open \File:
     #   csv = CSV.open(File.open(path))
-    #   csv # => #<CSV io_type:File io_path:"t.csv" encoding:UTF-8 lineno:0 col_sep:"," row_sep:"\r\n" quote_char:"\"">
+    #   csv # => #<CSV io_type:File io_path:"t.csv" encoding:UTF-8 lineno:0 col_sep:"," row_sep:"\n" quote_char:"\"">
     #
     # ---
     #
@@ -1224,15 +1255,15 @@ class CSV
     #
     # Using a file path:
     #   csv = CSV.open(path) {|csv| p csv}
-    #   csv # => #<CSV io_type:File io_path:"t.csv" encoding:UTF-8 lineno:0 col_sep:"," row_sep:"\r\n" quote_char:"\"">
+    #   csv # => #<CSV io_type:File io_path:"t.csv" encoding:UTF-8 lineno:0 col_sep:"," row_sep:"\n" quote_char:"\"">
     # Output:
-    #   #<CSV io_type:File io_path:"t.csv" encoding:UTF-8 lineno:0 col_sep:"," row_sep:"\r\n" quote_char:"\"">
+    #   #<CSV io_type:File io_path:"t.csv" encoding:UTF-8 lineno:0 col_sep:"," row_sep:"\n" quote_char:"\"">
     #
     # Using an open \File:
     #   csv = CSV.open(File.open(path)) {|csv| p csv}
-    #   csv # => #<CSV io_type:File io_path:"t.csv" encoding:UTF-8 lineno:0 col_sep:"," row_sep:"\r\n" quote_char:"\"">
+    #   csv # => #<CSV io_type:File io_path:"t.csv" encoding:UTF-8 lineno:0 col_sep:"," row_sep:"\n" quote_char:"\"">
     # Output:
-    #   #<CSV io_type:File io_path:"t.csv" encoding:UTF-8 lineno:0 col_sep:"," row_sep:"\r\n" quote_char:"\"">
+    #   #<CSV io_type:File io_path:"t.csv" encoding:UTF-8 lineno:0 col_sep:"," row_sep:"\n" quote_char:"\"">
     #
     # ---
     #
@@ -1642,51 +1673,44 @@ class CSV
     writer if @writer_options[:write_headers]
   end
 
-  #
-  # The encoded <tt>:col_sep</tt> used in parsing and writing.
-  # See CSV::new for details.
-  #
+  # Returns the encoded column separator; used for parsing and writing;
+  # see {Option +col_sep+}[#class-CSV-label-Option+col_sep]:
+  #   CSV.new('').col_sep # => ","
   def col_sep
     parser.column_separator
   end
 
-  #
-  # The encoded <tt>:row_sep</tt> used in parsing and writing.
-  # See CSV::new for details.
-  #
+  # Returns the encoded row separator; used for parsing and writing;
+  # see {Option +row_sep+}[#class-CSV-label-Option+row_sep]:
+  #   CSV.new('').row_sep # => "\n"
   def row_sep
     parser.row_separator
   end
 
-  #
-  # The encoded <tt>:quote_char</tt> used in parsing and writing.
-  # See CSV::new for details.
-  #
+  # Returns the encoded quote character; used for parsing and writing;
+  # see {Option +quote_char+}[#class-CSV-label-Option+quote_char]:
+  #   CSV.new('').quote_char # => "\""
   def quote_char
     parser.quote_character
   end
 
-  #
-  # The limit for field size, if any.
-  # See CSV::new for details.
-  #
+  # Returns the limit for field size; used for parsing;
+  # see {Option +field_size_limit+}[#class-CSV-label-Option+field_size_limit]:
+  #   CSV.new('').field_size_limit # => nil
   def field_size_limit
     parser.field_size_limit
   end
 
-  #
-  # The regex marking a line as a comment.
-  # See CSV::new for details.
-  #
+  # Returns the \Regexp used to identify comment lines; used for parsing;
+  # see {Option +skip_lines+}[#class-CSV-label-Option+skip_lines]:
+  #   CSV.new('').skip_lines # => nil
   def skip_lines
     parser.skip_lines
   end
 
-  #
-  # Returns the current list of converters in effect. See CSV::new for details.
-  # Built-in converters will be returned by name, while others will be returned
-  # as is.
-  #
+  # Returns an \Array containing field converters; used for parsing;
+  # see {Option +converters+}[#class-CSV-label-Option+converters]:
+  #   CSV.new('').converters # => []
   def converters
     parser_fields_converter.map do |converter|
       name = Converters.rassoc(converter)
@@ -1694,19 +1718,17 @@ class CSV
     end
   end
 
-  #
-  # Returns +true+ if unconverted_fields() to parsed results.
-  # See CSV::new for details.
-  #
+  # Returns the value that determines whether unconverted fields are to be
+  # available; used for parsing;
+  # see {Option +unconverted_fields+}[#class-CSV-label-Option+unconverted_fields]:
+  #   CSV.new('').unconverted_fields? # => nil
   def unconverted_fields?
     parser.unconverted_fields?
   end
 
-  #
-  # Returns +nil+ if headers will not be used, +true+ if they will but have not
-  # yet been read, or the actual headers after they have been read.
-  # See CSV::new for details.
-  #
+  # Returns the value that determines whether headers are used; used for parsing;
+  # see {Option +headers+}[#class-CSV-label-Option+headers]:
+  #   CSV.new('').headers # => nil
   def headers
     if @writer
       @writer.headers
@@ -1718,27 +1740,24 @@ class CSV
       raw_headers
     end
   end
-  #
-  # Returns +true+ if headers will be returned as a row of results.
-  # See CSV::new for details.
-  #
+
+  # Returns the value that determines whether headers are to be returned; used for parsing;
+  # see {Option +return_headers+}[#class-CSV-label-Option+return_headers]:
+  #   CSV.new('').return_headers? # => false
   def return_headers?
     parser.return_headers?
   end
 
-  #
-  # Returns +true+ if headers are written in output.
-  # See CSV::new for details.
-  #
+  # Returns the value that determines whether headers are to be written; used for generating;
+  # see {Option +write_headers+}[#class-CSV-label-Option+write_headers]:
+  #   CSV.new('').write_headers? # => nil
   def write_headers?
     @writer_options[:write_headers]
   end
 
-  #
-  # Returns the current list of converters in effect for headers. See CSV::new
-  # for details. Built-in converters will be returned by name, while others
-  # will be returned as is.
-  #
+  # Returns an \Array containing header converters; used for parsing;
+  # see {Option +header_converters+}[#class-CSV-label-Option+header_converters]:
+  #   CSV.new('').header_converters # => []
   def header_converters
     header_fields_converter.map do |converter|
       name = HeaderConverters.rassoc(converter)
@@ -1746,34 +1765,59 @@ class CSV
     end
   end
 
-  #
-  # Returns +true+ blank lines are skipped by the parser. See CSV::new
-  # for details.
-  #
+  # Returns the value that determines whether blank lines are to be ignored; used for parsing;
+  # see {Option +skip_blanks+}[#class-CSV-label-Option+skip_blanks]:
+  #   CSV.new('').skip_blanks? # => false
   def skip_blanks?
     parser.skip_blanks?
   end
 
-  # Returns +true+ if all output fields are quoted. See CSV::new for details.
+  # Returns the value that determines whether all output fields are to be quoted;
+  # used for generating;
+  # see {Option +force_quotes+}[#class-CSV-label-Option+force_quotes]:
+  #   CSV.new('').force_quotes? # => false
   def force_quotes?
     @writer_options[:force_quotes]
   end
 
-  # Returns +true+ if illegal input is handled. See CSV::new for details.
+  # Returns the value that determines whether illegal input is to be handled; used for parsing;
+  # see {Option +liberal_parsing+}[#class-CSV-label-Option+liberal_parsing]:
+  #   CSV.new('').liberal_parsing? # => false
   def liberal_parsing?
     parser.liberal_parsing?
   end
 
-  #
-  # The Encoding CSV is parsing or writing in.  This will be the Encoding you
-  # receive parsed data in and/or the Encoding data will be written in.
-  #
+  # Returns the encoding used for parsing and generating;
+  # see {CSV and Character Encodings (M17n or Multilingualization)}[#class-CSV-label-CSV+and+Character+Encodings+-28M17n+or+Multilingualization-29]:
+  #   CSV.new('').encoding # => #<Encoding:UTF-8>
   attr_reader :encoding
 
+  # Returns the count of the rows parsed or generated.
   #
-  # The line number of the last row read from this file. Fields with nested
-  # line-end characters will not affect this count.
+  # Parsing:
+  #   string = "foo,0\nbar,1\nbaz,2\n"
+  #   path = 't.csv'
+  #   File.write(path, string)
+  #   CSV.open(path) do |csv|
+  #     csv.each do |row|
+  #       p [csv.lineno, row]
+  #     end
+  #   end
+  # Output:
+  #   [1, ["foo", "0"]]
+  #   [2, ["bar", "1"]]
+  #   [3, ["baz", "2"]]
   #
+  # Generating:
+  #   CSV.generate do |csv|
+  #     p csv.lineno; csv << ['foo', 0]
+  #     p csv.lineno; csv << ['bar', 1]
+  #     p csv.lineno; csv << ['baz', 2]
+  #   end
+  # Output:
+  #   0
+  #   1
+  #   2
   def lineno
     if @writer
       @writer.lineno
@@ -1782,9 +1826,19 @@ class CSV
     end
   end
 
-  #
-  # The last row read from this file.
-  #
+  # Returns the line most recently read:
+  #   string = "foo,0\nbar,1\nbaz,2\n"
+  #   path = 't.csv'
+  #   File.write(path, string)
+  #   CSV.open(path) do |csv|
+  #     csv.each do |row|
+  #       p [csv.lineno, csv.line]
+  #     end
+  #   end
+  # Output:
+  #   [1, "foo,0\n"]
+  #   [2, "bar,1\n"]
+  #   [3, "baz,2\n"]
   def line
     parser.line
   end
