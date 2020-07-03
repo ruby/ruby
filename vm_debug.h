@@ -39,6 +39,7 @@ RUBY_SYMBOL_EXPORT_END
 #ifdef USE_RUBY_DEBUG_LOG
 #undef USE_RUBY_DEBUG_LOG
 #endif
+#endif
 
 /* RUBY_DEBUG_LOG: Logging debug information mechanism
  *
