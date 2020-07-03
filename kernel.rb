@@ -48,6 +48,28 @@ module Kernel
     Primitive.rb_obj_clone2(freeze)
   end
 
+  #
+  #  call-seq:
+  #     obj.tap {|x| block }    -> obj
+  #
+  #  Yields self to the block, and then returns self.
+  #  The primary purpose of this method is to "tap into" a method chain,
+  #  in order to perform operations on intermediate results within the chain.
+  #
+  #     (1..10)                  .tap {|x| puts "original: #{x}" }
+  #       .to_a                  .tap {|x| puts "array:    #{x}" }
+  #       .select {|x| x.even? } .tap {|x| puts "evens:    #{x}" }
+  #       .map {|x| x*x }        .tap {|x| puts "squares:  #{x}" }
+  #
+  #--
+  # \private
+  #++
+  #
+  def tap
+    yield(self)
+    self
+  end
+
   module_function
 
   #

@@ -485,8 +485,6 @@ class TestSetTraceFunc < Test::Unit::TestCase
      [:c_call,   4, 'xyzzy', Integer,     :times,           1,           :outer, :nothing],
      [:line,     4, 'xyzzy', self.class,  method,           self,        nil,    :nothing],
      [:line,     5, 'xyzzy', self.class,  method,           self,        :inner, :nothing],
-     [:c_call,   5, 'xyzzy', Kernel,      :tap,             self,        :inner, :nothing],
-     [:c_return, 5, "xyzzy", Kernel,      :tap,             self,        :inner, self],
      [:c_return, 4, "xyzzy", Integer,     :times,           1,           :outer, 1],
      [:line,     7, 'xyzzy', self.class,  method,           self,        :outer, :nothing],
      [:c_call,   7, "xyzzy", Class,       :inherited,       Object,      :outer, :nothing],
@@ -512,8 +510,6 @@ class TestSetTraceFunc < Test::Unit::TestCase
      [:call,    13, "xyzzy", xyzzy.class, :bar,             xyzzy,       nil, :nothing],
      [:line,    14, "xyzzy", xyzzy.class, :bar,             xyzzy,       nil, :nothing],
      [:line,    15, "xyzzy", xyzzy.class, :bar,             xyzzy,       :XYZZY_bar, :nothing],
-     [:c_call,  15, "xyzzy", Kernel,      :tap,             xyzzy,       :XYZZY_bar, :nothing],
-     [:c_return,15, "xyzzy", Kernel,      :tap,             xyzzy,       :XYZZY_bar, xyzzy],
      [:return,  16, "xyzzy", xyzzy.class, :bar,             xyzzy,       :XYZZY_bar, xyzzy],
      [:return,  12, "xyzzy", xyzzy.class, :foo,             xyzzy,       :XYZZY_foo, xyzzy],
      [:line,    20, "xyzzy", TestSetTraceFunc, method,      self,        :outer, :nothing],
@@ -610,8 +606,6 @@ class TestSetTraceFunc < Test::Unit::TestCase
      [:c_call,   4, 'xyzzy', Integer,     :times,           1,           :outer, :nothing],
      [:line,     4, 'xyzzy', self.class,  method,           self,        nil,    :nothing],
      [:line,     5, 'xyzzy', self.class,  method,           self,        :inner, :nothing],
-     [:c_call,   5, 'xyzzy', Kernel,      :tap,             self,        :inner, :nothing],
-     [:c_return, 5, "xyzzy", Kernel,      :tap,             self,        :inner, self],
      [:c_return, 4, "xyzzy", Integer,     :times,           1,           :outer, 1],
      [:line,     7, 'xyzzy', self.class,  method,           self,        :outer, :nothing],
      [:c_call,   7, "xyzzy", Class,       :inherited,       Object,      :outer, :nothing],
@@ -637,8 +631,6 @@ class TestSetTraceFunc < Test::Unit::TestCase
      [:call,    13, "xyzzy", xyzzy.class, :bar,             xyzzy,       nil, :nothing],
      [:line,    14, "xyzzy", xyzzy.class, :bar,             xyzzy,       nil, :nothing],
      [:line,    15, "xyzzy", xyzzy.class, :bar,             xyzzy,       :XYZZY_bar, :nothing],
-     [:c_call,  15, "xyzzy", Kernel,      :tap,             xyzzy,       :XYZZY_bar, :nothing],
-     [:c_return,15, "xyzzy", Kernel,      :tap,             xyzzy,       :XYZZY_bar, xyzzy],
      [:return,  16, "xyzzy", xyzzy.class, :bar,             xyzzy,       :XYZZY_bar, xyzzy],
      [:return,  12, "xyzzy", xyzzy.class, :foo,             xyzzy,       :XYZZY_foo, xyzzy],
      [:line,    20, "xyzzy", TestSetTraceFunc, method,      self,        :outer, :nothing],
@@ -1685,7 +1677,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     TracePoint.new(:return, &capture_events).enable{
       o.alias_m
     }
-    assert_equal [[:return, :m, :alias_m]], events
+    assert_equal [[:return, :tap, :tap], [:return, :m, :alias_m]], events
     events.clear
 
     o = Class.new{
@@ -1709,13 +1701,13 @@ class TestSetTraceFunc < Test::Unit::TestCase
     events.clear
 
     o = Class.new{
-      alias alias_tap tap
-      define_method(:m){alias_tap{return}}
+      alias alias_singleton_class singleton_class
+      define_method(:m){alias_singleton_class}
     }.new
     TracePoint.new(:c_return, &capture_events).enable{
       o.m
     }
-    assert_equal [[:c_return, :tap, :alias_tap]], events
+    assert_equal [[:c_return, :singleton_class, :alias_singleton_class]], events
     events.clear
 
     c = Class.new{
