@@ -10,6 +10,7 @@ class JSONFixturesTest < Test::Unit::TestCase
   end
 
   def test_passing
+    verbose_bak, $VERBOSE = $VERBOSE, nil
     for name, source in @passed
       begin
         assert JSON.parse(source),
@@ -19,6 +20,8 @@ class JSONFixturesTest < Test::Unit::TestCase
         raise e
       end
     end
+  ensure
+    $VERBOSE = verbose_bak
   end
 
   def test_failing
