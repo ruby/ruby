@@ -1946,12 +1946,6 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
 	    }
 	    break;
 	}
-      case TS_GENTRY:
-	{
-	    struct rb_global_entry *entry = (struct rb_global_entry *)op;
-	    ret = rb_str_dup(rb_id2str(entry->id));
-	}
-	break;
 
       case TS_IC:
       case TS_IVC:
@@ -2774,12 +2768,6 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 		    else {
 			rb_ary_push(ary, Qnil);
 		    }
-		}
-		break;
-	      case TS_GENTRY:
-		{
-		    struct rb_global_entry *entry = (struct rb_global_entry *)*seq;
-		    rb_ary_push(ary, ID2SYM(entry->id));
 		}
 		break;
 	      case TS_IC:

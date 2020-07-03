@@ -3661,7 +3661,7 @@ vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_
 	klass = vm_get_cbase(GET_EP());
 	break;
       case DEFINED_GVAR:
-	if (rb_gvar_defined(rb_global_entry(SYM2ID(obj)))) {
+	if (rb_gvar_defined(SYM2ID(obj))) {
 	    expr_type = DEFINED_GVAR;
 	}
 	break;
