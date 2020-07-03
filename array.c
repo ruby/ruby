@@ -4303,7 +4303,7 @@ ary_resize_smaller(VALUE ary, long len)
 /*
  *  call-seq:
  *    array.delete(obj) -> deleted_object
- *    array.delete {|nosuch| ... } -> deleted_object or block_return
+ *    array.delete(obj) {|nosuch| ... } -> deleted_object or block_return
  *
  *  Removes zero or more elements from +self+; returns +self+.
  *
