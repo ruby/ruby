@@ -31,7 +31,6 @@ VALUE rb_autoload_at_p(VALUE, ID, int);
 NORETURN(VALUE rb_mod_const_missing(VALUE,VALUE));
 rb_gvar_getter_t *rb_gvar_getter_function_of(ID);
 rb_gvar_setter_t *rb_gvar_setter_function_of(ID);
-bool rb_gvar_is_traced(ID);
 void rb_gvar_readonly_setter(VALUE v, ID id, VALUE *_);
 static inline bool ROBJ_TRANSIENT_P(VALUE obj);
 static inline void ROBJ_TRANSIENT_SET(VALUE obj);

@@ -786,13 +786,6 @@ rb_gvar_setter_function_of(ID id)
     return entry->var->setter;
 }
 
-bool
-rb_gvar_is_traced(ID id)
-{
-    const struct rb_global_entry *entry = rb_global_entry(id);
-    return !!entry->var->trace;
-}
-
 static enum rb_id_table_iterator_result
 gvar_i(ID key, VALUE val, void *a)
 {
