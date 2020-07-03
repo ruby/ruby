@@ -2318,13 +2318,6 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 		      case TS_ID: /* ID */
 			generated_iseq[code_index + 1 + j] = SYM2ID(operands[j]);
 			break;
-		      case TS_GENTRY:
-			{
-			    struct rb_global_entry *entry =
-				(struct rb_global_entry *)(operands[j] & (~1));
-			    generated_iseq[code_index + 1 + j] = (VALUE)entry;
-			}
-			break;
 		      case TS_FUNCPTR:
 			generated_iseq[code_index + 1 + j] = operands[j];
 			break;
@@ -4875,7 +4868,7 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
       case NODE_GVAR:
         ADD_INSN(ret, line, putnil);
         ADD_INSN3(ret, line, defined, INT2FIX(DEFINED_GVAR),
-		  ID2SYM(node->nd_entry->id), needstr);
+		  ID2SYM(node->nd_entry), needstr);
         return;
 
       case NODE_CVAR:
@@ -5262,7 +5255,7 @@ compile_named_capture_assign(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE
     LABEL *fail_label = NEW_LABEL(line), *end_label = NEW_LABEL(line);
 
 #if !(defined(NAMED_CAPTURE_BY_SVAR) && NAMED_CAPTURE_BY_SVAR-0)
-    ADD_INSN1(ret, line, getglobal, ((VALUE)rb_global_entry(idBACKREF) | 1));
+    ADD_INSN1(ret, line, getglobal, ID2SYM(idBACKREF));
 #else
     ADD_INSN2(ret, line, getspecial, INT2FIX(1) /* '~' */, INT2FIX(0));
 #endif
@@ -7599,8 +7592,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	if (!popped) {
 	    ADD_INSN(ret, line, dup);
 	}
-	ADD_INSN1(ret, line, setglobal,
-		  ((VALUE)node->nd_entry | 1));
+	ADD_INSN1(ret, line, setglobal, ID2SYM(node->nd_entry));
 	break;
       }
       case NODE_IASGN:{
@@ -8212,8 +8204,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	break;
       }
       case NODE_GVAR:{
-	ADD_INSN1(ret, line, getglobal,
-		  ((VALUE)node->nd_entry | 1));
+	ADD_INSN1(ret, line, getglobal, ID2SYM(node->nd_entry));
 	if (popped) {
 	    ADD_INSN(ret, line, pop);
 	}
@@ -8980,13 +8971,6 @@ insn_data_to_s_detail(INSN *iobj)
 	      case TS_ID:	/* ID */
 		rb_str_concat(str, opobj_inspect(OPERAND_AT(iobj, j)));
 		break;
-	      case TS_GENTRY:
-		{
-		    struct rb_global_entry *entry = (struct rb_global_entry *)
-		      (OPERAND_AT(iobj, j) & (~1));
-		    rb_str_append(str, rb_id2str(entry->id));
-		    break;
-		}
 	      case TS_IC:	/* inline cache */
 	      case TS_IVC:	/* inline ivar cache */
 	      case TS_ISE:	/* inline storage entry */
@@ -9375,10 +9359,6 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
 				argv[j] = 0;
 			    }
 			}
-			break;
-		      case TS_GENTRY:
-			op = rb_to_symbol_type(op);
-			argv[j] = (VALUE)rb_global_entry(SYM2ID(op));
 			break;
 		      case TS_ISE:
                         FL_SET((VALUE)iseq, ISEQ_MARKABLE_ISEQ);
@@ -10136,19 +10116,6 @@ ibf_dump_iseq(struct ibf_dump *dump, const rb_iseq_t *iseq)
     }
 }
 
-static VALUE
-ibf_dump_gentry(struct ibf_dump *dump, const struct rb_global_entry *entry)
-{
-    return (VALUE)ibf_dump_id(dump, entry->id);
-}
-
-static VALUE
-ibf_load_gentry(const struct ibf_load *load, const struct rb_global_entry *entry)
-{
-    ID gid = ibf_load_id(load, (ID)(VALUE)entry);
-    return (VALUE)rb_global_entry(gid);
-}
-
 static unsigned char
 ibf_load_byte(const struct ibf_load *load, ibf_offset_t *offset)
 {
@@ -10316,9 +10283,6 @@ ibf_dump_code(struct ibf_dump *dump, const rb_iseq_t *iseq)
               case TS_ID:
                 wv = ibf_dump_id(dump, (ID)op);
                 break;
-              case TS_GENTRY:
-                wv = ibf_dump_gentry(dump, (const struct rb_global_entry *)op);
-                break;
               case TS_FUNCPTR:
                 rb_raise(rb_eRuntimeError, "TS_FUNCPTR is not supported");
                 goto skip_wv;
@@ -10401,12 +10365,6 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
                 {
                     VALUE op = ibf_load_small_value(load, &reading_pos);
                     code[code_index] = ibf_load_id(load, (ID)(VALUE)op);
-                }
-                break;
-              case TS_GENTRY:
-                {
-                    VALUE op = ibf_load_small_value(load, &reading_pos);
-                    code[code_index] = ibf_load_gentry(load, (const struct rb_global_entry *)(VALUE)op);
                 }
                 break;
               case TS_FUNCPTR:

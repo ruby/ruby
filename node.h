@@ -164,7 +164,6 @@ typedef struct RNode {
 	struct RNode *node;
 	ID id;
 	long state;
-	struct rb_global_entry *entry;
 	struct rb_args_info *args;
 	struct rb_ary_pattern_info *apinfo;
 	struct rb_fnd_pattern_info *fpinfo;
@@ -228,7 +227,7 @@ typedef struct RNode {
 
 #define nd_stts  u1.node
 
-#define nd_entry u3.entry
+#define nd_entry u3.id
 #define nd_vid   u1.id
 #define nd_cflag u2.id
 #define nd_cval  u3.value
@@ -316,7 +315,7 @@ typedef struct RNode {
 #define NEW_ZLIST(loc) NEW_NODE(NODE_ZLIST,0,0,0,loc)
 #define NEW_HASH(a,loc)  NEW_NODE(NODE_HASH,a,0,0,loc)
 #define NEW_MASGN(l,r,loc)   NEW_NODE(NODE_MASGN,l,0,r,loc)
-#define NEW_GASGN(v,val,loc) NEW_NODE(NODE_GASGN,v,val,rb_global_entry(v),loc)
+#define NEW_GASGN(v,val,loc) NEW_NODE(NODE_GASGN,v,val,v,loc)
 #define NEW_LASGN(v,val,loc) NEW_NODE(NODE_LASGN,v,val,0,loc)
 #define NEW_DASGN(v,val,loc) NEW_NODE(NODE_DASGN,v,val,0,loc)
 #define NEW_DASGN_CURR(v,val,loc) NEW_NODE(NODE_DASGN_CURR,v,val,0,loc)
@@ -329,7 +328,7 @@ typedef struct RNode {
 #define NEW_OP_ASGN_OR(i,val,loc) NEW_NODE(NODE_OP_ASGN_OR,i,val,0,loc)
 #define NEW_OP_ASGN_AND(i,val,loc) NEW_NODE(NODE_OP_ASGN_AND,i,val,0,loc)
 #define NEW_OP_CDECL(v,op,val,loc) NEW_NODE(NODE_OP_CDECL,v,val,op,loc)
-#define NEW_GVAR(v,loc) NEW_NODE(NODE_GVAR,v,0,rb_global_entry(v),loc)
+#define NEW_GVAR(v,loc) NEW_NODE(NODE_GVAR,v,0,v,loc)
 #define NEW_LVAR(v,loc) NEW_NODE(NODE_LVAR,v,0,0,loc)
 #define NEW_DVAR(v,loc) NEW_NODE(NODE_DVAR,v,0,0,loc)
 #define NEW_IVAR(v,loc) NEW_NODE(NODE_IVAR,v,0,0,loc)
