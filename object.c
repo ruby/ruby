@@ -597,41 +597,10 @@ rb_obj_size(VALUE self, VALUE args, VALUE obj)
     return LONG2FIX(1);
 }
 
-/*
- *  call-seq:
- *     obj.then {|x| block }          -> an_object
- *     obj.yield_self {|x| block }    -> an_object
- *
- *  Yields self to the block and returns the result of the block.
- *
- *     3.next.then {|x| x**x }.to_s             #=> "256"
- *     "my string".yield_self {|s| s.upcase }   #=> "MY STRING"
- *
- *  Good usage for +then+ is value piping in method chains:
- *
- *     require 'open-uri'
- *     require 'json'
- *
- *     construct_url(arguments).
- *       then {|url| open(url).read }.
- *       then {|response| JSON.parse(response) }
- *
- *  When called without block, the method returns +Enumerator+,
- *  which can be used, for example, for conditional
- *  circuit-breaking:
- *
- *     # meets condition, no-op
- *     1.then.detect(&:odd?)            # => 1
- *     # does not meet condition, drop value
- *     2.then.detect(&:odd?)            # => nil
- *
- */
-
 static VALUE
-rb_obj_yield_self(VALUE obj)
+block_given_p(rb_execution_context_t *ec, VALUE self)
 {
-    RETURN_SIZED_ENUMERATOR(obj, 0, 0, rb_obj_size);
-    return rb_yield_values2(1, &obj);
+    return rb_block_given_p() ? Qtrue : Qfalse;
 }
 
 /**
@@ -1320,23 +1289,6 @@ rb_obj_freeze(VALUE obj)
     }
     return obj;
 }
-
-/**
- *  call-seq:
- *     obj.frozen?    -> true or false
- *
- *  Returns the freeze status of <i>obj</i>.
- *
- *     a = [ "a", "b", "c" ]
- *     a.freeze    #=> ["a", "b", "c"]
- *     a.frozen?   #=> true
- *--
- * Determines if the object is frozen. Equivalent to \c Object\#frozen? in Ruby.
- * \param[in] obj  the object to be determines
- * \retval Qtrue if frozen
- * \retval Qfalse if not frozen
- *++
- */
 
 VALUE
 rb_obj_frozen_p(VALUE obj)
@@ -4581,8 +4533,6 @@ InitVM_Object(void)
     rb_define_method(rb_mKernel, "singleton_class", rb_obj_singleton_class, 0);
     rb_define_method(rb_mKernel, "dup", rb_obj_dup, 0);
     rb_define_method(rb_mKernel, "itself", rb_obj_itself, 0);
-    rb_define_method(rb_mKernel, "yield_self", rb_obj_yield_self, 0);
-    rb_define_method(rb_mKernel, "then", rb_obj_yield_self, 0);
     rb_define_method(rb_mKernel, "initialize_copy", rb_obj_init_copy, 1);
     rb_define_method(rb_mKernel, "initialize_dup", rb_obj_init_dup_clone, 1);
     rb_define_method(rb_mKernel, "initialize_clone", rb_obj_init_clone, -1);
@@ -4594,7 +4544,6 @@ InitVM_Object(void)
     rb_define_method(rb_mKernel, "untrusted?", rb_obj_untrusted, 0);
     rb_define_method(rb_mKernel, "trust", rb_obj_trust, 0);
     rb_define_method(rb_mKernel, "freeze", rb_obj_freeze, 0);
-    rb_define_method(rb_mKernel, "frozen?", rb_obj_frozen_p, 0);
 
     rb_define_method(rb_mKernel, "to_s", rb_any_to_s, 0);
     rb_define_method(rb_mKernel, "inspect", rb_obj_inspect, 0);
