@@ -244,7 +244,7 @@ set_debug_option(const char *str, int len, void *arg)
     }
 }
 
-STATIC_ASSERT("USE_RUBY_DEBUG_LOG should not be enabled on release build (!RUBY_DEVEL)", USE_RUBY_DEBUG_LOG ? RUBY_DEVEL : 1);
+STATIC_ASSERT(USE_RUBY_DEBUG_LOG, USE_RUBY_DEBUG_LOG ? RUBY_DEVEL : 1);
 
 #if RUBY_DEVEL
 static void setup_debug_log(void);
