@@ -4,13 +4,16 @@ require 'json/generic_object'
 
 module JSON
   class << self
+    # :call-seq:
+    #   JSON[object] -> new_array or new_string
+    #
     # If +object+ is a
-    # {String-convertible object}[doc/implicit_conversion_rdoc.html#label-String-Convertible+Objects]
-    # (implementing +to_str+), calls JSON.parse with +object+ and +opts+:
+    # {String-convertible object}[doc/implicit_conversion_rdoc.html#label-String-Convertible+Objects],
+    # calls JSON.parse with +object+ and +opts+ (see method #parse):
     #   json = '[0, 1, null]'
     #   JSON[json]# => [0, 1, nil]
     #
-    # Otherwise, calls JSON.generate with +object+ and +opts+:
+    # Otherwise, calls JSON.generate with +object+ and +opts+ (see method #generate):
     #   ruby = [0, 1, nil]
     #   JSON[ruby] # => '[0,1,null]'
     def [](object, opts = {})
@@ -171,10 +174,24 @@ module JSON
   # For examples of parsing for all \JSON data types, see
   # {Parsing \JSON}[#module-JSON-label-Parsing+JSON].
   #
-  # ====== Exceptions
+  # Parses nested JSON objects:
+  #   source = <<-EOT
+  #   {
+  #   "name": "Dave",
+  #     "age" :40,
+  #     "hats": [
+  #       "Cattleman's",
+  #       "Panama",
+  #       "Tophat"
+  #     ]
+  #   }
+  #   EOT
+  #   ruby = JSON.parse(source)
+  #   ruby # => {"name"=>"Dave", "age"=>40, "hats"=>["Cattleman's", "Panama", "Tophat"]}
+  #
+  # ---
   #
   # Raises an exception if +source+ is not valid JSON:
-  #
   #   # Raises JSON::ParserError (783: unexpected token at ''):
   #   JSON.parse('')
   #
@@ -201,12 +218,24 @@ module JSON
     Parser.new(source, **(opts||{})).parse
   end
 
-  # Parses the content of a file (see parse method documentation for more information).
+  # :call-seq:
+  #   CSV.load_file(path, opts={}) -> object
+  #
+  # Calls:
+  #   parse(File.read(path), opts)
+  #
+  # See method #parse.
   def load_file(filespec, opts = {})
     parse(File.read(filespec), opts)
   end
 
-  # Parses the content of a file (see parse! method documentation for more information).
+  # :call-seq:
+  #   CSV.load_file!(path, opts = {})
+  #
+  # Calls:
+  #   CSV.parse!(File.read(path, opts))
+  #
+  # See method #parse!
   def load_file!(filespec, opts = {})
     parse!(File.read(filespec), opts)
   end
@@ -247,8 +276,6 @@ module JSON
   #
   # Raises an exception if any formatting option is not a \String.
   #
-  # ====== Exceptions
-  #
   # Raises an exception if +obj+ contains circular references:
   #   a = []; b = []; a.push(b); b.push(a)
   #   # Raises JSON::NestingError (nesting of 100 is too deep):
@@ -280,6 +307,9 @@ module JSON
   module_function :unparse
   # :startdoc:
 
+  # :call-seq:
+  #   JSON.fast_generate(obj, opts) -> new_string
+  #
   # Arguments +obj+ and +opts+ here are the same as
   # arguments +obj+ and +opts+ in JSON.generate.
   #
@@ -398,6 +428,7 @@ module JSON
   #
   # This method is part of the implementation of the load/dump interface of
   # Marshal and YAML.
+  #
   def load(source, proc = nil, options = {})
     opts = load_default_options.merge options
     if source.respond_to? :to_str
