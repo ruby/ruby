@@ -938,31 +938,6 @@ rb_class_search_ancestor(VALUE cl, VALUE c)
     return class_search_ancestor(cl, RCLASS_ORIGIN(c));
 }
 
-/**
- *  call-seq:
- *     obj.tap {|x| block }    -> obj
- *
- *  Yields self to the block, and then returns self.
- *  The primary purpose of this method is to "tap into" a method chain,
- *  in order to perform operations on intermediate results within the chain.
- *
- *     (1..10)                  .tap {|x| puts "original: #{x}" }
- *       .to_a                  .tap {|x| puts "array:    #{x}" }
- *       .select {|x| x.even? } .tap {|x| puts "evens:    #{x}" }
- *       .map {|x| x*x }        .tap {|x| puts "squares:  #{x}" }
- *
- *--
- * \private
- *++
- */
-
-VALUE
-rb_obj_tap(VALUE obj)
-{
-    rb_yield(obj);
-    return obj;
-}
-
 
 /*
  * Document-method: inherited
@@ -4638,7 +4613,6 @@ InitVM_Object(void)
     rb_define_method(rb_mKernel, "instance_of?", rb_obj_is_instance_of, 1);
     rb_define_method(rb_mKernel, "kind_of?", rb_obj_is_kind_of, 1);
     rb_define_method(rb_mKernel, "is_a?", rb_obj_is_kind_of, 1);
-    rb_define_method(rb_mKernel, "tap", rb_obj_tap, 0);
 
     rb_define_global_function("sprintf", f_sprintf, -1);
     rb_define_global_function("format", f_sprintf, -1);
