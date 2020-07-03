@@ -30,8 +30,14 @@ void ruby_set_debug_option(const char *str);
 
 RUBY_SYMBOL_EXPORT_END
 
+#if RUBY_DEVEL
 #ifndef USE_RUBY_DEBUG_LOG
-#define USE_RUBY_DEBUG_LOG (0 && RUBY_DEVEL)
+#define USE_RUBY_DEBUG_LOG 0
+#endif
+#else
+// disable on !RUBY_DEVEL
+#ifdef USE_RUBY_DEBUG_LOG
+#undef USE_RUBY_DEBUG_LOG
 #endif
 
 /* RUBY_DEBUG_LOG: Logging debug information mechanism
