@@ -2086,6 +2086,12 @@ ARGVSTR2ARGC(VALUE argv_str)
     return i - 1;
 }
 
+#ifdef HAVE_PWD_H
+VALUE rb_getlogin(void);
+VALUE rb_getpwdirnam_for_login(VALUE login);  /* read as: "get pwd db home dir by username for login" */
+VALUE rb_getpwdiruid(void);                   /* read as: "get pwd db home dir for getuid()" */
+#endif
+
 rb_pid_t rb_fork_ruby(int *status);
 void rb_last_status_clear(void);
 
