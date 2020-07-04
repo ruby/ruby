@@ -372,7 +372,7 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_send
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '1', success_count: 2, insns: %i[send])
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '1', success_count: 3, insns: %i[send])
     begin;
       print proc { yield_self { 1 } }.call
     end;

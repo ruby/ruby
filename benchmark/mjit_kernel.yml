@@ -4,8 +4,17 @@ prelude: |
     obj.class
   end
 
+  def mjit_frozen?(obj)
+    obj.frozen?
+  end
+
+  str = ""
+  fstr = "".freeze
+
 benchmark:
   - mjit_class(self)
   - mjit_class(1)
+  - mjit_frozen?(str)
+  - mjit_frozen?(fstr)
 
 loop_count: 40000000
