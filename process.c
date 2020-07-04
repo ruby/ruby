@@ -154,12 +154,40 @@ static int exec_async_signal_safe(const struct rb_execarg *, char *, size_t);
 #define p_gid_from_name p_gid_from_name
 #endif
 
+#if defined(HAVE_UNISTD_H)
+# if defined(HAVE_GETLOGIN_R)
+#  define USE_GETLOGIN_R 1
+#  define GETLOGIN_R_SIZE_DEFAULT   0x100
+#  define GETLOGIN_R_SIZE_LIMIT    0x1000
+#  if defined(_SC_LOGIN_NAME_MAX)
+#    define GETLOGIN_R_SIZE_INIT sysconf(_SC_LOGIN_NAME_MAX)
+#  else
+#    define GETLOGIN_R_SIZE_INIT GETLOGIN_R_SIZE_DEFAULT
+#  endif
+# elif defined(HAVE_GETLOGIN)
+#  define USE_GETLOGIN 1
+# endif
+#endif
+
 #if defined(HAVE_PWD_H)
-# if defined(HAVE_GETPWNAM_R) && defined(_SC_GETPW_R_SIZE_MAX)
+# if defined(HAVE_GETPWUID_R)
+#  define USE_GETPWUID_R 1
+# elif defined(HAVE_GETPWUID)
+#  define USE_GETPWUID 1
+# endif
+# if defined(HAVE_GETPWNAM_R)
 #  define USE_GETPWNAM_R 1
-#  define GETPW_R_SIZE_INIT sysconf(_SC_GETPW_R_SIZE_MAX)
+# elif defined(HAVE_GETPWNAM)
+#  define USE_GETPWNAM 1
+# endif
+# if defined(HAVE_GETPWNAM_R) || defined(HAVE_GETPWUID_R)
 #  define GETPW_R_SIZE_DEFAULT 0x1000
 #  define GETPW_R_SIZE_LIMIT  0x10000
+#  if defined(_SC_GETPW_R_SIZE_MAX)
+#   define GETPW_R_SIZE_INIT sysconf(_SC_GETPW_R_SIZE_MAX)
+#  else
+#   define GETPW_R_SIZE_INIT GETPW_R_SIZE_DEFAULT
+#  endif
 # endif
 # ifdef USE_GETPWNAM_R
 #   define PREPARE_GETPWNAM \
@@ -5460,6 +5488,240 @@ check_gid_switch(void)
 	rb_raise(rb_eRuntimeError, "can't handle GID while evaluating block given to Process::UID.switch method");
     }
 }
+
+
+#if defined(HAVE_PWD_H)
+/**
+ * Best-effort attempt to obtain the name of the login user, if any,
+ * associated with the process. Processes not descended from login(1) (or
+ * similar) may not have a logged-in user; returns Qnil in that case.
+ */
+VALUE
+rb_getlogin(void)
+{
+#if ( !defined(USE_GETLOGIN_R) && !defined(USE_GETLOGIN) )
+    return Qnil;
+#else
+    char MAYBE_UNUSED(*login) = NULL;
+
+# ifdef USE_GETLOGIN_R
+
+    long loginsize = GETLOGIN_R_SIZE_INIT;  /* maybe -1 */
+
+    if (loginsize < 0)
+        loginsize = GETLOGIN_R_SIZE_DEFAULT;
+
+    VALUE maybe_result = rb_str_buf_new(loginsize);
+
+    login = RSTRING_PTR(maybe_result);
+    loginsize = rb_str_capacity(maybe_result);
+    rb_str_set_len(maybe_result, loginsize);
+
+    int gle;
+    errno = 0;
+    while ((gle = getlogin_r(login, loginsize)) != 0) {
+
+        if (gle == ENOTTY || gle == ENXIO || gle == ENOENT) {
+            rb_str_resize(maybe_result, 0);
+            return Qnil;
+        }
+
+        if (gle != ERANGE || loginsize >= GETLOGIN_R_SIZE_LIMIT) {
+            rb_str_resize(maybe_result, 0);
+            rb_syserr_fail(gle, "getlogin_r");
+        }
+
+        rb_str_modify_expand(maybe_result, loginsize);
+        login = RSTRING_PTR(maybe_result);
+        loginsize = rb_str_capacity(maybe_result);
+    }
+
+    if (login == NULL) {
+        rb_str_resize(maybe_result, 0);
+        return Qnil;
+    }
+
+    return maybe_result;
+
+# elif USE_GETLOGIN
+
+    errno = 0;
+    login = getlogin();
+    if (errno) {
+        if (errno == ENOTTY || errno == ENXIO || errno == ENOENT) {
+            return Qnil;
+        }
+        rb_syserr_fail(errno, "getlogin");
+    }
+
+    return login ? rb_str_new_cstr(login) : Qnil;
+# endif
+
+#endif
+}
+
+VALUE
+rb_getpwdirnam_for_login(VALUE login_name)
+{
+#if ( !defined(USE_GETPWNAM_R) && !defined(USE_GETPWNAM) )
+    return Qnil;
+#else
+
+    if (NIL_P(login_name)) {
+        /* nothing to do; no name with which to query the password database */
+        return Qnil;
+    }
+
+    char *login = RSTRING_PTR(login_name);
+
+    struct passwd *pwptr;
+
+# ifdef USE_GETPWNAM_R
+
+    struct passwd pwdnm;
+    char *bufnm;
+    long bufsizenm = GETPW_R_SIZE_INIT;  /* maybe -1 */
+
+    if (bufsizenm < 0)
+        bufsizenm = GETPW_R_SIZE_DEFAULT;
+
+    VALUE getpwnm_tmp = rb_str_tmp_new(bufsizenm);
+
+    bufnm = RSTRING_PTR(getpwnm_tmp);
+    bufsizenm = rb_str_capacity(getpwnm_tmp);
+    rb_str_set_len(getpwnm_tmp, bufsizenm);
+
+    int enm;
+    errno = 0;
+    while ((enm = getpwnam_r(login, &pwdnm, bufnm, bufsizenm, &pwptr)) != 0) {
+
+        if (enm == ENOENT || enm== ESRCH || enm == EBADF || enm == EPERM) {
+            /* not found; non-errors */
+            rb_str_resize(getpwnm_tmp, 0);
+            return Qnil;
+        }
+
+        if (enm != ERANGE || bufsizenm >= GETPW_R_SIZE_LIMIT) {
+            rb_str_resize(getpwnm_tmp, 0);
+            rb_syserr_fail(enm, "getpwnam_r");
+        }
+
+        rb_str_modify_expand(getpwnm_tmp, bufsizenm);
+        bufnm = RSTRING_PTR(getpwnm_tmp);
+        bufsizenm = rb_str_capacity(getpwnm_tmp);
+    }
+
+    if (pwptr == NULL) {
+        /* no record in the password database for the login name */
+        rb_str_resize(getpwnm_tmp, 0);
+        return Qnil;
+    }
+
+    /* found it */
+    VALUE result = rb_str_new_cstr(pwptr->pw_dir);
+    rb_str_resize(getpwnm_tmp, 0);
+    return result;
+
+# elif USE_GETPWNAM
+
+    errno = 0;
+    pwptr = getpwnam(login);
+    if (pwptr) {
+        /* found it */
+        return rb_str_new_cstr(pwptr->pw_dir);
+    }
+    if (errno
+        /*   avoid treating as errors errno values that indicate "not found" */
+        && ( errno != ENOENT && errno != ESRCH && errno != EBADF && errno != EPERM)) {
+        rb_syserr_fail(errno, "getpwnam");
+    }
+
+    return Qnil;  /* not found */
+# endif
+
+#endif
+}
+
+/**
+ * Look up the user's dflt home dir in the password db, by uid.
+ */
+VALUE
+rb_getpwdiruid(void)
+{
+# if !defined(USE_GETPWUID_R) && !defined(USE_GETPWUID)
+    /* Should never happen... </famous-last-words> */
+    return Qnil;
+# else
+    uid_t ruid = getuid();
+
+    struct passwd *pwptr;
+
+# ifdef USE_GETPWUID_R
+
+    struct passwd pwdid;
+    char *bufid;
+    long bufsizeid = GETPW_R_SIZE_INIT;  /* maybe -1 */
+
+    if (bufsizeid < 0)
+        bufsizeid = GETPW_R_SIZE_DEFAULT;
+
+    VALUE getpwid_tmp = rb_str_tmp_new(bufsizeid);
+
+    bufid = RSTRING_PTR(getpwid_tmp);
+    bufsizeid = rb_str_capacity(getpwid_tmp);
+    rb_str_set_len(getpwid_tmp, bufsizeid);
+
+    int eid;
+    errno = 0;
+    while ((eid = getpwuid_r(ruid, &pwdid, bufid, bufsizeid, &pwptr)) != 0) {
+
+        if (eid == ENOENT || eid== ESRCH || eid == EBADF || eid == EPERM) {
+            /* not found; non-errors */
+            rb_str_resize(getpwid_tmp, 0);
+            return Qnil;
+        }
+
+        if (eid != ERANGE || bufsizeid >= GETPW_R_SIZE_LIMIT) {
+            rb_str_resize(getpwid_tmp, 0);
+            rb_syserr_fail(eid, "getpwuid_r");
+        }
+
+        rb_str_modify_expand(getpwid_tmp, bufsizeid);
+        bufid = RSTRING_PTR(getpwid_tmp);
+        bufsizeid = rb_str_capacity(getpwid_tmp);
+    }
+
+    if (pwptr == NULL) {
+        /* no record in the password database for the uid */
+        rb_str_resize(getpwid_tmp, 0);
+        return Qnil;
+    }
+
+    /* found it */
+    VALUE result = rb_str_new_cstr(pwptr->pw_dir);
+    rb_str_resize(getpwid_tmp, 0);
+    return result;
+
+# elif defined(USE_GETPWUID)
+
+    errno = 0;
+    pwptr = getpwuid(ruid);
+    if (pwptr) {
+        /* found it */
+        return rb_str_new_cstr(pwptr->pw_dir);
+    }
+    if (errno
+        /*   avoid treating as errors errno values that indicate "not found" */
+        && ( errno == ENOENT || errno == ESRCH || errno == EBADF || errno == EPERM)) {
+        rb_syserr_fail(errno, "getpwuid");
+    }
+
+    return Qnil;  /* not found */
+# endif
+
+#endif /* !defined(USE_GETPWUID_R) && !defined(USE_GETPWUID) */
+}
+#endif /* HAVE_PWD_H */
 
 
 /*********************************************************************
