@@ -1673,6 +1673,9 @@ class CSV
     writer if @writer_options[:write_headers]
   end
 
+  # :call-seq:
+  #   csv.col_sep -> string
+  #
   # Returns the encoded column separator; used for parsing and writing;
   # see {Option +col_sep+}[#class-CSV-label-Option+col_sep]:
   #   CSV.new('').col_sep # => ","
@@ -1680,6 +1683,9 @@ class CSV
     parser.column_separator
   end
 
+  # :call-seq:
+  #   csv.row_sep -> string
+  #
   # Returns the encoded row separator; used for parsing and writing;
   # see {Option +row_sep+}[#class-CSV-label-Option+row_sep]:
   #   CSV.new('').row_sep # => "\n"
@@ -1687,6 +1693,9 @@ class CSV
     parser.row_separator
   end
 
+  # :call-seq:
+  #   csv.quote_char -> character
+  #
   # Returns the encoded quote character; used for parsing and writing;
   # see {Option +quote_char+}[#class-CSV-label-Option+quote_char]:
   #   CSV.new('').quote_char # => "\""
@@ -1694,6 +1703,9 @@ class CSV
     parser.quote_character
   end
 
+  # :call-seq:
+  #   csv.field_size_limit -> integer or nil
+  #
   # Returns the limit for field size; used for parsing;
   # see {Option +field_size_limit+}[#class-CSV-label-Option+field_size_limit]:
   #   CSV.new('').field_size_limit # => nil
@@ -1701,6 +1713,9 @@ class CSV
     parser.field_size_limit
   end
 
+  # :call-seq:
+  #   csv.skip_lines -> regexp or nil
+  #
   # Returns the \Regexp used to identify comment lines; used for parsing;
   # see {Option +skip_lines+}[#class-CSV-label-Option+skip_lines]:
   #   CSV.new('').skip_lines # => nil
@@ -1708,6 +1723,9 @@ class CSV
     parser.skip_lines
   end
 
+  # :call-seq:
+  #   csv.converters -> array
+  #
   # Returns an \Array containing field converters; used for parsing;
   # see {Option +converters+}[#class-CSV-label-Option+converters]:
   #   CSV.new('').converters # => []
@@ -1718,6 +1736,9 @@ class CSV
     end
   end
 
+  # :call-seq:
+  #   csv.unconverted_fields? -> object
+  #
   # Returns the value that determines whether unconverted fields are to be
   # available; used for parsing;
   # see {Option +unconverted_fields+}[#class-CSV-label-Option+unconverted_fields]:
@@ -1726,6 +1747,9 @@ class CSV
     parser.unconverted_fields?
   end
 
+  # :call-seq:
+  #   csv.headers -> object
+  #
   # Returns the value that determines whether headers are used; used for parsing;
   # see {Option +headers+}[#class-CSV-label-Option+headers]:
   #   CSV.new('').headers # => nil
@@ -1741,6 +1765,9 @@ class CSV
     end
   end
 
+  # :call-seq:
+  #   csv.return_headers? -> true or false
+  #
   # Returns the value that determines whether headers are to be returned; used for parsing;
   # see {Option +return_headers+}[#class-CSV-label-Option+return_headers]:
   #   CSV.new('').return_headers? # => false
@@ -1748,6 +1775,9 @@ class CSV
     parser.return_headers?
   end
 
+  # :call-seq:
+  #   csv.write_headers? -> true or false
+  #
   # Returns the value that determines whether headers are to be written; used for generating;
   # see {Option +write_headers+}[#class-CSV-label-Option+write_headers]:
   #   CSV.new('').write_headers? # => nil
@@ -1755,6 +1785,9 @@ class CSV
     @writer_options[:write_headers]
   end
 
+  # :call-seq:
+  #   csv.header_converters -> array
+  #
   # Returns an \Array containing header converters; used for parsing;
   # see {Option +header_converters+}[#class-CSV-label-Option+header_converters]:
   #   CSV.new('').header_converters # => []
@@ -1765,6 +1798,9 @@ class CSV
     end
   end
 
+  # :call-seq:
+  #   csv.skip_blanks? -> true or false
+  #
   # Returns the value that determines whether blank lines are to be ignored; used for parsing;
   # see {Option +skip_blanks+}[#class-CSV-label-Option+skip_blanks]:
   #   CSV.new('').skip_blanks? # => false
@@ -1772,6 +1808,9 @@ class CSV
     parser.skip_blanks?
   end
 
+  # :call-seq:
+  #   csv.force_quotes? -> true or false
+  #
   # Returns the value that determines whether all output fields are to be quoted;
   # used for generating;
   # see {Option +force_quotes+}[#class-CSV-label-Option+force_quotes]:
@@ -1780,6 +1819,9 @@ class CSV
     @writer_options[:force_quotes]
   end
 
+  # :call-seq:
+  #   csv.liberal_parsing? -> true or false
+  #
   # Returns the value that determines whether illegal input is to be handled; used for parsing;
   # see {Option +liberal_parsing+}[#class-CSV-label-Option+liberal_parsing]:
   #   CSV.new('').liberal_parsing? # => false
@@ -1787,11 +1829,17 @@ class CSV
     parser.liberal_parsing?
   end
 
+  # :call-seq:
+  #   csv.encoding -> endcoding
+  #
   # Returns the encoding used for parsing and generating;
   # see {CSV and Character Encodings (M17n or Multilingualization)}[#class-CSV-label-CSV+and+Character+Encodings+-28M17n+or+Multilingualization-29]:
   #   CSV.new('').encoding # => #<Encoding:UTF-8>
   attr_reader :encoding
 
+  # :call-seq:
+  #   csv.line_no -> integer
+  #
   # Returns the count of the rows parsed or generated.
   #
   # Parsing:
@@ -1826,6 +1874,9 @@ class CSV
     end
   end
 
+  # :call-seq:
+  #   csv.line -> array
+  #
   # Returns the line most recently read:
   #   string = "foo,0\nbar,1\nbaz,2\n"
   #   path = 't.csv'
