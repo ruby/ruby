@@ -1266,7 +1266,10 @@ range_minmax(VALUE range)
     if (rb_block_given_p()) {
         return rb_call_super(0, NULL);
     }
-    return rb_assoc_new(range_min(0, NULL, range), range_max(0, NULL, range));
+    return rb_assoc_new(
+        rb_funcall(range, rb_intern("min"), 0),
+        rb_funcall(range, rb_intern("max"), 0)
+    );
 }
 
 int
