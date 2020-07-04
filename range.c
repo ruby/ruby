@@ -1146,6 +1146,8 @@ range_last(int argc, VALUE *argv, VALUE range)
     return rb_ary_last(argc, argv, rb_Array(range));
 }
 
+static VALUE range_min_internal(int argc, VALUE *argv, VALUE range);
+static VALUE range_max_internal(int argc, VALUE *argv, VALUE range);
 
 /*
  *  call-seq:
@@ -1168,6 +1170,14 @@ range_last(int argc, VALUE *argv, VALUE range)
 static VALUE
 range_min(int argc, VALUE *argv, VALUE range)
 {
+    VALUE result = range_min_internal(argc, argv, range);
+    if (result != Qundef) return result;
+    return rb_call_super(argc, argv);
+}
+
+static VALUE
+range_min_internal(int argc, VALUE *argv, VALUE range)
+{
     if (NIL_P(RANGE_BEG(range))) {
 	rb_raise(rb_eRangeError, "cannot get the minimum of beginless range");
     }
@@ -1176,7 +1186,7 @@ range_min(int argc, VALUE *argv, VALUE range)
         if (NIL_P(RANGE_END(range))) {
             rb_raise(rb_eRangeError, "cannot get the minimum of endless range with custom comparison method");
         }
-	return rb_call_super(argc, argv);
+        return Qundef;
     }
     else if (argc != 0) {
 	return range_first(argc, argv, range);
@@ -1213,6 +1223,14 @@ range_min(int argc, VALUE *argv, VALUE range)
 static VALUE
 range_max(int argc, VALUE *argv, VALUE range)
 {
+    VALUE result = range_max_internal(argc, argv, range);
+    if (result != Qundef) return result;
+    return rb_call_super(argc, argv);
+}
+
+static VALUE
+range_max_internal(int argc, VALUE *argv, VALUE range)
+{
     VALUE e = RANGE_END(range);
     int nm = FIXNUM_P(e) || rb_obj_is_kind_of(e, rb_cNumeric);
 
@@ -1224,7 +1242,7 @@ range_max(int argc, VALUE *argv, VALUE range)
         if (NIL_P(RANGE_BEG(range))) {
             rb_raise(rb_eRangeError, "cannot get the maximum of beginless range with custom comparison method");
         }
-        return rb_call_super(argc, argv);
+        return Qundef;
     }
     else {
         struct cmp_opt_data cmp_opt = { 0, 0 };
@@ -1268,10 +1286,15 @@ range_minmax(VALUE range)
     if (rb_block_given_p()) {
         return rb_call_super(0, NULL);
     }
-    return rb_assoc_new(
-        rb_funcall(range, id_min, 0),
-        rb_funcall(range, id_max, 0)
-    );
+    VALUE result_min = range_min_internal(0, NULL, range);
+    if (result_min == Qundef) {
+        result_min = rb_funcallv(range, id_min, 0, 0);
+    }
+    VALUE result_max = range_max_internal(0, NULL, range);
+    if (result_max == Qundef) {
+        result_max = rb_funcallv(range, id_max, 0, 0);
+    }
+    return rb_assoc_new(result_min, result_max);
 }
 
 int
