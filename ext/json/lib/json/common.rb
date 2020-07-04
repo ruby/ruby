@@ -414,21 +414,95 @@ module JSON
     :create_additions => true,
   }
 
-  # Load a ruby data structure from a JSON _source_ and return it. A source can
-  # either be a string-like object, an IO-like object, or an object responding
-  # to the read method. If _proc_ was given, it will be called with any nested
-  # Ruby object as an argument recursively in depth first order. To modify the
-  # default options pass in the optional _options_ argument as well.
+  # :call-seq:
+  #   JSON.load(source, proc = nil, options = {}) -> object
   #
-  # BEWARE: This method is meant to serialise data from trusted user input,
-  # like from your own database server or clients under your control, it could
-  # be dangerous to allow untrusted users to pass JSON sources into it. The
-  # default options for the parser can be changed via the load_default_options
-  # method.
+  # Returns the Ruby objects created by parsing the given +source+.
   #
-  # This method is part of the implementation of the load/dump interface of
-  # Marshal and YAML.
+  # - Argument +source+ must be, or be convertible to, a \String:
+  #   - If +source+ responds to instance method +to_str+,
+  #     <tt>source.to_str</tt> becomes the source.
+  #   - If +source+ responds to instance method +to_io+,
+  #     <tt>source.to_io.read</tt> becomes the source.
+  #   - If +source+ responds to instance method +read+,
+  #     <tt>source.read</tt> becomes the source.
+  #   - If both of the following are true, source becomes the \String <tt>'null'</tt>:
+  #     - Option +allow_blank+ specifies a truthy value.
+  #     - The source, as defined above, is +nil+ or the empty \String <tt>''</tt>.
+  #   - Otherwise, +source+ remains the source.
+  # - Argument +proc+, if given, must be a \Proc that accepts one argument.
+  #   It will be called recursively with each result (depth-first order).
+  #   See details below.
+  #   BEWARE: This method is meant to serialise data from trusted user input,
+  #   like from your own database server or clients under your control, it could
+  #   be dangerous to allow untrusted users to pass JSON sources into it.
+  # - Argument +opts+, if given, contains options for the parsing, and must be a
+  #   {Hash-convertible object}[doc/implicit_conversion_rdoc.html#label-Hash+Convertible+Objects].
+  #   See {Parsing Options}[#module-JSON-label-Parsing+Options].
+  #   The default options can be changed via method JSON.load_default_options=.
   #
+  # Examples in this section assume prior execution of:
+  #   source = <<-EOT
+  #   {
+  #   "name": "Dave",
+  #     "age" :40,
+  #     "hats": [
+  #       "Cattleman's",
+  #       "Panama",
+  #       "Tophat"
+  #     ]
+  #   }
+  #   EOT
+  #
+  # ---
+  #
+  # When +proc+ is not given, modifies +source+ as above and returns the result of
+  # <tt>parse(source, opts)</tt>;  see #parse.
+  #
+  # Load a \String:
+  #   ruby = JSON.load(source)
+  #   ruby # => {"name"=>"Dave", "age"=>40, "hats"=>["Cattleman's", "Panama", "Tophat"]}
+  #
+  # Load an \IO object:
+  #   require 'stringio'
+  #   object = JSON.load(StringIO.new(source))
+  #   object # => {"name"=>"Dave", "age"=>40, "hats"=>["Cattleman's", "Panama", "Tophat"]}
+  #
+  # Load a \File object:
+  #   path = 't.json'
+  #   File.write(path, source)
+  #   File.open(path) do |file|
+  #     JSON.load(file)
+  #   end # => {"name"=>"Dave", "age"=>40, "hats"=>["Cattleman's", "Panama", "Tophat"]}
+  #
+  # ---
+  #
+  # When +proc+ is given:
+  # - Modifies +source+ as above.
+  # - Gets the +result+ from calling <tt>parse(source, opts)</tt>.
+  # - Recursively calls <tt>proc(result)</tt>.
+  # - Returns the final result.
+  #
+  # Example:
+  #   def mung(obj)
+  #     case obj
+  #     when String
+  #       obj.upcase
+  #     when Integer
+  #       obj * 100
+  #     else
+  #       obj
+  #     end
+  #   end
+  #   new_obj = JSON.load(source, proc {|obj|
+  #     case obj
+  #     when Hash
+  #       obj.each {|k, v| obj[k] = mung(v) }
+  #     when Array
+  #       obj.map! {|v| mung(v) }
+  #     end
+  #   })
+  #   new_obj # => {"name"=>"DAVE", "age"=>4000, "hats"=>["CATTLEMAN'S", "PANAMA", "TOPHAT"]}
   def load(source, proc = nil, options = {})
     opts = load_default_options.merge options
     if source.respond_to? :to_str

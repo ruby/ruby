@@ -319,7 +319,7 @@ require 'json/common'
 #   opts = {
 #     array_nl: "\n",
 #     object_nl: "\n",
-#     indent+: '  ',
+#     indent: '  ',
 #     space_before: ' ',
 #     space: ' '
 #   }
