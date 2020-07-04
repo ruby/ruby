@@ -146,6 +146,9 @@ class TestRange < Test::Unit::TestCase
     assert_equal([nil, nil], (0...0).minmax)
 
     assert_equal([2, 1], (1..2).minmax{|a, b| b <=> a})
+
+    assert_equal(['a', 'c'], ('a'..'c').minmax)
+    assert_equal(['a', 'b'], ('a'...'c').minmax)
   end
 
   def test_initialize_twice
