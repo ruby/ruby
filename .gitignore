@@ -37,6 +37,7 @@
 .ppack
 .svn
 .time
+.ruby-version
 Makefile
 cygruby*.def
 extconf.h
@@ -56,11 +57,11 @@ lcov*.info
 /*.pc
 /*.rc
 /*_prelude.c
+/.downloaded-cache
+/.top-enc.mk
 /build*/
 /COPYING.LIB
 /ChangeLog
-/.downloaded-cache
-/.top-enc.mk
 /Doxyfile
 /GNUmakefile
 /README.atheos
