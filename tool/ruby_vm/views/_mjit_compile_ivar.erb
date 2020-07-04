@@ -16,28 +16,57 @@
 % # compiler: Use copied IVC to avoid race condition
     IVC ic_copy = &(status->is_entries + ((union iseq_inline_storage_entry *)ic - body->is_entries))->iv_cache;
 %
-    if (!status->compile_info->disable_ivar_cache && ic_copy->ic_serial) {
+    if (!status->compile_info->disable_ivar_cache && ic_copy->ic_serial) { // Only initialized (ic_serial > 0) IVCs are optimized
 % # JIT: optimize away motion of sp and pc. This path does not call rb_warning() and so it's always leaf and not `handles_sp`.
 % # <%= render 'mjit_compile_pc_and_sp', locals: { insn: insn } -%>
 %
 % # JIT: prepare vm_getivar/vm_setivar arguments and variables
         fprintf(f, "{\n");
         fprintf(f, "    VALUE obj = GET_SELF();\n");
-        fprintf(f, "    const rb_serial_t ic_serial = (rb_serial_t)%"PRI_SERIALT_PREFIX"u;\n", ic_copy->ic_serial);
         fprintf(f, "    const st_index_t index = %"PRIuSIZE";\n", ic_copy->index);
+        fprintf(f, "    VALUE val;\n");
+        if (status->merge_ivar_guards_p) {
+% # JIT: Access ivar without checking these VM_ASSERTed prerequisites as we checked them in the beginning of `mjit_compile_body`
+            fprintf(f, "    VM_ASSERT(RB_TYPE_P(obj, T_OBJECT));\n");
+            fprintf(f, "    VM_ASSERT((rb_serial_t)%"PRI_SERIALT_PREFIX"u == RCLASS_SERIAL(RBASIC(obj)->klass));\n", ic_copy->ic_serial);
+            fprintf(f, "    VM_ASSERT(index < ROBJECT_NUMIV(obj));\n");
+% if insn.name == 'setinstancevariable'
+            fprintf(f, "    if (LIKELY(!RB_OBJ_FROZEN(obj))) {\n");
+            fprintf(f, "        val = stack[%d];\n", b->stack_size - 1);
+            if (status->max_ivar_index >= ROBJECT_EMBED_LEN_MAX) {
+                fprintf(f, "        RB_OBJ_WRITE(obj, &ROBJECT(obj)->as.heap.ivptr[index], val);\n");
+            }
+            else {
+                fprintf(f, "        RB_OBJ_WRITE(obj, &ROBJECT(obj)->as.ary[index], val);\n");
+            }
+            fprintf(f, "    }\n");
+% else
+            if (status->max_ivar_index >= ROBJECT_EMBED_LEN_MAX) {
+                fprintf(f, "    val = ROBJECT(obj)->as.heap.ivptr[index];\n");
+            }
+            else {
+                fprintf(f, "    val = ROBJECT(obj)->as.ary[index];\n");
+            }
+            fprintf(f, "    if (LIKELY(val != Qundef)) {\n");
+            fprintf(f, "        stack[%d] = val;\n", b->stack_size);
+            fprintf(f, "    }\n");
+%end
+        }
+        else {
+            fprintf(f, "    const rb_serial_t ic_serial = (rb_serial_t)%"PRI_SERIALT_PREFIX"u;\n", ic_copy->ic_serial);
 % # JIT: cache hit path of vm_getivar/vm_setivar, or cancel JIT (recompile it with exivar)
 % if insn.name == 'setinstancevariable'
-        fprintf(f, "    VALUE val = stack[%d];\n", b->stack_size - 1);
-        fprintf(f, "    if (LIKELY(RB_TYPE_P(obj, T_OBJECT) && ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass) && index < ROBJECT_NUMIV(obj) && !RB_OBJ_FROZEN(obj))) {\n");
-        fprintf(f, "        VALUE *ptr = ROBJECT_IVPTR(obj);\n");
-        fprintf(f, "        RB_OBJ_WRITE(obj, &ptr[index], val);\n");
-        fprintf(f, "    }\n");
+            fprintf(f, "    val = stack[%d];\n", b->stack_size - 1);
+            fprintf(f, "    if (LIKELY(RB_TYPE_P(obj, T_OBJECT) && ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass) && index < ROBJECT_NUMIV(obj) && !RB_OBJ_FROZEN(obj))) {\n");
+            fprintf(f, "        VALUE *ptr = ROBJECT_IVPTR(obj);\n");
+            fprintf(f, "        RB_OBJ_WRITE(obj, &ptr[index], val);\n");
+            fprintf(f, "    }\n");
 % else
-        fprintf(f, "    VALUE val;\n");
-        fprintf(f, "    if (LIKELY(RB_TYPE_P(obj, T_OBJECT) && ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass) && index < ROBJECT_NUMIV(obj) && (val = ROBJECT_IVPTR(obj)[index]) != Qundef)) {\n");
-        fprintf(f, "        stack[%d] = val;\n", b->stack_size);
-        fprintf(f, "    }\n");
+            fprintf(f, "    if (LIKELY(RB_TYPE_P(obj, T_OBJECT) && ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass) && index < ROBJECT_NUMIV(obj) && (val = ROBJECT_IVPTR(obj)[index]) != Qundef)) {\n");
+            fprintf(f, "        stack[%d] = val;\n", b->stack_size);
+            fprintf(f, "    }\n");
 % end
+        }
         fprintf(f, "    else {\n");
         fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
         fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
