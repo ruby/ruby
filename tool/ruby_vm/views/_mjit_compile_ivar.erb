@@ -24,30 +24,21 @@
         fprintf(f, "{\n");
         fprintf(f, "    VALUE obj = GET_SELF();\n");
         fprintf(f, "    const st_index_t index = %"PRIuSIZE";\n", ic_copy->index);
-        fprintf(f, "    VALUE val;\n");
         if (status->merge_ivar_guards_p) {
 % # JIT: Access ivar without checking these VM_ASSERTed prerequisites as we checked them in the beginning of `mjit_compile_body`
             fprintf(f, "    VM_ASSERT(RB_TYPE_P(obj, T_OBJECT));\n");
             fprintf(f, "    VM_ASSERT((rb_serial_t)%"PRI_SERIALT_PREFIX"u == RCLASS_SERIAL(RBASIC(obj)->klass));\n", ic_copy->ic_serial);
             fprintf(f, "    VM_ASSERT(index < ROBJECT_NUMIV(obj));\n");
 % if insn.name == 'setinstancevariable'
-            fprintf(f, "    if (LIKELY(!RB_OBJ_FROZEN(obj))) {\n");
-            fprintf(f, "        val = stack[%d];\n", b->stack_size - 1);
-            if (status->max_ivar_index >= ROBJECT_EMBED_LEN_MAX) {
-                fprintf(f, "        RB_OBJ_WRITE(obj, &ROBJECT(obj)->as.heap.ivptr[index], val);\n");
-            }
-            else {
-                fprintf(f, "        RB_OBJ_WRITE(obj, &ROBJECT(obj)->as.ary[index], val);\n");
-            }
+            fprintf(f, "    if (LIKELY(!RB_OBJ_FROZEN(obj) && %sRB_FL_ANY_RAW(obj, ROBJECT_EMBED))) {\n", status->max_ivar_index >= ROBJECT_EMBED_LEN_MAX ? "!" : "");
+            fprintf(f, "        RB_OBJ_WRITE(obj, &ROBJECT(obj)->as.%s, stack[%d]);\n",
+                    status->max_ivar_index >= ROBJECT_EMBED_LEN_MAX ? "heap.ivptr[index]" : "ary[index]", b->stack_size - 1);
             fprintf(f, "    }\n");
 % else
-            if (status->max_ivar_index >= ROBJECT_EMBED_LEN_MAX) {
-                fprintf(f, "    val = ROBJECT(obj)->as.heap.ivptr[index];\n");
-            }
-            else {
-                fprintf(f, "    val = ROBJECT(obj)->as.ary[index];\n");
-            }
-            fprintf(f, "    if (LIKELY(val != Qundef)) {\n");
+            fprintf(f, "    VALUE val;\n");
+            fprintf(f, "    if (LIKELY(%sRB_FL_ANY_RAW(obj, ROBJECT_EMBED) && (val = ROBJECT(obj)->as.%s) != Qundef)) {\n",
+                    status->max_ivar_index >= ROBJECT_EMBED_LEN_MAX ? "!" : "",
+                    status->max_ivar_index >= ROBJECT_EMBED_LEN_MAX ? "heap.ivptr[index]" : "ary[index]");
             fprintf(f, "        stack[%d] = val;\n", b->stack_size);
             fprintf(f, "    }\n");
 %end
@@ -56,12 +47,12 @@
             fprintf(f, "    const rb_serial_t ic_serial = (rb_serial_t)%"PRI_SERIALT_PREFIX"u;\n", ic_copy->ic_serial);
 % # JIT: cache hit path of vm_getivar/vm_setivar, or cancel JIT (recompile it with exivar)
 % if insn.name == 'setinstancevariable'
-            fprintf(f, "    val = stack[%d];\n", b->stack_size - 1);
             fprintf(f, "    if (LIKELY(RB_TYPE_P(obj, T_OBJECT) && ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass) && index < ROBJECT_NUMIV(obj) && !RB_OBJ_FROZEN(obj))) {\n");
             fprintf(f, "        VALUE *ptr = ROBJECT_IVPTR(obj);\n");
-            fprintf(f, "        RB_OBJ_WRITE(obj, &ptr[index], val);\n");
+            fprintf(f, "        RB_OBJ_WRITE(obj, &ptr[index], stack[%d]);\n", b->stack_size - 1);
             fprintf(f, "    }\n");
 % else
+            fprintf(f, "    VALUE val;\n");
             fprintf(f, "    if (LIKELY(RB_TYPE_P(obj, T_OBJECT) && ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass) && index < ROBJECT_NUMIV(obj) && (val = ROBJECT_IVPTR(obj)[index]) != Qundef)) {\n");
             fprintf(f, "        stack[%d] = val;\n", b->stack_size);
             fprintf(f, "    }\n");

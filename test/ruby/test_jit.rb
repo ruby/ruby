@@ -921,6 +921,34 @@ class TestJIT < Test::Unit::TestCase
     end;
   end
 
+  def test_heap_promotion_of_ivar_in_the_middle_of_jit
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "true\ntrue\n", success_count: 2, min_calls: 2)
+    begin;
+      class A
+        def initialize
+          @iv0 = nil
+          @iv1 = []
+          @iv2 = nil
+        end
+
+        def test(add)
+          @iv0.nil?
+          @iv2.nil?
+          add_ivar if add
+          @iv1.empty?
+        end
+
+        def add_ivar
+          @iv3 = nil
+        end
+      end
+
+      a = A.new
+      p a.test(false)
+      p a.test(true)
+    end;
+  end
+
   def test_jump_to_precompiled_branch
     assert_eval_with_jit("#{<<~'begin;'}\n#{<<~'end;'}", stdout: ".0", success_count: 1, min_calls: 1)
     begin;
