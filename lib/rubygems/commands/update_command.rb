@@ -291,6 +291,7 @@ command to remove old versions.
 
   def update_rubygems_arguments # :nodoc:
     args = []
+    args << '--silent' if options[:silent]
     args << '--prefix' << Gem.prefix if Gem.prefix
     args << '--no-document' unless options[:document].include?('rdoc') || options[:document].include?('ri')
     args << '--no-format-executable' if options[:no_format_executable]
