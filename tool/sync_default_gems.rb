@@ -113,6 +113,7 @@ $repositories = {
   "net-imap": "ruby/net-imap",
   "net-ftp": "ruby/net-ftp",
   "net-http": "ruby/net-http",
+  bigdecimal: "ruby/bigdecimal",
 }
 
 def sync_default_gems(gem)
