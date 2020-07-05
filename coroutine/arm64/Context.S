@@ -13,7 +13,7 @@ coroutine_transfer:
 
 	# Make space on the stack for caller registers
 	sub sp, sp, 0xb0
-	
+
 	# Save caller registers
 	stp d8, d9, [sp, 0x00]
 	stp d10, d11, [sp, 0x10]

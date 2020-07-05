@@ -15,12 +15,12 @@
 coroutine_transfer:
 	# Save caller state (8 registers + return address)
 	push {r4-r11,lr}
-	
+
 	# Save caller stack pointer
 	str sp, [r0]
-	
+
 	# Restore callee stack pointer
 	ldr sp, [r1]
-	
+
 	# Restore callee state (8 registers program counter)
 	pop {r4-r11,pc}
