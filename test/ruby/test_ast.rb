@@ -319,4 +319,15 @@ class TestAst < Test::Unit::TestCase
     helper.validate_range
     assert_equal([], helper.errors)
   end
+
+  def test_op_asgn2
+    node = RubyVM::AbstractSyntaxTree.parse("struct.field += foo")
+    _, _, body = *node.children
+    assert_equal(:OP_ASGN2, body.type)
+    recv, _, mid, op, value = body.children
+    assert_equal(:VCALL, recv.type)
+    assert_equal(:field, mid)
+    assert_equal(:+, op)
+    assert_equal(:VCALL, value.type)
+  end
 end
