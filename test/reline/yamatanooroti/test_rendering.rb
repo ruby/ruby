@@ -5,11 +5,26 @@ begin
 
   class Reline::TestRendering < Yamatanooroti::TestCase
     def setup
+      @pwd = Dir.pwd
+      @tmpdir = File.join(Dir.tmpdir, "test_reline_config_#{$$}")
+      begin
+        Dir.mkdir(@tmpdir)
+      rescue Errno::EEXIST
+        FileUtils.rm_rf(@tmpdir)
+        Dir.mkdir(@tmpdir)
+      end
+      Dir.chdir(@tmpdir)
       inputrc_backup = ENV['INPUTRC']
-      ENV['INPUTRC'] = 'nonexistent_file'
-      start_terminal(5, 30, %w{ruby -Ilib bin/multiline_repl})
+      @inputrc_file = ENV['INPUTRC'] = File.expand_path('temporaty_inputrc')
+      File.unlink(@inputrc_file) if File.exist?(@inputrc_file)
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl})
       sleep 0.5
       ENV['INPUTRC'] = inputrc_backup
+    end
+
+    def teardown
+      Dir.chdir(@pwd)
+      FileUtils.rm_rf(@tmpdir)
     end
 
     def test_history_back
