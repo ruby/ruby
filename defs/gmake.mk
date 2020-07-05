@@ -248,7 +248,7 @@ HELP_EXTRA_TASKS = \
 
 extract-gems: update-gems
 
-BUNDLED_GEMS := $(shell sed 's/[ 	][ 	]*/-/;s/[ 	].*//' $(srcdir)/gems/bundled_gems)
+BUNDLED_GEMS := $(shell sed '/^[ 	]*#/d;/^[ 	]*$$/d;s/[ 	][ 	]*/-/;s/[ 	].*//' $(srcdir)/gems/bundled_gems)
 
 update-gems: | $(patsubst %,gems/%.gem,$(BUNDLED_GEMS))
 

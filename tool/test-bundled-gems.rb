@@ -9,6 +9,7 @@ gem_dir = File.realpath('../../gems', __FILE__)
 exit_code = 0
 ruby = ENV['RUBY'] || RbConfig.ruby
 File.foreach("#{gem_dir}/bundled_gems") do |line|
+  next if /^\s*(?:#|$)/ =~ line
   gem = line.split.first
   puts "\nTesting the #{gem} gem"
 

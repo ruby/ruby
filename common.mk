@@ -1294,6 +1294,7 @@ update-gems$(gnumake:yes=-nongnumake): PHONY
 	$(Q) $(BASERUBY) -C "$(srcdir)" \
 	    -I./tool -rdownloader -answ \
 	    -e 'gem, ver = *$$F' \
+	    -e 'next if !ver or /^#/=~gem' \
 	    -e 'old = Dir.glob("gems/#{gem}-*.gem")' \
 	    -e 'gem = "#{gem}-#{ver}.gem"' \
 	    -e 'Downloader::RubyGems.download(gem, "gems", nil) and' \
@@ -1308,19 +1309,22 @@ extract-gems$(gnumake:yes=-nongnumake): PHONY
 	    -Itool -rgem-unpack -answ \
 	    -e 'BEGIN {FileUtils.mkdir_p(d = ".bundle/gems")}' \
 	    -e 'gem, ver = *$$F' \
+	    -e 'next if !ver or /^#/=~gem' \
 	    -e 'Gem.unpack("gems/#{gem}-#{ver}.gem", d)' \
 	    gems/bundled_gems
 
 update-bundled_gems: PHONY
 	$(Q) $(RUNRUBY) -rrubygems \
 	    -pla \
+	    -e 'unless /^[^#]/!~(gem=$$F[0])' \
 	    -e '(gem,src), = Gem::SpecFetcher.fetcher.detect(:latest) {'"|s|" \
-	    -e   's.platform=="ruby"&&s.name==$$F[0]' \
+	    -e   's.platform=="ruby"&&s.name==gem' \
 	    -e '}' \
 	    -e 'gem = src.fetch_spec(gem)' \
 	    -e 'uri = gem.metadata["source_code_uri"]||gem.homepage' \
 	    -e 'uri = uri.sub(%r[\Ahttps://github\.com/[^/]+/[^/]+\K/tree/.*], "")' \
 	    -e '$$_ = [gem.name, gem.version, uri].join(" ")' \
+	    -e 'end' \
 	     "$(srcdir)/gems/bundled_gems" | \
 	"$(IFCHANGE)" "$(srcdir)/gems/bundled_gems" -
 
