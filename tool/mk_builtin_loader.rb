@@ -151,8 +151,8 @@ def collect_builtin base, tree, name, bs, inlines, locals = nil
             argc -= 1
           when 'cinit'
             text = inline_text argc, args.first
-            func_name = nil
-            inlines[inlines.size] = [nil, [lineno, text, nil, nil]]
+            func_name = nil # required
+            inlines[inlines.size] = [lineno, text, nil, nil]
             argc -= 1
           end
         end
