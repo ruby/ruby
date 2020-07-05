@@ -4,10 +4,15 @@ require 'bigdecimal'
 describe "BigDecimal#to_s" do
 
   before :each do
+    @internal = Encoding.default_internal
     @bigdec_str = "3.14159265358979323846264338327950288419716939937"
     @bigneg_str = "-3.1415926535897932384626433832795028841971693993"
     @bigdec = BigDecimal(@bigdec_str)
     @bigneg = BigDecimal(@bigneg_str)
+  end
+
+  after :each do
+    Encoding.default_internal = @internal
   end
 
   it "return type is of class String" do
@@ -78,4 +83,15 @@ describe "BigDecimal#to_s" do
     end
   end
 
+  ruby_version_is "2.8" do
+    it "returns a String in US-ASCII encoding when Encoding.default_internal is nil" do
+      Encoding.default_internal = nil
+      BigDecimal('1.23').to_s.encoding.should equal(Encoding::US_ASCII)
+    end
+
+    it "returns a String in US-ASCII encoding when Encoding.default_internal is not nil" do
+      Encoding.default_internal = Encoding::IBM437
+      BigDecimal('1.23').to_s.encoding.should equal(Encoding::US_ASCII)
+    end
+  end
 end

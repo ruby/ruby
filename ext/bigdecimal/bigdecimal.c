@@ -2068,7 +2068,7 @@ BigDecimal_to_s(int argc, VALUE *argv, VALUE self)
 	nc += (nc + mc - 1) / mc + 1;
     }
 
-    str = rb_str_new(0, nc);
+    str = rb_usascii_str_new(0, nc);
     psz = RSTRING_PTR(str);
 
     if (fmt) {
