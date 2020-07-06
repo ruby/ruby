@@ -287,7 +287,7 @@ vm_check_canary(const rb_execution_context_t *ec, VALUE *sp)
 #define vm_check_frame(a, b, c, d)
 #endif /* VM_CHECK_MODE > 0 */
 
-static inline rb_control_frame_t *
+static void
 vm_push_frame(rb_execution_context_t *ec,
 	      const rb_iseq_t *iseq,
 	      VALUE type,
@@ -370,8 +370,6 @@ vm_push_frame(rb_execution_context_t *ec,
         }
     }
 #endif
-
-    return cfp;
 }
 
 /* return TRUE if the frame is finished */
