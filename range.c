@@ -1287,9 +1287,7 @@ range_minmax(VALUE range)
         return rb_call_super(0, NULL);
     }
     VALUE result_min = range_min_internal(0, NULL, range);
-    if (result_min == Qundef) {
-        result_min = rb_funcallv(range, id_min, 0, 0);
-    }
+    ASSUME(result_min != Qundef);
     VALUE result_max = range_max_internal(0, NULL, range);
     if (result_max == Qundef) {
         result_max = rb_funcallv(range, id_max, 0, 0);
