@@ -287,6 +287,46 @@ vm_check_canary(const rb_execution_context_t *ec, VALUE *sp)
 #define vm_check_frame(a, b, c, d)
 #endif /* VM_CHECK_MODE > 0 */
 
+#if USE_DEBUG_COUNTER
+static void
+vm_push_frame_debug_counter_inc(
+    const struct rb_executoon_context_struct *ec,
+    const struct rb_control_frame_struct *reg_cfp,
+    VALUE type)
+{
+    const struct rb_control_frame_struct *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(reg_cfp);
+
+    RB_DEBUG_COUNTER_INC(frame_push);
+
+    if (RUBY_VM_END_CONTROL_FRAME(ec) != prev_cfp) {
+        const bool curr = VM_FRAME_RUBYFRAME_P(reg_cfp);
+        const bool prev = VM_FRAME_RUBYFRAME_P(prev_cfp);
+        const enum rb_debug_counter_type pat[2][2] = {
+            { RB_DEBUG_COUNTER_frame_R2R, RB_DEBUG_COUNTER_frame_R2C, },
+            { RB_DEBUG_COUNTER_frame_C2R, RB_DEBUG_COUNTER_frame_C2C, },
+        };
+        const enum rb_debug_counter_type i = pat[prev][curr];
+        rb_debug_counter[i]++;
+    }
+
+    switch (type & VM_FRAME_MAGIC_MASK) {
+      case VM_FRAME_MAGIC_METHOD: RB_DEBUG_COUNTER_INC(frame_push_method); return;
+      case VM_FRAME_MAGIC_BLOCK:  RB_DEBUG_COUNTER_INC(frame_push_block);  return;
+      case VM_FRAME_MAGIC_CLASS:  RB_DEBUG_COUNTER_INC(frame_push_class);  return;
+      case VM_FRAME_MAGIC_TOP:    RB_DEBUG_COUNTER_INC(frame_push_top);    return;
+      case VM_FRAME_MAGIC_CFUNC:  RB_DEBUG_COUNTER_INC(frame_push_cfunc);  return;
+      case VM_FRAME_MAGIC_IFUNC:  RB_DEBUG_COUNTER_INC(frame_push_ifunc);  return;
+      case VM_FRAME_MAGIC_EVAL:   RB_DEBUG_COUNTER_INC(frame_push_eval);   return;
+      case VM_FRAME_MAGIC_RESCUE: RB_DEBUG_COUNTER_INC(frame_push_rescue); return;
+      case VM_FRAME_MAGIC_DUMMY:  RB_DEBUG_COUNTER_INC(frame_push_dummy);  return;
+    }
+
+    rb_bug("unreachable");
+}
+#else
+#define vm_push_frame_debug_counter_inc(ec, cfp, t) /* void */
+#endif
+
 static void
 vm_push_frame(rb_execution_context_t *ec,
 	      const rb_iseq_t *iseq,
@@ -342,34 +382,7 @@ vm_push_frame(rb_execution_context_t *ec,
     if (VMDEBUG == 2) {
 	SDR();
     }
-
-#if USE_DEBUG_COUNTER
-    RB_DEBUG_COUNTER_INC(frame_push);
-    switch (type & VM_FRAME_MAGIC_MASK) {
-      case VM_FRAME_MAGIC_METHOD: RB_DEBUG_COUNTER_INC(frame_push_method); break;
-      case VM_FRAME_MAGIC_BLOCK:  RB_DEBUG_COUNTER_INC(frame_push_block);  break;
-      case VM_FRAME_MAGIC_CLASS:  RB_DEBUG_COUNTER_INC(frame_push_class);  break;
-      case VM_FRAME_MAGIC_TOP:    RB_DEBUG_COUNTER_INC(frame_push_top);    break;
-      case VM_FRAME_MAGIC_CFUNC:  RB_DEBUG_COUNTER_INC(frame_push_cfunc);  break;
-      case VM_FRAME_MAGIC_IFUNC:  RB_DEBUG_COUNTER_INC(frame_push_ifunc);  break;
-      case VM_FRAME_MAGIC_EVAL:   RB_DEBUG_COUNTER_INC(frame_push_eval);   break;
-      case VM_FRAME_MAGIC_RESCUE: RB_DEBUG_COUNTER_INC(frame_push_rescue); break;
-      case VM_FRAME_MAGIC_DUMMY:  RB_DEBUG_COUNTER_INC(frame_push_dummy);  break;
-      default: rb_bug("unreachable");
-    }
-    {
-        rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
-        if (RUBY_VM_END_CONTROL_FRAME(ec) != prev_cfp) {
-            int cur_ruby_frame = VM_FRAME_RUBYFRAME_P(cfp);
-            int pre_ruby_frame = VM_FRAME_RUBYFRAME_P(prev_cfp);
-
-            pre_ruby_frame ? (cur_ruby_frame ? RB_DEBUG_COUNTER_INC(frame_R2R) :
-                                               RB_DEBUG_COUNTER_INC(frame_R2C)):
-                             (cur_ruby_frame ? RB_DEBUG_COUNTER_INC(frame_C2R) :
-                                               RB_DEBUG_COUNTER_INC(frame_C2C));
-        }
-    }
-#endif
+    vm_push_frame_debug_counter_inc(ec, cfp, type);
 }
 
 /* return TRUE if the frame is finished */
