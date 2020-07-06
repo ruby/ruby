@@ -327,6 +327,10 @@ vm_push_frame_debug_counter_inc(
 #define vm_push_frame_debug_counter_inc(ec, cfp, t) /* void */
 #endif
 
+STATIC_ASSERT(VM_ENV_DATA_INDEX_ME_CREF, VM_ENV_DATA_INDEX_ME_CREF == -2);
+STATIC_ASSERT(VM_ENV_DATA_INDEX_SPECVAL, VM_ENV_DATA_INDEX_SPECVAL == -1);
+STATIC_ASSERT(VM_ENV_DATA_INDEX_FLAGS,   VM_ENV_DATA_INDEX_FLAGS   == -0);
+
 static void
 vm_push_frame(rb_execution_context_t *ec,
 	      const rb_iseq_t *iseq,
@@ -364,9 +368,6 @@ vm_push_frame(rb_execution_context_t *ec,
     }
 
     /* setup ep with managing data */
-    VM_ASSERT(VM_ENV_DATA_INDEX_ME_CREF == -2);
-    VM_ASSERT(VM_ENV_DATA_INDEX_SPECVAL == -1);
-    VM_ASSERT(VM_ENV_DATA_INDEX_FLAGS   == -0);
     *sp++ = cref_or_me; /* ep[-2] / Qnil or T_IMEMO(cref) or T_IMEMO(ment) */
     *sp++ = specval     /* ep[-1] / block handler or prev env ptr */;
     *sp   = type;       /* ep[-0] / ENV_FLAGS */
