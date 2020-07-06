@@ -352,14 +352,6 @@ vm_push_frame(rb_execution_context_t *ec,
     CHECK_VM_STACK_OVERFLOW0(cfp, sp, local_size + stack_max);
     vm_check_canary(ec, sp);
 
-    ec->cfp = cfp;
-
-    /* setup new frame */
-    cfp->pc = (VALUE *)pc;
-    cfp->iseq = (rb_iseq_t *)iseq;
-    cfp->self = self;
-    cfp->block_code = NULL;
-
     /* setup vm value stack */
 
     /* initialize local variables */
@@ -370,15 +362,23 @@ vm_push_frame(rb_execution_context_t *ec,
     /* setup ep with managing data */
     *sp++ = cref_or_me; /* ep[-2] / Qnil or T_IMEMO(cref) or T_IMEMO(ment) */
     *sp++ = specval     /* ep[-1] / block handler or prev env ptr */;
-    *sp   = type;       /* ep[-0] / ENV_FLAGS */
+    *sp++ = type;       /* ep[-0] / ENV_FLAGS */
 
-    /* Store initial value of ep as bp to skip calculation cost of bp on JIT cancellation. */
-    cfp->ep = sp;
-    cfp->__bp__ = cfp->sp = sp + 1;
-
+    /* setup new frame */
+    *cfp = (const struct rb_control_frame_struct) {
+        .pc         = pc,
+        .sp         = sp,
+        .iseq       = iseq,
+        .self       = self,
+        .ep         = sp - 1,
+        .block_code = NULL,
+        .__bp__     = sp, /* Store initial value of ep as bp to skip calculation cost of bp on JIT cancellation. */
 #if VM_DEBUG_BP_CHECK
-    cfp->bp_check = sp + 1;
+        .bp_check   = sp,
 #endif
+    };
+
+    ec->cfp = cfp;
 
     if (VMDEBUG == 2) {
 	SDR();
