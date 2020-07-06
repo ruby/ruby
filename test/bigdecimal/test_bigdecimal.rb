@@ -54,11 +54,6 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(111, BigDecimal("1_1_1_"))
     assert_equal(10**(-1), BigDecimal("1E-1"), '#4825')
     assert_equal(1234, BigDecimal(" \t\n\r \r1234 \t\n\r \r"))
-    bd = BigDecimal("1.12", 1)
-    assert_same(bd, BigDecimal(bd))
-    assert_same(bd, BigDecimal(bd, exception: false))
-    assert_not_same(bd, BigDecimal(bd, 1))
-    assert_not_same(bd, BigDecimal(bd, 1, exception: false))
 
     assert_raise(ArgumentError) { BigDecimal("1", -1) }
     assert_raise_with_message(ArgumentError, /"1__1_1"/) { BigDecimal("1__1_1") }
@@ -140,6 +135,14 @@ class TestBigDecimal < Test::Unit::TestCase
       assert_positive_infinite(BigDecimal(Float::INFINITY))
       assert_negative_infinite(BigDecimal(-Float::INFINITY))
     end
+  end
+
+  def test_BigDecimal_with_complex
+    assert_equal(BigDecimal("1"), BigDecimal(Complex(1, 0)))
+    assert_equal(BigDecimal("0.333333333333333333333"), BigDecimal(Complex(1.quo(3), 0), 21))
+    assert_equal(BigDecimal("0.1235"), BigDecimal(Complex(0.1234567, 0), 4))
+
+    assert_raise_with_message(ArgumentError, "Unable to make a BigDecimal from non-zero imaginary number") { BigDecimal(Complex(1, 1)) }
   end
 
   def test_BigDecimal_with_big_decimal
@@ -1531,29 +1534,34 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(BigDecimal::SIGN_NEGATIVE_ZERO, (-1 / inf).sign)
   end
 
+  def assert_equal_us_ascii_string(a, b)
+    assert_equal(a, b)
+    assert_equal(Encoding::US_ASCII, b.encoding)
+  end
+
   def test_to_special_string
     BigDecimal.mode(BigDecimal::EXCEPTION_OVERFLOW, false)
     BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
     nan = BigDecimal("NaN")
-    assert_equal("NaN", nan.to_s)
+    assert_equal_us_ascii_string("NaN", nan.to_s)
     inf = BigDecimal("Infinity")
-    assert_equal("Infinity", inf.to_s)
-    assert_equal(" Infinity", inf.to_s(" "))
-    assert_equal("+Infinity", inf.to_s("+"))
-    assert_equal("-Infinity", (-inf).to_s)
+    assert_equal_us_ascii_string("Infinity", inf.to_s)
+    assert_equal_us_ascii_string(" Infinity", inf.to_s(" "))
+    assert_equal_us_ascii_string("+Infinity", inf.to_s("+"))
+    assert_equal_us_ascii_string("-Infinity", (-inf).to_s)
     pzero = BigDecimal("0")
-    assert_equal("0.0", pzero.to_s)
-    assert_equal(" 0.0", pzero.to_s(" "))
-    assert_equal("+0.0", pzero.to_s("+"))
-    assert_equal("-0.0", (-pzero).to_s)
+    assert_equal_us_ascii_string("0.0", pzero.to_s)
+    assert_equal_us_ascii_string(" 0.0", pzero.to_s(" "))
+    assert_equal_us_ascii_string("+0.0", pzero.to_s("+"))
+    assert_equal_us_ascii_string("-0.0", (-pzero).to_s)
   end
 
   def test_to_string
-    assert_equal("0.01", BigDecimal("0.01").to_s("F"))
+    assert_equal_us_ascii_string("0.01", BigDecimal("0.01").to_s("F"))
     s = "0." + "0" * 100 + "1"
-    assert_equal(s, BigDecimal(s).to_s("F"))
+    assert_equal_us_ascii_string(s, BigDecimal(s).to_s("F"))
     s = "1" + "0" * 100 + ".0"
-    assert_equal(s, BigDecimal(s).to_s("F"))
+    assert_equal_us_ascii_string(s, BigDecimal(s).to_s("F"))
   end
 
   def test_ctov
@@ -1879,6 +1887,15 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_in_out_err(%w[-rbigdecimal --disable-gems], <<-EOS, [], [])
     Thread.current.keys.to_s
     EOS
+  end
+
+  def test_initialize_copy_dup_clone_frozen_error
+    bd = BigDecimal(1)
+    bd2 = BigDecimal(2)
+    err = RUBY_VERSION >= '2.5' ? FrozenError : TypeError
+    assert_raise(err) { bd.send(:initialize_copy, bd2) }
+    assert_raise(err) { bd.send(:initialize_clone, bd2) }
+    assert_raise(err) { bd.send(:initialize_dup, bd2) }
   end
 
   def assert_no_memory_leak(code, *rest, **opt)

@@ -597,41 +597,10 @@ rb_obj_size(VALUE self, VALUE args, VALUE obj)
     return LONG2FIX(1);
 }
 
-/*
- *  call-seq:
- *     obj.then {|x| block }          -> an_object
- *     obj.yield_self {|x| block }    -> an_object
- *
- *  Yields self to the block and returns the result of the block.
- *
- *     3.next.then {|x| x**x }.to_s             #=> "256"
- *     "my string".yield_self {|s| s.upcase }   #=> "MY STRING"
- *
- *  Good usage for +then+ is value piping in method chains:
- *
- *     require 'open-uri'
- *     require 'json'
- *
- *     construct_url(arguments).
- *       then {|url| open(url).read }.
- *       then {|response| JSON.parse(response) }
- *
- *  When called without block, the method returns +Enumerator+,
- *  which can be used, for example, for conditional
- *  circuit-breaking:
- *
- *     # meets condition, no-op
- *     1.then.detect(&:odd?)            # => 1
- *     # does not meet condition, drop value
- *     2.then.detect(&:odd?)            # => nil
- *
- */
-
 static VALUE
-rb_obj_yield_self(VALUE obj)
+block_given_p(rb_execution_context_t *ec, VALUE self)
 {
-    RETURN_SIZED_ENUMERATOR(obj, 0, 0, rb_obj_size);
-    return rb_yield_values2(1, &obj);
+    return rb_block_given_p() ? Qtrue : Qfalse;
 }
 
 /**
@@ -827,15 +796,13 @@ rb_obj_inspect(VALUE obj)
 static VALUE
 class_or_module_required(VALUE c)
 {
-    if (SPECIAL_CONST_P(c)) goto not_class;
-    switch (BUILTIN_TYPE(c)) {
+    switch (OBJ_BUILTIN_TYPE(c)) {
       case T_MODULE:
       case T_CLASS:
       case T_ICLASS:
 	break;
 
       default:
-      not_class:
 	rb_raise(rb_eTypeError, "class or module required");
     }
     return c;
@@ -938,31 +905,6 @@ rb_class_search_ancestor(VALUE cl, VALUE c)
     cl = class_or_module_required(cl);
     c = class_or_module_required(c);
     return class_search_ancestor(cl, RCLASS_ORIGIN(c));
-}
-
-/**
- *  call-seq:
- *     obj.tap {|x| block }    -> obj
- *
- *  Yields self to the block, and then returns self.
- *  The primary purpose of this method is to "tap into" a method chain,
- *  in order to perform operations on intermediate results within the chain.
- *
- *     (1..10)                  .tap {|x| puts "original: #{x}" }
- *       .to_a                  .tap {|x| puts "array:    #{x}" }
- *       .select {|x| x.even? } .tap {|x| puts "evens:    #{x}" }
- *       .map {|x| x*x }        .tap {|x| puts "squares:  #{x}" }
- *
- *--
- * \private
- *++
- */
-
-VALUE
-rb_obj_tap(VALUE obj)
-{
-    rb_yield(obj);
-    return obj;
 }
 
 
@@ -1347,23 +1289,6 @@ rb_obj_freeze(VALUE obj)
     }
     return obj;
 }
-
-/**
- *  call-seq:
- *     obj.frozen?    -> true or false
- *
- *  Returns the freeze status of <i>obj</i>.
- *
- *     a = [ "a", "b", "c" ]
- *     a.freeze    #=> ["a", "b", "c"]
- *     a.frozen?   #=> true
- *--
- * Determines if the object is frozen. Equivalent to \c Object\#frozen? in Ruby.
- * \param[in] obj  the object to be determines
- * \retval Qtrue if frozen
- * \retval Qfalse if not frozen
- *++
- */
 
 VALUE
 rb_obj_frozen_p(VALUE obj)
@@ -2506,8 +2431,7 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
     pend = path + RSTRING_LEN(name);
 
     if (p >= pend || !*p) {
-      wrong_name:
-	rb_name_err_raise(wrong_constant_name, mod, name);
+        goto wrong_name;
     }
 
     if (p + 2 < pend && p[0] == ':' && p[1] == ':') {
@@ -2574,6 +2498,10 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
     }
 
     return mod;
+
+  wrong_name:
+    rb_name_err_raise(wrong_constant_name, mod, name);
+    UNREACHABLE_RETURN(Qundef);
 }
 
 /*
@@ -2676,8 +2604,7 @@ rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
     pend = path + RSTRING_LEN(name);
 
     if (p >= pend || !*p) {
-      wrong_name:
-	rb_name_err_raise(wrong_constant_name, mod, name);
+        goto wrong_name;
     }
 
     if (p + 2 < pend && p[0] == ':' && p[1] == ':') {
@@ -2750,6 +2677,10 @@ rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
     }
 
     return Qtrue;
+
+  wrong_name:
+    rb_name_err_raise(wrong_constant_name, mod, name);
+    UNREACHABLE_RETURN(Qundef);
 }
 
 /*
@@ -2833,8 +2764,7 @@ rb_mod_const_source_location(int argc, VALUE *argv, VALUE mod)
     pend = path + RSTRING_LEN(name);
 
     if (p >= pend || !*p) {
-      wrong_name:
-        rb_name_err_raise(wrong_constant_name, mod, name);
+        goto wrong_name;
     }
 
     if (p + 2 < pend && p[0] == ':' && p[1] == ':') {
@@ -2900,6 +2830,10 @@ rb_mod_const_source_location(int argc, VALUE *argv, VALUE mod)
     }
 
     return loc;
+
+  wrong_name:
+    rb_name_err_raise(wrong_constant_name, mod, name);
+    UNREACHABLE_RETURN(Qundef);
 }
 
 /*
@@ -3358,32 +3292,34 @@ rb_convert_to_integer(VALUE val, int base, int raise_exception)
 {
     VALUE tmp;
 
+    if (base) {
+        tmp = rb_check_string_type(val);
+
+        if (! NIL_P(tmp)) {
+            val =  tmp;
+        }
+        else if (! raise_exception) {
+            return Qnil;
+        }
+        else {
+            rb_raise(rb_eArgError, "base specified for non string value");
+        }
+    }
     if (RB_FLOAT_TYPE_P(val)) {
-        double f;
-        if (base != 0) goto arg_error;
-        f = RFLOAT_VALUE(val);
+        double f = RFLOAT_VALUE(val);
         if (!raise_exception && !isfinite(f)) return Qnil;
         if (FIXABLE(f)) return LONG2FIX((long)f);
         return rb_dbl2big(f);
     }
     else if (RB_INTEGER_TYPE_P(val)) {
-        if (base != 0) goto arg_error;
         return val;
     }
     else if (RB_TYPE_P(val, T_STRING)) {
         return rb_str_convert_to_inum(val, base, TRUE, raise_exception);
     }
     else if (NIL_P(val)) {
-        if (base != 0) goto arg_error;
         if (!raise_exception) return Qnil;
         rb_raise(rb_eTypeError, "can't convert nil into Integer");
-    }
-    if (base != 0) {
-        tmp = rb_check_string_type(val);
-        if (!NIL_P(tmp)) return rb_str_convert_to_inum(tmp, base, TRUE, raise_exception);
-      arg_error:
-        if (!raise_exception) return Qnil;
-        rb_raise(rb_eArgError, "base specified for non string value");
     }
 
     tmp = rb_protect(rb_check_to_int, val, NULL);
@@ -3524,13 +3460,7 @@ rb_cstr_to_dbl_raise(const char *p, int badcheck, int raise, int *error)
     }
     if (p == end) {
         if (badcheck) {
-          bad:
-            if (raise)
-                rb_invalid_str(q, "Float()");
-            else {
-                if (error) *error = 1;
-                return 0.0;
-            }
+            goto bad;
         }
         return d;
     }
@@ -3605,6 +3535,16 @@ rb_cstr_to_dbl_raise(const char *p, int badcheck, int raise, int *error)
         rb_raise(rb_eArgError, "Float %.*s%s out of range", w, q, ellipsis);
     }
     return d;
+
+  bad:
+    if (raise) {
+        rb_invalid_str(q, "Float()");
+        UNREACHABLE_RETURN(nan(""));
+    }
+    else {
+        if (error) *error = 1;
+        return 0.0;
+    }
 }
 
 /*!
@@ -4593,8 +4533,6 @@ InitVM_Object(void)
     rb_define_method(rb_mKernel, "singleton_class", rb_obj_singleton_class, 0);
     rb_define_method(rb_mKernel, "dup", rb_obj_dup, 0);
     rb_define_method(rb_mKernel, "itself", rb_obj_itself, 0);
-    rb_define_method(rb_mKernel, "yield_self", rb_obj_yield_self, 0);
-    rb_define_method(rb_mKernel, "then", rb_obj_yield_self, 0);
     rb_define_method(rb_mKernel, "initialize_copy", rb_obj_init_copy, 1);
     rb_define_method(rb_mKernel, "initialize_dup", rb_obj_init_dup_clone, 1);
     rb_define_method(rb_mKernel, "initialize_clone", rb_obj_init_clone, -1);
@@ -4606,7 +4544,6 @@ InitVM_Object(void)
     rb_define_method(rb_mKernel, "untrusted?", rb_obj_untrusted, 0);
     rb_define_method(rb_mKernel, "trust", rb_obj_trust, 0);
     rb_define_method(rb_mKernel, "freeze", rb_obj_freeze, 0);
-    rb_define_method(rb_mKernel, "frozen?", rb_obj_frozen_p, 0);
 
     rb_define_method(rb_mKernel, "to_s", rb_any_to_s, 0);
     rb_define_method(rb_mKernel, "inspect", rb_obj_inspect, 0);
@@ -4625,7 +4562,6 @@ InitVM_Object(void)
     rb_define_method(rb_mKernel, "instance_of?", rb_obj_is_instance_of, 1);
     rb_define_method(rb_mKernel, "kind_of?", rb_obj_is_kind_of, 1);
     rb_define_method(rb_mKernel, "is_a?", rb_obj_is_kind_of, 1);
-    rb_define_method(rb_mKernel, "tap", rb_obj_tap, 0);
 
     rb_define_global_function("sprintf", f_sprintf, -1);
     rb_define_global_function("format", f_sprintf, -1);

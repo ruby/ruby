@@ -190,36 +190,35 @@ any_hash(VALUE a, st_index_t (*other_func)(VALUE))
     VALUE hval;
     st_index_t hnum;
 
-    if (SPECIAL_CONST_P(a)) {
+    switch (TYPE(a)) {
+      case T_SYMBOL:
 	if (STATIC_SYM_P(a)) {
             hnum = a >> (RUBY_SPECIAL_SHIFT + ID_SCOPE_SHIFT);
             hnum = rb_hash_start(hnum);
-            goto out;
         }
-	else if (FLONUM_P(a)) {
-	    /* prevent pathological behavior: [Bug #10761] */
-	    goto flt;
-	}
+        else {
+            hnum = RSYMBOL(a)->hashval;
+        }
+        break;
+      case T_FIXNUM:
+      case T_TRUE:
+      case T_FALSE:
+      case T_NIL:
 	hnum = rb_objid_hash((st_index_t)a);
-    }
-    else if (BUILTIN_TYPE(a) == T_STRING) {
+        break;
+      case T_STRING:
 	hnum = rb_str_hash(a);
-    }
-    else if (BUILTIN_TYPE(a) == T_SYMBOL) {
-	hnum = RSYMBOL(a)->hashval;
-    }
-    else if (BUILTIN_TYPE(a) == T_BIGNUM) {
+        break;
+      case T_BIGNUM:
 	hval = rb_big_hash(a);
 	hnum = FIX2LONG(hval);
-    }
-    else if (BUILTIN_TYPE(a) == T_FLOAT) {
-      flt:
+        break;
+      case T_FLOAT: /* prevent pathological behavior: [Bug #10761] */
 	hnum = rb_dbl_long_hash(rb_float_value(a));
-    }
-    else {
+        break;
+      default:
 	hnum = other_func(a);
     }
-  out:
 #if SIZEOF_LONG < SIZEOF_ST_INDEX_T
     if (hnum > 0)
 	hnum &= (unsigned long)-1 >> 2;
@@ -1289,14 +1288,13 @@ rb_hash_transient_heap_evacuate(VALUE hash, int promote)
             return;
         }
         HASH_ASSERT(old_tab != NULL);
+        if (! promote) {
+            new_tab = rb_transient_heap_alloc(hash, sizeof(ar_table));
+            if (new_tab == NULL) promote = true;
+        }
         if (promote) {
-          promote:
             new_tab = ruby_xmalloc(sizeof(ar_table));
             RHASH_UNSET_TRANSIENT_FLAG(hash);
-        }
-        else {
-            new_tab = rb_transient_heap_alloc(hash, sizeof(ar_table));
-            if (new_tab == NULL) goto promote;
         }
         *new_tab = *old_tab;
         hash_ar_table_set(hash, new_tab);

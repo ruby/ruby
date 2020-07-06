@@ -32,6 +32,8 @@ VALUE rb_cRange;
 static ID id_beg, id_end, id_excl;
 #define id_cmp idCmp
 #define id_succ idSucc
+#define id_min idMin
+#define id_max idMax
 
 static VALUE r_cover_p(VALUE, VALUE, VALUE, VALUE);
 
@@ -829,6 +831,38 @@ range_enum_size(VALUE range, VALUE args, VALUE eobj)
     return range_size(range);
 }
 
+RBIMPL_ATTR_NORETURN()
+static void
+range_each_bignum_endless(VALUE beg)
+{
+    for (;; beg = rb_big_plus(beg, INT2FIX(1))) {
+        rb_yield(beg);
+    }
+    UNREACHABLE;
+}
+
+RBIMPL_ATTR_NORETURN()
+static void
+range_each_fixnum_endless(VALUE beg)
+{
+    for (long i = FIX2LONG(beg); FIXABLE(i); i++) {
+        rb_yield(LONG2FIX(i));
+    }
+
+    range_each_bignum_endless(LONG2NUM(RUBY_FIXNUM_MAX + 1));
+    UNREACHABLE;
+}
+
+static VALUE
+range_each_fixnum_loop(VALUE beg, VALUE end, VALUE range)
+{
+    long lim = FIX2LONG(end) + !EXCL(range);
+    for (long i = FIX2LONG(beg); i < lim; i++) {
+        rb_yield(LONG2FIX(i));
+    }
+    return range;
+}
+
 /*
  *  call-seq:
  *     rng.each {| i | block } -> rng
@@ -854,7 +888,7 @@ static VALUE
 range_each(VALUE range)
 {
     VALUE beg, end;
-    long i, lim;
+    long i;
 
     RETURN_SIZED_ENUMERATOR(range, 0, 0, range_enum_size);
 
@@ -862,24 +896,10 @@ range_each(VALUE range)
     end = RANGE_END(range);
 
     if (FIXNUM_P(beg) && NIL_P(end)) {
-      fixnum_endless:
-	i = FIX2LONG(beg);
-	while (FIXABLE(i)) {
-	    rb_yield(LONG2FIX(i++));
-	}
-	beg = LONG2NUM(i);
-      bignum_endless:
-	for (;; beg = rb_big_plus(beg, INT2FIX(1)))
-	    rb_yield(beg);
+        range_each_fixnum_endless(beg);
     }
     else if (FIXNUM_P(beg) && FIXNUM_P(end)) { /* fixnums are special */
-      fixnum_loop:
-	lim = FIX2LONG(end);
-	if (!EXCL(range))
-	    lim += 1;
-	for (i = FIX2LONG(beg); i < lim; i++) {
-	    rb_yield(LONG2FIX(i));
-	}
+        return range_each_fixnum_loop(beg, end, range);
     }
     else if (RB_INTEGER_TYPE_P(beg) && (NIL_P(end) || RB_INTEGER_TYPE_P(end))) {
 	if (SPECIAL_CONST_P(end) || RBIGNUM_POSITIVE_P(end)) { /* end >= FIXNUM_MIN */
@@ -888,11 +908,11 @@ range_each(VALUE range)
 		    do {
 			rb_yield(beg);
 		    } while (!FIXNUM_P(beg = rb_big_plus(beg, INT2FIX(1))));
-		    if (NIL_P(end)) goto fixnum_endless;
-		    if (FIXNUM_P(end)) goto fixnum_loop;
+                    if (NIL_P(end)) range_each_fixnum_endless(beg);
+                    if (FIXNUM_P(end)) return range_each_fixnum_loop(beg, end, range);
 		}
 		else {
-		    if (NIL_P(end)) goto bignum_endless;
+                    if (NIL_P(end)) range_each_bignum_endless(beg);
 		    if (FIXNUM_P(end)) return range;
 		}
 	    }
@@ -1248,7 +1268,10 @@ range_minmax(VALUE range)
     if (rb_block_given_p()) {
         return rb_call_super(0, NULL);
     }
-    return rb_assoc_new(range_min(0, NULL, range), range_max(0, NULL, range));
+    return rb_assoc_new(
+        rb_funcall(range, id_min, 0),
+        rb_funcall(range, id_max, 0)
+    );
 }
 
 int

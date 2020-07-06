@@ -512,47 +512,37 @@ num_exact(VALUE v)
 {
     VALUE tmp;
 
-    if (NIL_P(v)) {
-	rb_raise(rb_eTypeError, "can't convert nil into an exact number");
-    }
-    else if (RB_INTEGER_TYPE_P(v)) {
+    switch (TYPE(v)) {
+      case T_FIXNUM:
+      case T_BIGNUM:
         return v;
-    }
-    else if (RB_TYPE_P(v, T_RATIONAL)) {
-	goto rational;
-    }
-    else if (RB_TYPE_P(v, T_STRING)) {
-        goto typeerror;
-    }
-    else {
+
+      case T_RATIONAL:
+        return rb_rational_canonicalize(v);
+
+      default:
         if ((tmp = rb_check_funcall(v, idTo_r, 0, NULL)) != Qundef) {
             /* test to_int method availability to reject non-Numeric
              * objects such as String, Time, etc which have to_r method. */
-            if (!rb_respond_to(v, idTo_int)) goto typeerror;
+            if (!rb_respond_to(v, idTo_int)) {
+                /* FALLTHROUGH */
+            }
+            else if (RB_INTEGER_TYPE_P(tmp)) {
+                return tmp;
+            }
+            else if (RB_TYPE_P(tmp, T_RATIONAL)) {
+                return rb_rational_canonicalize(tmp);
+            }
         }
         else if (!NIL_P(tmp = rb_check_to_int(v))) {
             return tmp;
         }
-        else {
-            goto typeerror;
-        }
-    }
 
-    if (RB_INTEGER_TYPE_P(tmp)) {
-        v = tmp;
-    }
-    else if (RB_TYPE_P(tmp, T_RATIONAL)) {
-        v = tmp;
-      rational:
-        if (RRATIONAL(v)->den == INT2FIX(1))
-            v = RRATIONAL(v)->num;
-    }
-    else {
-      typeerror:
+      case T_NIL:
+      case T_STRING:
 	rb_raise(rb_eTypeError, "can't convert %"PRIsVALUE" into an exact number",
 		 rb_obj_class(v));
     }
-    return v;
 }
 
 /* time_t */
@@ -1977,10 +1967,8 @@ vtm_add_offset(struct vtm *vtm, VALUE off, int sign)
             vtm->subsecx = subv(vtm->subsecx, INT2FIX(TIME_SCALE));
             sec += 1;
         }
-        goto not_zero_sec;
     }
     if (sec) {
-      not_zero_sec:
         /* If sec + subsec == 0, don't change vtm->sec.
          * It may be 60 which is a leap second. */
         sec += vtm->sec;
@@ -2091,8 +2079,7 @@ utc_offset_arg(VALUE arg)
         int n = 0;
         char *s = RSTRING_PTR(tmp);
         if (!rb_enc_str_asciicompat_p(tmp)) {
-	  invalid_utc_offset:
-            return Qnil;
+            goto invalid_utc_offset;
 	}
 	switch (RSTRING_LEN(tmp)) {
           case 1:
@@ -2143,6 +2130,8 @@ utc_offset_arg(VALUE arg)
     else {
         return num_exact(arg);
     }
+  invalid_utc_offset:
+    return Qnil;
 }
 
 static void
@@ -3276,8 +3265,8 @@ find_time_t(struct tm *tptr, int utc_p, time_t *tp)
     status = 1;
 
     while (guess_lo + 1 < guess_hi) {
+      binsearch:
         if (status == 0) {
-          binsearch:
             guess = guess_lo / 2 + guess_hi / 2;
             if (guess <= guess_lo)
                 guess = guess_lo + 1;
@@ -3306,6 +3295,7 @@ find_time_t(struct tm *tptr, int utc_p, time_t *tp)
                 if (guess <= guess_lo) fprintf(stderr, "too small guess: %ld <= %ld\n", guess, guess_lo);
                 if (guess_hi <= guess) fprintf(stderr, "too big guess: %ld <= %ld\n", guess_hi, guess);
 #endif
+                status = 0;
                 goto binsearch;
             }
         }
@@ -3326,64 +3316,8 @@ find_time_t(struct tm *tptr, int utc_p, time_t *tp)
             DEBUG_REPORT_GUESSRANGE;
         }
         else {
-          found:
-	    if (!utc_p) {
-		/* If localtime is nonmonotonic, another result may exist. */
-		time_t guess2;
-		if (find_dst) {
-		    guess2 = guess - 2 * 60 * 60;
-		    tm = LOCALTIME(&guess2, result);
-		    if (tm) {
-			if (tptr->tm_hour != (tm->tm_hour + 2) % 24 ||
-			    tptr->tm_min != tm->tm_min ||
-			    tptr->tm_sec != tm->tm_sec) {
-			    guess2 -= (tm->tm_hour - tptr->tm_hour) * 60 * 60 +
-				      (tm->tm_min - tptr->tm_min) * 60 +
-				      (tm->tm_sec - tptr->tm_sec);
-			    if (tptr->tm_mday != tm->tm_mday)
-				guess2 += 24 * 60 * 60;
-			    if (guess != guess2) {
-				tm = LOCALTIME(&guess2, result);
-				if (tm && tmcmp(tptr, tm) == 0) {
-				    if (guess < guess2)
-					*tp = guess;
-				    else
-					*tp = guess2;
-                                    return NULL;
-				}
-			    }
-			}
-		    }
-		}
-		else {
-		    guess2 = guess + 2 * 60 * 60;
-		    tm = LOCALTIME(&guess2, result);
-		    if (tm) {
-			if ((tptr->tm_hour + 2) % 24 != tm->tm_hour ||
-			    tptr->tm_min != tm->tm_min ||
-			    tptr->tm_sec != tm->tm_sec) {
-			    guess2 -= (tm->tm_hour - tptr->tm_hour) * 60 * 60 +
-				      (tm->tm_min - tptr->tm_min) * 60 +
-				      (tm->tm_sec - tptr->tm_sec);
-			    if (tptr->tm_mday != tm->tm_mday)
-				guess2 -= 24 * 60 * 60;
-			    if (guess != guess2) {
-				tm = LOCALTIME(&guess2, result);
-				if (tm && tmcmp(tptr, tm) == 0) {
-				    if (guess < guess2)
-					*tp = guess2;
-				    else
-					*tp = guess;
-                                    return NULL;
-				}
-			    }
-			}
-		    }
-		}
-	    }
-            *tp = guess;
-            return NULL;
-	}
+            goto found;
+        }
     }
 
     /* Given argument has no corresponding time_t. Let's extrapolate. */
@@ -3410,6 +3344,64 @@ find_time_t(struct tm *tptr, int utc_p, time_t *tp)
           (tptr->tm_min - tm_lo.tm_min) * 60 +
           (tptr->tm_sec - (tm_lo.tm_sec == 60 ? 59 : tm_lo.tm_sec));
 
+    return NULL;
+
+  found:
+    if (!utc_p) {
+        /* If localtime is nonmonotonic, another result may exist. */
+        time_t guess2;
+        if (find_dst) {
+            guess2 = guess - 2 * 60 * 60;
+            tm = LOCALTIME(&guess2, result);
+            if (tm) {
+                if (tptr->tm_hour != (tm->tm_hour + 2) % 24 ||
+                    tptr->tm_min != tm->tm_min ||
+                    tptr->tm_sec != tm->tm_sec) {
+                    guess2 -= (tm->tm_hour - tptr->tm_hour) * 60 * 60 +
+                        (tm->tm_min - tptr->tm_min) * 60 +
+                        (tm->tm_sec - tptr->tm_sec);
+                    if (tptr->tm_mday != tm->tm_mday)
+                        guess2 += 24 * 60 * 60;
+                    if (guess != guess2) {
+                        tm = LOCALTIME(&guess2, result);
+                        if (tm && tmcmp(tptr, tm) == 0) {
+                            if (guess < guess2)
+                                *tp = guess;
+                            else
+                                *tp = guess2;
+                            return NULL;
+                        }
+                    }
+                }
+            }
+        }
+        else {
+            guess2 = guess + 2 * 60 * 60;
+            tm = LOCALTIME(&guess2, result);
+            if (tm) {
+                if ((tptr->tm_hour + 2) % 24 != tm->tm_hour ||
+                    tptr->tm_min != tm->tm_min ||
+                    tptr->tm_sec != tm->tm_sec) {
+                    guess2 -= (tm->tm_hour - tptr->tm_hour) * 60 * 60 +
+                        (tm->tm_min - tptr->tm_min) * 60 +
+                        (tm->tm_sec - tptr->tm_sec);
+                    if (tptr->tm_mday != tm->tm_mday)
+                        guess2 -= 24 * 60 * 60;
+                    if (guess != guess2) {
+                        tm = LOCALTIME(&guess2, result);
+                        if (tm && tmcmp(tptr, tm) == 0) {
+                            if (guess < guess2)
+                                *tp = guess2;
+                            else
+                                *tp = guess;
+                            return NULL;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    *tp = guess;
     return NULL;
 
   out_of_range:
@@ -5337,8 +5329,7 @@ time_mload(VALUE time, VALUE str)
     StringValue(str);
     buf = (unsigned char *)RSTRING_PTR(str);
     if (RSTRING_LEN(str) < base_dump_size) {
-      invalid_format:
-	rb_raise(rb_eTypeError, "marshaled time format differ");
+        goto invalid_format;
     }
 
     p = s = 0;
@@ -5441,6 +5432,10 @@ end_submicro: ;
     }
 
     return time;
+
+  invalid_format:
+    rb_raise(rb_eTypeError, "marshaled time format differ");
+    UNREACHABLE_RETURN(Qundef);
 }
 
 /* :nodoc: */

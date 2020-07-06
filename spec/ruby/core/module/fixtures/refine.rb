@@ -10,4 +10,8 @@ module ModuleSpecs
   module IncludedModule
     def foo; "foo from included module"; end
   end
+
+  def self.build_refined_class
+    Class.new(ClassWithFoo)
+  end
 end

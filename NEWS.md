@@ -230,10 +230,36 @@ Excluding feature bug fixes.
 
 ## Implementation improvements
 
+* New method cache mechanism for Ractor [[Feature #16614]]
+
+  * TODO: ko1 will write details
+
 * The number of hashes allocated when using a keyword splat in
   a method call has been reduced to a maximum of 1, and passing
   a keyword splat to a method that accepts specific keywords
   does not allocate a hash.
+
+* `super` is optimized when the same type of method is called in the previous call
+  if it's not refinements or an attr reader or writer.
+
+### JIT
+
+* Native functions shared by multiple methods are deduplicated on JIT compaction.
+
+* Decrease code size of hot paths by some optimizations and partitioning cold paths.
+
+* Not only pure Ruby methods but also some C methods skip pushing a method frame.
+
+  * `Kernel#class`, `Integer#zero?`
+
+* Always generate appropriate code for `==`, `nil?`, and `!` calls depending on
+  a receiver class.
+
+* Optimize instance variable access in some core classes like Hash and their subclasses
+
+* Eliminate VM register access on a method return
+
+* Optimize C method call a little
 
 ## Miscellaneous changes
 
@@ -275,3 +301,4 @@ Excluding feature bug fixes.
 [Bug #14541]:     https://bugs.ruby-lang.org/issues/14541
 [Feature #16175]: https://bugs.ruby-lang.org/issues/16175
 [Feature #15973]: https://bugs.ruby-lang.org/issues/15973
+[Feature #16614]: https://bugs.ruby-lang.org/issues/16614

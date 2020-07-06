@@ -131,6 +131,39 @@ class Rational < Numeric
 end
 
 
+class Complex < Numeric
+  # call-seq:
+  #     cmp.to_d             -> bigdecimal
+  #     cmp.to_d(precision)  -> bigdecimal
+  #
+  # Returns the value as a BigDecimal.
+  #
+  # The +precision+ parameter is required for a rational complex number.
+  # This parameter is used to determine the number of significant digits
+  # for the result.
+  #
+  #     require 'bigdecimal'
+  #     require 'bigdecimal/util'
+  #
+  #     Complex(0.1234567, 0).to_d(4)   # => 0.1235e0
+  #     Complex(Rational(22, 7), 0).to_d(3)   # => 0.314e1
+  #
+  # See also BigDecimal::new.
+  #
+  def to_d(*args)
+    BigDecimal(self) unless self.imag.zero? # to raise eerror
+
+    if args.length == 0
+      case self.real
+      when Rational
+        BigDecimal(self.real) # to raise error
+      end
+    end
+    self.real.to_d(*args)
+  end
+end
+
+
 class NilClass
   # call-seq:
   #     nil.to_d -> bigdecimal

@@ -1,0 +1,6 @@
+prelude: |
+  obj = Object.new
+  x = nil
+benchmark:
+  kernel_tap: obj.tap { |o| x = o }
+loop_count: 20000000

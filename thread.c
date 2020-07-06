@@ -5162,10 +5162,7 @@ exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pairid, VALUE
 	    }
 	    EC_POP_TAG();
 	    if (!recursive_pop(p.list, p.obj, p.pairid)) {
-	      invalid:
-		rb_raise(rb_eTypeError, "invalid inspect_tbl pair_list "
-			 "for %+"PRIsVALUE" in %+"PRIsVALUE,
-			 sym, rb_thread_current());
+                goto invalid;
 	    }
 	    if (state != TAG_NONE) EC_JUMP_TAG(GET_EC(), state);
 	    result = ret;
@@ -5173,6 +5170,12 @@ exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pairid, VALUE
     }
     *(volatile struct exec_recursive_params *)&p;
     return result;
+
+  invalid:
+    rb_raise(rb_eTypeError, "invalid inspect_tbl pair_list "
+             "for %+"PRIsVALUE" in %+"PRIsVALUE,
+             sym, rb_thread_current());
+    UNREACHABLE_RETURN(Qundef);
 }
 
 /*

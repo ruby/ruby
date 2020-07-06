@@ -1285,10 +1285,10 @@ rb_ary_cat(VALUE ary, const VALUE *argv, long len)
  *    array.push(*objects) -> self
  *    array.append(*objects) -> self
  *
+ *  Array#append is an alias for \Array#push.
+ *
  *  Appends trailing elements.
  *
- *  Array#append is an alias for \Array#push.
-
  *  See also:
  *  - #pop:  Removes and returns trailing elements.
  *  - #shift:  Removes and returns leading elements.
@@ -1524,58 +1524,74 @@ rb_ary_shift_m(int argc, VALUE *argv, VALUE ary)
     return result;
 }
 
-MJIT_FUNC_EXPORTED VALUE
-rb_ary_behead(VALUE ary, long n)
+static VALUE
+behead_shared(VALUE ary, long n)
 {
-    if (n<=0) return ary;
-
+    assert(ARY_SHARED_P(ary));
     rb_ary_modify_check(ary);
-    if (ARY_SHARED_P(ary)) {
-        if (ARY_SHARED_ROOT_OCCUPIED(ARY_SHARED_ROOT(ary))) {
-	  setup_occupied_shared:
-	    ary_mem_clear(ary, 0, n);
-	}
-        ARY_INCREASE_PTR(ary, n);
+    if (ARY_SHARED_ROOT_OCCUPIED(ARY_SHARED_ROOT(ary))) {
+        ary_mem_clear(ary, 0, n);
     }
-    else {
-	if (RARRAY_LEN(ary) < ARY_DEFAULT_SIZE) {
-            RARRAY_PTR_USE_TRANSIENT(ary, ptr, {
-                MEMMOVE(ptr, ptr+n, VALUE, RARRAY_LEN(ary)-n);
-	    }); /* WB: no new reference */
-	}
-	else {
-	    ary_make_shared(ary);
-	    goto setup_occupied_shared;
-	}
-    }
+    ARY_INCREASE_PTR(ary, n);
     ARY_INCREASE_LEN(ary, -n);
-
     ary_verify(ary);
     return ary;
 }
 
 static VALUE
-ary_ensure_room_for_unshift(VALUE ary, int argc)
+behead_transient(VALUE ary, long n)
+{
+    rb_ary_modify_check(ary);
+    RARRAY_PTR_USE_TRANSIENT(ary, ptr, {
+        MEMMOVE(ptr, ptr+n, VALUE, RARRAY_LEN(ary)-n);
+    }); /* WB: no new reference */
+    ARY_INCREASE_LEN(ary, -n);
+    ary_verify(ary);
+    return ary;
+}
+
+MJIT_FUNC_EXPORTED VALUE
+rb_ary_behead(VALUE ary, long n)
+{
+    if (n <= 0) {
+        return ary;
+    }
+    else if (ARY_SHARED_P(ary)) {
+        return behead_shared(ary, n);
+    }
+    else if (RARRAY_LEN(ary) >= ARY_DEFAULT_SIZE) {
+        ary_make_shared(ary);
+        return behead_shared(ary, n);
+    }
+    else {
+        return behead_transient(ary, n);
+    }
+}
+
+static VALUE
+make_room_for_unshift(VALUE ary, const VALUE *head, VALUE *sharedp, int argc, long capa, long len)
+{
+    if (head - sharedp < argc) {
+        long room = capa - len - argc;
+
+        room -= room >> 4;
+        MEMMOVE((VALUE *)sharedp + argc + room, head, VALUE, len);
+        head = sharedp + argc + room;
+    }
+    ARY_SET_PTR(ary, head - argc);
+    assert(ARY_SHARED_ROOT_OCCUPIED(ARY_SHARED_ROOT(ary)));
+
+    ary_verify(ary);
+    return ARY_SHARED_ROOT(ary);
+}
+
+static VALUE
+ary_modify_for_unshift(VALUE ary, int argc)
 {
     long len = RARRAY_LEN(ary);
     long new_len = len + argc;
     long capa;
     const VALUE *head, *sharedp;
-
-    if (len > ARY_MAX_SIZE - argc) {
-	rb_raise(rb_eIndexError, "index %ld too big", new_len);
-    }
-
-    if (ARY_SHARED_P(ary)) {
-        VALUE shared_root = ARY_SHARED_ROOT(ary);
-        capa = RARRAY_LEN(shared_root);
-        if (ARY_SHARED_ROOT_OCCUPIED(shared_root) && capa > new_len) {
-            rb_ary_modify_check(ary);
-            head = RARRAY_CONST_PTR_TRANSIENT(ary);
-            sharedp = RARRAY_CONST_PTR_TRANSIENT(shared_root);
-	    goto makeroom_if_need;
-	}
-    }
 
     rb_ary_modify(ary);
     capa = ARY_CAPA(ary);
@@ -1592,21 +1608,7 @@ ary_ensure_room_for_unshift(VALUE ary, int argc)
 	ary_make_shared(ary);
 
         head = sharedp = RARRAY_CONST_PTR_TRANSIENT(ary);
-	goto makeroom;
-      makeroom_if_need:
-	if (head - sharedp < argc) {
-	    long room;
-	  makeroom:
-	    room = capa - new_len;
-	    room -= room >> 4;
-	    MEMMOVE((VALUE *)sharedp + argc + room, head, VALUE, len);
-	    head = sharedp + argc + room;
-	}
-	ARY_SET_PTR(ary, head - argc);
-        assert(ARY_SHARED_ROOT_OCCUPIED(ARY_SHARED_ROOT(ary)));
-
-        ary_verify(ary);
-        return ARY_SHARED_ROOT(ary);
+        return make_room_for_unshift(ary, head, (void *)sharedp, argc, capa, len);
     }
     else {
 	/* sliding items */
@@ -1619,14 +1621,46 @@ ary_ensure_room_for_unshift(VALUE ary, int argc)
     }
 }
 
+static VALUE
+ary_ensure_room_for_unshift(VALUE ary, int argc)
+{
+    long len = RARRAY_LEN(ary);
+    long new_len = len + argc;
+
+    if (len > ARY_MAX_SIZE - argc) {
+        rb_raise(rb_eIndexError, "index %ld too big", new_len);
+    }
+    else if (! ARY_SHARED_P(ary)) {
+        return ary_modify_for_unshift(ary, argc);
+    }
+    else {
+        VALUE shared_root = ARY_SHARED_ROOT(ary);
+        long capa = RARRAY_LEN(shared_root);
+
+        if (! ARY_SHARED_ROOT_OCCUPIED(shared_root)) {
+            return ary_modify_for_unshift(ary, argc);
+        }
+        else if (new_len > capa) {
+            return ary_modify_for_unshift(ary, argc);
+        }
+        else {
+            const VALUE * head = RARRAY_CONST_PTR_TRANSIENT(ary);
+            void *sharedp = (void *)RARRAY_CONST_PTR_TRANSIENT(shared_root);
+
+            rb_ary_modify_check(ary);
+            return make_room_for_unshift(ary, head, sharedp, argc, capa, len);
+        }
+    }
+}
+
 /*
  *  call-seq:
  *    array.unshift(*objects) -> self
  *    array.prepend(*objects) -> self
  *
- *  Prepends leading elements.
+ *  Array#prepend is an alias for Array#unshift.
  *
- *  Array#prepend is an alias for \Array#unshift.
+ *  Prepends leading elements.
  *
  *  See also:
  *  - #push:  Appends trailing elements.
@@ -1788,6 +1822,12 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *    a[-1..2] # => [2]
  *    a[-2..2] # => ["bar", 2]
  *    a[-3..2] # => [:foo, "bar", 2]
+ *
+ *  If <tt>range.start</tt> is larger than the array size, returns +nil+:
+ *    a = [:foo, 'bar', 2]
+ *    a[4..1] # => nil
+ *    a[4..0] # => nil
+ *    a[4..-1] # => nil
  *
  *  ---
  *
@@ -2087,6 +2127,8 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
  *  Array#find_index is an alias for Array#index.
  *  See also Array#rindex.
  *
+ *  Returns the index of a specified element.
+ *
  *  ---
  *
  *  When argument +object+ is given but no block,
@@ -2378,6 +2420,22 @@ rb_ary_resize(VALUE ary, long len)
     return ary;
 }
 
+static VALUE
+ary_aset_by_rb_ary_store(VALUE ary, long key, VALUE val)
+{
+    rb_ary_store(ary, key, val);
+    return val;
+}
+
+static VALUE
+ary_aset_by_rb_ary_splice(VALUE ary, long beg, long len, VALUE val)
+{
+    VALUE rpl = rb_ary_to_ary(val);
+    rb_ary_splice(ary, beg, len, RARRAY_CONST_PTR_TRANSIENT(rpl), RARRAY_LEN(rpl));
+    RB_GC_GUARD(rpl);
+    return val;
+}
+
 /*
  *  call-seq:
  *    array[index] = object -> object
@@ -2524,33 +2582,25 @@ static VALUE
 rb_ary_aset(int argc, VALUE *argv, VALUE ary)
 {
     long offset, beg, len;
-    VALUE rpl;
 
+    rb_check_arity(argc, 2, 3);
+    rb_ary_modify_check(ary);
     if (argc == 3) {
-	rb_ary_modify_check(ary);
 	beg = NUM2LONG(argv[0]);
 	len = NUM2LONG(argv[1]);
-	goto range;
+        return ary_aset_by_rb_ary_splice(ary, beg, len, argv[2]);
     }
-    rb_check_arity(argc, 2, 2);
-    rb_ary_modify_check(ary);
     if (FIXNUM_P(argv[0])) {
 	offset = FIX2LONG(argv[0]);
-	goto fixnum;
+        return ary_aset_by_rb_ary_store(ary, offset, argv[1]);
     }
     if (rb_range_beg_len(argv[0], &beg, &len, RARRAY_LEN(ary), 1)) {
 	/* check if idx is Range */
-      range:
-	rpl = rb_ary_to_ary(argv[argc-1]);
-        rb_ary_splice(ary, beg, len, RARRAY_CONST_PTR_TRANSIENT(rpl), RARRAY_LEN(rpl));
-	RB_GC_GUARD(rpl);
-	return argv[argc-1];
+        return ary_aset_by_rb_ary_splice(ary, beg, len, argv[1]);
     }
 
     offset = NUM2LONG(argv[0]);
-fixnum:
-    rb_ary_store(ary, offset, argv[1]);
-    return argv[1];
+    return ary_aset_by_rb_ary_store(ary, offset, argv[1]);
 }
 
 /*
@@ -2902,6 +2952,34 @@ ary_join_0(VALUE ary, VALUE sep, long max, VALUE result)
 }
 
 static void
+ary_join_1_str(VALUE dst, VALUE src, int *first)
+{
+    rb_str_buf_append(dst, src);
+    if (*first) {
+        rb_enc_copy(dst, src);
+        *first = FALSE;
+    }
+}
+
+static void
+ary_join_1_ary(VALUE obj, VALUE ary, VALUE sep, VALUE result, VALUE val, int *first)
+{
+    if (val == ary) {
+        rb_raise(rb_eArgError, "recursive array join");
+    }
+    else {
+        VALUE args[4];
+
+        *first = FALSE;
+        args[0] = val;
+        args[1] = sep;
+        args[2] = result;
+        args[3] = (VALUE)first;
+        rb_exec_recursive(recursive_join, obj, (VALUE)args);
+    }
+}
+
+static void
 ary_join_1(VALUE obj, VALUE ary, VALUE sep, long i, VALUE result, int *first)
 {
     VALUE val, tmp;
@@ -2912,44 +2990,19 @@ ary_join_1(VALUE obj, VALUE ary, VALUE sep, long i, VALUE result, int *first)
 
 	val = RARRAY_AREF(ary, i);
 	if (RB_TYPE_P(val, T_STRING)) {
-	  str_join:
-	    rb_str_buf_append(result, val);
-	    if (*first) {
-		rb_enc_copy(result, val);
-		*first = FALSE;
-	    }
+            ary_join_1_str(result, val, first);
 	}
 	else if (RB_TYPE_P(val, T_ARRAY)) {
-	    obj = val;
-	  ary_join:
-	    if (val == ary) {
-		rb_raise(rb_eArgError, "recursive array join");
-	    }
-	    else {
-		VALUE args[4];
-
-		*first = FALSE;
-		args[0] = val;
-		args[1] = sep;
-		args[2] = result;
-		args[3] = (VALUE)first;
-		rb_exec_recursive(recursive_join, obj, (VALUE)args);
-	    }
+            ary_join_1_ary(val, ary, sep, result, val, first);
 	}
-	else {
-	    tmp = rb_check_string_type(val);
-	    if (!NIL_P(tmp)) {
-		val = tmp;
-		goto str_join;
-	    }
-	    tmp = rb_check_array_type(val);
-	    if (!NIL_P(tmp)) {
-		obj = val;
-		val = tmp;
-		goto ary_join;
-	    }
-	    val = rb_obj_as_string(val);
-	    goto str_join;
+        else if (!NIL_P(tmp = rb_check_string_type(val))) {
+            ary_join_1_str(result, tmp, first);
+        }
+        else if (!NIL_P(tmp = rb_check_array_type(val))) {
+            ary_join_1_ary(val, ary, sep, result, tmp, first);
+        }
+        else {
+            ary_join_1_str(result, rb_obj_as_string(val), first);
 	}
     }
 }
@@ -3073,10 +3126,12 @@ inspect_ary(VALUE ary, VALUE dummy, int recur)
  *    array.inspect -> new_string
  *    array.to_s => new_string
  *
- *  Returns the new String formed by calling method <tt>#inspect</tt>
+ *  Array#to_s is an alias for Array#inspect.
+ *
+ *  Returns the new \String formed by calling method <tt>#inspect</tt>
  *  on each array element:
  *    a = [:foo, 'bar', 2]
- *    a.inspect  # => "[:foo, \"bar\", 2]"
+ *    a.inspect # => "[:foo, \"bar\", 2]"
  *
  *  Raises an exception if any element lacks instance method <tt>#inspect</tt>:
  *    a = [:foo, 'bar', 2, BasicObject.new]
@@ -4209,19 +4264,19 @@ rb_ary_select_bang(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.keep_if {|item| block}   -> ary
- *     ary.keep_if                  -> Enumerator
+ *    array.keep_if {|element| ... } -> self
+ *    array.keep_if -> new_enumeration
  *
- *  Deletes every element of +self+ for which the given block evaluates to
- *  +false+, and returns +self+.
+ *  Retains those elements for which the block returns a truthy value;
+ *  deletes all other elements; returns +self+:
+ *    a = [:foo, 'bar', 2, :bam]
+ *    a1 = a.keep_if {|element| element.to_s.start_with?('b') }
+ *    a1 # => ["bar", :bam]
+ *    a1.equal?(a) # => true # Returned self
  *
- *  If no block is given, an Enumerator is returned instead.
- *
- *     a = %w[ a b c d e f ]
- *     a.keep_if {|v| v =~ /[aeiou]/ }    #=> ["a", "e"]
- *     a                                  #=> ["a", "e"]
- *
- *  See also Array#select!.
+ *  Returns a new \Enumerator if no block given:
+ *    a = [:foo, 'bar', 2, :bam]
+ *    a.keep_if # => #<Enumerator: [:foo, "bar", 2, :bam]:keep_if>
  */
 
 static VALUE
@@ -4247,22 +4302,42 @@ ary_resize_smaller(VALUE ary, long len)
 
 /*
  *  call-seq:
- *     ary.delete(obj)            -> item or nil
- *     ary.delete(obj) {block}    -> item or result of block
+ *    array.delete(obj) -> deleted_object
+ *    array.delete(obj) {|nosuch| ... } -> deleted_object or block_return
  *
- *  Deletes all items from +self+ that are equal to +obj+.
+ *  Removes zero or more elements from +self+; returns +self+.
  *
- *  Returns the last deleted item, or +nil+ if no matching item is found.
+ *  ---
  *
- *  If the optional code block is given, the result of the block is returned if
- *  the item is not found.  (To remove +nil+ elements and get an informative
- *  return value, use Array#compact!)
+ *  When no block is given,
+ *  removes from +self+ each element +ele+ such that <tt>ele == obj</tt>;
+ *  returns the last deleted element:
+ *    s1 = 'bar'; s2 = 'bar'
+ *    a = [:foo, s1, 2, s2]
+ *    deleted_obj = a.delete('bar')
+ *    a # => [:foo, 2]
+ *    deleted_obj.equal?(s2) # => true # Returned self
  *
- *     a = [ "a", "b", "b", "b", "c" ]
- *     a.delete("b")                   #=> "b"
- *     a                               #=> ["a", "c"]
- *     a.delete("z")                   #=> nil
- *     a.delete("z") {"not found"}     #=> "not found"
+ *  Returns +nil+ if no elements removed:
+ *    a = [:foo, 'bar', 2]
+ *    a.delete(:nosuch) # => nil
+ *
+ *  ---
+ *
+ *  When a block is given,
+ *  removes from +self+ each element +ele+ such that <tt>ele == obj</tt>.
+ *
+ *  If any such elements are found, ignores the block
+ *  and returns the last deleted element:
+ *    s1 = 'bar'; s2 = 'bar'
+ *    a = [:foo, s1, 2, s2]
+ *    deleted_obj = a.delete('bar') {|obj| fail 'Cannot happen' }
+ *    a # => [:foo, 2]
+ *    deleted_obj.object_id == s2.object_id # => true
+ *
+ *  If no such elements are found, returns the block's return value:
+ *    a = [:foo, 'bar', 2]
+ *    a.delete(:nosuch) {|obj| "#{obj} not found" } # => "nosuch not found"
  */
 
 VALUE
@@ -4343,17 +4418,41 @@ rb_ary_delete_at(VALUE ary, long pos)
 
 /*
  *  call-seq:
- *     ary.delete_at(index)  -> obj or nil
+ *    array.delete_at(index) -> deleted_object or nil
  *
- *  Deletes the element at the specified +index+, returning that element, or
- *  +nil+ if the +index+ is out of range.
+ *  Deletes an element from +self+, per the given +index+.
  *
- *  See also Array#slice!
+ *  The given +index+ must be an
+ *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
  *
- *     a = ["ant", "bat", "cat", "dog"]
- *     a.delete_at(2)    #=> "cat"
- *     a                 #=> ["ant", "bat", "dog"]
- *     a.delete_at(99)   #=> nil
+ *  ---
+ *
+ *  When +index+ is non-negative, deletes the element at offset +index+:
+ *    a = [:foo, 'bar', 2]
+ *    a.delete_at(1) # => "bar"
+ *    a # => [:foo, 2]
+ *
+ *  If index is too large, returns nil:
+ *    a = [:foo, 'bar', 2]
+ *    a.delete_at(5) # => nil
+ *
+ *  ---
+ *
+ *  When +index+ is negative, counts backward from the end of the array:
+ *    a = [:foo, 'bar', 2]
+ *    a.delete_at(-2) # => "bar"
+ *    a # => [:foo, 2]
+ *
+ *  If +index+ is too small (far from zero), returns nil:
+ *    a = [:foo, 'bar', 2]
+ *    a.delete_at(-5) # => nil
+ *
+ *  ---
+ *
+ *  Raises an exception if index is not an Integer-convertible object:
+ *    a = [:foo, 'bar', 2]
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    a.delete_at(:foo)
  */
 
 static VALUE
@@ -4362,63 +4461,165 @@ rb_ary_delete_at_m(VALUE ary, VALUE pos)
     return rb_ary_delete_at(ary, NUM2LONG(pos));
 }
 
+static VALUE
+ary_slice_bang_by_rb_ary_splice(VALUE ary, long pos, long len)
+{
+    const long orig_len = RARRAY_LEN(ary);
+
+    if (len < 0) {
+        return Qnil;
+    }
+    else if (pos < -orig_len) {
+        return Qnil;
+    }
+    else if (pos < 0) {
+        pos += orig_len;
+    }
+    else if (orig_len < pos) {
+        return Qnil;
+    }
+    else if (orig_len < pos + len) {
+        len = orig_len - pos;
+    }
+    if (len == 0) {
+        return rb_ary_new2(0);
+    }
+    else {
+        VALUE arg2 = rb_ary_new4(len, RARRAY_CONST_PTR_TRANSIENT(ary)+pos);
+        RBASIC_SET_CLASS(arg2, rb_obj_class(ary));
+        rb_ary_splice(ary, pos, len, 0, 0);
+        return arg2;
+    }
+}
+
 /*
  *  call-seq:
- *     ary.slice!(index)         -> obj or nil
- *     ary.slice!(start, length) -> new_ary or nil
- *     ary.slice!(range)         -> new_ary or nil
+ *    array.slice!(n) -> obj or nil
+ *    array.slice!(start, length) -> new_array or nil
+ *    array.slice!(range) -> new_array or nil
  *
- *  Deletes the element(s) given by an +index+ (optionally up to +length+
- *  elements) or by a +range+.
+ *  Removes and returns elements from +self+.
  *
- *  Returns the deleted object (or objects), or +nil+ if the +index+ is out of
- *  range.
+ *  - Argument +n+, if given must be an \Integer object.
+ *  - Arguments +start+ and +length+, if given must be \Integer objects.
+ *  - Argument +range+, if given, must be a \Range object.
  *
- *     a = [ "a", "b", "c" ]
- *     a.slice!(1)     #=> "b"
- *     a               #=> ["a", "c"]
- *     a.slice!(-1)    #=> "c"
- *     a               #=> ["a"]
- *     a.slice!(100)   #=> nil
- *     a               #=> ["a"]
+ *  ---
+ *
+ *  When the only argument is an \Integer +n+,
+ *  removes and returns the _nth_ element in +self+:
+ *    a = [:foo, 'bar', 2]
+ *    a.slice!(1) # => "bar"
+ *    a # => [:foo, 2]
+ *
+ *  If +n+ is negative, counts backwards from the end of +self+:
+ *    a = [:foo, 'bar', 2]
+ *    a.slice!(-1) # => 2
+ *    a # => [:foo, "bar"]
+ *
+ *  If +n+ is out of range, returns +nil+:
+ *    a = [:foo, 'bar', 2]
+ *    a.slice!(50) # => nil
+ *    a.slice!(-50) # => nil
+ *    a # => [:foo, "bar", 2]
+ *
+ *  ---
+ *
+ *  When the only arguments are Integers +start+ and +length+,
+ *  removes +length+ elements from +self+ beginning at offset  +start+;
+ *  returns the deleted objects in a new Array:
+ *    a = [:foo, 'bar', 2]
+ *    a.slice!(0, 2) # => [:foo, "bar"]
+ *    a # => [2]
+ *
+ *  If <tt>start + length</tt> exceeds the array size,
+ *  removes and returns all elements from offset +start+ to the end:
+ *    a = [:foo, 'bar', 2]
+ *    a.slice!(1, 50) # => ["bar", 2]
+ *    a # => [:foo]
+ *
+ *  If <tt>start == a.size</tt> and +length+ is non-negative,
+ *  returns a new empty \Array:
+ *    a = [:foo, 'bar', 2]
+ *    a.slice!(a.size, 0) # => []
+ *    a.slice!(a.size, 50) # => []
+ *    a # => [:foo, "bar", 2]
+ *
+ *  If +length+ is negative, returns +nil+:
+ *    a = [:foo, 'bar', 2]
+ *    a.slice!(2, -1) # => nil
+ *    a.slice!(1, -2) # => nil
+ *    a # => [:foo, "bar", 2]
+ *
+ *  ---
+ *
+ *  When the only argument is a \Range object +range+,
+ *  treats <tt>range.min</tt> as +start+ above and <tt>range.size</tt> as +length+ above:
+ *    a = [:foo, 'bar', 2]
+ *     a.slice!(1..2) # => ["bar", 2]
+ *    a # => [:foo]
+ *
+ *  If <tt>range.start == a.size</tt>, returns a new empty \Array:
+ *    a = [:foo, 'bar', 2]
+ *    a.slice!(a.size..0) # => []
+ *    a.slice!(a.size..50) # => []
+ *    a.slice!(a.size..-1) # => []
+ *    a.slice!(a.size..-50) # => []
+ *    a # => [:foo, "bar", 2]
+ *
+ *  If <tt>range.start</tt> is larger than the array size, returns +nil+:
+ *    a = [:foo, 'bar', 2]
+ *    a.slice!(4..1) # => nil
+ *    a.slice!(4..0) # => nil
+ *    a.slice!(4..-1) # => nil
+ *
+ *  If <tt>range.end</tt> is negative, counts backwards from the end of the array:
+ *    a = [:foo, 'bar', 2]
+ *    a.slice!(0..-2) # => [:foo, "bar"]
+ *    a # => [2]
+ *
+ *  If <tt>range.start</tt> is negative,
+ *  calculates the start index backwards from the end of the array:
+ *    a = [:foo, 'bar', 2]
+ *    a.slice!(-2..2) # => ["bar", 2]
+ *    a # => [:foo]
+ *
+ *  ---
+ *
+ *  Raises an exception if given a single argument that is not an \Integer or a \Range:
+ *    a = [:foo, 'bar', 2]
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    a.slice!(:foo)
+ *
+ *  Raises an exception if given two arguments that are not both Integers:
+ *    a = [:foo, 'bar', 2]
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    a.slice!(:foo, 3)
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    a.slice!(1, :bar)
  */
 
 static VALUE
 rb_ary_slice_bang(int argc, VALUE *argv, VALUE ary)
 {
-    VALUE arg1, arg2;
-    long pos, len, orig_len;
+    VALUE arg1;
+    long pos, len;
 
     rb_ary_modify_check(ary);
+    rb_check_arity(argc, 1, 2);
+    arg1 = argv[0];
+
     if (argc == 2) {
 	pos = NUM2LONG(argv[0]);
 	len = NUM2LONG(argv[1]);
-      delete_pos_len:
-	if (len < 0) return Qnil;
-	orig_len = RARRAY_LEN(ary);
-	if (pos < 0) {
-	    pos += orig_len;
-	    if (pos < 0) return Qnil;
-	}
-	else if (orig_len < pos) return Qnil;
-	if (orig_len < pos + len) {
-	    len = orig_len - pos;
-	}
-	if (len == 0) return rb_ary_new2(0);
-        arg2 = rb_ary_new4(len, RARRAY_CONST_PTR_TRANSIENT(ary)+pos);
-	RBASIC_SET_CLASS(arg2, rb_obj_class(ary));
-	rb_ary_splice(ary, pos, len, 0, 0);
-	return arg2;
+        return ary_slice_bang_by_rb_ary_splice(ary, pos, len);
     }
-
-    rb_check_arity(argc, 1, 2);
-    arg1 = argv[0];
 
     if (!FIXNUM_P(arg1)) {
 	switch (rb_range_beg_len(arg1, &pos, &len, RARRAY_LEN(ary), 0)) {
 	  case Qtrue:
 	    /* valid range */
-	    goto delete_pos_len;
+            return ary_slice_bang_by_rb_ary_splice(ary, pos, len);
 	  case Qnil:
 	    /* invalid range */
 	    return Qnil;

@@ -985,18 +985,21 @@ flo_to_s(VALUE flt)
 	memcpy(ptr -= decpt, buf, digs);
     }
     else {
-      exp:
-	if (digs > 1) {
-	    memmove(buf + 2, buf + 1, digs - 1);
-	}
-	else {
-	    buf[2] = '0';
-	    digs++;
-	}
-	buf[1] = '.';
-	rb_str_cat(s, buf, digs + 1);
-	rb_str_catf(s, "e%+03d", decpt - 1);
+        goto exp;
     }
+    return s;
+
+  exp:
+    if (digs > 1) {
+        memmove(buf + 2, buf + 1, digs - 1);
+    }
+    else {
+        buf[2] = '0';
+        digs++;
+    }
+    buf[1] = '.';
+    rb_str_cat(s, buf, digs + 1);
+    rb_str_catf(s, "e%+03d", decpt - 1);
     return s;
 }
 
@@ -3217,42 +3220,6 @@ rb_num2ull(VALUE val)
  *
  */
 
-/*
- *  call-seq:
- *     int.to_i    ->  integer
- *     int.to_int  ->  integer
- *
- *  Since +int+ is already an Integer, returns +self+.
- *
- *  #to_int is an alias for #to_i.
- */
-
-static VALUE
-int_to_i(VALUE num)
-{
-    return num;
-}
-
-/*
- *  call-seq:
- *     int.integer?  ->  true
- *
- *  Since +int+ is already an Integer, this always returns +true+.
- */
-
-static VALUE
-int_int_p(VALUE num)
-{
-    return Qtrue;
-}
-
-/*
- *  call-seq:
- *     int.odd?  ->  true or false
- *
- *  Returns +true+ if +int+ is an odd number.
- */
-
 VALUE
 rb_int_odd_p(VALUE num)
 {
@@ -3267,13 +3234,6 @@ rb_int_odd_p(VALUE num)
 	return rb_big_odd_p(num);
     }
 }
-
-/*
- *  call-seq:
- *     int.even?  ->  true or false
- *
- *  Returns +true+ if +int+ is an even number.
- */
 
 static VALUE
 int_even_p(VALUE num)
@@ -3465,26 +3425,6 @@ int_chr(int argc, VALUE *argv, VALUE num)
     if (!enc) enc = rb_ascii8bit_encoding();
   decode:
     return rb_enc_uint_chr(i, enc);
-}
-
-/*
- *  call-seq:
- *     int.ord  ->  self
- *
- *  Returns the +int+ itself.
- *
- *     97.ord   #=> 97
- *
- *  This method is intended for compatibility to character literals
- *  in Ruby 1.9.
- *
- *  For example, <code>?a.ord</code> returns 97 both in 1.8 and 1.9.
- */
-
-static VALUE
-int_ord(VALUE num)
-{
-    return num;
 }
 
 /*
@@ -4038,13 +3978,7 @@ int_pow(long x, unsigned long y)
     do {
 	while (y % 2 == 0) {
 	    if (!FIT_SQRT_LONG(x)) {
-		VALUE v;
-	      bignum:
-		v = rb_big_pow(rb_int2big(x), LONG2NUM(y));
-		if (RB_FLOAT_TYPE_P(v)) /* infinity due to overflow */
-		    return v;
-		if (z != 1) v = rb_big_mul(rb_int2big(neg ? -z : z), v);
-		return v;
+                goto bignum;
 	    }
 	    x = x * x;
 	    y >>= 1;
@@ -4058,12 +3992,40 @@ int_pow(long x, unsigned long y)
     } while (--y);
     if (neg) z = -z;
     return LONG2NUM(z);
+
+    VALUE v;
+  bignum:
+    v = rb_big_pow(rb_int2big(x), LONG2NUM(y));
+    if (RB_FLOAT_TYPE_P(v)) /* infinity due to overflow */
+        return v;
+    if (z != 1) v = rb_big_mul(rb_int2big(neg ? -z : z), v);
+    return v;
 }
 
 VALUE
 rb_int_positive_pow(long x, unsigned long y)
 {
     return int_pow(x, y);
+}
+
+static VALUE
+fix_pow_inverted(VALUE x, VALUE minusb)
+{
+    if (x == INT2FIX(0)) {
+        rb_num_zerodiv();
+        UNREACHABLE_RETURN(Qundef);
+    }
+    else {
+        VALUE y = rb_int_pow(x, minusb);
+
+        if (RB_FLOAT_TYPE_P(y)) {
+            double d = pow((double)FIX2LONG(x), RFLOAT_VALUE(y));
+            return DBL2NUM(1.0 / d);
+        }
+        else {
+            return rb_rational_raw(INT2FIX(1), y);
+        }
+    }
 }
 
 static VALUE
@@ -4075,18 +4037,8 @@ fix_pow(VALUE x, VALUE y)
 	long b = FIX2LONG(y);
 
 	if (a == 1) return INT2FIX(1);
-	if (a == -1) {
-	    if (b % 2 == 0)
-		return INT2FIX(1);
-	    else
-		return INT2FIX(-1);
-	}
-	if (b < 0) {
-	    if (a == 0) rb_num_zerodiv();
-            y = rb_int_pow(x, LONG2NUM(-b));
-            goto inverted;
-	}
-
+        if (a == -1) return INT2FIX(b % 2 ? -1 : 1);
+        if (b <  0) return fix_pow_inverted(x, fix_uminus(y));
 	if (b == 0) return INT2FIX(1);
 	if (b == 1) return x;
 	if (a == 0) return INT2FIX(0);
@@ -4094,20 +4046,8 @@ fix_pow(VALUE x, VALUE y)
     }
     else if (RB_TYPE_P(y, T_BIGNUM)) {
 	if (a == 1) return INT2FIX(1);
-	if (a == -1) {
-	    if (int_even_p(y)) return INT2FIX(1);
-	    else return INT2FIX(-1);
-	}
-	if (BIGNUM_NEGATIVE_P(y)) {
-	    if (a == 0) rb_num_zerodiv();
-            y = rb_int_pow(x, rb_big_uminus(y));
-          inverted:
-            if (RB_FLOAT_TYPE_P(y)) {
-                double d = pow((double)a, RFLOAT_VALUE(y));
-                return DBL2NUM(1.0 / d);
-            }
-            return rb_rational_raw(INT2FIX(1), y);
-	}
+        if (a == -1) return INT2FIX(int_even_p(y) ? 1 : -1);
+        if (BIGNUM_NEGATIVE_P(y)) return fix_pow_inverted(x, rb_big_uminus(y));
 	if (a == 0) return INT2FIX(0);
 	x = rb_int2big(FIX2LONG(x));
 	return rb_big_pow(x, y);
@@ -4119,11 +4059,9 @@ fix_pow(VALUE x, VALUE y)
 	    return DBL2NUM(dy < 0 ? HUGE_VAL : 0.0);
 	}
 	if (a == 1) return DBL2NUM(1.0);
-	{
-	    if (a < 0 && dy != round(dy))
-                return rb_dbl_complex_new_polar_pi(pow(-(double)a, dy), dy);
-	    return DBL2NUM(pow((double)a, dy));
-	}
+        if (a < 0 && dy != round(dy))
+            return rb_dbl_complex_new_polar_pi(pow(-(double)a, dy), dy);
+        return DBL2NUM(pow((double)a, dy));
     }
     else {
 	return rb_num_coerce_bin(x, y, idPow);
@@ -5644,9 +5582,6 @@ Init_Numeric(void)
 
     rb_define_method(rb_cInteger, "to_s", int_to_s, -1);
     rb_define_alias(rb_cInteger, "inspect", "to_s");
-    rb_define_method(rb_cInteger, "integer?", int_int_p, 0);
-    rb_define_method(rb_cInteger, "odd?", rb_int_odd_p, 0);
-    rb_define_method(rb_cInteger, "even?", int_even_p, 0);
     rb_define_method(rb_cInteger, "allbits?", int_allbits_p, 1);
     rb_define_method(rb_cInteger, "anybits?", int_anybits_p, 1);
     rb_define_method(rb_cInteger, "nobits?", int_nobits_p, 1);
@@ -5657,9 +5592,6 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "next", int_succ, 0);
     rb_define_method(rb_cInteger, "pred", int_pred, 0);
     rb_define_method(rb_cInteger, "chr", int_chr, -1);
-    rb_define_method(rb_cInteger, "ord", int_ord, 0);
-    rb_define_method(rb_cInteger, "to_i", int_to_i, 0);
-    rb_define_method(rb_cInteger, "to_int", int_to_i, 0);
     rb_define_method(rb_cInteger, "to_f", int_to_f, 0);
     rb_define_method(rb_cInteger, "floor", int_floor, -1);
     rb_define_method(rb_cInteger, "ceil", int_ceil, -1);
@@ -5682,9 +5614,6 @@ Init_Numeric(void)
 
     rb_define_method(rb_cInteger, "pow", rb_int_powm, -1); /* in bignum.c */
 
-    rb_define_method(rb_cInteger, "abs", rb_int_abs, 0);
-    rb_define_method(rb_cInteger, "magnitude", rb_int_abs, 0);
-
     rb_define_method(rb_cInteger, "===", rb_int_equal, 1);
     rb_define_method(rb_cInteger, "==", rb_int_equal, 1);
     rb_define_method(rb_cInteger, ">", rb_int_gt, 1);
@@ -5702,7 +5631,6 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, ">>", rb_int_rshift, 1);
 
     rb_define_method(rb_cInteger, "size", int_size, 0);
-    rb_define_method(rb_cInteger, "bit_length", rb_int_bit_length, 0);
     rb_define_method(rb_cInteger, "digits", rb_int_digits, -1);
 
     /* An obsolete class, use Integer */

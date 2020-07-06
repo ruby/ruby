@@ -108,6 +108,7 @@ static inline int
 mjit_target_iseq_p(struct rb_iseq_constant_body *body)
 {
     return (body->type == ISEQ_TYPE_METHOD || body->type == ISEQ_TYPE_BLOCK)
+        && !body->builtin_inline_p
         && body->iseq_size < JIT_ISEQ_SIZE_THRESHOLD;
 }
 

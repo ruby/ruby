@@ -9,8 +9,10 @@
 extern "C" {
 #endif
 
-VALUE regexp_spec_re(VALUE self) {
-  return rb_reg_new("a", 1, 0);
+VALUE regexp_spec_re(VALUE self, VALUE str, VALUE options) {
+  char *cstr = StringValueCStr(str);
+  int opts = FIX2INT(options);
+  return rb_reg_new(cstr, strlen(cstr), opts);
 }
 
 VALUE regexp_spec_reg_1st_match(VALUE self, VALUE md) {
@@ -40,7 +42,7 @@ VALUE regexp_spec_match(VALUE self, VALUE regexp, VALUE str) {
 void Init_regexp_spec(void) {
   VALUE cls = rb_define_class("CApiRegexpSpecs", rb_cObject);
   rb_define_method(cls, "match", regexp_spec_match, 2);
-  rb_define_method(cls, "a_re", regexp_spec_re, 0);
+  rb_define_method(cls, "a_re", regexp_spec_re, 2);
   rb_define_method(cls, "a_re_1st_match", regexp_spec_reg_1st_match, 1);
   rb_define_method(cls, "rb_reg_match", regexp_spec_reg_match, 2);
   rb_define_method(cls, "rb_backref_get", regexp_spec_backref_get, 0);

@@ -49,37 +49,28 @@ def make_cfunc_name inlines, name, lineno
   end
 end
 
-def collect_params tree
-  while tree
-    case tree.first
-    when :params
-      params = []
-      _, mand, opt, rest, post, kwds, kwrest, block = tree
-      mand.each {|_, v| params << v.to_sym} if mand
-      opt.each {|(_, v), | params << v.to_sym} if opt
-      params << rest[1][1].to_sym if rest
-      post.each {|_, v| params << v.to_sym} if post
-      params << kwrest[1][1].to_sym if kwrest
-      params << block[1][1].to_sym if block
-      return params
-    when :paren
-      tree = tree[1]
-    else
-      raise "unknown sexp: #{tree.first}"
+def collect_locals tree
+  type, name, (line, cols) = tree
+  if locals = LOCALS_DB[[name, line]]
+    locals
+  else
+    if false # for debugging
+      pp LOCALS_DB
+      raise "not found: [#{name}, #{line}]"
     end
   end
 end
 
-def collect_builtin base, tree, name, bs, inlines, params = nil
+def collect_builtin base, tree, name, bs, inlines, locals = nil
   while tree
     call = recv = sep = mid = args = nil
     case tree.first
     when :def
-      params = collect_params(tree[2])
+      locals = collect_locals(tree[1])
       tree = tree[3]
       next
     when :defs
-      params = collect_params(tree[4])
+      locals = collect_locals(tree[3])
       tree = tree[5]
       next
     when :class
@@ -146,7 +137,7 @@ def collect_builtin base, tree, name, bs, inlines, params = nil
 
             func_name = "_bi#{inlines.size}"
             cfunc_name = make_cfunc_name(inlines, name, lineno)
-            inlines[cfunc_name] = [lineno, text, params, func_name]
+            inlines[cfunc_name] = [lineno, text, locals, func_name]
             argc -= 1
           when 'cexpr', 'cconst'
             text = inline_text argc, args.first
@@ -155,13 +146,13 @@ def collect_builtin base, tree, name, bs, inlines, params = nil
             func_name = "_bi#{inlines.size}"
             cfunc_name = make_cfunc_name(inlines, name, lineno)
 
-            params = [] if $1 == 'cconst'
-            inlines[cfunc_name] = [lineno, code, params, func_name]
+            locals = [] if $1 == 'cconst'
+            inlines[cfunc_name] = [lineno, code, locals, func_name]
             argc -= 1
           when 'cinit'
             text = inline_text argc, args.first
-            func_name = nil
-            inlines[inlines.size] = [nil, [lineno, text, nil, nil]]
+            func_name = nil # required
+            inlines[inlines.size] = [lineno, text, nil, nil]
             argc -= 1
           end
         end
@@ -177,21 +168,53 @@ def collect_builtin base, tree, name, bs, inlines, params = nil
     end
 
     tree.each do |t|
-      collect_builtin base, t, name, bs, inlines, params if Array === t
+      collect_builtin base, t, name, bs, inlines, locals if Array === t
     end
     break
   end
 end
+
 # ruby mk_builtin_loader.rb TARGET_FILE.rb
 # #=> generate TARGET_FILE.rbinc
 #
+
+LOCALS_DB = {} # [method_name, first_line] = locals
+
+def collect_iseq iseq_ary
+  # iseq_ary.each_with_index{|e, i| p [i, e]}
+  label = iseq_ary[5]
+  first_line = iseq_ary[8]
+  type = iseq_ary[9]
+  locals = iseq_ary[10]
+  insns = iseq_ary[13]
+
+  if type == :method
+    LOCALS_DB[[label, first_line].freeze] = locals
+  end
+
+  insns.each{|insn|
+    case insn
+    when Integer
+      # ignore
+    when Array
+      # p insn.shift # insn name
+      insn.each{|op|
+        if Array === op && op[0] == "YARVInstructionSequence/SimpleDataFormat"
+          collect_iseq op
+        end
+      }
+    end
+  }
+end
 
 def mk_builtin_header file
   base = File.basename(file, '.rb')
   ofile = "#{file}inc"
 
   # bs = { func_name => argc }
-  collect_builtin(base, Ripper.sexp(File.read(file)), 'top', bs = {}, inlines = {})
+  code = File.read(file)
+  collect_iseq RubyVM::InstructionSequence.compile(code).to_a
+  collect_builtin(base, Ripper.sexp(code), 'top', bs = {}, inlines = {})
 
   begin
     f = open(ofile, 'w')
@@ -200,6 +223,11 @@ def mk_builtin_header file
     f = open(File.basename(ofile), 'w')
   end
   begin
+    if File::ALT_SEPARATOR
+      file = file.tr(File::ALT_SEPARATOR, File::SEPARATOR)
+      ofile = ofile.tr(File::ALT_SEPARATOR, File::SEPARATOR)
+    end
+    lineno = __LINE__
     f.puts "// -*- c -*-"
     f.puts "// DO NOT MODIFY THIS FILE DIRECTLY."
     f.puts "// auto-generated file"
@@ -211,15 +239,15 @@ def mk_builtin_header file
     f.puts '#include "builtin.h"                /* for RB_BUILTIN_FUNCTION */'
     f.puts 'struct rb_execution_context_struct; /* in vm_core.h */'
     f.puts
-    lineno = 11
-    line_file = file.gsub('\\', '/')
+    lineno = __LINE__ - lineno - 1
+    line_file = file
 
-    inlines.each{|cfunc_name, (body_lineno, text, params, func_name)|
+    inlines.each{|cfunc_name, (body_lineno, text, locals, func_name)|
       if String === cfunc_name
         f.puts "static VALUE #{cfunc_name}(struct rb_execution_context_struct *ec, const VALUE self) {"
         lineno += 1
 
-        params.reverse_each.with_index{|param, i|
+        locals.reverse_each.with_index{|param, i|
           next unless Symbol === param
           f.puts "MAYBE_UNUSED(const VALUE) #{param} = rb_vm_lvar(ec, #{-3 - i});"
           lineno += 1

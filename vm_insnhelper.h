@@ -254,7 +254,7 @@ static bool
 vm_call_iseq_optimizable_p(const struct rb_callinfo *ci, const struct rb_callcache *cc)
 {
     return !IS_ARGS_SPLAT(ci) && !IS_ARGS_KEYWORD(ci) &&
-        !(METHOD_ENTRY_VISI(vm_cc_cme(cc)) == METHOD_VISI_PROTECTED);
+        METHOD_ENTRY_CACHEABLE(vm_cc_cme(cc));
 }
 
 #endif /* RUBY_INSNHELPER_H */

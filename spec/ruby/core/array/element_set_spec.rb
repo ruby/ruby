@@ -323,6 +323,10 @@ describe "Array#[]= with [index, count]" do
     b = [1, 2, 3, 4, 5]
     b[10, 0] = [1]
     a.should == [1, 2, 3, 4, 5, nil, nil, nil, nil, nil, 1]
+
+    c = [1, 2, 3, 4, 5]
+    c[10, 0] = []
+    c.should == [1, 2, 3, 4, 5, nil, nil, nil, nil, nil]
   end
 
   it "inserts other section in place defined by idx" do

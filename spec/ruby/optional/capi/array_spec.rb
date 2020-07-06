@@ -190,6 +190,22 @@ describe "C-API Array function" do
     end
   end
 
+  describe "rb_ary_sort" do
+    it "returns a new sorted array" do
+      a = [2, 1, 3]
+      @s.rb_ary_sort(a).should == [1, 2, 3]
+      a.should == [2, 1, 3]
+    end
+  end
+
+  describe "rb_ary_sort_bang" do
+    it "sorts the given array" do
+      a = [2, 1, 3]
+      @s.rb_ary_sort_bang(a).should == [1, 2, 3]
+      a.should == [1, 2, 3]
+    end
+  end
+
   describe "rb_ary_store" do
     it "overwrites the element at the given position" do
       a = [1, 2, 3]

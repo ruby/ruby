@@ -261,9 +261,7 @@ rb_path_to_class(VALUE pathname)
 	    pbeg = p;
 	}
 	if (!id) {
-	  undefined_class:
-	    rb_raise(rb_eArgError, "undefined class/module % "PRIsVALUE,
-		     rb_str_subseq(pathname, 0, p-path));
+            goto undefined_class;
 	}
 	c = rb_const_search(c, id, TRUE, FALSE, FALSE);
 	if (c == Qundef) goto undefined_class;
@@ -275,6 +273,11 @@ rb_path_to_class(VALUE pathname)
     RB_GC_GUARD(pathname);
 
     return c;
+
+  undefined_class:
+    rb_raise(rb_eArgError, "undefined class/module % "PRIsVALUE,
+             rb_str_subseq(pathname, 0, p-path));
+    UNREACHABLE_RETURN(Qundef);
 }
 
 VALUE
@@ -322,13 +325,24 @@ struct rb_global_variable {
     struct trace_var *trace;
 };
 
+struct rb_global_entry {
+    struct rb_global_variable *var;
+    ID id;
+};
+
+static struct rb_id_table *
+global_tbl(void)
+{
+    return rb_global_tbl;
+}
+
 static struct rb_global_entry*
 rb_find_global_entry(ID id)
 {
     struct rb_global_entry *entry;
     VALUE data;
 
-    if (!rb_id_table_lookup(rb_global_tbl, id, &data)) {
+    if (!rb_id_table_lookup(global_tbl(), id, &data)) {
         return NULL;
     }
     entry = (struct rb_global_entry *)data;
@@ -341,7 +355,7 @@ rb_gvar_undef_compactor(void *var)
 {
 }
 
-MJIT_FUNC_EXPORTED struct rb_global_entry*
+static struct rb_global_entry*
 rb_global_entry(ID id)
 {
     struct rb_global_entry *entry = rb_find_global_entry(id);
@@ -360,7 +374,7 @@ rb_global_entry(ID id)
 
 	var->block_trace = 0;
 	var->trace = 0;
-	rb_id_table_insert(rb_global_tbl, id, (VALUE)entry);
+	rb_id_table_insert(global_tbl(), id, (VALUE)entry);
     }
     return entry;
 }
@@ -469,8 +483,9 @@ mark_global_entry(VALUE v, void *ignored)
 void
 rb_gc_mark_global_tbl(void)
 {
-    if (rb_global_tbl)
+    if (rb_global_tbl) {
         rb_id_table_foreach_values(rb_global_tbl, mark_global_entry, 0);
+    }
 }
 
 static enum rb_id_table_iterator_result
@@ -637,7 +652,7 @@ rb_f_untrace_var(int argc, const VALUE *argv)
     if (!id) {
 	rb_name_error_str(var, "undefined global variable %"PRIsVALUE"", QUOTE(var));
     }
-    if (!rb_id_table_lookup(rb_global_tbl, id, &data)) {
+    if (!rb_id_table_lookup(global_tbl(), id, &data)) {
 	rb_name_error(id, "undefined global variable %"PRIsVALUE"", QUOTE_ID(id));
     }
 
@@ -668,13 +683,6 @@ rb_f_untrace_var(int argc, const VALUE *argv)
     return Qnil;
 }
 
-MJIT_FUNC_EXPORTED VALUE
-rb_gvar_get(struct rb_global_entry *entry)
-{
-    struct rb_global_variable *var = entry->var;
-    return (*var->getter)(entry->id, var->data);
-}
-
 struct trace_data {
     struct trace_var *trace;
     VALUE val;
@@ -703,8 +711,8 @@ trace_en(VALUE v)
     return Qnil;		/* not reached */
 }
 
-MJIT_FUNC_EXPORTED VALUE
-rb_gvar_set(struct rb_global_entry *entry, VALUE val)
+static VALUE
+rb_gvar_set_entry(struct rb_global_entry *entry, VALUE val)
 {
     struct trace_data trace;
     struct rb_global_variable *var = entry->var;
@@ -721,52 +729,61 @@ rb_gvar_set(struct rb_global_entry *entry, VALUE val)
 }
 
 VALUE
-rb_gv_set(const char *name, VALUE val)
+rb_gvar_set(ID id, VALUE val)
 {
     struct rb_global_entry *entry;
+    entry = rb_global_entry(id);
 
-    entry = rb_global_entry(global_id(name));
-    return rb_gvar_set(entry, val);
+    return rb_gvar_set_entry(entry, val);
+}
+
+VALUE
+rb_gv_set(const char *name, VALUE val)
+{
+    return rb_gvar_set(global_id(name), val);
+}
+
+VALUE
+rb_gvar_get(ID id)
+{
+    struct rb_global_entry *entry = rb_global_entry(id);
+    struct rb_global_variable *var = entry->var;
+    return (*var->getter)(entry->id, var->data);
 }
 
 VALUE
 rb_gv_get(const char *name)
 {
-    struct rb_global_entry *entry;
     ID id = find_global_id(name);
-
+    
     if (!id) {
         rb_warning("global variable `%s' not initialized", name);
         return Qnil;
     }
 
-    entry = rb_global_entry(id);
-    return rb_gvar_get(entry);
+    return rb_gvar_get(id);
 }
 
 MJIT_FUNC_EXPORTED VALUE
-rb_gvar_defined(struct rb_global_entry *entry)
+rb_gvar_defined(ID id)
 {
+    struct rb_global_entry *entry = rb_global_entry(id);
     if (entry->var->getter == rb_gvar_undef_getter) return Qfalse;
     return Qtrue;
 }
 
 rb_gvar_getter_t *
-rb_gvar_getter_function_of(const struct rb_global_entry *entry)
+rb_gvar_getter_function_of(ID id)
 {
+    const struct rb_global_entry *entry = rb_global_entry(id);
     return entry->var->getter;
 }
 
 rb_gvar_setter_t *
-rb_gvar_setter_function_of(const struct rb_global_entry *entry)
+rb_gvar_setter_function_of(ID id)
 {
+    const struct rb_global_entry *entry = rb_global_entry(id);
     return entry->var->setter;
-}
-
-bool
-rb_gvar_is_traced(const struct rb_global_entry *entry)
-{
-    return !!entry->var->trace;
 }
 
 static enum rb_id_table_iterator_result
@@ -783,7 +800,7 @@ rb_f_global_variables(void)
     VALUE ary = rb_ary_new();
     VALUE sym, backref = rb_backref_get();
 
-    rb_id_table_foreach(rb_global_tbl, gvar_i, (void *)ary);
+    rb_id_table_foreach(global_tbl(), gvar_i, (void *)ary);
     if (!NIL_P(backref)) {
 	char buf[2];
 	int i, nmatch = rb_match_count(backref);
@@ -810,12 +827,13 @@ rb_alias_variable(ID name1, ID name2)
 {
     struct rb_global_entry *entry1, *entry2;
     VALUE data1;
+    struct rb_id_table *gtbl = global_tbl();
 
     entry2 = rb_global_entry(name2);
-    if (!rb_id_table_lookup(rb_global_tbl, name1, &data1)) {
+    if (!rb_id_table_lookup(gtbl, name1, &data1)) {
 	entry1 = ALLOC(struct rb_global_entry);
 	entry1->id = name1;
-	rb_id_table_insert(rb_global_tbl, name1, (VALUE)entry1);
+	rb_id_table_insert(gtbl, name1, (VALUE)entry1);
     }
     else if ((entry1 = (struct rb_global_entry *)data1)->var != entry2->var) {
 	struct rb_global_variable *var = entry1->var;
@@ -947,29 +965,22 @@ iv_index_tbl_newsize(struct ivar_update *ivup)
 static int
 generic_ivar_update(st_data_t *k, st_data_t *v, st_data_t u, int existing)
 {
-    VALUE obj = (VALUE)*k;
     struct ivar_update *ivup = (struct ivar_update *)u;
-    uint32_t newsize;
-    int ret = ST_CONTINUE;
-    struct gen_ivtbl *ivtbl;
+    struct gen_ivtbl *ivtbl = 0;
 
     if (existing) {
 	ivtbl = (struct gen_ivtbl *)*v;
-	if (ivup->index >= ivtbl->numiv) {
-	    goto resize;
-	}
-	ret = ST_STOP;
+        if (ivup->index < ivtbl->numiv) {
+            ivup->u.ivtbl = ivtbl;
+            return ST_STOP;
+        }
     }
-    else {
-	FL_SET(obj, FL_EXIVAR);
-	ivtbl = 0;
-resize:
-	newsize = iv_index_tbl_newsize(ivup);
-	ivtbl = gen_ivtbl_resize(ivtbl, newsize);
-	*v = (st_data_t)ivtbl;
-    }
+    FL_SET((VALUE)*k, FL_EXIVAR);
+    uint32_t newsize = iv_index_tbl_newsize(ivup);
+    ivtbl = gen_ivtbl_resize(ivtbl, newsize);
+    *v = (st_data_t)ivtbl;
     ivup->u.ivtbl = ivtbl;
-    return ret;
+    return ST_CONTINUE;
 }
 
 static VALUE
@@ -1499,12 +1510,7 @@ rb_copy_generic_ivar(VALUE clone, VALUE obj)
     rb_check_frozen(clone);
 
     if (!FL_TEST(obj, FL_EXIVAR)) {
-      clear:
-        if (FL_TEST(clone, FL_EXIVAR)) {
-            rb_free_generic_ivar(clone);
-            FL_UNSET(clone, FL_EXIVAR);
-        }
-        return;
+        goto clear;
     }
     if (gen_ivtbl_get(obj, &ivtbl)) {
 	struct givar_copy c;
@@ -1530,6 +1536,13 @@ rb_copy_generic_ivar(VALUE clone, VALUE obj)
 	 * no need to free
 	 */
 	st_insert(generic_iv_tbl, (st_data_t)clone, (st_data_t)c.ivtbl);
+    }
+    return;
+
+  clear:
+    if (FL_TEST(clone, FL_EXIVAR)) {
+        rb_free_generic_ivar(clone);
+        FL_UNSET(clone, FL_EXIVAR);
     }
 }
 
@@ -3334,9 +3347,7 @@ rb_mod_remove_cvar(VALUE mod, VALUE name)
     st_data_t val, n = id;
 
     if (!id) {
-      not_defined:
-	rb_name_err_raise("class variable %1$s not defined for %2$s",
-			  mod, name);
+        goto not_defined;
     }
     rb_check_frozen(mod);
     if (RCLASS_IV_TBL(mod) && st_delete(RCLASS_IV_TBL(mod), &n, &val)) {
@@ -3345,7 +3356,10 @@ rb_mod_remove_cvar(VALUE mod, VALUE name)
     if (rb_cvar_defined(mod, id)) {
 	rb_name_err_raise("cannot remove %1$s for %2$s", mod, ID2SYM(id));
     }
-    goto not_defined;
+  not_defined:
+    rb_name_err_raise("class variable %1$s not defined for %2$s",
+                      mod, name);
+    UNREACHABLE_RETURN(Qundef);
 }
 
 VALUE

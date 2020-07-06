@@ -102,6 +102,37 @@ describe "The super keyword" do
     c2.new.m(:dump) { :value }.should == :value
   end
 
+  it "can pass an explicit block" do
+    c1 = Class.new do
+      def m(v)
+        yield(v)
+      end
+    end
+    c2 = Class.new(c1) do
+      def m(v)
+        block = -> w { yield(w + 'b') }
+        super(v, &block)
+      end
+    end
+
+    c2.new.m('a') { |x| x + 'c' }.should == 'abc'
+  end
+
+  it "can pass no block using &nil" do
+    c1 = Class.new do
+      def m(v)
+        block_given?
+      end
+    end
+    c2 = Class.new(c1) do
+      def m(v)
+        super(v, &nil)
+      end
+    end
+
+    c2.new.m('a') { raise }.should be_false
+  end
+
   it "uses block argument given to method when used in a block" do
     c1 = Class.new do
       def m

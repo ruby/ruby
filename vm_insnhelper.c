@@ -1080,23 +1080,7 @@ vm_getivar(VALUE obj, ID id, IVC ic, const struct rb_callcache *cc, int is_attr)
             iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
             numiv = ROBJECT_NUMIV(obj);
             ivptr = ROBJECT_IVPTR(obj);
-
-          fill:
-	    if (iv_index_tbl) {
-		if (st_lookup(iv_index_tbl, id, &index)) {
-                    if (!is_attr) {
-                        ic->index = index;
-                        ic->ic_serial = RCLASS_SERIAL(RBASIC(obj)->klass);
-                    }
-                    else { /* call_info */
-                        vm_cc_attr_index_set(cc, (int)index + 1);
-                    }
-
-                    if (index < numiv) {
-                        val = ivptr[index];
-		    }
-		}
-	    }
+            goto fill;
 	}
         else if (FL_TEST_RAW(obj, FL_EXIVAR)) {
             struct gen_ivtbl *ivtbl;
@@ -1107,10 +1091,30 @@ vm_getivar(VALUE obj, ID id, IVC ic, const struct rb_callcache *cc, int is_attr)
                 iv_index_tbl = RCLASS_IV_INDEX_TBL(rb_obj_class(obj));
                 goto fill;
             }
+            else {
+                goto ret;
+            }
         }
         else {
             // T_CLASS / T_MODULE
             goto general_path;
+        }
+
+      fill:
+        if (iv_index_tbl) {
+            if (st_lookup(iv_index_tbl, id, &index)) {
+                if (!is_attr) {
+                    ic->index = index;
+                    ic->ic_serial = RCLASS_SERIAL(RBASIC(obj)->klass);
+                }
+                else { /* call_info */
+                    vm_cc_attr_index_set(cc, (int)index + 1);
+                }
+
+                if (index < numiv) {
+                    val = ivptr[index];
+                }
+            }
         }
 
       ret:
@@ -2236,12 +2240,12 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
             if (LIKELY(!(vm_ci_flag(ci) & VM_CALL_TAILCALL))) {
                 CC_SET_FASTPATH(cc, vm_call_iseq_setup_normal_opt_start,
                                 !IS_ARGS_SPLAT(ci) && !IS_ARGS_KEYWORD(ci) &&
-                                !(METHOD_ENTRY_VISI(vm_cc_cme(cc)) == METHOD_VISI_PROTECTED));
+                                METHOD_ENTRY_CACHEABLE(vm_cc_cme(cc)));
             }
             else {
                 CC_SET_FASTPATH(cc, vm_call_iseq_setup_tailcall_opt_start,
                                 !IS_ARGS_SPLAT(ci) && !IS_ARGS_KEYWORD(ci) &&
-                                !(METHOD_ENTRY_VISI(vm_cc_cme(cc)) == METHOD_VISI_PROTECTED));
+                                METHOD_ENTRY_CACHEABLE(vm_cc_cme(cc)));
             }
 
             /* initialize opt vars for self-references */
@@ -2269,7 +2273,7 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
                     args_setup_kw_parameters(ec, iseq, ci_kws, ci_kw_len, ci_keywords, klocals);
 
                     CC_SET_FASTPATH(cc, vm_call_iseq_setup_kwparm_kwarg,
-                                    !(METHOD_ENTRY_VISI(vm_cc_cme(cc)) == METHOD_VISI_PROTECTED));
+                                    METHOD_ENTRY_CACHEABLE(vm_cc_cme(cc)));
 
                     return 0;
                 }
@@ -2282,7 +2286,7 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
                 if (klocals[kw_param->num] == INT2FIX(0)) {
                     /* copy from default_values */
                     CC_SET_FASTPATH(cc, vm_call_iseq_setup_kwparm_nokwarg,
-                                    !(METHOD_ENTRY_VISI(vm_cc_cme(cc)) == METHOD_VISI_PROTECTED));
+                                    METHOD_ENTRY_CACHEABLE(vm_cc_cme(cc)));
                 }
 
                 return 0;
@@ -3657,7 +3661,7 @@ vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_
 	klass = vm_get_cbase(GET_EP());
 	break;
       case DEFINED_GVAR:
-	if (rb_gvar_defined(rb_global_entry(SYM2ID(obj)))) {
+	if (rb_gvar_defined(SYM2ID(obj))) {
 	    expr_type = DEFINED_GVAR;
 	}
 	break;
@@ -4900,6 +4904,22 @@ vm_trace_hook(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VAL
             rb_exec_event_hook_orig(ec, local_hooks, event, self, 0, 0, 0 , val, 0);
             reg_cfp->pc--;
         }
+    }
+}
+
+// Return true if given cc has cfunc which is NOT handled by opt_send_without_block.
+bool
+rb_vm_opt_cfunc_p(CALL_CACHE cc, int insn)
+{
+    switch (insn) {
+      case BIN(opt_eq):
+        return check_cfunc(vm_cc_cme(cc), rb_obj_equal);
+      case BIN(opt_nil_p):
+        return check_cfunc(vm_cc_cme(cc), rb_false);
+      case BIN(opt_not):
+        return check_cfunc(vm_cc_cme(cc), rb_obj_not);
+      default:
+        return false;
     }
 }
 

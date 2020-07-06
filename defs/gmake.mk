@@ -248,7 +248,7 @@ HELP_EXTRA_TASKS = \
 
 extract-gems: update-gems
 
-BUNDLED_GEMS := $(shell sed 's/[ 	][ 	]*/-/;s/[ 	].*//' $(srcdir)/gems/bundled_gems)
+BUNDLED_GEMS := $(shell sed '/^[ 	]*\#/d;/^[ 	]*$$/d;s/[ 	][ 	]*/-/;s/[ 	].*//' $(srcdir)/gems/bundled_gems)
 
 update-gems: | $(patsubst %,gems/%.gem,$(BUNDLED_GEMS))
 
@@ -343,7 +343,7 @@ test_%.rb test/%: programs PHONY
 spec/bundler/%: PHONY
 	$(Q)$(exec) $(XRUBY) -C $(srcdir) -Ispec/bundler .bundle/bin/rspec --require spec_helper $(RSPECOPTS) $@
 
-spec/bundler spec/bundler/: test-bundler-parallel
+spec/bundler: test-bundler-parallel
 	$(Q)$(NULLCMD)
 
 spec/%: programs exts PHONY

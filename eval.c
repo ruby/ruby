@@ -456,7 +456,6 @@ void
 rb_class_modify_check(VALUE klass)
 {
     if (SPECIAL_CONST_P(klass)) {
-      noclass:
 	Check_Type(klass, T_CLASS);
     }
     if (OBJ_FROZEN(klass)) {
@@ -489,7 +488,8 @@ rb_class_modify_check(VALUE klass)
 		desc = "class";
 		break;
 	      default:
-		goto noclass;
+                Check_Type(klass, T_CLASS);
+                UNREACHABLE;
 	    }
 	}
         rb_frozen_error_raise(klass, "can't modify frozen %s: %"PRIsVALUE, desc, klass);
@@ -642,16 +642,19 @@ setup_exception(rb_execution_context_t *ec, int tag, volatile VALUE mesg, VALUE 
     }
 
     if (rb_ec_set_raised(ec)) {
-      fatal:
-	ec->errinfo = exception_error;
-	rb_ec_reset_raised(ec);
-	EC_JUMP_TAG(ec, TAG_FATAL);
+        goto fatal;
     }
 
     if (tag != TAG_FATAL) {
 	RUBY_DTRACE_HOOK(RAISE, rb_obj_classname(ec->errinfo));
 	EXEC_EVENT_HOOK(ec, RUBY_EVENT_RAISE, ec->cfp->self, 0, 0, 0, mesg);
     }
+    return;
+
+  fatal:
+    ec->errinfo = exception_error;
+    rb_ec_reset_raised(ec);
+    EC_JUMP_TAG(ec, TAG_FATAL);
 }
 
 /*! \private */
@@ -804,44 +807,37 @@ static VALUE
 make_exception(int argc, const VALUE *argv, int isstr)
 {
     VALUE mesg, exc;
-    int n;
 
     mesg = Qnil;
     switch (argc) {
       case 0:
-	break;
+        return Qnil;
       case 1:
 	exc = argv[0];
-	if (NIL_P(exc))
-	    break;
-	if (isstr) {
+        if (isstr &&! NIL_P(exc)) {
 	    mesg = rb_check_string_type(exc);
 	    if (!NIL_P(mesg)) {
-		mesg = rb_exc_new3(rb_eRuntimeError, mesg);
-		break;
+                return rb_exc_new3(rb_eRuntimeError, mesg);
 	    }
 	}
-	n = 0;
-	goto exception_call;
 
       case 2:
       case 3:
-	exc = argv[0];
-	n = 1;
-      exception_call:
-	mesg = rb_check_funcall(exc, idException, n, argv+1);
-	if (mesg == Qundef) {
-	    rb_raise(rb_eTypeError, "exception class/object expected");
-	}
 	break;
       default:
         rb_error_arity(argc, 0, 3);
     }
-    if (argc > 0) {
-	if (!rb_obj_is_kind_of(mesg, rb_eException))
-	    rb_raise(rb_eTypeError, "exception object expected");
-	if (argc > 2)
-	    set_backtrace(mesg, argv[2]);
+    if (NIL_P(mesg)) {
+        mesg = rb_check_funcall(argv[0], idException, argc != 1, &argv[1]);
+    }
+    if (mesg == Qundef) {
+        rb_raise(rb_eTypeError, "exception class/object expected");
+    }
+    if (!rb_obj_is_kind_of(mesg, rb_eException)) {
+        rb_raise(rb_eTypeError, "exception object expected");
+    }
+    if (argc == 3) {
+        set_backtrace(mesg, argv[2]);
     }
 
     return mesg;

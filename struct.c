@@ -324,6 +324,7 @@ static void
 define_aref_method(VALUE nstr, VALUE name, VALUE off)
 {
     const rb_iseq_t *iseq = rb_method_for_self_aref(name, off, &struct_aref_builtin);
+    iseq->body->builtin_inline_p = true;
 
     rb_add_method_iseq(nstr, SYM2ID(name), iseq, NULL, METHOD_VISI_PUBLIC);
 }

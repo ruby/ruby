@@ -288,25 +288,23 @@ setconstant
 /* get global variable id. */
 DEFINE_INSN
 getglobal
-(GENTRY entry)
+(ID gid)
 ()
 (VALUE val)
-// attr bool leaf = leafness_of_getglobal(entry);
+// attr bool leaf = false;
 {
-    struct rb_global_entry *gentry = (void *)entry;
-    val = rb_gvar_get(gentry);
+    val = rb_gvar_get(gid);
 }
 
 /* set global variable id as val. */
 DEFINE_INSN
 setglobal
-(GENTRY entry)
+(ID gid)
 (VALUE val)
 ()
-// attr bool leaf = leafness_of_setglobal(entry);
+// attr bool leaf = false;
 {
-    struct rb_global_entry *gentry = (void *)entry;
-    rb_gvar_set(gentry, val);
+    rb_gvar_set(gid, val);
 }
 
 /**********************************************************/

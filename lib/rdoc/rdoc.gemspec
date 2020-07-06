@@ -241,6 +241,5 @@ RDoc includes the +rdoc+ and +ri+ tools for generating and displaying documentat
   ]
 
   s.required_ruby_version = Gem::Requirement.new(">= 2.4.0")
-  s.rubygems_version = "2.5.2"
   s.required_rubygems_version = Gem::Requirement.new(">= 2.2")
 end

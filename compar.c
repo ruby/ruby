@@ -233,11 +233,9 @@ cmp_clamp(int argc, VALUE *argv, VALUE x)
         }
         if (!NIL_P(max)) {
             if (excl) rb_raise(rb_eArgError, "cannot clamp with an exclusive range");
-            if (!NIL_P(min) && cmpint(min, max) > 0) goto arg_error;
         }
     }
-    else if (cmpint(min, max) > 0) {
-      arg_error:
+    if (!NIL_P(min) && !NIL_P(max) && cmpint(min, max) > 0) {
 	rb_raise(rb_eArgError, "min argument must be smaller than max argument");
     }
 

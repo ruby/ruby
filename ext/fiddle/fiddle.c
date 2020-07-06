@@ -227,6 +227,14 @@ Init_fiddle(void)
      */
     rb_define_const(mFiddle, "TYPE_DOUBLE",    INT2NUM(TYPE_DOUBLE));
 
+#ifdef HAVE_FFI_PREP_CIF_VAR
+    /* Document-const: TYPE_VARIADIC
+     *
+     * C type - ...
+     */
+    rb_define_const(mFiddle, "TYPE_VARIADIC",  INT2NUM(TYPE_VARIADIC));
+#endif
+
     /* Document-const: TYPE_SIZE_T
      *
      * C type - size_t

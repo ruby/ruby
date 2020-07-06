@@ -25,6 +25,7 @@
 #include "vm_core.h"
 #include "vm_debug.h"
 #include "vm_callinfo.h"
+#include "ruby/thread_native.h"
 
 /* This is the only place struct RIMemo is actually used */
 struct RIMemo {
@@ -243,8 +244,238 @@ set_debug_option(const char *str, int len, void *arg)
     }
 }
 
+STATIC_ASSERT(USE_RUBY_DEBUG_LOG, USE_RUBY_DEBUG_LOG ? RUBY_DEVEL : 1);
+
+#if RUBY_DEVEL
+static void setup_debug_log(void);
+#else
+#define setup_debug_log()
+#endif
+
 void
 ruby_set_debug_option(const char *str)
 {
     ruby_each_words(str, set_debug_option, 0);
+    setup_debug_log();
 }
+
+#if RUBY_DEVEL
+
+// RUBY_DEBUG_LOG features
+// See vm_debug.h comments for details.
+
+#define MAX_DEBUG_LOG             0x1000
+#define MAX_DEBUG_LOG_MESSAGE_LEN 0x0200
+#define MAX_DEBUG_LOG_FILTER      0x0001
+
+enum ruby_debug_log_mode ruby_debug_log_mode;
+
+static struct {
+    char *mem;
+    unsigned int cnt;
+    const char *filters[MAX_DEBUG_LOG_FILTER];
+    unsigned int filters_num;
+    rb_nativethread_lock_t lock;
+    FILE *output;
+} debug_log;
+
+static char *
+RUBY_DEBUG_LOG_MEM_ENTRY(unsigned int index)
+{
+    return &debug_log.mem[MAX_DEBUG_LOG_MESSAGE_LEN * index];
+}
+
+static void
+setup_debug_log(void)
+{
+    // check RUBY_DEBUG_LOG
+    const char *log_config = getenv("RUBY_DEBUG_LOG");
+    if (log_config) {
+        fprintf(stderr, "RUBY_DEBUG_LOG=%s\n", log_config);
+        if  (strcmp(log_config, "mem")    == 0) {
+            debug_log.mem = (char *)malloc(MAX_DEBUG_LOG * MAX_DEBUG_LOG_MESSAGE_LEN);
+            if (debug_log.mem == NULL) {
+                fprintf(stderr, "setup_debug_log failed (can't allocate memory)\n");
+                exit(1);
+            }
+            ruby_debug_log_mode |= ruby_debug_log_memory;
+        }
+        else if (strcmp(log_config, "stderr") == 0) {
+            ruby_debug_log_mode |= ruby_debug_log_stderr;
+        }
+        else {
+            ruby_debug_log_mode |= ruby_debug_log_file;
+            if ((debug_log.output = fopen(log_config, "w")) == NULL) {
+                fprintf(stderr, "can not open %s for RUBY_DEBUG_LOG\n", log_config);
+                exit(1);
+            }
+            setvbuf(debug_log.output, NULL, _IONBF, 0);
+        }
+
+        rb_nativethread_lock_initialize(&debug_log.lock);
+    }
+
+    // check RUBY_DEBUG_LOG_FILTER
+    const char *filter_config = getenv("RUBY_DEBUG_LOG_FILTER");
+    if (filter_config) {
+        fprintf(stderr, "RUBY_DEBUG_LOG_FILTER=%s\n", filter_config);
+
+        // TODO: multiple filters
+        debug_log.filters[0] = filter_config;
+        debug_log.filters_num = 1;
+    }
+}
+
+static const char *
+pretty_filename(const char *path)
+{
+    // basename is one idea.
+    const char *s;
+    while ((s = strchr(path, '/')) != NULL) {
+        path = s+1;
+    }
+    return path;
+}
+
+void
+ruby_debug_log(const char *file, int line, const char *func_name, const char *fmt, ...)
+{
+    char buff[MAX_DEBUG_LOG_MESSAGE_LEN] = {0};
+    int len = 0;
+    int r;
+
+    // message title
+    if (func_name && len < MAX_DEBUG_LOG_MESSAGE_LEN) {
+        // filter on func_name
+        if (debug_log.filters_num > 0) {
+            int hit = 0;
+            for (unsigned int i = 0; i<debug_log.filters_num; i++) {
+                if (strstr(func_name, debug_log.filters[i]) != NULL) hit++;
+            }
+            if (hit != 0) return;
+        }
+
+        r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN, "%s\t", func_name);
+        if (r < 0) rb_bug("ruby_debug_log returns %d\n", r);
+        len += r;
+    }
+
+    // message
+    if (fmt && len < MAX_DEBUG_LOG_MESSAGE_LEN) {
+        va_list args;
+        va_start(args, fmt);
+        r = vsnprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, fmt, args);
+        va_end(args);
+        if (r < 0) rb_bug("ruby_debug_log vsnprintf() returns %d", r);
+        len += r;
+    }
+
+    // optional information
+
+    // C location
+    if (file && len < MAX_DEBUG_LOG_MESSAGE_LEN) {
+        r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN, "\t%s:%d", pretty_filename(file), line);
+        if (r < 0) rb_bug("ruby_debug_log returns %d\n", r);
+        len += r;
+    }
+
+    // Ruby location
+    int ruby_line;
+    const char *ruby_file = rb_source_location_cstr(&ruby_line);
+    if (len < MAX_DEBUG_LOG_MESSAGE_LEN) {
+        if (ruby_file) {
+            r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\t%s:%d", pretty_filename(ruby_file), ruby_line);
+        }
+        else {
+            r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\t");
+        }
+        if (r < 0) rb_bug("ruby_debug_log returns %d\n", r);
+        len += r;
+    }
+
+#if 0 // not yet
+    // ractor information
+    if (GET_VM()->ractor.cnt > 1) {
+        rb_ractor_t *cr = GET_RACTOR();
+        if (r && len < MAX_DEBUG_LOG_MESSAGE_LEN) {
+            r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\tr:#%u/%u",
+                         (unsigned int)rb_ractor_id(cr), GET_VM()->ractor.cnt);
+            if (r < 0) rb_bug("ruby_debug_log returns %d\n", r);
+            len += r;
+        }
+    }
+#endif
+
+    // thread information
+    if (!rb_thread_alone()) {
+        const rb_thread_t *th = GET_THREAD();
+        if (r && len < MAX_DEBUG_LOG_MESSAGE_LEN) {
+            r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\tth:%p", (void *)th);
+            if (r < 0) rb_bug("ruby_debug_log returns %d\n", r);
+            len += r;
+        }
+    }
+
+    rb_nativethread_lock_lock(&debug_log.lock);
+    {
+        unsigned int cnt = debug_log.cnt++;
+
+        if (ruby_debug_log_mode & ruby_debug_log_memory) {
+            unsigned int index = cnt % MAX_DEBUG_LOG;
+            char *dst = RUBY_DEBUG_LOG_MEM_ENTRY(index);
+            strncpy(dst, buff, MAX_DEBUG_LOG_MESSAGE_LEN);
+        }
+        if (ruby_debug_log_mode & ruby_debug_log_stderr) {
+            fprintf(stderr, "%4u: %s\n", cnt, buff);
+        }
+        if (ruby_debug_log_mode & ruby_debug_log_file) {
+            fprintf(debug_log.output, "%u\t%s\n", cnt, buff);
+        }
+    }
+    rb_nativethread_lock_unlock(&debug_log.lock);
+}
+
+// for debugger
+static void
+debug_log_dump(FILE *out, unsigned int n)
+{
+    if (ruby_debug_log_mode & ruby_debug_log_memory) {
+        unsigned int size = debug_log.cnt > MAX_DEBUG_LOG ? MAX_DEBUG_LOG : debug_log.cnt;
+        unsigned int current_index = debug_log.cnt % MAX_DEBUG_LOG;
+        if (n == 0) n = size;
+        if (n > size) n = size;
+
+        for (unsigned int i=0; i<n; i++) {
+            int index = current_index - size + i;
+            if (index < 0) index += MAX_DEBUG_LOG;
+            VM_ASSERT(index <= MAX_DEBUG_LOG);
+            const char *mesg = RUBY_DEBUG_LOG_MEM_ENTRY(index);;
+            fprintf(out, "%4u: %s\n", debug_log.cnt - size + i, mesg);
+        }
+    }
+    else {
+        fprintf(stderr, "RUBY_DEBUG_LOG=mem is not specified.");
+    }
+}
+
+// for debuggers
+
+void
+ruby_debug_log_print(unsigned int n)
+{
+    debug_log_dump(stderr, n);
+}
+
+void
+ruby_debug_log_dump(const char *fname, unsigned int n)
+{
+    FILE *fp = fopen(fname, "w");
+    if (fp == NULL) {
+        fprintf(stderr, "can't open %s. give up.\n", fname);
+    }
+    else {
+        debug_log_dump(fp, n);
+        fclose(fp);
+    }
+}
+#endif // #if RUBY_DEVEL

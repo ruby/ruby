@@ -50,6 +50,14 @@ describe "C-API Hash function" do
     end
   end
 
+  describe "rb_ident_hash_new" do
+    it "returns a new compare by identity hash" do
+      result = @s.rb_ident_hash_new
+      result.should == {}
+      result.compare_by_identity?.should == true
+    end
+  end
+
   describe "rb_hash_dup" do
     it "returns a copy of the hash" do
       hsh = {}

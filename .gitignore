@@ -27,7 +27,6 @@
 *.swp
 *.yarb
 *~
-.*-*
 .*.list
 .*.time
 .DS_Store
@@ -38,6 +37,7 @@
 .ppack
 .svn
 .time
+.ruby-version
 Makefile
 cygruby*.def
 extconf.h
@@ -57,6 +57,8 @@ lcov*.info
 /*.pc
 /*.rc
 /*_prelude.c
+/.downloaded-cache
+/.top-enc.mk
 /build*/
 /COPYING.LIB
 /ChangeLog
@@ -191,6 +193,7 @@ lcov*.info
 
 # /ext/ripper/
 /ext/ripper/eventids1.c
+/ext/ripper/.eventids2-check
 /ext/ripper/eventids2table.c
 /ext/ripper/ripper.*
 /ext/ripper/ids1

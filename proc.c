@@ -541,14 +541,15 @@ bind_local_variable_get(VALUE bindval, VALUE sym)
     GetBindingPtr(bindval, bind);
 
     env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
-    if ((ptr = get_local_variable_ptr(&env, lid)) == NULL) {
-	sym = ID2SYM(lid);
-      undefined:
-	rb_name_err_raise("local variable `%1$s' is not defined for %2$s",
-			  bindval, sym);
+    if ((ptr = get_local_variable_ptr(&env, lid)) != NULL) {
+        return *ptr;
     }
 
-    return *ptr;
+    sym = ID2SYM(lid);
+  undefined:
+    rb_name_err_raise("local variable `%1$s' is not defined for %2$s",
+                      bindval, sym);
+    UNREACHABLE_RETURN(Qundef);
 }
 
 /*
@@ -1865,7 +1866,7 @@ rb_method_name_error(VALUE klass, VALUE str)
 {
 #define MSG(s) rb_fstring_lit("undefined method `%1$s' for"s" `%2$s'")
     VALUE c = klass;
-    VALUE s;
+    VALUE s = Qundef;
 
     if (FL_TEST(c, FL_SINGLETON)) {
 	VALUE obj = rb_ivar_get(klass, attached);
@@ -1878,13 +1879,11 @@ rb_method_name_error(VALUE klass, VALUE str)
           default:
 	    break;
 	}
-	goto normal_class;
     }
     else if (RB_TYPE_P(c, T_MODULE)) {
 	s = MSG(" module");
     }
-    else {
-      normal_class:
+    if (s == Qundef) {
 	s = MSG(" class");
     }
     rb_name_err_raise_str(s, c, str);
@@ -1991,27 +1990,39 @@ rb_obj_public_method(VALUE obj, VALUE vid)
 VALUE
 rb_obj_singleton_method(VALUE obj, VALUE vid)
 {
-    const rb_method_entry_t *me;
     VALUE klass = rb_singleton_class_get(obj);
     ID id = rb_check_id(&vid);
 
-    if (NIL_P(klass) || NIL_P(klass = RCLASS_ORIGIN(klass))) {
-      undef:
-	rb_name_err_raise("undefined singleton method `%1$s' for `%2$s'",
-			  obj, vid);
+    if (NIL_P(klass)) {
+        /* goto undef; */
     }
-    if (!id) {
+    else if (NIL_P(klass = RCLASS_ORIGIN(klass))) {
+        /* goto undef; */
+    }
+    else if (! id) {
         VALUE m = mnew_missing_by_name(klass, obj, &vid, FALSE, rb_cMethod);
         if (m) return m;
-	goto undef;
+        /* else goto undef; */
     }
-    me = rb_method_entry_at(klass, id);
-    if (UNDEFINED_METHOD_ENTRY_P(me) ||
-	UNDEFINED_REFINED_METHOD_P(me->def)) {
-	vid = ID2SYM(id);
-	goto undef;
+    else {
+        const rb_method_entry_t *me = rb_method_entry_at(klass, id);
+        vid = ID2SYM(id);
+
+        if (UNDEFINED_METHOD_ENTRY_P(me)) {
+            /* goto undef; */
+        }
+        else if (UNDEFINED_REFINED_METHOD_P(me->def)) {
+            /* goto undef; */
+        }
+        else {
+            return mnew_from_me(me, klass, klass, obj, id, rb_cMethod, FALSE);
+        }
     }
-    return mnew_from_me(me, klass, klass, obj, id, rb_cMethod, FALSE);
+
+  /* undef: */
+    rb_name_err_raise("undefined singleton method `%1$s' for `%2$s'",
+                      obj, vid);
+    UNREACHABLE_RETURN(Qundef);
 }
 
 /*
@@ -3220,8 +3231,6 @@ proc_binding(VALUE self)
 	GetProcPtr(block->as.proc, proc);
 	block = &proc->block;
 	goto again;
-      case block_type_symbol:
-	goto error;
       case block_type_ifunc:
 	{
 	    const struct vm_ifunc *ifunc = block->as.captured.code.ifunc;
@@ -3238,12 +3247,11 @@ proc_binding(VALUE self)
 		RB_OBJ_WRITE(env, &env->iseq, empty);
 		break;
 	    }
-	    else {
-	      error:
-		rb_raise(rb_eArgError, "Can't create Binding from C level Proc");
-		return Qnil;
-	    }
 	}
+        /* FALLTHROUGH */
+      case block_type_symbol:
+        rb_raise(rb_eArgError, "Can't create Binding from C level Proc");
+        UNREACHABLE_RETURN(Qnil);
     }
 
     bindval = rb_binding_alloc(rb_cBinding);

@@ -502,6 +502,7 @@ touch-unicode-files:
     if File.exist?("gems/bundled_gems")
       gems = Dir.glob("gems/*.gem")
       gems -= File.readlines("gems/bundled_gems").map {|line|
+        next if /^\s*(?:#|$)/ =~ line
         name, version, _ = line.split(' ')
         "gems/#{name}-#{version}.gem"
       }

@@ -116,6 +116,7 @@ jobs:
           - { key: cppflags, name: USE_SYMBOL_GC=0,                value: '-DUSE_SYMBOL_GC=0' }
           - { key: cppflags, name: USE_THREAD_CACHE=0,             value: '-DUSE_THREAD_CACHE=0' }
           - { key: cppflags, name: USE_TRANSIENT_HEAP=0,           value: '-DUSE_TRANSIENT_HEAP=0' }
+          - { key: cppflags, name: USE_RUBY_DEBUG_LOG=1,           value: '-DUSE_RUBY_DEBUG_LOG=1' }
 
           - { key: cppflags, name: DEBUG_FIND_TIME_NUMGESS,        value: '-DDEBUG_FIND_TIME_NUMGESS' }
           - { key: cppflags, name: DEBUG_INTEGER_PACK,             value: '-DDEBUG_INTEGER_PACK' }

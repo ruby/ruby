@@ -330,9 +330,7 @@ node_children(rb_ast_t *ast, NODE *node)
       case NODE_IN:
         return rb_ary_new_from_node_args(ast, 3, node->nd_head, node->nd_body, node->nd_next);
       case NODE_WHILE:
-        goto loop;
       case NODE_UNTIL:
-      loop:
         return rb_ary_push(rb_ary_new_from_node_args(ast, 2, node->nd_cond, node->nd_body),
                            (node->nd_state ? Qtrue : Qfalse));
       case NODE_ITER:
@@ -341,11 +339,8 @@ node_children(rb_ast_t *ast, NODE *node)
       case NODE_FOR_MASGN:
         return rb_ary_new_from_node_args(ast, 1, node->nd_var);
       case NODE_BREAK:
-        goto jump;
       case NODE_NEXT:
-        goto jump;
       case NODE_RETURN:
-      jump:
         return rb_ary_new_from_node_args(ast, 1, node->nd_stts);
       case NODE_REDO:
         return rb_ary_new_from_node_args(ast, 0);
@@ -360,9 +355,7 @@ node_children(rb_ast_t *ast, NODE *node)
       case NODE_ENSURE:
         return rb_ary_new_from_node_args(ast, 2, node->nd_head, node->nd_ensr);
       case NODE_AND:
-        goto andor;
       case NODE_OR:
-      andor:
         {
             VALUE ary = rb_ary_new();
 
@@ -385,21 +378,15 @@ node_children(rb_ast_t *ast, NODE *node)
                                         ID2SYM(rb_intern("NODE_SPECIAL_NO_NAME_REST")));
         }
       case NODE_LASGN:
-        goto asgn;
       case NODE_DASGN:
-        goto asgn;
       case NODE_DASGN_CURR:
-        goto asgn;
       case NODE_IASGN:
-        goto asgn;
       case NODE_CVASGN:
-      asgn:
+      case NODE_GASGN:
         if (NODE_REQUIRED_KEYWORD_P(node)) {
             return rb_ary_new_from_args(2, var_name(node->nd_vid), ID2SYM(rb_intern("NODE_SPECIAL_REQUIRED_KEYWORD")));
         }
         return rb_ary_new_from_args(2, var_name(node->nd_vid), NEW_CHILD(ast, node->nd_value));
-      case NODE_GASGN:
-        goto asgn;
       case NODE_CDECL:
         if (node->nd_vid) {
             return rb_ary_new_from_args(2, ID2SYM(node->nd_vid), NEW_CHILD(ast, node->nd_value));
@@ -411,9 +398,10 @@ node_children(rb_ast_t *ast, NODE *node)
                                     NEW_CHILD(ast, node->nd_args->nd_head),
                                     NEW_CHILD(ast, node->nd_args->nd_body));
       case NODE_OP_ASGN2:
-        return rb_ary_new_from_args(4, NEW_CHILD(ast, node->nd_recv),
+        return rb_ary_new_from_args(5, NEW_CHILD(ast, node->nd_recv),
                                     node->nd_next->nd_aid ? Qtrue : Qfalse,
                                     ID2SYM(node->nd_next->nd_vid),
+                                    ID2SYM(node->nd_next->nd_mid),
                                     NEW_CHILD(ast, node->nd_value));
       case NODE_OP_ASGN_AND:
         return rb_ary_new_from_args(3, NEW_CHILD(ast, node->nd_head), ID2SYM(idANDOP),
@@ -441,9 +429,7 @@ node_children(rb_ast_t *ast, NODE *node)
       case NODE_ZSUPER:
         return rb_ary_new_from_node_args(ast, 0);
       case NODE_LIST:
-        goto ary;
       case NODE_VALUES:
-      ary:
         return dump_array(ast, node);
       case NODE_ZLIST:
         return rb_ary_new_from_node_args(ast, 0);
@@ -467,8 +453,6 @@ node_children(rb_ast_t *ast, NODE *node)
         name[1] = (char)node->nd_nth;
         name[2] = '\0';
         return rb_ary_new_from_args(1, ID2SYM(rb_intern(name)));
-      case NODE_MATCH:
-        goto lit;
       case NODE_MATCH2:
         if (node->nd_args) {
             return rb_ary_new_from_node_args(ast, 3, node->nd_recv, node->nd_value, node->nd_args);
@@ -476,23 +460,17 @@ node_children(rb_ast_t *ast, NODE *node)
         return rb_ary_new_from_node_args(ast, 2, node->nd_recv, node->nd_value);
       case NODE_MATCH3:
         return rb_ary_new_from_node_args(ast, 2, node->nd_recv, node->nd_value);
+      case NODE_MATCH:
       case NODE_LIT:
-        goto lit;
       case NODE_STR:
-        goto lit;
       case NODE_XSTR:
-      lit:
         return rb_ary_new_from_args(1, node->nd_lit);
       case NODE_ONCE:
         return rb_ary_new_from_node_args(ast, 1, node->nd_body);
       case NODE_DSTR:
-        goto dlit;
       case NODE_DXSTR:
-        goto dlit;
       case NODE_DREGX:
-        goto dlit;
       case NODE_DSYM:
-      dlit:
         return rb_ary_new_from_args(3, node->nd_lit,
                                     NEW_CHILD(ast, node->nd_next->nd_head),
                                     NEW_CHILD(ast, node->nd_next->nd_next));
@@ -527,13 +505,9 @@ node_children(rb_ast_t *ast, NODE *node)
       case NODE_COLON3:
         return rb_ary_new_from_args(1, ID2SYM(node->nd_mid));
       case NODE_DOT2:
-        goto dot;
       case NODE_DOT3:
-        goto dot;
       case NODE_FLIP2:
-        goto dot;
       case NODE_FLIP3:
-      dot:
         return rb_ary_new_from_node_args(ast, 2, node->nd_beg, node->nd_end);
       case NODE_SELF:
         return rb_ary_new_from_node_args(ast, 0);

@@ -35,6 +35,25 @@ module Fiddle
       end
     end
 
+    def test_argument_type_conversion
+      type = Struct.new(:int, :call_count) do
+        def initialize(int)
+          super(int, 0)
+        end
+        def to_int
+          raise "exhausted" if (self.call_count += 1) > 1
+          self.int
+        end
+      end
+      type_arg = type.new(TYPE_DOUBLE)
+      type_result = type.new(TYPE_DOUBLE)
+      assert_nothing_raised(RuntimeError) do
+        Function.new(@libm['sin'], [type_arg], type_result)
+      end
+      assert_equal(1, type_arg.call_count)
+      assert_equal(1, type_result.call_count)
+    end
+
     def test_call
       func = Function.new(@libm['sin'], [TYPE_DOUBLE], TYPE_DOUBLE)
       assert_in_delta 1.0, func.call(90 * Math::PI / 180), 0.0001

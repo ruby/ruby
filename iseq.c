@@ -1946,12 +1946,6 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
 	    }
 	    break;
 	}
-      case TS_GENTRY:
-	{
-	    struct rb_global_entry *entry = (struct rb_global_entry *)op;
-	    ret = rb_str_dup(rb_id2str(entry->id));
-	}
-	break;
 
       case TS_IC:
       case TS_IVC:
@@ -2776,12 +2770,6 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 		    }
 		}
 		break;
-	      case TS_GENTRY:
-		{
-		    struct rb_global_entry *entry = (struct rb_global_entry *)*seq;
-		    rb_ary_push(ary, ID2SYM(entry->id));
-		}
-		break;
 	      case TS_IC:
               case TS_IVC:
 	      case TS_ISE:
@@ -3125,17 +3113,20 @@ rb_vm_encoded_insn_data_table_init(void)
     encoded_insn_data = st_init_numtable_with_size(VM_INSTRUCTION_SIZE / 2);
 
     for (insn = 0; insn < VM_INSTRUCTION_SIZE/2; insn++) {
-        int traced_insn = (int)insn;
-        if (traced_insn == BIN(opt_invokebuiltin_delegate_leave)) {
-            traced_insn = BIN(opt_invokebuiltin_delegate); // to dispatch :return from leave
-        }
         st_data_t key1 = (st_data_t)INSN_CODE(insn);
-        st_data_t key2 = (st_data_t)INSN_CODE((st_data_t)traced_insn + VM_INSTRUCTION_SIZE/2);
+        st_data_t key2 = (st_data_t)INSN_CODE(insn + VM_INSTRUCTION_SIZE/2);
 
         insn_data[insn].insn = (int)insn;
         insn_data[insn].insn_len = insn_len(insn);
-        insn_data[insn].notrace_encoded_insn = (void *) key1;
-        insn_data[insn].trace_encoded_insn = (void *) key2;
+
+        if (insn != BIN(opt_invokebuiltin_delegate_leave)) {
+            insn_data[insn].notrace_encoded_insn = (void *) key1;
+            insn_data[insn].trace_encoded_insn = (void *) key2;
+        }
+        else {
+            insn_data[insn].notrace_encoded_insn = (void *) INSN_CODE(BIN(opt_invokebuiltin_delegate));
+            insn_data[insn].trace_encoded_insn = (void *) INSN_CODE(BIN(opt_invokebuiltin_delegate) + VM_INSTRUCTION_SIZE/2);
+        }
 
         st_add_direct(encoded_insn_data, key1, (st_data_t)&insn_data[insn]);
         st_add_direct(encoded_insn_data, key2, (st_data_t)&insn_data[insn]);

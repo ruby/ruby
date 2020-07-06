@@ -2469,12 +2469,7 @@ bary_mul_karatsuba_branch(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, 
 {
     /* normal multiplication when x is small */
     if (xn < KARATSUBA_MUL_DIGITS) {
-      normal:
-        if (xds == yds && xn == yn)
-            bary_sq_fast(zds, zn, xds, xn);
-        else
-            bary_short_mul(zds, zn, xds, xn, yds, yn);
-        return;
+        goto normal;
     }
 
     /* normal multiplication when x or y is a sparse bignum */
@@ -2492,6 +2487,15 @@ bary_mul_karatsuba_branch(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, 
 
     /* multiplication by karatsuba method */
     bary_mul_karatsuba(zds, zn, xds, xn, yds, yn, wds, wn);
+    return;
+
+  normal:
+    if (xds == yds && xn == yn) {
+        bary_sq_fast(zds, zn, xds, xn);
+    }
+    else {
+        bary_short_mul(zds, zn, xds, xn, yds, yn);
+    }
 }
 
 static void
@@ -3767,12 +3771,12 @@ str2big_scan_digits(const char *s, const char *str, int base, int badcheck, size
 	return TRUE;
     }
 
-    if (badcheck && *str == '_') goto bad;
+    if (badcheck && *str == '_') return FALSE;
 
     while ((c = *str++) != 0) {
 	if (c == '_') {
 	    if (nondigit) {
-		if (badcheck) goto bad;
+                if (badcheck) return FALSE;
 		break;
 	    }
 	    nondigit = (char) c;
@@ -3787,7 +3791,7 @@ str2big_scan_digits(const char *s, const char *str, int base, int badcheck, size
 	}
 	if (len > 0 && !--len) break;
     }
-    if (badcheck && nondigit) goto bad;
+    if (badcheck && nondigit) return FALSE;
     if (badcheck && len) {
 	str--;
 	while (*str && ISSPACE(*str)) {
@@ -3795,7 +3799,6 @@ str2big_scan_digits(const char *s, const char *str, int base, int badcheck, size
 	    if (len > 0 && !--len) break;
 	}
 	if (len && *str) {
-	  bad:
 	    return FALSE;
 	}
     }
@@ -4091,10 +4094,7 @@ rb_int_parse_cstr(const char *str, ssize_t len, char **endp, size_t *ndigits,
     } while (0)
 
     if (!str) {
-      bad:
-	if (endp) *endp = (char *)str;
-	if (ndigits) *ndigits = num_digits;
-	return z;
+        goto bad;
     }
     if (len && (flags & RB_INT_PARSE_SIGN)) {
 	while (ISSPACE(*str)) ADV(1);
@@ -4258,6 +4258,11 @@ rb_int_parse_cstr(const char *str, ssize_t len, char **endp, size_t *ndigits,
     }
 
     return bignorm(z);
+
+  bad:
+    if (endp) *endp = (char *)str;
+    if (ndigits) *ndigits = num_digits;
+    return z;
 }
 
 static VALUE
@@ -6707,7 +6712,6 @@ rb_big_aref(VALUE x, VALUE y)
 	    return INT2FIX(0);
 	bigtrunc(y);
 	if (BIGSIZE(y) > sizeof(size_t)) {
-	  out_of_range:
 	    return BIGNUM_SIGN(x) ? INT2FIX(0) : INT2FIX(1);
 	}
 #if SIZEOF_SIZE_T <= SIZEOF_LONG
@@ -6725,7 +6729,8 @@ rb_big_aref(VALUE x, VALUE y)
     s2 = shift%BITSPERDIG;
     bit = (BDIGIT)1 << s2;
 
-    if (s1 >= BIGNUM_LEN(x)) goto out_of_range;
+    if (s1 >= BIGNUM_LEN(x))
+        return BIGNUM_SIGN(x) ? INT2FIX(0) : INT2FIX(1);
 
     xds = BDIGITS(x);
     if (BIGNUM_POSITIVE_P(x))

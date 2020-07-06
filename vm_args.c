@@ -12,7 +12,7 @@ NORETURN(static void raise_argument_error(rb_execution_context_t *ec, const rb_i
 NORETURN(static void argument_arity_error(rb_execution_context_t *ec, const rb_iseq_t *iseq, const int miss_argc, const int min_argc, const int max_argc));
 NORETURN(static void argument_kw_error(rb_execution_context_t *ec, const rb_iseq_t *iseq, const char *error, const VALUE keys));
 VALUE rb_keyword_error_new(const char *error, VALUE keys); /* class.c */
-static VALUE method_missing(VALUE obj, ID id, int argc, const VALUE *argv,
+static VALUE method_missing(rb_execution_context_t *ec, VALUE obj, ID id, int argc, const VALUE *argv,
                             enum method_missing_reason call_status, int kw_splat);
 #if !defined(_MSC_VER) || !defined(MJIT_HEADER)
 MJIT_FUNC_EXPORTED
@@ -867,7 +867,7 @@ refine_sym_proc_call(RB_BLOCK_CALL_FUNC_ARGLIST(yielded_arg, callback_arg))
 	vm_passed_block_handler_set(ec, blockarg);
     }
     if (!me) {
-        return method_missing(obj, mid, argc, argv, MISSING_NOENTRY, kw_splat);
+        return method_missing(ec, obj, mid, argc, argv, MISSING_NOENTRY, kw_splat);
     }
     return rb_vm_call0(ec, obj, mid, argc, argv, me, kw_splat);
 }

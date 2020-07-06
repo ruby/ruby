@@ -2975,9 +2975,7 @@ rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
         ptr_cr != ENC_CODERANGE_7BIT) {
 	str_enc = rb_enc_from_index(str_encindex);
 	ptr_enc = rb_enc_from_index(ptr_encindex);
-      incompatible:
-        rb_raise(rb_eEncCompatError, "incompatible character encodings: %s and %s",
-		 rb_enc_name(str_enc), rb_enc_name(ptr_enc));
+        goto incompatible;
     }
 
     if (str_cr == ENC_CODERANGE_UNKNOWN) {
@@ -3013,6 +3011,11 @@ rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
     str_buf_cat(str, ptr, len);
     ENCODING_CODERANGE_SET(str, res_encindex, res_cr);
     return str;
+
+  incompatible:
+    rb_raise(rb_eEncCompatError, "incompatible character encodings: %s and %s",
+             rb_enc_name(str_enc), rb_enc_name(ptr_enc));
+    UNREACHABLE_RETURN(Qundef);
 }
 
 VALUE
@@ -3667,9 +3670,7 @@ rb_str_index_m(int argc, VALUE *argv, VALUE str)
 	}
     }
 
-    if (SPECIAL_CONST_P(sub)) goto generic;
-    switch (BUILTIN_TYPE(sub)) {
-      case T_REGEXP:
+    if (RB_TYPE_P(sub, T_REGEXP)) {
 	if (pos > str_strlen(str, NULL))
 	    return Qnil;
 	pos = str_offset(RSTRING_PTR(str), RSTRING_END(str), pos,
@@ -3677,24 +3678,11 @@ rb_str_index_m(int argc, VALUE *argv, VALUE str)
 
 	pos = rb_reg_search(sub, str, pos, 0);
 	pos = rb_str_sublen(str, pos);
-	break;
-
-      generic:
-      default: {
-	VALUE tmp;
-
-	tmp = rb_check_string_type(sub);
-	if (NIL_P(tmp)) {
-	    rb_raise(rb_eTypeError, "type mismatch: %s given",
-		     rb_obj_classname(sub));
-	}
-	sub = tmp;
-      }
-	/* fall through */
-      case T_STRING:
+    }
+    else {
+        StringValue(sub);
 	pos = rb_str_index(str, sub, pos);
 	pos = rb_str_sublen(str, pos);
-	break;
     }
 
     if (pos == -1) return Qnil;
@@ -3834,9 +3822,7 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
 	pos = len;
     }
 
-    if (SPECIAL_CONST_P(sub)) goto generic;
-    switch (BUILTIN_TYPE(sub)) {
-      case T_REGEXP:
+    if (RB_TYPE_P(sub, T_REGEXP)) {
 	/* enc = rb_get_check(str, sub); */
 	pos = str_offset(RSTRING_PTR(str), RSTRING_END(str), pos,
 			 enc, single_byte_optimizable(str));
@@ -3844,24 +3830,11 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
 	pos = rb_reg_search(sub, str, pos, 1);
 	pos = rb_str_sublen(str, pos);
 	if (pos >= 0) return LONG2NUM(pos);
-	break;
-
-      generic:
-      default: {
-	VALUE tmp;
-
-	tmp = rb_check_string_type(sub);
-	if (NIL_P(tmp)) {
-	    rb_raise(rb_eTypeError, "type mismatch: %s given",
-		     rb_obj_classname(sub));
-	}
-	sub = tmp;
-      }
-	/* fall through */
-      case T_STRING:
+    }
+    else {
+        StringValue(sub);
 	pos = rb_str_rindex(str, sub, pos);
 	if (pos >= 0) return LONG2NUM(pos);
-	break;
     }
     return Qnil;
 }
@@ -3892,15 +3865,13 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
 static VALUE
 rb_str_match(VALUE x, VALUE y)
 {
-    if (SPECIAL_CONST_P(y)) goto generic;
-    switch (BUILTIN_TYPE(y)) {
+    switch (OBJ_BUILTIN_TYPE(y)) {
       case T_STRING:
 	rb_raise(rb_eTypeError, "type mismatch: String given");
 
       case T_REGEXP:
 	return rb_reg_match(y, x);
 
-      generic:
       default:
 	return rb_funcall(y, idEqTilde, 1, x);
     }
@@ -4759,14 +4730,10 @@ rb_str_update(VALUE str, long beg, long len, VALUE val)
     enc = rb_enc_check(str, val);
     slen = str_strlen(str, enc); /* rb_enc_check */
 
-    if (slen < beg) {
-      out_of_range:
+    if ((slen < beg) || ((beg < 0) && (beg + slen < 0))) {
 	rb_raise(rb_eIndexError, "index %ld out of string", beg);
     }
     if (beg < 0) {
-	if (beg + slen < 0) {
-	    goto out_of_range;
-	}
 	beg += slen;
     }
     assert(beg >= 0);
@@ -4806,14 +4773,10 @@ rb_str_subpat_set(VALUE str, VALUE re, VALUE backref, VALUE val)
     match = rb_backref_get();
     nth = rb_reg_backref_number(match, backref);
     regs = RMATCH_REGS(match);
-    if (nth >= regs->num_regs) {
-      out_of_range:
+    if ((nth >= regs->num_regs) || ((nth < 0) && (-nth >= regs->num_regs))) {
 	rb_raise(rb_eIndexError, "index %d out of regexp", nth);
     }
     if (nth < 0) {
-	if (-nth >= regs->num_regs) {
-	    goto out_of_range;
-	}
 	nth += regs->num_regs;
     }
 
@@ -4834,15 +4797,7 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
 {
     long idx, beg;
 
-    if (FIXNUM_P(indx)) {
-	idx = FIX2LONG(indx);
-      num_index:
-	rb_str_splice(str, idx, 1, val);
-	return val;
-    }
-
-    if (SPECIAL_CONST_P(indx)) goto generic;
-    switch (BUILTIN_TYPE(indx)) {
+    switch (TYPE(indx)) {
       case T_REGEXP:
 	rb_str_subpat_set(str, indx, INT2FIX(0), val);
 	return val;
@@ -4856,7 +4811,6 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
 	rb_str_splice(str, beg, str_strlen(indx, NULL), val);
 	return val;
 
-      generic:
       default:
 	/* check if indx is Range */
 	{
@@ -4866,8 +4820,12 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
 		return val;
 	    }
 	}
+        /* FALLTHROUGH */
+
+      case T_FIXNUM:
 	idx = NUM2LONG(indx);
-	goto num_index;
+        rb_str_splice(str, idx, 1, val);
+        return val;
     }
 }
 
@@ -4985,17 +4943,12 @@ rb_str_slice_bang(int argc, VALUE *argv, VALUE str)
 	else if (nth >= regs->num_regs) return Qnil;
 	beg = BEG(nth);
 	len = END(nth) - beg;
-      subseq:
-        result = rb_str_new_with_class(str, RSTRING_PTR(str)+beg, len);
-	rb_enc_cr_str_copy_for_substr(result, str);
+        goto subseq;
     }
     else if (argc == 2) {
 	beg = NUM2LONG(indx);
 	len = NUM2LONG(argv[1]);
-      num_index:
-	if (!(p = rb_str_subpos(str, beg, &len))) return Qnil;
-	beg = p - RSTRING_PTR(str);
-	goto subseq;
+        goto num_index;
     }
     else if (FIXNUM_P(indx)) {
 	beg = FIX2LONG(indx);
@@ -5009,6 +4962,7 @@ rb_str_slice_bang(int argc, VALUE *argv, VALUE str)
 	if (beg == -1) return Qnil;
 	len = RSTRING_LEN(indx);
 	result = rb_str_dup(indx);
+        goto squash;
     }
     else {
 	switch (rb_range_beg_len(indx, &beg, &len, str_strlen(str, NULL), 0)) {
@@ -5022,6 +4976,15 @@ rb_str_slice_bang(int argc, VALUE *argv, VALUE str)
 	}
     }
 
+  num_index:
+    if (!(p = rb_str_subpos(str, beg, &len))) return Qnil;
+    beg = p - RSTRING_PTR(str);
+
+  subseq:
+    result = rb_str_new_with_class(str, RSTRING_PTR(str)+beg, len);
+    rb_enc_cr_str_copy_for_substr(result, str);
+
+  squash:
     if (len > 0) {
 	if (beg == 0) {
 	    rb_str_drop_bytes(str, len);
@@ -5047,8 +5010,7 @@ get_pat(VALUE pat)
 {
     VALUE val;
 
-    if (SPECIAL_CONST_P(pat)) goto to_string;
-    switch (BUILTIN_TYPE(pat)) {
+    switch (OBJ_BUILTIN_TYPE(pat)) {
       case T_REGEXP:
 	return pat;
 
@@ -5056,7 +5018,6 @@ get_pat(VALUE pat)
 	break;
 
       default:
-      to_string:
 	val = rb_check_string_type(pat);
 	if (NIL_P(val)) {
 	    Check_Type(pat, T_REGEXP);
@@ -5072,8 +5033,7 @@ get_pat_quoted(VALUE pat, int check)
 {
     VALUE val;
 
-    if (SPECIAL_CONST_P(pat)) goto to_string;
-    switch (BUILTIN_TYPE(pat)) {
+    switch (OBJ_BUILTIN_TYPE(pat)) {
       case T_REGEXP:
 	return pat;
 
@@ -5081,7 +5041,6 @@ get_pat_quoted(VALUE pat, int check)
 	break;
 
       default:
-      to_string:
 	val = rb_check_string_type(pat);
 	if (NIL_P(val)) {
 	    Check_Type(pat, T_REGEXP);
@@ -7161,8 +7120,8 @@ trnext(struct tr *t, rb_encoding *enc)
     int n;
 
     for (;;) {
+      nextpart:
 	if (!t->gen) {
-nextpart:
 	    if (t->p == t->pend) return -1;
 	    if (rb_enc_ascget(t->p, t->pend, &n, enc) == '\\' && t->p + n < t->pend) {
 		t->p += n;
@@ -9002,6 +8961,37 @@ rb_str_chop(VALUE str)
     return rb_str_subseq(str, 0, chopped_length(str));
 }
 
+static long
+smart_chomp(VALUE str, const char *e, const char *p)
+{
+    rb_encoding *enc = rb_enc_get(str);
+    if (rb_enc_mbminlen(enc) > 1) {
+        const char *pp = rb_enc_left_char_head(p, e-rb_enc_mbminlen(enc), e, enc);
+        if (rb_enc_is_newline(pp, e, enc)) {
+            e = pp;
+        }
+        pp = e - rb_enc_mbminlen(enc);
+        if (pp >= p) {
+            pp = rb_enc_left_char_head(p, pp, e, enc);
+            if (rb_enc_ascget(pp, e, 0, enc) == '\r') {
+                e = pp;
+            }
+        }
+    }
+    else {
+        switch (*(e-1)) { /* not e[-1] to get rid of VC bug */
+          case '\n':
+            if (--e > p && *(e-1) == '\r') {
+                --e;
+            }
+            break;
+          case '\r':
+            --e;
+            break;
+        }
+    }
+    return e - p;
+}
 
 static long
 chompped_length(VALUE str, VALUE rs)
@@ -9016,34 +9006,7 @@ chompped_length(VALUE str, VALUE rs)
     if (len == 0) return 0;
     e = p + len;
     if (rs == rb_default_rs) {
-      smart_chomp:
-	enc = rb_enc_get(str);
-	if (rb_enc_mbminlen(enc) > 1) {
-	    pp = rb_enc_left_char_head(p, e-rb_enc_mbminlen(enc), e, enc);
-	    if (rb_enc_is_newline(pp, e, enc)) {
-		e = pp;
-	    }
-	    pp = e - rb_enc_mbminlen(enc);
-	    if (pp >= p) {
-		pp = rb_enc_left_char_head(p, pp, e, enc);
-		if (rb_enc_ascget(pp, e, 0, enc) == '\r') {
-		    e = pp;
-		}
-	    }
-	}
-	else {
-	    switch (*(e-1)) { /* not e[-1] to get rid of VC bug */
-	      case '\n':
-		if (--e > p && *(e-1) == '\r') {
-		    --e;
-		}
-		break;
-	      case '\r':
-		--e;
-		break;
-	    }
-	}
-	return e - p;
+        return smart_chomp(str, e, p);
     }
 
     enc = rb_enc_get(str);
@@ -9079,11 +9042,11 @@ chompped_length(VALUE str, VALUE rs)
     if (rslen == rb_enc_mbminlen(enc)) {
 	if (rslen == 1) {
 	    if (newline == '\n')
-		goto smart_chomp;
+                return smart_chomp(str, e, p);
 	}
 	else {
 	    if (rb_enc_is_newline(rsptr, rsptr+rslen, enc))
-		goto smart_chomp;
+                return smart_chomp(str, e, p);
 	}
     }
 
@@ -9683,8 +9646,7 @@ rb_str_crypt(VALUE str, VALUE salt)
     mustnot_wchar(str);
     mustnot_wchar(salt);
     if (RSTRING_LEN(salt) < 2) {
-      short_salt:
-	rb_raise(rb_eArgError, "salt too short (need >=2 bytes)");
+        goto short_salt;
     }
 
     s = StringValueCStr(str);
@@ -9715,6 +9677,10 @@ rb_str_crypt(VALUE str, VALUE salt)
     result = rb_str_new_cstr(res);
     CRYPT_END();
     return result;
+
+  short_salt:
+    rb_raise(rb_eArgError, "salt too short (need >=2 bytes)");
+    UNREACHABLE_RETURN(Qundef);
 }
 
 
@@ -9975,8 +9941,7 @@ rb_str_partition(VALUE str, VALUE sep)
     if (RB_TYPE_P(sep, T_REGEXP)) {
 	pos = rb_reg_search(sep, str, 0, 0);
 	if (pos < 0) {
-	  failed:
-	    return rb_ary_new3(3, rb_str_dup(str), str_new_empty(str), str_new_empty(str));
+            goto failed;
 	}
 	sep = rb_str_subpat(str, sep, INT2FIX(0));
     }
@@ -9988,6 +9953,9 @@ rb_str_partition(VALUE str, VALUE sep)
 		          sep,
 		          rb_str_subseq(str, pos+RSTRING_LEN(sep),
 					     RSTRING_LEN(str)-pos-RSTRING_LEN(sep)));
+
+  failed:
+    return rb_ary_new3(3, rb_str_dup(str), str_new_empty(str), str_new_empty(str));
 }
 
 /*

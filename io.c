@@ -4173,8 +4173,7 @@ rb_io_each_codepoint(VALUE io)
 	    rb_yield(UINT2NUM(c));
 	}
 	else if (MBCLEN_INVALID_P(r)) {
-	  invalid:
-	    rb_raise(rb_eArgError, "invalid byte sequence in %s", rb_enc_name(enc));
+            goto invalid;
 	}
 	else if (MBCLEN_NEEDMORE_P(r)) {
 	    char cbuf[8], *p = cbuf;
@@ -4197,6 +4196,10 @@ rb_io_each_codepoint(VALUE io)
 	}
     }
     return io;
+
+  invalid:
+    rb_raise(rb_eArgError, "invalid byte sequence in %s", rb_enc_name(enc));
+    UNREACHABLE_RETURN(Qundef);
 }
 
 /*
@@ -5539,8 +5542,7 @@ rb_io_modestr_fmode(const char *modestr)
 	fmode |= FMODE_WRITABLE | FMODE_APPEND | FMODE_CREATE;
 	break;
       default:
-      error:
-	rb_raise(rb_eArgError, "invalid access mode %s", modestr);
+        goto error;
     }
 
     while (*m) {
@@ -5574,6 +5576,10 @@ rb_io_modestr_fmode(const char *modestr)
         goto error;
 
     return fmode;
+
+  error:
+    rb_raise(rb_eArgError, "invalid access mode %s", modestr);
+    UNREACHABLE_RETURN(Qundef);
 }
 
 int

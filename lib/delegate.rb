@@ -21,6 +21,8 @@
 # SimpleDelegator's implementation serves as a nice example of the use of
 # Delegator:
 #
+#   require 'delegate'
+#
 #   class SimpleDelegator < Delegator
 #     def __getobj__
 #       @delegate_sd_obj # return object we are delegating to, required
@@ -252,6 +254,8 @@ end
 #       Date.new(1989, 9, 10)
 #     end
 #   end
+#
+#   require 'delegate'
 #
 #   class UserDecorator < SimpleDelegator
 #     def birth_year

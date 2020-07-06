@@ -3848,122 +3848,144 @@ struct enum_sum_memo {
 };
 
 static void
-sum_iter(VALUE i, struct enum_sum_memo *memo)
+sum_iter_normalize_memo(struct enum_sum_memo *memo)
 {
-    const int unused = (assert(memo != NULL), 0);
+    assert(FIXABLE(memo->n));
+    memo->v = rb_fix_plus(LONG2FIX(memo->n), memo->v);
+    memo->n = 0;
 
-    long n = memo->n;
-    VALUE v = memo->v;
-    VALUE r = memo->r;
-    double f = memo->f;
-    double c = memo->c;
-
-    if (memo->block_given)
-        i = rb_yield(i);
-
-    if (memo->float_value)
-        goto float_value;
-
-    if (FIXNUM_P(v) || RB_TYPE_P(v, T_BIGNUM) || RB_TYPE_P(v, T_RATIONAL)) {
-        if (FIXNUM_P(i)) {
-            n += FIX2LONG(i); /* should not overflow long type */
-            if (!FIXABLE(n)) {
-                v = rb_big_plus(LONG2NUM(n), v);
-                n = 0;
-            }
-        }
-        else if (RB_TYPE_P(i, T_BIGNUM))
-            v = rb_big_plus(i, v);
-        else if (RB_TYPE_P(i, T_RATIONAL)) {
-            if (r == Qundef)
-                r = i;
-            else
-                r = rb_rational_plus(r, i);
-        }
-        else {
-            if (n != 0) {
-                v = rb_fix_plus(LONG2FIX(n), v);
-                n = 0;
-            }
-            if (r != Qundef) {
-                /* r can be an Integer when mathn is loaded */
-                if (FIXNUM_P(r))
-                    v = rb_fix_plus(r, v);
-                else if (RB_TYPE_P(r, T_BIGNUM))
-                    v = rb_big_plus(r, v);
-                else
-                    v = rb_rational_plus(r, v);
-                r = Qundef;
-            }
-            if (RB_FLOAT_TYPE_P(i)) {
-                f = NUM2DBL(v);
-                c = 0.0;
-                memo->float_value = 1;
-                goto float_value;
-            }
-            else
-                goto some_value;
-        }
+    /* r can be an Integer when mathn is loaded */
+    switch (TYPE(memo->r)) {
+      case T_FIXNUM:   memo->v = rb_fix_plus(memo->r, memo->v);      break;
+      case T_BIGNUM:   memo->v = rb_big_plus(memo->r, memo->v);      break;
+      case T_RATIONAL: memo->v = rb_rational_plus(memo->r, memo->v); break;
+      case T_UNDEF:    break;
+      default:         UNREACHABLE; /* or ...? */
     }
-    else if (RB_FLOAT_TYPE_P(v)) {
-        /*
-         * Kahan-Babuska balancing compensated summation algorithm
-         * See http://link.springer.com/article/10.1007/s00607-005-0139-x
-         */
-        double x, t;
+    memo->r = Qundef;
+}
 
-      float_value:
-        if (RB_FLOAT_TYPE_P(i))
-            x = RFLOAT_VALUE(i);
-        else if (FIXNUM_P(i))
-            x = FIX2LONG(i);
-        else if (RB_TYPE_P(i, T_BIGNUM))
-            x = rb_big2dbl(i);
-        else if (RB_TYPE_P(i, T_RATIONAL))
-            x = rb_num2dbl(i);
-        else {
-            v = DBL2NUM(f);
-            memo->float_value = 0;
-            goto some_value;
-        }
+static void
+sum_iter_fixnum(VALUE i, struct enum_sum_memo *memo)
+{
+    memo->n += FIX2LONG(i); /* should not overflow long type */
+    if (! FIXABLE(memo->n)) {
+        memo->v = rb_big_plus(LONG2NUM(memo->n), memo->v);
+        memo->n = 0;
+    }
+}
 
-        if (isnan(f)) return;
-        if (isnan(x)) {
-            memo->v = i;
-            memo->f = x;
-            return;
-        }
-        if (isinf(x)) {
-            if (isinf(f) && signbit(x) != signbit(f)) {
-                memo->f = NAN;
-                memo->v = DBL2NUM(f);
-            }
-            else {
-                memo->f = x;
-                memo->v = i;
-            }
-            return;
-        }
-        if (isinf(f)) return;
+static void
+sum_iter_bignum(VALUE i, struct enum_sum_memo *memo)
+{
+    memo->v = rb_big_plus(i, memo->v);
+}
 
-        t = f + x;
-        if (fabs(f) >= fabs(x))
-            c += ((f - t) + x);
-        else
-            c += ((x - t) + f);
-        f = t;
+static void
+sum_iter_rational(VALUE i, struct enum_sum_memo *memo)
+{
+    if (memo->r == Qundef) {
+        memo->r = i;
     }
     else {
-      some_value:
-        v = rb_funcallv(v, idPLUS, 1, &i);
+        memo->r = rb_rational_plus(memo->r, i);
+    }
+}
+
+static void
+sum_iter_some_value(VALUE i, struct enum_sum_memo *memo)
+{
+    memo->v = rb_funcallv(memo->v, idPLUS, 1, &i);
+}
+
+static void
+sum_iter_Kahan_Babuska(VALUE i, struct enum_sum_memo *memo)
+{
+    /*
+     * Kahan-Babuska balancing compensated summation algorithm
+     * See http://link.springer.com/article/10.1007/s00607-005-0139-x
+     */
+    double x;
+
+    switch (TYPE(i)) {
+      case T_FLOAT:    x = RFLOAT_VALUE(i); break;
+      case T_FIXNUM:   x = FIX2LONG(i);     break;
+      case T_BIGNUM:   x = rb_big2dbl(i);   break;
+      case T_RATIONAL: x = rb_num2dbl(i);   break;
+      default:
+        memo->v = DBL2NUM(memo->f);
+        memo->float_value = 0;
+        sum_iter_some_value(i, memo);
+        return;
     }
 
-    memo->v = v;
-    memo->n = n;
-    memo->r = r;
+    double f = memo->f;
+
+    if (isnan(f)) {
+        return;
+    }
+    else if (! isfinite(x)) {
+        if (isinf(x) && isinf(f) && signbit(x) != signbit(f)) {
+            i = DBL2NUM(f);
+            x = nan("");
+        }
+        memo->v = i;
+        memo->f = x;
+        return;
+    }
+    else if (isinf(f)) {
+        return;
+    }
+
+    double c = memo->c;
+    double t = f + x;
+
+    if (fabs(f) >= fabs(x)) {
+        c += ((f - t) + x);
+    }
+    else {
+        c += ((x - t) + f);
+    }
+    f = t;
+
     memo->f = f;
     memo->c = c;
-    (void)unused;
+}
+
+static void
+sum_iter(VALUE i, struct enum_sum_memo *memo)
+{
+    assert(memo != NULL);
+    if (memo->block_given) {
+        i = rb_yield(i);
+    }
+
+    if (memo->float_value) {
+        sum_iter_Kahan_Babuska(i, memo);
+    }
+    else switch (TYPE(memo->v)) {
+      default:      sum_iter_some_value(i, memo);    return;
+      case T_FLOAT: sum_iter_Kahan_Babuska(i, memo); return;
+      case T_FIXNUM:
+      case T_BIGNUM:
+      case T_RATIONAL:
+        switch (TYPE(i)) {
+          case T_FIXNUM:   sum_iter_fixnum(i, memo);   return;
+          case T_BIGNUM:   sum_iter_bignum(i, memo);   return;
+          case T_RATIONAL: sum_iter_rational(i, memo); return;
+          case T_FLOAT:
+            sum_iter_normalize_memo(memo);
+            memo->f = NUM2DBL(memo->v);
+            memo->c = 0.0;
+            memo->float_value = 1;
+            sum_iter_Kahan_Babuska(i, memo);
+            return;
+          default:
+            sum_iter_normalize_memo(memo);
+            sum_iter_some_value(i, memo);
+            return;
+        }
+    }
 }
 
 static VALUE

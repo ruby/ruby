@@ -63,7 +63,7 @@
 #define SIMPLE_FIELD1(name, ann)    SIMPLE_FIELD(FIELD_NAME_LEN(name, ann), FIELD_NAME_DESC(name, ann))
 #define F_CUSTOM1(name, ann)	    SIMPLE_FIELD1(#name, ann)
 #define F_ID(name, ann) 	    SIMPLE_FIELD1(#name, ann) A_ID(node->name)
-#define F_GENTRY(name, ann)	    SIMPLE_FIELD1(#name, ann) A_ID((node->name)->id)
+#define F_GENTRY(name, ann)	    SIMPLE_FIELD1(#name, ann) A_ID(node->name)
 #define F_INT(name, ann)	    SIMPLE_FIELD1(#name, ann) A_INT(node->name)
 #define F_LONG(name, ann)	    SIMPLE_FIELD1(#name, ann) A_LONG(node->name)
 #define F_LIT(name, ann)	    SIMPLE_FIELD1(#name, ann) A_LIT(node->name)

@@ -243,23 +243,7 @@ signm2signo(VALUE *sig_ptr, int negative, int exit, int *prefix_ptr)
 	    prefix += signame_prefix_len;
     }
     if (len <= (long)prefix) {
-      unsupported:
-	if (prefix == signame_prefix_len) {
-	    prefix = 0;
-	}
-	else if (prefix > signame_prefix_len) {
-	    prefix -= signame_prefix_len;
-	    len -= prefix;
-	    vsig = rb_str_subseq(vsig, prefix, len);
-	    prefix = 0;
-	}
-	else {
-	    len -= prefix;
-	    vsig = rb_str_subseq(vsig, prefix, len);
-	    prefix = signame_prefix_len;
-	}
-	rb_raise(rb_eArgError, "unsupported signal `%.*s%"PRIsVALUE"'",
-		 prefix, signame_prefix, vsig);
+        goto unsupported;
     }
 
     if (prefix_ptr) *prefix_ptr = prefix;
@@ -272,7 +256,25 @@ signm2signo(VALUE *sig_ptr, int negative, int exit, int *prefix_ptr)
 	    return negative ? -sigs->signo : sigs->signo;
 	}
     }
-    goto unsupported;
+
+  unsupported:
+    if (prefix == signame_prefix_len) {
+        prefix = 0;
+    }
+    else if (prefix > signame_prefix_len) {
+        prefix -= signame_prefix_len;
+        len -= prefix;
+        vsig = rb_str_subseq(vsig, prefix, len);
+        prefix = 0;
+    }
+    else {
+        len -= prefix;
+        vsig = rb_str_subseq(vsig, prefix, len);
+        prefix = signame_prefix_len;
+    }
+    rb_raise(rb_eArgError, "unsupported signal `%.*s%"PRIsVALUE"'",
+             prefix, signame_prefix, vsig);
+    UNREACHABLE_RETURN(0);
 }
 
 static const char*
@@ -1208,6 +1210,14 @@ trap_handler(VALUE *cmd, int sig)
 	    *cmd = command;
 	    RSTRING_GETMEM(command, cptr, len);
 	    switch (len) {
+              sig_ign:
+                func = SIG_IGN;
+                *cmd = Qtrue;
+                break;
+              sig_dfl:
+                func = default_handler(sig);
+                *cmd = 0;
+                break;
 	      case 0:
                 goto sig_ign;
 		break;
@@ -1222,14 +1232,10 @@ trap_handler(VALUE *cmd, int sig)
                 break;
 	      case 7:
 		if (memcmp(cptr, "SIG_IGN", 7) == 0) {
-sig_ign:
-                    func = SIG_IGN;
-                    *cmd = Qtrue;
+                    goto sig_ign;
 		}
 		else if (memcmp(cptr, "SIG_DFL", 7) == 0) {
-sig_dfl:
-                    func = default_handler(sig);
-                    *cmd = 0;
+                    goto sig_dfl;
 		}
 		else if (memcmp(cptr, "DEFAULT", 7) == 0) {
                     goto sig_dfl;

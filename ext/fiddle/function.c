@@ -1,6 +1,8 @@
 #include <fiddle.h>
 #include <ruby/thread.h>
 
+#include <stdbool.h>
+
 #ifdef PRIsVALUE
 # define RB_OBJ_CLASSNAME(obj) rb_obj_class(obj)
 # define RB_OBJ_STRING(obj) (obj)
@@ -19,21 +21,21 @@ VALUE cFiddleFunction;
 #define Check_Max_Args_Long(name, len) \
     Check_Max_Args_(name, len, "l")
 #define Check_Max_Args_(name, len, fmt) \
-    if ((size_t)(len) < MAX_ARGS) { \
-	/* OK */ \
-    } \
-    else { \
-	rb_raise(rb_eTypeError, \
-		 name" is so large that it can cause integer overflow (%"fmt"d)", \
-		 (len)); \
-    }
+    do { \
+        if ((size_t)(len) >= MAX_ARGS) { \
+            rb_raise(rb_eTypeError, \
+                     "%s is so large " \
+                     "that it can cause integer overflow (%"fmt"d)", \
+                     (name), (len)); \
+        } \
+    } while (0)
 
 static void
 deallocate(void *p)
 {
-    ffi_cif *ptr = p;
-    if (ptr->arg_types) xfree(ptr->arg_types);
-    xfree(ptr);
+    ffi_cif *cif = p;
+    if (cif->arg_types) xfree(cif->arg_types);
+    xfree(cif);
 }
 
 static size_t
@@ -88,61 +90,87 @@ parse_keyword_arg_i(VALUE key, VALUE value, VALUE self)
 }
 
 static VALUE
+normalize_argument_types(const char *name,
+                         VALUE arg_types,
+                         bool *is_variadic)
+{
+    VALUE normalized_arg_types;
+    int i;
+    int n_arg_types;
+    *is_variadic = false;
+
+    Check_Type(arg_types, T_ARRAY);
+    n_arg_types = RARRAY_LENINT(arg_types);
+    Check_Max_Args(name, n_arg_types);
+
+    normalized_arg_types = rb_ary_new_capa(n_arg_types);
+    for (i = 0; i < n_arg_types; i++) {
+        VALUE arg_type = RARRAY_AREF(arg_types, i);
+        int c_arg_type = NUM2INT(arg_type);
+        if (c_arg_type == TYPE_VARIADIC) {
+            if (i != n_arg_types - 1) {
+                rb_raise(rb_eArgError,
+                         "Fiddle::TYPE_VARIADIC must be the last argument type: "
+                         "%"PRIsVALUE,
+                         arg_types);
+            }
+            *is_variadic = true;
+            break;
+        }
+        else {
+            (void)INT2FFI_TYPE(c_arg_type); /* raise */
+        }
+        rb_ary_push(normalized_arg_types, INT2FIX(c_arg_type));
+    }
+
+    /* freeze to prevent inconsistency at calling #to_int later */
+    OBJ_FREEZE(normalized_arg_types);
+    return normalized_arg_types;
+}
+
+static VALUE
 initialize(int argc, VALUE argv[], VALUE self)
 {
     ffi_cif * cif;
-    ffi_type **arg_types, *rtype;
-    ffi_status result;
-    VALUE ptr, args, ret_type, abi, kwds, ary;
-    int i, len;
-    int nabi;
+    VALUE ptr, arg_types, ret_type, abi, kwds;
+    int c_ret_type;
+    bool is_variadic = false;
+    ffi_abi c_ffi_abi;
     void *cfunc;
 
-    rb_scan_args(argc, argv, "31:", &ptr, &args, &ret_type, &abi, &kwds);
+    rb_scan_args(argc, argv, "31:", &ptr, &arg_types, &ret_type, &abi, &kwds);
     rb_iv_set(self, "@closure", ptr);
 
     ptr = rb_Integer(ptr);
     cfunc = NUM2PTR(ptr);
     PTR2NUM(cfunc);
-    nabi = NIL_P(abi) ? FFI_DEFAULT_ABI : NUM2INT(abi);
-    abi = INT2FIX(nabi);
-    i = NUM2INT(ret_type);
-    rtype = INT2FFI_TYPE(i);
-    ret_type = INT2FIX(i);
+    c_ffi_abi = NIL_P(abi) ? FFI_DEFAULT_ABI : NUM2INT(abi);
+    abi = INT2FIX(c_ffi_abi);
+    c_ret_type = NUM2INT(ret_type);
+    (void)INT2FFI_TYPE(c_ret_type); /* raise */
+    ret_type = INT2FIX(c_ret_type);
 
-    Check_Type(args, T_ARRAY);
-    len = RARRAY_LENINT(args);
-    Check_Max_Args("args", len);
-    ary = rb_ary_subseq(args, 0, len);
-    for (i = 0; i < RARRAY_LEN(args); i++) {
-        VALUE a = RARRAY_AREF(args, i);
-	int type = NUM2INT(a);
-	(void)INT2FFI_TYPE(type); /* raise */
-	if (INT2FIX(type) != a) rb_ary_store(ary, i, INT2FIX(type));
+    arg_types = normalize_argument_types("argument types",
+                                         arg_types,
+                                         &is_variadic);
+#ifndef HAVE_FFI_PREP_CIF_VAR
+    if (is_variadic) {
+        rb_raise(rb_eNotImpError,
+                 "ffi_prep_cif_var() is required in libffi "
+                 "for variadic arguments");
     }
-    OBJ_FREEZE(ary);
+#endif
 
     rb_iv_set(self, "@ptr", ptr);
-    rb_iv_set(self, "@args", args);
+    rb_iv_set(self, "@argument_types", arg_types);
     rb_iv_set(self, "@return_type", ret_type);
     rb_iv_set(self, "@abi", abi);
+    rb_iv_set(self, "@is_variadic", is_variadic ? Qtrue : Qfalse);
 
     if (!NIL_P(kwds)) rb_hash_foreach(kwds, parse_keyword_arg_i, self);
 
     TypedData_Get_Struct(self, ffi_cif, &function_data_type, cif);
-
-    arg_types = xcalloc(len + 1, sizeof(ffi_type *));
-
-    for (i = 0; i < RARRAY_LEN(args); i++) {
-	int type = NUM2INT(RARRAY_AREF(args, i));
-	arg_types[i] = INT2FFI_TYPE(type);
-    }
-    arg_types[len] = NULL;
-
-    result = ffi_prep_cif(cif, nabi, len, rtype, arg_types);
-
-    if (result)
-	rb_raise(rb_eRuntimeError, "error creating CIF %d", result);
+    cif->arg_types = NULL;
 
     return self;
 }
@@ -169,44 +197,144 @@ function_call(int argc, VALUE argv[], VALUE self)
 {
     struct nogvl_ffi_call_args args = { 0 };
     fiddle_generic *generic_args;
-    VALUE cfunc, types, cPointer;
+    VALUE cfunc;
+    VALUE abi;
+    VALUE arg_types;
+    VALUE cPointer;
+    VALUE is_variadic;
+    int n_arg_types;
+    int n_fixed_args = 0;
+    int n_call_args = 0;
     int i;
+    int i_call;
     VALUE alloc_buffer = 0;
 
     cfunc    = rb_iv_get(self, "@ptr");
-    types    = rb_iv_get(self, "@args");
+    abi      = rb_iv_get(self, "@abi");
+    arg_types = rb_iv_get(self, "@argument_types");
     cPointer = rb_const_get(mFiddle, rb_intern("Pointer"));
+    is_variadic = rb_iv_get(self, "@is_variadic");
 
-    Check_Max_Args("number of arguments", argc);
-    if (argc != (i = RARRAY_LENINT(types))) {
-	rb_error_arity(argc, i, i);
+    n_arg_types = RARRAY_LENINT(arg_types);
+    n_fixed_args = n_arg_types;
+    if (RTEST(is_variadic)) {
+        if (argc < n_arg_types) {
+            rb_error_arity(argc, n_arg_types, UNLIMITED_ARGUMENTS);
+        }
+        if (((argc - n_arg_types) % 2) != 0) {
+            rb_raise(rb_eArgError,
+                     "variadic arguments must be type and value pairs: "
+                     "%"PRIsVALUE,
+                     rb_ary_new_from_values(argc, argv));
+        }
+        n_call_args = n_arg_types + ((argc - n_arg_types) / 2);
     }
+    else {
+        if (argc != n_arg_types) {
+            rb_error_arity(argc, n_arg_types, n_arg_types);
+        }
+        n_call_args = n_arg_types;
+    }
+    Check_Max_Args("the number of arguments", n_call_args);
 
     TypedData_Get_Struct(self, ffi_cif, &function_data_type, args.cif);
 
-    generic_args = ALLOCV(alloc_buffer,
-	(size_t)(argc + 1) * sizeof(void *) + (size_t)argc * sizeof(fiddle_generic));
-    args.values = (void **)((char *)generic_args +
-			    (size_t)argc * sizeof(fiddle_generic));
-
-    for (i = 0; i < argc; i++) {
-	VALUE type = RARRAY_AREF(types, i);
-	VALUE src = argv[i];
-	int argtype = FIX2INT(type);
-
-	if (argtype == TYPE_VOIDP) {
-	    if(NIL_P(src)) {
-		src = INT2FIX(0);
-	    } else if(cPointer != CLASS_OF(src)) {
-		src = rb_funcall(cPointer, rb_intern("[]"), 1, src);
-	    }
-	    src = rb_Integer(src);
-	}
-
-	VALUE2GENERIC(argtype, src, &generic_args[i]);
-	args.values[i] = (void *)&generic_args[i];
+    if (is_variadic && args.cif->arg_types) {
+        xfree(args.cif->arg_types);
+        args.cif->arg_types = NULL;
     }
-    args.values[argc] = NULL;
+
+    if (!args.cif->arg_types) {
+        VALUE fixed_arg_types = arg_types;
+        VALUE return_type;
+        int c_return_type;
+        ffi_type *ffi_return_type;
+        ffi_type **ffi_arg_types;
+        ffi_status result;
+
+        arg_types = rb_ary_dup(fixed_arg_types);
+        for (i = n_fixed_args; i < argc; i += 2) {
+          VALUE arg_type = argv[i];
+          int c_arg_type = NUM2INT(arg_type);
+          (void)INT2FFI_TYPE(c_arg_type); /* raise */
+          rb_ary_push(arg_types, INT2FIX(c_arg_type));
+        }
+
+        return_type = rb_iv_get(self, "@return_type");
+        c_return_type = FIX2INT(return_type);
+        ffi_return_type = INT2FFI_TYPE(c_return_type);
+
+        ffi_arg_types = xcalloc(n_call_args + 1, sizeof(ffi_type *));
+        for (i_call = 0; i_call < n_call_args; i_call++) {
+            VALUE arg_type;
+            int c_arg_type;
+            arg_type = RARRAY_AREF(arg_types, i_call);
+            c_arg_type = FIX2INT(arg_type);
+            ffi_arg_types[i_call] = INT2FFI_TYPE(c_arg_type);
+        }
+        ffi_arg_types[i_call] = NULL;
+
+        if (is_variadic) {
+#ifdef HAVE_FFI_PREP_CIF_VAR
+            result = ffi_prep_cif_var(args.cif,
+                                      FIX2INT(abi),
+                                      n_fixed_args,
+                                      n_call_args,
+                                      ffi_return_type,
+                                      ffi_arg_types);
+#else
+            /* This code is never used because ffi_prep_cif_var()
+             * availability check is done in #initialize. */
+            result = FFI_BAD_TYPEDEF;
+#endif
+        }
+        else {
+            result = ffi_prep_cif(args.cif,
+                                  FIX2INT(abi),
+                                  n_call_args,
+                                  ffi_return_type,
+                                  ffi_arg_types);
+        }
+        if (result != FFI_OK) {
+            xfree(ffi_arg_types);
+            args.cif->arg_types = NULL;
+            rb_raise(rb_eRuntimeError, "error creating CIF %d", result);
+        }
+    }
+
+    generic_args = ALLOCV(alloc_buffer,
+                          sizeof(fiddle_generic) * n_call_args +
+                          sizeof(void *) * (n_call_args + 1));
+    args.values = (void **)((char *)generic_args +
+                            sizeof(fiddle_generic) * n_call_args);
+
+    for (i = 0, i_call = 0;
+         i < argc && i_call < n_call_args;
+         i++, i_call++) {
+        VALUE arg_type;
+        int c_arg_type;
+        VALUE src;
+        arg_type = RARRAY_AREF(arg_types, i_call);
+        c_arg_type = FIX2INT(arg_type);
+        if (i >= n_fixed_args) {
+            i++;
+        }
+        src = argv[i];
+
+        if (c_arg_type == TYPE_VOIDP) {
+            if (NIL_P(src)) {
+                src = INT2FIX(0);
+            }
+            else if (cPointer != CLASS_OF(src)) {
+                src = rb_funcall(cPointer, rb_intern("[]"), 1, src);
+            }
+            src = rb_Integer(src);
+        }
+
+        VALUE2GENERIC(c_arg_type, src, &generic_args[i_call]);
+        args.values[i_call] = (void *)&generic_args[i_call];
+    }
+    args.values[i_call] = NULL;
     args.fn = (void(*)(void))NUM2PTR(cfunc);
 
     (void)rb_thread_call_without_gvl(nogvl_ffi_call, &args, 0, 0);

@@ -1169,8 +1169,8 @@ rand_range(VALUE obj, rb_random_t* rnd, VALUE range)
 	long max;
 	vmax = v;
 	v = Qnil;
+      fixnum:
 	if (FIXNUM_P(vmax)) {
-	  fixnum:
 	    if ((max = FIX2LONG(vmax) - excl) >= 0) {
 		unsigned long r = random_ulong_limited(obj, rnd, (unsigned long)max);
 		v = ULONG2NUM(r);

@@ -4389,7 +4389,6 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, rb_encoding *origenc, enum
     VALUE unresolved_path;
     char *resolved_ptr = NULL;
     VALUE resolved;
-    struct stat st;
 
     if (mode == RB_REALPATH_DIR) {
         return rb_check_realpath_emulate(basedir, path, origenc, mode);
@@ -4420,14 +4419,17 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, rb_encoding *origenc, enum
     resolved = ospath_new(resolved_ptr, strlen(resolved_ptr), rb_filesystem_encoding());
     free(resolved_ptr);
 
+# if !defined(__LINUX__) && !defined(__APPLE__)
     /* As `resolved` is a String in the filesystem encoding, no
      * conversion is needed */
+    struct stat st;
     if (stat_without_gvl(RSTRING_PTR(resolved), &st) < 0) {
         if (mode == RB_REALPATH_CHECK) {
             return Qnil;
         }
         rb_sys_fail_path(unresolved_path);
     }
+# endif
 
     if (origenc && origenc != rb_enc_get(resolved)) {
         if (!rb_enc_str_asciionly_p(resolved)) {
@@ -5299,14 +5301,7 @@ rb_f_test(int argc, VALUE *argv, VALUE _)
     if (argc == 0) rb_check_arity(argc, 2, 3);
     cmd = NUM2CHR(argv[0]);
     if (cmd == 0) {
-      unknown:
-	/* unknown command */
-	if (ISPRINT(cmd)) {
-	    rb_raise(rb_eArgError, "unknown command '%s%c'", cmd == '\'' || cmd == '\\' ? "\\" : "", cmd);
-	}
-	else {
-	    rb_raise(rb_eArgError, "unknown command \"\\x%02X\"", cmd);
-	}
+        goto unknown;
     }
     if (strchr("bcdefgGkloOprRsSuwWxXz", cmd)) {
 	CHECK(1);
@@ -5432,7 +5427,15 @@ rb_f_test(int argc, VALUE *argv, VALUE _)
 	    return Qfalse;
 	}
     }
-    goto unknown;
+  unknown:
+    /* unknown command */
+    if (ISPRINT(cmd)) {
+        rb_raise(rb_eArgError, "unknown command '%s%c'", cmd == '\'' || cmd == '\\' ? "\\" : "", cmd);
+    }
+    else {
+        rb_raise(rb_eArgError, "unknown command \"\\x%02X\"", cmd);
+    }
+    UNREACHABLE_RETURN(Qundef);
 }
 
 

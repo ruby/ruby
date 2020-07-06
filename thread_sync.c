@@ -1156,7 +1156,7 @@ rb_szqueue_push(int argc, VALUE *argv, VALUE self)
 	    rb_raise(rb_eThreadError, "queue full");
 	}
 	else if (queue_closed_p(self)) {
-	    goto closed;
+            break;
 	}
 	else {
 	    struct queue_waiter qw;
@@ -1172,7 +1172,6 @@ rb_szqueue_push(int argc, VALUE *argv, VALUE self)
     }
 
     if (queue_closed_p(self)) {
-      closed:
 	raise_closed_queue_error(self);
     }
 

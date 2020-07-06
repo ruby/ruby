@@ -113,6 +113,7 @@ $repositories = {
   "net-imap": "ruby/net-imap",
   "net-ftp": "ruby/net-ftp",
   "net-http": "ruby/net-http",
+  bigdecimal: "ruby/bigdecimal",
 }
 
 def sync_default_gems(gem)
@@ -312,7 +313,7 @@ end
 
 IGNORE_FILE_PATTERN = /\A(?:\.travis.yml|appveyor\.yml|azure-pipelines\.yml|\.git(?:ignore|hub)|Gemfile|README\.md|History\.txt|Rakefile|CODE_OF_CONDUCT\.md)/
 
-def sync_default_gems_with_commits(gem, range)
+def sync_default_gems_with_commits(gem, ranges)
   puts "Sync #{$repositories[gem.to_sym]} with commit history."
 
   IO.popen(%W"git remote") do |f|
@@ -322,12 +323,14 @@ def sync_default_gems_with_commits(gem, range)
   end
   system(*%W"git fetch --no-tags #{gem}")
 
-  unless range.include?("..")
-    range = "#{range}~1..#{range}"
-  end
+  commits = ranges.flat_map do |range|
+    unless range.include?("..")
+      range = "#{range}~1..#{range}"
+    end
 
-  commits = IO.popen(%W"git log --format=%H,%s #{range}") do |f|
-    f.read.split("\n").reverse.map{|commit| commit.split(',', 2)}
+    IO.popen(%W"git log --format=%H,%s #{range}") do |f|
+      f.read.split("\n").reverse.map{|commit| commit.split(',', 2)}
+    end
   end
 
   # Ignore Merge commit and insufficiency commit for ruby core repository.
@@ -466,9 +469,10 @@ when nil, "-h", "--help"
 
   exit
 else
-  if ARGV[1]
-    sync_default_gems_with_commits(ARGV[0], ARGV[1])
+  gem = ARGV.shift
+  if ARGV[0]
+    sync_default_gems_with_commits(gem, ARGV)
   else
-    sync_default_gems(ARGV[0])
+    sync_default_gems(gem)
   end
 end

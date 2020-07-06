@@ -1705,10 +1705,7 @@ glob_make_pattern(const char *p, const char *e, int flags, rb_encoding *enc)
 
     tmp = GLOB_ALLOC(struct glob_pattern);
     if (!tmp) {
-      error:
-	*tail = 0;
-	glob_free_pattern(list);
-	return 0;
+        goto error;
     }
     tmp->type = dirsep ? MATCH_DIR : MATCH_ALL;
     tmp->str = 0;
@@ -1716,6 +1713,11 @@ glob_make_pattern(const char *p, const char *e, int flags, rb_encoding *enc)
     tmp->next = 0;
 
     return list;
+
+  error:
+    *tail = 0;
+    glob_free_pattern(list);
+    return 0;
 }
 
 static void
@@ -2180,6 +2182,7 @@ glob_opendir(ruby_glob_entries_t *ent, DIR *dirp, int flags, rb_encoding *enc)
     MEMZERO(ent, ruby_glob_entries_t, 1);
     if (flags & FNM_GLOB_NOSORT) {
         ent->nosort.dirp = dirp;
+        return ent;
     }
     else {
         void *newp;
@@ -2200,10 +2203,7 @@ glob_opendir(ruby_glob_entries_t *ent, DIR *dirp, int flags, rb_encoding *enc)
 	while ((dp = READDIR(dirp, enc)) != NULL) {
             rb_dirent_t *rdp = dirent_copy(dp, NULL);
             if (!rdp) {
-              nomem:
-                glob_dir_finish(ent, 0);
-                closedir(dirp);
-                return NULL;
+                goto nomem;
             }
             if (count >= capacity) {
                 capacity += 256;
@@ -2224,8 +2224,13 @@ glob_opendir(ruby_glob_entries_t *ent, DIR *dirp, int flags, rb_encoding *enc)
         }
         ruby_qsort(ent->sort.entries, ent->sort.count, sizeof(ent->sort.entries[0]),
                    glob_sort_cmp, NULL);
+        return ent;
     }
-    return ent;
+
+  nomem:
+    glob_dir_finish(ent, 0);
+    closedir(dirp);
+    return NULL;
 }
 
 static rb_dirent_t *

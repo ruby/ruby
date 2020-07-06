@@ -480,9 +480,7 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const c
     }
     if (st_get_key(loading_tbl, (st_data_t)feature, &data)) {
 	if (fn) *fn = (const char*)data;
-      loading:
-	if (!ext) return 'u';
-	return !IS_RBEXT(ext) ? 's' : 'r';
+        goto loading;
     }
     else {
 	VALUE bufstr;
@@ -514,6 +512,10 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const c
 	rb_str_resize(bufstr, 0);
     }
     return 0;
+
+  loading:
+    if (!ext) return 'u';
+    return !IS_RBEXT(ext) ? 's' : 'r';
 }
 
 int
@@ -922,9 +924,7 @@ search_required(VALUE fname, volatile VALUE *path, feature_func rb_feature_p)
 
       default:
 	if (ft) {
-	  statically_linked:
-	    if (loading) *path = rb_filesystem_str_new_cstr(loading);
-	    return ft;
+            goto statically_linked;
 	}
         /* fall through */
       case 1:
@@ -934,6 +934,10 @@ search_required(VALUE fname, volatile VALUE *path, feature_func rb_feature_p)
 	*path = tmp;
     }
     return type ? 's' : 'r';
+
+  statically_linked:
+    if (loading) *path = rb_filesystem_str_new_cstr(loading);
+    return ft;
 }
 
 static void

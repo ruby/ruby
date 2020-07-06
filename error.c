@@ -784,6 +784,17 @@ rb_builtin_type_name(int t)
     return 0;
 }
 
+static VALUE
+displaying_class_of(VALUE x)
+{
+    switch (x) {
+      case Qfalse: return rb_fstring_cstr("false");
+      case Qnil:   return rb_fstring_cstr("nil");
+      case Qtrue:  return rb_fstring_cstr("true");
+      default:     return rb_obj_class(x);
+    }
+}
+
 static const char *
 builtin_class_name(VALUE x)
 {
@@ -831,13 +842,8 @@ unexpected_type(VALUE x, int xt, int t)
     VALUE mesg, exc = rb_eFatal;
 
     if (tname) {
-	const char *cname = builtin_class_name(x);
-	if (cname)
-	    mesg = rb_sprintf("wrong argument type %s (expected %s)",
-			      cname, tname);
-	else
-	    mesg = rb_sprintf("wrong argument type %"PRIsVALUE" (expected %s)",
-			      rb_obj_class(x), tname);
+        mesg = rb_sprintf("wrong argument type %"PRIsVALUE" (expected %s)",
+                          displaying_class_of(x), tname);
 	exc = rb_eTypeError;
     }
     else if (xt > T_MASK && xt <= 0x3f) {
@@ -905,26 +911,26 @@ rb_typeddata_is_instance_of(VALUE obj, const rb_data_type_t *data_type)
 void *
 rb_check_typeddata(VALUE obj, const rb_data_type_t *data_type)
 {
-    const char *etype;
+    VALUE actual;
 
     if (!RB_TYPE_P(obj, T_DATA)) {
-      wrong_type:
-	etype = builtin_class_name(obj);
-	if (!etype)
-	    rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected %s)",
-		     rb_obj_class(obj), data_type->wrap_struct_name);
-      wrong_datatype:
-	rb_raise(rb_eTypeError, "wrong argument type %s (expected %s)",
-		 etype, data_type->wrap_struct_name);
+        actual = displaying_class_of(obj);
     }
-    if (!RTYPEDDATA_P(obj)) {
-	goto wrong_type;
+    else if (!RTYPEDDATA_P(obj)) {
+        actual = displaying_class_of(obj);
     }
     else if (!rb_typeddata_inherited_p(RTYPEDDATA_TYPE(obj), data_type)) {
-	etype = RTYPEDDATA_TYPE(obj)->wrap_struct_name;
-	goto wrong_datatype;
+        const char *name = RTYPEDDATA_TYPE(obj)->wrap_struct_name;
+        actual = rb_str_new_cstr(name); /* or rb_fstring_cstr? not sure... */
     }
-    return DATA_PTR(obj);
+    else {
+        return DATA_PTR(obj);
+    }
+
+    const char *expected = data_type->wrap_struct_name;
+    rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected %s)",
+             actual, expected);
+    UNREACHABLE_RETURN(NULL);
 }
 
 /* exception classes */

@@ -156,6 +156,26 @@ describe "A method send" do
       -> { m(1, 2, *x) }.should raise_error(TypeError)
     end
   end
+
+  context "with a block argument" do
+    before :all do
+      def m(x)
+        if block_given?
+          [true, yield(x + 'b')]
+        else
+          [false]
+        end
+      end
+    end
+
+    it "that refers to a proc passes the proc as the block" do
+      m('a', &-> y { y + 'c'}).should == [true, 'abc']
+    end
+
+    it "that is nil passes no block" do
+      m('a', &nil).should == [false]
+    end
+  end
 end
 
 describe "An element assignment method send" do

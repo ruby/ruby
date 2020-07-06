@@ -372,7 +372,7 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_send
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '1', success_count: 2, insns: %i[send])
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '1', success_count: 3, insns: %i[send])
     begin;
       print proc { yield_self { 1 } }.call
     end;
@@ -614,7 +614,10 @@ class TestJIT < Test::Unit::TestCase
 
   def test_compile_insn_opt_invokebuiltin_delegate_leave
     skip 'ld SEGVs for this' if RUBY_PLATFORM.start_with?("s390x-")
-    insns = collect_insns(RubyVM::InstructionSequence.of("\x00".method(:unpack)).to_a)
+    iseq = eval(EnvUtil.invoke_ruby(['-e', <<~'EOS'], '', true).first)
+      p RubyVM::InstructionSequence.of("\x00".method(:unpack)).to_a
+    EOS
+    insns = collect_insns(iseq)
     mark_tested_insn(:opt_invokebuiltin_delegate_leave, used_insns: insns)
     assert_eval_with_jit('print "\x00".unpack("c")', stdout: '[0]', success_count: 1)
   end
@@ -918,6 +921,34 @@ class TestJIT < Test::Unit::TestCase
     end;
   end
 
+  def test_heap_promotion_of_ivar_in_the_middle_of_jit
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "true\ntrue\n", success_count: 2, min_calls: 2)
+    begin;
+      class A
+        def initialize
+          @iv0 = nil
+          @iv1 = []
+          @iv2 = nil
+        end
+
+        def test(add)
+          @iv0.nil?
+          @iv2.nil?
+          add_ivar if add
+          @iv1.empty?
+        end
+
+        def add_ivar
+          @iv3 = nil
+        end
+      end
+
+      a = A.new
+      p a.test(false)
+      p a.test(true)
+    end;
+  end
+
   def test_jump_to_precompiled_branch
     assert_eval_with_jit("#{<<~'begin;'}\n#{<<~'end;'}", stdout: ".0", success_count: 1, min_calls: 1)
     begin;
@@ -1005,6 +1036,10 @@ class TestJIT < Test::Unit::TestCase
         p multiply(7.0, 10.0)
       end
     end;
+  end
+
+  def test_builtin_frame_omitted_inlining
+    assert_eval_with_jit('0.zero?; 0.zero?; 3.times { p 0.zero? }', stdout: "true\ntrue\ntrue\n", success_count: 1, min_calls: 2)
   end
 
   def test_program_counter_with_regexpmatch
