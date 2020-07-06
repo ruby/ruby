@@ -62,17 +62,6 @@ static void vm_insns_counter_count_insn(int insn) {}
 #endif
 /* #define DECL_SC_REG(r, reg) VALUE reg_##r */
 
-#if VM_DEBUG_STACKOVERFLOW
-NORETURN(static void vm_stack_overflow_for_insn(void));
-static void
-vm_stack_overflow_for_insn(void)
-{
-    rb_bug("CHECK_VM_STACK_OVERFLOW_FOR_INSN: should not overflow here. "
-	   "Please contact ruby-core/dev with your (a part of) script. "
-	   "This check will be removed soon.");
-}
-#endif
-
 #if !OPT_CALL_THREADED_CODE
 static VALUE
 vm_exec_core(rb_execution_context_t *ec, VALUE initial)
