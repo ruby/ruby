@@ -1300,8 +1300,8 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     private
 
     def already_loaded?(file)
-      default_gem_load_paths.find do |load_path_entry|
-        $LOADED_FEATURES.include?("#{load_path_entry}/#{file}")
+      $LOADED_FEATURES.any? do |feature_path|
+        feature_path.end_with?(file) && default_gem_load_paths.any? {|load_path_entry| feature_path == "#{load_path_entry}/#{file}" }
       end
     end
 
