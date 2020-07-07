@@ -301,12 +301,22 @@ vm_push_frame_debug_counter_inc(
     if (RUBY_VM_END_CONTROL_FRAME(ec) != prev_cfp) {
         const bool curr = VM_FRAME_RUBYFRAME_P(reg_cfp);
         const bool prev = VM_FRAME_RUBYFRAME_P(prev_cfp);
-        const enum rb_debug_counter_type pat[2][2] = {
-            { RB_DEBUG_COUNTER_frame_R2R, RB_DEBUG_COUNTER_frame_R2C, },
-            { RB_DEBUG_COUNTER_frame_C2R, RB_DEBUG_COUNTER_frame_C2C, },
-        };
-        const enum rb_debug_counter_type i = pat[prev][curr];
-        rb_debug_counter[i]++;
+        if (prev) {
+            if (crr) {
+                RB_DEBUG_COUNTER_INC(frame_R2R);
+            }
+            else {
+                RB_DEBUG_COUNTER_INC(frame_R2C);
+            }
+        }
+        else {
+            if (crr) {
+                RB_DEBUG_COUNTER_INC(frame_C2R);
+            }
+            else {
+                RB_DEBUG_COUNTER_INC(frame_C2C);
+            }
+        }
     }
 
     switch (type & VM_FRAME_MAGIC_MASK) {
