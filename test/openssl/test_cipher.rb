@@ -147,13 +147,13 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
 
   def test_AES
     pt = File.read(__FILE__)
-    %w(ECB CBC CFB OFB).each{|mode|
-      c1 = OpenSSL::Cipher.new("AES-256-#{mode}")
+    %w(ecb cbc cfb ofb).each{|mode|
+      c1 = OpenSSL::Cipher.new("aes-256-#{mode}")
       c1.encrypt
       c1.pkcs5_keyivgen("passwd")
       ct = c1.update(pt) + c1.final
 
-      c2 = OpenSSL::Cipher.new("AES-256-#{mode}")
+      c2 = OpenSSL::Cipher.new("aes-256-#{mode}")
       c2.decrypt
       c2.pkcs5_keyivgen("passwd")
       assert_equal(pt, c2.update(ct) + c2.final)
@@ -163,7 +163,7 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
   def test_update_raise_if_key_not_set
     assert_raise(OpenSSL::Cipher::CipherError) do
       # it caused OpenSSL SEGV by uninitialized key [Bug #2768]
-      OpenSSL::Cipher.new("AES-128-ECB").update "." * 17
+      OpenSSL::Cipher.new("aes-128-ecb").update "." * 17
     end
   end
 
