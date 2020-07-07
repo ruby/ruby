@@ -330,4 +330,19 @@ class TestAst < Test::Unit::TestCase
     assert_equal(:+, op)
     assert_equal(:VCALL, value.type)
   end
+
+  def test_args
+    rest = 6
+    node = RubyVM::AbstractSyntaxTree.parse("proc { |a| }")
+    _, args = *node.children.last.children[1].children
+    assert_equal(nil, args.children[rest])
+
+    node = RubyVM::AbstractSyntaxTree.parse("proc { |a,| }")
+    _, args = *node.children.last.children[1].children
+    assert_equal(:NODE_SPECIAL_EXCESSIVE_COMMA, args.children[rest])
+
+    node = RubyVM::AbstractSyntaxTree.parse("proc { |*a| }")
+    _, args = *node.children.last.children[1].children
+    assert_equal(:a, args.children[rest])
+  end
 end
