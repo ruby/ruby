@@ -4199,7 +4199,7 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 
     /* create guard : fill 1 out-of-range */
     bits[BITMAP_INDEX(p)] |= BITMAP_BIT(p)-1;
-    bits[BITMAP_INDEX(p) + sweep_page->total_slots / BITS_BITLENGTH] |= ~((1 << ((NUM_IN_PAGE(p) + sweep_page->total_slots) % BITS_BITLENGTH)) - 1);
+    bits[BITMAP_INDEX(p) + sweep_page->total_slots / BITS_BITLENGTH] |= ~(((bits_t)1 << ((NUM_IN_PAGE(p) + sweep_page->total_slots) % BITS_BITLENGTH)) - 1);
 
     for (i=0; i < HEAP_PAGE_BITMAP_LIMIT; i++) {
 	bitset = ~bits[i];
