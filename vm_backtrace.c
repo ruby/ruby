@@ -1360,6 +1360,14 @@ rb_profile_frames(int start, int limit, VALUE *buff, int *lines)
 
 	    i++;
 	}
+        else {
+	    cme = rb_vm_frame_method_entry(cfp);
+	    if (cme && cme->def->type == VM_METHOD_TYPE_CFUNC) {
+		buff[i] = (VALUE)cme;
+                if (lines) lines[i] = 0;
+                i++;
+            }
+        }
 	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
     }
 
@@ -1399,9 +1407,42 @@ rb_profile_frame_path(VALUE frame)
     return iseq ? rb_iseq_path(iseq) : Qnil;
 }
 
+static const rb_callable_method_entry_t *
+cframe(VALUE frame)
+{
+    if (frame == Qnil) return NULL;
+
+    if (RB_TYPE_P(frame, T_IMEMO)) {
+	switch (imemo_type(frame)) {
+	  case imemo_ment:
+            {
+		const rb_callable_method_entry_t *cme = (rb_callable_method_entry_t *)frame;
+		switch (cme->def->type) {
+		  case VM_METHOD_TYPE_CFUNC:
+		    return cme;
+		  default:
+		    return NULL;
+		}
+            }
+          default:
+            return NULL;
+        }
+    }
+
+    return NULL;
+}
+
 VALUE
 rb_profile_frame_absolute_path(VALUE frame)
 {
+    if (cframe(frame)) {
+        static VALUE cfunc_str = Qfalse;
+        if (!cfunc_str) {
+            cfunc_str = rb_str_new_literal("<cfunc>");
+            rb_gc_register_mark_object(cfunc_str);
+        }
+        return cfunc_str;
+    }
     const rb_iseq_t *iseq = frame2iseq(frame);
     return iseq ? rb_iseq_realpath(iseq) : Qnil;
 }
@@ -1479,15 +1520,18 @@ rb_profile_frame_singleton_method_p(VALUE frame)
 VALUE
 rb_profile_frame_method_name(VALUE frame)
 {
+    const rb_callable_method_entry_t *cme = cframe(frame);
+    if (cme) {
+        ID mid = cme->def->original_id;
+        return id2str(mid);
+    }
     const rb_iseq_t *iseq = frame2iseq(frame);
     return iseq ? rb_iseq_method_name(iseq) : Qnil;
 }
 
-VALUE
-rb_profile_frame_qualified_method_name(VALUE frame)
+static VALUE
+qualified_method_name(VALUE frame, VALUE method_name)
 {
-    VALUE method_name = rb_profile_frame_method_name(frame);
-
     if (method_name != Qnil) {
 	VALUE classpath = rb_profile_frame_classpath(frame);
 	VALUE singleton_p = rb_profile_frame_singleton_method_p(frame);
@@ -1506,8 +1550,23 @@ rb_profile_frame_qualified_method_name(VALUE frame)
 }
 
 VALUE
+rb_profile_frame_qualified_method_name(VALUE frame)
+{
+    VALUE method_name = rb_profile_frame_method_name(frame);
+
+    return qualified_method_name(frame, method_name);
+}
+
+VALUE
 rb_profile_frame_full_label(VALUE frame)
 {
+    const rb_callable_method_entry_t *cme = cframe(frame);
+    if (cme) {
+        ID mid = cme->def->original_id;
+        VALUE method_name = id2str(mid);
+        return qualified_method_name(frame, method_name);
+    }
+
     VALUE label = rb_profile_frame_label(frame);
     VALUE base_label = rb_profile_frame_base_label(frame);
     VALUE qualified_method_name = rb_profile_frame_qualified_method_name(frame);
