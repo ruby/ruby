@@ -617,7 +617,6 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
   def self.load_yaml
     return if @yaml_loaded
-    return unless defined?(gem)
 
     begin
       # Try requiring the gem version *or* stdlib version of psych.
