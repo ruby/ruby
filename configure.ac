@@ -2386,6 +2386,7 @@ AC_ARG_WITH(coroutine,
     [rb_cv_coroutine=$withval])
 AS_CASE([$rb_cv_coroutine], [yes|''], [
     AC_MSG_CHECKING(native coroutine implementation for ${target_cpu}-${target_os})
+    rb_cv_coroutine=
     AS_CASE(["$target_cpu-$target_os"],
         [x*64-darwin*], [
             rb_cv_coroutine=amd64
@@ -2397,7 +2398,7 @@ AS_CASE([$rb_cv_coroutine], [yes|''], [
             AS_CASE(["$ac_cv_sizeof_voidp"],
                 [8], [ rb_cv_coroutine=amd64 ],
                 [4], [ rb_cv_coroutine=x86 ],
-                [*], [ rb_cv_coroutine= ]
+                dnl unknown pointer size, bail out as no Context.h soon.
             )
         ],
         [*86-linux*], [
@@ -2427,20 +2428,22 @@ AS_CASE([$rb_cv_coroutine], [yes|''], [
         [*-openbsd*], [
             rb_cv_coroutine=copy
         ],
-        [*], [
+        [
             rb_cv_coroutine=ucontext
         ]
     )
     AC_MSG_RESULT(${rb_cv_coroutine})
 ])
 COROUTINE_H=coroutine/$rb_cv_coroutine/Context.h
+AS_IF([test ! -f "$srcdir/$COROUTINE_H"],
+      [AC_MSG_ERROR('$rb_cv_coroutine' is not supported as coroutine)])
 AS_CASE([$rb_cv_coroutine],
     [copy|ucontext], [
         COROUTINE_SRC=coroutine/$rb_cv_coroutine/Context.c
     ],
-    [*], [
+    [
         COROUTINE_SRC=coroutine/$rb_cv_coroutine/Context.'$(ASMEXT)'
-    ],
+    ]
 )
 AC_DEFINE_UNQUOTED(COROUTINE_H, ["$COROUTINE_H"])
 AC_SUBST(X_COROUTINE_H, [$COROUTINE_H])
