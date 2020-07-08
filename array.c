@@ -5067,32 +5067,220 @@ rb_ary_clear(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.fill(obj)                                 -> ary
- *     ary.fill(obj, start [, length])               -> ary
- *     ary.fill(obj, range)                          -> ary
- *     ary.fill {|index| block}                      -> ary
- *     ary.fill(start [, length]) {|index| block}    -> ary
- *     ary.fill(range) {|index| block}               -> ary
+ *    array.fill(obj) -> self
+ *    array.fill(obj, start) -> self
+ *    array.fill(obj, start , length) -> self
+ *    array.fill(obj, range) -> self
+ *    array.fill { |index| ... } -> self
+ *    array.fill(start) { |index| ... } -> self
+ *    array.fill(start , length) { |index| ... } -> self
+ *    array.fill(range) { |index| ... } -> self
  *
- *  The first three forms set the selected elements of +self+ (which
- *  may be the entire array) to +obj+.
+ *  Replaces specified elements in +self+ with specified objects; returns +self+.
  *
- *  A +start+ of +nil+ is equivalent to zero.
+ *  - Arguments +start+ and +length+, if given, must be
+ *    {Integer-convertible objects}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
+ *  - Argument +range+, if given, must be a \Range object.
  *
- *  A +length+ of +nil+ is equivalent to the length of the array.
+ *  ---
  *
- *  The last three forms fill the array with the value of the given block,
- *  which is passed the absolute index of each element to be filled.
+ *  With argument +obj+ and no block given, replaces all elements with that one object:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a # => ["a", "b", "c", "d"]
+ *    a1 = a.fill(:X)
+ *    a1 # => [:X, :X, :X, :X]
+ *    a.equal?(a) #  => true # Retrurned self
  *
- *  Negative values of +start+ count from the end of the array, where +-1+ is
- *  the last element.
+ *  ---
  *
- *     a = [ "a", "b", "c", "d" ]
- *     a.fill("x")              #=> ["x", "x", "x", "x"]
- *     a.fill("z", 2, 2)        #=> ["x", "x", "z", "z"]
- *     a.fill("y", 0..1)        #=> ["y", "y", "z", "z"]
- *     a.fill {|i| i*i}         #=> [0, 1, 4, 9]
- *     a.fill(-2) {|i| i*i*i}   #=> [0, 1, 8, 27]
+ *  With arguments +obj+ and +start*, and no block given, replaces elements based on the given start.
+ *
+ *  If +start+ is in range (<tt>0 <= start < ary.size</tt>),
+ *  replaces all elements from offset +start+ through the end:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(:X, 2) # => ["a", "b", :X, :X]
+ *
+ *  If +start+ is too large (<tt>start >= ary.size</tt>), does nothing:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(:X, 4) # => ["a", "b", "c", "d"]
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(:X, 5) # => ["a", "b", "c", "d"]
+ *
+ *  If +start+ is negative, counts from the end (starting index is <tt>start + ary.size</tt>):
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(:X, -2) # => ["a", "b", :X, :X]
+ *
+ *  If +start+ is too small (less than and far from zero), replaces all elements:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(:X, -6) # => [:X, :X, :X, :X]
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(:X, -50) # => [:X, :X, :X, :X]
+ *
+ *  ---
+ *
+ *  With arguments +obj+, +start+, and +length+, and no block given,
+ *  replaces elements based on the given +start+ and +length+.
+ *
+ *  If +start+ is in range, replaces +length+ elements beginning at offset +start+:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(:X, 1, 1) # => ["a", :X, "c", "d"]
+ *
+ *  If +start+ is negative, counts from the end:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(:X, -2, 1) # => ["a", "b", :X, "d"]
+ *
+ *  If +start+ is large (<tt>start >= ary.size</tt>), extends +self+ with +nil+:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(:X, 5, 0) # => ["a", "b", "c", "d", nil]
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(:X, 5, 2) # => ["a", "b", "c", "d", nil, :X, :X]
+ *
+ *  ---
+ *
+ *  If +length+ is zero or negative, replaces no elements:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(:X, 1, 0) # => ["a", "b", "c", "d"]
+ *    a.fill(:X, 1, -1) # => ["a", "b", "c", "d"]
+ *
+ *  ---
+ *
+ *  With arguments +obj+ and +range+, and no block given,
+ *  replaces elements based on the given range.
+ *
+ *  If the range is positive and ascending (<tt>0 < range.begin <= range.end</tt>),
+ *  replaces elements from <tt>range.begin</tt> to <tt>range.end</tt>:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(:X, (1..1)) # => ["a", :X, "c", "d"]
+ *
+ *  If <tt>range.first</tt> is negative, replaces no elements:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(:X, (-1..1)) # => ["a", "b", "c", "d"]
+ *
+ *  If <tt>range.last</tt> is negative, counts from the end:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(:X, (0..-2)) # => [:X, :X, :X, "d"]
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(:X, (1..-2)) # => ["a", :X, :X, "d"]
+ *
+ *  If <tt>range.last</tt> and <tt>range.last</tt> are both negative,
+ *  both count from the end of the array:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(:X, (-1..-1)) # => ["a", "b", "c", :X]
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(:X, (-2..-2)) # => ["a", "b", :X, "d"]
+ *
+ *  ---
+ *
+ *  With no arguments and a block given, calls the block with each index;
+ *  replaces the corresponding element with the block's return value:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill { |index| "new_#{index}" } # => ["new_0", "new_1", "new_2", "new_3"]
+ *
+ *  ---
+ *
+ *  With argument +start+ and a block given, calls the block with each index
+ *  from offset +start+ to the end; replaces the corresponding element
+ *  with the block's return value:
+ *
+ *  If start is in range (<tt>0 <= start < ary.size</tt>),
+ *  replaces from offset +start+ to the end:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(1) { |index| "new_#{index}" } # => ["a", "new_1", "new_2", "new_3"]
+ *
+ *  If +start+ is too large(<tt>start >= ary.size</tt>), does nothing:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(4) { |index| fail 'Cannot happen' } # => ["a", "b", "c", "d"]
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(4) { |index| fail 'Cannot happen' } # => ["a", "b", "c", "d"]
+ *
+ *  If +start+ is negative, counts from the end:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(-2) { |index| "new_#{index}" } # => ["a", "b", "new_2", "new_3"]
+ *
+ *  If start is too small (<tt>start <= -ary.size</tt>, replaces all elements:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(-6) { |index| "new_#{index}" } # => ["new_0", "new_1", "new_2", "new_3"]
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(-50) { |index| "new_#{index}" } # => ["new_0", "new_1", "new_2", "new_3"]
+ *
+ *  ---
+ *
+ *  With arguments +start+ and +length+, and a block given,
+ *  calls the block for each index specified by start length;
+ *  replaces the corresponding element with the block's return value.
+ *
+ *  If +start+ is in range, replaces +length+ elements beginning at offset +start+:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(1, 1) { |index| "new_#{index}" } # => ["a", "new_1", "c", "d"]
+ *
+ *  If start is negative, counts from the end:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(-2, 1) { |index| "new_#{index}" } # => ["a", "b", "new_2", "d"]
+ *
+ *  If +start+ is large(<tt>start >= ary.size</tt>), extends +self+ with +nil+:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(5, 0) { |index| "new_#{index}" } # => ["a", "b", "c", "d", nil]
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(5, 2) { |index| "new_#{index}" } # => ["a", "b", "c", "d", nil, "new_5", "new_6"]
+ *
+ *  If +length+ is zero or less, replaces no elements:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(1, 0) { |index| "new_#{index}" } # => ["a", "b", "c", "d"]
+ *   a.fill(1, -1) { |index| "new_#{index}" } # => ["a", "b", "c", "d"]
+ *
+ *  ---
+ *
+ *  With arguments +obj+ and +range+, and a block given,
+ *  calls the block with each index in the given range;
+ *  replaces the corresponding element with the block's return value.
+ *
+ *  If the range is positive and ascending (<tt>range 0 < range.begin <= range.end</tt>,
+ *  replaces elements from <tt>range.begin</tt> to <tt>range.end</tt>:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(1..1) { |index| "new_#{index}" } # => ["a", "new_1", "c", "d"]
+ *
+ *  If +range.first+ is negative, does nothing:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(-1..1) { |index| fail 'Cannot happen' } # => ["a", "b", "c", "d"]
+ *
+ *  If <tt>range.last</tt> is negative, counts from the end:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(0..-2) { |index| "new_#{index}" } # => ["new_0", "new_1", "new_2", "d"]
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(1..-2) { |index| "new_#{index}" } # => ["a", "new_1", "new_2", "d"]
+ *
+ *  If <tt>range.first</tt> and <tt>range.last</tt> are both negative,
+ *  both count from the end:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(-1..-1) { |index| "new_#{index}" } # => ["a", "b", "c", "new_3"]
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(-2..-2) { |index| "new_#{index}" } # => ["a", "b", "new_2", "d"]
+ *
+ *  ---
+ *
+ *  Raises an exception if no block is given and the second argument is not a Range
+ *  or an Integer-convertible object,
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    [].fill(:X, :x)
+ *
+ *  Raises an exception if no is block given, three arguments are given,
+ *  amd the second or third argument not an Integer-convertible object:
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    [].fill(:X, :x, 1)
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    [].fill(:X, 1, :x)
+ *
+ *  Raises an exception if a block is given, one argument is given,
+ *  and that argument is not a \Range or an Integer-convertible object:
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    [].fill(:x) { }
+ *
+ *  Raises an exception if a block is given, two arguments are given,
+ *  and either argument is not an Integer-convertible object:
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    [].fill(:x, 1) { }
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    [].fill(1, :x) { }
  */
 
 static VALUE
