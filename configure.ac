@@ -638,7 +638,7 @@ AS_IF([test "$GCC" = yes], [
 
     # -fstack-protector
     AS_CASE(["$target_os"],
-    [mingw*], [
+    [haiku*|mingw*], [
 	stack_protector=no
     ])
     AS_IF([test -z "${stack_protector+set}"], [
@@ -2425,6 +2425,9 @@ AS_CASE([$rb_cv_coroutine], [yes|''], [
             rb_cv_coroutine=x86
         ],
         [*-openbsd*], [
+            rb_cv_coroutine=copy
+        ],
+        [*-haiku*], [
             rb_cv_coroutine=copy
         ],
         [*], [

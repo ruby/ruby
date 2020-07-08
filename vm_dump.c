@@ -28,6 +28,10 @@
 # undef LIST_HEAD
 #endif
 
+#ifdef __HAIKU__
+# include <kernel/image.h>
+#endif
+
 #include "addr2line.h"
 #include "gc.h"
 #include "internal.h"
@@ -1081,6 +1085,14 @@ rb_vm_bugreport(const void *ctx)
             addr += size;
             size = 0;
         }
+#endif
+#ifdef __HAIKU__
+	int32_t cookie = 0;
+	image_info ii;
+
+	while (get_next_image_info(0, &cookie, &ii) == B_OK) {
+		fprintf(stderr, "%lx-%lx %s\n", ii.text, ((char *)ii.text) + ii.text_size, ii.name);
+	}
 #endif
     }
 }
