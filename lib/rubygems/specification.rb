@@ -1006,7 +1006,6 @@ class Gem::Specification < Gem::BasicSpecification
   # Return currently unresolved specs that contain the file matching +path+.
 
   def self.find_in_unresolved(path)
-    # TODO: do we need these?? Kill it
     specs = unresolved_deps.values.map {|dep| dep.to_specs }.flatten
 
     specs.find_all {|spec| spec.contains_requirable_file? path }
