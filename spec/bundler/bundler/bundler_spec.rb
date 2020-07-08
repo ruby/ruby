@@ -21,30 +21,6 @@ RSpec.describe Bundler do
       it "catches YAML syntax errors" do
         expect { subject }.to raise_error(Bundler::GemspecError, /error while loading `test.gemspec`/)
       end
-
-      context "on Rubies with a settable YAML engine", :if => defined?(YAML::ENGINE) do
-        context "with Syck as YAML::Engine" do
-          it "raises a GemspecError after YAML load throws ArgumentError" do
-            orig_yamler = YAML::ENGINE.yamler
-            YAML::ENGINE.yamler = "syck"
-
-            expect { subject }.to raise_error(Bundler::GemspecError)
-
-            YAML::ENGINE.yamler = orig_yamler
-          end
-        end
-
-        context "with Psych as YAML::Engine" do
-          it "raises a GemspecError after YAML load throws Psych::SyntaxError" do
-            orig_yamler = YAML::ENGINE.yamler
-            YAML::ENGINE.yamler = "psych"
-
-            expect { subject }.to raise_error(Bundler::GemspecError)
-
-            YAML::ENGINE.yamler = orig_yamler
-          end
-        end
-      end
     end
 
     context "with correct YAML file", :if => defined?(Encoding) do
