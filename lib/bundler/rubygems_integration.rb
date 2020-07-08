@@ -119,7 +119,7 @@ module Bundler
       Bundler.ui.error "#{e.class}: #{e.message}"
       Bundler.ui.trace e
       raise
-    rescue YamlLibrarySyntaxError => e
+    rescue ::Psych::SyntaxError => e
       raise YamlSyntaxError.new(e, "Your RubyGems configuration, which is " \
         "usually located in ~/.gemrc, contains invalid YAML syntax.")
     end

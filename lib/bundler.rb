@@ -647,10 +647,8 @@ EOF
     def eval_yaml_gemspec(path, contents)
       require_relative "bundler/psyched_yaml"
 
-      # If the YAML is invalid, Syck raises an ArgumentError, and Psych
-      # raises a Psych::SyntaxError. See psyched_yaml.rb for more info.
       Gem::Specification.from_yaml(contents)
-    rescue YamlLibrarySyntaxError, ArgumentError, Gem::EndOfYAMLException, Gem::Exception
+    rescue ::Psych::SyntaxError, ArgumentError, Gem::EndOfYAMLException, Gem::Exception
       eval_gemspec(path, contents)
     end
 
