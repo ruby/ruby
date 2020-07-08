@@ -4443,7 +4443,9 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 	}
     }
 
-    gc_setup_mark_bits(sweep_page);
+    if (!objspace->flags.during_compacting) {
+        gc_setup_mark_bits(sweep_page);
+    }
 
 #if GC_PROFILE_MORE_DETAIL
     if (gc_prof_enabled(objspace)) {
@@ -7900,7 +7902,7 @@ gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
 }
 
 static VALUE
-gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, struct RMoved * moved_list)
+gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free)
 {
     int marked;
     int wb_unprotected;
@@ -7919,8 +7921,6 @@ gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, struct RMoved * moved_l
     wb_unprotected = RVALUE_WB_UNPROTECTED((VALUE)src);
     uncollectible = RVALUE_UNCOLLECTIBLE((VALUE)src);
     marking = RVALUE_MARKING((VALUE)src);
-
-    objspace->total_allocated_objects++;
 
     /* Clear bits for eventual T_MOVED */
     CLEAR_IN_BITMAP(GET_HEAP_MARK_BITS((VALUE)src), (VALUE)src);
@@ -7975,10 +7975,12 @@ gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, struct RMoved * moved_l
         CLEAR_IN_BITMAP(GET_HEAP_UNCOLLECTIBLE_BITS((VALUE)dest), (VALUE)dest);
     }
 
+    GET_HEAP_PAGE(dest)->free_slots--;
+
     /* Assign forwarding address */
     src->as.moved.flags = T_MOVED;
     src->as.moved.destination = (VALUE)dest;
-    list_add(&moved_list->as.head, &src->as.moved.as.node);
+    gc_pin(objspace, (VALUE)src);
     GC_ASSERT(BUILTIN_TYPE((VALUE)dest) != T_NONE);
 
     return (VALUE)src;
@@ -8109,7 +8111,7 @@ allocate_page_list(rb_objspace_t *objspace, page_compare_func_t *comparator)
 }
 
 static void
-gc_compact_heap(rb_objspace_t *objspace, page_compare_func_t *comparator, struct RMoved * moved_list)
+gc_compact_heap(rb_objspace_t *objspace, page_compare_func_t *comparator)
 {
     struct heap_cursor free_cursor;
     struct heap_cursor scan_cursor;
@@ -8175,7 +8177,7 @@ gc_compact_heap(rb_objspace_t *objspace, page_compare_func_t *comparator, struct
             GC_ASSERT(BUILTIN_TYPE((VALUE)scan_cursor.slot) != T_NONE);
             GC_ASSERT(BUILTIN_TYPE((VALUE)scan_cursor.slot) != T_MOVED);
 
-            gc_move(objspace, (VALUE)scan_cursor.slot, (VALUE)free_cursor.slot, moved_list);
+            gc_move(objspace, (VALUE)scan_cursor.slot, (VALUE)free_cursor.slot);
 
             GC_ASSERT(BUILTIN_TYPE((VALUE)free_cursor.slot) != T_MOVED);
             GC_ASSERT(BUILTIN_TYPE((VALUE)free_cursor.slot) != T_NONE);
@@ -8910,27 +8912,39 @@ gc_check_references_for_moved(rb_objspace_t *objspace)
 }
 
 static void
-gc_unlink_moved_list(rb_objspace_t *objspace, struct RMoved * moved_list_head)
+sweep_moved(rb_objspace_t *objspace, struct heap_page *sweep_page)
 {
-    /* For each moved slot */
-    struct RMoved * obj = NULL, *next;
-    list_for_each_safe(&RMOVED(moved_list_head)->as.head, obj, next, as.node) {
-        if (obj != moved_list_head) {
-            struct heap_page *page;
+    int i;
+    bits_t *mark_bits, *pin_bits;
+    bits_t bitset;
+    RVALUE *p, *offset;
 
-            page = GET_HEAP_PAGE((VALUE)obj);
+    mark_bits = sweep_page->mark_bits;
+    pin_bits = sweep_page->pinned_bits;
 
-            /* clear the memory for that moved slot */
-            memset(obj, 0, sizeof(VALUE));
-            page->free_slots++;
-            heap_page_add_freeobj(objspace, page, (VALUE)obj);
+    p = sweep_page->start;
+    offset = p - NUM_IN_PAGE(p);
 
-            if (page->free_slots == page->total_slots && heap_pages_freeable_pages > 0) {
-                heap_pages_freeable_pages--;
-                heap_unlink_page(objspace, heap_eden, page);
-                heap_add_page(objspace, heap_tomb, page);
-            }
-            objspace->profile.total_freed_objects++;
+    for (i=0; i < HEAP_PAGE_BITMAP_LIMIT; i++) {
+        /* Moved objects are pinned but never marked. We reuse the pin bits
+         * to indicate there is a moved object in this slot. */
+        bitset = pin_bits[i] & ~mark_bits[i];
+
+        if (bitset) {
+	    p = offset + i * BITS_BITLENGTH;
+            do {
+                if (bitset & 1) {
+                    VALUE vp = (VALUE)p;
+                    GC_ASSERT(MARKED_IN_BITMAP(GET_HEAP_PINNED_BITS(vp), vp));
+                    GC_ASSERT(!MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(vp), vp));
+                    GC_ASSERT(BUILTIN_TYPE(vp) == T_MOVED);
+                    memset(p, 0, sizeof(VALUE));
+                    sweep_page->free_slots++;
+                    heap_page_add_freeobj(objspace, sweep_page, (VALUE)vp);
+                }
+                p++;
+                bitset >>= 1;
+            } while (bitset);
         }
     }
 }
@@ -8953,16 +8967,13 @@ gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_doubl
         heap_add_pages(objspace, heap_eden, heap_allocated_pages);
     }
 
-    struct RMoved moved_list_head;
-    list_head_init(&moved_list_head.as.head);
-
     VALUE disabled = rb_objspace_gc_disable(objspace);
 
     if (use_toward_empty) {
-        gc_compact_heap(objspace, compare_free_slots, &moved_list_head);
+        gc_compact_heap(objspace, compare_free_slots);
     }
     else {
-        gc_compact_heap(objspace, compare_pinned, &moved_list_head);
+        gc_compact_heap(objspace, compare_pinned);
     }
     heap_eden->freelist = NULL;
 
@@ -8973,21 +8984,29 @@ gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_doubl
         gc_check_references_for_moved(objspace);
     }
 
-    rb_clear_constant_cache();
     heap_eden->free_pages = NULL;
     heap_eden->using_page = NULL;
-
-    gc_unlink_moved_list(objspace, &moved_list_head);
 
     /* Add any eden pages with free slots back to the free pages list */
     struct heap_page *page = NULL;
     list_for_each(&heap_eden->pages, page, page_node) {
-        if (page->free_slots > 0) {
-            heap_add_freepage(heap_eden, page);
+        sweep_moved(objspace, page);
+        gc_setup_mark_bits(page);
+
+        if (page->free_slots == page->total_slots && heap_pages_freeable_pages > 0) {
+            heap_pages_freeable_pages--;
+            heap_unlink_page(objspace, heap_eden, page);
+            heap_add_page(objspace, heap_tomb, page);
         } else {
-            page->free_next = NULL;
+            if (page->free_slots > 0) {
+                heap_add_freepage(heap_eden, page);
+            } else {
+                page->free_next = NULL;
+            }
         }
     }
+
+    rb_clear_constant_cache();
 
     /* Set up "using_page" if we have any pages with free slots */
     if (heap_eden->free_pages) {
