@@ -17,7 +17,7 @@ static VALUE rb_cNode;
 
 struct ASTNodeData {
     rb_ast_t *ast;
-    NODE *node;
+    const NODE *node;
 };
 
 static void
@@ -44,7 +44,7 @@ static const rb_data_type_t rb_node_type = {
 static VALUE rb_ast_node_alloc(VALUE klass);
 
 static void
-setup_node(VALUE obj, rb_ast_t *ast, NODE *node)
+setup_node(VALUE obj, rb_ast_t *ast, const NODE *node)
 {
     struct ASTNodeData *data;
 
@@ -54,7 +54,7 @@ setup_node(VALUE obj, rb_ast_t *ast, NODE *node)
 }
 
 static VALUE
-ast_new_internal(rb_ast_t *ast, NODE *node)
+ast_new_internal(rb_ast_t *ast, const NODE *node)
 {
     VALUE obj;
 
@@ -145,7 +145,7 @@ rb_ast_parse_array(VALUE array)
     return ast_parse_done(ast);
 }
 
-static VALUE node_children(rb_ast_t*, NODE*);
+static VALUE node_children(rb_ast_t*, const NODE*);
 
 static VALUE
 node_find(VALUE self, const int node_id)
@@ -268,7 +268,7 @@ rb_ary_new_from_node_args(rb_ast_t *ast, long n, ...)
 }
 
 static VALUE
-dump_block(rb_ast_t *ast, NODE *node)
+dump_block(rb_ast_t *ast, const NODE *node)
 {
     VALUE ary = rb_ary_new();
     do {
@@ -284,7 +284,7 @@ dump_block(rb_ast_t *ast, NODE *node)
 }
 
 static VALUE
-dump_array(rb_ast_t *ast, NODE *node)
+dump_array(rb_ast_t *ast, const NODE *node)
 {
     VALUE ary = rb_ary_new();
     rb_ary_push(ary, NEW_CHILD(ast, node->nd_head));
@@ -307,7 +307,7 @@ var_name(ID id)
 }
 
 static VALUE
-node_children(rb_ast_t *ast, NODE *node)
+node_children(rb_ast_t *ast, const NODE *node)
 {
     char name[DECIMAL_SIZE_OF_BITS(sizeof(long) * CHAR_BIT) + 2]; /* including '$' */
 
