@@ -289,8 +289,6 @@ class Gem::TestCase < Minitest::Test
   # or <tt>i686-darwin8.10.1</tt> otherwise.
 
   def setup
-    super
-
     @orig_env = ENV.to_hash
     @tmp = File.expand_path("tmp")
 
