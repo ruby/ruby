@@ -307,6 +307,20 @@ var_name(ID id)
 }
 
 static VALUE
+no_name_rest(void)
+{
+    ID rest;
+    CONST_ID(rest, "NODE_SPECIAL_NO_NAME_REST");
+    return ID2SYM(rest);
+}
+
+static VALUE
+rest_arg(rb_ast_t *ast, const NODE *rest_arg)
+{
+    return NODE_NAMED_REST_P(rest_arg) ? NEW_CHILD(ast, rest_arg) : no_name_rest();
+}
+
+static VALUE
 node_children(rb_ast_t *ast, const NODE *node)
 {
     char name[DECIMAL_SIZE_OF_BITS(sizeof(long) * CHAR_BIT) + 2]; /* including '$' */
@@ -375,7 +389,7 @@ node_children(rb_ast_t *ast, const NODE *node)
         else {
             return rb_ary_new_from_args(3, NEW_CHILD(ast, node->nd_value),
                                         NEW_CHILD(ast, node->nd_head),
-                                        ID2SYM(rb_intern("NODE_SPECIAL_NO_NAME_REST")));
+                                        no_name_rest());
         }
       case NODE_LASGN:
       case NODE_DASGN:
@@ -535,7 +549,7 @@ node_children(rb_ast_t *ast, const NODE *node)
         if (NODE_NAMED_REST_P(node->nd_1st)) {
             return rb_ary_new_from_node_args(ast, 2, node->nd_1st, node->nd_2nd);
         }
-        return rb_ary_new_from_args(2, ID2SYM(rb_intern("NODE_SPECIAL_NO_NAME_REST")),
+        return rb_ary_new_from_args(2, no_name_rest(),
                                     NEW_CHILD(ast, node->nd_2nd));
       case NODE_ARGS:
         {
@@ -567,8 +581,7 @@ node_children(rb_ast_t *ast, const NODE *node)
       case NODE_ARYPTN:
         {
             struct rb_ary_pattern_info *apinfo = node->nd_apinfo;
-            VALUE rest = NODE_NAMED_REST_P(apinfo->rest_arg) ? NEW_CHILD(ast, apinfo->rest_arg) :
-                                                               ID2SYM(rb_intern("NODE_SPECIAL_NO_NAME_REST"));
+            VALUE rest = rest_arg(ast, apinfo->rest_arg);
             return rb_ary_new_from_args(4,
                                         NEW_CHILD(ast, node->nd_pconst),
                                         NEW_CHILD(ast, apinfo->pre_args),
@@ -578,10 +591,8 @@ node_children(rb_ast_t *ast, const NODE *node)
       case NODE_FNDPTN:
         {
             struct rb_fnd_pattern_info *fpinfo = node->nd_fpinfo;
-            VALUE pre_rest = NODE_NAMED_REST_P(fpinfo->pre_rest_arg) ? NEW_CHILD(ast, fpinfo->pre_rest_arg) :
-                                                                       ID2SYM(rb_intern("NODE_SPECIAL_NO_NAME_REST"));
-            VALUE post_rest = NODE_NAMED_REST_P(fpinfo->post_rest_arg) ? NEW_CHILD(ast, fpinfo->post_rest_arg) :
-                                                                         ID2SYM(rb_intern("NODE_SPECIAL_NO_NAME_REST"));
+            VALUE pre_rest = rest_arg(ast, fpinfo->pre_rest_arg);
+            VALUE post_rest = rest_arg(ast, fpinfo->post_rest_arg);
             return rb_ary_new_from_args(4,
                                         NEW_CHILD(ast, node->nd_pconst),
                                         pre_rest,
