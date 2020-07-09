@@ -185,6 +185,7 @@ module GC
   # make a SEGV.
   def self.verify_compaction_references(toward: nil, double_heap: false)
     Primitive.gc_start_internal true, true, true, true
+    Primitive.gc_check_references_for_moved
     Primitive.gc_compact_stats
   end
 end

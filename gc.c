@@ -8117,70 +8117,6 @@ gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free)
     return (VALUE)src;
 }
 
-struct heap_cursor {
-    RVALUE *slot;
-    size_t index;
-    struct heap_page *page;
-    rb_objspace_t * objspace;
-};
-
-static void
-advance_cursor(struct heap_cursor *free, struct heap_page **page_list)
-{
-    if (free->slot == free->page->start + free->page->total_slots - 1) {
-        free->index++;
-        free->page = page_list[free->index];
-        free->slot = free->page->start;
-    }
-    else {
-        free->slot++;
-    }
-}
-
-static void
-retreat_cursor(struct heap_cursor *scan, struct heap_page **page_list)
-{
-    if (scan->slot == scan->page->start) {
-        scan->index--;
-        scan->page = page_list[scan->index];
-        scan->slot = scan->page->start + scan->page->total_slots - 1;
-    }
-    else {
-        scan->slot--;
-    }
-}
-
-static int
-not_met(struct heap_cursor *free, struct heap_cursor *scan)
-{
-    if (free->index < scan->index)
-        return 1;
-
-    if (free->index > scan->index)
-        return 0;
-
-    return free->slot < scan->slot;
-}
-
-static void
-init_cursors(rb_objspace_t *objspace, struct heap_cursor *free, struct heap_cursor *scan, struct heap_page **page_list)
-{
-    struct heap_page *page;
-    size_t total_pages = heap_eden->total_pages;
-    page = page_list[0];
-
-    free->index = 0;
-    free->page = page;
-    free->slot = page->start;
-    free->objspace = objspace;
-
-    page = page_list[total_pages - 1];
-    scan->index = total_pages - 1;
-    scan->page = page;
-    scan->slot = page->start + page->total_slots - 1;
-    scan->objspace = objspace;
-}
-
 static int
 count_pinned(struct heap_page *page)
 {
@@ -8216,110 +8152,6 @@ compare_free_slots(const void *left, const void *right, void *dummy)
     right_page = *(struct heap_page * const *)right;
 
     return right_page->free_slots - left_page->free_slots;
-}
-
-typedef int page_compare_func_t(const void *, const void *, void *);
-
-static struct heap_page **
-allocate_page_list(rb_objspace_t *objspace, page_compare_func_t *comparator)
-{
-    size_t total_pages = heap_eden->total_pages;
-    size_t size = size_mul_or_raise(total_pages, sizeof(struct heap_page *), rb_eRuntimeError);
-    struct heap_page *page = 0, **page_list = malloc(size);
-    int i = 0;
-
-    list_for_each(&heap_eden->pages, page, page_node) {
-        page_list[i++] = page;
-        page->pinned_slots = count_pinned(page);
-        GC_ASSERT(page != NULL);
-    }
-    GC_ASSERT(total_pages > 0);
-    GC_ASSERT((size_t)i == total_pages);
-
-    ruby_qsort(page_list, total_pages, sizeof(struct heap_page *), comparator, NULL);
-
-    return page_list;
-}
-
-static void
-gc_compact_heap(rb_objspace_t *objspace, page_compare_func_t *comparator)
-{
-    struct heap_cursor free_cursor;
-    struct heap_cursor scan_cursor;
-    struct heap_page **page_list;
-
-    memset(objspace->rcompactor.considered_count_table, 0, T_MASK * sizeof(size_t));
-    memset(objspace->rcompactor.moved_count_table, 0, T_MASK * sizeof(size_t));
-
-    page_list = allocate_page_list(objspace, comparator);
-
-    init_cursors(objspace, &free_cursor, &scan_cursor, page_list);
-
-    /* Two finger algorithm */
-    while (not_met(&free_cursor, &scan_cursor)) {
-        /* Free cursor movement */
-
-        /* Unpoison free_cursor slot */
-        void *free_slot_poison = asan_poisoned_object_p((VALUE)free_cursor.slot);
-        asan_unpoison_object((VALUE)free_cursor.slot, false);
-
-        while (BUILTIN_TYPE((VALUE)free_cursor.slot) != T_NONE && not_met(&free_cursor, &scan_cursor)) {
-            /* Re-poison slot if it's not the one we want */
-            if (free_slot_poison) {
-                GC_ASSERT(BUILTIN_TYPE((VALUE)free_cursor.slot) == T_NONE);
-                asan_poison_object((VALUE)free_cursor.slot);
-            }
-
-            advance_cursor(&free_cursor, page_list);
-
-            /* Unpoison free_cursor slot */
-            free_slot_poison = asan_poisoned_object_p((VALUE)free_cursor.slot);
-            asan_unpoison_object((VALUE)free_cursor.slot, false);
-        }
-
-        /* Unpoison scan_cursor slot */
-        void *scan_slot_poison = asan_poisoned_object_p((VALUE)scan_cursor.slot);
-        asan_unpoison_object((VALUE)scan_cursor.slot, false);
-
-        /* Scan cursor movement */
-        objspace->rcompactor.considered_count_table[BUILTIN_TYPE((VALUE)scan_cursor.slot)]++;
-
-        while (!gc_is_moveable_obj(objspace, (VALUE)scan_cursor.slot) && not_met(&free_cursor, &scan_cursor)) {
-
-            /* Re-poison slot if it's not the one we want */
-            if (scan_slot_poison) {
-                GC_ASSERT(BUILTIN_TYPE((VALUE)scan_cursor.slot) == T_NONE);
-                asan_poison_object((VALUE)scan_cursor.slot);
-            }
-
-            retreat_cursor(&scan_cursor, page_list);
-
-            /* Unpoison scan_cursor slot */
-            scan_slot_poison = asan_poisoned_object_p((VALUE)scan_cursor.slot);
-            asan_unpoison_object((VALUE)scan_cursor.slot, false);
-
-            objspace->rcompactor.considered_count_table[BUILTIN_TYPE((VALUE)scan_cursor.slot)]++;
-        }
-
-        if (not_met(&free_cursor, &scan_cursor)) {
-            objspace->rcompactor.moved_count_table[BUILTIN_TYPE((VALUE)scan_cursor.slot)]++;
-
-            GC_ASSERT(BUILTIN_TYPE((VALUE)free_cursor.slot) == T_NONE);
-            GC_ASSERT(BUILTIN_TYPE((VALUE)scan_cursor.slot) != T_NONE);
-            GC_ASSERT(BUILTIN_TYPE((VALUE)scan_cursor.slot) != T_MOVED);
-
-            gc_move(objspace, (VALUE)scan_cursor.slot, (VALUE)free_cursor.slot);
-            free_cursor.page->free_slots--;
-
-            GC_ASSERT(BUILTIN_TYPE((VALUE)free_cursor.slot) != T_MOVED);
-            GC_ASSERT(BUILTIN_TYPE((VALUE)free_cursor.slot) != T_NONE);
-            GC_ASSERT(BUILTIN_TYPE((VALUE)scan_cursor.slot) == T_MOVED);
-
-            advance_cursor(&free_cursor, page_list);
-            retreat_cursor(&scan_cursor, page_list);
-        }
-    }
-    free(page_list);
 }
 
 static void
@@ -8961,24 +8793,6 @@ gc_compact_stats(rb_execution_context_t *ec, VALUE self)
     return h;
 }
 
-static void gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_double_pages, int use_verifier);
-
-static void
-gc_compact(rb_objspace_t *objspace, int use_toward_empty, int use_double_pages, int use_verifier)
-{
-
-    objspace->flags.during_compacting = TRUE;
-    {
-        mjit_gc_start_hook();
-        /* pin objects referenced by maybe pointers */
-        garbage_collect(objspace, GPR_DEFAULT_REASON);
-        /* compact */
-        gc_compact_after_gc(objspace, use_toward_empty, use_double_pages, use_verifier);
-        mjit_gc_exit_hook();
-    }
-    objspace->flags.during_compacting = FALSE;
-}
-
 static void
 root_obj_check_moved_i(const char *category, VALUE obj, void *data)
 {
@@ -9027,121 +8841,12 @@ heap_check_moved_i(void *vstart, void *vend, size_t stride, void *data)
 }
 
 static VALUE
-gc_check_references_for_moved(rb_objspace_t *objspace)
+gc_check_references_for_moved(rb_execution_context_t *ec, VALUE self)
 {
+    rb_objspace_t *objspace = &rb_objspace;
     objspace_reachable_objects_from_root(objspace, root_obj_check_moved_i, NULL);
     objspace_each_objects(objspace, heap_check_moved_i, NULL);
     return Qnil;
-}
-
-static void
-sweep_moved(rb_objspace_t *objspace, struct heap_page *sweep_page)
-{
-    int i;
-    bits_t *mark_bits, *pin_bits;
-    bits_t bitset;
-    RVALUE *p, *offset;
-
-    mark_bits = sweep_page->mark_bits;
-    pin_bits = sweep_page->pinned_bits;
-
-    p = sweep_page->start;
-    offset = p - NUM_IN_PAGE(p);
-
-    for (i=0; i < HEAP_PAGE_BITMAP_LIMIT; i++) {
-        /* Moved objects are pinned but never marked. We reuse the pin bits
-         * to indicate there is a moved object in this slot. */
-        bitset = pin_bits[i] & ~mark_bits[i];
-
-        if (bitset) {
-	    p = offset + i * BITS_BITLENGTH;
-            do {
-                if (bitset & 1) {
-                    VALUE vp = (VALUE)p;
-                    GC_ASSERT(MARKED_IN_BITMAP(GET_HEAP_PINNED_BITS(vp), vp));
-                    GC_ASSERT(!MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(vp), vp));
-                    GC_ASSERT(BUILTIN_TYPE(vp) == T_MOVED);
-                    memset(p, 0, sizeof(VALUE));
-                    sweep_page->free_slots++;
-                    heap_page_add_freeobj(objspace, sweep_page, (VALUE)vp);
-                }
-                p++;
-                bitset >>= 1;
-            } while (bitset);
-        }
-    }
-}
-
-static void
-gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_double_pages, int use_verifier)
-{
-    if (0) fprintf(stderr, "gc_compact_after_gc: %d,%d,%d\n", use_toward_empty, use_double_pages, use_verifier);
-
-    mjit_gc_start_hook(); // prevent MJIT from running while moving pointers related to ISeq
-
-    objspace->profile.compact_count++;
-
-    if (use_verifier) {
-        gc_verify_internal_consistency(objspace);
-    }
-
-    if (use_double_pages) {
-        /* Double heap size */
-        heap_add_pages(objspace, heap_eden, heap_allocated_pages);
-    }
-
-    VALUE disabled = rb_objspace_gc_disable(objspace);
-
-    if (use_toward_empty) {
-        gc_compact_heap(objspace, compare_free_slots);
-    }
-    else {
-        gc_compact_heap(objspace, compare_pinned);
-    }
-    heap_eden->freelist = NULL;
-
-    gc_update_references(objspace);
-    if (!RTEST(disabled)) rb_objspace_gc_enable(objspace);
-
-    if (use_verifier) {
-        gc_check_references_for_moved(objspace);
-    }
-
-    heap_eden->free_pages = NULL;
-    heap_eden->using_page = NULL;
-
-    /* Add any eden pages with free slots back to the free pages list */
-    struct heap_page *page = NULL;
-    list_for_each(&heap_eden->pages, page, page_node) {
-        sweep_moved(objspace, page);
-        gc_setup_mark_bits(page);
-
-        if (page->free_slots == page->total_slots && heap_pages_freeable_pages > 0) {
-            heap_pages_freeable_pages--;
-            heap_unlink_page(objspace, heap_eden, page);
-            heap_add_page(objspace, heap_tomb, page);
-        } else {
-            if (page->free_slots > 0) {
-                heap_add_freepage(heap_eden, page);
-            } else {
-                page->free_next = NULL;
-            }
-        }
-    }
-
-    rb_clear_constant_cache();
-
-    /* Set up "using_page" if we have any pages with free slots */
-    if (heap_eden->free_pages) {
-        heap_eden->using_page = heap_eden->free_pages;
-        heap_eden->free_pages = heap_eden->free_pages->free_next;
-    }
-
-    if (use_verifier) {
-        gc_verify_internal_consistency(objspace);
-    }
-
-    mjit_gc_exit_hook(); // unlock MJIT here, because `rb_gc()` calls `mjit_gc_start_hook()` again.
 }
 
 VALUE
