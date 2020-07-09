@@ -70,11 +70,17 @@ switch (insn) {
       RB_BUILTIN bf = (RB_BUILTIN)operands[0];
       rb_num_t index = (rb_num_t)operands[0];
       fprintf(f, "{\n");
-      fprintf(f, "    VALUE val;\n");
-      fprintf(f, "    RB_BUILTIN bf = (RB_BUILTIN)0x%"PRIxVALUE";\n", operands[0]);
-      fprintf(f, "    rb_num_t index = (rb_num_t)0x%"PRIxVALUE";\n", operands[1]);
-      fprintf(f, <%= rstring2cstr(insn.expr.expr.lines.find { |l| l =~ / vm_invoke_builtin_delegate\(/ }).gsub("\n", '\n') %>);
-      fprintf(f, "    stack[0] = val;\n");
+      if (bf->argc == 0) {
+          fprintf(f, "    rb_insn_func_t f = (rb_insn_func_t)%p;\n", bf->func_ptr);
+          fprintf(f, "    stack[0] = builtin_invoker0(ec, GET_SELF(), NULL, f);\n");
+      }
+      else {
+          fprintf(f, "    RB_BUILTIN bf = (RB_BUILTIN)0x%"PRIxVALUE";\n", operands[0]);
+          fprintf(f, "    rb_num_t index = (rb_num_t)0x%"PRIxVALUE";\n", operands[1]);
+          fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
+          fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + index;\n");
+          fprintf(f, "    stack[0] = invoke_bf(ec, GET_CFP(), bf, argv);\n");
+      }
       fprintf(f, "}\n");
 %     else
       if (b->stack_size != 1) {
