@@ -3,38 +3,6 @@
 VALUE mFiddle;
 VALUE rb_eFiddleError;
 
-#ifndef TYPE_SSIZE_T
-# if SIZEOF_SIZE_T == SIZEOF_INT
-#   define TYPE_SSIZE_T TYPE_INT
-# elif SIZEOF_SIZE_T == SIZEOF_LONG
-#   define TYPE_SSIZE_T TYPE_LONG
-# elif defined HAVE_LONG_LONG && SIZEOF_SIZE_T == SIZEOF_LONG_LONG
-#   define TYPE_SSIZE_T TYPE_LONG_LONG
-# endif
-#endif
-#define TYPE_SIZE_T (-1*SIGNEDNESS_OF_SIZE_T*TYPE_SSIZE_T)
-
-#ifndef TYPE_PTRDIFF_T
-# if SIZEOF_PTRDIFF_T == SIZEOF_INT
-#   define TYPE_PTRDIFF_T TYPE_INT
-# elif SIZEOF_PTRDIFF_T == SIZEOF_LONG
-#   define TYPE_PTRDIFF_T TYPE_LONG
-# elif defined HAVE_LONG_LONG && SIZEOF_PTRDIFF_T == SIZEOF_LONG_LONG
-#   define TYPE_PTRDIFF_T TYPE_LONG_LONG
-# endif
-#endif
-
-#ifndef TYPE_INTPTR_T
-# if SIZEOF_INTPTR_T == SIZEOF_INT
-#   define TYPE_INTPTR_T TYPE_INT
-# elif SIZEOF_INTPTR_T == SIZEOF_LONG
-#   define TYPE_INTPTR_T TYPE_LONG
-# elif defined HAVE_LONG_LONG && SIZEOF_INTPTR_T == SIZEOF_LONG_LONG
-#   define TYPE_INTPTR_T TYPE_LONG_LONG
-# endif
-#endif
-#define TYPE_UINTPTR_T (-TYPE_INTPTR_T)
-
 void Init_fiddle_pointer(void);
 
 /*

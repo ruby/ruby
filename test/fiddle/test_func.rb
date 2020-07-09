@@ -96,22 +96,22 @@ module Fiddle
       end
       snprintf = Function.new(snprintf_pointer,
                               [
-                                TYPE_VOIDP,
-                                TYPE_SIZE_T,
-                                TYPE_CONST_STRING,
-                                TYPE_VARIADIC,
+                                :voidp,
+                                :size_t,
+                                :const_string,
+                                :variadic,
                               ],
-                              TYPE_INT)
+                              :int)
       output_buffer = " " * 1024
       output = Pointer[output_buffer]
 
       written = snprintf.call(output,
                               output.size,
                               "int: %d, string: %.*s, const string: %s\n",
-                              TYPE_INT, -29,
-                              TYPE_INT, 4,
-                              TYPE_VOIDP, "Hello",
-                              TYPE_CONST_STRING, "World")
+                              :int, -29,
+                              :int, 4,
+                              :voidp, "Hello",
+                              :const_string, "World")
       assert_equal("int: -29, string: Hell, const string: World\n",
                    output_buffer[0, written])
 
@@ -127,10 +127,10 @@ module Fiddle
       written = snprintf.call(output,
                               output.size,
                               "string: %.*s, const string: %s, uint: %u\n",
-                              TYPE_INT, 2,
-                              TYPE_VOIDP, "Hello",
-                              TYPE_CONST_STRING, string_like_class.new("World"),
-                              TYPE_INT, 29)
+                              :int, 2,
+                              :voidp, "Hello",
+                              :const_string, string_like_class.new("World"),
+                              :int, 29)
       assert_equal("string: He, const string: World, uint: 29\n",
                    output_buffer[0, written])
     end
