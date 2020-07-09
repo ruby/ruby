@@ -68,7 +68,7 @@ switch (insn) {
 %     # opt_invokebuiltin_delegate_leave also implements leave insn. We need to handle it here for inlining.
 %     if insn.name == 'opt_invokebuiltin_delegate_leave'
       RB_BUILTIN bf = (RB_BUILTIN)operands[0];
-      rb_num_t index = (rb_num_t)operands[0];
+      rb_num_t index = (rb_num_t)operands[1];
       fprintf(f, "{\n");
       if (bf->argc == 0) {
           fprintf(f, "    rb_insn_func_t f = (rb_insn_func_t)%p;\n", bf->func_ptr);
