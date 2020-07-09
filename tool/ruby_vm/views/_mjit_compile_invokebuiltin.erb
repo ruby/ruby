@@ -1,0 +1,23 @@
+% # -*- C -*-
+% # Copyright (c) 2020 Urabe, Shyouhei.  All rights reserved.
+% #
+% # This file is a part of  the programming language Ruby.  Permission is hereby
+% # granted, to either  redistribute and/or modify this file,  provided that the
+% # conditions mentioned  in the  file COPYING  are met.   Consult the  file for
+% # details.
+%
+    /* <%= insn.name %> */
+    const struct rb_builtin_function *bf = (const void *)operands[0];
+%
+% if insn.name == 'invokebuiltin' then
+    const rb_num_t index = -1;
+% else
+    const rb_num_t index = (rb_num_t)operands[1];
+% end
+%
+    if (bf->compiler) {
+        bf->compiler(f, index);
+    }
+    else {
+        mjit_invokebuiltin_default_compiler(f, bf, index);
+    }
