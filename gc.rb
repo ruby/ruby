@@ -166,7 +166,7 @@ module GC
 
   def self.compact
     Primitive.gc_start_internal true, true, true, true
-    true
+    Primitive.gc_compact_stats
   end
 
   # call-seq:
@@ -185,7 +185,7 @@ module GC
   # make a SEGV.
   def self.verify_compaction_references(toward: nil, double_heap: false)
     Primitive.gc_start_internal true, true, true, true
-    true
+    Primitive.gc_compact_stats
   end
 end
 

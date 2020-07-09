@@ -4387,7 +4387,12 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page,
 
                 do {
                     if (bits & 1) {
+                        /* We're trying to move "p" */
+                        objspace->rcompactor.considered_count_table[BUILTIN_TYPE((VALUE)p)]++;
+
                         if (gc_is_moveable_obj(objspace, (VALUE)p)) {
+                            /* We were able to move "p" */
+                            objspace->rcompactor.moved_count_table[BUILTIN_TYPE((VALUE)p)]++;
                             gc_move(objspace, (VALUE)p, vp);
                             return 1;
                         }
@@ -4753,6 +4758,8 @@ gc_compact_start(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     heap->compact_cursor = list_tail(&heap->pages, struct heap_page, page_node);
 
+    memset(objspace->rcompactor.considered_count_table, 0, T_MASK * sizeof(size_t));
+    memset(objspace->rcompactor.moved_count_table, 0, T_MASK * sizeof(size_t));
     objspace->flags.compact = 0;
     objspace->flags.during_compacting = FALSE;
     objspace->profile.compact_count++;
@@ -8912,9 +8919,10 @@ gc_update_references(rb_objspace_t * objspace)
 static VALUE type_sym(size_t type);
 
 static VALUE
-gc_compact_stats(rb_objspace_t *objspace)
+gc_compact_stats(rb_execution_context_t *ec, VALUE self)
 {
     size_t i;
+    rb_objspace_t *objspace = &rb_objspace;
     VALUE h = rb_hash_new();
     VALUE considered = rb_hash_new();
     VALUE moved = rb_hash_new();
@@ -8951,16 +8959,6 @@ gc_compact(rb_objspace_t *objspace, int use_toward_empty, int use_double_pages, 
         mjit_gc_exit_hook();
     }
     objspace->flags.during_compacting = FALSE;
-}
-
-static VALUE
-rb_gc_compact(rb_execution_context_t *ec, VALUE self)
-{
-    rb_objspace_t *objspace = &rb_objspace;
-    if (dont_gc_val()) return Qnil;
-
-    gc_compact(objspace, FALSE, FALSE, FALSE);
-    return gc_compact_stats(objspace);
 }
 
 static void
@@ -9126,19 +9124,6 @@ gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_doubl
     }
 
     mjit_gc_exit_hook(); // unlock MJIT here, because `rb_gc()` calls `mjit_gc_start_hook()` again.
-}
-
-static VALUE
-gc_verify_compaction_references(rb_execution_context_t *ec, VALUE mod, VALUE toward, VALUE double_heap)
-{
-    rb_objspace_t *objspace = &rb_objspace;
-    const ID id_empty = rb_intern("empty");
-    const int use_toward_empty = NIL_P(toward) ? FALSE :
-        (Check_Type(toward, T_SYMBOL), toward == ID2SYM(id_empty));
-    const int use_double_pages = RTEST(double_heap);
-
-    gc_compact(objspace, use_toward_empty, use_double_pages, TRUE);
-    return gc_compact_stats(objspace);
 }
 
 VALUE
