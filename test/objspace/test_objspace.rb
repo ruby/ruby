@@ -357,6 +357,24 @@ class TestObjSpace < Test::Unit::TestCase
     end
   end
 
+  def test_dump_escapes_method_name
+    method_name = "foo\"bar"
+    klass = Class.new do
+      define_method(method_name) { "TEST STRING" }
+    end
+    ObjectSpace.trace_object_allocations_start
+
+    obj = klass.new.send(method_name)
+
+    dump = ObjectSpace.dump(obj)
+    assert_includes dump, '"method":"foo\"bar"'
+
+    parsed = JSON.parse(dump)
+    assert_equal "foo\"bar", parsed["method"]
+  ensure
+    ObjectSpace.trace_object_allocations_stop
+  end
+
   def test_dump_reference_addresses_match_dump_all_addresses
     assert_in_out_err(%w[-robjspace], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
       begin;

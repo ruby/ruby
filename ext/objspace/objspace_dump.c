@@ -310,7 +310,8 @@ dump_object(VALUE obj, struct dump_config *dc)
 	dump_append(dc, ", \"file\":\"%s\", \"line\":%lu", ainfo->path, ainfo->line);
 	if (RTEST(ainfo->mid)) {
 	    VALUE m = rb_sym2str(ainfo->mid);
-	    dump_append(dc, ", \"method\":\"%s\"", RSTRING_PTR(m));
+	    dump_append(dc, ", \"method\":");
+	    dump_append_string_value(dc, m);
 	}
 	dump_append(dc, ", \"generation\":%"PRIuSIZE, ainfo->generation);
     }
