@@ -106,7 +106,9 @@ normalize_argument_types(const char *name,
     normalized_arg_types = rb_ary_new_capa(n_arg_types);
     for (i = 0; i < n_arg_types; i++) {
         VALUE arg_type = RARRAY_AREF(arg_types, i);
-        int c_arg_type = NUM2INT(arg_type);
+        int c_arg_type;
+        arg_type = rb_fiddle_type_ensure(arg_type);
+        c_arg_type = NUM2INT(arg_type);
         if (c_arg_type == TYPE_VARIADIC) {
             if (i != n_arg_types - 1) {
                 rb_raise(rb_eArgError,
@@ -146,6 +148,7 @@ initialize(int argc, VALUE argv[], VALUE self)
     PTR2NUM(cfunc);
     c_ffi_abi = NIL_P(abi) ? FFI_DEFAULT_ABI : NUM2INT(abi);
     abi = INT2FIX(c_ffi_abi);
+    ret_type = rb_fiddle_type_ensure(ret_type);
     c_ret_type = NUM2INT(ret_type);
     (void)INT2FFI_TYPE(c_ret_type); /* raise */
     ret_type = INT2FIX(c_ret_type);
@@ -256,7 +259,9 @@ function_call(int argc, VALUE argv[], VALUE self)
         arg_types = rb_ary_dup(fixed_arg_types);
         for (i = n_fixed_args; i < argc; i += 2) {
           VALUE arg_type = argv[i];
-          int c_arg_type = NUM2INT(arg_type);
+          int c_arg_type;
+          arg_type = rb_fiddle_type_ensure(arg_type);
+          c_arg_type = NUM2INT(arg_type);
           (void)INT2FFI_TYPE(c_arg_type); /* raise */
           rb_ary_push(arg_types, INT2FIX(c_arg_type));
         }

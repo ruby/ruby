@@ -1,5 +1,113 @@
 #include <fiddle.h>
 
+VALUE
+rb_fiddle_type_ensure(VALUE type)
+{
+    VALUE original_type = type;
+
+    if (!RB_SYMBOL_P(type)) {
+        VALUE type_string = rb_check_string_type(type);
+        if (!NIL_P(type_string)) {
+            type = rb_to_symbol(type_string);
+        }
+    }
+
+    if (RB_SYMBOL_P(type)) {
+        ID type_id = rb_sym2id(type);
+        ID void_id;
+        ID voidp_id;
+        ID char_id;
+        ID short_id;
+        ID int_id;
+        ID long_id;
+#ifdef TYPE_LONG_LONG
+        ID long_long_id;
+#endif
+        ID float_id;
+        ID double_id;
+        ID variadic_id;
+        ID const_string_id;
+        ID size_t_id;
+        ID ssize_t_id;
+        ID ptrdiff_t_id;
+        ID intptr_t_id;
+        ID uintptr_t_id;
+        RUBY_CONST_ID(void_id, "void");
+        RUBY_CONST_ID(voidp_id, "voidp");
+        RUBY_CONST_ID(char_id, "char");
+        RUBY_CONST_ID(short_id, "short");
+        RUBY_CONST_ID(int_id, "int");
+        RUBY_CONST_ID(long_id, "long");
+#ifdef TYPE_LONG_LONG
+        RUBY_CONST_ID(long_long_id, "long_long");
+#endif
+        RUBY_CONST_ID(float_id, "float");
+        RUBY_CONST_ID(double_id, "double");
+        RUBY_CONST_ID(variadic_id, "variadic");
+        RUBY_CONST_ID(const_string_id, "const_string");
+        RUBY_CONST_ID(size_t_id, "size_t");
+        RUBY_CONST_ID(ssize_t_id, "ssize_t");
+        RUBY_CONST_ID(ptrdiff_t_id, "ptrdiff_t");
+        RUBY_CONST_ID(intptr_t_id, "intptr_t");
+        RUBY_CONST_ID(uintptr_t_id, "uintptr_t");
+        if (type_id == void_id) {
+            return INT2NUM(TYPE_VOID);
+        }
+        else if (type_id == voidp_id) {
+            return INT2NUM(TYPE_VOIDP);
+        }
+        else if (type_id == char_id) {
+            return INT2NUM(TYPE_CHAR);
+        }
+        else if (type_id == short_id) {
+            return INT2NUM(TYPE_SHORT);
+        }
+        else if (type_id == int_id) {
+            return INT2NUM(TYPE_INT);
+        }
+        else if (type_id == long_id) {
+            return INT2NUM(TYPE_LONG);
+        }
+#ifdef TYPE_LONG_LONG
+        else if (type_id == long_long_id) {
+            return INT2NUM(TYPE_LONG_LONG);
+        }
+#endif
+        else if (type_id == float_id) {
+            return INT2NUM(TYPE_FLOAT);
+        }
+        else if (type_id == double_id) {
+            return INT2NUM(TYPE_DOUBLE);
+        }
+        else if (type_id == variadic_id) {
+            return INT2NUM(TYPE_VARIADIC);
+        }
+        else if (type_id == const_string_id) {
+            return INT2NUM(TYPE_CONST_STRING);
+        }
+        else if (type_id == size_t_id) {
+            return INT2NUM(TYPE_SIZE_T);
+        }
+        else if (type_id == ssize_t_id) {
+            return INT2NUM(TYPE_SSIZE_T);
+        }
+        else if (type_id == ptrdiff_t_id) {
+            return INT2NUM(TYPE_PTRDIFF_T);
+        }
+        else if (type_id == intptr_t_id) {
+            return INT2NUM(TYPE_INTPTR_T);
+        }
+        else if (type_id == uintptr_t_id) {
+            return INT2NUM(TYPE_UINTPTR_T);
+        }
+        else {
+            type = original_type;
+        }
+    }
+
+    return rb_to_int(type);
+}
+
 ffi_type *
 rb_fiddle_int_to_ffi_type(int type)
 {
