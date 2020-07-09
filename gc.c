@@ -2256,6 +2256,30 @@ rb_newobj_of(VALUE klass, VALUE flags)
     rb_bug(#func"(): GC does not handle T_NODE 0x%x(%p) 0x%"PRIxVALUE, \
 	   BUILTIN_TYPE(obj), (void*)(obj), RBASIC(obj)->flags)
 
+const char *
+rb_imemo_name(enum imemo_type type)
+{
+    // put no default case to get a warning if an imemo type is missing
+    switch (type) {
+#define IMEMO_NAME(x) case imemo_##x: return #x;
+        IMEMO_NAME(env);
+        IMEMO_NAME(cref);
+        IMEMO_NAME(svar);
+        IMEMO_NAME(throw_data);
+        IMEMO_NAME(ifunc);
+        IMEMO_NAME(memo);
+        IMEMO_NAME(ment);
+        IMEMO_NAME(iseq);
+        IMEMO_NAME(tmpbuf);
+        IMEMO_NAME(ast);
+        IMEMO_NAME(parser_strterm);
+        IMEMO_NAME(callinfo);
+        IMEMO_NAME(callcache);
+#undef IMEMO_NAME
+    }
+    return "unknown";
+}
+
 #undef rb_imemo_new
 
 VALUE
@@ -11662,26 +11686,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 	    break;
 	  }
 	  case T_IMEMO: {
-	    const char *imemo_name = "\0";
-	    switch (imemo_type(obj)) {
-#define IMEMO_NAME(x) case imemo_##x: imemo_name = #x; break;
-		IMEMO_NAME(env);
-		IMEMO_NAME(cref);
-		IMEMO_NAME(svar);
-		IMEMO_NAME(throw_data);
-		IMEMO_NAME(ifunc);
-		IMEMO_NAME(memo);
-		IMEMO_NAME(ment);
-		IMEMO_NAME(iseq);
-		IMEMO_NAME(tmpbuf);
-                IMEMO_NAME(ast);
-                IMEMO_NAME(parser_strterm);
-                IMEMO_NAME(callinfo);
-                IMEMO_NAME(callcache);
-#undef IMEMO_NAME
-	      default: UNREACHABLE;
-	    }
-            APPENDF((BUFF_ARGS, "<%s> ", imemo_name));
+            APPENDF((BUFF_ARGS, "<%s> ", rb_imemo_name(imemo_type(obj))));
 
 	    switch (imemo_type(obj)) {
 	      case imemo_ment: {
