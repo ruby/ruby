@@ -1505,20 +1505,8 @@ opt_invokebuiltin_delegate_leave
 // attr bool leaf = false; /* anything can happen inside */
 {
     val = vm_invoke_builtin_delegate(ec, reg_cfp, bf, (unsigned int)index);
-
-    /* leave fastpath */
-    /* TracePoint/return fallbacks this insn to opt_invokebuiltin_delegate */
-    if (vm_pop_frame(ec, GET_CFP(), GET_EP())) {
-#if OPT_CALL_THREADED_CODE
-        rb_ec_thread_ptr(ec)->retval = val;
-        return 0;
-#else
-        return val;
-#endif
-    }
-    else {
-        RESTORE_REGS();
-    }
+    PUSH(val);
+    DISPATCH_ORIGINAL_INSN(leave);
 }
 
 /* BLT */
