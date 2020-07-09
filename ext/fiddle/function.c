@@ -207,6 +207,7 @@ function_call(int argc, VALUE argv[], VALUE self)
     int n_call_args = 0;
     int i;
     int i_call;
+    VALUE converted_args = Qnil;
     VALUE alloc_buffer = 0;
 
     cfunc    = rb_iv_get(self, "@ptr");
@@ -313,6 +314,7 @@ function_call(int argc, VALUE argv[], VALUE self)
          i++, i_call++) {
         VALUE arg_type;
         int c_arg_type;
+        VALUE original_src;
         VALUE src;
         arg_type = RARRAY_AREF(arg_types, i_call);
         c_arg_type = FIX2INT(arg_type);
@@ -327,11 +329,22 @@ function_call(int argc, VALUE argv[], VALUE self)
             }
             else if (cPointer != CLASS_OF(src)) {
                 src = rb_funcall(cPointer, rb_intern("[]"), 1, src);
+                if (NIL_P(converted_args)) {
+                    converted_args = rb_ary_new();
+                }
+                rb_ary_push(converted_args, src);
             }
             src = rb_Integer(src);
         }
 
+        original_src = src;
         VALUE2GENERIC(c_arg_type, src, &generic_args[i_call]);
+        if (src != original_src) {
+            if (NIL_P(converted_args)) {
+                converted_args = rb_ary_new();
+            }
+            rb_ary_push(converted_args, src);
+        }
         args.values[i_call] = (void *)&generic_args[i_call];
     }
     args.values[i_call] = NULL;

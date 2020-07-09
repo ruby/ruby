@@ -235,6 +235,12 @@ Init_fiddle(void)
     rb_define_const(mFiddle, "TYPE_VARIADIC",  INT2NUM(TYPE_VARIADIC));
 #endif
 
+    /* Document-const: TYPE_CONST_STRING
+     *
+     * C type - const char* ('\0' terminated const char*)
+     */
+    rb_define_const(mFiddle, "TYPE_CONST_STRING",  INT2NUM(TYPE_CONST_STRING));
+
     /* Document-const: TYPE_SIZE_T
      *
      * C type - size_t
@@ -434,6 +440,12 @@ Init_fiddle(void)
      * size of a uintptr_t
      */
     rb_define_const(mFiddle, "SIZEOF_UINTPTR_T",  INT2NUM(sizeof(uintptr_t)));
+
+    /* Document-const: SIZEOF_CONST_STRING
+     *
+     * size of a const char*
+     */
+    rb_define_const(mFiddle, "SIZEOF_CONST_STRING", INT2NUM(sizeof(const char*)));
 
     /* Document-const: RUBY_FREE
      *

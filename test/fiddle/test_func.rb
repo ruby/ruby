@@ -98,7 +98,7 @@ module Fiddle
                               [
                                 TYPE_VOIDP,
                                 TYPE_SIZE_T,
-                                TYPE_VOIDP,
+                                TYPE_CONST_STRING,
                                 TYPE_VARIADIC,
                               ],
                               TYPE_INT)
@@ -107,20 +107,31 @@ module Fiddle
 
       written = snprintf.call(output,
                               output.size,
-                              "int: %d, string: %.*s\n",
+                              "int: %d, string: %.*s, const string: %s\n",
                               TYPE_INT, -29,
                               TYPE_INT, 4,
-                              TYPE_VOIDP, "Hello")
-      assert_equal("int: -29, string: Hell\n",
+                              TYPE_VOIDP, "Hello",
+                              TYPE_CONST_STRING, "World")
+      assert_equal("int: -29, string: Hell, const string: World\n",
                    output_buffer[0, written])
 
+      string_like_class = Class.new do
+        def initialize(string)
+          @string = string
+        end
+
+        def to_str
+          @string
+        end
+      end
       written = snprintf.call(output,
                               output.size,
-                              "string: %.*s, uint: %u\n",
+                              "string: %.*s, const string: %s, uint: %u\n",
                               TYPE_INT, 2,
                               TYPE_VOIDP, "Hello",
+                              TYPE_CONST_STRING, string_like_class.new("World"),
                               TYPE_INT, 29)
-      assert_equal("string: He, uint: 29\n",
+      assert_equal("string: He, const string: World, uint: 29\n",
                    output_buffer[0, written])
     end
   end
