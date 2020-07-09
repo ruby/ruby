@@ -316,9 +316,9 @@ opt_struct_aset(rb_execution_context_t *ec, VALUE self, VALUE val, VALUE idx)
 }
 
 static const struct rb_builtin_function struct_aref_builtin =
-    RB_BUILTIN_FUNCTION(0, struct_aref, opt_struct_aref, 1);
+    RB_BUILTIN_FUNCTION(0, struct_aref, opt_struct_aref, 1, 0);
 static const struct rb_builtin_function struct_aset_builtin =
-    RB_BUILTIN_FUNCTION(1, struct_aref, opt_struct_aset, 2);
+    RB_BUILTIN_FUNCTION(1, struct_aref, opt_struct_aset, 2, 0);
 
 static void
 define_aref_method(VALUE nstr, VALUE name, VALUE off)

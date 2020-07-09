@@ -1478,11 +1478,11 @@ DEFINE_INSN
 invokebuiltin
 (RB_BUILTIN bf)
 (...)
-(VALUE ret)
+(VALUE val)
 // attr bool leaf = false; /* anything can happen inside */
 // attr rb_snum_t sp_inc = 1 - bf->argc;
 {
-    ret = vm_invoke_builtin(ec, reg_cfp, bf, STACK_ADDR_FROM_TOP(bf->argc));
+    val = vm_invoke_builtin(ec, reg_cfp, bf, STACK_ADDR_FROM_TOP(bf->argc));
 }
 
 /* call specific function with args (same parameters) */
@@ -1490,10 +1490,10 @@ DEFINE_INSN
 opt_invokebuiltin_delegate
 (RB_BUILTIN bf, rb_num_t index)
 ()
-(VALUE ret)
+(VALUE val)
 // attr bool leaf = false; /* anything can happen inside */
 {
-    ret = vm_invoke_builtin_delegate(ec, reg_cfp, bf, (unsigned int)index);
+    val = vm_invoke_builtin_delegate(ec, reg_cfp, bf, (unsigned int)index);
 }
 
 /* call specific function with args (same parameters) and leave */

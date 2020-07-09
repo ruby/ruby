@@ -272,6 +272,25 @@ def mk_builtin_header file
       end
     }
 
+    bs.each_pair{|func, (argc, cfunc_name)|
+      f.puts %'static void'
+      f.puts %'mjit_compile_invokebuiltin_for_#{func}(FILE *f, long index)'
+      f.puts %'{'
+      f.puts %'    if (index > 0) {'
+      f.puts %'        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\\n");'
+      f.puts %'        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\\n", index);'
+      f.puts %'    }'
+      f.puts %'    else if (index == 0) {'
+      f.puts %'        fprintf(f, "    const VALUE *argv = NULL;\\n");'
+      f.puts %'    }'
+      f.puts %'    else {'
+      f.puts %'        fprintf(f, "    const VALUE *argv = STACK_ADDR_FROM_TOP(%d);\\n", #{argc});'
+      f.puts %'    }'
+      f.puts %'    fprintf(f, "    val = builtin_invoker#{argc}(ec, GET_SELF(), argv, %p);\\n", (const void *)#{cfunc_name});'
+      f.puts %'}'
+      f.puts
+    }
+
     f.puts "void Init_builtin_#{base}(void)"
     f.puts "{"
 
@@ -279,9 +298,9 @@ def mk_builtin_header file
     f.puts "  // table definition"
     f.puts "  static const struct rb_builtin_function #{table}[] = {"
     bs.each.with_index{|(func, (argc, cfunc_name)), i|
-      f.puts "    RB_BUILTIN_FUNCTION(#{i}, #{func}, #{cfunc_name}, #{argc}),"
+      f.puts "    RB_BUILTIN_FUNCTION(#{i}, #{func}, #{cfunc_name}, #{argc}, mjit_compile_invokebuiltin_for_#{func}),"
     }
-    f.puts "    RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0),"
+    f.puts "    RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0, 0),"
     f.puts "  };"
 
     f.puts

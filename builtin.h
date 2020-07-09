@@ -11,13 +11,17 @@ struct rb_builtin_function {
     // for load
     const int index;
     const char * const name;
+
+    // for jit
+    void (*compiler)(FILE *, long);
 };
 
-#define RB_BUILTIN_FUNCTION(_i, _name, _fname, _arity) { \
+#define RB_BUILTIN_FUNCTION(_i, _name, _fname, _arity, _compiler) {\
   .name = #_name, \
   .func_ptr = (void *)_fname, \
   .argc = _arity, \
-  .index = _i \
+  .index = _i, \
+  .compiler = _compiler, \
 }
 
 void rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin_function *table);
@@ -75,5 +79,21 @@ struct builtin_binary {
     const unsigned char *bin;     // binary by ISeq#to_binary
     size_t bin_size;
 };
+
+// mjit
+
+RBIMPL_ATTR_MAYBE_UNUSED()
+static void
+mjit_invokebuiltin_default_compiler(FILE *f, const struct rb_builtin_function *bf, long index)
+{
+    if (index >= 0) {
+        fprintf(f, "val = vm_invoke_builtin(ec, GET_CFP(), %p, STACK_ADDR_FROM_TOP(%d));\n",
+                (const void *)bf, bf->argc);
+    }
+    else {
+        fprintf(f, "val = vm_invoke_builtin_delegate(ec, GET_CFP(), %p, %ld);\n",
+                (const void *)bf, index);
+    }
+}
 
 #endif // BUILTIN_H_INCLUDED
