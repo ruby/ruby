@@ -112,10 +112,17 @@ module Fiddle
 
     Fiddle.constants.grep(/\ATYPE_(?!VOID|VARIADIC\z)(.*)/) do
       type = $&
-      size = Fiddle.const_get("SIZEOF_#{$1}")
-      name = $1.sub(/P\z/,"*").gsub(/_(?!T\z)/, " ").downcase
+      const_type_name = $1
+      size = Fiddle.const_get("SIZEOF_#{const_type_name}")
+      if const_type_name == "CONST_STRING"
+        name = "const_string"
+        type_name = "const char*"
+      else
+        name = $1.sub(/P\z/,"*").gsub(/_(?!T\z)/, " ").downcase
+        type_name = name
+      end
       define_method("test_sizeof_#{name}") do
-        assert_equal(size, Fiddle::Importer.sizeof(name), type)
+        assert_equal(size, Fiddle::Importer.sizeof(type_name), type)
       end
     end
 
