@@ -776,6 +776,28 @@ gem 'other', version
     assert File.exist?(plugin_path), 'plugin not written to install_dir'
   end
 
+  def test_generate_plugins_with_user_install
+    spec = quick_gem 'a' do |s|
+      write_file File.join(@tempdir, 'lib', 'rubygems_plugin.rb') do |io|
+        io.write "puts __FILE__"
+      end
+
+      s.files += %w[lib/rubygems_plugin.rb]
+    end
+
+    util_build_gem spec
+
+    File.chmod(0555, Gem.plugindir)
+    system_path = File.join(Gem.plugindir, 'a_plugin.rb')
+    user_path = File.join(Gem.plugindir(Gem.user_dir), 'a_plugin.rb')
+    installer = util_installer spec, Gem.dir, :user
+
+    assert_equal spec, installer.install
+
+    assert !File.exist?(system_path), 'plugin not written to user plugins_dir'
+    assert File.exist?(user_path), 'plugin not written to user plugins_dir'
+  end
+
   def test_keeps_plugins_up_to_date
     # NOTE: version a-2 is already installed by setup hooks
 
