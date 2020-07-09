@@ -121,6 +121,8 @@ module Fiddle
           return SIZEOF_DOUBLE
         when TYPE_VOIDP
           return SIZEOF_VOIDP
+        when TYPE_CONST_STRING
+          return SIZEOF_CONST_STRING
         else
           if defined?(TYPE_LONG_LONG) and
             ty == TYPE_LONG_LONG

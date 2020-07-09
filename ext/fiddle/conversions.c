@@ -1,7 +1,7 @@
 #include <fiddle.h>
 
 ffi_type *
-int_to_ffi_type(int type)
+rb_fiddle_int_to_ffi_type(int type)
 {
     int signed_p = 1;
 
@@ -33,66 +33,90 @@ int_to_ffi_type(int type)
 	return &ffi_type_float;
       case TYPE_DOUBLE:
 	return &ffi_type_double;
+      case TYPE_CONST_STRING:
+	return &ffi_type_pointer;
       default:
 	rb_raise(rb_eRuntimeError, "unknown type %d", type);
     }
     return &ffi_type_pointer;
 }
 
+ffi_type *
+int_to_ffi_type(int type)
+{
+    return rb_fiddle_int_to_ffi_type(type);
+}
+
 void
-value_to_generic(int type, VALUE src, fiddle_generic * dst)
+rb_fiddle_value_to_generic(int type, VALUE *src, fiddle_generic *dst)
 {
     switch (type) {
       case TYPE_VOID:
 	break;
       case TYPE_VOIDP:
-	dst->pointer = NUM2PTR(rb_Integer(src));
+	dst->pointer = NUM2PTR(rb_Integer(*src));
 	break;
       case TYPE_CHAR:
-	dst->schar = (signed char)NUM2INT(src);
+	dst->schar = (signed char)NUM2INT(*src);
 	break;
       case -TYPE_CHAR:
-	dst->uchar = (unsigned char)NUM2UINT(src);
+	dst->uchar = (unsigned char)NUM2UINT(*src);
 	break;
       case TYPE_SHORT:
-	dst->sshort = (unsigned short)NUM2INT(src);
+	dst->sshort = (unsigned short)NUM2INT(*src);
 	break;
       case -TYPE_SHORT:
-	dst->sshort = (signed short)NUM2UINT(src);
+	dst->sshort = (signed short)NUM2UINT(*src);
 	break;
       case TYPE_INT:
-	dst->sint = NUM2INT(src);
+	dst->sint = NUM2INT(*src);
 	break;
       case -TYPE_INT:
-	dst->uint = NUM2UINT(src);
+	dst->uint = NUM2UINT(*src);
 	break;
       case TYPE_LONG:
-	dst->slong = NUM2LONG(src);
+	dst->slong = NUM2LONG(*src);
 	break;
       case -TYPE_LONG:
-	dst->ulong = NUM2ULONG(src);
+	dst->ulong = NUM2ULONG(*src);
 	break;
 #if HAVE_LONG_LONG
       case TYPE_LONG_LONG:
-	dst->slong_long = NUM2LL(src);
+	dst->slong_long = NUM2LL(*src);
 	break;
       case -TYPE_LONG_LONG:
-	dst->ulong_long = NUM2ULL(src);
+	dst->ulong_long = NUM2ULL(*src);
 	break;
 #endif
       case TYPE_FLOAT:
-	dst->ffloat = (float)NUM2DBL(src);
+	dst->ffloat = (float)NUM2DBL(*src);
 	break;
       case TYPE_DOUBLE:
-	dst->ddouble = NUM2DBL(src);
+	dst->ddouble = NUM2DBL(*src);
+	break;
+      case TYPE_CONST_STRING:
+        if (NIL_P(*src)) {
+            dst->pointer = NULL;
+        }
+        else {
+            dst->pointer = rb_string_value_cstr(src);
+        }
 	break;
       default:
 	rb_raise(rb_eRuntimeError, "unknown type %d", type);
     }
 }
 
+void
+value_to_generic(int type, VALUE src, fiddle_generic *dst)
+{
+    /* src isn't safe from GC when type is TYPE_CONST_STRING and src
+     * isn't String. */
+    return rb_fiddle_value_to_generic(type, &src, dst);
+}
+
 VALUE
-generic_to_value(VALUE rettype, fiddle_generic retval)
+rb_fiddle_generic_to_value(VALUE rettype, fiddle_generic retval)
 {
     int type = NUM2INT(rettype);
     VALUE cPointer;
@@ -131,11 +155,24 @@ generic_to_value(VALUE rettype, fiddle_generic retval)
 	return rb_float_new(retval.ffloat);
       case TYPE_DOUBLE:
 	return rb_float_new(retval.ddouble);
+      case TYPE_CONST_STRING:
+        if (retval.pointer) {
+            return rb_str_new_cstr(retval.pointer);
+        }
+        else {
+            return Qnil;
+        }
       default:
 	rb_raise(rb_eRuntimeError, "unknown type %d", type);
     }
 
     UNREACHABLE;
+}
+
+VALUE
+generic_to_value(VALUE rettype, fiddle_generic retval)
+{
+    return rb_fiddle_generic_to_value(rettype, retval);
 }
 
 /* vim: set noet sw=4 sts=4 */

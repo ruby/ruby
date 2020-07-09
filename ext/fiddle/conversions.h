@@ -24,13 +24,22 @@ typedef union
     void * pointer;        /* ffi_type_pointer */
 } fiddle_generic;
 
+/* Deprecated. Use rb_fiddle_*() version. */
+ffi_type * rb_fiddle_int_to_ffi_type(int type);
+void rb_fiddle_value_to_generic(int type, VALUE *src, fiddle_generic *dst);
+VALUE rb_fiddle_generic_to_value(VALUE rettype, fiddle_generic retval);
+
+/* Deprecated. Use rb_fiddle_*() version. */
 ffi_type * int_to_ffi_type(int type);
-void value_to_generic(int type, VALUE src, fiddle_generic * dst);
+void value_to_generic(int type, VALUE src, fiddle_generic *dst);
 VALUE generic_to_value(VALUE rettype, fiddle_generic retval);
 
-#define VALUE2GENERIC(_type, _src, _dst) value_to_generic((_type), (_src), (_dst))
-#define INT2FFI_TYPE(_type) int_to_ffi_type(_type)
-#define GENERIC2VALUE(_type, _retval) generic_to_value((_type), (_retval))
+#define VALUE2GENERIC(_type, _src, _dst)        \
+    rb_fiddle_value_to_generic((_type), &(_src), (_dst))
+#define INT2FFI_TYPE(_type)                     \
+    rb_fiddle_int_to_ffi_type(_type)
+#define GENERIC2VALUE(_type, _retval)           \
+    rb_fiddle_generic_to_value((_type), (_retval))
 
 #if SIZEOF_VOIDP == SIZEOF_LONG
 # define PTR2NUM(x)   (LONG2NUM((long)(x)))
