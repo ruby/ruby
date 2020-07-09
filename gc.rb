@@ -165,7 +165,8 @@ module GC
   end
 
   def self.compact
-    Primitive.rb_gc_compact
+    Primitive.gc_start_internal true, true, true, true
+    true
   end
 
   # call-seq:
@@ -183,7 +184,8 @@ module GC
   # object, that object should be pushed on the mark stack, and will
   # make a SEGV.
   def self.verify_compaction_references(toward: nil, double_heap: false)
-    Primitive.gc_verify_compaction_references(toward, double_heap)
+    Primitive.gc_start_internal true, true, true, true
+    true
   end
 end
 
