@@ -25,6 +25,7 @@ typedef union
 } fiddle_generic;
 
 /* Deprecated. Use rb_fiddle_*() version. */
+VALUE rb_fiddle_type_ensure(VALUE type);
 ffi_type * rb_fiddle_int_to_ffi_type(int type);
 void rb_fiddle_value_to_generic(int type, VALUE *src, fiddle_generic *dst);
 VALUE rb_fiddle_generic_to_value(VALUE rettype, fiddle_generic retval);
