@@ -4414,6 +4414,18 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page,
     return 0;
 }
 
+static void gc_update_references(rb_objspace_t * objspace);
+
+static void
+gc_compact_finish(rb_objspace_t *objspace, rb_heap_t *heap)
+{
+    heap->compact_cursor = NULL;
+    gc_update_references(objspace);
+    rb_clear_constant_cache();
+    objspace->flags.compact = 0;
+    objspace->flags.during_compacting = FALSE;
+}
+
 static inline int
 gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page)
 {
@@ -4427,7 +4439,8 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
     sweep_page->flags.before_sweep = FALSE;
     if (heap->compact_cursor && sweep_page == heap->compact_cursor) {
         /* The compaction cursor and sweep page met, so we need to quit compacting */
-        heap->compact_cursor = NULL;
+        gc_report(5, objspace, "Quit compacting, mark and compact cursor met\n");
+        gc_compact_finish(objspace, heap);
     }
 
     p = sweep_page->start;
@@ -4472,8 +4485,9 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
                                   if (try_move(objspace, heap, sweep_page, vp)) {
                                       moved_slots++;
                                   } else {
-                                      heap->compact_cursor = NULL;
+                                      gc_report(5, objspace, "Quit compacting, couldn't find an object to move\n");
                                       heap_page_add_freeobj(objspace, sweep_page, vp);
+                                      gc_compact_finish(objspace, heap);
                                   }
                               } else {
                                   heap_page_add_freeobj(objspace, sweep_page, vp);
@@ -4504,7 +4518,8 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
                             if (try_move(objspace, heap, sweep_page, vp)) {
                                 moved_slots++;
                             } else {
-                                heap->compact_cursor = NULL;
+                                gc_report(5, objspace, "Quit compacting, couldn't find an object to move\n");
+                                gc_compact_finish(objspace, heap);
                             }
                         }
                         empty_slots++; /* already freed */
@@ -4736,18 +4751,10 @@ gc_compact_start(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     heap->compact_cursor = list_tail(&heap->pages, struct heap_page, page_node);
     objspace->profile.compact_count++;
-}
 
-static void gc_update_references(rb_objspace_t * objspace);
-
-static void
-gc_compact_finish(rb_objspace_t *objspace, rb_heap_t *heap)
-{
-    heap->compact_cursor = NULL;
-    gc_update_references(objspace);
-    rb_clear_constant_cache();
     objspace->flags.compact = 0;
     objspace->flags.during_compacting = FALSE;
+    objspace->profile.compact_count++;
 }
 
 static void
