@@ -69,9 +69,9 @@ RUBY_SYMBOL_EXPORT_END
  *   # It will help if the timing is important.
  *   RUBY_DEBUG_LOG=mem
  *
- * RUBY_DEBUG_LOG_FILTER environment variable can specify the fileter string.
+ * RUBY_DEBUG_LOG_FILTER environment variable can specify the filter string.
  * If "(3) __func__ in C (message title)" contains the specified string, the
- * infomation will be stored (example: RUBY_DEBUG_LOG_FILTER=str will enable
+ * information will be stored (example: RUBY_DEBUG_LOG_FILTER=str will enable
  * only on str related information).
  *
  * In a MRI source code, you can use the following macros:
