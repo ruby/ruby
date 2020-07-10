@@ -75,8 +75,8 @@
 
             if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
 %               # TODO: optimize this more
-                fprintf(f, "        CALL_DATA cd = (CALL_DATA)0x%"PRIxVALUE";\n", operands[0]);
-                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling, cd);\n");
+                fprintf(f, "        struct rb_call_data cc_cd = { .ci = (CALL_INFO)0x%"PRIxVALUE", .cc = cc };\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling, &cc_cd);\n");
             }
             else { // VM_METHOD_TYPE_ISEQ
 %               # fastpath_applied_iseq_p checks rb_simple_iseq_p, which ensures has_opt == FALSE
