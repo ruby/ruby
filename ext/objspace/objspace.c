@@ -28,7 +28,7 @@
  *  call-seq:
  *    ObjectSpace.memsize_of(obj) -> Integer
  *
- *  Return consuming memory size of obj.
+ *  Return consuming memory size of obj in bytes.
  *
  *  Note that the return size is incomplete.  You need to deal with this
  *  information as only a *HINT*. Especially, the size of +T_DATA+ may not be
@@ -81,7 +81,7 @@ total_i(void *vstart, void *vend, size_t stride, void *ptr)
  *  call-seq:
  *    ObjectSpace.memsize_of_all([klass]) -> Integer
  *
- *  Return consuming memory size of all living objects.
+ *  Return consuming memory size of all living objects in bytes.
  *
  *  If +klass+ (should be Class object) is given, return the total memory size
  *  of instances of the given class.
