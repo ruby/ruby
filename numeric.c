@@ -794,6 +794,12 @@ int_zero_p(VALUE num)
     return Qfalse;
 }
 
+VALUE
+rb_int_zero_p(VALUE num)
+{
+    return int_zero_p(num);
+}
+
 /*
  *  call-seq:
  *     num.nonzero?  ->  self or nil
@@ -3248,6 +3254,12 @@ int_even_p(VALUE num)
         assert(RB_TYPE_P(num, T_BIGNUM));
 	return rb_big_even_p(num);
     }
+}
+
+VALUE
+rb_int_even_p(VALUE num)
+{
+    return int_even_p(num);
 }
 
 /*

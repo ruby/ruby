@@ -1,6 +1,8 @@
 # Parse built-in script and make rbinc file
 
 require 'ripper'
+require 'stringio'
+require_relative 'ruby_vm/helpers/c_escape'
 
 def string_literal(lit, str = [])
   while lit
@@ -207,6 +209,29 @@ def collect_iseq iseq_ary
   }
 end
 
+def generate_cexpr(ofile, lineno, line_file, body_lineno, text, locals, func_name)
+  f = StringIO.new
+  f.puts '{'
+  lineno += 1
+  locals.reverse_each.with_index{|param, i|
+    next unless Symbol === param
+    f.puts "MAYBE_UNUSED(const VALUE) #{param} = rb_vm_lvar(ec, #{-3 - i});"
+    lineno += 1
+  }
+  f.puts "#line #{body_lineno} \"#{line_file}\""
+  lineno += 1
+
+  f.puts text
+  lineno += text.count("\n") + 1
+
+  f.puts "#line #{lineno + 2} \"#{ofile}\"" # TODO: restore line number.
+  f.puts "}"
+  f.puts
+  lineno += 3
+
+  return lineno, f.string
+end
+
 def mk_builtin_header file
   base = File.basename(file, '.rb')
   ofile = "#{file}inc"
@@ -244,23 +269,10 @@ def mk_builtin_header file
 
     inlines.each{|cfunc_name, (body_lineno, text, locals, func_name)|
       if String === cfunc_name
-        f.puts "static VALUE #{cfunc_name}(struct rb_execution_context_struct *ec, const VALUE self) {"
+        f.puts "static VALUE #{cfunc_name}(struct rb_execution_context_struct *ec, const VALUE self)"
         lineno += 1
-
-        locals.reverse_each.with_index{|param, i|
-          next unless Symbol === param
-          f.puts "MAYBE_UNUSED(const VALUE) #{param} = rb_vm_lvar(ec, #{-3 - i});"
-          lineno += 1
-        }
-        f.puts "#line #{body_lineno} \"#{line_file}\""
-        lineno += 1
-
-        f.puts text
-        lineno += text.count("\n") + 1
-
-        f.puts "#line #{lineno + 2} \"#{ofile}\"" # TODO: restore line number.
-        f.puts "}"
-        lineno += 2
+        lineno, str = generate_cexpr(ofile, lineno, line_file, body_lineno, text, locals, func_name)
+        f.write str
       else
         # cinit!
         f.puts "#line #{body_lineno} \"#{line_file}\""
@@ -276,17 +288,32 @@ def mk_builtin_header file
       f.puts %'static void'
       f.puts %'mjit_compile_invokebuiltin_for_#{func}(FILE *f, long index)'
       f.puts %'{'
-      f.puts %'    if (index > 0) {'
-      f.puts %'        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\\n");'
-      f.puts %'        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\\n", index);'
-      f.puts %'    }'
-      f.puts %'    else if (index == 0) {'
-      f.puts %'        fprintf(f, "    const VALUE *argv = NULL;\\n");'
-      f.puts %'    }'
-      f.puts %'    else {'
-      f.puts %'        fprintf(f, "    const VALUE *argv = STACK_ADDR_FROM_TOP(%d);\\n", #{argc});'
-      f.puts %'    }'
-      f.puts %'    fprintf(f, "    val = builtin_invoker#{argc}(ec, GET_SELF(), argv, %p);\\n", (const void *)#{cfunc_name});'
+      if inlines.has_key? cfunc_name
+        f.puts %'    fprintf(f, "    MAYBE_UNUSED(VALUE) self = GET_SELF();\\n");'
+        body_lineno, text, locals, func_name = inlines[cfunc_name]
+        lineno, str = generate_cexpr(ofile, lineno, line_file, body_lineno, text, locals, func_name)
+        str.each_line {|i|
+          f.printf(%'    fprintf(f, "%%s", %s);\n', RubyVM::CEscape.rstring2cstr(i.sub(/^return\b/ , '    val =')))
+        }
+      else
+        decl = ', VALUE' * argc
+        argv = argc                    \
+             . times                   \
+             . map {|i|", argv[#{i}]"} \
+             . join('')
+        f.puts %'    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE#{decl});\\n");'
+        if argc > 0
+          f.puts %'    if (index == -1) {'
+          f.puts %'        fprintf(f, "    const VALUE *argv = STACK_ADDR_FROM_TOP(%d);\\n", #{argc});'
+          f.puts %'    }'
+          f.puts %'    else {'
+          f.puts %'        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\\n");'
+          f.puts %'        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\\n", index);'
+          f.puts %'    }'
+        end
+        f.puts %'    fprintf(f, "    func f = (func)%p\\n;", (const void *)#{cfunc_name});'
+        f.puts %'    fprintf(f, "    val = f(ec, GET_SELF()#{argv});\\n");'
+      end
       f.puts %'}'
       f.puts
     }

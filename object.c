@@ -591,7 +591,7 @@ rb_obj_itself(VALUE obj)
     return obj;
 }
 
-static VALUE
+VALUE
 rb_obj_size(VALUE self, VALUE args, VALUE obj)
 {
     return LONG2FIX(1);
