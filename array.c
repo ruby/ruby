@@ -5069,7 +5069,7 @@ rb_ary_clear(VALUE ary)
  *  call-seq:
  *    array.fill(obj) -> self
  *    array.fill(obj, start) -> self
- *    array.fill(obj, start , length) -> self
+ *    array.fill(obj, start, length) -> self
  *    array.fill(obj, range) -> self
  *    array.fill { |index| ... } -> self
  *    array.fill(start) { |index| ... } -> self
