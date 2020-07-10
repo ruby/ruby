@@ -5093,7 +5093,7 @@ rb_ary_clear(VALUE ary)
  *
  *  ---
  *
- *  With arguments +obj+ and +start*, and no block given, replaces elements based on the given start.
+ *  With arguments +obj+ and +start+, and no block given, replaces elements based on the given start.
  *
  *  If +start+ is in range (<tt>0 <= start < ary.size</tt>),
  *  replaces all elements from offset +start+ through the end:
