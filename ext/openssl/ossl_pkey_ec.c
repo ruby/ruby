@@ -472,57 +472,6 @@ static VALUE ossl_ec_key_check_key(VALUE self)
 }
 
 /*
- *  call-seq:
- *     key.dsa_sign_asn1(data)   => String
- *
- *  See the OpenSSL documentation for ECDSA_sign()
- */
-static VALUE ossl_ec_key_dsa_sign_asn1(VALUE self, VALUE data)
-{
-    EC_KEY *ec;
-    unsigned int buf_len;
-    VALUE str;
-
-    GetEC(self, ec);
-    StringValue(data);
-
-    if (EC_KEY_get0_private_key(ec) == NULL)
-	ossl_raise(eECError, "Private EC key needed!");
-
-    str = rb_str_new(0, ECDSA_size(ec));
-    if (ECDSA_sign(0, (unsigned char *) RSTRING_PTR(data), RSTRING_LENINT(data), (unsigned char *) RSTRING_PTR(str), &buf_len, ec) != 1)
-	ossl_raise(eECError, "ECDSA_sign");
-    rb_str_set_len(str, buf_len);
-
-    return str;
-}
-
-/*
- *  call-seq:
- *     key.dsa_verify_asn1(data, sig)   => true or false
- *
- *  See the OpenSSL documentation for ECDSA_verify()
- */
-static VALUE ossl_ec_key_dsa_verify_asn1(VALUE self, VALUE data, VALUE sig)
-{
-    EC_KEY *ec;
-
-    GetEC(self, ec);
-    StringValue(data);
-    StringValue(sig);
-
-    switch (ECDSA_verify(0, (unsigned char *) RSTRING_PTR(data), RSTRING_LENINT(data), (unsigned char *) RSTRING_PTR(sig), (int)RSTRING_LEN(sig), ec)) {
-    case 1:	return Qtrue;
-    case 0:	return Qfalse;
-    default:	break;
-    }
-
-    ossl_raise(eECError, "ECDSA_verify");
-
-    UNREACHABLE;
-}
-
-/*
  * OpenSSL::PKey::EC::Group
  */
 static void
@@ -1582,10 +1531,6 @@ void Init_ossl_ec(void)
     rb_define_method(cEC, "generate_key!", ossl_ec_key_generate_key, 0);
     rb_define_alias(cEC, "generate_key", "generate_key!");
     rb_define_method(cEC, "check_key", ossl_ec_key_check_key, 0);
-
-    rb_define_method(cEC, "dsa_sign_asn1", ossl_ec_key_dsa_sign_asn1, 1);
-    rb_define_method(cEC, "dsa_verify_asn1", ossl_ec_key_dsa_verify_asn1, 2);
-/* do_sign/do_verify */
 
     rb_define_method(cEC, "export", ossl_ec_key_export, -1);
     rb_define_alias(cEC, "to_pem", "export");

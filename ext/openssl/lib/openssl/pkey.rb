@@ -165,6 +165,28 @@ module OpenSSL::PKey
     include OpenSSL::Marshal
 
     # :call-seq:
+    #    key.dsa_sign_asn1(data) -> String
+    #
+    # <b>Deprecated in version 3.0</b>.
+    # Consider using PKey::PKey#sign_raw and PKey::PKey#verify_raw instead.
+    def dsa_sign_asn1(data)
+      sign_raw(nil, data)
+    rescue OpenSSL::PKey::PKeyError
+      raise OpenSSL::PKey::ECError, $!.message
+    end
+
+    # :call-seq:
+    #    key.dsa_verify_asn1(data, sig) -> true | false
+    #
+    # <b>Deprecated in version 3.0</b>.
+    # Consider using PKey::PKey#sign_raw and PKey::PKey#verify_raw instead.
+    def dsa_verify_asn1(data, sig)
+      verify_raw(nil, sig, data)
+    rescue OpenSSL::PKey::PKeyError
+      raise OpenSSL::PKey::ECError, $!.message
+    end
+
+    # :call-seq:
     #    ec.dh_compute_key(pubkey) -> string
     #
     # Derives a shared secret by ECDH. _pubkey_ must be an instance of
