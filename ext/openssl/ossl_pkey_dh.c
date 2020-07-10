@@ -273,19 +273,38 @@ ossl_dh_get_params(VALUE self)
  * Validates the Diffie-Hellman parameters associated with this instance.
  * It checks whether a safe prime and a suitable generator are used. If this
  * is not the case, +false+ is returned.
+ *
+ * See also the man page EVP_PKEY_param_check(3).
  */
 static VALUE
 ossl_dh_check_params(VALUE self)
 {
+    int ret;
+#ifdef HAVE_EVP_PKEY_CHECK
+    EVP_PKEY *pkey;
+    EVP_PKEY_CTX *pctx;
+
+    GetPKey(self, pkey);
+    pctx = EVP_PKEY_CTX_new(pkey, /* engine */NULL);
+    if (!pctx)
+        ossl_raise(eDHError, "EVP_PKEY_CTX_new");
+    ret = EVP_PKEY_param_check(pctx);
+    EVP_PKEY_CTX_free(pctx);
+#else
     DH *dh;
     int codes;
 
     GetDH(self, dh);
-    if (!DH_check(dh, &codes)) {
-	return Qfalse;
-    }
+    ret = DH_check(dh, &codes) == 1 && codes == 0;
+#endif
 
-    return codes == 0 ? Qtrue : Qfalse;
+    if (ret == 1)
+        return Qtrue;
+    else {
+        /* DH_check_ex() will put error entry on failure */
+        ossl_clear_error();
+        return Qfalse;
+    }
 }
 
 /*

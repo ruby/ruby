@@ -86,6 +86,22 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
     assert_equal(dh.compute_key(dh2.pub_key), dh2.compute_key(dh.pub_key))
   end
 
+  def test_params_ok?
+    dh0 = Fixtures.pkey("dh1024")
+
+    dh1 = OpenSSL::PKey::DH.new(OpenSSL::ASN1::Sequence([
+      OpenSSL::ASN1::Integer(dh0.p),
+      OpenSSL::ASN1::Integer(dh0.g)
+    ]))
+    assert_equal(true, dh1.params_ok?)
+
+    dh2 = OpenSSL::PKey::DH.new(OpenSSL::ASN1::Sequence([
+      OpenSSL::ASN1::Integer(dh0.p + 1),
+      OpenSSL::ASN1::Integer(dh0.g)
+    ]))
+    assert_equal(false, dh2.params_ok?)
+  end
+
   def test_dup
     dh = Fixtures.pkey("dh1024")
     dh2 = dh.dup

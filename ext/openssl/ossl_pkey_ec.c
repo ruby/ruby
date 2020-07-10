@@ -438,20 +438,35 @@ static VALUE ossl_ec_key_generate_key(VALUE self)
 }
 
 /*
- *  call-seq:
- *     key.check_key   => true
+ * call-seq:
+ *    key.check_key   => true
  *
- *  Raises an exception if the key is invalid.
+ * Raises an exception if the key is invalid.
  *
- *  See the OpenSSL documentation for EC_KEY_check_key()
+ * See also the man page EVP_PKEY_public_check(3).
  */
 static VALUE ossl_ec_key_check_key(VALUE self)
 {
+#ifdef HAVE_EVP_PKEY_CHECK
+    EVP_PKEY *pkey;
+    EVP_PKEY_CTX *pctx;
+    int ret;
+
+    GetPKey(self, pkey);
+    pctx = EVP_PKEY_CTX_new(pkey, /* engine */NULL);
+    if (!pctx)
+        ossl_raise(eDHError, "EVP_PKEY_CTX_new");
+    ret = EVP_PKEY_public_check(pctx);
+    EVP_PKEY_CTX_free(pctx);
+    if (ret != 1)
+        ossl_raise(eECError, "EVP_PKEY_public_check");
+#else
     EC_KEY *ec;
 
     GetEC(self, ec);
     if (EC_KEY_check_key(ec) != 1)
 	ossl_raise(eECError, "EC_KEY_check_key");
+#endif
 
     return Qtrue;
 }
