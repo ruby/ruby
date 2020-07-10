@@ -15,7 +15,7 @@ class Gem::Commands::SetupCommand < Gem::Command
     require 'tmpdir'
 
     super 'setup', 'Install RubyGems',
-          :format_executable => true, :document => %w[ri],
+          :format_executable => false, :document => %w[ri],
           :force => true,
           :site_or_vendor => 'sitelibdir',
           :destdir => '', :prefix => '', :previous_version => '',
