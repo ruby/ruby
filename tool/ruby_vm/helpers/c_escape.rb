@@ -46,7 +46,7 @@ module RubyVM::CEscape
     # I believe this is the fastest implementation done in pure-ruby.
     # Constants cached, gsub skips block evaluation, string literal optimized.
     buf = str.b
-    buf.gsub! %r/./n, RString2CStr
+    buf.gsub! %r/./nm, RString2CStr
     return %'"#{buf}"'
   end
 

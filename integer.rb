@@ -15,7 +15,7 @@ class Integer
   #  Returns +true+ if +int+ is an even number.
   def even?
     Primitive.attr! 'inline'
-    Primitive.cexpr! 'int_even_p(self)'
+    Primitive.cexpr! 'rb_int_even_p(self)'
   end
 
   #  call-seq:
@@ -79,6 +79,6 @@ class Integer
   # Returns +true+ if +int+ has a zero value.
   def zero?
     Primitive.attr! 'inline'
-    Primitive.cexpr! 'int_zero_p(self)'
+    Primitive.cexpr! 'rb_int_zero_p(self)'
   end
 end
