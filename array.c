@@ -5226,7 +5226,7 @@ rb_ary_clear(VALUE ary)
  *  If +length+ is zero or less, replaces no elements:
  *    a = ['a', 'b', 'c', 'd']
  *    a.fill(1, 0) { |index| "new_#{index}" } # => ["a", "b", "c", "d"]
- *   a.fill(1, -1) { |index| "new_#{index}" } # => ["a", "b", "c", "d"]
+ *    a.fill(1, -1) { |index| "new_#{index}" } # => ["a", "b", "c", "d"]
  *
  *  ---
  *
