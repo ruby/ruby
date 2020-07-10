@@ -2948,12 +2948,12 @@ main(void)
     stack_t ss;
     struct sigaction sa;
 
-    ss.ss_sp = malloc(SIGSTKSZ);
+    ss.ss_sp = malloc(16*1024);
     if (ss.ss_sp == NULL) {
 	fprintf(stderr, "cannot allocate memory for sigaltstack\n");
 	return EXIT_FAILURE;
     }
-    ss.ss_size = SIGSTKSZ;
+    ss.ss_size = 16*1024;
     ss.ss_flags = 0;
     if (sigaltstack(&ss, NULL) == -1) {
 	fprintf(stderr, "sigaltstack failed\n");
