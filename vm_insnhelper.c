@@ -290,7 +290,7 @@ vm_check_canary(const rb_execution_context_t *ec, VALUE *sp)
 #if USE_DEBUG_COUNTER
 static void
 vm_push_frame_debug_counter_inc(
-    const struct rb_executoon_context_struct *ec,
+    const struct rb_execution_context_struct *ec,
     const struct rb_control_frame_struct *reg_cfp,
     VALUE type)
 {
