@@ -5264,7 +5264,7 @@ rb_ary_clear(VALUE ary)
  *    [].fill(:X, :x)
  *
  *  Raises an exception if no is block given, three arguments are given,
- *  amd the second or third argument not an Integer-convertible object:
+ *  and the second or third argument not an Integer-convertible object:
  *    # Raises TypeError (no implicit conversion of Symbol into Integer):
  *    [].fill(:X, :x, 1)
  *    # Raises TypeError (no implicit conversion of Symbol into Integer):
