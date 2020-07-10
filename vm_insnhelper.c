@@ -302,7 +302,7 @@ vm_push_frame_debug_counter_inc(
         const bool curr = VM_FRAME_RUBYFRAME_P(reg_cfp);
         const bool prev = VM_FRAME_RUBYFRAME_P(prev_cfp);
         if (prev) {
-            if (crr) {
+            if (curr) {
                 RB_DEBUG_COUNTER_INC(frame_R2R);
             }
             else {
@@ -310,7 +310,7 @@ vm_push_frame_debug_counter_inc(
             }
         }
         else {
-            if (crr) {
+            if (curr) {
                 RB_DEBUG_COUNTER_INC(frame_C2R);
             }
             else {
