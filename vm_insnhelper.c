@@ -3034,6 +3034,9 @@ search_refined_method(rb_execution_context_t *ec, rb_control_frame_t *cfp, struc
         if (ref_me) {
             if (vm_cc_call(cc) == vm_call_super_method) {
                 const rb_control_frame_t *top_cfp = current_method_entry(ec, cfp);
+                if (refinement == find_refinement(CREF_REFINEMENTS(vm_get_cref(top_cfp->ep)), vm_cc_cme(cc)->owner)) {
+                    continue;
+                }
                 const rb_callable_method_entry_t *top_me = rb_vm_frame_method_entry(top_cfp);
                 if (top_me && rb_method_definition_eq(ref_me->def, top_me->def)) {
                     continue;
