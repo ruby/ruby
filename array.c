@@ -5073,7 +5073,7 @@ rb_ary_clear(VALUE ary)
  *    array.fill(obj, range) -> self
  *    array.fill { |index| ... } -> self
  *    array.fill(start) { |index| ... } -> self
- *    array.fill(start , length) { |index| ... } -> self
+ *    array.fill(start, length) { |index| ... } -> self
  *    array.fill(range) { |index| ... } -> self
  *
  *  Replaces specified elements in +self+ with specified objects; returns +self+.
