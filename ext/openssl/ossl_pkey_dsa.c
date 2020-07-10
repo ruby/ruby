@@ -265,92 +265,6 @@ ossl_dsa_get_params(VALUE self)
 }
 
 /*
- *  call-seq:
- *    dsa.syssign(string) -> aString
- *
- * Computes and returns the DSA signature of _string_, where _string_ is
- * expected to be an already-computed message digest of the original input
- * data. The signature is issued using the private key of this DSA instance.
- *
- * === Parameters
- * * _string_ is a message digest of the original input data to be signed.
- *
- * === Example
- *  dsa = OpenSSL::PKey::DSA.new(2048)
- *  doc = "Sign me"
- *  digest = OpenSSL::Digest.digest('SHA1', doc)
- *  sig = dsa.syssign(digest)
- *
- *
- */
-static VALUE
-ossl_dsa_sign(VALUE self, VALUE data)
-{
-    DSA *dsa;
-    const BIGNUM *dsa_q;
-    unsigned int buf_len;
-    VALUE str;
-
-    GetDSA(self, dsa);
-    DSA_get0_pqg(dsa, NULL, &dsa_q, NULL);
-    if (!dsa_q)
-	ossl_raise(eDSAError, "incomplete DSA");
-    if (!DSA_PRIVATE(self, dsa))
-	ossl_raise(eDSAError, "Private DSA key needed!");
-    StringValue(data);
-    str = rb_str_new(0, DSA_size(dsa));
-    if (!DSA_sign(0, (unsigned char *)RSTRING_PTR(data), RSTRING_LENINT(data),
-		  (unsigned char *)RSTRING_PTR(str),
-		  &buf_len, dsa)) { /* type is ignored (0) */
-	ossl_raise(eDSAError, NULL);
-    }
-    rb_str_set_len(str, buf_len);
-
-    return str;
-}
-
-/*
- *  call-seq:
- *    dsa.sysverify(digest, sig) -> true | false
- *
- * Verifies whether the signature is valid given the message digest input. It
- * does so by validating _sig_ using the public key of this DSA instance.
- *
- * === Parameters
- * * _digest_ is a message digest of the original input data to be signed
- * * _sig_ is a DSA signature value
- *
- * === Example
- *  dsa = OpenSSL::PKey::DSA.new(2048)
- *  doc = "Sign me"
- *  digest = OpenSSL::Digest.digest('SHA1', doc)
- *  sig = dsa.syssign(digest)
- *  puts dsa.sysverify(digest, sig) # => true
- *
- */
-static VALUE
-ossl_dsa_verify(VALUE self, VALUE digest, VALUE sig)
-{
-    DSA *dsa;
-    int ret;
-
-    GetDSA(self, dsa);
-    StringValue(digest);
-    StringValue(sig);
-    /* type is ignored (0) */
-    ret = DSA_verify(0, (unsigned char *)RSTRING_PTR(digest), RSTRING_LENINT(digest),
-		     (unsigned char *)RSTRING_PTR(sig), RSTRING_LENINT(sig), dsa);
-    if (ret < 0) {
-	ossl_raise(eDSAError, NULL);
-    }
-    else if (ret == 1) {
-	return Qtrue;
-    }
-
-    return Qfalse;
-}
-
-/*
  * Document-method: OpenSSL::PKey::DSA#set_pqg
  * call-seq:
  *   dsa.set_pqg(p, q, g) -> self
@@ -404,8 +318,6 @@ Init_ossl_dsa(void)
     rb_define_alias(cDSA, "to_pem", "export");
     rb_define_alias(cDSA, "to_s", "export");
     rb_define_method(cDSA, "to_der", ossl_dsa_to_der, 0);
-    rb_define_method(cDSA, "syssign", ossl_dsa_sign, 1);
-    rb_define_method(cDSA, "sysverify", ossl_dsa_verify, 2);
 
     DEF_OSSL_PKEY_BN(cDSA, dsa, p);
     DEF_OSSL_PKEY_BN(cDSA, dsa, q);

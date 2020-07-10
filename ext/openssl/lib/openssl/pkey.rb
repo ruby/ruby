@@ -158,6 +158,60 @@ module OpenSSL::PKey
         end
       end
     end
+
+    # :call-seq:
+    #    dsa.syssign(string) -> string
+    #
+    # Computes and returns the \DSA signature of +string+, where +string+ is
+    # expected to be an already-computed message digest of the original input
+    # data. The signature is issued using the private key of this DSA instance.
+    #
+    # <b>Deprecated in version 3.0</b>.
+    # Consider using PKey::PKey#sign_raw and PKey::PKey#verify_raw instead.
+    #
+    # +string+::
+    #   A message digest of the original input data to be signed.
+    #
+    # Example:
+    #   dsa = OpenSSL::PKey::DSA.new(2048)
+    #   doc = "Sign me"
+    #   digest = OpenSSL::Digest.digest('SHA1', doc)
+    #
+    #   # With legacy #syssign and #sysverify:
+    #   sig = dsa.syssign(digest)
+    #   p dsa.sysverify(digest, sig) #=> true
+    #
+    #   # With #sign_raw and #verify_raw:
+    #   sig = dsa.sign_raw(nil, digest)
+    #   p dsa.verify_raw(nil, sig, digest) #=> true
+    def syssign(string)
+      q or raise OpenSSL::PKey::DSAError, "incomplete DSA"
+      private? or raise OpenSSL::PKey::DSAError, "Private DSA key needed!"
+      begin
+        sign_raw(nil, string)
+      rescue OpenSSL::PKey::PKeyError
+        raise OpenSSL::PKey::DSAError, $!.message
+      end
+    end
+
+    # :call-seq:
+    #    dsa.sysverify(digest, sig) -> true | false
+    #
+    # Verifies whether the signature is valid given the message digest input.
+    # It does so by validating +sig+ using the public key of this DSA instance.
+    #
+    # <b>Deprecated in version 3.0</b>.
+    # Consider using PKey::PKey#sign_raw and PKey::PKey#verify_raw instead.
+    #
+    # +digest+::
+    #   A message digest of the original input data to be signed.
+    # +sig+::
+    #   A \DSA signature value.
+    def sysverify(digest, sig)
+      verify_raw(nil, sig, digest)
+    rescue OpenSSL::PKey::PKeyError
+      raise OpenSSL::PKey::DSAError, $!.message
+    end
   end
 
   if defined?(EC)
