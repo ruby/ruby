@@ -805,7 +805,9 @@ class TestJIT < Test::Unit::TestCase
 
       print(test('a')) # set #to_s cc to String#to_s (expecting C method)
       print(test('a')) # JIT with #to_s cc: String#to_s
-      print(test('a', recursive: :foo)) # update #to_s cd->cc to Symbol#to_s, then go through inlined #to_s cc with Symbol#to_s
+      # update #to_s cd->cc to Symbol#to_s, then go through the Symbol#to_s cd->cc
+      # after checking receiver class using inlined #to_s cc with String#to_s.
+      print(test('a', recursive: :foo))
     end;
   end
 
