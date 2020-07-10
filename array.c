@@ -5217,7 +5217,7 @@ rb_ary_clear(VALUE ary)
  *    a = ['a', 'b', 'c', 'd']
  *    a.fill(-2, 1) { |index| "new_#{index}" } # => ["a", "b", "new_2", "d"]
  *
- *  If +start+ is large(<tt>start >= ary.size</tt>), extends +self+ with +nil+:
+ *  If +start+ is large (<tt>start >= ary.size</tt>), extends +self+ with +nil+:
  *    a = ['a', 'b', 'c', 'd']
  *    a.fill(5, 0) { |index| "new_#{index}" } # => ["a", "b", "c", "d", nil]
  *    a = ['a', 'b', 'c', 'd']
