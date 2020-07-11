@@ -7,12 +7,7 @@
 
 require 'rubygems/exceptions'
 require 'fileutils'
-
-begin
-  require 'openssl'
-rescue LoadError => e
-  raise unless e.path == 'openssl'
-end
+require_relative 'openssl'
 
 ##
 # = Signing gems
