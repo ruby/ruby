@@ -2822,7 +2822,12 @@ realclean: distclean
   end
 end
 
-include MakeMakefile
+# MakeMakefile::Global = #
+m = Module.new {
+  include(MakeMakefile)
+  private(*MakeMakefile.public_instance_methods(false))
+}
+include m
 
 if not $extmk and /\A(extconf|makefile).rb\z/ =~ File.basename($0)
   END {mkmf_failed($0)}
