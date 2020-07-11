@@ -45,7 +45,7 @@ class Gem::Request
   end
 
   def self.configure_connection_for_https(connection, cert_files)
-    require 'net/https'
+    require 'openssl'
     connection.use_ssl = true
     connection.verify_mode =
       Gem.configuration.ssl_verify_mode || OpenSSL::SSL::VERIFY_PEER
