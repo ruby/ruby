@@ -527,7 +527,7 @@ typedef RETSIGTYPE ruby_sigaction_t(int);
 static int
 rb_sigaltstack_size(void)
 {
-    /* XXX: BSD_vfprintf() uses >1500KiB stack and x86-64 need >5KiB stack. */
+    /* XXX: BSD_vfprintf() uses >1500B stack and x86-64 need >5KiB stack. */
     int size = 16*1024;
 
 #ifdef MINSIGSTKSZ
