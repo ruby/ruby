@@ -4931,7 +4931,7 @@ rb_fix_bit_length(VALUE fix)
     return LONG2FIX(bit_length(v));
 }
 
-static VALUE
+VALUE
 rb_int_bit_length(VALUE num)
 {
     if (FIXNUM_P(num)) {
