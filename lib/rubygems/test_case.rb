@@ -289,10 +289,6 @@ class Gem::TestCase < Minitest::Test
   # or <tt>i686-darwin8.10.1</tt> otherwise.
 
   def setup
-    @orig_stderr = $stderr.dup
-    @captured_stderr = Tempfile.new("captured_stderr")
-    $stderr.reopen @captured_stderr
-
     @orig_env = ENV.to_hash
     @tmp = File.expand_path("tmp")
 
@@ -466,16 +462,6 @@ class Gem::TestCase < Minitest::Test
     end
 
     @back_ui.close
-
-    $stderr.rewind
-    err = @captured_stderr.read
-    assert_empty err
-  ensure
-    @captured_stderr.unlink
-
-    $stderr.reopen @orig_stderr
-    @orig_stderr.close
-    @captured_stderr.close
   end
 
   def credential_setup
