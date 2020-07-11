@@ -91,12 +91,11 @@ class TestGemPackage < Gem::Package::TarTestCase
       'SHA512' => {
         'metadata.gz' => metadata_sha512,
         'data.tar.gz' => Digest::SHA512.hexdigest(tar),
+      },
+      'SHA256' => {
+        'metadata.gz' => metadata_sha256,
+        'data.tar.gz' => Digest::SHA256.hexdigest(tar),
       }
-    }
-
-    expected['SHA256'] = {
-      'metadata.gz' => metadata_sha256,
-      'data.tar.gz' => Digest::SHA256.hexdigest(tar),
     }
 
     assert_equal expected, YAML.load(checksums)
