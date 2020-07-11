@@ -77,29 +77,44 @@ module OpenSSL
       def parse_config_lines(io)
         section = 'default'
         data = {section => {}}
-        while definition = get_definition(io)
+        io_stack = [io]
+        while definition = get_definition(io_stack)
           definition = clear_comments(definition)
           next if definition.empty?
-          if definition[0] == ?[
+          case definition
+          when /\A\[/
             if /\[([^\]]*)\]/ =~ definition
               section = $1.strip
               data[section] ||= {}
             else
               raise ConfigError, "missing close square bracket"
             end
-          else
-            if /\A([^:\s]*)(?:::([^:\s]*))?\s*=(.*)\z/ =~ definition
-              if $2
-                section = $1
-                key = $2
-              else
-                key = $1
-              end
-              value = unescape_value(data, section, $3)
-              (data[section] ||= {})[key] = value.strip
+          when /\A\.include (\s*=\s*)?(.+)\z/
+            path = $2
+            if File.directory?(path)
+              files = Dir.glob(File.join(path, "*.{cnf,conf}"), File::FNM_EXTGLOB)
             else
-              raise ConfigError, "missing equal sign"
+              files = [path]
             end
+
+            files.each do |filename|
+              begin
+                io_stack << StringIO.new(File.read(filename))
+              rescue
+                raise ConfigError, "could not include file '%s'" % filename
+              end
+            end
+          when /\A([^:\s]*)(?:::([^:\s]*))?\s*=(.*)\z/
+            if $2
+              section = $1
+              key = $2
+            else
+              key = $1
+            end
+            value = unescape_value(data, section, $3)
+            (data[section] ||= {})[key] = value.strip
+          else
+            raise ConfigError, "missing equal sign"
           end
         end
         data
@@ -212,10 +227,10 @@ module OpenSSL
         scanned.join
       end
 
-      def get_definition(io)
-        if line = get_line(io)
+      def get_definition(io_stack)
+        if line = get_line(io_stack)
           while /[^\\]\\\z/ =~ line
-            if extra = get_line(io)
+            if extra = get_line(io_stack)
               line += extra
             else
               break
@@ -225,9 +240,12 @@ module OpenSSL
         end
       end
 
-      def get_line(io)
-        if line = io.gets
-          line.gsub(/[\r\n]*/, '')
+      def get_line(io_stack)
+        while io = io_stack.last
+          if line = io.gets
+            return line.gsub(/[\r\n]*/, '')
+          end
+          io_stack.pop
         end
       end
     end
