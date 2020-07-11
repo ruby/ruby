@@ -1,12 +1,6 @@
 # frozen_string_literal: true
 require 'rubygems/command'
 require 'rubygems/security'
-begin
-  require 'openssl'
-rescue LoadError => e
-  raise unless (e.respond_to?(:path) && e.path == 'openssl') ||
-               e.message =~ / -- openssl$/
-end
 
 class Gem::Commands::CertCommand < Gem::Command
   def initialize
