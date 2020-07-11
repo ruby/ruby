@@ -77,12 +77,6 @@ class Gem::Request
     end
 
     connection
-  rescue LoadError => e
-    raise unless (e.respond_to?(:path) && e.path == 'openssl') ||
-                 e.message =~ / -- openssl$/
-
-    raise Gem::Exception.new(
-            'Unable to require openssl, install OpenSSL and rebuild Ruby (preferred) or use non-HTTPS sources')
   end
 
   def self.verify_certificate(store_context)
