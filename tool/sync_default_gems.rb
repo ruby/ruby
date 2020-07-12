@@ -470,6 +470,13 @@ when "up"
   end
 when "all"
   $repositories.keys.each{|gem| sync_default_gems(gem.to_s)}
+when "list"
+  ARGV.shift
+  pattern = Regexp.new(ARGV.join('|'))
+  $repositories.each_pair do |name, gem|
+    next unless pattern =~ name or pattern =~ gem
+    printf "%-15s https://github.com/%s\n", name, gem
+  end
 when nil, "-h", "--help"
     puts <<-HELP
 \e[1mSync with upstream code of default libraries\e[0m
@@ -482,6 +489,12 @@ when nil, "-h", "--help"
 
 \e[1mPick a commit range from the upstream repository\e[0m
   ruby #$0 rubygems 97e9768612..9e53702832
+
+\e[1mList known libraries\e[0m
+  ruby #$0 list
+
+\e[1mList known libraries matching with patterns\e[0m
+  ruby #$0 list read
     HELP
 
   exit
