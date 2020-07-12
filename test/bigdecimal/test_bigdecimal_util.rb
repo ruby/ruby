@@ -61,15 +61,19 @@ class TestBigDecimalUtil < Test::Unit::TestCase
   end
 
   def test_Complex_to_d
-    assert_equal(BigDecimal("1"), Complex(1, 0).to_d)
-    assert_equal(BigDecimal("0.333333333333333333333"),
-                 Complex(1.quo(3), 0).to_d(21))
-    assert_equal(BigDecimal("0.1234567"), Complex(0.1234567, 0).to_d)
-    assert_equal(BigDecimal("0.1235"), Complex(0.1234567, 0).to_d(4))
+    BigDecimal.save_rounding_mode do
+      BigDecimal.mode(BigDecimal::ROUND_MODE, BigDecimal::ROUND_HALF_EVEN)
 
-    assert_raise_with_message(ArgumentError, "can't omit precision for a Rational.") { Complex(1.quo(3), 0).to_d }
+      assert_equal(BigDecimal("1"), Complex(1, 0).to_d)
+      assert_equal(BigDecimal("0.333333333333333333333"),
+                   Complex(1.quo(3), 0).to_d(21))
+      assert_equal(BigDecimal("0.1234567"), Complex(0.1234567, 0).to_d)
+      assert_equal(BigDecimal("0.1235"), Complex(0.1234567, 0).to_d(4))
 
-    assert_raise_with_message(ArgumentError, "Unable to make a BigDecimal from non-zero imaginary number") { Complex(1, 1).to_d }
+      assert_raise_with_message(ArgumentError, "can't omit precision for a Rational.") { Complex(1.quo(3), 0).to_d }
+
+      assert_raise_with_message(ArgumentError, "Unable to make a BigDecimal from non-zero imaginary number") { Complex(1, 1).to_d }
+    end
   end
 
   def test_String_to_d
