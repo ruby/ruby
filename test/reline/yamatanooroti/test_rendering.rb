@@ -81,6 +81,40 @@ begin
         prompt>
       EOC
     end
+
+    def test_mode_icon_emacs
+      File.open(@inputrc_file, 'w') do |f|
+        f.write <<~LINES
+          set show-mode-in-prompt on
+        LINES
+      end
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl})
+      sleep 0.5
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        @prompt>
+      EOC
+    end
+
+    def test_mode_icon_vi
+      File.open(@inputrc_file, 'w') do |f|
+        f.write <<~LINES
+          set editing-mode vi
+          set show-mode-in-prompt on
+        LINES
+      end
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl})
+      sleep 0.5
+      write(":a\n\C-[k")
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        (ins)prompt> :a
+        => :a
+        (cmd)prompt> :a
+      EOC
+    end
   end
 rescue LoadError, NameError
   # On Ruby repository, this test suit doesn't run because Ruby repo doesn't

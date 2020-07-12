@@ -76,11 +76,35 @@ class Reline::LineEditor
     if @prompt_proc
       prompt_list = @prompt_proc.(buffer)
       prompt_list.map!{ prompt } if @vi_arg or @searching_prompt
+      if @config.show_mode_in_prompt
+        if @config.editing_mode_is?(:vi_command)
+          mode_icon = @config.vi_cmd_mode_icon
+        elsif @config.editing_mode_is?(:vi_insert)
+          mode_icon = @config.vi_ins_mode_icon
+        elsif @config.editing_mode_is?(:emacs)
+          mode_icon = @config.emacs_mode_string
+        else
+          mode_icon = '?'
+        end
+        prompt_list.map!{ |pr| mode_icon + pr }
+      end
       prompt = prompt_list[@line_index]
       prompt_width = calculate_width(prompt, true)
       [prompt, prompt_width, prompt_list]
     else
       prompt_width = calculate_width(prompt, true)
+      if @config.show_mode_in_prompt
+        if @config.editing_mode_is?(:vi_command)
+          mode_icon = @config.vi_cmd_mode_icon
+        elsif @config.editing_mode_is?(:vi_insert)
+          mode_icon = @config.vi_ins_mode_icon
+        elsif @config.editing_mode_is?(:emacs)
+          mode_icon = @config.emacs_mode_string
+        else
+          mode_icon = '?'
+        end
+        prompt = mode_icon + prompt
+      end
       [prompt, prompt_width, nil]
     end
   end

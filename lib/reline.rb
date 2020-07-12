@@ -222,7 +222,6 @@ module Reline
       line_editor.auto_indent_proc = auto_indent_proc
       line_editor.dig_perfect_match_proc = dig_perfect_match_proc
       line_editor.pre_input_hook = pre_input_hook
-      line_editor.rerender
 
       unless config.test_mode
         config.read
@@ -231,6 +230,8 @@ module Reline
           config.add_default_key_binding(key, func)
         end
       end
+
+      line_editor.rerender
 
       begin
         loop do
