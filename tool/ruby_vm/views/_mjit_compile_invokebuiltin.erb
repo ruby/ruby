@@ -6,18 +6,24 @@
 % # conditions mentioned  in the  file COPYING  are met.   Consult the  file for
 % # details.
 %
-    /* <%= insn.name %> */
-    const struct rb_builtin_function *bf = (const void *)operands[0];
-%
-% if insn.name == 'invokebuiltin' then
-    const rb_num_t index = -1;
-% else
-    const rb_num_t index = (rb_num_t)operands[1];
+% insn.opes.each_with_index do |ope, i|
+        <%= ope.fetch(:decl) %> = (<%= ope.fetch(:type) %>)operands[<%= i %>];
 % end
-%
-    if (bf->compiler) {
-        bf->compiler(f, index);
-    }
-    else {
-        mjit_invokebuiltin_default_compiler(f, bf, index);
-    }
+        rb_snum_t sp_inc = <%= insn.call_attribute('sp_inc') %>;
+        unsigned sp = b->stack_size + (unsigned)sp_inc;
+        VM_ASSERT(sp_inc >= 0);
+        VM_ASSERT(sp_inc < UINT_MAX - b->stack_size);
+
+        if (bf->compiler) {
+            fprintf(f, "{\n");
+            fprintf(f, "    VALUE val;\n");
+            bf->compiler(f, <%=
+                insn.name == 'invokebuiltin' ? '-1' : '(rb_num_t)operands[1]'
+            %>);
+            fprintf(f, "    stack[%u] = val;\n", sp - 1);
+            fprintf(f, "}\n");
+% if insn.name != 'opt_invokebuiltin_delegate_leave'
+            b->stack_size = sp;
+            break;
+% end
+        }

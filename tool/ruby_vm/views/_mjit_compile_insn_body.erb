@@ -63,10 +63,6 @@
             fprintf(f, "        goto label_%lu;\n", arg.base_pos + else_offset);
             fprintf(f, "    }\n");
         }
-%     elsif insn.name == 'invokebuiltin' || insn.name == 'opt_invokebuiltin_delegate'
-        {
-<%=   render 'mjit_compile_invokebuiltin', locals: { insn: insn } -%>
-        }
 %     else
 %       # Before we `goto` next insn, we need to set return values, especially for getinlinecache
 %       insn.rets.reverse_each.with_index do |ret, i|
