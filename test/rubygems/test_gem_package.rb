@@ -1065,11 +1065,22 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     package = Gem::Package.new @gem
 
-    e = assert_raises Gem::Package::FormatError do
-      package.verify_entry entry
+    _, err = use_ui @ui do
+      e = nil
+
+      out_err = capture_io do
+        e = assert_raises ArgumentError do
+          package.verify_entry entry
+        end
+      end
+
+      assert_equal "whatever", e.message
+      assert_equal "full_name", e.backtrace_locations.first.label
+
+      out_err
     end
 
-    assert_equal "package is corrupt, exception while verifying: whatever (ArgumentError) in #{@gem}", e.message
+    assert_equal "Exception while verifying #{@gem}\n", err
 
     valid_metadata = ["metadata", "metadata.gz"]
     valid_metadata.each do |vm|
