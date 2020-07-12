@@ -80,20 +80,4 @@ struct builtin_binary {
     size_t bin_size;
 };
 
-// mjit
-
-RBIMPL_ATTR_MAYBE_UNUSED()
-static void
-mjit_invokebuiltin_default_compiler(FILE *f, const struct rb_builtin_function *bf, long index)
-{
-    if (index >= 0) {
-        fprintf(f, "val = vm_invoke_builtin(ec, GET_CFP(), %p, STACK_ADDR_FROM_TOP(%d));\n",
-                (const void *)bf, bf->argc);
-    }
-    else {
-        fprintf(f, "val = vm_invoke_builtin_delegate(ec, GET_CFP(), %p, %ld);\n",
-                (const void *)bf, index);
-    }
-}
-
 #endif // BUILTIN_H_INCLUDED

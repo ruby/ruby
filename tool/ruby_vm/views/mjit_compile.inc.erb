@@ -63,15 +63,15 @@ switch (insn) {
       }
 %   when 'getinstancevariable', 'setinstancevariable'
 <%=   render 'mjit_compile_ivar', locals: { insn: insn } -%>
+%   when 'invokebuiltin', 'opt_invokebuiltin_delegate'
+    {
+<%=   render 'mjit_compile_invokebuiltin', locals: { insn: insn } -%>
+    }
 %   when 'leave', 'opt_invokebuiltin_delegate_leave'
     {
 %     # opt_invokebuiltin_delegate_leave also implements leave insn. We need to handle it here for inlining.
 %     if insn.name == 'opt_invokebuiltin_delegate_leave'
-      fprintf(f, "{\n");
-      fprintf(f, "    VALUE val;\n");
 <%=   render 'mjit_compile_invokebuiltin', locals: { insn: insn } -%>
-      fprintf(f, "    stack[0] = val;\n");
-      fprintf(f, "}\n");
 %     else
       if (b->stack_size != 1) {
           if (mjit_opts.warnings || mjit_opts.verbose)
