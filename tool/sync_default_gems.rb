@@ -313,7 +313,7 @@ end
 
 IGNORE_FILE_PATTERN = /\A(?:\.travis.yml|appveyor\.yml|azure-pipelines\.yml|\.git(?:ignore|hub)|Gemfile|README\.md|History\.txt|Rakefile|CODE_OF_CONDUCT\.md)/
 
-def sync_default_gems_with_commits(gem, ranges)
+def sync_default_gems_with_commits(gem, ranges, edit: nil)
   puts "Sync #{$repositories[gem.to_sym]} with commit history."
 
   IO.popen(%W"git remote") do |f|
@@ -363,11 +363,23 @@ def sync_default_gems_with_commits(gem, ranges)
       skipped = true
     elsif /^CONFLICT/ =~ result
       result = IO.popen(%W"git status --porcelain", &:readlines).each(&:chomp!)
-      ignore = result.map {|line| /^.U / =~ line and IGNORE_FILE_PATTERN =~ (name = $') and name}
-      ignore.compact!
+      result.map! {|line| line[/^.U (.*)/, 1]}
+      result.compact!
+      ignore, conflict = result.partition {|name| IGNORE_FILE_PATTERN =~ name}
       unless ignore.empty?
         system(*%W"git reset HEAD --", *ignore)
         system(*%W"git checkout HEAD --", *ignore)
+      end
+      unless conflict.empty?
+        if edit
+          case
+          when (editor = ENV["GIT_EDITOR"] and !editor.empty?)
+          when (editor = `git config core.editor` and (editor.chomp!; !editor.empty?))
+          end
+          if editor
+            system([editor, conflict].join(' '))
+          end
+        end
       end
       skipped = !system({"GIT_EDITOR"=>"true"}, *%W"git cherry-pick --no-edit --continue")
     end
@@ -469,9 +481,13 @@ when nil, "-h", "--help"
 
   exit
 else
+  if ARGV[0] == "-e"
+    edit = true
+    ARGV.shift
+  end
   gem = ARGV.shift
   if ARGV[0]
-    sync_default_gems_with_commits(gem, ARGV)
+    sync_default_gems_with_commits(gem, ARGV, edit: edit)
   else
     sync_default_gems(gem)
   end
