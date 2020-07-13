@@ -1,0 +1,29 @@
+% # -*- C -*-
+% # Copyright (c) 2020 Urabe, Shyouhei.  All rights reserved.
+% #
+% # This file is a part of  the programming language Ruby.  Permission is hereby
+% # granted, to either  redistribute and/or modify this file,  provided that the
+% # conditions mentioned  in the  file COPYING  are met.   Consult the  file for
+% # details.
+%
+% insn.opes.each_with_index do |ope, i|
+        <%= ope.fetch(:decl) %> = (<%= ope.fetch(:type) %>)operands[<%= i %>];
+% end
+        rb_snum_t sp_inc = <%= insn.call_attribute('sp_inc') %>;
+        unsigned sp = b->stack_size + (unsigned)sp_inc;
+        VM_ASSERT(sp_inc >= 0);
+        VM_ASSERT(sp_inc < UINT_MAX - b->stack_size);
+
+        if (bf->compiler) {
+            fprintf(f, "{\n");
+            fprintf(f, "    VALUE val;\n");
+            bf->compiler(f, <%=
+                insn.name == 'invokebuiltin' ? '-1' : '(rb_num_t)operands[1]'
+            %>);
+            fprintf(f, "    stack[%u] = val;\n", sp - 1);
+            fprintf(f, "}\n");
+% if insn.name != 'opt_invokebuiltin_delegate_leave'
+            b->stack_size = sp;
+            break;
+% end
+        }

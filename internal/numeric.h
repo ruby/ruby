@@ -75,8 +75,6 @@ VALUE rb_int_divmod(VALUE x, VALUE y);
 VALUE rb_int_and(VALUE x, VALUE y);
 VALUE rb_int_lshift(VALUE x, VALUE y);
 VALUE rb_int_div(VALUE x, VALUE y);
-VALUE rb_int_abs(VALUE num);
-VALUE rb_int_odd_p(VALUE num);
 int rb_int_positive_p(VALUE num);
 int rb_int_negative_p(VALUE num);
 VALUE rb_num_pow(VALUE x, VALUE y);
@@ -107,6 +105,11 @@ VALUE rb_float_equal(VALUE x, VALUE y);
 int rb_float_cmp(VALUE x, VALUE y);
 VALUE rb_float_eql(VALUE x, VALUE y);
 VALUE rb_fix_aref(VALUE fix, VALUE idx);
+VALUE rb_int_zero_p(VALUE num);
+VALUE rb_int_even_p(VALUE num);
+VALUE rb_int_odd_p(VALUE num);
+VALUE rb_int_abs(VALUE num);
+VALUE rb_int_bit_length(VALUE num);
 MJIT_SYMBOL_EXPORT_END
 
 static inline bool

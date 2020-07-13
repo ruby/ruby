@@ -63,19 +63,15 @@ switch (insn) {
       }
 %   when 'getinstancevariable', 'setinstancevariable'
 <%=   render 'mjit_compile_ivar', locals: { insn: insn } -%>
+%   when 'invokebuiltin', 'opt_invokebuiltin_delegate'
+    {
+<%=   render 'mjit_compile_invokebuiltin', locals: { insn: insn } -%>
+    }
 %   when 'leave', 'opt_invokebuiltin_delegate_leave'
     {
 %     # opt_invokebuiltin_delegate_leave also implements leave insn. We need to handle it here for inlining.
 %     if insn.name == 'opt_invokebuiltin_delegate_leave'
-      RB_BUILTIN bf = (RB_BUILTIN)operands[0];
-      rb_num_t index = (rb_num_t)operands[0];
-      fprintf(f, "{\n");
-      fprintf(f, "    VALUE val;\n");
-      fprintf(f, "    RB_BUILTIN bf = (RB_BUILTIN)0x%"PRIxVALUE";\n", operands[0]);
-      fprintf(f, "    rb_num_t index = (rb_num_t)0x%"PRIxVALUE";\n", operands[1]);
-      fprintf(f, <%= rstring2cstr(insn.expr.expr.lines.find { |l| l =~ / vm_invoke_builtin_delegate\(/ }).gsub("\n", '\n') %>);
-      fprintf(f, "    stack[0] = val;\n");
-      fprintf(f, "}\n");
+<%=   render 'mjit_compile_invokebuiltin', locals: { insn: insn } -%>
 %     else
       if (b->stack_size != 1) {
           if (mjit_opts.warnings || mjit_opts.verbose)
