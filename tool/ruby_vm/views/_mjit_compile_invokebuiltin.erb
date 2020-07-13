@@ -19,7 +19,7 @@
             fprintf(f, "    VALUE val;\n");
             bf->compiler(f, <%=
                 insn.name == 'invokebuiltin' ? '-1' : '(rb_num_t)operands[1]'
-            %>);
+            %>, b->stack_size);
             fprintf(f, "    stack[%u] = val;\n", sp - 1);
             fprintf(f, "}\n");
 % if insn.name != 'opt_invokebuiltin_delegate_leave'

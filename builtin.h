@@ -13,7 +13,7 @@ struct rb_builtin_function {
     const char * const name;
 
     // for jit
-    void (*compiler)(FILE *, long);
+    void (*compiler)(FILE *, long, unsigned);
 };
 
 #define RB_BUILTIN_FUNCTION(_i, _name, _fname, _arity, _compiler) {\

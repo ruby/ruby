@@ -286,7 +286,7 @@ def mk_builtin_header file
 
     bs.each_pair{|func, (argc, cfunc_name)|
       f.puts %'static void'
-      f.puts %'mjit_compile_invokebuiltin_for_#{func}(FILE *f, long index)'
+      f.puts %'mjit_compile_invokebuiltin_for_#{func}(FILE *f, long index, unsigned stack_size)'
       f.puts %'{'
       if inlines.has_key? cfunc_name
         f.puts %'    fprintf(f, "    MAYBE_UNUSED(VALUE) self = GET_SELF();\\n");'
@@ -304,7 +304,7 @@ def mk_builtin_header file
         f.puts %'    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE#{decl});\\n");'
         if argc > 0
           f.puts %'    if (index == -1) {'
-          f.puts %'        fprintf(f, "    const VALUE *argv = STACK_ADDR_FROM_TOP(%d);\\n", #{argc});'
+          f.puts %'        fprintf(f, "    const VALUE *argv = &stack[%d];\\n", stack_size - #{argc});'
           f.puts %'    }'
           f.puts %'    else {'
           f.puts %'        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\\n");'
