@@ -6,7 +6,6 @@ unless defined?(OpenSSL::SSL)
 end
 
 class TestGemSecurityTrustDir < Gem::TestCase
-
   CHILD_CERT = load_cert 'child'
 
   def setup
@@ -96,5 +95,4 @@ class TestGemSecurityTrustDir < Gem::TestCase
 
     assert_equal mask, File.stat(@dest_dir).mode unless win_platform?
   end
-
 end if defined?(OpenSSL::SSL)

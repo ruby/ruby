@@ -3,7 +3,6 @@ require 'rubygems/command'
 require 'rubygems/package'
 
 class Gem::Commands::BuildCommand < Gem::Command
-
   def initialize
     super 'build', 'Build a gem from a gemspec'
 
@@ -108,5 +107,4 @@ Gems can be saved to a specified filename with the output option:
       terminate_interaction 1
     end
   end
-
 end

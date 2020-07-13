@@ -13,7 +13,6 @@ unless defined?(Rake::PackageTask)
 end
 
 class TestGemPackageTask < Gem::TestCase
-
   def test_gem_package
     original_rake_fileutils_verbosity = RakeFileUtils.verbose_flag
     RakeFileUtils.verbose_flag = false
@@ -115,5 +114,4 @@ class TestGemPackageTask < Gem::TestCase
 
     assert_equal 'pkg/nokogiri-1.5.0-java', pkg.package_dir_path
   end
-
 end if defined?(Rake::PackageTask)

@@ -13,7 +13,6 @@ require 'resolv'
 # a remote source.
 
 class Gem::RemoteFetcher
-
   include Gem::UserInteraction
   include Gem::UriParsing
 
@@ -22,7 +21,6 @@ class Gem::RemoteFetcher
   # that could happen while downloading from the internet.
 
   class FetchError < Gem::Exception
-
     include Gem::UriParsing
 
     ##
@@ -43,7 +41,6 @@ class Gem::RemoteFetcher
     def to_s # :nodoc:
       "#{super} (#{uri})"
     end
-
   end
 
   ##
@@ -341,5 +338,4 @@ class Gem::RemoteFetcher
       @pools[proxy] ||= Gem::Request::ConnectionPools.new proxy, @cert_files
     end
   end
-
 end

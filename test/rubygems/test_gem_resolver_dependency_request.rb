@@ -2,7 +2,6 @@
 require 'rubygems/test_case'
 
 class TestGemResolverDependencyRequest < Gem::TestCase
-
   def setup
     super
 
@@ -80,5 +79,4 @@ class TestGemResolverDependencyRequest < Gem::TestCase
 
     assert_equal dependency, dr.dependency
   end
-
 end

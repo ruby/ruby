@@ -10,14 +10,12 @@ require 'digest'
 # Allows writing of tar files
 
 class Gem::Package::TarWriter
-
   class FileOverflow < StandardError; end
 
   ##
   # IO wrapper that allows writing a limited amount of data
 
   class BoundedStream
-
     ##
     # Maximum number of bytes that can be written
 
@@ -49,14 +47,12 @@ class Gem::Package::TarWriter
       @written += data.bytesize
       data.bytesize
     end
-
   end
 
   ##
   # IO wrapper that provides only #write
 
   class RestrictedStream
-
     ##
     # Creates a new RestrictedStream wrapping +io+
 
@@ -70,7 +66,6 @@ class Gem::Package::TarWriter
     def write(data)
       @io.write data
     end
-
   end
 
   ##
@@ -333,5 +328,4 @@ class Gem::Package::TarWriter
 
     return name, prefix
   end
-
 end

@@ -3,7 +3,6 @@ require 'rubygems/test_case'
 require 'rubygems/commands/unpack_command'
 
 class TestGemCommandsUnpackCommand < Gem::TestCase
-
   def setup
     super
 
@@ -221,5 +220,4 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
 
     assert @cmd.options[:spec]
   end
-
 end

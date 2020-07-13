@@ -2,7 +2,6 @@
 require 'rubygems/test_case'
 
 class TestGemSourceLock < Gem::TestCase
-
   def test_fetch_spec
     spec_fetcher do |fetcher|
       fetcher.spec 'a', 1
@@ -110,5 +109,4 @@ class TestGemSourceLock < Gem::TestCase
 
     assert_equal URI(@gem_repo), lock.uri
   end
-
 end

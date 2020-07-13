@@ -6,7 +6,6 @@
 # is the name, version, and dependencies.
 
 class Gem::Resolver::APISpecification < Gem::Resolver::Specification
-
   ##
   # Creates an APISpecification for the given +set+ from the rubygems.org
   # +api_data+.
@@ -86,5 +85,4 @@ class Gem::Resolver::APISpecification < Gem::Resolver::Specification
   def source # :nodoc:
     @set.source
   end
-
 end

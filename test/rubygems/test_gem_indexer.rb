@@ -3,7 +3,6 @@ require 'rubygems/test_case'
 require 'rubygems/indexer'
 
 class TestGemIndexer < Gem::TestCase
-
   def setup
     super
 
@@ -355,5 +354,4 @@ class TestGemIndexer < Gem::TestCase
     file = File.join dir, name
     refute File.exist?(file), "#{file} exists"
   end
-
 end

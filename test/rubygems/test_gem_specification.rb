@@ -9,7 +9,6 @@ require 'rubygems/installer'
 require 'rubygems/platform'
 
 class TestGemSpecification < Gem::TestCase
-
   LEGACY_YAML_SPEC = <<-EOF.freeze
 --- !ruby/object:Gem::Specification
 rubygems_version: "1.0"
@@ -1837,7 +1836,6 @@ dependencies: []
       RbConfig::CONFIG['ENABLE_SHARED'], 'no'
 
     class << Gem
-
       alias orig_default_ext_dir_for default_ext_dir_for
 
       remove_method :default_ext_dir_for
@@ -1845,7 +1843,6 @@ dependencies: []
       def Gem.default_ext_dir_for(base_dir)
         'elsewhere'
       end
-
     end
 
     ext_spec
@@ -1859,11 +1856,9 @@ dependencies: []
     RbConfig::CONFIG['ENABLE_SHARED'] = enable_shared
 
     class << Gem
-
       remove_method :default_ext_dir_for
 
       alias default_ext_dir_for orig_default_ext_dir_for
-
     end
   end
 
@@ -2153,11 +2148,9 @@ dependencies: []
 
   def test_require_paths_default_ext_dir_for
     class << Gem
-
       send :alias_method, :orig_default_ext_dir_for, :default_ext_dir_for
 
       remove_method :default_ext_dir_for
-
     end
 
     def Gem.default_ext_dir_for(base_dir)
@@ -2173,11 +2166,9 @@ dependencies: []
     end
   ensure
     class << Gem
-
       send :remove_method, :default_ext_dir_for
       send :alias_method,  :default_ext_dir_for, :orig_default_ext_dir_for
       send :remove_method, :orig_default_ext_dir_for
-
     end
   end
 
@@ -3926,5 +3917,4 @@ end
   ensure
     $VERBOSE = old_verbose
   end
-
 end

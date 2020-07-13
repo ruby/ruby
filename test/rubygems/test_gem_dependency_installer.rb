@@ -4,7 +4,6 @@ require 'rubygems/dependency_installer'
 require 'rubygems/security'
 
 class TestGemDependencyInstaller < Gem::TestCase
-
   def setup
     super
     common_installer_setup
@@ -1128,5 +1127,4 @@ class TestGemDependencyInstaller < Gem::TestCase
                               @d1, @d2, @x1_m, @x1_o, @w1, @y1,
                               @y1_1_p, @z1].compact)
   end
-
 end

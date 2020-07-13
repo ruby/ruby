@@ -3,7 +3,6 @@
 # IO wrapper that creates digests of contents written to the IO it wraps.
 
 class Gem::Package::DigestIO
-
   ##
   # Collected digests for wrapped writes.
   #
@@ -60,5 +59,4 @@ class Gem::Package::DigestIO
 
     result
   end
-
 end

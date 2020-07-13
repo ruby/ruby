@@ -5,7 +5,6 @@ require 'rubygems/spec_fetcher'
 require 'rubygems/local_remote_options'
 
 class Gem::Commands::SourcesCommand < Gem::Command
-
   include Gem::LocalRemoteOptions
 
   def initialize
@@ -220,5 +219,4 @@ To remove a source use the --remove argument:
       say "*** Unable to remove #{desc} source cache ***"
     end
   end
-
 end

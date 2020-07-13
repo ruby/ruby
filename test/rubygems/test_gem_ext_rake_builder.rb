@@ -3,7 +3,6 @@ require 'rubygems/test_case'
 require 'rubygems/ext'
 
 class TestGemExtRakeBuilder < Gem::TestCase
-
   def setup
     super
 
@@ -91,5 +90,4 @@ class TestGemExtRakeBuilder < Gem::TestCase
       EO_MKRF
     end
   end
-
 end

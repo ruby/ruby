@@ -4,7 +4,6 @@ require 'rubygems/source'
 require 'rubygems/indexer'
 
 class TestGemSource < Gem::TestCase
-
   def tuple(*args)
     Gem::NameTuple.new(*args)
   end
@@ -246,5 +245,4 @@ class TestGemSource < Gem::TestCase
     distance_threshold = 5
     assert rubygems_source.typo_squatting?("rubysertgems.org", distance_threshold)
   end
-
 end

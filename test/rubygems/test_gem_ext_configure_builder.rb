@@ -3,7 +3,6 @@ require 'rubygems/test_case'
 require 'rubygems/ext'
 
 class TestGemExtConfigureBuilder < Gem::TestCase
-
   def setup
     super
 
@@ -83,5 +82,4 @@ class TestGemExtConfigureBuilder < Gem::TestCase
     assert_contains_make_command '', output[4]
     assert_contains_make_command 'install', output[7]
   end
-
 end

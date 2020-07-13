@@ -3,7 +3,6 @@ require 'rubygems/package/tar_test_case'
 require 'rubygems/package'
 
 class TestGemPackageTarHeader < Gem::Package::TarTestCase
-
   def setup
     super
 
@@ -223,5 +222,4 @@ Access_Points_09202018.csv
     assert_equal 0, tar_header.uid
     assert_equal 0, tar_header.gid
   end
-
 end

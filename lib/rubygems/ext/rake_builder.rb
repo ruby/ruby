@@ -8,7 +8,6 @@
 require "shellwords"
 
 class Gem::Ext::RakeBuilder < Gem::Ext::Builder
-
   def self.build(extension, dest_path, results, args=[], lib_dir=nil)
     if File.basename(extension) =~ /mkrf_conf/i
       run([Gem.ruby, File.basename(extension), *args], results)
@@ -31,5 +30,4 @@ class Gem::Ext::RakeBuilder < Gem::Ext::Builder
 
     results
   end
-
 end

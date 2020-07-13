@@ -2,7 +2,6 @@
 require 'rubygems/test_case'
 
 class TestGemSourceFetchProblem < Gem::TestCase
-
   def test_exception
     source = Gem::Source.new @gem_repo
     error  = RuntimeError.new 'test'
@@ -24,5 +23,4 @@ class TestGemSourceFetchProblem < Gem::TestCase
 
     refute_match sf.wordy, 'secret'
   end
-
 end

@@ -5,7 +5,6 @@ require 'rubygems/source'
 require 'fileutils'
 
 class TestGemSourceLocal < Gem::TestCase
-
   def setup
     super
 
@@ -104,5 +103,4 @@ class TestGemSourceLocal < Gem::TestCase
     assert_equal(-1, specific.<=>(local), 'specific <=> local')
     assert_equal(1, local.<=>(specific), 'local <=> specific')
   end
-
 end

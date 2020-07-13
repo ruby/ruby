@@ -4,7 +4,6 @@ require 'rubygems/request_set'
 require 'rubygems/request_set/lockfile'
 
 class TestGemRequestSetLockfile < Gem::TestCase
-
   def setup
     super
 
@@ -466,5 +465,4 @@ DEPENDENCIES
 
     assert_equal 'hello', File.read(gem_deps_lock_file)
   end
-
 end

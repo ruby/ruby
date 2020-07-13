@@ -6,7 +6,6 @@ require "rubygems/bundler_version_finder"
 require "rubygems/requirement"
 
 class Gem::Dependency
-
   ##
   # Valid dependency types.
   #--
@@ -347,5 +346,4 @@ class Gem::Dependency
       :released
     end
   end
-
 end

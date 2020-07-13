@@ -19,7 +19,6 @@ module TestGemCommandsQueryCommandSetup
 end
 
 class TestGemCommandsQueryCommandWithInstalledGems < Gem::TestCase
-
   include TestGemCommandsQueryCommandSetup
 
   def test_execute
@@ -607,11 +606,9 @@ pl (1 i386-linux)
       fetcher.spec 'a', '3.a'
     end
   end
-
 end
 
 class TestGemCommandsQueryCommandWithoutInstalledGems < Gem::TestCase
-
   include TestGemCommandsQueryCommandSetup
 
   def test_execute_platform
@@ -857,5 +854,4 @@ othergem (1.2.3)
       fetcher.download 'a', '3.a'
     end
   end
-
 end

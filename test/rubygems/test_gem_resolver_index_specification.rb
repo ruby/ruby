@@ -3,7 +3,6 @@ require 'rubygems/test_case'
 require 'rubygems/available_set'
 
 class TestGemResolverIndexSpecification < Gem::TestCase
-
   def test_initialize
     set     = Gem::Resolver::IndexSet.new
     source  = Gem::Source.new @gem_repo
@@ -90,5 +89,4 @@ class TestGemResolverIndexSpecification < Gem::TestCase
 
     assert_equal a_2_p.full_name, spec.full_name
   end
-
 end

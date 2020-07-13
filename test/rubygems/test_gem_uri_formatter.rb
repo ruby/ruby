@@ -3,7 +3,6 @@ require 'rubygems/test_case'
 require 'rubygems/uri_formatter'
 
 class TestGemUriFormatter < Gem::TestCase
-
   def test_normalize_uri
     assert_equal 'FILE://example/',
       Gem::UriFormatter.new('FILE://example/').normalize
@@ -24,5 +23,4 @@ class TestGemUriFormatter < Gem::TestCase
   def test_unescape
     assert_equal 'a@b\c', Gem::UriFormatter.new('a%40b%5Cc').unescape
   end
-
 end

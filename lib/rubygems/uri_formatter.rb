@@ -9,7 +9,6 @@ require 'cgi'
 #   p uf.normalize #=> 'http://example.com'
 
 class Gem::UriFormatter
-
   ##
   # The URI to be formatted.
 
@@ -44,5 +43,4 @@ class Gem::UriFormatter
     return unless @uri
     CGI.unescape @uri
   end
-
 end

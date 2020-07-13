@@ -31,7 +31,6 @@ require 'minitest/mock'
 # proxy is configured.
 
 class TestGemRemoteFetcher < Gem::TestCase
-
   include Gem::DefaultUserInteraction
 
   SERVER_DATA = <<-EOY.freeze
@@ -1000,10 +999,8 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   class NilLog < WEBrick::Log
-
     def log(level, data) #Do nothing
     end
-
   end
 
   private
@@ -1145,5 +1142,4 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   def key(filename)
     OpenSSL::PKey::RSA.new(File.read(File.join(__dir__, filename)))
   end
-
 end if defined?(OpenSSL::SSL)

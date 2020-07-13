@@ -3,7 +3,6 @@ require 'rubygems/test_case'
 require 'rubygems/commands/which_command'
 
 class TestGemCommandsWhichCommand < Gem::TestCase
-
   def setup
     super
     Gem::Specification.reset
@@ -82,5 +81,4 @@ class TestGemCommandsWhichCommand < Gem::TestCase
       FileUtils.touch filename
     end
   end
-
 end

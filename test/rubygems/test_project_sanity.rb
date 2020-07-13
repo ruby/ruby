@@ -4,7 +4,6 @@ require "rubygems/test_case"
 require "open3"
 
 class TestProjectSanity < Gem::TestCase
-
   def test_manifest_is_up_to_date
     skip unless File.exist?(File.expand_path("../../../Rakefile", __FILE__))
 
@@ -18,5 +17,4 @@ class TestProjectSanity < Gem::TestCase
 
     assert status.success?, err
   end
-
 end
