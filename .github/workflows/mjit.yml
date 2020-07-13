@@ -5,7 +5,7 @@ jobs:
     strategy:
       matrix:
         test_task: [ "check" ] # to make job names consistent
-        jit_opts: [ "--jit", "--jit-wait" ]
+        jit_opts: [ "--jit", "--jit-wait --jit-min-calls=5" ]
       fail-fast: false
     runs-on: ubuntu-latest
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
@@ -47,11 +47,11 @@ jobs:
         working-directory: build
       - run: sudo make $JOBS -s install
         working-directory: build
-      - run: make $JOBS -s test
+      - run: make $JOBS -s test RUN_OPTS="$RUN_OPTS"
         working-directory: build
-      - run: make $JOBS -s test-all
+      - run: make $JOBS -s test-all RUN_OPTS="$RUN_OPTS"
         working-directory: build
-      - run: make $JOBS -s test-spec
+      - run: make $JOBS -s test-spec RUN_OPTS="$RUN_OPTS"
         working-directory: build
       - uses: k0kubun/action-slack@v2.0.0
         with:
