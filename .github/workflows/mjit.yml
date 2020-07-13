@@ -5,7 +5,7 @@ jobs:
     strategy:
       matrix:
         test_task: [ "check" ] # to make job names consistent
-        jit_opts: [ "--jit", "--jit-wait" ]
+        jit_opts: [ "--jit", "--jit-wait --jit-min-calls=5" ]
       fail-fast: false
     runs-on: ubuntu-latest
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
