@@ -285,35 +285,39 @@ def mk_builtin_header file
     }
 
     bs.each_pair{|func, (argc, cfunc_name)|
+      decl = ', VALUE' * argc
+      argv = argc                    \
+           . times                   \
+           . map {|i|", argv[#{i}]"} \
+           . join('')
       f.puts %'static void'
-      f.puts %'mjit_compile_invokebuiltin_for_#{func}(FILE *f, long index, unsigned stack_size)'
+      f.puts %'mjit_compile_invokebuiltin_for_#{func}(FILE *f, long index, unsigned stack_size, bool inlinable_p)'
       f.puts %'{'
+      f.puts %'    fprintf(f, "    VALUE self = GET_SELF();\\n");'
+      f.puts %'    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE#{decl});\\n");'
       if inlines.has_key? cfunc_name
-        f.puts %'    fprintf(f, "    MAYBE_UNUSED(VALUE) self = GET_SELF();\\n");'
         body_lineno, text, locals, func_name = inlines[cfunc_name]
         lineno, str = generate_cexpr(ofile, lineno, line_file, body_lineno, text, locals, func_name)
-        str.each_line {|i|
-          f.printf(%'    fprintf(f, "%%s", %s);\n', RubyVM::CEscape.rstring2cstr(i.sub(/^return\b/ , '    val =')))
+        f.puts %'    if (inlinable_p) {'
+        str.gsub(/^(?!#)/, '    ').each_line {|i|
+          j = RubyVM::CEscape.rstring2cstr(i).dup
+          j.sub!(/^    return\b/ , '    val =')
+          f.printf(%'        fprintf(f, "%%s", %s);\n', j)
         }
-      else
-        decl = ', VALUE' * argc
-        argv = argc                    \
-             . times                   \
-             . map {|i|", argv[#{i}]"} \
-             . join('')
-        f.puts %'    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE#{decl});\\n");'
-        if argc > 0
-          f.puts %'    if (index == -1) {'
-          f.puts %'        fprintf(f, "    const VALUE *argv = &stack[%d];\\n", stack_size - #{argc});'
-          f.puts %'    }'
-          f.puts %'    else {'
-          f.puts %'        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\\n");'
-          f.puts %'        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\\n", index);'
-          f.puts %'    }'
-        end
-        f.puts %'    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == #{cfunc_name} */\\n", (intptr_t)#{cfunc_name});'
-        f.puts %'    fprintf(f, "    val = f(ec, GET_SELF()#{argv});\\n");'
+        f.puts(%'        return;')
+        f.puts(%'    }')
       end
+      if argc > 0
+        f.puts %'    if (index == -1) {'
+        f.puts %'        fprintf(f, "    const VALUE *argv = &stack[%d];\\n", stack_size - #{argc});'
+        f.puts %'    }'
+        f.puts %'    else {'
+        f.puts %'        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\\n");'
+        f.puts %'        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\\n", index);'
+        f.puts %'    }'
+      end
+      f.puts %'    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == #{cfunc_name} */\\n", (intptr_t)#{cfunc_name});'
+      f.puts %'    fprintf(f, "    val = f(ec, self#{argv});\\n");'
       f.puts %'}'
       f.puts
     }
