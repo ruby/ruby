@@ -19,6 +19,12 @@ class TestTmpdir < Test::Unit::TestCase
       oldenv = envs.each_with_object({}) {|v, h| h[v] = ENV.delete(v)}
       begin
         envs.each do |e|
+          tmpdirx = File.join(tmpdir, e)
+          ENV[e] = tmpdirx
+          assert_not_equal(tmpdirx, Dir.tmpdir)
+          File.write(tmpdirx, "")
+          assert_not_equal(tmpdirx, Dir.tmpdir)
+          File.unlink(tmpdirx)
           ENV[e] = tmpdir
           assert_equal(tmpdir, Dir.tmpdir)
           File.chmod(0777, tmpdir)
