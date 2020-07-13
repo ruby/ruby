@@ -15,7 +15,6 @@ require 'tsort'
 #   #=> ["nokogiri-1.6.0", "mini_portile-0.5.1", "pg-0.17.0"]
 
 class Gem::RequestSet
-
   include TSort
 
   ##
@@ -471,7 +470,6 @@ class Gem::RequestSet
       yield match
     end
   end
-
 end
 
 require 'rubygems/request_set/gem_dependency_api'

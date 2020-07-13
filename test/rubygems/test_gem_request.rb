@@ -9,7 +9,6 @@ unless defined?(OpenSSL::SSL)
 end
 
 class TestGemRequest < Gem::TestCase
-
   CA_CERT_FILE     = cert_path 'ca'
   CHILD_CERT       = load_cert 'child'
   EXPIRED_CERT     = load_cert 'expired'
@@ -488,7 +487,6 @@ ERROR:  Certificate  is an invalid CA certificate
   end
 
   class Conn
-
     attr_accessor :payload
 
     def new(*args); self; end
@@ -507,7 +505,5 @@ ERROR:  Certificate  is an invalid CA certificate
       self.payload = req
       @response
     end
-
   end
-
 end if defined?(OpenSSL::SSL)

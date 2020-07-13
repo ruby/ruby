@@ -3,7 +3,6 @@ require 'rubygems/package/tar_test_case'
 require 'rubygems/package'
 
 class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
-
   def setup
     super
 
@@ -150,5 +149,4 @@ class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
 
     assert_equal char, @entry.getc
   end
-
 end

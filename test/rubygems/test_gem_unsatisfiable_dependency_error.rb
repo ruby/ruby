@@ -2,7 +2,6 @@
 require 'rubygems/test_case'
 
 class TestGemUnsatisfiableDependencyError < Gem::TestCase
-
   def setup
     super
 
@@ -28,5 +27,4 @@ class TestGemUnsatisfiableDependencyError < Gem::TestCase
   def test_version
     assert_equal @a_dep.requirement, @e.version
   end
-
 end

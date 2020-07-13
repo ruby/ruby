@@ -2,7 +2,6 @@
 require 'rubygems/command'
 
 class Gem::Commands::HelpCommand < Gem::Command
-
   # :stopdoc:
   EXAMPLES = <<-EOF.freeze
 Some examples of 'gem' usage.
@@ -370,5 +369,4 @@ platform.
       alert_warning "Unknown command #{command_name}. Try: gem help commands"
     end
   end
-
 end

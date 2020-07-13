@@ -9,7 +9,6 @@ require 'rubygems/name_tuple'
 # SpecFetcher handles metadata updates from remote gem repositories.
 
 class Gem::SpecFetcher
-
   include Gem::UserInteraction
   include Gem::Text
 
@@ -259,5 +258,4 @@ class Gem::SpecFetcher
     raise unless gracefully_ignore
     []
   end
-
 end

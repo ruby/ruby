@@ -13,7 +13,6 @@ require 'rubygems/deprecate'
 # Installs a gem along with all its dependencies from local and remote gems.
 
 class Gem::DependencyInstaller
-
   include Gem::UserInteraction
   extend Gem::Deprecate
 
@@ -336,5 +335,4 @@ class Gem::DependencyInstaller
 
     request_set
   end
-
 end

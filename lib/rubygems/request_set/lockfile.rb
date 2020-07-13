@@ -5,12 +5,10 @@
 # constructed.
 
 class Gem::RequestSet::Lockfile
-
   ##
   # Raised when a lockfile cannot be parsed
 
   class ParseError < Gem::Exception
-
     ##
     # The column where the error was encountered
 
@@ -36,7 +34,6 @@ class Gem::RequestSet::Lockfile
       @path   = path
       super "#{message} (at line #{line} column #{column})"
     end
-
   end
 
   ##
@@ -237,7 +234,6 @@ class Gem::RequestSet::Lockfile
   def requests
     @set.sorted_requests
   end
-
 end
 
 require 'rubygems/request_set/lockfile/tokenizer'

@@ -3,7 +3,6 @@ require 'rubygems/test_case'
 require 'rubygems/commands/dependency_command'
 
 class TestGemCommandsDependencyCommand < Gem::TestCase
-
   def setup
     super
     @stub_ui = Gem::MockGemUi.new
@@ -225,5 +224,4 @@ ERROR:  Only reverse dependencies for local gems are supported.
     assert_equal "Gem a-2.a\n\n", @stub_ui.output
     assert_equal '', @stub_ui.error
   end
-
 end

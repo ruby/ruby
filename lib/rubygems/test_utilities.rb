@@ -29,7 +29,6 @@ require 'rubygems/remote_fetcher'
 # See RubyGems' tests for more examples of FakeFetcher.
 
 class Gem::FakeFetcher
-
   attr_reader :data
   attr_reader :last_request
   attr_accessor :paths
@@ -162,16 +161,13 @@ class Gem::FakeFetcher
 
     download spec, source.uri.to_s
   end
-
 end
 
 # :stopdoc:
 class Gem::RemoteFetcher
-
   def self.fetcher=(fetcher)
     @fetcher = fetcher
   end
-
 end
 # :startdoc:
 
@@ -191,7 +187,6 @@ end
 # After the gems are created they are removed from Gem.dir.
 
 class Gem::TestCase::SpecFetcherSetup
-
   ##
   # Executes a SpecFetcher setup block.  Yields an instance then creates the
   # gems and specifications defined in the instance.
@@ -346,7 +341,6 @@ class Gem::TestCase::SpecFetcherSetup
       io.write spec.to_ruby_for_cache
     end
   end
-
 end
 
 ##
@@ -358,7 +352,6 @@ end
 # This class was added to flush out problems in Rubinius' IO implementation.
 
 class TempIO < Tempfile
-
   ##
   # Creates a new TempIO that will be initialized to contain +string+.
 
@@ -376,5 +369,4 @@ class TempIO < Tempfile
     flush
     Gem.read_binary path
   end
-
 end

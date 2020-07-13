@@ -4,7 +4,6 @@ require 'rubygems/user_interaction'
 require 'timeout'
 
 class TestGemStreamUI < Gem::TestCase
-
   # increase timeout with MJIT for --jit-wait testing
   mjit_enabled = defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
   SHORT_TIMEOUT = (RUBY_ENGINE == "ruby" && !mjit_enabled) ? 0.1 : 1.0
@@ -222,5 +221,4 @@ class TestGemStreamUI < Gem::TestCase
     reporter.fetch 'a.gem', 1024
     assert_equal "", @out.string
   end
-
 end

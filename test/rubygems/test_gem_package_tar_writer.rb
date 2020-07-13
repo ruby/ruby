@@ -4,7 +4,6 @@ require 'rubygems/package/tar_writer'
 require 'minitest/mock'
 
 class TestGemPackageTarWriter < Gem::Package::TarTestCase
-
   def setup
     super
 
@@ -330,5 +329,4 @@ class TestGemPackageTarWriter < Gem::Package::TarTestCase
     end
     assert_includes exception.message, name
   end
-
 end

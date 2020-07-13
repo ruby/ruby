@@ -3,7 +3,6 @@ require 'rubygems/test_case'
 require 'rubygems/request_set'
 
 class TestGemRequestSet < Gem::TestCase
-
   def setup
     super
 
@@ -668,5 +667,4 @@ ruby "0"
 
     assert_empty deps
   end
-
 end

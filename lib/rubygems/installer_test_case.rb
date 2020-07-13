@@ -3,7 +3,6 @@ require 'rubygems/test_case'
 require 'rubygems/installer'
 
 class Gem::Installer
-
   ##
   # Available through requiring rubygems/installer_test_case
 
@@ -58,14 +57,12 @@ class Gem::Installer
   # Available through requiring rubygems/installer_test_case
 
   attr_writer :wrappers
-
 end
 
 ##
 # A test case for Gem::Installer.
 
 class Gem::InstallerTestCase < Gem::TestCase
-
   def setup
     super
 
@@ -246,5 +243,4 @@ class Gem::InstallerTestCase < Gem::TestCase
     end
     @@symlink_supported
   end
-
 end

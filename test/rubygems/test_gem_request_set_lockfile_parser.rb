@@ -6,7 +6,6 @@ require 'rubygems/request_set/lockfile/tokenizer'
 require 'rubygems/request_set/lockfile/parser'
 
 class TestGemRequestSetLockfileParser < Gem::TestCase
-
   def setup
     super
     @gem_deps_file = 'gem.deps.rb'
@@ -541,5 +540,4 @@ DEPENDENCIES
     parser = tokenizer.make_parser set, platforms
     parser.parse
   end
-
 end

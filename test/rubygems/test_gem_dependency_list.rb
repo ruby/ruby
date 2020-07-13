@@ -3,7 +3,6 @@ require 'rubygems/test_case'
 require 'rubygems/dependency_list'
 
 class TestGemDependencyList < Gem::TestCase
-
   def setup
     super
 
@@ -262,5 +261,4 @@ class TestGemDependencyList < Gem::TestCase
 
     @deplist.add @a1, @a2, @b1, @c2, @d1
   end
-
 end

@@ -28,7 +28,6 @@
 # A header for a tar file
 
 class Gem::Package::TarHeader
-
   ##
   # Fields in the tar header
 
@@ -241,5 +240,4 @@ class Gem::Package::TarHeader
   def oct(num, len)
     "%0#{len}o" % num
   end
-
 end

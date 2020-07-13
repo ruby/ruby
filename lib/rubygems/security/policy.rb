@@ -8,7 +8,6 @@ require 'rubygems/user_interaction'
 # Gem::Security::Policies.
 
 class Gem::Security::Policy
-
   include Gem::UserInteraction
 
   attr_reader :name
@@ -291,5 +290,4 @@ class Gem::Security::Policy
   end
 
   alias to_s name # :nodoc:
-
 end

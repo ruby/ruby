@@ -2,7 +2,6 @@
 require 'rubygems/test_case'
 
 class TestGemImpossibleDependenciesError < Gem::TestCase
-
   def test_message_conflict
     request = dependency_request dep('net-ssh', '>= 2.0.13'), 'rye', '0.9.8'
 
@@ -57,5 +56,4 @@ rye-0.9.8 requires net-ssh (>= 2.0.13) but it conflicted:
 
     assert_equal expected, error.message
   end
-
 end

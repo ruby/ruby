@@ -2,7 +2,6 @@
 require 'rubygems/test_case'
 
 class TestGemResolverBestSet < Gem::TestCase
-
   def setup
     super
 
@@ -133,5 +132,4 @@ class TestGemResolverBestSet < Gem::TestCase
 
     assert_equal error, e
   end
-
 end

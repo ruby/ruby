@@ -25,7 +25,6 @@ Gem.load_env_plugins rescue nil
 # classes they call directly.
 
 class Gem::GemRunner
-
   def initialize
     @command_manager_class = Gem::CommandManager
     @config_file_class = Gem::ConfigFile
@@ -76,7 +75,6 @@ class Gem::GemRunner
     Gem.use_paths Gem.configuration[:gemhome], Gem.configuration[:gempath]
     Gem::Command.extra_args = Gem.configuration[:gem]
   end
-
 end
 
 Gem.load_plugins

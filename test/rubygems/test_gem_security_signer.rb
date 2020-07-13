@@ -6,7 +6,6 @@ unless defined?(OpenSSL::SSL)
 end
 
 class TestGemSecuritySigner < Gem::TestCase
-
   ALTERNATE_KEY  = load_key 'alternate'
   CHILD_KEY      = load_key 'child'
   GRANDCHILD_KEY = load_key 'grandchild'
@@ -215,5 +214,4 @@ toqvglr0kdbknSRRjBVLK6tsgr07aLT9gNP7mTW2PA==
       signer.sign 'hello'
     end
   end
-
 end if defined?(OpenSSL::SSL)

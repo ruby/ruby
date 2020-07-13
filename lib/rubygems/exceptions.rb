@@ -19,7 +19,6 @@ class Gem::DependencyRemovalException < Gem::Exception; end
 # and #conflicting_dependencies
 
 class Gem::DependencyResolutionError < Gem::DependencyError
-
   attr_reader :conflict
 
   def initialize(conflict)
@@ -32,25 +31,20 @@ class Gem::DependencyResolutionError < Gem::DependencyError
   def conflicting_dependencies
     @conflict.conflicting_dependencies
   end
-
 end
 
 ##
 # Raised when attempting to uninstall a gem that isn't in GEM_HOME.
 
 class Gem::GemNotInHomeException < Gem::Exception
-
   attr_accessor :spec
-
 end
 
 ###
 # Raised when removing a gem with the uninstall command fails
 
 class Gem::UninstallError < Gem::Exception
-
   attr_accessor :spec
-
 end
 
 class Gem::DocumentError < Gem::Exception; end
@@ -64,7 +58,6 @@ class Gem::EndOfYAMLException < Gem::Exception; end
 # operating on the given directory.
 
 class Gem::FilePermissionError < Gem::Exception
-
   attr_reader :directory
 
   def initialize(directory)
@@ -72,15 +65,12 @@ class Gem::FilePermissionError < Gem::Exception
 
     super "You don't have write permissions for the #{directory} directory."
   end
-
 end
 
 ##
 # Used to raise parsing and loading errors
 class Gem::FormatException < Gem::Exception
-
   attr_accessor :file_path
-
 end
 
 class Gem::GemNotFoundException < Gem::Exception; end
@@ -89,7 +79,6 @@ class Gem::GemNotFoundException < Gem::Exception; end
 # Raised by the DependencyInstaller when a specific gem cannot be found
 
 class Gem::SpecificGemNotFoundException < Gem::GemNotFoundException
-
   ##
   # Creates a new SpecificGemNotFoundException for a gem with the given +name+
   # and +version+.  Any +errors+ encountered when attempting to find the gem
@@ -117,7 +106,6 @@ class Gem::SpecificGemNotFoundException < Gem::GemNotFoundException
   # Errors encountered attempting to find the gem.
 
   attr_reader :errors
-
 end
 
 ##
@@ -125,7 +113,6 @@ end
 # inability to find a valid possible spec for a request.
 
 class Gem::ImpossibleDependenciesError < Gem::Exception
-
   attr_reader :conflicts
   attr_reader :request
 
@@ -153,17 +140,14 @@ class Gem::ImpossibleDependenciesError < Gem::Exception
   def dependency
     @request.dependency
   end
-
 end
 
 class Gem::InstallError < Gem::Exception; end
 class Gem::RuntimeRequirementNotMetError < Gem::InstallError
-
   attr_accessor :suggestion
   def message
     [suggestion, super].compact.join("\n\t")
   end
-
 end
 
 ##
@@ -205,7 +189,6 @@ class Gem::VerificationError < Gem::Exception; end
 # exit_code
 
 class Gem::SystemExitException < SystemExit
-
   ##
   # The exit code for the process
 
@@ -219,7 +202,6 @@ class Gem::SystemExitException < SystemExit
 
     super "Exiting RubyGems with exit_code #{exit_code}"
   end
-
 end
 
 ##
@@ -227,7 +209,6 @@ end
 # there is no spec.
 
 class Gem::UnsatisfiableDependencyError < Gem::DependencyError
-
   ##
   # The unsatisfiable dependency.  This is a
   # Gem::Resolver::DependencyRequest, not a Gem::Dependency
@@ -272,7 +253,6 @@ class Gem::UnsatisfiableDependencyError < Gem::DependencyError
   def version
     @dependency.requirement
   end
-
 end
 
 ##

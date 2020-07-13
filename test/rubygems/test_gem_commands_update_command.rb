@@ -3,7 +3,6 @@ require 'rubygems/test_case'
 require 'rubygems/commands/update_command'
 
 class TestGemCommandsUpdateCommand < Gem::TestCase
-
   def setup
     super
     common_installer_setup
@@ -647,5 +646,4 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     assert_equal "  a-2", out.shift
     assert_empty out
   end
-
 end

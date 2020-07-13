@@ -3,7 +3,6 @@ require 'rubygems/test_case'
 require 'rubygems/ext'
 
 class TestGemExtCmakeBuilder < Gem::TestCase
-
   def setup
     super
 
@@ -87,5 +86,4 @@ install (FILES test.txt DESTINATION bin)
     assert_contains_make_command '', output
     assert_contains_make_command 'install', output
   end
-
 end

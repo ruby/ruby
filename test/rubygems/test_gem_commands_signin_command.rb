@@ -4,7 +4,6 @@ require 'rubygems/commands/signin_command'
 require 'rubygems/installer'
 
 class TestGemCommandsSigninCommand < Gem::TestCase
-
   def setup
     super
 
@@ -97,5 +96,4 @@ class TestGemCommandsSigninCommand < Gem::TestCase
 
     sign_in_ui
   end
-
 end

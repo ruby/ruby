@@ -4,7 +4,6 @@ require 'rubygems/platform'
 require 'rbconfig'
 
 class TestGemPlatform < Gem::TestCase
-
   def test_self_local
     util_set_arch 'i686-darwin8.10.1'
 
@@ -305,5 +304,4 @@ class TestGemPlatform < Gem::TestCase
   def refute_local_match(name)
     refute_match Gem::Platform.local, name
   end
-
 end

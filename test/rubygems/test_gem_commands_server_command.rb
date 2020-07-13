@@ -3,7 +3,6 @@ require 'rubygems/test_case'
 require 'rubygems/commands/server_command'
 
 class TestGemCommandsServerCommand < Gem::TestCase
-
   def setup
     super
 
@@ -59,5 +58,4 @@ class TestGemCommandsServerCommand < Gem::TestCase
     assert_equal 'invalid argument: -p 65536: not a port number',
                  e.message
   end
-
 end

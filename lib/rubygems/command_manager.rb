@@ -32,7 +32,6 @@ require 'rubygems/text'
 # See Gem::Command for instructions on writing gem commands.
 
 class Gem::CommandManager
-
   include Gem::Text
   include Gem::UserInteraction
 
@@ -231,5 +230,4 @@ class Gem::CommandManager
       ui.backtrace e
     end
   end
-
 end

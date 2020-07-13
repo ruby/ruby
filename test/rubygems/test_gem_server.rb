@@ -4,13 +4,10 @@ require 'rubygems/server'
 require 'stringio'
 
 class Gem::Server
-
   attr_reader :server
-
 end
 
 class TestGemServer < Gem::TestCase
-
   def process_based_port
     0
   end
@@ -608,5 +605,4 @@ class TestGemServer < Gem::TestCase
 
     @server.instance_variable_set :@server, webrick
   end
-
 end

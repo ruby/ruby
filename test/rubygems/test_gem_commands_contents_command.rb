@@ -3,7 +3,6 @@ require 'rubygems/test_case'
 require 'rubygems/commands/contents_command'
 
 class TestGemCommandsContentsCommand < Gem::TestCase
-
   def setup
     super
 
@@ -268,5 +267,4 @@ lib/foo.rb
     assert_equal Gem::Requirement.new('0.0.2'), @cmd.options[:version]
     assert @cmd.options[:show_install_dir]
   end
-
 end
