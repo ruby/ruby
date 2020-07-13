@@ -1234,6 +1234,13 @@ range_max(int argc, VALUE *argv, VALUE range)
         if (c > 0)
             return Qnil;
         if (EXCL(range)) {
+            if (RB_INTEGER_TYPE_P(b) && !RB_INTEGER_TYPE_P(e)) {
+                VALUE end = e;
+                e = rb_funcall(e, rb_intern("floor"), 0);
+                if (!RTEST(rb_funcall(e, rb_intern("=="), 1, end))) {
+                    return e;
+                }
+            }
             if (!RB_INTEGER_TYPE_P(e)) {
                 rb_raise(rb_eTypeError, "cannot exclude non Integer end value");
             }
@@ -1245,6 +1252,9 @@ range_max(int argc, VALUE *argv, VALUE range)
                 return LONG2NUM(FIX2LONG(e) - 1);
             }
             return rb_funcall(e, '-', 1, INT2FIX(1));
+        }
+        if (RB_INTEGER_TYPE_P(b) && !RB_INTEGER_TYPE_P(e)) {
+            e = rb_funcall(e, rb_intern("floor"), 0);
         }
         return e;
     }
@@ -1593,9 +1603,14 @@ r_cover_range_p(VALUE range, VALUE beg, VALUE end, VALUE val)
     else if (cmp_end >= 0) {
         return TRUE;
     }
-
-    val_max = rb_rescue2(r_call_max, val, 0, Qnil, rb_eTypeError, (VALUE)0);
-    if (val_max == Qnil) return FALSE;
+    if (RB_INTEGER_TYPE_P(val_beg) && RB_INTEGER_TYPE_P(beg) &&
+            RB_INTEGER_TYPE_P(val_end) != RB_INTEGER_TYPE_P(end)) {
+        val_max = val_end;
+    }
+    else {
+        val_max = rb_rescue2(r_call_max, val, 0, Qnil, rb_eTypeError, (VALUE)0);
+        if (val_max == Qnil) return FALSE;
+    }
 
     return r_less(end, val_max) >= 0;
 }
