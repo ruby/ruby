@@ -375,7 +375,7 @@ module URI
   # If +enc+ is given, convert +str+ to the encoding before percent encoding.
   #
   # This is an implementation of
-  # http://www.w3.org/TR/2013/CR-html5-20130806/forms.html#url-encoded-form-data.
+  # https://www.w3.org/TR/2013/CR-html5-20130806/forms.html#url-encoded-form-data.
   #
   # See URI.decode_www_form_component, URI.encode_www_form.
   def self.encode_www_form_component(str, enc=nil)
@@ -416,7 +416,7 @@ module URI
   # This method doesn't handle files.  When you send a file, use
   # multipart/form-data.
   #
-  # This refers http://url.spec.whatwg.org/#concept-urlencoded-serializer
+  # This refers https://url.spec.whatwg.org/#concept-urlencoded-serializer
   #
   #    URI.encode_www_form([["q", "ruby"], ["lang", "en"]])
   #    #=> "q=ruby&lang=en"
