@@ -231,7 +231,13 @@ class IPAddr
   # Returns a string containing the IP address representation in
   # canonical form.
   def to_string
-    return _to_string(@addr)
+    str = _to_string(@addr)
+
+    if @family == Socket::AF_INET6
+      str << zone_id.to_s
+    end
+
+    return str
   end
 
   # Returns a network byte ordered string form of the IP address.
@@ -403,7 +409,7 @@ class IPAddr
 
   # Returns a hash value used by Hash, Set, and Array classes
   def hash
-    return ([@addr, @mask_addr].hash << 1) | (ipv4? ? 0 : 1)
+    return ([@addr, @mask_addr, @zone_id].hash << 1) | (ipv4? ? 0 : 1)
   end
 
   # Creates a Range object for the network address.
@@ -459,16 +465,42 @@ class IPAddr
       af = "IPv4"
     when Socket::AF_INET6
       af = "IPv6"
+      zone_id = @zone_id.to_s
     else
       raise AddressFamilyError, "unsupported address family"
     end
-    return sprintf("#<%s: %s:%s/%s>", self.class.name,
-                   af, _to_string(@addr), _to_string(@mask_addr))
+    return sprintf("#<%s: %s:%s%s/%s>", self.class.name,
+                   af, _to_string(@addr), zone_id, _to_string(@mask_addr))
   end
 
   # Returns the netmask in string format e.g. 255.255.0.0
   def netmask
     _to_string(@mask_addr)
+  end
+
+  # Returns the IPv6 zone identifier, if present.
+  # Raises InvalidAddressError if not an IPv6 address.
+  def zone_id
+    if @family == Socket::AF_INET6
+      @zone_id
+    else
+      raise InvalidAddressError, "not an IPv6 address"
+    end
+  end
+
+  # Returns the IPv6 zone identifier, if present.
+  # Raises InvalidAddressError if not an IPv6 address.
+  def zone_id=(zid)
+    if @family == Socket::AF_INET6
+      case zid
+      when nil, /\A%(\w+)\z/
+        @zone_id = zid
+      else
+        raise InvalidAddressError, "invalid zone identifier for address"
+      end
+    else
+      raise InvalidAddressError, "not an IPv6 address"
+    end
   end
 
   protected
@@ -579,6 +611,11 @@ class IPAddr
       prefix = $1
       family = Socket::AF_INET6
     end
+    if prefix =~ /\A(.*)(%\w+)\z/
+      prefix = $1
+      zone_id = $2
+      family = Socket::AF_INET6
+    end
     # It seems AI_NUMERICHOST doesn't do the job.
     #Socket.getaddrinfo(left, nil, Socket::AF_INET6, Socket::SOCK_STREAM, nil,
     #                  Socket::AI_NUMERICHOST)
@@ -593,6 +630,7 @@ class IPAddr
       @addr = in6_addr(prefix)
       @family = Socket::AF_INET6
     end
+    @zone_id = zone_id
     if family != Socket::AF_UNSPEC && @family != family
       raise AddressFamilyError, "address family mismatch"
     end

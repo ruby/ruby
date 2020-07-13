@@ -43,6 +43,17 @@ class TC_IPAddr < Test::Unit::TestCase
     assert_equal("3ffe:0505:0002:0000:0000:0000:0000:0000", a.to_string)
     assert_equal(Socket::AF_INET6, a.family)
     assert_equal(48, a.prefix)
+    assert_nil(a.zone_id)
+
+    a = IPAddr.new("fe80::1%ab0")
+    assert_equal("fe80::1%ab0", a.to_s)
+    assert_equal("fe80:0000:0000:0000:0000:0000:0000:0001%ab0", a.to_string)
+    assert_equal(Socket::AF_INET6, a.family)
+    assert_equal(false, a.ipv4?)
+    assert_equal(true, a.ipv6?)
+    assert_equal("#<IPAddr: IPv6:fe80:0000:0000:0000:0000:0000:0000:0001%ab0/ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff>", a.inspect)
+    assert_equal(128, a.prefix)
+    assert_equal('%ab0', a.zone_id)
 
     a = IPAddr.new("0.0.0.0")
     assert_equal("0.0.0.0", a.to_s)
@@ -87,7 +98,8 @@ class TC_IPAddr < Test::Unit::TestCase
 
     assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("192.168.0.256") }
     assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("192.168.0.011") }
-    assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("fe80::1%fxp0") }
+    assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("fe80::1%") }
+    assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("fe80::1%]") }
     assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("[192.168.1.2]/120") }
     assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("[2001:200:300::]\nINVALID") }
     assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("192.168.0.1/32\nINVALID") }
@@ -230,6 +242,18 @@ class TC_IPAddr < Test::Unit::TestCase
 
     a = IPAddr.new("192.168.1.2/24")
     assert_equal(a.netmask, "255.255.255.0")
+  end
+
+  def test_zone_id
+    a = IPAddr.new("192.168.1.2")
+    assert_raise(IPAddr::InvalidAddressError) { a.zone_id = '%ab0' }
+    assert_raise(IPAddr::InvalidAddressError) { a.zone_id }
+
+    a = IPAddr.new("1:2:3:4:5:6:7:8")
+    a.zone_id = '%ab0'
+    assert_equal('%ab0', a.zone_id)
+    assert_equal("1:2:3:4:5:6:7:8%ab0", a.to_s)
+    assert_raise(IPAddr::InvalidAddressError) { a.zone_id = '%' }
   end
 end
 
