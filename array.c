@@ -5873,7 +5873,7 @@ ary_recycle_hash(VALUE hash)
  *  Array Difference
  *
  *  Returns a new array that is a copy of the original array, removing all
- *  occurrences of any item that also appear in +other_ary+. The order is
+ *  occurrences of any item that also appears in +other_ary+. The order is
  *  preserved from the original array.
  *
  *  It compares elements using their #hash and #eql? methods for efficiency.
@@ -5924,7 +5924,7 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
  *  Array Difference
  *
  *  Returns a new array that is a copy of the original array, removing all
- *  occurrences of any item that also appear in +other_ary+. The order is
+ *  occurrences of any item that also appears in +other_ary+. The order is
  *  preserved from the original array.
  *
  *  It compares elements using their #hash and #eql? methods for efficiency.
