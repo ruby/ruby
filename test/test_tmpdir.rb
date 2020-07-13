@@ -27,6 +27,8 @@ class TestTmpdir < Test::Unit::TestCase
           File.unlink(tmpdirx)
           ENV[e] = tmpdir
           assert_equal(tmpdir, Dir.tmpdir)
+          File.chmod(0555, tmpdir)
+          assert_not_equal(tmpdir, Dir.tmpdir)
           File.chmod(0777, tmpdir)
           assert_not_equal(tmpdir, Dir.tmpdir)
           newdir = Dir.mktmpdir("d", tmpdir) do |dir|
