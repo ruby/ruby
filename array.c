@@ -5870,7 +5870,7 @@ ary_recycle_hash(VALUE hash)
  *  call-seq:
  *     ary - other_ary    -> new_ary
  *
- *  Array Difference
+ *  Set Difference
  *
  *  Returns a new array that is a copy of the original array, removing all
  *  occurrences of any item that also appear in +other_ary+. The order is
@@ -5884,7 +5884,8 @@ ary_recycle_hash(VALUE hash)
  *  were present twice in the receiver array, all occurrences of each Integer are
  *  removed in the returned array.
  *
- *  If you need set-like behavior, see the library class Set.
+ *  If you need to instead only remove as many occurrences as given in
+ *  +other_ary+, see __.
  *
  *  See also Array#difference.
  */
@@ -5921,7 +5922,7 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
  *  call-seq:
  *     ary.difference(other_ary1, other_ary2, ...)   -> new_ary
  *
- *  Array Difference
+ *  Set Difference
  *
  *  Returns a new array that is a copy of the original array, removing all
  *  occurrences of any item that also appear in +other_ary+. The order is
@@ -5940,8 +5941,6 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
  *  returned array.
  *
  *     [ 1, 'c', :s, 'yep' ].difference([ 1 ], [ 'a', 'c' ])  #=> [ :s, "yep" ]
- *
- *  If you need set-like behavior, see the library class Set.
  *
  *  See also Array#-.
  */
@@ -8217,6 +8216,11 @@ rb_ary_deconstruct(VALUE ary)
  *     arr = [1, 2, 3, 4, 5, 6]
  *     arr.keep_if {|a| a < 4}   #=> [1, 2, 3]
  *     arr                       #=> [1, 2, 3]
+ *
+ *  === See also
+ *
+ *  If you need set-like behavior, see the library class Set. A Set is a
+ *  collection of unordered values with no duplicates.
  */
 
 void
