@@ -5,7 +5,7 @@ require 'tmpdir'
 class TestTmpdir < Test::Unit::TestCase
   def test_tmpdir_modifiable
     tmpdir = Dir.tmpdir
-    assert_equal(false, tmpdir.frozen?)
+    assert_not_predicate(tmpdir, :frozen?)
     tmpdir_org = tmpdir.dup
     tmpdir << "foo"
     assert_equal(tmpdir_org, Dir.tmpdir)
