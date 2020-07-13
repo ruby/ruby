@@ -5,13 +5,13 @@ jobs:
     strategy:
       matrix:
         test_task: [ "check" ] # to make job names consistent
-        jit_opts: [ "--jit", "--jit-wait --jit-min-calls=5" ]
+        jit_opts: [ "--jit", "--jit-wait" ]
       fail-fast: false
     runs-on: ubuntu-latest
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     env:
       TESTOPTS: '-q --tty=no'
-      RUN_OPTS: '--disable-gems --jit-warnings ${{ matrix.jit_opts }}'
+      RUN_OPTS: '--disable-gems ${{ matrix.jit_opts }}'
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
     steps:
       - name: Install libraries
