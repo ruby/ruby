@@ -11,7 +11,7 @@
 % end
         rb_snum_t sp_inc = <%= insn.call_attribute('sp_inc') %>;
         unsigned sp = b->stack_size + (unsigned)sp_inc;
-        VM_ASSERT(sp_inc >= 0);
+        VM_ASSERT(b->stack_size > -sp_inc);
         VM_ASSERT(sp_inc < UINT_MAX - b->stack_size);
 
         if (bf->compiler) {
