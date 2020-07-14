@@ -707,6 +707,8 @@ class Gem::Installer
     user_bin_dir = user_bin_dir.tr(File::ALT_SEPARATOR, File::SEPARATOR) if File::ALT_SEPARATOR
 
     path = ENV['PATH']
+    path = path.tr(File::ALT_SEPARATOR, File::SEPARATOR) if File::ALT_SEPARATOR
+
     if Gem.win_platform?
       path = path.downcase
       user_bin_dir = user_bin_dir.downcase
