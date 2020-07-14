@@ -13,7 +13,7 @@ jobs:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     steps:
-      - uses: actions/cache@v1
+      - uses: actions/cache@v2
         with:
           path: C:\vcpkg\downloads
           key: ${{ runner.os }}-vcpkg-download-${{ matrix.os }}-${{ github.sha }}
@@ -23,7 +23,7 @@ jobs:
       - name: Install libraries with vcpkg
         run: |
           vcpkg --triplet x64-windows install readline zlib
-      - uses: actions/cache@v1
+      - uses: actions/cache@v2
         with:
           path: C:\Users\runneradmin\AppData\Local\Temp\chocolatey
           key: ${{ runner.os }}-chocolatey-${{ matrix.os }}-${{ github.sha }}
