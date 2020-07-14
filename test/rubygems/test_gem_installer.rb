@@ -196,7 +196,7 @@ gem 'other', version
     bin_dir = installer.bin_dir
 
     if Gem.win_platform?
-      bin_dir = bin_dir.downcase.gsub(File::SEPARATOR, File::ALT_SEPARATOR)
+      bin_dir = bin_dir.downcase
     end
 
     orig_PATH, ENV['PATH'] =
@@ -239,7 +239,7 @@ gem 'other', version
     expected = installer.bin_dir
 
     if Gem.win_platform?
-      expected = expected.downcase.gsub(File::SEPARATOR, File::ALT_SEPARATOR)
+      expected = expected.downcase
     end
 
     assert_match expected, @ui.error
