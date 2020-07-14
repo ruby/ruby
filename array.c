@@ -5349,25 +5349,24 @@ rb_ary_fill(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *     ary + other_ary   -> new_ary
+ *    array + other_array -> new_array
  *
- *  Concatenation --- Returns a new array built by concatenating the
- *  two arrays together to produce a third array.
+ *  Returns the concatenation of +array+ and +other_array+ in a new \Array.
  *
- *     [ 1, 2, 3 ] + [ 4, 5 ]    #=> [ 1, 2, 3, 4, 5 ]
- *     a = [ "a", "b", "c" ]
- *     c = a + [ "d", "e", "f" ]
- *     c                         #=> [ "a", "b", "c", "d", "e", "f" ]
- *     a                         #=> [ "a", "b", "c" ]
+ *  Argument +other_array+ must be an
+ *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects].
  *
- *  Note that
- *     x += y
- *  is the same as
- *     x = x + y
- *  This means that it produces a new array. As a consequence,
- *  repeated use of <code>+=</code> on arrays can be quite inefficient.
+ *  Returns a new \Array containing all elements of +array+
+ *  followed by all elements of +other_array+:
+ *    a = [0, 1] + [2, 3]
+ *    a # => [0, 1, 2, 3]
  *
- *  See also Array#concat.
+ *  See also #concat.
+ *  ---
+ *
+ *  Raises an exception if +other_array+ is not an Array-convertible object:
+ *    # Raises TypeError (no implicit conversion of Symbol into Array):
+ *    [] + :foo
  */
 
 VALUE
@@ -5400,22 +5399,27 @@ ary_append(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     ary.concat(other_ary1, other_ary2, ...)   -> ary
+ *    array.concat(*other_arrays) -> self
  *
- *  Appends the elements of <code>other_ary</code>s to +self+.
+ *  The given +other_arrays+ must be
+ *  {Array-convertible objects}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects].
  *
- *     [ "a", "b" ].concat( ["c", "d"])   #=> [ "a", "b", "c", "d" ]
- *     [ "a" ].concat( ["b"], ["c", "d"]) #=> [ "a", "b", "c", "d" ]
- *     [ "a" ].concat #=> [ "a" ]
+ *  Adds to +array+ all elements from each array in +other_arrays+; returns +self+:
+ *    a = [0, 1]
+ *    a1 = a.concat([2, 3], [4, 5])
+ *    a1 # => [0, 1, 2, 3, 4, 5]
+ *    a1.equal?(a) # => true # Returned self
  *
- *     a = [ 1, 2, 3 ]
- *     a.concat( [ 4, 5 ])
- *     a                                 #=> [ 1, 2, 3, 4, 5 ]
+ *  Returns +self+ unmodified if no arguments given:
+ *    a = [0, 1]
+ *    a.concat
+ *    a # => [0, 1]
  *
- *     a = [ 1, 2 ]
- *     a.concat(a, a)                    #=> [1, 2, 1, 2, 1, 2]
+ *  ---
  *
- *  See also Array#+.
+ *  Raises an exception if any argument is not an Array-convertible object:
+ *    # Raises TypeError (no implicit conversion of Symbol into Array):
+ *    [].concat([], :foo)
  */
 
 static VALUE
@@ -5447,19 +5451,51 @@ rb_ary_concat(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     ary * int     -> new_ary
- *     ary * str     -> new_string
+ *    array * n -> new_array
+ *    array * string_separator -> new_string
  *
- *  Repetition --- With a String argument, equivalent to
- *  <code>ary.join(str)</code>.
+ *  - Argument +n+, if given, must be an
+ *    {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
+ *  - Argument +string_separator+, if given, myst be a
+ *    {String-convertible object}[doc/implicit_conversion_rdoc.html#label-String-Convertible+Objects].
  *
- *  Otherwise, returns a new array built by concatenating the +int+ copies of
- *  +self+.
+ *  ---
  *
+ *  When argument +n+ is given, returns a new concatenated \Array.
  *
- *     [ 1, 2, 3 ] * 3    #=> [ 1, 2, 3, 1, 2, 3, 1, 2, 3 ]
- *     [ 1, 2, 3 ] * ","  #=> "1,2,3"
+ *  If +n+ is positive, returns the concatenation of +n+ repetitions of +self+:
+ *    a = ['x', 'y']
+ *    a * 3 # => ["x", "y", "x", "y", "x", "y"]
  *
+ *  If +n+ is zero, returns an new empty \Array:
+ *    a = [0, 1]
+ *    a * 0 # => []
+ *
+ *  ---
+ *
+ *  When argument +string_separator+ is given,
+ *  returns a new \String equivalent to the result of <tt>array.join(string_separator)</tt>.
+ *
+ *  If +array+ is non-empty, returns the join of each element's +to_s+ value:
+ *    [0, [0, 1], {foo: 0}] * ', ' # => "0, 0, 1, {:foo=>0}"
+ *
+ *  If +array+ is empty, returns a new empty \String:
+ *    [] * ',' # => ""
+ *  ---
+ *
+ *  Raises an exception if the argument is not an Integer-convertible object
+ *  or a String-convertible object:
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    [] * :foo
+ *
+ *  Raises an exception if +n+ is negative:
+ *    # Raises ArgumentError (negative argument):
+ *    [] * -1
+ *
+ *  Raises an exception if argument +string_separator+ is given,
+ *  and any array element lacks instance method +to_s+:
+ *    # Raises NoMethodError (undefined method `to_s' for #<BasicObject:>):
+ *    [BasicObject.new] * ','
  */
 
 static VALUE
@@ -5508,22 +5544,18 @@ rb_ary_times(VALUE ary, VALUE times)
 
 /*
  *  call-seq:
- *     ary.assoc(obj)   -> element_ary  or  nil
+ *    array.assoc(obj) -> found_array or nil
  *
- *  Searches through an array whose elements are also arrays comparing +obj+
- *  with the first element of each contained array using <code>obj.==</code>.
+ *  Returns the first element in +self+ that is an \Array
+ *  whose first element <tt>==</tt> +obj+:
+ *    a = [{foo: 0}, [2, 4], [4, 5, 6], [4, 5]]
+ *    a.assoc(4) # => [4, 5, 6]
  *
- *  Returns the first contained array that matches (that is, the first
- *  associated array), or +nil+ if no match is found.
+ *  Returns +nil+ if no such element is found:
+ *    a = [{foo: 0}, [2, 4], [4, 5, 6], [4, 5]]
+ *    a.assoc(:nosuch) # => nil
  *
- *  See also Array#rassoc
- *
- *     s1 = [ "colors", "red", "blue", "green" ]
- *     s2 = [ "letters", "a", "b", "c" ]
- *     s3 = "foo"
- *     a  = [ s1, s2, s3 ]
- *     a.assoc("letters")  #=> [ "letters", "a", "b", "c" ]
- *     a.assoc("foo")      #=> nil
+ *  See also #rassoc.
  */
 
 VALUE
@@ -5543,20 +5575,18 @@ rb_ary_assoc(VALUE ary, VALUE key)
 
 /*
  *  call-seq:
- *     ary.rassoc(obj) -> element_ary or nil
+ *    array.rassoc(obj) -> found_array or nil
  *
- *  Searches through the array whose elements are also arrays.
+ *  Returns the first element in +self+ that is an \Array
+ *  whose second element <tt>==</tt> +obj+:
+ *    a = [{foo: 0}, [2, 4], [4, 5, 6], [4, 5]]
+ *    a.rassoc(4) # => [2, 4]
  *
- *  Compares +obj+ with the second element of each contained array using
- *  <code>obj.==</code>.
+ *  Returns +nil+ if no such element is found:
+ *    a = [{foo: 0}, [2, 4], [4, 5, 6], [4, 5]]
+ *    a.rassoc(:nosuch) # => nil
  *
- *  Returns the first contained array that matches +obj+.
- *
- *  See also Array#assoc.
- *
- *     a = [ [ 1, "one"], [2, "two"], [3, "three"], ["ii", "two"] ]
- *     a.rassoc("two")    #=> [2, "two"]
- *     a.rassoc("four")   #=> nil
+ *  See also #assoc.
  */
 
 VALUE
