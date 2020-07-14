@@ -583,7 +583,7 @@ module Net
       logging "TLS connection started"
       s.sync_close = true
       ssl_socket_connect(s, @open_timeout)
-      if @ssl_context.verify_mode != OpenSSL::SSL::VERIFY_NONE
+      if @ssl_context.verify_mode && @ssl_context.verify_mode != OpenSSL::SSL::VERIFY_NONE
         s.post_connection_check(@address)
       end
       verified = true

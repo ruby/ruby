@@ -53,8 +53,10 @@ module Net
         end
       }
 
+      ssl_context = OpenSSL::SSL::SSLContext.new
+      ssl_context.verify_mode = OpenSSL::SSL::VERIFY_PEER
       connection = MySMTP.new('localhost', 25)
-      connection.enable_starttls_auto
+      connection.enable_starttls_auto(ssl_context)
       connection.fake_tcp = tcp_socket
       connection.fake_ssl = ssl_socket
 
