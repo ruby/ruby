@@ -9,6 +9,7 @@
 #
 # $IPR: httprequest.rb,v 1.64 2003/07/13 17:18:22 gotoyuzo Exp $
 
+require 'fiber'
 require 'uri'
 require_relative 'httpversion'
 require_relative 'httpstatus'
@@ -273,13 +274,17 @@ module WEBrick
       self
     end
 
-    # for IO.copy_stream.  Note: we may return a larger string than +size+
-    # here; but IO.copy_stream does not care.
+    # for IO.copy_stream.
     def readpartial(size, buf = ''.b) # :nodoc
       res = @body_tmp.shift or raise EOFError, 'end of file reached'
+      if res.length > size
+        @body_tmp.unshift(res[size..-1])
+        res = res[0..size - 1]
+      end
       buf.replace(res)
       res.clear
-      @body_rd.resume # get more chunks
+      # get more chunks - check alive? because we can take a partial chunk
+      @body_rd.resume if @body_rd.alive?
       buf
     end
 
