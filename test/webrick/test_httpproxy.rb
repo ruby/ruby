@@ -213,7 +213,7 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
         end
       end
     end
-  end
+  end if RUBY_VERSION >= '2.5'
 
   def test_http10_proxy_chunked
     # Testing HTTP/1.0 client request and HTTP/1.1 chunked response
