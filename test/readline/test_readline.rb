@@ -596,7 +596,14 @@ module BasetestReadline
         end
         w.write("a\t\n")
         w.flush
-        line = Readline.readline('> ', false)
+        begin
+          stderr = $stderr.dup
+          $stderr.reopen(null)
+          line = Readline.readline('> ', false)
+        ensure
+          $stderr.reopen(stderr)
+          stderr.close
+        end
       end
     end
 
