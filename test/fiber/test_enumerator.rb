@@ -10,7 +10,11 @@ class TestFiberEnumerator < Test::Unit::TestCase
     skip unless defined?(UNIXSocket)
 
     i, o = UNIXSocket.pair
-    skip unless i.nonblock? && o.nonblock?
+    unless i.nonblock? && o.nonblock?
+      i.close
+      o.close
+      skip
+    end
 
     message = String.new
 
@@ -41,5 +45,7 @@ class TestFiberEnumerator < Test::Unit::TestCase
     thread.join
 
     assert_equal(MESSAGE, message)
+    assert_predicate(i, :closed?)
+    assert_predicate(o, :closed?)
   end
 end
