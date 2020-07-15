@@ -220,7 +220,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
         assert_path_exists File.join(bin_dir, "#{e}.bat")
       end
 
-      assert_path_exists File.join bin_dir, Gem.default_exec_format % e
+      assert_path_exists File.join bin_dir, e
     end
 
     default_dir = Gem.default_specifications_dir
@@ -266,7 +266,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
           assert_path_exists File.join(bin_dir, "#{e}.bat")
         end
 
-        assert_path_exists File.join bin_dir, Gem.default_exec_format % e
+        assert_path_exists File.join bin_dir, e
       end
     end
   end
@@ -411,12 +411,10 @@ class TestGemCommandsSetupCommand < Gem::TestCase
   end
 
   def default_gem_bin_path
-    gem_exec = sprintf Gem.default_exec_format, 'gem'
-    File.join @install_dir, 'bin', gem_exec
+    File.join @install_dir, 'bin', 'gem'
   end
 
   def default_bundle_bin_path
-    bundle_exec = sprintf Gem.default_exec_format, 'bundle'
-    File.join @install_dir, 'bin', bundle_exec
+    File.join @install_dir, 'bin', 'bundle'
   end
 end unless Gem.java_platform?
