@@ -1,41 +1,42 @@
 ====== Option +converters+
 
-Specifies a single field converter name or \Proc,
-or an \Array of field converter names and Procs.
-
+Specifies converters to be used in parsing fields.
 See {Field Converters}[#class-CSV-label-Field+Converters]
 
 Default value:
   CSV::DEFAULT_OPTIONS.fetch(:converters) # => nil
 
-The value may be a single field converter name:
+The value may be a field converter name
+(see {Stored Converters}[#class-CSV-label-Stored+Converters]):
   str = '1,2,3'
   # Without a converter
-  ary = CSV.parse_line(str)
-  ary # => ["1", "2", "3"]
+  array = CSV.parse_line(str)
+  array # => ["1", "2", "3"]
   # With built-in converter :integer
-  ary = CSV.parse_line(str, converters: :integer)
-  ary # => [1, 2, 3]
+  array = CSV.parse_line(str, converters: :integer)
+  array # => [1, 2, 3]
 
-The value may be an \Array of field converter names:
+The value may be a converter list
+(see {Converter Lists}[#class-CSV-label-Converter+Lists]):
   str = '1,3.14159'
   # Without converters
-  ary = CSV.parse_line(str)
-  ary # => ["1", "3.14159"]
+  array = CSV.parse_line(str)
+  array # => ["1", "3.14159"]
   # With built-in converters
-  ary = CSV.parse_line(str, converters: [:integer, :float])
-  ary # => [1, 3.14159]
+  array = CSV.parse_line(str, converters: [:integer, :float])
+  array # => [1, 3.14159]
 
 The value may be a \Proc custom converter:
+(see {Custom Field Converters}[#class-CSV-label-Custom+Field+Converters]):
   str = ' foo  ,  bar  ,  baz  '
   # Without a converter
-  ary = CSV.parse_line(str)
-  ary # => [" foo  ", "  bar  ", "  baz  "]
+  array = CSV.parse_line(str)
+  array # => [" foo  ", "  bar  ", "  baz  "]
   # With a custom converter
-  ary = CSV.parse_line(str, converters: proc {|field| field.strip })
-  ary # => ["foo", "bar", "baz"]
+  array = CSV.parse_line(str, converters: proc {|field| field.strip })
+  array # => ["foo", "bar", "baz"]
 
-See also {Custom Converters}[#class-CSV-label-Custom+Converters]
+See also {Custom Field Converters}[#class-CSV-label-Custom+Field+Converters]
 
 ---
 

@@ -34,7 +34,7 @@
 # I'm sure I'll miss something, but I'll try to mention most of the major
 # differences I am aware of, to help others quickly get up to speed:
 #
-# === CSV Parsing
+# === \CSV Parsing
 #
 # * This parser is m17n aware. See CSV for full details.
 # * This library has a stricter parser and will throw MalformedCSVErrors on
@@ -440,54 +440,188 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 #   data = CSV.parse('Bob,Engineering,1000', headers: %i[name department salary])
 #   data.first      #=> #<CSV::Row name:"Bob" department:"Engineering" salary:"1000">
 #
-# === \CSV \Converters
+# === \Converters
 #
-# By default, each field parsed by \CSV is formed into a \String.
-# You can use a _converter_ to convert certain fields into other Ruby objects.
+# By default, each value (field or header) parsed by \CSV is formed into a \String.
+# You can use a _field_ _converter_ or  _header_ _converter_
+# to intercept and modify the parsed values:
+# - See {Field Converters}[#class-CSV-label-Field+Converters].
+# - See {Header Converters}[#class-CSV-label-Header+Converters].
 #
-# When you specify a converter for parsing,
-# each parsed field is passed to the converter;
-# its return value becomes the new value for the field.
+# Also by default, each value to be written during generation is written 'as-is'.
+# You can use a _write_ _converter_ to modify values before writing.
+# - See {Write Converters}[#class-CSV-label-Write+Converters].
+#
+# ==== Specifying \Converters
+#
+# You can specify converters for parsing or generating in the +options+
+# argument to various \CSV methods:
+# - Option +converters+ for converting parsed field values.
+# - Option +header_converters+ for converting parsed header values.
+# - Option +write_converters+ for converting values to be written (generated).
+#
+# There are three forms for specifying converters:
+# - A converter proc: executable code to be used for conversion.
+# - A converter name: the name of a stored converter.
+# - A converter list: an array of converter procs, converter names, and converter lists.
+#
+# ===== Converter Procs
+#
+# This converter proc, +strip_converter+, accepts a value +field+
+# and returns <tt>field.strip</tt>:
+#   strip_converter = proc {|field| field.strip }
+# In this call to <tt>CSV.parse</tt>,
+# the keyword argument <tt>converters: string_converter</tt>
+# specifies that:
+# - \Proc +string_converter+ is to be called for each parsed field.
+# - The converter's return value is to replace the +field+ value.
+# Example:
+#   string = " foo , 0 \n bar , 1 \n baz , 2 \n"
+#   array = CSV.parse(string, converters: strip_converter)
+#   array # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
+#
+# A converter proc can receive a second argument, +field_info+,
+# that contains details about the field.
+# This modified +strip_converter+ displays its arguments:
+#   strip_converter = proc do |field, field_info|
+#     p [field, field_info]
+#     field.strip
+#   end
+#   string = " foo , 0 \n bar , 1 \n baz , 2 \n"
+#   array = CSV.parse(string, converters: strip_converter)
+#   array # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
+# Output:
+#  [" foo ", #<struct CSV::FieldInfo index=0, line=1, header=nil>]
+#  [" 0 ", #<struct CSV::FieldInfo index=1, line=1, header=nil>]
+#  [" bar ", #<struct CSV::FieldInfo index=0, line=2, header=nil>]
+#  [" 1 ", #<struct CSV::FieldInfo index=1, line=2, header=nil>]
+#  [" baz ", #<struct CSV::FieldInfo index=0, line=3, header=nil>]
+#  [" 2 ", #<struct CSV::FieldInfo index=1, line=3, header=nil>]
+# Each CSV::Info object shows:
+# - The 0-based field index.
+# - The 1-based line index.
+# - The field header, if any.
+#
+# ===== Stored \Converters
+#
+# A converter may be given a name and stored in a structure where
+# the parsing methods can find it by name.
+#
+# The storage structure for field converters is the \Hash CSV::Converters.
+# It has several built-in converter procs:
+# - <tt>:integer</tt>: converts each \String-embedded integer into a true \Integer.
+# - <tt>:float</tt>: converts each \String-embedded float into a true \Float.
+# - <tt>:date</tt>: converts each \String-embedded date into a true \Date.
+# - <tt>:date_time</tt>: converts each \String-embedded date-time into a true \DateTime
+# .
+# This example creates a converter proc, then stores it:
+#   strip_converter = proc {|field| field.strip }
+#   CSV::Converters[:strip] = strip_converter
+# Then the parsing method call can refer to the converter
+# by its name, <tt>:strip</tt>:
+#   string = " foo , 0 \n bar , 1 \n baz , 2 \n"
+#   array = CSV.parse(string, converters: :strip)
+#   array # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
+#
+# The storage structure for header converters is the \Hash CSV::HeaderConverters,
+# which works in the same way.
+# It also has built-in converter procs:
+# - <tt>:downcase</tt>: Downcases each header.
+# - <tt>:symbol</tt>: Converts each header to a \Symbol.
+#
+# There is no such storage structure for write headers.
+#
+# ===== Converter Lists
+#
+# A _converter_ _list_ is an \Array that may include any assortment of:
+# - Converter procs.
+# - Names of stored converters.
+# - Nested converter lists.
+#
+# Examples:
+#   numeric_converters = [:integer, :float]
+#   date_converters = [:date, :date_time]
+#   [numeric_converters, strip_converter]
+#   [strip_converter, date_converters, :float]
+#
+# Like a converter proc, a converter list may be named and stored in either
+# \CSV::Converters or CSV::HeaderConverters:
+#   CSV::Converters[:custom] = [strip_converter, date_converters, :float]
+#   CSV::HeaderConverters[:custom] = [:downcase, :symbol]
+#
+# There are two built-in converter lists:
+#   CSV::Converters[:numeric] # => [:integer, :float]
+#   CSV::Converters[:all] # => [:date_time, :numeric]
+#
+# ==== Field \Converters
+#
+# With no conversion, all parsed fields in all rows become Strings:
+#   string = "foo,0\nbar,1\nbaz,2\n"
+#   ary = CSV.parse(string)
+#   ary # => # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
+#
+# When you specify a field converter, each parsed field is passed to the converter;
+# its return value becomes the stored value for the field.
 # A converter might, for example, convert an integer embedded in a \String
 # into a true \Integer.
 # (In fact, that's what built-in field converter +:integer+ does.)
 #
-# There are additional built-in \converters, and custom \converters are also supported.
+# There are three ways to use field \converters.
 #
-# All \converters try to transcode fields to UTF-8 before converting.
-# The conversion will fail if the data cannot be transcoded, leaving the field unchanged.
+# - Using option {converters}[#class-CSV-label-Option+converters] with a parsing method:
+#     ary = CSV.parse(string, converters: :integer)
+#     ary # => [0, 1, 2] # => [["foo", 0], ["bar", 1], ["baz", 2]]
+# - Using option {converters}[#class-CSV-label-Option+converters] with a new \CSV instance:
+#     csv = CSV.new(string, converters: :integer)
+#     # Field converters in effect:
+#     csv.converters # => [:integer]
+#     csv.read # => [["foo", 0], ["bar", 1], ["baz", 2]]
+# - Using method #convert to add a field converter to a \CSV instance:
+#     csv = CSV.new(string)
+#     # Add a converter.
+#     csv.convert(:integer)
+#     csv.converters # => [:integer]
+#     csv.read # => [["foo", 0], ["bar", 1], ["baz", 2]]
 #
-# ==== Field \Converters
-#
-# There are three ways to use field \converters;
-# these examples use built-in field converter +:integer+,
-# which converts each parsed integer string to a true \Integer.
-#
-# Option +converters+ with a singleton parsing method:
-#   ary = CSV.parse_line('0,1,2', converters: :integer)
-#   ary # => [0, 1, 2]
-#
-# Option +converters+ with a new \CSV instance:
-#   csv = CSV.new('0,1,2', converters: :integer)
-#   # Field converters in effect:
-#   csv.converters # => [:integer]
-#   csv.shift # => [0, 1, 2]
-#
-# Method #convert adds a field converter to a \CSV instance:
-#   csv = CSV.new('0,1,2')
+# Installing a field converter does not affect already-read rows:
+#   csv = CSV.new(string)
+#   csv.shift # => ["foo", "0"]
 #   # Add a converter.
 #   csv.convert(:integer)
 #   csv.converters # => [:integer]
-#   csv.shift # => [0, 1, 2]
+#   csv.read # => [["bar", 1], ["baz", 2]]
 #
-# ---
+# There are additional built-in \converters, and custom \converters are also supported.
 #
-# The built-in field \converters are in \Hash CSV::Converters.
-# The \Symbol keys there are the names of the \converters:
+# ===== Built-In Field \Converters
 #
-#   CSV::Converters.keys # => [:integer, :float, :numeric, :date, :date_time, :all]
+# The built-in field converters are in \Hash CSV::Converters:
+# - Each key is a field converter name.
+# - Each value is one of:
+#   - A \Proc field converter.
+#   - An \Array of field converter names.
 #
-# Converter +:integer+ converts each field that +Integer()+ accepts:
+# Display:
+#   CSV::Converters.each_pair do |name, value|
+#     if value.kind_of?(Proc)
+#       p [name, value.class]
+#     else
+#       p [name, value]
+#     end
+#   end
+# Output:
+#   [:integer, Proc]
+#   [:float, Proc]
+#   [:numeric, [:integer, :float]]
+#   [:date, Proc]
+#   [:date_time, Proc]
+#   [:all, [:date_time, :numeric]]
+#
+# Each of these converters transcodes values to UTF-8 before attempting conversion.
+# If a value cannot be transcoded to UTF-8 the conversion will
+# fail and the value will remain unconverted.
+#
+# Converter +:integer+ converts each field that Integer() accepts:
 #   data = '0,1,2,x'
 #   # Without the converter
 #   csv = CSV.parse_line(data)
@@ -496,7 +630,7 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 #   csv = CSV.parse_line(data, converters: :integer)
 #   csv # => [0, 1, 2, "x"]
 #
-# Converter +:float+ converts each field that +Float()+ accepts:
+# Converter +:float+ converts each field that Float() accepts:
 #   data = '1.0,3.14159,x'
 #   # Without the converter
 #   csv = CSV.parse_line(data)
@@ -507,7 +641,7 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 #
 # Converter +:numeric+ converts with both +:integer+ and +:float+..
 #
-# Converter +:date+ converts each field that +Date::parse()+ accepts:
+# Converter +:date+ converts each field that Date::parse accepts:
 #   data = '2001-02-03,x'
 #   # Without the converter
 #   csv = CSV.parse_line(data)
@@ -516,7 +650,7 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 #   csv = CSV.parse_line(data, converters: :date)
 #   csv # => [#<Date: 2001-02-03 ((2451944j,0s,0n),+0s,2299161j)>, "x"]
 #
-# Converter +:date_time+ converts each field that +DateTime::parse() accepts:
+# Converter +:date_time+ converts each field that DateTime::parse accepts:
 #   data = '2020-05-07T14:59:00-05:00,x'
 #   # Without the converter
 #   csv = CSV.parse_line(data)
@@ -536,17 +670,16 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 #   csv.convert(:date)
 #   csv.converters # => [:integer, :date]
 #
-# You can add a custom field converter to \Hash CSV::Converters:
-#   strip_converter = proc {|field| field.strip}
+# ===== Custom Field \Converters
+#
+# You can define a custom field converter:
+#   strip_converter = proc {|field| field.strip }
+# Add it to the \Converters \Hash:
 #   CSV::Converters[:strip] = strip_converter
-#   CSV::Converters.keys # => [:integer, :float, :numeric, :date, :date_time, :all, :strip]
-#
-# Then use it to convert fields:
-#   str = ' foo , 0 '
-#   ary = CSV.parse_line(str, converters: :strip)
-#   ary # => ["foo", "0"]
-#
-# See {Custom Converters}[#class-CSV-label-Custom+Converters].
+# Use it by name:
+#   string = " foo , 0 \n bar , 1 \n baz , 2 \n"
+#   array = CSV.parse(string, converters: strip_converter)
+#   array # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
 #
 # ==== Header \Converters
 #
@@ -556,43 +689,42 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 # these examples use built-in header converter +:dowhcase+,
 # which downcases each parsed header.
 #
-# Option +header_converters+ with a singleton parsing method:
-#   str = "Name,Count\nFoo,0\n,Bar,1\nBaz,2"
-#   tbl = CSV.parse(str, headers: true, header_converters: :downcase)
-#   tbl.class # => CSV::Table
-#   tbl.headers # => ["name", "count"]
+# - Option +header_converters+ with a singleton parsing method:
+#     string = "Name,Count\nFoo,0\n,Bar,1\nBaz,2"
+#     tbl = CSV.parse(string, headers: true, header_converters: :downcase)
+#     tbl.class # => CSV::Table
+#     tbl.headers # => ["name", "count"]
 #
-# Option +header_converters+ with a new \CSV instance:
-#   csv = CSV.new(str, header_converters: :downcase)
-#   # Header converters in effect:
-#   csv.header_converters # => [:downcase]
-#   tbl = CSV.parse(str, headers: true)
-#   tbl.headers # => ["Name", "Count"]
+# - Option +header_converters+ with a new \CSV instance:
+#     csv = CSV.new(string, header_converters: :downcase)
+#     # Header converters in effect:
+#     csv.header_converters # => [:downcase]
+#     tbl = CSV.parse(string, headers: true)
+#     tbl.headers # => ["Name", "Count"]
 #
-# Method #header_convert adds a header converter to a \CSV instance:
-#   csv = CSV.new(str)
-#   # Add a header converter.
-#   csv.header_convert(:downcase)
-#   csv.header_converters # => [:downcase]
-#   tbl = CSV.parse(str, headers: true)
-#   tbl.headers # => ["Name", "Count"]
+# - Method #header_convert adds a header converter to a \CSV instance:
+#     csv = CSV.new(string)
+#     # Add a header converter.
+#     csv.header_convert(:downcase)
+#     csv.header_converters # => [:downcase]
+#     tbl = CSV.parse(string, headers: true)
+#     tbl.headers # => ["Name", "Count"]
 #
-# ---
+# ===== Built-In Header \Converters
 #
-# The built-in header \converters are in \Hash CSV::Converters.
-# The \Symbol keys there are the names of the \converters:
-#
+# The built-in header \converters are in \Hash CSV::HeaderConverters.
+# The keys there are the names of the \converters:
 #   CSV::HeaderConverters.keys # => [:downcase, :symbol]
 #
 # Converter +:downcase+ converts each header by downcasing it:
-#   str = "Name,Count\nFoo,0\n,Bar,1\nBaz,2"
-#   tbl = CSV.parse(str, headers: true, header_converters: :downcase)
+#   string = "Name,Count\nFoo,0\n,Bar,1\nBaz,2"
+#   tbl = CSV.parse(string, headers: true, header_converters: :downcase)
 #   tbl.class # => CSV::Table
 #   tbl.headers # => ["name", "count"]
 #
-# Converter +:symbol+ by making it into a \Symbol:
-#   str = "Name,Count\nFoo,0\n,Bar,1\nBaz,2"
-#   tbl = CSV.parse(str, headers: true, header_converters: :symbol)
+# Converter +:symbol+ converts each header by making it into a \Symbol:
+#   string = "Name,Count\nFoo,0\n,Bar,1\nBaz,2"
+#   tbl = CSV.parse(string, headers: true, header_converters: :symbol)
 #   tbl.headers # => [:name, :count]
 # Details:
 # - Strips leading and trailing whitespace.
@@ -601,46 +733,44 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 # - Removes non-word characters.
 # - Makes the string into a \Symbol.
 #
-# You can add a custom header converter to \Hash CSV::HeaderConverters:
-#   strip_converter = proc {|field| field.strip}
-#   CSV::HeaderConverters[:strip] = strip_converter
-#   CSV::HeaderConverters.keys # => [:downcase, :symbol, :strip]
+# ===== Custom Header \Converters
 #
-# Then use it to convert headers:
-#   str = " Name , Value \nfoo,0\nbar,1\nbaz,2"
-#   tbl = CSV.parse(str, headers: true, header_converters: :strip)
-#   tbl.headers # => ["Name", "Value"]
+# You can define a custom header converter:
+#   upcase_converter = proc {|header| header.upcase }
+# Add it to the \HeaderConverters \Hash:
+#   CSV::HeaderConverters[:upcase] = upcase_converter
+# Use it by name:
+#   string = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+#   table = CSV.parse(string, headers: true, converters: upcase_converter)
+#   table # => #<CSV::Table mode:col_or_row row_count:4>
+#   table.headers # => ["Name", "Value"]
 #
-# See {Custom Converters}[#class-CSV-label-Custom+Converters].
+# ===== Write \Converters
 #
-# ==== Custom \Converters
+# When you specify a write converter for generating \CSV,
+# each field to be written is passed to the converter;
+# its return value becomes the new value for the field.
+# A converter might, for example, strip whitespace from a field.
 #
-# You can define custom \converters.
+# - Using no write converter (all fields unmodified):
+#     output_string = CSV.generate do |csv|
+#       csv << [' foo ', 0]
+#       csv << [' bar ', 1]
+#       csv << [' baz ', 2]
+#     end
+#     output_string # => " foo ,0\n bar ,1\n baz ,2\n"
+# - Using option +write_converters+:
+#     strip_converter = proc {|field| field.respond_to?(:strip) ? field.strip : field }
+#     upcase_converter = proc {|field| field.respond_to?(:upcase) ? field.upcase : field }
+#     converters = [strip_converter, upcase_converter]
+#       output_string = CSV.generate(write_converters: converters) do |csv|
+#         csv << [' foo ', 0]
+#         csv << [' bar ', 1]
+#         csv << [' baz ', 2]
+#       end
+#       output_string # => "FOO,0\nBAR,1\nBAZ,2\n"
 #
-# The \converter is a \Proc that is called with two arguments,
-# \String +field+ and CSV::FieldInfo +field_info+;
-# it returns a \String that will become the field value:
-#   converter = proc {|field, field_info| <some_string> }
-#
-# To illustrate:
-#   converter = proc {|field, field_info| p [field, field_info]; field}
-#   ary = CSV.parse_line('foo,0', converters: converter)
-#
-# Produces:
-#   ["foo", #<struct CSV::FieldInfo index=0, line=1, header=nil>]
-#   ["0", #<struct CSV::FieldInfo index=1, line=1, header=nil>]
-#
-# In each of the output lines:
-# - The first \Array element is the passed \String field.
-# - The second is a \FieldInfo structure containing information about the field:
-#   - The 0-based column index.
-#   - The 1-based line number.
-#   - The header for the column, if available.
-#
-# If the \converter does not need +field_info+, it can be omitted:
-#   converter = proc {|field| ... }
-#
-# === CSV and Character Encodings (M17n or Multilingualization)
+# === Character Encodings (M17n or Multilingualization)
 #
 # This new CSV parser is m17n savvy.  The parser works in the Encoding of the IO
 # or String object being read from or written to. Your data is never transcoded
@@ -721,30 +851,12 @@ class CSV
   # The encoding used by all converters.
   ConverterEncoding = Encoding.find("UTF-8")
 
+  # A \Hash containing the names and \Procs for the built-in field converters.
+  # See {Built-In Field Converters}[#class-CSV-label-Built-In+Field+Converters].
   #
-  # This Hash holds the built-in converters of CSV that can be accessed by name.
-  # You can select Converters with CSV.convert() or through the +options+ Hash
-  # passed to CSV::new().
-  #
-  # <b><tt>:integer</tt></b>::    Converts any field Integer() accepts.
-  # <b><tt>:float</tt></b>::      Converts any field Float() accepts.
-  # <b><tt>:numeric</tt></b>::    A combination of <tt>:integer</tt>
-  #                               and <tt>:float</tt>.
-  # <b><tt>:date</tt></b>::       Converts any field Date::parse() accepts.
-  # <b><tt>:date_time</tt></b>::  Converts any field DateTime::parse() accepts.
-  # <b><tt>:all</tt></b>::        All built-in converters.  A combination of
-  #                               <tt>:date_time</tt> and <tt>:numeric</tt>.
-  #
-  # All built-in converters transcode field data to UTF-8 before attempting a
-  # conversion.  If your data cannot be transcoded to UTF-8 the conversion will
-  # fail and the field will remain unchanged.
-  #
-  # This Hash is intentionally left unfrozen and users should feel free to add
-  # values to it that can be accessed by all CSV objects.
-  #
-  # To add a combo field, the value should be an Array of names.  Combo fields
-  # can be nested with other combo fields.
-  #
+  # This \Hash is intentionally left unfrozen, and may be extended with
+  # custom field converters.
+  # See {Custom Field Converters}[#class-CSV-label-Custom+Field+Converters].
   Converters  = {
     integer:   lambda { |f|
       Integer(f.encode(ConverterEncoding)) rescue f
@@ -772,27 +884,12 @@ class CSV
     all:       [:date_time, :numeric],
   }
 
+  # A \Hash containing the names and \Procs for the built-in header converters.
+  # See {Built-In Header Converters}[#class-CSV-label-Built-In+Header+Converters].
   #
-  # This Hash holds the built-in header converters of CSV that can be accessed
-  # by name. You can select HeaderConverters with CSV.header_convert() or
-  # through the +options+ Hash passed to CSV::new().
-  #
-  # <b><tt>:downcase</tt></b>::  Calls downcase() on the header String.
-  # <b><tt>:symbol</tt></b>::    Leading/trailing spaces are dropped, string is
-  #                              downcased, remaining spaces are replaced with
-  #                              underscores, non-word characters are dropped,
-  #                              and finally to_sym() is called.
-  #
-  # All built-in header converters transcode header data to UTF-8 before
-  # attempting a conversion. If your data cannot be transcoded to UTF-8 the
-  # conversion will fail and the header will remain unchanged.
-  #
-  # This Hash is intentionally left unfrozen and users should feel free to add
-  # values to it that can be accessed by all CSV objects.
-  #
-  # To add a combo field, the value should be an Array of names. Combo fields
-  # can be nested with other combo fields.
-  #
+  # This \Hash is intentionally left unfrozen, and may be extended with
+  # custom field converters.
+  # See {Custom Header Converters}[#class-CSV-label-Custom+Header+Converters].
   HeaderConverters = {
     downcase: lambda { |h| h.encode(ConverterEncoding).downcase },
     symbol:   lambda { |h|
@@ -1726,9 +1823,14 @@ class CSV
   # :call-seq:
   #   csv.converters -> array
   #
-  # Returns an \Array containing field converters; used for parsing;
-  # see {Option +converters+}[#class-CSV-label-Option+converters]:
-  #   CSV.new('').converters # => []
+  # Returns an \Array containing field converters;
+  # see {Field Converters}[#class-CSV-label-Field+Converters]:
+  #   csv = CSV.new('')
+  #   csv.converters # => []
+  #   csv.convert(:integer)
+  #   csv.converters # => [:integer]
+  #   csv.convert(proc {|x| x.to_s })
+  #   csv.converters
   def converters
     parser_fields_converter.map do |converter|
       name = Converters.rassoc(converter)
@@ -1789,7 +1891,7 @@ class CSV
   #   csv.header_converters -> array
   #
   # Returns an \Array containing header converters; used for parsing;
-  # see {Option +header_converters+}[#class-CSV-label-Option+header_converters]:
+  # see {Header Converters}[#class-CSV-label-Header+Converters]:
   #   CSV.new('').header_converters # => []
   def header_converters
     header_fields_converter.map do |converter|
@@ -1833,7 +1935,7 @@ class CSV
   #   csv.encoding -> endcoding
   #
   # Returns the encoding used for parsing and generating;
-  # see {CSV and Character Encodings (M17n or Multilingualization)}[#class-CSV-label-CSV+and+Character+Encodings+-28M17n+or+Multilingualization-29]:
+  # see {Character Encodings (M17n or Multilingualization)}[#class-CSV-label-Character+Encodings+-28M17n+or+Multilingualization-29]:
   #   CSV.new('').encoding # => #<Encoding:UTF-8>
   attr_reader :encoding
 
@@ -1965,13 +2067,56 @@ class CSV
 
   ### End Delegation ###
 
+  # :call-seq:
+  #   csv.<< row
   #
-  # The primary write method for wrapped Strings and IOs, +row+ (an Array or
-  # CSV::Row) is converted to CSV and appended to the data source. When a
-  # CSV::Row is passed, only the row's fields() are appended to the output.
+  # Appends a row to +self+.
   #
-  # The data source must be open for writing.
+  # - Argument +row+ must be an \Array object or a CSV::Row object.
+  # - The output stream must be open for writing.
   #
+  # ---
+  #
+  # Append Arrays:
+  #   CSV.generate do |csv|
+  #     csv << ['foo', 0]
+  #     csv << ['bar', 1]
+  #     csv << ['baz', 2]
+  #   end # => "foo,0\nbar,1\nbaz,2\n"
+  #
+  # Append CSV::Rows:
+  #   headers = []
+  #   CSV.generate do |csv|
+  #     csv << CSV::Row.new(headers, ['foo', 0])
+  #     csv << CSV::Row.new(headers, ['bar', 1])
+  #     csv << CSV::Row.new(headers, ['baz', 2])
+  #   end # => "foo,0\nbar,1\nbaz,2\n"
+  #
+  # Headers in CSV::Row objects are not appended:
+  #   headers = ['Name', 'Count']
+  #   CSV.generate do |csv|
+  #     csv << CSV::Row.new(headers, ['foo', 0])
+  #     csv << CSV::Row.new(headers, ['bar', 1])
+  #     csv << CSV::Row.new(headers, ['baz', 2])
+  #   end # => "foo,0\nbar,1\nbaz,2\n"
+  #
+  # ---
+  #
+  # Raises an exception if +row+ is not an \Array or \CSV::Row:
+  #   CSV.generate do |csv|
+  #     # Raises NoMethodError (undefined method `collect' for :foo:Symbol)
+  #     csv << :foo
+  #   end
+  #
+  # Raises an exception if the output stream is not open for writing:
+  #   path = 't.csv'
+  #   File.write(path, '')
+  #   File.open(path) do |file|
+  #     CSV.open(file) do |csv|
+  #       # Raises IOError (not opened for writing)
+  #       csv << ['foo', 0]
+  #     end
+  #   end
   def <<(row)
     writer << row
     self
@@ -1979,36 +2124,136 @@ class CSV
   alias_method :add_row, :<<
   alias_method :puts,    :<<
 
-  #
   # :call-seq:
-  #   convert( name )
-  #   convert { |field| ... }
-  #   convert { |field, field_info| ... }
+  #   convert(converter_name) -> array_of_procs
+  #   convert {|field, field_info| ... } -> array_of_procs
   #
-  # You can use this method to install a CSV::Converters built-in, or provide a
-  # block that handles a custom conversion.
+  # - With no block, installs a field converter (a \Proc).
+  # - With a block, defines and installs a custom field converter.
+  # - Returns the \Array of installed field converters.
   #
-  # If you provide a block that takes one argument, it will be passed the field
-  # and is expected to return the converted value or the field itself. If your
-  # block takes two arguments, it will also be passed a CSV::FieldInfo Struct,
-  # containing details about the field. Again, the block should return a
-  # converted field or the field itself.
+  # - Argument +converter_name+, if given, should be the name
+  #   of an existing field converter.
   #
+  # See {Field Converters}[#class-CSV-label-Field+Converters].
+  # ---
+  #
+  # With no block, installs a field converter:
+  #   csv = CSV.new('')
+  #   csv.convert(:integer)
+  #   csv.convert(:float)
+  #   csv.convert(:date)
+  #   csv.converters # => [:integer, :float, :date]
+  #
+  # ---
+  #
+  # The block, if given, is called for each field:
+  # - Argument +field+ is the field value.
+  # - Argument +field_info+ is a CSV::FieldInfo object
+  #   containing details about the field.
+  #
+  # The examples here assume the prior execution of:
+  #   string = "foo,0\nbar,1\nbaz,2\n"
+  #   path = 't.csv'
+  #   File.write(path, string)
+  #
+  # Example giving a block:
+  #   csv = CSV.open(path)
+  #   csv.convert {|field, field_info| p [field, field_info]; field.upcase }
+  #   csv.read # => [["FOO", "0"], ["BAR", "1"], ["BAZ", "2"]]
+  #
+  # Output:
+  #   ["foo", #<struct CSV::FieldInfo index=0, line=1, header=nil>]
+  #   ["0", #<struct CSV::FieldInfo index=1, line=1, header=nil>]
+  #   ["bar", #<struct CSV::FieldInfo index=0, line=2, header=nil>]
+  #   ["1", #<struct CSV::FieldInfo index=1, line=2, header=nil>]
+  #   ["baz", #<struct CSV::FieldInfo index=0, line=3, header=nil>]
+  #   ["2", #<struct CSV::FieldInfo index=1, line=3, header=nil>]
+  #
+  # The block need not return a \String object:
+  #   csv = CSV.open(path)
+  #   csv.convert {|field, field_info| field.to_sym }
+  #   csv.read # => [[:foo, :"0"], [:bar, :"1"], [:baz, :"2"]]
+  #
+  # If +converter_name+ is given, the block is not called:
+  #   csv = CSV.open(path)
+  #   csv.convert(:integer) {|field, field_info| fail 'Cannot happen' }
+  #   csv.read # => [["foo", 0], ["bar", 1], ["baz", 2]]
+  #
+  # ---
+  #
+  # Raises a parse-time exception if +converter_name+ is not the name of a built-in
+  # field converter:
+  #   csv = CSV.open(path)
+  #   csv.convert(:nosuch) => [nil]
+  #   # Raises NoMethodError (undefined method `arity' for nil:NilClass)
+  #   csv.read
   def convert(name = nil, &converter)
     parser_fields_converter.add_converter(name, &converter)
   end
 
-  #
   # :call-seq:
-  #   header_convert( name )
-  #   header_convert { |field| ... }
-  #   header_convert { |field, field_info| ... }
+  #   header_convert(converter_name) -> array_of_procs
+  #   header_convert {|header, field_info| ... } -> array_of_procs
   #
-  # Identical to CSV#convert(), but for header rows.
+  # - With no block, installs a header converter (a \Proc).
+  # - With a block, defines and installs a custom header converter.
+  # - Returns the \Array of installed header converters.
   #
-  # Note that this method must be called before header rows are read to have any
-  # effect.
+  # - Argument +converter_name+, if given, should be the name
+  #   of an existing header converter.
   #
+  # See {Header Converters}[#class-CSV-label-Header+Converters].
+  # ---
+  #
+  # With no block, installs a header converter:
+  #   csv = CSV.new('')
+  #   csv.header_convert(:symbol)
+  #   csv.header_convert(:downcase)
+  #   csv.header_converters # => [:symbol, :downcase]
+  #
+  # ---
+  #
+  # The block, if given, is called for each header:
+  # - Argument +header+ is the header value.
+  # - Argument +field_info+ is a CSV::FieldInfo object
+  #   containing details about the header.
+  #
+  # The examples here assume the prior execution of:
+  #   string = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+  #   path = 't.csv'
+  #   File.write(path, string)
+  #
+  # Example giving a block:
+  #   csv = CSV.open(path, headers: true)
+  #   csv.header_convert {|header, field_info| p [header, field_info]; header.upcase }
+  #   table = csv.read
+  #   table # => #<CSV::Table mode:col_or_row row_count:4>
+  #   table.headers # => ["NAME", "VALUE"]
+  #
+  # Output:
+  #   ["Name", #<struct CSV::FieldInfo index=0, line=1, header=nil>]
+  #   ["Value", #<struct CSV::FieldInfo index=1, line=1, header=nil>]
+
+  # The block need not return a \String object:
+  #   csv = CSV.open(path, headers: true)
+  #   csv.header_convert {|header, field_info| header.to_sym }
+  #   table = csv.read
+  #   table.headers # => [:Name, :Value]
+  #
+  # If +converter_name+ is given, the block is not called:
+  #   csv = CSV.open(path, headers: true)
+  #   csv.header_convert(:downcase) {|header, field_info| fail 'Cannot happen' }
+  #   table = csv.read
+  #   table.headers # => ["name", "value"]
+  # ---
+  #
+  # Raises a parse-time exception if +converter_name+ is not the name of a built-in
+  # field converter:
+  #   csv = CSV.open(path, headers: true)
+  #   csv.header_convert(:nosuch)
+  #   # Raises NoMethodError (undefined method `arity' for nil:NilClass)
+  #   csv.read
   def header_convert(name = nil, &converter)
     header_fields_converter.add_converter(name, &converter)
   end
