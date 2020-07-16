@@ -4423,6 +4423,7 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page,
                             /* We were able to move "p" */
                             objspace->rcompactor.moved_count_table[BUILTIN_TYPE((VALUE)p)]++;
                             gc_move(objspace, (VALUE)p, vp);
+                            gc_pin(objspace, p);
 
                             if(mprotect(GET_PAGE_BODY(cursor->start), HEAP_PAGE_SIZE, PROT_NONE)) {
                                 rb_bug("Couldn't protect page %p", GET_PAGE_BODY(cursor->start));
@@ -4479,7 +4480,7 @@ gc_unprotect_pages(rb_objspace_t *objspace, rb_heap_t *heap)
     }
 }
 
-static void gc_update_references(rb_objspace_t * objspace);
+static void gc_update_references(rb_objspace_t * objspace, rb_heap_t *heap);
 
 static struct sigaction old_handler;
 
@@ -4487,12 +4488,14 @@ static void
 gc_compact_finish(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     gc_unprotect_pages(objspace, heap);
+    gc_update_references(objspace, heap);
     heap->compact_cursor = NULL;
     gc_update_references(objspace);
     rb_clear_constant_cache();
     objspace->flags.compact = 0;
     objspace->flags.during_compacting = FALSE;
     sigaction(SIGBUS, &old_handler, NULL);
+    sigaction(SIGSEGV, &old_handler, NULL);
 }
 
 static inline int
@@ -4603,7 +4606,9 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 	}
     }
 
-    gc_setup_mark_bits(sweep_page);
+    if (!objspace->flags.during_compacting) {
+        gc_setup_mark_bits(sweep_page);
+    }
 
 #if GC_PROFILE_MORE_DETAIL
     if (gc_prof_enabled(objspace)) {
@@ -4816,10 +4821,78 @@ gc_sweep_continue(rb_objspace_t *objspace, rb_heap_t *heap)
 }
 
 static void
+invalidate_moved_page(rb_objspace_t *objspace, struct heap_page *page)
+{
+    int i;
+    bits_t *mark_bits, *pin_bits;
+    bits_t bitset;
+    RVALUE *p, *offset;
+
+    mark_bits = page->mark_bits;
+    pin_bits = page->pinned_bits;
+
+    p = page->start;
+    offset = p - NUM_IN_PAGE(p);
+
+    for (i=0; i < HEAP_PAGE_BITMAP_LIMIT; i++) {
+        /* Moved objects are pinned but never marked. We reuse the pin bits
+         * to indicate there is a moved object in this slot. */
+        bitset = pin_bits[i] & ~mark_bits[i];
+
+        if (bitset) {
+            p = offset + i * BITS_BITLENGTH;
+            do {
+                if (bitset & 1) {
+                    VALUE forwarding_object = (VALUE)p;
+                    VALUE object;
+
+                    GC_ASSERT(BUILTIN_TYPE(forwarding_object) == T_MOVED);
+                    GC_ASSERT(MARKED_IN_BITMAP(GET_HEAP_PINNED_BITS(forwarding_object), forwarding_object));
+                    GC_ASSERT(!MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(forwarding_object), forwarding_object));
+
+                    CLEAR_IN_BITMAP(GET_HEAP_PINNED_BITS(forwarding_object), forwarding_object);
+
+                    object = rb_gc_location(forwarding_object);
+                    gc_move(objspace, object, forwarding_object);
+                    /* forwarding_object is now our actual object, and "object"
+                     * is the free slot for the original page */
+                    heap_page_add_freeobj(objspace, GET_HEAP_PAGE(object), object);
+                    GET_HEAP_PAGE(object)->free_slots++;
+
+                    GC_ASSERT(MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(forwarding_object), forwarding_object));
+                    GC_ASSERT(BUILTIN_TYPE(forwarding_object) != T_MOVED);
+                    GC_ASSERT(BUILTIN_TYPE(forwarding_object) != T_NONE);
+                    GC_ASSERT(BUILTIN_TYPE(object) != T_MOVED);
+                    GC_ASSERT(BUILTIN_TYPE(object) == T_NONE);
+                }
+                p++;
+                bitset >>= 1;
+            } while (bitset);
+        }
+    }
+}
+
+static void
 read_barrier_handler(int sig, siginfo_t * info, void * data)
 {
-    fprintf(stderr, "Attempt to access memory at address %p\n", info->si_addr);
-    rb_bug_for_fatal_signal(old_handler.sa_handler, sig, 0, "Inside read barrier");
+    VALUE obj;
+    rb_objspace_t * objspace;
+
+
+    intptr_t address = (intptr_t)info->si_addr;
+
+    address -= address % sizeof(RVALUE);
+
+    obj = (VALUE)address;
+
+    if(mprotect(GET_PAGE_BODY(obj), HEAP_PAGE_SIZE, PROT_READ | PROT_WRITE)) {
+        rb_bug("Couldn't unprotect page %p", (void *)GET_PAGE_BODY(obj));
+    } else {
+        gc_report(5, objspace, "Unprotecting page %p\n", (void *)GET_PAGE_BODY(obj));
+    }
+
+    objspace = &rb_objspace;
+    invalidate_moved_page(objspace, GET_HEAP_PAGE(obj));
 }
 
 static void
@@ -4829,8 +4902,6 @@ gc_compact_start(rb_objspace_t *objspace, rb_heap_t *heap)
 
     memset(objspace->rcompactor.considered_count_table, 0, T_MASK * sizeof(size_t));
     memset(objspace->rcompactor.moved_count_table, 0, T_MASK * sizeof(size_t));
-    objspace->flags.compact = 0;
-    objspace->flags.during_compacting = FALSE;
     objspace->profile.compact_count++;
 
     /* Set up read barrier for pages containing MOVED objects */
@@ -4841,6 +4912,7 @@ gc_compact_start(rb_objspace_t *objspace, rb_heap_t *heap)
     action.sa_flags = SA_SIGINFO | SA_ONSTACK;
 
     sigaction(SIGBUS, &action, &old_handler);
+    sigaction(SIGSEGV, &action, &old_handler);
 }
 
 static void
@@ -8813,12 +8885,23 @@ extern rb_symbols_t ruby_global_symbols;
 #define global_symbols ruby_global_symbols
 
 static void
-gc_update_references(rb_objspace_t * objspace)
+gc_update_references(rb_objspace_t * objspace, rb_heap_t *heap)
 {
     rb_execution_context_t *ec = GET_EC();
     rb_vm_t *vm = rb_ec_vm_ptr(ec);
+    short should_set_mark_bits = 1;
 
-    objspace_each_objects_without_setup(objspace, gc_ref_update, objspace);
+    struct heap_page *page = NULL;
+
+    list_for_each(&heap->pages, page, page_node) {
+        gc_ref_update(page->start, page->start + page->total_slots, sizeof(RVALUE), objspace);
+        if (page == heap->compact_cursor) {
+            should_set_mark_bits = 0;
+        }
+        if (should_set_mark_bits) {
+            gc_setup_mark_bits(page);
+        }
+    }
     rb_vm_update_references(vm);
     rb_transient_heap_update_references();
     rb_gc_update_global_tbl();
