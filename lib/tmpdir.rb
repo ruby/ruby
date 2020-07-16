@@ -20,14 +20,21 @@ class Dir
 
   def self.tmpdir
     tmp = nil
-    [ENV['TMPDIR'], ENV['TMP'], ENV['TEMP'], @@systmpdir, '/tmp', '.'].each do |dir|
+    ['TMPDIR', 'TMP', 'TEMP', ['system temporary path', @@systmpdir], ['/tmp']*2, ['.']*2].each do |name, dir = ENV[name]|
       next if !dir
       dir = File.expand_path(dir)
-      if stat = File.stat(dir) and stat.directory? and stat.writable? and
-          (!stat.world_writable? or stat.sticky?)
+      stat = File.stat(dir) rescue next
+      case
+      when !stat.directory?
+        warn "#{name} is not a directory: #{dir}"
+      when !stat.writable?
+        warn "#{name} is not writable: #{dir}"
+      when stat.world_writable? && !stat.sticky?
+        warn "#{name} is world-writable: #{dir}"
+      else
         tmp = dir
         break
-      end rescue nil
+      end
     end
     raise ArgumentError, "could not find a temporary directory" unless tmp
     tmp
