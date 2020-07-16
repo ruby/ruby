@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'fiber'
+require 'socket'
 
 begin
   require 'io/nonblock'

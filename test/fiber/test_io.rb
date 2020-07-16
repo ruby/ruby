@@ -6,10 +6,15 @@ class TestFiberIO < Test::Unit::TestCase
   MESSAGE = "Hello World"
 
   def test_read
-    skip unless defined?(UNIXSocket)
+    skip "UNIXSocket is not defined!" unless defined?(UNIXSocket)
 
     i, o = UNIXSocket.pair
-    skip unless i.nonblock? && o.nonblock?
+
+    unless i.nonblock? && o.nonblock?
+      i.close
+      o.close
+      skip "I/O is not non-blocking!"
+    end
 
     message = nil
 
@@ -31,5 +36,7 @@ class TestFiberIO < Test::Unit::TestCase
     thread.join
 
     assert_equal MESSAGE, message
+    assert_predicate(i, :closed?)
+    assert_predicate(o, :closed?)
   end
 end
