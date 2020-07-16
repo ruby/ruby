@@ -154,7 +154,8 @@ module Psych
 
     def test_convert
       w = Psych.load(Psych.dump(@wups))
-      assert_equal @wups, w
+      assert_equal @wups.message, w.message
+      assert_equal @wups.backtrace, w.backtrace
       assert_equal 1, w.foo
       assert_equal 2, w.bar
     end
