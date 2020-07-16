@@ -635,6 +635,22 @@ eom
           super
         end
       end
+
+      def diff(exp, act)
+        require 'pp'
+        q = PP.new(+"")
+        q.guard_inspect_key do
+          q.group(2, "expected: ") do
+            q.pp exp
+          end
+          q.text q.newline
+          q.group(2, "actual: ") do
+            q.pp act
+          end
+          q.flush
+        end
+        q.output
+      end
     end
   end
 end
