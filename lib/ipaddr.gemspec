@@ -19,8 +19,4 @@ Both IPv4 and IPv6 are supported.
 
   spec.files         = ["LICENSE.txt", "README.md", "ipaddr.gemspec", "lib/ipaddr.rb"]
   spec.require_paths = ["lib"]
-
-  spec.add_development_dependency "bundler", "~> 1.15"
-  spec.add_development_dependency "rake", ">= 12.3.3"
-  spec.add_development_dependency "test-unit"
 end
