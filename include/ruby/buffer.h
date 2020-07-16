@@ -11,6 +11,7 @@
  */
 
 #include "ruby/internal/dllexport.h"
+#include "ruby/internal/stdbool.h"
 #include "ruby/internal/value.h"
 
 enum ruby_buffer_flags {
@@ -75,18 +76,18 @@ typedef struct {
     void *const private;
 } rb_buffer_t;
 
-typedef int (* rb_get_buffer_func_t)(VALUE obj, rb_buffer_t *view, int flags);
-typedef int (* rb_release_buffer_func_t)(VALUE obj, rb_buffer_t *view);
+typedef int (* rb_buffer_protocol_get_buffer_func_t)(VALUE obj, rb_buffer_t *view, int flags);
+typedef int (* rb_buffer_protocol_release_buffer_func_t)(VALUE obj, rb_buffer_t *view);
 
 typedef struct {
-    rb_get_buffer_func_t get_buffer_func;
-    rb_release_buffer_func_t release_buffer_func;
+    rb_buffer_protocol_get_buffer_func_t get_buffer_func;
+    rb_buffer_protocol_release_buffer_func_t release_buffer_func;
 } rb_buffer_protocol_entry_t;
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 /* buffer.c */
-int rb_buffer_protocol_register_klass(VALUE klass, const buffer_protocol_entry_t *entry);
+bool rb_buffer_protocol_register(VALUE klass, const buffer_protocol_entry_t *entry);
 
 #define rb_buffer_is_contiguous(view) ( \
     rb_buffer_is_row_major_contiguous(view) \
@@ -99,9 +100,9 @@ int rb_buffer_init_as_byte_array(rb_buffer_t *view, void *data, ssize_t len, int
 ssize_t rb_buffer_item_size_from_format(const char *format);
 void *rb_buffer_get_item_pointer(rb_buffer_t *view, ssize_t *indices);
 
-int rb_obj_has_buffer_protocol(VALUE obj);
-int rb_obj_get_buffer(VALUE obj, rb_buffer_t* buffer);
-int rb_obj_release_buffer(VALUE obj, rb_buffer_t* buffer);
+int rb_buffer_protocol_available_p(VALUE obj);
+int rb_buffer_protocol_get_buffer(VALUE obj, rb_buffer_t* buffer);
+int rb_buffer_protocol_release_buffer(VALUE obj, rb_buffer_t* buffer);
 
 RBIMPL_SYMBOL_EXPORT_END()
 

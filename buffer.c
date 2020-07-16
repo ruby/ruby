@@ -10,7 +10,7 @@
 
 static ID id_buffer_protocol;
 
-static const rb_data_type_t random_mt_type = {
+static const rb_data_type_t buffer_protocol_type = {
     "buffer_protocol",
     {
 	0,
@@ -21,8 +21,8 @@ static const rb_data_type_t random_mt_type = {
 };
 
 /* Register buffer protocol functions for the given class */
-int
-rb_buffer_protocol_register_klass(VALUE klass, const rb_buffer_protocol_entry_t *entry) {
+bool
+rb_buffer_protocol_register(VALUE klass, const rb_buffer_protocol_entry_t *entry) {
     VALUE entry_obj = rb_ivar_get(klass, id_buffer_protocol);
     if (! NIL_P(entry_obj)) {
         rb_warning("Duplicated registration of buffer protocol to %"PRIsVALUE, klass);
@@ -40,11 +40,11 @@ int
 rb_buffer_is_row_major_contiguous(const rb_buffer_t *view)
 {
     const ssize_t ndim = view->ndim;
-    const ssize_t* shape = view->shape;
-    const ssize_t* strides = view->strides;
+    const ssize_t *shape = view->shape;
+    const ssize_t *strides = view->strides;
     ssize_t n = view->item_size;
     ssize_t i;
-    for (i = view->ndim - 1; i >= 0; --i) {
+    for (i = ndim - 1; i >= 0; --i) {
         if (strides[i] != n) return 0;
         n *= shape[i];
     }
@@ -56,8 +56,8 @@ int
 rb_buffer_is_column_major_contiguous(const rb_buffer_t *view)
 {
     const ssize_t ndim = view->ndim;
-    const ssize_t* shape = view->shape;
-    const ssize_t* strides = view->strides;
+    const ssize_t *shape = view->shape;
+    const ssize_t *strides = view->strides;
     ssize_t n = view->item_size;
     ssize_t i;
     for (i = 0; i < ndim; ++i) {
@@ -90,7 +90,6 @@ rb_buffer_fill_contiguous_strides(const int ndim, const int item_size, const ssi
 int
 rb_buffer_init_as_byte_array(rb_buffer_t *view, VALUE obj, void *data, ssize_t len, int readonly, int flags)
 {
-    view->obj = obj;
     view->data = data;
     view->len = len;
     view->readonly = readonly;
@@ -226,7 +225,7 @@ rb_buffer_get_item_pointer(rb_buffer_t *view, ssize_t *indices)
 static rb_buffer_protocol_entry_t *
 lookup_buffer_protocol_entry(VALUE klass) {
     VALUE entry_obj = rb_ivar_get(klass, id_buffer_protocol);
-    while (entry_obj == Qnil) {
+    while (NIL_P(entry_obj)) {
         klass = rb_class_get_superclass(klass);
 
         if (klass == rb_cBasicObject || klass == rb_cObject)
@@ -238,12 +237,12 @@ lookup_buffer_protocol_entry(VALUE klass) {
     if (! rb_typeddata_is_kind_of(entry_obj, &buffer_protocol_entry_data_type))
         return NULL;
 
-    return (rb_buffer_protocol_entry_t *)DATA_PTR(entry_obj);
+    return (rb_buffer_protocol_entry_t *)RTYPEDDATA_PTR(entry_obj);
 }
 
 /* Examine whether the given object supports buffer protocol. */
 int
-rb_obj_has_buffer_protocol(VALUE obj)
+rb_buffer_protocol_available_p(VALUE obj)
 {
     VALUE klass = CLASS_OF(obj);
     return lookup_buffer_protocol_entry(klass) != NULL;
@@ -251,7 +250,7 @@ rb_obj_has_buffer_protocol(VALUE obj)
 
 /* Obtain a buffer from obj, and substitute the information to view. */
 int
-rb_obj_get_buffer(VALUE obj, rb_buffer_t* view, int flags) {
+rb_buffer_protocol_get_buffer(VALUE obj, rb_buffer_t* view, int flags) {
     VALUE klass = CLASS_OF(obj);
     rb_buffer_protocol_entry_t *entry = lookup_buffer_protocol_entry(klass);
     if (entry)
@@ -262,7 +261,7 @@ rb_obj_get_buffer(VALUE obj, rb_buffer_t* view, int flags) {
 
 /* Release the buffer view obtained from obj. */
 int
-rb_obj_release_buffer(VALUE obj, rb_buffer_t* view) {
+rb_buffer_protocol_release_buffer(VALUE obj, rb_buffer_t* view) {
     VALUE klass = CLASS_OF(obj);
     rb_buffer_protocol_entry_t *entry = lookup_buffer_protocol_entry(klass);
     if (entry)
