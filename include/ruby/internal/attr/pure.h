@@ -33,7 +33,7 @@
 # define RBIMPL_ATTR_PURE() /* void */
 #endif
 
-/** Enables #RBIMPL_ATTR_PURE iff. !RUBY_DEBUG. */
+/** Enables #RBIMPL_ATTR_PURE iff. ! #RUBY_DEBUG. */
 #if !RUBY_DEBUG
 # define RBIMPL_ATTR_PURE_UNLESS_DEBUG() RBIMPL_ATTR_PURE()
 #else
