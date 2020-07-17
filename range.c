@@ -1220,16 +1220,17 @@ range_max(int argc, VALUE *argv, VALUE range)
 	rb_raise(rb_eRangeError, "cannot get the maximum of endless range");
     }
 
+    VALUE b = RANGE_BEG(range);
+
     if (rb_block_given_p() || (EXCL(range) && !nm) || argc) {
-        if (NIL_P(RANGE_BEG(range))) {
+        if (NIL_P(b)) {
             rb_raise(rb_eRangeError, "cannot get the maximum of beginless range with custom comparison method");
         }
         return rb_call_super(argc, argv);
     }
     else {
         struct cmp_opt_data cmp_opt = { 0, 0 };
-        VALUE b = RANGE_BEG(range);
-        int c = OPTIMIZED_CMP(b, e, cmp_opt);
+        int c = NIL_P(b) ? -1 : OPTIMIZED_CMP(b, e, cmp_opt);
 
         if (c > 0)
             return Qnil;
