@@ -61,6 +61,7 @@ jobs:
         working-directory: build
         shell: cmd
       - name: nmake test
+        timeout-minutes: 30
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           nmake ${{ matrix.test_task }}
