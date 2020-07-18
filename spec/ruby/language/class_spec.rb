@@ -286,7 +286,7 @@ describe "A class definition extending an object (sclass)" do
   end
 
   it "raises a TypeError when trying to extend non-Class" do
-    error_msg = /superclass must be a Class/
+    error_msg = /superclass must be a.* Class/
     -> { class TestClass < "";              end }.should raise_error(TypeError, error_msg)
     -> { class TestClass < 1;               end }.should raise_error(TypeError, error_msg)
     -> { class TestClass < :symbol;         end }.should raise_error(TypeError, error_msg)
