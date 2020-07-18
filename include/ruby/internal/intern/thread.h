@@ -73,7 +73,8 @@ VALUE rb_mutex_synchronize(VALUE mutex, VALUE (*func)(VALUE arg), VALUE arg);
 
 VALUE rb_thread_scheduler_get(VALUE);
 VALUE rb_thread_scheduler_set(VALUE, VALUE);
-VALUE rb_current_thread_scheduler(void);
+
+VALUE rb_thread_scheduler_if_nonblocking(VALUE thread);
 
 RBIMPL_SYMBOL_EXPORT_END()
 
