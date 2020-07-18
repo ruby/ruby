@@ -46,6 +46,7 @@ jobs:
         working-directory: build
         if: matrix.test_task == 'check'
       - run: make $JOBS -s ${{ matrix.test_task }}
+        timeout-minutes: 30
         working-directory: build
         env:
           RUBY_TESTOPTS: "-q --tty=no"

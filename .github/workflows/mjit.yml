@@ -48,10 +48,13 @@ jobs:
       - run: sudo make $JOBS -s install
         working-directory: build
       - run: make $JOBS -s test RUN_OPTS="$RUN_OPTS"
+        timeout-minutes: 10
         working-directory: build
       - run: make $JOBS -s test-all RUN_OPTS="$RUN_OPTS"
+        timeout-minutes: 10
         working-directory: build
       - run: make $JOBS -s test-spec RUN_OPTS="$RUN_OPTS"
+        timeout-minutes: 5
         working-directory: build
       - uses: k0kubun/action-slack@v2.0.0
         with:
