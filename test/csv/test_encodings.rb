@@ -242,6 +242,18 @@ class TestCSVEncodings < Test::Unit::TestCase
     assert_equal("UTF-8",      data.to_csv.encoding.name)
   end
 
+  def test_encoding_is_not_upgraded_for_non_ascii_content_during_writing_as_needed
+    data = ["\u00c0".encode("ISO-8859-1"), "\u3042"]
+    assert_equal([
+                   "ISO-8859-1",
+                   "UTF-8",
+                 ],
+                 data.collect {|field| field.encoding.name})
+    assert_raise(Encoding::CompatibilityError) do
+      data.to_csv
+    end
+  end
+
   def test_explicit_encoding
     bug9766 = '[ruby-core:62113] [Bug #9766]'
     s = CSV.generate(encoding: "Windows-31J") do |csv|

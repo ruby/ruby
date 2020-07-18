@@ -1289,8 +1289,20 @@ class CSV
       str = +""
       if options[:encoding]
         str.force_encoding(options[:encoding])
-      elsif field = row.find {|f| f.is_a?(String)}
-        str.force_encoding(field.encoding)
+      else
+        fallback_encoding = nil
+        output_encoding = nil
+        row.each do |field|
+          next unless field.is_a?(String)
+          fallback_encoding ||= field.encoding
+          next if field.ascii_only?
+          output_encoding = field.encoding
+          break
+        end
+        output_encoding ||= fallback_encoding
+        if output_encoding
+          str.force_encoding(output_encoding)
+        end
       end
       (new(str, **options) << row).string
     end
