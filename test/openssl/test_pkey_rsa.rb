@@ -117,27 +117,21 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
     assert_equal false, rsa1024.verify("SHA256", signature1, data)
   end
 
-  def test_digest_state_irrelevant_sign
+  def test_sign_verify_options
     key = Fixtures.pkey("rsa1024")
-    digest1 = OpenSSL::Digest.new('SHA1')
-    digest2 = OpenSSL::Digest.new('SHA1')
-    data = 'Sign me!'
-    digest1 << 'Change state of digest1'
-    sig1 = key.sign(digest1, data)
-    sig2 = key.sign(digest2, data)
-    assert_equal(sig1, sig2)
-  end
-
-  def test_digest_state_irrelevant_verify
-    key = Fixtures.pkey("rsa1024")
-    digest1 = OpenSSL::Digest.new('SHA1')
-    digest2 = OpenSSL::Digest.new('SHA1')
-    data = 'Sign me!'
-    sig = key.sign(digest1, data)
-    digest1.reset
-    digest1 << 'Change state of digest1'
-    assert(key.verify(digest1, sig, data))
-    assert(key.verify(digest2, sig, data))
+    data = "Sign me!"
+    pssopts = {
+      "rsa_padding_mode" => "pss",
+      "rsa_pss_saltlen" => 20,
+      "rsa_mgf1_md" => "SHA1"
+    }
+    sig_pss = key.sign("SHA256", data, pssopts)
+    assert_equal 128, sig_pss.bytesize
+    assert_equal true, key.verify("SHA256", sig_pss, data, pssopts)
+    assert_equal true, key.verify_pss("SHA256", sig_pss, data,
+                                      salt_length: 20, mgf1_hash: "SHA1")
+    # Defaults to PKCS #1 v1.5 padding => verification failure
+    assert_equal false, key.verify("SHA256", sig_pss, data)
   end
 
   def test_verify_empty_rsa

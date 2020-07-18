@@ -777,33 +777,51 @@ ossl_pkey_compare(VALUE self, VALUE other)
 }
 
 /*
- *  call-seq:
- *      pkey.sign(digest, data) -> String
+ * call-seq:
+ *    pkey.sign(digest, data [, options]) -> string
  *
- * To sign the String _data_, _digest_, an instance of OpenSSL::Digest, must
- * be provided. The return value is again a String containing the signature.
- * A PKeyError is raised should errors occur.
- * Any previous state of the Digest instance is irrelevant to the signature
- * outcome, the digest instance is reset to its initial state during the
- * operation.
+ * Hashes and signs the +data+ using a message digest algorithm +digest+ and
+ * a private key +pkey+.
  *
- * == Example
- *   data = 'Sign me!'
- *   digest = OpenSSL::Digest.new('SHA256')
- *   pkey = OpenSSL::PKey::RSA.new(2048)
- *   signature = pkey.sign(digest, data)
+ * See #verify for the verification operation.
+ *
+ * See also the man page EVP_DigestSign(3).
+ *
+ * +digest+::
+ *   A String that represents the message digest algorithm name, or +nil+
+ *   if the PKey type requires no digest algorithm.
+ *   For backwards compatibility, this can be an instance of OpenSSL::Digest.
+ *   Its state will not affect the signature.
+ * +data+::
+ *   A String. The data to be hashed and signed.
+ * +options+::
+ *   A Hash that contains algorithm specific control operations to \OpenSSL.
+ *   See OpenSSL's man page EVP_PKEY_CTX_ctrl_str(3) for details.
+ *   +options+ parameter was added in version 2.3.
+ *
+ * Example:
+ *   data = "Sign me!"
+ *   pkey = OpenSSL::PKey.generate_key("RSA", rsa_keygen_bits: 2048)
+ *   signopts = { rsa_padding_mode: "pss" }
+ *   signature = pkey.sign("SHA256", data, signopts)
+ *
+ *   # Creates a copy of the RSA key pkey, but without the private components
+ *   pub_key = pkey.public_key
+ *   puts pub_key.verify("SHA256", signature, data, signopts) # => true
  */
 static VALUE
-ossl_pkey_sign(VALUE self, VALUE digest, VALUE data)
+ossl_pkey_sign(int argc, VALUE *argv, VALUE self)
 {
     EVP_PKEY *pkey;
+    VALUE digest, data, options, sig;
     const EVP_MD *md = NULL;
     EVP_MD_CTX *ctx;
+    EVP_PKEY_CTX *pctx;
     size_t siglen;
     int state;
-    VALUE sig;
 
     pkey = GetPrivPKeyPtr(self);
+    rb_scan_args(argc, argv, "21", &digest, &data, &options);
     if (!NIL_P(digest))
         md = ossl_evp_get_digestbyname(digest);
     StringValue(data);
@@ -811,9 +829,16 @@ ossl_pkey_sign(VALUE self, VALUE digest, VALUE data)
     ctx = EVP_MD_CTX_new();
     if (!ctx)
         ossl_raise(ePKeyError, "EVP_MD_CTX_new");
-    if (EVP_DigestSignInit(ctx, NULL, md, /* engine */NULL, pkey) < 1) {
+    if (EVP_DigestSignInit(ctx, &pctx, md, /* engine */NULL, pkey) < 1) {
         EVP_MD_CTX_free(ctx);
         ossl_raise(ePKeyError, "EVP_DigestSignInit");
+    }
+    if (!NIL_P(options)) {
+        pkey_ctx_apply_options(pctx, options, &state);
+        if (state) {
+            EVP_MD_CTX_free(ctx);
+            rb_jump_tag(state);
+        }
     }
 #if OPENSSL_VERSION_NUMBER >= 0x10101000 && !defined(LIBRESSL_VERSION_NUMBER)
     if (EVP_DigestSign(ctx, NULL, &siglen, (unsigned char *)RSTRING_PTR(data),
@@ -866,35 +891,40 @@ ossl_pkey_sign(VALUE self, VALUE digest, VALUE data)
 }
 
 /*
- *  call-seq:
- *      pkey.verify(digest, signature, data) -> String
+ * call-seq:
+ *    pkey.verify(digest, signature, data [, options]) -> true or false
  *
- * To verify the String _signature_, _digest_, an instance of
- * OpenSSL::Digest, must be provided to re-compute the message digest of the
- * original _data_, also a String. The return value is +true+ if the
- * signature is valid, +false+ otherwise. A PKeyError is raised should errors
- * occur.
- * Any previous state of the Digest instance is irrelevant to the validation
- * outcome, the digest instance is reset to its initial state during the
- * operation.
+ * Verifies the +signature+ for the +data+ using a message digest algorithm
+ * +digest+ and a public key +pkey+.
  *
- * == Example
- *   data = 'Sign me!'
- *   digest = OpenSSL::Digest.new('SHA256')
- *   pkey = OpenSSL::PKey::RSA.new(2048)
- *   signature = pkey.sign(digest, data)
- *   pub_key = pkey.public_key
- *   puts pub_key.verify(digest, signature, data) # => true
+ * Returns +true+ if the signature is successfully verified, +false+ otherwise.
+ * The caller must check the return value.
+ *
+ * See #sign for the signing operation and an example.
+ *
+ * See also the man page EVP_DigestVerify(3).
+ *
+ * +digest+::
+ *   See #sign.
+ * +signature+::
+ *   A String containing the signature to be verified.
+ * +data+::
+ *   See #sign.
+ * +options+::
+ *   See #sign. +options+ parameter was added in version 2.3.
  */
 static VALUE
-ossl_pkey_verify(VALUE self, VALUE digest, VALUE sig, VALUE data)
+ossl_pkey_verify(int argc, VALUE *argv, VALUE self)
 {
     EVP_PKEY *pkey;
+    VALUE digest, sig, data, options;
     const EVP_MD *md = NULL;
     EVP_MD_CTX *ctx;
-    int ret;
+    EVP_PKEY_CTX *pctx;
+    int state, ret;
 
     GetPKey(self, pkey);
+    rb_scan_args(argc, argv, "31", &digest, &sig, &data, &options);
     ossl_pkey_check_public_key(pkey);
     if (!NIL_P(digest))
         md = ossl_evp_get_digestbyname(digest);
@@ -904,9 +934,16 @@ ossl_pkey_verify(VALUE self, VALUE digest, VALUE sig, VALUE data)
     ctx = EVP_MD_CTX_new();
     if (!ctx)
         ossl_raise(ePKeyError, "EVP_MD_CTX_new");
-    if (EVP_DigestVerifyInit(ctx, NULL, md, /* engine */NULL, pkey) < 1) {
+    if (EVP_DigestVerifyInit(ctx, &pctx, md, /* engine */NULL, pkey) < 1) {
         EVP_MD_CTX_free(ctx);
         ossl_raise(ePKeyError, "EVP_DigestVerifyInit");
+    }
+    if (!NIL_P(options)) {
+        pkey_ctx_apply_options(pctx, options, &state);
+        if (state) {
+            EVP_MD_CTX_free(ctx);
+            rb_jump_tag(state);
+        }
     }
 #if OPENSSL_VERSION_NUMBER >= 0x10101000 && !defined(LIBRESSL_VERSION_NUMBER)
     ret = EVP_DigestVerify(ctx, (unsigned char *)RSTRING_PTR(sig),
@@ -1081,8 +1118,8 @@ Init_ossl_pkey(void)
     rb_define_method(cPKey, "public_to_pem", ossl_pkey_public_to_pem, 0);
     rb_define_method(cPKey, "compare?", ossl_pkey_compare, 1);
 
-    rb_define_method(cPKey, "sign", ossl_pkey_sign, 2);
-    rb_define_method(cPKey, "verify", ossl_pkey_verify, 3);
+    rb_define_method(cPKey, "sign", ossl_pkey_sign, -1);
+    rb_define_method(cPKey, "verify", ossl_pkey_verify, -1);
     rb_define_method(cPKey, "derive", ossl_pkey_derive, -1);
 
     id_private_q = rb_intern("private?");
