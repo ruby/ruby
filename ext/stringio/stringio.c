@@ -1438,7 +1438,6 @@ strio_write(VALUE self, VALUE str)
 	VALUE converted = rb_str_conv_enc(str, enc2, enc);
 	if (converted == str && enc2 != ascii8bit) { /* conversion failed */
 	    rb_enc_check(rb_enc_from_encoding(enc), str);
-	    UNREACHABLE;
 	}
 	str = converted;
     }
