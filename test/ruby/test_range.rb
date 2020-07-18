@@ -127,6 +127,10 @@ class TestRange < Test::Unit::TestCase
     assert_raise(RangeError) { (1...).max(3) }
 
     assert_raise(RangeError) { (..0).min {|a, b| a <=> b } }
+
+    assert_equal(2, (..2).max)
+    assert_raise(TypeError) { (...2).max }
+    assert_raise(TypeError) { (...2.0).max }
   end
 
   def test_minmax
