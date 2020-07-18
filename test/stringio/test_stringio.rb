@@ -187,6 +187,31 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal(Encoding::UTF_8, s.encoding, "honor the original encoding over ASCII-8BIT")
   end
 
+  def test_write_encoding_conversion
+    convertible = "\u{3042}"
+    inconvertible = "\u{1f363}"
+    conversion_encoding = Encoding::Windows_31J
+
+    s = StringIO.new.set_encoding(conversion_encoding)
+    s.write(convertible)
+    assert_equal(conversion_encoding, s.string.encoding)
+    all_assertions do |a|
+      [
+        inconvertible,
+        convertible + inconvertible,
+        [convertible, inconvertible],
+        ["a", inconvertible],
+      ].each do |data|
+        a.for(data.inspect) do
+          s = StringIO.new.set_encoding(conversion_encoding)
+          assert_raise(Encoding::CompatibilityError) do
+            s.write(*data)
+          end
+        end
+      end
+    end
+  end
+
   def test_write_integer_overflow
     f = StringIO.new
     f.pos = RbConfig::LIMITS["LONG_MAX"]
