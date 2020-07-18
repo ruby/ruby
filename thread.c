@@ -3621,19 +3621,20 @@ VALUE rb_thread_scheduler_set(VALUE thread, VALUE scheduler)
 static VALUE
 rb_thread_scheduler(VALUE klass)
 {
-    return rb_current_thread_scheduler();
+    return rb_thread_scheduler_if_nonblocking(rb_thread_current());
 }
 
-VALUE rb_current_thread_scheduler(void)
+VALUE rb_thread_scheduler_if_nonblocking(VALUE thread)
 {
-    rb_thread_t * th = GET_THREAD();
+    rb_thread_t * th = rb_thread_ptr(thread);
 
     VM_ASSERT(th);
 
-    if (th->blocking == 0)
+    if (th->blocking == 0) {
         return th->scheduler;
-    else
+    } else {
         return Qnil;
+    }
 }
 
 static VALUE
@@ -4234,7 +4235,7 @@ rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
     struct waiting_fd wfd;
     int state;
 
-    VALUE scheduler = rb_current_thread_scheduler();
+    VALUE scheduler = rb_thread_scheduler_if_nonblocking(rb_thread_current());
     if (scheduler != Qnil) {
         VALUE result = rb_funcall(scheduler, id_wait_for_single_fd, 3, INT2NUM(fd), INT2NUM(events),
             rb_thread_timeout(timeout)
@@ -4376,7 +4377,7 @@ select_single_cleanup(VALUE ptr)
 int
 rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
 {
-    VALUE scheduler = rb_current_thread_scheduler();
+    VALUE scheduler = rb_thread_scheduler_if_nonblocking(rb_thread_current());
     if (scheduler != Qnil) {
         VALUE result = rb_funcall(scheduler, id_wait_for_single_fd, 3, INT2NUM(fd), INT2NUM(events),
             rb_thread_timeout(timeout)
