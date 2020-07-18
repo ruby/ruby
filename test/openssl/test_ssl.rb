@@ -246,7 +246,51 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     end
   end
 
-  def test_client_auth_failure
+  def test_verify_mode_server_cert
+    start_server(ignore_listener_error: true) { |port|
+      populated_store = OpenSSL::X509::Store.new
+      populated_store.add_cert(@ca_cert)
+      empty_store = OpenSSL::X509::Store.new
+
+      # Valid certificate, SSL_VERIFY_PEER
+      assert_nothing_raised {
+        ctx = OpenSSL::SSL::SSLContext.new
+        ctx.verify_mode = OpenSSL::SSL::VERIFY_PEER
+        ctx.cert_store = populated_store
+        server_connect(port, ctx) { |ssl| ssl.puts("abc"); ssl.gets }
+      }
+
+      # Invalid certificate, SSL_VERIFY_NONE
+      assert_nothing_raised {
+        ctx = OpenSSL::SSL::SSLContext.new
+        ctx.verify_mode = OpenSSL::SSL::VERIFY_NONE
+        ctx.cert_store = empty_store
+        server_connect(port, ctx) { |ssl| ssl.puts("abc"); ssl.gets }
+      }
+
+      # Invalid certificate, SSL_VERIFY_PEER
+      assert_handshake_error {
+        ctx = OpenSSL::SSL::SSLContext.new
+        ctx.verify_mode = OpenSSL::SSL::VERIFY_PEER
+        ctx.cert_store = empty_store
+        server_connect(port, ctx) { |ssl| ssl.puts("abc"); ssl.gets }
+      }
+    }
+  end
+
+  def test_verify_mode_client_cert_required
+    # Optional, client certificate not supplied
+    vflag = OpenSSL::SSL::VERIFY_PEER
+    accept_proc = -> ssl {
+      assert_equal nil, ssl.peer_cert
+    }
+    start_server(verify_mode: vflag, accept_proc: accept_proc) { |port|
+      assert_nothing_raised {
+        server_connect(port) { |ssl| ssl.puts("abc"); ssl.gets }
+      }
+    }
+
+    # Required, client certificate not supplied
     vflag = OpenSSL::SSL::VERIFY_PEER|OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT
     start_server(verify_mode: vflag, ignore_listener_error: true) { |port|
       assert_handshake_error {
