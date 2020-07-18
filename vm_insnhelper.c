@@ -4068,7 +4068,7 @@ vm_define_class(ID id, rb_num_t flags, VALUE cbase, VALUE super)
 
     if (VM_DEFINECLASS_HAS_SUPERCLASS_P(flags) && !RB_TYPE_P(super, T_CLASS)) {
 	rb_raise(rb_eTypeError,
-		 "superclass must be a Class (%"PRIsVALUE" given)",
+                 "superclass must be an instance of Class (given an instance of %"PRIsVALUE")",
 		 rb_obj_class(super));
     }
 

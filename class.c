@@ -227,7 +227,7 @@ void
 rb_check_inheritable(VALUE super)
 {
     if (!RB_TYPE_P(super, T_CLASS)) {
-	rb_raise(rb_eTypeError, "superclass must be a Class (%"PRIsVALUE" given)",
+        rb_raise(rb_eTypeError, "superclass must be an instance of Class (given an instance of %"PRIsVALUE")",
 		 rb_obj_class(super));
     }
     if (RBASIC(super)->flags & FL_SINGLETON) {
