@@ -246,6 +246,11 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     end
   end
 
+  def test_verify_mode_default
+    ctx = OpenSSL::SSL::SSLContext.new
+    assert_equal OpenSSL::SSL::VERIFY_NONE, ctx.verify_mode
+  end
+
   def test_verify_mode_server_cert
     start_server(ignore_listener_error: true) { |port|
       populated_store = OpenSSL::X509::Store.new
@@ -919,6 +924,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
 
     start_server(ctx_proc: ctx_proc, ignore_listener_error: true) do |port|
       ctx = OpenSSL::SSL::SSLContext.new
+      assert_equal false, ctx.verify_hostname
       ctx.verify_hostname = true
       ctx.cert_store = OpenSSL::X509::Store.new
       ctx.cert_store.add_cert(@ca_cert)
