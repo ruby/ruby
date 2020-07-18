@@ -1435,7 +1435,12 @@ strio_write(VALUE self, VALUE str)
     enc = get_enc(ptr);
     enc2 = rb_enc_get(str);
     if (enc != enc2 && enc != ascii8bit) {
-	str = rb_str_conv_enc(str, enc2, enc);
+	VALUE converted = rb_str_conv_enc(str, enc2, enc);
+	if (converted == str && enc2 != ascii8bit) { /* conversion failed */
+	    rb_enc_check(rb_enc_from_encoding(enc), str);
+	    UNREACHABLE;
+	}
+	str = converted;
     }
     len = RSTRING_LEN(str);
     if (len == 0) return 0;
