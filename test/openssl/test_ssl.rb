@@ -282,20 +282,16 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     }
   end
 
-  def test_client_auth_public_key
+  def test_client_cert_cb_ignore_error
     vflag = OpenSSL::SSL::VERIFY_PEER|OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT
     start_server(verify_mode: vflag, ignore_listener_error: true) do |port|
-      assert_raise(ArgumentError) {
-        ctx = OpenSSL::SSL::SSLContext.new
-        ctx.key = @cli_key.public_key
-        ctx.cert = @cli_cert
-        server_connect(port, ctx) { |ssl| ssl.puts("abc"); ssl.gets }
-      }
-
       ctx = OpenSSL::SSL::SSLContext.new
-      ctx.client_cert_cb = Proc.new{ |ssl|
-        [@cli_cert, @cli_key.public_key]
+      ctx.client_cert_cb = -> ssl {
+        raise "exception in client_cert_cb must be suppressed"
       }
+      # 1. Exception in client_cert_cb is suppressed
+      # 2. No client certificate will be sent to the server
+      # 3. SSL_VERIFY_FAIL_IF_NO_PEER_CERT causes the handshake to fail
       assert_handshake_error {
         server_connect(port, ctx) { |ssl| ssl.puts("abc"); ssl.gets }
       }
