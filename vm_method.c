@@ -130,7 +130,7 @@ rb_clear_constant_cache(void)
 
 static rb_method_entry_t *rb_method_entry_alloc(ID called_id, VALUE owner, VALUE defined_class, const rb_method_definition_t *def);
 const rb_method_entry_t * rb_method_entry_clone(const rb_method_entry_t *src_me);
-static const rb_callable_method_entry_t *copmplemented_callable_method_entry(VALUE klass, ID id);
+static const rb_callable_method_entry_t *complemented_callable_method_entry(VALUE klass, ID id);
 
 static void
 clear_method_cache_by_id_in_class(VALUE klass, ID mid)
@@ -160,7 +160,7 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
         RB_DEBUG_COUNTER_INC(cc_invalidate_leaf);
     }
     else {
-        const rb_callable_method_entry_t *cme = copmplemented_callable_method_entry(klass, mid);
+        const rb_callable_method_entry_t *cme = complemented_callable_method_entry(klass, mid);
 
         if (cme) {
             // invalidate cme if found to invalidate the inline method cache.
@@ -991,7 +991,7 @@ prepare_callable_method_entry(VALUE defined_class, ID id, const rb_method_entry_
 }
 
 static const rb_callable_method_entry_t *
-copmplemented_callable_method_entry(VALUE klass, ID id)
+complemented_callable_method_entry(VALUE klass, ID id)
 {
     VALUE defined_class;
     rb_method_entry_t *me = search_method_protect(klass, id, &defined_class);
