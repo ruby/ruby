@@ -225,14 +225,10 @@ module TestCSVWriteGeneral
   def with_default_internal(encoding)
     original = Encoding.default_internal
     begin
-      $VERBOSE, verbose_bak = nil, $VERBOSE
       Encoding.default_internal = encoding
-      $VERBOSE = verbose_bak
       yield
     ensure
-      $VERBOSE, verbose_bak = nil, $VERBOSE
       Encoding.default_internal = original
-      $VERBOSE = verbose_bak
     end
   end
 end
