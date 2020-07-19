@@ -235,6 +235,17 @@ class TestRegexp < Test::Unit::TestCase
     end;
   end
 
+  def test_deconstruct_keys
+    m = /(?<a>.)(?<b>.)/.match('xy')
+    assert_equal({a: 'x', b: 'y'}, m.deconstruct_keys(nil))
+    assert_equal({a: 'x', b: 'y'}, m.deconstruct_keys([:b, :a]))
+    assert_equal({a: 'x'}, m.deconstruct_keys([:a]))
+    assert_not_send([m.deconstruct_keys([:a, :c]), :key?, :c])
+    assert_raise(TypeError) {
+      m.deconstruct_keys(0)
+    }
+  end
+
   def test_match_regexp
     r = /./
     m = r.match("a")

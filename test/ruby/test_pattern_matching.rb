@@ -1080,6 +1080,16 @@ END
       end
     end
 
+    assert_block do
+      m = /(?<a>.)/.match('x')
+      [m].all? do |i|
+        case i
+        in {a: 'x'}
+          true
+        end
+      end
+    end
+
     assert_syntax_error(%q{
       case _
       in a:, a:

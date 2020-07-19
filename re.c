@@ -2190,6 +2190,39 @@ match_named_captures(VALUE match)
 
 /*
  *  call-seq:
+ *
+ *     mtch.deconstruct_keys(key, ...) -> hash
+ *
+ *  Returns a Hash similar to named_captures, but using symbolized keys.
+ *  This is needed to allow the use of Regexps in "Pattern Matching".
+ *
+ *  A key of the hash is a name of the named captures with non-nil values,
+ *  filtered by a list of keys passed in as an argument.
+ *
+ *     m = /(?<a>.)(?<b>.)/.match("xy")
+ *     m.deconstruct_keys(nil) #=> { a: "x", b: "y" }
+ *
+ *     m = /(?<a>.)(?<b>.)/.match("x")
+ *     m.deconstruct_keys([:b, :a]) #=> { a: "x", b: "y" }
+ *
+ *     m = /(?<a>.)(?<b>.)/.match("x")
+ *     m.deconstruct_keys(:a) #=> { a: "x" }
+ */
+
+static VALUE
+match_deconstruct_keys(VALUE s, VALUE keys)
+{
+    VALUE hash;
+
+    /*
+     * Some code.
+    */
+
+    return hash;
+}
+
+/*
+ *  call-seq:
  *     mtch.string   -> str
  *
  *  Returns a frozen copy of the string passed in to <code>match</code>.
@@ -4102,6 +4135,8 @@ Init_Regexp(void)
     rb_define_method(rb_cMatch, "[]", match_aref, -1);
     rb_define_method(rb_cMatch, "captures", match_captures, 0);
     rb_define_method(rb_cMatch, "named_captures", match_named_captures, 0);
+    rb_define_method(rb_cMatch, "deconstruct_keys", match_deconstruct_keys, 0);
+
     rb_define_method(rb_cMatch, "values_at", match_values_at, -1);
     rb_define_method(rb_cMatch, "pre_match", rb_reg_match_pre, 0);
     rb_define_method(rb_cMatch, "post_match", rb_reg_match_post, 0);
