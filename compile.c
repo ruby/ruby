@@ -2719,7 +2719,8 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	    ELEM_REMOVE(&iobj->link);
 	    return COMPILE_OK;
 	}
-	else if (iobj != diobj && IS_INSN_ID(diobj, jump) &&
+        else if (iobj != diobj && IS_INSN(&diobj->link) &&
+                 IS_INSN_ID(diobj, jump) &&
 		 OPERAND_AT(iobj, 0) != OPERAND_AT(diobj, 0)) {
 	    /*
 	     *  useless jump elimination:
@@ -2897,7 +2898,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
             }
 
             for (;;) {
-                if (IS_INSN_ID(nobj, jump)) {
+                if (IS_INSN(&nobj->link) && IS_INSN_ID(nobj, jump)) {
                     replace_destination(iobj, nobj);
                 }
                 else if (prev_dup && IS_INSN_ID(nobj, dup) &&
