@@ -22,6 +22,8 @@ VALUE rb_cRange;
 static ID id_beg, id_end, id_excl;
 #define id_cmp idCmp
 #define id_succ idSucc
+#define id_min idMin
+#define id_max idMax
 
 static VALUE r_cover_p(VALUE, VALUE, VALUE, VALUE);
 
@@ -1236,7 +1238,10 @@ range_minmax(VALUE range)
     if (rb_block_given_p()) {
         return rb_call_super(0, NULL);
     }
-    return rb_assoc_new(range_min(0, NULL, range), range_max(0, NULL, range));
+    return rb_assoc_new(
+        rb_funcall(range, id_min, 0),
+        rb_funcall(range, id_max, 0)
+    );
 }
 
 int
