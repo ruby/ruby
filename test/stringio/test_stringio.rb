@@ -195,9 +195,15 @@ class TestStringIO < Test::Unit::TestCase
     s = StringIO.new.set_encoding(conversion_encoding)
     s.write(convertible)
     assert_equal(conversion_encoding, s.string.encoding)
+
     s = StringIO.new.set_encoding(Encoding::UTF_8)
     s.write("foo".force_encoding("ISO-8859-1"), convertible)
     assert_equal(Encoding::UTF_8, s.string.encoding)
+
+    s = StringIO.new.set_encoding(Encoding::US_ASCII)
+    s.write("foo".force_encoding("US-ASCII"), convertible)
+    assert_equal(Encoding::UTF_8, s.string.encoding)
+
     all_assertions do |a|
       [
         inconvertible,
