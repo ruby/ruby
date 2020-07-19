@@ -7569,7 +7569,7 @@ gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
                 return FALSE;
             }
         }
-        return !RVALUE_PINNED(obj);
+        return RVALUE_MARKED(obj) && !RVALUE_PINNED(obj);
         break;
 
       default:
