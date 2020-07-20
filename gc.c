@@ -4440,12 +4440,14 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page,
             gc_report(5, objspace, "Protecting page in move %p\n", (void *)GET_PAGE_BODY(cursor->start));
         }
 
-        // Cursors have met, lets quit
+        heap->compact_cursor = next;
+        cursor = next;
+
+        // Cursors have met, lets quit.  We set `heap->compact_cursor` equal
+        // to `heap->sweeping_page` so we know how far to iterate through
+        // the heap when unprotecting pages.
         if (next == sweep_page) {
             break;
-        } else {
-            heap->compact_cursor = next;
-            cursor = next;
         }
     }
 
@@ -4455,7 +4457,13 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page,
 static void
 gc_unprotect_pages(rb_objspace_t *objspace, rb_heap_t *heap)
 {
+    assert(heap->sweeping_page == heap->compact_cursor);
+    // heap->compact_cursor == heap->sweeping_page when this function is called
+    // The sweeping page isn't protected, so move to the next page, and start
+    // unprotecting pages.
     struct heap_page *cursor = heap->compact_cursor;
+    cursor = list_next(&heap->pages, cursor, page_node);
+
     while(cursor) {
         if(mprotect(GET_PAGE_BODY(cursor->start), HEAP_PAGE_SIZE, PROT_READ | PROT_WRITE)) {
             rb_bug("Couldn't unprotect page %p", (void *)GET_PAGE_BODY(cursor->start));
@@ -4468,20 +4476,21 @@ gc_unprotect_pages(rb_objspace_t *objspace, rb_heap_t *heap)
 
 static void gc_update_references(rb_objspace_t * objspace, rb_heap_t *heap);
 
-static struct sigaction old_handler;
+static struct sigaction old_sigbus_handler;
+static struct sigaction old_sigsegv_handler;
 
 static void
 gc_compact_finish(rb_objspace_t *objspace, rb_heap_t *heap)
 {
+    assert(heap->sweeping_page == heap->compact_cursor);
     gc_unprotect_pages(objspace, heap);
     gc_update_references(objspace, heap);
     heap->compact_cursor = NULL;
-    gc_update_references(objspace);
     rb_clear_constant_cache();
     objspace->flags.compact = 0;
     objspace->flags.during_compacting = FALSE;
-    sigaction(SIGBUS, &old_handler, NULL);
-    sigaction(SIGSEGV, &old_handler, NULL);
+    sigaction(SIGBUS, &old_sigbus_handler, NULL);
+    sigaction(SIGSEGV, &old_sigsegv_handler, NULL);
 }
 
 static inline int
@@ -4494,6 +4503,7 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 
     gc_report(2, objspace, "page_sweep: start.\n");
 
+    assert(sweep_page == heap->sweeping_page);
     sweep_page->flags.before_sweep = FALSE;
     if (heap->compact_cursor && sweep_page == heap->compact_cursor) {
         /* The compaction cursor and sweep page met, so we need to quit compacting */
@@ -4897,8 +4907,8 @@ gc_compact_start(rb_objspace_t *objspace, rb_heap_t *heap)
     action.sa_sigaction = read_barrier_handler;
     action.sa_flags = SA_SIGINFO | SA_ONSTACK;
 
-    sigaction(SIGBUS, &action, &old_handler);
-    sigaction(SIGSEGV, &action, &old_handler);
+    sigaction(SIGBUS, &action, &old_sigbus_handler);
+    sigaction(SIGSEGV, &action, &old_sigsegv_handler);
 }
 
 static void
@@ -8877,7 +8887,7 @@ gc_update_references(rb_objspace_t * objspace, rb_heap_t *heap)
 
     list_for_each(&heap->pages, page, page_node) {
         gc_ref_update(page->start, page->start + page->total_slots, sizeof(RVALUE), objspace);
-        if (page == heap->compact_cursor) {
+        if (page == heap->sweeping_page) {
             should_set_mark_bits = 0;
         }
         if (should_set_mark_bits) {
