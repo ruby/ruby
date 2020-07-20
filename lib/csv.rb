@@ -357,35 +357,35 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 # - +nil_value+: Specifies the object that is to be substituted for each null (no-text) field.
 # - +empty_value+: Specifies the object that is to be substituted for each empty field.
 #
-# :include: ../doc/options/common/row_sep.rdoc
+# :include: ../doc/csv/options/common/row_sep.rdoc
 #
-# :include: ../doc/options/common/col_sep.rdoc
+# :include: ../doc/csv/options/common/col_sep.rdoc
 #
-# :include: ../doc/options/common/quote_char.rdoc
+# :include: ../doc/csv/options/common/quote_char.rdoc
 #
-# :include: ../doc/options/parsing/field_size_limit.rdoc
+# :include: ../doc/csv/options/parsing/field_size_limit.rdoc
 #
-# :include: ../doc/options/parsing/converters.rdoc
+# :include: ../doc/csv/options/parsing/converters.rdoc
 #
-# :include: ../doc/options/parsing/unconverted_fields.rdoc
+# :include: ../doc/csv/options/parsing/unconverted_fields.rdoc
 #
-# :include: ../doc/options/parsing/headers.rdoc
+# :include: ../doc/csv/options/parsing/headers.rdoc
 #
-# :include: ../doc/options/parsing/return_headers.rdoc
+# :include: ../doc/csv/options/parsing/return_headers.rdoc
 #
-# :include: ../doc/options/parsing/header_converters.rdoc
+# :include: ../doc/csv/options/parsing/header_converters.rdoc
 #
-# :include: ../doc/options/parsing/skip_blanks.rdoc
+# :include: ../doc/csv/options/parsing/skip_blanks.rdoc
 #
-# :include: ../doc/options/parsing/skip_lines.rdoc
+# :include: ../doc/csv/options/parsing/skip_lines.rdoc
 #
-# :include: ../doc/options/parsing/strip.rdoc
+# :include: ../doc/csv/options/parsing/strip.rdoc
 #
-# :include: ../doc/options/parsing/liberal_parsing.rdoc
+# :include: ../doc/csv/options/parsing/liberal_parsing.rdoc
 #
-# :include: ../doc/options/parsing/nil_value.rdoc
+# :include: ../doc/csv/options/parsing/nil_value.rdoc
 #
-# :include: ../doc/options/parsing/empty_value.rdoc
+# :include: ../doc/csv/options/parsing/empty_value.rdoc
 #
 # ==== Options for Generating
 #
@@ -400,23 +400,23 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 # - +write_nil_value+: Specifies the object that is to be substituted for each +nil+-valued field.
 # - +write_empty_value+: Specifies the object that is to be substituted for each empty field.
 #
-# :include: ../doc/options/common/row_sep.rdoc
+# :include: ../doc/csv/options/common/row_sep.rdoc
 #
-# :include: ../doc/options/common/col_sep.rdoc
+# :include: ../doc/csv/options/common/col_sep.rdoc
 #
-# :include: ../doc/options/common/quote_char.rdoc
+# :include: ../doc/csv/options/common/quote_char.rdoc
 #
-# :include: ../doc/options/generating/write_headers.rdoc
+# :include: ../doc/csv/options/generating/write_headers.rdoc
 #
-# :include: ../doc/options/generating/force_quotes.rdoc
+# :include: ../doc/csv/options/generating/force_quotes.rdoc
 #
-# :include: ../doc/options/generating/quote_empty.rdoc
+# :include: ../doc/csv/options/generating/quote_empty.rdoc
 #
-# :include: ../doc/options/generating/write_converters.rdoc
+# :include: ../doc/csv/options/generating/write_converters.rdoc
 #
-# :include: ../doc/options/generating/write_nil_value.rdoc
+# :include: ../doc/csv/options/generating/write_nil_value.rdoc
 #
-# :include: ../doc/options/generating/write_empty_value.rdoc
+# :include: ../doc/csv/options/generating/write_empty_value.rdoc
 #
 # === \CSV with Headers
 #
@@ -1075,7 +1075,7 @@ class CSV
     # Calls the block with each row read from source +path+ or +io+.
     #
     # * Argument +path+, if given, must be the path to a file.
-    # :include: ../doc/arguments/io.rdoc
+    # :include: ../doc/csv/arguments/io.rdoc
     # * Argument +mode+, if given, must be a \File mode
     #   See {Open Mode}[IO.html#method-c-new-label-Open+Mode].
     # * Arguments <tt>**options</tt> must be keyword options.
@@ -1322,7 +1322,7 @@ class CSV
     #     :replace => string   # replacement string ("?" or "\uFFFD" if not specified)
     #
     # * Argument +path+, if given, must be the path to a file.
-    # :include: ../doc/arguments/io.rdoc
+    # :include: ../doc/csv/arguments/io.rdoc
     # * Argument +mode+, if given, must be a \File mode
     #   See {Open Mode}[IO.html#method-c-new-label-Open+Mode].
     # * Arguments <tt>**options</tt> must be keyword options.
@@ -1427,7 +1427,7 @@ class CSV
     #
     # - Argument +string+ should be a \String object;
     #   it will be put into a new StringIO object positioned at the beginning.
-    # :include: ../doc/arguments/io.rdoc
+    # :include: ../doc/csv/arguments/io.rdoc
     # - Argument +options+: see {Options for Parsing}[#class-CSV-label-Options+for+Parsing]
     #
     # ====== Without Option +headers+
@@ -1552,7 +1552,7 @@ class CSV
     #
     # - Argument +string+ should be a \String object;
     #   it will be put into a new StringIO object positioned at the beginning.
-    # :include: ../doc/arguments/io.rdoc
+    # :include: ../doc/csv/arguments/io.rdoc
     # - Argument +options+: see {Options for Parsing}[#class-CSV-label-Options+for+Parsing]
     #
     # ====== Without Option +headers+
@@ -1672,7 +1672,7 @@ class CSV
   #
   # - Argument +string+ should be a \String object;
   #   it will be put into a new StringIO object positioned at the beginning.
-  # :include: ../doc/arguments/io.rdoc
+  # :include: ../doc/csv/arguments/io.rdoc
   # - Argument +options+: See:
   #   * {Options for Parsing}[#class-CSV-label-Options+for+Parsing]
   #   * {Options for Generating}[#class-CSV-label-Options+for+Generating]
