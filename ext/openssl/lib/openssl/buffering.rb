@@ -31,7 +31,7 @@ module OpenSSL::Buffering
 
       force_encoding(BINARY)
     end
-    
+
     def << string
       if string.encoding == BINARY
         super(string)

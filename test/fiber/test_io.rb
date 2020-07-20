@@ -39,14 +39,14 @@ class TestFiberIO < Test::Unit::TestCase
     assert_predicate(i, :closed?)
     assert_predicate(o, :closed?)
   end
-  
+
   def test_heavy_read
     skip unless defined?(UNIXSocket)
 
     16.times.map do
       thread = Thread.new do
         i, o = UNIXSocket.pair
-        
+
         scheduler = Scheduler.new
         Thread.current.scheduler = scheduler
 

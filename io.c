@@ -1293,7 +1293,7 @@ rb_io_wait_writable(int f)
         VALUE result = rb_funcall(scheduler, rb_intern("wait_writable_fd"), 1, INT2NUM(f));
         return RTEST(result);
     }
-    
+
     io_fd_check_closed(f);
     switch (errno) {
       case EINTR:
