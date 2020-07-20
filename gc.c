@@ -3898,6 +3898,24 @@ rb_obj_id(VALUE obj)
     return rb_find_object_id(obj, cached_object_id);
 }
 
+static enum rb_id_table_iterator_result
+cc_table_memsize_i(VALUE ccs_ptr, void *data_ptr)
+{
+    size_t *total_size = data_ptr;
+    struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_ptr;
+    *total_size += sizeof(*ccs);
+    *total_size += sizeof(ccs->entries[0]) * ccs->capa;
+    return ID_TABLE_CONTINUE;
+}
+
+static size_t
+cc_table_memsize(struct rb_id_table *cc_table)
+{
+    size_t total = rb_id_table_memsize(cc_table);
+    rb_id_table_foreach_values(cc_table, cc_table_memsize_i, &total);
+    return total;
+}
+
 static size_t
 obj_memsize_of(VALUE obj, int use_all_types)
 {
@@ -3936,6 +3954,9 @@ obj_memsize_of(VALUE obj, int use_all_types)
 	    if (RCLASS(obj)->ptr->const_tbl) {
 		size += rb_id_table_memsize(RCLASS(obj)->ptr->const_tbl);
 	    }
+            if (RCLASS_CC_TBL(obj)) {
+                size += cc_table_memsize(RCLASS_CC_TBL(obj));
+            }
 	    size += sizeof(rb_classext_t);
 	}
 	break;
@@ -3946,6 +3967,9 @@ obj_memsize_of(VALUE obj, int use_all_types)
 		size += rb_id_table_memsize(RCLASS_M_TBL(obj));
 	    }
 	}
+        if (RCLASS_EXT(obj) && RCLASS_CC_TBL(obj)) {
+            size += cc_table_memsize(RCLASS_CC_TBL(obj));
+        }
 	break;
       case T_STRING:
 	size += rb_str_memsize(obj);
