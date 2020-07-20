@@ -802,6 +802,9 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
     return v;
 }
 
+static rb_block_call_func *rb_enum_inject_prepare(int argc, VALUE *argv, VALUE *pinit, VALUE *pop);
+static VALUE rb_enum_inject_call(VALUE obj, VALUE init, VALUE op, rb_block_call_func *iter);
+
 /*
  *  call-seq:
  *     enum.inject(initial, sym) -> obj
@@ -851,7 +854,14 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
 static VALUE
 enum_inject(int argc, VALUE *argv, VALUE obj)
 {
-    struct MEMO *memo;
+    VALUE init, op;
+    rb_block_call_func *iter = rb_enum_inject_prepare(argc, argv, &init, &op);
+    return rb_enum_inject_call(obj, init, op, iter);
+}
+
+static rb_block_call_func *
+rb_enum_inject_prepare(int argc, VALUE *argv, VALUE *pinit, VALUE *pop)
+{
     VALUE init, op;
     rb_block_call_func *iter = inject_i;
     ID id;
@@ -878,6 +888,15 @@ enum_inject(int argc, VALUE *argv, VALUE obj)
 	iter = inject_op_i;
 	break;
     }
+    *pinit = init;
+    *pop = op;
+    return iter;
+}
+
+static VALUE
+rb_enum_inject_call(VALUE obj, VALUE init, VALUE op, rb_block_call_func *iter)
+{
+    struct MEMO *memo;
 
     if (iter == inject_op_i &&
         SYMBOL_P(op) &&
@@ -889,6 +908,30 @@ enum_inject(int argc, VALUE *argv, VALUE obj)
     memo = MEMO_NEW(init, Qnil, op);
     rb_block_call(obj, id_each, 0, 0, iter, (VALUE)memo);
     if (memo->v1 == Qundef) return Qnil;
+    return memo->v1;
+}
+
+struct MEMO *
+rb_enum_inject_memo(int argc, VALUE *argv)
+{
+    VALUE init, op, iter = Qfalse;
+    if (rb_enum_inject_prepare(argc, argv, &init, &op) == inject_i)
+        iter = Qtrue;
+    return MEMO_NEW(init, iter, op);
+}
+
+VALUE
+rb_enum_inject_memo_call(struct MEMO *memo, VALUE proc, VALUE i)
+{
+    if (!proc) {
+        inject_op_i(i, (VALUE)memo, 1, &i, Qnil);
+    }
+    else {
+        if (memo->v1 != Qundef) {
+            i = rb_proc_call_with_block(proc, 2, (VALUE[2]){memo->v1, i}, Qnil);
+        }
+	MEMO_V1_SET(memo, i);
+    }
     return memo->v1;
 }
 

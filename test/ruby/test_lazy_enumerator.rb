@@ -682,4 +682,19 @@ EOS
     ary = (0..Float::INFINITY).lazy.with_index.take(2).to_a
     assert_equal([[0, 0], [1, 1]], ary)
   end
+
+  def test_inject
+    assert_equal([1, 3, 6, 10], (1..Float::INFINITY).lazy.inject(:+).take(4).force)
+    assert_equal([0, 1, 3, 6], (1..Float::INFINITY).lazy.inject(0, :+).take(4).force)
+
+    a = []
+    ary = (2..Float::INFINITY).lazy.inject {|i, j| a << [i, j]; i+j}.take(3).to_a
+    assert_equal([[2, 3], [5, 4]], a)
+    assert_equal([2, 5, 9], ary)
+
+    a = []
+    ary = (1..Float::INFINITY).lazy.inject(2) {|i, j| a << [i, j]; i+j}.take(3).to_a
+    assert_equal([[2, 1], [3, 2]], a)
+    assert_equal([2, 3, 5], ary)
+  end
 end

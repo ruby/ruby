@@ -2783,6 +2783,53 @@ static VALUE lazy_slice_when(VALUE self)
 }
 # endif
 
+struct MEMO * rb_enum_inject_memo(int argc, VALUE *argv);
+VALUE rb_enum_inject_memo_call(struct MEMO *memo, VALUE proc, VALUE arg);
+
+static struct MEMO *
+lazy_inject_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+{
+    struct proc_entry *entry = proc_entry_ptr(proc_entry);
+    struct MEMO *memo = MEMO_CAST(entry->memo);
+    VALUE value = result->memo_value;
+    value = rb_enum_inject_memo_call(memo, entry->proc, value);
+    LAZY_MEMO_SET_VALUE(result, value);
+    LAZY_MEMO_RESET_PACKED(result);
+    return result;
+}
+
+static VALUE
+lazy_inject_init_proc(RB_BLOCK_CALL_FUNC_ARGLIST(y, m))
+{
+    struct MEMO *memo = MEMO_CAST(m);
+    VALUE val = argv[1];
+    if (!RTEST(rb_attr_get(y, id_memo))) {
+        rb_ivar_set(y, id_memo, Qtrue);
+        rb_funcallv(y, idLTLT, 1, &memo->v1);
+    }
+    val = rb_enum_inject_memo_call(memo, memo->v2, val);
+    rb_funcallv(y, idLTLT, 1, &val);
+    return Qnil;
+}
+
+static const lazyenum_funcs lazy_inject_funcs = {
+    lazy_inject_proc, 0,
+};
+
+static VALUE
+lazy_inject(int argc, VALUE *argv, VALUE obj)
+{
+    struct MEMO *memo = rb_enum_inject_memo(argc, argv);
+    if (memo->v1 == Qundef) {
+        return lazy_add_method(obj, 0, 0, (VALUE)memo, Qnil, &lazy_inject_funcs);
+    }
+    if (memo->v2) {
+        MEMO_V2_SET(memo, rb_block_proc());
+    }
+    obj = rb_block_call(rb_cLazy, id_new, 1, &obj, lazy_inject_init_proc, (VALUE)memo);
+    return lazy_set_method(obj, rb_ary_new_from_values(1, &memo->v1), 0);
+}
+
 static VALUE
 lazy_super(int argc, VALUE *argv, VALUE lazy)
 {
@@ -3995,6 +4042,7 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cLazy, "chunk_while", lazy_super, -1);
     rb_define_method(rb_cLazy, "uniq", lazy_uniq, 0);
     rb_define_method(rb_cLazy, "with_index", lazy_with_index, -1);
+    rb_define_method(rb_cLazy, "inject", lazy_inject, -1);
 
     lazy_use_super_method = rb_hash_new_with_size(18);
     rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("map")), ID2SYM(rb_intern("_enumerable_map")));
