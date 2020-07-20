@@ -120,6 +120,49 @@ __EOC__
     assert_equal("error in line 7: missing close square bracket", excn.message)
   end
 
+  def test_s_parse_include
+    in_tmpdir("ossl-config-include-test") do |dir|
+      Dir.mkdir("child")
+      File.write("child/a.conf", <<~__EOC__)
+        [default]
+        file-a = a.conf
+        [sec-a]
+        a = 123
+      __EOC__
+      File.write("child/b.cnf", <<~__EOC__)
+        [default]
+        file-b = b.cnf
+        [sec-b]
+        b = 123
+      __EOC__
+      File.write("include-child.conf", <<~__EOC__)
+        key_outside_section = value_a
+        .include child
+      __EOC__
+
+      include_file = <<~__EOC__
+        [default]
+        file-main = unnamed
+        [sec-main]
+        main = 123
+        .include = include-child.conf
+      __EOC__
+
+      # Include a file by relative path
+      c1 = OpenSSL::Config.parse(include_file)
+      assert_equal(["default", "sec-a", "sec-b", "sec-main"], c1.sections.sort)
+      assert_equal(["file-main", "file-a", "file-b"], c1["default"].keys)
+      assert_equal({"a" => "123"}, c1["sec-a"])
+      assert_equal({"b" => "123"}, c1["sec-b"])
+      assert_equal({"main" => "123", "key_outside_section" => "value_a"}, c1["sec-main"])
+
+      # Relative paths are from the working directory
+      assert_raise(OpenSSL::ConfigError) do
+        Dir.chdir("child") { OpenSSL::Config.parse(include_file) }
+      end
+    end
+  end
+
   def test_s_load
     # alias of new
     c = OpenSSL::Config.load
@@ -298,6 +341,17 @@ __EOC__
     assert_equal(@it.sections.sort, c.sections.sort)
     @it['newsection'] = {'a' => 'b'}
     assert_not_equal(@it.sections.sort, c.sections.sort)
+  end
+
+  private
+
+  def in_tmpdir(*args)
+    Dir.mktmpdir(*args) do |dir|
+      dir = File.realpath(dir)
+      Dir.chdir(dir) do
+        yield dir
+      end
+    end
   end
 end
 

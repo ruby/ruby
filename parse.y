@@ -968,6 +968,7 @@ static int looking_at_eol_p(struct parser_params *p);
 
 %expect 0
 %define api.pure
+%define parse.error verbose
 %lex-param {struct parser_params *p}
 %parse-param {struct parser_params *p}
 %initial-action
@@ -9495,15 +9496,16 @@ yylex(YYSTYPE *lval, YYLTYPE *yylloc, struct parser_params *p)
     p->lval = lval;
     lval->val = Qundef;
     t = parser_yylex(p);
-    if (has_delayed_token(p))
-	dispatch_delayed_token(p, t);
-    else if (t != 0)
-	dispatch_scan_event(p, t);
 
     if (p->lex.strterm && (p->lex.strterm->flags & STRTERM_HEREDOC))
 	RUBY_SET_YYLLOC_FROM_STRTERM_HEREDOC(*yylloc);
     else
 	RUBY_SET_YYLLOC(*yylloc);
+
+    if (has_delayed_token(p))
+	dispatch_delayed_token(p, t);
+    else if (t != 0)
+	dispatch_scan_event(p, t);
 
     return t;
 }

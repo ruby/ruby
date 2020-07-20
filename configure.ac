@@ -530,7 +530,7 @@ AS_CASE(["$GCC:${warnflags+set}:${extra_warnflags:+set}:"],
 		 -Wsuggest-attribute=format \
 		 -Wsuggest-attribute=noreturn \
 		 -Wunused-variable \
-		 -diag-disable=175,188,2259 \
+		 -diag-disable=175,188,1684,2259,2312 \
 		 $extra_warnflags \
 		 ; do
 	AS_IF([test "$particular_werror_flags" != yes], [
