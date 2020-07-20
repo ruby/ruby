@@ -2080,7 +2080,7 @@ class CSV
   ### End Delegation ###
 
   # :call-seq:
-  #   csv.<< row
+  #   csv << row -> self
   #
   # Appends a row to +self+.
   #
@@ -2120,7 +2120,7 @@ class CSV
   #     csv << :foo
   #   end
   #
-  # Raises an exception if the output stream is not open for writing:
+  # Raises an exception if the output stream is not opened for writing:
   #   path = 't.csv'
   #   File.write(path, '')
   #   File.open(path) do |file|
@@ -2272,25 +2272,57 @@ class CSV
 
   include Enumerable
 
+  # :call-seq:
+  #   csv.each -> enumerator
+  #   csv.each {|row| ...}
   #
-  # Yields each row of the data source in turn.
+  # Calls the block with each successive row.
+  # The data source must be opened for reading.
   #
-  # Support for Enumerable.
+  # Without headers:
+  #   string = "foo,0\nbar,1\nbaz,2\n"
+  #   csv = CSV.new(string)
+  #   csv.each do |row|
+  #     p row
+  #   end
+  # Output:
+  #   ["foo", "0"]
+  #   ["bar", "1"]
+  #   ["baz", "2"]
   #
-  # The data source must be open for reading.
+  # With headers:
+  #   string = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+  #   csv = CSV.new(string, headers: true)
+  #   csv.each do |row|
+  #     p row
+  #   end
+  # Output:
+  #   <CSV::Row "Name":"foo" "Value":"0">
+  #   <CSV::Row "Name":"bar" "Value":"1">
+  #   <CSV::Row "Name":"baz" "Value":"2">
   #
+  # ---
+  #
+  # Raises an exception if the source is not opened for reading:
+  #   string = "foo,0\nbar,1\nbaz,2\n"
+  #   csv = CSV.new(string)
+  #   csv.close
+  #   # Raises IOError (not opened for reading)
+  #   csv.each do |row|
+  #     p row
+  #   end
   def each(&block)
     parser_enumerator.each(&block)
   end
 
   # :call-seq:
-  #     read
+  #   csv.read -> array or csv_table
   #
   # Forms the remaining rows from +self+ into:
   # - A CSV::Table object, if headers are in use.
-  # - An Array of Arrays, otherwise.
+  # - An \Array of Arrays, otherwise.
   #
-  # The data source must be open for reading.
+  # The data source must be opened for reading.
   #
   # Without headers:
   #   string = "foo,0\nbar,1\nbaz,2\n"
@@ -2305,6 +2337,15 @@ class CSV
   #   File.write(path, string)
   #   csv = CSV.open(path, headers: true)
   #   csv.read # => #<CSV::Table mode:col_or_row row_count:4>
+  #
+  # ---
+  #
+  # Raises an exception if the source is not opened for reading:
+  #   string = "foo,0\nbar,1\nbaz,2\n"
+  #   csv = CSV.new(string)
+  #   csv.close
+  #   # Raises IOError (not opened for reading)
+  #   csv.read
   def read
     rows = to_a
     if parser.use_headers?
@@ -2315,18 +2356,69 @@ class CSV
   end
   alias_method :readlines, :read
 
-  # Returns +true+ if the next row read will be a header row.
+  # :call-seq:
+  #   csv.header_row? -> true or false
+  #
+  # Returns +true+ if the next row to be read is a header row\;
+  # +false+ otherwise.
+  #
+  # Without headers:
+  #   string = "foo,0\nbar,1\nbaz,2\n"
+  #   csv = CSV.new(string)
+  #   csv.header_row? # => false
+  #
+  # With headers:
+  #   string = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+  #   csv = CSV.new(string, headers: true)
+  #   csv.header_row? # => true
+  #   csv.shift # => #<CSV::Row "Name":"foo" "Value":"0">
+  #   csv.header_row? # => false
+  #
+  # ---
+  #
+  # Raises an exception if the source is not opened for reading:
+  #   string = "foo,0\nbar,1\nbaz,2\n"
+  #   csv = CSV.new(string)
+  #   csv.close
+  #   # Raises IOError (not opened for reading)
+  #   csv.header_row?
   def header_row?
     parser.header_row?
   end
 
+  # :call-seq:
+  #   csv.shift -> array, csv_row, or nil
   #
-  # The primary read method for wrapped Strings and IOs, a single row is pulled
-  # from the data source, parsed and returned as an Array of fields (if header
-  # rows are not used) or a CSV::Row (when header rows are used).
+  # Returns the next row of data as:
+  # - An \Array if no headers are used.
+  # - A CSV::Row object if headers are used.
   #
-  # The data source must be open for reading.
+  # The data source must be opened for reading.
   #
+  # Without headers:
+  #   string = "foo,0\nbar,1\nbaz,2\n"
+  #   csv = CSV.new(string)
+  #   csv.shift # => ["foo", "0"]
+  #   csv.shift # => ["bar", "1"]
+  #   csv.shift # => ["baz", "2"]
+  #   csv.shift # => nil
+  #
+  # With headers:
+  #   string = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+  #   csv = CSV.new(string, headers: true)
+  #   csv.shift # => #<CSV::Row "Name":"foo" "Value":"0">
+  #   csv.shift # => #<CSV::Row "Name":"bar" "Value":"1">
+  #   csv.shift # => #<CSV::Row "Name":"baz" "Value":"2">
+  #   csv.shift # => nil
+  #
+  # ---
+  #
+  # Raises an exception if the source is not opened for reading:
+  #   string = "foo,0\nbar,1\nbaz,2\n"
+  #   csv = CSV.new(string)
+  #   csv.close
+  #   # Raises IOError (not opened for reading)
+  #   csv.shift
   def shift
     if @eof_error
       eof_error, @eof_error = @eof_error, nil
@@ -2341,10 +2433,14 @@ class CSV
   alias_method :gets,     :shift
   alias_method :readline, :shift
 
+  # :call-seq:
+  #   csv.inspect -> string
   #
-  # Returns a simplified description of the key CSV attributes in an
-  # ASCII compatible String.
-  #
+  # Returns a \String showing certain properties of +self+:
+  #   string = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+  #   csv = CSV.new(string, headers: true)
+  #   s = csv.inspect
+  #   s # => "#<CSV io_type:StringIO encoding:UTF-8 lineno:0 col_sep:\",\" row_sep:\"\\n\" quote_char:\"\\\"\" headers:true>"
   def inspect
     str = ["#<", self.class.to_s, " io_type:"]
     # show type of wrapped IO
