@@ -115,6 +115,56 @@ begin
         (cmd)prompt> :a
       EOC
     end
+
+    def test_original_mode_icon_emacs
+      File.open(@inputrc_file, 'w') do |f|
+        f.write <<~LINES
+          set show-mode-in-prompt on
+          set emacs-mode-string [emacs]
+        LINES
+      end
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl})
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        [emacs]prompt>
+      EOC
+    end
+
+    def test_original_mode_icon_with_quote
+      File.open(@inputrc_file, 'w') do |f|
+        f.write <<~LINES
+          set show-mode-in-prompt on
+          set emacs-mode-string "[emacs]"
+        LINES
+      end
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl})
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        [emacs]prompt>
+      EOC
+    end
+
+    def test_original_mode_icon_vi
+      File.open(@inputrc_file, 'w') do |f|
+        f.write <<~LINES
+          set editing-mode vi
+          set show-mode-in-prompt on
+          set vi-ins-mode-string "{InS}"
+          set vi-cmd-mode-string "{CmD}"
+        LINES
+      end
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl})
+      write(":a\n\C-[k")
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        {InS}prompt> :a
+        => :a
+        {CmD}prompt> :a
+      EOC
+    end
   end
 rescue LoadError, NameError
   # On Ruby repository, this test suit doesn't run because Ruby repo doesn't

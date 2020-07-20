@@ -167,7 +167,7 @@ class Reline::Config
 
       case line
       when /^set +([^ ]+) +([^ ]+)/i
-        var, value = $1.downcase, $2.downcase
+        var, value = $1.downcase, $2
         bind_variable(var, value)
         next
       when /\s*("#{KEYSEQ_PATTERN}+")\s*:\s*(.*)\s*$/o
@@ -270,14 +270,22 @@ class Reline::Config
         @show_mode_in_prompt = false
       end
     when 'vi-cmd-mode-string'
-      @vi_cmd_mode_icon = value
+      @vi_cmd_mode_icon = retrieve_string(value)
     when 'vi-ins-mode-string'
-      @vi_ins_mode_icon = value
+      @vi_ins_mode_icon = retrieve_string(value)
     when 'emacs-mode-string'
-      @emacs_mode_string = value
+      @emacs_mode_string = retrieve_string(value)
     when *VARIABLE_NAMES then
       variable_name = :"@#{name.tr(?-, ?_)}"
       instance_variable_set(variable_name, value.nil? || value == '1' || value == 'on')
+    end
+  end
+
+  def retrieve_string(str)
+    if str =~ /\A"(.*)"\z/
+      parse_keyseq($1).map(&:chr).join
+    else
+      parse_keyseq(str).map(&:chr).join
     end
   end
 
