@@ -108,7 +108,7 @@ module TestIRB
         irb.eval_input
       end
       assert_empty err
-      assert_equal("(Object doesn't support #inspect)\n=> \n", out)
+      assert(/\(Object doesn't support #inspect\)\n(=> )?\n/, out)
     ensure
       $VERBOSE = verbose
     end
