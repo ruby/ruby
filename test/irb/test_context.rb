@@ -108,9 +108,7 @@ module TestIRB
         irb.eval_input
       end
       assert_empty err
-      assert_pattern_list([:*, /\(Object doesn't support #inspect\)/,
-                           :*, /=> \n/,
-                           /\s*/], out)
+      assert_equal("(Object doesn't support #inspect)\n=> \n", out)
     ensure
       $VERBOSE = verbose
     end
