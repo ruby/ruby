@@ -3826,6 +3826,7 @@ is_live_object(rb_objspace_t *objspace, VALUE ptr)
 {
     switch (BUILTIN_TYPE(ptr)) {
       case T_NONE:
+      case T_MOVED:
       case T_ZOMBIE:
 	return FALSE;
       default:
@@ -4834,6 +4835,7 @@ static void
 invalidate_moved_page(rb_objspace_t *objspace, struct heap_page *page)
 {
     int i;
+    int empty_slots = 0, freed_slots = 0;
     bits_t *mark_bits, *pin_bits;
     bits_t bitset;
     RVALUE *p, *offset;
@@ -4863,11 +4865,17 @@ invalidate_moved_page(rb_objspace_t *objspace, struct heap_page *page)
                     CLEAR_IN_BITMAP(GET_HEAP_PINNED_BITS(forwarding_object), forwarding_object);
 
                     object = rb_gc_location(forwarding_object);
+
+                    if (BUILTIN_TYPE(object) == T_NONE) {
+                        empty_slots++; /* already freed */
+                    } else {
+                        freed_slots++;
+                    }
+
                     gc_move(objspace, object, forwarding_object);
                     /* forwarding_object is now our actual object, and "object"
                      * is the free slot for the original page */
                     heap_page_add_freeobj(objspace, GET_HEAP_PAGE(object), object);
-                    GET_HEAP_PAGE(object)->free_slots++;
 
                     GC_ASSERT(MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(forwarding_object), forwarding_object));
                     GC_ASSERT(BUILTIN_TYPE(forwarding_object) != T_MOVED);
@@ -4880,6 +4888,9 @@ invalidate_moved_page(rb_objspace_t *objspace, struct heap_page *page)
             } while (bitset);
         }
     }
+
+    page->free_slots += (empty_slots + freed_slots);
+    objspace->profile.total_freed_objects += freed_slots;
 }
 
 static void
