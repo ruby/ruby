@@ -96,7 +96,7 @@
 #ifndef USE_NATIVE_THREAD_PRIORITY
 #define USE_NATIVE_THREAD_PRIORITY 0
 #define RUBY_THREAD_PRIORITY_MAX 3
-#define RUBY_THREAD_PRIORITY_MIN -3
+#define RUBY_THREAD_PRIORITY_MIN -5
 #endif
 
 #ifndef THREAD_DEBUG
@@ -354,6 +354,8 @@ ubf_sigwait(void *ignore)
     rb_thread_wakeup_timer_thread(0);
 }
 
+static int thread_time_quantum_usec_from_priority(int priority);
+
 #if   defined(_WIN32)
 #include "thread_win32.c"
 
@@ -376,6 +378,15 @@ ubf_sigwait(void *ignore)
 #else
 #error "unsupported thread type"
 #endif
+
+static int thread_time_quantum_usec_from_priority(int priority) {
+    if (priority > 0) {
+        return TIME_QUANTUM_USEC_BASE << priority;
+    }
+    else {
+        return TIME_QUANTUM_USEC_BASE >> -priority;
+    }
+}
 
 /*
  * TODO: somebody with win32 knowledge should be able to get rid of
@@ -2289,12 +2300,7 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 	}
 
 	if (timer_interrupt) {
-	    uint32_t limits_us = TIME_QUANTUM_USEC;
-
-	    if (th->priority > 0)
-		limits_us <<= th->priority;
-	    else
-		limits_us >>= -th->priority;
+	    uint32_t limits_us = thread_time_quantum_usec_from_priority(th->priority);
 
 	    if (th->status == THREAD_RUNNABLE)
 		th->running_time_us += TIME_QUANTUM_USEC;
@@ -3749,6 +3755,7 @@ rb_thread_priority_set(VALUE thread, VALUE prio)
     else if (priority < RUBY_THREAD_PRIORITY_MIN) {
 	priority = RUBY_THREAD_PRIORITY_MIN;
     }
+    native_update_quantum(priority);
     target_th->priority = (int8_t)priority;
 #endif
     return INT2NUM(target_th->priority);
@@ -4039,12 +4046,10 @@ static const rb_hrtime_t *
 sigwait_timeout(rb_thread_t *th, int sigwait_fd, const rb_hrtime_t *orig,
                 int *drained_p)
 {
-    static const rb_hrtime_t quantum = TIME_QUANTUM_USEC * 1000;
-
     if (sigwait_fd >= 0 && (!ubf_threads_empty() || BUSY_WAIT_SIGNALS)) {
         *drained_p = check_signals_nogvl(th, sigwait_fd);
-        if (!orig || *orig > quantum)
-            return &quantum;
+        if (!orig || *orig > TIME_QUANTUM_NSEC)
+            return &TIME_QUANTUM_NSEC;
     }
 
     return orig;
