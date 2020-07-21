@@ -151,7 +151,6 @@ rat.o: $(hdrdir)/ruby/backward.h
 rat.o: $(hdrdir)/ruby/backward/2/assume.h
 rat.o: $(hdrdir)/ruby/backward/2/attributes.h
 rat.o: $(hdrdir)/ruby/backward/2/bool.h
-rat.o: $(hdrdir)/ruby/backward/2/extern.h
 rat.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 rat.o: $(hdrdir)/ruby/backward/2/inttypes.h
 rat.o: $(hdrdir)/ruby/backward/2/limits.h

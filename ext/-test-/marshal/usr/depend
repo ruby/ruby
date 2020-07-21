@@ -147,7 +147,6 @@ usrmarshal.o: $(hdrdir)/ruby/backward.h
 usrmarshal.o: $(hdrdir)/ruby/backward/2/assume.h
 usrmarshal.o: $(hdrdir)/ruby/backward/2/attributes.h
 usrmarshal.o: $(hdrdir)/ruby/backward/2/bool.h
-usrmarshal.o: $(hdrdir)/ruby/backward/2/extern.h
 usrmarshal.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 usrmarshal.o: $(hdrdir)/ruby/backward/2/inttypes.h
 usrmarshal.o: $(hdrdir)/ruby/backward/2/limits.h

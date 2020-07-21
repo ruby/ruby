@@ -147,7 +147,6 @@ typeddata.o: $(hdrdir)/ruby/backward.h
 typeddata.o: $(hdrdir)/ruby/backward/2/assume.h
 typeddata.o: $(hdrdir)/ruby/backward/2/attributes.h
 typeddata.o: $(hdrdir)/ruby/backward/2/bool.h
-typeddata.o: $(hdrdir)/ruby/backward/2/extern.h
 typeddata.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 typeddata.o: $(hdrdir)/ruby/backward/2/inttypes.h
 typeddata.o: $(hdrdir)/ruby/backward/2/limits.h

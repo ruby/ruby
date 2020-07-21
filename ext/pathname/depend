@@ -147,7 +147,6 @@ pathname.o: $(hdrdir)/ruby/backward.h
 pathname.o: $(hdrdir)/ruby/backward/2/assume.h
 pathname.o: $(hdrdir)/ruby/backward/2/attributes.h
 pathname.o: $(hdrdir)/ruby/backward/2/bool.h
-pathname.o: $(hdrdir)/ruby/backward/2/extern.h
 pathname.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 pathname.o: $(hdrdir)/ruby/backward/2/inttypes.h
 pathname.o: $(hdrdir)/ruby/backward/2/limits.h

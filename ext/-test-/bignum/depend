@@ -147,7 +147,6 @@ big2str.o: $(hdrdir)/ruby/backward.h
 big2str.o: $(hdrdir)/ruby/backward/2/assume.h
 big2str.o: $(hdrdir)/ruby/backward/2/attributes.h
 big2str.o: $(hdrdir)/ruby/backward/2/bool.h
-big2str.o: $(hdrdir)/ruby/backward/2/extern.h
 big2str.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 big2str.o: $(hdrdir)/ruby/backward/2/inttypes.h
 big2str.o: $(hdrdir)/ruby/backward/2/limits.h
@@ -313,7 +312,6 @@ bigzero.o: $(hdrdir)/ruby/backward.h
 bigzero.o: $(hdrdir)/ruby/backward/2/assume.h
 bigzero.o: $(hdrdir)/ruby/backward/2/attributes.h
 bigzero.o: $(hdrdir)/ruby/backward/2/bool.h
-bigzero.o: $(hdrdir)/ruby/backward/2/extern.h
 bigzero.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 bigzero.o: $(hdrdir)/ruby/backward/2/inttypes.h
 bigzero.o: $(hdrdir)/ruby/backward/2/limits.h
@@ -479,7 +477,6 @@ div.o: $(hdrdir)/ruby/backward.h
 div.o: $(hdrdir)/ruby/backward/2/assume.h
 div.o: $(hdrdir)/ruby/backward/2/attributes.h
 div.o: $(hdrdir)/ruby/backward/2/bool.h
-div.o: $(hdrdir)/ruby/backward/2/extern.h
 div.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 div.o: $(hdrdir)/ruby/backward/2/inttypes.h
 div.o: $(hdrdir)/ruby/backward/2/limits.h
@@ -645,7 +642,6 @@ init.o: $(hdrdir)/ruby/backward.h
 init.o: $(hdrdir)/ruby/backward/2/assume.h
 init.o: $(hdrdir)/ruby/backward/2/attributes.h
 init.o: $(hdrdir)/ruby/backward/2/bool.h
-init.o: $(hdrdir)/ruby/backward/2/extern.h
 init.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 init.o: $(hdrdir)/ruby/backward/2/inttypes.h
 init.o: $(hdrdir)/ruby/backward/2/limits.h
@@ -809,7 +805,6 @@ intpack.o: $(hdrdir)/ruby/backward.h
 intpack.o: $(hdrdir)/ruby/backward/2/assume.h
 intpack.o: $(hdrdir)/ruby/backward/2/attributes.h
 intpack.o: $(hdrdir)/ruby/backward/2/bool.h
-intpack.o: $(hdrdir)/ruby/backward/2/extern.h
 intpack.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 intpack.o: $(hdrdir)/ruby/backward/2/inttypes.h
 intpack.o: $(hdrdir)/ruby/backward/2/limits.h
@@ -975,7 +970,6 @@ mul.o: $(hdrdir)/ruby/backward.h
 mul.o: $(hdrdir)/ruby/backward/2/assume.h
 mul.o: $(hdrdir)/ruby/backward/2/attributes.h
 mul.o: $(hdrdir)/ruby/backward/2/bool.h
-mul.o: $(hdrdir)/ruby/backward/2/extern.h
 mul.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 mul.o: $(hdrdir)/ruby/backward/2/inttypes.h
 mul.o: $(hdrdir)/ruby/backward/2/limits.h
@@ -1141,7 +1135,6 @@ str2big.o: $(hdrdir)/ruby/backward.h
 str2big.o: $(hdrdir)/ruby/backward/2/assume.h
 str2big.o: $(hdrdir)/ruby/backward/2/attributes.h
 str2big.o: $(hdrdir)/ruby/backward/2/bool.h
-str2big.o: $(hdrdir)/ruby/backward/2/extern.h
 str2big.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 str2big.o: $(hdrdir)/ruby/backward/2/inttypes.h
 str2big.o: $(hdrdir)/ruby/backward/2/limits.h

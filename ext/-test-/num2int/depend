@@ -147,7 +147,6 @@ num2int.o: $(hdrdir)/ruby/backward.h
 num2int.o: $(hdrdir)/ruby/backward/2/assume.h
 num2int.o: $(hdrdir)/ruby/backward/2/attributes.h
 num2int.o: $(hdrdir)/ruby/backward/2/bool.h
-num2int.o: $(hdrdir)/ruby/backward/2/extern.h
 num2int.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 num2int.o: $(hdrdir)/ruby/backward/2/inttypes.h
 num2int.o: $(hdrdir)/ruby/backward/2/limits.h

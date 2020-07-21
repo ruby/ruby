@@ -147,7 +147,6 @@ init.o: $(hdrdir)/ruby/backward.h
 init.o: $(hdrdir)/ruby/backward/2/assume.h
 init.o: $(hdrdir)/ruby/backward/2/attributes.h
 init.o: $(hdrdir)/ruby/backward/2/bool.h
-init.o: $(hdrdir)/ruby/backward/2/extern.h
 init.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 init.o: $(hdrdir)/ruby/backward/2/inttypes.h
 init.o: $(hdrdir)/ruby/backward/2/limits.h
@@ -311,7 +310,6 @@ leap_second.o: $(hdrdir)/ruby/backward.h
 leap_second.o: $(hdrdir)/ruby/backward/2/assume.h
 leap_second.o: $(hdrdir)/ruby/backward/2/attributes.h
 leap_second.o: $(hdrdir)/ruby/backward/2/bool.h
-leap_second.o: $(hdrdir)/ruby/backward/2/extern.h
 leap_second.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 leap_second.o: $(hdrdir)/ruby/backward/2/inttypes.h
 leap_second.o: $(hdrdir)/ruby/backward/2/limits.h
@@ -479,7 +477,6 @@ new.o: $(hdrdir)/ruby/backward.h
 new.o: $(hdrdir)/ruby/backward/2/assume.h
 new.o: $(hdrdir)/ruby/backward/2/attributes.h
 new.o: $(hdrdir)/ruby/backward/2/bool.h
-new.o: $(hdrdir)/ruby/backward/2/extern.h
 new.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 new.o: $(hdrdir)/ruby/backward/2/inttypes.h
 new.o: $(hdrdir)/ruby/backward/2/limits.h

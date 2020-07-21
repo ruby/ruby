@@ -147,7 +147,6 @@ escape.o: $(hdrdir)/ruby/backward.h
 escape.o: $(hdrdir)/ruby/backward/2/assume.h
 escape.o: $(hdrdir)/ruby/backward/2/attributes.h
 escape.o: $(hdrdir)/ruby/backward/2/bool.h
-escape.o: $(hdrdir)/ruby/backward/2/extern.h
 escape.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 escape.o: $(hdrdir)/ruby/backward/2/inttypes.h
 escape.o: $(hdrdir)/ruby/backward/2/limits.h

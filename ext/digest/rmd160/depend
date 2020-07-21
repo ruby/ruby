@@ -150,7 +150,6 @@ rmd160init.o: $(hdrdir)/ruby/backward.h
 rmd160init.o: $(hdrdir)/ruby/backward/2/assume.h
 rmd160init.o: $(hdrdir)/ruby/backward/2/attributes.h
 rmd160init.o: $(hdrdir)/ruby/backward/2/bool.h
-rmd160init.o: $(hdrdir)/ruby/backward/2/extern.h
 rmd160init.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 rmd160init.o: $(hdrdir)/ruby/backward/2/inttypes.h
 rmd160init.o: $(hdrdir)/ruby/backward/2/limits.h

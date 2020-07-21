@@ -161,7 +161,6 @@ limits.o: $(hdrdir)/ruby/backward.h
 limits.o: $(hdrdir)/ruby/backward/2/assume.h
 limits.o: $(hdrdir)/ruby/backward/2/attributes.h
 limits.o: $(hdrdir)/ruby/backward/2/bool.h
-limits.o: $(hdrdir)/ruby/backward/2/extern.h
 limits.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 limits.o: $(hdrdir)/ruby/backward/2/inttypes.h
 limits.o: $(hdrdir)/ruby/backward/2/limits.h
@@ -324,7 +323,6 @@ sizes.o: $(hdrdir)/ruby/backward.h
 sizes.o: $(hdrdir)/ruby/backward/2/assume.h
 sizes.o: $(hdrdir)/ruby/backward/2/attributes.h
 sizes.o: $(hdrdir)/ruby/backward/2/bool.h
-sizes.o: $(hdrdir)/ruby/backward/2/extern.h
 sizes.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 sizes.o: $(hdrdir)/ruby/backward/2/inttypes.h
 sizes.o: $(hdrdir)/ruby/backward/2/limits.h

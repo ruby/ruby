@@ -147,7 +147,6 @@ funcall.o: $(hdrdir)/ruby/backward.h
 funcall.o: $(hdrdir)/ruby/backward/2/assume.h
 funcall.o: $(hdrdir)/ruby/backward/2/attributes.h
 funcall.o: $(hdrdir)/ruby/backward/2/bool.h
-funcall.o: $(hdrdir)/ruby/backward/2/extern.h
 funcall.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 funcall.o: $(hdrdir)/ruby/backward/2/inttypes.h
 funcall.o: $(hdrdir)/ruby/backward/2/limits.h

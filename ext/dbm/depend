@@ -147,7 +147,6 @@ dbm.o: $(hdrdir)/ruby/backward.h
 dbm.o: $(hdrdir)/ruby/backward/2/assume.h
 dbm.o: $(hdrdir)/ruby/backward/2/attributes.h
 dbm.o: $(hdrdir)/ruby/backward/2/bool.h
-dbm.o: $(hdrdir)/ruby/backward/2/extern.h
 dbm.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 dbm.o: $(hdrdir)/ruby/backward/2/inttypes.h
 dbm.o: $(hdrdir)/ruby/backward/2/limits.h

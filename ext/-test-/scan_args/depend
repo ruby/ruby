@@ -147,7 +147,6 @@ scan_args.o: $(hdrdir)/ruby/backward.h
 scan_args.o: $(hdrdir)/ruby/backward/2/assume.h
 scan_args.o: $(hdrdir)/ruby/backward/2/attributes.h
 scan_args.o: $(hdrdir)/ruby/backward/2/bool.h
-scan_args.o: $(hdrdir)/ruby/backward/2/extern.h
 scan_args.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 scan_args.o: $(hdrdir)/ruby/backward/2/inttypes.h
 scan_args.o: $(hdrdir)/ruby/backward/2/limits.h

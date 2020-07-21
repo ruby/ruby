@@ -147,7 +147,6 @@ core_ext.o: $(hdrdir)/ruby/backward.h
 core_ext.o: $(hdrdir)/ruby/backward/2/assume.h
 core_ext.o: $(hdrdir)/ruby/backward/2/attributes.h
 core_ext.o: $(hdrdir)/ruby/backward/2/bool.h
-core_ext.o: $(hdrdir)/ruby/backward/2/extern.h
 core_ext.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 core_ext.o: $(hdrdir)/ruby/backward/2/inttypes.h
 core_ext.o: $(hdrdir)/ruby/backward/2/limits.h
@@ -320,7 +319,6 @@ init.o: $(hdrdir)/ruby/backward.h
 init.o: $(hdrdir)/ruby/backward/2/assume.h
 init.o: $(hdrdir)/ruby/backward/2/attributes.h
 init.o: $(hdrdir)/ruby/backward/2/bool.h
-init.o: $(hdrdir)/ruby/backward/2/extern.h
 init.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 init.o: $(hdrdir)/ruby/backward/2/inttypes.h
 init.o: $(hdrdir)/ruby/backward/2/limits.h
@@ -484,7 +482,6 @@ my_integer.o: $(hdrdir)/ruby/backward.h
 my_integer.o: $(hdrdir)/ruby/backward/2/assume.h
 my_integer.o: $(hdrdir)/ruby/backward/2/attributes.h
 my_integer.o: $(hdrdir)/ruby/backward/2/bool.h
-my_integer.o: $(hdrdir)/ruby/backward/2/extern.h
 my_integer.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 my_integer.o: $(hdrdir)/ruby/backward/2/inttypes.h
 my_integer.o: $(hdrdir)/ruby/backward/2/limits.h

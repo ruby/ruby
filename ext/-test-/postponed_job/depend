@@ -147,7 +147,6 @@ postponed_job.o: $(hdrdir)/ruby/backward.h
 postponed_job.o: $(hdrdir)/ruby/backward/2/assume.h
 postponed_job.o: $(hdrdir)/ruby/backward/2/attributes.h
 postponed_job.o: $(hdrdir)/ruby/backward/2/bool.h
-postponed_job.o: $(hdrdir)/ruby/backward/2/extern.h
 postponed_job.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 postponed_job.o: $(hdrdir)/ruby/backward/2/inttypes.h
 postponed_job.o: $(hdrdir)/ruby/backward/2/limits.h

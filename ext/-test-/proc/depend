@@ -147,7 +147,6 @@ init.o: $(hdrdir)/ruby/backward.h
 init.o: $(hdrdir)/ruby/backward/2/assume.h
 init.o: $(hdrdir)/ruby/backward/2/attributes.h
 init.o: $(hdrdir)/ruby/backward/2/bool.h
-init.o: $(hdrdir)/ruby/backward/2/extern.h
 init.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 init.o: $(hdrdir)/ruby/backward/2/inttypes.h
 init.o: $(hdrdir)/ruby/backward/2/limits.h
@@ -311,7 +310,6 @@ receiver.o: $(hdrdir)/ruby/backward.h
 receiver.o: $(hdrdir)/ruby/backward/2/assume.h
 receiver.o: $(hdrdir)/ruby/backward/2/attributes.h
 receiver.o: $(hdrdir)/ruby/backward/2/bool.h
-receiver.o: $(hdrdir)/ruby/backward/2/extern.h
 receiver.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 receiver.o: $(hdrdir)/ruby/backward/2/inttypes.h
 receiver.o: $(hdrdir)/ruby/backward/2/limits.h
@@ -475,7 +473,6 @@ super.o: $(hdrdir)/ruby/backward.h
 super.o: $(hdrdir)/ruby/backward/2/assume.h
 super.o: $(hdrdir)/ruby/backward/2/attributes.h
 super.o: $(hdrdir)/ruby/backward/2/bool.h
-super.o: $(hdrdir)/ruby/backward/2/extern.h
 super.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 super.o: $(hdrdir)/ruby/backward/2/inttypes.h
 super.o: $(hdrdir)/ruby/backward/2/limits.h

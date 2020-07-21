@@ -158,7 +158,6 @@ ancdata.o: $(hdrdir)/ruby/backward.h
 ancdata.o: $(hdrdir)/ruby/backward/2/assume.h
 ancdata.o: $(hdrdir)/ruby/backward/2/attributes.h
 ancdata.o: $(hdrdir)/ruby/backward/2/bool.h
-ancdata.o: $(hdrdir)/ruby/backward/2/extern.h
 ancdata.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ancdata.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ancdata.o: $(hdrdir)/ruby/backward/2/limits.h
@@ -343,7 +342,6 @@ basicsocket.o: $(hdrdir)/ruby/backward.h
 basicsocket.o: $(hdrdir)/ruby/backward/2/assume.h
 basicsocket.o: $(hdrdir)/ruby/backward/2/attributes.h
 basicsocket.o: $(hdrdir)/ruby/backward/2/bool.h
-basicsocket.o: $(hdrdir)/ruby/backward/2/extern.h
 basicsocket.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 basicsocket.o: $(hdrdir)/ruby/backward/2/inttypes.h
 basicsocket.o: $(hdrdir)/ruby/backward/2/limits.h
@@ -528,7 +526,6 @@ constants.o: $(hdrdir)/ruby/backward.h
 constants.o: $(hdrdir)/ruby/backward/2/assume.h
 constants.o: $(hdrdir)/ruby/backward/2/attributes.h
 constants.o: $(hdrdir)/ruby/backward/2/bool.h
-constants.o: $(hdrdir)/ruby/backward/2/extern.h
 constants.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 constants.o: $(hdrdir)/ruby/backward/2/inttypes.h
 constants.o: $(hdrdir)/ruby/backward/2/limits.h
@@ -714,7 +711,6 @@ ifaddr.o: $(hdrdir)/ruby/backward.h
 ifaddr.o: $(hdrdir)/ruby/backward/2/assume.h
 ifaddr.o: $(hdrdir)/ruby/backward/2/attributes.h
 ifaddr.o: $(hdrdir)/ruby/backward/2/bool.h
-ifaddr.o: $(hdrdir)/ruby/backward/2/extern.h
 ifaddr.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ifaddr.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ifaddr.o: $(hdrdir)/ruby/backward/2/limits.h
@@ -899,7 +895,6 @@ init.o: $(hdrdir)/ruby/backward.h
 init.o: $(hdrdir)/ruby/backward/2/assume.h
 init.o: $(hdrdir)/ruby/backward/2/attributes.h
 init.o: $(hdrdir)/ruby/backward/2/bool.h
-init.o: $(hdrdir)/ruby/backward/2/extern.h
 init.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 init.o: $(hdrdir)/ruby/backward/2/inttypes.h
 init.o: $(hdrdir)/ruby/backward/2/limits.h
@@ -1084,7 +1079,6 @@ ipsocket.o: $(hdrdir)/ruby/backward.h
 ipsocket.o: $(hdrdir)/ruby/backward/2/assume.h
 ipsocket.o: $(hdrdir)/ruby/backward/2/attributes.h
 ipsocket.o: $(hdrdir)/ruby/backward/2/bool.h
-ipsocket.o: $(hdrdir)/ruby/backward/2/extern.h
 ipsocket.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ipsocket.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ipsocket.o: $(hdrdir)/ruby/backward/2/limits.h
@@ -1269,7 +1263,6 @@ option.o: $(hdrdir)/ruby/backward.h
 option.o: $(hdrdir)/ruby/backward/2/assume.h
 option.o: $(hdrdir)/ruby/backward/2/attributes.h
 option.o: $(hdrdir)/ruby/backward/2/bool.h
-option.o: $(hdrdir)/ruby/backward/2/extern.h
 option.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 option.o: $(hdrdir)/ruby/backward/2/inttypes.h
 option.o: $(hdrdir)/ruby/backward/2/limits.h
@@ -1454,7 +1447,6 @@ raddrinfo.o: $(hdrdir)/ruby/backward.h
 raddrinfo.o: $(hdrdir)/ruby/backward/2/assume.h
 raddrinfo.o: $(hdrdir)/ruby/backward/2/attributes.h
 raddrinfo.o: $(hdrdir)/ruby/backward/2/bool.h
-raddrinfo.o: $(hdrdir)/ruby/backward/2/extern.h
 raddrinfo.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 raddrinfo.o: $(hdrdir)/ruby/backward/2/inttypes.h
 raddrinfo.o: $(hdrdir)/ruby/backward/2/limits.h
@@ -1639,7 +1631,6 @@ socket.o: $(hdrdir)/ruby/backward.h
 socket.o: $(hdrdir)/ruby/backward/2/assume.h
 socket.o: $(hdrdir)/ruby/backward/2/attributes.h
 socket.o: $(hdrdir)/ruby/backward/2/bool.h
-socket.o: $(hdrdir)/ruby/backward/2/extern.h
 socket.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 socket.o: $(hdrdir)/ruby/backward/2/inttypes.h
 socket.o: $(hdrdir)/ruby/backward/2/limits.h
@@ -1824,7 +1815,6 @@ sockssocket.o: $(hdrdir)/ruby/backward.h
 sockssocket.o: $(hdrdir)/ruby/backward/2/assume.h
 sockssocket.o: $(hdrdir)/ruby/backward/2/attributes.h
 sockssocket.o: $(hdrdir)/ruby/backward/2/bool.h
-sockssocket.o: $(hdrdir)/ruby/backward/2/extern.h
 sockssocket.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 sockssocket.o: $(hdrdir)/ruby/backward/2/inttypes.h
 sockssocket.o: $(hdrdir)/ruby/backward/2/limits.h
@@ -2009,7 +1999,6 @@ tcpserver.o: $(hdrdir)/ruby/backward.h
 tcpserver.o: $(hdrdir)/ruby/backward/2/assume.h
 tcpserver.o: $(hdrdir)/ruby/backward/2/attributes.h
 tcpserver.o: $(hdrdir)/ruby/backward/2/bool.h
-tcpserver.o: $(hdrdir)/ruby/backward/2/extern.h
 tcpserver.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 tcpserver.o: $(hdrdir)/ruby/backward/2/inttypes.h
 tcpserver.o: $(hdrdir)/ruby/backward/2/limits.h
@@ -2194,7 +2183,6 @@ tcpsocket.o: $(hdrdir)/ruby/backward.h
 tcpsocket.o: $(hdrdir)/ruby/backward/2/assume.h
 tcpsocket.o: $(hdrdir)/ruby/backward/2/attributes.h
 tcpsocket.o: $(hdrdir)/ruby/backward/2/bool.h
-tcpsocket.o: $(hdrdir)/ruby/backward/2/extern.h
 tcpsocket.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 tcpsocket.o: $(hdrdir)/ruby/backward/2/inttypes.h
 tcpsocket.o: $(hdrdir)/ruby/backward/2/limits.h
@@ -2379,7 +2367,6 @@ udpsocket.o: $(hdrdir)/ruby/backward.h
 udpsocket.o: $(hdrdir)/ruby/backward/2/assume.h
 udpsocket.o: $(hdrdir)/ruby/backward/2/attributes.h
 udpsocket.o: $(hdrdir)/ruby/backward/2/bool.h
-udpsocket.o: $(hdrdir)/ruby/backward/2/extern.h
 udpsocket.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 udpsocket.o: $(hdrdir)/ruby/backward/2/inttypes.h
 udpsocket.o: $(hdrdir)/ruby/backward/2/limits.h
@@ -2564,7 +2551,6 @@ unixserver.o: $(hdrdir)/ruby/backward.h
 unixserver.o: $(hdrdir)/ruby/backward/2/assume.h
 unixserver.o: $(hdrdir)/ruby/backward/2/attributes.h
 unixserver.o: $(hdrdir)/ruby/backward/2/bool.h
-unixserver.o: $(hdrdir)/ruby/backward/2/extern.h
 unixserver.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 unixserver.o: $(hdrdir)/ruby/backward/2/inttypes.h
 unixserver.o: $(hdrdir)/ruby/backward/2/limits.h
@@ -2749,7 +2735,6 @@ unixsocket.o: $(hdrdir)/ruby/backward.h
 unixsocket.o: $(hdrdir)/ruby/backward/2/assume.h
 unixsocket.o: $(hdrdir)/ruby/backward/2/attributes.h
 unixsocket.o: $(hdrdir)/ruby/backward/2/bool.h
-unixsocket.o: $(hdrdir)/ruby/backward/2/extern.h
 unixsocket.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 unixsocket.o: $(hdrdir)/ruby/backward/2/inttypes.h
 unixsocket.o: $(hdrdir)/ruby/backward/2/limits.h

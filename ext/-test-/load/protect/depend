@@ -147,7 +147,6 @@ protect.o: $(hdrdir)/ruby/backward.h
 protect.o: $(hdrdir)/ruby/backward/2/assume.h
 protect.o: $(hdrdir)/ruby/backward/2/attributes.h
 protect.o: $(hdrdir)/ruby/backward/2/bool.h
-protect.o: $(hdrdir)/ruby/backward/2/extern.h
 protect.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 protect.o: $(hdrdir)/ruby/backward/2/inttypes.h
 protect.o: $(hdrdir)/ruby/backward/2/limits.h

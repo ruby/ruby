@@ -146,7 +146,6 @@ class2name.o: $(hdrdir)/ruby/backward.h
 class2name.o: $(hdrdir)/ruby/backward/2/assume.h
 class2name.o: $(hdrdir)/ruby/backward/2/attributes.h
 class2name.o: $(hdrdir)/ruby/backward/2/bool.h
-class2name.o: $(hdrdir)/ruby/backward/2/extern.h
 class2name.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 class2name.o: $(hdrdir)/ruby/backward/2/inttypes.h
 class2name.o: $(hdrdir)/ruby/backward/2/limits.h
@@ -310,7 +309,6 @@ init.o: $(hdrdir)/ruby/backward.h
 init.o: $(hdrdir)/ruby/backward/2/assume.h
 init.o: $(hdrdir)/ruby/backward/2/attributes.h
 init.o: $(hdrdir)/ruby/backward/2/bool.h
-init.o: $(hdrdir)/ruby/backward/2/extern.h
 init.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 init.o: $(hdrdir)/ruby/backward/2/inttypes.h
 init.o: $(hdrdir)/ruby/backward/2/limits.h

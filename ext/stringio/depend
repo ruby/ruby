@@ -147,7 +147,6 @@ stringio.o: $(hdrdir)/ruby/backward.h
 stringio.o: $(hdrdir)/ruby/backward/2/assume.h
 stringio.o: $(hdrdir)/ruby/backward/2/attributes.h
 stringio.o: $(hdrdir)/ruby/backward/2/bool.h
-stringio.o: $(hdrdir)/ruby/backward/2/extern.h
 stringio.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 stringio.o: $(hdrdir)/ruby/backward/2/inttypes.h
 stringio.o: $(hdrdir)/ruby/backward/2/limits.h

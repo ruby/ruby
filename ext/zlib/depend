@@ -147,7 +147,6 @@ zlib.o: $(hdrdir)/ruby/backward.h
 zlib.o: $(hdrdir)/ruby/backward/2/assume.h
 zlib.o: $(hdrdir)/ruby/backward/2/attributes.h
 zlib.o: $(hdrdir)/ruby/backward/2/bool.h
-zlib.o: $(hdrdir)/ruby/backward/2/extern.h
 zlib.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 zlib.o: $(hdrdir)/ruby/backward/2/inttypes.h
 zlib.o: $(hdrdir)/ruby/backward/2/limits.h

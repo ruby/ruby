@@ -151,7 +151,6 @@ generator.o: $(hdrdir)/ruby/backward.h
 generator.o: $(hdrdir)/ruby/backward/2/assume.h
 generator.o: $(hdrdir)/ruby/backward/2/attributes.h
 generator.o: $(hdrdir)/ruby/backward/2/bool.h
-generator.o: $(hdrdir)/ruby/backward/2/extern.h
 generator.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 generator.o: $(hdrdir)/ruby/backward/2/inttypes.h
 generator.o: $(hdrdir)/ruby/backward/2/limits.h
