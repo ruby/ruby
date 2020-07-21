@@ -146,7 +146,6 @@ call_without_gvl.o: $(hdrdir)/ruby/backward.h
 call_without_gvl.o: $(hdrdir)/ruby/backward/2/assume.h
 call_without_gvl.o: $(hdrdir)/ruby/backward/2/attributes.h
 call_without_gvl.o: $(hdrdir)/ruby/backward/2/bool.h
-call_without_gvl.o: $(hdrdir)/ruby/backward/2/extern.h
 call_without_gvl.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 call_without_gvl.o: $(hdrdir)/ruby/backward/2/inttypes.h
 call_without_gvl.o: $(hdrdir)/ruby/backward/2/limits.h

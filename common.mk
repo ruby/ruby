@@ -1615,7 +1615,6 @@ addr2line.$(OBJEXT): {$(VPATH)}assert.h
 addr2line.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 addr2line.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 addr2line.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-addr2line.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 addr2line.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 addr2line.$(OBJEXT): {$(VPATH)}backward/2/long_long.h
 addr2line.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
@@ -1692,7 +1691,6 @@ array.$(OBJEXT): {$(VPATH)}assert.h
 array.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 array.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 array.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-array.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 array.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 array.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 array.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -1882,7 +1880,6 @@ ast.$(OBJEXT): {$(VPATH)}ast.rbinc
 ast.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 ast.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 ast.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-ast.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 ast.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 ast.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 ast.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -2075,7 +2072,6 @@ bignum.$(OBJEXT): {$(VPATH)}assert.h
 bignum.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 bignum.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 bignum.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-bignum.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 bignum.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 bignum.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 bignum.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -2256,7 +2252,6 @@ builtin.$(OBJEXT): {$(VPATH)}assert.h
 builtin.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 builtin.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 builtin.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-builtin.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 builtin.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 builtin.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 builtin.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -2450,7 +2445,6 @@ class.$(OBJEXT): {$(VPATH)}assert.h
 class.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 class.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 class.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-class.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 class.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 class.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 class.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -2634,7 +2628,6 @@ compar.$(OBJEXT): {$(VPATH)}assert.h
 compar.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 compar.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 compar.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-compar.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 compar.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 compar.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 compar.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -2829,7 +2822,6 @@ compile.$(OBJEXT): {$(VPATH)}assert.h
 compile.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 compile.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 compile.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-compile.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 compile.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 compile.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 compile.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -3041,7 +3033,6 @@ complex.$(OBJEXT): {$(VPATH)}assert.h
 complex.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 complex.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 complex.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-complex.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 complex.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 complex.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 complex.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -3226,7 +3217,6 @@ cont.$(OBJEXT): {$(VPATH)}assert.h
 cont.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 cont.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 cont.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-cont.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 cont.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 cont.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 cont.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -3417,7 +3407,6 @@ debug.$(OBJEXT): {$(VPATH)}assert.h
 debug.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 debug.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 debug.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-debug.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 debug.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 debug.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 debug.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -3600,7 +3589,6 @@ debug_counter.$(OBJEXT): {$(VPATH)}assert.h
 debug_counter.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 debug_counter.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 debug_counter.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-debug_counter.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 debug_counter.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 debug_counter.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 debug_counter.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -3777,7 +3765,6 @@ dir.$(OBJEXT): {$(VPATH)}assert.h
 dir.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 dir.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 dir.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-dir.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 dir.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 dir.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 dir.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -3952,7 +3939,6 @@ dln.$(OBJEXT): {$(VPATH)}assert.h
 dln.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 dln.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 dln.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-dln.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 dln.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 dln.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 dln.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -4115,7 +4101,6 @@ dln_find.$(OBJEXT): {$(VPATH)}assert.h
 dln_find.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 dln_find.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 dln_find.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-dln_find.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 dln_find.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 dln_find.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 dln_find.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -4277,7 +4262,6 @@ dmydln.$(OBJEXT): {$(VPATH)}assert.h
 dmydln.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 dmydln.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 dmydln.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-dmydln.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 dmydln.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 dmydln.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 dmydln.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -4493,7 +4477,6 @@ encoding.$(OBJEXT): {$(VPATH)}assert.h
 encoding.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 encoding.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 encoding.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-encoding.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 encoding.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 encoding.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 encoding.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -4683,7 +4666,6 @@ enum.$(OBJEXT): {$(VPATH)}assert.h
 enum.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 enum.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 enum.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-enum.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 enum.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 enum.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 enum.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -4872,7 +4854,6 @@ enumerator.$(OBJEXT): {$(VPATH)}assert.h
 enumerator.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 enumerator.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 enumerator.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-enumerator.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 enumerator.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 enumerator.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 enumerator.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -5061,7 +5042,6 @@ error.$(OBJEXT): {$(VPATH)}assert.h
 error.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 error.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 error.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-error.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 error.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 error.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 error.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -5265,7 +5245,6 @@ eval.$(OBJEXT): {$(VPATH)}assert.h
 eval.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 eval.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 eval.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-eval.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 eval.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 eval.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 eval.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -5485,7 +5464,6 @@ file.$(OBJEXT): {$(VPATH)}assert.h
 file.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 file.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 file.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-file.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 file.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 file.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 file.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -5690,7 +5668,6 @@ gc.$(OBJEXT): {$(VPATH)}assert.h
 gc.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 gc.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 gc.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-gc.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 gc.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 gc.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 gc.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -5899,7 +5876,6 @@ golf_prelude.$(OBJEXT): {$(VPATH)}assert.h
 golf_prelude.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 golf_prelude.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 golf_prelude.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-golf_prelude.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 golf_prelude.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 golf_prelude.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 golf_prelude.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -6074,7 +6050,6 @@ goruby.$(OBJEXT): {$(VPATH)}backward.h
 goruby.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 goruby.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 goruby.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-goruby.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 goruby.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 goruby.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 goruby.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -6257,7 +6232,6 @@ hash.$(OBJEXT): {$(VPATH)}assert.h
 hash.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 hash.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 hash.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-hash.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 hash.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 hash.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 hash.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -6435,7 +6409,6 @@ inits.$(OBJEXT): {$(VPATH)}assert.h
 inits.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 inits.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 inits.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-inits.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 inits.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 inits.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 inits.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -6627,7 +6600,6 @@ io.$(OBJEXT): {$(VPATH)}assert.h
 io.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 io.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 io.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-io.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 io.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 io.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 io.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -6834,7 +6806,6 @@ iseq.$(OBJEXT): {$(VPATH)}assert.h
 iseq.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 iseq.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 iseq.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-iseq.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 iseq.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 iseq.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 iseq.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -7043,7 +7014,6 @@ load.$(OBJEXT): {$(VPATH)}assert.h
 load.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 load.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 load.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-load.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 load.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 load.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 load.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -7227,7 +7197,6 @@ loadpath.$(OBJEXT): {$(VPATH)}assert.h
 loadpath.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 loadpath.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 loadpath.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-loadpath.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 loadpath.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 loadpath.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 loadpath.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -7390,7 +7359,6 @@ localeinit.$(OBJEXT): {$(VPATH)}assert.h
 localeinit.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 localeinit.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 localeinit.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-localeinit.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 localeinit.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 localeinit.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 localeinit.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -7558,7 +7526,6 @@ main.$(OBJEXT): {$(VPATH)}backward.h
 main.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 main.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 main.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-main.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 main.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 main.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 main.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -7738,7 +7705,6 @@ marshal.$(OBJEXT): {$(VPATH)}assert.h
 marshal.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 marshal.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 marshal.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-marshal.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 marshal.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 marshal.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 marshal.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -7918,7 +7884,6 @@ math.$(OBJEXT): {$(VPATH)}assert.h
 math.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 math.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 math.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-math.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 math.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 math.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 math.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -8096,7 +8061,6 @@ miniinit.$(OBJEXT): {$(VPATH)}ast.rb
 miniinit.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 miniinit.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 miniinit.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-miniinit.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 miniinit.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 miniinit.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 miniinit.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -8334,7 +8298,6 @@ mjit.$(OBJEXT): {$(VPATH)}assert.h
 mjit.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 mjit.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 mjit.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-mjit.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 mjit.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 mjit.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 mjit.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -8550,7 +8513,6 @@ mjit_compile.$(OBJEXT): {$(VPATH)}assert.h
 mjit_compile.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 mjit_compile.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 mjit_compile.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-mjit_compile.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 mjit_compile.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 mjit_compile.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 mjit_compile.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -8749,7 +8711,6 @@ node.$(OBJEXT): {$(VPATH)}assert.h
 node.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 node.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 node.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-node.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 node.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 node.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 node.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -8942,7 +8903,6 @@ numeric.$(OBJEXT): {$(VPATH)}assert.h
 numeric.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 numeric.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 numeric.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-numeric.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 numeric.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 numeric.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 numeric.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -9136,7 +9096,6 @@ object.$(OBJEXT): {$(VPATH)}assert.h
 object.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 object.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 object.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-object.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 object.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 object.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 object.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -9320,7 +9279,6 @@ pack.$(OBJEXT): {$(VPATH)}assert.h
 pack.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 pack.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 pack.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-pack.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 pack.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 pack.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 pack.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -9515,7 +9473,6 @@ parse.$(OBJEXT): {$(VPATH)}assert.h
 parse.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 parse.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 parse.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-parse.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 parse.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 parse.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 parse.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -9742,7 +9699,6 @@ proc.$(OBJEXT): {$(VPATH)}assert.h
 proc.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 proc.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 proc.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-proc.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 proc.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 proc.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 proc.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -9945,7 +9901,6 @@ process.$(OBJEXT): {$(VPATH)}assert.h
 process.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 process.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 process.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-process.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 process.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 process.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 process.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -10140,7 +10095,6 @@ random.$(OBJEXT): {$(VPATH)}assert.h
 random.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 random.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 random.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-random.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 random.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 random.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 random.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -10328,7 +10282,6 @@ range.$(OBJEXT): {$(VPATH)}assert.h
 range.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 range.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 range.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-range.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 range.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 range.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 range.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -10512,7 +10465,6 @@ rational.$(OBJEXT): {$(VPATH)}assert.h
 rational.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 rational.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 rational.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-rational.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 rational.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 rational.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 rational.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -10691,7 +10643,6 @@ re.$(OBJEXT): {$(VPATH)}assert.h
 re.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 re.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 re.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-re.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 re.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 re.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 re.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -10863,7 +10814,6 @@ regcomp.$(OBJEXT): {$(VPATH)}assert.h
 regcomp.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 regcomp.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 regcomp.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-regcomp.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 regcomp.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 regcomp.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 regcomp.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -11028,7 +10978,6 @@ regenc.$(OBJEXT): {$(VPATH)}assert.h
 regenc.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 regenc.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 regenc.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-regenc.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 regenc.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 regenc.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 regenc.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -11192,7 +11141,6 @@ regerror.$(OBJEXT): {$(VPATH)}assert.h
 regerror.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 regerror.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 regerror.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-regerror.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 regerror.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 regerror.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 regerror.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -11356,7 +11304,6 @@ regexec.$(OBJEXT): {$(VPATH)}assert.h
 regexec.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 regexec.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 regexec.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-regexec.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 regexec.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 regexec.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 regexec.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -11520,7 +11467,6 @@ regparse.$(OBJEXT): {$(VPATH)}assert.h
 regparse.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 regparse.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 regparse.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-regparse.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 regparse.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 regparse.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 regparse.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -11685,7 +11631,6 @@ regsyntax.$(OBJEXT): {$(VPATH)}assert.h
 regsyntax.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 regsyntax.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 regsyntax.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-regsyntax.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 regsyntax.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 regsyntax.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 regsyntax.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -11888,7 +11833,6 @@ ruby.$(OBJEXT): {$(VPATH)}assert.h
 ruby.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 ruby.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 ruby.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-ruby.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 ruby.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 ruby.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 ruby.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -12072,7 +12016,6 @@ setproctitle.$(OBJEXT): {$(VPATH)}assert.h
 setproctitle.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 setproctitle.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 setproctitle.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-setproctitle.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 setproctitle.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 setproctitle.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 setproctitle.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -12252,7 +12195,6 @@ signal.$(OBJEXT): {$(VPATH)}assert.h
 signal.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 signal.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 signal.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-signal.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 signal.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 signal.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 signal.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -12446,7 +12388,6 @@ sprintf.$(OBJEXT): {$(VPATH)}assert.h
 sprintf.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 sprintf.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 sprintf.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-sprintf.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 sprintf.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 sprintf.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 sprintf.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -12623,7 +12564,6 @@ st.$(OBJEXT): {$(VPATH)}assert.h
 st.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 st.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 st.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-st.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 st.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 st.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 st.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -12792,7 +12732,6 @@ strftime.$(OBJEXT): {$(VPATH)}assert.h
 strftime.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 strftime.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 strftime.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-strftime.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 strftime.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 strftime.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 strftime.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -12980,7 +12919,6 @@ string.$(OBJEXT): {$(VPATH)}assert.h
 string.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 string.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 string.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-string.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 string.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 string.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 string.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -13205,7 +13143,6 @@ struct.$(OBJEXT): {$(VPATH)}assert.h
 struct.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 struct.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 struct.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-struct.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 struct.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 struct.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 struct.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -13395,7 +13332,6 @@ symbol.$(OBJEXT): {$(VPATH)}assert.h
 symbol.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 symbol.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 symbol.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-symbol.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 symbol.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 symbol.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 symbol.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -13593,7 +13529,6 @@ thread.$(OBJEXT): {$(VPATH)}assert.h
 thread.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 thread.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 thread.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-thread.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 thread.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 thread.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 thread.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -13797,7 +13732,6 @@ time.$(OBJEXT): {$(VPATH)}assert.h
 time.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 time.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 time.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-time.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 time.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 time.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 time.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -13978,7 +13912,6 @@ transcode.$(OBJEXT): {$(VPATH)}assert.h
 transcode.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 transcode.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 transcode.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-transcode.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 transcode.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 transcode.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 transcode.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -14155,7 +14088,6 @@ transient_heap.$(OBJEXT): {$(VPATH)}assert.h
 transient_heap.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 transient_heap.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 transient_heap.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-transient_heap.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 transient_heap.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 transient_heap.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 transient_heap.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -14330,7 +14262,6 @@ util.$(OBJEXT): {$(VPATH)}assert.h
 util.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 util.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 util.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-util.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 util.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 util.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 util.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -14517,7 +14448,6 @@ variable.$(OBJEXT): {$(VPATH)}assert.h
 variable.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 variable.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 variable.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-variable.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 variable.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 variable.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 variable.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -14713,7 +14643,6 @@ version.$(OBJEXT): {$(VPATH)}assert.h
 version.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 version.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 version.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-version.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 version.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 version.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 version.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -14920,7 +14849,6 @@ vm.$(OBJEXT): {$(VPATH)}assert.h
 vm.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 vm.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 vm.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-vm.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 vm.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 vm.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 vm.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -15136,7 +15064,6 @@ vm_backtrace.$(OBJEXT): {$(VPATH)}assert.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-vm_backtrace.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -15328,7 +15255,6 @@ vm_dump.$(OBJEXT): {$(VPATH)}assert.h
 vm_dump.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 vm_dump.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 vm_dump.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-vm_dump.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 vm_dump.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 vm_dump.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 vm_dump.$(OBJEXT): {$(VPATH)}backward/2/limits.h
@@ -15519,7 +15445,6 @@ vm_trace.$(OBJEXT): {$(VPATH)}assert.h
 vm_trace.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 vm_trace.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 vm_trace.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-vm_trace.$(OBJEXT): {$(VPATH)}backward/2/extern.h
 vm_trace.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 vm_trace.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 vm_trace.$(OBJEXT): {$(VPATH)}backward/2/limits.h

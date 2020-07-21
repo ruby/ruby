@@ -147,7 +147,6 @@ delete.o: $(hdrdir)/ruby/backward.h
 delete.o: $(hdrdir)/ruby/backward/2/assume.h
 delete.o: $(hdrdir)/ruby/backward/2/attributes.h
 delete.o: $(hdrdir)/ruby/backward/2/bool.h
-delete.o: $(hdrdir)/ruby/backward/2/extern.h
 delete.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 delete.o: $(hdrdir)/ruby/backward/2/inttypes.h
 delete.o: $(hdrdir)/ruby/backward/2/limits.h
@@ -311,7 +310,6 @@ init.o: $(hdrdir)/ruby/backward.h
 init.o: $(hdrdir)/ruby/backward/2/assume.h
 init.o: $(hdrdir)/ruby/backward/2/attributes.h
 init.o: $(hdrdir)/ruby/backward/2/bool.h
-init.o: $(hdrdir)/ruby/backward/2/extern.h
 init.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 init.o: $(hdrdir)/ruby/backward/2/inttypes.h
 init.o: $(hdrdir)/ruby/backward/2/limits.h

@@ -147,7 +147,6 @@ foreach.o: $(hdrdir)/ruby/backward.h
 foreach.o: $(hdrdir)/ruby/backward/2/assume.h
 foreach.o: $(hdrdir)/ruby/backward/2/attributes.h
 foreach.o: $(hdrdir)/ruby/backward/2/bool.h
-foreach.o: $(hdrdir)/ruby/backward/2/extern.h
 foreach.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 foreach.o: $(hdrdir)/ruby/backward/2/inttypes.h
 foreach.o: $(hdrdir)/ruby/backward/2/limits.h

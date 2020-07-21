@@ -150,7 +150,6 @@ sha1init.o: $(hdrdir)/ruby/backward.h
 sha1init.o: $(hdrdir)/ruby/backward/2/assume.h
 sha1init.o: $(hdrdir)/ruby/backward/2/attributes.h
 sha1init.o: $(hdrdir)/ruby/backward/2/bool.h
-sha1init.o: $(hdrdir)/ruby/backward/2/extern.h
 sha1init.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 sha1init.o: $(hdrdir)/ruby/backward/2/inttypes.h
 sha1init.o: $(hdrdir)/ruby/backward/2/limits.h

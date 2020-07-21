@@ -197,7 +197,6 @@ ripper.o: $(hdrdir)/ruby/backward.h
 ripper.o: $(hdrdir)/ruby/backward/2/assume.h
 ripper.o: $(hdrdir)/ruby/backward/2/attributes.h
 ripper.o: $(hdrdir)/ruby/backward/2/bool.h
-ripper.o: $(hdrdir)/ruby/backward/2/extern.h
 ripper.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ripper.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ripper.o: $(hdrdir)/ruby/backward/2/limits.h

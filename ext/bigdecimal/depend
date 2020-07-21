@@ -148,7 +148,6 @@ bigdecimal.o: $(hdrdir)/ruby/assert.h
 bigdecimal.o: $(hdrdir)/ruby/backward/2/assume.h
 bigdecimal.o: $(hdrdir)/ruby/backward/2/attributes.h
 bigdecimal.o: $(hdrdir)/ruby/backward/2/bool.h
-bigdecimal.o: $(hdrdir)/ruby/backward/2/extern.h
 bigdecimal.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 bigdecimal.o: $(hdrdir)/ruby/backward/2/inttypes.h
 bigdecimal.o: $(hdrdir)/ruby/backward/2/limits.h

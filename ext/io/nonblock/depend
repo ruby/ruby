@@ -147,7 +147,6 @@ nonblock.o: $(hdrdir)/ruby/backward.h
 nonblock.o: $(hdrdir)/ruby/backward/2/assume.h
 nonblock.o: $(hdrdir)/ruby/backward/2/attributes.h
 nonblock.o: $(hdrdir)/ruby/backward/2/bool.h
-nonblock.o: $(hdrdir)/ruby/backward/2/extern.h
 nonblock.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 nonblock.o: $(hdrdir)/ruby/backward/2/inttypes.h
 nonblock.o: $(hdrdir)/ruby/backward/2/limits.h

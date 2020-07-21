@@ -147,7 +147,6 @@ console.o: $(hdrdir)/ruby/backward.h
 console.o: $(hdrdir)/ruby/backward/2/assume.h
 console.o: $(hdrdir)/ruby/backward/2/attributes.h
 console.o: $(hdrdir)/ruby/backward/2/bool.h
-console.o: $(hdrdir)/ruby/backward/2/extern.h
 console.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 console.o: $(hdrdir)/ruby/backward/2/inttypes.h
 console.o: $(hdrdir)/ruby/backward/2/limits.h

@@ -73,7 +73,6 @@
 #include "ruby/backward/2/assume.h"
 #include "ruby/backward/2/attributes.h"
 #include "ruby/backward/2/bool.h"
-#include "ruby/backward/2/extern.h"
 #include "ruby/backward/2/gcc_version_since.h"
 #include "ruby/backward/2/long_long.h"
 #include "ruby/backward/2/stdalign.h"

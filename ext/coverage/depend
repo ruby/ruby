@@ -147,7 +147,6 @@ coverage.o: $(hdrdir)/ruby/backward.h
 coverage.o: $(hdrdir)/ruby/backward/2/assume.h
 coverage.o: $(hdrdir)/ruby/backward/2/attributes.h
 coverage.o: $(hdrdir)/ruby/backward/2/bool.h
-coverage.o: $(hdrdir)/ruby/backward/2/extern.h
 coverage.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 coverage.o: $(hdrdir)/ruby/backward/2/inttypes.h
 coverage.o: $(hdrdir)/ruby/backward/2/limits.h

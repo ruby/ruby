@@ -146,7 +146,6 @@ monitor.o: $(hdrdir)/ruby/backward.h
 monitor.o: $(hdrdir)/ruby/backward/2/assume.h
 monitor.o: $(hdrdir)/ruby/backward/2/attributes.h
 monitor.o: $(hdrdir)/ruby/backward/2/bool.h
-monitor.o: $(hdrdir)/ruby/backward/2/extern.h
 monitor.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 monitor.o: $(hdrdir)/ruby/backward/2/inttypes.h
 monitor.o: $(hdrdir)/ruby/backward/2/limits.h

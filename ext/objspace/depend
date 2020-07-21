@@ -147,7 +147,6 @@ object_tracing.o: $(hdrdir)/ruby/backward.h
 object_tracing.o: $(hdrdir)/ruby/backward/2/assume.h
 object_tracing.o: $(hdrdir)/ruby/backward/2/attributes.h
 object_tracing.o: $(hdrdir)/ruby/backward/2/bool.h
-object_tracing.o: $(hdrdir)/ruby/backward/2/extern.h
 object_tracing.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 object_tracing.o: $(hdrdir)/ruby/backward/2/inttypes.h
 object_tracing.o: $(hdrdir)/ruby/backward/2/limits.h
@@ -315,7 +314,6 @@ objspace.o: $(hdrdir)/ruby/backward.h
 objspace.o: $(hdrdir)/ruby/backward/2/assume.h
 objspace.o: $(hdrdir)/ruby/backward/2/attributes.h
 objspace.o: $(hdrdir)/ruby/backward/2/bool.h
-objspace.o: $(hdrdir)/ruby/backward/2/extern.h
 objspace.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 objspace.o: $(hdrdir)/ruby/backward/2/inttypes.h
 objspace.o: $(hdrdir)/ruby/backward/2/limits.h
@@ -500,7 +498,6 @@ objspace_dump.o: $(hdrdir)/ruby/backward.h
 objspace_dump.o: $(hdrdir)/ruby/backward/2/assume.h
 objspace_dump.o: $(hdrdir)/ruby/backward/2/attributes.h
 objspace_dump.o: $(hdrdir)/ruby/backward/2/bool.h
-objspace_dump.o: $(hdrdir)/ruby/backward/2/extern.h
 objspace_dump.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 objspace_dump.o: $(hdrdir)/ruby/backward/2/inttypes.h
 objspace_dump.o: $(hdrdir)/ruby/backward/2/limits.h

@@ -147,7 +147,6 @@ break.o: $(hdrdir)/ruby/backward.h
 break.o: $(hdrdir)/ruby/backward/2/assume.h
 break.o: $(hdrdir)/ruby/backward/2/attributes.h
 break.o: $(hdrdir)/ruby/backward/2/bool.h
-break.o: $(hdrdir)/ruby/backward/2/extern.h
 break.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 break.o: $(hdrdir)/ruby/backward/2/inttypes.h
 break.o: $(hdrdir)/ruby/backward/2/limits.h
@@ -311,7 +310,6 @@ init.o: $(hdrdir)/ruby/backward.h
 init.o: $(hdrdir)/ruby/backward/2/assume.h
 init.o: $(hdrdir)/ruby/backward/2/attributes.h
 init.o: $(hdrdir)/ruby/backward/2/bool.h
-init.o: $(hdrdir)/ruby/backward/2/extern.h
 init.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 init.o: $(hdrdir)/ruby/backward/2/inttypes.h
 init.o: $(hdrdir)/ruby/backward/2/limits.h
@@ -475,7 +473,6 @@ yield.o: $(hdrdir)/ruby/backward.h
 yield.o: $(hdrdir)/ruby/backward/2/assume.h
 yield.o: $(hdrdir)/ruby/backward/2/attributes.h
 yield.o: $(hdrdir)/ruby/backward/2/bool.h
-yield.o: $(hdrdir)/ruby/backward/2/extern.h
 yield.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 yield.o: $(hdrdir)/ruby/backward/2/inttypes.h
 yield.o: $(hdrdir)/ruby/backward/2/limits.h

@@ -147,7 +147,6 @@ iseq_load.o: $(hdrdir)/ruby/backward.h
 iseq_load.o: $(hdrdir)/ruby/backward/2/assume.h
 iseq_load.o: $(hdrdir)/ruby/backward/2/attributes.h
 iseq_load.o: $(hdrdir)/ruby/backward/2/bool.h
-iseq_load.o: $(hdrdir)/ruby/backward/2/extern.h
 iseq_load.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 iseq_load.o: $(hdrdir)/ruby/backward/2/inttypes.h
 iseq_load.o: $(hdrdir)/ruby/backward/2/limits.h

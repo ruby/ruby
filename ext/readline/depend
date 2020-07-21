@@ -146,7 +146,6 @@ readline.o: $(hdrdir)/ruby/backward.h
 readline.o: $(hdrdir)/ruby/backward/2/assume.h
 readline.o: $(hdrdir)/ruby/backward/2/attributes.h
 readline.o: $(hdrdir)/ruby/backward/2/bool.h
-readline.o: $(hdrdir)/ruby/backward/2/extern.h
 readline.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 readline.o: $(hdrdir)/ruby/backward/2/inttypes.h
 readline.o: $(hdrdir)/ruby/backward/2/limits.h

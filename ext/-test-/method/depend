@@ -147,7 +147,6 @@ arity.o: $(hdrdir)/ruby/backward.h
 arity.o: $(hdrdir)/ruby/backward/2/assume.h
 arity.o: $(hdrdir)/ruby/backward/2/attributes.h
 arity.o: $(hdrdir)/ruby/backward/2/bool.h
-arity.o: $(hdrdir)/ruby/backward/2/extern.h
 arity.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 arity.o: $(hdrdir)/ruby/backward/2/inttypes.h
 arity.o: $(hdrdir)/ruby/backward/2/limits.h
@@ -311,7 +310,6 @@ init.o: $(hdrdir)/ruby/backward.h
 init.o: $(hdrdir)/ruby/backward/2/assume.h
 init.o: $(hdrdir)/ruby/backward/2/attributes.h
 init.o: $(hdrdir)/ruby/backward/2/bool.h
-init.o: $(hdrdir)/ruby/backward/2/extern.h
 init.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 init.o: $(hdrdir)/ruby/backward/2/inttypes.h
 init.o: $(hdrdir)/ruby/backward/2/limits.h

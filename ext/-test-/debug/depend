@@ -147,7 +147,6 @@ init.o: $(hdrdir)/ruby/backward.h
 init.o: $(hdrdir)/ruby/backward/2/assume.h
 init.o: $(hdrdir)/ruby/backward/2/attributes.h
 init.o: $(hdrdir)/ruby/backward/2/bool.h
-init.o: $(hdrdir)/ruby/backward/2/extern.h
 init.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 init.o: $(hdrdir)/ruby/backward/2/inttypes.h
 init.o: $(hdrdir)/ruby/backward/2/limits.h
@@ -310,7 +309,6 @@ inspector.o: $(hdrdir)/ruby/backward.h
 inspector.o: $(hdrdir)/ruby/backward/2/assume.h
 inspector.o: $(hdrdir)/ruby/backward/2/attributes.h
 inspector.o: $(hdrdir)/ruby/backward/2/bool.h
-inspector.o: $(hdrdir)/ruby/backward/2/extern.h
 inspector.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 inspector.o: $(hdrdir)/ruby/backward/2/inttypes.h
 inspector.o: $(hdrdir)/ruby/backward/2/limits.h
@@ -474,7 +472,6 @@ profile_frames.o: $(hdrdir)/ruby/backward.h
 profile_frames.o: $(hdrdir)/ruby/backward/2/assume.h
 profile_frames.o: $(hdrdir)/ruby/backward/2/attributes.h
 profile_frames.o: $(hdrdir)/ruby/backward/2/bool.h
-profile_frames.o: $(hdrdir)/ruby/backward/2/extern.h
 profile_frames.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 profile_frames.o: $(hdrdir)/ruby/backward/2/inttypes.h
 profile_frames.o: $(hdrdir)/ruby/backward/2/limits.h

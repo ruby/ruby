@@ -146,7 +146,6 @@ dataerror.o: $(hdrdir)/ruby/backward.h
 dataerror.o: $(hdrdir)/ruby/backward/2/assume.h
 dataerror.o: $(hdrdir)/ruby/backward/2/attributes.h
 dataerror.o: $(hdrdir)/ruby/backward/2/bool.h
-dataerror.o: $(hdrdir)/ruby/backward/2/extern.h
 dataerror.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 dataerror.o: $(hdrdir)/ruby/backward/2/inttypes.h
 dataerror.o: $(hdrdir)/ruby/backward/2/limits.h
@@ -310,7 +309,6 @@ enc_raise.o: $(hdrdir)/ruby/backward.h
 enc_raise.o: $(hdrdir)/ruby/backward/2/assume.h
 enc_raise.o: $(hdrdir)/ruby/backward/2/attributes.h
 enc_raise.o: $(hdrdir)/ruby/backward/2/bool.h
-enc_raise.o: $(hdrdir)/ruby/backward/2/extern.h
 enc_raise.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 enc_raise.o: $(hdrdir)/ruby/backward/2/inttypes.h
 enc_raise.o: $(hdrdir)/ruby/backward/2/limits.h
@@ -477,7 +475,6 @@ ensured.o: $(hdrdir)/ruby/backward.h
 ensured.o: $(hdrdir)/ruby/backward/2/assume.h
 ensured.o: $(hdrdir)/ruby/backward/2/attributes.h
 ensured.o: $(hdrdir)/ruby/backward/2/bool.h
-ensured.o: $(hdrdir)/ruby/backward/2/extern.h
 ensured.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ensured.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ensured.o: $(hdrdir)/ruby/backward/2/limits.h
@@ -641,7 +638,6 @@ init.o: $(hdrdir)/ruby/backward.h
 init.o: $(hdrdir)/ruby/backward/2/assume.h
 init.o: $(hdrdir)/ruby/backward/2/attributes.h
 init.o: $(hdrdir)/ruby/backward/2/bool.h
-init.o: $(hdrdir)/ruby/backward/2/extern.h
 init.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 init.o: $(hdrdir)/ruby/backward/2/inttypes.h
 init.o: $(hdrdir)/ruby/backward/2/limits.h

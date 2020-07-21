@@ -147,7 +147,6 @@ rb_call_super_kw.o: $(hdrdir)/ruby/backward.h
 rb_call_super_kw.o: $(hdrdir)/ruby/backward/2/assume.h
 rb_call_super_kw.o: $(hdrdir)/ruby/backward/2/attributes.h
 rb_call_super_kw.o: $(hdrdir)/ruby/backward/2/bool.h
-rb_call_super_kw.o: $(hdrdir)/ruby/backward/2/extern.h
 rb_call_super_kw.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 rb_call_super_kw.o: $(hdrdir)/ruby/backward/2/inttypes.h
 rb_call_super_kw.o: $(hdrdir)/ruby/backward/2/limits.h

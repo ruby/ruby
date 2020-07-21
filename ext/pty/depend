@@ -147,7 +147,6 @@ pty.o: $(hdrdir)/ruby/backward.h
 pty.o: $(hdrdir)/ruby/backward/2/assume.h
 pty.o: $(hdrdir)/ruby/backward/2/attributes.h
 pty.o: $(hdrdir)/ruby/backward/2/bool.h
-pty.o: $(hdrdir)/ruby/backward/2/extern.h
 pty.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 pty.o: $(hdrdir)/ruby/backward/2/inttypes.h
 pty.o: $(hdrdir)/ruby/backward/2/limits.h

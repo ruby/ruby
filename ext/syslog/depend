@@ -146,7 +146,6 @@ syslog.o: $(hdrdir)/ruby/backward.h
 syslog.o: $(hdrdir)/ruby/backward/2/assume.h
 syslog.o: $(hdrdir)/ruby/backward/2/attributes.h
 syslog.o: $(hdrdir)/ruby/backward/2/bool.h
-syslog.o: $(hdrdir)/ruby/backward/2/extern.h
 syslog.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 syslog.o: $(hdrdir)/ruby/backward/2/inttypes.h
 syslog.o: $(hdrdir)/ruby/backward/2/limits.h
