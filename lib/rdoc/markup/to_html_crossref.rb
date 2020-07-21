@@ -62,7 +62,7 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
 
     name = name[1..-1] unless @show_hash if name[0, 1] == '#'
 
-    if name =~ /(.*[^#:])@/
+    if !(name.end_with?('+@', '-@')) and name =~ /(.*[^#:])@/
       text ||= "#{CGI.unescape $'} at <code>#{$1}</code>"
       code = false
     else
@@ -138,7 +138,7 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
   # Creates an HTML link to +name+ with the given +text+.
 
   def link name, text, code = true
-    if name =~ /(.*[^#:])@/ then
+    if !(name.end_with?('+@', '-@')) and name =~ /(.*[^#:])@/
       name = $1
       label = $'
     end
