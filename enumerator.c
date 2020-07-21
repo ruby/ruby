@@ -1605,6 +1605,7 @@ lazy_init_block_i(RB_BLOCK_CALL_FUNC_ARGLIST(val, m))
 #define LAZY_MEMO_BREAK_P(memo) ((memo)->memo_flags & LAZY_MEMO_BREAK)
 #define LAZY_MEMO_PACKED_P(memo) ((memo)->memo_flags & LAZY_MEMO_PACKED)
 #define LAZY_MEMO_SET_BREAK(memo) ((memo)->memo_flags |= LAZY_MEMO_BREAK)
+#define LAZY_MEMO_RESET_BREAK(memo) ((memo)->memo_flags &= ~LAZY_MEMO_BREAK)
 #define LAZY_MEMO_SET_VALUE(memo, value) MEMO_V2_SET(memo, value)
 #define LAZY_MEMO_SET_PACKED(memo) ((memo)->memo_flags |= LAZY_MEMO_PACKED)
 #define LAZY_MEMO_RESET_PACKED(memo) ((memo)->memo_flags &= ~LAZY_MEMO_PACKED)
@@ -2058,57 +2059,56 @@ lazy_map(VALUE obj)
     return lazy_add_method(obj, 0, 0, Qnil, Qnil, &lazy_map_funcs);
 }
 
-static VALUE
-lazy_flat_map_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, yielder))
-{
-    VALUE arg = rb_enum_values_pack(argc, argv);
-
-    return rb_funcallv(yielder, idLTLT, 1, &arg);
-}
+struct flat_map_i_arg {
+    struct MEMO *result;
+    long index;
+};
 
 static VALUE
-lazy_flat_map_each(VALUE obj, VALUE yielder)
+lazy_flat_map_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, y))
 {
-    rb_block_call(obj, id_each, 0, 0, lazy_flat_map_i, yielder);
-    return Qnil;
+    struct flat_map_i_arg *arg = (struct flat_map_i_arg *)y;
+
+    return lazy_yielder_yield(arg->result, arg->index, argc, argv);
 }
 
-static VALUE
-lazy_flat_map_to_ary(VALUE obj, VALUE yielder)
+static struct MEMO *
+lazy_flat_map_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
 {
-    VALUE ary = rb_check_array_type(obj);
-    if (NIL_P(ary)) {
-	rb_funcall(yielder, idLTLT, 1, obj);
+    VALUE value = lazyenum_yield_values(proc_entry, result);
+    VALUE ary = 0;
+    const long proc_index = memo_index + 1;
+    int break_p = LAZY_MEMO_BREAK_P(result);
+
+    if (RB_TYPE_P(value, T_ARRAY)) {
+        ary = value;
     }
-    else {
-	long i;
-	for (i = 0; i < RARRAY_LEN(ary); i++) {
-	    rb_funcall(yielder, idLTLT, 1, RARRAY_AREF(ary, i));
-	}
+    else if (rb_respond_to(value, id_force) && rb_respond_to(value, id_each)) {
+        struct flat_map_i_arg arg = {.result = result, .index = proc_index};
+        LAZY_MEMO_RESET_BREAK(result);
+        rb_block_call(value, id_each, 0, 0, lazy_flat_map_i, (VALUE)&arg);
+        if (break_p) LAZY_MEMO_SET_BREAK(result);
+        return 0;
     }
-    return Qnil;
+
+    if (ary || !NIL_P(ary = rb_check_array_type(value))) {
+        long i;
+        LAZY_MEMO_RESET_BREAK(result);
+        for (i = 0; i + 1 < RARRAY_LEN(ary); i++) {
+            lazy_yielder_yield(result, proc_index, 1, &RARRAY_AREF(ary, i));
+        }
+        if (break_p) LAZY_MEMO_SET_BREAK(result);
+        if (i >= RARRAY_LEN(ary)) return 0;
+        value = RARRAY_AREF(ary, i);
+    }
+    LAZY_MEMO_SET_VALUE(result, value);
+    LAZY_MEMO_RESET_PACKED(result);
+    return result;
 }
 
-static VALUE
-lazy_flat_map_proc(RB_BLOCK_CALL_FUNC_ARGLIST(val, m))
-{
-    VALUE result = rb_yield_values2(argc - 1, &argv[1]);
-    if (RB_TYPE_P(result, T_ARRAY)) {
-	long i;
-	for (i = 0; i < RARRAY_LEN(result); i++) {
-	    rb_funcall(argv[0], idLTLT, 1, RARRAY_AREF(result, i));
-	}
-    }
-    else {
-	if (rb_respond_to(result, id_force) && rb_respond_to(result, id_each)) {
-	    lazy_flat_map_each(result, argv[0]);
-	}
-	else {
-	    lazy_flat_map_to_ary(result, argv[0]);
-	}
-    }
-    return Qnil;
-}
+static const lazyenum_funcs lazy_flat_map_funcs = {
+    lazy_flat_map_proc, 0,
+};
 
 /*
  *  call-seq:
@@ -2140,9 +2140,7 @@ lazy_flat_map(VALUE obj)
 	rb_raise(rb_eArgError, "tried to call lazy flat_map without a block");
     }
 
-    return lazy_set_method(rb_block_call(rb_cLazy, id_new, 1, &obj,
-					 lazy_flat_map_proc, 0),
-			   Qnil, 0);
+    return lazy_add_method(obj, 0, 0, Qnil, Qnil, &lazy_flat_map_funcs);
 }
 
 static struct MEMO *
