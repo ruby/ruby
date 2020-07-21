@@ -5461,7 +5461,8 @@ rb_ary_concat(VALUE x, VALUE y)
  *
  *  ---
  *
- *  When argument +n+ is given, returns a new concatenated \Array.
+ *  When argument +n+ is given, returns a new \Array
+ *  built by concatenating +n+ copies of +self+.
  *
  *  If +n+ is positive, returns the concatenation of +n+ repetitions of +self+:
  *    a = ['x', 'y']
@@ -5474,13 +5475,14 @@ rb_ary_concat(VALUE x, VALUE y)
  *  ---
  *
  *  When argument +string_separator+ is given,
- *  returns a new \String equivalent to the result of <tt>array.join(string_separator)</tt>.
+ *  equivalent to <tt>array.join(string_separator)</tt>.
  *
  *  If +array+ is non-empty, returns the join of each element's +to_s+ value:
  *    [0, [0, 1], {foo: 0}] * ', ' # => "0, 0, 1, {:foo=>0}"
  *
  *  If +array+ is empty, returns a new empty \String:
  *    [] * ',' # => ""
+ *
  *  ---
  *
  *  Raises an exception if the argument is not an Integer-convertible object
