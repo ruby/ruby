@@ -961,6 +961,8 @@ CODE
       assert_same s, s.codepoints {|x| res << x }
       assert_equal [65, 66, 67], res
     end
+
+    assert_equal ["263a", "fe0f"], "☺️".codepoints(16)
   end
 
   def test_each_char

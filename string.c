@@ -8669,16 +8669,14 @@ rb_str_chars(VALUE str)
 }
 
 static VALUE
-rb_str_enumerate_codepoints(VALUE str, VALUE ary)
+rb_str_enumerate_codepoints_with_base(VALUE str, VALUE ary, int base)
 {
     VALUE orig = str;
     int n;
     unsigned int c;
+    VALUE value;
     const char *ptr, *end;
     rb_encoding *enc;
-
-    if (single_byte_optimizable(str))
-	return rb_str_enumerate_bytes(str, ary);
 
     str = rb_str_new_frozen(str);
     ptr = RSTRING_PTR(str);
@@ -8686,15 +8684,29 @@ rb_str_enumerate_codepoints(VALUE str, VALUE ary)
     enc = STR_ENC_GET(str);
 
     while (ptr < end) {
-	c = rb_enc_codepoint_len(ptr, end, &n, enc);
-	ENUM_ELEM(ary, UINT2NUM(c));
-	ptr += n;
+    c = rb_enc_codepoint_len(ptr, end, &n, enc);
+    value = UINT2NUM(c);
+
+    if (base != 10)
+    value = rb_int2str(value, base);
+
+    ENUM_ELEM(ary, value);
+    ptr += n;
     }
     RB_GC_GUARD(str);
     if (ary)
-	return ary;
+    return ary;
     else
-	return orig;
+    return orig;
+}
+
+static VALUE
+rb_str_enumerate_codepoints(VALUE str, VALUE ary)
+{
+    if (single_byte_optimizable(str))
+    return rb_str_enumerate_bytes(str, ary);
+
+    return rb_str_enumerate_codepoints_with_base(str, ary, 10);
 }
 
 /*
@@ -8737,10 +8749,14 @@ rb_str_each_codepoint(VALUE str)
  */
 
 static VALUE
-rb_str_codepoints(VALUE str)
+rb_str_codepoints(int argc, VALUE *argv, VALUE str)
 {
     VALUE ary = WANTARRAY("codepoints", rb_str_strlen(str));
-    return rb_str_enumerate_codepoints(str, ary);
+    if (argc == 0) {
+        return rb_str_enumerate_codepoints(str, ary);
+    } else {
+        return rb_str_enumerate_codepoints_with_base(str, ary, NUM2INT(argv[0]));
+    }
 }
 
 static regex_t *
@@ -11450,7 +11466,7 @@ Init_String(void)
     rb_define_method(rb_cString, "lines", rb_str_lines, -1);
     rb_define_method(rb_cString, "bytes", rb_str_bytes, 0);
     rb_define_method(rb_cString, "chars", rb_str_chars, 0);
-    rb_define_method(rb_cString, "codepoints", rb_str_codepoints, 0);
+    rb_define_method(rb_cString, "codepoints", rb_str_codepoints, -1);
     rb_define_method(rb_cString, "grapheme_clusters", rb_str_grapheme_clusters, 0);
     rb_define_method(rb_cString, "reverse", rb_str_reverse, 0);
     rb_define_method(rb_cString, "reverse!", rb_str_reverse_bang, 0);
