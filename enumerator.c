@@ -1609,20 +1609,42 @@ lazy_init_block_i(RB_BLOCK_CALL_FUNC_ARGLIST(val, m))
 #define LAZY_MEMO_SET_PACKED(memo) ((memo)->memo_flags |= LAZY_MEMO_PACKED)
 #define LAZY_MEMO_RESET_PACKED(memo) ((memo)->memo_flags &= ~LAZY_MEMO_PACKED)
 
+static VALUE lazy_yielder_result(struct MEMO *result, VALUE yielder, VALUE procs_array, VALUE memos, long i);
+
 static VALUE
 lazy_init_yielder(RB_BLOCK_CALL_FUNC_ARGLIST(_, m))
 {
     VALUE yielder = RARRAY_AREF(m, 0);
     VALUE procs_array = RARRAY_AREF(m, 1);
     VALUE memos = rb_attr_get(yielder, id_memo);
-    long i = 0;
     struct MEMO *result;
+
+    result = MEMO_NEW(m, rb_enum_values_pack(argc, argv),
+		      argc > 1 ? LAZY_MEMO_PACKED : 0);
+    return lazy_yielder_result(result, yielder, procs_array, memos, 0);
+}
+
+static VALUE
+lazy_yielder_yield(struct MEMO *result, long memo_index, int argc, const VALUE *argv)
+{
+    VALUE m = result->v1;
+    VALUE yielder = RARRAY_AREF(m, 0);
+    VALUE procs_array = RARRAY_AREF(m, 1);
+    VALUE memos = rb_attr_get(yielder, id_memo);
+    LAZY_MEMO_SET_VALUE(result, rb_enum_values_pack(argc, argv));
+    if (argc > 1)
+        LAZY_MEMO_SET_PACKED(result);
+    else
+        LAZY_MEMO_RESET_PACKED(result);
+    return lazy_yielder_result(result, yielder, procs_array, memos, memo_index);
+}
+
+static VALUE
+lazy_yielder_result(struct MEMO *result, VALUE yielder, VALUE procs_array, VALUE memos, long i)
+{
     int cont = 1;
 
-    result = MEMO_NEW(Qnil, rb_enum_values_pack(argc, argv),
-		      argc > 1 ? LAZY_MEMO_PACKED : 0);
-
-    for (i = 0; i < RARRAY_LEN(procs_array); i++) {
+    for (; i < RARRAY_LEN(procs_array); i++) {
 	VALUE proc = RARRAY_AREF(procs_array, i);
 	struct proc_entry *entry = proc_entry_ptr(proc);
 	if (!(*entry->fn->proc)(proc, result, memos, i)) {
