@@ -1991,6 +1991,23 @@ class TestArray < Test::Unit::TestCase
     assert_equal(orig, ary, "must not be modified once frozen")
   end
 
+  def test_uniq?
+    assert_equal(true, [].uniq?)
+    assert_equal(true, [1].uniq?)
+    assert_equal(true, [1, 2].uniq?)
+    assert_equal(false, [1, 2, 1].uniq?)
+    assert_equal(true, [{a: 'a'}, {a: 'A'}].uniq?)
+    assert_equal(false, [{a: 'A'}, {a: 'A'}].uniq?)
+    assert_equal(true, @cls[1, 2, 3].uniq?)
+  end
+
+  def test_uniq_p_with_block
+    assert_equal(true, [].uniq? {|v| v % 3 })
+    assert_equal(true, [1].uniq? {|v| v % 3 })
+    assert_equal(true, [1, 2, 3].uniq? {|v| v % 3 })
+    assert_equal(false, [1, 2, 4].uniq? {|v| v % 3 })
+  end
+
   def test_unshift
     a = @cls[]
     assert_equal(@cls['cat'], a.unshift('cat'))

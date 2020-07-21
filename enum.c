@@ -4159,6 +4159,66 @@ enum_uniq(VALUE obj)
     return ret;
 }
 
+static VALUE
+uniq_p_func(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
+{
+    struct MEMO *memo = MEMO_CAST(args);
+    ENUM_WANT_SVALUE();
+    if (rb_hash_add_new_element(memo->v2, i, i)) {
+	MEMO_V1_SET(memo, Qfalse);
+	rb_iter_break();
+    }
+    return Qnil;
+}
+
+static VALUE
+uniq_p_iter(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
+{
+    struct MEMO *memo = MEMO_CAST(args);
+    ENUM_WANT_SVALUE();
+    if (rb_hash_add_new_element(memo->v2, rb_yield_values2(argc, argv), i)) {
+	MEMO_V1_SET(memo, Qfalse);
+	rb_iter_break();
+    }
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     enum.uniq?                   -> true or false
+ *     enum.uniq? { |item| ... }    -> true or false
+ *
+ *  Returns +true+ if no duplicates are found in the collection, otherwise returns +false+.
+ *
+ *  If the enumerable is empty, returns +true+.
+ *
+ *  If a block is given, it will use the return value of the block for comparison.
+ *
+ *  It compares values using their #hash and #eql? methods for efficiency.
+ *
+ *     %w(a b c).uniq?                # => true
+ *     %w(a b a).uniq?                # => false
+ *     %w(a b A).uniq? {|s| s.upcase} # => false
+ *     [].uniq?                       # => true
+ *
+ *  See also Array#uniq?.
+ */
+
+static VALUE
+enum_uniq_p(VALUE obj)
+{
+    VALUE hash;
+    struct MEMO *memo;
+    rb_block_call_func *const func =
+	rb_block_given_p() ? uniq_p_iter : uniq_p_func;
+
+    hash = rb_obj_hide(rb_hash_new());
+    memo = MEMO_NEW(Qtrue, hash, 0);
+    rb_block_call(obj, id_each, 0, 0, func, (VALUE)memo);
+    rb_hash_clear(hash);
+    return memo->v1;
+}
+
 /*
  *  The Enumerable mixin provides collection classes with several
  *  traversal and searching methods, and with the ability to sort. The
@@ -4235,6 +4295,7 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "chunk_while", enum_chunk_while, 0);
     rb_define_method(rb_mEnumerable, "sum", enum_sum, -1);
     rb_define_method(rb_mEnumerable, "uniq", enum_uniq, 0);
+    rb_define_method(rb_mEnumerable, "uniq?", enum_uniq_p, 0);
 
     id_next = rb_intern("next");
 }

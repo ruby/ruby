@@ -1153,6 +1153,25 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([1, [1, 2]], Foo.new.to_enum.uniq)
   end
 
+  def test_uniq?
+    assert_equal(true, (1..5).uniq?)
+    assert_equal(false, (1..5).uniq?{|i| i % 3 })
+    assert_equal(true, (1..5).uniq?{|i| i % 10 })
+
+    assert_equal(false, @obj.uniq?)
+    assert_equal(true, @empty.uniq?)
+
+    olympics = {
+      1896 => 'Athens',
+      1900 => 'Paris',
+      1904 => 'Chicago',
+      1906 => 'Athens',
+      1908 => 'Rome',
+    }
+    assert_equal(true, olympics.uniq?)
+    assert_equal(false, olympics.uniq?{|k,v| v })
+  end
+
   def test_transient_heap_sort_by
     klass = Class.new do
       include Comparable
