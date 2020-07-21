@@ -2787,47 +2787,50 @@ struct MEMO * rb_enum_inject_memo(int argc, VALUE *argv);
 VALUE rb_enum_inject_memo_call(struct MEMO *memo, VALUE proc, VALUE arg);
 
 static struct MEMO *
-lazy_inject_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+lazy_inject_yield(struct proc_entry *entry, struct MEMO *result, struct MEMO *memo, VALUE value)
 {
-    struct proc_entry *entry = proc_entry_ptr(proc_entry);
-    struct MEMO *memo = MEMO_CAST(entry->memo);
-    VALUE value = result->memo_value;
     value = rb_enum_inject_memo_call(memo, entry->proc, value);
     LAZY_MEMO_SET_VALUE(result, value);
     LAZY_MEMO_RESET_PACKED(result);
     return result;
 }
 
-static VALUE
-lazy_inject_init_proc(RB_BLOCK_CALL_FUNC_ARGLIST(y, m))
+static struct MEMO *
+lazy_inject_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
 {
-    struct MEMO *memo = MEMO_CAST(m);
-    VALUE val = argv[1];
-    if (!RTEST(rb_attr_get(y, id_memo))) {
-        rb_ivar_set(y, id_memo, Qtrue);
-        rb_funcallv(y, idLTLT, 1, &memo->v1);
-    }
-    val = rb_enum_inject_memo_call(memo, memo->v2, val);
-    rb_funcallv(y, idLTLT, 1, &val);
-    return Qnil;
+    struct proc_entry *entry = proc_entry_ptr(proc_entry);
+    struct MEMO *memo = MEMO_CAST(entry->memo);
+    return lazy_inject_yield(entry, result, memo, result->memo_value);
 }
 
 static const lazyenum_funcs lazy_inject_funcs = {
     lazy_inject_proc, 0,
 };
 
+static struct MEMO *
+lazy_inject_init_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+{
+    struct proc_entry *entry = proc_entry_ptr(proc_entry);
+    struct MEMO *memo = MEMO_CAST(entry->memo);
+    VALUE value = result->memo_value;
+    entry->fn = &lazy_inject_funcs;
+    lazy_yielder_yield(result, memo_index+1, 1, &memo->v1);
+    return lazy_inject_yield(entry, result, memo, value);
+}
+
+static const lazyenum_funcs lazy_inject_init_funcs = {
+    lazy_inject_init_proc, 0,
+};
+
 static VALUE
 lazy_inject(int argc, VALUE *argv, VALUE obj)
 {
+    const lazyenum_funcs *funcs = &lazy_inject_funcs;
     struct MEMO *memo = rb_enum_inject_memo(argc, argv);
-    if (memo->v1 == Qundef) {
-        return lazy_add_method(obj, 0, 0, (VALUE)memo, Qnil, &lazy_inject_funcs);
+    if (memo->v1 != Qundef) {
+        funcs = &lazy_inject_init_funcs;
     }
-    if (memo->v2) {
-        MEMO_V2_SET(memo, rb_block_proc());
-    }
-    obj = rb_block_call(rb_cLazy, id_new, 1, &obj, lazy_inject_init_proc, (VALUE)memo);
-    return lazy_set_method(obj, rb_ary_new_from_values(1, &memo->v1), 0);
+    return lazy_add_method(obj, 0, 0, (VALUE)memo, Qnil, funcs);
 }
 
 static VALUE
