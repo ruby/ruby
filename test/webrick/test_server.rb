@@ -160,4 +160,16 @@ class TestWEBrickServer < Test::Unit::TestCase
       assert_join_threads([client_thread, server_thread])
     }
   end
+
+  def test_shutdown_pipe
+    pipe = IO.pipe
+    server = WEBrick::GenericServer.new(
+      :ShutdownPipe => pipe,
+      :BindAddress => '0.0.0.0',
+      :Port => 0,
+      :Logger => WEBrick::Log.new([], WEBrick::BasicLog::WARN))
+    server_thread = Thread.start { server.start }
+    pipe.last.puts('')
+    assert_join_threads([server_thread])
+  end
 end
