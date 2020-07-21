@@ -3433,6 +3433,12 @@ rb_arithmetic_sequence_beg_len_step(VALUE obj, long *begp, long *lenp, long *ste
     long step = NIL_P(aseq.step) ? 1 : NUM2LONG(aseq.step);
     *stepp = step;
 
+    if (step < 0) {
+        VALUE tmp = aseq.begin;
+        aseq.begin = aseq.end;
+        aseq.end = tmp;
+    }
+
     return rb_range_component_beg_len(aseq.begin, aseq.end, aseq.exclude_end, begp, lenp, len, err);
 }
 
