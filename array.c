@@ -5461,15 +5461,9 @@ rb_ary_concat(VALUE x, VALUE y)
  *
  *  ---
  *
- *  When argument +n+ is given, returns a new \Array
- *  built by concatenating +n+ copies of +self+.
- *
- *  If +n+ is positive, returns the concatenation of +n+ repetitions of +self+:
+ *  When argument +n+ is given, returns a new array built by concatenating the +int+ copies of +self+:
  *    a = ['x', 'y']
  *    a * 3 # => ["x", "y", "x", "y", "x", "y"]
- *
- *  If +n+ is zero, returns an new empty \Array:
- *    a = [0, 1]
  *    a * 0 # => []
  *
  *  ---
