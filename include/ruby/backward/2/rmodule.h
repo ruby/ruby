@@ -28,4 +28,10 @@
 #define RMODULE_CONST_TBL(m) RCLASS_CONST_TBL(m)
 #define RMODULE_M_TBL(m) RCLASS_M_TBL(m)
 #define RMODULE_SUPER(m) RCLASS_SUPER(m)
+
+#if defined(__GNUC__)
+# warning RMODULE_* macros are deprecated
+#elif defined(_MSC_VER)
+# pragma message("warning: RMODULE_* macros are deprecated")
+#endif
 #endif /* RUBY_BACKWARD2_RMODULE_H */
