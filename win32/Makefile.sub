@@ -699,7 +699,6 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !endif
 !if $(MSC_VER) >= 1300
 #define DEPRECATED(x) __declspec(deprecated) x
-#define DEPRECATED_TYPE(mesg, x) __declspec(deprecated mesg) x
 #define RUBY_CXX_DEPRECATED(mesg) __declspec(deprecated(mesg))
 #define NOINLINE(x) __declspec(noinline) x
 !endif
