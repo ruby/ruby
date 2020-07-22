@@ -503,4 +503,31 @@ class TestObjSpace < Test::Unit::TestCase
     assert_equal h[:immortal_symbol], h[:immortal_dynamic_symbol] + h[:immortal_static_symbol], m
     ;;;
   end
+
+  def test_dump_allocations
+    object = Object.new
+    assert_allocations_count(3) { ObjectSpace.dump(object) }
+  end
+
+  def test_anonymous_class_name
+    klass = Class.new
+    assert_allocations_count(4) { ObjectSpace.dump(klass) }
+    assert_allocations_count(3) { ObjectSpace.dump(klass) }
+
+    mod = Module.new
+    assert_allocations_count(3) { ObjectSpace.dump(mod) }
+
+    assert_not_include ObjectSpace.dump(Class.new), '"name"'
+    assert_not_include ObjectSpace.dump(Module.new), '"name"'
+  end
+
+  private
+
+  def assert_allocations_count(count)
+    ObjectSpace.dump(Object.new) # warming up
+
+    before = GC.stat(:total_allocated_objects)
+    yield
+    assert_equal count, GC.stat(:total_allocated_objects) - before
+  end
 end
