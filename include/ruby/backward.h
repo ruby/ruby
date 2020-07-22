@@ -72,12 +72,9 @@ DECLARE_DEPRECATED_INTERNAL_FEATURE(rb_generic_ivar_table);
 NORETURN(ERRORFUNC(("internal function"), VALUE rb_mod_const_missing(VALUE, VALUE)));
 
 /* from version.c */
-#ifndef RUBY_SHOW_COPYRIGHT_TO_DIE
-# define RUBY_SHOW_COPYRIGHT_TO_DIE 1
-#endif
-#if RUBY_SHOW_COPYRIGHT_TO_DIE
+#if defined(RUBY_SHOW_COPYRIGHT_TO_DIE) && !!(RUBY_SHOW_COPYRIGHT_TO_DIE+0)
 /* for source code backward compatibility */
-DEPRECATED(static inline int ruby_show_copyright_to_die(int));
+RBIMPL_ATTR_DEPRECATED(("since 2.4"))
 static inline int
 ruby_show_copyright_to_die(int exitcode)
 {
