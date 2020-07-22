@@ -41,7 +41,7 @@ struct RFloat {
     double float_value;
 };
 
-#define RFLOAT(obj)  (R_CAST(RFloat)(obj))
+#define RFLOAT(obj)  ((struct RFloat *)(obj))
 
 /* numeric.c */
 int rb_num_to_uint(VALUE val, unsigned int *ret);

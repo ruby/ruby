@@ -21,7 +21,7 @@ struct RRational {
     VALUE den;
 };
 
-#define RRATIONAL(obj) (R_CAST(RRational)(obj))
+#define RRATIONAL(obj) ((struct RRational *)(obj))
 
 /* rational.c */
 VALUE rb_rational_canonicalize(VALUE x);

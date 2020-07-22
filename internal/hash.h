@@ -54,7 +54,7 @@ struct RHash {
     } ar_hint;
 };
 
-#define RHASH(obj) (R_CAST(RHash)(obj))
+#define RHASH(obj) ((struct RHash *)(obj))
 
 #ifdef RHASH_IFNONE
 # undef RHASH_IFNONE

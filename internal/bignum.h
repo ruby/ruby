@@ -74,7 +74,7 @@
 # define PRIXBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"X"
 #endif
 
-#define RBIGNUM(obj) (R_CAST(RBignum)(obj))
+#define RBIGNUM(obj) ((struct RBignum *)(obj))
 #define BIGNUM_SIGN_BIT FL_USER1
 #define BIGNUM_EMBED_FLAG ((VALUE)FL_USER2)
 #define BIGNUM_EMBED_LEN_NUMBITS 3
