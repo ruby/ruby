@@ -151,7 +151,6 @@ bug.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 bug.o: $(hdrdir)/ruby/backward/2/inttypes.h
 bug.o: $(hdrdir)/ruby/backward/2/limits.h
 bug.o: $(hdrdir)/ruby/backward/2/long_long.h
-bug.o: $(hdrdir)/ruby/backward/2/r_cast.h
 bug.o: $(hdrdir)/ruby/backward/2/rmodule.h
 bug.o: $(hdrdir)/ruby/backward/2/stdalign.h
 bug.o: $(hdrdir)/ruby/backward/2/stdarg.h

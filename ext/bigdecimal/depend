@@ -152,7 +152,6 @@ bigdecimal.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 bigdecimal.o: $(hdrdir)/ruby/backward/2/inttypes.h
 bigdecimal.o: $(hdrdir)/ruby/backward/2/limits.h
 bigdecimal.o: $(hdrdir)/ruby/backward/2/long_long.h
-bigdecimal.o: $(hdrdir)/ruby/backward/2/r_cast.h
 bigdecimal.o: $(hdrdir)/ruby/backward/2/rmodule.h
 bigdecimal.o: $(hdrdir)/ruby/backward/2/stdalign.h
 bigdecimal.o: $(hdrdir)/ruby/backward/2/stdarg.h

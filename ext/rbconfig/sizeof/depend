@@ -165,7 +165,6 @@ limits.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 limits.o: $(hdrdir)/ruby/backward/2/inttypes.h
 limits.o: $(hdrdir)/ruby/backward/2/limits.h
 limits.o: $(hdrdir)/ruby/backward/2/long_long.h
-limits.o: $(hdrdir)/ruby/backward/2/r_cast.h
 limits.o: $(hdrdir)/ruby/backward/2/rmodule.h
 limits.o: $(hdrdir)/ruby/backward/2/stdalign.h
 limits.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -327,7 +326,6 @@ sizes.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 sizes.o: $(hdrdir)/ruby/backward/2/inttypes.h
 sizes.o: $(hdrdir)/ruby/backward/2/limits.h
 sizes.o: $(hdrdir)/ruby/backward/2/long_long.h
-sizes.o: $(hdrdir)/ruby/backward/2/r_cast.h
 sizes.o: $(hdrdir)/ruby/backward/2/rmodule.h
 sizes.o: $(hdrdir)/ruby/backward/2/stdalign.h
 sizes.o: $(hdrdir)/ruby/backward/2/stdarg.h

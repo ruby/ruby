@@ -151,7 +151,6 @@ strscan.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 strscan.o: $(hdrdir)/ruby/backward/2/inttypes.h
 strscan.o: $(hdrdir)/ruby/backward/2/limits.h
 strscan.o: $(hdrdir)/ruby/backward/2/long_long.h
-strscan.o: $(hdrdir)/ruby/backward/2/r_cast.h
 strscan.o: $(hdrdir)/ruby/backward/2/rmodule.h
 strscan.o: $(hdrdir)/ruby/backward/2/stdalign.h
 strscan.o: $(hdrdir)/ruby/backward/2/stdarg.h

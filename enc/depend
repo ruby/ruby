@@ -329,7 +329,6 @@ enc/ascii.$(OBJEXT): backward/2/gcc_version_since.h
 enc/ascii.$(OBJEXT): backward/2/inttypes.h
 enc/ascii.$(OBJEXT): backward/2/limits.h
 enc/ascii.$(OBJEXT): backward/2/long_long.h
-enc/ascii.$(OBJEXT): backward/2/r_cast.h
 enc/ascii.$(OBJEXT): backward/2/rmodule.h
 enc/ascii.$(OBJEXT): backward/2/stdalign.h
 enc/ascii.$(OBJEXT): backward/2/stdarg.h
@@ -552,7 +551,6 @@ enc/cesu_8.$(OBJEXT): backward/2/gcc_version_since.h
 enc/cesu_8.$(OBJEXT): backward/2/inttypes.h
 enc/cesu_8.$(OBJEXT): backward/2/limits.h
 enc/cesu_8.$(OBJEXT): backward/2/long_long.h
-enc/cesu_8.$(OBJEXT): backward/2/r_cast.h
 enc/cesu_8.$(OBJEXT): backward/2/rmodule.h
 enc/cesu_8.$(OBJEXT): backward/2/stdalign.h
 enc/cesu_8.$(OBJEXT): backward/2/stdarg.h
@@ -833,7 +831,6 @@ enc/encdb.$(OBJEXT): backward/2/gcc_version_since.h
 enc/encdb.$(OBJEXT): backward/2/inttypes.h
 enc/encdb.$(OBJEXT): backward/2/limits.h
 enc/encdb.$(OBJEXT): backward/2/long_long.h
-enc/encdb.$(OBJEXT): backward/2/r_cast.h
 enc/encdb.$(OBJEXT): backward/2/rmodule.h
 enc/encdb.$(OBJEXT): backward/2/stdalign.h
 enc/encdb.$(OBJEXT): backward/2/stdarg.h
@@ -2382,7 +2379,6 @@ enc/trans/big5.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/big5.$(OBJEXT): backward/2/inttypes.h
 enc/trans/big5.$(OBJEXT): backward/2/limits.h
 enc/trans/big5.$(OBJEXT): backward/2/long_long.h
-enc/trans/big5.$(OBJEXT): backward/2/r_cast.h
 enc/trans/big5.$(OBJEXT): backward/2/rmodule.h
 enc/trans/big5.$(OBJEXT): backward/2/stdalign.h
 enc/trans/big5.$(OBJEXT): backward/2/stdarg.h
@@ -2544,7 +2540,6 @@ enc/trans/cesu_8.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/cesu_8.$(OBJEXT): backward/2/inttypes.h
 enc/trans/cesu_8.$(OBJEXT): backward/2/limits.h
 enc/trans/cesu_8.$(OBJEXT): backward/2/long_long.h
-enc/trans/cesu_8.$(OBJEXT): backward/2/r_cast.h
 enc/trans/cesu_8.$(OBJEXT): backward/2/rmodule.h
 enc/trans/cesu_8.$(OBJEXT): backward/2/stdalign.h
 enc/trans/cesu_8.$(OBJEXT): backward/2/stdarg.h
@@ -2706,7 +2701,6 @@ enc/trans/chinese.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/chinese.$(OBJEXT): backward/2/inttypes.h
 enc/trans/chinese.$(OBJEXT): backward/2/limits.h
 enc/trans/chinese.$(OBJEXT): backward/2/long_long.h
-enc/trans/chinese.$(OBJEXT): backward/2/r_cast.h
 enc/trans/chinese.$(OBJEXT): backward/2/rmodule.h
 enc/trans/chinese.$(OBJEXT): backward/2/stdalign.h
 enc/trans/chinese.$(OBJEXT): backward/2/stdarg.h
@@ -2868,7 +2862,6 @@ enc/trans/ebcdic.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/ebcdic.$(OBJEXT): backward/2/inttypes.h
 enc/trans/ebcdic.$(OBJEXT): backward/2/limits.h
 enc/trans/ebcdic.$(OBJEXT): backward/2/long_long.h
-enc/trans/ebcdic.$(OBJEXT): backward/2/r_cast.h
 enc/trans/ebcdic.$(OBJEXT): backward/2/rmodule.h
 enc/trans/ebcdic.$(OBJEXT): backward/2/stdalign.h
 enc/trans/ebcdic.$(OBJEXT): backward/2/stdarg.h
@@ -3030,7 +3023,6 @@ enc/trans/emoji.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/emoji.$(OBJEXT): backward/2/inttypes.h
 enc/trans/emoji.$(OBJEXT): backward/2/limits.h
 enc/trans/emoji.$(OBJEXT): backward/2/long_long.h
-enc/trans/emoji.$(OBJEXT): backward/2/r_cast.h
 enc/trans/emoji.$(OBJEXT): backward/2/rmodule.h
 enc/trans/emoji.$(OBJEXT): backward/2/stdalign.h
 enc/trans/emoji.$(OBJEXT): backward/2/stdarg.h
@@ -3192,7 +3184,6 @@ enc/trans/emoji_iso2022_kddi.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): backward/2/inttypes.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): backward/2/limits.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): backward/2/long_long.h
-enc/trans/emoji_iso2022_kddi.$(OBJEXT): backward/2/r_cast.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): backward/2/rmodule.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): backward/2/stdalign.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): backward/2/stdarg.h
@@ -3354,7 +3345,6 @@ enc/trans/emoji_sjis_docomo.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): backward/2/inttypes.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): backward/2/limits.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): backward/2/long_long.h
-enc/trans/emoji_sjis_docomo.$(OBJEXT): backward/2/r_cast.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): backward/2/rmodule.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): backward/2/stdalign.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): backward/2/stdarg.h
@@ -3516,7 +3506,6 @@ enc/trans/emoji_sjis_kddi.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): backward/2/inttypes.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): backward/2/limits.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): backward/2/long_long.h
-enc/trans/emoji_sjis_kddi.$(OBJEXT): backward/2/r_cast.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): backward/2/rmodule.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): backward/2/stdalign.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): backward/2/stdarg.h
@@ -3678,7 +3667,6 @@ enc/trans/emoji_sjis_softbank.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): backward/2/inttypes.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): backward/2/limits.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): backward/2/long_long.h
-enc/trans/emoji_sjis_softbank.$(OBJEXT): backward/2/r_cast.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): backward/2/rmodule.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): backward/2/stdalign.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): backward/2/stdarg.h
@@ -3840,7 +3828,6 @@ enc/trans/escape.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/escape.$(OBJEXT): backward/2/inttypes.h
 enc/trans/escape.$(OBJEXT): backward/2/limits.h
 enc/trans/escape.$(OBJEXT): backward/2/long_long.h
-enc/trans/escape.$(OBJEXT): backward/2/r_cast.h
 enc/trans/escape.$(OBJEXT): backward/2/rmodule.h
 enc/trans/escape.$(OBJEXT): backward/2/stdalign.h
 enc/trans/escape.$(OBJEXT): backward/2/stdarg.h
@@ -4002,7 +3989,6 @@ enc/trans/gb18030.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/gb18030.$(OBJEXT): backward/2/inttypes.h
 enc/trans/gb18030.$(OBJEXT): backward/2/limits.h
 enc/trans/gb18030.$(OBJEXT): backward/2/long_long.h
-enc/trans/gb18030.$(OBJEXT): backward/2/r_cast.h
 enc/trans/gb18030.$(OBJEXT): backward/2/rmodule.h
 enc/trans/gb18030.$(OBJEXT): backward/2/stdalign.h
 enc/trans/gb18030.$(OBJEXT): backward/2/stdarg.h
@@ -4164,7 +4150,6 @@ enc/trans/gbk.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/gbk.$(OBJEXT): backward/2/inttypes.h
 enc/trans/gbk.$(OBJEXT): backward/2/limits.h
 enc/trans/gbk.$(OBJEXT): backward/2/long_long.h
-enc/trans/gbk.$(OBJEXT): backward/2/r_cast.h
 enc/trans/gbk.$(OBJEXT): backward/2/rmodule.h
 enc/trans/gbk.$(OBJEXT): backward/2/stdalign.h
 enc/trans/gbk.$(OBJEXT): backward/2/stdarg.h
@@ -4326,7 +4311,6 @@ enc/trans/iso2022.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/iso2022.$(OBJEXT): backward/2/inttypes.h
 enc/trans/iso2022.$(OBJEXT): backward/2/limits.h
 enc/trans/iso2022.$(OBJEXT): backward/2/long_long.h
-enc/trans/iso2022.$(OBJEXT): backward/2/r_cast.h
 enc/trans/iso2022.$(OBJEXT): backward/2/rmodule.h
 enc/trans/iso2022.$(OBJEXT): backward/2/stdalign.h
 enc/trans/iso2022.$(OBJEXT): backward/2/stdarg.h
@@ -4488,7 +4472,6 @@ enc/trans/japanese.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/japanese.$(OBJEXT): backward/2/inttypes.h
 enc/trans/japanese.$(OBJEXT): backward/2/limits.h
 enc/trans/japanese.$(OBJEXT): backward/2/long_long.h
-enc/trans/japanese.$(OBJEXT): backward/2/r_cast.h
 enc/trans/japanese.$(OBJEXT): backward/2/rmodule.h
 enc/trans/japanese.$(OBJEXT): backward/2/stdalign.h
 enc/trans/japanese.$(OBJEXT): backward/2/stdarg.h
@@ -4650,7 +4633,6 @@ enc/trans/japanese_euc.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/japanese_euc.$(OBJEXT): backward/2/inttypes.h
 enc/trans/japanese_euc.$(OBJEXT): backward/2/limits.h
 enc/trans/japanese_euc.$(OBJEXT): backward/2/long_long.h
-enc/trans/japanese_euc.$(OBJEXT): backward/2/r_cast.h
 enc/trans/japanese_euc.$(OBJEXT): backward/2/rmodule.h
 enc/trans/japanese_euc.$(OBJEXT): backward/2/stdalign.h
 enc/trans/japanese_euc.$(OBJEXT): backward/2/stdarg.h
@@ -4812,7 +4794,6 @@ enc/trans/japanese_sjis.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/japanese_sjis.$(OBJEXT): backward/2/inttypes.h
 enc/trans/japanese_sjis.$(OBJEXT): backward/2/limits.h
 enc/trans/japanese_sjis.$(OBJEXT): backward/2/long_long.h
-enc/trans/japanese_sjis.$(OBJEXT): backward/2/r_cast.h
 enc/trans/japanese_sjis.$(OBJEXT): backward/2/rmodule.h
 enc/trans/japanese_sjis.$(OBJEXT): backward/2/stdalign.h
 enc/trans/japanese_sjis.$(OBJEXT): backward/2/stdarg.h
@@ -4974,7 +4955,6 @@ enc/trans/korean.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/korean.$(OBJEXT): backward/2/inttypes.h
 enc/trans/korean.$(OBJEXT): backward/2/limits.h
 enc/trans/korean.$(OBJEXT): backward/2/long_long.h
-enc/trans/korean.$(OBJEXT): backward/2/r_cast.h
 enc/trans/korean.$(OBJEXT): backward/2/rmodule.h
 enc/trans/korean.$(OBJEXT): backward/2/stdalign.h
 enc/trans/korean.$(OBJEXT): backward/2/stdarg.h
@@ -5135,7 +5115,6 @@ enc/trans/newline.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/newline.$(OBJEXT): backward/2/inttypes.h
 enc/trans/newline.$(OBJEXT): backward/2/limits.h
 enc/trans/newline.$(OBJEXT): backward/2/long_long.h
-enc/trans/newline.$(OBJEXT): backward/2/r_cast.h
 enc/trans/newline.$(OBJEXT): backward/2/rmodule.h
 enc/trans/newline.$(OBJEXT): backward/2/stdalign.h
 enc/trans/newline.$(OBJEXT): backward/2/stdarg.h
@@ -5297,7 +5276,6 @@ enc/trans/single_byte.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/single_byte.$(OBJEXT): backward/2/inttypes.h
 enc/trans/single_byte.$(OBJEXT): backward/2/limits.h
 enc/trans/single_byte.$(OBJEXT): backward/2/long_long.h
-enc/trans/single_byte.$(OBJEXT): backward/2/r_cast.h
 enc/trans/single_byte.$(OBJEXT): backward/2/rmodule.h
 enc/trans/single_byte.$(OBJEXT): backward/2/stdalign.h
 enc/trans/single_byte.$(OBJEXT): backward/2/stdarg.h
@@ -5461,7 +5439,6 @@ enc/trans/utf8_mac.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/utf8_mac.$(OBJEXT): backward/2/inttypes.h
 enc/trans/utf8_mac.$(OBJEXT): backward/2/limits.h
 enc/trans/utf8_mac.$(OBJEXT): backward/2/long_long.h
-enc/trans/utf8_mac.$(OBJEXT): backward/2/r_cast.h
 enc/trans/utf8_mac.$(OBJEXT): backward/2/rmodule.h
 enc/trans/utf8_mac.$(OBJEXT): backward/2/stdalign.h
 enc/trans/utf8_mac.$(OBJEXT): backward/2/stdarg.h
@@ -5623,7 +5600,6 @@ enc/trans/utf_16_32.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/utf_16_32.$(OBJEXT): backward/2/inttypes.h
 enc/trans/utf_16_32.$(OBJEXT): backward/2/limits.h
 enc/trans/utf_16_32.$(OBJEXT): backward/2/long_long.h
-enc/trans/utf_16_32.$(OBJEXT): backward/2/r_cast.h
 enc/trans/utf_16_32.$(OBJEXT): backward/2/rmodule.h
 enc/trans/utf_16_32.$(OBJEXT): backward/2/stdalign.h
 enc/trans/utf_16_32.$(OBJEXT): backward/2/stdarg.h
@@ -5787,7 +5763,6 @@ enc/unicode.$(OBJEXT): backward/2/gcc_version_since.h
 enc/unicode.$(OBJEXT): backward/2/inttypes.h
 enc/unicode.$(OBJEXT): backward/2/limits.h
 enc/unicode.$(OBJEXT): backward/2/long_long.h
-enc/unicode.$(OBJEXT): backward/2/r_cast.h
 enc/unicode.$(OBJEXT): backward/2/rmodule.h
 enc/unicode.$(OBJEXT): backward/2/stdalign.h
 enc/unicode.$(OBJEXT): backward/2/stdarg.h
@@ -5950,7 +5925,6 @@ enc/us_ascii.$(OBJEXT): backward/2/gcc_version_since.h
 enc/us_ascii.$(OBJEXT): backward/2/inttypes.h
 enc/us_ascii.$(OBJEXT): backward/2/limits.h
 enc/us_ascii.$(OBJEXT): backward/2/long_long.h
-enc/us_ascii.$(OBJEXT): backward/2/r_cast.h
 enc/us_ascii.$(OBJEXT): backward/2/rmodule.h
 enc/us_ascii.$(OBJEXT): backward/2/stdalign.h
 enc/us_ascii.$(OBJEXT): backward/2/stdarg.h
@@ -6347,7 +6321,6 @@ enc/utf_8.$(OBJEXT): backward/2/gcc_version_since.h
 enc/utf_8.$(OBJEXT): backward/2/inttypes.h
 enc/utf_8.$(OBJEXT): backward/2/limits.h
 enc/utf_8.$(OBJEXT): backward/2/long_long.h
-enc/utf_8.$(OBJEXT): backward/2/r_cast.h
 enc/utf_8.$(OBJEXT): backward/2/rmodule.h
 enc/utf_8.$(OBJEXT): backward/2/stdalign.h
 enc/utf_8.$(OBJEXT): backward/2/stdarg.h

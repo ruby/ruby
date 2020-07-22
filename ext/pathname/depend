@@ -151,7 +151,6 @@ pathname.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 pathname.o: $(hdrdir)/ruby/backward/2/inttypes.h
 pathname.o: $(hdrdir)/ruby/backward/2/limits.h
 pathname.o: $(hdrdir)/ruby/backward/2/long_long.h
-pathname.o: $(hdrdir)/ruby/backward/2/r_cast.h
 pathname.o: $(hdrdir)/ruby/backward/2/rmodule.h
 pathname.o: $(hdrdir)/ruby/backward/2/stdalign.h
 pathname.o: $(hdrdir)/ruby/backward/2/stdarg.h

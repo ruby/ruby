@@ -151,7 +151,6 @@ nonblock.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 nonblock.o: $(hdrdir)/ruby/backward/2/inttypes.h
 nonblock.o: $(hdrdir)/ruby/backward/2/limits.h
 nonblock.o: $(hdrdir)/ruby/backward/2/long_long.h
-nonblock.o: $(hdrdir)/ruby/backward/2/r_cast.h
 nonblock.o: $(hdrdir)/ruby/backward/2/rmodule.h
 nonblock.o: $(hdrdir)/ruby/backward/2/stdalign.h
 nonblock.o: $(hdrdir)/ruby/backward/2/stdarg.h

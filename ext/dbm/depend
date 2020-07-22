@@ -151,7 +151,6 @@ dbm.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 dbm.o: $(hdrdir)/ruby/backward/2/inttypes.h
 dbm.o: $(hdrdir)/ruby/backward/2/limits.h
 dbm.o: $(hdrdir)/ruby/backward/2/long_long.h
-dbm.o: $(hdrdir)/ruby/backward/2/r_cast.h
 dbm.o: $(hdrdir)/ruby/backward/2/rmodule.h
 dbm.o: $(hdrdir)/ruby/backward/2/stdalign.h
 dbm.o: $(hdrdir)/ruby/backward/2/stdarg.h

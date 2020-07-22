@@ -154,7 +154,6 @@ md5init.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 md5init.o: $(hdrdir)/ruby/backward/2/inttypes.h
 md5init.o: $(hdrdir)/ruby/backward/2/limits.h
 md5init.o: $(hdrdir)/ruby/backward/2/long_long.h
-md5init.o: $(hdrdir)/ruby/backward/2/r_cast.h
 md5init.o: $(hdrdir)/ruby/backward/2/rmodule.h
 md5init.o: $(hdrdir)/ruby/backward/2/stdalign.h
 md5init.o: $(hdrdir)/ruby/backward/2/stdarg.h

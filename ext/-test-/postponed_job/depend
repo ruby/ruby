@@ -151,7 +151,6 @@ postponed_job.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 postponed_job.o: $(hdrdir)/ruby/backward/2/inttypes.h
 postponed_job.o: $(hdrdir)/ruby/backward/2/limits.h
 postponed_job.o: $(hdrdir)/ruby/backward/2/long_long.h
-postponed_job.o: $(hdrdir)/ruby/backward/2/r_cast.h
 postponed_job.o: $(hdrdir)/ruby/backward/2/rmodule.h
 postponed_job.o: $(hdrdir)/ruby/backward/2/stdalign.h
 postponed_job.o: $(hdrdir)/ruby/backward/2/stdarg.h

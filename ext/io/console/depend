@@ -151,7 +151,6 @@ console.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 console.o: $(hdrdir)/ruby/backward/2/inttypes.h
 console.o: $(hdrdir)/ruby/backward/2/limits.h
 console.o: $(hdrdir)/ruby/backward/2/long_long.h
-console.o: $(hdrdir)/ruby/backward/2/r_cast.h
 console.o: $(hdrdir)/ruby/backward/2/rmodule.h
 console.o: $(hdrdir)/ruby/backward/2/stdalign.h
 console.o: $(hdrdir)/ruby/backward/2/stdarg.h

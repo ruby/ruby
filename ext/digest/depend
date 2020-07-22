@@ -151,7 +151,6 @@ digest.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 digest.o: $(hdrdir)/ruby/backward/2/inttypes.h
 digest.o: $(hdrdir)/ruby/backward/2/limits.h
 digest.o: $(hdrdir)/ruby/backward/2/long_long.h
-digest.o: $(hdrdir)/ruby/backward/2/r_cast.h
 digest.o: $(hdrdir)/ruby/backward/2/rmodule.h
 digest.o: $(hdrdir)/ruby/backward/2/stdalign.h
 digest.o: $(hdrdir)/ruby/backward/2/stdarg.h

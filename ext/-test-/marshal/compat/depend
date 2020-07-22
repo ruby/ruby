@@ -151,7 +151,6 @@ usrcompat.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 usrcompat.o: $(hdrdir)/ruby/backward/2/inttypes.h
 usrcompat.o: $(hdrdir)/ruby/backward/2/limits.h
 usrcompat.o: $(hdrdir)/ruby/backward/2/long_long.h
-usrcompat.o: $(hdrdir)/ruby/backward/2/r_cast.h
 usrcompat.o: $(hdrdir)/ruby/backward/2/rmodule.h
 usrcompat.o: $(hdrdir)/ruby/backward/2/stdalign.h
 usrcompat.o: $(hdrdir)/ruby/backward/2/stdarg.h

@@ -151,7 +151,6 @@ funcall.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 funcall.o: $(hdrdir)/ruby/backward/2/inttypes.h
 funcall.o: $(hdrdir)/ruby/backward/2/limits.h
 funcall.o: $(hdrdir)/ruby/backward/2/long_long.h
-funcall.o: $(hdrdir)/ruby/backward/2/r_cast.h
 funcall.o: $(hdrdir)/ruby/backward/2/rmodule.h
 funcall.o: $(hdrdir)/ruby/backward/2/stdalign.h
 funcall.o: $(hdrdir)/ruby/backward/2/stdarg.h

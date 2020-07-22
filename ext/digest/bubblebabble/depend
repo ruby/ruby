@@ -151,7 +151,6 @@ bubblebabble.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 bubblebabble.o: $(hdrdir)/ruby/backward/2/inttypes.h
 bubblebabble.o: $(hdrdir)/ruby/backward/2/limits.h
 bubblebabble.o: $(hdrdir)/ruby/backward/2/long_long.h
-bubblebabble.o: $(hdrdir)/ruby/backward/2/r_cast.h
 bubblebabble.o: $(hdrdir)/ruby/backward/2/rmodule.h
 bubblebabble.o: $(hdrdir)/ruby/backward/2/stdalign.h
 bubblebabble.o: $(hdrdir)/ruby/backward/2/stdarg.h

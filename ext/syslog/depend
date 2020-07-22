@@ -150,7 +150,6 @@ syslog.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 syslog.o: $(hdrdir)/ruby/backward/2/inttypes.h
 syslog.o: $(hdrdir)/ruby/backward/2/limits.h
 syslog.o: $(hdrdir)/ruby/backward/2/long_long.h
-syslog.o: $(hdrdir)/ruby/backward/2/r_cast.h
 syslog.o: $(hdrdir)/ruby/backward/2/rmodule.h
 syslog.o: $(hdrdir)/ruby/backward/2/stdalign.h
 syslog.o: $(hdrdir)/ruby/backward/2/stdarg.h

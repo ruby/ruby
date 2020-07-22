@@ -151,7 +151,6 @@ stringio.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 stringio.o: $(hdrdir)/ruby/backward/2/inttypes.h
 stringio.o: $(hdrdir)/ruby/backward/2/limits.h
 stringio.o: $(hdrdir)/ruby/backward/2/long_long.h
-stringio.o: $(hdrdir)/ruby/backward/2/r_cast.h
 stringio.o: $(hdrdir)/ruby/backward/2/rmodule.h
 stringio.o: $(hdrdir)/ruby/backward/2/stdalign.h
 stringio.o: $(hdrdir)/ruby/backward/2/stdarg.h

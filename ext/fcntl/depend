@@ -151,7 +151,6 @@ fcntl.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 fcntl.o: $(hdrdir)/ruby/backward/2/inttypes.h
 fcntl.o: $(hdrdir)/ruby/backward/2/limits.h
 fcntl.o: $(hdrdir)/ruby/backward/2/long_long.h
-fcntl.o: $(hdrdir)/ruby/backward/2/r_cast.h
 fcntl.o: $(hdrdir)/ruby/backward/2/rmodule.h
 fcntl.o: $(hdrdir)/ruby/backward/2/stdalign.h
 fcntl.o: $(hdrdir)/ruby/backward/2/stdarg.h

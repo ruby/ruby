@@ -150,7 +150,6 @@ monitor.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 monitor.o: $(hdrdir)/ruby/backward/2/inttypes.h
 monitor.o: $(hdrdir)/ruby/backward/2/limits.h
 monitor.o: $(hdrdir)/ruby/backward/2/long_long.h
-monitor.o: $(hdrdir)/ruby/backward/2/r_cast.h
 monitor.o: $(hdrdir)/ruby/backward/2/rmodule.h
 monitor.o: $(hdrdir)/ruby/backward/2/stdalign.h
 monitor.o: $(hdrdir)/ruby/backward/2/stdarg.h

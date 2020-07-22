@@ -150,7 +150,6 @@ bug-14384.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 bug-14384.o: $(hdrdir)/ruby/backward/2/inttypes.h
 bug-14384.o: $(hdrdir)/ruby/backward/2/limits.h
 bug-14384.o: $(hdrdir)/ruby/backward/2/long_long.h
-bug-14384.o: $(hdrdir)/ruby/backward/2/r_cast.h
 bug-14384.o: $(hdrdir)/ruby/backward/2/rmodule.h
 bug-14384.o: $(hdrdir)/ruby/backward/2/stdalign.h
 bug-14384.o: $(hdrdir)/ruby/backward/2/stdarg.h

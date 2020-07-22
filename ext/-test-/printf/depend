@@ -151,7 +151,6 @@ printf.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 printf.o: $(hdrdir)/ruby/backward/2/inttypes.h
 printf.o: $(hdrdir)/ruby/backward/2/limits.h
 printf.o: $(hdrdir)/ruby/backward/2/long_long.h
-printf.o: $(hdrdir)/ruby/backward/2/r_cast.h
 printf.o: $(hdrdir)/ruby/backward/2/rmodule.h
 printf.o: $(hdrdir)/ruby/backward/2/stdalign.h
 printf.o: $(hdrdir)/ruby/backward/2/stdarg.h

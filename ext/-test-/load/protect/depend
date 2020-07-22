@@ -151,7 +151,6 @@ protect.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 protect.o: $(hdrdir)/ruby/backward/2/inttypes.h
 protect.o: $(hdrdir)/ruby/backward/2/limits.h
 protect.o: $(hdrdir)/ruby/backward/2/long_long.h
-protect.o: $(hdrdir)/ruby/backward/2/r_cast.h
 protect.o: $(hdrdir)/ruby/backward/2/rmodule.h
 protect.o: $(hdrdir)/ruby/backward/2/stdalign.h
 protect.o: $(hdrdir)/ruby/backward/2/stdarg.h

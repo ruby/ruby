@@ -154,7 +154,6 @@ sha2init.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 sha2init.o: $(hdrdir)/ruby/backward/2/inttypes.h
 sha2init.o: $(hdrdir)/ruby/backward/2/limits.h
 sha2init.o: $(hdrdir)/ruby/backward/2/long_long.h
-sha2init.o: $(hdrdir)/ruby/backward/2/r_cast.h
 sha2init.o: $(hdrdir)/ruby/backward/2/rmodule.h
 sha2init.o: $(hdrdir)/ruby/backward/2/stdalign.h
 sha2init.o: $(hdrdir)/ruby/backward/2/stdarg.h

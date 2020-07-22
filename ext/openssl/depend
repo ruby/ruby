@@ -155,7 +155,6 @@ ossl.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl.o: $(hdrdir)/ruby/backward/2/long_long.h
-ossl.o: $(hdrdir)/ruby/backward/2/r_cast.h
 ossl.o: $(hdrdir)/ruby/backward/2/rmodule.h
 ossl.o: $(hdrdir)/ruby/backward/2/stdalign.h
 ossl.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -345,7 +344,6 @@ ossl_asn1.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_asn1.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_asn1.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_asn1.o: $(hdrdir)/ruby/backward/2/long_long.h
-ossl_asn1.o: $(hdrdir)/ruby/backward/2/r_cast.h
 ossl_asn1.o: $(hdrdir)/ruby/backward/2/rmodule.h
 ossl_asn1.o: $(hdrdir)/ruby/backward/2/stdalign.h
 ossl_asn1.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -534,7 +532,6 @@ ossl_bio.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_bio.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_bio.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_bio.o: $(hdrdir)/ruby/backward/2/long_long.h
-ossl_bio.o: $(hdrdir)/ruby/backward/2/r_cast.h
 ossl_bio.o: $(hdrdir)/ruby/backward/2/rmodule.h
 ossl_bio.o: $(hdrdir)/ruby/backward/2/stdalign.h
 ossl_bio.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -723,7 +720,6 @@ ossl_bn.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_bn.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_bn.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_bn.o: $(hdrdir)/ruby/backward/2/long_long.h
-ossl_bn.o: $(hdrdir)/ruby/backward/2/r_cast.h
 ossl_bn.o: $(hdrdir)/ruby/backward/2/rmodule.h
 ossl_bn.o: $(hdrdir)/ruby/backward/2/stdalign.h
 ossl_bn.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -912,7 +908,6 @@ ossl_cipher.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_cipher.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_cipher.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_cipher.o: $(hdrdir)/ruby/backward/2/long_long.h
-ossl_cipher.o: $(hdrdir)/ruby/backward/2/r_cast.h
 ossl_cipher.o: $(hdrdir)/ruby/backward/2/rmodule.h
 ossl_cipher.o: $(hdrdir)/ruby/backward/2/stdalign.h
 ossl_cipher.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -1101,7 +1096,6 @@ ossl_config.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_config.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_config.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_config.o: $(hdrdir)/ruby/backward/2/long_long.h
-ossl_config.o: $(hdrdir)/ruby/backward/2/r_cast.h
 ossl_config.o: $(hdrdir)/ruby/backward/2/rmodule.h
 ossl_config.o: $(hdrdir)/ruby/backward/2/stdalign.h
 ossl_config.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -1290,7 +1284,6 @@ ossl_digest.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_digest.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_digest.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_digest.o: $(hdrdir)/ruby/backward/2/long_long.h
-ossl_digest.o: $(hdrdir)/ruby/backward/2/r_cast.h
 ossl_digest.o: $(hdrdir)/ruby/backward/2/rmodule.h
 ossl_digest.o: $(hdrdir)/ruby/backward/2/stdalign.h
 ossl_digest.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -1479,7 +1472,6 @@ ossl_engine.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_engine.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_engine.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_engine.o: $(hdrdir)/ruby/backward/2/long_long.h
-ossl_engine.o: $(hdrdir)/ruby/backward/2/r_cast.h
 ossl_engine.o: $(hdrdir)/ruby/backward/2/rmodule.h
 ossl_engine.o: $(hdrdir)/ruby/backward/2/stdalign.h
 ossl_engine.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -1668,7 +1660,6 @@ ossl_hmac.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_hmac.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_hmac.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_hmac.o: $(hdrdir)/ruby/backward/2/long_long.h
-ossl_hmac.o: $(hdrdir)/ruby/backward/2/r_cast.h
 ossl_hmac.o: $(hdrdir)/ruby/backward/2/rmodule.h
 ossl_hmac.o: $(hdrdir)/ruby/backward/2/stdalign.h
 ossl_hmac.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -1857,7 +1848,6 @@ ossl_kdf.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_kdf.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_kdf.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_kdf.o: $(hdrdir)/ruby/backward/2/long_long.h
-ossl_kdf.o: $(hdrdir)/ruby/backward/2/r_cast.h
 ossl_kdf.o: $(hdrdir)/ruby/backward/2/rmodule.h
 ossl_kdf.o: $(hdrdir)/ruby/backward/2/stdalign.h
 ossl_kdf.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -2046,7 +2036,6 @@ ossl_ns_spki.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_ns_spki.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_ns_spki.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_ns_spki.o: $(hdrdir)/ruby/backward/2/long_long.h
-ossl_ns_spki.o: $(hdrdir)/ruby/backward/2/r_cast.h
 ossl_ns_spki.o: $(hdrdir)/ruby/backward/2/rmodule.h
 ossl_ns_spki.o: $(hdrdir)/ruby/backward/2/stdalign.h
 ossl_ns_spki.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -2235,7 +2224,6 @@ ossl_ocsp.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_ocsp.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_ocsp.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_ocsp.o: $(hdrdir)/ruby/backward/2/long_long.h
-ossl_ocsp.o: $(hdrdir)/ruby/backward/2/r_cast.h
 ossl_ocsp.o: $(hdrdir)/ruby/backward/2/rmodule.h
 ossl_ocsp.o: $(hdrdir)/ruby/backward/2/stdalign.h
 ossl_ocsp.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -2424,7 +2412,6 @@ ossl_pkcs12.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_pkcs12.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_pkcs12.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_pkcs12.o: $(hdrdir)/ruby/backward/2/long_long.h
-ossl_pkcs12.o: $(hdrdir)/ruby/backward/2/r_cast.h
 ossl_pkcs12.o: $(hdrdir)/ruby/backward/2/rmodule.h
 ossl_pkcs12.o: $(hdrdir)/ruby/backward/2/stdalign.h
 ossl_pkcs12.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -2613,7 +2600,6 @@ ossl_pkcs7.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_pkcs7.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_pkcs7.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_pkcs7.o: $(hdrdir)/ruby/backward/2/long_long.h
-ossl_pkcs7.o: $(hdrdir)/ruby/backward/2/r_cast.h
 ossl_pkcs7.o: $(hdrdir)/ruby/backward/2/rmodule.h
 ossl_pkcs7.o: $(hdrdir)/ruby/backward/2/stdalign.h
 ossl_pkcs7.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -2802,7 +2788,6 @@ ossl_pkey.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_pkey.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_pkey.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_pkey.o: $(hdrdir)/ruby/backward/2/long_long.h
-ossl_pkey.o: $(hdrdir)/ruby/backward/2/r_cast.h
 ossl_pkey.o: $(hdrdir)/ruby/backward/2/rmodule.h
 ossl_pkey.o: $(hdrdir)/ruby/backward/2/stdalign.h
 ossl_pkey.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -2991,7 +2976,6 @@ ossl_pkey_dh.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/backward/2/long_long.h
-ossl_pkey_dh.o: $(hdrdir)/ruby/backward/2/r_cast.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/backward/2/rmodule.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/backward/2/stdalign.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -3180,7 +3164,6 @@ ossl_pkey_dsa.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/backward/2/long_long.h
-ossl_pkey_dsa.o: $(hdrdir)/ruby/backward/2/r_cast.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/backward/2/rmodule.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/backward/2/stdalign.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -3369,7 +3352,6 @@ ossl_pkey_ec.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/backward/2/long_long.h
-ossl_pkey_ec.o: $(hdrdir)/ruby/backward/2/r_cast.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/backward/2/rmodule.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/backward/2/stdalign.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -3558,7 +3540,6 @@ ossl_pkey_rsa.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/backward/2/long_long.h
-ossl_pkey_rsa.o: $(hdrdir)/ruby/backward/2/r_cast.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/backward/2/rmodule.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/backward/2/stdalign.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -3747,7 +3728,6 @@ ossl_rand.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_rand.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_rand.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_rand.o: $(hdrdir)/ruby/backward/2/long_long.h
-ossl_rand.o: $(hdrdir)/ruby/backward/2/r_cast.h
 ossl_rand.o: $(hdrdir)/ruby/backward/2/rmodule.h
 ossl_rand.o: $(hdrdir)/ruby/backward/2/stdalign.h
 ossl_rand.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -3936,7 +3916,6 @@ ossl_ssl.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_ssl.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_ssl.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_ssl.o: $(hdrdir)/ruby/backward/2/long_long.h
-ossl_ssl.o: $(hdrdir)/ruby/backward/2/r_cast.h
 ossl_ssl.o: $(hdrdir)/ruby/backward/2/rmodule.h
 ossl_ssl.o: $(hdrdir)/ruby/backward/2/stdalign.h
 ossl_ssl.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -4125,7 +4104,6 @@ ossl_ssl_session.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_ssl_session.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_ssl_session.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_ssl_session.o: $(hdrdir)/ruby/backward/2/long_long.h
-ossl_ssl_session.o: $(hdrdir)/ruby/backward/2/r_cast.h
 ossl_ssl_session.o: $(hdrdir)/ruby/backward/2/rmodule.h
 ossl_ssl_session.o: $(hdrdir)/ruby/backward/2/stdalign.h
 ossl_ssl_session.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -4314,7 +4292,6 @@ ossl_ts.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_ts.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_ts.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_ts.o: $(hdrdir)/ruby/backward/2/long_long.h
-ossl_ts.o: $(hdrdir)/ruby/backward/2/r_cast.h
 ossl_ts.o: $(hdrdir)/ruby/backward/2/rmodule.h
 ossl_ts.o: $(hdrdir)/ruby/backward/2/stdalign.h
 ossl_ts.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -4503,7 +4480,6 @@ ossl_x509.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_x509.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_x509.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_x509.o: $(hdrdir)/ruby/backward/2/long_long.h
-ossl_x509.o: $(hdrdir)/ruby/backward/2/r_cast.h
 ossl_x509.o: $(hdrdir)/ruby/backward/2/rmodule.h
 ossl_x509.o: $(hdrdir)/ruby/backward/2/stdalign.h
 ossl_x509.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -4692,7 +4668,6 @@ ossl_x509attr.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_x509attr.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_x509attr.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_x509attr.o: $(hdrdir)/ruby/backward/2/long_long.h
-ossl_x509attr.o: $(hdrdir)/ruby/backward/2/r_cast.h
 ossl_x509attr.o: $(hdrdir)/ruby/backward/2/rmodule.h
 ossl_x509attr.o: $(hdrdir)/ruby/backward/2/stdalign.h
 ossl_x509attr.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -4881,7 +4856,6 @@ ossl_x509cert.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_x509cert.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_x509cert.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_x509cert.o: $(hdrdir)/ruby/backward/2/long_long.h
-ossl_x509cert.o: $(hdrdir)/ruby/backward/2/r_cast.h
 ossl_x509cert.o: $(hdrdir)/ruby/backward/2/rmodule.h
 ossl_x509cert.o: $(hdrdir)/ruby/backward/2/stdalign.h
 ossl_x509cert.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -5070,7 +5044,6 @@ ossl_x509crl.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_x509crl.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_x509crl.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_x509crl.o: $(hdrdir)/ruby/backward/2/long_long.h
-ossl_x509crl.o: $(hdrdir)/ruby/backward/2/r_cast.h
 ossl_x509crl.o: $(hdrdir)/ruby/backward/2/rmodule.h
 ossl_x509crl.o: $(hdrdir)/ruby/backward/2/stdalign.h
 ossl_x509crl.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -5259,7 +5232,6 @@ ossl_x509ext.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_x509ext.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_x509ext.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_x509ext.o: $(hdrdir)/ruby/backward/2/long_long.h
-ossl_x509ext.o: $(hdrdir)/ruby/backward/2/r_cast.h
 ossl_x509ext.o: $(hdrdir)/ruby/backward/2/rmodule.h
 ossl_x509ext.o: $(hdrdir)/ruby/backward/2/stdalign.h
 ossl_x509ext.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -5448,7 +5420,6 @@ ossl_x509name.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_x509name.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_x509name.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_x509name.o: $(hdrdir)/ruby/backward/2/long_long.h
-ossl_x509name.o: $(hdrdir)/ruby/backward/2/r_cast.h
 ossl_x509name.o: $(hdrdir)/ruby/backward/2/rmodule.h
 ossl_x509name.o: $(hdrdir)/ruby/backward/2/stdalign.h
 ossl_x509name.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -5637,7 +5608,6 @@ ossl_x509req.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_x509req.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_x509req.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_x509req.o: $(hdrdir)/ruby/backward/2/long_long.h
-ossl_x509req.o: $(hdrdir)/ruby/backward/2/r_cast.h
 ossl_x509req.o: $(hdrdir)/ruby/backward/2/rmodule.h
 ossl_x509req.o: $(hdrdir)/ruby/backward/2/stdalign.h
 ossl_x509req.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -5826,7 +5796,6 @@ ossl_x509revoked.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_x509revoked.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_x509revoked.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_x509revoked.o: $(hdrdir)/ruby/backward/2/long_long.h
-ossl_x509revoked.o: $(hdrdir)/ruby/backward/2/r_cast.h
 ossl_x509revoked.o: $(hdrdir)/ruby/backward/2/rmodule.h
 ossl_x509revoked.o: $(hdrdir)/ruby/backward/2/stdalign.h
 ossl_x509revoked.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -6015,7 +5984,6 @@ ossl_x509store.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_x509store.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_x509store.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_x509store.o: $(hdrdir)/ruby/backward/2/long_long.h
-ossl_x509store.o: $(hdrdir)/ruby/backward/2/r_cast.h
 ossl_x509store.o: $(hdrdir)/ruby/backward/2/rmodule.h
 ossl_x509store.o: $(hdrdir)/ruby/backward/2/stdalign.h
 ossl_x509store.o: $(hdrdir)/ruby/backward/2/stdarg.h

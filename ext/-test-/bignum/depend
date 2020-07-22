@@ -151,7 +151,6 @@ big2str.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 big2str.o: $(hdrdir)/ruby/backward/2/inttypes.h
 big2str.o: $(hdrdir)/ruby/backward/2/limits.h
 big2str.o: $(hdrdir)/ruby/backward/2/long_long.h
-big2str.o: $(hdrdir)/ruby/backward/2/r_cast.h
 big2str.o: $(hdrdir)/ruby/backward/2/rmodule.h
 big2str.o: $(hdrdir)/ruby/backward/2/stdalign.h
 big2str.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -316,7 +315,6 @@ bigzero.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 bigzero.o: $(hdrdir)/ruby/backward/2/inttypes.h
 bigzero.o: $(hdrdir)/ruby/backward/2/limits.h
 bigzero.o: $(hdrdir)/ruby/backward/2/long_long.h
-bigzero.o: $(hdrdir)/ruby/backward/2/r_cast.h
 bigzero.o: $(hdrdir)/ruby/backward/2/rmodule.h
 bigzero.o: $(hdrdir)/ruby/backward/2/stdalign.h
 bigzero.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -481,7 +479,6 @@ div.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 div.o: $(hdrdir)/ruby/backward/2/inttypes.h
 div.o: $(hdrdir)/ruby/backward/2/limits.h
 div.o: $(hdrdir)/ruby/backward/2/long_long.h
-div.o: $(hdrdir)/ruby/backward/2/r_cast.h
 div.o: $(hdrdir)/ruby/backward/2/rmodule.h
 div.o: $(hdrdir)/ruby/backward/2/stdalign.h
 div.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -646,7 +643,6 @@ init.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 init.o: $(hdrdir)/ruby/backward/2/inttypes.h
 init.o: $(hdrdir)/ruby/backward/2/limits.h
 init.o: $(hdrdir)/ruby/backward/2/long_long.h
-init.o: $(hdrdir)/ruby/backward/2/r_cast.h
 init.o: $(hdrdir)/ruby/backward/2/rmodule.h
 init.o: $(hdrdir)/ruby/backward/2/stdalign.h
 init.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -809,7 +805,6 @@ intpack.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 intpack.o: $(hdrdir)/ruby/backward/2/inttypes.h
 intpack.o: $(hdrdir)/ruby/backward/2/limits.h
 intpack.o: $(hdrdir)/ruby/backward/2/long_long.h
-intpack.o: $(hdrdir)/ruby/backward/2/r_cast.h
 intpack.o: $(hdrdir)/ruby/backward/2/rmodule.h
 intpack.o: $(hdrdir)/ruby/backward/2/stdalign.h
 intpack.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -974,7 +969,6 @@ mul.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 mul.o: $(hdrdir)/ruby/backward/2/inttypes.h
 mul.o: $(hdrdir)/ruby/backward/2/limits.h
 mul.o: $(hdrdir)/ruby/backward/2/long_long.h
-mul.o: $(hdrdir)/ruby/backward/2/r_cast.h
 mul.o: $(hdrdir)/ruby/backward/2/rmodule.h
 mul.o: $(hdrdir)/ruby/backward/2/stdalign.h
 mul.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -1139,7 +1133,6 @@ str2big.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 str2big.o: $(hdrdir)/ruby/backward/2/inttypes.h
 str2big.o: $(hdrdir)/ruby/backward/2/limits.h
 str2big.o: $(hdrdir)/ruby/backward/2/long_long.h
-str2big.o: $(hdrdir)/ruby/backward/2/r_cast.h
 str2big.o: $(hdrdir)/ruby/backward/2/rmodule.h
 str2big.o: $(hdrdir)/ruby/backward/2/stdalign.h
 str2big.o: $(hdrdir)/ruby/backward/2/stdarg.h

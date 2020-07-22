@@ -155,7 +155,6 @@ generator.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 generator.o: $(hdrdir)/ruby/backward/2/inttypes.h
 generator.o: $(hdrdir)/ruby/backward/2/limits.h
 generator.o: $(hdrdir)/ruby/backward/2/long_long.h
-generator.o: $(hdrdir)/ruby/backward/2/r_cast.h
 generator.o: $(hdrdir)/ruby/backward/2/rmodule.h
 generator.o: $(hdrdir)/ruby/backward/2/stdalign.h
 generator.o: $(hdrdir)/ruby/backward/2/stdarg.h
