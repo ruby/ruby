@@ -61,21 +61,18 @@
 
 #undef DEPRECATED_TYPE
 #if defined(__GNUC__)
-# define DEPRECATED_TYPE(mesg, decl)                    \
-    _Pragma("message \"DEPRECATED_TYPE is deprecated, " \
-            "use RBIMPL_ATTR_DEPRECATED instead\"");    \
+# define DEPRECATED_TYPE(mesg, decl)                      \
+    _Pragma("message \"DEPRECATED_TYPE is deprecated\""); \
     decl RBIMPL_ATTR_DEPRECATED(mseg)
 #elif defined(_MSC_VER)
 # pragma deprecated(DEPRECATED_TYPE)
 # define DEPRECATED_TYPE(mesg, decl)                              \
     __pragma(message(__FILE__"("STRINGIZE(__LINE__)"): warning: " \
-                     "DEPRECATED_TYPE is deprecated, "            \
-                     "use RBIMPL_ATTR_DEPRECATED instead"))       \
+                     "DEPRECATED_TYPE is deprecated"))            \
     decl RBIMPL_ATTR_DEPRECATED(mseg)
 #else
 # define DEPRECATED_TYPE(mesg, decl)                    \
-    <-<-"DEPRECATED_TYPE is deprecated, "               \
-        "use RBIMPL_ATTR_DEPRECATED instead"->->
+    <-<-"DEPRECATED_TYPE is deprecated"->->
 #endif
 
 #undef RUBY_CXX_DEPRECATED
