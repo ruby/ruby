@@ -151,7 +151,6 @@ delete.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 delete.o: $(hdrdir)/ruby/backward/2/inttypes.h
 delete.o: $(hdrdir)/ruby/backward/2/limits.h
 delete.o: $(hdrdir)/ruby/backward/2/long_long.h
-delete.o: $(hdrdir)/ruby/backward/2/rmodule.h
 delete.o: $(hdrdir)/ruby/backward/2/stdalign.h
 delete.o: $(hdrdir)/ruby/backward/2/stdarg.h
 delete.o: $(hdrdir)/ruby/defines.h
@@ -313,7 +312,6 @@ init.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 init.o: $(hdrdir)/ruby/backward/2/inttypes.h
 init.o: $(hdrdir)/ruby/backward/2/limits.h
 init.o: $(hdrdir)/ruby/backward/2/long_long.h
-init.o: $(hdrdir)/ruby/backward/2/rmodule.h
 init.o: $(hdrdir)/ruby/backward/2/stdalign.h
 init.o: $(hdrdir)/ruby/backward/2/stdarg.h
 init.o: $(hdrdir)/ruby/defines.h

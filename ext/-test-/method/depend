@@ -151,7 +151,6 @@ arity.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 arity.o: $(hdrdir)/ruby/backward/2/inttypes.h
 arity.o: $(hdrdir)/ruby/backward/2/limits.h
 arity.o: $(hdrdir)/ruby/backward/2/long_long.h
-arity.o: $(hdrdir)/ruby/backward/2/rmodule.h
 arity.o: $(hdrdir)/ruby/backward/2/stdalign.h
 arity.o: $(hdrdir)/ruby/backward/2/stdarg.h
 arity.o: $(hdrdir)/ruby/defines.h
@@ -313,7 +312,6 @@ init.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 init.o: $(hdrdir)/ruby/backward/2/inttypes.h
 init.o: $(hdrdir)/ruby/backward/2/limits.h
 init.o: $(hdrdir)/ruby/backward/2/long_long.h
-init.o: $(hdrdir)/ruby/backward/2/rmodule.h
 init.o: $(hdrdir)/ruby/backward/2/stdalign.h
 init.o: $(hdrdir)/ruby/backward/2/stdarg.h
 init.o: $(hdrdir)/ruby/defines.h

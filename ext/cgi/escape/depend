@@ -151,7 +151,6 @@ escape.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 escape.o: $(hdrdir)/ruby/backward/2/inttypes.h
 escape.o: $(hdrdir)/ruby/backward/2/limits.h
 escape.o: $(hdrdir)/ruby/backward/2/long_long.h
-escape.o: $(hdrdir)/ruby/backward/2/rmodule.h
 escape.o: $(hdrdir)/ruby/backward/2/stdalign.h
 escape.o: $(hdrdir)/ruby/backward/2/stdarg.h
 escape.o: $(hdrdir)/ruby/defines.h

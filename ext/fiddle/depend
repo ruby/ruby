@@ -204,7 +204,6 @@ closure.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 closure.o: $(hdrdir)/ruby/backward/2/inttypes.h
 closure.o: $(hdrdir)/ruby/backward/2/limits.h
 closure.o: $(hdrdir)/ruby/backward/2/long_long.h
-closure.o: $(hdrdir)/ruby/backward/2/rmodule.h
 closure.o: $(hdrdir)/ruby/backward/2/stdalign.h
 closure.o: $(hdrdir)/ruby/backward/2/stdarg.h
 closure.o: $(hdrdir)/ruby/defines.h
@@ -371,7 +370,6 @@ conversions.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 conversions.o: $(hdrdir)/ruby/backward/2/inttypes.h
 conversions.o: $(hdrdir)/ruby/backward/2/limits.h
 conversions.o: $(hdrdir)/ruby/backward/2/long_long.h
-conversions.o: $(hdrdir)/ruby/backward/2/rmodule.h
 conversions.o: $(hdrdir)/ruby/backward/2/stdalign.h
 conversions.o: $(hdrdir)/ruby/backward/2/stdarg.h
 conversions.o: $(hdrdir)/ruby/defines.h
@@ -537,7 +535,6 @@ fiddle.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 fiddle.o: $(hdrdir)/ruby/backward/2/inttypes.h
 fiddle.o: $(hdrdir)/ruby/backward/2/limits.h
 fiddle.o: $(hdrdir)/ruby/backward/2/long_long.h
-fiddle.o: $(hdrdir)/ruby/backward/2/rmodule.h
 fiddle.o: $(hdrdir)/ruby/backward/2/stdalign.h
 fiddle.o: $(hdrdir)/ruby/backward/2/stdarg.h
 fiddle.o: $(hdrdir)/ruby/defines.h
@@ -703,7 +700,6 @@ function.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 function.o: $(hdrdir)/ruby/backward/2/inttypes.h
 function.o: $(hdrdir)/ruby/backward/2/limits.h
 function.o: $(hdrdir)/ruby/backward/2/long_long.h
-function.o: $(hdrdir)/ruby/backward/2/rmodule.h
 function.o: $(hdrdir)/ruby/backward/2/stdalign.h
 function.o: $(hdrdir)/ruby/backward/2/stdarg.h
 function.o: $(hdrdir)/ruby/defines.h
@@ -870,7 +866,6 @@ handle.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 handle.o: $(hdrdir)/ruby/backward/2/inttypes.h
 handle.o: $(hdrdir)/ruby/backward/2/limits.h
 handle.o: $(hdrdir)/ruby/backward/2/long_long.h
-handle.o: $(hdrdir)/ruby/backward/2/rmodule.h
 handle.o: $(hdrdir)/ruby/backward/2/stdalign.h
 handle.o: $(hdrdir)/ruby/backward/2/stdarg.h
 handle.o: $(hdrdir)/ruby/defines.h
@@ -1036,7 +1031,6 @@ pointer.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 pointer.o: $(hdrdir)/ruby/backward/2/inttypes.h
 pointer.o: $(hdrdir)/ruby/backward/2/limits.h
 pointer.o: $(hdrdir)/ruby/backward/2/long_long.h
-pointer.o: $(hdrdir)/ruby/backward/2/rmodule.h
 pointer.o: $(hdrdir)/ruby/backward/2/stdalign.h
 pointer.o: $(hdrdir)/ruby/backward/2/stdarg.h
 pointer.o: $(hdrdir)/ruby/defines.h

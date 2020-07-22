@@ -151,7 +151,6 @@ break.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 break.o: $(hdrdir)/ruby/backward/2/inttypes.h
 break.o: $(hdrdir)/ruby/backward/2/limits.h
 break.o: $(hdrdir)/ruby/backward/2/long_long.h
-break.o: $(hdrdir)/ruby/backward/2/rmodule.h
 break.o: $(hdrdir)/ruby/backward/2/stdalign.h
 break.o: $(hdrdir)/ruby/backward/2/stdarg.h
 break.o: $(hdrdir)/ruby/defines.h
@@ -313,7 +312,6 @@ init.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 init.o: $(hdrdir)/ruby/backward/2/inttypes.h
 init.o: $(hdrdir)/ruby/backward/2/limits.h
 init.o: $(hdrdir)/ruby/backward/2/long_long.h
-init.o: $(hdrdir)/ruby/backward/2/rmodule.h
 init.o: $(hdrdir)/ruby/backward/2/stdalign.h
 init.o: $(hdrdir)/ruby/backward/2/stdarg.h
 init.o: $(hdrdir)/ruby/defines.h
@@ -475,7 +473,6 @@ yield.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 yield.o: $(hdrdir)/ruby/backward/2/inttypes.h
 yield.o: $(hdrdir)/ruby/backward/2/limits.h
 yield.o: $(hdrdir)/ruby/backward/2/long_long.h
-yield.o: $(hdrdir)/ruby/backward/2/rmodule.h
 yield.o: $(hdrdir)/ruby/backward/2/stdalign.h
 yield.o: $(hdrdir)/ruby/backward/2/stdarg.h
 yield.o: $(hdrdir)/ruby/defines.h
