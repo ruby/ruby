@@ -268,8 +268,11 @@ dump_object(VALUE obj, struct dump_config *dc)
 
       case T_CLASS:
       case T_MODULE:
-	if (dc->cur_obj_klass)
-	    dump_append(dc, ", \"name\":\"%s\"", rb_class2name(obj));
+	if (dc->cur_obj_klass) {
+	    VALUE mod_name = rb_mod_name(obj);
+	    if (!NIL_P(mod_name))
+		dump_append(dc, ", \"name\":\"%s\"", RSTRING_PTR(mod_name));
+	}
 	break;
 
       case T_DATA:
