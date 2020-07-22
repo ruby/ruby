@@ -539,6 +539,8 @@ typedef struct gc_profile_record {
 #endif
 } gc_profile_record;
 
+#define FL_FROM_FREELIST FL_USER0
+
 struct RMoved {
     VALUE flags;
     VALUE destination;
@@ -4378,9 +4380,11 @@ static int gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj);
 static VALUE gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free);
 
 static short
-try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page, VALUE vp)
+try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page, VALUE dest, char from_freelist)
 {
     struct heap_page * cursor = heap->compact_cursor;
+
+    GC_ASSERT(RVALUE_MARKED(dest) == FALSE);
 
     while(1) {
         if(mprotect(GET_PAGE_BODY(cursor->start), HEAP_PAGE_SIZE, PROT_READ | PROT_WRITE)) {
@@ -4409,8 +4413,11 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page,
                         if (gc_is_moveable_obj(objspace, (VALUE)p)) {
                             /* We were able to move "p" */
                             objspace->rcompactor.moved_count_table[BUILTIN_TYPE((VALUE)p)]++;
-                            gc_move(objspace, (VALUE)p, vp);
-                            gc_pin(objspace, p);
+                            gc_move(objspace, (VALUE)p, dest);
+                            gc_pin(objspace, (VALUE)p);
+                            if (from_freelist) {
+                                FL_SET((VALUE)p, FL_FROM_FREELIST);
+                            }
 
                             if(mprotect(GET_PAGE_BODY(cursor->start), HEAP_PAGE_SIZE, PROT_NONE)) {
                                 rb_bug("Couldn't protect page %p", GET_PAGE_BODY(cursor->start));
@@ -4499,6 +4506,7 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 {
     int i;
     int empty_slots = 0, freed_slots = 0, final_slots = 0;
+    int was_compacting = 0;
     RVALUE *p, *offset;
     bits_t *bits, bitset;
 
@@ -4506,10 +4514,19 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 
     assert(sweep_page == heap->sweeping_page);
     sweep_page->flags.before_sweep = FALSE;
-    if (heap->compact_cursor && sweep_page == heap->compact_cursor) {
-        /* The compaction cursor and sweep page met, so we need to quit compacting */
-        gc_report(5, objspace, "Quit compacting, mark and compact cursor met\n");
-        gc_compact_finish(objspace, heap);
+
+    if (heap->compact_cursor) {
+        assert(heap->freelist == NULL);
+        assert(heap->free_pages == NULL);
+        if (sweep_page == heap->compact_cursor) {
+            /* The compaction cursor and sweep page met, so we need to quit compacting */
+            gc_report(5, objspace, "Quit compacting, mark and compact cursor met\n");
+            gc_compact_finish(objspace, heap);
+        } else {
+            /* We anticipate filling the page, so NULL out the freelist. */
+            sweep_page->freelist = 0;
+            was_compacting = 1;
+        }
     }
 
     p = sweep_page->start;
@@ -4551,7 +4568,7 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
                                   /* If try_move couldn't compact anything, it means
                                    * the cursors have met and there are no objects left that
                                    * /can/ be compacted, so we need to quit. */
-                                  if (!try_move(objspace, heap, sweep_page, vp)) {
+                                  if (!try_move(objspace, heap, sweep_page, vp, 0)) {
                                       gc_report(5, objspace, "Quit compacting, couldn't find an object to move\n");
                                       heap_page_add_freeobj(objspace, sweep_page, vp);
                                       gc_report(3, objspace, "page_sweep: %s is added to freelist\n", obj_info(vp));
@@ -4578,20 +4595,32 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
                             rb_bug("T_MOVED shouldn't be seen until compaction is finished\n");
                         }
                         gc_report(3, objspace, "page_sweep: %s is added to freelist\n", obj_info(vp));
+                        if (FL_TEST(vp, FL_FROM_FREELIST)) {
+                            empty_slots++;
+                        } else {
+                            freed_slots++;
+                        }
                         heap_page_add_freeobj(objspace, sweep_page, vp);
-                        freed_slots++;
                         break;
 		      case T_ZOMBIE:
 			/* already counted */
 			break;
 		      case T_NONE:
                         if (heap->compact_cursor) {
-                            if (!try_move(objspace, heap, sweep_page, vp)) {
+                            if (!try_move(objspace, heap, sweep_page, (VALUE)vp, 1)) {
                                 gc_report(5, objspace, "Quit compacting, couldn't find an object to move\n");
+                                heap_page_add_freeobj(objspace, sweep_page, vp);
                                 gc_compact_finish(objspace, heap);
                                 empty_slots++; /* already freed */
                             }
                         } else {
+                            /* When we started sweeping this page, we were in
+                             * compacting mode and nulled the free list for
+                             * the page. But compaction finished, so we need to
+                             * put any T_NONE slots back on the freelist. */
+                            if (was_compacting) {
+                                heap_page_add_freeobj(objspace, sweep_page, vp);
+                            }
                             empty_slots++; /* already freed */
                         }
 			break;
@@ -4852,7 +4881,7 @@ invalidate_moved_page(rb_objspace_t *objspace, struct heap_page *page)
 
                     object = rb_gc_location(forwarding_object);
 
-                    if (BUILTIN_TYPE(object) == T_NONE) {
+                    if (FL_TEST(forwarding_object, FL_FROM_FREELIST)) {
                         empty_slots++; /* already freed */
                     } else {
                         freed_slots++;
@@ -8840,7 +8869,6 @@ gc_ref_update(void *vstart, void *vend, size_t stride, void * data)
 {
     rb_objspace_t * objspace;
     struct heap_page *page;
-    short free_slots = 0;
 
     VALUE v = (VALUE)vstart;
     objspace = (rb_objspace_t *)data;
@@ -8858,11 +8886,7 @@ gc_ref_update(void *vstart, void *vend, size_t stride, void * data)
 
         switch (BUILTIN_TYPE(v)) {
           case T_NONE:
-            heap_page_add_freeobj(objspace, page, v);
-            free_slots++;
-            break;
           case T_MOVED:
-            break;
           case T_ZOMBIE:
             break;
           default:
@@ -8880,7 +8904,6 @@ gc_ref_update(void *vstart, void *vend, size_t stride, void * data)
         }
     }
 
-    page->free_slots = free_slots;
     return 0;
 }
 
