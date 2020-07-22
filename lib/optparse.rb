@@ -419,6 +419,8 @@
 # have any questions, file a ticket at http://bugs.ruby-lang.org.
 #
 class OptionParser
+  OptionParser::Version = "0.1.0"
+
   # :stopdoc:
   NoArgument = [NO_ARGUMENT = :NONE, nil].freeze
   RequiredArgument = [REQUIRED_ARGUMENT = :REQUIRED, true].freeze

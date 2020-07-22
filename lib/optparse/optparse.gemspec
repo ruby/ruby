@@ -1,6 +1,14 @@
+name = File.basename(__FILE__, ".gemspec")
+version = nil
+["lib", ".."].find do |dir|
+  version = File.foreach(File.join(__dir__, dir, "#{name}.rb")) do |line|
+    /^\s*OptionParser::Version\s*=\s*"(.*)"/ =~ line and break $1
+  end rescue nil
+end
+
 Gem::Specification.new do |spec|
-  spec.name          = "optparse"
-  spec.version       = "0.1.0"
+  spec.name          = name
+  spec.version       = version
   spec.authors       = ["Nobu Nakada"]
   spec.email         = ["nobu@ruby-lang.org"]
 
