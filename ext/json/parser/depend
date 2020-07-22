@@ -155,7 +155,6 @@ parser.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 parser.o: $(hdrdir)/ruby/backward/2/inttypes.h
 parser.o: $(hdrdir)/ruby/backward/2/limits.h
 parser.o: $(hdrdir)/ruby/backward/2/long_long.h
-parser.o: $(hdrdir)/ruby/backward/2/r_cast.h
 parser.o: $(hdrdir)/ruby/backward/2/rmodule.h
 parser.o: $(hdrdir)/ruby/backward/2/stdalign.h
 parser.o: $(hdrdir)/ruby/backward/2/stdarg.h

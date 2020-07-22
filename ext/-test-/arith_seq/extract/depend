@@ -151,7 +151,6 @@ extract.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 extract.o: $(hdrdir)/ruby/backward/2/inttypes.h
 extract.o: $(hdrdir)/ruby/backward/2/limits.h
 extract.o: $(hdrdir)/ruby/backward/2/long_long.h
-extract.o: $(hdrdir)/ruby/backward/2/r_cast.h
 extract.o: $(hdrdir)/ruby/backward/2/rmodule.h
 extract.o: $(hdrdir)/ruby/backward/2/stdalign.h
 extract.o: $(hdrdir)/ruby/backward/2/stdarg.h

@@ -151,7 +151,6 @@ dataerror.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 dataerror.o: $(hdrdir)/ruby/backward/2/inttypes.h
 dataerror.o: $(hdrdir)/ruby/backward/2/limits.h
 dataerror.o: $(hdrdir)/ruby/backward/2/long_long.h
-dataerror.o: $(hdrdir)/ruby/backward/2/r_cast.h
 dataerror.o: $(hdrdir)/ruby/backward/2/rmodule.h
 dataerror.o: $(hdrdir)/ruby/backward/2/stdalign.h
 dataerror.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -315,7 +314,6 @@ enc_raise.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 enc_raise.o: $(hdrdir)/ruby/backward/2/inttypes.h
 enc_raise.o: $(hdrdir)/ruby/backward/2/limits.h
 enc_raise.o: $(hdrdir)/ruby/backward/2/long_long.h
-enc_raise.o: $(hdrdir)/ruby/backward/2/r_cast.h
 enc_raise.o: $(hdrdir)/ruby/backward/2/rmodule.h
 enc_raise.o: $(hdrdir)/ruby/backward/2/stdalign.h
 enc_raise.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -482,7 +480,6 @@ ensured.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ensured.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ensured.o: $(hdrdir)/ruby/backward/2/limits.h
 ensured.o: $(hdrdir)/ruby/backward/2/long_long.h
-ensured.o: $(hdrdir)/ruby/backward/2/r_cast.h
 ensured.o: $(hdrdir)/ruby/backward/2/rmodule.h
 ensured.o: $(hdrdir)/ruby/backward/2/stdalign.h
 ensured.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -646,7 +643,6 @@ init.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 init.o: $(hdrdir)/ruby/backward/2/inttypes.h
 init.o: $(hdrdir)/ruby/backward/2/limits.h
 init.o: $(hdrdir)/ruby/backward/2/long_long.h
-init.o: $(hdrdir)/ruby/backward/2/r_cast.h
 init.o: $(hdrdir)/ruby/backward/2/rmodule.h
 init.o: $(hdrdir)/ruby/backward/2/stdalign.h
 init.o: $(hdrdir)/ruby/backward/2/stdarg.h

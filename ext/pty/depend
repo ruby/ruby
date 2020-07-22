@@ -152,7 +152,6 @@ pty.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 pty.o: $(hdrdir)/ruby/backward/2/inttypes.h
 pty.o: $(hdrdir)/ruby/backward/2/limits.h
 pty.o: $(hdrdir)/ruby/backward/2/long_long.h
-pty.o: $(hdrdir)/ruby/backward/2/r_cast.h
 pty.o: $(hdrdir)/ruby/backward/2/rmodule.h
 pty.o: $(hdrdir)/ruby/backward/2/stdalign.h
 pty.o: $(hdrdir)/ruby/backward/2/stdarg.h

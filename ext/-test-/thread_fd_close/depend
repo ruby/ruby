@@ -151,7 +151,6 @@ thread_fd_close.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 thread_fd_close.o: $(hdrdir)/ruby/backward/2/inttypes.h
 thread_fd_close.o: $(hdrdir)/ruby/backward/2/limits.h
 thread_fd_close.o: $(hdrdir)/ruby/backward/2/long_long.h
-thread_fd_close.o: $(hdrdir)/ruby/backward/2/r_cast.h
 thread_fd_close.o: $(hdrdir)/ruby/backward/2/rmodule.h
 thread_fd_close.o: $(hdrdir)/ruby/backward/2/stdalign.h
 thread_fd_close.o: $(hdrdir)/ruby/backward/2/stdarg.h

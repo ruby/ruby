@@ -152,7 +152,6 @@ typeddata.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 typeddata.o: $(hdrdir)/ruby/backward/2/inttypes.h
 typeddata.o: $(hdrdir)/ruby/backward/2/limits.h
 typeddata.o: $(hdrdir)/ruby/backward/2/long_long.h
-typeddata.o: $(hdrdir)/ruby/backward/2/r_cast.h
 typeddata.o: $(hdrdir)/ruby/backward/2/rmodule.h
 typeddata.o: $(hdrdir)/ruby/backward/2/stdalign.h
 typeddata.o: $(hdrdir)/ruby/backward/2/stdarg.h

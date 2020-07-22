@@ -152,7 +152,6 @@ numhash.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 numhash.o: $(hdrdir)/ruby/backward/2/inttypes.h
 numhash.o: $(hdrdir)/ruby/backward/2/limits.h
 numhash.o: $(hdrdir)/ruby/backward/2/long_long.h
-numhash.o: $(hdrdir)/ruby/backward/2/r_cast.h
 numhash.o: $(hdrdir)/ruby/backward/2/rmodule.h
 numhash.o: $(hdrdir)/ruby/backward/2/stdalign.h
 numhash.o: $(hdrdir)/ruby/backward/2/stdarg.h

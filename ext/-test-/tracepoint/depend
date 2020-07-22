@@ -151,7 +151,6 @@ gc_hook.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 gc_hook.o: $(hdrdir)/ruby/backward/2/inttypes.h
 gc_hook.o: $(hdrdir)/ruby/backward/2/limits.h
 gc_hook.o: $(hdrdir)/ruby/backward/2/long_long.h
-gc_hook.o: $(hdrdir)/ruby/backward/2/r_cast.h
 gc_hook.o: $(hdrdir)/ruby/backward/2/rmodule.h
 gc_hook.o: $(hdrdir)/ruby/backward/2/stdalign.h
 gc_hook.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -315,7 +314,6 @@ tracepoint.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 tracepoint.o: $(hdrdir)/ruby/backward/2/inttypes.h
 tracepoint.o: $(hdrdir)/ruby/backward/2/limits.h
 tracepoint.o: $(hdrdir)/ruby/backward/2/long_long.h
-tracepoint.o: $(hdrdir)/ruby/backward/2/r_cast.h
 tracepoint.o: $(hdrdir)/ruby/backward/2/rmodule.h
 tracepoint.o: $(hdrdir)/ruby/backward/2/stdalign.h
 tracepoint.o: $(hdrdir)/ruby/backward/2/stdarg.h

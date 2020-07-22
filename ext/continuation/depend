@@ -151,7 +151,6 @@ continuation.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 continuation.o: $(hdrdir)/ruby/backward/2/inttypes.h
 continuation.o: $(hdrdir)/ruby/backward/2/limits.h
 continuation.o: $(hdrdir)/ruby/backward/2/long_long.h
-continuation.o: $(hdrdir)/ruby/backward/2/r_cast.h
 continuation.o: $(hdrdir)/ruby/backward/2/rmodule.h
 continuation.o: $(hdrdir)/ruby/backward/2/stdalign.h
 continuation.o: $(hdrdir)/ruby/backward/2/stdarg.h

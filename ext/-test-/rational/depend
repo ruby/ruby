@@ -156,7 +156,6 @@ rat.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 rat.o: $(hdrdir)/ruby/backward/2/inttypes.h
 rat.o: $(hdrdir)/ruby/backward/2/limits.h
 rat.o: $(hdrdir)/ruby/backward/2/long_long.h
-rat.o: $(hdrdir)/ruby/backward/2/r_cast.h
 rat.o: $(hdrdir)/ruby/backward/2/rmodule.h
 rat.o: $(hdrdir)/ruby/backward/2/stdalign.h
 rat.o: $(hdrdir)/ruby/backward/2/stdarg.h

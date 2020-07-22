@@ -154,7 +154,6 @@ psych.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 psych.o: $(hdrdir)/ruby/backward/2/inttypes.h
 psych.o: $(hdrdir)/ruby/backward/2/limits.h
 psych.o: $(hdrdir)/ruby/backward/2/long_long.h
-psych.o: $(hdrdir)/ruby/backward/2/r_cast.h
 psych.o: $(hdrdir)/ruby/backward/2/rmodule.h
 psych.o: $(hdrdir)/ruby/backward/2/stdalign.h
 psych.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -326,7 +325,6 @@ psych_emitter.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 psych_emitter.o: $(hdrdir)/ruby/backward/2/inttypes.h
 psych_emitter.o: $(hdrdir)/ruby/backward/2/limits.h
 psych_emitter.o: $(hdrdir)/ruby/backward/2/long_long.h
-psych_emitter.o: $(hdrdir)/ruby/backward/2/r_cast.h
 psych_emitter.o: $(hdrdir)/ruby/backward/2/rmodule.h
 psych_emitter.o: $(hdrdir)/ruby/backward/2/stdalign.h
 psych_emitter.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -498,7 +496,6 @@ psych_parser.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 psych_parser.o: $(hdrdir)/ruby/backward/2/inttypes.h
 psych_parser.o: $(hdrdir)/ruby/backward/2/limits.h
 psych_parser.o: $(hdrdir)/ruby/backward/2/long_long.h
-psych_parser.o: $(hdrdir)/ruby/backward/2/r_cast.h
 psych_parser.o: $(hdrdir)/ruby/backward/2/rmodule.h
 psych_parser.o: $(hdrdir)/ruby/backward/2/stdalign.h
 psych_parser.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -670,7 +667,6 @@ psych_to_ruby.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 psych_to_ruby.o: $(hdrdir)/ruby/backward/2/inttypes.h
 psych_to_ruby.o: $(hdrdir)/ruby/backward/2/limits.h
 psych_to_ruby.o: $(hdrdir)/ruby/backward/2/long_long.h
-psych_to_ruby.o: $(hdrdir)/ruby/backward/2/r_cast.h
 psych_to_ruby.o: $(hdrdir)/ruby/backward/2/rmodule.h
 psych_to_ruby.o: $(hdrdir)/ruby/backward/2/stdalign.h
 psych_to_ruby.o: $(hdrdir)/ruby/backward/2/stdarg.h
@@ -842,7 +838,6 @@ psych_yaml_tree.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 psych_yaml_tree.o: $(hdrdir)/ruby/backward/2/inttypes.h
 psych_yaml_tree.o: $(hdrdir)/ruby/backward/2/limits.h
 psych_yaml_tree.o: $(hdrdir)/ruby/backward/2/long_long.h
-psych_yaml_tree.o: $(hdrdir)/ruby/backward/2/r_cast.h
 psych_yaml_tree.o: $(hdrdir)/ruby/backward/2/rmodule.h
 psych_yaml_tree.o: $(hdrdir)/ruby/backward/2/stdalign.h
 psych_yaml_tree.o: $(hdrdir)/ruby/backward/2/stdarg.h

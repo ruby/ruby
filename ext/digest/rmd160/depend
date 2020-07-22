@@ -155,7 +155,6 @@ rmd160init.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 rmd160init.o: $(hdrdir)/ruby/backward/2/inttypes.h
 rmd160init.o: $(hdrdir)/ruby/backward/2/limits.h
 rmd160init.o: $(hdrdir)/ruby/backward/2/long_long.h
-rmd160init.o: $(hdrdir)/ruby/backward/2/r_cast.h
 rmd160init.o: $(hdrdir)/ruby/backward/2/rmodule.h
 rmd160init.o: $(hdrdir)/ruby/backward/2/stdalign.h
 rmd160init.o: $(hdrdir)/ruby/backward/2/stdarg.h

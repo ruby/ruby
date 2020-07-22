@@ -152,7 +152,6 @@ zlib.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 zlib.o: $(hdrdir)/ruby/backward/2/inttypes.h
 zlib.o: $(hdrdir)/ruby/backward/2/limits.h
 zlib.o: $(hdrdir)/ruby/backward/2/long_long.h
-zlib.o: $(hdrdir)/ruby/backward/2/r_cast.h
 zlib.o: $(hdrdir)/ruby/backward/2/rmodule.h
 zlib.o: $(hdrdir)/ruby/backward/2/stdalign.h
 zlib.o: $(hdrdir)/ruby/backward/2/stdarg.h

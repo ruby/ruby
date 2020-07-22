@@ -155,7 +155,6 @@ nkf.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 nkf.o: $(hdrdir)/ruby/backward/2/inttypes.h
 nkf.o: $(hdrdir)/ruby/backward/2/limits.h
 nkf.o: $(hdrdir)/ruby/backward/2/long_long.h
-nkf.o: $(hdrdir)/ruby/backward/2/r_cast.h
 nkf.o: $(hdrdir)/ruby/backward/2/rmodule.h
 nkf.o: $(hdrdir)/ruby/backward/2/stdalign.h
 nkf.o: $(hdrdir)/ruby/backward/2/stdarg.h

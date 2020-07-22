@@ -156,7 +156,6 @@ etc.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 etc.o: $(hdrdir)/ruby/backward/2/inttypes.h
 etc.o: $(hdrdir)/ruby/backward/2/limits.h
 etc.o: $(hdrdir)/ruby/backward/2/long_long.h
-etc.o: $(hdrdir)/ruby/backward/2/r_cast.h
 etc.o: $(hdrdir)/ruby/backward/2/rmodule.h
 etc.o: $(hdrdir)/ruby/backward/2/stdalign.h
 etc.o: $(hdrdir)/ruby/backward/2/stdarg.h

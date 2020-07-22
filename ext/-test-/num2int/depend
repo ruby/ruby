@@ -152,7 +152,6 @@ num2int.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 num2int.o: $(hdrdir)/ruby/backward/2/inttypes.h
 num2int.o: $(hdrdir)/ruby/backward/2/limits.h
 num2int.o: $(hdrdir)/ruby/backward/2/long_long.h
-num2int.o: $(hdrdir)/ruby/backward/2/r_cast.h
 num2int.o: $(hdrdir)/ruby/backward/2/rmodule.h
 num2int.o: $(hdrdir)/ruby/backward/2/stdalign.h
 num2int.o: $(hdrdir)/ruby/backward/2/stdarg.h

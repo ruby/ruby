@@ -152,7 +152,6 @@ usrmarshal.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 usrmarshal.o: $(hdrdir)/ruby/backward/2/inttypes.h
 usrmarshal.o: $(hdrdir)/ruby/backward/2/limits.h
 usrmarshal.o: $(hdrdir)/ruby/backward/2/long_long.h
-usrmarshal.o: $(hdrdir)/ruby/backward/2/r_cast.h
 usrmarshal.o: $(hdrdir)/ruby/backward/2/rmodule.h
 usrmarshal.o: $(hdrdir)/ruby/backward/2/stdalign.h
 usrmarshal.o: $(hdrdir)/ruby/backward/2/stdarg.h
