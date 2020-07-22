@@ -4379,6 +4379,26 @@ gc_setup_mark_bits(struct heap_page *page)
 static int gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj);
 static VALUE gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free);
 
+static void
+lock_page_body(rb_objspace_t *objspace, struct heap_page_body *body)
+{
+    if(mprotect(body, HEAP_PAGE_SIZE, PROT_NONE)) {
+        rb_bug("Couldn't protect page %p", (void *)body);
+    } else {
+        gc_report(5, objspace, "Protecting page in move %p\n", (void *)body);
+    }
+}
+
+static void
+unlock_page_body(rb_objspace_t *objspace, struct heap_page_body *body)
+{
+    if(mprotect(body, HEAP_PAGE_SIZE, PROT_READ | PROT_WRITE)) {
+        rb_bug("Couldn't unprotect page %p", (void *)body);
+    } else {
+        gc_report(5, objspace, "Unprotecting page in move %p\n", (void *)body);
+    }
+}
+
 static short
 try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page, VALUE dest, char from_freelist)
 {
@@ -4387,11 +4407,7 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page,
     GC_ASSERT(RVALUE_MARKED(dest) == FALSE);
 
     while(1) {
-        if(mprotect(GET_PAGE_BODY(cursor->start), HEAP_PAGE_SIZE, PROT_READ | PROT_WRITE)) {
-            rb_bug("Couldn't unprotect page %p", GET_PAGE_BODY(cursor->start));
-        } else {
-            gc_report(5, objspace, "Unprotecting page in move %p\n", (void *)GET_PAGE_BODY(cursor->start));
-        }
+        unlock_page_body(objspace, GET_PAGE_BODY(cursor->start));
 
 	bits_t *mark_bits = cursor->mark_bits;
         RVALUE * p = cursor->start;
@@ -4419,11 +4435,7 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page,
                                 FL_SET((VALUE)p, FL_FROM_FREELIST);
                             }
 
-                            if(mprotect(GET_PAGE_BODY(cursor->start), HEAP_PAGE_SIZE, PROT_NONE)) {
-                                rb_bug("Couldn't protect page %p", GET_PAGE_BODY(cursor->start));
-                            } else {
-                                gc_report(5, objspace, "Protecting page in move %p\n", (void *)GET_PAGE_BODY(cursor->start));
-                            }
+                            lock_page_body(objspace, GET_PAGE_BODY(cursor->start));
                             return 1;
                         }
                     }
@@ -4442,11 +4454,7 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page,
         next = list_prev(&heap->pages, cursor, page_node);
 
         /* Protect the current cursor since it probably has T_MOVED slots. */
-        if(mprotect(GET_PAGE_BODY(cursor->start), HEAP_PAGE_SIZE, PROT_NONE)) {
-            rb_bug("Couldn't protect page %p", GET_PAGE_BODY(cursor->start));
-        } else {
-            gc_report(5, objspace, "Protecting page in move %p\n", (void *)GET_PAGE_BODY(cursor->start));
-        }
+        lock_page_body(objspace, GET_PAGE_BODY(cursor->start));
 
         heap->compact_cursor = next;
         cursor = next;
@@ -4473,11 +4481,7 @@ gc_unprotect_pages(rb_objspace_t *objspace, rb_heap_t *heap)
     cursor = list_next(&heap->pages, cursor, page_node);
 
     while(cursor) {
-        if(mprotect(GET_PAGE_BODY(cursor->start), HEAP_PAGE_SIZE, PROT_READ | PROT_WRITE)) {
-            rb_bug("Couldn't unprotect page %p", (void *)GET_PAGE_BODY(cursor->start));
-        } else {
-            gc_report(5, objspace, "Unprotecting page %p\n", (void *)GET_PAGE_BODY(cursor->start));
-        }
+        unlock_page_body(objspace, GET_PAGE_BODY(cursor->start));
         cursor = list_next(&heap->pages, cursor, page_node);
     }
 }
@@ -4921,11 +4925,7 @@ read_barrier_handler(int sig, siginfo_t * info, void * data)
 
     obj = (VALUE)address;
 
-    if(mprotect(GET_PAGE_BODY(obj), HEAP_PAGE_SIZE, PROT_READ | PROT_WRITE)) {
-        rb_bug("Couldn't unprotect page %p", (void *)GET_PAGE_BODY(obj));
-    } else {
-        gc_report(5, objspace, "Unprotecting page %p\n", (void *)GET_PAGE_BODY(obj));
-    }
+    unlock_page_body(objspace, GET_PAGE_BODY(obj));
 
     objspace = &rb_objspace;
     invalidate_moved_page(objspace, GET_HEAP_PAGE(obj));
