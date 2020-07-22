@@ -24,10 +24,6 @@
 # undef RCLASS_SUPER
 #endif
 
-struct rb_deprecated_classext_struct {
-    char conflict[sizeof(VALUE) * 3];
-};
-
 struct rb_subclass_entry {
     VALUE klass;
     struct rb_subclass_entry *next;
