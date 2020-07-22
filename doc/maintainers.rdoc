@@ -54,8 +54,6 @@ Zachary Scott (zzak)
   _unmaintained_
 [lib/open-uri.rb]
   Tanaka Akira (akr)
-[lib/optparse.rb, lib/optparse/*]
-  Nobuyuki Nakada (nobu)
 [lib/pp.rb]
   Tanaka Akira (akr)
 [lib/prettyprint.rb]
@@ -170,6 +168,9 @@ Zachary Scott (zzak)
   Keiju ISHITSUKA (keiju)
   https://github.com/ruby/irb
   https://rubygems.org/gems/irb
+[lib/optparse.rb, lib/optparse/*]
+  Nobuyuki Nakada (nobu)
+  https://github.com/ruby/optparse
 [lib/logger.rb]
   Naotoshi Seo (sonots)
   https://github.com/ruby/logger
