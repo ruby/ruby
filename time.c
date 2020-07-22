@@ -5109,6 +5109,10 @@ time_strftime(VALUE time, VALUE format)
     VALUE tmp;
 
     GetTimeval(time, tobj);
+    if (tobj->vtm.yday == 0) {
+        VALUE zone = tobj->vtm.zone;
+        if (!NIL_P(zone)) zone_localtime(zone, time);
+    }
     MAKE_TM(time, tobj);
     StringValue(format);
     if (!rb_enc_str_asciicompat_p(format)) {
