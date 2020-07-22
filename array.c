@@ -5641,14 +5641,19 @@ recursive_equal(VALUE ary1, VALUE ary2, int recur)
  *
  *  Returns +true+ if both <tt>array.size == other_array.size</tt>
  *  and for each index +i+ in +array+, <tt>array[i] == other_array[i]</tt>:
- *    a = [0, 1, 2]
- *    a == [0, 1, 2] # => true
+ *    a0 = [:foo, 'bar', 2]
+ *    a1 = [:foo, 'bar', 2.0]
+ *    a1 == a0 # => true
  *    [] == [] # => true
  *
  *  Otherwise, returns +false+:
- *    a = [0, 1, 2]
- *    a == [0, 1] # => false
- *    a == [0, 1, 3] # => false
+ *    a0 == [:foo, 'bar'] # => false # Different sizes
+ *    a0 == [:foo, 'bar', 3] # => false # Different elements
+ *
+ *  This method is different from method Array#eql?,
+ *  which compares elements using <tt>Object#eql?</tt>:
+ *    a1[2].eql?(a0[2]) # false
+ *    a1.eql?(a0) # => false
  */
 
 static VALUE
@@ -5684,15 +5689,23 @@ recursive_eql(VALUE ary1, VALUE ary2, int recur)
  *    array.eql? other_array -> true or false
  *
  *  Returns +true+ if +self+ and +other_array+ are the same size,
- *  and if, for each index +i+ in +array+, <tt>self[i].eql? other_array[i]</tt>:
- *    a = [0, 1, 2]
- *    a.eql? [0, 1, 2] # => true
+ *  and if, for each index +i+ in +self+, <tt>self[i].eql? other_array[i]</tt>:
+ *    a0 = [:foo, 'bar', 2]
+ *    a1 = [:foo, 'bar', 2]
+ *    a1.eql?(a0) # => true
  *    [].eql? [] # => true
  *
  *  Otherwise, returns +false+:
- *    a = [0, 1, 2]
- *    a.eql? [0, 1] # => false
- *    a.eql? [0, 1, 3] # => false
+ *    a0 = [:foo, 'bar', 2]
+ *    a1 = [:foo, 'bar', 2.0]
+ *    a1.eql?(a0) # => false # Because 2.eql?(2.0) is false
+ *    a1.eql? [0, 1] # => false
+ *
+ *  This method is different from method <tt>Array#==</tt>,
+ *  which compares using method <tt>Object#==</tt>:
+ *    a0 = [:foo, 'bar', 2]
+ *    a1 = [:foo, 'bar', 2.0]
+ *    a1 == a0 # => true
  */
 
 static VALUE
