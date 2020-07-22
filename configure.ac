@@ -2929,6 +2929,7 @@ AS_IF([test "x$ac_cv_func_backtrace" = xyes], [
 #include <signal.h>
 #include <execinfo.h>
 
+]`grep '^@%:@ *define  *RUBY_SIGALTSTACK_SIZE' ${srcdir}/signal.c`[
 #define TRACE_SIZE 256
 
 void sigsegv(int signum, siginfo_t *info, void *ctx){
@@ -2948,12 +2949,12 @@ main(void)
     stack_t ss;
     struct sigaction sa;
 
-    ss.ss_sp = malloc(16*1024);
+    ss.ss_sp = malloc(RUBY_SIGALTSTACK_SIZE);
     if (ss.ss_sp == NULL) {
 	fprintf(stderr, "cannot allocate memory for sigaltstack\n");
 	return EXIT_FAILURE;
     }
-    ss.ss_size = 16*1024;
+    ss.ss_size = RUBY_SIGALTSTACK_SIZE;
     ss.ss_flags = 0;
     if (sigaltstack(&ss, NULL) == -1) {
 	fprintf(stderr, "sigaltstack failed\n");
