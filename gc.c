@@ -536,6 +536,8 @@ struct RMoved {
     } as;
 };
 
+#define RMOVED(obj) ((struct RMoved *)(obj))
+
 #if defined(_MSC_VER) || defined(__CYGWIN__)
 #pragma pack(push, 1) /* magic for reducing sizeof(RVALUE): 24 -> 20 */
 #endif
