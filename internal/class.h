@@ -16,10 +16,6 @@
 #include "ruby/intern.h"        /* for rb_alloc_func_t */
 #include "ruby/ruby.h"          /* for struct RBasic */
 
-#ifdef RClass
-# undef RClass /* See also include/ruby/backward.h */
-#endif
-
 #ifdef RCLASS_SUPER
 # undef RCLASS_SUPER
 #endif

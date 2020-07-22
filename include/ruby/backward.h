@@ -8,18 +8,9 @@
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
  */
-#include "ruby/internal/core/rbasic.h"
 #include "ruby/internal/value.h"
 #include "ruby/internal/interpreter.h"
 #include "ruby/backward/2/attributes.h"
-
-#define RClass RClassDeprecated
-#ifndef __cplusplus
-DEPRECATED_TYPE(("RClass is internal use only"),
-struct RClass {
-    struct RBasic basic;
-});
-#endif
 
 #define DECLARE_DEPRECATED_FEATURE(ver, func) \
     NORETURN(ERRORFUNC(("deprecated since "#ver), DEPRECATED(void func(void))))
