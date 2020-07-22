@@ -1553,17 +1553,7 @@ lazyenum_size(VALUE self, VALUE args, VALUE eobj)
     return enum_size(self);
 }
 
-static VALUE
-lazy_size(VALUE self)
-{
-    return enum_size(rb_ivar_get(self, id_receiver));
-}
-
-static VALUE
-lazy_receiver_size(VALUE generator, VALUE args, VALUE lazy)
-{
-    return lazy_size(lazy);
-}
+#define lazy_receiver_size lazy_map_size
 
 static VALUE
 lazy_init_iterator(RB_BLOCK_CALL_FUNC_ARGLIST(val, m))
@@ -1840,6 +1830,7 @@ lazy_set_args(VALUE lazy, VALUE args)
     }
 }
 
+#if 0
 static VALUE
 lazy_set_method(VALUE lazy, VALUE args, rb_enumerator_size_func *size_fn)
 {
@@ -1848,6 +1839,7 @@ lazy_set_method(VALUE lazy, VALUE args, rb_enumerator_size_func *size_fn)
     e->size_fn = size_fn;
     return lazy;
 }
+#endif
 
 static VALUE
 lazy_add_method(VALUE obj, int argc, VALUE *argv, VALUE args, VALUE memo,
@@ -2342,57 +2334,58 @@ next_stopped(VALUE obj, VALUE _)
     return Qnil;
 }
 
-static VALUE
-lazy_zip_arrays_func(RB_BLOCK_CALL_FUNC_ARGLIST(val, arrays))
+static struct MEMO *
+lazy_zip_arrays_func(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
 {
-    VALUE yielder, ary, memo;
-    long i, count;
-
-    yielder = argv[0];
-    memo = rb_attr_get(yielder, id_memo);
-    count = NIL_P(memo) ? 0 : NUM2LONG(memo);
+    struct proc_entry *entry = proc_entry_ptr(proc_entry);
+    VALUE ary, arrays = entry->memo;
+    VALUE memo = rb_ary_entry(memos, memo_index);
+    long i, count = NIL_P(memo) ? 0 : NUM2LONG(memo);
 
     ary = rb_ary_new2(RARRAY_LEN(arrays) + 1);
-    rb_ary_push(ary, argv[1]);
+    rb_ary_push(ary, result->memo_value);
     for (i = 0; i < RARRAY_LEN(arrays); i++) {
 	rb_ary_push(ary, rb_ary_entry(RARRAY_AREF(arrays, i), count));
     }
-    rb_funcall(yielder, idLTLT, 1, ary);
-    rb_ivar_set(yielder, id_memo, LONG2NUM(++count));
-    return Qnil;
+    LAZY_MEMO_SET_VALUE(result, ary);
+    LAZY_MEMO_SET_PACKED(result);
+    rb_ary_store(memos, memo_index, LONG2NUM(++count));
+    return result;
 }
 
-static VALUE
-lazy_zip_func(RB_BLOCK_CALL_FUNC_ARGLIST(val, zip_args))
+static struct MEMO *
+lazy_zip_func(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
 {
-    VALUE yielder, ary, arg, v;
+    struct proc_entry *entry = proc_entry_ptr(proc_entry);
+    VALUE arg = rb_ary_entry(memos, memo_index);
+    VALUE zip_args = entry->memo;
+    VALUE ary, v;
     long i;
 
-    yielder = argv[0];
-    arg = rb_attr_get(yielder, id_memo);
     if (NIL_P(arg)) {
 	arg = rb_ary_new2(RARRAY_LEN(zip_args));
 	for (i = 0; i < RARRAY_LEN(zip_args); i++) {
 	    rb_ary_push(arg, rb_funcall(RARRAY_AREF(zip_args, i), id_to_enum, 0));
 	}
-	rb_ivar_set(yielder, id_memo, arg);
+	rb_ary_store(memos, memo_index, arg);
     }
 
     ary = rb_ary_new2(RARRAY_LEN(arg) + 1);
-    v = Qnil;
-    if (--argc > 0) {
-	++argv;
-	v = argc > 1 ? rb_ary_new_from_values(argc, argv) : *argv;
-    }
-    rb_ary_push(ary, v);
+    rb_ary_push(ary, result->memo_value);
     for (i = 0; i < RARRAY_LEN(arg); i++) {
 	v = rb_rescue2(call_next, RARRAY_AREF(arg, i), next_stopped, 0,
 		       rb_eStopIteration, (VALUE)0);
 	rb_ary_push(ary, v);
     }
-    rb_funcall(yielder, idLTLT, 1, ary);
-    return Qnil;
+    LAZY_MEMO_SET_VALUE(result, ary);
+    LAZY_MEMO_SET_PACKED(result);
+    return result;
 }
+
+static const lazyenum_funcs lazy_zip_funcs[] = {
+    {lazy_zip_func, lazy_receiver_size,},
+    {lazy_zip_arrays_func, lazy_receiver_size,},
+};
 
 /*
  *  call-seq:
@@ -2407,7 +2400,7 @@ lazy_zip(int argc, VALUE *argv, VALUE obj)
 {
     VALUE ary, v;
     long i;
-    rb_block_call_func *func = lazy_zip_arrays_func;
+    const lazyenum_funcs *funcs = &lazy_zip_funcs[1];
 
     if (rb_block_given_p()) {
 	return rb_call_super(argc, argv);
@@ -2424,15 +2417,13 @@ lazy_zip(int argc, VALUE *argv, VALUE obj)
 		}
 	    }
 	    ary = rb_ary_new4(argc, argv);
-	    func = lazy_zip_func;
+	    funcs = &lazy_zip_funcs[0];
 	    break;
 	}
 	rb_ary_push(ary, v);
     }
 
-    return lazy_set_method(rb_block_call(rb_cLazy, id_new, 1, &obj,
-					 func, ary),
-			   ary, lazy_receiver_size);
+    return lazy_add_method(obj, 0, 0, ary, ary, funcs);
 }
 
 static struct MEMO *
