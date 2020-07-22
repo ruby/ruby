@@ -5725,7 +5725,7 @@ rb_ary_eql(VALUE ary1, VALUE ary2)
  *  Returns the integer hash value for +self+:
  *    [].hash.class # => Integer
  *
- *  Two arrays have the same hash value if and only if they have the same content:
+ *  Two arrays with the same content will have the same hash code (and will compare using eql?):
  *    [0, 1, 2].hash == [0, 1, 2].hash # => true
  *    [0, 1, 2].hash == [0, 1, 3].hash # => false
  */
