@@ -7,7 +7,7 @@ Gem::Specification.new do |spec|
   spec.summary       = %q{OptionParser is a class for command-line option analysis.}
   spec.description   = %q{OptionParser is a class for command-line option analysis.}
   spec.homepage      = "https://github.com/ruby/optparse"
-  spec.required_ruby_version = Gem::Requirement.new(">= 2.3.0")
+  spec.required_ruby_version = Gem::Requirement.new(">= 2.5.0")
 
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = spec.homepage
