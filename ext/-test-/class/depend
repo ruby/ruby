@@ -150,7 +150,6 @@ class2name.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 class2name.o: $(hdrdir)/ruby/backward/2/inttypes.h
 class2name.o: $(hdrdir)/ruby/backward/2/limits.h
 class2name.o: $(hdrdir)/ruby/backward/2/long_long.h
-class2name.o: $(hdrdir)/ruby/backward/2/rmodule.h
 class2name.o: $(hdrdir)/ruby/backward/2/stdalign.h
 class2name.o: $(hdrdir)/ruby/backward/2/stdarg.h
 class2name.o: $(hdrdir)/ruby/defines.h
@@ -312,7 +311,6 @@ init.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 init.o: $(hdrdir)/ruby/backward/2/inttypes.h
 init.o: $(hdrdir)/ruby/backward/2/limits.h
 init.o: $(hdrdir)/ruby/backward/2/long_long.h
-init.o: $(hdrdir)/ruby/backward/2/rmodule.h
 init.o: $(hdrdir)/ruby/backward/2/stdalign.h
 init.o: $(hdrdir)/ruby/backward/2/stdarg.h
 init.o: $(hdrdir)/ruby/defines.h

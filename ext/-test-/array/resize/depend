@@ -150,7 +150,6 @@ resize.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 resize.o: $(hdrdir)/ruby/backward/2/inttypes.h
 resize.o: $(hdrdir)/ruby/backward/2/limits.h
 resize.o: $(hdrdir)/ruby/backward/2/long_long.h
-resize.o: $(hdrdir)/ruby/backward/2/rmodule.h
 resize.o: $(hdrdir)/ruby/backward/2/stdalign.h
 resize.o: $(hdrdir)/ruby/backward/2/stdarg.h
 resize.o: $(hdrdir)/ruby/defines.h

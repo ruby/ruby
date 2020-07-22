@@ -151,7 +151,6 @@ enumerator_kw.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 enumerator_kw.o: $(hdrdir)/ruby/backward/2/inttypes.h
 enumerator_kw.o: $(hdrdir)/ruby/backward/2/limits.h
 enumerator_kw.o: $(hdrdir)/ruby/backward/2/long_long.h
-enumerator_kw.o: $(hdrdir)/ruby/backward/2/rmodule.h
 enumerator_kw.o: $(hdrdir)/ruby/backward/2/stdalign.h
 enumerator_kw.o: $(hdrdir)/ruby/backward/2/stdarg.h
 enumerator_kw.o: $(hdrdir)/ruby/defines.h

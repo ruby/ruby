@@ -150,7 +150,6 @@ infinite_loop_dlsym.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/backward/2/inttypes.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/backward/2/limits.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/backward/2/long_long.h
-infinite_loop_dlsym.o: $(hdrdir)/ruby/backward/2/rmodule.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/backward/2/stdalign.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/backward/2/stdarg.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/defines.h
