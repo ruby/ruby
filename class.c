@@ -1027,7 +1027,7 @@ include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super)
         VALUE super_class = RCLASS_SUPER(c);
 
         // invalidate inline method cache
-        tbl = RMODULE_M_TBL(module);
+        tbl = RCLASS_M_TBL(module);
         if (tbl && rb_id_table_size(tbl)) {
             if (search_super) { // include
                 if (super_class && !RB_TYPE_P(super_class, T_MODULE)) {
@@ -1070,11 +1070,11 @@ include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super)
 	    VALUE refined_class =
 		rb_refinement_module_get_refined_class(klass);
 
-            rb_id_table_foreach(RMODULE_M_TBL(module), add_refined_method_entry_i, (void *)refined_class);
+            rb_id_table_foreach(RCLASS_M_TBL(module), add_refined_method_entry_i, (void *)refined_class);
 	    FL_SET(c, RMODULE_INCLUDED_INTO_REFINEMENT);
 	}
 
-	tbl = RMODULE_CONST_TBL(module);
+        tbl = RCLASS_CONST_TBL(module);
 	if (tbl && rb_id_table_size(tbl)) constant_changed = 1;
       skip:
 	module = RCLASS_SUPER(module);
