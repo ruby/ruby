@@ -5412,7 +5412,7 @@ ary_append(VALUE x, VALUE y)
  *
  *  Returns +self+ unmodified if no arguments given:
  *    a = [0, 1]
- *    a.concat
+ *    a.concat(*[])
  *    a # => [0, 1]
  *
  *  ---
@@ -5920,23 +5920,24 @@ ary_recycle_hash(VALUE hash)
 
 /*
  *  call-seq:
- *     ary - other_ary    -> new_ary
+ *    array - other_array -> new_array
  *
- *  Array Difference
+ *  Argument +other_array+ must be an
+ *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects].
  *
- *  Returns a new array that is a copy of the original array, removing all
- *  occurrences of any item that also appear in +other_ary+. The order is
- *  preserved from the original array.
+ *  Returns a new \Array containing only those elements from +array+
+ *  that are not found in +other_array+;
+ *  items are compared using <tt>eql?</tt>;
+ *  the order from +array+ is preserved:
+ *    [0, 1, 1, 2, 1, 1, 3, 1, 1] - [1] # => [0, 2, 3]
+ *    [0, 1, 2, 3] - [3, 0] # => [1, 2]
+ *    [0, 1, 2] - [4] # => [0, 1, 2]
  *
- *  It compares elements using their #hash and #eql? methods for efficiency.
+ *  ---
  *
- *     [ 1, 1, 2, 2, 3, 3, 4, 5 ] - [ 1, 2, 4 ]  #=>  [ 3, 3, 5 ]
- *
- *  Note that while 1 and 2 were only present once in the array argument, and
- *  were present twice in the receiver array, all occurrences of each Integer are
- *  removed in the returned array.
- *
- *  If you need set-like behavior, see the library class Set.
+ *  Raises an exception if +other_array+ is not an Array-convertible object:
+ *    # Raises TypeError (no implicit conversion of Symbol into Array):
+ *    [] - :foo
  *
  *  See also Array#difference.
  */
@@ -5971,29 +5972,29 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
 
 /*
  *  call-seq:
- *     ary.difference(other_ary1, other_ary2, ...)   -> new_ary
+ *    array.difference(*other_arrays) -> new_array
  *
- *  Array Difference
+ *  Each argument in +other_arrays+ must be an
+ *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects].
  *
- *  Returns a new array that is a copy of the original array, removing all
- *  occurrences of any item that also appear in +other_ary+. The order is
- *  preserved from the original array.
+ *  Returns a new \Array containing only those elements from +self+
+ *  that are not found in any of the +other_arrays+;
+ *  items are compared using <tt>eql?</tt>;  order from +self+ is preserved:
+ *    [0, 1, 1, 2, 1, 1, 3, 1, 1].difference([1]) # => [0, 2, 3]
+ *    [0, 1, 2, 3].difference([3, 0], [1, 3]) # => [2]
+ *    [0, 1, 2].difference([4]) # => [0, 1, 2]
  *
- *  It compares elements using their #hash and #eql? methods for efficiency.
+ *  Returns a copy of +self+ if no arguments given:
+ *    a0 = [0, 1]
+ *    a1 = a0.difference(*[])
+ *    a1 # => [0, 1]
+ *    a1.equal?(a0) # => false
  *
- *     [ 1, 1, 2, 2, 3, 3, 4, 5 ].difference([ 1, 2, 4 ])     #=> [ 3, 3, 5 ]
+ *  ---
  *
- *  Note that while 1 and 2 were only present once in the array argument, and
- *  were present twice in the receiver array, all occurrences of each Integer are
- *  removed in the returned array.
- *
- *  Multiple array arguments can be supplied and all occurrences of any element
- *  in those supplied arrays that match the receiver will be removed from the
- *  returned array.
- *
- *     [ 1, 'c', :s, 'yep' ].difference([ 1 ], [ 'a', 'c' ])  #=> [ :s, "yep" ]
- *
- *  If you need set-like behavior, see the library class Set.
+ *  Raises an exception if any of +other_arrays+ is not an Array-convertible object:
+ *    # Raises TypeError (no implicit conversion of Symbol into Array):
+ *    [].difference(:foo)
  *
  *  See also Array#-.
  */
@@ -6037,17 +6038,26 @@ rb_ary_difference_multi(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *     ary & other_ary      -> new_ary
+ *    array & other_array -> new_array
  *
- *  Set Intersection --- Returns a new array containing unique elements common to the
- *  two arrays. The order is preserved from the original array.
+ *  Argument +other_array+ must be an
+ *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects].
  *
- *  It compares elements using their #hash and #eql? methods for efficiency.
+ *  Returns a new \Array containing each element found in both +array+ and +other_array+;
+ *  duplicates are omitted; items are compared using <tt>eql?</tt>:
+ *    [0, 1, 2, 3] & [1, 2] # => [1, 2]
+ *    [0, 1, 0, 1] & [0, 1] # => [0, 1]
  *
- *     [ 1, 1, 3, 5 ] & [ 3, 2, 1 ]                 #=> [ 1, 3 ]
- *     [ 'a', 'b', 'b', 'z' ] & [ 'a', 'b', 'c' ]   #=> [ 'a', 'b' ]
+ *  Preserves order from +array+:
+ *    [0, 1, 2] & [3, 2, 1, 0] # => [0, 1, 2]
  *
- *  See also Array#uniq.
+ *  ---
+ *
+ *  Raises an exception if +other_array+ is not an Array-convertible object:
+ *    # Raises TypeError (no implicit conversion of Symbol into Array):
+ *    [] & :foo
+ *
+ *  See also Array#intersection.
  */
 
 
@@ -6088,17 +6098,31 @@ rb_ary_and(VALUE ary1, VALUE ary2)
 
 /*
  *  call-seq:
- *     ary.intersection(other_ary1, other_ary2, ...)      -> new_ary
+ *    array.intersection(*other_arrays) -> new_array
  *
- *  Set Intersection --- Returns a new array containing unique elements common
- *  to +self+ and <code>other_ary</code>s. Order is preserved from the original
- *  array.
+ *  Each object in +other_arrays+ must be an
+ *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects].
  *
- *  It compares elements using their #hash and #eql? methods for efficiency.
+ *  Returns a new \Array containing each element found both in +self+
+ *  and in all of the given +other_arrays+;
+ *  duplicates are omitted; items are compared using <tt>eql?</tt>:
+ *    [0, 1, 2, 3].intersection([0, 1, 2], [0, 1, 3]) # => [0, 1]
+ *    [0, 0, 1, 1, 2, 3].intersection([0, 1, 2], [0, 1, 3]) # => [0, 1]
  *
- *     [ 1, 1, 3, 5 ].intersection([ 3, 2, 1 ])                    # => [ 1, 3 ]
- *     [ "a", "b", "z" ].intersection([ "a", "b", "c" ], [ "b" ])  # => [ "b" ]
- *     [ "a" ].intersection #=> [ "a" ]
+ *  Preserves order from +self+:
+ *    [0, 1, 2].intersection([2, 1, 0]) # => [0, 1, 2]
+ *
+ *  Returns a copy of +self+ if no arguments given:
+ *    a0 = [0, 1]
+ *    a1 = a0.intersection(*[])
+ *    a1 # => [0, 1]
+ *    a1.equal?(a0) # => false
+ *
+ *  ---
+ *
+ *  Raises an exception if any of the given +other_arrays+ is not an Array-convertible object:
+ *    # Raises TypeError (no implicit conversion of Symbol into Array):
+ *    [].intersection([0, 1], :foo)
  *
  *  See also Array#&.
  */
@@ -6149,15 +6173,23 @@ rb_ary_union_hash(VALUE hash, VALUE ary2)
 
 /*
  *  call-seq:
- *     ary | other_ary     -> new_ary
+ *    array | other_array -> new_array
  *
- *  Set Union --- Returns a new array by joining +ary+ with +other_ary+,
- *  excluding any duplicates and preserving the order from the given arrays.
+ *  Argument +other_array+ must be an
+ *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects].
  *
- *  It compares elements using their #hash and #eql? methods for efficiency.
+ *  Returns the union of +array+ and +other_array+;
+ *  duplicates are removed; order is preserved;
+ *  items are compared using <tt>eql?</tt>:
+ *    [0, 1] | [2, 3] # => [0, 1, 2, 3]
+ *    [0, 1, 1] | [2, 2, 3] # => [0, 1, 2, 3]
+ *    [0, 1, 2] | [3, 2, 1, 0] # => [0, 1, 2, 3]
  *
- *     [ "a", "b", "c" ] | [ "c", "d", "a" ]    #=> [ "a", "b", "c", "d" ]
- *     [ "c", "d", "a" ] | [ "a", "b", "c" ]    #=> [ "c", "d", "a", "b" ]
+ *  ---
+ *
+ *  Raises an exception if +other_array+ is not an Array-convertible object:
+ *    # Raises TypeError (no implicit conversion of Symbol into Array):
+ *    [] | :foo
  *
  *  See also Array#union.
  */
@@ -6185,16 +6217,28 @@ rb_ary_or(VALUE ary1, VALUE ary2)
 
 /*
  *  call-seq:
- *     ary.union(other_ary1, other_ary2, ...)   -> new_ary
+ *    array.union(*other_arrays) -> new_array
  *
- *  Set Union --- Returns a new array by joining <code>other_ary</code>s with +self+,
- *  excluding any duplicates and preserving the order from the given arrays.
+ *  Each object in +other_arrays+ must be an
+ *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects].
  *
- *  It compares elements using their #hash and #eql? methods for efficiency.
+ *  Returns a new \Array that is the union of +self+ and all given +other_arrays+;
+ *  duplicates are removed;  order is preserved;  items are compared using <tt>eql?</tt>:
+ *    [0, 1, 2, 3].union([4, 5], [6, 7]) # => [0, 1, 2, 3, 4, 5, 6, 7]
+ *    [0, 1, 1].union([2, 1], [3, 1]) # => [0, 1, 2, 3]
+ *    [0, 1, 2, 3].union([3, 2], [1, 0]) # => [0, 1, 2, 3]
  *
- *     [ "a", "b", "c" ].union( [ "c", "d", "a" ] )    #=> [ "a", "b", "c", "d" ]
- *     [ "a" ].union( ["e", "b"], ["a", "c", "b"] )    #=> [ "a", "e", "b", "c" ]
- *     [ "a" ].union #=> [ "a" ]
+ *  Returns a copy of +self+ if no arguments given:
+ *    a0 = [0, 1]
+ *    a1 = a0.union(*[])
+ *    a1 # => [0, 1]
+ *    a1.equal?(a0) # => false
+ *
+ *  ---
+ *
+ *  Raises an exception if any argument is not an \Array-convertible object:
+ *    # Raises TypeError (no implicit conversion of Symbol into Array):
+ *    [].union([], :foo)
  *
  *  See also Array#|.
  */
@@ -6320,25 +6364,64 @@ ary_max_opt_string(VALUE ary, long i, VALUE vmax)
 
 /*
  *  call-seq:
- *     ary.max                     -> obj
- *     ary.max {|a, b| block}      -> obj
- *     ary.max(n)                  -> array
- *     ary.max(n) {|a, b| block}   -> array
+ *    array.max -> element
+ *    array.max {|a, b| ... } -> element
+ *    array.max(n) -> new_array
+ *    array.max(n) {|a, b| ... } -> new_array
  *
- *  Returns the object in _ary_ with the maximum value. The
- *  first form assumes all objects implement <code><=></code>;
- *  the second uses the block to return <em>a <=> b</em>.
+ *  Returns one of the following:
+ *  - The maximum-valued element from +self+.
+ *  - A new \Array of maximum-valued elements selected from +self+.
  *
- *     ary = %w(albatross dog horse)
- *     ary.max                                   #=> "horse"
- *     ary.max {|a, b| a.length <=> b.length}    #=> "albatross"
+ *  Argument +n+, if given, must be an
+ *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects],
+ *  and must be non-negative.
  *
- *  If the +n+ argument is given, maximum +n+ elements are returned
- *  as an array.
+ *  ---
  *
- *     ary = %w[albatross dog horse]
- *     ary.max(2)                                  #=> ["horse", "dog"]
- *     ary.max(2) {|a, b| a.length <=> b.length }  #=> ["albatross", "horse"]
+ *  When no block is given, each element in +self+ must respond to method <tt><=></tt>
+ *  with an \Integer-convertible object.
+ *
+ *  With no argument and no block, returns the element in +self+
+ *  having the maximum value per method <tt><=></tt>:
+ *    [0, 1, 2].max # => 2
+ *
+ *  With an argument +n+ and no block, returns a new \Array with at most +n+ elements,
+ *  in descending order per method <tt><=></tt>:
+ *    [0, 1, 2, 3].max(3) # => [3, 2, 1]
+ *    [0, 1, 2, 3].max(6) # => [3, 2, 1]
+ *    [0, 1, 2, 3].max(0) # => []
+ *
+ *  ---
+ *
+ *  When a block is given, the block must return an Integer-convertible object.
+ *
+ *  With a block and no argument, calls the block <tt>self.size-1</tt> times to compare elements;
+ *  returns the element having the maximum value per the block:
+ *    ['0', '00', '000'].max {|a, b| a.size <=> b.size } # => "000"
+ *
+ *  With an argument +n+ and a block, returns a new \Array with at most +n+ elements,
+ *  in descending order per the block:
+ *    ['0', '00', '000'].max(2) {|a, b| a.size <=> b.size } # => ["000", "00"]
+ *    ['0', '00', '000'].max(0) {|a, b| a.size <=> b.size } # => []
+ *
+ *  ---
+ *
+ *  Raises an exception on encountering elements that are not comparable:
+ *    # Raises ArgumentError (comparison of Symbol with 1 failed):
+ *    [0, 1, :foo].max
+ *
+ *  Raises an exception if argument +n+ is not an Integer-convertible object:
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    [0, 1].max(:foo)
+ *
+ *  Raises an exception if argument +n+ is negative:
+ *    # Raises ArgumentError (negative size (-1)):
+ *    [0, 1].max(-1)
+ *
+ *  Raises an exception if the block returns an object that is not an Integer-convertible object:
+ *    # Raises ArgumentError (comparison of Symbol with 0 failed):
+ *    [0, 1, 2].max {|a, b| :foo }
  */
 static VALUE
 rb_ary_max(int argc, VALUE *argv, VALUE ary)
@@ -6472,25 +6555,65 @@ ary_min_opt_string(VALUE ary, long i, VALUE vmin)
 
 /*
  *  call-seq:
- *     ary.min                     -> obj
- *     ary.min {| a,b | block }    -> obj
- *     ary.min(n)                  -> array
- *     ary.min(n) {| a,b | block } -> array
+ *    array.min -> element
+ *    array.min { |a, b| ... } -> element
+ *    array.min(n) -> new_array
+ *    ary.min(n) { |a, b| ... } → new_array
  *
- *  Returns the object in _ary_ with the minimum value. The
- *  first form assumes all objects implement <code><=></code>;
- *  the second uses the block to return <em>a <=> b</em>.
+ *  Returns one of the following:
+ *  - The minimum-valued element from +self+.
+ *  - A new \Array of minimum-valued elements selected from +self+.
  *
- *     ary = %w(albatross dog horse)
- *     ary.min                                   #=> "albatross"
- *     ary.min {|a, b| a.length <=> b.length}    #=> "dog"
+ *  Argument +n+, if given, must be an
+ *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects],
+ *  and must be non-negative.
  *
- *  If the +n+ argument is given, minimum +n+ elements are returned
- *  as an array.
+ *  ---
  *
- *     ary = %w[albatross dog horse]
- *     ary.min(2)                                  #=> ["albatross", "dog"]
- *     ary.min(2) {|a, b| a.length <=> b.length }  #=> ["dog", "horse"]
+ *  When no block is given, each element in +self+ must respond to method <tt><=></tt>
+ *  with an \Integer-convertible object.
+ *
+ *  With no argument and no block, returns the element in +self+
+ *  having the minimum value per method <tt><=></tt>:
+ *    [0, 1, 2].min # => 0
+ *
+ *  With an argument +n+ and no block, returns a new \Array with at most +n+ elements,
+ *  in ascending order per method <tt><=></tt>:
+ *    [0, 1, 2, 3].min(3) # => [0, 1, 2]
+ *    [0, 1, 2, 3].min(6) # => [0, 1, 2, 3]
+ *    [0, 1, 2, 3].min(0) # => []
+ *
+ *  ---
+ *
+ *  When a block is given, the block must return an Integer-convertible object.
+ *
+ *  With a block and no argument, calls the block <tt>self.size-1</tt> times to compare elements;
+ *  returns the element having the minimum value per the block:
+ *    ['0', '00', '000'].min { |a, b| a.size <=> b.size } # => "0"
+ *
+ *  With an argument +n+ and a block, returns a new \Array with at most +n+ elements,
+ *  in ascending order per the block:
+ *    [0, 1, 2, 3].min(3) # => [0, 1, 2]
+ *    [0, 1, 2, 3].min(6) # => [0, 1, 2, 3]
+ *    [0, 1, 2, 3].min(0) # => []
+ *
+ *  ---
+ *
+ *  Raises an exception on encountering elements that are not comparable:
+ *    # Raises ArgumentError (comparison of Symbol with 1 failed):
+ *    [0, 1, :foo].min
+ *
+ *  Raises an exception if argument +n+ is not an Integer-convertible object:
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    [0, 1].min(:foo)
+ *
+ *  Raises an exception if argument +n+ is negative:
+ *    # Raises ArgumentError (negative size (-1)):
+ *    [0, 1].min(-1)
+ *
+ *  Raises an exception if the block returns an object that is not an Integer-convertible object:
+ *    # Raises ArgumentError (comparison of Symbol with 0 failed):
+ *    [0, 1, 2].min {|a, b| :foo }
  */
 static VALUE
 rb_ary_min(int argc, VALUE *argv, VALUE ary)
@@ -6535,14 +6658,35 @@ rb_ary_min(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *     ary.minmax                       -> [obj, obj]
- *     ary.minmax {| a,b | block }      -> [obj, obj]
+ *    array.minmax -> [min_val, max_val]
+ *    array.minmax {|a, b| ... } -> [min_val, max_val]
  *
- *  Returns a two element array which contains the minimum and the
- *  maximum value in the array.
+ *  Returns a new 2-element \Array containing the minimum and maximum values
+ *  from +self+, either per method <tt><=></tt> or per a given block:.
  *
- *  Can be given an optional block to override the default comparison
- *  method <code>a <=> b</code>.
+ *  ---
+ *
+ *  When no block is given, each element in +self+ must respond to method <tt><=></tt>
+ *  with an \Integer-convertible object;
+ *  returns a new 2-element \Array containing the minimum and maximum values
+ *  from +self+, per method <tt><=></tt>:
+ *    [0, 1, 2].minmax # => [0, 2]
+ *
+ *  When a block is given, the block must return an Integer-convertible object;
+ *  the block is called <tt>self.size-1</tt> times to compare elements;
+ *  returns a new 2-element \Array containing the minimum and maximum values
+ *  from +self+, per the block:
+ *    ['0', '00', '000'].minmax {|a, b| a.size <=> b.size } # => ["0", "000"]
+ *
+ *  ---
+ *
+ *  Raises an exception on encountering elements that are not comparable:
+ *    # Raises ArgumentError (comparison of Symbol with 1 failed):
+ *    [0, 1, :foo].minmax
+ *
+ *  Raises an exception if the block returns an object that is not an Integer-convertible object:
+ *    # Raises ArgumentError (comparison of Symbol with 0 failed):
+ *    [0, 1, 2].minmax {|a, b| :foo }
  */
 static VALUE
 rb_ary_minmax(VALUE ary)
