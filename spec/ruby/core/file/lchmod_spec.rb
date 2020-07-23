@@ -1,7 +1,7 @@
 require_relative '../../spec_helper'
 
 describe "File.lchmod" do
-  platform_is_not :linux, :windows, :openbsd, :solaris, :aix do
+  guard -> { File.respond_to?(:lchmod) } do
     before :each do
       @fname = tmp('file_chmod_test')
       @lname = @fname + '.lnk'
@@ -30,13 +30,9 @@ describe "File.lchmod" do
     end
   end
 
-  platform_is :linux, :openbsd, :aix do
-    it "returns false from #respond_to?" do
-      File.respond_to?(:lchmod).should be_false
-    end
-
+  guard_not -> { File.respond_to?(:lchmod) } do
     it "raises a NotImplementedError when called" do
-      -> { File.lchmod 0 }.should raise_error(NotImplementedError)
+      -> { File.lchmod 0, "foo" }.should raise_error(NotImplementedError)
     end
   end
 end
