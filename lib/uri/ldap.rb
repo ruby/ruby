@@ -119,6 +119,7 @@ module URI
 
     # Private method to cleanup +dn+ from using the +path+ component attribute.
     def parse_dn
+      raise InvalidURIError, 'bad LDAP URL' unless @path
       @dn = @path[1..-1]
     end
     private :parse_dn
