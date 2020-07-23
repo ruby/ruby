@@ -1765,6 +1765,14 @@ static VALUE time_get_tm(VALUE, struct time_object *);
 	time_get_tm((time), (tobj)); \
     } \
   } while (0)
+#define MAKE_TM_ENSURE(time, tobj, cond) \
+    do { \
+        MAKE_TM(time, tobj); \
+        if (!(cond)) { \
+            VALUE zone = (tobj)->vtm.zone; \
+            if (!NIL_P(zone)) zone_localtime(zone, (time)); \
+        } \
+    } while (0)
 
 static void
 time_mark(void *ptr)
@@ -4593,11 +4601,7 @@ time_wday(VALUE time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    MAKE_TM(time, tobj);
-    if (tobj->vtm.wday == VTM_WDAY_INITVAL) {
-        VALUE zone = tobj->vtm.zone;
-        if (!NIL_P(zone)) zone_localtime(zone, time);
-    }
+    MAKE_TM_ENSURE(time, tobj, tobj->vtm.wday != VTM_WDAY_INITVAL);
     return INT2FIX((int)tobj->vtm.wday);
 }
 
@@ -4733,11 +4737,7 @@ time_yday(VALUE time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    MAKE_TM(time, tobj);
-    if (tobj->vtm.yday == 0) {
-        VALUE zone = tobj->vtm.zone;
-        if (!NIL_P(zone)) zone_localtime(zone, time);
-    }
+    MAKE_TM_ENSURE(time, tobj, tobj->vtm.yday != 0);
     return INT2FIX(tobj->vtm.yday);
 }
 
@@ -5109,11 +5109,7 @@ time_strftime(VALUE time, VALUE format)
     VALUE tmp;
 
     GetTimeval(time, tobj);
-    if (tobj->vtm.yday == 0) {
-        VALUE zone = tobj->vtm.zone;
-        if (!NIL_P(zone)) zone_localtime(zone, time);
-    }
-    MAKE_TM(time, tobj);
+    MAKE_TM_ENSURE(time, tobj, tobj->vtm.yday != 0);
     StringValue(format);
     if (!rb_enc_str_asciicompat_p(format)) {
 	rb_raise(rb_eArgError, "format should have ASCII compatible encoding");
