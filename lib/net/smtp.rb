@@ -630,10 +630,13 @@ module Net
     # binary message with this method. +msgstr+ should include both
     # the message headers and body.
     #
-    # +from_addr+ is a String representing the source mail address.
+    # +from_addr+ is the source mail address.
     #
-    # +to_addr+ is a String or Strings or Array of Strings, representing
-    # the destination mail address or addresses.
+    # +to_addr+ is an address or Array of addresses.
+    #
+    # An address is a String representing the source mail address, or an [addr, params]
+    # pair, where +addr+ is a String representing the source mail address and
+    # +params+ is an Array or Hash of parameters.
     #
     # === Example
     #
@@ -656,7 +659,10 @@ module Net
     #
     def send_message(msgstr, from_addr, *to_addrs)
       raise IOError, 'closed session' unless @socket
-      mailfrom from_addr
+      mailfrom *Array(from_addr)
+      if to_addrs.first.is_a?(Array) && to_addrs.count == 1
+        to_addrs = to_addrs.first
+      end
       rcptto_list(to_addrs) {data msgstr}
     end
 
@@ -679,10 +685,13 @@ module Net
     #
     # === Parameters
     #
-    # +from_addr+ is a String representing the source mail address.
+    # +from_addr+ is the source mail address.
     #
-    # +to_addr+ is a String or Strings or Array of Strings, representing
-    # the destination mail address or addresses.
+    # +to_addr+ is an address or Array of addresses.
+    #
+    # An address is a String representing the source mail address, or an [addr, params]
+    # pair, where +addr+ is a String representing the source mail address and
+    # +params+ is an Array or Hash of parameters.
     #
     # === Example
     #
@@ -709,7 +718,10 @@ module Net
     #
     def open_message_stream(from_addr, *to_addrs, &block)   # :yield: stream
       raise IOError, 'closed session' unless @socket
-      mailfrom from_addr
+      mailfrom *Array(from_addr)
+      if to_addrs.first.is_a?(Array) && to_addrs.count == 1
+        to_addrs = to_addrs.first
+      end
       rcptto_list(to_addrs) {data(&block)}
     end
 
@@ -831,17 +843,18 @@ module Net
       getok("EHLO #{domain}")
     end
 
-    def mailfrom(from_addr)
-      getok("MAIL FROM:<#{from_addr}>")
+    def mailfrom(from_addr, params = [])
+      getok(addr_req("MAIL FROM", from_addr, params))
     end
 
     def rcptto_list(to_addrs)
       raise ArgumentError, 'mail destination not given' if to_addrs.empty?
       ok_users = []
       unknown_users = []
-      to_addrs.flatten.each do |addr|
+      to_addrs.each do |addr|
+        addr, params = Array(addr)
         begin
-          rcptto addr
+          rcptto addr, params
         rescue SMTPAuthenticationError
           unknown_users << addr.dump
         else
@@ -856,8 +869,13 @@ module Net
       ret
     end
 
-    def rcptto(to_addr)
-      getok("RCPT TO:<#{to_addr}>")
+    def rcptto(to_addr, params = [])
+      getok(addr_req("RCPT TO", to_addr, params))
+    end
+
+    def addr_req(command, addr, params)
+      params_list = params.to_a.map {|param| " " + Array(param).compact.join("=") }.join
+      req = "#{command}:<#{addr}>#{params_list}"
     end
 
     # This method sends a message.
