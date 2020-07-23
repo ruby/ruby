@@ -5412,7 +5412,7 @@ ary_append(VALUE x, VALUE y)
  *
  *  Returns +self+ unmodified if no arguments given:
  *    a = [0, 1]
- *    a.concat
+ *    a.concat(*[])
  *    a # => [0, 1]
  *
  *  ---
@@ -5986,7 +5986,7 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
  *
  *  Returns a copy of +self+ if no arguments given:
  *    a0 = [0, 1]
- *    a1 = a0.difference
+ *    a1 = a0.difference(*[])
  *    a1 # => [0, 1]
  *    a1.equal?(a0) # => false
  *
@@ -6114,7 +6114,7 @@ rb_ary_and(VALUE ary1, VALUE ary2)
  *
  *  Returns a copy of +self+ if no arguments given:
  *    a0 = [0, 1]
- *    a1 = a0.intersection
+ *    a1 = a0.intersection(*[])
  *    a1 # => [0, 1]
  *    a1.equal?(a0) # => false
  *
@@ -6230,7 +6230,7 @@ rb_ary_or(VALUE ary1, VALUE ary2)
  *
  *  Returns a copy of +self+ if no arguments given:
  *    a0 = [0, 1]
- *    a1 = a0.union
+ *    a1 = a0.union(*[])
  *    a1 # => [0, 1]
  *    a1.equal?(a0) # => false
  *
