@@ -824,6 +824,26 @@ end.join
     }
   end
 
+  def test_cause_exception_in_cause_message
+    assert_in_out_err([], "#{<<~"begin;"}\n#{<<~'end;'}") do |outs, errs, status|
+      begin;
+        exc = Class.new(StandardError) do
+          def initialize(obj, cnt)
+            super(obj)
+            @errcnt = cnt
+          end
+          def to_s
+            return super if @errcnt <= 0
+            @errcnt -= 1
+            raise "xxx"
+          end
+        end.new("ok", 10)
+        raise "[Bug #17033]", cause: exc
+      end;
+      assert_equal(1, errs.count {|m| m.include?("[Bug #17033]")}, proc {errs.pretty_inspect})
+    end
+  end
+
   def test_anonymous_message
     assert_in_out_err([], "raise Class.new(RuntimeError), 'foo'", [], /foo\n/)
   end
