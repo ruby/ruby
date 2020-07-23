@@ -111,7 +111,7 @@ class Gem::Requirement
     elsif $1 == ">=" && $2 == "0.a"
       DefaultPrereleaseRequirement
     else
-      [$1 || "=", Gem::Version.new($2)]
+      [-($1 || "="), Gem::Version.new($2)]
     end
   end
 
