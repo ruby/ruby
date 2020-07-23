@@ -10707,7 +10707,7 @@ wmap_aset(VALUE self, VALUE wmap, VALUE orig)
 
 /* Retrieves a weakly referenced object with the given key */
 static VALUE
-wmap_aref(VALUE self, VALUE wmap)
+wmap_lookup(VALUE self, VALUE key)
 {
     st_data_t data;
     VALUE obj;
@@ -10715,17 +10715,25 @@ wmap_aref(VALUE self, VALUE wmap)
     rb_objspace_t *objspace = &rb_objspace;
 
     TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
-    if (!st_lookup(w->wmap2obj, (st_data_t)wmap, &data)) return Qnil;
+    if (!st_lookup(w->wmap2obj, (st_data_t)key, &data)) return Qundef;
     obj = (VALUE)data;
-    if (!wmap_live_p(objspace, obj)) return Qnil;
+    if (!wmap_live_p(objspace, obj)) return Qundef;
     return obj;
+}
+
+/* Retrieves a weakly referenced object with the given key */
+static VALUE
+wmap_aref(VALUE self, VALUE key)
+{
+    VALUE obj = wmap_lookup(self, key);
+    return obj != Qundef ? obj : Qnil;
 }
 
 /* Returns +true+ if +key+ is registered */
 static VALUE
 wmap_has_key(VALUE self, VALUE key)
 {
-    return NIL_P(wmap_aref(self, key)) ? Qfalse : Qtrue;
+    return wmap_lookup(self, key) == Qundef ? Qfalse : Qtrue;
 }
 
 /* Returns the number of referenced objects */
