@@ -4867,7 +4867,7 @@ time_to_a(VALUE time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    MAKE_TM(time, tobj);
+    MAKE_TM_ENSURE(time, tobj, tobj->vtm.yday != 0);
     return rb_ary_new3(10,
 		    INT2FIX(tobj->vtm.sec),
 		    INT2FIX(tobj->vtm.min),
