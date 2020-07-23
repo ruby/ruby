@@ -83,7 +83,7 @@ shortlen(size_t len, BDIGIT *ds)
 static ID s_dump, s_load, s_mdump, s_mload;
 static ID s_dump_data, s_load_data, s_alloc, s_call;
 static ID s_getbyte, s_read, s_write, s_binmode;
-static ID s_encoding_short;
+static ID s_encoding_short, s_ruby2_keywords_flag;
 
 #define name_s_dump	"_dump"
 #define name_s_load	"_load"
@@ -98,6 +98,7 @@ static ID s_encoding_short;
 #define name_s_write	"write"
 #define name_s_binmode	"binmode"
 #define name_s_encoding_short "E"
+#define name_s_ruby2_keywords_flag "K"
 
 typedef struct {
     VALUE newclass;
@@ -557,7 +558,7 @@ w_uclass(VALUE obj, VALUE super, struct dump_arg *arg)
     }
 }
 
-#define to_be_skipped_id(id) (id == rb_id_encoding() || id == s_encoding_short || !rb_id2str(id))
+#define to_be_skipped_id(id) (id == rb_id_encoding() || id == s_encoding_short || id == s_ruby2_keywords_flag || !rb_id2str(id))
 
 struct w_ivar_arg {
     struct dump_call_arg *dump;
@@ -575,6 +576,10 @@ w_obj_each(st_data_t key, st_data_t val, st_data_t a)
     if (to_be_skipped_id(id)) {
         if (id == s_encoding_short) {
             rb_warn("instance variable `"name_s_encoding_short"' on class %"PRIsVALUE" is not dumped",
+                    CLASS_OF(arg->obj));
+        }
+        if (id == s_ruby2_keywords_flag) {
+            rb_warn("instance variable `"name_s_ruby2_keywords_flag"' on class %"PRIsVALUE" is not dumped",
                     CLASS_OF(arg->obj));
         }
         return ST_CONTINUE;
@@ -654,6 +659,7 @@ has_ivars(VALUE obj, VALUE encname, VALUE *ivobj)
 {
     st_index_t enc = !NIL_P(encname);
     st_index_t num = 0;
+    st_index_t ruby2_keywords_flag = 0;
 
     if (SPECIAL_CONST_P(obj)) goto generic;
     switch (BUILTIN_TYPE(obj)) {
@@ -661,13 +667,16 @@ has_ivars(VALUE obj, VALUE encname, VALUE *ivobj)
       case T_CLASS:
       case T_MODULE:
 	break; /* counted elsewhere */
+      case T_HASH:
+        ruby2_keywords_flag = RHASH(obj)->basic.flags & RHASH_PASS_AS_KEYWORDS ? 1 : 0;
+        /* fall through */
       default:
       generic:
 	rb_ivar_foreach(obj, obj_count_ivars, (st_data_t)&num);
-	if (num) *ivobj = obj;
+	if (ruby2_keywords_flag || num) *ivobj = obj;
     }
 
-    return num + enc;
+    return num + enc + ruby2_keywords_flag;
 }
 
 static void
@@ -687,7 +696,14 @@ w_ivar(st_index_t num, VALUE ivobj, VALUE encname, struct dump_call_arg *arg)
 {
     w_long(num, arg->arg);
     num -= w_encoding(encname, arg);
-    if (ivobj != Qundef) {
+    if (RB_TYPE_P(ivobj, T_HASH) && (RHASH(ivobj)->basic.flags & RHASH_PASS_AS_KEYWORDS)) {
+        int limit = arg->limit;
+        if (limit >= 0) ++limit;
+        w_symbol(ID2SYM(s_ruby2_keywords_flag), arg->arg);
+	w_object(Qtrue, arg->arg, limit);
+        num--;
+    }
+    if (ivobj != Qundef && num) {
         w_ivar_each(ivobj, num, arg);
     }
 }
@@ -1388,6 +1404,19 @@ sym2encidx(VALUE sym, VALUE val)
     return -1;
 }
 
+static int
+ruby2_keywords_flag_check(VALUE sym)
+{
+    const char *p;
+    long l;
+    RSTRING_GETMEM(sym, p, l);
+    if (l <= 0) return 0;
+    if (name_equal(name_s_ruby2_keywords_flag, rb_strlen_lit(name_s_ruby2_keywords_flag), p, 1)) {
+        return 1;
+    }
+    return 0;
+}
+
 static VALUE
 r_symlink(struct load_arg *arg)
 {
@@ -1541,8 +1570,16 @@ r_ivar(VALUE obj, int *has_encoding, struct load_arg *arg)
                 }
 		if (has_encoding) *has_encoding = TRUE;
 	    }
-	    else {
-		rb_ivar_set(obj, rb_intern_str(sym), val);
+	    else if (ruby2_keywords_flag_check(sym)) {
+                if (RB_TYPE_P(obj, T_HASH)) {
+                    RHASH(obj)->basic.flags |= RHASH_PASS_AS_KEYWORDS;
+                }
+                else {
+                    rb_raise(rb_eArgError, "ruby2_keywords flag is given but %"PRIsVALUE" is not a Hash", obj);
+                }
+            }
+            else {
+                rb_ivar_set(obj, rb_intern_str(sym), val);
 	    }
 	} while (--len > 0);
     }
@@ -2288,6 +2325,7 @@ Init_marshal(void)
     set_id(s_write);
     set_id(s_binmode);
     set_id(s_encoding_short);
+    set_id(s_ruby2_keywords_flag);
 
     rb_define_module_function(rb_mMarshal, "dump", marshal_dump, -1);
     rb_define_module_function(rb_mMarshal, "load", marshal_load, -1);

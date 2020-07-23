@@ -753,4 +753,18 @@ class TestMarshal < Test::Unit::TestCase
       Marshal.dump(obj)
     end
   end
+
+  ruby2_keywords def ruby2_keywords_hash(*a)
+    a.last
+  end
+
+  def ruby2_keywords_test(key: 1)
+    key
+  end
+
+  def test_marshal_with_ruby2_keywords_hash
+    flagged_hash = ruby2_keywords_hash(key: 42)
+    hash = Marshal.load(Marshal.dump(flagged_hash))
+    assert_equal(42, ruby2_keywords_test(*[hash]))
+  end
 end
