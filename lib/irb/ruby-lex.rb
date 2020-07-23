@@ -34,7 +34,7 @@ class RubyLex
     line_no = 1
     begin
       result = yield code, line_no
-    rescue ArgumentError => e
+    rescue ArgumentError
       code = ";\n#{code}"
       line_no = 0
       result = yield code, line_no

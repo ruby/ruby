@@ -44,14 +44,14 @@ class TestFiberIO < Test::Unit::TestCase
     skip unless defined?(UNIXSocket)
 
     16.times.map do
-      thread = Thread.new do
+      Thread.new do
         i, o = UNIXSocket.pair
 
         scheduler = Scheduler.new
         Thread.current.scheduler = scheduler
 
         Fiber do
-          message = i.read(20)
+          i.read(20)
           i.close
         end
 
