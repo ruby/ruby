@@ -121,7 +121,7 @@ describe "Time.new with a utc_offset argument" do
   end
 end
 
-ruby_version_is "2.6" do
+ruby_version_is "2.7" do
   describe "Time.new with a timezone argument" do
     it "returns a Time in the timezone" do
       zone = TimeSpecs::Timezone.new(offset: (5*3600+30*60))
@@ -129,6 +129,10 @@ ruby_version_is "2.6" do
 
       time.zone.should == zone
       time.utc_offset.should == 5*3600+30*60
+      ruby_version_is "2.7" do
+        time.wday.should == 6
+        time.yday.should == 1
+      end
     end
 
     it "accepts timezone argument that must have #local_to_utc and #utc_to_local methods" do
