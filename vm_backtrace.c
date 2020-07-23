@@ -29,6 +29,9 @@ id2str(ID id)
 }
 #define rb_id2str(id) id2str(id)
 
+#define BACKTRACE_START 0
+#define ALL_BACKTRACE_LINES -1
+
 inline static int
 calc_lineno(const rb_iseq_t *iseq, const VALUE *pc)
 {
@@ -126,6 +129,10 @@ location_mark_entry(rb_backtrace_location_t *fi)
 	rb_gc_mark_movable((VALUE)fi->body.iseq.iseq);
 	break;
       case LOCATION_TYPE_CFUNC:
+        if (fi->body.cfunc.prev_loc) {
+            location_mark_entry(fi->body.cfunc.prev_loc);
+        }
+        break;
       case LOCATION_TYPE_IFUNC:
       default:
 	break;
@@ -484,22 +491,47 @@ backtrace_alloc(VALUE klass)
     return obj;
 }
 
-static void
+static long
+backtrace_size(const rb_execution_context_t *ec)
+{
+    const rb_control_frame_t *last_cfp = ec->cfp;
+    const rb_control_frame_t *start_cfp = RUBY_VM_END_CONTROL_FRAME(ec);
+
+    if (start_cfp == NULL) {
+        return -1;
+    }
+
+    start_cfp =
+      RUBY_VM_NEXT_CONTROL_FRAME(
+          RUBY_VM_NEXT_CONTROL_FRAME(start_cfp)); /* skip top frames */
+
+    if (start_cfp < last_cfp) {
+        return 0;
+    }
+
+    return start_cfp - last_cfp + 1;
+}
+
+static int
 backtrace_each(const rb_execution_context_t *ec,
+               ptrdiff_t from_last,
+               long num_frames,
 	       void (*init)(void *arg, size_t size),
 	       void (*iter_iseq)(void *arg, const rb_control_frame_t *cfp),
 	       void (*iter_cfunc)(void *arg, const rb_control_frame_t *cfp, ID mid),
+               void (*iter_skip)(void *arg, const rb_control_frame_t *cfp),
 	       void *arg)
 {
     const rb_control_frame_t *last_cfp = ec->cfp;
     const rb_control_frame_t *start_cfp = RUBY_VM_END_CONTROL_FRAME(ec);
     const rb_control_frame_t *cfp;
-    ptrdiff_t size, i;
+    ptrdiff_t size, i, last, start = 0;
+    int ret = 0;
 
     // In the case the thread vm_stack or cfp is not initialized, there is no backtrace.
     if (start_cfp == NULL) {
         init(arg, 0);
-        return;
+        return ret;
     }
 
     /*                <- start_cfp (end control frame)
@@ -517,16 +549,43 @@ backtrace_each(const rb_execution_context_t *ec,
 	  RUBY_VM_NEXT_CONTROL_FRAME(start_cfp)); /* skip top frames */
 
     if (start_cfp < last_cfp) {
-	size = 0;
+        size = last = 0;
     }
     else {
 	size = start_cfp - last_cfp + 1;
+
+        if (from_last > size) {
+            size = last = 0;
+            ret = 1;
+        }
+        else if (num_frames >= 0 && num_frames < size) {
+            if (from_last + num_frames > size) {
+                size -= from_last;
+                last = size;
+            }
+            else {
+                start = size - from_last - num_frames;
+                size = num_frames;
+                last = start + size;
+            }
+        }
+        else {
+            size -= from_last;
+            last = size;
+        }
     }
 
     init(arg, size);
 
     /* SDR(); */
-    for (i=0, cfp = start_cfp; i<size; i++, cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
+    for (i=0, cfp = start_cfp; i<last; i++, cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
+        if (i < start) {
+            if (iter_skip) {
+                iter_skip(arg, cfp);
+            }
+            continue;
+        }
+
 	/* fprintf(stderr, "cfp: %d\n", (rb_control_frame_t *)(ec->vm_stack + ec->vm_stack_size) - cfp); */
 	if (cfp->iseq) {
 	    if (cfp->pc) {
@@ -540,12 +599,16 @@ backtrace_each(const rb_execution_context_t *ec,
 	    iter_cfunc(arg, cfp, mid);
 	}
     }
+
+    return ret;
 }
 
 struct bt_iter_arg {
     rb_backtrace_t *bt;
     VALUE btobj;
     rb_backtrace_location_t *prev_loc;
+    const rb_control_frame_t *prev_cfp;
+    rb_backtrace_location_t *init_loc;
 };
 
 static void
@@ -554,8 +617,11 @@ bt_init(void *ptr, size_t size)
     struct bt_iter_arg *arg = (struct bt_iter_arg *)ptr;
     arg->btobj = backtrace_alloc(rb_cBacktrace);
     GetCoreDataFromValue(arg->btobj, rb_backtrace_t, arg->bt);
-    arg->bt->backtrace_base = arg->bt->backtrace = ALLOC_N(rb_backtrace_location_t, size);
-    arg->bt->backtrace_size = 0;
+    arg->bt->backtrace_base = arg->bt->backtrace = ALLOC_N(rb_backtrace_location_t, size+1);
+    arg->bt->backtrace_size = 1;
+    arg->prev_cfp = NULL;
+    arg->init_loc = &arg->bt->backtrace_base[size];
+    arg->init_loc->type = 0;
 }
 
 static void
@@ -564,7 +630,7 @@ bt_iter_iseq(void *ptr, const rb_control_frame_t *cfp)
     const rb_iseq_t *iseq = cfp->iseq;
     const VALUE *pc = cfp->pc;
     struct bt_iter_arg *arg = (struct bt_iter_arg *)ptr;
-    rb_backtrace_location_t *loc = &arg->bt->backtrace[arg->bt->backtrace_size++];
+    rb_backtrace_location_t *loc = &arg->bt->backtrace[arg->bt->backtrace_size++-1];
     loc->type = LOCATION_TYPE_ISEQ;
     loc->body.iseq.iseq = iseq;
     loc->body.iseq.lineno.pc = pc;
@@ -575,41 +641,69 @@ static void
 bt_iter_cfunc(void *ptr, const rb_control_frame_t *cfp, ID mid)
 {
     struct bt_iter_arg *arg = (struct bt_iter_arg *)ptr;
-    rb_backtrace_location_t *loc = &arg->bt->backtrace[arg->bt->backtrace_size++];
+    rb_backtrace_location_t *loc = &arg->bt->backtrace[arg->bt->backtrace_size++-1];
     loc->type = LOCATION_TYPE_CFUNC;
     loc->body.cfunc.mid = mid;
-    loc->body.cfunc.prev_loc = arg->prev_loc;
+    if (arg->prev_loc) {
+        loc->body.cfunc.prev_loc = arg->prev_loc;
+    }
+    else if (arg->prev_cfp) {
+        const rb_iseq_t *iseq = arg->prev_cfp->iseq;
+        const VALUE *pc = arg->prev_cfp->pc;
+        arg->init_loc->type = LOCATION_TYPE_ISEQ;
+        arg->init_loc->body.iseq.iseq = iseq;
+        arg->init_loc->body.iseq.lineno.pc = pc;
+        loc->body.cfunc.prev_loc = arg->prev_loc = arg->init_loc;
+    } else {
+        loc->body.cfunc.prev_loc = NULL;
+    }
+}
+
+static void
+bt_iter_skip(void *ptr, const rb_control_frame_t *cfp)
+{
+    if (cfp->iseq && cfp->pc) {
+        ((struct bt_iter_arg *)ptr)->prev_cfp = cfp;
+    }
+}
+
+static VALUE
+rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long lev, long n, int* level_too_large)
+{
+    struct bt_iter_arg arg;
+    int too_large;
+    arg.prev_loc = 0;
+
+    too_large = backtrace_each(ec,
+                               lev,
+                               n,
+                               bt_init,
+                               bt_iter_iseq,
+                               bt_iter_cfunc,
+                               bt_iter_skip,
+                               &arg);
+
+    if (level_too_large) *level_too_large = too_large;
+
+    return arg.btobj;
 }
 
 MJIT_FUNC_EXPORTED VALUE
 rb_ec_backtrace_object(const rb_execution_context_t *ec)
 {
-    struct bt_iter_arg arg;
-    arg.prev_loc = 0;
-
-    backtrace_each(ec,
-		   bt_init,
-		   bt_iter_iseq,
-		   bt_iter_cfunc,
-		   &arg);
-
-    return arg.btobj;
+    return rb_ec_partial_backtrace_object(ec, BACKTRACE_START, ALL_BACKTRACE_LINES, NULL);
 }
 
 static VALUE
-backtrace_collect(rb_backtrace_t *bt, long lev, long n, VALUE (*func)(rb_backtrace_location_t *, void *arg), void *arg)
+backtrace_collect(rb_backtrace_t *bt, VALUE (*func)(rb_backtrace_location_t *, void *arg), void *arg)
 {
     VALUE btary;
     int i;
 
-    if (UNLIKELY(lev < 0 || n < 0)) {
-	rb_bug("backtrace_collect: unreachable");
-    }
+    btary = rb_ary_new2(bt->backtrace_size-1);
 
-    btary = rb_ary_new2(n);
-
-    for (i=0; i+lev<bt->backtrace_size && i<n; i++) {
-	rb_backtrace_location_t *loc = &bt->backtrace[bt->backtrace_size - 1 - (lev+i)];
+    for (i=0; i<bt->backtrace_size-1; i++) {
+        rb_backtrace_location_t *loc = &bt->backtrace[bt->backtrace_size - 2 - i];
 	rb_ary_push(btary, func(loc, arg));
     }
 
@@ -623,23 +717,12 @@ location_to_str_dmyarg(rb_backtrace_location_t *loc, void *dmy)
 }
 
 static VALUE
-backtrace_to_str_ary(VALUE self, long lev, long n)
+backtrace_to_str_ary(VALUE self)
 {
-    rb_backtrace_t *bt;
-    int size;
     VALUE r;
-
+    rb_backtrace_t *bt;
     GetCoreDataFromValue(self, rb_backtrace_t, bt);
-    size = bt->backtrace_size;
-
-    if (n == 0) {
-	n = size;
-    }
-    if (lev > size) {
-	return Qnil;
-    }
-
-    r = backtrace_collect(bt, lev, n, location_to_str_dmyarg, 0);
+    r = backtrace_collect(bt, location_to_str_dmyarg, 0);
     RB_GC_GUARD(self);
     return r;
 }
@@ -651,7 +734,7 @@ rb_backtrace_to_str_ary(VALUE self)
     GetCoreDataFromValue(self, rb_backtrace_t, bt);
 
     if (!bt->strary) {
-	bt->strary = backtrace_to_str_ary(self, 0, bt->backtrace_size);
+        bt->strary = backtrace_to_str_ary(self);
     }
     return bt->strary;
 }
@@ -664,9 +747,9 @@ rb_backtrace_use_iseq_first_lineno_for_last_location(VALUE self)
     rb_backtrace_location_t *loc;
 
     GetCoreDataFromValue(self, rb_backtrace_t, bt);
-    VM_ASSERT(bt->backtrace_size > 0);
+    VM_ASSERT(bt->backtrace_size > 1);
 
-    loc = &bt->backtrace[bt->backtrace_size - 1];
+    loc = &bt->backtrace[bt->backtrace_size - 2];
     iseq = loc->body.iseq.iseq;
 
     VM_ASSERT(loc->type == LOCATION_TYPE_ISEQ);
@@ -689,23 +772,12 @@ location_create(rb_backtrace_location_t *srcloc, void *btobj)
 }
 
 static VALUE
-backtrace_to_location_ary(VALUE self, long lev, long n)
+backtrace_to_location_ary(VALUE self)
 {
-    rb_backtrace_t *bt;
-    int size;
     VALUE r;
-
+    rb_backtrace_t *bt;
     GetCoreDataFromValue(self, rb_backtrace_t, bt);
-    size = bt->backtrace_size;
-
-    if (n == 0) {
-	n = size;
-    }
-    if (lev > size) {
-	return Qnil;
-    }
-
-    r = backtrace_collect(bt, lev, n, location_create, (void *)self);
+    r = backtrace_collect(bt, location_create, (void *)self);
     RB_GC_GUARD(self);
     return r;
 }
@@ -717,7 +789,7 @@ rb_backtrace_to_location_ary(VALUE self)
     GetCoreDataFromValue(self, rb_backtrace_t, bt);
 
     if (!bt->locary) {
-	bt->locary = backtrace_to_location_ary(self, 0, 0);
+        bt->locary = backtrace_to_location_ary(self);
     }
     return bt->locary;
 }
@@ -741,13 +813,13 @@ backtrace_load_data(VALUE self, VALUE str)
 VALUE
 rb_ec_backtrace_str_ary(const rb_execution_context_t *ec, long lev, long n)
 {
-    return backtrace_to_str_ary(rb_ec_backtrace_object(ec), lev, n);
+    return backtrace_to_str_ary(rb_ec_partial_backtrace_object(ec, lev, n, NULL));
 }
 
 VALUE
 rb_ec_backtrace_location_ary(const rb_execution_context_t *ec, long lev, long n)
 {
-    return backtrace_to_location_ary(rb_ec_backtrace_object(ec), lev, n);
+    return backtrace_to_location_ary(rb_ec_partial_backtrace_object(ec, lev, n, NULL));
 }
 
 /* make old style backtrace directly */
@@ -814,9 +886,12 @@ vm_backtrace_print(FILE *fp)
     arg.func = oldbt_print;
     arg.data = (void *)fp;
     backtrace_each(GET_EC(),
+                   BACKTRACE_START,
+                   ALL_BACKTRACE_LINES,
 		   oldbt_init,
 		   oldbt_iter_iseq,
 		   oldbt_iter_cfunc,
+                   NULL,
 		   &arg);
 }
 
@@ -847,9 +922,12 @@ rb_backtrace_print_as_bugreport(void)
     arg.data = (int *)&i;
 
     backtrace_each(GET_EC(),
+                   BACKTRACE_START,
+                   ALL_BACKTRACE_LINES,
 		   oldbt_init,
 		   oldbt_iter_iseq,
 		   oldbt_iter_cfunc,
+                   NULL,
 		   &arg);
 }
 
@@ -890,16 +968,19 @@ rb_backtrace_each(VALUE (*iter)(VALUE recv, VALUE str), VALUE output)
     arg.func = oldbt_print_to;
     arg.data = &parg;
     backtrace_each(GET_EC(),
+                   BACKTRACE_START,
+                   ALL_BACKTRACE_LINES,
 		   oldbt_init,
 		   oldbt_iter_iseq,
 		   oldbt_iter_cfunc,
+                   NULL,
 		   &arg);
 }
 
 VALUE
 rb_make_backtrace(void)
 {
-    return rb_ec_backtrace_str_ary(GET_EC(), 0, 0);
+    return rb_ec_backtrace_str_ary(GET_EC(), BACKTRACE_START, ALL_BACKTRACE_LINES);
 }
 
 static VALUE
@@ -907,11 +988,9 @@ ec_backtrace_to_ary(const rb_execution_context_t *ec, int argc, const VALUE *arg
 {
     VALUE level, vn;
     long lev, n;
-    VALUE btval = rb_ec_backtrace_object(ec);
+    VALUE btval;
     VALUE r;
-    rb_backtrace_t *bt;
-
-    GetCoreDataFromValue(btval, rb_backtrace_t, bt);
+    int too_large;
 
     rb_scan_args(argc, argv, "02", &level, &vn);
 
@@ -920,19 +999,19 @@ ec_backtrace_to_ary(const rb_execution_context_t *ec, int argc, const VALUE *arg
     switch (argc) {
       case 0:
 	lev = lev_default + lev_plus;
-	n = bt->backtrace_size - lev;
+        n = ALL_BACKTRACE_LINES;
 	break;
       case 1:
 	{
-	    long beg, len;
-	    switch (rb_range_beg_len(level, &beg, &len, bt->backtrace_size - lev_plus, 0)) {
+            long beg, len, bt_size = backtrace_size(ec);
+            switch (rb_range_beg_len(level, &beg, &len, bt_size - lev_plus, 0)) {
 	      case Qfalse:
 		lev = NUM2LONG(level);
 		if (lev < 0) {
 		    rb_raise(rb_eArgError, "negative level (%ld)", lev);
 		}
 		lev += lev_plus;
-		n = bt->backtrace_size - lev;
+                n = ALL_BACKTRACE_LINES;
 		break;
 	      case Qnil:
 		return Qnil;
@@ -963,11 +1042,17 @@ ec_backtrace_to_ary(const rb_execution_context_t *ec, int argc, const VALUE *arg
 	return rb_ary_new();
     }
 
+    btval = rb_ec_partial_backtrace_object(ec, lev, n, &too_large);
+
+    if (too_large) {
+        return Qnil;
+    }
+
     if (to_str) {
-	r = backtrace_to_str_ary(btval, lev, n);
+        r = backtrace_to_str_ary(btval);
     }
     else {
-	r = backtrace_to_location_ary(btval, lev, n);
+        r = backtrace_to_location_ary(btval);
     }
     RB_GC_GUARD(btval);
     return r;
@@ -1239,9 +1324,12 @@ collect_caller_bindings(const rb_execution_context_t *ec)
     data.ary = rb_ary_new();
 
     backtrace_each(ec,
+                   BACKTRACE_START,
+                   ALL_BACKTRACE_LINES,
 		   collect_caller_bindings_init,
 		   collect_caller_bindings_iseq,
 		   collect_caller_bindings_cfunc,
+                   NULL,
 		   &data);
 
     result = rb_ary_reverse(data.ary);
@@ -1278,7 +1366,7 @@ rb_debug_inspector_open(rb_debug_inspector_func_t func, void *data)
 
     dbg_context.ec = ec;
     dbg_context.cfp = dbg_context.ec->cfp;
-    dbg_context.backtrace = rb_ec_backtrace_location_ary(ec, 0, 0);
+    dbg_context.backtrace = rb_ec_backtrace_location_ary(ec, BACKTRACE_START, ALL_BACKTRACE_LINES);
     dbg_context.backtrace_size = RARRAY_LEN(dbg_context.backtrace);
     dbg_context.contexts = collect_caller_bindings(ec);
 
