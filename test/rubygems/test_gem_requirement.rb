@@ -81,6 +81,12 @@ class TestGemRequirement < Gem::TestCase
       Gem::Requirement.parse(Gem::Version.new('2'))
   end
 
+  if RUBY_VERSION >= '2.5'
+    def test_parse_deduplication
+      assert_same '~>', Gem::Requirement.parse('~> 1').first
+    end
+  end
+
   def test_parse_bad
     [
       nil,
