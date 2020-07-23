@@ -425,6 +425,19 @@ p Foo::Bar
     end
   end
 
+  def test_source_location
+    klass = self.class
+    bug = "Bug16764"
+    Dir.mktmpdir('autoload') do |tmpdir|
+      path = "#{tmpdir}/test-#{bug}.rb"
+      File.write(path, "#{klass}::#{bug} = __FILE__\n")
+      klass.autoload(:Bug16764, path)
+      assert_equal [__FILE__, __LINE__-1], klass.const_source_location(bug)
+      assert_equal path, klass.const_get(bug)
+      assert_equal [path, 1], klass.const_source_location(bug)
+    end
+  end
+
   def test_no_leak
     assert_no_memory_leak([], '', <<~'end;', 'many autoloads', timeout: 60)
       200000.times do |i|
