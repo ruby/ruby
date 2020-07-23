@@ -661,6 +661,12 @@ module TestTimeTZ::WithTZ
     assert_equal(utc, t.to_i)
   end
 
+  def subtest_to_a(time_class, tz, tzarg, tzname, abbr, utc_offset)
+    t = time_class.new(2018, 9, 1, 12, 0, 0, tzarg)
+    ary = t.to_a
+    assert_equal(ary, [t.sec, t.min, t.hour, t.mday, t.mon, t.year, t.wday, t.yday, t.isdst, t.zone])
+  end
+
   def subtest_marshal(time_class, tz, tzarg, tzname, abbr, utc_offset)
     t = time_class.new(2018, 9, 1, 12, 0, 0, tzarg)
     t2 = Marshal.load(Marshal.dump(t))
