@@ -1072,13 +1072,13 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *   loop do
  *     ssl_connection = ssl_server.accept
  *
- *     data = connection.gets
+ *     data = ssl_connection.gets
  *
  *     response = "I got #{data.dump}"
  *     puts response
  *
- *     connection.puts "I got #{data.dump}"
- *     connection.close
+ *     ssl_connection.puts "I got #{data.dump}"
+ *     ssl_connection.close
  *   end
  *
  * === SSL client
