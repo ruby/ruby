@@ -52,6 +52,17 @@ class TestTmpdir < Test::Unit::TestCase
     }
   end
 
+  def test_mktmpdir_mutate
+    bug16918 = '[ruby-core:98563]'
+    assert_nothing_raised(bug16918) do
+      assert_mktmpdir_traversal do |traversal_path|
+        Dir.mktmpdir(traversal_path + 'foo') do |actual|
+          actual << "foo"
+        end
+      end
+    end
+  end
+
   def test_mktmpdir_traversal
     assert_mktmpdir_traversal do |traversal_path|
       Dir.mktmpdir(traversal_path + 'foo') do |actual|
