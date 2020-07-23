@@ -632,6 +632,7 @@ module TestTimeTZ::WithTZ
     h, m = (utc_offset.abs / 60).divmod(60)
     h = -h if utc_offset < 0
     assert_equal("%+.2d%.2d %s" % [h, m, abbr], t.strftime("%z %Z"))
+    assert_equal("34 35 35", t.strftime("%U %V %W"))
   end
 
   def subtest_plus(time_class, tz, tzarg, tzname, abbr, utc_offset)
