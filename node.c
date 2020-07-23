@@ -1144,6 +1144,7 @@ typedef struct {
 struct node_buffer_struct {
     node_buffer_list_t unmarkable;
     node_buffer_list_t markable;
+    ID *local_tables;
     VALUE mark_hash;
 };
 
@@ -1169,6 +1170,7 @@ rb_node_buffer_new(void)
     node_buffer_t *nb = ruby_xmalloc(alloc_size);
     init_node_buffer_list(&nb->unmarkable, (node_buffer_elem_t*)&nb[1]);
     init_node_buffer_list(&nb->markable, (node_buffer_elem_t*)((size_t)nb->unmarkable.head + bucket_size));
+    nb->local_tables = 0;
     nb->mark_hash = Qnil;
     return nb;
 }
@@ -1190,6 +1192,13 @@ rb_node_buffer_free(node_buffer_t *nb)
 {
     node_buffer_list_free(&nb->unmarkable);
     node_buffer_list_free(&nb->markable);
+    ID * local_table = nb->local_tables;
+    while (local_table) {
+        unsigned int size = (unsigned int)*local_table;
+        ID * next_table = (ID *)local_table[size + 1];
+        xfree(local_table);
+        local_table = next_table;
+    }
     xfree(nb);
 }
 
@@ -1223,13 +1232,20 @@ rb_ast_newnode(rb_ast_t *ast, enum node_type type)
       case NODE_DREGX:
       case NODE_DSYM:
       case NODE_ARGS:
-      case NODE_SCOPE:
       case NODE_ARYPTN:
       case NODE_FNDPTN:
         return ast_newnode_in_bucket(&nb->markable);
       default:
         return ast_newnode_in_bucket(&nb->unmarkable);
     }
+}
+
+void
+rb_ast_add_local_table(rb_ast_t *ast, ID *buf)
+{
+    unsigned int size = (unsigned int)*buf;
+    buf[size + 1] = (ID)ast->node_buffer->local_tables;
+    ast->node_buffer->local_tables = buf;
 }
 
 void
@@ -1278,15 +1294,6 @@ static void
 mark_ast_value(void *ctx, NODE * node)
 {
     switch (nd_type(node)) {
-      case NODE_SCOPE:
-        {
-            ID *buf = node->nd_tbl;
-            if (buf) {
-                unsigned int size = (unsigned int)*buf;
-                rb_gc_mark_movable((VALUE)buf[size + 1]);
-            }
-            break;
-        }
       case NODE_ARYPTN:
         {
             struct rb_ary_pattern_info *apinfo = node->nd_apinfo;
@@ -1324,15 +1331,6 @@ static void
 update_ast_value(void *ctx, NODE * node)
 {
     switch (nd_type(node)) {
-      case NODE_SCOPE:
-        {
-            ID *buf = node->nd_tbl;
-            if (buf) {
-                unsigned int size = (unsigned int)*buf;
-                buf[size + 1] = rb_gc_location((VALUE)buf[size + 1]);
-            }
-            break;
-        }
       case NODE_ARYPTN:
         {
             struct rb_ary_pattern_info *apinfo = node->nd_apinfo;
