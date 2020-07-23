@@ -1957,6 +1957,8 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   eval <<-RUBY, binding, __FILE__, __LINE__ + 1
+    # frozen_string_literal: true
+
     def set_nil_attributes_to_nil
       #{@@nil_attributes.map {|key| "@#{key} = nil" }.join "; "}
     end
