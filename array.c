@@ -5637,16 +5637,23 @@ recursive_equal(VALUE ary1, VALUE ary2, int recur)
 
 /*
  *  call-seq:
- *     ary == other_ary   ->   bool
+ *    array == other_array -> true or false
  *
- *  Equality --- Two arrays are equal if they contain the same number of
- *  elements and if each element is equal to (according to Object#==) the
- *  corresponding element in +other_ary+.
+ *  Returns +true+ if both <tt>array.size == other_array.size</tt>
+ *  and for each index +i+ in +array+, <tt>array[i] == other_array[i]</tt>:
+ *    a0 = [:foo, 'bar', 2]
+ *    a1 = [:foo, 'bar', 2.0]
+ *    a1 == a0 # => true
+ *    [] == [] # => true
  *
- *     [ "a", "c" ]    == [ "a", "c", 7 ]     #=> false
- *     [ "a", "c", 7 ] == [ "a", "c", 7 ]     #=> true
- *     [ "a", "c", 7 ] == [ "a", "d", "f" ]   #=> false
+ *  Otherwise, returns +false+:
+ *    a0 == [:foo, 'bar'] # => false # Different sizes
+ *    a0 == [:foo, 'bar', 3] # => false # Different elements
  *
+ *  This method is different from method Array#eql?,
+ *  which compares elements using <tt>Object#eql?</tt>:
+ *    a1[2].eql?(a0[2]) # false
+ *    a1.eql?(a0) # => false
  */
 
 static VALUE
@@ -5679,10 +5686,26 @@ recursive_eql(VALUE ary1, VALUE ary2, int recur)
 
 /*
  *  call-seq:
- *     ary.eql?(other)  -> true or false
+ *    array.eql? other_array -> true or false
  *
- *  Returns +true+ if +self+ and +other+ are the same object,
- *  or are both arrays with the same content (according to Object#eql?).
+ *  Returns +true+ if +self+ and +other_array+ are the same size,
+ *  and if, for each index +i+ in +self+, <tt>self[i].eql? other_array[i]</tt>:
+ *    a0 = [:foo, 'bar', 2]
+ *    a1 = [:foo, 'bar', 2]
+ *    a1.eql?(a0) # => true
+ *    [].eql? [] # => true
+ *
+ *  Otherwise, returns +false+:
+ *    a0 = [:foo, 'bar', 2]
+ *    a1 = [:foo, 'bar', 2.0]
+ *    a1.eql?(a0) # => false # Because 2.eql?(2.0) is false
+ *    a1.eql? [0, 1] # => false
+ *
+ *  This method is different from method <tt>Array#==</tt>,
+ *  which compares using method <tt>Object#==</tt>:
+ *    a0 = [:foo, 'bar', 2]
+ *    a1 = [:foo, 'bar', 2.0]
+ *    a1 == a0 # => true
  */
 
 static VALUE
@@ -5697,14 +5720,14 @@ rb_ary_eql(VALUE ary1, VALUE ary2)
 
 /*
  *  call-seq:
- *     ary.hash   -> integer
+ *    array.hash -> integer
  *
- *  Compute a hash-code for this array.
+ *  Returns the integer hash value for +self+:
+ *    [].hash.class # => Integer
  *
- *  Two arrays with the same content will have the same hash code (and will
- *  compare using #eql?).
- *
- *  See also Object#hash.
+ *  Two arrays with the same content will have the same hash code (and will compare using eql?):
+ *    [0, 1, 2].hash == [0, 1, 2].hash # => true
+ *    [0, 1, 2].hash == [0, 1, 3].hash # => false
  */
 
 static VALUE
@@ -5726,14 +5749,12 @@ rb_ary_hash(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.include?(object)   -> true or false
+ *    array.include?(obj) -> true or false
  *
- *  Returns +true+ if the given +object+ is present in +self+ (that is, if any
- *  element <code>==</code> +object+), otherwise returns +false+.
- *
- *     a = [ "a", "b", "c" ]
- *     a.include?("b")   #=> true
- *     a.include?("z")   #=> false
+ *  Returns +true+ if for some index +i+ in +self+, <tt>obj == self[i]</tt>;
+ *  otherwise +false+:
+ *    [0, 1, 2].include?(2) # => true
+ *    [0, 1, 2].include?(3) # => false
  */
 
 VALUE
@@ -5788,32 +5809,37 @@ recursive_cmp(VALUE ary1, VALUE ary2, int recur)
 
 /*
  *  call-seq:
- *     ary <=> other_ary   ->  -1, 0, +1 or nil
+ *    array <=> other_array → -1, 0, or 1
  *
- *  Comparison --- Returns an integer (+-1+, +0+, or <code>+1</code>) if this
- *  array is less than, equal to, or greater than +other_ary+.
+ *  Returns -1, 0, or 1 as +self+ is less than, equal to, or greater than +other_array+.
+ *  For each index +i+ in +self+, evaluates <tt>result = self[i] <=> other_array[i]</tt>.
  *
- *  Each object in each array is compared (using the <=> operator).
+ *  ---
  *
- *  Arrays are compared in an "element-wise" manner; the first element of +ary+
- *  is compared with the first one of +other_ary+ using the <=> operator, then
- *  each of the second elements, etc...
- *  As soon as the result of any such comparison is non zero (i.e. the two
- *  corresponding elements are not equal), that result is returned for the
- *  whole array comparison.
+ *  Returns -1 if any result is -1:
+ *    [0, 1, 2] <=> [0, 1, 3] # => -1
+ *  Returns 1 if any result is 1:
+ *    [0, 1, 2] <=> [0, 1, 1] # => 1
  *
- *  If all the elements are equal, then the result is based on a comparison of
- *  the array lengths. Thus, two arrays are "equal" according to Array#<=> if,
- *  and only if, they have the same length and the value of each element is
- *  equal to the value of the corresponding element in the other array.
+ *  ---
  *
- *  +nil+ is returned if the +other_ary+ is not an array or if the comparison
- *  of two elements returned +nil+.
+ *  When all results are zero:
+ *  - Returns -1 if +array+ is smaller than +other_array+:
+ *      [0, 1, 2] <=> [0, 1, 2, 3] # => -1
+ *  - Returns 1 if +array+ is larger than +other_array+:
+ *      [0, 1, 2] <=> [0, 1] # => 1
+ *  - Returns 0 if +array+ and +other_array+ are the same size:
+ *      [0, 1, 2] <=> [0, 1, 2] # => 0
  *
- *     [ "a", "a", "c" ]    <=> [ "a", "b", "c" ]   #=> -1
- *     [ 1, 2, 3, 4, 5, 6 ] <=> [ 1, 2 ]            #=> +1
- *     [ 1, 2 ]             <=> [ 1, :two ]         #=> nil
+ *  ---
  *
+ *  Argument +other_array+ may be an
+ *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects]:
+ *    require 'csv'
+ *    [] <=> CSV::Row.new([], []) # => 0
+ *
+ *  Returns +nil+ if +other_array+ is not an Array-convertible object:
+ *    [] <=> 0 # => nil
  */
 
 VALUE
