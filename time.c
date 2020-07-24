@@ -4446,7 +4446,10 @@ time_ceil(int argc, VALUE *argv, VALUE time)
     v = w2v(rb_time_unmagnify(tobj->timew));
 
     v = modv(v, den);
-    return time_add(tobj, time, subv(den, v), 1);
+    if (!rb_equal(v, INT2FIX(0))) {
+        v = subv(den, v);
+    }
+    return time_add(tobj, time, v, 1);
 }
 
 /*
