@@ -239,6 +239,62 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(2.0+3.0i, [2.0, 3.0i].inject(:+))
   end
 
+  def test_inject_op_redefined
+    assert_separately([], "#{<<~"end;"}\n""end")
+    k = Class.new do
+      include Enumerable
+      def each
+        yield 1
+        yield 2
+        yield 3
+      end
+    end
+    all_assertions_foreach("", *%i[+ * / - %]) do |op|
+      bug = '[ruby-dev:49510] [Bug#12178] should respect redefinition'
+      begin
+        Integer.class_eval do
+          alias_method :orig, op
+          define_method(op) do |x|
+            0
+          end
+        end
+        assert_equal(0, k.new.inject(op), bug)
+      ensure
+        Integer.class_eval do
+          undef_method op
+          alias_method op, :orig
+        end
+      end
+    end;
+  end
+
+  def test_inject_op_private
+    assert_separately([], "#{<<~"end;"}\n""end")
+    k = Class.new do
+      include Enumerable
+      def each
+        yield 1
+        yield 2
+        yield 3
+      end
+    end
+    all_assertions_foreach("", *%i[+ * / - %]) do |op|
+      bug = '[ruby-core:81349] [Bug #13592] should respect visibility'
+      assert_raise_with_message(NoMethodError, /private method/, bug) do
+        begin
+          Integer.class_eval do
+            private op
+          end
+          k.new.inject(op)
+        ensure
+          Integer.class_eval do
+            public op
+          end
+        end
+      end
+    end;
+  end
+
   def test_inject_array_op_redefined
     assert_separately([], "#{<<~"end;"}\n""end")
     all_assertions_foreach("", *%i[+ * / - %]) do |op|
