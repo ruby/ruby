@@ -1830,7 +1830,6 @@ lazy_set_args(VALUE lazy, VALUE args)
     }
 }
 
-#if 0
 static VALUE
 lazy_set_method(VALUE lazy, VALUE args, rb_enumerator_size_func *size_fn)
 {
@@ -1839,7 +1838,6 @@ lazy_set_method(VALUE lazy, VALUE args, rb_enumerator_size_func *size_fn)
     e->size_fn = size_fn;
     return lazy;
 }
-#endif
 
 static VALUE
 lazy_add_method(VALUE obj, int argc, VALUE *argv, VALUE args, VALUE memo,
@@ -2055,6 +2053,103 @@ struct flat_map_i_arg {
     struct MEMO *result;
     long index;
 };
+
+static VALUE
+lazy_reflect_proc(RB_BLOCK_CALL_FUNC_ARGLIST(val, memop))
+{
+    VALUE yielder, ary, arg, v;
+    VALUE name;
+    struct MEMO *memo = MEMO_CAST(memop);
+    long i;
+
+    yielder = argv[0];
+
+
+    if (RARRAY_LEN(memo->v1) == 0) {
+        if (memo->v2 == Qundef) {
+            MEMO_V2_SET(memo, argv[1]);
+        }
+        rb_ary_push(memo->v1, memo->v2);
+        rb_funcall(yielder, idLTLT, 1, memo->v2);
+    }
+
+    if (SYMBOL_P(name = memo->u3.value)) {
+        const ID mid = SYM2ID(name);
+        MEMO_V2_SET(memo, rb_funcallv_public(memo->v2, mid, 1, &argv[1]));
+        rb_ary_push(memo->v1, memo->v2);
+        rb_funcall(yielder, idLTLT, 1, memo->v2);
+        return memo->v1;
+    }
+
+    MEMO_V2_SET(memo, rb_yield_values(2, memo->v2, argv[1]));
+
+    rb_ary_push(memo->v1, memo->v2);
+
+    rb_funcall(yielder, idLTLT, 1, memo->v2);
+
+    return  memo->v1;
+}
+
+/*
+ *  call-seq:
+ *     lazy.reflect(initial, sym) -> lazy
+ *     lazy.reflect(sym)          -> lazy
+ *     lazy.reflect(initial) { |memo, obj| block }  -> lazy
+ *     lazy.reflect          { |memo, obj| block }  -> lazy
+ *
+ *  Like Enumerable#reflect, but chains operation to be lazy-evaluated.
+ *
+ *     # Sum some numbers
+ *     (5..10).lazy.reflect(:+).to_a                                #=> [5, 10, 16, 23, 31, 40, 50]
+ *     # Same using an infinite range
+ *     (5..).lazy.reflect(:+).first(6)                              #=> [5, 10, 16, 23, 31, 40]
+ *     # Same using a block and reflect
+ *     (5..10).lazy.reflect { |total, n| total + n }.to_a           #=> [5, 10, 16, 23, 31, 40, 50]
+ *     # Multiply some numbers
+ *     (5..10).lazy.reflect(1, :*).to_a                             #=> [1, 5, 30, 210, 1680, 15120, 151200]
+ *     # Same using a block
+ *     (5..10).lazy.reflect(1) { |product, n| product * n }.to_a    #=> [1, 5, 30, 210, 1680, 15120, 151200]
+ */
+
+static VALUE
+lazy_reflect(int argc, VALUE *argv, VALUE obj)
+{
+    struct MEMO *memo;
+    VALUE init, op, ary;
+    ID id;
+
+    switch (rb_scan_args(argc, argv, "02", &init, &op)) {
+        case 0:
+            init = Qundef;
+            if (!rb_block_given_p()) {
+                rb_raise(rb_eArgError, "no block given");
+            }
+            break;
+        case 1:
+            if (rb_block_given_p()) {
+                break;
+            }
+            id = rb_check_id(&init);
+            op = id ? ID2SYM(id) : init;
+            init = Qundef;
+            break;
+        case 2:
+            if (rb_block_given_p()) {
+                rb_warning("given block not used");
+            }
+            id = rb_check_id(&op);
+            if (id) op = ID2SYM(id);
+            break;
+    }
+
+    ary = rb_ary_new4(argc, argv);
+
+    memo = MEMO_NEW(rb_ary_new(), init, op);
+
+    return lazy_set_method(rb_block_call(rb_cLazy, id_new, 1, &obj,
+                                         lazy_reflect_proc, (VALUE)memo),
+                           ary, lazy_receiver_size);
+}
 
 static VALUE
 lazy_flat_map_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, y))
@@ -3973,6 +4068,7 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cLazy, "eager", lazy_eager, 0);
     rb_define_method(rb_cLazy, "map", lazy_map, 0);
     rb_define_method(rb_cLazy, "collect", lazy_map, 0);
+    rb_define_method(rb_cLazy, "reflect", lazy_reflect, -1);
     rb_define_method(rb_cLazy, "flat_map", lazy_flat_map, 0);
     rb_define_method(rb_cLazy, "collect_concat", lazy_flat_map, 0);
     rb_define_method(rb_cLazy, "select", lazy_select, 0);

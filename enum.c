@@ -590,6 +590,124 @@ enum_collect(VALUE obj)
 }
 
 static VALUE
+reflect_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
+{
+    struct MEMO *memo = MEMO_CAST(memop);
+
+    ENUM_WANT_SVALUE();
+
+    if (RARRAY_LEN(memo->v1) == 0) {
+        if (memo->v2 == Qundef) {
+            MEMO_V2_SET(memo, i);
+        }
+
+        rb_ary_push(memo->v1, memo->v2);
+    }
+
+    MEMO_V2_SET(memo, rb_yield_values(2, memo->v2, i));
+
+    rb_ary_push(memo->v1, memo->v2);
+
+    return Qnil;
+}
+
+static VALUE
+reflect_op_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
+{
+    struct MEMO *memo = MEMO_CAST(memop);
+
+    ENUM_WANT_SVALUE();
+
+    if (RARRAY_LEN(memo->v1) == 0) {
+        if (memo->v2 == Qundef) {
+            MEMO_V2_SET(memo, i);
+        }
+
+        rb_ary_push(memo->v1, memo->v2);
+    }
+
+    const ID mid = SYM2ID(memo->u3.value);
+    MEMO_V2_SET(memo, rb_funcallv_public(memo->v2, mid, 1, &i));
+
+    rb_ary_push(memo->v1, memo->v2);
+
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     enum.reflect(initial, sym) -> array
+ *     enum.reflect(sym)          -> array
+ *     enum.reflect(initial) { |memo, obj| block }  -> array
+ *     enum.reflect          { |memo, obj| block }  -> array
+ *
+ *  Produces a collection of cumulative results starts from the <i>initial</i> value by
+ *  processing each element of the input series.
+ *
+ *  If you specify a block, then for each element in <i>enum</i>
+ *  the block is passed an accumulator value (<i>memo</i>) and the element.
+ *  If you specify a symbol instead, then each element in the collection
+ *  will be passed to the named method of <i>memo</i>.
+ *  In either case, the result becomes the new value for <i>memo</i>.
+ *
+ *  If you do not explicitly specify an <i>initial</i> value for <i>memo</i>,
+ *  then the first element of collection is used as the initial value
+ *  of <i>memo</i>.
+ * 
+ *  The result collection has a size bigger by one than the initial collection.
+ *
+ *
+ *     # Sum some numbers
+ *     (5..10).reflect(:+)                               #=> [5, 10, 16, 23, 31, 40, 50]
+ *     # Same using a block and reflect
+ *     (5..10).reflect { |total, n| total + n }          #=> [5, 10, 16, 23, 31, 40, 50]
+ *     # Multiply some numbers
+ *     (5..10).reflect(1, :*)                            #=> [1, 5, 30, 210, 1680, 15120, 151200]
+ *     # Same using a block
+ *     (5..10).reflect(1) { |product, n| product * n }   #=> [1, 5, 30, 210, 1680, 15120, 151200]
+ *
+ */
+static VALUE
+enum_reflect(int argc, VALUE *argv, VALUE obj)
+{
+    struct MEMO *memo;
+    VALUE init, op;
+    rb_block_call_func *iter = reflect_i;
+    ID id;
+
+    switch (rb_scan_args(argc, argv, "02", &init, &op)) {
+        case 0:
+            init = Qundef;
+            if (!rb_block_given_p()) {
+                rb_raise(rb_eArgError, "no block given");
+            }
+            break;
+        case 1:
+            if (rb_block_given_p()) {
+                break;
+            }
+            id = rb_check_id(&init);
+            op = id ? ID2SYM(id) : init;
+            init = Qundef;
+            iter = reflect_op_i;
+            break;
+        case 2:
+            if (rb_block_given_p()) {
+                rb_warning("given block not used");
+            }
+            id = rb_check_id(&op);
+            if (id) op = ID2SYM(id);
+            iter = reflect_op_i;
+            break;
+    }
+
+    memo = MEMO_NEW(rb_ary_new(), init, op);
+    rb_block_call(obj, id_each, 0, 0, iter, (VALUE)memo);
+
+    return memo->v1;
+}
+
+static VALUE
 flat_map_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 {
     VALUE tmp;
@@ -4196,6 +4314,7 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "reject", enum_reject, 0);
     rb_define_method(rb_mEnumerable, "collect", enum_collect, 0);
     rb_define_method(rb_mEnumerable, "map", enum_collect, 0);
+    rb_define_method(rb_mEnumerable, "reflect", enum_reflect, -1);
     rb_define_method(rb_mEnumerable, "flat_map", enum_flat_map, 0);
     rb_define_method(rb_mEnumerable, "collect_concat", enum_flat_map, 0);
     rb_define_method(rb_mEnumerable, "inject", enum_inject, -1);

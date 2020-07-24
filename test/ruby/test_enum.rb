@@ -1006,6 +1006,83 @@ class TestEnumerable < Test::Unit::TestCase
                  @obj.each_with_index.flat_map(&lambda2))
   end
 
+  def test_reflect
+    assert_equal([1, 1, 2, 6, 6, 12], @obj.reflect { |z, x| z * x })
+    assert_equal([1, 3, 8, 19, 39, 80], @obj.reflect { |z, x| z * 2 + x })
+    assert_equal([1, 1, 2, 6, 6, 12], @obj.reflect(:*))
+    assert_equal([2, 2, 4, 12, 12, 24], @obj.reflect(2) { |z, x| z * x })
+    assert_equal([2, 2, 4, 12, 12, 24], @obj.reflect(2, :*) { |z, x| z + x })
+    assert_equal([], @empty.reflect { 9 })
+    assert_raise(ArgumentError) { @empty.reflect }
+    assert_raise(ArgumentError) { @obj.reflect }
+  end
+
+  def test_reflect_array_mul
+    assert_equal([], [].reflect(:*))
+    assert_equal([5, 25], [5].reflect(:*))
+    assert_equal([5, 25, 175], [5, 7].reflect(:*))
+    assert_equal([], [].reflect(3, :*))
+    assert_equal([3, 15], [5].reflect(3, :*))
+    assert_equal([3, 15, 105], [5, 7].reflect(3, :*))
+  end
+
+  def test_reflect_array_plus
+    assert_equal([3, 6], [3].reflect(:+))
+    assert_equal([3, 6, 11], [3, 5].reflect(:+))
+    assert_equal([3, 6, 11, 18], [3, 5, 7].reflect(:+))
+    assert_float_equal(18.0, [3, 5, 7.0].reflect(:+).last)
+    assert_equal([FIXNUM_MAX, 2*FIXNUM_MAX, 3*FIXNUM_MAX], Array.new(2, FIXNUM_MAX).reflect(:+))
+    assert_equal([FIXNUM_MAX+1, 2*(FIXNUM_MAX+1), 3*(FIXNUM_MAX+1)], Array.new(2, FIXNUM_MAX+1).reflect(:+))
+    assert_equal([FIXNUM_MAX, 2*FIXNUM_MAX, 3*FIXNUM_MAX, 4*FIXNUM_MAX, 5*FIXNUM_MAX, 6*FIXNUM_MAX], Array.new(5, FIXNUM_MAX).reflect(:+))
+    assert_equal([FIXNUM_MIN, 2*FIXNUM_MIN, 3*FIXNUM_MIN], Array.new(2, FIXNUM_MIN).reflect(:+))
+    reflect_with_floats = [FIXNUM_MAX, 1, 0.0].reflect(:+)
+    assert_equal([FIXNUM_MAX, 2*FIXNUM_MAX, 2*FIXNUM_MAX+1, (2*FIXNUM_MAX+1).to_f], reflect_with_floats)
+    assert_float_equal((2*FIXNUM_MAX+1).to_f, reflect_with_floats[3])
+    reflect_with_floats = [3.0, 5].reflect(2.0, :+)
+    assert_float_equal(2.0, reflect_with_floats[0])
+    assert_float_equal(5.0, reflect_with_floats[1])
+    assert_float_equal(10.0, reflect_with_floats[2])
+    assert_equal([2.0, 4.0, 4.0+3.0i], [2.0, 3.0i].reflect(:+))
+  end
+
+  def test_reflect_array_op_redefined
+    assert_separately([], "#{<<~"end;"}\n""end")
+    all_assertions_foreach("", *%i[+ * / - %]) do |op|
+      begin
+        Integer.class_eval do
+          alias_method :orig, op
+          define_method(op) do |x|
+            0
+          end
+        end
+        assert_equal([1, 0, 0, 0], [1, 2, 3].reflect(op))
+      ensure
+        Integer.class_eval do
+          undef_method op
+          alias_method op, :orig
+        end
+      end
+    end;
+  end
+
+  def test_reflect_array_op_private
+    assert_separately([], "#{<<~"end;"}\n""end")
+    all_assertions_foreach("", *%i[+ * / - %]) do |op|
+      assert_raise_with_message(NoMethodError, /private method/) do
+        begin
+          Integer.class_eval do
+            private op
+          end
+          [1, 2 ,3].reflect(op)
+        ensure
+          Integer.class_eval do
+            public op
+          end
+        end
+      end
+    end;
+  end
+
   def assert_typed_equal(e, v, cls, msg=nil)
     assert_kind_of(cls, v, msg)
     assert_equal(e, v, msg)
