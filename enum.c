@@ -944,11 +944,27 @@ reflect_op_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
 }
 
 /* v1: initial value/Qundef, v2: result array/Qfalse, u3.value: op/Qundef */
-static struct MEMO *
+struct MEMO *
 rb_enum_reflect_memo_new(int argc, VALUE *argv)
 {
     VALUE init, op = rb_enum_inject_prepare(argc, argv, &init);
     return MEMO_NEW(init, Qfalse, op);
+}
+
+VALUE
+rb_enum_reflect_memo_call(struct MEMO *memo, VALUE proc, VALUE i)
+{
+    if (proc) {
+        VALUE v = memo->v1;
+        if (v != Qundef) {
+            i = rb_proc_call_with_block(proc, 2, (VALUE[2]){v, i}, Qnil);
+        }
+	MEMO_V1_SET(memo, i);
+    }
+    else {
+        inject_op_i(i, (VALUE)memo, 1, &i, Qnil);
+    }
+    return memo->v1;
 }
 
 /*

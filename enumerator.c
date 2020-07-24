@@ -2783,6 +2783,64 @@ static VALUE lazy_slice_when(VALUE self)
 }
 # endif
 
+struct MEMO *rb_enum_reflect_memo_new(int argc, VALUE *argv);
+VALUE rb_enum_reflect_memo_call(struct MEMO *memo, VALUE proc, VALUE arg);
+
+static struct MEMO *
+lazy_reflect_yield(struct proc_entry *entry, struct MEMO *result, struct MEMO *memo, VALUE value)
+{
+    value = rb_enum_reflect_memo_call(memo, entry->proc, value);
+    LAZY_MEMO_SET_VALUE(result, value);
+    LAZY_MEMO_RESET_PACKED(result);
+    return result;
+}
+
+static struct MEMO *
+lazy_reflect_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+{
+    struct proc_entry *entry = proc_entry_ptr(proc_entry);
+    struct MEMO *memo = MEMO_CAST(entry->memo);
+    return lazy_reflect_yield(entry, result, memo, result->memo_value);
+}
+
+static const lazyenum_funcs lazy_reflect_funcs = {
+    lazy_reflect_proc, 0,
+};
+
+static struct MEMO *
+lazy_reflect_init_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+{
+    struct proc_entry *entry = proc_entry_ptr(proc_entry);
+    struct MEMO *memo = MEMO_CAST(entry->memo);
+    VALUE value = result->memo_value;
+    entry->fn = &lazy_reflect_funcs;
+    lazy_yielder_yield(result, memo_index+1, 1, &memo->v1);
+    return lazy_reflect_yield(entry, result, memo, value);
+}
+
+static const lazyenum_funcs lazy_reflect_init_funcs = {
+    lazy_reflect_init_proc, 0,
+};
+
+/*
+ *  call-seq:
+ *     lazy.reflect(initial, sym) -> lazy
+ *     lazy.reflect(sym)          -> lazy
+ *     lazy.reflect(initial) { |memo, obj| block }  -> lazy
+ *     lazy.reflect          { |memo, obj| block }  -> lazy
+ */
+
+static VALUE
+lazy_reflect(int argc, VALUE *argv, VALUE obj)
+{
+    const lazyenum_funcs *funcs = &lazy_reflect_funcs;
+    struct MEMO *memo = rb_enum_reflect_memo_new(argc, argv);
+    if (memo->v1 != Qundef) {
+        funcs = &lazy_reflect_init_funcs;
+    }
+    return lazy_add_method(obj, 0, 0, (VALUE)memo, Qnil, funcs);
+}
+
 static VALUE
 lazy_super(int argc, VALUE *argv, VALUE lazy)
 {
@@ -3995,6 +4053,7 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cLazy, "chunk_while", lazy_super, -1);
     rb_define_method(rb_cLazy, "uniq", lazy_uniq, 0);
     rb_define_method(rb_cLazy, "with_index", lazy_with_index, -1);
+    rb_define_method(rb_cLazy, "reflect", lazy_reflect, -1);
 
     lazy_use_super_method = rb_hash_new_with_size(18);
     rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("map")), ID2SYM(rb_intern("_enumerable_map")));
