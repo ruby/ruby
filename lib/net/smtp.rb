@@ -637,6 +637,8 @@ module Net
     # pair, where +addr+ is a String representing the source mail address and
     # +params+ is an Array or Hash of parameters.
     #
+    # Parameters may be a Hash or an Array of Strings.
+    #
     # === Example
     #
     #     Net::SMTP.start('smtp.example.com') do |smtp|
@@ -691,6 +693,8 @@ module Net
     # An address is a String representing the source mail address, or an [addr, params]
     # pair, where +addr+ is a String representing the source mail address and
     # +params+ is an Array or Hash of parameters.
+    #
+    # Parameters may be a Hash or an Array of Strings.
     #
     # === Example
     #
