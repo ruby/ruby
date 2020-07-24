@@ -38,10 +38,11 @@ if RUBY_VERSION >= "2.5"
 
           start += 1
 
-          path = loc.path
-          unless path.start_with?(rubygems_path) or path.start_with?('<internal:')
-            # Non-rubygems frames
-            uplevel -= 1
+          if path = loc.path
+            unless path.start_with?(rubygems_path) or path.start_with?('<internal:')
+              # Non-rubygems frames
+              uplevel -= 1
+            end
           end
         end
         uplevel = start
