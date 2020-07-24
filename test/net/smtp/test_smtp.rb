@@ -24,7 +24,7 @@ module Net
       def readline
         line = @read_io.gets
         raise 'ran out of input' unless line
-        line.chop
+        line.chomp
       end
 
       def io
@@ -160,11 +160,37 @@ module Net
       assert_equal 'omg', smtp.esmtp?
     end
 
-    def test_rset
+    def test_helo
+      sock = FakeSocket.new
       smtp = Net::SMTP.new 'localhost', 25
-      smtp.instance_variable_set :@socket, FakeSocket.new
+      smtp.instance_variable_set :@socket, sock
+
+      assert smtp.helo("example.com")
+      assert_equal "HELO example.com\r\n", sock.write_io.string
+    end
+
+    def test_ehlo
+      sock = FakeSocket.new [
+        "220-smtp.example.com",
+        "250-STARTTLS",
+        "250-SIZE 100",
+        "250 XFOO 1 2 3",
+      ].join "\r\n"
+      smtp = Net::SMTP.new 'localhost', 25
+      smtp.instance_variable_set :@socket, sock
+      res = smtp.ehlo("example.com")
+      assert res.success?
+      assert_equal ({"STARTTLS" => [], "SIZE" => ["100"], "XFOO" => ["1", "2", "3"]}), res.capabilities
+      assert_equal "EHLO example.com\r\n", sock.write_io.string
+    end
+
+    def test_rset
+      sock = FakeSocket.new
+      smtp = Net::SMTP.new 'localhost', 25
+      smtp.instance_variable_set :@socket, sock
 
       assert smtp.rset
+      assert_equal "RSET\r\n", sock.write_io.string
     end
 
     def test_mailfrom
