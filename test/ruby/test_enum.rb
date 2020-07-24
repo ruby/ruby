@@ -335,6 +335,21 @@ class TestEnumerable < Test::Unit::TestCase
     end;
   end
 
+  def test_reflect
+    assert_equal([1, 3, 6, 10], (1..4).reflect(:+))
+    assert_equal([0, 1, 3, 6], (1..3).reflect(0, :+))
+
+    a = []
+    ary = (2..4).reflect {|i, j| a << [i, j]; i+j}
+    assert_equal([[2, 3], [5, 4]], a)
+    assert_equal([2, 5, 9], ary)
+
+    a = []
+    ary = (1..2).reflect(2) {|i, j| a << [i, j]; i+j}
+    assert_equal([[2, 1], [3, 2]], a)
+    assert_equal([2, 3, 5], ary)
+  end
+
   def test_refine_Enumerable_then_include
     assert_separately([], "#{<<~"end;"}\n")
       module RefinementBug

@@ -802,6 +802,9 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
     return v;
 }
 
+static VALUE rb_enum_inject_prepare(int argc, VALUE *argv, VALUE *pinit);
+static VALUE rb_enum_inject_call(VALUE obj, VALUE init, VALUE op, rb_block_call_func *iter);
+
 /*
  *  call-seq:
  *     enum.inject(initial, sym) -> obj
@@ -851,23 +854,38 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
 static VALUE
 enum_inject(int argc, VALUE *argv, VALUE obj)
 {
-    struct MEMO *memo;
+    VALUE init, op = rb_enum_inject_prepare(argc, argv, &init);
+    rb_block_call_func *iter = op == Qundef ? inject_i : inject_op_i;
+
+    if (SYMBOL_P(op) &&
+        RB_TYPE_P(obj, T_ARRAY) &&
+        rb_method_basic_definition_p(CLASS_OF(obj), id_each)) {
+        return ary_inject_op(obj, init, op);
+    }
+
+    return rb_enum_inject_call(obj, init, op, iter);
+}
+
+static VALUE
+rb_enum_inject_prepare(int argc, VALUE *argv, VALUE *pinit)
+{
     VALUE init, op;
-    rb_block_call_func *iter = inject_i;
     ID id;
 
     switch (rb_scan_args(argc, argv, "02", &init, &op)) {
       case 0:
 	init = Qundef;
+	op = Qundef;
 	break;
       case 1:
 	if (rb_block_given_p()) {
+	    op = Qundef;
 	    break;
 	}
 	id = rb_check_id(&init);
 	op = id ? ID2SYM(id) : init;
 	init = Qundef;
-	iter = inject_op_i;
+	ASSUME(op != Qundef);
 	break;
       case 2:
 	if (rb_block_given_p()) {
@@ -875,21 +893,80 @@ enum_inject(int argc, VALUE *argv, VALUE obj)
 	}
 	id = rb_check_id(&op);
 	if (id) op = ID2SYM(id);
-	iter = inject_op_i;
+	ASSUME(op != Qundef);
 	break;
     }
+    *pinit = init;
+    return op;
+}
 
-    if (iter == inject_op_i &&
-        SYMBOL_P(op) &&
-        RB_TYPE_P(obj, T_ARRAY) &&
-        rb_method_basic_definition_p(CLASS_OF(obj), id_each)) {
-        return ary_inject_op(obj, init, op);
-    }
+static VALUE
+rb_enum_inject_call(VALUE obj, VALUE init, VALUE op, rb_block_call_func *iter)
+{
+    struct MEMO *memo;
 
     memo = MEMO_NEW(init, Qnil, op);
     rb_block_call(obj, id_each, 0, 0, iter, (VALUE)memo);
     if (memo->v1 == Qundef) return Qnil;
     return memo->v1;
+}
+
+static VALUE
+reflect_array(struct MEMO *memo)
+{
+    VALUE result = memo->v2;
+    if (!result) {
+        result = rb_ary_new();
+        MEMO_V2_SET(memo, result);
+        if (memo->v1 != Qundef) rb_ary_push(result, memo->v1);
+    }
+    return result;
+}
+
+static VALUE
+reflect_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
+{
+    struct MEMO *memo = MEMO_CAST(memop);
+    VALUE result = reflect_array(memo);
+    inject_i(i, memop, argc, argv, blockarg);
+    rb_ary_push(result, memo->v1);
+    return Qnil;
+}
+
+static VALUE
+reflect_op_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
+{
+    struct MEMO *memo = MEMO_CAST(memop);
+    VALUE result = reflect_array(memo);
+    inject_op_i(i, memop, argc, argv, blockarg);
+    rb_ary_push(result, memo->v1);
+    return Qnil;
+}
+
+/* v1: initial value/Qundef, v2: result array/Qfalse, u3.value: op/Qundef */
+static struct MEMO *
+rb_enum_reflect_memo_new(int argc, VALUE *argv)
+{
+    VALUE init, op = rb_enum_inject_prepare(argc, argv, &init);
+    return MEMO_NEW(init, Qfalse, op);
+}
+
+/*
+ *  call-seq:
+ *     enum.reflect(initial, sym) -> array
+ *     enum.reflect(sym)          -> array
+ *     enum.reflect(initial) { |memo, obj| block }  -> array
+ *     enum.reflect          { |memo, obj| block }  -> array
+ */
+
+static VALUE
+enum_reflect(int argc, VALUE *argv, VALUE obj)
+{
+    struct MEMO *memo = rb_enum_reflect_memo_new(argc, argv);
+    VALUE op = memo->u3.value;
+    rb_block_call_func *iter = op == Qundef ? reflect_i : reflect_op_i;
+    rb_block_call(obj, id_each, 0, 0, iter, (VALUE)memo);
+    return reflect_array(memo);
 }
 
 static VALUE
@@ -4200,6 +4277,7 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "collect_concat", enum_flat_map, 0);
     rb_define_method(rb_mEnumerable, "inject", enum_inject, -1);
     rb_define_method(rb_mEnumerable, "reduce", enum_inject, -1);
+    rb_define_method(rb_mEnumerable, "reflect", enum_reflect, -1);
     rb_define_method(rb_mEnumerable, "partition", enum_partition, 0);
     rb_define_method(rb_mEnumerable, "group_by", enum_group_by, 0);
     rb_define_method(rb_mEnumerable, "tally", enum_tally, 0);
