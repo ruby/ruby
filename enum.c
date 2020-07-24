@@ -973,6 +973,32 @@ rb_enum_reflect_memo_call(struct MEMO *memo, VALUE proc, VALUE i)
  *     enum.reflect(sym)          -> array
  *     enum.reflect(initial) { |memo, obj| block }  -> array
  *     enum.reflect          { |memo, obj| block }  -> array
+ *
+ *  Produces a collection of cumulative results starts from the <i>initial</i> value by
+ *  processing each element of the input series.
+ *
+ *  If you specify a block, then for each element in <i>enum</i>
+ *  the block is passed an accumulator value (<i>memo</i>) and the element.
+ *  If you specify a symbol instead, then each element in the collection
+ *  will be passed to the named method of <i>memo</i>.
+ *  In either case, the result becomes the new value for <i>memo</i>.
+ *
+ *  If you do not explicitly specify an <i>initial</i> value for <i>memo</i>,
+ *  then the first element of collection is used as the initial value
+ *  of <i>memo</i>.
+ *
+ *  The result collection has a size bigger by one than the initial collection.
+ *
+ *
+ *     # Sum some numbers
+ *     (5..10).reflect(:+)                               #=> [5, 10, 16, 23, 31, 40, 50]
+ *     # Same using a block and reflect
+ *     (5..10).reflect { |total, n| total + n }          #=> [5, 10, 16, 23, 31, 40, 50]
+ *     # Multiply some numbers
+ *     (5..10).reflect(1, :*)                            #=> [1, 5, 30, 210, 1680, 15120, 151200]
+ *     # Same using a block
+ *     (5..10).reflect(1) { |product, n| product * n }   #=> [1, 5, 30, 210, 1680, 15120, 151200]
+ *
  */
 
 static VALUE

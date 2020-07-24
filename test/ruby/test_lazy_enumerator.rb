@@ -685,6 +685,7 @@ EOS
 
   def test_reflect
     assert_equal([1, 3, 6, 10], (1..Float::INFINITY).lazy.reflect(:+).take(4).force)
+    assert_equal([0, 1, 3, 6], (0..Float::INFINITY).lazy.reflect(:+).first(4))
     assert_equal([0, 1, 3, 6], (1..Float::INFINITY).lazy.reflect(0, :+).take(4).force)
 
     a = []
@@ -696,5 +697,51 @@ EOS
     ary = (1..Float::INFINITY).lazy.reflect(2) {|i, j| a << [i, j]; i+j}.take(3).to_a
     assert_equal([[2, 1], [3, 2]], a)
     assert_equal([2, 3, 5], ary)
+
+    assert_equal([0, -1, -4, -10], (0..Float::INFINITY).lazy.reflect { |memo, i| memo + i }.reflect(:-).first(4))
+
+    range = 0..Float::INFINITY
+    assert_equal(range.lazy.reflect(:+).first(100), range.first(100).reflect(:+))
+
+    lazy = 10.times.lazy.map { |i| raise "foo" }
+    assert_raise(RuntimeError, "foo") { lazy.reflect(:+).first }
+  end
+
+  def test_reflect_array_op_redefined
+    assert_separately([], "#{<<~"end;"}\n""end")
+    all_assertions_foreach("", *%i[+ * / - %]) do |op|
+      begin
+        Integer.class_eval do
+          alias_method :orig, op
+          define_method(op) do |x|
+            0
+          end
+        end
+        assert_equal([1, 0, 0, 0], (1..10).lazy.reflect(op).first(4))
+      ensure
+        Integer.class_eval do
+          undef_method op
+          alias_method op, :orig
+        end
+      end
+    end;
+  end
+
+  def test_reflect_array_op_private
+    assert_separately([], "#{<<~"end;"}\n""end")
+    all_assertions_foreach("", *%i[+ * / - %]) do |op|
+      assert_raise_with_message(NoMethodError, /private method/) do
+        begin
+          Integer.class_eval do
+            private op
+          end
+          [1, 2 ,3].reflect(op).lazy.first(4)
+        ensure
+          Integer.class_eval do
+            public op
+          end
+        end
+      end
+    end;
   end
 end
