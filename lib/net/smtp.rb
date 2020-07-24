@@ -249,7 +249,6 @@ module Net
       return nil unless @capabilities
       @capabilities[key] ? true : false
     end
-    private :capable?
 
     # true if server advertises AUTH PLAIN.
     # You cannot get valid value before opening SMTP session.
@@ -942,11 +941,13 @@ module Net
     end
 
     def getok(reqline)
+      puts reqline
       validate_line reqline
       res = critical {
         @socket.writeline reqline
         recv_response()
       }
+      puts res.string
       check_response res
       res
     end
