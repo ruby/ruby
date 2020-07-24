@@ -2148,7 +2148,7 @@ lazy_reflect(int argc, VALUE *argv, VALUE obj)
 
     return lazy_set_method(rb_block_call(rb_cLazy, id_new, 1, &obj,
                                          lazy_reflect_proc, (VALUE)memo),
-                           ary, lazy_receiver_size);
+                           ary, 0);
 }
 
 static VALUE
