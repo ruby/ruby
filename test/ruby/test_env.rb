@@ -433,6 +433,8 @@ class TestEnv < Test::Unit::TestCase
     ENV["foo"] = "xxx"
     ENV.replace({"foo"=>"bar", "baz"=>"qux"})
     check(ENV.to_hash.to_a, [%w(foo bar), %w(baz qux)])
+    ENV.replace({"Foo"=>"Bar", "Baz"=>"Qux"})
+    check(ENV.to_hash.to_a, [%w(Foo Bar), %w(Baz Qux)])
   end
 
   def test_update
