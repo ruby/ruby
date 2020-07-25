@@ -683,31 +683,31 @@ EOS
     assert_equal([[0, 0], [1, 1]], ary)
   end
 
-  def test_reflect
-    assert_equal([1, 3, 6, 10], (1..Float::INFINITY).lazy.reflect(:+).take(4).force)
-    assert_equal([0, 1, 3, 6], (0..Float::INFINITY).lazy.reflect(:+).first(4))
-    assert_equal([0, 1, 3, 6], (1..Float::INFINITY).lazy.reflect(0, :+).take(4).force)
+  def test_accumulate
+    assert_equal([1, 3, 6, 10], (1..Float::INFINITY).lazy.accumulate(:+).take(4).force)
+    assert_equal([0, 1, 3, 6], (0..Float::INFINITY).lazy.accumulate(:+).first(4))
+    assert_equal([0, 1, 3, 6], (1..Float::INFINITY).lazy.accumulate(0, :+).take(4).force)
 
     a = []
-    ary = (2..Float::INFINITY).lazy.reflect {|i, j| a << [i, j]; i+j}.take(3).to_a
+    ary = (2..Float::INFINITY).lazy.accumulate {|i, j| a << [i, j]; i+j}.take(3).to_a
     assert_equal([[2, 3], [5, 4]], a)
     assert_equal([2, 5, 9], ary)
 
     a = []
-    ary = (1..Float::INFINITY).lazy.reflect(2) {|i, j| a << [i, j]; i+j}.take(3).to_a
+    ary = (1..Float::INFINITY).lazy.accumulate(2) {|i, j| a << [i, j]; i+j}.take(3).to_a
     assert_equal([[2, 1], [3, 2]], a)
     assert_equal([2, 3, 5], ary)
 
-    assert_equal([0, -1, -4, -10], (0..Float::INFINITY).lazy.reflect { |memo, i| memo + i }.reflect(:-).first(4))
+    assert_equal([0, -1, -4, -10], (0..Float::INFINITY).lazy.accumulate { |memo, i| memo + i }.accumulate(:-).first(4))
 
     range = 0..Float::INFINITY
-    assert_equal(range.lazy.reflect(:+).first(100), range.first(100).reflect(:+))
+    assert_equal(range.lazy.accumulate(:+).first(100), range.first(100).accumulate(:+))
 
     lazy = 10.times.lazy.map { |i| raise "foo" }
-    assert_raise(RuntimeError, "foo") { lazy.reflect(:+).first }
+    assert_raise(RuntimeError, "foo") { lazy.accumulate(:+).first }
   end
 
-  def test_reflect_array_op_redefined
+  def test_accumulate_array_op_redefined
     assert_separately([], "#{<<~"end;"}\n""end")
     all_assertions_foreach("", *%i[+ * / - %]) do |op|
       begin
@@ -717,7 +717,7 @@ EOS
             0
           end
         end
-        assert_equal([1, 0, 0, 0], (1..10).lazy.reflect(op).first(4))
+        assert_equal([1, 0, 0, 0], (1..10).lazy.accumulate(op).first(4))
       ensure
         Integer.class_eval do
           undef_method op
@@ -727,7 +727,7 @@ EOS
     end;
   end
 
-  def test_reflect_array_op_private
+  def test_accumulate_array_op_private
     assert_separately([], "#{<<~"end;"}\n""end")
     all_assertions_foreach("", *%i[+ * / - %]) do |op|
       assert_raise_with_message(NoMethodError, /private method/) do
@@ -735,7 +735,7 @@ EOS
           Integer.class_eval do
             private op
           end
-          [1, 2 ,3].reflect(op).lazy.first(4)
+          [1, 2 ,3].accumulate(op).lazy.first(4)
         ensure
           Integer.class_eval do
             public op

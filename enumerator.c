@@ -2783,73 +2783,73 @@ static VALUE lazy_slice_when(VALUE self)
 }
 # endif
 
-struct MEMO *rb_enum_reflect_memo_new(int argc, VALUE *argv);
-VALUE rb_enum_reflect_memo_call(struct MEMO *memo, VALUE proc, VALUE arg);
+struct MEMO *rb_enum_accumulate_memo_new(int argc, VALUE *argv);
+VALUE rb_enum_accumulate_memo_call(struct MEMO *memo, VALUE proc, VALUE arg);
 
 static struct MEMO *
-lazy_reflect_yield(struct proc_entry *entry, struct MEMO *result, struct MEMO *memo, VALUE value)
+lazy_accumulate_yield(struct proc_entry *entry, struct MEMO *result, struct MEMO *memo, VALUE value)
 {
-    value = rb_enum_reflect_memo_call(memo, entry->proc, value);
+    value = rb_enum_accumulate_memo_call(memo, entry->proc, value);
     LAZY_MEMO_SET_VALUE(result, value);
     LAZY_MEMO_RESET_PACKED(result);
     return result;
 }
 
 static struct MEMO *
-lazy_reflect_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+lazy_accumulate_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
 {
     struct proc_entry *entry = proc_entry_ptr(proc_entry);
     struct MEMO *memo = MEMO_CAST(entry->memo);
-    return lazy_reflect_yield(entry, result, memo, result->memo_value);
+    return lazy_accumulate_yield(entry, result, memo, result->memo_value);
 }
 
-static const lazyenum_funcs lazy_reflect_funcs = {
-    lazy_reflect_proc, 0,
+static const lazyenum_funcs lazy_accumulate_funcs = {
+    lazy_accumulate_proc, 0,
 };
 
 static struct MEMO *
-lazy_reflect_init_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+lazy_accumulate_init_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
 {
     struct proc_entry *entry = proc_entry_ptr(proc_entry);
     struct MEMO *memo = MEMO_CAST(entry->memo);
     VALUE value = result->memo_value;
-    entry->fn = &lazy_reflect_funcs;
+    entry->fn = &lazy_accumulate_funcs;
     lazy_yielder_yield(result, memo_index+1, 1, &memo->v1);
-    return lazy_reflect_yield(entry, result, memo, value);
+    return lazy_accumulate_yield(entry, result, memo, value);
 }
 
-static const lazyenum_funcs lazy_reflect_init_funcs = {
-    lazy_reflect_init_proc, 0,
+static const lazyenum_funcs lazy_accumulate_init_funcs = {
+    lazy_accumulate_init_proc, 0,
 };
 
 /*
  *  call-seq:
- *     lazy.reflect(initial, sym) -> lazy
- *     lazy.reflect(sym)          -> lazy
- *     lazy.reflect(initial) { |memo, obj| block }  -> lazy
- *     lazy.reflect          { |memo, obj| block }  -> lazy
+ *     lazy.accumulate(initial, sym) -> lazy
+ *     lazy.accumulate(sym)          -> lazy
+ *     lazy.accumulate(initial) { |memo, obj| block }  -> lazy
+ *     lazy.accumulate          { |memo, obj| block }  -> lazy
  *
- *  Like Enumerable#reflect, but chains operation to be lazy-evaluated.
+ *  Like Enumerable#accumulate, but chains operation to be lazy-evaluated.
  *
  *     # Sum some numbers
- *     (5..10).lazy.reflect(:+).to_a                                #=> [5, 11, 18, 26, 35, 45]
+ *     (5..10).lazy.accumulate(:+).to_a                                #=> [5, 11, 18, 26, 35, 45]
  *     # Same using an infinite range
- *     (5..).lazy.reflect(:+).first(6)                              #=> [5, 11, 18, 26, 35]
- *     # Same using a block and reflect
- *     (5..10).lazy.reflect { |total, n| total + n }.to_a           #=> [5, 11, 18, 26, 35, 45]
+ *     (5..).lazy.accumulate(:+).first(6)                              #=> [5, 11, 18, 26, 35]
+ *     # Same using a block and accumulate
+ *     (5..10).lazy.accumulate { |total, n| total + n }.to_a           #=> [5, 11, 18, 26, 35, 45]
  *     # Multiply some numbers
- *     (5..10).lazy.reflect(1, :*).to_a                             #=> [1, 5, 30, 210, 1680, 15120, 151200]
+ *     (5..10).lazy.accumulate(1, :*).to_a                             #=> [1, 5, 30, 210, 1680, 15120, 151200]
  *     # Same using a block
- *     (5..10).lazy.reflect(1) { |product, n| product * n }.to_a    #=> [1, 5, 30, 210, 1680, 15120, 151200]
+ *     (5..10).lazy.accumulate(1) { |product, n| product * n }.to_a    #=> [1, 5, 30, 210, 1680, 15120, 151200]
  */
 
 static VALUE
-lazy_reflect(int argc, VALUE *argv, VALUE obj)
+lazy_accumulate(int argc, VALUE *argv, VALUE obj)
 {
-    const lazyenum_funcs *funcs = &lazy_reflect_funcs;
-    struct MEMO *memo = rb_enum_reflect_memo_new(argc, argv);
+    const lazyenum_funcs *funcs = &lazy_accumulate_funcs;
+    struct MEMO *memo = rb_enum_accumulate_memo_new(argc, argv);
     if (memo->v1 != Qundef) {
-        funcs = &lazy_reflect_init_funcs;
+        funcs = &lazy_accumulate_init_funcs;
     }
     return lazy_add_method(obj, 0, 0, (VALUE)memo, Qnil, funcs);
 }
@@ -4066,7 +4066,7 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cLazy, "chunk_while", lazy_super, -1);
     rb_define_method(rb_cLazy, "uniq", lazy_uniq, 0);
     rb_define_method(rb_cLazy, "with_index", lazy_with_index, -1);
-    rb_define_method(rb_cLazy, "reflect", lazy_reflect, -1);
+    rb_define_method(rb_cLazy, "accumulate", lazy_accumulate, -1);
 
     lazy_use_super_method = rb_hash_new_with_size(18);
     rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("map")), ID2SYM(rb_intern("_enumerable_map")));

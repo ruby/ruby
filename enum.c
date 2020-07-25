@@ -912,7 +912,7 @@ rb_enum_inject_call(VALUE obj, VALUE init, VALUE op, rb_block_call_func *iter)
 }
 
 static VALUE
-reflect_array(struct MEMO *memo)
+accumulate_array(struct MEMO *memo)
 {
     VALUE result = memo->v2;
     if (!result) {
@@ -924,20 +924,20 @@ reflect_array(struct MEMO *memo)
 }
 
 static VALUE
-reflect_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
+accumulate_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
 {
     struct MEMO *memo = MEMO_CAST(memop);
-    VALUE result = reflect_array(memo);
+    VALUE result = accumulate_array(memo);
     inject_i(i, memop, argc, argv, blockarg);
     rb_ary_push(result, memo->v1);
     return Qnil;
 }
 
 static VALUE
-reflect_op_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
+accumulate_op_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
 {
     struct MEMO *memo = MEMO_CAST(memop);
-    VALUE result = reflect_array(memo);
+    VALUE result = accumulate_array(memo);
     inject_op_i(i, memop, argc, argv, blockarg);
     rb_ary_push(result, memo->v1);
     return Qnil;
@@ -945,14 +945,14 @@ reflect_op_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
 
 /* v1: initial value/Qundef, v2: result array/Qfalse, u3.value: op/Qundef */
 struct MEMO *
-rb_enum_reflect_memo_new(int argc, VALUE *argv)
+rb_enum_accumulate_memo_new(int argc, VALUE *argv)
 {
     VALUE init, op = rb_enum_inject_prepare(argc, argv, &init);
     return MEMO_NEW(init, Qfalse, op);
 }
 
 VALUE
-rb_enum_reflect_memo_call(struct MEMO *memo, VALUE proc, VALUE i)
+rb_enum_accumulate_memo_call(struct MEMO *memo, VALUE proc, VALUE i)
 {
     if (proc) {
         VALUE v = memo->v1;
@@ -969,10 +969,10 @@ rb_enum_reflect_memo_call(struct MEMO *memo, VALUE proc, VALUE i)
 
 /*
  *  call-seq:
- *     enum.reflect(initial, sym) -> array
- *     enum.reflect(sym)          -> array
- *     enum.reflect(initial) { |memo, obj| block }  -> array
- *     enum.reflect          { |memo, obj| block }  -> array
+ *     enum.accumulate(initial, sym) -> array
+ *     enum.accumulate(sym)          -> array
+ *     enum.accumulate(initial) { |memo, obj| block }  -> array
+ *     enum.accumulate          { |memo, obj| block }  -> array
  *
  *  Produces a collection of cumulative results starts from the <i>initial</i> value by
  *  processing each element of the input series.
@@ -991,24 +991,24 @@ rb_enum_reflect_memo_call(struct MEMO *memo, VALUE proc, VALUE i)
  *
  *
  *     # Sum some numbers
- *     (5..10).reflect(:+)                               #=> [5, 11, 18, 26, 35, 45]
- *     # Same using a block and reflect
- *     (5..10).reflect { |total, n| total + n }          #=> [5, 11, 18, 26, 35, 45]
+ *     (5..10).accumulate(:+)                               #=> [5, 11, 18, 26, 35, 45]
+ *     # Same using a block and accumulate
+ *     (5..10).accumulate { |total, n| total + n }          #=> [5, 11, 18, 26, 35, 45]
  *     # Multiply some numbers
- *     (5..10).reflect(1, :*)                            #=> [1, 5, 30, 210, 1680, 15120, 151200]
+ *     (5..10).accumulate(1, :*)                            #=> [1, 5, 30, 210, 1680, 15120, 151200]
  *     # Same using a block
- *     (5..10).reflect(1) { |product, n| product * n }   #=> [1, 5, 30, 210, 1680, 15120, 151200]
+ *     (5..10).accumulate(1) { |product, n| product * n }   #=> [1, 5, 30, 210, 1680, 15120, 151200]
  *
  */
 
 static VALUE
-enum_reflect(int argc, VALUE *argv, VALUE obj)
+enum_accumulate(int argc, VALUE *argv, VALUE obj)
 {
-    struct MEMO *memo = rb_enum_reflect_memo_new(argc, argv);
+    struct MEMO *memo = rb_enum_accumulate_memo_new(argc, argv);
     VALUE op = memo->u3.value;
-    rb_block_call_func *iter = op == Qundef ? reflect_i : reflect_op_i;
+    rb_block_call_func *iter = op == Qundef ? accumulate_i : accumulate_op_i;
     rb_block_call(obj, id_each, 0, 0, iter, (VALUE)memo);
-    return reflect_array(memo);
+    return accumulate_array(memo);
 }
 
 static VALUE
@@ -4319,7 +4319,7 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "collect_concat", enum_flat_map, 0);
     rb_define_method(rb_mEnumerable, "inject", enum_inject, -1);
     rb_define_method(rb_mEnumerable, "reduce", enum_inject, -1);
-    rb_define_method(rb_mEnumerable, "reflect", enum_reflect, -1);
+    rb_define_method(rb_mEnumerable, "accumulate", enum_accumulate, -1);
     rb_define_method(rb_mEnumerable, "partition", enum_partition, 0);
     rb_define_method(rb_mEnumerable, "group_by", enum_group_by, 0);
     rb_define_method(rb_mEnumerable, "tally", enum_tally, 0);

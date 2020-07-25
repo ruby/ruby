@@ -335,57 +335,57 @@ class TestEnumerable < Test::Unit::TestCase
     end;
   end
 
-  def test_reflect
-    assert_equal([1, 3, 6, 10], (1..4).reflect(:+))
-    assert_equal([0, 1, 3, 6], (1..3).reflect(0, :+))
+  def test_accumulate
+    assert_equal([1, 3, 6, 10], (1..4).accumulate(:+))
+    assert_equal([0, 1, 3, 6], (1..3).accumulate(0, :+))
 
     a = []
-    ary = (2..4).reflect {|i, j| a << [i, j]; i+j}
+    ary = (2..4).accumulate {|i, j| a << [i, j]; i+j}
     assert_equal([[2, 3], [5, 4]], a)
     assert_equal([2, 5, 9], ary)
 
     a = []
-    ary = (1..2).reflect(2) {|i, j| a << [i, j]; i+j}
+    ary = (1..2).accumulate(2) {|i, j| a << [i, j]; i+j}
     assert_equal([[2, 1], [3, 2]], a)
     assert_equal([2, 3, 5], ary)
 
-    assert_equal([1, 2, 6, 6, 12], @obj.reflect { |z, x| z * x })
-    assert_equal([1, 4, 11, 23, 48], @obj.reflect { |z, x| z * 2 + x })
-    assert_equal([1, 2, 6, 6, 12], @obj.reflect(:*))
-    assert_equal([2, 2, 4, 12, 12, 24], @obj.reflect(2) { |z, x| z * x })
-    assert_equal([2, 2, 4, 12, 12, 24], @obj.reflect(2, :*) { |z, x| z + x })
-    assert_equal([], @empty.reflect { 9 })
+    assert_equal([1, 2, 6, 6, 12], @obj.accumulate { |z, x| z * x })
+    assert_equal([1, 4, 11, 23, 48], @obj.accumulate { |z, x| z * 2 + x })
+    assert_equal([1, 2, 6, 6, 12], @obj.accumulate(:*))
+    assert_equal([2, 2, 4, 12, 12, 24], @obj.accumulate(2) { |z, x| z * x })
+    assert_equal([2, 2, 4, 12, 12, 24], @obj.accumulate(2, :*) { |z, x| z + x })
+    assert_equal([], @empty.accumulate { 9 })
   end
 
-  def test_reflect_array_mul
-    assert_equal([], [].reflect(:*))
-    assert_equal([5], [5].reflect(:*))
-    assert_equal([5, 35], [5, 7].reflect(:*))
-    assert_equal([3], [].reflect(3, :*))
-    assert_equal([3, 15], [5].reflect(3, :*))
-    assert_equal([3, 15, 105], [5, 7].reflect(3, :*))
+  def test_accumulate_array_mul
+    assert_equal([], [].accumulate(:*))
+    assert_equal([5], [5].accumulate(:*))
+    assert_equal([5, 35], [5, 7].accumulate(:*))
+    assert_equal([3], [].accumulate(3, :*))
+    assert_equal([3, 15], [5].accumulate(3, :*))
+    assert_equal([3, 15, 105], [5, 7].accumulate(3, :*))
   end
 
-  def test_reflect_array_plus
-    assert_equal([3], [3].reflect(:+))
-    assert_equal([3, 8], [3, 5].reflect(:+))
-    assert_equal([3, 8, 15], [3, 5, 7].reflect(:+))
-    assert_float_equal(15.0, [3, 5, 7.0].reflect(:+).last)
-    assert_equal([FIXNUM_MAX, 2*FIXNUM_MAX], Array.new(2, FIXNUM_MAX).reflect(:+))
-    assert_equal([FIXNUM_MAX+1, 2*(FIXNUM_MAX+1)], Array.new(2, FIXNUM_MAX+1).reflect(:+))
-    assert_equal([FIXNUM_MAX, 2*FIXNUM_MAX, 3*FIXNUM_MAX, 4*FIXNUM_MAX, 5*FIXNUM_MAX], Array.new(5, FIXNUM_MAX).reflect(:+))
-    assert_equal([FIXNUM_MIN, 2*FIXNUM_MIN], Array.new(2, FIXNUM_MIN).reflect(:+))
-    reflect_with_floats = [FIXNUM_MAX, 1, 0.0].reflect(:+)
-    assert_equal([FIXNUM_MAX, FIXNUM_MAX+1, (FIXNUM_MAX+1).to_f], reflect_with_floats)
-    assert_float_equal((FIXNUM_MAX+1).to_f, reflect_with_floats[2])
-    reflect_with_floats = [3.0, 5].reflect(2.0, :+)
-    assert_float_equal(2.0, reflect_with_floats[0])
-    assert_float_equal(5.0, reflect_with_floats[1])
-    assert_float_equal(10.0, reflect_with_floats[2])
-    assert_equal([2.0, 2.0+3.0i], [2.0, 3.0i].reflect(:+))
+  def test_accumulate_array_plus
+    assert_equal([3], [3].accumulate(:+))
+    assert_equal([3, 8], [3, 5].accumulate(:+))
+    assert_equal([3, 8, 15], [3, 5, 7].accumulate(:+))
+    assert_float_equal(15.0, [3, 5, 7.0].accumulate(:+).last)
+    assert_equal([FIXNUM_MAX, 2*FIXNUM_MAX], Array.new(2, FIXNUM_MAX).accumulate(:+))
+    assert_equal([FIXNUM_MAX+1, 2*(FIXNUM_MAX+1)], Array.new(2, FIXNUM_MAX+1).accumulate(:+))
+    assert_equal([FIXNUM_MAX, 2*FIXNUM_MAX, 3*FIXNUM_MAX, 4*FIXNUM_MAX, 5*FIXNUM_MAX], Array.new(5, FIXNUM_MAX).accumulate(:+))
+    assert_equal([FIXNUM_MIN, 2*FIXNUM_MIN], Array.new(2, FIXNUM_MIN).accumulate(:+))
+    accumulate_with_floats = [FIXNUM_MAX, 1, 0.0].accumulate(:+)
+    assert_equal([FIXNUM_MAX, FIXNUM_MAX+1, (FIXNUM_MAX+1).to_f], accumulate_with_floats)
+    assert_float_equal((FIXNUM_MAX+1).to_f, accumulate_with_floats[2])
+    accumulate_with_floats = [3.0, 5].accumulate(2.0, :+)
+    assert_float_equal(2.0, accumulate_with_floats[0])
+    assert_float_equal(5.0, accumulate_with_floats[1])
+    assert_float_equal(10.0, accumulate_with_floats[2])
+    assert_equal([2.0, 2.0+3.0i], [2.0, 3.0i].accumulate(:+))
   end
 
-  def test_reflect_array_op_redefined
+  def test_accumulate_array_op_redefined
     assert_separately([], "#{<<~"end;"}\n""end")
     all_assertions_foreach("", *%i[+ * / - %]) do |op|
       begin
@@ -395,7 +395,7 @@ class TestEnumerable < Test::Unit::TestCase
             0
           end
         end
-        assert_equal([1, 0, 0], [1, 2, 3].reflect(op))
+        assert_equal([1, 0, 0], [1, 2, 3].accumulate(op))
       ensure
         Integer.class_eval do
           undef_method op
@@ -405,7 +405,7 @@ class TestEnumerable < Test::Unit::TestCase
     end;
   end
 
-  def test_reflect_array_op_private
+  def test_accumulate_array_op_private
     assert_separately([], "#{<<~"end;"}\n""end")
     all_assertions_foreach("", *%i[+ * / - %]) do |op|
       bug = '[ruby-core:81349] [Bug #13592] should respect visibility'
@@ -414,7 +414,7 @@ class TestEnumerable < Test::Unit::TestCase
           Integer.class_eval do
             private op
           end
-          [1,2,3].reflect(op)
+          [1,2,3].accumulate(op)
         ensure
           Integer.class_eval do
             public op
