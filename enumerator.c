@@ -2832,11 +2832,11 @@ static const lazyenum_funcs lazy_reflect_init_funcs = {
  *  Like Enumerable#reflect, but chains operation to be lazy-evaluated.
  *
  *     # Sum some numbers
- *     (5..10).lazy.reflect(:+).to_a                                #=> [5, 10, 16, 23, 31, 40, 50]
+ *     (5..10).lazy.reflect(:+).to_a                                #=> [5, 11, 18, 26, 35, 45]
  *     # Same using an infinite range
- *     (5..).lazy.reflect(:+).first(6)                              #=> [5, 10, 16, 23, 31, 40]
+ *     (5..).lazy.reflect(:+).first(6)                              #=> [5, 11, 18, 26, 35]
  *     # Same using a block and reflect
- *     (5..10).lazy.reflect { |total, n| total + n }.to_a           #=> [5, 10, 16, 23, 31, 40, 50]
+ *     (5..10).lazy.reflect { |total, n| total + n }.to_a           #=> [5, 11, 18, 26, 35, 45]
  *     # Multiply some numbers
  *     (5..10).lazy.reflect(1, :*).to_a                             #=> [1, 5, 30, 210, 1680, 15120, 151200]
  *     # Same using a block

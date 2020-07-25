@@ -991,9 +991,9 @@ rb_enum_reflect_memo_call(struct MEMO *memo, VALUE proc, VALUE i)
  *
  *
  *     # Sum some numbers
- *     (5..10).reflect(:+)                               #=> [5, 10, 16, 23, 31, 40, 50]
+ *     (5..10).reflect(:+)                               #=> [5, 11, 18, 26, 35, 45]
  *     # Same using a block and reflect
- *     (5..10).reflect { |total, n| total + n }          #=> [5, 10, 16, 23, 31, 40, 50]
+ *     (5..10).reflect { |total, n| total + n }          #=> [5, 11, 18, 26, 35, 45]
  *     # Multiply some numbers
  *     (5..10).reflect(1, :*)                            #=> [1, 5, 30, 210, 1680, 15120, 151200]
  *     # Same using a block
