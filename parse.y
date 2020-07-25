@@ -2023,10 +2023,6 @@ fname		: tIDENTIFIER
 			$$ = $1;
 		    }
 		| reswords
-		    {
-			SET_LEX_STATE(EXPR_ENDFN);
-			$$ = $1;
-		    }
 		;
 
 fitem		: fname
@@ -8738,11 +8734,12 @@ parse_ident(struct parser_params *p, int c, int cmd_state)
 	kw = rb_reserved_word(tok(p), toklen(p));
 	if (kw) {
 	    enum lex_state_e state = p->lex.state;
-	    SET_LEX_STATE(kw->state);
 	    if (IS_lex_state_for(state, EXPR_FNAME)) {
+		SET_LEX_STATE(EXPR_ENDFN);
 		set_yylval_name(rb_intern2(tok(p), toklen(p)));
 		return kw->id[0];
 	    }
+	    SET_LEX_STATE(kw->state);
 	    if (IS_lex_state(EXPR_BEG)) {
 		p->command_start = TRUE;
 	    }
