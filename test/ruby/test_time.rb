@@ -885,6 +885,13 @@ class TestTime < Test::Unit::TestCase
     assert_equal(8192, Time.now.strftime('%8192z').size)
   end
 
+  def test_strftime_wide_precision
+    t2000 = get_t2000
+    s = t2000.strftime("%28c")
+    assert_equal(28, s.size)
+    assert_equal(t2000.strftime("%c"), s.strip)
+  end
+
   def test_strfimte_zoneoffset
     t2000 = get_t2000
     t = t2000.getlocal("+09:00:00")
