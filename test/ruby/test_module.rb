@@ -435,6 +435,12 @@ class TestModule < Test::Unit::TestCase
     assert_empty(m.constants, bug9813)
   end
 
+  def test_initialize_copy_in_use
+    m = Module.new
+    Class.new {include m}
+    assert_raise(TypeError) {m.send(:initialize_copy, Module.new)}
+  end
+
   def test_dup
     OtherSetup.call
 
