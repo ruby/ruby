@@ -52,11 +52,10 @@ jobs:
         shell: bash
         id: commit_info
       - name: Set up Ruby & MSYS2
-        uses: MSP-Greg/actions-ruby@master
+        uses: MSP-Greg/setup-ruby-pkgs@v1
         with:
-          ruby-version: 2.6.x
-          base: update
-          mingw: gdbm gmp libffi libyaml openssl ragel readline
+          ruby-version: 2.6
+          mingw: _upgrade_ gdbm gmp libffi libyaml openssl ragel readline
           msys2: automake1.16 bison
       - name: where check
         run: |
