@@ -3094,18 +3094,6 @@ class TestModule < Test::Unit::TestCase
     assert_match(/::Foo$/, mod.name, '[Bug #14895]')
   end
 
-  def test_include_allocated
-    assert_raise(ArgumentError) do
-      Module.new {include Module.allocate}
-    end
-    assert_raise(ArgumentError) do
-      Module.new {prepend Module.allocate}
-    end
-    assert_raise(ArgumentError) do
-      Object.new.extend Module.allocate
-    end
-  end
-
   private
 
   def assert_top_method_is_private(method)
