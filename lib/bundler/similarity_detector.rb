@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+# This module is not used anywhere in Bundler
+# It is included for backwards compatibility in-case someone is relying on it
+
 module Bundler
   class SimilarityDetector
     SimilarityScore = Struct.new(:string, :distance)
