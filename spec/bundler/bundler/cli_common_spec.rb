@@ -1,9 +1,11 @@
-require 'bundler/cli'
+# frozen_string_literal: true
+
+require "bundler/cli"
 
 RSpec.describe Bundler::CLI::Common do
-  describe 'gem_not_found_message' do
-    it 'should suggest alternate gem names' do
-      message = subject.gem_not_found_message('ralis', ['BOGUS'])
+  describe "gem_not_found_message" do
+    it "should suggest alternate gem names" do
+      message = subject.gem_not_found_message("ralis", ["BOGUS"])
       expect(message).to match("Could not find gem 'ralis'.$")
       message = subject.gem_not_found_message("ralis", ["rails"])
       expect(message).to match("Did you mean 'rails'?")
