@@ -114,10 +114,9 @@ module TestStruct
     assert_equal "#{@Struct}::KeywordInitFalse", @Struct::KeywordInitFalse.inspect
     assert_equal "#{@Struct}::KeywordInitTrue(keyword_init: true)", @Struct::KeywordInitTrue.inspect
     # eval is needed to prevent the warning duplication filter
-    k = eval("Class.new(@Struct::KeywordInitFalse) {def initialize(**) end}")
-    assert_warn(/Using the last argument as keyword parameters is deprecated/) {k.new(a: 1, b: 2)}
-    k = Class.new(@Struct::KeywordInitTrue) {def initialize(**) end}
-    assert_warn('') {k.new(a: 1, b: 2)}
+    k = Class.new(@Struct::KeywordInitTrue) {def initialize(b, options); super(a: options, b: b); end}
+    o = assert_warn('') { k.new(42, {foo: 1, bar: 2}) }
+    assert_equal(1, o.a[:foo])
 
     @Struct.instance_eval do
       remove_const(:KeywordInitTrue)
@@ -150,6 +149,17 @@ module TestStruct
     klass = @Struct.new(:a, :b)
     o = klass.new(1, 2)
     assert_equal([1, 2], o.each.to_a)
+  end
+
+  def test_initialize_with_kw
+    klass = @Struct.new(:foo, :options) do
+      def initialize(foo, **options)
+        super(foo, options)
+      end
+    end
+    assert_equal({}, klass.new(42, **Hash.new).options)
+    x = assert_warn('') { klass.new(1, bar: 2) }
+    assert_equal 2, x.options[:bar]
   end
 
   def test_each_pair
