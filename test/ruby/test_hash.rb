@@ -1664,9 +1664,15 @@ class TestHash < Test::Unit::TestCase
 
   def test_transform_values
     x = @cls[a: 1, b: 2, c: 3]
+    x.default = 42
     y = x.transform_values {|v| v ** 2 }
     assert_equal([1, 4, 9], y.values_at(:a, :b, :c))
     assert_not_same(x, y)
+    assert_nil(y.default)
+
+    x.default_proc = proc {|h, k| k}
+    y = x.transform_values {|v| v ** 2 }
+    assert_nil(y.default_proc)
 
     y = x.transform_values.with_index {|v, i| "#{v}.#{i}" }
     assert_equal(%w(1.0  2.1  3.2), y.values_at(:a, :b, :c))
