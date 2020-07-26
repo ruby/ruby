@@ -1766,20 +1766,7 @@ rb_mod_cmp(VALUE mod, VALUE arg)
     return INT2FIX(1);
 }
 
-static VALUE
-rb_module_s_alloc(VALUE klass)
-{
-    VALUE mod = rb_module_new();
-
-    RBASIC_SET_CLASS(mod, klass);
-    return mod;
-}
-
-static VALUE
-rb_class_s_alloc(VALUE klass)
-{
-    return rb_class_boot(0);
-}
+static VALUE rb_mod_initialize_exec(VALUE module);
 
 /*
  *  call-seq:
@@ -1809,6 +1796,13 @@ rb_class_s_alloc(VALUE klass)
 
 static VALUE
 rb_mod_initialize(VALUE module)
+{
+    rb_module_check_initialiable(module);
+    return rb_mod_initialize_exec(module);
+}
+
+static VALUE
+rb_mod_initialize_exec(VALUE module)
 {
     if (rb_block_given_p()) {
 	rb_mod_module_exec(1, &module, module);
@@ -1879,7 +1873,7 @@ rb_class_initialize(int argc, VALUE *argv, VALUE klass)
     RCLASS_SET_SUPER(klass, super);
     rb_make_metaclass(klass, RBASIC(super)->klass);
     rb_class_inherited(super, klass);
-    rb_mod_initialize(klass);
+    rb_mod_initialize_exec(klass);
 
     return klass;
 }
