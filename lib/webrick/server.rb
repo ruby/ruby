@@ -102,6 +102,9 @@ module WEBrick
       @listeners = []
       @shutdown_pipe = nil
       unless @config[:DoNotListen]
+        raise ArgumentError, "Port must an integer" unless @config[:Port].to_s == @config[:Port].to_i.to_s
+
+        @config[:Port] = @config[:Port].to_i
         if @config[:Listen]
           warn(":Listen option is deprecated; use GenericServer#listen", uplevel: 1)
         end

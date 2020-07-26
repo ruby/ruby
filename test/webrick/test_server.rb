@@ -172,4 +172,32 @@ class TestWEBrickServer < Test::Unit::TestCase
     pipe.last.puts('')
     assert_join_threads([server_thread])
   end
+
+  def test_port_numbers
+    config = {
+      :BindAddress => '0.0.0.0',
+      :Logger => WEBrick::Log.new([], WEBrick::BasicLog::WARN),
+    }
+
+    ports = [0, "0"]
+
+    ports.each do |port|
+      config[:Port]= port
+      server = WEBrick::GenericServer.new(config)
+      server_thread = Thread.start { server.start }
+      client_thread = Thread.start {
+        sleep 0.1 until server.status == :Running || !server_thread.status
+        server_port = server.listeners[0].addr[1]
+        server.stop
+        assert_equal server.config[:Port], server_port
+        sleep 0.1 until server.status == :Stop || !server_thread.status
+      }
+      assert_join_threads([client_thread, server_thread])
+    end
+
+    assert_raise(ArgumentError) do
+      config[:Port]= "FOO"
+      WEBrick::GenericServer.new(config)
+    end
+  end
 end
