@@ -85,6 +85,7 @@ module Net
     end
 
     # :stopdoc:
+    VERSION = "0.1.0"
     FTP_PORT = 21
     CRLF = "\r\n"
     DEFAULT_BLOCKSIZE = BufferedIO::BUFSIZE
