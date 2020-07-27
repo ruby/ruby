@@ -550,7 +550,7 @@ EOF
 
     def git_present?
       return @git_present if defined?(@git_present)
-      @git_present = Bundler.which("git") || Bundler.which("git.exe")
+      @git_present = Bundler.which("git#{RbConfig::CONFIG["EXEEXT"]}")
     end
 
     def feature_flag
