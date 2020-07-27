@@ -182,16 +182,16 @@ module Net
     # The available options are:
     #
     # port::      Port number (default value is 21)
-    # ssl::       If options[:ssl] is true, then an attempt will be made
+    # ssl::       If +options+[:ssl] is true, then an attempt will be made
     #             to use SSL (now TLS) to connect to the server.  For this
     #             to work OpenSSL [OSSL] and the Ruby OpenSSL [RSSL]
-    #             extensions need to be installed.  If options[:ssl] is a
+    #             extensions need to be installed.  If +options+[:ssl] is a
     #             hash, it's passed to OpenSSL::SSL::SSLContext#set_params
     #             as parameters.
     # private_data_connection::  If true, TLS is used for data connections.
-    #                            Default: +true+ when options[:ssl] is true.
-    # username::  Username for login.  If options[:username] is the string
-    #             "anonymous" and the options[:password] is +nil+,
+    #                            Default: +true+ when +options+[:ssl] is true.
+    # username::  Username for login.  If +options+[:username] is the string
+    #             "anonymous" and the +options+[:password] is +nil+,
     #             "anonymous@" is used as a password.
     # password::  Password for login.
     # account::   Account information for ACCT.
