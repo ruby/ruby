@@ -599,8 +599,11 @@ reflect_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
     if (RARRAY_LEN(memo->v1) == 0) {
         if (memo->v2 == Qundef) {
             MEMO_V2_SET(memo, i);
-        }
+            rb_ary_push(memo->v1, i);
 
+            return Qnil;
+        }
+        
         rb_ary_push(memo->v1, memo->v2);
     }
 
@@ -621,6 +624,9 @@ reflect_op_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
     if (RARRAY_LEN(memo->v1) == 0) {
         if (memo->v2 == Qundef) {
             MEMO_V2_SET(memo, i);
+            rb_ary_push(memo->v1, i);
+
+            return Qnil;
         }
 
         rb_ary_push(memo->v1, memo->v2);
@@ -654,13 +660,14 @@ reflect_op_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
  *  then the first element of collection is used as the initial value
  *  of <i>memo</i>.
  * 
- *  The result collection has a size bigger by one than the initial collection.
+ *  In the case when an <i>initial</i> value is set the result collection will have a size 
+ *  bigger by one than <i>enum</i> size otherwise the size will be equal to the size of <i>enum</i>.
  *
  *
  *     # Sum some numbers
- *     (5..10).reflect(:+)                               #=> [5, 10, 16, 23, 31, 40, 50]
+ *     (5..10).reflect(:+)                               #=> [5, 11, 18, 26, 35, 45]
  *     # Same using a block and reflect
- *     (5..10).reflect { |total, n| total + n }          #=> [5, 10, 16, 23, 31, 40, 50]
+ *     (5..10).reflect { |total, n| total + n }          #=> [5, 11, 18, 26, 35, 45]
  *     # Multiply some numbers
  *     (5..10).reflect(1, :*)                            #=> [1, 5, 30, 210, 1680, 15120, 151200]
  *     # Same using a block

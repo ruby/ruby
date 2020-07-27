@@ -684,12 +684,12 @@ EOS
   end
 
   def test_reflect
-    assert_equal([0, 0, 1, 3], (0..Float::INFINITY).lazy.reflect(:+).first(4))
+    assert_equal([0, 1, 3], (0..Float::INFINITY).lazy.reflect(:+).first(3))
 
-    assert_equal([0, 0, 0, -1], (0..Float::INFINITY).lazy.reflect { |memo, i| memo + i }.reflect(:-).first(4))
+    assert_equal([0, -1, -4], (0..Float::INFINITY).lazy.reflect { |memo, i| memo + i }.reflect(:-).first(3))
 
     range = 0..Float::INFINITY
-    assert_equal(range.lazy.reflect(:+).first(100), range.first(99).reflect(:+))
+    assert_equal(range.lazy.reflect(:+).first(99), range.first(99).reflect(:+))
 
     assert_raise(ArgumentError, "no block given") { [1].reflect }
     assert_raise(ArgumentError, "no block given") { [].reflect }
@@ -708,7 +708,7 @@ EOS
             0
           end
         end
-        assert_equal([1, 0, 0, 0], [1, 2, 3].lazy.reflect(op).first(4))
+        assert_equal([1, 0, 0], [1, 2, 3].lazy.reflect(op).first(3))
       ensure
         Integer.class_eval do
           undef_method op
@@ -726,7 +726,7 @@ EOS
           Integer.class_eval do
             private op
           end
-          [1, 2 ,3].reflect(op).lazy.first(4)
+          [1, 2 ,3].reflect(op).lazy.first(3)
         ensure
           Integer.class_eval do
             public op

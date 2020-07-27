@@ -2068,7 +2068,12 @@ lazy_reflect_proc(RB_BLOCK_CALL_FUNC_ARGLIST(val, memop))
     if (RARRAY_LEN(memo->v1) == 0) {
         if (memo->v2 == Qundef) {
             MEMO_V2_SET(memo, argv[1]);
+
+            rb_ary_push(memo->v1, memo->v2);
+            rb_funcall(yielder, idLTLT, 1, memo->v2);
+            return memo->v1;
         }
+
         rb_ary_push(memo->v1, memo->v2);
         rb_funcall(yielder, idLTLT, 1, memo->v2);
     }
@@ -2087,7 +2092,7 @@ lazy_reflect_proc(RB_BLOCK_CALL_FUNC_ARGLIST(val, memop))
 
     rb_funcall(yielder, idLTLT, 1, memo->v2);
 
-    return  memo->v1;
+    return memo->v1;
 }
 
 /*
