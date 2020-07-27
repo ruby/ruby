@@ -2652,7 +2652,7 @@ Init_Exception(void)
     rb_define_method(rb_eNameError, "name", name_err_name, 0);
     rb_define_method(rb_eNameError, "receiver", name_err_receiver, 0);
     rb_define_method(rb_eNameError, "local_variables", name_err_local_variables, 0);
-    rb_cNameErrorMesg = rb_define_class_under(rb_eNameError, "message", rb_cData);
+    rb_cNameErrorMesg = rb_define_class_under(rb_eNameError, "message", rb_cObject);
     rb_define_method(rb_cNameErrorMesg, "==", name_err_mesg_equal, 1);
     rb_define_method(rb_cNameErrorMesg, "to_str", name_err_mesg_to_str, 0);
     rb_define_method(rb_cNameErrorMesg, "_dump", name_err_mesg_dump, 1);

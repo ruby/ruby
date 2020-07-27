@@ -4461,7 +4461,7 @@ InitVM_transcode(void)
     rb_define_method(rb_cString, "encode", str_encode, -1);
     rb_define_method(rb_cString, "encode!", str_encode_bang, -1);
 
-    rb_cEncodingConverter = rb_define_class_under(rb_cEncoding, "Converter", rb_cData);
+    rb_cEncodingConverter = rb_define_class_under(rb_cEncoding, "Converter", rb_cObject);
     rb_define_alloc_func(rb_cEncodingConverter, econv_s_allocate);
     rb_define_singleton_method(rb_cEncodingConverter, "asciicompat_encoding", econv_s_asciicompat_encoding, 1);
     rb_define_singleton_method(rb_cEncodingConverter, "search_convpath", econv_s_search_convpath, -1);

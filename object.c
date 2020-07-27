@@ -32,6 +32,7 @@
 #include "internal/struct.h"
 #include "internal/symbol.h"
 #include "internal/variable.h"
+#include "internal/warnings.h"
 #include "probes.h"
 #include "ruby/encoding.h"
 #include "ruby/st.h"
@@ -4320,6 +4321,25 @@ f_sprintf(int c, const VALUE *v, VALUE _)
     return rb_f_sprintf(c, v);
 }
 
+COMPILER_WARNING_PUSH
+#if defined(_MSC_VER)
+COMPILER_WARNING_IGNORED(4996)
+#elif defined(__INTEL_COMPILER)
+COMPILER_WARNING_IGNORED(1786)
+#elif __has_warning("-Wdeprecated-declarations")
+COMPILER_WARNING_IGNORED(-Wdeprecated-declarations)
+#elif defined(__GNUC__)
+COMPILER_WARNING_IGNORED(-Wdeprecated-declarations)
+#endif
+
+static inline void
+Init_rb_cData(void)
+{
+    rb_cData = rb_cObject;
+}
+
+COMPILER_WARNING_POP
+
 /*
  *  Document-class: Class
  *
@@ -4655,15 +4675,7 @@ InitVM_Object(void)
     rb_undef_method(rb_cClass, "append_features");
     rb_undef_method(rb_cClass, "prepend_features");
 
-    /*
-     * Document-class: Data
-     *
-     * This is a deprecated class, base class for C extensions using
-     * Data_Make_Struct or Data_Wrap_Struct.
-     */
-    rb_cData = rb_define_class("Data", rb_cObject);
-    rb_undef_alloc_func(rb_cData);
-    rb_deprecate_constant(rb_cObject, "Data");
+    Init_rb_cData();
 
     rb_cTrueClass = rb_define_class("TrueClass", rb_cObject);
     rb_cTrueClass_to_s = rb_fstring_enc_lit("true", rb_usascii_encoding());
