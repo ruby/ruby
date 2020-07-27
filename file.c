@@ -1787,23 +1787,6 @@ rb_file_exist_p(VALUE obj, VALUE fname)
     return Qtrue;
 }
 
-/* :nodoc: */
-static VALUE
-rb_file_exists_p(VALUE obj, VALUE fname)
-{
-    const char *s = "FileTest#exist?";
-    if (obj == rb_mFileTest) {
-	s = "FileTest.exist?";
-    }
-    else if (obj == rb_cFile ||
-	     (RB_TYPE_P(obj, T_CLASS) &&
-	      RTEST(rb_class_inherited_p(obj, rb_cFile)))) {
-	s = "File.exist?";
-    }
-    rb_warn_deprecated("%.*ss?", s, (int)(strlen(s)-1), s);
-    return rb_file_exist_p(obj, fname);
-}
-
 /*
  * call-seq:
  *    File.readable?(file_name)   -> true or false
@@ -6483,7 +6466,6 @@ Init_File(void)
 
     define_filetest_function("directory?", rb_file_directory_p, 1);
     define_filetest_function("exist?", rb_file_exist_p, 1);
-    define_filetest_function("exists?", rb_file_exists_p, 1);
     define_filetest_function("readable?", rb_file_readable_p, 1);
     define_filetest_function("readable_real?", rb_file_readable_real_p, 1);
     define_filetest_function("world_readable?", rb_file_world_readable_p, 1);
