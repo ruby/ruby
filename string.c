@@ -3856,7 +3856,6 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
  *  against the receiver, and returns the position the match starts,
  *  or +nil+ if there is no match. Otherwise, invokes <i>obj.=~</i>,
  *  passing the string as an argument.
- *  The default Object#=~ (deprecated) returns +nil+.
  *
  *     "cat o' 9 tails" =~ /\d/   #=> 7
  *     "cat o' 9 tails" =~ 9      #=> nil

@@ -3,7 +3,7 @@ require_relative '../../spec_helper'
 ruby_version_is "2.6" do
   describe "NilClass#=~" do
     it "returns nil matching any object" do
-      o = Object.new
+      o = nil
 
       suppress_warning do
         (o =~ /Object/).should   be_nil

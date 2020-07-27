@@ -1399,6 +1399,8 @@ nil_inspect(VALUE obj)
  *     nil =~ other  -> nil
  *
  *  Dummy pattern matching -- always returns nil.
+ *
+ *  This method makes it possible to `while gets =~ /re/ do`.
  */
 
 static VALUE
@@ -1576,27 +1578,6 @@ MJIT_FUNC_EXPORTED VALUE
 rb_false(VALUE obj)
 {
     return Qfalse;
-}
-
-
-/*
- *  call-seq:
- *     obj =~ other  -> nil
- *
- * This method is deprecated.
- *
- * This is not only useless but also troublesome because it may hide a
- * type error.
- */
-
-static VALUE
-rb_obj_match(VALUE obj1, VALUE obj2)
-{
-    if (rb_warning_category_enabled_p(RB_WARN_CATEGORY_DEPRECATED)) {
-        rb_warn("deprecated Object#=~ is called on %"PRIsVALUE
-                "; it always returns nil", rb_obj_class(obj1));
-    }
-    return Qnil;
 }
 
 /*
@@ -4524,7 +4505,6 @@ InitVM_Object(void)
 
     rb_define_method(rb_mKernel, "nil?", rb_false, 0);
     rb_define_method(rb_mKernel, "===", case_equal, 1);
-    rb_define_method(rb_mKernel, "=~", rb_obj_match, 1);
     rb_define_method(rb_mKernel, "!~", rb_obj_not_match, 1);
     rb_define_method(rb_mKernel, "eql?", rb_obj_equal, 1);
     rb_define_method(rb_mKernel, "hash", rb_obj_hash, 0); /* in hash.c */
