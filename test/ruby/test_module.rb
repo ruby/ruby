@@ -2379,6 +2379,9 @@ class TestModule < Test::Unit::TestCase
     def ivar
       @ivar
     end
+    def ivar2
+      @ivar2
+    end
   end
 
   def test_uninitialized_instance_variable
@@ -2394,6 +2397,29 @@ class TestModule < Test::Unit::TestCase
     name = "@\u{5909 6570}"
     assert_warning(/instance variable #{name} not initialized/) do
       assert_nil(a.instance_eval(name))
+    end
+  end
+
+  def test_expected_uninitialized_instance_variable
+    a = AttrTest.new
+    a.define_singleton_method(:expected_uninitialized_instance_variable?){|v| v == :@ivar2}
+    assert_warning(/instance variable @ivar not initialized/) do
+      assert_nil(a.ivar)
+    end
+    assert_warning(/instance variable @ivar not initialized/) do
+      assert_nil(a.instance_variable_get(:@ivar))
+    end
+    assert_warning(/instance variable @ivar not initialized/) do
+      assert_nil(a.instance_variable_get("@ivar"))
+    end
+    assert_warning('') do
+      assert_nil(a.ivar2)
+    end
+    assert_warning('') do
+      assert_nil(a.instance_variable_get(:@ivar2))
+    end
+    assert_warning('') do
+      assert_nil(a.instance_variable_get("@ivar2"))
     end
   end
 

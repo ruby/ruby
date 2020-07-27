@@ -32,6 +32,7 @@ NORETURN(VALUE rb_mod_const_missing(VALUE,VALUE));
 rb_gvar_getter_t *rb_gvar_getter_function_of(ID);
 rb_gvar_setter_t *rb_gvar_setter_function_of(ID);
 void rb_gvar_readonly_setter(VALUE v, ID id, VALUE *_);
+
 static inline bool ROBJ_TRANSIENT_P(VALUE obj);
 static inline void ROBJ_TRANSIENT_SET(VALUE obj);
 static inline void ROBJ_TRANSIENT_UNSET(VALUE obj);
@@ -51,6 +52,7 @@ VALUE rb_gvar_get(ID);
 VALUE rb_gvar_set(ID, VALUE);
 VALUE rb_gvar_defined(ID);
 void rb_const_warn_if_deprecated(const rb_const_entry_t *, VALUE, ID);
+void rb_uninitialized_ivar_access_verbose(VALUE obj, VALUE var);
 MJIT_SYMBOL_EXPORT_END
 
 static inline bool

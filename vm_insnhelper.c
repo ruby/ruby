@@ -1145,7 +1145,7 @@ vm_getivar(VALUE obj, ID id, IVC ic, const struct rb_callcache *cc, int is_attr)
         }
         else {
             if (!is_attr && RTEST(ruby_verbose)) {
-                rb_warning("instance variable %"PRIsVALUE" not initialized", QUOTE_ID(id));
+                rb_uninitialized_ivar_access_verbose(obj, ID2SYM(id));
             }
             return Qnil;
         }

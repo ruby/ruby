@@ -1122,6 +1122,34 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
     return undef;
 }
 
+struct rb_ivar_uninitialized_allowed_t {
+    VALUE obj;
+    VALUE var;
+};
+
+static VALUE
+rb_ivar_uninitialized_allowed(VALUE obj)
+{
+    struct rb_ivar_uninitialized_allowed_t* args = (struct rb_ivar_uninitialized_allowed_t *)obj;
+    return rb_funcall(args->obj, rb_intern("expected_uninitialized_instance_variable?"), 1,  args->var);
+}
+
+MJIT_FUNC_EXPORTED void
+rb_uninitialized_ivar_access_verbose(VALUE obj, VALUE var)
+{
+    int state;
+    struct rb_ivar_uninitialized_allowed_t args;
+
+    args.obj = obj;
+    args.var = var;
+    obj = rb_protect(rb_ivar_uninitialized_allowed, (VALUE)&args, &state);
+
+    if (state)
+        rb_set_errinfo(Qnil);
+    if (!RTEST(obj))
+       rb_warning("instance variable %"PRIsVALUE" not initialized", var);
+}
+
 VALUE
 rb_ivar_get(VALUE obj, ID id)
 {
@@ -1129,9 +1157,9 @@ rb_ivar_get(VALUE obj, ID id)
     RB_DEBUG_COUNTER_INC(ivar_get_base);
 
     if (iv == Qundef) {
-	if (RTEST(ruby_verbose))
-	    rb_warning("instance variable %"PRIsVALUE" not initialized", QUOTE_ID(id));
-	iv = Qnil;
+        if (RTEST(ruby_verbose))
+            rb_uninitialized_ivar_access_verbose(obj, ID2SYM(id));
+        iv = Qnil;
     }
     return iv;
 }
@@ -3373,7 +3401,7 @@ rb_iv_get(VALUE obj, const char *name)
 
     if (!id) {
         if (RTEST(ruby_verbose))
-            rb_warning("instance variable %s not initialized", name);
+            rb_uninitialized_ivar_access_verbose(obj, rb_str_new_cstr(name));
         return Qnil;
     }
     return rb_ivar_get(obj, id);
