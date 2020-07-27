@@ -2309,14 +2309,6 @@ rb_hash_key(VALUE hash, VALUE value)
     return args[1];
 }
 
-/* :nodoc: */
-static VALUE
-rb_hash_index(VALUE hash, VALUE value)
-{
-    rb_warn_deprecated("Hash#index", "Hash#key");
-    return rb_hash_key(hash, value);
-}
-
 int
 rb_hash_stlike_delete(VALUE hash, st_data_t *pkey, st_data_t *pval)
 {
@@ -6938,7 +6930,6 @@ Init_Hash(void)
     rb_define_method(rb_cHash, "default_proc", rb_hash_default_proc, 0);
     rb_define_method(rb_cHash, "default_proc=", rb_hash_set_default_proc, 1);
     rb_define_method(rb_cHash, "key", rb_hash_key, 1);
-    rb_define_method(rb_cHash, "index", rb_hash_index, 1);
     rb_define_method(rb_cHash, "size", rb_hash_size, 0);
     rb_define_method(rb_cHash, "length", rb_hash_size, 0);
     rb_define_method(rb_cHash, "empty?", rb_hash_empty_p, 0);
