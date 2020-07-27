@@ -20,6 +20,7 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Ruby-level global variables / constants, visible from C.
  */
+#include "ruby/internal/attr/deprecated.h"
 #include "ruby/internal/attr/pure.h"
 #include "ruby/internal/dllexport.h"
 #include "ruby/internal/fl_type.h"
@@ -48,6 +49,7 @@ RUBY_EXTERN VALUE rb_cArray;
 RUBY_EXTERN VALUE rb_cBinding;
 RUBY_EXTERN VALUE rb_cClass;
 RUBY_EXTERN VALUE rb_cCont;
+RBIMPL_ATTR_DEPRECATED(("by: rb_cObject.  Will be removed in 3.1."))
 RUBY_EXTERN VALUE rb_cData;
 RUBY_EXTERN VALUE rb_cDir;
 RUBY_EXTERN VALUE rb_cEncoding;
