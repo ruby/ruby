@@ -2864,6 +2864,8 @@ rb_obj_ivar_get(VALUE obj, VALUE iv)
     ID id = id_for_var(obj, iv, instance);
 
     if (!id) {
+        if (RTEST(ruby_verbose))
+            rb_uninitialized_ivar_access_verbose(obj, iv);
 	return Qnil;
     }
     return rb_ivar_get(obj, id);

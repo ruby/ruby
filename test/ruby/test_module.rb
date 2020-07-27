@@ -2423,6 +2423,17 @@ class TestModule < Test::Unit::TestCase
     end
   end
 
+  def test_expected_uninitialized_instance_variable_without_id
+    a = Object.new
+    a.define_singleton_method(:expected_uninitialized_instance_variable?){|v| v == "@ivar2_adfasdfjo14390"}
+    assert_warning(/instance variable @ivar2_adfasdfjo14391 not initialized/) do
+      assert_nil(a.instance_variable_get("@ivar2_adfasdfjo14391"))
+    end
+    assert_warning('') do
+      assert_nil(a.instance_variable_get("@ivar2_adfasdfjo14390"))
+    end
+  end
+
   def test_uninitialized_attr
     a = AttrTest.new
     assert_warning '' do
