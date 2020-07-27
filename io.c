@@ -3872,19 +3872,6 @@ rb_io_each_line(int argc, VALUE *argv, VALUE io)
 }
 
 /*
- *  This is a deprecated alias for #each_line.
- */
-
-static VALUE
-rb_io_lines(int argc, VALUE *argv, VALUE io)
-{
-    rb_warn_deprecated("IO#lines", "#each_line");
-    if (!rb_block_given_p())
-	return rb_enumeratorize(io, ID2SYM(rb_intern("each_line")), argc, argv);
-    return rb_io_each_line(argc, argv, io);
-}
-
-/*
  *  call-seq:
  *     ios.each_byte {|byte| block }  -> ios
  *     ios.each_byte                  -> an_enumerator
@@ -3920,19 +3907,6 @@ rb_io_each_byte(VALUE io)
 	READ_CHECK(fptr);
     } while (io_fillbuf(fptr) >= 0);
     return io;
-}
-
-/*
- *  This is a deprecated alias for #each_byte.
- */
-
-static VALUE
-rb_io_bytes(VALUE io)
-{
-    rb_warn_deprecated("IO#bytes", "#each_byte");
-    if (!rb_block_given_p())
-	return rb_enumeratorize(io, ID2SYM(rb_intern("each_byte")), 0, 0);
-    return rb_io_each_byte(io);
 }
 
 static VALUE
@@ -4077,20 +4051,6 @@ rb_io_each_char(VALUE io)
 }
 
 /*
- *  This is a deprecated alias for #each_char.
- */
-
-static VALUE
-rb_io_chars(VALUE io)
-{
-    rb_warn_deprecated("IO#chars", "#each_char");
-    if (!rb_block_given_p())
-	return rb_enumeratorize(io, ID2SYM(rb_intern("each_char")), 0, 0);
-    return rb_io_each_char(io);
-}
-
-
-/*
  *  call-seq:
  *     ios.each_codepoint {|c| block }  -> ios
  *     ios.codepoints     {|c| block }  -> ios
@@ -4206,20 +4166,6 @@ rb_io_each_codepoint(VALUE io)
     rb_raise(rb_eArgError, "invalid byte sequence in %s", rb_enc_name(enc));
     UNREACHABLE_RETURN(Qundef);
 }
-
-/*
- *  This is a deprecated alias for #each_codepoint.
- */
-
-static VALUE
-rb_io_codepoints(VALUE io)
-{
-    rb_warn_deprecated("IO#codepoints", "#each_codepoint");
-    if (!rb_block_given_p())
-	return rb_enumeratorize(io, ID2SYM(rb_intern("each_codepoint")), 0, 0);
-    return rb_io_each_codepoint(io);
-}
-
 
 /*
  *  call-seq:
@@ -12605,23 +12551,7 @@ argf_each_line(int argc, VALUE *argv, VALUE argf)
 }
 
 /*
- *  This is a deprecated alias for #each_line.
- */
-
-static VALUE
-argf_lines(int argc, VALUE *argv, VALUE argf)
-{
-    rb_warn_deprecated("ARGF#lines", "#each_line");
-    if (!rb_block_given_p())
-	return rb_enumeratorize(argf, ID2SYM(rb_intern("each_line")), argc, argv);
-    return argf_each_line(argc, argv, argf);
-}
-
-/*
  *  call-seq:
- *     ARGF.bytes     {|byte| block }  -> ARGF
- *     ARGF.bytes                      -> an_enumerator
- *
  *     ARGF.each_byte {|byte| block }  -> ARGF
  *     ARGF.each_byte                  -> an_enumerator
  *
@@ -12652,19 +12582,6 @@ argf_each_byte(VALUE argf)
 }
 
 /*
- *  This is a deprecated alias for #each_byte.
- */
-
-static VALUE
-argf_bytes(VALUE argf)
-{
-    rb_warn_deprecated("ARGF#bytes", "#each_byte");
-    if (!rb_block_given_p())
-	return rb_enumeratorize(argf, ID2SYM(rb_intern("each_byte")), 0, 0);
-    return argf_each_byte(argf);
-}
-
-/*
  *  call-seq:
  *     ARGF.each_char {|char| block }  -> ARGF
  *     ARGF.each_char                  -> an_enumerator
@@ -12691,19 +12608,6 @@ argf_each_char(VALUE argf)
 }
 
 /*
- *  This is a deprecated alias for #each_char.
- */
-
-static VALUE
-argf_chars(VALUE argf)
-{
-    rb_warn_deprecated("ARGF#chars", "#each_char");
-    if (!rb_block_given_p())
-	return rb_enumeratorize(argf, ID2SYM(rb_intern("each_char")), 0, 0);
-    return argf_each_char(argf);
-}
-
-/*
  *  call-seq:
  *     ARGF.each_codepoint {|codepoint| block }  -> ARGF
  *     ARGF.each_codepoint                       -> an_enumerator
@@ -12727,19 +12631,6 @@ argf_each_codepoint(VALUE argf)
 	argf_block_call(rb_intern("each_codepoint"), 0, 0, argf);
     }
     return argf;
-}
-
-/*
- *  This is a deprecated alias for #each_codepoint.
- */
-
-static VALUE
-argf_codepoints(VALUE argf)
-{
-    rb_warn_deprecated("ARGF#codepoints", "#each_codepoint");
-    if (!rb_block_given_p())
-	return rb_enumeratorize(argf, ID2SYM(rb_intern("each_codepoint")), 0, 0);
-    return argf_each_codepoint(argf);
 }
 
 /*
@@ -13407,10 +13298,6 @@ Init_IO(void)
     rb_define_method(rb_cIO, "each_byte",  rb_io_each_byte, 0);
     rb_define_method(rb_cIO, "each_char",  rb_io_each_char, 0);
     rb_define_method(rb_cIO, "each_codepoint",  rb_io_each_codepoint, 0);
-    rb_define_method(rb_cIO, "lines",  rb_io_lines, -1);
-    rb_define_method(rb_cIO, "bytes",  rb_io_bytes, 0);
-    rb_define_method(rb_cIO, "chars",  rb_io_chars, 0);
-    rb_define_method(rb_cIO, "codepoints",  rb_io_codepoints, 0);
 
     rb_define_method(rb_cIO, "syswrite", rb_io_syswrite, 1);
     rb_define_method(rb_cIO, "sysread",  rb_io_sysread, -1);
@@ -13538,10 +13425,6 @@ Init_IO(void)
     rb_define_method(rb_cARGF, "each_byte",  argf_each_byte, 0);
     rb_define_method(rb_cARGF, "each_char",  argf_each_char, 0);
     rb_define_method(rb_cARGF, "each_codepoint",  argf_each_codepoint, 0);
-    rb_define_method(rb_cARGF, "lines", argf_lines, -1);
-    rb_define_method(rb_cARGF, "bytes", argf_bytes, 0);
-    rb_define_method(rb_cARGF, "chars", argf_chars, 0);
-    rb_define_method(rb_cARGF, "codepoints", argf_codepoints, 0);
 
     rb_define_method(rb_cARGF, "read",  argf_read, -1);
     rb_define_method(rb_cARGF, "readpartial",  argf_readpartial, -1);
