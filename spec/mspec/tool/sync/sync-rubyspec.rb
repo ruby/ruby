@@ -160,6 +160,9 @@ end
 def test_new_specs
   require "yaml"
   Dir.chdir(SOURCE_REPO) do
+    diff = `git diff master`
+    abort "#{BRIGHT_YELLOW}No new commits, aborting#{RESET}" if diff.empty?
+
     workflow = YAML.load_file(".github/workflows/ci.yml")
     job_name = MSPEC ? "test" : "specs"
     versions = workflow.dig("jobs", job_name, "strategy", "matrix", "ruby")
@@ -175,7 +178,7 @@ def test_new_specs
 
     run_test[min_version]
     run_test[max_version]
-    run_test["master"] if TEST_MASTER
+    run_test["ruby-master"] if TEST_MASTER
   end
 end
 
