@@ -44,7 +44,7 @@ class Delegator < BasicObject
   kernel = ::Kernel.dup
   kernel.class_eval do
     alias __raise__ raise
-    [:to_s, :inspect, :=~, :!~, :===, :<=>, :hash].each do |m|
+    [:to_s, :inspect, :!~, :===, :<=>, :hash].each do |m|
       undef_method m
     end
     private_instance_methods.each do |m|
