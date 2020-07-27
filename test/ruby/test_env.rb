@@ -84,7 +84,6 @@ class TestEnv < Test::Unit::TestCase
     ENV['test'] = val[0...-1]
 
     assert_nil(ENV.key(val))
-    assert_nil(ENV.index(val))
     assert_nil(ENV.key(val.upcase))
     ENV['test'] = val
     if IGNORE_CASE
