@@ -92,6 +92,7 @@ Lint/UnreachableCode:
   Exclude:
     - 'core/enumerator/lazy/fixtures/classes.rb'
     - 'core/kernel/catch_spec.rb'
+    - 'core/kernel/raise_spec.rb'
     - 'core/kernel/throw_spec.rb'
     - 'language/break_spec.rb'
     - 'language/fixtures/break.rb'

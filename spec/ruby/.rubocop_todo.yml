@@ -59,6 +59,7 @@ Lint/InheritException:
     - 'core/enumerator/lazy/fixtures/classes.rb'
     - 'core/exception/fixtures/common.rb'
     - 'core/module/fixtures/autoload_ex1.rb'
+    - 'shared/kernel/raise.rb'
 
 # Offense count: 72
 # Cop supports --auto-correct.
@@ -115,6 +116,7 @@ Lint/RescueException:
     - 'core/exception/cause_spec.rb'
     - 'core/exception/no_method_error_spec.rb'
     - 'core/kernel/fixtures/autoload_frozen.rb'
+    - 'core/kernel/raise_spec.rb'
     - 'core/module/autoload_spec.rb'
     - 'core/mutex/sleep_spec.rb'
     - 'core/thread/abort_on_exception_spec.rb'

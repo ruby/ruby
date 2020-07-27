@@ -831,6 +831,7 @@ describe "CApiObject" do
 
       it "returns nil if the instance variable has not been initialized and is not a valid Ruby name" do
         @o.rb_ivar_get(@test, :bar).should == nil
+        @o.rb_ivar_get(@test, :mesg).should == nil
       end
 
       it 'returns the instance variable when it is not a valid Ruby name' do
@@ -866,6 +867,7 @@ describe "CApiObject" do
 
       it "does not throw an error if the instance variable is not a valid Ruby name" do
         @o.rb_ivar_defined(@test, :bar).should == false
+        @o.rb_ivar_defined(@test, :mesg).should == false
       end
     end
 

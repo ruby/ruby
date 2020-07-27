@@ -42,7 +42,7 @@ ruby_version_is "2.7" do
         end
       end
 
-      it "warns when numbered parameter is overriten with local variable" do
+      it "warns when numbered parameter is overwritten with local variable" do
         -> {
           eval("_1 = 0")
         }.should complain(/warning: `_1' is reserved for numbered parameter; consider another name/)
@@ -59,7 +59,7 @@ ruby_version_is "2.7" do
         }.should raise_error(SyntaxError, /_1 is reserved for numbered parameter/)
       end
 
-      it "errors when numbered parameter is overriten with local variable" do
+      it "errors when numbered parameter is overwritten with local variable" do
         -> {
           eval("_1 = 0")
         }.should raise_error(SyntaxError, /_1 is reserved for numbered parameter/)

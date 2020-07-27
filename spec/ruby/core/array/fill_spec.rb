@@ -207,8 +207,9 @@ describe "Array#fill with (filler, index, length)" do
 
   not_supported_on :opal do
     it "raises an ArgumentError or RangeError for too-large sizes" do
+      error_types = [RangeError, ArgumentError]
       arr = [1, 2, 3]
-      -> { arr.fill(10, 1, fixnum_max) }.should raise_error(ArgumentError)
+      -> { arr.fill(10, 1, fixnum_max) }.should raise_error { |err| error_types.should include(err.class) }
       -> { arr.fill(10, 1, bignum_value) }.should raise_error(RangeError)
     end
   end

@@ -426,12 +426,70 @@ describe "String#split with Regexp" do
   end
 
   ruby_version_is "2.6" do
-    it "yields each split substrings if a block is given" do
-      a = []
-      returned_object = "chunky bacon".split(" ") { |str| a << str.capitalize }
+    context "when a block is given" do
+      it "yields each split substring with default pattern" do
+        a = []
+        returned_object = "chunky bacon".split { |str| a << str.capitalize }
 
-      returned_object.should == "chunky bacon"
-      a.should == ["Chunky", "Bacon"]
+        returned_object.should == "chunky bacon"
+        a.should == ["Chunky", "Bacon"]
+      end
+
+      it "yields the string when limit is 1" do
+        a = []
+        returned_object = "chunky bacon".split("", 1) { |str| a << str.capitalize }
+
+        returned_object.should == "chunky bacon"
+        a.should == ["Chunky bacon"]
+      end
+
+      it "yields each split letter" do
+        a = []
+        returned_object = "chunky".split("", 0) { |str| a << str.capitalize }
+
+        returned_object.should == "chunky"
+        a.should == %w(C H U N K Y)
+      end
+
+      it "yields each split substring with a pattern" do
+        a = []
+        returned_object = "chunky-bacon".split("-", 0) { |str| a << str.capitalize }
+
+        returned_object.should == "chunky-bacon"
+        a.should == ["Chunky", "Bacon"]
+      end
+
+      it "yields each split substring with empty regexp pattern" do
+        a = []
+        returned_object = "chunky".split(//) { |str| a << str.capitalize }
+
+        returned_object.should == "chunky"
+        a.should == %w(C H U N K Y)
+      end
+
+      it "yields each split substring with empty regexp pattern and limit" do
+        a = []
+        returned_object = "chunky".split(//, 3) { |str| a << str.capitalize }
+
+        returned_object.should == "chunky"
+        a.should == %w(C H Unky)
+      end
+
+      it "yields each split substring with a regexp pattern" do
+        a = []
+        returned_object = "chunky:bacon".split(/:/) { |str| a << str.capitalize }
+
+        returned_object.should == "chunky:bacon"
+        a.should == ["Chunky", "Bacon"]
+      end
+
+      it "returns a string as is (and doesn't call block) if it is empty" do
+        a = []
+        returned_object = "".split { |str| a << str.capitalize }
+
+        returned_object.should == ""
+        a.should == []
+      end
     end
 
     describe "for a String subclass" do

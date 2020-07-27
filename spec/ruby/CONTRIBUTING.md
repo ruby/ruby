@@ -136,11 +136,11 @@ Here is a list of the most commonly-used guards:
 #### Version guards
 
 ```ruby
-ruby_version_is ""..."2.6 do
+ruby_version_is ""..."2.6" do
   # Specs for RUBY_VERSION < 2.6
 end
 
-ruby_version_is "2.6 do
+ruby_version_is "2.6" do
   # Specs for RUBY_VERSION >= 2.6
 end
 ```

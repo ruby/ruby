@@ -76,6 +76,7 @@ def compile_extension(name)
           $ruby = ENV.values_at('RUBY_EXE', 'RUBY_FLAGS').join(' ')
           # MRI magic to consider building non-bundled extensions
           $extout = nil
+          $warnflags << ' -Wno-declaration-after-statement'
           create_makefile(#{ext.inspect})
         RUBY
         output = ruby_exe("extconf.rb")

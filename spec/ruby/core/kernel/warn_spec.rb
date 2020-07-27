@@ -101,6 +101,19 @@ describe "Kernel#warn" do
       -> { w.f4("foo", 3) }.should output(nil, %r|core/kernel/fixtures/classes.rb:#{w.f3_call_lineno}: warning: foo|)
     end
 
+    # Test both explicitly without and with RubyGems as RubyGems overrides Kernel#warn
+    it "shows the caller of #require and not #require itself without RubyGems" do
+      file = fixture(__FILE__ , "warn_require_caller.rb")
+      ruby_exe(file, options: "--disable-gems", args: "2>&1").should == "#{file}:2: warning: warn-require-warning\n"
+    end
+
+    ruby_version_is "2.6" do
+      it "shows the caller of #require and not #require itself with RubyGems loaded" do
+        file = fixture(__FILE__ , "warn_require_caller.rb")
+        ruby_exe(file, options: "-rrubygems", args: "2>&1").should == "#{file}:2: warning: warn-require-warning\n"
+      end
+    end
+
     it "converts first arg using to_s" do
       w = KernelSpecs::WarnInNestedCall.new
 
