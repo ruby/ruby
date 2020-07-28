@@ -1311,7 +1311,8 @@ extract-gems$(gnumake:yes=-nongnumake): PHONY
 	    -e 'BEGIN {FileUtils.mkdir_p(d = ".bundle/gems")}' \
 	    -e 'gem, ver = *$$F' \
 	    -e 'next if !ver or /^#/=~gem' \
-	    -e 'Gem.unpack("gems/#{gem}-#{ver}.gem", d)' \
+	    -e 'g = "#{gem}-#{ver}"' \
+	    -e 'File.directory?("#{d}/#{g}") or Gem.unpack("gems/#{g}.gem", d)' \
 	    gems/bundled_gems
 
 update-bundled_gems: PHONY
