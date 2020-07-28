@@ -29,6 +29,10 @@ describe "Hash#to_proc" do
       it "is a lambda" do
         @proc.should.lambda?
       end
+
+      it "has an arity of 1" do
+        @proc.arity.should == 1
+      end
     end
 
     it "raises ArgumentError if not passed exactly one argument" do

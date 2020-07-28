@@ -5285,7 +5285,7 @@ hash_proc_call(RB_BLOCK_CALL_FUNC_ARGLIST(key, hash))
 static VALUE
 rb_hash_to_proc(VALUE hash)
 {
-    return rb_func_proc_new(hash_proc_call, hash);
+    return rb_func_lambda_new(hash_proc_call, hash, 1, 1);
 }
 
 static VALUE
