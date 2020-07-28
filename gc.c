@@ -8890,7 +8890,6 @@ gc_ref_update(void *vstart, void *vend, size_t stride, void * data)
     objspace = (rb_objspace_t *)data;
     page = GET_HEAP_PAGE(v);
     asan_unpoison_memory_region(&page->freelist, sizeof(RVALUE*), false);
-    page->freelist = NULL;
     asan_poison_memory_region(&page->freelist, sizeof(RVALUE*));
     page->flags.has_uncollectible_shady_objects = FALSE;
     page->flags.has_remembered_objects = FALSE;
