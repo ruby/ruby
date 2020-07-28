@@ -136,6 +136,7 @@
 #   ticker.add_observer(warner, :call)
 #   ticker.run
 module Observable
+  VERSION = "0.1.0"
 
   #
   # Add +observer+ as an observer on this object. So that it will receive

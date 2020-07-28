@@ -1,10 +1,15 @@
-lib = File.expand_path("lib", __dir__)
-$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require "weakref/version"
+# frozen_string_literal: true
+
+name = File.basename(__FILE__, ".gemspec")
+version = ["lib", Array.new(name.count("-")+1, "..").join("/")].find do |dir|
+  break File.foreach(File.join(__dir__, dir, "#{name.tr('-', '/')}.rb")) do |line|
+    /^\s*VERSION\s*=\s*"(.*)"/ =~ line and break $1
+  end rescue nil
+end
 
 Gem::Specification.new do |spec|
-  spec.name          = "weakref"
-  spec.version       = Weakref::VERSION
+  spec.name          = name
+  spec.version       = version
   spec.authors = ["Yukihiro Matsumoto"]
   spec.email = ["matz@ruby-lang.org"]
 

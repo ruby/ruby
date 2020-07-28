@@ -30,6 +30,7 @@
 #
 
 module Open3
+  VERSION = "0.1.0"
 
   # Open stdin, stdout, and stderr streams and start external executable.
   # In addition, a thread to wait for the started process is created.
