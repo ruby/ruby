@@ -7226,7 +7226,7 @@ permute0(const long n, const long r, long *const p, char *const used, const VALU
 
 /*
  * Returns the product of from, from-1, ..., from - how_many + 1.
- * http://en.wikipedia.org/wiki/Pochhammer_symbol
+ * https://en.wikipedia.org/wiki/Pochhammer_symbol
  */
 static VALUE
 descending_factorial(long from, long how_many)

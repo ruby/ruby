@@ -694,7 +694,7 @@ static VALUE cPTY;
  * Document-class: PTY
  *
  * Creates and manages pseudo terminals (PTYs).  See also
- * http://en.wikipedia.org/wiki/Pseudo_terminal
+ * https://en.wikipedia.org/wiki/Pseudo_terminal
  *
  * PTY allows you to allocate new terminals using ::open or ::spawn a new
  * terminal with a specific command.

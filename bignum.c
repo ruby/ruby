@@ -2006,7 +2006,7 @@ bary_mul_toom3(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGI
     }
 
     /*
-     * ref. http://en.wikipedia.org/wiki/Toom%E2%80%93Cook_multiplication
+     * ref. https://en.wikipedia.org/wiki/Toom%E2%80%93Cook_multiplication
      *
      * x(b) = x0 * b^0 + x1 * b^1 + x2 * b^2
      * y(b) = y0 * b^0 + y1 * b^1 + y2 * b^2

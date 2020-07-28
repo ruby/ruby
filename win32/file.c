@@ -157,7 +157,7 @@ replace_to_long_name(wchar_t **wfullpath, size_t size, size_t buffer_size)
     /*
       Skip long name conversion if the path is already long name.
       Short name is 8.3 format.
-      http://en.wikipedia.org/wiki/8.3_filename
+      https://en.wikipedia.org/wiki/8.3_filename
       This check can be skipped for directory components that have file
       extensions longer than 3 characters, or total lengths longer than
       12 characters.

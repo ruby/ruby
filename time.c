@@ -4456,7 +4456,7 @@ time_ceil(int argc, VALUE *argv, VALUE time)
  *  Returns the second of the minute (0..60) for _time_.
  *
  *  *Note:* Seconds range from zero to 60 to allow the system to inject
- *  leap seconds. See http://en.wikipedia.org/wiki/Leap_second for further
+ *  leap seconds. See https://en.wikipedia.org/wiki/Leap_second for further
  *  details.
  *
  *     t = Time.now   #=> 2007-11-19 08:25:02 -0600
@@ -5776,7 +5776,7 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
  *
  *  You can also create a new time using Time.at which takes the number of
  *  seconds (with subsecond) since the {Unix
- *  Epoch}[http://en.wikipedia.org/wiki/Unix_time].
+ *  Epoch}[https://en.wikipedia.org/wiki/Unix_time].
  *
  *    Time.at(628232400) #=> 1989-11-28 00:00:00 -0500
  *
