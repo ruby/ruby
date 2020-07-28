@@ -728,6 +728,8 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert_equal('http://foo:bar@zab:8080', uri.to_s)
     assert_equal('/', uri.path = '/')
     assert_equal('http://foo:bar@zab:8080/', uri.to_s)
+    assert_equal('', uri.query = '')
+    assert_equal('http://foo:bar@zab:8080/', uri.to_s)
     assert_equal('a=1', uri.query = 'a=1')
     assert_equal('http://foo:bar@zab:8080/?a=1', uri.to_s)
     assert_equal('b123', uri.fragment = 'b123')

@@ -1355,7 +1355,7 @@ module URI
           str << @port.to_s
         end
         str << @path
-        if @query
+        if @query && !@query.empty?
           str << '?'
           str << @query
         end
