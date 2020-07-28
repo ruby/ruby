@@ -1349,6 +1349,7 @@ update_ast_value(void *ctx, NODE * node)
             args->imemo = rb_gc_location(args->imemo);
             break;
         }
+      case NODE_MATCH:
       case NODE_LIT:
       case NODE_STR:
       case NODE_XSTR:
