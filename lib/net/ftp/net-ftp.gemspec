@@ -1,13 +1,14 @@
+# frozen_string_literal: true
+
 name = File.basename(__FILE__, ".gemspec")
-version = nil
-["lib", "../.."].find do |dir|
-  version = File.foreach(File.join(__dir__, dir, "#{name.tr('-', '/')}.rb")) do |line|
+version = ["lib", Array.new(name.count("-")+1, "..").join("/")].find do |dir|
+  break File.foreach(File.join(__dir__, dir, "#{name.tr('-', '/')}.rb")) do |line|
     /^\s*VERSION\s*=\s*"(.*)"/ =~ line and break $1
   end rescue nil
 end
 
 Gem::Specification.new do |spec|
-  spec.name          = "net-ftp"
+  spec.name          = name
   spec.version       = version
   spec.authors       = ["Shugo Maeda"]
   spec.email         = ["shugo@ruby-lang.org"]

@@ -194,9 +194,8 @@ module Net
   # String. Normally the unique-id is a hash of the message.
   #
   class POP3 < Protocol
-
-    # svn revision of this library
-    Revision = %q$Revision$.split[1]
+    # version of this library
+    VERSION = "0.1.0"
 
     #
     # Class Parameters

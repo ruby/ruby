@@ -1,12 +1,15 @@
-begin
-  require_relative "lib/net/http/version"
-rescue LoadError # Fallback to load version file in ruby core repository
-  require_relative "version"
+# frozen_string_literal: true
+
+name = File.basename(__FILE__, ".gemspec")
+version = ["lib", Array.new(name.count("-")+1, "..").join("/")].find do |dir|
+  break File.foreach(File.join(__dir__, dir, "#{name.tr('-', '/')}.rb")) do |line|
+    /^\s*VERSION\s*=\s*"(.*)"/ =~ line and break $1
+  end rescue nil
 end
 
 Gem::Specification.new do |spec|
-  spec.name          = "net-http"
-  spec.version       = Net::Http::VERSION
+  spec.name          = name
+  spec.version       = version
   spec.authors       = ["NARUSE, Yui"]
   spec.email         = ["naruse@airemix.jp"]
 
