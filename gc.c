@@ -4474,11 +4474,8 @@ static void
 gc_unprotect_pages(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     assert(heap->sweeping_page == heap->compact_cursor);
-    // heap->compact_cursor == heap->sweeping_page when this function is called
-    // The sweeping page isn't protected, so move to the next page, and start
-    // unprotecting pages.
+
     struct heap_page *cursor = heap->compact_cursor;
-    cursor = list_next(&heap->pages, cursor, page_node);
 
     while(cursor) {
         unlock_page_body(objspace, GET_PAGE_BODY(cursor->start));
@@ -4495,14 +4492,16 @@ static void
 gc_compact_finish(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     assert(heap->sweeping_page == heap->compact_cursor);
+
     gc_unprotect_pages(objspace, heap);
+    sigaction(SIGBUS, &old_sigbus_handler, NULL);
+    sigaction(SIGSEGV, &old_sigsegv_handler, NULL);
+
     gc_update_references(objspace, heap);
     heap->compact_cursor = NULL;
     rb_clear_constant_cache();
     objspace->flags.compact = 0;
     objspace->flags.during_compacting = FALSE;
-    sigaction(SIGBUS, &old_sigbus_handler, NULL);
-    sigaction(SIGSEGV, &old_sigsegv_handler, NULL);
 }
 
 static inline int
@@ -4566,24 +4565,24 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
                             final_slots++;
                         }
                         else {
-                            (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
-
-                              if (heap->compact_cursor) {
-                                  /* If try_move couldn't compact anything, it means
-                                   * the cursors have met and there are no objects left that
-                                   * /can/ be compacted, so we need to quit. */
-                                  if (!try_move(objspace, heap, sweep_page, vp, 0)) {
-                                      gc_report(5, objspace, "Quit compacting, couldn't find an object to move\n");
-                                      heap_page_add_freeobj(objspace, sweep_page, vp);
-                                      gc_report(3, objspace, "page_sweep: %s is added to freelist\n", obj_info(vp));
-                                      freed_slots++;
-                                      gc_compact_finish(objspace, heap);
-                                  }
-                              } else {
-                                  heap_page_add_freeobj(objspace, sweep_page, vp);
-                                  gc_report(3, objspace, "page_sweep: %s is added to freelist\n", obj_info(vp));
-                                  freed_slots++;
-                              }
+                            if (heap->compact_cursor) {
+                                /* If try_move couldn't compact anything, it means
+                                 * the cursors have met and there are no objects left that
+                                 * /can/ be compacted, so we need to quit. */
+                                if (!try_move(objspace, heap, sweep_page, vp, 0)) {
+                                    (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
+                                    gc_report(5, objspace, "Quit compacting, couldn't find an object to move\n");
+                                    heap_page_add_freeobj(objspace, sweep_page, vp);
+                                    gc_report(3, objspace, "page_sweep: %s is added to freelist\n", obj_info(vp));
+                                    freed_slots++;
+                                    gc_compact_finish(objspace, heap);
+                                }
+                            } else {
+                                (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
+                                heap_page_add_freeobj(objspace, sweep_page, vp);
+                                gc_report(3, objspace, "page_sweep: %s is added to freelist\n", obj_info(vp));
+                                freed_slots++;
+                            }
 
                         }
                         break;
@@ -4917,7 +4916,7 @@ read_barrier_handler(int sig, siginfo_t * info, void * data)
 {
     VALUE obj;
     rb_objspace_t * objspace;
-
+    objspace = &rb_objspace;
 
     intptr_t address = (intptr_t)info->si_addr;
 
@@ -4927,7 +4926,6 @@ read_barrier_handler(int sig, siginfo_t * info, void * data)
 
     unlock_page_body(objspace, GET_PAGE_BODY(obj));
 
-    objspace = &rb_objspace;
     invalidate_moved_page(objspace, GET_HEAP_PAGE(obj));
 }
 
