@@ -441,7 +441,12 @@ module JSON
   #   See {Parsing Options}[#module-JSON-label-Parsing+Options].
   #   The default options can be changed via method JSON.load_default_options=.
   #
-  # Examples in this section assume prior execution of:
+  # ---
+  #
+  # When no +proc+ is given, modifies +source+ as above and returns the result of
+  # <tt>parse(source, opts)</tt>;  see #parse.
+  #
+  # Source for following examples:
   #   source = <<-EOT
   #   {
   #   "name": "Dave",
@@ -453,11 +458,6 @@ module JSON
   #     ]
   #   }
   #   EOT
-  #
-  # ---
-  #
-  # When +proc+ is not given, modifies +source+ as above and returns the result of
-  # <tt>parse(source, opts)</tt>;  see #parse.
   #
   # Load a \String:
   #   ruby = JSON.load(source)
@@ -484,25 +484,65 @@ module JSON
   # - Returns the final result.
   #
   # Example:
-  #   def mung(obj)
-  #     case obj
-  #     when String
-  #       obj.upcase
-  #     when Integer
-  #       obj * 100
-  #     else
-  #       obj
+  #   require 'json'
+  #
+  #   # Some classes for the example.
+  #   class Base
+  #     def initialize(attributes)
+  #       @attributes = attributes
   #     end
   #   end
-  #   new_obj = JSON.load(source, proc {|obj|
+  #   class User    < Base; end
+  #   class Account < Base; end
+  #   class Admin   < Base; end
+  #   # The JSON source.
+  #   json = <<-EOF
+  #   {
+  #     "users": [
+  #         {"type": "User", "username": "jane", "email": "jane@example.com"},
+  #         {"type": "User", "username": "john", "email": "john@example.com"}
+  #     ],
+  #     "accounts": [
+  #         {"account": {"type": "Account", "paid": true, "account_id": "1234"}},
+  #         {"account": {"type": "Account", "paid": false, "account_id": "1235"}}
+  #     ],
+  #     "admins": {"type": "Admin", "password": "0wn3d"}
+  #   }
+  #   EOF
+  #   # Deserializer method.
+  #   def deserialize_obj(obj, safe_types = %w(User Account Admin))
+  #     type = obj.is_a?(Hash) && obj["type"]
+  #     safe_types.include?(type) ? Object.const_get(type).new(obj) : obj
+  #   end
+  #   # Call to JSON.load
+  #   ruby = JSON.load(json, proc {|obj|
   #     case obj
   #     when Hash
-  #       obj.each {|k, v| obj[k] = mung(v) }
+  #       obj.each {|k, v| obj[k] = deserialize_obj v }
   #     when Array
-  #       obj.map! {|v| mung(v) }
+  #       obj.map! {|v| deserialize_obj v }
   #     end
   #   })
-  #   new_obj # => {"name"=>"DAVE", "age"=>4000, "hats"=>["CATTLEMAN'S", "PANAMA", "TOPHAT"]}
+  #   pp ruby
+  # Output:
+  #   {"users"=>
+  #      [#<User:0x00000000064c4c98
+  #        @attributes=
+  #          {"type"=>"User", "username"=>"jane", "email"=>"jane@example.com"}>,
+  #        #<User:0x00000000064c4bd0
+  #        @attributes=
+  #          {"type"=>"User", "username"=>"john", "email"=>"john@example.com"}>],
+  #    "accounts"=>
+  #      [{"account"=>
+  #          #<Account:0x00000000064c4928
+  #          @attributes={"type"=>"Account", "paid"=>true, "account_id"=>"1234"}>},
+  #       {"account"=>
+  #          #<Account:0x00000000064c4680
+  #          @attributes={"type"=>"Account", "paid"=>false, "account_id"=>"1235"}>}],
+  #    "admins"=>
+  #      #<Admin:0x00000000064c41f8
+  #      @attributes={"type"=>"Admin", "password"=>"0wn3d"}>}
+  #
   def load(source, proc = nil, options = {})
     opts = load_default_options.merge options
     if source.respond_to? :to_str
