@@ -126,7 +126,7 @@ lib/rubygems/defaults/operating_system.rb
 
     out << "  - RUBYGEMS PLATFORMS:\n"
     Gem.platforms.each do |platform|
-      out << "    - #{platform}\n"
+      out << "     - #{platform}\n"
     end
 
     out << "  - GEM PATHS:\n"
