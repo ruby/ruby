@@ -23,7 +23,7 @@
 #include "vm_core.h"
 
 static VALUE sym_output, sym_stdout, sym_string, sym_file;
-static VALUE sym_full;
+static VALUE sym_full, sym_since;
 
 struct dump_config {
     VALUE type;
@@ -35,6 +35,8 @@ struct dump_config {
     size_t cur_obj_references;
     unsigned int roots: 1;
     unsigned int full_heap: 1;
+    unsigned int partial_dump;
+    size_t since;
 };
 
 PRINTF_ARGS(static void dump_append(struct dump_config *, const char *, ...), 2, 3);
@@ -202,7 +204,7 @@ static void
 dump_object(VALUE obj, struct dump_config *dc)
 {
     size_t memsize;
-    struct allocation_info *ainfo;
+    struct allocation_info *ainfo = objspace_lookup_allocation_info(obj);
     rb_io_t *fptr;
     ID flags[RB_OBJ_GC_FLAGS_MAX];
     size_t n, i;
@@ -215,6 +217,10 @@ dump_object(VALUE obj, struct dump_config *dc)
     dc->cur_obj = obj;
     dc->cur_obj_references = 0;
     dc->cur_obj_klass = BUILTIN_TYPE(obj) == T_NODE ? 0 : RBASIC_CLASS(obj);
+
+    if (dc->partial_dump && (!ainfo || ainfo->generation < dc->since)) {
+        return;
+    }
 
     if (dc->cur_obj == dc->string)
 	return;
@@ -309,7 +315,7 @@ dump_object(VALUE obj, struct dump_config *dc)
     if (dc->cur_obj_references > 0)
 	dump_append(dc, "]");
 
-    if ((ainfo = objspace_lookup_allocation_info(obj))) {
+    if (ainfo) {
 	dump_append(dc, ", \"file\":\"%s\", \"line\":%lu", ainfo->path, ainfo->line);
 	if (RTEST(ainfo->mid)) {
 	    VALUE m = rb_sym2str(ainfo->mid);
@@ -374,6 +380,14 @@ dump_output(struct dump_config *dc, VALUE opts, VALUE output, const char *filena
 
 	if (Qtrue == rb_hash_lookup2(opts, sym_full, Qfalse))
 	    dc->full_heap = 1;
+
+	VALUE since = rb_hash_aref(opts, sym_since);
+	if (RTEST(since)) {
+	    dc->partial_dump = 1;
+	    dc->since = NUM2SIZET(since);
+	} else {
+	    dc->partial_dump = 0;
+	}
     }
 
     if (output == sym_stdout) {
@@ -456,8 +470,22 @@ objspace_dump(int argc, VALUE *argv, VALUE os)
  *    ObjectSpace.dump_all(output: :string) # => "{...}\n{...}\n..."
  *    ObjectSpace.dump_all(output:
  *      File.open('heap.json','w'))         # => #<File:heap.json>
+ *    ObjectSpace.dump_all(output: :string,
+ *      since: 42)                          # => "{...}\n{...}\n..."
  *
  *  Dump the contents of the ruby heap as JSON.
+ *
+ *  _since_ must be a non-negative integer or +nil+.
+ *
+ *  If _since_ is a positive integer, only objects of that generation and
+ *  newer generations are dumped. The current generation can be accessed using
+ *  GC::count.
+ *
+ *  Objects that were allocated without object allocation tracing enabled
+ *  are ignored. See ::trace_object_allocations for more information and
+ *  examples.
+ *
+ *  If _since_ is omitted or is +nil+, all objects are dumped.
  *
  *  This method is only expected to work with C Ruby.
  *  This is an experimental method and is subject to change.
@@ -476,9 +504,11 @@ objspace_dump_all(int argc, VALUE *argv, VALUE os)
 
     output = dump_output(&dc, opts, sym_file, filename);
 
-    /* dump roots */
-    rb_objspace_reachable_objects_from_root(root_obj_i, &dc);
-    if (dc.roots) dump_append(&dc, "]}\n");
+    if (!dc.partial_dump || dc.since == 0) {
+        /* dump roots */
+        rb_objspace_reachable_objects_from_root(root_obj_i, &dc);
+        if (dc.roots) dump_append(&dc, "]}\n");
+    }
 
     /* dump all objects */
     rb_objspace_each_objects(heap_i, &dc);
@@ -500,6 +530,7 @@ Init_objspace_dump(VALUE rb_mObjSpace)
     sym_output = ID2SYM(rb_intern("output"));
     sym_stdout = ID2SYM(rb_intern("stdout"));
     sym_string = ID2SYM(rb_intern("string"));
+    sym_since  = ID2SYM(rb_intern("since"));
     sym_file   = ID2SYM(rb_intern("file"));
     sym_full   = ID2SYM(rb_intern("full"));
 

@@ -336,6 +336,29 @@ class TestObjSpace < Test::Unit::TestCase
     end
   end
 
+  def test_dump_all_single_generation
+    assert_in_out_err(%w[-robjspace], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        def dump_my_heap_please
+          GC.start
+          ObjectSpace.trace_object_allocations_start
+          gc_gen = GC.count
+          puts gc_gen
+          @obj1 = Object.new
+          GC.start
+          @obj2 = Object.new
+          ObjectSpace.dump_all(output: :stdout, since: gc_gen)
+        end
+
+        dump_my_heap_please
+      end;
+      since = output.shift.to_i
+      assert_operator output.size, :>, 0
+      generations = output.map { |l| JSON.parse(l)["generation"] }.uniq.sort
+      assert_equal [since, since + 1], generations
+    end
+  end
+
   def test_dump_addresses_match_dump_all_addresses
     assert_in_out_err(%w[-robjspace], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
       begin;
