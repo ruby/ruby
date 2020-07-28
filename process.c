@@ -8796,9 +8796,6 @@ InitVM_process(void)
 #if defined(HAVE_TIMES) || defined(_WIN32)
     /* Placeholder for rusage */
     rb_cProcessTms = rb_struct_define_under(rb_mProcess, "Tms", "utime", "stime", "cutime", "cstime", NULL);
-    /* An obsolete name of Process::Tms for backward compatibility */
-    rb_define_const(rb_cStruct, "Tms", rb_cProcessTms);
-    rb_deprecate_constant(rb_cStruct, "Tms");
 #endif
 
     SAVED_USER_ID = geteuid();
