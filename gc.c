@@ -4396,7 +4396,13 @@ static VALUE gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free);
 static void
 lock_page_body(rb_objspace_t *objspace, struct heap_page_body *body)
 {
+#if defined(_WIN32)
+    DWORD old_protect;
+
+    if (!VirtualProtect(body, HEAP_PAGE_SIZE, PAGE_NOACCESS, &old_protect)) {
+#else
     if(mprotect(body, HEAP_PAGE_SIZE, PROT_NONE)) {
+#endif
         rb_bug("Couldn't protect page %p", (void *)body);
     } else {
         gc_report(5, objspace, "Protecting page in move %p\n", (void *)body);
@@ -4406,7 +4412,13 @@ lock_page_body(rb_objspace_t *objspace, struct heap_page_body *body)
 static void
 unlock_page_body(rb_objspace_t *objspace, struct heap_page_body *body)
 {
+#if defined(_WIN32)
+    DWORD old_protect;
+
+    if (!VirtualProtect(body, HEAP_PAGE_SIZE, PAGE_READWRITE, &old_protect)) {
+#else
     if(mprotect(body, HEAP_PAGE_SIZE, PROT_READ | PROT_WRITE)) {
+#endif
         rb_bug("Couldn't unprotect page %p", (void *)body);
     } else {
         gc_report(5, objspace, "Unprotecting page in move %p\n", (void *)body);
@@ -4498,9 +4510,84 @@ gc_unprotect_pages(rb_objspace_t *objspace, rb_heap_t *heap)
 }
 
 static void gc_update_references(rb_objspace_t * objspace, rb_heap_t *heap);
+static void invalidate_moved_page(rb_objspace_t *objspace, struct heap_page *page);
 
+static void read_barrier_handler(intptr_t address)
+{
+    VALUE obj;
+    rb_objspace_t * objspace = &rb_objspace;
+
+    address -= address % sizeof(RVALUE);
+
+    obj = (VALUE)address;
+
+    unlock_page_body(objspace, GET_PAGE_BODY(obj));
+
+    invalidate_moved_page(objspace, GET_HEAP_PAGE(obj));
+}
+
+#if defined(_WIN32)
+LPTOP_LEVEL_EXCEPTION_FILTER old_handler;
+typedef void (*signal_handler)(int);
+static signal_handler old_sigsegv_handler;
+
+static LONG WINAPI read_barrier_signal(EXCEPTION_POINTERS * info)
+{
+    /* EXCEPTION_ACCESS_VIOLATION is what's raised by access to protected pages */
+    if (info->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) {
+        /* > The second array element specifies the virtual address of the inaccessible data.
+         * https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-exception_record
+         *
+         * Use this address to invalidate the page */
+        read_barrier_handler((intptr_t)info->ExceptionRecord->ExceptionInformation[1]);
+        return EXCEPTION_CONTINUE_EXECUTION;
+    } else {
+        return EXCEPTION_CONTINUE_SEARCH;
+    }
+}
+
+static void uninstall_handlers(void)
+{
+    signal(SIGSEGV, old_sigsegv_handler);
+    SetUnhandledExceptionFilter(old_handler);
+}
+
+static void install_handlers(void)
+{
+    /* Remove SEGV handler so that the Unhandled Exception Filter handles it */
+    old_sigsegv_handler = signal(SIGSEGV, NULL);
+    /* Unhandled Exception Filter has access to the violation address similar
+     * to si_addr from sigaction */
+    old_handler = SetUnhandledExceptionFilter(read_barrier_signal);
+}
+#else
 static struct sigaction old_sigbus_handler;
 static struct sigaction old_sigsegv_handler;
+
+static void
+read_barrier_signal(int sig, siginfo_t * info, void * data)
+{
+	read_barrier_handler((intptr_t)info->si_addr);
+}
+
+static void uninstall_handlers(void)
+{
+    sigaction(SIGBUS, &old_sigbus_handler, NULL);
+    sigaction(SIGSEGV, &old_sigsegv_handler, NULL);
+}
+
+static void install_handlers(void)
+{
+    struct sigaction action;
+    memset(&action, 0, sizeof(struct sigaction));
+    sigemptyset(&action.sa_mask);
+    action.sa_sigaction = read_barrier_signal;
+    action.sa_flags = SA_SIGINFO | SA_ONSTACK;
+
+    sigaction(SIGBUS, &action, &old_sigbus_handler);
+    sigaction(SIGSEGV, &action, &old_sigsegv_handler);
+}
+#endif
 
 static void
 gc_compact_finish(rb_objspace_t *objspace, rb_heap_t *heap)
@@ -4508,8 +4595,7 @@ gc_compact_finish(rb_objspace_t *objspace, rb_heap_t *heap)
     assert(heap->sweeping_page == heap->compact_cursor);
 
     gc_unprotect_pages(objspace, heap);
-    sigaction(SIGBUS, &old_sigbus_handler, NULL);
-    sigaction(SIGSEGV, &old_sigsegv_handler, NULL);
+    uninstall_handlers();
 
     gc_update_references(objspace, heap);
     heap->compact_cursor = NULL;
@@ -4926,24 +5012,6 @@ invalidate_moved_page(rb_objspace_t *objspace, struct heap_page *page)
 }
 
 static void
-read_barrier_handler(int sig, siginfo_t * info, void * data)
-{
-    VALUE obj;
-    rb_objspace_t * objspace;
-    objspace = &rb_objspace;
-
-    intptr_t address = (intptr_t)info->si_addr;
-
-    address -= address % sizeof(RVALUE);
-
-    obj = (VALUE)address;
-
-    unlock_page_body(objspace, GET_PAGE_BODY(obj));
-
-    invalidate_moved_page(objspace, GET_HEAP_PAGE(obj));
-}
-
-static void
 gc_compact_start(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     heap->compact_cursor = list_tail(&heap->pages, struct heap_page, page_node);
@@ -4953,14 +5021,7 @@ gc_compact_start(rb_objspace_t *objspace, rb_heap_t *heap)
     objspace->profile.compact_count++;
 
     /* Set up read barrier for pages containing MOVED objects */
-    struct sigaction action;
-    memset(&action, 0, sizeof(struct sigaction));
-    sigemptyset(&action.sa_mask);
-    action.sa_sigaction = read_barrier_handler;
-    action.sa_flags = SA_SIGINFO | SA_ONSTACK;
-
-    sigaction(SIGBUS, &action, &old_sigbus_handler);
-    sigaction(SIGSEGV, &action, &old_sigsegv_handler);
+    install_handlers();
 }
 
 static void
