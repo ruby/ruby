@@ -1573,6 +1573,27 @@ class TestModule < Test::Unit::TestCase
     assert_match(/: warning: previous definition of foo/, stderr)
   end
 
+  def test_method_redefinition_expected
+    m = nil
+    stderr = EnvUtil.verbose_warning do
+      m = Module.new do
+        def self.expected_redefined_method?(m) m == :foo end
+        def foo; end
+        def foo; end
+      end
+    end
+    assert_equal('', stderr)
+
+    stderr = EnvUtil.verbose_warning do
+      m.class_eval do
+        def bar; end
+        def bar; end
+      end
+    end
+    assert_match(/: warning: method redefined; discarding old bar/, stderr)
+    assert_match(/: warning: previous definition of bar/, stderr)
+  end
+
   def test_module_function_inside_method
     assert_warn(/calling module_function without arguments inside a method may not have the intended effect/, '[ruby-core:79751]') do
       Module.new do

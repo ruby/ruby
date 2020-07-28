@@ -680,6 +680,35 @@ check_override_opt_method(VALUE klass, VALUE mid)
     }
 }
 
+struct rb_method_redefined_allowed_t {
+    VALUE mod;
+    VALUE meth;
+};
+
+static VALUE
+rb_method_redefined_allowed(VALUE obj)
+{
+    struct rb_method_redefined_allowed_t * args = (struct rb_method_redefined_allowed_t *)obj;
+    return rb_funcall(args->mod, rb_intern("expected_redefined_method?"), 1,  args->meth);
+}
+
+static int
+rb_method_redefined_verbose_warning(VALUE mod, VALUE meth)
+{
+    int state;
+    struct rb_method_redefined_allowed_t args;
+
+    args.mod = mod;
+    args.meth = meth;
+    mod = rb_protect(rb_method_redefined_allowed, (VALUE)&args, &state);
+
+    if (state) {
+        rb_set_errinfo(Qnil);
+        return 1;
+    }
+    return !RTEST(mod);
+}
+
 /*
  * klass->method_table[mid] = method_entry(defined_class, visi, def)
  *
@@ -753,23 +782,27 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
 	    old_def->type != VM_METHOD_TYPE_ALIAS) {
 	    const rb_iseq_t *iseq = 0;
 
-	    rb_warning("method redefined; discarding old %"PRIsVALUE, rb_id2str(mid));
-	    switch (old_def->type) {
-	      case VM_METHOD_TYPE_ISEQ:
-		iseq = def_iseq_ptr(old_def);
-		break;
-	      case VM_METHOD_TYPE_BMETHOD:
-                iseq = rb_proc_get_iseq(old_def->body.bmethod.proc, 0);
-		break;
-	      default:
-		break;
-	    }
-	    if (iseq) {
-		rb_compile_warning(RSTRING_PTR(rb_iseq_path(iseq)),
-				   FIX2INT(iseq->body->location.first_lineno),
-				   "previous definition of %"PRIsVALUE" was here",
-				   rb_id2str(old_def->original_id));
-	    }
+
+            if (rb_method_redefined_verbose_warning(klass, ID2SYM(mid)))
+            {
+                rb_warning("method redefined; discarding old %"PRIsVALUE, rb_id2str(mid));
+                switch (old_def->type) {
+                  case VM_METHOD_TYPE_ISEQ:
+                    iseq = def_iseq_ptr(old_def);
+                    break;
+                  case VM_METHOD_TYPE_BMETHOD:
+                    iseq = rb_proc_get_iseq(old_def->body.bmethod.proc, 0);
+                    break;
+                  default:
+                    break;
+                }
+                if (iseq) {
+                    rb_compile_warning(RSTRING_PTR(rb_iseq_path(iseq)),
+                                       FIX2INT(iseq->body->location.first_lineno),
+                                       "previous definition of %"PRIsVALUE" was here",
+                                       rb_id2str(old_def->original_id));
+                }
+            }
 	}
     }
 
