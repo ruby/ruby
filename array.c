@@ -6706,31 +6706,40 @@ push_value(st_data_t key, st_data_t val, st_data_t ary)
 
 /*
  *  call-seq:
- *     ary.uniq!                -> ary or nil
- *     ary.uniq! {|item| ...}   -> ary or nil
+ *    array.uniq! -> self or nil
+ *    array.uniq! {|element| ... } -> self or nil
  *
- *  Removes duplicate elements from +self+.
+ *  Removes duplicate elements from +self+, the first occurrence always being retained;
+ *  returns +self+ if any elements removed, +nil+ otherwise.
  *
- *  If a block is given, it will use the return value of the block for
- *  comparison.
+ *  ---
  *
- *  It compares values using their #hash and #eql? methods for efficiency.
+ *  With no block given, identifies and removes elements using method <tt>eql?</tt>
+ *  to compare.
  *
- *  +self+ is traversed in order, and the first occurrence is kept.
+ *  Returns +self+ if any elements removed:
+ *    a = [0, 0, 1, 1, 2, 2]
+ *    a1 = a.uniq!
+ *    a1 # => [0, 1, 2]
+ *    a1.equal?(a) # => true # Returned self
  *
- *  Returns +nil+ if no changes are made (that is, no duplicates are found).
+ *  Returns +nil+ if no elements removed:
+ *    [0, 1, 2].uniq! # => nil
  *
- *     a = [ "a", "a", "b", "b", "c" ]
- *     a.uniq!   # => ["a", "b", "c"]
+ *  ---
  *
- *     b = [ "a", "b", "c" ]
- *     b.uniq!   # => nil
+ *  With a block given, calls the block for each element;
+ *  removes elements for which the block returns duplicate values.
  *
- *     c = [["student","sam"], ["student","george"], ["teacher","matz"]]
- *     c.uniq! {|s| s.first}   # => [["student", "sam"], ["teacher", "matz"]]
+ *  Returns +self+ if any elements removed:
+ *    a = ['a', 'aa', 'aaa', 'b', 'bb', 'bbb']
+ *    a1 = a.uniq! {|element| element.size }
+ *    a1 # => ['a', 'aa', 'aaa']
+ *    a1.equal?(a) # => true # Returned self
  *
+ *  Returns +nil+ if no elements removed:
+ *    a.uniq! {|element| element.size } # => nil
  */
-
 static VALUE
 rb_ary_uniq_bang(VALUE ary)
 {
@@ -6764,23 +6773,22 @@ rb_ary_uniq_bang(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.uniq                -> new_ary
- *     ary.uniq {|item| ...}   -> new_ary
+ *    array.uniq -> new_array
+ *    array.uniq {|element| ... } -> new_array
  *
- *  Returns a new array by removing duplicate values in +self+.
+ *  Returns a new \Array containing those elements from +self+ that are not duplicates,
+ *  the first occurrence always being retained.
  *
- *  If a block is given, it will use the return value of the block for comparison.
+ *  With no block given, identifies and omits duplicates using method <tt>eql?</tt>
+ *  to compare.
+ *    a = [0, 0, 1, 1, 2, 2]
+ *    a.uniq # => [0, 1, 2]
  *
- *  It compares values using their #hash and #eql? methods for efficiency.
- *
- *  +self+ is traversed in order, and the first occurrence is kept.
- *
- *     a = [ "a", "a", "b", "b", "c" ]
- *     a.uniq   # => ["a", "b", "c"]
- *
- *     b = [["student","sam"], ["student","george"], ["teacher","matz"]]
- *     b.uniq {|s| s.first}   # => [["student", "sam"], ["teacher", "matz"]]
- *
+ *  With a block given, calls the block for each element;
+ *  identifies and omits "duplicates",
+ *  that is, those elements for which the block returns the same value:
+ *    a = ['a', 'aa', 'aaa', 'b', 'bb', 'bbb']
+ *    a.uniq { |element| element.size } # => ["a", "aa", "aaa"]
  */
 
 static VALUE
@@ -6810,14 +6818,17 @@ rb_ary_uniq(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.compact!    -> ary  or  nil
+ *    array.compact! -> self or nil
  *
- *  Removes +nil+ elements from the array.
+ *  Removes all +nil+ elements from +self+.
  *
- *  Returns +nil+ if no changes were made, otherwise returns the array.
+ *  Returns +self+ if any elements removed:
+ *    a = [nil, 0, nil, 1, nil, 2, nil]
+ *    a1 = a.compact! # => [0, 1, 2]
+ *    a1.equal?(a) # => true # Returned self
  *
- *     [ "a", nil, "b", nil, "c" ].compact! #=> [ "a", "b", "c" ]
- *     [ "a", "b", "c" ].compact!           #=> nil
+ *  Returns +nil+ if no elements removed:
+ *    [0, 1, 2].compact! # => nil
  */
 
 static VALUE
@@ -6845,12 +6856,11 @@ rb_ary_compact_bang(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.compact     -> new_ary
+ *    array.compact -> self or nil
  *
- *  Returns a copy of +self+ with all +nil+ elements removed.
- *
- *     [ "a", nil, "b", nil, "c", nil ].compact
- *                       #=> [ "a", "b", "c" ]
+ *  Returns a new \Array containing all non-+nil+ elements from +self+:
+ *    a = [nil, 0, nil, 1, nil, 2, nil]
+ *    a.compact # => [0, 1, 2]
  */
 
 static VALUE
@@ -6863,23 +6873,28 @@ rb_ary_compact(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.count                   -> int
- *     ary.count(obj)              -> int
- *     ary.count {|item| block}    -> int
+ *    array.count -> an_integer
+ *    array.count(obj) -> an_integer
+ *    array.count {|element| ... } -> an_integer
  *
- *  Returns the number of elements.
+ *  Returns a count of specified elements.
  *
- *  If an argument is given, counts the number of elements which equal +obj+
- *  using <code>==</code>.
+ *  With no argument and no block, returns the count of all elements:
+ *    [0, 1, 2].count # => 3
+ *    [].count # => 0
  *
- *  If a block is given, counts the number of elements for which the block
- *  returns a true value.
+ *  With argument +obj+, returns the count of elements <tt>eql?</tt> to +obj+:
+ *    [0, 1, 2, 0].count(0) # => 2
+ *    [0, 1, 2].count(3) # => 0
  *
- *     ary = [1, 2, 4, 2]
- *     ary.count                  #=> 4
- *     ary.count(2)               #=> 2
- *     ary.count {|x| x%2 == 0}   #=> 3
+ *  With no argument and a block given, calls the block with each element;
+ *  returns the count of elements for which the block returns a truthy value:
+ *    [0, 1, 2, 3].count {|element| element > 1} # => 2
  *
+ *  With argument +obj+ and a block given, issues a warning
+ *  (warning: given block not used); ignores the block;
+ *  returns the count of elements <tt>eql?</tt> to +obj+:
+ *    [0, 1, 2, 0].count(0) {|element| fail 'Cannot happen'} # => 2
  */
 
 static VALUE
@@ -6998,22 +7013,59 @@ flatten(VALUE ary, int level)
 
 /*
  *  call-seq:
- *     ary.flatten!        -> ary or nil
- *     ary.flatten!(level) -> ary or nil
+ *    array.flatten! -> self or nil
+ *    array.flatten!(level) -> self or nil
  *
- *  Flattens +self+ in place.
+ *  Replaces each nested \Array in +self+ with the elements from that \Array;
+ *  returns +self+ if any changes, +nil+ otherwise.
  *
- *  Returns +nil+ if no modifications were made (i.e., the array contains no
- *  subarrays.)
+ *  Argument +level+, if given, must be an
+ *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
  *
- *  The optional +level+ argument determines the level of recursion to flatten.
+ *  With no argument, flattens all levels:
+ *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
+ *    a1 = a.flatten!
+ *    a1 # => [0, 1, 2, 3, 4, 5]
+ *    a1.equal?(a) # => true # Returned self
+ *    [0, 1, 2].flatten! # => nil
  *
- *     a = [ 1, 2, [3, [4, 5] ] ]
- *     a.flatten!   #=> [1, 2, 3, 4, 5]
- *     a.flatten!   #=> nil
- *     a            #=> [1, 2, 3, 4, 5]
- *     a = [ 1, 2, [3, [4, 5] ] ]
- *     a.flatten!(1) #=> [1, 2, 3, [4, 5]]
+ *  With non-negative argument +level+, flattens recursively through +level+ levels:
+ *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
+ *    a.flatten!(0) # => nil
+ *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
+ *    a.flatten!(1) # => [0, 1, [2, 3], 4, 5]
+ *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
+ *    a.flatten!(2) # => [0, 1, 2, 3, 4, 5]
+ *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
+ *    a.flatten!(3) # => [0, 1, 2, 3, 4, 5]
+ *    [0, 1, 2].flatten!(1) # => nil
+ *
+ *  With negative argument +level+, flattens all levels:
+ *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
+ *    a.flatten!(-1) # => [0, 1, 2, 3, 4, 5]
+ *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
+ *    a.flatten!(-2) # => [0, 1, 2, 3, 4, 5]
+ *    [0, 1, 2].flatten!(-1) # => nil
+ *
+ *  ---
+ *
+ *  Raises an exception if +level+ is not an Integer-convertible object:
+ *     # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    [].flatten!(:foo)
+ *
+ *  Raises an exception if +self+ contains a circular reference:
+ *    a = []
+ *    a.push([a, a])
+ *    # Raises ArgumentError (tried to flatten recursive array):
+ *    a.flatten!
+ *
+ *  Raises an exception if method <tt>flatten!</tt> is reentered:
+ *    require 'continuation'
+ *    o = Object.new
+ *    def o.to_ary() callcc {|k| @cont = k; [1,2,3]} end
+ *    [10, 20, o, 30, o, 40].flatten!
+ *    # Raises RuntimeError (flatten reentered):
+ *    o.instance_eval {@cont}.call
  */
 
 static VALUE
@@ -7040,24 +7092,58 @@ rb_ary_flatten_bang(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *     ary.flatten -> new_ary
- *     ary.flatten(level) -> new_ary
+ *    array.flatten -> self or nil
+ *    array.flatten(level) -> self or nil
  *
- *  Returns a new array that is a one-dimensional flattening of +self+
- *  (recursively).
+ *  Returns a new \Array that is a recursive flattening of +self+:
+ *  - Each non-Array element is unchanged.
+ *  - Each \Array is replaced by its individual elements.
  *
- *  That is, for every element that is an array, extract its elements into
- *  the new array.
+ *  Argument +level+, if given, must be
+ *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
  *
- *  The optional +level+ argument determines the level of recursion to
- *  flatten.
+ *  With no argument, flattens all levels:
+ *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
+ *    a.flatten # => [0, 1, 2, 3, 4, 5]
+ *    [0, 1, 2].flatten # => [0, 1, 2]
  *
- *     s = [ 1, 2, 3 ]           #=> [1, 2, 3]
- *     t = [ 4, 5, 6, [7, 8] ]   #=> [4, 5, 6, [7, 8]]
- *     a = [ s, t, 9, 10 ]       #=> [[1, 2, 3], [4, 5, 6, [7, 8]], 9, 10]
- *     a.flatten                 #=> [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
- *     a = [ 1, 2, [3, [4, 5] ] ]
- *     a.flatten(1)              #=> [1, 2, 3, [4, 5]]
+ *  With non-negative argument +level+, flattens recursively through +level+ levels:
+ *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
+ *    a.flatten(0) # => [0, [1, [2, 3], 4], 5]
+ *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
+ *    a.flatten(1) # => [0, 1, [2, 3], 4, 5]
+ *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
+ *    a.flatten(2) # => [0, 1, 2, 3, 4, 5]
+ *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
+ *    a.flatten(3) # => [0, 1, 2, 3, 4, 5]
+ *    [0, 1, 2].flatten(1) # => [0, 1, 2]
+ *
+ *  With negative argument +level+, flattens all levels:
+ *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
+ *    a.flatten(-1) # => [0, 1, 2, 3, 4, 5]
+ *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
+ *    a.flatten(-2) # => [0, 1, 2, 3, 4, 5]
+ *    [0, 1, 2].flatten(-1) # => [0, 1, 2]
+ *
+ *  ---
+ *
+ *  Raises an exception if +level+ is not an Integer-convertible object:
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    [].flatten(:foo)
+ *
+ *  Raises an exception if +self+ contains a circular reference:
+ *    a = []
+ *    a.push([a, a])
+ *    # Raises ArgumentError (tried to flatten recursive array):
+ *    a.flatten
+ *
+ *  Raises an exception if if method flatten is reentered:
+ *    require 'continuation'
+ *    o = Object.new
+ *    def o.to_ary() callcc {|k| @cont = k; [1,2,3]} end
+ *    [10, 20, o, 30, o, 40].flatten
+ *    # Raises RuntimeError (flatten reentered):
+ *    o.instance_eval {@cont}.call
  */
 
 static VALUE
