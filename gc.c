@@ -738,6 +738,7 @@ typedef struct rb_objspace {
 	size_t minor_gc_count;
 	size_t major_gc_count;
 	size_t compact_count;
+	size_t read_barrier_faults;
 #if RGENGC_PROFILE > 0
 	size_t total_generated_normal_object_count;
 	size_t total_generated_shady_object_count;
@@ -4522,6 +4523,8 @@ static void read_barrier_handler(intptr_t address)
     obj = (VALUE)address;
 
     unlock_page_body(objspace, GET_PAGE_BODY(obj));
+
+    objspace->profile.read_barrier_faults++;
 
     invalidate_moved_page(objspace, GET_HEAP_PAGE(obj));
 }
@@ -9285,6 +9288,7 @@ enum gc_stat_sym {
     gc_stat_sym_minor_gc_count,
     gc_stat_sym_major_gc_count,
     gc_stat_sym_compact_count,
+    gc_stat_sym_read_barrier_faults,
     gc_stat_sym_remembered_wb_unprotected_objects,
     gc_stat_sym_remembered_wb_unprotected_objects_limit,
     gc_stat_sym_old_objects,
@@ -9358,6 +9362,7 @@ setup_gc_stat_symbols(void)
 	S(minor_gc_count);
 	S(major_gc_count);
 	S(compact_count);
+	S(read_barrier_faults);
 	S(remembered_wb_unprotected_objects);
 	S(remembered_wb_unprotected_objects_limit);
 	S(old_objects);
@@ -9525,6 +9530,7 @@ gc_stat_internal(VALUE hash_or_sym)
     SET(minor_gc_count, objspace->profile.minor_gc_count);
     SET(major_gc_count, objspace->profile.major_gc_count);
     SET(compact_count, objspace->profile.compact_count);
+    SET(read_barrier_faults, objspace->profile.read_barrier_faults);
     SET(remembered_wb_unprotected_objects, objspace->rgengc.uncollectible_wb_unprotected_objects);
     SET(remembered_wb_unprotected_objects_limit, objspace->rgengc.uncollectible_wb_unprotected_objects_limit);
     SET(old_objects, objspace->rgengc.old_objects);
