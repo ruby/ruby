@@ -354,6 +354,13 @@ static void ensure_origin(VALUE klass);
 VALUE
 rb_mod_init_copy(VALUE clone, VALUE orig)
 {
+    if (RCLASS_EXT(clone)->subclasses ||
+        RCLASS_EXT(clone)->parent_subclasses ||
+        RCLASS_EXT(clone)->module_subclasses) {
+        rb_raise(rb_eTypeError, "cannot replace %s in use",
+                 (RB_TYPE_P(clone, T_MODULE) ? "module" : "class"));
+    }
+
     /* cloned flag is refer at constant inline cache
      * see vm_get_const_key_cref() in vm_insnhelper.c
      */
