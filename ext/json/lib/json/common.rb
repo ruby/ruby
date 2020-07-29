@@ -561,7 +561,7 @@ module JSON
   end
 
   # Recursively calls passed _Proc_ if the parsed data structure is an _Array_ or _Hash_
-  def recurse_proc(result, &proc)
+  def recurse_proc(result, &proc) # :nodoc:
     case result
     when Array
       result.each { |x| recurse_proc x, &proc }
