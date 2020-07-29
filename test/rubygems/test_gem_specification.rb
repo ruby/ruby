@@ -3051,6 +3051,13 @@ Please report a bug if this causes problems.
     end
   end
 
+  def test_duplicate_runtime_dependency
+    expected = "WARNING: duplicate dependency [\"~> 3.0\", \"~> 3.0\"]\n"
+    assert_output nil, expected do
+      @a1.add_runtime_dependency "b", "~> 3.0", "~> 3.0"
+    end
+  end
+
   def set_orig(cls)
     s_cls = cls.singleton_class
     s_cls.send :alias_method, :orig_unresolved_deps , :unresolved_deps
