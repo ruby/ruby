@@ -842,14 +842,12 @@ module RbInstall
     end
 
     def generate_bin_script(filename, bindir)
+      name = formatted_program_filename(filename)
       unless $dryrun
         super
-        File.chmod($script_mode, filename)
+        File.chmod($script_mode, File.join(bindir, name))
       end
-      if $installed_list
-        filename = formatted_program_filename(filename)
-        $installed_list.puts(File.join(without_destdir(bindir), filename))
-      end
+      $installed_list.puts(File.join(without_destdir(bindir), name)) if $installed_list
     end
 
     def verify_gem_home # :nodoc:
