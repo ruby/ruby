@@ -2187,38 +2187,24 @@ rb_hash_lookup(VALUE hash, VALUE key)
  *    hash.fetch(key) { |key| ... } -> value
  *
  *  Returns the value for the given +key+.
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.fetch(:bar) # => 1
  *
- *  ---
+ *  If +key+ is not found, then the given +default+ or
+ *  block (if any) will be used:
  *
- *  When neither +default+ nor a block given:
- *  * If +key+ is found, returns its associated value.
- *  * Otherwise, raises an exception:
- *      h = {foo: 0, bar: 1, baz: 2}
- *      h.fetch(:bar) # => 1
- *      # Raises KeyError (key not found: :nosuch):
- *      h.fetch(:nosuch)
+ *    {}.fetch(:nosuch, :default) # => :default
+ *    {}.fetch(:nosuch) { |key| "No #{key}"}) # => "No nosuch"
  *
- *  When +default+ is given, but no block:
- *  * If +key+ is found, returns its associated value.
- *  * Otherwise, returns the given +default+:
- *      h = {foo: 0, bar: 1, baz: 2}
- *      h.fetch(:bar, :default) # => 1
- *      h.fetch(:nosuch, :default) # => :default
+ *  If neither is given, an error is raised:
  *
- *  When a block is given, but no +default+:
- *  * If +key+ is found, returns its associated value.
- *  * Otherwise, calls the block with +key+, and returns the block's return value.
- *      h = {foo: 0, bar: 1, baz: 2}
- *      h.fetch(:bar) { |key| raise 'Ignored'} # => 1
- *      h.fetch(:nosuch) { |key| "Value for #{key}"} # => "Value for nosuch"
+ *    {}.fetch(:foo) # => KeyError (key not found: :nosuch)
  *
- *  When both +default+ and a block are given:
- *  * Ignores +default+ and issues a warning: 'block supersedes default value argument'.
- *  * If +key+ is found, returns its associated value.
- *  * Otherwise, calls the block with +key+, and returns the block's return value.
- *      h = {foo: 0, bar: 1, baz: 2}
- *      h.fetch(:bar, :default) { |key| raise 'Ignored'} # => 1
- *      h.fetch(:nosuch, :default) { |key| "Value for #{key}"} # => "Value for nosuch"
+ *  Note that the #default or #default_proc are always ignored by `fetch`
+ *
+ *    h = Hash.new(0)
+ *    h[:nosuch] # => 0
+ *    h.fetch(:nosuch) # => KeyError
  */
 
 static VALUE
@@ -2276,12 +2262,12 @@ rb_hash_fetch(VALUE hash, VALUE key)
  *
  *  With +key+ given, returns the default value for +key+,
  *  regardless of whether that key exists:
- *    h = {}
- *    h.default(:nosuch) # => nil
+ *    h = Hash.new { |hash, key| hash[key] = "No #{key}"}
+ #    h[:foo] = "Hello"
+ *    h.default(:foo) # => "No foo"
  *
  *  The returned value will be determined either by the default proc or by the default value.
  *  See {Default Values}[#class-Hash-label-Default+Values].
- *
  */
 
 static VALUE
@@ -2757,6 +2743,10 @@ rb_hash_reject(VALUE hash)
  *    h1 = h.slice(:baz, :foo)
  *    h1 # => {:baz=>2, :foo=>0}
  *    h1.equal?(h) # => false
+ *
+ *  The given keys that are not found are ignored:
+ *    h = {foo: 0, bar: 1}
+ *    h.slice(:not_there, :bar, :not_there_either) # => {bar: 1}
  */
 
 static VALUE
@@ -2788,7 +2778,9 @@ rb_hash_slice(int argc, VALUE *argv, VALUE hash)
  *
  *     h = { a: 100, b: 200, c: 300 }
  *     h.except(:a)          #=> {:b=>200, :c=>300}
- *     h.except(:b, :c, :d)  #=> {:a=>100}
+ *
+ *  The given keys that are not found are ignored:
+ *     h.except(:b, :c, :not_there, :idem)  #=> {:a=>100}
  */
 
 static VALUE
@@ -2815,9 +2807,11 @@ rb_hash_except(int argc, VALUE *argv, VALUE hash)
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.values_at(:foo, :baz) # => [0, 2]
  *
- *  Returns an empty Array if no arguments given:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    h.values_at # => []
+ *  The {default values}[#class-Hash-label-Default+Values] will be used for keys
+ *  that are not present:
+ *    h.values_at(:hello, :foo) # => [nil, 0]
+ *    h.default = -1
+ *    h.values_at(:hello, :foo) # => [-1, 0]
  */
 
 VALUE
@@ -4540,7 +4534,7 @@ assoc_i(VALUE key, VALUE val, VALUE arg)
  *
  *  Returns +nil+ if key +key+ is not found:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h.assoc(:nosuch)
+ *    h.assoc(:nosuch) # => nil
  */
 
 VALUE
@@ -4987,10 +4981,6 @@ rb_hash_any_p(int argc, VALUE *argv, VALUE hash)
  *    h.dig(:foo, :bar, :baz) # => 2
  *    h.dig(:foo, :bar, :BAZ) # => nil
  *
- *  Returns +nil+ if any key is not found:
- *    h = { foo: {bar: {baz: 2}}}
- *    h.dig(:foo, :nosuch) # => nil
- *
  *  The nested objects may include any that respond to \#dig.  See:
  *  - Hash#dig
  *  - Array#dig
@@ -5002,6 +4992,14 @@ rb_hash_any_p(int argc, VALUE *argv, VALUE hash)
  *  Example:
  *    h = {foo: {bar: [:a, :b, :c]}}
  *    h.dig(:foo, :bar, 2) # => :c
+ *
+ *  This method will use the {default values}[#class-Hash-label-Default+Values]
+ *  for keys that are not present:
+ *    h = {foo: {bar: [:a, :b, :c]}}
+ *    h.dig(:hello) # => nil
+ *    h.default_proc = -> (hash, _key) { hash }
+ *    h.dig(:hello, :world) # => h
+ *    h.dig(:hello, :world, :foo, :bar, 2) # => :c
  */
 
 static VALUE
@@ -7280,60 +7278,47 @@ env_update(VALUE env, VALUE hash)
  *
  *  === Default Values
  *
- *  For a key that is not found,
- *  method #[] returns a default value
- *  determined by:
- *
- *  - Its default proc, if the default proc is not +nil+.
- *  - Its default value, otherwise.
- *
- *  ==== Default Value
- *
- *  A \Hash object's default value is relevant only
- *  when its default proc is +nil+.  (Initially, both are +nil+).
+ *  The methods #[], #values_at and #dig need to return the value associated to a certain key
+ *  When that key is not found, that value will be determined by its default proc (if any)
+ *  or else its default (initially `nil`).
  *
  *  You can retrieve the default value with method #default:
  *
  *    h = Hash.new
  *    h.default # => nil
  *
- *  You can initialize the default value by passing an argument to method Hash.new:
+ *  You can set the default value by passing an argument to method Hash.new or
+ *  with method #default=
  *
- *    h = Hash.new(false)
- *    h.default # => false
+ *    h = Hash.new(-1)
+ *    h.default # => -1
+ *    h.default = 0
+ *    h.default # => 0
  *
- *  You can update the default value with method #default=:
+ *  This default value is returned for #[], #values_at and #dig when a key is
+ *  not found:
  *
- *    h.default = false
- *    h.default # => false
+ *    counts = {foo: 42}
+ *    counts.default # => nil (default)
+ *    counts[:foo] = 42
+ *    counts[:bar] # => nil
+ *    counts.default = 0
+ *    counts[:bar] # => 0
+ *    counts.values_at(:foo, :bar, :baz) # => [42, 0, 0]
+ *    counts.dig(:bar) # => 0
  *
- *  Incidentally, updating the default value (even to +nil+)
- *  also sets the default proc to +nil+:
+ *  Note that the default value is used without being duplicated. It is not advised to set
+ *  the default value to a mutable object:
  *
- *    h.default_proc = proc { }
- *    h.default = nil
- *    h.default_proc # => nil
+ *    synonyms = Hash.new([])
+ *    synonyms[:hello] # => []
+ *    synonyms[:hello] << :hi # => [:hi], but this mutates the default!
+ *    synonyms.default # => [:hi]
+ *    synonyms[:world] << :universe
+ *    synonyms[:world] # => [:hi, :universe], oops
+ *    synonyms.keys # => [], oops
  *
- *  When the default proc is +nil+,
- *  method #[] returns the value of method #default:
- *
- *    h = Hash.new
- *    h.default_proc # => nil
- *    h.default # => nil
- *    h[:nosuch] # => nil
- *    h.default = false
- *    h[:nosuch] # => false
- *
- *  For certain kinds of default values, the default value can be modified thus:
- *
- *    h = Hash.new('Foo')
- *    h[:nosuch] # => "Foo"
- *    h[:nosuch].upcase! # => "FOO"
- *    h[:nosuch] # => "FOO"
- *    h.default = [0, 1]
- *    h[:nosuch] # => [0, 1]
- *    h[:nosuch].reverse! # => [1, 0]
- *    h[:nosuch] # => [1, 0]
+ *  To use a mutable object as default, it is recommended to use a default proc
  *
  *  ==== Default \Proc
  *
@@ -7345,23 +7330,13 @@ env_update(VALUE env, VALUE hash)
  *    h = Hash.new
  *    h.default_proc # => nil
  *
- *  You can initialize the default proc by calling Hash.new with a block:
+ *  You can set the default proc by calling Hash.new with a block or
+ *  calling the method #default_proc=
  *
  *    h = Hash.new { |hash, key| "Default value for #{key}" }
  *    h.default_proc.class # => Proc
- *
- *  You can update the default proc with method #default_proc=:
- *
- *    h = Hash.new
- *    h.default_proc = proc { |hash, key| "Default value for #{key}" }
+ *    h.default_proc = proc { |hash, key| "Default value for #{key.inspect}" }
  *    h.default_proc.class # => Proc
- *
- *  Incidentally, updating the default proc (even to +nil+)
- *  also sets the default value to +nil+:
- *
- *    h.default = false
- *    h.default_proc = nil
- *    h.default # => nil
  *
  *  When the default proc is set (i.e., not +nil+)
  *  and method #[] is called with with a non-existent key,
@@ -7377,19 +7352,13 @@ env_update(VALUE env, VALUE hash)
  *
  *  However, the proc itself can add a new entry:
  *
- *    h = Hash.new { |hash, key| hash[key] = "Subsequent value for #{key}"; "First value for #{key}" }
- *    h.include?(:nosuch) # => false
- *    h[:nosuch] # => "First value for nosuch"
- *    h.include?(:nosuch) # => true
- *    h[:nosuch] # => "Subsequent value for nosuch"
- *    h[:nosuch] # => "Subsequent value for nosuch"
+ *    synonyms = Hash.new { |hash, key| hash[key] = [] }
+ *    synonyms.include?(:hello) # => false
+ *    synonyms[:hello] << :hi # => [:hi]
+ *    synonyms[:world] << :universe # => [:universe]
+ *    synonyms.keys # => [:hello, :world]
  *
- *  You can set the default proc to +nil+, which restores control to the default value:
- *
- *    h.delete(:nosuch)
- *    h.default_proc = nil
- *    h.default = false
- *    h[:nosuch] # => false
+ *  Note that setting the default proc will clear the default value and vice versa.
  */
 
 void
