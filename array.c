@@ -6857,7 +6857,7 @@ rb_ary_compact_bang(VALUE ary)
 
 /*
  *  call-seq:
- *    array.compact -> self
+ *    array.compact -> new_array
  *
  *  Returns a new \Array containing all non-+nil+ elements from +self+:
  *    a = [nil, 0, nil, 1, nil, 2, nil]
@@ -7079,8 +7079,8 @@ rb_ary_flatten_bang(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *    array.flatten -> self
- *    array.flatten(level) -> self
+ *    array.flatten -> new_array
+ *    array.flatten(level) -> new_array
  *
  *  Returns a new \Array that is a recursive flattening of +self+:
  *  - Each non-Array element is unchanged.
