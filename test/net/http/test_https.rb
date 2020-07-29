@@ -108,7 +108,7 @@ class TestNetHTTPS < Test::Unit::TestCase
 
   def test_get_SNI_failure
     TestNetHTTPUtils.clean_http_proxy_env do
-      http = Net::HTTP.new("invalid_servername", config("port"))
+      http = Net::HTTP.new("invalidservername", config("port"))
       http.ipaddr = config('host')
       http.use_ssl = true
       http.cert_store = TEST_STORE
@@ -204,22 +204,22 @@ class TestNetHTTPS < Test::Unit::TestCase
     skip $!
   end
 
-  def test_skip_hostname_verfiction
+  def test_skip_hostname_verification
     TestNetHTTPUtils.clean_http_proxy_env do
-      http = Net::HTTP.new('invalid_servername', config('port'))
+      http = Net::HTTP.new('invalidservername', config('port'))
       http.ipaddr = config('host')
       http.use_ssl = true
       http.cert_store = TEST_STORE
       http.verify_hostname = false
       assert_nothing_raised { http.start }
     ensure
-      http&.finish
+      http.finish if http&.started?
     end
   end
 
   def test_fail_if_verify_hostname_is_true
     TestNetHTTPUtils.clean_http_proxy_env do
-      http = Net::HTTP.new('invalid_servername', config('port'))
+      http = Net::HTTP.new('invalidservername', config('port'))
       http.ipaddr = config('host')
       http.use_ssl = true
       http.cert_store = TEST_STORE
