@@ -174,7 +174,7 @@ ossl_pkey_read_generic(BIO *bio, VALUE pass)
  * instance of the appropriate PKey class.
  *
  * === Parameters
- * * _string+ is a DER- or PEM-encoded string containing an arbitrary private
+ * * _string_ is a DER- or PEM-encoded string containing an arbitrary private
  *   or public key.
  * * _io_ is an instance of IO containing a DER- or PEM-encoded
  *   arbitrary private or public key.
