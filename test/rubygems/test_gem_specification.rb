@@ -3052,7 +3052,7 @@ Please report a bug if this causes problems.
   end
 
   def test_duplicate_runtime_dependency
-    expected = "WARNING: duplicate dependency [\"~> 3.0\", \"~> 3.0\"]\n"
+    expected = "WARNING: duplicated b dependency [\"~> 3.0\", \"~> 3.0\"]\n"
     assert_output nil, expected do
       @a1.add_runtime_dependency "b", "~> 3.0", "~> 3.0"
     end

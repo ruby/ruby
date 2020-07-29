@@ -557,7 +557,7 @@ class Gem::Specification < Gem::BasicSpecification
 
   def add_runtime_dependency(gem, *requirements)
     if requirements.uniq.size != requirements.size
-      warn "WARNING: duplicate dependency #{requirements}"
+      warn "WARNING: duplicated #{gem} dependency #{requirements}"
     end
 
     add_dependency_with_type(gem, :runtime, requirements)
