@@ -556,6 +556,10 @@ class Gem::Specification < Gem::BasicSpecification
   #   spec.add_runtime_dependency 'example', '~> 1.1', '>= 1.1.4'
 
   def add_runtime_dependency(gem, *requirements)
+    if requirements.uniq.size != requirements.size
+      warn "WARNING: duplicate dependency #{requirements}"
+    end
+
     add_dependency_with_type(gem, :runtime, requirements)
   end
 
