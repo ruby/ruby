@@ -6729,7 +6729,8 @@ push_value(st_data_t key, st_data_t val, st_data_t ary)
  *  ---
  *
  *  With a block given, calls the block for each element;
- *  removes elements for which the block returns duplicate values.
+ *  identifies (using method <tt>eql?</tt>) and removes
+ *  elements for which the block returns duplicate values.
  *
  *  Returns +self+ if any elements removed:
  *    a = ['a', 'aa', 'aaa', 'b', 'bb', 'bbb']
@@ -6785,7 +6786,7 @@ rb_ary_uniq_bang(VALUE ary)
  *    a.uniq # => [0, 1, 2]
  *
  *  With a block given, calls the block for each element;
- *  identifies and omits "duplicates",
+ *  identifies (using method <tt>eql?</tt>) and omits duplicate values,
  *  that is, those elements for which the block returns the same value:
  *    a = ['a', 'aa', 'aaa', 'b', 'bb', 'bbb']
  *    a.uniq { |element| element.size } # => ["a", "aa", "aaa"]
@@ -6856,7 +6857,7 @@ rb_ary_compact_bang(VALUE ary)
 
 /*
  *  call-seq:
- *    array.compact -> self or nil
+ *    array.compact -> self
  *
  *  Returns a new \Array containing all non-+nil+ elements from +self+:
  *    a = [nil, 0, nil, 1, nil, 2, nil]
@@ -6891,10 +6892,8 @@ rb_ary_compact(VALUE ary)
  *  returns the count of elements for which the block returns a truthy value:
  *    [0, 1, 2, 3].count {|element| element > 1} # => 2
  *
- *  With argument +obj+ and a block given, issues a warning
- *  (warning: given block not used); ignores the block;
- *  returns the count of elements <tt>eql?</tt> to +obj+:
- *    [0, 1, 2, 0].count(0) {|element| fail 'Cannot happen'} # => 2
+ *  With argument +obj+ and a block given, issues a warning, ignores the block,
+ *  and returns the count of elements <tt>eql?</tt> to +obj+:
  */
 
 static VALUE
@@ -7022,25 +7021,21 @@ flatten(VALUE ary, int level)
  *  Argument +level+, if given, must be an
  *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
  *
- *  With no argument, flattens all levels:
- *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
- *    a1 = a.flatten!
- *    a1 # => [0, 1, 2, 3, 4, 5]
- *    a1.equal?(a) # => true # Returned self
- *    [0, 1, 2].flatten! # => nil
- *
  *  With non-negative argument +level+, flattens recursively through +level+ levels:
  *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
- *    a.flatten!(0) # => nil
- *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
- *    a.flatten!(1) # => [0, 1, [2, 3], 4, 5]
+ *    a1 = a.flatten!(1)
+ *    a1 # => [0, 1, [2, 3], 4, 5]
+ *    a1.equal?(a) # => true # Returned self
  *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
  *    a.flatten!(2) # => [0, 1, 2, 3, 4, 5]
  *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
  *    a.flatten!(3) # => [0, 1, 2, 3, 4, 5]
  *    [0, 1, 2].flatten!(1) # => nil
  *
- *  With negative argument +level+, flattens all levels:
+ *  With no argument,  or with negative argument +level+, flattens all levels:
+ *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
+ *    a.flatten! # => [0, 1, 2, 3, 4, 5]
+ *    [0, 1, 2].flatten! # => nil
  *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
  *    a.flatten!(-1) # => [0, 1, 2, 3, 4, 5]
  *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
@@ -7058,14 +7053,6 @@ flatten(VALUE ary, int level)
  *    a.push([a, a])
  *    # Raises ArgumentError (tried to flatten recursive array):
  *    a.flatten!
- *
- *  Raises an exception if method <tt>flatten!</tt> is reentered:
- *    require 'continuation'
- *    o = Object.new
- *    def o.to_ary() callcc {|k| @cont = k; [1,2,3]} end
- *    [10, 20, o, 30, o, 40].flatten!
- *    # Raises RuntimeError (flatten reentered):
- *    o.instance_eval {@cont}.call
  */
 
 static VALUE
@@ -7092,8 +7079,8 @@ rb_ary_flatten_bang(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *    array.flatten -> self or nil
- *    array.flatten(level) -> self or nil
+ *    array.flatten -> self
+ *    array.flatten(level) -> self
  *
  *  Returns a new \Array that is a recursive flattening of +self+:
  *  - Each non-Array element is unchanged.
@@ -7101,11 +7088,6 @@ rb_ary_flatten_bang(int argc, VALUE *argv, VALUE ary)
  *
  *  Argument +level+, if given, must be
  *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
- *
- *  With no argument, flattens all levels:
- *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
- *    a.flatten # => [0, 1, 2, 3, 4, 5]
- *    [0, 1, 2].flatten # => [0, 1, 2]
  *
  *  With non-negative argument +level+, flattens recursively through +level+ levels:
  *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
@@ -7116,9 +7098,11 @@ rb_ary_flatten_bang(int argc, VALUE *argv, VALUE ary)
  *    a.flatten(2) # => [0, 1, 2, 3, 4, 5]
  *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
  *    a.flatten(3) # => [0, 1, 2, 3, 4, 5]
- *    [0, 1, 2].flatten(1) # => [0, 1, 2]
  *
- *  With negative argument +level+, flattens all levels:
+ *  With no argument, or with negative argument +level+, flattens all levels:
+ *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
+ *    a.flatten # => [0, 1, 2, 3, 4, 5]
+ *    [0, 1, 2].flatten # => [0, 1, 2]
  *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
  *    a.flatten(-1) # => [0, 1, 2, 3, 4, 5]
  *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
@@ -7136,14 +7120,6 @@ rb_ary_flatten_bang(int argc, VALUE *argv, VALUE ary)
  *    a.push([a, a])
  *    # Raises ArgumentError (tried to flatten recursive array):
  *    a.flatten
- *
- *  Raises an exception if if method flatten is reentered:
- *    require 'continuation'
- *    o = Object.new
- *    def o.to_ary() callcc {|k| @cont = k; [1,2,3]} end
- *    [10, 20, o, 30, o, 40].flatten
- *    # Raises RuntimeError (flatten reentered):
- *    o.instance_eval {@cont}.call
  */
 
 static VALUE
