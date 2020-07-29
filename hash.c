@@ -1875,14 +1875,6 @@ rb_hash_initialize(int argc, VALUE *argv, VALUE hash)
  *
  *    # Raises ArgumentError (invalid number of elements (3 for 1..2)):
  *    Hash[ [ [0, 1, 2] ] ]
- *
- *  Raises an exception if any proposed key is not a valid key
- *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
- *
- *    # Raises NoMethodError (undefined method `hash' for #<BasicObject>):
- *    Hash[:foo, 0, BasicObject.new, 1]
- *    # Raises NoMethodError (undefined method `hash' for #<BasicObject>):
- *    Hash[ [ [:foo, 0], [BasicObject.new, 1] ] ]
  */
 
 static VALUE
@@ -2056,8 +2048,8 @@ rb_hash_rehash_i(VALUE key, VALUE value, VALUE arg)
  *  Rebuilds the hash table by recomputing the hash index for each key;
  *  returns <tt>self</tt>.
  *
- *  The hash table will have become invalid if the hash value of a key
- *  has changed since the entry was created.
+ *  The hash table becomes invalid if the hash value of a key
+ *  has changed after the entry was created.
  *  See {Modifying an Active Hash Key}[#class-Hash-label-Modifying+an+Active+Hash+Key].
  *
  *  ---
@@ -2227,15 +2219,6 @@ rb_hash_lookup(VALUE hash, VALUE key)
  *      h = {foo: 0, bar: 1, baz: 2}
  *      h.fetch(:bar, :default) { |key| raise 'Ignored'} # => 1
  *      h.fetch(:nosuch, :default) { |key| "Value for #{key}"} # => "Value for nosuch"
- *
- *  ---
- *
- *  Raises an exception if +key+ is invalid
- *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
- *    h = {foo: 0, bar: 1, baz: 2}
- *    # Raises NoMethodError (undefined method `hash' for #<BasicObject>):
-
- *    h.fetch(BasicObject.new)
  */
 
 static VALUE
@@ -2525,14 +2508,6 @@ rb_hash_delete(VALUE hash, VALUE key)
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.delete(:nosuch) { |key| "Key #{key} not found" } # => "Key nosuch not found"
  *    h # => {:foo=>0, :bar=>1, :baz=>2}
- *
- *  ---
- *
- *  Raises an exception if +key+ is invalid
- *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
- *    h = {foo: 0, bar: 1, baz: 2}
- *    # Raises NoMethodError (undefined method `hash' for #<BasicObject>):
- *    h.delete(BasicObject.new)
  */
 
 static VALUE
@@ -2782,14 +2757,6 @@ rb_hash_reject(VALUE hash)
  *    h1 = h.slice(:baz, :foo)
  *    h1 # => {:baz=>2, :foo=>0}
  *    h1.equal?(h) # => false
- *
- *  ---
- *
- *  Raises an exception if any given key is invalid
- *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
- *    h = {foo: 0, bar: 1, baz: 2}
- *    # Raises NoMethodError (undefined method `hash' for #<BasicObject>):
- *    h.slice(:foo, BasicObject.new)
  */
 
 static VALUE
@@ -2851,14 +2818,6 @@ rb_hash_except(int argc, VALUE *argv, VALUE hash)
  *  Returns an empty Array if no arguments given:
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.values_at # => []
- *
- *  ---
- *
- *  Raises an exception if any given key is invalid
- *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
- *    h = {foo: 0, bar: 1, baz: 2}
- *    # Raises NoMethodError (undefined method `hash' for #<BasicObject>):
- *    h.values_at(BasicObject.new)
  */
 
 VALUE
@@ -2894,15 +2853,9 @@ rb_hash_values_at(int argc, VALUE *argv, VALUE hash)
  *
  *  ---
  *
- *  Raises an exception if any given key is not found:
+ *  When no block is given, raises an exception if any given key is not found:
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.fetch_values(:baz, :nosuch) # Raises KeyError (key not found: :nosuch)
- *
- *  Raises an exception if any given key is invalid
- *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
- *    h = {foo: 0, bar: 1, baz: 2}
- *    # Raises NoMethodError (undefined method `hash' for #<BasicObject>):
- *    h.fetch_values(:baz, BasicObject.new)
  */
 
 static VALUE
@@ -3158,16 +3111,6 @@ NOINSERT_UPDATE_CALLBACK(hash_aset_str)
  *    h[:baz] = 2 # => 2
  *    h.store(:bat, 3) # => 3
  *    h # => {:foo=>0, :bar=>1, :baz=>2, :bat=>3}
- *
- *  ---
- *
- *  Raises an exception if +key+ is invalid
- *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
- *    h = {foo: 0, bar: 1}
- *    # Raises NoMethodError (undefined method `hash' for #<BasicObject>):
- *    h[BasicObject.new] = 2
- *    # Raises NoMethodError (undefined method `hash' for #<BasicObject>):
- *    h.store(BasicObject.new, 2)
  */
 
 VALUE
@@ -3502,12 +3445,6 @@ transform_keys_i(VALUE key, VALUE value, VALUE result)
  *
  *  ---
  *
- *  Raises an exception if the block returns an invalid key
- *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
- *    h = {foo: 0, bar: 1, baz: 2}
- *    # Raises NoMethodError (undefined method `hash' for #<BasicObject>)
- *    h.transform_keys {|key| BasicObject.new }
- *
  *  Raises an exception if the block attempts to add a new key:
  *    h = {foo: 0, bar: 1, baz: 2}
  *    # Raises RuntimeError (can't add a new key into hash during iteration)
@@ -3569,14 +3506,6 @@ static VALUE rb_hash_flatten(int argc, VALUE *argv, VALUE hash);
  *    e = h.transform_keys! # => #<Enumerator: {"foo"=>0, "bar"=>1, "baz"=>2}:transform_keys!>
  *    h1 = e.each { |key| key.to_s }
  *    h1 # => {"foo"=>0, "bar"=>1, "baz"=>2}
- *
- *  ---
- *
- *  Raises an exception if the block returns an invalid key
- *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
- *    h = {foo: 0, bar: 1, baz: 2}
- *    # Raises NoMethodError (undefined method `hash' for #<BasicObject>)
- *    h.transform_keys! {|key| BasicObject.new }
  */
 static VALUE
 rb_hash_transform_keys_bang(int argc, VALUE *argv, VALUE hash)
@@ -3879,12 +3808,6 @@ rb_hash_to_h_block(VALUE hash)
  *    # Raises ArgumentError (element has wrong array length (expected 2, was 3)):
  *    h1 = h.to_h {|key, value| [0, 1, 2] }
  *
- *  Raises an exception if the block returns an invalid key
- *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
- *    h = {foo: 0, bar: 1, baz: 2}
- *   # Raises NoMethodError (undefined method `hash' for #<BasicObject>)
- *    h1 = h.to_h {|key, value| [BasicObject.new, 0] }
- *
  *  Raises an exception if the block attempts to add a new key:
  *    h = {foo: 0, bar: 1, baz: 2}
  *    # Raises RuntimeError (can't add a new key into hash during iteration):
@@ -4010,13 +3933,6 @@ rb_hash_values(VALUE hash)
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.include?(:bar) # => true
  *    h.include?(:nosuch) # => false
- *
- *  ---
- *
- *  Raises an exception if +key+ is invalid
- *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
- *    # Raises NoMethodError (undefined method `hash' for #<BasicObject>):
- *    h.include?(BasicObject.new)
  */
 
 MJIT_FUNC_EXPORTED VALUE
@@ -4283,14 +4199,6 @@ rb_hash_invert_i(VALUE key, VALUE value, VALUE hash)
  *  (see {Entry Order}[#class-Hash-label-Entry+Order]):
  *    h = {foo: 0, bar: 0, baz: 0}
  *    h.invert # => {0=>:baz}
- *
- *  ---
- *
- *  Raises an exception if any value cannot be a key
- *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
- *    h = {foo: 0, bar: 1, baz: BasicObject.new}
- *    # Raises NoMethodError (undefined method `hash' for #<BasicObject>):
- *    h.invert
  */
 
 static VALUE
@@ -4633,14 +4541,6 @@ assoc_i(VALUE key, VALUE val, VALUE arg)
  *  Returns +nil+ if key +key+ is not found:
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.assoc(:nosuch)
- *
- *  ---
- *
- *  Raises an exception if +key+ is invalid (see Invalid Hash Keys)
- *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
- *    h = {foo: 0, bar: 1, baz: 2}
- *    # Raises NoMethodError (undefined method `hash' for #<BasicObject>)
- *    h.assoc(BasicObject.new)
  */
 
 VALUE
@@ -5086,6 +4986,22 @@ rb_hash_any_p(int argc, VALUE *argv, VALUE hash)
  *    h.dig(:foo, :bar) # => {:bar=>{:baz=>2}}
  *    h.dig(:foo, :bar, :baz) # => 2
  *    h.dig(:foo, :bar, :BAZ) # => nil
+ *
+ *  Returns +nil+ if any key is not found:
+ *    h = { foo: {bar: {baz: 2}}}
+ *    h.dig(:foo, :nosuch) # => nil
+ *
+ *  The nested objects may include any that respond to \#dig.  See:
+ *  - Hash#dig
+ *  - Array#dig
+ *  - Struct#dig
+ *  - OpenStruct#dig
+ *  - CSV::Table#dig
+ *  - CSV::Row#dig
+ *
+ *  Example:
+ *    h = {foo: {bar: [:a, :b, :c]}}
+ *    h.dig(:foo, :bar, 2) # => :c
  */
 
 static VALUE
@@ -7277,13 +7193,6 @@ env_update(VALUE env, VALUE hash)
  *  Two objects are treated as the same \hash key when their <code>hash</code> value
  *  is identical and the two objects are <code>eql?</code> to each other.
  *
- *  ==== Invalid \Hash Keys
- *
- *  An object that lacks method #hash cannot be a \Hash key:
- *
- *    # Raises NoMethodError (undefined method `hash' for #<BasicObject>):
- *    {BasicObject.new => 0}
- *
  *  ==== Modifying an Active \Hash Key
  *
  *  Modifying a \Hash key while it is in use damages the hash's index.
@@ -7326,9 +7235,13 @@ env_update(VALUE env, VALUE hash)
  *
  *  ==== User-Defined \Hash Keys
  *
- *  A user-defined class may be used as a \Hash key if the <code>hash</code>
- *  and <code>eql?</code> methods are overridden to provide meaningful
- *  behavior.  By default, separate instances refer to separate \Hash keys.
+ *  To be useable as a \Hash key, objects must implement the methods <code>hash</code> and <code>eql?</code>.
+ *  Note: this requirement does not apply if the \Hash uses #compare_by_id since comparison will then rely on
+ *  the keys' object id instead of <code>hash</code> and <code>eql?</code>.
+ *
+ *  \Object defines basic implementation for <code>hash</code> and <code>eq?</code> that makes each object
+ *  a distinct key. Typically, user-defined classes will want to override these methods to provide meaningful
+ *  behavior, or for example inherit \Struct that has useful definitions for these.
  *
  *  A typical implementation of <code>hash</code> is based on the
  *  object's data while <code>eql?</code> is usually aliased to the overridden
@@ -7343,8 +7256,8 @@ env_update(VALUE env, VALUE hash)
  *      end
  *
  *      def ==(other)
- *        self.class === other and
- *          other.author == @author and
+ *        self.class === other &&
+ *          other.author == @author &&
  *          other.title == @title
  *      end
  *
