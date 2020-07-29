@@ -2345,7 +2345,6 @@ class Reline::LineEditor
     new_pointer = [@byte_pointer, @line_index]
     @previous_line_index = @line_index
     @byte_pointer, @line_index = @mark_pointer
-    @byte_pointer, @line_index = @mark_pointer
     @cursor = calculate_width(@line.byteslice(0, @byte_pointer))
     @cursor_max = calculate_width(@line)
     @mark_pointer = new_pointer
