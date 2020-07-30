@@ -34,7 +34,6 @@ un.rb:: Utilities to replace common UNIX commands
 
 Coverage:: Provides coverage measurement for Ruby
 Digest:: Provides a framework for message digest libraries
-IO:: Extensions for Ruby IO class, including #wait and ::console
 Monitor:: Provides an object or module to use safely by more than one thread
 NKF:: Ruby extension for Network Kanji Filter
 objspace:: Extends ObjectSpace module to add methods for internal statistics
@@ -97,8 +96,7 @@ Etc:: Provides access to information typically stored in UNIX /etc directory
 Fcntl:: Loads constants defined in the OS fcntl.h C header file
 Fiddle:: A libffi wrapper for Ruby
 GDBM:: Ruby extension for the GNU dbm (gdbm) library
-IO::console:: Console interface
-IO::wait::
+IO:: Extensions for Ruby IO class, including #wait, #nonblock and ::console
 JSON:: Implements Javascript Object Notation for Ruby
 OpenSSL:: Provides SSL, TLS and general purpose cryptography for Ruby
 Psych:: A YAML parser and emitter for Ruby

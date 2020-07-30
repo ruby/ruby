@@ -14,6 +14,7 @@ $repositories = {
   fiddle: 'ruby/fiddle',
   stringio: 'ruby/stringio',
   "io-console": 'ruby/io-console',
+  "io-nonblock": 'ruby/io-nonblock',
   "io-wait": 'ruby/io-wait',
   csv: 'ruby/csv',
   webrick: 'ruby/webrick',
@@ -135,6 +136,12 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/lib/io/console", "ext/io/console/lib")
     cp_r("#{upstream}/io-console.gemspec", "ext/io/console")
     `git checkout ext/io/console/depend`
+  when "io-nonblock"
+    rm_rf(%w[ext/io/nonblock test/io/nonblock])
+    cp_r("#{upstream}/ext/io/nonblock", "ext/io")
+    cp_r("#{upstream}/test/io/nonblock", "test/io")
+    cp_r("#{upstream}/io-nonblock.gemspec", "ext/io/nonblock")
+    `git checkout ext/io/nonblock/depend`
   when "io-wait"
     rm_rf(%w[ext/io/wait test/io/wait])
     cp_r("#{upstream}/ext/io/wait", "ext/io")
