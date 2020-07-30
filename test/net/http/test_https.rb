@@ -143,6 +143,14 @@ class TestNetHTTPS < Test::Unit::TestCase
     http.use_ssl = true
     http.cert_store = TEST_STORE
 
+    if OpenSSL::OPENSSL_LIBRARY_VERSION =~ /LibreSSL (\d+\.\d+)/ && $1.to_f > 3.19
+      # LibreSSL 3.2 defaults to TLSv1.3 in server and client, which doesn't currently
+      # support session resuse.  Limiting the version to the TLSv1.2 stack allows
+      # this test to continue to work on LibreSSL 3.2+.  LibreSSL may eventually
+      # support session reuse, but there are no current plans to do so.
+      http.ssl_version = :TLSv1
+    end
+
     http.start
     http.get("/")
     http.finish
