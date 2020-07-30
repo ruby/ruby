@@ -276,6 +276,34 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     Gem.disable_system_update_message = old_disable_system_update_message
   end
 
+  # The other style of `gem update --system` tests don't actually run
+  # setup.rb, so we just check that setup.rb gets the `--silent` flag.
+  def test_execute_system_silent_passed_to_setuprb
+    @cmd.options[:args] = []
+    @cmd.options[:system] = true
+    @cmd.options[:silent] = true
+
+    assert_equal true, @cmd.update_rubygems_arguments.include?('--silent')
+  end
+
+  def test_execute_system_silent
+    spec_fetcher do |fetcher|
+      fetcher.download 'rubygems-update', 9 do |s|
+        s.files = %w[setup.rb]
+      end
+    end
+
+    @cmd.options[:args]          = []
+    @cmd.options[:system]        = true
+    @cmd.options[:silent]        = true
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    assert_empty @ui.output
+  end
+
   # before:
   #   a1 -> c1.2
   # after:

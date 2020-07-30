@@ -174,13 +174,13 @@ command to remove old versions.
     update_dir = File.join Gem.dir, 'gems', "rubygems-update-#{version}"
 
     Dir.chdir update_dir do
-      say "Installing RubyGems #{version}"
+      say "Installing RubyGems #{version}" unless options[:silent]
 
       installed = preparing_gem_layout_for(version) do
         system Gem.ruby, '--disable-gems', 'setup.rb', *args
       end
 
-      say "RubyGems system software updated" if installed
+      say "RubyGems system software updated" if installed unless options[:silent]
     end
   end
 
