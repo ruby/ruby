@@ -7026,7 +7026,7 @@ flatten(VALUE ary, int level)
  *  Replaces each nested \Array in +self+ with the elements from that \Array;
  *  returns +self+ if any changes, +nil+ otherwise.
  *
- *  Argument +level+, if given, must be an
+ *  Argument +level+, if given and not +nil+, must be an
  *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
  *
  *  With non-negative argument +level+, flattens recursively through +level+ levels:
@@ -7040,7 +7040,7 @@ flatten(VALUE ary, int level)
  *    a.flatten!(3) # => [0, 1, 2, 3, 4, 5]
  *    [0, 1, 2].flatten!(1) # => nil
  *
- *  With no argument,  or with negative argument +level+, flattens all levels:
+ *  With no argument, a +nil+ argument, or with negative argument +level+, flattens all levels:
  *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
  *    a.flatten! # => [0, 1, 2, 3, 4, 5]
  *    [0, 1, 2].flatten! # => nil
@@ -7094,7 +7094,7 @@ rb_ary_flatten_bang(int argc, VALUE *argv, VALUE ary)
  *  - Each non-Array element is unchanged.
  *  - Each \Array is replaced by its individual elements.
  *
- *  Argument +level+, if given, must be
+ *  Argument +level+, if given and not +nil+, must be
  *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
  *
  *  With non-negative argument +level+, flattens recursively through +level+ levels:
@@ -7107,7 +7107,7 @@ rb_ary_flatten_bang(int argc, VALUE *argv, VALUE ary)
  *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
  *    a.flatten(3) # => [0, 1, 2, 3, 4, 5]
  *
- *  With no argument, or with negative argument +level+, flattens all levels:
+ *  With no argument, a +nil+ argument, or with negative argument +level+, flattens all levels:
  *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
  *    a.flatten # => [0, 1, 2, 3, 4, 5]
  *    [0, 1, 2].flatten # => [0, 1, 2]
