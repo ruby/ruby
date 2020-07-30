@@ -4581,7 +4581,7 @@ static void install_handlers(void)
 static void
 gc_compact_finish(rb_objspace_t *objspace, rb_heap_t *heap)
 {
-    assert(heap->sweeping_page == heap->compact_cursor);
+    GC_ASSERT(heap->sweeping_page == heap->compact_cursor);
 
     gc_unprotect_pages(objspace, heap);
     uninstall_handlers();
@@ -4604,12 +4604,9 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 
     gc_report(2, objspace, "page_sweep: start.\n");
 
-    assert(sweep_page == heap->sweeping_page);
     sweep_page->flags.before_sweep = FALSE;
 
     if (heap->compact_cursor) {
-        assert(heap->freelist == NULL);
-        assert(heap->free_pages == NULL);
         if (sweep_page == heap->compact_cursor) {
             /* The compaction cursor and sweep page met, so we need to quit compacting */
             gc_report(5, objspace, "Quit compacting, mark and compact cursor met\n");
