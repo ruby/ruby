@@ -68,18 +68,6 @@ class TestOpenURI < Test::Unit::TestCase
     @proxies.each_with_index {|k, i| ENV[k] = @old_proxies[i] }
   end
 
-  def test_deprecated_kernel_open
-    with_http {|srv, dr, url|
-      srv.mount_proc("/foo200", lambda { |req, res| res.body = "foo200" } )
-      assert_warning(/calling URI.open via Kernel#open is deprecated, call URI.open directly/) {
-        open("#{url}/foo200") {|f|
-          assert_equal("200", f.status[0])
-          assert_equal("foo200", f.read)
-        }
-      }
-    }
-  end
-
   def test_200_uri_open
     with_http {|srv, dr, url|
       srv.mount_proc("/urifoo200", lambda { |req, res| res.body = "urifoo200" } )
