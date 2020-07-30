@@ -14,6 +14,7 @@ $repositories = {
   fiddle: 'ruby/fiddle',
   stringio: 'ruby/stringio',
   "io-console": 'ruby/io-console',
+  "io-wait": 'ruby/io-wait',
   csv: 'ruby/csv',
   webrick: 'ruby/webrick',
   dbm: 'ruby/dbm',
@@ -134,6 +135,12 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/lib/io/console", "ext/io/console/lib")
     cp_r("#{upstream}/io-console.gemspec", "ext/io/console")
     `git checkout ext/io/console/depend`
+  when "io-wait"
+    rm_rf(%w[ext/io/wait test/io/wait])
+    cp_r("#{upstream}/ext/io/wait", "ext/io")
+    cp_r("#{upstream}/test/io/wait", "test/io")
+    cp_r("#{upstream}/io-wait.gemspec", "ext/io/wait")
+    `git checkout ext/io/wait/depend`
   when "dbm"
     rm_rf(%w[ext/dbm test/dbm])
     cp_r("#{upstream}/ext/dbm", "ext")

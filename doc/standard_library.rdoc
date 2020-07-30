@@ -98,6 +98,7 @@ Fcntl:: Loads constants defined in the OS fcntl.h C header file
 Fiddle:: A libffi wrapper for Ruby
 GDBM:: Ruby extension for the GNU dbm (gdbm) library
 IO::console:: Console interface
+IO::wait::
 JSON:: Implements Javascript Object Notation for Ruby
 OpenSSL:: Provides SSL, TLS and general purpose cryptography for Ruby
 Psych:: A YAML parser and emitter for Ruby
