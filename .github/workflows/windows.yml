@@ -15,6 +15,16 @@ jobs:
     steps:
       - uses: actions/cache@v2
         with:
+          path: C:\Users\runneradmin\AppData\Local\Temp\chocolatey
+          key: ${{ runner.os }}-chocolatey-${{ matrix.os }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-chocolatey-${{ matrix.os }}-
+            ${{ runner.os }}-chocolatey-
+      - name: Install libraries with chocolatey
+        run: |
+          choco install --no-progress openssl winflexbison3 pkgconfiglite
+      - uses: actions/cache@v2
+        with:
           path: C:\vcpkg\downloads
           key: ${{ runner.os }}-vcpkg-download-${{ matrix.os }}-${{ github.sha }}
           restore-keys: |
@@ -23,16 +33,6 @@ jobs:
       - name: Install libraries with vcpkg
         run: |
           vcpkg --triplet x64-windows install readline zlib
-      - uses: actions/cache@v2
-        with:
-          path: C:\Users\runneradmin\AppData\Local\Temp\chocolatey
-          key: ${{ runner.os }}-chocolatey-${{ matrix.os }}-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-chocolatey-${{ matrix.os }}-
-            ${{ runner.os }}-chocolatey-
-      - name: Install libraries with chocolatey
-        run: |
-          choco install --no-progress openssl winflexbison3
       - name: git config
         run: |
           git config --system advice.detachedHead 0
