@@ -130,7 +130,7 @@ RSpec.describe "bundle install" do
 
       expect(err).to include("Ruby patchlevel")
       expect(err).to include("but your Gemfile specified")
-      expect(exitstatus).to eq(18) if exitstatus
+      expect(exitstatus).to eq(18)
     end
 
     it "fails and complains about version on version mismatch" do
@@ -147,7 +147,7 @@ RSpec.describe "bundle install" do
 
       expect(err).to include("Ruby version")
       expect(err).to include("but your Gemfile specified")
-      expect(exitstatus).to eq(18) if exitstatus
+      expect(exitstatus).to eq(18)
     end
   end
 end

@@ -754,7 +754,7 @@ module RbInstall
 
     def extract_files(destination_dir, pattern = "*")
       return if @src_dir == destination_dir
-      File.chmod(0700, destination_dir)
+      File.chmod(0700, destination_dir) unless $dryrun
       mode = pattern == File.join(spec.bindir, '*') ? prog_mode : data_mode
       destdir = without_destdir(destination_dir)
       spec.files.each do |f|
@@ -763,11 +763,14 @@ module RbInstall
         makedirs(dest[/.*(?=\/)/m])
         install src, dest, :mode => mode
       end
-      File.chmod(dir_mode, destination_dir)
+      File.chmod(dir_mode, destination_dir) unless $dryrun
     end
   end
 
-  class UnpackedInstaller < Gem::Installer
+  class GemInstaller < Gem::Installer
+  end
+
+  class UnpackedInstaller < GemInstaller
     def write_cache_file
     end
 
@@ -797,7 +800,6 @@ module RbInstall
     def generate_bin_script(filename, bindir)
       return if same_bin_script?(filename, bindir)
       super
-      $installed_list.puts(File.join(without_destdir(bindir), filename)) if $installed_list
     end
 
     def same_bin_script?(filename, bindir)
@@ -810,28 +812,54 @@ module RbInstall
     end
 
     def write_spec
-      super
+      super unless $dryrun
       $installed_list.puts(without_destdir(spec_file)) if $installed_list
     end
   end
-end
 
-class Gem::Installer
-  install = instance_method(:install)
-  define_method(:install) do
-    spec.post_install_message = nil
-    begin
+  class GemInstaller
+    def install
+      spec.post_install_message = nil
       u = File.umask(0022)
-      install.bind(self).call
+      if $dryrun
+        fu = ::Object.class_eval do
+          fu = remove_const(:FileUtils)
+          const_set(:FileUtils, fu::NoWrite)
+          fu
+        end
+        dir_mode = options.delete(:dir_mode)
+      end
+      super
     ensure
+      options[:dir_mode] = dir_mode if dir_mode
+      if fu
+        ::Object.class_eval do
+          remove_const(:FileUtils)
+          const_set(:FileUtils, fu)
+        end
+      end
       File.umask(u)
     end
-  end
 
-  generate_bin_script = instance_method(:generate_bin_script)
-  define_method(:generate_bin_script) do |filename, bindir|
-    generate_bin_script.bind(self).call(filename, bindir)
-    File.chmod($script_mode, File.join(bindir, formatted_program_filename(filename)))
+    def generate_bin_script(filename, bindir)
+      name = formatted_program_filename(filename)
+      unless $dryrun
+        super
+        File.chmod($script_mode, File.join(bindir, name))
+      end
+      $installed_list.puts(File.join(without_destdir(bindir), name)) if $installed_list
+    end
+
+    def verify_gem_home # :nodoc:
+    end
+
+    def ensure_writable_dir(dir)
+      $made_dirs.fetch(d = without_destdir(dir)) do
+        $made_dirs[d] = true
+        super unless $dryrun
+        $installed_list.puts(d) if $installed_list
+      end
+    end
   end
 end
 
@@ -876,7 +904,7 @@ def install_default_gem(dir, srcdir)
   gems.compact.sort_by(&:name).each do |gemspec|
     old_gemspecs = Dir[File.join(with_destdir(default_spec_dir), "#{gemspec.name}-*.gemspec")]
     if old_gemspecs.size > 0
-      old_gemspecs.each {|spec| FileUtils.rm spec }
+      old_gemspecs.each {|spec| rm spec }
     end
 
     full_name = "#{gemspec.name}-#{gemspec.version}"
@@ -939,7 +967,9 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
     ins = RbInstall::UnpackedInstaller.new(package, options)
     puts "#{INDENT}#{spec.name} #{spec.version}"
     ins.install
-    File.chmod($data_mode, File.join(install_dir, "specifications", "#{spec.full_name}.gemspec"))
+    unless $dryrun
+      File.chmod($data_mode, File.join(install_dir, "specifications", "#{spec.full_name}.gemspec"))
+    end
     unless spec.extensions.empty?
       install_recursive(ext, spec.extension_dir)
     end
@@ -956,7 +986,7 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
     silent = Gem::SilentUI.new
     gems.each do |gem|
       package = Gem::Package.new(gem)
-      inst = Gem::Installer.new(package, options)
+      inst = RbInstall::GemInstaller.new(package, options)
       inst.spec.extension_dir = with_destdir(inst.spec.extension_dir)
       begin
         Gem::DefaultUserInteraction.use_ui(silent) {inst.install}

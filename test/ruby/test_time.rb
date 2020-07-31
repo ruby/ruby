@@ -1069,6 +1069,11 @@ class TestTime < Test::Unit::TestCase
     t2 = (t+0.123456789).ceil(4)
     assert_equal([59,59,23, 31,12,1999, 5,365,false,"UTC"], t2.to_a)
     assert_equal(Rational(1235,10000), t2.subsec)
+
+    time = Time.utc(2016, 4, 23, 0, 0, 0.123456789r)
+    assert_equal(time, time.ceil(9))
+    assert_equal(time, time.ceil(10))
+    assert_equal(time, time.ceil(11))
   end
 
   def test_getlocal_dont_share_eigenclass

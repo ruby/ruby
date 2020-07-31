@@ -118,7 +118,7 @@ jobs:
           - { key: cppflags, name: USE_TRANSIENT_HEAP=0,           value: '-DUSE_TRANSIENT_HEAP=0' }
           - { key: cppflags, name: USE_RUBY_DEBUG_LOG=1,           value: '-DUSE_RUBY_DEBUG_LOG=1' }
 
-          - { key: cppflags, name: DEBUG_FIND_TIME_NUMGESS,        value: '-DDEBUG_FIND_TIME_NUMGESS' }
+          - { key: cppflags, name: DEBUG_FIND_TIME_NUMGUESS,       value: '-DDEBUG_FIND_TIME_NUMGUESS' }
           - { key: cppflags, name: DEBUG_INTEGER_PACK,             value: '-DDEBUG_INTEGER_PACK' }
           - { key: cppflags, name: ENABLE_PATH_CHECK,              value: '-DENABLE_PATH_CHECK' }
 

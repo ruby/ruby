@@ -99,14 +99,11 @@ RSpec.configure do |config|
       FileUtils.cp_r pristine_system_gem_path, system_gem_path
 
       with_gem_path_as(system_gem_path) do
-        @command_executions = []
-
         Bundler.ui.silence { example.run }
 
-        all_output = @command_executions.map(&:to_s_verbose).join("\n\n")
+        all_output = all_commands_output
         if example.exception && !all_output.empty?
-          warn all_output unless config.formatters.grep(RSpec::Core::Formatters::DocumentationFormatter).empty?
-          message = example.exception.message + "\n\nCommands:\n#{all_output}"
+          message = example.exception.message + all_output
           (class << example.exception; self; end).send(:define_method, :message) do
             message
           end

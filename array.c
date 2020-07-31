@@ -4677,17 +4677,24 @@ ary_reject_bang(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.reject! {|item| block}    -> ary or nil
- *     ary.reject!                   -> Enumerator
+ *    array.reject! {|element| ... } -> self or nil
+ *    array.reject! -> new_enumerator
  *
- *  Deletes every element of +self+ for which the block evaluates to +true+,
- *  if no changes were made returns +nil+.
+ *  Removes each element for which the block returns a truthy value.
  *
- *  The array may not be changed instantly every time the block is called.
+ *  Returns +self+ if any elements removed:
+ *    a = [:foo, 'bar', 2, 'bat']
+ *    a1 = a.reject! {|element| element.to_s.start_with?('b') }
+ *    a1 # => [:foo, 2]
+ *    a1.equal?(a) # => true # Returned self
  *
- *  See also Enumerable#reject and Array#delete_if.
+ *  Returns +nil+ if no elements removed:
+ *    a = [:foo, 'bar', 2]
+ *    a.reject! {|element| false } # => nil
  *
- *  If no block is given, an Enumerator is returned instead.
+ *  Returns a new \Enumerator if no block given:
+ *    a = [:foo, 'bar', 2]
+ *    a.reject! # => #<Enumerator: [:foo, "bar", 2]:reject!>
  */
 
 static VALUE
@@ -4700,15 +4707,18 @@ rb_ary_reject_bang(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.reject  {|item| block }  -> new_ary
- *     ary.reject                   -> Enumerator
+ *    array.reject {|element| ... } -> new_array
+ *    array.reject -> new_enumerator
  *
- *  Returns a new array containing the items in +self+ for which the given
- *  block is not +true+. The ordering of non-rejected elements is maintained.
+ *  Returns a new \Array whose elements are all those from +self+
+ *  for which the block returns +false+ or +nil+:
+ *    a = [:foo, 'bar', 2, 'bat']
+ *    a1 = a.reject { |element| element.to_s.start_with?('b') }
+ *    a1 # => [:foo, 2]
  *
- *  See also Array#delete_if
- *
- *  If no block is given, an Enumerator is returned instead.
+ *  Returns a new \Enumerator if no block given:
+ *     a = [:foo, 'bar', 2]
+ *     a.reject # => #<Enumerator: [:foo, "bar", 2]:reject>
  */
 
 static VALUE
@@ -4724,20 +4734,19 @@ rb_ary_reject(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.delete_if {|item| block}    -> ary
- *     ary.delete_if                   -> Enumerator
+ *    array.delete_if {|element| ... } -> self
+ *    array.delete_if -> Enumerator
  *
- *  Deletes every element of +self+ for which block evaluates to +true+.
+ *  Removes each element in +self+ for which the block returns a truthy value;
+ *  returns +self+:
+ *    a = [:foo, 'bar', 2, 'bat']
+ *    a1 = a.delete_if {|element| element.to_s.start_with?('b') }
+ *    a1 # => [:foo, 2]
+ *    a1.equal?(a) # => true # Returned self
  *
- *  The array is changed instantly every time the block is called, not after
- *  the iteration is over.
- *
- *  See also Array#reject!
- *
- *  If no block is given, an Enumerator is returned instead.
- *
- *     scores = [ 97, 42, 75 ]
- *     scores.delete_if {|score| score < 80 }   #=> [97]
+ *  Returns a new \Enumerator if no block given:
+ *    a = [:foo, 'bar', 2]
+ *    a.delete_if # => #<Enumerator: [:foo, "bar", 2]:delete_if>
  */
 
 static VALUE
@@ -4778,26 +4787,67 @@ take_items(VALUE obj, long n)
 
 /*
  *  call-seq:
- *     ary.zip(arg, ...)                  -> new_ary
- *     ary.zip(arg, ...) {|arr| block}    -> nil
+ *    array.zip(*other_arrays) -> new_array
+ *    array.zip(*other_arrays) {|other_array| ... } -> nil
  *
- *  Converts any arguments to arrays, then merges elements of +self+ with
- *  corresponding elements from each argument.
+ *  Each object in +other_arrays+ must be an
+ *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects].
  *
- *  This generates a sequence of <code>ary.size</code> _n_-element arrays,
- *  where _n_ is one more than the count of arguments.
+ *  ---
  *
- *  If the size of any argument is less than the size of the initial array,
- *  +nil+ values are supplied.
+ *  When no block given, returns a new \Array +new_array+ of size <tt>self.size</tt>
+ *  whose elements are Arrays.
  *
- *  If a block is given, it is invoked for each output +array+, otherwise an
- *  array of arrays is returned.
+ *  Each nested array <tt>new_array[n]</tt> is of size <tt>other_arrays.size+1</tt>,
+ *  and contains:
+ *  - The _nth_ element of +self+.
+ *  - The _nth_ element of each of the +other_arrays+.
  *
- *     a = [ 4, 5, 6 ]
- *     b = [ 7, 8, 9 ]
- *     [1, 2, 3].zip(a, b)   #=> [[1, 4, 7], [2, 5, 8], [3, 6, 9]]
- *     [1, 2].zip(a, b)      #=> [[1, 4, 7], [2, 5, 8]]
- *     a.zip([1, 2], [8])    #=> [[4, 1, 8], [5, 2, nil], [6, nil, nil]]
+ *  If all +other_arrays+ and +self+ are the same size:
+ *    a = [:a0, :a1, :a2, :a3]
+ *    b = [:b0, :b1, :b2, :b3]
+ *    c = [:c0, :c1, :c2, :c3]
+ *    d = a.zip(b, c)
+ *    d # => [[:a0, :b0, :c0], [:a1, :b1, :c1], [:a2, :b2, :c2], [:a3, :b3, :c3]]
+ *
+ *  If any array in +other_arrays+ is smaller than +self+,
+ *  fills to <tt>self.size</tt> with +nil+:
+ *    a = [:a0, :a1, :a2, :a3]
+ *    b = [:b0, :b1, :b2]
+ *    c = [:c0, :c1]
+ *    d = a.zip(b, c)
+ *    d # => [[:a0, :b0, :c0], [:a1, :b1, :c1], [:a2, :b2, nil], [:a3, nil, nil]]
+ *
+ *  If any array in +other_arrays+ is larger than +self+,
+ *  its trailing elements are ignored:
+ *    a = [:a0, :a1, :a2, :a3]
+ *    b = [:b0, :b1, :b2, :b3, :b4]
+ *    c = [:c0, :c1, :c2, :c3, :c4, :c5]
+ *    d = a.zip(b, c)
+ *    d # => [[:a0, :b0, :c0], [:a1, :b1, :c1], [:a2, :b2, :c2], [:a3, :b3, :c3]]
+ *
+ *  ---
+ *
+ *  When a block is given, calls the block with each of the sub-arrays (formed as above); returns nil
+ *    a = [:a0, :a1, :a2, :a3]
+ *    b = [:b0, :b1, :b2, :b3]
+ *    c = [:c0, :c1, :c2, :c3]
+ *    a.zip(b, c) {|sub_array| p sub_array} # => nil
+ *
+ *  Output:
+ *    [:a0, :b0, :c0]
+ *    [:a1, :b1, :c1]
+ *    [:a2, :b2, :c2]
+ *    [:a3, :b3, :c3]
+ *
+ *  ---
+ *
+ *  Raises an exception if any object in +other_arrays+ is not an Array-convertible object:
+ *    a = [:a0, :a1, :a2, :a3]
+ *    b = [:b0, :b1, :b2, :b3]
+ *    c = [:c0, :c1, :c2, :c3]
+ *    # Raises TypeError (wrong argument type Symbol (must respond to :each)):
+ *    d = a.zip(a, b, c, :foo)
  */
 
 static VALUE
@@ -4860,15 +4910,27 @@ rb_ary_zip(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *     ary.transpose -> new_ary
+ *    array.transpose -> new_array
  *
- *  Assumes that +self+ is an array of arrays and transposes the rows and
- *  columns.
+ *  Transposes the rows and columns in an array of arrays.
  *
- *     a = [[1,2], [3,4], [5,6]]
- *     a.transpose   #=> [[1, 3, 5], [2, 4, 6]]
+ *  Each element in +self+ must be an
+ *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects].
  *
- *  If the length of the subarrays don't match, an IndexError is raised.
+ *    a = [[:a0, :a1], [:b0, :b1], [:c0, :c1]]
+ *    a.transpose # => [[:a0, :b0, :c0], [:a1, :b1, :c1]]
+ *
+ *  ---
+ *
+ *  Raises an exception if any element in +self+ is not an Array-convertible object:
+ *    a = [[:a0, :a1], [:b0, :b1], :foo]
+ *    # Raises TypeError (no implicit conversion of Symbol into Array):
+ *    a.transpose
+ *
+ *  Raises an exception if the elements in +self+ are of differing sizes:
+ *    a = [[:a0, :a1], [:b0, :b1], [:c0, :c1, :c2]]
+ *    # Raises IndexError (element size differs (3 should be 2)):
+ *    a.transpose
  */
 
 static VALUE
@@ -4901,15 +4963,33 @@ rb_ary_transpose(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.replace(other_ary)  -> ary
- *     ary.initialize_copy(other_ary)	-> ary
+ *    array.replace(other_array) -> self
  *
- *  Replaces the contents of +self+ with the contents of +other_ary+,
- *  truncating or expanding if necessary.
+ *  Replaces the content of +self+ with the content of +other_array+; returns +self+.
  *
- *     a = [ "a", "b", "c", "d", "e" ]
- *     a.replace([ "x", "y", "z" ])   #=> ["x", "y", "z"]
- *     a                              #=> ["x", "y", "z"]
+ *  Argument +other_array+ must be an
+ *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects].
+ *
+ *  ---
+ *
+ *  Replaces the content of +self+ with the content of +other_array+:
+ *    a = [:foo, 'bar', 2]
+ *    a1 = a.replace(['foo', :bar, 3])
+ *    a1 # => ["foo", :bar, 3]
+ *    a1.equal?(a) # => true # Returned self
+ *
+ *  Ignores the size of +self+:
+ *
+ *    a = [:foo, 'bar', 2]
+ *    a.replace([]) # => []
+ *    a.replace([:foo, 'bar', 2]) # => [:foo, "bar", 2]
+ *
+ *  ---
+ *
+ *  Raises an exception if +other_array+ is not an Array-convertible object:
+ *    a = [:foo, 'bar', 2]
+ *    # Raises TypeError (no implicit conversion of Symbol into Array):
+ *    a.replace(:foo)
  */
 
 VALUE
@@ -4955,12 +5035,13 @@ rb_ary_replace(VALUE copy, VALUE orig)
 
 /*
  *  call-seq:
- *     ary.clear    -> ary
+ *     array.clear -> self
  *
- *  Removes all elements from +self+.
- *
- *     a = [ "a", "b", "c", "d", "e" ]
- *     a.clear    #=> [ ]
+ *  Removes all elements from +self+:
+ *    a = [:foo, 'bar', 2]
+ *    a1 = a.clear
+ *    a1 # => []
+ *    a1.equal?(a) # => true # Returned self
  */
 
 VALUE
@@ -4986,32 +5067,220 @@ rb_ary_clear(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.fill(obj)                                 -> ary
- *     ary.fill(obj, start [, length])               -> ary
- *     ary.fill(obj, range)                          -> ary
- *     ary.fill {|index| block}                      -> ary
- *     ary.fill(start [, length]) {|index| block}    -> ary
- *     ary.fill(range) {|index| block}               -> ary
+ *    array.fill(obj) -> self
+ *    array.fill(obj, start) -> self
+ *    array.fill(obj, start, length) -> self
+ *    array.fill(obj, range) -> self
+ *    array.fill { |index| ... } -> self
+ *    array.fill(start) { |index| ... } -> self
+ *    array.fill(start, length) { |index| ... } -> self
+ *    array.fill(range) { |index| ... } -> self
  *
- *  The first three forms set the selected elements of +self+ (which
- *  may be the entire array) to +obj+.
+ *  Replaces specified elements in +self+ with specified objects; returns +self+.
  *
- *  A +start+ of +nil+ is equivalent to zero.
+ *  - Arguments +start+ and +length+, if given, must be
+ *    {Integer-convertible objects}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
+ *  - Argument +range+, if given, must be a \Range object.
  *
- *  A +length+ of +nil+ is equivalent to the length of the array.
+ *  ---
  *
- *  The last three forms fill the array with the value of the given block,
- *  which is passed the absolute index of each element to be filled.
+ *  With argument +obj+ and no block given, replaces all elements with that one object:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a # => ["a", "b", "c", "d"]
+ *    a1 = a.fill(:X)
+ *    a1 # => [:X, :X, :X, :X]
+ *    a.equal?(a) #  => true # Retrurned self
  *
- *  Negative values of +start+ count from the end of the array, where +-1+ is
- *  the last element.
+ *  ---
  *
- *     a = [ "a", "b", "c", "d" ]
- *     a.fill("x")              #=> ["x", "x", "x", "x"]
- *     a.fill("z", 2, 2)        #=> ["x", "x", "z", "z"]
- *     a.fill("y", 0..1)        #=> ["y", "y", "z", "z"]
- *     a.fill {|i| i*i}         #=> [0, 1, 4, 9]
- *     a.fill(-2) {|i| i*i*i}   #=> [0, 1, 8, 27]
+ *  With arguments +obj+ and +start+, and no block given, replaces elements based on the given start.
+ *
+ *  If +start+ is in range (<tt>0 <= start < ary.size</tt>),
+ *  replaces all elements from offset +start+ through the end:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(:X, 2) # => ["a", "b", :X, :X]
+ *
+ *  If +start+ is too large (<tt>start >= ary.size</tt>), does nothing:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(:X, 4) # => ["a", "b", "c", "d"]
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(:X, 5) # => ["a", "b", "c", "d"]
+ *
+ *  If +start+ is negative, counts from the end (starting index is <tt>start + ary.size</tt>):
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(:X, -2) # => ["a", "b", :X, :X]
+ *
+ *  If +start+ is too small (less than and far from zero), replaces all elements:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(:X, -6) # => [:X, :X, :X, :X]
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(:X, -50) # => [:X, :X, :X, :X]
+ *
+ *  ---
+ *
+ *  With arguments +obj+, +start+, and +length+, and no block given,
+ *  replaces elements based on the given +start+ and +length+.
+ *
+ *  If +start+ is in range, replaces +length+ elements beginning at offset +start+:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(:X, 1, 1) # => ["a", :X, "c", "d"]
+ *
+ *  If +start+ is negative, counts from the end:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(:X, -2, 1) # => ["a", "b", :X, "d"]
+ *
+ *  If +start+ is large (<tt>start >= ary.size</tt>), extends +self+ with +nil+:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(:X, 5, 0) # => ["a", "b", "c", "d", nil]
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(:X, 5, 2) # => ["a", "b", "c", "d", nil, :X, :X]
+ *
+ *  ---
+ *
+ *  If +length+ is zero or negative, replaces no elements:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(:X, 1, 0) # => ["a", "b", "c", "d"]
+ *    a.fill(:X, 1, -1) # => ["a", "b", "c", "d"]
+ *
+ *  ---
+ *
+ *  With arguments +obj+ and +range+, and no block given,
+ *  replaces elements based on the given range.
+ *
+ *  If the range is positive and ascending (<tt>0 < range.begin <= range.end</tt>),
+ *  replaces elements from <tt>range.begin</tt> to <tt>range.end</tt>:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(:X, (1..1)) # => ["a", :X, "c", "d"]
+ *
+ *  If <tt>range.first</tt> is negative, replaces no elements:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(:X, (-1..1)) # => ["a", "b", "c", "d"]
+ *
+ *  If <tt>range.last</tt> is negative, counts from the end:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(:X, (0..-2)) # => [:X, :X, :X, "d"]
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(:X, (1..-2)) # => ["a", :X, :X, "d"]
+ *
+ *  If <tt>range.last</tt> and <tt>range.last</tt> are both negative,
+ *  both count from the end of the array:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(:X, (-1..-1)) # => ["a", "b", "c", :X]
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(:X, (-2..-2)) # => ["a", "b", :X, "d"]
+ *
+ *  ---
+ *
+ *  With no arguments and a block given, calls the block with each index;
+ *  replaces the corresponding element with the block's return value:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill { |index| "new_#{index}" } # => ["new_0", "new_1", "new_2", "new_3"]
+ *
+ *  ---
+ *
+ *  With argument +start+ and a block given, calls the block with each index
+ *  from offset +start+ to the end; replaces the corresponding element
+ *  with the block's return value:
+ *
+ *  If start is in range (<tt>0 <= start < ary.size</tt>),
+ *  replaces from offset +start+ to the end:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(1) { |index| "new_#{index}" } # => ["a", "new_1", "new_2", "new_3"]
+ *
+ *  If +start+ is too large(<tt>start >= ary.size</tt>), does nothing:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(4) { |index| fail 'Cannot happen' } # => ["a", "b", "c", "d"]
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(4) { |index| fail 'Cannot happen' } # => ["a", "b", "c", "d"]
+ *
+ *  If +start+ is negative, counts from the end:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(-2) { |index| "new_#{index}" } # => ["a", "b", "new_2", "new_3"]
+ *
+ *  If start is too small (<tt>start <= -ary.size</tt>, replaces all elements:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(-6) { |index| "new_#{index}" } # => ["new_0", "new_1", "new_2", "new_3"]
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(-50) { |index| "new_#{index}" } # => ["new_0", "new_1", "new_2", "new_3"]
+ *
+ *  ---
+ *
+ *  With arguments +start+ and +length+, and a block given,
+ *  calls the block for each index specified by start length;
+ *  replaces the corresponding element with the block's return value.
+ *
+ *  If +start+ is in range, replaces +length+ elements beginning at offset +start+:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(1, 1) { |index| "new_#{index}" } # => ["a", "new_1", "c", "d"]
+ *
+ *  If start is negative, counts from the end:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(-2, 1) { |index| "new_#{index}" } # => ["a", "b", "new_2", "d"]
+ *
+ *  If +start+ is large (<tt>start >= ary.size</tt>), extends +self+ with +nil+:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(5, 0) { |index| "new_#{index}" } # => ["a", "b", "c", "d", nil]
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(5, 2) { |index| "new_#{index}" } # => ["a", "b", "c", "d", nil, "new_5", "new_6"]
+ *
+ *  If +length+ is zero or less, replaces no elements:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(1, 0) { |index| "new_#{index}" } # => ["a", "b", "c", "d"]
+ *    a.fill(1, -1) { |index| "new_#{index}" } # => ["a", "b", "c", "d"]
+ *
+ *  ---
+ *
+ *  With arguments +obj+ and +range+, and a block given,
+ *  calls the block with each index in the given range;
+ *  replaces the corresponding element with the block's return value.
+ *
+ *  If the range is positive and ascending (<tt>range 0 < range.begin <= range.end</tt>,
+ *  replaces elements from <tt>range.begin</tt> to <tt>range.end</tt>:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(1..1) { |index| "new_#{index}" } # => ["a", "new_1", "c", "d"]
+ *
+ *  If +range.first+ is negative, does nothing:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(-1..1) { |index| fail 'Cannot happen' } # => ["a", "b", "c", "d"]
+ *
+ *  If <tt>range.last</tt> is negative, counts from the end:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(0..-2) { |index| "new_#{index}" } # => ["new_0", "new_1", "new_2", "d"]
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(1..-2) { |index| "new_#{index}" } # => ["a", "new_1", "new_2", "d"]
+ *
+ *  If <tt>range.first</tt> and <tt>range.last</tt> are both negative,
+ *  both count from the end:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(-1..-1) { |index| "new_#{index}" } # => ["a", "b", "c", "new_3"]
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.fill(-2..-2) { |index| "new_#{index}" } # => ["a", "b", "new_2", "d"]
+ *
+ *  ---
+ *
+ *  Raises an exception if no block is given and the second argument is not a Range
+ *  or an Integer-convertible object,
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    [].fill(:X, :x)
+ *
+ *  Raises an exception if no is block given, three arguments are given,
+ *  and the second or third argument not an Integer-convertible object:
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    [].fill(:X, :x, 1)
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    [].fill(:X, 1, :x)
+ *
+ *  Raises an exception if a block is given, one argument is given,
+ *  and that argument is not a \Range or an Integer-convertible object:
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    [].fill(:x) { }
+ *
+ *  Raises an exception if a block is given, two arguments are given,
+ *  and either argument is not an Integer-convertible object:
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    [].fill(:x, 1) { }
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    [].fill(1, :x) { }
  */
 
 static VALUE
@@ -5080,25 +5349,24 @@ rb_ary_fill(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *     ary + other_ary   -> new_ary
+ *    array + other_array -> new_array
  *
- *  Concatenation --- Returns a new array built by concatenating the
- *  two arrays together to produce a third array.
+ *  Returns the concatenation of +array+ and +other_array+ in a new \Array.
  *
- *     [ 1, 2, 3 ] + [ 4, 5 ]    #=> [ 1, 2, 3, 4, 5 ]
- *     a = [ "a", "b", "c" ]
- *     c = a + [ "d", "e", "f" ]
- *     c                         #=> [ "a", "b", "c", "d", "e", "f" ]
- *     a                         #=> [ "a", "b", "c" ]
+ *  Argument +other_array+ must be an
+ *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects].
  *
- *  Note that
- *     x += y
- *  is the same as
- *     x = x + y
- *  This means that it produces a new array. As a consequence,
- *  repeated use of <code>+=</code> on arrays can be quite inefficient.
+ *  Returns a new \Array containing all elements of +array+
+ *  followed by all elements of +other_array+:
+ *    a = [0, 1] + [2, 3]
+ *    a # => [0, 1, 2, 3]
  *
- *  See also Array#concat.
+ *  See also #concat.
+ *  ---
+ *
+ *  Raises an exception if +other_array+ is not an Array-convertible object:
+ *    # Raises TypeError (no implicit conversion of Symbol into Array):
+ *    [] + :foo
  */
 
 VALUE
@@ -5131,22 +5399,27 @@ ary_append(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     ary.concat(other_ary1, other_ary2, ...)   -> ary
+ *    array.concat(*other_arrays) -> self
  *
- *  Appends the elements of <code>other_ary</code>s to +self+.
+ *  The given +other_arrays+ must be
+ *  {Array-convertible objects}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects].
  *
- *     [ "a", "b" ].concat( ["c", "d"])   #=> [ "a", "b", "c", "d" ]
- *     [ "a" ].concat( ["b"], ["c", "d"]) #=> [ "a", "b", "c", "d" ]
- *     [ "a" ].concat #=> [ "a" ]
+ *  Adds to +array+ all elements from each array in +other_arrays+; returns +self+:
+ *    a = [0, 1]
+ *    a1 = a.concat([2, 3], [4, 5])
+ *    a1 # => [0, 1, 2, 3, 4, 5]
+ *    a1.equal?(a) # => true # Returned self
  *
- *     a = [ 1, 2, 3 ]
- *     a.concat( [ 4, 5 ])
- *     a                                 #=> [ 1, 2, 3, 4, 5 ]
+ *  Returns +self+ unmodified if no arguments given:
+ *    a = [0, 1]
+ *    a.concat(*[])
+ *    a # => [0, 1]
  *
- *     a = [ 1, 2 ]
- *     a.concat(a, a)                    #=> [1, 2, 1, 2, 1, 2]
+ *  ---
  *
- *  See also Array#+.
+ *  Raises an exception if any argument is not an Array-convertible object:
+ *    # Raises TypeError (no implicit conversion of Symbol into Array):
+ *    [].concat([], :foo)
  */
 
 static VALUE
@@ -5178,19 +5451,47 @@ rb_ary_concat(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     ary * int     -> new_ary
- *     ary * str     -> new_string
+ *    array * n -> new_array
+ *    array * string_separator -> new_string
  *
- *  Repetition --- With a String argument, equivalent to
- *  <code>ary.join(str)</code>.
+ *  - Argument +n+, if given, must be an
+ *    {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
+ *  - Argument +string_separator+, if given, myst be a
+ *    {String-convertible object}[doc/implicit_conversion_rdoc.html#label-String-Convertible+Objects].
  *
- *  Otherwise, returns a new array built by concatenating the +int+ copies of
- *  +self+.
+ *  ---
  *
+ *  When argument +n+ is given, returns a new array built by concatenating the +int+ copies of +self+:
+ *    a = ['x', 'y']
+ *    a * 3 # => ["x", "y", "x", "y", "x", "y"]
+ *    a * 0 # => []
  *
- *     [ 1, 2, 3 ] * 3    #=> [ 1, 2, 3, 1, 2, 3, 1, 2, 3 ]
- *     [ 1, 2, 3 ] * ","  #=> "1,2,3"
+ *  ---
  *
+ *  When argument +string_separator+ is given,
+ *  equivalent to <tt>array.join(string_separator)</tt>.
+ *
+ *  If +array+ is non-empty, returns the join of each element's +to_s+ value:
+ *    [0, [0, 1], {foo: 0}] * ', ' # => "0, 0, 1, {:foo=>0}"
+ *
+ *  If +array+ is empty, returns a new empty \String:
+ *    [] * ',' # => ""
+ *
+ *  ---
+ *
+ *  Raises an exception if the argument is not an Integer-convertible object
+ *  or a String-convertible object:
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    [] * :foo
+ *
+ *  Raises an exception if +n+ is negative:
+ *    # Raises ArgumentError (negative argument):
+ *    [] * -1
+ *
+ *  Raises an exception if argument +string_separator+ is given,
+ *  and any array element lacks instance method +to_s+:
+ *    # Raises NoMethodError (undefined method `to_s' for #<BasicObject:>):
+ *    [BasicObject.new] * ','
  */
 
 static VALUE
@@ -5239,22 +5540,18 @@ rb_ary_times(VALUE ary, VALUE times)
 
 /*
  *  call-seq:
- *     ary.assoc(obj)   -> element_ary  or  nil
+ *    array.assoc(obj) -> found_array or nil
  *
- *  Searches through an array whose elements are also arrays comparing +obj+
- *  with the first element of each contained array using <code>obj.==</code>.
+ *  Returns the first element in +self+ that is an \Array
+ *  whose first element <tt>==</tt> +obj+:
+ *    a = [{foo: 0}, [2, 4], [4, 5, 6], [4, 5]]
+ *    a.assoc(4) # => [4, 5, 6]
  *
- *  Returns the first contained array that matches (that is, the first
- *  associated array), or +nil+ if no match is found.
+ *  Returns +nil+ if no such element is found:
+ *    a = [{foo: 0}, [2, 4], [4, 5, 6], [4, 5]]
+ *    a.assoc(:nosuch) # => nil
  *
- *  See also Array#rassoc
- *
- *     s1 = [ "colors", "red", "blue", "green" ]
- *     s2 = [ "letters", "a", "b", "c" ]
- *     s3 = "foo"
- *     a  = [ s1, s2, s3 ]
- *     a.assoc("letters")  #=> [ "letters", "a", "b", "c" ]
- *     a.assoc("foo")      #=> nil
+ *  See also #rassoc.
  */
 
 VALUE
@@ -5274,20 +5571,18 @@ rb_ary_assoc(VALUE ary, VALUE key)
 
 /*
  *  call-seq:
- *     ary.rassoc(obj) -> element_ary or nil
+ *    array.rassoc(obj) -> found_array or nil
  *
- *  Searches through the array whose elements are also arrays.
+ *  Returns the first element in +self+ that is an \Array
+ *  whose second element <tt>==</tt> +obj+:
+ *    a = [{foo: 0}, [2, 4], [4, 5, 6], [4, 5]]
+ *    a.rassoc(4) # => [2, 4]
  *
- *  Compares +obj+ with the second element of each contained array using
- *  <code>obj.==</code>.
+ *  Returns +nil+ if no such element is found:
+ *    a = [{foo: 0}, [2, 4], [4, 5, 6], [4, 5]]
+ *    a.rassoc(:nosuch) # => nil
  *
- *  Returns the first contained array that matches +obj+.
- *
- *  See also Array#assoc.
- *
- *     a = [ [ 1, "one"], [2, "two"], [3, "three"], ["ii", "two"] ]
- *     a.rassoc("two")    #=> [2, "two"]
- *     a.rassoc("four")   #=> nil
+ *  See also #assoc.
  */
 
 VALUE
@@ -5342,16 +5637,23 @@ recursive_equal(VALUE ary1, VALUE ary2, int recur)
 
 /*
  *  call-seq:
- *     ary == other_ary   ->   bool
+ *    array == other_array -> true or false
  *
- *  Equality --- Two arrays are equal if they contain the same number of
- *  elements and if each element is equal to (according to Object#==) the
- *  corresponding element in +other_ary+.
+ *  Returns +true+ if both <tt>array.size == other_array.size</tt>
+ *  and for each index +i+ in +array+, <tt>array[i] == other_array[i]</tt>:
+ *    a0 = [:foo, 'bar', 2]
+ *    a1 = [:foo, 'bar', 2.0]
+ *    a1 == a0 # => true
+ *    [] == [] # => true
  *
- *     [ "a", "c" ]    == [ "a", "c", 7 ]     #=> false
- *     [ "a", "c", 7 ] == [ "a", "c", 7 ]     #=> true
- *     [ "a", "c", 7 ] == [ "a", "d", "f" ]   #=> false
+ *  Otherwise, returns +false+:
+ *    a0 == [:foo, 'bar'] # => false # Different sizes
+ *    a0 == [:foo, 'bar', 3] # => false # Different elements
  *
+ *  This method is different from method Array#eql?,
+ *  which compares elements using <tt>Object#eql?</tt>:
+ *    a1[2].eql?(a0[2]) # false
+ *    a1.eql?(a0) # => false
  */
 
 static VALUE
@@ -5384,10 +5686,26 @@ recursive_eql(VALUE ary1, VALUE ary2, int recur)
 
 /*
  *  call-seq:
- *     ary.eql?(other)  -> true or false
+ *    array.eql? other_array -> true or false
  *
- *  Returns +true+ if +self+ and +other+ are the same object,
- *  or are both arrays with the same content (according to Object#eql?).
+ *  Returns +true+ if +self+ and +other_array+ are the same size,
+ *  and if, for each index +i+ in +self+, <tt>self[i].eql? other_array[i]</tt>:
+ *    a0 = [:foo, 'bar', 2]
+ *    a1 = [:foo, 'bar', 2]
+ *    a1.eql?(a0) # => true
+ *    [].eql? [] # => true
+ *
+ *  Otherwise, returns +false+:
+ *    a0 = [:foo, 'bar', 2]
+ *    a1 = [:foo, 'bar', 2.0]
+ *    a1.eql?(a0) # => false # Because 2.eql?(2.0) is false
+ *    a1.eql? [0, 1] # => false
+ *
+ *  This method is different from method <tt>Array#==</tt>,
+ *  which compares using method <tt>Object#==</tt>:
+ *    a0 = [:foo, 'bar', 2]
+ *    a1 = [:foo, 'bar', 2.0]
+ *    a1 == a0 # => true
  */
 
 static VALUE
@@ -5402,14 +5720,14 @@ rb_ary_eql(VALUE ary1, VALUE ary2)
 
 /*
  *  call-seq:
- *     ary.hash   -> integer
+ *    array.hash -> integer
  *
- *  Compute a hash-code for this array.
+ *  Returns the integer hash value for +self+:
+ *    [].hash.class # => Integer
  *
- *  Two arrays with the same content will have the same hash code (and will
- *  compare using #eql?).
- *
- *  See also Object#hash.
+ *  Two arrays with the same content will have the same hash code (and will compare using eql?):
+ *    [0, 1, 2].hash == [0, 1, 2].hash # => true
+ *    [0, 1, 2].hash == [0, 1, 3].hash # => false
  */
 
 static VALUE
@@ -5431,14 +5749,12 @@ rb_ary_hash(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.include?(object)   -> true or false
+ *    array.include?(obj) -> true or false
  *
- *  Returns +true+ if the given +object+ is present in +self+ (that is, if any
- *  element <code>==</code> +object+), otherwise returns +false+.
- *
- *     a = [ "a", "b", "c" ]
- *     a.include?("b")   #=> true
- *     a.include?("z")   #=> false
+ *  Returns +true+ if for some index +i+ in +self+, <tt>obj == self[i]</tt>;
+ *  otherwise +false+:
+ *    [0, 1, 2].include?(2) # => true
+ *    [0, 1, 2].include?(3) # => false
  */
 
 VALUE
@@ -5493,32 +5809,37 @@ recursive_cmp(VALUE ary1, VALUE ary2, int recur)
 
 /*
  *  call-seq:
- *     ary <=> other_ary   ->  -1, 0, +1 or nil
+ *    array <=> other_array → -1, 0, or 1
  *
- *  Comparison --- Returns an integer (+-1+, +0+, or <code>+1</code>) if this
- *  array is less than, equal to, or greater than +other_ary+.
+ *  Returns -1, 0, or 1 as +self+ is less than, equal to, or greater than +other_array+.
+ *  For each index +i+ in +self+, evaluates <tt>result = self[i] <=> other_array[i]</tt>.
  *
- *  Each object in each array is compared (using the <=> operator).
+ *  ---
  *
- *  Arrays are compared in an "element-wise" manner; the first element of +ary+
- *  is compared with the first one of +other_ary+ using the <=> operator, then
- *  each of the second elements, etc...
- *  As soon as the result of any such comparison is non zero (i.e. the two
- *  corresponding elements are not equal), that result is returned for the
- *  whole array comparison.
+ *  Returns -1 if any result is -1:
+ *    [0, 1, 2] <=> [0, 1, 3] # => -1
+ *  Returns 1 if any result is 1:
+ *    [0, 1, 2] <=> [0, 1, 1] # => 1
  *
- *  If all the elements are equal, then the result is based on a comparison of
- *  the array lengths. Thus, two arrays are "equal" according to Array#<=> if,
- *  and only if, they have the same length and the value of each element is
- *  equal to the value of the corresponding element in the other array.
+ *  ---
  *
- *  +nil+ is returned if the +other_ary+ is not an array or if the comparison
- *  of two elements returned +nil+.
+ *  When all results are zero:
+ *  - Returns -1 if +array+ is smaller than +other_array+:
+ *      [0, 1, 2] <=> [0, 1, 2, 3] # => -1
+ *  - Returns 1 if +array+ is larger than +other_array+:
+ *      [0, 1, 2] <=> [0, 1] # => 1
+ *  - Returns 0 if +array+ and +other_array+ are the same size:
+ *      [0, 1, 2] <=> [0, 1, 2] # => 0
  *
- *     [ "a", "a", "c" ]    <=> [ "a", "b", "c" ]   #=> -1
- *     [ 1, 2, 3, 4, 5, 6 ] <=> [ 1, 2 ]            #=> +1
- *     [ 1, 2 ]             <=> [ 1, :two ]         #=> nil
+ *  ---
  *
+ *  Argument +other_array+ may be an
+ *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects]:
+ *    require 'csv'
+ *    [] <=> CSV::Row.new([], []) # => 0
+ *
+ *  Returns +nil+ if +other_array+ is not an Array-convertible object:
+ *    [] <=> 0 # => nil
  */
 
 VALUE
@@ -5599,23 +5920,24 @@ ary_recycle_hash(VALUE hash)
 
 /*
  *  call-seq:
- *     ary - other_ary    -> new_ary
+ *    array - other_array -> new_array
  *
- *  Array Difference
+ *  Argument +other_array+ must be an
+ *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects].
  *
- *  Returns a new array that is a copy of the original array, removing all
- *  occurrences of any item that also appear in +other_ary+. The order is
- *  preserved from the original array.
+ *  Returns a new \Array containing only those elements from +array+
+ *  that are not found in +other_array+;
+ *  items are compared using <tt>eql?</tt>;
+ *  the order from +array+ is preserved:
+ *    [0, 1, 1, 2, 1, 1, 3, 1, 1] - [1] # => [0, 2, 3]
+ *    [0, 1, 2, 3] - [3, 0] # => [1, 2]
+ *    [0, 1, 2] - [4] # => [0, 1, 2]
  *
- *  It compares elements using their #hash and #eql? methods for efficiency.
+ *  ---
  *
- *     [ 1, 1, 2, 2, 3, 3, 4, 5 ] - [ 1, 2, 4 ]  #=>  [ 3, 3, 5 ]
- *
- *  Note that while 1 and 2 were only present once in the array argument, and
- *  were present twice in the receiver array, all occurrences of each Integer are
- *  removed in the returned array.
- *
- *  If you need set-like behavior, see the library class Set.
+ *  Raises an exception if +other_array+ is not an Array-convertible object:
+ *    # Raises TypeError (no implicit conversion of Symbol into Array):
+ *    [] - :foo
  *
  *  See also Array#difference.
  */
@@ -5650,29 +5972,29 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
 
 /*
  *  call-seq:
- *     ary.difference(other_ary1, other_ary2, ...)   -> new_ary
+ *    array.difference(*other_arrays) -> new_array
  *
- *  Array Difference
+ *  Each argument in +other_arrays+ must be an
+ *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects].
  *
- *  Returns a new array that is a copy of the original array, removing all
- *  occurrences of any item that also appear in +other_ary+. The order is
- *  preserved from the original array.
+ *  Returns a new \Array containing only those elements from +self+
+ *  that are not found in any of the +other_arrays+;
+ *  items are compared using <tt>eql?</tt>;  order from +self+ is preserved:
+ *    [0, 1, 1, 2, 1, 1, 3, 1, 1].difference([1]) # => [0, 2, 3]
+ *    [0, 1, 2, 3].difference([3, 0], [1, 3]) # => [2]
+ *    [0, 1, 2].difference([4]) # => [0, 1, 2]
  *
- *  It compares elements using their #hash and #eql? methods for efficiency.
+ *  Returns a copy of +self+ if no arguments given:
+ *    a0 = [0, 1]
+ *    a1 = a0.difference(*[])
+ *    a1 # => [0, 1]
+ *    a1.equal?(a0) # => false
  *
- *     [ 1, 1, 2, 2, 3, 3, 4, 5 ].difference([ 1, 2, 4 ])     #=> [ 3, 3, 5 ]
+ *  ---
  *
- *  Note that while 1 and 2 were only present once in the array argument, and
- *  were present twice in the receiver array, all occurrences of each Integer are
- *  removed in the returned array.
- *
- *  Multiple array arguments can be supplied and all occurrences of any element
- *  in those supplied arrays that match the receiver will be removed from the
- *  returned array.
- *
- *     [ 1, 'c', :s, 'yep' ].difference([ 1 ], [ 'a', 'c' ])  #=> [ :s, "yep" ]
- *
- *  If you need set-like behavior, see the library class Set.
+ *  Raises an exception if any of +other_arrays+ is not an Array-convertible object:
+ *    # Raises TypeError (no implicit conversion of Symbol into Array):
+ *    [].difference(:foo)
  *
  *  See also Array#-.
  */
@@ -5716,17 +6038,26 @@ rb_ary_difference_multi(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *     ary & other_ary      -> new_ary
+ *    array & other_array -> new_array
  *
- *  Set Intersection --- Returns a new array containing unique elements common to the
- *  two arrays. The order is preserved from the original array.
+ *  Argument +other_array+ must be an
+ *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects].
  *
- *  It compares elements using their #hash and #eql? methods for efficiency.
+ *  Returns a new \Array containing each element found in both +array+ and +other_array+;
+ *  duplicates are omitted; items are compared using <tt>eql?</tt>:
+ *    [0, 1, 2, 3] & [1, 2] # => [1, 2]
+ *    [0, 1, 0, 1] & [0, 1] # => [0, 1]
  *
- *     [ 1, 1, 3, 5 ] & [ 3, 2, 1 ]                 #=> [ 1, 3 ]
- *     [ 'a', 'b', 'b', 'z' ] & [ 'a', 'b', 'c' ]   #=> [ 'a', 'b' ]
+ *  Preserves order from +array+:
+ *    [0, 1, 2] & [3, 2, 1, 0] # => [0, 1, 2]
  *
- *  See also Array#uniq.
+ *  ---
+ *
+ *  Raises an exception if +other_array+ is not an Array-convertible object:
+ *    # Raises TypeError (no implicit conversion of Symbol into Array):
+ *    [] & :foo
+ *
+ *  See also Array#intersection.
  */
 
 
@@ -5767,17 +6098,31 @@ rb_ary_and(VALUE ary1, VALUE ary2)
 
 /*
  *  call-seq:
- *     ary.intersection(other_ary1, other_ary2, ...)      -> new_ary
+ *    array.intersection(*other_arrays) -> new_array
  *
- *  Set Intersection --- Returns a new array containing unique elements common
- *  to +self+ and <code>other_ary</code>s. Order is preserved from the original
- *  array.
+ *  Each object in +other_arrays+ must be an
+ *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects].
  *
- *  It compares elements using their #hash and #eql? methods for efficiency.
+ *  Returns a new \Array containing each element found both in +self+
+ *  and in all of the given +other_arrays+;
+ *  duplicates are omitted; items are compared using <tt>eql?</tt>:
+ *    [0, 1, 2, 3].intersection([0, 1, 2], [0, 1, 3]) # => [0, 1]
+ *    [0, 0, 1, 1, 2, 3].intersection([0, 1, 2], [0, 1, 3]) # => [0, 1]
  *
- *     [ 1, 1, 3, 5 ].intersection([ 3, 2, 1 ])                    # => [ 1, 3 ]
- *     [ "a", "b", "z" ].intersection([ "a", "b", "c" ], [ "b" ])  # => [ "b" ]
- *     [ "a" ].intersection #=> [ "a" ]
+ *  Preserves order from +self+:
+ *    [0, 1, 2].intersection([2, 1, 0]) # => [0, 1, 2]
+ *
+ *  Returns a copy of +self+ if no arguments given:
+ *    a0 = [0, 1]
+ *    a1 = a0.intersection(*[])
+ *    a1 # => [0, 1]
+ *    a1.equal?(a0) # => false
+ *
+ *  ---
+ *
+ *  Raises an exception if any of the given +other_arrays+ is not an Array-convertible object:
+ *    # Raises TypeError (no implicit conversion of Symbol into Array):
+ *    [].intersection([0, 1], :foo)
  *
  *  See also Array#&.
  */
@@ -5828,15 +6173,23 @@ rb_ary_union_hash(VALUE hash, VALUE ary2)
 
 /*
  *  call-seq:
- *     ary | other_ary     -> new_ary
+ *    array | other_array -> new_array
  *
- *  Set Union --- Returns a new array by joining +ary+ with +other_ary+,
- *  excluding any duplicates and preserving the order from the given arrays.
+ *  Argument +other_array+ must be an
+ *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects].
  *
- *  It compares elements using their #hash and #eql? methods for efficiency.
+ *  Returns the union of +array+ and +other_array+;
+ *  duplicates are removed; order is preserved;
+ *  items are compared using <tt>eql?</tt>:
+ *    [0, 1] | [2, 3] # => [0, 1, 2, 3]
+ *    [0, 1, 1] | [2, 2, 3] # => [0, 1, 2, 3]
+ *    [0, 1, 2] | [3, 2, 1, 0] # => [0, 1, 2, 3]
  *
- *     [ "a", "b", "c" ] | [ "c", "d", "a" ]    #=> [ "a", "b", "c", "d" ]
- *     [ "c", "d", "a" ] | [ "a", "b", "c" ]    #=> [ "c", "d", "a", "b" ]
+ *  ---
+ *
+ *  Raises an exception if +other_array+ is not an Array-convertible object:
+ *    # Raises TypeError (no implicit conversion of Symbol into Array):
+ *    [] | :foo
  *
  *  See also Array#union.
  */
@@ -5864,16 +6217,28 @@ rb_ary_or(VALUE ary1, VALUE ary2)
 
 /*
  *  call-seq:
- *     ary.union(other_ary1, other_ary2, ...)   -> new_ary
+ *    array.union(*other_arrays) -> new_array
  *
- *  Set Union --- Returns a new array by joining <code>other_ary</code>s with +self+,
- *  excluding any duplicates and preserving the order from the given arrays.
+ *  Each object in +other_arrays+ must be an
+ *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects].
  *
- *  It compares elements using their #hash and #eql? methods for efficiency.
+ *  Returns a new \Array that is the union of +self+ and all given +other_arrays+;
+ *  duplicates are removed;  order is preserved;  items are compared using <tt>eql?</tt>:
+ *    [0, 1, 2, 3].union([4, 5], [6, 7]) # => [0, 1, 2, 3, 4, 5, 6, 7]
+ *    [0, 1, 1].union([2, 1], [3, 1]) # => [0, 1, 2, 3]
+ *    [0, 1, 2, 3].union([3, 2], [1, 0]) # => [0, 1, 2, 3]
  *
- *     [ "a", "b", "c" ].union( [ "c", "d", "a" ] )    #=> [ "a", "b", "c", "d" ]
- *     [ "a" ].union( ["e", "b"], ["a", "c", "b"] )    #=> [ "a", "e", "b", "c" ]
- *     [ "a" ].union #=> [ "a" ]
+ *  Returns a copy of +self+ if no arguments given:
+ *    a0 = [0, 1]
+ *    a1 = a0.union(*[])
+ *    a1 # => [0, 1]
+ *    a1.equal?(a0) # => false
+ *
+ *  ---
+ *
+ *  Raises an exception if any argument is not an \Array-convertible object:
+ *    # Raises TypeError (no implicit conversion of Symbol into Array):
+ *    [].union([], :foo)
  *
  *  See also Array#|.
  */
@@ -5908,27 +6273,155 @@ rb_ary_union_multi(int argc, VALUE *argv, VALUE ary)
     return ary_union;
 }
 
+static VALUE
+ary_max_generic(VALUE ary, long i, VALUE vmax)
+{
+    RUBY_ASSERT(i > 0 && i < RARRAY_LEN(ary));
+
+    VALUE v;
+    for (; i < RARRAY_LEN(ary); ++i) {
+        v = RARRAY_AREF(ary, i);
+
+        if (rb_cmpint(rb_funcallv(vmax, id_cmp, 1, &v), vmax, v) < 0) {
+            vmax = v;
+        }
+    }
+
+    return vmax;
+}
+
+static VALUE
+ary_max_opt_fixnum(VALUE ary, long i, VALUE vmax)
+{
+    const long n = RARRAY_LEN(ary);
+    RUBY_ASSERT(i > 0 && i < n);
+    RUBY_ASSERT(FIXNUM_P(vmax));
+
+    VALUE v;
+    for (; i < n; ++i) {
+        v = RARRAY_AREF(ary, i);
+
+        if (FIXNUM_P(v)) {
+            if ((long)vmax < (long)v) {
+                vmax = v;
+            }
+        }
+        else {
+            return ary_max_generic(ary, i, vmax);
+        }
+    }
+
+    return vmax;
+}
+
+static VALUE
+ary_max_opt_float(VALUE ary, long i, VALUE vmax)
+{
+    const long n = RARRAY_LEN(ary);
+    RUBY_ASSERT(i > 0 && i < n);
+    RUBY_ASSERT(RB_FLOAT_TYPE_P(vmax));
+
+    VALUE v;
+    for (; i < n; ++i) {
+        v = RARRAY_AREF(ary, i);
+
+        if (RB_FLOAT_TYPE_P(v)) {
+            if (rb_float_cmp(vmax, v) < 0) {
+                vmax = v;
+            }
+        }
+        else {
+            return ary_max_generic(ary, i, vmax);
+        }
+    }
+
+    return vmax;
+}
+
+static VALUE
+ary_max_opt_string(VALUE ary, long i, VALUE vmax)
+{
+    const long n = RARRAY_LEN(ary);
+    RUBY_ASSERT(i > 0 && i < n);
+    RUBY_ASSERT(STRING_P(vmax));
+
+    VALUE v;
+    for (; i < n; ++i) {
+        v = RARRAY_AREF(ary, i);
+
+        if (STRING_P(v)) {
+            if (rb_str_cmp(vmax, v) < 0) {
+                vmax = v;
+            }
+        }
+        else {
+            return ary_max_generic(ary, i, vmax);
+        }
+    }
+
+    return vmax;
+}
+
 /*
  *  call-seq:
- *     ary.max                     -> obj
- *     ary.max {|a, b| block}      -> obj
- *     ary.max(n)                  -> array
- *     ary.max(n) {|a, b| block}   -> array
+ *    array.max -> element
+ *    array.max {|a, b| ... } -> element
+ *    array.max(n) -> new_array
+ *    array.max(n) {|a, b| ... } -> new_array
  *
- *  Returns the object in _ary_ with the maximum value. The
- *  first form assumes all objects implement <code><=></code>;
- *  the second uses the block to return <em>a <=> b</em>.
+ *  Returns one of the following:
+ *  - The maximum-valued element from +self+.
+ *  - A new \Array of maximum-valued elements selected from +self+.
  *
- *     ary = %w(albatross dog horse)
- *     ary.max                                   #=> "horse"
- *     ary.max {|a, b| a.length <=> b.length}    #=> "albatross"
+ *  Argument +n+, if given, must be an
+ *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects],
+ *  and must be non-negative.
  *
- *  If the +n+ argument is given, maximum +n+ elements are returned
- *  as an array.
+ *  ---
  *
- *     ary = %w[albatross dog horse]
- *     ary.max(2)                                  #=> ["horse", "dog"]
- *     ary.max(2) {|a, b| a.length <=> b.length }  #=> ["albatross", "horse"]
+ *  When no block is given, each element in +self+ must respond to method <tt><=></tt>
+ *  with an \Integer-convertible object.
+ *
+ *  With no argument and no block, returns the element in +self+
+ *  having the maximum value per method <tt><=></tt>:
+ *    [0, 1, 2].max # => 2
+ *
+ *  With an argument +n+ and no block, returns a new \Array with at most +n+ elements,
+ *  in descending order per method <tt><=></tt>:
+ *    [0, 1, 2, 3].max(3) # => [3, 2, 1]
+ *    [0, 1, 2, 3].max(6) # => [3, 2, 1]
+ *    [0, 1, 2, 3].max(0) # => []
+ *
+ *  ---
+ *
+ *  When a block is given, the block must return an Integer-convertible object.
+ *
+ *  With a block and no argument, calls the block <tt>self.size-1</tt> times to compare elements;
+ *  returns the element having the maximum value per the block:
+ *    ['0', '00', '000'].max {|a, b| a.size <=> b.size } # => "000"
+ *
+ *  With an argument +n+ and a block, returns a new \Array with at most +n+ elements,
+ *  in descending order per the block:
+ *    ['0', '00', '000'].max(2) {|a, b| a.size <=> b.size } # => ["000", "00"]
+ *    ['0', '00', '000'].max(0) {|a, b| a.size <=> b.size } # => []
+ *
+ *  ---
+ *
+ *  Raises an exception on encountering elements that are not comparable:
+ *    # Raises ArgumentError (comparison of Symbol with 1 failed):
+ *    [0, 1, :foo].max
+ *
+ *  Raises an exception if argument +n+ is not an Integer-convertible object:
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    [0, 1].max(:foo)
+ *
+ *  Raises an exception if argument +n+ is negative:
+ *    # Raises ArgumentError (negative size (-1)):
+ *    [0, 1].max(-1)
+ *
+ *  Raises an exception if the block returns an object that is not an Integer-convertible object:
+ *    # Raises ArgumentError (comparison of Symbol with 0 failed):
+ *    [0, 1, 2].max {|a, b| :foo }
  */
 static VALUE
 rb_ary_max(int argc, VALUE *argv, VALUE ary)
@@ -5941,6 +6434,7 @@ rb_ary_max(int argc, VALUE *argv, VALUE ary)
     if (rb_check_arity(argc, 0, 1) && !NIL_P(num = argv[0]))
        return rb_nmin_run(ary, num, 0, 1, 1);
 
+    const long n = RARRAY_LEN(ary);
     if (rb_block_given_p()) {
 	for (i = 0; i < RARRAY_LEN(ary); i++) {
 	   v = RARRAY_AREF(ary, i);
@@ -5949,39 +6443,177 @@ rb_ary_max(int argc, VALUE *argv, VALUE ary)
 	   }
 	}
     }
-    else {
-	for (i = 0; i < RARRAY_LEN(ary); i++) {
-	   v = RARRAY_AREF(ary, i);
-	   if (result == Qundef || OPTIMIZED_CMP(v, result, cmp_opt) > 0) {
-	       result = v;
-	   }
-	}
+    else if (n > 0) {
+        result = RARRAY_AREF(ary, 0);
+        if (n > 1) {
+            if (FIXNUM_P(result) && CMP_OPTIMIZABLE(cmp_opt, Integer)) {
+                return ary_max_opt_fixnum(ary, 1, result);
+            }
+            else if (STRING_P(result) && CMP_OPTIMIZABLE(cmp_opt, String)) {
+                return ary_max_opt_string(ary, 1, result);
+            }
+            else if (RB_FLOAT_TYPE_P(result) && CMP_OPTIMIZABLE(cmp_opt, Float)) {
+                return ary_max_opt_float(ary, 1, result);
+            }
+            else {
+                return ary_max_generic(ary, 1, result);
+            }
+        }
     }
     if (result == Qundef) return Qnil;
     return result;
 }
 
+static VALUE
+ary_min_generic(VALUE ary, long i, VALUE vmin)
+{
+    RUBY_ASSERT(i > 0 && i < RARRAY_LEN(ary));
+
+    VALUE v;
+    for (; i < RARRAY_LEN(ary); ++i) {
+        v = RARRAY_AREF(ary, i);
+
+        if (rb_cmpint(rb_funcallv(vmin, id_cmp, 1, &v), vmin, v) > 0) {
+            vmin = v;
+        }
+    }
+
+    return vmin;
+}
+
+static VALUE
+ary_min_opt_fixnum(VALUE ary, long i, VALUE vmin)
+{
+    const long n = RARRAY_LEN(ary);
+    RUBY_ASSERT(i > 0 && i < n);
+    RUBY_ASSERT(FIXNUM_P(vmin));
+
+    VALUE a;
+    for (; i < n; ++i) {
+        a = RARRAY_AREF(ary, i);
+
+        if (FIXNUM_P(a)) {
+            if ((long)vmin > (long)a) {
+                vmin = a;
+            }
+        }
+        else {
+            return ary_min_generic(ary, i, vmin);
+        }
+    }
+
+    return vmin;
+}
+
+static VALUE
+ary_min_opt_float(VALUE ary, long i, VALUE vmin)
+{
+    const long n = RARRAY_LEN(ary);
+    RUBY_ASSERT(i > 0 && i < n);
+    RUBY_ASSERT(RB_FLOAT_TYPE_P(vmin));
+
+    VALUE a;
+    for (; i < n; ++i) {
+        a = RARRAY_AREF(ary, i);
+
+        if (RB_FLOAT_TYPE_P(a)) {
+            if (rb_float_cmp(vmin, a) > 0) {
+                vmin = a;
+            }
+        }
+        else {
+            return ary_min_generic(ary, i, vmin);
+        }
+    }
+
+    return vmin;
+}
+
+static VALUE
+ary_min_opt_string(VALUE ary, long i, VALUE vmin)
+{
+    const long n = RARRAY_LEN(ary);
+    RUBY_ASSERT(i > 0 && i < n);
+    RUBY_ASSERT(STRING_P(vmin));
+
+    VALUE a;
+    for (; i < n; ++i) {
+        a = RARRAY_AREF(ary, i);
+
+        if (STRING_P(a)) {
+            if (rb_str_cmp(vmin, a) > 0) {
+                vmin = a;
+            }
+        }
+        else {
+            return ary_min_generic(ary, i, vmin);
+        }
+    }
+
+    return vmin;
+}
+
 /*
  *  call-seq:
- *     ary.min                     -> obj
- *     ary.min {| a,b | block }    -> obj
- *     ary.min(n)                  -> array
- *     ary.min(n) {| a,b | block } -> array
+ *    array.min -> element
+ *    array.min { |a, b| ... } -> element
+ *    array.min(n) -> new_array
+ *    ary.min(n) { |a, b| ... } → new_array
  *
- *  Returns the object in _ary_ with the minimum value. The
- *  first form assumes all objects implement <code><=></code>;
- *  the second uses the block to return <em>a <=> b</em>.
+ *  Returns one of the following:
+ *  - The minimum-valued element from +self+.
+ *  - A new \Array of minimum-valued elements selected from +self+.
  *
- *     ary = %w(albatross dog horse)
- *     ary.min                                   #=> "albatross"
- *     ary.min {|a, b| a.length <=> b.length}    #=> "dog"
+ *  Argument +n+, if given, must be an
+ *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects],
+ *  and must be non-negative.
  *
- *  If the +n+ argument is given, minimum +n+ elements are returned
- *  as an array.
+ *  ---
  *
- *     ary = %w[albatross dog horse]
- *     ary.min(2)                                  #=> ["albatross", "dog"]
- *     ary.min(2) {|a, b| a.length <=> b.length }  #=> ["dog", "horse"]
+ *  When no block is given, each element in +self+ must respond to method <tt><=></tt>
+ *  with an \Integer-convertible object.
+ *
+ *  With no argument and no block, returns the element in +self+
+ *  having the minimum value per method <tt><=></tt>:
+ *    [0, 1, 2].min # => 0
+ *
+ *  With an argument +n+ and no block, returns a new \Array with at most +n+ elements,
+ *  in ascending order per method <tt><=></tt>:
+ *    [0, 1, 2, 3].min(3) # => [0, 1, 2]
+ *    [0, 1, 2, 3].min(6) # => [0, 1, 2, 3]
+ *    [0, 1, 2, 3].min(0) # => []
+ *
+ *  ---
+ *
+ *  When a block is given, the block must return an Integer-convertible object.
+ *
+ *  With a block and no argument, calls the block <tt>self.size-1</tt> times to compare elements;
+ *  returns the element having the minimum value per the block:
+ *    ['0', '00', '000'].min { |a, b| a.size <=> b.size } # => "0"
+ *
+ *  With an argument +n+ and a block, returns a new \Array with at most +n+ elements,
+ *  in ascending order per the block:
+ *    [0, 1, 2, 3].min(3) # => [0, 1, 2]
+ *    [0, 1, 2, 3].min(6) # => [0, 1, 2, 3]
+ *    [0, 1, 2, 3].min(0) # => []
+ *
+ *  ---
+ *
+ *  Raises an exception on encountering elements that are not comparable:
+ *    # Raises ArgumentError (comparison of Symbol with 1 failed):
+ *    [0, 1, :foo].min
+ *
+ *  Raises an exception if argument +n+ is not an Integer-convertible object:
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    [0, 1].min(:foo)
+ *
+ *  Raises an exception if argument +n+ is negative:
+ *    # Raises ArgumentError (negative size (-1)):
+ *    [0, 1].min(-1)
+ *
+ *  Raises an exception if the block returns an object that is not an Integer-convertible object:
+ *    # Raises ArgumentError (comparison of Symbol with 0 failed):
+ *    [0, 1, 2].min {|a, b| :foo }
  */
 static VALUE
 rb_ary_min(int argc, VALUE *argv, VALUE ary)
@@ -5994,6 +6626,7 @@ rb_ary_min(int argc, VALUE *argv, VALUE ary)
     if (rb_check_arity(argc, 0, 1) && !NIL_P(num = argv[0]))
        return rb_nmin_run(ary, num, 0, 0, 1);
 
+    const long n = RARRAY_LEN(ary);
     if (rb_block_given_p()) {
 	for (i = 0; i < RARRAY_LEN(ary); i++) {
 	   v = RARRAY_AREF(ary, i);
@@ -6002,13 +6635,22 @@ rb_ary_min(int argc, VALUE *argv, VALUE ary)
 	   }
 	}
     }
-    else {
-	for (i = 0; i < RARRAY_LEN(ary); i++) {
-	   v = RARRAY_AREF(ary, i);
-	   if (result == Qundef || OPTIMIZED_CMP(v, result, cmp_opt) < 0) {
-	       result = v;
-	   }
-	}
+    else if (n > 0) {
+        result = RARRAY_AREF(ary, 0);
+        if (n > 1) {
+            if (FIXNUM_P(result) && CMP_OPTIMIZABLE(cmp_opt, Integer)) {
+                return ary_min_opt_fixnum(ary, 1, result);
+            }
+            else if (STRING_P(result) && CMP_OPTIMIZABLE(cmp_opt, String)) {
+                return ary_min_opt_string(ary, 1, result);
+            }
+            else if (RB_FLOAT_TYPE_P(result) && CMP_OPTIMIZABLE(cmp_opt, Float)) {
+                return ary_min_opt_float(ary, 1, result);
+            }
+            else {
+                return ary_min_generic(ary, 1, result);
+            }
+        }
     }
     if (result == Qundef) return Qnil;
     return result;
@@ -6016,14 +6658,35 @@ rb_ary_min(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *     ary.minmax                       -> [obj, obj]
- *     ary.minmax {| a,b | block }      -> [obj, obj]
+ *    array.minmax -> [min_val, max_val]
+ *    array.minmax {|a, b| ... } -> [min_val, max_val]
  *
- *  Returns a two element array which contains the minimum and the
- *  maximum value in the array.
+ *  Returns a new 2-element \Array containing the minimum and maximum values
+ *  from +self+, either per method <tt><=></tt> or per a given block:.
  *
- *  Can be given an optional block to override the default comparison
- *  method <code>a <=> b</code>.
+ *  ---
+ *
+ *  When no block is given, each element in +self+ must respond to method <tt><=></tt>
+ *  with an \Integer-convertible object;
+ *  returns a new 2-element \Array containing the minimum and maximum values
+ *  from +self+, per method <tt><=></tt>:
+ *    [0, 1, 2].minmax # => [0, 2]
+ *
+ *  When a block is given, the block must return an Integer-convertible object;
+ *  the block is called <tt>self.size-1</tt> times to compare elements;
+ *  returns a new 2-element \Array containing the minimum and maximum values
+ *  from +self+, per the block:
+ *    ['0', '00', '000'].minmax {|a, b| a.size <=> b.size } # => ["0", "000"]
+ *
+ *  ---
+ *
+ *  Raises an exception on encountering elements that are not comparable:
+ *    # Raises ArgumentError (comparison of Symbol with 1 failed):
+ *    [0, 1, :foo].minmax
+ *
+ *  Raises an exception if the block returns an object that is not an Integer-convertible object:
+ *    # Raises ArgumentError (comparison of Symbol with 0 failed):
+ *    [0, 1, 2].minmax {|a, b| :foo }
  */
 static VALUE
 rb_ary_minmax(VALUE ary)
@@ -6043,31 +6706,41 @@ push_value(st_data_t key, st_data_t val, st_data_t ary)
 
 /*
  *  call-seq:
- *     ary.uniq!                -> ary or nil
- *     ary.uniq! {|item| ...}   -> ary or nil
+ *    array.uniq! -> self or nil
+ *    array.uniq! {|element| ... } -> self or nil
  *
- *  Removes duplicate elements from +self+.
+ *  Removes duplicate elements from +self+, the first occurrence always being retained;
+ *  returns +self+ if any elements removed, +nil+ otherwise.
  *
- *  If a block is given, it will use the return value of the block for
- *  comparison.
+ *  ---
  *
- *  It compares values using their #hash and #eql? methods for efficiency.
+ *  With no block given, identifies and removes elements using method <tt>eql?</tt>
+ *  to compare.
  *
- *  +self+ is traversed in order, and the first occurrence is kept.
+ *  Returns +self+ if any elements removed:
+ *    a = [0, 0, 1, 1, 2, 2]
+ *    a1 = a.uniq!
+ *    a1 # => [0, 1, 2]
+ *    a1.equal?(a) # => true # Returned self
  *
- *  Returns +nil+ if no changes are made (that is, no duplicates are found).
+ *  Returns +nil+ if no elements removed:
+ *    [0, 1, 2].uniq! # => nil
  *
- *     a = [ "a", "a", "b", "b", "c" ]
- *     a.uniq!   # => ["a", "b", "c"]
+ *  ---
  *
- *     b = [ "a", "b", "c" ]
- *     b.uniq!   # => nil
+ *  With a block given, calls the block for each element;
+ *  identifies (using method <tt>eql?</tt>) and removes
+ *  elements for which the block returns duplicate values.
  *
- *     c = [["student","sam"], ["student","george"], ["teacher","matz"]]
- *     c.uniq! {|s| s.first}   # => [["student", "sam"], ["teacher", "matz"]]
+ *  Returns +self+ if any elements removed:
+ *    a = ['a', 'aa', 'aaa', 'b', 'bb', 'bbb']
+ *    a1 = a.uniq! {|element| element.size }
+ *    a1 # => ['a', 'aa', 'aaa']
+ *    a1.equal?(a) # => true # Returned self
  *
+ *  Returns +nil+ if no elements removed:
+ *    a.uniq! {|element| element.size } # => nil
  */
-
 static VALUE
 rb_ary_uniq_bang(VALUE ary)
 {
@@ -6101,23 +6774,22 @@ rb_ary_uniq_bang(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.uniq                -> new_ary
- *     ary.uniq {|item| ...}   -> new_ary
+ *    array.uniq -> new_array
+ *    array.uniq {|element| ... } -> new_array
  *
- *  Returns a new array by removing duplicate values in +self+.
+ *  Returns a new \Array containing those elements from +self+ that are not duplicates,
+ *  the first occurrence always being retained.
  *
- *  If a block is given, it will use the return value of the block for comparison.
+ *  With no block given, identifies and omits duplicates using method <tt>eql?</tt>
+ *  to compare.
+ *    a = [0, 0, 1, 1, 2, 2]
+ *    a.uniq # => [0, 1, 2]
  *
- *  It compares values using their #hash and #eql? methods for efficiency.
- *
- *  +self+ is traversed in order, and the first occurrence is kept.
- *
- *     a = [ "a", "a", "b", "b", "c" ]
- *     a.uniq   # => ["a", "b", "c"]
- *
- *     b = [["student","sam"], ["student","george"], ["teacher","matz"]]
- *     b.uniq {|s| s.first}   # => [["student", "sam"], ["teacher", "matz"]]
- *
+ *  With a block given, calls the block for each element;
+ *  identifies (using method <tt>eql?</tt>) and omits duplicate values,
+ *  that is, those elements for which the block returns the same value:
+ *    a = ['a', 'aa', 'aaa', 'b', 'bb', 'bbb']
+ *    a.uniq { |element| element.size } # => ["a", "aa", "aaa"]
  */
 
 static VALUE
@@ -6147,14 +6819,17 @@ rb_ary_uniq(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.compact!    -> ary  or  nil
+ *    array.compact! -> self or nil
  *
- *  Removes +nil+ elements from the array.
+ *  Removes all +nil+ elements from +self+.
  *
- *  Returns +nil+ if no changes were made, otherwise returns the array.
+ *  Returns +self+ if any elements removed:
+ *    a = [nil, 0, nil, 1, nil, 2, nil]
+ *    a1 = a.compact! # => [0, 1, 2]
+ *    a1.equal?(a) # => true # Returned self
  *
- *     [ "a", nil, "b", nil, "c" ].compact! #=> [ "a", "b", "c" ]
- *     [ "a", "b", "c" ].compact!           #=> nil
+ *  Returns +nil+ if no elements removed:
+ *    [0, 1, 2].compact! # => nil
  */
 
 static VALUE
@@ -6182,12 +6857,11 @@ rb_ary_compact_bang(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.compact     -> new_ary
+ *    array.compact -> new_array
  *
- *  Returns a copy of +self+ with all +nil+ elements removed.
- *
- *     [ "a", nil, "b", nil, "c", nil ].compact
- *                       #=> [ "a", "b", "c" ]
+ *  Returns a new \Array containing all non-+nil+ elements from +self+:
+ *    a = [nil, 0, nil, 1, nil, 2, nil]
+ *    a.compact # => [0, 1, 2]
  */
 
 static VALUE
@@ -6200,23 +6874,26 @@ rb_ary_compact(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.count                   -> int
- *     ary.count(obj)              -> int
- *     ary.count {|item| block}    -> int
+ *    array.count -> an_integer
+ *    array.count(obj) -> an_integer
+ *    array.count {|element| ... } -> an_integer
  *
- *  Returns the number of elements.
+ *  Returns a count of specified elements.
  *
- *  If an argument is given, counts the number of elements which equal +obj+
- *  using <code>==</code>.
+ *  With no argument and no block, returns the count of all elements:
+ *    [0, 1, 2].count # => 3
+ *    [].count # => 0
  *
- *  If a block is given, counts the number of elements for which the block
- *  returns a true value.
+ *  With argument +obj+, returns the count of elements <tt>eql?</tt> to +obj+:
+ *    [0, 1, 2, 0].count(0) # => 2
+ *    [0, 1, 2].count(3) # => 0
  *
- *     ary = [1, 2, 4, 2]
- *     ary.count                  #=> 4
- *     ary.count(2)               #=> 2
- *     ary.count {|x| x%2 == 0}   #=> 3
+ *  With no argument and a block given, calls the block with each element;
+ *  returns the count of elements for which the block returns a truthy value:
+ *    [0, 1, 2, 3].count {|element| element > 1} # => 2
  *
+ *  With argument +obj+ and a block given, issues a warning, ignores the block,
+ *  and returns the count of elements <tt>eql?</tt> to +obj+:
  */
 
 static VALUE
@@ -6266,8 +6943,6 @@ flatten(VALUE ary, int level)
     }
     if (i == RARRAY_LEN(ary)) {
         return ary;
-    } else if (tmp == ary) {
-        rb_raise(rb_eArgError, "tried to flatten recursive array");
     }
 
     result = ary_new(0, RARRAY_LEN(ary));
@@ -6278,12 +6953,14 @@ flatten(VALUE ary, int level)
     rb_ary_push(stack, ary);
     rb_ary_push(stack, LONG2NUM(i + 1));
 
-    vmemo = rb_hash_new();
-    RBASIC_CLEAR_CLASS(vmemo);
-    memo = st_init_numtable();
-    rb_hash_st_table_set(vmemo, memo);
-    st_insert(memo, (st_data_t)ary, (st_data_t)Qtrue);
-    st_insert(memo, (st_data_t)tmp, (st_data_t)Qtrue);
+    if (level < 0) {
+	vmemo = rb_hash_new();
+	RBASIC_CLEAR_CLASS(vmemo);
+	memo = st_init_numtable();
+	rb_hash_st_table_set(vmemo, memo);
+	st_insert(memo, (st_data_t)ary, (st_data_t)Qtrue);
+	st_insert(memo, (st_data_t)tmp, (st_data_t)Qtrue);
+    }
 
     ary = tmp;
     i = 0;
@@ -6297,20 +6974,24 @@ flatten(VALUE ary, int level)
 	    }
 	    tmp = rb_check_array_type(elt);
 	    if (RBASIC(result)->klass) {
-                RB_GC_GUARD(vmemo);
-                st_clear(memo);
+		if (level < 0) {
+		    RB_GC_GUARD(vmemo);
+		    st_clear(memo);
+		}
 		rb_raise(rb_eRuntimeError, "flatten reentered");
 	    }
 	    if (NIL_P(tmp)) {
 		rb_ary_push(result, elt);
 	    }
 	    else {
-		id = (st_data_t)tmp;
-		if (st_is_member(memo, id)) {
-                    st_clear(memo);
-		    rb_raise(rb_eArgError, "tried to flatten recursive array");
+		if (level < 0) {
+		    id = (st_data_t)tmp;
+		    if (st_is_member(memo, id)) {
+			st_clear(memo);
+			rb_raise(rb_eArgError, "tried to flatten recursive array");
+		    }
+		    st_insert(memo, id, (st_data_t)Qtrue);
 		}
-		st_insert(memo, id, (st_data_t)Qtrue);
 		rb_ary_push(stack, ary);
 		rb_ary_push(stack, LONG2NUM(i));
 		ary = tmp;
@@ -6320,14 +7001,18 @@ flatten(VALUE ary, int level)
 	if (RARRAY_LEN(stack) == 0) {
 	    break;
 	}
-	id = (st_data_t)ary;
-	st_delete(memo, &id, 0);
+	if (level < 0) {
+	    id = (st_data_t)ary;
+	    st_delete(memo, &id, 0);
+	}
 	tmp = rb_ary_pop(stack);
 	i = NUM2LONG(tmp);
 	ary = rb_ary_pop(stack);
     }
 
-    st_clear(memo);
+    if (level < 0) {
+	st_clear(memo);
+    }
 
     RBASIC_SET_CLASS(result, rb_obj_class(ary));
     return result;
@@ -6335,22 +7020,47 @@ flatten(VALUE ary, int level)
 
 /*
  *  call-seq:
- *     ary.flatten!        -> ary or nil
- *     ary.flatten!(level) -> ary or nil
+ *    array.flatten! -> self or nil
+ *    array.flatten!(level) -> self or nil
  *
- *  Flattens +self+ in place.
+ *  Replaces each nested \Array in +self+ with the elements from that \Array;
+ *  returns +self+ if any changes, +nil+ otherwise.
  *
- *  Returns +nil+ if no modifications were made (i.e., the array contains no
- *  subarrays.)
+ *  Argument +level+, if given and not +nil+, must be an
+ *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
  *
- *  The optional +level+ argument determines the level of recursion to flatten.
+ *  With non-negative argument +level+, flattens recursively through +level+ levels:
+ *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
+ *    a1 = a.flatten!(1)
+ *    a1 # => [0, 1, [2, 3], 4, 5]
+ *    a1.equal?(a) # => true # Returned self
+ *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
+ *    a.flatten!(2) # => [0, 1, 2, 3, 4, 5]
+ *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
+ *    a.flatten!(3) # => [0, 1, 2, 3, 4, 5]
+ *    [0, 1, 2].flatten!(1) # => nil
  *
- *     a = [ 1, 2, [3, [4, 5] ] ]
- *     a.flatten!   #=> [1, 2, 3, 4, 5]
- *     a.flatten!   #=> nil
- *     a            #=> [1, 2, 3, 4, 5]
- *     a = [ 1, 2, [3, [4, 5] ] ]
- *     a.flatten!(1) #=> [1, 2, 3, [4, 5]]
+ *  With no argument, a +nil+ argument, or with negative argument +level+, flattens all levels:
+ *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
+ *    a.flatten! # => [0, 1, 2, 3, 4, 5]
+ *    [0, 1, 2].flatten! # => nil
+ *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
+ *    a.flatten!(-1) # => [0, 1, 2, 3, 4, 5]
+ *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
+ *    a.flatten!(-2) # => [0, 1, 2, 3, 4, 5]
+ *    [0, 1, 2].flatten!(-1) # => nil
+ *
+ *  ---
+ *
+ *  Raises an exception if +level+ is not an Integer-convertible object:
+ *     # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    [].flatten!(:foo)
+ *
+ *  Raises an exception if +self+ contains a circular reference:
+ *    a = []
+ *    a.push([a, a])
+ *    # Raises ArgumentError (tried to flatten recursive array):
+ *    a.flatten!
  */
 
 static VALUE
@@ -6377,24 +7087,47 @@ rb_ary_flatten_bang(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *     ary.flatten -> new_ary
- *     ary.flatten(level) -> new_ary
+ *    array.flatten -> new_array
+ *    array.flatten(level) -> new_array
  *
- *  Returns a new array that is a one-dimensional flattening of +self+
- *  (recursively).
+ *  Returns a new \Array that is a recursive flattening of +self+:
+ *  - Each non-Array element is unchanged.
+ *  - Each \Array is replaced by its individual elements.
  *
- *  That is, for every element that is an array, extract its elements into
- *  the new array.
+ *  Argument +level+, if given and not +nil+, must be
+ *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
  *
- *  The optional +level+ argument determines the level of recursion to
- *  flatten.
+ *  With non-negative argument +level+, flattens recursively through +level+ levels:
+ *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
+ *    a.flatten(0) # => [0, [1, [2, 3], 4], 5]
+ *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
+ *    a.flatten(1) # => [0, 1, [2, 3], 4, 5]
+ *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
+ *    a.flatten(2) # => [0, 1, 2, 3, 4, 5]
+ *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
+ *    a.flatten(3) # => [0, 1, 2, 3, 4, 5]
  *
- *     s = [ 1, 2, 3 ]           #=> [1, 2, 3]
- *     t = [ 4, 5, 6, [7, 8] ]   #=> [4, 5, 6, [7, 8]]
- *     a = [ s, t, 9, 10 ]       #=> [[1, 2, 3], [4, 5, 6, [7, 8]], 9, 10]
- *     a.flatten                 #=> [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
- *     a = [ 1, 2, [3, [4, 5] ] ]
- *     a.flatten(1)              #=> [1, 2, 3, [4, 5]]
+ *  With no argument, a +nil+ argument, or with negative argument +level+, flattens all levels:
+ *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
+ *    a.flatten # => [0, 1, 2, 3, 4, 5]
+ *    [0, 1, 2].flatten # => [0, 1, 2]
+ *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
+ *    a.flatten(-1) # => [0, 1, 2, 3, 4, 5]
+ *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
+ *    a.flatten(-2) # => [0, 1, 2, 3, 4, 5]
+ *    [0, 1, 2].flatten(-1) # => [0, 1, 2]
+ *
+ *  ---
+ *
+ *  Raises an exception if +level+ is not an Integer-convertible object:
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    [].flatten(:foo)
+ *
+ *  Raises an exception if +self+ contains a circular reference:
+ *    a = []
+ *    a.push([a, a])
+ *    # Raises ArgumentError (tried to flatten recursive array):
+ *    a.flatten
  */
 
 static VALUE
@@ -6707,7 +7440,7 @@ permute0(const long n, const long r, long *const p, char *const used, const VALU
 
 /*
  * Returns the product of from, from-1, ..., from - how_many + 1.
- * http://en.wikipedia.org/wiki/Pochhammer_symbol
+ * https://en.wikipedia.org/wiki/Pochhammer_symbol
  */
 static VALUE
 descending_factorial(long from, long how_many)

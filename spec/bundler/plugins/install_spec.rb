@@ -149,7 +149,7 @@ RSpec.describe "bundler plugin install" do
     it "raises an error when both git and local git sources are specified" do
       bundle "plugin install foo --local_git /phony/path/project --git git@gitphony.com:/repo/project", :raise_on_error => false
 
-      expect(exitstatus).not_to eq(0) if exitstatus
+      expect(exitstatus).not_to eq(0)
       expect(err).to eq("Remote and local plugin git sources can't be both specified")
     end
   end

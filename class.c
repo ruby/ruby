@@ -334,20 +334,23 @@ copy_tables(VALUE clone, VALUE orig)
     }
 }
 
+static void ensure_origin(VALUE klass);
+
 /* :nodoc: */
 VALUE
 rb_mod_init_copy(VALUE clone, VALUE orig)
 {
+    if (RB_TYPE_P(clone, T_CLASS)) {
+        class_init_copy_check(clone, orig);
+    }
+    if (!OBJ_INIT_COPY(clone, orig)) return clone;
+
     /* cloned flag is refer at constant inline cache
      * see vm_get_const_key_cref() in vm_insnhelper.c
      */
     FL_SET(clone, RCLASS_CLONED);
     FL_SET(orig , RCLASS_CLONED);
 
-    if (RB_TYPE_P(clone, T_CLASS)) {
-        class_init_copy_check(clone, orig);
-    }
-    if (!OBJ_INIT_COPY(clone, orig)) return clone;
     if (!FL_TEST(CLASS_OF(clone), FL_SINGLETON)) {
         RBASIC_SET_CLASS(clone, rb_singleton_class_clone(orig));
         rb_singleton_class_attached(RBASIC(clone)->klass, (VALUE)clone);
@@ -376,7 +379,7 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
         int add_subclass;
         VALUE clone_origin;
 
-        rb_ensure_origin(clone);
+        ensure_origin(clone);
         clone_origin = RCLASS_ORIGIN(clone);
 
         while (p && p != orig_origin) {
@@ -977,8 +980,6 @@ include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super)
     struct rb_managed_id_table *const klass_m_tbl = RCLASS_M_TBL(RCLASS_ORIGIN(klass));
     VALUE original_klass = klass;
 
-    rb_ensure_origin(module);
-
     while (module) {
 	int superclass_seen = FALSE;
 	struct rb_id_table *tbl;
@@ -1091,8 +1092,8 @@ move_refined_method(ID key, VALUE value, void *data)
     }
 }
 
-void
-rb_ensure_origin(VALUE klass)
+static void
+ensure_origin(VALUE klass)
 {
     VALUE origin = RCLASS_ORIGIN(klass);
     if (origin == klass) {
@@ -1110,9 +1111,10 @@ void
 rb_prepend_module(VALUE klass, VALUE module)
 {
     int changed = 0;
+    bool klass_had_no_origin = RCLASS_ORIGIN(klass) == klass;
 
     ensure_includable(klass, module);
-    rb_ensure_origin(klass);
+    ensure_origin(klass);
     changed = include_modules_at(klass, klass, module, FALSE);
     if (changed < 0)
 	rb_raise(rb_eArgError, "cyclic prepend detected");
@@ -1121,7 +1123,19 @@ rb_prepend_module(VALUE klass, VALUE module)
     }
     if (RB_TYPE_P(klass, T_MODULE)) {
         rb_subclass_entry_t *iclass = RCLASS_EXT(klass)->subclasses;
+        VALUE klass_origin = RCLASS_ORIGIN(klass);
+        struct rb_managed_id_table *klass_m_tbl = RCLASS_M_TBL(klass);
+        struct rb_managed_id_table *klass_origin_m_tbl = RCLASS_M_TBL(klass_origin);
         while (iclass) {
+            if (klass_had_no_origin && klass_origin_m_tbl == RCLASS_M_TBL(iclass->klass)) {
+                // backfill an origin iclass to handle refinements and future prepends
+                rb_id_table_foreach(&RCLASS_M_TBL(iclass->klass)->table, clear_module_cache_i, (void *)iclass->klass);
+                RCLASS_M_TBL(iclass->klass) = klass_m_tbl;
+                VALUE origin = rb_include_class_new(klass_origin, RCLASS_SUPER(iclass->klass));
+                RCLASS_SET_SUPER(iclass->klass, origin);
+                RCLASS_SET_INCLUDER(origin, RCLASS_INCLUDER(iclass->klass));
+                RCLASS_SET_ORIGIN(iclass->klass, origin);
+            }
             include_modules_at(iclass->klass, iclass->klass, module, FALSE);
             iclass = iclass->next;
         }

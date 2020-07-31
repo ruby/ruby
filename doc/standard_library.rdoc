@@ -16,7 +16,6 @@ ERB:: An easy to use but powerful templating system for Ruby
 Find:: This module supports top-down traversal of a set of file paths
 MakeMakefile:: Module used to generate a Makefile for C extensions
 OpenURI:: An easy-to-use wrapper for Net::HTTP, Net::HTTPS and Net::FTP
-OptionParser:: Ruby-oriented class for command-line option analysis
 PP:: Provides a PrettyPrinter for Ruby objects
 PrettyPrinter:: Implements a pretty printing algorithm for readable structure
 RbConfig:: Information of your configure and build of Ruby
@@ -35,7 +34,6 @@ un.rb:: Utilities to replace common UNIX commands
 
 Coverage:: Provides coverage measurement for Ruby
 Digest:: Provides a framework for message digest libraries
-IO:: Extensions for Ruby IO class, including #wait and ::console
 Monitor:: Provides an object or module to use safely by more than one thread
 NKF:: Ruby extension for Network Kanji Filter
 objspace:: Extends ObjectSpace module to add methods for internal statistics
@@ -62,6 +60,7 @@ Forwardable:: Provides delegation of specified methods to a designated object
 GetoptLong:: Parse command line options similar to the GNU C getopt_long()
 IPAddr:: Provides methods to manipulate IPv4 and IPv6 IP addresses
 IRB:: Interactive Ruby command-line tool for REPL (Read Eval Print Loop)
+OptionParser:: Ruby-oriented class for command-line option analysis
 Logger:: Provides a simple logging utility for outputting messages
 Matrix:: Represents a mathematical matrix.
 Mutex_m:: Mixin to extend objects to be handled like a Mutex
@@ -97,7 +96,7 @@ Etc:: Provides access to information typically stored in UNIX /etc directory
 Fcntl:: Loads constants defined in the OS fcntl.h C header file
 Fiddle:: A libffi wrapper for Ruby
 GDBM:: Ruby extension for the GNU dbm (gdbm) library
-IO::console:: Console interface
+IO:: Extensions for Ruby IO class, including #wait, #nonblock and ::console
 JSON:: Implements Javascript Object Notation for Ruby
 OpenSSL:: Provides SSL, TLS and general purpose cryptography for Ruby
 Psych:: A YAML parser and emitter for Ruby

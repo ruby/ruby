@@ -1220,20 +1220,28 @@ range_max(int argc, VALUE *argv, VALUE range)
 	rb_raise(rb_eRangeError, "cannot get the maximum of endless range");
     }
 
+    VALUE b = RANGE_BEG(range);
+
     if (rb_block_given_p() || (EXCL(range) && !nm) || argc) {
-        if (NIL_P(RANGE_BEG(range))) {
+        if (NIL_P(b)) {
             rb_raise(rb_eRangeError, "cannot get the maximum of beginless range with custom comparison method");
         }
         return rb_call_super(argc, argv);
     }
     else {
         struct cmp_opt_data cmp_opt = { 0, 0 };
-        VALUE b = RANGE_BEG(range);
-        int c = OPTIMIZED_CMP(b, e, cmp_opt);
+        int c = NIL_P(b) ? -1 : OPTIMIZED_CMP(b, e, cmp_opt);
 
         if (c > 0)
             return Qnil;
         if (EXCL(range)) {
+            if (RB_INTEGER_TYPE_P(b) && !RB_INTEGER_TYPE_P(e)) {
+                VALUE end = e;
+                e = rb_funcall(e, rb_intern("floor"), 0);
+                if (!RTEST(rb_funcall(e, rb_intern("=="), 1, end))) {
+                    return e;
+                }
+            }
             if (!RB_INTEGER_TYPE_P(e)) {
                 rb_raise(rb_eTypeError, "cannot exclude non Integer end value");
             }
@@ -1245,6 +1253,18 @@ range_max(int argc, VALUE *argv, VALUE range)
                 return LONG2NUM(FIX2LONG(e) - 1);
             }
             return rb_funcall(e, '-', 1, INT2FIX(1));
+        }
+        if (RB_INTEGER_TYPE_P(b) && !RB_INTEGER_TYPE_P(e)) {
+            if (RB_TYPE_P(e, T_FLOAT)) {
+                VALUE inf = rb_funcall(e, rb_intern("infinite?"), 0);
+                if (inf != Qnil) {
+                  /* For backwards compatibility, return end if the end
+                   * is Float::Infinity and the beginning is integer.
+                     If end is -Float::Infinity, return nil. */
+                  return(inf == INT2FIX(1) ? e : Qnil);
+                }
+            }
+            e = rb_funcall(e, rb_intern("floor"), 0);
         }
         return e;
     }
@@ -1593,9 +1613,14 @@ r_cover_range_p(VALUE range, VALUE beg, VALUE end, VALUE val)
     else if (cmp_end >= 0) {
         return TRUE;
     }
-
-    val_max = rb_rescue2(r_call_max, val, 0, Qnil, rb_eTypeError, (VALUE)0);
-    if (val_max == Qnil) return FALSE;
+    if (RB_INTEGER_TYPE_P(val_beg) && RB_INTEGER_TYPE_P(beg) &&
+            RB_INTEGER_TYPE_P(val_end) != RB_INTEGER_TYPE_P(end)) {
+        val_max = val_end;
+    }
+    else {
+        val_max = rb_rescue2(r_call_max, val, 0, Qnil, rb_eTypeError, (VALUE)0);
+        if (val_max == Qnil) return FALSE;
+    }
 
     return r_less(end, val_max) >= 0;
 }

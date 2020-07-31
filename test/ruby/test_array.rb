@@ -886,6 +886,17 @@ class TestArray < Test::Unit::TestCase
     assert_raise(NoMethodError, bug12738) { a.flatten.m }
   end
 
+  def test_flatten_recursive
+    a = []
+    a << a
+    assert_raise(ArgumentError) { a.flatten }
+    b = [1]; c = [2, b]; b << c
+    assert_raise(ArgumentError) { b.flatten }
+
+    assert_equal([1, 2, b], b.flatten(1))
+    assert_equal([1, 2, 1, 2, 1, c], b.flatten(4))
+  end
+
   def test_flatten!
     a1 = @cls[ 1, 2, 3]
     a2 = @cls[ 5, 6 ]
@@ -1734,10 +1745,12 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_min
+    assert_equal(3, [3].min)
     assert_equal(1, [1, 2, 3, 1, 2].min)
     assert_equal(3, [1, 2, 3, 1, 2].min {|a,b| b <=> a })
     cond = ->((a, ia), (b, ib)) { (b <=> a).nonzero? or ia <=> ib }
     assert_equal([3, 2], [1, 2, 3, 1, 2].each_with_index.min(&cond))
+    assert_equal(1.0, [3.0, 1.0, 2.0].min)
     ary = %w(albatross dog horse)
     assert_equal("albatross", ary.min)
     assert_equal("dog", ary.min {|a,b| a.length <=> b.length })
@@ -1756,10 +1769,12 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_max
+    assert_equal(1, [1].max)
     assert_equal(3, [1, 2, 3, 1, 2].max)
     assert_equal(1, [1, 2, 3, 1, 2].max {|a,b| b <=> a })
     cond = ->((a, ia), (b, ib)) { (b <=> a).nonzero? or ia <=> ib }
     assert_equal([1, 3], [1, 2, 3, 1, 2].each_with_index.max(&cond))
+    assert_equal(3.0, [1.0, 3.0, 2.0].max)
     ary = %w(albatross dog horse)
     assert_equal("horse", ary.max)
     assert_equal("albatross", ary.max {|a,b| a.length <=> b.length })
@@ -1777,6 +1792,7 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_minmax
+    assert_equal([3, 3], [3].minmax)
     assert_equal([1, 3], [1, 2, 3, 1, 2].minmax)
     assert_equal([3, 1], [1, 2, 3, 1, 2].minmax {|a,b| b <=> a })
     cond = ->((a, ia), (b, ib)) { (b <=> a).nonzero? or ia <=> ib }
@@ -2644,9 +2660,6 @@ class TestArray < Test::Unit::TestCase
 
   def test_flatten_error
     a = []
-    a << a
-    assert_raise(ArgumentError) { a.flatten }
-
     f = [].freeze
     assert_raise(ArgumentError) { a.flatten!(1, 2) }
     assert_raise(TypeError) { a.flatten!(:foo) }

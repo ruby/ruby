@@ -427,8 +427,6 @@ struct rb_iseq_constant_body {
     long unsigned total_calls; /* number of total calls with `mjit_exec()` */
     struct rb_mjit_unit *jit_unit;
 #endif
-
-    uintptr_t iseq_unique_id; /* -- Remove In 3.0 -- */
 };
 
 /* T_IMEMO/iseq */
@@ -1688,17 +1686,17 @@ MJIT_STATIC const rb_callable_method_entry_t *rb_vm_frame_method_entry(const rb_
 
 #define sysstack_error GET_VM()->special_exceptions[ruby_error_sysstack]
 
-#define RUBY_CONST_ASSERT(expr) (1/!!(expr)) /* expr must be a compile-time constant */
-#define VM_STACK_OVERFLOWED_P(cfp, sp, margin) \
-    (!RUBY_CONST_ASSERT(sizeof(*(sp)) == sizeof(VALUE)) || \
-     !RUBY_CONST_ASSERT(sizeof(*(cfp)) == sizeof(rb_control_frame_t)) || \
-     ((rb_control_frame_t *)((sp) + (margin)) + 1) >= (cfp))
-#define WHEN_VM_STACK_OVERFLOWED(cfp, sp, margin) \
-    if (LIKELY(!VM_STACK_OVERFLOWED_P(cfp, sp, margin))) {(void)0;} else /* overflowed */
-#define CHECK_VM_STACK_OVERFLOW0(cfp, sp, margin) \
-    WHEN_VM_STACK_OVERFLOWED(cfp, sp, margin) vm_stackoverflow()
+#define CHECK_VM_STACK_OVERFLOW0(cfp, sp, margin) do {                       \
+    STATIC_ASSERT(sizeof_sp,  sizeof(*(sp))  == sizeof(VALUE));              \
+    STATIC_ASSERT(sizeof_cfp, sizeof(*(cfp)) == sizeof(rb_control_frame_t)); \
+    const struct rb_control_frame_struct *bound = (void *)&(sp)[(margin)];   \
+    if (UNLIKELY((cfp) <= &bound[1])) {                                      \
+        vm_stackoverflow();                                                  \
+    }                                                                        \
+} while (0)
+
 #define CHECK_VM_STACK_OVERFLOW(cfp, margin) \
-    WHEN_VM_STACK_OVERFLOWED(cfp, (cfp)->sp, margin) vm_stackoverflow()
+    CHECK_VM_STACK_OVERFLOW0((cfp), (cfp)->sp, (margin))
 
 VALUE rb_catch_protect(VALUE t, rb_block_call_func *func, VALUE data, enum ruby_tag_type *stateptr);
 

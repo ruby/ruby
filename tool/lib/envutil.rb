@@ -197,11 +197,6 @@ module EnvUtil
   end
   module_function :invoke_ruby
 
-  alias rubyexec invoke_ruby
-  class << self
-    alias rubyexec invoke_ruby
-  end
-
   def verbose_warning
     class << (stderr = "".dup)
       alias write concat

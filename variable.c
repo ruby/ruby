@@ -755,7 +755,7 @@ VALUE
 rb_gv_get(const char *name)
 {
     ID id = find_global_id(name);
-    
+
     if (!id) {
         rb_warning("global variable `%s' not initialized", name);
         return Qnil;

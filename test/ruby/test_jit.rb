@@ -793,6 +793,24 @@ class TestJIT < Test::Unit::TestCase
     end;
   end
 
+  def test_inlined_c_method
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "aaa", success_count: 2, recompile_count: 1, min_calls: 2)
+    begin;
+      def test(obj, recursive: nil)
+        if recursive
+          test(recursive)
+        end
+        obj.to_s
+      end
+
+      print(test('a')) # set #to_s cc to String#to_s (expecting C method)
+      print(test('a')) # JIT with #to_s cc: String#to_s
+      # update #to_s cd->cc to Symbol#to_s, then go through the Symbol#to_s cd->cc
+      # after checking receiver class using inlined #to_s cc with String#to_s.
+      print(test('a', recursive: :foo))
+    end;
+  end
+
   def test_inlined_exivar
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "aaa", success_count: 3, recompile_count: 1, min_calls: 2)
     begin;

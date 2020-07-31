@@ -107,11 +107,13 @@ class TestRange < Test::Unit::TestCase
     assert_equal(1, (1...2).max)
     assert_raise(RangeError) { (1..).max }
     assert_raise(RangeError) { (1...).max }
+    assert_equal(2, (1..2.1).max)
+    assert_equal(2, (1...2.1).max)
 
     assert_equal(2.0, (1.0..2.0).max)
     assert_equal(nil, (2.0..1.0).max)
     assert_raise(TypeError) { (1.0...2.0).max }
-    assert_raise(TypeError) { (1...1.5).max }
+    assert_equal(1, (1...1.5).max)
     assert_raise(TypeError) { (1.5...2).max }
 
     assert_equal(-0x80000002, ((-0x80000002)...(-0x80000001)).max)
@@ -125,6 +127,13 @@ class TestRange < Test::Unit::TestCase
     assert_raise(RangeError) { (1...).max(3) }
 
     assert_raise(RangeError) { (..0).min {|a, b| a <=> b } }
+
+    assert_equal(2, (..2).max)
+    assert_raise(TypeError) { (...2).max }
+    assert_raise(TypeError) { (...2.0).max }
+
+    assert_equal(Float::INFINITY, (1..Float::INFINITY).max)
+    assert_nil((1..-Float::INFINITY).max)
   end
 
   def test_minmax
@@ -133,11 +142,13 @@ class TestRange < Test::Unit::TestCase
     assert_equal([1, 1], (1...2).minmax)
     assert_raise(RangeError) { (1..).minmax }
     assert_raise(RangeError) { (1...).minmax }
+    assert_equal([1, 2], (1..2.1).minmax)
+    assert_equal([1, 2], (1...2.1).minmax)
 
     assert_equal([1.0, 2.0], (1.0..2.0).minmax)
     assert_equal([nil, nil], (2.0..1.0).minmax)
     assert_raise(TypeError) { (1.0...2.0).minmax }
-    assert_raise(TypeError) { (1...1.5).minmax }
+    assert_equal([1, 1], (1..1.5).minmax)
     assert_raise(TypeError) { (1.5...2).minmax }
 
     assert_equal([-0x80000002, -0x80000002], ((-0x80000002)...(-0x80000001)).minmax)
@@ -149,6 +160,9 @@ class TestRange < Test::Unit::TestCase
 
     assert_equal(['a', 'c'], ('a'..'c').minmax)
     assert_equal(['a', 'b'], ('a'...'c').minmax)
+
+    assert_equal([1, Float::INFINITY], (1..Float::INFINITY).minmax)
+    assert_equal([nil, nil], (1..-Float::INFINITY).minmax)
   end
 
   def test_initialize_twice
@@ -652,7 +666,12 @@ class TestRange < Test::Unit::TestCase
     assert_not_operator(1..10, :cover?, 3...2)
     assert_not_operator(1..10, :cover?, 3...3)
     assert_not_operator('aa'..'zz', :cover?, 'aa'...'zzz')
+
     assert_not_operator(1..10, :cover?, 1...10.1)
+    assert_not_operator(1...10.1, :cover?, 1..10.1)
+    assert_operator(1..10.1, :cover?, 1...10.1)
+    assert_operator(1..10.1, :cover?, 1...10)
+    assert_operator(1..10.1, :cover?, 1..10)
   end
 
   def test_beg_len

@@ -30,6 +30,18 @@ class RubyLex
     @prompt = nil
   end
 
+  def self.compile_with_errors_suppressed(code)
+    line_no = 1
+    begin
+      result = yield code, line_no
+    rescue ArgumentError
+      code = ";\n#{code}"
+      line_no = 0
+      result = yield code, line_no
+    end
+    result
+  end
+
   # io functions
   def set_input(io, p = nil, &block)
     @io = io
@@ -76,7 +88,10 @@ class RubyLex
 
   def ripper_lex_without_warning(code)
     verbose, $VERBOSE = $VERBOSE, nil
-    tokens = Ripper.lex(code)
+    tokens = nil
+    self.class.compile_with_errors_suppressed(code) do |inner_code, line_no|
+      tokens = Ripper.lex(inner_code, '-', line_no)
+    end
     $VERBOSE = verbose
     tokens
   end
@@ -210,7 +225,9 @@ class RubyLex
       when 'jruby'
         JRuby.compile_ir(code)
       else
-        RubyVM::InstructionSequence.compile(code)
+        self.class.compile_with_errors_suppressed(code) do |inner_code, line_no|
+          RubyVM::InstructionSequence.compile(inner_code, nil, nil, line_no)
+        end
       end
     rescue EncodingError
       # This is for a hash with invalid encoding symbol, {"\xAE": 1}
@@ -307,7 +324,7 @@ class RubyLex
         when 'def', 'case', 'for', 'begin', 'class', 'module'
           indent += 1
         when 'if', 'unless', 'while', 'until'
-          # postfix if/unless/while/until/rescue must be Ripper::EXPR_LABEL
+          # postfix if/unless/while/until must be Ripper::EXPR_LABEL
           indent += 1 unless t[3].allbits?(Ripper::EXPR_LABEL)
         when 'end'
           indent -= 1
@@ -352,12 +369,12 @@ class RubyLex
           end
         when 'def', 'case', 'for', 'begin', 'class', 'module'
           depth_difference += 1
-        when 'if', 'unless', 'while', 'until'
+        when 'if', 'unless', 'while', 'until', 'rescue'
           # postfix if/unless/while/until/rescue must be Ripper::EXPR_LABEL
           unless t[3].allbits?(Ripper::EXPR_LABEL)
             depth_difference += 1
           end
-        when 'else', 'elsif', 'rescue', 'ensure', 'when', 'in'
+        when 'else', 'elsif', 'ensure', 'when', 'in'
           depth_difference += 1
         end
       end
@@ -403,12 +420,16 @@ class RubyLex
         case t[2]
         when 'def', 'do', 'case', 'for', 'begin', 'class', 'module'
           spaces_of_nest.push(spaces_at_line_head)
+        when 'rescue'
+          unless t[3].allbits?(Ripper::EXPR_LABEL)
+            corresponding_token_depth = spaces_of_nest.last
+          end
         when 'if', 'unless', 'while', 'until'
-          # postfix if/unless/while/until/rescue must be Ripper::EXPR_LABEL
+          # postfix if/unless/while/until must be Ripper::EXPR_LABEL
           unless t[3].allbits?(Ripper::EXPR_LABEL)
             spaces_of_nest.push(spaces_at_line_head)
           end
-        when 'else', 'elsif', 'rescue', 'ensure', 'when', 'in'
+        when 'else', 'elsif', 'ensure', 'when', 'in'
           corresponding_token_depth = spaces_of_nest.last
         when 'end'
           if is_first_printable_of_line

@@ -1468,13 +1468,12 @@ eom
     assert_syntax_error('-> {_1; -> {_2}}', /numbered parameter is already used/)
     assert_syntax_error('-> {-> {_1}; _2}', /numbered parameter is already used/)
     assert_syntax_error('proc {_1; _1 = nil}', /Can't assign to numbered parameter _1/)
-    mesg = proc {|n| /`_#{n}' is reserved for numbered parameter/}
-    assert_warn(mesg[1]) {eval('proc {_1 = nil}')}
-    assert_warn(mesg[2]) {eval('_2=1')}
-    assert_warn(mesg[3]) {eval('proc {|_3|}')}
-    assert_warn(mesg[4]) {instance_eval('def x(_4) end')}
-    assert_warn(mesg[5]) {instance_eval('def _5; end')}
-    assert_warn(mesg[6]) {instance_eval('def self._6; end')}
+    assert_syntax_error('proc {_1 = nil}', /_1 is reserved for numbered parameter/)
+    assert_syntax_error('_2=1', /_2 is reserved for numbered parameter/)
+    assert_syntax_error('proc {|_3|}', /_3 is reserved for numbered parameter/)
+    assert_syntax_error('def x(_4) end', /_4 is reserved for numbered parameter/)
+    assert_syntax_error('def _5; end', /_5 is reserved for numbered parameter/)
+    assert_syntax_error('def self._6; end', /_6 is reserved for numbered parameter/)
     assert_raise_with_message(NameError, /undefined local variable or method `_1'/) {
       eval('_1')
     }

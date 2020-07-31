@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 require 'reline'
 require 'ripper'
+require 'irb/ruby-lex'
 
 module IRB # :nodoc:
   module Color
@@ -155,27 +156,29 @@ module IRB # :nodoc:
         pos = [1, 0]
 
         verbose, $VERBOSE = $VERBOSE, nil
-        lexer = Ripper::Lexer.new(code)
-        if lexer.respond_to?(:scan) # Ruby 2.7+
-          lexer.scan.each do |elem|
-            str = elem.tok
-            next if allow_last_error and /meets end of file|unexpected end-of-input/ =~ elem.message
-            next if ([elem.pos[0], elem.pos[1] + str.bytesize] <=> pos) <= 0
+        RubyLex.compile_with_errors_suppressed(code) do |inner_code, line_no|
+          lexer = Ripper::Lexer.new(inner_code, '(ripper)', line_no)
+          if lexer.respond_to?(:scan) # Ruby 2.7+
+            lexer.scan.each do |elem|
+              str = elem.tok
+              next if allow_last_error and /meets end of file|unexpected end-of-input/ =~ elem.message
+              next if ([elem.pos[0], elem.pos[1] + str.bytesize] <=> pos) <= 0
 
-            str.each_line do |line|
-              if line.end_with?("\n")
-                pos[0] += 1
-                pos[1] = 0
-              else
-                pos[1] += line.bytesize
+              str.each_line do |line|
+                if line.end_with?("\n")
+                  pos[0] += 1
+                  pos[1] = 0
+                else
+                  pos[1] += line.bytesize
+                end
               end
-            end
 
-            yield(elem.event, str, elem.state)
-          end
-        else
-          lexer.parse.each do |elem|
-            yield(elem.event, elem.tok, elem.state)
+              yield(elem.event, str, elem.state)
+            end
+          else
+            lexer.parse.each do |elem|
+              yield(elem.event, elem.tok, elem.state)
+            end
           end
         end
         $VERBOSE = verbose

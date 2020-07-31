@@ -682,10 +682,22 @@ rb_load_protect(VALUE fname, int wrap, int *pstate)
  *
  *  Loads and executes the Ruby program in the file _filename_.
  *
- *  If the filename neither resolves to an absolute path nor starts with
- *  './' or '../', the file will be searched for in the library
+ *  If the filename is an absolute path (e.g. starts with '/'), the file
+ *  will be loaded directly using the absolute path.
+ *
+ *  If the filename is an explicit relative path (e.g. starts with './' or
+ *  '../'), the file will be loaded using the relative path from the current
+ *  directory.
+ *
+ *  Otherwise, the file will be searched for in the library
  *  directories listed in <code>$LOAD_PATH</code> (<code>$:</code>).
- *  If the filename starts with './' or '../', resolution is based on Dir.pwd.
+ *  If the file is found in a directory, it will attempt to load the file
+ *  relative to that directory.  If the file is not found in any of the
+ *  directories in <code>$LOAD_PATH</code>, the file will be loaded using
+ *  the relative path from the current directory.
+ *
+ *  If the file doesn't exist when there is an attempt to load it, a
+ *  LoadError will be raised.
  *
  *  If the optional _wrap_ parameter is +true+, the loaded script will
  *  be executed under an anonymous module, protecting the calling

@@ -580,7 +580,19 @@ class VCS
               s = s.lines
               fix.each_line do |x|
                 if %r[^ +(\d+)s/(.+)/(.*)/] =~ x
-                  s[$1.to_i][$2] = $3
+                  begin
+                    s[$1.to_i][$2] = $3
+                  rescue IndexError
+                    message = ["format_changelog failed to replace #{$2.dump} with #{$3.dump} at #$1\n"]
+                    from = [1, $1.to_i-2].max
+                    to = [s.size-1, $1.to_i+2].min
+                    s.each_with_index do |e, i|
+                      next if i < from
+                      break if to < i
+                      message << "#{i}:#{e}"
+                    end
+                    raise message.join('')
+                  end
                 end
               end
               s = s.join('')

@@ -1,6 +1,8 @@
 # Parse built-in script and make rbinc file
 
 require 'ripper'
+require 'stringio'
+require_relative 'ruby_vm/helpers/c_escape'
 
 def string_literal(lit, str = [])
   while lit
@@ -207,6 +209,29 @@ def collect_iseq iseq_ary
   }
 end
 
+def generate_cexpr(ofile, lineno, line_file, body_lineno, text, locals, func_name)
+  f = StringIO.new
+  f.puts '{'
+  lineno += 1
+  locals.reverse_each.with_index{|param, i|
+    next unless Symbol === param
+    f.puts "MAYBE_UNUSED(const VALUE) #{param} = rb_vm_lvar(ec, #{-3 - i});"
+    lineno += 1
+  }
+  f.puts "#line #{body_lineno} \"#{line_file}\""
+  lineno += 1
+
+  f.puts text
+  lineno += text.count("\n") + 1
+
+  f.puts "#line #{lineno + 2} \"#{ofile}\"" # TODO: restore line number.
+  f.puts "}"
+  f.puts
+  lineno += 3
+
+  return lineno, f.string
+end
+
 def mk_builtin_header file
   base = File.basename(file, '.rb')
   ofile = "#{file}inc"
@@ -244,23 +269,10 @@ def mk_builtin_header file
 
     inlines.each{|cfunc_name, (body_lineno, text, locals, func_name)|
       if String === cfunc_name
-        f.puts "static VALUE #{cfunc_name}(struct rb_execution_context_struct *ec, const VALUE self) {"
+        f.puts "static VALUE #{cfunc_name}(struct rb_execution_context_struct *ec, const VALUE self)"
         lineno += 1
-
-        locals.reverse_each.with_index{|param, i|
-          next unless Symbol === param
-          f.puts "MAYBE_UNUSED(const VALUE) #{param} = rb_vm_lvar(ec, #{-3 - i});"
-          lineno += 1
-        }
-        f.puts "#line #{body_lineno} \"#{line_file}\""
-        lineno += 1
-
-        f.puts text
-        lineno += text.count("\n") + 1
-
-        f.puts "#line #{lineno + 2} \"#{ofile}\"" # TODO: restore line number.
-        f.puts "}"
-        lineno += 2
+        lineno, str = generate_cexpr(ofile, lineno, line_file, body_lineno, text, locals, func_name)
+        f.write str
       else
         # cinit!
         f.puts "#line #{body_lineno} \"#{line_file}\""
@@ -272,6 +284,44 @@ def mk_builtin_header file
       end
     }
 
+    bs.each_pair{|func, (argc, cfunc_name)|
+      decl = ', VALUE' * argc
+      argv = argc                    \
+           . times                   \
+           . map {|i|", argv[#{i}]"} \
+           . join('')
+      f.puts %'static void'
+      f.puts %'mjit_compile_invokebuiltin_for_#{func}(FILE *f, long index, unsigned stack_size, bool inlinable_p)'
+      f.puts %'{'
+      f.puts %'    fprintf(f, "    VALUE self = GET_SELF();\\n");'
+      f.puts %'    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE#{decl});\\n");'
+      if inlines.has_key? cfunc_name
+        body_lineno, text, locals, func_name = inlines[cfunc_name]
+        lineno, str = generate_cexpr(ofile, lineno, line_file, body_lineno, text, locals, func_name)
+        f.puts %'    if (inlinable_p) {'
+        str.gsub(/^(?!#)/, '    ').each_line {|i|
+          j = RubyVM::CEscape.rstring2cstr(i).dup
+          j.sub!(/^    return\b/ , '    val =')
+          f.printf(%'        fprintf(f, "%%s", %s);\n', j)
+        }
+        f.puts(%'        return;')
+        f.puts(%'    }')
+      end
+      if argc > 0
+        f.puts %'    if (index == -1) {'
+        f.puts %'        fprintf(f, "    const VALUE *argv = &stack[%d];\\n", stack_size - #{argc});'
+        f.puts %'    }'
+        f.puts %'    else {'
+        f.puts %'        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\\n");'
+        f.puts %'        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\\n", index);'
+        f.puts %'    }'
+      end
+      f.puts %'    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == #{cfunc_name} */\\n", (intptr_t)#{cfunc_name});'
+      f.puts %'    fprintf(f, "    val = f(ec, self#{argv});\\n");'
+      f.puts %'}'
+      f.puts
+    }
+
     f.puts "void Init_builtin_#{base}(void)"
     f.puts "{"
 
@@ -279,9 +329,9 @@ def mk_builtin_header file
     f.puts "  // table definition"
     f.puts "  static const struct rb_builtin_function #{table}[] = {"
     bs.each.with_index{|(func, (argc, cfunc_name)), i|
-      f.puts "    RB_BUILTIN_FUNCTION(#{i}, #{func}, #{cfunc_name}, #{argc}),"
+      f.puts "    RB_BUILTIN_FUNCTION(#{i}, #{func}, #{cfunc_name}, #{argc}, mjit_compile_invokebuiltin_for_#{func}),"
     }
-    f.puts "    RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0),"
+    f.puts "    RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0, 0),"
     f.puts "  };"
 
     f.puts

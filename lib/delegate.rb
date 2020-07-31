@@ -39,6 +39,8 @@
 # Be advised, RDoc will not detect delegated methods.
 #
 class Delegator < BasicObject
+  VERSION = "0.1.0"
+
   kernel = ::Kernel.dup
   kernel.class_eval do
     alias __raise__ raise
@@ -421,6 +423,21 @@ def DelegateClass(superclass, &block)
   end
   klass.define_singleton_method :protected_instance_methods do |all=true|
     super(all) | superclass.protected_instance_methods
+  end
+  klass.define_singleton_method :instance_methods do |all=true|
+    super(all) | superclass.instance_methods
+  end
+  klass.define_singleton_method :public_instance_method do |name|
+    super(name)
+  rescue NameError
+    raise unless self.public_instance_methods.include?(name)
+    superclass.public_instance_method(name)
+  end
+  klass.define_singleton_method :instance_method do |name|
+    super(name)
+  rescue NameError
+    raise unless self.instance_methods.include?(name)
+    superclass.instance_method(name)
   end
   klass.module_eval(&block) if block
   return klass

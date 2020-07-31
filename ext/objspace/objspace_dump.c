@@ -195,28 +195,6 @@ dump_append_string_content(struct dump_config *dc, VALUE obj)
     }
 }
 
-static const char *
-imemo_name(int imemo)
-{
-    switch(imemo) {
-#define TYPE_STR(t) case(imemo_##t): return #t
-	TYPE_STR(env);
-	TYPE_STR(cref);
-	TYPE_STR(svar);
-	TYPE_STR(throw_data);
-	TYPE_STR(ifunc);
-	TYPE_STR(memo);
-	TYPE_STR(ment);
-	TYPE_STR(iseq);
-	TYPE_STR(tmpbuf);
-	TYPE_STR(ast);
-	TYPE_STR(parser_strterm);
-      default:
-	return "unknown";
-#undef TYPE_STR
-    }
-}
-
 static void
 dump_object(VALUE obj, struct dump_config *dc)
 {
@@ -251,7 +229,7 @@ dump_object(VALUE obj, struct dump_config *dc)
 	return;
 
       case T_IMEMO:
-	dump_append(dc, ", \"imemo_type\":\"%s\"", imemo_name(imemo_type(obj)));
+	dump_append(dc, ", \"imemo_type\":\"%s\"", rb_imemo_name(imemo_type(obj)));
 	break;
 
       case T_SYMBOL:
@@ -290,8 +268,11 @@ dump_object(VALUE obj, struct dump_config *dc)
 
       case T_CLASS:
       case T_MODULE:
-	if (dc->cur_obj_klass)
-	    dump_append(dc, ", \"name\":\"%s\"", rb_class2name(obj));
+	if (dc->cur_obj_klass) {
+	    VALUE mod_name = rb_mod_name(obj);
+	    if (!NIL_P(mod_name))
+		dump_append(dc, ", \"name\":\"%s\"", RSTRING_PTR(mod_name));
+	}
 	break;
 
       case T_DATA:

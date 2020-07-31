@@ -731,16 +731,67 @@ describe "Module#refine" do
       result.should == "foo"
     end
 
+    it "looks in the refined class from included module" do
+      refined_class = ModuleSpecs.build_refined_class(for_super: true)
+
+      a = Module.new do
+        def foo
+          [:A] + super
+        end
+      end
+
+      refinement = Module.new do
+        refine refined_class do
+          include a
+        end
+      end
+
+      result = nil
+      Module.new do
+        using refinement
+
+        result = refined_class.new.foo
+      end
+
+      result.should == [:A, :C]
+    end
+
+    it "looks in the refined ancestors from included module" do
+      refined_class = ModuleSpecs.build_refined_class(for_super: true)
+      subclass = Class.new(refined_class)
+
+      a = Module.new do
+        def foo
+          [:A] + super
+        end
+      end
+
+      refinement = Module.new do
+        refine refined_class do
+          include a
+        end
+      end
+
+      result = nil
+      Module.new do
+        using refinement
+
+        result = subclass.new.foo
+      end
+
+      result.should == [:A, :C]
+    end
+
     # super in a method of a refinement invokes the method in the refined
     # class even if there is another refinement which has been activated
     # in the same context.
-    it "looks in the refined class even if there is another active refinement" do
-      refined_class = ModuleSpecs.build_refined_class
+    it "looks in the refined class first if called from refined method" do
+      refined_class = ModuleSpecs.build_refined_class(for_super: true)
 
       refinement = Module.new do
         refine refined_class do
           def foo
-            "foo from refinement"
+            [:R1]
           end
         end
       end
@@ -748,7 +799,7 @@ describe "Module#refine" do
       refinement_with_super = Module.new do
         refine refined_class do
           def foo
-            super
+            [:R2] + super
           end
         end
       end
@@ -760,7 +811,246 @@ describe "Module#refine" do
         result = refined_class.new.foo
       end
 
-      result.should == "foo"
+      result.should == [:R2, :C]
+    end
+
+    it "looks only in the refined class even if there is another active refinement" do
+      refined_class = ModuleSpecs.build_refined_class(for_super: true)
+
+      refinement = Module.new do
+        refine refined_class do
+          def bar
+            "you cannot see me from super because I belong to another active R"
+          end
+        end
+      end
+
+      refinement_with_super = Module.new do
+        refine refined_class do
+          def bar
+            super
+          end
+        end
+      end
+
+
+      Module.new do
+        using refinement
+        using refinement_with_super
+        -> {
+          refined_class.new.bar
+        }.should raise_error(NoMethodError)
+      end
+    end
+
+    it "does't have access to active refinements for C from included module" do
+      refined_class = ModuleSpecs.build_refined_class
+
+      a = Module.new do
+        def foo
+          super + bar
+        end
+      end
+
+      refinement = Module.new do
+        refine refined_class do
+          include a
+
+          def bar
+            "bar is not seen from A methods"
+          end
+        end
+      end
+
+      Module.new do
+        using refinement
+        -> {
+          refined_class.new.foo
+        }.should raise_error(NameError) { |e| e.name.should == :bar }
+      end
+    end
+
+    it "does't have access to other active refinements from included module" do
+      refined_class = ModuleSpecs.build_refined_class
+
+      refinement_integer = Module.new do
+        refine Integer do
+          def bar
+            "bar is not seen from A methods"
+          end
+        end
+      end
+
+      a = Module.new do
+        def foo
+          super + 1.bar
+        end
+      end
+
+      refinement = Module.new do
+        refine refined_class do
+          include a
+        end
+      end
+
+      Module.new do
+        using refinement
+        using refinement_integer
+        -> {
+          refined_class.new.foo
+        }.should raise_error(NameError) { |e| e.name.should == :bar }
+      end
+    end
+
+    # https://bugs.ruby-lang.org/issues/16977
+    it "looks in the another active refinement if super called from included modules" do
+      refined_class = ModuleSpecs.build_refined_class(for_super: true)
+
+      a = Module.new do
+        def foo
+          [:A] + super
+        end
+      end
+
+      b = Module.new do
+        def foo
+          [:B] + super
+        end
+      end
+
+      refinement_a = Module.new do
+        refine refined_class do
+          include a
+        end
+      end
+
+      refinement_b = Module.new do
+        refine refined_class do
+          include b
+        end
+      end
+
+      result = nil
+      Module.new do
+        using refinement_a
+        using refinement_b
+        result = refined_class.new.foo
+      end
+
+      result.should == [:B, :A, :C]
+    end
+
+    it "looks in the current active refinement from included modules" do
+      refined_class = ModuleSpecs.build_refined_class(for_super: true)
+
+      a = Module.new do
+        def foo
+          [:A] + super
+        end
+      end
+
+      b = Module.new do
+        def foo
+          [:B] + super
+        end
+      end
+
+      refinement = Module.new do
+        refine refined_class do
+          def foo
+            [:LAST] + super
+          end
+        end
+      end
+
+      refinement_a_b = Module.new do
+        refine refined_class do
+          include a
+          include b
+        end
+      end
+
+      result = nil
+      Module.new do
+        using refinement
+        using refinement_a_b
+        result = refined_class.new.foo
+      end
+
+      result.should == [:B, :A, :LAST, :C]
+    end
+
+    ruby_version_is ""..."2.8" do
+      it "looks in the lexical scope refinements before other active refinements" do
+        refined_class = ModuleSpecs.build_refined_class(for_super: true)
+
+        refinement_local = Module.new do
+          refine refined_class do
+            def foo
+              [:LOCAL] + super
+            end
+          end
+        end
+
+        a = Module.new do
+          using refinement_local
+
+          def foo
+            [:A] + super
+          end
+        end
+
+        refinement = Module.new do
+          refine refined_class do
+            include a
+          end
+        end
+
+        result = nil
+        Module.new do
+          using refinement
+          result = refined_class.new.foo
+        end
+
+        result.should == [:A, :LOCAL, :C]
+      end
+    end
+
+    ruby_version_is "2.8" do
+      # https://bugs.ruby-lang.org/issues/17007
+      it "does not look in the lexical scope refinements before other active refinements" do
+        refined_class = ModuleSpecs.build_refined_class(for_super: true)
+
+        refinement_local = Module.new do
+          refine refined_class do
+            def foo
+              [:LOCAL] + super
+            end
+          end
+        end
+
+        a = Module.new do
+          using refinement_local
+
+          def foo
+            [:A] + super
+          end
+        end
+
+        refinement = Module.new do
+          refine refined_class do
+            include a
+          end
+        end
+
+        result = nil
+        Module.new do
+          using refinement
+          result = refined_class.new.foo
+        end
+
+        result.should == [:A, :C]
+      end
     end
   end
 

@@ -57,4 +57,21 @@ describe "CApiWrappedTypedStruct" do
       @s.typed_get_struct_data_ptr(a).should == 1024
     end
   end
+
+  describe "rb_check_typeddata" do
+    it "returns data pointer when the struct has the given type" do
+      a = @s.typed_wrap_struct(1024)
+      @s.rb_check_typeddata_same_type(a).should == true
+    end
+
+    it "returns data pointer when the parent struct has the given type" do
+      a = @s.typed_wrap_struct(1024)
+      @s.rb_check_typeddata_same_type_parent(a).should == true
+    end
+
+    it "raises an error for different types" do
+      a = @s.typed_wrap_struct(1024)
+      -> { @s.rb_check_typeddata_different_type(a) }.should raise_error(TypeError)
+    end
+  end
 end

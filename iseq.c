@@ -451,14 +451,11 @@ rb_iseq_memsize(const rb_iseq_t *iseq)
     return size;
 }
 
-static uintptr_t fresh_iseq_unique_id = 0; /* -- Remove In 3.0 -- */
-
 struct rb_iseq_constant_body *
 rb_iseq_constant_body_alloc(void)
 {
     struct rb_iseq_constant_body *iseq_body;
     iseq_body = ZALLOC(struct rb_iseq_constant_body);
-    iseq_body->iseq_unique_id = fresh_iseq_unique_id++; /* -- Remove In 3.0 -- */
     return iseq_body;
 }
 

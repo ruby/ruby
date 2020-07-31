@@ -912,7 +912,6 @@ RSpec.describe "bundle install with git sources" do
 
     bundle "install"
     bundle "install"
-    expect(exitstatus).to eq(0) if exitstatus
   end
 
   it "prints a friendly error if a file blocks the git repo" do
@@ -927,7 +926,7 @@ RSpec.describe "bundle install with git sources" do
       gem "foo", :git => "#{lib_path("foo-1.0")}"
     G
 
-    expect(exitstatus).to_not eq(0) if exitstatus
+    expect(exitstatus).to_not eq(0)
     expect(err).to include("Bundler could not install a gem because it " \
                            "needs to create a directory, but a file exists " \
                            "- #{default_bundle_path("bundler")}")
@@ -1358,7 +1357,6 @@ In Gemfile:
         end
       G
 
-      expect(exitstatus).to eq(0) if exitstatus
       expect(ENV["GIT_DIR"]).to eq("bar")
       expect(ENV["GIT_WORK_TREE"]).to eq("bar")
     end

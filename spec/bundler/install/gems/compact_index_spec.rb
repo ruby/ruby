@@ -522,8 +522,6 @@ The checksum of /versions does not match the checksum provided by the server! So
   end
 
   it "installs the binstubs", :bundler => "< 3" do
-    skip "exec format error" if Gem.win_platform?
-
     gemfile <<-G
       source "#{source_uri}"
       gem "rack"
@@ -775,8 +773,6 @@ The checksum of /versions does not match the checksum provided by the server! So
         G
 
         bundle :install, :artifice => "compact_index_forbidden"
-
-        expect(exitstatus).to eq(0) if exitstatus
       ensure
         home(".gemrc").rmtree
       end
@@ -860,7 +856,7 @@ The checksum of /versions does not match the checksum provided by the server! So
       source "htps://rubygems.org"
       gem "rack"
     G
-    expect(exitstatus).to eq(15) if exitstatus
+    expect(exitstatus).to eq(15)
     expect(err).to end_with(<<-E.strip)
       The request uri `htps://index.rubygems.org/versions` has an invalid scheme (`htps`). Did you mean `http` or `https`?
     E
@@ -873,7 +869,7 @@ The checksum of /versions does not match the checksum provided by the server! So
         gem "rack"
       G
 
-      expect(exitstatus).to eq(19) if exitstatus
+      expect(exitstatus).to eq(19)
       expect(err).
         to  include("Bundler cannot continue installing rack (1.0.0).").
         and include("The checksum for the downloaded `rack-1.0.0.gem` does not match the checksum given by the server.").
@@ -892,7 +888,7 @@ The checksum of /versions does not match the checksum provided by the server! So
         source "#{source_uri}"
         gem "rack"
       G
-      expect(exitstatus).to eq(5) if exitstatus
+      expect(exitstatus).to eq(5)
       expect(err).to include("The given checksum for rack-1.0.0 (\"checksum!\") is not a valid SHA256 hexdigest nor base64digest")
     end
 

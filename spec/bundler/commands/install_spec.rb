@@ -119,7 +119,7 @@ RSpec.describe "bundle install with gem sources" do
         source "#{file_uri_for(gem_repo1)}"
         gem :rack
       G
-      expect(exitstatus).to eq(4) if exitstatus
+      expect(exitstatus).to eq(4)
     end
 
     it "pulls in dependencies" do
@@ -420,7 +420,6 @@ RSpec.describe "bundle install with gem sources" do
 
         gem 'foo'
       G
-      expect(exitstatus).to eq(0) if exitstatus
     end
 
     it "doesn't blow up when the global .bundle/config is empty" do
@@ -432,7 +431,6 @@ RSpec.describe "bundle install with gem sources" do
 
         gem 'foo'
       G
-      expect(exitstatus).to eq(0) if exitstatus
     end
   end
 
@@ -517,8 +515,6 @@ RSpec.describe "bundle install with gem sources" do
       end
 
       bundle :install, :dir => root_dir
-
-      expect(exitstatus).to eq(0) if exitstatus
     end
   end
 
@@ -582,7 +578,7 @@ RSpec.describe "bundle install with gem sources" do
 
     it "should display a helpful message explaining how to fix it" do
       bundle :install, :env => { "BUNDLE_RUBYGEMS__ORG" => "user:pass{word" }, :raise_on_error => false
-      expect(exitstatus).to eq(17) if exitstatus
+      expect(exitstatus).to eq(17)
       expect(err).to eq("Please CGI escape your usernames and passwords before " \
                         "setting them for authentication.")
     end

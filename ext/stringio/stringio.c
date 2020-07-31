@@ -11,7 +11,7 @@
 
 **********************************************************************/
 
-#define STRINGIO_VERSION "0.1.1"
+#define STRINGIO_VERSION "0.1.3"
 
 #include "ruby.h"
 #include "ruby/io.h"
@@ -1429,13 +1429,18 @@ strio_write(VALUE self, VALUE str)
     long len, olen;
     rb_encoding *enc, *enc2;
     rb_encoding *const ascii8bit = rb_ascii8bit_encoding();
+    rb_encoding *usascii = 0;
 
     if (!RB_TYPE_P(str, T_STRING))
 	str = rb_obj_as_string(str);
     enc = get_enc(ptr);
     enc2 = rb_enc_get(str);
-    if (enc != enc2 && enc != ascii8bit) {
-	str = rb_str_conv_enc(str, enc2, enc);
+    if (enc != enc2 && enc != ascii8bit && enc != (usascii = rb_usascii_encoding())) {
+	VALUE converted = rb_str_conv_enc(str, enc2, enc);
+	if (converted == str && enc2 != ascii8bit && enc2 != usascii) { /* conversion failed */
+	    rb_enc_check(rb_enc_from_encoding(enc), str);
+	}
+	str = converted;
     }
     len = RSTRING_LEN(str);
     if (len == 0) return 0;

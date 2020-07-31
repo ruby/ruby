@@ -54,8 +54,6 @@ Zachary Scott (zzak)
   _unmaintained_
 [lib/open-uri.rb]
   Tanaka Akira (akr)
-[lib/optparse.rb, lib/optparse/*]
-  Nobuyuki Nakada (nobu)
 [lib/pp.rb]
   Tanaka Akira (akr)
 [lib/prettyprint.rb]
@@ -94,10 +92,6 @@ Zachary Scott (zzak)
   Akinori MUSHA (knu)
 [ext/fiber]
   Koichi Sasada (ko1)
-[ext/io/nonblock]
-  Nobuyuki Nakada (nobu)
-[ext/io/wait]
-  Nobuyuki Nakada (nobu)
 [ext/monitor]
   Koichi Sasada (ko1)
 [ext/nkf]
@@ -170,6 +164,9 @@ Zachary Scott (zzak)
   Keiju ISHITSUKA (keiju)
   https://github.com/ruby/irb
   https://rubygems.org/gems/irb
+[lib/optparse.rb, lib/optparse/*]
+  Nobuyuki Nakada (nobu)
+  https://github.com/ruby/optparse
 [lib/logger.rb]
   Naotoshi Seo (sonots)
   https://github.com/ruby/logger
@@ -308,6 +305,12 @@ Zachary Scott (zzak)
   Nobuyuki Nakada (nobu)
   https://github.com/ruby/io-console
   https://rubygems.org/gems/io-console
+[ext/io/nonblock]
+  Nobuyuki Nakada (nobu)
+  https://github.com/ruby/io-nonblock
+[ext/io/wait]
+  Nobuyuki Nakada (nobu)
+  https://github.com/ruby/io-wait
 [ext/json]
   NARUSE, Yui (naruse), Hiroshi SHIBATA (hsbt)
   https://github.com/flori/json

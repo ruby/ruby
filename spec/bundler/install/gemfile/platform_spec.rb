@@ -349,7 +349,6 @@ RSpec.describe "bundle install with platform conditionals" do
     G
 
     bundle :list
-    expect(exitstatus).to eq(0) if exitstatus
   end
 
   it "does not attempt to install gems from :rbx when using --local" do

@@ -1729,7 +1729,7 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
 
 /*
  * UTF-8 leading bytes have either 0xxxxxxx or 11xxxxxx
- * bit representation. (see http://en.wikipedia.org/wiki/UTF-8)
+ * bit representation. (see https://en.wikipedia.org/wiki/UTF-8)
  * Therefore, the following pseudocode can detect UTF-8 leading bytes.
  *
  * if (!(byte & 0x80))

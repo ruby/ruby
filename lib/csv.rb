@@ -34,7 +34,7 @@
 # I'm sure I'll miss something, but I'll try to mention most of the major
 # differences I am aware of, to help others quickly get up to speed:
 #
-# === CSV Parsing
+# === \CSV Parsing
 #
 # * This parser is m17n aware. See CSV for full details.
 # * This library has a stricter parser and will throw MalformedCSVErrors on
@@ -103,85 +103,322 @@ require_relative "csv/writer"
 
 using CSV::MatchP if CSV.const_defined?(:MatchP)
 
+# == \CSV
+# \CSV (comma-separated variables) data is a text representation of a table:
+# - A _row_ _separator_ delimits table rows.
+#   A common row separator is the newline character <tt>"\n"</tt>.
+# - A _column_ _separator_ delimits fields in a row.
+#   A common column separator is the comma character <tt>","</tt>.
 #
-# This class provides a complete interface to CSV files and data. It offers
-# tools to enable you to read and write to and from Strings or IO objects, as
-# needed.
+# This \CSV \String, with row separator <tt>"\n"</tt>
+# and column separator <tt>","</tt>,
+# has three rows and two columns:
+#   "foo,0\nbar,1\nbaz,2\n"
 #
-# The most generic interface of the library is:
+# Despite the name \CSV, a \CSV representation can use different separators.
 #
-#    csv = CSV.new(string_or_io, **options)
+# == \Class \CSV
 #
-#    # Reading: IO object should be open for read
-#    csv.read # => array of rows
-#    # or
-#    csv.each do |row|
-#      # ...
-#    end
-#    # or
-#    row = csv.shift
+# Class \CSV provides methods for:
+# - Parsing \CSV data from a \String object, a \File (via its file path), or an \IO object.
+# - Generating \CSV data to a \String object.
 #
-#    # Writing: IO object should be open for write
-#    csv << row
+# To make \CSV available:
+#   require 'csv'
 #
-# There are several specialized class methods for one-statement reading or writing,
-# described in the Specialized Methods section.
+# All examples here assume that this has been done.
 #
-# If a String is passed into ::new, it is internally wrapped into a StringIO object.
+# == Keeping It Simple
 #
-# +options+ can be used for specifying the particular CSV flavor (column
-# separators, row separators, value quoting and so on), and for data conversion,
-# see Data Conversion section for the description of the latter.
+# A \CSV object has dozens of instance methods that offer fine-grained control
+# of parsing and generating \CSV data.
+# For many needs, though, simpler approaches will do.
 #
-# == Specialized Methods
+# This section summarizes the singleton methods in \CSV
+# that allow you to parse and generate without explicitly
+# creating \CSV objects.
+# For details, follow the links.
 #
-# === Reading
+# === Simple Parsing
 #
-#   # From a file: all at once
-#   arr_of_rows = CSV.read("path/to/file.csv", **options)
-#   # iterator-style:
-#   CSV.foreach("path/to/file.csv", **options) do |row|
-#     # ...
+# Parsing methods commonly return either of:
+# - An \Array of Arrays of Strings:
+#   - The outer \Array is the entire "table".
+#   - Each inner \Array is a row.
+#   - Each \String is a field.
+# - A CSV::Table object.  For details, see
+#   {\CSV with Headers}[#class-CSV-label-CSV+with+Headers].
+#
+# ==== Parsing a \String
+#
+# The input to be parsed can be a string:
+#   string = "foo,0\nbar,1\nbaz,2\n"
+#
+# \Method CSV.parse returns the entire \CSV data:
+#   CSV.parse(string) # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
+#
+# \Method CSV.parse_line returns only the first row:
+#   CSV.parse_line(string) # => ["foo", "0"]
+#
+# \CSV extends class \String with instance method String#parse_csv,
+# which also returns only the first row:
+#   string.parse_csv # => ["foo", "0"]
+#
+# ==== Parsing Via a \File Path
+#
+# The input to be parsed can be in a file:
+#   string = "foo,0\nbar,1\nbaz,2\n"
+#   path = 't.csv'
+#   File.write(path, string)
+#
+# \Method CSV.read returns the entire \CSV data:
+#  CSV.read(path) # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
+#
+# \Method CSV.foreach iterates, passing each row to the given block:
+#  CSV.foreach(path) do |row|
+#    p row
+#  end
+# Output:
+#   ["foo", "0"]
+#   ["bar", "1"]
+#   ["baz", "2"]
+#
+# \Method CSV.table returns the entire \CSV data as a CSV::Table object:
+#   CSV.table(path) # => #<CSV::Table mode:col_or_row row_count:3>
+#
+# ==== Parsing from an Open \IO Stream
+#
+# The input to be parsed can be in an open \IO stream:
+#
+# \Method CSV.read returns the entire \CSV data:
+#   File.open(path) do |file|
+#     CSV.read(file)
+#   end # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
+#
+# As does method CSV.parse:
+#   File.open(path) do |file|
+#     CSV.parse(file)
+#   end # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
+#
+# \Method CSV.parse_line returns only the first row:
+#   File.open(path) do |file|
+#    CSV.parse_line(file)
+#   end # => ["foo", "0"]
+#
+# \Method CSV.foreach iterates, passing each row to the given block:
+#   File.open(path) do |file|
+#     CSV.foreach(file) do |row|
+#       p row
+#     end
 #   end
+# Output:
+#   ["foo", "0"]
+#   ["bar", "1"]
+#   ["baz", "2"]
 #
-#   # From a string
-#   arr_of_rows = CSV.parse("CSV,data,String", **options)
-#   # or
-#   CSV.parse("CSV,data,String", **options) do |row|
-#     # ...
+# \Method CSV.table returns the entire \CSV data as a CSV::Table object:
+#   File.open(path) do |file|
+#     CSV.table(file)
+#   end # => #<CSV::Table mode:col_or_row row_count:3>
+#
+# === Simple Generating
+#
+# \Method CSV.generate returns a \String;
+# this example uses method CSV#<< to append the rows
+# that are to be generated:
+#   output_string = CSV.generate do |csv|
+#     csv << ['foo', 0]
+#     csv << ['bar', 1]
+#     csv << ['baz', 2]
 #   end
+#   output_string # => "foo,0\nbar,1\nbaz,2\n"
 #
-# === Writing
+# \Method CSV.generate_line returns a \String containing the single row
+# constructed from an \Array:
+#   CSV.generate_line(['foo', '0']) # => "foo,0\n"
 #
-#   # To a file
-#   CSV.open("path/to/file.csv", "wb") do |csv|
-#     csv << ["row", "of", "CSV", "data"]
-#     csv << ["another", "row"]
-#     # ...
+# \CSV extends class \Array with instance method <tt>Array#to_csv</tt>,
+# which forms an \Array into a \String:
+#   ['foo', '0'].to_csv # => "foo,0\n"
+#
+# === "Filtering" \CSV
+#
+# \Method CSV.filter provides a Unix-style filter for \CSV data.
+# The input data is processed to form the output data:
+#   in_string = "foo,0\nbar,1\nbaz,2\n"
+#   out_string = ''
+#   CSV.filter(in_string, out_string) do |row|
+#     row[0] = row[0].upcase
+#     row[1] *= 4
 #   end
+#   out_string # => "FOO,0000\nBAR,1111\nBAZ,2222\n"
 #
-#   # To a String
-#   csv_string = CSV.generate do |csv|
-#     csv << ["row", "of", "CSV", "data"]
-#     csv << ["another", "row"]
-#     # ...
-#   end
+# == \CSV Objects
 #
-# === Shortcuts
+# There are three ways to create a \CSV object:
+# - \Method CSV.new returns a new \CSV object.
+# - \Method CSV.instance returns a new or cached \CSV object.
+# - \Method \CSV() also returns a new or cached \CSV object.
 #
-#   # Core extensions for converting one line
-#   csv_string = ["CSV", "data"].to_csv   # to CSV
-#   csv_array  = "CSV,String".parse_csv   # from CSV
+# === Instance Methods
 #
-#   # CSV() method
-#   CSV             { |csv_out| csv_out << %w{my data here} }  # to $stdout
-#   CSV(csv = "")   { |csv_str| csv_str << %w{my data here} }  # to a String
-#   CSV($stderr)    { |csv_err| csv_err << %w{my data here} }  # to $stderr
-#   CSV($stdin)     { |csv_in|  csv_in.each { |row| p row } }  # from $stdin
+# \CSV has three groups of instance methods:
+# - Its own internally defined instance methods.
+# - Methods included by module Enumerable.
+# - Methods delegated to class IO. See below.
 #
-# == Data Conversion
+# ==== Delegated Methods
 #
-# === CSV with headers
+# For convenience, a CSV object will delegate to many methods in class IO.
+# (A few have wrapper "guard code" in \CSV.) You may call:
+# * IO#binmode
+# * #binmode?
+# * IO#close
+# * IO#close_read
+# * IO#close_write
+# * IO#closed?
+# * #eof
+# * #eof?
+# * IO#external_encoding
+# * IO#fcntl
+# * IO#fileno
+# * #flock
+# * IO#flush
+# * IO#fsync
+# * IO#internal_encoding
+# * #ioctl
+# * IO#isatty
+# * #path
+# * IO#pid
+# * IO#pos
+# * IO#pos=
+# * IO#reopen
+# * #rewind
+# * IO#seek
+# * #stat
+# * IO#string
+# * IO#sync
+# * IO#sync=
+# * IO#tell
+# * #to_i
+# * #to_io
+# * IO#truncate
+# * IO#tty?
+#
+# === Options
+#
+# The default values for options are:
+#   DEFAULT_OPTIONS = {
+#     # For both parsing and generating.
+#     col_sep:            ",",
+#     row_sep:            :auto,
+#     quote_char:         '"',
+#     # For parsing.
+#     field_size_limit:   nil,
+#     converters:         nil,
+#     unconverted_fields: nil,
+#     headers:            false,
+#     return_headers:     false,
+#     header_converters:  nil,
+#     skip_blanks:        false,
+#     skip_lines:         nil,
+#     liberal_parsing:    false,
+#     nil_value:          nil,
+#     empty_value:        "",
+#     # For generating.
+#     write_headers:      nil,
+#     quote_empty:        true,
+#     force_quotes:       false,
+#     write_converters:   nil,
+#     write_nil_value:    nil,
+#     write_empty_value:  "",
+#     strip:              false,
+#   }
+#
+# ==== Options for Parsing
+#
+# Options for parsing, described in detail below, include:
+# - +row_sep+: Specifies the row separator; used to delimit rows.
+# - +col_sep+: Specifies the column separator; used to delimit fields.
+# - +quote_char+: Specifies the quote character; used to quote fields.
+# - +field_size_limit+: Specifies the maximum field size allowed.
+# - +converters+: Specifies the field converters to be used.
+# - +unconverted_fields+: Specifies whether unconverted fields are to be available.
+# - +headers+: Specifies whether data contains headers,
+#   or specifies the headers themselves.
+# - +return_headers+: Specifies whether headers are to be returned.
+# - +header_converters+: Specifies the header converters to be used.
+# - +skip_blanks+: Specifies whether blanks lines are to be ignored.
+# - +skip_lines+: Specifies how comments lines are to be recognized.
+# - +strip+: Specifies whether leading and trailing whitespace are
+#   to be stripped from fields..
+# - +liberal_parsing+: Specifies whether \CSV should attempt to parse
+#   non-compliant data.
+# - +nil_value+: Specifies the object that is to be substituted for each null (no-text) field.
+# - +empty_value+: Specifies the object that is to be substituted for each empty field.
+#
+# :include: ../doc/csv/options/common/row_sep.rdoc
+#
+# :include: ../doc/csv/options/common/col_sep.rdoc
+#
+# :include: ../doc/csv/options/common/quote_char.rdoc
+#
+# :include: ../doc/csv/options/parsing/field_size_limit.rdoc
+#
+# :include: ../doc/csv/options/parsing/converters.rdoc
+#
+# :include: ../doc/csv/options/parsing/unconverted_fields.rdoc
+#
+# :include: ../doc/csv/options/parsing/headers.rdoc
+#
+# :include: ../doc/csv/options/parsing/return_headers.rdoc
+#
+# :include: ../doc/csv/options/parsing/header_converters.rdoc
+#
+# :include: ../doc/csv/options/parsing/skip_blanks.rdoc
+#
+# :include: ../doc/csv/options/parsing/skip_lines.rdoc
+#
+# :include: ../doc/csv/options/parsing/strip.rdoc
+#
+# :include: ../doc/csv/options/parsing/liberal_parsing.rdoc
+#
+# :include: ../doc/csv/options/parsing/nil_value.rdoc
+#
+# :include: ../doc/csv/options/parsing/empty_value.rdoc
+#
+# ==== Options for Generating
+#
+# Options for generating, described in detail below, include:
+# - +row_sep+: Specifies the row separator; used to delimit rows.
+# - +col_sep+: Specifies the column separator; used to delimit fields.
+# - +quote_char+: Specifies the quote character; used to quote fields.
+# - +write_headers+: Specifies whether headers are to be written.
+# - +force_quotes+: Specifies whether each output field is to be quoted.
+# - +quote_empty+: Specifies whether each empty output field is to be quoted.
+# - +write_converters+: Specifies the field converters to be used in writing.
+# - +write_nil_value+: Specifies the object that is to be substituted for each +nil+-valued field.
+# - +write_empty_value+: Specifies the object that is to be substituted for each empty field.
+#
+# :include: ../doc/csv/options/common/row_sep.rdoc
+#
+# :include: ../doc/csv/options/common/col_sep.rdoc
+#
+# :include: ../doc/csv/options/common/quote_char.rdoc
+#
+# :include: ../doc/csv/options/generating/write_headers.rdoc
+#
+# :include: ../doc/csv/options/generating/force_quotes.rdoc
+#
+# :include: ../doc/csv/options/generating/quote_empty.rdoc
+#
+# :include: ../doc/csv/options/generating/write_converters.rdoc
+#
+# :include: ../doc/csv/options/generating/write_nil_value.rdoc
+#
+# :include: ../doc/csv/options/generating/write_empty_value.rdoc
+#
+# === \CSV with Headers
 #
 # CSV allows to specify column names of CSV file, whether they are in data, or
 # provided separately. If headers are specified, reading methods return an instance
@@ -203,24 +440,337 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 #   data = CSV.parse('Bob,Engineering,1000', headers: %i[name department salary])
 #   data.first      #=> #<CSV::Row name:"Bob" department:"Engineering" salary:"1000">
 #
-# === Typed data reading
+# === \Converters
 #
-# CSV allows to provide a set of data _converters_ e.g. transformations to try on input
-# data. Converter could be a symbol from CSV::Converters constant's keys, or lambda.
+# By default, each value (field or header) parsed by \CSV is formed into a \String.
+# You can use a _field_ _converter_ or  _header_ _converter_
+# to intercept and modify the parsed values:
+# - See {Field Converters}[#class-CSV-label-Field+Converters].
+# - See {Header Converters}[#class-CSV-label-Header+Converters].
 #
-#   # Without any converters:
-#   CSV.parse('Bob,2018-03-01,100')
-#   #=> [["Bob", "2018-03-01", "100"]]
+# Also by default, each value to be written during generation is written 'as-is'.
+# You can use a _write_ _converter_ to modify values before writing.
+# - See {Write Converters}[#class-CSV-label-Write+Converters].
 #
-#   # With built-in converters:
-#   CSV.parse('Bob,2018-03-01,100', converters: %i[numeric date])
-#   #=> [["Bob", #<Date: 2018-03-01>, 100]]
+# ==== Specifying \Converters
 #
-#   # With custom converters:
-#   CSV.parse('Bob,2018-03-01,100', converters: [->(v) { Time.parse(v) rescue v }])
-#   #=> [["Bob", 2018-03-01 00:00:00 +0200, "100"]]
+# You can specify converters for parsing or generating in the +options+
+# argument to various \CSV methods:
+# - Option +converters+ for converting parsed field values.
+# - Option +header_converters+ for converting parsed header values.
+# - Option +write_converters+ for converting values to be written (generated).
 #
-# == CSV and Character Encodings (M17n or Multilingualization)
+# There are three forms for specifying converters:
+# - A converter proc: executable code to be used for conversion.
+# - A converter name: the name of a stored converter.
+# - A converter list: an array of converter procs, converter names, and converter lists.
+#
+# ===== Converter Procs
+#
+# This converter proc, +strip_converter+, accepts a value +field+
+# and returns <tt>field.strip</tt>:
+#   strip_converter = proc {|field| field.strip }
+# In this call to <tt>CSV.parse</tt>,
+# the keyword argument <tt>converters: string_converter</tt>
+# specifies that:
+# - \Proc +string_converter+ is to be called for each parsed field.
+# - The converter's return value is to replace the +field+ value.
+# Example:
+#   string = " foo , 0 \n bar , 1 \n baz , 2 \n"
+#   array = CSV.parse(string, converters: strip_converter)
+#   array # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
+#
+# A converter proc can receive a second argument, +field_info+,
+# that contains details about the field.
+# This modified +strip_converter+ displays its arguments:
+#   strip_converter = proc do |field, field_info|
+#     p [field, field_info]
+#     field.strip
+#   end
+#   string = " foo , 0 \n bar , 1 \n baz , 2 \n"
+#   array = CSV.parse(string, converters: strip_converter)
+#   array # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
+# Output:
+#  [" foo ", #<struct CSV::FieldInfo index=0, line=1, header=nil>]
+#  [" 0 ", #<struct CSV::FieldInfo index=1, line=1, header=nil>]
+#  [" bar ", #<struct CSV::FieldInfo index=0, line=2, header=nil>]
+#  [" 1 ", #<struct CSV::FieldInfo index=1, line=2, header=nil>]
+#  [" baz ", #<struct CSV::FieldInfo index=0, line=3, header=nil>]
+#  [" 2 ", #<struct CSV::FieldInfo index=1, line=3, header=nil>]
+# Each CSV::Info object shows:
+# - The 0-based field index.
+# - The 1-based line index.
+# - The field header, if any.
+#
+# ===== Stored \Converters
+#
+# A converter may be given a name and stored in a structure where
+# the parsing methods can find it by name.
+#
+# The storage structure for field converters is the \Hash CSV::Converters.
+# It has several built-in converter procs:
+# - <tt>:integer</tt>: converts each \String-embedded integer into a true \Integer.
+# - <tt>:float</tt>: converts each \String-embedded float into a true \Float.
+# - <tt>:date</tt>: converts each \String-embedded date into a true \Date.
+# - <tt>:date_time</tt>: converts each \String-embedded date-time into a true \DateTime
+# .
+# This example creates a converter proc, then stores it:
+#   strip_converter = proc {|field| field.strip }
+#   CSV::Converters[:strip] = strip_converter
+# Then the parsing method call can refer to the converter
+# by its name, <tt>:strip</tt>:
+#   string = " foo , 0 \n bar , 1 \n baz , 2 \n"
+#   array = CSV.parse(string, converters: :strip)
+#   array # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
+#
+# The storage structure for header converters is the \Hash CSV::HeaderConverters,
+# which works in the same way.
+# It also has built-in converter procs:
+# - <tt>:downcase</tt>: Downcases each header.
+# - <tt>:symbol</tt>: Converts each header to a \Symbol.
+#
+# There is no such storage structure for write headers.
+#
+# ===== Converter Lists
+#
+# A _converter_ _list_ is an \Array that may include any assortment of:
+# - Converter procs.
+# - Names of stored converters.
+# - Nested converter lists.
+#
+# Examples:
+#   numeric_converters = [:integer, :float]
+#   date_converters = [:date, :date_time]
+#   [numeric_converters, strip_converter]
+#   [strip_converter, date_converters, :float]
+#
+# Like a converter proc, a converter list may be named and stored in either
+# \CSV::Converters or CSV::HeaderConverters:
+#   CSV::Converters[:custom] = [strip_converter, date_converters, :float]
+#   CSV::HeaderConverters[:custom] = [:downcase, :symbol]
+#
+# There are two built-in converter lists:
+#   CSV::Converters[:numeric] # => [:integer, :float]
+#   CSV::Converters[:all] # => [:date_time, :numeric]
+#
+# ==== Field \Converters
+#
+# With no conversion, all parsed fields in all rows become Strings:
+#   string = "foo,0\nbar,1\nbaz,2\n"
+#   ary = CSV.parse(string)
+#   ary # => # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
+#
+# When you specify a field converter, each parsed field is passed to the converter;
+# its return value becomes the stored value for the field.
+# A converter might, for example, convert an integer embedded in a \String
+# into a true \Integer.
+# (In fact, that's what built-in field converter +:integer+ does.)
+#
+# There are three ways to use field \converters.
+#
+# - Using option {converters}[#class-CSV-label-Option+converters] with a parsing method:
+#     ary = CSV.parse(string, converters: :integer)
+#     ary # => [0, 1, 2] # => [["foo", 0], ["bar", 1], ["baz", 2]]
+# - Using option {converters}[#class-CSV-label-Option+converters] with a new \CSV instance:
+#     csv = CSV.new(string, converters: :integer)
+#     # Field converters in effect:
+#     csv.converters # => [:integer]
+#     csv.read # => [["foo", 0], ["bar", 1], ["baz", 2]]
+# - Using method #convert to add a field converter to a \CSV instance:
+#     csv = CSV.new(string)
+#     # Add a converter.
+#     csv.convert(:integer)
+#     csv.converters # => [:integer]
+#     csv.read # => [["foo", 0], ["bar", 1], ["baz", 2]]
+#
+# Installing a field converter does not affect already-read rows:
+#   csv = CSV.new(string)
+#   csv.shift # => ["foo", "0"]
+#   # Add a converter.
+#   csv.convert(:integer)
+#   csv.converters # => [:integer]
+#   csv.read # => [["bar", 1], ["baz", 2]]
+#
+# There are additional built-in \converters, and custom \converters are also supported.
+#
+# ===== Built-In Field \Converters
+#
+# The built-in field converters are in \Hash CSV::Converters:
+# - Each key is a field converter name.
+# - Each value is one of:
+#   - A \Proc field converter.
+#   - An \Array of field converter names.
+#
+# Display:
+#   CSV::Converters.each_pair do |name, value|
+#     if value.kind_of?(Proc)
+#       p [name, value.class]
+#     else
+#       p [name, value]
+#     end
+#   end
+# Output:
+#   [:integer, Proc]
+#   [:float, Proc]
+#   [:numeric, [:integer, :float]]
+#   [:date, Proc]
+#   [:date_time, Proc]
+#   [:all, [:date_time, :numeric]]
+#
+# Each of these converters transcodes values to UTF-8 before attempting conversion.
+# If a value cannot be transcoded to UTF-8 the conversion will
+# fail and the value will remain unconverted.
+#
+# Converter +:integer+ converts each field that Integer() accepts:
+#   data = '0,1,2,x'
+#   # Without the converter
+#   csv = CSV.parse_line(data)
+#   csv # => ["0", "1", "2", "x"]
+#   # With the converter
+#   csv = CSV.parse_line(data, converters: :integer)
+#   csv # => [0, 1, 2, "x"]
+#
+# Converter +:float+ converts each field that Float() accepts:
+#   data = '1.0,3.14159,x'
+#   # Without the converter
+#   csv = CSV.parse_line(data)
+#   csv # => ["1.0", "3.14159", "x"]
+#   # With the converter
+#   csv = CSV.parse_line(data, converters: :float)
+#   csv # => [1.0, 3.14159, "x"]
+#
+# Converter +:numeric+ converts with both +:integer+ and +:float+..
+#
+# Converter +:date+ converts each field that Date::parse accepts:
+#   data = '2001-02-03,x'
+#   # Without the converter
+#   csv = CSV.parse_line(data)
+#   csv # => ["2001-02-03", "x"]
+#   # With the converter
+#   csv = CSV.parse_line(data, converters: :date)
+#   csv # => [#<Date: 2001-02-03 ((2451944j,0s,0n),+0s,2299161j)>, "x"]
+#
+# Converter +:date_time+ converts each field that DateTime::parse accepts:
+#   data = '2020-05-07T14:59:00-05:00,x'
+#   # Without the converter
+#   csv = CSV.parse_line(data)
+#   csv # => ["2020-05-07T14:59:00-05:00", "x"]
+#   # With the converter
+#   csv = CSV.parse_line(data, converters: :date_time)
+#   csv # => [#<DateTime: 2020-05-07T14:59:00-05:00 ((2458977j,71940s,0n),-18000s,2299161j)>, "x"]
+#
+# Converter +:numeric+ converts with both +:date_time+ and +:numeric+..
+#
+# As seen above, method #convert adds \converters to a \CSV instance,
+# and method #converters returns an \Array of the \converters in effect:
+#   csv = CSV.new('0,1,2')
+#   csv.converters # => []
+#   csv.convert(:integer)
+#   csv.converters # => [:integer]
+#   csv.convert(:date)
+#   csv.converters # => [:integer, :date]
+#
+# ===== Custom Field \Converters
+#
+# You can define a custom field converter:
+#   strip_converter = proc {|field| field.strip }
+# Add it to the \Converters \Hash:
+#   CSV::Converters[:strip] = strip_converter
+# Use it by name:
+#   string = " foo , 0 \n bar , 1 \n baz , 2 \n"
+#   array = CSV.parse(string, converters: strip_converter)
+#   array # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
+#
+# ==== Header \Converters
+#
+# Header converters operate only on headers (and not on other rows).
+#
+# There are three ways to use header \converters;
+# these examples use built-in header converter +:dowhcase+,
+# which downcases each parsed header.
+#
+# - Option +header_converters+ with a singleton parsing method:
+#     string = "Name,Count\nFoo,0\n,Bar,1\nBaz,2"
+#     tbl = CSV.parse(string, headers: true, header_converters: :downcase)
+#     tbl.class # => CSV::Table
+#     tbl.headers # => ["name", "count"]
+#
+# - Option +header_converters+ with a new \CSV instance:
+#     csv = CSV.new(string, header_converters: :downcase)
+#     # Header converters in effect:
+#     csv.header_converters # => [:downcase]
+#     tbl = CSV.parse(string, headers: true)
+#     tbl.headers # => ["Name", "Count"]
+#
+# - Method #header_convert adds a header converter to a \CSV instance:
+#     csv = CSV.new(string)
+#     # Add a header converter.
+#     csv.header_convert(:downcase)
+#     csv.header_converters # => [:downcase]
+#     tbl = CSV.parse(string, headers: true)
+#     tbl.headers # => ["Name", "Count"]
+#
+# ===== Built-In Header \Converters
+#
+# The built-in header \converters are in \Hash CSV::HeaderConverters.
+# The keys there are the names of the \converters:
+#   CSV::HeaderConverters.keys # => [:downcase, :symbol]
+#
+# Converter +:downcase+ converts each header by downcasing it:
+#   string = "Name,Count\nFoo,0\n,Bar,1\nBaz,2"
+#   tbl = CSV.parse(string, headers: true, header_converters: :downcase)
+#   tbl.class # => CSV::Table
+#   tbl.headers # => ["name", "count"]
+#
+# Converter +:symbol+ converts each header by making it into a \Symbol:
+#   string = "Name,Count\nFoo,0\n,Bar,1\nBaz,2"
+#   tbl = CSV.parse(string, headers: true, header_converters: :symbol)
+#   tbl.headers # => [:name, :count]
+# Details:
+# - Strips leading and trailing whitespace.
+# - Downcases the header.
+# - Replaces embedded spaces with underscores.
+# - Removes non-word characters.
+# - Makes the string into a \Symbol.
+#
+# ===== Custom Header \Converters
+#
+# You can define a custom header converter:
+#   upcase_converter = proc {|header| header.upcase }
+# Add it to the \HeaderConverters \Hash:
+#   CSV::HeaderConverters[:upcase] = upcase_converter
+# Use it by name:
+#   string = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+#   table = CSV.parse(string, headers: true, converters: upcase_converter)
+#   table # => #<CSV::Table mode:col_or_row row_count:4>
+#   table.headers # => ["Name", "Value"]
+#
+# ===== Write \Converters
+#
+# When you specify a write converter for generating \CSV,
+# each field to be written is passed to the converter;
+# its return value becomes the new value for the field.
+# A converter might, for example, strip whitespace from a field.
+#
+# - Using no write converter (all fields unmodified):
+#     output_string = CSV.generate do |csv|
+#       csv << [' foo ', 0]
+#       csv << [' bar ', 1]
+#       csv << [' baz ', 2]
+#     end
+#     output_string # => " foo ,0\n bar ,1\n baz ,2\n"
+# - Using option +write_converters+:
+#     strip_converter = proc {|field| field.respond_to?(:strip) ? field.strip : field }
+#     upcase_converter = proc {|field| field.respond_to?(:upcase) ? field.upcase : field }
+#     converters = [strip_converter, upcase_converter]
+#       output_string = CSV.generate(write_converters: converters) do |csv|
+#         csv << [' foo ', 0]
+#         csv << [' bar ', 1]
+#         csv << [' baz ', 2]
+#       end
+#       output_string # => "FOO,0\nBAR,1\nBAZ,2\n"
+#
+# === Character Encodings (M17n or Multilingualization)
 #
 # This new CSV parser is m17n savvy.  The parser works in the Encoding of the IO
 # or String object being read from or written to. Your data is never transcoded
@@ -301,30 +851,12 @@ class CSV
   # The encoding used by all converters.
   ConverterEncoding = Encoding.find("UTF-8")
 
+  # A \Hash containing the names and \Procs for the built-in field converters.
+  # See {Built-In Field Converters}[#class-CSV-label-Built-In+Field+Converters].
   #
-  # This Hash holds the built-in converters of CSV that can be accessed by name.
-  # You can select Converters with CSV.convert() or through the +options+ Hash
-  # passed to CSV::new().
-  #
-  # <b><tt>:integer</tt></b>::    Converts any field Integer() accepts.
-  # <b><tt>:float</tt></b>::      Converts any field Float() accepts.
-  # <b><tt>:numeric</tt></b>::    A combination of <tt>:integer</tt>
-  #                               and <tt>:float</tt>.
-  # <b><tt>:date</tt></b>::       Converts any field Date::parse() accepts.
-  # <b><tt>:date_time</tt></b>::  Converts any field DateTime::parse() accepts.
-  # <b><tt>:all</tt></b>::        All built-in converters.  A combination of
-  #                               <tt>:date_time</tt> and <tt>:numeric</tt>.
-  #
-  # All built-in converters transcode field data to UTF-8 before attempting a
-  # conversion.  If your data cannot be transcoded to UTF-8 the conversion will
-  # fail and the field will remain unchanged.
-  #
-  # This Hash is intentionally left unfrozen and users should feel free to add
-  # values to it that can be accessed by all CSV objects.
-  #
-  # To add a combo field, the value should be an Array of names.  Combo fields
-  # can be nested with other combo fields.
-  #
+  # This \Hash is intentionally left unfrozen, and may be extended with
+  # custom field converters.
+  # See {Custom Field Converters}[#class-CSV-label-Custom+Field+Converters].
   Converters  = {
     integer:   lambda { |f|
       Integer(f.encode(ConverterEncoding)) rescue f
@@ -352,27 +884,12 @@ class CSV
     all:       [:date_time, :numeric],
   }
 
+  # A \Hash containing the names and \Procs for the built-in header converters.
+  # See {Built-In Header Converters}[#class-CSV-label-Built-In+Header+Converters].
   #
-  # This Hash holds the built-in header converters of CSV that can be accessed
-  # by name. You can select HeaderConverters with CSV.header_convert() or
-  # through the +options+ Hash passed to CSV::new().
-  #
-  # <b><tt>:downcase</tt></b>::  Calls downcase() on the header String.
-  # <b><tt>:symbol</tt></b>::    Leading/trailing spaces are dropped, string is
-  #                              downcased, remaining spaces are replaced with
-  #                              underscores, non-word characters are dropped,
-  #                              and finally to_sym() is called.
-  #
-  # All built-in header converters transcode header data to UTF-8 before
-  # attempting a conversion. If your data cannot be transcoded to UTF-8 the
-  # conversion will fail and the header will remain unchanged.
-  #
-  # This Hash is intentionally left unfrozen and users should feel free to add
-  # values to it that can be accessed by all CSV objects.
-  #
-  # To add a combo field, the value should be an Array of names. Combo fields
-  # can be nested with other combo fields.
-  #
+  # This \Hash is intentionally left unfrozen, and may be extended with
+  # custom field converters.
+  # See {Custom Header Converters}[#class-CSV-label-Custom+Header+Converters].
   HeaderConverters = {
     downcase: lambda { |h| h.encode(ConverterEncoding).downcase },
     symbol:   lambda { |h|
@@ -380,29 +897,13 @@ class CSV
                                            gsub(/\s+/, "_").to_sym
     }
   }
-
-  #
-  # The options used when no overrides are given by calling code. They are:
-  #
-  # <b><tt>:col_sep</tt></b>::            <tt>","</tt>
-  # <b><tt>:row_sep</tt></b>::            <tt>:auto</tt>
-  # <b><tt>:quote_char</tt></b>::         <tt>'"'</tt>
-  # <b><tt>:field_size_limit</tt></b>::   +nil+
-  # <b><tt>:converters</tt></b>::         +nil+
-  # <b><tt>:unconverted_fields</tt></b>:: +nil+
-  # <b><tt>:headers</tt></b>::            +false+
-  # <b><tt>:return_headers</tt></b>::     +false+
-  # <b><tt>:header_converters</tt></b>::  +nil+
-  # <b><tt>:skip_blanks</tt></b>::        +false+
-  # <b><tt>:force_quotes</tt></b>::       +false+
-  # <b><tt>:skip_lines</tt></b>::         +nil+
-  # <b><tt>:liberal_parsing</tt></b>::    +false+
-  # <b><tt>:quote_empty</tt></b>::        +true+
-  #
+  # Default values for method options.
   DEFAULT_OPTIONS = {
+    # For both parsing and generating.
     col_sep:            ",",
     row_sep:            :auto,
     quote_char:         '"',
+    # For parsing.
     field_size_limit:   nil,
     converters:         nil,
     unconverted_fields: nil,
@@ -410,22 +911,62 @@ class CSV
     return_headers:     false,
     header_converters:  nil,
     skip_blanks:        false,
-    force_quotes:       false,
     skip_lines:         nil,
     liberal_parsing:    false,
+    nil_value:          nil,
+    empty_value:        "",
+    # For generating.
+    write_headers:      nil,
     quote_empty:        true,
+    force_quotes:       false,
+    write_converters:   nil,
+    write_nil_value:    nil,
+    write_empty_value:  "",
+    strip:              false,
   }.freeze
 
   class << self
+    # :call-seq:
+    #   instance(string, **options)
+    #   instance(io = $stdout, **options)
+    #   instance(string, **options) {|csv| ... }
+    #   instance(io = $stdout, **options) {|csv| ... }
     #
-    # This method will return a CSV instance, just like CSV::new(), but the
-    # instance will be cached and returned for all future calls to this method for
-    # the same +data+ object (tested by Object#object_id()) with the same
-    # +options+.
+    # Creates or retrieves cached \CSV objects.
+    # For arguments and options, see CSV.new.
     #
-    # If a block is given, the instance is passed to the block and the return
-    # value becomes the return value of the block.
+    # ---
     #
+    # With no block given, returns a \CSV object.
+    #
+    # The first call to +instance+ creates and caches a \CSV object:
+    #   s0 = 's0'
+    #   csv0 = CSV.instance(s0)
+    #   csv0.class # => CSV
+    #
+    # Subsequent calls to +instance+ with that _same_ +string+ or +io+
+    # retrieve that same cached object:
+    #   csv1 = CSV.instance(s0)
+    #   csv1.class # => CSV
+    #   csv1.equal?(csv0) # => true # Same CSV object
+    #
+    # A subsequent call to +instance+ with a _different_ +string+ or +io+
+    # creates and caches a _different_ \CSV object.
+    #   s1 = 's1'
+    #   csv2 = CSV.instance(s1)
+    #   csv2.equal?(csv0) # => false # Different CSV object
+    #
+    # All the cached objects remains available:
+    #   csv3 = CSV.instance(s0)
+    #   csv3.equal?(csv0) # true # Same CSV object
+    #   csv4 = CSV.instance(s1)
+    #   csv4.equal?(csv2) # true # Same CSV object
+    #
+    # ---
+    #
+    # When a block is given, calls the block with the created or retrieved
+    # \CSV object; returns the block's return value:
+    #   CSV.instance(s0) {|csv| :foo } # => :foo
     def instance(data = $stdout, **options)
       # create a _signature_ for this method call, data object and options
       sig = [data.object_id] +
@@ -442,30 +983,61 @@ class CSV
       end
     end
 
-    #
     # :call-seq:
-    #   filter( **options ) { |row| ... }
-    #   filter( input, **options ) { |row| ... }
-    #   filter( input, output, **options ) { |row| ... }
+    #   filter(**options) {|row| ... }
+    #   filter(in_string, **options) {|row| ... }
+    #   filter(in_io, **options) {|row| ... }
+    #   filter(in_string, out_string, **options) {|row| ... }
+    #   filter(in_string, out_io, **options) {|row| ... }
+    #   filter(in_io, out_string, **options) {|row| ... }
+    #   filter(in_io, out_io, **options) {|row| ... }
     #
-    # This method is a convenience for building Unix-like filters for CSV data.
-    # Each row is yielded to the provided block which can alter it as needed.
-    # After the block returns, the row is appended to +output+ altered or not.
+    # Reads \CSV input and writes \CSV output.
     #
-    # The +input+ and +output+ arguments can be anything CSV::new() accepts
-    # (generally String or IO objects). If not given, they default to
-    # <tt>ARGF</tt> and <tt>$stdout</tt>.
+    # For each input row:
+    # - Forms the data into:
+    #   - A CSV::Row object, if headers are in use.
+    #   - An \Array of Arrays, otherwise.
+    # - Calls the block with that object.
+    # - Appends the block's return value to the output.
     #
-    # The +options+ parameter is also filtered down to CSV::new() after some
-    # clever key parsing. Any key beginning with <tt>:in_</tt> or
-    # <tt>:input_</tt> will have that leading identifier stripped and will only
-    # be used in the +options+ Hash for the +input+ object. Keys starting with
-    # <tt>:out_</tt> or <tt>:output_</tt> affect only +output+. All other keys
-    # are assigned to both objects.
+    # Arguments:
+    # * \CSV source:
+    #   * Argument +in_string+, if given, should be a \String object;
+    #     it will be put into a new StringIO object positioned at the beginning.
+    #   * Argument +in_io+, if given, should be an IO object that is
+    #     open for reading; on return, the IO object will be closed.
+    #   * If neither  +in_string+ nor +in_io+ is given,
+    #     the input stream defaults to {ARGF}[https://ruby-doc.org/core/ARGF.html].
+    # * \CSV output:
+    #   * Argument +out_string+, if given, should be a \String object;
+    #     it will be put into a new StringIO object positioned at the beginning.
+    #   * Argument +out_io+, if given, should be an IO object that is
+    #     ppen for writing; on return, the IO object will be closed.
+    #   * If neither +out_string+ nor +out_io+ is given,
+    #     the output stream defaults to <tt>$stdout</tt>.
+    # * Argument +options+ should be keyword arguments.
+    #   - Each argument name that is prefixed with +in_+ or +input_+
+    #     is stripped of its prefix and is treated as an option
+    #     for parsing the input.
+    #     Option +input_row_sep+ defaults to <tt>$INPUT_RECORD_SEPARATOR</tt>.
+    #   - Each argument name that is prefixed with +out_+ or +output_+
+    #     is stripped of its prefix and is treated as an option
+    #     for generating the output.
+    #     Option +output_row_sep+ defaults to <tt>$INPUT_RECORD_SEPARATOR</tt>.
+    #   - Each argument not prefixed as above is treated as an option
+    #     both for parsing the input and for generating the output.
+    #   - See {Options for Parsing}[#class-CSV-label-Options+for+Parsing]
+    #     and {Options for Generating}[#class-CSV-label-Options+for+Generating].
     #
-    # The <tt>:output_row_sep</tt> +option+ defaults to
-    # <tt>$INPUT_RECORD_SEPARATOR</tt> (<tt>$/</tt>).
-    #
+    # Example:
+    #   in_string = "foo,0\nbar,1\nbaz,2\n"
+    #   out_string = ''
+    #   CSV.filter(in_string, out_string) do |row|
+    #     row[0] = row[0].upcase
+    #     row[1] *= 4
+    #   end
+    #   out_string # => "FOO,0000\nBAR,1111\nBAZ,2222\n"
     def filter(input=nil, output=nil, **options)
       # parse options for input, output, or both
       in_options, out_options = Hash.new, {row_sep: $INPUT_RECORD_SEPARATOR}
@@ -492,18 +1064,111 @@ class CSV
     end
 
     #
-    # This method is intended as the primary interface for reading CSV files. You
-    # pass a +path+ and any +options+ you wish to set for the read. Each row of
-    # file will be passed to the provided +block+ in turn.
+    # :call-seq:
+    #   foreach(path, mode='r', **options) {|row| ... )
+    #   foreach(io, mode='r', **options {|row| ... )
+    #   foreach(path, mode='r', headers: ..., **options) {|row| ... )
+    #   foreach(io, mode='r', headers: ..., **options {|row| ... )
+    #   foreach(path, mode='r', **options) -> new_enumerator
+    #   foreach(io, mode='r', **options -> new_enumerator
     #
-    # The +options+ parameter can be anything CSV::new() understands. This method
-    # also understands an additional <tt>:encoding</tt> parameter that you can use
-    # to specify the Encoding of the data in the file to be read. You must provide
-    # this unless your data is in Encoding::default_external(). CSV will use this
-    # to determine how to parse the data. You may provide a second Encoding to
-    # have the data transcoded as it is read. For example,
-    # <tt>encoding: "UTF-32BE:UTF-8"</tt> would read UTF-32BE data from the file
-    # but transcode it to UTF-8 before CSV parses it.
+    # Calls the block with each row read from source +path+ or +io+.
+    #
+    # * Argument +path+, if given, must be the path to a file.
+    # :include: ../doc/csv/arguments/io.rdoc
+    # * Argument +mode+, if given, must be a \File mode
+    #   See {Open Mode}[IO.html#method-c-new-label-Open+Mode].
+    # * Arguments <tt>**options</tt> must be keyword options.
+    #   See {Options for Parsing}[#class-CSV-label-Options+for+Parsing].
+    # * This method optionally accepts an additional <tt>:encoding</tt> option
+    #   that you can use to specify the Encoding of the data read from +path+ or +io+.
+    #   You must provide this unless your data is in the encoding
+    #   given by <tt>Encoding::default_external</tt>.
+    #   Parsing will use this to determine how to parse the data.
+    #   You may provide a second Encoding to
+    #   have the data transcoded as it is read. For example,
+    #     encoding: 'UTF-32BE:UTF-8'
+    #   would read +UTF-32BE+ data from the file
+    #   but transcode it to +UTF-8+ before parsing.
+    #
+    # ====== Without Option +headers+
+    #
+    # Without option +headers+, returns each row as an \Array object.
+    #
+    # These examples assume prior execution of:
+    #   string = "foo,0\nbar,1\nbaz,2\n"
+    #   path = 't.csv'
+    #   File.write(path, string)
+    #
+    # Read rows from a file at +path+:
+    #   CSV.foreach(path) {|row| p row }
+    # Output:
+    #   ["foo", "0"]
+    #   ["bar", "1"]
+    #   ["baz", "2"]
+    #
+    # Read rows from an \IO object:
+    #   File.open(path) do |file|
+    #     CSV.foreach(file) {|row| p row }
+    #   end
+    #
+    # Output:
+    #   ["foo", "0"]
+    #   ["bar", "1"]
+    #   ["baz", "2"]
+    #
+    # Returns a new \Enumerator if no block given:
+    #   CSV.foreach(path) # => #<Enumerator: CSV:foreach("t.csv", "r")>
+    #   CSV.foreach(File.open(path)) # => #<Enumerator: CSV:foreach(#<File:t.csv>, "r")>
+    #
+    # Issues a warning if an encoding is unsupported:
+    #   CSV.foreach(File.open(path), encoding: 'foo:bar') {|row| }
+    # Output:
+    #   warning: Unsupported encoding foo ignored
+    #   warning: Unsupported encoding bar ignored
+    #
+    # ====== With Option +headers+
+    #
+    # With {option +headers+}[#class-CSV-label-Option+headers],
+    # returns each row as a CSV::Row object.
+    #
+    # These examples assume prior execution of:
+    #   string = "Name,Count\nfoo,0\nbar,1\nbaz,2\n"
+    #   path = 't.csv'
+    #   File.write(path, string)
+    #
+    # Read rows from a file at +path+:
+    #   CSV.foreach(path, headers: true) {|row| p row }
+    #
+    # Output:
+    #   #<CSV::Row "Name":"foo" "Count":"0">
+    #   #<CSV::Row "Name":"bar" "Count":"1">
+    #   #<CSV::Row "Name":"baz" "Count":"2">
+    #
+    # Read rows from an \IO object:
+    #   File.open(path) do |file|
+    #     CSV.foreach(file, headers: true) {|row| p row }
+    #   end
+    #
+    # Output:
+    #   #<CSV::Row "Name":"foo" "Count":"0">
+    #   #<CSV::Row "Name":"bar" "Count":"1">
+    #   #<CSV::Row "Name":"baz" "Count":"2">
+    #
+    # ---
+    #
+    # Raises an exception if +path+ is a \String, but not the path to a readable file:
+    #   # Raises Errno::ENOENT (No such file or directory @ rb_sysopen - nosuch.csv):
+    #   CSV.foreach('nosuch.csv') {|row| }
+    #
+    # Raises an exception if +io+ is an \IO object, but not open for reading:
+    #   io = File.open(path, 'w') {|row| }
+    #   # Raises TypeError (no implicit conversion of nil into String):
+    #   CSV.foreach(io) {|row| }
+    #
+    # Raises an exception if +mode+ is invalid:
+    #   # Raises ArgumentError (invalid access mode nosuch):
+    #   CSV.foreach(path, 'nosuch') {|row| }
     #
     def foreach(path, mode="r", **options, &block)
       return to_enum(__method__, path, mode, **options) unless block_given?
@@ -514,29 +1179,71 @@ class CSV
 
     #
     # :call-seq:
-    #   generate( str, **options ) { |csv| ... }
-    #   generate( **options ) { |csv| ... }
+    #   generate(csv_string, **options) {|csv| ... }
+    #   generate(**options) {|csv| ... }
     #
-    # This method wraps a String you provide, or an empty default String, in a
-    # CSV object which is passed to the provided block. You can use the block to
-    # append CSV rows to the String and when the block exits, the final String
-    # will be returned.
+    # * Argument +csv_string+, if given, must be a \String object;
+    #   defaults to a new empty \String.
+    # * Arguments +options+, if given, should be generating options.
+    #   See {Options for Generating}[#class-CSV-label-Options+for+Generating].
     #
-    # Note that a passed String *is* modified by this method. Call dup() before
-    # passing if you need a new String.
+    # ---
     #
-    # The +options+ parameter can be anything CSV::new() understands.  This method
-    # understands an additional <tt>:encoding</tt> parameter when not passed a
-    # String to set the base Encoding for the output.  CSV needs this hint if you
-    # plan to output non-ASCII compatible data.
+    # Creates a new \CSV object via <tt>CSV.new(csv_string, **options)</tt>;
+    # calls the block with the \CSV object, which the block may modify;
+    # returns the \String generated from the \CSV object.
+    #
+    # Note that a passed \String *is* modified by this method.
+    # Pass <tt>csv_string</tt>.dup if the \String must be preserved.
+    #
+    # This method has one additional option: <tt>:encoding</tt>,
+    # which sets the base Encoding for the output if no no +str+ is specified.
+    # CSV needs this hint if you plan to output non-ASCII compatible data.
+    #
+    # ---
+    #
+    # Add lines:
+    #   input_string = "foo,0\nbar,1\nbaz,2\n"
+    #   output_string = CSV.generate(input_string) do |csv|
+    #     csv << ['bat', 3]
+    #     csv << ['bam', 4]
+    #   end
+    #   output_string # => "foo,0\nbar,1\nbaz,2\nbat,3\nbam,4\n"
+    #   input_string # => "foo,0\nbar,1\nbaz,2\nbat,3\nbam,4\n"
+    #   output_string.equal?(input_string) # => true # Same string, modified
+    #
+    # Add lines into new string, preserving old string:
+    #   input_string = "foo,0\nbar,1\nbaz,2\n"
+    #   output_string = CSV.generate(input_string.dup) do |csv|
+    #     csv << ['bat', 3]
+    #     csv << ['bam', 4]
+    #   end
+    #   output_string # => "foo,0\nbar,1\nbaz,2\nbat,3\nbam,4\n"
+    #   input_string # => "foo,0\nbar,1\nbaz,2\n"
+    #   output_string.equal?(input_string) # => false # Different strings
+    #
+    # Create lines from nothing:
+    #   output_string = CSV.generate do |csv|
+    #     csv << ['foo', 0]
+    #     csv << ['bar', 1]
+    #     csv << ['baz', 2]
+    #   end
+    #   output_string # => "foo,0\nbar,1\nbaz,2\n"
+    #
+    # ---
+    #
+    # Raises an exception if +csv_string+ is not a \String object:
+    #   # Raises TypeError (no implicit conversion of Integer into String)
+    #   CSV.generate(0)
     #
     def generate(str=nil, **options)
+      encoding = options[:encoding]
       # add a default empty String, if none was given
       if str
         str = StringIO.new(str)
         str.seek(0, IO::SEEK_END)
+        str.set_encoding(encoding) if encoding
       else
-        encoding = options[:encoding]
         str = +""
         str.force_encoding(encoding) if encoding
       end
@@ -545,97 +1252,140 @@ class CSV
       csv.string        # return final String
     end
 
+    # :call-seq:
+    #   CSV.generate_line(ary)
+    #   CSV.generate_line(ary, **options)
     #
-    # This method is a shortcut for converting a single row (Array) into a CSV
-    # String.
+    # Returns the \String created by generating \CSV from +ary+
+    # using the specified +options+.
     #
-    # The +options+ parameter can be anything CSV::new() understands. This method
-    # understands an additional <tt>:encoding</tt> parameter to set the base
-    # Encoding for the output. This method will try to guess your Encoding from
-    # the first non-+nil+ field in +row+, if possible, but you may need to use
-    # this parameter as a backup plan.
+    # Argument +ary+ must be an \Array.
     #
-    # The <tt>:row_sep</tt> +option+ defaults to <tt>$INPUT_RECORD_SEPARATOR</tt>
-    # (<tt>$/</tt>) when calling this method.
+    # Special options:
+    # * Option <tt>:row_sep</tt> defaults to <tt>$INPUT_RECORD_SEPARATOR</tt>
+    #   (<tt>$/</tt>).:
+    #     $INPUT_RECORD_SEPARATOR # => "\n"
+    # * This method accepts an additional option, <tt>:encoding</tt>, which sets the base
+    #   Encoding for the output. This method will try to guess your Encoding from
+    #   the first non-+nil+ field in +row+, if possible, but you may need to use
+    #   this parameter as a backup plan.
+    #
+    # For other +options+,
+    # see {Options for Generating}[#class-CSV-label-Options+for+Generating].
+    #
+    # ---
+    #
+    # Returns the \String generated from an \Array:
+    #   CSV.generate_line(['foo', '0']) # => "foo,0\n"
+    #
+    # ---
+    #
+    # Raises an exception if +ary+ is not an \Array:
+    #   # Raises NoMethodError (undefined method `find' for :foo:Symbol)
+    #   CSV.generate_line(:foo)
     #
     def generate_line(row, **options)
       options = {row_sep: $INPUT_RECORD_SEPARATOR}.merge(options)
       str = +""
       if options[:encoding]
         str.force_encoding(options[:encoding])
-      elsif field = row.find {|f| f.is_a?(String)}
-        str.force_encoding(field.encoding)
+      else
+        fallback_encoding = nil
+        output_encoding = nil
+        row.each do |field|
+          next unless field.is_a?(String)
+          fallback_encoding ||= field.encoding
+          next if field.ascii_only?
+          output_encoding = field.encoding
+          break
+        end
+        output_encoding ||= fallback_encoding
+        if output_encoding
+          str.force_encoding(output_encoding)
+        end
       end
       (new(str, **options) << row).string
     end
 
     #
     # :call-seq:
-    #   open( filename, mode = "rb", **options ) { |faster_csv| ... }
-    #   open( filename, **options ) { |faster_csv| ... }
-    #   open( filename, mode = "rb", **options )
-    #   open( filename, **options )
+    #   open(file_path, mode = "rb", **options ) -> new_csv
+    #   open(io, mode = "rb", **options ) -> new_csv
+    #   open(file_path, mode = "rb", **options ) { |csv| ... } -> object
+    #   open(io, mode = "rb", **options ) { |csv| ... } -> object
     #
-    # This method opens an IO object, and wraps that with CSV. This is intended
-    # as the primary interface for writing a CSV file.
+    # possible options elements:
+    #   hash form:
+    #     :invalid => nil      # raise error on invalid byte sequence (default)
+    #     :invalid => :replace # replace invalid byte sequence
+    #     :undef => :replace   # replace undefined conversion
+    #     :replace => string   # replacement string ("?" or "\uFFFD" if not specified)
     #
-    # You must pass a +filename+ and may optionally add a +mode+ for Ruby's
-    # open(). You may also pass an optional Hash containing any +options+
-    # CSV::new() understands as the final argument.
+    # * Argument +path+, if given, must be the path to a file.
+    # :include: ../doc/csv/arguments/io.rdoc
+    # * Argument +mode+, if given, must be a \File mode
+    #   See {Open Mode}[IO.html#method-c-new-label-Open+Mode].
+    # * Arguments <tt>**options</tt> must be keyword options.
+    #   See {Options for Generating}[#class-CSV-label-Options+for+Generating].
+    # * This method optionally accepts an additional <tt>:encoding</tt> option
+    #   that you can use to specify the Encoding of the data read from +path+ or +io+.
+    #   You must provide this unless your data is in the encoding
+    #   given by <tt>Encoding::default_external</tt>.
+    #   Parsing will use this to determine how to parse the data.
+    #   You may provide a second Encoding to
+    #   have the data transcoded as it is read. For example,
+    #     encoding: 'UTF-32BE:UTF-8'
+    #   would read +UTF-32BE+ data from the file
+    #   but transcode it to +UTF-8+ before parsing.
     #
-    # This method works like Ruby's open() call, in that it will pass a CSV object
-    # to a provided block and close it when the block terminates, or it will
-    # return the CSV object when no block is provided. (*Note*: This is different
-    # from the Ruby 1.8 CSV library which passed rows to the block. Use
-    # CSV::foreach() for that behavior.)
+    # ---
     #
-    # You must provide a +mode+ with an embedded Encoding designator unless your
-    # data is in Encoding::default_external(). CSV will check the Encoding of the
-    # underlying IO object (set by the +mode+ you pass) to determine how to parse
-    # the data. You may provide a second Encoding to have the data transcoded as
-    # it is read just as you can with a normal call to IO::open(). For example,
-    # <tt>"rb:UTF-32BE:UTF-8"</tt> would read UTF-32BE data from the file but
-    # transcode it to UTF-8 before CSV parses it.
+    # These examples assume prior execution of:
+    #   string = "foo,0\nbar,1\nbaz,2\n"
+    #   path = 't.csv'
+    #   File.write(path, string)
     #
-    # An opened CSV object will delegate to many IO methods for convenience. You
-    # may call:
+    # ---
     #
-    # * binmode()
-    # * binmode?()
-    # * close()
-    # * close_read()
-    # * close_write()
-    # * closed?()
-    # * eof()
-    # * eof?()
-    # * external_encoding()
-    # * fcntl()
-    # * fileno()
-    # * flock()
-    # * flush()
-    # * fsync()
-    # * internal_encoding()
-    # * ioctl()
-    # * isatty()
-    # * path()
-    # * pid()
-    # * pos()
-    # * pos=()
-    # * reopen()
-    # * seek()
-    # * stat()
-    # * sync()
-    # * sync=()
-    # * tell()
-    # * to_i()
-    # * to_io()
-    # * truncate()
-    # * tty?()
+    # With no block given, returns a new \CSV object.
     #
+    # Create a \CSV object using a file path:
+    #   csv = CSV.open(path)
+    #   csv # => #<CSV io_type:File io_path:"t.csv" encoding:UTF-8 lineno:0 col_sep:"," row_sep:"\n" quote_char:"\"">
+    #
+    # Create a \CSV object using an open \File:
+    #   csv = CSV.open(File.open(path))
+    #   csv # => #<CSV io_type:File io_path:"t.csv" encoding:UTF-8 lineno:0 col_sep:"," row_sep:"\n" quote_char:"\"">
+    #
+    # ---
+    #
+    # With a block given, calls the block with the created \CSV object;
+    # returns the block's return value:
+    #
+    # Using a file path:
+    #   csv = CSV.open(path) {|csv| p csv}
+    #   csv # => #<CSV io_type:File io_path:"t.csv" encoding:UTF-8 lineno:0 col_sep:"," row_sep:"\n" quote_char:"\"">
+    # Output:
+    #   #<CSV io_type:File io_path:"t.csv" encoding:UTF-8 lineno:0 col_sep:"," row_sep:"\n" quote_char:"\"">
+    #
+    # Using an open \File:
+    #   csv = CSV.open(File.open(path)) {|csv| p csv}
+    #   csv # => #<CSV io_type:File io_path:"t.csv" encoding:UTF-8 lineno:0 col_sep:"," row_sep:"\n" quote_char:"\"">
+    # Output:
+    #   #<CSV io_type:File io_path:"t.csv" encoding:UTF-8 lineno:0 col_sep:"," row_sep:"\n" quote_char:"\"">
+    #
+    # ---
+    #
+    # Raises an exception if the argument is not a \String object or \IO object:
+    #   # Raises TypeError (no implicit conversion of Symbol into String)
+    #   CSV.open(:foo)
     def open(filename, mode="r", **options)
       # wrap a File opened with the remaining +args+ with no newline
       # decorator
       file_opts = {universal_newline: false}.merge(options)
+      options.delete(:invalid)
+      options.delete(:undef)
+      options.delete(:replace)
 
       begin
         f = File.open(filename, mode, **file_opts)
@@ -666,16 +1416,116 @@ class CSV
 
     #
     # :call-seq:
-    #   parse( str, **options ) { |row| ... }
-    #   parse( str, **options )
+    #   parse(string) -> array_of_arrays
+    #   parse(io) -> array_of_arrays
+    #   parse(string, headers: ..., **options) -> csv_table
+    #   parse(io, headers: ..., **options) -> csv_table
+    #   parse(string, **options) {|row| ... }
+    #   parse(io, **options) {|row| ... }
     #
-    # This method can be used to easily parse CSV out of a String. You may either
-    # provide a +block+ which will be called with each row of the String in turn,
-    # or just use the returned Array of Arrays (when no +block+ is given).
+    # Parses +string+ or +io+ using the specified +options+.
     #
-    # You pass your +str+ to read from, and an optional +options+ containing
-    # anything CSV::new() understands.
+    # - Argument +string+ should be a \String object;
+    #   it will be put into a new StringIO object positioned at the beginning.
+    # :include: ../doc/csv/arguments/io.rdoc
+    # - Argument +options+: see {Options for Parsing}[#class-CSV-label-Options+for+Parsing]
     #
+    # ====== Without Option +headers+
+    #
+    # Without {option +headers+}[#class-CSV-label-Option+headers] case.
+    #
+    # These examples assume prior execution of:
+    #   string = "foo,0\nbar,1\nbaz,2\n"
+    #   path = 't.csv'
+    #   File.write(path, string)
+    #
+    # ---
+    #
+    # With no block given, returns an \Array of Arrays formed from the source.
+    #
+    # Parse a \String:
+    #   a_of_a = CSV.parse(string)
+    #   a_of_a # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
+    #
+    # Parse an open \File:
+    #   a_of_a = File.open(path) do |file|
+    #     CSV.parse(file)
+    #   end
+    #   a_of_a # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
+    #
+    # ---
+    #
+    # With a block given, calls the block with each parsed row:
+    #
+    # Parse a \String:
+    #   CSV.parse(string) {|row| p row }
+    #
+    # Output:
+    #   ["foo", "0"]
+    #   ["bar", "1"]
+    #   ["baz", "2"]
+    #
+    # Parse an open \File:
+    #   File.open(path) do |file|
+    #     CSV.parse(file) {|row| p row }
+    #   end
+    #
+    # Output:
+    #   ["foo", "0"]
+    #   ["bar", "1"]
+    #   ["baz", "2"]
+    #
+    # ====== With Option +headers+
+    #
+    # With {option +headers+}[#class-CSV-label-Option+headers] case.
+    #
+    # These examples assume prior execution of:
+    #   string = "Name,Count\nfoo,0\nbar,1\nbaz,2\n"
+    #   path = 't.csv'
+    #   File.write(path, string)
+    #
+    # ---
+    #
+    # With no block given, returns a CSV::Table object formed from the source.
+    #
+    # Parse a \String:
+    #   csv_table = CSV.parse(string, headers: ['Name', 'Count'])
+    #   csv_table # => #<CSV::Table mode:col_or_row row_count:5>
+    #
+    # Parse an open \File:
+    #   csv_table = File.open(path) do |file|
+    #     CSV.parse(file, headers: ['Name', 'Count'])
+    #   end
+    #   csv_table # => #<CSV::Table mode:col_or_row row_count:4>
+    #
+    # ---
+    #
+    # With a block given, calls the block with each parsed row,
+    # which has been formed into a CSV::Row object:
+    #
+    # Parse a \String:
+    #   CSV.parse(string, headers: ['Name', 'Count']) {|row| p row }
+    #
+    # Output:
+    #   # <CSV::Row "Name":"foo" "Count":"0">
+    #   # <CSV::Row "Name":"bar" "Count":"1">
+    #   # <CSV::Row "Name":"baz" "Count":"2">
+    #
+    # Parse an open \File:
+    #   File.open(path) do |file|
+    #     CSV.parse(file, headers: ['Name', 'Count']) {|row| p row }
+    #   end
+    #
+    # Output:
+    #   # <CSV::Row "Name":"foo" "Count":"0">
+    #   # <CSV::Row "Name":"bar" "Count":"1">
+    #   # <CSV::Row "Name":"baz" "Count":"2">
+    #
+    # ---
+    #
+    # Raises an exception if the argument is not a \String object or \IO object:
+    #   # Raises NoMethodError (undefined method `close' for :foo:Symbol)
+    #   CSV.parse(:foo)
     def parse(str, **options, &block)
       csv = new(str, **options)
 
@@ -689,44 +1539,117 @@ class CSV
       end
     end
 
+    # :call-seq:
+    #   CSV.parse_line(string) -> new_array or nil
+    #   CSV.parse_line(io) -> new_array or nil
+    #   CSV.parse_line(string, **options) -> new_array or nil
+    #   CSV.parse_line(io, **options) -> new_array or nil
+    #   CSV.parse_line(string, headers: true, **options) -> csv_row or nil
+    #   CSV.parse_line(io, headers: true, **options) -> csv_row or nil
     #
-    # This method is a shortcut for converting a single line of a CSV String into
-    # an Array. Note that if +line+ contains multiple rows, anything beyond the
-    # first row is ignored.
+    # Returns the data created by parsing the first line of +string+ or +io+
+    # using the specified +options+.
     #
-    # The +options+ parameter can be anything CSV::new() understands.
+    # - Argument +string+ should be a \String object;
+    #   it will be put into a new StringIO object positioned at the beginning.
+    # :include: ../doc/csv/arguments/io.rdoc
+    # - Argument +options+: see {Options for Parsing}[#class-CSV-label-Options+for+Parsing]
+    #
+    # ====== Without Option +headers+
+    #
+    # Without option +headers+, returns the first row as a new \Array.
+    #
+    # These examples assume prior execution of:
+    #   string = "foo,0\nbar,1\nbaz,2\n"
+    #   path = 't.csv'
+    #   File.write(path, string)
+    #
+    # Parse the first line from a \String object:
+    #   CSV.parse_line(string) # => ["foo", "0"]
+    #
+    # Parse the first line from a File object:
+    #   File.open(path) do |file|
+    #     CSV.parse_line(file) # => ["foo", "0"]
+    #   end # => ["foo", "0"]
+    #
+    # Returns +nil+ if the argument is an empty \String:
+    #   CSV.parse_line('') # => nil
+    #
+    # ====== With Option +headers+
+    #
+    # With {option +headers+}[#class-CSV-label-Option+headers],
+    # returns the first row as a CSV::Row object.
+    #
+    # These examples assume prior execution of:
+    #   string = "Name,Count\nfoo,0\nbar,1\nbaz,2\n"
+    #   path = 't.csv'
+    #   File.write(path, string)
+    #
+    # Parse the first line from a \String object:
+    #   CSV.parse_line(string, headers: true) # => #<CSV::Row "Name":"foo" "Count":"0">
+    #
+    # Parse the first line from a File object:
+    #   File.open(path) do |file|
+    #     CSV.parse_line(file, headers: true)
+    #   end # => #<CSV::Row "Name":"foo" "Count":"0">
+    #
+    # ---
+    #
+    # Raises an exception if the argument is +nil+:
+    #   # Raises ArgumentError (Cannot parse nil as CSV):
+    #   CSV.parse_line(nil)
     #
     def parse_line(line, **options)
-      new(line, **options).shift
+      new(line, **options).each.first
     end
 
     #
-    # Use to slurp a CSV file into an Array of Arrays. Pass the +path+ to the
-    # file and any +options+ CSV::new() understands. This method also understands
-    # an additional <tt>:encoding</tt> parameter that you can use to specify the
-    # Encoding of the data in the file to be read. You must provide this unless
-    # your data is in Encoding::default_external(). CSV will use this to determine
-    # how to parse the data. You may provide a second Encoding to have the data
-    # transcoded as it is read. For example,
-    # <tt>encoding: "UTF-32BE:UTF-8"</tt> would read UTF-32BE data from the file
-    # but transcode it to UTF-8 before CSV parses it.
+    # :call-seq:
+    #   read(source, **options) -> array_of_arrays
+    #   read(source, headers: true, **options) -> csv_table
     #
+    # Opens the given +source+ with the given +options+ (see CSV.open),
+    # reads the source (see CSV#read), and returns the result,
+    # which will be either an \Array of Arrays or a CSV::Table.
+    #
+    # Without headers:
+    #   string = "foo,0\nbar,1\nbaz,2\n"
+    #   path = 't.csv'
+    #   File.write(path, string)
+    #   CSV.read(path) # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
+    #
+    # With headers:
+    #   string = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+    #   path = 't.csv'
+    #   File.write(path, string)
+    #   CSV.read(path, headers: true) # => #<CSV::Table mode:col_or_row row_count:4>
     def read(path, **options)
       open(path, **options) { |csv| csv.read }
     end
 
-    # Alias for CSV::read().
+    # :call-seq:
+    #   CSV.readlines(source, **options)
+    #
+    # Alias for CSV.read.
     def readlines(path, **options)
       read(path, **options)
     end
 
+    # :call-seq:
+    #   CSV.table(source, **options)
     #
-    # A shortcut for:
+    # Calls CSV.read with +source+, +options+, and certain default options:
+    # - +headers+: +true+
+    # - +converbers+: +:numeric+
+    # - +header_converters+: +:symbol+
     #
-    #   CSV.read( path, { headers:           true,
-    #                     converters:        :numeric,
-    #                     header_converters: :symbol }.merge(options) )
+    # Returns a CSV::Table object.
     #
+    # Example:
+    #   string = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+    #   path = 't.csv'
+    #   File.write(path, string)
+    #   CSV.table(path) # => #<CSV::Table mode:col_or_row row_count:4>
     def table(path, **options)
       default_options = {
         headers:           true,
@@ -738,185 +1661,43 @@ class CSV
     end
   end
 
+  # :call-seq:
+  #   CSV.new(string)
+  #   CSV.new(io)
+  #   CSV.new(string, **options)
+  #   CSV.new(io, **options)
   #
-  # This constructor will wrap either a String or IO object passed in +data+ for
-  # reading and/or writing. In addition to the CSV instance methods, several IO
-  # methods are delegated. (See CSV::open() for a complete list.) If you pass
-  # a String for +data+, you can later retrieve it (after writing to it, for
-  # example) with CSV.string().
+  # Returns the new \CSV object created using +string+ or +io+
+  # and the specified +options+.
   #
-  # Note that a wrapped String will be positioned at the beginning (for
-  # reading). If you want it at the end (for writing), use CSV::generate().
-  # If you want any other positioning, pass a preset StringIO object instead.
+  # - Argument +string+ should be a \String object;
+  #   it will be put into a new StringIO object positioned at the beginning.
+  # :include: ../doc/csv/arguments/io.rdoc
+  # - Argument +options+: See:
+  #   * {Options for Parsing}[#class-CSV-label-Options+for+Parsing]
+  #   * {Options for Generating}[#class-CSV-label-Options+for+Generating]
+  #   For performance reasons, the options cannot be overridden
+  #   in a \CSV object, so those specified here will endure.
   #
-  # You may set any reading and/or writing preferences in the +options+ Hash.
-  # Available options are:
+  # In addition to the \CSV instance methods, several \IO methods are delegated.
+  # See {Delegated Methods}[#class-CSV-label-Delegated+Methods].
   #
-  # <b><tt>:col_sep</tt></b>::            The String placed between each field.
-  #                                       This String will be transcoded into
-  #                                       the data's Encoding before parsing.
-  # <b><tt>:row_sep</tt></b>::            The String appended to the end of each
-  #                                       row. This can be set to the special
-  #                                       <tt>:auto</tt> setting, which requests
-  #                                       that CSV automatically discover this
-  #                                       from the data. Auto-discovery reads
-  #                                       ahead in the data looking for the next
-  #                                       <tt>"\r\n"</tt>, <tt>"\n"</tt>, or
-  #                                       <tt>"\r"</tt> sequence. A sequence
-  #                                       will be selected even if it occurs in
-  #                                       a quoted field, assuming that you
-  #                                       would have the same line endings
-  #                                       there. If none of those sequences is
-  #                                       found, +data+ is <tt>ARGF</tt>,
-  #                                       <tt>STDIN</tt>, <tt>STDOUT</tt>, or
-  #                                       <tt>STDERR</tt>, or the stream is only
-  #                                       available for output, the default
-  #                                       <tt>$INPUT_RECORD_SEPARATOR</tt>
-  #                                       (<tt>$/</tt>) is used. Obviously,
-  #                                       discovery takes a little time. Set
-  #                                       manually if speed is important. Also
-  #                                       note that IO objects should be opened
-  #                                       in binary mode on Windows if this
-  #                                       feature will be used as the
-  #                                       line-ending translation can cause
-  #                                       problems with resetting the document
-  #                                       position to where it was before the
-  #                                       read ahead. This String will be
-  #                                       transcoded into the data's Encoding
-  #                                       before parsing.
-  # <b><tt>:quote_char</tt></b>::         The character used to quote fields.
-  #                                       This has to be a single character
-  #                                       String. This is useful for
-  #                                       application that incorrectly use
-  #                                       <tt>'</tt> as the quote character
-  #                                       instead of the correct <tt>"</tt>.
-  #                                       CSV will always consider a double
-  #                                       sequence of this character to be an
-  #                                       escaped quote. This String will be
-  #                                       transcoded into the data's Encoding
-  #                                       before parsing.
-  # <b><tt>:field_size_limit</tt></b>::   This is a maximum size CSV will read
-  #                                       ahead looking for the closing quote
-  #                                       for a field. (In truth, it reads to
-  #                                       the first line ending beyond this
-  #                                       size.) If a quote cannot be found
-  #                                       within the limit CSV will raise a
-  #                                       MalformedCSVError, assuming the data
-  #                                       is faulty. You can use this limit to
-  #                                       prevent what are effectively DoS
-  #                                       attacks on the parser. However, this
-  #                                       limit can cause a legitimate parse to
-  #                                       fail and thus is set to +nil+, or off,
-  #                                       by default.
-  # <b><tt>:converters</tt></b>::         An Array of names from the Converters
-  #                                       Hash and/or lambdas that handle custom
-  #                                       conversion. A single converter
-  #                                       doesn't have to be in an Array. All
-  #                                       built-in converters try to transcode
-  #                                       fields to UTF-8 before converting.
-  #                                       The conversion will fail if the data
-  #                                       cannot be transcoded, leaving the
-  #                                       field unchanged.
-  # <b><tt>:unconverted_fields</tt></b>:: If set to +true+, an
-  #                                       unconverted_fields() method will be
-  #                                       added to all returned rows (Array or
-  #                                       CSV::Row) that will return the fields
-  #                                       as they were before conversion. Note
-  #                                       that <tt>:headers</tt> supplied by
-  #                                       Array or String were not fields of the
-  #                                       document and thus will have an empty
-  #                                       Array attached.
-  # <b><tt>:headers</tt></b>::            If set to <tt>:first_row</tt> or
-  #                                       +true+, the initial row of the CSV
-  #                                       file will be treated as a row of
-  #                                       headers. If set to an Array, the
-  #                                       contents will be used as the headers.
-  #                                       If set to a String, the String is run
-  #                                       through a call of CSV::parse_line()
-  #                                       with the same <tt>:col_sep</tt>,
-  #                                       <tt>:row_sep</tt>, and
-  #                                       <tt>:quote_char</tt> as this instance
-  #                                       to produce an Array of headers. This
-  #                                       setting causes CSV#shift() to return
-  #                                       rows as CSV::Row objects instead of
-  #                                       Arrays and CSV#read() to return
-  #                                       CSV::Table objects instead of an Array
-  #                                       of Arrays.
-  # <b><tt>:return_headers</tt></b>::     When +false+, header rows are silently
-  #                                       swallowed. If set to +true+, header
-  #                                       rows are returned in a CSV::Row object
-  #                                       with identical headers and
-  #                                       fields (save that the fields do not go
-  #                                       through the converters).
-  # <b><tt>:write_headers</tt></b>::      When +true+ and <tt>:headers</tt> is
-  #                                       set, a header row will be added to the
-  #                                       output.
-  # <b><tt>:header_converters</tt></b>::  Identical in functionality to
-  #                                       <tt>:converters</tt> save that the
-  #                                       conversions are only made to header
-  #                                       rows. All built-in converters try to
-  #                                       transcode headers to UTF-8 before
-  #                                       converting. The conversion will fail
-  #                                       if the data cannot be transcoded,
-  #                                       leaving the header unchanged.
-  # <b><tt>:skip_blanks</tt></b>::        When setting a +true+ value, CSV will
-  #                                       skip over any empty rows. Note that
-  #                                       this setting will not skip rows that
-  #                                       contain column separators, even if
-  #                                       the rows contain no actual data. If
-  #                                       you want to skip rows that contain
-  #                                       separators but no content, consider
-  #                                       using <tt>:skip_lines</tt>, or
-  #                                       inspecting fields.compact.empty? on
-  #                                       each row.
-  # <b><tt>:force_quotes</tt></b>::       When setting a +true+ value, CSV will
-  #                                       quote all CSV fields it creates.
-  # <b><tt>:skip_lines</tt></b>::         When setting an object responding to
-  #                                       <tt>match</tt>, every line matching
-  #                                       it is considered a comment and ignored
-  #                                       during parsing. When set to a String,
-  #                                       it is first converted to a Regexp.
-  #                                       When set to +nil+ no line is considered
-  #                                       a comment. If the passed object does
-  #                                       not respond to <tt>match</tt>,
-  #                                       <tt>ArgumentError</tt> is thrown.
-  # <b><tt>:liberal_parsing</tt></b>::    When setting a +true+ value, CSV will
-  #                                       attempt to parse input not conformant
-  #                                       with RFC 4180, such as double quotes
-  #                                       in unquoted fields.
-  # <b><tt>:nil_value</tt></b>::          When set an object, any values of an
-  #                                       empty field is replaced by the set
-  #                                       object, not nil.
-  # <b><tt>:empty_value</tt></b>::        When setting an object, any values of a
-  #                                       blank string field is replaced by
-  #                                       the set object.
-  # <b><tt>:quote_empty</tt></b>::        When setting a +true+ value, CSV will
-  #                                       quote empty values with double quotes.
-  #                                       When +false+, CSV will emit an
-  #                                       empty string for an empty field value.
-  # <b><tt>:write_converters</tt></b>::   Converts values on each line with the
-  #                                       specified <tt>Proc</tt> object(s),
-  #                                       which receive a <tt>String</tt> value
-  #                                       and return a <tt>String</tt> or +nil+
-  #                                       value.
-  #                                       When an array is specified, each
-  #                                       converter will be applied in order.
-  # <b><tt>:write_nil_value</tt></b>::    When a <tt>String</tt> value, +nil+
-  #                                       value(s) on each line will be replaced
-  #                                       with the specified value.
-  # <b><tt>:write_empty_value</tt></b>::  When a <tt>String</tt> or +nil+ value,
-  #                                       empty value(s) on each line will be
-  #                                       replaced with the specified value.
-  # <b><tt>:strip</tt></b>::              When setting a +true+ value, CSV will
-  #                                       strip "\t\r\n\f\v" around the values.
-  #                                       If you specify a string instead of
-  #                                       +true+, CSV will strip string. The
-  #                                       length of the string must be 1.
+  # ---
   #
-  # See CSV::DEFAULT_OPTIONS for the default settings.
+  # Create a \CSV object from a \String object:
+  #   csv = CSV.new('foo,0')
+  #   csv # => #<CSV io_type:StringIO encoding:UTF-8 lineno:0 col_sep:"," row_sep:"\n" quote_char:"\"">
   #
-  # Options cannot be overridden in the instance methods for performance reasons,
-  # so be sure to set what you want here.
+  # Create a \CSV object from a \File object:
+  #   File.write('t.csv', 'foo,0')
+  #   csv = CSV.new(File.open('t.csv'))
+  #   csv # => #<CSV io_type:File io_path:"t.csv" encoding:UTF-8 lineno:0 col_sep:"," row_sep:"\n" quote_char:"\"">
+  #
+  # ---
+  #
+  # Raises an exception if the argument is +nil+:
+  #   # Raises ArgumentError (Cannot parse nil as CSV):
+  #   CSV.new(nil)
   #
   def initialize(data,
                  col_sep: ",",
@@ -1001,51 +1782,67 @@ class CSV
     writer if @writer_options[:write_headers]
   end
 
+  # :call-seq:
+  #   csv.col_sep -> string
   #
-  # The encoded <tt>:col_sep</tt> used in parsing and writing.
-  # See CSV::new for details.
-  #
+  # Returns the encoded column separator; used for parsing and writing;
+  # see {Option +col_sep+}[#class-CSV-label-Option+col_sep]:
+  #   CSV.new('').col_sep # => ","
   def col_sep
     parser.column_separator
   end
 
+  # :call-seq:
+  #   csv.row_sep -> string
   #
-  # The encoded <tt>:row_sep</tt> used in parsing and writing.
-  # See CSV::new for details.
-  #
+  # Returns the encoded row separator; used for parsing and writing;
+  # see {Option +row_sep+}[#class-CSV-label-Option+row_sep]:
+  #   CSV.new('').row_sep # => "\n"
   def row_sep
     parser.row_separator
   end
 
+  # :call-seq:
+  #   csv.quote_char -> character
   #
-  # The encoded <tt>:quote_char</tt> used in parsing and writing.
-  # See CSV::new for details.
-  #
+  # Returns the encoded quote character; used for parsing and writing;
+  # see {Option +quote_char+}[#class-CSV-label-Option+quote_char]:
+  #   CSV.new('').quote_char # => "\""
   def quote_char
     parser.quote_character
   end
 
+  # :call-seq:
+  #   csv.field_size_limit -> integer or nil
   #
-  # The limit for field size, if any.
-  # See CSV::new for details.
-  #
+  # Returns the limit for field size; used for parsing;
+  # see {Option +field_size_limit+}[#class-CSV-label-Option+field_size_limit]:
+  #   CSV.new('').field_size_limit # => nil
   def field_size_limit
     parser.field_size_limit
   end
 
+  # :call-seq:
+  #   csv.skip_lines -> regexp or nil
   #
-  # The regex marking a line as a comment.
-  # See CSV::new for details.
-  #
+  # Returns the \Regexp used to identify comment lines; used for parsing;
+  # see {Option +skip_lines+}[#class-CSV-label-Option+skip_lines]:
+  #   CSV.new('').skip_lines # => nil
   def skip_lines
     parser.skip_lines
   end
 
+  # :call-seq:
+  #   csv.converters -> array
   #
-  # Returns the current list of converters in effect. See CSV::new for details.
-  # Built-in converters will be returned by name, while others will be returned
-  # as is.
-  #
+  # Returns an \Array containing field converters;
+  # see {Field Converters}[#class-CSV-label-Field+Converters]:
+  #   csv = CSV.new('')
+  #   csv.converters # => []
+  #   csv.convert(:integer)
+  #   csv.converters # => [:integer]
+  #   csv.convert(proc {|x| x.to_s })
+  #   csv.converters
   def converters
     parser_fields_converter.map do |converter|
       name = Converters.rassoc(converter)
@@ -1053,19 +1850,23 @@ class CSV
     end
   end
 
+  # :call-seq:
+  #   csv.unconverted_fields? -> object
   #
-  # Returns +true+ if unconverted_fields() to parsed results.
-  # See CSV::new for details.
-  #
+  # Returns the value that determines whether unconverted fields are to be
+  # available; used for parsing;
+  # see {Option +unconverted_fields+}[#class-CSV-label-Option+unconverted_fields]:
+  #   CSV.new('').unconverted_fields? # => nil
   def unconverted_fields?
     parser.unconverted_fields?
   end
 
+  # :call-seq:
+  #   csv.headers -> object
   #
-  # Returns +nil+ if headers will not be used, +true+ if they will but have not
-  # yet been read, or the actual headers after they have been read.
-  # See CSV::new for details.
-  #
+  # Returns the value that determines whether headers are used; used for parsing;
+  # see {Option +headers+}[#class-CSV-label-Option+headers]:
+  #   CSV.new('').headers # => nil
   def headers
     if @writer
       @writer.headers
@@ -1077,27 +1878,33 @@ class CSV
       raw_headers
     end
   end
+
+  # :call-seq:
+  #   csv.return_headers? -> true or false
   #
-  # Returns +true+ if headers will be returned as a row of results.
-  # See CSV::new for details.
-  #
+  # Returns the value that determines whether headers are to be returned; used for parsing;
+  # see {Option +return_headers+}[#class-CSV-label-Option+return_headers]:
+  #   CSV.new('').return_headers? # => false
   def return_headers?
     parser.return_headers?
   end
 
+  # :call-seq:
+  #   csv.write_headers? -> true or false
   #
-  # Returns +true+ if headers are written in output.
-  # See CSV::new for details.
-  #
+  # Returns the value that determines whether headers are to be written; used for generating;
+  # see {Option +write_headers+}[#class-CSV-label-Option+write_headers]:
+  #   CSV.new('').write_headers? # => nil
   def write_headers?
     @writer_options[:write_headers]
   end
 
+  # :call-seq:
+  #   csv.header_converters -> array
   #
-  # Returns the current list of converters in effect for headers. See CSV::new
-  # for details. Built-in converters will be returned by name, while others
-  # will be returned as is.
-  #
+  # Returns an \Array containing header converters; used for parsing;
+  # see {Header Converters}[#class-CSV-label-Header+Converters]:
+  #   CSV.new('').header_converters # => []
   def header_converters
     header_fields_converter.map do |converter|
       name = HeaderConverters.rassoc(converter)
@@ -1105,34 +1912,74 @@ class CSV
     end
   end
 
+  # :call-seq:
+  #   csv.skip_blanks? -> true or false
   #
-  # Returns +true+ blank lines are skipped by the parser. See CSV::new
-  # for details.
-  #
+  # Returns the value that determines whether blank lines are to be ignored; used for parsing;
+  # see {Option +skip_blanks+}[#class-CSV-label-Option+skip_blanks]:
+  #   CSV.new('').skip_blanks? # => false
   def skip_blanks?
     parser.skip_blanks?
   end
 
-  # Returns +true+ if all output fields are quoted. See CSV::new for details.
+  # :call-seq:
+  #   csv.force_quotes? -> true or false
+  #
+  # Returns the value that determines whether all output fields are to be quoted;
+  # used for generating;
+  # see {Option +force_quotes+}[#class-CSV-label-Option+force_quotes]:
+  #   CSV.new('').force_quotes? # => false
   def force_quotes?
     @writer_options[:force_quotes]
   end
 
-  # Returns +true+ if illegal input is handled. See CSV::new for details.
+  # :call-seq:
+  #   csv.liberal_parsing? -> true or false
+  #
+  # Returns the value that determines whether illegal input is to be handled; used for parsing;
+  # see {Option +liberal_parsing+}[#class-CSV-label-Option+liberal_parsing]:
+  #   CSV.new('').liberal_parsing? # => false
   def liberal_parsing?
     parser.liberal_parsing?
   end
 
+  # :call-seq:
+  #   csv.encoding -> endcoding
   #
-  # The Encoding CSV is parsing or writing in.  This will be the Encoding you
-  # receive parsed data in and/or the Encoding data will be written in.
-  #
+  # Returns the encoding used for parsing and generating;
+  # see {Character Encodings (M17n or Multilingualization)}[#class-CSV-label-Character+Encodings+-28M17n+or+Multilingualization-29]:
+  #   CSV.new('').encoding # => #<Encoding:UTF-8>
   attr_reader :encoding
 
+  # :call-seq:
+  #   csv.line_no -> integer
   #
-  # The line number of the last row read from this file. Fields with nested
-  # line-end characters will not affect this count.
+  # Returns the count of the rows parsed or generated.
   #
+  # Parsing:
+  #   string = "foo,0\nbar,1\nbaz,2\n"
+  #   path = 't.csv'
+  #   File.write(path, string)
+  #   CSV.open(path) do |csv|
+  #     csv.each do |row|
+  #       p [csv.lineno, row]
+  #     end
+  #   end
+  # Output:
+  #   [1, ["foo", "0"]]
+  #   [2, ["bar", "1"]]
+  #   [3, ["baz", "2"]]
+  #
+  # Generating:
+  #   CSV.generate do |csv|
+  #     p csv.lineno; csv << ['foo', 0]
+  #     p csv.lineno; csv << ['bar', 1]
+  #     p csv.lineno; csv << ['baz', 2]
+  #   end
+  # Output:
+  #   0
+  #   1
+  #   2
   def lineno
     if @writer
       @writer.lineno
@@ -1141,9 +1988,22 @@ class CSV
     end
   end
 
+  # :call-seq:
+  #   csv.line -> array
   #
-  # The last row read from this file.
-  #
+  # Returns the line most recently read:
+  #   string = "foo,0\nbar,1\nbaz,2\n"
+  #   path = 't.csv'
+  #   File.write(path, string)
+  #   CSV.open(path) do |csv|
+  #     csv.each do |row|
+  #       p [csv.lineno, csv.line]
+  #     end
+  #   end
+  # Output:
+  #   [1, "foo,0\n"]
+  #   [2, "bar,1\n"]
+  #   [3, "baz,2\n"]
   def line
     parser.line
   end
@@ -1219,13 +2079,56 @@ class CSV
 
   ### End Delegation ###
 
+  # :call-seq:
+  #   csv << row -> self
   #
-  # The primary write method for wrapped Strings and IOs, +row+ (an Array or
-  # CSV::Row) is converted to CSV and appended to the data source. When a
-  # CSV::Row is passed, only the row's fields() are appended to the output.
+  # Appends a row to +self+.
   #
-  # The data source must be open for writing.
+  # - Argument +row+ must be an \Array object or a CSV::Row object.
+  # - The output stream must be open for writing.
   #
+  # ---
+  #
+  # Append Arrays:
+  #   CSV.generate do |csv|
+  #     csv << ['foo', 0]
+  #     csv << ['bar', 1]
+  #     csv << ['baz', 2]
+  #   end # => "foo,0\nbar,1\nbaz,2\n"
+  #
+  # Append CSV::Rows:
+  #   headers = []
+  #   CSV.generate do |csv|
+  #     csv << CSV::Row.new(headers, ['foo', 0])
+  #     csv << CSV::Row.new(headers, ['bar', 1])
+  #     csv << CSV::Row.new(headers, ['baz', 2])
+  #   end # => "foo,0\nbar,1\nbaz,2\n"
+  #
+  # Headers in CSV::Row objects are not appended:
+  #   headers = ['Name', 'Count']
+  #   CSV.generate do |csv|
+  #     csv << CSV::Row.new(headers, ['foo', 0])
+  #     csv << CSV::Row.new(headers, ['bar', 1])
+  #     csv << CSV::Row.new(headers, ['baz', 2])
+  #   end # => "foo,0\nbar,1\nbaz,2\n"
+  #
+  # ---
+  #
+  # Raises an exception if +row+ is not an \Array or \CSV::Row:
+  #   CSV.generate do |csv|
+  #     # Raises NoMethodError (undefined method `collect' for :foo:Symbol)
+  #     csv << :foo
+  #   end
+  #
+  # Raises an exception if the output stream is not opened for writing:
+  #   path = 't.csv'
+  #   File.write(path, '')
+  #   File.open(path) do |file|
+  #     CSV.open(file) do |csv|
+  #       # Raises IOError (not opened for writing)
+  #       csv << ['foo', 0]
+  #     end
+  #   end
   def <<(row)
     writer << row
     self
@@ -1233,58 +2136,216 @@ class CSV
   alias_method :add_row, :<<
   alias_method :puts,    :<<
 
-  #
   # :call-seq:
-  #   convert( name )
-  #   convert { |field| ... }
-  #   convert { |field, field_info| ... }
+  #   convert(converter_name) -> array_of_procs
+  #   convert {|field, field_info| ... } -> array_of_procs
   #
-  # You can use this method to install a CSV::Converters built-in, or provide a
-  # block that handles a custom conversion.
+  # - With no block, installs a field converter (a \Proc).
+  # - With a block, defines and installs a custom field converter.
+  # - Returns the \Array of installed field converters.
   #
-  # If you provide a block that takes one argument, it will be passed the field
-  # and is expected to return the converted value or the field itself. If your
-  # block takes two arguments, it will also be passed a CSV::FieldInfo Struct,
-  # containing details about the field. Again, the block should return a
-  # converted field or the field itself.
+  # - Argument +converter_name+, if given, should be the name
+  #   of an existing field converter.
   #
+  # See {Field Converters}[#class-CSV-label-Field+Converters].
+  # ---
+  #
+  # With no block, installs a field converter:
+  #   csv = CSV.new('')
+  #   csv.convert(:integer)
+  #   csv.convert(:float)
+  #   csv.convert(:date)
+  #   csv.converters # => [:integer, :float, :date]
+  #
+  # ---
+  #
+  # The block, if given, is called for each field:
+  # - Argument +field+ is the field value.
+  # - Argument +field_info+ is a CSV::FieldInfo object
+  #   containing details about the field.
+  #
+  # The examples here assume the prior execution of:
+  #   string = "foo,0\nbar,1\nbaz,2\n"
+  #   path = 't.csv'
+  #   File.write(path, string)
+  #
+  # Example giving a block:
+  #   csv = CSV.open(path)
+  #   csv.convert {|field, field_info| p [field, field_info]; field.upcase }
+  #   csv.read # => [["FOO", "0"], ["BAR", "1"], ["BAZ", "2"]]
+  #
+  # Output:
+  #   ["foo", #<struct CSV::FieldInfo index=0, line=1, header=nil>]
+  #   ["0", #<struct CSV::FieldInfo index=1, line=1, header=nil>]
+  #   ["bar", #<struct CSV::FieldInfo index=0, line=2, header=nil>]
+  #   ["1", #<struct CSV::FieldInfo index=1, line=2, header=nil>]
+  #   ["baz", #<struct CSV::FieldInfo index=0, line=3, header=nil>]
+  #   ["2", #<struct CSV::FieldInfo index=1, line=3, header=nil>]
+  #
+  # The block need not return a \String object:
+  #   csv = CSV.open(path)
+  #   csv.convert {|field, field_info| field.to_sym }
+  #   csv.read # => [[:foo, :"0"], [:bar, :"1"], [:baz, :"2"]]
+  #
+  # If +converter_name+ is given, the block is not called:
+  #   csv = CSV.open(path)
+  #   csv.convert(:integer) {|field, field_info| fail 'Cannot happen' }
+  #   csv.read # => [["foo", 0], ["bar", 1], ["baz", 2]]
+  #
+  # ---
+  #
+  # Raises a parse-time exception if +converter_name+ is not the name of a built-in
+  # field converter:
+  #   csv = CSV.open(path)
+  #   csv.convert(:nosuch) => [nil]
+  #   # Raises NoMethodError (undefined method `arity' for nil:NilClass)
+  #   csv.read
   def convert(name = nil, &converter)
     parser_fields_converter.add_converter(name, &converter)
   end
 
-  #
   # :call-seq:
-  #   header_convert( name )
-  #   header_convert { |field| ... }
-  #   header_convert { |field, field_info| ... }
+  #   header_convert(converter_name) -> array_of_procs
+  #   header_convert {|header, field_info| ... } -> array_of_procs
   #
-  # Identical to CSV#convert(), but for header rows.
+  # - With no block, installs a header converter (a \Proc).
+  # - With a block, defines and installs a custom header converter.
+  # - Returns the \Array of installed header converters.
   #
-  # Note that this method must be called before header rows are read to have any
-  # effect.
+  # - Argument +converter_name+, if given, should be the name
+  #   of an existing header converter.
   #
+  # See {Header Converters}[#class-CSV-label-Header+Converters].
+  # ---
+  #
+  # With no block, installs a header converter:
+  #   csv = CSV.new('')
+  #   csv.header_convert(:symbol)
+  #   csv.header_convert(:downcase)
+  #   csv.header_converters # => [:symbol, :downcase]
+  #
+  # ---
+  #
+  # The block, if given, is called for each header:
+  # - Argument +header+ is the header value.
+  # - Argument +field_info+ is a CSV::FieldInfo object
+  #   containing details about the header.
+  #
+  # The examples here assume the prior execution of:
+  #   string = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+  #   path = 't.csv'
+  #   File.write(path, string)
+  #
+  # Example giving a block:
+  #   csv = CSV.open(path, headers: true)
+  #   csv.header_convert {|header, field_info| p [header, field_info]; header.upcase }
+  #   table = csv.read
+  #   table # => #<CSV::Table mode:col_or_row row_count:4>
+  #   table.headers # => ["NAME", "VALUE"]
+  #
+  # Output:
+  #   ["Name", #<struct CSV::FieldInfo index=0, line=1, header=nil>]
+  #   ["Value", #<struct CSV::FieldInfo index=1, line=1, header=nil>]
+
+  # The block need not return a \String object:
+  #   csv = CSV.open(path, headers: true)
+  #   csv.header_convert {|header, field_info| header.to_sym }
+  #   table = csv.read
+  #   table.headers # => [:Name, :Value]
+  #
+  # If +converter_name+ is given, the block is not called:
+  #   csv = CSV.open(path, headers: true)
+  #   csv.header_convert(:downcase) {|header, field_info| fail 'Cannot happen' }
+  #   table = csv.read
+  #   table.headers # => ["name", "value"]
+  # ---
+  #
+  # Raises a parse-time exception if +converter_name+ is not the name of a built-in
+  # field converter:
+  #   csv = CSV.open(path, headers: true)
+  #   csv.header_convert(:nosuch)
+  #   # Raises NoMethodError (undefined method `arity' for nil:NilClass)
+  #   csv.read
   def header_convert(name = nil, &converter)
     header_fields_converter.add_converter(name, &converter)
   end
 
   include Enumerable
 
+  # :call-seq:
+  #   csv.each -> enumerator
+  #   csv.each {|row| ...}
   #
-  # Yields each row of the data source in turn.
+  # Calls the block with each successive row.
+  # The data source must be opened for reading.
   #
-  # Support for Enumerable.
+  # Without headers:
+  #   string = "foo,0\nbar,1\nbaz,2\n"
+  #   csv = CSV.new(string)
+  #   csv.each do |row|
+  #     p row
+  #   end
+  # Output:
+  #   ["foo", "0"]
+  #   ["bar", "1"]
+  #   ["baz", "2"]
   #
-  # The data source must be open for reading.
+  # With headers:
+  #   string = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+  #   csv = CSV.new(string, headers: true)
+  #   csv.each do |row|
+  #     p row
+  #   end
+  # Output:
+  #   <CSV::Row "Name":"foo" "Value":"0">
+  #   <CSV::Row "Name":"bar" "Value":"1">
+  #   <CSV::Row "Name":"baz" "Value":"2">
   #
+  # ---
+  #
+  # Raises an exception if the source is not opened for reading:
+  #   string = "foo,0\nbar,1\nbaz,2\n"
+  #   csv = CSV.new(string)
+  #   csv.close
+  #   # Raises IOError (not opened for reading)
+  #   csv.each do |row|
+  #     p row
+  #   end
   def each(&block)
     parser_enumerator.each(&block)
   end
 
+  # :call-seq:
+  #   csv.read -> array or csv_table
   #
-  # Slurps the remaining rows and returns an Array of Arrays.
+  # Forms the remaining rows from +self+ into:
+  # - A CSV::Table object, if headers are in use.
+  # - An \Array of Arrays, otherwise.
   #
-  # The data source must be open for reading.
+  # The data source must be opened for reading.
   #
+  # Without headers:
+  #   string = "foo,0\nbar,1\nbaz,2\n"
+  #   path = 't.csv'
+  #   File.write(path, string)
+  #   csv = CSV.open(path)
+  #   csv.read # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
+  #
+  # With headers:
+  #   string = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+  #   path = 't.csv'
+  #   File.write(path, string)
+  #   csv = CSV.open(path, headers: true)
+  #   csv.read # => #<CSV::Table mode:col_or_row row_count:4>
+  #
+  # ---
+  #
+  # Raises an exception if the source is not opened for reading:
+  #   string = "foo,0\nbar,1\nbaz,2\n"
+  #   csv = CSV.new(string)
+  #   csv.close
+  #   # Raises IOError (not opened for reading)
+  #   csv.read
   def read
     rows = to_a
     if parser.use_headers?
@@ -1295,18 +2356,69 @@ class CSV
   end
   alias_method :readlines, :read
 
-  # Returns +true+ if the next row read will be a header row.
+  # :call-seq:
+  #   csv.header_row? -> true or false
+  #
+  # Returns +true+ if the next row to be read is a header row\;
+  # +false+ otherwise.
+  #
+  # Without headers:
+  #   string = "foo,0\nbar,1\nbaz,2\n"
+  #   csv = CSV.new(string)
+  #   csv.header_row? # => false
+  #
+  # With headers:
+  #   string = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+  #   csv = CSV.new(string, headers: true)
+  #   csv.header_row? # => true
+  #   csv.shift # => #<CSV::Row "Name":"foo" "Value":"0">
+  #   csv.header_row? # => false
+  #
+  # ---
+  #
+  # Raises an exception if the source is not opened for reading:
+  #   string = "foo,0\nbar,1\nbaz,2\n"
+  #   csv = CSV.new(string)
+  #   csv.close
+  #   # Raises IOError (not opened for reading)
+  #   csv.header_row?
   def header_row?
     parser.header_row?
   end
 
+  # :call-seq:
+  #   csv.shift -> array, csv_row, or nil
   #
-  # The primary read method for wrapped Strings and IOs, a single row is pulled
-  # from the data source, parsed and returned as an Array of fields (if header
-  # rows are not used) or a CSV::Row (when header rows are used).
+  # Returns the next row of data as:
+  # - An \Array if no headers are used.
+  # - A CSV::Row object if headers are used.
   #
-  # The data source must be open for reading.
+  # The data source must be opened for reading.
   #
+  # Without headers:
+  #   string = "foo,0\nbar,1\nbaz,2\n"
+  #   csv = CSV.new(string)
+  #   csv.shift # => ["foo", "0"]
+  #   csv.shift # => ["bar", "1"]
+  #   csv.shift # => ["baz", "2"]
+  #   csv.shift # => nil
+  #
+  # With headers:
+  #   string = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+  #   csv = CSV.new(string, headers: true)
+  #   csv.shift # => #<CSV::Row "Name":"foo" "Value":"0">
+  #   csv.shift # => #<CSV::Row "Name":"bar" "Value":"1">
+  #   csv.shift # => #<CSV::Row "Name":"baz" "Value":"2">
+  #   csv.shift # => nil
+  #
+  # ---
+  #
+  # Raises an exception if the source is not opened for reading:
+  #   string = "foo,0\nbar,1\nbaz,2\n"
+  #   csv = CSV.new(string)
+  #   csv.close
+  #   # Raises IOError (not opened for reading)
+  #   csv.shift
   def shift
     if @eof_error
       eof_error, @eof_error = @eof_error, nil
@@ -1321,10 +2433,14 @@ class CSV
   alias_method :gets,     :shift
   alias_method :readline, :shift
 
+  # :call-seq:
+  #   csv.inspect -> string
   #
-  # Returns a simplified description of the key CSV attributes in an
-  # ASCII compatible String.
-  #
+  # Returns a \String showing certain properties of +self+:
+  #   string = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+  #   csv = CSV.new(string, headers: true)
+  #   s = csv.inspect
+  #   s # => "#<CSV io_type:StringIO encoding:UTF-8 lineno:0 col_sep:\",\" row_sep:\"\\n\" quote_char:\"\\\"\" headers:true>"
   def inspect
     str = ["#<", self.class.to_s, " io_type:"]
     # show type of wrapped IO

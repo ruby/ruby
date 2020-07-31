@@ -1003,7 +1003,8 @@ $(srcs_vpath)vm.inc: $(tooldir)/ruby_vm/views/vm.inc.erb $(inc_common_headers) \
 $(srcs_vpath)mjit_compile.inc: $(tooldir)/ruby_vm/views/mjit_compile.inc.erb $(inc_common_headers) \
   $(tooldir)/ruby_vm/views/_mjit_compile_insn.erb $(tooldir)/ruby_vm/views/_mjit_compile_send.erb \
   $(tooldir)/ruby_vm/views/_mjit_compile_ivar.erb \
-  $(tooldir)/ruby_vm/views/_mjit_compile_insn_body.erb $(tooldir)/ruby_vm/views/_mjit_compile_pc_and_sp.erb
+  $(tooldir)/ruby_vm/views/_mjit_compile_insn_body.erb $(tooldir)/ruby_vm/views/_mjit_compile_pc_and_sp.erb \
+  $(tooldir)/ruby_vm/views/_mjit_compile_invokebuiltin.erb
 
 BUILTIN_RB_SRCS = \
 		$(srcdir)/ast.rb \
@@ -1310,7 +1311,8 @@ extract-gems$(gnumake:yes=-nongnumake): PHONY
 	    -e 'BEGIN {FileUtils.mkdir_p(d = ".bundle/gems")}' \
 	    -e 'gem, ver = *$$F' \
 	    -e 'next if !ver or /^#/=~gem' \
-	    -e 'Gem.unpack("gems/#{gem}-#{ver}.gem", d)' \
+	    -e 'g = "#{gem}-#{ver}"' \
+	    -e 'File.directory?("#{d}/#{g}") or Gem.unpack("gems/#{g}.gem", d)' \
 	    gems/bundled_gems
 
 update-bundled_gems: PHONY

@@ -236,7 +236,7 @@ YoaOffgTf5qxiwkjnlVZQc3whgnEt9FpVMvQ9eknyeGB5KHfayAc3+hUAvI3/Cr3
       def fileno
         to_io.fileno
       end
-      
+
       def addr
         to_io.addr
       end

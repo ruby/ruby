@@ -805,8 +805,7 @@ typedef struct rb_objspace {
 enum {
     HEAP_PAGE_ALIGN = (1UL << HEAP_PAGE_ALIGN_LOG),
     HEAP_PAGE_ALIGN_MASK = (~(~0UL << HEAP_PAGE_ALIGN_LOG)),
-    REQUIRED_SIZE_BY_MALLOC = (sizeof(size_t) * 5),
-    HEAP_PAGE_SIZE = (HEAP_PAGE_ALIGN - REQUIRED_SIZE_BY_MALLOC),
+    HEAP_PAGE_SIZE = HEAP_PAGE_ALIGN,
     HEAP_PAGE_OBJ_LIMIT = (unsigned int)((HEAP_PAGE_SIZE - sizeof(struct heap_page_header))/sizeof(struct RVALUE)),
     HEAP_PAGE_BITMAP_LIMIT = CEILDIV(CEILDIV(HEAP_PAGE_SIZE, sizeof(struct RVALUE)), BITS_BITLENGTH),
     HEAP_PAGE_BITMAP_SIZE = (BITS_SIZE * HEAP_PAGE_BITMAP_LIMIT),
@@ -2256,6 +2255,32 @@ rb_newobj_of(VALUE klass, VALUE flags)
 #define UNEXPECTED_NODE(func) \
     rb_bug(#func"(): GC does not handle T_NODE 0x%x(%p) 0x%"PRIxVALUE, \
 	   BUILTIN_TYPE(obj), (void*)(obj), RBASIC(obj)->flags)
+
+const char *
+rb_imemo_name(enum imemo_type type)
+{
+    // put no default case to get a warning if an imemo type is missing
+    switch (type) {
+#define IMEMO_NAME(x) case imemo_##x: return #x;
+        IMEMO_NAME(env);
+        IMEMO_NAME(cref);
+        IMEMO_NAME(svar);
+        IMEMO_NAME(throw_data);
+        IMEMO_NAME(ifunc);
+        IMEMO_NAME(memo);
+        IMEMO_NAME(ment);
+        IMEMO_NAME(iseq);
+        IMEMO_NAME(tmpbuf);
+        IMEMO_NAME(ast);
+        IMEMO_NAME(parser_strterm);
+        IMEMO_NAME(callinfo);
+        IMEMO_NAME(callcache);
+        IMEMO_NAME(method_table);
+        IMEMO_NAME(constant_table);
+#undef IMEMO_NAME
+    }
+    return "unknown";
+}
 
 #undef rb_imemo_new
 
@@ -3871,6 +3896,24 @@ rb_obj_id(VALUE obj)
     return rb_find_object_id(obj, cached_object_id);
 }
 
+static enum rb_id_table_iterator_result
+cc_table_memsize_i(VALUE ccs_ptr, void *data_ptr)
+{
+    size_t *total_size = data_ptr;
+    struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_ptr;
+    *total_size += sizeof(*ccs);
+    *total_size += sizeof(ccs->entries[0]) * ccs->capa;
+    return ID_TABLE_CONTINUE;
+}
+
+static size_t
+cc_table_memsize(struct rb_id_table *cc_table)
+{
+    size_t total = rb_id_table_memsize(cc_table);
+    rb_id_table_foreach_values(cc_table, cc_table_memsize_i, &total);
+    return total;
+}
+
 static size_t
 obj_memsize_of(VALUE obj, int use_all_types)
 {
@@ -3903,10 +3946,16 @@ obj_memsize_of(VALUE obj, int use_all_types)
 	    if (RCLASS(obj)->ptr->iv_tbl) {
 		size += st_memsize(RCLASS(obj)->ptr->iv_tbl);
 	    }
+            if (RCLASS_CC_TBL(obj)) {
+                size += cc_table_memsize(RCLASS_CC_TBL(obj));
+            }
 	    size += sizeof(rb_classext_t);
 	}
 	break;
       case T_ICLASS:
+        if (RCLASS_EXT(obj) && RCLASS_CC_TBL(obj)) {
+            size += cc_table_memsize(RCLASS_CC_TBL(obj));
+        }
 	break;
       case T_STRING:
 	size += rb_str_memsize(obj);
@@ -4171,20 +4220,20 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 {
     int i;
     int empty_slots = 0, freed_slots = 0, final_slots = 0;
-    RVALUE *p, *pend,*offset;
+    RVALUE *p, *offset;
     bits_t *bits, bitset;
 
     gc_report(2, objspace, "page_sweep: start.\n");
 
     sweep_page->flags.before_sweep = FALSE;
 
-    p = sweep_page->start; pend = p + sweep_page->total_slots;
+    p = sweep_page->start;
     offset = p - NUM_IN_PAGE(p);
     bits = sweep_page->mark_bits;
 
     /* create guard : fill 1 out-of-range */
     bits[BITMAP_INDEX(p)] |= BITMAP_BIT(p)-1;
-    bits[BITMAP_INDEX(pend)] |= ~(BITMAP_BIT(pend) - 1);
+    bits[BITMAP_INDEX(p) + sweep_page->total_slots / BITS_BITLENGTH] |= ~(((bits_t)1 << ((NUM_IN_PAGE(p) + sweep_page->total_slots) % BITS_BITLENGTH)) - 1);
 
     for (i=0; i < HEAP_PAGE_BITMAP_LIMIT; i++) {
 	bitset = ~bits[i];
@@ -11655,28 +11704,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 	    break;
 	  }
 	  case T_IMEMO: {
-	    const char *imemo_name = "\0";
-	    switch (imemo_type(obj)) {
-#define IMEMO_NAME(x) case imemo_##x: imemo_name = #x; break;
-		IMEMO_NAME(env);
-		IMEMO_NAME(cref);
-		IMEMO_NAME(svar);
-		IMEMO_NAME(throw_data);
-		IMEMO_NAME(ifunc);
-		IMEMO_NAME(memo);
-		IMEMO_NAME(ment);
-		IMEMO_NAME(iseq);
-		IMEMO_NAME(tmpbuf);
-                IMEMO_NAME(ast);
-                IMEMO_NAME(parser_strterm);
-                IMEMO_NAME(callinfo);
-                IMEMO_NAME(callcache);
-                IMEMO_NAME(method_table);
-                IMEMO_NAME(constant_table);
-#undef IMEMO_NAME
-	      default: UNREACHABLE;
-	    }
-            APPENDF((BUFF_ARGS, "<%s> ", imemo_name));
+            APPENDF((BUFF_ARGS, "<%s> ", rb_imemo_name(imemo_type(obj))));
 
 	    switch (imemo_type(obj)) {
 	      case imemo_ment: {

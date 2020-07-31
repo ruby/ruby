@@ -92,6 +92,8 @@
 #    p a.strip #  => nil
 #
 module Singleton
+  VERSION = "0.1.0"
+
   # Raises a TypeError to prevent cloning.
   def clone
     raise TypeError, "can't clone instance of singleton #{self.class}"

@@ -39,7 +39,7 @@ RSpec.describe "bundle install" do
     it "disallows --path vendor/bundle --system", :bundler => "< 3" do
       bundle "install --path vendor/bundle --system", :raise_on_error => false
       expect(err).to include("Please choose only one option.")
-      expect(exitstatus).to eq(15) if exitstatus
+      expect(exitstatus).to eq(15)
     end
 
     it "remembers to disable system gems after the first time with bundle --path vendor/bundle", :bundler => "< 3" do

@@ -604,6 +604,8 @@ module TestTimeTZ::WithTZ
     assert_equal([2018, 9, 1, 12, 0, 0, tz], [t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.zone])
     h, m = (-utc_offset / 60).divmod(60)
     assert_equal(time_class.utc(2018, 9, 1, 12+h, m, 0).to_i, t.to_i)
+    assert_equal(6, t.wday)
+    assert_equal(244, t.yday)
   end
 
   def subtest_now(time_class, tz, tzarg, tzname, abbr, utc_offset)
@@ -630,6 +632,7 @@ module TestTimeTZ::WithTZ
     h, m = (utc_offset.abs / 60).divmod(60)
     h = -h if utc_offset < 0
     assert_equal("%+.2d%.2d %s" % [h, m, abbr], t.strftime("%z %Z"))
+    assert_equal("34 35 35", t.strftime("%U %V %W"))
   end
 
   def subtest_plus(time_class, tz, tzarg, tzname, abbr, utc_offset)
@@ -656,6 +659,12 @@ module TestTimeTZ::WithTZ
     t = time_class.at(utc, in: tzarg)
     assert_equal([2018, 9, 1, 12+h, m, 0, tz], [t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.zone])
     assert_equal(utc, t.to_i)
+  end
+
+  def subtest_to_a(time_class, tz, tzarg, tzname, abbr, utc_offset)
+    t = time_class.new(2018, 9, 1, 12, 0, 0, tzarg)
+    ary = t.to_a
+    assert_equal(ary, [t.sec, t.min, t.hour, t.mday, t.mon, t.year, t.wday, t.yday, t.isdst, t.zone])
   end
 
   def subtest_marshal(time_class, tz, tzarg, tzname, abbr, utc_offset)

@@ -605,7 +605,7 @@ parse_main(struct cparse_params *v, VALUE tok, VALUE val, int resume)
   user_yyerror:
     if (v->errstatus == 3) {
         if (v->t == vFINAL_TOKEN) {
-            v->retval = Qfalse;
+            v->retval = Qnil;
             v->fin = CP_FIN_EOT;
             return;
         }

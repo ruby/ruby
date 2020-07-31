@@ -15,9 +15,8 @@
 
 <link href="<%= asset_rel_prefix %>/css/fonts.css" rel="stylesheet">
 <link href="<%= asset_rel_prefix %>/css/rdoc.css" rel="stylesheet">
-<% if @options.template_stylesheets.flatten.any? then %>
-<%   @options.template_stylesheets.flatten.each do |stylesheet| %>
+<%- if @options.template_stylesheets.flatten.any? then -%>
+<%-   @options.template_stylesheets.flatten.each do |stylesheet| -%>
 <link href="<%= asset_rel_prefix %>/<%= File.basename stylesheet %>" rel="stylesheet">
-<%   end %>
-<% end %>
-
+<%-   end -%>
+<%- end -%>

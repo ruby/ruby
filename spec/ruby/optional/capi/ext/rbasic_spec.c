@@ -7,23 +7,34 @@ extern "C" {
 
 static const VALUE VISIBLE_BITS = FL_TAINT | FL_FREEZE | ~(FL_USER0 - 1);
 
+#if SIZEOF_VALUE == SIZEOF_LONG
+#define VALUE2NUM(v) ULONG2NUM(v)
+#define NUM2VALUE(n) NUM2ULONG(n)
+#elif SIZEOF_VALUE == SIZEOF_LONG_LONG
+#define VALUE2NUM(v) ULL2NUM(v)
+#define NUM2VALUE(n) NUM2ULL(n)
+#else
+#error "unsupported"
+#endif
+
+
 VALUE rbasic_spec_taint_flag(VALUE self) {
-  return INT2FIX(RUBY_FL_TAINT);
+  return VALUE2NUM(RUBY_FL_TAINT);
 }
 
 VALUE rbasic_spec_freeze_flag(VALUE self) {
-  return INT2FIX(RUBY_FL_FREEZE);
+  return VALUE2NUM(RUBY_FL_FREEZE);
 }
 
 static VALUE spec_get_flags(const struct RBasic *b) {
   VALUE flags = b->flags & VISIBLE_BITS;
-  return INT2FIX(flags);
+  return VALUE2NUM(flags);
 }
 
 static VALUE spec_set_flags(struct RBasic *b, VALUE flags) {
   flags &= VISIBLE_BITS;
   b->flags = (b->flags & ~VISIBLE_BITS) | flags;
-  return INT2FIX(flags);
+  return VALUE2NUM(flags);
 }
 
 VALUE rbasic_spec_get_flags(VALUE self, VALUE val) {
@@ -31,7 +42,7 @@ VALUE rbasic_spec_get_flags(VALUE self, VALUE val) {
 }
 
 VALUE rbasic_spec_set_flags(VALUE self, VALUE val, VALUE flags) {
-  return spec_set_flags(RBASIC(val), FIX2INT(flags));
+  return spec_set_flags(RBASIC(val), NUM2VALUE(flags));
 }
 
 VALUE rbasic_spec_copy_flags(VALUE self, VALUE to, VALUE from) {
@@ -47,7 +58,7 @@ VALUE rbasic_rdata_spec_get_flags(VALUE self, VALUE structure) {
 }
 
 VALUE rbasic_rdata_spec_set_flags(VALUE self, VALUE structure, VALUE flags) {
-  return spec_set_flags(&RDATA(structure)->basic, FIX2INT(flags));
+  return spec_set_flags(&RDATA(structure)->basic, NUM2VALUE(flags));
 }
 
 VALUE rbasic_rdata_spec_copy_flags(VALUE self, VALUE to, VALUE from) {

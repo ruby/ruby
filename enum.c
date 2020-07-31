@@ -734,7 +734,7 @@ inject_op_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, p))
     }
     else if (SYMBOL_P(name = memo->u3.value)) {
 	const ID mid = SYM2ID(name);
-	MEMO_V1_SET(memo, rb_funcallv(memo->v1, mid, 1, &i));
+	MEMO_V1_SET(memo, rb_funcallv_public(memo->v1, mid, 1, &i));
     }
     else {
 	VALUE args[2];

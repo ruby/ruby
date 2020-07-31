@@ -113,6 +113,7 @@ module IRB # :nodoc:
       result
     rescue NoMethodError
       puts "(Object doesn't support #inspect)"
+      ''
     end
   }
   Inspector.def_inspector([:pp, :pretty_inspect], proc{require "pp"}){|v|

@@ -257,6 +257,7 @@ CODE
 
     assert_not_equal(S("CAT"), S('cat'))
     assert_not_equal(S("CaT"), S('cAt'))
+    assert_not_equal(S("cat\0""dog"), S("cat\0"))
 
     o = Object.new
     def o.to_str; end
@@ -759,6 +760,7 @@ CODE
     assert_equal(S("hello"), S("hello").downcase)
     assert_equal(S("hello"), S("HELLO").downcase)
     assert_equal(S("abc hello 123"), S("abc HELLO 123").downcase)
+    assert_equal(S("h\0""ello"), S("h\0""ELLO").downcase)
   end
 
   def test_downcase!
@@ -771,6 +773,12 @@ CODE
     a=S("hello")
     assert_nil(a.downcase!)
     assert_equal(S("hello"), a)
+
+    a = S("h\0""ELLO")
+    b = a.dup
+    assert_equal(S("h\0""ello"), a.downcase!)
+    assert_equal(S("h\0""ello"), a)
+    assert_equal(S("h\0""ELLO"), b)
   end
 
   def test_dump
@@ -2344,6 +2352,7 @@ CODE
     assert_equal(S("HELLO"), S("hello").upcase)
     assert_equal(S("HELLO"), S("HELLO").upcase)
     assert_equal(S("ABC HELLO 123"), S("abc HELLO 123").upcase)
+    assert_equal(S("H\0""ELLO"), S("H\0""ello").upcase)
   end
 
   def test_upcase!
@@ -2356,6 +2365,12 @@ CODE
     a = S("HELLO")
     assert_nil(a.upcase!)
     assert_equal(S("HELLO"), a)
+
+    a = S("H\0""ello")
+    b = a.dup
+    assert_equal(S("H\0""ELLO"), a.upcase!)
+    assert_equal(S("H\0""ELLO"), a)
+    assert_equal(S("H\0""ello"), b)
   end
 
   def test_upto
@@ -2674,6 +2689,7 @@ CODE
     assert_equal(1, "FoO".casecmp("BaR"))
     assert_equal(-1, "baR".casecmp("FoO"))
     assert_equal(1, "\u3042B".casecmp("\u3042a"))
+    assert_equal(-1, "foo".casecmp("foo\0"))
 
     assert_nil("foo".casecmp(:foo))
     assert_nil("foo".casecmp(Object.new))
@@ -2688,6 +2704,7 @@ CODE
     assert_equal(false, 'FoO'.casecmp?('BaR'))
     assert_equal(false, 'baR'.casecmp?('FoO'))
     assert_equal(true, 'äöü'.casecmp?('ÄÖÜ'))
+    assert_equal(false, "foo".casecmp?("foo\0"))
 
     assert_nil("foo".casecmp?(:foo))
     assert_nil("foo".casecmp?(Object.new))

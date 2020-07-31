@@ -794,6 +794,12 @@ int_zero_p(VALUE num)
     return Qfalse;
 }
 
+VALUE
+rb_int_zero_p(VALUE num)
+{
+    return int_zero_p(num);
+}
+
 /*
  *  call-seq:
  *     num.nonzero?  ->  self or nil
@@ -907,7 +913,7 @@ num_negative_p(VALUE num)
  *
  *  - http://docs.sun.com/source/806-3568/ncg_goldberg.html
  *  - https://github.com/rdp/ruby_tutorials_core/wiki/Ruby-Talk-FAQ#floats_imprecise
- *  - http://en.wikipedia.org/wiki/Floating_point#Accuracy_problems
+ *  - https://en.wikipedia.org/wiki/Floating_point#Accuracy_problems
  */
 
 VALUE
@@ -3250,6 +3256,12 @@ int_even_p(VALUE num)
     }
 }
 
+VALUE
+rb_int_even_p(VALUE num)
+{
+    return int_even_p(num);
+}
+
 /*
  *  call-seq:
  *     int.allbits?(mask)  ->  true or false
@@ -4919,7 +4931,7 @@ rb_fix_bit_length(VALUE fix)
     return LONG2FIX(bit_length(v));
 }
 
-static VALUE
+VALUE
 rb_int_bit_length(VALUE num)
 {
     if (FIXNUM_P(num)) {

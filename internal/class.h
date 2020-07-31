@@ -120,7 +120,6 @@ VALUE rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach);
 VALUE rb_singleton_class_get(VALUE obj);
 int rb_class_has_methods(VALUE c);
 void rb_undef_methods_from(VALUE klass, VALUE super);
-void rb_ensure_origin(VALUE klass);
 
 static inline void RCLASS_SET_ORIGIN(VALUE klass, VALUE origin);
 static inline VALUE RCLASS_SUPER(VALUE klass);

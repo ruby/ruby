@@ -10,6 +10,15 @@ RSpec.describe "bundle gem" do
     expect(bundled_app("#{gem_name}/lib/#{require_path}/version.rb")).to exist
   end
 
+  def bundle_exec_rubocop
+    prepare_gemspec(bundled_app(gem_name, "#{gem_name}.gemspec"))
+    rubocop_version = RUBY_VERSION > "2.4" ? "0.85.1" : "0.80.1"
+    gems = ["minitest", "rake", "rake-compiler", "rspec", "rubocop -v #{rubocop_version}", "test-unit"]
+    path = Bundler.feature_flag.default_install_uses_path? ? local_gem_path(:base => bundled_app(gem_name)) : system_gem_path
+    realworld_system_gems gems, :path => path
+    bundle "exec rubocop --config .rubocop.yml", :dir => bundled_app(gem_name)
+  end
+
   let(:generated_gemspec) { Bundler.load_gemspec_uncached(bundled_app(gem_name).join("#{gem_name}.gemspec")) }
 
   let(:gem_name) { "mygem" }
@@ -155,9 +164,10 @@ RSpec.describe "bundle gem" do
     it "generates a gem skeleton with rubocop" do
       gem_skeleton_assertions
       expect(bundled_app("test-gem/Rakefile")).to read_as(
-        include('require "rubocop/rake_task"').
+        include("# frozen_string_literal: true").
+        and(include('require "rubocop/rake_task"').
         and(include("RuboCop::RakeTask.new").
-        and(match(/:default.+:rubocop/)))
+        and(match(/default:.+:rubocop/))))
       )
     end
 
@@ -200,6 +210,41 @@ RSpec.describe "bundle gem" do
     it "doesn't generate a default .rubocop.yml" do
       expect(bundled_app("#{gem_name}/.rubocop.yml")).to_not exist
     end
+  end
+
+  it "has no rubocop offenses when using --rubocop flag", :readline do
+    skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
+    bundle "gem #{gem_name} --rubocop"
+    bundle_exec_rubocop
+    expect(err).to be_empty
+  end
+
+  it "has no rubocop offenses when using --ext and --rubocop flag", :readline do
+    skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
+    bundle "gem #{gem_name} --ext --rubocop"
+    bundle_exec_rubocop
+    expect(err).to be_empty
+  end
+
+  it "has no rubocop offenses when using --ext, --test=minitest, and --rubocop flag", :readline do
+    skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
+    bundle "gem #{gem_name} --ext --test=minitest --rubocop"
+    bundle_exec_rubocop
+    expect(err).to be_empty
+  end
+
+  it "has no rubocop offenses when using --ext, --test=rspec, and --rubocop flag", :readline do
+    skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
+    bundle "gem #{gem_name} --ext --test=rspec --rubocop"
+    bundle_exec_rubocop
+    expect(err).to be_empty
+  end
+
+  it "has no rubocop offenses when using --ext, --ext=test-unit, and --rubocop flag", :readline do
+    skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
+    bundle "gem #{gem_name} --ext --test=test-unit --rubocop"
+    bundle_exec_rubocop
+    expect(err).to be_empty
   end
 
   shared_examples_for "CI config is absent" do
@@ -532,6 +577,8 @@ RSpec.describe "bundle gem" do
 
       it "creates a default rake task to run the test suite" do
         rakefile = strip_whitespace <<-RAKEFILE
+          # frozen_string_literal: true
+
           require "bundler/gem_tasks"
           require "rake/testtask"
 
@@ -541,7 +588,7 @@ RSpec.describe "bundle gem" do
             t.test_files = FileList["test/**/*_test.rb"]
           end
 
-          task :default => :test
+          task default: :test
         RAKEFILE
 
         expect(bundled_app("#{gem_name}/Rakefile").read).to eq(rakefile)
@@ -588,6 +635,8 @@ RSpec.describe "bundle gem" do
 
       it "creates a default rake task to run the test suite" do
         rakefile = strip_whitespace <<-RAKEFILE
+          # frozen_string_literal: true
+
           require "bundler/gem_tasks"
           require "rake/testtask"
 
@@ -597,7 +646,7 @@ RSpec.describe "bundle gem" do
             t.test_files = FileList["test/**/*_test.rb"]
           end
 
-          task :default => :test
+          task default: :test
         RAKEFILE
 
         expect(bundled_app("#{gem_name}/Rakefile").read).to eq(rakefile)
@@ -887,16 +936,18 @@ RSpec.describe "bundle gem" do
 
       it "depends on compile task for build" do
         rakefile = strip_whitespace <<-RAKEFILE
+          # frozen_string_literal: true
+
           require "bundler/gem_tasks"
           require "rake/extensiontask"
 
-          task :build => :compile
+          task build: :compile
 
           Rake::ExtensionTask.new("#{gem_name}") do |ext|
             ext.lib_dir = "lib/#{gem_name}"
           end
 
-          task :default => [:clobber, :compile]
+          task default: %i[clobber compile]
         RAKEFILE
 
         expect(bundled_app("#{gem_name}/Rakefile").read).to eq(rakefile)
@@ -985,12 +1036,14 @@ Usage: "bundle gem NAME [OPTIONS]"
 
       expect(bundled_app("foobar/spec/spec_helper.rb")).to exist
       rakefile = strip_whitespace <<-RAKEFILE
+        # frozen_string_literal: true
+
         require "bundler/gem_tasks"
         require "rspec/core/rake_task"
 
         RSpec::Core::RakeTask.new(:spec)
 
-        task :default => :spec
+        task default: :spec
       RAKEFILE
 
       expect(bundled_app("foobar/Rakefile").read).to eq(rakefile)
@@ -1035,7 +1088,7 @@ Usage: "bundle gem NAME [OPTIONS]"
       FileUtils.touch(bundled_app("conflict-foobar"))
       bundle "gem conflict-foobar", :raise_on_error => false
       expect(err).to include("Errno::ENOTDIR")
-      expect(exitstatus).to eql(32) if exitstatus
+      expect(exitstatus).to eql(32)
     end
   end
 

@@ -980,7 +980,7 @@ fdbm_reject(VALUE obj)
  * == Introduction
  *
  * The DBM class provides a wrapper to a Unix-style
- * {dbm}[http://en.wikipedia.org/wiki/Dbm] or Database Manager library.
+ * {dbm}[https://en.wikipedia.org/wiki/Dbm] or Database Manager library.
  *
  * Dbm databases do not have tables or columns; they are simple key-value
  * data stores, like a Ruby Hash except not resident in RAM. Keys and values
@@ -992,7 +992,7 @@ fdbm_reject(VALUE obj)
  * - The original ndbm library is released in 4.3BSD.
  *   It is based on dbm library in Unix Version 7 but has different API to
  *   support multiple databases in a process.
- * - {Berkeley DB}[http://en.wikipedia.org/wiki/Berkeley_DB] versions
+ * - {Berkeley DB}[https://en.wikipedia.org/wiki/Berkeley_DB] versions
  *   1 thru 6, also known as BDB and Sleepycat DB, now owned by Oracle
  *   Corporation.
  * - Berkeley DB 1.x, still found in 4.4BSD derivatives (FreeBSD, OpenBSD, etc).

@@ -496,8 +496,6 @@ RSpec.describe "gemcutter's dependency API" do
   end
 
   it "installs the binstubs", :bundler => "< 3" do
-    skip "exec format error" if Gem.win_platform?
-
     gemfile <<-G
       source "#{source_uri}"
       gem "rack"
@@ -749,8 +747,6 @@ RSpec.describe "gemcutter's dependency API" do
         G
 
         bundle "install", :artifice => "endpoint_marshal_fail"
-
-        expect(exitstatus).to eq(0) if exitstatus
       ensure
         home(".gemrc").rmtree
       end

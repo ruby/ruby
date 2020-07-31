@@ -258,6 +258,23 @@ RSpec.describe Bundler::GemHelper do
           end
         end
 
+        context "on releasing with a custom tag prefix" do
+          before do
+            Bundler::GemHelper.tag_prefix = "foo-"
+            mock_build_message app_name, app_version
+            mock_confirm_message "Pushed git commits and tags."
+
+            sys_exec("git push -u origin master", :dir => app_path)
+            expect(subject).to receive(:rubygem_push).with(app_gem_path.to_s)
+          end
+
+          it "prepends the custom prefix to the tag" do
+            mock_confirm_message "Tagged foo-v#{app_version}."
+
+            Rake.application["release"].invoke
+          end
+        end
+
         it "even if tag already exists" do
           mock_build_message app_name, app_version
           mock_confirm_message "Tag v#{app_version} has already been created."

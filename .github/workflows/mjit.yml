@@ -11,7 +11,7 @@ jobs:
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     env:
       TESTOPTS: '-q --tty=no'
-      RUN_OPTS: '--disable-gems --jit-warnings ${{ matrix.jit_opts }}'
+      RUN_OPTS: '--disable-gems ${{ matrix.jit_opts }}'
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
     steps:
       - name: Install libraries
@@ -47,11 +47,14 @@ jobs:
         working-directory: build
       - run: sudo make $JOBS -s install
         working-directory: build
-      - run: make $JOBS -s test
+      - run: make $JOBS -s test RUN_OPTS="$RUN_OPTS"
+        timeout-minutes: 10
         working-directory: build
-      - run: make $JOBS -s test-all
+      - run: make $JOBS -s test-all RUN_OPTS="$RUN_OPTS"
+        timeout-minutes: 10
         working-directory: build
-      - run: make $JOBS -s test-spec
+      - run: make $JOBS -s test-spec RUN_OPTS="$RUN_OPTS"
+        timeout-minutes: 5
         working-directory: build
       - uses: k0kubun/action-slack@v2.0.0
         with:

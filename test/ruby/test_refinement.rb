@@ -484,6 +484,37 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal("M#baz C#baz", RefineModule.call_baz)
   end
 
+  module RefineIncludeActivatedSuper
+    class C
+      def foo
+        ["C"]
+      end
+    end
+
+    module M; end
+
+    refinement = Module.new do
+      R = refine C do
+        def foo
+          ["R"] + super
+        end
+
+        include M
+      end
+    end
+
+    using refinement
+    M.define_method(:foo){["M"] + super()}
+
+    def self.foo
+      C.new.foo
+    end
+  end
+
+  def test_refine_include_activated_super
+    assert_equal(["R", "M", "C"], RefineIncludeActivatedSuper.foo)
+  end
+
   def test_refine_neither_class_nor_module
     assert_raise(TypeError) do
       Module.new {

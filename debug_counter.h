@@ -398,14 +398,14 @@ VALUE rb_debug_counter_show(VALUE klass);
 
 #define RB_DEBUG_COUNTER_INC(type)                rb_debug_counter_add(RB_DEBUG_COUNTER_##type, 1, 1)
 #define RB_DEBUG_COUNTER_INC_UNLESS(type, cond) (!rb_debug_counter_add(RB_DEBUG_COUNTER_##type, 1, !(cond)))
-#define RB_DEBUG_COUNTER_INC_IF(type, cond)       rb_debug_counter_add(RB_DEBUG_COUNTER_##type, 1, (cond))
+#define RB_DEBUG_COUNTER_INC_IF(type, cond)       rb_debug_counter_add(RB_DEBUG_COUNTER_##type, 1, !!(cond))
 #define RB_DEBUG_COUNTER_ADD(type, num)           rb_debug_counter_add(RB_DEBUG_COUNTER_##type, (num), 1)
 #define RB_DEBUG_COUNTER_SETMAX(type, num)        rb_debug_counter_max(RB_DEBUG_COUNTER_##type, (unsigned int)(num))
 
 #else
 #define RB_DEBUG_COUNTER_INC(type)              ((void)0)
-#define RB_DEBUG_COUNTER_INC_UNLESS(type, cond) (cond)
-#define RB_DEBUG_COUNTER_INC_IF(type, cond)     (cond)
+#define RB_DEBUG_COUNTER_INC_UNLESS(type, cond) (!!(cond))
+#define RB_DEBUG_COUNTER_INC_IF(type, cond)     (!!(cond))
 #define RB_DEBUG_COUNTER_ADD(type, num)         ((void)0)
 #define RB_DEBUG_COUNTER_SETMAX(type, num)      0
 #endif

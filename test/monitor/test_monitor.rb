@@ -236,6 +236,22 @@ class TestMonitor < Test::Unit::TestCase
     assert NewCondTest.new.cond.instance_variable_get(:@monitor) != nil
   end
 
+  class KeywordInitializeParent
+    def initialize(x:)
+    end
+  end
+
+  class KeywordInitializeChild < KeywordInitializeParent
+    include MonitorMixin
+    def initialize
+      super(x: 1)
+    end
+  end
+
+  def test_initialize_with_keyword_arg
+    assert KeywordInitializeChild.new
+  end
+
   def test_timedwait
     cond = @monitor.new_cond
     b = "foo"

@@ -503,4 +503,9 @@ class TestObjSpace < Test::Unit::TestCase
     assert_equal h[:immortal_symbol], h[:immortal_dynamic_symbol] + h[:immortal_static_symbol], m
     ;;;
   end
+
+  def test_anonymous_class_name
+    assert_not_include ObjectSpace.dump(Class.new), '"name"'
+    assert_not_include ObjectSpace.dump(Module.new), '"name"'
+  end
 end

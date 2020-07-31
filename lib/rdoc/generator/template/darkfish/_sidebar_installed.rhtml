@@ -2,14 +2,14 @@
   <h3>Documentation</h3>
 
   <ul>
-  <% installed.each do |name, href, exists, type, _| %>
-    <% next if type == :extra %>
+  <%- installed.each do |name, href, exists, type, _| -%>
+    <%- next if type == :extra -%>
     <li class="folder">
-    <% if exists then %>
+    <%- if exists then -%>
       <a href="<%= href %>"><%= h name %></a>
-    <% else %>
+    <%- else -%>
       <%= h name %>
-    <% end %>
-  <% end %>
+    <%- end -%>
+  <%- end -%>
   </ul>
 </div>

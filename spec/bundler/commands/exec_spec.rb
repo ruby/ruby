@@ -327,7 +327,7 @@ RSpec.describe "bundle exec" do
     G
 
     bundle "exec foobarbaz", :raise_on_error => false
-    expect(exitstatus).to eq(127) if exitstatus
+    expect(exitstatus).to eq(127)
     expect(err).to include("bundler: command not found: foobarbaz")
     expect(err).to include("Install missing gem executables with `bundle install`")
   end
@@ -339,7 +339,7 @@ RSpec.describe "bundle exec" do
 
     bundle "exec touch foo"
     bundle "exec ./foo", :raise_on_error => false
-    expect(exitstatus).to eq(126) if exitstatus
+    expect(exitstatus).to eq(126)
     expect(err).to include("bundler: not executable: ./foo")
   end
 
@@ -349,7 +349,7 @@ RSpec.describe "bundle exec" do
     G
 
     bundle "exec", :raise_on_error => false
-    expect(exitstatus).to eq(128) if exitstatus
+    expect(exitstatus).to eq(128)
     expect(err).to include("bundler: exec needs a command to run")
   end
 
@@ -647,7 +647,7 @@ RSpec.describe "bundle exec" do
         skip "https://github.com/rubygems/bundler/issues/6898" if Gem.win_platform?
 
         subject
-        expect(exitstatus).to eq(exit_code) if exitstatus
+        expect(exitstatus).to eq(exit_code)
         expect(err).to eq(expected_err)
         expect(out).to eq(expected)
       end

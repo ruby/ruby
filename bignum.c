@@ -2006,7 +2006,7 @@ bary_mul_toom3(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGI
     }
 
     /*
-     * ref. http://en.wikipedia.org/wiki/Toom%E2%80%93Cook_multiplication
+     * ref. https://en.wikipedia.org/wiki/Toom%E2%80%93Cook_multiplication
      *
      * x(b) = x0 * b^0 + x1 * b^1 + x2 * b^2
      * y(b) = y0 * b^0 + y1 * b^1 + y2 * b^2
@@ -2912,30 +2912,6 @@ bary_divmod(BDIGIT *qds, size_t qn, BDIGIT *rds, size_t rn, const BDIGIT *xds, s
 
 #ifndef BIGNUM_DEBUG
 # define BIGNUM_DEBUG (0+RUBY_DEBUG)
-#endif
-
-#if BIGNUM_DEBUG
-#define ON_DEBUG(x) do { x; } while (0)
-static void
-dump_bignum(VALUE x)
-{
-    long i;
-    printf("%c0x0", BIGNUM_SIGN(x) ? '+' : '-');
-    for (i = BIGNUM_LEN(x); i--; ) {
-        printf("_%0*"PRIxBDIGIT, SIZEOF_BDIGIT*2, BDIGITS(x)[i]);
-    }
-    printf(", len=%"PRIuSIZE, BIGNUM_LEN(x));
-    puts("");
-}
-
-static VALUE
-rb_big_dump(VALUE x)
-{
-    dump_bignum(x);
-    return x;
-}
-#else
-#define ON_DEBUG(x)
 #endif
 
 static int

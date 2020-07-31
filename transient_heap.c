@@ -732,9 +732,26 @@ transient_heap_block_evacuate(struct transient_heap* theap, struct transient_hea
     }
 }
 
+#if USE_RUBY_DEBUG_LOG
+static const char *
+transient_heap_status_cstr(enum transient_heap_status status)
+{
+    switch (status) {
+      case transient_heap_none: return "none";
+      case transient_heap_marking: return "marking";
+      case transient_heap_escaping: return "escaping";
+    }
+    UNREACHABLE_RETURN(NULL);
+}
+#endif
+
 static void
 transient_heap_update_status(struct transient_heap* theap, enum transient_heap_status status)
 {
+    RUBY_DEBUG_LOG("%s -> %s",
+                   transient_heap_status_cstr(theap->status),
+                   transient_heap_status_cstr(status));
+
     TH_ASSERT(theap->status != status);
     theap->status = status;
 }
@@ -873,6 +890,8 @@ rb_transient_heap_update_references(void)
 void
 rb_transient_heap_start_marking(int full_marking)
 {
+    RUBY_DEBUG_LOG("full?:%d", full_marking);
+
     struct transient_heap* theap = transient_heap_get();
 
     if (TRANSIENT_HEAP_DEBUG >= 1) fprintf(stderr, "!! rb_transient_heap_start_marking objects:%d blocks:%d promtoed:%d full_marking:%d\n",
@@ -921,6 +940,8 @@ rb_transient_heap_start_marking(int full_marking)
 void
 rb_transient_heap_finish_marking(void)
 {
+    RUBY_DEBUG_LOG("", 0);
+
     struct transient_heap* theap = transient_heap_get();
 
     if (TRANSIENT_HEAP_DEBUG >= 1) fprintf(stderr, "!! rb_transient_heap_finish_marking objects:%d, marked:%d\n",

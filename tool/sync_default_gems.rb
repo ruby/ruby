@@ -1,59 +1,4 @@
-# sync following repositories to ruby repository
-#
-# * https://github.com/rubygems/rubygems
-# * https://github.com/ruby/rdoc
-# * https://github.com/ruby/reline
-# * https://github.com/flori/json
-# * https://github.com/ruby/psych
-# * https://github.com/ruby/fileutils
-# * https://github.com/ruby/fiddle
-# * https://github.com/ruby/stringio
-# * https://github.com/ruby/io-console
-# * https://github.com/ruby/csv
-# * https://github.com/ruby/webrick
-# * https://github.com/ruby/dbm
-# * https://github.com/ruby/gdbm
-# * https://github.com/ruby/etc
-# * https://github.com/ruby/date
-# * https://github.com/ruby/zlib
-# * https://github.com/ruby/fcntl
-# * https://github.com/ruby/strscan
-# * https://github.com/ruby/ipaddr
-# * https://github.com/ruby/logger
-# * https://github.com/ruby/prime
-# * https://github.com/ruby/matrix
-# * https://github.com/ruby/ostruct
-# * https://github.com/ruby/irb
-# * https://github.com/ruby/tracer
-# * https://github.com/ruby/forwardable
-# * https://github.com/ruby/mutex_m
-# * https://github.com/ruby/racc
-# * https://github.com/ruby/singleton
-# * https://github.com/ruby/open3
-# * https://github.com/ruby/getoptlong
-# * https://github.com/ruby/pstore
-# * https://github.com/ruby/delegate
-# * https://github.com/ruby/benchmark
-# * https://github.com/ruby/net-pop
-# * https://github.com/ruby/net-smtp
-# * https://github.com/ruby/cgi
-# * https://github.com/ruby/readline
-# * https://github.com/ruby/readline-ext
-# * https://github.com/ruby/observer
-# * https://github.com/ruby/timeout
-# * https://github.com/ruby/yaml
-# * https://github.com/ruby/uri
-# * https://github.com/ruby/openssl
-# * https://github.com/ruby/did_you_mean
-# * https://github.com/ruby/weakref
-# * https://github.com/ruby/tempfile
-# * https://github.com/ruby/tmpdir
-# * https://github.com/ruby/English
-# * https://github.com/ruby/net-protocol
-# * https://github.com/ruby/net-imap
-# * https://github.com/ruby/net-ftp
-# * https://github.com/ruby/net-http
-#
+# sync upstream github repositories to ruby repository
 
 require 'fileutils'
 include FileUtils
@@ -69,6 +14,8 @@ $repositories = {
   fiddle: 'ruby/fiddle',
   stringio: 'ruby/stringio',
   "io-console": 'ruby/io-console',
+  "io-nonblock": 'ruby/io-nonblock',
+  "io-wait": 'ruby/io-wait',
   csv: 'ruby/csv',
   webrick: 'ruby/webrick',
   dbm: 'ruby/dbm',
@@ -114,6 +61,7 @@ $repositories = {
   "net-ftp": "ruby/net-ftp",
   "net-http": "ruby/net-http",
   bigdecimal: "ruby/bigdecimal",
+  optparse: "ruby/optparse",
 }
 
 def sync_default_gems(gem)
@@ -188,6 +136,18 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/lib/io/console", "ext/io/console/lib")
     cp_r("#{upstream}/io-console.gemspec", "ext/io/console")
     `git checkout ext/io/console/depend`
+  when "io-nonblock"
+    rm_rf(%w[ext/io/nonblock test/io/nonblock])
+    cp_r("#{upstream}/ext/io/nonblock", "ext/io")
+    cp_r("#{upstream}/test/io/nonblock", "test/io")
+    cp_r("#{upstream}/io-nonblock.gemspec", "ext/io/nonblock")
+    `git checkout ext/io/nonblock/depend`
+  when "io-wait"
+    rm_rf(%w[ext/io/wait test/io/wait])
+    cp_r("#{upstream}/ext/io/wait", "ext/io")
+    cp_r("#{upstream}/test/io/wait", "test/io")
+    cp_r("#{upstream}/io-wait.gemspec", "ext/io/wait")
+    `git checkout ext/io/wait/depend`
   when "dbm"
     rm_rf(%w[ext/dbm test/dbm])
     cp_r("#{upstream}/ext/dbm", "ext")
@@ -311,9 +271,14 @@ def sync_default_gems(gem)
   end
 end
 
-IGNORE_FILE_PATTERN = /\A(?:\.travis.yml|appveyor\.yml|azure-pipelines\.yml|\.git(?:ignore|hub)|Gemfile|README\.md|History\.txt|Rakefile|CODE_OF_CONDUCT\.md)/
+IGNORE_FILE_PATTERN =
+  /\A(?:[A-Z]\w*\.(?:md|txt)
+  |[^\/]+\.yml
+  |\.git.*
+  |[A-Z]\w+file
+  )\z/x
 
-def sync_default_gems_with_commits(gem, ranges)
+def sync_default_gems_with_commits(gem, ranges, edit: nil)
   puts "Sync #{$repositories[gem.to_sym]} with commit history."
 
   IO.popen(%W"git remote") do |f|
@@ -363,11 +328,23 @@ def sync_default_gems_with_commits(gem, ranges)
       skipped = true
     elsif /^CONFLICT/ =~ result
       result = IO.popen(%W"git status --porcelain", &:readlines).each(&:chomp!)
-      ignore = result.map {|line| /^.U / =~ line and IGNORE_FILE_PATTERN =~ (name = $') and name}
-      ignore.compact!
+      result.map! {|line| line[/^.U (.*)/, 1]}
+      result.compact!
+      ignore, conflict = result.partition {|name| IGNORE_FILE_PATTERN =~ name}
       unless ignore.empty?
         system(*%W"git reset HEAD --", *ignore)
         system(*%W"git checkout HEAD --", *ignore)
+      end
+      unless conflict.empty?
+        if edit
+          case
+          when (editor = ENV["GIT_EDITOR"] and !editor.empty?)
+          when (editor = `git config core.editor` and (editor.chomp!; !editor.empty?))
+          end
+          if editor
+            system([editor, conflict].join(' '))
+          end
+        end
       end
       skipped = !system({"GIT_EDITOR"=>"true"}, *%W"git cherry-pick --no-edit --continue")
     end
@@ -453,6 +430,13 @@ when "up"
   end
 when "all"
   $repositories.keys.each{|gem| sync_default_gems(gem.to_s)}
+when "list"
+  ARGV.shift
+  pattern = Regexp.new(ARGV.join('|'))
+  $repositories.each_pair do |name, gem|
+    next unless pattern =~ name or pattern =~ gem
+    printf "%-15s https://github.com/%s\n", name, gem
+  end
 when nil, "-h", "--help"
     puts <<-HELP
 \e[1mSync with upstream code of default libraries\e[0m
@@ -465,13 +449,23 @@ when nil, "-h", "--help"
 
 \e[1mPick a commit range from the upstream repository\e[0m
   ruby #$0 rubygems 97e9768612..9e53702832
+
+\e[1mList known libraries\e[0m
+  ruby #$0 list
+
+\e[1mList known libraries matching with patterns\e[0m
+  ruby #$0 list read
     HELP
 
   exit
 else
+  if ARGV[0] == "-e"
+    edit = true
+    ARGV.shift
+  end
   gem = ARGV.shift
   if ARGV[0]
-    sync_default_gems_with_commits(gem, ARGV)
+    sync_default_gems_with_commits(gem, ARGV, edit: edit)
   else
     sync_default_gems(gem)
   end

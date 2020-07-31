@@ -5,12 +5,12 @@ require "bundler/cli"
 RSpec.describe "bundle executable" do
   it "returns non-zero exit status when passed unrecognized options" do
     bundle "--invalid_argument", :raise_on_error => false
-    expect(exitstatus).to_not be_zero if exitstatus
+    expect(exitstatus).to_not be_zero
   end
 
   it "returns non-zero exit status when passed unrecognized task" do
     bundle "unrecognized-task", :raise_on_error => false
-    expect(exitstatus).to_not be_zero if exitstatus
+    expect(exitstatus).to_not be_zero
   end
 
   it "looks for a binary and executes it if it's named bundler-<task>" do
@@ -25,7 +25,6 @@ RSpec.describe "bundle executable" do
       bundle "testtasks"
     end
 
-    expect(exitstatus).to be_zero if exitstatus
     expect(out).to eq("Hello, world")
   end
 

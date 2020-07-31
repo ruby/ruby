@@ -98,6 +98,21 @@ module TestIRB
       $VERBOSE = verbose
     end
 
+    def test_eval_object_without_inspect_method
+      verbose, $VERBOSE = $VERBOSE, nil
+      input = TestInputMethod.new([
+        "BasicObject.new\n",
+      ])
+      irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
+      out, err = capture_output do
+        irb.eval_input
+      end
+      assert_empty err
+      assert(/\(Object doesn't support #inspect\)\n(=> )?\n/, out)
+    ensure
+      $VERBOSE = verbose
+    end
+
     def test_default_config
       assert_equal(true, @context.use_colorize?)
     end

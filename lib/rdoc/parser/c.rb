@@ -318,7 +318,7 @@ class RDoc::Parser::C < RDoc::Parser
                 \s*"(?<module_name_1>\w+)"\s*
               \)
             |
-              _under\s*\( # rb_define_module_under(module_under, module_name_1)
+              _under\s*\( # rb_define_module_under(module_under, module_name_2)
                 \s*(?<module_under>\w+),
                 \s*"(?<module_name_2>\w+)"
               \s*\)

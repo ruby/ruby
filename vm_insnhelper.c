@@ -287,7 +287,61 @@ vm_check_canary(const rb_execution_context_t *ec, VALUE *sp)
 #define vm_check_frame(a, b, c, d)
 #endif /* VM_CHECK_MODE > 0 */
 
-static inline rb_control_frame_t *
+#if USE_DEBUG_COUNTER
+static void
+vm_push_frame_debug_counter_inc(
+    const struct rb_execution_context_struct *ec,
+    const struct rb_control_frame_struct *reg_cfp,
+    VALUE type)
+{
+    const struct rb_control_frame_struct *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(reg_cfp);
+
+    RB_DEBUG_COUNTER_INC(frame_push);
+
+    if (RUBY_VM_END_CONTROL_FRAME(ec) != prev_cfp) {
+        const bool curr = VM_FRAME_RUBYFRAME_P(reg_cfp);
+        const bool prev = VM_FRAME_RUBYFRAME_P(prev_cfp);
+        if (prev) {
+            if (curr) {
+                RB_DEBUG_COUNTER_INC(frame_R2R);
+            }
+            else {
+                RB_DEBUG_COUNTER_INC(frame_R2C);
+            }
+        }
+        else {
+            if (curr) {
+                RB_DEBUG_COUNTER_INC(frame_C2R);
+            }
+            else {
+                RB_DEBUG_COUNTER_INC(frame_C2C);
+            }
+        }
+    }
+
+    switch (type & VM_FRAME_MAGIC_MASK) {
+      case VM_FRAME_MAGIC_METHOD: RB_DEBUG_COUNTER_INC(frame_push_method); return;
+      case VM_FRAME_MAGIC_BLOCK:  RB_DEBUG_COUNTER_INC(frame_push_block);  return;
+      case VM_FRAME_MAGIC_CLASS:  RB_DEBUG_COUNTER_INC(frame_push_class);  return;
+      case VM_FRAME_MAGIC_TOP:    RB_DEBUG_COUNTER_INC(frame_push_top);    return;
+      case VM_FRAME_MAGIC_CFUNC:  RB_DEBUG_COUNTER_INC(frame_push_cfunc);  return;
+      case VM_FRAME_MAGIC_IFUNC:  RB_DEBUG_COUNTER_INC(frame_push_ifunc);  return;
+      case VM_FRAME_MAGIC_EVAL:   RB_DEBUG_COUNTER_INC(frame_push_eval);   return;
+      case VM_FRAME_MAGIC_RESCUE: RB_DEBUG_COUNTER_INC(frame_push_rescue); return;
+      case VM_FRAME_MAGIC_DUMMY:  RB_DEBUG_COUNTER_INC(frame_push_dummy);  return;
+    }
+
+    rb_bug("unreachable");
+}
+#else
+#define vm_push_frame_debug_counter_inc(ec, cfp, t) /* void */
+#endif
+
+STATIC_ASSERT(VM_ENV_DATA_INDEX_ME_CREF, VM_ENV_DATA_INDEX_ME_CREF == -2);
+STATIC_ASSERT(VM_ENV_DATA_INDEX_SPECVAL, VM_ENV_DATA_INDEX_SPECVAL == -1);
+STATIC_ASSERT(VM_ENV_DATA_INDEX_FLAGS,   VM_ENV_DATA_INDEX_FLAGS   == -0);
+
+static void
 vm_push_frame(rb_execution_context_t *ec,
 	      const rb_iseq_t *iseq,
 	      VALUE type,
@@ -308,14 +362,6 @@ vm_push_frame(rb_execution_context_t *ec,
     CHECK_VM_STACK_OVERFLOW0(cfp, sp, local_size + stack_max);
     vm_check_canary(ec, sp);
 
-    ec->cfp = cfp;
-
-    /* setup new frame */
-    cfp->pc = (VALUE *)pc;
-    cfp->iseq = (rb_iseq_t *)iseq;
-    cfp->self = self;
-    cfp->block_code = NULL;
-
     /* setup vm value stack */
 
     /* initialize local variables */
@@ -324,54 +370,30 @@ vm_push_frame(rb_execution_context_t *ec,
     }
 
     /* setup ep with managing data */
-    VM_ASSERT(VM_ENV_DATA_INDEX_ME_CREF == -2);
-    VM_ASSERT(VM_ENV_DATA_INDEX_SPECVAL == -1);
-    VM_ASSERT(VM_ENV_DATA_INDEX_FLAGS   == -0);
     *sp++ = cref_or_me; /* ep[-2] / Qnil or T_IMEMO(cref) or T_IMEMO(ment) */
     *sp++ = specval     /* ep[-1] / block handler or prev env ptr */;
-    *sp   = type;       /* ep[-0] / ENV_FLAGS */
+    *sp++ = type;       /* ep[-0] / ENV_FLAGS */
 
-    /* Store initial value of ep as bp to skip calculation cost of bp on JIT cancellation. */
-    cfp->ep = sp;
-    cfp->__bp__ = cfp->sp = sp + 1;
-
+    /* setup new frame */
+    *cfp = (const struct rb_control_frame_struct) {
+        .pc         = pc,
+        .sp         = sp,
+        .iseq       = iseq,
+        .self       = self,
+        .ep         = sp - 1,
+        .block_code = NULL,
+        .__bp__     = sp, /* Store initial value of ep as bp to skip calculation cost of bp on JIT cancellation. */
 #if VM_DEBUG_BP_CHECK
-    cfp->bp_check = sp + 1;
+        .bp_check   = sp,
 #endif
+    };
+
+    ec->cfp = cfp;
 
     if (VMDEBUG == 2) {
 	SDR();
     }
-
-#if USE_DEBUG_COUNTER
-    RB_DEBUG_COUNTER_INC(frame_push);
-    switch (type & VM_FRAME_MAGIC_MASK) {
-      case VM_FRAME_MAGIC_METHOD: RB_DEBUG_COUNTER_INC(frame_push_method); break;
-      case VM_FRAME_MAGIC_BLOCK:  RB_DEBUG_COUNTER_INC(frame_push_block);  break;
-      case VM_FRAME_MAGIC_CLASS:  RB_DEBUG_COUNTER_INC(frame_push_class);  break;
-      case VM_FRAME_MAGIC_TOP:    RB_DEBUG_COUNTER_INC(frame_push_top);    break;
-      case VM_FRAME_MAGIC_CFUNC:  RB_DEBUG_COUNTER_INC(frame_push_cfunc);  break;
-      case VM_FRAME_MAGIC_IFUNC:  RB_DEBUG_COUNTER_INC(frame_push_ifunc);  break;
-      case VM_FRAME_MAGIC_EVAL:   RB_DEBUG_COUNTER_INC(frame_push_eval);   break;
-      case VM_FRAME_MAGIC_RESCUE: RB_DEBUG_COUNTER_INC(frame_push_rescue); break;
-      case VM_FRAME_MAGIC_DUMMY:  RB_DEBUG_COUNTER_INC(frame_push_dummy);  break;
-      default: rb_bug("unreachable");
-    }
-    {
-        rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
-        if (RUBY_VM_END_CONTROL_FRAME(ec) != prev_cfp) {
-            int cur_ruby_frame = VM_FRAME_RUBYFRAME_P(cfp);
-            int pre_ruby_frame = VM_FRAME_RUBYFRAME_P(prev_cfp);
-
-            pre_ruby_frame ? (cur_ruby_frame ? RB_DEBUG_COUNTER_INC(frame_R2R) :
-                                               RB_DEBUG_COUNTER_INC(frame_R2C)):
-                             (cur_ruby_frame ? RB_DEBUG_COUNTER_INC(frame_C2R) :
-                                               RB_DEBUG_COUNTER_INC(frame_C2C));
-        }
-    }
-#endif
-
-    return cfp;
+    vm_push_frame_debug_counter_inc(ec, cfp, type);
 }
 
 /* return TRUE if the frame is finished */
@@ -3012,6 +3034,9 @@ search_refined_method(rb_execution_context_t *ec, rb_control_frame_t *cfp, struc
         if (ref_me) {
             if (vm_cc_call(cc) == vm_call_super_method) {
                 const rb_control_frame_t *top_cfp = current_method_entry(ec, cfp);
+                if (refinement == find_refinement(CREF_REFINEMENTS(vm_get_cref(top_cfp->ep)), vm_cc_cme(cc)->owner)) {
+                    continue;
+                }
                 const rb_callable_method_entry_t *top_me = rb_vm_frame_method_entry(top_cfp);
                 if (top_me && rb_method_definition_eq(ref_me->def, top_me->def)) {
                     continue;

@@ -23,6 +23,8 @@
 # Copyright:: (C) 2000  Information-technology Promotion Agency, Japan
 
 module Timeout
+  VERSION = "0.1.0"
+
   # Raised by Timeout.timeout when the block times out.
   class Error < RuntimeError
     attr_reader :thread
