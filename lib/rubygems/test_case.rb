@@ -296,6 +296,9 @@ class Gem::TestCase < Minitest::Test
 
     ENV['GEM_VENDOR'] = nil
     ENV['GEMRC'] = nil
+    ENV['XDG_CACHE_HOME'] = nil
+    ENV['XDG_CONFIG_HOME'] = nil
+    ENV['XDG_DATA_HOME'] = nil
     ENV['SOURCE_DATE_EPOCH'] = nil
     ENV["TMPDIR"] = @tmp
 
