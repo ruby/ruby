@@ -634,7 +634,7 @@ lookup_method_table(VALUE klass, ID id)
     st_data_t body;
     struct rb_id_table *m_tbl = RCLASS_M_TBL(klass);
 
-    if (rb_id_table_lookup(m_tbl, id, &body)) {
+    if (m_tbl && rb_id_table_lookup(m_tbl, id, &body)) {
 	return (rb_method_entry_t *) body;
     }
     else {
