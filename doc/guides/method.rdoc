@@ -1,5 +1,15 @@
 = Documenting a Method
 
+== Structure
+
+=== Synopsis
+
+Begin with a one-line synopsis that tells what the method does.  Example:
+  *  call-seq:
+  *    array <=> other_array -> -1, 0, or 1
+  *
+  *  Returns -1, 0, or 1 as +self+ is less than, equal to, or greater than +other_array+.
+
 == Multiple Signatures
 
 \[Is 'signatures' the correct term?]
