@@ -2,7 +2,7 @@
 
 == Multiple Signatures
 
-[Is 'signatures' the correct term?]
+\[Is 'signatures' the correct term?]
 
 When a method has multiple signatures,
 it may be clarifying to document each signature separately, as if it were a distinct method.
