@@ -292,8 +292,8 @@ setup_debug_log(void)
     const char *log_config = getenv("RUBY_DEBUG_LOG");
     if (log_config) {
         fprintf(stderr, "RUBY_DEBUG_LOG=%s\n", log_config);
-        unsetenv("RUBY_DEBUG_LOG");
-        if  (strcmp(log_config, "mem")    == 0) {
+
+        if  (strcmp(log_config, "mem") == 0) {
             debug_log.mem = (char *)malloc(MAX_DEBUG_LOG * MAX_DEBUG_LOG_MESSAGE_LEN);
             if (debug_log.mem == NULL) {
                 fprintf(stderr, "setup_debug_log failed (can't allocate memory)\n");
