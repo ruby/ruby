@@ -50,6 +50,7 @@ RDoc includes the +rdoc+ and +ri+ tools for generating and displaying documentat
     "bin/setup",
     "exe/rdoc",
     "exe/ri",
+    "man/ri.1",
     "lib/rdoc.rb",
     "lib/rdoc/alias.rb",
     "lib/rdoc/anon_class.rb",
