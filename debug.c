@@ -266,14 +266,14 @@ ruby_set_debug_option(const char *str)
 
 #define MAX_DEBUG_LOG             0x1000
 #define MAX_DEBUG_LOG_MESSAGE_LEN 0x0200
-#define MAX_DEBUG_LOG_FILTER      0x0001
+#define MAX_DEBUG_LOG_FILTER      0x0010
 
 enum ruby_debug_log_mode ruby_debug_log_mode;
 
 static struct {
     char *mem;
     unsigned int cnt;
-    const char *filters[MAX_DEBUG_LOG_FILTER];
+    char filters[MAX_DEBUG_LOG_FILTER][MAX_DEBUG_LOG_FILTER];
     unsigned int filters_num;
     rb_nativethread_lock_t lock;
     FILE *output;
@@ -292,6 +292,7 @@ setup_debug_log(void)
     const char *log_config = getenv("RUBY_DEBUG_LOG");
     if (log_config) {
         fprintf(stderr, "RUBY_DEBUG_LOG=%s\n", log_config);
+        unsetenv("RUBY_DEBUG_LOG");
         if  (strcmp(log_config, "mem")    == 0) {
             debug_log.mem = (char *)malloc(MAX_DEBUG_LOG * MAX_DEBUG_LOG_MESSAGE_LEN);
             if (debug_log.mem == NULL) {
@@ -317,12 +318,49 @@ setup_debug_log(void)
 
     // check RUBY_DEBUG_LOG_FILTER
     const char *filter_config = getenv("RUBY_DEBUG_LOG_FILTER");
-    if (filter_config) {
-        fprintf(stderr, "RUBY_DEBUG_LOG_FILTER=%s\n", filter_config);
+    if (filter_config && strlen(filter_config) > 0) {
+        unsigned int i;
+        for (i=0; i<MAX_DEBUG_LOG_FILTER; i++) {
+            const char *p;
+            if ((p = strchr(filter_config, ',')) == NULL) {
+                if (strlen(filter_config) >= MAX_DEBUG_LOG_FILTER) {
+                    fprintf(stderr, "too long: %s (max:%d)\n", filter_config, MAX_DEBUG_LOG_FILTER);
+                    exit(1);
+                }
+                strncpy(debug_log.filters[i], filter_config, MAX_DEBUG_LOG_FILTER - 1);
+                i++;
+                break;
+            }
+            else {
+                size_t n = p - filter_config;
+                if (n >= MAX_DEBUG_LOG_FILTER) {
+                    fprintf(stderr, "too long: %s (max:%d)\n", filter_config, MAX_DEBUG_LOG_FILTER);
+                    exit(1);
+                }
+                strncpy(debug_log.filters[i], filter_config, n);
+                filter_config = p+1;
+            }
+        }
+        debug_log.filters_num = i;
+        for (i=0; i<debug_log.filters_num; i++) {
+            fprintf(stderr, "RUBY_DEBUG_LOG_FILTER[%d]=%s\n", i, debug_log.filters[i]);
+        }
+    }
+}
 
-        // TODO: multiple filters
-        debug_log.filters[0] = filter_config;
-        debug_log.filters_num = 1;
+bool
+ruby_debug_log_filter(const char *func_name)
+{
+    if (debug_log.filters_num > 0) {
+        for (unsigned int i = 0; i<debug_log.filters_num; i++) {
+            if (strstr(func_name, debug_log.filters[i]) != NULL) {
+                return true;
+            }
+        }
+        return false;
+    }
+    else {
+        return true;
     }
 }
 
@@ -346,15 +384,6 @@ ruby_debug_log(const char *file, int line, const char *func_name, const char *fm
 
     // message title
     if (func_name && len < MAX_DEBUG_LOG_MESSAGE_LEN) {
-        // filter on func_name
-        if (debug_log.filters_num > 0) {
-            int hit = 0;
-            for (unsigned int i = 0; i<debug_log.filters_num; i++) {
-                if (strstr(func_name, debug_log.filters[i]) != NULL) hit++;
-            }
-            if (hit != 0) return;
-        }
-
         r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN, "%s\t", func_name);
         if (r < 0) rb_bug("ruby_debug_log returns %d\n", r);
         len += r;

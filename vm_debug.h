@@ -89,14 +89,24 @@ extern enum ruby_debug_log_mode {
 
 void ruby_debug_log(const char *file, int line, const char *func_name, const char *fmt, ...);
 void ruby_debug_log_print(unsigned int n);
+bool ruby_debug_log_filter(const char *func_name);
 
 // convenient macro to log even if the USE_RUBY_DEBUG_LOG macro is not specified.
 // You can use this macro for temporary usage (you should not commit it).
 #define _RUBY_DEBUG_LOG(fmt, ...) ruby_debug_log(__FILE__, __LINE__, __func__, fmt, __VA_ARGS__)
 
 #if USE_RUBY_DEBUG_LOG
-#define RUBY_DEBUG_LOG(fmt, ...) do { if (ruby_debug_log_mode) ruby_debug_log(__FILE__, __LINE__, __func__, fmt, __VA_ARGS__); } while (0)
-#define RUBY_DEBUG_LOG2(file, line, fmt, ...) do { if (ruby_debug_log_mode) ruby_debug_log(file, line, __func__, fmt, __VA_ARGS__); } while (0)
+
+#define RUBY_DEBUG_LOG(fmt, ...) do { \
+  if (ruby_debug_log_mode && ruby_debug_log_filter(__func__)) \
+    ruby_debug_log(__FILE__, __LINE__, __func__, fmt, __VA_ARGS__); \
+} while (0)
+
+#define RUBY_DEBUG_LOG2(file, line, fmt, ...) do { \
+  if (ruby_debug_log_mode && ruby_debug_log_filter(__func__)) \
+    ruby_debug_log(file, line, __func__, fmt, __VA_ARGS__); \
+} while (0)
+
 #else
 // do nothing
 #define RUBY_DEBUG_LOG(fmt, ...)
