@@ -6931,7 +6931,7 @@ flatten(VALUE ary, int level)
 {
     long i;
     VALUE stack, result, tmp = 0, elt, vmemo;
-    st_table *memo;
+    st_table *memo = 0;
     st_data_t id;
 
     for (i = 0; i < RARRAY_LEN(ary); i++) {
@@ -6974,7 +6974,7 @@ flatten(VALUE ary, int level)
 	    }
 	    tmp = rb_check_array_type(elt);
 	    if (RBASIC(result)->klass) {
-		if (level < 0) {
+		if (memo) {
 		    RB_GC_GUARD(vmemo);
 		    st_clear(memo);
 		}
@@ -6984,7 +6984,7 @@ flatten(VALUE ary, int level)
 		rb_ary_push(result, elt);
 	    }
 	    else {
-		if (level < 0) {
+		if (memo) {
 		    id = (st_data_t)tmp;
 		    if (st_is_member(memo, id)) {
 			st_clear(memo);
@@ -7001,7 +7001,7 @@ flatten(VALUE ary, int level)
 	if (RARRAY_LEN(stack) == 0) {
 	    break;
 	}
-	if (level < 0) {
+	if (memo) {
 	    id = (st_data_t)ary;
 	    st_delete(memo, &id, 0);
 	}
@@ -7010,7 +7010,7 @@ flatten(VALUE ary, int level)
 	ary = rb_ary_pop(stack);
     }
 
-    if (level < 0) {
+    if (memo) {
 	st_clear(memo);
     }
 
