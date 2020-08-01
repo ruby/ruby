@@ -7334,7 +7334,7 @@ rb_ary_cycle_size(VALUE self, VALUE args, VALUE eobj)
  *    array.cycle -> new_enumerator
  *    array.cycle(count) -> new_enumerator
  *
- *  Argument +count+, if given, must be an
+ *  Argument +count+, if given, must be +nil+ or an
  *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
  *
  *  ---
@@ -7347,14 +7347,15 @@ rb_ary_cycle_size(VALUE self, VALUE args, VALUE eobj)
  *    output # => [0, 1, 0, 1]
  *
  *  If +count+ is zero or negative, does not call the block:
- *
  *    [0, 1].cycle(0) {|element| fail 'Cannot happen' } # => nil
  *    [0, 1].cycle(-1) {|element| fail 'Cannot happen' } # => nil
  *
  *  ---
  *
- *  When a block is given, but no argument, cycles forever (output omitted):
+ *  When a block is given, and argument is omitted or +nil+, cycles forever:
+ *    # Prints 0 and 1 forever.
  *    [0, 1].cycle {|element| puts element }
+ *    [0, 1].cycle(nil) {|element| puts element }
  *
  *  ---
  *
@@ -7362,6 +7363,7 @@ rb_ary_cycle_size(VALUE self, VALUE args, VALUE eobj)
  *
  *    [0, 1].cycle(2) # => #<Enumerator: [0, 1]:cycle(2)>
  *    [0, 1].cycle # => # => #<Enumerator: [0, 1]:cycle>
+ *    [0, 1].cycle.first(5) # => [0, 1, 0, 1, 0]
  *
  *  ---
  *
@@ -7519,7 +7521,7 @@ rb_ary_permutation_size(VALUE ary, VALUE args, VALUE eobj)
  *    array.permutation -> new_enumerator
  *    array.permutation(n) -> new_enumerator
  *
- *  Calls the block, if given, with permutations of elements of +self+; returns +self+.
+ *  When invoked with a block, yield all permutations of elements of +self+; returns +self+.
  *  The order of permutations is indeterminate.
  *
  *  Argument +n+, if given, must be an
