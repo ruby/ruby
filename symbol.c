@@ -247,7 +247,7 @@ struct enc_synmane_type_leading_chars_tag {
 #define t struct enc_synmane_type_leading_chars_tag
 
 static struct enc_synmane_type_leading_chars_tag
-enc_synmane_type_leading_chars(const char *name, long len, const rb_encoding *enc, int allowed_attrset)
+enc_synmane_type_leading_chars(const char *name, long len, rb_encoding *enc, int allowed_attrset)
 {
     const char *m = name;
     const char *e = m + len;
