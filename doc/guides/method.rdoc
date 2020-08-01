@@ -15,5 +15,10 @@ In <tt>array.c</tt>, for example, we have this call-seq:
   slice(start, length) → object or nil
   slice(range) → object or nil
 
-Begin each of six sections with a level-6 header.  For example:
-  ====== array\[index] → object or nil
+Begin each of six sections with a level-6 header:
+  ====== array[index] → object or nil
+  ====== array[start, length] → object or nil
+  ====== array[range] → object or nil
+  ====== slice(index) → object or nil
+  ====== slice(start, length) → object or nil
+  ====== slice(range) → object or nil
