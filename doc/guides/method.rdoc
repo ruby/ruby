@@ -7,15 +7,16 @@
 When a method has multiple signatures,
 document each signature separately, as if it were a distinct method.
 
-In <tt>array.c</tt>, for example, we have this call-seq:
-  array[index] → object or nil
-  array[start, length] → object or nil
-  array[range] → object or nil
-  slice(index) → object or nil
-  slice(start, length) → object or nil
-  slice(range) → object or nil
+In <tt>array.c</tt>, for example, we have this:
+  *  call-seq:
+  *    array[index] -> object or nil
+  *    array[start, length] -> object or nil
+  *    array[range] -> object or nil
+  *    array.slice(index) -> object or nil
+  *    array.slice(start, length) -> object or nil
+  *    array.slice(range) -> object or nil
 
-Begin each of six sections with a level-6 header:
+Document each signature separately, beginning with a level-6 header:
   ====== array[index] → object or nil
   ====== array[start, length] → object or nil
   ====== array[range] → object or nil
