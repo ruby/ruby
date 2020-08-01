@@ -1,0 +1,17 @@
+= Documenting a Method
+
+== Multiple Signatures
+
+[Is 'signatures' the correct term?]
+
+When a method has multiple signatures,
+it may be clarifying to document each signature separately, as if it were a distinct method.
+
+In <tt>array.c</tt>, for example, we have:
+
+  array[index] → object or nil
+  array[start, length] → object or nil
+  array[range] → object or nil
+  slice(index) → object or nil
+  slice(start, length) → object or nil
+  slice(range) → object or nil
