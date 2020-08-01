@@ -3551,7 +3551,7 @@ vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_
 	      case METHOD_VISI_PRIVATE:
 		break;
 	      case METHOD_VISI_PROTECTED:
-		if (!rb_obj_is_kind_of(GET_SELF(), rb_class_real(klass))) {
+		if (!rb_obj_is_kind_of(GET_SELF(), rb_class_real(me->defined_class))) {
 		    break;
 		}
 	      case METHOD_VISI_PUBLIC:
