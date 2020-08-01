@@ -7329,24 +7329,48 @@ rb_ary_cycle_size(VALUE self, VALUE args, VALUE eobj)
 
 /*
  *  call-seq:
- *     ary.cycle(n=nil) {|obj| block}    -> nil
- *     ary.cycle(n=nil)                  -> Enumerator
+ *    array.cycle {|element| ... } -> nil
+ *    array.cycle(count) {|element| ... } -> nil
+ *    array.cycle -> new_enumerator
+ *    array.cycle(count) -> new_enumerator
  *
- *  Calls the given block for each element +n+ times or forever if +nil+ is
- *  given.
+ *  Argument +count+, if given, must be +nil+ or an
+ *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
  *
- *  Does nothing if a non-positive number is given or the array is empty.
+ *  ---
  *
- *  Returns +nil+ if the loop has finished without getting interrupted.
+ *  When called with positive argument +count+ and a block,
+ *  calls the block with each element, then does so again,
+ *  until it has done so +count+ times; returns +nil+:
+ *    output = []
+ *    [0, 1].cycle(2) {|element| output.push(element) } # => nil
+ *    output # => [0, 1, 0, 1]
  *
- *  If no block is given, an Enumerator is returned instead.
+ *  If +count+ is zero or negative, does not call the block:
+ *    [0, 1].cycle(0) {|element| fail 'Cannot happen' } # => nil
+ *    [0, 1].cycle(-1) {|element| fail 'Cannot happen' } # => nil
  *
- *     a = ["a", "b", "c"]
- *     a.cycle {|x| puts x}       # print, a, b, c, a, b, c,.. forever.
- *     a.cycle(2) {|x| puts x}    # print, a, b, c, a, b, c.
+ *  ---
  *
+ *  When a block is given, and argument is omitted or +nil+, cycles forever:
+ *    # Prints 0 and 1 forever.
+ *    [0, 1].cycle {|element| puts element }
+ *    [0, 1].cycle(nil) {|element| puts element }
+ *
+ *  ---
+ *
+ *  When no block is given, returns a new \Enumerator:
+ *
+ *    [0, 1].cycle(2) # => #<Enumerator: [0, 1]:cycle(2)>
+ *    [0, 1].cycle # => # => #<Enumerator: [0, 1]:cycle>
+ *    [0, 1].cycle.first(5) # => [0, 1, 0, 1, 0]
+ *
+ *  ---
+ *
+ *  Raises an exception if +count+ is not an Integer-convertible object:
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    [0, 1].cycle(:foo) {|element| }
  */
-
 static VALUE
 rb_ary_cycle(int argc, VALUE *argv, VALUE ary)
 {
@@ -7492,30 +7516,86 @@ rb_ary_permutation_size(VALUE ary, VALUE args, VALUE eobj)
 
 /*
  *  call-seq:
- *     ary.permutation {|p| block}            -> ary
- *     ary.permutation                        -> Enumerator
- *     ary.permutation(n) {|p| block}         -> ary
- *     ary.permutation(n)                     -> Enumerator
+ *    array.permutation {|element| ... } -> self
+ *    array.permutation(n) {|element| ... } -> self
+ *    array.permutation -> new_enumerator
+ *    array.permutation(n) -> new_enumerator
  *
- * When invoked with a block, yield all permutations of length +n+ of the
- * elements of the array, then return the array itself.
+ *  When invoked with a block, yield all permutations of elements of +self+; returns +self+.
+ *  The order of permutations is indeterminate.
  *
- * If +n+ is not specified, yield all permutations of all elements.
+ *  Argument +n+, if given, must be an
+ *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
  *
- * The implementation makes no guarantees about the order in which the
- * permutations are yielded.
+ *  ---
  *
- * If no block is given, an Enumerator is returned instead.
+ *  When a block and an in-range positive argument +n+ (<tt>0 < n <= self.size</tt>)
+ *  are given, calls the block with all +n+-tuple permutations of +self+.
  *
- * Examples:
+ *  Example:
+ *    a = [0, 1, 2]
+ *    a1 = a.permutation(2) {|permutation| p permutation }
+ *    a1.equal?(a) # => true # Returned self
+ *  Output:
+ *    [0, 1]
+ *    [0, 2]
+ *    [1, 0]
+ *    [1, 2]
+ *    [2, 0]
+ *    [2, 1]
+ *  Another example:
+ *    a = [0, 1, 2]
+ *    a.permutation(3) {|permutation| p permutation }
+ *  Output:
+ *    [0, 1, 2]
+ *    [0, 2, 1]
+ *    [1, 0, 2]
+ *    [1, 2, 0]
+ *    [2, 0, 1]
+ *    [2, 1, 0]
  *
- *   a = [1, 2, 3]
- *   a.permutation.to_a    #=> [[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]]
- *   a.permutation(1).to_a #=> [[1],[2],[3]]
- *   a.permutation(2).to_a #=> [[1,2],[1,3],[2,1],[2,3],[3,1],[3,2]]
- *   a.permutation(3).to_a #=> [[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]]
- *   a.permutation(0).to_a #=> [[]] # one permutation of length 0
- *   a.permutation(4).to_a #=> []   # no permutations of length 4
+ *  ---
+ *
+ *  When +n+ is zero, calls the block once with a new empty \Array:
+ *    a = [0, 1, 2]
+ *    a.permutation(0) {|permutation| p permutation }
+ *  Output:
+ *    []
+ *
+ *  ---
+ *
+ *  When +n+ is out of range (negative or larger than <tt>self.size</tt>),
+ *  does not call the block:
+ *    a = [0, 1, 2]
+ *    a.permutation(-1) {|permutation| fail 'Cannot happen' }
+ *    a.permutation(4) {|permutation| fail 'Cannot happen' }
+ *
+ *  ---
+ *
+ *  When a block given but no argument,
+ *  behaves the same as <tt>a.permutation(a.size)</tt>:
+ *    a = [0, 1, 2]
+ *    a.permutation {|permutation| p permutation }
+ *  Output:
+ *    [0, 1, 2]
+ *    [0, 2, 1]
+ *    [1, 0, 2]
+ *    [1, 2, 0]
+ *    [2, 0, 1]
+ *    [2, 1, 0]
+ *
+ *  ---
+ *
+ *  Returns a new \Enumerator if no block given:
+ *    a = [0, 1, 2]
+ *    a.permutation # => #<Enumerator: [0, 1, 2]:permutation>
+ *    a.permutation(2) # => #<Enumerator: [0, 1, 2]:permutation(2)>
+ *
+ *  ---
+ *
+ *  Raises an exception if +n+ is not an Integer-convertible object:
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    a.permutation(:foo) { }
  */
 
 static VALUE
@@ -7588,27 +7668,62 @@ rb_ary_combination_size(VALUE ary, VALUE args, VALUE eobj)
 
 /*
  *  call-seq:
- *     ary.combination(n) {|c| block}      -> ary
- *     ary.combination(n)                  -> Enumerator
+ *    array.combination(n) {|element| ... } -> self
+ *    ary.combination(n) -> new_enumerator
  *
- * When invoked with a block, yields all combinations of length +n+ of elements
- * from the array and then returns the array itself.
+ *  Calls the block, if given, with combinations of elements of +self+;
+ *  returns +self+. The order of combinations is indeterminate.
  *
- * The implementation makes no guarantees about the order in which the
- * combinations are yielded.
+ *  Argument +n+, if given, must be an
+ *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
  *
- * If no block is given, an Enumerator is returned instead.
+ *  ---
  *
- * Examples:
+ *  When a block and an in-range positive argument +n+ (<tt>0 < n <= self.size</tt>)
+ *  are given, calls the block with all +n+-tuple combinations of +self+.
  *
- *     a = [1, 2, 3, 4]
- *     a.combination(1).to_a  #=> [[1],[2],[3],[4]]
- *     a.combination(2).to_a  #=> [[1,2],[1,3],[1,4],[2,3],[2,4],[3,4]]
- *     a.combination(3).to_a  #=> [[1,2,3],[1,2,4],[1,3,4],[2,3,4]]
- *     a.combination(4).to_a  #=> [[1,2,3,4]]
- *     a.combination(0).to_a  #=> [[]] # one combination of length 0
- *     a.combination(5).to_a  #=> []   # no combinations of length 5
+ *  Example:
+ *    a = [0, 1, 2]
+ *    a1 = a.combination(2) {|combination| p combination }
+ *    a1.equal?(a) # => true # Returned self
+ *  Output:
+ *    [0, 1]
+ *    [0, 2]
+ *    [1, 2]
  *
+ *  Another example:
+ *    a = [0, 1, 2]
+ *    a.combination(3) {|combination| p combination }
+ *  Output:
+ *    [0, 1, 2]
+ *
+ *  ---
+ *
+ *  When +n+ is zero, calls the block once with a new empty \Array:
+ *    a = [0, 1, 2]
+ *    a1 = a.combination(0) {|combination| p combination }
+ *  Output:
+ *    []
+ *
+ *  ---
+ *
+ *  When +n+ is out of range (negative or larger than <tt>self.size</tt>),
+ *  does not call the block:
+ *    a = [0, 1, 2]
+ *    a.combination(-1) {|combination| fail 'Cannot happen' }
+ *    a.combination(4) {|combination| fail 'Cannot happen' }
+ *
+ *  ---
+ *
+ *  Returns a new \Enumerator if no block given:
+ *    a = [0, 1, 2]
+ *    a.combination(2) # => #<Enumerator: [0, 1, 2]:combination(2)>
+ *
+ *  ---
+ *
+ *  Raises an exception if +n+ is not an Integer-convertible object:
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    a.combination(:foo) { }
  */
 
 static VALUE
