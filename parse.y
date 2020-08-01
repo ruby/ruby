@@ -829,12 +829,7 @@ static VALUE
 new_array_pattern(struct parser_params *p, VALUE constant, VALUE pre_arg, VALUE aryptn, const YYLTYPE *loc)
 {
     NODE *t = (NODE *)aryptn;
-    struct rb_ary_pattern_info *apinfo = t->nd_apinfo;
-    VALUE pre_args, rest_arg, post_args;
-
-    pre_args = rb_ary_entry(apinfo->imemo, 0);
-    rest_arg = rb_ary_entry(apinfo->imemo, 1);
-    post_args = rb_ary_entry(apinfo->imemo, 2);
+    VALUE pre_args = t->u1.value, rest_arg = t->u2.value, post_args = t->u3.value;
 
     if (!NIL_P(pre_arg)) {
 	if (!NIL_P(pre_args)) {
@@ -851,7 +846,6 @@ static VALUE
 new_array_pattern_tail(struct parser_params *p, VALUE pre_args, VALUE has_rest, VALUE rest_arg, VALUE post_args, const YYLTYPE *loc)
 {
     NODE *t;
-    struct rb_ary_pattern_info *apinfo;
 
     if (has_rest) {
 	rest_arg = dispatch1(var_field, rest_arg ? rest_arg : Qnil);
@@ -860,14 +854,10 @@ new_array_pattern_tail(struct parser_params *p, VALUE pre_args, VALUE has_rest, 
 	rest_arg = Qnil;
     }
 
-    VALUE tmpbuf = rb_imemo_tmpbuf_auto_free_pointer();
-    apinfo = ZALLOC(struct rb_ary_pattern_info);
-    rb_imemo_tmpbuf_set_ptr(tmpbuf, apinfo);
-    apinfo->imemo = rb_ary_new_from_args(4, pre_args, rest_arg, post_args, tmpbuf);
-
-    t = rb_node_newnode(NODE_ARYPTN, Qnil, Qnil, (VALUE)apinfo, &NULL_LOC);
-    RB_OBJ_WRITTEN(p->ast, Qnil, apinfo->imemo);
-
+    t = rb_node_newnode(NODE_ARYPTN, pre_args, rest_arg, post_args, &NULL_LOC);
+    add_mark_object(p, pre_args);
+    add_mark_object(p, rest_arg);
+    add_mark_object(p, post_args);
     return (VALUE)t;
 }
 
@@ -875,12 +865,7 @@ static VALUE
 new_find_pattern(struct parser_params *p, VALUE constant, VALUE fndptn, const YYLTYPE *loc)
 {
     NODE *t = (NODE *)fndptn;
-    struct rb_fnd_pattern_info *fpinfo = t->nd_fpinfo;
-    VALUE pre_rest_arg, args, post_rest_arg;
-
-    pre_rest_arg = rb_ary_entry(fpinfo->imemo, 0);
-    args = rb_ary_entry(fpinfo->imemo, 1);
-    post_rest_arg = rb_ary_entry(fpinfo->imemo, 2);
+    VALUE pre_rest_arg = t->u1.value, args = t->u2.value, post_rest_arg = t->u3.value;
 
     return dispatch4(fndptn, constant, pre_rest_arg, args, post_rest_arg);
 }
@@ -889,19 +874,14 @@ static VALUE
 new_find_pattern_tail(struct parser_params *p, VALUE pre_rest_arg, VALUE args, VALUE post_rest_arg, const YYLTYPE *loc)
 {
     NODE *t;
-    struct rb_fnd_pattern_info *fpinfo;
 
     pre_rest_arg = dispatch1(var_field, pre_rest_arg ? pre_rest_arg : Qnil);
     post_rest_arg = dispatch1(var_field, post_rest_arg ? post_rest_arg : Qnil);
 
-    VALUE tmpbuf = rb_imemo_tmpbuf_auto_free_pointer();
-    fpinfo = ZALLOC(struct rb_fnd_pattern_info);
-    rb_imemo_tmpbuf_set_ptr(tmpbuf, fpinfo);
-    fpinfo->imemo = rb_ary_new_from_args(4, pre_rest_arg, args, post_rest_arg, tmpbuf);
-
-    t = rb_node_newnode(NODE_FNDPTN, Qnil, Qnil, (VALUE)fpinfo, &NULL_LOC);
-    RB_OBJ_WRITTEN(p->ast, Qnil, fpinfo->imemo);
-
+    t = rb_node_newnode(NODE_FNDPTN, pre_rest_arg, args, post_rest_arg, &NULL_LOC);
+    add_mark_object(p, pre_rest_arg);
+    add_mark_object(p, args);
+    add_mark_object(p, post_rest_arg);
     return (VALUE)t;
 }
 
@@ -11602,8 +11582,7 @@ new_array_pattern_tail(struct parser_params *p, NODE *pre_args, int has_rest, ID
     VALUE tmpbuf = rb_imemo_tmpbuf_auto_free_pointer();
     struct rb_ary_pattern_info *apinfo = ZALLOC(struct rb_ary_pattern_info);
     rb_imemo_tmpbuf_set_ptr(tmpbuf, apinfo);
-    node = NEW_NODE(NODE_ARYPTN, 0, 0, apinfo, loc);
-    apinfo->imemo = tmpbuf;
+    node = NEW_NODE(NODE_ARYPTN, tmpbuf, 0, apinfo, loc);
     RB_OBJ_WRITTEN(p->ast, Qnil, tmpbuf);
 
     apinfo->pre_args = pre_args;
@@ -11642,8 +11621,7 @@ new_find_pattern_tail(struct parser_params *p, ID pre_rest_arg, NODE *args, ID p
     VALUE tmpbuf = rb_imemo_tmpbuf_auto_free_pointer();
     struct rb_fnd_pattern_info *fpinfo = ZALLOC(struct rb_fnd_pattern_info);
     rb_imemo_tmpbuf_set_ptr(tmpbuf, fpinfo);
-    node = NEW_NODE(NODE_FNDPTN, 0, 0, fpinfo, loc);
-    fpinfo->imemo = tmpbuf;
+    node = NEW_NODE(NODE_FNDPTN, tmpbuf, 0, fpinfo, loc);
     RB_OBJ_WRITTEN(p->ast, Qnil, tmpbuf);
 
     fpinfo->pre_rest_arg = pre_rest_arg ? assignable(p, pre_rest_arg, 0, loc) : NODE_SPECIAL_NO_NAME_REST;
@@ -11677,7 +11655,7 @@ new_hash_pattern_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, co
 	kw_rest_arg_node = NULL;
     }
 
-    node = NEW_NODE(NODE_HSHPTN, 0, kw_args, kw_rest_arg_node, loc);
+    node = NEW_NODE(NODE_HSHPTN, kw_args, 0, kw_rest_arg_node, loc);
 
     p->ruby_sourceline = saved_line;
     return node;

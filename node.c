@@ -1294,18 +1294,6 @@ static void
 mark_ast_value(void *ctx, NODE * node)
 {
     switch (nd_type(node)) {
-      case NODE_ARYPTN:
-        {
-            struct rb_ary_pattern_info *apinfo = node->nd_apinfo;
-            rb_gc_mark_movable(apinfo->imemo);
-            break;
-        }
-      case NODE_FNDPTN:
-        {
-            struct rb_fnd_pattern_info *fpinfo = node->nd_fpinfo;
-            rb_gc_mark_movable(fpinfo->imemo);
-            break;
-        }
       case NODE_ARGS:
         {
             struct rb_args_info *args = node->nd_ainfo;
@@ -1320,6 +1308,8 @@ mark_ast_value(void *ctx, NODE * node)
       case NODE_DXSTR:
       case NODE_DREGX:
       case NODE_DSYM:
+      case NODE_ARYPTN:
+      case NODE_FNDPTN:
         rb_gc_mark_movable(node->nd_lit);
         break;
       default:
@@ -1331,18 +1321,6 @@ static void
 update_ast_value(void *ctx, NODE * node)
 {
     switch (nd_type(node)) {
-      case NODE_ARYPTN:
-        {
-            struct rb_ary_pattern_info *apinfo = node->nd_apinfo;
-            apinfo->imemo = rb_gc_location(apinfo->imemo);
-            break;
-        }
-      case NODE_FNDPTN:
-        {
-            struct rb_fnd_pattern_info *fpinfo = node->nd_fpinfo;
-            fpinfo->imemo = rb_gc_location(fpinfo->imemo);
-            break;
-        }
       case NODE_ARGS:
         {
             struct rb_args_info *args = node->nd_ainfo;
@@ -1357,6 +1335,8 @@ update_ast_value(void *ctx, NODE * node)
       case NODE_DXSTR:
       case NODE_DREGX:
       case NODE_DSYM:
+      case NODE_ARYPTN:
+      case NODE_FNDPTN:
         node->nd_lit = rb_gc_location(node->nd_lit);
         break;
       default:

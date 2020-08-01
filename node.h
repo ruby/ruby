@@ -273,8 +273,8 @@ typedef struct RNode {
 
 #define nd_brace u2.argc
 
-#define nd_pconst     u1.node
-#define nd_pkwargs    u2.node
+#define nd_pkwargs    u1.node
+#define nd_pconst     u2.node
 #define nd_pkwrestarg u3.node
 
 #define nd_apinfo u3.apinfo
@@ -458,14 +458,12 @@ struct rb_ary_pattern_info {
     NODE *pre_args;
     NODE *rest_arg;
     NODE *post_args;
-    VALUE imemo;
 };
 
 struct rb_fnd_pattern_info {
     NODE *pre_rest_arg;
     NODE *args;
     NODE *post_rest_arg;
-    VALUE imemo;
 };
 
 struct parser_params;
