@@ -3328,13 +3328,12 @@ rb_mod_class_variables(int argc, const VALUE *argv, VALUE mod)
  *  call-seq:
  *     remove_class_variable(sym)    -> obj
  *
- *  Removes the definition of the <i>sym</i>, returning that
- *  constant's value.
+ *  Removes the named class variable from the receiver, returning that
+ *  variable's value.
  *
- *     class Dummy
+ *     class Example
  *       @@var = 99
- *       puts @@var
- *       remove_class_variable(:@@var)
+ *       puts remove_class_variable(:@@var)
  *       p(defined? @@var)
  *     end
  *
