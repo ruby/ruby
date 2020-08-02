@@ -9,6 +9,8 @@ RSpec.describe Bundler::CLI::Common do
       expect(message).to match("Could not find gem 'ralis'.$")
       message = subject.gem_not_found_message("ralis", ["rails"])
       expect(message).to match("Did you mean 'rails'?")
+      message = subject.gem_not_found_message("Rails", ["rails"])
+      expect(message).to match("Did you mean 'rails'?")
       message = subject.gem_not_found_message("meail", %w[email fail eval])
       expect(message).to match("Did you mean 'email'?")
       message = subject.gem_not_found_message("nokogri", %w[nokogiri rails sidekiq dog])

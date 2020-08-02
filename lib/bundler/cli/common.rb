@@ -95,8 +95,10 @@ module Bundler
 
     def self.gem_not_found_message(missing_gem_name, alternatives)
       message = "Could not find gem '#{missing_gem_name}'."
-      if defined?(DidYouMean::SpellChecker)
-        alternate_names = alternatives.map {|a| a.respond_to?(:name) ? a.name : a }
+      alternate_names = alternatives.map {|a| a.respond_to?(:name) ? a.name : a }
+      if alternate_names.include?(missing_gem_name.downcase)
+        message += "\nDid you mean '#{missing_gem_name.downcase}'?"
+      elsif defined?(DidYouMean::SpellChecker)
         suggestions = DidYouMean::SpellChecker.new(:dictionary => alternate_names).correct(missing_gem_name)
         message += "\nDid you mean #{word_list(suggestions)}?" unless suggestions.empty?
       end

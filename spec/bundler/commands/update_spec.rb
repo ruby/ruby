@@ -193,7 +193,7 @@ RSpec.describe "bundle update" do
     end
     it "should suggest alternatives" do
       bundle "update platformspecific", raise_on_error: false
-      expect(err).to include "Did you mean platform_specific?"
+      expect(err).to include "Did you mean 'platform_specific'?"
     end
   end
 
