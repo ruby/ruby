@@ -49,7 +49,7 @@ RSpec.describe "bundle open" do
 
     it "suggests alternatives for similar-sounding gems" do
       bundle "open Rails", env: { "EDITOR" => "echo editor", "VISUAL" => "", "BUNDLER_EDITOR" => "" }, raise_on_error: false
-      expect(err).to match(/did you mean rails\?/i)
+      expect(err).to match(/did you mean 'rails'\?/i)
     end
 
     it "opens the gem with short words" do
