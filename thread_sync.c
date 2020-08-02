@@ -93,7 +93,7 @@ rb_mutex_num_waiting(rb_mutex_t *mutex)
     return n;
 }
 
-rb_thread_t* fiber_thread_ptr(const rb_fiber_t *fiber);
+rb_thread_t* rb_fiber_threadptr(const rb_fiber_t *fiber);
 
 static void
 mutex_free(void *ptr)
@@ -101,7 +101,7 @@ mutex_free(void *ptr)
     rb_mutex_t *mutex = ptr;
     if (mutex->fiber) {
 	/* rb_warn("free locked mutex"); */
-	const char *err = rb_mutex_unlock_th(mutex, fiber_thread_ptr(mutex->fiber), mutex->fiber);
+	const char *err = rb_mutex_unlock_th(mutex, rb_fiber_threadptr(mutex->fiber), mutex->fiber);
 	if (err) rb_bug("%s", err);
     }
     ruby_xfree(ptr);

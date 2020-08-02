@@ -850,7 +850,7 @@ NOINLINE(static VALUE cont_capture(volatile int *volatile stat));
     } while (0)
 
 rb_thread_t*
-fiber_thread_ptr(const rb_fiber_t *fiber)
+rb_fiber_threadptr(const rb_fiber_t *fiber)
 {
     return fiber->cont.saved_ec.thread_ptr;
 }
