@@ -74,14 +74,14 @@ rb_fiddle_handle_close(VALUE self)
 	/* Check dlclose for successful return value */
 	if(ret) {
 #if defined(HAVE_DLERROR)
-	    rb_raise(rb_eFiddleError, "%s", dlerror());
+	    rb_raise(rb_eFiddleDLError, "%s", dlerror());
 #else
-	    rb_raise(rb_eFiddleError, "could not close handle");
+	    rb_raise(rb_eFiddleDLError, "could not close handle");
 #endif
 	}
 	return INT2NUM(ret);
     }
-    rb_raise(rb_eFiddleError, "dlclose() called too many times");
+    rb_raise(rb_eFiddleDLError, "dlclose() called too many times");
 
     UNREACHABLE;
 }
@@ -177,12 +177,12 @@ rb_fiddle_handle_initialize(int argc, VALUE argv[], VALUE self)
 	ptr = dlopen(clib, cflag);
 #if defined(HAVE_DLERROR)
     if( !ptr && (err = dlerror()) ){
-	rb_raise(rb_eFiddleError, "%s", err);
+	rb_raise(rb_eFiddleDLError, "%s", err);
     }
 #else
     if( !ptr ){
 	err = dlerror();
-	rb_raise(rb_eFiddleError, "%s", err);
+	rb_raise(rb_eFiddleDLError, "%s", err);
     }
 #endif
     TypedData_Get_Struct(self, struct dl_handle, &fiddle_handle_data_type, fiddle_handle);
@@ -278,7 +278,7 @@ rb_fiddle_handle_sym(VALUE self, VALUE sym)
 
     TypedData_Get_Struct(self, struct dl_handle, &fiddle_handle_data_type, fiddle_handle);
     if( ! fiddle_handle->open ){
-	rb_raise(rb_eFiddleError, "closed handle");
+	rb_raise(rb_eFiddleDLError, "closed handle");
     }
 
     return fiddle_handle_sym(fiddle_handle->ptr, sym);
@@ -366,7 +366,7 @@ fiddle_handle_sym(void *handle, VALUE symbol)
     }
 #endif
     if( !func ){
-	rb_raise(rb_eFiddleError, "unknown symbol \"%"PRIsVALUE"\"", symbol);
+	rb_raise(rb_eFiddleDLError, "unknown symbol \"%"PRIsVALUE"\"", symbol);
     }
 
     return PTR2NUM(func);
