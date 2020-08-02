@@ -164,7 +164,7 @@
 #define ALIGN_DOUBLE ALIGN_OF(double)
 
 extern VALUE mFiddle;
-extern VALUE rb_eFiddleError;
+extern VALUE rb_eFiddleDLError;
 
 VALUE rb_fiddle_new_function(VALUE address, VALUE arg_types, VALUE ret_type);
 
