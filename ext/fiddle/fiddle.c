@@ -1,9 +1,11 @@
 #include <fiddle.h>
 
 VALUE mFiddle;
+VALUE rb_eFiddleDLError;
 VALUE rb_eFiddleError;
 
 void Init_fiddle_pointer(void);
+void Init_fiddle_pinned(void);
 
 /*
  * call-seq: Fiddle.malloc(size)
@@ -133,11 +135,18 @@ Init_fiddle(void)
     mFiddle = rb_define_module("Fiddle");
 
     /*
+     * Document-class: Fiddle::Error
+     *
+     * Generic error class for Fiddle
+     */
+    rb_eFiddleError = rb_define_class_under(mFiddle, "Error", rb_eStandardError);
+
+    /*
      * Document-class: Fiddle::DLError
      *
      * standard dynamic load exception
      */
-    rb_eFiddleError = rb_define_class_under(mFiddle, "DLError", rb_eStandardError);
+    rb_eFiddleDLError = rb_define_class_under(mFiddle, "DLError", rb_eFiddleError);
 
     /* Document-const: TYPE_VOID
      *
@@ -439,5 +448,6 @@ Init_fiddle(void)
     Init_fiddle_closure();
     Init_fiddle_handle();
     Init_fiddle_pointer();
+    Init_fiddle_pinned();
 }
 /* vim: set noet sws=4 sw=4: */

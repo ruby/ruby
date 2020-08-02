@@ -39,6 +39,7 @@ Gem::Specification.new do |spec|
     "ext/fiddle/function.c",
     "ext/fiddle/function.h",
     "ext/fiddle/handle.c",
+    "ext/fiddle/pinned.c",
     "ext/fiddle/pointer.c",
     "ext/fiddle/win32/fficonfig.h",
     "ext/fiddle/win32/libffi-3.2.1-mswin.patch",
