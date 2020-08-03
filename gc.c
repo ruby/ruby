@@ -5313,7 +5313,9 @@ gc_pin(rb_objspace_t *objspace, VALUE obj)
 {
     GC_ASSERT(is_markable_object(objspace, obj));
     if (UNLIKELY(objspace->flags.during_compacting)) {
-        MARK_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), obj);
+        if (LIKELY(objspace->mark_func_data == NULL)) {
+            MARK_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), obj);
+        }
     }
 }
 
