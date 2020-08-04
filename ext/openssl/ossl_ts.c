@@ -821,12 +821,9 @@ ossl_ts_resp_verify(int argc, VALUE *argv, VALUE self)
     TS_VERIFY_CTX_set_store(ctx, x509st);
 
     ok = TS_RESP_verify_response(ctx, resp);
-
-    /* WORKAROUND:
-     *   X509_STORE can count references, but X509_STORE_free() doesn't check
-     *   this. To prevent our X509_STORE from being freed with our
-     *   TS_VERIFY_CTX we set the store to NULL first.
-     *   Fixed in OpenSSL 1.0.2; bff9ce4db38b (master), 5b4b9ce976fc (1.0.2)
+    /*
+     * TS_VERIFY_CTX_set_store() call above does not increment the reference
+     * counter, so it must be unset before TS_VERIFY_CTX_free() is called.
      */
     TS_VERIFY_CTX_set_store(ctx, NULL);
     TS_VERIFY_CTX_free(ctx);

@@ -265,10 +265,9 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
     assert_raise(OpenSSL::ASN1::ASN1Error) {
       OpenSSL::ASN1.decode(B(%w{ 03 00 }))
     }
-    # OpenSSL < OpenSSL_1_0_1k and LibreSSL ignore the error
-    # assert_raise(OpenSSL::ASN1::ASN1Error) {
-    #   OpenSSL::ASN1.decode(B(%w{ 03 03 08 FF 00 }))
-    # }
+    assert_raise(OpenSSL::ASN1::ASN1Error) {
+      OpenSSL::ASN1.decode(B(%w{ 03 03 08 FF 00 }))
+    }
     # OpenSSL does not seem to prohibit this, though X.690 8.6.2.3 (15/08) does
     # assert_raise(OpenSSL::ASN1::ASN1Error) {
     #   OpenSSL::ASN1.decode(B(%w{ 03 01 04 }))
