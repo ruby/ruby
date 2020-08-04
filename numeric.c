@@ -911,7 +911,7 @@ num_negative_p(VALUE num)
  *  Floating point has a different arithmetic and is an inexact number.
  *  So you should know its esoteric system. See following:
  *
- *  - http://docs.sun.com/source/806-3568/ncg_goldberg.html
+ *  - https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html
  *  - https://github.com/rdp/ruby_tutorials_core/wiki/Ruby-Talk-FAQ#floats_imprecise
  *  - https://en.wikipedia.org/wiki/Floating_point#Accuracy_problems
  */
