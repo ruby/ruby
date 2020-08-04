@@ -144,14 +144,91 @@ class CSV
       end
     end
 
+    # :call-seq:
+    #   table[n] -> row
+    #   table[range] -> array_of_rows
+    #   table[header] -> array_of_fields
     #
-    # In the default mixed mode, this method returns rows for index access and
-    # columns for header access. You can force the index association by first
-    # calling by_col!() or by_row!().
+    # Returns data from the table;  does not modify the table.
     #
-    # Columns are returned as an Array of values.  Altering that Array has no
-    # effect on the table.
+    # ---
     #
+    # The expression <tt>table[n]</tt>, where +n+ is a non-negative \Integer,
+    # returns the +n+th row of the table, if that row exists,
+    # and if the access mode is <tt>:row</tt> or <tt>:col_or_row</tt>:
+    #   source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+    #   table = CSV.parse(source, headers: true)
+    #   table.by_row! # => #<CSV::Table mode:row row_count:4>
+    #   table[1] # => #<CSV::Row "Name":"bar" "Value":"1">
+    #   table.by_col_or_row! # => #<CSV::Table mode:col_or_row row_count:4>
+    #   table[1] # => #<CSV::Row "Name":"bar" "Value":"1">
+    #
+    # Counts backward from the last row if +n+ is negative:
+    #   table[-1] # => #<CSV::Row "Name":"baz" "Value":"2">
+    #
+    # Returns +nil+ if +n+ is too large or too small:
+    #   table[4] # => nil
+    #   table[-4] => nil
+    #
+    # Raises an exception if the access mode is <tt>:row</tt>
+    # and +n+ is not an
+    # {Integer-convertible object}[https://docs.ruby-lang.org/en/master/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
+    #   table.by_row! # => #<CSV::Table mode:row row_count:4>
+    #   # Raises TypeError (no implicit conversion of String into Integer):
+    #   table['Name']
+    #
+    # ---
+    #
+    # The expression <tt>table[range]</tt>, where +range+ is a Range object,
+    # returns rows from the table, beginning at row <tt>range.first</tt>,
+    # if those rows exist, and if the access mode is <tt>:row</tt> or <tt>:col_or_row</tt>:
+    #   source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+    #   table = CSV.parse(source, headers: true)
+    #   table.by_row! # => #<CSV::Table mode:row row_count:4>
+    #   rows = table[1..2] # => #<CSV::Row "Name":"bar" "Value":"1">
+    #   rows # => [#<CSV::Row "Name":"bar" "Value":"1">, #<CSV::Row "Name":"baz" "Value":"2">]
+    #   table.by_col_or_row! # => #<CSV::Table mode:col_or_row row_count:4>
+    #   rows = table[1..2] # => #<CSV::Row "Name":"bar" "Value":"1">
+    #   rows # => [#<CSV::Row "Name":"bar" "Value":"1">, #<CSV::Row "Name":"baz" "Value":"2">]
+    #
+    # If there are too few rows, returns all from <tt>range.first</tt> to the end:
+    #   rows = table[1..50] # => #<CSV::Row "Name":"bar" "Value":"1">
+    #   rows # => [#<CSV::Row "Name":"bar" "Value":"1">, #<CSV::Row "Name":"baz" "Value":"2">]
+    #
+    # Special case:  if <tt>range.start == table.size</tt>, returns an empty \Array:
+    #   table[table.size..50] # => []
+    #
+    # If <tt>range.end</tt> is negative, calculates the ending index from the end:
+    #   rows = table[0..-1]
+    #   rows # => [#<CSV::Row "Name":"foo" "Value":"0">, #<CSV::Row "Name":"bar" "Value":"1">, #<CSV::Row "Name":"baz" "Value":"2">]
+    #
+    # If <tt>range.start</tt> is negative, calculates the starting index from the end:
+    #   rows = table[-1..2]
+    #   rows # => [#<CSV::Row "Name":"baz" "Value":"2">]
+    #
+    # If <tt>range.start</tt> is larger than <tt>table.size</tt>, returns +nil+:
+    #   table[4..4] # => nil
+    #
+    # ---
+    #
+    # The expression <tt>table[header]</tt>, where +header+ is a \String,
+    # returns column values (\Array of \Strings) if the column exists
+    # and if the access mode is <tt>:col</tt> or <tt>:col_or_row</tt>:
+    #   source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+    #   table = CSV.parse(source, headers: true)
+    #   table.by_col! # => #<CSV::Table mode:col row_count:4>
+    #   table['Name'] # => ["foo", "bar", "baz"]
+    #   table.by_col_or_row! # => #<CSV::Table mode:col_or_row row_count:4>
+    #   col = table['Name']
+    #   col # => ["foo", "bar", "baz"]
+    #
+    # Modifying the returned column values does not modify the table:
+    #   col[0] = 'bat'
+    #   col # => ["bat", "bar", "baz"]
+    #   table['Name'] # => ["foo", "bar", "baz"]
+    #
+    # Returns an \Array of +nil+ values if there is no such column:
+    #   table['Nosuch'] # => [nil, nil, nil]
     def [](index_or_header)
       if @mode == :row or  # by index
          (@mode == :col_or_row and (index_or_header.is_a?(Integer) or index_or_header.is_a?(Range)))
