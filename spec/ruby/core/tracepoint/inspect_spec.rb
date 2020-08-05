@@ -2,6 +2,18 @@ require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
 describe 'TracePoint#inspect' do
+  before do
+    ruby_version_is ""..."2.8" do
+      # Old behavior for Ruby < 2.8
+      @path_prefix = '@'
+    end
+
+    ruby_version_is "2.8" do
+      # New behavior for Ruby >= 2.8
+      @path_prefix = ' '
+    end
+  end
+
   it 'returns a string containing a human-readable TracePoint status' do
     TracePoint.new(:line) {}.inspect.should == '#<TracePoint:disabled>'
   end
@@ -16,7 +28,7 @@ describe 'TracePoint#inspect' do
       line = __LINE__
     end
 
-    inspect.should == "#<TracePoint:line #{__FILE__}:#{line}>"
+    inspect.should == "#<TracePoint:line#{@path_prefix}#{__FILE__}:#{line}>"
   end
 
   it 'returns a String showing the event, method, path and line for a :call event' do
@@ -31,7 +43,7 @@ describe 'TracePoint#inspect' do
       trace_point_spec_test_call
     end
 
-    inspect.should == "#<TracePoint:call `trace_point_spec_test_call' #{__FILE__}:#{line}>"
+    inspect.should == "#<TracePoint:call `trace_point_spec_test_call'#{@path_prefix}#{__FILE__}:#{line}>"
   end
 
   it 'returns a String showing the event, method, path and line for a :return event' do
@@ -49,7 +61,7 @@ describe 'TracePoint#inspect' do
       trace_point_spec_test_return
     end
 
-    inspect.should == "#<TracePoint:return `trace_point_spec_test_return' #{__FILE__}:#{line}>"
+    inspect.should == "#<TracePoint:return `trace_point_spec_test_return'#{@path_prefix}#{__FILE__}:#{line}>"
   end
 
   it 'returns a String showing the event, method, path and line for a :c_call event' do
@@ -63,7 +75,7 @@ describe 'TracePoint#inspect' do
       [0, 1].max
     end
 
-    inspect.should == "#<TracePoint:c_call `max' #{__FILE__}:#{line}>"
+    inspect.should == "#<TracePoint:c_call `max'#{@path_prefix}#{__FILE__}:#{line}>"
   end
 
   it 'returns a String showing the event, path and line for a :class event' do
@@ -78,7 +90,7 @@ describe 'TracePoint#inspect' do
       end
     end
 
-    inspect.should == "#<TracePoint:class #{__FILE__}:#{line}>"
+    inspect.should == "#<TracePoint:class#{@path_prefix}#{__FILE__}:#{line}>"
   end
 
   it 'returns a String showing the event and thread for :thread_begin event' do
