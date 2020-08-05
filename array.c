@@ -7810,25 +7810,74 @@ rb_ary_repeated_permutation_size(VALUE ary, VALUE args, VALUE eobj)
 
 /*
  *  call-seq:
- *     ary.repeated_permutation(n) {|p| block}   -> ary
- *     ary.repeated_permutation(n)               -> Enumerator
+ *  array.repeated_permutation(n) {|permutation| ... } -> self
+ *  array.repeated_permutation(n) -> new_enumerator
  *
- * When invoked with a block, yield all repeated permutations of length +n+ of
- * the elements of the array, then return the array itself.
+ *  Calls the block with each repeated permutation of length +n+ of the elements of +self+;
+ *  each permutation is an \Array;
+ *  returns +self+. The order of the permutations is indeterminate.
  *
- * The implementation makes no guarantees about the order in which the repeated
- * permutations are yielded.
+ *  Argument +n+ must be an
+ *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
  *
- * If no block is given, an Enumerator is returned instead.
+ *  ---
  *
- * Examples:
+ *  When a block and a positive argument +n+ are given, calls the block with each
+ *  +n+-tuple repeated permutation of the elements of +self+.
+ *  The number of permutations is <tt>self.size**n</tt>.
  *
- *     a = [1, 2]
- *     a.repeated_permutation(1).to_a  #=> [[1], [2]]
- *     a.repeated_permutation(2).to_a  #=> [[1,1],[1,2],[2,1],[2,2]]
- *     a.repeated_permutation(3).to_a  #=> [[1,1,1],[1,1,2],[1,2,1],[1,2,2],
- *                                     #    [2,1,1],[2,1,2],[2,2,1],[2,2,2]]
- *     a.repeated_permutation(0).to_a  #=> [[]] # one permutation of length 0
+ *  +n+ = 1:
+ *    a = [0, 1, 2]
+ *    a1 = a.repeated_permutation(1) {|permutation| p permutation }
+ *    a1.equal?(a) # => true # Returned self
+ *  Output:
+ *    [0]
+ *    [1]
+ *    [2]
+ *
+ *  +n+ = 2:
+ *    a.repeated_permutation(2) {|permutation| p permutation }
+ *  Output:
+ *    [0, 0]
+ *    [0, 1]
+ *    [0, 2]
+ *    [1, 0]
+ *    [1, 1]
+ *    [1, 2]
+ *    [2, 0]
+ *    [2, 1]
+ *    [2, 2]
+ *
+ *  If +n+ is zero, calls the block once with an empty \Array:
+ *    a.repeated_permutation(0) {|permutation| p permutation }
+ *  Output:
+ *    []
+ *  If +n+ is negative, does not call the block:
+ *    a.repeated_permutation(-1) {|permutation| fail 'Cannot happen' }
+ *
+ *  ---
+ *
+ *  Returns a new \Enumerator if no block given:
+ *    a = [0, 1, 2]
+ *    a.repeated_permutations(2) # => #<Enumerator: [0, 1, 2]:permutation(2)>
+ *
+ *  Using Enumerators, it's convenient to show the permutations and counts
+ *  for some values of +n+:
+ *    e = a.repeated_permutation(0)
+ *    e.size # => 1
+ *    e.to_a # => [[]]
+ *    e = a.repeated_permutation(1)
+ *    e.size # => 3
+ *    e.to_a # => [[0], [1], [2]]
+ *    e = a.repeated_permutation(2)
+ *    e.size # => 9
+ *    e.to_a # => [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2]]
+ *
+ *  ---
+ *
+ *  Raises an exception if +n+ is not an Integer-convertible object:
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    a.repeated_permutation(:foo) { }
  */
 
 static VALUE
