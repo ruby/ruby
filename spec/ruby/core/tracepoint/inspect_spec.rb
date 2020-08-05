@@ -95,8 +95,10 @@ describe 'TracePoint#inspect' do
 
   it 'returns a String showing the event and thread for :thread_begin event' do
     inspect = nil
+    thread = nil
     thread_inspection = nil
     TracePoint.new(:thread_begin) { |tp|
+      next unless Thread.current == thread
       inspect ||= tp.inspect
     }.enable do
       thread = Thread.new {}
@@ -109,8 +111,10 @@ describe 'TracePoint#inspect' do
 
   it 'returns a String showing the event and thread for :thread_end event' do
     inspect = nil
+    thread = nil
     thread_inspection = nil
     TracePoint.new(:thread_end) { |tp|
+      next unless Thread.current == thread
       inspect ||= tp.inspect
     }.enable do
       thread = Thread.new {}
