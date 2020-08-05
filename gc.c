@@ -654,6 +654,7 @@ typedef struct rb_heap_struct {
     struct list_head pages;
     struct heap_page *sweeping_page; /* iterator for .pages */
     struct heap_page *compact_cursor;
+    size_t compact_cursor_index;
 #if GC_ENABLE_INCREMENTAL_MARK
     struct heap_page *pooled_pages;
 #endif
@@ -4434,6 +4435,8 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page,
     GC_ASSERT(RVALUE_MARKED(dest) == FALSE);
 
     while(1) {
+        size_t index = heap->compact_cursor_index;
+
         unlock_page_body(objspace, GET_PAGE_BODY(cursor->start));
 
 	bits_t *mark_bits = cursor->mark_bits;
@@ -4443,7 +4446,7 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page,
 
         /* Find an object to move and move it. Movable objects must be
          * marked, so we iterate using the marking bitmap */
-        for (size_t i = 0; i < HEAP_PAGE_BITMAP_LIMIT; i++) {
+        for (size_t i = index; i < HEAP_PAGE_BITMAP_LIMIT; i++) {
             bits_t bits = mark_bits[i] & ~pin_bits[i];
 
             if (bits) {
@@ -4459,6 +4462,7 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page,
                             objspace->rcompactor.moved_count_table[BUILTIN_TYPE((VALUE)p)]++;
                             gc_move(objspace, (VALUE)p, dest);
                             gc_pin(objspace, (VALUE)p);
+                            heap->compact_cursor_index = i;
                             if (from_freelist) {
                                 FL_SET((VALUE)p, FL_FROM_FREELIST);
                             }
@@ -4481,10 +4485,12 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page,
 
         next = list_prev(&heap->pages, cursor, page_node);
 
+
         /* Protect the current cursor since it probably has T_MOVED slots. */
         lock_page_body(objspace, GET_PAGE_BODY(cursor->start));
 
         heap->compact_cursor = next;
+        heap->compact_cursor_index = 0;
         cursor = next;
 
         // Cursors have met, lets quit.  We set `heap->compact_cursor` equal
@@ -4601,6 +4607,7 @@ gc_compact_finish(rb_objspace_t *objspace, rb_heap_t *heap)
 
     gc_update_references(objspace, heap);
     heap->compact_cursor = NULL;
+    heap->compact_cursor_index = 0;
     rb_clear_constant_cache();
     objspace->flags.compact = 0;
     objspace->flags.during_compacting = FALSE;
@@ -5014,6 +5021,7 @@ static void
 gc_compact_start(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     heap->compact_cursor = list_tail(&heap->pages, struct heap_page, page_node);
+    heap->compact_cursor_index = 0;
 
     memset(objspace->rcompactor.considered_count_table, 0, T_MASK * sizeof(size_t));
     memset(objspace->rcompactor.moved_count_table, 0, T_MASK * sizeof(size_t));
@@ -8226,9 +8234,7 @@ gc_start_internal(rb_execution_context_t *ec, VALUE self, VALUE full_mark, VALUE
 static int
 gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
 {
-    if (SPECIAL_CONST_P(obj)) {
-        return FALSE;
-    }
+    GC_ASSERT(!SPECIAL_CONST_P(obj));
 
     switch (BUILTIN_TYPE(obj)) {
       case T_NONE:
@@ -8269,7 +8275,10 @@ gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
                 return FALSE;
             }
         }
-        return RVALUE_MARKED(obj) && !RVALUE_PINNED(obj);
+        GC_ASSERT(RVALUE_MARKED(obj));
+        GC_ASSERT(!RVALUE_PINNED(obj));
+
+        return TRUE;
 
       default:
         rb_bug("gc_is_moveable_obj: unreachable (%d)", (int)BUILTIN_TYPE(obj));
