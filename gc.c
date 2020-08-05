@@ -4500,8 +4500,6 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page,
 static void
 gc_unprotect_pages(rb_objspace_t *objspace, rb_heap_t *heap)
 {
-    assert(heap->sweeping_page == heap->compact_cursor);
-
     struct heap_page *cursor = heap->compact_cursor;
 
     while(cursor) {
