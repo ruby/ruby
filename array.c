@@ -7848,10 +7848,7 @@ rb_ary_repeated_permutation_size(VALUE ary, VALUE args, VALUE eobj)
  *    [2, 1]
  *    [2, 2]
  *
- *  If +n+ is zero, calls the block once with an empty \Array:
- *    a.repeated_permutation(0) {|permutation| p permutation }
- *  Output:
- *    []
+ *  If +n+ is zero, calls the block once with an empty \Array.
  *
  *  If +n+ is negative, does not call the block:
  *    a.repeated_permutation(-1) {|permutation| fail 'Cannot happen' }
@@ -7984,10 +7981,7 @@ rb_ary_repeated_combination_size(VALUE ary, VALUE args, VALUE eobj)
  *    [1, 2]
  *    [2, 2]
  *
- *  If +n+ is zero, calls the block once with an empty \Array:
- *    a.repeated_combination(0) {|combination| p combination }
- *  Output:
- *    []
+ *  If +n+ is zero, calls the block once with an empty \Array.
  *
  *  If +n+ is negative, does not call the block:
  *    a.repeated_combination(-1) {|combination| fail 'Cannot happen' }
