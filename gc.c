@@ -4423,13 +4423,14 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page,
         unlock_page_body(objspace, GET_PAGE_BODY(cursor->start));
 
 	bits_t *mark_bits = cursor->mark_bits;
+        bits_t *pin_bits = cursor->pinned_bits;
         RVALUE * p = cursor->start;
         RVALUE * offset = p - NUM_IN_PAGE(p);
 
         /* Find an object to move and move it. Movable objects must be
          * marked, so we iterate using the marking bitmap */
         for (size_t i = 0; i < HEAP_PAGE_BITMAP_LIMIT; i++) {
-            bits_t bits = mark_bits[i];
+            bits_t bits = mark_bits[i] & ~pin_bits[i];
 
             if (bits) {
                 p = offset + i * BITS_BITLENGTH;
