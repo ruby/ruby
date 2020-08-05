@@ -67,7 +67,7 @@ block_mark(const struct rb_block *block)
 	    RUBY_MARK_MOVABLE_UNLESS_NULL(captured->self);
 	    RUBY_MARK_MOVABLE_UNLESS_NULL((VALUE)captured->code.val);
 	    if (captured->ep && captured->ep[VM_ENV_DATA_INDEX_ENV] != Qundef /* cfunc_proc_t */) {
-                RUBY_MARK_MOVABLE_UNLESS_NULL(VM_ENV_ENVVAL(captured->ep));
+                rb_gc_mark(VM_ENV_ENVVAL(captured->ep));
 	    }
 	}
 	break;
@@ -83,16 +83,13 @@ block_mark(const struct rb_block *block)
 static void
 block_compact(struct rb_block *block)
 {
-    switch (block->type) {
+    switch (vm_block_type(block)) {
       case block_type_iseq:
       case block_type_ifunc:
 	{
 	    struct rb_captured_block *captured = &block->as.captured;
             captured->self = rb_gc_location(captured->self);
             captured->code.val = rb_gc_location(captured->code.val);
-            if (captured->ep && captured->ep[VM_ENV_DATA_INDEX_ENV] != Qundef /* cfunc_proc_t */) {
-                UPDATE_REFERENCE(captured->ep[VM_ENV_DATA_INDEX_ENV]);
-            }
 	}
 	break;
       case block_type_symbol:
