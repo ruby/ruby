@@ -7810,8 +7810,8 @@ rb_ary_repeated_permutation_size(VALUE ary, VALUE args, VALUE eobj)
 
 /*
  *  call-seq:
- *  array.repeated_permutation(n) {|permutation| ... } -> self
- *  array.repeated_permutation(n) -> new_enumerator
+ *    array.repeated_permutation(n) {|permutation| ... } -> self
+ *    array.repeated_permutation(n) -> new_enumerator
  *
  *  Calls the block with each repeated permutation of length +n+ of the elements of +self+;
  *  each permutation is an \Array;
@@ -7852,6 +7852,7 @@ rb_ary_repeated_permutation_size(VALUE ary, VALUE args, VALUE eobj)
  *    a.repeated_permutation(0) {|permutation| p permutation }
  *  Output:
  *    []
+ *
  *  If +n+ is negative, does not call the block:
  *    a.repeated_permutation(-1) {|permutation| fail 'Cannot happen' }
  *
@@ -7859,7 +7860,7 @@ rb_ary_repeated_permutation_size(VALUE ary, VALUE args, VALUE eobj)
  *
  *  Returns a new \Enumerator if no block given:
  *    a = [0, 1, 2]
- *    a.repeated_permutations(2) # => #<Enumerator: [0, 1, 2]:permutation(2)>
+ *    a.repeated_permutation(2) # => #<Enumerator: [0, 1, 2]:permutation(2)>
  *
  *  Using Enumerators, it's convenient to show the permutations and counts
  *  for some values of +n+:
@@ -7879,7 +7880,6 @@ rb_ary_repeated_permutation_size(VALUE ary, VALUE args, VALUE eobj)
  *    # Raises TypeError (no implicit conversion of Symbol into Integer):
  *    a.repeated_permutation(:foo) { }
  */
-
 static VALUE
 rb_ary_repeated_permutation(VALUE ary, VALUE num)
 {
@@ -7949,29 +7949,72 @@ rb_ary_repeated_combination_size(VALUE ary, VALUE args, VALUE eobj)
 
 /*
  *  call-seq:
- *     ary.repeated_combination(n) {|c| block}   -> ary
- *     ary.repeated_combination(n)               -> Enumerator
+ *    array.repeated_combination(n) {|combination| ... } -> self
+ *    array.repeated_combination(n) -> new_enumerator
  *
- * When invoked with a block, yields all repeated combinations of length +n+ of
- * elements from the array and then returns the array itself.
+ *  Calls the block with each repeated combination of length +n+ of the elements of +self+;
+ *  each combination is an \Array;
+ *  returns +self+. The order of the combinations is indeterminate.
  *
- * The implementation makes no guarantees about the order in which the repeated
- * combinations are yielded.
+ *  Argument +n+ must be an
+ *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
  *
- * If no block is given, an Enumerator is returned instead.
+ *  ---
  *
- * Examples:
+ *  When a block and a positive argument +n+ are given, calls the block with each
+ *  +n+-tuple repeated combination of the elements of +self+.
+ *  The number of combinations is <tt>(n+1)(n+2)/2</tt>.
  *
- *   a = [1, 2, 3]
- *   a.repeated_combination(1).to_a  #=> [[1], [2], [3]]
- *   a.repeated_combination(2).to_a  #=> [[1,1],[1,2],[1,3],[2,2],[2,3],[3,3]]
- *   a.repeated_combination(3).to_a  #=> [[1,1,1],[1,1,2],[1,1,3],[1,2,2],[1,2,3],
- *                                   #    [1,3,3],[2,2,2],[2,2,3],[2,3,3],[3,3,3]]
- *   a.repeated_combination(4).to_a  #=> [[1,1,1,1],[1,1,1,2],[1,1,1,3],[1,1,2,2],[1,1,2,3],
- *                                   #    [1,1,3,3],[1,2,2,2],[1,2,2,3],[1,2,3,3],[1,3,3,3],
- *                                   #    [2,2,2,2],[2,2,2,3],[2,2,3,3],[2,3,3,3],[3,3,3,3]]
- *   a.repeated_combination(0).to_a  #=> [[]] # one combination of length 0
+ *  +n+ = 1:
+ *    a = [0, 1, 2]
+ *    a1 = a.repeated_combination(1) {|combination| p combination }
+ *    a1.equal?(a) # => true # Returned self
+ *  Output:
+ *    [0]
+ *    [1]
+ *    [2]
  *
+ *  +n+ = 2:
+ *    a.repeated_combination(2) {|combination| p combination }
+ *  Output:
+ *    [0, 0]
+ *    [0, 1]
+ *    [0, 2]
+ *    [1, 1]
+ *    [1, 2]
+ *    [2, 2]
+ *
+ *  If +n+ is zero, calls the block once with an empty \Array:
+ *    a.repeated_combination(0) {|combination| p combination }
+ *  Output:
+ *    []
+ *
+ *  If +n+ is negative, does not call the block:
+ *    a.repeated_combination(-1) {|combination| fail 'Cannot happen' }
+ *
+ *  ---
+ *
+ *  Returns a new \Enumerator if no block given:
+ *    a = [0, 1, 2]
+ *    a.repeated_combination(2) # => #<Enumerator: [0, 1, 2]:combination(2)>
+ *
+ *  Using Enumerators, it's convenient to show the combinations and counts
+ *  for some values of +n+:
+ *    e = a.repeated_combination(0)
+ *    e.size # => 1
+ *    e.to_a # => [[]]
+ *    e = a.repeated_combination(1)
+ *    e.size # => 3
+ *    e.to_a # => [[0], [1], [2]]
+ *    e = a.repeated_combination(2)
+ *    e.size # => 6
+ *    e.to_a # => [[0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [2, 2]]
+ *
+ *  ---
+ *
+ *  Raises an exception if +n+ is not an Integer-convertible object:
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    a.repeated_combination(:foo) { }
  */
 
 static VALUE
