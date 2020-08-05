@@ -1456,7 +1456,7 @@ tracepoint_inspect(rb_execution_context_t *ec, VALUE self)
 		VALUE sym = rb_tracearg_method_id(trace_arg);
 		if (NIL_P(sym))
                     break;
-		return rb_sprintf("#<TracePoint:%"PRIsVALUE"@%"PRIsVALUE":%d in `%"PRIsVALUE"'>",
+		return rb_sprintf("#<TracePoint:%"PRIsVALUE" %"PRIsVALUE":%d in `%"PRIsVALUE"'>",
 				  rb_tracearg_event(trace_arg),
 				  rb_tracearg_path(trace_arg),
 				  FIX2INT(rb_tracearg_lineno(trace_arg)),
@@ -1466,7 +1466,7 @@ tracepoint_inspect(rb_execution_context_t *ec, VALUE self)
 	  case RUBY_EVENT_C_CALL:
 	  case RUBY_EVENT_RETURN:
 	  case RUBY_EVENT_C_RETURN:
-	    return rb_sprintf("#<TracePoint:%"PRIsVALUE" `%"PRIsVALUE"'@%"PRIsVALUE":%d>",
+	    return rb_sprintf("#<TracePoint:%"PRIsVALUE" `%"PRIsVALUE"' %"PRIsVALUE":%d>",
 			      rb_tracearg_event(trace_arg),
 			      rb_tracearg_method_id(trace_arg),
 			      rb_tracearg_path(trace_arg),
@@ -1479,7 +1479,7 @@ tracepoint_inspect(rb_execution_context_t *ec, VALUE self)
 	  default:
             break;
 	}
-        return rb_sprintf("#<TracePoint:%"PRIsVALUE"@%"PRIsVALUE":%d>",
+        return rb_sprintf("#<TracePoint:%"PRIsVALUE" %"PRIsVALUE":%d>",
                           rb_tracearg_event(trace_arg),
                           rb_tracearg_path(trace_arg),
                           FIX2INT(rb_tracearg_lineno(trace_arg)));

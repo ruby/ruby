@@ -146,7 +146,7 @@ describe 'TracePoint#enable' do
       end
 
       all.uniq.should == [second]
-      inspects.uniq.should == ["#<TracePoint:line@#{__FILE__}:#{line}>"]
+      inspects.uniq.should == ["#<TracePoint:line #{__FILE__}:#{line}>"]
       called.should == true
     end
   end
