@@ -7865,16 +7865,13 @@ rb_ary_repeated_permutation_size(VALUE ary, VALUE args, VALUE eobj)
  *  for some values of +n+:
  *    e = a.repeated_permutation(0)
  *    e.size # => 1
- *    e.to_a # => 27
+ *    e.to_a # => [[]]
  *    e = a.repeated_permutation(1)
- *    e.size # => 1
- *    e.to_a # => 27
+ *    e.size # => 3
+ *    e.to_a # => [[0], [1], [2]]
  *    e = a.repeated_permutation(2)
  *    e.size # => 9
  *    e.to_a # => [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2]]
- *    e = a.repeated_permutation(3)
- *    e.size # => 27
- *    e.to_a # => [[0, 0, 0], [0, 0, 1], [0, 0, 2], [0, 1, 0], [0, 1, 1], [0, 1, 2], [0, 2, 0], [0, 2, 1], [0, 2, 2], [1, 0, 0], [1, 0, 1], [1, 0, 2], [1, 1, 0], [1, 1, 1], [1, 1, 2], [1, 2, 0], [1, 2, 1], [1, 2, 2], [2, 0, 0], [2, 0, 1], [2, 0, 2], [2, 1, 0], [2, 1, 1], [2, 1, 2], [2, 2, 0], [2, 2, 1], [2, 2, 2]]
  *
  *  ---
  *
