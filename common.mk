@@ -1659,7 +1659,6 @@ addr2line.$(OBJEXT): {$(VPATH)}internal/has/declspec_attribute.h
 addr2line.$(OBJEXT): {$(VPATH)}internal/has/extension.h
 addr2line.$(OBJEXT): {$(VPATH)}internal/has/feature.h
 addr2line.$(OBJEXT): {$(VPATH)}internal/has/warning.h
-addr2line.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 addr2line.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 addr2line.$(OBJEXT): {$(VPATH)}internal/stdbool.h
 addr2line.$(OBJEXT): {$(VPATH)}internal/token_paste.h
@@ -1834,7 +1833,6 @@ array.$(OBJEXT): {$(VPATH)}internal/iterator.h
 array.$(OBJEXT): {$(VPATH)}internal/memory.h
 array.$(OBJEXT): {$(VPATH)}internal/method.h
 array.$(OBJEXT): {$(VPATH)}internal/module.h
-array.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 array.$(OBJEXT): {$(VPATH)}internal/newobj.h
 array.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 array.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -2023,7 +2021,6 @@ ast.$(OBJEXT): {$(VPATH)}internal/iterator.h
 ast.$(OBJEXT): {$(VPATH)}internal/memory.h
 ast.$(OBJEXT): {$(VPATH)}internal/method.h
 ast.$(OBJEXT): {$(VPATH)}internal/module.h
-ast.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 ast.$(OBJEXT): {$(VPATH)}internal/newobj.h
 ast.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 ast.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -2217,7 +2214,6 @@ bignum.$(OBJEXT): {$(VPATH)}internal/iterator.h
 bignum.$(OBJEXT): {$(VPATH)}internal/memory.h
 bignum.$(OBJEXT): {$(VPATH)}internal/method.h
 bignum.$(OBJEXT): {$(VPATH)}internal/module.h
-bignum.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 bignum.$(OBJEXT): {$(VPATH)}internal/newobj.h
 bignum.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 bignum.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -2399,7 +2395,6 @@ builtin.$(OBJEXT): {$(VPATH)}internal/iterator.h
 builtin.$(OBJEXT): {$(VPATH)}internal/memory.h
 builtin.$(OBJEXT): {$(VPATH)}internal/method.h
 builtin.$(OBJEXT): {$(VPATH)}internal/module.h
-builtin.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 builtin.$(OBJEXT): {$(VPATH)}internal/newobj.h
 builtin.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 builtin.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -2595,7 +2590,6 @@ class.$(OBJEXT): {$(VPATH)}internal/iterator.h
 class.$(OBJEXT): {$(VPATH)}internal/memory.h
 class.$(OBJEXT): {$(VPATH)}internal/method.h
 class.$(OBJEXT): {$(VPATH)}internal/module.h
-class.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 class.$(OBJEXT): {$(VPATH)}internal/newobj.h
 class.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 class.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -2778,7 +2772,6 @@ compar.$(OBJEXT): {$(VPATH)}internal/iterator.h
 compar.$(OBJEXT): {$(VPATH)}internal/memory.h
 compar.$(OBJEXT): {$(VPATH)}internal/method.h
 compar.$(OBJEXT): {$(VPATH)}internal/module.h
-compar.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 compar.$(OBJEXT): {$(VPATH)}internal/newobj.h
 compar.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 compar.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -2983,7 +2976,6 @@ compile.$(OBJEXT): {$(VPATH)}internal/iterator.h
 compile.$(OBJEXT): {$(VPATH)}internal/memory.h
 compile.$(OBJEXT): {$(VPATH)}internal/method.h
 compile.$(OBJEXT): {$(VPATH)}internal/module.h
-compile.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 compile.$(OBJEXT): {$(VPATH)}internal/newobj.h
 compile.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 compile.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -3186,7 +3178,6 @@ complex.$(OBJEXT): {$(VPATH)}internal/iterator.h
 complex.$(OBJEXT): {$(VPATH)}internal/memory.h
 complex.$(OBJEXT): {$(VPATH)}internal/method.h
 complex.$(OBJEXT): {$(VPATH)}internal/module.h
-complex.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 complex.$(OBJEXT): {$(VPATH)}internal/newobj.h
 complex.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 complex.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -3374,7 +3365,6 @@ cont.$(OBJEXT): {$(VPATH)}internal/iterator.h
 cont.$(OBJEXT): {$(VPATH)}internal/memory.h
 cont.$(OBJEXT): {$(VPATH)}internal/method.h
 cont.$(OBJEXT): {$(VPATH)}internal/module.h
-cont.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 cont.$(OBJEXT): {$(VPATH)}internal/newobj.h
 cont.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 cont.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -3566,7 +3556,6 @@ debug.$(OBJEXT): {$(VPATH)}internal/iterator.h
 debug.$(OBJEXT): {$(VPATH)}internal/memory.h
 debug.$(OBJEXT): {$(VPATH)}internal/method.h
 debug.$(OBJEXT): {$(VPATH)}internal/module.h
-debug.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 debug.$(OBJEXT): {$(VPATH)}internal/newobj.h
 debug.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 debug.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -3746,7 +3735,6 @@ debug_counter.$(OBJEXT): {$(VPATH)}internal/iterator.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/memory.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/method.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/module.h
-debug_counter.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/newobj.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -3927,7 +3915,6 @@ dir.$(OBJEXT): {$(VPATH)}internal/iterator.h
 dir.$(OBJEXT): {$(VPATH)}internal/memory.h
 dir.$(OBJEXT): {$(VPATH)}internal/method.h
 dir.$(OBJEXT): {$(VPATH)}internal/module.h
-dir.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 dir.$(OBJEXT): {$(VPATH)}internal/newobj.h
 dir.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 dir.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -4099,7 +4086,6 @@ dln.$(OBJEXT): {$(VPATH)}internal/iterator.h
 dln.$(OBJEXT): {$(VPATH)}internal/memory.h
 dln.$(OBJEXT): {$(VPATH)}internal/method.h
 dln.$(OBJEXT): {$(VPATH)}internal/module.h
-dln.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 dln.$(OBJEXT): {$(VPATH)}internal/newobj.h
 dln.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 dln.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -4262,7 +4248,6 @@ dln_find.$(OBJEXT): {$(VPATH)}internal/iterator.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/memory.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/method.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/module.h
-dln_find.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/newobj.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -4424,7 +4409,6 @@ dmydln.$(OBJEXT): {$(VPATH)}internal/iterator.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/memory.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/method.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/module.h
-dmydln.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/newobj.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -4642,7 +4626,6 @@ encoding.$(OBJEXT): {$(VPATH)}internal/iterator.h
 encoding.$(OBJEXT): {$(VPATH)}internal/memory.h
 encoding.$(OBJEXT): {$(VPATH)}internal/method.h
 encoding.$(OBJEXT): {$(VPATH)}internal/module.h
-encoding.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 encoding.$(OBJEXT): {$(VPATH)}internal/newobj.h
 encoding.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 encoding.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -4831,7 +4814,6 @@ enum.$(OBJEXT): {$(VPATH)}internal/iterator.h
 enum.$(OBJEXT): {$(VPATH)}internal/memory.h
 enum.$(OBJEXT): {$(VPATH)}internal/method.h
 enum.$(OBJEXT): {$(VPATH)}internal/module.h
-enum.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 enum.$(OBJEXT): {$(VPATH)}internal/newobj.h
 enum.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 enum.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -5020,7 +5002,6 @@ enumerator.$(OBJEXT): {$(VPATH)}internal/iterator.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/memory.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/method.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/module.h
-enumerator.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/newobj.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -5213,7 +5194,6 @@ error.$(OBJEXT): {$(VPATH)}internal/iterator.h
 error.$(OBJEXT): {$(VPATH)}internal/memory.h
 error.$(OBJEXT): {$(VPATH)}internal/method.h
 error.$(OBJEXT): {$(VPATH)}internal/module.h
-error.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 error.$(OBJEXT): {$(VPATH)}internal/newobj.h
 error.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 error.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -5421,7 +5401,6 @@ eval.$(OBJEXT): {$(VPATH)}internal/iterator.h
 eval.$(OBJEXT): {$(VPATH)}internal/memory.h
 eval.$(OBJEXT): {$(VPATH)}internal/method.h
 eval.$(OBJEXT): {$(VPATH)}internal/module.h
-eval.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 eval.$(OBJEXT): {$(VPATH)}internal/newobj.h
 eval.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 eval.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -5636,7 +5615,6 @@ file.$(OBJEXT): {$(VPATH)}internal/iterator.h
 file.$(OBJEXT): {$(VPATH)}internal/memory.h
 file.$(OBJEXT): {$(VPATH)}internal/method.h
 file.$(OBJEXT): {$(VPATH)}internal/module.h
-file.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 file.$(OBJEXT): {$(VPATH)}internal/newobj.h
 file.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 file.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -5848,7 +5826,6 @@ gc.$(OBJEXT): {$(VPATH)}internal/iterator.h
 gc.$(OBJEXT): {$(VPATH)}internal/memory.h
 gc.$(OBJEXT): {$(VPATH)}internal/method.h
 gc.$(OBJEXT): {$(VPATH)}internal/module.h
-gc.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 gc.$(OBJEXT): {$(VPATH)}internal/newobj.h
 gc.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 gc.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -6049,7 +6026,6 @@ golf_prelude.$(OBJEXT): {$(VPATH)}internal/iterator.h
 golf_prelude.$(OBJEXT): {$(VPATH)}internal/memory.h
 golf_prelude.$(OBJEXT): {$(VPATH)}internal/method.h
 golf_prelude.$(OBJEXT): {$(VPATH)}internal/module.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 golf_prelude.$(OBJEXT): {$(VPATH)}internal/newobj.h
 golf_prelude.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 golf_prelude.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -6222,7 +6198,6 @@ goruby.$(OBJEXT): {$(VPATH)}internal/iterator.h
 goruby.$(OBJEXT): {$(VPATH)}internal/memory.h
 goruby.$(OBJEXT): {$(VPATH)}internal/method.h
 goruby.$(OBJEXT): {$(VPATH)}internal/module.h
-goruby.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 goruby.$(OBJEXT): {$(VPATH)}internal/newobj.h
 goruby.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 goruby.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -6411,7 +6386,6 @@ hash.$(OBJEXT): {$(VPATH)}internal/iterator.h
 hash.$(OBJEXT): {$(VPATH)}internal/memory.h
 hash.$(OBJEXT): {$(VPATH)}internal/method.h
 hash.$(OBJEXT): {$(VPATH)}internal/module.h
-hash.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 hash.$(OBJEXT): {$(VPATH)}internal/newobj.h
 hash.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 hash.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -6587,7 +6561,6 @@ inits.$(OBJEXT): {$(VPATH)}internal/iterator.h
 inits.$(OBJEXT): {$(VPATH)}internal/memory.h
 inits.$(OBJEXT): {$(VPATH)}internal/method.h
 inits.$(OBJEXT): {$(VPATH)}internal/module.h
-inits.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 inits.$(OBJEXT): {$(VPATH)}internal/newobj.h
 inits.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 inits.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -6784,7 +6757,6 @@ io.$(OBJEXT): {$(VPATH)}internal/iterator.h
 io.$(OBJEXT): {$(VPATH)}internal/memory.h
 io.$(OBJEXT): {$(VPATH)}internal/method.h
 io.$(OBJEXT): {$(VPATH)}internal/module.h
-io.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 io.$(OBJEXT): {$(VPATH)}internal/newobj.h
 io.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 io.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -6996,7 +6968,6 @@ iseq.$(OBJEXT): {$(VPATH)}internal/iterator.h
 iseq.$(OBJEXT): {$(VPATH)}internal/memory.h
 iseq.$(OBJEXT): {$(VPATH)}internal/method.h
 iseq.$(OBJEXT): {$(VPATH)}internal/module.h
-iseq.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 iseq.$(OBJEXT): {$(VPATH)}internal/newobj.h
 iseq.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 iseq.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -7201,7 +7172,6 @@ load.$(OBJEXT): {$(VPATH)}internal/iterator.h
 load.$(OBJEXT): {$(VPATH)}internal/memory.h
 load.$(OBJEXT): {$(VPATH)}internal/method.h
 load.$(OBJEXT): {$(VPATH)}internal/module.h
-load.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 load.$(OBJEXT): {$(VPATH)}internal/newobj.h
 load.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 load.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -7379,7 +7349,6 @@ loadpath.$(OBJEXT): {$(VPATH)}internal/iterator.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/memory.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/method.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/module.h
-loadpath.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/newobj.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -7546,7 +7515,6 @@ localeinit.$(OBJEXT): {$(VPATH)}internal/iterator.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/memory.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/method.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/module.h
-localeinit.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/newobj.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -7712,7 +7680,6 @@ main.$(OBJEXT): {$(VPATH)}internal/iterator.h
 main.$(OBJEXT): {$(VPATH)}internal/memory.h
 main.$(OBJEXT): {$(VPATH)}internal/method.h
 main.$(OBJEXT): {$(VPATH)}internal/module.h
-main.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 main.$(OBJEXT): {$(VPATH)}internal/newobj.h
 main.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 main.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -7896,7 +7863,6 @@ marshal.$(OBJEXT): {$(VPATH)}internal/iterator.h
 marshal.$(OBJEXT): {$(VPATH)}internal/memory.h
 marshal.$(OBJEXT): {$(VPATH)}internal/method.h
 marshal.$(OBJEXT): {$(VPATH)}internal/module.h
-marshal.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 marshal.$(OBJEXT): {$(VPATH)}internal/newobj.h
 marshal.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 marshal.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -8072,7 +8038,6 @@ math.$(OBJEXT): {$(VPATH)}internal/iterator.h
 math.$(OBJEXT): {$(VPATH)}internal/memory.h
 math.$(OBJEXT): {$(VPATH)}internal/method.h
 math.$(OBJEXT): {$(VPATH)}internal/module.h
-math.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 math.$(OBJEXT): {$(VPATH)}internal/newobj.h
 math.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 math.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -8257,7 +8222,6 @@ miniinit.$(OBJEXT): {$(VPATH)}internal/iterator.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/memory.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/method.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/module.h
-miniinit.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/newobj.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -8497,7 +8461,6 @@ mjit.$(OBJEXT): {$(VPATH)}internal/iterator.h
 mjit.$(OBJEXT): {$(VPATH)}internal/memory.h
 mjit.$(OBJEXT): {$(VPATH)}internal/method.h
 mjit.$(OBJEXT): {$(VPATH)}internal/module.h
-mjit.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 mjit.$(OBJEXT): {$(VPATH)}internal/newobj.h
 mjit.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 mjit.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -8713,7 +8676,6 @@ mjit_compile.$(OBJEXT): {$(VPATH)}internal/iterator.h
 mjit_compile.$(OBJEXT): {$(VPATH)}internal/memory.h
 mjit_compile.$(OBJEXT): {$(VPATH)}internal/method.h
 mjit_compile.$(OBJEXT): {$(VPATH)}internal/module.h
-mjit_compile.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 mjit_compile.$(OBJEXT): {$(VPATH)}internal/newobj.h
 mjit_compile.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 mjit_compile.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -8908,7 +8870,6 @@ node.$(OBJEXT): {$(VPATH)}internal/iterator.h
 node.$(OBJEXT): {$(VPATH)}internal/memory.h
 node.$(OBJEXT): {$(VPATH)}internal/method.h
 node.$(OBJEXT): {$(VPATH)}internal/module.h
-node.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 node.$(OBJEXT): {$(VPATH)}internal/newobj.h
 node.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 node.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -9105,7 +9066,6 @@ numeric.$(OBJEXT): {$(VPATH)}internal/iterator.h
 numeric.$(OBJEXT): {$(VPATH)}internal/memory.h
 numeric.$(OBJEXT): {$(VPATH)}internal/method.h
 numeric.$(OBJEXT): {$(VPATH)}internal/module.h
-numeric.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 numeric.$(OBJEXT): {$(VPATH)}internal/newobj.h
 numeric.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 numeric.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -9298,7 +9258,6 @@ object.$(OBJEXT): {$(VPATH)}internal/iterator.h
 object.$(OBJEXT): {$(VPATH)}internal/memory.h
 object.$(OBJEXT): {$(VPATH)}internal/method.h
 object.$(OBJEXT): {$(VPATH)}internal/module.h
-object.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 object.$(OBJEXT): {$(VPATH)}internal/newobj.h
 object.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 object.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -9481,7 +9440,6 @@ pack.$(OBJEXT): {$(VPATH)}internal/iterator.h
 pack.$(OBJEXT): {$(VPATH)}internal/memory.h
 pack.$(OBJEXT): {$(VPATH)}internal/method.h
 pack.$(OBJEXT): {$(VPATH)}internal/module.h
-pack.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 pack.$(OBJEXT): {$(VPATH)}internal/newobj.h
 pack.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 pack.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -9678,7 +9636,6 @@ parse.$(OBJEXT): {$(VPATH)}internal/iterator.h
 parse.$(OBJEXT): {$(VPATH)}internal/memory.h
 parse.$(OBJEXT): {$(VPATH)}internal/method.h
 parse.$(OBJEXT): {$(VPATH)}internal/module.h
-parse.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 parse.$(OBJEXT): {$(VPATH)}internal/newobj.h
 parse.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 parse.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -9906,7 +9863,6 @@ proc.$(OBJEXT): {$(VPATH)}internal/iterator.h
 proc.$(OBJEXT): {$(VPATH)}internal/memory.h
 proc.$(OBJEXT): {$(VPATH)}internal/method.h
 proc.$(OBJEXT): {$(VPATH)}internal/module.h
-proc.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 proc.$(OBJEXT): {$(VPATH)}internal/newobj.h
 proc.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 proc.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -10110,7 +10066,6 @@ process.$(OBJEXT): {$(VPATH)}internal/iterator.h
 process.$(OBJEXT): {$(VPATH)}internal/memory.h
 process.$(OBJEXT): {$(VPATH)}internal/method.h
 process.$(OBJEXT): {$(VPATH)}internal/module.h
-process.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 process.$(OBJEXT): {$(VPATH)}internal/newobj.h
 process.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 process.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -10300,7 +10255,6 @@ random.$(OBJEXT): {$(VPATH)}internal/iterator.h
 random.$(OBJEXT): {$(VPATH)}internal/memory.h
 random.$(OBJEXT): {$(VPATH)}internal/method.h
 random.$(OBJEXT): {$(VPATH)}internal/module.h
-random.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 random.$(OBJEXT): {$(VPATH)}internal/newobj.h
 random.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 random.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -10490,7 +10444,6 @@ range.$(OBJEXT): {$(VPATH)}internal/iterator.h
 range.$(OBJEXT): {$(VPATH)}internal/memory.h
 range.$(OBJEXT): {$(VPATH)}internal/method.h
 range.$(OBJEXT): {$(VPATH)}internal/module.h
-range.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 range.$(OBJEXT): {$(VPATH)}internal/newobj.h
 range.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 range.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -10673,7 +10626,6 @@ rational.$(OBJEXT): {$(VPATH)}internal/iterator.h
 rational.$(OBJEXT): {$(VPATH)}internal/memory.h
 rational.$(OBJEXT): {$(VPATH)}internal/method.h
 rational.$(OBJEXT): {$(VPATH)}internal/module.h
-rational.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 rational.$(OBJEXT): {$(VPATH)}internal/newobj.h
 rational.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 rational.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -10853,7 +10805,6 @@ re.$(OBJEXT): {$(VPATH)}internal/iterator.h
 re.$(OBJEXT): {$(VPATH)}internal/memory.h
 re.$(OBJEXT): {$(VPATH)}internal/method.h
 re.$(OBJEXT): {$(VPATH)}internal/module.h
-re.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 re.$(OBJEXT): {$(VPATH)}internal/newobj.h
 re.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 re.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -11022,7 +10973,6 @@ regcomp.$(OBJEXT): {$(VPATH)}internal/iterator.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/memory.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/method.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/module.h
-regcomp.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/newobj.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -11188,7 +11138,6 @@ regenc.$(OBJEXT): {$(VPATH)}internal/iterator.h
 regenc.$(OBJEXT): {$(VPATH)}internal/memory.h
 regenc.$(OBJEXT): {$(VPATH)}internal/method.h
 regenc.$(OBJEXT): {$(VPATH)}internal/module.h
-regenc.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 regenc.$(OBJEXT): {$(VPATH)}internal/newobj.h
 regenc.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 regenc.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -11353,7 +11302,6 @@ regerror.$(OBJEXT): {$(VPATH)}internal/iterator.h
 regerror.$(OBJEXT): {$(VPATH)}internal/memory.h
 regerror.$(OBJEXT): {$(VPATH)}internal/method.h
 regerror.$(OBJEXT): {$(VPATH)}internal/module.h
-regerror.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 regerror.$(OBJEXT): {$(VPATH)}internal/newobj.h
 regerror.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 regerror.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -11518,7 +11466,6 @@ regexec.$(OBJEXT): {$(VPATH)}internal/iterator.h
 regexec.$(OBJEXT): {$(VPATH)}internal/memory.h
 regexec.$(OBJEXT): {$(VPATH)}internal/method.h
 regexec.$(OBJEXT): {$(VPATH)}internal/module.h
-regexec.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 regexec.$(OBJEXT): {$(VPATH)}internal/newobj.h
 regexec.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 regexec.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -11683,7 +11630,6 @@ regparse.$(OBJEXT): {$(VPATH)}internal/iterator.h
 regparse.$(OBJEXT): {$(VPATH)}internal/memory.h
 regparse.$(OBJEXT): {$(VPATH)}internal/method.h
 regparse.$(OBJEXT): {$(VPATH)}internal/module.h
-regparse.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 regparse.$(OBJEXT): {$(VPATH)}internal/newobj.h
 regparse.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 regparse.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -11849,7 +11795,6 @@ regsyntax.$(OBJEXT): {$(VPATH)}internal/iterator.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/memory.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/method.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/module.h
-regsyntax.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/newobj.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -12060,7 +12005,6 @@ ruby.$(OBJEXT): {$(VPATH)}internal/iterator.h
 ruby.$(OBJEXT): {$(VPATH)}internal/memory.h
 ruby.$(OBJEXT): {$(VPATH)}internal/method.h
 ruby.$(OBJEXT): {$(VPATH)}internal/module.h
-ruby.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 ruby.$(OBJEXT): {$(VPATH)}internal/newobj.h
 ruby.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 ruby.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -12237,7 +12181,6 @@ setproctitle.$(OBJEXT): {$(VPATH)}internal/iterator.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/memory.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/method.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/module.h
-setproctitle.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/newobj.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -12423,7 +12366,6 @@ signal.$(OBJEXT): {$(VPATH)}internal/iterator.h
 signal.$(OBJEXT): {$(VPATH)}internal/memory.h
 signal.$(OBJEXT): {$(VPATH)}internal/method.h
 signal.$(OBJEXT): {$(VPATH)}internal/module.h
-signal.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 signal.$(OBJEXT): {$(VPATH)}internal/newobj.h
 signal.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 signal.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -12615,7 +12557,6 @@ sprintf.$(OBJEXT): {$(VPATH)}internal/iterator.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/memory.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/method.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/module.h
-sprintf.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/newobj.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -12789,7 +12730,6 @@ st.$(OBJEXT): {$(VPATH)}internal/iterator.h
 st.$(OBJEXT): {$(VPATH)}internal/memory.h
 st.$(OBJEXT): {$(VPATH)}internal/method.h
 st.$(OBJEXT): {$(VPATH)}internal/module.h
-st.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 st.$(OBJEXT): {$(VPATH)}internal/newobj.h
 st.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 st.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -12960,7 +12900,6 @@ strftime.$(OBJEXT): {$(VPATH)}internal/iterator.h
 strftime.$(OBJEXT): {$(VPATH)}internal/memory.h
 strftime.$(OBJEXT): {$(VPATH)}internal/method.h
 strftime.$(OBJEXT): {$(VPATH)}internal/module.h
-strftime.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 strftime.$(OBJEXT): {$(VPATH)}internal/newobj.h
 strftime.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 strftime.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -13154,7 +13093,6 @@ string.$(OBJEXT): {$(VPATH)}internal/iterator.h
 string.$(OBJEXT): {$(VPATH)}internal/memory.h
 string.$(OBJEXT): {$(VPATH)}internal/method.h
 string.$(OBJEXT): {$(VPATH)}internal/module.h
-string.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 string.$(OBJEXT): {$(VPATH)}internal/newobj.h
 string.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 string.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -13376,7 +13314,6 @@ struct.$(OBJEXT): {$(VPATH)}internal/iterator.h
 struct.$(OBJEXT): {$(VPATH)}internal/memory.h
 struct.$(OBJEXT): {$(VPATH)}internal/method.h
 struct.$(OBJEXT): {$(VPATH)}internal/module.h
-struct.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 struct.$(OBJEXT): {$(VPATH)}internal/newobj.h
 struct.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 struct.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -13568,7 +13505,6 @@ symbol.$(OBJEXT): {$(VPATH)}internal/iterator.h
 symbol.$(OBJEXT): {$(VPATH)}internal/memory.h
 symbol.$(OBJEXT): {$(VPATH)}internal/method.h
 symbol.$(OBJEXT): {$(VPATH)}internal/module.h
-symbol.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 symbol.$(OBJEXT): {$(VPATH)}internal/newobj.h
 symbol.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 symbol.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -13769,7 +13705,6 @@ thread.$(OBJEXT): {$(VPATH)}internal/iterator.h
 thread.$(OBJEXT): {$(VPATH)}internal/memory.h
 thread.$(OBJEXT): {$(VPATH)}internal/method.h
 thread.$(OBJEXT): {$(VPATH)}internal/module.h
-thread.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 thread.$(OBJEXT): {$(VPATH)}internal/newobj.h
 thread.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 thread.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -13970,7 +13905,6 @@ time.$(OBJEXT): {$(VPATH)}internal/iterator.h
 time.$(OBJEXT): {$(VPATH)}internal/memory.h
 time.$(OBJEXT): {$(VPATH)}internal/method.h
 time.$(OBJEXT): {$(VPATH)}internal/module.h
-time.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 time.$(OBJEXT): {$(VPATH)}internal/newobj.h
 time.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 time.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -14145,7 +14079,6 @@ transcode.$(OBJEXT): {$(VPATH)}internal/iterator.h
 transcode.$(OBJEXT): {$(VPATH)}internal/memory.h
 transcode.$(OBJEXT): {$(VPATH)}internal/method.h
 transcode.$(OBJEXT): {$(VPATH)}internal/module.h
-transcode.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 transcode.$(OBJEXT): {$(VPATH)}internal/newobj.h
 transcode.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 transcode.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -14325,7 +14258,6 @@ transient_heap.$(OBJEXT): {$(VPATH)}internal/iterator.h
 transient_heap.$(OBJEXT): {$(VPATH)}internal/memory.h
 transient_heap.$(OBJEXT): {$(VPATH)}internal/method.h
 transient_heap.$(OBJEXT): {$(VPATH)}internal/module.h
-transient_heap.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 transient_heap.$(OBJEXT): {$(VPATH)}internal/newobj.h
 transient_heap.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 transient_heap.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -14497,7 +14429,6 @@ util.$(OBJEXT): {$(VPATH)}internal/iterator.h
 util.$(OBJEXT): {$(VPATH)}internal/memory.h
 util.$(OBJEXT): {$(VPATH)}internal/method.h
 util.$(OBJEXT): {$(VPATH)}internal/module.h
-util.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 util.$(OBJEXT): {$(VPATH)}internal/newobj.h
 util.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 util.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -14688,7 +14619,6 @@ variable.$(OBJEXT): {$(VPATH)}internal/iterator.h
 variable.$(OBJEXT): {$(VPATH)}internal/memory.h
 variable.$(OBJEXT): {$(VPATH)}internal/method.h
 variable.$(OBJEXT): {$(VPATH)}internal/module.h
-variable.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 variable.$(OBJEXT): {$(VPATH)}internal/newobj.h
 variable.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 variable.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -14882,7 +14812,6 @@ version.$(OBJEXT): {$(VPATH)}internal/iterator.h
 version.$(OBJEXT): {$(VPATH)}internal/memory.h
 version.$(OBJEXT): {$(VPATH)}internal/method.h
 version.$(OBJEXT): {$(VPATH)}internal/module.h
-version.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 version.$(OBJEXT): {$(VPATH)}internal/newobj.h
 version.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 version.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -15100,7 +15029,6 @@ vm.$(OBJEXT): {$(VPATH)}internal/iterator.h
 vm.$(OBJEXT): {$(VPATH)}internal/memory.h
 vm.$(OBJEXT): {$(VPATH)}internal/method.h
 vm.$(OBJEXT): {$(VPATH)}internal/module.h
-vm.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 vm.$(OBJEXT): {$(VPATH)}internal/newobj.h
 vm.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 vm.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -15309,7 +15237,6 @@ vm_backtrace.$(OBJEXT): {$(VPATH)}internal/iterator.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/memory.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/method.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/module.h
-vm_backtrace.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/newobj.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -15502,7 +15429,6 @@ vm_dump.$(OBJEXT): {$(VPATH)}internal/iterator.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/memory.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/method.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/module.h
-vm_dump.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/newobj.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/scan_args.h
@@ -15696,7 +15622,6 @@ vm_trace.$(OBJEXT): {$(VPATH)}internal/iterator.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/memory.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/method.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/module.h
-vm_trace.$(OBJEXT): {$(VPATH)}internal/ndebug.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/newobj.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/scan_args.h
