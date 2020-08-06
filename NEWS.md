@@ -165,6 +165,13 @@ Outstanding ones only.
         * Symbol#to_proc now returns a lambda Proc.
           [[Feature #16260]]
 
+* Warning
+
+    * Modified method
+
+        * Warning#warn now supports a category kwarg.
+        [[Feature #17122]]
+
 ## Stdlib updates
 
 Outstanding ones only.
@@ -342,3 +349,4 @@ Excluding feature bug fixes.
 [Feature #16686]: https://bugs.ruby-lang.org/issues/16686
 [Misc #16961]:    https://bugs.ruby-lang.org/issues/16961
 [Bug #8446]:      https://bugs.ruby-lang.org/issues/8446
+[Feature #17122]: https://bugs.ruby-lang.org/issues/17122
