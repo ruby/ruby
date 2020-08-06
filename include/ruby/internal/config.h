@@ -103,6 +103,8 @@
 # define UNALIGNED_WORD_ACCESS 1
 #elif defined(__powerpc64__)
 # define UNALIGNED_WORD_ACCESS 1
+#elif defined(__aarch64__)
+# define UNALIGNED_WORD_ACCESS 1
 #elif defined(__mc68020__)
 # define UNALIGNED_WORD_ACCESS 1
 #else
