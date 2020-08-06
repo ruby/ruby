@@ -2270,16 +2270,14 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 	    }
 	  case ISEQ_ELEMENT_ADJUST:
 	    {
-		ADJUST *adjust = (ADJUST *)list;
-		if (adjust->line_no != -1) {
-		    int orig_sp = sp;
-		    sp = adjust->label ? adjust->label->sp : 0;
-		    if (orig_sp - sp > 0) {
-			if (orig_sp - sp > 1) code_index++; /* 1 operand */
-			code_index++; /* insn */
-			insn_num++;
-		    }
-		}
+                ADJUST *adjust = (ADJUST *)list;
+                int orig_sp = sp;
+                sp = adjust->label ? adjust->label->sp : 0;
+                if (adjust->line_no != -1 && orig_sp - sp > 0) {
+                    if (orig_sp - sp > 1) code_index++; /* 1 operand */
+                    code_index++; /* insn */
+                    insn_num++;
+                }
 		break;
 	    }
 	  default: break;
