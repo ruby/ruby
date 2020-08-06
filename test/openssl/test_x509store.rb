@@ -128,7 +128,7 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
     assert_equal(@ee2.to_der, chain[0].subject.to_der)
     assert_equal(@ca2.to_der, chain[1].subject.to_der)
     assert_equal(@ca1.to_der, chain[2].subject.to_der)
-    assert_equal(false, store.verify(ee3_cert))
+    assert_equal(false, store.verify(ee3_cert), "store=#{store.inspect} ee3_cert=#{ee3_cert.inspect}")
     assert_equal(OpenSSL::X509::V_ERR_CERT_HAS_EXPIRED, store.error)
     assert_match(/expire/i, store.error_string)
     assert_equal(false, store.verify(ee4_cert))
