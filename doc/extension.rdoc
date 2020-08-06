@@ -676,7 +676,8 @@ member of the struct.
                   void (*dmark)(void*);
                   void (*dfree)(void*);
                   size_t (*dsize)(const void *);
-                  void *reserved[2];
+                  void (*dcompact)(void*);
+                  void *reserved[1];
           } function;
           const rb_data_type_t *parent;
           void *data;
@@ -708,7 +709,15 @@ Its parameter is a pointer to your struct.
 You can pass 0 as dsize if it is hard to implement such a function.
 But it is still recommended to avoid 0.
 
-You have to fill reserved and parent with 0.
+dcompact is invoked when memory compaction took place.
+Referred Ruby objects that were marked by rb_gc_mark_movable()
+can here be updated per rb_gc_location().
+
+You have to fill reserved with 0.
+
+parent can point to another C type definition that the Ruby object
+is inherited from. Then TypedData_Get_Struct() does also accept
+derived objects.
 
 You can fill "data" with an arbitrary value for your use.
 Ruby does nothing with the member.
