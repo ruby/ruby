@@ -81,7 +81,7 @@ ossl_sslctx_s_alloc(VALUE klass)
     VALUE obj;
 
     obj = TypedData_Wrap_Struct(klass, &ossl_sslctx_type, 0);
-#if OPENSSL_VERSION_NUMBER >= 0x10100000 && !defined(LIBRESSL_VERSION_NUMBER)
+#if OPENSSL_VERSION_NUMBER >= 0x10100000 || defined(LIBRESSL_VERSION_NUMBER)
     ctx = SSL_CTX_new(TLS_method());
 #else
     ctx = SSL_CTX_new(SSLv23_method());
