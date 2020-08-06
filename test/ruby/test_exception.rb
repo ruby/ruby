@@ -915,7 +915,7 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     end
   end
 
-  def capture_warning_warn
+  def capture_warning_warn(category: false)
     verbose = $VERBOSE
     deprecated = Warning[:deprecated]
     warning = []
@@ -924,8 +924,14 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
       alias_method :warn2, :warn
       remove_method :warn
 
-      define_method(:warn) do |str|
-        warning << str
+      if category
+        define_method(:warn) do |str, **kw|
+          warning << [str, kw[:category]]
+        end
+      else
+        define_method(:warn) do |str|
+          warning << str
+        end
       end
     end
 
@@ -952,6 +958,18 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     assert_equal(["a\nz\n"], capture_warning_warn {warn "a\n", "z"})
     assert_equal([],         capture_warning_warn {warn})
     assert_equal(["\n"],     capture_warning_warn {warn ""})
+  end
+
+  def test_warn_backwards_compatibility
+    warning = capture_warning_warn { Object.new.tainted? }
+
+    assert_match(/deprecated/, warning[0])
+  end
+
+  def test_warn_category
+    warning = capture_warning_warn(category: true) { Object.new.tainted? }
+
+    assert_equal :deprecated, warning[0][1]
   end
 
   def test_kernel_warn_uplevel

@@ -229,15 +229,20 @@ rb_warning_s_aset(VALUE mod, VALUE category, VALUE flag)
 
 /*
  * call-seq:
- *    warn(msg)  -> nil
+ *    warn(msg, **kw)  -> nil
  *
  * Writes warning message +msg+ to $stderr. This method is called by
- * Ruby for all emitted warnings.
+ * Ruby for all emitted warnings. A +category+ may be included with
+ * the warning.
  */
 
 static VALUE
-rb_warning_s_warn(VALUE mod, VALUE str)
+rb_warning_s_warn(int argc, VALUE *argv, VALUE mod)
 {
+    VALUE str;
+    VALUE opt;
+
+    rb_scan_args(argc, argv, "1:", &str, &opt);
     Check_Type(str, T_STRING);
     rb_must_asciicompat(str);
     rb_write_error_str(str);
@@ -401,7 +406,22 @@ rb_warn_deprecated_to_remove(const char *fmt, const char *removal, ...)
     va_end(args);
     rb_str_set_len(mesg, RSTRING_LEN(mesg) - 1);
     rb_str_catf(mesg, " is deprecated and will be removed in Ruby %s\n", removal);
-    rb_write_warning_str(mesg);
+
+    VALUE warn_args[2];
+    warn_args[0] = mesg;
+
+    const rb_method_entry_t * me;
+    me = rb_method_entry(rb_mWarning, id_warn);
+
+    if (rb_method_entry_arity(me) != 1) {
+        VALUE kwargs = rb_hash_new();
+        rb_hash_aset(kwargs, ID2SYM(rb_intern("category")), ID2SYM(rb_intern("deprecated")));
+        warn_args[1] = kwargs;
+
+        rb_funcallv_kw(rb_mWarning, id_warn, 2, warn_args, RB_PASS_KEYWORDS);
+    } else {
+        rb_funcall(rb_mWarning, id_warn, 1, mesg);
+    }
 }
 
 static inline int
@@ -2658,7 +2678,7 @@ Init_Exception(void)
     rb_mWarning = rb_define_module("Warning");
     rb_define_singleton_method(rb_mWarning, "[]", rb_warning_s_aref, 1);
     rb_define_singleton_method(rb_mWarning, "[]=", rb_warning_s_aset, 2);
-    rb_define_method(rb_mWarning, "warn", rb_warning_s_warn, 1);
+    rb_define_method(rb_mWarning, "warn", rb_warning_s_warn, -1);
     rb_extend_object(rb_mWarning, rb_mWarning);
 
     /* :nodoc: */
