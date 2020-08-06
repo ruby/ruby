@@ -93,14 +93,15 @@ ossl_sslctx_s_alloc(VALUE klass)
     RTYPEDDATA_DATA(obj) = ctx;
     SSL_CTX_set_ex_data(ctx, ossl_sslctx_ex_ptr_idx, (void *)obj);
 
-#if !defined(OPENSSL_NO_EC)
+#if !defined(OPENSSL_NO_EC) && OPENSSL_VERSION_NUMBER < 0x10100000 && \
+    !defined(LIBRESSL_VERSION_NUMBER)
     /* We use SSL_CTX_set1_curves_list() to specify the curve used in ECDH. It
      * allows to specify multiple curve names and OpenSSL will select
      * automatically from them. In OpenSSL 1.0.2, the automatic selection has to
-     * be enabled explicitly. But OpenSSL 1.1.0 removed the knob and it is
-     * always enabled. To uniform the behavior, we enable the automatic
-     * selection also in 1.0.2. Users can still disable ECDH by removing ECDH
-     * cipher suites by SSLContext#ciphers=. */
+     * be enabled explicitly. OpenSSL 1.1.0 and LibreSSL 2.6.1 removed the knob
+     * and it is always enabled. To uniform the behavior, we enable the
+     * automatic selection also in 1.0.2. Users can still disable ECDH by
+     * removing ECDH cipher suites by SSLContext#ciphers=. */
     if (!SSL_CTX_set_ecdh_auto(ctx, 1))
 	ossl_raise(eSSLError, "SSL_CTX_set_ecdh_auto");
 #endif
