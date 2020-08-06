@@ -123,6 +123,18 @@ describe 'TracePoint#enable' do
   end
 
   describe "when nested" do
+    before do
+      ruby_version_is ""..."2.8" do
+        # Old behavior for Ruby < 2.8
+        @path_prefix = '@'
+      end
+
+      ruby_version_is "2.8" do
+        # New behavior for Ruby >= 2.8
+        @path_prefix = ' '
+      end
+    end
+
     it "enables both TracePoints but only calls the respective callbacks" do
       called = false
       first = TracePoint.new(:line) do |tp|
@@ -146,7 +158,7 @@ describe 'TracePoint#enable' do
       end
 
       all.uniq.should == [second]
-      inspects.uniq.should == ["#<TracePoint:line@#{__FILE__}:#{line}>"]
+      inspects.uniq.should == ["#<TracePoint:line#{@path_prefix}#{__FILE__}:#{line}>"]
       called.should == true
     end
   end

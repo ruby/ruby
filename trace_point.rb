@@ -183,7 +183,7 @@ class TracePoint
   #    t.enable(target: method(:m1))
   #
   #    m1
-  #    # prints #<TracePoint:line@test.rb:4 in `m1'>
+  #    # prints #<TracePoint:line test.rb:4 in `m1'>
   #    m2
   #    # prints nothing
   #
