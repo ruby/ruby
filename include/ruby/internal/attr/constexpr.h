@@ -75,7 +75,7 @@
 # define RBIMPL_ATTR_CONSTEXPR(_) /* void */
 #endif
 
-/** Enables #RBIMPL_ATTR_CONSTEXPR iff. !RUBY_DEBUG. */
+/** Enables #RBIMPL_ATTR_CONSTEXPR iff. ! #RUBY_DEBUG. */
 #if !RUBY_DEBUG
 # define RBIMPL_ATTR_CONSTEXPR_UNLESS_DEBUG(_) RBIMPL_ATTR_CONSTEXPR(_)
 #else
