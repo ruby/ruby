@@ -23,6 +23,7 @@ The general structure of the method documentation should be:
 * Details and Examples
 * Argument Description (if necessary)
 * Corner Cases and Exceptions
+* Related Methods (optional)
 
 == call-seq (for methods written in C)
 
@@ -129,6 +130,18 @@ if you have stated earlier than an argument type must be an integer,
 you do not need to document that a TypeError is raised if a non-integer
 is passed.  Do not provide examples of exceptions being raised unless
 that is a common case, such as Hash#fetch raising KeyError.
+
+== Related Methods (optional)
+
+In some cases, it is useful to document which methods are related to
+the current method.  For example, documentation for Hash#[] might
+mention Hash#fetch as a related method, and Hash#merge might mention
+#merge! as a related method.  Consider which methods may be related
+to the current method, and if you think the reader would benefit it,
+at the end of the method documentation, add a line starting with
+"Related: " (e.g. "Related: #fetch").  Don't list more than three
+related methods. If you think more than three methods are related,
+pick the three you think are most important and list those three.
 
 == Methods Accepting Multiple Argument Types
 
