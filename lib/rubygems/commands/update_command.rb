@@ -322,6 +322,7 @@ command to remove old versions.
   private
 
   def oldest_supported_version
+    # for Ruby 2.3
     @oldest_supported_version ||= Gem::Version.new("2.5.2")
   end
 end
