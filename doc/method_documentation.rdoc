@@ -149,6 +149,20 @@ For methods that accept multiple argument types, in some cases it can
 be useful to document the different argument types separately.  It's
 best to use a separate paragraph for each case you are discussing.
 
+== Use of English
+
+Readers of this documentation may not be native speakers of English.
+Documentation should be written with this in mind.
+
+Use short sentences and group them into paragraphs that cover a single
+topic.  Avoid complex verb tenses, excessive comma-separated phrases,
+and idioms.
+
+When writing documentation, define unusual or critical concepts in
+simple language.  Provide links to authoritative sources, or add a
+general description to the top-level documentation for the class or
+module.
+
 == Formatting
 
 Extraneous formatting such as headings and horizontal lines should be
