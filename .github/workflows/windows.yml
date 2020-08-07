@@ -22,7 +22,7 @@ jobs:
             ${{ runner.os }}-vcpkg-download-
       - name: Install libraries with vcpkg
         run: |
-          vcpkg --triplet x64-windows install readline
+          vcpkg --triplet x64-windows install readline zlib
       - uses: actions/cache@v2
         with:
           path: C:\Users\runneradmin\AppData\Local\Temp\chocolatey
@@ -42,11 +42,6 @@ jobs:
       - run: ./src/tool/actions-commit-info.sh
         shell: bash
         id: commit_info
-      - name: Install zlib
-        run: |
-          $zlib = 'zlib1211.zip'
-          curl -fsSL -o $zlib --retry 10 https://zlib.net/$zlib
-          &'C:\Program Files\7-Zip\7z.exe' x -osrc/ext/zlib $zlib
       - run: md build
         shell: cmd
       - name: Configure
