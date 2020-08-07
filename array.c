@@ -8199,17 +8199,32 @@ done:
 
 /*
  *  call-seq:
- *     ary.take(n)               -> new_ary
+ *    array.take(n) -> new_array
  *
- *  Returns first +n+ elements from the array.
+ *  Returns a new \Array containing the first +n+ element of +self+;
+ *  does not modify +self+.
  *
- *  If a negative number is given, raises an ArgumentError.
+ *  Argument +n+ must be an
+ *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects]
+ *  and non-negative.
  *
- *  See also Array#drop
+ *  Examples:
+ *    a = [0, 1, 2, 3, 4, 5]
+ *    a.take(0) # => []
+ *    a.take(1) # => [0]
+ *    a.take(2) # => [0, 1]
+ *    a.take(50) # => [0, 1, 2, 3, 4, 5]
+ *    a # => [0, 1, 2, 3, 4, 5]
  *
- *     a = [1, 2, 3, 4, 5, 0]
- *     a.take(3)             #=> [1, 2, 3]
+ *  ---
  *
+ *  Raises an exception if +n+ is negative:
+ *    # Raises ArgumentError (attempt to take negative size):
+ *    [0, 1].take(-1)
+ *
+ *  Raises an exception if +n+ is not an Integer-convertible object:
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    [0, 1].take(:foo)
  */
 
 static VALUE
@@ -8224,19 +8239,23 @@ rb_ary_take(VALUE obj, VALUE n)
 
 /*
  *  call-seq:
- *     ary.take_while {|obj| block}    -> new_ary
- *     ary.take_while                  -> Enumerator
+ *    array.take_while {|element| ... } -> new_array
+ *    array.take_while -> new_enumerator
  *
- *  Passes elements to the block until the block returns +nil+ or +false+, then
- *  stops iterating and returns an array of all prior elements.
+ *  Returns a new \Array containing zero or more leading elements of +self+;
+ *  does not modify +self+.
  *
- *  If no block is given, an Enumerator is returned instead.
+ *  With a block given, calls the block with each successive element of +self+;
+ *  stops if the block returns +false+ or +nil+;
+ *  returns a new Array containing those elements for which the block returned a truthy value:
+ *    a = [0, 1, 2, 3, 4, 5]
+ *    a.take_while {|element| element < 3 } # => [0, 1, 2]
+ *    a.take_while {|element| true } # => [0, 1, 2, 3, 4, 5]
+ *    a.take_while {|element| false } # => []
+ *    a # => [0, 1, 2, 3, 4, 5]
  *
- *  See also Array#drop_while
- *
- *     a = [1, 2, 3, 4, 5, 0]
- *     a.take_while {|i| i < 3}    #=> [1, 2]
- *
+ *  With no block given, returns a new \Enumerator:
+ *    [0, 1].take_while # => #<Enumerator: [0, 1]:take_while>
  */
 
 static VALUE
