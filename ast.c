@@ -407,9 +407,10 @@ node_children(rb_ast_t *ast, NODE *node)
                                     NEW_CHILD(ast, node->nd_args->nd_head),
                                     NEW_CHILD(ast, node->nd_args->nd_body));
       case NODE_OP_ASGN2:
-        return rb_ary_new_from_args(4, NEW_CHILD(ast, node->nd_recv),
+        return rb_ary_new_from_args(5, NEW_CHILD(ast, node->nd_recv),
                                     node->nd_next->nd_aid ? Qtrue : Qfalse,
                                     ID2SYM(node->nd_next->nd_vid),
+                                    ID2SYM(node->nd_next->nd_mid),
                                     NEW_CHILD(ast, node->nd_value));
       case NODE_OP_ASGN_AND:
         return rb_ary_new_from_args(3, NEW_CHILD(ast, node->nd_head), ID2SYM(idANDOP),
