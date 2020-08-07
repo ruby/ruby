@@ -109,7 +109,12 @@ module IRB
 
         open(history_file, "w:#{IRB.conf[:LC_MESSAGES].encoding}", 0600) do |f|
           hist = history.map{ |l| l.split("\n").join("\\\n") }
-          f.puts(hist[-num..-1] || hist)
+          begin
+            hist = hist.last(num) if hist.size > num
+          rescue RangeError # bignum too big to convert into `long'
+            # Do nothing because the bignum should be treated as inifinity
+          end
+          f.puts(hist)
         end
       end
     end
