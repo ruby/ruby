@@ -8048,23 +8048,65 @@ rb_ary_repeated_combination(VALUE ary, VALUE num)
 
 /*
  *  call-seq:
- *     ary.product(other_ary, ...)                -> new_ary
- *     ary.product(other_ary, ...) {|p| block}    -> ary
+ *    array.product(*other_arrays) -> new_array
+ *    array.product(*other_arrays) {|combination| ... } -> self
  *
- *  Returns an array of all combinations of elements from all arrays.
+ *  Computes and returns or yields all combinations of elements from all the arrays,
+ *  including both +self+ and +other_arrays+.
+ *  - The number of combinations is the product of the sizes of all the arrays,
+ *    including both +self+ and +other_arrays+.
+ *  - The order of the returned combinations is indeterminate.
  *
- *  The length of the returned array is the product of the length of +self+ and
- *  the argument arrays.
+ *  Each argument must be an
+ *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects].
  *
- *  If given a block, #product will yield all combinations and return +self+
- *  instead.
+ *  ---
  *
- *     [1,2,3].product([4,5])     #=> [[1,4],[1,5],[2,4],[2,5],[3,4],[3,5]]
- *     [1,2].product([1,2])       #=> [[1,1],[1,2],[2,1],[2,2]]
- *     [1,2].product([3,4],[5,6]) #=> [[1,3,5],[1,3,6],[1,4,5],[1,4,6],
- *                                #     [2,3,5],[2,3,6],[2,4,5],[2,4,6]]
- *     [1,2].product()            #=> [[1],[2]]
- *     [1,2].product([])          #=> []
+ *  When no block is given, returns the combinations as an \Array of Arrays:
+ *    a = [0, 1, 2]
+ *    a1 = [3, 4]
+ *    a2 = [5, 6]
+ *    p = a.product(a1)
+ *    p.size # => 6 # a.size * a1.size
+ *    p # => [[0, 3], [0, 4], [1, 3], [1, 4], [2, 3], [2, 4]]
+ *    p = a.product(a1, a2)
+ *    p.size # => 12 # a.size * a1.size * a2.size
+ *    p # => [[0, 3, 5], [0, 3, 6], [0, 4, 5], [0, 4, 6], [1, 3, 5], [1, 3, 6], [1, 4, 5], [1, 4, 6], [2, 3, 5], [2, 3, 6], [2, 4, 5], [2, 4, 6]]
+ *
+ *  If any argument is an empty \Array, returns an empty \Array:
+ *    a.product(a1, a2, []) # => []
+ *
+ *  If no argument is given, returns an \Array of 1-element Arrays,
+ *  each containing an element of +self+:
+ *    a.product # => [[0], [1], [2]]
+ *
+ *  ---
+ *
+ *  When a block is given, yields each combination as an \Array; returns +self+:
+ *    a.product(a1) {|combination| p combination }
+ *  Output:
+ *    [0, 3]
+ *    [0, 4]
+ *    [1, 3]
+ *    [1, 4]
+ *    [2, 3]
+ *    [2, 4]
+ *
+ *  If any argument is an empty \Array, does not call the block:
+ *    a.product(a1, a2, []) {|combination| fail 'Cannot happen' }
+ *
+ *  If no argument is given, yields each element of +self+ as a 1-element \Array:
+ *    a.product {|combination| p combination }
+ *  Output:
+ *    [0]
+ *    [1]
+ *    [2]
+ *
+ *  ---
+ *
+ *  Raises an exception if any argument is not an \Array-convertible object:
+ *    # Raises TypeError (no implicit conversion of Symbol into Array)
+ *    a.product(a1, :foo)
  */
 
 static VALUE
