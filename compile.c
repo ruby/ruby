@@ -7736,6 +7736,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	    }
 	    ADD_INSN(ret, line, pop);
 	    ADD_INSNL(ret, line, jump, lfin);
+            ADD_INSN1(ret, line, dupn, FIXNUM_INC(argc, 2+boff));
 	    ADD_LABEL(ret, label);
 	    if (!popped) {
 		ADD_INSN1(ret, line, setn, FIXNUM_INC(argc, 2+boff));
