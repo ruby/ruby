@@ -6212,6 +6212,7 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
         ADD_INSN(ret, line, dup);
         CHECK(iseq_compile_pattern_match(iseq, ret, n->nd_head, match_failed, in_alt_pattern, deconstructed_pos ? deconstructed_pos + 1 : FALSE));
         CHECK(iseq_compile_pattern_each(iseq, ret, n->nd_next->nd_head, matched, match_failed, in_alt_pattern, FALSE));
+        ADD_INSN(ret, line, putnil);
 
         ADD_LABEL(ret, match_failed);
         ADD_INSN(ret, line, pop);
