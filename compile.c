@@ -5294,6 +5294,7 @@ compile_named_capture_assign(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE
 #endif
     }
     ADD_INSNL(ret, line, jump, end_label);
+    ADD_INSN(ret, line, putnil);
     ADD_LABEL(ret, fail_label);
     ADD_INSN(ret, line, pop);
     for (vars = node; vars; vars = vars->nd_next) {
