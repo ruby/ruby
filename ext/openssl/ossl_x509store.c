@@ -509,7 +509,9 @@ static VALUE ossl_x509stctx_set_time(VALUE, VALUE);
 
 /*
  * call-seq:
- *   StoreContext.new(store, cert = nil, chain = nil)
+ *   StoreContext.new(store, cert = nil, untrusted = nil)
+ *
+ * Sets up a StoreContext for a verification of the X.509 certificate _cert_.
  */
 static VALUE
 ossl_x509stctx_initialize(int argc, VALUE *argv, VALUE self)
@@ -519,15 +521,24 @@ ossl_x509stctx_initialize(int argc, VALUE *argv, VALUE self)
     X509_STORE *x509st;
     X509 *x509 = NULL;
     STACK_OF(X509) *x509s = NULL;
+    int state;
 
     rb_scan_args(argc, argv, "12", &store, &cert, &chain);
     GetX509StCtx(self, ctx);
     GetX509Store(store, x509st);
-    if(!NIL_P(cert)) x509 = DupX509CertPtr(cert); /* NEED TO DUP */
-    if(!NIL_P(chain)) x509s = ossl_x509_ary2sk(chain);
-    if(X509_STORE_CTX_init(ctx, x509st, x509, x509s) != 1){
+    if (!NIL_P(cert))
+        x509 = DupX509CertPtr(cert); /* NEED TO DUP */
+    if (!NIL_P(chain)) {
+        x509s = ossl_protect_x509_ary2sk(chain, &state);
+        if (state) {
+            X509_free(x509);
+            rb_jump_tag(state);
+        }
+    }
+    if (X509_STORE_CTX_init(ctx, x509st, x509, x509s) != 1){
+        X509_free(x509);
         sk_X509_pop_free(x509s, X509_free);
-        ossl_raise(eX509StoreError, NULL);
+        ossl_raise(eX509StoreError, "X509_STORE_CTX_init");
     }
     if (!NIL_P(t = rb_iv_get(store, "@time")))
 	ossl_x509stctx_set_time(self, t);
