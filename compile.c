@@ -6385,6 +6385,10 @@ compile_case3(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_no
         add_trace_branch_coverage(iseq, cond_seq, node, branch_id, "else", branches);
         CHECK(COMPILE_(cond_seq, "else", node, popped));
         ADD_INSNL(cond_seq, line, jump, endlabel);
+        ADD_INSN(cond_seq, line, putnil);
+        if (popped) {
+                ADD_INSN(cond_seq, line, putnil);
+        }
     }
     else {
         debugs("== else (implicit)\n");
@@ -6401,6 +6405,10 @@ compile_case3(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_no
             ADD_INSN(cond_seq, nd_line(orig_node), putnil);
         }
         ADD_INSNL(cond_seq, nd_line(orig_node), jump, endlabel);
+        ADD_INSN(cond_seq, line, putnil);
+        if (popped) {
+                ADD_INSN(cond_seq, line, putnil);
+        }
     }
 
     ADD_SEQ(ret, cond_seq);
