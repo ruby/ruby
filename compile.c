@@ -8684,6 +8684,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	ADD_LABEL(ret, ltrue);
 	ADD_INSN1(ret, line, putobject, Qtrue);
 	ADD_INSNL(ret, line, jump, lend);
+        ADD_INSN(ret, line, pop);
 	ADD_LABEL(ret, lfalse);
 	ADD_INSN1(ret, line, putobject, Qfalse);
 	ADD_LABEL(ret, lend);
