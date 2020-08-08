@@ -1508,6 +1508,11 @@ eom
     assert_valid_syntax("tap {a = (break unless true)}")
   end
 
+  def test_tautological_condition
+    assert_valid_syntax("def f() return if false and invalid; nil end")
+    assert_valid_syntax("def f() return unless true or invalid; nil end")
+  end
+
   def test_argument_forwarding
     assert_valid_syntax('def foo(...) bar(...) end')
     assert_valid_syntax('def foo(...) end')
