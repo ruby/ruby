@@ -75,6 +75,29 @@ module TestIRB
       HISTORY_FILE
     end
 
+    def test_history_save_minus_as_infinity
+      result_output, result_history_file = launch_irb_with_irbrc_and_irb_history(<<~IRBRC, <<~IRB_HISTORY) do |stdin|
+        IRB.conf[:USE_READLINE] = true
+        IRB.conf[:SAVE_HISTORY] = -1 # infinity
+      IRBRC
+        1
+        2
+        3
+        4
+      IRB_HISTORY
+        stdin.write("5\nexit\n")
+      end
+
+      assert_equal(<<~HISTORY_FILE, result_history_file)
+        1
+        2
+        3
+        4
+        5
+        exit
+      HISTORY_FILE
+    end
+
     private
 
     def launch_irb_with_irbrc_and_irb_history(irbrc, irb_history)
