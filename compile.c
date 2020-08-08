@@ -6209,6 +6209,7 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
         ADD_LABEL(ret, match_succeeded);
         ADD_INSN(ret, line, pop);
         ADD_INSNL(ret, line, jump, matched);
+        ADD_INSN(ret, line, putnil);
         ADD_LABEL(ret, fin);
         CHECK(iseq_compile_pattern_each(iseq, ret, node->nd_2nd, matched, unmatched, TRUE, deconstructed_pos));
         break;
