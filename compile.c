@@ -5454,6 +5454,9 @@ compile_case(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_nod
     while (type == NODE_WHEN) {
 	LABEL *l1;
 
+        if (popped && branch_id) {
+            ADD_INSN(body_seq, line, putnil);
+        }
 	l1 = NEW_LABEL(line);
 	ADD_LABEL(body_seq, l1);
 	ADD_INSN(body_seq, line, pop);
@@ -5512,6 +5515,9 @@ compile_case(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_nod
 	    ADD_INSN(cond_seq, nd_line(orig_node), putnil);
 	}
 	ADD_INSNL(cond_seq, nd_line(orig_node), jump, endlabel);
+    }
+    if (popped) {
+        ADD_INSN(cond_seq, nd_line(orig_node), putnil);
     }
 
     if (only_special_literals && ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
