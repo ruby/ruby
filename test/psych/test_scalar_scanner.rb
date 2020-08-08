@@ -66,6 +66,10 @@ module Psych
       assert_equal(1 / 0.0, ss.tokenize('.inf'))
     end
 
+    def test_scan_plus_inf
+      assert_equal(1 / 0.0, ss.tokenize('+.inf'))
+    end
+
     def test_scan_minus_inf
       assert_equal(-1 / 0.0, ss.tokenize('-.inf'))
     end
@@ -132,6 +136,14 @@ module Psych
       assert_equal 0x123456789abcdef, ss.tokenize('0x12_,34,_56,_789abcdef')
       assert_equal 0x123456789abcdef, ss.tokenize('0x_12_,34,_56,_789abcdef')
       assert_equal 0x123456789abcdef, ss.tokenize('0x12_,34,_56,_789abcdef__')
+    end
+
+    def test_scan_dot
+      assert_equal '.', ss.tokenize('.')
+    end
+
+    def test_scan_plus_dot
+      assert_equal '+.', ss.tokenize('+.')
     end
   end
 end
