@@ -8272,18 +8272,32 @@ rb_ary_take_while(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.drop(n)               -> new_ary
+ *    array.drop(n) -> new_array
  *
- *  Drops first +n+ elements from +ary+ and returns the rest of the elements in
- *  an array.
+ *  Returns a new \Array containing all but the first +n+ element of +self+;
+ *  does not modify +self+:
  *
- *  If a negative number is given, raises an ArgumentError.
+ *  Argument +n+ must be an
+ *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects]
+ *  and non-negative.
  *
- *  See also Array#take
+ *  Examples:
+ *    a = [0, 1, 2, 3, 4, 5]
+ *    a.drop(0) # => [0, 1, 2, 3, 4, 5]
+ *    a.drop(1) # => [1, 2, 3, 4, 5]
+ *    a.drop(2) # => [2, 3, 4, 5]
+ *    a.drop(50) # => []
+ *    a # => [0, 1, 2, 3, 4, 5]
  *
- *     a = [1, 2, 3, 4, 5, 0]
- *     a.drop(3)             #=> [4, 5, 0]
+ *  ---
  *
+ *  Raises an exception if +n+ is negative:
+ *    # Raises ArgumentError (attempt to drop negative size):
+ *    [0, 1].drop(-1)
+ *
+ *  Raises an exception if +n+ is not an Integer-convertible object:
+ *    # Raises TypeError (no implicit conversion of Symbol into Integer):
+ *    [0, 1].drop(:foo)
  */
 
 static VALUE
@@ -8302,20 +8316,22 @@ rb_ary_drop(VALUE ary, VALUE n)
 
 /*
  *  call-seq:
- *     ary.drop_while {|obj| block}     -> new_ary
- *     ary.drop_while                  -> Enumerator
+ *    array.drop_while {|element| ... } -> new_array
+ *    array.drop_while -> new_enumerator
+
+ *  Returns a new \Array containing zero or more trailing elements of +self+;
+ *  does not modify +self+.
  *
- *  Drops elements up to, but not including, the first element for which the
- *  block returns +nil+ or +false+ and returns an array containing the
- *  remaining elements.
+ *  With a block given, calls the block with each successive element of +self+;
+ *  stops if the block returns +false+ or +nil+;
+ *  returns a new Array _omitting_ those elements for which the block returned a truthy value:
+ *    a = [0, 1, 2, 3, 4, 5]
+ *    a.drop_while {|element| element < 3 } # => [3, 4, 5]
+ *    a.drop_while {|element| true } # => []
+ *    a.drop_while {|element| false } # => [0, 1, 2, 3, 4, 5]
  *
- *  If no block is given, an Enumerator is returned instead.
- *
- *  See also Array#take_while
- *
- *     a = [1, 2, 3, 4, 5, 0]
- *     a.drop_while {|i| i < 3 }   #=> [3, 4, 5, 0]
- *
+ *  With no block given, returns a new \Enumerator:
+ *    [0, 1].drop_while # => # => #<Enumerator: [0, 1]:drop_while>
  */
 
 static VALUE
@@ -8332,10 +8348,47 @@ rb_ary_drop_while(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.any? [{|obj| block}  ]   -> true or false
- *     ary.any?(pattern)            -> true or false
+ *    array.any? -> true or false
+ *    array.any? {|element| ... } -> true or false
+ *    array.any?(obj) -> true or false
+ *
+ *  Returns +true+ if any element of +self+ meets a given criterion.
+ *
+ *  The argument, if given, must have instance method <tt>===</tt>.
+ *
+ *  With no block given and no argument, returns +true+ if +self+ has any truthy element,
+ *  +false+ otherwise:
+ *    [nil, 0, false].any? # => true
+ *    [nil, false].any? # => false
+ *    [].any? # => false
+ *
+ *  With a block given and no argument, calls the block with each element in +self+;
+ *  returns +true+ if the block returns any truthy value, +false+ otherwise:
+ *    [0, 1, 2].any? {|element| element > 1 } # => true
+ *    [0, 1, 2].any? {|element| element > 2 } # => false
+ *
+ *  Does not call the block if +self+ is empty:
+ *    [].any? {|element| fail 'Cannot happen' } # => false
+ *
+ *  If argument +obj+ is given, returns +true+ if +obj+.<tt>===</tt> any element,
+ *  +false+ otherwise:
+ *    ['food', 'drink'].any?(/foo/) # => true
+ *    ['food', 'drink'].any?(/bar/) # => false
+ *    [].any?(/foo/) # => false
+ *    [0, 1, 2].any?(1) # => true
+ *    [0, 1, 2].any?(3) # => false
+ *
+ *  Issues a warning ('given block not used')
+ *  if both an argument and a block given:
+ *    [0, 1, 2].any?(/foo/) {|element|} # => false
  *
  *  See also Enumerable#any?
+ *
+ *  ---
+ *
+ *  Raises an exception if the argument does not have instance method <tt>===</tt>:
+ *    # Raises NoMethodError (undefined method `===' for #<BasicObject:>):
+ *    [0, 1, 2].any?(BasicObject.new)
  */
 
 static VALUE
@@ -8368,8 +8421,45 @@ rb_ary_any_p(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *     ary.all? [{|obj| block}  ]   -> true or false
- *     ary.all?(pattern)            -> true or false
+ *    array.all? -> true or false
+ *    array.all? {|element| ... } -> true or false
+ *    array.all?(obj) -> true or false
+ *
+ *  Returns +true+ if all elements of +self+ meet a given criterion.
+ *
+ *  The argument, if given, must have instance method <tt>===</tt>.
+ *
+ *  With no block given and no argument, returns +true+ if +self+ contains only truthy elements,
+ *  +false+ otherwise:
+ *    [0, 1, :foo].all? # => true
+ *    [0, nil, 2].all? # => false
+ *    [].all? # => true
+ *
+ *  With a block given and no argument, calls the block with each element in +self+;
+ *  returns +true+ if the block returns only truthy values, +false+ otherwise:
+ *    [0, 1, 2].all? { |element| element < 3 } # => true
+ *    [0, 1, 2].all? { |element| element < 2 } # => false
+ *
+ *  Does not call the block if +self+ is empty:
+ *    [].all? { |element| fail 'Cannot happen' } # => true
+ *
+ *  If argument +obj+ is given, returns +true+ if <tt>obj.===</tt> every element, +false+ otherwise:
+ *    ['food', 'fool', 'foot'].all?(/foo/) # => true
+ *    ['food', 'drink'].all?(/bar/) # => false
+ *    [].all?(/foo/) # => true
+ *    [0, 0, 0].all?(0) # => true
+ *    [0, 1, 2].all?(1) # => false
+ *
+ *  Issues a warning ('warning: given block not used') if both an argument and a block given:
+ *    [0, 1, 2].all?(/foo/) { |element|} # => false
+ *
+ *  See also Enumerable#all?
+ *
+ *  ---
+ *
+ *  Raises an exception if the argument does not have instance method <tt>===<tt/>:
+ *    # Raises NoMethodError (undefined method `===' for #<BasicObject:>):
+ *    [0, 1, 2].all?(BasicObject.new)
  *
  *  See also Enumerable#all?
  */
@@ -8404,8 +8494,37 @@ rb_ary_all_p(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *     ary.none? [{|obj| block}  ]   -> true or false
- *     ary.none?(pattern)            -> true or false
+ *    array.none? -> true or false
+ *    array.none? {|element| ... } -> true or false
+ *    array.none?(obj) -> true or false
+ *
+ *  Returns +true+ if no element of +self+ meet a given criterion.
+ *
+ *  The argument, if given, must have instance method <tt>===</tt>.
+ *
+ *  With no block given and no argument, returns +true+ if +self+ has no truthy elements,
+ *  +false+ otherwise:
+ *    [nil, false].none? # => true
+ *    [nil, 0, false].none? # => false
+ *    [].none? # => true
+ *
+ *  With a block given and no argument, calls the block with each element in +self+;
+ *  returns +true+ if the block returns no truthy value, +false+ otherwise:
+ *    [0, 1, 2].none? {|element| element > 3 } # => true
+ *    [0, 1, 2].none? {|element| element > 1 } # => false
+ *
+ *  Does not call the block if +self+ is empty:
+ *    [].none? {|element| fail 'Cannot happen' } # => true
+ *
+ *  If argument +obj+ is given, returns +true+ if <tt>obj.===</tt> no element, +false+ otherwise:
+ *    ['food', 'drink'].none?(/bar/) # => true
+ *    ['food', 'drink'].none?(/foo/) # => false
+ *    [].none?(/foo/) # => true
+ *    [0, 1, 2].none?(3) # => true
+ *    [0, 1, 2].none?(1) # => false
+ *
+ *  Issues a warning ('given block not used') if both an argument and a block given:
+ *    [0, 1, 2].none?(/foo/) { |element| } # => true
  *
  *  See also Enumerable#none?
  */
@@ -8440,10 +8559,43 @@ rb_ary_none_p(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *     ary.one? [{|obj| block}  ]   -> true or false
- *     ary.one?(pattern)            -> true or false
+ *    array.one? -> true or false
+ *    array.one? {|element| ... } -> true or false
+ *    array.one?(obj) -> true or false
  *
- *  See also Enumerable#one?
+ *  Returns +true+ if exactly one element of +self+ meets a given criterion.
+ *
+ *  The argument, if given, must have instance method <tt>===</tt>.
+ *
+ *  With no block given and no argument, returns +true+ if +self+ has exactly one truthy element,
+ *  +false+ otherwise:
+ *    [nil, 0].one? # => true
+ *    [0, 0].one? # => false
+ *    [nil, nil].one? # => false
+ *    [].one? # => false
+ *
+ *  With a block given and no argument, calls the block with each element in +self+;
+ *  returns +true+ if the block a truthy value for exactly one element, +false+ otherwise:
+ *    [0, 1, 2].one? {|element| element > 0 } # => false
+ *    [0, 1, 2].one? {|element| element > 1 } # => true
+ *    [0, 1, 2].one? {|element| element > 2 } # => false
+ *
+ *  Does not call the block if +self+ is empty:
+ *    [].one? {|element| fail 'Cannot happen' } # => false
+ *
+ *  If argument +obj+ is given, returns +true+ if <tt>obj.===</tt> exactly one element,
+ *  +false+ otherwise:
+ *    [0, 1, 2].one?(0) # => true
+ *    [0, 0, 1].one?(0) # => false
+ *    [1, 1, 2].one?(0) # => false
+ *    ['food', 'drink'].one?(/bar/) # => false
+ *    ['food', 'drink'].one?(/foo/) # => true
+ *    [].one?(/foo/) # => false
+ *
+ *  Issues a warning ('given block not used') if both an argument and a block given:
+ *    [0, 1, 2].one?(/foo/) { |element| } # => false
+ *
+ *  See also Enumerable#none?
  */
 
 static VALUE
