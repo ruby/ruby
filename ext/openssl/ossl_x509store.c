@@ -157,9 +157,8 @@ ossl_x509store_alloc(VALUE klass)
     VALUE obj;
 
     obj = NewX509Store(klass);
-    if((store = X509_STORE_new()) == NULL){
-        ossl_raise(eX509StoreError, NULL);
-    }
+    if ((store = X509_STORE_new()) == NULL)
+        ossl_raise(eX509StoreError, "X509_STORE_new");
     SetX509Store(obj, store);
 
     return obj;
@@ -365,9 +364,8 @@ ossl_x509store_set_default_paths(VALUE self)
     X509_STORE *store;
 
     GetX509Store(self, store);
-    if (X509_STORE_set_default_paths(store) != 1){
-        ossl_raise(eX509StoreError, NULL);
-    }
+    if (X509_STORE_set_default_paths(store) != 1)
+        ossl_raise(eX509StoreError, "X509_STORE_set_default_paths");
 
     return Qnil;
 }
@@ -386,9 +384,8 @@ ossl_x509store_add_cert(VALUE self, VALUE arg)
 
     cert = GetX509CertPtr(arg); /* NO NEED TO DUP */
     GetX509Store(self, store);
-    if (X509_STORE_add_cert(store, cert) != 1){
-        ossl_raise(eX509StoreError, NULL);
-    }
+    if (X509_STORE_add_cert(store, cert) != 1)
+        ossl_raise(eX509StoreError, "X509_STORE_add_cert");
 
     return self;
 }
@@ -407,9 +404,8 @@ ossl_x509store_add_crl(VALUE self, VALUE arg)
 
     crl = GetX509CRLPtr(arg); /* NO NEED TO DUP */
     GetX509Store(self, store);
-    if (X509_STORE_add_crl(store, crl) != 1){
-        ossl_raise(eX509StoreError, NULL);
-    }
+    if (X509_STORE_add_crl(store, crl) != 1)
+        ossl_raise(eX509StoreError, "X509_STORE_add_crl");
 
     return self;
 }
@@ -488,9 +484,8 @@ ossl_x509stctx_alloc(VALUE klass)
     VALUE obj;
 
     obj = NewX509StCtx(klass);
-    if((ctx = X509_STORE_CTX_new()) == NULL){
-        ossl_raise(eX509StoreError, NULL);
-    }
+    if ((ctx = X509_STORE_CTX_new()) == NULL)
+        ossl_raise(eX509StoreError, "X509_STORE_CTX_new");
     SetX509StCtx(obj, ctx);
 
     return obj;
@@ -557,12 +552,12 @@ ossl_x509stctx_verify(VALUE self)
 
     switch (X509_verify_cert(ctx)) {
       case 1:
-	return Qtrue;
+        return Qtrue;
       case 0:
-	ossl_clear_error();
-	return Qfalse;
+        ossl_clear_error();
+        return Qfalse;
       default:
-	ossl_raise(eX509CertError, NULL);
+        ossl_raise(eX509CertError, "X509_verify_cert");
     }
 }
 
