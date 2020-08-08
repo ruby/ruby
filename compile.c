@@ -6325,6 +6325,9 @@ compile_case3(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_no
     while (type == NODE_IN) {
         LABEL *l1;
 
+        if (branch_id) {
+                ADD_INSN(body_seq, line, putnil);
+        }
         l1 = NEW_LABEL(line);
         ADD_LABEL(body_seq, l1);
         ADD_INSN(body_seq, line, pop);
