@@ -3893,7 +3893,10 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *co
 	    LABEL *label = NEW_LABEL(nd_line(cond));
 	    CHECK(compile_branch_condition(iseq, ret, cond->nd_1st, label,
 					   else_label));
-	    if (!label->refcnt) break;
+            if (!label->refcnt) {
+                ADD_INSN(ret, nd_line(cond), putnil);
+                break;
+            }
 	    ADD_LABEL(ret, label);
 	    cond = cond->nd_2nd;
 	    goto again;
@@ -3903,7 +3906,10 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *co
 	    LABEL *label = NEW_LABEL(nd_line(cond));
 	    CHECK(compile_branch_condition(iseq, ret, cond->nd_1st, then_label,
 					   label));
-	    if (!label->refcnt) break;
+            if (!label->refcnt) {
+                ADD_INSN(ret, nd_line(cond), putnil);
+                break;
+            }
 	    ADD_LABEL(ret, label);
 	    cond = cond->nd_2nd;
 	    goto again;
