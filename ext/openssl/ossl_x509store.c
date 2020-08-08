@@ -301,17 +301,15 @@ ossl_x509store_add_file(VALUE self, VALUE file)
 {
     X509_STORE *store;
     X509_LOOKUP *lookup;
-    char *path = NULL;
+    const char *path;
 
-    if(file != Qnil){
-	path = StringValueCStr(file);
-    }
     GetX509Store(self, store);
+    path = StringValueCStr(file);
     lookup = X509_STORE_add_lookup(store, X509_LOOKUP_file());
-    if(lookup == NULL) ossl_raise(eX509StoreError, NULL);
-    if(X509_LOOKUP_load_file(lookup, path, X509_FILETYPE_PEM) != 1){
-        ossl_raise(eX509StoreError, NULL);
-    }
+    if (!lookup)
+        ossl_raise(eX509StoreError, "X509_STORE_add_lookup");
+    if (X509_LOOKUP_load_file(lookup, path, X509_FILETYPE_PEM) != 1)
+        ossl_raise(eX509StoreError, "X509_LOOKUP_load_file");
 #if OPENSSL_VERSION_NUMBER < 0x10101000 || defined(LIBRESSL_VERSION_NUMBER)
     /*
      * X509_load_cert_crl_file() which is called from X509_LOOKUP_load_file()
@@ -336,17 +334,15 @@ ossl_x509store_add_path(VALUE self, VALUE dir)
 {
     X509_STORE *store;
     X509_LOOKUP *lookup;
-    char *path = NULL;
+    const char *path;
 
-    if(dir != Qnil){
-	path = StringValueCStr(dir);
-    }
     GetX509Store(self, store);
+    path = StringValueCStr(dir);
     lookup = X509_STORE_add_lookup(store, X509_LOOKUP_hash_dir());
-    if(lookup == NULL) ossl_raise(eX509StoreError, NULL);
-    if(X509_LOOKUP_add_dir(lookup, path, X509_FILETYPE_PEM) != 1){
-        ossl_raise(eX509StoreError, NULL);
-    }
+    if (!lookup)
+        ossl_raise(eX509StoreError, "X509_STORE_add_lookup");
+    if (X509_LOOKUP_add_dir(lookup, path, X509_FILETYPE_PEM) != 1)
+        ossl_raise(eX509StoreError, "X509_LOOKUP_add_dir");
 
     return self;
 }
