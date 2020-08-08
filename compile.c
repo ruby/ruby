@@ -5752,6 +5752,9 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
         }
         ADD_INSNL(ret, line, jump, matched);
         ADD_INSN(ret, line, putnil);
+        if (use_rest_num) {
+            ADD_INSN(ret, line, putnil);
+        }
 
         ADD_LABEL(ret, type_error);
         ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
