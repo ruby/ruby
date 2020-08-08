@@ -192,8 +192,9 @@ ossl_x509store_initialize(int argc, VALUE *argv, VALUE self)
 {
     X509_STORE *store;
 
-/* BUG: This method takes any number of arguments but appears to ignore them. */
     GetX509Store(self, store);
+    if (argc != 0)
+        rb_warn("OpenSSL::X509::Store.new does not take any arguments");
 #if !defined(HAVE_OPAQUE_OPENSSL)
     /* [Bug #405] [Bug #1678] [Bug #3000]; already fixed? */
     store->ex_data.sk = NULL;

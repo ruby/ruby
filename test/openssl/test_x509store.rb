@@ -16,14 +16,11 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
     @ee2 = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=EE2")
   end
 
-  def test_nosegv_on_cleanup
-    cert  = OpenSSL::X509::Certificate.new
-    store = OpenSSL::X509::Store.new
-    ctx   = OpenSSL::X509::StoreContext.new(store, cert, [])
-    EnvUtil.suppress_warning do
-      ctx.cleanup
-    end
-    ctx.verify
+  def test_store_new
+    # v2.3.0 emits explicit warning
+    assert_warning(/new does not take any arguments/) {
+      OpenSSL::X509::Store.new(123)
+    }
   end
 
   def test_add_file_path
@@ -254,6 +251,14 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
     assert_raise(NoMethodError) { store.dup }
     ctx = OpenSSL::X509::StoreContext.new(store)
     assert_raise(NoMethodError) { ctx.dup }
+  end
+
+  def test_ctx_cleanup
+    # Deprecated in Ruby 1.9.3
+    cert  = OpenSSL::X509::Certificate.new
+    store = OpenSSL::X509::Store.new
+    ctx   = OpenSSL::X509::StoreContext.new(store, cert, [])
+    assert_warning(/cleanup/) { ctx.cleanup }
   end
 end
 
