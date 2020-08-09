@@ -5929,6 +5929,7 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
             ADD_INSN(ret, line, pop);
             ADD_INSN(ret, line, pop);
             ADD_INSNL(ret, line, jump, match_failed);
+            ADD_INSN1(ret, line, dupn, INT2FIX(3));
 
             ADD_LABEL(ret, find_succeeded);
             ADD_INSN(ret, line, pop);
@@ -5938,12 +5939,14 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
 
         ADD_INSN(ret, line, pop);
         ADD_INSNL(ret, line, jump, matched);
+        ADD_INSN(ret, line, putnil);
 
         ADD_LABEL(ret, type_error);
         ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
         ADD_INSN1(ret, line, putobject, rb_eTypeError);
         ADD_INSN1(ret, line, putobject, rb_fstring_lit("deconstruct must return Array"));
         ADD_SEND(ret, line, id_core_raise, INT2FIX(2));
+        ADD_INSN(ret, line, pop);
 
         ADD_LABEL(ret, match_failed);
         ADD_INSN(ret, line, pop);
