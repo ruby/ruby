@@ -8275,7 +8275,7 @@ rb_ary_take_while(VALUE ary)
  *    array.drop(n) -> new_array
  *
  *  Returns a new \Array containing all but the first +n+ element of +self+;
- *  does not modify +self+:
+ *  does not modify +self+.
  *
  *  Argument +n+ must be an
  *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects]
