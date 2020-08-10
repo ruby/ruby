@@ -8948,6 +8948,11 @@ rb_ary_deconstruct(VALUE ary)
 void
 Init_Array(void)
 {
+    if (should_be_T_ARRAY(Qnil)) {
+        should_not_be_shared_and_embedded(Qnil);
+        UNREACHABLE;
+    }
+
 #undef rb_intern
 #define rb_intern(str) rb_intern_const(str)
 
