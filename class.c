@@ -911,8 +911,7 @@ rb_include_class_new(VALUE module, VALUE super)
 {
     VALUE klass = class_alloc(T_ICLASS, rb_cClass);
 
-    RCLASS_M_TBL(OBJ_WB_UNPROTECT(klass)) =
-      RCLASS_M_TBL(OBJ_WB_UNPROTECT(module)); /* TODO: unprotected? */
+    RCLASS_M_TBL(klass) = RCLASS_M_TBL(module);
 
     RCLASS_SET_ORIGIN(klass, klass);
     if (BUILTIN_TYPE(module) == T_ICLASS) {
@@ -1098,13 +1097,12 @@ move_refined_method(ID key, VALUE value, void *data)
 	    const rb_method_entry_t *orig_me = me->def->body.refined.orig_me, *new_me;
 	    RB_OBJ_WRITE(me, &me->def->body.refined.orig_me, NULL);
 	    new_me = rb_method_entry_clone(me);
-	    rb_id_table_insert(tbl, key, (VALUE)new_me);
-	    RB_OBJ_WRITTEN(klass, Qundef, new_me);
+            rb_method_table_insert(klass, tbl, key, new_me);
 	    rb_method_entry_copy(me, orig_me);
 	    return ID_TABLE_CONTINUE;
 	}
 	else {
-	    rb_id_table_insert(tbl, key, (VALUE)me);
+            rb_method_table_insert(klass, tbl, key, me);
 	    return ID_TABLE_DELETE;
 	}
     }
@@ -1119,7 +1117,6 @@ ensure_origin(VALUE klass)
     VALUE origin = RCLASS_ORIGIN(klass);
     if (origin == klass) {
 	origin = class_alloc(T_ICLASS, klass);
-	OBJ_WB_UNPROTECT(origin); /* TODO: conservative shading. Need more survey. */
 	RCLASS_SET_SUPER(origin, RCLASS_SUPER(klass));
 	RCLASS_SET_SUPER(klass, origin);
 	RCLASS_SET_ORIGIN(klass, origin);

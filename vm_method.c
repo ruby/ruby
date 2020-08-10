@@ -174,11 +174,9 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
                     // invalidate cc by invalidating cc->cme
                     VALUE owner = cme->owner;
                     VM_ASSERT(BUILTIN_TYPE(owner) == T_CLASS);
-                    rb_callable_method_entry_t *new_cme =
-                      (rb_callable_method_entry_t *)rb_method_entry_clone((const rb_method_entry_t *)cme);
-                    struct rb_id_table *mtbl = RCLASS_M_TBL(RCLASS_ORIGIN(owner));
-                    rb_id_table_insert(mtbl, mid, (VALUE)new_cme);
-                    RB_OBJ_WRITTEN(owner, cme, new_cme);
+                    const rb_method_entry_t *new_cme = rb_method_entry_clone((const rb_method_entry_t *)cme);
+                    VALUE origin = RCLASS_ORIGIN(owner);
+                    rb_method_table_insert(origin, RCLASS_M_TBL(origin), mid, new_cme);
                 }
                 vm_me_invalidate_cache((rb_callable_method_entry_t *)cme);
                 RB_DEBUG_COUNTER_INC(cc_invalidate_tree_cme);
@@ -259,6 +257,19 @@ void
 rb_clear_method_cache_all(void)
 {
     rb_objspace_each_objects(invalidate_all_cc, NULL);
+}
+
+void
+rb_method_table_insert(VALUE klass, struct rb_id_table *table, ID method_id, const rb_method_entry_t *me)
+{
+    VALUE table_owner = klass;
+    if (RB_TYPE_P(klass, T_ICLASS) && !RICLASS_OWNS_M_TBL_P(klass)) {
+        table_owner = RBASIC(table_owner)->klass;
+    }
+    VM_ASSERT(RB_TYPE_P(table_owner, T_CLASS) || RB_TYPE_P(table_owner, T_ICLASS) || RB_TYPE_P(table_owner, T_MODULE));
+    VM_ASSERT(table == RCLASS_M_TBL(table_owner));
+    rb_id_table_insert(table, method_id, (VALUE)me);
+    RB_OBJ_WRITTEN(table_owner, Qundef, (VALUE)me);
 }
 
 VALUE
@@ -802,8 +813,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
 	make_method_entry_refined(klass, me);
     }
 
-    rb_id_table_insert(mtbl, mid, (VALUE)me);
-    RB_OBJ_WRITTEN(klass, Qundef, (VALUE)me);
+    rb_method_table_insert(klass, mtbl, mid, me);
 
     VM_ASSERT(me->def != NULL);
 
@@ -973,6 +983,7 @@ prepare_callable_method_entry(VALUE defined_class, ID id, const rb_method_entry_
                 }
                 cme = rb_method_entry_complement_defined_class(me, me->called_id, defined_class);
                 rb_id_table_insert(mtbl, id, (VALUE)cme);
+                RB_OBJ_WRITTEN(defined_class, Qundef, (VALUE)cme);
                 VM_ASSERT(callable_method_entry_p(cme));
             }
             else {
