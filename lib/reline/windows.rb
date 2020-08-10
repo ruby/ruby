@@ -92,6 +92,7 @@ class Reline::Windows
   @@ReadConsoleInput = Win32API.new('kernel32', 'ReadConsoleInput', ['L', 'P', 'L', 'P'], 'L')
   @@GetFileType = Win32API.new('kernel32', 'GetFileType', ['L'], 'L')
   @@GetFileInformationByHandleEx = Win32API.new('kernel32', 'GetFileInformationByHandleEx', ['L', 'I', 'P', 'L'], 'I')
+  @@FillConsoleOutputAttribute = Win32API.new('kernel32', 'FillConsoleOutputAttribute', ['L', 'L', 'L', 'L', 'P'], 'L')
 
   @@input_buf = []
   @@output_buf = []
@@ -249,9 +250,15 @@ class Reline::Windows
   end
 
   def self.clear_screen
-    # TODO: Use FillConsoleOutputCharacter and FillConsoleOutputAttribute
-    write "\e[2J"
-    write "\e[1;1H"
+    coord_screen_top_left = 0
+    written = 0.chr * 4
+    csbi = 0.chr * 22
+    return if @@GetConsoleScreenBufferInfo.call(@@hConsoleHandle, csbi) == 0
+    con_size = csbi[0, 4].unpack('SS').inject(:*)
+    attributes = csbi[8, 2].unpack('S').first
+    @@FillConsoleOutputCharacter.call(@@hConsoleHandle, 0x20, con_size, coord_screen_top_left, written)
+    @@FillConsoleOutputAttribute.call(@@hConsoleHandle, attributes, con_size, coord_screen_top_left, written)
+    @@SetConsoleCursorPosition.call(@@hConsoleHandle, coord_screen_top_left)
   end
 
   def self.set_screen_size(rows, columns)
