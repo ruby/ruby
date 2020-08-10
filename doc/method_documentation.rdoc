@@ -170,3 +170,7 @@ avoided in general.  It is best to keep the formatting as simple as
 possible.  Only use headings and other formatting for the most complex
 cases where the method documentation is very long due to the complexity
 of the method.
+
+Methods are documented using RDoc syntax.  See the
+{RDoc Markup Reference}[https://docs.ruby-lang.org/en/master/RDoc/Markup.html#class-RDoc::Markup-label-RDoc+Markup+Reference]
+for more information on formatting with RDoc syntax.
