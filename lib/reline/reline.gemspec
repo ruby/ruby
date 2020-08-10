@@ -12,7 +12,7 @@ Gem::Specification.new do |spec|
   spec.summary       = %q{Alternative GNU Readline or Editline implementation by pure Ruby.}
   spec.description   = %q{Alternative GNU Readline or Editline implementation by pure Ruby.}
   spec.homepage      = 'https://github.com/ruby/reline'
-  spec.license       = 'Ruby License'
+  spec.license       = 'Ruby'
 
   spec.files         = Dir['BSDL', 'COPYING', 'README.md', 'lib/**/*']
   spec.require_paths = ['lib']
