@@ -1420,8 +1420,7 @@ rb_using_refinement(rb_cref_t *cref, VALUE klass, VALUE module)
     c = iclass = rb_include_class_new(module, superclass);
     RB_OBJ_WRITE(c, &RCLASS_REFINED_CLASS(c), klass);
 
-    RCLASS_M_TBL(OBJ_WB_UNPROTECT(c)) =
-      RCLASS_M_TBL(OBJ_WB_UNPROTECT(module)); /* TODO: check unprotecting */
+    RCLASS_M_TBL(c) = RCLASS_M_TBL(module);
 
     module = RCLASS_SUPER(module);
     while (module && module != klass) {

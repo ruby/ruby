@@ -2854,8 +2854,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	break;
       case T_ICLASS:
 	/* Basically , T_ICLASS shares table with the module */
-        if (FL_TEST(obj, RICLASS_IS_ORIGIN) &&
-                !FL_TEST(obj, RICLASS_ORIGIN_SHARED_MTBL)) {
+        if (RICLASS_OWNS_M_TBL_P(obj)) {
             /* Method table is not shared for origin iclasses of classes */
             rb_id_table_free(RCLASS_M_TBL(obj));
         }
@@ -3974,8 +3973,7 @@ obj_memsize_of(VALUE obj, int use_all_types)
 	}
 	break;
       case T_ICLASS:
-        if (FL_TEST(obj, RICLASS_IS_ORIGIN) &&
-                !FL_TEST(obj, RICLASS_ORIGIN_SHARED_MTBL)) {
+        if (RICLASS_OWNS_M_TBL_P(obj)) {
 	    if (RCLASS_M_TBL(obj)) {
 		size += rb_id_table_memsize(RCLASS_M_TBL(obj));
 	    }
@@ -5504,8 +5502,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 	break;
 
       case T_ICLASS:
-        if (FL_TEST(obj, RICLASS_IS_ORIGIN) &&
-                !FL_TEST(obj, RICLASS_ORIGIN_SHARED_MTBL)) {
+        if (RICLASS_OWNS_M_TBL_P(obj)) {
 	    mark_m_tbl(objspace, RCLASS_M_TBL(obj));
 	}
         if (RCLASS_SUPER(obj)) {

@@ -144,6 +144,12 @@ RICLASS_SET_ORIGIN_SHARED_MTBL(VALUE iclass)
     FL_SET(iclass, RICLASS_ORIGIN_SHARED_MTBL);
 }
 
+static inline bool
+RICLASS_OWNS_M_TBL_P(VALUE iclass)
+{
+    return FL_TEST_RAW(iclass, RICLASS_IS_ORIGIN | RICLASS_ORIGIN_SHARED_MTBL) == RICLASS_IS_ORIGIN;
+}
+
 static inline void
 RCLASS_SET_INCLUDER(VALUE iclass, VALUE klass)
 {
