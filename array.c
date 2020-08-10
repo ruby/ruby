@@ -5809,7 +5809,7 @@ recursive_cmp(VALUE ary1, VALUE ary2, int recur)
 
 /*
  *  call-seq:
- *    array <=> other_array → -1, 0, or 1
+ *    array <=> other_array -> -1, 0, or 1
  *
  *  Returns -1, 0, or 1 as +self+ is less than, equal to, or greater than +other_array+.
  *  For each index +i+ in +self+, evaluates <tt>result = self[i] <=> other_array[i]</tt>.
@@ -6558,7 +6558,7 @@ ary_min_opt_string(VALUE ary, long i, VALUE vmin)
  *    array.min -> element
  *    array.min { |a, b| ... } -> element
  *    array.min(n) -> new_array
- *    ary.min(n) { |a, b| ... } → new_array
+ *    ary.min(n) { |a, b| ... } -> new_array
  *
  *  Returns one of the following:
  *  - The minimum-valued element from +self+.

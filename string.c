@@ -1585,8 +1585,8 @@ rb_str_resurrect(VALUE str)
  *
  *  With the single argument +str+, returns a copy of +str+
  *  with the same encoding as +str+:
- *    s = String.new('Que veut dire ça?')
- *    s # => "Que veut dire ça?"
+ *    s = String.new("Que veut dire \u{e7}a?")
+ *    s # => "Que veut dire \u{e7}a?"
  *    s.encoding # => #<Encoding:UTF-8>
  *
  *  Literal strings like <tt>""</tt> or here-documents always use
@@ -1634,8 +1634,8 @@ rb_str_resurrect(VALUE str)
  *    String.new(encoding: 'FOO')
  *
  *  Raises an exception if the given +encoding+ is incompatible with +str+:
- *    utf8 = 'Que veut dire ça?'
- *    ascii = 'Que veut dire ça?'.force_encoding('ASCII')
+ *    utf8 = "Que veut dire \u{e7}a?"
+ *    ascii = "Que veut dire \u{e7}a?".force_encoding('ASCII')
  *    # Raises Encoding::CompatibilityError (incompatible character encodings: UTF-8 and US-ASCII)
  *    utf8.include? ascii
  *
