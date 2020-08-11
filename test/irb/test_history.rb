@@ -1,5 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
+require 'irb'
 
 module TestIRB
   class TestHistory < Test::Unit::TestCase
