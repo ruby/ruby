@@ -12988,7 +12988,7 @@ opt_i_set(VALUE val, ID id, VALUE *var)
 void
 ruby_set_inplace_mode(const char *suffix)
 {
-    ARGF.inplace = !suffix ? Qfalse : !*suffix ? Qnil : rb_fstring_cstr(suffix);
+    ARGF.inplace = !suffix ? Qfalse : !*suffix ? Qnil : rb_str_new(suffix, strlen(suffix));
 }
 
 /*
