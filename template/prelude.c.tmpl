@@ -81,6 +81,10 @@ Prelude.new(output, ARGV, vpath).instance_eval do
 #include "ruby/ruby.h"
 #include "vm_core.h"
 
+COMPILER_WARNING_PUSH
+#if __has_warning("-Wstring-concatenation")
+COMPILER_WARNING_IGNORED(-Wstring-concatenation)
+#endif
 % preludes = @preludes.values.sort
 % preludes.each {|i, prelude, lines, sub|
 
@@ -115,6 +119,8 @@ static const struct {
 #line <%=_erbout.count("\n")+2%> "<%=@output%>"
 };
 % }
+
+COMPILER_WARNING_POP
 
 % if @have_sublib
 #define PRELUDE_COUNT <%=preludes.size%>
