@@ -673,8 +673,19 @@ rb_vm_frame_method_entry(const rb_control_frame_t *cfp)
     return check_method_entry(ep[VM_ENV_DATA_INDEX_ME_CREF], TRUE);
 }
 
+static rb_iseq_t *
+method_entry_iseqptr(const rb_callable_method_entry_t *me)
+{
+    switch (me->def->type) {
+      case VM_METHOD_TYPE_ISEQ:
+        return me->def->body.iseq.iseqptr;
+      default:
+        return NULL;
+    }
+}
+
 static rb_cref_t *
-method_entry_cref(rb_callable_method_entry_t *me)
+method_entry_cref(const rb_callable_method_entry_t *me)
 {
     switch (me->def->type) {
       case VM_METHOD_TYPE_ISEQ:
@@ -3266,7 +3277,7 @@ static inline VALUE
 vm_search_normal_superclass(VALUE klass)
 {
     if (BUILTIN_TYPE(klass) == T_ICLASS &&
-	FL_TEST(RBASIC(klass)->klass, RMODULE_IS_REFINEMENT)) {
+	FL_TEST_RAW(RBASIC(klass)->klass, RMODULE_IS_REFINEMENT)) {
 	klass = RBASIC(klass)->klass;
     }
     klass = RCLASS_ORIGIN(klass);
@@ -3299,6 +3310,7 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
 
     if (BUILTIN_TYPE(current_defined_class) != T_MODULE &&
 	!FL_TEST(current_defined_class, RMODULE_INCLUDED_INTO_REFINEMENT) &&
+        reg_cfp->iseq != method_entry_iseqptr(me) &&
         !rb_obj_is_kind_of(recv, current_defined_class)) {
 	VALUE m = RB_TYPE_P(current_defined_class, T_ICLASS) ?
             RCLASS_INCLUDER(current_defined_class) : current_defined_class;
