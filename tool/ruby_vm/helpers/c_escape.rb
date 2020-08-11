@@ -17,7 +17,7 @@ module RubyVM::CEscape
 
   # generate comment, with escaps.
   def commentify str
-    return "/* #{str.strip.b.gsub '*/', '*\\/'} */"
+    return "/* #{str.b.gsub '*/', '*\\/'} */"
   end
 
   # Mimic gensym of CL.
