@@ -66,7 +66,7 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
     ee1_cert = issue_cert(@ee1, @dsa256, 10, ee_exts, ca2_cert, @rsa1024)
     ee2_cert = issue_cert(@ee2, @dsa512, 20, ee_exts, ca2_cert, @rsa1024)
     ee3_cert = issue_cert(@ee2, @dsa512, 30,  ee_exts, ca2_cert, @rsa1024,
-                          not_before: now-100, not_after: now-1)
+                          not_before: now-100, not_after: now-50)
     ee4_cert = issue_cert(@ee2, @dsa512, 40, ee_exts, ca2_cert, @rsa1024,
                           not_before: now+1000, not_after: now+2000,)
 
