@@ -4,18 +4,6 @@ require_relative "utils"
 if defined?(OpenSSL)
 
 class OpenSSL::TestX509Store < OpenSSL::TestCase
-  def setup
-    super
-    @rsa1024 = Fixtures.pkey("rsa1024")
-    @rsa2048 = Fixtures.pkey("rsa2048")
-    @dsa256  = Fixtures.pkey("dsa256")
-    @dsa512  = Fixtures.pkey("dsa512")
-    @ca1 = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=CA1")
-    @ca2 = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=CA2")
-    @ee1 = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=EE1")
-    @ee2 = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=EE2")
-  end
-
   def test_store_new
     # v2.3.0 emits explicit warning
     assert_warning(/new does not take any arguments/) {
@@ -339,22 +327,26 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
     assert_equal(false, store.verify(ee2_cert))
   end
 
-  def test_set_errors
+  def test_add_cert_duplicate
+    # Up until OpenSSL 1.1.0, X509_STORE_add_{cert,crl}() returned an error
+    # if the given certificate is already in the X509_STORE
     return if openssl?(1, 1, 0) || libressl?
-    now = Time.now
-    ca1_cert = issue_cert(@ca1, @rsa2048, 1, [], nil, nil)
+    ca1 = OpenSSL::X509::Name.parse_rfc2253("CN=Root CA")
+    ca1_key = Fixtures.pkey("rsa-1")
+    ca1_cert = issue_cert(ca1, ca1_key, 1, [], nil, nil)
     store = OpenSSL::X509::Store.new
     store.add_cert(ca1_cert)
     assert_raise(OpenSSL::X509::StoreError){
       store.add_cert(ca1_cert)  # add same certificate twice
     }
 
+    now = Time.now
     revoke_info = []
     crl1 = issue_crl(revoke_info, 1, now, now+1800, [],
-                     ca1_cert, @rsa2048, OpenSSL::Digest.new('SHA1'))
+                     ca1_cert, ca1_key, "sha256")
     revoke_info = [ [2, now, 1], ]
     crl2 = issue_crl(revoke_info, 2, now+1800, now+3600, [],
-                     ca1_cert, @rsa2048, OpenSSL::Digest.new('SHA1'))
+                     ca1_cert, ca1_key, "sha256")
     store.add_crl(crl1)
     assert_raise(OpenSSL::X509::StoreError){
       store.add_crl(crl2) # add CRL issued by same CA twice.
