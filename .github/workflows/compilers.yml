@@ -53,6 +53,7 @@ jobs:
           - { key: default_cc, name: gcc-6,     value: gcc-6 }
           - { key: default_cc, name: gcc-5,     value: gcc-5 }
           - { key: default_cc, name: gcc-4.8,   value: gcc-4.8 }
+          - { key: default_cc, name: clang-12,  value: clang-12 }
           - { key: default_cc, name: clang-11,  value: clang-11 }
           - { key: default_cc, name: clang-10,  value: clang-10 }
           - { key: default_cc, name: clang-9,   value: clang-9 }
