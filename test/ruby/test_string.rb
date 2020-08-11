@@ -1838,6 +1838,11 @@ CODE
     assert_equal("abc", s)
   end
 
+  def test_split_lookbehind
+    assert_equal([S("ab"), S("d")], S("abcd").split(/(?<=b)c/))
+    assert_equal([S("ab"), S("d")], S("abcd").split(/b\Kc/))
+  end
+
   def test_squeeze
     assert_equal(S("abc"), S("aaabbbbccc").squeeze)
     assert_equal(S("aa bb cc"), S("aa   bb      cc").squeeze(S(" ")))
