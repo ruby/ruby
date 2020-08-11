@@ -613,7 +613,6 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_opt_invokebuiltin_delegate_leave
-    skip 'ld SEGVs for this' if RUBY_PLATFORM.start_with?("s390x-")
     iseq = eval(EnvUtil.invoke_ruby(['-e', <<~'EOS'], '', true).first)
       p RubyVM::InstructionSequence.of("\x00".method(:unpack)).to_a
     EOS
