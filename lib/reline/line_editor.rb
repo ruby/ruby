@@ -2,7 +2,6 @@ require 'reline/kill_ring'
 require 'reline/unicode'
 
 require 'tempfile'
-require 'pathname'
 
 class Reline::LineEditor
   # TODO: undo
@@ -2145,7 +2144,7 @@ class Reline::LineEditor
       fp.path
     }
     system("#{ENV['EDITOR']} #{path}")
-    @line = Pathname.new(path).read
+    @line = File.read(path)
     finish
   end
 

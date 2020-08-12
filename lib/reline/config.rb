@@ -1,5 +1,3 @@
-require 'pathname'
-
 class Reline::Config
   attr_reader :test_mode
 
