@@ -374,34 +374,59 @@ rb_enc_warning(rb_encoding *enc, const char *fmt, ...)
 }
 #endif
 
-void
-rb_warn_deprecated(const char *fmt, const char *suggest, ...)
+static void
+warn_deprecated_i(
+    const char *fmt,
+    va_list args,
+    const char *removal,
+    const char *suggest)
 {
-    if (NIL_P(ruby_verbose)) return;
-    if (!rb_warning_category_enabled_p(RB_WARN_CATEGORY_DEPRECATED)) return;
-    va_list args;
-    va_start(args, suggest);
-    VALUE mesg = warning_string(0, fmt, args);
-    va_end(args);
+    if (NIL_P(ruby_verbose)) {
+        return;
+    }
+    else if (!rb_warning_category_enabled_p(RB_WARN_CATEGORY_DEPRECATED)) {
+        return;
+    }
+
+    VALUE mesg = warning_string(NULL, fmt, args);
     rb_str_set_len(mesg, RSTRING_LEN(mesg) - 1);
     rb_str_cat_cstr(mesg, " is deprecated");
-    if (suggest) rb_str_catf(mesg, "; use %s instead", suggest);
+    if (removal) {
+        rb_str_catf(mesg, ", and will be removed in Ruby %s", removal);
+    }
+    if (suggest) {
+        rb_str_catf(mesg, "; use %s instead", suggest);
+    }
+
     rb_str_cat_cstr(mesg, "\n");
     rb_write_warning_str(mesg);
 }
 
 void
+rb_warn_deprecated(const char *fmt, const char *suggest, ...)
+{
+    va_list args;
+    va_start(args, suggest);
+    warn_deprecated_i(fmt, args, NULL, suggest);
+    va_end(args);
+}
+
+void
 rb_warn_deprecated_to_remove(const char *fmt, const char *removal, ...)
 {
-    if (NIL_P(ruby_verbose)) return;
-    if (!rb_warning_category_enabled_p(RB_WARN_CATEGORY_DEPRECATED)) return;
     va_list args;
     va_start(args, removal);
-    VALUE mesg = warning_string(0, fmt, args);
+    warn_deprecated_i(fmt, args, removal, NULL);
     va_end(args);
-    rb_str_set_len(mesg, RSTRING_LEN(mesg) - 1);
-    rb_str_catf(mesg, " is deprecated and will be removed in Ruby %s\n", removal);
-    rb_write_warning_str(mesg);
+}
+
+void
+rb_warn_deprecated_to_remove_use_this_one_instead(const char *fmt, const char *removal, const char *suggest, ...)
+{
+    va_list args;
+    va_start(args, suggest);
+    warn_deprecated_i(fmt, args, removal, suggest);
+    va_end(args);
 }
 
 static inline int
