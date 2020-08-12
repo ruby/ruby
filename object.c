@@ -1399,6 +1399,8 @@ nil_inspect(VALUE obj)
  *     nil =~ other  -> nil
  *
  *  Dummy pattern matching -- always returns nil.
+ *
+ *  This method makes it possible to `while gets =~ /re/ do`.
  */
 
 static VALUE
@@ -1592,10 +1594,10 @@ rb_false(VALUE obj)
 static VALUE
 rb_obj_match(VALUE obj1, VALUE obj2)
 {
-    if (rb_warning_category_enabled_p(RB_WARN_CATEGORY_DEPRECATED)) {
-        rb_warn("deprecated Object#=~ is called on %"PRIsVALUE
-                "; it always returns nil", rb_obj_class(obj1));
-    }
+    rb_warn_deprecated_to_remove(
+        "deprecated Object#=~ is called on %"PRIsVALUE", "
+        "which always returns nil, and" /* is deprecated. */,
+        /* Will be removed in */ "3.1", rb_obj_class(obj1));
     return Qnil;
 }
 
