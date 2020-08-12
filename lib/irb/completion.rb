@@ -7,7 +7,6 @@
 #       From Original Idea of shugo@ruby-lang.org
 #
 
-require "readline"
 autoload :RDoc, "rdoc"
 
 module IRB
