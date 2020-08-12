@@ -287,15 +287,58 @@ class CSV
       end
     end
 
+    # :call-seq:
+    #   table.values_at(*indexes) -> array_of_rows
+    #   table.values_at(*headers) -> array_of_columns_data
     #
-    # The mixed mode default is to treat a list of indices as row access,
-    # returning the rows indicated. Anything else is considered columnar
-    # access. For columnar access, the return set has an Array for each row
-    # with the values indicated by the headers in each Array. You can force
-    # column or row mode using by_col!() or by_row!().
+    # If the access mode is <tt>:row</tt> or <tt>:col_or_row</tt>,
+    # and each argument is either an \Integer or a \Range,
+    # returns rows.
+    # Otherwise, returns columns data.
     #
-    # You cannot mix column and row access.
+    # In either case, the returned values are in the order
+    # specified by the arguments.  Arguments may be repeated.
     #
+    # ---
+    #
+    # Returns rows as an \Array of \CSV::Row objects.
+    #
+    # No argument:
+    #   source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+    #   table = CSV.parse(source, headers: true)
+    #   table.values_at # => []
+    #
+    # One index:
+    #   values = table.values_at(0)
+    #   values # => [#<CSV::Row "Name":"foo" "Value":"0">]
+    #
+    # Two indexes:
+    #   values = table.values_at(2, 0)
+    #   values # => [#<CSV::Row "Name":"baz" "Value":"2">, #<CSV::Row "Name":"foo" "Value":"0">]
+    #
+    # One \Range:
+    #   values = table.values_at(1..2)
+    #   values # => [#<CSV::Row "Name":"bar" "Value":"1">, #<CSV::Row "Name":"baz" "Value":"2">]
+    #
+    # \Ranges and indexes:
+    #   values = table.values_at(0..1, 1..2, 0, 2)
+    #   pp values
+    # Output:
+    #   [#<CSV::Row "Name":"foo" "Value":"0">,
+    #    #<CSV::Row "Name":"bar" "Value":"1">,
+    #    #<CSV::Row "Name":"bar" "Value":"1">,
+    #    #<CSV::Row "Name":"baz" "Value":"2">,
+    #    #<CSV::Row "Name":"foo" "Value":"0">,
+    #    #<CSV::Row "Name":"baz" "Value":"2">]
+    #
+    # ---
+    #
+    # Returns columns data as Arrays,
+    # each consisting of the specified columns data for that row:
+    #   values = table.values_at('Name')
+    #   values # => [["foo"], ["bar"], ["baz"]]
+    #   values = table.values_at('Value', 'Name')
+    #   values # => [["0", "foo"], ["1", "bar"], ["2", "baz"]]
     def values_at(*indices_or_headers)
       if @mode == :row or  # by indices
          ( @mode == :col_or_row and indices_or_headers.all? do |index|
@@ -310,13 +353,20 @@ class CSV
       end
     end
 
+    # :call-seq:
+    #   table << row_or_array -> self
     #
-    # Adds a new row to the bottom end of this table. You can provide an Array,
-    # which will be converted to a CSV::Row (inheriting the table's headers()),
-    # or a CSV::Row.
+    # If +row_or_array+ is a \CSV::Row object,
+    # it is appended to the table:
+    #   source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+    #   table = CSV.parse(source, headers: true)
+    #   table << CSV::Row.new(table.headers, ['bat', 3])
+    #   table[3] # => #<CSV::Row "Name":"bat" "Value":3>
     #
-    # This method returns the table for chaining.
-    #
+    # If +row_or_array+ is an \Array, it is used to create a new
+    # \CSV::Row object which is then appended to the table:
+    #   table << ['bam', 4]
+    #   table[4] # => #<CSV::Row "Name":"bam" "Value":4>
     def <<(row_or_array)
       if row_or_array.is_a? Array  # append Array
         @table << Row.new(headers, row_or_array)
@@ -328,12 +378,21 @@ class CSV
     end
 
     #
+    # :call-seq:
+    #   table.push(*rows_or_arrays) -> self
+    #
     # A shortcut for appending multiple rows. Equivalent to:
+    #   rows.each {|row| self << row }
     #
-    #   rows.each { |row| self << row }
-    #
-    # This method returns the table for chaining.
-    #
+    # Each argument may be either a \CSV::Row object or an \Array:
+    #   source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+    #   table = CSV.parse(source, headers: true)
+    #   rows = [
+    #     CSV::Row.new(table.headers, ['bat', 3]),
+    #     ['bam', 4]
+    #   ]
+    #   table.push(*rows)
+    #   table[3..4] # => [#<CSV::Row "Name":"bat" "Value":3>, #<CSV::Row "Name":"bam" "Value":4>]
     def push(*rows)
       rows.each { |row| self << row }
 
