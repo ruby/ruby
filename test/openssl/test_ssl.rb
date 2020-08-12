@@ -1603,30 +1603,6 @@ end
     end
   end
 
-  def test_tmp_ecdh_callback
-    pend "EC is disabled" unless defined?(OpenSSL::PKey::EC)
-    pend "tmp_ecdh_callback is not supported" unless \
-      OpenSSL::SSL::SSLContext.method_defined?(:tmp_ecdh_callback)
-    pend "LibreSSL 2.6 has broken SSL_CTX_set_tmp_ecdh_callback()" \
-      if libressl?(2, 6, 1)
-
-    EnvUtil.suppress_warning do # tmp_ecdh_callback is deprecated (2016-05)
-      called = false
-      ctx_proc = -> ctx {
-        ctx.ciphers = "DEFAULT:!kRSA:!kEDH"
-        ctx.tmp_ecdh_callback = -> (*args) {
-          called = true
-          OpenSSL::PKey::EC.new "prime256v1"
-        }
-      }
-      start_server(ctx_proc: ctx_proc) do |port|
-        server_connect(port) { |s|
-          assert called, "tmp_ecdh_callback should be called"
-        }
-      end
-    end
-  end
-
   def test_ecdh_curves
     pend "EC is disabled" unless defined?(OpenSSL::PKey::EC)
 

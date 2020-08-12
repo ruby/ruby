@@ -160,7 +160,6 @@ have_func("X509_CRL_up_ref")
 have_func("X509_STORE_up_ref")
 have_func("SSL_SESSION_up_ref")
 have_func("EVP_PKEY_up_ref")
-have_func("SSL_CTX_set_tmp_ecdh_callback(NULL, NULL)", "openssl/ssl.h") # removed
 have_func("SSL_CTX_set_min_proto_version(NULL, 0)", "openssl/ssl.h")
 have_func("SSL_CTX_get_security_level")
 have_func("X509_get0_notBefore")
