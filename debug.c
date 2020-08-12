@@ -380,7 +380,7 @@ ruby_debug_log(const char *file, int line, const char *func_name, const char *fm
 {
     char buff[MAX_DEBUG_LOG_MESSAGE_LEN] = {0};
     int len = 0;
-    int r;
+    int r = 0;
 
     // message title
     if (func_name && len < MAX_DEBUG_LOG_MESSAGE_LEN) {
