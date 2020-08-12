@@ -387,6 +387,21 @@ class TestArgf < Test::Unit::TestCase
     assert_equal("foo", File.read(name+suffix))
   end
 
+  def test_inplace_bug_17117
+    assert_in_out_err(["-", @t1.path], "#{<<~"{#"}#{<<~'};'}")
+    {#
+      #!/usr/bin/ruby -pi.bak
+      BEGIN {
+        GC.start
+        arr = []
+        1000000.times { |x| arr << "fooo#{x}" }
+      }
+      puts "hello"
+    };
+    assert_equal("hello\n1\nhello\n2\n", File.read(@t1.path))
+    assert_equal("1\n2\n", File.read("#{@t1.path}.bak"))
+  end
+
   def test_encoding
     ruby('-e', "#{<<~"{#"}\n#{<<~'};'}", @t1.path, @t2.path, @t3.path) do |f|
       {#
