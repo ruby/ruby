@@ -214,8 +214,16 @@ ossl_x509store_initialize(int argc, VALUE *argv, VALUE self)
  * call-seq:
  *   store.flags = flags
  *
- * Sets _flags_ to the Store. _flags_ consists of zero or more of the constants
- * defined in with name V_FLAG_* or'ed together.
+ * Sets the default flags used by certificate chain verification performed with
+ * the Store.
+ *
+ * _flags_ consists of zero or more of the constants defined in OpenSSL::X509
+ * with name V_FLAG_* or'ed together.
+ *
+ * OpenSSL::X509::StoreContext#flags= can be used to change the flags for a
+ * single verification operation.
+ *
+ * See also the man page X509_VERIFY_PARAM_set_flags(3).
  */
 static VALUE
 ossl_x509store_set_flags(VALUE self, VALUE flags)
@@ -233,9 +241,9 @@ ossl_x509store_set_flags(VALUE self, VALUE flags)
  * call-seq:
  *   store.purpose = purpose
  *
- * Sets the store's purpose to _purpose_. If specified, the verifications on
- * the store will check every untrusted certificate's extensions are consistent
- * with the purpose. The purpose is specified by constants:
+ * Sets the store's default verification purpose. If specified,
+ * the verifications on the store will check every certificate's extensions are
+ * consistent with the purpose. The purpose is specified by constants:
  *
  * * X509::PURPOSE_SSL_CLIENT
  * * X509::PURPOSE_SSL_SERVER
@@ -246,6 +254,11 @@ ossl_x509store_set_flags(VALUE self, VALUE flags)
  * * X509::PURPOSE_ANY
  * * X509::PURPOSE_OCSP_HELPER
  * * X509::PURPOSE_TIMESTAMP_SIGN
+ *
+ * OpenSSL::X509::StoreContext#purpose= can be used to change the value for a
+ * single verification operation.
+ *
+ * See also the man page X509_VERIFY_PARAM_set_purpose(3).
  */
 static VALUE
 ossl_x509store_set_purpose(VALUE self, VALUE purpose)
@@ -262,6 +275,14 @@ ossl_x509store_set_purpose(VALUE self, VALUE purpose)
 /*
  * call-seq:
  *   store.trust = trust
+ *
+ * Sets the default trust settings used by the certificate verification with
+ * the store.
+ *
+ * OpenSSL::X509::StoreContext#trust= can be used to change the value for a
+ * single verification operation.
+ *
+ * See also the man page X509_VERIFY_PARAM_set_trust(3).
  */
 static VALUE
 ossl_x509store_set_trust(VALUE self, VALUE trust)
@@ -279,7 +300,13 @@ ossl_x509store_set_trust(VALUE self, VALUE trust)
  * call-seq:
  *   store.time = time
  *
- * Sets the time to be used in verifications.
+ * Sets the time to be used in the certificate verifications with the store.
+ * By default, if not specified, the current system time is used.
+ *
+ * OpenSSL::X509::StoreContext#time= can be used to change the value for a
+ * single verification operation.
+ *
+ * See also the man page X509_VERIFY_PARAM_set_time(3).
  */
 static VALUE
 ossl_x509store_set_time(VALUE self, VALUE time)
@@ -295,6 +322,8 @@ ossl_x509store_set_time(VALUE self, VALUE time)
  * Adds the certificates in _file_ to the certificate store. _file_ is the path
  * to the file, and the file contains one or more certificates in PEM format
  * concatenated together.
+ *
+ * See also the man page X509_LOOKUP_file(3).
  */
 static VALUE
 ossl_x509store_add_file(VALUE self, VALUE file)
@@ -328,6 +357,8 @@ ossl_x509store_add_file(VALUE self, VALUE file)
  *   store.add_path(path) -> self
  *
  * Adds _path_ as the hash dir to be looked up by the store.
+ *
+ * See also the man page X509_LOOKUP_hash_dir(3).
  */
 static VALUE
 ossl_x509store_add_path(VALUE self, VALUE dir)
@@ -357,6 +388,8 @@ ossl_x509store_add_path(VALUE self, VALUE dir)
  *
  * * OpenSSL::X509::DEFAULT_CERT_FILE
  * * OpenSSL::X509::DEFAULT_CERT_DIR
+ *
+ * See also the man page X509_STORE_set_default_paths(3).
  */
 static VALUE
 ossl_x509store_set_default_paths(VALUE self)
@@ -372,9 +405,11 @@ ossl_x509store_set_default_paths(VALUE self)
 
 /*
  * call-seq:
- *   store.add_cert(cert)
+ *   store.add_cert(cert) -> self
  *
  * Adds the OpenSSL::X509::Certificate _cert_ to the certificate store.
+ *
+ * See also the man page X509_STORE_add_cert(3).
  */
 static VALUE
 ossl_x509store_add_cert(VALUE self, VALUE arg)
@@ -395,6 +430,8 @@ ossl_x509store_add_cert(VALUE self, VALUE arg)
  *   store.add_crl(crl) -> self
  *
  * Adds the OpenSSL::X509::CRL _crl_ to the store.
+ *
+ * See also the man page X509_STORE_add_crl(3).
  */
 static VALUE
 ossl_x509store_add_crl(VALUE self, VALUE arg)
@@ -551,6 +588,10 @@ ossl_x509stctx_initialize(int argc, VALUE *argv, VALUE self)
 /*
  * call-seq:
  *   stctx.verify -> true | false
+ *
+ * Performs the certificate verification using the parameters set to _stctx_.
+ *
+ * See also the man page X509_verify_cert(3).
  */
 static VALUE
 ossl_x509stctx_verify(VALUE self)
@@ -574,7 +615,11 @@ ossl_x509stctx_verify(VALUE self)
 
 /*
  * call-seq:
- *   stctx.chain -> Array of X509::Certificate
+ *   stctx.chain -> nil | Array of X509::Certificate
+ *
+ * Returns the verified chain.
+ *
+ * See also the man page X509_STORE_CTX_set0_verified_chain(3).
  */
 static VALUE
 ossl_x509stctx_get_chain(VALUE self)
@@ -592,6 +637,12 @@ ossl_x509stctx_get_chain(VALUE self)
 /*
  * call-seq:
  *   stctx.error -> Integer
+ *
+ * Returns the error code of _stctx_. This is typically called after #verify
+ * is done, or from the verification callback set to
+ * OpenSSL::X509::Store#verify_callback=.
+ *
+ * See also the man page X509_STORE_CTX_get_error(3).
  */
 static VALUE
 ossl_x509stctx_get_err(VALUE self)
@@ -606,6 +657,11 @@ ossl_x509stctx_get_err(VALUE self)
 /*
  * call-seq:
  *   stctx.error = error_code
+ *
+ * Sets the error code of _stctx_. This is used by the verification callback
+ * set to OpenSSL::X509::Store#verify_callback=.
+ *
+ * See also the man page X509_STORE_CTX_set_error(3).
  */
 static VALUE
 ossl_x509stctx_set_error(VALUE self, VALUE err)
@@ -622,7 +678,10 @@ ossl_x509stctx_set_error(VALUE self, VALUE err)
  * call-seq:
  *   stctx.error_string -> String
  *
- * Returns the error string corresponding to the error code retrieved by #error.
+ * Returns the human readable error string corresponding to the error code
+ * retrieved by #error.
+ *
+ * See also the man page X509_verify_cert_error_string(3).
  */
 static VALUE
 ossl_x509stctx_get_err_string(VALUE self)
@@ -639,6 +698,10 @@ ossl_x509stctx_get_err_string(VALUE self)
 /*
  * call-seq:
  *   stctx.error_depth -> Integer
+ *
+ * Returns the depth of the chain. This is used in combination with #error.
+ *
+ * See also the man page X509_STORE_CTX_get_error_depth(3).
  */
 static VALUE
 ossl_x509stctx_get_err_depth(VALUE self)
@@ -653,6 +716,10 @@ ossl_x509stctx_get_err_depth(VALUE self)
 /*
  * call-seq:
  *   stctx.current_cert -> X509::Certificate
+ *
+ * Returns the certificate which caused the error.
+ *
+ * See also the man page X509_STORE_CTX_get_current_cert(3).
  */
 static VALUE
 ossl_x509stctx_get_curr_cert(VALUE self)
@@ -667,6 +734,10 @@ ossl_x509stctx_get_curr_cert(VALUE self)
 /*
  * call-seq:
  *   stctx.current_crl -> X509::CRL
+ *
+ * Returns the CRL which caused the error.
+ *
+ * See also the man page X509_STORE_CTX_get_current_crl(3).
  */
 static VALUE
 ossl_x509stctx_get_curr_crl(VALUE self)
@@ -686,7 +757,10 @@ ossl_x509stctx_get_curr_crl(VALUE self)
  * call-seq:
  *   stctx.flags = flags
  *
- * Sets the verification flags to the context. See Store#flags=.
+ * Sets the verification flags to the context. This overrides the default value
+ * set by Store#flags=.
+ *
+ * See also the man page X509_VERIFY_PARAM_set_flags(3).
  */
 static VALUE
 ossl_x509stctx_set_flags(VALUE self, VALUE flags)
@@ -704,7 +778,10 @@ ossl_x509stctx_set_flags(VALUE self, VALUE flags)
  * call-seq:
  *   stctx.purpose = purpose
  *
- * Sets the purpose of the context. See Store#purpose=.
+ * Sets the purpose of the context. This overrides the default value set by
+ * Store#purpose=.
+ *
+ * See also the man page X509_VERIFY_PARAM_set_purpose(3).
  */
 static VALUE
 ossl_x509stctx_set_purpose(VALUE self, VALUE purpose)
@@ -721,6 +798,11 @@ ossl_x509stctx_set_purpose(VALUE self, VALUE purpose)
 /*
  * call-seq:
  *   stctx.trust = trust
+ *
+ * Sets the trust settings of the context. This overrides the default value set
+ * by Store#trust=.
+ *
+ * See also the man page X509_VERIFY_PARAM_set_trust(3).
  */
 static VALUE
 ossl_x509stctx_set_trust(VALUE self, VALUE trust)
@@ -739,6 +821,8 @@ ossl_x509stctx_set_trust(VALUE self, VALUE trust)
  *   stctx.time = time
  *
  * Sets the time used in the verification. If not set, the current time is used.
+ *
+ * See also the man page X509_VERIFY_PARAM_set_time(3).
  */
 static VALUE
 ossl_x509stctx_set_time(VALUE self, VALUE time)
@@ -814,23 +898,37 @@ Init_ossl_x509store(void)
     cX509Store = rb_define_class_under(mX509, "Store", rb_cObject);
     /*
      * The callback for additional certificate verification. It is invoked for
-     * each untrusted certificate in the chain.
+     * each certificate in the chain and can be used to implement custom
+     * certificate verification conditions.
      *
      * The callback is invoked with two values, a boolean that indicates if the
      * pre-verification by OpenSSL has succeeded or not, and the StoreContext in
-     * use. The callback must return either true or false.
+     * use.
+     *
+     * The callback can use StoreContext#error= to change the error code as
+     * needed. The callback must return either true or false.
+     *
+     * NOTE: any exception raised within the callback will be ignored.
+     *
+     * See also the man page X509_STORE_CTX_set_verify_cb(3).
      */
     rb_attr(cX509Store, rb_intern("verify_callback"), 1, 0, Qfalse);
     /*
      * The error code set by the last call of #verify.
+     *
+     * See also StoreContext#error.
      */
     rb_attr(cX509Store, rb_intern("error"), 1, 0, Qfalse);
     /*
      * The description for the error code set by the last call of #verify.
+     *
+     * See also StoreContext#error_string.
      */
     rb_attr(cX509Store, rb_intern("error_string"), 1, 0, Qfalse);
     /*
      * The certificate chain constructed by the last call of #verify.
+     *
+     * See also StoreContext#chain.
      */
     rb_attr(cX509Store, rb_intern("chain"), 1, 0, Qfalse);
     rb_define_alloc_func(cX509Store, ossl_x509store_alloc);
