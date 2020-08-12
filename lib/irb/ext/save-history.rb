@@ -9,8 +9,6 @@
 #
 #
 
-require "readline"
-
 module IRB
   module HistorySavingAbility # :nodoc:
   end
