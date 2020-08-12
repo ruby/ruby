@@ -7,6 +7,7 @@ require 'reline/key_actor'
 require 'reline/key_stroke'
 require 'reline/line_editor'
 require 'reline/history'
+require 'rbconfig'
 
 module Reline
   FILENAME_COMPLETION_PROC = nil
