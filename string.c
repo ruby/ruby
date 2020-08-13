@@ -10271,7 +10271,7 @@ rb_fs_setter(VALUE val, ID id, VALUE *var)
 		 rb_id2str(id));
     }
     if (!NIL_P(val)) {
-        rb_warn_deprecated("`$;'", NULL);
+        rb_warn_deprecated_to_remove("`$;'", "3.1");
     }
     *var = val;
 }
