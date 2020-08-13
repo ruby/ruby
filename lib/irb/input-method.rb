@@ -326,7 +326,7 @@ module IRB
       config = Reline::Config.new
       str = "ReidlineInputMethod with Reline #{Reline::VERSION}"
       if config.respond_to?(:inputrc_path)
-        inputrc_path = config.inputrc_path
+        inputrc_path = File.expand_path(config.inputrc_path)
       else
         inputrc_path = File.expand_path(ENV['INPUTRC'] || '~/.inputrc')
       end
