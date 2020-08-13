@@ -5080,53 +5080,19 @@ rb_hash_any_p(int argc, VALUE *argv, VALUE hash)
 
 /*
  *  call-seq:
- *    hash.dig(*keys) -> value
+ *    hash.dig(key, *identifiers) -> object
  *
- *  Returns the value for a specified object in nested objects.
- *
- *  For nested objects:
- *  - For each key in +keys+, calls method \#dig on a receiver.
- *  - The first receiver is +self+.
- *  - Each successive receiver is the value returned by the previous call to \#dig.
- *  - The value finally returned is the value returned by the last call to \#dig.
+ *  Finds and returns the object in nested objects
+ *  that is specified by +key+ and +identifiers+.
+ *  The nested objects may be instances of various classes.
+ *  See {Dig Methods}[doc/dig_methods_rdoc.html].
  *
  *  Examples:
- *    h = {foo: 0}
- *    h.dig(:foo) # => 0
- *
- *    h = {foo: {bar: 1}}
- *    h.dig(:foo, :bar) # => 1
- *
  *    h = {foo: {bar: {baz: 2}}}
+ *    h.dig(:foo) # => {:bar=>{:baz=>2}}
+ *    h.dig(:foo, :bar) # => {:bar=>{:baz=>2}}
  *    h.dig(:foo, :bar, :baz) # => 2
- *
- *  Returns +nil+ if any key is not found:
- *    h = { foo: {bar: {baz: 2}}}
- *    h.dig(:foo, :nosuch) # => nil
- *
- *  The nested objects may include any that respond to \#dig.  See:
- *  - Hash#dig
- *  - Array#dig
- *  - Struct#dig
- *  - OpenStruct#dig
- *  - CSV::Table#dig
- *  - CSV::Row#dig
- *
- *  Example:
- *    h = {foo: {bar: [:a, :b, :c]}}
- *    h.dig(:foo, :bar, 2) # => :c
- *
- *  ---
- *
- *  Raises an exception if any given key is invalid
- *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
- *    # Raises NoMethodError (undefined method `hash' for #<BasicObject>)
- *    h.dig(BasicObject.new)
- *
- *  Raises an exception if any receiver does not respond to \#dig:
- *    h = { foo: 1 }
- *    # Raises TypeError: Integer does not have #dig method
- *    h.dig(:foo, 1)
+ *    h.dig(:foo, :bar, :BAZ) # => nil
  */
 
 static VALUE

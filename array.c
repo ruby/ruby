@@ -8639,19 +8639,20 @@ rb_ary_one_p(int argc, VALUE *argv, VALUE ary)
 }
 
 /*
- * call-seq:
- *   ary.dig(idx, ...)                 -> object
+ *  call-seq:
+ *    array.dig(index, *identifiers) -> object
  *
- * Extracts the nested value specified by the sequence of <i>idx</i>
- * objects by calling +dig+ at each step, returning +nil+ if any
- * intermediate step is +nil+.
+ *  Finds and returns the object in nested objects
+ *  that is specified by +index+ and +identifiers+.
+ *  The nested objects may be instances of various classes.
+ *  See {Dig Methods}[doc/dig_methods_rdoc.html].
  *
- *   a = [[1, [2, 3]]]
- *
- *   a.dig(0, 1, 1)                    #=> 3
- *   a.dig(1, 2, 3)                    #=> nil
- *   a.dig(0, 0, 0)                    #=> TypeError: Integer does not have #dig method
- *   [42, {foo: :bar}].dig(1, :foo)    #=> :bar
+ *  Examples:
+ *    a = [:foo, [:bar, :baz, [:bat, :bam]]]
+ *    a.dig(1) # => [:bar, :baz, [:bat, :bam]]
+ *    a.dig(1, 2) # => [:bat, :bam]
+ *    a.dig(1, 2, 0) # => :bat
+ *    a.dig(1, 2, 3) # => nil
  */
 
 static VALUE

@@ -255,26 +255,20 @@ class OpenStruct
     modifiable?[new_ostruct_member!(name)] = value
   end
 
-  #
   # :call-seq:
-  #   ostruct.dig(name, ...)  -> object
+  #   ostruct.dig(name, *identifiers) -> object
   #
-  # Extracts the nested value specified by the sequence of +name+
-  # objects by calling +dig+ at each step, returning +nil+ if any
-  # intermediate step is +nil+.
+  # Finds and returns the object in nested objects
+  # that is specified by +name+ and +identifiers+.
+  # The nested objects may be instances of various classes.
+  # See {Dig Methods}[doc/dig_methods_rdoc.html].
   #
+  # Examples:
   #   require "ostruct"
   #   address = OpenStruct.new("city" => "Anytown NC", "zip" => 12345)
   #   person  = OpenStruct.new("name" => "John Smith", "address" => address)
-  #
-  #   person.dig(:address, "zip")            # => 12345
-  #   person.dig(:business_address, "zip")   # => nil
-  #
-  #   data = OpenStruct.new(:array => [1, [2, 3]])
-  #
-  #   data.dig(:array, 1, 0)   # => 2
-  #   data.dig(:array, 0, 0)   # TypeError: Integer does not have #dig method
-  #
+  #   person.dig(:address, "zip") # => 12345
+  #   person.dig(:business_address, "zip") # => nil
   def dig(name, *names)
     begin
       name = name.to_sym
