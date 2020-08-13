@@ -2603,6 +2603,8 @@ CODE
     assert_equal("hello", hello, bug)
 
     assert_equal(["", "", "foo"], "foo".partition(/^=*/))
+
+    assert_equal([S("ab"), S("c"), S("dbce")], S("abcdbce").partition(/b\Kc/))
   end
 
   def test_rpartition
@@ -2627,6 +2629,8 @@ CODE
     hello = "hello"
     hello.rpartition("hi").map(&:upcase!)
     assert_equal("hello", hello, bug)
+
+    assert_equal([S("abcdb"), S("c"), S("e")], S("abcdbce").rpartition(/b\Kc/))
   end
 
   def test_setter
