@@ -1328,18 +1328,21 @@ rb_struct_size(VALUE s)
 
 /*
  * call-seq:
- *   struct.dig(key, ...)              -> object
+ *   struct.dig(key, *identifiers) -> object
  *
- * Extracts the nested value specified by the sequence of +key+
- * objects by calling +dig+ at each step, returning +nil+ if any
- * intermediate step is +nil+.
+ * Finds and returns the object in nested objects
+ * that is specified by +key+ and +identifiers+.
+ * The nested objects may be instances of various classes.
+ * See {Dig Methods}[doc/dig_methods_rdoc.html].
  *
+ * Examples:
  *   Foo = Struct.new(:a)
  *   f = Foo.new(Foo.new({b: [1, 2, 3]}))
- *
- *   f.dig(:a, :a, :b, 0)    # => 1
- *   f.dig(:b, 0)            # => nil
- *   f.dig(:a, :a, :b, :c)   # TypeError: no implicit conversion of Symbol into Integer
+ *   f.dig(:a) # => #<struct Foo a={:b=>[1, 2, 3]}>
+ *   f.dig(:a, :a) # => {:b=>[1, 2, 3]}
+ *   f.dig(:a, :a, :b) # => [1, 2, 3]
+ *   f.dig(:a, :a, :b, 0) # => 1
+ *   f.dig(:b, 0) # => nil
  */
 
 static VALUE
