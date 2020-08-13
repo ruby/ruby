@@ -7587,7 +7587,7 @@ deprecated_str_setter(VALUE val, ID id, VALUE *var)
 {
     rb_str_setter(val, id, &val);
     if (!NIL_P(val)) {
-        rb_warn_deprecated("`%s'", NULL, rb_id2name(id));
+        rb_warn_deprecated_to_remove("`%s'", "3.2", rb_id2name(id));
     }
     *var = val;
 }
