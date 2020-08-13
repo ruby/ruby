@@ -3676,8 +3676,14 @@ rb_str_index_m(int argc, VALUE *argv, VALUE str)
 	pos = str_offset(RSTRING_PTR(str), RSTRING_END(str), pos,
 			 rb_enc_check(str, sub), single_byte_optimizable(str));
 
-	pos = rb_reg_search(sub, str, pos, 0);
-	pos = rb_str_sublen(str, pos);
+	if (rb_reg_search(sub, str, pos, 0) < 0) {
+            return Qnil;
+        } else {
+            VALUE match = rb_backref_get();
+            struct re_registers *regs = RMATCH_REGS(match);
+            pos = rb_str_sublen(str, BEG(0));
+            return LONG2NUM(pos);
+        }
     }
     else {
         StringValue(sub);
@@ -3827,9 +3833,12 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
 	pos = str_offset(RSTRING_PTR(str), RSTRING_END(str), pos,
 			 enc, single_byte_optimizable(str));
 
-	pos = rb_reg_search(sub, str, pos, 1);
-	pos = rb_str_sublen(str, pos);
-	if (pos >= 0) return LONG2NUM(pos);
+	if (rb_reg_search(sub, str, pos, 1) >= 0) {
+            VALUE match = rb_backref_get();
+            struct re_registers *regs = RMATCH_REGS(match);
+            pos = rb_str_sublen(str, BEG(0));
+            return LONG2NUM(pos);
+        }
     }
     else {
         StringValue(sub);

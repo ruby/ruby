@@ -1353,6 +1353,8 @@ CODE
 
     assert_nil("foo".index(//, -100))
     assert_nil($~)
+
+    assert_equal(2, S("abcdbce").index(/b\Kc/))
   end
 
   def test_insert
@@ -1525,6 +1527,8 @@ CODE
 
     assert_equal(3, "foo".rindex(//))
     assert_equal([3, 3], $~.offset(0))
+
+    assert_equal(5, S("abcdbce").rindex(/b\Kc/))
   end
 
   def test_rjust
