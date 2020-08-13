@@ -5093,13 +5093,6 @@ rb_hash_any_p(int argc, VALUE *argv, VALUE hash)
  *    h.dig(:foo, :bar) # => {:bar=>{:baz=>2}}
  *    h.dig(:foo, :bar, :baz) # => 2
  *    h.dig(:foo, :bar, :BAZ) # => nil
- *
- *  ---
- *
- *  Raises an exception if +key+ is invalid
- *  (see {Invalid Hash Keys}[#class-Hash-label-Invalid+Hash+Keys]):
- *    # Raises NoMethodError (undefined method `hash' for #<BasicObject>)
- *    h.dig(BasicObject.new)
  */
 
 static VALUE
