@@ -1481,8 +1481,10 @@ rb_reg_prepare_re0(VALUE re, VALUE str, onig_errmsg_buffer err)
 	rb_raise(rb_eArgError, "regexp preprocess failed: %s", err);
     }
 
-    r = onig_new(&reg, (UChar* )RSTRING_PTR(unescaped),
-		 (UChar* )(RSTRING_PTR(unescaped) + RSTRING_LEN(unescaped)),
+    const char *ptr;
+    long len;
+    RSTRING_GETMEM(unescaped, ptr, len);
+    r = onig_new(&reg, (UChar *)ptr, (UChar *)(ptr + len),
 		 reg->options, enc,
 		 OnigDefaultSyntax, &einfo);
     if (r) {
@@ -1539,12 +1541,15 @@ rb_reg_search0(VALUE re, VALUE str, long pos, int reverse, int set_backref_str)
     long result;
     VALUE match;
     struct re_registers regi, *regs = &regi;
-    char *range = RSTRING_PTR(str);
+    char *start, *range;
+    long len;
     regex_t *reg;
     int tmpreg;
     onig_errmsg_buffer err = "";
 
-    if (pos > RSTRING_LEN(str) || pos < 0) {
+    RSTRING_GETMEM(str, start, len);
+    range = start;
+    if (pos > len || pos < 0) {
 	rb_backref_set(Qnil);
 	return -1;
     }
@@ -1566,12 +1571,12 @@ rb_reg_search0(VALUE re, VALUE str, long pos, int reverse, int set_backref_str)
 	MEMZERO(regs, struct re_registers, 1);
     }
     if (!reverse) {
-	range += RSTRING_LEN(str);
+	range += len;
     }
     result = onig_search(reg,
-			 (UChar*)(RSTRING_PTR(str)),
-			 ((UChar*)(RSTRING_PTR(str)) + RSTRING_LEN(str)),
-			 ((UChar*)(RSTRING_PTR(str)) + pos),
+			 (UChar*)start,
+			 ((UChar*)(start + len)),
+			 ((UChar*)(start + pos)),
 			 ((UChar*)range),
 			 regs, ONIG_OPTION_NONE);
     if (!tmpreg) RREGEXP(re)->usecnt--;
@@ -1647,10 +1652,13 @@ rb_reg_start_with_p(VALUE re, VALUE str)
     if (NIL_P(match)) {
 	MEMZERO(regs, struct re_registers, 1);
     }
+    const char *ptr;
+    long len;
+    RSTRING_GETMEM(str, ptr, len);
     result = onig_match(reg,
-	    (UChar*)(RSTRING_PTR(str)),
-	    ((UChar*)(RSTRING_PTR(str)) + RSTRING_LEN(str)),
-	    (UChar*)(RSTRING_PTR(str)),
+	    (UChar*)(ptr),
+	    ((UChar*)(ptr + len)),
+	    (UChar*)(ptr),
 	    regs, ONIG_OPTION_NONE);
     if (!tmpreg) RREGEXP(re)->usecnt--;
     if (tmpreg) {
@@ -3510,8 +3518,11 @@ rb_reg_quote(VALUE str)
     }
     t = RSTRING_PTR(tmp);
     /* copy upto metacharacter */
-    memcpy(t, RSTRING_PTR(str), s - RSTRING_PTR(str));
-    t += s - RSTRING_PTR(str);
+    const char *p;
+    long n;
+    RSTRING_GETMEM(str, p, n);
+    memcpy(t, p, s - p);
+    t += s - p;
 
     while (s < send) {
         c = rb_enc_ascget(s, send, &clen, enc);
@@ -3789,10 +3800,12 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
     rb_encoding *str_enc = rb_enc_get(str);
     rb_encoding *src_enc = rb_enc_get(src);
     int acompat = rb_enc_asciicompat(str_enc);
+    long n;
 #define ASCGET(s,e,cl) (acompat ? (*(cl)=1,ISASCII((s)[0])?(s)[0]:-1) : rb_enc_ascget((s), (e), (cl), str_enc))
 
-    p = s = RSTRING_PTR(str);
-    e = s + RSTRING_LEN(str);
+    RSTRING_GETMEM(str, s, n);
+    p = s;
+    e = s + n;
 
     while (s < e) {
         int c = ASCGET(s, e, &clen);
