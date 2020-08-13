@@ -272,6 +272,7 @@ int
 rb_to_encoding_index(VALUE enc)
 {
     int idx;
+    const char *name;
 
     idx = enc_check_encoding(enc);
     if (idx >= 0) {
@@ -283,20 +284,33 @@ rb_to_encoding_index(VALUE enc)
     if (!rb_enc_asciicompat(rb_enc_get(enc))) {
 	return -1;
     }
-    return rb_enc_find_index(StringValueCStr(enc));
+    if (!(name = rb_str_to_cstr(enc))) {
+	return -1;
+    }
+    return rb_enc_find_index(name);
+}
+
+static const char *
+name_for_encoding(volatile VALUE *enc)
+{
+    VALUE name = StringValue(*enc);
+    const char *n;
+
+    if (!rb_enc_asciicompat(rb_enc_get(name))) {
+	rb_raise(rb_eArgError, "invalid encoding name (non ASCII)");
+    }
+    if (!(n = rb_str_to_cstr(name))) {
+	rb_raise(rb_eArgError, "invalid encoding name (NUL byte)");
+    }
+    return n;
 }
 
 /* Returns encoding index or UNSPECIFIED_ENCODING */
 static int
 str_find_encindex(VALUE enc)
 {
-    int idx;
-
-    StringValue(enc);
-    if (!rb_enc_asciicompat(rb_enc_get(enc))) {
-	rb_raise(rb_eArgError, "invalid name encoding (non ASCII)");
-    }
-    idx = rb_enc_find_index(StringValueCStr(enc));
+    int idx = rb_enc_find_index(name_for_encoding(&enc));
+    RB_GC_GUARD(enc);
     return idx;
 }
 
@@ -385,9 +399,8 @@ enc_register(struct enc_table *enc_table, const char *name, rb_encoding *encodin
 {
     int index = enc_table->count;
 
-    if ((index = enc_table_expand(enc_table, index + 1)) < 0) return -1;
-    enc_table->count = index;
-    return enc_register_at(enc_table, index - 1, name, encoding);
+    enc_table->count = enc_table_expand(enc_table, index + 1);
+    return enc_register_at(enc_table, index, name, encoding);
 }
 
 static void set_encoding_const(const char *, rb_encoding *);
@@ -524,6 +537,7 @@ enc_replicate(struct enc_table *enc_table, const char *name, rb_encoding *encodi
 
     enc_check_duplication(enc_table, name);
     idx = enc_register(enc_table, name, encoding);
+    if (idx < 0) rb_raise(rb_eArgError, "invalid encoding name: %s", name);
     set_base_encoding(enc_table, idx, encoding);
     set_encoding_const(name, rb_enc_from_index(idx));
     return idx;
@@ -552,9 +566,9 @@ rb_enc_replicate(const char *name, rb_encoding *encoding)
 static VALUE
 enc_replicate_m(VALUE encoding, VALUE name)
 {
-    return rb_enc_from_encoding_index(
-	rb_enc_replicate(StringValueCStr(name),
-			 rb_to_encoding(encoding)));
+    int idx = rb_enc_replicate(name_for_encoding(&name), rb_to_encoding(encoding));
+    RB_GC_GUARD(name);
+    return rb_enc_from_encoding_index(idx);
 }
 
 static int
