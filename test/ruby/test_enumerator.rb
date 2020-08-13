@@ -69,22 +69,16 @@ class TestEnumerator < Test::Unit::TestCase
 
   def test_initialize
     assert_equal([1, 2, 3], @obj.to_enum(:foo, 1, 2, 3).to_a)
-    begin
-      deprecated_bak, Warning[:deprecated] = Warning[:deprecated], true
-      _, err = capture_io do
-        assert_equal([1, 2, 3], Enumerator.new(@obj, :foo, 1, 2, 3).to_a)
-      end
-      assert_match 'Enumerator.new without a block is deprecated', err
-    ensure
-      Warning[:deprecated] = deprecated_bak
-    end
+    assert_raise(ArgumentError) {
+      Enumerator.new(@obj, :foo, 1, 2, 3)
+    }
     assert_equal([1, 2, 3], Enumerator.new { |y| i = 0; loop { y << (i += 1) } }.take(3))
     assert_raise(ArgumentError) { Enumerator.new }
 
     enum = @obj.to_enum
     assert_raise(NoMethodError) { enum.each {} }
     enum.freeze
-    assert_raise(FrozenError) {
+    assert_raise(ArgumentError) {
       capture_io do
         # warning: Enumerator.new without a block is deprecated; use Object#to_enum
         enum.__send__(:initialize, @obj, :foo)
