@@ -9940,11 +9940,14 @@ rb_str_partition(VALUE str, VALUE sep)
 
     sep = get_pat_quoted(sep, 0);
     if (RB_TYPE_P(sep, T_REGEXP)) {
-	pos = rb_reg_search(sep, str, 0, 0);
-	if (pos < 0) {
+	if (rb_reg_search(sep, str, 0, 0) < 0) {
             goto failed;
 	}
-	sep = rb_str_subpat(str, sep, INT2FIX(0));
+	VALUE match = rb_backref_get();
+	struct re_registers *regs = RMATCH_REGS(match);
+
+        pos = BEG(0);
+	sep = rb_str_subseq(str, pos, END(0) - pos);
     }
     else {
 	pos = rb_str_index(str, sep, 0);
@@ -9978,37 +9981,33 @@ static VALUE
 rb_str_rpartition(VALUE str, VALUE sep)
 {
     long pos = RSTRING_LEN(str);
-    int regex = FALSE;
 
+    sep = get_pat_quoted(sep, 0);
     if (RB_TYPE_P(sep, T_REGEXP)) {
-	pos = rb_reg_search(sep, str, pos, 1);
-	regex = TRUE;
+        if (rb_reg_search(sep, str, pos, 1) < 0) {
+            goto failed;
+        }
+        VALUE match = rb_backref_get();
+	struct re_registers *regs = RMATCH_REGS(match);
+
+        pos = BEG(0);
+        sep = rb_str_subseq(str, pos, END(0) - pos);
     }
     else {
-	VALUE tmp;
-
-	tmp = rb_check_string_type(sep);
-	if (NIL_P(tmp)) {
-	    rb_raise(rb_eTypeError, "type mismatch: %s given",
-		     rb_obj_classname(sep));
-	}
-	sep = tmp;
 	pos = rb_str_sublen(str, pos);
 	pos = rb_str_rindex(str, sep, pos);
+        if(pos < 0) {
+            goto failed;
+        }
+        pos = rb_str_offset(str, pos);
     }
-    if (pos < 0) {
-       return rb_ary_new3(3, str_new_empty(str), str_new_empty(str), rb_str_dup(str));
-    }
-    if (regex) {
-	sep = rb_reg_nth_match(0, rb_backref_get());
-    }
-    else {
-	pos = rb_str_offset(str, pos);
-    }
+
     return rb_ary_new3(3, rb_str_subseq(str, 0, pos),
 		          sep,
 		          rb_str_subseq(str, pos+RSTRING_LEN(sep),
 					RSTRING_LEN(str)-pos-RSTRING_LEN(sep)));
+  failed:
+    return rb_ary_new3(3, str_new_empty(str), str_new_empty(str), rb_str_dup(str));
 }
 
 /*
