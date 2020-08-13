@@ -863,7 +863,7 @@ f_lambda(VALUE _)
           case block_handler_type_proc:
           case block_handler_type_symbol:
           case block_handler_type_ifunc:
-            rb_warn_deprecated("lambda without a literal block", "the proc without lambda");
+            rb_warn_deprecated_to_remove_use_this_one_instead("lambda without a literal block", "3.2", "the proc without lambda");
           default:
             break;
         }
