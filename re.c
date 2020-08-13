@@ -1674,13 +1674,17 @@ rb_reg_start_with_p(VALUE re, VALUE str)
 	if (regs == &regi)
 	    onig_region_free(regs, 0);
 	if (result == ONIG_MISMATCH) {
-	    rb_backref_set(Qnil);
-	    return false;
+            goto mismatch;
 	}
 	else {
 	    onig_error_code_to_str((UChar*)err, (int)result);
 	    rb_reg_raise(RREGEXP_SRC_PTR(re), RREGEXP_SRC_LEN(re), err, re);
 	}
+    }
+
+    /* In case re contains \K */
+    if (BEG(0) != 0) {
+        goto mismatch;
     }
 
     if (NIL_P(match)) {
@@ -1697,6 +1701,10 @@ rb_reg_start_with_p(VALUE re, VALUE str)
     rb_backref_set(match);
 
     return true;
+
+  mismatch:
+    rb_backref_set(Qnil);
+    return false;
 }
 
 VALUE

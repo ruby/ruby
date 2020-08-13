@@ -1884,6 +1884,9 @@ CODE
     assert_equal("hel", $&)
     assert_equal(false, "hello".start_with?(/el/))
     assert_nil($&)
+
+    assert_equal(false, "hello".start_with?(/h\Ke/))
+    assert_nil($&)
   end
 
   def test_strip
