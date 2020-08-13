@@ -3519,7 +3519,7 @@ rb_reg_quote(VALUE str)
     t = RSTRING_PTR(tmp);
     /* copy upto metacharacter */
     const char *p;
-    long n;
+    long MAYBE_UNUSED(n);
     RSTRING_GETMEM(str, p, n);
     memcpy(t, p, s - p);
     t += s - p;
