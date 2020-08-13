@@ -1115,6 +1115,19 @@ tick(void)
     return val;
 }
 
+#elif defined(__aarch64__) &&  defined(__GNUC__)
+typedef unsigned long tick_t;
+#define PRItick "lu"
+
+static __inline__ tick_t
+tick(void)
+{
+    unsigned long val;
+    __asm__ __volatile__ ("mrs %0, cntvct_el0", : "=r" (val));
+    return val;
+}
+
+
 #elif defined(_WIN32) && defined(_MSC_VER)
 #include <intrin.h>
 typedef unsigned __int64 tick_t;
