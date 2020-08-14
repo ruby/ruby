@@ -31,6 +31,9 @@
 /* Following macros were formerly defined in this header but moved to somewhere
  * else.  In order to detect them we undef here. */
 
+/* internal/array.h */
+#undef RARRAY_AREF
+
 /* internal/class.h */
 #undef RClass
 #undef RCLASS_SUPER

@@ -7221,7 +7221,7 @@ rb_ary_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv, VA
 	return rb_ary_new_capa(0);
       case 1:
 	i = rnds[0];
-	return rb_ary_new_from_values(1, &RARRAY_AREF(ary, i));
+	return rb_ary_new_from_args(1, RARRAY_AREF(ary, i));
       case 2:
 	i = rnds[0];
 	j = rnds[1];

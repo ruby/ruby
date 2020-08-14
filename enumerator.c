@@ -2087,7 +2087,8 @@ lazy_flat_map_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo
         long i;
         LAZY_MEMO_RESET_BREAK(result);
         for (i = 0; i + 1 < RARRAY_LEN(ary); i++) {
-            lazy_yielder_yield(result, proc_index, 1, &RARRAY_AREF(ary, i));
+            const VALUE argv = RARRAY_AREF(ary, i);
+            lazy_yielder_yield(result, proc_index, 1, &argv);
         }
         if (break_p) LAZY_MEMO_SET_BREAK(result);
         if (i >= RARRAY_LEN(ary)) return 0;

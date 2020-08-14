@@ -14,6 +14,7 @@
 #include <ctype.h>
 
 #include "internal.h"
+#include "internal/array.h"
 #include "internal/inits.h"
 #include "internal/object.h"
 #include "internal/string.h"

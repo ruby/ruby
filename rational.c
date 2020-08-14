@@ -24,6 +24,7 @@
 #define NDEBUG
 #include "id.h"
 #include "internal.h"
+#include "internal/array.h"
 #include "internal/complex.h"
 #include "internal/gc.h"
 #include "internal/numeric.h"
