@@ -125,6 +125,10 @@ module IRB # :nodoc:
         :irb_info, :Info, "irb/cmd/info"
       ],
 
+      [
+        :measure, :Measure, "irb/cmd/measure"
+      ],
+
     ]
 
     # Installs the default irb commands:

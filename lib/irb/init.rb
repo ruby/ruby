@@ -111,9 +111,64 @@ module IRB # :nodoc:
     @CONF[:CONTEXT_MODE] = 4 # use a copy of TOPLEVEL_BINDING
     @CONF[:SINGLE_IRB] = false
 
+    @CONF[:MEASURE] = false
+    @CONF[:MEASURE_PROC] = {}
+    @CONF[:MEASURE_PROC][:TIME] = proc { |context, code, line_no, &block|
+      time = Time.now
+      result = block.()
+      now = Time.now
+      puts 'processing time: %fs' % (now - time) if IRB.conf[:MEASURE]
+      result
+    }
+    @CONF[:MEASURE_PROC][:STACKPROF] = proc { |context, code, line_no, &block|
+      success = false
+      begin
+        require 'stackprof'
+        success = true
+      rescue LoadError
+        puts 'Please run "gem install stackprof" before measuring by StackProf.'
+      end
+      if success
+        result = nil
+        stackprof_result = StackProf.run(mode: :cpu) do
+          result = block.()
+        end
+        StackProf::Report.new(stackprof_result).print_text if IRB.conf[:MEASURE]
+        result
+      else
+        block.()
+      end
+    }
+    @CONF[:MEASURE_CALLBACKS] = []
+
     @CONF[:LC_MESSAGES] = Locale.new
 
     @CONF[:AT_EXIT] = []
+  end
+
+  def IRB.set_measure_callback(type = nil)
+    added = nil
+    if type
+      type_sym = type.upcase.to_sym
+      if IRB.conf[:MEASURE_PROC][type_sym]
+        added = [type_sym, IRB.conf[:MEASURE_PROC][type_sym]]
+      end
+    elsif IRB.conf[:MEASURE_PROC][:CUSTOM]
+      added = [:CUSTOM, IRB.conf[:MEASURE_PROC][:CUSTOM]]
+    else
+      added = [:TIME, IRB.conf[:MEASURE_PROC][:TIME]]
+    end
+    IRB.conf[:MEASURE_CALLBACKS] << added if added
+    added
+  end
+
+  def IRB.unset_measure_callback(type = nil)
+    if type.nil?
+      IRB.conf[:MEASURE_CALLBACKS].clear
+    else
+      type_sym = type.upcase.to_sym
+      IRB.conf[:MEASURE_CALLBACKS].reject!{ |t, c| t == type_sym }
+    end
   end
 
   def IRB.init_error

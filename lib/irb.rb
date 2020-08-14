@@ -538,7 +538,23 @@ module IRB
         signal_status(:IN_EVAL) do
           begin
             line.untaint if RUBY_VERSION < '2.7'
-            @context.evaluate(line, line_no, exception: exc)
+            if IRB.conf[:MEASURE] && IRB.conf[:MEASURE_CALLBACKS].empty?
+              IRB.set_measure_callback
+            end
+            if IRB.conf[:MEASURE] && !IRB.conf[:MEASURE_CALLBACKS].empty?
+              result = nil
+              last_proc = proc{ result = @context.evaluate(line, line_no, exception: exc) }
+              IRB.conf[:MEASURE_CALLBACKS].map{ |s| s.last }.inject(last_proc) { |chain, item|
+                proc {
+                  item.(@context, line, line_no, exception: exc) do
+                    chain.call
+                  end
+                }
+              }.call
+              @context.set_last_value(result)
+            else
+              @context.evaluate(line, line_no, exception: exc)
+            end
             if @context.echo?
               if assignment_expression?(line)
                 if @context.echo_on_assignment?
