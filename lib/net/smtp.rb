@@ -945,13 +945,11 @@ module Net
     end
 
     def getok(reqline)
-      puts reqline
       validate_line reqline
       res = critical {
         @socket.writeline reqline
         recv_response()
       }
-      puts res.string
       check_response res
       res
     end
