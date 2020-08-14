@@ -18,6 +18,7 @@ Gem::Specification.new do |s|
     ".travis.yml",
     "CHANGES.md",
     "Gemfile",
+    "LICENSE",
     "README-json-jruby.md",
     "README.md",
     "Rakefile",
