@@ -3015,6 +3015,7 @@ compile.$(OBJEXT): {$(VPATH)}vm_debug.h
 compile.$(OBJEXT): {$(VPATH)}vm_opts.h
 complex.$(OBJEXT): $(hdrdir)/ruby.h
 complex.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+complex.$(OBJEXT): $(top_srcdir)/internal/array.h
 complex.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 complex.$(OBJEXT): $(top_srcdir)/internal/bits.h
 complex.$(OBJEXT): $(top_srcdir)/internal/class.h
@@ -3755,6 +3756,7 @@ debug_counter.$(OBJEXT): {$(VPATH)}st.h
 debug_counter.$(OBJEXT): {$(VPATH)}subst.h
 dir.$(OBJEXT): $(hdrdir)/ruby.h
 dir.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+dir.$(OBJEXT): $(top_srcdir)/internal/array.h
 dir.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 dir.$(OBJEXT): $(top_srcdir)/internal/dir.h
 dir.$(OBJEXT): $(top_srcdir)/internal/encoding.h
@@ -7703,6 +7705,7 @@ main.$(OBJEXT): {$(VPATH)}subst.h
 main.$(OBJEXT): {$(VPATH)}vm_debug.h
 marshal.$(OBJEXT): $(hdrdir)/ruby.h
 marshal.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+marshal.$(OBJEXT): $(top_srcdir)/internal/array.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/class.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/compilers.h
@@ -9286,6 +9289,7 @@ object.$(OBJEXT): {$(VPATH)}subst.h
 object.$(OBJEXT): {$(VPATH)}util.h
 pack.$(OBJEXT): $(hdrdir)/ruby.h
 pack.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+pack.$(OBJEXT): $(top_srcdir)/internal/array.h
 pack.$(OBJEXT): $(top_srcdir)/internal/bits.h
 pack.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 pack.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
@@ -10100,6 +10104,7 @@ process.$(OBJEXT): {$(VPATH)}vm_core.h
 process.$(OBJEXT): {$(VPATH)}vm_opts.h
 random.$(OBJEXT): $(hdrdir)/ruby.h
 random.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+random.$(OBJEXT): $(top_srcdir)/internal/array.h
 random.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 random.$(OBJEXT): $(top_srcdir)/internal/bits.h
 random.$(OBJEXT): $(top_srcdir)/internal/compilers.h
@@ -10467,6 +10472,7 @@ range.$(OBJEXT): {$(VPATH)}st.h
 range.$(OBJEXT): {$(VPATH)}subst.h
 rational.$(OBJEXT): $(hdrdir)/ruby.h
 rational.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+rational.$(OBJEXT): $(top_srcdir)/internal/array.h
 rational.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 rational.$(OBJEXT): $(top_srcdir)/internal/bits.h
 rational.$(OBJEXT): $(top_srcdir)/internal/compilers.h
@@ -13930,9 +13936,11 @@ time.$(OBJEXT): {$(VPATH)}time.c
 time.$(OBJEXT): {$(VPATH)}timev.h
 transcode.$(OBJEXT): $(hdrdir)/ruby.h
 transcode.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+transcode.$(OBJEXT): $(top_srcdir)/internal/array.h
 transcode.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 transcode.$(OBJEXT): $(top_srcdir)/internal/inits.h
 transcode.$(OBJEXT): $(top_srcdir)/internal/object.h
+transcode.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 transcode.$(OBJEXT): $(top_srcdir)/internal/string.h
 transcode.$(OBJEXT): $(top_srcdir)/internal/transcode.h
 transcode.$(OBJEXT): {$(VPATH)}assert.h
