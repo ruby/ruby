@@ -65,17 +65,17 @@ public C interface:
   class Scheduler
     # Wrapper for rb_wait_readable(int) C function.
     def wait_readable_fd(fd)
-      wait_readable(::IO.from_fd(fd, autoclose: false))
+      wait_readable(::IO.for_fd(fd, autoclose: false))
     end
 
     # Wrapper for rb_wait_readable(int) C function.
     def wait_writable_fd(fd)
-      wait_writable(::IO.from_fd(fd, autoclose: false))
+      wait_writable(::IO.for_fd(fd, autoclose: false))
     end
 
     # Wrapper for rb_wait_for_single_fd(int) C function.
     def wait_for_single_fd(fd, events, duration)
-      wait_any(::IO.from_fd(fd, autoclose: false), events, duration)
+      wait_any(::IO.for_fd(fd, autoclose: false), events, duration)
     end
   end
 
