@@ -22,6 +22,7 @@
 #include "encindex.h"
 #include "id_table.h"
 #include "internal.h"
+#include "internal/array.h"
 #include "internal/bignum.h"
 #include "internal/class.h"
 #include "internal/encoding.h"

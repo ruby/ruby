@@ -105,6 +105,7 @@ char *strchr(char*,char);
 #include "encindex.h"
 #include "id.h"
 #include "internal.h"
+#include "internal/array.h"
 #include "internal/dir.h"
 #include "internal/encoding.h"
 #include "internal/error.h"

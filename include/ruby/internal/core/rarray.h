@@ -256,20 +256,15 @@ RARRAY_ASET(VALUE ary, long i, VALUE v)
         RB_OBJ_WRITE(ary, &ptr[i], v));
 }
 
-/* RARRAY_AREF is used as a lvalue.  Cannot be a function. */
-#if 0
-RBIMPL_ATTR_PURE_UNLESS_DEBUG()
-RBIMPL_ATTR_ARTIFICIAL()
-static inline VALUE
-RARRAY_AREF(VALUE ary, long i)
-{
-    RBIMPL_ASSERT_TYPE(ary, RUBY_T_ARRAY);
-
-    return RARRAY_CONST_PTR_TRANSIENT(ary)[i];
-}
-#else
-# undef RARRAY_AREF
-# define RARRAY_AREF(a, i) RARRAY_CONST_PTR_TRANSIENT(a)[i]
-#endif
+/*
+ * :FIXME: we want to convert RARRAY_AREF into an inline function (to add rooms
+ * for more sanity checks).  However there were situations where the address of
+ * this macro is taken i.e. &RARRAY_AREF(...).  They cannot be possible if this
+ * is not a  macro.  Such usages are abuse, and  we eliminated them internally.
+ * However we are afraid  of similar things to remain in  the wild.  This macro
+ * remains as  it is due to  that.  If we could  warn such usages we  can set a
+ * transition path, but currently no way is found to do so.
+ */
+#define RARRAY_AREF(a, i) RARRAY_CONST_PTR_TRANSIENT(a)[i]
 
 #endif /* RBIMPL_RARRAY_H */

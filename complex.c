@@ -19,6 +19,7 @@
 #define NDEBUG
 #include "id.h"
 #include "internal.h"
+#include "internal/array.h"
 #include "internal/class.h"
 #include "internal/complex.h"
 #include "internal/math.h"

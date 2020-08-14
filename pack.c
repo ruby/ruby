@@ -17,6 +17,7 @@
 #include <sys/types.h>
 
 #include "internal.h"
+#include "internal/array.h"
 #include "internal/bits.h"
 #include "internal/string.h"
 #include "internal/symbol.h"

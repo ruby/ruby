@@ -56,6 +56,7 @@
 #endif
 
 #include "internal.h"
+#include "internal/array.h"
 #include "internal/compilers.h"
 #include "internal/numeric.h"
 #include "internal/random.h"
