@@ -590,21 +590,33 @@ module JSON
     :escape_slash => false,
   }
 
-  # Dumps _obj_ as a JSON string, i.e. calls generate on the object and returns
-  # the result.
+  # :call-seq:
+  #   JSON.dump(obj, io = nil, limit = nil)
   #
-  # If anIO (an IO-like object or an object that responds to the write method)
-  # was given, the resulting JSON is written to it.
+  # Dumps +obj+ as a \JSON string, i.e. calls generate on the object and returns the result.
   #
-  # If the number of nested arrays or objects exceeds _limit_, an ArgumentError
-  # exception is raised. This argument is similar (but not exactly the
-  # same!) to the _limit_ argument in Marshal.dump.
+  # The default options can be changed via method JSON.dump_default_options.
   #
-  # The default options for the generator can be changed via the
-  # dump_default_options method.
+  # - Argument +io+, if given, should respond to method +write+;
+  #   the \JSON \String is written to +io+, and +io+ is returned.
+  #   If +io+ is not given, the \JSON \String is returned.
+  # - Argument +limit+, if given, is passed to JSON.generate as option +max_nesting+.
   #
-  # This method is part of the implementation of the load/dump interface of
-  # Marshal and YAML.
+  # ---
+  #
+  # When argument +io+ is not given, returns the \JSON \String generated from +obj+:
+  #   obj = {foo: [0, 1], bar: {baz: 2, bat: 3}, bam: :bad}
+  #   json = JSON.dump(obj)
+  #   json # => "{\"foo\":[0,1],\"bar\":{\"baz\":2,\"bat\":3},\"bam\":\"bad\"}"
+  #
+  # When argument +io+ is given, writes the \JSON \String to +io+ and returns +io+:
+  #   path = 't.json'
+  #   File.open(path, 'w') do |file|
+  #     JSON.dump(obj, file)
+  #   end # => #<File:t.json (closed)>
+  #   puts File.read(path)
+  # Output:
+  #   {"foo":[0,1],"bar":{"baz":2,"bat":3},"bam":"bad"}
   def dump(obj, anIO = nil, limit = nil)
     if anIO and limit.nil?
       anIO = anIO.to_io if anIO.respond_to?(:to_io)
