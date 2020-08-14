@@ -8645,7 +8645,7 @@ rb_ary_one_p(int argc, VALUE *argv, VALUE ary)
  *  Finds and returns the object in nested objects
  *  that is specified by +index+ and +identifiers+.
  *  The nested objects may be instances of various classes.
- *  See {Dig Methods}[dig_methods_rdoc.html].
+ *  See {Dig Methods}[rdoc-ref:doc/dig_methods.rdoc].
  *
  *  Examples:
  *    a = [:foo, [:bar, :baz, [:bat, :bam]]]
