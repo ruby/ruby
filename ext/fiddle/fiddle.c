@@ -142,6 +142,20 @@ Init_fiddle(void)
     rb_eFiddleError = rb_define_class_under(mFiddle, "Error", rb_eStandardError);
 
     /*
+     * Ruby installed by RubyInstaller for Windows always require
+     * bundled Fiddle because ruby_installer/runtime/dll_directory.rb
+     * requires Fiddle. It's used by
+     * rubygems/defaults/operating_system.rb. It means that the
+     * bundled Fiddle is always required on initialization.
+     *
+     * We just remove existing Fiddle::DLError here to override
+     * the bundled Fiddle.
+     */
+    if (rb_const_defined(mFiddle, rb_intern("DLError"))) {
+        rb_const_remove(mFiddle, rb_intern("DLError"));
+    }
+
+    /*
      * Document-class: Fiddle::DLError
      *
      * standard dynamic load exception
