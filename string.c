@@ -1560,7 +1560,7 @@ rb_str_resurrect(VALUE str)
  *
  *  Argument +str+, if given, it must be a
  *  {String-convertible object}[doc/implicit_conversion_rdoc.html#label-String-Convertible+Objects]
- *  (implements +to_str).
+ *  (implements +to_str+).
  *
  *  Argument +encoding+, if given, must be:
  *  - A {String-convertible object}[doc/implicit_conversion_rdoc.html#label-String-Convertible+Objects]
