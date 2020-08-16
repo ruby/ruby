@@ -398,7 +398,7 @@ class RubyLex
         next
       end
       case t[1]
-      when :on_lbracket, :on_lbrace, :on_lparen
+      when :on_lbracket, :on_lbrace, :on_lparen, :on_tlambeg
         depth_difference += 1
         open_brace_on_line += 1
       when :on_rbracket, :on_rbrace, :on_rparen
@@ -481,7 +481,7 @@ class RubyLex
         next
       end
       case t[1]
-      when :on_lbracket, :on_lbrace, :on_lparen
+      when :on_lbracket, :on_lbrace, :on_lparen, :on_tlambeg
         spaces_of_nest.push(spaces_at_line_head + open_brace_on_line * 2)
         open_brace_on_line += 1
       when :on_rbracket, :on_rbrace, :on_rparen
