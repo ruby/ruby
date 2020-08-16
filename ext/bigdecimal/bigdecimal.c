@@ -25,7 +25,6 @@
 #include <string.h>
 #include <errno.h>
 #include <math.h>
-#include "math.h"
 
 #ifdef HAVE_IEEEFP_H
 #include <ieeefp.h>
