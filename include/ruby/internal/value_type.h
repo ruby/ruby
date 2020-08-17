@@ -328,26 +328,6 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline void
 Check_Type(VALUE v, enum ruby_value_type t)
 {
-    if (RB_UNLIKELY(! RB_TYPE_P(v, t))) {
-        goto slowpath;
-    }
-    else if (t != RUBY_T_DATA) {
-        goto fastpath;
-    }
-    else if (rbimpl_rtypeddata_p(v)) {
-        /* The intention itself is not necessarily clear to me, but at least it
-         * is  intentional   to  rule   out  typed   data  here.    See  commit
-         * a7c32bf81d3391cfb78cfda278f469717d0fb794. */
-        goto slowpath;
-    }
-    else {
-        goto fastpath;
-    }
-
-  fastpath:
-    return;
-
-  slowpath: /* <- :TODO: mark this label as cold. */
     rb_check_type(v, t);
 }
 
