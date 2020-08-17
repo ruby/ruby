@@ -6333,8 +6333,6 @@ compile_case3(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_no
     INIT_ANCHOR(body_seq);
     INIT_ANCHOR(cond_seq);
 
-    CHECK(COMPILE(head, "case base", node->nd_head));
-
     branches = decl_branch_base(iseq, node, "case");
 
     node = node->nd_body;
@@ -6346,7 +6344,9 @@ compile_case3(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_no
     elselabel = NEW_LABEL(line);
 
     ADD_INSN(head, line, putnil); /* allocate stack for cached #deconstruct value */
-    ADD_INSN(head, line, swap);
+
+    CHECK(COMPILE(head, "case base", orig_node->nd_head));
+
     ADD_SEQ(ret, head);	/* case VAL */
 
     while (type == NODE_IN) {
