@@ -2489,6 +2489,17 @@ class TestIO < Test::Unit::TestCase
     end
   end
 
+  def test_reopen_ivar
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      f = File.open(IO::NULL)
+      f.instance_variable_set(:@foo, 42)
+      f.reopen(STDIN)
+      f.instance_variable_defined?(:@foo)
+      f.instance_variable_get(:@foo)
+    end;
+  end
+
   def test_foreach
     a = []
     IO.foreach("|" + EnvUtil.rubybin + " -e 'puts :foo; puts :bar; puts :baz'") {|x| a << x }
