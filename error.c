@@ -392,7 +392,7 @@ warn_deprecated_i(
     rb_str_set_len(mesg, RSTRING_LEN(mesg) - 1);
     rb_str_cat_cstr(mesg, " is deprecated");
     if (removal) {
-        rb_str_catf(mesg, ", and will be removed in Ruby %s", removal);
+        rb_str_cat_cstr(mesg, ", and is planned for removal");
     }
     if (suggest) {
         rb_str_catf(mesg, "; use %s instead", suggest);
