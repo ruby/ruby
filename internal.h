@@ -46,6 +46,7 @@
 /* internal/hash.h */
 #undef RHASH_IFNONE
 #undef RHASH_SIZE
+#undef RHASH_TBL
 
 /* internal/object.h */
 #undef ROBJECT_IV_INDEX_TBL

@@ -107,13 +107,8 @@ VALUE rb_hash_keys(VALUE hash);
 VALUE rb_hash_has_key(VALUE hash, VALUE key);
 VALUE rb_hash_compare_by_id_p(VALUE hash);
 
-#if RHASH_CONVERT_TABLE_DEBUG
 st_table *rb_hash_tbl_raw(VALUE hash, const char *file, int line);
 #define RHASH_TBL_RAW(h) rb_hash_tbl_raw(h, __FILE__, __LINE__)
-#else
-st_table *rb_hash_tbl_raw(VALUE hash);
-#define RHASH_TBL_RAW(h) rb_hash_tbl_raw(h)
-#endif
 MJIT_SYMBOL_EXPORT_END
 
 #if 0 /* for debug */
