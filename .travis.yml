@@ -434,7 +434,7 @@ matrix:
   include:
     # Build every commit:
     - <<: *flto
-  fast_finish: true
+  fast_finish: false
 
 before_script:
   - rm -fr .ext autom4te.cache
