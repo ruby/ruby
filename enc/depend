@@ -139,13 +139,13 @@ enc/<%=e%>.$(OBJEXT): <%=deps.map {|n| rule_subst % n}.join(' ')%>
 %     cmd.sub!(/\$\(DEFFILE\)/) {df}
 %     cmd.gsub!(/-(?:implib|pdb):/) {|s|"#{s}enc/#{e.sub(/[^\/]+\z/, '')}"}
 %   end
-	$(Q)<%=cmd%>
+	+$(Q)<%=cmd%>
 
 % end
 % dependencies.each do |e|
 <%="enc/#{e}.$(OBJEXT)"%>: <%="$(encsrcdir)/#{e}.c"%>
 	$(ECHO) compiling <%= "$(encsrcdir)/#{e}.c"%>
-	$(Q)<%=COMPILE_C.gsub(/\$(\()?<(\:[^)]+)?(\))?/){"$(encsrcdir)/#{e}.c"}%>
+	+$(Q)<%=COMPILE_C.gsub(/\$(\()?<(\:[^)]+)?(\))?/){"$(encsrcdir)/#{e}.c"}%>
 
 % end
 

@@ -12,8 +12,8 @@ jobs:
       MSYSTEM_PREFIX: /mingw64
       MSYS2_ARCH: x86_64
       CHOST: "x86_64-w64-mingw32"
-      CFLAGS:   "-march=x86-64 -mtune=generic -O3 -pipe -fstack-protector-strong"
-      CXXFLAGS: "-march=x86-64 -mtune=generic -O3 -pipe"
+      CFLAGS:   "-march=x86-64 -mtune=generic -O3 -pipe -fstack-protector-strong -flto"
+      CXXFLAGS: "-march=x86-64 -mtune=generic -O3 -pipe -flto"
       CPPFLAGS: "-D_FORTIFY_SOURCE=2 -D__USE_MINGW_ANSI_STDIO=1 -DFD_SETSIZE=2048"
       LDFLAGS:  "-pipe -fstack-protector-strong"
       UPDATE_UNICODE: "UNICODE_FILES=. UNICODE_PROPERTY_FILES=. UNICODE_AUXILIARY_FILES=. UNICODE_EMOJI_FILES=."
