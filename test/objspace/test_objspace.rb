@@ -275,6 +275,10 @@ class TestObjSpace < Test::Unit::TestCase
     JSON.parse(info) if defined?(JSON)
   end
 
+  def test_dump_control_char
+    assert_include(ObjectSpace.dump("\x0f"), '"value":"\u000f"')
+  end
+
   def test_dump_special_consts
     # [ruby-core:69692] [Bug #11291]
     assert_equal('null', ObjectSpace.dump(nil))

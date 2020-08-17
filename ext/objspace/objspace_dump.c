@@ -87,7 +87,7 @@ dump_append_string_value(struct dump_config *dc, VALUE obj)
 	    break;
 	  default:
 	    if (c <= 0x1f)
-		dump_append(dc, "\\u%04d", c);
+		dump_append(dc, "\\u%04x", c);
 	    else
 		dump_append(dc, "%c", c);
 	}
