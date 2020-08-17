@@ -2457,7 +2457,7 @@ site-install-rb: install-rb
     mfile.print ".SUFFIXES: .#{(SRC_EXT + [$OBJEXT, $ASMEXT]).compact.join(' .')}\n"
     mfile.print "\n"
 
-    compile_command = "\n\t$(ECHO) compiling $(<#{rsep})\n\t+$(Q) %s\n\n"
+    compile_command = "\n\t$(ECHO) compiling $(<#{rsep})\n\t$(Q) %s\n\n"
     command = compile_command % COMPILE_CXX
     asm_command = compile_command.sub(/compiling/, 'translating') % ASSEMBLE_CXX
     CXX_EXT.each do |e|
@@ -2486,7 +2486,7 @@ site-install-rb: install-rb
     mfile.print "\n"
     mfile.print "\t$(ECHO) linking shared-object #{target_prefix.sub(/\A\/(.*)/, '\1/')}$(DLLIB)\n"
     mfile.print "\t-$(Q)$(RM) $(@#{sep})\n"
-    link_so = LINK_SO.gsub(/^/, "\t+$(Q) ")
+    link_so = LINK_SO.gsub(/^/, "\t$(Q) ")
     if srcs.any?(&%r"\.(?:#{CXX_EXT.join('|')})\z".method(:===))
       link_so = link_so.sub(/\bLDSHARED\b/, '\&XX')
     end
