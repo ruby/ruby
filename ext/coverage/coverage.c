@@ -252,7 +252,8 @@ rb_coverage_peek_result(VALUE klass)
     if (!RTEST(coverages)) {
 	rb_raise(rb_eRuntimeError, "coverage measurement is not enabled");
     }
-    st_foreach(RHASH_TBL(coverages), coverage_peek_result_i, ncoverages);
+    OBJ_WB_UNPROTECT(coverages);
+    st_foreach(RHASH_TBL_RAW(coverages), coverage_peek_result_i, ncoverages);
 
     if (current_mode & COVERAGE_TARGET_METHODS) {
 	rb_objspace_each_objects(method_coverage_i, &ncoverages);

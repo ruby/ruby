@@ -141,7 +141,8 @@ setup_hash(int argc, VALUE *argv)
         hash = rb_hash_new();
     }
     else if (!RHASH_EMPTY_P(hash)) {
-        st_foreach(RHASH_TBL(hash), set_zero_i, hash);
+        /* WB: no new reference */
+        st_foreach(RHASH_TBL_RAW(hash), set_zero_i, hash);
     }
 
     return hash;

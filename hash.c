@@ -1620,23 +1620,16 @@ rb_hash_modify_check(VALUE hash)
 }
 
 MJIT_FUNC_EXPORTED struct st_table *
-#if RHASH_CONVERT_TABLE_DEBUG
 rb_hash_tbl_raw(VALUE hash, const char *file, int line)
 {
     return ar_force_convert_table(hash, file, line);
 }
-#else
-rb_hash_tbl_raw(VALUE hash)
-{
-    return ar_force_convert_table(hash, NULL, 0);
-}
-#endif
 
 struct st_table *
 rb_hash_tbl(VALUE hash, const char *file, int line)
 {
     OBJ_WB_UNPROTECT(hash);
-    return RHASH_TBL_RAW(hash);
+    return rb_hash_tbl_raw(hash, file, line);
 }
 
 static void
