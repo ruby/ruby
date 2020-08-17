@@ -85,6 +85,9 @@ dump_append_string_value(struct dump_config *dc, VALUE obj)
 	  case '\r':
 	    dump_append(dc, "\\r");
 	    break;
+	  case '\177':
+	    dump_append(dc, "\\u007f");
+	    break;
 	  default:
 	    if (c <= 0x1f)
 		dump_append(dc, "\\u%04x", c);

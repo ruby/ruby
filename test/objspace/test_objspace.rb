@@ -277,6 +277,7 @@ class TestObjSpace < Test::Unit::TestCase
 
   def test_dump_control_char
     assert_include(ObjectSpace.dump("\x0f"), '"value":"\u000f"')
+    assert_include(ObjectSpace.dump("\C-?"), '"value":"\u007f"')
   end
 
   def test_dump_special_consts
