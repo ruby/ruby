@@ -47,6 +47,9 @@
 #undef RHASH_IFNONE
 #undef RHASH_SIZE
 
+/* internal/object.h */
+#undef ROBJECT_IV_INDEX_TBL
+
 /* internal/struct.h */
 #undef RSTRUCT_LEN
 #undef RSTRUCT_PTR
