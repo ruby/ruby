@@ -47,6 +47,7 @@
 #undef RHASH_IFNONE
 #undef RHASH_SIZE
 #undef RHASH_TBL
+#undef RHASH_EMPTY_P
 
 /* internal/struct.h */
 #undef RSTRUCT_LEN

@@ -64,6 +64,10 @@ struct RHash {
 # undef RHASH_SIZE
 #endif
 
+#ifdef RHASH_EMPTY_P
+# undef RHASH_EMPTY_P
+#endif
+
 /* hash.c */
 void rb_hash_st_table_set(VALUE hash, st_table *st);
 VALUE rb_hash_default_value(VALUE hash, VALUE key);
@@ -82,6 +86,7 @@ int rb_hash_stlike_update(VALUE hash, st_data_t key, st_update_callback_func *fu
 static inline unsigned RHASH_AR_TABLE_SIZE_RAW(VALUE h);
 static inline VALUE RHASH_IFNONE(VALUE h);
 static inline size_t RHASH_SIZE(VALUE h);
+static inline bool RHASH_EMPTY_P(VALUE h);
 static inline bool RHASH_AR_TABLE_P(VALUE h);
 static inline bool RHASH_ST_TABLE_P(VALUE h);
 static inline struct ar_table_struct *RHASH_AR_TABLE(VALUE h);
@@ -171,6 +176,12 @@ RHASH_SIZE(VALUE h)
     else {
         return RHASH_ST_SIZE(h);
     }
+}
+
+static inline bool
+RHASH_EMPTY_P(VALUE h)
+{
+    return RHASH_SIZE(h) == 0;
 }
 
 static inline bool
