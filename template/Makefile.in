@@ -441,7 +441,7 @@ $(srcdir)/enc/jis/props.h: enc/jis/props.kwd
 
 .dmyh.h:
 	@$(ECHO) making dummy $(DEST_FILE)
-	$(Q) $(SHELL) echo '#include "$(*F).dmyh"' > $@
+	$(Q)echo '#include "$(*F).dmyh"' > $@
 
 probes.stamp: $(DTRACE_REBUILD_OBJS)
 	$(Q) if test -f $@ -o -f probes.$(OBJEXT); then \
