@@ -1671,6 +1671,7 @@ array.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 array.$(OBJEXT): $(top_srcdir)/internal/array.h
 array.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 array.$(OBJEXT): $(top_srcdir)/internal/bits.h
+array.$(OBJEXT): $(top_srcdir)/internal/class.h
 array.$(OBJEXT): $(top_srcdir)/internal/compar.h
 array.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 array.$(OBJEXT): $(top_srcdir)/internal/enum.h
@@ -1706,6 +1707,7 @@ array.$(OBJEXT): {$(VPATH)}debug_counter.h
 array.$(OBJEXT): {$(VPATH)}defines.h
 array.$(OBJEXT): {$(VPATH)}encoding.h
 array.$(OBJEXT): {$(VPATH)}id.h
+array.$(OBJEXT): {$(VPATH)}id_table.h
 array.$(OBJEXT): {$(VPATH)}intern.h
 array.$(OBJEXT): {$(VPATH)}internal.h
 array.$(OBJEXT): {$(VPATH)}internal/anyargs.h
@@ -2055,6 +2057,7 @@ bignum.$(OBJEXT): $(hdrdir)/ruby.h
 bignum.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 bignum.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 bignum.$(OBJEXT): $(top_srcdir)/internal/bits.h
+bignum.$(OBJEXT): $(top_srcdir)/internal/class.h
 bignum.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 bignum.$(OBJEXT): $(top_srcdir)/internal/complex.h
 bignum.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
@@ -2801,6 +2804,7 @@ compile.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 compile.$(OBJEXT): $(top_srcdir)/internal/array.h
 compile.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 compile.$(OBJEXT): $(top_srcdir)/internal/bits.h
+compile.$(OBJEXT): $(top_srcdir)/internal/class.h
 compile.$(OBJEXT): $(top_srcdir)/internal/compile.h
 compile.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 compile.$(OBJEXT): $(top_srcdir)/internal/complex.h
@@ -4473,9 +4477,11 @@ enc/utf_8.$(OBJEXT): {$(VPATH)}missing.h
 enc/utf_8.$(OBJEXT): {$(VPATH)}regenc.h
 encoding.$(OBJEXT): $(hdrdir)/ruby.h
 encoding.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+encoding.$(OBJEXT): $(top_srcdir)/internal/class.h
 encoding.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 encoding.$(OBJEXT): $(top_srcdir)/internal/enc.h
 encoding.$(OBJEXT): $(top_srcdir)/internal/encoding.h
+encoding.$(OBJEXT): $(top_srcdir)/internal/gc.h
 encoding.$(OBJEXT): $(top_srcdir)/internal/inits.h
 encoding.$(OBJEXT): $(top_srcdir)/internal/load.h
 encoding.$(OBJEXT): $(top_srcdir)/internal/object.h
@@ -4501,6 +4507,7 @@ encoding.$(OBJEXT): {$(VPATH)}defines.h
 encoding.$(OBJEXT): {$(VPATH)}encindex.h
 encoding.$(OBJEXT): {$(VPATH)}encoding.c
 encoding.$(OBJEXT): {$(VPATH)}encoding.h
+encoding.$(OBJEXT): {$(VPATH)}id_table.h
 encoding.$(OBJEXT): {$(VPATH)}intern.h
 encoding.$(OBJEXT): {$(VPATH)}internal.h
 encoding.$(OBJEXT): {$(VPATH)}internal/anyargs.h
@@ -4656,6 +4663,7 @@ enum.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 enum.$(OBJEXT): $(top_srcdir)/internal/array.h
 enum.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 enum.$(OBJEXT): $(top_srcdir)/internal/bits.h
+enum.$(OBJEXT): $(top_srcdir)/internal/class.h
 enum.$(OBJEXT): $(top_srcdir)/internal/compar.h
 enum.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 enum.$(OBJEXT): $(top_srcdir)/internal/enum.h
@@ -4689,6 +4697,7 @@ enum.$(OBJEXT): {$(VPATH)}defines.h
 enum.$(OBJEXT): {$(VPATH)}encoding.h
 enum.$(OBJEXT): {$(VPATH)}enum.c
 enum.$(OBJEXT): {$(VPATH)}id.h
+enum.$(OBJEXT): {$(VPATH)}id_table.h
 enum.$(OBJEXT): {$(VPATH)}intern.h
 enum.$(OBJEXT): {$(VPATH)}internal.h
 enum.$(OBJEXT): {$(VPATH)}internal/anyargs.h
@@ -5031,6 +5040,7 @@ error.$(OBJEXT): $(CCAN_DIR)/str/str.h
 error.$(OBJEXT): $(hdrdir)/ruby.h
 error.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 error.$(OBJEXT): $(top_srcdir)/internal/array.h
+error.$(OBJEXT): $(top_srcdir)/internal/class.h
 error.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 error.$(OBJEXT): $(top_srcdir)/internal/error.h
 error.$(OBJEXT): $(top_srcdir)/internal/eval.h
@@ -5454,6 +5464,7 @@ explicit_bzero.$(OBJEXT): {$(VPATH)}missing.h
 file.$(OBJEXT): $(hdrdir)/ruby.h
 file.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 file.$(OBJEXT): $(top_srcdir)/internal/array.h
+file.$(OBJEXT): $(top_srcdir)/internal/class.h
 file.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 file.$(OBJEXT): $(top_srcdir)/internal/dir.h
 file.$(OBJEXT): $(top_srcdir)/internal/error.h
@@ -5490,6 +5501,7 @@ file.$(OBJEXT): {$(VPATH)}encindex.h
 file.$(OBJEXT): {$(VPATH)}encoding.h
 file.$(OBJEXT): {$(VPATH)}file.c
 file.$(OBJEXT): {$(VPATH)}id.h
+file.$(OBJEXT): {$(VPATH)}id_table.h
 file.$(OBJEXT): {$(VPATH)}intern.h
 file.$(OBJEXT): {$(VPATH)}internal.h
 file.$(OBJEXT): {$(VPATH)}internal/anyargs.h
@@ -6591,6 +6603,7 @@ io.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 io.$(OBJEXT): $(top_srcdir)/internal/array.h
 io.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 io.$(OBJEXT): $(top_srcdir)/internal/bits.h
+io.$(OBJEXT): $(top_srcdir)/internal/class.h
 io.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 io.$(OBJEXT): $(top_srcdir)/internal/encoding.h
 io.$(OBJEXT): $(top_srcdir)/internal/error.h
@@ -7892,8 +7905,10 @@ marshal.$(OBJEXT): {$(VPATH)}util.h
 math.$(OBJEXT): $(hdrdir)/ruby.h
 math.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 math.$(OBJEXT): $(top_srcdir)/internal/bignum.h
+math.$(OBJEXT): $(top_srcdir)/internal/class.h
 math.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 math.$(OBJEXT): $(top_srcdir)/internal/complex.h
+math.$(OBJEXT): $(top_srcdir)/internal/gc.h
 math.$(OBJEXT): $(top_srcdir)/internal/math.h
 math.$(OBJEXT): $(top_srcdir)/internal/object.h
 math.$(OBJEXT): $(top_srcdir)/internal/serial.h
@@ -7914,6 +7929,7 @@ math.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 math.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 math.$(OBJEXT): {$(VPATH)}config.h
 math.$(OBJEXT): {$(VPATH)}defines.h
+math.$(OBJEXT): {$(VPATH)}id_table.h
 math.$(OBJEXT): {$(VPATH)}intern.h
 math.$(OBJEXT): {$(VPATH)}internal.h
 math.$(OBJEXT): {$(VPATH)}internal/anyargs.h
@@ -8518,6 +8534,7 @@ mjit_compile.$(OBJEXT): $(CCAN_DIR)/str/str.h
 mjit_compile.$(OBJEXT): $(hdrdir)/ruby.h
 mjit_compile.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 mjit_compile.$(OBJEXT): $(top_srcdir)/internal/array.h
+mjit_compile.$(OBJEXT): $(top_srcdir)/internal/class.h
 mjit_compile.$(OBJEXT): $(top_srcdir)/internal/compile.h
 mjit_compile.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 mjit_compile.$(OBJEXT): $(top_srcdir)/internal/gc.h
@@ -8905,6 +8922,7 @@ numeric.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/array.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/bits.h
+numeric.$(OBJEXT): $(top_srcdir)/internal/class.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/complex.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/enumerator.h
@@ -9905,6 +9923,7 @@ process.$(OBJEXT): $(hdrdir)/ruby.h
 process.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 process.$(OBJEXT): $(top_srcdir)/internal/array.h
 process.$(OBJEXT): $(top_srcdir)/internal/bits.h
+process.$(OBJEXT): $(top_srcdir)/internal/class.h
 process.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 process.$(OBJEXT): $(top_srcdir)/internal/dir.h
 process.$(OBJEXT): $(top_srcdir)/internal/error.h
@@ -10475,6 +10494,7 @@ rational.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 rational.$(OBJEXT): $(top_srcdir)/internal/array.h
 rational.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 rational.$(OBJEXT): $(top_srcdir)/internal/bits.h
+rational.$(OBJEXT): $(top_srcdir)/internal/class.h
 rational.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 rational.$(OBJEXT): $(top_srcdir)/internal/complex.h
 rational.$(OBJEXT): $(top_srcdir)/internal/error.h
@@ -10505,6 +10525,7 @@ rational.$(OBJEXT): {$(VPATH)}config.h
 rational.$(OBJEXT): {$(VPATH)}defines.h
 rational.$(OBJEXT): {$(VPATH)}encoding.h
 rational.$(OBJEXT): {$(VPATH)}id.h
+rational.$(OBJEXT): {$(VPATH)}id_table.h
 rational.$(OBJEXT): {$(VPATH)}intern.h
 rational.$(OBJEXT): {$(VPATH)}internal.h
 rational.$(OBJEXT): {$(VPATH)}internal/anyargs.h
@@ -11843,6 +11864,7 @@ ruby.$(OBJEXT): $(hdrdir)/ruby.h
 ruby.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 ruby.$(OBJEXT): $(hdrdir)/ruby/version.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/array.h
+ruby.$(OBJEXT): $(top_srcdir)/internal/class.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/error.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/file.h
@@ -12405,9 +12427,11 @@ sprintf.$(OBJEXT): $(hdrdir)/ruby.h
 sprintf.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 sprintf.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 sprintf.$(OBJEXT): $(top_srcdir)/internal/bits.h
+sprintf.$(OBJEXT): $(top_srcdir)/internal/class.h
 sprintf.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 sprintf.$(OBJEXT): $(top_srcdir)/internal/error.h
 sprintf.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
+sprintf.$(OBJEXT): $(top_srcdir)/internal/gc.h
 sprintf.$(OBJEXT): $(top_srcdir)/internal/hash.h
 sprintf.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 sprintf.$(OBJEXT): $(top_srcdir)/internal/object.h
@@ -12435,6 +12459,7 @@ sprintf.$(OBJEXT): {$(VPATH)}config.h
 sprintf.$(OBJEXT): {$(VPATH)}defines.h
 sprintf.$(OBJEXT): {$(VPATH)}encoding.h
 sprintf.$(OBJEXT): {$(VPATH)}id.h
+sprintf.$(OBJEXT): {$(VPATH)}id_table.h
 sprintf.$(OBJEXT): {$(VPATH)}intern.h
 sprintf.$(OBJEXT): {$(VPATH)}internal.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/anyargs.h
@@ -12933,6 +12958,7 @@ string.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 string.$(OBJEXT): $(top_srcdir)/internal/array.h
 string.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 string.$(OBJEXT): $(top_srcdir)/internal/bits.h
+string.$(OBJEXT): $(top_srcdir)/internal/class.h
 string.$(OBJEXT): $(top_srcdir)/internal/compar.h
 string.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 string.$(OBJEXT): $(top_srcdir)/internal/encoding.h
@@ -12971,6 +12997,7 @@ string.$(OBJEXT): {$(VPATH)}encindex.h
 string.$(OBJEXT): {$(VPATH)}encoding.h
 string.$(OBJEXT): {$(VPATH)}gc.h
 string.$(OBJEXT): {$(VPATH)}id.h
+string.$(OBJEXT): {$(VPATH)}id_table.h
 string.$(OBJEXT): {$(VPATH)}intern.h
 string.$(OBJEXT): {$(VPATH)}internal.h
 string.$(OBJEXT): {$(VPATH)}internal/anyargs.h
@@ -13352,6 +13379,7 @@ struct.$(OBJEXT): {$(VPATH)}vm_core.h
 struct.$(OBJEXT): {$(VPATH)}vm_opts.h
 symbol.$(OBJEXT): $(hdrdir)/ruby.h
 symbol.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+symbol.$(OBJEXT): $(top_srcdir)/internal/class.h
 symbol.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 symbol.$(OBJEXT): $(top_srcdir)/internal/error.h
 symbol.$(OBJEXT): $(top_srcdir)/internal/gc.h
@@ -13937,9 +13965,12 @@ time.$(OBJEXT): {$(VPATH)}timev.h
 transcode.$(OBJEXT): $(hdrdir)/ruby.h
 transcode.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 transcode.$(OBJEXT): $(top_srcdir)/internal/array.h
+transcode.$(OBJEXT): $(top_srcdir)/internal/class.h
 transcode.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+transcode.$(OBJEXT): $(top_srcdir)/internal/gc.h
 transcode.$(OBJEXT): $(top_srcdir)/internal/inits.h
 transcode.$(OBJEXT): $(top_srcdir)/internal/object.h
+transcode.$(OBJEXT): $(top_srcdir)/internal/serial.h
 transcode.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 transcode.$(OBJEXT): $(top_srcdir)/internal/string.h
 transcode.$(OBJEXT): $(top_srcdir)/internal/transcode.h
@@ -13960,6 +13991,7 @@ transcode.$(OBJEXT): {$(VPATH)}config.h
 transcode.$(OBJEXT): {$(VPATH)}defines.h
 transcode.$(OBJEXT): {$(VPATH)}encoding.h
 transcode.$(OBJEXT): {$(VPATH)}id.h
+transcode.$(OBJEXT): {$(VPATH)}id_table.h
 transcode.$(OBJEXT): {$(VPATH)}intern.h
 transcode.$(OBJEXT): {$(VPATH)}internal.h
 transcode.$(OBJEXT): {$(VPATH)}internal/anyargs.h
@@ -14471,6 +14503,7 @@ variable.$(OBJEXT): $(top_srcdir)/internal/eval.h
 variable.$(OBJEXT): $(top_srcdir)/internal/gc.h
 variable.$(OBJEXT): $(top_srcdir)/internal/hash.h
 variable.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+variable.$(OBJEXT): $(top_srcdir)/internal/object.h
 variable.$(OBJEXT): $(top_srcdir)/internal/re.h
 variable.$(OBJEXT): $(top_srcdir)/internal/serial.h
 variable.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
