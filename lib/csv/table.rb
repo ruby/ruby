@@ -333,7 +333,7 @@ class CSV
     #
     # ---
     #
-    # Returns columns data as Arrays,
+    # Returns columns data as row Arrays,
     # each consisting of the specified columns data for that row:
     #   values = table.values_at('Name')
     #   values # => [["foo"], ["bar"], ["baz"]]
@@ -399,11 +399,46 @@ class CSV
       self # for chaining
     end
 
+    # :call-seq:
+    #   table.delete(*indexes) -> deleted_values
+    #   table.delete(*headers) -> deleted_values
     #
-    # Removes and returns the indicated columns or rows. In the default mixed
-    # mode indices refer to rows and everything else is assumed to be a column
-    # headers. Use by_col!() or by_row!() to force the lookup.
+    # If the access mode is <tt>:row</tt> or <tt>:col_or_row</tt>,
+    # and each argument is either an \Integer or a \Range,
+    # returns deleted rows.
+    # Otherwise, returns deleted columns data.
     #
+    # In either case, the returned values are in the order
+    # specified by the arguments.  Arguments may be repeated.
+    #
+    # ---
+    #
+    # Returns rows as an \Array of \CSV::Row objects.
+    #
+    # One index:
+    #   source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+    #   table = CSV.parse(source, headers: true)
+    #   deleted_values = table.delete(0)
+    #   deleted_values # => [#<CSV::Row "Name":"foo" "Value":"0">]
+    #
+    # Two indexes:
+    #   table = CSV.parse(source, headers: true)
+    #   deleted_values = table.delete(2, 0)
+    #   deleted_values # => [#<CSV::Row "Name":"baz" "Value":"2">, #<CSV::Row "Name":"foo" "Value":"0">]
+    #
+    # ---
+    #
+    # Returns columns data as column Arrays.
+    #
+    # One header:
+    #   table = CSV.parse(source, headers: true)
+    #   deleted_values = table.delete('Name')
+    #   deleted_values # => ["foo", "bar", "baz"]
+    #
+    # Two headers:
+    #   table = CSV.parse(source, headers: true)
+    #   deleted_values = table.delete('Value', 'Name')
+    #   deleted_values # => [["0", "1", "2"], ["foo", "bar", "baz"]]
     def delete(*indexes_or_headers)
       if indexes_or_headers.empty?
         raise ArgumentError, "wrong number of arguments (given 0, expected 1+)"
@@ -428,16 +463,32 @@ class CSV
       end
     end
 
+    # Removes rows or columns for which the block returns a truthy value;
+    # returns +self+.
     #
-    # Removes any column or row for which the block returns +true+. In the
-    # default mixed mode or row mode, iteration is the standard row major
-    # walking of rows. In column mode, iteration will +yield+ two element
-    # tuples containing the column name and an Array of values for that column.
+    # Removes rows when the access mode is <tt>:row</tt> or <tt>:col_or_row</tt>;
+    # calls the block with each \CSV::Row object:
+    #   source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+    #   table = CSV.parse(source, headers: true)
+    #   table.by_row! # => #<CSV::Table mode:row row_count:4>
+    #   table.size # => 3
+    #   table.delete_if {|row| row['Name'].start_with?('b') }
+    #   table.size # => 1
     #
-    # This method returns the table for chaining.
+    # Removes columns when the access mode is <tt>:col</tt>;
+    # calls the block with each column as a 2-element array
+    # containing the header and an \Array of column fields:
+    #   source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+    #   table = CSV.parse(source, headers: true)
+    #   table.by_col! # => #<CSV::Table mode:col row_count:4>
+    #   table.headers.size # => 2
+    #   table.delete_if {|column_data| column_data[1].include?('2') }
+    #   table.headers.size # => 1
     #
-    # If no block is given, an Enumerator is returned.
-    #
+    # Returns a new \Enumerator if no block is given:
+    #   source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+    #   table = CSV.parse(source, headers: true)
+    #   table.delete_if # => #<Enumerator: #<CSV::Table mode:col_or_row row_count:4>:delete_if>
     def delete_if(&block)
       return enum_for(__method__) { @mode == :row or @mode == :col_or_row ? size : headers.size } unless block_given?
 
@@ -455,15 +506,30 @@ class CSV
 
     include Enumerable
 
+    # Calls the block with each row or column; returns +self+.
     #
-    # In the default mixed mode or row mode, iteration is the standard row major
-    # walking of rows. In column mode, iteration will +yield+ two element
-    # tuples containing the column name and an Array of values for that column.
+    # When the access mode is <tt>:row</tt> or <tt>:col_or_row</tt>,
+    # calls the block with each \CSV::Row object:
+    #   source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+    #   table = CSV.parse(source, headers: true)
+    #   table.by_row! # => #<CSV::Table mode:row row_count:4>
+    #   table.each {|row| p row }
+    # Output:
+    #   #<CSV::Row "Name":"foo" "Value":"0">
+    #   #<CSV::Row "Name":"bar" "Value":"1">
+    #   #<CSV::Row "Name":"baz" "Value":"2">
     #
-    # This method returns the table for chaining.
+    # When the access mode is <tt>:col</tt>,
+    # calls the block with each column as a 2-element array
+    # containing the header and an \Array of column fields:
+    #   table.by_col! # => #<CSV::Table mode:col row_count:4>
+    #   table.each {|column_data| p column_data }
+    # Output:
+    #   ["Name", ["foo", "bar", "baz"]]
+    #   ["Value", ["0", "1", "2"]]
     #
-    # If no block is given, an Enumerator is returned.
-    #
+    # Returns a new \Enumerator if no block is given:
+    #   table.each # => #<Enumerator: #<CSV::Table mode:col row_count:4>:each>
     def each(&block)
       return enum_for(__method__) { @mode == :col ? headers.size : size } unless block_given?
 
@@ -476,7 +542,24 @@ class CSV
       self # for chaining
     end
 
-    # Returns +true+ if all rows of this table ==() +other+'s rows.
+    # Returns +true+ if all each row of +self+ <tt>==</tt>
+    # the corresponding row of +other_table+, otherwise, +false+.
+    #
+    # The access mode does no affect the result.
+    #
+    # Equal tables:
+    #   source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+    #   table = CSV.parse(source, headers: true)
+    #   other_table = CSV.parse(source, headers: true)
+    #   table == other_table # => true
+    #
+    # Different row count:
+    #   other_table.delete(2)
+    #   table == other_table # => false
+    #
+    # Different last row:
+    #   other_table << ['bat', 3]
+    #   table == other_table # => false
     def ==(other)
       return @table == other.table if other.is_a? CSV::Table
       @table == other
