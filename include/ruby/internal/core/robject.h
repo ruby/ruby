@@ -27,6 +27,7 @@
 #endif
 
 #include "ruby/internal/attr/artificial.h"
+#include "ruby/internal/attr/deprecated.h"
 #include "ruby/internal/attr/pure.h"
 #include "ruby/internal/cast.h"
 #include "ruby/internal/fl_type.h"
@@ -39,11 +40,14 @@
 /** @cond INTERNAL_MACRO */
 #define ROBJECT_NUMIV         ROBJECT_NUMIV
 #define ROBJECT_IVPTR         ROBJECT_IVPTR
+#define ROBJECT_IV_INDEX_TBL  ROBJECT_IV_INDEX_TBL
 /** @endcond */
 
 enum ruby_robject_flags { ROBJECT_EMBED = RUBY_FL_USER1 };
 
 enum ruby_robject_consts { ROBJECT_EMBED_LEN_MAX = RBIMPL_EMBED_LEN_MAX_OF(VALUE) };
+
+struct st_table;
 
 struct RObject {
     struct RBasic basic;
@@ -51,11 +55,15 @@ struct RObject {
         struct {
             uint32_t numiv;
             VALUE *ivptr;
-            void *iv_index_tbl; /* shortcut for RCLASS_IV_INDEX_TBL(rb_obj_class(obj)) */
+            struct st_table *iv_index_tbl; /* shortcut for RCLASS_IV_INDEX_TBL(rb_obj_class(obj)) */
         } heap;
         VALUE ary[ROBJECT_EMBED_LEN_MAX];
     } as;
 };
+
+RBIMPL_SYMBOL_EXPORT_BEGIN()
+struct st_table *rb_obj_iv_index_tbl(const struct RObject *obj);
+RBIMPL_SYMBOL_EXPORT_END()
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
@@ -89,9 +97,17 @@ ROBJECT_IVPTR(VALUE obj)
     }
 }
 
-#define ROBJECT_IV_INDEX_TBL(o) \
-    ((RBASIC(o)->flags & ROBJECT_EMBED) ? \
-     RCLASS_IV_INDEX_TBL(rb_obj_class(o)) : \
-     ROBJECT(o)->as.heap.iv_index_tbl)
+RBIMPL_ATTR_DEPRECATED(("Whoever have used it before?  Just tell us so.  We can stop deleting it."))
+RBIMPL_ATTR_PURE_UNLESS_DEBUG()
+RBIMPL_ATTR_ARTIFICIAL()
+static inline struct st_table *
+ROBJECT_IV_INDEX_TBL(VALUE obj)
+{
+    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
+
+    struct RObject *const ptr = ROBJECT(obj);
+
+    return rb_obj_iv_index_tbl(ptr);
+}
 
 #endif /* RBIMPL_ROBJECT_H */

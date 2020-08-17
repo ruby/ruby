@@ -25,6 +25,7 @@
 #include "internal/error.h"
 #include "internal/eval.h"
 #include "internal/hash.h"
+#include "internal/object.h"
 #include "internal/re.h"
 #include "internal/symbol.h"
 #include "internal/thread.h"
