@@ -5,7 +5,7 @@ require 'ostruct'
 
 module TestIRB
   class TestRubyLex < Test::Unit::TestCase
-    Row = Struct.new(:content, :current_line_spaces, :new_line_spaces)
+    Row = Struct.new(:content, :current_line_spaces, :new_line_spaces, :nesting_level)
 
     class MockIO
       def initialize(params, &assertion)
@@ -32,6 +32,15 @@ module TestIRB
       ruby_lex.set_input(io)
       context = OpenStruct.new(auto_indent_mode: true)
       ruby_lex.set_auto_indent(context)
+    end
+
+    def assert_nesting_level(lines, expected)
+      ruby_lex = RubyLex.new()
+      io = proc{ lines.join("\n") }
+      ruby_lex.set_input(io, io)
+      ruby_lex.lex
+      error_message = "Calculated the wrong number of nesting level for:\n #{lines.join("\n")}"
+      assert_equal(expected, ruby_lex.instance_variable_get(:@indent), error_message)
     end
 
     def test_auto_indent
@@ -237,10 +246,10 @@ module TestIRB
 
     def test_tlambda
       input_with_correct_indents = [
-        Row.new(%q(if true), nil, 2),
-        Row.new(%q(  -> {), nil, 4),
-        Row.new(%q(  }), 2, 2),
-        Row.new(%q(end), 0, 0),
+        Row.new(%q(if true), nil, 2, 1),
+        Row.new(%q(  -> {), nil, 4, 2),
+        Row.new(%q(  }), 2, 2, 1),
+        Row.new(%q(end), 0, 0, 0),
       ]
 
       lines = []
@@ -248,6 +257,7 @@ module TestIRB
         lines << row.content
         assert_indenting(lines, row.current_line_spaces, false)
         assert_indenting(lines, row.new_line_spaces, true)
+        assert_nesting_level(lines, row.nesting_level)
       end
     end
   end

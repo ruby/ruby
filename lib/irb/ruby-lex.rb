@@ -329,7 +329,7 @@ class RubyLex
       end
 
       case t[1]
-      when :on_lbracket, :on_lbrace, :on_lparen
+      when :on_lbracket, :on_lbrace, :on_lparen, :on_tlambeg
         indent += 1
       when :on_rbracket, :on_rbrace, :on_rparen
         indent -= 1
