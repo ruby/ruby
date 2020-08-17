@@ -60,6 +60,11 @@ mentioned below.
 
   This file is licensed under the {MIT License}[rdoc-label:label-MIT+License].
 
+[coroutine]
+
+  Unless otherwise specified, these files are licensed under the
+  {MIT License}[rdoc-label:label-MIT+License].
+
 [include/ruby/onigmo.h]
 [include/ruby/oniguruma.h]
 [regcomp.c]
