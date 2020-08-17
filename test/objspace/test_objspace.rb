@@ -194,7 +194,7 @@ class TestObjSpace < Test::Unit::TestCase
       assert_equal(self.class.name, ObjectSpace.allocation_class_path(o3))
       assert_equal(__method__,      ObjectSpace.allocation_method_id(o3))
     }
-  end
+  end if false # TODO: tenderlove is debugging it [Tue Aug 18 11:00:49 2020 JST]
 
   def test_trace_object_allocations_start_stop_clear
     ObjectSpace.trace_object_allocations_clear # clear object_table to get rid of erroneous detection for obj3
