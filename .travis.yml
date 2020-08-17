@@ -40,6 +40,7 @@ env:
     - CCACHE_COMPILERCHECK=none
     - CCACHE_NOCOMPRESS=1
     - CCACHE_MAXSIZE=512Mi
+    - CCACHE_EXE=ccache
     - NPROC="`nproc`"
     # JOBS and SETARCH are overridden when necessary; see below.
     - JOBS=-j$((1+${NPROC}))
@@ -149,6 +150,13 @@ env:
     env:
       - GEMS_FOR_TEST=
       - cppflags='-DRUBY_DEBUG -DVM_CHECK_MODE=1 -DTRANSIENT_HEAP_CHECK_MODE -DRGENGC_CHECK_MODE -DENC_DEBUG'
+      
+  - &flto
+    name: gcc -flfo=jobserver
+    <<: *linux
+    env:
+      - CONFIG_FLAG='--enable-lto'
+      - CCACHE_EXE=
 
   - &VM_CHECK_MODE
     name: VM_CHECK_MODE=3
@@ -483,8 +491,8 @@ before_script:
   - cd build
   - |-
     case "$CC" in
-    gcc*)   CC="ccache $CC${GCC_FLAGS:+ }$GCC_FLAGS -fno-diagnostics-color";;
-    clang*) CC="ccache $CC${GCC_FLAGS:+ }$GCC_FLAGS -fno-color-diagnostics";;
+    gcc*)   CC="${CCACHE_EXE} $CC${GCC_FLAGS:+ }$GCC_FLAGS -fno-diagnostics-color";;
+    clang*) CC="${CCACHE_EXE} $CC${GCC_FLAGS:+ }$GCC_FLAGS -fno-color-diagnostics";;
     esac
   - |-
     [ ! -f config.cache ] ||

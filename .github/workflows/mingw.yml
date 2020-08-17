@@ -18,6 +18,7 @@ jobs:
       LDFLAGS:  "-pipe -fstack-protector-strong"
       UPDATE_UNICODE: "UNICODE_FILES=. UNICODE_PROPERTY_FILES=. UNICODE_AUXILIARY_FILES=. UNICODE_EMOJI_FILES=."
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
+      CONFIG_FLAG: --enable-lto
     strategy:
       matrix:
         test_task: [ "check" ] # to make job names consistent

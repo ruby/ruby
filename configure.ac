@@ -191,6 +191,7 @@ AS_IF([test x"${build}" != x"${host}"], [
   AC_CHECK_TOOL(CC, gcc)
 ])
 
+RUBY_PROG_TOOLCHAINS
 AC_PROG_CC_C99
 AS_CASE([$CC],
 [gcc-*], [
@@ -3375,6 +3376,22 @@ AC_SUBST(LIBRUBY_RELATIVE)
 
 LDFLAGS="-L. $LDFLAGS"
 AC_SUBST(ARCHFILE)
+
+AC_ARG_ENABLE(lto,
+    AS_HELP_STRING([--enable-lto], [enables inter-procedural optimization]),
+    [enable_lto=$enableval], [enable_lto=no])
+AS_IF([test "$enable_lto" = yes],[
+    for i in "-flto=jobserver" "-flto=thin" "-flto" "-LTCG:INCREMENTAL" "-LTCG"
+    do
+        RUBY_TRY_LDFLAGS(["${i}"], [
+            RUBY_APPEND_OPTIONS(CFLAGS, "${i}")
+            # linker needs -O3 etc this case.
+            RUBY_APPEND_OPTIONS(LDFLAGS, "${CFLAGS}")
+            AC_MSG_RESULT(yes)
+            break
+        ])
+    done
+])
 
 AS_IF([test "$EXEEXT" = .exe], [
     EXECUTABLE_EXTS='".exe",".com",".cmd",".bat"'

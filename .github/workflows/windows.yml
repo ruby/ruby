@@ -11,6 +11,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
+      CONFIG_FLAG: --enable-lto
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     steps:
       - uses: actions/cache@v2
