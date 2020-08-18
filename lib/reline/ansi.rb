@@ -31,7 +31,7 @@ class Reline::ANSI
     # urxvt / exoterm
     [27, 91, 55, 126] => :ed_move_to_beg, # Home
     [27, 91, 56, 126] => :ed_move_to_end, # End
-    
+
     # GNOME
     [27, 79, 72] => :ed_move_to_beg,      # Home
     [27, 79, 70] => :ed_move_to_end,      # End
