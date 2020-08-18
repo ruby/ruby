@@ -117,10 +117,9 @@ module TestIRB
 
         with_temp_stdio do |stdin, stdout|
           replace_stdio(stdin.path, stdout.path) do
-            cmds = %W[ruby -Ilib:test -W0 -rirb -e 'IRB.start(__FILE__)']
             yield(stdin, stdout)
             stdin.close
-            system(cmds.join(' '))
+            system('ruby', '-Ilib', '-Itest', '-W0', '-rirb', '-e', 'IRB.start(__FILE__)')
             stdout.flush
             result = stdout.read
             stdout.close
