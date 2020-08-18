@@ -19,15 +19,20 @@
 #include "node.h"
 #include "objspace.h"
 #include "ruby/debug.h"
+#include "ruby/util.h"
 #include "ruby/io.h"
 #include "vm_core.h"
+
+RUBY_EXTERN const char ruby_hexdigits[];
 
 static VALUE sym_output, sym_stdout, sym_string, sym_file;
 static VALUE sym_full, sym_since;
 
+#define BUFFER_CAPACITY 4096
+
 struct dump_config {
     VALUE type;
-    FILE *stream;
+    VALUE stream;
     VALUE string;
     const char *root_category;
     VALUE cur_obj;
@@ -37,22 +42,141 @@ struct dump_config {
     unsigned int full_heap: 1;
     unsigned int partial_dump;
     size_t since;
+    unsigned long buffer_len;
+    char buffer[BUFFER_CAPACITY];
 };
 
-PRINTF_ARGS(static void dump_append(struct dump_config *, const char *, ...), 2, 3);
 static void
-dump_append(struct dump_config *dc, const char *format, ...)
+dump_flush(struct dump_config *dc)
 {
-    va_list vl;
-    va_start(vl, format);
-
-    if (dc->stream) {
-	vfprintf(dc->stream, format, vl);
+    if (dc->buffer_len) {
+        if (dc->stream) {
+            size_t written = rb_io_bufwrite(dc->stream, dc->buffer, dc->buffer_len);
+            if (written < dc->buffer_len) {
+                MEMMOVE(dc->buffer, dc->buffer + written, char, dc->buffer_len - written);
+                dc->buffer_len -= written;
+                return;
+            }
+        }
+        else if (dc->string) {
+            rb_str_cat(dc->string, dc->buffer, dc->buffer_len);
+        }
+        dc->buffer_len = 0;
     }
-    else if (dc->string)
-	rb_str_vcatf(dc->string, format, vl);
+}
 
-    va_end(vl);
+static inline void
+buffer_ensure_capa(struct dump_config *dc, unsigned long requested)
+{
+    RUBY_ASSERT(requested <= BUFFER_CAPACITY);
+    if (requested + dc->buffer_len >= BUFFER_CAPACITY) {
+        dump_flush(dc);
+        if (requested + dc->buffer_len >= BUFFER_CAPACITY) {
+            rb_raise(rb_eIOError, "full buffer");
+        }
+    }
+}
+
+static void buffer_append(struct dump_config *dc, const char *cstr, unsigned long len)
+{
+    if (LIKELY(len > 0)) {
+        buffer_ensure_capa(dc, len);
+        MEMCPY(dc->buffer + dc->buffer_len, cstr, char, len);
+        dc->buffer_len += len;
+    }
+}
+
+# define dump_append(dc, str) buffer_append(dc, (str), (long)strlen(str))
+
+static void
+dump_append_ld(struct dump_config *dc, const long number)
+{
+    const int width = DECIMAL_SIZE_OF_BITS(sizeof(number) * CHAR_BIT - 1) + 2;
+    buffer_ensure_capa(dc, width);
+    unsigned long required = snprintf(dc->buffer + dc->buffer_len, width, "%ld", number);
+    RUBY_ASSERT(required <= width);
+    dc->buffer_len += required;
+}
+
+static void
+dump_append_lu(struct dump_config *dc, const unsigned long number)
+{
+    const int width = DECIMAL_SIZE_OF_BITS(sizeof(number) * CHAR_BIT) + 1;
+    buffer_ensure_capa(dc, width);
+    unsigned long required = snprintf(dc->buffer + dc->buffer_len, width, "%lu", number);
+    RUBY_ASSERT(required <= width);
+    dc->buffer_len += required;
+}
+
+static void
+dump_append_g(struct dump_config *dc, const double number)
+{
+    unsigned long capa_left = BUFFER_CAPACITY - dc->buffer_len;
+    unsigned long required = snprintf(dc->buffer + dc->buffer_len, capa_left, "%#g", number);
+
+    if (required >= capa_left) {
+        buffer_ensure_capa(dc, required);
+        capa_left = BUFFER_CAPACITY - dc->buffer_len;
+        snprintf(dc->buffer + dc->buffer_len, capa_left, "%#g", number);
+    }
+    dc->buffer_len += required;
+}
+
+static void
+dump_append_d(struct dump_config *dc, const int number)
+{
+    const int width = DECIMAL_SIZE_OF_BITS(sizeof(number) * CHAR_BIT - 1) + 2;
+    buffer_ensure_capa(dc, width);
+    unsigned long required = snprintf(dc->buffer + dc->buffer_len, width, "%d", number);
+    RUBY_ASSERT(required <= width);
+    dc->buffer_len += required;
+}
+
+static void
+dump_append_sizet(struct dump_config *dc, const size_t number)
+{
+    const int width = DECIMAL_SIZE_OF_BITS(sizeof(number) * CHAR_BIT) + 1;
+    buffer_ensure_capa(dc, width);
+    unsigned long required = snprintf(dc->buffer + dc->buffer_len, width, "%"PRIuSIZE, number);
+    RUBY_ASSERT(required <= width);
+    dc->buffer_len += required;
+}
+
+static void
+dump_append_c(struct dump_config *dc, char c)
+{
+    if (c <= 0x1f) {
+        const int width = (sizeof(c) * CHAR_BIT / 4) + 5;
+        buffer_ensure_capa(dc, width);
+        unsigned long required = snprintf(dc->buffer + dc->buffer_len, width, "\\u00%02x", c);
+        RUBY_ASSERT(required <= width);
+        dc->buffer_len += required;
+    }
+    else {
+        buffer_ensure_capa(dc, 1);
+        dc->buffer[dc->buffer_len] = c;
+        dc->buffer_len++;
+    }
+}
+
+static void
+dump_append_ref(struct dump_config *dc, VALUE ref)
+{
+    RUBY_ASSERT(ref > 0);
+
+    char buffer[((sizeof(VALUE) * CHAR_BIT + 3) / 4) + 4];
+    char *buffer_start, *buffer_end;
+
+    buffer_start = buffer_end = &buffer[sizeof(buffer)];
+    *--buffer_start = '"';
+    while (ref) {
+        *--buffer_start = ruby_hexdigits[ref & 0xF];
+        ref >>= 4;
+    }
+    *--buffer_start = 'x';
+    *--buffer_start = '0';
+    *--buffer_start = '"';
+    buffer_append(dc, buffer_start, buffer_end - buffer_start);
 }
 
 static void
@@ -64,38 +188,36 @@ dump_append_string_value(struct dump_config *dc, VALUE obj)
 
     dump_append(dc, "\"");
     for (i = 0, value = RSTRING_PTR(obj); i < RSTRING_LEN(obj); i++) {
-	switch ((c = value[i])) {
-	  case '\\':
-	  case '"':
-	    dump_append(dc, "\\%c", c);
-	    break;
-	  case '\0':
-	    dump_append(dc, "\\u0000");
-	    break;
-	  case '\b':
-	    dump_append(dc, "\\b");
-	    break;
-	  case '\t':
-	    dump_append(dc, "\\t");
-	    break;
-	  case '\f':
-	    dump_append(dc, "\\f");
-	    break;
-	  case '\n':
-	    dump_append(dc, "\\n");
-	    break;
-	  case '\r':
-	    dump_append(dc, "\\r");
-	    break;
-	  case '\177':
-	    dump_append(dc, "\\u007f");
-	    break;
-	  default:
-	    if (c <= 0x1f)
-		dump_append(dc, "\\u%04x", c);
-	    else
-		dump_append(dc, "%c", c);
-	}
+        switch ((c = value[i])) {
+          case '\\':
+            dump_append(dc, "\\\\");
+          case '"':
+            dump_append(dc, "\\\"");
+            break;
+          case '\0':
+            dump_append(dc, "\\u0000");
+            break;
+          case '\b':
+            dump_append(dc, "\\b");
+            break;
+          case '\t':
+            dump_append(dc, "\\t");
+            break;
+          case '\f':
+            dump_append(dc, "\\f");
+            break;
+          case '\n':
+            dump_append(dc, "\\n");
+            break;
+          case '\r':
+            dump_append(dc, "\\r");
+            break;
+          case '\177':
+            dump_append(dc, "\\u007f");
+            break;
+          default:
+            dump_append_c(dc, c);
+        }
     }
     dump_append(dc, "\"");
 }
@@ -149,25 +271,25 @@ static void
 dump_append_special_const(struct dump_config *dc, VALUE value)
 {
     if (value == Qtrue) {
-	dump_append(dc, "true");
+        dump_append(dc, "true");
     }
     else if (value == Qfalse) {
-	dump_append(dc, "false");
+        dump_append(dc, "false");
     }
     else if (value == Qnil) {
-	dump_append(dc, "null");
+        dump_append(dc, "null");
     }
     else if (FIXNUM_P(value)) {
-	dump_append(dc, "%ld", FIX2LONG(value));
+        dump_append_ld(dc, FIX2LONG(value));
     }
     else if (FLONUM_P(value)) {
-	dump_append(dc, "%#g", RFLOAT_VALUE(value));
+        dump_append_g(dc, RFLOAT_VALUE(value));
     }
     else if (SYMBOL_P(value)) {
-	dump_append_symbol_value(dc, value);
+        dump_append_symbol_value(dc, value);
     }
     else {
-	dump_append(dc, "{}");
+        dump_append(dc, "{}");
     }
 }
 
@@ -177,12 +299,16 @@ reachable_object_i(VALUE ref, void *data)
     struct dump_config *dc = (struct dump_config *)data;
 
     if (dc->cur_obj_klass == ref)
-	return;
+        return;
 
-    if (dc->cur_obj_references == 0)
-        dump_append(dc, ", \"references\":[\"%#"PRIxVALUE"\"", ref);
-    else
-        dump_append(dc, ", \"%#"PRIxVALUE"\"", ref);
+    if (dc->cur_obj_references == 0) {
+        dump_append(dc, ", \"references\":[");
+        dump_append_ref(dc, ref);
+    }
+    else {
+        dump_append(dc, ", ");
+        dump_append_ref(dc, ref);
+    }
 
     dc->cur_obj_references++;
 }
@@ -190,13 +316,16 @@ reachable_object_i(VALUE ref, void *data)
 static void
 dump_append_string_content(struct dump_config *dc, VALUE obj)
 {
-    dump_append(dc, ", \"bytesize\":%ld", RSTRING_LEN(obj));
-    if (!STR_EMBED_P(obj) && !STR_SHARED_P(obj) && (long)rb_str_capacity(obj) != RSTRING_LEN(obj))
-	dump_append(dc, ", \"capacity\":%"PRIuSIZE, rb_str_capacity(obj));
+    dump_append(dc, ", \"bytesize\":");
+    dump_append_ld(dc, RSTRING_LEN(obj));
+    if (!STR_EMBED_P(obj) && !STR_SHARED_P(obj) && (long)rb_str_capacity(obj) != RSTRING_LEN(obj)) {
+        dump_append(dc, ", \"capacity\":");
+        dump_append_sizet(dc, rb_str_capacity(obj));
+    }
 
     if (is_ascii_string(obj)) {
-	dump_append(dc, ", \"value\":");
-	dump_append_string_value(dc, obj);
+        dump_append(dc, ", \"value\":");
+        dump_append_string_value(dc, obj);
     }
 }
 
@@ -210,8 +339,8 @@ dump_object(VALUE obj, struct dump_config *dc)
     size_t n, i;
 
     if (SPECIAL_CONST_P(obj)) {
-	dump_append_special_const(dc, obj);
-	return;
+        dump_append_special_const(dc, obj);
+        return;
     }
 
     dc->cur_obj = obj;
@@ -223,89 +352,116 @@ dump_object(VALUE obj, struct dump_config *dc)
     }
 
     if (dc->cur_obj == dc->string)
-	return;
+        return;
 
-    dump_append(dc, "{\"address\":\"%#"PRIxVALUE"\", \"type\":\"%s\"", obj, obj_type(obj));
+    dump_append(dc, "{\"address\":");
+    dump_append_ref(dc, obj);
 
-    if (dc->cur_obj_klass)
-        dump_append(dc, ", \"class\":\"%#"PRIxVALUE"\"", dc->cur_obj_klass);
+    dump_append(dc, ", \"type\":\"");
+    dump_append(dc, obj_type(obj));
+    dump_append(dc, "\"");
+
+    if (dc->cur_obj_klass) {
+        dump_append(dc, ", \"class\":");
+        dump_append_ref(dc, dc->cur_obj_klass);
+    }
     if (rb_obj_frozen_p(obj))
-	dump_append(dc, ", \"frozen\":true");
+        dump_append(dc, ", \"frozen\":true");
 
     switch (BUILTIN_TYPE(obj)) {
       case T_NONE:
-	dump_append(dc, "}\n");
-	return;
+        dump_append(dc, "}\n");
+        return;
 
       case T_IMEMO:
-	dump_append(dc, ", \"imemo_type\":\"%s\"", rb_imemo_name(imemo_type(obj)));
-	break;
+        dump_append(dc, ", \"imemo_type\":\"");
+        dump_append(dc, rb_imemo_name(imemo_type(obj)));
+        dump_append(dc, "\"");
+        break;
 
       case T_SYMBOL:
-	dump_append_string_content(dc, rb_sym2str(obj));
-	break;
+        dump_append_string_content(dc, rb_sym2str(obj));
+        break;
 
       case T_STRING:
-	if (STR_EMBED_P(obj))
-	    dump_append(dc, ", \"embedded\":true");
-	if (is_broken_string(obj))
-	    dump_append(dc, ", \"broken\":true");
-	if (FL_TEST(obj, RSTRING_FSTR))
-	    dump_append(dc, ", \"fstring\":true");
-	if (STR_SHARED_P(obj))
-	    dump_append(dc, ", \"shared\":true");
-	else
-	    dump_append_string_content(dc, obj);
+        if (STR_EMBED_P(obj))
+            dump_append(dc, ", \"embedded\":true");
+        if (is_broken_string(obj))
+            dump_append(dc, ", \"broken\":true");
+        if (FL_TEST(obj, RSTRING_FSTR))
+            dump_append(dc, ", \"fstring\":true");
+        if (STR_SHARED_P(obj))
+            dump_append(dc, ", \"shared\":true");
+        else
+            dump_append_string_content(dc, obj);
 
-	if (!ENCODING_IS_ASCII8BIT(obj))
-	    dump_append(dc, ", \"encoding\":\"%s\"", rb_enc_name(rb_enc_from_index(ENCODING_GET(obj))));
-	break;
+        if (!ENCODING_IS_ASCII8BIT(obj)) {
+            dump_append(dc, ", \"encoding\":\"");
+            dump_append(dc, rb_enc_name(rb_enc_from_index(ENCODING_GET(obj))));
+            dump_append(dc, "\"");
+        }
+        break;
 
       case T_HASH:
-	dump_append(dc, ", \"size\":%"PRIuSIZE, (size_t)RHASH_SIZE(obj));
-        if (FL_TEST(obj, RHASH_PROC_DEFAULT))
-            dump_append(dc, ", \"default\":\"%#"PRIxVALUE"\"", RHASH_IFNONE(obj));
-	break;
+        dump_append(dc, ", \"size\":");
+        dump_append_sizet(dc, (size_t)RHASH_SIZE(obj));
+        if (FL_TEST(obj, RHASH_PROC_DEFAULT)) {
+            dump_append(dc, ", \"default\":");
+            dump_append_ref(dc, RHASH_IFNONE(obj));
+        }
+        break;
 
       case T_ARRAY:
-	dump_append(dc, ", \"length\":%ld", RARRAY_LEN(obj));
-	if (RARRAY_LEN(obj) > 0 && FL_TEST(obj, ELTS_SHARED))
-	    dump_append(dc, ", \"shared\":true");
-	if (RARRAY_LEN(obj) > 0 && FL_TEST(obj, RARRAY_EMBED_FLAG))
-	    dump_append(dc, ", \"embedded\":true");
-	break;
+        dump_append(dc, ", \"length\":");
+        dump_append_ld(dc, RARRAY_LEN(obj));
+        if (RARRAY_LEN(obj) > 0 && FL_TEST(obj, ELTS_SHARED))
+            dump_append(dc, ", \"shared\":true");
+        if (RARRAY_LEN(obj) > 0 && FL_TEST(obj, RARRAY_EMBED_FLAG))
+            dump_append(dc, ", \"embedded\":true");
+        break;
 
       case T_CLASS:
       case T_MODULE:
-	if (dc->cur_obj_klass) {
-	    VALUE mod_name = rb_mod_name(obj);
-	    if (!NIL_P(mod_name))
-		dump_append(dc, ", \"name\":\"%s\"", RSTRING_PTR(mod_name));
-	}
-	break;
+        if (dc->cur_obj_klass) {
+            VALUE mod_name = rb_mod_name(obj);
+            if (!NIL_P(mod_name)) {
+                dump_append(dc, ", \"name\":\"");
+                dump_append(dc, RSTRING_PTR(mod_name));
+                dump_append(dc, "\"");
+            }
+        }
+        break;
 
       case T_DATA:
-	if (RTYPEDDATA_P(obj))
-	    dump_append(dc, ", \"struct\":\"%s\"", RTYPEDDATA_TYPE(obj)->wrap_struct_name);
-	break;
+        if (RTYPEDDATA_P(obj)) {
+            dump_append(dc, ", \"struct\":\"");
+            dump_append(dc, RTYPEDDATA_TYPE(obj)->wrap_struct_name);
+            dump_append(dc, "\"");
+        }
+        break;
 
       case T_FLOAT:
-	dump_append(dc, ", \"value\":\"%g\"", RFLOAT_VALUE(obj));
-	break;
+        dump_append(dc, ", \"value\":\"");
+        dump_append_g(dc, RFLOAT_VALUE(obj));
+        dump_append(dc, "\"");
+        break;
 
       case T_OBJECT:
-	dump_append(dc, ", \"ivars\":%u", ROBJECT_NUMIV(obj));
-	break;
+        dump_append(dc, ", \"ivars\":");
+        dump_append_lu(dc, ROBJECT_NUMIV(obj));
+        break;
 
       case T_FILE:
-	fptr = RFILE(obj)->fptr;
-	if (fptr)
-	    dump_append(dc, ", \"fd\":%d", fptr->fd);
-	break;
+        fptr = RFILE(obj)->fptr;
+        if (fptr) {
+            dump_append(dc, ", \"fd\":");
+            dump_append_d(dc, fptr->fd);
+        }
+        break;
 
       case T_ZOMBIE:
-	dump_append(dc, "}\n");
-	return;
+          dump_append(dc, "}\n");
+          return;
 
       default:
         break;
@@ -313,28 +469,36 @@ dump_object(VALUE obj, struct dump_config *dc)
 
     rb_objspace_reachable_objects_from(obj, reachable_object_i, dc);
     if (dc->cur_obj_references > 0)
-	dump_append(dc, "]");
+        dump_append(dc, "]");
 
     if (ainfo) {
-	dump_append(dc, ", \"file\":\"%s\", \"line\":%lu", ainfo->path, ainfo->line);
-	if (RTEST(ainfo->mid)) {
-	    VALUE m = rb_sym2str(ainfo->mid);
-	    dump_append(dc, ", \"method\":");
-	    dump_append_string_value(dc, m);
-	}
-	dump_append(dc, ", \"generation\":%"PRIuSIZE, ainfo->generation);
+        dump_append(dc, ", \"file\":\"");
+        dump_append(dc, ainfo->path);
+        dump_append(dc, "\", \"line\":");
+        dump_append_lu(dc, ainfo->line);
+        if (RTEST(ainfo->mid)) {
+            VALUE m = rb_sym2str(ainfo->mid);
+            dump_append(dc, ", \"method\":");
+            dump_append_string_value(dc, m);
+        }
+        dump_append(dc, ", \"generation\":");
+        dump_append_sizet(dc, ainfo->generation);
     }
 
-    if ((memsize = rb_obj_memsize_of(obj)) > 0)
-	dump_append(dc, ", \"memsize\":%"PRIuSIZE, memsize);
+    if ((memsize = rb_obj_memsize_of(obj)) > 0) {
+        dump_append(dc, ", \"memsize\":");
+        dump_append_sizet(dc, memsize);
+    }
 
     if ((n = rb_obj_gc_flags(obj, flags, sizeof(flags))) > 0) {
-	dump_append(dc, ", \"flags\":{");
-	for (i=0; i<n; i++) {
-	    dump_append(dc, "\"%s\":true", rb_id2name(flags[i]));
-	    if (i != n-1) dump_append(dc, ", ");
-	}
-	dump_append(dc, "}");
+        dump_append(dc, ", \"flags\":{");
+        for (i=0; i<n; i++) {
+            dump_append(dc, "\"");
+            dump_append(dc, rb_id2name(flags[i]));
+            dump_append(dc, "\":true");
+            if (i != n-1) dump_append(dc, ", ");
+        }
+        dump_append(dc, "}");
     }
 
     dump_append(dc, "}\n");
@@ -358,11 +522,17 @@ root_obj_i(const char *category, VALUE obj, void *data)
     struct dump_config *dc = (struct dump_config *)data;
 
     if (dc->root_category != NULL && category != dc->root_category)
-	dump_append(dc, "]}\n");
-    if (dc->root_category == NULL || category != dc->root_category)
-        dump_append(dc, "{\"type\":\"ROOT\", \"root\":\"%s\", \"references\":[\"%#"PRIxVALUE"\"", category, obj);
-    else
-        dump_append(dc, ", \"%#"PRIxVALUE"\"", obj);
+        dump_append(dc, "]}\n");
+    if (dc->root_category == NULL || category != dc->root_category) {
+        dump_append(dc, "{\"type\":\"ROOT\", \"root\":\"");
+        dump_append(dc, category);
+        dump_append(dc, "\", \"references\":[");
+        dump_append_ref(dc, obj);
+    }
+    else {
+        dump_append(dc, ", ");
+        dump_append_ref(dc, obj);
+    }
 
     dc->root_category = category;
     dc->roots = 1;
@@ -374,62 +544,63 @@ dump_output(struct dump_config *dc, VALUE opts, VALUE output, const char *filena
     VALUE tmp;
 
     dc->full_heap = 0;
+    dc->buffer_len = 0;
 
     if (RTEST(opts)) {
-	output = rb_hash_aref(opts, sym_output);
+        output = rb_hash_aref(opts, sym_output);
 
-	if (Qtrue == rb_hash_lookup2(opts, sym_full, Qfalse))
-	    dc->full_heap = 1;
+        if (Qtrue == rb_hash_lookup2(opts, sym_full, Qfalse))
+            dc->full_heap = 1;
 
-	VALUE since = rb_hash_aref(opts, sym_since);
-	if (RTEST(since)) {
-	    dc->partial_dump = 1;
-	    dc->since = NUM2SIZET(since);
-	} else {
-	    dc->partial_dump = 0;
-	}
+        VALUE since = rb_hash_aref(opts, sym_since);
+        if (RTEST(since)) {
+            dc->partial_dump = 1;
+            dc->since = NUM2SIZET(since);
+        } else {
+            dc->partial_dump = 0;
+        }
     }
 
     if (output == sym_stdout) {
-	dc->stream = stdout;
-	dc->string = Qnil;
+        dc->stream = rb_stdout;
+        dc->string = Qnil;
     }
-    else if (output == sym_file) {
-	rb_io_t *fptr;
-	rb_require("tempfile");
-	tmp = rb_assoc_new(rb_str_new_cstr(filename), rb_str_new_cstr(".json"));
-	tmp = rb_funcallv(rb_path2class("Tempfile"), rb_intern("create"), 1, &tmp);
+    else if (output == sym_file || output == Qnil) {
+        rb_require("tempfile");
+        tmp = rb_assoc_new(rb_str_new_cstr(filename), rb_str_new_cstr(".json"));
+        tmp = rb_funcallv(rb_path2class("Tempfile"), rb_intern("create"), 1, &tmp);
       io:
-	dc->string = rb_io_get_write_io(tmp);
-	rb_io_flush(dc->string);
-	GetOpenFile(dc->string, fptr);
-	dc->stream = rb_io_stdio_file(fptr);
+        dc->string = Qnil;
+        dc->stream = rb_io_get_write_io(tmp);
     }
     else if (output == sym_string) {
-	dc->string = rb_str_new_cstr("");
+        dc->string = rb_str_new_cstr("");
     }
     else if (!NIL_P(tmp = rb_io_check_io(output))) {
-	output = sym_file;
-	goto io;
+        output = sym_file;
+        goto io;
     }
     else {
-	rb_raise(rb_eArgError, "wrong output option: %"PRIsVALUE, output);
+        rb_raise(rb_eArgError, "wrong output option: %"PRIsVALUE, output);
     }
+
     return output;
 }
 
 static VALUE
 dump_result(struct dump_config *dc, VALUE output)
 {
+    dump_flush(dc);
+
     if (output == sym_string) {
-	return rb_str_resurrect(dc->string);
+        return rb_str_resurrect(dc->string);
     }
     else if (output == sym_file) {
-	rb_io_flush(dc->string);
-	return dc->string;
+        rb_io_flush(dc->stream);
+        return dc->stream;
     }
     else {
-	return Qnil;
+        return Qnil;
     }
 }
 
