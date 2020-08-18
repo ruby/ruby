@@ -117,8 +117,7 @@ module TestIRB
 
         with_temp_stdio do |stdin, stdout|
           replace_stdio(stdin.path, stdout.path) do
-            bundle_exec = ENV.key?('BUNDLE_GEMFILE') ? ['-rbundler/setup'] : []
-            cmds = %W[ruby] + bundle_exec + %W[-W0 -rirb -e 'IRB.start(__FILE__)']
+            cmds = %W[ruby -Ilib:test -W0 -rirb -e 'IRB.start(__FILE__)']
             yield(stdin, stdout)
             stdin.close
             system(cmds.join(' '))
