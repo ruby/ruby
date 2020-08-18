@@ -299,6 +299,12 @@ class TestObjSpace < Test::Unit::TestCase
     assert_equal('{"type":"SYMBOL", "value":"foo"}', ObjectSpace.dump(:foo))
   end
 
+  def test_dump_special_floats
+    assert_match(/"value":"NaN"/, ObjectSpace.dump(Float::NAN))
+    assert_match(/"value":"Inf"/, ObjectSpace.dump(Float::INFINITY))
+    assert_match(/"value":"\-Inf"/, ObjectSpace.dump(-Float::INFINITY))
+  end
+
   def test_dump_dynamic_symbol
     dump = ObjectSpace.dump(("foobar%x" % rand(0x10000)).to_sym)
     assert_match(/"type":"SYMBOL"/, dump)
