@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
   spec.summary       = "Ruby extension for GNU dbm."
   spec.description   = "Ruby extension for GNU dbm."
   spec.homepage      = "https://github.com/ruby/gdbm"
-  spec.license       = "BSD-2-Clause"
+  spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
   spec.files         = ["ext/gdbm/extconf.rb", "ext/gdbm/gdbm.c"]
   spec.bindir        = "exe"

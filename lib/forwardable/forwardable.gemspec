@@ -16,7 +16,7 @@ Gem::Specification.new do |spec|
   spec.summary       = %q{Provides delegation of specified methods to a designated object.}
   spec.description   = %q{Provides delegation of specified methods to a designated object.}
   spec.homepage      = "https://github.com/ruby/forwardable"
-  spec.license       = "BSD-2-Clause"
+  spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
   spec.files         = ["forwardable.gemspec", "lib/forwardable.rb", "lib/forwardable/impl.rb", "lib/forwardable/version.rb"]
   spec.bindir        = "exe"

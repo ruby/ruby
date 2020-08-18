@@ -16,7 +16,7 @@ Gem::Specification.new do |spec|
   spec.summary       = "CSV Reading and Writing"
   spec.description   = "The CSV library provides a complete interface to CSV files and data. It offers tools to enable you to read and write to and from Strings or IO objects, as needed."
   spec.homepage      = "https://github.com/ruby/csv"
-  spec.license       = "BSD-2-Clause"
+  spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
   lib_path = "lib"
   spec.require_paths = [lib_path]

@@ -21,5 +21,5 @@ Gem::Specification.new do |s|
     lib/io/console/size.rb
   ]
   s.extensions = %w[ext/io/console/extconf.rb]
-  s.license = "BSD-2-Clause"
+  s.licenses = ["Ruby", "BSD-2-Clause"]
 end

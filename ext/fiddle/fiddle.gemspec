@@ -19,7 +19,7 @@ Gem::Specification.new do |spec|
   spec.summary       = %q{A libffi wrapper for Ruby.}
   spec.description   = %q{A libffi wrapper for Ruby.}
   spec.homepage      = "https://github.com/ruby/fiddle"
-  spec.license       = "BSD-2-Clause"
+  spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
   spec.files         = [
     "LICENSE.txt",

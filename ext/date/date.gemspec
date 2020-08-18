@@ -17,5 +17,5 @@ Gem::Specification.new do |s|
   s.authors = ["Tadayoshi Funaba"]
   s.email = [nil]
   s.homepage = "https://github.com/ruby/date"
-  s.license = "BSD-2-Clause"
+  s.licenses = ["Ruby", "BSD-2-Clause"]
 end

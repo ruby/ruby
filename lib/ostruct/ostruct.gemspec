@@ -16,7 +16,7 @@ Gem::Specification.new do |spec|
   spec.summary       = %q{Class to build custom data structures, similar to a Hash.}
   spec.description   = %q{Class to build custom data structures, similar to a Hash.}
   spec.homepage      = "https://github.com/ruby/ostruct"
-  spec.license       = "BSD-2-Clause"
+  spec.licenses      = ["Ruby", "BSD-2-Clause"]
   spec.required_ruby_version = ">= 2.5.0"
 
   spec.files         = [".gitignore", ".travis.yml", "Gemfile", "LICENSE.txt", "README.md", "Rakefile", "bin/console", "bin/setup", "lib/ostruct.rb", "lib/ostruct/version.rb", "ostruct.gemspec"]
