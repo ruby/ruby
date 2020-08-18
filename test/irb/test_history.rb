@@ -13,7 +13,7 @@ module TestIRB
     end
 
     def test_history_save_1
-      result_output, result_history_file = launch_irb_with_irbrc_and_irb_history(<<~IRBRC, <<~IRB_HISTORY) do |stdin|
+      _result_output, result_history_file = launch_irb_with_irbrc_and_irb_history(<<~IRBRC, <<~IRB_HISTORY) do |stdin|
         IRB.conf[:USE_READLINE] = true
         IRB.conf[:SAVE_HISTORY] = 1
       IRBRC
@@ -31,7 +31,7 @@ module TestIRB
     end
 
     def test_history_save_100
-      result_output, result_history_file = launch_irb_with_irbrc_and_irb_history(<<~IRBRC, <<~IRB_HISTORY) do |stdin|
+      _result_output, result_history_file = launch_irb_with_irbrc_and_irb_history(<<~IRBRC, <<~IRB_HISTORY) do |stdin|
         IRB.conf[:USE_READLINE] = true
         IRB.conf[:SAVE_HISTORY] = 100
       IRBRC
@@ -54,7 +54,7 @@ module TestIRB
     end
 
     def test_history_save_bignum
-      result_output, result_history_file = launch_irb_with_irbrc_and_irb_history(<<~IRBRC, <<~IRB_HISTORY) do |stdin|
+      _result_output, result_history_file = launch_irb_with_irbrc_and_irb_history(<<~IRBRC, <<~IRB_HISTORY) do |stdin|
         IRB.conf[:USE_READLINE] = true
         IRB.conf[:SAVE_HISTORY] = 10 ** 19
       IRBRC
@@ -77,7 +77,7 @@ module TestIRB
     end
 
     def test_history_save_minus_as_infinity
-      result_output, result_history_file = launch_irb_with_irbrc_and_irb_history(<<~IRBRC, <<~IRB_HISTORY) do |stdin|
+      _result_output, result_history_file = launch_irb_with_irbrc_and_irb_history(<<~IRBRC, <<~IRB_HISTORY) do |stdin|
         IRB.conf[:USE_READLINE] = true
         IRB.conf[:SAVE_HISTORY] = -1 # infinity
       IRBRC
