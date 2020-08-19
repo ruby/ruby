@@ -1,6 +1,7 @@
 # frozen_string_literal: false
 require 'test/unit'
 require 'irb'
+require 'readline'
 
 module TestIRB
   class TestHistory < Test::Unit::TestCase
@@ -13,9 +14,11 @@ module TestIRB
     end
 
     def test_history_save_1
+      omit "Skip Editline" if /EditLine/n.match(Readline::VERSION)
       _result_output, result_history_file = launch_irb_with_irbrc_and_irb_history(<<~IRBRC, <<~IRB_HISTORY) do |stdin|
         IRB.conf[:USE_READLINE] = true
         IRB.conf[:SAVE_HISTORY] = 1
+        IRB.conf[:USE_READLINE] = true
       IRBRC
         1
         2
@@ -31,9 +34,11 @@ module TestIRB
     end
 
     def test_history_save_100
+      omit "Skip Editline" if /EditLine/n.match(Readline::VERSION)
       _result_output, result_history_file = launch_irb_with_irbrc_and_irb_history(<<~IRBRC, <<~IRB_HISTORY) do |stdin|
         IRB.conf[:USE_READLINE] = true
         IRB.conf[:SAVE_HISTORY] = 100
+        IRB.conf[:USE_READLINE] = true
       IRBRC
         1
         2
@@ -54,9 +59,11 @@ module TestIRB
     end
 
     def test_history_save_bignum
+      omit "Skip Editline" if /EditLine/n.match(Readline::VERSION)
       _result_output, result_history_file = launch_irb_with_irbrc_and_irb_history(<<~IRBRC, <<~IRB_HISTORY) do |stdin|
         IRB.conf[:USE_READLINE] = true
         IRB.conf[:SAVE_HISTORY] = 10 ** 19
+        IRB.conf[:USE_READLINE] = true
       IRBRC
         1
         2
@@ -77,9 +84,11 @@ module TestIRB
     end
 
     def test_history_save_minus_as_infinity
+      omit "Skip Editline" if /EditLine/n.match(Readline::VERSION)
       _result_output, result_history_file = launch_irb_with_irbrc_and_irb_history(<<~IRBRC, <<~IRB_HISTORY) do |stdin|
         IRB.conf[:USE_READLINE] = true
         IRB.conf[:SAVE_HISTORY] = -1 # infinity
+        IRB.conf[:USE_READLINE] = true
       IRBRC
         1
         2
