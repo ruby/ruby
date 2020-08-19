@@ -4428,11 +4428,21 @@ unlock_page_body(rb_objspace_t *objspace, struct heap_page_body *body)
 }
 
 static short
-try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page, VALUE dest, char from_freelist)
+try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page, VALUE dest)
 {
     struct heap_page * cursor = heap->compact_cursor;
+    char from_freelist = 0;
 
     GC_ASSERT(RVALUE_MARKED(dest) == FALSE);
+
+    /* Since every destination slot is a T_NONE, we need this flag to
+     * differentiate between slots that just got freed, and slots that were
+     * already part of the freelist. FL_FROM_FREELIST is set on slots that
+     * were from the freelist */
+
+    if (BUILTIN_TYPE(dest) == T_NONE) {
+        from_freelist = 1;
+    }
 
     while(1) {
         size_t index = heap->compact_cursor_index;
@@ -4613,6 +4623,75 @@ gc_compact_finish(rb_objspace_t *objspace, rb_heap_t *heap)
     objspace->flags.during_compacting = FALSE;
 }
 
+static void
+gc_fill_swept_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page, int *freed_slots, int *empty_slots)
+{
+    /* Find any pinned but not marked objects and try to fill those slots */
+    int i;
+    int moved_slots = 0;
+    int finished_compacting = 0;
+    bits_t *mark_bits, *pin_bits;
+    bits_t bitset;
+    RVALUE *p, *offset;
+
+    mark_bits = sweep_page->mark_bits;
+    pin_bits = sweep_page->pinned_bits;
+
+    p = sweep_page->start;
+    offset = p - NUM_IN_PAGE(p);
+
+    struct heap_page * cursor = heap->compact_cursor;
+
+    for (i=0; i < HEAP_PAGE_BITMAP_LIMIT; i++) {
+        /* *Want to move* objects are pinned but not marked. */
+        bitset = pin_bits[i] & ~mark_bits[i];
+
+        if (bitset) {
+            p = offset + i * BITS_BITLENGTH;
+            do {
+                if (bitset & 1) {
+                    VALUE dest = (VALUE)p;
+
+                    assert(MARKED_IN_BITMAP(GET_HEAP_PINNED_BITS(dest), dest));
+                    assert(!MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(dest), dest));
+
+                    CLEAR_IN_BITMAP(GET_HEAP_PINNED_BITS(dest), dest);
+
+                    if (finished_compacting) {
+                        if (BUILTIN_TYPE(dest) == T_NONE) {
+                            (*empty_slots)++;
+                        } else {
+                            (*freed_slots)++;
+                        }
+                        heap_page_add_freeobj(objspace, sweep_page, dest);
+                    } else {
+                        if(!try_move(objspace, heap, sweep_page, dest)) {
+                            finished_compacting = 1;
+                            (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
+                            gc_report(5, objspace, "Quit compacting, couldn't find an object to move\n");
+                            if (BUILTIN_TYPE(dest) == T_NONE) {
+                                (*empty_slots)++;
+                            } else {
+                                (*freed_slots)++;
+                            }
+                            heap_page_add_freeobj(objspace, sweep_page, dest);
+                            gc_report(3, objspace, "page_sweep: %s is added to freelist\n", obj_info(dest));
+                        } else {
+                            moved_slots++;
+                        }
+                    }
+                }
+                p++;
+                bitset >>= 1;
+            } while (bitset);
+        }
+    }
+
+    if (finished_compacting) {
+        gc_compact_finish(objspace, heap);
+    }
+}
+
 static inline int
 gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page)
 {
@@ -4672,17 +4751,8 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
                         }
                         else {
                             if (heap->compact_cursor) {
-                                /* If try_move couldn't compact anything, it means
-                                 * the cursors have met and there are no objects left that
-                                 * /can/ be compacted, so we need to quit. */
-                                if (!try_move(objspace, heap, sweep_page, vp, 0)) {
-                                    (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
-                                    gc_report(5, objspace, "Quit compacting, couldn't find an object to move\n");
-                                    heap_page_add_freeobj(objspace, sweep_page, vp);
-                                    gc_report(3, objspace, "page_sweep: %s is added to freelist\n", obj_info(vp));
-                                    freed_slots++;
-                                    gc_compact_finish(objspace, heap);
-                                }
+                                /* We *want* to fill this slot */
+                                MARK_IN_BITMAP(GET_HEAP_PINNED_BITS(vp), vp);
                             } else {
                                 (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
                                 heap_page_add_freeobj(objspace, sweep_page, vp);
@@ -4716,12 +4786,8 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 			break;
 		      case T_NONE:
                         if (heap->compact_cursor) {
-                            if (!try_move(objspace, heap, sweep_page, (VALUE)vp, 1)) {
-                                gc_report(5, objspace, "Quit compacting, couldn't find an object to move\n");
-                                heap_page_add_freeobj(objspace, sweep_page, vp);
-                                gc_compact_finish(objspace, heap);
-                                empty_slots++; /* already freed */
-                            }
+                            /* We *want* to fill this slot */
+                            MARK_IN_BITMAP(GET_HEAP_PINNED_BITS(vp), vp);
                         } else {
                             /* When we started sweeping this page, we were in
                              * compacting mode and nulled the free list for
@@ -4757,6 +4823,9 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 		   sweep_page->total_slots,
 		   freed_slots, empty_slots, final_slots);
 
+    if (heap->compact_cursor) {
+        gc_fill_swept_page(objspace, heap, sweep_page, &freed_slots, &empty_slots);
+    }
     sweep_page->free_slots = freed_slots + empty_slots;
     objspace->profile.total_freed_objects += freed_slots;
 
