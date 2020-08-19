@@ -4767,7 +4767,7 @@ rb_ary_zip(int argc, VALUE *argv, VALUE ary)
  *
  *  Transposes the rows and columns in an array of arrays.
  *
- *  Each element in +self+ must be an \Integer.
+ *  Each element in +self+ must be an \Array.
  *
  *    a = [[:a0, :a1], [:b0, :b1], [:c0, :c1]]
  *    a.transpose # => [[:a0, :b0, :c0], [:a1, :b1, :c1]]
@@ -5254,7 +5254,7 @@ rb_ary_concat(VALUE x, VALUE y)
  *    array * string_separator -> new_string
  *
  *  - Argument +n+, if given, must be an \Integer.
- *  - Argument +string_separator+, if given, myst be a \String.
+ *  - Argument +string_separator+, if given, must be a \String.
  *
  *  ---
  *
