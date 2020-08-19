@@ -146,4 +146,4 @@ module TestIRB
       end
     end
   end
-end
+end if not RUBY_PLATFORM.match?(/solaris/i)
