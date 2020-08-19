@@ -25,7 +25,16 @@
 #include "ruby/internal/token_paste.h"
 
 /** @cond INTERNAL_MACRO */
-#if defined(__has_cpp_attribute)
+#if RBIMPL_COMPILER_IS(SunPro)
+# /* Oracle Developer Studio 12.5's C++  preprocessor is reportedly broken.  We
+#  * could simulate  __has_cpp_attribute like below,  but don't know  the exact
+#  * list of which version supported which attribute.  Just kill everything for
+#  * now.  If you can please :FIXME: */
+# /* https://unicode-org.atlassian.net/browse/ICU-12893 */
+# /* https://github.com/boostorg/config/pull/95 */
+# define RBIMPL_HAS_CPP_ATTRIBUTE0(_) 0
+
+#elif defined(__has_cpp_attribute)
 # define RBIMPL_HAS_CPP_ATTRIBUTE0(_) __has_cpp_attribute(_)
 
 #elif RBIMPL_COMPILER_IS(MSVC)
@@ -60,7 +69,6 @@
 # /* :FIXME:
 #  * Candidate compilers to list here:
 #  * - icpc: They have __INTEL_CXX11_MODE__.
-#  * - SunPro: Seems they support C++11.
 #  */
 # define RBIMPL_HAS_CPP_ATTRIBUTE0(_) 0
 #endif
