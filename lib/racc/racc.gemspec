@@ -15,7 +15,7 @@ DESC
   s.authors = ["Minero Aoki", "Aaron Patterson"]
   s.email = [nil, "aaron@tenderlovemaking.com"]
   s.homepage = "http://i.loveruby.net/en/projects/racc/"
-  s.licenses = ["MIT"]
+  s.licenses = ["Ruby", "BSD-2-Clause"]
   s.executables = ["racc"]
   s.files = [
     "COPYING", "ChangeLog",
