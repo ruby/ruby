@@ -3187,6 +3187,22 @@ CODE
     assert_same(str, -bar, "uminus deduplicates [Feature #13077]")
   end
 
+  def test_uminus_frozen
+    # embedded
+    str1 = ("foobar" * 3).freeze
+    str2 = ("foobar" * 3).freeze
+    assert_not_same str1, str2
+    assert_same str1, -str1
+    assert_same str1, -str2
+
+    # regular
+    str1 = ("foobar" * 4).freeze
+    str2 = ("foobar" * 4).freeze
+    assert_not_same str1, str2
+    assert_same str1, -str1
+    assert_same str1, -str2
+  end
+
   def test_uminus_no_freeze_not_bare
     str = @cls.new("foo")
     assert_instance_of(@cls, -str)
