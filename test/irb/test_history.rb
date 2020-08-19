@@ -116,14 +116,14 @@ module TestIRB
         end
 
         with_temp_stdio do |stdin, stdout|
+          yield(stdin, stdout)
+          stdin.close
+          stdout.flush
           replace_stdio(stdin.path, stdout.path) do
-            yield(stdin, stdout)
-            stdin.close
             system('ruby', '-Ilib', '-Itest', '-W0', '-rirb', '-e', 'IRB.start(__FILE__)')
-            stdout.flush
-            result = stdout.read
-            stdout.close
           end
+          result = stdout.read
+          stdout.close
         end
         open(IRB.rc_file("_history"), "r") do |f|
           result_history = f.read
