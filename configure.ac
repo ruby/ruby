@@ -73,6 +73,8 @@ AC_SUBST(RUBY_PROGRAM_VERSION, '$(MAJOR).$(MINOR).$(TEENY)')
 
 dnl checks for alternative programs
 AC_CANONICAL_BUILD
+AC_CANONICAL_HOST
+AC_CANONICAL_TARGET
 RUBY_RM_RECURSIVE
 AC_ARG_WITH(gcc,
 	AS_HELP_STRING([--without-gcc], [never use gcc]),
@@ -86,7 +88,94 @@ AS_IF([test ! -z "$ac_cv_prog_CC" -a ! -z "$CC" -a "$CC" != "$ac_cv_prog_CC"], [
   AC_MSG_ERROR(cached CC is different -- throw away $cache_file
 (it is also a good idea to do 'make clean' before compiling))
 ])
-test -z "$CC" || ac_cv_prog_CC="$CC"
+AS_IF([test -z "${CC}"], [
+    # OpenBSD wants to prefer cc over gcc.
+    # See https://github.com/ruby/ruby/pull/2443
+    AC_CHECK_TOOLS([CC], [cl.exe clang cc gcc c99 /usr/ucb/cc])
+])
+
+AC_ARG_VAR([AR],       [Archiver command])
+AC_ARG_VAR([AS],       [Assembler command])
+AC_ARG_VAR([CC],       [C compiler command])
+AC_ARG_VAR([CXX],      [C++ compiler command])
+AC_ARG_VAR([LD],       [Linker command])
+AC_ARG_VAR([NM],       [Symbol list command])
+AC_ARG_VAR([OBJCOPY],  [Objcopy command])
+AC_ARG_VAR([OBJDUMP],  [Objdump command])
+AC_ARG_VAR([RANLIB],   [Ranlib command])
+AC_ARG_VAR([STRIP],    [Strip command])
+
+# We don't want to bother things like `ccache gcc`, `clang -shared-libgcc`, ...
+set rb_dummy ${CC}
+rb_CC=$2
+AS_CASE(["/${rb_CC} "],
+[*@<:@\ /@:>@"cc "*], [
+    # Don't try g++/clang++ when CC=cc
+    AC_CHECK_TOOLS([CXX],    [cl.exe CC c++])
+],
+[*icc*],              [
+    # Intel C++ has interprocedural optimizations.  It tends to come with its
+    # own linker etc.
+    AC_CHECK_TOOL([AR],      [`echo "${rb_CC}" | sed s/icc/xiar/`])
+    AC_CHECK_TOOL([CXX],     [`echo "${rb_CC}" | sed s/icc/icpc/`])
+    AC_CHECK_TOOL([LD],      [`echo "${rb_CC}" | sed s/icc/xild/`])
+],
+[*gcc*],              [
+    # Dito for GCC.
+    : ${LD:="${CC}"}
+    AC_CHECK_TOOL([AR],      [`echo "${rb_CC}" | sed s/gcc/gcc-ar/`])
+    AC_CHECK_TOOL([CXX],     [`echo "${rb_CC}" | sed s/gcc/g++/`])
+    AC_CHECK_TOOL([NM],      [`echo "${rb_CC}" | sed s/gcc/gcc-nm/`])
+    AC_CHECK_TOOL([RANLIB],  [`echo "${rb_CC}" | sed s/gcc/gcc-ranlib/`])
+],
+[*clang*],            [
+    # Dito for LLVM.  Note however that llvm-as is a LLVM-IR to LLVM bitcode
+    # assembler that does not target your machine native binary.
+    : ${LD:="${CC}"}         # ... try -fuse-ld=lld ?
+    AC_CHECK_TOOL([AR],      [`echo "${rb_CC}" | sed s/clang/llvm-ar/`])
+#   AC_CHECK_TOOL([AS],      [`echo "${rb_CC}" | sed s/clang/llvm-as/`])
+    AC_CHECK_TOOL([CXX],     [`echo "${rb_CC}" | sed s/clang/clang++/`])
+    AC_CHECK_TOOL([NM],      [`echo "${rb_CC}" | sed s/clang/llvm-nm/`])
+    AC_CHECK_TOOL([OBJCOPY], [`echo "${rb_CC}" | sed s/clang/llvm-objcopy/`])
+    AC_CHECK_TOOL([OBJDUMP], [`echo "${rb_CC}" | sed s/clang/llvm-objdump/`])
+    AC_CHECK_TOOL([RANLIB],  [`echo "${rb_CC}" | sed s/clang/llvm-ranlib/`])
+    AC_CHECK_TOOL([STRIP],   [`echo "${rb_CC}" | sed s/clang/llvm-strip/`])
+])
+AS_UNSET(rb_CC)
+AS_UNSET(rb_dummy)
+
+AS_CASE(["${build_os}"],
+[solaris*], [
+    AC_PATH_TOOL([LD], [ld], [/usr/ccs/bin/ld], [/usr/ccs/bin:$PATH])
+],
+[aix*], [
+    AC_PATH_TOOL([NM], [nm], [/usr/ccs/bin/nm], [/usr/ccs/bin:$PATH])
+],
+[darwin*], [
+    AS_IF([libtool 2>&1 | grep no_warning_for_no_symbols > /dev/null], [
+        ac_cv_prog_ac_ct_RANLIB=:
+        ac_cv_prog_ac_ct_AR='libtool -static'
+        rb_cv_arflags='-no_warning_for_no_symbols -o'
+    ])
+])
+AS_CASE(["${target_os}"],
+[cygwin*|mingw*], [
+    ac_cv_prog_ac_ct_OBJCOPY=":"
+])
+
+# BSD's ports and MacPorts prefix GNU binutils with 'g'
+AC_PROG_CC_C99
+AC_PROG_CXX
+AC_PROG_CPP
+AC_PROG_CXXCPP
+AC_PROG_RANLIB
+AC_CHECK_TOOLS([AR],      [gar ar])
+AC_CHECK_TOOLS([AS],      [gas as])
+AC_CHECK_TOOLS([LD],      [gld ld]) # ... try gold ?
+AC_CHECK_TOOLS([NM],      [gnm nm])
+AC_CHECK_TOOLS([OBJCOPY], [gobjcopy objcopy])
+AC_CHECK_TOOLS([OBJDUMP], [gobjdump objdump])
+AC_CHECK_TOOLS([STRIP],   [gstrip strip], [:])
 
 AS_IF([test "$program_prefix" = NONE], [
   program_prefix=
@@ -100,7 +189,6 @@ AC_SUBST(RUBY_BASE_NAME)
 AC_SUBST(RUBYW_BASE_NAME)
 AC_SUBST(RUBY_VERSION_NAME, '${RUBY_BASE_NAME}-${ruby_version}')
 
-AC_CANONICAL_TARGET
 test x"$target_alias" = x &&
 target_os=`echo $target_os | sed 's/linux-gnu$/linux/;s/linux-gnu/linux-/'`
 ac_install_sh='' # unusable for extension libraries.
@@ -172,7 +260,6 @@ dnl ])
 
 AS_CASE(["$host_os:$build_os"],
 [darwin*:darwin*], [
-    AC_CHECK_TOOLS(CC, [clang gcc cc])
     # Following Apple deployed clang are broken
     # clang version 1.0 (http://llvm.org/svn/llvm-project/cfe/tags/Apple/clang-23 exported)
     # Apple clang version 2.0 (tags/Apple/clang-137) (based on LLVM 2.9svn)
@@ -183,47 +270,8 @@ AS_CASE(["$host_os:$build_os"],
 	@%:@endif
 SRC
 	AC_MSG_ERROR([clang version 3.0 or later is required])
-    ])],
-[openbsd*:openbsd*], [
-    AC_CHECK_TOOLS(CC, [cc])
-])
-AS_IF([test x"${build}" != x"${host}"], [
-  AC_CHECK_TOOL(CC, gcc)
-])
-
-AC_PROG_CC_C99
-AS_CASE([$CC],
-[gcc-*], [
-    gcc_prefix=gcc- gcc_suffix=`echo "$CC" | sed 's/^gcc//'`
-    AC_PROG_CXX(g++${gcc_suffix})],
-[clang-*|clang], [
-    gcc_prefix=clang- gcc_suffix=`echo "$CC" | sed 's/^clang//'`
-    AC_PROG_CXX(clang++${gcc_suffix})],
-[gcc_prefix= gcc_suffix=])
-
-dnl Select the appropriate C++ compiler in OS X
-AS_CASE(["$build_os:${CXX}"],
-    [darwin1*.*:], [
-        AC_MSG_CHECKING([CXX for $CC])
-        AS_CASE(["/$CC "],
-            [*@<:@\ /@:>@"gcc-4.2 "*], [pat='gcc-4\.2' CXX=g++-4.2],
-            [*@<:@\ /@:>@"gcc "*],     [pat=gcc CXX=g++],
-            [*@<:@\ /@:>@"cc "*],      [pat=cc CXX=c++],
-            [*@<:@\ /@:>@"icc "*],     [pat=icc CXX=icpc],
-            [*@<:@\ /@:>@"clang "*],   [pat=clang CXX=clang++])
-        AS_IF([test "${CXX}"], [
-            CXX=`echo "/$CC " | sed ["s:\([ /]\)${pat}:\1$CXX:; s:^/::; s: *$::"]`
-        ])
-        AC_MSG_RESULT([$CXX])],
-    [openbsd*:*], [
-        AC_CHECK_TOOLS(CXX, [c++])
-    ],
-    [solaris*:*], [
-        dnl C++ compiler of Sun OpenStudio is not supported
-        AS_CASE(["/$CC "],
-            [*@<:@\ /@:>@"cc "*],      [CXX=no-c++])
     ])
-test -z "$CXX" || ac_cv_prog_CXX="$CXX"
+])
 
 AS_CASE(["$target_os"],
 [darwin*], [
@@ -240,13 +288,8 @@ AS_CASE(["$target_os"],
     AC_MSG_RESULT(${macosx_min_required})
 ])
 
-AC_PROG_CXX
 RUBY_MINGW32
-AC_PROG_GCC_TRADITIONAL
 AC_SUBST(GCC)
-AS_CASE(["$target_os"],
-[solaris*], [AC_PATH_TOOL([LD], [ld], [/usr/ccs/bin/ld], [/usr/ccs/bin:$PATH])],
-[AC_CHECK_TOOL([LD], [ld], [ld])])
 AC_SUBST(LD)
 AS_IF([test "$GCC" = yes], [
     linker_flag=-Wl,
@@ -324,33 +367,12 @@ AS_IF([test "$target_cpu" != "$host_cpu" -a "$GCC" = yes -a "$cross_compiling" =
     RUBY_DEFAULT_ARCH("$target_cpu")
 ])
 
-AS_CASE(["$target_os"], [darwin*], [
-if libtool 2>&1 | grep no_warning_for_no_symbols > /dev/null; then
-  ac_cv_prog_ac_ct_RANLIB=:
-  ac_cv_prog_ac_ct_AR='libtool -static'
-  rb_cv_arflags='-no_warning_for_no_symbols -o'
-fi
-])
-AC_CHECK_TOOLS(RANLIB, [${gcc_prefix}ranlib${gcc_suffix} ranlib], :)
-AC_CHECK_TOOLS(AR, [${gcc_prefix}ar${gcc_suffix} ar])
-AS_IF([test -z "$AR"], [
-  AC_CHECK_PROGS(AR, aal, ar)
-])
 AC_CACHE_CHECK([for $AR flags], [rb_cv_arflags], [
     AS_IF([$AR rcD conftest.a > /dev/null 2>&1 && rm conftest.a],
 	[rb_cv_arflags=rcD], [rb_cv_arflags=rcu])
 ])
 AC_SUBST(ARFLAGS, ["$rb_cv_arflags "])
-
-AC_CHECK_TOOL(AS, as)
-ASFLAGS=$ASFLAGS
 AC_SUBST(ASFLAGS)
-
-AS_CASE(["$target_os"],[cygwin*|mingw*], [ac_cv_prog_ac_ct_OBJCOPY=":"])
-
-# BSD's ports and MacPorts prefix GNU binutils with 'g'
-AC_CHECK_TOOLS(OBJDUMP, [objdump gobjdump])
-AC_CHECK_TOOLS(OBJCOPY, [objcopy gobjcopy])
 
 AS_CASE(["$target_os"],
 [cygwin*|mingw*], [
@@ -379,9 +401,7 @@ AS_CASE(["$target_os"],
     ])
     : ${enable_shared=yes}
     ],
-[aix*],     [AC_CHECK_TOOL(NM, nm, /usr/ccs/bin/nm, /usr/ccs/bin:$PATH)],
 [hiuxmpp*], [AC_DEFINE(__HIUX_MPP__)])    # by TOYODA Eizi <toyoda@npd.kishou.go.jp>
-AC_CHECK_TOOLS(NM, [${gcc_prefix}nm${gcc_suffix} nm])
 
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
