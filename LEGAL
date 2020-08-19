@@ -957,6 +957,17 @@ mentioned below.
 
     {MIT License}[rdoc-label:label-MIT+License]
 
+[lib/did_you_mean]
+[lib/did_you_mean.rb]
+[test/did_you_mean]
+
+  did_you_mean is under the following license.
+
+  >>>
+    Copyright (c) 2014-2016 Yuki Nishijima
+
+    {MIT License}[rdoc-label:label-MIT+License]
+
 [benchmark/so_ackermann.rb]
 [benchmark/so_array.rb]
 [benchmark/so_binary_trees.rb]
