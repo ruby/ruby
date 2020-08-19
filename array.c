@@ -947,9 +947,7 @@ rb_check_to_array(VALUE ary)
  *
  *  Tries to convert +object+ to an \Array.
  *
- *  When +object+ is an
- *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects]
- *  (implements +to_ary+),
+ *  When +object+ is an \Array,
  *  returns the \Array object created by converting it:
  *
  *    class ToAryReturnsArray < Set
@@ -960,9 +958,7 @@ rb_check_to_array(VALUE ary)
  *    as = ToAryReturnsArray.new([:foo, :bar, :baz])
  *    Array.try_convert(as) # => [:foo, :bar, :baz]
  *
- *  Returns +nil+ if +object+ is not \Array-convertible:
- *
- *    Array.try_convert(:foo) # => nil
+ *  Returns +nil+ if +object+ is not an Array.
  */
 
 static VALUE
@@ -981,14 +977,8 @@ rb_ary_s_try_convert(VALUE dummy, VALUE ary)
  *
  *  Returns a new \Array.
  *
- *  Argument +array+, if given, must be an
- *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects]
- *  (implements +to_ary+).
- *
- *  Argument +size+, if given must be an
- *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects]
- *  (implements +to_int+).
- *
+ *  Argument +array+, if given, must be an \Array.
+ *  Argument +size+, if given must be an \Integer.
  *  Argument +default_value+ may be any object.
  *
  *  ---
@@ -1058,11 +1048,7 @@ rb_ary_s_try_convert(VALUE dummy, VALUE ary)
  *    # Raises ArgumentError (negative array size):
  *    Array.new(-1) { |n| }
  *
- *  Raises an exception if the single argument is neither \Array-convertible
- *  nor \Integer-convertible.
- *
- *    # Raises TypeError (no implicit conversion of Symbol into Integer):
- *    Array.new(:foo)
+ *  Raises an exception if the single argument is neither an \Array nor an \Integer.
  */
 
 static VALUE
@@ -1346,9 +1332,7 @@ rb_ary_pop(VALUE ary)
  *  - #shift:  Removes and returns leading elements.
  *  - #unshift:  Prepends leading elements.
  *
- *  Argument +n+, if given, must be an
- *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects]
- *  (implements +to_int+).
+ *  Argument +n+, if given, must be an \Integer.
  *
  *  ---
  *
@@ -1392,12 +1376,6 @@ rb_ary_pop(VALUE ary)
  *    a = [:foo, 'bar', 2]
  *    # Raises ArgumentError (negative array size):
  *    a1 = a.pop(-1)
- *
- *  Raises an exception if +n+ is not \Integer-convertible (implements +to_int+):
- *
- *    a = [:foo, 'bar', 2]
- *    # Raises TypeError (no implicit conversion of String into Integer):
- *    a1 = a.pop('x')
  */
 
 static VALUE
@@ -1462,8 +1440,7 @@ rb_ary_shift(VALUE ary)
  *  - #pop:  Removes and returns trailing elements.
  *  - #unshift:  Prepends leading elements.
  *
- *  Argument +n+, if given, must be an
- *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects]
+ *  Argument +n+, if given, must be an \Integer.
  *
  *  ---
  *
@@ -1500,12 +1477,6 @@ rb_ary_shift(VALUE ary)
  *    a = [:foo, 'bar', 2]
  *    # Raises ArgumentError (negative array size):
  *    a1 = a.shift(-1)
- *
- *  Raises an exception if +n+ is not an
- *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects]:
- *    a = [:foo, 'bar', 2]
- *    # Raises TypeError (no implicit conversion of Symbol into Integer):
- *    a.shift(:foo)
  */
 
 static VALUE
@@ -1748,8 +1719,7 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *
  *  Returns elements from +self+; does not modify +self+.
  *
- *  - Arguments +index+, +start+, and +length+, if given, must be
- *    {Integer-convertible objects}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
+ *  - Arguments +index+, +start+, and +length+, if given, must be Integers.
  *  - Argument +range+, if given, must be a \Range object.
  *
  *  ---
@@ -1830,21 +1800,6 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *    a[4..1] # => nil
  *    a[4..0] # => nil
  *    a[4..-1] # => nil
- *
- *  ---
- *
- *  Raises an exception if given a single argument
- *  that is not an \Integer-convertible object or a \Range object:
- *    a = [:foo, 'bar', 2]
- *    # Raises TypeError (no implicit conversion of Symbol into Integer):
- *    a[:foo]
- *
- *  Raises an exception if given two arguments that are not both \Integer-convertible objects:
- *    a = [:foo, 'bar', 2]
- *    # Raises TypeError (no implicit conversion of Symbol into Integer):
- *    a[:foo, 3]
- *    # Raises TypeError (no implicit conversion of Symbol into Integer):
- *    a[1, :bar]
  */
 
 VALUE
@@ -1893,20 +1848,12 @@ rb_ary_aref1(VALUE ary, VALUE arg)
  *  call-seq:
  *    array.at(index) -> object
  *
- *  Argument +index+ must be an
- *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
+ *  Argument +index+ must be an \Integer.
  *
  *  Returns the element at offset +index+; does not modify +self+.
  *    a = [:foo, 'bar', 2]
  *    a.at(0) # => :foo
  *    a.at(2) # => 2
- *
- *  ---
- *
- *  Raises an exception if +index+ is not an \Integer-convertible object:
- *    a = [:foo, 'bar', 2]
- *    # Raises TypeError (no implicit conversion of Symbol into Integer):
- *    a.at(:foo)
  */
 
 VALUE
@@ -1923,8 +1870,7 @@ rb_ary_at(VALUE ary, VALUE pos)
  *  Returns elements from +self+; does not modify +self+.
  *  See also #last.
  *
- *  Argument +n+, if given, must be an
- *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
+ *  Argument +n+, if given, must be an \Integer.
  *
  *  ---
  *
@@ -1956,11 +1902,6 @@ rb_ary_at(VALUE ary, VALUE pos)
  *    a = [:foo, 'bar', 2]
  *    # Raises ArgumentError (negative array size):
  *    a.first(-1)
- *
- *  Raises an exception if +n+ is not an \Integer-convertible object:
- *    a = [:foo, 'bar', 2]
- *    # Raises TypeError (no implicit conversion of String into Integer):
- *    a.first(:X)
  */
 static VALUE
 rb_ary_first(int argc, VALUE *argv, VALUE ary)
@@ -1982,8 +1923,7 @@ rb_ary_first(int argc, VALUE *argv, VALUE ary)
  *  Returns elements from +self+; +self+ is not modified.
  *  See also #first.
  *
- *  Argument +n+, if given, must be an
- *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
+ *  Argument +n+, if given, must be an \Integer.
  *
  *  ---
  *
@@ -2015,11 +1955,6 @@ rb_ary_first(int argc, VALUE *argv, VALUE ary)
  *    a = [:foo, 'bar', 2]
  *    # Raises ArgumentError (negative array size):
  *    a.last(-1)
- *
- *  Raises an exception if +n+ is not an \Integer-convertible object:
- *    a = [:foo, 'bar', 2]
- *    # Raises TypeError (no implicit conversion of Symbol into Integer):
- *    a.last(:X)
  */
 
 VALUE
@@ -2043,8 +1978,7 @@ rb_ary_last(int argc, const VALUE *argv, VALUE ary)
  *
  *  Returns the element at offset  +index+.
  *
- *  Argument +index+ must be an
- *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects]
+ *  Argument +index+ must be an \Integer.
  *
  *  ---
  *
@@ -2077,11 +2011,6 @@ rb_ary_last(int argc, const VALUE *argv, VALUE ary)
  *    a.fetch(50) { |index| "Value for #{index}" } # => "Value for 50"
  *
  *  ---
- *
- *  Raises an exception if +index+ is not an \Integer-convertible object.
- *    a = [:foo, 'bar', 2]
- *    # Raises TypeError (no implicit conversion of Symbol into Integer):
- *    a.fetch(:foo)
  *
  *  Raises an exception if +index+ is out of range and neither default_value nor a block given:
  *    a = [:foo, 'bar', 2]
@@ -2446,12 +2375,8 @@ ary_aset_by_rb_ary_splice(VALUE ary, long beg, long len, VALUE val)
  *
  *  Assigns elements in +self+; returns the given +object+.
  *
- *  - Arguments +index+, +start+, and +length+, if given, must be
- *    {Integer-convertible objects}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
+ *  - Arguments +index+, +start+, and +length+, if given, must be Integers.
  *  - Argument +range+, if given, must be a \Range object.
- *  - If +object+ is an
- *    {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects]
- *    it will be converted to an \Array.
  *
  *  ---
  *
@@ -2474,7 +2399,7 @@ ary_aset_by_rb_ary_splice(VALUE ary, long beg, long len, VALUE val)
  *
  *  ---
  *
- *  When +start+ and +length+ are given and +object+ is not an Array-convertible object,
+ *  When +start+ and +length+ are given and +object+ is not an Array,
  *  removes <tt>length - 1</tt> elements beginning at offset +start+,
  *  and assigns +object+ at offset +start+:
  *    a = [:foo, 'bar', 2]
@@ -2506,7 +2431,7 @@ ary_aset_by_rb_ary_splice(VALUE ary, long beg, long len, VALUE val)
  *
  *  ---
  *
- *  When +range+ is given and +object+ is an \Array-convertible object,
+ *  When +range+ is given and +object+ is an \Array,
  *  removes <tt>length - 1</tt> elements beginning at offset +start+,
  *  and assigns +object+ at offset +start+:
  *    a = [:foo, 'bar', 2]
@@ -2550,19 +2475,6 @@ ary_aset_by_rb_ary_splice(VALUE ary, long beg, long len, VALUE val)
  *    a # => [:foo, "foo"]
  *
  *  ---
- *
- *  Raises an exception if given a single argument
- *  that is not an \Integer-convertible object or a \Range:
- *    a = [:foo, 'bar', 2]
- *    # Raises TypeError (no implicit conversion of Symbol into Integer):
- *    a[:nosuch] = 'two'
- *
- *  Raises an exception if given two arguments that are not both \Integer-convertible objects:
- *    a = [:foo, 'bar', 2]
- *    # Raises TypeError (no implicit conversion of Symbol into Integer):
- *    a[:nosuch, 2] = 'two'
- *    # Raises TypeError (no implicit conversion of Symbol into Integer):
- *    a[0, :nosuch] = 'two'
  *
  *  Raises an exception if a negative +index+ is out of range:
  *    a = [:foo, 'bar', 2]
@@ -2612,8 +2524,7 @@ rb_ary_aset(int argc, VALUE *argv, VALUE ary)
  *  Inserts given +objects+ before or after the element at +offset+ index;
  *  returns +self+.
  *
- *  Argument +index+ must be an
- *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
+ *  Argument +index+ must be an \Integer.
  *
  *  ---
  *
@@ -2645,11 +2556,6 @@ rb_ary_aset(int argc, VALUE *argv, VALUE ary)
  *    a # => [:foo, "bar", :bat, :bam, 2]
  *
  *  ---
- *
- *  Raises an exception if +index+ is not an Integer-convertible object:
- *    a = [:foo, 'bar', 2, 'bar']
- *    # Raises TypeError (no implicit conversion of Symbol into Integer):
- *    a.insert(:foo)
  *
  *  Raises an exception if +index+ is too small (<tt>index+self.size < 0</tt>):
  *    a = [:foo, 'bar', 2]
@@ -3058,8 +2964,7 @@ rb_ary_join(VALUE ary, VALUE sep)
  *  - Uses <tt>element.to_s</tt> if +element+ is not a <tt>kind_of?(Array)</tt>.
  *  - Uses recursive <tt>element.join(separator)</tt> if +element+ is a <tt>kind_of?(Array)</tt>.
  *
- *  Argument +separator+, if given, must be a
- *  {String-convertible object}[doc/implicit_conversion_rdoc.html#label-String-Convertible+Objects].
+ *  Argument +separator+, if given, must be a \String.
  *
  *  ---
  *
@@ -3077,18 +2982,6 @@ rb_ary_join(VALUE ary, VALUE sep)
  *  Joins recursively for nested Arrays:
  *   a = [:foo, [:bar, [:baz, :bat]]]
  *   a.join # => "foobarbazbat"
- *
- *  ---
- *
- *  Raises an exception if +separator+ is not a String-convertible object:
- *    a = [:foo, 'bar', 2]
- *    # Raises TypeError (no implicit conversion of Symbol into String):
- *    a.join(:foo)
- *
- *  Raises an exception if any element lacks instance method +#to_s+:
- *    a = [:foo, 'bar', 2, BasicObject.new]
- *    # Raises NoMethodError (undefined method `to_s' for #<BasicObject>):
- *    a.join
  */
 static VALUE
 rb_ary_join_m(int argc, VALUE *argv, VALUE ary)
@@ -3376,8 +3269,7 @@ rb_ary_rotate(VALUE ary, long cnt)
  *
  *  Rotates +self+ in place by moving elements from one end to the other; returns +self+.
  *
- *  Argument +count+, if given, must be an
- *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
+ *  Argument +count+, if given, must be an \Integer.
  *
  *  ---
  *
@@ -3416,13 +3308,6 @@ rb_ary_rotate(VALUE ary, long cnt)
  *    a = [:foo, 'bar', 2]
  *    a.rotate!(-5)
  *    a # => ["bar", 2, :foo]
- *
- *  ---
- *
- *  Raises an exception if +count+ is not an Integer-convertible object:
- *    a = [:foo, 'bar', 2]
- *    # Raises TypeError (no implicit conversion of Symbol into Integer):
- *    a1 = a.rotate!(:foo)
  */
 
 static VALUE
@@ -3441,8 +3326,7 @@ rb_ary_rotate_bang(int argc, VALUE *argv, VALUE ary)
  *  Returns a new \Array formed from +self+ with elements
  *  rotated from one end to the other.
  *
- *  Argument +count+, if given, must be an
- *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
+ *  Argument +count+, if given, must be an \Integer.
  *
  *  ---
  *  When no argument given, returns a new \Array that is like +self+,
@@ -3481,13 +3365,6 @@ rb_ary_rotate_bang(int argc, VALUE *argv, VALUE ary)
  *    a = [:foo, 'bar', 2]
  *    a1 = a.rotate(-5)
  *    a1 # => ["bar", 2, :foo]
- *
- *  ---
- *
- *  Raises an exception if +count+ is not an Integer-convertible object:
- *    a = [:foo, 'bar', 2]
- *    # Raises TypeError (no implicit conversion of Symbol into Integer):
- *    a1 = a.rotate(:foo)
  */
 
 static VALUE
@@ -4084,8 +3961,7 @@ append_values_at_single(VALUE result, VALUE ary, long olen, VALUE idx)
  *  Returns a new \Array whose elements are the elements
  *  of +self+ at the given +indexes+.
  *
- *  Each +index+ given in +indexes+ must be an
- *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
+ *  Each +index+ given in +indexes+ must be an \Integer.
  *
  *  ---
  *
@@ -4117,13 +3993,6 @@ append_values_at_single(VALUE result, VALUE ary, long olen, VALUE idx)
  *  The given +indexes+ may have a mixture of signs:
  *    a = [:foo, 'bar', 2]
  *    a.values_at(0, -2, 1, -1) # => [:foo, "bar", "bar", 2]
- *
- *  ---
- *
- *  Raises an exception if any +index+ is not an Integer-convertible object:
- *    a = [:foo, 'bar', 2]
- *    # Raises TypeError (no implicit conversion of Symbol into Integer):
- *    a.values_at(0, :foo)
  */
 
 static VALUE
@@ -4424,8 +4293,7 @@ rb_ary_delete_at(VALUE ary, long pos)
  *
  *  Deletes an element from +self+, per the given +index+.
  *
- *  The given +index+ must be an
- *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
+ *  The given +index+ must be an \Integer.
  *
  *  ---
  *
@@ -4448,13 +4316,6 @@ rb_ary_delete_at(VALUE ary, long pos)
  *  If +index+ is too small (far from zero), returns nil:
  *    a = [:foo, 'bar', 2]
  *    a.delete_at(-5) # => nil
- *
- *  ---
- *
- *  Raises an exception if index is not an Integer-convertible object:
- *    a = [:foo, 'bar', 2]
- *    # Raises TypeError (no implicit conversion of Symbol into Integer):
- *    a.delete_at(:foo)
  */
 
 static VALUE
@@ -4792,8 +4653,7 @@ take_items(VALUE obj, long n)
  *    array.zip(*other_arrays) -> new_array
  *    array.zip(*other_arrays) {|other_array| ... } -> nil
  *
- *  Each object in +other_arrays+ must be an
- *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects].
+ *  Each object in +other_arrays+ must be an \Array.
  *
  *  ---
  *
@@ -4841,15 +4701,6 @@ take_items(VALUE obj, long n)
  *    [:a1, :b1, :c1]
  *    [:a2, :b2, :c2]
  *    [:a3, :b3, :c3]
- *
- *  ---
- *
- *  Raises an exception if any object in +other_arrays+ is not an Array-convertible object:
- *    a = [:a0, :a1, :a2, :a3]
- *    b = [:b0, :b1, :b2, :b3]
- *    c = [:c0, :c1, :c2, :c3]
- *    # Raises TypeError (wrong argument type Symbol (must respond to :each)):
- *    d = a.zip(a, b, c, :foo)
  */
 
 static VALUE
@@ -4916,18 +4767,12 @@ rb_ary_zip(int argc, VALUE *argv, VALUE ary)
  *
  *  Transposes the rows and columns in an array of arrays.
  *
- *  Each element in +self+ must be an
- *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects].
+ *  Each element in +self+ must be an \Integer.
  *
  *    a = [[:a0, :a1], [:b0, :b1], [:c0, :c1]]
  *    a.transpose # => [[:a0, :b0, :c0], [:a1, :b1, :c1]]
  *
  *  ---
- *
- *  Raises an exception if any element in +self+ is not an Array-convertible object:
- *    a = [[:a0, :a1], [:b0, :b1], :foo]
- *    # Raises TypeError (no implicit conversion of Symbol into Array):
- *    a.transpose
  *
  *  Raises an exception if the elements in +self+ are of differing sizes:
  *    a = [[:a0, :a1], [:b0, :b1], [:c0, :c1, :c2]]
@@ -4969,8 +4814,7 @@ rb_ary_transpose(VALUE ary)
  *
  *  Replaces the content of +self+ with the content of +other_array+; returns +self+.
  *
- *  Argument +other_array+ must be an
- *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects].
+ *  Argument +other_array+ must be an \Array.
  *
  *  ---
  *
@@ -4985,13 +4829,6 @@ rb_ary_transpose(VALUE ary)
  *    a = [:foo, 'bar', 2]
  *    a.replace([]) # => []
  *    a.replace([:foo, 'bar', 2]) # => [:foo, "bar", 2]
- *
- *  ---
- *
- *  Raises an exception if +other_array+ is not an Array-convertible object:
- *    a = [:foo, 'bar', 2]
- *    # Raises TypeError (no implicit conversion of Symbol into Array):
- *    a.replace(:foo)
  */
 
 VALUE
@@ -5080,8 +4917,7 @@ rb_ary_clear(VALUE ary)
  *
  *  Replaces specified elements in +self+ with specified objects; returns +self+.
  *
- *  - Arguments +start+ and +length+, if given, must be
- *    {Integer-convertible objects}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
+ *  - Arguments +start+ and +length+, if given, must be Integers.
  *  - Argument +range+, if given, must be a \Range object.
  *
  *  ---
@@ -5257,32 +5093,6 @@ rb_ary_clear(VALUE ary)
  *    a.fill(-1..-1) { |index| "new_#{index}" } # => ["a", "b", "c", "new_3"]
  *    a = ['a', 'b', 'c', 'd']
  *    a.fill(-2..-2) { |index| "new_#{index}" } # => ["a", "b", "new_2", "d"]
- *
- *  ---
- *
- *  Raises an exception if no block is given and the second argument is not a Range
- *  or an Integer-convertible object,
- *    # Raises TypeError (no implicit conversion of Symbol into Integer):
- *    [].fill(:X, :x)
- *
- *  Raises an exception if no is block given, three arguments are given,
- *  and the second or third argument not an Integer-convertible object:
- *    # Raises TypeError (no implicit conversion of Symbol into Integer):
- *    [].fill(:X, :x, 1)
- *    # Raises TypeError (no implicit conversion of Symbol into Integer):
- *    [].fill(:X, 1, :x)
- *
- *  Raises an exception if a block is given, one argument is given,
- *  and that argument is not a \Range or an Integer-convertible object:
- *    # Raises TypeError (no implicit conversion of Symbol into Integer):
- *    [].fill(:x) { }
- *
- *  Raises an exception if a block is given, two arguments are given,
- *  and either argument is not an Integer-convertible object:
- *    # Raises TypeError (no implicit conversion of Symbol into Integer):
- *    [].fill(:x, 1) { }
- *    # Raises TypeError (no implicit conversion of Symbol into Integer):
- *    [].fill(1, :x) { }
  */
 
 static VALUE
@@ -5355,8 +5165,7 @@ rb_ary_fill(int argc, VALUE *argv, VALUE ary)
  *
  *  Returns the concatenation of +array+ and +other_array+ in a new \Array.
  *
- *  Argument +other_array+ must be an
- *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects].
+ *  Argument +other_array+ must be an \Array.
  *
  *  Returns a new \Array containing all elements of +array+
  *  followed by all elements of +other_array+:
@@ -5364,11 +5173,6 @@ rb_ary_fill(int argc, VALUE *argv, VALUE ary)
  *    a # => [0, 1, 2, 3]
  *
  *  See also #concat.
- *  ---
- *
- *  Raises an exception if +other_array+ is not an Array-convertible object:
- *    # Raises TypeError (no implicit conversion of Symbol into Array):
- *    [] + :foo
  */
 
 VALUE
@@ -5403,8 +5207,7 @@ ary_append(VALUE x, VALUE y)
  *  call-seq:
  *    array.concat(*other_arrays) -> self
  *
- *  The given +other_arrays+ must be
- *  {Array-convertible objects}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects].
+ *  The given +other_arrays+ must be Arrays.
  *
  *  Adds to +array+ all elements from each array in +other_arrays+; returns +self+:
  *    a = [0, 1]
@@ -5416,12 +5219,6 @@ ary_append(VALUE x, VALUE y)
  *    a = [0, 1]
  *    a.concat(*[])
  *    a # => [0, 1]
- *
- *  ---
- *
- *  Raises an exception if any argument is not an Array-convertible object:
- *    # Raises TypeError (no implicit conversion of Symbol into Array):
- *    [].concat([], :foo)
  */
 
 static VALUE
@@ -5456,10 +5253,8 @@ rb_ary_concat(VALUE x, VALUE y)
  *    array * n -> new_array
  *    array * string_separator -> new_string
  *
- *  - Argument +n+, if given, must be an
- *    {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
- *  - Argument +string_separator+, if given, myst be a
- *    {String-convertible object}[doc/implicit_conversion_rdoc.html#label-String-Convertible+Objects].
+ *  - Argument +n+, if given, must be an \Integer.
+ *  - Argument +string_separator+, if given, myst be a \String.
  *
  *  ---
  *
@@ -5480,11 +5275,6 @@ rb_ary_concat(VALUE x, VALUE y)
  *    [] * ',' # => ""
  *
  *  ---
- *
- *  Raises an exception if the argument is not an Integer-convertible object
- *  or a String-convertible object:
- *    # Raises TypeError (no implicit conversion of Symbol into Integer):
- *    [] * :foo
  *
  *  Raises an exception if +n+ is negative:
  *    # Raises ArgumentError (negative argument):
@@ -5833,14 +5623,7 @@ recursive_cmp(VALUE ary1, VALUE ary2, int recur)
  *  - Returns 0 if +array+ and +other_array+ are the same size:
  *      [0, 1, 2] <=> [0, 1, 2] # => 0
  *
- *  ---
- *
- *  Argument +other_array+ may be an
- *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects]:
- *    require 'csv'
- *    [] <=> CSV::Row.new([], []) # => 0
- *
- *  Returns +nil+ if +other_array+ is not an Array-convertible object:
+ *  Returns +nil+ if +other_array+ is not an \Array.
  *    [] <=> 0 # => nil
  */
 
@@ -5924,8 +5707,7 @@ ary_recycle_hash(VALUE hash)
  *  call-seq:
  *    array - other_array -> new_array
  *
- *  Argument +other_array+ must be an
- *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects].
+ *  Argument +other_array+ must be an \Array.
  *
  *  Returns a new \Array containing only those elements from +array+
  *  that are not found in +other_array+;
@@ -5934,12 +5716,6 @@ ary_recycle_hash(VALUE hash)
  *    [0, 1, 1, 2, 1, 1, 3, 1, 1] - [1] # => [0, 2, 3]
  *    [0, 1, 2, 3] - [3, 0] # => [1, 2]
  *    [0, 1, 2] - [4] # => [0, 1, 2]
- *
- *  ---
- *
- *  Raises an exception if +other_array+ is not an Array-convertible object:
- *    # Raises TypeError (no implicit conversion of Symbol into Array):
- *    [] - :foo
  *
  *  See also Array#difference.
  */
@@ -5976,8 +5752,7 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
  *  call-seq:
  *    array.difference(*other_arrays) -> new_array
  *
- *  Each argument in +other_arrays+ must be an
- *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects].
+ *  Each argument in +other_arrays+ must be an \Array.
  *
  *  Returns a new \Array containing only those elements from +self+
  *  that are not found in any of the +other_arrays+;
@@ -5991,12 +5766,6 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
  *    a1 = a0.difference(*[])
  *    a1 # => [0, 1]
  *    a1.equal?(a0) # => false
- *
- *  ---
- *
- *  Raises an exception if any of +other_arrays+ is not an Array-convertible object:
- *    # Raises TypeError (no implicit conversion of Symbol into Array):
- *    [].difference(:foo)
  *
  *  See also Array#-.
  */
@@ -6042,8 +5811,7 @@ rb_ary_difference_multi(int argc, VALUE *argv, VALUE ary)
  *  call-seq:
  *    array & other_array -> new_array
  *
- *  Argument +other_array+ must be an
- *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects].
+ *  Argument +other_array+ must be an \Array.
  *
  *  Returns a new \Array containing each element found in both +array+ and +other_array+;
  *  duplicates are omitted; items are compared using <tt>eql?</tt>:
@@ -6052,12 +5820,6 @@ rb_ary_difference_multi(int argc, VALUE *argv, VALUE ary)
  *
  *  Preserves order from +array+:
  *    [0, 1, 2] & [3, 2, 1, 0] # => [0, 1, 2]
- *
- *  ---
- *
- *  Raises an exception if +other_array+ is not an Array-convertible object:
- *    # Raises TypeError (no implicit conversion of Symbol into Array):
- *    [] & :foo
  *
  *  See also Array#intersection.
  */
@@ -6102,8 +5864,7 @@ rb_ary_and(VALUE ary1, VALUE ary2)
  *  call-seq:
  *    array.intersection(*other_arrays) -> new_array
  *
- *  Each object in +other_arrays+ must be an
- *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects].
+ *  Each object in +other_arrays+ must be an \Array.
  *
  *  Returns a new \Array containing each element found both in +self+
  *  and in all of the given +other_arrays+;
@@ -6119,12 +5880,6 @@ rb_ary_and(VALUE ary1, VALUE ary2)
  *    a1 = a0.intersection(*[])
  *    a1 # => [0, 1]
  *    a1.equal?(a0) # => false
- *
- *  ---
- *
- *  Raises an exception if any of the given +other_arrays+ is not an Array-convertible object:
- *    # Raises TypeError (no implicit conversion of Symbol into Array):
- *    [].intersection([0, 1], :foo)
  *
  *  See also Array#&.
  */
@@ -6177,8 +5932,7 @@ rb_ary_union_hash(VALUE hash, VALUE ary2)
  *  call-seq:
  *    array | other_array -> new_array
  *
- *  Argument +other_array+ must be an
- *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects].
+ *  Argument +other_array+ must be an \Array.
  *
  *  Returns the union of +array+ and +other_array+;
  *  duplicates are removed; order is preserved;
@@ -6186,12 +5940,6 @@ rb_ary_union_hash(VALUE hash, VALUE ary2)
  *    [0, 1] | [2, 3] # => [0, 1, 2, 3]
  *    [0, 1, 1] | [2, 2, 3] # => [0, 1, 2, 3]
  *    [0, 1, 2] | [3, 2, 1, 0] # => [0, 1, 2, 3]
- *
- *  ---
- *
- *  Raises an exception if +other_array+ is not an Array-convertible object:
- *    # Raises TypeError (no implicit conversion of Symbol into Array):
- *    [] | :foo
  *
  *  See also Array#union.
  */
@@ -6221,8 +5969,7 @@ rb_ary_or(VALUE ary1, VALUE ary2)
  *  call-seq:
  *    array.union(*other_arrays) -> new_array
  *
- *  Each object in +other_arrays+ must be an
- *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects].
+ *  Each object in +other_arrays+ must be an \Array.
  *
  *  Returns a new \Array that is the union of +self+ and all given +other_arrays+;
  *  duplicates are removed;  order is preserved;  items are compared using <tt>eql?</tt>:
@@ -6235,12 +5982,6 @@ rb_ary_or(VALUE ary1, VALUE ary2)
  *    a1 = a0.union(*[])
  *    a1 # => [0, 1]
  *    a1.equal?(a0) # => false
- *
- *  ---
- *
- *  Raises an exception if any argument is not an \Array-convertible object:
- *    # Raises TypeError (no implicit conversion of Symbol into Array):
- *    [].union([], :foo)
  *
  *  See also Array#|.
  */
@@ -6375,14 +6116,12 @@ ary_max_opt_string(VALUE ary, long i, VALUE vmax)
  *  - The maximum-valued element from +self+.
  *  - A new \Array of maximum-valued elements selected from +self+.
  *
- *  Argument +n+, if given, must be an
- *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects],
- *  and must be non-negative.
+ *  Argument +n+, if given, must be a non-negative \Integer.
  *
  *  ---
  *
  *  When no block is given, each element in +self+ must respond to method <tt><=></tt>
- *  with an \Integer-convertible object.
+ *  with an \Integer.
  *
  *  With no argument and no block, returns the element in +self+
  *  having the maximum value per method <tt><=></tt>:
@@ -6396,7 +6135,7 @@ ary_max_opt_string(VALUE ary, long i, VALUE vmax)
  *
  *  ---
  *
- *  When a block is given, the block must return an Integer-convertible object.
+ *  When a block is given, the block must return an \Integer.
  *
  *  With a block and no argument, calls the block <tt>self.size-1</tt> times to compare elements;
  *  returns the element having the maximum value per the block:
@@ -6413,17 +6152,9 @@ ary_max_opt_string(VALUE ary, long i, VALUE vmax)
  *    # Raises ArgumentError (comparison of Symbol with 1 failed):
  *    [0, 1, :foo].max
  *
- *  Raises an exception if argument +n+ is not an Integer-convertible object:
- *    # Raises TypeError (no implicit conversion of Symbol into Integer):
- *    [0, 1].max(:foo)
- *
  *  Raises an exception if argument +n+ is negative:
  *    # Raises ArgumentError (negative size (-1)):
  *    [0, 1].max(-1)
- *
- *  Raises an exception if the block returns an object that is not an Integer-convertible object:
- *    # Raises ArgumentError (comparison of Symbol with 0 failed):
- *    [0, 1, 2].max {|a, b| :foo }
  */
 static VALUE
 rb_ary_max(int argc, VALUE *argv, VALUE ary)
@@ -6566,14 +6297,12 @@ ary_min_opt_string(VALUE ary, long i, VALUE vmin)
  *  - The minimum-valued element from +self+.
  *  - A new \Array of minimum-valued elements selected from +self+.
  *
- *  Argument +n+, if given, must be an
- *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects],
- *  and must be non-negative.
+ *  Argument +n+, if given, must be a non-negative \Integer.
  *
  *  ---
  *
  *  When no block is given, each element in +self+ must respond to method <tt><=></tt>
- *  with an \Integer-convertible object.
+ *  with an \Integer.
  *
  *  With no argument and no block, returns the element in +self+
  *  having the minimum value per method <tt><=></tt>:
@@ -6587,7 +6316,7 @@ ary_min_opt_string(VALUE ary, long i, VALUE vmin)
  *
  *  ---
  *
- *  When a block is given, the block must return an Integer-convertible object.
+ *  When a block is given, the block must return an Integer.
  *
  *  With a block and no argument, calls the block <tt>self.size-1</tt> times to compare elements;
  *  returns the element having the minimum value per the block:
@@ -6605,17 +6334,9 @@ ary_min_opt_string(VALUE ary, long i, VALUE vmin)
  *    # Raises ArgumentError (comparison of Symbol with 1 failed):
  *    [0, 1, :foo].min
  *
- *  Raises an exception if argument +n+ is not an Integer-convertible object:
- *    # Raises TypeError (no implicit conversion of Symbol into Integer):
- *    [0, 1].min(:foo)
- *
  *  Raises an exception if argument +n+ is negative:
  *    # Raises ArgumentError (negative size (-1)):
  *    [0, 1].min(-1)
- *
- *  Raises an exception if the block returns an object that is not an Integer-convertible object:
- *    # Raises ArgumentError (comparison of Symbol with 0 failed):
- *    [0, 1, 2].min {|a, b| :foo }
  */
 static VALUE
 rb_ary_min(int argc, VALUE *argv, VALUE ary)
@@ -6669,12 +6390,12 @@ rb_ary_min(int argc, VALUE *argv, VALUE ary)
  *  ---
  *
  *  When no block is given, each element in +self+ must respond to method <tt><=></tt>
- *  with an \Integer-convertible object;
+ *  with an \Integer;
  *  returns a new 2-element \Array containing the minimum and maximum values
  *  from +self+, per method <tt><=></tt>:
  *    [0, 1, 2].minmax # => [0, 2]
  *
- *  When a block is given, the block must return an Integer-convertible object;
+ *  When a block is given, the block must return an \Integer;
  *  the block is called <tt>self.size-1</tt> times to compare elements;
  *  returns a new 2-element \Array containing the minimum and maximum values
  *  from +self+, per the block:
@@ -6685,10 +6406,6 @@ rb_ary_min(int argc, VALUE *argv, VALUE ary)
  *  Raises an exception on encountering elements that are not comparable:
  *    # Raises ArgumentError (comparison of Symbol with 1 failed):
  *    [0, 1, :foo].minmax
- *
- *  Raises an exception if the block returns an object that is not an Integer-convertible object:
- *    # Raises ArgumentError (comparison of Symbol with 0 failed):
- *    [0, 1, 2].minmax {|a, b| :foo }
  */
 static VALUE
 rb_ary_minmax(VALUE ary)
@@ -7028,8 +6745,7 @@ flatten(VALUE ary, int level)
  *  Replaces each nested \Array in +self+ with the elements from that \Array;
  *  returns +self+ if any changes, +nil+ otherwise.
  *
- *  Argument +level+, if given and not +nil+, must be an
- *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
+ *  Argument +level+, if given and not +nil+, must be an \Integer.
  *
  *  With non-negative argument +level+, flattens recursively through +level+ levels:
  *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
@@ -7053,10 +6769,6 @@ flatten(VALUE ary, int level)
  *    [0, 1, 2].flatten!(-1) # => nil
  *
  *  ---
- *
- *  Raises an exception if +level+ is not an Integer-convertible object:
- *     # Raises TypeError (no implicit conversion of Symbol into Integer):
- *    [].flatten!(:foo)
  *
  *  Raises an exception if +self+ contains a circular reference:
  *    a = []
@@ -7096,8 +6808,7 @@ rb_ary_flatten_bang(int argc, VALUE *argv, VALUE ary)
  *  - Each non-Array element is unchanged.
  *  - Each \Array is replaced by its individual elements.
  *
- *  Argument +level+, if given and not +nil+, must be
- *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
+ *  Argument +level+, if given and not +nil+, must be Integers.
  *
  *  With non-negative argument +level+, flattens recursively through +level+ levels:
  *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
@@ -7120,10 +6831,6 @@ rb_ary_flatten_bang(int argc, VALUE *argv, VALUE ary)
  *    [0, 1, 2].flatten(-1) # => [0, 1, 2]
  *
  *  ---
- *
- *  Raises an exception if +level+ is not an Integer-convertible object:
- *    # Raises TypeError (no implicit conversion of Symbol into Integer):
- *    [].flatten(:foo)
  *
  *  Raises an exception if +self+ contains a circular reference:
  *    a = []
@@ -7336,8 +7043,7 @@ rb_ary_cycle_size(VALUE self, VALUE args, VALUE eobj)
  *    array.cycle -> new_enumerator
  *    array.cycle(count) -> new_enumerator
  *
- *  Argument +count+, if given, must be +nil+ or an
- *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
+ *  Argument +count+, if given, must be +nil+ or an \Integer.
  *
  *  ---
  *
@@ -7366,12 +7072,6 @@ rb_ary_cycle_size(VALUE self, VALUE args, VALUE eobj)
  *    [0, 1].cycle(2) # => #<Enumerator: [0, 1]:cycle(2)>
  *    [0, 1].cycle # => # => #<Enumerator: [0, 1]:cycle>
  *    [0, 1].cycle.first(5) # => [0, 1, 0, 1, 0]
- *
- *  ---
- *
- *  Raises an exception if +count+ is not an Integer-convertible object:
- *    # Raises TypeError (no implicit conversion of Symbol into Integer):
- *    [0, 1].cycle(:foo) {|element| }
  */
 static VALUE
 rb_ary_cycle(int argc, VALUE *argv, VALUE ary)
@@ -7526,8 +7226,7 @@ rb_ary_permutation_size(VALUE ary, VALUE args, VALUE eobj)
  *  When invoked with a block, yield all permutations of elements of +self+; returns +self+.
  *  The order of permutations is indeterminate.
  *
- *  Argument +n+, if given, must be an
- *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
+ *  Argument +n+, if given, must be an \Integer.
  *
  *  ---
  *
@@ -7592,12 +7291,6 @@ rb_ary_permutation_size(VALUE ary, VALUE args, VALUE eobj)
  *    a = [0, 1, 2]
  *    a.permutation # => #<Enumerator: [0, 1, 2]:permutation>
  *    a.permutation(2) # => #<Enumerator: [0, 1, 2]:permutation(2)>
- *
- *  ---
- *
- *  Raises an exception if +n+ is not an Integer-convertible object:
- *    # Raises TypeError (no implicit conversion of Symbol into Integer):
- *    a.permutation(:foo) { }
  */
 
 static VALUE
@@ -7676,8 +7369,7 @@ rb_ary_combination_size(VALUE ary, VALUE args, VALUE eobj)
  *  Calls the block, if given, with combinations of elements of +self+;
  *  returns +self+. The order of combinations is indeterminate.
  *
- *  Argument +n+, if given, must be an
- *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
+ *  Argument +n+, if given, must be an \Integer.
  *
  *  ---
  *
@@ -7720,12 +7412,6 @@ rb_ary_combination_size(VALUE ary, VALUE args, VALUE eobj)
  *  Returns a new \Enumerator if no block given:
  *    a = [0, 1, 2]
  *    a.combination(2) # => #<Enumerator: [0, 1, 2]:combination(2)>
- *
- *  ---
- *
- *  Raises an exception if +n+ is not an Integer-convertible object:
- *    # Raises TypeError (no implicit conversion of Symbol into Integer):
- *    a.combination(:foo) { }
  */
 
 static VALUE
@@ -7819,8 +7505,7 @@ rb_ary_repeated_permutation_size(VALUE ary, VALUE args, VALUE eobj)
  *  each permutation is an \Array;
  *  returns +self+. The order of the permutations is indeterminate.
  *
- *  Argument +n+ must be an
- *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
+ *  Argument +n+ must be an \Integer.
  *
  *  ---
  *
@@ -7872,12 +7557,6 @@ rb_ary_repeated_permutation_size(VALUE ary, VALUE args, VALUE eobj)
  *    e = a.repeated_permutation(2)
  *    e.size # => 9
  *    e.to_a # => [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2]]
- *
- *  ---
- *
- *  Raises an exception if +n+ is not an Integer-convertible object:
- *    # Raises TypeError (no implicit conversion of Symbol into Integer):
- *    a.repeated_permutation(:foo) { }
  */
 static VALUE
 rb_ary_repeated_permutation(VALUE ary, VALUE num)
@@ -7955,8 +7634,7 @@ rb_ary_repeated_combination_size(VALUE ary, VALUE args, VALUE eobj)
  *  each combination is an \Array;
  *  returns +self+. The order of the combinations is indeterminate.
  *
- *  Argument +n+ must be an
- *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
+ *  Argument +n+ must be an \Integer.
  *
  *  ---
  *
@@ -8005,12 +7683,6 @@ rb_ary_repeated_combination_size(VALUE ary, VALUE args, VALUE eobj)
  *    e = a.repeated_combination(2)
  *    e.size # => 6
  *    e.to_a # => [[0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [2, 2]]
- *
- *  ---
- *
- *  Raises an exception if +n+ is not an Integer-convertible object:
- *    # Raises TypeError (no implicit conversion of Symbol into Integer):
- *    a.repeated_combination(:foo) { }
  */
 
 static VALUE
@@ -8059,8 +7731,7 @@ rb_ary_repeated_combination(VALUE ary, VALUE num)
  *    including both +self+ and +other_arrays+.
  *  - The order of the returned combinations is indeterminate.
  *
- *  Each argument must be an
- *  {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects].
+ *  Each argument must be an \Array.
  *
  *  ---
  *
@@ -8103,12 +7774,6 @@ rb_ary_repeated_combination(VALUE ary, VALUE num)
  *    [0]
  *    [1]
  *    [2]
- *
- *  ---
- *
- *  Raises an exception if any argument is not an \Array-convertible object:
- *    # Raises TypeError (no implicit conversion of Symbol into Array)
- *    a.product(a1, :foo)
  */
 
 static VALUE
@@ -8206,8 +7871,7 @@ done:
  *  Returns a new \Array containing the first +n+ element of +self+;
  *  does not modify +self+.
  *
- *  Argument +n+ must be an
- *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects]
+ *  Argument +n+ must be an \Integer.
  *  and non-negative.
  *
  *  Examples:
@@ -8223,10 +7887,6 @@ done:
  *  Raises an exception if +n+ is negative:
  *    # Raises ArgumentError (attempt to take negative size):
  *    [0, 1].take(-1)
- *
- *  Raises an exception if +n+ is not an Integer-convertible object:
- *    # Raises TypeError (no implicit conversion of Symbol into Integer):
- *    [0, 1].take(:foo)
  */
 
 static VALUE
@@ -8279,9 +7939,7 @@ rb_ary_take_while(VALUE ary)
  *  Returns a new \Array containing all but the first +n+ element of +self+;
  *  does not modify +self+.
  *
- *  Argument +n+ must be an
- *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects]
- *  and non-negative.
+ *  Argument +n+ must be a non-negative \Integer.
  *
  *  Examples:
  *    a = [0, 1, 2, 3, 4, 5]
@@ -8296,10 +7954,6 @@ rb_ary_take_while(VALUE ary)
  *  Raises an exception if +n+ is negative:
  *    # Raises ArgumentError (attempt to drop negative size):
  *    [0, 1].drop(-1)
- *
- *  Raises an exception if +n+ is not an Integer-convertible object:
- *    # Raises TypeError (no implicit conversion of Symbol into Integer):
- *    [0, 1].drop(:foo)
  */
 
 static VALUE
