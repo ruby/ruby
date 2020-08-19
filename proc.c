@@ -83,7 +83,7 @@ block_mark(const struct rb_block *block)
 static void
 block_compact(struct rb_block *block)
 {
-    switch (vm_block_type(block)) {
+    switch (block->type) {
       case block_type_iseq:
       case block_type_ifunc:
 	{
