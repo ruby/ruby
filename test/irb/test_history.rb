@@ -119,9 +119,7 @@ module TestIRB
           yield(stdin, stdout)
           stdin.close
           stdout.flush
-          replace_stdio(stdin.path, stdout.path) do
-            system('ruby', '-Ilib', '-Itest', '-W0', '-rirb', '-e', 'IRB.start(__FILE__)')
-          end
+          system('ruby', '-Ilib', '-Itest', '-W0', '-rirb', '-e', 'IRB.start(__FILE__)', in: stdin.path, out: stdout.path)
           result = stdout.read
           stdout.close
         end
@@ -143,31 +141,6 @@ module TestIRB
             # needed since readline holds refs to tempfiles, can't delete on Windows
             #Readline.input = STDIN
             #Readline.output = STDOUT
-          end
-        end
-      end
-    end
-
-    def replace_stdio(stdin_path, stdout_path)
-      open(stdin_path, "r") do |stdin|
-        open(stdout_path, "w") do |stdout|
-          orig_stdin = STDIN.dup
-          orig_stdout = STDOUT.dup
-          orig_stderr = STDERR.dup
-          STDIN.reopen(stdin)
-          STDOUT.reopen(stdout)
-          STDERR.reopen(stdout)
-          begin
-            #Readline.input = STDIN
-            #Readline.output = STDOUT
-            yield
-          ensure
-            STDERR.reopen(orig_stderr)
-            STDIN.reopen(orig_stdin)
-            STDOUT.reopen(orig_stdout)
-            orig_stdin.close
-            orig_stdout.close
-            orig_stderr.close
           end
         end
       end
