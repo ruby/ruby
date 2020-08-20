@@ -117,6 +117,11 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 #
 # Despite the name \CSV, a \CSV representation can use different separators.
 #
+# For more about tables, see the Wikipedia article
+# "{Table (information)}[https://en.wikipedia.org/wiki/Table_(information)]",
+# especially its section
+# "{Simple table}[https://en.wikipedia.org/wiki/Table_(information)#Simple_table]"
+#
 # == \Class \CSV
 #
 # Class \CSV provides methods for:
