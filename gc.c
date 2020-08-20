@@ -4447,8 +4447,6 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page,
     while(1) {
         size_t index = heap->compact_cursor_index;
 
-        unlock_page_body(objspace, GET_PAGE_BODY(cursor->start));
-
 	bits_t *mark_bits = cursor->mark_bits;
         bits_t *pin_bits = cursor->pinned_bits;
         RVALUE * p = cursor->start;
@@ -4477,7 +4475,6 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page,
                                 FL_SET((VALUE)p, FL_FROM_FREELIST);
                             }
 
-                            lock_page_body(objspace, GET_PAGE_BODY(cursor->start));
                             return 1;
                         }
                     }
@@ -4494,7 +4491,6 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page,
         struct heap_page * next;
 
         next = list_prev(&heap->pages, cursor, page_node);
-
 
         /* Protect the current cursor since it probably has T_MOVED slots. */
         lock_page_body(objspace, GET_PAGE_BODY(cursor->start));
@@ -4642,6 +4638,8 @@ gc_fill_swept_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *s
 
     struct heap_page * cursor = heap->compact_cursor;
 
+    unlock_page_body(objspace, GET_PAGE_BODY(cursor->start));
+
     for (i=0; i < HEAP_PAGE_BITMAP_LIMIT; i++) {
         /* *Want to move* objects are pinned but not marked. */
         bitset = pin_bits[i] & ~mark_bits[i];
@@ -4686,6 +4684,8 @@ gc_fill_swept_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *s
             } while (bitset);
         }
     }
+
+    lock_page_body(objspace, GET_PAGE_BODY(heap->compact_cursor->start));
 
     if (finished_compacting) {
         gc_compact_finish(objspace, heap);
