@@ -4793,6 +4793,10 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 	}
     }
 
+    if (heap->compact_cursor) {
+        gc_fill_swept_page(objspace, heap, sweep_page, &freed_slots, &empty_slots);
+    }
+
     if (!objspace->flags.during_compacting) {
         gc_setup_mark_bits(sweep_page);
     }
@@ -4809,9 +4813,6 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 		   sweep_page->total_slots,
 		   freed_slots, empty_slots, final_slots);
 
-    if (heap->compact_cursor) {
-        gc_fill_swept_page(objspace, heap, sweep_page, &freed_slots, &empty_slots);
-    }
     sweep_page->free_slots = freed_slots + empty_slots;
     objspace->profile.total_freed_objects += freed_slots;
 
