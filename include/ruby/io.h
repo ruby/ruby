@@ -59,6 +59,8 @@ PACKED_STRUCT_UNALIGNED(struct rb_io_buffer_t {
 typedef struct rb_io_buffer_t rb_io_buffer_t;
 
 typedef struct rb_io_t {
+    VALUE self;
+
     FILE *stdio_file;		/* stdio ptr for read/write if available */
     int fd;                     /* file descriptor */
     int mode;			/* mode flags: FMODE_XXXs */

@@ -2619,6 +2619,11 @@ bufread_call(VALUE arg)
 static long
 io_fread(VALUE str, long offset, long size, rb_io_t *fptr)
 {
+    VALUE scheduler = rb_thread_current_scheduler();
+    if (scheduler != Qnil && rb_scheduler_supports_io_read(scheduler)) {
+        return rb_scheduler_io_read(scheduler, fptr->self, str, offset, size);
+    }
+    
     long len;
     struct bufread_arg arg;
 
@@ -8511,6 +8516,7 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
 	fmode |= FMODE_PREP;
     }
     MakeOpenFile(io, fp);
+    fp->self = io;
     fp->fd = fd;
     fp->mode = fmode;
     fp->encs = convconfig;
