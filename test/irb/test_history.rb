@@ -146,13 +146,8 @@ module TestIRB
       Tempfile.create("test_readline_stdin") do |stdin|
         Tempfile.create("test_readline_stdout") do |stdout|
           yield stdin, stdout
-          if /mswin|mingw/ =~ RUBY_PLATFORM
-            # needed since readline holds refs to tempfiles, can't delete on Windows
-            #Readline.input = STDIN
-            #Readline.output = STDOUT
-          end
         end
       end
     end
   end
-end if not RUBY_PLATFORM.match?(/solaris/i)
+end if not RUBY_PLATFORM.match?(/solaris|mswin|mingw/i)
