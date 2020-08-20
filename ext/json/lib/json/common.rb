@@ -7,8 +7,7 @@ module JSON
     # :call-seq:
     #   JSON[object] -> new_array or new_string
     #
-    # If +object+ is a
-    # {String-convertible object}[doc/implicit_conversion_rdoc.html#label-String-Convertible+Objects],
+    # If +object+ is a \String,
     # calls JSON.parse with +object+ and +opts+ (see method #parse):
     #   json = '[0, 1, null]'
     #   JSON[json]# => [0, 1, nil]
@@ -149,12 +148,9 @@ module JSON
   #
   # Returns the Ruby objects created by parsing the given +source+.
   #
-  # Argument +source+ contains the \String to be parsed. It must be a
-  # {String-convertible object}[doc/implicit_conversion_rdoc.html#label-String-Convertible+Objects]
-  # (implementing +to_str+), and must contain valid \JSON data.
+  # Argument +source+ contains the \String to be parsed.
   #
-  # Argument +opts+, if given, contains options for the parsing, and must be a
-  # {Hash-convertible object}[doc/implicit_conversion_rdoc.html#label-Hash+Convertible+Objects].
+  # Argument +opts+, if given, contains a \Hash of options for the parsing.
   # See {Parsing Options}[#module-JSON-label-Parsing+Options].
   #
   # ---
@@ -249,22 +245,17 @@ module JSON
   #
   # Argument +obj+ is the Ruby object to be converted to \JSON.
   #
-  # Argument +opts+, if given, contains options for the generation, and must be a
-  # {Hash-convertible object}[doc/implicit_conversion_rdoc.html#label-Hash-Convertible+Objects].
+  # Argument +opts+, if given, contains a \Hash of options for the generation.
   # See {Generating Options}[#module-JSON-label-Generating+Options].
   #
   # ---
   #
-  # When +obj+ is an
-  # {Array-convertible object}[doc/implicit_conversion_rdoc.html#label-Array-Convertible+Objects]
-  # (implementing +to_ary+), returns a \String containing a \JSON array:
+  # When +obj+ is an \Array, returns a \String containing a \JSON array:
   #   obj = ["foo", 1.0, true, false, nil]
   #   json = JSON.generate(obj)
   #   json # => '["foo",1.0,true,false,null]'
   #
-  # When +obj+ is a
-  # {Hash-convertible object}[doc/implicit_conversion_rdoc.html#label-Hash-Convertible+Objects],
-  # return a \String containing a \JSON object:
+  # When +obj+ is a \Hash, returns a \String containing a \JSON object:
   #   obj = {foo: 0, bar: 's', baz: :bat}
   #   json = JSON.generate(obj)
   #   json # => '{"foo":0,"bar":"s","baz":"bat"}'
@@ -436,8 +427,7 @@ module JSON
   #   BEWARE: This method is meant to serialise data from trusted user input,
   #   like from your own database server or clients under your control, it could
   #   be dangerous to allow untrusted users to pass JSON sources into it.
-  # - Argument +opts+, if given, contains options for the parsing, and must be a
-  #   {Hash-convertible object}[doc/implicit_conversion_rdoc.html#label-Hash+Convertible+Objects].
+  # - Argument +opts+, if given, contains a \Hash of options for the parsing.
   #   See {Parsing Options}[#module-JSON-label-Parsing+Options].
   #   The default options can be changed via method JSON.load_default_options=.
   #
