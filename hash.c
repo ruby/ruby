@@ -1810,7 +1810,7 @@ rb_hash_initialize(int argc, VALUE *argv, VALUE hash)
  *    Hash[] -> new_empty_hash
  *    Hash[ [*2_element_arrays] ] -> new_hash
  *    Hash[*objects] -> new_hash
- *    Hash[hash_convertible_object] -> new_hash
+ *    Hash[hash] -> new_hash
  *
  *  Returns a new \Hash object populated with the given objects, if any.
  *
@@ -1836,11 +1836,8 @@ rb_hash_initialize(int argc, VALUE *argv, VALUE hash)
  *    Hash[] # => {}
  *    Hash[:foo, 0, :bar, 1] # => {:foo=>0, :bar=>1}
  *
- *  When argument <tt>hash_convertible_object</tt> is given,
- *  the argument must be a
- *  {Hash-convertible object}[doc/implicit_conversion_rdoc.html#label-Hash-Convertible+Objects];
- *  converts the object and returns the resulting \Hash object:
- *
+ *  When argument <tt>hash</tt> is given,
+ *  the argument must be a \Hash:
  *    class Foo
  *      def to_hash
  *        {foo: 0, bar: 1}
@@ -1851,9 +1848,7 @@ rb_hash_initialize(int argc, VALUE *argv, VALUE hash)
  *  ---
  *
  *  Raises an exception if the argument count is 1,
- *  but the argument is not an array of 2-element arrays or a
- *  {Hash-convertible object}[doc/implicit_conversion_rdoc.html#label-Hash-Convertible+Objects]:
- *
+ *  but the argument is not an array of 2-element arrays or a \Hash:
  *    # Raises ArgumentError (odd number of arguments for Hash):
  *    Hash[:foo]
  *    # Raises ArgumentError (invalid number of elements (3 for 1..2)):
@@ -3138,13 +3133,6 @@ rb_hash_aset(VALUE hash, VALUE key, VALUE val)
  *    h1 = h.replace({bat: 3, bam: 4})
  *    h1 # => {:bat=>3, :bam=>4}
  *    h1.equal?(h) # => true # Identity check
- *
- *  ---
- *
- *  Raises an exception if other_hash is not a Hash-convertible object:
- *    h = {}
- *    # Raises TypeError (no implicit conversion of Symbol into Hash):
- *    h.replace(:not_a_hash)
  */
 
 static VALUE
@@ -4262,8 +4250,7 @@ rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
  *
  *  Merges each of +other_hashes+ into +self+; returns +self+.
  *
- *  Each argument in +other_hashes+ must be
- *  a {Hash-convertible object}[doc/implicit_conversion_rdoc.html#label-Hash-Convertible+Objects].
+ *  Each argument in +other_hashes+ must be a \Hash.
  *
  *  \Method #update is an alias for \#merge!.
  *
@@ -4320,13 +4307,6 @@ rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
  *    h1 = h.merge! { |key, old_value, new_value| raise 'Cannot happen' }
  *    h1 # => {:foo=>0, :bar=>1, :baz=>2}
  *    h1.equal?(h) # => true # Identity check
- *
- *  ---
- *
- *  Raises an exception if any given argument is not a Hash-convertible object:
- *    h = {}
- *    # Raises TypeError (no implicit conversion of Integer into Hash):
- *    h.merge!(1)
  */
 
 static VALUE
@@ -4411,8 +4391,7 @@ rb_hash_update_by(VALUE hash1, VALUE hash2, rb_hash_update_func *func)
  *  Returns the new \Hash formed by merging each of +other_hashes+
  *  into a copy of +self+.
  *
- *  Each argument in +other_hashes+ must be
- *  a {Hash-convertible object}[doc/implicit_conversion_rdoc.html#label-Hash-Convertible+Objects].
+ *  Each argument in +other_hashes+ must be a \Hash.
  *
  *  ---
  *
@@ -4470,13 +4449,6 @@ rb_hash_update_by(VALUE hash1, VALUE hash2, rb_hash_update_func *func)
  *    h2 = h.merge { |key, old_value, new_value| raise 'Cannot happen' }
  *    h2 # => {:foo=>0, :bar=>1, :baz=>2}
  *    h2.equal?(h) # => false # Identity check
- *
- *  ---
- *
- *  Raises an exception if any given argument is not a Hash-convertible object:
- *    h = {}
- *    # Raises TypeError (no implicit conversion of Integer into Hash):
- *    h.merge(1)
  */
 
 static VALUE
@@ -4628,8 +4600,7 @@ flatten_i(VALUE key, VALUE val, VALUE ary)
  *     hash.flatten -> new_array
  *     hash.flatten(level) -> new_array
  *
- *  Argument +level+, if given, must be an
- *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
+ *  Argument +level+, if given, must be an \Integer.
  *
  *  Returns a new \Array object that is a 1-dimensional flattening of +self+.
  *
@@ -4655,13 +4626,6 @@ flatten_i(VALUE key, VALUE val, VALUE ary)
  *    h = {foo: 0, bar: [:bat, 3], baz: 2}
  *    h.flatten(0) # => [[:foo, 0], [:bar, [:bat, 3]], [:baz, 2]]
  *    h.flatten(0) == h.to_a # => true
- *
- *  ---
- *
- *  Raises an exception if +level+ is not an \Integer-convertible object:
- *    h = {foo: 0, bar: [:bat, 3], baz: 2}
- *    # Raises TypeError (no implicit conversion of Symbol into Integer):
- *    h.flatten(:nosuch)
  */
 
 static VALUE
@@ -5042,13 +5006,6 @@ hash_le(VALUE hash1, VALUE hash2)
  *    h1 <= h2 # => true
  *    h2 <= h1 # => false
  *    h1 <= h1 # => true
- *
- *  ---
- *
- *  Raises an exception if +other_hash+ is not a
- *  {Hash-convertible object}[doc/implicit_conversion_rdoc.html#label-Hash-Convertible+Objects]:
- *    h = {}
- *    h <= 1 # Raises TypeError (no implicit conversion of Integer into Hash)
  */
 static VALUE
 rb_hash_le(VALUE hash, VALUE other)
@@ -5068,13 +5025,6 @@ rb_hash_le(VALUE hash, VALUE other)
  *    h1 < h2 # => true
  *    h2 < h1 # => false
  *    h1 < h1 # => false
- *
- *  ---
- *
- *  Raises an exception if +other_hash+ is not a
- *  {Hash-convertible object}[doc/implicit_conversion_rdoc.html#label-Hash-Convertible+Objects]:
- *    h = {}
- *    h < 1 # Raises TypeError (no implicit conversion of Integer into Hash)
  */
 static VALUE
 rb_hash_lt(VALUE hash, VALUE other)
@@ -5094,13 +5044,6 @@ rb_hash_lt(VALUE hash, VALUE other)
  *    h1 >= h2 # => true
  *    h2 >= h1 # => false
  *    h1 >= h1 # => true
- *
- *  ---
- *
- *  Raises an exception if +other_hash+ is not a
- *  {Hash-convertible object}[doc/implicit_conversion_rdoc.html#label-Hash-Convertible+Objects]:
- *    h = {}
- *    h >= 1 # Raises TypeError (no implicit conversion of Integer into Hash)
  */
 static VALUE
 rb_hash_ge(VALUE hash, VALUE other)
@@ -5120,13 +5063,6 @@ rb_hash_ge(VALUE hash, VALUE other)
  *    h1 > h2 # => true
  *    h2 > h1 # => false
  *    h1 > h1 # => false
- *
- *  ---
- *
- *  Raises an exception if +other_hash+ is not a
- *  {Hash-convertible object}[doc/implicit_conversion_rdoc.html#label-Hash-Convertible+Objects]:
- *    h = {}
- *    h > 1 # Raises TypeError (no implicit conversion of Integer into Hash)
  */
 static VALUE
 rb_hash_gt(VALUE hash, VALUE other)
