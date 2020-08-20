@@ -13,7 +13,7 @@ class TestFiberSleep < Test::Unit::TestCase
       Thread.current.scheduler = scheduler
 
       5.times do |i|
-        Fiber do
+        Fiber.schedule do
           assert_operator sleep(i/100.0), :>=, 0
           items << i
         end
@@ -34,7 +34,7 @@ class TestFiberSleep < Test::Unit::TestCase
     thread = Thread.new do
       scheduler = Scheduler.new
       Thread.current.scheduler = scheduler
-      Fiber do
+      Fiber.schedule do
         seconds = sleep(2)
       end
     end

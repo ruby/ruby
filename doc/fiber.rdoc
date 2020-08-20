@@ -101,7 +101,7 @@ context switching points.
 We also introduce a new method which simplifies the creation of these
 non-blocking fibers:
 
-  Fiber do
+  Fiber.schedule do
     puts Fiber.current.blocking? # false
   end
 

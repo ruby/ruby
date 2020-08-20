@@ -2554,7 +2554,8 @@ Init_Cont(void)
     rb_define_method(rb_cFiber, "to_s", fiber_to_s, 0);
     rb_define_alias(rb_cFiber, "inspect", "to_s");
 
-    rb_define_global_function("Fiber", rb_f_fiber, -1);
+    rb_define_singleton_method(rb_cFiber, "schedule", rb_f_fiber, -1);
+    //rb_define_global_function("Fiber", rb_f_fiber, -1);
 
 #ifdef RB_EXPERIMENTAL_FIBER_POOL
     rb_cFiberPool = rb_define_class("Pool", rb_cFiber);
