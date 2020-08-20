@@ -113,11 +113,13 @@ typedef struct rb_io_enc_t rb_io_enc_t;
 /* #define FMODE_INET                  0x00400000 */
 /* #define FMODE_INET6                 0x00800000 */
 
-#define GetOpenFile(obj,fp) rb_io_check_closed((fp) = RFILE(rb_io_taint_check(obj))->fptr)
+#define RB_IO_POINTER(obj,fp) rb_io_check_closed((fp) = RFILE(rb_io_taint_check(obj))->fptr)
+#define GetOpenFile RB_IO_POINTER
 
-#define MakeOpenFile(obj, fp) do {\
+#define RB_IO_OPEN(obj, fp) do {\
     (fp) = rb_io_make_open_file(obj);\
 } while (0)
+#define MakeOpenFile RB_IO_OPEN
 
 rb_io_t *rb_io_make_open_file(VALUE obj);
 
