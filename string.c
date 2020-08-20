@@ -1559,18 +1559,12 @@ rb_str_resurrect(VALUE str)
  *     String.new(str='', encoding: enc)    -> new_str
  *     String.new(str='', capacity: size)   -> new_str
  *
- *  Argument +str+, if given, it must be a
- *  {String-convertible object}[doc/implicit_conversion_rdoc.html#label-String-Convertible+Objects]
- *  (implements +to_str+).
+ *  Argument +str+, if given, it must be a \String.
  *
- *  Argument +encoding+, if given, must be:
- *  - A {String-convertible object}[doc/implicit_conversion_rdoc.html#label-String-Convertible+Objects]
- *    (implements +to_str+).
- *  - The name of an encoding that is compatible with +str+.
+ *  Argument +encoding+, if given, must be the \String name of an encoding
+ *  that is compatible with +str+.
  *
- *  Argument +capacity+, if given, must be an
- *  {Integer-convertible object}[doc/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects]
- *  (implements +to_int+).
+ *  Argument +capacity+, if given, must be an \Integer.
  *
  *  The +str+, +encoding+, and +capacity+ arguments may all be used together:
  *    String.new('hello', encoding: 'UTF-8', capacity: 25)
@@ -1621,15 +1615,6 @@ rb_str_resurrect(VALUE str)
  *
  *  ---
  *
- *  Raises an exception if +str+ is not \String-convertible:
- *    # Raises TypeError (no implicit conversion of Integer into String):
- *    String.new(0)
- *
- *  Raises an exception if +encoding+ is not \String-convertible
- *  or an Encoding object:
- *    # Raises TypeError (no implicit conversion of Integer into String):
- *    String.new(encoding: 0)
- *
  *  Raises an exception if the given +encoding+ is not a valid encoding name:
  *    # Raises ArgumentError (unknown encoding name - FOO)
  *    String.new(encoding: 'FOO')
@@ -1639,10 +1624,6 @@ rb_str_resurrect(VALUE str)
  *    ascii = "Que veut dire \u{e7}a?".force_encoding('ASCII')
  *    # Raises Encoding::CompatibilityError (incompatible character encodings: UTF-8 and US-ASCII)
  *    utf8.include? ascii
- *
- *  Raises an exception if +capacity+ is not \Integer-convertible:
- *    # Raises TypeError (no implicit conversion of Symbol into Integer):
- *    String.new(capacity: :foo)
  */
 
 static VALUE
