@@ -67,8 +67,6 @@ Zachary Scott (zzak)
 [lib/rubygems.rb, lib/rubygems/*]
   Eric Hodel (drbrain), Hiroshi SHIBATA (hsbt)
   https://github.com/rubygems/rubygems
-[lib/set.rb]
-  Akinori MUSHA (knu)
 [lib/securerandom.rb]
   Tanaka Akira (akr)
 [lib/shellwords.rb]
@@ -233,6 +231,9 @@ Zachary Scott (zzak)
   aycabta
   https://github.com/ruby/reline
   https://rubygems.org/gems/reline
+[lib/set.rb]
+  Akinori MUSHA (knu)
+  https://github.com/ruby/set
 [lib/singleton.rb]
   Yukihiro Matsumoto (matz)
   https://github.com/ruby/singleton

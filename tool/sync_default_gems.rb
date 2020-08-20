@@ -62,6 +62,7 @@ $repositories = {
   "net-http": "ruby/net-http",
   bigdecimal: "ruby/bigdecimal",
   optparse: "ruby/optparse",
+  set: "ruby/set",
 }
 
 def sync_default_gems(gem)
