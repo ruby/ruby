@@ -43,5 +43,4 @@ class TestFiberSleep < Test::Unit::TestCase
 
     assert_operator seconds, :>=, 2, "actual: %p" % seconds
   end
-
 end

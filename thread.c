@@ -112,8 +112,6 @@ static VALUE sym_immediate;
 static VALUE sym_on_blocking;
 static VALUE sym_never;
 
-static ID id_wait_for_single_fd;
-
 enum SLEEP_FLAGS {
     SLEEP_DEADLOCKABLE = 0x1,
     SLEEP_SPURIOUS_CHECK = 0x2
@@ -1603,7 +1601,6 @@ rb_nogvl(void *(*func)(void *), void *data1,
     rb_thread_t *th = rb_ec_thread_ptr(ec);
     int saved_errno = 0;
     VALUE ubf_th = Qfalse;
-    VALUE scheduler = th->scheduler;
 
     if (ubf == RUBY_UBF_IO || ubf == RUBY_UBF_PROCESS) {
 	ubf = ubf_select;
@@ -1616,10 +1613,6 @@ rb_nogvl(void *(*func)(void *), void *data1,
         else {
             ubf_th = rb_thread_start_unblock_thread();
         }
-    }
-
-    if (scheduler != Qnil) {
-        rb_funcall(scheduler, rb_intern("enter_blocking_region"), 0);
     }
 
     BLOCKING_REGION(th, {
@@ -1635,10 +1628,6 @@ rb_nogvl(void *(*func)(void *), void *data1,
 
     if (ubf_th != Qfalse) {
         thread_value(rb_thread_kill(ubf_th));
-    }
-
-    if (scheduler != Qnil) {
-        rb_funcall(scheduler, rb_intern("exit_blocking_region"), 0);
     }
 
     errno = saved_errno;
@@ -3749,7 +3738,7 @@ rb_thread_scheduler(VALUE klass)
     return rb_thread_scheduler_if_nonblocking(rb_thread_current());
 }
 
-static VALUE
+VALUE
 rb_thread_current_scheduler()
 {
     return rb_thread_scheduler_if_nonblocking(rb_thread_current());
@@ -4332,15 +4321,6 @@ rb_thread_fd_select(int max, rb_fdset_t * read, rb_fdset_t * write, rb_fdset_t *
     return (int)rb_ensure(do_select, (VALUE)&set, select_set_free, (VALUE)&set);
 }
 
-static VALUE
-rb_thread_timeout(struct timeval *timeout) {
-    if (timeout) {
-        return rb_float_new((double)timeout->tv_sec + (0.000001f * timeout->tv_usec));
-    }
-
-    return Qnil;
-}
-
 #ifdef USE_POLL
 
 /* The same with linux kernel. TODO: make platform independent definition. */
@@ -4356,7 +4336,7 @@ rb_thread_timeout(struct timeval *timeout) {
  * returns a mask of events
  */
 int
-rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
+rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
 {
     struct pollfd fds[2];
     int result = 0, lerrno;
@@ -4366,14 +4346,6 @@ rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
     rb_unblock_function_t *ubf;
     struct waiting_fd wfd;
     int state;
-
-    VALUE scheduler = rb_thread_scheduler_if_nonblocking(rb_thread_current());
-    if (scheduler != Qnil) {
-        VALUE result = rb_funcall(scheduler, id_wait_for_single_fd, 3, INT2NUM(fd), INT2NUM(events),
-            rb_thread_timeout(timeout)
-        );
-        return RTEST(result);
-    }
 
     wfd.th = GET_THREAD();
     wfd.fd = fd;
@@ -4513,16 +4485,8 @@ select_single_cleanup(VALUE ptr)
 }
 
 int
-rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
+rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
 {
-    VALUE scheduler = rb_thread_scheduler_if_nonblocking(rb_thread_current());
-    if (scheduler != Qnil) {
-        VALUE result = rb_funcall(scheduler, id_wait_for_single_fd, 3, INT2NUM(fd), INT2NUM(events),
-            rb_thread_timeout(timeout)
-        );
-        return RTEST(result);
-    }
-
     rb_fdset_t rfds, wfds, efds;
     struct select_args args;
     int r;
@@ -5449,8 +5413,6 @@ Init_Thread(void)
     sym_never = ID2SYM(rb_intern("never"));
     sym_immediate = ID2SYM(rb_intern("immediate"));
     sym_on_blocking = ID2SYM(rb_intern("on_blocking"));
-
-    id_wait_for_single_fd = rb_intern("wait_for_single_fd");
 
     rb_define_singleton_method(rb_cThread, "new", thread_s_new, -1);
     rb_define_singleton_method(rb_cThread, "start", thread_start, -2);

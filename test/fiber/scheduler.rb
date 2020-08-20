@@ -14,15 +14,11 @@ class Scheduler
     @readable = {}
     @writable = {}
     @waiting = {}
-    @blocking = []
-
-    @ios = ObjectSpace::WeakMap.new
   end
 
   attr :readable
   attr :writable
   attr :waiting
-  attr :blocking
 
   def next_timeout
     _fiber, timeout = @waiting.min_by{|key, value| value}
@@ -70,47 +66,11 @@ class Scheduler
     end
   end
 
-  def for_fd(fd)
-    @ios[fd] ||= ::IO.for_fd(fd, autoclose: false)
-  end
-
-  def wait_readable(io)
-    @readable[io] = Fiber.current
-
-    Fiber.yield
-
-    @readable.delete(io)
-
-    return true
-  end
-
-  def wait_readable_fd(fd)
-    wait_readable(
-      for_fd(fd)
-    )
-  end
-
-  def wait_writable(io)
-    @writable[io] = Fiber.current
-
-    Fiber.yield
-
-    @writable.delete(io)
-
-    return true
-  end
-
-  def wait_writable_fd(fd)
-    wait_writable(
-      for_fd(fd)
-    )
-  end
-
   def current_time
     Process.clock_gettime(Process::CLOCK_MONOTONIC)
   end
 
-  def wait_sleep(duration = nil)
+  def kernel_sleep(duration = nil)
     @waiting[Fiber.current] = current_time + duration
 
     Fiber.yield
@@ -118,7 +78,7 @@ class Scheduler
     return true
   end
 
-  def wait_any(io, events, duration)
+  def io_wait(io, events, duration)
     unless (events & IO::READABLE).zero?
       @readable[io] = Fiber.current
     end
@@ -133,23 +93,6 @@ class Scheduler
     @writable.delete(io)
 
     return true
-  end
-
-  def wait_for_single_fd(fd, events, duration)
-    wait_any(
-      for_fd(fd),
-      events,
-      duration
-    )
-  end
-
-  def enter_blocking_region
-    # puts "Enter blocking region: #{caller.first}"
-  end
-
-  def exit_blocking_region
-    # puts "Exit blocking region: #{caller.first}"
-    @blocking << caller.first
   end
 
   def fiber(&block)

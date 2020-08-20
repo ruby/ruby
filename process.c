@@ -13,6 +13,8 @@
 
 #include "ruby/internal/config.h"
 
+#include "internal/scheduler.h"
+
 #include <ctype.h>
 #include <errno.h>
 #include <signal.h>
@@ -4927,7 +4929,7 @@ rb_f_sleep(int argc, VALUE *argv, VALUE _)
     VALUE scheduler = rb_thread_scheduler_if_nonblocking(rb_thread_current());
 
     if (scheduler != Qnil) {
-        rb_funcallv(scheduler, rb_intern("wait_sleep"), argc, argv);
+        rb_scheduler_kernel_sleepv(scheduler, argc, argv);
     }
     else {
         if (argc == 0) {

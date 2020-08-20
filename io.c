@@ -13,6 +13,8 @@
 
 #include "ruby/internal/config.h"
 
+#include "internal/scheduler.h"
+
 #ifdef _WIN32
 # include "ruby/ruby.h"
 # include "ruby/io.h"
@@ -212,6 +214,8 @@ static VALUE sym_DATA;
 #ifdef SEEK_HOLE
 static VALUE sym_HOLE;
 #endif
+
+static VALUE rb_io_initialize(int argc, VALUE *argv, VALUE io);
 
 struct argf {
     VALUE filename, current_file;
@@ -1256,13 +1260,65 @@ io_fflush(rb_io_t *fptr)
     return 0;
 }
 
+VALUE
+rb_io_wait(VALUE io, VALUE events, VALUE timeout) {
+    VALUE scheduler = rb_thread_current_scheduler();
+
+    if (scheduler != Qnil) {
+        return rb_scheduler_io_wait(scheduler, io, events, timeout);
+    }
+
+    rb_io_t * fptr = NULL;
+    RB_IO_POINTER(io, fptr);
+
+    struct timeval tv_storage;
+    struct timeval *tv = NULL;
+
+    if (timeout != Qnil) {
+        tv_storage = rb_time_interval(timeout);
+        tv = &tv_storage;
+    }
+
+    int ready = rb_thread_wait_for_single_fd(fptr->fd, RB_NUM2INT(events), tv);
+
+    if (ready < 0) {
+        rb_sys_fail(0);
+    }
+
+    // Not sure if this is necessary:
+    rb_io_check_closed(fptr);
+
+    if (ready > 0) {
+        return RB_INT2NUM(ready);
+    } else {
+        return Qfalse;
+    }
+}
+
+VALUE
+rb_io_from_fd(int f)
+{
+    VALUE io = rb_obj_alloc(rb_cIO);
+    VALUE argv[] = {RB_INT2NUM(f)};
+
+    rb_io_initialize(1, argv, io);
+
+    rb_io_t *fptr;
+    RB_IO_POINTER(io, fptr);
+
+    fptr->mode &= ~FMODE_PREP;
+
+    return io;
+}
+
 int
 rb_io_wait_readable(int f)
 {
     VALUE scheduler = rb_thread_scheduler_if_nonblocking(rb_thread_current());
     if (scheduler != Qnil) {
-        VALUE result = rb_funcall(scheduler, rb_intern("wait_readable_fd"), 1, INT2NUM(f));
-        return RTEST(result);
+        return RTEST(
+            rb_scheduler_io_wait_readable(scheduler, rb_io_from_fd(f))
+        );
     }
 
     io_fd_check_closed(f);
@@ -1291,8 +1347,9 @@ rb_io_wait_writable(int f)
 {
     VALUE scheduler = rb_thread_scheduler_if_nonblocking(rb_thread_current());
     if (scheduler != Qnil) {
-        VALUE result = rb_funcall(scheduler, rb_intern("wait_writable_fd"), 1, INT2NUM(f));
-        return RTEST(result);
+        return RTEST(
+            rb_scheduler_io_wait_writable(scheduler, rb_io_from_fd(f))
+        );
     }
 
     io_fd_check_closed(f);
@@ -1323,6 +1380,20 @@ rb_io_wait_writable(int f)
       default:
 	return FALSE;
     }
+}
+
+int
+rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
+{
+    VALUE scheduler = rb_thread_current_scheduler();
+
+    if (scheduler != Qnil) {
+        return RTEST(
+            rb_scheduler_io_wait(scheduler, rb_io_from_fd(fd), RB_INT2NUM(events), rb_scheduler_timeout(timeout))
+        );
+    }
+
+    return rb_thread_wait_for_single_fd(fd, events, timeout);
 }
 
 static void
@@ -10975,7 +11046,7 @@ rb_thread_scheduler_wait_for_single_fd(void * _args)
 {
     struct wait_for_single_fd *args = (struct wait_for_single_fd *)_args;
 
-    args->result = rb_funcall(args->scheduler, rb_intern("wait_for_single_fd"), 3, INT2NUM(args->fd), INT2NUM(args->events), Qnil);
+    args->result = rb_scheduler_io_wait(args->scheduler, rb_io_from_fd(args->fd), INT2NUM(args->events), Qnil);
 
     return NULL;
 }
