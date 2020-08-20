@@ -71,10 +71,23 @@ AC_SUBST(TEENY)
 AC_SUBST(RUBY_API_VERSION, '$(MAJOR).$(MINOR)')
 AC_SUBST(RUBY_PROGRAM_VERSION, '$(MAJOR).$(MINOR).$(TEENY)')
 
+AS_IF([test "$program_prefix" = NONE], [
+  program_prefix=
+])
+AS_IF([test "$prefix" -ef .], [
+  AC_MSG_ERROR(--prefix cannot be the current working directory.)
+])
+RUBY_BASE_NAME=`echo ruby | sed "$program_transform_name"`
+RUBYW_BASE_NAME=`echo rubyw | sed "$program_transform_name"`
+AC_SUBST(RUBY_BASE_NAME)
+AC_SUBST(RUBYW_BASE_NAME)
+AC_SUBST(RUBY_VERSION_NAME, '${RUBY_BASE_NAME}-${ruby_version}')
+
 dnl checks for alternative programs
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 AC_CANONICAL_TARGET
+AC_ARG_PROGRAM
 RUBY_RM_RECURSIVE
 AC_ARG_WITH(gcc,
 	AS_HELP_STRING([--without-gcc], [never use gcc]),
@@ -177,18 +190,6 @@ AC_CHECK_TOOLS([OBJCOPY], [gobjcopy objcopy])
 AC_CHECK_TOOLS([OBJDUMP], [gobjdump objdump])
 AC_CHECK_TOOLS([STRIP],   [gstrip strip], [:])
 
-AS_IF([test "$program_prefix" = NONE], [
-  program_prefix=
-])
-AS_IF([test "$prefix" -ef .], [
-  AC_MSG_ERROR(--prefix cannot be the current working directory.)
-])
-RUBY_BASE_NAME=`echo ruby | sed "$program_transform_name"`
-RUBYW_BASE_NAME=`echo rubyw | sed "$program_transform_name"`
-AC_SUBST(RUBY_BASE_NAME)
-AC_SUBST(RUBYW_BASE_NAME)
-AC_SUBST(RUBY_VERSION_NAME, '${RUBY_BASE_NAME}-${ruby_version}')
-
 test x"$target_alias" = x &&
 target_os=`echo $target_os | sed 's/linux-gnu$/linux/;s/linux-gnu/linux-/'`
 ac_install_sh='' # unusable for extension libraries.
@@ -235,8 +236,6 @@ AC_ARG_WITH(arch,
 AC_ARG_ENABLE(load-relative,
        AS_HELP_STRING([--enable-load-relative], [resolve load paths at run time]),
        [load_relative=$enableval])
-
-AC_ARG_PROGRAM
 
 dnl Checks for programs.
 
