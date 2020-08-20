@@ -1810,7 +1810,7 @@ rb_hash_initialize(int argc, VALUE *argv, VALUE hash)
  *    Hash[] -> new_empty_hash
  *    Hash[ [*2_element_arrays] ] -> new_hash
  *    Hash[*objects] -> new_hash
- *    Hash[hash_convertible_object] -> new_hash
+ *    Hash[hash] -> new_hash
  *
  *  Returns a new \Hash object populated with the given objects, if any.
  *
@@ -1836,7 +1836,7 @@ rb_hash_initialize(int argc, VALUE *argv, VALUE hash)
  *    Hash[] # => {}
  *    Hash[:foo, 0, :bar, 1] # => {:foo=>0, :bar=>1}
  *
- *  When argument <tt>hash_convertible_object</tt> is given,
+ *  When argument <tt>hash</tt> is given,
  *  the argument must be a \Hash:
  *    class Foo
  *      def to_hash
