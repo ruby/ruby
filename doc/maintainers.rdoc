@@ -48,8 +48,6 @@ Zachary Scott (zzak)
   _unmaintained_
 [lib/erb.rb]
   Masatoshi SEKI (seki), Takashi Kokubun (k0kubun)
-[lib/find.rb]
-  Kazuki Tsujimoto (ktsj)
 [lib/mkmf.rb]
   _unmaintained_
 [lib/open-uri.rb]
@@ -146,6 +144,9 @@ Zachary Scott (zzak)
   _unmaintained_
   https://github.com/ruby/fileutils
   https://rubygems.org/gems/fileutils
+[lib/find.rb]
+  Kazuki Tsujimoto (ktsj)
+  https://github.com/ruby/find
 [lib/forwardable.rb]
   Keiju ISHITSUKA (keiju)
   https://github.com/ruby/forwardable

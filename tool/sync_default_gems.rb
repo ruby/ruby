@@ -63,6 +63,7 @@ $repositories = {
   bigdecimal: "ruby/bigdecimal",
   optparse: "ruby/optparse",
   set: "ruby/set",
+  find: "ruby/find",
 }
 
 def sync_default_gems(gem)

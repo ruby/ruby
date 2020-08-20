@@ -13,7 +13,6 @@ Base64:: Support for encoding and decoding binary data using a Base64 representa
 DEBUGGER__:: Debugging functionality for Ruby
 DRb:: Distributed object system for Ruby
 ERB:: An easy to use but powerful templating system for Ruby
-Find:: This module supports top-down traversal of a set of file paths
 MakeMakefile:: Module used to generate a Makefile for C extensions
 OpenURI:: An easy-to-use wrapper for Net::HTTP, Net::HTTPS and Net::FTP
 PP:: Provides a PrettyPrinter for Ruby objects
@@ -55,6 +54,7 @@ Delegator:: Provides three abilities to delegate method calls to an object
 DidYouMean:: "Did you mean?" experience in Ruby
 English.rb:: Require 'English.rb' to reference global variables with less cryptic names
 FileUtils:: Several file utility methods for copying, moving, removing, etc
+Find:: This module supports top-down traversal of a set of file paths
 Forwardable:: Provides delegation of specified methods to a designated object
 GetoptLong:: Parse command line options similar to the GNU C getopt_long()
 IPAddr:: Provides methods to manipulate IPv4 and IPv6 IP addresses
