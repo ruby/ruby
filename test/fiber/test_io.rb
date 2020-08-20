@@ -22,12 +22,12 @@ class TestFiberIO < Test::Unit::TestCase
       scheduler = Scheduler.new
       Thread.current.scheduler = scheduler
 
-      Fiber do
+      Fiber.schedule do
         message = i.read(20)
         i.close
       end
 
-      Fiber do
+      Fiber.schedule do
         o.write("Hello World")
         o.close
       end
@@ -50,12 +50,12 @@ class TestFiberIO < Test::Unit::TestCase
         scheduler = Scheduler.new
         Thread.current.scheduler = scheduler
 
-        Fiber do
+        Fiber.schedule do
           i.read(20)
           i.close
         end
 
-        Fiber do
+        Fiber.schedule do
           o.write("Hello World")
           o.close
         end
