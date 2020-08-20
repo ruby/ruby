@@ -19,6 +19,7 @@ io.rb
 kernel.rb
 pack.rb
 trace_point.rb
+trueclass.rb
 warning.rb
 
 # the lib/ directory (which has its own .document file)

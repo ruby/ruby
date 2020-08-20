@@ -1,0 +1,8 @@
+benchmark:
+  to_s: |
+    true.to_s
+  inspect: |
+    true.inspect
+  or: |
+    true | false
+loop_count: 1000000

@@ -1424,21 +1424,6 @@ nil_match(VALUE obj1, VALUE obj2)
  *  <code>true</code> to be used in logical expressions.
  */
 
-
-/*
- * call-seq:
- *   true.to_s   ->  "true"
- *
- * The string representation of <code>true</code> is "true".
- */
-
-static VALUE
-true_to_s(VALUE obj)
-{
-    return rb_cTrueClass_to_s;
-}
-
-
 /*
  *  call-seq:
  *     true & obj    -> true or false
@@ -1452,29 +1437,6 @@ true_and(VALUE obj, VALUE obj2)
 {
     return RTEST(obj2)?Qtrue:Qfalse;
 }
-
-/*
- *  call-seq:
- *     true | obj   -> true
- *
- *  Or---Returns <code>true</code>. As <i>obj</i> is an argument to
- *  a method call, it is always evaluated; there is no short-circuit
- *  evaluation in this case.
- *
- *     true |  puts("or")
- *     true || puts("logical or")
- *
- *  <em>produces:</em>
- *
- *     or
- */
-
-static VALUE
-true_or(VALUE obj, VALUE obj2)
-{
-    return Qtrue;
-}
-
 
 /*
  *  call-seq:
@@ -4665,12 +4627,7 @@ InitVM_Object(void)
     rb_deprecate_constant(rb_cObject, "Data");
 
     rb_cTrueClass = rb_define_class("TrueClass", rb_cObject);
-    rb_cTrueClass_to_s = rb_fstring_enc_lit("true", rb_usascii_encoding());
-    rb_gc_register_mark_object(rb_cTrueClass_to_s);
-    rb_define_method(rb_cTrueClass, "to_s", true_to_s, 0);
-    rb_define_alias(rb_cTrueClass, "inspect", "to_s");
     rb_define_method(rb_cTrueClass, "&", true_and, 1);
-    rb_define_method(rb_cTrueClass, "|", true_or, 1);
     rb_define_method(rb_cTrueClass, "^", true_xor, 1);
     rb_define_method(rb_cTrueClass, "===", case_equal, 1);
     rb_undef_alloc_func(rb_cTrueClass);
@@ -4690,6 +4647,7 @@ InitVM_Object(void)
 }
 
 #include "kernel.rbinc"
+#include "trueclass.rbinc"
 
 void
 Init_Object(void)
