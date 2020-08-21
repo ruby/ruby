@@ -135,7 +135,7 @@ AS_CASE(["/${rb_CC} "],
 ],
 [*gcc*],              [
     # Dito for GCC.
-    : ${LD:="${CC}"}
+    AC_CHECK_TOOL([LD],      [`echo "${rb_CC}" | sed s/gcc/ld/`])
     AC_CHECK_TOOL([AR],      [`echo "${rb_CC}" | sed s/gcc/gcc-ar/`])
     AC_CHECK_TOOL([CXX],     [`echo "${rb_CC}" | sed s/gcc/g++/`])
     AC_CHECK_TOOL([NM],      [`echo "${rb_CC}" | sed s/gcc/gcc-nm/`])
