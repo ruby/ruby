@@ -20,7 +20,7 @@ class TestErbCommand < Test::Unit::TestCase
   def test_deprecated_option
     warnings = [
       "warning: -S option of erb command is deprecated. Please do not use this.",
-      /\n.+\/bin\/erb:\d+: warning: Passing safe_level with the 2nd argument of ERB\.new is deprecated\. Do not use it, and specify other arguments as keyword arguments\.\n/,
+      /\n.+\/libexec\/erb:\d+: warning: Passing safe_level with the 2nd argument of ERB\.new is deprecated\. Do not use it, and specify other arguments as keyword arguments\.\n/,
     ]
     assert_in_out_err(["-w",
                        File.expand_path("../../../libexec/erb", __FILE__),
