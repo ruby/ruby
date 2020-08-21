@@ -2383,7 +2383,7 @@ key_i(VALUE key, VALUE value, VALUE arg)
  *    h.key(0) # => :foo
  *    h.key(2) # => :bar
  *
- *  Returns nil if so such value is found.
+ *  Returns +nil+ if so such value is found.
  */
 
 static VALUE
@@ -4552,7 +4552,7 @@ rassoc_i(VALUE key, VALUE val, VALUE arg)
  *    h = {foo: 0, bar: 1, baz: 1}
  *    h.rassoc(1) # => [:bar, 1]
  *
- *  Returns nil if no such value found.
+ *  Returns +nil+ if no such value found.
  */
 
 VALUE
@@ -5361,7 +5361,7 @@ env_delete(VALUE name)
  *   ENV['foo'] = '0'
  *   ENV.delete('foo') # => '0'
  *
- * Returns +nil+ if the named environment variable does not exist.
+ * If a block is not given and the named environment variable does not exist, returns +nil+.
  *
  * If a block given and the environment variable does not exist,
  * yields +name+ to the block and returns the value of the block:
@@ -5392,7 +5392,7 @@ env_delete_m(VALUE obj, VALUE name)
  * Returns the value for the environment variable +name+ if it exists:
  *   ENV['foo'] = '0'
  *   ENV['foo'] # => "0"
- * Returns nil if the named variable does not exist.
+ * Returns +nil+ if the named variable does not exist.
  *
  * Raises an exception if +name+ is invalid.
  * See {Invalid Names and Values}[#class-ENV-label-Invalid+Names+and+Values].
