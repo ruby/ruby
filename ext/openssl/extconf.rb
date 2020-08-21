@@ -130,7 +130,6 @@ engines.each { |name|
 if !have_struct_member("SSL", "ctx", "openssl/ssl.h") || is_libressl
   $defs.push("-DHAVE_OPAQUE_OPENSSL")
 end
-have_func("CRYPTO_lock") || $defs.push("-DHAVE_OPENSSL_110_THREADING_API")
 have_func("BN_GENCB_new")
 have_func("BN_GENCB_free")
 have_func("BN_GENCB_get_arg")
