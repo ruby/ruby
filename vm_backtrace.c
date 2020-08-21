@@ -129,10 +129,6 @@ location_mark_entry(rb_backtrace_location_t *fi)
 	rb_gc_mark_movable((VALUE)fi->body.iseq.iseq);
 	break;
       case LOCATION_TYPE_CFUNC:
-        if (fi->body.cfunc.prev_loc) {
-            location_mark_entry(fi->body.cfunc.prev_loc);
-        }
-        break;
       case LOCATION_TYPE_IFUNC:
       default:
 	break;
