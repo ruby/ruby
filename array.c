@@ -1343,10 +1343,7 @@ rb_ary_pop(VALUE ary)
  *    a.pop # => 2
  *    a # => [:foo, "bar"]
  *
- *  Returns +nil+ if the array is empty:
- *
- *    a = []
- *    a.pop # => nil
+ *  Returns +nil+ if the array is empty.
  *
  *  ---
  *
@@ -1449,8 +1446,7 @@ rb_ary_shift(VALUE ary)
  *    a.shift # => :foo
  *    a # => ['bar', 2]
  *
- *  Returns +nil+ if +self+ is empty:
- *    [].shift # => nil
+ *  Returns +nil+ if +self+ is empty.
  *
  *  ---
  *
@@ -1735,10 +1731,7 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *    a[-1] # => 2
  *    a[-2] # => "bar"
  *
- *  If +index+ is out of range, returns +nil+:
- *    a = [:foo, 'bar', 2]
- *    a[50] # => nil
- *    a[-50] # => nil
+ *  If +index+ is out of range, returns +nil+.
  *
  *  ---
  *
@@ -1761,10 +1754,7 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *    a[a.size, 0] # => []
  *    a[a.size, 50] # => []
  *
- *  If +length+ is negative, returns +nil+:
- *    a = [:foo, 'bar', 2]
- *    a[2, -1] # => nil
- *    a[1, -2] # => nil
+ *  If +length+ is negative, returns +nil+.
  *
  *  ---
  *
@@ -1795,11 +1785,7 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *    a[-2..2] # => ["bar", 2]
  *    a[-3..2] # => [:foo, "bar", 2]
  *
- *  If <tt>range.start</tt> is larger than the array size, returns +nil+:
- *    a = [:foo, 'bar', 2]
- *    a[4..1] # => nil
- *    a[4..0] # => nil
- *    a[4..-1] # => nil
+ *  If <tt>range.start</tt> is larger than the array size, returns +nil+.
  */
 
 VALUE
@@ -1879,8 +1865,7 @@ rb_ary_at(VALUE ary, VALUE pos)
  *    a.first # => :foo
  *    a # => [:foo, "bar", 2]
  *
- *  If +self+ is empty, returns +nil+:
- *    [].first # => nil
+ *  If +self+ is empty, returns +nil+.
  *
  *  ---
  *
@@ -1932,8 +1917,7 @@ rb_ary_first(int argc, VALUE *argv, VALUE ary)
  *    a.last # => 2
  *    a # => [:foo, "bar", 2]
  *
- *  If +self+ is empty, returns +nil+:
- *    [].last # => nil
+ *  If +self+ is empty, returns +nil+.
  *
  *  ---
  *
@@ -1998,7 +1982,6 @@ rb_ary_last(int argc, const VALUE *argv, VALUE ary)
  *  otherwise returns +default_value+:
  *    a = [:foo, 'bar', 2]
  *    a.fetch(1, nil) # => "bar"
- *    a.fetch(50, nil) # => nil
  *
  *  ---
  *
@@ -2068,9 +2051,7 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
  *    a = [:foo, 'bar', 2, 'bar']
  *    a.index('bar') # => 1
  *
- *  Returns +nil+ if no such element found:
- *    a = [:foo, 'bar', 2]
- *    a.index(:nosuch) # => nil
+ *  Returns +nil+ if no such element found.
  *
  *  ---
  *
@@ -2080,9 +2061,7 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
  *    a = [:foo, 'bar', 2, 'bar']
  *    a.index { |element| element == 'bar' } # => 1
  *
- *  Returns +nil+ if the block never returns a truthy value:
- *    a = [:foo, 'bar', 2]
- *    a.index { |element| element == :X } # => nil
+ *  Returns +nil+ if the block never returns a truthy value.
  *
  *  ---
  *
@@ -2143,9 +2122,7 @@ rb_ary_index(int argc, VALUE *argv, VALUE ary)
  *    a = [:foo, 'bar', 2, 'bar']
  *    a.rindex('bar') # => 3
  *
- *  Returns +nil+ if no such object found:
- *    a = [:foo, 'bar', 2]
- *    a.rindex(:nosuch) # => nil
+ *  Returns +nil+ if no such object found.
  *
  *  ---
  *
@@ -2154,10 +2131,7 @@ rb_ary_index(int argc, VALUE *argv, VALUE ary)
  *    a = [:foo, 'bar', 2, 'bar']
  *    a.rindex {|element| element == 'bar' } # => 3
  *
- *  Returns +nil+ if the block never returns a truthy value:
- *
- *    a = [:foo, 'bar', 2]
- *    a.rindex {|element| element == :X } # => nil
+ *  Returns +nil+ if the block never returns a truthy value.
  *
  *  ---
  *
@@ -4109,9 +4083,7 @@ select_bang_ensure(VALUE a)
  *    a1 # => ["bar", :bam]
  *    a1.equal?(a) # => true # Returned self
  *
- *  Returns +nil+ if no elements were removed:
- *    a = [:foo, 'bar', 2, :bam]
- *    a.select! { |element| element.kind_of?(Object) } # => nil
+ *  Returns +nil+ if no elements were removed.
  *
  *  ---
  *
@@ -4189,9 +4161,7 @@ ary_resize_smaller(VALUE ary, long len)
  *    a # => [:foo, 2]
  *    deleted_obj.equal?(s2) # => true # Returned self
  *
- *  Returns +nil+ if no elements removed:
- *    a = [:foo, 'bar', 2]
- *    a.delete(:nosuch) # => nil
+ *  Returns +nil+ if no elements removed.
  *
  *  ---
  *
@@ -4302,9 +4272,7 @@ rb_ary_delete_at(VALUE ary, long pos)
  *    a.delete_at(1) # => "bar"
  *    a # => [:foo, 2]
  *
- *  If index is too large, returns nil:
- *    a = [:foo, 'bar', 2]
- *    a.delete_at(5) # => nil
+ *  If index is too large, returns +nil+.
  *
  *  ---
  *
@@ -4313,9 +4281,7 @@ rb_ary_delete_at(VALUE ary, long pos)
  *    a.delete_at(-2) # => "bar"
  *    a # => [:foo, 2]
  *
- *  If +index+ is too small (far from zero), returns nil:
- *    a = [:foo, 'bar', 2]
- *    a.delete_at(-5) # => nil
+ *  If +index+ is too small (far from zero), returns nil.
  */
 
 static VALUE
@@ -4380,11 +4346,7 @@ ary_slice_bang_by_rb_ary_splice(VALUE ary, long pos, long len)
  *    a.slice!(-1) # => 2
  *    a # => [:foo, "bar"]
  *
- *  If +n+ is out of range, returns +nil+:
- *    a = [:foo, 'bar', 2]
- *    a.slice!(50) # => nil
- *    a.slice!(-50) # => nil
- *    a # => [:foo, "bar", 2]
+ *  If +n+ is out of range, returns +nil+.
  *
  *  ---
  *
@@ -4408,11 +4370,7 @@ ary_slice_bang_by_rb_ary_splice(VALUE ary, long pos, long len)
  *    a.slice!(a.size, 50) # => []
  *    a # => [:foo, "bar", 2]
  *
- *  If +length+ is negative, returns +nil+:
- *    a = [:foo, 'bar', 2]
- *    a.slice!(2, -1) # => nil
- *    a.slice!(1, -2) # => nil
- *    a # => [:foo, "bar", 2]
+ *  If +length+ is negative, returns +nil+.
  *
  *  ---
  *
@@ -4430,11 +4388,7 @@ ary_slice_bang_by_rb_ary_splice(VALUE ary, long pos, long len)
  *    a.slice!(a.size..-50) # => []
  *    a # => [:foo, "bar", 2]
  *
- *  If <tt>range.start</tt> is larger than the array size, returns +nil+:
- *    a = [:foo, 'bar', 2]
- *    a.slice!(4..1) # => nil
- *    a.slice!(4..0) # => nil
- *    a.slice!(4..-1) # => nil
+ *  If <tt>range.start</tt> is larger than the array size, returns +nil+.
  *
  *  If <tt>range.end</tt> is negative, counts backwards from the end of the array:
  *    a = [:foo, 'bar', 2]
@@ -4551,9 +4505,7 @@ ary_reject_bang(VALUE ary)
  *    a1 # => [:foo, 2]
  *    a1.equal?(a) # => true # Returned self
  *
- *  Returns +nil+ if no elements removed:
- *    a = [:foo, 'bar', 2]
- *    a.reject! {|element| false } # => nil
+ *  Returns +nil+ if no elements removed.
  *
  *  Returns a new \Enumerator if no block given:
  *    a = [:foo, 'bar', 2]
@@ -5339,9 +5291,7 @@ rb_ary_times(VALUE ary, VALUE times)
  *    a = [{foo: 0}, [2, 4], [4, 5, 6], [4, 5]]
  *    a.assoc(4) # => [4, 5, 6]
  *
- *  Returns +nil+ if no such element is found:
- *    a = [{foo: 0}, [2, 4], [4, 5, 6], [4, 5]]
- *    a.assoc(:nosuch) # => nil
+ *  Returns +nil+ if no such element is found.
  *
  *  See also #rassoc.
  */
@@ -5370,9 +5320,7 @@ rb_ary_assoc(VALUE ary, VALUE key)
  *    a = [{foo: 0}, [2, 4], [4, 5, 6], [4, 5]]
  *    a.rassoc(4) # => [2, 4]
  *
- *  Returns +nil+ if no such element is found:
- *    a = [{foo: 0}, [2, 4], [4, 5, 6], [4, 5]]
- *    a.rassoc(:nosuch) # => nil
+ *  Returns +nil+ if no such element is found.
  *
  *  See also #assoc.
  */
@@ -5624,7 +5572,6 @@ recursive_cmp(VALUE ary1, VALUE ary2, int recur)
  *      [0, 1, 2] <=> [0, 1, 2] # => 0
  *
  *  Returns +nil+ if +other_array+ is not an \Array.
- *    [] <=> 0 # => nil
  */
 
 VALUE
@@ -6442,8 +6389,7 @@ push_value(st_data_t key, st_data_t val, st_data_t ary)
  *    a1 # => [0, 1, 2]
  *    a1.equal?(a) # => true # Returned self
  *
- *  Returns +nil+ if no elements removed:
- *    [0, 1, 2].uniq! # => nil
+ *  Returns +nil+ if no elements removed.
  *
  *  ---
  *
@@ -6457,8 +6403,7 @@ push_value(st_data_t key, st_data_t val, st_data_t ary)
  *    a1 # => ['a', 'aa', 'aaa']
  *    a1.equal?(a) # => true # Returned self
  *
- *  Returns +nil+ if no elements removed:
- *    a.uniq! {|element| element.size } # => nil
+ *  Returns +nil+ if no elements removed.
  */
 static VALUE
 rb_ary_uniq_bang(VALUE ary)
@@ -6547,8 +6492,7 @@ rb_ary_uniq(VALUE ary)
  *    a1 = a.compact! # => [0, 1, 2]
  *    a1.equal?(a) # => true # Returned self
  *
- *  Returns +nil+ if no elements removed:
- *    [0, 1, 2].compact! # => nil
+ *  Returns +nil+ if no elements removed.
  */
 
 static VALUE
