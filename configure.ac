@@ -3087,14 +3087,21 @@ AC_SUBST(DLEXT)
 AS_IF([test "$with_dln_a_out" = yes], [
   STRIP=true
 ], [
-  AC_CHECK_TOOL(STRIP, strip, :)dnl
+    AC_MSG_CHECKING([for $STRIP flags])
+    AC_LINK_IFELSE([AC_LANG_PROGRAM], [AS_IF(
+        ["${STRIP}" -A -n conftest$ac_exeext 2>/dev/null], [
+            AC_MSG_RESULT([-A -n])
+            STRIP="${STRIP} -A -n"
+        ],
+        ["${STRIP}" -S -x conftest$ac_exeext 2>/dev/null], [
+            AC_MSG_RESULT([-S -x])
+            STRIP="${STRIP} -S -x"
+        ], [
+            AC_MSG_RESULT([none needed])
+        ])
+    ])
 ])
 
-AS_CASE(["$target_os"],
-  [linux* | gnu* | k*bsd*-gnu | kopensolaris*-gnu], [
-	STRIP="$STRIP -S -x"],
-  [darwin*], [
-	STRIP="$STRIP -A -n"])
 
 AC_ARG_WITH(ext,
             AC_HELP_STRING([--with-ext=EXTS],
