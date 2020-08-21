@@ -1115,6 +1115,20 @@ main()
 [	LIBS="-lm $LIBS"])
 : ${ORIG_LIBS=$LIBS}
 
+AS_IF([test -n "${CXX}"], [
+    RUBY_WERROR_FLAG([
+        AC_MSG_CHECKING([whether CXXFLAGS is valid])
+        AC_LANG_PUSH(C++)
+        AC_TRY_COMPILE([@%:@include <cstdio>], [], [AC_MSG_RESULT(yes)], [
+            AC_MSG_RESULT(no)
+            # The message mentions CXXFLAGS, but CPPFLAGS might also affects.
+            AC_MSG_WARN([something wrong with CXXFLAGS="$CXXFLAGS"])
+            CXX=false
+        ])
+        AC_LANG_POP(C++)
+    ])
+])
+
 AC_CHECK_LIB(crypt, crypt)      # glibc (GNU/Linux, GNU/Hurd, GNU/kFreeBSD)
 AC_CHECK_LIB(dl, dlopen)	# Dynamic linking for SunOS/Solaris and SYSV
 AC_CHECK_LIB(dld, shl_load)	# Dynamic linking for HP-UX
