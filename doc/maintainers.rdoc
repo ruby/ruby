@@ -46,8 +46,6 @@ Zachary Scott (zzak)
   Masatoshi SEKI (seki)
 [lib/debug.rb]
   _unmaintained_
-[lib/erb.rb]
-  Masatoshi SEKI (seki), Takashi Kokubun (k0kubun)
 [lib/mkmf.rb]
   _unmaintained_
 [lib/open-uri.rb]
@@ -138,6 +136,9 @@ Zachary Scott (zzak)
 [lib/did_you_mean.rb]
   Yuki Nishijima (yuki24)
   https://github.com/ruby/did_you_mean
+[lib/erb.rb]
+  Masatoshi SEKI (seki), Takashi Kokubun (k0kubun)
+  https://github.com/ruby/erb
 [lib/fileutils.rb]
   _unmaintained_
   https://github.com/ruby/fileutils

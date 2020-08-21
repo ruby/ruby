@@ -65,6 +65,7 @@ $repositories = {
   set: "ruby/set",
   find: "ruby/find",
   rinda: "ruby/rinda",
+  erb: "ruby/erb",
 }
 
 def sync_default_gems(gem)
@@ -264,6 +265,12 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/did_you_mean.gemspec", "lib/did_you_mean")
     cp_r("#{upstream}/test", "test/did_you_mean")
     rm_rf(%w[test/did_you_mean/tree_spell/test_explore.rb])
+  when "erb"
+    rm_rf(%w[lib/erb* test/erb libexec/erb])
+    cp_r("#{upstream}/lib/erb.rb", "lib")
+    cp_r("#{upstream}/test/erb", "test")
+    cp_r("#{upstream}/erb.gemspec", "lib")
+    cp_r("#{upstream}/exe/erb", "libexec")
   else
     sync_lib gem
   end
