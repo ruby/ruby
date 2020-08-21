@@ -176,6 +176,9 @@ AS_CASE(["${target_os}"],
     ac_cv_prog_ac_ct_OBJCOPY=":"
 ])
 
+rb_test_CFLAGS=${CFLAGS+yes}
+rb_test_CXXFLAGS=${CXXFLAGS+yes}
+
 # BSD's ports and MacPorts prefix GNU binutils with 'g'
 AC_PROG_CC_C99
 AC_PROG_CXX
@@ -188,6 +191,9 @@ AC_CHECK_TOOLS([NM],      [gnm nm])
 AC_CHECK_TOOLS([OBJCOPY], [gobjcopy objcopy])
 AC_CHECK_TOOLS([OBJDUMP], [gobjdump objdump])
 AC_CHECK_TOOLS([STRIP],   [gstrip strip], [:])
+
+AS_IF([test ! $rb_test_CFLAGS], [AS_UNSET(CFLAGS)]); AS_UNSET(rb_test_CFLAGS)
+AS_IF([test ! $rb_test_CXXFLAGS], [AS_UNSET(CXXFLAGS)]); AS_UNSET(rb_save_CXXFLAGS)
 
 test x"$target_alias" = x &&
 target_os=`echo $target_os | sed 's/linux-gnu$/linux/;s/linux-gnu/linux-/'`
