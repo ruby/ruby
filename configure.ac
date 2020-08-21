@@ -180,7 +180,6 @@ AS_CASE(["${target_os}"],
 AC_PROG_CC_C99
 AC_PROG_CXX
 AC_PROG_CPP
-AC_PROG_CXXCPP
 AC_PROG_RANLIB
 AC_CHECK_TOOLS([AR],      [gar ar])
 AC_CHECK_TOOLS([AS],      [gas as])
