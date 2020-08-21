@@ -1951,10 +1951,7 @@ rb_check_hash_type(VALUE hash)
  *    h1 = Hash.try_convert(h)
  *    h1.equal?(h) # => true # Identity check
  *
- *  Returns <tt>nil</tt> unless <tt>obj.respond_to?(:to_hash)</tt>:
- *    s = 'foo'
- *    s.respond_to?(:to_hash) # => false
- *    Hash.try_convert(s) # => nil
+ *  Returns <tt>nil</tt> unless <tt>obj.respond_to?(:to_hash)</tt>.
  *
  *  ---
  *
@@ -2386,8 +2383,7 @@ key_i(VALUE key, VALUE value, VALUE arg)
  *    h.key(0) # => :foo
  *    h.key(2) # => :bar
  *
- *  Returns nil if so such value is found:
- *    h.key(:nosuch) # => nil
+ *  Returns nil if so such value is found.
  */
 
 static VALUE
@@ -2473,10 +2469,7 @@ rb_hash_delete(VALUE hash, VALUE key)
  *    h.delete(:bar) # => 1
  *    h # => {:foo=>0, :baz=>2}
  *
- *  If no block given and +key+ is not found, returns +nil+:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    h.delete(:nosuch) # => nil
- *    h # => {:foo=>0, :bar=>1, :baz=>2}
+ *  If no block given and +key+ is not found, returns +nil+.
  *
  *  If a block is given and +key+ is found, ignores the block,
  *  deletes the entry, and returns the associated value:
@@ -2649,10 +2642,7 @@ rb_hash_delete_if(VALUE hash)
  *    h1 # => {:baz=>2}
  *    h1.equal?(h) # => true # Identity check
  *
- *  Returns +nil+ if no entries are removed:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    h.reject! {|key, value| value > 2 } # => nil
- *    h # => {:foo=>0, :bar=>1, :baz=>2}
+ *  Returns +nil+ if no entries are removed.
  *
  *  Returns a new \Enumerator if no block given:
  *    h = {foo: 0, bar: 1, baz: 2}
@@ -2935,10 +2925,7 @@ keep_if_i(VALUE key, VALUE value, VALUE hash)
  *    h # => {:foo=>0, :bar=>1}
  *    h1.equal?(h) # => true
  *
- *  Returns +nil+ if no entries were removed:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    h.select! {|key, value| value < 3} # => nil
- *    h # => {:foo=>0, :bar=>1, :baz=>2}
+ *  Returns +nil+ if no entries were removed.
  *
  *  Returns a new \Enumerator if no block given:
  *    h = {foo: 0, bar: 1, baz: 2}
@@ -4504,9 +4491,7 @@ assoc_i(VALUE key, VALUE val, VALUE arg)
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.assoc(:bar) # => [:bar, 1]
  *
- *  Returns +nil+ if key +key+ is not found:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    h.assoc(:nosuch) # => nil
+ *  Returns +nil+ if key +key+ is not found.
  */
 
 VALUE
@@ -4567,9 +4552,7 @@ rassoc_i(VALUE key, VALUE val, VALUE arg)
  *    h = {foo: 0, bar: 1, baz: 1}
  *    h.rassoc(1) # => [:bar, 1]
  *
- *  Returns nil if no such value found:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    h.rassoc(3) # => nil
+ *  Returns nil if no such value found.
  */
 
 VALUE
@@ -4709,10 +4692,7 @@ rb_hash_compact(VALUE hash)
  *    h1 # => {:foo=>0, :baz=>2}
  *    h1.equal?(h) # => true
  *
- *  Returns +nil+ if no entries were removed:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    h.compact! # => nil
- *    h # => {:foo=>0, :bar=>1, :baz=>2}
+ *  Returns +nil+ if no entries were removed.
  */
 
 static VALUE
@@ -5380,15 +5360,18 @@ env_delete(VALUE name)
  * Deletes the environment variable with +name+ if it exists and returns its value:
  *   ENV['foo'] = '0'
  *   ENV.delete('foo') # => '0'
- * Returns +nil+ if the named environment variable does not exist:
- *   ENV.delete('foo') # => nil
+ *
+ * Returns +nil+ if the named environment variable does not exist.
+ *
  * If a block given and the environment variable does not exist,
  * yields +name+ to the block and returns the value of the block:
  *   ENV.delete('foo') { |name| name * 2 } # => "foofoo"
+ *
  * If a block given and the environment variable exists,
  * deletes the environment variable and returns its value (ignoring the block):
  *   ENV['foo'] = '0'
  *   ENV.delete('foo') { |name| raise 'ignored' } # => "0"
+ *
  * Raises an exception if +name+ is invalid.
  * See {Invalid Names and Values}[#class-ENV-label-Invalid+Names+and+Values].
  */
@@ -5409,9 +5392,8 @@ env_delete_m(VALUE obj, VALUE name)
  * Returns the value for the environment variable +name+ if it exists:
  *   ENV['foo'] = '0'
  *   ENV['foo'] # => "0"
- * Returns nil if the named variable does not exist:
- *   ENV.clear
- *   ENV['foo'] # => nil
+ * Returns nil if the named variable does not exist.
+ *
  * Raises an exception if +name+ is invalid.
  * See {Invalid Names and Values}[#class-ENV-label-Invalid+Names+and+Values].
  */
@@ -6391,10 +6373,7 @@ env_to_a(VALUE _)
  *
  * (Provided for compatibility with Hash.)
  *
- * Does not modify ENV; returns +nil+:
- *   ENV.replace('foo' => '0', 'bar' => '1')
- *   ENV.rehash # => nil
- *   ENV # => {"bar"=>"1", "foo"=>"0"}
+ * Does not modify ENV; returns +nil+.
  */
 static VALUE
 env_none(VALUE _)
@@ -6492,11 +6471,10 @@ env_has_key(VALUE env, VALUE key)
  * for +name+ if it exists:
  *   ENV.replace('foo' => '0', 'bar' => '1')
  *   ENV.assoc('foo') # => ['foo', '0']
- * Returns +nil+ if +name+ is a valid String and there is no such environment variable:
- *   ENV.assoc('baz') # => nil
- * Returns +nil+ if +name+ is the empty String or is a String containing character <code>'='</code>:
- *   ENV.assoc('') # => nil
- *   ENV.assoc('=') # => nil
+ * Returns +nil+ if +name+ is a valid String and there is no such environment variable.
+ *
+ * Returns +nil+ if +name+ is the empty String or is a String containing character <code>'='</code>.
+ *
  * Raises an exception if +name+ is a String containing the NUL character <code>"\0"</code>:
  *   ENV.assoc("\0") # Raises ArgumentError (bad environment variable name: contains null byte)
  * Raises an exception if +name+ has an encoding that is not ASCII-compatible:
@@ -6563,13 +6541,7 @@ env_has_value(VALUE dmy, VALUE obj)
  * The order in which environment variables are examined is OS-dependent.
  * See {About Ordering}[#class-ENV-label-About+Ordering].
  *
- * Returns +nil+ if there is no such environment variable:
- *   ENV.rassoc('2') # => nil
- *   ENV.rassoc('') # => nil
- *   ENV.rassoc('=') # => nil
- *   ENV.rassoc("\0") # => nil
- *   ENV.rassoc(Object.new) # => nil
- *   ENV.rassoc("\xa1\xa1".force_encoding(Encoding::UTF_16LE)) # => nil
+ * Returns +nil+ if there is no such environment variable.
  */
 static VALUE
 env_rassoc(VALUE dmy, VALUE obj)
@@ -6605,8 +6577,8 @@ env_rassoc(VALUE dmy, VALUE obj)
  * The order in which environment variables are examined is OS-dependent.
  * See {About Ordering}[#class-ENV-label-About+Ordering].
  *
- * Returns +nil+ if there is no such value:
- *   ENV.key('2') # => nil
+ * Returns +nil+ if there is no such value.
+ *
  * Raises an exception if +value+ is invalid:
  *   ENV.key(Object.new) # raises TypeError (no implicit conversion of Object into String)
  * See {Invalid Names and Values}[#class-ENV-label-Invalid+Names+and+Values].
@@ -6783,9 +6755,7 @@ env_freeze(VALUE self)
  * Exactly which environment variable is "first" is OS-dependent.
  * See {About Ordering}[#class-ENV-label-About+Ordering].
  *
- * Returns +nil+ if the environment is empty:
- *   ENV.clear
- *   ENV.shift # => nil
+ * Returns +nil+ if the environment is empty.
  */
 static VALUE
 env_shift(VALUE _)
