@@ -64,6 +64,7 @@ $repositories = {
   optparse: "ruby/optparse",
   set: "ruby/set",
   find: "ruby/find",
+  rinda: "ruby/rinda",
 }
 
 def sync_default_gems(gem)

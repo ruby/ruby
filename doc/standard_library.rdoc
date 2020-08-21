@@ -20,7 +20,6 @@ PrettyPrinter:: Implements a pretty printing algorithm for readable structure
 RbConfig:: Information of your configure and build of Ruby
 resolv-replace.rb:: Replace Socket DNS with Resolv
 Resolv::  Thread-aware DNS resolver library in Ruby
-Rinda:: The Linda distributed computing paradigm in Ruby
 Gem:: Package management framework for Ruby
 SecureRandom:: Interface for secure random number generator
 Shellwords:: Manipulates strings with word parsing rules of UNIX Bourne shell
@@ -75,6 +74,7 @@ Prime:: Prime numbers and factorization library
 PStore:: Implements a file based persistence mechanism based on a Hash
 Racc:: A LALR(1) parser generator written in Ruby.
 RDoc:: Produces HTML and command-line documentation for Ruby
+Rinda:: The Linda distributed computing paradigm in Ruby
 Set:: Provides a class to deal with collections of unordered, unique values
 Singleton:: Implementation of the Singleton pattern for Ruby
 Tempfile:: A utility class for managing temporary files

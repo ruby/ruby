@@ -60,8 +60,6 @@ Zachary Scott (zzak)
   Tanaka Akira (akr)
 [lib/resolv.rb]
   Tanaka Akira (akr)
-[lib/rinda/*]
-  Masatoshi SEKI (seki)
 [lib/rubygems.rb, lib/rubygems/*]
   Eric Hodel (drbrain), Hiroshi SHIBATA (hsbt)
   https://github.com/rubygems/rubygems
@@ -232,6 +230,9 @@ Zachary Scott (zzak)
   aycabta
   https://github.com/ruby/reline
   https://rubygems.org/gems/reline
+[lib/rinda/*]
+  Masatoshi SEKI (seki)
+  https://github.com/ruby/rinda
 [lib/set.rb]
   Akinori MUSHA (knu)
   https://github.com/ruby/set
