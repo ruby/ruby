@@ -658,9 +658,8 @@ ary_ensure_room_for_push(VALUE ary, long add_len)
  *  Freezes +self+; returns +self+:
  *    a = []
  *    a.frozen? # => false
- *    a1 = a.freeze
+ *    a.freeze
  *    a.frozen? # => true
- *    a1.equal?(a) # => true # Returned self
  *
  *  An attempt to modify a frozen \Array raises an exception:
  *    # Raises FrozenError (can't modify frozen Array: [:foo, "bar", 2]):
@@ -1005,8 +1004,6 @@ rb_ary_s_try_convert(VALUE dummy, VALUE ary)
  *
  *    a = Array.new(3, 'x')
  *    a # => ['x', 'x', 'x']
- *    a[1].equal?(a[0]) # => true # Identity check.
- *    a[2].equal?(a[0]) # => true # Identity check.
  *
  *  With a block and argument +size+,
  *  returns an \Array of the given size;
@@ -1224,9 +1221,7 @@ ary_take_first_or_last(int argc, const VALUE *argv, VALUE ary, enum ary_take_pos
  *
  *  Appends +object+ to +self+; returns +self+:
  *    a = [:foo, 'bar', 2]
- *    a1 = a << :baz
- *    a1 # => [:foo, "bar", 2, :baz]
- *    a1.equal?(a) # => true # Returned self
+ *    a << :baz # => [:foo, "bar", 2, :baz]
  *
  *  Appends +object+ as one element, even if it is another \Array:
  *
@@ -1274,9 +1269,7 @@ rb_ary_cat(VALUE ary, const VALUE *argv, long len)
  *
  *  Appends each argument in +objects+ to +self+;  returns +self+:
  *    a = [:foo, 'bar', 2]
- *    a1 = a.push(:baz, :bat)
- *    a1 # => [:foo, "bar", 2, :baz, :bat]
- *    a1.equal?(a) # => true # Returned self
+ *    a.push(:baz, :bat) # => [:foo, "bar", 2, :baz, :bat]
  *
  *  Appends each argument as one element, even if it is another \Array:
  *
@@ -1615,9 +1608,7 @@ ary_ensure_room_for_unshift(VALUE ary, int argc)
  *
  *  Prepends the given +objects+ to +self+:
  *    a = [:foo, 'bar', 2]
- *    a1 = a.unshift(:bam, :bat)
- *    a1 # => [:bam, :bat, :foo, "bar", 2]
- *    a1.equal?(a) # => true # Returned self
+ *    a.unshift(:bam, :bat) # => [:bam, :bat, :foo, "bar", 2]
  */
 
 static VALUE
@@ -2473,9 +2464,7 @@ rb_ary_aset(int argc, VALUE *argv, VALUE ary)
  *  When +index+ is non-negative, inserts all given +objects+
  *  before the element at offset +index+:
  *    a = [:foo, 'bar', 2]
- *    a1 = a.insert(1, :bat, :bam)
- *    a # => [:foo, :bat, :bam, "bar", 2]
- *    a1.object_id == a.object_id # => true
+ *    a.insert(1, :bat, :bam) # => [:foo, :bat, :bam, "bar", 2]
  *
  *  Extends the array if +index+ is beyond the array (<tt>index >= self.size</tt>):
  *    a = [:foo, 'bar', 2]
@@ -2550,8 +2539,7 @@ ary_enum_length(VALUE ary, VALUE args, VALUE eobj)
  *  When a block given, passes each successive array element to the block;
  *  returns +self+:
  *    a = [:foo, 'bar', 2]
- *    a1 = a.each {|element|  puts "#{element.class} #{element}" }
- *    a1.equal?(a) # => true # Returned self
+ *    a.each {|element|  puts "#{element.class} #{element}" }
  *
  *  Output:
  *    Symbol foo
@@ -2604,8 +2592,7 @@ rb_ary_each(VALUE ary)
  *  When a block given, passes each successive array index to the block;
  *  returns +self+:
  *    a = [:foo, 'bar', 2]
- *    a1 = a.each_index {|index|  puts "#{index} #{a[index]}" }
- *    a1.equal?(a) # => true # Returned self
+ *    a.each_index {|index|  puts "#{index} #{a[index]}" }
  *
  *  Output:
  *    0 foo
@@ -2658,8 +2645,7 @@ rb_ary_each_index(VALUE ary)
  *  When a block given, passes, in reverse order, each element to the block;
  *  returns +self+:
  *    a = [:foo, 'bar', 2]
- *    a1 = a.reverse_each {|element|  puts "#{element.class} #{element}" }
- *    a1.equal?(a) # => true # Returned self
+ *    a.reverse_each {|element|  puts "#{element.class} #{element}" }
  *
  *  Output:
  *    Integer 2
@@ -2992,9 +2978,7 @@ rb_ary_to_s(VALUE ary)
  *
  *  When +self+ is an instance of \Array, returns +self+:
  *    a = [:foo, 'bar', 2]
- *    a.instance_of?(Array) # => true
- *    a1 = a.to_a
- *    a1.equal?(a) # => true # Returned self
+ *    a.to_a # => [:foo, "bar", 2]
  *
  *  Otherwise, returns a new \Array containing the elements of +self+:
  *    class MyArray < Array; end
@@ -3083,8 +3067,7 @@ rb_ary_to_h(VALUE ary)
  *
  *  Returns +self+:
  *    a = [:foo, 'bar', 2]
- *    a1 = a.to_ary
- *    a1.equal?(a) # => true # Returned self
+ *    a.to_ary # => [:foo, "bar", 2]
  */
 
 static VALUE
@@ -3125,9 +3108,7 @@ rb_ary_reverse(VALUE ary)
  *
  *  Reverses +self+ in place:
  *    a = ['foo', 'bar', 'two']
- *    a1 = a.reverse!
- *    a1 # => ["two", "bar", "foo"]
- *    a1.equal?(a) # => true # Returned self
+ *    a.reverse! # => ["two", "bar", "foo"]
  */
 
 static VALUE
@@ -3214,9 +3195,7 @@ rb_ary_rotate(VALUE ary, long cnt)
  *
  *  When no argument given, rotates the first element to the last position:
  *    a = [:foo, 'bar', 2, 'bar']
- *    a1 = a.rotate!
- *    a1 # => ["bar", 2, "bar", :foo]
- *    a1.equal?(a1) # => true # Retruned self
+ *    a.rotate! # => ["bar", 2, "bar", :foo]
  *
  *  ---
  *
@@ -3814,9 +3793,7 @@ rb_ary_collect(VALUE ary)
  *  Calls the block, if given, with each element;
  *  replaces the element with the block's return value:
  *    a = [:foo, 'bar', 2]
- *    a1 = a.collect! { |element| element.class }
- *    a1 # => [Symbol, String, Integer]
- *    a1.equal?(a) # => true # Returned self
+ *    a.collect! { |element| element.class } # => [Symbol, String, Integer]
  *
  *  ---
  *
@@ -4043,9 +4020,7 @@ select_bang_ensure(VALUE a)
  *
  *  Returns +self+ if any elements were removed:
  *    a = [:foo, 'bar', 2, :bam]
- *    a1 = a.select! {|element| element.to_s.start_with?('b') }
- *    a1 # => ["bar", :bam]
- *    a1.equal?(a) # => true # Returned self
+ *    a.select! {|element| element.to_s.start_with?('b') } # => ["bar", :bam]
  *
  *  Returns +nil+ if no elements were removed.
  *
@@ -4077,9 +4052,7 @@ rb_ary_select_bang(VALUE ary)
  *  Retains those elements for which the block returns a truthy value;
  *  deletes all other elements; returns +self+:
  *    a = [:foo, 'bar', 2, :bam]
- *    a1 = a.keep_if {|element| element.to_s.start_with?('b') }
- *    a1 # => ["bar", :bam]
- *    a1.equal?(a) # => true # Returned self
+ *    a.keep_if {|element| element.to_s.start_with?('b') } # => ["bar", :bam]
  *
  *  Returns a new \Enumerator if no block given:
  *    a = [:foo, 'bar', 2, :bam]
@@ -4119,11 +4092,10 @@ ary_resize_smaller(VALUE ary, long len)
  *  When no block is given,
  *  removes from +self+ each element +ele+ such that <tt>ele == obj</tt>;
  *  returns the last deleted element:
- *    s1 = 'bar'; s2 = 'bar'
- *    a = [:foo, s1, 2, s2]
- *    deleted_obj = a.delete('bar')
- *    a # => [:foo, 2]
- *    deleted_obj.equal?(s2) # => true # Returned self
+     *    s1 = 'bar'; s2 = 'bar'
+     *    a = [:foo, s1, 2, s2]
+     *    a.delete('bar') # => "bar"
+     *    a # => [:foo, 2]
  *
  *  Returns +nil+ if no elements removed.
  *
@@ -4138,7 +4110,6 @@ ary_resize_smaller(VALUE ary, long len)
  *    a = [:foo, s1, 2, s2]
  *    deleted_obj = a.delete('bar') {|obj| fail 'Cannot happen' }
  *    a # => [:foo, 2]
- *    deleted_obj.object_id == s2.object_id # => true
  *
  *  If no such elements are found, returns the block's return value:
  *    a = [:foo, 'bar', 2]
@@ -4455,9 +4426,7 @@ ary_reject_bang(VALUE ary)
  *
  *  Returns +self+ if any elements removed:
  *    a = [:foo, 'bar', 2, 'bat']
- *    a1 = a.reject! {|element| element.to_s.start_with?('b') }
- *    a1 # => [:foo, 2]
- *    a1.equal?(a) # => true # Returned self
+ *    a.reject! {|element| element.to_s.start_with?('b') } # => [:foo, 2]
  *
  *  Returns +nil+ if no elements removed.
  *
@@ -4509,9 +4478,7 @@ rb_ary_reject(VALUE ary)
  *  Removes each element in +self+ for which the block returns a truthy value;
  *  returns +self+:
  *    a = [:foo, 'bar', 2, 'bat']
- *    a1 = a.delete_if {|element| element.to_s.start_with?('b') }
- *    a1 # => [:foo, 2]
- *    a1.equal?(a) # => true # Returned self
+ *    a.delete_if {|element| element.to_s.start_with?('b') } # => [:foo, 2]
  *
  *  Returns a new \Enumerator if no block given:
  *    a = [:foo, 'bar', 2]
@@ -4726,9 +4693,7 @@ rb_ary_transpose(VALUE ary)
  *
  *  Replaces the content of +self+ with the content of +other_array+:
  *    a = [:foo, 'bar', 2]
- *    a1 = a.replace(['foo', :bar, 3])
- *    a1 # => ["foo", :bar, 3]
- *    a1.equal?(a) # => true # Returned self
+ *    a.replace(['foo', :bar, 3]) # => ["foo", :bar, 3]
  *
  *  Ignores the size of +self+:
  *
@@ -4783,8 +4748,7 @@ rb_ary_replace(VALUE copy, VALUE orig)
  *
  *  Removes all elements from +self+:
  *    a = [:foo, 'bar', 2]
- *    a1 = a.clear
- *    a1.equal?(a) # => true # Returned self
+ *    a.clear # => []
  */
 
 VALUE
@@ -4829,9 +4793,7 @@ rb_ary_clear(VALUE ary)
  *  With argument +obj+ and no block given, replaces all elements with that one object:
  *    a = ['a', 'b', 'c', 'd']
  *    a # => ["a", "b", "c", "d"]
- *    a1 = a.fill(:X)
- *    a1 # => [:X, :X, :X, :X]
- *    a.equal?(a) #  => true # Retrurned self
+ *    a.fill(:X) # => [:X, :X, :X, :X]
  *
  *  ---
  *
@@ -5115,9 +5077,7 @@ ary_append(VALUE x, VALUE y)
  *
  *  Adds to +array+ all elements from each array in +other_arrays+; returns +self+:
  *    a = [0, 1]
- *    a1 = a.concat([2, 3], [4, 5])
- *    a1 # => [0, 1, 2, 3, 4, 5]
- *    a1.equal?(a) # => true # Returned self
+ *    a.concat([2, 3], [4, 5]) # => [0, 1, 2, 3, 4, 5]
  *
  *  Returns +self+ unmodified if no arguments given:
  *    a = [0, 1]
@@ -5659,11 +5619,7 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
  *    [0, 1, 2, 3].difference([3, 0], [1, 3]) # => [2]
  *    [0, 1, 2].difference([4]) # => [0, 1, 2]
  *
- *  Returns a copy of +self+ if no arguments given:
- *    a0 = [0, 1]
- *    a1 = a0.difference(*[])
- *    a1 # => [0, 1]
- *    a1.equal?(a0) # => false
+ *  Returns a copy of +self+ if no arguments given.
  *
  *  See also Array#-.
  */
@@ -5773,11 +5729,7 @@ rb_ary_and(VALUE ary1, VALUE ary2)
  *  Preserves order from +self+:
  *    [0, 1, 2].intersection([2, 1, 0]) # => [0, 1, 2]
  *
- *  Returns a copy of +self+ if no arguments given:
- *    a0 = [0, 1]
- *    a1 = a0.intersection(*[])
- *    a1 # => [0, 1]
- *    a1.equal?(a0) # => false
+ *  Returns a copy of +self+ if no arguments given.
  *
  *  See also Array#&.
  */
@@ -5875,11 +5827,7 @@ rb_ary_or(VALUE ary1, VALUE ary2)
  *    [0, 1, 1].union([2, 1], [3, 1]) # => [0, 1, 2, 3]
  *    [0, 1, 2, 3].union([3, 2], [1, 0]) # => [0, 1, 2, 3]
  *
- *  Returns a copy of +self+ if no arguments given:
- *    a0 = [0, 1]
- *    a1 = a0.union(*[])
- *    a1 # => [0, 1]
- *    a1.equal?(a0) # => false
+ *  Returns a copy of +self+ if no arguments given.
  *
  *  See also Array#|.
  */
@@ -6332,9 +6280,7 @@ push_value(st_data_t key, st_data_t val, st_data_t ary)
  *
  *  Returns +self+ if any elements removed:
  *    a = [0, 0, 1, 1, 2, 2]
- *    a1 = a.uniq!
- *    a1 # => [0, 1, 2]
- *    a1.equal?(a) # => true # Returned self
+ *    a.uniq! # => [0, 1, 2]
  *
  *  Returns +nil+ if no elements removed.
  *
@@ -6346,9 +6292,7 @@ push_value(st_data_t key, st_data_t val, st_data_t ary)
  *
  *  Returns +self+ if any elements removed:
  *    a = ['a', 'aa', 'aaa', 'b', 'bb', 'bbb']
- *    a1 = a.uniq! {|element| element.size }
- *    a1 # => ['a', 'aa', 'aaa']
- *    a1.equal?(a) # => true # Returned self
+ *    a.uniq! {|element| element.size } # => ['a', 'aa', 'aaa']
  *
  *  Returns +nil+ if no elements removed.
  */
@@ -6434,12 +6378,7 @@ rb_ary_uniq(VALUE ary)
  *
  *  Removes all +nil+ elements from +self+.
  *
- *  Returns +self+ if any elements removed:
- *    a = [nil, 0, nil, 1, nil, 2, nil]
- *    a1 = a.compact! # => [0, 1, 2]
- *    a1.equal?(a) # => true # Returned self
- *
- *  Returns +nil+ if no elements removed.
+ *  Returns +self+ if any elements removed, otherwise +nil+.
  */
 
 static VALUE
@@ -6640,9 +6579,7 @@ flatten(VALUE ary, int level)
  *
  *  With non-negative argument +level+, flattens recursively through +level+ levels:
  *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
- *    a1 = a.flatten!(1)
- *    a1 # => [0, 1, [2, 3], 4, 5]
- *    a1.equal?(a) # => true # Returned self
+ *    a.flatten!(1) # => [0, 1, [2, 3], 4, 5]
  *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
  *    a.flatten!(2) # => [0, 1, 2, 3, 4, 5]
  *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
@@ -7126,8 +7063,7 @@ rb_ary_permutation_size(VALUE ary, VALUE args, VALUE eobj)
  *
  *  Example:
  *    a = [0, 1, 2]
- *    a1 = a.permutation(2) {|permutation| p permutation }
- *    a1.equal?(a) # => true # Returned self
+ *    a.permutation(2) {|permutation| p permutation }
  *  Output:
  *    [0, 1]
  *    [0, 2]
@@ -7269,8 +7205,7 @@ rb_ary_combination_size(VALUE ary, VALUE args, VALUE eobj)
  *
  *  Example:
  *    a = [0, 1, 2]
- *    a1 = a.combination(2) {|combination| p combination }
- *    a1.equal?(a) # => true # Returned self
+ *    a.combination(2) {|combination| p combination }
  *  Output:
  *    [0, 1]
  *    [0, 2]
@@ -7406,8 +7341,7 @@ rb_ary_repeated_permutation_size(VALUE ary, VALUE args, VALUE eobj)
  *
  *  +n+ = 1:
  *    a = [0, 1, 2]
- *    a1 = a.repeated_permutation(1) {|permutation| p permutation }
- *    a1.equal?(a) # => true # Returned self
+ *    a.repeated_permutation(1) {|permutation| p permutation }
  *  Output:
  *    [0]
  *    [1]
@@ -7535,8 +7469,7 @@ rb_ary_repeated_combination_size(VALUE ary, VALUE args, VALUE eobj)
  *
  *  +n+ = 1:
  *    a = [0, 1, 2]
- *    a1 = a.repeated_combination(1) {|combination| p combination }
- *    a1.equal?(a) # => true # Returned self
+ *    a.repeated_combination(1) {|combination| p combination }
  *  Output:
  *    [0]
  *    [1]

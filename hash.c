@@ -1949,7 +1949,6 @@ rb_check_hash_type(VALUE hash)
  *  Returns the given <tt>obj</tt> if it is a Hash:
  *    h = {}
  *    h1 = Hash.try_convert(h)
- *    h1.equal?(h) # => true # Identity check
  *
  *  Returns <tt>nil</tt> unless <tt>obj.respond_to?(:to_hash)</tt>.
  *
@@ -2600,16 +2599,12 @@ hash_enum_size(VALUE hash, VALUE args, VALUE eobj)
  *  deletes each entry for which the block returns a truthy value;
  *  returns +self+:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h1 = h.delete_if { |key, value| value > 0 }
- *    h1 # => {:foo=>0}
- *    h1.equal?(h) # => true #  Identity check
+ *    h.delete_if { |key, value| value > 0 } # => {:foo=>0}
  *
  *  If no block given, returns a new \Enumerator:
  *    h = {foo: 0, bar: 1, baz: 2}
  *    e = h.delete_if # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:delete_if>
- *    h1 = e.each { |key, value| value > 0 }
- *    h1 # => {:foo=>0}
- *    h1.equal?(h) # => true #  Identity check
+ *    e.each { |key, value| value > 0 } # => {:foo=>0}
  *
  *  ----
  *
@@ -2638,18 +2633,14 @@ rb_hash_delete_if(VALUE hash)
  *  Returns +self+, whose remaining entries are those
  *  for which the block returns +false+ or +nil+:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h1 = h.reject! {|key, value| value < 2 }
- *    h1 # => {:baz=>2}
- *    h1.equal?(h) # => true # Identity check
+ *    h.reject! {|key, value| value < 2 } # => {:baz=>2}
  *
  *  Returns +nil+ if no entries are removed.
  *
  *  Returns a new \Enumerator if no block given:
  *    h = {foo: 0, bar: 1, baz: 2}
  *    e = h.reject! # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:reject!>
- *    h1 = e.each {|key, value| key.start_with?('b') }
- *    h1 # => {:foo=>0}
- *    h1.equal?(h) # => true # Identity check
+ *    e.each {|key, value| key.start_with?('b') } # => {:foo=>0}
  *
  *  ---
  *
@@ -2725,9 +2716,7 @@ rb_hash_reject(VALUE hash)
  *
  *  Returns a new \Hash object containing the entries for the given +keys+:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h1 = h.slice(:baz, :foo)
- *    h1 # => {:baz=>2, :foo=>0}
- *    h1.equal?(h) # => false
+ *    h.slice(:baz, :foo) # => {:baz=>2, :foo=>0}
  *
  *  The given keys that are not found are ignored:
  *    h = {foo: 0, bar: 1}
@@ -2820,9 +2809,7 @@ rb_hash_values_at(int argc, VALUE *argv, VALUE hash)
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.fetch_values(:baz, :foo) # => [2, 0]
  *
- *  Returns a new empty \Array if no arguments given:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    h.fetch_values # => []
+ *  Returns a new empty \Array if no arguments given.
  *
  *  When a block given, calls the block with each missing key,
  *  treating the block's return value as the value for that key:
@@ -2869,16 +2856,12 @@ select_i(VALUE key, VALUE value, VALUE result)
  *
  *  Returns a new \Hash object whose entries are those for which the block returns a truthy value:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h1 = h.select {|key, value| value < 2 }
- *    h1 # => {:foo=>0, :bar=>1}
- *    h1.equal?(h) # => false
+ *    h.select {|key, value| value < 2 } # => {:foo=>0, :bar=>1}
  *
  *  Returns a new \Enumerator if no block given:
  *    h = {foo: 0, bar: 1, baz: 2}
  *    e = h.select # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:select>
- *    h1 = e.each {|key, value| value < 2 }
- *    h1 # => {:foo=>0, :bar=>1}
- *    h1.equal?(h) # => false
+ *    e.each {|key, value| value < 2 } # => {:foo=>0, :bar=>1}
  *
  *  ---
  *
@@ -2921,18 +2904,14 @@ keep_if_i(VALUE key, VALUE value, VALUE hash)
  *
  *  Returns +self+, whose entries are those for which the block returns a truthy value:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h1 = h.select! {|key, value| value < 2 }
- *    h # => {:foo=>0, :bar=>1}
- *    h1.equal?(h) # => true
+ *    h.select! {|key, value| value < 2 }  => {:foo=>0, :bar=>1}
  *
  *  Returns +nil+ if no entries were removed.
  *
  *  Returns a new \Enumerator if no block given:
  *    h = {foo: 0, bar: 1, baz: 2}
  *    e = h.select!  # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:select!>
- *    h1 = e.each { |key, value| value < 2 }
- *    h1 # => {:foo=>0, :bar=>1}
- *    h1.equal?(h) # => true
+ *    e.each { |key, value| value < 2 } # => {:foo=>0, :bar=>1}
  *
  *  ---
  *
@@ -2965,16 +2944,12 @@ rb_hash_select_bang(VALUE hash)
  *  retains the entry if the block returns a truthy value;
  *  deletes the entry otherwise; returns +self+.
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h1 = h.keep_if { |key, value| key.start_with?('b') }
- *    h1 # => {:bar=>1, :baz=>2}
- *    h1.object_id == h.object_id # => true
+ *    h.keep_if { |key, value| key.start_with?('b') } # => {:bar=>1, :baz=>2}
  *
  *  Returns a new \Enumerator if no block given:
  *    h = {foo: 0, bar: 1, baz: 2}
  *    e = h.keep_if # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:keep_if>
- *    h1 = e.each { |key, value| key.start_with?('b') }
- *    h1 # => {:bar=>1, :baz=>2}
- *    h1.object_id == h.object_id # => true
+ *    e.each { |key, value| key.start_with?('b') } # => {:bar=>1, :baz=>2}
  *
  *  Raises an exception if the block attempts to add a new key:
  *    h = {foo: 0, bar: 1, baz: 2}
@@ -3005,8 +2980,7 @@ clear_i(VALUE key, VALUE value, VALUE dummy)
  *
  *  Removes all hash entries; returns +self+:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h1 = h.clear # => {}
- *    h1.equal?(h) # => true # Identity check
+ *    h.clear # => {}
  */
 
 VALUE
@@ -3117,9 +3091,7 @@ rb_hash_aset(VALUE hash, VALUE key, VALUE val)
  *  Replaces the entire contents of +self+ with the contents of +other_hash+;
  *  returns +self+:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h1 = h.replace({bat: 3, bam: 4})
- *    h1 # => {:bat=>3, :bam=>4}
- *    h1.equal?(h) # => true # Identity check
+ *    h.replace({bat: 3, bam: 4}) # => {:bat=>3, :bam=>4}
  */
 
 static VALUE
@@ -3213,9 +3185,7 @@ each_value_i(VALUE key, VALUE value, VALUE _)
  *
  *  Calls the given block with each value; returns +self+:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h1 = h.each_value {|value| puts value }
- *    h1 # => {:foo=>0, :bar=>1, :baz=>2}
- *    h1.equal?(h) # => true # Identity check
+ *    h.each_value {|value| puts value } # => {:foo=>0, :bar=>1, :baz=>2}
  *  Output:
  *    0
  *    1
@@ -3261,9 +3231,7 @@ each_key_i(VALUE key, VALUE value, VALUE _)
  *
  *  Calls the given block with each key; returns +self+:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h1 = h.each_key {|key| puts key }
- *    h1 # => {:foo=>0, :bar=>1, :baz=>2}
- *    h1.equal?(h) # => true # Identity check
+ *    h.each_key {|key| puts key }  # => {:foo=>0, :bar=>1, :baz=>2}
  *  Output:
  *    foo
  *    bar
@@ -3320,9 +3288,7 @@ each_pair_i_fast(VALUE key, VALUE value, VALUE _)
  *
  *  Calls the given block with each key-value pair, returning self:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h1 = h.each_pair {|key, value| puts "#{key}: #{value}"}
- *    h1 # => {:foo=>0, :bar=>1, :baz=>2}
- *    h1.equal?(h) # => true # Identity check
+ *    h.each_pair {|key, value| puts "#{key}: #{value}"} # => {:foo=>0, :bar=>1, :baz=>2}
  *  Output:
  *    foo: 0
  *    bar: 1
@@ -3456,9 +3422,7 @@ static VALUE rb_hash_flatten(int argc, VALUE *argv, VALUE hash);
  *
  *  Returns +self+ with new keys provided by the block:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h1 = h.transform_keys! {|key| key.to_s }
- *    h1 # => {"foo"=>0, "bar"=>1, "baz"=>2}
- *    h1.equal?(h) # => true # Identity check
+ *    h.transform_keys! {|key| key.to_s } # => {"foo"=>0, "bar"=>1, "baz"=>2}
  *
  *  Overwrites values for duplicate keys:
  *    h = {foo: 0, bar: 1, baz: 2}
@@ -3579,9 +3543,7 @@ rb_hash_transform_values(VALUE hash)
  *
  *  Returns +self+, whose keys are unchanged, and whose values are determined by the given block.
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h1 = h.transform_values! {|value| value * 100}
- *    h1 # => {:foo=>0, :bar=>100, :baz=>200}
- *    h1.equal?(h) # => true # Identity check
+ *    h.transform_values! {|value| value * 100} # => {:foo=>0, :bar=>100, :baz=>200}
  *
  *  Allows the block to add a new entry:
  *    h = {foo: 0, bar: 1, baz: 2}
@@ -3693,9 +3655,7 @@ rb_hash_inspect(VALUE hash)
  *
  *  Returns +self+:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h1 = h.to_hash
- *    h1 # => {:foo=>0, :bar=>1, :baz=>2}
- *    h1.equal?(h) # => true # Identity check
+ *    h.to_hash # => {:foo=>0, :bar=>1, :baz=>2}
  */
 static VALUE
 rb_hash_to_hash(VALUE hash)
@@ -3743,9 +3703,7 @@ rb_hash_to_h_block(VALUE hash)
  *
  *  For an instance of \Hash, returns +self+:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h1 = h.to_h
- *    h1 # => {:foo=>0, :bar=>1, :baz=>2}
- *    h1.equal?(h) #  => true # Identity check
+ *    h.to_h # => {:foo=>0, :bar=>1, :baz=>2}
  *
  *  For a subclass of \Hash, returns a new \Hash
  *  containing the content of +self+:
@@ -4253,8 +4211,7 @@ rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h1 = {bat: 3, bar: 4}
  *    h2 = {bam: 5, bat:6}
- *    h3 = h.merge!(h1, h2) # => {:foo=>0, :bar=>4, :baz=>2, :bat=>6, :bam=>5}
- *    h3.equal?(h) # => true # Identity check
+ *    h.merge!(h1, h2) # => {:foo=>0, :bar=>4, :baz=>2, :bat=>6, :bam=>5}
  *
  *  ---
  *
@@ -4272,7 +4229,6 @@ rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
  *    h2 = {bam: 5, bat:6}
  *    h3 = h.merge!(h1, h2) { |key, old_value, new_value| old_value + new_value }
  *    h3 # => {:foo=>0, :bar=>5, :baz=>2, :bat=>9, :bam=>5}
- *    h3.equal?(h) # => true # Identity check
  *
  *  Allows the block to add a new key:
  *    h = {foo: 0, bar: 1, baz: 2}
@@ -4280,7 +4236,6 @@ rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
  *    h2 = {bam: 5, bat:6}
  *    h3 = h.merge!(h1, h2) { |key, old_value, new_value| h[:new_key] = 10 }
  *    h3 # => {:foo=>0, :bar=>10, :baz=>2, :bat=>10, :new_key=>10, :bam=>5}
- *    h3.equal?(h) # => true # Identity check
  *
  *  ---
  *
@@ -4293,7 +4248,6 @@ rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
  *    h.merge # => {:foo=>0, :bar=>1, :baz=>2}
  *    h1 = h.merge! { |key, old_value, new_value| raise 'Cannot happen' }
  *    h1 # => {:foo=>0, :bar=>1, :baz=>2}
- *    h1.equal?(h) # => true # Identity check
  */
 
 static VALUE
@@ -4392,9 +4346,7 @@ rb_hash_update_by(VALUE hash1, VALUE hash2, rb_hash_update_func *func)
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h1 = {bat: 3, bar: 4}
  *    h2 = {bam: 5, bat:6}
- *    h3 = h.merge(h1, h2)
- *    h3 # => {:foo=>0, :bar=>4, :baz=>2, :bat=>6, :bam=>5}
- *    h3.equal?(h) # => false # Identity check
+ *    h.merge(h1, h2) # => {:foo=>0, :bar=>4, :baz=>2, :bat=>6, :bam=>5}
  *
  *  ---
  *
@@ -4412,7 +4364,6 @@ rb_hash_update_by(VALUE hash1, VALUE hash2, rb_hash_update_func *func)
  *    h2 = {bam: 5, bat:6}
  *    h3 = h.merge(h1, h2) { |key, old_value, new_value| old_value + new_value }
  *    h3 # => {:foo=>0, :bar=>5, :baz=>2, :bat=>9, :bam=>5}
- *    h3.equal?(h) # => false # Identity check
  *
  *  Ignores an attempt in the block to add a new key:
  *    h = {foo: 0, bar: 1, baz: 2}
@@ -4420,7 +4371,6 @@ rb_hash_update_by(VALUE hash1, VALUE hash2, rb_hash_update_func *func)
  *    h2 = {bam: 5, bat:6}
  *    h3 = h.merge(h1, h2) { |key, old_value, new_value| h[:new_key] = 10 }
  *    h3 # => {:foo=>0, :bar=>10, :baz=>2, :bat=>10, :bam=>5}
- *    h3.equal?(h) # => false # Identity check
  *
  *  ---
  *
@@ -4430,12 +4380,9 @@ rb_hash_update_by(VALUE hash1, VALUE hash2, rb_hash_update_func *func)
  *
  *  Example:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h1 = h.merge
+ *    h.merge # => {:foo=>0, :bar=>1, :baz=>2}
+ *    h1 = h.merge { |key, old_value, new_value| raise 'Cannot happen' }
  *    h1 # => {:foo=>0, :bar=>1, :baz=>2}
- *    h1.equal?(h) # => false # Identity check
- *    h2 = h.merge { |key, old_value, new_value| raise 'Cannot happen' }
- *    h2 # => {:foo=>0, :bar=>1, :baz=>2}
- *    h2.equal?(h) # => false # Identity check
  */
 
 static VALUE
@@ -4688,9 +4635,7 @@ rb_hash_compact(VALUE hash)
  *
  *  Returns +self+ with all its +nil+-valued entries removed (in place):
  *    h = {foo: 0, bar: nil, baz: 2, bat: nil}
- *    h1 = h.compact!
- *    h1 # => {:foo=>0, :baz=>2}
- *    h1.equal?(h) # => true
+ *    h.compact! # => {:foo=>0, :baz=>2}
  *
  *  Returns +nil+ if no entries were removed.
  */
@@ -4723,7 +4668,6 @@ static st_table *rb_init_identtable_with_size(st_index_t size);
  *  so +s1+ will overwrite +s0+:
  *    s0 = 'x'
  *    s1 = 'x'
- *    s0.equal?(s0) # => false
  *    h = {}
  *    h.compare_by_identity? # => false
  *    h[s0] = 0
@@ -4733,8 +4677,7 @@ static st_table *rb_init_identtable_with_size(st_index_t size);
  *  After calling \#compare_by_identity, the keys are considered to be different,
  *  and therefore do not overwrite each other:
  *    h = {}
- *    h1 = h.compare_by_identity # => {}
- *    h1.equal?(h) # => true
+ *    h.compare_by_identity # => {}
  *    h.compare_by_identity? # => true
  *    h[s0] = 0
  *    h[s1] = 1
@@ -5806,9 +5749,7 @@ env_keys(int raw)
  * The order of the names is OS-dependent.
  * See {About Ordering}[#class-ENV-label-About+Ordering].
  *
- * Returns the empty Array if ENV is empty:
- *   ENV.clear
- *   ENV.keys # => []
+ * Returns the empty Array if ENV is empty.
  */
 
 static VALUE
@@ -5893,9 +5834,7 @@ env_values(void)
  * The order of the values is OS-dependent.
  * See {About Ordering}[#class-ENV-label-About+Ordering].
  *
- * Returns the empty Array if ENV is empty:
- *   ENV.clear
- *   ENV.values # => []
+ * Returns the empty Array if ENV is empty.
  */
 static VALUE
 env_f_values(VALUE _)
@@ -6072,8 +6011,7 @@ env_delete_if(VALUE ehash)
  * Returns +nil+ in the Array for each name that is not an ENV name:
  *   ENV.values_at('foo', 'bat', 'bar', 'bam') # => ["0", nil, "1", nil]
  *
- * Returns an empty \Array if no names given:
- *   ENV.values_at() # => []
+ * Returns an empty \Array if no names given.
  *
  * Raises an exception if any name is invalid.
  * See {Invalid Names and Values}[#class-ENV-label-Invalid+Names+and+Values].
@@ -7135,7 +7073,6 @@ env_update(VALUE env, VALUE hash)
  *    h = {s => 0}
  *    first_key = h.keys.first
  *    first_key.frozen? # => true
- *    first_key.equal?(s) # => false
  *
  *  ==== User-Defined \Hash Keys
  *
