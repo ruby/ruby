@@ -630,8 +630,17 @@ AC_COMPILE_IFELSE([
 @%:@if !(defined(__SUNPRO_C)||defined(__SUNPRO_CC))
 @%:@error not sunpro
 @%:@endif],[])], [
-    RUBY_TRY_CFLAGS(-erroff=E_STATEMENT_NOT_REACHED, [
-        RUBY_APPEND_OPTIONS(rb_cv_warnflags, -erroff=E_STATEMENT_NOT_REACHED)])],[])
+    for e in \
+        E_STATEMENT_NOT_REACHED \
+        E_INIT_SIGN_EXTEND \
+        E_INIT_DOES_NOT_FIT \
+        E_INITIALIZATION_TYPE_MISMATCH
+    do
+        RUBY_TRY_CFLAGS([-erroff=${e}], [
+            RUBY_APPEND_OPTIONS(rb_cv_warnflags, [-erroff=${e}])
+        ])
+    done
+])
 
 AC_ARG_WITH(compress-debug-sections,
 	AS_HELP_STRING([--with-compress-debug-sections=type],
