@@ -5,7 +5,7 @@ classes and classes in the standard library.
 
 == Goal
 
-The goal when documentating a method is to impart the most important
+The goal when documenting a method is to impart the most important
 information about the method in the least amount of time.  A reader
 of the method documentation should be able to quickly understand
 the purpose of the method and how to use it.  Providing too little
@@ -49,7 +49,7 @@ method returns the receiver, use "self".
 
 In cases where the method accepts optional arguments, use a <tt>call-seq</tt>
 with an optional argument if the method has the same behavior when an argument
-is ommitted as when the argument is passed with the default value.  For example,
+is omitted as when the argument is passed with the default value.  For example,
 use:
 
   *     obj.respond_to?(symbol, include_all=false) -> true or false
@@ -60,7 +60,7 @@ Instead of:
   *     obj.respond_to?(symbol, include_all) -> true or false
 
 However, as shown above for <tt>Array#count</tt>, use separate lines if the
-behavior is different if the argument is ommitted.
+behavior is different if the argument is omitted.
 
 == Synopsis
 
@@ -107,7 +107,7 @@ provide details about the types of arguments supported.  When discussing
 the types of arguments, use simple language even if less-precise, such
 as "level must be an integer", not "level must be an Integer-convertible
 object".  The vast majority of use will be with the expected type, not an
-argument that is explicitly convertable to the expected type, and
+argument that is explicitly convertible to the expected type, and
 documenting the difference is not important.
 
 For methods that take blocks, it can be useful to document the type of
