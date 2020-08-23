@@ -54,34 +54,75 @@ class CSV
       super_return_value
     end
 
-    # Returns +true+ if this is a header row.
+    # :call-seq:
+    #   row.header_row? -> true or false
+    #
+    # Returns +true+ if this is a header row, +false+ otherwise.
     def header_row?
       @header_row
     end
 
-    # Returns +true+ if this is a field row.
+    # :call-seq:
+    #   row.field_row? -> true or false
+    #
+    # Returns +true+ if this is a field row, +false+ otherwise.
     def field_row?
       not header_row?
     end
 
-    # Returns the headers of this row.
+    # :call-seq:
+    #    row.headers
+    #
+    # Returns the headers for this row:
+    #   source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table.first
+    #   row.headers # => ["Name", "Value"]
     def headers
       @row.map(&:first)
     end
 
-    #
     # :call-seq:
-    #   field( header )
-    #   field( header, offset )
-    #   field( index )
+    #   field(index)
+    #   field(header)
+    #   field(header, offset)
     #
-    # This method will return the field value by +header+ or +index+. If a field
-    # is not found, +nil+ is returned.
+    # Returns the field value for the given +index+ or +header+.
+    # If an \Integer +offset+ is given, the first +offset+ columns are
+    # ignored.
     #
-    # When provided, +offset+ ensures that a header match occurs on or later
-    # than the +offset+ index. You can use this to find duplicate headers,
-    # without resorting to hard-coding exact indices.
+    # ---
     #
+    # Fetch field value by \Integer index:
+    #   source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row.field(0) # => "foo"
+    #   row.field(1) # => "bar"
+    #
+    # Counts backward from the last column if +index+ is negative:
+    #   row.field(-1) # => "0"
+    #   row.field(-2) # => "foo"
+    #
+    # Returns +nil+ if +index+ is out of range:
+    #   row.field(2) # => nil
+    #   row.field(-3) # => nil
+    #
+    # ---
+    #
+    # Fetch field value by header (first found):
+    #   source = "Name,Name,Name\nFoo,Bar,Baz\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row.field('Name') # => "Foo"
+    #
+    # Fetch field value by header, ignoring +offset+ leading fields:
+    #   source = "Name,Name,Name\nFoo,Bar,Baz\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row.field('Name', 2) # => "Baz"
+    #
+    # Returns +nil+ if the header does not exist.
     def field(header_or_index, minimum_index = 0)
       # locate the pair
       finder = (header_or_index.is_a?(Integer) || header_or_index.is_a?(Range)) ? :[] : :assoc
@@ -98,16 +139,45 @@ class CSV
 
     #
     # :call-seq:
-    #   fetch( header )
-    #   fetch( header ) { |row| ... }
-    #   fetch( header, default )
+    #   fetch(header)
+    #   fetch(header, default)
+    #   fetch(header) {|row| ... }
     #
-    # This method will fetch the field value by +header+. It has the same
-    # behavior as Hash#fetch: if there is a field with the given +header+, its
-    # value is returned. Otherwise, if a block is given, it is yielded the
-    # +header+ and its result is returned; if a +default+ is given as the
-    # second argument, it is returned; otherwise a KeyError is raised.
+    # Returns the field value as specified by +header+.
     #
+    # ---
+    #
+    # With the single argument +header+, returns the field value
+    # for that header (first found):
+    #   source = "Name,Name,Name\nFoo,Bar,Baz\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row.fetch('Name') # => "Foo"
+    #
+    # Raises exception +KeyError+ if the header does not exist.
+    #
+    # ---
+    #
+    # With arguments +header+ and +default+ given,
+    # returns the field value for the header (first found)
+    # if the header exists, otherwise returns +default+:
+    #   source = "Name,Name,Name\nFoo,Bar,Baz\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row.fetch('Name', '') # => "Foo"
+    #   row.fetch(:nosuch, '') # => ""
+    #
+    # ---
+    #
+    # With argument +header+ and a block given,
+    # returns the field value for the header (first found)
+    # if the header exists; otherwise calls the block
+    # and returns its return value:
+    #   source = "Name,Name,Name\nFoo,Bar,Baz\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row.fetch('Name') {|header| fail 'Cannot happen' } # => "Foo"
+    #   row.fetch(:nosuch) {|header| "Header '#{header} not found'" } # => "Header 'nosuch not found'"
     def fetch(header, *varargs)
       raise ArgumentError, "Too many arguments" if varargs.length > 1
       pair = @row.assoc(header)
@@ -124,7 +194,11 @@ class CSV
       end
     end
 
-    # Returns +true+ if there is a field with the given +header+.
+    # :call-seq:
+    #   row.has_key?(header)
+    #
+    # Returns +true+ if there is a field with the given +header+,
+    # +false+ otherwise.
     def has_key?(header)
       !!@row.assoc(header)
     end
