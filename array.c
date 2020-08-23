@@ -1999,10 +1999,10 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *    array.index(object) -> integer or nil
+ *    array.index(object [, offset]) -> integer or nil
  *    array.index {|element| ... } -> integer or nil
  *    array.index -> new_enumerator
- *    array.find_index(object) -> integer or nil
+ *    array.find_index(object [, offset]) -> integer or nil
  *    array.find_index {|element| ... } -> integer or nil
  *    array.find_index -> new_enumerator
  *
@@ -2015,9 +2015,12 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
  *
  *  When argument +object+ is given but no block,
  *  returns the index of the first element +element+
- *  for which <tt>object == element</tt>:
+ *  for which <tt>object == element</tt>. If the second parameter is present,
+ *  it specifies the position in the array to begin the search.
+ *
  *    a = [:foo, 'bar', 2, 'bar']
  *    a.index('bar') # => 1
+ *    a.index('bar', 2) # => 3
  *
  *  Returns +nil+ if no such element found.
  *
@@ -2052,6 +2055,8 @@ static VALUE
 rb_ary_index(int argc, VALUE *argv, VALUE ary)
 {
     VALUE val;
+    VALUE initpos;
+    long pos;
     long i;
 
     if (argc == 0) {
@@ -2063,11 +2068,23 @@ rb_ary_index(int argc, VALUE *argv, VALUE ary)
 	}
 	return Qnil;
     }
-    rb_check_arity(argc, 0, 1);
-    val = argv[0];
+
+    rb_scan_args(argc, argv, "11", &val, &initpos);
+    if (argc == 2) {
+	pos = NUM2LONG(initpos);
+    }
+    else {
+	pos = 0;
+    }
+    if (pos < 0) {
+	pos += RARRAY_LEN(ary);
+	if (pos < 0)
+	return Qnil;
+    }
+
     if (rb_block_given_p())
 	rb_warn("given block not used");
-    for (i=0; i<RARRAY_LEN(ary); i++) {
+    for (i=pos; i<RARRAY_LEN(ary); i++) {
 	VALUE e = RARRAY_AREF(ary, i);
 	if (rb_equal(e, val)) {
 	    return LONG2NUM(i);
