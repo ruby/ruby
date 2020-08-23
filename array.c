@@ -4092,10 +4092,10 @@ ary_resize_smaller(VALUE ary, long len)
  *  When no block is given,
  *  removes from +self+ each element +ele+ such that <tt>ele == obj</tt>;
  *  returns the last deleted element:
-     *    s1 = 'bar'; s2 = 'bar'
-     *    a = [:foo, s1, 2, s2]
-     *    a.delete('bar') # => "bar"
-     *    a # => [:foo, 2]
+ *    s1 = 'bar'; s2 = 'bar'
+ *    a = [:foo, s1, 2, s2]
+ *    a.delete('bar') # => "bar"
+ *    a # => [:foo, 2]
  *
  *  Returns +nil+ if no elements removed.
  *

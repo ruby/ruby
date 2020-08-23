@@ -1946,9 +1946,7 @@ rb_check_hash_type(VALUE hash)
  *    row.respond_to?(:to_hash)  # => true
  *    Hash.try_convert(row) # => {"Name"=>"Bob", "Age"=>45}
  *
- *  Returns the given <tt>obj</tt> if it is a Hash:
- *    h = {}
- *    h1 = Hash.try_convert(h)
+ *  Returns the given <tt>obj</tt> if it is a Hash.
  *
  *  Returns <tt>nil</tt> unless <tt>obj.respond_to?(:to_hash)</tt>.
  *
@@ -3286,7 +3284,7 @@ each_pair_i_fast(VALUE key, VALUE value, VALUE _)
  *    hash.each -> new_enumerator
  *    hash.each_pair -> new_enumerator
  *
- *  Calls the given block with each key-value pair, returning self:
+ *  Calls the given block with each key-value pair, returning +self+:
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.each_pair {|key, value| puts "#{key}: #{value}"} # => {:foo=>0, :bar=>1, :baz=>2}
  *  Output:
