@@ -107,106 +107,163 @@ rb_memory_view_init_as_byte_array(rb_memory_view_t *view, VALUE obj, void *data,
     return 1;
 }
 
-/* Return the item size. */
+static ssize_t
+get_format_size(const char *format, bool *native_p)
+{
+    RUBY_ASSERT(format != NULL);
+    RUBY_ASSERT(native_p != NULL);
+
+    *native_p = false;
+
+    switch (*format) {
+      case 'x':  // padding
+        return 1;
+
+      case 'c':  // signed char
+      case 'C':  // unsigned char
+        return sizeof(char);
+
+      case 's':  // s for int16_t, s! for signed short
+      case 'S':  // S for uint16_t, S! for unsigned short
+        if (format[1] == '!') {
+            *native_p = true;
+            return sizeof(short);
+        }
+        // fall through
+
+      case 'n':  // n for big-endian 16bit unsigned integer
+      case 'v':  // v for little-endian 16bit unsigned integer
+        return 2;
+
+      case 'i':  // i and i! for signed int
+      case 'I':  // I and I! for unsigned int
+        *native_p = (format[1] == '!');
+        return sizeof(int);
+
+      case 'l':  // l for int32_t, l! for signed long
+      case 'L':  // L for uint32_t, L! for unsigned long
+        if (format[1] == '!') {
+            *native_p = true;
+            return sizeof(long);
+        }
+        // fall through
+
+      case 'N':  // N for big-endian 32bit unsigned integer
+      case 'V':  // V for little-endian 32bit unsigned integer
+      case 'f':  // f for native float
+      case 'e':  // e for little-endian float
+      case 'g':  // g for big-endian float
+        return 4;
+
+      case 'q':  // q for int64_t, q! for signed long long
+      case 'Q':  // Q for uint64_t, Q! for unsigned long long
+        if (format[1] == '!') {
+            *native_p = true;
+            return sizeof(LONG_LONG);
+        }
+        // fall through
+
+      case 'd':  // d for native double
+      case 'E':  // E for little-endian double
+      case 'G':  // G for big-endian double
+        return 8;
+
+      case 'j':  // j for intptr_t
+      case 'J':  // J for uintptr_t
+        return sizeof(intptr_t);
+
+      default:
+        return -1;
+    }
+}
+
 ssize_t
-rb_memory_view_item_size_from_format(const char *format, const char **err)
+rb_memory_view_parse_item_format(const char *format,
+                                 rb_memory_view_item_component_t **members,
+                                 ssize_t *n_members, const char **err)
 {
     if (format == NULL) return 1;
 
-    ssize_t size = 0;
-    while (*format) {
-        const char *s = format;
+    ssize_t total = 0;
+    ssize_t len = 0;
+
+    const char *p = format;
+    while (*p) {
+        const char *q = p;
         ssize_t count = 0;
 
-        int ch = *format;
+        int ch = *p;
         if ('0' <= ch && ch <= '9') {
-            while ('0' <= (ch = *format) && ch <= '9') {
+            while ('0' <= (ch = *p) && ch <= '9') {
                 count = 10*count + ruby_digit36_to_number_table[ch];
-                ++format;
+                ++p;
             }
         }
         else {
             count = 1;
         }
 
-        ssize_t n = 0;
-        switch (*format) {
-          case 'x':  // padding
-            n += count;
-            break;
-
-          case 'c':  // signed char
-          case 'C':  // unsigned char
-            n += count * sizeof(char);
-            break;
-
-          case 's':  // s for int16_t, s! for signed short
-          case 'S':  // S for uint16_t, S! for unsigned short
-            if (format[1] == '!') {
-                ++format;
-                n += count * sizeof(short);
-                break;
-            }
-            // fall through
-
-          case 'n':  // n for big-endian 16bit unsigned integer
-          case 'v':  // v for little-endian 16bit unsigned integer
-            n += count * 2;
-            break;
-
-          case 'i':  // i and i! for signed int
-          case 'I':  // I and I! for unsigned int
-            if (format[1] == '!') ++format;
-            n += count * sizeof(int);
-            break;
-
-          case 'l':  // l for int32_t, l! for signed long
-          case 'L':  // L for uint32_t, L! for unsigned long
-            if (format[1] == '!') {
-                ++format;
-                n += count * sizeof(long);
-                break;
-            }
-            // fall through
-
-          case 'N':  // N for big-endian 32bit unsigned integer
-          case 'V':  // V for little-endian 32bit unsigned integer
-          case 'f':  // f for native float
-          case 'e':  // e for little-endian float
-          case 'g':  // g for big-endian float
-            n += 4;
-            break;
-
-          case 'q':  // q for int64_t, q! for signed long long
-          case 'Q':  // Q for uint64_t, Q! for unsigned long long
-            if (format[1] == '!') {
-                ++format;
-                n += count * sizeof(LONG_LONG);
-                break;
-            }
-            // fall through
-
-          case 'd':  // d for native double
-          case 'E':  // E for little-endian double
-          case 'G':  // G for big-endian double
-            n += count * 8;
-            break;
-
-          case 'j':  // j for intptr_t
-          case 'J':  // J for uintptr_t
-            n += count * sizeof(intptr_t);
-            break;
-
-          default:
-            if (err) *err = s;
+        bool native_p;
+        ssize_t size = get_format_size(p, &native_p);
+        if (size < 0) {
+            if (err) *err = q;
             return -1;
         }
 
-        size += n;
-        ++format;
+        if (ch != 'x') {
+            ++len;
+        }
+
+        total += size * count;
+
+        p += 1 + (int)native_p;
     }
 
-    return size;
+    if (members && n_members) {
+        rb_memory_view_item_component_t *buf = ALLOC_N(rb_memory_view_item_component_t, len);
+
+        ssize_t i = 0, offset = 0;
+        const char *p = format;
+        while (*p) {
+            ssize_t count = 0;
+            int ch = *p;
+            if ('0' <= ch && ch <= '9') {
+                while ('0' <= (ch = *p) && ch <= '9') {
+                    count = 10*count + ruby_digit36_to_number_table[ch];
+                    ++p;
+                }
+            }
+            else {
+                count = 1;
+            }
+
+            bool native_p;
+            ssize_t size = get_format_size(p, &native_p);
+
+            if (ch != 'x') {
+                buf[i++] = (rb_memory_view_item_component_t){
+                    .format = ch,
+                    .native_size_p = native_p,
+                    .offset = offset,
+                    .size = size,
+                    .repeat = count
+                };
+            }
+            offset += size * count;
+            p += 1 + (int)native_p;
+        }
+        *members = buf;
+        *n_members = len;
+    }
+
+    return total;
+}
+
+/* Return the item size. */
+ssize_t
+rb_memory_view_item_size_from_format(const char *format, const char **err)
+{
+    return rb_memory_view_parse_item_format(format, NULL, NULL, err);
 }
 
 /* Return the pointer to the item located by the given indices. */

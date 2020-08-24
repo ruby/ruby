@@ -28,6 +28,14 @@ enum ruby_memory_view_flags {
 };
 
 typedef struct {
+    char format;
+    int native_size_p;
+    size_t offset;
+    size_t size;
+    size_t repeat;
+} rb_memory_view_item_component_t;
+
+typedef struct {
     /* The original object that have the memory exported via this memory view.
      * The consumer of this memory view has the responsibility to call rb_gc_mark
      * for preventing this obj collected by GC.  */
@@ -50,13 +58,21 @@ typedef struct {
      *
      * For example, "dd" for an element that consists of two double values,
      * and "CCC" for an element that consists of three bytes, such as
-     * a RGB color triplet.
-     */
+     * a RGB color triplet. */
     const char *format;
 
     /* The number of bytes in each element.
      * item_size should equal to rb_memory_view_item_size_from_format(format). */
     ssize_t item_size;
+
+    struct {
+        /* The array of rb_memory_view_item_component_t that describes the
+         * item structure. */
+        rb_memory_view_item_component_t *components;
+
+        /* The number of components in an item. */
+        ssize_t length;
+    } item_desc;
 
     /* The number of dimension. */
     int ndim;
@@ -100,6 +116,9 @@ int rb_memory_view_is_row_major_contiguous(const rb_memory_view_t *view);
 int rb_memory_view_is_column_major_contiguous(const rb_memory_view_t *view);
 void rb_memory_view_fill_contiguous_strides(const int ndim, const int item_size, const ssize_t *const shape, ssize_t *const strides, const int row_major_p);
 int rb_memory_view_init_as_byte_array(rb_memory_view_t *view, VALUE obj, void *data, const ssize_t len, const int readonly);
+ssize_t rb_memory_view_parse_item_format(const char *format,
+                                         rb_memory_view_item_component_t **members,
+                                         ssize_t *n_members, const char **err);
 ssize_t rb_memory_view_item_size_from_format(const char *format, const char **err);
 void *rb_memory_view_get_item_pointer(rb_memory_view_t *view, const ssize_t *indices);
 
