@@ -171,6 +171,4 @@ EOU
   end
 end
 
-if __FILE__ == $0
-  ERB::Main.run
-end
+ERB::Main.run
