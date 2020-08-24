@@ -1,7 +1,7 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    diff-lcs (1.3)
+    diff-lcs (1.4.4)
     rake (12.3.3)
     rspec (2.14.1)
       rspec-core (~> 2.14.0)
