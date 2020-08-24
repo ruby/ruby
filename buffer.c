@@ -245,7 +245,11 @@ int
 rb_buffer_protocol_available_p(VALUE obj)
 {
     VALUE klass = CLASS_OF(obj);
-    return lookup_buffer_protocol_entry(klass) != NULL;
+    rb_buffer_protocol_entry *entry = lookup_buffer_protocol_entry(klass);
+    if (entry)
+        return (* entry->available_p_func)(obj)
+    else
+        return 0;
 }
 
 /* Obtain a buffer from obj, and substitute the information to view. */

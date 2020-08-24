@@ -78,10 +78,12 @@ typedef struct {
 
 typedef int (* rb_buffer_protocol_get_buffer_func_t)(VALUE obj, rb_buffer_t *view, int flags);
 typedef int (* rb_buffer_protocol_release_buffer_func_t)(VALUE obj, rb_buffer_t *view);
+typedef int (* rb_buffer_protocol_available_p_func_t)(VALUE obj);
 
 typedef struct {
     rb_buffer_protocol_get_buffer_func_t get_buffer_func;
     rb_buffer_protocol_release_buffer_func_t release_buffer_func;
+    rb_buffer_protocol_available_p_func_t available_p_func;
 } rb_buffer_protocol_entry_t;
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
