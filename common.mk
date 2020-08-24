@@ -107,6 +107,7 @@ COMMONOBJS    = array.$(OBJEXT) \
 		load.$(OBJEXT) \
 		marshal.$(OBJEXT) \
 		math.$(OBJEXT) \
+		memory_view.$(OBJEXT) \
 		mjit.$(OBJEXT) \
 		mjit_compile.$(OBJEXT) \
 		node.$(OBJEXT) \

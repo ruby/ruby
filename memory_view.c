@@ -1,17 +1,18 @@
 /**********************************************************************
 
-  buffer.c - Buffer Protocol
+  memory_view.c - Memory View
 
   Copyright (C) 2020 Kenta Murata <mrkn@mrkn.jp>
 
 **********************************************************************/
 
-#include "ruby/internal/config.h"
+#include "internal.h"
+#include "ruby/memory_view.h"
 
-static ID id_buffer_protocol;
+static ID id_memory_view;
 
-static const rb_data_type_t buffer_protocol_type = {
-    "buffer_protocol",
+static const rb_data_type_t memory_view_entry_data_type = {
+    "memory_view",
     {
 	0,
 	0,
@@ -20,24 +21,24 @@ static const rb_data_type_t buffer_protocol_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
-/* Register buffer protocol functions for the given class */
+/* Register memory view functions for the given class */
 bool
-rb_buffer_protocol_register(VALUE klass, const rb_buffer_protocol_entry_t *entry) {
-    VALUE entry_obj = rb_ivar_get(klass, id_buffer_protocol);
+rb_memory_view_register(VALUE klass, const rb_memory_view_entry_t *entry) {
+    VALUE entry_obj = rb_ivar_get(klass, id_memory_view);
     if (! NIL_P(entry_obj)) {
-        rb_warning("Duplicated registration of buffer protocol to %"PRIsVALUE, klass);
+        rb_warning("Duplicated registration of memory_view to %"PRIsVALUE, klass);
         return 0;
     }
     else {
-        entry_obj = TypedData_Wrap_Struct(0, &buffer_protocol_entry_data_type, entry);
-        rb_ivar_set(klass, id_buffer_protocol, entry_obj);
+        entry_obj = TypedData_Wrap_Struct(0, &memory_view_entry_data_type, (void *)entry);
+        rb_ivar_set(klass, id_memory_view, entry_obj);
         return 1;
     }
 }
 
-/* Examine whether the given buffer has row-major order strides. */
+/* Examine whether the given memory view has row-major order strides. */
 int
-rb_buffer_is_row_major_contiguous(const rb_buffer_t *view)
+rb_memory_view_is_row_major_contiguous(const rb_memory_view_t *view)
 {
     const ssize_t ndim = view->ndim;
     const ssize_t *shape = view->shape;
@@ -51,9 +52,9 @@ rb_buffer_is_row_major_contiguous(const rb_buffer_t *view)
     return 1;
 }
 
-/* Examine whether the given buffer has column-major order strides. */
+/* Examine whether the given memory view has column-major order strides. */
 int
-rb_buffer_is_column_major_contiguous(const rb_buffer_t *view)
+rb_memory_view_is_column_major_contiguous(const rb_memory_view_t *view)
 {
     const ssize_t ndim = view->ndim;
     const ssize_t *shape = view->shape;
@@ -69,7 +70,7 @@ rb_buffer_is_column_major_contiguous(const rb_buffer_t *view)
 
 /* Initialize strides array to represent the specified contiguous array. */
 void
-rb_buffer_fill_contiguous_strides(const int ndim, const int item_size, const ssize_t *const shape, ssize_t *const strides, int row_major_p)
+rb_memory_view_fill_contiguous_strides(const int ndim, const int item_size, const ssize_t *const shape, ssize_t *const strides, const int row_major_p)
 {
     ssize_t i, n = item_size;
     if (row_major_p) {
@@ -88,8 +89,9 @@ rb_buffer_fill_contiguous_strides(const int ndim, const int item_size, const ssi
 
 /* Initialize view to expose a simple byte array */
 int
-rb_buffer_init_as_byte_array(rb_buffer_t *view, VALUE obj, void *data, ssize_t len, int readonly, int flags)
+rb_memory_view_init_as_byte_array(rb_memory_view_t *view, VALUE obj, void *data, const ssize_t len, const int readonly)
 {
+    view->obj = obj;
     view->data = data;
     view->len = len;
     view->readonly = readonly;
@@ -99,13 +101,14 @@ rb_buffer_init_as_byte_array(rb_buffer_t *view, VALUE obj, void *data, ssize_t l
     view->shape = NULL;
     view->strides = NULL;
     view->sub_offsets = NULL;
-    view->private = NULL;
+    *((void **)&view->private) = NULL;
 
     return 1;
 }
 
+/* Return the item size. */
 ssize_t
-rb_buffer_item_size_from_format(const char *format, const char **err)
+rb_memory_view_item_size_from_format(const char *format, const char **err)
 {
     if (format == NULL) return 1;
 
@@ -186,7 +189,7 @@ rb_buffer_item_size_from_format(const char *format, const char **err)
 
 /* Return the pointer to the item located by the given indices. */
 void *
-rb_buffer_get_item_pointer(rb_buffer_t *view, ssize_t *indices)
+rb_memory_view_get_item_pointer(rb_memory_view_t *view, const ssize_t *indices)
 {
     uint8_t *ptr = view->data;
 
@@ -222,60 +225,62 @@ rb_buffer_get_item_pointer(rb_buffer_t *view, ssize_t *indices)
     return ptr;
 }
 
-static rb_buffer_protocol_entry_t *
-lookup_buffer_protocol_entry(VALUE klass) {
-    VALUE entry_obj = rb_ivar_get(klass, id_buffer_protocol);
+static const rb_memory_view_entry_t *
+lookup_memory_view_entry(VALUE klass) {
+    VALUE entry_obj = rb_ivar_get(klass, id_memory_view);
     while (NIL_P(entry_obj)) {
         klass = rb_class_get_superclass(klass);
 
         if (klass == rb_cBasicObject || klass == rb_cObject)
             return NULL;
 
-        entry_obj = rb_ivar_get(klass, id_buffer_protocol);
+        entry_obj = rb_ivar_get(klass, id_memory_view);
     }
 
-    if (! rb_typeddata_is_kind_of(entry_obj, &buffer_protocol_entry_data_type))
+    if (! rb_typeddata_is_kind_of(entry_obj, &memory_view_entry_data_type))
         return NULL;
 
-    return (rb_buffer_protocol_entry_t *)RTYPEDDATA_PTR(entry_obj);
+    return (const rb_memory_view_entry_t *)RTYPEDDATA_DATA(entry_obj);
 }
 
-/* Examine whether the given object supports buffer protocol. */
+/* Examine whether the given object supports memory view. */
 int
-rb_buffer_protocol_available_p(VALUE obj)
+rb_memory_view_available_p(VALUE obj)
 {
     VALUE klass = CLASS_OF(obj);
-    rb_buffer_protocol_entry *entry = lookup_buffer_protocol_entry(klass);
+    const rb_memory_view_entry_t *entry = lookup_memory_view_entry(klass);
     if (entry)
-        return (* entry->available_p_func)(obj)
+        return (* entry->available_p_func)(obj);
     else
         return 0;
 }
 
-/* Obtain a buffer from obj, and substitute the information to view. */
+/* Obtain a memory view from obj, and substitute the information to view. */
 int
-rb_buffer_protocol_get_buffer(VALUE obj, rb_buffer_t* view, int flags) {
+rb_memory_view_get(VALUE obj, rb_memory_view_t* view, int flags)
+{
     VALUE klass = CLASS_OF(obj);
-    rb_buffer_protocol_entry_t *entry = lookup_buffer_protocol_entry(klass);
+    const rb_memory_view_entry_t *entry = lookup_memory_view_entry(klass);
     if (entry)
-        return (*entry->get_buffer_func)(obj, view, flags);
+        return (*entry->get_func)(obj, view, flags);
     else
         return 0;
 }
 
-/* Release the buffer view obtained from obj. */
+/* Release the memory view obtained from obj. */
 int
-rb_buffer_protocol_release_buffer(VALUE obj, rb_buffer_t* view) {
+rb_memory_view_release(VALUE obj, rb_memory_view_t* view)
+{
     VALUE klass = CLASS_OF(obj);
-    rb_buffer_protocol_entry_t *entry = lookup_buffer_protocol_entry(klass);
+    const rb_memory_view_entry_t *entry = lookup_memory_view_entry(klass);
     if (entry)
-        return (*entry->release_buffer_func)(obj, view, flags);
+        return (*entry->release_func)(obj, view);
     else
         return 0;
 }
 
 void
-Init_Buffer(void)
+Init_MemoryView(void)
 {
-    id_buffer_protocol = rb_intern("__buffer_protocol__");
+    id_memory_view = rb_intern("__memory_view__");
 }
