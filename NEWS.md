@@ -217,6 +217,26 @@ Excluding feature bug fixes.
 
 ## Stdlib compatibility issues
 
+* Default gems
+
+    * The following libraries are promoted the default gems from stdlib.
+
+        * English
+        * erb
+        * find
+        * io-nonblock
+        * io-wait
+        * net-ftp
+        * net-http
+        * net-imap
+        * net-protocol
+        * optparse
+        * rinda
+        * set
+        * tempfile
+        * tmpdir
+        * werkref
+
 * Bundled gems
 
     * net-telnet and xmlrpc have been removed from the bundled gems.
