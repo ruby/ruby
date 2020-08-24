@@ -464,11 +464,11 @@ pty_close_pty(VALUE assoc)
 /*
  * call-seq:
  *   PTY.open => [master_io, slave_file]
- *   PTY.open {|master_io, slave_file| ... } => block value
+ *   PTY.open {|(master_io, slave_file)| ... } => block value
  *
  * Allocates a pty (pseudo-terminal).
  *
- * In the block form, yields two arguments <tt>master_io, slave_file</tt>
+ * In the block form, yields an array of two elements (<tt>master_io, slave_file</tt>)
  * and the value of the block is returned from +open+.
  *
  * The IO and File are both closed after the block completes if they haven't
