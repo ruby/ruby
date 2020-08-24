@@ -4636,8 +4636,8 @@ gc_fill_swept_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *s
                 if (bitset & 1) {
                     VALUE dest = (VALUE)p;
 
-                    assert(MARKED_IN_BITMAP(GET_HEAP_PINNED_BITS(dest), dest));
-                    assert(!MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(dest), dest));
+                    GC_ASSERT(MARKED_IN_BITMAP(GET_HEAP_PINNED_BITS(dest), dest));
+                    GC_ASSERT(!MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(dest), dest));
 
                     CLEAR_IN_BITMAP(GET_HEAP_PINNED_BITS(dest), dest);
 
