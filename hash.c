@@ -1740,49 +1740,33 @@ set_proc_default(VALUE hash, VALUE proc)
 
 /*
  *  call-seq:
- *     Hash.new                                        -> new_hash
- *     Hash.new(default_value)                         -> new_hash
- *     Hash.new{|hash, key| hash[key] = default_value} -> new_hash
+ *     Hash.new(default_value = nil) -> new_hash
+ *     Hash.new {|hash, key| ... } -> new_hash
  *
  *  Returns a new empty \Hash object.
  *
  *  The initial default value and initial default proc for the new hash
  *  depend on which form above was used. See {Default Values}[#class-Hash-label-Default+Values].
  *
- *  If neither argument nor block given,
+ *  If neither an argument nor a block given,
  *  initializes both the default value and the default proc to <tt>nil</tt>:
  *    h = Hash.new
- *    h # => {}
- *    h.class # => Hash
  *    h.default # => nil
  *    h.default_proc # => nil
- *    h[:nosuch] # => nil
  *
  *  If argument <tt>default_value</tt> given but no block given,
  *  initializes the default value to the given <tt>default_value</tt>
  *  and the default proc to <tt>nil</tt>:
- *
  *    h = Hash.new(false)
- *    h # => {}
  *    h.default # => false
  *    h.default_proc # => nil
- *    h[:nosuch] # => false
  *
- *  If block given but no argument given, stores the block as the default proc,
+ *  If a block given but no argument, stores the block as the default proc
  *  and sets the default value to <tt>nil</tt>:
- *
- *    h = Hash.new { |hash, key| "Default value for #{key}" }
- *    h # => {}
+ *    h = Hash.new {|hash, key| "Default value for #{key}" }
  *    h.default # => nil
  *    h.default_proc.class # => Proc
  *    h[:nosuch] # => "Default value for nosuch"
- *
- *  ---
- *
- *  Raises an exception if both argument <tt>default_value</tt> and a block are given:
- *
- *    # Raises ArgumentError (wrong number of arguments (given 1, expected 0)):
- *    Hash.new(0) { }
  */
 
 static VALUE
@@ -1808,68 +1792,30 @@ rb_hash_initialize(int argc, VALUE *argv, VALUE hash)
 /*
  *  call-seq:
  *    Hash[] -> new_empty_hash
+ *    Hash[hash] -> new_hash
  *    Hash[ [*2_element_arrays] ] -> new_hash
  *    Hash[*objects] -> new_hash
- *    Hash[hash] -> new_hash
  *
  *  Returns a new \Hash object populated with the given objects, if any.
+ *  See Hash::new.
  *
- *  The initial default value and default proc are set to <tt>nil</tt>
- *  (see {Default Values}[#class-Hash-label-Default+Values]):
+ *  With no argument, returns a new empty \Hash.
  *
- *    h = Hash[]
- *    h # => {}
- *    h.class # => Hash
- *    h.default # => nil
- *    h.default_proc # => nil
+ *  When the single given argument is a \Hash,
+ *  returns a new \Hash populated with the entries from the given \Hash.
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    Hash[h] # => {:foo=>0, :bar=>1, :baz=>2}
  *
- *  When argument <tt>[*2_element_arrays]</tt> is given,
- *  each element of the outer array must be a 2-element array;
+ *  When the single given argument is an \Array of 2-element Arrays,
  *  returns a new \Hash object wherein each 2-element array forms a key-value entry:
- *
  *    Hash[ [ [:foo, 0], [:bar, 1] ] ] # => {:foo=>0, :bar=>1}
  *
- *  When arguments <tt>*objects</tt> are given,
- *  the argument count must be an even number;
- *  returns a new \Hash object wherein each successive pair of arguments has become a key-value entry:
- *
- *    Hash[] # => {}
+ *  When the argument count is an even number;
+ *  returns a new \Hash object wherein each successive pair of arguments
+ *  has become a key-value entry:
  *    Hash[:foo, 0, :bar, 1] # => {:foo=>0, :bar=>1}
  *
- *  When argument <tt>hash</tt> is given,
- *  the argument must be a \Hash:
- *    class Foo
- *      def to_hash
- *        {foo: 0, bar: 1}
- *      end
- *    end
- *    Hash[Foo.new] # => {:foo=>0, :bar=>1}
- *
- *  ---
- *
- *  Raises an exception if the argument count is 1,
- *  but the argument is not an array of 2-element arrays or a \Hash:
- *    # Raises ArgumentError (odd number of arguments for Hash):
- *    Hash[:foo]
- *    # Raises ArgumentError (invalid number of elements (3 for 1..2)):
- *    Hash[ [ [:foo, 0, 1] ] ]
- *
- *  Raises an exception if the argument count is odd and greater than 1:
- *
- *    # Raises ArgumentError (odd number of arguments for Hash):
- *    Hash[0, 1, 2]
- *
- *  Raises an exception if the argument is an array containing an element
- *  that is not a 2-element array:
- *
- *    # Raises ArgumentError (wrong element type Symbol at 0 (expected array)):
- *    Hash[ [ :foo ] ]
- *
- *  Raises an exception if the argument is an array containing an element
- *  that is an array of size different from 2:
- *
- *    # Raises ArgumentError (invalid number of elements (3 for 1..2)):
- *    Hash[ [ [0, 1, 2] ] ]
+ *  Raises an exception if the argument list does not conform to any of the above.
  */
 
 static VALUE
@@ -1938,28 +1884,14 @@ rb_check_hash_type(VALUE hash)
 
 /*
  *  call-seq:
- *    Hash.try_convert(obj) -> new_hash or nil
+ *    Hash.try_convert(obj) -> obj, new_hash, or nil
  *
- *  Returns the Hash object created by calling <tt>obj.to_hash</tt>:
- *    require 'csv' # => true
- *    row = CSV::Row.new(['Name', 'Age'], ['Bob', 45])
- *    row.respond_to?(:to_hash)  # => true
- *    Hash.try_convert(row) # => {"Name"=>"Bob", "Age"=>45}
+ *  If +obj+ is a \Hash object, returns +obj+.
  *
- *  Returns the given <tt>obj</tt> if it is a Hash.
+ *  Otherwise if +obj+ responds to <tt>:to_hash</tt>,
+ *  calls <tt>obj.to_hash</tt> and returns the result.
  *
- *  Returns <tt>nil</tt> unless <tt>obj.respond_to?(:to_hash)</tt>.
- *
- *  ---
- *
- *  Raises an exception unless <tt>obj.to_hash</tt> returns a \Hash object:
- *    class BadToHash
- *      def to_hash
- *        1
- *      end
- *    end
- *    bad = BadToHash.new
- *    Hash.try_convert(bad) # Raises TypeError (can't convert BadToHash to Hash (BadToHash#to_hash gives Integer))
+ *  Returns +nil+ if +obj+ does not respond to <tt>:to_hash</tt>
  */
 static VALUE
 rb_hash_s_try_convert(VALUE dummy, VALUE hash)
@@ -2040,14 +1972,6 @@ rb_hash_rehash_i(VALUE key, VALUE value, VALUE arg)
  *  The hash table becomes invalid if the hash value of a key
  *  has changed after the entry was created.
  *  See {Modifying an Active Hash Key}[#class-Hash-label-Modifying+an+Active+Hash+Key].
- *
- *  ---
- *
- *  Raises an exception if called while an iterator is traversing the hash:
- *
- *    h = {foo: 0, bar: 1, baz: 2}
- *    # Raises RuntimeError (rehash during iteration):
- *    h.each { |x| h.rehash }
  */
 
 VALUE
@@ -2134,7 +2058,6 @@ rb_hash_stlike_lookup(VALUE hash, st_data_t key, st_data_t *pval)
  *  (see {Default Values}[#class-Hash-label-Default+Values]):
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h[:nosuch] # => nil
- *
  */
 
 VALUE
@@ -2171,29 +2094,25 @@ rb_hash_lookup(VALUE hash, VALUE key)
 
 /*
  *  call-seq:
- *    hash.fetch(key) -> value
- *    hash.fetch(key, default) -> value
+ *    hash.fetch(key, default_value = self.default) -> value
  *    hash.fetch(key) { |key| ... } -> value
  *
- *  Returns the value for the given +key+.
+ *  Returns the value for the given +key+, if found.
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.fetch(:bar) # => 1
  *
- *  If +key+ is not found, then the given +default+ or
- *  block (if any) will be used:
- *
+ *  If +key+ is not found and no block was given,
+ *  returns +default_value+:
  *    {}.fetch(:nosuch, :default) # => :default
- *    {}.fetch(:nosuch) { |key| "No #{key}"}) # => "No nosuch"
+ *    {}.fetch(:nosuch) # => nil
  *
- *  If neither is given, an error is raised:
+ *  If +key+ is not found and a block was given,
+ *  yields +key+ to the block and returns the block's return value:
+ *    {}.fetch(:nosuch) {|key| "No key #{key}"} # => "No key nosuch"
  *
- *    {}.fetch(:foo) # => KeyError (key not found: :nosuch)
+ *  Raises KeyError if neither +default_value+ nor a block was given.
  *
- *  Note that the #default or #default_proc are always ignored by `fetch`
- *
- *    h = Hash.new(0)
- *    h[:nosuch] # => 0
- *    h.fetch(:nosuch) # => KeyError
+ *  Note that this method does not use the values of either #default or #default_proc.
  */
 
 static VALUE
@@ -2240,23 +2159,21 @@ rb_hash_fetch(VALUE hash, VALUE key)
 
 /*
  *  call-seq:
- *    hash.default -> value
- *    hash.default(key) -> value
+ *    hash.default(key = self.default) -> value
+ *
+ *  Returns the default value for the given +key+.
+ *  The returned value will be determined either by the default proc or by the default value.
+ *  See {Default Values}[#class-Hash-label-Default+Values].
  *
  *  With no argument, returns the current default value:
  *    h = {}
  *    h.default # => nil
- *    h.default = false
- *    h.default # => false
  *
- *  With +key+ given, returns the default value for +key+,
+ *  If +key+ is given, returns the default value for +key+,
  *  regardless of whether that key exists:
- *    h = Hash.new { |hash, key| hash[key] = "No #{key}"}
- #    h[:foo] = "Hello"
- *    h.default(:foo) # => "No foo"
- *
- *  The returned value will be determined either by the default proc or by the default value.
- *  See {Default Values}[#class-Hash-label-Default+Values].
+ *    h = Hash.new { |hash, key| hash[key] = "No key #{key}"}
+ *    h[:foo] = "Hello"
+ *    h.default(:foo) # => "No key foo"
  */
 
 static VALUE
@@ -2277,7 +2194,7 @@ rb_hash_default(int argc, VALUE *argv, VALUE hash)
  *  call-seq:
  *    hash.default = value -> value
  *
- *  Sets the default value to +value+, returning +value+:
+ *  Sets the default value to +value+; returns +value+:
  *    h = {}
  *    h.default # => nil
  *    h.default = false # => false
@@ -2298,13 +2215,12 @@ rb_hash_set_default(VALUE hash, VALUE ifnone)
  *  call-seq:
  *    hash.default_proc -> proc or nil
  *
- *  Returns the default proc:
+ *  Returns the default proc for +self+
+ *  (see {Default Values}[#class-Hash-label-Default+Values]):
  *    h = {}
  *    h.default_proc # => nil
- *    h.default_proc = proc { |hash, key| "Default value for #{key}" }
+ *    h.default_proc = proc {|hash, key| "Default value for #{key}" }
  *    h.default_proc.class # => Proc
- *
- *  See {Default Values}[#class-Hash-label-Default+Values].
  */
 
 static VALUE
@@ -2320,21 +2236,14 @@ rb_hash_default_proc(VALUE hash)
  *  call-seq:
  *    hash.default_proc = proc -> proc
  *
- *  Sets the default proc to +proc+:
+ *  Sets the default proc for +self+ to +proc+:
+ *  (see {Default Values}[#class-Hash-label-Default+Values]):
  *    h = {}
  *    h.default_proc # => nil
  *    h.default_proc = proc { |hash, key| "Default value for #{key}" }
  *    h.default_proc.class # => Proc
  *    h.default_proc = nil
  *    h.default_proc # => nil
- *
- *  See {Default Values}[#class-Hash-label-Default+Values].
- *
- *  ---
- *
- *  Raises an exception if +proc+ is not a \Proc:
- *    # Raises TypeError (wrong default_proc type Integer (expected Proc)):
- *    h.default_proc = 1
  */
 
 VALUE
