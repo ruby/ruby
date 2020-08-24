@@ -16,6 +16,25 @@ class TestResolvAddr < Test::Unit::TestCase
     }
   end
 
+  def test_valid_ipv6_link_local_address
+    bug17112 = "[ruby-core:99539]"
+    assert_not_match(Resolv::IPv6::Regex, "fe80::1%", bug17112)
+    assert_not_match(Resolv::IPv6::Regex, "fe80:2:3:4:5:6:7:8%", bug17112)
+    assert_not_match(Resolv::IPv6::Regex, "fe90::1%em1", bug17112)
+    assert_not_match(Resolv::IPv6::Regex, "1:2:3:4:5:6:7:8%em1", bug17112)
+    assert_match(Resolv::IPv6::Regex, "fe80:2:3:4:5:6:7:8%em1", bug17112)
+    assert_match(Resolv::IPv6::Regex, "fe80::20d:3aff:fe7d:9760%eth0", bug17112)
+    assert_match(Resolv::IPv6::Regex, "fe80::1%em1", bug17112)
+  end
+
+  def test_valid_socket_ip_address_list
+    Socket.ip_address_list.each do |addr|
+      ip = addr.ip_address
+      assert_match(Resolv::AddressRegex, ip)
+      assert_equal(ip, Resolv.getaddress(ip))
+    end
+  end
+
   def test_invalid_byte_comment
     bug9273 = '[ruby-core:59239] [Bug #9273]'
     Tempfile.create('resolv_test_addr_') do |tmpfile|
