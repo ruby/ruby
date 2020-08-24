@@ -213,7 +213,7 @@ Excluding feature bug fixes.
 
 * `TRUE`/`FALSE`/`NIL` constants are no longer defined.
 
-* `Integer#zero?` overrides `Numeric#zero?` for optimization.  [[Misc #16961]}
+* `Integer#zero?` overrides `Numeric#zero?` for optimization.  [[Misc #16961]]
 
 ## Stdlib compatibility issues
 
@@ -310,3 +310,6 @@ Excluding feature bug fixes.
 [Feature #16175]: https://bugs.ruby-lang.org/issues/16175
 [Feature #15973]: https://bugs.ruby-lang.org/issues/15973
 [Feature #16614]: https://bugs.ruby-lang.org/issues/16614
+[Feature #16686]: https://bugs.ruby-lang.org/issues/16686
+[Misc #16961]:    https://bugs.ruby-lang.org/issues/16961
+[Bug #8446]:      https://bugs.ruby-lang.org/issues/8446
