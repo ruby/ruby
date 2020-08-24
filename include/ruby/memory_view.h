@@ -10,10 +10,10 @@
  * @brief      Memory View.
  */
 
-#include "ruby/intern.h"
 #include "ruby/internal/dllexport.h"
 #include "ruby/internal/stdbool.h"
 #include "ruby/internal/value.h"
+#include "ruby/intern.h"
 
 enum ruby_memory_view_flags {
     RUBY_MEMORY_VIEW_SIMPLE            = 0,

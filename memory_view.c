@@ -7,6 +7,7 @@
 **********************************************************************/
 
 #include "internal.h"
+#include "internal/util.h"
 #include "ruby/memory_view.h"
 
 static ID id_memory_view;
@@ -114,37 +115,51 @@ rb_memory_view_item_size_from_format(const char *format, const char **err)
 
     ssize_t n = 0;
     while (*format) {
+        const char *s = format;
+        ssize_t count = 0;
+
+        int ch = *format;
+        if ('0' <= ch && ch <= '9') {
+            while ('0' <= (ch = *format) && ch <= '9') {
+                count = 10*count + ruby_digit36_to_number_table[ch];
+                ++format;
+            }
+        }
+        else {
+            count = 1;
+        }
+
         switch (*format) {
           case 'c':  // signed char
           case 'C':  // unsigned char
-            ++n;
+            n += count * sizeof(char);
             break;
 
           case 's':  // s for int16_t, s! for signed short
           case 'S':  // S for uint16_t, S! for unsigned short
             if (format[1] == '!') {
                 ++format;
-                n += sizeof(short);
+                n += count * sizeof(short);
                 break;
             }
             // fall through
 
           case 'n':  // n for big-endian 16bit unsigned integer
           case 'v':  // v for little-endian 16bit unsigned integer
-            n += 2;
+            n += count * 2;
             break;
 
           case 'i':  // i and i! for signed int
           case 'I':  // I and I! for unsigned int
             if (format[1] == '!') ++format;
-            n += sizeof(int);
+            n += count * sizeof(int);
             break;
 
           case 'l':  // l for int32_t, l! for signed long
           case 'L':  // L for uint32_t, L! for unsigned long
             if (format[1] == '!') {
                 ++format;
-                n += sizeof(long);
+                n += count * sizeof(long);
                 break;
             }
             // fall through
@@ -161,7 +176,7 @@ rb_memory_view_item_size_from_format(const char *format, const char **err)
           case 'Q':  // Q for uint64_t, Q! for unsigned long long
             if (format[1] == '!') {
                 ++format;
-                n += sizeof(LONG_LONG);
+                n += count * sizeof(LONG_LONG);
                 break;
             }
             // fall through
@@ -169,16 +184,16 @@ rb_memory_view_item_size_from_format(const char *format, const char **err)
           case 'd':  // d for native double
           case 'E':  // E for little-endian double
           case 'G':  // G for big-endian double
-            n += 8;
+            n += count * 8;
             break;
 
           case 'j':  // j for intptr_t
           case 'J':  // J for uintptr_t
-            n += sizeof(intptr_t);
+            n += count * sizeof(intptr_t);
             break;
 
           default:
-            if (err) *err = format;
+            if (err) *err = s;
             return -1;
         }
         ++format;
