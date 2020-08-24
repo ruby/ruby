@@ -113,7 +113,7 @@ rb_memory_view_item_size_from_format(const char *format, const char **err)
 {
     if (format == NULL) return 1;
 
-    ssize_t n = 0;
+    ssize_t size = 0;
     while (*format) {
         const char *s = format;
         ssize_t count = 0;
@@ -129,7 +129,12 @@ rb_memory_view_item_size_from_format(const char *format, const char **err)
             count = 1;
         }
 
+        ssize_t n = 0;
         switch (*format) {
+          case 'x':  // padding
+            n += count;
+            break;
+
           case 'c':  // signed char
           case 'C':  // unsigned char
             n += count * sizeof(char);
@@ -196,10 +201,12 @@ rb_memory_view_item_size_from_format(const char *format, const char **err)
             if (err) *err = s;
             return -1;
         }
+
+        size += n;
         ++format;
     }
 
-    return n;
+    return size;
 }
 
 /* Return the pointer to the item located by the given indices. */
