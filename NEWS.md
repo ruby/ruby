@@ -149,6 +149,16 @@ Outstanding ones only.
           the other modules and classes included or prepended the receiver.
           [[Feature #9573]]
 
+
+```ruby
+class C; end
+module M1; end
+module M2; end
+C.include M1
+M1.include M2
+p C.ancestors #=> [C, M1, M2, Object, Kernel, BasicObject]
+```
+
 * Symbol
 
     * Modified method
@@ -179,7 +189,7 @@ Outstanding ones only.
 
         * Net::HTTP.get, Net::HTTP.get_response, and Net::HTTP.get_print can
           take request headers as a Hash in the second argument when the first
-          argument is a URI.
+          argument is a URI.  [[Feature #16686]]
 
 ## Compatibility issues
 
@@ -190,13 +200,6 @@ Excluding feature bug fixes.
     ```ruby
     /foo/.frozen? #=> true
     ```
-
-* Bundled gems
-
-    * net-telnet and xmlrpc have been removed from the bundled gems.
-      If you are interested in maintaining them, please comment on
-      your plan to https://github.com/ruby/xmlrpc
-      or https://github.com/ruby/net-telnet.
 
 * EXPERIMENTAL: Hash#each consistently yields a 2-element array [[Bug #12706]]
 
@@ -210,15 +213,20 @@ Excluding feature bug fixes.
 
 * `TRUE`/`FALSE`/`NIL` constants are no longer defined.
 
-* SDBM have been removed from ruby standard library.
-
-    * The issues of sdbm will handle at https://github.com/ruby/sdbm
-
-* `Integer#zero?` overrides `Numeric#zero?` for optimization.
+* `Integer#zero?` overrides `Numeric#zero?` for optimization.  [[Misc #16961]}
 
 ## Stdlib compatibility issues
 
-Excluding feature bug fixes.
+* Bundled gems
+
+    * net-telnet and xmlrpc have been removed from the bundled gems.
+      If you are interested in maintaining them, please comment on
+      your plan to https://github.com/ruby/xmlrpc
+      or https://github.com/ruby/net-telnet.
+
+* SDBM have been removed from ruby standard library. [[Bug #8446]]
+
+    * The issues of sdbm will handle at https://github.com/ruby/sdbm
 
 ## C API updates
 
