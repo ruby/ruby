@@ -25,9 +25,10 @@ static const rb_data_type_t memory_view_entry_data_type = {
 /* Register memory view functions for the given class */
 bool
 rb_memory_view_register(VALUE klass, const rb_memory_view_entry_t *entry) {
+    Check_Type(klass, T_CLASS);
     VALUE entry_obj = rb_ivar_get(klass, id_memory_view);
     if (! NIL_P(entry_obj)) {
-        rb_warning("Duplicated registration of memory_view to %"PRIsVALUE, klass);
+        rb_warning("Duplicated registration of memory view to %"PRIsVALUE, klass);
         return 0;
     }
     else {
