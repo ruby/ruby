@@ -18,6 +18,7 @@ Gem::Specification.new do |spec|
   spec.homepage      = "https://github.com/ruby/forwardable"
   spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
+  spec.required_ruby_version = '>= 2.4.0'
   spec.files         = ["forwardable.gemspec", "lib/forwardable.rb", "lib/forwardable/impl.rb", "lib/forwardable/version.rb"]
   spec.bindir        = "exe"
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
