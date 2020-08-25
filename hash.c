@@ -1892,6 +1892,8 @@ rb_check_hash_type(VALUE hash)
  *  calls <tt>obj.to_hash</tt> and returns the result.
  *
  *  Returns +nil+ if +obj+ does not respond to <tt>:to_hash</tt>
+ *
+ *  Raises an exception unless <tt>obj.to_hash</tt> returns a \Hash object.
  */
 static VALUE
 rb_hash_s_try_convert(VALUE dummy, VALUE hash)
@@ -2094,8 +2096,9 @@ rb_hash_lookup(VALUE hash, VALUE key)
 
 /*
  *  call-seq:
- *    hash.fetch(key, default_value = self.default) -> value
- *    hash.fetch(key) { |key| ... } -> value
+ *    hash.fetch(key) -> value
+ *    hash.fetch(key, default_value) -> value
+ *    hash.fetch(key) {|key| ... } -> value
  *
  *  Returns the value for the given +key+, if found.
  *    h = {foo: 0, bar: 1, baz: 2}
@@ -2159,7 +2162,8 @@ rb_hash_fetch(VALUE hash, VALUE key)
 
 /*
  *  call-seq:
- *    hash.default(key = self.default) -> value
+ *    hash.default -> value
+ *    hash.default(key) -> value
  *
  *  Returns the default value for the given +key+.
  *  The returned value will be determined either by the default proc or by the default value.
