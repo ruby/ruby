@@ -86,8 +86,6 @@ Zachary Scott (zzak)
   Koichi Sasada (ko1)
 [ext/monitor]
   Koichi Sasada (ko1)
-[ext/nkf]
-  NARUSE, Yui (naruse)
 [ext/objspace]
   _unmaintained_
 [ext/pathname]
@@ -319,6 +317,9 @@ Zachary Scott (zzak)
   NARUSE, Yui (naruse), Hiroshi SHIBATA (hsbt)
   https://github.com/flori/json
   https://rubygems.org/gems/json
+[ext/nkf]
+  NARUSE, Yui (naruse)
+  https://github.com/ruby/nkf
 [ext/openssl]
   Kazuki Yamaguchi (rhe)
   https://github.com/ruby/openssl

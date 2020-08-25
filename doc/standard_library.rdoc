@@ -31,7 +31,6 @@ un.rb:: Utilities to replace common UNIX commands
 Coverage:: Provides coverage measurement for Ruby
 Digest:: Provides a framework for message digest libraries
 Monitor:: Provides an object or module to use safely by more than one thread
-NKF:: Ruby extension for Network Kanji Filter
 objspace:: Extends ObjectSpace module to add methods for internal statistics
 Pathname:: Representation of the name of a file or directory on the filesystem
 PTY:: Creates and manages pseudo terminals
@@ -98,6 +97,7 @@ Fiddle:: A libffi wrapper for Ruby
 GDBM:: Ruby extension for the GNU dbm (gdbm) library
 IO:: Extensions for Ruby IO class, including #wait, #nonblock and ::console
 JSON:: Implements Javascript Object Notation for Ruby
+NKF:: Ruby extension for Network Kanji Filter
 OpenSSL:: Provides SSL, TLS and general purpose cryptography for Ruby
 Psych:: A YAML parser and emitter for Ruby
 Readline:: Provides an interface for GNU Readline and Edit Line (libedit)
