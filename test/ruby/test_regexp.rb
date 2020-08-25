@@ -1234,6 +1234,29 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal(1, pr4.call(1))
   end
 
+  def test_nomatchdata
+    /(ab)c/f =~ 'abcd'
+    assert_nil($&)
+
+    case 'abcd'
+    when /abc/
+    end
+    assert_equal('abc', $&)
+
+    /R.../ =~ 'Ruby'
+
+    /M.+/f =~ 'Matz'
+    assert_equal('Ruby', $&, 'Should not change previous values')
+
+    case 'abcd'
+    when /abc/f
+    end
+    assert_equal('Ruby', $&, 'Should not change previous values')
+
+    /abc/f === "abcd"
+    assert_equal('Ruby', $&, 'Should not change previous values')
+  end
+
   def test_eq_tilde_can_be_overridden
     assert_separately([], <<-RUBY)
       class Regexp

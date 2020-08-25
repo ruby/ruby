@@ -285,7 +285,7 @@ rb_memsearch(const void *x0, long m, const void *y0, long n, rb_encoding *enc)
 #define KCODE_FIXED FL_USER4
 
 #define ARG_REG_OPTION_MASK \
-    (ONIG_OPTION_IGNORECASE|ONIG_OPTION_MULTILINE|ONIG_OPTION_EXTEND)
+    (ONIG_OPTION_IGNORECASE|ONIG_OPTION_MULTILINE|ONIG_OPTION_EXTEND|ONIG_OPTION_NOMATCHDATA)
 #define ARG_ENCODING_FIXED    16
 #define ARG_ENCODING_NONE     32
 
@@ -303,6 +303,9 @@ char_to_option(int c)
 	break;
       case 'm':
 	val = ONIG_OPTION_MULTILINE;
+	break;
+      case 'f':
+	val = ONIG_OPTION_NOMATCHDATA;
 	break;
       default:
 	val = 0;
@@ -741,6 +744,7 @@ rb_reg_casefold_p(VALUE re)
  *     Regexp::IGNORECASE                  #=> 1
  *     Regexp::EXTENDED                    #=> 2
  *     Regexp::MULTILINE                   #=> 4
+ *     Regexp::NOMATCHDATA                 #=> 8
  *
  *     /cat/.options                       #=> 0
  *     /cat/ix.options                     #=> 3
@@ -1537,6 +1541,7 @@ rb_reg_adjust_startpos(VALUE re, VALUE str, long pos, int reverse)
 }
 
 /* returns byte offset */
+/* updates $~ and other related variables */
 long
 rb_reg_search0(VALUE re, VALUE str, long pos, int reverse, int set_backref_str)
 {
@@ -1622,9 +1627,69 @@ rb_reg_search0(VALUE re, VALUE str, long pos, int reverse, int set_backref_str)
     return result;
 }
 
+/* returns byte offset */
+/* does not update $~ and other related variables */
 long
-rb_reg_search(VALUE re, VALUE str, long pos, int reverse)
+rb_reg_search1(VALUE re, VALUE str, long pos, int reverse)
 {
+    long result;
+    char *start, *range;
+    long len;
+    regex_t *reg;
+    int tmpreg;
+    onig_errmsg_buffer err = "";
+
+    RSTRING_GETMEM(str, start, len);
+    range = start;
+    if (pos > len || pos < 0) {
+        rb_backref_set(Qnil);
+        return -1;
+    }
+
+    reg = rb_reg_prepare_re0(re, str, err);
+    tmpreg = reg != RREGEXP_PTR(re);
+    if (!tmpreg) RREGEXP(re)->usecnt++;
+
+    if (!reverse) {
+        range += len;
+    }
+    result = onig_search(reg,
+             (UChar*)start,
+             ((UChar*)(start + len)),
+             ((UChar*)(start + pos)),
+             ((UChar*)range),
+             NULL, ONIG_OPTION_NONE);
+    if (!tmpreg) RREGEXP(re)->usecnt--;
+    if (tmpreg) {
+        if (RREGEXP(re)->usecnt) {
+            onig_free(reg);
+        }
+        else {
+            onig_free(RREGEXP_PTR(re));
+            RREGEXP_PTR(re) = reg;
+        }
+    }
+    if (result < 0) {
+        if (result == ONIG_MISMATCH) {
+            return result;
+        }
+        else {
+            onig_error_code_to_str((UChar*)err, (int)result);
+            rb_reg_raise(RREGEXP_SRC_PTR(re), RREGEXP_SRC_LEN(re), err, re);
+        }
+    }
+
+    return result;
+}
+
+long
+rb_reg_search(VALUE re, VALUE str, long pos, int reverse, int need_matchdata)
+{
+    rb_reg_check(re);
+    if (!need_matchdata ||
+        (need_matchdata == -1 && IS_NOMATCHDATA(RREGEXP_PTR(re)->options))) {
+        return rb_reg_search1(re, str, pos, reverse);
+    }
     return rb_reg_search0(re, str, pos, reverse, 1);
 }
 
@@ -3124,12 +3189,14 @@ reg_operand(VALUE s, int check)
 }
 
 static long
-reg_match_pos(VALUE re, VALUE *strp, long pos)
+reg_match_pos(VALUE re, VALUE *strp, long pos, int need_matchdata)
 {
     VALUE str = *strp;
 
     if (NIL_P(str)) {
-	rb_backref_set(Qnil);
+        if (need_matchdata) {
+            rb_backref_set(Qnil);
+        }
 	return -1;
     }
     *strp = str = reg_operand(str, TRUE);
@@ -3143,7 +3210,7 @@ reg_match_pos(VALUE re, VALUE *strp, long pos)
 	}
 	pos = rb_str_offset(str, pos);
     }
-    return rb_reg_search(re, str, pos, 0);
+    return rb_reg_search(re, str, pos, 0, need_matchdata);
 }
 
 /*
@@ -3197,7 +3264,7 @@ reg_match_pos(VALUE re, VALUE *strp, long pos)
 VALUE
 rb_reg_match(VALUE re, VALUE str)
 {
-    long pos = reg_match_pos(re, &str, 0);
+    long pos = reg_match_pos(re, &str, 0, -1);
     if (pos < 0) return Qnil;
     pos = rb_str_sublen(str, pos);
     return LONG2FIX(pos);
@@ -3234,7 +3301,7 @@ rb_reg_eqq(VALUE re, VALUE str)
 	rb_backref_set(Qnil);
 	return Qfalse;
     }
-    start = rb_reg_search(re, str, 0, 0);
+    start = rb_reg_search(re, str, 0, 0, -1);
     if (start < 0) {
 	return Qfalse;
     }
@@ -3264,7 +3331,7 @@ rb_reg_match2(VALUE re)
 	return Qnil;
     }
 
-    start = rb_reg_search(re, line, 0, 0);
+    start = rb_reg_search(re, line, 0, 0, -1);
     if (start < 0) {
 	return Qnil;
     }
@@ -3318,7 +3385,7 @@ rb_reg_match_m(int argc, VALUE *argv, VALUE re)
 	pos = 0;
     }
 
-    pos = reg_match_pos(re, &str, pos);
+    pos = reg_match_pos(re, &str, pos, 1);
     if (pos < 0) {
 	rb_backref_set(Qnil);
 	return Qnil;
@@ -3357,51 +3424,10 @@ rb_reg_match_m_p(int argc, VALUE *argv, VALUE re)
 VALUE
 rb_reg_match_p(VALUE re, VALUE str, long pos)
 {
-    regex_t *reg;
-    onig_errmsg_buffer err = "";
-    OnigPosition result;
-    const UChar *start, *end;
-    int tmpreg;
-
-    if (NIL_P(str)) return Qfalse;
-    str = SYMBOL_P(str) ? rb_sym2str(str) : StringValue(str);
-    if (pos) {
-	if (pos < 0) {
-	    pos += NUM2LONG(rb_str_length(str));
-	    if (pos < 0) return Qfalse;
-	}
-	if (pos > 0) {
-	    long len = 1;
-	    const char *beg = rb_str_subpos(str, pos, &len);
-	    if (!beg) return Qfalse;
-	    pos = beg - RSTRING_PTR(str);
-	}
-    }
-    reg = rb_reg_prepare_re0(re, str, err);
-    tmpreg = reg != RREGEXP_PTR(re);
-    if (!tmpreg) RREGEXP(re)->usecnt++;
-    start = ((UChar*)RSTRING_PTR(str));
-    end = start + RSTRING_LEN(str);
-    result = onig_search(reg, start, end, start + pos, end,
-			 NULL, ONIG_OPTION_NONE);
-    if (!tmpreg) RREGEXP(re)->usecnt--;
-    if (tmpreg) {
-	if (RREGEXP(re)->usecnt) {
-	    onig_free(reg);
-	}
-	else {
-	    onig_free(RREGEXP_PTR(re));
-	    RREGEXP_PTR(re) = reg;
-	}
-    }
-    if (result < 0) {
-	if (result == ONIG_MISMATCH) {
-	    return Qfalse;
-	}
-	else {
-	    onig_error_code_to_str((UChar*)err, (int)result);
-	    rb_reg_raise(RREGEXP_SRC_PTR(re), RREGEXP_SRC_LEN(re), err, re);
-	}
+    long result;
+    result = reg_match_pos(re, &str, pos, 0);
+    if (result == ONIG_MISMATCH) {
+        return Qfalse;
     }
     return Qtrue;
 }
@@ -3424,7 +3450,7 @@ rb_reg_match_p(VALUE re, VALUE str, long pos)
  *  and new options may not be specified (a change as of Ruby 1.8).
  *
  *  If +options+ is an Integer, it should be one or more of the constants
- *  Regexp::EXTENDED, Regexp::IGNORECASE, and Regexp::MULTILINE,
+ *  Regexp::EXTENDED, Regexp::IGNORECASE, Regexp::NOMATCHDATA, and Regexp::MULTILINE,
  *  <em>or</em>-ed together.  Otherwise, if +options+ is not
  *  +nil+ or +false+, the regexp will be case insensitive.
  *
@@ -4095,6 +4121,8 @@ Init_Regexp(void)
     rb_define_const(rb_cRegexp, "FIXEDENCODING", INT2FIX(ARG_ENCODING_FIXED));
     /* see Regexp.options and Regexp.new */
     rb_define_const(rb_cRegexp, "NOENCODING", INT2FIX(ARG_ENCODING_NONE));
+    /* see Regexp.options and Regexp.new */
+    rb_define_const(rb_cRegexp, "NOMATCHDATA", INT2FIX(ONIG_OPTION_NOMATCHDATA));
 
     rb_global_variable(&reg_cache);
 
