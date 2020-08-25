@@ -349,12 +349,12 @@ rb_memory_view_get(VALUE obj, rb_memory_view_t* view, int flags)
 
 /* Release the memory view obtained from obj. */
 int
-rb_memory_view_release(VALUE obj, rb_memory_view_t* view)
+rb_memory_view_release(rb_memory_view_t* view)
 {
-    VALUE klass = CLASS_OF(obj);
+    VALUE klass = CLASS_OF(view->obj);
     const rb_memory_view_entry_t *entry = lookup_memory_view_entry(klass);
     if (entry)
-        return (*entry->release_func)(obj, view);
+        return (*entry->release_func)(view->obj, view);
     else
         return 0;
 }

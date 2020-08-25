@@ -124,7 +124,7 @@ void *rb_memory_view_get_item_pointer(rb_memory_view_t *view, const ssize_t *ind
 
 int rb_memory_view_available_p(VALUE obj);
 int rb_memory_view_get(VALUE obj, rb_memory_view_t* memory_view, int flags);
-int rb_memory_view_release(VALUE obj, rb_memory_view_t* memory_view);
+int rb_memory_view_release(rb_memory_view_t* memory_view);
 
 RBIMPL_SYMBOL_EXPORT_END()
 

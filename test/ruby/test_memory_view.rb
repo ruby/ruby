@@ -68,4 +68,22 @@ class TestMemoryView < Test::Unit::TestCase
                  ],
                  members)
   end
+
+  def test_rb_memory_view_init_as_byte_array
+    # ExportableString's memory view is initialized by rb_memory_view_init_as_byte_array
+    es = MemoryViewTestUtils::ExportableString.new("ruby")
+    memory_view_info = MemoryViewTestUtils.get_memory_view_info(es)
+    assert_equal({
+                   obj: es,
+                   len: 4,
+                   readonly: true,
+                   format: nil,
+                   item_size: 1,
+                   ndim: 1,
+                   shape: nil,
+                   strides: nil,
+                   sub_offsets: nil
+                 },
+                 memory_view_info)
+  end
 end
