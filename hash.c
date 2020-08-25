@@ -2096,9 +2096,9 @@ rb_hash_lookup(VALUE hash, VALUE key)
 
 /*
  *  call-seq:
- *    hash.fetch(key) -> value
- *    hash.fetch(key, default_value) -> value
- *    hash.fetch(key) {|key| ... } -> value
+ *    hash.fetch(key) -> object
+ *    hash.fetch(key, default_value) -> object
+ *    hash.fetch(key) {|key| ... } -> object
  *
  *  Returns the value for the given +key+, if found.
  *    h = {foo: 0, bar: 1, baz: 2}
@@ -2162,8 +2162,8 @@ rb_hash_fetch(VALUE hash, VALUE key)
 
 /*
  *  call-seq:
- *    hash.default -> value
- *    hash.default(key) -> value
+ *    hash.default -> object
+ *    hash.default(key) -> object
  *
  *  Returns the default value for the given +key+.
  *  The returned value will be determined either by the default proc or by the default value.
@@ -2196,7 +2196,7 @@ rb_hash_default(int argc, VALUE *argv, VALUE hash)
 
 /*
  *  call-seq:
- *    hash.default = value -> value
+ *    hash.default = value -> object
  *
  *  Sets the default value to +value+; returns +value+:
  *    h = {}
@@ -2367,12 +2367,9 @@ rb_hash_delete(VALUE hash, VALUE key)
 /*
  *  call-seq:
  *    hash.delete(key) -> value or nil
- *    hash.delete(key) { |key| ... } -> value
+ *    hash.delete(key) {|key| ... } -> object
  *
- *  Deletes the entry for the given +key+
- *  and returns its associated value.
- *
- *  ---
+ *  Deletes the entry for the given +key+ and returns its associated value.
  *
  *  If no block is given and +key+ is found, deletes the entry and returns the associated value:
  *    h = {foo: 0, bar: 1, baz: 2}
@@ -2442,9 +2439,7 @@ shift_i_safe(VALUE key, VALUE value, VALUE arg)
  *    h # => {:bar=>1, :baz=>2}
  *
  *  Returns the default value if the hash is empty
- *  (see {Default Values}[#class-Hash-label-Default+Values]):
- *    h = {}
- *    h.shift # => nil
+ *  (see {Default Values}[#class-Hash-label-Default+Values]).
  */
 
 static VALUE
@@ -2510,19 +2505,12 @@ hash_enum_size(VALUE hash, VALUE args, VALUE eobj)
  *  deletes each entry for which the block returns a truthy value;
  *  returns +self+:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h.delete_if { |key, value| value > 0 } # => {:foo=>0}
+ *    h.delete_if {|key, value| value > 0 } # => {:foo=>0}
  *
  *  If no block given, returns a new \Enumerator:
  *    h = {foo: 0, bar: 1, baz: 2}
  *    e = h.delete_if # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:delete_if>
  *    e.each { |key, value| value > 0 } # => {:foo=>0}
- *
- *  ----
- *
- *  Raises an exception if the block attempts to add a new key:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    # Raises RuntimeError (can't add a new key into hash during iteration):
- *    h.delete_if { |key, value| h[:new_key] = 3 }
  */
 
 VALUE
@@ -2552,13 +2540,6 @@ rb_hash_delete_if(VALUE hash)
  *    h = {foo: 0, bar: 1, baz: 2}
  *    e = h.reject! # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:reject!>
  *    e.each {|key, value| key.start_with?('b') } # => {:foo=>0}
- *
- *  ---
- *
- *  Raises an exception if the block attempts to add a new key:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    # Raises RuntimeError (can't add a new key into hash during iteration):
- *    h.reject! { |key, value| h[:new_Key] = 3 }
  */
 
 VALUE
@@ -2629,9 +2610,7 @@ rb_hash_reject(VALUE hash)
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.slice(:baz, :foo) # => {:baz=>2, :foo=>0}
  *
- *  The given keys that are not found are ignored:
- *    h = {foo: 0, bar: 1}
- *    h.slice(:not_there, :bar, :not_there_either) # => {bar: 1}
+ *  Any given +keys+ that are not found are ignored.
  */
 
 static VALUE
@@ -2659,13 +2638,11 @@ rb_hash_slice(int argc, VALUE *argv, VALUE hash)
  *  call-seq:
  *     hsh.except(*keys) -> a_hash
  *
- *  Returns a hash excluding the given keys and their values.
- *
+ *  Returns a new \Hash excluding entries for the given +keys+:
  *     h = { a: 100, b: 200, c: 300 }
  *     h.except(:a)          #=> {:b=>200, :c=>300}
  *
- *  The given keys that are not found are ignored:
- *     h.except(:b, :c, :not_there, :idem)  #=> {:a=>100}
+ *  Any given +keys+ that are not found are ignored.
  */
 
 static VALUE
@@ -2690,13 +2667,11 @@ rb_hash_except(int argc, VALUE *argv, VALUE hash)
  *
  *  Returns a new \Array containing values for the given +keys+:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h.values_at(:foo, :baz) # => [0, 2]
+ *    h.values_at(:baz, :foo) # => [2, 0]
  *
- *  The {default values}[#class-Hash-label-Default+Values] will be used for keys
- *  that are not present:
+ *  The {default values}[#class-Hash-label-Default+Values] are returned
+ *  for any keys that are not found:
  *    h.values_at(:hello, :foo) # => [nil, 0]
- *    h.default = -1
- *    h.values_at(:hello, :foo) # => [-1, 0]
  */
 
 VALUE
@@ -2722,17 +2697,13 @@ rb_hash_values_at(int argc, VALUE *argv, VALUE hash)
  *
  *  Returns a new empty \Array if no arguments given.
  *
- *  When a block given, calls the block with each missing key,
+ *  When a block is given, calls the block with each missing key,
  *  treating the block's return value as the value for that key:
  *    h = {foo: 0, bar: 1, baz: 2}
  *    values = h.fetch_values(:bar, :foo, :bad, :bam) {|key| key.to_s}
  *    values # => [1, 0, "bad", "bam"]
  *
- *  ---
- *
- *  When no block is given, raises an exception if any given key is not found:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    h.fetch_values(:baz, :nosuch) # Raises KeyError (key not found: :nosuch)
+ *  When no block is given, raises an exception if any given key is not found.
  */
 
 static VALUE
@@ -2760,8 +2731,6 @@ select_i(VALUE key, VALUE value, VALUE result)
  *  call-seq:
  *    hash.select {|key, value| ... } -> new_hash
  *    hash.select -> new_enumerator
- *    hash.filter {|key, value| ... } -> new_hash
- *    hash.filter -> new_enumerator
  *
  *  Hash#filter is an alias for Hash#select.
  *
@@ -2773,13 +2742,6 @@ select_i(VALUE key, VALUE value, VALUE result)
  *    h = {foo: 0, bar: 1, baz: 2}
  *    e = h.select # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:select>
  *    e.each {|key, value| value < 2 } # => {:foo=>0, :bar=>1}
- *
- *  ---
- *
- *  Raises an exception if the block attempts to add a new key:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    # Raises RuntimeError (can't add a new key into hash during iteration):
- *    h.select {|key, value| h[:new_key] = 3 }
  */
 
 static VALUE
@@ -2808,8 +2770,6 @@ keep_if_i(VALUE key, VALUE value, VALUE hash)
  *  call-seq:
  *    hash.select! {|key, value| ... } -> self or nil
  *    hash.select! -> new_enumerator
- *    hash.filter! {|key, value| ... } -> self or nil
- *    hash.filter! -> new_enumerator
  *
  *  Hash#filter! is an alias for Hash#select!.
  *
@@ -2823,13 +2783,6 @@ keep_if_i(VALUE key, VALUE value, VALUE hash)
  *    h = {foo: 0, bar: 1, baz: 2}
  *    e = h.select!  # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:select!>
  *    e.each { |key, value| value < 2 } # => {:foo=>0, :bar=>1}
- *
- *  ---
- *
- *  Raises an exception if the block attempts to add a new key:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    # Raises RuntimeError (can't add a new key into hash during iteration)
- *    h.select! {|key, value| h[:new_key] = 3 }
  */
 
 static VALUE
@@ -2853,7 +2806,7 @@ rb_hash_select_bang(VALUE hash)
  *
  *  Calls the block for each key-value pair;
  *  retains the entry if the block returns a truthy value;
- *  deletes the entry otherwise; returns +self+.
+ *  otherwise deletes the entry; returns +self+.
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.keep_if { |key, value| key.start_with?('b') } # => {:bar=>1, :baz=>2}
  *
@@ -2861,11 +2814,6 @@ rb_hash_select_bang(VALUE hash)
  *    h = {foo: 0, bar: 1, baz: 2}
  *    e = h.keep_if # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:keep_if>
  *    e.each { |key, value| key.start_with?('b') } # => {:bar=>1, :baz=>2}
- *
- *  Raises an exception if the block attempts to add a new key:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    # Raises RuntimeError (can't add a new key into hash during iteration):
- *    h.keep_if { |key, value| h[:new_key] = 3 }
  */
 
 static VALUE
