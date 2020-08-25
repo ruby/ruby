@@ -56,15 +56,16 @@ class TestMemoryView < Test::Unit::TestCase
   end
 
   def test_rb_memory_view_parse_item_format
-    total_size, members, err = MemoryViewTestUtils.parse_item_format("cc2c3f2x4d")
-    assert_equal(50, total_size)
+    total_size, members, err = MemoryViewTestUtils.parse_item_format("cc2c3f2x4dq!")
+    assert_equal(58, total_size)
     assert_nil(err)
     assert_equal([
                    {format: 'c', native_size_p: false, offset:  0, size: 1, repeat: 1},
                    {format: 'c', native_size_p: false, offset:  1, size: 1, repeat: 1},
                    {format: 'c', native_size_p: false, offset:  2, size: 1, repeat: 2},
                    {format: 'f', native_size_p: false, offset:  4, size: 4, repeat: 3},
-                   {format: 'd', native_size_p: false, offset: 18, size: 8, repeat: 4}
+                   {format: 'd', native_size_p: false, offset: 18, size: 8, repeat: 4},
+                   {format: 'q', native_size_p: true,  offset: 50, size: sizeof('long long'), repeat: 1}
                  ],
                  members)
   end
