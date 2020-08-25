@@ -643,6 +643,26 @@ class TestRubyOptions < Test::Unit::TestCase
     end
   end
 
+  def test_executed?
+    # false
+    Tempfile.create(["required_file", ".rb"]) {|t1|
+      t1.puts "p executed?"
+      t1.flush
+      Tempfile.create(["requiring_file", ".rb"]) {|t2|
+        t2.puts "require '#{ t1.path }'"
+        t2.flush
+        assert_in_out_err([t2.path], "", %w(false), [])
+      }
+    }
+
+    # true
+    Tempfile.create(["raw_file", ".rb"]) {|t1|
+      t1.puts "p executed?"
+      t1.flush
+      assert_in_out_err([t1.path], "", %w(true), [])
+    }
+  end
+
   def test_setproctitle
     skip "platform dependent feature" unless defined?(PSCMD) and PSCMD
 
