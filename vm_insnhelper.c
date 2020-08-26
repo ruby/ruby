@@ -2673,7 +2673,7 @@ vm_call_bmethod(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_c
     return vm_call_bmethod_body(ec, calling, cd, argv);
 }
 
-VALUE
+MJIT_FUNC_EXPORTED VALUE
 rb_find_defined_class_by_owner(VALUE current_class, VALUE target_owner)
 {
     VALUE klass = current_class;
