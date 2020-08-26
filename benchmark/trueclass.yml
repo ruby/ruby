@@ -5,4 +5,8 @@ benchmark:
     true.inspect
   or: |
     true | false
+  xor: |
+    true ^ false
+  and: |
+    true & false
 loop_count: 1000000

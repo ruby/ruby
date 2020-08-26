@@ -1415,44 +1415,11 @@ nil_match(VALUE obj1, VALUE obj2)
     return Qnil;
 }
 
-/***********************************************************************
- *  Document-class: TrueClass
- *
- *  The global value <code>true</code> is the only instance of class
- *  TrueClass and represents a logically true value in
- *  boolean expressions. The class provides operators allowing
- *  <code>true</code> to be used in logical expressions.
- */
-
-/*
- *  call-seq:
- *     true & obj    -> true or false
- *
- *  And---Returns <code>false</code> if <i>obj</i> is
- *  <code>nil</code> or <code>false</code>, <code>true</code> otherwise.
- */
-
 static VALUE
 true_and(VALUE obj, VALUE obj2)
 {
     return RTEST(obj2)?Qtrue:Qfalse;
 }
-
-/*
- *  call-seq:
- *     true ^ obj   -> !obj
- *
- *  Exclusive Or---Returns <code>true</code> if <i>obj</i> is
- *  <code>nil</code> or <code>false</code>, <code>false</code>
- *  otherwise.
- */
-
-static VALUE
-true_xor(VALUE obj, VALUE obj2)
-{
-    return RTEST(obj2)?Qfalse:Qtrue;
-}
-
 
 /*
  *  Document-class: FalseClass
@@ -4627,8 +4594,8 @@ InitVM_Object(void)
     rb_deprecate_constant(rb_cObject, "Data");
 
     rb_cTrueClass = rb_define_class("TrueClass", rb_cObject);
-    rb_define_method(rb_cTrueClass, "&", true_and, 1);
-    rb_define_method(rb_cTrueClass, "^", true_xor, 1);
+    rb_cTrueClass_to_s = rb_fstring_enc_lit("true", rb_usascii_encoding());
+    rb_gc_register_mark_object(rb_cTrueClass_to_s);
     rb_define_method(rb_cTrueClass, "===", case_equal, 1);
     rb_undef_alloc_func(rb_cTrueClass);
     rb_undef_method(CLASS_OF(rb_cTrueClass), "new");
