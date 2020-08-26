@@ -5116,6 +5116,10 @@ gc_sweep(rb_objspace_t *objspace)
 	struct heap_page *page = NULL;
 	gc_sweep_start(objspace);
 
+        if (is_full_marking(objspace)) {
+            gc_compact_start(objspace, heap_eden);
+        }
+
         list_for_each(&heap_eden->pages, page, page_node) {
             page->flags.before_sweep = TRUE;
         }
@@ -6972,6 +6976,7 @@ gc_marks_start(rb_objspace_t *objspace, int full_mark)
                        objspace->marked_slots, objspace->rincgc.pooled_slots, objspace->rincgc.step_slots);
 #endif
 	objspace->flags.during_minor_gc = FALSE;
+	objspace->flags.during_compacting = TRUE;
 	objspace->profile.major_gc_count++;
 	objspace->rgengc.uncollectible_wb_unprotected_objects = 0;
 	objspace->rgengc.old_objects = 0;
