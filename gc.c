@@ -1769,6 +1769,12 @@ heap_pages_free_unused_pages(rb_objspace_t *objspace)
 		j++;
 	    }
 	}
+
+        struct heap_page *hipage = heap_pages_sorted[heap_allocated_pages - 1];
+        RVALUE *himem = hipage->start + hipage->total_slots;
+        GC_ASSERT(himem <= heap_pages_himem);
+        heap_pages_himem = himem;
+
 	GC_ASSERT(j == heap_allocated_pages);
     }
 }
