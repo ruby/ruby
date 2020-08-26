@@ -405,6 +405,19 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
+  def test_each_codepoint_enumerator
+    make_tempfile {|t|
+      a = ""
+      b = ""
+      File.open(t, 'rt') {|f|
+        a = f.each_codepoint.take(4).pack('U*')
+        b = f.read(8)
+      }
+      assert_equal("foo\n", a)
+      assert_equal("bar\nbaz\n", b)
+    }
+  end
+
   def test_codepoints
     make_tempfile {|t|
       bug2959 = '[ruby-core:28650]'

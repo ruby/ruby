@@ -1095,8 +1095,8 @@ strio_each_codepoint(VALUE self)
 
 	c = rb_enc_codepoint_len(RSTRING_PTR(ptr->string)+ptr->pos,
 				 RSTRING_END(ptr->string), &n, enc);
-	rb_yield(UINT2NUM(c));
 	ptr->pos += n;
+	rb_yield(UINT2NUM(c));
     }
     return self;
 }
