@@ -8556,7 +8556,7 @@ parse_percent(struct parser_params *p, const int space_seen, const enum lex_stat
 		return 0;
 	    }
 	}
-	if (c == -1 || term == -1) {
+	if (term == -1) {
 	    compile_error(p, "unterminated quoted string meets end of file");
 	    return 0;
 	}
