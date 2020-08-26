@@ -2102,13 +2102,6 @@ rb_obj_alloc(VALUE klass)
     return rb_class_alloc(klass);
 }
 
-static VALUE
-rb_class_allocate_instance(VALUE klass)
-{
-    NEWOBJ_OF(obj, struct RObject, klass, T_OBJECT | (RGENGC_WB_PROTECTED_OBJECT ? FL_WB_PROTECTED : 0));
-    return (VALUE)obj;
-}
-
 /*
  *  call-seq:
  *     class.new(args, ...)    ->  obj
