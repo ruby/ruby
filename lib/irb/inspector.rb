@@ -136,8 +136,3 @@ module IRB # :nodoc:
     Marshal.dump(v)
   }
 end
-
-
-
-
-
