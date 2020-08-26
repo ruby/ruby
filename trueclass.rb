@@ -27,8 +27,7 @@ class TrueClass
   #  <code>nil</code> or <code>false</code>, <code>true</code> otherwise.
   #
   def &(obj)
-    Primitive.attr! 'inline'
-    Primitive.cexpr! 'RTEST(obj)?Qtrue:Qfalse;'
+    obj ? true : false
   end
 
   #
@@ -40,8 +39,7 @@ class TrueClass
   #  otherwise.
   #
   def ^(obj)
-    Primitive.attr! 'inline'
-    Primitive.cexpr! 'RTEST(obj)?Qfalse:Qtrue;'
+    obj ? false : true
   end
 
   #
