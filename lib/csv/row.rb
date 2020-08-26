@@ -88,8 +88,6 @@ class CSV
     #   field(header, offset)
     #
     # Returns the field value for the given +index+ or +header+.
-    # If an \Integer +offset+ is given, the first +offset+ columns are
-    # ignored.
     #
     # ---
     #
@@ -209,17 +207,56 @@ class CSV
 
     #
     # :call-seq:
-    #   []=( header, value )
-    #   []=( header, offset, value )
-    #   []=( index, value )
+    #   row[index] = value -> value
+    #   row[header, offset] = value -> value
+    #   row[header] = value -> value
     #
-    # Looks up the field by the semantics described in CSV::Row.field() and
-    # assigns the +value+.
+    # Assigns the field value for the given +index+ or +header+;
+    # returns +value+.
     #
-    # Assigning past the end of the row with an index will set all pairs between
-    # to <tt>[nil, nil]</tt>. Assigning to an unused header appends the new
-    # pair.
+    # ---
     #
+    # Assign field value by \Integer index:
+    #   source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row[0] = 'Bat'
+    #   row[1] = 3
+    #   row # => #<CSV::Row "Name":"Bat" "Value":3>
+    #
+    # Counts backward from the last column if +index+ is negative:
+    #   row[-1] = 4
+    #   row[-2] = 'Bam'
+    #   row # => #<CSV::Row "Name":"Bam" "Value":4>
+    #
+    # Extends the row with <tt>nil:nil</tt> if positive +index+ is not in the row:
+    #   row[4] = 5
+    #   row # => #<CSV::Row "Name":"bad" "Value":4 nil:nil nil:nil nil:5>
+    #
+    # Raises IndexError if negative +index+ is too small (too far from zero).
+    #
+    # ---
+    #
+    # Assign field value by header (first found):
+    #   source = "Name,Name,Name\nFoo,Bar,Baz\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row['Name'] = 'Bat'
+    #   row # => #<CSV::Row "Name":"Bat" "Name":"Bar" "Name":"Baz">
+    #
+    # Assign field value by header, ignoring +offset+ leading fields:
+    #   source = "Name,Name,Name\nFoo,Bar,Baz\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row['Name', 2] = 4
+    #   row # => #<CSV::Row "Name":"Foo" "Name":"Bar" "Name":4>
+    #
+    # Append new field by (new) header:
+    #   source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row['New'] = 6
+    #   row# => #<CSV::Row "Name":"foo" "Value":"0" "New":6>
     def []=(*args)
       value = args.pop
 
