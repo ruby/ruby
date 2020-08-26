@@ -599,6 +599,8 @@ class TestParse < Test::Unit::TestCase
     assert_syntax_error('%s', /unterminated quoted string/)
     assert_syntax_error('%ss', /unknown type/)
     assert_syntax_error('%z()', /unknown type/)
+    assert_syntax_error("%\u3042", /unknown type/)
+    assert_syntax_error("%q\u3042", /unknown type/)
   end
 
   def test_symbol
