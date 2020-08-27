@@ -4515,12 +4515,8 @@ any_p_i_pattern(VALUE key, VALUE value, VALUE arg)
  *  Returns +true+ if any element satisfies a given criterion;
  *  +false+ otherwise.
  *
- *  ---
- *
  *  With no argument and no block,
- *  returns +true+ if +self+ is non-empty; +false+ if empty:
- *    {}.any? # => false
- *    {nil => false}.any? # => true
+ *  returns +true+ if +self+ is non-empty; +false+ if empty.
  *
  *  With argument +object+ and no block,
  *  returns +true+ if for any key +key+
@@ -4537,13 +4533,6 @@ any_p_i_pattern(VALUE key, VALUE value, VALUE arg)
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.any? {|key, value| value < 3 } # => true
  *    h.any? {|key, value| value > 3 } # => false
- *
- *  With argument +object+ and a block,
- *  issues a warning ('given block not used') and ignores the block:
- *   h = {foo: 0, bar: 1, baz: 2}
- *   h.any?([:bar, 1]) # => true
- *   h.any?([:bar, 0]) # => false
- *   h.any?([:baz, 1]) # => false
  */
 
 static VALUE
@@ -4584,22 +4573,14 @@ rb_hash_any_p(int argc, VALUE *argv, VALUE hash)
  *  The nested objects may be instances of various classes.
  *  See {Dig Methods}[rdoc-ref:doc/dig_methods.rdoc].
  *
- *  Examples:
+ *  Nested Hashes:
  *    h = {foo: {bar: {baz: 2}}}
  *    h.dig(:foo) # => {:bar=>{:baz=>2}}
  *    h.dig(:foo, :bar) # => {:bar=>{:baz=>2}}
  *    h.dig(:foo, :bar, :baz) # => 2
  *    h.dig(:foo, :bar, :BAZ) # => nil
  *
- *  The nested objects may include any that respond to \#dig.  See:
- *  - Hash#dig
- *  - Array#dig
- *  - Struct#dig
- *  - OpenStruct#dig
- *  - CSV::Table#dig
- *  - CSV::Row#dig
- *
- *  Example:
+ *  Nested Hashes and Arrays:
  *    h = {foo: {bar: [:a, :b, :c]}}
  *    h.dig(:foo, :bar, 2) # => :c
  *
