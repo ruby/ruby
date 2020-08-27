@@ -369,15 +369,16 @@ rb_getaddrinfo_a(const char *node, const char *service,
 	arg.timeout = timeout;
 
 	ret = (int)(VALUE)rb_thread_call_without_gvl(nogvl_gai_suspend, &arg, RUBY_UBF_IO, 0);
+    if (ret && ret != EAI_ALLDONE) {
+        /* EAI_ALLDONE indicates that the request already completed and gai_suspend was redundant */
+        /* on Ubuntu 18.04 (or other systems), gai_suspend(3) returns EAI_SYSTEM/ENOENT on timeout */
+        if (ret == EAI_SYSTEM && errno == ENOENT) {
+            return EAI_AGAIN;
+        } else {
+            return ret;
+        }
+    }
 
-	if (ret) {
-	    /* on Ubuntu 18.04 (or other systems), gai_suspend(3) returns EAI_SYSTEM/ENOENT on timeout */
-	    if (ret == EAI_SYSTEM && errno == ENOENT) {
-		return EAI_AGAIN;
-	    } else {
-		return ret;
-	    }
-	}
 
 	ret = gai_error(reqs[0]);
 	ai = reqs[0]->ar_result;
@@ -601,7 +602,7 @@ rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_h
 }
 
 #ifdef HAVE_GETADDRINFO_A
-static struct rb_addrinfo*
+struct rb_addrinfo*
 rsock_getaddrinfo_a(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack, VALUE timeout)
 {
     struct rb_addrinfo* res = NULL;
@@ -619,10 +620,10 @@ rsock_getaddrinfo_a(VALUE host, VALUE port, struct addrinfo *hints, int socktype
     hints->ai_flags |= additional_flags;
 
     if (NIL_P(timeout)) {
-	error = rb_getaddrinfo(hostp, portp, hints, &res);
+        error = rb_getaddrinfo_a(hostp, portp, hints, &res, (struct timespec *)NULL);
     } else {
-	struct timespec _timeout = rb_time_timespec_interval(timeout);
-	error = rb_getaddrinfo_a(hostp, portp, hints, &res, &_timeout);
+        struct timespec _timeout = rb_time_timespec_interval(timeout);
+        error = rb_getaddrinfo_a(hostp, portp, hints, &res, &_timeout);
     }
 
     if (error) {
@@ -942,11 +943,7 @@ call_getaddrinfo(VALUE node, VALUE service,
     }
 
 #ifdef HAVE_GETADDRINFO_A
-    if (NIL_P(timeout)) {
-	res = rsock_getaddrinfo(node, service, &hints, socktype_hack);
-    } else {
 	res = rsock_getaddrinfo_a(node, service, &hints, socktype_hack, timeout);
-    }
 #else
     res = rsock_getaddrinfo(node, service, &hints, socktype_hack);
 #endif

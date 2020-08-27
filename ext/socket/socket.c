@@ -1181,7 +1181,12 @@ sock_s_getaddrinfo(int argc, VALUE *argv, VALUE _)
     if (NIL_P(revlookup) || !rsock_revlookup_flag(revlookup, &norevlookup)) {
 	norevlookup = rsock_do_not_reverse_lookup;
     }
-    res = rsock_getaddrinfo(host, port, &hints, 0);
+
+    #ifdef HAVE_GETADDRINFO_A
+        res = rsock_getaddrinfo_a(host, port, &hints, 0, Qnil);
+    #else
+        res = rsock_getaddrinfo(host, port, &hints, 0);
+    #endif
 
     ret = make_addrinfo(res, norevlookup);
     rb_freeaddrinfo(res);
