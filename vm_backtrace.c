@@ -612,11 +612,10 @@ bt_init(void *ptr, size_t size)
     struct bt_iter_arg *arg = (struct bt_iter_arg *)ptr;
     arg->btobj = backtrace_alloc(rb_cBacktrace);
     GetCoreDataFromValue(arg->btobj, rb_backtrace_t, arg->bt);
-    arg->bt->backtrace = ALLOC_N(rb_backtrace_location_t, size+1);
+    arg->bt->backtrace = ZALLOC_N(rb_backtrace_location_t, size+1);
     arg->bt->backtrace_size = 1;
     arg->prev_cfp = NULL;
     arg->init_loc = &arg->bt->backtrace[size];
-    arg->init_loc->type = 0;
 }
 
 static void
