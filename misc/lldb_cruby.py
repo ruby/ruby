@@ -243,6 +243,10 @@ def lldb_inspect(debugger, target, result, val):
             print("T_IMEMO: ", file=result)
             append_command_output(debugger, "p (enum imemo_type) %d" % imemo_type, result)
             append_command_output(debugger, "p *(struct MEMO *) %0#x" % val.GetValueAsUnsigned(), result)
+        elif flType == RUBY_T_ZOMBIE:
+            tRZombie = target.FindFirstType("struct RZombie").GetPointerType()
+            val = val.Cast(tRZombie)
+            append_command_output(debugger, "p *(struct RZombie *) %0#x" % val.GetValueAsUnsigned(), result)
         else:
             print("Not-handled type %0#x" % flType, file=result)
             print(val, file=result)
