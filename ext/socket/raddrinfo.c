@@ -369,15 +369,15 @@ rb_getaddrinfo_a(const char *node, const char *service,
 	arg.timeout = timeout;
 
 	ret = (int)(VALUE)rb_thread_call_without_gvl(nogvl_gai_suspend, &arg, RUBY_UBF_IO, 0);
-    if (ret && ret != EAI_ALLDONE) {
-        /* EAI_ALLDONE indicates that the request already completed and gai_suspend was redundant */
-        /* on Ubuntu 18.04 (or other systems), gai_suspend(3) returns EAI_SYSTEM/ENOENT on timeout */
-        if (ret == EAI_SYSTEM && errno == ENOENT) {
-            return EAI_AGAIN;
-        } else {
-            return ret;
+        if (ret && ret != EAI_ALLDONE) {
+            /* EAI_ALLDONE indicates that the request already completed and gai_suspend was redundant */
+            /* on Ubuntu 18.04 (or other systems), gai_suspend(3) returns EAI_SYSTEM/ENOENT on timeout */
+            if (ret == EAI_SYSTEM && errno == ENOENT) {
+                return EAI_AGAIN;
+            } else {
+                return ret;
+            }
         }
-    }
 
 
 	ret = gai_error(reqs[0]);
@@ -943,7 +943,7 @@ call_getaddrinfo(VALUE node, VALUE service,
     }
 
 #ifdef HAVE_GETADDRINFO_A
-	res = rsock_getaddrinfo_a(node, service, &hints, socktype_hack, timeout);
+    res = rsock_getaddrinfo_a(node, service, &hints, socktype_hack, timeout);
 #else
     res = rsock_getaddrinfo(node, service, &hints, socktype_hack);
 #endif
