@@ -90,7 +90,6 @@ typedef struct rb_backtrace_location_struct {
 	LOCATION_TYPE_ISEQ = 1,
 	LOCATION_TYPE_ISEQ_CALCED,
 	LOCATION_TYPE_CFUNC,
-	LOCATION_TYPE_IFUNC
     } type;
 
     union {
@@ -129,7 +128,6 @@ location_mark_entry(rb_backtrace_location_t *fi)
 	rb_gc_mark_movable((VALUE)fi->body.iseq.iseq);
 	break;
       case LOCATION_TYPE_CFUNC:
-      case LOCATION_TYPE_IFUNC:
       default:
 	break;
     }
@@ -199,7 +197,6 @@ location_label(rb_backtrace_location_t *loc)
 	return loc->body.iseq.iseq->body->location.label;
       case LOCATION_TYPE_CFUNC:
 	return rb_id2str(loc->body.cfunc.mid);
-      case LOCATION_TYPE_IFUNC:
       default:
 	rb_bug("location_label: unreachable");
 	UNREACHABLE;
@@ -248,7 +245,6 @@ location_base_label(rb_backtrace_location_t *loc)
 	return loc->body.iseq.iseq->body->location.base_label;
       case LOCATION_TYPE_CFUNC:
 	return rb_id2str(loc->body.cfunc.mid);
-      case LOCATION_TYPE_IFUNC:
       default:
 	rb_bug("location_base_label: unreachable");
 	UNREACHABLE;
@@ -278,7 +274,6 @@ location_path(rb_backtrace_location_t *loc)
 	    return location_path(loc->body.cfunc.prev_loc);
 	}
 	return Qnil;
-      case LOCATION_TYPE_IFUNC:
       default:
 	rb_bug("location_path: unreachable");
 	UNREACHABLE;
@@ -311,7 +306,6 @@ location_realpath(rb_backtrace_location_t *loc)
 	    return location_realpath(loc->body.cfunc.prev_loc);
 	}
 	return Qnil;
-      case LOCATION_TYPE_IFUNC:
       default:
 	rb_bug("location_realpath: unreachable");
 	UNREACHABLE;
@@ -376,7 +370,6 @@ location_to_str(rb_backtrace_location_t *loc)
 	}
 	name = rb_id2str(loc->body.cfunc.mid);
 	break;
-      case LOCATION_TYPE_IFUNC:
       default:
 	rb_bug("location_to_str: unreachable");
     }
@@ -440,7 +433,6 @@ location_update_entry(rb_backtrace_location_t *fi)
 	fi->body.iseq.iseq = (rb_iseq_t*)rb_gc_location((VALUE)fi->body.iseq.iseq);
 	break;
       case LOCATION_TYPE_CFUNC:
-      case LOCATION_TYPE_IFUNC:
       default:
 	break;
     }
