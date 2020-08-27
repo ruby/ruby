@@ -405,7 +405,6 @@ location_inspect_m(VALUE self)
 
 typedef struct rb_backtrace_struct {
     rb_backtrace_location_t *backtrace;
-    rb_backtrace_location_t *backtrace_base;
     int backtrace_size;
     VALUE strary;
     VALUE locary;
@@ -428,7 +427,7 @@ static void
 backtrace_free(void *ptr)
 {
    rb_backtrace_t *bt = (rb_backtrace_t *)ptr;
-   if (bt->backtrace) ruby_xfree(bt->backtrace_base);
+   if (bt->backtrace) ruby_xfree(bt->backtrace);
    ruby_xfree(bt);
 }
 
@@ -613,10 +612,10 @@ bt_init(void *ptr, size_t size)
     struct bt_iter_arg *arg = (struct bt_iter_arg *)ptr;
     arg->btobj = backtrace_alloc(rb_cBacktrace);
     GetCoreDataFromValue(arg->btobj, rb_backtrace_t, arg->bt);
-    arg->bt->backtrace_base = arg->bt->backtrace = ALLOC_N(rb_backtrace_location_t, size+1);
+    arg->bt->backtrace = ALLOC_N(rb_backtrace_location_t, size+1);
     arg->bt->backtrace_size = 1;
     arg->prev_cfp = NULL;
-    arg->init_loc = &arg->bt->backtrace_base[size];
+    arg->init_loc = &arg->bt->backtrace[size];
     arg->init_loc->type = 0;
 }
 
