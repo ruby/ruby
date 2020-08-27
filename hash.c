@@ -2837,9 +2837,7 @@ clear_i(VALUE key, VALUE value, VALUE dummy)
  *  call-seq:
  *    hash.clear -> self
  *
- *  Removes all hash entries; returns +self+:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    h.clear # => {}
+ *  Removes all hash entries; returns +self+.
  */
 
 VALUE
@@ -2903,7 +2901,9 @@ NOINSERT_UPDATE_CALLBACK(hash_aset_str)
  *    hash[key] = value -> value
  *    hash.store(key, value)
  *
- *  Associates the given +value+ with the given +key+, and returns +value+.
+ *  Hash#store is an alias for Hash#[]=.
+
+ *  Associates the given +value+ with the given +key+; returns +value+.
  *
  *  If the given +key+ exists, replaces its value with the given +value+;
  *  the ordering is not affected
@@ -2997,8 +2997,7 @@ rb_hash_replace(VALUE hash, VALUE hash2)
  *     hash.size -> integer
  *
  *  Returns the count of entries in +self+:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    h.length # => 3
+ *    {foo: 0, bar: 1, baz: 2}.length # => 3
  *
  *  Hash#length is an alias for Hash#size.
  */
@@ -3050,7 +3049,7 @@ each_value_i(VALUE key, VALUE value, VALUE _)
  *    1
  *    2
  *
- *  Returns an \Enumerator if no block given:
+ *  Returns a new \Enumerator if no block given:
  *    h = {foo: 0, bar: 1, baz: 2}
  *    e = h.each_value # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:each_value>
  *    h1 = e.each {|value| puts value }
@@ -3059,13 +3058,6 @@ each_value_i(VALUE key, VALUE value, VALUE _)
  *    0
  *    1
  *    2
- *
- *  ---
- *
- *  Raises an exception if the block attempts to add a new key:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    # Raises RuntimeError (can't add a new key into hash during iteration):
- *    h.each_value {|value| h[:new_key] = 3 }
  */
 
 static VALUE
@@ -3096,7 +3088,7 @@ each_key_i(VALUE key, VALUE value, VALUE _)
  *    bar
  *    baz
  *
- *  Returns an \Enumerator if no block given:
+ *  Returns a new \Enumerator if no block given:
  *    h = {foo: 0, bar: 1, baz: 2}
  *    e = h.each_key # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:each_key>
  *    h1 = e.each {|key| puts key }
@@ -3105,13 +3097,6 @@ each_key_i(VALUE key, VALUE value, VALUE _)
  *    foo
  *    bar
  *    baz
- *
- *  ---
- *
- *  Raises an exception if the block attempts to add a new key:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    # Raises RuntimeError (can't add a new key into hash during iteration):
- *    h.each_key {|key| h[:new_key] = 3 }
  */
 static VALUE
 rb_hash_each_key(VALUE hash)
@@ -3145,7 +3130,9 @@ each_pair_i_fast(VALUE key, VALUE value, VALUE _)
  *    hash.each -> new_enumerator
  *    hash.each_pair -> new_enumerator
  *
- *  Calls the given block with each key-value pair, returning +self+:
+ *  Hash#each is an alias for Hash#each_pair.
+
+ *  Calls the given block with each key-value pair; returns +self+:
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.each_pair {|key, value| puts "#{key}: #{value}"} # => {:foo=>0, :bar=>1, :baz=>2}
  *  Output:
@@ -3153,7 +3140,7 @@ each_pair_i_fast(VALUE key, VALUE value, VALUE _)
  *    bar: 1
  *    baz: 2
  *
- *  Returns an \Enumerator if no block given:
+ *  Returns a new \Enumerator if no block given:
  *    h = {foo: 0, bar: 1, baz: 2}
  *    e = h.each_pair # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:each_pair>
  *    h1 = e.each {|key, value| puts "#{key}: #{value}"}
@@ -3162,13 +3149,6 @@ each_pair_i_fast(VALUE key, VALUE value, VALUE _)
  *    foo: 0
  *    bar: 1
  *    baz: 2
- *
- *  ---
- *
- *  Raises an exception if the block attempts to add a new key:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    # Raises RuntimeError (can't add a new key into hash during iteration)
- *    h.each_pair {|key, value| h[:new_key] = 3 }
  */
 
 static VALUE
@@ -3236,13 +3216,6 @@ transform_keys_i(VALUE key, VALUE value, VALUE result)
  *    e = h.transform_keys # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:transform_keys>
  *    h1 = e.each { |key| key.to_s }
  *    h1 # => {"foo"=>0, "bar"=>1, "baz"=>2}
- *
- *  ---
- *
- *  Raises an exception if the block attempts to add a new key:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    # Raises RuntimeError (can't add a new key into hash during iteration)
- *    h.transform_keys {|key| h[:new_key] = 3 }
  */
 static VALUE
 rb_hash_transform_keys(int argc, VALUE *argv, VALUE hash)
@@ -3287,11 +3260,6 @@ static VALUE rb_hash_flatten(int argc, VALUE *argv, VALUE hash);
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h1 = h.transform_keys! {|key| :bat }
  *    h1 # => {:bat=>2}
- *
- *  Allows the block to add a new entry:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    h1 = h.transform_keys! {|key| h[:new_key] = key.to_s }
- *    h1 # => {:new_key=>"baz", "foo"=>0, "bar"=>1, "baz"=>2}
  *
  *  Returns a new \Enumerator if no block given:
  *    h = {foo: 0, bar: 1, baz: 2}
@@ -3369,11 +3337,6 @@ transform_values_foreach_replace(st_data_t *key, st_data_t *value, st_data_t arg
  *    h1 = h.transform_values {|value| value * 100}
  *    h1 # => {:foo=>0, :bar=>100, :baz=>200}
  *
- *  Ignores an attempt in the block to add a new key:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    h1 = h.transform_values {|value| h[:new_key] = 3; value * 100 }
- *    h1 # => {:foo=>0, :bar=>100, :baz=>200}
- *
  *  Returns a new \Enumerator if no block given:
  *    h = {foo: 0, bar: 1, baz: 2}
  *    e = h.transform_values # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:transform_values>
@@ -3403,11 +3366,6 @@ rb_hash_transform_values(VALUE hash)
  *  Returns +self+, whose keys are unchanged, and whose values are determined by the given block.
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.transform_values! {|value| value * 100} # => {:foo=>0, :bar=>100, :baz=>200}
- *
- *  Allows the block to add a new entry:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    h1 = h.transform_values! {|value| h[:new_key] = 3; value * 100 }
- *    h1 # => {:foo=>0, :bar=>100, :baz=>200, :new_key=>3}
  *
  *  Returns a new \Enumerator if no block given:
  *    h = {foo: 0, bar: 1, baz: 2}
