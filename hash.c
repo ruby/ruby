@@ -3952,8 +3952,6 @@ rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
  *
  *  \Method #update is an alias for \#merge!.
  *
- *  ---
- *
  *  With arguments and no block:
  *  * Returns +self+, after the given hashes are merged into it.
  *  * The given hashes are merged left to right.
@@ -3965,8 +3963,6 @@ rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
  *    h1 = {bat: 3, bar: 4}
  *    h2 = {bam: 5, bat:6}
  *    h.merge!(h1, h2) # => {:foo=>0, :bar=>4, :baz=>2, :bat=>6, :bam=>5}
- *
- *  ---
  *
  *  With arguments and a block:
  *  * Returns +self+, after the given hashes are merged.
@@ -3982,15 +3978,6 @@ rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
  *    h2 = {bam: 5, bat:6}
  *    h3 = h.merge!(h1, h2) { |key, old_value, new_value| old_value + new_value }
  *    h3 # => {:foo=>0, :bar=>5, :baz=>2, :bat=>9, :bam=>5}
- *
- *  Allows the block to add a new key:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    h1 = {bat: 3, bar: 4}
- *    h2 = {bam: 5, bat:6}
- *    h3 = h.merge!(h1, h2) { |key, old_value, new_value| h[:new_key] = 10 }
- *    h3 # => {:foo=>0, :bar=>10, :baz=>2, :bat=>10, :new_key=>10, :bam=>5}
- *
- *  ---
  *
  *  With no arguments:
  *  * Returns +self+, unmodified.
@@ -4101,8 +4088,6 @@ rb_hash_update_by(VALUE hash1, VALUE hash2, rb_hash_update_func *func)
  *    h2 = {bam: 5, bat:6}
  *    h.merge(h1, h2) # => {:foo=>0, :bar=>4, :baz=>2, :bat=>6, :bam=>5}
  *
- *  ---
- *
  *  With arguments and a block:
  *  * Returns a new \Hash object that is the merge of +self+ and each given hash.
  *  * The given hashes are merged left to right.
@@ -4117,15 +4102,6 @@ rb_hash_update_by(VALUE hash1, VALUE hash2, rb_hash_update_func *func)
  *    h2 = {bam: 5, bat:6}
  *    h3 = h.merge(h1, h2) { |key, old_value, new_value| old_value + new_value }
  *    h3 # => {:foo=>0, :bar=>5, :baz=>2, :bat=>9, :bam=>5}
- *
- *  Ignores an attempt in the block to add a new key:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    h1 = {bat: 3, bar: 4}
- *    h2 = {bam: 5, bat:6}
- *    h3 = h.merge(h1, h2) { |key, old_value, new_value| h[:new_key] = 10 }
- *    h3 # => {:foo=>0, :bar=>10, :baz=>2, :bat=>10, :bam=>5}
- *
- *  ---
  *
  *  With no arguments:
  *  * Returns a copy of +self+.
@@ -4283,8 +4259,6 @@ flatten_i(VALUE key, VALUE val, VALUE ary)
  *     hash.flatten -> new_array
  *     hash.flatten(level) -> new_array
  *
- *  Argument +level+, if given, must be an \Integer.
- *
  *  Returns a new \Array object that is a 1-dimensional flattening of +self+.
  *
  *  ---
@@ -4293,7 +4267,7 @@ flatten_i(VALUE key, VALUE val, VALUE ary)
  *    h = {foo: 0, bar: [:bat, 3], baz: 2}
  *    h.flatten # => [:foo, 0, :bar, [:bat, 3], :baz, 2]
  *
- *  Takes the depth of recursive flattening from argument +level+:
+ *  Takes the depth of recursive flattening from \Integer argument +level+:
  *    h = {foo: 0, bar: [:bat, [:baz, [:bat, ]]]}
  *    h.flatten(1) # => [:foo, 0, :bar, [:bat, [:baz, [:bat]]]]
  *    h.flatten(2) # => [:foo, 0, :bar, :bat, [:baz, [:bat]]]
@@ -4465,11 +4439,7 @@ rb_hash_compare_by_id(VALUE hash)
  *  call-seq:
  *    hash.compare_by_identity? -> true or false
  *
- *  Returns +true+ if #compare_by_identity has been called, +false+ otherwise:
- *    h = {}
- *    h.compare_by_identity? # false
- *    h.compare_by_identity
- *    h.compare_by_identity? # true
+ *  Returns +true+ if #compare_by_identity has been called, +false+ otherwise.
  */
 
 MJIT_FUNC_EXPORTED VALUE
