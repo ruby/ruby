@@ -341,6 +341,7 @@ check_step_domain(VALUE step)
 	rb_raise(rb_eArgError, "step can't be negative");
     }
     else if (cmp == 0) {
+    rb_warning("given step is 0. This will be allowed at future release.");
 	rb_raise(rb_eArgError, "step can't be 0");
     }
     return step;

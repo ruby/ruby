@@ -2678,7 +2678,7 @@ num_step_extract_args(int argc, const VALUE *argv, VALUE *to, VALUE *step, VALUE
 }
 
 static int
-num_step_check_fix_args(int argc, VALUE *to, VALUE *step, VALUE by, int fix_nil, int allow_zero_step)
+num_step_check_fix_args(int argc, VALUE *to, VALUE *step, VALUE by, int fix_nil)
 {
     int desc;
     if (by != Qundef) {
@@ -2689,7 +2689,8 @@ num_step_check_fix_args(int argc, VALUE *to, VALUE *step, VALUE by, int fix_nil,
         if (argc > 1 && NIL_P(*step)) {
             rb_raise(rb_eTypeError, "step must be numeric");
         }
-        if (!allow_zero_step && rb_equal(*step, INT2FIX(0))) {
+        if (rb_equal(*step, INT2FIX(0))) {
+            rb_warning("given step is 0. This will be allowed at future release.");
             rb_raise(rb_eArgError, "step can't be 0");
         }
     }
@@ -2704,11 +2705,11 @@ num_step_check_fix_args(int argc, VALUE *to, VALUE *step, VALUE by, int fix_nil,
 }
 
 static int
-num_step_scan_args(int argc, const VALUE *argv, VALUE *to, VALUE *step, int fix_nil, int allow_zero_step)
+num_step_scan_args(int argc, const VALUE *argv, VALUE *to, VALUE *step, int fix_nil)
 {
     VALUE by = Qundef;
     argc = num_step_extract_args(argc, argv, to, step, &by);
-    return num_step_check_fix_args(argc, to, step, by, fix_nil, allow_zero_step);
+    return num_step_check_fix_args(argc, to, step, by, fix_nil);
 }
 
 static VALUE
@@ -2718,7 +2719,7 @@ num_step_size(VALUE from, VALUE args, VALUE eobj)
     int argc = args ? RARRAY_LENINT(args) : 0;
     const VALUE *argv = args ? RARRAY_CONST_PTR(args) : 0;
 
-    num_step_scan_args(argc, argv, &to, &step, TRUE, FALSE);
+    num_step_scan_args(argc, argv, &to, &step, TRUE);
 
     return ruby_num_interval_step_size(from, to, step, FALSE);
 }
@@ -2804,7 +2805,7 @@ num_step(int argc, VALUE *argv, VALUE from)
         return SIZED_ENUMERATOR(from, 2, ((VALUE [2]){to, step}), num_step_size);
     }
 
-    desc = num_step_scan_args(argc, argv, &to, &step, TRUE, FALSE);
+    desc = num_step_scan_args(argc, argv, &to, &step, TRUE);
     if (rb_equal(step, INT2FIX(0))) {
 	inf = 1;
     }
