@@ -3398,7 +3398,7 @@ to_a_i(VALUE key, VALUE value, VALUE ary)
  *    hash.to_a -> new_array
  *
  *  Returns a new \Array of 2-element \Array objects;
- *  each nested \Array contains the key and value for a hash entry:
+ *  each nested \Array contains a key-value pair from +self+:
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.to_a # => [[:foo, 0], [:bar, 1], [:baz, 2]]
  */
@@ -3470,9 +3470,7 @@ rb_hash_inspect(VALUE hash)
  *  call-seq:
  *    hash.to_hash -> self
  *
- *  Returns +self+:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    h.to_hash # => {:foo=>0, :bar=>1, :baz=>2}
+ *  Returns +self+.
  */
 static VALUE
 rb_hash_to_hash(VALUE hash)
@@ -3518,19 +3516,10 @@ rb_hash_to_h_block(VALUE hash)
  *    hash.to_h -> self or new_hash
  *    hash.to_h {|key, value| ... } -> new_hash
  *
- *  For an instance of \Hash, returns +self+:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    h.to_h # => {:foo=>0, :bar=>1, :baz=>2}
+ *  For an instance of \Hash, returns +self+.
  *
  *  For a subclass of \Hash, returns a new \Hash
- *  containing the content of +self+:
- *    class MyHash < Hash; end
- *    h = MyHash[foo: 0, bar: 1, baz: 2]
- *    h # => {:foo=>0, :bar=>1, :baz=>2}
- *    h.class # => MyHash
- *    h1 = h.to_h
- *    h1 # => {:foo=>0, :bar=>1, :baz=>2}
- *    h1.class # => Hash
+ *  containing the content of +self+.
  *
  *  When a block is given, returns a new \Hash object
  *  whose content is based on the block;
@@ -3539,23 +3528,6 @@ rb_hash_to_h_block(VALUE hash)
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h1 = h.to_h {|key, value| [value, key] }
  *    h1 # => {0=>:foo, 1=>:bar, 2=>:baz}
- *
- *  ---
- *
- *  Raises an exception if the block does not return an \Array:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    # Raises TypeError (wrong element type Symbol (expected array)):
- *    h1 = h.to_h {|key, value| :array }
- *
- *  Raises an exception if the block returns an \Array of size different from 2:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    # Raises ArgumentError (element has wrong array length (expected 2, was 3)):
- *    h1 = h.to_h {|key, value| [0, 1, 2] }
- *
- *  Raises an exception if the block attempts to add a new key:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    # Raises RuntimeError (can't add a new key into hash during iteration):
- *    h.to_h {|key, value| h[:new_key] = 3 }
  */
 
 static VALUE
@@ -3580,7 +3552,7 @@ keys_i(VALUE key, VALUE value, VALUE ary)
 
 /*
  *  call-seq:
- *  hash.keys -> new_array
+ *    hash.keys -> new_array
  *
  *  Returns a new \Array containing all keys in +self+:
  *    h = {foo: 0, bar: 1, baz: 2}
@@ -3673,10 +3645,7 @@ rb_hash_values(VALUE hash)
 
  *  Methods #has_key?, #key?, and #member? are aliases for \#include?.
  *
- *  Returns +true+ if +key+ is a key in +self+, otherwise +false+:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    h.include?(:bar) # => true
- *    h.include?(:nosuch) # => false
+ *  Returns +true+ if +key+ is a key in +self+, otherwise +false+.
  */
 
 MJIT_FUNC_EXPORTED VALUE
@@ -3706,10 +3675,7 @@ rb_hash_search_value(VALUE key, VALUE value, VALUE arg)
  *  call-seq:
  *    hash.has_value?(value) -> true or false
  *
- *  Returns +true+ if +value+ is a value in +self+, otherwise +false+:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    h.has_value?(1) # => true
- *    h.has_value?(123) # => false
+ *  Returns +true+ if +value+ is a value in +self+, otherwise +false+.
  */
 
 static VALUE
@@ -3821,20 +3787,6 @@ hash_equal(VALUE hash1, VALUE hash2, int eql)
  *    h1 == h2 # => true
  *    h3 = {baz: 2, bar: 1, foo: 0}
  *    h1 == h3 # => true
-*
- *  Not equal because of class:
- *    h1 = {foo: 0, bar: 1, baz: 2}
- *    h1 == 1 # false
- *
- *  Not equal because of different keys:
- *    h1 = {foo: 0, bar: 1, baz: 2}
- *    h2 = {foo: 0, bar: 1, zab: 2}
- *    h1 == h2 # => false
- *
- *  Not equal because of different values:
- *    h1 = {foo: 0, bar: 1, baz: 2}
- *    h2 = {foo: 0, bar: 1, baz: 3}
- *    h1 == h2 # => false
  */
 
 static VALUE
@@ -3860,20 +3812,6 @@ rb_hash_equal(VALUE hash1, VALUE hash2)
  *    h1.eql? h2 # => true
  *    h3 = {baz: 2, bar: 1, foo: 0}
  *    h1.eql? h3 # => true
- *
- *  Not equal because of class:
- *    h1 = {foo: 0, bar: 1, baz: 2}
- *    h1.eql? 1 # false
- *
- *  Not equal because of different keys:
- *    h1 = {foo: 0, bar: 1, baz: 2}
- *    h2 = {foo: 0, bar: 1, zab: 2}
- *    h1.eql? h2 # => false
- *
- *  Not equal because of different values:
- *    h1 = {foo: 0, bar: 1, baz: 2}
- *    h2 = {foo: 0, bar: 1, baz: 3}
- *    h1.eql? h2 # => false
  */
 
 static VALUE
@@ -3898,9 +3836,7 @@ hash_i(VALUE key, VALUE val, VALUE arg)
  *  call-seq:
  *    hash.hash -> an_integer
  *
- *  Returns the \Integer hash-code for the hash:
- *    h1 = {foo: 0, bar: 1, baz: 2}
- *    h1.hash.class # => Integer
+ *  Returns the \Integer hash-code for the hash.
  *
  *  Two \Hash objects have the same hash-code if their content is the same
  *  (regardless or order):
