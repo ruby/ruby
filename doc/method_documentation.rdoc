@@ -19,11 +19,11 @@ method correctly.
 The general structure of the method documentation should be:
 
 * call-seq (for methods written in C)
-* Aliases
 * Synopsis (Short Description)
 * Details and Examples
 * Argument Description (if necessary)
 * Corner Cases and Exceptions
+* Aliases
 * Related Methods (optional)
 
 == call-seq (for methods written in C)
@@ -65,10 +65,6 @@ behavior is different if the argument is omitted.
 
 Omit aliases from the call-seq.
 
-== Aliases
-
-Mention aliases in the form "Array#find_index is an alias for Array#index."
-- "
 == Synopsis
 
 The synopsis comes next, and is a short description of what the
@@ -137,6 +133,10 @@ if you have stated earlier than an argument type must be an integer,
 you do not need to document that a TypeError is raised if a non-integer
 is passed.  Do not provide examples of exceptions being raised unless
 that is a common case, such as Hash#fetch raising KeyError.
+
+== Aliases
+
+Mention aliases in the form "Array#find_index is an alias for Array#index."
 
 == Related Methods (optional)
 
