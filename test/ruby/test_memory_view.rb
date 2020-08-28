@@ -87,4 +87,14 @@ class TestMemoryView < Test::Unit::TestCase
                  },
                  memory_view_info)
   end
+
+  def test_rb_memory_view_fill_contiguous_strides
+    row_major_strides = MemoryViewTestUtils.fill_contiguous_strides(3, 8, [2, 3, 4], true)
+    assert_equal([96, 32, 8],
+                 row_major_strides)
+
+    column_major_strides = MemoryViewTestUtils.fill_contiguous_strides(3, 8, [2, 3, 4], false)
+    assert_equal([8, 16, 48],
+                 column_major_strides)
+  end
 end

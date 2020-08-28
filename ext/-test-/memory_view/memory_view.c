@@ -174,6 +174,31 @@ memory_view_get_memory_view_info(VALUE mod, VALUE obj)
 }
 
 static VALUE
+memory_view_fill_contiguous_strides(VALUE mod, VALUE ndim_v, VALUE item_size_v, VALUE shape_v, VALUE row_major_p)
+{
+    int i, ndim = FIX2INT(ndim_v);
+
+    Check_Type(shape_v, T_ARRAY);
+    ssize_t *shape = ALLOC_N(ssize_t, ndim);
+    for (i = 0; i < ndim; ++i) {
+        shape[i] = NUM2SSIZET(RARRAY_AREF(shape_v, i));
+    }
+
+    ssize_t *strides = ALLOC_N(ssize_t, ndim);
+    rb_memory_view_fill_contiguous_strides(ndim, NUM2SSIZET(item_size_v), shape, RTEST(row_major_p), strides);
+
+    VALUE result = rb_ary_new_capa(ndim);
+    for (i = 0; i < ndim; ++i) {
+        rb_ary_push(result, SSIZET2NUM(strides[i]));
+    }
+
+    xfree(strides);
+    xfree(shape);
+
+    return result;
+}
+
+static VALUE
 expstr_initialize(VALUE obj, VALUE s)
 {
     rb_ivar_set(obj, id_str, s);
@@ -190,6 +215,7 @@ Init_memory_view(void)
     rb_define_module_function(mMemoryViewTestUtils, "item_size_from_format", memory_view_item_size_from_format, 1);
     rb_define_module_function(mMemoryViewTestUtils, "parse_item_format", memory_view_parse_item_format, 1);
     rb_define_module_function(mMemoryViewTestUtils, "get_memory_view_info", memory_view_get_memory_view_info, 1);
+    rb_define_module_function(mMemoryViewTestUtils, "fill_contiguous_strides", memory_view_fill_contiguous_strides, 4);
 
     VALUE cExportableString = rb_define_class_under(mMemoryViewTestUtils, "ExportableString", rb_cObject);
 

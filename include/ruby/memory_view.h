@@ -114,7 +114,7 @@ bool rb_memory_view_register(VALUE klass, const rb_memory_view_entry_t *entry);
 
 int rb_memory_view_is_row_major_contiguous(const rb_memory_view_t *view);
 int rb_memory_view_is_column_major_contiguous(const rb_memory_view_t *view);
-void rb_memory_view_fill_contiguous_strides(const int ndim, const int item_size, const ssize_t *const shape, ssize_t *const strides, const int row_major_p);
+void rb_memory_view_fill_contiguous_strides(const int ndim, const int item_size, const ssize_t *const shape, const int row_major_p, ssize_t *const strides);
 int rb_memory_view_init_as_byte_array(rb_memory_view_t *view, VALUE obj, void *data, const ssize_t len, const int readonly);
 ssize_t rb_memory_view_parse_item_format(const char *format,
                                          rb_memory_view_item_component_t **members,
