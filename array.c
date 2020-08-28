@@ -1366,7 +1366,7 @@ rb_ary_shift(VALUE ary)
  *
  *  If +n+ is zero, returns a new empty \Array; +self+ is unmodified.
  *
- *  Related: #push, #pop, #unshift..
+ *  Related: #push, #pop, #unshift.
  */
 
 static VALUE
