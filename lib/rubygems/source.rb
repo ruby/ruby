@@ -179,7 +179,10 @@ class Gem::Source
     local_file = File.join(cache_dir, file_name)
     retried    = false
 
-    FileUtils.mkdir_p cache_dir if update_cache?
+    if update_cache?
+      require "fileutils"
+      FileUtils.mkdir_p cache_dir
+    end
 
     spec_dump = fetcher.cache_update_path spec_path, local_file, update_cache?
 
