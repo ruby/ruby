@@ -311,7 +311,7 @@ char_to_option(int c)
     return val;
 }
 
-static const int OPTBUF_SIZE = 4;
+enum { OPTBUF_SIZE = 4 };
 
 static char *
 option_to_str(char str[OPTBUF_SIZE], int options)
