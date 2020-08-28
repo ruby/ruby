@@ -661,9 +661,7 @@ ary_ensure_room_for_push(VALUE ary, long add_len)
  *    a.freeze
  *    a.frozen? # => true
  *
- *  An attempt to modify a frozen \Array raises an exception:
- *    # Raises FrozenError (can't modify frozen Array: [:foo, "bar", 2]):
- *    [:foo, 'bar', 2].freeze.push(:foo)
+ *  An attempt to modify a frozen \Array raises FrozenError.
  */
 
 VALUE
@@ -942,22 +940,16 @@ rb_check_to_array(VALUE ary)
 
 /*
  *  call-seq:
- *    Array.try_convert(object) -> new_array or nil
+ *    Array.try_convert(object) -> object, new_array, or nil
  *
- *  Tries to convert +object+ to an \Array.
+ *  If +object+ is an \Array object, returns +object+.
  *
- *  When +object+ is an \Array,
- *  returns the \Array object created by converting it:
+ *  Otherwise if +object+ responds to <tt>:to_ary</tt>,
+ *  calls <tt>object.to_ary</tt> and returns the result.
  *
- *    class ToAryReturnsArray < Set
- *      def to_ary
- *        self.to_a
- *      end
- *    end
- *    as = ToAryReturnsArray.new([:foo, :bar, :baz])
- *    Array.try_convert(as) # => [:foo, :bar, :baz]
+ *  Returns +nil+ if +object+ does not respond to <tt>:to_ary</tt>
  *
- *  Returns +nil+ if +object+ is not an Array.
+ *  Raises an exception unless <tt>object.to_ary</tt> returns an \Array object.
  */
 
 static VALUE
@@ -976,32 +968,23 @@ rb_ary_s_try_convert(VALUE dummy, VALUE ary)
  *
  *  Returns a new \Array.
  *
- *  Argument +array+, if given, must be an \Array.
- *  Argument +size+, if given must be an \Integer.
- *  Argument +default_value+ may be any object.
- *
- *  ---
- *
  *  With no block and no arguments, returns a new empty \Array object.
  *
- *  With no block and a single argument +array+,
+ *  With no block and a single \Array argument +array+,
  *  returns a new \Array formed from +array+:
- *
  *    a = Array.new([:foo, 'bar', 2])
  *    a.class # => Array
  *    a # => [:foo, "bar", 2]
  *
- *  With no block and a single argument +size+,
+ *  With no block and a single \Integer argument +size+,
  *  returns a new \Array of the given size
  *  whose elements are all +nil+:
- *
  *    a = Array.new(3)
  *    a # => [nil, nil, nil]
  *
- *  With no block and arguments +size+ and  +default_value+,
+ *  With no block and arguments +size+ and +default_value+,
  *  returns an \Array of the given size;
  *  each element is that same +default_value+:
- *
  *    a = Array.new(3, 'x')
  *    a # => ['x', 'x', 'x']
  *
@@ -1009,33 +992,14 @@ rb_ary_s_try_convert(VALUE dummy, VALUE ary)
  *  returns an \Array of the given size;
  *  the block is called with each successive integer +index+;
  *  the element for that +index+ is the return value from the block:
- *
  *    a = Array.new(3) { |index| "Element #{index}" }
  *    a # => ["Element 0", "Element 1", "Element 2"]
+ *
+ *  Raises ArgumentError if +size+ is negative.
  *
  *  With a block and no argument,
  *  or a single argument +0+,
  *  ignores the block and returns a new empty \Array.
- *
- *  With a block and arguments +size+ and +default_value+,
- *  gives a warning message
- *  ('warning: block supersedes default value argument'),
- *  and assigns elements from the block's return values:
- *
- *    Array.new(4, :default) {} # => [nil, nil, nil, nil]
- *
- *  ---
- *
- *  Raises an exception if +size+ is a negative integer:
- *
- *    # Raises ArgumentError (negative array size):
- *    Array.new(-1)
- *    # Raises ArgumentError (negative array size):
- *    Array.new(-1, :default)
- *    # Raises ArgumentError (negative array size):
- *    Array.new(-1) { |n| }
- *
- *  Raises an exception if the single argument is neither an \Array nor an \Integer.
  */
 
 static VALUE
@@ -1224,7 +1188,6 @@ ary_take_first_or_last(int argc, const VALUE *argv, VALUE ary, enum ary_take_pos
  *    a << :baz # => [:foo, "bar", 2, :baz]
  *
  *  Appends +object+ as one element, even if it is another \Array:
- *
  *    a = [:foo, 'bar', 2]
  *    a1 = a << [3, 4]
  *    a1 # => [:foo, "bar", 2, [3, 4]]
@@ -1256,26 +1219,21 @@ rb_ary_cat(VALUE ary, const VALUE *argv, long len)
 /*
  *  call-seq:
  *    array.push(*objects) -> self
- *    array.append(*objects) -> self
- *
- *  Array#append is an alias for \Array#push.
  *
  *  Appends trailing elements.
- *
- *  See also:
- *  - #pop:  Removes and returns trailing elements.
- *  - #shift:  Removes and returns leading elements.
- *  - #unshift:  Prepends leading elements.
  *
  *  Appends each argument in +objects+ to +self+;  returns +self+:
  *    a = [:foo, 'bar', 2]
  *    a.push(:baz, :bat) # => [:foo, "bar", 2, :baz, :bat]
  *
  *  Appends each argument as one element, even if it is another \Array:
- *
  *    a = [:foo, 'bar', 2]
  *    a1 = a.push([:baz, :bat], [:bam, :bad])
  *    a1 # => [:foo, "bar", 2, [:baz, :bat], [:bam, :bad]]
+ *
+ *  Array#append is an alias for \Array#push.
+ *
+ *  Related: #pop, #shift, #unshift.
  */
 
 static VALUE
@@ -1310,27 +1268,15 @@ rb_ary_pop(VALUE ary)
  *
  *  Removes and returns trailing elements.
  *
- *  See also:
- *  - #push:  Appends trailing elements.
- *  - #shift:  Removes and returns leading elements.
- *  - #unshift:  Prepends leading elements.
- *
- *  Argument +n+, if given, must be an \Integer.
- *
- *  ---
- *
- *  When no argument is given and the array is not empty,
- *  removes and returns the last element in the array:
- *
+ *  When no argument is given and +self+ is not empty,
+ *  removes and returns the last element:
  *    a = [:foo, 'bar', 2]
  *    a.pop # => 2
  *    a # => [:foo, "bar"]
  *
  *  Returns +nil+ if the array is empty.
  *
- *  ---
- *
- *  When argument +n+ is given and is non-negative and in range,
+ *  When a non-negative \Integer argument +n+ is given and is in range,
  *  removes and returns the last +n+ elements in a new \Array:
  *    a = [:foo, 'bar', 2]
  *    a.pop(2) # => ["bar", 2]
@@ -1340,13 +1286,7 @@ rb_ary_pop(VALUE ary)
  *    a = [:foo, 'bar', 2]
  *    a.pop(50) # => [:foo, "bar", 2]
  *
- *  ---
- *
- *  Raises an exception if +n+ is negative:
- *
- *    a = [:foo, 'bar', 2]
- *    # Raises ArgumentError (negative array size):
- *    a1 = a.pop(-1)
+ *  Related: #push, #shift, #unshift.
  */
 
 static VALUE
@@ -1406,15 +1346,6 @@ rb_ary_shift(VALUE ary)
  *
  *  Removes and returns leading elements.
  *
- *  See also:
- *  - #push:  Appends trailing elements.
- *  - #pop:  Removes and returns trailing elements.
- *  - #unshift:  Prepends leading elements.
- *
- *  Argument +n+, if given, must be an \Integer.
- *
- *  ---
- *
  *  When no argument is given, removes and returns the first element:
  *    a = [:foo, 'bar', 2]
  *    a.shift # => :foo
@@ -1422,9 +1353,7 @@ rb_ary_shift(VALUE ary)
  *
  *  Returns +nil+ if +self+ is empty.
  *
- *  ---
- *
- *  When argument +n+ is given, removes the first +n+ elements;
+ *  When positive \Integer argument +n+ is given, removes the first +n+ elements;
  *  returns those elements in a new \Array:
  *    a = [:foo, 'bar', 2]
  *    a.shift(2) # => [:foo, 'bar']
@@ -1437,12 +1366,7 @@ rb_ary_shift(VALUE ary)
  *
  *  If +n+ is zero, returns a new empty \Array; +self+ is unmodified.
  *
- *  ---
- *
- *  Raises an exception if +n+ is negative:
- *    a = [:foo, 'bar', 2]
- *    # Raises ArgumentError (negative array size):
- *    a1 = a.shift(-1)
+ *  Related: #push, #pop, #unshift..
  */
 
 static VALUE
@@ -1597,18 +1521,13 @@ ary_ensure_room_for_unshift(VALUE ary, int argc)
  *    array.unshift(*objects) -> self
  *    array.prepend(*objects) -> self
  *
- *  Array#prepend is an alias for Array#unshift.
- *
- *  Prepends leading elements.
- *
- *  See also:
- *  - #push:  Appends trailing elements.
- *  - #pop:  Removes and returns trailing elements.
- *  - #shift:  Removes and returns leading elements.
- *
  *  Prepends the given +objects+ to +self+:
  *    a = [:foo, 'bar', 2]
  *    a.unshift(:bam, :bat) # => [:bam, :bat, :foo, "bar", 2]
+ *
+ *  Array#prepend is an alias for Array#unshift.
+ *
+ *  Related: #push, #pop, #shift.
  */
 
 static VALUE
@@ -1677,18 +1596,10 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *    array[index] -> object or nil
  *    array[start, length] -> object or nil
  *    array[range] -> object or nil
- *    array.slice(index) -> object or nil
- *    array.slice(start, length) -> object or nil
- *    array.slice(range) -> object or nil
  *
  *  Returns elements from +self+; does not modify +self+.
  *
- *  - Arguments +index+, +start+, and +length+, if given, must be Integers.
- *  - Argument +range+, if given, must be a \Range object.
- *
- *  ---
- *
- *  When a single argument +index+ is given, returns the element at offset +index+:
+ *  When a single \Integer argument +index+ is given, returns the element at offset +index+:
  *    a = [:foo, 'bar', 2]
  *    a[0] # => :foo
  *    a[2] # => 2
@@ -1701,9 +1612,7 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *
  *  If +index+ is out of range, returns +nil+.
  *
- *  ---
- *
- *  When two arguments +start+ and +length+ are given,
+ *  When two \Integer arguments +start+ and +length+ are given,
  *  returns a new \Array of size +length+ containing successive elements beginning at offset +start+:
  *    a = [:foo, 'bar', 2]
  *    a[0, 2] # => [:foo, "bar"]
@@ -1721,9 +1630,7 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *
  *  If +length+ is negative, returns +nil+.
  *
- *  ---
- *
- *  When a single argument +range+ is given,
+ *  When a single \Range argument +range+ is given,
  *  treats <tt>range.min</tt> as +start+ above
  *  and <tt>range.size</tt> as +length+ above:
  *    a = [:foo, 'bar', 2]
@@ -1745,6 +1652,8 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *    a[-3..2] # => [:foo, "bar", 2]
  *
  *  If <tt>range.start</tt> is larger than the array size, returns +nil+.
+ *
+ *  Array#slice is an alias for Array#[].
  */
 
 VALUE
@@ -2037,6 +1946,8 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
  *    a = [:foo, 'bar', 2, 'bar']
  *    index = a.index('bar') { raise 'Cannot happen' }
  *    index # => 1
+ *
+ *  Related: #rindex.
  */
 
 static VALUE
