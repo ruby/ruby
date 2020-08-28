@@ -42,7 +42,7 @@ class SpecVersion
 
   def <=>(other)
     if other.respond_to? :to_int
-      other = Integer other
+      other = Integer(other.to_int)
     else
       other = SpecVersion.new(String(other)).to_i
     end
