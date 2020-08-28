@@ -210,6 +210,13 @@ describe "Module#autoload" do
     ModuleSpecs::Autoload.use_ex1.should == :good
   end
 
+  it "considers an autoload constant as loaded when autoload is called for/from the current file" do
+    filename = fixture(__FILE__, "autoload_during_require_current_file.rb")
+    require filename
+
+    ScratchPad.recorded.should be_nil
+  end
+
   describe "interacting with defined?" do
     it "does not load the file when referring to the constant in defined?" do
       module ModuleSpecs::Autoload::Dog

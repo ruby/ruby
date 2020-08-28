@@ -59,16 +59,15 @@ describe 'RbConfig::CONFIG' do
       out.should_not be_empty
     end
 
-    require 'tempfile'
     it "['STRIP'] exists and can be executed" do
       strip = RbConfig::CONFIG.fetch('STRIP')
-      Tempfile.open('sh') do |dst|
-        File.open('/bin/sh', 'rb') do |src|
-          IO.copy_stream(src, dst)
-          dst.flush
-          out =`#{strip} #{dst.to_path}`
-          $?.should.success?
-        end
+      copy = tmp("sh")
+      cp '/bin/sh', copy
+      begin
+        out = `#{strip} #{copy}`
+        $?.should.success?
+      ensure
+        rm_r copy
       end
     end
   end

@@ -115,6 +115,12 @@ describe "Literal Regexps" do
     /foo.(?<=\d)/.match("fooA foo1").to_a.should == ["foo1"]
   end
 
+  # https://bugs.ruby-lang.org/issues/13671
+  it "raises a RegexpError for lookbehind with specific characters" do
+    r =  Regexp.new("(?<!dss)", Regexp::IGNORECASE)
+    -> { r =~ "✨" }.should raise_error(RegexpError)
+  end
+
   it "supports (?<! ) (negative lookbehind)" do
     /foo.(?<!\d)/.match("foo1 fooA").to_a.should == ["fooA"]
   end
