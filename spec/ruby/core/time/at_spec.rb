@@ -92,6 +92,12 @@ describe "Time.at" do
         o.should_receive(:to_r).and_return(Rational(5, 2))
         Time.at(o).should == Time.at(Rational(5, 2))
       end
+
+      it "needs for the argument to respond to #to_int too" do
+        o = mock('rational-but-no-to_int')
+        o.should_receive(:to_r).and_return(Rational(5, 2))
+        -> { Time.at(o) }.should raise_error(TypeError)
+      end
     end
   end
 
