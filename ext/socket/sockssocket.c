@@ -34,7 +34,7 @@ socks_init(VALUE sock, VALUE host, VALUE port)
 	init = 1;
     }
 
-    return rsock_init_inetsock(sock, host, port, Qnil, Qnil, INET_SOCKS);
+    return rsock_init_inetsock(sock, host, port, Qnil, Qnil, INET_SOCKS, Qnil);
 }
 
 #ifdef SOCKS5
