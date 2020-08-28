@@ -23,12 +23,28 @@ tcp_init(int argc, VALUE *argv, VALUE sock)
 {
     VALUE remote_host, remote_serv;
     VALUE local_host, local_serv;
+    VALUE opt;
+    static ID keyword_ids[1];
+    VALUE kwargs[1];
+    VALUE resolv_timeout = Qnil;
 
-    rb_scan_args(argc, argv, "22", &remote_host, &remote_serv,
-			&local_host, &local_serv);
+    if (!keyword_ids[0]) {
+	CONST_ID(keyword_ids[0], "resolv_timeout");
+    }
+
+    rb_scan_args(argc, argv, "22:", &remote_host, &remote_serv,
+			&local_host, &local_serv, &opt);
+
+    if (!NIL_P(opt)) {
+	rb_get_kwargs(opt, keyword_ids, 0, 1, kwargs);
+	if (kwargs[0] != Qundef) {
+	    resolv_timeout = kwargs[0];
+	}
+    }
 
     return rsock_init_inetsock(sock, remote_host, remote_serv,
-			       local_host, local_serv, INET_CLIENT);
+			       local_host, local_serv, INET_CLIENT,
+			       resolv_timeout);
 }
 
 static VALUE

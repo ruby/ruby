@@ -19,6 +19,7 @@ struct inetsock_arg
     } remote, local;
     int type;
     int fd;
+    VALUE resolv_timeout;
 };
 
 static VALUE
@@ -49,10 +50,20 @@ init_inetsock_internal(VALUE v)
     int fd, status = 0, local = 0;
     int family = AF_UNSPEC;
     const char *syscall = 0;
+    VALUE resolv_timeout = arg->resolv_timeout;
 
+#ifdef HAVE_GETADDRINFO_A
+    arg->remote.res = rsock_addrinfo_a(arg->remote.host, arg->remote.serv,
+				       family, SOCK_STREAM,
+				       (type == INET_SERVER) ? AI_PASSIVE : 0,
+				       resolv_timeout);
+#else
     arg->remote.res = rsock_addrinfo(arg->remote.host, arg->remote.serv,
 				     family, SOCK_STREAM,
 				     (type == INET_SERVER) ? AI_PASSIVE : 0);
+#endif
+
+
     /*
      * Maybe also accept a local address
      */
@@ -157,7 +168,8 @@ init_inetsock_internal(VALUE v)
 
 VALUE
 rsock_init_inetsock(VALUE sock, VALUE remote_host, VALUE remote_serv,
-	            VALUE local_host, VALUE local_serv, int type)
+	            VALUE local_host, VALUE local_serv, int type,
+		    VALUE resolv_timeout)
 {
     struct inetsock_arg arg;
     arg.sock = sock;
@@ -169,6 +181,7 @@ rsock_init_inetsock(VALUE sock, VALUE remote_host, VALUE remote_serv,
     arg.local.res = 0;
     arg.type = type;
     arg.fd = -1;
+    arg.resolv_timeout = resolv_timeout;
     return rb_ensure(init_inetsock_internal, (VALUE)&arg,
 		     inetsock_cleanup, (VALUE)&arg);
 }
