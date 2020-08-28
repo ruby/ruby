@@ -1269,6 +1269,67 @@ rb_mod_ancestors(VALUE mod)
     return ary;
 }
 
+static inline int
+is_singleton_class(VALUE klass)
+{
+    return RB_TYPE_P(klass, T_CLASS) && FL_TEST(klass, FL_SINGLETON);
+}
+
+static void
+collect_descendants(VALUE mod, VALUE ary)
+{
+    if (BUILTIN_TYPE(mod) != T_ICLASS && !is_singleton_class(mod)) {
+        rb_ary_push(ary, mod);
+    }
+
+    rb_class_foreach_subclass(mod, collect_descendants, ary);
+}
+
+/*
+ *  call-seq:
+ *     mod.descendants -> array
+ *
+ *  Returns a list of modules including <i>mod</i> or a list of subclasses
+ *  inheriting from <i>mod</i> (including <i>mod</i> itself).
+ *
+ *     module A
+ *     end
+ *
+ *     module B
+ *       include A
+ *     end
+ *
+ *     module C
+ *       include B
+ *     end
+ *
+ *     A.descendants    #=> [A, C, B]
+ *     B.descendants    #=> [B, C]
+ *     C.descendants    #=> [C]
+ *
+ *     class A
+ *     end
+ *
+ *     class B < A
+ *     end
+ *
+ *     class C < B
+ *     end
+ *
+ *     A.descendants    #=> [A, B, C]
+ *     B.descendants    #=> [B, C]
+ *     C.descendants    #=> [C]
+ */
+VALUE
+rb_mod_descendants(VALUE mod)
+{
+    VALUE ary = rb_ary_new();
+    rb_ary_push(ary, mod);
+    rb_class_foreach_subclass(mod, collect_descendants, ary);
+    rb_funcall(ary, rb_intern("uniq!"), 0, 0);
+    return ary;
+}
+
 static void
 ins_methods_push(st_data_t name, st_data_t ary)
 {

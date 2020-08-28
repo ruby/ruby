@@ -222,6 +222,16 @@ class TestModule < Test::Unit::TestCase
     assert_equal([String, Comparable, Object, Kernel, BasicObject], String.ancestors - mixins)
   end
 
+  def test_descendants
+    a = Module.new
+    b = Module.new { include a }
+    c = Module.new { include b }
+
+    assert_equal([a, c, b].sort, a.descendants.sort)
+    assert_equal([b, c].sort, b.descendants.sort)
+    assert_equal([c], c.descendants)
+  end
+
   CLASS_EVAL = 2
   @@class_eval = 'b'
 

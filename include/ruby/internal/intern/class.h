@@ -40,6 +40,7 @@ VALUE rb_define_module_id_under(VALUE, ID);
 VALUE rb_mod_included_modules(VALUE);
 VALUE rb_mod_include_p(VALUE, VALUE);
 VALUE rb_mod_ancestors(VALUE);
+VALUE rb_mod_descendants(VALUE);
 VALUE rb_class_instance_methods(int, const VALUE*, VALUE);
 VALUE rb_class_public_instance_methods(int, const VALUE*, VALUE);
 VALUE rb_class_protected_instance_methods(int, const VALUE*, VALUE);
