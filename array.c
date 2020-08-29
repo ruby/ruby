@@ -3462,21 +3462,21 @@ rb_ary_sort_by_bang(VALUE ary)
 
 /*
  *  call-seq:
- *    array.collect {|element| ... } -> new_array
- *    array.collect -> new_enumerator
+ *    array.map {|element| ... } -> new_array
+ *    array.map -> new_enumerator
  *
  *  Calls the block, if given, with each element of +self+;
  *  returns a new \Array whose elements are the return values from the block:
  *    a = [:foo, 'bar', 2]
- *    a1 = a.collect {|element| element.class }
+ *    a1 = a.map {|element| element.class }
  *    a1 # => [Symbol, String, Integer]
  *
  *  Returns a new \Enumerator if no block given:
  *    a = [:foo, 'bar', 2]
- *    a1 = a.collect
- *    a1 # => #<Enumerator: [:foo, "bar", 2]:collect>
+ *    a1 = a.map
+ *    a1 # => #<Enumerator: [:foo, "bar", 2]:map>
  *
- *  Array#map is an alias for Array#collect.
+ *  Array#collect is an alias for Array#map.
  */
 
 static VALUE
@@ -3496,20 +3496,20 @@ rb_ary_collect(VALUE ary)
 
 /*
  *  call-seq:
- *    array.collect! {|element| ... } -> self
- *    array.collect! -> new_enumerator
+ *    array.map! {|element| ... } -> self
+ *    array.map! -> new_enumerator
  *
  *  Calls the block, if given, with each element;
  *  replaces the element with the block's return value:
  *    a = [:foo, 'bar', 2]
- *    a.collect! { |element| element.class } # => [Symbol, String, Integer]
+ *    a.map! { |element| element.class } # => [Symbol, String, Integer]
  *
  *  Returns a new \Enumerator if no block given:
  *    a = [:foo, 'bar', 2]
- *    a1 = a.collect!
- *    a1 # => #<Enumerator: [:foo, "bar", 2]:collect!>
+ *    a1 = a.map!
+ *    a1 # => #<Enumerator: [:foo, "bar", 2]:map!>
  *
- *  Array#map! is an alias for Array#collect!.
+ *  Array#collect! is an alias for Array#map!.
  */
 
 static VALUE
