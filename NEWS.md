@@ -191,6 +191,16 @@ Outstanding ones only.
           take request headers as a Hash in the second argument when the first
           argument is a URI.  [[Feature #16686]]
 
+* Tempfile
+
+    * Modified method
+
+        * `Tempfile.open { ... }` will now unlink the file at the end of the
+          block (https://github.com/ruby/tempfile/pull/3), such that once the
+          block finishes execution nothing leaks.
+
+
+
 ## Compatibility issues
 
 Excluding feature bug fixes.

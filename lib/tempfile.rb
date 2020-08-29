@@ -290,7 +290,7 @@ class Tempfile < DelegateClass(File)
         begin
           yield(tempfile)
         ensure
-          tempfile.close
+          tempfile.close!
         end
       else
         tempfile
