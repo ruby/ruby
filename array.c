@@ -2730,7 +2730,6 @@ inspect_ary(VALUE ary, VALUE dummy, int recur)
 /*
  *  call-seq:
  *    array.inspect -> new_string
- *    array.to_s => new_string
  *
  *  Returns the new \String formed by calling method <tt>#inspect</tt>
  *  on each array element:
@@ -2886,7 +2885,7 @@ rb_ary_reverse_bang(VALUE ary)
  *  call-seq:
  *    array.reverse -> new_array
  *
- *  Returns a new \Array with the elements of +self+ reversed.
+ *  Returns a new \Array with the elements of +self+ in reverse order.
  *    a = ['foo', 'bar', 'two']
  *    a1 = a.reverse
  *    a1 # => ["two", "bar", "foo"]
