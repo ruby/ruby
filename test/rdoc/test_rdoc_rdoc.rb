@@ -342,16 +342,14 @@ class TestRDocRDoc < RDoc::TestCase
     @rdoc.options.encoding = Encoding::ISO_8859_1
     @rdoc.store = RDoc::Store.new
 
-    tf = Tempfile.open 'test.txt' do |io|
+    Tempfile.open 'test.txt' do |io|
       io.write 'hi'
       io.rewind
 
       top_level = @rdoc.parse_file io.path
 
       assert_equal Encoding::ISO_8859_1, top_level.absolute_name.encoding
-      io
     end
-    tf.close!
   end
 
   def test_parse_file_forbidden
@@ -360,7 +358,7 @@ class TestRDocRDoc < RDoc::TestCase
 
     @rdoc.store = RDoc::Store.new
 
-    tf = Tempfile.open 'test.txt' do |io|
+    Tempfile.open 'test.txt' do |io|
       io.write 'hi'
       io.rewind
 
@@ -379,9 +377,7 @@ class TestRDocRDoc < RDoc::TestCase
       ensure
         File.chmod 0400, io.path
       end
-      io
     end
-    tf.close!
   end
 
   def test_remove_unparseable
@@ -478,7 +474,7 @@ class TestRDocRDoc < RDoc::TestCase
   end
 
   def test_setup_output_dir_exists_file
-    tf = Tempfile.open 'test_rdoc_rdoc' do |tempfile|
+    Tempfile.open 'test_rdoc_rdoc' do |tempfile|
       path = tempfile.path
 
       e = assert_raise RDoc::Error do
@@ -487,9 +483,7 @@ class TestRDocRDoc < RDoc::TestCase
 
       assert_match(%r%#{Regexp.escape path} exists and is not a directory%,
                    e.message)
-      tempfile
     end
-    tf.close!
   end
 
   def test_setup_output_dir_exists_not_rdoc

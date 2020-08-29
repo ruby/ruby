@@ -154,7 +154,7 @@ class TestRDocRdBlockParser < RDoc::TestCase
         blank_line,
         blank_line)
 
-    tf = Tempfile.open %w[parse_include .rd] do |io|
+    Tempfile.open %w[parse_include .rd] do |io|
       io.puts "=begin\ninclude ((*worked*))\n=end"
       io.flush
 
@@ -163,9 +163,7 @@ class TestRDocRdBlockParser < RDoc::TestCase
       STR
 
       assert_equal expected, parse(str)
-      io
     end
-    tf.close!
   end
 
   def test_parse_heading

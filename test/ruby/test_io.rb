@@ -2814,7 +2814,7 @@ __END__
 
   def test_flush_in_finalizer1
     bug3910 = '[ruby-dev:42341]'
-    tmp = Tempfile.open("bug3910") {|t|
+    Tempfile.open("bug3910") {|t|
       path = t.path
       t.close
       fds = []
@@ -2826,7 +2826,6 @@ __END__
           f.print "hoge"
         }
       end
-      t
     }
   ensure
     ObjectSpace.each_object(File) {|f|
@@ -2834,7 +2833,6 @@ __END__
         f.close
       end
     }
-    tmp.close!
   end
 
   def test_flush_in_finalizer2
@@ -2858,7 +2856,6 @@ __END__
           end
         }
       end
-      t.close!
     }
   end
 

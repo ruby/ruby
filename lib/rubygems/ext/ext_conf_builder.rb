@@ -36,7 +36,6 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
       siteconf.close
 
       destdir = ENV["DESTDIR"]
-
       begin
         cmd = Gem.ruby.shellsplit << "-I" << File.expand_path("../../..", __FILE__) <<
               "-r" << get_relative_path(siteconf.path) << File.basename(extension)
@@ -76,7 +75,6 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
         end
       ensure
         ENV["DESTDIR"] = destdir
-        siteconf.close!
       end
     end
 

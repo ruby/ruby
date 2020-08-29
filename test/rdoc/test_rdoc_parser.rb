@@ -106,7 +106,7 @@ class TestRDocParser < RDoc::TestCase
   def test_class_for_forbidden
     omit 'chmod not supported' if Gem.win_platform?
 
-    tf = Tempfile.open 'forbidden' do |io|
+    Tempfile.open 'forbidden' do |io|
       begin
         File.chmod 0000, io.path
         forbidden = @store.add_file io.path
@@ -117,9 +117,7 @@ class TestRDocParser < RDoc::TestCase
       ensure
         File.chmod 0400, io.path
       end
-      io
     end
-    tf.close!
   end
 
   def test_class_for_modeline
