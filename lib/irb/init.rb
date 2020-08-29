@@ -52,6 +52,7 @@ module IRB # :nodoc:
     @CONF[:IGNORE_EOF] = false
     @CONF[:ECHO] = nil
     @CONF[:ECHO_ON_ASSIGNMENT] = nil
+    @CONF[:OMIT_ON_ASSIGNMENT] = nil
     @CONF[:VERBOSE] = nil
 
     @CONF[:EVAL_HISTORY] = nil
@@ -177,6 +178,10 @@ module IRB # :nodoc:
         @CONF[:ECHO_ON_ASSIGNMENT] = true
       when "--noecho-on-assignment"
         @CONF[:ECHO_ON_ASSIGNMENT] = false
+      when "--omit-on-assignment"
+        @CONF[:OMIT_ON_ASSIGNMENT] = true
+      when "--noomit-on-assignment"
+        @CONF[:OMIT_ON_ASSIGNMENT] = false
       when "--verbose"
         @CONF[:VERBOSE] = true
       when "--noverbose"

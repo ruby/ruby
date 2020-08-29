@@ -12,6 +12,7 @@
 require_relative 'src_encoding'
 require_relative 'magic-file'
 require_relative 'completion'
+require 'io/console'
 require 'reline'
 
 module IRB
@@ -35,6 +36,14 @@ module IRB
       fail NotImplementedError, "gets"
     end
     public :gets
+
+    def winsize
+      if instance_variable_defined?(:@stdout)
+        @stdout.winsize
+      else
+        [24, 80]
+      end
+    end
 
     # Whether this input method is still readable when there is no more data to
     # read.

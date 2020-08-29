@@ -10,6 +10,7 @@
 #
 #
 require "ripper"
+require "reline"
 
 require_relative "irb/init"
 require_relative "irb/context"
@@ -538,7 +539,15 @@ module IRB
           begin
             line.untaint if RUBY_VERSION < '2.7'
             @context.evaluate(line, line_no, exception: exc)
-            output_value if @context.echo? && (@context.echo_on_assignment? || !assignment_expression?(line))
+            if @context.echo?
+              if assignment_expression?(line)
+                if @context.echo_on_assignment?
+                  output_value(@context.omit_on_assignment?)
+                end
+              else
+                output_value
+              end
+            end
           rescue Interrupt => exc
           rescue SystemExit, SignalException
             raise
@@ -737,9 +746,22 @@ module IRB
       p
     end
 
-    def output_value # :nodoc:
+    def output_value(omit = false) # :nodoc:
       str = @context.inspect_last_value
       multiline_p = str.include?("\n")
+      if omit
+        if multiline_p
+          str.gsub!(/(\A.*?\n).*/m, "\\1...")
+        else
+          winwidth = @context.io.winsize.last
+          output_width = Reline::Unicode.calculate_width(@context.return_format % str, true)
+          diff_size = output_width - Reline::Unicode.calculate_width(str, true)
+          if diff_size.positive? and output_width > winwidth
+            lines, _ = Reline::Unicode.split_by_width(str, winwidth - diff_size - 3)
+            str = "%s...\e[0m" % lines.first
+          end
+        end
+      end
       if multiline_p && @context.newline_before_multiline_output?
         printf @context.return_format, "\n#{str}"
       else
