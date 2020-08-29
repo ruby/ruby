@@ -124,11 +124,11 @@ Outstanding ones only.
     * Modified method
 
         * Kernel#clone when called with `freeze: false` keyword will call
-          #initialize_clone with the `freeze: false` keyword.
+          `#initialize_clone` with the `freeze: false` keyword.
           [[Bug #14266]]
 
         * Kernel#clone when called with `freeze: true` keyword will call
-          #initialize_clone with the `freeze: true` keyword, and will
+          `#initialize_clone` with the `freeze: true` keyword, and will
           return a frozen copy even if the receiver is unfrozen.
           [[Feature #16175]]
 
@@ -235,7 +235,7 @@ Excluding feature bug fixes.
         * set
         * tempfile
         * tmpdir
-        * werkref
+        * weakref
 
 * Bundled gems
 
