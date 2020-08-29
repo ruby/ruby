@@ -2492,10 +2492,7 @@ rb_ary_reverse_each(VALUE ary)
  *  call-seq:
  *    array.length -> an_integer
  *
- *  Returns the count of elements in the array:
- *    a = [:foo, 'bar', 2]
- *    a.length # => 3
- *    [].length # => 0
+ *  Returns the count of elements in +self+.
  */
 
 static VALUE
@@ -2509,10 +2506,8 @@ rb_ary_length(VALUE ary)
  *  call-seq:
  *    array.empty?  -> true or false
  *
- *  Returns +true+ if the count of elements in the array is zero,
- *  +false+ otherwise:
- *    [].empty? # => true
- *    [:foo, 'bar', 2].empty? # => false
+ *  Returns +true+ if the count of elements in +self+ is zero,
+ *  +false+ otherwise.
  */
 
 static VALUE
@@ -2686,20 +2681,14 @@ rb_ary_join(VALUE ary, VALUE sep)
  *  - Uses <tt>element.to_s</tt> if +element+ is not a <tt>kind_of?(Array)</tt>.
  *  - Uses recursive <tt>element.join(separator)</tt> if +element+ is a <tt>kind_of?(Array)</tt>.
  *
- *  Argument +separator+, if given, must be a \String.
- *
- *  ---
- *
  *  With no argument, joins using the output field separator, <tt>$,</tt>:
  *    a = [:foo, 'bar', 2]
  *    $, # => nil
  *    a.join # => "foobar2"
  *
- *  With argument +separator+, joins using that separator:
+ *  With \string argument +separator+, joins using that separator:
  *    a = [:foo, 'bar', 2]
  *    a.join("\n") # => "foo\nbar\n2"
- *
- *  ---
  *
  *  Joins recursively for nested Arrays:
  *   a = [:foo, [:bar, [:baz, :bat]]]
@@ -2743,17 +2732,12 @@ inspect_ary(VALUE ary, VALUE dummy, int recur)
  *    array.inspect -> new_string
  *    array.to_s => new_string
  *
- *  Array#to_s is an alias for Array#inspect.
- *
  *  Returns the new \String formed by calling method <tt>#inspect</tt>
  *  on each array element:
  *    a = [:foo, 'bar', 2]
  *    a.inspect # => "[:foo, \"bar\", 2]"
  *
- *  Raises an exception if any element lacks instance method <tt>#inspect</tt>:
- *    a = [:foo, 'bar', 2, BasicObject.new]
- *    a.inspect
- *    # Raises NoMethodError (undefined method `inspect' for #<BasicObject>)
+ *  Array#to_s is an alias for Array#inspect.
  */
 
 static VALUE
@@ -2818,20 +2802,6 @@ rb_ary_to_a(VALUE ary)
  *    a = [['foo', 'zero'], ['bar', 'one'], ['baz', 'two']]
  *    h = a.to_h
  *    h # => {"foo"=>"zero", "bar"=>"one", "baz"=>"two"}
- *
- *  ---
- *
- *  Raises an exception if no block is given
- *  and any element in +self+ is not a 2-element \Array:
- *    # Raises TypeError (wrong element type Symbol at 0 (expected array):
- *    [:foo].to_h
- *    # Raises ArgumentError (wrong array length at 0 (expected 2, was 1)):
- *    [[:foo]].to_h
- *
- *  Raises an exception if for some 2-element \Array +element+ in +self+,
- *  <tt>element.first</tt> would be an invalid hash key:
- *    # Raises NoMethodError (undefined method `hash' for #<BasicObject:>):
- *    [[BasicObject.new, 0]].to_h
  */
 
 static VALUE
@@ -2862,9 +2832,7 @@ rb_ary_to_h(VALUE ary)
  *  call-seq:
  *    array.to_ary -> self
  *
- *  Returns +self+:
- *    a = [:foo, 'bar', 2]
- *    a.to_ary # => [:foo, "bar", 2]
+ *  Returns +self+.
  */
 
 static VALUE
@@ -2918,7 +2886,7 @@ rb_ary_reverse_bang(VALUE ary)
  *  call-seq:
  *    array.reverse -> new_array
  *
- *  Returns a new \Array whose elements are in reverse order:
+ *  Returns a new \Array with the elements of +self+ reversed.
  *    a = ['foo', 'bar', 'two']
  *    a1 = a.reverse
  *    a1 # => ["two", "bar", "foo"]
@@ -2986,17 +2954,12 @@ rb_ary_rotate(VALUE ary, long cnt)
  *
  *  Rotates +self+ in place by moving elements from one end to the other; returns +self+.
  *
- *  Argument +count+, if given, must be an \Integer.
- *
- *  ---
- *
  *  When no argument given, rotates the first element to the last position:
  *    a = [:foo, 'bar', 2, 'bar']
  *    a.rotate! # => ["bar", 2, "bar", :foo]
  *
- *  ---
- *
- *  When given a non-negative +count+, rotates +count+ elements from the beginning to the end:
+ *  When given a non-negative \Integer +count+,
+ *  rotates +count+ elements from the beginning to the end:
  *    a = [:foo, 'bar', 2]
  *    a.rotate!(2)
  *    a # => [2, :foo, "bar"]
@@ -3011,9 +2974,7 @@ rb_ary_rotate(VALUE ary, long cnt)
  *    a.rotate!(0)
  *    a # => [:foo, "bar", 2]
  *
- *  ---
- *
- *  When given a negative +count+, rotates in the opposite direction,
+ *  When given a negative Integer +count+, rotates in the opposite direction,
  *  from end to beginning:
  *    a = [:foo, 'bar', 2]
  *    a.rotate!(-2)
@@ -3041,18 +3002,13 @@ rb_ary_rotate_bang(int argc, VALUE *argv, VALUE ary)
  *  Returns a new \Array formed from +self+ with elements
  *  rotated from one end to the other.
  *
- *  Argument +count+, if given, must be an \Integer.
- *
- *  ---
  *  When no argument given, returns a new \Array that is like +self+,
  *  except that the first element has been rotated to the last position:
  *    a = [:foo, 'bar', 2, 'bar']
  *    a1 = a.rotate
  *    a1 # => ["bar", 2, "bar", :foo]
  *
- *  ---
- *
- *  When given a non-negative +count+,
+ *  When given a non-negative \Integer +count+,
  *  returns a new \Array with +count+ elements rotated from the beginning to the end:
  *    a = [:foo, 'bar', 2]
  *    a1 = a.rotate(2)
@@ -3068,9 +3024,7 @@ rb_ary_rotate_bang(int argc, VALUE *argv, VALUE ary)
  *    a1 = a.rotate(0)
  *    a1 # => [:foo, "bar", 2]
  *
- *  ---
- *
- *  When given a negative +count+, rotates in the opposite direction,
+ *  When given a negative \Integer +count+, rotates in the opposite direction,
  *  from end to beginning:
  *    a = [:foo, 'bar', 2]
  *    a1 = a.rotate(-2)
@@ -3168,16 +3122,12 @@ sort_2(const void *ap, const void *bp, void *dummy)
  *
  *  Returns +self+ with its elements sorted in place.
  *
- *  ---
- *
  *  With no block, compares elements using operator <tt><=></tt>
  *  (see Comparable):
  *    a = 'abcde'.split('').shuffle
  *    a # => ["e", "b", "d", "a", "c"]
  *    a.sort!
  *    a # => ["a", "b", "c", "d", "e"]
- *
- *  ---
  *
  *  With a block, calls the block with each element pair;
  *  for each element pair +a+ and +b+, the block should return an integer:
@@ -3199,13 +3149,6 @@ sort_2(const void *ap, const void *bp, void *dummy)
  *    a # => ["e", "b", "d", "a", "c"]
  *    a.sort! {|a, b| 0 }
  *    a # => ["d", "e", "c", "a", "b"]
- *
- *  ---
- *
- *  Raises an exception if the block returns a non-Integer:
- *    a = 'abcde'.split('').shuffle
- *    # Raises ArgumentError (comparison of Symbol with 0 failed):
- *    a1 = a.sort! {|a, b| :foo }
  */
 
 VALUE
@@ -3275,18 +3218,12 @@ rb_ary_sort_bang(VALUE ary)
  *
  *  Returns a new \Array whose elements are those from +self+, sorted.
  *
- *  See also Enumerable#sort_by.
- *
- *  ---
- *
  *  With no block, compares elements using operator <tt><=></tt>
  *  (see Comparable):
  *    a = 'abcde'.split('').shuffle
  *    a # => ["e", "b", "d", "a", "c"]
  *    a1 = a.sort
  *    a1 # => ["a", "b", "c", "d", "e"]
- *
- *  ---
  *
  *  With a block, calls the block with each element pair;
  *  for each element pair +a+ and +b+, the block should return an integer:
@@ -3309,12 +3246,7 @@ rb_ary_sort_bang(VALUE ary)
  *    a1 = a.sort {|a, b| 0 }
  *    a1 # =>  ["c", "e", "b", "d", "a"]
  *
- *  ---
- *
- *  Raises an exception if the block returns a non-Integer:
- *    a = 'abcde'.split('').shuffle
- *    # Raises ArgumentError (comparison of Symbol with 0 failed):
- *    a1 = a.sort {|a, b| :foo }
+ *  Related: Enumerable#sort_by.
  */
 
 VALUE
