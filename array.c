@@ -992,7 +992,7 @@ rb_ary_s_try_convert(VALUE dummy, VALUE ary)
  *  returns an \Array of the given size;
  *  the block is called with each successive integer +index+;
  *  the element for that +index+ is the return value from the block:
- *    a = Array.new(3) { |index| "Element #{index}" }
+ *    a = Array.new(3) {|index| "Element #{index}" }
  *    a # => ["Element 0", "Element 1", "Element 2"]
  *
  *  Raises ArgumentError if +size+ is negative.
@@ -1519,7 +1519,6 @@ ary_ensure_room_for_unshift(VALUE ary, int argc)
 /*
  *  call-seq:
  *    array.unshift(*objects) -> self
- *    array.prepend(*objects) -> self
  *
  *  Prepends the given +objects+ to +self+:
  *    a = [:foo, 'bar', 2]
@@ -1702,9 +1701,7 @@ rb_ary_aref1(VALUE ary, VALUE arg)
  *  call-seq:
  *    array.at(index) -> object
  *
- *  Argument +index+ must be an \Integer.
- *
- *  Returns the element at offset +index+; does not modify +self+.
+ *  Returns the element at \Integer offset +index+; does not modify +self+.
  *    a = [:foo, 'bar', 2]
  *    a.at(0) # => :foo
  *    a.at(2) # => 2
@@ -1722,11 +1719,6 @@ rb_ary_at(VALUE ary, VALUE pos)
  *    array.first(n) -> new_array
  *
  *  Returns elements from +self+; does not modify +self+.
- *  See also #last.
- *
- *  Argument +n+, if given, must be an \Integer.
- *
- *  ---
  *
  *  When no argument is given, returns the first element:
  *    a = [:foo, 'bar', 2]
@@ -1735,9 +1727,8 @@ rb_ary_at(VALUE ary, VALUE pos)
  *
  *  If +self+ is empty, returns +nil+.
  *
- *  ---
- *
- *  When argument +n+ is given, returns the first +n+ elements in a new \Array:
+ *  When non-negative \Integer argument +n+ is given,
+ *  returns the first +n+ elements in a new \Array:
  *    a = [:foo, 'bar', 2]
  *    a.first(2) # => [:foo, "bar"]
  *
@@ -1749,12 +1740,7 @@ rb_ary_at(VALUE ary, VALUE pos)
  *    a = [:foo, 'bar', 2]
  *    a.first(0) # []
  *
- *  ---
- *
- *  Raises an exception if +n+ is negative:
- *    a = [:foo, 'bar', 2]
- *    # Raises ArgumentError (negative array size):
- *    a.first(-1)
+ *  Related: #last.
  */
 static VALUE
 rb_ary_first(int argc, VALUE *argv, VALUE ary)
@@ -1774,11 +1760,6 @@ rb_ary_first(int argc, VALUE *argv, VALUE ary)
  *    array.last(n) -> new_array
  *
  *  Returns elements from +self+; +self+ is not modified.
- *  See also #first.
- *
- *  Argument +n+, if given, must be an \Integer.
- *
- *  ---
  *
  *  When no argument is given, returns the last element:
  *    a = [:foo, 'bar', 2]
@@ -1787,9 +1768,8 @@ rb_ary_first(int argc, VALUE *argv, VALUE ary)
  *
  *  If +self+ is empty, returns +nil+.
  *
- *  ---
- *
- *  When argument +n+ is given, returns the last +n+ elements in a new \Array:
+ *  When non-negative \Innteger argument +n+ is given,
+ *  returns the last +n+ elements in a new \Array:
  *    a = [:foo, 'bar', 2]
  *    a.last(2) # => ["bar", 2]
  *
@@ -1801,12 +1781,7 @@ rb_ary_first(int argc, VALUE *argv, VALUE ary)
  *    a = [:foo, 'bar', 2]
  *    a.last(0) # []
  *
- *  ---
- *
- *  Raises an exception if +n+ is negative:
- *    a = [:foo, 'bar', 2]
- *    # Raises ArgumentError (negative array size):
- *    a.last(-1)
+ *  Related: #first.
  */
 
 VALUE
@@ -1830,11 +1805,8 @@ rb_ary_last(int argc, const VALUE *argv, VALUE ary)
  *
  *  Returns the element at offset  +index+.
  *
- *  Argument +index+ must be an \Integer.
- *
- *  ---
- *
- *  With the single argument +index+, returns the element at offset +index+:
+ *  With the single \Integer argument +index+,
+ *  returns the element at offset +index+:
  *    a = [:foo, 'bar', 2]
  *    a.fetch(1) # => "bar"
  *
@@ -1843,30 +1815,19 @@ rb_ary_last(int argc, const VALUE *argv, VALUE ary)
  *    a.fetch(-1) # => 2
  *    a.fetch(-2) # => "bar"
  *
- *  ---
- *
  *  With arguments +index+ and +default_value+,
  *  returns the element at offset +index+ if index is in range,
  *  otherwise returns +default_value+:
  *    a = [:foo, 'bar', 2]
  *    a.fetch(1, nil) # => "bar"
  *
- *  ---
- *
  *  With argument +index+ and a block,
  *  returns the element at offset +index+ if index is in range
  *  (and the block is not called); otherwise calls the block with index and returns its return value:
  *
  *    a = [:foo, 'bar', 2]
- *    a.fetch(1) { |index| raise 'Cannot happen' } # => "bar"
- *    a.fetch(50) { |index| "Value for #{index}" } # => "Value for 50"
- *
- *  ---
- *
- *  Raises an exception if +index+ is out of range and neither default_value nor a block given:
- *    a = [:foo, 'bar', 2]
- *    # Raises IndexError (index 50 outside of array bounds: -3...3):
- *    a.fetch(50)
+ *    a.fetch(1) {|index| raise 'Cannot happen' } # => "bar"
+ *    a.fetch(50) {|index| "Value for #{index}" } # => "Value for 50"
  */
 
 static VALUE
@@ -1902,16 +1863,8 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
  *    array.index(object) -> integer or nil
  *    array.index {|element| ... } -> integer or nil
  *    array.index -> new_enumerator
- *    array.find_index(object) -> integer or nil
- *    array.find_index {|element| ... } -> integer or nil
- *    array.find_index -> new_enumerator
- *
- *  Array#find_index is an alias for Array#index.
- *  See also Array#rindex.
  *
  *  Returns the index of a specified element.
- *
- *  ---
  *
  *  When argument +object+ is given but no block,
  *  returns the index of the first element +element+
@@ -1921,31 +1874,21 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
  *
  *  Returns +nil+ if no such element found.
  *
- *  ---
- *
  *  When both argument +object+ and a block are given,
  *  calls the block with each successive element;
  *  returns the index of the first element for which the block returns a truthy value:
  *    a = [:foo, 'bar', 2, 'bar']
- *    a.index { |element| element == 'bar' } # => 1
+ *    a.index {|element| element == 'bar' } # => 1
  *
  *  Returns +nil+ if the block never returns a truthy value.
- *
- *  ---
  *
  *  When neither an argument nor a block is given, returns a new Enumerator:
  *    a = [:foo, 'bar', 2]
  *    e = a.index
  *    e # => #<Enumerator: [:foo, "bar", 2]:index>
- *    e.each { |element| element == 'bar' } # => 1
+ *    e.each {|element| element == 'bar' } # => 1
  *
- *  ---
- *
- *  When both an argument and a block given, gives a warning (warning: given block not used)
- *  and ignores the block:
- *    a = [:foo, 'bar', 2, 'bar']
- *    index = a.index('bar') { raise 'Cannot happen' }
- *    index # => 1
+ *  Array#find_index is an alias for Array#index.
  *
  *  Related: #rindex.
  */
@@ -1986,15 +1929,11 @@ rb_ary_index(int argc, VALUE *argv, VALUE ary)
  *
  *  Returns the index of the last element for which <tt>object == element</tt>.
  *
- *  ---
- *
  *  When argument +object+ is given but no block, returns the index of the last such element found:
  *    a = [:foo, 'bar', 2, 'bar']
  *    a.rindex('bar') # => 3
  *
  *  Returns +nil+ if no such object found.
- *
- *  ---
  *
  *  When a block is given but no argument, calls the block with each successive element;
  *  returns the index of the last element for which the block returns a truthy value:
@@ -2003,22 +1942,14 @@ rb_ary_index(int argc, VALUE *argv, VALUE ary)
  *
  *  Returns +nil+ if the block never returns a truthy value.
  *
- *  ---
- *
  *  When neither an argument nor a block is given, returns a new \Enumerator:
  *
  *    a = [:foo, 'bar', 2, 'bar']
  *    e = a.rindex
  *    e # => #<Enumerator: [:foo, "bar", 2, "bar"]:rindex>
- *    e.each { |element| element == 'bar' } # => 3
+ *    e.each {|element| element == 'bar' } # => 3
  *
- *  ---
- *
- *  When both an argument and a block given, gives a warning (warning: given block not used)
- *  and ignores the block:
- *    a = [:foo, 'bar', 2, 'bar']
- *    index = a.rindex('bar') { raise 'Cannot happen' }
- *    index # => 3
+ *  Related: #index.
  */
 
 static VALUE
@@ -2219,12 +2150,7 @@ ary_aset_by_rb_ary_splice(VALUE ary, long beg, long len, VALUE val)
  *
  *  Assigns elements in +self+; returns the given +object+.
  *
- *  - Arguments +index+, +start+, and +length+, if given, must be Integers.
- *  - Argument +range+, if given, must be a \Range object.
- *
- *  ---
- *
- *  When +index+ is given, assigns +object+ to an element in +self+.
+ *  When \Integer argument +index+ is given, assigns +object+ to an element in +self+.
  *
  *  If +index+ is non-negative, assigns +object+ the element at offset +index+:
  *    a = [:foo, 'bar', 2]
@@ -2241,9 +2167,7 @@ ary_aset_by_rb_ary_splice(VALUE ary, long beg, long len, VALUE val)
  *    a[-1] = 'two' # => "two"
  *    a # => [:foo, "bar", "two"]
  *
- *  ---
- *
- *  When +start+ and +length+ are given and +object+ is not an Array,
+ *  When \Integer arguments +start+ and +length+ are given and +object+ is not an \Array,
  *  removes <tt>length - 1</tt> elements beginning at offset +start+,
  *  and assigns +object+ at offset +start+:
  *    a = [:foo, 'bar', 2]
@@ -2273,9 +2197,7 @@ ary_aset_by_rb_ary_splice(VALUE ary, long beg, long len, VALUE val)
  *    a[1, 5] = 'foo' # => "foo"
  *    a # => [:foo, "foo"]
  *
- *  ---
- *
- *  When +range+ is given and +object+ is an \Array,
+ *  When \Range argument +range+ is given and +object+ is an \Array,
  *  removes <tt>length - 1</tt> elements beginning at offset +start+,
  *  and assigns +object+ at offset +start+:
  *    a = [:foo, 'bar', 2]
@@ -2317,23 +2239,6 @@ ary_aset_by_rb_ary_splice(VALUE ary, long beg, long len, VALUE val)
  *    a = [:foo, 'bar', 2]
  *    a[1..5] = 'foo' # => "foo"
  *    a # => [:foo, "foo"]
- *
- *  ---
- *
- *  Raises an exception if a negative +index+ is out of range:
- *    a = [:foo, 'bar', 2]
- *    # Raises IndexError (index -4 too small for array; minimum: -3):
- *    a[-4] = 'two'
- *
- *  Raises an exception if +start+ is too small for the array:
- *    a = [:foo, 'bar', 2]
- *    # Raises IndexError (index -5 too small for array; minimum: -3):
- *    a[-5, 2] = 'foo'
- *
- *  Raises an exception if +length+ is negative:
- *    a = [:foo, 'bar', 2]
- *    # Raises IndexError (negative length (-1)):
- *    a[1, -1] = 'foo'
  */
 
 static VALUE
@@ -2365,12 +2270,8 @@ rb_ary_aset(int argc, VALUE *argv, VALUE ary)
  *  call-seq:
  *    array.insert(index, *objects) -> self
  *
- *  Inserts given +objects+ before or after the element at +offset+ index;
+ *  Inserts given +objects+ before or after the element at \Integer index +offset+;
  *  returns +self+.
- *
- *  Argument +index+ must be an \Integer.
- *
- *  ---
  *
  *  When +index+ is non-negative, inserts all given +objects+
  *  before the element at offset +index+:
@@ -2389,20 +2290,11 @@ rb_ary_aset(int argc, VALUE *argv, VALUE ary)
  *    a.insert(-50)
  *    a # => [:foo, "bar", 2]
  *
- *  ---
- *
  *  When +index+ is negative, inserts all given +objects+
  *  _after_ the element at offset <tt>index+self.size</tt>:
  *    a = [:foo, 'bar', 2]
  *    a.insert(-2, :bat, :bam)
  *    a # => [:foo, "bar", :bat, :bam, 2]
- *
- *  ---
- *
- *  Raises an exception if +index+ is too small (<tt>index+self.size < 0</tt>):
- *    a = [:foo, 'bar', 2]
- *    # Raises IndexError (index -5 too small for array; minimum: -4):
- *    a.insert(-5, :bat, :bam)
  */
 
 static VALUE
@@ -2445,8 +2337,6 @@ ary_enum_length(VALUE ary, VALUE args, VALUE eobj)
  *
  *  Iterates over array elements.
  *
- *  ---
- *
  *  When a block given, passes each successive array element to the block;
  *  returns +self+:
  *    a = [:foo, 'bar', 2]
@@ -2465,18 +2355,18 @@ ary_enum_length(VALUE ary, VALUE args, VALUE eobj)
  *    foo
  *    bar
  *
- *  ---
- *
  *  When no block given, returns a new \Enumerator:
  *    a = [:foo, 'bar', 2]
  *    e = a.each
  *    e # => #<Enumerator: [:foo, "bar", 2]:each>
- *    a1 = e.each { |element|  puts "#{element.class} #{element}" }
+ *    a1 = e.each {|element|  puts "#{element.class} #{element}" }
  *
  *  Output:
  *    Symbol foo
  *    String bar
  *    Integer 2
+ *
+ *  Related: #each_index, #reverse_each.
  */
 
 VALUE
@@ -2498,8 +2388,6 @@ rb_ary_each(VALUE ary)
  *
  *  Iterates over array indexes.
  *
- *  ---
- *
  *  When a block given, passes each successive array index to the block;
  *  returns +self+:
  *    a = [:foo, 'bar', 2]
@@ -2518,8 +2406,6 @@ rb_ary_each(VALUE ary)
  *    0
  *    1
  *
- *  ---
- *
  *  When no block given, returns a new \Enumerator:
  *    a = [:foo, 'bar', 2]
  *    e = a.each_index
@@ -2530,6 +2416,8 @@ rb_ary_each(VALUE ary)
  *    0 foo
  *    1 bar
  *    2 2
+ *
+ *  Related: #each, #reverse_each.
  */
 
 static VALUE
@@ -2551,8 +2439,6 @@ rb_ary_each_index(VALUE ary)
  *
  *  Iterates backwards over array elements.
  *
- *  ---
- *
  *  When a block given, passes, in reverse order, each element to the block;
  *  returns +self+:
  *    a = [:foo, 'bar', 2]
@@ -2571,17 +2457,17 @@ rb_ary_each_index(VALUE ary)
  *    2
  *    bar
  *
- *  ---
- *
  *  When no block given, returns a new \Enumerator:
  *    a = [:foo, 'bar', 2]
  *    e = a.reverse_each
  *    e # => #<Enumerator: [:foo, "bar", 2]:reverse_each>
- *    a1 = e.each { |element|  puts "#{element.class} #{element}" }
+ *    a1 = e.each {|element|  puts "#{element.class} #{element}" }
  *  Output:
  *    Integer 2
  *    String bar
  *    Symbol foo
+ *
+ *  Related: #each, #each_index.
  */
 
 static VALUE
