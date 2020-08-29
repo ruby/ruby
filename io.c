@@ -11312,10 +11312,10 @@ nogvl_copy_stream_sendfile(struct copy_stream_struct *stp)
 #ifdef ENOSYS
 	  case ENOSYS:
 #endif
-#ifdef ENOTSUP
-	  /* some RedHat kernels may return ENOTSUP on an NFS mount.
+#ifdef EOPNOTSUP
+	  /* some RedHat kernels may return EOPNOTSUP on an NFS mount.
 	     see also: [Feature #16965] */
-	  case ENOTSUP:
+	  case EOPNOTSUP:
 #endif
             return 0;
 	  case EAGAIN:
