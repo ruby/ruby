@@ -632,7 +632,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
   end
 
   def test_load
-    Tempfile.open 'gem.deps.rb' do |io|
+    tf = Tempfile.open 'gem.deps.rb' do |io|
       io.write <<-GEM_DEPS
 gem 'a'
 
@@ -647,7 +647,9 @@ end
       assert_equal gda, gda.load
 
       assert_equal [dep('a'), dep('b')], @set.dependencies
+      io
     end
+    tf.close!
   end
 
   def test_pin_gem_source

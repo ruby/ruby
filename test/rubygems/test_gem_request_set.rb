@@ -261,14 +261,16 @@ ruby "0"
   def test_load_gemdeps
     rs = Gem::RequestSet.new
 
-    Tempfile.open 'gem.deps.rb' do |io|
+    tf = Tempfile.open 'gem.deps.rb' do |io|
       io.puts 'gem "a"'
       io.flush
 
       gem_deps = rs.load_gemdeps io.path
 
       assert_kind_of Gem::RequestSet::GemDependencyAPI, gem_deps
+      io
     end
+    tf.close!
 
     assert_equal [dep('a')], rs.dependencies
 
@@ -279,7 +281,7 @@ ruby "0"
   def test_load_gemdeps_installing
     rs = Gem::RequestSet.new
 
-    Tempfile.open 'gem.deps.rb' do |io|
+    tf = Tempfile.open 'gem.deps.rb' do |io|
       io.puts 'ruby "0"'
       io.puts 'gem "a"'
       io.flush
@@ -287,7 +289,9 @@ ruby "0"
       gem_deps = rs.load_gemdeps io.path, [], true
 
       assert_kind_of Gem::RequestSet::GemDependencyAPI, gem_deps
+      io
     end
+    tf.close!
 
     assert_equal [dep('a')], rs.dependencies
   end
@@ -295,12 +299,14 @@ ruby "0"
   def test_load_gemdeps_without_groups
     rs = Gem::RequestSet.new
 
-    Tempfile.open 'gem.deps.rb' do |io|
+    tf = Tempfile.open 'gem.deps.rb' do |io|
       io.puts 'gem "a", :group => :test'
       io.flush
 
       rs.load_gemdeps io.path, [:test]
+      io
     end
+    tf.close!
 
     assert_empty rs.dependencies
   end
@@ -388,7 +394,7 @@ ruby "0"
 
     rs = Gem::RequestSet.new
 
-    Tempfile.open 'gem.deps.rb' do |io|
+    tf = Tempfile.open 'gem.deps.rb' do |io|
       io.puts <<-GEMS_DEPS_RB
         gem "#{name}", :git => "#{repository}"
       GEMS_DEPS_RB
@@ -396,7 +402,9 @@ ruby "0"
       io.flush
 
       rs.load_gemdeps io.path
+      io
     end
+    tf.close!
 
     res = rs.resolve
     assert_equal 1, res.size
@@ -449,7 +457,7 @@ ruby "0"
 
     rs = Gem::RequestSet.new
 
-    Tempfile.open 'gem.deps.rb' do |io|
+    tf = Tempfile.open 'gem.deps.rb' do |io|
       io.puts <<-GEMS_DEPS_RB
         gem "#{a_name}", :path => "#{a_directory}"
         gem "#{b_name}", :path => "#{b_directory}"
@@ -458,7 +466,9 @@ ruby "0"
       io.flush
 
       rs.load_gemdeps io.path
+      io
     end
+    tf.close!
 
     res = rs.resolve
     assert_equal 2, res.size
