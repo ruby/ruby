@@ -68,7 +68,7 @@
 #endif
 
 #if defined(__SUNPRO_CC)
-# /* Oracle  Developer Studio  12.5: GCC  compatiblity guide  says it  supports
+# /* Oracle  Developer Studio  12.5: GCC compatibility guide  says it  supports
 #  * statement expressions.   But to our  knowledge they support  the extension
 #  * only for C and not for C++.  Prove  me wrong.  Am happy to support them if
 #  * there is a way. */
