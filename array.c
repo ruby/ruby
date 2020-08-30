@@ -4410,10 +4410,12 @@ rb_ary_clear(VALUE ary)
 /*
  *  call-seq:
  *    array.fill(obj) -> self
- *    array.fill(obj, start, length = self.size) -> self
+ *    array.fill(obj, start) -> self
+ *    array.fill(obj, start, length) -> self
  *    array.fill(obj, range) -> self
  *    array.fill {|index| ... } -> self
- *    array.fill(start, length = self.size) {|index| ... } -> self
+ *    array.fill(start) {|index| ... } -> self
+ *    array.fill(start, length) {|index| ... } -> self
  *    array.fill(range) {|index| ... } -> self
  *
  *  Replaces specified elements in +self+ with specified objects; returns +self+.
@@ -4447,7 +4449,7 @@ rb_ary_clear(VALUE ary)
  *    a = ['a', 'b', 'c', 'd']
  *    a.fill(:X, -50) # => [:X, :X, :X, :X]
  *
- *  With arguments +obj+, \ Integer +start+, and \Integer +length+, and no block given,
+ *  With arguments +obj+, \Integer +start+, and \Integer +length+, and no block given,
  *  replaces elements based on the given +start+ and +length+.
  *
  *  If +start+ is in range, replaces +length+ elements beginning at offset +start+:
