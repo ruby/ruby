@@ -81,4 +81,24 @@ class Integer
     Primitive.attr! 'inline'
     Primitive.cexpr! 'rb_int_zero_p(self)'
   end
+
+  #
+  #  Document-method: Integer#size
+  #  call-seq:
+  #     int.size  ->  int
+  #
+  #  Returns the number of bytes in the machine representation of +int+
+  #  (machine dependent).
+  #
+  #     1.size               #=> 8
+  #     -1.size              #=> 8
+  #     2147483647.size      #=> 8
+  #     (256**10 - 1).size   #=> 10
+  #     (256**20 - 1).size   #=> 20
+  #     (256**40 - 1).size   #=> 40
+  #
+  def size
+    Primitive.attr! 'inline'
+    Primitive.cexpr! 'int_size(self)'
+  end
 end

@@ -1,0 +1,6 @@
+prelude: |
+  n = 42
+benchmark:
+  size: |
+    n.size
+loop_count: 20000000
