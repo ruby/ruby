@@ -3276,7 +3276,7 @@ static VALUE rb_ary_bsearch_index(VALUE ary);
  *  The block should not mix the modes by and sometimes returning +true+ or +false+
  *  and sometimes returning a numeric value, but this is not checked.
  *
- *  ====== Find-Minimum Mode
+ *  <b>Find-Minimum Mode</b>
  *
  *  In find-minimum mode, the block always returns +true+ or +false+.
  *  The further requirement (though not checked) is that
@@ -3307,7 +3307,7 @@ static VALUE rb_ary_bsearch_index(VALUE ary);
  *    a = [0, 4, 7, 10, 12]
  *    a.map {|x| x == 7 } # => [false, false, true, false, false]
  *
- *  ====== Find-Any Mode
+ *  <b>Find-Any Mode</b>
  *
  *  In find-any mode, the block always returns a numeric value.
  *  The further requirement (though not checked) is that
@@ -3344,18 +3344,9 @@ static VALUE rb_ary_bsearch_index(VALUE ary);
  *    a = [0, 4, 7, 10, 12]
  *    a.map {|element| element <=> 7 } # => [-1, -1, 0, 1, 1]
  *
- *  ---
- *
  *  Returns an enumerator if no block given:
  *    a = [0, 4, 7, 10, 12]
  *    a.bsearch # => #<Enumerator: [0, 4, 7, 10, 12]:bsearch>
- *
- *  ---
- *
- *  Raises an exception if the block returns an invalid value:
- *    a = 'abcde'.split('').shuffle
- *    # Raises TypeError (wrong argument type Symbol (must be numeric, true, false or nil)):
- *    a.bsearch {|element| :foo }
  */
 
 static VALUE
@@ -3450,8 +3441,6 @@ sort_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, dummy))
  *    a.sort_by! {|element| element.size }
  *    a # => ["d", "cc", "bbb", "aaaa"]
  *
- *  ---
- *
  *  Returns a new \Enumerator if no block given:
  *
  *    a = ['aaaa', 'bbb', 'cc', 'd']
@@ -3475,23 +3464,19 @@ rb_ary_sort_by_bang(VALUE ary)
  *  call-seq:
  *    array.map {|element| ... } -> new_array
  *    array.map -> new_enumerator
- *    array.collect {|element| ... } -> new_array
- *    array.collect -> new_enumerator
- *
- *  Array#map is an alias for Array#collect.
  *
  *  Calls the block, if given, with each element of +self+;
  *  returns a new \Array whose elements are the return values from the block:
  *    a = [:foo, 'bar', 2]
- *    a1 = a.collect {|element| element.class }
+ *    a1 = a.map {|element| element.class }
  *    a1 # => [Symbol, String, Integer]
- *
- *  ---
  *
  *  Returns a new \Enumerator if no block given:
  *    a = [:foo, 'bar', 2]
- *    a1 = a.collect
- *    a1 # => #<Enumerator: [:foo, "bar", 2]:collect>
+ *    a1 = a.map
+ *    a1 # => #<Enumerator: [:foo, "bar", 2]:map>
+ *
+ *  Array#collect is an alias for Array#map.
  */
 
 static VALUE
@@ -3513,22 +3498,18 @@ rb_ary_collect(VALUE ary)
  *  call-seq:
  *    array.map! {|element| ... } -> self
  *    array.map! -> new_enumerator
- *    array.collect! {|element| ... } -> self
- *    array.collect! -> new_enumerator
- *
- *  Array#map! is an alias for Array#collect!.
  *
  *  Calls the block, if given, with each element;
  *  replaces the element with the block's return value:
  *    a = [:foo, 'bar', 2]
- *    a.collect! { |element| element.class } # => [Symbol, String, Integer]
- *
- *  ---
+ *    a.map! { |element| element.class } # => [Symbol, String, Integer]
  *
  *  Returns a new \Enumerator if no block given:
  *    a = [:foo, 'bar', 2]
- *    a1 = a.collect!
- *    a1 # => #<Enumerator: [:foo, "bar", 2]:collect!>
+ *    a1 = a.map!
+ *    a1 # => #<Enumerator: [:foo, "bar", 2]:map!>
+ *
+ *  Array#collect! is an alias for Array#map!.
  */
 
 static VALUE
@@ -3603,11 +3584,7 @@ append_values_at_single(VALUE result, VALUE ary, long olen, VALUE idx)
  *    array.values_at(*indexes) -> new_array
  *
  *  Returns a new \Array whose elements are the elements
- *  of +self+ at the given +indexes+.
- *
- *  Each +index+ given in +indexes+ must be an \Integer.
- *
- *  ---
+ *  of +self+ at the given \Integer +indexes+.
  *
  *  For each positive +index+, returns the element at offset +index+:
  *    a = [:foo, 'bar', 2]
@@ -3622,8 +3599,6 @@ append_values_at_single(VALUE result, VALUE ary, long olen, VALUE idx)
  *    a.values_at(0, 3, 1, 3) # => [:foo, nil, "bar", nil]
  *
  *  Returns a new empty \Array if no arguments given.
- *
- *  ---
  *
  *  For each negative +index+, counts backward from the end of the array:
  *    a = [:foo, 'bar', 2]
@@ -3655,10 +3630,6 @@ rb_ary_values_at(int argc, VALUE *argv, VALUE ary)
  *  call-seq:
  *    array.select {|element| ... } -> new_array
  *    array.select -> new_enumerator
- *    array.filter {|element| ... } -> new_array
- *    array.filter -> new_enumerator
- *
- *  Array#filter is an alias for Array#select.
  *
  *  Calls the block, if given, with each element of +self+;
  *  returns a new \Array containing those elements of +self+
@@ -3667,11 +3638,11 @@ rb_ary_values_at(int argc, VALUE *argv, VALUE ary)
  *    a1 = a.select {|element| element.to_s.start_with?('b') }
  *    a1 # => ["bar", :bam]
  *
- *  ---
- *
  *  Returns a new \Enumerator if no block given:
  *    a = [:foo, 'bar', 2, :bam]
  *    a.select # => #<Enumerator: [:foo, "bar", 2, :bam]:select>
+ *
+ *  Array#filter is an alias for Array#select.
  */
 
 static VALUE
@@ -3738,10 +3709,6 @@ select_bang_ensure(VALUE a)
  *  call-seq:
  *    array.select! {|element| ... } -> self or nil
  *    array.select! -> new_enumerator
- *    array.filter! {|element| ... } -> self or nil
- *    array.filter! -> new_enumerator
- *
- *  Array#filter! is an alias for Array#select!.
  *
  *  Calls the block, if given  with each element of +self+;
  *  removes from +self+ those elements for which the block returns +false+ or +nil+.
@@ -3752,11 +3719,11 @@ select_bang_ensure(VALUE a)
  *
  *  Returns +nil+ if no elements were removed.
  *
- *  ---
- *
  *  Returns a new \Enumerator if no block given:
  *    a = [:foo, 'bar', 2, :bam]
  *    a.select! # => #<Enumerator: [:foo, "bar", 2, :bam]:select!>
+ *
+ *  Array#filter! is an alias for Array#select!.
  */
 
 static VALUE
@@ -3815,8 +3782,6 @@ ary_resize_smaller(VALUE ary, long len)
  *
  *  Removes zero or more elements from +self+; returns +self+.
  *
- *  ---
- *
  *  When no block is given,
  *  removes from +self+ each element +ele+ such that <tt>ele == obj</tt>;
  *  returns the last deleted element:
@@ -3826,8 +3791,6 @@ ary_resize_smaller(VALUE ary, long len)
  *    a # => [:foo, 2]
  *
  *  Returns +nil+ if no elements removed.
- *
- *  ---
  *
  *  When a block is given,
  *  removes from +self+ each element +ele+ such that <tt>ele == obj</tt>.
