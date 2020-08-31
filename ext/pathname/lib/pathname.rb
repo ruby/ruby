@@ -19,13 +19,13 @@ class Pathname
   # to_path is implemented so Pathname objects are usable with File.open, etc.
   TO_PATH = :to_path
 
-  SAME_PATHS = if File::FNM_SYSCASE.nonzero?
-    # Avoid #zero? here because #casecmp can return nil.
-    proc {|a, b| a.casecmp(b) == 0}
-  else
-    proc {|a, b| a == b}
+  SAME_PATHS = proc do |a, b|
+    next true if a == b
+    next false unless a.casecmp(b) == 0
+    sa = File.stat(a) rescue (next false)
+    sb = File.stat(b) rescue (next false)
+    sa == sb
   end
-
 
   if File::ALT_SEPARATOR
     SEPARATOR_LIST = "#{Regexp.quote File::ALT_SEPARATOR}#{Regexp.quote File::SEPARATOR}"
