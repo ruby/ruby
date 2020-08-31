@@ -89,8 +89,6 @@ tests = [
   [ 'putiseq',                  %q{ -> { true }.() }, ],
   [ 'putstring',                %q{ "true" }, ],
   [ 'tostring / concatstrings', %q{ "#{true}" }, ],
-  [ 'freezestring',             %q{ "#{true}" }, fsl, ],
-  [ 'freezestring',             %q{ "#{true}" }, '-d', fsl, ],
   [ 'toregexp',                 %q{ /#{true}/ =~ "true" && $~ }, ],
   [ 'intern',                   %q{ :"#{true}" }, ],
 

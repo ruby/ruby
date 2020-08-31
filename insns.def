@@ -390,16 +390,6 @@ tostring
     val = rb_obj_as_string_result(str, val);
 }
 
-/* Freeze (dynamically) created strings. if debug_info is given, set it. */
-DEFINE_INSN
-freezestring
-(VALUE debug_info)
-(VALUE str)
-(VALUE str)
-{
-    vm_freezestring(str, debug_info);
-}
-
 /* compile str to Regexp and push it.
      opt is the option for the Regexp.
  */
