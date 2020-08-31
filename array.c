@@ -4644,16 +4644,12 @@ rb_ary_fill(int argc, VALUE *argv, VALUE ary)
  *  call-seq:
  *    array + other_array -> new_array
  *
- *  Returns the concatenation of +array+ and +other_array+ in a new \Array.
- *
- *  Argument +other_array+ must be an \Array.
- *
  *  Returns a new \Array containing all elements of +array+
  *  followed by all elements of +other_array+:
  *    a = [0, 1] + [2, 3]
  *    a # => [0, 1, 2, 3]
  *
- *  See also #concat.
+ *  Related: #concat.
  */
 
 VALUE
@@ -4688,16 +4684,9 @@ ary_append(VALUE x, VALUE y)
  *  call-seq:
  *    array.concat(*other_arrays) -> self
  *
- *  The given +other_arrays+ must be Arrays.
- *
- *  Adds to +array+ all elements from each array in +other_arrays+; returns +self+:
+ *  Adds to +array+ all elements from each \Array in +other_arrays+; returns +self+:
  *    a = [0, 1]
  *    a.concat([2, 3], [4, 5]) # => [0, 1, 2, 3, 4, 5]
- *
- *  Returns +self+ unmodified if no arguments given:
- *    a = [0, 1]
- *    a.concat(*[])
- *    a # => [0, 1]
  */
 
 static VALUE
@@ -4732,36 +4721,14 @@ rb_ary_concat(VALUE x, VALUE y)
  *    array * n -> new_array
  *    array * string_separator -> new_string
  *
- *  - Argument +n+, if given, must be an \Integer.
- *  - Argument +string_separator+, if given, must be a \String.
- *
- *  ---
- *
- *  When argument +n+ is given, returns a new array built by concatenating the +int+ copies of +self+:
+ *  When non-negative argument \Integer +n+ is given,
+ *  returns a new \Array built by concatenating the +n+ copies of +self+:
  *    a = ['x', 'y']
  *    a * 3 # => ["x", "y", "x", "y", "x", "y"]
  *
- *  ---
- *
- *  When argument +string_separator+ is given,
- *  equivalent to <tt>array.join(string_separator)</tt>.
- *
- *  If +array+ is non-empty, returns the join of each element's +to_s+ value:
+ *  When \String argument +string_separator+ is given,
+ *  equivalent to <tt>array.join(string_separator)</tt>:
  *    [0, [0, 1], {foo: 0}] * ', ' # => "0, 0, 1, {:foo=>0}"
- *
- *  If +array+ is empty, returns a new empty \String:
- *    [] * ',' # => ""
- *
- *  ---
- *
- *  Raises an exception if +n+ is negative:
- *    # Raises ArgumentError (negative argument):
- *    [] * -1
- *
- *  Raises an exception if argument +string_separator+ is given,
- *  and any array element lacks instance method +to_s+:
- *    # Raises NoMethodError (undefined method `to_s' for #<BasicObject:>):
- *    [BasicObject.new] * ','
  */
 
 static VALUE
@@ -4819,7 +4786,7 @@ rb_ary_times(VALUE ary, VALUE times)
  *
  *  Returns +nil+ if no such element is found.
  *
- *  See also #rassoc.
+ *  Related: #rassoc.
  */
 
 VALUE
@@ -4848,7 +4815,7 @@ rb_ary_assoc(VALUE ary, VALUE key)
  *
  *  Returns +nil+ if no such element is found.
  *
- *  See also #assoc.
+ *  Related: #assoc.
  */
 
 VALUE
@@ -4912,14 +4879,10 @@ recursive_equal(VALUE ary1, VALUE ary2, int recur)
  *    a1 == a0 # => true
  *    [] == [] # => true
  *
- *  Otherwise, returns +false+:
- *    a0 == [:foo, 'bar'] # => false # Different sizes
- *    a0 == [:foo, 'bar', 3] # => false # Different elements
+ *  Otherwise, returns +false+.
  *
  *  This method is different from method Array#eql?,
- *  which compares elements using <tt>Object#eql?</tt>:
- *    a1[2].eql?(a0[2]) # false
- *    a1.eql?(a0) # => false
+ *  which compares elements using <tt>Object#eql?</tt>.
  */
 
 static VALUE
@@ -4959,19 +4922,11 @@ recursive_eql(VALUE ary1, VALUE ary2, int recur)
  *    a0 = [:foo, 'bar', 2]
  *    a1 = [:foo, 'bar', 2]
  *    a1.eql?(a0) # => true
- *    [].eql? [] # => true
  *
- *  Otherwise, returns +false+:
- *    a0 = [:foo, 'bar', 2]
- *    a1 = [:foo, 'bar', 2.0]
- *    a1.eql?(a0) # => false # Because 2.eql?(2.0) is false
- *    a1.eql? [0, 1] # => false
+ *  Otherwise, returns +false+.
  *
- *  This method is different from method <tt>Array#==</tt>,
- *  which compares using method <tt>Object#==</tt>:
- *    a0 = [:foo, 'bar', 2]
- *    a1 = [:foo, 'bar', 2.0]
- *    a1 == a0 # => true
+ *  This method is different from method {Array#==}[#method-i-3D-3D],
+ *  which compares using method <tt>Object#==</tt>.
  */
 
 static VALUE
@@ -4988,8 +4943,7 @@ rb_ary_eql(VALUE ary1, VALUE ary2)
  *  call-seq:
  *    array.hash -> integer
  *
- *  Returns the integer hash value for +self+:
- *    [].hash.class # => Integer
+ *  Returns the integer hash value for +self+.
  *
  *  Two arrays with the same content will have the same hash code (and will compare using eql?):
  *    [0, 1, 2].hash == [0, 1, 2].hash # => true
@@ -5080,14 +5034,11 @@ recursive_cmp(VALUE ary1, VALUE ary2, int recur)
  *  Returns -1, 0, or 1 as +self+ is less than, equal to, or greater than +other_array+.
  *  For each index +i+ in +self+, evaluates <tt>result = self[i] <=> other_array[i]</tt>.
  *
- *  ---
- *
  *  Returns -1 if any result is -1:
  *    [0, 1, 2] <=> [0, 1, 3] # => -1
+ *
  *  Returns 1 if any result is 1:
  *    [0, 1, 2] <=> [0, 1, 1] # => 1
- *
- *  ---
  *
  *  When all results are zero:
  *  - Returns -1 if +array+ is smaller than +other_array+:
@@ -5096,8 +5047,6 @@ recursive_cmp(VALUE ary1, VALUE ary2, int recur)
  *      [0, 1, 2] <=> [0, 1] # => 1
  *  - Returns 0 if +array+ and +other_array+ are the same size:
  *      [0, 1, 2] <=> [0, 1, 2] # => 0
- *
- *  Returns +nil+ if +other_array+ is not an \Array.
  */
 
 VALUE
@@ -5180,17 +5129,15 @@ ary_recycle_hash(VALUE hash)
  *  call-seq:
  *    array - other_array -> new_array
  *
- *  Argument +other_array+ must be an \Array.
- *
  *  Returns a new \Array containing only those elements from +array+
- *  that are not found in +other_array+;
+ *  that are not found in \Array +other_array+;
  *  items are compared using <tt>eql?</tt>;
  *  the order from +array+ is preserved:
  *    [0, 1, 1, 2, 1, 1, 3, 1, 1] - [1] # => [0, 2, 3]
  *    [0, 1, 2, 3] - [3, 0] # => [1, 2]
  *    [0, 1, 2] - [4] # => [0, 1, 2]
  *
- *  See also Array#difference.
+ *  Related: Array#difference.
  */
 
 static VALUE
@@ -5225,10 +5172,8 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
  *  call-seq:
  *    array.difference(*other_arrays) -> new_array
  *
- *  Each argument in +other_arrays+ must be an \Array.
- *
  *  Returns a new \Array containing only those elements from +self+
- *  that are not found in any of the +other_arrays+;
+ *  that are not found in any of the Arrays +other_arrays+;
  *  items are compared using <tt>eql?</tt>;  order from +self+ is preserved:
  *    [0, 1, 1, 2, 1, 1, 3, 1, 1].difference([1]) # => [0, 2, 3]
  *    [0, 1, 2, 3].difference([3, 0], [1, 3]) # => [2]
@@ -5236,7 +5181,7 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
  *
  *  Returns a copy of +self+ if no arguments given.
  *
- *  See also Array#-.
+ *  Related: Array#-.
  */
 
 static VALUE
