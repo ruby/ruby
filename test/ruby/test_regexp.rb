@@ -661,19 +661,9 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal('foobazquux/foobazquux', result, bug8856)
   end
 
-  def test_KCODE
-    assert_nil($KCODE)
-    assert_nothing_raised { $KCODE = nil }
-  end
-
   def test_ignorecase
     assert_equal(false, $=)
     assert_nothing_raised { $= = nil }
-  end
-
-  def test_KCODE_warning
-    assert_warning(/variable \$KCODE is no longer effective; ignored/) { $KCODE = nil }
-    assert_warning(/variable \$KCODE is no longer effective/) { $KCODE = nil }
   end
 
   def test_ignorecase_warning
