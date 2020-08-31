@@ -5225,9 +5225,7 @@ rb_ary_difference_multi(int argc, VALUE *argv, VALUE ary)
  *  call-seq:
  *    array & other_array -> new_array
  *
- *  Argument +other_array+ must be an \Array.
- *
- *  Returns a new \Array containing each element found in both +array+ and +other_array+;
+ *  Returns a new \Array containing each element found in both +array+ and \Array +other_array+;
  *  duplicates are omitted; items are compared using <tt>eql?</tt>:
  *    [0, 1, 2, 3] & [1, 2] # => [1, 2]
  *    [0, 1, 0, 1] & [0, 1] # => [0, 1]
@@ -5235,7 +5233,7 @@ rb_ary_difference_multi(int argc, VALUE *argv, VALUE ary)
  *  Preserves order from +array+:
  *    [0, 1, 2] & [3, 2, 1, 0] # => [0, 1, 2]
  *
- *  See also Array#intersection.
+ *  Related: Array#intersection.
  */
 
 
@@ -5278,10 +5276,8 @@ rb_ary_and(VALUE ary1, VALUE ary2)
  *  call-seq:
  *    array.intersection(*other_arrays) -> new_array
  *
- *  Each object in +other_arrays+ must be an \Array.
- *
  *  Returns a new \Array containing each element found both in +self+
- *  and in all of the given +other_arrays+;
+ *  and in all of the given Arrays +other_arrays+;
  *  duplicates are omitted; items are compared using <tt>eql?</tt>:
  *    [0, 1, 2, 3].intersection([0, 1, 2], [0, 1, 3]) # => [0, 1]
  *    [0, 0, 1, 1, 2, 3].intersection([0, 1, 2], [0, 1, 3]) # => [0, 1]
@@ -5291,7 +5287,7 @@ rb_ary_and(VALUE ary1, VALUE ary2)
  *
  *  Returns a copy of +self+ if no arguments given.
  *
- *  See also Array#&.
+ *  Related: Array#&.
  */
 
 static VALUE
@@ -5342,16 +5338,14 @@ rb_ary_union_hash(VALUE hash, VALUE ary2)
  *  call-seq:
  *    array | other_array -> new_array
  *
- *  Argument +other_array+ must be an \Array.
- *
- *  Returns the union of +array+ and +other_array+;
+ *  Returns the union of +array+ and \Array +other_array+;
  *  duplicates are removed; order is preserved;
  *  items are compared using <tt>eql?</tt>:
  *    [0, 1] | [2, 3] # => [0, 1, 2, 3]
  *    [0, 1, 1] | [2, 2, 3] # => [0, 1, 2, 3]
  *    [0, 1, 2] | [3, 2, 1, 0] # => [0, 1, 2, 3]
  *
- *  See also Array#union.
+ *  Related: Array#union.
  */
 
 static VALUE
@@ -5379,9 +5373,7 @@ rb_ary_or(VALUE ary1, VALUE ary2)
  *  call-seq:
  *    array.union(*other_arrays) -> new_array
  *
- *  Each object in +other_arrays+ must be an \Array.
- *
- *  Returns a new \Array that is the union of +self+ and all given +other_arrays+;
+ *  Returns a new \Array that is the union of +self+ and all given Arrays +other_arrays+;
  *  duplicates are removed;  order is preserved;  items are compared using <tt>eql?</tt>:
  *    [0, 1, 2, 3].union([4, 5], [6, 7]) # => [0, 1, 2, 3, 4, 5, 6, 7]
  *    [0, 1, 1].union([2, 1], [3, 1]) # => [0, 1, 2, 3]
@@ -5389,7 +5381,7 @@ rb_ary_or(VALUE ary1, VALUE ary2)
  *
  *  Returns a copy of +self+ if no arguments given.
  *
- *  See also Array#|.
+ *  Related: Array#|.
  */
 
 static VALUE
@@ -5522,10 +5514,6 @@ ary_max_opt_string(VALUE ary, long i, VALUE vmax)
  *  - The maximum-valued element from +self+.
  *  - A new \Array of maximum-valued elements selected from +self+.
  *
- *  Argument +n+, if given, must be a non-negative \Integer.
- *
- *  ---
- *
  *  When no block is given, each element in +self+ must respond to method <tt><=></tt>
  *  with an \Integer.
  *
@@ -5533,12 +5521,10 @@ ary_max_opt_string(VALUE ary, long i, VALUE vmax)
  *  having the maximum value per method <tt><=></tt>:
  *    [0, 1, 2].max # => 2
  *
- *  With an argument +n+ and no block, returns a new \Array with at most +n+ elements,
+ *  With an argument \Integer +n+ and no block, returns a new \Array with at most +n+ elements,
  *  in descending order per method <tt><=></tt>:
  *    [0, 1, 2, 3].max(3) # => [3, 2, 1]
  *    [0, 1, 2, 3].max(6) # => [3, 2, 1]
- *
- *  ---
  *
  *  When a block is given, the block must return an \Integer.
  *
@@ -5549,16 +5535,6 @@ ary_max_opt_string(VALUE ary, long i, VALUE vmax)
  *  With an argument +n+ and a block, returns a new \Array with at most +n+ elements,
  *  in descending order per the block:
  *    ['0', '00', '000'].max(2) {|a, b| a.size <=> b.size } # => ["000", "00"]
- *
- *  ---
- *
- *  Raises an exception on encountering elements that are not comparable:
- *    # Raises ArgumentError (comparison of Symbol with 1 failed):
- *    [0, 1, :foo].max
- *
- *  Raises an exception if argument +n+ is negative:
- *    # Raises ArgumentError (negative size (-1)):
- *    [0, 1].max(-1)
  */
 static VALUE
 rb_ary_max(int argc, VALUE *argv, VALUE ary)
@@ -5701,10 +5677,6 @@ ary_min_opt_string(VALUE ary, long i, VALUE vmin)
  *  - The minimum-valued element from +self+.
  *  - A new \Array of minimum-valued elements selected from +self+.
  *
- *  Argument +n+, if given, must be a non-negative \Integer.
- *
- *  ---
- *
  *  When no block is given, each element in +self+ must respond to method <tt><=></tt>
  *  with an \Integer.
  *
@@ -5712,12 +5684,10 @@ ary_min_opt_string(VALUE ary, long i, VALUE vmin)
  *  having the minimum value per method <tt><=></tt>:
  *    [0, 1, 2].min # => 0
  *
- *  With an argument +n+ and no block, returns a new \Array with at most +n+ elements,
+ *  With \Integer argument +n+ and no block, returns a new \Array with at most +n+ elements,
  *  in ascending order per method <tt><=></tt>:
  *    [0, 1, 2, 3].min(3) # => [0, 1, 2]
  *    [0, 1, 2, 3].min(6) # => [0, 1, 2, 3]
- *
- *  ---
  *
  *  When a block is given, the block must return an Integer.
  *
@@ -5729,16 +5699,6 @@ ary_min_opt_string(VALUE ary, long i, VALUE vmin)
  *  in ascending order per the block:
  *    [0, 1, 2, 3].min(3) # => [0, 1, 2]
  *    [0, 1, 2, 3].min(6) # => [0, 1, 2, 3]
- *
- *  ---
- *
- *  Raises an exception on encountering elements that are not comparable:
- *    # Raises ArgumentError (comparison of Symbol with 1 failed):
- *    [0, 1, :foo].min
- *
- *  Raises an exception if argument +n+ is negative:
- *    # Raises ArgumentError (negative size (-1)):
- *    [0, 1].min(-1)
  */
 static VALUE
 rb_ary_min(int argc, VALUE *argv, VALUE ary)
@@ -5789,8 +5749,6 @@ rb_ary_min(int argc, VALUE *argv, VALUE ary)
  *  Returns a new 2-element \Array containing the minimum and maximum values
  *  from +self+, either per method <tt><=></tt> or per a given block:.
  *
- *  ---
- *
  *  When no block is given, each element in +self+ must respond to method <tt><=></tt>
  *  with an \Integer;
  *  returns a new 2-element \Array containing the minimum and maximum values
@@ -5802,12 +5760,6 @@ rb_ary_min(int argc, VALUE *argv, VALUE ary)
  *  returns a new 2-element \Array containing the minimum and maximum values
  *  from +self+, per the block:
  *    ['0', '00', '000'].minmax {|a, b| a.size <=> b.size } # => ["0", "000"]
- *
- *  ---
- *
- *  Raises an exception on encountering elements that are not comparable:
- *    # Raises ArgumentError (comparison of Symbol with 1 failed):
- *    [0, 1, :foo].minmax
  */
 static VALUE
 rb_ary_minmax(VALUE ary)
@@ -5833,8 +5785,6 @@ push_value(st_data_t key, st_data_t val, st_data_t ary)
  *  Removes duplicate elements from +self+, the first occurrence always being retained;
  *  returns +self+ if any elements removed, +nil+ otherwise.
  *
- *  ---
- *
  *  With no block given, identifies and removes elements using method <tt>eql?</tt>
  *  to compare.
  *
@@ -5843,8 +5793,6 @@ push_value(st_data_t key, st_data_t val, st_data_t ary)
  *    a.uniq! # => [0, 1, 2]
  *
  *  Returns +nil+ if no elements removed.
- *
- *  ---
  *
  *  With a block given, calls the block for each element;
  *  identifies (using method <tt>eql?</tt>) and removes
@@ -5904,7 +5852,7 @@ rb_ary_uniq_bang(VALUE ary)
  *  identifies (using method <tt>eql?</tt>) and omits duplicate values,
  *  that is, those elements for which the block returns the same value:
  *    a = ['a', 'aa', 'aaa', 'b', 'bb', 'bbb']
- *    a.uniq { |element| element.size } # => ["a", "aa", "aaa"]
+ *    a.uniq {|element| element.size } # => ["a", "aa", "aaa"]
  */
 
 static VALUE
