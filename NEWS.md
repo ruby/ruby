@@ -255,7 +255,7 @@ Excluding feature bug fixes.
 
 * SDBM have been removed from ruby standard library. [[Bug #8446]]
 
-    * The issues of sdbm will handle at https://github.com/ruby/sdbm
+    * The issues of sdbm will be handled at https://github.com/ruby/sdbm
 
 ## C API updates
 
