@@ -654,7 +654,7 @@ describe "Predefined global $," do
     -> { $, = Object.new }.should raise_error(TypeError)
   end
 
-  ruby_version_is "2.7" do
+  ruby_version_is "2.7"..."3.0" do
     it "warns if assigned non-nil" do
       -> { $, = "_" }.should complain(/warning: `\$,' is deprecated/)
     end
@@ -693,7 +693,7 @@ describe "Predefined global $;" do
     $; = nil
   end
 
-  ruby_version_is "2.7" do
+  ruby_version_is "2.7"..."3.0" do
     it "warns if assigned non-nil" do
       -> { $; = "_" }.should complain(/warning: `\$;' is deprecated/)
     end

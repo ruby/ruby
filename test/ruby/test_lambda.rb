@@ -74,12 +74,6 @@ class TestLambdaParameters < Test::Unit::TestCase
     assert_raise(ArgumentError, bug9605) {proc(&plus).call [1,2]}
   end
 
-  def test_warning_for_non_literal_blocks
-    assert_warn(/lambda without a literal block/, '[ruby-core:93482] [Feature #15973]') do
-      lambda(&:symbol)
-    end
-  end
-
   def pass_along(&block)
     lambda(&block)
   end

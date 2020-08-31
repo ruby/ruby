@@ -418,19 +418,6 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
-  def test_codepoints
-    make_tempfile {|t|
-      bug2959 = '[ruby-core:28650]'
-      a = ""
-      File.open(t, 'rt') {|f|
-        assert_warn(/deprecated/) {
-          f.codepoints {|c| a << c}
-        }
-      }
-      assert_equal("foo\nbar\nbaz\n", a, bug2959)
-    }
-  end
-
   def test_rubydev33072
     t = make_tempfile
     path = t.path
@@ -1833,70 +1820,6 @@ class TestIO < Test::Unit::TestCase
       r.each_char {|c| a << c }
       assert_equal(%w(f o o) + ["\n"] + %w(b a r) + ["\n"] + %w(b a z) + ["\n"], a)
     end)
-  end
-
-  def test_lines
-    verbose, $VERBOSE = $VERBOSE, nil
-    pipe(proc do |w|
-      w.puts "foo"
-      w.puts "bar"
-      w.puts "baz"
-      w.close
-    end, proc do |r|
-      e = nil
-      assert_warn(/deprecated/) {
-        e = r.lines
-      }
-      assert_equal("foo\n", e.next)
-      assert_equal("bar\n", e.next)
-      assert_equal("baz\n", e.next)
-      assert_raise(StopIteration) { e.next }
-    end)
-  ensure
-    $VERBOSE = verbose
-  end
-
-  def test_bytes
-    verbose, $VERBOSE = $VERBOSE, nil
-    pipe(proc do |w|
-      w.binmode
-      w.puts "foo"
-      w.puts "bar"
-      w.puts "baz"
-      w.close
-    end, proc do |r|
-      e = nil
-      assert_warn(/deprecated/) {
-        e = r.bytes
-      }
-      (%w(f o o) + ["\n"] + %w(b a r) + ["\n"] + %w(b a z) + ["\n"]).each do |c|
-        assert_equal(c.ord, e.next)
-      end
-      assert_raise(StopIteration) { e.next }
-    end)
-  ensure
-    $VERBOSE = verbose
-  end
-
-  def test_chars
-    verbose, $VERBOSE = $VERBOSE, nil
-    pipe(proc do |w|
-      w.puts "foo"
-      w.puts "bar"
-      w.puts "baz"
-      w.close
-    end, proc do |r|
-      e = nil
-      assert_warn(/deprecated/) {
-        e = r.chars
-      }
-      (%w(f o o) + ["\n"] + %w(b a r) + ["\n"] + %w(b a z) + ["\n"]).each do |c|
-        assert_equal(c, e.next)
-      end
-      assert_raise(StopIteration) { e.next }
-    end)
-  ensure
-    $VERBOSE = verbose
   end
 
   def test_readbyte

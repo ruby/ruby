@@ -14,7 +14,7 @@ describe "Kernel#=~" do
     end
   end
 
-  ruby_version_is "2.6" do
+  ruby_version_is "2.6"..."3.0" do
     it "is deprecated" do
       -> do
         Object.new =~ /regexp/
