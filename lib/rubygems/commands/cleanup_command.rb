@@ -15,7 +15,7 @@ class Gem::Commands::CleanupCommand < Gem::Command
       options[:dryrun] = true
     end
 
-    add_option('-n', '-d', '--dryrun',
+    add_option('--dryrun',
                'Do not uninstall gems') do |value, options|
       options[:dryrun] = true
     end
