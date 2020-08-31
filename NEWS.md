@@ -149,15 +149,14 @@ Outstanding ones only.
           the other modules and classes included or prepended the receiver.
           [[Feature #9573]]
 
-
-```ruby
-class C; end
-module M1; end
-module M2; end
-C.include M1
-M1.include M2
-p C.ancestors #=> [C, M1, M2, Object, Kernel, BasicObject]
-```
+            ```ruby
+            class C; end
+            module M1; end
+            module M2; end
+            C.include M1
+            M1.include M2
+            p C.ancestors #=> [C, M1, M2, Object, Kernel, BasicObject]
+            ```
 
 * Symbol
 
