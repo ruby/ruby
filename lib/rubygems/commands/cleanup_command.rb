@@ -10,7 +10,7 @@ class Gem::Commands::CleanupCommand < Gem::Command
           :force => false, :install_dir => Gem.dir,
           :check_dev => true
 
-    add_option('-n', '-d', '--dryrun',
+    add_option('-n', '-d', '--dry-run',
                'Do not uninstall gems') do |value, options|
       options[:dryrun] = true
     end
