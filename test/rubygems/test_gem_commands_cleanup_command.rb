@@ -22,7 +22,7 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
   end
 
   def test_handle_options_dry_run
-    @cmd.handle_options %w[--dryrun]
+    @cmd.handle_options %w[--dry-run]
     assert @cmd.options[:dryrun]
   end
 
