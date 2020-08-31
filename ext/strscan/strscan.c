@@ -848,9 +848,8 @@ adjust_registers_to_matched(struct strscanner *p)
  *   s.getch           # => "b"
  *   s.getch           # => nil
  *
- *   $KCODE = 'EUC'
- *   s = StringScanner.new("\244\242")
- *   s.getch           # => "\244\242"   # Japanese hira-kana "A" in EUC-JP
+ *   s = StringScanner.new("\244\242".force_encoding("euc-jp"))
+ *   s.getch           # => "\x{A4A2}"   # Japanese hira-kana "A" in EUC-JP
  *   s.getch           # => nil
  */
 static VALUE
@@ -885,10 +884,9 @@ strscan_getch(VALUE self)
  *   s.get_byte         # => "b"
  *   s.get_byte         # => nil
  *
- *   $KCODE = 'EUC'
- *   s = StringScanner.new("\244\242")
- *   s.get_byte         # => "\244"
- *   s.get_byte         # => "\242"
+ *   s = StringScanner.new("\244\242".force_encoding("euc-jp"))
+ *   s.get_byte         # => "\xA4"
+ *   s.get_byte         # => "\xA2"
  *   s.get_byte         # => nil
  */
 static VALUE
