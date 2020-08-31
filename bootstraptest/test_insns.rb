@@ -86,7 +86,6 @@ tests = [
   [ 'putobject',            %q{ /(?<x>x)/ =~ "x"; x == "x" }, ],
 
   [ 'putspecialobject',         %q{ {//=>true}[//] }, ],
-  [ 'putiseq',                  %q{ -> { true }.() }, ],
   [ 'putstring',                %q{ "true" }, ],
   [ 'tostring / concatstrings', %q{ "#{true}" }, ],
   [ 'freezestring',             %q{ "#{true}" }, fsl, ],
