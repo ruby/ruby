@@ -2272,11 +2272,18 @@ rb_string_value_ptr(volatile VALUE *ptr)
 }
 
 static int
-zero_filled(const char *s, int n)
+zero_terminated(const char *s, int start, long strlen, int termlen)
 {
-    for (; n > 0; --n) {
-	if (*s++) return 0;
+    if (start + termlen >= strlen) {
+        return 0;
     }
+
+    for (int i = start; i < start + termlen; i++) {
+        if (s[start + i]) {
+            return 0;
+        }
+    }
+
     return 1;
 }
 
@@ -2286,7 +2293,7 @@ str_null_char(const char *s, long len, const int minlen, rb_encoding *enc)
     const char *e = s + len;
 
     for (; s + minlen <= e; s += rb_enc_mbclen(s, e, enc)) {
-	if (zero_filled(s, minlen)) return s;
+        if (zero_terminated(s, 0, len, minlen)) return s;
     }
     return 0;
 }
@@ -2298,8 +2305,7 @@ str_fill_term(VALUE str, char *s, long len, int termlen)
      * is allocated, like many other functions in this file.
      */
     if (str_dependent_p(str)) {
-	if (!zero_filled(s + len, termlen))
-	    str_make_independent_expand(str, len, 0L, termlen);
+        str_make_independent_expand(str, len, 0L, termlen);
     }
     else {
 	TERM_FILL(s + len, termlen);
@@ -2356,7 +2362,7 @@ str_null_check(VALUE str, int *w)
     if (!s || memchr(s, 0, len)) {
 	return NULL;
     }
-    if (s[len]) {
+    if (s[len - 1]) {
 	s = str_fill_term(str, s, len, minlen);
     }
     return s;
