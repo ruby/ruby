@@ -3816,15 +3816,6 @@ vm_get_special_object(const VALUE *const reg_ep,
     }
 }
 
-static void
-vm_freezestring(VALUE str, VALUE debug)
-{
-    if (!NIL_P(debug)) {
-	rb_ivar_set(str, id_debug_created_info, debug);
-    }
-    rb_str_freeze(str);
-}
-
 static VALUE
 vm_concat_array(VALUE ary1, VALUE ary2st)
 {

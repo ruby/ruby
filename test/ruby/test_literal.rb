@@ -187,7 +187,7 @@ class TestRubyLiteral < Test::Unit::TestCase
   if defined?(RubyVM::InstructionSequence.compile_option) and
     RubyVM::InstructionSequence.compile_option.key?(:debug_frozen_string_literal)
     def test_debug_frozen_string
-      src = 'n = 1; _="foo#{n ? "-#{n}" : ""}"'; f = "test.rb"; n = 1
+      src = '_="foo-1"'; f = "test.rb"; n = 1
       opt = {frozen_string_literal: true, debug_frozen_string_literal: true}
       str = RubyVM::InstructionSequence.compile(src, f, f, n, **opt).eval
       assert_equal("foo-1", str)

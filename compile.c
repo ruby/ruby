@@ -2693,21 +2693,6 @@ iseq_pop_newarray(rb_iseq_t *iseq, INSN *iobj)
 }
 
 static int
-same_debug_pos_p(LINK_ELEMENT *iobj1, LINK_ELEMENT *iobj2)
-{
-    VALUE debug1 = OPERAND_AT(iobj1, 0);
-    VALUE debug2 = OPERAND_AT(iobj2, 0);
-    if (debug1 == debug2) return TRUE;
-    if (!RB_TYPE_P(debug1, T_ARRAY)) return FALSE;
-    if (!RB_TYPE_P(debug2, T_ARRAY)) return FALSE;
-    if (RARRAY_LEN(debug1) != 2) return FALSE;
-    if (RARRAY_LEN(debug2) != 2) return FALSE;
-    if (RARRAY_AREF(debug1, 0) != RARRAY_AREF(debug2, 0)) return FALSE;
-    if (RARRAY_AREF(debug1, 1) != RARRAY_AREF(debug2, 1)) return FALSE;
-    return TRUE;
-}
-
-static int
 is_frozen_putstring(INSN *insn, VALUE *op)
 {
     if (IS_INSN_ID(insn, putstring)) {
@@ -3229,10 +3214,8 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	 * =>
 	 *  concatstrings N+M-1
 	 */
-	LINK_ELEMENT *next = iobj->link.next, *freeze = 0;
+	LINK_ELEMENT *next = iobj->link.next;
 	INSN *jump = 0;
-	if (IS_INSN(next) && IS_INSN_ID(next, freezestring))
-	    next = (freeze = next)->next;
 	if (IS_INSN(next) && IS_INSN_ID(next, jump))
 	    next = get_destination_insn(jump = (INSN *)next);
 	if (IS_INSN(next) && IS_INSN_ID(next, concatstrings)) {
@@ -3248,41 +3231,12 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		    OPERAND_AT(jump, 0) = (VALUE)label;
 		}
 		label->refcnt++;
-		if (freeze && IS_NEXT_INSN_ID(next, freezestring)) {
-		    if (same_debug_pos_p(freeze, next->next)) {
-			ELEM_REMOVE(freeze);
-		    }
-		    else {
-			next = next->next;
-		    }
-		}
 		ELEM_INSERT_NEXT(next, &label->link);
 		CHECK(iseq_peephole_optimize(iseq, get_next_insn(jump), do_tailcallopt));
 	    }
 	    else {
-		if (freeze) ELEM_REMOVE(freeze);
 		ELEM_REMOVE(next);
 	    }
-	}
-    }
-
-    if (IS_INSN_ID(iobj, freezestring) &&
-	NIL_P(OPERAND_AT(iobj, 0)) &&
-	IS_NEXT_INSN_ID(&iobj->link, send)) {
-	INSN *niobj = (INSN *)iobj->link.next;
-        const struct rb_callinfo *ci = (struct rb_callinfo *)OPERAND_AT(niobj, 0);
-
-        /*
-	 *  freezestring nil # no debug_info
-	 *  send <:+@, 0, ARG_SIMPLE>  # :-@, too
-	 * =>
-	 *  send <:+@, 0, ARG_SIMPLE>  # :-@, too
-	 */
-	if ((vm_ci_mid(ci) == idUPlus || vm_ci_mid(ci) == idUMinus) &&
-            (vm_ci_flag(ci) & VM_CALL_ARGS_SIMPLE) &&
-            vm_ci_argc(ci) == 0) {
-	    ELEM_REMOVE(list);
-	    return COMPILE_OK;
 	}
     }
 
@@ -8401,18 +8355,6 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 
 	if (popped) {
 	    ADD_INSN(ret, line, pop);
-	}
-	else {
-	    if (ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal) {
-		VALUE debug_info = Qnil;
-		if (ISEQ_COMPILE_DATA(iseq)->option->debug_frozen_string_literal || RTEST(ruby_debug)) {
-		    debug_info = rb_ary_new_from_args(2, rb_iseq_path(iseq), INT2FIX(line));
-		}
-		ADD_INSN1(ret, line, freezestring, debug_info);
-                if (!NIL_P(debug_info)) {
-                    RB_OBJ_WRITTEN(iseq, Qundef, rb_obj_freeze(debug_info));
-                }
-	    }
 	}
 	break;
       }
