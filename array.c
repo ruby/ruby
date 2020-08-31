@@ -3887,11 +3887,7 @@ rb_ary_delete_at(VALUE ary, long pos)
  *  call-seq:
  *    array.delete_at(index) -> deleted_object or nil
  *
- *  Deletes an element from +self+, per the given +index+.
- *
- *  The given +index+ must be an \Integer.
- *
- *  ---
+ *  Deletes an element from +self+, per the given \Integer +index+.
  *
  *  When +index+ is non-negative, deletes the element at offset +index+:
  *    a = [:foo, 'bar', 2]
@@ -3899,8 +3895,6 @@ rb_ary_delete_at(VALUE ary, long pos)
  *    a # => [:foo, 2]
  *
  *  If index is too large, returns +nil+.
- *
- *  ---
  *
  *  When +index+ is negative, counts backward from the end of the array:
  *    a = [:foo, 'bar', 2]
@@ -3949,17 +3943,11 @@ ary_slice_bang_by_rb_ary_splice(VALUE ary, long pos, long len)
 
 /*
  *  call-seq:
- *    array.slice!(n) -> obj or nil
+ *    array.slice!(n) -> object or nil
  *    array.slice!(start, length) -> new_array or nil
  *    array.slice!(range) -> new_array or nil
  *
  *  Removes and returns elements from +self+.
- *
- *  - Argument +n+, if given must be an \Integer object.
- *  - Arguments +start+ and +length+, if given must be \Integer objects.
- *  - Argument +range+, if given, must be a \Range object.
- *
- *  ---
  *
  *  When the only argument is an \Integer +n+,
  *  removes and returns the _nth_ element in +self+:
@@ -3973,8 +3961,6 @@ ary_slice_bang_by_rb_ary_splice(VALUE ary, long pos, long len)
  *    a # => [:foo, "bar"]
  *
  *  If +n+ is out of range, returns +nil+.
- *
- *  ---
  *
  *  When the only arguments are Integers +start+ and +length+,
  *  removes +length+ elements from +self+ beginning at offset  +start+;
@@ -3993,8 +3979,6 @@ ary_slice_bang_by_rb_ary_splice(VALUE ary, long pos, long len)
  *  returns a new empty \Array.
  *
  *  If +length+ is negative, returns +nil+.
- *
- *  ---
  *
  *  When the only argument is a \Range object +range+,
  *  treats <tt>range.min</tt> as +start+ above and <tt>range.size</tt> as +length+ above:
@@ -4016,20 +4000,6 @@ ary_slice_bang_by_rb_ary_splice(VALUE ary, long pos, long len)
  *    a = [:foo, 'bar', 2]
  *    a.slice!(-2..2) # => ["bar", 2]
  *    a # => [:foo]
- *
- *  ---
- *
- *  Raises an exception if given a single argument that is not an \Integer or a \Range:
- *    a = [:foo, 'bar', 2]
- *    # Raises TypeError (no implicit conversion of Symbol into Integer):
- *    a.slice!(:foo)
- *
- *  Raises an exception if given two arguments that are not both Integers:
- *    a = [:foo, 'bar', 2]
- *    # Raises TypeError (no implicit conversion of Symbol into Integer):
- *    a.slice!(:foo, 3)
- *    # Raises TypeError (no implicit conversion of Symbol into Integer):
- *    a.slice!(1, :bar)
  */
 
 static VALUE
@@ -4142,7 +4112,7 @@ rb_ary_reject_bang(VALUE ary)
  *  Returns a new \Array whose elements are all those from +self+
  *  for which the block returns +false+ or +nil+:
  *    a = [:foo, 'bar', 2, 'bat']
- *    a1 = a.reject { |element| element.to_s.start_with?('b') }
+ *    a1 = a.reject {|element| element.to_s.start_with?('b') }
  *    a1 # => [:foo, 2]
  *
  *  Returns a new \Enumerator if no block given:
@@ -4217,10 +4187,6 @@ take_items(VALUE obj, long n)
  *    array.zip(*other_arrays) -> new_array
  *    array.zip(*other_arrays) {|other_array| ... } -> nil
  *
- *  Each object in +other_arrays+ must be an \Array.
- *
- *  ---
- *
  *  When no block given, returns a new \Array +new_array+ of size <tt>self.size</tt>
  *  whose elements are Arrays.
  *
@@ -4251,8 +4217,6 @@ take_items(VALUE obj, long n)
  *    c = [:c0, :c1, :c2, :c3, :c4, :c5]
  *    d = a.zip(b, c)
  *    d # => [[:a0, :b0, :c0], [:a1, :b1, :c1], [:a2, :b2, :c2], [:a3, :b3, :c3]]
- *
- *  ---
  *
  *  When a block is given, calls the block with each of the sub-arrays (formed as above); returns nil
  *    a = [:a0, :a1, :a2, :a3]
@@ -4329,19 +4293,10 @@ rb_ary_zip(int argc, VALUE *argv, VALUE ary)
  *  call-seq:
  *    array.transpose -> new_array
  *
- *  Transposes the rows and columns in an array of arrays.
- *
- *  Each element in +self+ must be an \Array.
- *
+ *  Transposes the rows and columns in an \Array of Arrays;
+ *  the nested Arrays must all be the same size:
  *    a = [[:a0, :a1], [:b0, :b1], [:c0, :c1]]
  *    a.transpose # => [[:a0, :b0, :c0], [:a1, :b1, :c1]]
- *
- *  ---
- *
- *  Raises an exception if the elements in +self+ are of differing sizes:
- *    a = [[:a0, :a1], [:b0, :b1], [:c0, :c1, :c2]]
- *    # Raises IndexError (element size differs (3 should be 2)):
- *    a.transpose
  */
 
 static VALUE
@@ -4376,20 +4331,9 @@ rb_ary_transpose(VALUE ary)
  *  call-seq:
  *    array.replace(other_array) -> self
  *
- *  Replaces the content of +self+ with the content of +other_array+; returns +self+.
- *
- *  Argument +other_array+ must be an \Array.
- *
- *  ---
- *
- *  Replaces the content of +self+ with the content of +other_array+:
+ *  Replaces the content of +self+ with the content of +other_array+; returns +self+:
  *    a = [:foo, 'bar', 2]
  *    a.replace(['foo', :bar, 3]) # => ["foo", :bar, 3]
- *
- *  Ignores the size of +self+:
- *
- *    a = [:foo, 'bar', 2]
- *    a.replace([:foo, 'bar', 2]) # => [:foo, "bar", 2]
  */
 
 VALUE
@@ -4469,26 +4413,20 @@ rb_ary_clear(VALUE ary)
  *    array.fill(obj, start) -> self
  *    array.fill(obj, start, length) -> self
  *    array.fill(obj, range) -> self
- *    array.fill { |index| ... } -> self
- *    array.fill(start) { |index| ... } -> self
- *    array.fill(start, length) { |index| ... } -> self
- *    array.fill(range) { |index| ... } -> self
+ *    array.fill {|index| ... } -> self
+ *    array.fill(start) {|index| ... } -> self
+ *    array.fill(start, length) {|index| ... } -> self
+ *    array.fill(range) {|index| ... } -> self
  *
  *  Replaces specified elements in +self+ with specified objects; returns +self+.
- *
- *  - Arguments +start+ and +length+, if given, must be Integers.
- *  - Argument +range+, if given, must be a \Range object.
- *
- *  ---
  *
  *  With argument +obj+ and no block given, replaces all elements with that one object:
  *    a = ['a', 'b', 'c', 'd']
  *    a # => ["a", "b", "c", "d"]
  *    a.fill(:X) # => [:X, :X, :X, :X]
  *
- *  ---
- *
- *  With arguments +obj+ and +start+, and no block given, replaces elements based on the given start.
+ *  With arguments +obj+ and \Integer +start+, and no block given,
+ *  replaces elements based on the given start.
  *
  *  If +start+ is in range (<tt>0 <= start < ary.size</tt>),
  *  replaces all elements from offset +start+ through the end:
@@ -4511,9 +4449,7 @@ rb_ary_clear(VALUE ary)
  *    a = ['a', 'b', 'c', 'd']
  *    a.fill(:X, -50) # => [:X, :X, :X, :X]
  *
- *  ---
- *
- *  With arguments +obj+, +start+, and +length+, and no block given,
+ *  With arguments +obj+, \Integer +start+, and \Integer +length+, and no block given,
  *  replaces elements based on the given +start+ and +length+.
  *
  *  If +start+ is in range, replaces +length+ elements beginning at offset +start+:
@@ -4530,16 +4466,12 @@ rb_ary_clear(VALUE ary)
  *    a = ['a', 'b', 'c', 'd']
  *    a.fill(:X, 5, 2) # => ["a", "b", "c", "d", nil, :X, :X]
  *
- *  ---
- *
  *  If +length+ is zero or negative, replaces no elements:
  *    a = ['a', 'b', 'c', 'd']
  *    a.fill(:X, 1, 0) # => ["a", "b", "c", "d"]
  *    a.fill(:X, 1, -1) # => ["a", "b", "c", "d"]
  *
- *  ---
- *
- *  With arguments +obj+ and +range+, and no block given,
+ *  With arguments +obj+ and \Range +range+, and no block given,
  *  replaces elements based on the given range.
  *
  *  If the range is positive and ascending (<tt>0 < range.begin <= range.end</tt>),
@@ -4564,14 +4496,10 @@ rb_ary_clear(VALUE ary)
  *    a = ['a', 'b', 'c', 'd']
  *    a.fill(:X, (-2..-2)) # => ["a", "b", :X, "d"]
  *
- *  ---
- *
  *  With no arguments and a block given, calls the block with each index;
  *  replaces the corresponding element with the block's return value:
  *    a = ['a', 'b', 'c', 'd']
  *    a.fill { |index| "new_#{index}" } # => ["new_0", "new_1", "new_2", "new_3"]
- *
- *  ---
  *
  *  With argument +start+ and a block given, calls the block with each index
  *  from offset +start+ to the end; replaces the corresponding element
@@ -4598,8 +4526,6 @@ rb_ary_clear(VALUE ary)
  *    a = ['a', 'b', 'c', 'd']
  *    a.fill(-50) { |index| "new_#{index}" } # => ["new_0", "new_1", "new_2", "new_3"]
  *
- *  ---
- *
  *  With arguments +start+ and +length+, and a block given,
  *  calls the block for each index specified by start length;
  *  replaces the corresponding element with the block's return value.
@@ -4622,8 +4548,6 @@ rb_ary_clear(VALUE ary)
  *    a = ['a', 'b', 'c', 'd']
  *    a.fill(1, 0) { |index| "new_#{index}" } # => ["a", "b", "c", "d"]
  *    a.fill(1, -1) { |index| "new_#{index}" } # => ["a", "b", "c", "d"]
- *
- *  ---
  *
  *  With arguments +obj+ and +range+, and a block given,
  *  calls the block with each index in the given range;
