@@ -1,6 +1,19 @@
 require_relative '../../spec_helper'
 
 describe "Kernel#=~" do
+  before :each do
+    if Warning.respond_to?(:[])
+      @deprecated = Warning[:deprecated]
+      Warning[:deprecated] = true
+    end
+  end
+
+  after :each do
+    if Warning.respond_to?(:[])
+      Warning[:deprecated] = @deprecated
+    end
+  end
+
   it "returns nil matching any object" do
     o = Object.new
 
@@ -14,7 +27,7 @@ describe "Kernel#=~" do
     end
   end
 
-  ruby_version_is "2.6" do
+  ruby_version_is "2.6"..."3.0" do
     it "is deprecated" do
       -> do
         Object.new =~ /regexp/

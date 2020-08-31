@@ -36,6 +36,19 @@ describe "Kernel.proc" do
 end
 
 describe "Kernel#proc" do
+  before :each do
+    if Warning.respond_to?(:[])
+      @deprecated = Warning[:deprecated]
+      Warning[:deprecated] = true
+    end
+  end
+
+  after :each do
+    if Warning.respond_to?(:[])
+      Warning[:deprecated] = @deprecated
+    end
+  end
+
   ruby_version_is ""..."2.7" do
     it "uses the implicit block from an enclosing method" do
       def some_method

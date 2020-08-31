@@ -13,8 +13,21 @@ ruby_version_is ""..."2.6" do
   end
 end
 
-ruby_version_is "2.6" do
+ruby_version_is "2.6"..."3.0" do
   describe "Net::HTTPServerException" do
+    before :each do
+      if Warning.respond_to?(:[])
+        @deprecated = Warning[:deprecated]
+        Warning[:deprecated] = true
+      end
+    end
+
+    after :each do
+      if Warning.respond_to?(:[])
+        Warning[:deprecated] = @deprecated
+      end
+    end
+
     it "is a subclass of Net::ProtoServerError and is warned as deprecated" do
       -> { Net::HTTPServerException.should < Net::ProtoServerError }.should complain(/warning: constant Net::HTTPServerException is deprecated/)
     end

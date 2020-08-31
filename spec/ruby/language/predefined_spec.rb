@@ -622,6 +622,19 @@ describe "Predefined global $-0" do
 end
 
 describe "Predefined global $," do
+  before :each do
+    if Warning.respond_to?(:[])
+      @deprecated = Warning[:deprecated]
+      Warning[:deprecated] = true
+    end
+  end
+
+  after :each do
+    if Warning.respond_to?(:[])
+      Warning[:deprecated] = @deprecated
+    end
+  end
+
   after :each do
     $, = nil
   end
@@ -632,6 +645,10 @@ describe "Predefined global $," do
 
   it "raises TypeError if assigned a non-String" do
     -> { $, = Object.new }.should raise_error(TypeError)
+  end
+
+  it "warns if assigned non-nil" do
+    -> { $, = "_" }.should complain(/warning: `\$,' is deprecated/)
   end
 end
 
@@ -659,6 +676,29 @@ describe "Predefined global $." do
     obj.should_receive(:to_int).and_return('abc')
 
     -> { $. = obj }.should raise_error(TypeError)
+  end
+end
+
+describe "Predefined global $;" do
+  before :each do
+    if Warning.respond_to?(:[])
+      @deprecated = Warning[:deprecated]
+      Warning[:deprecated] = true
+    end
+  end
+
+  after :each do
+    if Warning.respond_to?(:[])
+      Warning[:deprecated] = @deprecated
+    end
+  end
+
+  after :each do
+    $; = nil
+  end
+
+  it "warns if assigned non-nil" do
+    -> { $; = "_" }.should complain(/warning: `\$;' is deprecated/)
   end
 end
 
@@ -1076,6 +1116,19 @@ TRUE                 TrueClass   Synonym for true.
 =end
 
 describe "The predefined global constants" do
+  before :each do
+    if Warning.respond_to?(:[])
+      @deprecated = Warning[:deprecated]
+      Warning[:deprecated] = true
+    end
+  end
+
+  after :each do
+    if Warning.respond_to?(:[])
+      Warning[:deprecated] = @deprecated
+    end
+  end
+
   it "includes TRUE" do
     Object.const_defined?(:TRUE).should == true
     -> {

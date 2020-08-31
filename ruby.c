@@ -1066,6 +1066,7 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 		warning = 1;
 		ruby_verbose = Qtrue;
 	    }
+	    FEATURE_SET(opt->warn, RB_WARN_CATEGORY_ALL_BITS);
 	    s++;
 	    goto reswitch;
 
@@ -1112,6 +1113,17 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 		    }
 		}
 		warning = 1;
+		switch (v) {
+		  case 0:
+		    FEATURE_SET_TO(opt->warn, RB_WARN_CATEGORY_ALL_BITS, 0);
+		    break;
+		  case 1:
+		    FEATURE_SET_TO(opt->warn, 1U << RB_WARN_CATEGORY_DEPRECATED, 0);
+		    break;
+		  default:
+		    FEATURE_SET(opt->warn, RB_WARN_CATEGORY_ALL_BITS);
+		    break;
+		}
 	    }
 	    goto reswitch;
 

@@ -168,6 +168,19 @@ describe "Proc.new with a block argument called indirectly from a subclass" do
 end
 
 describe "Proc.new without a block" do
+  before :each do
+    if Warning.respond_to?(:[])
+      @deprecated = Warning[:deprecated]
+      Warning[:deprecated] = true
+    end
+  end
+
+  after :each do
+    if Warning.respond_to?(:[])
+      Warning[:deprecated] = @deprecated
+    end
+  end
+
   it "raises an ArgumentError" do
     -> { Proc.new }.should raise_error(ArgumentError)
   end
