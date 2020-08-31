@@ -101,7 +101,9 @@ AS_IF([test ! -z "$ac_cv_prog_CC" -a ! -z "$CC" -a "$CC" != "$ac_cv_prog_CC"], [
   AC_MSG_ERROR(cached CC is different -- throw away $cache_file
 (it is also a good idea to do 'make clean' before compiling))
 ])
-AS_IF([test -z "${CC}"], [
+AS_CASE(["${build_os}"], [linux*], [
+    AC_CHECK_TOOLS([CC], [gcc clang cc])
+], [
     # OpenBSD wants to prefer cc over gcc.
     # See https://github.com/ruby/ruby/pull/2443
     AC_CHECK_TOOLS([CC], [cl.exe clang cc gcc c99 /usr/ucb/cc])
