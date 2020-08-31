@@ -143,11 +143,17 @@ module IRB
   end
 
   begin
-    require "readline"
     class ReadlineInputMethod < InputMethod
-      include Readline
+      def self.initialize_readline
+        require "readline"
+      rescue LoadError
+      else
+        include ::Readline
+      end
+
       # Creates a new input method object using Readline
       def initialize
+        self.class.initialize_readline
         if Readline.respond_to?(:encoding_system_needs)
           IRB.__send__(:set_encoding, Readline.encoding_system_needs.name, override: false)
         end
@@ -212,12 +218,6 @@ module IRB
         @stdin.external_encoding
       end
 
-      if Readline.respond_to?("basic_word_break_characters=")
-        Readline.basic_word_break_characters = IRB::InputCompletor::BASIC_WORD_BREAK_CHARACTERS
-      end
-      Readline.completion_append_character = nil
-      Readline.completion_proc = IRB::InputCompletor::CompletionProc
-
       # For debug message
       def inspect
         readline_impl = (defined?(Reline) && Readline == Reline) ? 'Reline' : 'ext/readline'
@@ -227,7 +227,6 @@ module IRB
         str
       end
     end
-  rescue LoadError
   end
 
   class ReidlineInputMethod < InputMethod
@@ -251,7 +250,7 @@ module IRB
       Reline.completion_proc = IRB::InputCompletor::CompletionProc
       Reline.output_modifier_proc =
         if IRB.conf[:USE_COLORIZE]
-          proc do |output, complete:|
+          proc do |output, complete: |
             next unless IRB::Color.colorable?
             IRB::Color.colorize_code(output, complete: complete)
           end
@@ -327,7 +326,7 @@ module IRB
       config = Reline::Config.new
       str = "ReidlineInputMethod with Reline #{Reline::VERSION}"
       if config.respond_to?(:inputrc_path)
-        inputrc_path = config.inputrc_path
+        inputrc_path = File.expand_path(config.inputrc_path)
       else
         inputrc_path = File.expand_path(ENV['INPUTRC'] || '~/.inputrc')
       end

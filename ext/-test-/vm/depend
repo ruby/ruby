@@ -146,13 +146,10 @@ at_exit.o: $(hdrdir)/ruby/backward.h
 at_exit.o: $(hdrdir)/ruby/backward/2/assume.h
 at_exit.o: $(hdrdir)/ruby/backward/2/attributes.h
 at_exit.o: $(hdrdir)/ruby/backward/2/bool.h
-at_exit.o: $(hdrdir)/ruby/backward/2/extern.h
 at_exit.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 at_exit.o: $(hdrdir)/ruby/backward/2/inttypes.h
 at_exit.o: $(hdrdir)/ruby/backward/2/limits.h
 at_exit.o: $(hdrdir)/ruby/backward/2/long_long.h
-at_exit.o: $(hdrdir)/ruby/backward/2/r_cast.h
-at_exit.o: $(hdrdir)/ruby/backward/2/rmodule.h
 at_exit.o: $(hdrdir)/ruby/backward/2/stdalign.h
 at_exit.o: $(hdrdir)/ruby/backward/2/stdarg.h
 at_exit.o: $(hdrdir)/ruby/defines.h

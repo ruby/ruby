@@ -303,9 +303,33 @@ class RubyLex
 
   def process_nesting_level
     indent = 0
+    in_oneliner_def = nil
     @tokens.each_with_index { |t, index|
+      # detecting one-liner method definition
+      if in_oneliner_def.nil?
+        if t[3].allbits?(Ripper::EXPR_ENDFN)
+          in_oneliner_def = :ENDFN
+        end
+      else
+        if t[3].allbits?(Ripper::EXPR_ENDFN)
+          # continuing
+        elsif t[3].allbits?(Ripper::EXPR_BEG)
+          if t[2] == '='
+            in_oneliner_def = :BODY
+          end
+        elsif t[3].allbits?(Ripper::EXPR_END)
+          if in_oneliner_def == :BODY
+            # one-liner method definition
+            indent -= 1
+          end
+          in_oneliner_def = nil
+        else
+          in_oneliner_def = nil
+        end
+      end
+
       case t[1]
-      when :on_lbracket, :on_lbrace, :on_lparen
+      when :on_lbracket, :on_lbrace, :on_lparen, :on_tlambeg
         indent += 1
       when :on_rbracket, :on_rbrace, :on_rparen
         indent -= 1
@@ -338,7 +362,31 @@ class RubyLex
   def check_newline_depth_difference
     depth_difference = 0
     open_brace_on_line = 0
+    in_oneliner_def = nil
     @tokens.each_with_index do |t, index|
+      # detecting one-liner method definition
+      if in_oneliner_def.nil?
+        if t[3].allbits?(Ripper::EXPR_ENDFN)
+          in_oneliner_def = :ENDFN
+        end
+      else
+        if t[3].allbits?(Ripper::EXPR_ENDFN)
+          # continuing
+        elsif t[3].allbits?(Ripper::EXPR_BEG)
+          if t[2] == '='
+            in_oneliner_def = :BODY
+          end
+        elsif t[3].allbits?(Ripper::EXPR_END)
+          if in_oneliner_def == :BODY
+            # one[-liner method definition
+            depth_difference -= 1
+          end
+          in_oneliner_def = nil
+        else
+          in_oneliner_def = nil
+        end
+      end
+
       case t[1]
       when :on_ignored_nl, :on_nl, :on_comment
         if index != (@tokens.size - 1)
@@ -350,7 +398,7 @@ class RubyLex
         next
       end
       case t[1]
-      when :on_lbracket, :on_lbrace, :on_lparen
+      when :on_lbracket, :on_lbrace, :on_lparen, :on_tlambeg
         depth_difference += 1
         open_brace_on_line += 1
       when :on_rbracket, :on_rbrace, :on_rparen
@@ -389,7 +437,36 @@ class RubyLex
     spaces_of_nest = []
     spaces_at_line_head = 0
     open_brace_on_line = 0
+    in_oneliner_def = nil
     @tokens.each_with_index do |t, index|
+      # detecting one-liner method definition
+      if in_oneliner_def.nil?
+        if t[3].allbits?(Ripper::EXPR_ENDFN)
+          in_oneliner_def = :ENDFN
+        end
+      else
+        if t[3].allbits?(Ripper::EXPR_ENDFN)
+          # continuing
+        elsif t[3].allbits?(Ripper::EXPR_BEG)
+          if t[2] == '='
+            in_oneliner_def = :BODY
+          end
+        elsif t[3].allbits?(Ripper::EXPR_END)
+          if in_oneliner_def == :BODY
+            # one-liner method definition
+            if is_first_printable_of_line
+              corresponding_token_depth = spaces_of_nest.pop
+            else
+              spaces_of_nest.pop
+              corresponding_token_depth = nil
+            end
+          end
+          in_oneliner_def = nil
+        else
+          in_oneliner_def = nil
+        end
+      end
+
       case t[1]
       when :on_ignored_nl, :on_nl, :on_comment
         corresponding_token_depth = nil
@@ -404,7 +481,7 @@ class RubyLex
         next
       end
       case t[1]
-      when :on_lbracket, :on_lbrace, :on_lparen
+      when :on_lbracket, :on_lbrace, :on_lparen, :on_tlambeg
         spaces_of_nest.push(spaces_at_line_head + open_brace_on_line * 2)
         open_brace_on_line += 1
       when :on_rbracket, :on_rbrace, :on_rparen

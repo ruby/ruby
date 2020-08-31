@@ -16,7 +16,7 @@ Gem::Specification.new do |spec|
   spec.summary       = %q{Transactional File Storage for Ruby Objects}
   spec.description   = spec.summary
   spec.homepage      = "https://github.com/ruby/pstore"
-  spec.license       = "BSD-2-Clause"
+  spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = "https://github.com/ruby/pstore"

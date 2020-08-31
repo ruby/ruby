@@ -164,7 +164,17 @@ class TestObjSpace < Test::Unit::TestCase
     end;
   end
 
+  def test_trace_object_allocations_stop_first
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      require "objspace"
+      # Make sure stoping before the tracepoints are initialized doesn't raise. See [Bug #17020]
+      ObjectSpace.trace_object_allocations_stop
+    end;
+  end
+
   def test_trace_object_allocations
+    ObjectSpace.trace_object_allocations_clear # clear object_table to get rid of erroneous detection for c0
     Class.name
     o0 = Object.new
     ObjectSpace.trace_object_allocations{
@@ -275,6 +285,11 @@ class TestObjSpace < Test::Unit::TestCase
     JSON.parse(info) if defined?(JSON)
   end
 
+  def test_dump_control_char
+    assert_include(ObjectSpace.dump("\x0f"), '"value":"\u000f"')
+    assert_include(ObjectSpace.dump("\C-?"), '"value":"\u007f"')
+  end
+
   def test_dump_special_consts
     # [ruby-core:69692] [Bug #11291]
     assert_equal('null', ObjectSpace.dump(nil))
@@ -355,6 +370,24 @@ class TestObjSpace < Test::Unit::TestCase
       found  = output.drop(1).find { |l| JSON.parse(l)['address'] == addr }
       assert found, "object #{addr} should be findable in full heap dump"
     end
+  end
+
+  def test_dump_escapes_method_name
+    method_name = "foo\"bar"
+    klass = Class.new do
+      define_method(method_name) { "TEST STRING" }
+    end
+    ObjectSpace.trace_object_allocations_start
+
+    obj = klass.new.send(method_name)
+
+    dump = ObjectSpace.dump(obj)
+    assert_includes dump, '"method":"foo\"bar"'
+
+    parsed = JSON.parse(dump)
+    assert_equal "foo\"bar", parsed["method"]
+  ensure
+    ObjectSpace.trace_object_allocations_stop
   end
 
   def test_dump_reference_addresses_match_dump_all_addresses

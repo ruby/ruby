@@ -14,7 +14,7 @@ Gem::Specification.new do |spec|
   spec.summary       = %q{Prime numbers and factorization library.}
   spec.description   = %q{Prime numbers and factorization library.}
   spec.homepage      = "https://github.com/ruby/prime"
-  spec.license       = "BSD-2-Clause"
+  spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
   spec.files         = [".gitignore", ".travis.yml", "Gemfile", "LICENSE.txt", "README.md", "Rakefile", "bin/console", "bin/setup", "lib/prime.rb", "prime.gemspec"]
   spec.bindir        = "exe"

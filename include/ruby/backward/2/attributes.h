@@ -60,7 +60,20 @@
 #define DEPRECATED_BY(n,x) RBIMPL_ATTR_DEPRECATED(("by: " # n)) x
 
 #undef DEPRECATED_TYPE
-#define DEPRECATED_TYPE(mseg, decl) decl RBIMPL_ATTR_DEPRECATED(mseg)
+#if defined(__GNUC__)
+# define DEPRECATED_TYPE(mesg, decl)                      \
+    _Pragma("message \"DEPRECATED_TYPE is deprecated\""); \
+    decl RBIMPL_ATTR_DEPRECATED(mseg)
+#elif defined(_MSC_VER)
+# pragma deprecated(DEPRECATED_TYPE)
+# define DEPRECATED_TYPE(mesg, decl)                              \
+    __pragma(message(__FILE__"("STRINGIZE(__LINE__)"): warning: " \
+                     "DEPRECATED_TYPE is deprecated"))            \
+    decl RBIMPL_ATTR_DEPRECATED(mseg)
+#else
+# define DEPRECATED_TYPE(mesg, decl)                    \
+    <-<-"DEPRECATED_TYPE is deprecated"->->
+#endif
 
 #undef RUBY_CXX_DEPRECATED
 #define RUBY_CXX_DEPRECATED(mseg) RBIMPL_ATTR_DEPRECATED((mseg))

@@ -120,6 +120,16 @@ MSpec can automatically add new top-level constants in this file with:
 
 See [CONTRIBUTING.md](https://github.com/ruby/spec/blob/master/CONTRIBUTING.md) for documentation about contributing and writing specs (guards, matchers, etc).
 
+### Dependencies
+
+These command-line executables are needed to run the specs.
+
+* `echo`
+* `stat` for `core/file/*time_spec.rb`
+* `find` for `core/file/fixtures/file_types.rb` (package `findutils`, not needed on Windows)
+
+The file `/etc/services` is required for socket specs (package `netbase` on Debian, not needed on Windows).
+
 ### Socket specs from rubysl-socket
 
 Most specs under `library/socket` were imported from [the rubysl-socket project](https://github.com/rubysl/rubysl-socket).

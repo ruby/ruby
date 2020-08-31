@@ -124,11 +124,11 @@ Outstanding ones only.
     * Modified method
 
         * Kernel#clone when called with `freeze: false` keyword will call
-          #initialize_clone with the `freeze: false` keyword.
+          `#initialize_clone` with the `freeze: false` keyword.
           [[Bug #14266]]
 
         * Kernel#clone when called with `freeze: true` keyword will call
-          #initialize_clone with the `freeze: true` keyword, and will
+          `#initialize_clone` with the `freeze: true` keyword, and will
           return a frozen copy even if the receiver is unfrozen.
           [[Feature #16175]]
 
@@ -148,6 +148,15 @@ Outstanding ones only.
           behavior if the arguments were included in the receiver before
           the other modules and classes included or prepended the receiver.
           [[Feature #9573]]
+
+            ```ruby
+            class C; end
+            module M1; end
+            module M2; end
+            C.include M1
+            M1.include M2
+            p C.ancestors #=> [C, M1, M2, Object, Kernel, BasicObject]
+            ```
 
 * Symbol
 
@@ -179,7 +188,17 @@ Outstanding ones only.
 
         * Net::HTTP.get, Net::HTTP.get_response, and Net::HTTP.get_print can
           take request headers as a Hash in the second argument when the first
-          argument is a URI.
+          argument is a URI.  [[Feature #16686]]
+
+* Tempfile
+
+    * Modified method
+
+        * `Tempfile.open { ... }` will now unlink the file at the end of the
+          block (https://github.com/ruby/tempfile/pull/3), such that once the
+          block finishes execution nothing leaks.
+
+
 
 ## Compatibility issues
 
@@ -190,13 +209,6 @@ Excluding feature bug fixes.
     ```ruby
     /foo/.frozen? #=> true
     ```
-
-* Bundled gems
-
-    * net-telnet and xmlrpc have been removed from the bundled gems.
-      If you are interested in maintaining them, please comment on
-      your plan to https://github.com/ruby/xmlrpc
-      or https://github.com/ruby/net-telnet.
 
 * EXPERIMENTAL: Hash#each consistently yields a 2-element array [[Bug #12706]]
 
@@ -210,15 +222,40 @@ Excluding feature bug fixes.
 
 * `TRUE`/`FALSE`/`NIL` constants are no longer defined.
 
-* SDBM have been removed from ruby standard library.
-
-    * The issues of sdbm will handle at https://github.com/ruby/sdbm
-
-* `Integer#zero?` overrides `Numeric#zero?` for optimization.
+* `Integer#zero?` overrides `Numeric#zero?` for optimization.  [[Misc #16961]]
 
 ## Stdlib compatibility issues
 
-Excluding feature bug fixes.
+* Default gems
+
+    * The following libraries are promoted the default gems from stdlib.
+
+        * English
+        * erb
+        * find
+        * io-nonblock
+        * io-wait
+        * net-ftp
+        * net-http
+        * net-imap
+        * net-protocol
+        * optparse
+        * rinda
+        * set
+        * tempfile
+        * tmpdir
+        * weakref
+
+* Bundled gems
+
+    * net-telnet and xmlrpc have been removed from the bundled gems.
+      If you are interested in maintaining them, please comment on
+      your plan to https://github.com/ruby/xmlrpc
+      or https://github.com/ruby/net-telnet.
+
+* SDBM have been removed from ruby standard library. [[Bug #8446]]
+
+    * The issues of sdbm will be handled at https://github.com/ruby/sdbm
 
 ## C API updates
 
@@ -302,3 +339,6 @@ Excluding feature bug fixes.
 [Feature #16175]: https://bugs.ruby-lang.org/issues/16175
 [Feature #15973]: https://bugs.ruby-lang.org/issues/15973
 [Feature #16614]: https://bugs.ruby-lang.org/issues/16614
+[Feature #16686]: https://bugs.ruby-lang.org/issues/16686
+[Misc #16961]:    https://bugs.ruby-lang.org/issues/16961
+[Bug #8446]:      https://bugs.ruby-lang.org/issues/8446

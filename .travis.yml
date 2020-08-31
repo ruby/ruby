@@ -413,7 +413,7 @@ env:
       - make -s $JOBS $UPDATE_UNICODE -o update-src up
       - make -s $JOBS srcs
       - rm -f config.status Makefile rbconfig.rb .rbconfig.time
-      - $SETARCH ./configure -C --disable-install-doc --prefix=$RUBY_PREFIX --disable-rubygems 'optflags=-O0' 'debugflags=-save-temps=obj -g'
+      - $SETARCH ./configure -C --disable-install-doc --prefix=$RUBY_PREFIX --disable-rubygems --with-gcc 'optflags=-O0' 'debugflags=-save-temps=obj -g'
       - ruby tool/update-deps --fix
     script:
       - git diff --no-ext-diff --ignore-submodules --exit-code

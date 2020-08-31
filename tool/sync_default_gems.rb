@@ -3,7 +3,7 @@
 require 'fileutils'
 include FileUtils
 
-$repositories = {
+REPOSITORIES = {
   rubygems: 'rubygems/rubygems',
   bundler: 'rubygems/rubygems',
   rdoc: 'ruby/rdoc',
@@ -62,12 +62,17 @@ $repositories = {
   "net-http": "ruby/net-http",
   bigdecimal: "ruby/bigdecimal",
   optparse: "ruby/optparse",
+  set: "ruby/set",
+  find: "ruby/find",
+  rinda: "ruby/rinda",
+  erb: "ruby/erb",
+  nkf: "ruby/nkf",
 }
 
 def sync_default_gems(gem)
-  puts "Sync #{$repositories[gem.to_sym]}"
+  puts "Sync #{REPOSITORIES[gem.to_sym]}"
 
-  upstream = File.join("..", "..", $repositories[gem.to_sym])
+  upstream = File.join("..", "..", REPOSITORIES[gem.to_sym])
 
   case gem
   when "rubygems"
@@ -261,6 +266,19 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/did_you_mean.gemspec", "lib/did_you_mean")
     cp_r("#{upstream}/test", "test/did_you_mean")
     rm_rf(%w[test/did_you_mean/tree_spell/test_explore.rb])
+  when "erb"
+    rm_rf(%w[lib/erb* test/erb libexec/erb])
+    cp_r("#{upstream}/lib/erb.rb", "lib")
+    cp_r("#{upstream}/test/erb", "test")
+    cp_r("#{upstream}/erb.gemspec", "lib")
+    cp_r("#{upstream}/exe/erb", "libexec")
+  when "nkf"
+    rm_rf(%w[ext/nkf test/nkf])
+    cp_r("#{upstream}/ext/nkf", "ext")
+    cp_r("#{upstream}/lib", "ext/nkf")
+    cp_r("#{upstream}/test/nkf", "test")
+    cp_r("#{upstream}/nkf.gemspec", "ext/nkf")
+    `git checkout ext/nkf/depend`
   else
     sync_lib gem
   end
@@ -274,11 +292,11 @@ IGNORE_FILE_PATTERN =
   )\z/x
 
 def sync_default_gems_with_commits(gem, ranges, edit: nil)
-  puts "Sync #{$repositories[gem.to_sym]} with commit history."
+  puts "Sync #{REPOSITORIES[gem.to_sym]} with commit history."
 
   IO.popen(%W"git remote") do |f|
     unless f.read.split.include?(gem)
-      `git remote add #{gem} git@github.com:#{$repositories[gem.to_sym]}.git`
+      `git remote add #{gem} git@github.com:#{REPOSITORIES[gem.to_sym]}.git`
     end
   end
   system(*%W"git fetch --no-tags #{gem}")
@@ -308,7 +326,7 @@ def sync_default_gems_with_commits(gem, ranges, edit: nil)
   ENV["FILTER_BRANCH_SQUELCH_WARNING"] = "1"
 
   commits.each do |sha, subject|
-    puts "Pick #{sha} from #{$repositories[gem.to_sym]}."
+    puts "Pick #{sha} from #{REPOSITORIES[gem.to_sym]}."
 
     skipped = false
     result = IO.popen(%W"git cherry-pick #{sha}", &:read)
@@ -353,8 +371,8 @@ def sync_default_gems_with_commits(gem, ranges, edit: nil)
 
     puts "Update commit message: #{sha}"
 
-    prefix = "[#{($repositories[gem.to_sym])}]".gsub(/\//, '\/')
-    suffix = "https://github.com/#{($repositories[gem.to_sym])}/commit/#{sha[0,10]}"
+    prefix = "[#{(REPOSITORIES[gem.to_sym])}]".gsub(/\//, '\/')
+    suffix = "https://github.com/#{(REPOSITORIES[gem.to_sym])}/commit/#{sha[0,10]}"
     `git filter-branch -f --msg-filter 'sed "1s/^/#{prefix} /" && echo && echo #{suffix}' -- HEAD~1..HEAD`
     unless $?.success?
       puts "Failed to modify commit message of #{sha}"
@@ -390,7 +408,7 @@ end
 
 def update_default_gems(gem)
 
-  author, repository = $repositories[gem.to_sym].split('/')
+  author, repository = REPOSITORIES[gem.to_sym].split('/')
 
   puts "Update #{author}/#{repository}"
 
@@ -421,14 +439,14 @@ when "up"
   if ARGV[1]
     update_default_gems(ARGV[1])
   else
-    $repositories.keys.each{|gem| update_default_gems(gem.to_s)}
+    REPOSITORIES.keys.each{|gem| update_default_gems(gem.to_s)}
   end
 when "all"
-  $repositories.keys.each{|gem| sync_default_gems(gem.to_s)}
+  REPOSITORIES.keys.each{|gem| sync_default_gems(gem.to_s)}
 when "list"
   ARGV.shift
   pattern = Regexp.new(ARGV.join('|'))
-  $repositories.each_pair do |name, gem|
+  REPOSITORIES.each_pair do |name, gem|
     next unless pattern =~ name or pattern =~ gem
     printf "%-15s https://github.com/%s\n", name, gem
   end

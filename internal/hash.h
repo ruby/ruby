@@ -54,7 +54,7 @@ struct RHash {
     } ar_hint;
 };
 
-#define RHASH(obj) (R_CAST(RHash)(obj))
+#define RHASH(obj) ((struct RHash *)(obj))
 
 #ifdef RHASH_IFNONE
 # undef RHASH_IFNONE
@@ -62,6 +62,10 @@ struct RHash {
 
 #ifdef RHASH_SIZE
 # undef RHASH_SIZE
+#endif
+
+#ifdef RHASH_EMPTY_P
+# undef RHASH_EMPTY_P
 #endif
 
 /* hash.c */
@@ -82,6 +86,7 @@ int rb_hash_stlike_update(VALUE hash, st_data_t key, st_update_callback_func *fu
 static inline unsigned RHASH_AR_TABLE_SIZE_RAW(VALUE h);
 static inline VALUE RHASH_IFNONE(VALUE h);
 static inline size_t RHASH_SIZE(VALUE h);
+static inline bool RHASH_EMPTY_P(VALUE h);
 static inline bool RHASH_AR_TABLE_P(VALUE h);
 static inline bool RHASH_ST_TABLE_P(VALUE h);
 static inline struct ar_table_struct *RHASH_AR_TABLE(VALUE h);
@@ -107,13 +112,8 @@ VALUE rb_hash_keys(VALUE hash);
 VALUE rb_hash_has_key(VALUE hash, VALUE key);
 VALUE rb_hash_compare_by_id_p(VALUE hash);
 
-#if RHASH_CONVERT_TABLE_DEBUG
 st_table *rb_hash_tbl_raw(VALUE hash, const char *file, int line);
 #define RHASH_TBL_RAW(h) rb_hash_tbl_raw(h, __FILE__, __LINE__)
-#else
-st_table *rb_hash_tbl_raw(VALUE hash);
-#define RHASH_TBL_RAW(h) rb_hash_tbl_raw(h)
-#endif
 MJIT_SYMBOL_EXPORT_END
 
 #if 0 /* for debug */
@@ -176,6 +176,12 @@ RHASH_SIZE(VALUE h)
     else {
         return RHASH_ST_SIZE(h);
     }
+}
+
+static inline bool
+RHASH_EMPTY_P(VALUE h)
+{
+    return RHASH_SIZE(h) == 0;
 }
 
 static inline bool

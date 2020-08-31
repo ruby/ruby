@@ -17,6 +17,7 @@ Gem::Specification.new do |spec|
   spec.description   = %q{The abstruct interface for net-* client.}
   spec.homepage      = "https://github.com/ruby/net-protocol"
   spec.required_ruby_version = Gem::Requirement.new(">= 2.3.0")
+  spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = spec.homepage

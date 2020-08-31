@@ -11,7 +11,7 @@
 
 **********************************************************************/
 
-#define STRINGIO_VERSION "0.1.3"
+#define STRINGIO_VERSION "0.1.4"
 
 #include "ruby.h"
 #include "ruby/io.h"
@@ -1071,8 +1071,8 @@ strio_each_codepoint(VALUE self)
 
 	c = rb_enc_codepoint_len(RSTRING_PTR(ptr->string)+ptr->pos,
 				 RSTRING_END(ptr->string), &n, enc);
-	rb_yield(UINT2NUM(c));
 	ptr->pos += n;
+	rb_yield(UINT2NUM(c));
     }
     return self;
 }

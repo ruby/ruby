@@ -36,6 +36,51 @@ class Reline::Config::Test < Reline::TestCase
     assert_equal true, @config.instance_variable_get(:@disable_completion)
   end
 
+  def test_string_value
+    @config.read_lines(<<~LINES.lines)
+      set show-mode-in-prompt on
+      set emacs-mode-string Emacs
+    LINES
+
+    assert_equal 'Emacs', @config.instance_variable_get(:@emacs_mode_string)
+  end
+
+  def test_string_value_with_brackets
+    @config.read_lines(<<~LINES.lines)
+      set show-mode-in-prompt on
+      set emacs-mode-string [Emacs]
+    LINES
+
+    assert_equal '[Emacs]', @config.instance_variable_get(:@emacs_mode_string)
+  end
+
+  def test_string_value_with_brackets_and_quotes
+    @config.read_lines(<<~LINES.lines)
+      set show-mode-in-prompt on
+      set emacs-mode-string "[Emacs]"
+    LINES
+
+    assert_equal '[Emacs]', @config.instance_variable_get(:@emacs_mode_string)
+  end
+
+  def test_string_value_with_parens
+    @config.read_lines(<<~LINES.lines)
+      set show-mode-in-prompt on
+      set emacs-mode-string (Emacs)
+    LINES
+
+    assert_equal '(Emacs)', @config.instance_variable_get(:@emacs_mode_string)
+  end
+
+  def test_string_value_with_parens_and_quotes
+    @config.read_lines(<<~LINES.lines)
+      set show-mode-in-prompt on
+      set emacs-mode-string "(Emacs)"
+    LINES
+
+    assert_equal '(Emacs)', @config.instance_variable_get(:@emacs_mode_string)
+  end
+
   def test_comment_line
     @config.read_lines([" #a: error\n"])
     assert_not_include @config.key_bindings, nil

@@ -67,6 +67,14 @@
 # undef HAVE_BUILTIN___BUILTIN_ALLOCA_WITH_ALIGN
 #endif
 
+#if defined(__SUNPRO_CC)
+# /* Oracle  Developer Studio  12.5: GCC compatibility guide  says it  supports
+#  * statement expressions.   But to our  knowledge they support  the extension
+#  * only for C and not for C++.  Prove  me wrong.  Am happy to support them if
+#  * there is a way. */
+# undef HAVE_STMT_AND_DECL_IN_EXPR
+#endif
+
 #ifndef STRINGIZE0
 # define STRINGIZE(expr) STRINGIZE0(expr)
 # define STRINGIZE0(expr) #expr

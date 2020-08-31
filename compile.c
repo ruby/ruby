@@ -596,7 +596,8 @@ APPEND_ELEM(ISEQ_ARG_DECLARE LINK_ANCHOR *const anchor, LINK_ELEMENT *before, LI
 #define APPEND_ELEM(anchor, before, elem) APPEND_ELEM(iseq, (anchor), (before), (elem))
 #endif
 
-static int branch_coverage_valid_p(rb_iseq_t *iseq, int first_line)
+static int
+branch_coverage_valid_p(rb_iseq_t *iseq, int first_line)
 {
     if (!ISEQ_COVERAGE(iseq)) return 0;
     if (!ISEQ_BRANCH_COVERAGE(iseq)) return 0;
@@ -604,7 +605,8 @@ static int branch_coverage_valid_p(rb_iseq_t *iseq, int first_line)
     return 1;
 }
 
-static VALUE decl_branch_base(rb_iseq_t *iseq, const NODE *node, const char *type)
+static VALUE
+decl_branch_base(rb_iseq_t *iseq, const NODE *node, const char *type)
 {
     const int first_lineno = nd_first_lineno(node), first_column = nd_first_column(node);
     const int last_lineno = nd_last_lineno(node), last_column = nd_last_column(node);
@@ -643,7 +645,8 @@ static VALUE decl_branch_base(rb_iseq_t *iseq, const NODE *node, const char *typ
     return branches;
 }
 
-static void add_trace_branch_coverage(rb_iseq_t *iseq, LINK_ANCHOR *const seq, const NODE *node, int branch_id, const char *type, VALUE branches)
+static void
+add_trace_branch_coverage(rb_iseq_t *iseq, LINK_ANCHOR *const seq, const NODE *node, int branch_id, const char *type, VALUE branches)
 {
     const int first_lineno = nd_first_lineno(node), first_column = nd_first_column(node);
     const int last_lineno = nd_last_lineno(node), last_column = nd_last_column(node);
@@ -6333,9 +6336,6 @@ compile_case3(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_no
     INIT_ANCHOR(body_seq);
     INIT_ANCHOR(cond_seq);
 
-    ADD_INSN(head, line, putnil); /* allocate stack for cached #deconstruct value */
-    CHECK(COMPILE(head, "case base", node->nd_head));
-
     branches = decl_branch_base(iseq, node, "case");
 
     node = node->nd_body;
@@ -6345,6 +6345,10 @@ compile_case3(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_no
 
     endlabel = NEW_LABEL(line);
     elselabel = NEW_LABEL(line);
+
+    ADD_INSN(head, line, putnil); /* allocate stack for cached #deconstruct value */
+
+    CHECK(COMPILE(head, "case base", orig_node->nd_head));
 
     ADD_SEQ(ret, head);	/* case VAL */
 

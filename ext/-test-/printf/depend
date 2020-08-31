@@ -147,13 +147,10 @@ printf.o: $(hdrdir)/ruby/backward.h
 printf.o: $(hdrdir)/ruby/backward/2/assume.h
 printf.o: $(hdrdir)/ruby/backward/2/attributes.h
 printf.o: $(hdrdir)/ruby/backward/2/bool.h
-printf.o: $(hdrdir)/ruby/backward/2/extern.h
 printf.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 printf.o: $(hdrdir)/ruby/backward/2/inttypes.h
 printf.o: $(hdrdir)/ruby/backward/2/limits.h
 printf.o: $(hdrdir)/ruby/backward/2/long_long.h
-printf.o: $(hdrdir)/ruby/backward/2/r_cast.h
-printf.o: $(hdrdir)/ruby/backward/2/rmodule.h
 printf.o: $(hdrdir)/ruby/backward/2/stdalign.h
 printf.o: $(hdrdir)/ruby/backward/2/stdarg.h
 printf.o: $(hdrdir)/ruby/defines.h

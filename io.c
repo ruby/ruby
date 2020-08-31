@@ -11258,6 +11258,11 @@ nogvl_copy_stream_sendfile(struct copy_stream_struct *stp)
 #ifdef ENOSYS
 	  case ENOSYS:
 #endif
+#ifdef EOPNOTSUP
+	  /* some RedHat kernels may return EOPNOTSUP on an NFS mount.
+	     see also: [Feature #16965] */
+	  case EOPNOTSUP:
+#endif
             return 0;
 	  case EAGAIN:
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN

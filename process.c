@@ -5577,6 +5577,12 @@ rb_getlogin(void)
 
 # ifdef USE_GETLOGIN_R
 
+#if defined(__FreeBSD__)
+    typedef int getlogin_r_size_t;
+#else
+    typedef size_t getlogin_r_size_t;
+#endif
+
     long loginsize = GETLOGIN_R_SIZE_INIT;  /* maybe -1 */
 
     if (loginsize < 0)
@@ -5590,7 +5596,7 @@ rb_getlogin(void)
 
     int gle;
     errno = 0;
-    while ((gle = getlogin_r(login, loginsize)) != 0) {
+    while ((gle = getlogin_r(login, (getlogin_r_size_t)loginsize)) != 0) {
 
         if (gle == ENOTTY || gle == ENXIO || gle == ENOENT) {
             rb_str_resize(maybe_result, 0);

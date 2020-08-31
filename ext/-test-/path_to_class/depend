@@ -147,13 +147,10 @@ path_to_class.o: $(hdrdir)/ruby/backward.h
 path_to_class.o: $(hdrdir)/ruby/backward/2/assume.h
 path_to_class.o: $(hdrdir)/ruby/backward/2/attributes.h
 path_to_class.o: $(hdrdir)/ruby/backward/2/bool.h
-path_to_class.o: $(hdrdir)/ruby/backward/2/extern.h
 path_to_class.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 path_to_class.o: $(hdrdir)/ruby/backward/2/inttypes.h
 path_to_class.o: $(hdrdir)/ruby/backward/2/limits.h
 path_to_class.o: $(hdrdir)/ruby/backward/2/long_long.h
-path_to_class.o: $(hdrdir)/ruby/backward/2/r_cast.h
-path_to_class.o: $(hdrdir)/ruby/backward/2/rmodule.h
 path_to_class.o: $(hdrdir)/ruby/backward/2/stdalign.h
 path_to_class.o: $(hdrdir)/ruby/backward/2/stdarg.h
 path_to_class.o: $(hdrdir)/ruby/defines.h

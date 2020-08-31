@@ -17,7 +17,7 @@ struct RComplex {
     VALUE imag;
 };
 
-#define RCOMPLEX(obj) (R_CAST(RComplex)(obj))
+#define RCOMPLEX(obj) ((struct RComplex *)(obj))
 
 /* shortcut macro for internal only */
 #define RCOMPLEX_SET_REAL(cmp, r) RB_OBJ_WRITE((cmp), &RCOMPLEX(cmp)->real, (r))

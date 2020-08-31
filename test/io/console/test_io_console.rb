@@ -443,10 +443,14 @@ defined?(IO.console) and TestIO_Console.class_eval do
       s = IO.console.winsize
       assert_nothing_raised(TypeError) {IO.console.winsize = s}
       bug = '[ruby-core:82741] [Bug #13888]'
-      IO.console.winsize = [s[0], s[1]+1]
-      assert_equal([s[0], s[1]+1], IO.console.winsize, bug)
-      IO.console.winsize = s
-      assert_equal(s, IO.console.winsize, bug)
+      begin
+        IO.console.winsize = [s[0], s[1]+1]
+        assert_equal([s[0], s[1]+1], IO.console.winsize, bug)
+      rescue Errno::EINVAL    # Error if run on an actual console.
+      else
+        IO.console.winsize = s
+        assert_equal(s, IO.console.winsize, bug)
+      end
     ensure
       set_winsize_teardown
     end

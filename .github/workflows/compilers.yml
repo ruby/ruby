@@ -8,12 +8,13 @@ on: [push, pull_request]
 env:
   default_cc: clang-11
   append_cc: ''
+  crosshost: ''
 
   # -O1 is faster than -O3 in our tests... Majority of time are consumed trying
   # to optimize binaries.  Also Github Actions runs on a relatively modern CPU
   # compared to, say, GCC 4 or Clang 3.  We don't specify `-march=native`
   # because compilers tend not understand what the CPU is.
-  optflags: '-O1 -march=x86-64 -mtune=generic'
+  optflags: '-O1'
 
   # -g0 disables backtraces when SEGV.  Do not set that.
   debugflags: '-ggdb3'
@@ -63,6 +64,15 @@ jobs:
           - { key: default_cc, name: clang-5.0, value: clang-5.0 }
           - { key: default_cc, name: clang-4.0, value: clang-4.0 }
           - { key: default_cc, name: clang-3.9, value: clang-3.9 }
+
+          - { key: crosshost, name: aarch64-linux-gnu,     value: aarch64-linux-gnu }
+#         - { key: crosshost, name: arm-linux-gnueabi,     value: arm-linux-gnueabi }
+#         - { key: crosshost, name: arm-linux-gnueabihf,   value: arm-linux-gnueabihf }
+#         - { key: crosshost, name: i686-w64-mingw32,      value: i686-w64-mingw32 }
+#         - { key: crosshost, name: powerpc-linux-gnu,     value: powerpc-linux-gnu }
+          - { key: crosshost, name: powerpc64le-linux-gnu, value: powerpc64le-linux-gnu }
+          - { key: crosshost, name: s390x-linux-gnu,       value: s390x-linux-gnu }
+          - { key: crosshost, name: x86_64-w64-mingw32,    value: x86_64-w64-mingw32 }
 
           - { key: append_cc, name: c99,   value: '-std=c99   -Werror=pedantic -pedantic-errors' }
           - { key: append_cc, name: c11,   value: '-std=c11   -Werror=pedantic -pedantic-errors' }
@@ -162,10 +172,19 @@ jobs:
       - name: Run configure
         working-directory: build
         run: |
-          ../src/configure -C \
-            ${default_configure} \
-            ${append_configure} \
-            --with-gcc="${default_cc} ${append_cc}"
+          if [ -n "${crosshost}" ]; then
+            ../src/configure -C \
+              ${default_configure} \
+              ${append_configure} \
+              --host="${crosshost}"
+          else
+            ../src/configure -C \
+              ${default_configure} \
+              ${append_configure} \
+              --with-gcc="${default_cc} ${append_cc}"
+          fi
+      - run: $make extract-extlibs
+        working-directory: build
       - run: $make incs
         working-directory: build
       - run: $make

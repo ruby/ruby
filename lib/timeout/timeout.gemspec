@@ -16,7 +16,7 @@ Gem::Specification.new do |spec|
   spec.summary       = %q{Auto-terminate potentially long-running operations in Ruby.}
   spec.description   = %q{Auto-terminate potentially long-running operations in Ruby.}
   spec.homepage      = "https://github.com/ruby/timeout"
-  spec.license       = "BSD-2-Clause"
+  spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = spec.homepage

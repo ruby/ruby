@@ -3590,7 +3590,8 @@ rb_thread_variables(VALUE thread)
     return ary;
 }
 
-VALUE rb_thread_scheduler_get(VALUE thread)
+VALUE
+rb_thread_scheduler_get(VALUE thread)
 {
     rb_thread_t * th = rb_thread_ptr(thread);
 
@@ -3599,7 +3600,8 @@ VALUE rb_thread_scheduler_get(VALUE thread)
     return th->scheduler;
 }
 
-VALUE rb_thread_scheduler_set(VALUE thread, VALUE scheduler)
+VALUE
+rb_thread_scheduler_set(VALUE thread, VALUE scheduler)
 {
     rb_thread_t * th = rb_thread_ptr(thread);
 
@@ -3624,7 +3626,8 @@ rb_thread_scheduler(VALUE klass)
     return rb_thread_scheduler_if_nonblocking(rb_thread_current());
 }
 
-VALUE rb_thread_scheduler_if_nonblocking(VALUE thread)
+VALUE
+rb_thread_scheduler_if_nonblocking(VALUE thread)
 {
     rb_thread_t * th = rb_thread_ptr(thread);
 

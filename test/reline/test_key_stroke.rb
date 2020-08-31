@@ -16,10 +16,10 @@ class Reline::KeyStroke::Test < Reline::TestCase
   def test_match_status
     config = Reline::Config.new
     {
-      "a" => "xx",
-      "ab" => "y",
-      "abc" => "z",
-      "x" => "rr"
+      'a' => 'xx',
+      'ab' => 'y',
+      'abc' => 'z',
+      'x' => 'rr'
     }.each_pair do |key, func|
       config.add_default_key_binding(key.bytes, func.bytes)
     end
@@ -34,5 +34,16 @@ class Reline::KeyStroke::Test < Reline::TestCase
     assert_equal(:matched, stroke.match_status("x".bytes))
     assert_equal(:unmatched, stroke.match_status("m".bytes))
     assert_equal(:matched, stroke.match_status("abzwabk".bytes))
+  end
+
+  def test_aaa
+    config = Reline::Config.new
+    {
+      'abc' => '123',
+    }.each_pair do |key, func|
+      config.add_default_key_binding(key.bytes, func.bytes)
+    end
+    stroke = Reline::KeyStroke.new(config)
+    assert_equal('123'.bytes, stroke.expand('abc'.bytes))
   end
 end

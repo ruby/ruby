@@ -11,7 +11,7 @@ Gem::Specification.new do |s|
   s.summary       = "Arbitrary-precision decimal floating-point number library."
   s.description   = "This library provides arbitrary-precision decimal floating-point number class."
   s.homepage      = "https://github.com/ruby/bigdecimal"
-  s.license       = "ruby"
+  s.license       = "Ruby"
 
   s.require_paths = %w[lib]
   s.extensions    = %w[ext/bigdecimal/extconf.rb]

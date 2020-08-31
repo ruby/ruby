@@ -147,13 +147,10 @@ enumerator_kw.o: $(hdrdir)/ruby/backward.h
 enumerator_kw.o: $(hdrdir)/ruby/backward/2/assume.h
 enumerator_kw.o: $(hdrdir)/ruby/backward/2/attributes.h
 enumerator_kw.o: $(hdrdir)/ruby/backward/2/bool.h
-enumerator_kw.o: $(hdrdir)/ruby/backward/2/extern.h
 enumerator_kw.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 enumerator_kw.o: $(hdrdir)/ruby/backward/2/inttypes.h
 enumerator_kw.o: $(hdrdir)/ruby/backward/2/limits.h
 enumerator_kw.o: $(hdrdir)/ruby/backward/2/long_long.h
-enumerator_kw.o: $(hdrdir)/ruby/backward/2/r_cast.h
-enumerator_kw.o: $(hdrdir)/ruby/backward/2/rmodule.h
 enumerator_kw.o: $(hdrdir)/ruby/backward/2/stdalign.h
 enumerator_kw.o: $(hdrdir)/ruby/backward/2/stdarg.h
 enumerator_kw.o: $(hdrdir)/ruby/defines.h

@@ -536,6 +536,8 @@ struct RMoved {
     } as;
 };
 
+#define RMOVED(obj) ((struct RMoved *)(obj))
+
 #if defined(_MSC_VER) || defined(__CYGWIN__)
 #pragma pack(push, 1) /* magic for reducing sizeof(RVALUE): 24 -> 20 */
 #endif
@@ -2597,6 +2599,10 @@ make_zombie(rb_objspace_t *objspace, VALUE obj, void (*dfree)(void *), void *dat
     zombie->data = data;
     zombie->next = heap_pages_deferred_final;
     heap_pages_deferred_final = (VALUE)zombie;
+
+    struct heap_page *page = GET_HEAP_PAGE(obj);
+    page->final_slots++;
+    heap_pages_final_slots++;
 }
 
 static inline void
@@ -2854,8 +2860,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	break;
       case T_ICLASS:
 	/* Basically , T_ICLASS shares table with the module */
-        if (FL_TEST(obj, RICLASS_IS_ORIGIN) &&
-                !FL_TEST(obj, RICLASS_ORIGIN_SHARED_MTBL)) {
+        if (RICLASS_OWNS_M_TBL_P(obj)) {
             /* Method table is not shared for origin iclasses of classes */
             rb_id_table_free(RCLASS_M_TBL(obj));
         }
@@ -3485,7 +3490,9 @@ finalize_list(rb_objspace_t *objspace, VALUE zombie)
         }
 
 	RZOMBIE(zombie)->basic.flags = 0;
-        if (LIKELY(heap_pages_final_slots)) heap_pages_final_slots--;
+        GC_ASSERT(heap_pages_final_slots > 0);
+        GC_ASSERT(page->final_slots > 0);
+        heap_pages_final_slots--;
 	page->final_slots--;
 	page->free_slots++;
 	heap_page_add_freeobj(objspace, GET_HEAP_PAGE(zombie), zombie);
@@ -3974,8 +3981,7 @@ obj_memsize_of(VALUE obj, int use_all_types)
 	}
 	break;
       case T_ICLASS:
-        if (FL_TEST(obj, RICLASS_IS_ORIGIN) &&
-                !FL_TEST(obj, RICLASS_ORIGIN_SHARED_MTBL)) {
+        if (RICLASS_OWNS_M_TBL_P(obj)) {
 	    if (RCLASS_M_TBL(obj)) {
 		size += rb_id_table_memsize(RCLASS_M_TBL(obj));
 	    }
@@ -4326,8 +4332,6 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 
     sweep_page->free_slots = freed_slots + empty_slots;
     objspace->profile.total_freed_objects += freed_slots;
-    heap_pages_final_slots += final_slots;
-    sweep_page->final_slots += final_slots;
 
     if (heap_pages_deferred_final && !finalizing) {
         rb_thread_t *th = GET_THREAD();
@@ -5504,8 +5508,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 	break;
 
       case T_ICLASS:
-        if (FL_TEST(obj, RICLASS_IS_ORIGIN) &&
-                !FL_TEST(obj, RICLASS_ORIGIN_SHARED_MTBL)) {
+        if (RICLASS_OWNS_M_TBL_P(obj)) {
 	    mark_m_tbl(objspace, RCLASS_M_TBL(obj));
 	}
         if (RCLASS_SUPER(obj)) {

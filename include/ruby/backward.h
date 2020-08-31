@@ -8,18 +8,9 @@
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
  */
-#include "ruby/internal/core/rbasic.h"
 #include "ruby/internal/value.h"
 #include "ruby/internal/interpreter.h"
 #include "ruby/backward/2/attributes.h"
-
-#define RClass RClassDeprecated
-#ifndef __cplusplus
-DEPRECATED_TYPE(("RClass is internal use only"),
-struct RClass {
-    struct RBasic basic;
-});
-#endif
 
 #define DECLARE_DEPRECATED_FEATURE(ver, func) \
     NORETURN(ERRORFUNC(("deprecated since "#ver), DEPRECATED(void func(void))))
@@ -72,12 +63,9 @@ DECLARE_DEPRECATED_INTERNAL_FEATURE(rb_generic_ivar_table);
 NORETURN(ERRORFUNC(("internal function"), VALUE rb_mod_const_missing(VALUE, VALUE)));
 
 /* from version.c */
-#ifndef RUBY_SHOW_COPYRIGHT_TO_DIE
-# define RUBY_SHOW_COPYRIGHT_TO_DIE 1
-#endif
-#if RUBY_SHOW_COPYRIGHT_TO_DIE
+#if defined(RUBY_SHOW_COPYRIGHT_TO_DIE) && !!(RUBY_SHOW_COPYRIGHT_TO_DIE+0)
 /* for source code backward compatibility */
-DEPRECATED(static inline int ruby_show_copyright_to_die(int));
+RBIMPL_ATTR_DEPRECATED(("since 2.4"))
 static inline int
 ruby_show_copyright_to_die(int exitcode)
 {

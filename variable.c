@@ -25,6 +25,7 @@
 #include "internal/error.h"
 #include "internal/eval.h"
 #include "internal/hash.h"
+#include "internal/object.h"
 #include "internal/re.h"
 #include "internal/symbol.h"
 #include "internal/thread.h"
@@ -885,7 +886,7 @@ generic_ivar_delete(VALUE obj, ID id, VALUE undef)
 	st_table *iv_index_tbl = RCLASS_IV_INDEX_TBL(rb_obj_class(obj));
 	st_data_t index;
 
-	if (st_lookup(iv_index_tbl, (st_data_t)id, &index)) {
+	if (iv_index_tbl && st_lookup(iv_index_tbl, (st_data_t)id, &index)) {
 	    if (index < ivtbl->numiv) {
 		VALUE ret = ivtbl->ivptr[index];
 
@@ -906,7 +907,7 @@ generic_ivar_get(VALUE obj, ID id, VALUE undef)
 	st_table *iv_index_tbl = RCLASS_IV_INDEX_TBL(rb_obj_class(obj));
 	st_data_t index;
 
-	if (st_lookup(iv_index_tbl, (st_data_t)id, &index)) {
+	if (iv_index_tbl && st_lookup(iv_index_tbl, (st_data_t)id, &index)) {
 	    if (index < ivtbl->numiv) {
 		VALUE ret = ivtbl->ivptr[index];
 

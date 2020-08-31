@@ -150,13 +150,10 @@ parser.o: $(hdrdir)/ruby/backward.h
 parser.o: $(hdrdir)/ruby/backward/2/assume.h
 parser.o: $(hdrdir)/ruby/backward/2/attributes.h
 parser.o: $(hdrdir)/ruby/backward/2/bool.h
-parser.o: $(hdrdir)/ruby/backward/2/extern.h
 parser.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 parser.o: $(hdrdir)/ruby/backward/2/inttypes.h
 parser.o: $(hdrdir)/ruby/backward/2/limits.h
 parser.o: $(hdrdir)/ruby/backward/2/long_long.h
-parser.o: $(hdrdir)/ruby/backward/2/r_cast.h
-parser.o: $(hdrdir)/ruby/backward/2/rmodule.h
 parser.o: $(hdrdir)/ruby/backward/2/stdalign.h
 parser.o: $(hdrdir)/ruby/backward/2/stdarg.h
 parser.o: $(hdrdir)/ruby/defines.h

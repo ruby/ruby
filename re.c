@@ -311,8 +311,10 @@ char_to_option(int c)
     return val;
 }
 
+enum { OPTBUF_SIZE = 4 };
+
 static char *
-option_to_str(char str[4], int options)
+option_to_str(char str[OPTBUF_SIZE], int options)
 {
     char *p = str;
     if (options & ONIG_OPTION_MULTILINE) *p++ = 'm';
@@ -462,7 +464,7 @@ rb_reg_desc(const char *s, long len, VALUE re)
     rb_reg_expr_str(str, s, len, enc, resenc, '/');
     rb_str_buf_cat2(str, "/");
     if (re) {
-	char opts[4];
+	char opts[OPTBUF_SIZE];
 	rb_reg_check(re);
 	if (*option_to_str(opts, RREGEXP_PTR(re)->options))
 	    rb_str_buf_cat2(str, opts);
@@ -554,7 +556,7 @@ rb_reg_str_with_term(VALUE re, int term)
     long len;
     const UChar* ptr;
     VALUE str = rb_str_buf_new2("(?");
-    char optbuf[5];
+    char optbuf[OPTBUF_SIZE + 1]; /* for '-' */
     rb_encoding *enc = rb_enc_get(re);
 
     rb_reg_check(re);
@@ -668,7 +670,7 @@ rb_reg_raise(const char *s, long len, const char *err, VALUE re)
 static VALUE
 rb_enc_reg_error_desc(const char *s, long len, rb_encoding *enc, int options, const char *err)
 {
-    char opts[6];
+    char opts[OPTBUF_SIZE + 1];	/* for '/' */
     VALUE desc = rb_str_buf_new2(err);
     rb_encoding *resenc = rb_default_internal_encoding();
     if (resenc == NULL) resenc = rb_default_external_encoding();

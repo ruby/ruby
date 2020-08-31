@@ -62,7 +62,7 @@ Gem::Specification.new do |s|
   s.authors = ["TAKAHASHI Masayoshi", "GOTOU YUUZOU", "Eric Wong"]
   s.email = [nil, nil, 'normal@ruby-lang.org']
   s.homepage = "https://www.ruby-lang.org"
-  s.license = "BSD-2-Clause"
+  s.licenses = ["Ruby", "BSD-2-Clause"]
 
   if s.respond_to?(:metadata=)
     s.metadata = {

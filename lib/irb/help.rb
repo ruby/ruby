@@ -34,4 +34,3 @@ module IRB
     }
   end
 end
-

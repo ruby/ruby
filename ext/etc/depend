@@ -151,13 +151,10 @@ etc.o: $(hdrdir)/ruby/backward.h
 etc.o: $(hdrdir)/ruby/backward/2/assume.h
 etc.o: $(hdrdir)/ruby/backward/2/attributes.h
 etc.o: $(hdrdir)/ruby/backward/2/bool.h
-etc.o: $(hdrdir)/ruby/backward/2/extern.h
 etc.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 etc.o: $(hdrdir)/ruby/backward/2/inttypes.h
 etc.o: $(hdrdir)/ruby/backward/2/limits.h
 etc.o: $(hdrdir)/ruby/backward/2/long_long.h
-etc.o: $(hdrdir)/ruby/backward/2/r_cast.h
-etc.o: $(hdrdir)/ruby/backward/2/rmodule.h
 etc.o: $(hdrdir)/ruby/backward/2/stdalign.h
 etc.o: $(hdrdir)/ruby/backward/2/stdarg.h
 etc.o: $(hdrdir)/ruby/defines.h

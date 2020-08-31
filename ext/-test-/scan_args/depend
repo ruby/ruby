@@ -147,13 +147,10 @@ scan_args.o: $(hdrdir)/ruby/backward.h
 scan_args.o: $(hdrdir)/ruby/backward/2/assume.h
 scan_args.o: $(hdrdir)/ruby/backward/2/attributes.h
 scan_args.o: $(hdrdir)/ruby/backward/2/bool.h
-scan_args.o: $(hdrdir)/ruby/backward/2/extern.h
 scan_args.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 scan_args.o: $(hdrdir)/ruby/backward/2/inttypes.h
 scan_args.o: $(hdrdir)/ruby/backward/2/limits.h
 scan_args.o: $(hdrdir)/ruby/backward/2/long_long.h
-scan_args.o: $(hdrdir)/ruby/backward/2/r_cast.h
-scan_args.o: $(hdrdir)/ruby/backward/2/rmodule.h
 scan_args.o: $(hdrdir)/ruby/backward/2/stdalign.h
 scan_args.o: $(hdrdir)/ruby/backward/2/stdarg.h
 scan_args.o: $(hdrdir)/ruby/defines.h

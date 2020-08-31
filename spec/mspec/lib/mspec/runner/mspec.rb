@@ -155,7 +155,9 @@ module MSpec
 
   # Stores the shared ContextState keyed by description.
   def self.register_shared(state)
-    @shared[state.to_s] = state
+    name = state.to_s
+    raise "duplicated shared #describe: #{name}" if @shared.key?(name)
+    @shared[name] = state
   end
 
   # Returns the shared ContextState matching description.

@@ -147,13 +147,10 @@ bug_reporter.o: $(hdrdir)/ruby/backward.h
 bug_reporter.o: $(hdrdir)/ruby/backward/2/assume.h
 bug_reporter.o: $(hdrdir)/ruby/backward/2/attributes.h
 bug_reporter.o: $(hdrdir)/ruby/backward/2/bool.h
-bug_reporter.o: $(hdrdir)/ruby/backward/2/extern.h
 bug_reporter.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 bug_reporter.o: $(hdrdir)/ruby/backward/2/inttypes.h
 bug_reporter.o: $(hdrdir)/ruby/backward/2/limits.h
 bug_reporter.o: $(hdrdir)/ruby/backward/2/long_long.h
-bug_reporter.o: $(hdrdir)/ruby/backward/2/r_cast.h
-bug_reporter.o: $(hdrdir)/ruby/backward/2/rmodule.h
 bug_reporter.o: $(hdrdir)/ruby/backward/2/stdalign.h
 bug_reporter.o: $(hdrdir)/ruby/backward/2/stdarg.h
 bug_reporter.o: $(hdrdir)/ruby/defines.h

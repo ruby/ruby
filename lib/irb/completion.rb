@@ -7,7 +7,6 @@
 #       From Original Idea of shugo@ruby-lang.org
 #
 
-require "readline"
 autoload :RDoc, "rdoc"
 
 module IRB
@@ -97,17 +96,13 @@ module IRB
       when /^(:[^:.]*)$/
         # Symbol
         return nil if doc_namespace
-        if Symbol.respond_to?(:all_symbols)
-          sym = $1
-          candidates = Symbol.all_symbols.collect do |s|
-            ":" + s.id2name.encode(Encoding.default_external)
-          rescue Encoding::UndefinedConversionError
-            # ignore
-          end
-          candidates.grep(/^#{Regexp.quote(sym)}/)
-        else
-          []
+        sym = $1
+        candidates = Symbol.all_symbols.collect do |s|
+          ":" + s.id2name.encode(Encoding.default_external)
+        rescue Encoding::UndefinedConversionError
+          # ignore
         end
+        candidates.grep(/^#{Regexp.quote(sym)}/)
 
       when /^::([A-Z][^:\.\(]*)$/
         # Absolute Constant or class methods

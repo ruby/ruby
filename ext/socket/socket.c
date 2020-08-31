@@ -965,6 +965,7 @@ sock_sockaddr(struct sockaddr *addr, socklen_t len)
 static VALUE
 sock_s_gethostbyname(VALUE obj, VALUE host)
 {
+    rb_warn("Socket.gethostbyname is deprecated; use Addrinfo.getaddrinfo instead.");
     struct rb_addrinfo *res =
 	rsock_addrinfo(host, Qnil, AF_UNSPEC, SOCK_STREAM, AI_CANONNAME);
     return rsock_make_hostent(host, res, sock_sockaddr);
@@ -1003,6 +1004,8 @@ sock_s_gethostbyaddr(int argc, VALUE *argv, VALUE _)
     char **pch;
     VALUE ary, names;
     int t = AF_INET;
+
+    rb_warn("Socket.gethostbyaddr is deprecated; use Addrinfo#getnameinfo instead.");
 
     rb_scan_args(argc, argv, "11", &addr, &family);
     StringValue(addr);
@@ -1181,7 +1184,12 @@ sock_s_getaddrinfo(int argc, VALUE *argv, VALUE _)
     if (NIL_P(revlookup) || !rsock_revlookup_flag(revlookup, &norevlookup)) {
 	norevlookup = rsock_do_not_reverse_lookup;
     }
+
+#ifdef HAVE_GETADDRINFO_A
+    res = rsock_getaddrinfo_a(host, port, &hints, 0, Qnil);
+#else
     res = rsock_getaddrinfo(host, port, &hints, 0);
+#endif
 
     ret = make_addrinfo(res, norevlookup);
     rb_freeaddrinfo(res);

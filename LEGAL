@@ -60,6 +60,11 @@ mentioned below.
 
   This file is licensed under the {MIT License}[rdoc-label:label-MIT+License].
 
+[coroutine]
+
+  Unless otherwise specified, these files are licensed under the
+  {MIT License}[rdoc-label:label-MIT+License].
+
 [include/ruby/onigmo.h]
 [include/ruby/oniguruma.h]
 [regcomp.c]
@@ -949,6 +954,17 @@ mentioned below.
   >>>
     Portions copyright (c) 2010:: Andre Arko
     Portions copyright (c) 2009:: Engine Yard
+
+    {MIT License}[rdoc-label:label-MIT+License]
+
+[lib/did_you_mean]
+[lib/did_you_mean.rb]
+[test/did_you_mean]
+
+  did_you_mean is under the following license.
+
+  >>>
+    Copyright (c) 2014-2016 Yuki Nishijima
 
     {MIT License}[rdoc-label:label-MIT+License]
 

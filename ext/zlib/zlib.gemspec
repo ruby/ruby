@@ -20,7 +20,7 @@ Gem::Specification.new do |spec|
   spec.summary       = %q{Ruby interface for the zlib compression/decompression library}
   spec.description   = %q{Ruby interface for the zlib compression/decompression library}
   spec.homepage      = "https://github.com/ruby/zlib"
-  spec.license       = "BSD-2-Clause"
+  spec.licenses       = ["Ruby", "BSD-2-Clause"]
 
   spec.files         = [".gitignore", ".travis.yml", "Gemfile", "LICENSE.txt", "README.md", "Rakefile", "bin/console", "bin/setup", "ext/zlib/extconf.rb", "ext/zlib/zlib.c", "zlib.gemspec"]
   spec.bindir        = "exe"

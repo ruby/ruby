@@ -147,13 +147,10 @@ fcntl.o: $(hdrdir)/ruby/backward.h
 fcntl.o: $(hdrdir)/ruby/backward/2/assume.h
 fcntl.o: $(hdrdir)/ruby/backward/2/attributes.h
 fcntl.o: $(hdrdir)/ruby/backward/2/bool.h
-fcntl.o: $(hdrdir)/ruby/backward/2/extern.h
 fcntl.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 fcntl.o: $(hdrdir)/ruby/backward/2/inttypes.h
 fcntl.o: $(hdrdir)/ruby/backward/2/limits.h
 fcntl.o: $(hdrdir)/ruby/backward/2/long_long.h
-fcntl.o: $(hdrdir)/ruby/backward/2/r_cast.h
-fcntl.o: $(hdrdir)/ruby/backward/2/rmodule.h
 fcntl.o: $(hdrdir)/ruby/backward/2/stdalign.h
 fcntl.o: $(hdrdir)/ruby/backward/2/stdarg.h
 fcntl.o: $(hdrdir)/ruby/defines.h

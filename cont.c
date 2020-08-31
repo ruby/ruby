@@ -2281,6 +2281,18 @@ rb_fiber_raise(int argc, VALUE *argv, VALUE fiber)
     return rb_fiber_resume_kw(fiber, -1, &exc, RB_NO_KEYWORDS);
 }
 
+static VALUE
+rb_fiber_backtrace(int argc, VALUE *argv, VALUE fiber)
+{
+    return rb_vm_backtrace(argc, argv, &fiber_ptr(fiber)->cont.saved_ec);
+}
+
+static VALUE
+rb_fiber_backtrace_locations(int argc, VALUE *argv, VALUE fiber)
+{
+    return rb_vm_backtrace_locations(argc, argv, &fiber_ptr(fiber)->cont.saved_ec);
+}
+
 /*
  *  call-seq:
  *     fiber.transfer(args, ...) -> obj
@@ -2533,6 +2545,8 @@ Init_Cont(void)
     rb_define_method(rb_cFiber, "blocking?", rb_fiber_blocking_p, 0);
     rb_define_method(rb_cFiber, "resume", rb_fiber_m_resume, -1);
     rb_define_method(rb_cFiber, "raise", rb_fiber_raise, -1);
+    rb_define_method(rb_cFiber, "backtrace", rb_fiber_backtrace, -1);
+    rb_define_method(rb_cFiber, "backtrace_locations", rb_fiber_backtrace_locations, -1);
     rb_define_method(rb_cFiber, "to_s", fiber_to_s, 0);
     rb_define_alias(rb_cFiber, "inspect", "to_s");
 

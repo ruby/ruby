@@ -1,5 +1,3 @@
-require 'pathname'
-
 class Reline::Config
   attr_reader :test_mode
 
@@ -35,6 +33,10 @@ class Reline::Config
     show-all-if-ambiguous
     show-all-if-unmodified
     visible-stats
+    show-mode-in-prompt
+    vi-cmd-mode-icon
+    vi-ins-mode-icon
+    emacs-mode-string
   }
   VARIABLE_NAME_SYMBOLS = VARIABLE_NAMES.map { |v| :"#{v.tr(?-, ?_)}" }
   VARIABLE_NAME_SYMBOLS.each do |v|
@@ -52,6 +54,9 @@ class Reline::Config
     @key_actors[:emacs] = Reline::KeyActor::Emacs.new
     @key_actors[:vi_insert] = Reline::KeyActor::ViInsert.new
     @key_actors[:vi_command] = Reline::KeyActor::ViCommand.new
+    @vi_cmd_mode_icon = '(cmd)'
+    @vi_ins_mode_icon = '(ins)'
+    @emacs_mode_string = '@'
     # https://tiswww.case.edu/php/chet/readline/readline.html#IDX25
     @history_size = -1 # unlimited
     @keyseq_timeout = 500
@@ -160,7 +165,7 @@ class Reline::Config
 
       case line
       when /^set +([^ ]+) +([^ ]+)/i
-        var, value = $1.downcase, $2.downcase
+        var, value = $1.downcase, $2
         bind_variable(var, value)
         next
       when /\s*("#{KEYSEQ_PATTERN}+")\s*:\s*(.*)\s*$/o
@@ -253,9 +258,32 @@ class Reline::Config
       end
     when 'keyseq-timeout'
       @keyseq_timeout = value.to_i
+    when 'show-mode-in-prompt'
+      case value
+      when 'off'
+        @show_mode_in_prompt = false
+      when 'on'
+        @show_mode_in_prompt = true
+      else
+        @show_mode_in_prompt = false
+      end
+    when 'vi-cmd-mode-string'
+      @vi_cmd_mode_icon = retrieve_string(value)
+    when 'vi-ins-mode-string'
+      @vi_ins_mode_icon = retrieve_string(value)
+    when 'emacs-mode-string'
+      @emacs_mode_string = retrieve_string(value)
     when *VARIABLE_NAMES then
       variable_name = :"@#{name.tr(?-, ?_)}"
       instance_variable_set(variable_name, value.nil? || value == '1' || value == 'on')
+    end
+  end
+
+  def retrieve_string(str)
+    if str =~ /\A"(.*)"\z/
+      parse_keyseq($1).map(&:chr).join
+    else
+      parse_keyseq(str).map(&:chr).join
     end
   end
 

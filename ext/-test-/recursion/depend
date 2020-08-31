@@ -147,13 +147,10 @@ recursion.o: $(hdrdir)/ruby/backward.h
 recursion.o: $(hdrdir)/ruby/backward/2/assume.h
 recursion.o: $(hdrdir)/ruby/backward/2/attributes.h
 recursion.o: $(hdrdir)/ruby/backward/2/bool.h
-recursion.o: $(hdrdir)/ruby/backward/2/extern.h
 recursion.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 recursion.o: $(hdrdir)/ruby/backward/2/inttypes.h
 recursion.o: $(hdrdir)/ruby/backward/2/limits.h
 recursion.o: $(hdrdir)/ruby/backward/2/long_long.h
-recursion.o: $(hdrdir)/ruby/backward/2/r_cast.h
-recursion.o: $(hdrdir)/ruby/backward/2/rmodule.h
 recursion.o: $(hdrdir)/ruby/backward/2/stdalign.h
 recursion.o: $(hdrdir)/ruby/backward/2/stdarg.h
 recursion.o: $(hdrdir)/ruby/defines.h

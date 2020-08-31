@@ -525,6 +525,16 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal([49, 50, 51, 52], f.each_codepoint.to_a)
   end
 
+  def test_each_codepoint_enumerator
+    io = StringIO.new('你好построить')
+
+    chinese_part = io.each_codepoint.take(2).pack('U*')
+    russian_part = io.read(40).force_encoding('UTF-8')
+
+    assert_equal("你好", chinese_part)
+    assert_equal("построить", russian_part)
+  end
+
   def test_gets2
     f = StringIO.new("foo\nbar\nbaz\n")
     assert_equal("fo", f.gets(2))

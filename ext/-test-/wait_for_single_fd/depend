@@ -146,13 +146,10 @@ wait_for_single_fd.o: $(hdrdir)/ruby/backward.h
 wait_for_single_fd.o: $(hdrdir)/ruby/backward/2/assume.h
 wait_for_single_fd.o: $(hdrdir)/ruby/backward/2/attributes.h
 wait_for_single_fd.o: $(hdrdir)/ruby/backward/2/bool.h
-wait_for_single_fd.o: $(hdrdir)/ruby/backward/2/extern.h
 wait_for_single_fd.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 wait_for_single_fd.o: $(hdrdir)/ruby/backward/2/inttypes.h
 wait_for_single_fd.o: $(hdrdir)/ruby/backward/2/limits.h
 wait_for_single_fd.o: $(hdrdir)/ruby/backward/2/long_long.h
-wait_for_single_fd.o: $(hdrdir)/ruby/backward/2/r_cast.h
-wait_for_single_fd.o: $(hdrdir)/ruby/backward/2/rmodule.h
 wait_for_single_fd.o: $(hdrdir)/ruby/backward/2/stdalign.h
 wait_for_single_fd.o: $(hdrdir)/ruby/backward/2/stdarg.h
 wait_for_single_fd.o: $(hdrdir)/ruby/defines.h

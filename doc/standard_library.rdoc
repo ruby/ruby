@@ -12,8 +12,6 @@ Abbrev:: Calculates a set of unique abbreviations for a given set of strings
 Base64:: Support for encoding and decoding binary data using a Base64 representation
 DEBUGGER__:: Debugging functionality for Ruby
 DRb:: Distributed object system for Ruby
-ERB:: An easy to use but powerful templating system for Ruby
-Find:: This module supports top-down traversal of a set of file paths
 MakeMakefile:: Module used to generate a Makefile for C extensions
 OpenURI:: An easy-to-use wrapper for Net::HTTP, Net::HTTPS and Net::FTP
 PP:: Provides a PrettyPrinter for Ruby objects
@@ -21,10 +19,8 @@ PrettyPrinter:: Implements a pretty printing algorithm for readable structure
 RbConfig:: Information of your configure and build of Ruby
 resolv-replace.rb:: Replace Socket DNS with Resolv
 Resolv::  Thread-aware DNS resolver library in Ruby
-Rinda:: The Linda distributed computing paradigm in Ruby
 Gem:: Package management framework for Ruby
 SecureRandom:: Interface for secure random number generator
-Set:: Provides a class to deal with collections of unordered, unique values
 Shellwords:: Manipulates strings with word parsing rules of UNIX Bourne shell
 Time:: Extends the Time class with methods for parsing and conversion
 TSort:: Topological sorting using Tarjan's algorithm
@@ -35,7 +31,6 @@ un.rb:: Utilities to replace common UNIX commands
 Coverage:: Provides coverage measurement for Ruby
 Digest:: Provides a framework for message digest libraries
 Monitor:: Provides an object or module to use safely by more than one thread
-NKF:: Ruby extension for Network Kanji Filter
 objspace:: Extends ObjectSpace module to add methods for internal statistics
 Pathname:: Representation of the name of a file or directory on the filesystem
 PTY:: Creates and manages pseudo terminals
@@ -55,7 +50,9 @@ CSV:: Provides an interface to read and write CSV files and data
 Delegator:: Provides three abilities to delegate method calls to an object
 DidYouMean:: "Did you mean?" experience in Ruby
 English.rb:: Require 'English.rb' to reference global variables with less cryptic names
+ERB:: An easy to use but powerful templating system for Ruby
 FileUtils:: Several file utility methods for copying, moving, removing, etc
+Find:: This module supports top-down traversal of a set of file paths
 Forwardable:: Provides delegation of specified methods to a designated object
 GetoptLong:: Parse command line options similar to the GNU C getopt_long()
 IPAddr:: Provides methods to manipulate IPv4 and IPv6 IP addresses
@@ -76,6 +73,8 @@ Prime:: Prime numbers and factorization library
 PStore:: Implements a file based persistence mechanism based on a Hash
 Racc:: A LALR(1) parser generator written in Ruby.
 RDoc:: Produces HTML and command-line documentation for Ruby
+Rinda:: The Linda distributed computing paradigm in Ruby
+Set:: Provides a class to deal with collections of unordered, unique values
 Singleton:: Implementation of the Singleton pattern for Ruby
 Tempfile:: A utility class for managing temporary files
 Timeout:: Auto-terminate potentially long-running operations in Ruby
@@ -98,6 +97,7 @@ Fiddle:: A libffi wrapper for Ruby
 GDBM:: Ruby extension for the GNU dbm (gdbm) library
 IO:: Extensions for Ruby IO class, including #wait, #nonblock and ::console
 JSON:: Implements Javascript Object Notation for Ruby
+NKF:: Ruby extension for Network Kanji Filter
 OpenSSL:: Provides SSL, TLS and general purpose cryptography for Ruby
 Psych:: A YAML parser and emitter for Ruby
 Readline:: Provides an interface for GNU Readline and Edit Line (libedit)

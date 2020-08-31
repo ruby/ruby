@@ -8547,16 +8547,22 @@ parse_percent(struct parser_params *p, const int space_seen, const enum lex_stat
       quotation:
 	if (c == -1 || !ISALNUM(c)) {
 	    term = c;
+	    if (!ISASCII(c)) goto unknown;
 	    c = 'Q';
 	}
 	else {
 	    term = nextc(p);
 	    if (rb_enc_isalnum(term, p->enc) || !parser_isascii(p)) {
+	      unknown:
+		pushback(p, term);
+		c = parser_precise_mbclen(p, p->lex.pcur);
+		if (c < 0) return 0;
+		p->lex.pcur += c;
 		yyerror0("unknown type of %string");
 		return 0;
 	    }
 	}
-	if (c == -1 || term == -1) {
+	if (term == -1) {
 	    compile_error(p, "unterminated quoted string meets end of file");
 	    return 0;
 	}

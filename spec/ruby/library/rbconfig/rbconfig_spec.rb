@@ -61,9 +61,14 @@ describe 'RbConfig::CONFIG' do
 
     it "['STRIP'] exists and can be executed" do
       strip = RbConfig::CONFIG.fetch('STRIP')
-      out = `#{strip} --version`
-      $?.should.success?
-      out.should_not be_empty
+      copy = tmp("sh")
+      cp '/bin/sh', copy
+      begin
+        out = `#{strip} #{copy}`
+        $?.should.success?
+      ensure
+        rm_r copy
+      end
     end
   end
 end

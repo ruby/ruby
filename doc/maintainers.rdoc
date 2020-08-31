@@ -46,10 +46,6 @@ Zachary Scott (zzak)
   Masatoshi SEKI (seki)
 [lib/debug.rb]
   _unmaintained_
-[lib/erb.rb]
-  Masatoshi SEKI (seki), Takashi Kokubun (k0kubun)
-[lib/find.rb]
-  Kazuki Tsujimoto (ktsj)
 [lib/mkmf.rb]
   _unmaintained_
 [lib/open-uri.rb]
@@ -62,13 +58,9 @@ Zachary Scott (zzak)
   Tanaka Akira (akr)
 [lib/resolv.rb]
   Tanaka Akira (akr)
-[lib/rinda/*]
-  Masatoshi SEKI (seki)
 [lib/rubygems.rb, lib/rubygems/*]
   Eric Hodel (drbrain), Hiroshi SHIBATA (hsbt)
   https://github.com/rubygems/rubygems
-[lib/set.rb]
-  Akinori MUSHA (knu)
 [lib/securerandom.rb]
   Tanaka Akira (akr)
 [lib/shellwords.rb]
@@ -94,8 +86,6 @@ Zachary Scott (zzak)
   Koichi Sasada (ko1)
 [ext/monitor]
   Koichi Sasada (ko1)
-[ext/nkf]
-  NARUSE, Yui (naruse)
 [ext/objspace]
   _unmaintained_
 [ext/pathname]
@@ -144,10 +134,16 @@ Zachary Scott (zzak)
 [lib/did_you_mean.rb]
   Yuki Nishijima (yuki24)
   https://github.com/ruby/did_you_mean
+[lib/erb.rb]
+  Masatoshi SEKI (seki), Takashi Kokubun (k0kubun)
+  https://github.com/ruby/erb
 [lib/fileutils.rb]
   _unmaintained_
   https://github.com/ruby/fileutils
   https://rubygems.org/gems/fileutils
+[lib/find.rb]
+  Kazuki Tsujimoto (ktsj)
+  https://github.com/ruby/find
 [lib/forwardable.rb]
   Keiju ISHITSUKA (keiju)
   https://github.com/ruby/forwardable
@@ -233,6 +229,12 @@ Zachary Scott (zzak)
   aycabta
   https://github.com/ruby/reline
   https://rubygems.org/gems/reline
+[lib/rinda/*]
+  Masatoshi SEKI (seki)
+  https://github.com/ruby/rinda
+[lib/set.rb]
+  Akinori MUSHA (knu)
+  https://github.com/ruby/set
 [lib/singleton.rb]
   Yukihiro Matsumoto (matz)
   https://github.com/ruby/singleton
@@ -315,6 +317,9 @@ Zachary Scott (zzak)
   NARUSE, Yui (naruse), Hiroshi SHIBATA (hsbt)
   https://github.com/flori/json
   https://rubygems.org/gems/json
+[ext/nkf]
+  NARUSE, Yui (naruse)
+  https://github.com/ruby/nkf
 [ext/openssl]
   Kazuki Yamaguchi (rhe)
   https://github.com/ruby/openssl

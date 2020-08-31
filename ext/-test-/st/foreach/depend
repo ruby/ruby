@@ -147,13 +147,10 @@ foreach.o: $(hdrdir)/ruby/backward.h
 foreach.o: $(hdrdir)/ruby/backward/2/assume.h
 foreach.o: $(hdrdir)/ruby/backward/2/attributes.h
 foreach.o: $(hdrdir)/ruby/backward/2/bool.h
-foreach.o: $(hdrdir)/ruby/backward/2/extern.h
 foreach.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 foreach.o: $(hdrdir)/ruby/backward/2/inttypes.h
 foreach.o: $(hdrdir)/ruby/backward/2/limits.h
 foreach.o: $(hdrdir)/ruby/backward/2/long_long.h
-foreach.o: $(hdrdir)/ruby/backward/2/r_cast.h
-foreach.o: $(hdrdir)/ruby/backward/2/rmodule.h
 foreach.o: $(hdrdir)/ruby/backward/2/stdalign.h
 foreach.o: $(hdrdir)/ruby/backward/2/stdarg.h
 foreach.o: $(hdrdir)/ruby/defines.h

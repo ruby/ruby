@@ -19,4 +19,31 @@ describe 'Thread::Backtrace::Location#base_label' do
       @frame.base_label.should == 'block_location'
     end
   end
+
+  it "is <module:A> for a module body" do
+    module ThreadBacktraceLocationSpecs
+      module ModuleLabel
+        ScratchPad.record caller_locations(0, 1)[0].base_label
+      end
+    end
+    ScratchPad.recorded.should == '<module:ModuleLabel>'
+  end
+
+  it "is <class:A> for a class body" do
+    module ThreadBacktraceLocationSpecs
+      class ClassLabel
+        ScratchPad.record caller_locations(0, 1)[0].base_label
+      end
+    end
+    ScratchPad.recorded.should == '<class:ClassLabel>'
+  end
+
+  it "is 'singleton class' for a singleton class body" do
+    module ThreadBacktraceLocationSpecs
+      class << Object.new
+        ScratchPad.record caller_locations(0, 1)[0].base_label
+      end
+    end
+    ScratchPad.recorded.should =~ /\A(singleton class|<singleton class>)\z/
+  end
 end

@@ -321,6 +321,14 @@ rb_obj_singleton_class(VALUE obj)
     return rb_singleton_class(obj);
 }
 
+struct st_table *
+rb_obj_iv_index_tbl(const struct RObject *obj)
+{
+    /* This is a function that practically never gets used.  Just to keep
+     * backwards compatibility to ruby 2.x. */
+    return ROBJECT_IV_INDEX_TBL((VALUE)obj);
+}
+
 /*! \private */
 MJIT_FUNC_EXPORTED void
 rb_obj_copy_ivar(VALUE dest, VALUE obj)

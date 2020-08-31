@@ -2,7 +2,6 @@ require 'reline/kill_ring'
 require 'reline/unicode'
 
 require 'tempfile'
-require 'pathname'
 
 class Reline::LineEditor
   # TODO: undo
@@ -51,12 +50,6 @@ class Reline::LineEditor
   CompletionJourneyData = Struct.new('CompletionJourneyData', :preposing, :postposing, :list, :pointer)
   MenuInfo = Struct.new('MenuInfo', :target, :list)
 
-  CSI_REGEXP = /\e\[[\d;]*[ABCDEFGHJKSTfminsuhl]/
-  OSC_REGEXP = /\e\]\d+(?:;[^;]+)*\a/
-  NON_PRINTING_START = "\1"
-  NON_PRINTING_END = "\2"
-  WIDTH_SCANNER = /\G(?:#{NON_PRINTING_START}|#{NON_PRINTING_END}|#{CSI_REGEXP}|#{OSC_REGEXP}|\X)/
-
   def initialize(config, encoding)
     @config = config
     @completion_append_character = ''
@@ -76,11 +69,35 @@ class Reline::LineEditor
     if @prompt_proc
       prompt_list = @prompt_proc.(buffer)
       prompt_list.map!{ prompt } if @vi_arg or @searching_prompt
+      if @config.show_mode_in_prompt
+        if @config.editing_mode_is?(:vi_command)
+          mode_icon = @config.vi_cmd_mode_icon
+        elsif @config.editing_mode_is?(:vi_insert)
+          mode_icon = @config.vi_ins_mode_icon
+        elsif @config.editing_mode_is?(:emacs)
+          mode_icon = @config.emacs_mode_string
+        else
+          mode_icon = '?'
+        end
+        prompt_list.map!{ |pr| mode_icon + pr }
+      end
       prompt = prompt_list[@line_index]
       prompt_width = calculate_width(prompt, true)
       [prompt, prompt_width, prompt_list]
     else
       prompt_width = calculate_width(prompt, true)
+      if @config.show_mode_in_prompt
+        if @config.editing_mode_is?(:vi_command)
+          mode_icon = @config.vi_cmd_mode_icon
+        elsif @config.editing_mode_is?(:vi_insert)
+          mode_icon = @config.vi_ins_mode_icon
+        elsif @config.editing_mode_is?(:emacs)
+          mode_icon = @config.emacs_mode_string
+        else
+          mode_icon = '?'
+        end
+        prompt = mode_icon + prompt
+      end
       [prompt, prompt_width, nil]
     end
   end
@@ -211,40 +228,8 @@ class Reline::LineEditor
     width.div(@screen_size.last) + 1
   end
 
-  private def split_by_width(prompt, str, max_width)
-    lines = [String.new(encoding: @encoding)]
-    height = 1
-    width = 0
-    rest = "#{prompt}#{str}".encode(Encoding::UTF_8)
-    in_zero_width = false
-    rest.scan(WIDTH_SCANNER) do |gc|
-      case gc
-      when NON_PRINTING_START
-        in_zero_width = true
-      when NON_PRINTING_END
-        in_zero_width = false
-      when CSI_REGEXP, OSC_REGEXP
-        lines.last << gc
-      else
-        unless in_zero_width
-          mbchar_width = Reline::Unicode.get_mbchar_width(gc)
-          if (width += mbchar_width) > max_width
-            width = mbchar_width
-            lines << nil
-            lines << String.new(encoding: @encoding)
-            height += 1
-          end
-        end
-        lines.last << gc
-      end
-    end
-    # The cursor moves to next line in first
-    if width == max_width
-      lines << nil
-      lines << String.new(encoding: @encoding)
-      height += 1
-    end
-    [lines, height]
+  private def split_by_width(str, max_width)
+    Reline::Unicode.split_by_width(str, max_width, @encoding)
   end
 
   private def scroll_down(val)
@@ -488,7 +473,7 @@ class Reline::LineEditor
   end
 
   private def render_partial(prompt, prompt_width, line_to_render, with_control = true)
-    visual_lines, height = split_by_width(prompt, line_to_render.nil? ? '' : line_to_render, @screen_size.last)
+    visual_lines, height = split_by_width(line_to_render.nil? ? prompt : prompt + line_to_render, @screen_size.last)
     if with_control
       if height > @highest_in_this
         diff = height - @highest_in_this
@@ -1058,29 +1043,7 @@ class Reline::LineEditor
   end
 
   private def calculate_width(str, allow_escape_code = false)
-    if allow_escape_code
-      width = 0
-      rest = str.encode(Encoding::UTF_8)
-      in_zero_width = false
-      rest.scan(WIDTH_SCANNER) do |gc|
-        case gc
-        when NON_PRINTING_START
-          in_zero_width = true
-        when NON_PRINTING_END
-          in_zero_width = false
-        when CSI_REGEXP, OSC_REGEXP
-        else
-          unless in_zero_width
-            width += Reline::Unicode.get_mbchar_width(gc)
-          end
-        end
-      end
-      width
-    else
-      str.encode(Encoding::UTF_8).grapheme_clusters.inject(0) { |w, gc|
-        w + Reline::Unicode.get_mbchar_width(gc)
-      }
-    end
+    Reline::Unicode.calculate_width(str, allow_escape_code)
   end
 
   private def key_delete(key)
@@ -2116,12 +2079,14 @@ class Reline::LineEditor
   end
 
   private def vi_histedit(key)
-    path = Tempfile.open { |fp|
+    Tempfile.open { |fp|
       fp.write @line
-      fp.path
+      path = fp.path
+      fp.close
+
+      system("#{ENV['EDITOR']} #{path}")
+      @line = File.read(path)
     }
-    system("#{ENV['EDITOR']} #{path}")
-    @line = Pathname.new(path).read
     finish
   end
 
@@ -2320,7 +2285,6 @@ class Reline::LineEditor
   private def em_exchange_mark(key)
     new_pointer = [@byte_pointer, @line_index]
     @previous_line_index = @line_index
-    @byte_pointer, @line_index = @mark_pointer
     @byte_pointer, @line_index = @mark_pointer
     @cursor = calculate_width(@line.byteslice(0, @byte_pointer))
     @cursor_max = calculate_width(@line)

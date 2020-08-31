@@ -3116,6 +3116,8 @@ method_to_proc(VALUE method)
     return procval;
 }
 
+extern VALUE rb_find_defined_class_by_owner(VALUE current_class, VALUE target_owner);
+
 /*
  * call-seq:
  *   meth.super_method  -> method
@@ -3135,8 +3137,15 @@ method_super_method(VALUE method)
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
     iclass = data->iclass;
     if (!iclass) return Qnil;
-    super_class = RCLASS_SUPER(RCLASS_ORIGIN(iclass));
-    mid = data->me->called_id;
+    if (data->me->def->type == VM_METHOD_TYPE_ALIAS) {
+        super_class = RCLASS_SUPER(rb_find_defined_class_by_owner(data->me->defined_class,
+            data->me->def->body.alias.original_me->owner));
+        mid = data->me->def->body.alias.original_me->def->original_id;
+    }
+    else {
+        super_class = RCLASS_SUPER(RCLASS_ORIGIN(iclass));
+        mid = data->me->def->original_id;
+    }
     if (!super_class) return Qnil;
     me = (rb_method_entry_t *)rb_callable_method_entry_with_refinements(super_class, mid, &iclass);
     if (!me) return Qnil;

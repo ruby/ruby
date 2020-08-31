@@ -11,17 +11,17 @@
 #
 require "ripper"
 
-require "irb/init"
-require "irb/context"
-require "irb/extend-command"
+require_relative "irb/init"
+require_relative "irb/context"
+require_relative "irb/extend-command"
 
-require "irb/ruby-lex"
-require "irb/input-method"
-require "irb/locale"
-require "irb/color"
+require_relative "irb/ruby-lex"
+require_relative "irb/input-method"
+require_relative "irb/locale"
+require_relative "irb/color"
 
-require "irb/version"
-require "irb/easter-egg"
+require_relative "irb/version"
+require_relative "irb/easter-egg"
 
 # IRB stands for "interactive Ruby" and is a tool to interactively execute Ruby
 # expressions read from the standard input.

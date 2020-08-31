@@ -28,6 +28,10 @@ class Reline::ANSI
     [27, 71, 67] => :ed_next_char,        # →
     [27, 71, 68] => :ed_prev_char,        # ←
 
+    # urxvt / exoterm
+    [27, 91, 55, 126] => :ed_move_to_beg, # Home
+    [27, 91, 56, 126] => :ed_move_to_end, # End
+
     # GNOME
     [27, 79, 72] => :ed_move_to_beg,      # Home
     [27, 79, 70] => :ed_move_to_end,      # End
@@ -63,6 +67,9 @@ class Reline::ANSI
     end
     c = @@input.raw(intr: true, &:getbyte)
     (c == 0x16 && @@input.raw(min: 0, tim: 0, &:getbyte)) || c
+  rescue Errno::EIO
+    # Maybe the I/O has been closed.
+    nil
   end
 
   def self.ungetc(c)
@@ -105,10 +112,11 @@ class Reline::ANSI
       @@input.raw do |stdin|
         @@output << "\e[6n"
         @@output.flush
-        while (c = stdin.getc) != 'R'
-          res << c if c
+        while (c = stdin.getc)
+          res << c
+          m = res.match(/\e\[(?<row>\d+);(?<column>\d+)R/)
+          break if m
         end
-        m = res.match(/\e\[(?<row>\d+);(?<column>\d+)/)
         (m.pre_match + m.post_match).chars.reverse_each do |ch|
           stdin.ungetc ch
         end

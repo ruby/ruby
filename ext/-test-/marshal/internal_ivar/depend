@@ -147,13 +147,10 @@ internal_ivar.o: $(hdrdir)/ruby/backward.h
 internal_ivar.o: $(hdrdir)/ruby/backward/2/assume.h
 internal_ivar.o: $(hdrdir)/ruby/backward/2/attributes.h
 internal_ivar.o: $(hdrdir)/ruby/backward/2/bool.h
-internal_ivar.o: $(hdrdir)/ruby/backward/2/extern.h
 internal_ivar.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 internal_ivar.o: $(hdrdir)/ruby/backward/2/inttypes.h
 internal_ivar.o: $(hdrdir)/ruby/backward/2/limits.h
 internal_ivar.o: $(hdrdir)/ruby/backward/2/long_long.h
-internal_ivar.o: $(hdrdir)/ruby/backward/2/r_cast.h
-internal_ivar.o: $(hdrdir)/ruby/backward/2/rmodule.h
 internal_ivar.o: $(hdrdir)/ruby/backward/2/stdalign.h
 internal_ivar.o: $(hdrdir)/ruby/backward/2/stdarg.h
 internal_ivar.o: $(hdrdir)/ruby/defines.h

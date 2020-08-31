@@ -9,14 +9,12 @@ Expected 1 == 2
 to be truthy but was false
 CWD/spec/fixtures/a_spec.rb:8:in `block (2 levels) in <top (required)>'
 CWD/spec/fixtures/a_spec.rb:2:in `<top (required)>'
-CWD/bin/mspec-run:7:in `<main>'
 
 2)
 Foo#bar fails ERROR
 RuntimeError: failure
 CWD/spec/fixtures/a_spec.rb:12:in `block (2 levels) in <top (required)>'
 CWD/spec/fixtures/a_spec.rb:2:in `<top (required)>'
-CWD/bin/mspec-run:7:in `<main>'
 
 Finished in D.DDDDDD seconds
 EOS

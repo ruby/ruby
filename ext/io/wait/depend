@@ -147,13 +147,10 @@ wait.o: $(hdrdir)/ruby/backward.h
 wait.o: $(hdrdir)/ruby/backward/2/assume.h
 wait.o: $(hdrdir)/ruby/backward/2/attributes.h
 wait.o: $(hdrdir)/ruby/backward/2/bool.h
-wait.o: $(hdrdir)/ruby/backward/2/extern.h
 wait.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 wait.o: $(hdrdir)/ruby/backward/2/inttypes.h
 wait.o: $(hdrdir)/ruby/backward/2/limits.h
 wait.o: $(hdrdir)/ruby/backward/2/long_long.h
-wait.o: $(hdrdir)/ruby/backward/2/r_cast.h
-wait.o: $(hdrdir)/ruby/backward/2/rmodule.h
 wait.o: $(hdrdir)/ruby/backward/2/stdalign.h
 wait.o: $(hdrdir)/ruby/backward/2/stdarg.h
 wait.o: $(hdrdir)/ruby/defines.h

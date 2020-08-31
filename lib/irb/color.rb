@@ -146,10 +146,9 @@ module IRB # :nodoc:
         seen.delete(obj)
       end
 
-      # Ripper::Lexer::Elem#state is supported on Ruby 2.5+
       def supported?
         return @supported if defined?(@supported)
-        @supported = Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('2.5.0')
+        @supported = Ripper::Lexer::Elem.method_defined?(:state)
       end
 
       def scan(code, allow_last_error:)

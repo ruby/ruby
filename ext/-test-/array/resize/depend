@@ -146,13 +146,10 @@ resize.o: $(hdrdir)/ruby/backward.h
 resize.o: $(hdrdir)/ruby/backward/2/assume.h
 resize.o: $(hdrdir)/ruby/backward/2/attributes.h
 resize.o: $(hdrdir)/ruby/backward/2/bool.h
-resize.o: $(hdrdir)/ruby/backward/2/extern.h
 resize.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 resize.o: $(hdrdir)/ruby/backward/2/inttypes.h
 resize.o: $(hdrdir)/ruby/backward/2/limits.h
 resize.o: $(hdrdir)/ruby/backward/2/long_long.h
-resize.o: $(hdrdir)/ruby/backward/2/r_cast.h
-resize.o: $(hdrdir)/ruby/backward/2/rmodule.h
 resize.o: $(hdrdir)/ruby/backward/2/stdalign.h
 resize.o: $(hdrdir)/ruby/backward/2/stdarg.h
 resize.o: $(hdrdir)/ruby/defines.h

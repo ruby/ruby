@@ -147,13 +147,10 @@ console.o: $(hdrdir)/ruby/backward.h
 console.o: $(hdrdir)/ruby/backward/2/assume.h
 console.o: $(hdrdir)/ruby/backward/2/attributes.h
 console.o: $(hdrdir)/ruby/backward/2/bool.h
-console.o: $(hdrdir)/ruby/backward/2/extern.h
 console.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 console.o: $(hdrdir)/ruby/backward/2/inttypes.h
 console.o: $(hdrdir)/ruby/backward/2/limits.h
 console.o: $(hdrdir)/ruby/backward/2/long_long.h
-console.o: $(hdrdir)/ruby/backward/2/r_cast.h
-console.o: $(hdrdir)/ruby/backward/2/rmodule.h
 console.o: $(hdrdir)/ruby/backward/2/stdalign.h
 console.o: $(hdrdir)/ruby/backward/2/stdarg.h
 console.o: $(hdrdir)/ruby/defines.h

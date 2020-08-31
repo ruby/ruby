@@ -38,8 +38,10 @@ describe "Tempfile.open" do
   end
 
   it "is passed an array [base, suffix] as first argument" do
-    Tempfile.open(["specs", ".tt"]) { |tempfile| @tempfile = tempfile }
-    @tempfile.path.should =~ /specs.*\.tt$/
+    Tempfile.open(["specs", ".tt"]) { |tempfile|
+      @tempfile = tempfile
+      tempfile.path.should =~ /specs.*\.tt$/
+    }
   end
 
   it "passes the third argument (options) to open" do
@@ -65,7 +67,7 @@ describe "Tempfile.open when passed a block" do
   end
 
   after :each do
-    # Tempfile.open with block does not unlink
+    # Tempfile.open with block does not unlink in Ruby <= 2.7
     @tempfile.close! if @tempfile
   end
 
@@ -93,5 +95,25 @@ describe "Tempfile.open when passed a block" do
   it "closes the yielded Tempfile after the block" do
     Tempfile.open("specs") { |tempfile| @tempfile = tempfile }
     @tempfile.closed?.should be_true
+  end
+
+  ruby_version_is ""..."2.8" do
+    it "does not unlink the file after the block ends" do
+      path = Tempfile.open("specs") { |tempfile|
+        @tempfile = tempfile
+        tempfile.path
+      }
+      File.should.exist?(path)
+    end
+  end
+
+  ruby_version_is "2.8" do
+    it "unlinks the file after the block ends" do
+      path = Tempfile.open("specs") { |tempfile|
+        @tempfile = tempfile
+        tempfile.path
+      }
+      File.should_not.exist?(path)
+    end
   end
 end

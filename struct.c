@@ -388,9 +388,10 @@ struct_make_members_list(va_list ar)
 {
     char *mem;
     VALUE ary, list = rb_ident_hash_new();
-    st_table *tbl = RHASH_TBL(list);
+    st_table *tbl = RHASH_TBL_RAW(list);
 
     RBASIC_CLEAR_CLASS(list);
+    OBJ_WB_UNPROTECT(list);
     while ((mem = va_arg(ar, char*)) != 0) {
 	VALUE sym = rb_sym_intern_ascii_cstr(mem);
 	if (st_insert(tbl, sym, Qtrue)) {
@@ -583,7 +584,8 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
 
     rest = rb_ident_hash_new();
     RBASIC_CLEAR_CLASS(rest);
-    tbl = RHASH_TBL(rest);
+    OBJ_WB_UNPROTECT(rest);
+    tbl = RHASH_TBL_RAW(rest);
     for (i=0; i<argc; i++) {
 	VALUE mem = rb_to_symbol(argv[i]);
         if (rb_is_attrset_sym(mem)) {

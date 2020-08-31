@@ -85,9 +85,12 @@ dump_append_string_value(struct dump_config *dc, VALUE obj)
 	  case '\r':
 	    dump_append(dc, "\\r");
 	    break;
+	  case '\177':
+	    dump_append(dc, "\\u007f");
+	    break;
 	  default:
 	    if (c <= 0x1f)
-		dump_append(dc, "\\u%04d", c);
+		dump_append(dc, "\\u%04x", c);
 	    else
 		dump_append(dc, "%c", c);
 	}
@@ -310,7 +313,8 @@ dump_object(VALUE obj, struct dump_config *dc)
 	dump_append(dc, ", \"file\":\"%s\", \"line\":%lu", ainfo->path, ainfo->line);
 	if (RTEST(ainfo->mid)) {
 	    VALUE m = rb_sym2str(ainfo->mid);
-	    dump_append(dc, ", \"method\":\"%s\"", RSTRING_PTR(m));
+	    dump_append(dc, ", \"method\":");
+	    dump_append_string_value(dc, m);
 	}
 	dump_append(dc, ", \"generation\":%"PRIuSIZE, ainfo->generation);
     }

@@ -15,7 +15,7 @@ IPAddr provides a set of methods to manipulate an IP address.
 Both IPv4 and IPv6 are supported.
   DESCRIPTION
   spec.homepage      = "https://github.com/ruby/ipaddr"
-  spec.license       = "BSD-2-Clause"
+  spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
   spec.files         = [".gitignore", ".travis.yml", "Gemfile", "LICENSE.txt", "README.md", "Rakefile", "bin/console", "bin/setup", "ipaddr.gemspec", "lib/ipaddr.rb"]
   spec.bindir        = "exe"

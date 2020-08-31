@@ -2,8 +2,6 @@
 require 'test/unit'
 
 class TestString < Test::Unit::TestCase
-  ENUMERATOR_WANTARRAY = RUBY_VERSION >= "3.0.0"
-
   WIDE_ENCODINGS = [
      Encoding::UTF_16BE, Encoding::UTF_16LE,
      Encoding::UTF_32BE, Encoding::UTF_32LE,
@@ -915,21 +913,15 @@ CODE
     s = S("ABC")
     assert_equal [65, 66, 67], s.bytes
 
-    if ENUMERATOR_WANTARRAY
-      assert_warn(/block not used/) {
-        assert_equal [65, 66, 67], s.bytes {}
-      }
-    else
-      res = []
-      assert_equal s.object_id, s.bytes {|x| res << x }.object_id
-      assert_equal(65, res[0])
-      assert_equal(66, res[1])
-      assert_equal(67, res[2])
-      s = S("ABC")
-      res = []
-      assert_same s, s.bytes {|x| res << x }
-      assert_equal [65, 66, 67], res
-    end
+    res = []
+    assert_equal s.object_id, s.bytes {|x| res << x }.object_id
+    assert_equal(65, res[0])
+    assert_equal(66, res[1])
+    assert_equal(67, res[2])
+    s = S("ABC")
+    res = []
+    assert_same s, s.bytes {|x| res << x }
+    assert_equal [65, 66, 67], res
   end
 
   def test_each_codepoint
@@ -954,21 +946,15 @@ CODE
     s = S("\u3042\u3044\u3046")
     assert_equal [0x3042, 0x3044, 0x3046], s.codepoints
 
-    if ENUMERATOR_WANTARRAY
-      assert_warn(/block not used/) {
-        assert_equal [0x3042, 0x3044, 0x3046], s.codepoints {}
-      }
-    else
-      res = []
-      assert_equal s.object_id, s.codepoints {|x| res << x }.object_id
-      assert_equal(0x3042, res[0])
-      assert_equal(0x3044, res[1])
-      assert_equal(0x3046, res[2])
-      s = S("ABC")
-      res = []
-      assert_same s, s.codepoints {|x| res << x }
-      assert_equal [65, 66, 67], res
-    end
+    res = []
+    assert_equal s.object_id, s.codepoints {|x| res << x }.object_id
+    assert_equal(0x3042, res[0])
+    assert_equal(0x3044, res[1])
+    assert_equal(0x3046, res[2])
+    s = S("ABC")
+    res = []
+    assert_same s, s.codepoints {|x| res << x }
+    assert_equal [65, 66, 67], res
   end
 
   def test_each_char
@@ -987,17 +973,11 @@ CODE
     s = S("ABC")
     assert_equal ["A", "B", "C"], s.chars
 
-    if ENUMERATOR_WANTARRAY
-      assert_warn(/block not used/) {
-        assert_equal ["A", "B", "C"], s.chars {}
-      }
-    else
-      res = []
-      assert_equal s.object_id, s.chars {|x| res << x }.object_id
-      assert_equal("A", res[0])
-      assert_equal("B", res[1])
-      assert_equal("C", res[2])
-    end
+    res = []
+    assert_equal s.object_id, s.chars {|x| res << x }.object_id
+    assert_equal("A", res[0])
+    assert_equal("B", res[1])
+    assert_equal("C", res[2])
   end
 
   def test_each_grapheme_cluster
@@ -1058,19 +1038,13 @@ CODE
     end
     assert_equal ["a", "b", "c"], "abc".b.grapheme_clusters
 
-    if ENUMERATOR_WANTARRAY
-      assert_warn(/block not used/) {
-        assert_equal ["A", "B", "C"], "ABC".grapheme_clusters {}
-      }
-    else
-      s = "ABC".b
-      res = []
-      assert_same s, s.grapheme_clusters {|x| res << x }
-      assert_equal(3, res.size)
-      assert_equal("A", res[0])
-      assert_equal("B", res[1])
-      assert_equal("C", res[2])
-    end
+    s = "ABC".b
+    res = []
+    assert_same s, s.grapheme_clusters {|x| res << x }
+    assert_equal(3, res.size)
+    assert_equal("A", res[0])
+    assert_equal("B", res[1])
+    assert_equal("C", res[2])
   end
 
   def test_each_line
@@ -1180,16 +1154,10 @@ CODE
     assert_equal ["hello\n", "world"], s.lines
     assert_equal ["hello\nworld"], s.lines(nil)
 
-    if ENUMERATOR_WANTARRAY
-      assert_warn(/block not used/) {
-        assert_equal ["hello\n", "world"], s.lines {}
-      }
-    else
-      res = []
-      assert_equal s.object_id, s.lines {|x| res << x }.object_id
-      assert_equal(S("hello\n"), res[0])
-      assert_equal(S("world"),  res[1])
-    end
+    res = []
+    assert_equal s.object_id, s.lines {|x| res << x }.object_id
+    assert_equal(S("hello\n"), res[0])
+    assert_equal(S("world"),  res[1])
   end
 
   def test_empty?
@@ -3185,6 +3153,22 @@ CODE
 
     bar = %w(b a r).join('')
     assert_same(str, -bar, "uminus deduplicates [Feature #13077]")
+  end
+
+  def test_uminus_frozen
+    # embedded
+    str1 = ("foobar" * 3).freeze
+    str2 = ("foobar" * 3).freeze
+    assert_not_same str1, str2
+    assert_same str1, -str1
+    assert_same str1, -str2
+
+    # regular
+    str1 = ("foobar" * 4).freeze
+    str2 = ("foobar" * 4).freeze
+    assert_not_same str1, str2
+    assert_same str1, -str1
+    assert_same str1, -str2
   end
 
   def test_uminus_no_freeze_not_bare

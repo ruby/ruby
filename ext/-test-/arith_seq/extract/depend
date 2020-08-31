@@ -146,13 +146,10 @@ extract.o: $(hdrdir)/ruby/backward.h
 extract.o: $(hdrdir)/ruby/backward/2/assume.h
 extract.o: $(hdrdir)/ruby/backward/2/attributes.h
 extract.o: $(hdrdir)/ruby/backward/2/bool.h
-extract.o: $(hdrdir)/ruby/backward/2/extern.h
 extract.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 extract.o: $(hdrdir)/ruby/backward/2/inttypes.h
 extract.o: $(hdrdir)/ruby/backward/2/limits.h
 extract.o: $(hdrdir)/ruby/backward/2/long_long.h
-extract.o: $(hdrdir)/ruby/backward/2/r_cast.h
-extract.o: $(hdrdir)/ruby/backward/2/rmodule.h
 extract.o: $(hdrdir)/ruby/backward/2/stdalign.h
 extract.o: $(hdrdir)/ruby/backward/2/stdarg.h
 extract.o: $(hdrdir)/ruby/defines.h

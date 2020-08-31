@@ -197,13 +197,10 @@ ripper.o: $(hdrdir)/ruby/backward.h
 ripper.o: $(hdrdir)/ruby/backward/2/assume.h
 ripper.o: $(hdrdir)/ruby/backward/2/attributes.h
 ripper.o: $(hdrdir)/ruby/backward/2/bool.h
-ripper.o: $(hdrdir)/ruby/backward/2/extern.h
 ripper.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ripper.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ripper.o: $(hdrdir)/ruby/backward/2/limits.h
 ripper.o: $(hdrdir)/ruby/backward/2/long_long.h
-ripper.o: $(hdrdir)/ruby/backward/2/r_cast.h
-ripper.o: $(hdrdir)/ruby/backward/2/rmodule.h
 ripper.o: $(hdrdir)/ruby/backward/2/stdalign.h
 ripper.o: $(hdrdir)/ruby/backward/2/stdarg.h
 ripper.o: $(hdrdir)/ruby/defines.h

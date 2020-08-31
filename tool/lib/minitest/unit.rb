@@ -122,16 +122,11 @@ module MiniTest
       return "Expected: #{mu_pp exp}\n  Actual: #{mu_pp act}" unless
         need_to_diff
 
-      tempfile_a = nil
-      tempfile_b = nil
-
       Tempfile.open("expect") do |a|
-        tempfile_a = a
         a.puts expect
         a.flush
 
         Tempfile.open("butwas") do |b|
-          tempfile_b = b
           b.puts butwas
           b.flush
 
@@ -152,9 +147,6 @@ module MiniTest
       end
 
       result
-    ensure
-      tempfile_a.close! if tempfile_a
-      tempfile_b.close! if tempfile_b
     end
 
     ##

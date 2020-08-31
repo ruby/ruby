@@ -23,7 +23,7 @@ Gem::Specification.new do |s|
   s.authors = ["Minero Aoki"]
   s.email = [nil]
   s.homepage = "https://github.com/ruby/fileutils"
-  s.license = "BSD-2-Clause"
+  s.licenses = ["Ruby", "BSD-2-Clause"]
 
   s.metadata = {
     "source_code_uri" => "https://github.com/ruby/fileutils"

@@ -1754,6 +1754,7 @@ rb_current_vm(void)
     VM_ASSERT(ruby_current_vm_ptr == NULL ||
 	      ruby_current_execution_context_ptr == NULL ||
 	      rb_ec_thread_ptr(GET_EC()) == NULL ||
+              rb_ec_thread_ptr(GET_EC())->status == THREAD_KILLED ||
 	      rb_ec_vm_ptr(GET_EC()) == ruby_current_vm_ptr);
     return ruby_current_vm_ptr;
 }

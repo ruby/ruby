@@ -405,6 +405,32 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
+  def test_each_codepoint_enumerator
+    make_tempfile {|t|
+      a = ""
+      b = ""
+      File.open(t, 'rt') {|f|
+        a = f.each_codepoint.take(4).pack('U*')
+        b = f.read(8)
+      }
+      assert_equal("foo\n", a)
+      assert_equal("bar\nbaz\n", b)
+    }
+  end
+
+  def test_codepoints
+    make_tempfile {|t|
+      bug2959 = '[ruby-core:28650]'
+      a = ""
+      File.open(t, 'rt') {|f|
+        assert_warn(/deprecated/) {
+          f.codepoints {|c| a << c}
+        }
+      }
+      assert_equal("foo\nbar\nbaz\n", a, bug2959)
+    }
+  end
+
   def test_rubydev33072
     t = make_tempfile
     path = t.path
@@ -2467,6 +2493,17 @@ class TestIO < Test::Unit::TestCase
     end
   end
 
+  def test_reopen_ivar
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      f = File.open(IO::NULL)
+      f.instance_variable_set(:@foo, 42)
+      f.reopen(STDIN)
+      f.instance_variable_defined?(:@foo)
+      f.instance_variable_get(:@foo)
+    end;
+  end
+
   def test_foreach
     a = []
     IO.foreach("|" + EnvUtil.rubybin + " -e 'puts :foo; puts :bar; puts :baz'") {|x| a << x }
@@ -2768,7 +2805,7 @@ __END__
 
   def test_flush_in_finalizer1
     bug3910 = '[ruby-dev:42341]'
-    tmp = Tempfile.open("bug3910") {|t|
+    Tempfile.open("bug3910") {|t|
       path = t.path
       t.close
       fds = []
@@ -2780,7 +2817,6 @@ __END__
           f.print "hoge"
         }
       end
-      t
     }
   ensure
     ObjectSpace.each_object(File) {|f|
@@ -2788,7 +2824,6 @@ __END__
         f.close
       end
     }
-    tmp.close!
   end
 
   def test_flush_in_finalizer2
@@ -2812,7 +2847,6 @@ __END__
           end
         }
       end
-      t.close!
     }
   end
 

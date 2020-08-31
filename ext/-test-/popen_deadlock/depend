@@ -146,13 +146,10 @@ infinite_loop_dlsym.o: $(hdrdir)/ruby/backward.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/backward/2/assume.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/backward/2/attributes.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/backward/2/bool.h
-infinite_loop_dlsym.o: $(hdrdir)/ruby/backward/2/extern.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/backward/2/inttypes.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/backward/2/limits.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/backward/2/long_long.h
-infinite_loop_dlsym.o: $(hdrdir)/ruby/backward/2/r_cast.h
-infinite_loop_dlsym.o: $(hdrdir)/ruby/backward/2/rmodule.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/backward/2/stdalign.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/backward/2/stdarg.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/defines.h
