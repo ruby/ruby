@@ -2474,6 +2474,9 @@ arg		: lhs '=' arg_rhs
 		    }
 		| defn_head f_paren_args '=' arg
 		    {
+			if (is_attrset_id($<node>1->nd_mid)) {
+			    yyerror1(&@1, "setter method cannot be defined in an endless method definition");
+			}
 			token_info_drop(p, "def", @1.beg_pos);
 			restore_defun(p, $<node>1->nd_defn);
 		    /*%%%*/

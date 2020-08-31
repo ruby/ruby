@@ -1429,6 +1429,7 @@ eom
     end
     assert_equal("class ok", k.rescued("ok"))
     assert_equal("instance ok", k.new.rescued("ok"))
+    assert_syntax_error('def foo=() = 42', /setter method cannot be defined in an endless method definition/)
   end
 
   def test_methoddef_in_cond
