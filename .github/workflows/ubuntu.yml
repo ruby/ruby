@@ -25,6 +25,7 @@ jobs:
       fail-fast: false
     env:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
+      RUBY_DEBUG: ci
     runs-on: ${{ matrix.os }}
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     steps:
