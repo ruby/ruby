@@ -664,6 +664,9 @@ class TestRegexp < Test::Unit::TestCase
   def test_KCODE
     assert_nil($KCODE)
     assert_nothing_raised { $KCODE = nil }
+  end
+
+  def test_ignorecase
     assert_equal(false, $=)
     assert_nothing_raised { $= = nil }
   end
