@@ -1255,15 +1255,6 @@ range_max(int argc, VALUE *argv, VALUE range)
             return rb_funcall(e, '-', 1, INT2FIX(1));
         }
         if (RB_INTEGER_TYPE_P(b) && !RB_INTEGER_TYPE_P(e)) {
-            if (RB_TYPE_P(e, T_FLOAT)) {
-                VALUE inf = rb_funcall(e, rb_intern("infinite?"), 0);
-                if (inf != Qnil) {
-                  /* For backwards compatibility, return end if the end
-                   * is Float::Infinity and the beginning is integer.
-                     If end is -Float::Infinity, return nil. */
-                  return(inf == INT2FIX(1) ? e : Qnil);
-                }
-            }
             e = rb_funcall(e, rb_intern("floor"), 0);
         }
         return e;
