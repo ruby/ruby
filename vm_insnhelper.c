@@ -4902,7 +4902,7 @@ vm_opt_regexpmatch2(VALUE recv, VALUE obj)
 
 rb_event_flag_t rb_iseq_event_flags(const rb_iseq_t *iseq, size_t pos);
 
-NOINLINE(static void vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE *pc));
+NOINLINE(static void vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp));
 
 static inline void
 vm_trace_hook(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE *pc,
@@ -4955,8 +4955,9 @@ rb_vm_opt_cfunc_p(CALL_CACHE cc, int insn)
 } while (0)
 
 static void
-vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE *pc)
+vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
 {
+    const VALUE *pc = reg_cfp->pc;
     rb_event_flag_t enabled_flags = ruby_vm_event_flags & ISEQ_TRACE_EVENTS;
 
     if (enabled_flags == 0 && ruby_vm_event_local_num == 0) {
