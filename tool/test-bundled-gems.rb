@@ -13,12 +13,11 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
   gem = line.split.first
   puts "\nTesting the #{gem} gem"
 
-  test_command = "#{ruby} -C #{gem_dir}/src/#{gem} -Ilib #{rake}"
+  test_command = "#{ruby} -C #{gem_dir}/src/#{gem} -Ilib #{rake} test"
 
   if gem == "rbs"
     racc = File.realpath("../../libexec/racc", __FILE__)
     Process.spawn("#{ruby} -C #{gem_dir}/src/#{gem} -Ilib #{racc} -v -o lib/rbs/parser.rb lib/rbs/parser.y")
-    test_command << " test"
   end
 
   puts test_command
