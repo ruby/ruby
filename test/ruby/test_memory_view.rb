@@ -50,6 +50,12 @@ class TestMemoryView < Test::Unit::TestCase
     assert_equal(14, actual)
   end
 
+  def test_rb_memory_view_item_size_from_format_with_spaces
+    # spaces should be ignored
+    actual, = MemoryViewTestUtils.item_size_from_format("f 2x d")
+    assert_equal(14, actual)
+  end
+
   def test_rb_memory_view_item_size_from_format_error
     assert_equal([-1, "a"], MemoryViewTestUtils.item_size_from_format("ccca"))
     assert_equal([-1, "4a"], MemoryViewTestUtils.item_size_from_format("ccc4a"))

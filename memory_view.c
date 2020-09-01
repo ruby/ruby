@@ -194,7 +194,11 @@ rb_memory_view_parse_item_format(const char *format,
         ssize_t count = 0;
 
         int ch = *p;
-        if ('0' <= ch && ch <= '9') {
+        if (ISSPACE(ch)) {
+            ++p;
+            continue;
+        }
+        else if ('0' <= ch && ch <= '9') {
             while ('0' <= (ch = *p) && ch <= '9') {
                 count = 10*count + ruby_digit36_to_number_table[ch];
                 ++p;
