@@ -29,7 +29,8 @@ enum ruby_memory_view_flags {
 
 typedef struct {
     char format;
-    int native_size_p;
+    unsigned native_size_p: 1;
+    unsigned little_endian_p: 1;
     size_t offset;
     size_t size;
     size_t repeat;

@@ -222,6 +222,9 @@ rb_memory_view_parse_item_format(const char *format,
         total += size * count;
 
         p += 1 + (int)native_p;
+
+        // skip an endianness specifier
+        if (*p == '<' || *p == '>') ++p;
     }
 
     if (members && n_members) {
@@ -242,20 +245,41 @@ rb_memory_view_parse_item_format(const char *format,
                 count = 1;
             }
 
-            bool native_p;
-            ssize_t size = get_format_size(p, &native_p);
+            bool native_size_p;
+            ssize_t size = get_format_size(p, &native_size_p);
+
+            bool has_endianness = false;
+#ifdef WORDS_BIGENDIAN
+            bool little_endian_p = false;
+#else
+            bool little_endian_p = true;
+#endif
+            switch (p[1 + (int)native_size_p]) {
+              case '<':
+                little_endian_p = true;
+                has_endianness = true;
+                break;
+              case '>':
+                little_endian_p = false;
+                has_endianness = true;
+                break;
+              default:
+                break;
+            }
 
             if (ch != 'x') {
                 buf[i++] = (rb_memory_view_item_component_t){
                     .format = ch,
-                    .native_size_p = native_p,
+                    .native_size_p = native_size_p,
+                    .little_endian_p = little_endian_p,
                     .offset = offset,
                     .size = size,
                     .repeat = count
                 };
             }
+
             offset += size * count;
-            p += 1 + (int)native_p;
+            p += 1 + (int)native_size_p + (int)has_endianness;
         }
         *members = buf;
         *n_members = len;

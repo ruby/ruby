@@ -2,6 +2,8 @@ require "-test-/memory_view"
 require "rbconfig/sizeof"
 
 class TestMemoryView < Test::Unit::TestCase
+  NATIVE_ENDIAN = MemoryViewTestUtils::NATIVE_ENDIAN
+
   def test_rb_memory_view_register_duplicated
     assert_warning(/Duplicated registration of memory view to/) do
       MemoryViewTestUtils.register(MemoryViewTestUtils::ExportableString)
@@ -62,16 +64,16 @@ class TestMemoryView < Test::Unit::TestCase
   end
 
   def test_rb_memory_view_parse_item_format
-    total_size, members, err = MemoryViewTestUtils.parse_item_format("cc2c3f2x4dq!")
+    total_size, members, err = MemoryViewTestUtils.parse_item_format("cc2c3f>2x4d<q!<")
     assert_equal(58, total_size)
     assert_nil(err)
     assert_equal([
-                   {format: 'c', native_size_p: false, offset:  0, size: 1, repeat: 1},
-                   {format: 'c', native_size_p: false, offset:  1, size: 1, repeat: 1},
-                   {format: 'c', native_size_p: false, offset:  2, size: 1, repeat: 2},
-                   {format: 'f', native_size_p: false, offset:  4, size: 4, repeat: 3},
-                   {format: 'd', native_size_p: false, offset: 18, size: 8, repeat: 4},
-                   {format: 'q', native_size_p: true,  offset: 50, size: sizeof('long long'), repeat: 1}
+                   {format: 'c', native_size_p: false, endianness: NATIVE_ENDIAN,  offset:  0, size: 1, repeat: 1},
+                   {format: 'c', native_size_p: false, endianness: NATIVE_ENDIAN,  offset:  1, size: 1, repeat: 1},
+                   {format: 'c', native_size_p: false, endianness: NATIVE_ENDIAN,  offset:  2, size: 1, repeat: 2},
+                   {format: 'f', native_size_p: false, endianness: :big_endian,    offset:  4, size: 4, repeat: 3},
+                   {format: 'd', native_size_p: false, endianness: :little_endian, offset: 18, size: 8, repeat: 4},
+                   {format: 'q', native_size_p: true,  endianness: :little_endian, offset: 50, size: sizeof('long long'), repeat: 1}
                  ],
                  members)
   end

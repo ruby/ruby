@@ -16,6 +16,9 @@ static VALUE sym_ndim;
 static VALUE sym_shape;
 static VALUE sym_strides;
 static VALUE sym_sub_offsets;
+static VALUE sym_endianness;
+static VALUE sym_little_endian;
+static VALUE sym_big_endian;
 
 static VALUE exported_objects;
 
@@ -110,6 +113,7 @@ memory_view_parse_item_format(VALUE mod, VALUE format)
             VALUE member = rb_hash_new();
             rb_hash_aset(member, sym_format, rb_str_new(&members[i].format, 1));
             rb_hash_aset(member, sym_native_size_p, members[i].native_size_p ? Qtrue : Qfalse);
+            rb_hash_aset(member, sym_endianness, members[i].little_endian_p ? sym_little_endian : sym_big_endian);
             rb_hash_aset(member, sym_offset, SSIZET2NUM(members[i].offset));
             rb_hash_aset(member, sym_size, SSIZET2NUM(members[i].size));
             rb_hash_aset(member, sym_repeat, SSIZET2NUM(members[i].repeat));
@@ -238,6 +242,15 @@ Init_memory_view(void)
     sym_shape = ID2SYM(rb_intern("shape"));
     sym_strides = ID2SYM(rb_intern("strides"));
     sym_sub_offsets = ID2SYM(rb_intern("sub_offsets"));
+    sym_endianness = ID2SYM(rb_intern("endianness"));
+    sym_little_endian = ID2SYM(rb_intern("little_endian"));
+    sym_big_endian = ID2SYM(rb_intern("big_endian"));
+
+#ifdef WORDS_BIGENDIAN
+    rb_const_set(mMemoryViewTestUtils, rb_intern("NATIVE_ENDIAN"), sym_big_endian);
+#else
+    rb_const_set(mMemoryViewTestUtils, rb_intern("NATIVE_ENDIAN"), sym_little_endian);
+#endif
 
     exported_objects = rb_hash_new();
     rb_gc_register_mark_object(exported_objects);
