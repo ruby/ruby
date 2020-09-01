@@ -17,8 +17,7 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
 
   if gem == "rbs"
     racc = File.realpath("../../libexec/racc", __FILE__)
-    racc_command = "#{ruby} -C #{gem_dir}/src/#{gem} -Ilib #{racc} -v -o lib/rbs/parser.rb lib/rbs/parser.y"
-    Process.spawn(racc_command)
+    Process.spawn("#{ruby} -C #{gem_dir}/src/#{gem} -Ilib #{racc} -v -o lib/rbs/parser.rb lib/rbs/parser.y")
     test_command << " test"
   end
 
