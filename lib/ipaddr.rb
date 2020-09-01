@@ -235,6 +235,10 @@ class IPAddr
     return _to_string(@addr)
   end
 
+  def to_unmasked_string
+    return _to_string(@unmasked_addr)
+  end
+
   # Returns a network byte ordered string form of the IP address.
   def hton
     case @family
@@ -589,6 +593,7 @@ class IPAddr
     if family != Socket::AF_UNSPEC && @family != family
       raise AddressFamilyError, "address family mismatch"
     end
+    @unmasked_addr = @addr
     if prefixlen
       mask!(prefixlen)
     else
