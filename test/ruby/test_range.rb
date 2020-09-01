@@ -107,13 +107,11 @@ class TestRange < Test::Unit::TestCase
     assert_equal(1, (1...2).max)
     assert_raise(RangeError) { (1..).max }
     assert_raise(RangeError) { (1...).max }
-    assert_equal(2, (1..2.1).max)
-    assert_equal(2, (1...2.1).max)
 
     assert_equal(2.0, (1.0..2.0).max)
     assert_equal(nil, (2.0..1.0).max)
     assert_raise(TypeError) { (1.0...2.0).max }
-    assert_equal(1, (1...1.5).max)
+    assert_raise(TypeError) { (1...1.5).max }
     assert_raise(TypeError) { (1.5...2).max }
 
     assert_equal(-0x80000002, ((-0x80000002)...(-0x80000001)).max)
@@ -139,13 +137,11 @@ class TestRange < Test::Unit::TestCase
     assert_equal([1, 1], (1...2).minmax)
     assert_raise(RangeError) { (1..).minmax }
     assert_raise(RangeError) { (1...).minmax }
-    assert_equal([1, 2], (1..2.1).minmax)
-    assert_equal([1, 2], (1...2.1).minmax)
 
     assert_equal([1.0, 2.0], (1.0..2.0).minmax)
     assert_equal([nil, nil], (2.0..1.0).minmax)
     assert_raise(TypeError) { (1.0...2.0).minmax }
-    assert_equal([1, 1], (1..1.5).minmax)
+    assert_raise(TypeError) { (1...1.5).minmax }
     assert_raise(TypeError) { (1.5...2).minmax }
 
     assert_equal([-0x80000002, -0x80000002], ((-0x80000002)...(-0x80000001)).minmax)
@@ -660,12 +656,7 @@ class TestRange < Test::Unit::TestCase
     assert_not_operator(1..10, :cover?, 3...2)
     assert_not_operator(1..10, :cover?, 3...3)
     assert_not_operator('aa'..'zz', :cover?, 'aa'...'zzz')
-
     assert_not_operator(1..10, :cover?, 1...10.1)
-    assert_not_operator(1...10.1, :cover?, 1..10.1)
-    assert_operator(1..10.1, :cover?, 1...10.1)
-    assert_operator(1..10.1, :cover?, 1...10)
-    assert_operator(1..10.1, :cover?, 1..10)
   end
 
   def test_beg_len
