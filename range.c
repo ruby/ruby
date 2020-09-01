@@ -1200,14 +1200,34 @@ range_min(int argc, VALUE *argv, VALUE range)
  *     rng.max(n)                    -> obj
  *     rng.max(n) {| a,b | block }   -> obj
  *
- *  Returns the maximum value in the range. Returns +nil+ if the begin
- *  value of the range larger than the end value. Returns +nil+ if
- *  the begin value of an exclusive range is equal to the end value.
+ *  Returns the maximum value in the range, or an array of maximum
+ *  values in the range if given an \Integer argument.
  *
- *  Can be given an optional block to override the default comparison
- *  method <code>a <=> b</code>.
+ *  For inclusive ranges with an end, the maximum value of the range
+ *  is the same as the end of the range.
  *
- *    (10..20).max    #=> 20
+ *  If an argument or block is given, or +self+ is an exclusive,
+ *  non-numeric range, calls Enumerable#max (via +super+) with the
+ *  argument and/or block to get the maximum values, unless +self+ is
+ *  a beginless range, in which case it raises a RangeError.
+ *
+ *  If +self+ is an exclusive, integer range (both start and end of the
+ *  range are integers), and no arguments or block are provided, returns
+ *  last value in the range (1 before the end).  Otherwise, if +self+ is
+ *  an exclusive, numeric range, raises a TypeError.
+ * 
+ *  Returns +nil+ if the begin value of the range larger than the
+ *  end value. Returns +nil+ if the begin value of an exclusive
+ *  range is equal to the end value.  Raises a RangeError if called on
+ *  an endless range.
+ *
+ *  Examples:
+ *    (10..20).max                        #=> 20
+ *    (10..20).max(2)                     #=> [20, 19]
+ *    (10...20).max                       #=> 19
+ *    (10...20).max(2)                    #=> [19, 18]
+ *    (10...20).max{|x, y| -x <=> -y }    #=> 10
+ *    (10...20).max(2){|x, y| -x <=> -y } #=> [10, 11]
  */
 
 static VALUE
