@@ -11,8 +11,10 @@ describe "Enumerator#initialize" do
     Enumerator.should have_private_instance_method(:initialize, false)
   end
 
-  it "returns self when given an object" do
-    @uninitialized.send(:initialize, Object.new).should equal(@uninitialized)
+  ruby_version_is ''...'2.8' do
+    it "returns self when given an object" do
+      @uninitialized.send(:initialize, Object.new).should equal(@uninitialized)
+    end
   end
 
   it "returns self when given a block" do

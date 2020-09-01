@@ -990,13 +990,4 @@ class TestObject < Test::Unit::TestCase
       end
     EOS
   end
-
-  def test_matcher
-    assert_warning(/deprecated Object#=~ is called on Object/) do
-      assert_equal(Object.new =~ 42, nil)
-    end
-    assert_warning(/deprecated Object#=~ is called on Array/) do
-      assert_equal([] =~ 42, nil)
-    end
-  end
 end

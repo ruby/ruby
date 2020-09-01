@@ -419,15 +419,30 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, const VALUE *ar
     return enum_obj;
 }
 
+static VALUE
+convert_to_feasible_size_value(VALUE obj) {
+    if (NIL_P(obj)) {
+        return obj;
+    }
+    else if (rb_respond_to(obj, id_call)) {
+        return obj;
+    }
+    else if (RB_FLOAT_TYPE_P(obj) && RFLOAT_VALUE(obj) == HUGE_VAL) {
+        return obj;
+    }
+    else {
+        return rb_to_int(obj);
+    }
+}
+
 /*
  * call-seq:
  *   Enumerator.new(size = nil) { |yielder| ... }
- *   Enumerator.new(obj, method = :each, *args)
  *
  * Creates a new Enumerator object, which can be used as an
  * Enumerable.
  *
- * In the first form, iteration is defined by the given block, in
+ * Iteration is defined by the given block, in
  * which a "yielder" object, given as block parameter, can be used to
  * yield a value by calling the +yield+ method (aliased as <code><<</code>):
  *
@@ -444,52 +459,16 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, const VALUE *ar
  * The optional parameter can be used to specify how to calculate the size
  * in a lazy fashion (see Enumerator#size). It can either be a value or
  * a callable object.
- *
- * In the deprecated second form, a generated Enumerator iterates over the
- * given object using the given method with the given arguments passed.
- *
- * Use of this form is discouraged.  Use Object#enum_for or Object#to_enum
- * instead.
- *
- *   e = Enumerator.new(ObjectSpace, :each_object)
- *       #-> ObjectSpace.enum_for(:each_object)
- *
- *   e.select { |obj| obj.is_a?(Class) }  # => array of all classes
- *
  */
 static VALUE
 enumerator_initialize(int argc, VALUE *argv, VALUE obj)
 {
-    VALUE recv, meth = sym_each;
-    VALUE size = Qnil;
-    int kw_splat = 0;
+    VALUE iter = rb_block_proc();
+    VALUE recv = generator_init(generator_allocate(rb_cGenerator), iter);
+    VALUE arg0 = rb_check_arity(argc, 0, 1) ? argv[0] : Qnil;
+    VALUE size = convert_to_feasible_size_value(arg0);
 
-    if (rb_block_given_p()) {
-	rb_check_arity(argc, 0, 1);
-	recv = generator_init(generator_allocate(rb_cGenerator), rb_block_proc());
-	if (argc) {
-            if (NIL_P(argv[0]) || rb_respond_to(argv[0], id_call) ||
-                (RB_TYPE_P(argv[0], T_FLOAT) && RFLOAT_VALUE(argv[0]) == HUGE_VAL)) {
-                size = argv[0];
-            }
-            else {
-                size = rb_to_int(argv[0]);
-            }
-            argc = 0;
-        }
-    }
-    else {
-	rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
-	rb_warn_deprecated("Enumerator.new without a block", "Object#to_enum");
-	recv = *argv++;
-	if (--argc) {
-	    meth = *argv++;
-	    --argc;
-	}
-        kw_splat = rb_keyword_given_p();
-    }
-
-    return enumerator_init(obj, recv, meth, argc, argv, 0, size, kw_splat);
+    return enumerator_init(obj, recv, sym_each, 0, 0, 0, size, false);
 }
 
 /* :nodoc: */

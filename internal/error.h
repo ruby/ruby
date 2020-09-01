@@ -56,6 +56,7 @@ const char *rb_builtin_type_name(int t);
 const char *rb_builtin_class_name(VALUE x);
 PRINTF_ARGS(void rb_warn_deprecated(const char *fmt, const char *suggest, ...), 1, 3);
 PRINTF_ARGS(void rb_warn_deprecated_to_remove(const char *fmt, const char *removal, ...), 1, 3);
+PRINTF_ARGS(void rb_warn_deprecated_to_remove_use_this_one_instead(const char *deprecated, const char *to_remove, const char *use_this_one_instead, ...), 1, 4);
 VALUE rb_syntax_error_append(VALUE, VALUE, int, int, rb_encoding*, const char*, va_list);
 PRINTF_ARGS(void rb_enc_warn(rb_encoding *enc, const char *fmt, ...), 2, 3);
 PRINTF_ARGS(void rb_sys_enc_warning(rb_encoding *enc, const char *fmt, ...), 2, 3);

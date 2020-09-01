@@ -32,6 +32,7 @@
 #include "internal/struct.h"
 #include "internal/symbol.h"
 #include "internal/variable.h"
+#include "internal/warnings.h"
 #include "probes.h"
 #include "ruby/encoding.h"
 #include "ruby/st.h"
@@ -1407,6 +1408,8 @@ nil_inspect(VALUE obj)
  *     nil =~ other  -> nil
  *
  *  Dummy pattern matching -- always returns nil.
+ *
+ *  This method makes it possible to `while gets =~ /re/ do`.
  */
 
 static VALUE
@@ -1584,27 +1587,6 @@ MJIT_FUNC_EXPORTED VALUE
 rb_false(VALUE obj)
 {
     return Qfalse;
-}
-
-
-/*
- *  call-seq:
- *     obj =~ other  -> nil
- *
- * This method is deprecated.
- *
- * This is not only useless but also troublesome because it may hide a
- * type error.
- */
-
-static VALUE
-rb_obj_match(VALUE obj1, VALUE obj2)
-{
-    if (rb_warning_category_enabled_p(RB_WARN_CATEGORY_DEPRECATED)) {
-        rb_warn("deprecated Object#=~ is called on %"PRIsVALUE
-                "; it always returns nil", rb_obj_class(obj1));
-    }
-    return Qnil;
 }
 
 /*
@@ -4326,6 +4308,25 @@ f_sprintf(int c, const VALUE *v, VALUE _)
     return rb_f_sprintf(c, v);
 }
 
+COMPILER_WARNING_PUSH
+#if defined(_MSC_VER)
+COMPILER_WARNING_IGNORED(4996)
+#elif defined(__INTEL_COMPILER)
+COMPILER_WARNING_IGNORED(1786)
+#elif __has_warning("-Wdeprecated-declarations")
+COMPILER_WARNING_IGNORED(-Wdeprecated-declarations)
+#elif defined(__GNUC__)
+COMPILER_WARNING_IGNORED(-Wdeprecated-declarations)
+#endif
+
+static inline void
+Init_rb_cData(void)
+{
+    rb_cData = rb_cObject;
+}
+
+COMPILER_WARNING_POP
+
 /*
  *  Document-class: Class
  *
@@ -4532,7 +4533,6 @@ InitVM_Object(void)
 
     rb_define_method(rb_mKernel, "nil?", rb_false, 0);
     rb_define_method(rb_mKernel, "===", case_equal, 1);
-    rb_define_method(rb_mKernel, "=~", rb_obj_match, 1);
     rb_define_method(rb_mKernel, "!~", rb_obj_not_match, 1);
     rb_define_method(rb_mKernel, "eql?", rb_obj_equal, 1);
     rb_define_method(rb_mKernel, "hash", rb_obj_hash, 0); /* in hash.c */
@@ -4661,15 +4661,7 @@ InitVM_Object(void)
     rb_undef_method(rb_cClass, "append_features");
     rb_undef_method(rb_cClass, "prepend_features");
 
-    /*
-     * Document-class: Data
-     *
-     * This is a deprecated class, base class for C extensions using
-     * Data_Make_Struct or Data_Wrap_Struct.
-     */
-    rb_cData = rb_define_class("Data", rb_cObject);
-    rb_undef_alloc_func(rb_cData);
-    rb_deprecate_constant(rb_cObject, "Data");
+    Init_rb_cData();
 
     rb_cTrueClass = rb_define_class("TrueClass", rb_cObject);
     rb_cTrueClass_to_s = rb_fstring_enc_lit("true", rb_usascii_encoding());
