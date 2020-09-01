@@ -55,11 +55,15 @@ typedef struct {
      * The format string is a sequence the following pack-template specifiers:
      *
      *   c, C, s, s!, S, S!, n, v, i, i!, I, I!, l, l!,
-     *   L, L!, N, V, f, e, g, d, E, G, j, J
+     *   L, L!, N, V, f, e, g, d, E, G, j, J, x
      *
      * For example, "dd" for an element that consists of two double values,
      * and "CCC" for an element that consists of three bytes, such as
-     * a RGB color triplet. */
+     * a RGB color triplet.
+     *
+     * Also, the value endianness can be explicitly specified by '<' or '>'
+     * following a value type specifier.
+     */
     const char *format;
 
     /* The number of bytes in each element.
