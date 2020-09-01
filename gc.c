@@ -11667,7 +11667,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
             }
 	    break;
 	  case T_STRING: {
-            APPENDF((BUFF_ARGS, "%s", RSTRING_PTR(obj)));
+            APPENDF((BUFF_ARGS, "%.*s", (int)RSTRING_LEN(obj), RSTRING_PTR(obj)));
 	    break;
 	  }
           case T_MOVED: {
