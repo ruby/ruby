@@ -6083,9 +6083,7 @@ flatten(VALUE ary, int level)
  *  Replaces each nested \Array in +self+ with the elements from that \Array;
  *  returns +self+ if any changes, +nil+ otherwise.
  *
- *  Argument +level+, if given and not +nil+, must be an \Integer.
- *
- *  With non-negative argument +level+, flattens recursively through +level+ levels:
+ *  With non-negative \Integer argument +level+, flattens recursively through +level+ levels:
  *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
  *    a.flatten!(1) # => [0, 1, [2, 3], 4, 5]
  *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
@@ -6103,14 +6101,6 @@ flatten(VALUE ary, int level)
  *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
  *    a.flatten!(-2) # => [0, 1, 2, 3, 4, 5]
  *    [0, 1, 2].flatten!(-1) # => nil
- *
- *  ---
- *
- *  Raises an exception if +self+ contains a circular reference:
- *    a = []
- *    a.push([a, a])
- *    # Raises ArgumentError (tried to flatten recursive array):
- *    a.flatten!
  */
 
 static VALUE
@@ -6144,9 +6134,7 @@ rb_ary_flatten_bang(int argc, VALUE *argv, VALUE ary)
  *  - Each non-Array element is unchanged.
  *  - Each \Array is replaced by its individual elements.
  *
- *  Argument +level+, if given and not +nil+, must be Integers.
- *
- *  With non-negative argument +level+, flattens recursively through +level+ levels:
+ *  With non-negative \Integer argument +level+, flattens recursively through +level+ levels:
  *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
  *    a.flatten(0) # => [0, [1, [2, 3], 4], 5]
  *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
@@ -6165,14 +6153,6 @@ rb_ary_flatten_bang(int argc, VALUE *argv, VALUE ary)
  *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
  *    a.flatten(-2) # => [0, 1, 2, 3, 4, 5]
  *    [0, 1, 2].flatten(-1) # => [0, 1, 2]
- *
- *  ---
- *
- *  Raises an exception if +self+ contains a circular reference:
- *    a = []
- *    a.push([a, a])
- *    # Raises ArgumentError (tried to flatten recursive array):
- *    a.flatten
  */
 
 static VALUE
@@ -6379,11 +6359,7 @@ rb_ary_cycle_size(VALUE self, VALUE args, VALUE eobj)
  *    array.cycle -> new_enumerator
  *    array.cycle(count) -> new_enumerator
  *
- *  Argument +count+, if given, must be +nil+ or an \Integer.
- *
- *  ---
- *
- *  When called with positive argument +count+ and a block,
+ *  When called with positive \Integer argument +count+ and a block,
  *  calls the block with each element, then does so again,
  *  until it has done so +count+ times; returns +nil+:
  *    output = []
@@ -6394,14 +6370,10 @@ rb_ary_cycle_size(VALUE self, VALUE args, VALUE eobj)
  *    [0, 1].cycle(0) {|element| fail 'Cannot happen' } # => nil
  *    [0, 1].cycle(-1) {|element| fail 'Cannot happen' } # => nil
  *
- *  ---
- *
  *  When a block is given, and argument is omitted or +nil+, cycles forever:
  *    # Prints 0 and 1 forever.
  *    [0, 1].cycle {|element| puts element }
  *    [0, 1].cycle(nil) {|element| puts element }
- *
- *  ---
  *
  *  When no block is given, returns a new \Enumerator:
  *
@@ -6562,11 +6534,7 @@ rb_ary_permutation_size(VALUE ary, VALUE args, VALUE eobj)
  *  When invoked with a block, yield all permutations of elements of +self+; returns +self+.
  *  The order of permutations is indeterminate.
  *
- *  Argument +n+, if given, must be an \Integer.
- *
- *  ---
- *
- *  When a block and an in-range positive argument +n+ (<tt>0 < n <= self.size</tt>)
+ *  When a block and an in-range positive \Integer argument +n+ (<tt>0 < n <= self.size</tt>)
  *  are given, calls the block with all +n+-tuple permutations of +self+.
  *
  *  Example:
@@ -6590,23 +6558,17 @@ rb_ary_permutation_size(VALUE ary, VALUE args, VALUE eobj)
  *    [2, 0, 1]
  *    [2, 1, 0]
  *
- *  ---
- *
  *  When +n+ is zero, calls the block once with a new empty \Array:
  *    a = [0, 1, 2]
  *    a.permutation(0) {|permutation| p permutation }
  *  Output:
  *    []
  *
- *  ---
- *
  *  When +n+ is out of range (negative or larger than <tt>self.size</tt>),
  *  does not call the block:
  *    a = [0, 1, 2]
  *    a.permutation(-1) {|permutation| fail 'Cannot happen' }
  *    a.permutation(4) {|permutation| fail 'Cannot happen' }
- *
- *  ---
  *
  *  When a block given but no argument,
  *  behaves the same as <tt>a.permutation(a.size)</tt>:
@@ -6619,8 +6581,6 @@ rb_ary_permutation_size(VALUE ary, VALUE args, VALUE eobj)
  *    [1, 2, 0]
  *    [2, 0, 1]
  *    [2, 1, 0]
- *
- *  ---
  *
  *  Returns a new \Enumerator if no block given:
  *    a = [0, 1, 2]
@@ -6704,11 +6664,7 @@ rb_ary_combination_size(VALUE ary, VALUE args, VALUE eobj)
  *  Calls the block, if given, with combinations of elements of +self+;
  *  returns +self+. The order of combinations is indeterminate.
  *
- *  Argument +n+, if given, must be an \Integer.
- *
- *  ---
- *
- *  When a block and an in-range positive argument +n+ (<tt>0 < n <= self.size</tt>)
+ *  When a block and an in-range positive \Integer argument +n+ (<tt>0 < n <= self.size</tt>)
  *  are given, calls the block with all +n+-tuple combinations of +self+.
  *
  *  Example:
@@ -6725,23 +6681,17 @@ rb_ary_combination_size(VALUE ary, VALUE args, VALUE eobj)
  *  Output:
  *    [0, 1, 2]
  *
- *  ---
- *
  *  When +n+ is zero, calls the block once with a new empty \Array:
  *    a = [0, 1, 2]
  *    a1 = a.combination(0) {|combination| p combination }
  *  Output:
  *    []
  *
- *  ---
- *
  *  When +n+ is out of range (negative or larger than <tt>self.size</tt>),
  *  does not call the block:
  *    a = [0, 1, 2]
  *    a.combination(-1) {|combination| fail 'Cannot happen' }
  *    a.combination(4) {|combination| fail 'Cannot happen' }
- *
- *  ---
  *
  *  Returns a new \Enumerator if no block given:
  *    a = [0, 1, 2]
@@ -6839,11 +6789,7 @@ rb_ary_repeated_permutation_size(VALUE ary, VALUE args, VALUE eobj)
  *  each permutation is an \Array;
  *  returns +self+. The order of the permutations is indeterminate.
  *
- *  Argument +n+ must be an \Integer.
- *
- *  ---
- *
- *  When a block and a positive argument +n+ are given, calls the block with each
+ *  When a block and a positive \Integer argument +n+ are given, calls the block with each
  *  +n+-tuple repeated permutation of the elements of +self+.
  *  The number of permutations is <tt>self.size**n</tt>.
  *
@@ -6872,8 +6818,6 @@ rb_ary_repeated_permutation_size(VALUE ary, VALUE args, VALUE eobj)
  *
  *  If +n+ is negative, does not call the block:
  *    a.repeated_permutation(-1) {|permutation| fail 'Cannot happen' }
- *
- *  ---
  *
  *  Returns a new \Enumerator if no block given:
  *    a = [0, 1, 2]
@@ -6967,11 +6911,7 @@ rb_ary_repeated_combination_size(VALUE ary, VALUE args, VALUE eobj)
  *  each combination is an \Array;
  *  returns +self+. The order of the combinations is indeterminate.
  *
- *  Argument +n+ must be an \Integer.
- *
- *  ---
- *
- *  When a block and a positive argument +n+ are given, calls the block with each
+ *  When a block and a positive \Integer argument +n+ are given, calls the block with each
  *  +n+-tuple repeated combination of the elements of +self+.
  *  The number of combinations is <tt>(n+1)(n+2)/2</tt>.
  *
@@ -6997,8 +6937,6 @@ rb_ary_repeated_combination_size(VALUE ary, VALUE args, VALUE eobj)
  *
  *  If +n+ is negative, does not call the block:
  *    a.repeated_combination(-1) {|combination| fail 'Cannot happen' }
- *
- *  ---
  *
  *  Returns a new \Enumerator if no block given:
  *    a = [0, 1, 2]
@@ -7057,15 +6995,11 @@ rb_ary_repeated_combination(VALUE ary, VALUE num)
  *    array.product(*other_arrays) -> new_array
  *    array.product(*other_arrays) {|combination| ... } -> self
  *
- *  Computes and returns or yields all combinations of elements from all the arrays,
+ *  Computes and returns or yields all combinations of elements from all the Arrays,
  *  including both +self+ and +other_arrays+.
  *  - The number of combinations is the product of the sizes of all the arrays,
  *    including both +self+ and +other_arrays+.
  *  - The order of the returned combinations is indeterminate.
- *
- *  Each argument must be an \Array.
- *
- *  ---
  *
  *  When no block is given, returns the combinations as an \Array of Arrays:
  *    a = [0, 1, 2]
@@ -7083,8 +7017,6 @@ rb_ary_repeated_combination(VALUE ary, VALUE num)
  *  If no argument is given, returns an \Array of 1-element Arrays,
  *  each containing an element of +self+:
  *    a.product # => [[0], [1], [2]]
- *
- *  ---
  *
  *  When a block is given, yields each combination as an \Array; returns +self+:
  *    a.product(a1) {|combination| p combination }
@@ -7199,11 +7131,9 @@ done:
  *  call-seq:
  *    array.take(n) -> new_array
  *
- *  Returns a new \Array containing the first +n+ element of +self+;
+ *  Returns a new \Array containing the first +n+ element of +self+,
+ *  where +n+ is a non-negative \Integer;
  *  does not modify +self+.
- *
- *  Argument +n+ must be an \Integer.
- *  and non-negative.
  *
  *  Examples:
  *    a = [0, 1, 2, 3, 4, 5]
@@ -7211,12 +7141,6 @@ done:
  *    a.take(2) # => [0, 1]
  *    a.take(50) # => [0, 1, 2, 3, 4, 5]
  *    a # => [0, 1, 2, 3, 4, 5]
- *
- *  ---
- *
- *  Raises an exception if +n+ is negative:
- *    # Raises ArgumentError (attempt to take negative size):
- *    [0, 1].take(-1)
  */
 
 static VALUE
@@ -7265,22 +7189,15 @@ rb_ary_take_while(VALUE ary)
  *  call-seq:
  *    array.drop(n) -> new_array
  *
- *  Returns a new \Array containing all but the first +n+ element of +self+;
+ *  Returns a new \Array containing all but the first +n+ element of +self+,
+ *  where +n+ is a non-negative \Integer;
  *  does not modify +self+.
- *
- *  Argument +n+ must be a non-negative \Integer.
  *
  *  Examples:
  *    a = [0, 1, 2, 3, 4, 5]
  *    a.drop(0) # => [0, 1, 2, 3, 4, 5]
  *    a.drop(1) # => [1, 2, 3, 4, 5]
  *    a.drop(2) # => [2, 3, 4, 5]
- *
- *  ---
- *
- *  Raises an exception if +n+ is negative:
- *    # Raises ArgumentError (attempt to drop negative size):
- *    [0, 1].drop(-1)
  */
 
 static VALUE
