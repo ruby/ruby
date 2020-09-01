@@ -6134,7 +6134,7 @@ rb_ary_flatten_bang(int argc, VALUE *argv, VALUE ary)
  *  - Each non-Array element is unchanged.
  *  - Each \Array is replaced by its individual elements.
  *
- *  With non-negative argument +level+, flattens recursively through +level+ levels:
+ *  With non-negative \Integer argument +level+, flattens recursively through +level+ levels:
  *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
  *    a.flatten(0) # => [0, [1, [2, 3], 4], 5]
  *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
@@ -6359,7 +6359,7 @@ rb_ary_cycle_size(VALUE self, VALUE args, VALUE eobj)
  *    array.cycle -> new_enumerator
  *    array.cycle(count) -> new_enumerator
  *
- *  When called with positive \Intgeger argument +count+ and a block,
+ *  When called with positive \Integer argument +count+ and a block,
  *  calls the block with each element, then does so again,
  *  until it has done so +count+ times; returns +nil+:
  *    output = []
