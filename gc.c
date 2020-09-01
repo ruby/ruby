@@ -991,7 +991,7 @@ static void gc_marks(rb_objspace_t *objspace, int full_mark);
 static void gc_marks_start(rb_objspace_t *objspace, int full);
 static int  gc_marks_finish(rb_objspace_t *objspace);
 static void gc_marks_rest(rb_objspace_t *objspace);
-static void gc_marks_step(rb_objspace_t *objspace, int slots);
+static void gc_marks_step(rb_objspace_t *objspace, size_t slots);
 static void gc_marks_continue(rb_objspace_t *objspace, rb_heap_t *heap);
 
 static void gc_sweep(rb_objspace_t *objspace);
@@ -5964,7 +5964,7 @@ objspace_allrefs(rb_objspace_t *objspace)
 }
 
 static int
-objspace_allrefs_destruct_i(st_data_t key, st_data_t value, void *ptr)
+objspace_allrefs_destruct_i(st_data_t key, st_data_t value, st_data_t ptr)
 {
     struct reflist *refs = (struct reflist *)value;
     reflist_destruct(refs);
@@ -6000,7 +6000,7 @@ allrefs_dump(rb_objspace_t *objspace)
 #endif
 
 static int
-gc_check_after_marks_i(st_data_t k, st_data_t v, void *ptr)
+gc_check_after_marks_i(st_data_t k, st_data_t v, st_data_t ptr)
 {
     VALUE obj = k;
     struct reflist *refs = (struct reflist *)v;
@@ -6591,7 +6591,7 @@ gc_marks_finish(rb_objspace_t *objspace)
 }
 
 static void
-gc_marks_step(rb_objspace_t *objspace, int slots)
+gc_marks_step(rb_objspace_t *objspace, size_t slots)
 {
 #if GC_ENABLE_INCREMENTAL_MARK
     GC_ASSERT(is_marking(objspace));
