@@ -120,7 +120,7 @@ vm_exec_core(rb_execution_context_t *ec, VALUE initial)
 #undef  GET_PC
 #define GET_PC() (reg_pc)
 #undef  SET_PC
-#define SET_PC(x) (reg_cfp->pc = VM_REG_PC = (x))
+#define SET_PC(x) (reg_pc = (x))
 #endif
 
 #if OPT_TOKEN_THREADED_CODE || OPT_DIRECT_THREADED_CODE

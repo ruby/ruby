@@ -10,6 +10,9 @@
 /* insn <%= insn.pretty_name %> */
 INSN_ENTRY(<%= insn.name %>)
 {
+#if USE_MACHINE_REGS
+    GET_CFP()->pc = GET_PC();
+#endif
     vm_trace(ec, GET_CFP());
     DISPATCH_ORIGINAL_INSN(<%= insn.jump_destination %>);
     END_INSN(<%= insn.name %>);

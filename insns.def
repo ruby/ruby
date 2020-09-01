@@ -363,6 +363,7 @@ putstring
 ()
 (VALUE val)
 {
+    GET_CFP()->pc = GET_PC();
     val = rb_str_resurrect(str);
 }
 
@@ -387,6 +388,7 @@ tostring
 (VALUE val, VALUE str)
 (VALUE val)
 {
+    GET_CFP()->pc = GET_PC();
     val = rb_obj_as_string_result(str, val);
 }
 
@@ -425,6 +427,7 @@ intern
 (VALUE str)
 (VALUE sym)
 {
+    GET_CFP()->pc = GET_PC();
     sym = rb_str_intern(str);
 }
 
@@ -436,6 +439,7 @@ newarray
 (VALUE val)
 // attr rb_snum_t sp_inc = 1 - (rb_snum_t)num;
 {
+    GET_CFP()->pc = GET_PC();
     val = rb_ary_new4(num, STACK_ADDR_FROM_TOP(num));
 }
 
@@ -451,6 +455,7 @@ newarraykwsplat
 (VALUE val)
 // attr rb_snum_t sp_inc = 1 - (rb_snum_t)num;
 {
+    GET_CFP()->pc = GET_PC();
     if (RHASH_EMPTY_P(*STACK_ADDR_FROM_TOP(1))) {
         val = rb_ary_new4(num-1, STACK_ADDR_FROM_TOP(num));
     }
@@ -466,6 +471,7 @@ duparray
 ()
 (VALUE val)
 {
+    GET_CFP()->pc = GET_PC();
     RUBY_DTRACE_CREATE_HOOK(ARRAY, RARRAY_LEN(ary));
     val = rb_ary_resurrect(ary);
 }

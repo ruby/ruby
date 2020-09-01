@@ -36,6 +36,9 @@ INSN_ENTRY(<%= insn.name %>)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
+#if USE_MACHINE_REGS
+    if (! leaf) GET_CFP()->pc = GET_PC();
+#endif
 % if insn.handles_sp?
     POPN(INSN_ATTR(popn));
 % end
