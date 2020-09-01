@@ -22,6 +22,24 @@ static VALUE sym_big_endian;
 
 static VALUE exported_objects;
 
+typedef struct { char c; short     x; } short_alignment_s;
+typedef struct { char c; int       x; } int_alignment_s;
+typedef struct { char c; long      x; } long_alignment_s;
+typedef struct { char c; LONG_LONG x; } long_long_alignment_s;
+typedef struct { char c; int16_t   x; } int16_alignment_s;
+typedef struct { char c; int32_t   x; } int32_alignment_s;
+typedef struct { char c; int64_t   x; } int64_alignment_s;
+typedef struct { char c; intptr_t  x; } intptr_alignment_s;
+
+#define SHORT_ALIGNMENT      (sizeof(short_alignment_s) - sizeof(short))
+#define INT_ALIGNMENT        (sizeof(int_alignment_s) - sizeof(int))
+#define LONG_ALIGNMENT       (sizeof(long_alignment_s) - sizeof(long))
+#define LONG_LONG_ALIGNMENT  (sizeof(long_long_alignment_s) - sizeof(LONG_LONG))
+#define INT16_ALIGNMENT      (sizeof(int16_alignment_s) - sizeof(int16_t))
+#define INT32_ALIGNMENT      (sizeof(int32_alignment_s) - sizeof(int32_t))
+#define INT64_ALIGNMENT      (sizeof(int64_alignment_s) - sizeof(int64_t))
+#define INTPTR_ALIGNMENT     (sizeof(intptr_alignment_s) - sizeof(intptr_t))
+
 static int
 exportable_string_get_memory_view(VALUE obj, rb_memory_view_t *view, int flags)
 {
@@ -251,6 +269,19 @@ Init_memory_view(void)
 #else
     rb_const_set(mMemoryViewTestUtils, rb_intern("NATIVE_ENDIAN"), sym_little_endian);
 #endif
+
+#define DEF_ALIGNMENT_CONST(TYPE) rb_const_set(mMemoryViewTestUtils, rb_intern(#TYPE "_ALIGNMENT"), INT2FIX(TYPE ## _ALIGNMENT))
+
+    DEF_ALIGNMENT_CONST(SHORT);
+    DEF_ALIGNMENT_CONST(INT);
+    DEF_ALIGNMENT_CONST(LONG);
+    DEF_ALIGNMENT_CONST(LONG_LONG);
+    DEF_ALIGNMENT_CONST(INT16);
+    DEF_ALIGNMENT_CONST(INT32);
+    DEF_ALIGNMENT_CONST(INT64);
+    DEF_ALIGNMENT_CONST(INTPTR);
+
+#undef DEF_ALIGNMENT_CONST
 
     exported_objects = rb_hash_new();
     rb_gc_register_mark_object(exported_objects);

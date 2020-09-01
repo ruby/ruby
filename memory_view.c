@@ -10,6 +10,24 @@
 #include "internal/util.h"
 #include "ruby/memory_view.h"
 
+typedef struct { char c; short     x; } short_alignment_s;
+typedef struct { char c; int       x; } int_alignment_s;
+typedef struct { char c; long      x; } long_alignment_s;
+typedef struct { char c; LONG_LONG x; } long_long_alignment_s;
+typedef struct { char c; int16_t   x; } int16_alignment_s;
+typedef struct { char c; int32_t   x; } int32_alignment_s;
+typedef struct { char c; int64_t   x; } int64_alignment_s;
+typedef struct { char c; intptr_t  x; } intptr_alignment_s;
+
+#define SHORT_ALIGNMENT      (sizeof(short_alignment_s) - sizeof(short))
+#define INT_ALIGNMENT        (sizeof(int_alignment_s) - sizeof(int))
+#define LONG_ALIGNMENT       (sizeof(long_alignment_s) - sizeof(long))
+#define LONG_LONG_ALIGNMENT  (sizeof(long_long_alignment_s) - sizeof(LONG_LONG))
+#define INT16_ALIGNMENT      (sizeof(int16_alignment_s) - sizeof(int16_t))
+#define INT32_ALIGNMENT      (sizeof(int32_alignment_s) - sizeof(int32_t))
+#define INT64_ALIGNMENT      (sizeof(int64_alignment_s) - sizeof(int64_t))
+#define INTPTR_ALIGNMENT     (sizeof(intptr_alignment_s) - sizeof(intptr_t))
+
 static ID id_memory_view;
 
 static const rb_data_type_t memory_view_entry_data_type = {
@@ -109,7 +127,7 @@ rb_memory_view_init_as_byte_array(rb_memory_view_t *view, VALUE obj, void *data,
 }
 
 static ssize_t
-get_format_size(const char *format, bool *native_p)
+get_format_size(const char *format, bool *native_p, ssize_t *alignment)
 {
     RUBY_ASSERT(format != NULL);
     RUBY_ASSERT(native_p != NULL);
@@ -128,23 +146,27 @@ get_format_size(const char *format, bool *native_p)
       case 'S':  // S for uint16_t, S! for unsigned short
         if (format[1] == '!') {
             *native_p = true;
+            *alignment = SHORT_ALIGNMENT;
             return sizeof(short);
         }
         // fall through
 
       case 'n':  // n for big-endian 16bit unsigned integer
       case 'v':  // v for little-endian 16bit unsigned integer
+        *alignment = INT16_ALIGNMENT;
         return 2;
 
       case 'i':  // i and i! for signed int
       case 'I':  // I and I! for unsigned int
         *native_p = (format[1] == '!');
+        *alignment = INT_ALIGNMENT;
         return sizeof(int);
 
       case 'l':  // l for int32_t, l! for signed long
       case 'L':  // L for uint32_t, L! for unsigned long
         if (format[1] == '!') {
             *native_p = true;
+            *alignment = LONG_ALIGNMENT;
             return sizeof(long);
         }
         // fall through
@@ -154,12 +176,14 @@ get_format_size(const char *format, bool *native_p)
       case 'f':  // f for native float
       case 'e':  // e for little-endian float
       case 'g':  // g for big-endian float
+        *alignment = INT32_ALIGNMENT;
         return 4;
 
       case 'q':  // q for int64_t, q! for signed long long
       case 'Q':  // Q for uint64_t, Q! for unsigned long long
         if (format[1] == '!') {
             *native_p = true;
+            *alignment = LONG_LONG_ALIGNMENT;
             return sizeof(LONG_LONG);
         }
         // fall through
@@ -167,13 +191,16 @@ get_format_size(const char *format, bool *native_p)
       case 'd':  // d for native double
       case 'E':  // E for little-endian double
       case 'G':  // G for big-endian double
+        *alignment = INT64_ALIGNMENT;
         return 8;
 
       case 'j':  // j for intptr_t
       case 'J':  // J for uintptr_t
+        *alignment = INTPTR_ALIGNMENT;
         return sizeof(intptr_t);
 
       default:
+        *alignment = -1;
         return -1;
     }
 }
@@ -187,8 +214,14 @@ rb_memory_view_parse_item_format(const char *format,
 
     ssize_t total = 0;
     ssize_t len = 0;
+    bool alignment = false;
 
     const char *p = format;
+    if (*p == '|') {  // alginment specifier
+        alignment = true;
+        ++format;
+        ++p;
+    }
     while (*p) {
         const char *q = p;
         ssize_t count = 0;
@@ -209,17 +242,26 @@ rb_memory_view_parse_item_format(const char *format,
         }
 
         bool native_p;
-        ssize_t size = get_format_size(p, &native_p);
+        ssize_t alignment_size = 0;
+        ssize_t size = get_format_size(p, &native_p, &alignment_size);
         if (size < 0) {
             if (err) *err = q;
             return -1;
+        }
+
+        ssize_t padding = 0;
+        if (alignment && alignment_size > 1) {
+            ssize_t res = total % alignment_size;
+            if (res > 0) {
+                padding = alignment_size - res;
+            }
         }
 
         if (ch != 'x') {
             ++len;
         }
 
-        total += size * count;
+        total += padding + size * count;
 
         p += 1 + (int)native_p;
 
@@ -246,7 +288,16 @@ rb_memory_view_parse_item_format(const char *format,
             }
 
             bool native_size_p;
-            ssize_t size = get_format_size(p, &native_size_p);
+            ssize_t alignment_size = 0;
+            ssize_t size = get_format_size(p, &native_size_p, &alignment_size);
+
+            ssize_t padding = 0;
+            if (alignment && alignment_size > 1) {
+                ssize_t res = offset % alignment_size;
+                if (res > 0) {
+                    padding = alignment_size - res;
+                }
+            }
 
             bool has_endianness = false;
 #ifdef WORDS_BIGENDIAN
@@ -266,6 +317,8 @@ rb_memory_view_parse_item_format(const char *format,
               default:
                 break;
             }
+
+            offset += padding;
 
             if (ch != 'x') {
                 buf[i++] = (rb_memory_view_item_component_t){

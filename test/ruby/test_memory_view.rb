@@ -4,6 +4,10 @@ require "rbconfig/sizeof"
 class TestMemoryView < Test::Unit::TestCase
   NATIVE_ENDIAN = MemoryViewTestUtils::NATIVE_ENDIAN
 
+  LONG_LONG_ALIGNMENT = MemoryViewTestUtils::LONG_LONG_ALIGNMENT
+  INT32_ALIGNMENT     = MemoryViewTestUtils::INT32_ALIGNMENT
+  INT64_ALIGNMENT     = MemoryViewTestUtils::INT64_ALIGNMENT
+
   def test_rb_memory_view_register_duplicated
     assert_warning(/Duplicated registration of memory view to/) do
       MemoryViewTestUtils.register(MemoryViewTestUtils::ExportableString)
@@ -76,6 +80,40 @@ class TestMemoryView < Test::Unit::TestCase
                    {format: 'q', native_size_p: true,  endianness: :little_endian, offset: 50, size: sizeof('long long'), repeat: 1}
                  ],
                  members)
+  end
+
+  def test_rb_memory_view_parse_item_format_with_alignment
+    total_size, members, err = MemoryViewTestUtils.parse_item_format("|cc2c3f>2x4d<cq<")
+    assert_equal(72, total_size)
+    assert_nil(err)
+
+    expected_result = [
+      {format: 'c', native_size_p: false, endianness: NATIVE_ENDIAN,  offset:  0, size: 1, repeat: 1},
+      {format: 'c', native_size_p: false, endianness: NATIVE_ENDIAN,  offset:  1, size: 1, repeat: 1},
+      {format: 'c', native_size_p: false, endianness: NATIVE_ENDIAN,  offset:  2, size: 1, repeat: 2},
+    ]
+    offset = 4
+
+    res = offset % INT32_ALIGNMENT
+    offset += INT32_ALIGNMENT - res if res > 0
+    expected_result << {format: 'f', native_size_p: false, endianness: :big_endian, offset: offset, size: 4, repeat: 3}
+    offset += 12
+
+    offset += 2 # 2x
+
+    res = offset % INT64_ALIGNMENT
+    offset += INT64_ALIGNMENT - res if res > 0
+    expected_result << {format: 'd', native_size_p: false, endianness: :little_endian, offset: offset, size: 8, repeat: 4}
+    offset += 32
+
+    expected_result << {format: 'c', native_size_p: false, endianness: NATIVE_ENDIAN,  offset: offset, size: 1, repeat: 1}
+    offset += 1
+
+    res = offset % LONG_LONG_ALIGNMENT
+    offset += LONG_LONG_ALIGNMENT - res if res > 0
+    expected_result << {format: 'q', native_size_p: false, endianness: :little_endian, offset: offset, size: 8, repeat: 1}
+
+    assert_equal(expected_result, members)
   end
 
   def test_rb_memory_view_init_as_byte_array
