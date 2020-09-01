@@ -80,7 +80,7 @@ def sync_default_gems(gem)
     cp_r(Dir.glob("#{upstream}/lib/rubygems*"), "lib")
     cp_r("#{upstream}/test/rubygems", "test")
   when "bundler"
-    rm_rf(%w[lib/bundler lib/bundler.rb libexec/bundler libexec/bundle spec/bundler man/bundle* man/gemfile*])
+    rm_rf(%w[lib/bundler lib/bundler.rb libexec/bundler libexec/bundle spec/bundler] + Dir.glob("man/{bundle*,gemfile*}"))
     cp_r(Dir.glob("#{upstream}/bundler/lib/bundler*"), "lib")
     cp_r(Dir.glob("#{upstream}/bundler/exe/bundle*"), "libexec")
     cp_r("#{upstream}/bundler/bundler.gemspec", "lib/bundler")
