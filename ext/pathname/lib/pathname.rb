@@ -502,6 +502,9 @@ class Pathname
   #
   # ArgumentError is raised when it cannot find a relative path.
   #
+  # Note that this method does not handle situations where the case sensitivity
+  # of the filesystem in use differs from the operating system default.
+  #
   def relative_path_from(base_directory)
     base_directory = Pathname.new(base_directory) unless base_directory.is_a? Pathname
     dest_directory = self.cleanpath.to_s
