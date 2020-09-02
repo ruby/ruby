@@ -516,6 +516,11 @@ class TestObjSpace < Test::Unit::TestCase
     assert_operator i, :>, 0
   end
 
+  def test_internal_class_of_on_ast
+    children = ObjectSpace.reachable_objects_from(RubyVM::AbstractSyntaxTree.parse("kadomatsu"))
+    children.each {|child| ObjectSpace.internal_class_of(child).itself} # this used to crash
+  end
+
   def traverse_super_classes klass
     while klass
       klass = ObjectSpace.internal_super_of(klass)
