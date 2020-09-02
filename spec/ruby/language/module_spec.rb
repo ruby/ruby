@@ -69,10 +69,20 @@ describe "Assigning an anonymous module to a constant" do
     mod.name.should == "ModuleSpecs_CS1"
   end
 
-  it "does not set the name of a module scoped by an anonymous module" do
-    a, b = Module.new, Module.new
-    a::B = b
-    b.name.should be_nil
+  ruby_version_is ""..."3.0" do
+    it "does not set the name of a module scoped by an anonymous module" do
+      a, b = Module.new, Module.new
+      a::B = b
+      b.name.should be_nil
+    end
+  end
+
+  ruby_version_is "3.0" do
+    it "sets the name of a module scoped by an anonymous module" do
+      a, b = Module.new, Module.new
+      a::B = b
+      b.name.should.end_with? '::B'
+    end
   end
 
   it "sets the name of contained modules when assigning a toplevel anonymous module" do
