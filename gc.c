@@ -7170,7 +7170,7 @@ rb_gc_force_recycle(VALUE obj)
     }
     else {
 #endif
-	if (is_old || !GET_HEAP_PAGE(obj)->flags.before_sweep) {
+	if (is_old || GET_HEAP_PAGE(obj)->flags.before_sweep) {
 	    CLEAR_IN_BITMAP(GET_HEAP_MARK_BITS(obj), obj);
 	}
 	CLEAR_IN_BITMAP(GET_HEAP_MARKING_BITS(obj), obj);
