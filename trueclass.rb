@@ -17,7 +17,10 @@ class TrueClass
     Primitive.cexpr! 'rb_cTrueClass_to_s'
   end
 
-  alias_method :inspect, :to_s
+  def inspect
+    Primitive.attr! 'inline'
+    Primitive.cexpr! 'rb_cTrueClass_to_s'
+  end
 
   #
   #  call-seq:
