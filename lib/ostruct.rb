@@ -170,8 +170,7 @@ class OpenStruct
     begin
       @modifiable = true
     rescue
-      exception_class = defined?(FrozenError) ? FrozenError : RuntimeError
-      raise exception_class, "can't modify frozen #{self.class}", caller(3)
+      raise FrozenError, "can't modify frozen #{self.class}", caller(3)
     end
     @table
   end
