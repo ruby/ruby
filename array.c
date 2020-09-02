@@ -1732,7 +1732,7 @@ rb_ary_at(VALUE ary, VALUE pos)
  *    a = [:foo, 'bar', 2]
  *    a.first(2) # => [:foo, "bar"]
  *
- *  If <tt>n >= ary.size</tt>, returns all elements:
+ *  If <tt>n >= array.size</tt>, returns all elements:
  *    a = [:foo, 'bar', 2]
  *    a.first(50) # => [:foo, "bar", 2]
  *
@@ -1773,7 +1773,7 @@ rb_ary_first(int argc, VALUE *argv, VALUE ary)
  *    a = [:foo, 'bar', 2]
  *    a.last(2) # => ["bar", 2]
  *
- *  If <tt>n >= ary.size</tt>, returns all elements:
+ *  If <tt>n >= array.size</tt>, returns all elements:
  *    a = [:foo, 'bar', 2]
  *    a.last(50) # => [:foo, "bar", 2]
  *
@@ -2963,7 +2963,7 @@ rb_ary_rotate(VALUE ary, long cnt)
  *    a.rotate!(2)
  *    a # => [2, :foo, "bar"]
  *
- *  If +count+ is large, uses <tt>count % ary.size</tt> as the count:
+ *  If +count+ is large, uses <tt>count % array.size</tt> as the count:
  *    a = [:foo, 'bar', 2]
  *    a.rotate!(20)
  *    a # => [2, :foo, "bar"]
@@ -2979,7 +2979,7 @@ rb_ary_rotate(VALUE ary, long cnt)
  *    a.rotate!(-2)
  *    a # => ["bar", 2, :foo]
  *
- *  If +count+ is small (far from zero), uses <tt>count % ary.size</tt> as the count:
+ *  If +count+ is small (far from zero), uses <tt>count % array.size</tt> as the count:
  *    a = [:foo, 'bar', 2]
  *    a.rotate!(-5)
  *    a # => ["bar", 2, :foo]
@@ -3013,7 +3013,7 @@ rb_ary_rotate_bang(int argc, VALUE *argv, VALUE ary)
  *    a1 = a.rotate(2)
  *    a1 # => [2, :foo, "bar"]
  *
- *  If +count+ is large, uses <tt>count % ary.size</tt> as the count:
+ *  If +count+ is large, uses <tt>count % array.size</tt> as the count:
  *    a = [:foo, 'bar', 2]
  *    a1 = a.rotate(20)
  *    a1 # => [2, :foo, "bar"]
@@ -3029,7 +3029,7 @@ rb_ary_rotate_bang(int argc, VALUE *argv, VALUE ary)
  *    a1 = a.rotate(-2)
  *    a1 # => ["bar", 2, :foo]
  *
- *  If +count+ is small (far from zero), uses <tt>count % ary.size</tt> as the count:
+ *  If +count+ is small (far from zero), uses <tt>count % array.size</tt> as the count:
  *    a = [:foo, 'bar', 2]
  *    a1 = a.rotate(-5)
  *    a1 # => ["bar", 2, :foo]
@@ -4428,18 +4428,18 @@ rb_ary_clear(VALUE ary)
  *  With arguments +obj+ and \Integer +start+, and no block given,
  *  replaces elements based on the given start.
  *
- *  If +start+ is in range (<tt>0 <= start < ary.size</tt>),
+ *  If +start+ is in range (<tt>0 <= start < array.size</tt>),
  *  replaces all elements from offset +start+ through the end:
  *    a = ['a', 'b', 'c', 'd']
  *    a.fill(:X, 2) # => ["a", "b", :X, :X]
  *
- *  If +start+ is too large (<tt>start >= ary.size</tt>), does nothing:
+ *  If +start+ is too large (<tt>start >= array.size</tt>), does nothing:
  *    a = ['a', 'b', 'c', 'd']
  *    a.fill(:X, 4) # => ["a", "b", "c", "d"]
  *    a = ['a', 'b', 'c', 'd']
  *    a.fill(:X, 5) # => ["a", "b", "c", "d"]
  *
- *  If +start+ is negative, counts from the end (starting index is <tt>start + ary.size</tt>):
+ *  If +start+ is negative, counts from the end (starting index is <tt>start + array.size</tt>):
  *    a = ['a', 'b', 'c', 'd']
  *    a.fill(:X, -2) # => ["a", "b", :X, :X]
  *
@@ -4460,7 +4460,7 @@ rb_ary_clear(VALUE ary)
  *    a = ['a', 'b', 'c', 'd']
  *    a.fill(:X, -2, 1) # => ["a", "b", :X, "d"]
  *
- *  If +start+ is large (<tt>start >= ary.size</tt>), extends +self+ with +nil+:
+ *  If +start+ is large (<tt>start >= array.size</tt>), extends +self+ with +nil+:
  *    a = ['a', 'b', 'c', 'd']
  *    a.fill(:X, 5, 0) # => ["a", "b", "c", "d", nil]
  *    a = ['a', 'b', 'c', 'd']
@@ -4505,12 +4505,12 @@ rb_ary_clear(VALUE ary)
  *  from offset +start+ to the end; replaces the corresponding element
  *  with the block's return value:
  *
- *  If start is in range (<tt>0 <= start < ary.size</tt>),
+ *  If start is in range (<tt>0 <= start < array.size</tt>),
  *  replaces from offset +start+ to the end:
  *    a = ['a', 'b', 'c', 'd']
  *    a.fill(1) { |index| "new_#{index}" } # => ["a", "new_1", "new_2", "new_3"]
  *
- *  If +start+ is too large(<tt>start >= ary.size</tt>), does nothing:
+ *  If +start+ is too large(<tt>start >= array.size</tt>), does nothing:
  *    a = ['a', 'b', 'c', 'd']
  *    a.fill(4) { |index| fail 'Cannot happen' } # => ["a", "b", "c", "d"]
  *    a = ['a', 'b', 'c', 'd']
@@ -4520,7 +4520,7 @@ rb_ary_clear(VALUE ary)
  *    a = ['a', 'b', 'c', 'd']
  *    a.fill(-2) { |index| "new_#{index}" } # => ["a", "b", "new_2", "new_3"]
  *
- *  If start is too small (<tt>start <= -ary.size</tt>, replaces all elements:
+ *  If start is too small (<tt>start <= -array.size</tt>, replaces all elements:
  *    a = ['a', 'b', 'c', 'd']
  *    a.fill(-6) { |index| "new_#{index}" } # => ["new_0", "new_1", "new_2", "new_3"]
  *    a = ['a', 'b', 'c', 'd']
@@ -4538,7 +4538,7 @@ rb_ary_clear(VALUE ary)
  *    a = ['a', 'b', 'c', 'd']
  *    a.fill(-2, 1) { |index| "new_#{index}" } # => ["a", "b", "new_2", "d"]
  *
- *  If +start+ is large (<tt>start >= ary.size</tt>), extends +self+ with +nil+:
+ *  If +start+ is large (<tt>start >= array.size</tt>), extends +self+ with +nil+:
  *    a = ['a', 'b', 'c', 'd']
  *    a.fill(5, 0) { |index| "new_#{index}" } # => ["a", "b", "c", "d", nil]
  *    a = ['a', 'b', 'c', 'd']
@@ -5671,7 +5671,7 @@ ary_min_opt_string(VALUE ary, long i, VALUE vmin)
  *    array.min -> element
  *    array.min { |a, b| ... } -> element
  *    array.min(n) -> new_array
- *    ary.min(n) { |a, b| ... } -> new_array
+ *    array.min(n) { |a, b| ... } -> new_array
  *
  *  Returns one of the following:
  *  - The minimum-valued element from +self+.
@@ -6659,7 +6659,7 @@ rb_ary_combination_size(VALUE ary, VALUE args, VALUE eobj)
 /*
  *  call-seq:
  *    array.combination(n) {|element| ... } -> self
- *    ary.combination(n) -> new_enumerator
+ *    array.combination(n) -> new_enumerator
  *
  *  Calls the block, if given, with combinations of elements of +self+;
  *  returns +self+. The order of combinations is indeterminate.
@@ -7252,8 +7252,6 @@ rb_ary_drop_while(VALUE ary)
  *
  *  Returns +true+ if any element of +self+ meets a given criterion.
  *
- *  The argument, if given, must have instance method <tt>===</tt>.
- *
  *  With no block given and no argument, returns +true+ if +self+ has any truthy element,
  *  +false+ otherwise:
  *    [nil, 0, false].any? # => true
@@ -7265,9 +7263,6 @@ rb_ary_drop_while(VALUE ary)
  *    [0, 1, 2].any? {|element| element > 1 } # => true
  *    [0, 1, 2].any? {|element| element > 2 } # => false
  *
- *  Does not call the block if +self+ is empty:
- *    [].any? {|element| fail 'Cannot happen' } # => false
- *
  *  If argument +obj+ is given, returns +true+ if +obj+.<tt>===</tt> any element,
  *  +false+ otherwise:
  *    ['food', 'drink'].any?(/foo/) # => true
@@ -7276,17 +7271,7 @@ rb_ary_drop_while(VALUE ary)
  *    [0, 1, 2].any?(1) # => true
  *    [0, 1, 2].any?(3) # => false
  *
- *  Issues a warning ('given block not used')
- *  if both an argument and a block given:
- *    [0, 1, 2].any?(/foo/) {|element|} # => false
- *
- *  See also Enumerable#any?
- *
- *  ---
- *
- *  Raises an exception if the argument does not have instance method <tt>===</tt>:
- *    # Raises NoMethodError (undefined method `===' for #<BasicObject:>):
- *    [0, 1, 2].any?(BasicObject.new)
+ *  Related: Enumerable#any?
  */
 
 static VALUE
@@ -7325,8 +7310,6 @@ rb_ary_any_p(int argc, VALUE *argv, VALUE ary)
  *
  *  Returns +true+ if all elements of +self+ meet a given criterion.
  *
- *  The argument, if given, must have instance method <tt>===</tt>.
- *
  *  With no block given and no argument, returns +true+ if +self+ contains only truthy elements,
  *  +false+ otherwise:
  *    [0, 1, :foo].all? # => true
@@ -7338,9 +7321,6 @@ rb_ary_any_p(int argc, VALUE *argv, VALUE ary)
  *    [0, 1, 2].all? { |element| element < 3 } # => true
  *    [0, 1, 2].all? { |element| element < 2 } # => false
  *
- *  Does not call the block if +self+ is empty:
- *    [].all? { |element| fail 'Cannot happen' } # => true
- *
  *  If argument +obj+ is given, returns +true+ if <tt>obj.===</tt> every element, +false+ otherwise:
  *    ['food', 'fool', 'foot'].all?(/foo/) # => true
  *    ['food', 'drink'].all?(/bar/) # => false
@@ -7348,18 +7328,7 @@ rb_ary_any_p(int argc, VALUE *argv, VALUE ary)
  *    [0, 0, 0].all?(0) # => true
  *    [0, 1, 2].all?(1) # => false
  *
- *  Issues a warning ('warning: given block not used') if both an argument and a block given:
- *    [0, 1, 2].all?(/foo/) { |element|} # => false
- *
- *  See also Enumerable#all?
- *
- *  ---
- *
- *  Raises an exception if the argument does not have instance method <tt>===<tt/>:
- *    # Raises NoMethodError (undefined method `===' for #<BasicObject:>):
- *    [0, 1, 2].all?(BasicObject.new)
- *
- *  See also Enumerable#all?
+ *  Related: Enumerable#all?
  */
 
 static VALUE
@@ -7398,8 +7367,6 @@ rb_ary_all_p(int argc, VALUE *argv, VALUE ary)
  *
  *  Returns +true+ if no element of +self+ meet a given criterion.
  *
- *  The argument, if given, must have instance method <tt>===</tt>.
- *
  *  With no block given and no argument, returns +true+ if +self+ has no truthy elements,
  *  +false+ otherwise:
  *    [nil, false].none? # => true
@@ -7411,9 +7378,6 @@ rb_ary_all_p(int argc, VALUE *argv, VALUE ary)
  *    [0, 1, 2].none? {|element| element > 3 } # => true
  *    [0, 1, 2].none? {|element| element > 1 } # => false
  *
- *  Does not call the block if +self+ is empty:
- *    [].none? {|element| fail 'Cannot happen' } # => true
- *
  *  If argument +obj+ is given, returns +true+ if <tt>obj.===</tt> no element, +false+ otherwise:
  *    ['food', 'drink'].none?(/bar/) # => true
  *    ['food', 'drink'].none?(/foo/) # => false
@@ -7421,10 +7385,7 @@ rb_ary_all_p(int argc, VALUE *argv, VALUE ary)
  *    [0, 1, 2].none?(3) # => true
  *    [0, 1, 2].none?(1) # => false
  *
- *  Issues a warning ('given block not used') if both an argument and a block given:
- *    [0, 1, 2].none?(/foo/) { |element| } # => true
- *
- *  See also Enumerable#none?
+ *  Related: Enumerable#none?
  */
 
 static VALUE
@@ -7463,8 +7424,6 @@ rb_ary_none_p(int argc, VALUE *argv, VALUE ary)
  *
  *  Returns +true+ if exactly one element of +self+ meets a given criterion.
  *
- *  The argument, if given, must have instance method <tt>===</tt>.
- *
  *  With no block given and no argument, returns +true+ if +self+ has exactly one truthy element,
  *  +false+ otherwise:
  *    [nil, 0].one? # => true
@@ -7478,9 +7437,6 @@ rb_ary_none_p(int argc, VALUE *argv, VALUE ary)
  *    [0, 1, 2].one? {|element| element > 1 } # => true
  *    [0, 1, 2].one? {|element| element > 2 } # => false
  *
- *  Does not call the block if +self+ is empty:
- *    [].one? {|element| fail 'Cannot happen' } # => false
- *
  *  If argument +obj+ is given, returns +true+ if <tt>obj.===</tt> exactly one element,
  *  +false+ otherwise:
  *    [0, 1, 2].one?(0) # => true
@@ -7490,10 +7446,7 @@ rb_ary_none_p(int argc, VALUE *argv, VALUE ary)
  *    ['food', 'drink'].one?(/foo/) # => true
  *    [].one?(/foo/) # => false
  *
- *  Issues a warning ('given block not used') if both an argument and a block given:
- *    [0, 1, 2].one?(/foo/) { |element| } # => false
- *
- *  See also Enumerable#none?
+ *  Related: Enumerable#none?
  */
 
 static VALUE
@@ -7583,44 +7536,35 @@ finish_exact_sum(long n, VALUE r, VALUE v, int z)
 
 /*
  * call-seq:
- *   ary.sum(init=0)                    -> number
- *   ary.sum(init=0) {|e| expr }        -> number
+ *   array.sum(init = 0) -> object
+ *   array.sum(init = 0) {|element| ... } -> object
  *
- * Returns the sum of elements.
- * For example, [e1, e2, e3].sum returns init + e1 + e2 + e3.
+ *  When no block is given, returns the object equivalent to:
+ *    sum = init
+ *    array.each {|element| sum += element }
+ *    sum
+ *  For example, <tt>[e1, e2, e3].sum</tt> returns </tt>init + e1 + e2 + e3</tt>.
  *
- * If a block is given, the block is applied to each element
- * before addition.
+ *  Examples:
+ *    a = [0, 1, 2, 3]
+ *    a.sum # => 6
+ *    a.sum(100) # => 106
  *
- * If <i>ary</i> is empty, it returns <i>init</i>.
+ *  The elements need not be numeric, but must be <tt>+</tt>-compatible
+ *  with each other and with +init+:
+ *    a = ['abc', 'def', 'ghi']
+ *    a.sum('jkl') # => "jklabcdefghi"
  *
- *   [].sum                             #=> 0
- *   [].sum(0.0)                        #=> 0.0
- *   [1, 2, 3].sum                      #=> 6
- *   [3, 5.5].sum                       #=> 8.5
- *   [2.5, 3.0].sum(0.0) {|e| e * e }   #=> 15.25
- *   [Object.new].sum                   #=> TypeError
+ *  When a block is given, it is called with each element
+ *  and the block's return value (instead of the element itself) is used as the addend:
+ *    a = ['zero', 1, :two]
+ *    s = a.sum('Coerced and concatenated: ') {|element| element.to_s }
+ *    s # => "Coerced and concatenated: zero1two"
  *
- * The (arithmetic) mean value of an array can be obtained as follows.
- *
- *   mean = ary.sum(0.0) / ary.length
- *
- * This method can be used for non-numeric objects by
- * explicit <i>init</i> argument.
- *
- *   ["a", "b", "c"].sum("")            #=> "abc"
- *   [[1], [[2]], [3]].sum([])          #=> [1, [2], 3]
- *
- * However, Array#join and Array#flatten is faster than Array#sum for
- * array of strings and array of arrays.
- *
- *   ["a", "b", "c"].join               #=> "abc"
- *   [[1], [[2]], [3]].flatten(1)       #=> [1, [2], 3]
- *
- *
- * Array#sum method may not respect method redefinition of "+" methods
- * such as Integer#+.
- *
+ *  Notes:
+ *  - Array#join and Array#flatten may be faster than Array#sum
+ *    for an \Array of Strings or an \Array of Arrays.
+ *  - Array#sum method may not respect method redefinition of "+" methods such as Integer#+.
  */
 
 static VALUE
