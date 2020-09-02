@@ -20,10 +20,20 @@ describe "Module#const_set" do
     m.name.should == "ConstantSpecs::CS_CONST1000"
   end
 
-  it "does not set the name of a module scoped by an anonymous module" do
-    a, b = Module.new, Module.new
-    a.const_set :B, b
-    b.name.should be_nil
+  ruby_version_is ""..."3.0" do
+    it "does not set the name of a module scoped by an anonymous module" do
+      a, b = Module.new, Module.new
+      a.const_set :B, b
+      b.name.should be_nil
+    end
+  end
+
+  ruby_version_is "3.0" do
+    it "sets the name of a module scoped by an anonymous module" do
+      a, b = Module.new, Module.new
+      a.const_set :B, b
+      b.name.should.end_with? '::B'
+    end
   end
 
   it "sets the name of contained modules when assigning a toplevel anonymous module" do

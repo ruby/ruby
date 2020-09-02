@@ -2854,14 +2854,15 @@ rb_const_set(VALUE klass, ID id, VALUE val)
 	    else {
                 int parental_path_permanent;
                 VALUE parental_path = classname(klass, &parental_path_permanent);
-                if (!NIL_P(parental_path)) {
-                    if (parental_path_permanent && !val_path_permanent) {
-                        set_namespace_path(val, build_const_path(parental_path, id));
-                    }
-                    else if (!parental_path_permanent && NIL_P(val_path)) {
-                        rb_ivar_set(val, tmp_classpath, build_const_path(parental_path, id));
-                    }
-		}
+                if (NIL_P(parental_path)) {
+                    parental_path = rb_funcall(klass, rb_intern("to_s"), 0);
+                }
+                if (parental_path_permanent && !val_path_permanent) {
+                    set_namespace_path(val, build_const_path(parental_path, id));
+                }
+                else if (!parental_path_permanent && NIL_P(val_path)) {
+                    rb_ivar_set(val, tmp_classpath, build_const_path(parental_path, id));
+                }
 	    }
 	}
     }

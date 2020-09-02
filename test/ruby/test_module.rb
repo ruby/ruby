@@ -767,13 +767,13 @@ class TestModule < Test::Unit::TestCase
     n = Module.new
     m.const_set(:N, n)
     assert_nil(m.name)
-    assert_nil(n.name)
+    assert_match(/::N$/, n.name)
     assert_equal([:N], m.constants)
     m.module_eval("module O end")
     assert_equal([:N, :O], m.constants.sort)
     m.module_eval("class C; end")
     assert_equal([:C, :N, :O], m.constants.sort)
-    assert_nil(m::N.name)
+    assert_match(/::N$/, m::N.name)
     assert_match(/\A#<Module:.*>::O\z/, m::O.name)
     assert_match(/\A#<Module:.*>::C\z/, m::C.name)
     self.class.const_set(:M, m)
@@ -2722,6 +2722,12 @@ class TestModule < Test::Unit::TestCase
     m = Module.new.freeze
     assert_predicate m.clone, :frozen?
     assert_not_predicate m.clone(freeze: false), :frozen?
+  end
+
+  def test_module_name_in_singleton_method
+    s = Object.new.singleton_class
+    mod = s.const_set(:Foo, Module.new)
+    assert_match(/::Foo$/, mod.name, '[Bug #14895]')
   end
 
   private
