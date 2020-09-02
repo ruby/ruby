@@ -9871,12 +9871,24 @@ literal_concat0(struct parser_params *p, VALUE head, VALUE tail)
     return 1;
 }
 
+static VALUE
+string_literal_head(enum node_type htype, NODE *head)
+{
+    if (htype != NODE_DSTR) return Qfalse;
+    if (head->nd_next) {
+	head = head->nd_next->nd_end->nd_head;
+	if (!head || nd_type(head) != NODE_STR) return Qfalse;
+    }
+    const VALUE lit = head->nd_lit;
+    ASSUME(lit != Qfalse);
+    return lit;
+}
+
 /* concat two string literals */
 static NODE *
 literal_concat(struct parser_params *p, NODE *head, NODE *tail, const YYLTYPE *loc)
 {
     enum node_type htype;
-    NODE *headlast;
     VALUE lit;
 
     if (!head) return tail;
@@ -9899,10 +9911,8 @@ literal_concat(struct parser_params *p, NODE *head, NODE *tail, const YYLTYPE *l
     }
     switch (nd_type(tail)) {
       case NODE_STR:
-	if (htype == NODE_DSTR && (headlast = head->nd_next->nd_end->nd_head) &&
-	    nd_type(headlast) == NODE_STR) {
+	if ((lit = string_literal_head(htype, head)) != Qfalse) {
 	    htype = NODE_STR;
-	    lit = headlast->nd_lit;
 	}
 	else {
 	    lit = head->nd_lit;
@@ -9932,13 +9942,16 @@ literal_concat(struct parser_params *p, NODE *head, NODE *tail, const YYLTYPE *l
 	else if (NIL_P(tail->nd_lit)) {
 	  append:
 	    head->nd_alen += tail->nd_alen - 1;
-	    head->nd_next->nd_end->nd_next = tail->nd_next;
-	    head->nd_next->nd_end = tail->nd_next->nd_end;
+	    if (!head->nd_next) {
+		head->nd_next = tail->nd_next;
+	    }
+	    else if (tail->nd_next) {
+		head->nd_next->nd_end->nd_next = tail->nd_next;
+		head->nd_next->nd_end = tail->nd_next->nd_end;
+	    }
 	    rb_discard_node(p, tail);
 	}
-	else if (htype == NODE_DSTR && (headlast = head->nd_next->nd_end->nd_head) &&
-		 nd_type(headlast) == NODE_STR) {
-	    lit = headlast->nd_lit;
+	else if ((lit = string_literal_head(htype, head)) != Qfalse) {
 	    if (!literal_concat0(p, lit, tail->nd_lit))
 		goto error;
 	    tail->nd_lit = Qnil;
@@ -9976,7 +9989,9 @@ new_evstr(struct parser_params *p, NODE *node, const YYLTYPE *loc)
 
     if (node) {
 	switch (nd_type(node)) {
-	  case NODE_STR: case NODE_DSTR: case NODE_EVSTR:
+	  case NODE_STR:
+	    nd_set_type(node, NODE_DSTR);
+	  case NODE_DSTR: case NODE_EVSTR:
 	    return node;
 	}
     }
@@ -10273,8 +10288,10 @@ new_regexp(struct parser_params *p, NODE *node, int options, const YYLTYPE *loc)
 	node->nd_cflag = options & RE_OPTION_MASK;
 	if (!NIL_P(node->nd_lit)) reg_fragment_check(p, node->nd_lit, options);
 	for (list = (prev = node)->nd_next; list; list = list->nd_next) {
-	    if (nd_type(list->nd_head) == NODE_STR) {
-		VALUE tail = list->nd_head->nd_lit;
+	    NODE *frag = list->nd_head;
+	    enum node_type type = nd_type(frag);
+	    if (type == NODE_STR || (type == NODE_DSTR && !frag->nd_next)) {
+		VALUE tail = frag->nd_lit;
 		if (reg_fragment_check(p, tail, options) && prev && !NIL_P(prev->nd_lit)) {
 		    VALUE lit = prev == node ? prev->nd_lit : prev->nd_head->nd_lit;
 		    if (!literal_concat0(p, lit, tail)) {
