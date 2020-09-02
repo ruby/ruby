@@ -379,6 +379,8 @@ rb_enc_warning(rb_encoding *enc, const char *fmt, ...)
 }
 #endif
 
+static void warn_deprecated(VALUE mesg);
+
 void
 rb_warn_deprecated(const char *fmt, const char *suggest, ...)
 {
@@ -392,22 +394,7 @@ rb_warn_deprecated(const char *fmt, const char *suggest, ...)
     rb_str_cat_cstr(mesg, " is deprecated");
     if (suggest) rb_str_catf(mesg, "; use %s instead", suggest);
     rb_str_cat_cstr(mesg, "\n");
-
-    VALUE warn_args[2];
-    warn_args[0] = mesg;
-
-    const rb_method_entry_t * me;
-    me = rb_method_entry(rb_singleton_class(rb_mWarning), id_warn);
-
-    if (rb_method_entry_arity(me) != 1) {
-        VALUE kwargs = rb_hash_new();
-        rb_hash_aset(kwargs, ID2SYM(rb_intern("category")), ID2SYM(rb_intern("deprecated")));
-        warn_args[1] = kwargs;
-
-        rb_funcallv_kw(rb_mWarning, id_warn, 2, warn_args, RB_PASS_KEYWORDS);
-    } else {
-        rb_funcall(rb_mWarning, id_warn, 1, mesg);
-    }
+    warn_deprecated(mesg);
 }
 
 void
@@ -421,22 +408,24 @@ rb_warn_deprecated_to_remove(const char *fmt, const char *removal, ...)
     va_end(args);
     rb_str_set_len(mesg, RSTRING_LEN(mesg) - 1);
     rb_str_catf(mesg, " is deprecated and will be removed in Ruby %s\n", removal);
+    warn_deprecated(mesg);
+}
 
-    VALUE warn_args[2];
-    warn_args[0] = mesg;
-
-    const rb_method_entry_t * me;
-    me = rb_method_entry(rb_singleton_class(rb_mWarning), id_warn);
+static void
+warn_deprecated(VALUE mesg)
+{
+    VALUE warn_args[2] = {mesg};
+    int kwd = 0;
+    const rb_method_entry_t *me = rb_method_entry(rb_singleton_class(rb_mWarning), id_warn);
 
     if (rb_method_entry_arity(me) != 1) {
         VALUE kwargs = rb_hash_new();
         rb_hash_aset(kwargs, ID2SYM(rb_intern("category")), ID2SYM(rb_intern("deprecated")));
         warn_args[1] = kwargs;
-
-        rb_funcallv_kw(rb_mWarning, id_warn, 2, warn_args, RB_PASS_KEYWORDS);
-    } else {
-        rb_funcall(rb_mWarning, id_warn, 1, mesg);
+        kwd = 1;
     }
+
+    rb_funcallv_kw(rb_mWarning, id_warn, 1 + kwd, warn_args, kwd);
 }
 
 static inline int
