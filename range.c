@@ -1215,7 +1215,7 @@ range_min(int argc, VALUE *argv, VALUE range)
  *  range are integers), and no arguments or block are provided, returns
  *  last value in the range (1 before the end).  Otherwise, if +self+ is
  *  an exclusive, numeric range, raises a TypeError.
- * 
+ *
  *  Returns +nil+ if the begin value of the range larger than the
  *  end value. Returns +nil+ if the begin value of an exclusive
  *  range is equal to the end value.  Raises a RangeError if called on
