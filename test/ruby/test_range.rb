@@ -129,6 +129,9 @@ class TestRange < Test::Unit::TestCase
     assert_equal(2, (..2).max)
     assert_raise(TypeError) { (...2).max }
     assert_raise(TypeError) { (...2.0).max }
+
+    assert_equal(Float::INFINITY, (1..Float::INFINITY).max)
+    assert_nil((1..-Float::INFINITY).max)
   end
 
   def test_minmax
@@ -153,6 +156,9 @@ class TestRange < Test::Unit::TestCase
 
     assert_equal(['a', 'c'], ('a'..'c').minmax)
     assert_equal(['a', 'b'], ('a'...'c').minmax)
+
+    assert_equal([1, Float::INFINITY], (1..Float::INFINITY).minmax)
+    assert_equal([nil, nil], (1..-Float::INFINITY).minmax)
   end
 
   def test_initialize_twice
