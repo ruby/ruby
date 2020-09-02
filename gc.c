@@ -7160,23 +7160,15 @@ rb_gc_force_recycle(VALUE obj)
     CLEAR_IN_BITMAP(GET_HEAP_UNCOLLECTIBLE_BITS(obj), obj);
     CLEAR_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(obj), obj);
 
+
 #if GC_ENABLE_INCREMENTAL_MARK
-    if (is_incremental_marking(objspace)) {
-	if (MARKED_IN_BITMAP(GET_HEAP_MARKING_BITS(obj), obj)) {
-	    invalidate_mark_stack(&objspace->mark_stack, obj);
-	    CLEAR_IN_BITMAP(GET_HEAP_MARKING_BITS(obj), obj);
-	}
-	CLEAR_IN_BITMAP(GET_HEAP_MARK_BITS(obj), obj);
-    }
-    else {
-#endif
-	if (is_old || GET_HEAP_PAGE(obj)->flags.before_sweep) {
-	    CLEAR_IN_BITMAP(GET_HEAP_MARK_BITS(obj), obj);
-	}
-	CLEAR_IN_BITMAP(GET_HEAP_MARKING_BITS(obj), obj);
-#if GC_ENABLE_INCREMENTAL_MARK
+    if (is_incremental_marking(objspace) && MARKED_IN_BITMAP(GET_HEAP_MARKING_BITS(obj), obj)) {
+        invalidate_mark_stack(&objspace->mark_stack, obj);
     }
 #endif
+
+    CLEAR_IN_BITMAP(GET_HEAP_MARKING_BITS(obj), obj);
+    CLEAR_IN_BITMAP(GET_HEAP_MARK_BITS(obj), obj);
 
     objspace->profile.total_freed_objects++;
 
