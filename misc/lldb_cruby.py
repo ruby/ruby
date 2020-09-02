@@ -237,6 +237,10 @@ def lldb_inspect(debugger, target, result, val):
             tRTypedData = target.FindFirstType("struct RMoved").GetPointerType()
             val = val.Cast(tRTypedData)
             append_command_output(debugger, "p *(struct RMoved *) %0#x" % val.GetValueAsUnsigned(), result)
+        elif flType == RUBY_T_MATCH:
+            tRTypedData = target.FindFirstType("struct RMatch").GetPointerType()
+            val = val.Cast(tRTypedData)
+            append_command_output(debugger, "p *(struct RMatch *) %0#x" % val.GetValueAsUnsigned(), result)
         elif flType == RUBY_T_IMEMO:
             # I'm not sure how to get IMEMO_MASK out of lldb. It's not in globals()
             imemo_type = (flags >> RUBY_FL_USHIFT) & 0x0F # IMEMO_MASK
