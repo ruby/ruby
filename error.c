@@ -72,6 +72,7 @@ static VALUE rb_mWarning;
 static VALUE rb_cWarningBuffer;
 
 static ID id_warn;
+static ID id_category;
 
 extern const char ruby_description[];
 
@@ -231,11 +232,11 @@ rb_warning_s_aset(VALUE mod, VALUE category, VALUE flag)
 
 /*
  * call-seq:
- *    warn(msg, **kw)  -> nil
+ *    warn(msg, category: nil)  -> nil
  *
  * Writes warning message +msg+ to $stderr. This method is called by
  * Ruby for all emitted warnings. A +category+ may be included with
- * the warning.
+ * the warning, but is ignored by default.
  */
 
 static VALUE
@@ -243,8 +244,11 @@ rb_warning_s_warn(int argc, VALUE *argv, VALUE mod)
 {
     VALUE str;
     VALUE opt;
+    VALUE category;
 
     rb_scan_args(argc, argv, "1:", &str, &opt);
+    if (!NIL_P(opt)) rb_get_kwargs(opt, &id_category, 0, 1, &category);
+
     Check_Type(str, T_STRING);
     rb_must_asciicompat(str);
     rb_write_error_str(str);
@@ -2749,6 +2753,7 @@ Init_Exception(void)
     id_errno = rb_intern_const("errno");
     id_i_path = rb_intern_const("@path");
     id_warn = rb_intern_const("warn");
+    id_category = rb_intern_const("category");
     id_top = rb_intern_const("top");
     id_bottom = rb_intern_const("bottom");
     id_iseq = rb_make_internal_id();
