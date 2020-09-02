@@ -11,6 +11,9 @@ import lldb
 import os
 import shlex
 
+HEAP_PAGE_ALIGN_LOG = 14
+HEAP_PAGE_ALIGN_MASK = (~(~0 << HEAP_PAGE_ALIGN_LOG))
+
 def lldb_init(debugger):
     target = debugger.GetSelectedTarget()
     global SIZEOF_VALUE
@@ -283,6 +286,41 @@ def count_objects(debugger, command, ctx, result, internal_dict):
 def stack_dump_raw(debugger, command, ctx, result, internal_dict):
     ctx.frame.EvaluateExpression("rb_vmdebug_stack_dump_raw_current()")
 
+def heap_page(debugger, command, ctx, result, internal_dict):
+    target = debugger.GetSelectedTarget()
+    process = target.GetProcess()
+    thread = process.GetSelectedThread()
+    frame = thread.GetSelectedFrame()
+
+    val = frame.EvaluateExpression(command)
+    page = get_page(lldb, target, val)
+    page_type = target.FindFirstType("struct heap_page").GetPointerType()
+    page.Cast(page_type)
+    append_command_output(debugger, "p (struct heap_page *) %0#x" % page.GetValueAsUnsigned(), result)
+    append_command_output(debugger, "p *(struct heap_page *) %0#x" % page.GetValueAsUnsigned(), result)
+
+def heap_page_body(debugger, command, ctx, result, internal_dict):
+    target = debugger.GetSelectedTarget()
+    process = target.GetProcess()
+    thread = process.GetSelectedThread()
+    frame = thread.GetSelectedFrame()
+
+    val = frame.EvaluateExpression(command)
+    page = get_page_body(lldb, target, val)
+    print("Page body address: ", page.GetAddress(), file=result)
+    print(page, file=result)
+
+def get_page_body(lldb, target, val):
+    tHeapPageBody = target.FindFirstType("struct heap_page_body")
+    addr = val.GetValueAsUnsigned()
+    page_addr = addr & ~(HEAP_PAGE_ALIGN_MASK)
+    address = lldb.SBAddress(page_addr, target)
+    return target.CreateValueFromAddress("page", address, tHeapPageBody)
+
+def get_page(lldb, target, val):
+    body = get_page_body(lldb, target, val)
+    return body.GetValueForExpressionPath("->header.page")
+
 def dump_node(debugger, command, ctx, result, internal_dict):
     args = shlex.split(command)
     if not args:
@@ -297,5 +335,7 @@ def __lldb_init_module(debugger, internal_dict):
     debugger.HandleCommand("command script add -f lldb_cruby.count_objects rb_count_objects")
     debugger.HandleCommand("command script add -f lldb_cruby.stack_dump_raw SDR")
     debugger.HandleCommand("command script add -f lldb_cruby.dump_node dump_node")
+    debugger.HandleCommand("command script add -f lldb_cruby.heap_page heap_page")
+    debugger.HandleCommand("command script add -f lldb_cruby.heap_page_body heap_page_body")
     lldb_init(debugger)
     print("lldb scripts for ruby has been installed.")
