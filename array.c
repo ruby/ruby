@@ -7446,7 +7446,7 @@ rb_ary_none_p(int argc, VALUE *argv, VALUE ary)
  *    ['food', 'drink'].one?(/foo/) # => true
  *    [].one?(/foo/) # => false
  *
- *  Related: Enumerable#none?
+ *  Related: Enumerable#one?
  */
 
 static VALUE

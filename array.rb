@@ -1,6 +1,5 @@
 class Array
   # call-seq:
-  #    array.shuffle! -> array
   #    array.shuffle!(random: Random) -> array
   #
   # Shuffles the elements of +self+ in place.
@@ -14,7 +13,6 @@ class Array
   end
 
   # call-seq:
-  #    array.shuffle -> new_ary
   #    array.shuffle(random: Random) -> new_ary
   #
   # Returns a new array with elements of +self+ shuffled.
@@ -28,9 +26,7 @@ class Array
   end
 
   # call-seq:
-  #    array.sample -> object
   #    array.sample(random: Random) -> object
-  #    array.sample(n) -> new_ary
   #    array.sample(n, random: Random) -> new_ary
   #
   # Returns random elements from +self+.
