@@ -392,7 +392,22 @@ rb_warn_deprecated(const char *fmt, const char *suggest, ...)
     rb_str_cat_cstr(mesg, " is deprecated");
     if (suggest) rb_str_catf(mesg, "; use %s instead", suggest);
     rb_str_cat_cstr(mesg, "\n");
-    rb_write_warning_str(mesg);
+
+    VALUE warn_args[2];
+    warn_args[0] = mesg;
+
+    const rb_method_entry_t * me;
+    me = rb_method_entry(rb_singleton_class(rb_mWarning), id_warn);
+
+    if (rb_method_entry_arity(me) != 1) {
+        VALUE kwargs = rb_hash_new();
+        rb_hash_aset(kwargs, ID2SYM(rb_intern("category")), ID2SYM(rb_intern("deprecated")));
+        warn_args[1] = kwargs;
+
+        rb_funcallv_kw(rb_mWarning, id_warn, 2, warn_args, RB_PASS_KEYWORDS);
+    } else {
+        rb_funcall(rb_mWarning, id_warn, 1, mesg);
+    }
 }
 
 void
@@ -411,7 +426,7 @@ rb_warn_deprecated_to_remove(const char *fmt, const char *removal, ...)
     warn_args[0] = mesg;
 
     const rb_method_entry_t * me;
-    me = rb_method_entry(rb_mWarning, id_warn);
+    me = rb_method_entry(rb_singleton_class(rb_mWarning), id_warn);
 
     if (rb_method_entry_arity(me) != 1) {
         VALUE kwargs = rb_hash_new();
