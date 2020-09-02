@@ -895,8 +895,13 @@ objspace_internal_class_of(VALUE self, VALUE obj)
 	obj = (VALUE)DATA_PTR(obj);
     }
 
-    klass = CLASS_OF(obj);
-    return wrap_klass_iow(klass);
+    if (RB_TYPE_P(obj, T_IMEMO)) {
+        return Qnil;
+    }
+    else {
+        klass = CLASS_OF(obj);
+        return wrap_klass_iow(klass);
+    }
 }
 
 /*
