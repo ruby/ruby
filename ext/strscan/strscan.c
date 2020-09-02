@@ -1089,8 +1089,9 @@ strscan_matched(VALUE self)
 }
 
 /*
- * Returns the size of the most recent match (see #matched), or +nil+ if there
- * was no recent match.
+ * Returns the size of the most recent match in bytes, or +nil+ if there
+ * was no recent match.  This is different than <tt>matched.size</tt>,
+ * which will return the size in characters.
  *
  *   s = StringScanner.new('test string')
  *   s.check /\w+/           # -> "test"
