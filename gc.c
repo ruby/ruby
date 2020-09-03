@@ -4619,7 +4619,7 @@ gc_compact_finish(rb_objspace_t *objspace, rb_heap_t *heap)
     objspace->flags.during_compacting = FALSE;
 }
 
-static void
+static int
 gc_fill_swept_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page, int *freed_slots, int *empty_slots)
 {
     /* Find any pinned but not marked objects and try to fill those slots */
@@ -4691,9 +4691,7 @@ gc_fill_swept_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *s
 
     lock_page_body(objspace, GET_PAGE_BODY(heap->compact_cursor->start));
 
-    if (finished_compacting) {
-        gc_compact_finish(objspace, heap);
-    }
+    return finished_compacting;
 }
 
 static inline int
@@ -4812,10 +4810,12 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
     }
 
     if (heap->compact_cursor) {
-        gc_fill_swept_page(objspace, heap, sweep_page, &freed_slots, &empty_slots);
+        if (gc_fill_swept_page(objspace, heap, sweep_page, &freed_slots, &empty_slots)) {
+            gc_compact_finish(objspace, heap);
+        }
     }
 
-    if (!objspace->flags.during_compacting) {
+    if (!heap->compact_cursor) {
         gc_setup_mark_bits(sweep_page);
     }
 
