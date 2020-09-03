@@ -102,6 +102,23 @@ do not add an example if it provides the same information given
 in the synopsis or details.  The purpose of examples is not to prove
 what the details are stating.
 
+An example \String should use single-quotes unless it contains:
+- One or more single-quotes.
+- Interpolations.
+
+An example variable name or constant value should enhance the discussion,
+not distract from it.
+
+Avoid:
+  command = 'Open the pod bay doors, Hal.'
+  "cat o' 9 tails" =~ /\d/ => 7
+  "Koala".intern # => :Koala
+
+Better:
+  s = 'abc'
+  '0123 56' =~ /\s/ # => 4
+  'Foo'.intern # => :Foo
+
 == Argument Description (if necessary)
 
 For methods that require arguments, if not obvious and not explicitly
