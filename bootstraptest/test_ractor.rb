@@ -57,8 +57,10 @@ assert_equal 'ok', %q{
 ###
 ###
 # Ractor still has several memory corruption so skip huge number of tests
-return if ENV['GITHUB_WORKFLOW'] &&
-          ENV['GITHUB_WORKFLOW'] == 'Compilations'
+if ENV['GITHUB_WORKFLOW'] &&
+   ENV['GITHUB_WORKFLOW'] == 'Compilations'
+   # ignore the follow
+else
 
 # Ractor.select(*ractors) receives a values from a ractors.
 # It is similar to select(2) and Go's select syntax.
@@ -519,3 +521,4 @@ assert_equal 'nil', %q{
   r.name.inspect
 }
 
+end # if !ENV['GITHUB_WORKFLOW']
