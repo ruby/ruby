@@ -227,3 +227,6 @@ lcov*.info
 /rb_mjit_header.h
 /mjit_config.h
 /include/ruby-*/*/rb_mjit_min_header-*.h
+
+# UJIT
+/ujit_examples.h
