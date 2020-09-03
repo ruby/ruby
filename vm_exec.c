@@ -92,8 +92,13 @@ vm_exec_core(rb_execution_context_t *ec, VALUE initial)
 #define USE_MACHINE_REGS 1
 
 #elif defined(__GNUC__) && defined(__powerpc64__)
+#if 0
     DECL_SC_REG(const VALUE *, pc, "14");
     DECL_SC_REG(rb_control_frame_t *, cfp, "15");
+#else
+    register rb_control_frame_t *reg_cfp;
+    const VALUE *reg_pc;
+#endif
 #define USE_MACHINE_REGS 1
 
 #elif defined(__GNUC__) && defined(__aarch64__)
