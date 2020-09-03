@@ -61,18 +61,21 @@ def disassemble(offset)
   raise 'failed to find jmp' unless jmp_idx
   raise 'generated code for example too long' unless jmp_idx < 10
   handler_instructions = instructions[(0..jmp_idx)]
+
+  puts "Disassembly for the example handler:"
+  puts handler_instructions.map {|_, _, line| line}
+
+
   raise 'rip reference in example makes copying unsafe' if handler_instructions.any? { |_, _, full_line| full_line.downcase.include?('rip') }
   acceptable_mnemonics = %w(mov jmp lea call)
   unrecognized = nil
   handler_instructions.each { |i| unrecognized = i unless acceptable_mnemonics.include?(i[1]) }
-  raise "found a unrecognized \"#{unrecognized[1]}\" instruction in the example. List of recognized instructions: #{acceptable_mnemonics.join(', ')}" if unrecognized
+  raise "found an unrecognized \"#{unrecognized[1]}\" instruction in the example. List of recognized instructions: #{acceptable_mnemonics.join(', ')}" if unrecognized
   raise 'found multiple jmp instructions' if handler_instructions.count { |_, mnemonic, _| mnemonic == 'jmp' } > 1
+  raise "the jmp instruction seems to be relative which isn't copiable" if instructions[jmp_idx][0].split.size > 4
   raise 'found multiple call instructions' if handler_instructions.count { |_, mnemonic, _| mnemonic == 'call' } > 1
   call_idx = handler_instructions.find_index { |_, mnemonic, _| mnemonic == 'call' }
 
-
-  puts "Disassembly for the example handler:"
-  puts handler_instructions.map{|_,_,line|line}
 
   pre_call_bytes = []
   post_call_bytes = []
