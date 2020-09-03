@@ -73,6 +73,8 @@ static VALUE rb_cWarningBuffer;
 
 static ID id_warn;
 static ID id_category;
+static VALUE sym_category;
+static VALUE warning_categories;
 
 extern const char ruby_description[];
 
@@ -276,6 +278,34 @@ rb_warning_warn(VALUE mod, VALUE str)
     return rb_funcallv(mod, id_warn, 1, &str);
 }
 
+
+static int
+rb_warning_warn_arity(void) {
+    return rb_method_entry_arity(rb_method_entry(rb_singleton_class(rb_mWarning), id_warn));
+}
+
+static VALUE
+rb_warn_category(VALUE str, VALUE category)
+{
+    if (category != Qnil) {
+        category = rb_to_symbol_type(category);
+        if (rb_hash_aref(warning_categories, category) != Qtrue) {
+            rb_raise(rb_eArgError, "invalid warning category used: %s", rb_id2name(SYM2ID(category)));
+        }
+    }
+
+    if (rb_warning_warn_arity() == 1) {
+        return rb_warning_warn(rb_mWarning, str);
+    }
+    else {
+        VALUE args[2];
+        args[0] = str;
+        args[1] = rb_hash_new();
+        rb_hash_aset(args[1], sym_category, category);
+        return rb_funcallv_kw(rb_mWarning, id_warn, 2, args, RB_PASS_KEYWORDS);
+    }
+}
+
 static void
 rb_write_warning_str(VALUE str)
 {
@@ -345,6 +375,16 @@ rb_warn(const char *fmt, ...)
 }
 
 void
+rb_category_warn(const char *category, const char *fmt, ...)
+{
+    if (!NIL_P(ruby_verbose)) {
+        with_warning_string(mesg, 0, fmt) {
+            rb_warn_category(mesg, ID2SYM(rb_intern(category)));
+        }
+    }
+}
+
+void
 rb_enc_warn(rb_encoding *enc, const char *fmt, ...)
 {
     if (!NIL_P(ruby_verbose)) {
@@ -362,6 +402,17 @@ rb_warning(const char *fmt, ...)
 	with_warning_string(mesg, 0, fmt) {
 	    rb_write_warning_str(mesg);
 	}
+    }
+}
+
+/* rb_category_warning() reports only in verbose mode */
+void
+rb_category_warning(const char *category, const char *fmt, ...)
+{
+    if (RTEST(ruby_verbose)) {
+        with_warning_string(mesg, 0, fmt) {
+            rb_warn_category(mesg, ID2SYM(rb_intern(category)));
+        }
     }
 }
 
@@ -385,8 +436,6 @@ rb_enc_warning(rb_encoding *enc, const char *fmt, ...)
 }
 #endif
 
-static void warn_deprecated(VALUE mesg);
-
 void
 rb_warn_deprecated(const char *fmt, const char *suggest, ...)
 {
@@ -400,7 +449,7 @@ rb_warn_deprecated(const char *fmt, const char *suggest, ...)
     rb_str_cat_cstr(mesg, " is deprecated");
     if (suggest) rb_str_catf(mesg, "; use %s instead", suggest);
     rb_str_cat_cstr(mesg, "\n");
-    warn_deprecated(mesg);
+    rb_warn_category(mesg, ID2SYM(rb_intern("deprecated")));
 }
 
 void
@@ -414,24 +463,7 @@ rb_warn_deprecated_to_remove(const char *fmt, const char *removal, ...)
     va_end(args);
     rb_str_set_len(mesg, RSTRING_LEN(mesg) - 1);
     rb_str_catf(mesg, " is deprecated and will be removed in Ruby %s\n", removal);
-    warn_deprecated(mesg);
-}
-
-static void
-warn_deprecated(VALUE mesg)
-{
-    VALUE warn_args[2] = {mesg};
-    int kwd = 0;
-    const rb_method_entry_t *me = rb_method_entry(rb_singleton_class(rb_mWarning), id_warn);
-
-    if (rb_method_entry_arity(me) != 1) {
-        VALUE kwargs = rb_hash_new();
-        rb_hash_aset(kwargs, ID2SYM(rb_intern("category")), ID2SYM(rb_intern("deprecated")));
-        warn_args[1] = kwargs;
-        kwd = 1;
-    }
-
-    rb_funcallv_kw(rb_mWarning, id_warn, 1 + kwd, warn_args, kwd);
+    rb_warn_category(mesg, ID2SYM(rb_intern("deprecated")));
 }
 
 static inline int
@@ -453,7 +485,7 @@ warning_write(int argc, VALUE *argv, VALUE buf)
 
 VALUE rb_ec_backtrace_location_ary(rb_execution_context_t *ec, long lev, long n);
 static VALUE
-rb_warn_m(rb_execution_context_t *ec, VALUE exc, VALUE msgs, VALUE uplevel)
+rb_warn_m(rb_execution_context_t *ec, VALUE exc, VALUE msgs, VALUE uplevel, VALUE category)
 {
     VALUE location = Qnil;
     int argc = RARRAY_LENINT(msgs);
@@ -489,12 +521,13 @@ rb_warn_m(rb_execution_context_t *ec, VALUE exc, VALUE msgs, VALUE uplevel)
 	    rb_io_puts(argc, argv, str);
 	    RBASIC_SET_CLASS(str, rb_cString);
 	}
+
 	if (exc == rb_mWarning) {
 	    rb_must_asciicompat(str);
 	    rb_write_error_str(str);
 	}
 	else {
-	    rb_write_warning_str(str);
+            rb_warn_category(str, category);
 	}
     }
     return Qnil;
@@ -2758,6 +2791,13 @@ Init_Exception(void)
     id_bottom = rb_intern_const("bottom");
     id_iseq = rb_make_internal_id();
     id_recv = rb_make_internal_id();
+
+    sym_category = ID2SYM(id_category);
+
+    warning_categories = rb_hash_new();
+    rb_gc_register_mark_object(warning_categories);
+    rb_hash_aset(warning_categories, ID2SYM(rb_intern("deprecated")), Qtrue);
+    rb_obj_freeze(warning_categories);
 }
 
 void

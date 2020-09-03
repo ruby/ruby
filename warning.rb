@@ -39,7 +39,7 @@ module Kernel
   #
   #    baz.rb:6: warning: invalid call to foo
   #
-  def warn(*msgs, uplevel: nil)
-    Primitive.rb_warn_m(msgs, uplevel)
+  def warn(*msgs, uplevel: nil, category: nil)
+    Primitive.rb_warn_m(msgs, uplevel, category)
   end
 end
