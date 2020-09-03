@@ -197,6 +197,14 @@ AC_CHECK_TOOLS([STRIP],   [gstrip strip], [:])
 AS_IF([test ! $rb_test_CFLAGS], [AS_UNSET(CFLAGS)]); AS_UNSET(rb_test_CFLAGS)
 AS_IF([test ! $rb_test_CXXFLAGS], [AS_UNSET(CXXFLAGS)]); AS_UNSET(rb_save_CXXFLAGS)
 
+AS_IF([test "${CXX}" = "g++" -a -z "${GXX}"], [
+    # AC_PROG_CXX sets $CXX to "g++" when it purposefully finds that there is
+    # _no_ g++.  This brain-damaged design must be worked around.  Thankfully,
+    # similar thing doesn't happen for AC_PROG_CC.
+    AC_MSG_NOTICE([C++ features disabled due to lack of a C++ compiler.])
+    AS_UNSET(CXX)
+])
+
 test x"$target_alias" = x &&
 target_os=`echo $target_os | sed 's/linux-gnu$/linux/;s/linux-gnu/linux-/'`
 ac_install_sh='' # unusable for extension libraries.
