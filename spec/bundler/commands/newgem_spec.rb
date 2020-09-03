@@ -376,6 +376,8 @@ RSpec.describe "bundle gem" do
       expect(bundled_app("#{gem_name}/bin/console")).to exist
       expect(bundled_app("#{gem_name}/bin/setup")).to be_executable
       expect(bundled_app("#{gem_name}/bin/console")).to be_executable
+      expect(bundled_app("#{gem_name}/bin/setup").read).to start_with("#!")
+      expect(bundled_app("#{gem_name}/bin/console").read).to start_with("#!")
     end
 
     it "starts with version 0.1.0" do
