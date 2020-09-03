@@ -8399,8 +8399,13 @@ gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free)
      * the object to object id mapping. */
     if (st_lookup(objspace->obj_to_id_tbl, srcid, &id)) {
         gc_report(4, objspace, "Moving object with seen id: %p -> %p\n", (void *)src, (void *)dest);
+        /* inserting in the st table can cause the GC to run. We need to
+         * prevent re-entry in to the GC since `gc_move` is running in the GC,
+         * so temporarily disable the GC around the st table mutation */
+        VALUE already_disabled = rb_gc_disable_no_rest();
         st_delete(objspace->obj_to_id_tbl, &srcid, 0);
         st_insert(objspace->obj_to_id_tbl, (st_data_t)dest, id);
+        if (already_disabled == Qfalse) rb_objspace_gc_enable(objspace);
     }
 
     /* Move the object */
