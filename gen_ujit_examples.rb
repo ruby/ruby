@@ -2,7 +2,7 @@ def get_example_instruction_id
   # TODO we could get this from the script that generates vm.inc instead of dothings this song and dance
   `dwarfdump --name='YARVINSN_ujit_call_example' vm.o`.each_line do |line|
     if (id = line[/DW_AT_const_value\s\((\d+\))/, 1])
-      p [__method__, line]
+      p [__method__, line] if $DEBUG
       return id.to_i
     end
   end
@@ -13,7 +13,7 @@ def get_fileoff
   # use the load command to figure out the offset to the start of the content of vm.o
   `otool -l vm.o`.each_line do |line|
     if (fileoff = line[/fileoff (\d+)/, 1])
-      p [__method__, line]
+      p [__method__, line] if $DEBUG
       return fileoff.to_i
     end
   end
@@ -23,7 +23,7 @@ end
 def get_symbol_offset(symbol)
   `nm vm.o`.each_line do |line|
     if (offset = line[Regexp.compile('(\h+).+' + Regexp.escape(symbol) + '\Z'), 1])
-      p [__method__, line]
+      p [__method__, line] if $DEBUG
       return Integer(offset, 16)
     end
   end
@@ -42,15 +42,16 @@ def disassemble(offset)
   puts "feel free to verify with --reloc"
   disassembly = `#{command}`
   instructions = []
-  puts disassembly
+  puts disassembly if $DEBUG
   disassembly.each_line do |line|
     line = line.strip
-    match = /\h+: ((?:\h\h\s?)+)\s+(\w+)/.match(line) do |match_data|
+    match_data = /\h+: ((?:\h\h\s?)+)\s+(\w+)/.match(line)
+    if match_data
       bytes = match_data[1]
       mnemonic = match_data[2]
       instructions << [bytes, mnemonic, line]
-    end
-    if !match && !instructions.empty?
+      break if mnemonic == 'jmp'
+    elsif !instructions.empty?
       p line
       raise "expected a continuous sequence of disassembly lines"
     end
@@ -70,7 +71,7 @@ def disassemble(offset)
   call_idx = handler_instructions.find_index { |_, mnemonic, _| mnemonic == 'call' }
 
 
-  puts "\n\nDisassembly for the handler:"
+  puts "Disassembly for the example handler:"
   puts handler_instructions.map{|_,_,line|line}
 
   pre_call_bytes = []
@@ -78,28 +79,30 @@ def disassemble(offset)
   handler_instructions.take(call_idx).each do |bytes, mnemonic, _|
     pre_call_bytes += bytes.split
   end
-  handler_instructions[((call_idx+1)...)].each do |bytes, _, _|
+  handler_instructions[call_idx + 1, handler_instructions.size].each do |bytes, _, _|
     post_call_bytes += bytes.split
   end
 
   File.write("ujit_examples.h", <<-EOF)
-static const uint8_t ujit_precall_bytes[] = { #{pre_call_bytes.map{ |byte| '0x'+byte}.join(', ')} };
-static const uint8_t ujit_postall_bytes[] = { #{post_call_bytes.map{ |byte| '0x'+byte}.join(', ')} };
+static const uint8_t ujit_pre_call_bytes[] = { #{pre_call_bytes.map{ |byte| '0x'+byte}.join(', ')} };
+static const uint8_t ujit_post_call_bytes[] = { #{post_call_bytes.map{ |byte| '0x'+byte}.join(', ')} };
   EOF
-  puts "file:"
-  puts File.binread("ujit_examples.h")
+  if $DEBUG
+    puts "file:"
+    puts File.binread("ujit_examples.h")
+  end
 end
 
 instruction_id = get_example_instruction_id
 fileoff = get_fileoff
 tc_table_offset = get_symbol_offset('vm_exec_core.insns_address_table')
 vm_exec_core_offset = get_symbol_offset('vm_exec_core')
-p instruction_id
-p fileoff
-p tc_table_offset.to_s(16)
+p instruction_id if $DEBUG
+p fileoff if $DEBUG
+p tc_table_offset.to_s(16) if $DEBUG
 offset_to_insn_in_tc_table = fileoff + tc_table_offset + 8 * instruction_id
-p offset_to_insn_in_tc_table
+p offset_to_insn_in_tc_table if $DEBUG
 offset_to_handler_code_from_vm_exec_core = readint8b(offset_to_insn_in_tc_table)
-p offset_to_handler_code_from_vm_exec_core
+p offset_to_handler_code_from_vm_exec_core if $DEBUG
 disassemble(vm_exec_core_offset + offset_to_handler_code_from_vm_exec_core)
 
