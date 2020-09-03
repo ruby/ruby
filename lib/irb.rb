@@ -750,10 +750,20 @@ module IRB
       str = @context.inspect_last_value
       multiline_p = str.include?("\n")
       if omit
+        winwidth = @context.io.winsize.last
         if multiline_p
-          str.gsub!(/(\A.*?\n).*/m, "\\1...")
+          first_line = str.split("\n").first
+          result = @context.newline_before_multiline_output? ? (@context.return_format % first_line) : first_line
+          output_width = Reline::Unicode.calculate_width(result, true)
+          diff_size = output_width - Reline::Unicode.calculate_width(first_line, true)
+          if diff_size.positive? and output_width > winwidth
+            lines, _ = Reline::Unicode.split_by_width(first_line, winwidth - diff_size - 3)
+            str = "%s...\e[0m" % lines.first
+            multiline_p = false
+          else
+            str.gsub!(/(\A.*?\n).*/m, "\\1...")
+          end
         else
-          winwidth = @context.io.winsize.last
           output_width = Reline::Unicode.calculate_width(@context.return_format % str, true)
           diff_size = output_width - Reline::Unicode.calculate_width(str, true)
           if diff_size.positive? and output_width > winwidth
