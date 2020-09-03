@@ -4691,8 +4691,6 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 
     gc_report(2, objspace, "page_sweep: start.\n");
 
-    sweep_page->flags.before_sweep = FALSE;
-
     if (heap->compact_cursor) {
         if (sweep_page == heap->compact_cursor) {
             /* The compaction cursor and sweep page met, so we need to quit compacting */
@@ -4704,6 +4702,8 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
             was_compacting = 1;
         }
     }
+
+    sweep_page->flags.before_sweep = FALSE;
 
     p = sweep_page->start;
     offset = p - NUM_IN_PAGE(p);
