@@ -34,7 +34,7 @@ INSN_ENTRY(<%= insn.name %>)
     START_OF_ORIGINAL_INSN(<%= insn.name %>);
     // assumes USE_MACHINE_REGS, aka reg_pc setup,
     // aka #define SET_PC(x) (reg_cfp->pc = reg_pc = (x))
-    reg_pc = rb_ujit_empty_func(GET_CFP());
+    reg_pc = rb_ujit_empty_func(GET_CFP(), reg_pc);
     END_INSN(<%= insn.name %>);
 }
 % end

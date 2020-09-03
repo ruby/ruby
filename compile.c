@@ -839,6 +839,8 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
     return iseq_setup(iseq, ret);
 }
 
+extern uint8_t *native_pop_code; // TODO global hack
+
 static int
 rb_iseq_translate_threaded_code(rb_iseq_t *iseq)
 {
@@ -851,6 +853,9 @@ rb_iseq_translate_threaded_code(rb_iseq_t *iseq)
 	int insn = (int)iseq->body->iseq_encoded[i];
 	int len = insn_len(insn);
 	encoded[i] = (VALUE)table[insn];
+
+        if (insn == BIN(pop)) encoded[i] = (VALUE)native_pop_code;
+
 	i += len;
     }
     FL_SET((VALUE)iseq, ISEQ_TRANSLATED);
