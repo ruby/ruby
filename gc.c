@@ -11702,6 +11702,15 @@ rb_raw_iseq_info(char *buff, const int buff_size, const rb_iseq_t *iseq)
 
 bool rb_ractor_p(VALUE rv);
 
+static int
+str_len_no_raise(VALUE str)
+{
+    long len = RSTRING_LEN(str);
+    if (len < 0) return 0;
+    if (len > INT_MAX) return INT_MAX;
+    return (int)len;
+}
+
 const char *
 rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 {
@@ -11789,7 +11798,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
             }
 	    break;
 	  case T_STRING: {
-            APPENDF((BUFF_ARGS, "%.*s", RSTRING_LENINT(obj), RSTRING_PTR(obj)));
+            APPENDF((BUFF_ARGS, "%.*s", str_len_no_raise(obj), RSTRING_PTR(obj)));
 	    break;
 	  }
           case T_MOVED: {
