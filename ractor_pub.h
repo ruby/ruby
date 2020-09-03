@@ -1,5 +1,20 @@
+#ifndef RACTOR_PUB_INCLUDED
+#define RACTOR_PUB_INCLUDED
 
-int rb_ractor_main_p(void);
+RUBY_EXTERN bool ruby_multi_ractor;
+
+bool rb_ractor_main_p_(void);
+
+static inline bool
+rb_ractor_main_p(void)
+{
+    if (!ruby_multi_ractor) {
+        return true;
+    }
+    else {
+        return rb_ractor_main_p_();
+    }
+}
 
 bool rb_ractor_shareable_p_continue(VALUE obj);
 
@@ -31,3 +46,5 @@ void rb_ractor_stdout_set(VALUE);
 void rb_ractor_stderr_set(VALUE);
 
 RUBY_SYMBOL_EXPORT_END
+
+#endif

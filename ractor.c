@@ -15,9 +15,12 @@ static VALUE rb_eRactorMovedError;
 static VALUE rb_eRactorClosedError;
 static VALUE rb_cRactorMovedObject;
 
+RUBY_SYMBOL_EXPORT_BEGIN
+// to share with MJIT
 bool ruby_multi_ractor;
-static void vm_ractor_blocking_cnt_inc(rb_vm_t *vm, rb_ractor_t *r, const char *file, int line);
+RUBY_SYMBOL_EXPORT_END
 
+static void vm_ractor_blocking_cnt_inc(rb_vm_t *vm, rb_ractor_t *r, const char *file, int line);
 
 static void
 ASSERT_ractor_unlocking(rb_ractor_t *r)
@@ -1423,9 +1426,10 @@ rb_ractor_self(const rb_ractor_t *r)
     return r->self;
 }
 
-MJIT_FUNC_EXPORTED int
-rb_ractor_main_p(void)
+MJIT_FUNC_EXPORTED bool
+rb_ractor_main_p_(void)
 {
+    VM_ASSERT(rb_multi_ractor_p());
     rb_execution_context_t *ec = GET_EC();
     return rb_ec_ractor_ptr(ec) == rb_ec_vm_ptr(ec)->ractor.main_ractor;
 }

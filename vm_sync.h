@@ -4,6 +4,7 @@
 
 #include "vm_core.h"
 #include "vm_debug.h"
+#include "ractor_pub.h"
 
 #if USE_RUBY_DEBUG_LOG
 #define LOCATION_ARGS const char *file, int line
@@ -25,8 +26,6 @@ void rb_vm_lock_leave_body(unsigned int *lev APPEND_LOCATION_ARGS);
 void rb_vm_barrier(void);
 void rb_vm_cond_wait(rb_vm_t *vm, rb_nativethread_cond_t *cond);
 void rb_vm_cond_timedwait(rb_vm_t *vm, rb_nativethread_cond_t *cond, unsigned long msec);
-
-extern bool ruby_multi_ractor;
 
 static inline bool
 rb_multi_ractor_p(void)
