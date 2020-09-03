@@ -3334,6 +3334,16 @@ trace_set_i(void *vstart, void *vend, size_t stride, void *data)
     return 0;
 }
 
+VALUE *
+rb_ujit_empty_func(rb_control_frame_t *cfp)
+{
+    // okay, not really empty, so maybe think of another name.
+    // it's put in this file instead of say, compile.c to dodge long C compile time.
+    // it just needs to be in a different unit from vm.o so the compiler can't see the definition
+    // and is forced to emit a call that respects the calling convention.
+    return NULL;
+}
+
 void
 rb_iseq_trace_set_all(rb_event_flag_t turnon_events)
 {
@@ -3449,7 +3459,6 @@ struct succ_index_table {
 #define imm_block_rank_get(v, i) (((int)((v) >> ((i) * 7))) & 0x7f)
 #define small_block_rank_set(v, i, r) (v) |= (uint64_t)(r) << (9 * ((i) - 1))
 #define small_block_rank_get(v, i) ((i) == 0 ? 0 : (((int)((v) >> (((i) - 1) * 9))) & 0x1ff))
-
 static struct succ_index_table *
 succ_index_table_create(int max_pos, int *data, int size)
 {
