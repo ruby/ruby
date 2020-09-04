@@ -108,6 +108,7 @@ class TestSymbol < Test::Unit::TestCase
   def test_name
     assert_equal("foo", :foo.name)
     assert_same(:foo.name, :foo.name)
+    assert_predicate(:foo.name, :frozen?)
   end
 
   def test_to_proc
