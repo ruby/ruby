@@ -1434,6 +1434,14 @@ rb_ractor_main_p_(void)
     return rb_ec_ractor_ptr(ec) == rb_ec_vm_ptr(ec)->ractor.main_ractor;
 }
 
+bool
+rb_obj_is_main_ractor(VALUE gv)
+{
+    if (!rb_ractor_p(gv)) return false;
+    rb_ractor_t *r = DATA_PTR(gv);
+    return r == GET_VM()->ractor.main_ractor;
+}
+
 rb_global_vm_lock_t *
 rb_ractor_gvl(rb_ractor_t *r)
 {

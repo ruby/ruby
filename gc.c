@@ -3597,6 +3597,8 @@ force_chain_object(st_data_t key, st_data_t val, st_data_t arg)
     return ST_CONTINUE;
 }
 
+bool rb_obj_is_main_ractor(VALUE gv);
+
 void
 rb_objspace_call_finalizer(rb_objspace_t *objspace)
 {
@@ -3652,6 +3654,7 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
                 if (rb_obj_is_thread(vp)) break;
                 if (rb_obj_is_mutex(vp)) break;
                 if (rb_obj_is_fiber(vp)) break;
+                if (rb_obj_is_main_ractor(vp)) break;
                 if (RTYPEDDATA_P(vp)) {
 		    RDATA(p)->dfree = RANY(p)->as.typeddata.type->function.dfree;
 		}
