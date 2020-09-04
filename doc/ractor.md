@@ -1,6 +1,6 @@
 # Ractor - Ruby's Actor-like concurrent abstraction
 
-Ractor is designed to provide a parallel execution feature fo Ruby without thread-safety concerns.
+Ractor is designed to provide a parallel execution feature of Ruby without thread-safety concerns.
 
 ## Summary
 
@@ -351,7 +351,7 @@ Multiple Ractors can send to one Ractor.
 
 TODO: Current `Ractor.select()` has same issue of `select(2)`, so this interface should be refined.
 
-TODO: `select` syntax of go-language uses round-robbin technique to make fair scheduling. Now `Ractor.select()` doesn't use it.
+TODO: `select` syntax of go-language uses round-robin technique to make fair scheduling. Now `Ractor.select()` doesn't use it.
 
 ### Closing Ractor's ports
 
