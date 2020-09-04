@@ -14347,6 +14347,7 @@ transient_heap.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 transient_heap.$(OBJEXT): {$(VPATH)}method.h
 transient_heap.$(OBJEXT): {$(VPATH)}missing.h
 transient_heap.$(OBJEXT): {$(VPATH)}node.h
+transient_heap.$(OBJEXT): {$(VPATH)}ractor_pub.h
 transient_heap.$(OBJEXT): {$(VPATH)}ruby_assert.h
 transient_heap.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 transient_heap.$(OBJEXT): {$(VPATH)}st.h
