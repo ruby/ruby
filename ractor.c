@@ -177,7 +177,7 @@ ractor_mark(void *ptr)
     rb_gc_mark(r->r_stderr);
 
     if (r->threads.cnt > 0) {
-        rb_thread_t *th;
+        rb_thread_t *th = 0;
         list_for_each(&r->threads.set, th, lt_node) {
             VM_ASSERT(th != NULL);
             rb_gc_mark(th->self);
@@ -1640,7 +1640,7 @@ ractor_terminal_interrupt_all(rb_vm_t *vm)
 {
     if (vm->ractor.cnt > 1) {
         // send terminate notification to all ractors
-        rb_ractor_t *r;
+        rb_ractor_t *r = 0;
         list_for_each(&vm->ractor.set, r, vmlr_node) {
             if (r != vm->ractor.main_ractor) {
                 rb_ractor_terminate_interrupt_main_thread(r);
@@ -1795,7 +1795,7 @@ void
 rb_ractor_dump(void)
 {
     rb_vm_t *vm = GET_VM();
-    rb_ractor_t *r;
+    rb_ractor_t *r = 0;
 
     list_for_each(&vm->ractor.set, r, vmlr_node) {
         if (r != vm->ractor.main_ractor) {

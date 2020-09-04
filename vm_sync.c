@@ -224,7 +224,7 @@ rb_vm_barrier(void)
         rb_vm_ractor_blocking_cnt_inc(vm, cr, __FILE__, __LINE__);
 
         // send signal
-        rb_ractor_t *r;
+        rb_ractor_t *r = 0;
         list_for_each(&vm->ractor.set, r, vmlr_node) {
             if (r != cr) {
                 rb_ractor_vm_barrier_interrupt_running_thread(r);

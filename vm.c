@@ -2324,7 +2324,7 @@ rb_vm_mark(void *ptr)
     RUBY_GC_INFO("-------------------------------------------------\n");
     if (ptr) {
 	rb_vm_t *vm = ptr;
-        rb_ractor_t *r;
+        rb_ractor_t *r = 0;
         long i, len;
         const VALUE *obj_ary;
 
