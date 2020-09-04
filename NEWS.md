@@ -165,6 +165,12 @@ Outstanding ones only.
         * Symbol#to_proc now returns a lambda Proc.
           [[Feature #16260]]
 
+    * New method
+
+        * Symbol#name, which returns the name of the symbol if it is
+          named.  The returned string cannot be modified.
+          [[Feature #16150]]
+
 * Warning
 
     * Modified method
@@ -343,6 +349,7 @@ Excluding feature bug fixes.
 [Feature #16378]: https://bugs.ruby-lang.org/issues/16378
 [Feature #16828]: https://bugs.ruby-lang.org/issues/16828
 [Bug #14541]:     https://bugs.ruby-lang.org/issues/14541
+[Feature #16150]: https://bugs.ruby-lang.org/issues/16150
 [Feature #16175]: https://bugs.ruby-lang.org/issues/16175
 [Feature #15973]: https://bugs.ruby-lang.org/issues/15973
 [Feature #16614]: https://bugs.ruby-lang.org/issues/16614
