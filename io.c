@@ -10970,7 +10970,9 @@ struct wait_for_single_fd {
     VALUE result;
 };
 
-void * rb_thread_scheduler_wait_for_single_fd(void * _args) {
+void *
+rb_thread_scheduler_wait_for_single_fd(void * _args)
+{
     struct wait_for_single_fd *args = (struct wait_for_single_fd *)_args;
 
     args->result = rb_funcall(args->scheduler, rb_intern("wait_for_single_fd"), 3, INT2NUM(args->fd), INT2NUM(args->events), Qnil);
