@@ -51,17 +51,23 @@ typedef struct CodeBlock
 
 } codeblock_t;
 
+typedef struct X86Opnd
+{
+
+
+
+
+} x86opnd_t;
+
 void cb_init(codeblock_t* cb, size_t mem_size);
 uint8_t* cb_get_ptr(codeblock_t* cb, size_t index);
 void cb_write_byte(codeblock_t* cb, uint8_t byte);
 void cb_write_bytes(codeblock_t* cb, size_t num_bytes, ...);
 void cb_write_int(codeblock_t* cb, uint64_t val, size_t num_bits);
 
-// TODO:
-// prologue and epilogue functions
-// cb_write_prologue()
-// cb_write_epilogue
-// Test those out
+// Ruby instruction prologue and epilogue functions
+void cb_write_prologue(codeblock_t* cb);
+void cb_write_epilogue(codeblock_t* cb);
 
 void nop(codeblock_t* cb, size_t length);
 
