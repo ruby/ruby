@@ -115,6 +115,52 @@ void cb_write_int(codeblock_t* cb, uint64_t val, size_t num_bits)
     }
 }
 
+// Ruby instruction prologue and epilogue functions
+void cb_write_prologue(codeblock_t* cb)
+{
+    for (size_t i = 0; i < sizeof(ujit_pre_call_bytes); ++i)
+        cb_write_byte(cb, ujit_pre_call_bytes[i]);
+}
+
+void cb_write_epilogue(codeblock_t* cb)
+{
+    for (size_t i = 0; i < sizeof(ujit_post_call_bytes); ++i)
+        cb_write_byte(cb, ujit_post_call_bytes[i]);
+}
+
+// Write the REX byte
+void writeREX(
+    codeblock_t* cb,
+    bool w_flag,
+    uint8_t reg_no,
+    uint8_t idx_reg_no,
+    uint8_t rm_reg_no
+)
+{
+    // 0 1 0 0 w r x b
+    // w - 64-bit operand size flag
+    // r - MODRM.reg extension
+    // x - SIB.index extension
+    // b - MODRM.rm or SIB.base extension
+    uint8_t w = w_flag? 1:0;
+    uint8_t r = (reg_no & 8)? 1:0;
+    uint8_t x = (idx_reg_no & 8)? 1:0;
+    uint8_t b = (rm_reg_no & 8)? 1:0;
+
+    // Encode and write the REX byte
+    uint8_t rexByte = 0x40 + (w << 3) + (r << 2) + (x << 1) + (b);
+    cb_write_byte(cb, rexByte);
+}
+
+// Write an opcode byte with an embedded register operand
+/*static void cb_write_opcode(codeblock_t* cb, uint8_t opcode, X86Reg rOpnd)
+{
+    // Write the reg field into the opcode byte
+    uint8_t op_byte = opcode | (rOpnd.regNo & 7);
+    cb_write_byte(cb, op_byte);
+}
+*/
+
 // nop - Noop, one or multiple bytes long
 void nop(codeblock_t* cb, size_t length)
 {
@@ -181,3 +227,29 @@ void nop(codeblock_t* cb, size_t length)
         break;
     }
 }
+
+/*
+/// push - Push a register on the stack
+void push(codeblock_t* cb, X86Reg reg)
+{
+    assert (reg.size is 64, "can only push 64-bit registers");
+
+    //cb.writeASM("push", reg);
+
+    if (reg.rexNeeded)
+        cb_write_rex(cb, false, 0, 0, reg.regNo);
+    cb_write_byte(cb, 0x50, reg);
+}
+
+/// pop - Pop a register off the stack
+void pop(codeblock_t* cb, X86Reg reg)
+{
+    assert (reg.size is 64);
+
+    //cb.writeASM("pop", reg);
+
+    if (reg.rexNeeded)
+        cb_write_rex(false, 0, 0, reg.regNo);
+    cb_write_byte(cb, 0x58, reg);
+}
+*/
