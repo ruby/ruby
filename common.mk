@@ -147,6 +147,8 @@ COMMONOBJS    = array.$(OBJEXT) \
 		vm_dump.$(OBJEXT) \
 		vm_sync.$(OBJEXT) \
 		vm_trace.$(OBJEXT) \
+		ujit_asm.$(OBJEXT) \
+		ujit_asm_tests.$(OBJEXT) \
 		$(COROUTINE_OBJ) \
 		$(DTRACE_OBJ) \
 		$(BUILTIN_ENCOBJS) \
