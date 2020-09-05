@@ -8701,7 +8701,12 @@ gc_ref_update_imemo(rb_objspace_t *objspace, VALUE obj)
       case imemo_callcache:
         {
             const struct rb_callcache *cc = (const struct rb_callcache *)obj;
-            UPDATE_IF_MOVED(objspace, cc->klass);
+            if (cc->klass) {
+                UPDATE_IF_MOVED(objspace, cc->klass);
+                if (!is_live_object(objspace, cc->klass)) {
+                    *((VALUE *)(&cc->klass)) = (VALUE)0;
+                }
+            }
             TYPED_UPDATE_IF_MOVED(objspace, struct rb_callable_method_entry_struct *, cc->cme_);
         }
         break;
