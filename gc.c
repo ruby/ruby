@@ -9027,14 +9027,9 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
 }
 
 static int
-gc_ref_update(void *vstart, void *vend, size_t stride, void * data)
+gc_ref_update(void *vstart, void *vend, size_t stride, rb_objspace_t * objspace, struct heap_page *page)
 {
-    rb_objspace_t * objspace;
-    struct heap_page *page;
-
     VALUE v = (VALUE)vstart;
-    objspace = (rb_objspace_t *)data;
-    page = GET_HEAP_PAGE(v);
     asan_unpoison_memory_region(&page->freelist, sizeof(RVALUE*), false);
     asan_poison_memory_region(&page->freelist, sizeof(RVALUE*));
     page->flags.has_uncollectible_shady_objects = FALSE;
@@ -9081,7 +9076,7 @@ gc_update_references(rb_objspace_t * objspace, rb_heap_t *heap)
     struct heap_page *page = NULL;
 
     list_for_each(&heap->pages, page, page_node) {
-        gc_ref_update(page->start, page->start + page->total_slots, sizeof(RVALUE), objspace);
+        gc_ref_update(page->start, page->start + page->total_slots, sizeof(RVALUE), objspace, page);
         if (page == heap->sweeping_page) {
             should_set_mark_bits = 0;
         }
