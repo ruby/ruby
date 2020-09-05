@@ -780,4 +780,35 @@ class TestMarshal < Test::Unit::TestCase
     hash = Marshal.load(Marshal.dump(flagged_hash))
     assert_equal(42, ruby2_keywords_test(*[hash]))
   end
+
+  def exception_test
+    raise
+  end
+
+  def test_marshal_exception
+    begin
+      exception_test
+    rescue => e
+      e2 = Marshal.load(Marshal.dump(e))
+      assert_equal(e.message, e2.message)
+      assert_equal(e.backtrace, e2.backtrace)
+      assert_nil(e2.backtrace_locations) # temporal
+    end
+  end
+
+  def nameerror_test
+    unknown_method
+  end
+
+  def test_marshal_nameerror
+    begin
+      nameerror_test
+    rescue NameError => e
+      e2 = Marshal.load(Marshal.dump(e))
+      assert_equal(e.message, e2.message)
+      assert_equal(e.name, e2.name)
+      assert_equal(e.backtrace, e2.backtrace)
+      assert_nil(e2.backtrace_locations) # temporal
+    end
+  end
 end
