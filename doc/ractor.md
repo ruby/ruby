@@ -19,7 +19,7 @@ You can make multiple Ractors and they run in parallel.
 
 Ractors don't share everything, unlike threads.
 
-* Most of the objects are *Unshareable objects*, so you don't need to care about thread-safety problem which is caused by sharing.
+* Most objects are *Unshareable objects*, so you don't need to care about thread-safety problem which is caused by sharing.
 * Some objects are *Shareable objects*.
   * Immutable objects: frozen objects which don't refer to unshareable-objects.
     * `i = 123`: `i` is an immutable object.
@@ -58,7 +58,7 @@ To send unshareable objects as messages, objects are copied or moved.
 Ractor helps to write a thread-safe program, but we can make thread-unsafe programs with Ractors.
 
 * GOOD: Sharing limitation
-  * Most of the objects are unshareable, so we can't make data-racy and race-conditional programs.
+  * Most objects are unshareable, so we can't make data-racy and race-conditional programs.
   * Shareable objects are protected by an interpreter or locking mechanism.
 * BAD: Class/Module can violate this assumption
   * To make it compatible with old behavior, classes and modules can introduce data-race and so on.
