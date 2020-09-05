@@ -543,11 +543,8 @@ typedef struct gc_profile_record {
 
 struct RMoved {
     VALUE flags;
+    VALUE dummy;
     VALUE destination;
-    union {
-        struct list_node node;
-        struct list_head head;
-    } as;
 };
 
 #define RMOVED(obj) ((struct RMoved *)(obj))
@@ -8443,6 +8440,7 @@ gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free)
 
     /* Assign forwarding address */
     src->as.moved.flags = T_MOVED;
+    src->as.moved.dummy = Qundef;
     src->as.moved.destination = (VALUE)dest;
     GC_ASSERT(BUILTIN_TYPE((VALUE)dest) != T_NONE);
 
