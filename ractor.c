@@ -363,7 +363,7 @@ ractor_moving_new(VALUE obj)
     rv->v3 = 0;
 
     // TODO: record moved location
-    // TOOD: check flags for each data types
+    // TODO: check flags for each data types
 
     return v;
 }
@@ -1527,7 +1527,7 @@ rb_vm_ractor_blocking_cnt_dec(rb_vm_t *vm, rb_ractor_t *cr, const char *file, in
 }
 
 static void
-ractor_check_blocking(rb_ractor_t *cr, unsigned int remaind_thread_cnt, const char *file, int line)
+ractor_check_blocking(rb_ractor_t *cr, unsigned int remained_thread_cnt, const char *file, int line)
 {
     VM_ASSERT(cr == GET_RACTOR());
 
@@ -1538,7 +1538,7 @@ ractor_check_blocking(rb_ractor_t *cr, unsigned int remaind_thread_cnt, const ch
 
     VM_ASSERT(cr->threads.cnt >= cr->threads.blocking_cnt + 1);
 
-    if (remaind_thread_cnt > 0 &&
+    if (remained_thread_cnt > 0 &&
         // will be block
         cr->threads.cnt == cr->threads.blocking_cnt + 1) {
         // change ractor status: running -> blocking
