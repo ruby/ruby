@@ -40,4 +40,16 @@ describe "Mutex#owned?" do
       m.owned?.should be_false
     end
   end
+
+  ruby_version_is "2.8" do
+    it "is held per Fiber" do
+      m = Mutex.new
+      m.lock
+
+      Fiber.new do
+        m.locked?.should == true
+        m.owned?.should == false
+      end.resume
+    end
+  end
 end
