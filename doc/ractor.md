@@ -19,9 +19,9 @@ You can make multiple Ractors and they run in parallel.
 
 Ractors don't share everything, unlike threads.
 
-* Most of objects are *Unshareable objects*, so you don't need to care about thread-safety problem which is caused by sharing.
+* Most of the objects are *Unshareable objects*, so you don't need to care about thread-safety problem which is caused by sharing.
 * Some objects are *Shareable objects*.
-  * Immutable objects: frozen object which doesn't refer unshareable-objects.
+  * Immutable objects: frozen objects which don't refer to unshareable-objects.
     * `i = 123`: `i` is an immutable object.
     * `s = "str".freeze`: `s` is an immutable object.
     * `a = [1, [2], 3].freeze`: `a` is not an immutable object because `a` refer unshareable-object `[2]` (which is not frozen).
@@ -32,11 +32,11 @@ Ractors don't share everything, unlike threads.
 
 ### Two-types communication between Ractors
 
-Ractors communicate each other and synchronize the execution by message exchanging between Ractors. There are two message exchange protocol: push type (message passing) and pull type.
+Ractors communicate with each other and synchronize the execution by message exchanging between Ractors. There are two message exchange protocols: push type (message passing) and pull type.
 
 * Push type message passing: `Ractor#send(obj)` and `Ractor.receive()` pair.
   * Sender ractor passes the `obj` to receiver Ractor.
-  * Sender knows a destination Ractor (the receiver of `r.send(obj)`) and receiver does not know the sender (accept all message from any ractors).
+  * Sender knows a destination Ractor (the receiver of `r.send(obj)`) and the receiver does not know the sender (accept all message from any ractors).
   * Receiver has infinite queue and sender enqueues the message. Sender doesn't block to put message.
   * This type is based on actor model
 * Pull type communication: `Ractor.yield(obj)` and `Ractor#take()` pair.
@@ -50,7 +50,7 @@ To send unshareable objects as messages, objects are copied or moved.
 
 * Copy: use deep-copy (like dRuby)
 * Move: move membership
-  * Sender can not access to the moved object after moving the object.
+  * Sender can not access the moved object after moving the object.
   * Guarantee that at least only 1 Ractor can access the object.
 
 ### Thread-safety
@@ -58,11 +58,11 @@ To send unshareable objects as messages, objects are copied or moved.
 Ractor helps to write a thread-safe program, but we can make thread-unsafe programs with Ractors.
 
 * GOOD: Sharing limitation
-  * Most of objects are unshareable, so we can't make data-racy and race-conditional programs.
+  * Most of the objects are unshareable, so we can't make data-racy and race-conditional programs.
   * Shareable objects are protected by an interpreter or locking mechanism.
 * BAD: Class/Module can violate this assumption
-  * To make compatible with old behavior, classes and modules can introduce data-race and so on.
-  * Ruby programmer should take care if they modify class/module objects on multi Ractor programs.
+  * To make it compatible with old behavior, classes and modules can introduce data-race and so on.
+  * Ruby programmers should take care if they modify class/module objects on multi Ractor programs.
 * BAD: Ractor can't solve all thread-safety problems
   * There are several blocking operations (waiting send, waiting yield and waiting take) so you can make a program which has dead-lock and live-lock issues.
   * Some kind of shareable objects can introduce transactions (STM, for example). However, misusing transactions will generate inconsistent state.
@@ -121,7 +121,7 @@ end
 r.take == self.object_id #=> false
 ```
 
-Passed arguments to `Ractor.new()` becomes block parameters for the given block. However, an interpreter does not pass the parameter object references, but send as messages (see bellow for details).
+Passed arguments to `Ractor.new()` becomes block parameters for the given block. However, an interpreter does not pass the parameter object references, but send them as messages (see below for details).
 
 ```ruby
 r = Ractor.new 'ok' do |msg|
@@ -188,7 +188,7 @@ Users can control blocking on (1), but should not control on (2) (only manage as
 
 * (1-1) send/recv (push type)
   * `Ractor#send(obj)` (`Ractor#<<(obj)` is an aliases) send a message to the Ractor's incoming port. Incoming port is connected to the infinite size incoming queue so `Ractor#send` will never block.
-  * `Ractor.recv` dequeue a message from own incoming queue. If the incoming queue is empty, `Ractor.recv` calling will block.
+  * `Ractor.recv` dequeue a message from its own incoming queue. If the incoming queue is empty, `Ractor.recv` calling will block.
 * (1-2) yield/take (pull type)
   * `Ractor.yield(obj)` send an message to a Ractor which are calling `Ractor#take` via outgoing port . If no Ractors are waiting for it, the `Ractor.yield(obj)` will block. If multiple Ractors are waiting for `Ractor.yield(obj)`, only one Ractor can receive the message.
   * `Ractor#take` receives a message which is waiting by `Ractor.yield(obj)` method from the specified Ractor. If the Ractor does not call `Ractor.yield` yet, the `Ractor#take` call will block.
@@ -349,7 +349,7 @@ Multiple Ractors can send to one Ractor.
   }.sort #=> [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 ```
 
-TODO: Current `Ractor.select()` has same issue of `select(2)`, so this interface should be refined.
+TODO: Current `Ractor.select()` has the same issue of `select(2)`, so this interface should be refined.
 
 TODO: `select` syntax of go-language uses round-robin technique to make fair scheduling. Now `Ractor.select()` doesn't use it.
 
@@ -358,12 +358,12 @@ TODO: `select` syntax of go-language uses round-robin technique to make fair sch
 * `Ractor#close_incoming/outgoing` close incoming/outgoing ports (similar to `Queue#close`).
 * `Ractor#close_incoming`
   * `r.send(obj) ` where `r`'s incoming port is closed, will raise an exception.
-  * When the incoming queue is empty and incoming port is closed, `Ractor.recv` raise an exception. If incoming queue is not empty, it dequeues an object.
+  * When the incoming queue is empty and incoming port is closed, `Ractor.recv` raise an exception. If the incoming queue is not empty, it dequeues an object.
 * `Ractor#close_outgoing`
   * `Ractor.yield` on a Ractor which closed the outgoing port, it will raise an exception.
   * `Ractor#take` for a Ractor which closed the outgoing port, it will raise an exception. If `Ractor#take` is blocking, it will raise an exception.
 * When a Ractor terminates, the ports are closed automatically.
-  * Return value of the Ractor's block will be yield as `Ractor.yield(ret_val)`, even if the implementation terminate the based native thread.
+  * Return value of the Ractor's block will be yielded as `Ractor.yield(ret_val)`, even if the implementation terminates the based native thread.
 
 
 Example (try to take from closed Ractor):
@@ -478,7 +478,7 @@ Now only `T_FILE`, `T_STRING` and `T_ARRAY` objects are supported.
 
 * `T_FILE` (`IO`, `File`): support to send accepted socket etc.
 * `T_STRING` (`String`): support to send a huge string without copying (fast).
-* `T_ARRAY` (`Array'): support to send a huge Array without re-allocating the array's buffer. However, all of referred objects from the array should be moved, so it is not so fast.
+* `T_ARRAY` (`Array'): support to send a huge Array without re-allocating the array's buffer. However, all of the referred objects from the array should be moved, so it is not so fast.
 
 To achieve the access prohibition for moved objects, _class replacement_ technique is used to implement it. 
 
@@ -492,7 +492,7 @@ The following objects are shareable.
     * Numeric objects: `Float`, `Complex`, `Rational`, big integers (`T_BIGNUM` in internal)
     * All Symbols.
   * Frozen `String` and `Regexp` objects (which does not have instance variables)
-  * In future, "Immutable" objects (frozen and only refer shareable objects) will be supported (TODO: introduce an `immutable` flag for objects?)
+  * In future, "Immutable" objects (frozen and only refer to shareable objects) will be supported (TODO: introduce an `immutable` flag for objects?)
 * Class, Module objects (`T_CLASS`, `T_MODULE` and `T_ICLASS` in internal)
 * `Ractor` and other objects which care about synchronization.
 
@@ -533,7 +533,7 @@ Note that without using Ractors, these additional semantics is not needed (100% 
 
 ### Global variables
 
-Only main Ractor (a Ractor created at starting of interpreter) can access global variables.
+Only the main Ractor (a Ractor created at starting of interpreter) can access global variables.
 
 ```ruby
   $gv = 1
@@ -550,7 +550,7 @@ Only main Ractor (a Ractor created at starting of interpreter) can access global
 
 ### Instance variables of shareable objects
 
-Only main Ractor can access instance variables of shareable objects.
+Only the main Ractor can access instance variables of shareable objects.
 
 ```ruby
   class C
@@ -590,7 +590,7 @@ Note that instance variables for class/module objects are also prohibited on Rac
 
 ### Class variables
 
-Only main Ractor can access class variables.
+Only the main Ractor can access class variables.
 
 ```ruby
   class C
@@ -613,7 +613,7 @@ Only main Ractor can access class variables.
 
 ### Constants
 
-Only main Ractor can read constants which refer to the unshareable object.
+Only the main Ractor can read constants which refer to the unshareable object.
 
 ```ruby
   class C
@@ -629,7 +629,7 @@ Only main Ractor can read constants which refer to the unshareable object.
   end
 ```
 
-Only main Ractor can define constants which refer to the unshareable object.
+Only the main Ractor can define constants which refer to the unshareable object.
 
 ```ruby
   class C
