@@ -262,7 +262,7 @@ end
 
 def read_make_deps(cwd)
   dependencies = {}
-  make_p, make_p_stderr, make_p_status = Open3.capture3("make -p all miniruby ruby-runner golf")
+  make_p, make_p_stderr, make_p_status = Open3.capture3("make -p all miniruby exe/ruby golf")
   File.open('update-deps.make.out.log', 'w') {|f| f.print make_p }
   File.open('update-deps.make.err.log', 'w') {|f| f.print make_p_stderr }
   if !make_p_status.success?
