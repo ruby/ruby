@@ -2599,10 +2599,56 @@ syserr_eqq(VALUE self, VALUE exc)
  *  * fatal
  */
 
+static VALUE
+exception_alloc(VALUE klass)
+{
+    return rb_class_allocate_instance(klass);
+}
+
+static VALUE
+exception_dumper(VALUE exc)
+{
+    // TODO: Currently, the instance variables "bt" and "bt_locations"
+    // refers to the same object (Array of String). But "bt_locations"
+    // should have an Array of Thread::Backtrace::Locations.
+
+    return exc;
+}
+
+static int
+ivar_copy_i(st_data_t key, st_data_t val, st_data_t exc)
+{
+    rb_ivar_set((VALUE) exc, (ID) key, (VALUE) val);
+    return ST_CONTINUE;
+}
+
+static VALUE
+exception_loader(VALUE exc, VALUE obj)
+{
+    // The loader function of rb_marshal_define_compat seems to be called for two events:
+    // one is for fixup (r_fixup_compat), the other is for TYPE_USERDEF.
+    // In the former case, the first argument is an instance of Exception (because
+    // we pass rb_eException to rb_marshal_define_compat). In the latter case, the first
+    // argument is a class object (see TYPE_USERDEF case in r_object0).
+    // We want to copy all instance variables (but "bt_locations) from obj to exc.
+    // But we do not want to do so in the second case, so the following branch is for that.
+    if (RB_TYPE_P(exc, T_CLASS)) return obj; // maybe called from Marshal's TYPE_USERDEF
+
+    rb_ivar_foreach(obj, ivar_copy_i, exc);
+
+    if (rb_ivar_get(exc, id_bt) == rb_ivar_get(exc, id_bt_locations)) {
+        rb_ivar_set(exc, id_bt_locations, Qnil);
+    }
+
+    return exc;
+}
+
 void
 Init_Exception(void)
 {
     rb_eException   = rb_define_class("Exception", rb_cObject);
+    rb_define_alloc_func(rb_eException, exception_alloc);
+    rb_marshal_define_compat(rb_eException, rb_eException, exception_dumper, exception_loader);
     rb_define_singleton_method(rb_eException, "exception", rb_class_new_instance, -1);
     rb_define_singleton_method(rb_eException, "to_tty?", exc_s_to_tty_p, 0);
     rb_define_method(rb_eException, "exception", exc_exception, -1);
