@@ -65,7 +65,9 @@ class Reline::ANSI
     unless @@buf.empty?
       return @@buf.shift
     end
-    c = @@input.raw(intr: true, &:getbyte)
+    until c = @@input.raw(intr: true, &:getbyte)
+      sleep 0.1
+    end
     (c == 0x16 && @@input.raw(min: 0, tim: 0, &:getbyte)) || c
   rescue Errno::EIO
     # Maybe the I/O has been closed.
@@ -112,7 +114,9 @@ class Reline::ANSI
       @@input.raw do |stdin|
         @@output << "\e[6n"
         @@output.flush
-        while (c = stdin.getc)
+        loop do
+          c = stdin.getc
+          next if c.nil?
           res << c
           m = res.match(/\e\[(?<row>\d+);(?<column>\d+)R/)
           break if m
