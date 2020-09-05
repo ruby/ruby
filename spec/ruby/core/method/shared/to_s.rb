@@ -31,22 +31,4 @@ describe :method_to_s, shared: true do
   it "returns a String containing the Module the method is referenced from" do
     @string.should =~ /MethodSpecs::MySub/
   end
-
-  ruby_version_is '2.8' do
-    it "returns a String containing the Module containing the method if object has a singleton class but method is not defined in the singleton class" do
-      obj = MethodSpecs::MySub.new
-      obj.singleton_class
-      @m = obj.method(:bar)
-      @string = @m.send(@method).sub(/0x\w+/, '0xXXXXXX')
-      @string.should =~ /\A#<Method: MethodSpecs::MySub\(MethodSpecs::MyMod\)#bar\(\) /
-    end
-  end
-
-  it "returns a String containing the singleton class if method is defined in the singleton class" do
-    obj = MethodSpecs::MySub.new
-    def obj.bar; end
-    @m = obj.method(:bar)
-    @string = @m.send(@method).sub(/0x\w+/, '0xXXXXXX')
-    @string.should =~ /\A#<Method: #<MethodSpecs::MySub:0xXXXXXX>\.bar/
-  end
 end

@@ -2816,8 +2816,7 @@ method_inspect(VALUE method)
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
     str = rb_sprintf("#<% "PRIsVALUE": ", rb_obj_class(method));
 
-    mklass = data->iclass;
-    if (!mklass) mklass = data->klass;
+    mklass = data->klass;
 
     if (RB_TYPE_P(mklass, T_ICLASS)) {
         /* TODO: I'm not sure why mklass is T_ICLASS.
@@ -2857,12 +2856,6 @@ method_inspect(VALUE method)
 	}
     }
     else {
-        mklass = data->klass;
-        if (FL_TEST(mklass, FL_SINGLETON)) {
-            do {
-               mklass = RCLASS_SUPER(mklass);
-            } while (RB_TYPE_P(mklass, T_ICLASS));
-        }
 	rb_str_buf_append(str, rb_inspect(mklass));
 	if (defined_class != mklass) {
 	    rb_str_catf(str, "(% "PRIsVALUE")", defined_class);
