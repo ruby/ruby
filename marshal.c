@@ -1503,13 +1503,12 @@ r_string(struct load_arg *arg)
 static VALUE
 r_entry0(VALUE v, st_index_t num, struct load_arg *arg)
 {
-    st_data_t real_obj = (VALUE)Qundef;
-    if (arg->compat_tbl && st_lookup(arg->compat_tbl, v, &real_obj)) {
-        st_insert(arg->data, num, (st_data_t)real_obj);
+    st_data_t real_obj = (st_data_t)v;
+    if (arg->compat_tbl) {
+        /* real_obj is kept if not found */
+        st_lookup(arg->compat_tbl, v, &real_obj);
     }
-    else {
-        st_insert(arg->data, num, (st_data_t)v);
-    }
+    st_insert(arg->data, num, real_obj);
     return v;
 }
 
