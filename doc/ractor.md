@@ -142,7 +142,7 @@ r.take #=> 'ok'
 
 ### An execution result of given block
 
-Return value of the given block becomes an outgoing message (see bellow for details).
+Return value of the given block becomes an outgoing message (see below for details).
 
 ```ruby
 r = Ractor.new do
