@@ -2279,4 +2279,18 @@ class TestSetTraceFunc < Test::Unit::TestCase
   def test_stat_exists
     assert_instance_of Hash, TracePoint.stat
   end
+
+  def test_tracepoint_opt_invokebuiltin_delegate_leave
+    code = 'puts RubyVM::InstructionSequence.of("\x00".method(:unpack)).disasm'
+    out, _err, _status = EnvUtil.invoke_ruby(['-e', code], '', true)
+    assert_match /^0000 opt_invokebuiltin_delegate_leave /, out
+
+    events = []
+    TracePoint.new(:return) do |tp|
+      events << [tp.event, tp.method_id]
+    end.enable do
+      "\x00".unpack("c")
+    end
+    assert_equal [[:return, :unpack]], events
+  end
 end

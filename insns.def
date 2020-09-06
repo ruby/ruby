@@ -1508,7 +1508,7 @@ opt_invokebuiltin_delegate_leave
     val = vm_invoke_builtin_delegate(ec, reg_cfp, bf, (unsigned int)index);
 
     /* leave fastpath */
-    /* TracePoint/return should fallback this insn to opt_invokebuiltin_delegate */
+    /* TracePoint/return fallbacks this insn to opt_invokebuiltin_delegate */
     if (vm_pop_frame(ec, GET_CFP(), GET_EP())) {
 #if OPT_CALL_THREADED_CODE
         rb_ec_thread_ptr(ec)->retval = val;

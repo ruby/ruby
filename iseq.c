@@ -3094,8 +3094,12 @@ rb_vm_encoded_insn_data_table_init(void)
     encoded_insn_data = st_init_numtable_with_size(VM_INSTRUCTION_SIZE / 2);
 
     for (insn = 0; insn < VM_INSTRUCTION_SIZE/2; insn++) {
+        int traced_insn = insn;
+        if (traced_insn == BIN(opt_invokebuiltin_delegate_leave)) {
+            traced_insn = BIN(opt_invokebuiltin_delegate); // to dispatch :return from leave
+        }
         st_data_t key1 = (st_data_t)INSN_CODE(insn);
-        st_data_t key2 = (st_data_t)INSN_CODE(insn + VM_INSTRUCTION_SIZE/2);
+        st_data_t key2 = (st_data_t)INSN_CODE(traced_insn + VM_INSTRUCTION_SIZE/2);
 
         insn_data[insn].insn = (int)insn;
         insn_data[insn].insn_len = insn_len(insn);
