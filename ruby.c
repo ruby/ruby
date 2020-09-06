@@ -1289,18 +1289,6 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 	    }
 	    goto reswitch;
 
-	  case 'T':
-            {
-                size_t numlen;
-
-                if (*++s) {
-                    scan_oct(s, 2, &numlen);
-                    s += numlen;
-                }
-            }
-            rb_warn("ruby -T will be removed in Ruby 3.0");
-	    goto reswitch;
-
 	  case 'I':
 	    forbid_setid("-I");
 	    if (*++s)
