@@ -5052,6 +5052,12 @@ class TestKeywordArgumentsSymProcRefinements < Test::Unit::TestCase
     end
   end
 
+  def test_splat_fixnum
+    bug16603 = '[ruby-core:97047] [Bug #16603]'
+    assert_raise(TypeError, bug16603) { p(**42) }
+    assert_raise(TypeError, bug16603) { p(k:1, **42) }
+  end
+
   def test_ruby2_keywords_hash_empty_kw_splat
     def self.foo(*a) a.last end
     singleton_class.send(:ruby2_keywords, :foo)

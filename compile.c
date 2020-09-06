@@ -4241,7 +4241,7 @@ compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popp
                 FLUSH_CHUNK();
 
                 const NODE *kw = node->nd_next->nd_head;
-                int empty_kw = nd_type(kw) == NODE_LIT;       /* foo(  ..., **{}, ...) */
+                int empty_kw = nd_type(kw) == NODE_LIT && RB_TYPE_P(kw->nd_lit, T_HASH); /* foo(  ..., **{}, ...) */
                 int first_kw = first_chunk && stack_len == 0; /* foo(1,2,3, **kw, ...) */
                 int last_kw = !node->nd_next->nd_next;        /* foo(  ..., **kw) */
                 int only_kw = last_kw && first_kw;            /* foo(1,2,3, **kw) */
