@@ -264,12 +264,12 @@ do_mutex_lock(VALUE self, int interruptible_p)
             .fiber = fiber
         };
 
-	if (mutex->fiber == fiber) {
-	    rb_raise(rb_eThreadError, "deadlock; recursive locking");
-	}
+        if (mutex->fiber == fiber) {
+            rb_raise(rb_eThreadError, "deadlock; recursive locking");
+        }
 
-        VALUE scheduler = rb_thread_current_scheduler();
-	while (mutex->fiber != fiber) {
+        while (mutex->fiber != fiber) {
+            VALUE scheduler = rb_thread_current_scheduler();
             if (scheduler != Qnil) {
                 list_add_tail(&mutex->waitq, &w.node);
 
@@ -279,52 +279,48 @@ do_mutex_lock(VALUE self, int interruptible_p)
 
                 if (!mutex->fiber) {
                     mutex->fiber = fiber;
-                    break;
-                } else {
-                    // Try again...
-                    continue;
                 }
+            } else {
+                enum rb_thread_status prev_status = th->status;
+                rb_hrtime_t *timeout = 0;
+                rb_hrtime_t rel = rb_msec2hrtime(100);
+
+                th->status = THREAD_STOPPED_FOREVER;
+                th->locking_mutex = self;
+                rb_ractor_sleeper_threads_inc(th->ractor);
+                /*
+                 * Carefully! while some contended threads are in native_sleep(),
+                 * ractor->sleeper is unstable value. we have to avoid both deadlock
+                 * and busy loop.
+                 */
+                if ((rb_ractor_living_thread_num(th->ractor) == rb_ractor_sleeper_thread_num(th->ractor)) &&
+                    !patrol_thread) {
+                    timeout = &rel;
+                    patrol_thread = th;
+                }
+
+                list_add_tail(&mutex->waitq, &w.node);
+
+                native_sleep(th, timeout); /* release GVL */
+
+                list_del(&w.node);
+
+                if (!mutex->fiber) {
+                    mutex->fiber = fiber;
+                }
+
+                if (patrol_thread == th)
+                    patrol_thread = NULL;
+
+                th->locking_mutex = Qfalse;
+                if (mutex->fiber && timeout && !RUBY_VM_INTERRUPTED(th->ec)) {
+                    rb_check_deadlock(th->ractor);
+                }
+                if (th->status == THREAD_STOPPED_FOREVER) {
+                    th->status = prev_status;
+                }
+                rb_ractor_sleeper_threads_dec(th->ractor);
             }
-            
-	    enum rb_thread_status prev_status = th->status;
-	    rb_hrtime_t *timeout = 0;
-	    rb_hrtime_t rel = rb_msec2hrtime(100);
-
-	    th->status = THREAD_STOPPED_FOREVER;
-	    th->locking_mutex = self;
-            rb_ractor_sleeper_threads_inc(th->ractor);
-	    /*
-	     * Carefully! while some contended threads are in native_sleep(),
-	     * ractor->sleeper is unstable value. we have to avoid both deadlock
-	     * and busy loop.
-	     */
-	    if ((rb_ractor_living_thread_num(th->ractor) == rb_ractor_sleeper_thread_num(th->ractor)) &&
-		!patrol_thread) {
-		timeout = &rel;
-		patrol_thread = th;
-	    }
-
-	    list_add_tail(&mutex->waitq, &w.node);
-
-            native_sleep(th, timeout); /* release GVL */
-
-	    list_del(&w.node);
-
-	    if (!mutex->fiber) {
-		mutex->fiber = fiber;
-	    }
-
-	    if (patrol_thread == th)
-		patrol_thread = NULL;
-
-	    th->locking_mutex = Qfalse;
-	    if (mutex->fiber && timeout && !RUBY_VM_INTERRUPTED(th->ec)) {
-		rb_check_deadlock(th->ractor);
-	    }
-	    if (th->status == THREAD_STOPPED_FOREVER) {
-		th->status = prev_status;
-	    }
-            rb_ractor_sleeper_threads_dec(th->ractor);
 
             if (interruptible_p) {
                 /* release mutex before checking for interrupts...as interrupt checking
@@ -335,7 +331,7 @@ do_mutex_lock(VALUE self, int interruptible_p)
                     mutex->fiber = fiber;
                 }
             }
-	}
+        }
 
         if (mutex->fiber == fiber) mutex_locked(th, self);
     }

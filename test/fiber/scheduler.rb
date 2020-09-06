@@ -15,11 +15,9 @@ class Scheduler
     @writable = {}
     @waiting = {}
 
-    @urgent = nil
-
     @lock = Mutex.new
     @locking = 0
-    @ready = []
+    @ready = Array.new
   end
 
   attr :readable
@@ -51,11 +49,17 @@ class Scheduler
       # puts "writable: #{writable}" if writable&.any?
 
       readable&.each do |io|
-        @readable[io]&.resume
+        if fiber = @readable.delete(io)
+          fiber.resume
+        elsif io == @urgent.first
+          @urgent.first.read_nonblock(1024)
+        end
       end
 
       writable&.each do |io|
-        @writable[io]&.resume
+        if fiber = @writable.delete(io)
+          fiber.resume
+        end
       end
 
       if @waiting.any?
@@ -73,9 +77,6 @@ class Scheduler
       end
 
       if @ready.any?
-        # Clear out the urgent notification pipe.
-        @urgent.first.read_nonblock(1024)
-
         ready = nil
 
         @lock.synchronize do
@@ -114,9 +115,6 @@ class Scheduler
 
     Fiber.yield
 
-    @readable.delete(io)
-    @writable.delete(io)
-
     return true
   end
 
@@ -130,10 +128,10 @@ class Scheduler
   def mutex_unlock(mutex, fiber)
     @lock.synchronize do
       @ready << fiber
+    end
 
-      if @urgent
-        @urgent.last.write('.')
-      end
+    if io = @urgent&.last
+      @urgent.last.write_nonblock('.')
     end
   end
 
