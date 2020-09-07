@@ -38,7 +38,7 @@ loop_alloc(VALUE klass)
 {
     rand_loop_t *rnd;
     VALUE obj = TypedData_Make_Struct(klass, rand_loop_t, &random_loop_type, rnd);
-    rnd->base.seed = INT2FIX(0);
+    rb_random_base_init(&rnd->base);
     return obj;
 }
 
