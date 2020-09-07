@@ -44,14 +44,20 @@ typedef struct {
 #define RB_RANDOM_INTERFACE_DECLARE(prefix) \
     static void prefix##_init(rb_random_t *, const uint32_t *, size_t); \
     static unsigned int prefix##_get_int32(rb_random_t *); \
-    static void prefix##_get_bytes(rb_random_t *, void *, size_t); \
-    /* end */
+    static void prefix##_get_bytes(rb_random_t *, void *, size_t)
+
+#define RB_RANDOM_INTERFACE_DECLARE_WITH_REAL(prefix) \
+    RB_RANDOM_INTERFACE_DECLARE(prefix); \
+    static double prefix##_get_real(rb_random_t *, int)
 
 #define RB_RANDOM_INTERFACE_DEFINE(prefix) \
     prefix##_init, \
     prefix##_get_int32, \
-    prefix##_get_bytes, \
-    /* end */
+    prefix##_get_bytes
+
+#define RB_RANDOM_INTERFACE_DEFINE_WITH_REAL(prefix) \
+    RB_RANDOM_INTERFACE_DEFINE(prefix), \
+    prefix##_get_real
 
 #if defined _WIN32 && !defined __CYGWIN__
 typedef rb_data_type_t rb_random_data_type_t;

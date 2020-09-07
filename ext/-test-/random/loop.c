@@ -7,13 +7,10 @@ typedef struct {
     uint32_t num, idx, *buf;
 } rand_loop_t;
 
-static double loop_get_real(rb_random_t *rnd, int excl);
-
-RB_RANDOM_INTERFACE_DECLARE(loop)
+RB_RANDOM_INTERFACE_DECLARE_WITH_REAL(loop);
 static const rb_random_interface_t random_loop_if = {
     32,
-    RB_RANDOM_INTERFACE_DEFINE(loop)
-    loop_get_real,
+    RB_RANDOM_INTERFACE_DEFINE_WITH_REAL(loop)
 };
 
 static size_t
