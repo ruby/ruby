@@ -127,7 +127,7 @@ static VALUE random_seed(VALUE);
 static void fill_random_seed(uint32_t *seed, size_t cnt);
 static VALUE make_seed_value(uint32_t *ptr, size_t len);
 
-RB_RANDOM_INTERFACE_DECLARE(rand_mt)
+RB_RANDOM_INTERFACE_DECLARE(rand_mt);
 static const rb_random_interface_t random_mt_if = {
     DEFAULT_SEED_CNT * 32,
     RB_RANDOM_INTERFACE_DEFINE(rand_mt)
