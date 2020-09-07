@@ -524,10 +524,21 @@ class CSV
       @row == other
     end
 
+    # :call-seq:
+    #   row.to_h -> hash
     #
-    # Collapses the row into a simple Hash. Be warned that this discards field
-    # order and clobbers duplicate fields.
+    # Returns the new \Hash formed by adding each header-value pair in +self+
+    # as a key-value pair in the \Hash.
+    #   source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row.to_h # => {"Name"=>"foo", "Value"=>"0"}
     #
+    # Header order is preserved, but repeated headers are ignored:
+    #   source = "Name,Name,Name\nFoo,Bar,Baz\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row.to_h # => {"Name"=>"Foo"}
     def to_h
       hash = {}
       each do |key, _value|
@@ -539,20 +550,35 @@ class CSV
 
     alias_method :to_ary, :to_a
 
+    # :call-seq:
+    #   row.to_csv -> csv_string
     #
-    # Returns the row as a CSV String. Headers are not used. Equivalent to:
-    #
-    #   csv_row.fields.to_csv( options )
-    #
+    # Returns the row as a \CSV String. Headers are not included:
+    #   source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row.to_csv # => "foo,0\n"
     def to_csv(**options)
       fields.to_csv(**options)
     end
     alias_method :to_s, :to_csv
 
+    # :call-seq:
+    #   row.dig(index_or_header, *identifiers) -> object
     #
-    # Extracts the nested value specified by the sequence of +index+ or +header+ objects by calling dig at each step,
-    # returning nil if any intermediate step is nil.
+    # Finds and returns the object in nested object that is specified
+    # by +index_or_header+ and +specifiers+.
     #
+    # The nested objects may be instances of various classes.
+    # See {Dig Methods}[https://docs.ruby-lang.org/en/master/doc/dig_methods_rdoc.html].
+    #
+    # Examples:
+    #   source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row.dig(1) # => "0"
+    #   row.dig('Value') # => "0"
+    #   row.dig(5) # => nil
     def dig(index_or_header, *indexes)
       value = field(index_or_header)
       if value.nil?
@@ -567,9 +593,17 @@ class CSV
       end
     end
 
+    # :call-seq:
+    #   row.inspect -> string
     #
-    # A summary of fields, by header, in an ASCII compatible String.
-    #
+    # Returns an ASCII-compatible \String showing:
+    # - Class \CSV::Row.
+    # - Header-value pairs.
+    # Example:
+    #   source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row.inspect # => "#<CSV::Row \"Name\":\"foo\" \"Value\":\"0\">"
     def inspect
       str = ["#<", self.class.to_s]
       each do |header, field|
