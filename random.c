@@ -297,12 +297,19 @@ try_rand_if(VALUE obj, rb_random_t *rnd)
 }
 
 /* :nodoc: */
+void
+rb_random_base_init(rb_random_t *rnd)
+{
+    rnd->seed = INT2FIX(0);
+}
+
+/* :nodoc: */
 static VALUE
 random_alloc(VALUE klass)
 {
     rb_random_mt_t *rnd;
     VALUE obj = TypedData_Make_Struct(klass, rb_random_mt_t, &random_mt_type, rnd);
-    rnd->base.seed = INT2FIX(0);
+    rb_random_base_init(&rnd->base);
     return obj;
 }
 

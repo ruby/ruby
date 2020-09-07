@@ -71,6 +71,7 @@ typedef const rb_data_type_t rb_random_data_type_t;
 #endif
 
 void rb_random_mark(void *ptr);
+void rb_random_base_init(rb_random_t *rnd);
 double rb_int_pair_to_real(uint32_t a, uint32_t b, int excl);
 void rb_rand_bytes_int32(rb_random_get_int32_func *, rb_random_t *, void *, size_t);
 RUBY_EXTERN const rb_data_type_t rb_random_data_type;
