@@ -156,7 +156,7 @@ jobs:
 
     name: ${{ matrix.entry.name }}
     runs-on: ubuntu-latest
-    container: shyouhei/c-compilers:latest
+    container: ghcr.io/ruby/ruby-ci-image:latest
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     steps:
       - name: setenv
