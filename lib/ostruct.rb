@@ -93,9 +93,7 @@ class OpenStruct
     @table = {}
     if hash
       hash.each_pair do |k, v|
-        k = k.to_sym
-        @table[k] = v
-        new_ostruct_member!(k)
+        self[k] = v
       end
     end
   end
@@ -166,33 +164,22 @@ class OpenStruct
   end
 
   #
-  # Used internally to check if the OpenStruct is able to be
-  # modified before granting access to the internal Hash table to be modified.
-  #
-  def modifiable? # :nodoc:
-    begin
-      @modifiable = true
-    rescue
-      raise FrozenError, "can't modify frozen #{self.class}", caller(3)
-    end
-    @table
-  end
-  private :modifiable?
-
-  #
   # Used internally to defined properties on the
   # OpenStruct. It does this by using the metaprogramming function
   # define_singleton_method for both the getter method and the setter method.
   #
   def new_ostruct_member!(name) # :nodoc:
-    name = name.to_sym
     unless respond_to?(name)
       define_singleton_method(name) { @table[name] }
-      define_singleton_method("#{name}=") {|x| modifiable?[name] = x}
+      define_singleton_method("#{name}=") {|x| @table[name] = x}
     end
-    name
   end
   private :new_ostruct_member!
+
+  def freeze
+    @table.freeze
+    super
+  end
 
   def method_missing(mid, *args) # :nodoc:
     len = args.length
@@ -200,7 +187,7 @@ class OpenStruct
       if len != 1
         raise ArgumentError, "wrong number of arguments (given #{len}, expected 1)", caller(1)
       end
-      modifiable?[new_ostruct_member!(mname)] = args[0]
+      self[mname]= args[0]
     elsif len == 0
     elsif @table.key?(mid)
       raise ArgumentError, "wrong number of arguments (given #{len}, expected 0)"
@@ -240,7 +227,9 @@ class OpenStruct
   #   person.age          # => 42
   #
   def []=(name, value)
-    modifiable?[new_ostruct_member!(name)] = value
+    name = name.to_sym
+    new_ostruct_member!(name)
+    @table[name] = value
   end
 
   # :call-seq:
