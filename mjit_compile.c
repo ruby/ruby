@@ -61,7 +61,7 @@ struct compile_status {
     struct rb_mjit_compile_info *compile_info;
     bool merge_ivar_guards_p; // If true, merge guards of ivar accesses
     rb_serial_t ivar_serial; // ic_serial of IVC in is_entries (used only when merge_ivar_guards_p)
-    st_index_t max_ivar_index; // Max IVC index in is_entries (used only when merge_ivar_guards_p)
+    size_t max_ivar_index; // Max IVC index in is_entries (used only when merge_ivar_guards_p)
     // If `inlined_iseqs[pos]` is not NULL, `mjit_compile_body` tries to inline ISeq there.
     const struct rb_iseq_constant_body **inlined_iseqs;
     struct inlined_call_context inline_context;
