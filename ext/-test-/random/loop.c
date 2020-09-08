@@ -63,12 +63,15 @@ loop_get_bytes(rb_random_t *rnd, void *p, size_t n)
           case 0:
             *buf++ = (uint8_t)x;
             n--;
+            /* FALLTHROUGH */
           case 3:
             *buf++ = (uint8_t)x;
             n--;
+            /* FALLTHROUGH */
           case 2:
             *buf++ = (uint8_t)x;
             n--;
+            /* FALLTHROUGH */
           case 1:
             *buf++ = (uint8_t)x;
             n--;
