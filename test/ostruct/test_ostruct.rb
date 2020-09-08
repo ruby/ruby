@@ -241,4 +241,9 @@ class TC_OpenStruct < Test::Unit::TestCase
     assert_equal(:foo, os.method)
     assert_equal(:bar, os.class)
   end
+
+  def test_access_original_methods
+    os = OpenStruct.new(method: :foo)
+    assert_equal(os.object_id, os.method!(:object_id).call)
+  end
 end
