@@ -100,9 +100,9 @@ class OpenStruct
 
   # Duplicates an OpenStruct object's Hash table.
   def initialize_copy(orig) # :nodoc:
+    orig.table.each_key{|key| new_ostruct_member!(key)}
     super
     @table = @table.dup
-    @table.each_key{|key| new_ostruct_member!(key)}
   end
 
   #
@@ -159,8 +159,8 @@ class OpenStruct
   # Provides marshalling support for use by the Marshal library.
   #
   def marshal_load(x)
+    x.each_key{|key| new_ostruct_member!(key)}
     @table = x
-    @table.each_key{|key| new_ostruct_member!(key)}
   end
 
   #
@@ -169,7 +169,7 @@ class OpenStruct
   # define_singleton_method for both the getter method and the setter method.
   #
   def new_ostruct_member!(name) # :nodoc:
-    unless respond_to?(name)
+    unless @table.key?(name)
       define_singleton_method(name) { @table[name] }
       define_singleton_method("#{name}=") {|x| @table[name] = x}
     end
