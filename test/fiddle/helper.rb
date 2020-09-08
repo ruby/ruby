@@ -55,8 +55,7 @@ when /mingw/, /mswin/
   crtname = RbConfig::CONFIG["RUBY_SO_NAME"][/msvc\w+/] || 'ucrtbase'
   libc_so = libm_so = "#{crtname}.dll"
 when /darwin/
-  libc_so = "/usr/lib/libc.dylib"
-  libm_so = "/usr/lib/libm.dylib"
+  libc_so = libm_so = "/usr/lib/libSystem.dylib"
 when /kfreebsd/
   libc_so = "/lib/libc.so.0.1"
   libm_so = "/lib/libm.so.1"
