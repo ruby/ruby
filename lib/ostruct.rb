@@ -36,9 +36,10 @@
 # Hash keys with spaces or characters that could normally not be used for
 # method calls (e.g. <code>()[]*</code>) will not be immediately available
 # on the OpenStruct object as a method for retrieval or assignment, but can
-# still be reached through the Object#send method.
+# still be reached through the Object#send method or using [].
 #
 #   measurements = OpenStruct.new("length (in inches)" => 24)
+#   measurements[:"length (in inches)"]       # => 24
 #   measurements.send("length (in inches)")   # => 24
 #
 #   message = OpenStruct.new(:queued? => true)
