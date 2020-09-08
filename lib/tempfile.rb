@@ -270,6 +270,13 @@ class Tempfile < DelegateClass(File)
     # object will be automatically closed after the block terminates.
     # The call returns the value of the block.
     #
+    # Unlike Tempfile.create, Tempfile.open when called with a block
+    # does not unlink the temporary file when the block exits. When using
+    # Tempfile.open, the temporary file is not unlinked from the file
+    # system unless Tempfile#unlink or Tempfile#close! is called directly,
+    # or until the Tempfile instance is garbage collected. Due to this,
+    # most callers of Tempfile.open with a block should use Tempfile.create instead.
+    #
     # In any case, all arguments (<code>*args</code>) will be passed to Tempfile.new.
     #
     #   Tempfile.open('foo', '/home/temp') do |f|
@@ -290,7 +297,7 @@ class Tempfile < DelegateClass(File)
         begin
           yield(tempfile)
         ensure
-          tempfile.close!
+          tempfile.close
         end
       else
         tempfile
