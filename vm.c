@@ -1739,7 +1739,7 @@ vm_init_redefined_flag(void)
     OP(Length, LENGTH), (C(Array), C(String), C(Hash));
     OP(Size, SIZE), (C(Array), C(String), C(Hash));
     OP(EmptyP, EMPTY_P), (C(Array), C(String), C(Hash));
-    OP(Succ, SUCC), (C(Integer), C(String), C(Time));
+    OP(Succ, SUCC), (C(Integer), C(String));
     OP(EqTilde, MATCH), (C(Regexp), C(String));
     OP(Freeze, FREEZE), (C(String));
     OP(UMinus, UMINUS), (C(String));

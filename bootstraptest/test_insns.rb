@@ -394,7 +394,6 @@ tests = [
     [ 'opt_succ',%Q{ #{ $FIXNUM_MAX }.succ == #{ $FIXNUM_MAX + 1 } }, ]
   end,
   [ 'opt_succ',  %q{ '1'.succ == '2' }, ],
-  [ 'opt_succ',  %q{ x = Time.at(0); x.succ == Time.at(1) }, ],
 
   [ 'opt_not',  %q{ ! false }, ],
   [ 'opt_neq', <<-'},', ],       # {

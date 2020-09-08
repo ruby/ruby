@@ -307,7 +307,6 @@ step_i(VALUE i, VALUE arg)
 static int
 discrete_object_p(VALUE obj)
 {
-    if (rb_obj_is_kind_of(obj, rb_cTime)) return FALSE; /* until Time#succ removed */
     return rb_respond_to(obj, id_succ);
 }
 

@@ -171,6 +171,13 @@ Outstanding ones only.
           named.  The returned string cannot be modified.
           [[Feature #16150]]
 
+* Time
+
+    * Removed method
+
+        * Time#succ has been removed as it is obsolete since ruby 1.9.2
+          [[Feature #17039]]
+
 * Warning
 
     * Modified method
@@ -357,3 +364,4 @@ Excluding feature bug fixes.
 [Misc #16961]:    https://bugs.ruby-lang.org/issues/16961
 [Feature #17122]: https://bugs.ruby-lang.org/issues/17122
 [GH-2991]:        https://github.com/ruby/ruby/pull/2991
+[Feature #17039]: https://bugs.ruby-lang.org/issues/17039

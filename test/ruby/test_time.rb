@@ -604,13 +604,9 @@ class TestTime < Test::Unit::TestCase
     assert_nil(t.getlocal("+02:00").zone)
   end
 
-  def test_plus_minus_succ
+  def test_plus_minus
     t2000 = get_t2000
-    # assert_raise(RangeError) { t2000 + 10000000000 }
-    # assert_raise(RangeError)  t2000 - 3094168449 }
-    # assert_raise(RangeError) { t2000 + 1200798848 }
     assert_raise(TypeError) { t2000 + Time.now }
-    assert_equal(t2000 + 1, t2000.succ)
   end
 
   def test_plus_type
