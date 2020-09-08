@@ -11,6 +11,24 @@
 // TODO: give ujit_examples.h some more meaningful file name
 #include "ujit_examples.h"
 
+// 64-bit GP registers
+const x86opnd_t RAX = { OPND_REG, 64, .reg = { REG_GP, 0 }};
+const x86opnd_t RCX = { OPND_REG, 64, .reg = { REG_GP, 1 }};
+const x86opnd_t RDX = { OPND_REG, 64, .reg = { REG_GP, 2 }};
+const x86opnd_t RBX = { OPND_REG, 64, .reg = { REG_GP, 3 }};
+const x86opnd_t RSP = { OPND_REG, 64, .reg = { REG_GP, 4 }};
+const x86opnd_t RBP = { OPND_REG, 64, .reg = { REG_GP, 5 }};
+const x86opnd_t RSI = { OPND_REG, 64, .reg = { REG_GP, 6 }};
+const x86opnd_t RDI = { OPND_REG, 64, .reg = { REG_GP, 7 }};
+const x86opnd_t R8  = { OPND_REG, 64, .reg = { REG_GP, 8 }};
+const x86opnd_t R9  = { OPND_REG, 64, .reg = { REG_GP, 9 }};
+const x86opnd_t R10 = { OPND_REG, 64, .reg = { REG_GP, 10 }};
+const x86opnd_t R11 = { OPND_REG, 64, .reg = { REG_GP, 11 }};
+const x86opnd_t R12 = { OPND_REG, 64, .reg = { REG_GP, 12 }};
+const x86opnd_t R13 = { OPND_REG, 64, .reg = { REG_GP, 13 }};
+const x86opnd_t R14 = { OPND_REG, 64, .reg = { REG_GP, 14 }};
+const x86opnd_t R15 = { OPND_REG, 64, .reg = { REG_GP, 15 }};
+
 void cb_init(codeblock_t* cb, size_t mem_size)
 {
     // Map the memory as executable
@@ -34,6 +52,15 @@ void cb_init(codeblock_t* cb, size_t mem_size)
     cb->write_pos = 0;
     cb->num_labels = 0;
     cb->num_refs = 0;
+}
+
+/**
+Set the current write position
+*/
+void cb_set_pos(codeblock_t* cb, size_t pos)
+{
+    assert (pos < cb->mem_size);
+    cb->write_pos = pos;
 }
 
 // Get a direct pointer into the executable memory block
@@ -128,8 +155,27 @@ void cb_write_epilogue(codeblock_t* cb)
         cb_write_byte(cb, ujit_post_call_bytes[i]);
 }
 
+// Check if an operand needs a rex byte to be encoded
+bool rex_needed(x86opnd_t opnd)
+{
+    if (opnd.type == OPND_REG)
+    {
+        return (
+            opnd.reg.reg_no > 7 ||
+            (opnd.num_bits == 8 && opnd.reg.reg_no >= 4 && opnd.reg.reg_no <= 7)
+        );
+    }
+
+    if (opnd.type == OPND_MEM)
+    {
+        return (opnd.mem.base_reg_no > 7) || (opnd.mem.has_idx && opnd.mem.idx_reg_no > 7);
+    }
+
+    assert (false);
+}
+
 // Write the REX byte
-void writeREX(
+static void cb_write_rex(
     codeblock_t* cb,
     bool w_flag,
     uint8_t reg_no,
@@ -153,13 +199,12 @@ void writeREX(
 }
 
 // Write an opcode byte with an embedded register operand
-/*static void cb_write_opcode(codeblock_t* cb, uint8_t opcode, X86Reg rOpnd)
+static void cb_write_opcode(codeblock_t* cb, uint8_t opcode, x86opnd_t reg)
 {
     // Write the reg field into the opcode byte
-    uint8_t op_byte = opcode | (rOpnd.regNo & 7);
+    uint8_t op_byte = opcode | (reg.reg.reg_no & 7);
     cb_write_byte(cb, op_byte);
 }
-*/
 
 // nop - Noop, one or multiple bytes long
 void nop(codeblock_t* cb, size_t length)
@@ -228,28 +273,35 @@ void nop(codeblock_t* cb, size_t length)
     }
 }
 
-/*
 /// push - Push a register on the stack
-void push(codeblock_t* cb, X86Reg reg)
+void push(codeblock_t* cb, x86opnd_t reg)
 {
-    assert (reg.size is 64, "can only push 64-bit registers");
+    assert (reg.num_bits == 64);
 
     //cb.writeASM("push", reg);
 
-    if (reg.rexNeeded)
-        cb_write_rex(cb, false, 0, 0, reg.regNo);
-    cb_write_byte(cb, 0x50, reg);
+    if (rex_needed(reg))
+        cb_write_rex(cb, false, 0, 0, reg.reg.reg_no);
+
+    cb_write_opcode(cb, 0x50, reg);
 }
 
 /// pop - Pop a register off the stack
-void pop(codeblock_t* cb, X86Reg reg)
+void pop(codeblock_t* cb, x86opnd_t reg)
 {
-    assert (reg.size is 64);
+    assert (reg.num_bits == 64);
 
     //cb.writeASM("pop", reg);
 
-    if (reg.rexNeeded)
-        cb_write_rex(false, 0, 0, reg.regNo);
-    cb_write_byte(cb, 0x58, reg);
+    if (rex_needed(reg))
+        cb_write_rex(cb, false, 0, 0, reg.reg.reg_no);
+
+    cb_write_opcode(cb, 0x58, reg);
 }
-*/
+
+/// ret - Return from call, popping only the return address
+void ret(codeblock_t* cb)
+{
+    //cb.writeASM("ret");
+    cb_write_byte(cb, 0xC3);
+}
