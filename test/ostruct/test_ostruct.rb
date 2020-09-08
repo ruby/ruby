@@ -179,7 +179,6 @@ class TC_OpenStruct < Test::Unit::TestCase
   def test_accessor_defines_method
     os = OpenStruct.new(foo: 42)
     assert_respond_to(os, :foo)
-    assert_equal([], os.singleton_methods)
     assert_equal(42, os.foo)
     assert_equal([:foo, :foo=], os.singleton_methods.sort)
   end
@@ -224,5 +223,11 @@ class TC_OpenStruct < Test::Unit::TestCase
     assert_raise_with_message(NoMethodError, /protected method/) do
       os.foo true, true
     end
+  end
+
+  def test_overriden_private_methods
+    os = OpenStruct.new(puts: :foo, format: :bar)
+    assert_equal(:foo, os.puts)
+    assert_equal(:bar, os.format)
   end
 end

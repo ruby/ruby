@@ -95,6 +95,7 @@ class OpenStruct
       hash.each_pair do |k, v|
         k = k.to_sym
         @table[k] = v
+        new_ostruct_member!(k)
       end
     end
   end
@@ -103,6 +104,7 @@ class OpenStruct
   def initialize_copy(orig) # :nodoc:
     super
     @table = @table.dup
+    @table.each_key{|key| new_ostruct_member!(key)}
   end
 
   #
@@ -160,6 +162,7 @@ class OpenStruct
   #
   def marshal_load(x)
     @table = x
+    @table.each_key{|key| new_ostruct_member!(key)}
   end
 
   #
@@ -183,23 +186,13 @@ class OpenStruct
   #
   def new_ostruct_member!(name) # :nodoc:
     name = name.to_sym
-    unless singleton_class.method_defined?(name)
+    unless respond_to?(name)
       define_singleton_method(name) { @table[name] }
       define_singleton_method("#{name}=") {|x| modifiable?[name] = x}
     end
     name
   end
   private :new_ostruct_member!
-
-  def freeze
-    @table.each_key {|key| new_ostruct_member!(key)}
-    super
-  end
-
-  def respond_to_missing?(mid, include_private = false) # :nodoc:
-    mname = mid.to_s.chomp("=").to_sym
-    defined?(@table) && @table.key?(mname) || super
-  end
 
   def method_missing(mid, *args) # :nodoc:
     len = args.length
@@ -208,11 +201,7 @@ class OpenStruct
         raise ArgumentError, "wrong number of arguments (given #{len}, expected 1)", caller(1)
       end
       modifiable?[new_ostruct_member!(mname)] = args[0]
-    elsif len == 0 # and /\A[a-z_]\w*\z/ =~ mid #
-      if @table.key?(mid)
-        new_ostruct_member!(mid) unless frozen?
-        @table[mid]
-      end
+    elsif len == 0
     elsif @table.key?(mid)
       raise ArgumentError, "wrong number of arguments (given #{len}, expected 0)"
     else
