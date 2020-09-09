@@ -215,7 +215,7 @@ module JSON
   end
 
   # :call-seq:
-  #   CSV.load_file(path, opts={}) -> object
+  #   JSON.load_file(path, opts={}) -> object
   #
   # Calls:
   #   parse(File.read(path), opts)
@@ -226,10 +226,10 @@ module JSON
   end
 
   # :call-seq:
-  #   CSV.load_file!(path, opts = {})
+  #   JSON.load_file!(path, opts = {})
   #
   # Calls:
-  #   CSV.parse!(File.read(path, opts))
+  #   JSON.parse!(File.read(path, opts))
   #
   # See method #parse!
   def load_file!(filespec, opts = {})
