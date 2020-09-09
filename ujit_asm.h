@@ -59,7 +59,7 @@ enum OpndType
     OPND_REG,
     OPND_IMM,
     OPND_MEM,
-    OPND_IPREL
+    //OPND_IPREL
 };
 
 enum RegType
@@ -94,7 +94,7 @@ typedef struct X86Mem
     /// Has index register flag
     bool has_idx;
 
-    // FIXME: do we need this, or can base reg just be RIP?
+    // TODO: should this be here, or should we have an extra operand type?
     /// IP-relative addressing flag
     bool is_iprel;
 
@@ -123,10 +123,13 @@ typedef struct X86Opnd
         int64_t imm;
 
         // Unsigned immediate value
-        uint64_t unsgImm;
+        uint64_t unsigImm;
     };
 
 } x86opnd_t;
+
+// Dummy none/null operand
+const x86opnd_t NO_OPND;
 
 // 64-bit GP registers
 const x86opnd_t RAX;
@@ -146,6 +149,12 @@ const x86opnd_t R13;
 const x86opnd_t R14;
 const x86opnd_t R15;
 
+// Memory operand with base register and displacement/offset
+x86opnd_t mem_opnd(size_t num_bits, x86opnd_t base_reg, int32_t disp);
+
+// Immediate number operand
+x86opnd_t imm_opnd(int64_t val);
+
 void cb_init(codeblock_t* cb, size_t mem_size);
 void cb_set_pos(codeblock_t* cb, size_t pos);
 uint8_t* cb_get_ptr(codeblock_t* cb, size_t index);
@@ -158,6 +167,9 @@ void cb_write_prologue(codeblock_t* cb);
 void cb_write_epilogue(codeblock_t* cb);
 
 // Encode individual instructions into a code block
+void add(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1);
+void call(codeblock_t* cb, x86opnd_t opnd);
+void mov(codeblock_t* cb, x86opnd_t dst, x86opnd_t src);
 void nop(codeblock_t* cb, size_t length);
 void push(codeblock_t* cb, x86opnd_t reg);
 void pop(codeblock_t* cb, x86opnd_t reg);

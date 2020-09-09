@@ -15,7 +15,7 @@ void check_bytes(codeblock_t* cb, const char* bytes)
 
     if (cb->write_pos != num_bytes)
     {
-        fprintf(stderr, "incorrect encoding length %ld\n", cb->write_pos);
+        fprintf(stderr, "incorrect encoding length %ld, expected %ld\n", cb->write_pos, num_bytes);
         exit(-1);
     }
 
@@ -23,8 +23,6 @@ void check_bytes(codeblock_t* cb, const char* bytes)
     {
         char byte_str[] = {0, 0, 0, 0};
         strncpy(byte_str, bytes + (2 * i), 2);
-        //printf("%ld: %s\n", i, byte_str);
-
         char* endptr;
         long int byte = strtol(byte_str, &endptr, 16);
 
@@ -32,7 +30,11 @@ void check_bytes(codeblock_t* cb, const char* bytes)
 
         if (cb_byte != byte)
         {
-            fprintf(stderr, "incorrect encoding at position %ld\n", i);
+            fprintf(stderr, "incorrect encoding at position %ld, got %X, expected %X\n",
+                i,
+                (int)cb_byte,
+                (int)byte
+            );
             exit(-1);
         }
     }
@@ -48,6 +50,114 @@ void run_tests()
     cb_write_prologue(cb);
     cb_write_epilogue(cb);
 
+    // add
+    /*
+    test(
+        delegate void (CodeBlock cb) { cb.add(X86Opnd(CL), X86Opnd(3)); },
+        "80C103"
+    );
+    test(
+        delegate void (CodeBlock cb) { cb.add(X86Opnd(CL), X86Opnd(BL)); },
+        "00D9"
+    );
+    test(
+        delegate void (CodeBlock cb) { cb.add(X86Opnd(CL), X86Opnd(SPL)); },
+        "4000E1"
+    );
+    test(
+        delegate void (CodeBlock cb) { cb.add(X86Opnd(CX), X86Opnd(BX)); },
+        "6601D9"
+    );
+    */
+    cb_set_pos(cb, 0); add(cb, RAX, RBX); check_bytes(cb, "4801D8");
+    //cb_set_pos(cb, 0); add(cb, ECX, EDX); check_bytes(cb, "01D1");
+    cb_set_pos(cb, 0); add(cb, RDX, R14); check_bytes(cb, "4C01F2");
+    cb_set_pos(cb, 0); add(cb, mem_opnd(64, RAX, 0), RDX); check_bytes(cb, "480110");
+    cb_set_pos(cb, 0); add(cb, RDX, mem_opnd(64, RAX, 0)); check_bytes(cb, "480310");
+    cb_set_pos(cb, 0); add(cb, RDX, mem_opnd(64, RAX, 8)); check_bytes(cb, "48035008");
+    cb_set_pos(cb, 0); add(cb, RDX, mem_opnd(64, RAX, 255)); check_bytes(cb, "480390FF000000");
+    cb_set_pos(cb, 0); add(cb, mem_opnd(64, RAX, 127), imm_opnd(255)); check_bytes(cb, "4881407FFF000000");
+    /*
+    test(
+        delegate void (CodeBlock cb) { cb.add(X86Opnd(32, RAX), X86Opnd(EDX)); },
+        "0110"
+    );
+    */
+    cb_set_pos(cb, 0); add(cb, RSP, imm_opnd(8)); check_bytes(cb, "4883C408");
+    /*
+    test(
+        delegate void (CodeBlock cb) { cb.add(X86Opnd(ECX), X86Opnd(8)); },
+        "83C108"
+    );
+    test(
+        delegate void (CodeBlock cb) { cb.add(X86Opnd(ECX), X86Opnd(255)); },
+        "81C1FF000000"
+    );
+    */
+
+    // call
+    /*
+    test(
+        delegate void (CodeBlock cb) { auto l = cb.label("foo"); cb.instr(CALL, l); },
+        "E8FBFFFFFF"
+    );
+    */
+    cb_set_pos(cb, 0); call(cb, RAX); check_bytes(cb, "FFD0");
+    cb_set_pos(cb, 0); call(cb, mem_opnd(64, RSP, 8)); check_bytes(cb, "FF542408");
+
+    // mov
+    /*
+    test(
+        delegate void (CodeBlock cb) { cb.mov(X86Opnd(EAX), X86Opnd(7)); },
+        "B807000000"
+    );
+    test(
+        delegate void (CodeBlock cb) { cb.mov(X86Opnd(EAX), X86Opnd(-3)); },
+        "B8FDFFFFFF"
+    );
+    */
+    cb_set_pos(cb, 0); mov(cb, R15, imm_opnd(3)); check_bytes(cb, "49BF0300000000000000");
+
+    /*
+    test(
+        delegate void (CodeBlock cb) { cb.mov(X86Opnd(EAX), X86Opnd(EBX)); },
+        "89D8"
+    );
+    test(
+        delegate void (CodeBlock cb) { cb.mov(X86Opnd(EAX), X86Opnd(ECX)); },
+        "89C8"
+    );
+    test(
+        delegate void (CodeBlock cb) { cb.mov(X86Opnd(EDX), X86Opnd(32, RBX, 128)); },
+        "8B9380000000"
+    );
+    test(
+        delegate void (CodeBlock cb) { cb.mov(X86Opnd(AL), X86Opnd(8, RCX, 0, 1, RDX)); },
+        "8A0411"
+    );
+    test(
+        delegate void (CodeBlock cb) { cb.mov(X86Opnd(CL), X86Opnd(R9L)); },
+        "4488C9"
+    );
+    */
+    cb_set_pos(cb, 0); mov(cb, RBX, RAX); check_bytes(cb, "4889C3");
+    cb_set_pos(cb, 0); mov(cb, RDI, RBX); check_bytes(cb, "4889DF");
+    /*
+    test(
+        delegate void (CodeBlock cb) { cb.mov(X86Opnd(SIL), X86Opnd(11)); },
+        "40B60B"
+    );
+    */
+    cb_set_pos(cb, 0); mov(cb, mem_opnd(8, RSP, 0), imm_opnd(-3)); check_bytes(cb, "C60424FD");
+
+
+
+
+
+
+    // nop
+    cb_set_pos(cb, 0); nop(cb, 1); check_bytes(cb, "90");
+
     // pop
     cb_set_pos(cb, 0); pop(cb, RAX); check_bytes(cb, "58");
     cb_set_pos(cb, 0); pop(cb, RBX); check_bytes(cb, "5B");
@@ -62,7 +172,6 @@ void run_tests()
 
     // ret
     cb_set_pos(cb, 0); ret(cb); check_bytes(cb, "C3");
-
 
 
 

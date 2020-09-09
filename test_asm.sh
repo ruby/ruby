@@ -3,7 +3,7 @@
 
 clear
 
-clang -std=gnu99 -Wall ujit_asm.c ujit_asm_tests.c -o asm_test
+clang -std=gnu99 -Wall -Werror -Wshorten-64-to-32 ujit_asm.c ujit_asm_tests.c -o asm_test
 
 ./asm_test
 
