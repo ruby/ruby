@@ -5746,7 +5746,6 @@ gc_mark_maybe(rb_objspace_t *objspace, VALUE obj)
 
         /* Garbage can live on the stack, so do not mark or pin */
         switch (BUILTIN_TYPE(obj)) {
-          case T_MOVED:
           case T_ZOMBIE:
           case T_NONE:
             break;
@@ -8690,7 +8689,13 @@ gc_ref_update_imemo(rb_objspace_t *objspace, VALUE obj)
                     *((VALUE *)(&cc->klass)) = (VALUE)0;
                 }
             }
-            TYPED_UPDATE_IF_MOVED(objspace, struct rb_callable_method_entry_struct *, cc->cme_);
+
+            if (cc->cme_) {
+                TYPED_UPDATE_IF_MOVED(objspace, struct rb_callable_method_entry_struct *, cc->cme_);
+                if (!is_live_object(objspace, (VALUE)cc->cme_)) {
+                    *((struct rb_callable_method_entry_struct **)(&cc->cme_)) = (struct rb_callable_method_entry_struct *)0;
+                }
+            }
         }
         break;
       case imemo_parser_strterm:
@@ -9144,7 +9149,9 @@ heap_check_moved_i(void *vstart, void *vend, size_t stride, void *data)
               case T_ZOMBIE:
                 break;
               default:
-                rb_objspace_reachable_objects_from(v, reachable_object_check_moved_i, (void *)v);
+                if (!rb_objspace_garbage_object_p(v)) {
+                    rb_objspace_reachable_objects_from(v, reachable_object_check_moved_i, (void *)v);
+                }
             }
 
             if (poisoned) {
