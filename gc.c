@@ -7493,6 +7493,7 @@ gc_mark_from(rb_objspace_t *objspace, VALUE obj, VALUE parent)
 {
     gc_mark_set_parent(objspace, parent);
     rgengc_check_relation(objspace, obj);
+    gc_pin(objspace, obj);
     if (gc_mark_set(objspace, obj) == FALSE) return;
     gc_aging(objspace, obj);
     gc_grey(objspace, obj);
