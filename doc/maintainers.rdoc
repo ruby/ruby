@@ -67,8 +67,6 @@ Zachary Scott (zzak)
   Akinori MUSHA (knu)
 [lib/time.rb]
   Tanaka Akira (akr)
-[lib/tsort.rb]
-  Tanaka Akira (akr)
 [lib/un.rb]
   WATANABE Hirofumi (eban)
 [lib/unicode_normalize.rb, lib/unicode_normalize/*]
@@ -255,6 +253,9 @@ Zachary Scott (zzak)
 [lib/tracer.rb]
   Keiju ISHITSUKA (keiju)
   https://github.com/ruby/tracer
+[lib/tsort.rb]
+  Tanaka Akira (akr)
+  https://github.com/ruby/tsort
 [lib/uri.rb, lib/uri/*]
   YAMADA, Akira (akira)
   https://github.com/ruby/uri
