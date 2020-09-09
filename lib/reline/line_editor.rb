@@ -2079,14 +2079,12 @@ class Reline::LineEditor
   end
 
   private def vi_histedit(key)
-    Tempfile.open { |fp|
+    path = Tempfile.open { |fp|
       fp.write @line
-      path = fp.path
-      fp.close
-
-      system("#{ENV['EDITOR']} #{path}")
-      @line = File.read(path)
+      fp.path
     }
+    system("#{ENV['EDITOR']} #{path}")
+    @line = File.read(path)
     finish
   end
 
