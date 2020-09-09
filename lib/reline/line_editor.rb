@@ -492,8 +492,18 @@ class Reline::LineEditor
     Reline::IOGate.move_cursor_column(0)
     visual_lines.each_with_index do |line, index|
       if line.nil?
-        if Reline::IOGate.win? and calculate_width(visual_lines[index - 1], true) == Reline::IOGate.get_screen_size.last
-          # A newline is automatically inserted if a character is rendered at eol on command prompt.
+        if calculate_width(visual_lines[index - 1], true) == Reline::IOGate.get_screen_size.last
+          # reaches the end of line
+          if Reline::IOGate.win?
+            # A newline is automatically inserted if a character is rendered at
+            # eol on command prompt.
+          else
+            # When the cursor is at the end of the line and erases characters
+            # after the cursor, some terminals delete the character at the
+            # cursor position.
+            move_cursor_down(1)
+            Reline::IOGate.move_cursor_column(0)
+          end
         else
           Reline::IOGate.erase_after_cursor
           move_cursor_down(1)
