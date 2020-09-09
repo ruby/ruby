@@ -105,6 +105,24 @@ void run_tests()
     cb_set_pos(cb, 0); call(cb, RAX); check_bytes(cb, "FFD0");
     cb_set_pos(cb, 0); call(cb, mem_opnd(64, RSP, 8)); check_bytes(cb, "FF542408");
 
+    /*
+    // jcc
+    test(
+        delegate void (CodeBlock cb) { auto l = cb.label(Label.LOOP); cb.jge(l); },
+        "0F8DFAFFFFFF"
+    );
+    test(
+        delegate void (CodeBlock cb) { cb.label(Label.LOOP); cb.jo(Label.LOOP); },
+        "0F80FAFFFFFF"
+    );
+    */
+
+    // jmp
+    cb_set_pos(cb, 0); jmp(cb, R12); check_bytes(cb, "41FFE4");
+
+    // lea
+    //cb_set_pos(cb, 0); mov(cb, EBX, mem_opnd(32, RSP, 4))); check_bytes(cb, "8D5C2404");
+
     // mov
     /*
     test(
@@ -117,7 +135,6 @@ void run_tests()
     );
     */
     cb_set_pos(cb, 0); mov(cb, R15, imm_opnd(3)); check_bytes(cb, "49BF0300000000000000");
-
     /*
     test(
         delegate void (CodeBlock cb) { cb.mov(X86Opnd(EAX), X86Opnd(EBX)); },
@@ -149,11 +166,6 @@ void run_tests()
     );
     */
     cb_set_pos(cb, 0); mov(cb, mem_opnd(8, RSP, 0), imm_opnd(-3)); check_bytes(cb, "C60424FD");
-
-
-
-
-
 
     // nop
     cb_set_pos(cb, 0); nop(cb, 1); check_bytes(cb, "90");
