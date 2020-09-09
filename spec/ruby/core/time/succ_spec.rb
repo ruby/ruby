@@ -2,7 +2,7 @@ require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
 describe "Time#succ" do
-  ruby_version_is ""..."2.6" do
+  ruby_version_is ""..."3.0" do
     it "returns a new time one second later than time" do
       suppress_warning {
         @result = Time.at(100).succ
