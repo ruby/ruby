@@ -95,7 +95,7 @@ static ID i_json_creatable_p, i_json_create, i_create_id, i_create_additions,
           i_chr, i_max_nesting, i_allow_nan, i_symbolize_names,
           i_object_class, i_array_class, i_decimal_class, i_key_p,
           i_deep_const_get, i_match, i_match_string, i_aset, i_aref,
-          i_leftshift, i_new, i_BigDecimal;
+          i_leftshift, i_new, i_BigDecimal, i_freeze, i_uminus;
 
 %%{
     machine JSON_common;
@@ -289,6 +289,10 @@ static char *JSON_parse_value(JSON_Parser *json, char *p, char *pe, VALUE *resul
 
     %% write init;
     %% write exec;
+
+    if (json->freeze) {
+        OBJ_FREEZE(*result);
+    }
 
     if (cs >= JSON_value_first_final) {
         return p;
@@ -573,7 +577,22 @@ static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *resu
     if (json->symbolize_names && json->parsing_name) {
       *result = rb_str_intern(*result);
     } else if (RB_TYPE_P(*result, T_STRING)) {
+# if STR_UMINUS_DEDUPE_FROZEN
+      if (json->freeze) {
+        // Starting from MRI 2.8 it is preferable to freeze the string
+        // before deduplication so that it can be interned directly
+        // otherwise it would be duplicated first which is wasteful.
+        *result = rb_funcall(rb_str_freeze(*result), i_uminus, 0);
+      }
+# elif STR_UMINUS_DEDUPE
+      if (json->freeze) {
+        // MRI 2.5 and older do not deduplicate strings that are already
+        // frozen.
+        *result = rb_funcall(*result, i_uminus, 0);
+      }
+# else
       rb_str_resize(*result, RSTRING_LEN(*result));
+# endif
     }
     if (cs >= JSON_string_first_final) {
         return p + 1;
@@ -680,6 +699,12 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
                 json->symbolize_names = RTEST(rb_hash_aref(opts, tmp)) ? 1 : 0;
             } else {
                 json->symbolize_names = 0;
+            }
+            tmp = ID2SYM(i_freeze);
+            if (option_given_p(opts, tmp)) {
+                json->freeze = RTEST(rb_hash_aref(opts, tmp)) ? 1 : 0;
+            } else {
+                json->freeze = 0;
             }
             tmp = ID2SYM(i_create_additions);
             if (option_given_p(opts, tmp)) {
@@ -886,6 +911,8 @@ void Init_parser(void)
     i_leftshift = rb_intern("<<");
     i_new = rb_intern("new");
     i_BigDecimal = rb_intern("BigDecimal");
+    i_freeze = rb_intern("freeze");
+    i_uminus = rb_intern("-@");
 }
 
 /*
