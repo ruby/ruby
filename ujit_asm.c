@@ -613,6 +613,105 @@ void call(codeblock_t* cb, x86opnd_t opnd)
     cb_write_rm(cb, false, false, NO_OPND, opnd, 2, 1, 0xFF);
 }
 
+/**
+Encode a relative jump to a label (direct or conditional)
+Note: this always encodes a 32-bit offset
+*/
+/*
+void writeJcc(string mnem, opcode...)(CodeBlock cb, Label label)
+{
+    cb.writeASM(mnem, label);
+
+    // Write the opcode
+    cb.writeBytes(opcode);
+
+    // Add a reference to the label
+    cb.addLabelRef(label);
+
+    // Relative 32-bit offset to be patched
+    cb.writeInt(0, 32);
+}
+*/
+
+/*
+/// jcc - Conditional relative jump to a label
+alias ja = writeJcc!("ja", 0x0F, 0x87);
+alias jae = writeJcc!("jae", 0x0F, 0x83);
+alias jb = writeJcc!("jb", 0x0F, 0x82);
+alias jbe = writeJcc!("jbe", 0x0F, 0x86);
+alias jc = writeJcc!("jc", 0x0F, 0x82);
+alias je = writeJcc!("je", 0x0F, 0x84);
+alias jg = writeJcc!("jg", 0x0F, 0x8F);
+alias jge = writeJcc!("jge", 0x0F, 0x8D);
+alias jl = writeJcc!("jl", 0x0F, 0x8C);
+alias jle = writeJcc!("jle", 0x0F, 0x8E);
+alias jna = writeJcc!("jna", 0x0F, 0x86);
+alias jnae = writeJcc!("jnae", 0x0F, 0x82);
+alias jnb = writeJcc!("jnb", 0x0F, 0x83);
+alias jnbe = writeJcc!("jnbe", 0x0F, 0x87);
+alias jnc = writeJcc!("jnc", 0x0F, 0x83);
+alias jne = writeJcc!("jne", 0x0F, 0x85);
+alias jng = writeJcc!("jng", 0x0F, 0x8E);
+alias jnge = writeJcc!("jnge", 0x0F, 0x8C);
+alias jnl = writeJcc!("jnl", 0x0F, 0x8D);
+alias jnle = writeJcc!("jnle", 0x0F, 0x8F);
+alias jno = writeJcc!("jno", 0x0F, 0x81);
+alias jnp = writeJcc!("jnp", 0x0F, 0x8b);
+alias jns = writeJcc!("jns", 0x0F, 0x89);
+alias jnz = writeJcc!("jnz", 0x0F, 0x85);
+alias jo = writeJcc!("jo", 0x0F, 0x80);
+alias jp = writeJcc!("jp", 0x0F, 0x8A);
+alias jpe = writeJcc!("jpe", 0x0F, 0x8A);
+alias jpo = writeJcc!("jpo", 0x0F, 0x8B);
+alias js = writeJcc!("js", 0x0F, 0x88);
+alias jz = writeJcc!("jz", 0x0F, 0x84);
+
+/// Opcode for direct jump with relative 8-bit offset
+const ubyte JMP_REL8_OPCODE = 0xEB;
+
+/// Opcode for direct jump with relative 32-bit offset
+const ubyte JMP_REL32_OPCODE = 0xE9;
+
+/// Opcode for jump on equal with relative 32-bit offset
+const ubyte[] JE_REL32_OPCODE = [0x0F, 0x84];
+
+/// jmp - Direct relative jump to label
+alias jmp = writeJcc!("jmp", JMP_REL32_OPCODE);
+*/
+
+/// jmp - Indirect jump near to an R/M operand
+void jmp(codeblock_t* cb, x86opnd_t opnd)
+{
+    //cb.writeASM("jmp", opnd);
+    cb_write_rm(cb, false, false, NO_OPND, opnd, 4, 1, 0xFF);
+}
+
+/*
+/// jmp - Jump with relative 8-bit offset
+void jmp8(CodeBlock cb, int8_t offset)
+{
+    cb.writeASM("jmp", ((offset > 0)? "+":"-") ~ to!string(offset));
+    cb.writeByte(JMP_REL8_OPCODE);
+    cb.writeByte(offset);
+}
+
+/// jmp - Jump with relative 32-bit offset
+void jmp32(CodeBlock cb, int32_t offset)
+{
+    cb.writeASM("jmp", ((offset > 0)? "+":"-") ~ to!string(offset));
+    cb.writeByte(JMP_REL32_OPCODE);
+    cb.writeInt(offset, 32);
+}
+*/
+
+/// lea - Load Effective Address
+void lea(codeblock_t* cb, x86opnd_t dst, x86opnd_t src)
+{
+    //cb.writeASM("lea", dst, src);
+    assert (dst.num_bits == 64);
+    cb_write_rm(cb, false, true, dst, src, 0xFF, 1, 0x8D);
+}
+
 /// mov - Data move operation
 void mov(codeblock_t* cb, x86opnd_t dst, x86opnd_t src)
 {
