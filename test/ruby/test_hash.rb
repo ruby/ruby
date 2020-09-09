@@ -277,8 +277,14 @@ class TestHash < Test::Unit::TestCase
 
   def test_ASET_fstring_key
     a, b = {}, {}
-    assert_equal 1, a["abc"] = 1
-    assert_equal 1, b["abc"] = 1
+    a["abc"] = b["abc"] = 1
+    assert_same a.keys[0], b.keys[0]
+  end
+
+  def test_ASET_fstring_key_frozen
+    a, b = {}, {}
+    k1, k2 = "abc", "abc"
+    a[k1.freeze] = b[k2.freeze] = 1
     assert_same a.keys[0], b.keys[0]
   end
 

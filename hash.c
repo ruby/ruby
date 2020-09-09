@@ -2876,19 +2876,24 @@ hash_aset(st_data_t *key, st_data_t *val, struct update_arg *arg, int existing)
 VALUE
 rb_hash_key_str(VALUE key)
 {
-    if (!RB_FL_ANY_RAW(key, FL_EXIVAR) && RBASIC_CLASS(key) == rb_cString) {
+    RUBY_ASSERT(TYPE(key) == T_STRING);
+
+    if (RB_FL_TEST_RAW(key, RSTRING_FSTR)) {
+        return key;
+    }
+
+    if (!RB_FL_TEST_RAW(key, FL_EXIVAR) && RBASIC_CLASS(key) == rb_cString) {
         return rb_fstring(key);
     }
-    else {
-	return rb_str_new_frozen(key);
-    }
+
+    return rb_str_new_frozen(key);
 }
 
 static int
 hash_aset_str(st_data_t *key, st_data_t *val, struct update_arg *arg, int existing)
 {
-    if (!existing && !RB_OBJ_FROZEN(*key)) {
-	*key = rb_hash_key_str(*key);
+    if (!existing) {
+      *key = rb_hash_key_str(*key);
     }
     return hash_aset(key, val, arg, existing);
 }
@@ -2934,7 +2939,7 @@ rb_hash_aset(VALUE hash, VALUE key, VALUE val)
         ar_alloc_table(hash);
     }
 
-    if (RHASH_TYPE(hash) == &identhash || rb_obj_class(key) != rb_cString) {
+    if (TYPE(key) != T_STRING || RHASH_TYPE(hash) == &identhash) {
 	RHASH_UPDATE_ITER(hash, iter_lev, key, hash_aset, val);
     }
     else {
@@ -4770,8 +4775,7 @@ rb_hash_add_new_element(VALUE hash, VALUE key, VALUE val)
 static st_data_t
 key_stringify(VALUE key)
 {
-    return (rb_obj_class(key) == rb_cString && !RB_OBJ_FROZEN(key)) ?
-        rb_hash_key_str(key) : key;
+    return rb_obj_class(key) == rb_cString ? rb_hash_key_str(key) : key;
 }
 
 static void
