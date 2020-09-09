@@ -538,7 +538,7 @@ class Reline::LineEditor
     return before if before.nil? || before.empty?
 
     if after = @output_modifier_proc&.call("#{before.join("\n")}\n", complete: finished?)
-      after.lines("\n", chomp: true)
+      after.lines("\n").map { |l| l.chomp('') }
     else
       before
     end
