@@ -3269,23 +3269,6 @@ rb_thread_stop_p(VALUE thread)
 }
 
 /*
- *  call-seq:
- *     thr.safe_level   -> integer
- *
- *  Returns the safe level.
- *
- *  This method is obsolete because $SAFE is a process global state.
- *  Simply check $SAFE.
- */
-
-static VALUE
-rb_thread_safe_level(VALUE thread)
-{
-    rb_warn("Thread#safe_level will be removed in Ruby 3.0");
-    return UINT2NUM(GET_VM()->safe_level_);
-}
-
-/*
  * call-seq:
  *   thr.name   -> string
  *
@@ -5503,7 +5486,6 @@ Init_Thread(void)
     rb_define_method(rb_cThread, "abort_on_exception=", rb_thread_abort_exc_set, 1);
     rb_define_method(rb_cThread, "report_on_exception", rb_thread_report_exc, 0);
     rb_define_method(rb_cThread, "report_on_exception=", rb_thread_report_exc_set, 1);
-    rb_define_method(rb_cThread, "safe_level", rb_thread_safe_level, 0);
     rb_define_method(rb_cThread, "group", rb_thread_group, 0);
     rb_define_method(rb_cThread, "backtrace", rb_thread_backtrace_m, -1);
     rb_define_method(rb_cThread, "backtrace_locations", rb_thread_backtrace_locations_m, -1);
