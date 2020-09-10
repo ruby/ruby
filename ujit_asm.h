@@ -149,6 +149,24 @@ const x86opnd_t R13;
 const x86opnd_t R14;
 const x86opnd_t R15;
 
+// 32-bit GP registers
+const x86opnd_t EAX;
+const x86opnd_t ECX;
+const x86opnd_t EDX;
+const x86opnd_t EBX;
+const x86opnd_t EBP;
+const x86opnd_t ESP;
+const x86opnd_t ESI;
+const x86opnd_t EDI;
+const x86opnd_t R8D;
+const x86opnd_t R9D;
+const x86opnd_t R10D;
+const x86opnd_t R11D;
+const x86opnd_t R12D;
+const x86opnd_t R13D;
+const x86opnd_t R14D;
+const x86opnd_t R15D;
+
 // Memory operand with base register and displacement/offset
 x86opnd_t mem_opnd(size_t num_bits, x86opnd_t base_reg, int32_t disp);
 
@@ -170,16 +188,12 @@ void cb_write_epilogue(codeblock_t* cb);
 void add(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1);
 void call(codeblock_t* cb, x86opnd_t opnd);
 void jmp(codeblock_t* cb, x86opnd_t opnd);
+void lea(codeblock_t* cb, x86opnd_t dst, x86opnd_t src);
 void mov(codeblock_t* cb, x86opnd_t dst, x86opnd_t src);
 void nop(codeblock_t* cb, size_t length);
 void push(codeblock_t* cb, x86opnd_t reg);
 void pop(codeblock_t* cb, x86opnd_t reg);
 void ret(codeblock_t* cb);
-
-
-
-
-
-
+void sub(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1);
 
 #endif

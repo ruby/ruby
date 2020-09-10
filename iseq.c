@@ -3148,6 +3148,18 @@ rb_vm_encoded_insn_data_table_init(void)
     head += sizeof(handmade_pop);
     memcpy(head, ujit_post_call_bytes, sizeof(ujit_post_call_bytes));
     // TODO this is small enough to fit in the page we allocated but that can change
+
+
+
+
+
+
+
+
+
+
+
+
 }
 
 int

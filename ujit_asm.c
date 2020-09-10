@@ -32,6 +32,24 @@ const x86opnd_t R13 = { OPND_REG, 64, .reg = { REG_GP, 13 }};
 const x86opnd_t R14 = { OPND_REG, 64, .reg = { REG_GP, 14 }};
 const x86opnd_t R15 = { OPND_REG, 64, .reg = { REG_GP, 15 }};
 
+// 32-bit GP registers
+const x86opnd_t EAX  = { OPND_REG, 32, .reg = { REG_GP, 0 }};
+const x86opnd_t ECX  = { OPND_REG, 32, .reg = { REG_GP, 1 }};
+const x86opnd_t EDX  = { OPND_REG, 32, .reg = { REG_GP, 2 }};
+const x86opnd_t EBX  = { OPND_REG, 32, .reg = { REG_GP, 3 }};
+const x86opnd_t ESP  = { OPND_REG, 32, .reg = { REG_GP, 4 }};
+const x86opnd_t EBP  = { OPND_REG, 32, .reg = { REG_GP, 5 }};
+const x86opnd_t ESI  = { OPND_REG, 32, .reg = { REG_GP, 6 }};
+const x86opnd_t EDI  = { OPND_REG, 32, .reg = { REG_GP, 7 }};
+const x86opnd_t R8D  = { OPND_REG, 32, .reg = { REG_GP, 8 }};
+const x86opnd_t R9D  = { OPND_REG, 32, .reg = { REG_GP, 9 }};
+const x86opnd_t R10D = { OPND_REG, 32, .reg = { REG_GP, 10 }};
+const x86opnd_t R11D = { OPND_REG, 32, .reg = { REG_GP, 11 }};
+const x86opnd_t R12D = { OPND_REG, 32, .reg = { REG_GP, 12 }};
+const x86opnd_t R13D = { OPND_REG, 32, .reg = { REG_GP, 13 }};
+const x86opnd_t R14D = { OPND_REG, 32, .reg = { REG_GP, 14 }};
+const x86opnd_t R15D = { OPND_REG, 32, .reg = { REG_GP, 15 }};
+
 // Compute the number of bits needed to encode a signed value
 size_t sig_imm_size(int64_t imm)
 {
@@ -873,4 +891,23 @@ void ret(codeblock_t* cb)
 {
     //cb.writeASM("ret");
     cb_write_byte(cb, 0xC3);
+}
+
+/// sub - Integer subtraction
+void sub(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1)
+{
+    cb_write_rm_multi(
+        cb,
+        "sub",
+        0x28, // opMemReg8
+        0x29, // opMemRegPref
+        0x2A, // opRegMem8
+        0x2B, // opRegMemPref
+        0x80, // opMemImm8
+        0x83, // opMemImmSml
+        0x81, // opMemImmLrg
+        0x05,  // opExtImm
+        opnd0,
+        opnd1
+    );
 }
