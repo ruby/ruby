@@ -1013,6 +1013,8 @@ complemented_callable_method_entry(VALUE klass, ID id)
 static const rb_callable_method_entry_t *
 cached_callable_method_entry(VALUE klass, ID mid)
 {
+    ASSERT_vm_locking();
+
     struct rb_id_table *cc_tbl = RCLASS_CC_TBL(klass);
     struct rb_class_cc_entries *ccs;
 
@@ -1035,6 +1037,8 @@ cached_callable_method_entry(VALUE klass, ID mid)
 static void
 cache_callable_method_entry(VALUE klass, ID mid, const rb_callable_method_entry_t *cme)
 {
+    ASSERT_vm_locking();
+
     struct rb_id_table *cc_tbl = RCLASS_CC_TBL(klass);
     struct rb_class_cc_entries *ccs;
 
@@ -1054,19 +1058,25 @@ cache_callable_method_entry(VALUE klass, ID mid, const rb_callable_method_entry_
 static const rb_callable_method_entry_t *
 callable_method_entry(VALUE klass, ID mid, VALUE *defined_class_ptr)
 {
-    VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_ICLASS));
-    const rb_callable_method_entry_t *cme = cached_callable_method_entry(klass, mid);
+    const rb_callable_method_entry_t *cme;
 
-    if (cme) {
-        if (defined_class_ptr != NULL) *defined_class_ptr = cme->defined_class;
+    VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_ICLASS));
+    RB_VM_LOCK_ENTER();
+    {
+        cme = cached_callable_method_entry(klass, mid);
+
+        if (cme) {
+            if (defined_class_ptr != NULL) *defined_class_ptr = cme->defined_class;
+        }
+        else {
+            VALUE defined_class;
+            rb_method_entry_t *me = search_method_protect(klass, mid, &defined_class);
+            if (defined_class_ptr) *defined_class_ptr = defined_class;
+            cme = prepare_callable_method_entry(defined_class, mid, me, TRUE);
+            if (cme) cache_callable_method_entry(klass, mid, cme);
+        }
     }
-    else {
-        VALUE defined_class;
-        rb_method_entry_t *me = search_method_protect(klass, mid, &defined_class);
-        if (defined_class_ptr) *defined_class_ptr = defined_class;
-        cme = prepare_callable_method_entry(defined_class, mid, me, TRUE);
-        if (cme) cache_callable_method_entry(klass, mid, cme);
-    }
+    RB_VM_LOCK_LEAVE();
 
     return cme;
 }
