@@ -61,8 +61,6 @@ Zachary Scott (zzak)
   https://github.com/rubygems/rubygems
 [lib/securerandom.rb]
   Tanaka Akira (akr)
-[lib/shellwords.rb]
-  Akinori MUSHA (knu)
 [lib/time.rb]
   Tanaka Akira (akr)
 [lib/un.rb]
@@ -234,6 +232,9 @@ Zachary Scott (zzak)
 [lib/set.rb]
   Akinori MUSHA (knu)
   https://github.com/ruby/set
+[lib/shellwords.rb]
+  Akinori MUSHA (knu)
+  https://github.com/ruby/shellwords
 [lib/singleton.rb]
   Yukihiro Matsumoto (matz)
   https://github.com/ruby/singleton
