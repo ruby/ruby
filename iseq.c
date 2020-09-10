@@ -3101,6 +3101,14 @@ typedef struct insn_data_struct {
 } insn_data_t;
 static insn_data_t insn_data[VM_INSTRUCTION_SIZE/2];
 
+
+
+
+#include "ujit_asm.h"
+
+
+
+
 void
 rb_vm_encoded_insn_data_table_init(void)
 {
@@ -3133,6 +3141,8 @@ rb_vm_encoded_insn_data_table_init(void)
         st_add_direct(encoded_insn_data, key2, (st_data_t)&insn_data[insn]);
     }
 
+
+    /*
     native_pop_code = mmap(0, 4096, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_ANON|MAP_PRIVATE, 0, 0);
     if (native_pop_code == MAP_FAILED) rb_bug("mmap failed");
     uint8_t *head = native_pop_code;
@@ -3148,11 +3158,27 @@ rb_vm_encoded_insn_data_table_init(void)
     head += sizeof(handmade_pop);
     memcpy(head, ujit_post_call_bytes, sizeof(ujit_post_call_bytes));
     // TODO this is small enough to fit in the page we allocated but that can change
+    */
 
 
 
+    // I decided to start by replicating Alan's code above using the new assembler
+    codeblock_t block;
+    codeblock_t* cb = &block;
+    cb_init(cb, 4096);
 
+    // Write the pre call bytes
+    cb_write_prologue(cb);
 
+    sub(cb, mem_opnd(64, RDI, 8), imm_opnd(8)); // decrement SP
+    add(cb, RSI, imm_opnd(8));                  // increment PC
+    mov(cb, mem_opnd(64, RDI, 0), RSI);         // write new PC to EC object, not necessary for pop bytecode?
+    mov(cb, RAX, RSI);                          // return new PC
+
+    // Write the post call bytes
+    cb_write_epilogue(cb);
+
+    native_pop_code = cb_get_ptr(cb, 0);
 
 
 
