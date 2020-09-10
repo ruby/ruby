@@ -89,8 +89,6 @@ Zachary Scott (zzak)
 [ext/socket]
   * Tanaka Akira (akr)
   * API change needs matz's approval
-[ext/syslog]
-  Akinori MUSHA (knu)
 [ext/win32]
   NAKAMURA Usaku (usa)
 [ext/win32ole]
@@ -348,6 +346,9 @@ Zachary Scott (zzak)
   Kouhei Sutou (kou)
   https://github.com/ruby/strscan
   https://rubygems.org/gems/strscan
+[ext/syslog]
+  Akinori MUSHA (knu)
+  https://github.com/ruby/syslog
 [ext/zlib]
   NARUSE, Yui (naruse)
   https://github.com/ruby/zlib
