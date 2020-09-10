@@ -70,6 +70,7 @@ REPOSITORIES = {
   tsort: "ruby/tsort",
   abbrev: "ruby/abbrev",
   shellwords: "ruby/shellwords",
+  base64: "ruby/base64",
 }
 
 def sync_default_gems(gem)

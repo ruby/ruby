@@ -8,7 +8,6 @@ description.
 
 == Libraries
 
-Base64:: Support for encoding and decoding binary data using a Base64 representation
 DEBUGGER__:: Debugging functionality for Ruby
 DRb:: Distributed object system for Ruby
 MakeMakefile:: Module used to generate a Makefile for C extensions
@@ -41,6 +40,7 @@ WIN32OLE:: Provides an interface for OLE Automation in Ruby
 == Libraries
 
 Abbrev:: Calculates a set of unique abbreviations for a given set of strings
+Base64:: Support for encoding and decoding binary data using a Base64 representation
 Benchmark:: Provides methods to measure and report the time used to execute code
 Bundler:: Manage your Ruby application's gem dependencies
 CGI:: Support for the Common Gateway Interface protocol

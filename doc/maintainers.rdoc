@@ -38,8 +38,6 @@ Zachary Scott (zzak)
 
 === Libraries
 
-[lib/base64.rb]
-  Yusuke Endoh (mame)
 [lib/drb.rb, lib/drb/*]
   Masatoshi SEKI (seki)
 [lib/debug.rb]
@@ -105,6 +103,9 @@ Zachary Scott (zzak)
 [lib/abbrev.rb]
   Akinori MUSHA (knu)
   https://github.com/ruby/abbrev
+[lib/base64.rb]
+  https://github.com/ruby/base64
+  Yusuke Endoh (mame)
 [lib/benchmark.rb]
   _unmaintained_
   https://github.com/ruby/benchmark
