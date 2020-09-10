@@ -208,7 +208,9 @@ module FileUtils
     fu_output_message "mkdir -p #{mode ? ('-m %03o ' % mode) : ''}#{list.join ' '}" if verbose
     return *list if noop
 
-    list.map {|path| remove_trailing_slash(path)}.each do |path|
+    list.each do |item|
+      path = remove_trailing_slash(item)
+
       # optimize for the most common case
       begin
         fu_mkdir path, mode
