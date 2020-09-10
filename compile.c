@@ -42,6 +42,7 @@
 #include "builtin.h"
 #include "insns.inc"
 #include "insns_info.inc"
+#include "ujit_compile.h"
 
 #undef RUBY_UNTYPED_DATA_WARNING
 #define RUBY_UNTYPED_DATA_WARNING 0
@@ -839,8 +840,6 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
     return iseq_setup(iseq, ret);
 }
 
-extern uint8_t *native_pop_code; // TODO global hack
-
 static int
 rb_iseq_translate_threaded_code(rb_iseq_t *iseq)
 {
@@ -853,17 +852,17 @@ rb_iseq_translate_threaded_code(rb_iseq_t *iseq)
     {
     	int insn = (int)iseq->body->iseq_encoded[i];
     	int len = insn_len(insn);
-    	encoded[i] = (VALUE)table[insn];
 
-        if (insn == BIN(pop))
-            encoded[i] = (VALUE)native_pop_code;
+        uint8_t* native_code_ptr = ujit_compile_insn(iseq, i);
 
-        const char* name = insn_name(insn);
-        printf("%s\n", name);
-
+        if (native_code_ptr)
+            encoded[i] = (VALUE)native_code_ptr;
+        else
+	        encoded[i] = (VALUE)table[insn];
 
     	i += len;
     }
+
     FL_SET((VALUE)iseq, ISEQ_TRANSLATED);
 #endif
     return COMPILE_OK;
