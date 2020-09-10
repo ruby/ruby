@@ -849,14 +849,20 @@ rb_iseq_translate_threaded_code(rb_iseq_t *iseq)
     unsigned int i;
     VALUE *encoded = (VALUE *)iseq->body->iseq_encoded;
 
-    for (i = 0; i < iseq->body->iseq_size; /* */ ) {
-	int insn = (int)iseq->body->iseq_encoded[i];
-	int len = insn_len(insn);
-	encoded[i] = (VALUE)table[insn];
+    for (i = 0; i < iseq->body->iseq_size; /* */ )
+    {
+    	int insn = (int)iseq->body->iseq_encoded[i];
+    	int len = insn_len(insn);
+    	encoded[i] = (VALUE)table[insn];
 
-        if (insn == BIN(pop)) encoded[i] = (VALUE)native_pop_code;
+        if (insn == BIN(pop))
+            encoded[i] = (VALUE)native_pop_code;
 
-	i += len;
+        const char* name = insn_name(insn);
+        printf("%s\n", name);
+
+
+    	i += len;
     }
     FL_SET((VALUE)iseq, ISEQ_TRANSLATED);
 #endif

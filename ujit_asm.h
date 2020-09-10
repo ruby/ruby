@@ -194,6 +194,10 @@ void nop(codeblock_t* cb, size_t length);
 void push(codeblock_t* cb, x86opnd_t reg);
 void pop(codeblock_t* cb, x86opnd_t reg);
 void ret(codeblock_t* cb);
+void sal(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1);
+void sar(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1);
+void shl(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1);
+void shr(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1);
 void sub(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1);
 
 #endif

@@ -588,6 +588,56 @@ void cb_write_rm_multi(
     }
 }
 
+// Encode a single-operand shift instruction
+void cb_write_shift(
+    codeblock_t* cb,
+    const char* mnem,
+    uint8_t opMemOnePref,
+    uint8_t opMemClPref,
+    uint8_t opMemImmPref,
+    uint8_t opExt,
+    x86opnd_t opnd0,
+    x86opnd_t opnd1)
+{
+    // Write a disassembly string
+    //cb.writeASM(mnem, opnd0, opnd1);
+
+    // Check the size of opnd0
+    size_t opndSize;
+    if (opnd0.type == OPND_REG || opnd0.type == OPND_MEM)
+        opndSize = opnd0.num_bits;
+    else
+        assert (false && "shift: invalid first operand");
+
+    assert (opndSize == 16 || opndSize == 32 || opndSize == 64);
+    bool szPref = opndSize == 16;
+    bool rexW = opndSize == 64;
+
+    if (opnd1.type == OPND_IMM)
+    {
+        if (opnd1.imm == 1)
+        {
+            cb_write_rm(cb, szPref, rexW, NO_OPND, opnd0, opExt, 1, opMemOnePref);
+        }
+        else
+        {
+            assert (opnd1.num_bits <= 8);
+            cb_write_rm(cb, szPref, rexW, NO_OPND, opnd0, opExt, 1, opMemImmPref);
+            cb_write_byte(cb, (uint8_t)opnd1.imm);
+        }
+    }
+    /*
+    else if (opnd1.isReg && opnd1.reg == CL)
+    {
+        cb.writeRMInstr!('l', opExt, opMemClPref)(szPref, rexW, opnd0, X86Opnd.NONE);
+    }
+    */
+    else
+    {
+        assert (false);
+    }
+}
+
 // add - Integer addition
 void add(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1)
 {
@@ -893,6 +943,65 @@ void ret(codeblock_t* cb)
     cb_write_byte(cb, 0xC3);
 }
 
+// sal - Shift arithmetic left
+void sal(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1)
+{
+    cb_write_shift(
+        cb,
+        "sal",
+        0xD1, // opMemOnePref,
+        0xD3, // opMemClPref,
+        0xC1, // opMemImmPref,
+        0x04,
+        opnd0,
+        opnd1
+    );
+}
+
+/// sar - Shift arithmetic right (signed)
+void sar(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1)
+{
+    cb_write_shift(
+        cb,
+        "sar",
+        0xD1, // opMemOnePref,
+        0xD3, // opMemClPref,
+        0xC1, // opMemImmPref,
+        0x07,
+        opnd0,
+        opnd1
+    );
+}
+// shl - Shift logical left
+void shl(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1)
+{
+    cb_write_shift(
+        cb,
+        "shl",
+        0xD1, // opMemOnePref,
+        0xD3, // opMemClPref,
+        0xC1, // opMemImmPref,
+        0x04,
+        opnd0,
+        opnd1
+    );
+}
+
+/// shr - Shift logical right (unsigned)
+void shr(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1)
+{
+    cb_write_shift(
+        cb,
+        "shr",
+        0xD1, // opMemOnePref,
+        0xD3, // opMemClPref,
+        0xC1, // opMemImmPref,
+        0x05,
+        opnd0,
+        opnd1
+    );
+}
+
 /// sub - Integer subtraction
 void sub(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1)
 {
@@ -906,7 +1015,7 @@ void sub(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1)
         0x80, // opMemImm8
         0x83, // opMemImmSml
         0x81, // opMemImmLrg
-        0x05,  // opExtImm
+        0x05, // opExtImm
         opnd0,
         opnd1
     );
