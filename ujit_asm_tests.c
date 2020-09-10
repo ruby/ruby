@@ -156,15 +156,34 @@ void run_tests()
     // ret
     cb_set_pos(cb, 0); ret(cb); check_bytes(cb, "C3");
 
+    // sal
+    /*
+    test(
+        delegate void (CodeBlock cb) { cb.sal(X86Opnd(CX), X86Opnd(1)); },
+        "66D1E1"
+    );
+    */
+    cb_set_pos(cb, 0); sal(cb, ECX, imm_opnd(1)); check_bytes(cb, "D1E1");
+    cb_set_pos(cb, 0); sal(cb, EBP, imm_opnd(5)); check_bytes(cb, "C1E505");
+    cb_set_pos(cb, 0); sal(cb, mem_opnd(32, RSP, 68), imm_opnd(1)); check_bytes(cb, "D1642444");
+
+    // sar
+    cb_set_pos(cb, 0); sar(cb, EDX, imm_opnd(1)); check_bytes(cb, "D1FA");
+
+    // shr
+    cb_set_pos(cb, 0); shr(cb, R14, imm_opnd(7)); check_bytes(cb, "49C1EE07");
+
+    /*
+    // sqrtsd
+    test(
+        delegate void (CodeBlock cb) { cb.sqrtsd(X86Opnd(XMM2), X86Opnd(XMM6)); },
+        "F20F51D6"
+    );
+    */
+
     // sub
     cb_set_pos(cb, 0); sub(cb, EAX, imm_opnd(1)); check_bytes(cb, "83E801");
     cb_set_pos(cb, 0); sub(cb, RAX, imm_opnd(2)); check_bytes(cb, "4883E802");
-
-
-
-
-
-
 
     printf("Assembler tests done\n");
 }
