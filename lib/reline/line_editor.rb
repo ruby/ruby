@@ -524,12 +524,14 @@ class Reline::LineEditor
     end
     Reline::IOGate.erase_after_cursor
     if with_control
-      move_cursor_up(height - 1)
+      # Just after rendring, so the cursor is on the last line.
       if finished?
-        move_cursor_down(@started_from)
+        Reline::IOGate.move_cursor_column(0)
+      else
+        # Moves up from bottom of lines to the cursor position.
+        move_cursor_up(height - 1 - @started_from)
+        Reline::IOGate.move_cursor_column((prompt_width + @cursor) % @screen_size.last)
       end
-      move_cursor_down(@started_from)
-      Reline::IOGate.move_cursor_column((prompt_width + @cursor) % @screen_size.last)
     end
     height
   end
