@@ -68,6 +68,7 @@ REPOSITORIES = {
   erb: "ruby/erb",
   nkf: "ruby/nkf",
   tsort: "ruby/tsort",
+  abbrev: "ruby/abbrev",
 }
 
 def sync_default_gems(gem)
