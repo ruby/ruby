@@ -83,12 +83,13 @@ void run_tests()
     cb_set_pos(cb, 0); add(cb, ECX, imm_opnd(255)); check_bytes(cb, "81C1FF000000");
 
     // call
-    /*
-    test(
-        delegate void (CodeBlock cb) { auto l = cb.label("foo"); cb.instr(CALL, l); },
-        "E8FBFFFFFF"
-    );
-    */
+    {
+        cb_set_pos(cb, 0);
+        size_t fn_label = cb_new_label(cb, "foo");
+        call_label(cb, fn_label);
+        cb_link_labels(cb);
+        check_bytes(cb, "E8FBFFFFFF");
+    }
     cb_set_pos(cb, 0); call(cb, RAX); check_bytes(cb, "FFD0");
     cb_set_pos(cb, 0); call(cb, mem_opnd(64, RSP, 8)); check_bytes(cb, "FF542408");
 
