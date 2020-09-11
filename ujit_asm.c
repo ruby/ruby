@@ -723,22 +723,20 @@ void add(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1)
     );
 }
 
-/*
 /// call - Call to label with 32-bit offset
-void call(CodeBlock cb, Label label)
+void call_label(codeblock_t* cb, size_t label_idx)
 {
-    cb.writeASM("call", label);
+    //cb.writeASM("call", label);
 
     // Write the opcode
-    cb.writeByte(0xE8);
+    cb_write_byte(cb, 0xE8);
 
     // Add a reference to the label
-    cb.addLabelRef(label);
+    cb_label_ref(cb, label_idx);
 
     // Relative 32-bit offset to be patched
-    cb.writeInt(0, 32);
+    cb_write_int(cb, 0, 32);
 }
-*/
 
 /// call - Indirect call with an R/M operand
 void call(codeblock_t* cb, x86opnd_t opnd)
