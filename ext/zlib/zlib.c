@@ -4229,6 +4229,8 @@ gzreader_gets(int argc, VALUE *argv, VALUE obj)
  * Document-method: Zlib::GzipReader#gets
  *
  * See Zlib::GzipReader documentation for a description.
+ * However, note that this method can return +nil+ even if
+ * #eof? returns false, unlike the behavior of File#gets.
  */
 static VALUE
 rb_gzreader_gets(int argc, VALUE *argv, VALUE obj)
