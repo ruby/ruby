@@ -1588,8 +1588,10 @@ CODE
     a = S("FooBar")
     if @aref_slicebang_silent
       assert_nil( a.slice!(6) )
+      assert_nil( a.slice!(6r) )
     else
       assert_raise(IndexError) { a.slice!(6) }
+      assert_raise(IndexError) { a.slice!(6r) }
     end
     assert_equal(S("FooBar"), a)
 
