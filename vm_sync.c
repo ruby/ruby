@@ -12,7 +12,7 @@ vm_locked(rb_vm_t *vm)
     return vm->ractor.sync.lock_owner == GET_RACTOR();
 }
 
-#if VM_CHECK_MODE > 0
+#if RUBY_DEBUG > 0
 void
 ASSERT_vm_locking(void)
 {
@@ -21,9 +21,7 @@ ASSERT_vm_locking(void)
         VM_ASSERT(vm_locked(vm));
     }
 }
-#endif
 
-#if VM_CHECK_MODE > 0
 void
 ASSERT_vm_unlocking(void)
 {

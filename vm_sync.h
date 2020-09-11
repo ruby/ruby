@@ -2,9 +2,8 @@
 #ifndef RUBY_VM_SYNC_H
 #define RUBY_VM_SYNC_H
 
-#include "vm_core.h"
 #include "vm_debug.h"
-#include "ractor_pub.h"
+RUBY_EXTERN bool ruby_multi_ractor;
 
 #if USE_RUBY_DEBUG_LOG
 #define LOCATION_ARGS const char *file, int line
@@ -24,15 +23,18 @@ void rb_vm_unlock_body(LOCATION_ARGS);
 void rb_vm_lock_enter_body(unsigned int *lev APPEND_LOCATION_ARGS);
 void rb_vm_lock_leave_body(unsigned int *lev APPEND_LOCATION_ARGS);
 void rb_vm_barrier(void);
-void rb_vm_cond_wait(rb_vm_t *vm, rb_nativethread_cond_t *cond);
-void rb_vm_cond_timedwait(rb_vm_t *vm, rb_nativethread_cond_t *cond, unsigned long msec);
+
+#if RUBY_DEBUG
+// GET_VM()
+#include "vm_core.h"
+#endif
 
 static inline bool
 rb_multi_ractor_p(void)
 {
     if (LIKELY(!ruby_multi_ractor)) {
         // 0 on boot time.
-        VM_ASSERT(GET_VM()->ractor.cnt <= 1);
+        RUBY_ASSERT(GET_VM()->ractor.cnt <= 1);
         return false;
     }
     else {
@@ -84,7 +86,7 @@ rb_vm_lock_leave(unsigned int *lev, const char *file, int line)
 #define RB_VM_LOCK_ENTER()  { unsigned int _lev; RB_VM_LOCK_ENTER_LEV(&_lev);
 #define RB_VM_LOCK_LEAVE()    RB_VM_LOCK_LEAVE_LEV(&_lev); }
 
-#if VM_CHECK_MODE > 0
+#if RUBY_DEBUG > 0
 void ASSERT_vm_locking(void);
 void ASSERT_vm_unlocking(void);
 #else
