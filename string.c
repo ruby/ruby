@@ -4961,7 +4961,10 @@ rb_str_slice_bang(int argc, VALUE *argv, VALUE str)
 	    return Qnil;
 	  case Qfalse:
 	    beg = NUM2LONG(indx);
-	    goto num_index;
+	    if (!(p = rb_str_subpos(str, beg, &len))) return Qnil;
+	    if (!len) return Qnil;
+	    beg = p - RSTRING_PTR(str);
+	    goto subseq;
 	  default:
 	    goto num_index;
 	}
