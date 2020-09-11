@@ -48,8 +48,6 @@ Zachary Scott (zzak)
   Tanaka Akira (akr)
 [lib/prettyprint.rb]
   Tanaka Akira (akr)
-[lib/resolv-replace.rb]
-  Tanaka Akira (akr)
 [lib/rubygems.rb, lib/rubygems/*]
   Eric Hodel (drbrain), Hiroshi SHIBATA (hsbt)
   https://github.com/rubygems/rubygems
@@ -217,6 +215,9 @@ Zachary Scott (zzak)
 [lib/resolv.rb]
   Tanaka Akira (akr)
   https://github.com/ruby/resolv
+[lib/resolv-replace.rb]
+  Tanaka Akira (akr)
+  https://github.com/ruby/resolv-replace
 [lib/rdoc.rb, lib/rdoc/*]
   Eric Hodel (drbrain), Hiroshi SHIBATA (hsbt)
   https://github.com/ruby/rdoc
