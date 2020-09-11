@@ -92,20 +92,24 @@ void run_tests()
     cb_set_pos(cb, 0); call(cb, RAX); check_bytes(cb, "FFD0");
     cb_set_pos(cb, 0); call(cb, mem_opnd(64, RSP, 8)); check_bytes(cb, "FF542408");
 
-    /*
     // jcc
-    test(
-        delegate void (CodeBlock cb) { auto l = cb.label(Label.LOOP); cb.jge(l); },
-        "0F8DFAFFFFFF"
-    );
-    test(
-        delegate void (CodeBlock cb) { cb.label(Label.LOOP); cb.jo(Label.LOOP); },
-        "0F80FAFFFFFF"
-    );
-    */
+    {
+        cb_set_pos(cb, 0);
+        size_t loop_label = cb_new_label(cb, "loop");
+        jge(cb, loop_label);
+        cb_link_labels(cb);
+        check_bytes(cb, "0F8DFAFFFFFF");
+    }
+    {
+        cb_set_pos(cb, 0);
+        size_t loop_label = cb_new_label(cb, "loop");
+        jo(cb, loop_label);
+        cb_link_labels(cb);
+        check_bytes(cb, "0F80FAFFFFFF");
+    }
 
-    // jmp
-    cb_set_pos(cb, 0); jmp(cb, R12); check_bytes(cb, "41FFE4");
+    // jmp with RM operand
+    cb_set_pos(cb, 0); jmp_rm(cb, R12); check_bytes(cb, "41FFE4");
 
     // lea
     //cb_set_pos(cb, 0); lea(cb, EBX, mem_opnd(32, RSP, 4)); check_bytes(cb, "8D5C2404");
