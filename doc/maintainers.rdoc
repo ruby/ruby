@@ -50,8 +50,6 @@ Zachary Scott (zzak)
   Tanaka Akira (akr)
 [lib/resolv-replace.rb]
   Tanaka Akira (akr)
-[lib/resolv.rb]
-  Tanaka Akira (akr)
 [lib/rubygems.rb, lib/rubygems/*]
   Eric Hodel (drbrain), Hiroshi SHIBATA (hsbt)
   https://github.com/rubygems/rubygems
@@ -216,6 +214,9 @@ Zachary Scott (zzak)
   aycabta
   https://github.com/ruby/readline
   https://rubygems.org/gems/readline
+[lib/resolv.rb]
+  Tanaka Akira (akr)
+  https://github.com/ruby/resolv
 [lib/rdoc.rb, lib/rdoc/*]
   Eric Hodel (drbrain), Hiroshi SHIBATA (hsbt)
   https://github.com/ruby/rdoc

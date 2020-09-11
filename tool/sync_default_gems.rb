@@ -74,6 +74,7 @@ REPOSITORIES = {
   syslog: "ruby/syslog",
   "open-uri": "ruby/open-uri",
   securerandom: "ruby/securerandom",
+  resolv: "ruby/resolv",
 }
 
 def sync_default_gems(gem)

@@ -15,7 +15,6 @@ PP:: Provides a PrettyPrinter for Ruby objects
 PrettyPrinter:: Implements a pretty printing algorithm for readable structure
 RbConfig:: Information of your configure and build of Ruby
 resolv-replace.rb:: Replace Socket DNS with Resolv
-Resolv::  Thread-aware DNS resolver library in Ruby
 Gem:: Package management framework for Ruby
 Time:: Extends the Time class with methods for parsing and conversion
 un.rb:: Utilities to replace common UNIX commands
@@ -68,6 +67,7 @@ OpenURI:: An easy-to-use wrapper for Net::HTTP, Net::HTTPS and Net::FTP
 Prime:: Prime numbers and factorization library
 PStore:: Implements a file based persistence mechanism based on a Hash
 Racc:: A LALR(1) parser generator written in Ruby.
+Resolv::  Thread-aware DNS resolver library in Ruby
 RDoc:: Produces HTML and command-line documentation for Ruby
 Rinda:: The Linda distributed computing paradigm in Ruby
 SecureRandom:: Interface for secure random number generator
