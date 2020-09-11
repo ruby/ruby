@@ -858,7 +858,7 @@ rb_iseq_translate_threaded_code(rb_iseq_t *iseq)
         if (native_code_ptr)
             encoded[i] = (VALUE)native_code_ptr;
         else
-	        encoded[i] = (VALUE)table[insn];
+            encoded[i] = (VALUE)table[insn];
 
     	i += len;
     }

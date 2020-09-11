@@ -3092,7 +3092,7 @@ rb_iseq_defined_string(enum defined_type type)
 /* A map from encoded_insn to insn_data: decoded insn number, its len,
  * non-trace version of encoded insn, and trace version. */
 
-static st_table *encoded_insn_data;
+st_table *rb_encoded_insn_data;
 typedef struct insn_data_struct {
     int insn;
     int insn_len;
@@ -3119,7 +3119,7 @@ rb_vm_encoded_insn_data_table_init(void)
 #define INSN_CODE(insn) (insn)
 #endif
     st_data_t insn;
-    encoded_insn_data = st_init_numtable_with_size(VM_INSTRUCTION_SIZE / 2);
+    rb_encoded_insn_data = st_init_numtable_with_size(VM_INSTRUCTION_SIZE / 2);
 
     for (insn = 0; insn < VM_INSTRUCTION_SIZE/2; insn++) {
         st_data_t key1 = (st_data_t)INSN_CODE(insn);
@@ -3137,8 +3137,8 @@ rb_vm_encoded_insn_data_table_init(void)
             insn_data[insn].trace_encoded_insn = (void *) INSN_CODE(BIN(opt_invokebuiltin_delegate) + VM_INSTRUCTION_SIZE/2);
         }
 
-        st_add_direct(encoded_insn_data, key1, (st_data_t)&insn_data[insn]);
-        st_add_direct(encoded_insn_data, key2, (st_data_t)&insn_data[insn]);
+        st_add_direct(rb_encoded_insn_data, key1, (st_data_t)&insn_data[insn]);
+        st_add_direct(rb_encoded_insn_data, key2, (st_data_t)&insn_data[insn]);
     }
 
 
@@ -3194,7 +3194,7 @@ rb_vm_insn_addr2insn(const void *addr)
     st_data_t key = (st_data_t)addr;
     st_data_t val;
 
-    if (st_lookup(encoded_insn_data, key, &val)) {
+    if (st_lookup(rb_encoded_insn_data, key, &val)) {
         insn_data_t *e = (insn_data_t *)val;
         return (int)e->insn;
     }
@@ -3214,7 +3214,7 @@ encoded_iseq_trace_instrument(VALUE *iseq_encoded_insn, rb_event_flag_t turnon)
     st_data_t key = (st_data_t)*iseq_encoded_insn;
     st_data_t val;
 
-    if (st_lookup(encoded_insn_data, key, &val)) {
+    if (st_lookup(rb_encoded_insn_data, key, &val)) {
         insn_data_t *e = (insn_data_t *)val;
         *iseq_encoded_insn = (VALUE) (turnon ? e->trace_encoded_insn : e->notrace_encoded_insn);
         return e->insn_len;

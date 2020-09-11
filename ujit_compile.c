@@ -16,10 +16,27 @@ static codeblock_t block;
 static codeblock_t* cb = NULL;
 
 extern uint8_t* native_pop_code; // FIXME global hack
+extern st_table *rb_encoded_insn_data;
+
+// See coment for rb_encoded_insn_data in iseq.c
+static void
+addr2insn_bookkeeping(void *code_ptr, int insn)
+{
+    const void * const *table = rb_vm_get_insns_address_table();
+    const void * const translated_address = table[insn];
+    st_data_t encoded_insn_data;
+    if (st_lookup(rb_encoded_insn_data, (st_data_t)translated_address, &encoded_insn_data)) {
+        st_insert(rb_encoded_insn_data, (st_data_t)code_ptr, encoded_insn_data);
+    }
+    else {
+        rb_bug("ujit: failed to find info for original instruction while dealing wiht addr2insn");
+    }
+}
 
 // Generate a chunk of machinecode for one individual bytecode instruction
 // Eventually, this will handle multiple instructions in a sequence
-uint8_t* ujit_compile_insn(rb_iseq_t *iseq, size_t insn_idx)
+uint8_t *
+ujit_compile_insn(rb_iseq_t *iseq, size_t insn_idx)
 {
     // Allocate the code block if not previously allocated
     if (!cb)
@@ -29,18 +46,13 @@ uint8_t* ujit_compile_insn(rb_iseq_t *iseq, size_t insn_idx)
         cb_init(cb, 4000000);
     }
 
-	int insn = (int)iseq->body->iseq_encoded[insn_idx];
+    int insn = (int)iseq->body->iseq_encoded[insn_idx];
 
     //const char* name = insn_name(insn);
     //printf("%s\n", name);
 
     if (insn == BIN(pop))
     {
-        //printf("COMPILING %ld\n", cb->write_pos);
-
-        return native_pop_code;
-
-        /*
         // Get a pointer to the current write position in the code block
         uint8_t* code_ptr = &cb->mem_block[cb->write_pos];
 
@@ -55,8 +67,9 @@ uint8_t* ujit_compile_insn(rb_iseq_t *iseq, size_t insn_idx)
         // Write the post call bytes
         cb_write_epilogue(cb);
 
+        addr2insn_bookkeeping(code_ptr, insn);
+
         return code_ptr;
-        */
     }
 
     return 0;
