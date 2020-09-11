@@ -8,17 +8,12 @@
 #include "ujit_compile.h"
 #include "ujit_asm.h"
 
-// NOTE: do we have to deal with multiple Ruby processes/threads compiling
-// functions with the new Ractor in Ruby 3.0? If so, we need to think about
-// a strategy for handling that. What does Ruby currently do for its own
-// iseq translation?
 static codeblock_t block;
 static codeblock_t* cb = NULL;
 
-extern uint8_t* native_pop_code; // FIXME global hack
 extern st_table *rb_encoded_insn_data;
 
-// See coment for rb_encoded_insn_data in iseq.c
+// See comment for rb_encoded_insn_data in iseq.c
 static void
 addr2insn_bookkeeping(void *code_ptr, int insn)
 {
@@ -29,7 +24,7 @@ addr2insn_bookkeeping(void *code_ptr, int insn)
         st_insert(rb_encoded_insn_data, (st_data_t)code_ptr, encoded_insn_data);
     }
     else {
-        rb_bug("ujit: failed to find info for original instruction while dealing wiht addr2insn");
+        rb_bug("ujit: failed to find info for original instruction while dealing with addr2insn");
     }
 }
 
@@ -50,6 +45,9 @@ ujit_compile_insn(rb_iseq_t *iseq, size_t insn_idx)
 
     //const char* name = insn_name(insn);
     //printf("%s\n", name);
+
+    // TODO: encode individual instructions, eg
+    // putnil, putobject, pop, dup, getlocal, nilp
 
     if (insn == BIN(pop))
     {

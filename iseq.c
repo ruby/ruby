@@ -42,9 +42,6 @@
 #include "insns.inc"
 #include "insns_info.inc"
 #include <sys/mman.h>
-#include "ujit_examples.h"
-
-uint8_t *native_pop_code; // TODO: hack. see addr2insn
 
 VALUE rb_cISeq;
 static VALUE iseqw_new(const rb_iseq_t *iseq);
@@ -3140,52 +3137,6 @@ rb_vm_encoded_insn_data_table_init(void)
         st_add_direct(rb_encoded_insn_data, key1, (st_data_t)&insn_data[insn]);
         st_add_direct(rb_encoded_insn_data, key2, (st_data_t)&insn_data[insn]);
     }
-
-
-    /*
-    native_pop_code = mmap(0, 4096, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_ANON|MAP_PRIVATE, 0, 0);
-    if (native_pop_code == MAP_FAILED) rb_bug("mmap failed");
-    uint8_t *head = native_pop_code;
-    memcpy(head, ujit_pre_call_bytes, sizeof(ujit_pre_call_bytes));
-    head += sizeof(ujit_pre_call_bytes);
-    const uint8_t handmade_pop[] = {           // TODO assmeble this from a separate file
-       0x48, 0x83, 0x6f, 0x08, 0x08,         //	subq	$8, 8(%rdi)
-       0x48, 0x83, 0xc6, 0x08,               //	addq	$8, %rsi
-       0x48, 0x89, 0x37,                     //	movq	%rsi, (%rdi)
-       0x48, 0x89, 0xf0                      //	movq	%rsi, %rax
-    };
-    memcpy(head, handmade_pop, sizeof(handmade_pop));
-    head += sizeof(handmade_pop);
-    memcpy(head, ujit_post_call_bytes, sizeof(ujit_post_call_bytes));
-    // TODO this is small enough to fit in the page we allocated but that can change
-    */
-
-
-
-    // I decided to start by replicating Alan's code above using the new assembler
-    codeblock_t block;
-    codeblock_t* cb = &block;
-    cb_init(cb, 4096);
-
-    // Write the pre call bytes
-    cb_write_prologue(cb);
-
-    sub(cb, mem_opnd(64, RDI, 8), imm_opnd(8)); // decrement SP
-    add(cb, RSI, imm_opnd(8));                  // increment PC
-    mov(cb, mem_opnd(64, RDI, 0), RSI);         // write new PC to EC object, not necessary for pop bytecode?
-    mov(cb, RAX, RSI);                          // return new PC
-
-    // Write the post call bytes
-    cb_write_epilogue(cb);
-
-    native_pop_code = cb_get_ptr(cb, 0);
-
-
-
-
-
-
-
 }
 
 int
@@ -3197,12 +3148,6 @@ rb_vm_insn_addr2insn(const void *addr)
     if (st_lookup(rb_encoded_insn_data, key, &val)) {
         insn_data_t *e = (insn_data_t *)val;
         return (int)e->insn;
-    }
-
-    // TODO this is a hack. The proper way to do this is to refactor this so that it takes
-    // the iseq body.
-    if (addr && addr == native_pop_code) {
-        return BIN(pop);
     }
 
     rb_bug("rb_vm_insn_addr2insn: invalid insn address: %p", addr);
@@ -3218,12 +3163,6 @@ encoded_iseq_trace_instrument(VALUE *iseq_encoded_insn, rb_event_flag_t turnon)
         insn_data_t *e = (insn_data_t *)val;
         *iseq_encoded_insn = (VALUE) (turnon ? e->trace_encoded_insn : e->notrace_encoded_insn);
         return e->insn_len;
-    }
-
-    // TODO this is a hack. The proper way to do this is to refactor this so that it takes
-    // the iseq body.
-    if (key && (uint8_t *)key == native_pop_code) {
-        return insn_len(BIN(pop));
     }
 
     rb_bug("trace_instrument: invalid insn address: %p", (void *)*iseq_encoded_insn);
