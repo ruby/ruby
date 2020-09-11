@@ -126,7 +126,9 @@ env:
 
   - &arm64-linux
     name: arm64-linux
-    arch: arm64
+    arch: arm64-graviton2
+    virt: lxd
+    group: edge
     <<: *gcc-8
 
   - &s390x-linux
@@ -297,7 +299,9 @@ env:
 
   - &arm32-linux
     name: arm32-linux
-    arch: arm64
+    arch: arm64-graviton2
+    virt: lxd
+    group: edge
     # https://packages.ubuntu.com/xenial/crossbuild-essential-armhf
     compiler: arm-linux-gnueabihf-gcc
     env:
