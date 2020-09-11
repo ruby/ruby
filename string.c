@@ -53,6 +53,7 @@
 #include "ruby/re.h"
 #include "ruby/util.h"
 #include "ruby_assert.h"
+#include "vm_sync.h"
 
 #define BEG(no) (regs->beg[(no)])
 #define END(no) (regs->end[(no)])
@@ -364,13 +365,18 @@ static VALUE
 register_fstring(VALUE str)
 {
     VALUE ret;
-    st_table *frozen_strings = rb_vm_fstring_table();
 
-    do {
-	ret = str;
-	st_update(frozen_strings, (st_data_t)str,
-		  fstr_update_callback, (st_data_t)&ret);
-    } while (ret == Qundef);
+    RB_VM_LOCK_ENTER();
+    {
+        st_table *frozen_strings = rb_vm_fstring_table();
+
+        do {
+            ret = str;
+            st_update(frozen_strings, (st_data_t)str,
+                      fstr_update_callback, (st_data_t)&ret);
+        } while (ret == Qundef);
+    }
+    RB_VM_LOCK_LEAVE();
 
     assert(OBJ_FROZEN(ret));
     assert(!FL_TEST_RAW(ret, STR_FAKESTR));

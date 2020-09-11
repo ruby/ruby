@@ -521,4 +521,21 @@ assert_equal 'nil', %q{
   r.name.inspect
 }
 
+###
+### Synchronization tests
+###
+
+N = 100_000
+
+# fstring pool
+assert_equal "#{N}#{N}", %Q{
+  N = #{N}
+  2.times.map{
+    Ractor.new{
+      N.times{|i| -(i.to_s)}
+    }
+  }.map{|r| r.take}.join
+}
+
 end # if !ENV['GITHUB_WORKFLOW']
+
