@@ -20,7 +20,6 @@ require 'fileutils'
 require 'shellwords'
 require 'optparse'
 require 'optparse/shellwords'
-require 'ostruct'
 require 'rubygems'
 begin
   require "zlib"
