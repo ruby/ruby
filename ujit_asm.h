@@ -37,6 +37,10 @@ typedef struct CodeBlock
     // Table of registered label addresses
     size_t label_addrs[MAX_LABELS];
 
+    // Table of registered label names
+    // Note that these should be constant strings only
+    const char* label_names[MAX_LABELS];
+
     // References to labels
     labelref_t label_refs[MAX_LABEL_REFS];
 
@@ -179,6 +183,10 @@ uint8_t* cb_get_ptr(codeblock_t* cb, size_t index);
 void cb_write_byte(codeblock_t* cb, uint8_t byte);
 void cb_write_bytes(codeblock_t* cb, size_t num_bytes, ...);
 void cb_write_int(codeblock_t* cb, uint64_t val, size_t num_bits);
+size_t cb_new_label(codeblock_t* cb, const char* name);
+void cb_write_label(codeblock_t* cb, size_t label_idx);
+void cb_label_ref(codeblock_t* cb, size_t label_idx);
+void cb_link_labels(codeblock_t* cb);
 
 // Ruby instruction prologue and epilogue functions
 void cb_write_prologue(codeblock_t* cb);
@@ -187,7 +195,38 @@ void cb_write_epilogue(codeblock_t* cb);
 // Encode individual instructions into a code block
 void add(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1);
 void call(codeblock_t* cb, x86opnd_t opnd);
-void jmp(codeblock_t* cb, x86opnd_t opnd);
+void ja(codeblock_t* cb, size_t label_idx);
+void jae(codeblock_t* cb, size_t label_idx);
+void jb(codeblock_t* cb, size_t label_idx);
+void jbe(codeblock_t* cb, size_t label_idx);
+void jc(codeblock_t* cb, size_t label_idx);
+void je(codeblock_t* cb, size_t label_idx);
+void jg(codeblock_t* cb, size_t label_idx);
+void jge(codeblock_t* cb, size_t label_idx);
+void jl(codeblock_t* cb, size_t label_idx);
+void jle(codeblock_t* cb, size_t label_idx);
+void jna(codeblock_t* cb, size_t label_idx);
+void jnae(codeblock_t* cb, size_t label_idx);
+void jnb(codeblock_t* cb, size_t label_idx);
+void jnbe(codeblock_t* cb, size_t label_idx);
+void jnc(codeblock_t* cb, size_t label_idx);
+void jne(codeblock_t* cb, size_t label_idx);
+void jng(codeblock_t* cb, size_t label_idx);
+void jnge(codeblock_t* cb, size_t label_idx);
+void jnl(codeblock_t* cb, size_t label_idx);
+void jnle(codeblock_t* cb, size_t label_idx);
+void jno(codeblock_t* cb, size_t label_idx);
+void jnp(codeblock_t* cb, size_t label_idx);
+void jns(codeblock_t* cb, size_t label_idx);
+void jnz(codeblock_t* cb, size_t label_idx);
+void jo(codeblock_t* cb, size_t label_idx);
+void jp(codeblock_t* cb, size_t label_idx);
+void jpe(codeblock_t* cb, size_t label_idx);
+void jpo(codeblock_t* cb, size_t label_idx);
+void js(codeblock_t* cb, size_t label_idx);
+void jz(codeblock_t* cb, size_t label_idx);
+void jmp(codeblock_t* cb, size_t label_idx);
+void jmp_rm(codeblock_t* cb, x86opnd_t opnd);
 void lea(codeblock_t* cb, x86opnd_t dst, x86opnd_t src);
 void mov(codeblock_t* cb, x86opnd_t dst, x86opnd_t src);
 void nop(codeblock_t* cb, size_t length);
