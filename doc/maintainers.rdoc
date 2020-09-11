@@ -44,8 +44,6 @@ Zachary Scott (zzak)
   _unmaintained_
 [lib/mkmf.rb]
   _unmaintained_
-[lib/open-uri.rb]
-  Tanaka Akira (akr)
 [lib/pp.rb]
   Tanaka Akira (akr)
 [lib/prettyprint.rb]
@@ -198,6 +196,9 @@ Zachary Scott (zzak)
   _unmaintained_
   https://github.com/ruby/open3
   https://rubygems.org/gems/open3
+[lib/open-uri.rb]
+  Tanaka Akira (akr)
+  https://github.com/ruby/open-uri
 [lib/ostruct.rb]
   Marc-Andre Lafortune (marcandre)
   https://github.com/ruby/ostruct
