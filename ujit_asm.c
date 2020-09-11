@@ -555,6 +555,35 @@ void cb_write_rm(
     }
 }
 
+// Encode a mul-like single-operand RM instruction
+void write_rm_unary(
+    codeblock_t* cb,
+    const char* mnem,
+    uint8_t opMemReg8,
+    uint8_t opMemRegPref,
+    uint8_t opExt,
+    x86opnd_t opnd)
+{
+    // Write a disassembly string
+    //cb.writeASM(mnem, opnd);
+
+    // Check the size of opnd0
+    size_t opndSize;
+    if (opnd.type == OPND_REG || opnd.type == OPND_MEM)
+        opndSize = opnd.num_bits;
+    else
+        assert (false && "invalid operand");
+
+    assert (opndSize == 8 || opndSize == 16 || opndSize == 32 || opndSize == 64);
+    bool szPref = opndSize == 16;
+    bool rexW = opndSize == 64;
+
+    if (opndSize == 8)
+        cb_write_rm(cb, false, false, NO_OPND, opnd, opExt, 1, opMemReg8);
+    else
+        cb_write_rm(cb, szPref, rexW, NO_OPND, opnd, opExt, 1, opMemRegPref);
+}
+
 // Encode an add-like RM instruction with multiple possible encodings
 void cb_write_rm_multi(
     codeblock_t* cb,
@@ -704,6 +733,23 @@ void cb_write_shift(
     }
 }
 
+// Encode a relative jump to a label (direct or conditional)
+// Note: this always encodes a 32-bit offset
+void cb_write_jcc(codeblock_t* cb, const char* mnem, uint8_t op0, uint8_t op1, size_t label_idx)
+{
+    //cb.writeASM(mnem, label);
+
+    // Write the opcode
+    cb_write_byte(cb, op0);
+    cb_write_byte(cb, op1);
+
+    // Add a reference to the label
+    cb_label_ref(cb, label_idx);
+
+    // Relative 32-bit offset to be patched
+    cb_write_int(cb, 0, 32);
+}
+
 // add - Integer addition
 void add(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1)
 {
@@ -745,21 +791,128 @@ void call(codeblock_t* cb, x86opnd_t opnd)
     cb_write_rm(cb, false, false, NO_OPND, opnd, 2, 1, 0xFF);
 }
 
-// Encode a relative jump to a label (direct or conditional)
-// Note: this always encodes a 32-bit offset
-void cb_write_jcc(codeblock_t* cb, const char* mnem, uint8_t op0, uint8_t op1, size_t label_idx)
+// dec - Decrement integer by 1
+void dec(codeblock_t* cb, x86opnd_t opnd)
 {
-    //cb.writeASM(mnem, label);
+    write_rm_unary(
+        cb,
+        "dec",
+        0xFE, // opMemReg8
+        0xFF, // opMemRegPref
+        0x01, // opExt
+        opnd
+    );
+}
 
-    // Write the opcode
-    cb_write_byte(cb, op0);
-    cb_write_byte(cb, op1);
+/*
+// div - Unsigned integer division
+alias div = writeRMUnary!(
+    "div",
+    0xF6, // opMemReg8
+    0xF7, // opMemRegPref
+    0x06  // opExt
+);
+*/
 
-    // Add a reference to the label
-    cb_label_ref(cb, label_idx);
+/*
+/// divsd - Divide scalar double
+alias divsd = writeXMM64!(
+    "divsd",
+    0xF2, // prefix
+    0x0F, // opRegMem0
+    0x5E  // opRegMem1
+);
+*/
 
-    // Relative 32-bit offset to be patched
-    cb_write_int(cb, 0, 32);
+/*
+// idiv - Signed integer division
+alias idiv = writeRMUnary!(
+    "idiv",
+    0xF6, // opMemReg8
+    0xF7, // opMemRegPref
+    0x07  // opExt
+);
+*/
+
+/*
+/// imul - Signed integer multiplication with two operands
+void imul(CodeBlock cb, X86Opnd opnd0, X86Opnd opnd1)
+{
+    cb.writeASM("imul", opnd0, opnd1);
+
+    assert (opnd0.isReg, "invalid first operand");
+    auto opndSize = opnd0.reg.size;
+
+    // Check the size of opnd1
+    if (opnd1.isReg)
+        assert (opnd1.reg.size is opndSize, "operand size mismatch");
+    else if (opnd1.isMem)
+        assert (opnd1.mem.size is opndSize, "operand size mismatch");
+
+    assert (opndSize is 16 || opndSize is 32 || opndSize is 64);
+    auto szPref = opndSize is 16;
+    auto rexW = opndSize is 64;
+
+    cb.writeRMInstr!('r', 0xFF, 0x0F, 0xAF)(szPref, rexW, opnd0, opnd1);
+}
+*/
+
+/*
+/// imul - Signed integer multiplication with three operands (one immediate)
+void imul(CodeBlock cb, X86Opnd opnd0, X86Opnd opnd1, X86Opnd opnd2)
+{
+    cb.writeASM("imul", opnd0, opnd1, opnd2);
+
+    assert (opnd0.isReg, "invalid first operand");
+    auto opndSize = opnd0.reg.size;
+
+    // Check the size of opnd1
+    if (opnd1.isReg)
+        assert (opnd1.reg.size is opndSize, "operand size mismatch");
+    else if (opnd1.isMem)
+        assert (opnd1.mem.size is opndSize, "operand size mismatch");
+
+    assert (opndSize is 16 || opndSize is 32 || opndSize is 64);
+    auto szPref = opndSize is 16;
+    auto rexW = opndSize is 64;
+
+    assert (opnd2.isImm, "invalid third operand");
+    auto imm = opnd2.imm;
+
+    // 8-bit immediate
+    if (imm.immSize <= 8)
+    {
+        cb.writeRMInstr!('r', 0xFF, 0x6B)(szPref, rexW, opnd0, opnd1);
+        cb.writeInt(imm.imm, 8);
+    }
+
+    // 32-bit immediate
+    else if (imm.immSize <= 32)
+    {
+        assert (imm.immSize <= opndSize, "immediate too large for dst");
+        cb.writeRMInstr!('r', 0xFF, 0x69)(szPref, rexW, opnd0, opnd1);
+        cb.writeInt(imm.imm, min(opndSize, 32));
+    }
+
+    // Immediate too large
+    else
+    {
+        assert (false, "immediate value too large");
+    }
+}
+*/
+
+// inc - Increment integer by 1
+void inc(codeblock_t* cb, x86opnd_t opnd)
+{
+    write_rm_unary(
+        cb,
+        "inc",
+        0xFE, // opMemReg8
+        0xFF, // opMemRegPref
+        0x00, // opExt
+        opnd
+    );
 }
 
 /// jcc - Conditional relative jump to a label
