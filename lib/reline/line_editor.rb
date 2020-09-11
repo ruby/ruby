@@ -133,7 +133,7 @@ class Reline::LineEditor
           if @line_index.zero?
             0
           else
-            calculate_height_by_lines(@buffer_of_lines[0..(@line_index - 1)], prompt_list)
+            calculate_height_by_lines(@buffer_of_lines[0..(@line_index - 1)], prompt_list || prompt)
           end
         if @prompt_proc
           prompt = prompt_list[@line_index]
@@ -207,10 +207,10 @@ class Reline::LineEditor
     @is_multiline = false
   end
 
-  private def calculate_height_by_lines(lines, prompt_list)
+  private def calculate_height_by_lines(lines, prompt)
     result = 0
+    prompt_list = prompt.is_a?(Array) ? prompt : nil
     lines.each_with_index { |line, i|
-      prompt = ''
       prompt = prompt_list[i] if prompt_list and prompt_list[i]
       result += calculate_height_by_width(calculate_width(prompt, true) + calculate_width(line))
     }
@@ -343,7 +343,7 @@ class Reline::LineEditor
         new_lines = whole_lines
       end
       prompt, prompt_width, prompt_list = check_multiline_prompt(new_lines, prompt)
-      all_height = calculate_height_by_lines(new_lines, prompt_list)
+      all_height = calculate_height_by_lines(new_lines, prompt_list || prompt)
       diff = all_height - @highest_in_all
       move_cursor_down(@highest_in_all - @first_line_started_from - @started_from - 1)
       if diff > 0
@@ -383,7 +383,7 @@ class Reline::LineEditor
         if @line_index.zero?
           0
         else
-          calculate_height_by_lines(@buffer_of_lines[0..(@line_index - 1)], prompt_list)
+          calculate_height_by_lines(@buffer_of_lines[0..(@line_index - 1)], prompt_list || prompt)
         end
       if @prompt_proc
         prompt = prompt_list[@line_index]
@@ -442,7 +442,7 @@ class Reline::LineEditor
         if @line_index.zero?
           0
         else
-          calculate_height_by_lines(new_buffer[0..(@line_index - 1)], prompt_list)
+          calculate_height_by_lines(new_buffer[0..(@line_index - 1)], prompt_list || prompt)
         end
       @started_from = calculate_height_by_width(prompt_width + @cursor) - 1
       move_cursor_down(@first_line_started_from + @started_from)

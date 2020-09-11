@@ -100,6 +100,22 @@ begin
       EOC
     end
 
+    def test_finish_autowrapped_line_in_the_middle_of_multilines
+      start_terminal(30, 16, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl})
+      sleep 0.5
+      write("<<~EOM\n  ABCDEFG\nEOM\n")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> <<~EOM
+        prompt>   ABCDEF
+        G
+        prompt> EOM
+        => "ABCDEFG\n"
+        prompt>
+      EOC
+    end
+
     def test_prompt
       File.open(@inputrc_file, 'w') do |f|
         f.write <<~'LINES'
