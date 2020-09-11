@@ -51,8 +51,6 @@ Zachary Scott (zzak)
 [lib/rubygems.rb, lib/rubygems/*]
   Eric Hodel (drbrain), Hiroshi SHIBATA (hsbt)
   https://github.com/rubygems/rubygems
-[lib/time.rb]
-  Tanaka Akira (akr)
 [lib/un.rb]
   WATANABE Hirofumi (eban)
 [lib/unicode_normalize.rb, lib/unicode_normalize/*]
@@ -245,6 +243,9 @@ Zachary Scott (zzak)
 [lib/tempfile.rb]
   _unmaintained_
   https://github.com/ruby/tempfile
+[lib/time.rb]
+  Tanaka Akira (akr)
+  https://github.com/ruby/time
 [lib/timeout.rb]
   Yukihiro Matsumoto (matz)
   https://github.com/ruby/timeout
