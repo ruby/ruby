@@ -168,6 +168,7 @@ begin
         set emacs-mode-string [emacs]
       LINES
       start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl})
+      sleep 0.5
       close
       assert_screen(<<~EOC)
         Multiline REPL.
@@ -181,6 +182,7 @@ begin
         set emacs-mode-string "[emacs]"
       LINES
       start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl})
+      sleep 0.5
       close
       assert_screen(<<~EOC)
         Multiline REPL.
@@ -196,6 +198,7 @@ begin
         set vi-cmd-mode-string "{CmD}"
       LINES
       start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl})
+      sleep 0.5
       write(":a\n\C-[k")
       close
       assert_screen(<<~EOC)
