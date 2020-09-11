@@ -55,8 +55,6 @@ Zachary Scott (zzak)
 [lib/rubygems.rb, lib/rubygems/*]
   Eric Hodel (drbrain), Hiroshi SHIBATA (hsbt)
   https://github.com/rubygems/rubygems
-[lib/securerandom.rb]
-  Tanaka Akira (akr)
 [lib/time.rb]
   Tanaka Akira (akr)
 [lib/un.rb]
@@ -229,6 +227,9 @@ Zachary Scott (zzak)
 [lib/rinda/*]
   Masatoshi SEKI (seki)
   https://github.com/ruby/rinda
+[lib/securerandom.rb]
+  Tanaka Akira (akr)
+  https://github.com/ruby/securerandom
 [lib/set.rb]
   Akinori MUSHA (knu)
   https://github.com/ruby/set

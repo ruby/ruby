@@ -17,7 +17,6 @@ RbConfig:: Information of your configure and build of Ruby
 resolv-replace.rb:: Replace Socket DNS with Resolv
 Resolv::  Thread-aware DNS resolver library in Ruby
 Gem:: Package management framework for Ruby
-SecureRandom:: Interface for secure random number generator
 Time:: Extends the Time class with methods for parsing and conversion
 un.rb:: Utilities to replace common UNIX commands
 
@@ -71,6 +70,7 @@ PStore:: Implements a file based persistence mechanism based on a Hash
 Racc:: A LALR(1) parser generator written in Ruby.
 RDoc:: Produces HTML and command-line documentation for Ruby
 Rinda:: The Linda distributed computing paradigm in Ruby
+SecureRandom:: Interface for secure random number generator
 Set:: Provides a class to deal with collections of unordered, unique values
 Shellwords:: Manipulates strings with word parsing rules of UNIX Bourne shell
 Singleton:: Implementation of the Singleton pattern for Ruby
