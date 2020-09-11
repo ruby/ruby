@@ -191,6 +191,7 @@ dump_append_string_value(struct dump_config *dc, VALUE obj)
         switch ((c = value[i])) {
           case '\\':
             dump_append(dc, "\\\\");
+            break;
           case '"':
             dump_append(dc, "\\\"");
             break;
