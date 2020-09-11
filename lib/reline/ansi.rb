@@ -38,6 +38,12 @@ class Reline::ANSI
     # Del is 0x08
     # Arrow keys are the same of KDE
 
+    # iTerm2
+    [27, 27, 91, 67] => :em_next_word,    # Option+→
+    [27, 27, 91, 68] => :ed_prev_word,    # Option+←
+    [195, 166] => :em_next_word,          # Option+f
+    [195, 162] => :ed_prev_word,          # Option+b
+
     # others
     [27, 32] => :em_set_mark,             # M-<space>
     [24, 24] => :em_exchange_mark,        # C-x C-x TODO also add Windows
