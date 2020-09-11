@@ -1057,9 +1057,28 @@ class CSV
           out_options[key] = value
         end
       end
+
       # build input and output wrappers
-      input  = new(input  || ARGF,    **in_options)
+      input  = new(input  || ARGF, **in_options)
       output = new(output || $stdout, **out_options)
+
+      # process headers
+      need_manual_header_output =
+        (in_options[:headers] and
+         out_options[:headers] == true and
+         out_options[:write_headers])
+      if need_manual_header_output
+        first_row = input.shift
+        if first_row
+          if first_row.is_a?(Row)
+            headers = first_row.headers
+            yield headers
+            output << headers
+          end
+          yield first_row
+          output << first_row
+        end
+      end
 
       # read, yield, write
       input.each do |row|
