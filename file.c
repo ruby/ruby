@@ -6302,13 +6302,6 @@ copy_path_class(VALUE path, VALUE orig)
 }
 
 int
-rb_find_file_ext_safe(VALUE *filep, const char *const *ext, int _level)
-{
-    rb_warn("rb_find_file_ext_safe will be removed in Ruby 3.0");
-    return rb_find_file_ext(filep, ext);
-}
-
-int
 rb_find_file_ext(VALUE *filep, const char *const *ext)
 {
     const char *f = StringValueCStr(*filep);
@@ -6365,13 +6358,6 @@ rb_find_file_ext(VALUE *filep, const char *const *ext)
     rb_str_resize(tmp, 0);
     RB_GC_GUARD(load_path);
     return 0;
-}
-
-VALUE
-rb_find_file_safe(VALUE path, int _level)
-{
-    rb_warn("rb_find_file_safe will be removed in Ruby 3.0");
-    return rb_find_file(path);
 }
 
 VALUE
