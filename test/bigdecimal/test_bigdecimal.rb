@@ -1104,6 +1104,11 @@ class TestBigDecimal < Test::Unit::TestCase
       assert_equal(-1, x.round(0, BigDecimal::ROUND_HALF_DOWN), bug3803)
       assert_equal(-1, x.round(0, BigDecimal::ROUND_HALF_EVEN), bug3803)
     end
+
+    assert_instance_of(Integer, x.round)
+    assert_instance_of(Integer, x.round(0))
+    assert_instance_of(Integer, x.round(-1))
+    assert_instance_of(BigDecimal, x.round(1))
   end
 
   def test_round_half_even

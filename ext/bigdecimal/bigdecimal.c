@@ -1791,10 +1791,10 @@ BigDecimal_fix(VALUE self)
  * more than that many digits.
  *
  * If n is specified and negative, at least that many digits to the left of the
- * decimal point will be 0 in the result.
+ * decimal point will be 0 in the result, and return value will be an Integer.
  *
  *	BigDecimal('3.14159').round(3) #=> 3.142
- *	BigDecimal('13345.234').round(-2) #=> 13300.0
+ *	BigDecimal('13345.234').round(-2) #=> 13300
  *
  * The value of the optional mode argument can be used to determine how
  * rounding is performed; see BigDecimal.mode.
@@ -1807,6 +1807,7 @@ BigDecimal_round(int argc, VALUE *argv, VALUE self)
     int    iLoc = 0;
     VALUE  vLoc;
     VALUE  vRound;
+    int    round_to_int = 0;
     size_t mx, pl;
 
     unsigned short sw = VpGetRoundMode();
@@ -1814,6 +1815,7 @@ BigDecimal_round(int argc, VALUE *argv, VALUE self)
     switch (rb_scan_args(argc, argv, "02", &vLoc, &vRound)) {
       case 0:
 	iLoc = 0;
+        round_to_int = 1;
 	break;
       case 1:
         if (RB_TYPE_P(vLoc, T_HASH)) {
@@ -1821,6 +1823,7 @@ BigDecimal_round(int argc, VALUE *argv, VALUE self)
 	}
 	else {
 	    iLoc = NUM2INT(vLoc);
+            if (iLoc < 1) round_to_int = 1;
 	}
 	break;
       case 2:
@@ -1842,7 +1845,7 @@ BigDecimal_round(int argc, VALUE *argv, VALUE self)
     GUARD_OBJ(c, VpCreateRbObject(mx, "0"));
     VpSetPrecLimit(pl);
     VpActiveRound(c, a, sw, iLoc);
-    if (argc == 0) {
+    if (round_to_int) {
 	return BigDecimal_to_i(ToValue(c));
     }
     return ToValue(c);
