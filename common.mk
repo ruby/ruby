@@ -13351,6 +13351,7 @@ string.$(OBJEXT): {$(VPATH)}internal/variable.h
 string.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 string.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 string.$(OBJEXT): {$(VPATH)}missing.h
+string.$(OBJEXT): {$(VPATH)}node.h
 string.$(OBJEXT): {$(VPATH)}onigmo.h
 string.$(OBJEXT): {$(VPATH)}oniguruma.h
 string.$(OBJEXT): {$(VPATH)}probes.dmyh
@@ -13362,6 +13363,8 @@ string.$(OBJEXT): {$(VPATH)}st.h
 string.$(OBJEXT): {$(VPATH)}string.c
 string.$(OBJEXT): {$(VPATH)}subst.h
 string.$(OBJEXT): {$(VPATH)}util.h
+string.$(OBJEXT): {$(VPATH)}vm_debug.h
+string.$(OBJEXT): {$(VPATH)}vm_sync.h
 strlcat.$(OBJEXT): {$(VPATH)}config.h
 strlcat.$(OBJEXT): {$(VPATH)}internal/compiler_is.h
 strlcat.$(OBJEXT): {$(VPATH)}internal/compiler_is/apple.h
