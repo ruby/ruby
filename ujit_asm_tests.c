@@ -93,6 +93,38 @@ void run_tests()
     cb_set_pos(cb, 0); call(cb, RAX); check_bytes(cb, "FFD0");
     cb_set_pos(cb, 0); call(cb, mem_opnd(64, RSP, 8)); check_bytes(cb, "FF542408");
 
+    // dec
+    /*
+    test(
+        delegate void (CodeBlock cb) { cb.dec(X86Opnd(CX)); },
+        "66FFC9"
+    );
+    */
+    cb_set_pos(cb, 0); dec(cb, EDX); check_bytes(cb, "FFCA");
+
+    // div
+    /*
+    test(
+        delegate void (CodeBlock cb) { cb.div(X86Opnd(EDX)); },
+        "F7F2"
+    );
+    test(
+        delegate void (CodeBlock cb) { cb.div(X86Opnd(32, RSP, -12)); },
+        "F77424F4"
+    );
+    */
+
+    // inc
+    /*
+    test(
+        delegate void (CodeBlock cb) { cb.inc(X86Opnd(BL)); },
+        "FEC3"
+    );
+    */
+    cb_set_pos(cb, 0); inc(cb, ESP); check_bytes(cb, "FFC4");
+    cb_set_pos(cb, 0); inc(cb, mem_opnd(32, RSP, 0)); check_bytes(cb, "FF0424");
+    cb_set_pos(cb, 0); inc(cb, mem_opnd(64, RSP, 4)); check_bytes(cb, "48FF442404");
+
     // jcc
     {
         cb_set_pos(cb, 0);

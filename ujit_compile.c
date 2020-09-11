@@ -47,7 +47,7 @@ ujit_compile_insn(rb_iseq_t *iseq, size_t insn_idx)
     //printf("%s\n", name);
 
     // TODO: encode individual instructions, eg
-    // putnil, putobject, pop, dup, getlocal, nilp
+    // nop, putnil, putobject, putself, pop, dup, getlocal, nilp
 
     if (insn == BIN(pop))
     {
