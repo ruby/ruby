@@ -196,6 +196,8 @@ void cb_write_epilogue(codeblock_t* cb);
 void add(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1);
 void call_label(codeblock_t* cb, size_t label_idx);
 void call(codeblock_t* cb, x86opnd_t opnd);
+void dec(codeblock_t* cb, x86opnd_t opnd);
+void inc(codeblock_t* cb, x86opnd_t opnd);
 void ja(codeblock_t* cb, size_t label_idx);
 void jae(codeblock_t* cb, size_t label_idx);
 void jb(codeblock_t* cb, size_t label_idx);
