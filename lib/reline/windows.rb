@@ -254,7 +254,7 @@ class Reline::Windows
     return if @@GetConsoleScreenBufferInfo.call(@@hConsoleHandle, csbi) == 0
     buffer_width = csbi[0, 2].unpack('S').first
     attributes = csbi[8, 2].unpack('S').first
-    window_left, window_top, window_right, window_bottom = *csbi[10,8].unpack('S*')
+    _window_left, window_top, _window_right, window_bottom = *csbi[10,8].unpack('S*')
     fill_length = buffer_width * (window_bottom - window_top + 1)
     screen_topleft = window_top * 65536
     written = 0.chr * 4
