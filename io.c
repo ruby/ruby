@@ -11074,10 +11074,6 @@ nogvl_copy_stream_wait_write(struct copy_stream_struct *stp)
     return 0;
 }
 
-#if defined HAVE_COPY_FILE_RANGE || (defined __linux__ && defined __NR_copy_file_range)
-#  define USE_COPY_FILE_RANGE
-#endif
-
 #ifdef USE_COPY_FILE_RANGE
 
 static ssize_t

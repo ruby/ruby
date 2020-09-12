@@ -2396,6 +2396,42 @@ AS_IF([test "$rb_cv_rshift_sign" = yes], [
   AC_DEFINE(RSHIFT(x,y), (((x)<0) ? ~((~(x))>>(int)(y)) : (x)>>(int)(y)))
 ])
 
+AS_IF([test "$ac_cv_func_copy_file_range" = no], [
+  AC_CACHE_CHECK([for copy_file_range],
+    rb_cv_use_copy_file_range,
+    [AC_TRY_RUN([
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/syscall.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+#ifndef O_TMPFILE
+  #define O_TMPFILE __O_TMPFILE
+#endif
+
+int
+main()
+{
+#ifdef __NR_copy_file_range
+   int ret, fd_in, fd_out;
+   fd_in = open("/tmp", O_TMPFILE|O_RDWR, S_IRUSR);
+   fd_out = open("/tmp", O_TMPFILE|O_WRONLY, S_IWUSR);
+   ret = syscall(__NR_copy_file_range, fd_in, NULL, fd_out, NULL, 0, 0);
+   if (ret == -1) { return 1; }
+   return 0;
+#else
+   return 1;
+#endif
+}
+  ],
+    [rb_cv_use_copy_file_range=yes],
+    [rb_cv_use_copy_file_range=no])])
+  AS_IF([test "$rb_cv_use_copy_file_range" = yes], [
+    AC_DEFINE(USE_COPY_FILE_RANGE)
+  ])
+])
+
 AS_CASE(["$ac_cv_func_gettimeofday:$ac_cv_func_clock_gettime"],
 [*yes*], [],
 [
