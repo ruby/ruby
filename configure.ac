@@ -2418,6 +2418,8 @@ main()
    fd_in = open("/tmp", O_TMPFILE|O_RDWR, S_IRUSR);
    fd_out = open("/tmp", O_TMPFILE|O_WRONLY, S_IWUSR);
    ret = syscall(__NR_copy_file_range, fd_in, NULL, fd_out, NULL, 0, 0);
+   close(fd_in);
+   close(fd_out);
    if (ret == -1) { return 1; }
    return 0;
 #else
@@ -2426,10 +2428,11 @@ main()
 }
   ],
     [rb_cv_use_copy_file_range=yes],
+    [rb_cv_use_copy_file_range=no],
     [rb_cv_use_copy_file_range=no])])
-  AS_IF([test "$rb_cv_use_copy_file_range" = yes], [
-    AC_DEFINE(USE_COPY_FILE_RANGE)
-  ])
+])
+AS_CASE(["$ac_cv_func_copy_file_range:$rb_cv_use_copy_file_range"], [*yes*], [
+  AC_DEFINE(USE_COPY_FILE_RANGE)
 ])
 
 AS_CASE(["$ac_cv_func_gettimeofday:$ac_cv_func_clock_gettime"],
