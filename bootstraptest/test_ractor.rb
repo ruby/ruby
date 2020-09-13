@@ -345,7 +345,7 @@ assert_equal 'hello', %q{
   end
 }
 
-# Access to global-variables are prohibitted
+# Access to global-variables are prohibited
 assert_equal 'can not access global variables $gv from non-main Ractors', %q{
   $gv = 1
   r = Ractor.new do
@@ -359,7 +359,7 @@ assert_equal 'can not access global variables $gv from non-main Ractors', %q{
   end
 }
 
-# Access to global-variables are prohibitted
+# Access to global-variables are prohibited
 assert_equal 'can not access global variables $gv from non-main Ractors', %q{
   r = Ractor.new do
     $gv = 1
