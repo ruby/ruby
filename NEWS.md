@@ -208,6 +208,14 @@ Outstanding ones only.
           take request headers as a Hash in the second argument when the first
           argument is a URI.  [[Feature #16686]]
 
+* IRB
+
+    * Update to IRB 1.2.6
+
+* Reline
+
+    * Update to Reline 0.1.5
+
 ## Compatibility issues
 
 Excluding feature bug fixes.
