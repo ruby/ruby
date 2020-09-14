@@ -218,6 +218,12 @@ vm_check_ints_blocking(rb_execution_context_t *ec)
     return rb_threadptr_execute_interrupts(th, 1);
 }
 
+int
+rb_vm_check_ints_blocking(rb_execution_context_t *ec)
+{
+    return vm_check_ints_blocking(ec);
+}
+
 /*
  * poll() is supported by many OSes, but so far Linux is the only
  * one we know of that supports using poll() in all places select()

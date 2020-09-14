@@ -877,6 +877,7 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, int alen, VALUE yield
     VALUE crv = cr->self;
     VALUE ret = Qundef;
     int i;
+    bool interrupted = false;
     enum ractor_wait_status wait_status = 0;
     bool yield_p = (yielded_value != Qundef) ? true : false;
 
@@ -913,6 +914,8 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, int alen, VALUE yield
         }
     }
     rs = NULL;
+
+  restart:
 
     if (yield_p) {
         actions[i].type = ractor_select_action_yield;
@@ -1079,6 +1082,7 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, int alen, VALUE yield
             break;
           case wakeup_by_interrupt:
             ret = Qundef;
+            interrupted = true;
             goto cleanup;
         }
     }
@@ -1095,7 +1099,11 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, int alen, VALUE yield
     VM_ASSERT(cr->wait.taken_basket.type == basket_type_none);
     VM_ASSERT(cr->wait.yielded_basket.type == basket_type_none);
 
-    RUBY_VM_CHECK_INTS(ec);
+    if (interrupted) {
+        rb_vm_check_ints_blocking(ec);
+        interrupted = false;
+        goto restart;
+    }
 
     VM_ASSERT(ret != Qundef);
     return ret;
