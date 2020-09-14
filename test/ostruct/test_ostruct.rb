@@ -246,4 +246,22 @@ class TC_OpenStruct < Test::Unit::TestCase
     os = OpenStruct.new(method: :foo)
     assert_equal(os.object_id, os.method!(:object_id).call)
   end
+
+  def test_mistaken_subclass
+    sub = Class.new(OpenStruct) do
+      def [](k)
+        __send__(k)
+        super
+      end
+
+      def []=(k, v)
+        @item_set = true
+        __send__("#{k}=", v)
+        super
+      end
+    end
+    o = sub.new
+    o.foo = 42
+    assert_equal 42, o.foo
+  end
 end
