@@ -2620,8 +2620,8 @@ end
 #     c.read.any? { |a| a.include?("zombies") }
 #   } #=> false
 #
-def CSV(*args, &block)
-  CSV.instance(*args, &block)
+def CSV(...)
+  CSV.instance(...)
 end
 
 require_relative "csv/version"
