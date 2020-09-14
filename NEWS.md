@@ -158,6 +158,11 @@ Outstanding ones only.
             p C.ancestors #=> [C, M1, M2, Object, Kernel, BasicObject]
             ```
 
+* Ractor
+
+    * new class to enable parallel execution. See doc/ractor.md for
+      more details.
+
 * Symbol
 
     * Modified method
@@ -282,7 +287,13 @@ Excluding feature bug fixes.
 
 * New method cache mechanism for Ractor [[Feature #16614]]
 
-  * TODO: ko1 will write details
+  * Inline method caches pointed from ISeq can be accessed by multiple Ractors
+    in parallel and synchronization is needed even for method caches. However,
+    such synchronization can be overhead so introducing new inline method cache
+    mehanisms, (1) Disposable inline method cache (2) per-Class method cache
+    and (3) new invalidation mechanism. (1) can avoid per-method call
+    syncrhonization because it only use atomic operations.
+    See the ticket for more details.
 
 * The number of hashes allocated when using a keyword splat in
   a method call has been reduced to a maximum of 1, and passing
