@@ -548,10 +548,11 @@ void cb_write_rm(
     }
 
     // Add the displacement size
-    if (rm_opnd.type == OPND_MEM && rm_opnd.mem.disp != 0)
+    if (rm_opnd.type == OPND_MEM)
     {
         size_t dsize = disp_size(rm_opnd);
-        cb_write_int(cb, rm_opnd.mem.disp, dsize);
+        if (dsize > 0)
+            cb_write_int(cb, rm_opnd.mem.disp, dsize);
     }
 }
 
@@ -789,6 +790,39 @@ void call(codeblock_t* cb, x86opnd_t opnd)
 {
     //cb.writeASM("call", opnd);
     cb_write_rm(cb, false, false, NO_OPND, opnd, 2, 1, 0xFF);
+}
+
+/// cmp - Compare and set flags
+void cmp(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1)
+{
+    cb_write_rm_multi(
+        cb,
+        "cmp",
+        0x38, // opMemReg8
+        0x39, // opMemRegPref
+        0x3A, // opRegMem8
+        0x3B, // opRegMemPref
+        0x80, // opMemImm8
+        0x83, // opMemImmSml
+        0x81, // opMemImmLrg
+        0x07, // opExtImm
+        opnd0,
+        opnd1
+    );
+}
+
+/// cdq - Convert doubleword to quadword
+void cdq(codeblock_t* cb)
+{
+    //cb.writeASM("cdq");
+    cb_write_byte(cb, 0x99);
+}
+
+/// cqo - Convert quadword to octaword
+void cqo(codeblock_t* cb)
+{
+    //cb.writeASM("cqo");
+    cb_write_bytes(cb, 2, 0x48, 0x99);
 }
 
 // dec - Decrement integer by 1
@@ -1131,6 +1165,34 @@ void nop(codeblock_t* cb, size_t length)
         break;
     }
 }
+
+// not - Bitwise NOT
+void not(codeblock_t* cb, x86opnd_t opnd)
+{
+    write_rm_unary(
+        cb,
+        "not",
+        0xF6, // opMemReg8
+        0xF7, // opMemRegPref
+        0x02, // opExt
+        opnd
+    );
+}
+
+/*
+/// or - Bitwise OR
+alias or = writeRMMulti!(
+    "or",
+    0x08, // opMemReg8
+    0x09, // opMemRegPref
+    0x0A, // opRegMem8
+    0x0B, // opRegMemPref
+    0x80, // opMemImm8
+    0x83, // opMemImmSml
+    0x81, // opMemImmLrg
+    0x01  // opExtImm
+);
+*/
 
 /// push - Push a register on the stack
 void push(codeblock_t* cb, x86opnd_t reg)
