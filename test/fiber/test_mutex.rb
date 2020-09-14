@@ -10,7 +10,7 @@ class TestFiberMutex < Test::Unit::TestCase
       scheduler = Scheduler.new
       Thread.current.scheduler = scheduler
 
-      Fiber.schedule do
+      Fiber do
         assert_equal Thread.scheduler, scheduler
 
         mutex.synchronize do
@@ -29,7 +29,7 @@ class TestFiberMutex < Test::Unit::TestCase
       scheduler = Scheduler.new
       Thread.current.scheduler = scheduler
 
-      Fiber.schedule do
+      Fiber do
         assert_equal Thread.scheduler, scheduler
 
         mutex.synchronize do

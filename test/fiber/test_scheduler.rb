@@ -6,7 +6,7 @@ class TestFiberScheduler < Test::Unit::TestCase
   def test_fiber_without_scheduler
     # Cannot create fiber without scheduler.
     assert_raise RuntimeError do
-      Fiber.schedule do
+      Fiber do
       end
     end
   end
