@@ -3749,12 +3749,6 @@ rb_thread_scheduler(VALUE klass)
     return rb_thread_scheduler_if_nonblocking(rb_thread_current());
 }
 
-static VALUE
-rb_thread_current_scheduler()
-{
-    return rb_thread_scheduler_if_nonblocking(rb_thread_current());
-}
-
 VALUE
 rb_thread_scheduler_if_nonblocking(VALUE thread)
 {
