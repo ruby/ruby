@@ -8,9 +8,6 @@
 
 #include "ujit_asm.h"
 
-// TODO: give ujit_examples.h some more meaningful file name
-#include "ujit_examples.h"
-
 // Dummy none/null operand
 const x86opnd_t NO_OPND = { OPND_NONE, 0, .imm = 0 };
 
@@ -211,19 +208,6 @@ void cb_write_int(codeblock_t* cb, uint64_t val, size_t num_bits)
             }
         }
     }
-}
-
-// Ruby instruction prologue and epilogue functions
-void cb_write_prologue(codeblock_t* cb)
-{
-    for (size_t i = 0; i < sizeof(ujit_pre_call_bytes); ++i)
-        cb_write_byte(cb, ujit_pre_call_bytes[i]);
-}
-
-void cb_write_epilogue(codeblock_t* cb)
-{
-    for (size_t i = 0; i < sizeof(ujit_post_call_bytes); ++i)
-        cb_write_byte(cb, ujit_post_call_bytes[i]);
 }
 
 // Allocate a new label with a given name
