@@ -1,5 +1,5 @@
 def get_example_instruction_id
-  # TODO we could get this from the script that generates vm.inc instead of dothings this song and dance
+  # TODO we could get this from the script that generates vm.inc instead of doing this song and dance
   `dwarfdump --name='YARVINSN_ujit_call_example' vm.o`.each_line do |line|
     if (id = line[/DW_AT_const_value\s\((\d+\))/, 1])
       p [__method__, line] if $DEBUG
@@ -108,4 +108,3 @@ p offset_to_insn_in_tc_table if $DEBUG
 offset_to_handler_code_from_vm_exec_core = readint8b(offset_to_insn_in_tc_table)
 p offset_to_handler_code_from_vm_exec_core if $DEBUG
 disassemble(vm_exec_core_offset + offset_to_handler_code_from_vm_exec_core)
-
