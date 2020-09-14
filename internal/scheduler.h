@@ -21,10 +21,7 @@ VALUE rb_scheduler_io_wait(VALUE scheduler, VALUE io, VALUE events, VALUE timeou
 VALUE rb_scheduler_io_wait_readable(VALUE scheduler, VALUE io);
 VALUE rb_scheduler_io_wait_writable(VALUE scheduler, VALUE io);
 
-int rb_scheduler_supports_io_read(VALUE scheduler);
-VALUE rb_scheduler_io_read(VALUE scheduler, VALUE io, VALUE buffer, size_t offset, size_t length);
-
-int rb_scheduler_supports_io_write(VALUE scheduler);
-VALUE rb_scheduler_io_write(VALUE scheduler, VALUE io, VALUE buffer, size_t offset, size_t length);
+VALUE rb_scheduler_io_read(VALUE scheduler, VALUE io, VALUE buffer, VALUE offset, VALUE length);
+VALUE rb_scheduler_io_write(VALUE scheduler, VALUE io, VALUE buffer, VALUE offset, VALUE length);
 
 #endif /* RUBY_SCHEDULER_H */

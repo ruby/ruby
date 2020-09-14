@@ -59,23 +59,13 @@ VALUE rb_scheduler_io_wait_writable(VALUE scheduler, VALUE io)
     return rb_scheduler_io_wait(scheduler, io, RB_UINT2NUM(RUBY_IO_WRITABLE), Qnil);
 }
 
-int rb_scheduler_supports_io_read(VALUE scheduler)
+VALUE rb_scheduler_io_read(VALUE scheduler, VALUE io, VALUE buffer, VALUE offset, VALUE length)
 {
-    return rb_respond_to(scheduler, id_io_read);
+    return rb_funcall(scheduler, id_io_read, 4, io, buffer, offset, length);
 }
 
-VALUE rb_scheduler_io_read(VALUE scheduler, VALUE io, VALUE buffer, size_t offset, size_t length)
-{
-    return rb_funcall(scheduler, id_io_read, 4, io, buffer, SIZET2NUM(offset), SIZET2NUM(length));
-}
-
-int rb_scheduler_supports_io_write(VALUE scheduler)
-{
-    return rb_respond_to(scheduler, id_io_write);
-}
-
-VALUE rb_scheduler_io_write(VALUE scheduler, VALUE io, VALUE buffer, size_t offset, size_t length)
+VALUE rb_scheduler_io_write(VALUE scheduler, VALUE io, VALUE buffer, VALUE offset, VALUE length)
 {
     // We should ensure string has capacity to receive data, and then resize it afterwards.
-    return rb_funcall(scheduler, id_io_write, 4, io, buffer, SIZET2NUM(offset), SIZET2NUM(length));
+    return rb_funcall(scheduler, id_io_write, 4, io, buffer, offset, length);
 }
