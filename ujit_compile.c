@@ -63,8 +63,12 @@ ujit_compile_insn(rb_iseq_t *iseq, size_t insn_idx)
     }
 
     int insn = (int)iseq->body->iseq_encoded[insn_idx];
+	int len = insn_len(insn);
     //const char* name = insn_name(insn);
     //printf("%s\n", name);
+
+    // Compute the address of the next instruction
+    void* next_pc = &iseq->body->iseq_encoded[insn_idx + len];
 
     // Get a pointer to the current write position in the code block
     uint8_t* code_ptr = &cb->mem_block[cb->write_pos];
@@ -80,9 +84,12 @@ ujit_compile_insn(rb_iseq_t *iseq, size_t insn_idx)
         // Write the pre call bytes
         ujit_instr_entry(cb);
 
-        add(cb, RSI, imm_opnd(8));                  // increment PC
-        mov(cb, mem_opnd(64, RDI, 0), RSI);         // write new PC to EC object, not necessary for nop bytecode?
-        mov(cb, RAX, RSI);                          // return new PC
+        //add(cb, RSI, imm_opnd(8));                  // increment PC
+        //mov(cb, mem_opnd(64, RDI, 0), RSI);         // write new PC to EC object, not necessary for nop bytecode?
+        //mov(cb, RAX, RSI);                          // return new PC
+
+        // Directly return the next PC, which is a constant
+        mov(cb, RAX, const_ptr_opnd(next_pc));
 
         // Write the post call bytes
         ujit_instr_exit(cb);
@@ -98,9 +105,9 @@ ujit_compile_insn(rb_iseq_t *iseq, size_t insn_idx)
         ujit_instr_entry(cb);
 
         sub(cb, mem_opnd(64, RDI, 8), imm_opnd(8)); // decrement SP
-        add(cb, RSI, imm_opnd(8));                  // increment PC
-        mov(cb, mem_opnd(64, RDI, 0), RSI);         // write new PC to EC object, not necessary for pop bytecode?
-        mov(cb, RAX, RSI);                          // return new PC
+
+        // Directly return the next PC, which is a constant
+        mov(cb, RAX, const_ptr_opnd(next_pc));
 
         // Write the post call bytes
         ujit_instr_exit(cb);
