@@ -8,11 +8,34 @@
 #include "ujit_compile.h"
 #include "ujit_asm.h"
 
+// TODO: give ujit_examples.h some more meaningful file name
+#include "ujit_examples.h"
+
 static codeblock_t block;
 static codeblock_t* cb = NULL;
 
+// Hash table of encoded instructions
 extern st_table *rb_encoded_insn_data;
 
+static void ujit_init();
+
+// Ruby instruction entry
+static void
+ujit_instr_entry(codeblock_t* cb)
+{
+    for (size_t i = 0; i < sizeof(ujit_pre_call_bytes); ++i)
+        cb_write_byte(cb, ujit_pre_call_bytes[i]);
+}
+
+// Ruby instruction exit
+static void
+ujit_instr_exit(codeblock_t* cb)
+{
+    for (size_t i = 0; i < sizeof(ujit_post_call_bytes); ++i)
+        cb_write_byte(cb, ujit_post_call_bytes[i]);
+}
+
+// Keep track of mapping from instructions to generated code
 // See comment for rb_encoded_insn_data in iseq.c
 static void
 addr2insn_bookkeeping(void *code_ptr, int insn)
@@ -33,12 +56,10 @@ addr2insn_bookkeeping(void *code_ptr, int insn)
 uint8_t *
 ujit_compile_insn(rb_iseq_t *iseq, size_t insn_idx)
 {
-    // Allocate the code block if not previously allocated
+    // If not previously done, initialize ujit
     if (!cb)
     {
-        // 4MB ought to be enough for anybody
-        cb = &block;
-        cb_init(cb, 4000000);
+        ujit_init();
     }
 
     int insn = (int)iseq->body->iseq_encoded[insn_idx];
@@ -57,14 +78,14 @@ ujit_compile_insn(rb_iseq_t *iseq, size_t insn_idx)
     if (insn == BIN(nop))
     {
         // Write the pre call bytes
-        cb_write_prologue(cb);
+        ujit_instr_entry(cb);
 
         add(cb, RSI, imm_opnd(8));                  // increment PC
         mov(cb, mem_opnd(64, RDI, 0), RSI);         // write new PC to EC object, not necessary for nop bytecode?
         mov(cb, RAX, RSI);                          // return new PC
 
         // Write the post call bytes
-        cb_write_epilogue(cb);
+        ujit_instr_exit(cb);
 
         addr2insn_bookkeeping(code_ptr, insn);
 
@@ -74,7 +95,7 @@ ujit_compile_insn(rb_iseq_t *iseq, size_t insn_idx)
     if (insn == BIN(pop))
     {
         // Write the pre call bytes
-        cb_write_prologue(cb);
+        ujit_instr_entry(cb);
 
         sub(cb, mem_opnd(64, RDI, 8), imm_opnd(8)); // decrement SP
         add(cb, RSI, imm_opnd(8));                  // increment PC
@@ -82,7 +103,7 @@ ujit_compile_insn(rb_iseq_t *iseq, size_t insn_idx)
         mov(cb, RAX, RSI);                          // return new PC
 
         // Write the post call bytes
-        cb_write_epilogue(cb);
+        ujit_instr_exit(cb);
 
         addr2insn_bookkeeping(code_ptr, insn);
 
@@ -90,4 +111,11 @@ ujit_compile_insn(rb_iseq_t *iseq, size_t insn_idx)
     }
 
     return 0;
+}
+
+static void ujit_init()
+{
+    // 4MB ought to be enough for anybody
+    cb = &block;
+    cb_init(cb, 4000000);
 }
