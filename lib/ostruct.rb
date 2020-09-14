@@ -212,7 +212,7 @@ class OpenStruct
     super
   end
 
-  def method_missing(mid, *args) # :nodoc:
+  private def method_missing(mid, *args) # :nodoc:
     len = args.length
     if mname = mid[/.*(?==\z)/m]
       if len != 1
