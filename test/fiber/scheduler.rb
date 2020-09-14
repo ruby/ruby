@@ -119,11 +119,11 @@ class Scheduler
   end
 
   def wait_any(io, events, duration)
-    unless (events & IO::READABLE).zero?
+    unless (events & IO::WAIT_READABLE).zero?
       @readable[io] = Fiber.current
     end
 
-    unless (events & IO::WRITABLE).zero?
+    unless (events & IO::WAIT_WRITABLE).zero?
       @writable[io] = Fiber.current
     end
 

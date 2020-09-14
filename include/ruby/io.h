@@ -41,12 +41,6 @@
 #  define RB_WAITFD_OUT 0x004
 #endif
 
-typedef enum {
-    RUBY_IO_READABLE = RB_WAITFD_IN,
-    RUBY_IO_WRITABLE = RB_WAITFD_OUT,
-    RUBY_IO_PRIORITY = RB_WAITFD_PRI,
-} rb_io_event_t;
-
 #include "ruby/internal/dllexport.h"
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
