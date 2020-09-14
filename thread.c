@@ -1481,13 +1481,8 @@ rb_thread_sleep_interruptible(void)
 static void
 rb_thread_sleep_deadly_allow_spurious_wakeup(void)
 {
-    VALUE scheduler = rb_thread_current_scheduler();
-    if (scheduler != Qnil) {
-        rb_scheduler_kernel_sleepv(scheduler, 0, NULL);
-    } else {
-        thread_debug("rb_thread_sleep_deadly_allow_spurious_wakeup\n");
-        sleep_forever(GET_THREAD(), SLEEP_DEADLOCKABLE);
-    }
+    thread_debug("rb_thread_sleep_deadly_allow_spurious_wakeup\n");
+    sleep_forever(GET_THREAD(), SLEEP_DEADLOCKABLE);
 }
 
 void
