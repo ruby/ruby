@@ -75,13 +75,11 @@
 #include "hrtime.h"
 #include "internal.h"
 #include "internal/class.h"
-#include "internal/cont.h"
 #include "internal/error.h"
 #include "internal/hash.h"
 #include "internal/io.h"
 #include "internal/object.h"
 #include "internal/proc.h"
-#include "internal/scheduler.h"
 #include "internal/signal.h"
 #include "internal/thread.h"
 #include "internal/time.h"
@@ -550,7 +548,7 @@ rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th)
 	/* rb_warn("mutex #<%p> remains to be locked by terminated thread",
 		(void *)mutexes); */
 	mutexes = mutex->next_mutex;
-	err = rb_mutex_unlock_th(mutex, th, mutex->fiber);
+	err = rb_mutex_unlock_th(mutex, th);
 	if (err) rb_bug("invalid keeping_mutexes: %s", err);
     }
 }
@@ -5042,7 +5040,7 @@ rb_thread_shield_wait(VALUE self)
 
     if (!mutex) return Qfalse;
     m = mutex_ptr(mutex);
-    if (m->fiber == GET_EC()->fiber_ptr) return Qnil;
+    if (m->th == GET_THREAD()) return Qnil;
     rb_thread_shield_waiting_inc(self);
     rb_mutex_lock(mutex);
     rb_thread_shield_waiting_dec(self);
@@ -5542,7 +5540,7 @@ debug_deadlock_check(rb_ractor_t *r, VALUE msg)
         if (th->locking_mutex) {
             rb_mutex_t *mutex = mutex_ptr(th->locking_mutex);
             rb_str_catf(msg, " mutex:%p cond:%"PRIuSIZE,
-                        (void *)mutex->fiber, rb_mutex_num_waiting(mutex));
+                        (void *)mutex->th, rb_mutex_num_waiting(mutex));
         }
 
         {
@@ -5576,7 +5574,8 @@ rb_check_deadlock(rb_ractor_t *r)
         }
         else if (th->locking_mutex) {
             rb_mutex_t *mutex = mutex_ptr(th->locking_mutex);
-            if (mutex->fiber == th->ec->fiber_ptr || (!mutex->fiber && !list_empty(&mutex->waitq))) {
+
+            if (mutex->th == th || (!mutex->th && !list_empty(&mutex->waitq))) {
                 found = 1;
             }
         }

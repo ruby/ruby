@@ -12,8 +12,6 @@
 #include "ruby/io.h"
 
 static ID id_kernel_sleep;
-static ID id_mutex_lock;
-static ID id_mutex_unlock;
 static ID id_io_read;
 static ID id_io_write;
 static ID id_io_wait;
@@ -22,8 +20,6 @@ void
 Init_Scheduler(void)
 {
     id_kernel_sleep = rb_intern_const("kernel_sleep");
-    id_mutex_lock = rb_intern_const("mutex_lock");
-    id_mutex_unlock = rb_intern_const("mutex_unlock");
     id_io_read = rb_intern_const("io_read");
     id_io_write = rb_intern_const("io_write");
     id_io_wait = rb_intern_const("io_wait");
@@ -46,16 +42,6 @@ VALUE rb_scheduler_kernel_sleep(VALUE scheduler, VALUE timeout)
 VALUE rb_scheduler_kernel_sleepv(VALUE scheduler, int argc, VALUE * argv)
 {
     return rb_funcallv(scheduler, id_kernel_sleep, argc, argv);
-}
-
-VALUE rb_scheduler_mutex_lock(VALUE scheduler, VALUE mutex)
-{
-    return rb_funcall(scheduler, id_mutex_lock, 1, mutex);
-}
-
-VALUE rb_scheduler_mutex_unlock(VALUE scheduler, VALUE mutex, VALUE fiber)
-{
-    return rb_funcall(scheduler, id_mutex_unlock, 2, mutex, fiber);
 }
 
 VALUE rb_scheduler_io_wait(VALUE scheduler, VALUE io, VALUE events, VALUE timeout)

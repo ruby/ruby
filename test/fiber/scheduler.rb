@@ -14,12 +14,6 @@ class Scheduler
     @readable = {}
     @writable = {}
     @waiting = {}
-
-    @urgent = nil
-
-    @lock = Mutex.new
-    @locking = 0
-    @ready = []
   end
 
   attr :readable
@@ -41,11 +35,9 @@ class Scheduler
   end
 
   def run
-    @urgent = IO.pipe
-
-    while @readable.any? or @writable.any? or @waiting.any? or @locking.positive?
+    while @readable.any? or @writable.any? or @waiting.any?
       # Can only handle file descriptors up to 1024...
-      readable, writable = IO.select(@readable.keys + [@urgent.first], @writable.keys, [], next_timeout)
+      readable, writable = IO.select(@readable.keys, @writable.keys, [], next_timeout)
 
       # puts "readable: #{readable}" if readable&.any?
       # puts "writable: #{writable}" if writable&.any?
@@ -71,24 +63,7 @@ class Scheduler
           end
         end
       end
-
-      if @ready.any?
-        # Clear out the urgent notification pipe.
-        @urgent.first.read_nonblock(1024)
-
-        ready = nil
-
-        @lock.synchronize do
-          ready, @ready = @ready, Array.new
-        end
-
-        ready.each do |fiber|
-          fiber.resume
-        end
-      end
     end
-  ensure
-    @urgent.each(&:close)
   end
 
   def current_time
@@ -118,23 +93,6 @@ class Scheduler
     @writable.delete(io)
 
     return true
-  end
-
-  def mutex_lock(mutex)
-    @locking += 1
-    Fiber.yield
-  ensure
-    @locking -= 1
-  end
-
-  def mutex_unlock(mutex, fiber)
-    @lock.synchronize do
-      @ready << fiber
-
-      if @urgent
-        @urgent.last.write('.')
-      end
-    end
   end
 
   def fiber(&block)

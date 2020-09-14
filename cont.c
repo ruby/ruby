@@ -851,12 +851,6 @@ NOINLINE(static VALUE cont_capture(volatile int *volatile stat));
         if (!(th)->ec->tag) rb_raise(rb_eThreadError, "not running thread"); \
     } while (0)
 
-rb_thread_t*
-rb_fiber_threadptr(const rb_fiber_t *fiber)
-{
-    return fiber->cont.saved_ec.thread_ptr;
-}
-
 static VALUE
 cont_thread_value(const rb_context_t *cont)
 {
@@ -1150,11 +1144,6 @@ cont_new(VALUE klass)
     cont->self = contval;
     cont_init(cont, th);
     return cont;
-}
-
-VALUE rb_fiberptr_self(struct rb_fiber_struct *fiber)
-{
-    return fiber->cont.self;
 }
 
 void

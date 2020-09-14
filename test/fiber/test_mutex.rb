@@ -14,43 +14,15 @@ class TestFiberMutex < Test::Unit::TestCase
         assert_equal Thread.scheduler, scheduler
 
         mutex.synchronize do
-          assert Thread.scheduler
+          assert_nil Thread.scheduler
         end
       end
-    end
-
-    thread.join
-  end
-
-  def test_mutex_interleaved_locking
-    mutex = Mutex.new
-
-    thread = Thread.new do
-      scheduler = Scheduler.new
-      Thread.current.scheduler = scheduler
-
-      Fiber.schedule do
-        mutex.lock
-        sleep 0.1
-        mutex.unlock
-      end
-
-      Fiber.schedule do
-        mutex.lock
-        sleep 0.1
-        mutex.unlock
-      end
-
-      scheduler.run
     end
 
     thread.join
   end
 
   def test_mutex_deadlock
-    err = /No live threads left. Deadlock\?/
-    assert_in_out_err %W[-I#{__dir__} -], <<-RUBY, ['in synchronize'], err, success: false
-    require 'scheduler'
     mutex = Mutex.new
 
     thread = Thread.new do
@@ -58,18 +30,18 @@ class TestFiberMutex < Test::Unit::TestCase
       Thread.current.scheduler = scheduler
 
       Fiber.schedule do
-        raise unless Thread.scheduler == scheduler
+        assert_equal Thread.scheduler, scheduler
 
         mutex.synchronize do
-          puts 'in synchronize'
           Fiber.yield
         end
       end
 
-      mutex.lock
+      assert_raise ThreadError do
+        mutex.lock
+      end
     end
 
     thread.join
-    RUBY
   end
 end
