@@ -147,16 +147,13 @@ VALUE rb_io_get_io(VALUE io);
 VALUE rb_io_check_io(VALUE io);
 VALUE rb_io_get_write_io(VALUE io);
 VALUE rb_io_set_write_io(VALUE io, VALUE w);
+int rb_io_wait_readable(int);
+int rb_io_wait_writable(int);
+int rb_wait_for_single_fd(int fd, int events, struct timeval *tv);
 void rb_io_set_nonblock(rb_io_t *fptr);
 int rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2_p, int *fmode_p);
 void rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash, int *oflags_p, int *fmode_p, rb_io_enc_t *convconfig_p);
 ssize_t rb_io_bufwrite(VALUE io, const void *buf, size_t size);
-
-int rb_io_wait_readable(int);
-int rb_io_wait_writable(int);
-int rb_wait_for_single_fd(int fd, int events, struct timeval *tv);
-
-VALUE rb_io_wait(VALUE io, VALUE events, VALUE timeout);
 
 /* compatibility for ruby 1.8 and older */
 #define rb_io_mode_flags(modestr) [<"rb_io_mode_flags() is obsolete; use rb_io_modestr_fmode()">]

@@ -37,8 +37,6 @@ void rb_mutex_allow_trap(VALUE self, int val);
 VALUE rb_uninterruptible(VALUE (*b_proc)(VALUE), VALUE data);
 VALUE rb_mutex_owned_p(VALUE self);
 
-int rb_thread_wait_for_single_fd(int fd, int events, struct timeval * timeout);
-
 VALUE rb_thread_scheduler_get(VALUE thread);
 VALUE rb_thread_scheduler_set(VALUE thread, VALUE scheduler);
 
