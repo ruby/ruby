@@ -193,6 +193,7 @@ void cb_link_labels(codeblock_t* cb);
 
 // Encode individual instructions into a code block
 void add(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1);
+void and(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1);
 void call_label(codeblock_t* cb, size_t label_idx);
 void call(codeblock_t* cb, x86opnd_t opnd);
 void cmp(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1);
@@ -234,10 +235,12 @@ void jmp(codeblock_t* cb, size_t label_idx);
 void jmp_rm(codeblock_t* cb, x86opnd_t opnd);
 void lea(codeblock_t* cb, x86opnd_t dst, x86opnd_t src);
 void mov(codeblock_t* cb, x86opnd_t dst, x86opnd_t src);
+void neg(codeblock_t* cb, x86opnd_t opnd);
 void nop(codeblock_t* cb, size_t length);
 void not(codeblock_t* cb, x86opnd_t opnd);
-void push(codeblock_t* cb, x86opnd_t reg);
+void or(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1);
 void pop(codeblock_t* cb, x86opnd_t reg);
+void push(codeblock_t* cb, x86opnd_t reg);
 void ret(codeblock_t* cb);
 void sal(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1);
 void sar(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1);
