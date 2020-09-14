@@ -225,9 +225,25 @@ class TC_OpenStruct < Test::Unit::TestCase
     end
   end
 
+  def test_access_undefined
+    os = OpenStruct.new
+    assert_nil os.foo
+  end
+
   def test_overriden_private_methods
     os = OpenStruct.new(puts: :foo, format: :bar)
     assert_equal(:foo, os.puts)
     assert_equal(:bar, os.format)
+  end
+
+  def test_overriden_public_methods
+    os = OpenStruct.new(method: :foo, class: :bar)
+    assert_equal(:foo, os.method)
+    assert_equal(:bar, os.class)
+  end
+
+  def test_access_original_methods
+    os = OpenStruct.new(method: :foo)
+    assert_equal(os.object_id, os.method!(:object_id).call)
   end
 end
