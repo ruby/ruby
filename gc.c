@@ -4516,11 +4516,15 @@ static void read_barrier_handler(intptr_t address)
 
     obj = (VALUE)address;
 
-    unlock_page_body(objspace, GET_PAGE_BODY(obj));
+    RB_VM_LOCK_ENTER();
+    {
+        unlock_page_body(objspace, GET_PAGE_BODY(obj));
 
-    objspace->profile.read_barrier_faults++;
+        objspace->profile.read_barrier_faults++;
 
-    invalidate_moved_page(objspace, GET_HEAP_PAGE(obj));
+        invalidate_moved_page(objspace, GET_HEAP_PAGE(obj));
+    }
+    RB_VM_LOCK_LEAVE();
 }
 
 #if defined(_WIN32)
