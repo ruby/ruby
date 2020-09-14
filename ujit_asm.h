@@ -188,10 +188,6 @@ void cb_write_label(codeblock_t* cb, size_t label_idx);
 void cb_label_ref(codeblock_t* cb, size_t label_idx);
 void cb_link_labels(codeblock_t* cb);
 
-// Ruby instruction prologue and epilogue functions
-void cb_write_prologue(codeblock_t* cb);
-void cb_write_epilogue(codeblock_t* cb);
-
 // Encode individual instructions into a code block
 void add(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1);
 void call_label(codeblock_t* cb, size_t label_idx);
