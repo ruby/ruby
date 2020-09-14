@@ -47,43 +47,6 @@ class TestFiberMutex < Test::Unit::TestCase
     thread.join
   end
 
-  def test_condition_variable
-    mutex = Mutex.new
-    condition = ConditionVariable.new
-
-    signalled = 0
-
-    thread = Thread.new do
-      scheduler = Scheduler.new
-      Thread.current.scheduler = scheduler
-
-      Fiber.schedule do
-        mutex.synchronize do
-          3.times do
-            condition.wait(mutex)
-            signalled += 1
-          end
-        end
-      end
-
-      Fiber.schedule do
-        3.times do
-          mutex.synchronize do
-            condition.signal
-          end
-
-          sleep 0.1
-        end
-      end
-
-      scheduler.run
-    end
-
-    thread.join
-
-    assert signalled > 1
-  end
-
   def test_mutex_deadlock
     err = /No live threads left. Deadlock\?/
     assert_in_out_err %W[-I#{__dir__} -], <<-RUBY, ['in synchronize'], err, success: false

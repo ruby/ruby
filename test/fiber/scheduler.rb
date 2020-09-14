@@ -97,9 +97,7 @@ class Scheduler
   end
 
   def kernel_sleep(duration = nil)
-    if duration
-      @waiting[Fiber.current] = current_time + duration
-    end
+    @waiting[Fiber.current] = current_time + duration
 
     Fiber.yield
 
