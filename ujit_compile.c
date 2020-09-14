@@ -42,18 +42,37 @@ ujit_compile_insn(rb_iseq_t *iseq, size_t insn_idx)
     }
 
     int insn = (int)iseq->body->iseq_encoded[insn_idx];
-
     //const char* name = insn_name(insn);
     //printf("%s\n", name);
 
+    // Get a pointer to the current write position in the code block
+    uint8_t* code_ptr = &cb->mem_block[cb->write_pos];
+    //printf("write pos: %ld\n", cb->write_pos);
+
     // TODO: encode individual instructions, eg
-    // nop, putnil, putobject, putself, pop, dup, getlocal, nilp
+    // nop, putnil, putobject, putself, pop, dup, getlocal, setlocal, nilp
+
+    // TODO: we should move the codegen for individual instructions
+    // into separate functions
+    if (insn == BIN(nop))
+    {
+        // Write the pre call bytes
+        cb_write_prologue(cb);
+
+        add(cb, RSI, imm_opnd(8));                  // increment PC
+        mov(cb, mem_opnd(64, RDI, 0), RSI);         // write new PC to EC object, not necessary for nop bytecode?
+        mov(cb, RAX, RSI);                          // return new PC
+
+        // Write the post call bytes
+        cb_write_epilogue(cb);
+
+        addr2insn_bookkeeping(code_ptr, insn);
+
+        return code_ptr;
+    }
 
     if (insn == BIN(pop))
     {
-        // Get a pointer to the current write position in the code block
-        uint8_t* code_ptr = &cb->mem_block[cb->write_pos];
-
         // Write the pre call bytes
         cb_write_prologue(cb);
 

@@ -93,6 +93,44 @@ void run_tests()
     cb_set_pos(cb, 0); call(cb, RAX); check_bytes(cb, "FFD0");
     cb_set_pos(cb, 0); call(cb, mem_opnd(64, RSP, 8)); check_bytes(cb, "FF542408");
 
+    /*
+    // cmovcc
+    test(
+        delegate void (CodeBlock cb) { cb.cmovg(ESI, X86Opnd(EDI)); },
+        "0F4FF7"
+    );
+    test(
+        delegate void (CodeBlock cb) { cb.cmovg(ESI, X86Opnd(32, RBP, 12)); },
+        "0F4F750C"
+    );
+    test(
+        delegate void (CodeBlock cb) { cb.cmovl(EAX, X86Opnd(ECX)); },
+        "0F4CC1"
+    );
+    test(
+        delegate void (CodeBlock cb) { cb.cmovl(RBX, X86Opnd(RBP)); },
+        "480F4CDD"
+    );
+    test(
+        delegate void (CodeBlock cb) { cb.cmovle(ESI, X86Opnd(32, RSP, 4)); },
+        "0F4E742404"
+    );
+    */
+
+    // cmp
+    /*
+    test(
+        delegate void (CodeBlock cb) { cb.cmp(X86Opnd(CL), X86Opnd(DL)); },
+        "38D1"
+    );
+    */
+    cb_set_pos(cb, 0); cmp(cb, ECX, EDI); check_bytes(cb, "39F9");
+    cb_set_pos(cb, 0); cmp(cb, RDX, mem_opnd(64, R12, 0)); check_bytes(cb, "493B1424");
+    cb_set_pos(cb, 0); cmp(cb, RAX, imm_opnd(2)); check_bytes(cb, "4883F802");
+
+    // cqo
+    cb_set_pos(cb, 0); cqo(cb); check_bytes(cb, "4899");
+
     // dec
     /*
     test(
@@ -177,6 +215,92 @@ void run_tests()
 
     // nop
     cb_set_pos(cb, 0); nop(cb, 1); check_bytes(cb, "90");
+
+    // not
+    /*
+    test(
+        delegate void (CodeBlock cb) { cb.not(X86Opnd(AX)); },
+        "66F7D0"
+    );
+    */
+    cb_set_pos(cb, 0); not(cb, EAX); check_bytes(cb, "F7D0");
+    cb_set_pos(cb, 0); not(cb, mem_opnd(64, R12, 0)); check_bytes(cb, "49F71424");
+    cb_set_pos(cb, 0); not(cb, mem_opnd(32, RSP, 301)); check_bytes(cb, "F794242D010000");
+    cb_set_pos(cb, 0); not(cb, mem_opnd(32, RSP, 0)); check_bytes(cb, "F71424");
+    cb_set_pos(cb, 0); not(cb, mem_opnd(32, RSP, 3)); check_bytes(cb, "F7542403");
+    cb_set_pos(cb, 0); not(cb, mem_opnd(32, RBP, 0)); check_bytes(cb, "F75500");
+    cb_set_pos(cb, 0); not(cb, mem_opnd(32, RBP, 13)); check_bytes(cb, "F7550D");
+    cb_set_pos(cb, 0); not(cb, RAX); check_bytes(cb, "48F7D0");
+    cb_set_pos(cb, 0); not(cb, R11); check_bytes(cb, "49F7D3");
+    cb_set_pos(cb, 0); not(cb, mem_opnd(32, RAX, 0)); check_bytes(cb, "F710");
+    cb_set_pos(cb, 0); not(cb, mem_opnd(32, RSI, 0)); check_bytes(cb, "F716");
+    cb_set_pos(cb, 0); not(cb, mem_opnd(32, RDI, 0)); check_bytes(cb, "F717");
+    cb_set_pos(cb, 0); not(cb, mem_opnd(32, RDX, 55)); check_bytes(cb, "F75237");
+    cb_set_pos(cb, 0); not(cb, mem_opnd(32, RDX, 1337)); check_bytes(cb, "F79239050000");
+    cb_set_pos(cb, 0); not(cb, mem_opnd(32, RDX, -55)); check_bytes(cb, "F752C9");
+    cb_set_pos(cb, 0); not(cb, mem_opnd(32, RDX, -555)); check_bytes(cb, "F792D5FDFFFF");
+    /*
+    test(
+        delegate void (CodeBlock cb) { cb.not(X86Opnd(32, RAX, 0, 1, RBX)); },
+        "F71418"
+    );
+    test(
+        delegate void (CodeBlock cb) { cb.not(X86Opnd(32, RAX, 0, 1, R12)); },
+        "42F71420"
+    );
+    test(
+        delegate void (CodeBlock cb) { cb.not(X86Opnd(32, R15, 0, 1, R12)); },
+        "43F71427"
+    );
+    test(
+        delegate void (CodeBlock cb) { cb.not(X86Opnd(32, R15, 5, 1, R12)); },
+        "43F7542705"
+    );
+    test(
+        delegate void (CodeBlock cb) { cb.not(X86Opnd(32, R15, 5, 8, R12)); },
+        "43F754E705"
+    );
+    test(
+        delegate void (CodeBlock cb) { cb.not(X86Opnd(32, R15, 5, 8, R13)); },
+        "43F754EF05"
+    );
+    test(
+        delegate void (CodeBlock cb) { cb.not(X86Opnd(32, R12, 5, 4, R9)); },
+        "43F7548C05"
+    );
+    test(
+        delegate void (CodeBlock cb) { cb.not(X86Opnd(32, R12, 301, 4, R9)); },
+        "43F7948C2D010000"
+    );
+    test(
+        delegate void (CodeBlock cb) { cb.not(X86Opnd(32, RAX, 5, 4, RDX)); },
+        "F7549005"
+    );
+    test(
+        delegate void (CodeBlock cb) { cb.not(X86Opnd(64, RAX, 0, 2, RDX)); },
+        "48F71450"
+    );
+    test(
+        delegate void (CodeBlock cb) { cb.not(X86Opnd(32, RSP, 0, 1, RBX)); },
+        "F7141C"
+    );
+    test(
+        delegate void (CodeBlock cb) { cb.not(X86Opnd(32, RSP, 3, 1, RBX)); },
+        "F7541C03"
+    );
+    test(
+        delegate void (CodeBlock cb) { cb.not(X86Opnd(32, RBP, 13, 1, RDX)); },
+        "F754150D"
+    );
+    */
+
+    // or
+    /*
+    test(
+        delegate void (CodeBlock cb) { cb.or(X86Opnd(EDX), X86Opnd(ESI)); },
+        "09F2"
+    );
+    */
 
     // pop
     cb_set_pos(cb, 0); pop(cb, RAX); check_bytes(cb, "58");
