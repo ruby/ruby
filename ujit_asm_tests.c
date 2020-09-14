@@ -30,7 +30,7 @@ void check_bytes(codeblock_t* cb, const char* bytes)
 
         if (cb_byte != byte)
         {
-            fprintf(stderr, "incorrect encoding at position %ld, got %X, expected %X\n",
+            fprintf(stderr, "incorrect encoding at position %ld, got %02X, expected %02X\n",
                 i,
                 (int)cb_byte,
                 (int)byte
@@ -47,8 +47,6 @@ void run_tests()
     codeblock_t cb_obj;
     codeblock_t* cb = &cb_obj;
     cb_init(cb, 4096);
-    cb_write_prologue(cb);
-    cb_write_epilogue(cb);
 
     // add
     /*
@@ -81,6 +79,9 @@ void run_tests()
     cb_set_pos(cb, 0); add(cb, RSP, imm_opnd(8)); check_bytes(cb, "4883C408");
     cb_set_pos(cb, 0); add(cb, ECX, imm_opnd(8)); check_bytes(cb, "83C108");
     cb_set_pos(cb, 0); add(cb, ECX, imm_opnd(255)); check_bytes(cb, "81C1FF000000");
+
+    // and
+    cb_set_pos(cb, 0); and(cb, EBP, R12D); check_bytes(cb, "4421E5");
 
     // call
     {
@@ -212,6 +213,10 @@ void run_tests()
     );
     */
     cb_set_pos(cb, 0); mov(cb, mem_opnd(8, RSP, 0), imm_opnd(-3)); check_bytes(cb, "C60424FD");
+    cb_set_pos(cb, 0); mov(cb, mem_opnd(64, RDI, 8), imm_opnd(1)); check_bytes(cb, "48C7470801000000");
+
+    // neg
+    cb_set_pos(cb, 0); neg(cb, RAX); check_bytes(cb, "48F7D8");
 
     // nop
     cb_set_pos(cb, 0); nop(cb, 1); check_bytes(cb, "90");
@@ -295,12 +300,7 @@ void run_tests()
     */
 
     // or
-    /*
-    test(
-        delegate void (CodeBlock cb) { cb.or(X86Opnd(EDX), X86Opnd(ESI)); },
-        "09F2"
-    );
-    */
+    cb_set_pos(cb, 0); or(cb, EDX, ESI); check_bytes(cb, "09F2");
 
     // pop
     cb_set_pos(cb, 0); pop(cb, RAX); check_bytes(cb, "58");
@@ -345,6 +345,14 @@ void run_tests()
     // sub
     cb_set_pos(cb, 0); sub(cb, EAX, imm_opnd(1)); check_bytes(cb, "83E801");
     cb_set_pos(cb, 0); sub(cb, RAX, imm_opnd(2)); check_bytes(cb, "4883E802");
+
+    /*
+    // xor
+    test(
+        delegate void (CodeBlock cb) { cb.xor(X86Opnd(EAX), X86Opnd(EAX)); },
+        "31C0"
+    );
+    */
 
     printf("Assembler tests done\n");
 }

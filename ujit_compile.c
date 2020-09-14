@@ -62,6 +62,11 @@ ujit_compile_insn(rb_iseq_t *iseq, size_t insn_idx)
         ujit_init();
     }
 
+    if (cb->write_pos + 1024 >= cb->mem_size)
+    {
+        rb_bug("out of executable memory");
+    }
+
     int insn = (int)iseq->body->iseq_encoded[insn_idx];
 	int len = insn_len(insn);
     //const char* name = insn_name(insn);
@@ -74,6 +79,9 @@ ujit_compile_insn(rb_iseq_t *iseq, size_t insn_idx)
     uint8_t* code_ptr = &cb->mem_block[cb->write_pos];
     //printf("write pos: %ld\n", cb->write_pos);
 
+    // Write the pre call bytes
+    ujit_instr_entry(cb);
+
     // TODO: encode individual instructions, eg
     // nop, putnil, putobject, putself, pop, dup, getlocal, setlocal, nilp
 
@@ -81,9 +89,6 @@ ujit_compile_insn(rb_iseq_t *iseq, size_t insn_idx)
     // into separate functions
     if (insn == BIN(nop))
     {
-        // Write the pre call bytes
-        ujit_instr_entry(cb);
-
         //add(cb, RSI, imm_opnd(8));                  // increment PC
         //mov(cb, mem_opnd(64, RDI, 0), RSI);         // write new PC to EC object, not necessary for nop bytecode?
         //mov(cb, RAX, RSI);                          // return new PC
@@ -101,10 +106,34 @@ ujit_compile_insn(rb_iseq_t *iseq, size_t insn_idx)
 
     if (insn == BIN(pop))
     {
-        // Write the pre call bytes
-        ujit_instr_entry(cb);
+        // Decrement SP
+        sub(cb, mem_opnd(64, RDI, 8), imm_opnd(8));
 
-        sub(cb, mem_opnd(64, RDI, 8), imm_opnd(8)); // decrement SP
+        // Directly return the next PC, which is a constant
+        mov(cb, RAX, const_ptr_opnd(next_pc));
+
+        // Write the post call bytes
+        ujit_instr_exit(cb);
+
+        addr2insn_bookkeeping(code_ptr, insn);
+
+        return code_ptr;
+    }
+
+    if (insn == BIN(putobject_INT2FIX_0_) || insn == BIN(putobject_INT2FIX_1_))
+    {
+        // Load current SP into RAX
+        mov(cb, RAX, mem_opnd(64, RDI, 8));
+
+        // Write constant at SP
+        int cst = (insn == BIN(putobject_INT2FIX_0_))? 0:1;
+        mov(cb, mem_opnd(64, RAX, 0), imm_opnd(INT2FIX(cst)));
+
+        // Load incremented SP into RCX
+        lea(cb, RCX, mem_opnd(64, RAX, 8));
+
+        // Write back incremented SP
+        mov(cb, mem_opnd(64, RDI, 8), RCX);
 
         // Directly return the next PC, which is a constant
         mov(cb, RAX, const_ptr_opnd(next_pc));
