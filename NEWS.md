@@ -233,6 +233,8 @@ Excluding feature bug fixes.
 
     * The following libraries are promoted the default gems from stdlib.
 
+        * abbrev
+        * base64
         * English
         * erb
         * find
@@ -242,11 +244,19 @@ Excluding feature bug fixes.
         * net-http
         * net-imap
         * net-protocol
+        * nkf
+        * open-uri
         * optparse
+        * resolv
+        * resolv-replace
         * rinda
+        * securerandom
         * set
+        * shellwords
         * tempfile
+        * time
         * tmpdir
+        * tsort
         * weakref
 
 * Bundled gems
