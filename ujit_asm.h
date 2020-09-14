@@ -127,7 +127,7 @@ typedef struct X86Opnd
         int64_t imm;
 
         // Unsigned immediate value
-        uint64_t unsigImm;
+        uint64_t unsig_imm;
     };
 
 } x86opnd_t;
@@ -176,6 +176,9 @@ x86opnd_t mem_opnd(size_t num_bits, x86opnd_t base_reg, int32_t disp);
 
 // Immediate number operand
 x86opnd_t imm_opnd(int64_t val);
+
+// Constant pointer operand
+x86opnd_t const_ptr_opnd(void* ptr);
 
 void cb_init(codeblock_t* cb, size_t mem_size);
 void cb_set_pos(codeblock_t* cb, size_t pos);

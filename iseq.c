@@ -3344,7 +3344,7 @@ trace_set_i(void *vstart, void *vend, size_t stride, void *data)
 }
 
 VALUE *
-rb_ujit_empty_func(rb_control_frame_t *cfp, const VALUE *pc)
+rb_ujit_empty_func(rb_control_frame_t *cfp)
 {
     // okay, not really empty, so maybe think of another name.
     // it's put in this file instead of say, compile.c to dodge long C compile time.

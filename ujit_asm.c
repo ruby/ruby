@@ -97,6 +97,17 @@ x86opnd_t imm_opnd(int64_t imm)
     return opnd;
 }
 
+x86opnd_t const_ptr_opnd(void* ptr)
+{
+    x86opnd_t opnd = {
+        OPND_IMM,
+        64,
+        .unsig_imm = (uint64_t)ptr
+    };
+
+    return opnd;
+}
+
 void cb_init(codeblock_t* cb, size_t mem_size)
 {
     // Map the memory as executable
