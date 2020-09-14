@@ -1314,7 +1314,7 @@ rb_io_from_fd(int f)
 int
 rb_io_wait_readable(int f)
 {
-    VALUE scheduler = rb_thread_current_scheduler();
+    VALUE scheduler = rb_thread_scheduler_if_nonblocking(rb_thread_current());
     if (scheduler != Qnil) {
         return RTEST(
             rb_scheduler_io_wait_readable(scheduler, rb_io_from_fd(f))
@@ -1345,7 +1345,7 @@ rb_io_wait_readable(int f)
 int
 rb_io_wait_writable(int f)
 {
-    VALUE scheduler = rb_thread_current_scheduler();
+    VALUE scheduler = rb_thread_scheduler_if_nonblocking(rb_thread_current());
     if (scheduler != Qnil) {
         return RTEST(
             rb_scheduler_io_wait_writable(scheduler, rb_io_from_fd(f))
@@ -1545,18 +1545,6 @@ io_binwrite(VALUE str, const char *ptr, long len, rb_io_t *fptr, int nosync)
     rb_thread_check_ints();
 
     if ((n = len) <= 0) return n;
-
-    VALUE scheduler = rb_thread_current_scheduler();
-    if (scheduler != Qnil && rb_scheduler_supports_io_write(scheduler)) {
-        ssize_t length = RB_NUM2SSIZE(
-            rb_scheduler_io_write(scheduler, fptr->self, str, offset, len)
-        );
-
-        if (length < 0) rb_sys_fail_path(fptr->pathv);
-
-        return length;
-    }
-
     if (fptr->wbuf.ptr == NULL && !(!nosync && (fptr->mode & FMODE_SYNC))) {
         fptr->wbuf.off = 0;
         fptr->wbuf.len = 0;
@@ -2633,15 +2621,9 @@ io_fread(VALUE str, long offset, long size, rb_io_t *fptr)
 {
     VALUE scheduler = rb_thread_current_scheduler();
     if (scheduler != Qnil && rb_scheduler_supports_io_read(scheduler)) {
-        ssize_t length = RB_NUM2SSIZE(
-            rb_scheduler_io_read(scheduler, fptr->self, str, offset, size)
-        );
-
-        if (length < 0) rb_sys_fail_path(fptr->pathv);
-
-        return length;
+        return rb_scheduler_io_read(scheduler, fptr->self, str, offset, size);
     }
-
+    
     long len;
     struct bufread_arg arg;
 

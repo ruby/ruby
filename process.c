@@ -4926,7 +4926,7 @@ static VALUE
 rb_f_sleep(int argc, VALUE *argv, VALUE _)
 {
     time_t beg = time(0);
-    VALUE scheduler = rb_thread_current_scheduler();
+    VALUE scheduler = rb_thread_scheduler_if_nonblocking(rb_thread_current());
 
     if (scheduler != Qnil) {
         rb_scheduler_kernel_sleepv(scheduler, argc, argv);
