@@ -513,44 +513,44 @@ console_getch(int argc, VALUE *argv, VALUE io)
     int w, len;
     char buf[8];
     wint_t wbuf[2];
-    VALUE timeout = Qnil;
+    struct timeval *to = NULL, tv;
 
     GetOpenFile(io, fptr);
     if (optp) {
-        if (optp->vtime) {
-            struct timeval tv;
-            tv.tv_sec = optp->vtime / 10;
-            tv.tv_usec = (optp->vtime % 10) * 100000;
-            timeout = rb_scheduler_timeout(&tv);
-        }
-        if (optp->vmin != 1) {
-            rb_warning("min option ignored");
-        }
-        if (optp->intr) {
-            VALUE result = RB_NUM2INT(rb_io_wait(io, RUBY_IO_READABLE, timeout));
-            if (result == Qfalse) return Qnil;
-        }
-        else {
-            rb_warning("vtime option ignored if intr flag is unset");
-        }
+	if (optp->vtime) {
+	    to = &tv;
+	    tv.tv_sec = optp->vtime / 10;
+	    tv.tv_usec = (optp->vtime % 10) * 100000;
+	}
+	if (optp->vmin != 1) {
+	    rb_warning("min option ignored");
+	}
+	if (optp->intr) {
+	    w = rb_wait_for_single_fd(fptr->fd, RB_WAITFD_IN, to);
+	    if (w < 0) rb_eof_error();
+	    if (!(w & RB_WAITFD_IN)) return Qnil;
+	}
+	else {
+	    rb_warning("vtime option ignored if intr flag is unset");
+	}
     }
     len = (int)(VALUE)rb_thread_call_without_gvl(nogvl_getch, wbuf, RUBY_UBF_IO, 0);
     switch (len) {
       case 0:
-        return Qnil;
+	return Qnil;
       case 2:
-        buf[0] = (char)wbuf[0];
-        c = wbuf[1];
-        len = 1;
-        do {
-            buf[len++] = (unsigned char)c;
-        } while ((c >>= CHAR_BIT) && len < (int)sizeof(buf));
-        return rb_str_new(buf, len);
+	buf[0] = (char)wbuf[0];
+	c = wbuf[1];
+	len = 1;
+	do {
+	    buf[len++] = (unsigned char)c;
+	} while ((c >>= CHAR_BIT) && len < (int)sizeof(buf));
+	return rb_str_new(buf, len);
       default:
-        c = wbuf[0];
-        len = rb_uv_to_utf8(buf, c);
-        str = rb_utf8_str_new(buf, len);
-        return rb_str_conv_enc(str, NULL, rb_default_external_encoding());
+	c = wbuf[0];
+	len = rb_uv_to_utf8(buf, c);
+	str = rb_utf8_str_new(buf, len);
+	return rb_str_conv_enc(str, NULL, rb_default_external_encoding());
     }
 #endif
 }

@@ -154,8 +154,8 @@ int rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **
 void rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash, int *oflags_p, int *fmode_p, rb_io_enc_t *convconfig_p);
 ssize_t rb_io_bufwrite(VALUE io, const void *buf, size_t size);
 
-int rb_io_wait_readable(int fd);
-int rb_io_wait_writable(int fd);
+int rb_io_wait_readable(int);
+int rb_io_wait_writable(int);
 int rb_wait_for_single_fd(int fd, int events, struct timeval *tv);
 
 VALUE rb_io_wait(VALUE io, VALUE events, VALUE timeout);
