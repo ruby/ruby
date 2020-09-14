@@ -746,6 +746,22 @@ void cb_write_jcc(codeblock_t* cb, const char* mnem, uint8_t op0, uint8_t op1, s
     cb_write_int(cb, 0, 32);
 }
 
+// Encode a conditional move instruction
+/*
+void writeCmov(CodeBlock cb, const char mnem, ubyte opcode1, X86Reg dst, X86Opnd src)
+{
+    //cb.writeASM(mnem, dst, src);
+
+    assert (src.isReg || src.isMem);
+    assert (dst.size >= 16, "invalid dst reg size in cmov");
+
+    auto szPref = dst.size is 16;
+    auto rexW = dst.size is 64;
+
+    cb.writeRMInstr!('r', 0xFF, 0x0F, opcode1)(szPref, rexW, X86Opnd(dst), src);
+}
+*/
+
 // add - Integer addition
 void add(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1)
 {
@@ -760,6 +776,25 @@ void add(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1)
         0x83, // opMemImmSml
         0x81, // opMemImmLrg
         0x00, // opExtImm
+        opnd0,
+        opnd1
+    );
+}
+
+/// and - Bitwise AND
+void and(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1)
+{
+    cb_write_rm_multi(
+        cb,
+        "and",
+        0x20, // opMemReg8
+        0x21, // opMemRegPref
+        0x22, // opRegMem8
+        0x23, // opRegMemPref
+        0x80, // opMemImm8
+        0x83, // opMemImmSml
+        0x81, // opMemImmLrg
+        0x04, // opExtImm
         opnd0,
         opnd1
     );
@@ -786,6 +821,40 @@ void call(codeblock_t* cb, x86opnd_t opnd)
     //cb.writeASM("call", opnd);
     cb_write_rm(cb, false, false, NO_OPND, opnd, 2, 1, 0xFF);
 }
+
+/*
+/// cmovcc - Conditional move
+alias cmova = writeCmov!("cmova", 0x47);
+alias cmovae = writeCmov!("cmovae", 0x43);
+alias cmovb = writeCmov!("cmovb", 0x42);
+alias cmovbe = writeCmov!("cmovbe", 0x46);
+alias cmovc = writeCmov!("cmovc", 0x42);
+alias cmove = writeCmov!("cmove", 0x44);
+alias cmovg = writeCmov!("cmovg", 0x4F);
+alias cmovge = writeCmov!("cmovge", 0x4D);
+alias cmovl = writeCmov!("cmovl", 0x4C);
+alias cmovle = writeCmov!("cmovle", 0x4E);
+alias cmovna = writeCmov!("cmovna", 0x46);
+alias cmovnae = writeCmov!("cmovnae", 0x42);
+alias cmovnb = writeCmov!("cmovnb", 0x43);
+alias cmovnbe = writeCmov!("cmovnbe", 0x47);
+alias cmovnc = writeCmov!("cmovnc", 0x43);
+alias cmovne = writeCmov!("cmovne", 0x45);
+alias cmovnge = writeCmov!("cmovng", 0x4E);
+alias cmovnge = writeCmov!("cmovnge", 0x4C);
+alias cmovnl = writeCmov!("cmovnl", 0x4D);
+alias cmovnle = writeCmov!("cmovnle", 0x4F);
+alias cmovno = writeCmov!("cmovno", 0x41);
+alias cmovnp = writeCmov!("cmovnp", 0x4B);
+alias cmovns = writeCmov!("cmovns", 0x49);
+alias cmovnz = writeCmov!("cmovnz", 0x45);
+alias cmovo = writeCmov!("cmovno", 0x40);
+alias cmovp = writeCmov!("cmovp", 0x4A);
+alias cmovpe = writeCmov!("cmovpe", 0x4A);
+alias cmovpo = writeCmov!("cmovpo", 0x4B);
+alias cmovs = writeCmov!("cmovs", 0x48);
+alias cmovz = writeCmov!("cmovz", 0x44);
+*/
 
 /// cmp - Compare and set flags
 void cmp(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1)
@@ -1094,6 +1163,19 @@ void mov(codeblock_t* cb, x86opnd_t dst, x86opnd_t src)
     }
 }
 
+// neg - Integer negation (multiplication by -1)
+void neg(codeblock_t* cb, x86opnd_t opnd)
+{
+    write_rm_unary(
+        cb,
+        "neg",
+        0xF6, // opMemReg8
+        0xF7, // opMemRegPref
+        0x03,  // opExt
+        opnd
+    );
+}
+
 // nop - Noop, one or multiple bytes long
 void nop(codeblock_t* cb, size_t length)
 {
@@ -1174,32 +1256,23 @@ void not(codeblock_t* cb, x86opnd_t opnd)
     );
 }
 
-/*
 /// or - Bitwise OR
-alias or = writeRMMulti!(
-    "or",
-    0x08, // opMemReg8
-    0x09, // opMemRegPref
-    0x0A, // opRegMem8
-    0x0B, // opRegMemPref
-    0x80, // opMemImm8
-    0x83, // opMemImmSml
-    0x81, // opMemImmLrg
-    0x01  // opExtImm
-);
-*/
-
-/// push - Push a register on the stack
-void push(codeblock_t* cb, x86opnd_t reg)
+void or(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1)
 {
-    assert (reg.num_bits == 64);
-
-    //cb.writeASM("push", reg);
-
-    if (rex_needed(reg))
-        cb_write_rex(cb, false, 0, 0, reg.reg.reg_no);
-
-    cb_write_opcode(cb, 0x50, reg);
+    cb_write_rm_multi(
+        cb,
+        "or",
+        0x08, // opMemReg8
+        0x09, // opMemRegPref
+        0x0A, // opRegMem8
+        0x0B, // opRegMemPref
+        0x80, // opMemImm8
+        0x83, // opMemImmSml
+        0x81, // opMemImmLrg
+        0x01, // opExtImm
+        opnd0,
+        opnd1
+    );
 }
 
 /// pop - Pop a register off the stack
@@ -1213,6 +1286,19 @@ void pop(codeblock_t* cb, x86opnd_t reg)
         cb_write_rex(cb, false, 0, 0, reg.reg.reg_no);
 
     cb_write_opcode(cb, 0x58, reg);
+}
+
+/// push - Push a register on the stack
+void push(codeblock_t* cb, x86opnd_t reg)
+{
+    assert (reg.num_bits == 64);
+
+    //cb.writeASM("push", reg);
+
+    if (rex_needed(reg))
+        cb_write_rex(cb, false, 0, 0, reg.reg.reg_no);
+
+    cb_write_opcode(cb, 0x50, reg);
 }
 
 /// ret - Return from call, popping only the return address
@@ -1299,3 +1385,18 @@ void sub(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1)
         opnd1
     );
 }
+
+/*
+/// xor - Exclusive bitwise OR
+alias xor = writeRMMulti!(
+    "xor",
+    0x30, // opMemReg8
+    0x31, // opMemRegPref
+    0x32, // opRegMem8
+    0x33, // opRegMemPref
+    0x80, // opMemImm8
+    0x83, // opMemImmSml
+    0x81, // opMemImmLrg
+    0x06  // opExtImm
+);
+*/
