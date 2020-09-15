@@ -11,6 +11,20 @@
 // TODO: give ujit_examples.h some more meaningful file name
 #include "ujit_examples.h"
 
+// Code generation context
+typedef struct ctx_struct
+{
+    // TODO: virtual stack pointer handling
+
+} ctx_t;
+
+// Code generation function
+typedef void (*codegen_fn)(codeblock_t* cb, ctx_t* ctx);
+
+// Map from YARV opcodes to code generation functions
+static st_table *gen_fns;
+
+// Code block into which we write machine code
 static codeblock_t block;
 static codeblock_t* cb = NULL;
 
@@ -76,6 +90,15 @@ ujit_compile_insn(rb_iseq_t *iseq, size_t insn_idx)
     //const char* name = insn_name(insn);
     //printf("%s\n", name);
 
+    // Lookup the codegen function for this instruction
+    st_data_t st_gen_fn;
+    int found = rb_st_lookup(gen_fns, insn, &st_gen_fn);
+
+    if (!found)
+        return 0;
+
+    codegen_fn gen_fn = (codegen_fn)st_gen_fn;
+
     // Compute the address of the next instruction
     void *next_pc = &iseq->body->iseq_encoded[insn_idx + len];
 
@@ -86,44 +109,28 @@ ujit_compile_insn(rb_iseq_t *iseq, size_t insn_idx)
     // Write the pre call bytes
     ujit_instr_entry(cb);
 
-    // TODO: encode individual instructions, eg
-    // nop, putnil, putobject, putself, pop, dup, getlocal, setlocal, nilp
+    // TODO: create codegen context
 
-    // TODO: we should move the codegen for individual instructions
-    // into separate functions
-    if (insn == BIN(nop))
-    {
-        //add(cb, RSI, imm_opnd(8));                  // increment PC
-        //mov(cb, mem_opnd(64, RDI, 0), RSI);         // write new PC to CFP object, not necessary for nop bytecode?
-        //mov(cb, RAX, RSI);                          // return new PC
+    // Call the code generation function
+    gen_fn(cb, NULL);
 
-        // Directly return the next PC, which is a constant
-        mov(cb, RAX, const_ptr_opnd(next_pc));
+    // Directly return the next PC, which is a constant
+    mov(cb, RAX, const_ptr_opnd(next_pc));
 
-        // Write the post call bytes
-        ujit_instr_exit(cb);
+    // Write the post call bytes
+    ujit_instr_exit(cb);
 
-        addr2insn_bookkeeping(code_ptr, insn);
+    addr2insn_bookkeeping(code_ptr, insn);
 
-        return code_ptr;
-    }
+    return code_ptr;
 
-    if (insn == BIN(pop))
-    {
-        // Decrement SP
-        sub(cb, mem_opnd(64, RDI, 8), imm_opnd(8));
 
-        // Directly return the next PC, which is a constant
-        mov(cb, RAX, const_ptr_opnd(next_pc));
 
-        // Write the post call bytes
-        ujit_instr_exit(cb);
 
-        addr2insn_bookkeeping(code_ptr, insn);
 
-        return code_ptr;
-    }
 
+
+    /*
     if (insn == BIN(putobject_INT2FIX_0_) || insn == BIN(putobject_INT2FIX_1_))
     {
         // Load current SP into RAX
@@ -149,6 +156,7 @@ ujit_compile_insn(rb_iseq_t *iseq, size_t insn_idx)
 
         return code_ptr;
     }
+    */
 
     // TODO: implement putself
     /*
@@ -164,6 +172,7 @@ ujit_compile_insn(rb_iseq_t *iseq, size_t insn_idx)
     }
     */
 
+    /*
     if (insn == BIN(getlocal_WC_0))
     {
         //printf("compiling getlocal_WC_0\n");
@@ -199,8 +208,17 @@ ujit_compile_insn(rb_iseq_t *iseq, size_t insn_idx)
 
         addr2insn_bookkeeping(code_ptr, insn);
     }
+    */
+}
 
-    return 0;
+void gen_nop(codeblock_t* cb, ctx_t* ctx)
+{
+}
+
+void gen_pop(codeblock_t* cb, ctx_t* ctx)
+{
+    // Decrement SP
+    sub(cb, mem_opnd(64, RDI, 8), imm_opnd(8));
 }
 
 static void ujit_init()
@@ -208,4 +226,11 @@ static void ujit_init()
     // 4MB ought to be enough for anybody
     cb = &block;
     cb_init(cb, 4000000);
+
+    // Initialize the codegen function table
+    gen_fns = rb_st_init_numtable();
+
+    // Map YARV opcodes to the corresponding codegen functions
+    st_insert(gen_fns, (st_data_t)BIN(nop), (st_data_t)&gen_nop);
+    st_insert(gen_fns, (st_data_t)BIN(pop), (st_data_t)&gen_pop);
 }
