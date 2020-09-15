@@ -11,6 +11,9 @@
 // Dummy none/null operand
 const x86opnd_t NO_OPND = { OPND_NONE, 0, .imm = 0 };
 
+// Instruction pointer
+const x86opnd_t RIP = { OPND_REG, 64, .reg = { REG_IP, 5 }};
+
 // 64-bit GP registers
 const x86opnd_t RAX = { OPND_REG, 64, .reg = { REG_GP, 0 }};
 const x86opnd_t RCX = { OPND_REG, 64, .reg = { REG_GP, 1 }};
@@ -77,10 +80,12 @@ size_t unsig_imm_size(uint64_t imm)
 
 x86opnd_t mem_opnd(size_t num_bits, x86opnd_t base_reg, int32_t disp)
 {
+    bool is_iprel = base_reg.reg.reg_type == REG_IP;
+
     x86opnd_t opnd = {
         OPND_MEM,
         num_bits,
-        .mem = { base_reg.reg.reg_no, 0, 0, false, false, disp }
+        .mem = { base_reg.reg.reg_no, 0, 0, false, is_iprel, disp }
     };
 
     return opnd;
@@ -542,7 +547,7 @@ void cb_write_rm(
         cb_write_byte(cb, sib_byte);
     }
 
-    // Add the displacement size
+    // Add the displacement
     if (rm_opnd.type == OPND_MEM)
     {
         size_t dsize = disp_size(rm_opnd);
@@ -1285,6 +1290,15 @@ void pop(codeblock_t* cb, x86opnd_t reg)
     cb_write_opcode(cb, 0x58, reg);
 }
 
+/// popfq - Pop the flags register (64-bit)
+void popfq(codeblock_t* cb)
+{
+    //cb.writeASM("popfq");
+
+    // REX.W + 0x9D
+    cb_write_bytes(cb, 2, 0x48, 0x9D);
+}
+
 /// push - Push a register on the stack
 void push(codeblock_t* cb, x86opnd_t reg)
 {
@@ -1296,6 +1310,13 @@ void push(codeblock_t* cb, x86opnd_t reg)
         cb_write_rex(cb, false, 0, 0, reg.reg.reg_no);
 
     cb_write_opcode(cb, 0x50, reg);
+}
+
+/// pushfq - Push the flags register (64-bit)
+void pushfq(codeblock_t* cb)
+{
+    //cb.writeASM("pushfq");
+    cb_write_byte(cb, 0x9C);
 }
 
 /// ret - Return from call, popping only the return address
