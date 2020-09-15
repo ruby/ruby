@@ -3331,11 +3331,13 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
     }
 
     // update iseq. really? (TODO)
-    cd->ci = vm_ci_new_runtime(me->def->original_id,
-                               vm_ci_flag(cd->ci),
-                               vm_ci_argc(cd->ci),
-                               vm_ci_kwarg(cd->ci));
-    RB_OBJ_WRITTEN(reg_cfp->iseq, Qundef, cd->ci);
+    if (!vm_ci_mid(cd->ci)) {
+        cd->ci = vm_ci_new_runtime(me->def->original_id,
+                                   vm_ci_flag(cd->ci),
+                                   vm_ci_argc(cd->ci),
+                                   vm_ci_kwarg(cd->ci));
+        RB_OBJ_WRITTEN(reg_cfp->iseq, Qundef, cd->ci);
+    }
 
     klass = vm_search_normal_superclass(me->defined_class);
 
