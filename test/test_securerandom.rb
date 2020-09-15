@@ -175,7 +175,7 @@ end
   end
 
   def assert_in_range(range, result, mesg = nil)
-    assert(range.cover?(result), build_message(mesg) {"Expected #{result} to be in #{range}"})
+    assert(range.cover?(result), message(mesg) {"Expected #{result} to be in #{range}"})
   end
 
   def test_with_openssl
