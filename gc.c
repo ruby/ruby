@@ -4430,7 +4430,7 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page,
     struct heap_page * cursor = heap->compact_cursor;
     char from_freelist = 0;
 
-    GC_ASSERT(RVALUE_MARKED(dest) == FALSE);
+    GC_ASSERT(!MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(dest), dest));
 
     /* Since every destination slot is a T_NONE, we need this flag to
      * differentiate between slots that just got freed, and slots that were
@@ -8376,7 +8376,7 @@ gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free)
     gc_report(4, objspace, "Moving object: %p -> %p\n", (void*)scan, (void *)free);
 
     GC_ASSERT(BUILTIN_TYPE(scan) != T_NONE);
-    GC_ASSERT(RVALUE_MARKED(free) == FALSE);
+    GC_ASSERT(!MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(free), free));
 
     /* Save off bits for current object. */
     marked = rb_objspace_marked_object_p((VALUE)src);
