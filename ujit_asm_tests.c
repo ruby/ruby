@@ -169,6 +169,7 @@ void run_tests()
     // lea
     //cb_set_pos(cb, 0); lea(cb, EBX, mem_opnd(32, RSP, 4)); check_bytes(cb, "8D5C2404");
     cb_set_pos(cb, 0); lea(cb, RDX, mem_opnd(64, RCX, 8)); check_bytes(cb, "488D5108");
+    //cb_set_pos(cb, 0); lea(cb, RAX, mem_opnd(8, RIP, 5)); check_bytes(cb, "488D042505000000");
 
     // mov
     cb_set_pos(cb, 0); mov(cb, EAX, imm_opnd(7)); check_bytes(cb, "B807000000");

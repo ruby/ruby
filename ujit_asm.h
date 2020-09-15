@@ -62,8 +62,7 @@ enum OpndType
     OPND_NONE,
     OPND_REG,
     OPND_IMM,
-    OPND_MEM,
-    //OPND_IPREL
+    OPND_MEM
 };
 
 enum RegType
@@ -134,6 +133,9 @@ typedef struct X86Opnd
 
 // Dummy none/null operand
 const x86opnd_t NO_OPND;
+
+// Instruction pointer
+const x86opnd_t RIP;
 
 // 64-bit GP registers
 const x86opnd_t RAX;
@@ -270,7 +272,9 @@ void nop(codeblock_t* cb, size_t length);
 void not(codeblock_t* cb, x86opnd_t opnd);
 void or(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1);
 void pop(codeblock_t* cb, x86opnd_t reg);
+void popfq(codeblock_t* cb);
 void push(codeblock_t* cb, x86opnd_t reg);
+void pushfq(codeblock_t* cb);
 void ret(codeblock_t* cb);
 void sal(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1);
 void sar(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1);
