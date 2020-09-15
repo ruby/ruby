@@ -5636,6 +5636,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 
       case T_FILE:
         if (any->as.file.fptr) {
+            gc_mark(objspace, any->as.file.fptr->self);
             gc_mark(objspace, any->as.file.fptr->pathv);
             gc_mark(objspace, any->as.file.fptr->tied_io_for_writing);
             gc_mark(objspace, any->as.file.fptr->writeconv_asciicompat);
@@ -8555,6 +8556,7 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
 
       case T_FILE:
         if (any->as.file.fptr) {
+            UPDATE_IF_MOVED(objspace, any->as.file.fptr->self);
             UPDATE_IF_MOVED(objspace, any->as.file.fptr->pathv);
             UPDATE_IF_MOVED(objspace, any->as.file.fptr->tied_io_for_writing);
             UPDATE_IF_MOVED(objspace, any->as.file.fptr->writeconv_asciicompat);
