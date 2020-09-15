@@ -51,8 +51,11 @@ addr2insn_bookkeeping(void *code_ptr, int insn)
     }
 }
 
-// Generate a chunk of machinecode for one individual bytecode instruction
+// Generate a chunk of machine code for one individual bytecode instruction
 // Eventually, this will handle multiple instructions in a sequence
+//
+// MicroJIT code gets a pointer to the cfp as the first argument in RSI
+// See rb_ujit_empty_func(rb_control_frame_t *cfp) in iseq.c
 uint8_t *
 ujit_compile_insn(rb_iseq_t *iseq, size_t insn_idx)
 {
@@ -69,14 +72,15 @@ ujit_compile_insn(rb_iseq_t *iseq, size_t insn_idx)
 
     int insn = (int)iseq->body->iseq_encoded[insn_idx];
 	int len = insn_len(insn);
+
     //const char* name = insn_name(insn);
     //printf("%s\n", name);
 
     // Compute the address of the next instruction
-    void* next_pc = &iseq->body->iseq_encoded[insn_idx + len];
+    void *next_pc = &iseq->body->iseq_encoded[insn_idx + len];
 
     // Get a pointer to the current write position in the code block
-    uint8_t* code_ptr = &cb->mem_block[cb->write_pos];
+    uint8_t *code_ptr = &cb->mem_block[cb->write_pos];
     //printf("write pos: %ld\n", cb->write_pos);
 
     // Write the pre call bytes
@@ -90,7 +94,7 @@ ujit_compile_insn(rb_iseq_t *iseq, size_t insn_idx)
     if (insn == BIN(nop))
     {
         //add(cb, RSI, imm_opnd(8));                  // increment PC
-        //mov(cb, mem_opnd(64, RDI, 0), RSI);         // write new PC to EC object, not necessary for nop bytecode?
+        //mov(cb, mem_opnd(64, RDI, 0), RSI);         // write new PC to CFP object, not necessary for nop bytecode?
         //mov(cb, RAX, RSI);                          // return new PC
 
         // Directly return the next PC, which is a constant
@@ -126,8 +130,8 @@ ujit_compile_insn(rb_iseq_t *iseq, size_t insn_idx)
         mov(cb, RAX, mem_opnd(64, RDI, 8));
 
         // Write constant at SP
-        int cst = (insn == BIN(putobject_INT2FIX_0_))? 0:1;
-        mov(cb, mem_opnd(64, RAX, 0), imm_opnd(INT2FIX(cst)));
+        int cst_val = (insn == BIN(putobject_INT2FIX_0_))? 0:1;
+        mov(cb, mem_opnd(64, RAX, 0), imm_opnd(INT2FIX(cst_val)));
 
         // Load incremented SP into RCX
         lea(cb, RCX, mem_opnd(64, RAX, 8));
@@ -144,6 +148,56 @@ ujit_compile_insn(rb_iseq_t *iseq, size_t insn_idx)
         addr2insn_bookkeeping(code_ptr, insn);
 
         return code_ptr;
+    }
+
+    // TODO: implement putself
+    /*
+    if (insn == BIN(putself))
+    {
+    }
+    */
+
+    // TODO: implement putobject
+    /*
+    if (insn == BIN(putobject))
+    {
+    }
+    */
+
+    if (insn == BIN(getlocal_WC_0))
+    {
+        //printf("compiling getlocal_WC_0\n");
+
+        // Load current SP from CFP
+        mov(cb, RAX, mem_opnd(64, RDI, 8));
+
+        // Load block pointer from CFP
+        mov(cb, RDX, mem_opnd(64, RDI, 32));
+
+        // TODO: we may want a macro or helper function to get insn operands
+        // Compute the offset from BP to the local
+        int32_t opnd0 = (int)iseq->body->iseq_encoded[insn_idx+1];
+        const int32_t offs = -8 * opnd0;
+
+        // Load the local from the block
+        mov(cb, RCX, mem_opnd(64, RDX, offs));
+
+        // Write the local at SP
+        mov(cb, mem_opnd(64, RAX, 0), RCX);
+
+        // Compute address of incremented SP
+        lea(cb, RCX, mem_opnd(64, RAX, 8));
+
+        // Write back incremented SP
+        mov(cb, mem_opnd(64, RDI, 8), RCX);
+
+        // Directly return the next PC, which is a constant
+        mov(cb, RAX, const_ptr_opnd(next_pc));
+
+        // Write the post call bytes
+        ujit_instr_exit(cb);
+
+        addr2insn_bookkeeping(code_ptr, insn);
     }
 
     return 0;
