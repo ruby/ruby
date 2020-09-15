@@ -4934,7 +4934,7 @@ gc_mark_stack_values(rb_objspace_t *objspace, long n, const VALUE *values)
 
     for (i=0; i<n; i++) {
         if (is_markable_object(objspace, values[i])) {
-            gc_mark(objspace, values[i]);
+            gc_mark_and_pin(objspace, values[i]);
         }
     }
 }
