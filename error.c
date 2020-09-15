@@ -2630,7 +2630,7 @@ exception_loader(VALUE exc, VALUE obj)
     // In the former case, the first argument is an instance of Exception (because
     // we pass rb_eException to rb_marshal_define_compat). In the latter case, the first
     // argument is a class object (see TYPE_USERDEF case in r_object0).
-    // We want to copy all instance variables (but "bt_locations) from obj to exc.
+    // We want to copy all instance variables (but "bt_locations") from obj to exc.
     // But we do not want to do so in the second case, so the following branch is for that.
     if (RB_TYPE_P(exc, T_CLASS)) return obj; // maybe called from Marshal's TYPE_USERDEF
 
