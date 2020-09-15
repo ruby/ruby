@@ -747,20 +747,19 @@ void cb_write_jcc(codeblock_t* cb, const char* mnem, uint8_t op0, uint8_t op1, s
 }
 
 // Encode a conditional move instruction
-/*
-void writeCmov(CodeBlock cb, const char mnem, ubyte opcode1, X86Reg dst, X86Opnd src)
+void cb_write_cmov(codeblock_t* cb, const char* mnem, uint8_t opcode1, x86opnd_t dst, x86opnd_t src)
 {
     //cb.writeASM(mnem, dst, src);
 
-    assert (src.isReg || src.isMem);
-    assert (dst.size >= 16, "invalid dst reg size in cmov");
+    assert (dst.type == OPND_REG);
+    assert (src.type == OPND_REG || src.type == OPND_MEM);
+    assert (dst.num_bits >= 16 && "invalid dst reg size in cmov");
 
-    auto szPref = dst.size is 16;
-    auto rexW = dst.size is 64;
+    bool szPref = dst.num_bits == 16;
+    bool rexW = dst.num_bits == 64;
 
-    cb.writeRMInstr!('r', 0xFF, 0x0F, opcode1)(szPref, rexW, X86Opnd(dst), src);
+    cb_write_rm(cb, szPref, rexW, dst, src, 0xFF, 2, 0x0F, opcode1);
 }
-*/
 
 // add - Integer addition
 void add(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1)
@@ -822,39 +821,37 @@ void call(codeblock_t* cb, x86opnd_t opnd)
     cb_write_rm(cb, false, false, NO_OPND, opnd, 2, 1, 0xFF);
 }
 
-/*
 /// cmovcc - Conditional move
-alias cmova = writeCmov!("cmova", 0x47);
-alias cmovae = writeCmov!("cmovae", 0x43);
-alias cmovb = writeCmov!("cmovb", 0x42);
-alias cmovbe = writeCmov!("cmovbe", 0x46);
-alias cmovc = writeCmov!("cmovc", 0x42);
-alias cmove = writeCmov!("cmove", 0x44);
-alias cmovg = writeCmov!("cmovg", 0x4F);
-alias cmovge = writeCmov!("cmovge", 0x4D);
-alias cmovl = writeCmov!("cmovl", 0x4C);
-alias cmovle = writeCmov!("cmovle", 0x4E);
-alias cmovna = writeCmov!("cmovna", 0x46);
-alias cmovnae = writeCmov!("cmovnae", 0x42);
-alias cmovnb = writeCmov!("cmovnb", 0x43);
-alias cmovnbe = writeCmov!("cmovnbe", 0x47);
-alias cmovnc = writeCmov!("cmovnc", 0x43);
-alias cmovne = writeCmov!("cmovne", 0x45);
-alias cmovnge = writeCmov!("cmovng", 0x4E);
-alias cmovnge = writeCmov!("cmovnge", 0x4C);
-alias cmovnl = writeCmov!("cmovnl", 0x4D);
-alias cmovnle = writeCmov!("cmovnle", 0x4F);
-alias cmovno = writeCmov!("cmovno", 0x41);
-alias cmovnp = writeCmov!("cmovnp", 0x4B);
-alias cmovns = writeCmov!("cmovns", 0x49);
-alias cmovnz = writeCmov!("cmovnz", 0x45);
-alias cmovo = writeCmov!("cmovno", 0x40);
-alias cmovp = writeCmov!("cmovp", 0x4A);
-alias cmovpe = writeCmov!("cmovpe", 0x4A);
-alias cmovpo = writeCmov!("cmovpo", 0x4B);
-alias cmovs = writeCmov!("cmovs", 0x48);
-alias cmovz = writeCmov!("cmovz", 0x44);
-*/
+void cmova(codeblock_t* cb, x86opnd_t dst, x86opnd_t src) { cb_write_cmov(cb, "cmova", 0x47, dst, src); }
+void cmovae(codeblock_t* cb, x86opnd_t dst, x86opnd_t src) { cb_write_cmov(cb, "cmovae", 0x43, dst, src); }
+void cmovb(codeblock_t* cb, x86opnd_t dst, x86opnd_t src) { cb_write_cmov(cb, "cmovb", 0x42, dst, src); }
+void cmovbe(codeblock_t* cb, x86opnd_t dst, x86opnd_t src) { cb_write_cmov(cb, "cmovbe", 0x46, dst, src); }
+void cmovc(codeblock_t* cb, x86opnd_t dst, x86opnd_t src) { cb_write_cmov(cb, "cmovc", 0x42, dst, src); }
+void cmove(codeblock_t* cb, x86opnd_t dst, x86opnd_t src) { cb_write_cmov(cb, "cmove", 0x44, dst, src); }
+void cmovg(codeblock_t* cb, x86opnd_t dst, x86opnd_t src) { cb_write_cmov(cb, "cmovg", 0x4F, dst, src); }
+void cmovge(codeblock_t* cb, x86opnd_t dst, x86opnd_t src) { cb_write_cmov(cb, "cmovge", 0x4D, dst, src); }
+void cmovl(codeblock_t* cb, x86opnd_t dst, x86opnd_t src) { cb_write_cmov(cb, "cmovl", 0x4C, dst, src); }
+void cmovle(codeblock_t* cb, x86opnd_t dst, x86opnd_t src) { cb_write_cmov(cb, "cmovle", 0x4E, dst, src); }
+void cmovna(codeblock_t* cb, x86opnd_t dst, x86opnd_t src) { cb_write_cmov(cb, "cmovna", 0x46, dst, src); }
+void cmovnae(codeblock_t* cb, x86opnd_t dst, x86opnd_t src) { cb_write_cmov(cb, "cmovnae", 0x42, dst, src); }
+void cmovnb(codeblock_t* cb, x86opnd_t dst, x86opnd_t src) { cb_write_cmov(cb, "cmovnb", 0x43, dst, src); }
+void cmovnbe(codeblock_t* cb, x86opnd_t dst, x86opnd_t src) { cb_write_cmov(cb, "cmovnbe", 0x47, dst, src); }
+void cmovnc(codeblock_t* cb, x86opnd_t dst, x86opnd_t src) { cb_write_cmov(cb, "cmovnc", 0x43, dst, src); }
+void cmovne(codeblock_t* cb, x86opnd_t dst, x86opnd_t src) { cb_write_cmov(cb, "cmovne", 0x45, dst, src); }
+void cmovng(codeblock_t* cb, x86opnd_t dst, x86opnd_t src) { cb_write_cmov(cb, "cmovng", 0x4E, dst, src); }
+void cmovnge(codeblock_t* cb, x86opnd_t dst, x86opnd_t src) { cb_write_cmov(cb, "cmovnge", 0x4C, dst, src); }
+void cmovnl(codeblock_t* cb, x86opnd_t dst, x86opnd_t src) { cb_write_cmov(cb, "cmovnl" , 0x4D, dst, src); }
+void cmovnle(codeblock_t* cb, x86opnd_t dst, x86opnd_t src) { cb_write_cmov(cb, "cmovnle", 0x4F, dst, src); }
+void cmovno(codeblock_t* cb, x86opnd_t dst, x86opnd_t src) { cb_write_cmov(cb, "cmovno", 0x41, dst, src); }
+void cmovnp(codeblock_t* cb, x86opnd_t dst, x86opnd_t src) { cb_write_cmov(cb, "cmovnp", 0x4B, dst, src); }
+void cmovns(codeblock_t* cb, x86opnd_t dst, x86opnd_t src) { cb_write_cmov(cb, "cmovns", 0x49, dst, src); }
+void cmovnz(codeblock_t* cb, x86opnd_t dst, x86opnd_t src) { cb_write_cmov(cb, "cmovnz", 0x45, dst, src); }
+void cmovo(codeblock_t* cb, x86opnd_t dst, x86opnd_t src) { cb_write_cmov(cb, "cmovo", 0x40, dst, src); }
+void cmovp(codeblock_t* cb, x86opnd_t dst, x86opnd_t src) { cb_write_cmov(cb, "cmovp", 0x4A, dst, src); }
+void cmovpe(codeblock_t* cb, x86opnd_t dst, x86opnd_t src) { cb_write_cmov(cb, "cmovpe", 0x4A, dst, src); }
+void cmovpo(codeblock_t* cb, x86opnd_t dst, x86opnd_t src) { cb_write_cmov(cb, "cmovpo", 0x4B, dst, src); }
+void cmovs(codeblock_t* cb, x86opnd_t dst, x86opnd_t src) { cb_write_cmov(cb, "cmovs", 0x48, dst, src); }
+void cmovz(codeblock_t* cb, x86opnd_t dst, x86opnd_t src) { cb_write_cmov(cb, "cmovz", 0x44, dst, src); }
 
 /// cmp - Compare and set flags
 void cmp(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1)
@@ -1386,17 +1383,21 @@ void sub(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1)
     );
 }
 
-/*
 /// xor - Exclusive bitwise OR
-alias xor = writeRMMulti!(
-    "xor",
-    0x30, // opMemReg8
-    0x31, // opMemRegPref
-    0x32, // opRegMem8
-    0x33, // opRegMemPref
-    0x80, // opMemImm8
-    0x83, // opMemImmSml
-    0x81, // opMemImmLrg
-    0x06  // opExtImm
-);
-*/
+void xor(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1)
+{
+    cb_write_rm_multi(
+        cb,
+        "xor",
+        0x30, // opMemReg8
+        0x31, // opMemRegPref
+        0x32, // opRegMem8
+        0x33, // opRegMemPref
+        0x80, // opMemImm8
+        0x83, // opMemImmSml
+        0x81, // opMemImmLrg
+        0x06, // opExtImm
+        opnd0,
+        opnd1
+    );
+}
