@@ -3,6 +3,29 @@ require 'test/unit'
 require 'fiddle'
 
 class TestGCCompact < Test::Unit::TestCase
+  def test_enable_autocompact
+    GC.disable_autocompact
+    assert GC.enable_autocompact
+    refute GC.enable_autocompact
+    GC.disable_autocompact
+  end
+
+  def test_disable_autocompact
+    GC.disable_autocompact
+    assert GC.disable_autocompact
+    GC.enable_autocompact
+    refute GC.disable_autocompact
+  end
+
+  def test_major_compacts
+    GC.enable_autocompact
+    compact = GC.stat :compact_count
+    GC.start
+    assert_operator GC.stat(:compact_count), :>, compact
+  ensure
+    GC.disable_autocompact
+  end
+
   def memory_location(obj)
     (Fiddle.dlwrap(obj) >> 1)
   end
