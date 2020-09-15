@@ -2636,7 +2636,7 @@ exception_loader(VALUE exc, VALUE obj)
 
     rb_ivar_foreach(obj, ivar_copy_i, exc);
 
-    if (rb_ivar_get(exc, id_bt) == rb_ivar_get(exc, id_bt_locations)) {
+    if (rb_attr_get(exc, id_bt) == rb_attr_get(exc, id_bt_locations)) {
         rb_ivar_set(exc, id_bt_locations, Qnil);
     }
 
