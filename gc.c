@@ -982,6 +982,7 @@ int ruby_gc_debug_indent = 0;
 #endif
 VALUE rb_mGC;
 int ruby_disable_gc = 0;
+int ruby_enable_autocompact = 0;
 
 void rb_iseq_mark(const rb_iseq_t *iseq);
 void rb_iseq_update_references(rb_iseq_t *iseq);
@@ -5116,7 +5117,7 @@ gc_sweep(rb_objspace_t *objspace)
 	struct heap_page *page = NULL;
 	gc_sweep_start(objspace);
 
-        if (is_full_marking(objspace)) {
+        if (ruby_enable_autocompact && is_full_marking(objspace)) {
             gc_compact_start(objspace, heap_eden);
         }
 
@@ -6976,7 +6977,9 @@ gc_marks_start(rb_objspace_t *objspace, int full_mark)
                        objspace->marked_slots, objspace->rincgc.pooled_slots, objspace->rincgc.step_slots);
 #endif
 	objspace->flags.during_minor_gc = FALSE;
-	objspace->flags.during_compacting = TRUE;
+        if (ruby_enable_autocompact) {
+            objspace->flags.during_compacting = TRUE;
+        }
 	objspace->profile.major_gc_count++;
 	objspace->rgengc.uncollectible_wb_unprotected_objects = 0;
 	objspace->rgengc.old_objects = 0;
@@ -9768,6 +9771,22 @@ static VALUE
 gc_disable(rb_execution_context_t *ec, VALUE _)
 {
     return rb_gc_disable();
+}
+
+static VALUE
+gc_enable_autocompact(rb_execution_context_t *ec, VALUE _)
+{
+    int old = ruby_enable_autocompact;
+    ruby_enable_autocompact = 1;
+    return old ? Qfalse : Qtrue;
+}
+
+static VALUE
+gc_disable_autocompact(rb_execution_context_t *ec, VALUE _)
+{
+    int old = ruby_enable_autocompact;
+    ruby_enable_autocompact = 0;
+    return old ? Qfalse : Qtrue;
 }
 
 static int
