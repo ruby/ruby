@@ -8214,6 +8214,7 @@ prep_io(int fd, int fmode, VALUE klass, const char *path)
     VALUE io = io_alloc(klass);
 
     MakeOpenFile(io, fp);
+    fp->self = io;
     fp->fd = fd;
     fp->mode = fmode;
     if (!io_check_tty(fp)) {
@@ -8297,6 +8298,7 @@ static inline rb_io_t *
 rb_io_fptr_new(void)
 {
     rb_io_t *fp = ALLOC(rb_io_t);
+    fp->self = Qnil;
     fp->fd = -1;
     fp->stdio_file = NULL;
     fp->mode = 0;
@@ -8329,11 +8331,12 @@ rb_io_make_open_file(VALUE obj)
 
     Check_Type(obj, T_FILE);
     if (RFILE(obj)->fptr) {
-	rb_io_close(obj);
-	rb_io_fptr_finalize(RFILE(obj)->fptr);
-	RFILE(obj)->fptr = 0;
+        rb_io_close(obj);
+        rb_io_fptr_finalize(RFILE(obj)->fptr);
+        RFILE(obj)->fptr = 0;
     }
     fp = rb_io_fptr_new();
+    fp->self = obj;
     RFILE(obj)->fptr = fp;
     return fp;
 }
