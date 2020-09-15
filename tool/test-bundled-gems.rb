@@ -25,7 +25,7 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
 
   puts test_command
   pid = Process.spawn(test_env, test_command, "#{/mingw|mswin/ =~ RUBY_PLATFORM ? 'new_' : ''}pgroup": true)
-  {nil => 60, INT: 30, TERM: 10, KILL: nil}.each do |sig, sec|
+  {nil => 180, INT: 30, TERM: 10, KILL: nil}.each do |sig, sec|
     if sig
       puts "Sending #{sig} signal"
       Process.kill("-#{sig}", pid)
