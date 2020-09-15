@@ -83,7 +83,7 @@ describe "BigDecimal#to_s" do
     end
   end
 
-  ruby_version_is "2.8" do
+  ruby_version_is "3.0" do
     it "returns a String in US-ASCII encoding when Encoding.default_internal is nil" do
       Encoding.default_internal = nil
       BigDecimal('1.23').to_s.encoding.should equal(Encoding::US_ASCII)

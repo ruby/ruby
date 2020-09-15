@@ -41,7 +41,7 @@ describe "Mutex#owned?" do
     end
   end
 
-  ruby_version_is "2.8" do
+  ruby_version_is "3.0" do
     it "is held per Fiber" do
       m = Mutex.new
       m.lock

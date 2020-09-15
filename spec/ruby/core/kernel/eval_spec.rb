@@ -159,7 +159,7 @@ describe "Kernel#eval" do
     end
   end
 
-  ruby_version_is ""..."2.8" do
+  ruby_version_is ""..."3.0" do
     it "uses the filename of the binding if none is provided" do
       eval("__FILE__").should == "(eval)"
       suppress_warning {eval("__FILE__", binding)}.should == __FILE__
@@ -170,7 +170,7 @@ describe "Kernel#eval" do
     end
   end
 
-  ruby_version_is "2.8" do
+  ruby_version_is "3.0" do
     it "uses (eval) filename if none is provided" do
       eval("__FILE__").should == "(eval)"
       eval("__FILE__", binding).should == "(eval)"

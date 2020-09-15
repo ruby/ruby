@@ -19,7 +19,7 @@ describe "Kernel#__dir__" do
     end
   end
 
-  ruby_version_is ""..."2.8" do
+  ruby_version_is ""..."3.0" do
     context "when used in eval with top level binding" do
       it "returns the real name of the directory containing the currently-executing file" do
         eval("__dir__", binding).should == File.realpath(File.dirname(__FILE__))
@@ -27,7 +27,7 @@ describe "Kernel#__dir__" do
     end
   end
 
-  ruby_version_is "2.8" do
+  ruby_version_is "3.0" do
     context "when used in eval with top level binding" do
       it "returns nil" do
         eval("__dir__", binding).should == nil

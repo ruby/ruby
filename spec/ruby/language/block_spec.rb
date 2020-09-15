@@ -44,7 +44,7 @@ describe "A block yielded a single" do
       m([1, 2]) { |a, **k| [a, k] }.should == [1, {}]
     end
 
-    ruby_version_is ''..."2.8" do
+    ruby_version_is ''..."3.0" do
       it "assigns elements to mixed argument types" do
         suppress_keyword_warning do
           result = m([1, 2, 3, {x: 9}]) { |a, b=5, *c, d, e: 2, **k| [a, b, c, d, e, k] }
@@ -70,7 +70,7 @@ describe "A block yielded a single" do
       end
     end
 
-    ruby_version_is "2.8" do
+    ruby_version_is "3.0" do
       it "assigns elements to mixed argument types" do
         result = m([1, 2, 3, {x: 9}]) { |a, b=5, *c, d, e: 2, **k| [a, b, c, d, e, k] }
         result.should == [1, 2, [3], {x: 9}, 2, {}]
@@ -102,7 +102,7 @@ describe "A block yielded a single" do
       end
     end
 
-    ruby_version_is "2.7"...'2.8' do
+    ruby_version_is "2.7"...'3.0' do
       it "calls #to_hash on the argument but ignores result when optional argument and keyword argument accepted" do
         obj = mock("coerce block keyword arguments")
         obj.should_receive(:to_hash).and_return({"a" => 1, "b" => 2})
@@ -112,7 +112,7 @@ describe "A block yielded a single" do
       end
     end
 
-    ruby_version_is "2.8" do
+    ruby_version_is "3.0" do
       it "does not call #to_hash on the argument when optional argument and keyword argument accepted and does not autosplat" do
         obj = mock("coerce block keyword arguments")
         obj.should_not_receive(:to_hash)
@@ -123,7 +123,7 @@ describe "A block yielded a single" do
     end
 
     describe "when non-symbol keys are in a keyword arguments Hash" do
-      ruby_version_is ""..."2.8" do
+      ruby_version_is ""..."3.0" do
         it "separates non-symbol keys and symbol keys" do
           suppress_keyword_warning do
             result = m(["a" => 10, b: 2]) { |a=nil, **b| [a, b] }
@@ -131,7 +131,7 @@ describe "A block yielded a single" do
           end
         end
       end
-      ruby_version_is "2.8" do
+      ruby_version_is "3.0" do
         it "does not separate non-symbol keys and symbol keys and does not autosplat" do
           suppress_keyword_warning do
             result = m(["a" => 10, b: 2]) { |a=nil, **b| [a, b] }
@@ -141,21 +141,21 @@ describe "A block yielded a single" do
       end
     end
 
-    ruby_version_is ""..."2.8" do
+    ruby_version_is ""..."3.0" do
       it "does not treat hashes with string keys as keyword arguments" do
         result = m(["a" => 10]) { |a = nil, **b| [a, b] }
         result.should == [{"a" => 10}, {}]
       end
     end
 
-    ruby_version_is "2.8" do
+    ruby_version_is "3.0" do
       it "does not treat hashes with string keys as keyword arguments and does not autosplat" do
         result = m(["a" => 10]) { |a = nil, **b| [a, b] }
         result.should == [[{"a" => 10}], {}]
       end
     end
 
-    ruby_version_is ''...'2.8' do
+    ruby_version_is ''...'3.0' do
       it "calls #to_hash on the last element if keyword arguments are present" do
         suppress_keyword_warning do
           obj = mock("destructure block keyword arguments")
@@ -202,7 +202,7 @@ describe "A block yielded a single" do
       end
     end
 
-    ruby_version_is '2.8' do
+    ruby_version_is '3.0' do
       it "does not call #to_hash on the last element if keyword arguments are present" do
         obj = mock("destructure block keyword arguments")
         obj.should_not_receive(:to_hash)

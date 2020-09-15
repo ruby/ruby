@@ -285,7 +285,7 @@ describe "A class definition extending an object (sclass)" do
     }.should raise_error(TypeError)
   end
 
-  ruby_version_is ""..."2.8" do
+  ruby_version_is ""..."3.0" do
     it "allows accessing the block of the original scope" do
       suppress_warning do
         ClassSpecs.sclass_with_block { 123 }.should == 123
@@ -293,7 +293,7 @@ describe "A class definition extending an object (sclass)" do
     end
   end
 
-  ruby_version_is "2.8" do
+  ruby_version_is "3.0" do
     it "does not allow accessing the block of the original scope" do
       -> {
         ClassSpecs.sclass_with_block { 123 }

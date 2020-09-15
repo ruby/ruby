@@ -21,7 +21,7 @@ describe :hash_each, shared: true do
     ary.sort.should == ["a", "b", "c"]
   end
 
-  ruby_version_is ""..."2.8" do
+  ruby_version_is ""..."3.0" do
     it "yields 2 values and not an Array of 2 elements when given a callable of arity 2" do
       obj = Object.new
       def obj.foo(key, value)
@@ -38,7 +38,7 @@ describe :hash_each, shared: true do
     end
   end
 
-  ruby_version_is "2.8" do
+  ruby_version_is "3.0" do
     it "yields an Array of 2 elements when given a callable of arity 2" do
       obj = Object.new
       def obj.foo(key, value)

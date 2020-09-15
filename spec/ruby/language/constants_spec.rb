@@ -154,7 +154,7 @@ describe "Literal (A::X) constant resolution" do
     -> { ConstantSpecs::ParentA::CS_CONSTX }.should raise_error(NameError)
   end
 
-  ruby_version_is "2.8" do
+  ruby_version_is "3.0" do
     it "uses the module or class #name to craft the error message" do
       mod = Module.new do
         def self.name

@@ -32,7 +32,7 @@ ruby_version_is "2.7" do
       }.should raise_error(SyntaxError, /numbered parameter is already used in.+ outer block here/m)
     end
 
-    ruby_version_is '2.7'...'2.8' do
+    ruby_version_is '2.7'...'3.0' do
       it "can be overwritten with local variable" do
         suppress_warning do
           eval <<~CODE
@@ -49,7 +49,7 @@ ruby_version_is "2.7" do
       end
     end
 
-    ruby_version_is '2.8' do
+    ruby_version_is '3.0' do
       it "cannot be overwritten with local variable" do
         -> {
           eval <<~CODE
