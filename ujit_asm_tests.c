@@ -94,29 +94,12 @@ void run_tests()
     cb_set_pos(cb, 0); call(cb, RAX); check_bytes(cb, "FFD0");
     cb_set_pos(cb, 0); call(cb, mem_opnd(64, RSP, 8)); check_bytes(cb, "FF542408");
 
-    /*
     // cmovcc
-    test(
-        delegate void (CodeBlock cb) { cb.cmovg(ESI, X86Opnd(EDI)); },
-        "0F4FF7"
-    );
-    test(
-        delegate void (CodeBlock cb) { cb.cmovg(ESI, X86Opnd(32, RBP, 12)); },
-        "0F4F750C"
-    );
-    test(
-        delegate void (CodeBlock cb) { cb.cmovl(EAX, X86Opnd(ECX)); },
-        "0F4CC1"
-    );
-    test(
-        delegate void (CodeBlock cb) { cb.cmovl(RBX, X86Opnd(RBP)); },
-        "480F4CDD"
-    );
-    test(
-        delegate void (CodeBlock cb) { cb.cmovle(ESI, X86Opnd(32, RSP, 4)); },
-        "0F4E742404"
-    );
-    */
+    cb_set_pos(cb, 0); cmovg(cb, ESI, EDI); check_bytes(cb, "0F4FF7");
+    cb_set_pos(cb, 0); cmovg(cb, ESI, mem_opnd(32, RBP, 12)); check_bytes(cb, "0F4F750C");
+    cb_set_pos(cb, 0); cmovl(cb, EAX, ECX); check_bytes(cb, "0F4CC1");
+    cb_set_pos(cb, 0); cmovl(cb, RBX, RBP); check_bytes(cb, "480F4CDD");
+    cb_set_pos(cb, 0); cmovle(cb, ESI, mem_opnd(32, RSP, 4)); check_bytes(cb, "0F4E742404");
 
     // cmp
     /*
@@ -346,13 +329,8 @@ void run_tests()
     cb_set_pos(cb, 0); sub(cb, EAX, imm_opnd(1)); check_bytes(cb, "83E801");
     cb_set_pos(cb, 0); sub(cb, RAX, imm_opnd(2)); check_bytes(cb, "4883E802");
 
-    /*
     // xor
-    test(
-        delegate void (CodeBlock cb) { cb.xor(X86Opnd(EAX), X86Opnd(EAX)); },
-        "31C0"
-    );
-    */
+    cb_set_pos(cb, 0); xor(cb, EAX, EAX); check_bytes(cb, "31C0");
 
     printf("Assembler tests done\n");
 }
