@@ -1306,7 +1306,7 @@ rb_io_from_fd(int f)
     rb_io_t *fptr;
     RB_IO_POINTER(io, fptr);
 
-    fptr->mode &= ~FMODE_PREP;
+    fptr->mode |= FMODE_PREP;
 
     return io;
 }
