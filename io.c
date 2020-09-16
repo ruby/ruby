@@ -216,6 +216,7 @@ static VALUE sym_HOLE;
 #endif
 
 static VALUE rb_io_initialize(int argc, VALUE *argv, VALUE io);
+static VALUE prep_io(int fd, int fmode, VALUE klass, const char *path);
 
 struct argf {
     VALUE filename, current_file;
@@ -1295,20 +1296,10 @@ rb_io_wait(VALUE io, VALUE events, VALUE timeout) {
     }
 }
 
-VALUE
-rb_io_from_fd(int f)
+static VALUE
+rb_io_from_fd(int fd)
 {
-    VALUE io = rb_obj_alloc(rb_cIO);
-    VALUE argv[] = {RB_INT2NUM(f)};
-
-    rb_io_initialize(1, argv, io);
-
-    rb_io_t *fptr;
-    RB_IO_POINTER(io, fptr);
-
-    fptr->mode |= FMODE_PREP;
-
-    return io;
+    return prep_io(fd, FMODE_PREP, rb_cIO, NULL);
 }
 
 int
