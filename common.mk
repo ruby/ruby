@@ -1070,7 +1070,7 @@ incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}known_errors.inc \
       {$(VPATH)}vm_call_iseq_optimized.inc $(srcdir)/revision.h \
       $(REVISION_H) \
       $(UNICODE_DATA_HEADERS) $(srcdir)/enc/jis/props.h \
-      {$(VPATH)}id.h {$(VPATH)}probes.dmyh
+      {$(VPATH)}id.h {$(VPATH)}probes.dmyh {$(VPATH)}ujit_exmaples.h
 
 insns: $(INSNS)
 
@@ -6959,7 +6959,6 @@ iseq.$(OBJEXT): {$(VPATH)}util.h
 iseq.$(OBJEXT): {$(VPATH)}vm_callinfo.h
 iseq.$(OBJEXT): {$(VPATH)}vm_core.h
 iseq.$(OBJEXT): {$(VPATH)}vm_opts.h
-iseq.$(OBJEXT): {$(VPATH)}ujit_examples.h
 load.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 load.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 load.$(OBJEXT): $(CCAN_DIR)/list/list.h
@@ -14372,6 +14371,7 @@ transient_heap.$(OBJEXT): {$(VPATH)}vm_core.h
 transient_heap.$(OBJEXT): {$(VPATH)}vm_debug.h
 transient_heap.$(OBJEXT): {$(VPATH)}vm_opts.h
 transient_heap.$(OBJEXT): {$(VPATH)}vm_sync.h
+ujit_compile.$(OBJEXT): {$(VPATH)}ujit_examples.h
 util.$(OBJEXT): $(hdrdir)/ruby.h
 util.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 util.$(OBJEXT): $(top_srcdir)/internal/compilers.h
