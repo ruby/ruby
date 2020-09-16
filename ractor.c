@@ -1224,6 +1224,7 @@ vm_insert_ractor(rb_vm_t *vm, rb_ractor_t *r)
         else {
             vm_ractor_blocking_cnt_inc(vm, r, __FILE__, __LINE__);
 
+            RUBY_DEBUG_LOG("ruby_multi_ractor=true", 0);
             // enable multi-ractor mode
             ruby_multi_ractor = true;
 
