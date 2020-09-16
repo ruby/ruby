@@ -983,7 +983,7 @@ int ruby_gc_debug_indent = 0;
 #endif
 VALUE rb_mGC;
 int ruby_disable_gc = 0;
-int ruby_enable_autocompact = 0;
+int ruby_enable_autocompact = 1;
 
 void rb_iseq_mark(const rb_iseq_t *iseq);
 void rb_iseq_update_references(rb_iseq_t *iseq);
