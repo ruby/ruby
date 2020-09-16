@@ -7,6 +7,7 @@ require 'reline/key_actor'
 require 'reline/key_stroke'
 require 'reline/line_editor'
 require 'reline/history'
+require 'rbconfig'
 
 module Reline
   FILENAME_COMPLETION_PROC = nil
@@ -98,22 +99,22 @@ module Reline
     end
 
     def completion_proc=(p)
-      raise ArgumentError unless p.respond_to?(:call)
+      raise ArgumentError unless p.respond_to?(:call) or p.nil?
       @completion_proc = p
     end
 
     def output_modifier_proc=(p)
-      raise ArgumentError unless p.respond_to?(:call)
+      raise ArgumentError unless p.respond_to?(:call) or p.nil?
       @output_modifier_proc = p
     end
 
     def prompt_proc=(p)
-      raise ArgumentError unless p.respond_to?(:call)
+      raise ArgumentError unless p.respond_to?(:call) or p.nil?
       @prompt_proc = p
     end
 
     def auto_indent_proc=(p)
-      raise ArgumentError unless p.respond_to?(:call)
+      raise ArgumentError unless p.respond_to?(:call) or p.nil?
       @auto_indent_proc = p
     end
 
@@ -122,7 +123,7 @@ module Reline
     end
 
     def dig_perfect_match_proc=(p)
-      raise ArgumentError unless p.respond_to?(:call)
+      raise ArgumentError unless p.respond_to?(:call) or p.nil?
       @dig_perfect_match_proc = p
     end
 
@@ -222,7 +223,6 @@ module Reline
       line_editor.auto_indent_proc = auto_indent_proc
       line_editor.dig_perfect_match_proc = dig_perfect_match_proc
       line_editor.pre_input_hook = pre_input_hook
-      line_editor.rerender
 
       unless config.test_mode
         config.read
@@ -231,6 +231,8 @@ module Reline
           config.add_default_key_binding(key, func)
         end
       end
+
+      line_editor.rerender
 
       begin
         loop do
@@ -243,6 +245,8 @@ module Reline
           break if line_editor.finished?
         end
         Reline::IOGate.move_cursor_column(0)
+      rescue Errno::EIO
+        # Maybe the I/O has been closed.
       rescue StandardError => e
         line_editor.finalize
         Reline::IOGate.deprep(otio)

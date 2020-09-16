@@ -35,6 +35,12 @@ class Reline::Unicode
   }
   EscapedChars = EscapedPairs.keys.map(&:chr)
 
+  CSI_REGEXP = /\e\[[\d;]*[ABCDEFGHJKSTfminsuhl]/
+  OSC_REGEXP = /\e\]\d+(?:;[^;]+)*\a/
+  NON_PRINTING_START = "\1"
+  NON_PRINTING_END = "\2"
+  WIDTH_SCANNER = /\G(?:#{NON_PRINTING_START}|#{NON_PRINTING_END}|#{CSI_REGEXP}|#{OSC_REGEXP}|\X)/
+
   def self.get_mbchar_byte_size_by_first_char(c)
     # Checks UTF-8 character byte size
     case c.ord
@@ -83,6 +89,68 @@ class Reline::Unicode
     else
       nil
     end
+  end
+
+  def self.calculate_width(str, allow_escape_code = false)
+    if allow_escape_code
+      width = 0
+      rest = str.encode(Encoding::UTF_8)
+      in_zero_width = false
+      rest.scan(WIDTH_SCANNER) do |gc|
+        case gc
+        when NON_PRINTING_START
+          in_zero_width = true
+        when NON_PRINTING_END
+          in_zero_width = false
+        when CSI_REGEXP, OSC_REGEXP
+        else
+          unless in_zero_width
+            width += get_mbchar_width(gc)
+          end
+        end
+      end
+      width
+    else
+      str.encode(Encoding::UTF_8).grapheme_clusters.inject(0) { |w, gc|
+        w + get_mbchar_width(gc)
+      }
+    end
+  end
+
+  def self.split_by_width(str, max_width, encoding = str.encoding)
+    lines = [String.new(encoding: encoding)]
+    height = 1
+    width = 0
+    rest = str.encode(Encoding::UTF_8)
+    in_zero_width = false
+    rest.scan(WIDTH_SCANNER) do |gc|
+      case gc
+      when NON_PRINTING_START
+        in_zero_width = true
+      when NON_PRINTING_END
+        in_zero_width = false
+      when CSI_REGEXP, OSC_REGEXP
+        lines.last << gc
+      else
+        unless in_zero_width
+          mbchar_width = get_mbchar_width(gc)
+          if (width += mbchar_width) > max_width
+            width = mbchar_width
+            lines << nil
+            lines << String.new(encoding: encoding)
+            height += 1
+          end
+        end
+        lines.last << gc
+      end
+    end
+    # The cursor moves to next line in first
+    if width == max_width
+      lines << nil
+      lines << String.new(encoding: encoding)
+      height += 1
+    end
+    [lines, height]
   end
 
   def self.get_next_mbchar_size(line, byte_pointer)

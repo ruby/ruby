@@ -1,9 +1,5 @@
-require 'pathname'
-
 class Reline::Config
   attr_reader :test_mode
-
-  DEFAULT_PATH = '~/.inputrc'
 
   KEYSEQ_PATTERN = /\\(?:C|Control)-[A-Za-z_]|\\(?:M|Meta)-[0-9A-Za-z_]|\\(?:C|Control)-(?:M|Meta)-[A-Za-z_]|\\(?:M|Meta)-(?:C|Control)-[A-Za-z_]|\\e|\\[\\\"\'abdfnrtv]|\\\d{1,3}|\\x\h{1,2}|./
 
@@ -37,6 +33,10 @@ class Reline::Config
     show-all-if-ambiguous
     show-all-if-unmodified
     visible-stats
+    show-mode-in-prompt
+    vi-cmd-mode-icon
+    vi-ins-mode-icon
+    emacs-mode-string
   }
   VARIABLE_NAME_SYMBOLS = VARIABLE_NAMES.map { |v| :"#{v.tr(?-, ?_)}" }
   VARIABLE_NAME_SYMBOLS.each do |v|
@@ -54,7 +54,11 @@ class Reline::Config
     @key_actors[:emacs] = Reline::KeyActor::Emacs.new
     @key_actors[:vi_insert] = Reline::KeyActor::ViInsert.new
     @key_actors[:vi_command] = Reline::KeyActor::ViCommand.new
-    @history_size = 500
+    @vi_cmd_mode_icon = '(cmd)'
+    @vi_ins_mode_icon = '(ins)'
+    @emacs_mode_string = '@'
+    # https://tiswww.case.edu/php/chet/readline/readline.html#IDX25
+    @history_size = -1 # unlimited
     @keyseq_timeout = 500
     @test_mode = false
   end
@@ -86,14 +90,31 @@ class Reline::Config
   def inputrc_path
     case ENV['INPUTRC']
     when nil, ''
-      DEFAULT_PATH
     else
-      ENV['INPUTRC']
+      return File.expand_path(ENV['INPUTRC'])
     end
+
+    # In the XDG Specification, if ~/.config/readline/inputrc exists, then
+    # ~/.inputrc should not be read, but for compatibility with GNU Readline,
+    # if ~/.inputrc exists, then it is given priority.
+    home_rc_path = File.expand_path('~/.inputrc')
+    return home_rc_path if File.exist?(home_rc_path)
+
+    case path = ENV['XDG_CONFIG_HOME']
+    when nil, ''
+    else
+      path = File.join(path, 'readline/inputrc')
+      return path if File.exist?(path) and path == File.expand_path(path)
+    end
+
+    path = File.expand_path('~/.config/readline/inputrc')
+    return path if File.exist?(path)
+
+    return home_rc_path
   end
 
   def read(file = nil)
-    file ||= File.expand_path(inputrc_path)
+    file ||= inputrc_path
     begin
       if file.respond_to?(:readlines)
         lines = file.readlines
@@ -144,7 +165,7 @@ class Reline::Config
 
       case line
       when /^set +([^ ]+) +([^ ]+)/i
-        var, value = $1.downcase, $2.downcase
+        var, value = $1.downcase, $2
         bind_variable(var, value)
         next
       when /\s*("#{KEYSEQ_PATTERN}+")\s*:\s*(.*)\s*$/o
@@ -194,7 +215,11 @@ class Reline::Config
   def bind_variable(name, value)
     case name
     when 'history-size'
-      @history_size = value.to_i
+      begin
+        @history_size = Integer(value)
+      rescue ArgumentError
+        @history_size = 500
+      end
     when 'bell-style'
       @bell_style =
         case value
@@ -233,9 +258,32 @@ class Reline::Config
       end
     when 'keyseq-timeout'
       @keyseq_timeout = value.to_i
+    when 'show-mode-in-prompt'
+      case value
+      when 'off'
+        @show_mode_in_prompt = false
+      when 'on'
+        @show_mode_in_prompt = true
+      else
+        @show_mode_in_prompt = false
+      end
+    when 'vi-cmd-mode-string'
+      @vi_cmd_mode_icon = retrieve_string(value)
+    when 'vi-ins-mode-string'
+      @vi_ins_mode_icon = retrieve_string(value)
+    when 'emacs-mode-string'
+      @emacs_mode_string = retrieve_string(value)
     when *VARIABLE_NAMES then
       variable_name = :"@#{name.tr(?-, ?_)}"
       instance_variable_set(variable_name, value.nil? || value == '1' || value == 'on')
+    end
+  end
+
+  def retrieve_string(str)
+    if str =~ /\A"(.*)"\z/
+      parse_keyseq($1).map(&:chr).join
+    else
+      parse_keyseq(str).map(&:chr).join
     end
   end
 

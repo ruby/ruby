@@ -1625,7 +1625,7 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_line('')
   end
 
-  def test_ed_search_prev_history
+  def test_vi_search_prev
     Reline::HISTORY.concat(%w{abc 123 AAA})
     assert_line('')
     assert_byte_pointer_size('')
@@ -1897,12 +1897,162 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
   end
 
   def test_modify_lines_with_wrong_rs
+    verbose, $VERBOSE = $VERBOSE, nil
     original_global_slash = $/
     $/ = 'b'
+    $VERBOSE = verbose
     @line_editor.output_modifier_proc = proc { |output| Reline::Unicode.escape_for_print(output) }
     input_keys("abcdef\n")
-    assert_equal(['abcdef'], @line_editor.__send__(:modify_lines, @line_editor.whole_lines))
+    result = @line_editor.__send__(:modify_lines, @line_editor.whole_lines)
+    $/ = nil
+    assert_equal(['abcdef'], result)
+  ensure
+    $VERBOSE = nil
     $/ = original_global_slash
+    $VERBOSE = verbose
+  end
+
+  def test_ed_search_prev_history
+    Reline::HISTORY.concat([
+      '12356', # old
+      '12aaa',
+      '12345' # new
+    ])
+    input_keys('123')
+    # The ed_search_prev_history doesn't have default binding
+    @line_editor.__send__(:ed_search_prev_history, "\C-p".ord)
+    assert_byte_pointer_size('123')
+    assert_cursor(3)
+    assert_cursor_max(5)
+    assert_line('12345')
+    @line_editor.__send__(:ed_search_prev_history, "\C-p".ord)
+    assert_byte_pointer_size('123')
+    assert_cursor(3)
+    assert_cursor_max(5)
+    assert_line('12356')
+    @line_editor.__send__(:ed_search_prev_history, "\C-p".ord)
+    assert_byte_pointer_size('123')
+    assert_cursor(3)
+    assert_cursor_max(5)
+    assert_line('12356')
+  end
+
+  def test_ed_search_prev_history_with_empty
+    Reline::HISTORY.concat([
+      '12356', # old
+      '12aaa',
+      '12345' # new
+    ])
+    # The ed_search_prev_history doesn't have default binding
+    @line_editor.__send__(:ed_search_prev_history, "\C-p".ord)
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(5)
+    assert_line('12345')
+    @line_editor.__send__(:ed_search_prev_history, "\C-p".ord)
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(5)
+    assert_line('12aaa')
+    @line_editor.__send__(:ed_search_prev_history, "\C-p".ord)
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(5)
+    assert_line('12356')
+    @line_editor.__send__(:ed_search_prev_history, "\C-p".ord)
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(5)
+    assert_line('12356')
+  end
+
+  def test_ed_search_prev_history_without_match
+    Reline::HISTORY.concat([
+      '12356', # old
+      '12aaa',
+      '12345' # new
+    ])
+    input_keys('ABC')
+    # The ed_search_prev_history doesn't have default binding
+    @line_editor.__send__(:ed_search_prev_history, "\C-p".ord)
+    assert_byte_pointer_size('ABC')
+    assert_cursor(3)
+    assert_cursor_max(3)
+    assert_line('ABC')
+  end
+
+  def test_ed_search_next_history
+    Reline::HISTORY.concat([
+      '12356', # old
+      '12aaa',
+      '12345' # new
+    ])
+    input_keys('123')
+    # The ed_search_prev_history and ed_search_next_history doesn't have default binding
+    @line_editor.__send__(:ed_search_prev_history, "\C-p".ord)
+    assert_byte_pointer_size('123')
+    assert_cursor(3)
+    assert_cursor_max(5)
+    assert_line('12345')
+    @line_editor.__send__(:ed_search_prev_history, "\C-p".ord)
+    assert_byte_pointer_size('123')
+    assert_cursor(3)
+    assert_cursor_max(5)
+    assert_line('12356')
+    @line_editor.__send__(:ed_search_prev_history, "\C-p".ord)
+    assert_byte_pointer_size('123')
+    assert_cursor(3)
+    assert_cursor_max(5)
+    assert_line('12356')
+    @line_editor.__send__(:ed_search_next_history, "\C-n".ord)
+    assert_byte_pointer_size('123')
+    assert_cursor(3)
+    assert_cursor_max(5)
+    assert_line('12345')
+    @line_editor.__send__(:ed_search_next_history, "\C-n".ord)
+    assert_byte_pointer_size('123')
+    assert_cursor(3)
+    assert_cursor_max(5)
+    assert_line('12345')
+  end
+
+  def test_ed_search_next_history_with_empty
+    Reline::HISTORY.concat([
+      '12356', # old
+      '12aaa',
+      '12345' # new
+    ])
+    # The ed_search_prev_history and ed_search_next_history doesn't have default binding
+    @line_editor.__send__(:ed_search_prev_history, "\C-p".ord)
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(5)
+    assert_line('12345')
+    @line_editor.__send__(:ed_search_prev_history, "\C-p".ord)
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(5)
+    assert_line('12aaa')
+    @line_editor.__send__(:ed_search_prev_history, "\C-p".ord)
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(5)
+    assert_line('12356')
+    @line_editor.__send__(:ed_search_next_history, "\C-n".ord)
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(5)
+    assert_line('12aaa')
+    @line_editor.__send__(:ed_search_next_history, "\C-n".ord)
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(5)
+    assert_line('12345')
+    @line_editor.__send__(:ed_search_next_history, "\C-n".ord)
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    assert_line('')
   end
 
 =begin # TODO: move KeyStroke instance from Reline to LineEditor

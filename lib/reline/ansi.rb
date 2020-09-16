@@ -28,11 +28,21 @@ class Reline::ANSI
     [27, 71, 67] => :ed_next_char,        # →
     [27, 71, 68] => :ed_prev_char,        # ←
 
+    # urxvt / exoterm
+    [27, 91, 55, 126] => :ed_move_to_beg, # Home
+    [27, 91, 56, 126] => :ed_move_to_end, # End
+
     # GNOME
     [27, 79, 72] => :ed_move_to_beg,      # Home
     [27, 79, 70] => :ed_move_to_end,      # End
     # Del is 0x08
     # Arrow keys are the same of KDE
+
+    # iTerm2
+    [27, 27, 91, 67] => :em_next_word,    # Option+→
+    [27, 27, 91, 68] => :ed_prev_word,    # Option+←
+    [195, 166] => :em_next_word,          # Option+f
+    [195, 162] => :ed_prev_word,          # Option+b
 
     # others
     [27, 32] => :em_set_mark,             # M-<space>
@@ -61,8 +71,13 @@ class Reline::ANSI
     unless @@buf.empty?
       return @@buf.shift
     end
-    c = @@input.raw(intr: true, &:getbyte)
+    until c = @@input.raw(intr: true, &:getbyte)
+      sleep 0.1
+    end
     (c == 0x16 && @@input.raw(min: 0, tim: 0, &:getbyte)) || c
+  rescue Errno::EIO
+    # Maybe the I/O has been closed.
+    nil
   end
 
   def self.ungetc(c)
@@ -105,10 +120,13 @@ class Reline::ANSI
       @@input.raw do |stdin|
         @@output << "\e[6n"
         @@output.flush
-        while (c = stdin.getc) != 'R'
-          res << c if c
+        loop do
+          c = stdin.getc
+          next if c.nil?
+          res << c
+          m = res.match(/\e\[(?<row>\d+);(?<column>\d+)R/)
+          break if m
         end
-        m = res.match(/\e\[(?<row>\d+);(?<column>\d+)/)
         (m.pre_match + m.post_match).chars.reverse_each do |ch|
           stdin.ungetc ch
         end
@@ -116,9 +134,16 @@ class Reline::ANSI
       column = m[:column].to_i - 1
       row = m[:row].to_i - 1
     rescue Errno::ENOTTY
-      buf = @@output.pread(@@output.pos, 0)
-      row = buf.count("\n")
-      column = buf.rindex("\n") ? (buf.size - buf.rindex("\n")) - 1 : 0
+      begin
+        buf = @@output.pread(@@output.pos, 0)
+        row = buf.count("\n")
+        column = buf.rindex("\n") ? (buf.size - buf.rindex("\n")) - 1 : 0
+      rescue Errno::ESPIPE
+        # Just returns column 1 for ambiguous width because this I/O is not
+        # tty and can't seek.
+        row = 0
+        column = 1
+      end
     end
     Reline::CursorPos.new(column, row)
   end
