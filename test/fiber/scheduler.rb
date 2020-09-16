@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 
+# This is an example and simplified scheduler for test purposes.
+# It is not efficient for a large number of file descriptors as it uses IO.select().
+# Production Fiber schedulers should use epoll/kqueue/etc.
+
 require 'fiber'
 require 'socket'
 
