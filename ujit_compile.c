@@ -85,8 +85,11 @@ VALUE ctx_get_arg(ctx_t* ctx, size_t arg_idx)
 Generate a chunk of machine code for one individual bytecode instruction
 Eventually, this will handle multiple instructions in a sequence
 
-MicroJIT code gets a pointer to the cfp as the first argument in RSI
+MicroJIT code gets a pointer to the cfp as the first argument in RDI
 See rb_ujit_empty_func(rb_control_frame_t *cfp) in iseq.c
+
+System V ABI reference:
+https://wiki.osdev.org/System_V_ABI#x86-64
 */
 uint8_t *
 ujit_compile_insn(rb_iseq_t *iseq, size_t insn_idx)
@@ -186,7 +189,6 @@ void gen_getlocal_wc0(codeblock_t* cb, ctx_t* ctx)
     // Load block pointer from CFP
     mov(cb, RDX, mem_opnd(64, RDI, 32));
 
-    // TODO: we may want a macro or helper function to get insn operands
     // Compute the offset from BP to the local
     int32_t local_idx = (int32_t)ctx_get_arg(ctx, 0);
     const int32_t offs = -8 * local_idx;

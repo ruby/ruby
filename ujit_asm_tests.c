@@ -4,6 +4,17 @@
 #include <assert.h>
 #include "ujit_asm.h"
 
+// Print the bytes in a code block
+void print_bytes(codeblock_t* cb)
+{
+    for (size_t i = 0; i < cb->write_pos; ++i)
+    {
+        printf("%02X", (int)cb->mem_block[i]);
+    }
+
+    printf("\n");
+}
+
 // Check that the code block contains the given sequence of bytes
 void check_bytes(codeblock_t* cb, const char* bytes)
 {
@@ -15,7 +26,12 @@ void check_bytes(codeblock_t* cb, const char* bytes)
 
     if (cb->write_pos != num_bytes)
     {
-        fprintf(stderr, "incorrect encoding length %ld, expected %ld\n", cb->write_pos, num_bytes);
+        fprintf(stderr, "incorrect encoding length, expected %ld, got %ld\n",
+            num_bytes,
+            cb->write_pos
+        );
+        printf("%s\n", bytes);
+        print_bytes(cb);
         exit(-1);
     }
 
@@ -30,11 +46,13 @@ void check_bytes(codeblock_t* cb, const char* bytes)
 
         if (cb_byte != byte)
         {
-            fprintf(stderr, "incorrect encoding at position %ld, got %02X, expected %02X\n",
+            fprintf(stderr, "incorrect encoding at position %ld, expected %02X, got %02X\n",
                 i,
-                (int)cb_byte,
-                (int)byte
+                (int)byte,
+                (int)cb_byte
             );
+            printf("%s\n", bytes);
+            print_bytes(cb);
             exit(-1);
         }
     }
@@ -167,9 +185,10 @@ void run_tests()
     cb_set_pos(cb, 0); jmp_rm(cb, R12); check_bytes(cb, "41FFE4");
 
     // lea
-    //cb_set_pos(cb, 0); lea(cb, EBX, mem_opnd(32, RSP, 4)); check_bytes(cb, "8D5C2404");
     cb_set_pos(cb, 0); lea(cb, RDX, mem_opnd(64, RCX, 8)); check_bytes(cb, "488D5108");
-    //cb_set_pos(cb, 0); lea(cb, RAX, mem_opnd(8, RIP, 5)); check_bytes(cb, "488D042505000000");
+    cb_set_pos(cb, 0); lea(cb, RAX, mem_opnd(8, RIP, 0)); check_bytes(cb, "488D0500000000");
+    cb_set_pos(cb, 0); lea(cb, RAX, mem_opnd(8, RIP, 5)); check_bytes(cb, "488D0505000000");
+    cb_set_pos(cb, 0); lea(cb, RDI, mem_opnd(8, RIP, 5)); check_bytes(cb, "488D3D05000000");
 
     // mov
     cb_set_pos(cb, 0); mov(cb, EAX, imm_opnd(7)); check_bytes(cb, "B807000000");
