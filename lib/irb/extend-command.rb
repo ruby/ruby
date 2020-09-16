@@ -121,6 +121,10 @@ module IRB # :nodoc:
         [:help, NO_OVERRIDE],
       ],
 
+      [
+        :irb_info, :Info, "irb/cmd/info"
+      ],
+
     ]
 
     # Installs the default irb commands:
@@ -169,11 +173,14 @@ module IRB # :nodoc:
             args << "&block"
             args = args.join(", ")
             line = __LINE__; eval %[
-              def #{cmd_name}(\#{args})
-            ExtendCommand::#{cmd_class}.execute(irb_context, \#{args})
+              unless self.class.class_variable_defined?(:@@#{cmd_name}_)
+              self.class.class_variable_set(:@@#{cmd_name}_, true)
+                def #{cmd_name}_(\#{args})
+                  ExtendCommand::#{cmd_class}.execute(irb_context, \#{args})
+                end
               end
             ], nil, __FILE__, line
-            send :#{cmd_name}, *opts, &b
+            send :#{cmd_name}_, *opts, &b
           end
         ], nil, __FILE__, line
       else

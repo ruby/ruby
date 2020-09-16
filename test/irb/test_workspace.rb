@@ -1,6 +1,7 @@
 # frozen_string_literal: false
 require 'test/unit'
 require 'tempfile'
+require 'rubygems'
 require 'irb'
 require 'irb/workspace'
 require 'irb/color'

@@ -35,5 +35,3 @@ module IRB
   end
 end
 # :startdoc:
-
-

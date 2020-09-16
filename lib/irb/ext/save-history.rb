@@ -9,8 +9,6 @@
 #
 #
 
-require "readline"
-
 module IRB
   module HistorySavingAbility # :nodoc:
   end
@@ -27,7 +25,7 @@ module IRB
       IRB.conf[:SAVE_HISTORY]
     end
 
-    remove_method :save_history= if method_defined?(:save_history=)
+    remove_method(:save_history=) if method_defined?(:save_history=)
     # Sets <code>IRB.conf[:SAVE_HISTORY]</code> to the given +val+ and calls
     # #init_save_history with this context.
     #
@@ -89,7 +87,7 @@ module IRB
     def save_history
       return unless self.class.const_defined?(:HISTORY)
       history = self.class::HISTORY
-      if num = IRB.conf[:SAVE_HISTORY] and (num = num.to_i) > 0
+      if num = IRB.conf[:SAVE_HISTORY] and (num = num.to_i) != 0
         if history_file = IRB.conf[:HISTORY_FILE]
           history_file = File.expand_path(history_file)
         end
@@ -109,7 +107,12 @@ module IRB
 
         open(history_file, "w:#{IRB.conf[:LC_MESSAGES].encoding}", 0600) do |f|
           hist = history.map{ |l| l.split("\n").join("\\\n") }
-          f.puts(hist[-num..-1] || hist)
+          begin
+            hist = hist.last(num) if hist.size > num and num > 0
+          rescue RangeError # bignum too big to convert into `long'
+            # Do nothing because the bignum should be treated as inifinity
+          end
+          f.puts(hist)
         end
       end
     end

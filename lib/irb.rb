@@ -10,18 +10,19 @@
 #
 #
 require "ripper"
+require "reline"
 
-require "irb/init"
-require "irb/context"
-require "irb/extend-command"
+require_relative "irb/init"
+require_relative "irb/context"
+require_relative "irb/extend-command"
 
-require "irb/ruby-lex"
-require "irb/input-method"
-require "irb/locale"
-require "irb/color"
+require_relative "irb/ruby-lex"
+require_relative "irb/input-method"
+require_relative "irb/locale"
+require_relative "irb/color"
 
-require "irb/version"
-require "irb/easter-egg"
+require_relative "irb/version"
+require_relative "irb/easter-egg"
 
 # IRB stands for "interactive Ruby" and is a tool to interactively execute Ruby
 # expressions read from the standard input.
@@ -271,7 +272,7 @@ require "irb/easter-egg"
 # On the other hand, each conf in IRB@Command+line+options is used to
 # individually configure IRB.irb.
 #
-# If a proc is set for IRB.conf[:IRB_RC], its will be invoked after execution
+# If a proc is set for <code>IRB.conf[:IRB_RC]</code>, its will be invoked after execution
 # of that proc with the context of the current session as its argument. Each
 # session can be configured using this mechanism.
 #
@@ -399,7 +400,7 @@ module IRB
     irb.run(@CONF)
   end
 
-  # Calls each event hook of IRB.conf[:AT_EXIT] when the current session quits.
+  # Calls each event hook of <code>IRB.conf[:TA_EXIT]</code> when the current session quits.
   def IRB.irb_at_exit
     @CONF[:AT_EXIT].each{|hook| hook.call}
   end
@@ -538,7 +539,15 @@ module IRB
           begin
             line.untaint if RUBY_VERSION < '2.7'
             @context.evaluate(line, line_no, exception: exc)
-            output_value if @context.echo? && (@context.echo_on_assignment? || !assignment_expression?(line))
+            if @context.echo?
+              if assignment_expression?(line)
+                if @context.echo_on_assignment?
+                  output_value(@context.omit_on_assignment?)
+                end
+              else
+                output_value
+              end
+            end
           rescue Interrupt => exc
           rescue SystemExit, SignalException
             raise
@@ -737,9 +746,32 @@ module IRB
       p
     end
 
-    def output_value # :nodoc:
+    def output_value(omit = false) # :nodoc:
       str = @context.inspect_last_value
       multiline_p = str.include?("\n")
+      if omit
+        winwidth = @context.io.winsize.last
+        if multiline_p
+          first_line = str.split("\n").first
+          result = @context.newline_before_multiline_output? ? (@context.return_format % first_line) : first_line
+          output_width = Reline::Unicode.calculate_width(result, true)
+          diff_size = output_width - Reline::Unicode.calculate_width(first_line, true)
+          if diff_size.positive? and output_width > winwidth
+            lines, _ = Reline::Unicode.split_by_width(first_line, winwidth - diff_size - 3)
+            str = "%s...\e[0m" % lines.first
+            multiline_p = false
+          else
+            str.gsub!(/(\A.*?\n).*/m, "\\1...")
+          end
+        else
+          output_width = Reline::Unicode.calculate_width(@context.return_format % str, true)
+          diff_size = output_width - Reline::Unicode.calculate_width(str, true)
+          if diff_size.positive? and output_width > winwidth
+            lines, _ = Reline::Unicode.split_by_width(str, winwidth - diff_size - 3)
+            str = "%s...\e[0m" % lines.first
+          end
+        end
+      end
       if multiline_p && @context.newline_before_multiline_output?
         printf @context.return_format, "\n#{str}"
       else
