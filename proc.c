@@ -2739,6 +2739,18 @@ rb_obj_method_arity(VALUE obj, ID id)
     return rb_mod_method_arity(CLASS_OF(obj), id);
 }
 
+VALUE
+rb_callable_receiver(VALUE callable) {
+    if (rb_obj_is_proc(callable)) {
+        VALUE binding = rb_funcall(callable, rb_intern("binding"), 0);
+        return rb_funcall(binding, rb_intern("receiver"), 0);
+    } else if (rb_obj_is_method(callable)) {
+        return method_receiver(callable);
+    } else {
+        return Qundef;
+    }
+}
+
 const rb_method_definition_t *
 rb_method_def(VALUE method)
 {
