@@ -4615,6 +4615,7 @@ gc_compact_finish(rb_objspace_t *objspace, rb_heap_t *heap)
     gc_update_references(objspace, heap);
     heap->compact_cursor = NULL;
     heap->compact_cursor_index = 0;
+    objspace->profile.compact_count++;
     rb_clear_constant_cache();
     objspace->flags.during_compacting = FALSE;
 }
@@ -5099,7 +5100,6 @@ gc_compact_start(rb_objspace_t *objspace, rb_heap_t *heap)
 
     memset(objspace->rcompactor.considered_count_table, 0, T_MASK * sizeof(size_t));
     memset(objspace->rcompactor.moved_count_table, 0, T_MASK * sizeof(size_t));
-    objspace->profile.compact_count++;
 
     /* Set up read barrier for pages containing MOVED objects */
     install_handlers();
