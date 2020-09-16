@@ -190,6 +190,20 @@ module GC
     Primitive.gc_latest_gc_info hash_or_key
   end
 
+  #  call-seq:
+  #     GC.latest_compact_info -> {:considered=>{:T_CLASS=>11}, :moved=>{:T_CLASS=>11}}
+  #
+  #  Returns information about object moved in the most recent GC compaction.
+  #
+  # The returned hash has two keys :considered and :moved.  The hash for
+  # :considered lists the number of objects that were considered for movement
+  # by the compactor, and the :moved hash lists the number of objects that
+  # were actually moved.  Some objects can't be moved (maybe they were pinned)
+  # so these numbers can be used to calculate compaction efficiency.
+  def self.latest_compact_info
+    Primitive.gc_compact_stats
+  end
+
   def self.compact
     Primitive.gc_start_internal true, true, true, true
     Primitive.gc_compact_stats
