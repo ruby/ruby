@@ -109,40 +109,61 @@ ujit_compile_insn(rb_iseq_t *iseq, size_t insn_idx)
     uint8_t *code_ptr = &cb->mem_block[cb->write_pos];
     //printf("write pos: %ld\n", cb->write_pos);
 
-    int insn = (int)iseq->body->iseq_encoded[insn_idx];
-	int len = insn_len(insn);
-    //const char* name = insn_name(insn);
-    //printf("%s\n", name);
-
-    // Lookup the codegen function for this instruction
-    st_data_t st_gen_fn;
-    int found = rb_st_lookup(gen_fns, insn, &st_gen_fn);
-
-    if (!found)
-        return 0;
-
-    codegen_fn gen_fn = (codegen_fn)st_gen_fn;
-
-    // Write the pre call bytes
-    ujit_instr_entry(cb);
+    // Get the first opcode in the sequence
+    int first_opcode = (int)iseq->body->iseq_encoded[insn_idx];
 
     // Create codegen context
     ctx_t ctx;
 
-    // Set the current PC
-    ctx.pc = &iseq->body->iseq_encoded[insn_idx];
+    // For each instruction to compile
+    size_t num_instrs;
+    for (num_instrs = 0;; ++num_instrs)
+    {
+        // Set the current PC
+        ctx.pc = &iseq->body->iseq_encoded[insn_idx];
 
-    // Call the code generation function
-    gen_fn(cb, &ctx);
+        // Get the current opcode
+        int opcode = ctx_get_opcode(&ctx);
+        //const char* name = insn_name(insn);
+        //printf("%s\n", name);
+
+        // Lookup the codegen function for this instruction
+        st_data_t st_gen_fn;
+        int found = rb_st_lookup(gen_fns, opcode, &st_gen_fn);
+
+        if (!found)
+        {
+            break;
+        }
+
+        // Write the pre call bytes before the first instruction
+        if (num_instrs == 0)
+        {
+            ujit_instr_entry(cb);
+        }
+
+        // Call the code generation function
+        codegen_fn gen_fn = (codegen_fn)st_gen_fn;
+        gen_fn(cb, &ctx);
+
+    	// Move to the next instruction
+        insn_idx += insn_len(opcode);
+    }
+
+    // If no instructions were compiled
+    if (num_instrs == 0)
+    {
+        return NULL;
+    }
 
     // Directly return the next PC, which is a constant
-    void *next_pc = &iseq->body->iseq_encoded[insn_idx + len];
+    void *next_pc = &iseq->body->iseq_encoded[insn_idx];
     mov(cb, RAX, const_ptr_opnd(next_pc));
 
     // Write the post call bytes
     ujit_instr_exit(cb);
 
-    addr2insn_bookkeeping(code_ptr, insn);
+    addr2insn_bookkeeping(code_ptr, first_opcode);
 
     return code_ptr;
 }
