@@ -3,9 +3,10 @@ require_relative 'helper'
 class Reline::WithinPipeTest < Reline::TestCase
   def setup
     Reline.send(:test_mode)
-    @reader, @writer = IO.pipe((RELINE_TEST_ENCODING rescue Encoding.default_external))
-    Reline.input = @reader
-    @output = Reline.output = File.open(IO::NULL, 'w')
+    @input_reader, @writer = IO.pipe((RELINE_TEST_ENCODING rescue Encoding.default_external))
+    Reline.input = @input_reader
+    @reader, @output_writer = IO.pipe((RELINE_TEST_ENCODING rescue Encoding.default_external))
+    @output = Reline.output = @output_writer
     @config = Reline.send(:core).config
     @line_editor = Reline.send(:core).line_editor
   end
@@ -14,9 +15,11 @@ class Reline::WithinPipeTest < Reline::TestCase
     Reline.input = STDIN
     Reline.output = STDOUT
     Reline.point = 0
-    @reader.close
+    Reline.delete_text
+    @input_reader.close
     @writer.close
-    @output.close
+    @reader.close
+    @output_writer.close
     @config.reset
   end
 

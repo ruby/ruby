@@ -29,27 +29,47 @@ class Reline::History < Array
   end
 
   def push(*val)
-    diff = size + val.size - @config.history_size
-    if diff > 0
-      if diff <= size
-        shift(diff)
-      else
-        diff -= size
-        clear
-        val.shift(diff)
+    # If history_size is zero, all histories are dropped.
+    return self if @config.history_size.zero?
+    # If history_size is negative, history size is unlimited.
+    if @config.history_size.positive?
+      diff = size + val.size - @config.history_size
+      if diff > 0
+        if diff <= size
+          shift(diff)
+        else
+          diff -= size
+          clear
+          val.shift(diff)
+        end
       end
     end
-    super(*(val.map{ |v| String.new(v, encoding: Reline.encoding_system_needs) }))
+    super(*(val.map{ |v|
+      String.new(v, encoding: Reline.encoding_system_needs)
+    }))
   end
 
   def <<(val)
-    shift if size + 1 > @config.history_size
+    # If history_size is zero, all histories are dropped.
+    return self if @config.history_size.zero?
+    # If history_size is negative, history size is unlimited.
+    if @config.history_size.positive?
+      shift if size + 1 > @config.history_size
+    end
     super(String.new(val, encoding: Reline.encoding_system_needs))
   end
 
   private def check_index(index)
     index += size if index < 0
-    raise RangeError.new("index=<#{index}>") if index < -@config.history_size or @config.history_size < index
+    if index < -2147483648 or 2147483647 < index
+      raise RangeError.new("integer #{index} too big to convert to `int'")
+    end
+    # If history_size is negative, history size is unlimited.
+    if @config.history_size.positive?
+      if index < -@config.history_size or @config.history_size < index
+        raise RangeError.new("index=<#{index}>")
+      end
+    end
     raise IndexError.new("index=<#{index}>") if index < 0 or size <= index
     index
   end
