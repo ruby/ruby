@@ -30,6 +30,10 @@ module TestIRB
       def reset
         @line_no = 0
       end
+
+      def winsize
+        [10, 20]
+      end
     end
 
     def setup
@@ -94,6 +98,21 @@ module TestIRB
                            :*, /0$/,
                            :*, /0$/,
                            /\s*/], out)
+    ensure
+      $VERBOSE = verbose
+    end
+
+    def test_eval_object_without_inspect_method
+      verbose, $VERBOSE = $VERBOSE, nil
+      input = TestInputMethod.new([
+        "BasicObject.new\n",
+      ])
+      irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
+      out, err = capture_output do
+        irb.eval_input
+      end
+      assert_empty err
+      assert(/\(Object doesn't support #inspect\)\n(=> )?\n/, out)
     ensure
       $VERBOSE = verbose
     end
@@ -198,6 +217,151 @@ module TestIRB
       assert_equal("", out)
     end
 
+    def test_omit_on_assignment
+      input = TestInputMethod.new([
+        "a = [1] * 100\n",
+        "a\n",
+      ])
+      value = [1] * 100
+      irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
+      irb.context.return_format = "=> %s\n"
+
+      irb.context.echo = true
+      irb.context.echo_on_assignment = false
+      irb.context.omit_on_assignment = true
+      out, err = capture_io do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_equal("=> #{value.inspect}\n", out)
+
+      input.reset
+      irb.context.echo = true
+      irb.context.echo_on_assignment = true
+      irb.context.omit_on_assignment = true
+      out, err = capture_io do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_equal("=> #{value.inspect[0..(input.winsize.last - 9)]}...\e[0m\n=> #{value.inspect}\n", out)
+
+      input.reset
+      irb.context.echo = true
+      irb.context.echo_on_assignment = true
+      irb.context.omit_on_assignment = false
+      out, err = capture_io do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_equal("=> #{value.inspect}\n=> #{value.inspect}\n", out)
+
+      input.reset
+      irb.context.echo = false
+      irb.context.echo_on_assignment = false
+      irb.context.omit_on_assignment = true
+      out, err = capture_io do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_equal("", out)
+
+      input.reset
+      irb.context.echo = false
+      irb.context.echo_on_assignment = true
+      irb.context.omit_on_assignment = true
+      out, err = capture_io do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_equal("", out)
+
+      input.reset
+      irb.context.echo = false
+      irb.context.echo_on_assignment = true
+      irb.context.omit_on_assignment = false
+      out, err = capture_io do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_equal("", out)
+    end
+
+    def test_omit_multiline_on_assignment
+      input = TestInputMethod.new([
+        "class A; def inspect; ([?* * 1000] * 3).join(%{\\n}); end; end; a = A.new\n",
+        "a\n"
+      ])
+      value = ([?* * 1000] * 3).join(%{\n})
+      value_first_line = (?* * 1000).to_s
+      irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
+      irb.context.return_format = "=> %s\n"
+
+      irb.context.echo = true
+      irb.context.echo_on_assignment = false
+      irb.context.omit_on_assignment = true
+      out, err = capture_io do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_equal("=> \n#{value}\n", out)
+      irb.context.evaluate('A.remove_method(:inspect)', 0)
+
+      input.reset
+      irb.context.echo = true
+      irb.context.echo_on_assignment = true
+      irb.context.omit_on_assignment = true
+      out, err = capture_io do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_equal("=> #{value_first_line[0..(input.winsize.last - 9)]}...\e[0m\n=> \n#{value}\n", out)
+      irb.context.evaluate('A.remove_method(:inspect)', 0)
+
+      input.reset
+      irb.context.echo = true
+      irb.context.echo_on_assignment = true
+      irb.context.omit_on_assignment = false
+      out, err = capture_io do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_equal("=> \n#{value}\n=> \n#{value}\n", out)
+      irb.context.evaluate('A.remove_method(:inspect)', 0)
+
+      input.reset
+      irb.context.echo = false
+      irb.context.echo_on_assignment = false
+      irb.context.omit_on_assignment = true
+      out, err = capture_io do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_equal("", out)
+      irb.context.evaluate('A.remove_method(:inspect)', 0)
+
+      input.reset
+      irb.context.echo = false
+      irb.context.echo_on_assignment = true
+      irb.context.omit_on_assignment = true
+      out, err = capture_io do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_equal("", out)
+      irb.context.evaluate('A.remove_method(:inspect)', 0)
+
+      input.reset
+      irb.context.echo = false
+      irb.context.echo_on_assignment = true
+      irb.context.omit_on_assignment = false
+      out, err = capture_io do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_equal("", out)
+      irb.context.evaluate('A.remove_method(:inspect)', 0)
+    end
+
     def test_echo_on_assignment_conf
       # Default
       IRB.conf[:ECHO] = nil
@@ -206,22 +370,26 @@ module TestIRB
       irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
 
       assert(irb.context.echo?, "echo? should be true by default")
-      refute(irb.context.echo_on_assignment?, "echo_on_assignment? should be false by default")
+      assert(irb.context.echo_on_assignment?, "echo_on_assignment? should be true by default")
+      assert(irb.context.omit_on_assignment?, "omit_on_assignment? should be true by default")
 
       # Explicitly set :ECHO to false
       IRB.conf[:ECHO] = false
       irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
 
       refute(irb.context.echo?, "echo? should be false when IRB.conf[:ECHO] is set to false")
-      refute(irb.context.echo_on_assignment?, "echo_on_assignment? should be false by default")
+      assert(irb.context.echo_on_assignment?, "echo_on_assignment? should be true by default")
+      assert(irb.context.omit_on_assignment?, "omit_on_assignment? should be true by default")
 
       # Explicitly set :ECHO_ON_ASSIGNMENT to true
       IRB.conf[:ECHO] = nil
-      IRB.conf[:ECHO_ON_ASSIGNMENT] = true
+      IRB.conf[:ECHO_ON_ASSIGNMENT] = false
+      IRB.conf[:OMIT_ON_ASSIGNMENT] = false
       irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
 
       assert(irb.context.echo?, "echo? should be true by default")
-      assert(irb.context.echo_on_assignment?, "echo_on_assignment? should be true when IRB.conf[:ECHO_ON_ASSIGNMENT] is set to true")
+      refute(irb.context.echo_on_assignment?, "echo_on_assignment? should be false when IRB.conf[:ECHO_ON_ASSIGNMENT] is set to false")
+      refute(irb.context.omit_on_assignment?, "omit_on_assignment? should be false when IRB.conf[:OMIT_ON_ASSIGNMENT] is set to false")
     end
 
     def test_multiline_output_on_default_inspector

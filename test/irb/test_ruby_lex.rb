@@ -5,7 +5,7 @@ require 'ostruct'
 
 module TestIRB
   class TestRubyLex < Test::Unit::TestCase
-    Row = Struct.new(:content, :current_line_spaces, :new_line_spaces)
+    Row = Struct.new(:content, :current_line_spaces, :new_line_spaces, :nesting_level)
 
     class MockIO
       def initialize(params, &assertion)
@@ -32,6 +32,15 @@ module TestIRB
       ruby_lex.set_input(io)
       context = OpenStruct.new(auto_indent_mode: true)
       ruby_lex.set_auto_indent(context)
+    end
+
+    def assert_nesting_level(lines, expected)
+      ruby_lex = RubyLex.new()
+      io = proc{ lines.join("\n") }
+      ruby_lex.set_input(io, io)
+      ruby_lex.lex
+      error_message = "Calculated the wrong number of nesting level for:\n #{lines.join("\n")}"
+      assert_equal(expected, ruby_lex.instance_variable_get(:@indent), error_message)
     end
 
     def test_auto_indent
@@ -124,6 +133,131 @@ module TestIRB
         lines << row.content
         assert_indenting(lines, row.current_line_spaces, false)
         assert_indenting(lines, row.new_line_spaces, true)
+      end
+    end
+
+    def test_incomplete_coding_magic_comment
+      input_with_correct_indents = [
+        Row.new(%q(#coding:u), nil, 0),
+      ]
+
+      lines = []
+      input_with_correct_indents.each do |row|
+        lines << row.content
+        assert_indenting(lines, row.current_line_spaces, false)
+        assert_indenting(lines, row.new_line_spaces, true)
+      end
+    end
+
+    def test_incomplete_encoding_magic_comment
+      input_with_correct_indents = [
+        Row.new(%q(#encoding:u), nil, 0),
+      ]
+
+      lines = []
+      input_with_correct_indents.each do |row|
+        lines << row.content
+        assert_indenting(lines, row.current_line_spaces, false)
+        assert_indenting(lines, row.new_line_spaces, true)
+      end
+    end
+
+    def test_incomplete_emacs_coding_magic_comment
+      input_with_correct_indents = [
+        Row.new(%q(# -*- coding: u), nil, 0),
+      ]
+
+      lines = []
+      input_with_correct_indents.each do |row|
+        lines << row.content
+        assert_indenting(lines, row.current_line_spaces, false)
+        assert_indenting(lines, row.new_line_spaces, true)
+      end
+    end
+
+    def test_incomplete_vim_coding_magic_comment
+      input_with_correct_indents = [
+        Row.new(%q(# vim:set fileencoding=u), nil, 0),
+      ]
+
+      lines = []
+      input_with_correct_indents.each do |row|
+        lines << row.content
+        assert_indenting(lines, row.current_line_spaces, false)
+        assert_indenting(lines, row.new_line_spaces, true)
+      end
+    end
+
+    def test_mixed_rescue
+      input_with_correct_indents = [
+        Row.new(%q(def m), nil, 2),
+        Row.new(%q(  begin), nil, 4),
+        Row.new(%q(    begin), nil, 6),
+        Row.new(%q(      x = a rescue 4), nil, 6),
+        Row.new(%q(      y = [(a rescue 5)]), nil, 6),
+        Row.new(%q(      [x, y]), nil, 6),
+        Row.new(%q(    rescue => e), 4, 6),
+        Row.new(%q(      raise e rescue 8), nil, 6),
+        Row.new(%q(    end), 4, 4),
+        Row.new(%q(  rescue), 2, 4),
+        Row.new(%q(    raise rescue 11), nil, 4),
+        Row.new(%q(  end), 2, 2),
+        Row.new(%q(rescue => e), 0, 2),
+        Row.new(%q(  raise e rescue 14), nil, 2),
+        Row.new(%q(end), 0, 0),
+      ]
+
+      lines = []
+      input_with_correct_indents.each do |row|
+        lines << row.content
+        assert_indenting(lines, row.current_line_spaces, false)
+        assert_indenting(lines, row.new_line_spaces, true)
+      end
+    end
+
+    def test_oneliner_method_definition
+      input_with_correct_indents = [
+        Row.new(%q(class A), nil, 2),
+        Row.new(%q(  def foo0), nil, 4),
+        Row.new(%q(    3), nil, 4),
+        Row.new(%q(  end), 2, 2),
+        Row.new(%q(  def foo1()), nil, 4),
+        Row.new(%q(    3), nil, 4),
+        Row.new(%q(  end), 2, 2),
+        Row.new(%q(  def foo2(a, b)), nil, 4),
+        Row.new(%q(    a + b), nil, 4),
+        Row.new(%q(  end), 2, 2),
+        Row.new(%q(  def foo3 a, b), nil, 4),
+        Row.new(%q(    a + b), nil, 4),
+        Row.new(%q(  end), 2, 2),
+        Row.new(%q(  def bar0() = 3), nil, 2),
+        Row.new(%q(  def bar1(a) = a), nil, 2),
+        Row.new(%q(  def bar2(a, b) = a + b), nil, 2),
+        Row.new(%q(end), 0, 0),
+      ]
+
+      lines = []
+      input_with_correct_indents.each do |row|
+        lines << row.content
+        assert_indenting(lines, row.current_line_spaces, false)
+        assert_indenting(lines, row.new_line_spaces, true)
+      end
+    end
+
+    def test_tlambda
+      input_with_correct_indents = [
+        Row.new(%q(if true), nil, 2, 1),
+        Row.new(%q(  -> {), nil, 4, 2),
+        Row.new(%q(  }), 2, 2, 1),
+        Row.new(%q(end), 0, 0, 0),
+      ]
+
+      lines = []
+      input_with_correct_indents.each do |row|
+        lines << row.content
+        assert_indenting(lines, row.current_line_spaces, false)
+        assert_indenting(lines, row.new_line_spaces, true)
+        assert_nesting_level(lines, row.nesting_level)
       end
     end
   end

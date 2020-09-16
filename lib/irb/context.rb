@@ -131,7 +131,12 @@ module IRB
 
       @echo_on_assignment = IRB.conf[:ECHO_ON_ASSIGNMENT]
       if @echo_on_assignment.nil?
-        @echo_on_assignment = false
+        @echo_on_assignment = true
+      end
+
+      @omit_on_assignment = IRB.conf[:OMIT_ON_ASSIGNMENT]
+      if @omit_on_assignment.nil?
+        @omit_on_assignment = true
       end
 
       @newline_before_multiline_output = IRB.conf[:NEWLINE_BEFORE_MULTILINE_OUTPUT]
@@ -240,7 +245,7 @@ module IRB
     attr_accessor :ignore_eof
     # Whether to echo the return value to output or not.
     #
-    # Uses IRB.conf[:ECHO] if available, or defaults to +true+.
+    # Uses <code>IRB.conf[:ECHO]</code> if available, or defaults to +true+.
     #
     #     puts "hello"
     #     # hello
@@ -251,16 +256,30 @@ module IRB
     attr_accessor :echo
     # Whether to echo for assignment expressions
     #
-    # Uses IRB.conf[:ECHO_ON_ASSIGNMENT] if available, or defaults to +false+.
+    # Uses <code>IRB.conf[:ECHO_ON_ASSIGNMENT]</code> if available, or defaults to +true+.
     #
-    #     a = "omg"
-    #     IRB.CurrentContext.echo_on_assignment = true
     #     a = "omg"
     #     #=> omg
+    #     IRB.CurrentContext.echo_on_assignment = false
+    #     a = "omg"
     attr_accessor :echo_on_assignment
+    # Whether to omit echo for assignment expressions
+    #
+    # Uses <code>IRB.conf[:OMIT_ON_ASSIGNMENT]</code> if available, or defaults to +true+.
+    #
+    #     a = [1] * 10
+    #     #=> [1, 1, 1, 1, 1, 1, 1, 1, ...
+    #     [1] * 10
+    #     #=> [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    #     IRB.CurrentContext.omit_on_assignment = false
+    #     a = [1] * 10
+    #     #=> [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    #     [1] * 10
+    #     #=> [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    attr_accessor :omit_on_assignment
     # Whether a newline is put before multiline output.
     #
-    # Uses IRB.conf[:NEWLINE_BEFORE_MULTILINE_OUTPUT] if available,
+    # Uses <code>IRB.conf[:NEWLINE_BEFORE_MULTILINE_OUTPUT]</code> if available,
     # or defaults to +true+.
     #
     #     "abc\ndef"
@@ -306,6 +325,7 @@ module IRB
     alias ignore_eof? ignore_eof
     alias echo? echo
     alias echo_on_assignment? echo_on_assignment
+    alias omit_on_assignment? omit_on_assignment
     alias newline_before_multiline_output? newline_before_multiline_output
 
     # Returns whether messages are displayed or not.
