@@ -195,8 +195,20 @@ void gen_putobject_int2fix(codeblock_t* cb, ctx_t* ctx)
     mov(cb, mem_opnd(64, RDI, 8), RCX);
 }
 
-// TODO: putnil
-// could we reuse code from putobject_int2fix here?
+void gen_putnil(codeblock_t* cb, ctx_t* ctx)
+{
+    // Load current SP into RAX
+    mov(cb, RAX, mem_opnd(64, RDI, 8));
+
+    // Write constant at SP
+    mov(cb, mem_opnd(64, RAX, 0), imm_opnd(Qnil));
+
+    // Load incremented SP into RCX
+    lea(cb, RCX, mem_opnd(64, RAX, 8));
+
+    // Write back incremented SP
+    mov(cb, mem_opnd(64, RDI, 8), RCX);
+}
 
 // TODO: implement putself
 
@@ -239,6 +251,7 @@ static void ujit_init()
     // Map YARV opcodes to the corresponding codegen functions
     st_insert(gen_fns, (st_data_t)BIN(nop), (st_data_t)&gen_nop);
     st_insert(gen_fns, (st_data_t)BIN(pop), (st_data_t)&gen_pop);
+    st_insert(gen_fns, (st_data_t)BIN(putnil), (st_data_t)&gen_putnil);
     st_insert(gen_fns, (st_data_t)BIN(putobject_INT2FIX_0_), (st_data_t)&gen_putobject_int2fix);
     st_insert(gen_fns, (st_data_t)BIN(putobject_INT2FIX_1_), (st_data_t)&gen_putobject_int2fix);
     st_insert(gen_fns, (st_data_t)BIN(getlocal_WC_0), (st_data_t)&gen_getlocal_wc0);
