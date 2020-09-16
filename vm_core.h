@@ -1836,6 +1836,11 @@ void rb_execution_context_update(const rb_execution_context_t *ec);
 void rb_execution_context_mark(const rb_execution_context_t *ec);
 void rb_fiber_close(rb_fiber_t *fib);
 void Init_native_thread(rb_thread_t *th);
+int rb_vm_check_ints_blocking(rb_execution_context_t *ec);
+
+// vm_sync.h
+void rb_vm_cond_wait(rb_vm_t *vm, rb_nativethread_cond_t *cond);
+void rb_vm_cond_timedwait(rb_vm_t *vm, rb_nativethread_cond_t *cond, unsigned long msec);
 
 #define RUBY_VM_CHECK_INTS(ec) rb_vm_check_ints(ec)
 static inline void

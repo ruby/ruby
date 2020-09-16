@@ -64,6 +64,58 @@ begin
       EOC
     end
 
+    def test_finish_autowrapped_line
+      start_terminal(10, 40, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl})
+      sleep 0.5
+      write("[{'user'=>{'email'=>'a@a', 'id'=>'ABC'}, 'version'=>4, 'status'=>'succeeded'}]\n")
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        prompt> [{'user'=>{'email'=>'a@a', 'id'=
+        >'ABC'}, 'version'=>4, 'status'=>'succee
+        ded'}]
+        => [{"user"=>{"email"=>"a@a", "id"=>"ABC
+        "}, "version"=>4, "status"=>"succeeded"}
+        ]
+        prompt>
+      EOC
+    end
+
+    def test_finish_autowrapped_line_in_the_middle_of_lines
+      start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl})
+      sleep 0.5
+      write("[{'user'=>{'email'=>'abcdef@abcdef', 'id'=>'ABC'}, 'version'=>4, 'status'=>'succeeded'}]#{"\C-b"*7}\n")
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        prompt> [{'user'=>{'email'=>'a
+        bcdef@abcdef', 'id'=>'ABC'}, '
+        version'=>4, 'status'=>'succee
+        ded'}]
+        => [{"user"=>{"email"=>"abcdef
+        @abcdef", "id"=>"ABC"}, "versi
+        on"=>4, "status"=>"succeeded"}
+        ]
+        prompt>
+      EOC
+    end
+
+    def test_finish_autowrapped_line_in_the_middle_of_multilines
+      start_terminal(30, 16, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl})
+      sleep 0.5
+      write("<<~EOM\n  ABCDEFG\nEOM\n")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> <<~EOM
+        prompt>   ABCDEF
+        G
+        prompt> EOM
+        => "ABCDEFG\n"
+        prompt>
+      EOC
+    end
+
     def test_prompt
       File.open(@inputrc_file, 'w') do |f|
         f.write <<~'LINES'

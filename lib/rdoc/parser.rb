@@ -269,9 +269,9 @@ class RDoc::Parser
 end
 
 # simple must come first in order to show up last in the parsers list
-require 'rdoc/parser/simple'
-require 'rdoc/parser/c'
-require 'rdoc/parser/changelog'
-require 'rdoc/parser/markdown'
-require 'rdoc/parser/rd'
-require 'rdoc/parser/ruby'
+require_relative 'parser/simple'
+require_relative 'parser/c'
+require_relative 'parser/changelog'
+require_relative 'parser/markdown'
+require_relative 'parser/rd'
+require_relative 'parser/ruby'

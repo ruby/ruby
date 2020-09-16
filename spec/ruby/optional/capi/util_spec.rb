@@ -115,7 +115,7 @@ describe "C-API Util function" do
       ScratchPad.recorded.should == [1, nil]
     end
 
-    ruby_version_is ''...'2.8' do
+    ruby_version_is ''...'3.0' do
       it "assigns required and Hash arguments with nil Hash" do
         suppress_warning do
           @o.rb_scan_args([1, nil], "1:", 2, @acc).should == 1
@@ -124,7 +124,7 @@ describe "C-API Util function" do
       end
     end
 
-    ruby_version_is '2.8' do
+    ruby_version_is '3.0' do
       it "rejects the use of nil as a hash" do
         -> {
           @o.rb_scan_args([1, nil], "1:", 2, @acc).should == 1
@@ -144,7 +144,7 @@ describe "C-API Util function" do
       ScratchPad.recorded.should == [1, 2, [3, 4], 5, h, @prc]
     end
 
-    ruby_version_is ''...'2.8' do
+    ruby_version_is ''...'3.0' do
       # r43934
       it "rejects non-keyword arguments" do
         h = {1 => 2, 3 => 4}
@@ -175,7 +175,7 @@ describe "C-API Util function" do
       end
     end
 
-    ruby_version_is '2.8' do
+    ruby_version_is '3.0' do
       it "does not reject non-symbol keys in keyword arguments" do
         h = {1 => 2, 3 => 4}
         @o.rb_scan_args([h], "#{@keyword_prefix}0:", 1, @acc).should == 0

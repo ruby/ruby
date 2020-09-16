@@ -46,6 +46,7 @@ VALUE rb_method_call_with_block(int, const VALUE *, VALUE, VALUE);
 VALUE rb_method_call_with_block_kw(int, const VALUE *, VALUE, VALUE, int);
 int rb_mod_method_arity(VALUE, ID);
 int rb_obj_method_arity(VALUE, ID);
+VALUE rb_callable_receiver(VALUE);
 VALUE rb_protect(VALUE (*)(VALUE), VALUE, int*);
 
 RBIMPL_SYMBOL_EXPORT_END()

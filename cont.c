@@ -851,6 +851,12 @@ NOINLINE(static VALUE cont_capture(volatile int *volatile stat));
         if (!(th)->ec->tag) rb_raise(rb_eThreadError, "not running thread"); \
     } while (0)
 
+rb_thread_t*
+rb_fiber_threadptr(const rb_fiber_t *fiber)
+{
+    return fiber->cont.saved_ec.thread_ptr;
+}
+
 static VALUE
 cont_thread_value(const rb_context_t *cont)
 {
@@ -1144,6 +1150,11 @@ cont_new(VALUE klass)
     cont->self = contval;
     cont_init(cont, th);
     return cont;
+}
+
+VALUE rb_fiberptr_self(struct rb_fiber_struct *fiber)
+{
+    return fiber->cont.self;
 }
 
 void
@@ -2554,7 +2565,8 @@ Init_Cont(void)
     rb_define_method(rb_cFiber, "to_s", fiber_to_s, 0);
     rb_define_alias(rb_cFiber, "inspect", "to_s");
 
-    rb_define_global_function("Fiber", rb_f_fiber, -1);
+    rb_define_singleton_method(rb_cFiber, "schedule", rb_f_fiber, -1);
+    //rb_define_global_function("Fiber", rb_f_fiber, -1);
 
 #ifdef RB_EXPERIMENTAL_FIBER_POOL
     rb_cFiberPool = rb_define_class("Pool", rb_cFiber);

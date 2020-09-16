@@ -38,6 +38,12 @@ class Reline::ANSI
     # Del is 0x08
     # Arrow keys are the same of KDE
 
+    # iTerm2
+    [27, 27, 91, 67] => :em_next_word,    # Option+→
+    [27, 27, 91, 68] => :ed_prev_word,    # Option+←
+    [195, 166] => :em_next_word,          # Option+f
+    [195, 162] => :ed_prev_word,          # Option+b
+
     # others
     [27, 32] => :em_set_mark,             # M-<space>
     [24, 24] => :em_exchange_mark,        # C-x C-x TODO also add Windows
@@ -65,7 +71,9 @@ class Reline::ANSI
     unless @@buf.empty?
       return @@buf.shift
     end
-    c = @@input.raw(intr: true, &:getbyte)
+    until c = @@input.raw(intr: true, &:getbyte)
+      sleep 0.1
+    end
     (c == 0x16 && @@input.raw(min: 0, tim: 0, &:getbyte)) || c
   rescue Errno::EIO
     # Maybe the I/O has been closed.
@@ -112,7 +120,9 @@ class Reline::ANSI
       @@input.raw do |stdin|
         @@output << "\e[6n"
         @@output.flush
-        while (c = stdin.getc)
+        loop do
+          c = stdin.getc
+          next if c.nil?
           res << c
           m = res.match(/\e\[(?<row>\d+);(?<column>\d+)R/)
           break if m

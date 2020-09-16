@@ -179,7 +179,6 @@ class TC_OpenStruct < Test::Unit::TestCase
   def test_accessor_defines_method
     os = OpenStruct.new(foo: 42)
     assert_respond_to(os, :foo)
-    assert_equal([], os.singleton_methods)
     assert_equal(42, os.foo)
     assert_equal([:foo, :foo=], os.singleton_methods.sort)
   end
@@ -224,5 +223,45 @@ class TC_OpenStruct < Test::Unit::TestCase
     assert_raise_with_message(NoMethodError, /protected method/) do
       os.foo true, true
     end
+  end
+
+  def test_access_undefined
+    os = OpenStruct.new
+    assert_nil os.foo
+  end
+
+  def test_overriden_private_methods
+    os = OpenStruct.new(puts: :foo, format: :bar)
+    assert_equal(:foo, os.puts)
+    assert_equal(:bar, os.format)
+  end
+
+  def test_overriden_public_methods
+    os = OpenStruct.new(method: :foo, class: :bar)
+    assert_equal(:foo, os.method)
+    assert_equal(:bar, os.class)
+  end
+
+  def test_access_original_methods
+    os = OpenStruct.new(method: :foo)
+    assert_equal(os.object_id, os.method!(:object_id).call)
+  end
+
+  def test_mistaken_subclass
+    sub = Class.new(OpenStruct) do
+      def [](k)
+        __send__(k)
+        super
+      end
+
+      def []=(k, v)
+        @item_set = true
+        __send__("#{k}=", v)
+        super
+      end
+    end
+    o = sub.new
+    o.foo = 42
+    assert_equal 42, o.foo
   end
 end

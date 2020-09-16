@@ -8,21 +8,13 @@ description.
 
 == Libraries
 
-Abbrev:: Calculates a set of unique abbreviations for a given set of strings
-Base64:: Support for encoding and decoding binary data using a Base64 representation
 DEBUGGER__:: Debugging functionality for Ruby
 DRb:: Distributed object system for Ruby
 MakeMakefile:: Module used to generate a Makefile for C extensions
-OpenURI:: An easy-to-use wrapper for Net::HTTP, Net::HTTPS and Net::FTP
 PP:: Provides a PrettyPrinter for Ruby objects
 PrettyPrinter:: Implements a pretty printing algorithm for readable structure
 RbConfig:: Information of your configure and build of Ruby
-resolv-replace.rb:: Replace Socket DNS with Resolv
-Resolv::  Thread-aware DNS resolver library in Ruby
 Gem:: Package management framework for Ruby
-SecureRandom:: Interface for secure random number generator
-Shellwords:: Manipulates strings with word parsing rules of UNIX Bourne shell
-Time:: Extends the Time class with methods for parsing and conversion
 un.rb:: Utilities to replace common UNIX commands
 
 == Extensions
@@ -35,13 +27,14 @@ Pathname:: Representation of the name of a file or directory on the filesystem
 PTY:: Creates and manages pseudo terminals
 Ripper:: Provides an interface for parsing Ruby programs into S-expressions
 Socket:: Access underlying OS socket implementations
-Syslog:: Ruby interface for the POSIX system logging facility
 WIN32OLE:: Provides an interface for OLE Automation in Ruby
 
 = Default gems
 
 == Libraries
 
+Abbrev:: Calculates a set of unique abbreviations for a given set of strings
+Base64:: Support for encoding and decoding binary data using a Base64 representation
 Benchmark:: Provides methods to measure and report the time used to execute code
 Bundler:: Manage your Ruby application's gem dependencies
 CGI:: Support for the Common Gateway Interface protocol
@@ -68,14 +61,20 @@ Net::SMTP:: Simple Mail Transfer Protocol client library for Ruby
 Observable:: Provides a mechanism for publish/subscribe pattern in Ruby
 Open3:: Provides access to stdin, stdout and stderr when running other programs
 OpenStruct:: Class to build custom data structures, similar to a Hash
+OpenURI:: An easy-to-use wrapper for Net::HTTP, Net::HTTPS and Net::FTP
 Prime:: Prime numbers and factorization library
 PStore:: Implements a file based persistence mechanism based on a Hash
 Racc:: A LALR(1) parser generator written in Ruby.
+Resolv::  Thread-aware DNS resolver library in Ruby
+resolv-replace.rb:: Replace Socket DNS with Resolv
 RDoc:: Produces HTML and command-line documentation for Ruby
 Rinda:: The Linda distributed computing paradigm in Ruby
+SecureRandom:: Interface for secure random number generator
 Set:: Provides a class to deal with collections of unordered, unique values
+Shellwords:: Manipulates strings with word parsing rules of UNIX Bourne shell
 Singleton:: Implementation of the Singleton pattern for Ruby
 Tempfile:: A utility class for managing temporary files
+Time:: Extends the Time class with methods for parsing and conversion
 Timeout:: Auto-terminate potentially long-running operations in Ruby
 tmpdir.rb:: Extends the Dir class to manage the OS temporary file path
 Tracer:: Outputs a source level execution trace of a Ruby program
@@ -103,6 +102,7 @@ Psych:: A YAML parser and emitter for Ruby
 Readline:: Provides an interface for GNU Readline and Edit Line (libedit)
 StringIO:: Pseudo I/O on String objects
 StringScanner:: Provides lexical scanning operations on a String
+Syslog:: Ruby interface for the POSIX system logging facility
 Zlib:: Ruby interface for the zlib compression/decompression library
 
 = Bundled gems

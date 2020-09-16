@@ -980,7 +980,7 @@ describe "Module#refine" do
       result.should == [:B, :A, :LAST, :C]
     end
 
-    ruby_version_is ""..."2.8" do
+    ruby_version_is ""..."3.0" do
       it "looks in the lexical scope refinements before other active refinements" do
         refined_class = ModuleSpecs.build_refined_class(for_super: true)
 
@@ -1016,7 +1016,7 @@ describe "Module#refine" do
       end
     end
 
-    ruby_version_is "2.8" do
+    ruby_version_is "3.0" do
       # https://bugs.ruby-lang.org/issues/17007
       it "does not look in the lexical scope refinements before other active refinements" do
         refined_class = ModuleSpecs.build_refined_class(for_super: true)

@@ -24,12 +24,12 @@ class TestFiberEnumerator < Test::Unit::TestCase
 
       e = i.to_enum(:each_char)
 
-      Fiber do
+      Fiber.schedule do
         o.write("Hello World")
         o.close
       end
 
-      Fiber do
+      Fiber.schedule do
         begin
           while c = e.next
             message << c

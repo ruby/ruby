@@ -38,35 +38,19 @@ Zachary Scott (zzak)
 
 === Libraries
 
-[lib/abbrev.rb]
-  Akinori MUSHA (knu)
-[lib/base64.rb]
-  Yusuke Endoh (mame)
 [lib/drb.rb, lib/drb/*]
   Masatoshi SEKI (seki)
 [lib/debug.rb]
   _unmaintained_
 [lib/mkmf.rb]
   _unmaintained_
-[lib/open-uri.rb]
-  Tanaka Akira (akr)
 [lib/pp.rb]
   Tanaka Akira (akr)
 [lib/prettyprint.rb]
   Tanaka Akira (akr)
-[lib/resolv-replace.rb]
-  Tanaka Akira (akr)
-[lib/resolv.rb]
-  Tanaka Akira (akr)
 [lib/rubygems.rb, lib/rubygems/*]
   Eric Hodel (drbrain), Hiroshi SHIBATA (hsbt)
   https://github.com/rubygems/rubygems
-[lib/securerandom.rb]
-  Tanaka Akira (akr)
-[lib/shellwords.rb]
-  Akinori MUSHA (knu)
-[lib/time.rb]
-  Tanaka Akira (akr)
 [lib/un.rb]
   WATANABE Hirofumi (eban)
 [lib/unicode_normalize.rb, lib/unicode_normalize/*]
@@ -95,8 +79,6 @@ Zachary Scott (zzak)
 [ext/socket]
   * Tanaka Akira (akr)
   * API change needs matz's approval
-[ext/syslog]
-  Akinori MUSHA (knu)
 [ext/win32]
   NAKAMURA Usaku (usa)
 [ext/win32ole]
@@ -106,6 +88,12 @@ Zachary Scott (zzak)
 
 === Libraries
 
+[lib/abbrev.rb]
+  Akinori MUSHA (knu)
+  https://github.com/ruby/abbrev
+[lib/base64.rb]
+  https://github.com/ruby/base64
+  Yusuke Endoh (mame)
 [lib/benchmark.rb]
   _unmaintained_
   https://github.com/ruby/benchmark
@@ -200,6 +188,9 @@ Zachary Scott (zzak)
   _unmaintained_
   https://github.com/ruby/open3
   https://rubygems.org/gems/open3
+[lib/open-uri.rb]
+  Tanaka Akira (akr)
+  https://github.com/ruby/open-uri
 [lib/ostruct.rb]
   Marc-Andre Lafortune (marcandre)
   https://github.com/ruby/ostruct
@@ -219,6 +210,12 @@ Zachary Scott (zzak)
   aycabta
   https://github.com/ruby/readline
   https://rubygems.org/gems/readline
+[lib/resolv.rb]
+  Tanaka Akira (akr)
+  https://github.com/ruby/resolv
+[lib/resolv-replace.rb]
+  Tanaka Akira (akr)
+  https://github.com/ruby/resolv-replace
 [lib/rdoc.rb, lib/rdoc/*]
   Eric Hodel (drbrain), Hiroshi SHIBATA (hsbt)
   https://github.com/ruby/rdoc
@@ -230,9 +227,15 @@ Zachary Scott (zzak)
 [lib/rinda/*]
   Masatoshi SEKI (seki)
   https://github.com/ruby/rinda
+[lib/securerandom.rb]
+  Tanaka Akira (akr)
+  https://github.com/ruby/securerandom
 [lib/set.rb]
   Akinori MUSHA (knu)
   https://github.com/ruby/set
+[lib/shellwords.rb]
+  Akinori MUSHA (knu)
+  https://github.com/ruby/shellwords
 [lib/singleton.rb]
   Yukihiro Matsumoto (matz)
   https://github.com/ruby/singleton
@@ -240,6 +243,9 @@ Zachary Scott (zzak)
 [lib/tempfile.rb]
   _unmaintained_
   https://github.com/ruby/tempfile
+[lib/time.rb]
+  Tanaka Akira (akr)
+  https://github.com/ruby/time
 [lib/timeout.rb]
   Yukihiro Matsumoto (matz)
   https://github.com/ruby/timeout
@@ -345,6 +351,9 @@ Zachary Scott (zzak)
   Kouhei Sutou (kou)
   https://github.com/ruby/strscan
   https://rubygems.org/gems/strscan
+[ext/syslog]
+  Akinori MUSHA (knu)
+  https://github.com/ruby/syslog
 [ext/zlib]
   NARUSE, Yui (naruse)
   https://github.com/ruby/zlib

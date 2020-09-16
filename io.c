@@ -13,6 +13,8 @@
 
 #include "ruby/internal/config.h"
 
+#include "internal/scheduler.h"
+
 #ifdef _WIN32
 # include "ruby/ruby.h"
 # include "ruby/io.h"
@@ -212,6 +214,9 @@ static VALUE sym_DATA;
 #ifdef SEEK_HOLE
 static VALUE sym_HOLE;
 #endif
+
+static VALUE rb_io_initialize(int argc, VALUE *argv, VALUE io);
+static VALUE prep_io(int fd, int fmode, VALUE klass, const char *path);
 
 struct argf {
     VALUE filename, current_file;
@@ -1256,13 +1261,55 @@ io_fflush(rb_io_t *fptr)
     return 0;
 }
 
+VALUE
+rb_io_wait(VALUE io, VALUE events, VALUE timeout) {
+    VALUE scheduler = rb_thread_current_scheduler();
+
+    if (scheduler != Qnil) {
+        return rb_scheduler_io_wait(scheduler, io, events, timeout);
+    }
+
+    rb_io_t * fptr = NULL;
+    RB_IO_POINTER(io, fptr);
+
+    struct timeval tv_storage;
+    struct timeval *tv = NULL;
+
+    if (timeout != Qnil) {
+        tv_storage = rb_time_interval(timeout);
+        tv = &tv_storage;
+    }
+
+    int ready = rb_thread_wait_for_single_fd(fptr->fd, RB_NUM2INT(events), tv);
+
+    if (ready < 0) {
+        rb_sys_fail(0);
+    }
+
+    // Not sure if this is necessary:
+    rb_io_check_closed(fptr);
+
+    if (ready > 0) {
+        return RB_INT2NUM(ready);
+    } else {
+        return Qfalse;
+    }
+}
+
+static VALUE
+rb_io_from_fd(int fd)
+{
+    return prep_io(fd, FMODE_PREP, rb_cIO, NULL);
+}
+
 int
 rb_io_wait_readable(int f)
 {
-    VALUE scheduler = rb_thread_scheduler_if_nonblocking(rb_thread_current());
+    VALUE scheduler = rb_thread_current_scheduler();
     if (scheduler != Qnil) {
-        VALUE result = rb_funcall(scheduler, rb_intern("wait_readable_fd"), 1, INT2NUM(f));
-        return RTEST(result);
+        return RTEST(
+            rb_scheduler_io_wait_readable(scheduler, rb_io_from_fd(f))
+        );
     }
 
     io_fd_check_closed(f);
@@ -1289,10 +1336,11 @@ rb_io_wait_readable(int f)
 int
 rb_io_wait_writable(int f)
 {
-    VALUE scheduler = rb_thread_scheduler_if_nonblocking(rb_thread_current());
+    VALUE scheduler = rb_thread_current_scheduler();
     if (scheduler != Qnil) {
-        VALUE result = rb_funcall(scheduler, rb_intern("wait_writable_fd"), 1, INT2NUM(f));
-        return RTEST(result);
+        return RTEST(
+            rb_scheduler_io_wait_writable(scheduler, rb_io_from_fd(f))
+        );
     }
 
     io_fd_check_closed(f);
@@ -1323,6 +1371,20 @@ rb_io_wait_writable(int f)
       default:
 	return FALSE;
     }
+}
+
+int
+rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
+{
+    VALUE scheduler = rb_thread_current_scheduler();
+
+    if (scheduler != Qnil) {
+        return RTEST(
+            rb_scheduler_io_wait(scheduler, rb_io_from_fd(fd), RB_INT2NUM(events), rb_scheduler_timeout(timeout))
+        );
+    }
+
+    return rb_thread_wait_for_single_fd(fd, events, timeout);
 }
 
 static void
@@ -1474,6 +1536,18 @@ io_binwrite(VALUE str, const char *ptr, long len, rb_io_t *fptr, int nosync)
     rb_thread_check_ints();
 
     if ((n = len) <= 0) return n;
+
+    VALUE scheduler = rb_thread_current_scheduler();
+    if (scheduler != Qnil && rb_scheduler_supports_io_write(scheduler)) {
+        ssize_t length = RB_NUM2SSIZE(
+            rb_scheduler_io_write(scheduler, fptr->self, str, offset, len)
+        );
+
+        if (length < 0) rb_sys_fail_path(fptr->pathv);
+
+        return length;
+    }
+
     if (fptr->wbuf.ptr == NULL && !(!nosync && (fptr->mode & FMODE_SYNC))) {
         fptr->wbuf.off = 0;
         fptr->wbuf.len = 0;
@@ -2548,6 +2622,17 @@ bufread_call(VALUE arg)
 static long
 io_fread(VALUE str, long offset, long size, rb_io_t *fptr)
 {
+    VALUE scheduler = rb_thread_current_scheduler();
+    if (scheduler != Qnil && rb_scheduler_supports_io_read(scheduler)) {
+        ssize_t length = RB_NUM2SSIZE(
+            rb_scheduler_io_read(scheduler, fptr->self, str, offset, size)
+        );
+
+        if (length < 0) rb_sys_fail_path(fptr->pathv);
+
+        return length;
+    }
+
     long len;
     struct bufread_arg arg;
 
@@ -8120,6 +8205,7 @@ prep_io(int fd, int fmode, VALUE klass, const char *path)
     VALUE io = io_alloc(klass);
 
     MakeOpenFile(io, fp);
+    fp->self = io;
     fp->fd = fd;
     fp->mode = fmode;
     if (!io_check_tty(fp)) {
@@ -8203,6 +8289,7 @@ static inline rb_io_t *
 rb_io_fptr_new(void)
 {
     rb_io_t *fp = ALLOC(rb_io_t);
+    fp->self = Qnil;
     fp->fd = -1;
     fp->stdio_file = NULL;
     fp->mode = 0;
@@ -8235,11 +8322,12 @@ rb_io_make_open_file(VALUE obj)
 
     Check_Type(obj, T_FILE);
     if (RFILE(obj)->fptr) {
-	rb_io_close(obj);
-	rb_io_fptr_finalize(RFILE(obj)->fptr);
-	RFILE(obj)->fptr = 0;
+        rb_io_close(obj);
+        rb_io_fptr_finalize(RFILE(obj)->fptr);
+        RFILE(obj)->fptr = 0;
     }
     fp = rb_io_fptr_new();
+    fp->self = obj;
     RFILE(obj)->fptr = fp;
     return fp;
 }
@@ -8440,6 +8528,7 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
 	fmode |= FMODE_PREP;
     }
     MakeOpenFile(io, fp);
+    fp->self = io;
     fp->fd = fd;
     fp->mode = fmode;
     fp->encs = convconfig;
@@ -10975,7 +11064,7 @@ rb_thread_scheduler_wait_for_single_fd(void * _args)
 {
     struct wait_for_single_fd *args = (struct wait_for_single_fd *)_args;
 
-    args->result = rb_funcall(args->scheduler, rb_intern("wait_for_single_fd"), 3, INT2NUM(args->fd), INT2NUM(args->events), Qnil);
+    args->result = rb_scheduler_io_wait(args->scheduler, rb_io_from_fd(args->fd), INT2NUM(args->events), Qnil);
 
     return NULL;
 }
@@ -11073,10 +11162,6 @@ nogvl_copy_stream_wait_write(struct copy_stream_struct *stp)
     }
     return 0;
 }
-
-#if defined HAVE_COPY_FILE_RANGE || (defined __linux__ && defined __NR_copy_file_range)
-#  define USE_COPY_FILE_RANGE
-#endif
 
 #ifdef USE_COPY_FILE_RANGE
 
@@ -13385,9 +13470,9 @@ Init_IO(void)
     rb_cIO = rb_define_class("IO", rb_cObject);
     rb_include_module(rb_cIO, rb_mEnumerable);
 
-    rb_define_const(rb_cIO, "WAIT_READABLE", INT2NUM(RB_WAITFD_IN));
-    rb_define_const(rb_cIO, "WAIT_PRIORITY", INT2NUM(RB_WAITFD_PRI));
-    rb_define_const(rb_cIO, "WAIT_WRITABLE", INT2NUM(RB_WAITFD_OUT));
+    rb_define_const(rb_cIO, "READABLE", INT2NUM(RUBY_IO_READABLE));
+    rb_define_const(rb_cIO, "WRITABLE", INT2NUM(RUBY_IO_WRITABLE));
+    rb_define_const(rb_cIO, "PRIORITY", INT2NUM(RUBY_IO_PRIORITY));
 
     /* exception to wait for reading. see IO.select. */
     rb_mWaitReadable = rb_define_module_under(rb_cIO, "WaitReadable");

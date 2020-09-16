@@ -80,6 +80,9 @@ sufficient information, see the ChangeLog file or Redmine
     def square(x) = x * x
     ```
 
+* Interpolated String literals are no longer frozen when
+  `# frozen-string-literal: true` is used. [[Feature #17104]]
+
 ## Command line options
 
 ### `--help` option
@@ -158,6 +161,11 @@ Outstanding ones only.
             p C.ancestors #=> [C, M1, M2, Object, Kernel, BasicObject]
             ```
 
+* Ractor
+
+    * new class to enable parallel execution. See doc/ractor.md for
+      more details.
+
 * Symbol
 
     * Modified method
@@ -203,6 +211,14 @@ Outstanding ones only.
           take request headers as a Hash in the second argument when the first
           argument is a URI.  [[Feature #16686]]
 
+* IRB
+
+    * Update to IRB 1.2.6
+
+* Reline
+
+    * Update to Reline 0.1.5
+
 ## Compatibility issues
 
 Excluding feature bug fixes.
@@ -233,6 +249,8 @@ Excluding feature bug fixes.
 
     * The following libraries are promoted the default gems from stdlib.
 
+        * abbrev
+        * base64
         * English
         * erb
         * find
@@ -242,11 +260,19 @@ Excluding feature bug fixes.
         * net-http
         * net-imap
         * net-protocol
+        * nkf
+        * open-uri
         * optparse
+        * resolv
+        * resolv-replace
         * rinda
+        * securerandom
         * set
+        * shellwords
         * tempfile
+        * time
         * tmpdir
+        * tsort
         * weakref
 
 * Bundled gems
@@ -272,7 +298,13 @@ Excluding feature bug fixes.
 
 * New method cache mechanism for Ractor [[Feature #16614]]
 
-  * TODO: ko1 will write details
+  * Inline method caches pointed from ISeq can be accessed by multiple Ractors
+    in parallel and synchronization is needed even for method caches. However,
+    such synchronization can be overhead so introducing new inline method cache
+    mehanisms, (1) Disposable inline method cache (2) per-Class method cache
+    and (3) new invalidation mechanism. (1) can avoid per-method call
+    syncrhonization because it only use atomic operations.
+    See the ticket for more details.
 
 * The number of hashes allocated when using a keyword splat in
   a method call has been reduced to a maximum of 1, and passing
@@ -344,6 +376,7 @@ Excluding feature bug fixes.
 [Feature #16746]: https://bugs.ruby-lang.org/issues/16746
 [Feature #16754]: https://bugs.ruby-lang.org/issues/16754
 [Feature #16828]: https://bugs.ruby-lang.org/issues/16828
+[Feature #17104]: https://bugs.ruby-lang.org/issues/17104
 [Misc #16961]:    https://bugs.ruby-lang.org/issues/16961
 [Feature #17122]: https://bugs.ruby-lang.org/issues/17122
 [GH-2991]:        https://github.com/ruby/ruby/pull/2991

@@ -3724,6 +3724,60 @@ rb_gzreader_s_open(int argc, VALUE *argv, VALUE klass)
 }
 
 /*
+ * Document-method: Zlib::GzipReader.zcat
+ *
+ * call-seq:
+ *   Zlib::GzipReader.zcat(io, options = {}, &block) => nil
+ *   Zlib::GzipReader.zcat(io, options = {}) => string
+ *
+ * Decompresses all gzip data in the +io+, handling multiple gzip
+ * streams until the end of the +io+.  There should not be any non-gzip
+ * data after the gzip streams.
+ *
+ * If a block is given, it is yielded strings of uncompressed data,
+ * and the method returns +nil+.
+ * If a block is not given, the method returns the concatenation of
+ * all uncompressed data in all gzip streams.
+ */
+static VALUE
+rb_gzreader_s_zcat(int argc, VALUE *argv, VALUE klass)
+{
+    VALUE io, unused, obj, buf=0, tmpbuf;
+    long pos;
+
+    rb_check_arity(argc, 1, 2);
+    io = argv[0];
+
+    do {
+        obj = rb_funcallv(klass, rb_intern("new"), argc, argv);
+        if (rb_block_given_p()) {
+           rb_gzreader_each(0, 0, obj);
+        }
+        else {
+            if (!buf) {
+                buf = rb_str_new(0, 0);
+            }
+            tmpbuf = gzfile_read_all(get_gzfile(obj));
+            rb_str_cat(buf, RSTRING_PTR(tmpbuf), RSTRING_LEN(tmpbuf));
+        }
+
+        rb_gzreader_read(0, 0, obj);
+        pos = NUM2LONG(rb_funcall(io, rb_intern("pos"), 0));
+        unused = rb_gzreader_unused(obj);
+        rb_gzfile_finish(obj);
+        if (!NIL_P(unused)) {
+            pos -= NUM2LONG(rb_funcall(unused, rb_intern("length"), 0));
+            rb_funcall(io, rb_intern("pos="), 1, LONG2NUM(pos));
+        }
+    } while (pos < NUM2LONG(rb_funcall(io, rb_intern("size"), 0)));
+
+    if (rb_block_given_p()) {
+        return Qnil;
+    }
+    return buf;
+}
+
+/*
  * Document-method: Zlib::GzipReader.new
  *
  * call-seq:
@@ -4696,6 +4750,7 @@ Init_zlib(void)
     rb_define_method(cGzipWriter, "puts", rb_gzwriter_puts, -1);
 
     rb_define_singleton_method(cGzipReader, "open", rb_gzreader_s_open,-1);
+    rb_define_singleton_method(cGzipReader, "zcat", rb_gzreader_s_zcat, -1);
     rb_define_alloc_func(cGzipReader, rb_gzreader_s_allocate);
     rb_define_method(cGzipReader, "initialize", rb_gzreader_initialize, -1);
     rb_define_method(cGzipReader, "rewind", rb_gzreader_rewind, 0);

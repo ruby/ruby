@@ -25,9 +25,6 @@
 
 RUBY_EXTERN const char ruby_hexdigits[];
 
-static VALUE sym_output, sym_stdout, sym_string, sym_file;
-static VALUE sym_full, sym_since;
-
 #define BUFFER_CAPACITY 4096
 
 struct dump_config {
@@ -191,6 +188,7 @@ dump_append_string_value(struct dump_config *dc, VALUE obj)
         switch ((c = value[i])) {
           case '\\':
             dump_append(dc, "\\\\");
+            break;
           case '"':
             dump_append(dc, "\\\"");
             break;
@@ -538,142 +536,62 @@ root_obj_i(const char *category, VALUE obj, void *data)
     dc->roots = 1;
 }
 
-static VALUE
-dump_output(struct dump_config *dc, VALUE opts, VALUE output, const char *filename)
+static void
+dump_output(struct dump_config *dc, VALUE output, VALUE full, VALUE since)
 {
-    VALUE tmp;
 
     dc->full_heap = 0;
     dc->buffer_len = 0;
 
-    if (RTEST(opts)) {
-        output = rb_hash_aref(opts, sym_output);
-
-        if (Qtrue == rb_hash_lookup2(opts, sym_full, Qfalse))
-            dc->full_heap = 1;
-
-        VALUE since = rb_hash_aref(opts, sym_since);
-        if (RTEST(since)) {
-            dc->partial_dump = 1;
-            dc->since = NUM2SIZET(since);
-        } else {
-            dc->partial_dump = 0;
-        }
+    if (TYPE(output) == T_STRING) {
+        dc->stream = Qfalse;
+        dc->string = output;
+    } else {
+        dc->stream = output;
+        dc->string = Qfalse;
     }
 
-    if (output == sym_stdout) {
-        dc->stream = rb_stdout;
-        dc->string = Qnil;
-    }
-    else if (output == sym_file || output == Qnil) {
-        rb_require("tempfile");
-        tmp = rb_assoc_new(rb_str_new_cstr(filename), rb_str_new_cstr(".json"));
-        tmp = rb_funcallv(rb_path2class("Tempfile"), rb_intern("create"), 1, &tmp);
-      io:
-        dc->string = Qnil;
-        dc->stream = rb_io_get_write_io(tmp);
-    }
-    else if (output == sym_string) {
-        dc->string = rb_str_new_cstr("");
-    }
-    else if (!NIL_P(tmp = rb_io_check_io(output))) {
-        output = sym_file;
-        goto io;
-    }
-    else {
-        rb_raise(rb_eArgError, "wrong output option: %"PRIsVALUE, output);
+    if (full == Qtrue) {
+        dc->full_heap = 1;
     }
 
-    return output;
+    if (RTEST(since)) {
+        dc->partial_dump = 1;
+        dc->since = NUM2SIZET(since);
+    } else {
+        dc->partial_dump = 0;
+    }
 }
 
 static VALUE
-dump_result(struct dump_config *dc, VALUE output)
+dump_result(struct dump_config *dc)
 {
     dump_flush(dc);
 
-    if (output == sym_string) {
-        return rb_str_resurrect(dc->string);
-    }
-    else if (output == sym_file) {
+    if (dc->string) {
+        return dc->string;
+    } else {
         rb_io_flush(dc->stream);
         return dc->stream;
     }
-    else {
-        return Qnil;
-    }
 }
 
-/*
- *  call-seq:
- *    ObjectSpace.dump(obj[, output: :string]) # => "{ ... }"
- *    ObjectSpace.dump(obj, output: :file)     # => #<File:/tmp/rubyobj20131125-88733-1xkfmpv.json>
- *    ObjectSpace.dump(obj, output: :stdout)   # => nil
- *
- *  Dump the contents of a ruby object as JSON.
- *
- *  This method is only expected to work with C Ruby.
- *  This is an experimental method and is subject to change.
- *  In particular, the function signature and output format are
- *  not guaranteed to be compatible in future versions of ruby.
- */
-
 static VALUE
-objspace_dump(int argc, VALUE *argv, VALUE os)
+objspace_dump(VALUE os, VALUE obj, VALUE output)
 {
-    static const char filename[] = "rubyobj";
-    VALUE obj = Qnil, opts = Qnil, output;
     struct dump_config dc = {0,};
-
-    rb_scan_args(argc, argv, "1:", &obj, &opts);
-
-    output = dump_output(&dc, opts, sym_string, filename);
+    dump_output(&dc, output, Qnil, Qnil);
 
     dump_object(obj, &dc);
 
-    return dump_result(&dc, output);
+    return dump_result(&dc);
 }
 
-/*
- *  call-seq:
- *    ObjectSpace.dump_all([output: :file]) # => #<File:/tmp/rubyheap20131125-88469-laoj3v.json>
- *    ObjectSpace.dump_all(output: :stdout) # => nil
- *    ObjectSpace.dump_all(output: :string) # => "{...}\n{...}\n..."
- *    ObjectSpace.dump_all(output:
- *      File.open('heap.json','w'))         # => #<File:heap.json>
- *    ObjectSpace.dump_all(output: :string,
- *      since: 42)                          # => "{...}\n{...}\n..."
- *
- *  Dump the contents of the ruby heap as JSON.
- *
- *  _since_ must be a non-negative integer or +nil+.
- *
- *  If _since_ is a positive integer, only objects of that generation and
- *  newer generations are dumped. The current generation can be accessed using
- *  GC::count.
- *
- *  Objects that were allocated without object allocation tracing enabled
- *  are ignored. See ::trace_object_allocations for more information and
- *  examples.
- *
- *  If _since_ is omitted or is +nil+, all objects are dumped.
- *
- *  This method is only expected to work with C Ruby.
- *  This is an experimental method and is subject to change.
- *  In particular, the function signature and output format are
- *  not guaranteed to be compatible in future versions of ruby.
- */
-
 static VALUE
-objspace_dump_all(int argc, VALUE *argv, VALUE os)
+objspace_dump_all(VALUE os, VALUE output, VALUE full, VALUE since)
 {
-    static const char filename[] = "rubyheap";
-    VALUE opts = Qnil, output;
     struct dump_config dc = {0,};
-
-    rb_scan_args(argc, argv, "0:", &opts);
-
-    output = dump_output(&dc, opts, sym_file, filename);
+    dump_output(&dc, output, full, since);
 
     if (!dc.partial_dump || dc.since == 0) {
         /* dump roots */
@@ -684,7 +602,7 @@ objspace_dump_all(int argc, VALUE *argv, VALUE os)
     /* dump all objects */
     rb_objspace_each_objects(heap_i, &dc);
 
-    return dump_result(&dc, output);
+    return dump_result(&dc);
 }
 
 void
@@ -695,15 +613,8 @@ Init_objspace_dump(VALUE rb_mObjSpace)
     rb_mObjSpace = rb_define_module("ObjectSpace"); /* let rdoc know */
 #endif
 
-    rb_define_module_function(rb_mObjSpace, "dump", objspace_dump, -1);
-    rb_define_module_function(rb_mObjSpace, "dump_all", objspace_dump_all, -1);
-
-    sym_output = ID2SYM(rb_intern("output"));
-    sym_stdout = ID2SYM(rb_intern("stdout"));
-    sym_string = ID2SYM(rb_intern("string"));
-    sym_since  = ID2SYM(rb_intern("since"));
-    sym_file   = ID2SYM(rb_intern("file"));
-    sym_full   = ID2SYM(rb_intern("full"));
+    rb_define_module_function(rb_mObjSpace, "_dump", objspace_dump, 2);
+    rb_define_module_function(rb_mObjSpace, "_dump_all", objspace_dump_all, 3);
 
     /* force create static IDs */
     rb_obj_gc_flags(rb_mObjSpace, 0, 0);

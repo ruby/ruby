@@ -68,6 +68,15 @@ REPOSITORIES = {
   erb: "ruby/erb",
   nkf: "ruby/nkf",
   tsort: "ruby/tsort",
+  abbrev: "ruby/abbrev",
+  shellwords: "ruby/shellwords",
+  base64: "ruby/base64",
+  syslog: "ruby/syslog",
+  "open-uri": "ruby/open-uri",
+  securerandom: "ruby/securerandom",
+  resolv: "ruby/resolv",
+  "resolv-replace": "ruby/resolv-replace",
+  time: "ruby/time",
 }
 
 def sync_default_gems(gem)
@@ -280,6 +289,14 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/test/nkf", "test")
     cp_r("#{upstream}/nkf.gemspec", "ext/nkf")
     `git checkout ext/nkf/depend`
+  when "syslog"
+    rm_rf(%w[ext/syslog test/syslog test/test_syslog.rb])
+    cp_r("#{upstream}/ext/syslog", "ext")
+    cp_r("#{upstream}/lib", "ext/syslog")
+    cp_r("#{upstream}/test/syslog", "test")
+    cp_r("#{upstream}/test/test_syslog.rb", "test")
+    cp_r("#{upstream}/syslog.gemspec", "ext/syslog")
+    `git checkout ext/syslog/depend`
   else
     sync_lib gem
   end

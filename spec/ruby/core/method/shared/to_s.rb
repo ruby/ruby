@@ -32,7 +32,7 @@ describe :method_to_s, shared: true do
     @string.should =~ /MethodSpecs::MySub/
   end
 
-  ruby_version_is '2.8' do
+  ruby_version_is '3.0' do
     it "returns a String containing the Module containing the method if object has a singleton class but method is not defined in the singleton class" do
       obj = MethodSpecs::MySub.new
       obj.singleton_class

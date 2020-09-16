@@ -41,6 +41,12 @@
 #  define RB_WAITFD_OUT 0x004
 #endif
 
+typedef enum {
+    RUBY_IO_READABLE = RB_WAITFD_IN,
+    RUBY_IO_WRITABLE = RB_WAITFD_OUT,
+    RUBY_IO_PRIORITY = RB_WAITFD_PRI,
+} rb_io_event_t;
+
 #include "ruby/internal/dllexport.h"
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
@@ -53,6 +59,8 @@ PACKED_STRUCT_UNALIGNED(struct rb_io_buffer_t {
 typedef struct rb_io_buffer_t rb_io_buffer_t;
 
 typedef struct rb_io_t {
+    VALUE self;
+
     FILE *stdio_file;		/* stdio ptr for read/write if available */
     int fd;                     /* file descriptor */
     int mode;			/* mode flags: FMODE_XXXs */
@@ -113,11 +121,13 @@ typedef struct rb_io_enc_t rb_io_enc_t;
 /* #define FMODE_INET                  0x00400000 */
 /* #define FMODE_INET6                 0x00800000 */
 
-#define GetOpenFile(obj,fp) rb_io_check_closed((fp) = RFILE(rb_io_taint_check(obj))->fptr)
+#define RB_IO_POINTER(obj,fp) rb_io_check_closed((fp) = RFILE(rb_io_taint_check(obj))->fptr)
+#define GetOpenFile RB_IO_POINTER
 
-#define MakeOpenFile(obj, fp) do {\
+#define RB_IO_OPEN(obj, fp) do {\
     (fp) = rb_io_make_open_file(obj);\
 } while (0)
+#define MakeOpenFile RB_IO_OPEN
 
 rb_io_t *rb_io_make_open_file(VALUE obj);
 
@@ -139,13 +149,16 @@ VALUE rb_io_get_io(VALUE io);
 VALUE rb_io_check_io(VALUE io);
 VALUE rb_io_get_write_io(VALUE io);
 VALUE rb_io_set_write_io(VALUE io, VALUE w);
-int rb_io_wait_readable(int);
-int rb_io_wait_writable(int);
-int rb_wait_for_single_fd(int fd, int events, struct timeval *tv);
 void rb_io_set_nonblock(rb_io_t *fptr);
 int rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2_p, int *fmode_p);
 void rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash, int *oflags_p, int *fmode_p, rb_io_enc_t *convconfig_p);
 ssize_t rb_io_bufwrite(VALUE io, const void *buf, size_t size);
+
+int rb_io_wait_readable(int fd);
+int rb_io_wait_writable(int fd);
+int rb_wait_for_single_fd(int fd, int events, struct timeval *tv);
+
+VALUE rb_io_wait(VALUE io, VALUE events, VALUE timeout);
 
 /* compatibility for ruby 1.8 and older */
 #define rb_io_mode_flags(modestr) [<"rb_io_mode_flags() is obsolete; use rb_io_modestr_fmode()">]

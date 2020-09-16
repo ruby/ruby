@@ -20,6 +20,7 @@ static void Init_builtin_prelude(void);
 void
 rb_call_inits(void)
 {
+    CALL(Thread_Mutex);
 #if USE_TRANSIENT_HEAP
     CALL(TransientHeap);
 #endif
@@ -64,6 +65,7 @@ rb_call_inits(void)
     CALL(VM);
     CALL(ISeq);
     CALL(Thread);
+    CALL(Scheduler);
     CALL(process);
     CALL(Cont);
     CALL(Rational);

@@ -3384,6 +3384,57 @@ should_be_finalizable(VALUE obj)
  *  as an argument to <i>aProc</i>. If <i>aProc</i> is a lambda or
  *  method, make sure it can be called with a single argument.
  *
+ *  The return value is an array <code>[0, aProc]</code>.
+ *
+ *  The two recommended patterns are to either create the finaliser proc
+ *  in a non-instance method where it can safely capture the needed state,
+ *  or to use a custom callable object that stores the needed state
+ *  explicitly as instance variables.
+ *
+ *      class Foo
+ *        def initialize(data_needed_for_finalization)
+ *          ObjectSpace.define_finalizer(self, self.class.create_finalizer(data_needed_for_finalization))
+ *        end
+ *      
+ *        def self.create_finalizer(data_needed_for_finalization)
+ *          proc {
+ *            puts "finalizing #{data_needed_for_finalization}"
+ *          }
+ *        end
+ *      end
+ *
+ *      class Bar
+ *       class Remover
+ *          def initialize(data_needed_for_finalization)
+ *            @data_needed_for_finalization = data_needed_for_finalization
+ *          end
+ *        
+ *          def call(id)
+ *            puts "finalizing #{@data_needed_for_finalization}"
+ *          end
+ *        end
+ *
+ *        def initialize(data_needed_for_finalization)
+ *          ObjectSpace.define_finalizer(self, Remover.new(data_needed_for_finalization))
+ *        end
+ *      end
+ *
+ *  Note that if your finalizer references the object to be
+ *  finalized it will never be run on GC, although it will still be
+ *  run at exit. You will get a warning if you capture the object
+ *  to be finalized as the receiver of the finalizer.
+ *
+ *      class CapturesSelf
+ *        def initialize(name)
+ *          ObjectSpace.define_finalizer(self, proc {
+ *            # this finalizer will only be run on exit
+ *            puts "finalizing #{name}"
+ *          })
+ *        end
+ *      end
+ *
+ *  Also note that finalization can be unpredictable and is never guaranteed
+ *  to be run except on exit.
  */
 
 static VALUE
@@ -3398,6 +3449,10 @@ define_final(int argc, VALUE *argv, VALUE os)
     }
     else {
 	should_be_callable(block);
+    }
+
+    if (rb_callable_receiver(block) == obj) {
+        rb_warn("finalizer references object to be finalized");
     }
 
     return define_final0(obj, block);
@@ -4934,7 +4989,7 @@ gc_mark_stack_values(rb_objspace_t *objspace, long n, const VALUE *values)
 
     for (i=0; i<n; i++) {
         if (is_markable_object(objspace, values[i])) {
-            gc_mark(objspace, values[i]);
+            gc_mark_and_pin(objspace, values[i]);
         }
     }
 }
@@ -5636,6 +5691,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 
       case T_FILE:
         if (any->as.file.fptr) {
+            gc_mark(objspace, any->as.file.fptr->self);
             gc_mark(objspace, any->as.file.fptr->pathv);
             gc_mark(objspace, any->as.file.fptr->tied_io_for_writing);
             gc_mark(objspace, any->as.file.fptr->writeconv_asciicompat);
@@ -8555,6 +8611,7 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
 
       case T_FILE:
         if (any->as.file.fptr) {
+            UPDATE_IF_MOVED(objspace, any->as.file.fptr->self);
             UPDATE_IF_MOVED(objspace, any->as.file.fptr->pathv);
             UPDATE_IF_MOVED(objspace, any->as.file.fptr->tied_io_for_writing);
             UPDATE_IF_MOVED(objspace, any->as.file.fptr->writeconv_asciicompat);
@@ -12099,15 +12156,18 @@ rb_gcdebug_remove_stress_to_class(int argc, VALUE *argv, VALUE self)
  *
  *  ObjectSpace also provides support for object finalizers, procs that will be
  *  called when a specific object is about to be destroyed by garbage
- *  collection.
- *
- *     require 'objspace'
+ *  collection. See the documentation for
+ *  <code>ObjectSpace.define_finalizer</code> for important information on
+ *  how to use this method correctly.
  *
  *     a = "A"
  *     b = "B"
  *
  *     ObjectSpace.define_finalizer(a, proc {|id| puts "Finalizer one on #{id}" })
  *     ObjectSpace.define_finalizer(b, proc {|id| puts "Finalizer two on #{id}" })
+ *
+ *     a = nil
+ *     b = nil
  *
  *  _produces:_
  *

@@ -446,6 +446,30 @@ if defined? Zlib
   end
 
   class TestZlibGzipFile < Test::Unit::TestCase
+    def test_gzip_reader_zcat
+      Tempfile.create("test_zlib_gzip_file_to_io") {|t|
+        gz = Zlib::GzipWriter.new(t)
+        gz.print("foo")
+        gz.close
+        t = File.open(t.path, 'ab')
+        gz = Zlib::GzipWriter.new(t)
+        gz.print("bar")
+        gz.close
+
+        results = []
+        t = File.open(t.path)
+        Zlib::GzipReader.zcat(t) do |str|
+          results << str
+        end
+        assert_equal(["foo", "bar"], results)
+        t.close
+
+        t = File.open(t.path)
+        assert_equal("foobar", Zlib::GzipReader.zcat(t))
+        t.close
+      }
+    end
+
     def test_to_io
       Tempfile.create("test_zlib_gzip_file_to_io") {|t|
         t.close

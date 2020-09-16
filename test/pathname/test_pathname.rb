@@ -269,17 +269,17 @@ class TestPathname < Test::Unit::TestCase
     Pathname.new(path).relative?
   end
 
+  defassert(:relative?, true, '')
   defassert(:relative?, false, '/')
   defassert(:relative?, false, '/a')
   defassert(:relative?, false, '/..')
   defassert(:relative?, true, 'a')
   defassert(:relative?, true, 'a/b')
 
-  if DOSISH_DRIVE_LETTER
-    defassert(:relative?, false, 'A:')
-    defassert(:relative?, false, 'A:/')
-    defassert(:relative?, false, 'A:/a')
-  end
+  defassert(:relative?, !DOSISH_DRIVE_LETTER, 'A:.')
+  defassert(:relative?, !DOSISH_DRIVE_LETTER, 'A:')
+  defassert(:relative?, !DOSISH_DRIVE_LETTER, 'A:/')
+  defassert(:relative?, !DOSISH_DRIVE_LETTER, 'A:/a')
 
   if File.dirname('//') == '//'
     defassert(:relative?, false, '//')

@@ -247,14 +247,6 @@ class TestJIT < Test::Unit::TestCase
     assert_compile_once('"a#{}b" + "c"', result_inspect: '"abc"', insns: %i[putstring concatstrings tostring])
   end
 
-  def test_compile_insn_freezestring
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~'end;'}", stdout: 'true', success_count: 1, insns: %i[freezestring])
-    begin;
-      # frozen_string_literal: true
-      print proc { "#{true}".frozen? }.call
-    end;
-  end
-
   def test_compile_insn_toregexp
     assert_compile_once('/#{true}/ =~ "true"', result_inspect: '0', insns: %i[toregexp])
   end

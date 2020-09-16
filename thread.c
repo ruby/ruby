@@ -75,11 +75,13 @@
 #include "hrtime.h"
 #include "internal.h"
 #include "internal/class.h"
+#include "internal/cont.h"
 #include "internal/error.h"
 #include "internal/hash.h"
 #include "internal/io.h"
 #include "internal/object.h"
 #include "internal/proc.h"
+#include "internal/scheduler.h"
 #include "internal/signal.h"
 #include "internal/thread.h"
 #include "internal/time.h"
@@ -111,8 +113,6 @@ static VALUE rb_cThreadShield;
 static VALUE sym_immediate;
 static VALUE sym_on_blocking;
 static VALUE sym_never;
-
-static ID id_wait_for_single_fd;
 
 enum SLEEP_FLAGS {
     SLEEP_DEADLOCKABLE = 0x1,
@@ -216,6 +216,12 @@ vm_check_ints_blocking(rb_execution_context_t *ec)
 	RUBY_VM_SET_INTERRUPT(ec);
     }
     return rb_threadptr_execute_interrupts(th, 1);
+}
+
+int
+rb_vm_check_ints_blocking(rb_execution_context_t *ec)
+{
+    return vm_check_ints_blocking(ec);
 }
 
 /*
@@ -550,7 +556,7 @@ rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th)
 	/* rb_warn("mutex #<%p> remains to be locked by terminated thread",
 		(void *)mutexes); */
 	mutexes = mutex->next_mutex;
-	err = rb_mutex_unlock_th(mutex, th);
+	err = rb_mutex_unlock_th(mutex, th, mutex->fiber);
 	if (err) rb_bug("invalid keeping_mutexes: %s", err);
     }
 }
@@ -1481,8 +1487,13 @@ rb_thread_sleep_interruptible(void)
 static void
 rb_thread_sleep_deadly_allow_spurious_wakeup(void)
 {
-    thread_debug("rb_thread_sleep_deadly_allow_spurious_wakeup\n");
-    sleep_forever(GET_THREAD(), SLEEP_DEADLOCKABLE);
+    VALUE scheduler = rb_thread_current_scheduler();
+    if (scheduler != Qnil) {
+        rb_scheduler_kernel_sleepv(scheduler, 0, NULL);
+    } else {
+        thread_debug("rb_thread_sleep_deadly_allow_spurious_wakeup\n");
+        sleep_forever(GET_THREAD(), SLEEP_DEADLOCKABLE);
+    }
 }
 
 void
@@ -1603,7 +1614,6 @@ rb_nogvl(void *(*func)(void *), void *data1,
     rb_thread_t *th = rb_ec_thread_ptr(ec);
     int saved_errno = 0;
     VALUE ubf_th = Qfalse;
-    VALUE scheduler = th->scheduler;
 
     if (ubf == RUBY_UBF_IO || ubf == RUBY_UBF_PROCESS) {
 	ubf = ubf_select;
@@ -1616,10 +1626,6 @@ rb_nogvl(void *(*func)(void *), void *data1,
         else {
             ubf_th = rb_thread_start_unblock_thread();
         }
-    }
-
-    if (scheduler != Qnil) {
-        rb_funcall(scheduler, rb_intern("enter_blocking_region"), 0);
     }
 
     BLOCKING_REGION(th, {
@@ -1635,10 +1641,6 @@ rb_nogvl(void *(*func)(void *), void *data1,
 
     if (ubf_th != Qfalse) {
         thread_value(rb_thread_kill(ubf_th));
-    }
-
-    if (scheduler != Qnil) {
-        rb_funcall(scheduler, rb_intern("exit_blocking_region"), 0);
     }
 
     errno = saved_errno;
@@ -3269,23 +3271,6 @@ rb_thread_stop_p(VALUE thread)
 }
 
 /*
- *  call-seq:
- *     thr.safe_level   -> integer
- *
- *  Returns the safe level.
- *
- *  This method is obsolete because $SAFE is a process global state.
- *  Simply check $SAFE.
- */
-
-static VALUE
-rb_thread_safe_level(VALUE thread)
-{
-    rb_warn("Thread#safe_level will be removed in Ruby 3.0");
-    return UINT2NUM(GET_VM()->safe_level_);
-}
-
-/*
  * call-seq:
  *   thr.name   -> string
  *
@@ -3762,6 +3747,12 @@ rb_thread_scheduler_set(VALUE thread, VALUE scheduler)
 
 static VALUE
 rb_thread_scheduler(VALUE klass)
+{
+    return rb_thread_scheduler_if_nonblocking(rb_thread_current());
+}
+
+VALUE
+rb_thread_current_scheduler()
 {
     return rb_thread_scheduler_if_nonblocking(rb_thread_current());
 }
@@ -4343,15 +4334,6 @@ rb_thread_fd_select(int max, rb_fdset_t * read, rb_fdset_t * write, rb_fdset_t *
     return (int)rb_ensure(do_select, (VALUE)&set, select_set_free, (VALUE)&set);
 }
 
-static VALUE
-rb_thread_timeout(struct timeval *timeout) {
-    if (timeout) {
-        return rb_float_new((double)timeout->tv_sec + (0.000001f * timeout->tv_usec));
-    }
-
-    return Qnil;
-}
-
 #ifdef USE_POLL
 
 /* The same with linux kernel. TODO: make platform independent definition. */
@@ -4367,7 +4349,7 @@ rb_thread_timeout(struct timeval *timeout) {
  * returns a mask of events
  */
 int
-rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
+rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
 {
     struct pollfd fds[2];
     int result = 0, lerrno;
@@ -4377,14 +4359,6 @@ rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
     rb_unblock_function_t *ubf;
     struct waiting_fd wfd;
     int state;
-
-    VALUE scheduler = rb_thread_scheduler_if_nonblocking(rb_thread_current());
-    if (scheduler != Qnil) {
-        VALUE result = rb_funcall(scheduler, id_wait_for_single_fd, 3, INT2NUM(fd), INT2NUM(events),
-            rb_thread_timeout(timeout)
-        );
-        return RTEST(result);
-    }
 
     wfd.th = GET_THREAD();
     wfd.fd = fd;
@@ -4524,16 +4498,8 @@ select_single_cleanup(VALUE ptr)
 }
 
 int
-rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
+rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
 {
-    VALUE scheduler = rb_thread_scheduler_if_nonblocking(rb_thread_current());
-    if (scheduler != Qnil) {
-        VALUE result = rb_funcall(scheduler, id_wait_for_single_fd, 3, INT2NUM(fd), INT2NUM(events),
-            rb_thread_timeout(timeout)
-        );
-        return RTEST(result);
-    }
-
     rb_fdset_t rfds, wfds, efds;
     struct select_args args;
     int r;
@@ -5087,7 +5053,7 @@ rb_thread_shield_wait(VALUE self)
 
     if (!mutex) return Qfalse;
     m = mutex_ptr(mutex);
-    if (m->th == GET_THREAD()) return Qnil;
+    if (m->fiber == GET_EC()->fiber_ptr) return Qnil;
     rb_thread_shield_waiting_inc(self);
     rb_mutex_lock(mutex);
     rb_thread_shield_waiting_dec(self);
@@ -5423,6 +5389,16 @@ rb_thread_backtrace_locations_m(int argc, VALUE *argv, VALUE thval)
     return rb_vm_thread_backtrace_locations(argc, argv, thval);
 }
 
+void
+Init_Thread_Mutex()
+{
+    rb_thread_t *th = GET_THREAD();
+
+    rb_native_mutex_initialize(&th->vm->waitpid_lock);
+    rb_native_mutex_initialize(&th->vm->workqueue_lock);
+    rb_native_mutex_initialize(&th->interrupt_lock);
+}
+
 /*
  *  Document-class: ThreadError
  *
@@ -5450,8 +5426,6 @@ Init_Thread(void)
     sym_never = ID2SYM(rb_intern("never"));
     sym_immediate = ID2SYM(rb_intern("immediate"));
     sym_on_blocking = ID2SYM(rb_intern("on_blocking"));
-
-    id_wait_for_single_fd = rb_intern("wait_for_single_fd");
 
     rb_define_singleton_method(rb_cThread, "new", thread_s_new, -1);
     rb_define_singleton_method(rb_cThread, "start", thread_start, -2);
@@ -5503,7 +5477,6 @@ Init_Thread(void)
     rb_define_method(rb_cThread, "abort_on_exception=", rb_thread_abort_exc_set, 1);
     rb_define_method(rb_cThread, "report_on_exception", rb_thread_report_exc, 0);
     rb_define_method(rb_cThread, "report_on_exception=", rb_thread_report_exc_set, 1);
-    rb_define_method(rb_cThread, "safe_level", rb_thread_safe_level, 0);
     rb_define_method(rb_cThread, "group", rb_thread_group, 0);
     rb_define_method(rb_cThread, "backtrace", rb_thread_backtrace_m, -1);
     rb_define_method(rb_cThread, "backtrace_locations", rb_thread_backtrace_locations_m, -1);
@@ -5542,9 +5515,6 @@ Init_Thread(void)
 	    /* acquire global vm lock */
             rb_global_vm_lock_t *gvl = rb_ractor_gvl(th->ractor);
 	    gvl_acquire(gvl, th);
-            rb_native_mutex_initialize(&th->vm->waitpid_lock);
-            rb_native_mutex_initialize(&th->vm->workqueue_lock);
-            rb_native_mutex_initialize(&th->interrupt_lock);
 
 	    th->pending_interrupt_queue = rb_ary_tmp_new(0);
 	    th->pending_interrupt_queue_checked = 0;
@@ -5583,7 +5553,7 @@ debug_deadlock_check(rb_ractor_t *r, VALUE msg)
         if (th->locking_mutex) {
             rb_mutex_t *mutex = mutex_ptr(th->locking_mutex);
             rb_str_catf(msg, " mutex:%p cond:%"PRIuSIZE,
-                        (void *)mutex->th, rb_mutex_num_waiting(mutex));
+                        (void *)mutex->fiber, rb_mutex_num_waiting(mutex));
         }
 
         {
@@ -5617,8 +5587,7 @@ rb_check_deadlock(rb_ractor_t *r)
         }
         else if (th->locking_mutex) {
             rb_mutex_t *mutex = mutex_ptr(th->locking_mutex);
-
-            if (mutex->th == th || (!mutex->th && !list_empty(&mutex->waitq))) {
+            if (mutex->fiber == th->ec->fiber_ptr || (!mutex->fiber && !list_empty(&mutex->waitq))) {
                 found = 1;
             }
         }

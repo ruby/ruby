@@ -38,7 +38,7 @@ ruby_version_is "2.6" do
         (f << g).should_not.lambda?
       end
 
-      ruby_version_is(''...'2.8') do
+      ruby_version_is(''...'3.0') do
         it "is a Proc when other is lambda" do
           f = proc { |x| x * x }
           g = -> x { x + x }
@@ -56,7 +56,7 @@ ruby_version_is "2.6" do
         end
       end
 
-      ruby_version_is('2.8') do
+      ruby_version_is('3.0') do
         it "is a lambda when parameter is lambda" do
           f = -> x { x * x }
           g = proc { |x| x + x }

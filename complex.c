@@ -732,6 +732,14 @@ nucomp_s_polar(int argc, VALUE *argv, VALUE klass)
 	nucomp_real_check(arg);
 	break;
     }
+    if (RB_TYPE_P(abs, T_COMPLEX)) {
+        get_dat1(abs);
+        abs = dat->real;
+    }
+    if (RB_TYPE_P(arg, T_COMPLEX)) {
+        get_dat1(arg);
+        arg = dat->real;
+    }
     return f_complex_polar(klass, abs, arg);
 }
 
