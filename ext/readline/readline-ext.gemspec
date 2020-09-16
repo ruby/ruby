@@ -7,7 +7,7 @@ Gem::Specification.new do |spec|
   spec.summary       = %q{Provides an interface for GNU Readline and Edit Line (libedit).}
   spec.description   = %q{Provides an interface for GNU Readline and Edit Line (libedit).}
   spec.homepage      = "https://github.com/ruby/readline-ext"
-  spec.license       = "BSD-2-Clause"
+  spec.licenses      = ["Ruby", "BSD-2-Clause"]
   spec.extensions    = %w[ext/readline/extconf.rb]
 
   spec.metadata["homepage_uri"] = spec.homepage
