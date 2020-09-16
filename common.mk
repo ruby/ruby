@@ -13761,6 +13761,7 @@ symbol.$(OBJEXT): {$(VPATH)}internal/variable.h
 symbol.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 symbol.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 symbol.$(OBJEXT): {$(VPATH)}missing.h
+symbol.$(OBJEXT): {$(VPATH)}node.h
 symbol.$(OBJEXT): {$(VPATH)}onigmo.h
 symbol.$(OBJEXT): {$(VPATH)}oniguruma.h
 symbol.$(OBJEXT): {$(VPATH)}probes.dmyh
@@ -13770,6 +13771,8 @@ symbol.$(OBJEXT): {$(VPATH)}st.h
 symbol.$(OBJEXT): {$(VPATH)}subst.h
 symbol.$(OBJEXT): {$(VPATH)}symbol.c
 symbol.$(OBJEXT): {$(VPATH)}symbol.h
+symbol.$(OBJEXT): {$(VPATH)}vm_debug.h
+symbol.$(OBJEXT): {$(VPATH)}vm_sync.h
 thread.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 thread.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 thread.$(OBJEXT): $(CCAN_DIR)/list/list.h
