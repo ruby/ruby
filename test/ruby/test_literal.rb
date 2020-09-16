@@ -194,7 +194,7 @@ class TestRubyLiteral < Test::Unit::TestCase
       assert_predicate(str, :frozen?)
       assert_raise_with_message(FrozenError, /created at #{Regexp.quote(f)}:#{n}/) {
         str << "x"
-      }
+      } unless ENV['RUBY_ISEQ_DUMP_DEBUG']
     end
 
     def test_debug_frozen_string_in_array_literal
