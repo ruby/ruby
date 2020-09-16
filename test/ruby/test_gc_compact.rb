@@ -49,6 +49,21 @@ class TestGCCompact < Test::Unit::TestCase
     GC.disable_autocompact
   end
 
+  def test_gc_compact_stats
+    list = []
+    list2 = []
+
+    # Try to make some fragmentation
+    500.times {
+      list << Object.new
+      Object.new
+      Object.new
+    }
+    compact_stats = GC.compact
+    refute_predicate compact_stats[:considered], :empty?
+    refute_predicate compact_stats[:moved], :empty?
+  end
+
   def memory_location(obj)
     (Fiddle.dlwrap(obj) >> 1)
   end

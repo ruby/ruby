@@ -685,7 +685,6 @@ typedef struct rb_objspace {
 	unsigned int gc_stressful: 1;
 	unsigned int has_hook: 1;
 	unsigned int during_minor_gc : 1;
-	unsigned int compact : 1;
 #if GC_ENABLE_INCREMENTAL_MARK
 	unsigned int during_incremental_marking : 1;
 #endif
@@ -4617,7 +4616,6 @@ gc_compact_finish(rb_objspace_t *objspace, rb_heap_t *heap)
     heap->compact_cursor = NULL;
     heap->compact_cursor_index = 0;
     rb_clear_constant_cache();
-    objspace->flags.compact = 0;
     objspace->flags.during_compacting = FALSE;
 }
 
@@ -5119,7 +5117,7 @@ gc_sweep(rb_objspace_t *objspace)
 	gc_prof_sweep_timer_start(objspace);
 #endif
 	gc_sweep_start(objspace);
-        if (objspace->flags.compact) {
+        if (objspace->flags.during_compacting) {
             gc_compact_start(objspace, heap_eden);
         }
 	gc_sweep_rest(objspace);
@@ -8020,10 +8018,7 @@ gc_start(rb_objspace_t *objspace, int reason)
 
     /* reason may be clobbered, later, so keep set immediate_sweep here */
     objspace->flags.immediate_sweep = !!((unsigned)reason & GPR_FLAG_IMMEDIATE_SWEEP);
-    objspace->flags.compact = !!((unsigned)reason & GPR_FLAG_COMPACT);
-    if (objspace->flags.compact) {
-        objspace->flags.during_compacting = TRUE;
-    }
+    objspace->flags.during_compacting = !!((unsigned)reason & GPR_FLAG_COMPACT);
 
     if (!heap_allocated_pages) return FALSE; /* heap is not ready */
     if (!(reason & GPR_FLAG_METHOD) && !ready_to_gc(objspace)) return TRUE; /* GC is not allowed */
