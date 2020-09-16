@@ -1070,7 +1070,7 @@ incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}known_errors.inc \
       {$(VPATH)}vm_call_iseq_optimized.inc $(srcdir)/revision.h \
       $(REVISION_H) \
       $(UNICODE_DATA_HEADERS) $(srcdir)/enc/jis/props.h \
-      {$(VPATH)}id.h {$(VPATH)}probes.dmyh {$(VPATH)}ujit_exmaples.h
+      {$(VPATH)}id.h {$(VPATH)}probes.dmyh {$(VPATH)}ujit_examples.h
 
 insns: $(INSNS)
 
