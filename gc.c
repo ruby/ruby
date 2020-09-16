@@ -4444,7 +4444,7 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page,
     while(1) {
         size_t index = heap->compact_cursor_index;
 
-	bits_t *mark_bits = cursor->mark_bits;
+        bits_t *mark_bits = cursor->mark_bits;
         bits_t *pin_bits = cursor->pinned_bits;
         RVALUE * p = cursor->start;
         RVALUE * offset = p - NUM_IN_PAGE(p);
