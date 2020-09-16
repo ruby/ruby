@@ -11861,6 +11861,17 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
             APPENDF((BUFF_ARGS, "%.*s", str_len_no_raise(obj), RSTRING_PTR(obj)));
 	    break;
 	  }
+          case T_SYMBOL: {
+              VALUE fstr = RSYMBOL(obj)->fstr;
+              ID id = RSYMBOL(obj)->id;
+              if (RB_TYPE_P(fstr, T_STRING)) {
+                  APPENDF((BUFF_ARGS, ":%s id:%d", RSTRING_PTR(fstr), (unsigned int)id));
+              }
+              else {
+                  APPENDF((BUFF_ARGS, "(%p) id:%d", (void *)fstr, (unsigned int)id));
+              }
+              break;
+          }
           case T_MOVED: {
             APPENDF((BUFF_ARGS, "-> %p", (void*)rb_gc_location(obj)));
             break;
