@@ -135,7 +135,8 @@ class Scheduler
     @locking -= 1
   end
 
-  # Used when synchronization wakes up a previously-blocked fiber (Mutex#unlock, Queue#push, ...)
+  # Used when synchronization wakes up a previously-blocked fiber (Mutex#unlock, Queue#push, ...).
+  # This might be called from another thread.
   def unblock(blocker, fiber)
     # p [__method__, blocker, fiber]
     @lock.synchronize do

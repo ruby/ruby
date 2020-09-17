@@ -402,6 +402,7 @@ rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_fiber_t *fiber)
 
             if (cur->th->scheduler != Qnil) {
                 rb_scheduler_unblock(cur->th->scheduler, cur->self, rb_fiberptr_self(cur->fiber));
+                goto found;
             } else {
                 switch (cur->th->status) {
                   case THREAD_RUNNABLE: /* from someone else calling Thread#run */
