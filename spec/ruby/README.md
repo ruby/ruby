@@ -5,6 +5,8 @@
 
 The Ruby Spec Suite, abbreviated `ruby/spec`, is a test suite for the behavior of the Ruby programming language.
 
+### Description and Motivation
+
 It is not a standardized specification like the ISO one, and does not aim to become one.
 Instead, it is a practical tool to describe and test the behavior of Ruby with code.
 
@@ -30,19 +32,23 @@ ruby/spec is known to be tested in these implementations for every commit:
 ruby/spec describes the behavior of Ruby 2.5 and more recent Ruby versions.
 More precisely, every latest stable MRI release should [pass](https://travis-ci.org/ruby/spec) all specs of ruby/spec (2.5.x, 2.6.x, 2.7.x, etc), and those are tested in TravisCI.
 
+### Synchronization with Ruby Implementations
+
 The specs are synchronized both ways around once a month by @eregon between ruby/spec, MRI, JRuby and TruffleRuby.
 Each of these repositories has a full copy of the specs under `spec/ruby` to ease editing specs.
 Any of these repositories can be used to add or edit specs, use what is most convenient for you.
 
-For *testing* a Ruby implementation, one should always test against the implementation's copy of the specs under `spec/ruby`, as that's what the Ruby implementation tests against in their CI.
+For *testing* the development version of a Ruby implementation, one should always test against that implementation's copy of the specs under `spec/ruby`, as that's what the Ruby implementation tests against in their CI.
 Also, this repository doesn't always contain the latest spec changes from MRI (it's synchronized monthly), and does not contain tags (specs marked as failing on that Ruby implementation).
-Running specs in a Ruby implementation can be done with:
+Running specs on a Ruby implementation can be done with:
 
 ```
 $ cd ruby_implementation/spec/ruby
 # Add ../ruby_implementation/bin in PATH, or pass -t /path/to/bin/ruby
 $ ../mspec/bin/mspec
 ```
+
+### Specs for old Ruby versions
 
 For older specs try these commits:
 * Ruby 2.0.0-p647 - [Suite](https://github.com/ruby/spec/commit/245862558761d5abc676843ef74f86c9bcc8ea8d) using [MSpec](https://github.com/ruby/mspec/commit/f90efa068791064f955de7a843e96e2d7d3041c2) (may encounter 2 failures)
