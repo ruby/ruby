@@ -30,7 +30,7 @@ sync_wakeup(struct list_head *head, long max)
         list_del_init(&cur->node);
 
         if (cur->th->scheduler != Qnil) {
-            rb_scheduler_mutex_unlock(cur->th->scheduler, cur->self, rb_fiberptr_self(cur->fiber));
+            rb_scheduler_unblock(cur->th->scheduler, cur->self, rb_fiberptr_self(cur->fiber));
         }
 
         if (cur->th->status != THREAD_KILLED) {
@@ -276,7 +276,7 @@ do_mutex_lock(VALUE self, int interruptible_p)
             if (scheduler != Qnil) {
                 list_add_tail(&mutex->waitq, &w.node);
 
-                rb_scheduler_mutex_lock(scheduler, self);
+                rb_scheduler_block(scheduler, self);
 
                 list_del(&w.node);
 
@@ -401,7 +401,7 @@ rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_fiber_t *fiber)
 	    list_del_init(&cur->node);
 
             if (cur->th->scheduler != Qnil) {
-                rb_scheduler_mutex_unlock(cur->th->scheduler, cur->self, rb_fiberptr_self(cur->fiber));
+                rb_scheduler_unblock(cur->th->scheduler, cur->self, rb_fiberptr_self(cur->fiber));
             }
 
 	    switch (cur->th->status) {

@@ -17,8 +17,8 @@ VALUE rb_scheduler_timeout(struct timeval *timeout);
 VALUE rb_scheduler_kernel_sleep(VALUE scheduler, VALUE duration);
 VALUE rb_scheduler_kernel_sleepv(VALUE scheduler, int argc, VALUE * argv);
 
-VALUE rb_scheduler_mutex_lock(VALUE scheduler, VALUE mutex);
-VALUE rb_scheduler_mutex_unlock(VALUE scheduler, VALUE mutex, VALUE fiber);
+VALUE rb_scheduler_block(VALUE scheduler, VALUE blocker);
+VALUE rb_scheduler_unblock(VALUE scheduler, VALUE blocker, VALUE fiber);
 
 VALUE rb_scheduler_io_wait(VALUE scheduler, VALUE io, VALUE events, VALUE timeout);
 VALUE rb_scheduler_io_wait_readable(VALUE scheduler, VALUE io);

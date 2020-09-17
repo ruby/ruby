@@ -99,16 +99,6 @@ class Scheduler
     Process.clock_gettime(Process::CLOCK_MONOTONIC)
   end
 
-  def kernel_sleep(duration = nil)
-    if duration
-      @waiting[Fiber.current] = current_time + duration
-    end
-
-    Fiber.yield
-
-    return true
-  end
-
   def io_wait(io, events, duration)
     unless (events & IO::READABLE).zero?
       @readable[io] = Fiber.current
@@ -123,14 +113,27 @@ class Scheduler
     return true
   end
 
-  def mutex_lock(mutex)
+  def kernel_sleep(duration = nil)
+    # p [__method__, duration]
+    if duration
+      @waiting[Fiber.current] = current_time + duration
+    end
+
+    Fiber.yield
+
+    return true
+  end
+
+  def block(blocker)
+    # p [__method__, blocker]
     @locking += 1
     Fiber.yield
   ensure
     @locking -= 1
   end
 
-  def mutex_unlock(mutex, fiber)
+  def unblock(blocker, fiber)
+    # p [__method__, blocker, fiber]
     @lock.synchronize do
       @ready << fiber
     end
