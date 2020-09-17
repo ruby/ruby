@@ -149,6 +149,7 @@ COMMONOBJS    = array.$(OBJEXT) \
 		vm_sync.$(OBJEXT) \
 		vm_trace.$(OBJEXT) \
 		ujit_asm.$(OBJEXT) \
+		ujit_utils.$(OBJEXT) \
 		ujit_compile.$(OBJEXT) \
 		$(COROUTINE_OBJ) \
 		$(DTRACE_OBJ) \

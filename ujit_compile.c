@@ -7,8 +7,10 @@
 #include "insns_info.inc"
 #include "ujit_compile.h"
 #include "ujit_asm.h"
+#include "ujit_utils.h"
 
 // TODO: give ujit_examples.h some more meaningful file name
+// eg ujit_hook.h
 #include "ujit_examples.h"
 
 // Code generation context

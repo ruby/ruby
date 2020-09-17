@@ -1084,15 +1084,13 @@ void jmp8(CodeBlock cb, int8_t offset)
 }
 */
 
-/*
-/// jmp - Jump with relative 32-bit offset
-void jmp32(CodeBlock cb, int32_t offset)
+// jmp - Jump with relative 32-bit offset
+void jmp32(codeblock_t* cb, int32_t offset)
 {
-    cb.writeASM("jmp", ((offset > 0)? "+":"-") ~ to!string(offset));
-    cb.writeByte(JMP_REL32_OPCODE);
-    cb.writeInt(offset, 32);
+    //cb.writeASM("jmp", ((offset > 0)? "+":"-") ~ to!string(offset));
+    cb_write_byte(cb, 0xE9);
+    cb_write_int(cb, offset, 32);
 }
-*/
 
 /// lea - Load Effective Address
 void lea(codeblock_t* cb, x86opnd_t dst, x86opnd_t src)
