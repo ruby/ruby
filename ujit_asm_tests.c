@@ -349,6 +349,27 @@ void run_tests()
     cb_set_pos(cb, 0); sub(cb, EAX, imm_opnd(1)); check_bytes(cb, "83E801");
     cb_set_pos(cb, 0); sub(cb, RAX, imm_opnd(2)); check_bytes(cb, "4883E802");
 
+    // test
+    /*
+    test(
+        delegate void (CodeBlock cb) { cb.instr(TEST, AL, 4); },
+        "A804"
+    );
+    test(
+        delegate void (CodeBlock cb) { cb.instr(TEST, CL, 255); },
+        "F6C1FF"
+    );
+    test(
+        delegate void (CodeBlock cb) { cb.instr(TEST, DL, 7); },
+        "F6C207"
+    );
+    test(
+        delegate void (CodeBlock cb) { cb.instr(TEST, DIL, 9); },
+        "",
+        "40F6C709"
+    );
+    */
+
     // xor
     cb_set_pos(cb, 0); xor(cb, EAX, EAX); check_bytes(cb, "31C0");
 

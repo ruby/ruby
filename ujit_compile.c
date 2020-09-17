@@ -92,7 +92,7 @@ System V ABI reference:
 https://wiki.osdev.org/System_V_ABI#x86-64
 */
 uint8_t *
-ujit_compile_insn(rb_iseq_t *iseq, size_t insn_idx)
+ujit_compile_insn(rb_iseq_t *iseq, unsigned int insn_idx, unsigned int* next_ujit_idx)
 {
     // If not previously done, initialize ujit
     if (!cb)
@@ -100,6 +100,9 @@ ujit_compile_insn(rb_iseq_t *iseq, size_t insn_idx)
         ujit_init();
     }
 
+    // NOTE: if we are ever deployed in production, we
+    // should probably just log an error and return NULL here,
+    // so we can fail more gracefully
     if (cb->write_pos + 1024 >= cb->mem_size)
     {
         rb_bug("out of executable memory");
@@ -124,8 +127,6 @@ ujit_compile_insn(rb_iseq_t *iseq, size_t insn_idx)
 
         // Get the current opcode
         int opcode = ctx_get_opcode(&ctx);
-        //const char* name = insn_name(insn);
-        //printf("%s\n", name);
 
         // Lookup the codegen function for this instruction
         st_data_t st_gen_fn;
@@ -150,6 +151,9 @@ ujit_compile_insn(rb_iseq_t *iseq, size_t insn_idx)
         insn_idx += insn_len(opcode);
     }
 
+    // Let the caller know how many instructions ujit compiled
+    *next_ujit_idx = insn_idx;
+
     // If no instructions were compiled
     if (num_instrs == 0)
     {
@@ -157,8 +161,7 @@ ujit_compile_insn(rb_iseq_t *iseq, size_t insn_idx)
     }
 
     // Directly return the next PC, which is a constant
-    void *next_pc = &iseq->body->iseq_encoded[insn_idx];
-    mov(cb, RAX, const_ptr_opnd(next_pc));
+    mov(cb, RAX, const_ptr_opnd(ctx.pc));
 
     // Write the post call bytes
     ujit_instr_exit(cb);
