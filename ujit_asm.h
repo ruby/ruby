@@ -265,6 +265,7 @@ void js(codeblock_t* cb, size_t label_idx);
 void jz(codeblock_t* cb, size_t label_idx);
 void jmp(codeblock_t* cb, size_t label_idx);
 void jmp_rm(codeblock_t* cb, x86opnd_t opnd);
+void jmp32(codeblock_t* cb, int32_t offset);
 void lea(codeblock_t* cb, x86opnd_t dst, x86opnd_t src);
 void mov(codeblock_t* cb, x86opnd_t dst, x86opnd_t src);
 void neg(codeblock_t* cb, x86opnd_t opnd);
