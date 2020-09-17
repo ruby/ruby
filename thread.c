@@ -134,7 +134,7 @@ rb_thread_local_storage(VALUE thread)
 
 static void sleep_hrtime(rb_thread_t *, rb_hrtime_t, unsigned int fl);
 static void sleep_forever(rb_thread_t *th, unsigned int fl);
-static void rb_thread_sleep_deadly_allow_spurious_wakeup(void);
+static void rb_thread_sleep_deadly_allow_spurious_wakeup(VALUE blocker);
 static int rb_threadptr_dead(rb_thread_t *th);
 static void rb_check_deadlock(rb_ractor_t *r);
 static int rb_threadptr_pending_interrupt_empty_p(const rb_thread_t *th);
@@ -1485,11 +1485,11 @@ rb_thread_sleep_interruptible(void)
 }
 
 static void
-rb_thread_sleep_deadly_allow_spurious_wakeup(void)
+rb_thread_sleep_deadly_allow_spurious_wakeup(VALUE blocker)
 {
     VALUE scheduler = rb_thread_current_scheduler();
     if (scheduler != Qnil) {
-        rb_scheduler_kernel_sleepv(scheduler, 0, NULL);
+        rb_scheduler_block(scheduler, blocker);
     } else {
         thread_debug("rb_thread_sleep_deadly_allow_spurious_wakeup\n");
         sleep_forever(GET_THREAD(), SLEEP_DEADLOCKABLE);

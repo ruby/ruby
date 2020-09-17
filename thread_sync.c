@@ -483,9 +483,9 @@ rb_mutex_abandon_all(rb_mutex_t *mutexes)
 #endif
 
 static VALUE
-rb_mutex_sleep_forever(VALUE time)
+rb_mutex_sleep_forever(VALUE self)
 {
-    rb_thread_sleep_deadly_allow_spurious_wakeup();
+    rb_thread_sleep_deadly_allow_spurious_wakeup(self);
     return Qnil;
 }
 
@@ -516,7 +516,7 @@ rb_mutex_sleep(VALUE self, VALUE timeout)
         mutex_lock_uninterruptible(self);
     } else {
         if (NIL_P(timeout)) {
-            rb_ensure(rb_mutex_sleep_forever, Qnil, mutex_lock_uninterruptible, self);
+            rb_ensure(rb_mutex_sleep_forever, self, mutex_lock_uninterruptible, self);
         } else {
             rb_hrtime_t rel = rb_timeval2hrtime(&t);
             rb_ensure(rb_mutex_wait_for, (VALUE)&rel, mutex_lock_uninterruptible, self);
@@ -904,9 +904,9 @@ rb_queue_push(VALUE self, VALUE obj)
 }
 
 static VALUE
-queue_sleep(VALUE arg)
+queue_sleep(VALUE self)
 {
-    rb_thread_sleep_deadly_allow_spurious_wakeup();
+    rb_thread_sleep_deadly_allow_spurious_wakeup(self);
     return Qnil;
 }
 

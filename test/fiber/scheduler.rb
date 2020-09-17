@@ -93,6 +93,7 @@ class Scheduler
     end
   ensure
     @urgent.each(&:close)
+    @urgent = nil
   end
 
   def current_time
@@ -139,7 +140,7 @@ class Scheduler
     end
 
     if io = @urgent&.last
-      @urgent.last.write_nonblock('.')
+      io.write_nonblock('.')
     end
   end
 

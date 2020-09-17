@@ -115,6 +115,31 @@ class TestFiberMutex < Test::Unit::TestCase
     assert processed == 3
   end
 
+  def test_queue_pop_waits
+    queue = Queue.new
+    running = false
+
+    thread = Thread.new do
+      scheduler = Scheduler.new
+      Thread.current.scheduler = scheduler
+
+      result = nil
+      Fiber.schedule do
+        result = queue.pop
+      end
+
+      running = true
+      scheduler.run
+      result
+    end
+
+    Thread.pass until running
+    sleep 0.1
+
+    queue << :done
+    assert_equal :done, thread.value
+  end
+
   def test_mutex_deadlock
     err = /No live threads left. Deadlock\?/
     assert_in_out_err %W[-I#{__dir__} -], <<-RUBY, ['in synchronize'], err, success: false
