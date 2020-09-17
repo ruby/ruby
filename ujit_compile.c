@@ -17,7 +17,8 @@ typedef struct ctx_struct
     // Current PC
     VALUE* pc;
 
-    // TODO: virtual stack pointer handling
+    // Difference between the current stack pointer and actual stack top
+    int32_t stack_diff;
 
 } ctx_t;
 
@@ -82,11 +83,39 @@ VALUE ctx_get_arg(ctx_t* ctx, size_t arg_idx)
 }
 
 /*
+Make space on the stack for N values
+Return a pointer to the new stack top
+*/
+x86opnd_t ctx_stack_push(ctx_t* ctx, size_t n)
+{
+    ctx->stack_diff += n;
+
+    // SP points just above the topmost value
+    int32_t offset = (ctx->stack_diff - 1) * 8;
+    return mem_opnd(64, RSI, offset);
+}
+
+/*
+Pop N values off the stack
+Return a pointer to the stack top before the pop operation
+*/
+x86opnd_t ctx_stack_pop(ctx_t* ctx, size_t n)
+{
+    ctx->stack_diff -= n;
+
+    // SP points just above the topmost value
+    int32_t offset = (ctx->stack_diff - 1) * 8;
+    return mem_opnd(64, RSI, offset);
+}
+
+/*
 Generate a chunk of machine code for one individual bytecode instruction
 Eventually, this will handle multiple instructions in a sequence
 
 MicroJIT code gets a pointer to the cfp as the first argument in RDI
 See rb_ujit_empty_func(rb_control_frame_t *cfp) in iseq.c
+
+Throughout the generated code, we store the current stack pointer in RSI
 
 System V ABI reference:
 https://wiki.osdev.org/System_V_ABI#x86-64
@@ -117,6 +146,8 @@ ujit_compile_insn(rb_iseq_t *iseq, unsigned int insn_idx, unsigned int* next_uji
 
     // Create codegen context
     ctx_t ctx;
+    ctx.pc = NULL;
+    ctx.stack_diff = 0;
 
     // For each instruction to compile
     size_t num_instrs;
@@ -130,9 +161,7 @@ ujit_compile_insn(rb_iseq_t *iseq, unsigned int insn_idx, unsigned int* next_uji
 
         // Lookup the codegen function for this instruction
         st_data_t st_gen_fn;
-        int found = rb_st_lookup(gen_fns, opcode, &st_gen_fn);
-
-        if (!found)
+        if (!rb_st_lookup(gen_fns, opcode, &st_gen_fn))
         {
             break;
         }
@@ -141,6 +170,9 @@ ujit_compile_insn(rb_iseq_t *iseq, unsigned int insn_idx, unsigned int* next_uji
         if (num_instrs == 0)
         {
             ujit_instr_entry(cb);
+
+            // Load the current SP from the CFP into RSI
+            mov(cb, RSI, mem_opnd(64, RDI, 8));
         }
 
         // Call the code generation function
@@ -158,6 +190,15 @@ ujit_compile_insn(rb_iseq_t *iseq, unsigned int insn_idx, unsigned int* next_uji
     if (num_instrs == 0)
     {
         return NULL;
+    }
+
+    // Write the adjusted SP back into the CFP
+    if (ctx.stack_diff != 0)
+    {
+        // The stack pointer points one above the actual stack top
+        x86opnd_t stack_pointer = ctx_stack_push(&ctx, 1);
+        lea(cb, RSI, stack_pointer);
+        mov(cb, mem_opnd(64, RDI, 8), RSI);
     }
 
     // Directly return the next PC, which is a constant
@@ -178,50 +219,42 @@ void gen_nop(codeblock_t* cb, ctx_t* ctx)
 void gen_pop(codeblock_t* cb, ctx_t* ctx)
 {
     // Decrement SP
-    sub(cb, mem_opnd(64, RDI, 8), imm_opnd(8));
-}
-
-void gen_putobject_int2fix(codeblock_t* cb, ctx_t* ctx)
-{
-    // Load current SP into RAX
-    mov(cb, RAX, mem_opnd(64, RDI, 8));
-
-    // Write constant at SP
-    int opcode = ctx_get_opcode(ctx);
-    int cst_val = (opcode == BIN(putobject_INT2FIX_0_))? 0:1;
-    mov(cb, mem_opnd(64, RAX, 0), imm_opnd(INT2FIX(cst_val)));
-
-    // Load incremented SP into RCX
-    lea(cb, RCX, mem_opnd(64, RAX, 8));
-
-    // Write back incremented SP
-    mov(cb, mem_opnd(64, RDI, 8), RCX);
+    ctx_stack_pop(ctx, 1);
 }
 
 void gen_putnil(codeblock_t* cb, ctx_t* ctx)
 {
-    // Load current SP into RAX
-    mov(cb, RAX, mem_opnd(64, RDI, 8));
+    // Write constant at SP
+    x86opnd_t stack_top = ctx_stack_push(ctx, 1);
+    mov(cb, stack_top, imm_opnd(Qnil));
+}
+
+void gen_putobject(codeblock_t* cb, ctx_t* ctx)
+{
+    // Get the argument
+    VALUE object = ctx_get_arg(ctx, 0);
+    x86opnd_t ptr_imm = const_ptr_opnd((void*)object);
 
     // Write constant at SP
-    mov(cb, mem_opnd(64, RAX, 0), imm_opnd(Qnil));
+    x86opnd_t stack_top = ctx_stack_push(ctx, 1);
+    mov(cb, RAX, ptr_imm);
+    mov(cb, stack_top, RAX);
+}
 
-    // Load incremented SP into RCX
-    lea(cb, RCX, mem_opnd(64, RAX, 8));
+void gen_putobject_int2fix(codeblock_t* cb, ctx_t* ctx)
+{
+    int opcode = ctx_get_opcode(ctx);
+    int cst_val = (opcode == BIN(putobject_INT2FIX_0_))? 0:1;
 
-    // Write back incremented SP
-    mov(cb, mem_opnd(64, RDI, 8), RCX);
+    // Write constant at SP
+    x86opnd_t stack_top = ctx_stack_push(ctx, 1);
+    mov(cb, stack_top, imm_opnd(INT2FIX(cst_val)));
 }
 
 // TODO: implement putself
 
-// TODO: implement putobject
-
 void gen_getlocal_wc0(codeblock_t* cb, ctx_t* ctx)
 {
-    // Load current SP from CFP
-    mov(cb, RAX, mem_opnd(64, RDI, 8));
-
     // Load block pointer from CFP
     mov(cb, RDX, mem_opnd(64, RDI, 32));
 
@@ -233,13 +266,8 @@ void gen_getlocal_wc0(codeblock_t* cb, ctx_t* ctx)
     mov(cb, RCX, mem_opnd(64, RDX, offs));
 
     // Write the local at SP
-    mov(cb, mem_opnd(64, RAX, 0), RCX);
-
-    // Compute address of incremented SP
-    lea(cb, RCX, mem_opnd(64, RAX, 8));
-
-    // Write back incremented SP
-    mov(cb, mem_opnd(64, RDI, 8), RCX);
+    x86opnd_t stack_top = ctx_stack_push(ctx, 1);
+    mov(cb, stack_top, RCX);
 }
 
 static void ujit_init()
@@ -255,6 +283,7 @@ static void ujit_init()
     st_insert(gen_fns, (st_data_t)BIN(nop), (st_data_t)&gen_nop);
     st_insert(gen_fns, (st_data_t)BIN(pop), (st_data_t)&gen_pop);
     st_insert(gen_fns, (st_data_t)BIN(putnil), (st_data_t)&gen_putnil);
+    st_insert(gen_fns, (st_data_t)BIN(putobject), (st_data_t)&gen_putobject);
     st_insert(gen_fns, (st_data_t)BIN(putobject_INT2FIX_0_), (st_data_t)&gen_putobject_int2fix);
     st_insert(gen_fns, (st_data_t)BIN(putobject_INT2FIX_1_), (st_data_t)&gen_putobject_int2fix);
     st_insert(gen_fns, (st_data_t)BIN(getlocal_WC_0), (st_data_t)&gen_getlocal_wc0);
