@@ -132,7 +132,7 @@ class Ractor
     loc  = __builtin_cexpr! %q{ RACTOR_PTR(self)->loc }
     name = __builtin_cexpr! %q{ RACTOR_PTR(self)->name }
     id   = __builtin_cexpr! %q{ INT2FIX(RACTOR_PTR(self)->id) }
-    "#<Ractor:##{id}#{name ? ' '+name : ''}#{loc ? " " + loc : ''}>"
+    "#<Ractor:##{id}#{name ? ' '+name : ''}#{loc ? " " + loc : ''} #{status}>"
   end
 
   def name
