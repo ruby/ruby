@@ -1309,6 +1309,16 @@ ractor_init(rb_ractor_t *r, VALUE name, VALUE loc)
     rb_ractor_living_threads_init(r);
 
     // naming
+    if (!NIL_P(name)) {
+        rb_encoding *enc;
+        StringValueCStr(name);
+        enc = rb_enc_get(name);
+        if (!rb_enc_asciicompat(enc)) {
+            rb_raise(rb_eArgError, "ASCII incompatible encoding (%s)",
+                 rb_enc_name(enc));
+        }
+        name = rb_str_new_frozen(name);
+    }
     r->name = name;
     r->loc = loc;
 }
@@ -1347,6 +1357,29 @@ ractor_create(rb_execution_context_t *ec, VALUE self, VALUE loc, VALUE name, VAL
 
     RB_GC_GUARD(rv);
     return rv;
+}
+
+/*
+ * call-seq:
+ *   ractor.name=(name)   -> string
+ *
+ * set given name to a ractor.
+ */
+static VALUE
+rb_actor_setname(rb_ractor_t *r, VALUE name)
+{
+    if (!NIL_P(name)) {
+        rb_encoding *enc;
+        StringValueCStr(name);
+        enc = rb_enc_get(name);
+        if (!rb_enc_asciicompat(enc)) {
+            rb_raise(rb_eArgError, "ASCII incompatible encoding (%s)",
+                 rb_enc_name(enc));
+        }
+        name = rb_str_new_frozen(name);
+    }
+    r->name = name;
+    return name;
 }
 
 static void

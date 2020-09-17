@@ -139,6 +139,10 @@ class Ractor
     __builtin_cexpr! %q{ RACTOR_PTR(self)->name }
   end
 
+  def name=(new_name)
+    __builtin_cexpr! %q{ rb_actor_setname(RACTOR_PTR(self), new_name) }
+  end
+
   class RemoteError
     attr_reader :ractor
   end
