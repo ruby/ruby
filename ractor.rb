@@ -143,6 +143,23 @@ class Ractor
     __builtin_cexpr! %q{ rb_actor_setname(RACTOR_PTR(self), new_name) }
   end
 
+
+  # Returns the status of a +ractor+.
+  #
+  # [<tt>"created"</tt>]
+  #	Returned if a ractor has just been created and not ready to run
+  # [<tt>"blocking"</tt>]
+  #	Returned if all threads are blocking
+  # [<tt>"running"</tt>]
+  #	When any thread of a ractor is running
+  # [<tt>"terminated"</tt>]
+  #	Return if a ractor finishes its execution
+  def status
+    __builtin_cexpr! %q{
+      rb_str_new2(ractor_status_str(RACTOR_PTR(self)->status_))
+    }
+  end
+
   class RemoteError
     attr_reader :ractor
   end
