@@ -3331,7 +3331,7 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
     }
 
     // update iseq. really? (TODO)
-    if (!vm_ci_mid(cd->ci)) {
+    if (!(reg_cfp->iseq == method_entry_iseqptr(me) && vm_ci_mid(cd->ci))) {
         cd->ci = vm_ci_new_runtime(me->def->original_id,
                                    vm_ci_flag(cd->ci),
                                    vm_ci_argc(cd->ci),
