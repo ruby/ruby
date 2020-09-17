@@ -9,6 +9,6 @@ typedef struct rb_iseq_struct rb_iseq_t;
 #define rb_iseq_t rb_iseq_t
 #endif
 
-uint8_t* ujit_compile_insn(rb_iseq_t* iseq, size_t insn_idx);
+uint8_t* ujit_compile_insn(rb_iseq_t *iseq, unsigned int insn_idx, unsigned int* next_ujit_idx);
 
 #endif
