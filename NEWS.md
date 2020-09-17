@@ -161,6 +161,12 @@ Outstanding ones only.
             p C.ancestors #=> [C, M1, M2, Object, Kernel, BasicObject]
             ```
 
+* Mutex
+
+    * Mutex is now acquired per-Fiber instead of per-Thread. This change should
+      be compatible for essentially all usages and avoids blocking when using
+      a Fiber Scheduler. [[Feature #16792]]
+
 * Ractor
 
     * new class to enable parallel execution. See doc/ractor.md for
@@ -375,6 +381,7 @@ Excluding feature bug fixes.
 [Feature #16686]: https://bugs.ruby-lang.org/issues/16686
 [Feature #16746]: https://bugs.ruby-lang.org/issues/16746
 [Feature #16754]: https://bugs.ruby-lang.org/issues/16754
+[Feature #16792]: https://bugs.ruby-lang.org/issues/16792
 [Feature #16828]: https://bugs.ruby-lang.org/issues/16828
 [Feature #17104]: https://bugs.ruby-lang.org/issues/17104
 [Misc #16961]:    https://bugs.ruby-lang.org/issues/16961
