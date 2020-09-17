@@ -2,7 +2,7 @@ require_relative '../../spec_helper'
 
 ruby_version_is '3.0.0' do
   describe 'Ractor.main' do
-    it 'returns main ractor object outside' do
+    it 'returns main ractor object in main ractor' do
       Ractor.current.should == Ractor.main
     end
 
