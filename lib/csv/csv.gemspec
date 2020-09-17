@@ -43,6 +43,7 @@ Gem::Specification.new do |spec|
     "LICENSE.txt",
     "NEWS.md",
     "README.md",
+    "doc/csv/recipes.rdoc"
   ]
   spec.extra_rdoc_files = rdoc_files
 

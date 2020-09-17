@@ -1,0 +1,325 @@
+== Recipes
+
+=== Contents
+- {Parsing}[#label-Parsing]
+  - {Parse from String Without Headers}[#label-Parse+from+String+Without+Headers]
+  - {Parse from String with Headers}[#label-Parse+from+String+with+Headers]
+  - {Parse from File Without Headers}[#label-Parse+from+File+Without+Headers]
+  - {Parse from File with Headers}[#label-Parse+from+File+with+Headers]
+  - {Parse from IO Stream Without Headers}[#label-Parse+from+IO+Stream+Without+Headers]
+  - {Parse from IO Stream with Headers}[#label-Parse+from+IO+Stream+with+Headers]
+- {Generating}[#label-Generating]
+  - {Generate to String Without Headers}[#label-Generate+to+String+Without+Headers]
+  - {Generate to String with Headers}[#label-Generate+to+String+with+Headers]
+  - {Generate to File Without Headers}[#label-Generate+to+File+Without+Headers]
+  - {Generate to File with Headers}[#label-Generate+to+File+with+Headers]
+  - {Generate to IO Stream Without Headers}[#label-Generate+to+IO+Stream+Without+Headers]
+  - {Generate to IO Stream with Headers}[#label-Generate+to+IO+Stream+with+Headers]
+- {Filtering}[#label-Filtering]
+  - {Filter String to String Without Headers}[#label-Filter+String+to+String+Without+Headers]
+  - {Filter String to String with Headers}[#label-Filter+String+to+String+with+Headers]
+  - {Filter String to IO Stream Without Headers}[#label-Filter+String+to+IO+Stream+Without+Headers]
+  - {Filter String to IO Stream with Headers}[#label-Filter+String+to+IO+Stream+with+Headers]
+  - {Filter IO Stream to String Without Headers}[#label-Filter+IO+Stream+to+String+Without+Headers]
+  - {Filter IO Stream to String with Headers}[#label-Filter+IO+Stream+to+String+with+Headers]
+  - {Filter IO Stream to IO Stream Without Headers}[#label-Filter+IO+Stream+to+IO+Stream+Without+Headers]
+  - {Filter IO Stream to IO Stream with Headers}[#label-Filter+IO+Stream+to+IO+Stream+with+Headers]
+
+=== Parsing
+
+==== Parse from \String Without Headers
+
+\Class method CSV.parse can read a source \String all at once,
+and so may have memory resource implications:
+  string = "foo,0\nbar,1\nbaz,2\n"
+  CSV.parse(string) # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
+
+Instance method CSV#each can read a source \String one row at a time:
+  CSV.new(string).each do |row|
+    p row
+  end
+Output:
+  ["foo", "0"]
+  ["bar", "1"]
+  ["baz", "2"]
+
+==== Parse from \String with Headers
+
+\Class method CSV.parse can read a source \String all at once,
+and so may have memory resource implications:
+  string = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+  CSV.parse(string, headers: true) # => #<CSV::Table mode:col_or_row row_count:4>
+
+Instance method CSV#each can read a source \String one row at a time:
+  CSV.new(string, headers: true).each do |row|
+    p row
+  end
+Ouput:
+  #<CSV::Row "Name":"foo" "Value":"0">
+  #<CSV::Row "Name":"bar" "Value":"1">
+  #<CSV::Row "Name":"baz" "Value":"2">
+
+==== Parse from \File Without Headers
+
+\Class method CSV.read can read a file all at once:
+  string = "foo,0\nbar,1\nbaz,2\n"
+  path = 't.csv'
+  File.write(path, string)
+  CSV.read(path) # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
+
+\Class method CSV.foreach can read one row at a time:
+  CSV.foreach(path) do |row|
+    p row
+  end
+Output:
+  ["foo", "0"]
+  ["bar", "1"]
+  ["baz", "2"]
+
+==== Parse from \File with Headers
+
+Instance method CSV#read can reada file all at once:
+  string = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+  path = 't.csv'
+  File.write(path, string)
+  CSV.read(path, headers: true) # => #<CSV::Table mode:col_or_row row_count:4>
+
+\Class method CSV.foreach can read one row at a time:
+  CSV.foreach(path, headers: true) do |row|
+    p row
+  end
+Output:
+  #<CSV::Row "Name":"foo" "Value":"0">
+  #<CSV::Row "Name":"bar" "Value":"1">
+  #<CSV::Row "Name":"baz" "Value":"2">
+
+==== Parse from \IO Stream Without Headers
+
+\Class method CSV.parse can read an \IO stream all at once:
+  string = "foo,0\nbar,1\nbaz,2\n"
+  path = 't.csv'
+  File.write(path, string)
+  File.open(path) do |file|
+    CSV.parse(file)
+  end # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
+
+\Class method CSV.foreach can read one row at a time:
+  File.open(path) do |file|
+    CSV.foreach(file) do |row|
+      p row
+    end
+  end
+Output:
+  ["foo", "0"]
+  ["bar", "1"]
+  ["baz", "2"]
+
+==== Parse from \IO Stream with Headers
+
+\Class method CSV.parse can read an \IO stream all at once:
+  string = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+  path = 't.csv'
+  File.write(path, string)
+  File.open(path) do |file|
+    CSV.parse(file, headers: true)
+  end # => #<CSV::Table mode:col_or_row row_count:4>
+
+\Class method CSV.foreach can read one row at a time:
+  File.open(path) do |file|
+    CSV.foreach(file, headers: true) do |row|
+      p row
+    end
+  end
+Output:
+  #<CSV::Row "Name":"foo" "Value":"0">
+  #<CSV::Row "Name":"bar" "Value":"1">
+  #<CSV::Row "Name":"baz" "Value":"2">
+
+=== Generating
+
+==== Generate to \String Without Headers
+
+\Class method CSV.generate can generate to a \String.
+
+This example uses method CSV#<< to append the rows
+that are to be generated:
+  output_string = CSV.generate do |csv|
+    csv << ['Foo', 0]
+    csv << ['Bar', 1]
+    csv << ['Baz', 2]
+  end
+  output_string # => "Foo,0\nBar,1\nBaz,2\n"
+
+==== Generate to \String with Headers
+
+\Class method CSV.generate can generate to a \String.
+
+This example uses method CSV#<< to append the rows
+that are to be generated:
+  output_string = CSV.generate('', headers: ['Name', 'Value'], write_headers: true) do |csv|
+    csv << ['Foo', 0]
+    csv << ['Bar', 1]
+    csv << ['Baz', 2]
+  end
+  output_string # => "Name,Value\nFoo,0\nBar,1\nBaz,2\n"
+
+==== Generate to \File Without Headers
+
+\Class method CSV.open can generate to a \File.
+
+This example uses method CSV#<< to append the rows
+that are to be generated:
+  path = 't.csv'
+  CSV.open(path, 'w') do |csv|
+    csv << ['Foo', 0]
+    csv << ['Bar', 1]
+    csv << ['Baz', 2]
+  end
+  p File.read(path) # => "Foo,0\nBar,1\nBaz,2\n"
+
+==== Generate to \File with Headers
+
+\Class method CSV.open can generate to a \File.
+
+This example uses method CSV#<< to append the rows
+that are to be generated:
+  path = 't.csv'
+  CSV.open(path, 'w', headers: ['Name', 'Value'], write_headers: true) do |csv|
+    csv << ['Foo', 0]
+    csv << ['Bar', 1]
+    csv << ['Baz', 2]
+  end
+  p File.read(path) # => "Name,Value\nFoo,0\nBar,1\nBaz,2\n"
+
+==== Generate to \IO Stream Without Headers
+
+\Class method CSV.new can generate \CSV data to an \IO stream:
+  path = 't.csv'
+  File.open(path, 'w') do |file|
+    csv = CSV.new(file)
+    csv << ['Foo', 0]
+    csv << ['Bar', 1]
+    csv << ['Baz', 2]
+  end
+  p File.read(path) # => "Foo,0\nBar,1\nBaz,2\n"
+
+==== Generate to \IO Stream with Headers
+
+\\Classs method CSV.new can generate \CSV data to an \IO stream:
+  path = 't.csv'
+  File.open(path, 'w') do |file|
+    csv = CSV.new(file, headers: ['Name', 'Value'], write_headers: true)
+    csv << ['Foo', 0]
+    csv << ['Bar', 1]
+    csv << ['Baz', 2]
+  end
+  p File.read(path) # => "Name,Value\nFoo,0\nBar,1\nBaz,2\n"
+
+=== Filtering
+
+\Class method CSV.filter provides a Unix-style filter for \CSV data.
+The input \CSV data is processed to form output \CSV data.
+
+==== Filter \String to \String Without Headers
+
+  in_string = "foo,0\nbar,1\nbaz,2\n"
+  out_string = ''
+  CSV.filter(in_string, out_string) do |row|
+    row[0] = row[0].upcase
+    row[1] *= 4
+  end
+  out_string # => "FOO,0000\nBAR,1111\nBAZ,2222\n"
+
+==== Filter \String to \String with Headers
+
+  in_string = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+  out_string = ''
+  CSV.filter(in_string, out_string, headers: true) do |row|
+    row[0] = row[0].upcase
+    row[1] *= 4
+  end
+  out_string # => "Name,Value\nFOO,0000\nBAR,1111\nBAZ,2222\n"
+
+==== Filter \String to \IO Stream Without Headers
+
+  in_string = "foo,0\nbar,1\nbaz,2\n"
+  path = 't.csv'
+  File.open(path, 'w') do |out_io|
+    CSV.filter(in_string, out_io) do |row|
+      row[0] = row[0].upcase
+      row[1] *= 4
+    end
+  end
+  p File.read(path) # => "FOO,0000\nBAR,1111\nBAZ,2222\n"
+
+==== Filter \String to \IO Stream with Headers
+
+  in_string = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+  path = 't.csv'
+  File.open(path, 'w') do |out_io|
+    CSV.filter(in_string, out_io, headers: true) do |row|
+      row[0] = row[0].upcase
+      row[1] *= 4
+    end
+  end
+  p File.read(path) # => "Name,Value\nFOO,0000\nBAR,1111\nBAZ,2222\n"
+
+==== Filter \IO Stream to \String Without Headers
+
+  in_string = "foo,0\nbar,1\nbaz,2\n"
+  path = 't.csv'
+  File.write(path, in_string)
+  out_string = ''
+  File.open(path) do |in_io|
+    CSV.filter(in_io, out_string) do |row|
+      row[0] = row[0].upcase
+      row[1] *= 4
+    end
+  end
+  out_string # => "FOO,0000\nBAR,1111\nBAZ,2222\n"
+
+==== Filter \IO Stream to \String with Headers
+
+  in_string = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+  path = 't.csv'
+  File.write(path, in_string)
+  out_string = ''
+  File.open(path, headers: true) do |in_io|
+    CSV.filter(in_io, out_string, headers: true) do |row|
+      row[0] = row[0].upcase
+      row[1] *= 4
+    end
+  end
+  out_string # => "Name,Value\nFOO,0000\nBAR,1111\nBAZ,2222\n"
+
+==== Filter \IO Stream to \IO Stream Without Headers
+
+  in_path = 't.csv'
+  in_string = "foo,0\nbar,1\nbaz,2\n"
+  File.write(in_path, in_string)
+  out_path = 'u.csv'
+  File.open(in_path) do |in_io|
+    File.open(out_path, 'w') do |out_io|
+      CSV.filter(in_io, out_io) do |row|
+        row[0] = row[0].upcase
+        row[1] *= 4
+      end
+    end
+  end
+  p File.read(out_path) # => "FOO,0000\nBAR,1111\nBAZ,2222\n"
+
+==== Filter \IO Stream to \IO Stream with Headers
+
+  in_path = 't.csv'
+  in_string = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+  File.write(in_path, in_string)
+  out_path = 'u.csv'
+  File.open(in_path) do |in_io|
+    File.open(out_path, 'w') do |out_io|
+      CSV.filter(in_io, out_io, headers: true) do |row|
+        row[0] = row[0].upcase
+        row[1] *= 4
+      end
+    end
+  end
+  p File.read(out_path) # => "Name,Value\nFOO,0000\nBAR,1111\nBAZ,2222\n"
