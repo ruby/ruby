@@ -199,8 +199,6 @@ mutex_locked(rb_thread_t *th, VALUE self)
 	mutex->next_mutex = th->keeping_mutexes;
     }
     th->keeping_mutexes = mutex;
-
-    // th->blocking += 1;
 }
 
 /*
@@ -393,8 +391,6 @@ rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_fiber_t *fiber)
     else {
 	struct sync_waiter *cur = 0, *next;
 	rb_mutex_t **th_mutex = &th->keeping_mutexes;
-
-        // th->blocking -= 1;
 
 	mutex->fiber = 0;
 	list_for_each_safe(&mutex->waitq, cur, next, node) {
