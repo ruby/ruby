@@ -47,6 +47,29 @@ class TestFiberMutex < Test::Unit::TestCase
     thread.join
   end
 
+  def test_mutex_thread
+    mutex = Mutex.new
+    mutex.lock
+
+    thread = Thread.new do
+      scheduler = Scheduler.new
+      Thread.current.scheduler = scheduler
+
+      Fiber.schedule do
+        mutex.lock
+        sleep 0.1
+        mutex.unlock
+      end
+
+      scheduler.run
+    end
+
+    sleep 0.1
+    mutex.unlock
+
+    thread.join
+  end
+
   def test_condition_variable
     mutex = Mutex.new
     condition = ConditionVariable.new
