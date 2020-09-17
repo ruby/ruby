@@ -21,7 +21,7 @@ class Scheduler
 
     @lock = Mutex.new
     @locking = 0
-    @ready = Array.new
+    @ready = []
   end
 
   attr :readable
@@ -68,8 +68,7 @@ class Scheduler
 
       if @waiting.any?
         time = current_time
-        waiting = @waiting
-        @waiting = {}
+        waiting, @waiting = @waiting, {}
 
         waiting.each do |fiber, timeout|
           if timeout <= time
@@ -84,7 +83,7 @@ class Scheduler
         ready = nil
 
         @lock.synchronize do
-          ready, @ready = @ready, Array.new
+          ready, @ready = @ready, []
         end
 
         ready.each do |fiber|
