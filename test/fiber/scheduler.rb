@@ -114,6 +114,7 @@ class Scheduler
     return true
   end
 
+  # Used for Kernel#sleep and Mutex#sleep
   def kernel_sleep(duration = nil)
     # p [__method__, duration]
     if duration
@@ -125,6 +126,7 @@ class Scheduler
     return true
   end
 
+  # Used when blocking on synchronization (Mutex#lock, Queue#pop, SizedQueue#push, ...)
   def block(blocker)
     # p [__method__, blocker]
     @locking += 1
@@ -133,6 +135,7 @@ class Scheduler
     @locking -= 1
   end
 
+  # Used when synchronization wakes up a previously-blocked fiber (Mutex#unlock, Queue#push, ...)
   def unblock(blocker, fiber)
     # p [__method__, blocker, fiber]
     @lock.synchronize do
