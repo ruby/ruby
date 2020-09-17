@@ -954,6 +954,7 @@ G
     end
 
     it "starts IRB with the default group loaded when ruby version matches any engine" do
+      skip "irb depend on JRuby.compile_ir and don't work in simulated environment." unless RUBY_ENGINE == "jruby"
       simulate_ruby_engine "jruby" do
         gemfile <<-G
           source "#{file_uri_for(gem_repo1)}"
