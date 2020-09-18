@@ -34,8 +34,10 @@ sync_wakeup(struct list_head *head, long max)
         }
 
         if (cur->th->status != THREAD_KILLED) {
-            rb_threadptr_interrupt(cur->th);
-            cur->th->status = THREAD_RUNNABLE;
+            if (cur->th->scheduler != Qnil) {
+                rb_threadptr_interrupt(cur->th);
+                cur->th->status = THREAD_RUNNABLE;
+            }
             if (--max == 0) return;
         }
     }
