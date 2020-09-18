@@ -297,6 +297,14 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/test/test_syslog.rb", "test")
     cp_r("#{upstream}/syslog.gemspec", "ext/syslog")
     `git checkout ext/syslog/depend`
+  when "bigdecimal"
+    rm_rf(%w[ext/bigdecimal test/bigdecimal])
+    cp_r("#{upstream}/ext/bigdecimal", "ext")
+    cp_r("#{upstream}/sample", "ext/bigdecimal")
+    cp_r("#{upstream}/lib", "ext/bigdecimal")
+    cp_r("#{upstream}/test/bigdecimal", "test")
+    cp_r("#{upstream}/bigdecimal.gemspec", "ext/bigdecimal")
+    `git checkout ext/bigdecimal/depend`
   else
     sync_lib gem
   end
