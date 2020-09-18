@@ -165,6 +165,7 @@ ujit_compile_insn(rb_iseq_t *iseq, unsigned int insn_idx, unsigned int* next_uji
         st_data_t st_gen_fn;
         if (!rb_st_lookup(gen_fns, opcode, &st_gen_fn))
         {
+            //print_str(cb, insn_name(opcode));
             break;
         }
 
@@ -194,6 +195,8 @@ ujit_compile_insn(rb_iseq_t *iseq, unsigned int insn_idx, unsigned int* next_uji
         return NULL;
     }
 
+    //print_int(cb, imm_opnd(num_instrs));
+
     // Write the adjusted SP back into the CFP
     if (ctx.stack_diff != 0)
     {
@@ -216,6 +219,7 @@ ujit_compile_insn(rb_iseq_t *iseq, unsigned int insn_idx, unsigned int* next_uji
 
 void gen_nop(codeblock_t* cb, ctx_t* ctx)
 {
+    // Do nothing
 }
 
 void gen_pop(codeblock_t* cb, ctx_t* ctx)
@@ -253,7 +257,15 @@ void gen_putobject_int2fix(codeblock_t* cb, ctx_t* ctx)
     mov(cb, stack_top, imm_opnd(INT2FIX(cst_val)));
 }
 
-// TODO: implement putself
+void gen_putself(codeblock_t* cb, ctx_t* ctx)
+{
+    // Load self from CFP
+    mov(cb, RAX, mem_opnd(64, RDI, 24));
+
+    // Write it on the stack
+    x86opnd_t stack_top = ctx_stack_push(ctx, 1);
+    mov(cb, stack_top, RAX);
+}
 
 void gen_getlocal_wc0(codeblock_t* cb, ctx_t* ctx)
 {
@@ -274,9 +286,9 @@ void gen_getlocal_wc0(codeblock_t* cb, ctx_t* ctx)
 
 static void ujit_init()
 {
-    // 4MB ought to be enough for anybody
+    // 64MB ought to be enough for anybody
     cb = &block;
-    cb_init(cb, 4000000);
+    cb_init(cb, 64 * 1024 * 1024);
 
     // Initialize the codegen function table
     gen_fns = rb_st_init_numtable();
@@ -288,5 +300,6 @@ static void ujit_init()
     st_insert(gen_fns, (st_data_t)BIN(putobject), (st_data_t)&gen_putobject);
     st_insert(gen_fns, (st_data_t)BIN(putobject_INT2FIX_0_), (st_data_t)&gen_putobject_int2fix);
     st_insert(gen_fns, (st_data_t)BIN(putobject_INT2FIX_1_), (st_data_t)&gen_putobject_int2fix);
+    st_insert(gen_fns, (st_data_t)BIN(putself), (st_data_t)&gen_putself);
     st_insert(gen_fns, (st_data_t)BIN(getlocal_WC_0), (st_data_t)&gen_getlocal_wc0);
 }

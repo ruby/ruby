@@ -268,6 +268,7 @@ void jmp_rm(codeblock_t* cb, x86opnd_t opnd);
 void jmp32(codeblock_t* cb, int32_t offset);
 void lea(codeblock_t* cb, x86opnd_t dst, x86opnd_t src);
 void mov(codeblock_t* cb, x86opnd_t dst, x86opnd_t src);
+void movsx(codeblock_t* cb, x86opnd_t dst, x86opnd_t src);
 void neg(codeblock_t* cb, x86opnd_t opnd);
 void nop(codeblock_t* cb, size_t length);
 void not(codeblock_t* cb, x86opnd_t opnd);
