@@ -281,7 +281,7 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/lib/erb.rb", "lib")
     cp_r("#{upstream}/test/erb", "test")
     cp_r("#{upstream}/erb.gemspec", "lib")
-    cp_r("#{upstream}/exe/erb", "libexec")
+    cp_r("#{upstream}/libexec/erb", "libexec")
   when "nkf"
     rm_rf(%w[ext/nkf test/nkf])
     cp_r("#{upstream}/ext/nkf", "ext")
