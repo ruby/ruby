@@ -103,11 +103,13 @@ Return a pointer to the stack top before the pop operation
 */
 x86opnd_t ctx_stack_pop(ctx_t* ctx, size_t n)
 {
-    ctx->stack_diff -= n;
-
     // SP points just above the topmost value
     int32_t offset = (ctx->stack_diff - 1) * 8;
-    return mem_opnd(64, RSI, offset);
+    x86opnd_t top = mem_opnd(64, RSI, offset);
+
+    ctx->stack_diff -= n;
+
+    return top;
 }
 
 /*
@@ -217,6 +219,16 @@ ujit_compile_insn(rb_iseq_t *iseq, unsigned int insn_idx, unsigned int* next_uji
     return code_ptr;
 }
 
+void gen_dup(codeblock_t* cb, ctx_t* ctx)
+{
+    x86opnd_t dup_val = ctx_stack_pop(ctx, 1);
+    x86opnd_t loc0 = ctx_stack_push(ctx, 1);
+    x86opnd_t loc1 = ctx_stack_push(ctx, 1);
+    mov(cb, RAX, dup_val);
+    mov(cb, loc0, RAX);
+    mov(cb, loc1, RAX);
+}
+
 void gen_nop(codeblock_t* cb, ctx_t* ctx)
 {
     // Do nothing
@@ -294,6 +306,7 @@ static void ujit_init()
     gen_fns = rb_st_init_numtable();
 
     // Map YARV opcodes to the corresponding codegen functions
+    st_insert(gen_fns, (st_data_t)BIN(dup), (st_data_t)&gen_dup);
     st_insert(gen_fns, (st_data_t)BIN(nop), (st_data_t)&gen_nop);
     st_insert(gen_fns, (st_data_t)BIN(pop), (st_data_t)&gen_pop);
     st_insert(gen_fns, (st_data_t)BIN(putnil), (st_data_t)&gen_putnil);
