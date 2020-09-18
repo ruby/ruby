@@ -8,6 +8,37 @@ assert_equal 'Ractor', %q{
   Ractor.new{}.class
 }
 
+# A Ractor can have a name
+assert_equal 'test-name', %q{
+  r = Ractor.new name: 'test-name' do
+  end
+  r.name
+}
+
+# If Ractor doesn't have a name, Ractor#name returns nil.
+assert_equal 'nil', %q{
+  r = Ractor.new do
+  end
+  r.name.inspect
+}
+
+# Raises exceptions if initialize with invalid name
+assert_equal 'no implicit conversion of Array into String', %q{
+  begin
+    r = Ractor.new(name: [{}]) {}
+  rescue TypeError => e
+    e.message
+  end
+}
+
+assert_equal 'ASCII incompatible encoding (UTF-16BE)', %q{
+  begin
+    r = Ractor.new(name: String.new('Invalid encoding', encoding: 'UTF-16BE')) {}
+  rescue ArgumentError => e
+    e.message
+  end
+}
+
 # Ractor.new must call with a block
 assert_equal "must be called with a block", %q{
   begin
@@ -263,7 +294,7 @@ assert_equal 'false', %q{
   r = Ractor.new obj do |msg|
     msg.object_id
   end
-  
+
   obj.object_id == r.take
 }
 
@@ -360,7 +391,7 @@ assert_equal 'hello', %q{
 
   str = r.take
   begin
-    r.take 
+    r.take
   rescue Ractor::RemoteError
     str #=> "hello"
   end
@@ -528,20 +559,6 @@ assert_equal '[1000, 3]', %q{
   Ractor.new{ [A.size, H.size] }.take
 }
 
-# A Ractor can have a name
-assert_equal 'test-name', %q{
-  r = Ractor.new name: 'test-name' do
-  end
-  r.name
-}
-
-# If Ractor doesn't have a name, Ractor#name returns nil.
-assert_equal 'nil', %q{
-  r = Ractor.new do
-  end
-  r.name.inspect
-}
-
 ###
 ### Synchronization tests
 ###
@@ -559,4 +576,3 @@ assert_equal "#{N}#{N}", %Q{
 }
 
 end # if !ENV['GITHUB_WORKFLOW']
-

@@ -1310,6 +1310,16 @@ ractor_init(rb_ractor_t *r, VALUE name, VALUE loc)
     rb_ractor_living_threads_init(r);
 
     // naming
+    if (!NIL_P(name)) {
+        rb_encoding *enc;
+        StringValueCStr(name);
+        enc = rb_enc_get(name);
+        if (!rb_enc_asciicompat(enc)) {
+            rb_raise(rb_eArgError, "ASCII incompatible encoding (%s)",
+                 rb_enc_name(enc));
+        }
+        name = rb_str_new_frozen(name);
+    }
     r->name = name;
     r->loc = loc;
 }
