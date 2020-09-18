@@ -1163,6 +1163,73 @@ void mov(codeblock_t* cb, x86opnd_t dst, x86opnd_t src)
     }
 }
 
+/// movsx - Move with sign extension (signed integers)
+void movsx(codeblock_t* cb, x86opnd_t dst, x86opnd_t src)
+{
+    assert (dst.type == OPND_REG);
+    assert (src.type == OPND_REG || src.type == OPND_MEM);
+    assert (src.num_bits < dst.num_bits);
+
+    //cb.writeASM("movsx", dst, src);
+
+    if (src.num_bits == 8)
+    {
+        cb_write_rm(cb, dst.num_bits == 16, dst.num_bits == 64, dst, src, 0xFF, 2, 0x0F, 0xBE);
+    }
+    else if (src.num_bits == 16)
+    {
+        cb_write_rm(cb, dst.num_bits == 16, dst.num_bits == 64, dst, src, 0xFF, 2, 0x0F, 0xBF);
+    }
+    else if (src.num_bits == 32)
+    {
+        cb_write_rm(cb, false, true, dst, src, 0xFF, 1, 0x63);
+    }
+    else
+    {
+        assert (false);
+    }
+}
+
+/*
+/// movzx - Move with zero extension (unsigned values)
+void movzx(codeblock_t* cb, x86opnd_t dst, x86opnd_t src)
+{
+    cb.writeASM("movzx", dst, src);
+
+    size_t dstSize;
+    if (dst.isReg)
+        dstSize = dst.reg.size;
+    else
+        assert (false, "movzx dst must be a register");
+
+    size_t srcSize;
+    if (src.isReg)
+        srcSize = src.reg.size;
+    else if (src.isMem)
+        srcSize = src.mem.size;
+    else
+        assert (false);
+
+    assert (
+        srcSize < dstSize,
+        "movzx: srcSize >= dstSize"
+    );
+
+    if (srcSize is 8)
+    {
+        cb.writeRMInstr!('r', 0xFF, 0x0F, 0xB6)(dstSize is 16, dstSize is 64, dst, src);
+    }
+    else if (srcSize is 16)
+    {
+        cb.writeRMInstr!('r', 0xFF, 0x0F, 0xB7)(dstSize is 16, dstSize is 64, dst, src);
+    }
+    else
+    {
+        assert (false, "invalid src operand size for movxz");
+    }
+}
+*/
+
 // neg - Integer negation (multiplication by -1)
 void neg(codeblock_t* cb, x86opnd_t opnd)
 {

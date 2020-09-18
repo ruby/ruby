@@ -218,6 +218,32 @@ void run_tests()
     cb_set_pos(cb, 0); mov(cb, mem_opnd(8, RSP, 0), imm_opnd(-3)); check_bytes(cb, "C60424FD");
     cb_set_pos(cb, 0); mov(cb, mem_opnd(64, RDI, 8), imm_opnd(1)); check_bytes(cb, "48C7470801000000");
 
+    // movsx
+    /*
+    test(
+        delegate void (CodeBlock cb) { cb.movsx(X86Opnd(AX), X86Opnd(AL)); },
+        "660FBEC0"
+    );
+    test(
+        delegate void (CodeBlock cb) { cb.movsx(X86Opnd(EDX), X86Opnd(AL)); },
+        "0FBED0"
+    );
+    test(
+        delegate void (CodeBlock cb) { cb.movsx(X86Opnd(RAX), X86Opnd(BL)); },
+        "480FBEC3"
+    );
+    test(
+        delegate void (CodeBlock cb) { cb.movsx(X86Opnd(ECX), X86Opnd(AX)); },
+        "0FBFC8"
+    );
+    test(
+        delegate void (CodeBlock cb) { cb.movsx(X86Opnd(R11), X86Opnd(CL)); },
+        "4C0FBED9"
+    );
+    */
+    cb_set_pos(cb, 0); movsx(cb, R10, mem_opnd(32, RSP, 12)); check_bytes(cb, "4C6354240C");
+    cb_set_pos(cb, 0); movsx(cb, RAX, mem_opnd(8, RSP, 0)); check_bytes(cb, "480FBE0424");
+
     // neg
     cb_set_pos(cb, 0); neg(cb, RAX); check_bytes(cb, "48F7D8");
 

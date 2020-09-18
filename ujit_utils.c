@@ -33,43 +33,31 @@ void pop_regs(codeblock_t* cb)
     pop(cb, RAX);
 }
 
-static void print_str_fn(const char* str)
+static void print_int_cfun(int64_t val)
 {
-    printf("%s", str);
+    printf("%lld\n", val);
 }
 
-/*
-void printInt(CodeBlock as, X86Opnd opnd)
+void print_int(codeblock_t* cb, x86opnd_t opnd)
 {
-    extern (C) void printIntFn(int64_t v)
-    {
-        writefln("%s", v);
-    }
+    push_regs(cb);
 
-    size_t opndSz;
-    if (opnd.isImm)
-        opndSz = 64;
-    else if (opnd.isGPR)
-        opndSz = opnd.reg.size;
-    else if (opnd.isMem)
-        opndSz = opnd.mem.size;
+    if (opnd.num_bits < 64 && opnd.type != OPND_IMM)
+        movsx(cb, RDI, opnd);
     else
-        assert (false);
-
-    as.pushRegs();
-
-    if (opndSz < 64)
-        as.movsx(cargRegs[0].opnd(64), opnd);
-    else
-        as.mov(cargRegs[0].opnd(64), opnd);
+        mov(cb, RDI, opnd);
 
     // Call the print function
-    as.ptr(scrRegs[0], &printIntFn);
-    as.call(scrRegs[0]);
+    mov(cb, RAX, const_ptr_opnd(&print_int_cfun));
+    call(cb, RAX);
 
-    as.popRegs();
+    pop_regs(cb);
 }
-*/
+
+static void print_str_cfun(const char* str)
+{
+    printf("%s\n", str);
+}
 
 // Print a constant string to stdout
 void print_str(codeblock_t* cb, const char* str)
@@ -89,7 +77,7 @@ void print_str(codeblock_t* cb, const char* str)
     cb_write_byte(cb, 0);
 
     // Call the print function
-    mov(cb, RAX, const_ptr_opnd(&print_str_fn));
+    mov(cb, RAX, const_ptr_opnd(&print_str_cfun));
     call(cb, RAX);
 
     pop_regs(cb);
