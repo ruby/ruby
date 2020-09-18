@@ -12,7 +12,7 @@ class Ractor
   # receive them.
   #
   # The result of the block is sent via the outgoing channel
-  # and other 
+  # and other
   #
   # r = Ractor.new do
   #   Ractor.recv    # recv via r's mailbox => 1
@@ -29,7 +29,7 @@ class Ractor
   #
   # other options:
   #   name: Ractor's name
-  # 
+  #
   def self.new *args, name: nil, &block
     b = block # TODO: builtin bug
     raise ArgumentError, "must be called with a block" unless block
@@ -132,7 +132,10 @@ class Ractor
     loc  = __builtin_cexpr! %q{ RACTOR_PTR(self)->loc }
     name = __builtin_cexpr! %q{ RACTOR_PTR(self)->name }
     id   = __builtin_cexpr! %q{ INT2FIX(RACTOR_PTR(self)->id) }
-    "#<Ractor:##{id}#{name ? ' '+name : ''}#{loc ? " " + loc : ''}>"
+    status = __builtin_cexpr! %q{
+      rb_str_new2(ractor_status_str(RACTOR_PTR(self)->status_))
+    }
+    "#<Ractor:##{id}#{name ? ' '+name : ''}#{loc ? " " + loc : ''} #{status}>"
   end
 
   def name

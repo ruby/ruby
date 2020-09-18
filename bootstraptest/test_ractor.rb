@@ -17,6 +17,27 @@ assert_equal "must be called with a block", %q{
   end
 }
 
+# Ractor#inspect
+assert_equal "#<Ractor:#1 running>", %q{
+  Ractor.current.inspect
+}
+
+assert_match /^#<Ractor:#([^ ]*?) bootstraptest.tmp.rb:[0-9]+ blocking>$/, %q{
+  r = Ractor.new { Ractor.recv }
+  r.inspect
+}
+
+assert_match /^#<Ractor:#([^ ]*?) bootstraptest.tmp.rb:[0-9]+ terminated>$/, %q{
+  r = Ractor.new { '' }
+  r.take
+  r.inspect
+}
+
+assert_match /^#<Ractor:#([^ ]*?) Test Ractor bootstraptest.tmp.rb:[0-9]+ blocking>$/, %q{
+  r = Ractor.new(name: 'Test Ractor') { Ractor.recv }
+  r.inspect
+}
+
 # A return value of a Ractor block will be a message from the Ractor.
 assert_equal 'ok', %q{
   # join
