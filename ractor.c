@@ -492,7 +492,7 @@ ractor_copy_setup(struct rb_ractor_basket *b, VALUE obj)
 #if 0
         // TODO: consider custom copy protocol
         switch (BUILTIN_TYPE(obj)) {
-            
+
         }
 #endif
         b->v = rb_marshal_dump(obj, Qnil);
@@ -1309,6 +1309,16 @@ ractor_init(rb_ractor_t *r, VALUE name, VALUE loc)
     rb_ractor_living_threads_init(r);
 
     // naming
+    if (!NIL_P(name)) {
+        rb_encoding *enc;
+        StringValueCStr(name);
+        enc = rb_enc_get(name);
+        if (!rb_enc_asciicompat(enc)) {
+            rb_raise(rb_eArgError, "ASCII incompatible encoding (%s)",
+                 rb_enc_name(enc));
+        }
+        name = rb_str_new_frozen(name);
+    }
     r->name = name;
     r->loc = loc;
 }
@@ -1356,7 +1366,7 @@ ractor_atexit_yield(rb_execution_context_t *ec, rb_ractor_t *cr, VALUE v, bool e
 
     struct rb_ractor_basket basket;
     ractor_basket_setup(ec, &basket, v, Qfalse, exc);
- 
+
   retry:
     if (ractor_try_yield(ec, cr, &basket)) {
         // OK.
