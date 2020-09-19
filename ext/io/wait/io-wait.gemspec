@@ -8,7 +8,7 @@ Gem::Specification.new do |spec|
   spec.description   = %q{Waits until IO is readable or writable without blocking.}
   spec.homepage      = "https://github.com/ruby/io-wait"
   spec.licenses      = ["Ruby", "BSD-2-Clause"]
-  spec.required_ruby_version = Gem::Requirement.new(">= 2.3.0")
+  spec.required_ruby_version = Gem::Requirement.new(">= 3.0.0")
 
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = spec.homepage
