@@ -28,6 +28,7 @@
 #include "internal/io.h"
 #include "internal/mjit.h"
 #include "internal/object.h"
+#include "internal/thread.h"
 #include "internal/variable.h"
 #include "iseq.h"
 #include "mjit.h"
@@ -158,6 +159,13 @@ rb_ec_teardown(rb_execution_context_t *ec)
 }
 
 static void
+rb_ec_scheduler_finalize(rb_execution_context_t *ec)
+{
+    rb_thread_t *thread = rb_ec_thread_ptr(ec);
+    rb_thread_scheduler_set(thread->self, Qnil);
+}
+
+static void
 rb_ec_finalize(rb_execution_context_t *ec)
 {
     ruby_sig_finalize();
@@ -269,6 +277,9 @@ rb_ec_cleanup(rb_execution_context_t *ec, volatile int ex)
 	    sysex = EXIT_FAILURE;
 	}
     }
+
+    // If the user code defined a scheduler for the top level thread, run it:
+    rb_ec_scheduler_finalize(ec);
 
     mjit_finish(true); // We still need ISeqs here.
 

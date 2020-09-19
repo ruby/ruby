@@ -748,10 +748,7 @@ thread_do_start(rb_thread_t *th)
         rb_bug("unreachable");
     }
 
-    VALUE scheduler = th->scheduler;
-    if (scheduler != Qnil) {
-        rb_funcall(scheduler, rb_intern("run"), 0);
-    }
+    rb_thread_scheduler_set(th->self, Qnil);
 }
 
 void rb_ec_clear_current_thread_trace_func(const rb_execution_context_t *ec);
@@ -3731,6 +3728,11 @@ rb_thread_scheduler_set(VALUE thread, VALUE scheduler)
     rb_thread_t * th = rb_thread_ptr(thread);
 
     VM_ASSERT(th);
+
+    // We invoke Scheduler#close when setting it to something else, to ensure the previous scheduler runs to completion before changing the scheduler. That way, we do not need to consider interactions, e.g., of a Fiber from the previous scheduler with the new scheduler.
+    if (th->scheduler != Qnil) {
+        rb_scheduler_close(th->scheduler);
+    }
 
     th->scheduler = scheduler;
 

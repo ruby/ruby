@@ -5214,6 +5214,7 @@ eval.$(OBJEXT): $(top_srcdir)/internal/object.h
 eval.$(OBJEXT): $(top_srcdir)/internal/serial.h
 eval.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 eval.$(OBJEXT): $(top_srcdir)/internal/string.h
+eval.$(OBJEXT): $(top_srcdir)/internal/thread.h
 eval.$(OBJEXT): $(top_srcdir)/internal/variable.h
 eval.$(OBJEXT): $(top_srcdir)/internal/vm.h
 eval.$(OBJEXT): $(top_srcdir)/internal/warnings.h
