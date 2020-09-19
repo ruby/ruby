@@ -492,7 +492,7 @@ ractor_copy_setup(struct rb_ractor_basket *b, VALUE obj)
 #if 0
         // TODO: consider custom copy protocol
         switch (BUILTIN_TYPE(obj)) {
-            
+
         }
 #endif
         b->v = rb_marshal_dump(obj, Qnil);
@@ -1357,7 +1357,7 @@ ractor_atexit_yield(rb_execution_context_t *ec, rb_ractor_t *cr, VALUE v, bool e
 
     struct rb_ractor_basket basket;
     ractor_basket_setup(ec, &basket, v, Qfalse, exc);
- 
+
   retry:
     if (ractor_try_yield(ec, cr, &basket)) {
         // OK.

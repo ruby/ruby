@@ -3395,7 +3395,7 @@ should_be_finalizable(VALUE obj)
  *        def initialize(data_needed_for_finalization)
  *          ObjectSpace.define_finalizer(self, self.class.create_finalizer(data_needed_for_finalization))
  *        end
- *      
+ *
  *        def self.create_finalizer(data_needed_for_finalization)
  *          proc {
  *            puts "finalizing #{data_needed_for_finalization}"
@@ -3408,7 +3408,7 @@ should_be_finalizable(VALUE obj)
  *          def initialize(data_needed_for_finalization)
  *            @data_needed_for_finalization = data_needed_for_finalization
  *          end
- *        
+ *
  *          def call(id)
  *            puts "finalizing #{@data_needed_for_finalization}"
  *          end
@@ -7739,7 +7739,7 @@ static inline void
 gc_enter(rb_objspace_t *objspace, const char *event, unsigned int *lock_lev)
 {
     // stop other ractors
-    
+
     RB_VM_LOCK_ENTER_LEV(lock_lev);
     rb_vm_barrier();
 
