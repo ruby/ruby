@@ -10,4 +10,29 @@ class TestFiberScheduler < Test::Unit::TestCase
       end
     end
   end
+  
+  def test_closed_at_thread_exit
+    scheduler = Scheduler.new
+
+    thread = Thread.new do
+      Thread.current.scheduler = scheduler
+    end
+
+    thread.join
+
+    assert scheduler.closed?
+  end
+
+  def test_closed_when_set_to_nil
+    scheduler = Scheduler.new
+
+    thread = Thread.new do
+      Thread.current.scheduler = scheduler
+      Thread.current.scheduler = nil
+
+      assert scheduler.closed?
+    end
+
+    thread.join
+  end
 end

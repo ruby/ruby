@@ -19,6 +19,8 @@ class Scheduler
     @writable = {}
     @waiting = {}
 
+    @closed = false
+
     @lock = Mutex.new
     @locking = 0
     @ready = []
@@ -94,6 +96,19 @@ class Scheduler
   ensure
     @urgent.each(&:close)
     @urgent = nil
+  end
+
+  def close
+    self.run
+  ensure
+    @closed = true
+    
+    # We freeze to detect any inadvertant modifications after the scheduler is closed:
+    self.freeze
+  end
+
+  def closed?
+    @closed
   end
 
   def current_time

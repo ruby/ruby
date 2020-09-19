@@ -14,6 +14,8 @@
 
 VALUE rb_scheduler_timeout(struct timeval *timeout);
 
+VALUE rb_scheduler_close(VALUE scheduler);
+
 VALUE rb_scheduler_kernel_sleep(VALUE scheduler, VALUE duration);
 VALUE rb_scheduler_kernel_sleepv(VALUE scheduler, int argc, VALUE * argv);
 
