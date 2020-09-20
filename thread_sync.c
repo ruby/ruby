@@ -214,18 +214,17 @@ VALUE
 rb_mutex_trylock(VALUE self)
 {
     rb_mutex_t *mutex = mutex_ptr(self);
-    VALUE locked = Qfalse;
 
     if (mutex->fiber == 0) {
 	rb_fiber_t *fiber = GET_EC()->fiber_ptr;
 	rb_thread_t *th = GET_THREAD();
 	mutex->fiber = fiber;
-	locked = Qtrue;
 
 	mutex_locked(th, self);
+	return Qtrue;
     }
 
-    return locked;
+    return Qfalse;
 }
 
 /*
@@ -244,6 +243,16 @@ mutex_owned_p(rb_fiber_t *fiber, rb_mutex_t *mutex)
     else {
         return Qfalse;
     }
+}
+
+static VALUE call_rb_scheduler_block(VALUE mutex) {
+    return rb_scheduler_block(rb_thread_current_scheduler(), mutex);
+}
+
+static VALUE remove_from_mutex_lock_waiters(VALUE arg) {
+    struct list_node *node = (struct list_node*)arg;
+    list_del(node);
+    return Qnil;
 }
 
 static VALUE
@@ -276,9 +285,7 @@ do_mutex_lock(VALUE self, int interruptible_p)
             if (scheduler != Qnil) {
                 list_add_tail(&mutex->waitq, &w.node);
 
-                rb_scheduler_block(scheduler, self);
-
-                list_del(&w.node);
+                rb_ensure(call_rb_scheduler_block, self, remove_from_mutex_lock_waiters, (VALUE)&w.node);
 
                 if (!mutex->fiber) {
                     mutex->fiber = fiber;

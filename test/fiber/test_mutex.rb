@@ -70,6 +70,38 @@ class TestFiberMutex < Test::Unit::TestCase
     thread.join
   end
 
+  def test_mutex_fiber_raise
+    mutex = Mutex.new
+    ran = false
+
+    main = Thread.new do
+      mutex.lock
+
+      thread = Thread.new do
+        scheduler = Scheduler.new
+        Thread.current.scheduler = scheduler
+
+        f = Fiber.schedule do
+          assert_raise_with_message(RuntimeError, "bye") do
+            assert_same scheduler, Thread.scheduler
+            mutex.lock
+          end
+          ran = true
+        end
+
+        Fiber.schedule do
+          f.raise "bye"
+        end
+      end
+
+      thread.join
+    end
+
+    main.join # causes mutex to be released
+    assert_equal false, mutex.locked?
+    assert_equal true, ran
+  end
+
   def test_condition_variable
     mutex = Mutex.new
     condition = ConditionVariable.new
