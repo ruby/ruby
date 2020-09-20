@@ -3,6 +3,8 @@ require "rbconfig/sizeof"
 
 class TestMemoryView < Test::Unit::TestCase
   NATIVE_ENDIAN = MemoryViewTestUtils::NATIVE_ENDIAN
+  LITTLE_ENDIAN = :little_endian
+  BIG_ENDIAN    = :big_endian
 
   %I(SHORT INT INT16 INT32 INT64 INTPTR LONG LONG_LONG FLOAT DOUBLE).each do |type|
     name = :"#{type}_ALIGNMENT"
@@ -47,37 +49,37 @@ class TestMemoryView < Test::Unit::TestCase
     actual, = MemoryViewTestUtils.item_size_from_format("ccc")
     assert_equal(3, actual)
 
-    actual, = MemoryViewTestUtils.item_size_from_format("3c")
+    actual, = MemoryViewTestUtils.item_size_from_format("c3")
     assert_equal(3, actual)
 
     actual, = MemoryViewTestUtils.item_size_from_format("fd")
     assert_equal(12, actual)
 
-    actual, = MemoryViewTestUtils.item_size_from_format("f2xd")
+    actual, = MemoryViewTestUtils.item_size_from_format("fx2d")
     assert_equal(14, actual)
   end
 
   def test_rb_memory_view_item_size_from_format_with_spaces
     # spaces should be ignored
-    actual, = MemoryViewTestUtils.item_size_from_format("f 2x d")
+    actual, = MemoryViewTestUtils.item_size_from_format("f x2 d")
     assert_equal(14, actual)
   end
 
   def test_rb_memory_view_item_size_from_format_error
     assert_equal([-1, "a"], MemoryViewTestUtils.item_size_from_format("ccca"))
-    assert_equal([-1, "4a"], MemoryViewTestUtils.item_size_from_format("ccc4a"))
+    assert_equal([-1, "a"], MemoryViewTestUtils.item_size_from_format("ccc4a"))
   end
 
   def test_rb_memory_view_parse_item_format
-    total_size, members, err = MemoryViewTestUtils.parse_item_format("cc2c3f>2x4d<q!<")
+    total_size, members, err = MemoryViewTestUtils.parse_item_format("ccc2f3x2d4q!<")
     assert_equal(58, total_size)
     assert_nil(err)
     assert_equal([
-                   {format: 'c', native_size_p: false, endianness: NATIVE_ENDIAN,  offset:  0, size: 1, repeat: 1},
-                   {format: 'c', native_size_p: false, endianness: NATIVE_ENDIAN,  offset:  1, size: 1, repeat: 1},
-                   {format: 'c', native_size_p: false, endianness: NATIVE_ENDIAN,  offset:  2, size: 1, repeat: 2},
-                   {format: 'f', native_size_p: false, endianness: :big_endian,    offset:  4, size: 4, repeat: 3},
-                   {format: 'd', native_size_p: false, endianness: :little_endian, offset: 18, size: 8, repeat: 4},
+                   {format: 'c', native_size_p: false, endianness: NATIVE_ENDIAN, offset:  0, size: 1, repeat: 1},
+                   {format: 'c', native_size_p: false, endianness: NATIVE_ENDIAN, offset:  1, size: 1, repeat: 1},
+                   {format: 'c', native_size_p: false, endianness: NATIVE_ENDIAN, offset:  2, size: 1, repeat: 2},
+                   {format: 'f', native_size_p: false, endianness: NATIVE_ENDIAN, offset:  4, size: 4, repeat: 3},
+                   {format: 'd', native_size_p: false, endianness: NATIVE_ENDIAN, offset: 18, size: 8, repeat: 4},
                    {format: 'q', native_size_p: true,  endianness: :little_endian, offset: 50, size: sizeof('long long'), repeat: 1}
                  ],
                  members)
@@ -85,36 +87,36 @@ class TestMemoryView < Test::Unit::TestCase
 
   def test_rb_memory_view_parse_item_format_with_alignment_signle
     [
-      ["c",  false, NATIVE_ENDIAN, 1,               1,              1],
-      ["C",  false, NATIVE_ENDIAN, 1,               1,              1],
-      ["s",  false, NATIVE_ENDIAN, SHORT_ALIGNMENT, sizeof(:short), 1],
-      ["S",  false, NATIVE_ENDIAN, SHORT_ALIGNMENT, sizeof(:short), 1],
-      ["s!", true,  NATIVE_ENDIAN, SHORT_ALIGNMENT, sizeof(:short), 1],
-      ["S!", true,  NATIVE_ENDIAN, SHORT_ALIGNMENT, sizeof(:short), 1],
-      ["n",  false, NATIVE_ENDIAN, INT16_ALIGNMENT, sizeof(:int16_t), 1],
-      ["v",  false, NATIVE_ENDIAN, INT16_ALIGNMENT, sizeof(:int16_t), 1],
-      ["i",  false, NATIVE_ENDIAN, INT_ALIGNMENT, sizeof(:int), 1],
-      ["I",  false, NATIVE_ENDIAN, INT_ALIGNMENT, sizeof(:int), 1],
-      ["i!", true,  NATIVE_ENDIAN, INT_ALIGNMENT, sizeof(:int), 1],
-      ["I!", true,  NATIVE_ENDIAN, INT_ALIGNMENT, sizeof(:int), 1],
-      ["i",  false, NATIVE_ENDIAN, INT32_ALIGNMENT, sizeof(:int32_t), 1],
-      ["L",  false, NATIVE_ENDIAN, INT32_ALIGNMENT, sizeof(:int32_t), 1],
-      ["l!", true,  NATIVE_ENDIAN, LONG_ALIGNMENT, sizeof(:long), 1],
-      ["L!", true,  NATIVE_ENDIAN, LONG_ALIGNMENT, sizeof(:long), 1],
-      ["N",  false, NATIVE_ENDIAN, INT32_ALIGNMENT, sizeof(:int32_t), 1],
-      ["V",  false, NATIVE_ENDIAN, INT32_ALIGNMENT, sizeof(:int32_t), 1],
-      ["f",  false, NATIVE_ENDIAN, FLOAT_ALIGNMENT, sizeof(:float), 1],
-      ["e",  false, NATIVE_ENDIAN, FLOAT_ALIGNMENT, sizeof(:float), 1],
-      ["g",  false, NATIVE_ENDIAN, FLOAT_ALIGNMENT, sizeof(:float), 1],
-      ["q",  false, NATIVE_ENDIAN, INT64_ALIGNMENT, sizeof(:int64_t), 1],
-      ["Q",  false, NATIVE_ENDIAN, INT64_ALIGNMENT, sizeof(:int64_t), 1],
-      ["q!", true,  NATIVE_ENDIAN, LONG_LONG_ALIGNMENT, sizeof("long long"), 1],
-      ["Q!", true,  NATIVE_ENDIAN, LONG_LONG_ALIGNMENT, sizeof("long long"), 1],
-      ["d",  false, NATIVE_ENDIAN, DOUBLE_ALIGNMENT, sizeof(:double), 1],
-      ["E",  false, NATIVE_ENDIAN, DOUBLE_ALIGNMENT, sizeof(:double), 1],
-      ["G",  false, NATIVE_ENDIAN, DOUBLE_ALIGNMENT, sizeof(:double), 1],
-      ["j",  false, NATIVE_ENDIAN, INTPTR_ALIGNMENT, sizeof(:intptr_t), 1],
-      ["J",  false, NATIVE_ENDIAN, INTPTR_ALIGNMENT, sizeof(:intptr_t), 1],
+      ["c",  false, NATIVE_ENDIAN,  1,               1,              1],
+      ["C",  false, NATIVE_ENDIAN,  1,               1,              1],
+      ["s",  false, NATIVE_ENDIAN,  SHORT_ALIGNMENT, sizeof(:short), 1],
+      ["S",  false, NATIVE_ENDIAN,  SHORT_ALIGNMENT, sizeof(:short), 1],
+      ["s!", true,  NATIVE_ENDIAN,  SHORT_ALIGNMENT, sizeof(:short), 1],
+      ["S!", true,  NATIVE_ENDIAN,  SHORT_ALIGNMENT, sizeof(:short), 1],
+      ["n",  false, NATIVE_ENDIAN,  INT16_ALIGNMENT, sizeof(:int16_t), 1],
+      ["v",  false, NATIVE_ENDIAN,  INT16_ALIGNMENT, sizeof(:int16_t), 1],
+      ["i",  false, NATIVE_ENDIAN,  INT_ALIGNMENT, sizeof(:int), 1],
+      ["I",  false, NATIVE_ENDIAN,  INT_ALIGNMENT, sizeof(:int), 1],
+      ["i!", true,  NATIVE_ENDIAN,  INT_ALIGNMENT, sizeof(:int), 1],
+      ["I!", true,  NATIVE_ENDIAN,  INT_ALIGNMENT, sizeof(:int), 1],
+      ["i",  false, NATIVE_ENDIAN,  INT32_ALIGNMENT, sizeof(:int32_t), 1],
+      ["L",  false, NATIVE_ENDIAN,  INT32_ALIGNMENT, sizeof(:int32_t), 1],
+      ["l!", true,  NATIVE_ENDIAN,  LONG_ALIGNMENT, sizeof(:long), 1],
+      ["L!", true,  NATIVE_ENDIAN,  LONG_ALIGNMENT, sizeof(:long), 1],
+      ["N",  false, NATIVE_ENDIAN,  INT32_ALIGNMENT, sizeof(:int32_t), 1],
+      ["V",  false, NATIVE_ENDIAN,  INT32_ALIGNMENT, sizeof(:int32_t), 1],
+      ["f",  false, NATIVE_ENDIAN,  FLOAT_ALIGNMENT, sizeof(:float), 1],
+      ["e",  false, :little_endian, FLOAT_ALIGNMENT, sizeof(:float), 1],
+      ["g",  false, :big_endian,    FLOAT_ALIGNMENT, sizeof(:float), 1],
+      ["q",  false, NATIVE_ENDIAN,  INT64_ALIGNMENT, sizeof(:int64_t), 1],
+      ["Q",  false, NATIVE_ENDIAN,  INT64_ALIGNMENT, sizeof(:int64_t), 1],
+      ["q!", true,  NATIVE_ENDIAN,  LONG_LONG_ALIGNMENT, sizeof("long long"), 1],
+      ["Q!", true,  NATIVE_ENDIAN,  LONG_LONG_ALIGNMENT, sizeof("long long"), 1],
+      ["d",  false, NATIVE_ENDIAN,  DOUBLE_ALIGNMENT, sizeof(:double), 1],
+      ["E",  false, :little_endian, DOUBLE_ALIGNMENT, sizeof(:double), 1],
+      ["G",  false, :big_endian,    DOUBLE_ALIGNMENT, sizeof(:double), 1],
+      ["j",  false, NATIVE_ENDIAN,  INTPTR_ALIGNMENT, sizeof(:intptr_t), 1],
+      ["J",  false, NATIVE_ENDIAN,  INTPTR_ALIGNMENT, sizeof(:intptr_t), 1],
     ].each do |type, native_size_p, endianness, alignment, size, repeat, total_size|
       total_size, members, err = MemoryViewTestUtils.parse_item_format("|c#{type}")
       assert_nil(err)
@@ -132,7 +134,7 @@ class TestMemoryView < Test::Unit::TestCase
   end
 
   def test_rb_memory_view_parse_item_format_with_alignment_compound
-    total_size, members, err = MemoryViewTestUtils.parse_item_format("|cc2c3f>2x4d<cq!<")
+    total_size, members, err = MemoryViewTestUtils.parse_item_format("|ccc2f3x2d4cq!<")
     assert_equal(72, total_size)
     assert_nil(err)
 
@@ -145,14 +147,14 @@ class TestMemoryView < Test::Unit::TestCase
 
     res = offset % FLOAT_ALIGNMENT
     offset += FLOAT_ALIGNMENT - res if res > 0
-    expected_result << {format: 'f', native_size_p: false, endianness: :big_endian, offset: offset, size: 4, repeat: 3}
+    expected_result << {format: 'f', native_size_p: false, endianness: NATIVE_ENDIAN, offset: offset, size: 4, repeat: 3}
     offset += 12
 
     offset += 2 # 2x
 
     res = offset % DOUBLE_ALIGNMENT
     offset += DOUBLE_ALIGNMENT - res if res > 0
-    expected_result << {format: 'd', native_size_p: false, endianness: :little_endian, offset: offset, size: 8, repeat: 4}
+    expected_result << {format: 'd', native_size_p: false, endianness: NATIVE_ENDIAN, offset: offset, size: 8, repeat: 4}
     offset += 32
 
     expected_result << {format: 'c', native_size_p: false, endianness: NATIVE_ENDIAN,  offset: offset, size: 1, repeat: 1}

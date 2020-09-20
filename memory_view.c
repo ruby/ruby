@@ -108,15 +108,72 @@ rb_memory_view_init_as_byte_array(rb_memory_view_t *view, VALUE obj, void *data,
     return 1;
 }
 
+#ifdef HAVE_TRUE_LONG_LONG
+static const char native_types[] = "sSiIlLqQjJ";
+#else
+static const char native_types[] = "sSiIlLjJ";
+#endif
+static const char endianness_types[] = "sSiIlLqQjJ";
+
+typedef enum {
+    ENDIANNESS_NATIVE,
+    ENDIANNESS_LITTLE,
+    ENDIANNESS_BIG
+} endianness_t;
+
 static ssize_t
-get_format_size(const char *format, bool *native_p, ssize_t *alignment)
+get_format_size(const char *format, bool *native_p, ssize_t *alignment, endianness_t *endianness, VALUE *error)
 {
     RUBY_ASSERT(format != NULL);
     RUBY_ASSERT(native_p != NULL);
+    RUBY_ASSERT(endianness != NULL);
 
     *native_p = false;
 
-    switch (*format) {
+    const int type_char = *format;
+
+    int i = 1;
+    while (format[i]) {
+        switch (format[i]) {
+          case '!':
+            if (strchr(native_types, type_char)) {
+                *native_p = true;
+                ++i;
+            }
+            else {
+                if (error) {
+                    *error = rb_exc_new_str(rb_eArgError,
+                                            rb_sprintf("Unable to specify native size for '%c'", type_char));
+                }
+                return -1;
+            }
+            continue;
+
+          case '<':
+          case '>':
+            if (!strchr(endianness_types, type_char)) {
+                if (error) {
+                    *error = rb_exc_new_str(rb_eArgError,
+                                            rb_sprintf("Unable to specify endianness for '%c'", type_char));
+                }
+                return -1;
+            }
+            if (*endianness != ENDIANNESS_NATIVE) {
+                *error = rb_exc_new_cstr(rb_eArgError, "Unable to use both '<' and '>' multiple times");
+                return -1;
+            }
+            *endianness = (format[i] == '<') ? ENDIANNESS_LITTLE : ENDIANNESS_BIG;
+            ++i;
+            continue;
+
+          default:
+            break;
+        }
+
+        break;
+    }
+
+    switch (type_char) {
       case 'x':  // padding
         return 1;
 
@@ -126,8 +183,7 @@ get_format_size(const char *format, bool *native_p, ssize_t *alignment)
 
       case 's':  // s for int16_t, s! for signed short
       case 'S':  // S for uint16_t, S! for unsigned short
-        if (format[1] == '!') {
-            *native_p = true;
+        if (*native_p) {
             *alignment = RUBY_ALIGNOF(short);
             return sizeof(short);
         }
@@ -140,14 +196,12 @@ get_format_size(const char *format, bool *native_p, ssize_t *alignment)
 
       case 'i':  // i and i! for signed int
       case 'I':  // I and I! for unsigned int
-        *native_p = (format[1] == '!');
         *alignment = RUBY_ALIGNOF(int);
         return sizeof(int);
 
       case 'l':  // l for int32_t, l! for signed long
       case 'L':  // L for uint32_t, L! for unsigned long
-        if (format[1] == '!') {
-            *native_p = true;
+        if (*native_p) {
             *alignment = RUBY_ALIGNOF(long);
             return sizeof(long);
         }
@@ -166,8 +220,7 @@ get_format_size(const char *format, bool *native_p, ssize_t *alignment)
 
       case 'q':  // q for int64_t, q! for signed long long
       case 'Q':  // Q for uint64_t, Q! for unsigned long long
-        if (format[1] == '!') {
-            *native_p = true;
+        if (*native_p) {
             *alignment = RUBY_ALIGNOF(LONG_LONG);
             return sizeof(LONG_LONG);
         }
@@ -187,6 +240,9 @@ get_format_size(const char *format, bool *native_p, ssize_t *alignment)
 
       default:
         *alignment = -1;
+        if (error) {
+            *error = rb_exc_new_str(rb_eArgError, rb_sprintf("Invalid type character '%c'", type_char));
+        }
         return -1;
     }
 }
@@ -198,6 +254,7 @@ rb_memory_view_parse_item_format(const char *format,
 {
     if (format == NULL) return 1;
 
+    VALUE error = Qnil;
     ssize_t total = 0;
     ssize_t len = 0;
     bool alignment = false;
@@ -212,12 +269,27 @@ rb_memory_view_parse_item_format(const char *format,
         const char *q = p;
         ssize_t count = 0;
 
-        int ch = *p;
-        if (ISSPACE(ch)) {
-            ++p;
+        // ignore spaces
+        if (ISSPACE(*p)) {
+            while (ISSPACE(*p)) ++p;
             continue;
         }
-        else if ('0' <= ch && ch <= '9') {
+
+        bool native_size_p = false;
+        ssize_t alignment_size = 0;
+        endianness_t endianness = ENDIANNESS_NATIVE;
+        const ssize_t size = get_format_size(p, &native_size_p, &alignment_size, &endianness, &error);
+        if (size < 0) {
+            if (err) *err = q;
+            return -1;
+        }
+
+        const int type_char = *p;
+        p += 1 + (int)native_size_p + (endianness != ENDIANNESS_NATIVE);
+
+        // count modifiers
+        int ch = *p;
+        if ('0' <= ch && ch <= '9') {
             while ('0' <= (ch = *p) && ch <= '9') {
                 count = 10*count + ruby_digit36_to_number_table[ch];
                 ++p;
@@ -225,14 +297,6 @@ rb_memory_view_parse_item_format(const char *format,
         }
         else {
             count = 1;
-        }
-
-        bool native_p;
-        ssize_t alignment_size = 0;
-        ssize_t size = get_format_size(p, &native_p, &alignment_size);
-        if (size < 0) {
-            if (err) *err = q;
-            return -1;
         }
 
         ssize_t padding = 0;
@@ -243,16 +307,11 @@ rb_memory_view_parse_item_format(const char *format,
             }
         }
 
-        if (ch != 'x') {
+        if (type_char != 'x') {
             ++len;
         }
 
         total += padding + size * count;
-
-        p += 1 + (int)native_p;
-
-        // skip an endianness specifier
-        if (*p == '<' || *p == '>') ++p;
     }
 
     if (members && n_members) {
@@ -262,6 +321,16 @@ rb_memory_view_parse_item_format(const char *format,
         const char *p = format;
         while (*p) {
             ssize_t count = 0;
+
+            bool native_size_p;
+            ssize_t alignment_size = 0;
+            endianness_t endianness = ENDIANNESS_NATIVE;
+            const ssize_t size = get_format_size(p, &native_size_p, &alignment_size, &endianness, NULL);
+
+            const int type_char = *p;
+            p += 1 + (int)native_size_p + (endianness != ENDIANNESS_NATIVE);
+
+            // count modifiers
             int ch = *p;
             if ('0' <= ch && ch <= '9') {
                 while ('0' <= (ch = *p) && ch <= '9') {
@@ -273,10 +342,6 @@ rb_memory_view_parse_item_format(const char *format,
                 count = 1;
             }
 
-            bool native_size_p;
-            ssize_t alignment_size = 0;
-            ssize_t size = get_format_size(p, &native_size_p, &alignment_size);
-
             ssize_t padding = 0;
             if (alignment && alignment_size > 1) {
                 ssize_t res = offset % alignment_size;
@@ -285,30 +350,30 @@ rb_memory_view_parse_item_format(const char *format,
                 }
             }
 
-            bool has_endianness = false;
-#ifdef WORDS_BIGENDIAN
-            bool little_endian_p = false;
-#else
-            bool little_endian_p = true;
-#endif
-            switch (p[1 + (int)native_size_p]) {
-              case '<':
-                little_endian_p = true;
-                has_endianness = true;
-                break;
-              case '>':
-                little_endian_p = false;
-                has_endianness = true;
-                break;
-              default:
-                break;
-            }
-
             offset += padding;
 
-            if (ch != 'x') {
+            if (type_char != 'x') {
+#ifdef WORDS_BIGENDIAN
+                bool little_endian_p = (endianness == ENDIANNESS_LITTLE);
+#else
+                bool little_endian_p = (endianness != ENDIANNESS_BIG);
+#endif
+
+                switch (type_char) {
+                  case 'e':
+                  case 'E':
+                    little_endian_p = true;
+                    break;
+                  case 'g':
+                  case 'G':
+                    little_endian_p = false;
+                    break;
+                  default:
+                    break;
+                }
+
                 buf[i++] = (rb_memory_view_item_component_t){
-                    .format = ch,
+                    .format = type_char,
                     .native_size_p = native_size_p,
                     .little_endian_p = little_endian_p,
                     .offset = offset,
@@ -318,8 +383,8 @@ rb_memory_view_parse_item_format(const char *format,
             }
 
             offset += size * count;
-            p += 1 + (int)native_size_p + (int)has_endianness;
         }
+
         *members = buf;
         *n_members = len;
     }
