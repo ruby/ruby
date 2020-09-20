@@ -182,7 +182,9 @@ x86opnd_t imm_opnd(int64_t val);
 // Constant pointer operand
 x86opnd_t const_ptr_opnd(void* ptr);
 
+// Code block methods
 void cb_init(codeblock_t* cb, size_t mem_size);
+void cb_align_pos(codeblock_t* cb, size_t multiple);
 void cb_set_pos(codeblock_t* cb, size_t pos);
 uint8_t* cb_get_ptr(codeblock_t* cb, size_t index);
 void cb_write_byte(codeblock_t* cb, uint8_t byte);
@@ -283,6 +285,7 @@ void sar(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1);
 void shl(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1);
 void shr(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1);
 void sub(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1);
+void ud2(codeblock_t* cb);
 void xor(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1);
 
 #endif
