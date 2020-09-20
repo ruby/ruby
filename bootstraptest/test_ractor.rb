@@ -261,7 +261,7 @@ assert_equal 'no _dump_data is defined for class Thread', %q{
 }
 
 # send sharable and unsharable objects
-assert_equal "[[[1, true], [:sym, true], [:xyzzy, true], [\"frozen\", true], " \
+assert_equal "[[[#<struct Person name=\"Matz\">, true], [1, true], [:sym, true], [:xyzzy, true], [\"frozen\", true], " \
              "[(3/1), true], [(3+4i), true], [/regexp/, true], [C, true]], " \
              "[[\"mutable str\", false], [[:array], false], [{:hash=>true}, false]]]", %q{
   r = Ractor.new do
@@ -273,7 +273,9 @@ assert_equal "[[[1, true], [:sym, true], [:xyzzy, true], [\"frozen\", true], " \
   class C
   end
 
-  sharable_objects = [1, :sym, 'xyzzy'.to_sym, 'frozen'.freeze, 1+2r, 3+4i, /regexp/, C]
+  Person = Struct.new(:name)
+
+  sharable_objects = [Person.new("Matz".freeze).freeze, 1, :sym, 'xyzzy'.to_sym, 'frozen'.freeze, 1+2r, 3+4i, /regexp/, C]
 
   sr = sharable_objects.map{|o|
     r << o

@@ -1778,6 +1778,20 @@ rb_ractor_shareable_p_continue(VALUE obj)
             goto shareable;
         }
         return false;
+      case T_STRUCT:
+        if (!RB_OBJ_FROZEN_RAW(obj) ||
+            FL_TEST_RAW(obj, RUBY_FL_EXIVAR)) {
+            return false;
+        }
+        for (int i=0; i<RSTRUCT_LEN(obj); i++) {
+            VALUE item;
+            item = RSTRUCT_GET(obj, i);
+            if (!RB_OBJ_FROZEN_RAW(item) ||
+                FL_TEST_RAW(obj, RUBY_FL_EXIVAR)) {
+                return false;
+            }
+        }
+        goto shareable;
       case T_ARRAY:
         if (!RB_OBJ_FROZEN_RAW(obj) ||
             FL_TEST_RAW(obj, RUBY_FL_EXIVAR)) {
