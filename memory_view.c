@@ -136,6 +136,7 @@ get_format_size(const char *format, bool *native_p, ssize_t *alignment, endianne
     while (format[i]) {
         switch (format[i]) {
           case '!':
+          case '_':
             if (strchr(native_types, type_char)) {
                 *native_p = true;
                 ++i;
