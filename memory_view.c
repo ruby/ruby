@@ -122,13 +122,17 @@ typedef enum {
 } endianness_t;
 
 static ssize_t
-get_format_size(const char *format, bool *native_p, ssize_t *alignment, endianness_t *endianness, VALUE *error)
+get_format_size(const char *format, bool *native_p, ssize_t *alignment, endianness_t *endianness, ssize_t *count, const char **next_format, VALUE *error)
 {
     RUBY_ASSERT(format != NULL);
     RUBY_ASSERT(native_p != NULL);
     RUBY_ASSERT(endianness != NULL);
+    RUBY_ASSERT(count != NULL);
+    RUBY_ASSERT(next_format != NULL);
 
     *native_p = false;
+    *endianness = ENDIANNESS_NATIVE;
+    *count = 1;
 
     const int type_char = *format;
 
@@ -173,6 +177,19 @@ get_format_size(const char *format, bool *native_p, ssize_t *alignment, endianne
 
         break;
     }
+
+    // parse count
+    int ch = format[i];
+    if ('0' <= ch && ch <= '9') {
+        ssize_t n = 0;
+        while ('0' <= (ch = format[i]) && ch <= '9') {
+            n = 10*n + ruby_digit36_to_number_table[ch];
+            ++i;
+        }
+        *count = n;
+    }
+
+    *next_format = &format[i];
 
     switch (type_char) {
       case 'x':  // padding
@@ -248,6 +265,17 @@ get_format_size(const char *format, bool *native_p, ssize_t *alignment, endianne
     }
 }
 
+static inline ssize_t
+calculate_padding(ssize_t total, ssize_t alignment_size) {
+    if (alignment_size > 1) {
+        ssize_t res = total % alignment_size;
+        if (res > 0) {
+            return alignment_size - res;
+        }
+    }
+    return 0;
+}
+
 ssize_t
 rb_memory_view_parse_item_format(const char *format,
                                  rb_memory_view_item_component_t **members,
@@ -268,7 +296,6 @@ rb_memory_view_parse_item_format(const char *format,
     }
     while (*p) {
         const char *q = p;
-        ssize_t count = 0;
 
         // ignore spaces
         if (ISSPACE(*p)) {
@@ -279,40 +306,19 @@ rb_memory_view_parse_item_format(const char *format,
         bool native_size_p = false;
         ssize_t alignment_size = 0;
         endianness_t endianness = ENDIANNESS_NATIVE;
-        const ssize_t size = get_format_size(p, &native_size_p, &alignment_size, &endianness, &error);
+        ssize_t count = 0;
+        const ssize_t size = get_format_size(p, &native_size_p, &alignment_size, &endianness, &count, &p, &error);
         if (size < 0) {
             if (err) *err = q;
             return -1;
         }
 
-        const int type_char = *p;
-        p += 1 + (int)native_size_p + (endianness != ENDIANNESS_NATIVE);
+        const ssize_t padding = alignment ? calculate_padding(total, alignment_size) : 0;
+        total += padding + size * count;
 
-        // count modifiers
-        int ch = *p;
-        if ('0' <= ch && ch <= '9') {
-            while ('0' <= (ch = *p) && ch <= '9') {
-                count = 10*count + ruby_digit36_to_number_table[ch];
-                ++p;
-            }
-        }
-        else {
-            count = 1;
-        }
-
-        ssize_t padding = 0;
-        if (alignment && alignment_size > 1) {
-            ssize_t res = total % alignment_size;
-            if (res > 0) {
-                padding = alignment_size - res;
-            }
-        }
-
-        if (type_char != 'x') {
+        if (*q != 'x') {
             ++len;
         }
-
-        total += padding + size * count;
     }
 
     if (members && n_members) {
@@ -321,36 +327,15 @@ rb_memory_view_parse_item_format(const char *format,
         ssize_t i = 0, offset = 0;
         const char *p = format;
         while (*p) {
-            ssize_t count = 0;
+            const int type_char = *p;
 
             bool native_size_p;
             ssize_t alignment_size = 0;
             endianness_t endianness = ENDIANNESS_NATIVE;
-            const ssize_t size = get_format_size(p, &native_size_p, &alignment_size, &endianness, NULL);
+            ssize_t count = 0;
+            const ssize_t size = get_format_size(p, &native_size_p, &alignment_size, &endianness, &count, &p, NULL);
 
-            const int type_char = *p;
-            p += 1 + (int)native_size_p + (endianness != ENDIANNESS_NATIVE);
-
-            // count modifiers
-            int ch = *p;
-            if ('0' <= ch && ch <= '9') {
-                while ('0' <= (ch = *p) && ch <= '9') {
-                    count = 10*count + ruby_digit36_to_number_table[ch];
-                    ++p;
-                }
-            }
-            else {
-                count = 1;
-            }
-
-            ssize_t padding = 0;
-            if (alignment && alignment_size > 1) {
-                ssize_t res = offset % alignment_size;
-                if (res > 0) {
-                    padding = alignment_size - res;
-                }
-            }
-
+            const ssize_t padding = alignment ? calculate_padding(offset, alignment_size) : 0;
             offset += padding;
 
             if (type_char != 'x') {
