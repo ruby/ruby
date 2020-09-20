@@ -138,9 +138,23 @@ void cb_init(codeblock_t* cb, size_t mem_size)
     cb->num_refs = 0;
 }
 
-/**
-Set the current write position
-*/
+// Align the current write position to a multiple of bytes
+void cb_align_pos(codeblock_t* cb, size_t multiple)
+{
+    // Compute the pointer modulo the given alignment boundary
+    uint8_t* ptr = &cb->mem_block[cb->write_pos];
+    size_t rem = ((size_t)ptr) % multiple;
+
+    // If the pointer is already aligned, stop
+    if (rem != 0)
+        return;
+
+    // Pad the pointer by the necessary amount to align it
+    size_t pad = multiple - rem;
+    cb->write_pos += pad;
+}
+
+// Set the current write position
 void cb_set_pos(codeblock_t* cb, size_t pos)
 {
     assert (pos < cb->mem_size);
@@ -1467,6 +1481,12 @@ void sub(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1)
         opnd0,
         opnd1
     );
+}
+
+/// Undefined opcode
+void ud2(codeblock_t* cb)
+{
+    cb_write_bytes(cb, 2, 0x0F, 0x0B);
 }
 
 /// xor - Exclusive bitwise OR
