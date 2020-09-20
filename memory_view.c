@@ -10,24 +10,6 @@
 #include "internal/util.h"
 #include "ruby/memory_view.h"
 
-typedef struct { char c; short     x; } short_alignment_s;
-typedef struct { char c; int       x; } int_alignment_s;
-typedef struct { char c; long      x; } long_alignment_s;
-typedef struct { char c; LONG_LONG x; } long_long_alignment_s;
-typedef struct { char c; int16_t   x; } int16_alignment_s;
-typedef struct { char c; int32_t   x; } int32_alignment_s;
-typedef struct { char c; int64_t   x; } int64_alignment_s;
-typedef struct { char c; intptr_t  x; } intptr_alignment_s;
-
-#define SHORT_ALIGNMENT      (sizeof(short_alignment_s) - sizeof(short))
-#define INT_ALIGNMENT        (sizeof(int_alignment_s) - sizeof(int))
-#define LONG_ALIGNMENT       (sizeof(long_alignment_s) - sizeof(long))
-#define LONG_LONG_ALIGNMENT  (sizeof(long_long_alignment_s) - sizeof(LONG_LONG))
-#define INT16_ALIGNMENT      (sizeof(int16_alignment_s) - sizeof(int16_t))
-#define INT32_ALIGNMENT      (sizeof(int32_alignment_s) - sizeof(int32_t))
-#define INT64_ALIGNMENT      (sizeof(int64_alignment_s) - sizeof(int64_t))
-#define INTPTR_ALIGNMENT     (sizeof(intptr_alignment_s) - sizeof(intptr_t))
-
 static ID id_memory_view;
 
 static const rb_data_type_t memory_view_entry_data_type = {
@@ -146,57 +128,61 @@ get_format_size(const char *format, bool *native_p, ssize_t *alignment)
       case 'S':  // S for uint16_t, S! for unsigned short
         if (format[1] == '!') {
             *native_p = true;
-            *alignment = SHORT_ALIGNMENT;
+            *alignment = RUBY_ALIGNOF(short);
             return sizeof(short);
         }
         // fall through
 
       case 'n':  // n for big-endian 16bit unsigned integer
       case 'v':  // v for little-endian 16bit unsigned integer
-        *alignment = INT16_ALIGNMENT;
+        *alignment = RUBY_ALIGNOF(int16_t);
         return 2;
 
       case 'i':  // i and i! for signed int
       case 'I':  // I and I! for unsigned int
         *native_p = (format[1] == '!');
-        *alignment = INT_ALIGNMENT;
+        *alignment = RUBY_ALIGNOF(int);
         return sizeof(int);
 
       case 'l':  // l for int32_t, l! for signed long
       case 'L':  // L for uint32_t, L! for unsigned long
         if (format[1] == '!') {
             *native_p = true;
-            *alignment = LONG_ALIGNMENT;
+            *alignment = RUBY_ALIGNOF(long);
             return sizeof(long);
         }
         // fall through
 
       case 'N':  // N for big-endian 32bit unsigned integer
       case 'V':  // V for little-endian 32bit unsigned integer
+        *alignment = RUBY_ALIGNOF(int32_t);
+        return 4;
+
       case 'f':  // f for native float
       case 'e':  // e for little-endian float
       case 'g':  // g for big-endian float
-        *alignment = INT32_ALIGNMENT;
-        return 4;
+        *alignment = RUBY_ALIGNOF(float);
+        return sizeof(float);
 
       case 'q':  // q for int64_t, q! for signed long long
       case 'Q':  // Q for uint64_t, Q! for unsigned long long
         if (format[1] == '!') {
             *native_p = true;
-            *alignment = LONG_LONG_ALIGNMENT;
+            *alignment = RUBY_ALIGNOF(LONG_LONG);
             return sizeof(LONG_LONG);
         }
-        // fall through
+        *alignment = RUBY_ALIGNOF(int64_t);
+        return 8;
 
       case 'd':  // d for native double
       case 'E':  // E for little-endian double
       case 'G':  // G for big-endian double
-        *alignment = INT64_ALIGNMENT;
-        return 8;
+        *alignment = RUBY_ALIGNOF(double);
+        return sizeof(double);
 
       case 'j':  // j for intptr_t
       case 'J':  // J for uintptr_t
-        *alignment = INTPTR_ALIGNMENT;
+        *alignment = RUBY_ALIGNOF(intptr_t);
         return sizeof(intptr_t);
 
       default:

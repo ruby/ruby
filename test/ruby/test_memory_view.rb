@@ -4,9 +4,10 @@ require "rbconfig/sizeof"
 class TestMemoryView < Test::Unit::TestCase
   NATIVE_ENDIAN = MemoryViewTestUtils::NATIVE_ENDIAN
 
-  LONG_LONG_ALIGNMENT = MemoryViewTestUtils::LONG_LONG_ALIGNMENT
-  INT32_ALIGNMENT     = MemoryViewTestUtils::INT32_ALIGNMENT
-  INT64_ALIGNMENT     = MemoryViewTestUtils::INT64_ALIGNMENT
+  %I(SHORT INT INT16 INT32 INT64 INTPTR LONG LONG_LONG FLOAT DOUBLE).each do |type|
+    name = :"#{type}_ALIGNMENT"
+    const_set(name, MemoryViewTestUtils.const_get(name))
+  end
 
   def test_rb_memory_view_register_duplicated
     assert_warning(/Duplicated registration of memory view to/) do
@@ -82,8 +83,56 @@ class TestMemoryView < Test::Unit::TestCase
                  members)
   end
 
-  def test_rb_memory_view_parse_item_format_with_alignment
-    total_size, members, err = MemoryViewTestUtils.parse_item_format("|cc2c3f>2x4d<cq<")
+  def test_rb_memory_view_parse_item_format_with_alignment_signle
+    [
+      ["c",  false, NATIVE_ENDIAN, 1,               1,              1],
+      ["C",  false, NATIVE_ENDIAN, 1,               1,              1],
+      ["s",  false, NATIVE_ENDIAN, SHORT_ALIGNMENT, sizeof(:short), 1],
+      ["S",  false, NATIVE_ENDIAN, SHORT_ALIGNMENT, sizeof(:short), 1],
+      ["s!", true,  NATIVE_ENDIAN, SHORT_ALIGNMENT, sizeof(:short), 1],
+      ["S!", true,  NATIVE_ENDIAN, SHORT_ALIGNMENT, sizeof(:short), 1],
+      ["n",  false, NATIVE_ENDIAN, INT16_ALIGNMENT, sizeof(:int16_t), 1],
+      ["v",  false, NATIVE_ENDIAN, INT16_ALIGNMENT, sizeof(:int16_t), 1],
+      ["i",  false, NATIVE_ENDIAN, INT_ALIGNMENT, sizeof(:int), 1],
+      ["I",  false, NATIVE_ENDIAN, INT_ALIGNMENT, sizeof(:int), 1],
+      ["i!", true,  NATIVE_ENDIAN, INT_ALIGNMENT, sizeof(:int), 1],
+      ["I!", true,  NATIVE_ENDIAN, INT_ALIGNMENT, sizeof(:int), 1],
+      ["i",  false, NATIVE_ENDIAN, INT32_ALIGNMENT, sizeof(:int32_t), 1],
+      ["L",  false, NATIVE_ENDIAN, INT32_ALIGNMENT, sizeof(:int32_t), 1],
+      ["l!", true,  NATIVE_ENDIAN, LONG_ALIGNMENT, sizeof(:long), 1],
+      ["L!", true,  NATIVE_ENDIAN, LONG_ALIGNMENT, sizeof(:long), 1],
+      ["N",  false, NATIVE_ENDIAN, INT32_ALIGNMENT, sizeof(:int32_t), 1],
+      ["V",  false, NATIVE_ENDIAN, INT32_ALIGNMENT, sizeof(:int32_t), 1],
+      ["f",  false, NATIVE_ENDIAN, FLOAT_ALIGNMENT, sizeof(:float), 1],
+      ["e",  false, NATIVE_ENDIAN, FLOAT_ALIGNMENT, sizeof(:float), 1],
+      ["g",  false, NATIVE_ENDIAN, FLOAT_ALIGNMENT, sizeof(:float), 1],
+      ["q",  false, NATIVE_ENDIAN, INT64_ALIGNMENT, sizeof(:int64_t), 1],
+      ["Q",  false, NATIVE_ENDIAN, INT64_ALIGNMENT, sizeof(:int64_t), 1],
+      ["q!", true,  NATIVE_ENDIAN, LONG_LONG_ALIGNMENT, sizeof("long long"), 1],
+      ["Q!", true,  NATIVE_ENDIAN, LONG_LONG_ALIGNMENT, sizeof("long long"), 1],
+      ["d",  false, NATIVE_ENDIAN, DOUBLE_ALIGNMENT, sizeof(:double), 1],
+      ["E",  false, NATIVE_ENDIAN, DOUBLE_ALIGNMENT, sizeof(:double), 1],
+      ["G",  false, NATIVE_ENDIAN, DOUBLE_ALIGNMENT, sizeof(:double), 1],
+      ["j",  false, NATIVE_ENDIAN, INTPTR_ALIGNMENT, sizeof(:intptr_t), 1],
+      ["J",  false, NATIVE_ENDIAN, INTPTR_ALIGNMENT, sizeof(:intptr_t), 1],
+    ].each do |type, native_size_p, endianness, alignment, size, repeat, total_size|
+      total_size, members, err = MemoryViewTestUtils.parse_item_format("|c#{type}")
+      assert_nil(err)
+
+      padding_size = alignment - 1
+      expected_total_size = 1 + padding_size + size
+      assert_equal(expected_total_size, total_size)
+
+      expected_result = [
+        {format: 'c', native_size_p: false, endianness: NATIVE_ENDIAN,  offset: 0, size: 1, repeat: 1},
+        {format: type[0], native_size_p: native_size_p, endianness: endianness,  offset: alignment, size: size, repeat: repeat},
+      ]
+      assert_equal(expected_result, members)
+    end
+  end
+
+  def test_rb_memory_view_parse_item_format_with_alignment_compound
+    total_size, members, err = MemoryViewTestUtils.parse_item_format("|cc2c3f>2x4d<cq!<")
     assert_equal(72, total_size)
     assert_nil(err)
 
@@ -94,15 +143,15 @@ class TestMemoryView < Test::Unit::TestCase
     ]
     offset = 4
 
-    res = offset % INT32_ALIGNMENT
-    offset += INT32_ALIGNMENT - res if res > 0
+    res = offset % FLOAT_ALIGNMENT
+    offset += FLOAT_ALIGNMENT - res if res > 0
     expected_result << {format: 'f', native_size_p: false, endianness: :big_endian, offset: offset, size: 4, repeat: 3}
     offset += 12
 
     offset += 2 # 2x
 
-    res = offset % INT64_ALIGNMENT
-    offset += INT64_ALIGNMENT - res if res > 0
+    res = offset % DOUBLE_ALIGNMENT
+    offset += DOUBLE_ALIGNMENT - res if res > 0
     expected_result << {format: 'd', native_size_p: false, endianness: :little_endian, offset: offset, size: 8, repeat: 4}
     offset += 32
 
@@ -111,7 +160,7 @@ class TestMemoryView < Test::Unit::TestCase
 
     res = offset % LONG_LONG_ALIGNMENT
     offset += LONG_LONG_ALIGNMENT - res if res > 0
-    expected_result << {format: 'q', native_size_p: false, endianness: :little_endian, offset: offset, size: 8, repeat: 1}
+    expected_result << {format: 'q', native_size_p: true, endianness: :little_endian, offset: offset, size: 8, repeat: 1}
 
     assert_equal(expected_result, members)
   end
