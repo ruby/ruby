@@ -22,20 +22,12 @@ assert_equal 'nil', %q{
   r.name.inspect
 }
 
-# Raises exceptions if initialize with invalid name
-assert_equal 'no implicit conversion of Array into String', %q{
+# Raises exceptions if initialize with an invalid name
+assert_equal 'ok', %q{
   begin
     r = Ractor.new(name: [{}]) {}
   rescue TypeError => e
-    e.message
-  end
-}
-
-assert_equal 'ASCII incompatible encoding (UTF-16BE)', %q{
-  begin
-    r = Ractor.new(name: String.new('Invalid encoding', encoding: 'UTF-16BE')) {}
-  rescue ArgumentError => e
-    e.message
+    'ok'
   end
 }
 
@@ -49,23 +41,24 @@ assert_equal "must be called with a block", %q{
 }
 
 # Ractor#inspect
+# Return only id and status for main ractor
 assert_equal "#<Ractor:#1 running>", %q{
   Ractor.current.inspect
 }
 
-assert_match /^#<Ractor:#([^ ]*?) bootstraptest.tmp.rb:[0-9]+ blocking>$/, %q{
-  r = Ractor.new { Ractor.recv }
-  r.inspect
-}
-
-assert_match /^#<Ractor:#([^ ]*?) bootstraptest.tmp.rb:[0-9]+ terminated>$/, %q{
+# Return id, loc, and status for no-name ractor
+assert_match /^#<Ractor:#([^ ]*?) .+:[0-9]+ terminated>$/, %q{
   r = Ractor.new { '' }
   r.take
+  sleep 0.1 until r.inspect =~ /terminated/
   r.inspect
 }
 
-assert_match /^#<Ractor:#([^ ]*?) Test Ractor bootstraptest.tmp.rb:[0-9]+ blocking>$/, %q{
-  r = Ractor.new(name: 'Test Ractor') { Ractor.recv }
+# Return id, name, loc, and status for named ractor
+assert_match /^#<Ractor:#([^ ]*?) Test Ractor .+:[0-9]+ terminated>$/, %q{
+  r = Ractor.new(name: 'Test Ractor') { '' }
+  r.take
+  sleep 0.1 until r.inspect =~ /terminated/
   r.inspect
 }
 
@@ -154,7 +147,7 @@ assert_equal 'true', %q{
       rs.delete(r)
     }
 
-    if as.map{|r, o| r.inspect}.sort == all_rs.map{|r| r.inspect}.sort &&
+    if as.map{|r, o| r.object_id}.sort == all_rs.map{|r| r.object_id}.sort &&
        as.map{|r, o| o}.sort == (1..n).map{|i| "r#{i}"}.sort
       'ok'
     else
@@ -174,7 +167,7 @@ assert_equal 'ok', %q{
   end
 
   r.take
-  sleep 0.1 # wait for terminate
+  sleep 0.1 until r.inspect =~ /terminated/
 
   begin
     o = r.take
@@ -190,7 +183,7 @@ assert_equal 'ok', %q{
   end
 
   r.take # closed
-  sleep 0.1 # wait for terminate
+  sleep 0.1 until r.inspect =~ /terminated/
 
   begin
     r.send(1)
@@ -198,6 +191,95 @@ assert_equal 'ok', %q{
     'ok'
   else
     'ng'
+  end
+}
+
+# Raise Ractor::ClosedError when try to send into a closed actor
+assert_equal 'ok', %q{
+  r = Ractor.new { Ractor.recv }
+
+  r.close
+  begin
+    r.send(1)
+  rescue Ractor::ClosedError
+    'ok'
+  else
+    'ng'
+  end
+}
+
+# Raise Ractor::ClosedError when try to take from closed actor
+assert_equal 'ok', %q{
+  r = Ractor.new do
+    Ractor.yield 1
+    Ractor.recv
+  end
+
+  r.close
+  begin
+    r.take
+  rescue Ractor::ClosedError
+    'ok'
+  else
+    'ng'
+  end
+}
+
+# Raise Ractor::ClosedError when try to send into a ractor with closed incoming port
+assert_equal 'ok', %q{
+  r = Ractor.new { Ractor.recv }
+  r.close_incoming
+
+  begin
+    r.send(1)
+  rescue Ractor::ClosedError
+    'ok'
+  else
+    'ng'
+  end
+}
+
+# A ractor with closed incoming port still can send messages out
+assert_equal '[1, 2]', %q{
+  r = Ractor.new do
+    Ractor.yield 1
+    2
+  end
+  r.close_incoming
+
+  [r.take, r.take]
+}
+
+# Raise Ractor::ClosedError when try to take from a ractor with closed outgoing port
+assert_equal 'ok', %q{
+  r = Ractor.new do
+    Ractor.yield 1
+    Ractor.recv
+  end
+
+  r.close_outgoing
+  begin
+    r.take
+  rescue Ractor::ClosedError
+    'ok'
+  else
+    'ng'
+  end
+}
+
+# A ractor with closed outgoing port still can receive messages from incoming port
+assert_equal 'ok', %q{
+  r = Ractor.new do
+    Ractor.recv
+  end
+
+  r.close_outgoing
+  begin
+    r.send(1)
+  rescue Ractor::ClosedError
+    'ng'
+  else
+    'ok'
   end
 }
 
@@ -557,6 +639,28 @@ assert_equal '[1000, 3]', %q{
   H = {a: 1, b: 2, c: 3}.freeze
 
   Ractor.new{ [A.size, H.size] }.take
+}
+
+# Ractor.count
+assert_equal '[1, 4, 3, 2, 1]', %q{
+  counts = []
+  counts << Ractor.count
+  ractors = (1..3).map { Ractor.new { Ractor.recv } }
+  counts << Ractor.count
+
+  ractors[0].send('End 0').take
+  sleep 0.1 until ractors[0].inspect =~ /terminated/
+  counts << Ractor.count
+
+  ractors[1].send('End 1').take
+  sleep 0.1 until ractors[1].inspect =~ /terminated/
+  counts << Ractor.count
+
+  ractors[2].send('End 2').take
+  sleep 0.1 until ractors[2].inspect =~ /terminated/
+  counts << Ractor.count
+
+  counts.inspect
 }
 
 ###
