@@ -812,11 +812,6 @@ struct rb_unblock_callback {
 
 struct rb_mutex_struct;
 
-typedef struct rb_thread_list_struct{
-    struct rb_thread_list_struct *next;
-    struct rb_thread_struct *th;
-} rb_thread_list_t;
-
 typedef struct rb_ensure_entry {
     VALUE marker;
     VALUE (*e_proc)(VALUE);
@@ -831,6 +826,12 @@ typedef struct rb_ensure_list {
 typedef char rb_thread_id_string_t[sizeof(rb_nativethread_id_t) * 2 + 3];
 
 typedef struct rb_fiber_struct rb_fiber_t;
+
+struct rb_waiting_list {
+    struct rb_waiting_list *next;
+    struct rb_thread_struct *thread;
+    struct rb_fiber_struct *fiber;
+};
 
 struct rb_execution_context_struct {
     /* execution information */
@@ -958,7 +959,7 @@ typedef struct rb_thread_struct {
     VALUE locking_mutex;
     struct rb_mutex_struct *keeping_mutexes;
 
-    rb_thread_list_t *join_list;
+    struct rb_waiting_list *join_list;
 
     union {
         struct {

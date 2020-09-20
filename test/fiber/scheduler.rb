@@ -22,7 +22,7 @@ class Scheduler
     @closed = false
 
     @lock = Mutex.new
-    @locking = 0
+    @blocking = 0
     @ready = []
   end
 
@@ -47,7 +47,7 @@ class Scheduler
   def run
     @urgent = IO.pipe
 
-    while @readable.any? or @writable.any? or @waiting.any? or @locking.positive?
+    while @readable.any? or @writable.any? or @waiting.any? or @blocking.positive?
       # Can only handle file descriptors up to 1024...
       readable, writable = IO.select(@readable.keys + [@urgent.first], @writable.keys, [], next_timeout)
 
@@ -142,12 +142,22 @@ class Scheduler
   end
 
   # Used when blocking on synchronization (Mutex#lock, Queue#pop, SizedQueue#push, ...)
-  def block(blocker)
-    # p [__method__, blocker]
-    @locking += 1
+  def block(blocker, timeout = nil)
+    # p [__method__, blocker, timeout]
+    @blocking += 1
+
+    if timeout
+      @waiting[Fiber.current] = current_time + timeout
+    end
+
     Fiber.yield
   ensure
-    @locking -= 1
+    @blocking -= 1
+
+    # Remove from @waiting in the case #unblock was called before the timeout expired:
+    if timeout
+      @waiting.delete(Fiber.current)
+    end
   end
 
   # Used when synchronization wakes up a previously-blocked fiber (Mutex#unlock, Queue#push, ...).

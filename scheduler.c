@@ -61,9 +61,9 @@ VALUE rb_scheduler_kernel_sleepv(VALUE scheduler, int argc, VALUE * argv)
     return rb_funcallv(scheduler, id_kernel_sleep, argc, argv);
 }
 
-VALUE rb_scheduler_block(VALUE scheduler, VALUE blocker)
+VALUE rb_scheduler_block(VALUE scheduler, VALUE blocker, VALUE timeout)
 {
-    return rb_funcall(scheduler, id_block, 1, blocker);
+    return rb_funcall(scheduler, id_block, 2, blocker, timeout);
 }
 
 VALUE rb_scheduler_unblock(VALUE scheduler, VALUE blocker, VALUE fiber)

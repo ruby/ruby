@@ -246,7 +246,7 @@ mutex_owned_p(rb_fiber_t *fiber, rb_mutex_t *mutex)
 }
 
 static VALUE call_rb_scheduler_block(VALUE mutex) {
-    return rb_scheduler_block(rb_thread_current_scheduler(), mutex);
+    return rb_scheduler_block(rb_thread_current_scheduler(), mutex, Qnil);
 }
 
 static VALUE remove_from_mutex_lock_waiters(VALUE arg) {
