@@ -141,6 +141,9 @@ ujit_compile_insn(rb_iseq_t *iseq, unsigned int insn_idx, unsigned int* next_uji
         rb_bug("out of executable memory");
     }
 
+    // Align the current write positon to cache line boundaries
+    cb_align_pos(cb, 64);
+
     // Get a pointer to the current write position in the code block
     uint8_t *code_ptr = &cb->mem_block[cb->write_pos];
     //printf("write pos: %ld\n", cb->write_pos);
