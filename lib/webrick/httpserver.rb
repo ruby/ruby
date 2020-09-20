@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 # httpserver.rb -- HTTPServer Class
 #
@@ -285,7 +285,7 @@ module WEBrick
       end
 
       def normalize(dir)
-        ret = dir ? dir.dup : ""
+        ret = dir ? dir.dup : +""
         ret.sub!(%r|/+\z|, "")
         ret
       end

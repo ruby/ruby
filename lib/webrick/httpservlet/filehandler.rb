@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 # filehandler.rb -- FileHandler Module
 #
@@ -481,9 +481,9 @@ module WEBrick
         elsif !namewidth or (namewidth = namewidth.to_i) < 2
           namewidth = 25
         end
-        query = query.inject('') {|s, (k, v)| s << '&' << HTMLUtils::escape("#{k}=#{v}")}
+        query = query.inject('') {|s, (k, v)| s << '&' << HTMLUtils::escape("#{k}=#{v}")}.dup
 
-        type = "text/html"
+        type = +"text/html"
         case enc = Encoding.find('filesystem')
         when Encoding::US_ASCII, Encoding::ASCII_8BIT
         else

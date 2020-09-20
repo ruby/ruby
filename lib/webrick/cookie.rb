@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 # cookie.rb -- Cookie class
 #
@@ -92,7 +92,7 @@ module WEBrick
     # The cookie string suitable for use in an HTTP header
 
     def to_s
-      ret = ""
+      ret = +""
       ret << @name << "=" << @value
       ret << "; " << "Version=" << @version.to_s if @version > 0
       ret << "; " << "Domain="  << @domain  if @domain

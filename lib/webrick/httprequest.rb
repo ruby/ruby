@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 # httprequest.rb -- HTTPRequest Class
 #
@@ -170,7 +170,7 @@ module WEBrick
       @accept_charset = []
       @accept_encoding = []
       @accept_language = []
-      @body = ""
+      @body = +""
 
       @addr = @peeraddr = nil
       @attributes = {}

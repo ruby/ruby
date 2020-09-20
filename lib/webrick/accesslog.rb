@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #--
 # accesslog.rb -- Access log handling utilities
 #
