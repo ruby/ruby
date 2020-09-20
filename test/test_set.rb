@@ -739,7 +739,7 @@ class TC_Set < Test::Unit::TestCase
     set2.add 5
     assert_equal Set[1,2,3,5], set2
     assert_equal Set[1,2,3], set1
-  end
+  end if Kernel.instance_method(:initialize_clone).arity != 1
 
   def test_inspect
     set1 = Set[1, 2]
