@@ -1119,7 +1119,7 @@ rb_thread_create_ractor(rb_ractor_t *g, VALUE args, VALUE proc)
 
 
 struct join_arg {
-    struct rb_waiting_list *waiting_list;
+    struct rb_waiting_list *waiter;
     rb_thread_t *target;
     VALUE timeout;
 };
@@ -1134,11 +1134,11 @@ remove_from_join_list(VALUE arg)
         struct rb_waiting_list **join_list = &target_thread->join_list;
 
         while (*join_list) {
-            if (*join_list == p->waiting_list) {
+            if (*join_list == p->waiter) {
                 *join_list = (*join_list)->next;
                 break;
             }
-            
+
             join_list = &(*join_list)->next;
         }
     }
@@ -1152,7 +1152,7 @@ static VALUE
 thread_join_sleep(VALUE arg)
 {
     struct join_arg *p = (struct join_arg *)arg;
-    rb_thread_t *target_th = p->target, *th = p->waiting_list->thread;
+    rb_thread_t *target_th = p->target, *th = p->waiter->thread;
     rb_hrtime_t end = 0, rel = 0, *limit = 0;
 
     /*
@@ -1220,14 +1220,14 @@ thread_join(rb_thread_t *target_th, VALUE timeout)
                  thread_id_str(target_th), thread_status_name(target_th, TRUE));
 
     if (target_th->status != THREAD_KILLED) {
-        struct rb_waiting_list waiting_list;
-        waiting_list.next = target_th->join_list;
-        waiting_list.thread = th;
-        waiting_list.fiber = fiber;
-        target_th->join_list = &waiting_list;
+        struct rb_waiting_list waiter;
+        waiter.next = target_th->join_list;
+        waiter.thread = th;
+        waiter.fiber = fiber;
+        target_th->join_list = &waiter;
 
         struct join_arg arg;
-        arg.waiting_list = &waiting_list;
+        arg.waiter = &waiter;
         arg.target = target_th;
         arg.timeout = timeout;
 
@@ -1308,7 +1308,7 @@ static VALUE
 thread_join_m(int argc, VALUE *argv, VALUE self)
 {
     VALUE timeout = Qnil;
-    
+
     if (rb_check_arity(argc, 0, 1)) {
         timeout = argv[0];
     }
