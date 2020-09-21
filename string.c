@@ -1566,39 +1566,25 @@ rb_str_resurrect(VALUE str)
 
 /*
  *  call-seq:
- *     String.new(str='')                   -> new_str
- *     String.new(str='', encoding: enc)    -> new_str
- *     String.new(str='', capacity: size)   -> new_str
+ *    String.new(string = '') -> new_string
+ *    String.new(string = '', encoding: encoding _name) -> new_string
+ *    String.new(string = '', capacity: size) -> new_string
  *
- *  Argument +str+, if given, it must be a \String.
- *
- *  Argument +encoding+, if given, must be the \String name of an encoding
- *  that is compatible with +str+.
- *
- *  Argument +capacity+, if given, must be an \Integer.
- *
- *  The +str+, +encoding+, and +capacity+ arguments may all be used together:
- *    String.new('hello', encoding: 'UTF-8', capacity: 25)
- *
- *  Returns a new \String that is a copy of <i>str</i>.
- *
- *  ---
+ *  Returns a new \String that is a copy of +string+.
  *
  *  With no arguments, returns the empty string with the Encoding <tt>ASCII-8BIT</tt>:
  *    s = String.new
  *    s # => ""
  *    s.encoding # => #<Encoding:ASCII-8BIT>
  *
- *  With the single argument +str+, returns a copy of +str+
- *  with the same encoding as +str+:
+ *  With the single \String argument +string+, returns a copy of +string+
+ *  with the same encoding as +string+:
  *    s = String.new("Que veut dire \u{e7}a?")
  *    s # => "Que veut dire \u{e7}a?"
  *    s.encoding # => #<Encoding:UTF-8>
  *
  *  Literal strings like <tt>""</tt> or here-documents always use
  *  {script encoding}[Encoding.html#class-Encoding-label-Script+encoding], unlike String.new.
- *
- *  ---
  *
  *  With keyword +encoding+, returns a copy of +str+
  *  with the specified encoding:
@@ -1612,29 +1598,14 @@ rb_str_resurrect(VALUE str)
  *    s1 = 'foo'.force_encoding('ASCII')
  *    s0.encoding == s1.encoding # => true
  *
- *  ---
- *
  *  With keyword +capacity+, returns a copy of +str+;
  *  the given +capacity+ may set the size of the internal buffer,
  *  which may affect performance:
  *    String.new(capacity: 1) # => ""
  *    String.new(capacity: 4096) # => ""
  *
- *  No exception is raised for zero or negative values:
- *    String.new(capacity: 0) # => ""
- *    String.new(capacity: -1) # => ""
- *
- *  ---
- *
- *  Raises an exception if the given +encoding+ is not a valid encoding name:
- *    # Raises ArgumentError (unknown encoding name - FOO)
- *    String.new(encoding: 'FOO')
- *
- *  Raises an exception if the given +encoding+ is incompatible with +str+:
- *    utf8 = "Que veut dire \u{e7}a?"
- *    ascii = "Que veut dire \u{e7}a?".force_encoding('ASCII')
- *    # Raises Encoding::CompatibilityError (incompatible character encodings: UTF-8 and US-ASCII)
- *    utf8.include? ascii
+ *  The +string+, +encoding+, and +capacity+ arguments may all be used together:
+ *    String.new('hello', encoding: 'UTF-8', capacity: 25)
  */
 
 static VALUE
@@ -1926,10 +1897,15 @@ rb_str_strlen(VALUE str)
 
 /*
  *  call-seq:
- *     str.length   -> integer
- *     str.size     -> integer
+ *    string.length -> integer
  *
- *  Returns the character length of <i>str</i>.
+ *  Returns the count of characters (not bytes) in +self+:
+ *    "\x80\u3042".length # => 2
+ *    "hello".length # => 5
+ *
+ *  String#size is an alias for String#length.
+ *
+ *  Related: String#bytesize.
  */
 
 VALUE
@@ -1940,12 +1916,13 @@ rb_str_length(VALUE str)
 
 /*
  *  call-seq:
- *     str.bytesize  -> integer
+ *    string.bytesize -> integer
  *
- *  Returns the length of +str+ in bytes.
+ *  Returns the count  of bytes in +self+:
+ *    "\x80\u3042".bytesize # => 4
+ *    "hello".bytesize # => 5
  *
- *    "\x80\u3042".bytesize  #=> 4
- *    "hello".bytesize       #=> 5
+ *  Related: String#length.
  */
 
 static VALUE
@@ -1956,13 +1933,12 @@ rb_str_bytesize(VALUE str)
 
 /*
  *  call-seq:
- *     str.empty?   -> true or false
+ *    string.empty? -> true or false
  *
- *  Returns <code>true</code> if <i>str</i> has a length of zero.
- *
- *     "hello".empty?   #=> false
- *     " ".empty?       #=> false
- *     "".empty?        #=> true
+ *  Returns +true+ if the length of +self+ is zero, +false+ otherwise:
+ *    "hello".empty? # => false
+ *    " ".empty? # => false
+ *    "".empty? # => true
  */
 
 static VALUE
@@ -1975,12 +1951,10 @@ rb_str_empty(VALUE str)
 
 /*
  *  call-seq:
- *     str + other_str   -> new_str
+ *    string + other_string -> new_string
  *
- *  Concatenation---Returns a new String containing
- *  <i>other_str</i> concatenated to <i>str</i>.
- *
- *     "Hello from " + self.to_s   #=> "Hello from main"
+ *  Returns a new \String containing +other_string+ concatenated to +self+:
+ *    "Hello from " + self.to_s   #=> "Hello from main"
  */
 
 VALUE
@@ -2046,13 +2020,11 @@ rb_str_opt_plus(VALUE str1, VALUE str2)
 
 /*
  *  call-seq:
- *     str * integer   -> new_str
+ *    string * integer -> new_string
  *
- *  Copy --- Returns a new String containing +integer+ copies of the receiver.
- *  +integer+ must be greater than or equal to 0.
- *
- *     "Ho! " * 3   #=> "Ho! Ho! Ho! "
- *     "Ho! " * 0   #=> ""
+ *  Returns a new \String containing +integer+ copies of +self+:
+ *    "Ho! " * 3 # => "Ho! Ho! Ho! "
+ *    "Ho! " * 0 # => ""
  */
 
 VALUE
@@ -2112,17 +2084,17 @@ rb_str_times(VALUE str, VALUE times)
 
 /*
  *  call-seq:
- *     str % arg   -> new_str
+ *    string % object -> new_string
  *
- *  Format---Uses <i>str</i> as a format specification, and returns
- *  the result of applying it to <i>arg</i>. If the format
- *  specification contains more than one substitution, then <i>arg</i>
- *  must be an Array or Hash containing the values to be
- *  substituted. See Kernel#sprintf for details of the format string.
+ *  Returns the result of formatting +object+ into the format specification +self+
+ *  (see Kernel#sprintf for formatting details):
+ *    "%05d" % 123 # => "00123"
  *
- *     "%05d" % 123                              #=> "00123"
- *     "%-5s: %016x" % [ "ID", self.object_id ]  #=> "ID   : 00002b054ec93168"
- *     "foo = %{foo}" % { :foo => 'bar' }        #=> "foo = bar"
+ *  If +self+ contains multiple substitutions, +object+ must be
+ *  an \Array or \Hash containing the values to be substituted:
+ *    "%-5s: %016x" % [ "ID", self.object_id ] # => "ID   : 00002b054ec93168"
+ *    "foo = %{foo}" % {foo: 'bar'} # => "foo = bar"
+ *    "foo = %{foo}, baz = %{baz}" % {foo: 'bar', baz: 'bat'} # => "foo = bar, baz = bat"
  */
 
 static VALUE
