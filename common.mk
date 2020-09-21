@@ -1078,7 +1078,7 @@ insns: $(INSNS)
 
 ujit_examples.h: gen_ujit_examples.rb vm.$(OBJEXT)
 	$(ECHO) generating $@
-	$(Q) $(BASERUBY) gen_ujit_examples.rb
+	$(Q) $(BASERUBY) $(srcdir)/gen_ujit_examples.rb
 
 id.h: $(tooldir)/generic_erb.rb $(srcdir)/template/id.h.tmpl $(srcdir)/defs/id.def
 	$(ECHO) generating $@
