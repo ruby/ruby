@@ -117,7 +117,7 @@ void cb_init(codeblock_t* cb, size_t mem_size)
 {
     // Map the memory as executable
     cb->mem_block = (uint8_t*)mmap(
-        NULL,
+        &cb_init,
         mem_size,
         PROT_READ | PROT_WRITE | PROT_EXEC,
         MAP_PRIVATE | MAP_ANON,
@@ -1084,14 +1084,12 @@ void jmp_rm(codeblock_t* cb, x86opnd_t opnd)
 }
 
 /*
-/// Opcode for direct jump with relative 8-bit offset
-const ubyte JMP_REL8_OPCODE = 0xEB;
-*/
-
-/*
 /// jmp - Jump with relative 8-bit offset
 void jmp8(CodeBlock cb, int8_t offset)
 {
+    /// Opcode for direct jump with relative 8-bit offset
+    const ubyte JMP_REL8_OPCODE = 0xEB;
+
     cb.writeASM("jmp", ((offset > 0)? "+":"-") ~ to!string(offset));
     cb.writeByte(JMP_REL8_OPCODE);
     cb.writeByte(offset);
