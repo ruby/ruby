@@ -102,8 +102,8 @@ class Scheduler
     self.run
   ensure
     @closed = true
-    
-    # We freeze to detect any inadvertant modifications after the scheduler is closed:
+
+    # We freeze to detect any unintended modifications after the scheduler is closed:
     self.freeze
   end
 
@@ -144,19 +144,21 @@ class Scheduler
   # Used when blocking on synchronization (Mutex#lock, Queue#pop, SizedQueue#push, ...)
   def block(blocker, timeout = nil)
     # p [__method__, blocker, timeout]
-    @blocking += 1
-
     if timeout
       @waiting[Fiber.current] = current_time + timeout
-    end
-
-    Fiber.yield
-  ensure
-    @blocking -= 1
-
-    # Remove from @waiting in the case #unblock was called before the timeout expired:
-    if timeout
-      @waiting.delete(Fiber.current)
+      begin
+        Fiber.yield
+      ensure
+        # Remove from @waiting in the case #unblock was called before the timeout expired:
+        @waiting.delete(Fiber.current)
+      end
+    else
+      @blocking += 1
+      begin
+        Fiber.yield
+      ensure
+        @blocking -= 1
+      end
     end
   end
 
