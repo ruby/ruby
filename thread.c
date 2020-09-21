@@ -1313,6 +1313,17 @@ thread_join_m(int argc, VALUE *argv, VALUE self)
         timeout = argv[0];
     }
 
+    // Convert the timeout eagerly, so it's always converted and deterministic
+    if (timeout == Qnil) {
+        /* unlimited */
+    }
+    else if (FIXNUM_P(timeout)) {
+        /* handled directly in thread_join_sleep() */
+    }
+    else {
+        timeout = rb_to_float(timeout);
+    }
+
     return thread_join(rb_thread_ptr(self), timeout);
 }
 

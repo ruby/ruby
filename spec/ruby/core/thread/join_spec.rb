@@ -22,11 +22,10 @@ describe "Thread#join" do
   end
 
   it "raises TypeError if the argument is not a valid timeout" do
-    t = Thread.new { sleep }
+    t = Thread.new { }
+    t.join
     -> { t.join(:foo) }.should raise_error TypeError
     -> { t.join("bar") }.should raise_error TypeError
-    t.kill
-    t.join
   end
 
   it "returns nil if it is not finished when given a timeout" do
