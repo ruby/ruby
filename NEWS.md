@@ -161,11 +161,51 @@ Outstanding ones only.
             p C.ancestors #=> [C, M1, M2, Object, Kernel, BasicObject]
             ```
 
+* Thread
+
+    * Introduce `Thread#scheduler` for intercepting blocking operations and
+      `Thread.scheduler` for accessing the current scheduler. See
+      doc/scheduler.md for more details. [[Feature #16786]]
+    * `Thread#blocking?` tells whether the current execution context is
+      blocking. [[Feature #16786]]
+    * `Thread#join` invokes the scheduler hooks `block`/`unblock` in a
+      non-blocking execution context. [[Feature #16786]]
+
 * Mutex
 
-    * Mutex is now acquired per-Fiber instead of per-Thread. This change should
-      be compatible for essentially all usages and avoids blocking when using
-      a Fiber Scheduler. [[Feature #16792]]
+    * `Mutex` is now acquired per-`Fiber` instead of per-`Thread`. This change
+      should be compatible for essentially all usages and avoids blocking when
+      using a scheduler. [[Feature #16792]]
+
+* Fiber
+
+    * `Fiber.new(blocking: true/false)` allows you to create non-blocking
+      execution contexts. [[Feature #16786]]
+    * `Fiber#blocking?` tells whether the fiber is non-blocking. [[Feature #16786]]
+
+* Kernel
+
+    * `Kernel.sleep(...)` invokes the scheduler hook `#kernel_sleep(...)` in a
+      non-blocking execution context. [[Feature #16786]]
+
+* IO
+
+    * `IO#nonblock?` now defaults to `true`. [[Feature #16786]]
+    * `IO#wait_readable`, `IO#wait_writable`, `IO#read`, `IO#write` and other
+      related methods (e.g. `#puts`, `#gets`) may invoke the scheduler hook
+      `#io_wait(io, events, timeout)` in a non-blocking execution context.
+      [[Feature #16786]]
+
+* ConditionVariable
+
+    * `ConditionVariable#wait` may now invoke the `block`/`unblock` scheduler
+      hooks in a non-blocking context. [[Feature #16786]]
+
+* Queue / SizedQueue
+
+    * `Queue#pop`, `SizedQueue#push` and related methods may now invoke the
+      `block`/`unblock` scheduler hooks in a non-blocking context.
+      [[Feature #16786]]
 
 * Ractor
 
@@ -381,6 +421,7 @@ Excluding feature bug fixes.
 [Feature #16686]: https://bugs.ruby-lang.org/issues/16686
 [Feature #16746]: https://bugs.ruby-lang.org/issues/16746
 [Feature #16754]: https://bugs.ruby-lang.org/issues/16754
+[Feature #16786]: https://bugs.ruby-lang.org/issues/16786
 [Feature #16792]: https://bugs.ruby-lang.org/issues/16792
 [Feature #16828]: https://bugs.ruby-lang.org/issues/16828
 [Misc #16961]:    https://bugs.ruby-lang.org/issues/16961
