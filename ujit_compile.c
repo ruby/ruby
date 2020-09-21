@@ -170,6 +170,7 @@ ujit_compile_insn(rb_iseq_t *iseq, unsigned int insn_idx, unsigned int* next_uji
         st_data_t st_gen_fn;
         if (!rb_st_lookup(gen_fns, opcode, &st_gen_fn))
         {
+            //print_int(cb, imm_opnd(num_instrs));
             //print_str(cb, insn_name(opcode));
             break;
         }
@@ -200,8 +201,6 @@ ujit_compile_insn(rb_iseq_t *iseq, unsigned int insn_idx, unsigned int* next_uji
         return NULL;
     }
 
-    //print_int(cb, imm_opnd(num_instrs));
-
     // Write the adjusted SP back into the CFP
     if (ctx.stack_diff != 0)
     {
@@ -216,6 +215,33 @@ ujit_compile_insn(rb_iseq_t *iseq, unsigned int insn_idx, unsigned int* next_uji
 
     // Write the post call bytes
     ujit_instr_exit(cb);
+
+    /*
+    // Hack to patch a relative 32-bit jump to the instruction handler
+    int next_opcode = (int)*ctx.pc;
+    const void * const *table = rb_vm_get_insns_address_table();
+    VALUE encoded = (VALUE)table[next_opcode];
+    uint8_t* p_handler = (uint8_t*)encoded;
+
+    uint8_t* p_code = &cb->mem_block[cb->write_pos];
+    int64_t rel64 = ((int64_t)p_handler) - ((int64_t)p_code - 2 + 5);
+
+    //printf("p_handler: %lld\n", (int64_t)p_handler);
+    //printf("rel64: %lld\n", rel64);
+
+    uint8_t byte0 = cb->mem_block[cb->write_pos - 2];
+    uint8_t byte1 = cb->mem_block[cb->write_pos - 1];
+
+    //printf("cb_init: %lld\n", (int64_t)&cb_init);
+    //printf("%lld\n", rel64);
+
+    if (byte0 == 0xFF && byte1 == 0x20 && rel64 >= -2147483648 && rel64 <= 2147483647)
+    {
+        //printf("%02X %02X\n", (int)byte0, (int)byte1);
+        cb->write_pos -= 2;
+        jmp32(cb, (int32_t)rel64);
+    }
+    */
 
     addr2insn_bookkeeping(code_ptr, first_opcode);
 
