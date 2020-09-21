@@ -1,6 +1,11 @@
 #include "ruby.h"
 #include "ruby/memory_view.h"
 
+#define STRUCT_ALIGNOF(T, result) do { \
+    struct S { char _; T t; }; \
+    (result) = (int)offsetof(struct S, t); \
+} while(0)
+
 static ID id_str;
 static VALUE sym_format;
 static VALUE sym_native_size_p;
@@ -252,20 +257,22 @@ Init_memory_view(void)
     rb_const_set(mMemoryViewTestUtils, rb_intern("NATIVE_ENDIAN"), sym_little_endian);
 #endif
 
-#define DEF_TYPE_CONST(type, TYPE) \
-    rb_const_set(mMemoryViewTestUtils, rb_intern(#TYPE "_ALIGNMENT"), INT2FIX(RUBY_ALIGNOF(type))); \
-    rb_const_set(mMemoryViewTestUtils, rb_intern(#TYPE "_SIZE"), INT2FIX(sizeof(type)))
+#define DEF_ALIGNMENT_CONST(type, TYPE) do { \
+    int alignment; \
+    STRUCT_ALIGNOF(type, alignment); \
+    rb_const_set(mMemoryViewTestUtils, rb_intern(#TYPE "_ALIGNMENT"), INT2FIX(alignment)); \
+} while(0)
 
-    DEF_TYPE_CONST(short, SHORT);
-    DEF_TYPE_CONST(int, INT);
-    DEF_TYPE_CONST(long, LONG);
-    DEF_TYPE_CONST(LONG_LONG, LONG_LONG);
-    DEF_TYPE_CONST(int16_t, INT16);
-    DEF_TYPE_CONST(int32_t, INT32);
-    DEF_TYPE_CONST(int64_t, INT64);
-    DEF_TYPE_CONST(intptr_t, INTPTR);
-    DEF_TYPE_CONST(float, FLOAT);
-    DEF_TYPE_CONST(double, DOUBLE);
+    DEF_ALIGNMENT_CONST(short, SHORT);
+    DEF_ALIGNMENT_CONST(int, INT);
+    DEF_ALIGNMENT_CONST(long, LONG);
+    DEF_ALIGNMENT_CONST(LONG_LONG, LONG_LONG);
+    DEF_ALIGNMENT_CONST(int16_t, INT16);
+    DEF_ALIGNMENT_CONST(int32_t, INT32);
+    DEF_ALIGNMENT_CONST(int64_t, INT64);
+    DEF_ALIGNMENT_CONST(intptr_t, INTPTR);
+    DEF_ALIGNMENT_CONST(float, FLOAT);
+    DEF_ALIGNMENT_CONST(double, DOUBLE);
 
 #undef DEF_ALIGNMENT_CONST
 
