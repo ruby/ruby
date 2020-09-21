@@ -679,11 +679,14 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 #
 # You can define a custom field converter:
 #   strip_converter = proc {|field| field.strip }
-# Add it to the \Converters \Hash:
-#   CSV::Converters[:strip] = strip_converter
-# Use it by name:
 #   string = " foo , 0 \n bar , 1 \n baz , 2 \n"
 #   array = CSV.parse(string, converters: strip_converter)
+#   array # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
+# You can register the converter in \Converters \Hash,
+# which allows you to refer to it by name:
+#   CSV::Converters[:strip] = strip_converter
+#   string = " foo , 0 \n bar , 1 \n baz , 2 \n"
+#   array = CSV.parse(string, converters: :strip)
 #   array # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
 #
 # ==== Header \Converters
@@ -742,13 +745,16 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 #
 # You can define a custom header converter:
 #   upcase_converter = proc {|header| header.upcase }
-# Add it to the \HeaderConverters \Hash:
-#   CSV::HeaderConverters[:upcase] = upcase_converter
-# Use it by name:
 #   string = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
-#   table = CSV.parse(string, headers: true, converters: upcase_converter)
+#   table = CSV.parse(string, headers: true, header_converters: upcase_converter)
 #   table # => #<CSV::Table mode:col_or_row row_count:4>
-#   table.headers # => ["Name", "Value"]
+#   table.headers # => ["NAME", "VALUE"]
+# You can register the converter in \HeaderConverters \Hash,
+# which allows you to refer to it by name:
+#   CSV::HeaderConverters[:upcase] = upcase_converter
+#   table = CSV.parse(string, headers: true, header_converters: :upcase)
+#   table # => #<CSV::Table mode:col_or_row row_count:4>
+#   table.headers # => ["NAME", "VALUE"]
 #
 # ===== Write \Converters
 #
@@ -757,23 +763,23 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 # its return value becomes the new value for the field.
 # A converter might, for example, strip whitespace from a field.
 #
-# - Using no write converter (all fields unmodified):
-#     output_string = CSV.generate do |csv|
-#       csv << [' foo ', 0]
-#       csv << [' bar ', 1]
-#       csv << [' baz ', 2]
-#     end
-#     output_string # => " foo ,0\n bar ,1\n baz ,2\n"
-# - Using option +write_converters+:
-#     strip_converter = proc {|field| field.respond_to?(:strip) ? field.strip : field }
-#     upcase_converter = proc {|field| field.respond_to?(:upcase) ? field.upcase : field }
-#     converters = [strip_converter, upcase_converter]
-#       output_string = CSV.generate(write_converters: converters) do |csv|
-#         csv << [' foo ', 0]
-#         csv << [' bar ', 1]
-#         csv << [' baz ', 2]
-#       end
-#       output_string # => "FOO,0\nBAR,1\nBAZ,2\n"
+# Using no write converter (all fields unmodified):
+#   output_string = CSV.generate do |csv|
+#     csv << [' foo ', 0]
+#     csv << [' bar ', 1]
+#     csv << [' baz ', 2]
+#   end
+#   output_string # => " foo ,0\n bar ,1\n baz ,2\n"
+# Using option +write_converters+ with two custom write converters:
+#   strip_converter = proc {|field| field.respond_to?(:strip) ? field.strip : field }
+#   upcase_converter = proc {|field| field.respond_to?(:upcase) ? field.upcase : field }
+#   write_converters = [strip_converter, upcase_converter]
+#   output_string = CSV.generate(write_converters: write_converters) do |csv|
+#     csv << [' foo ', 0]
+#     csv << [' bar ', 1]
+#     csv << [' baz ', 2]
+#   end
+#   output_string # => "FOO,0\nBAR,1\nBAZ,2\n"
 #
 # === Character Encodings (M17n or Multilingualization)
 #
