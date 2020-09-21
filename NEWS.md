@@ -182,6 +182,8 @@ Outstanding ones only.
     * `Fiber.new(blocking: true/false)` allows you to create non-blocking
       execution contexts. [[Feature #16786]]
     * `Fiber#blocking?` tells whether the fiber is non-blocking. [[Feature #16786]]
+    * `Fiber#backtrace` & `Fiber#backtrace_locations` provide per-fiber backtrace.
+      [[Feature #16815]]
 
 * Kernel
 
@@ -423,6 +425,7 @@ Excluding feature bug fixes.
 [Feature #16754]: https://bugs.ruby-lang.org/issues/16754
 [Feature #16786]: https://bugs.ruby-lang.org/issues/16786
 [Feature #16792]: https://bugs.ruby-lang.org/issues/16792
+[Feature #16815]: https://bugs.ruby-lang.org/issues/16815
 [Feature #16828]: https://bugs.ruby-lang.org/issues/16828
 [Misc #16961]:    https://bugs.ruby-lang.org/issues/16961
 [Feature #17104]: https://bugs.ruby-lang.org/issues/17104
