@@ -3350,6 +3350,7 @@ rb_hash_transform_values(VALUE hash)
 
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
     result = hash_copy(hash_alloc(rb_cHash), hash);
+    SET_DEFAULT(result, Qnil);
 
     if (!RHASH_EMPTY_P(hash)) {
         rb_hash_stlike_foreach_with_replace(result, transform_values_foreach_func, transform_values_foreach_replace, result);
