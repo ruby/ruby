@@ -64,14 +64,7 @@ addr2insn_bookkeeping(void *code_ptr, int insn)
     const void * const translated_address = table[insn];
     st_data_t encoded_insn_data;
     if (st_lookup(rb_encoded_insn_data, (st_data_t)translated_address, &encoded_insn_data)) {
-        // This is a roundabout way of doing an insert. Doing a plain insert can cause GC
-        // while inserting. While inserting, the table is in an inconsistent state and the
-        // GC can do a lookup in the table.
-        st_table *new_table = st_copy(rb_encoded_insn_data);
-        st_table *old_table = rb_encoded_insn_data;
-        st_insert(new_table, (st_data_t)code_ptr, encoded_insn_data);
-        rb_encoded_insn_data = new_table;
-        st_free_table(old_table);
+        st_insert(rb_encoded_insn_data, (st_data_t)code_ptr, encoded_insn_data);
     }
     else {
         rb_bug("ujit: failed to find info for original instruction while dealing with addr2insn");
