@@ -7860,6 +7860,11 @@ gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
       case T_RATIONAL:
       case T_NODE:
       case T_CLASS:
+        if (FL_TEST(obj, FL_FINALIZE)) {
+            if (st_is_member(finalizer_table, obj)) {
+                return FALSE;
+            }
+        }
         return RVALUE_MARKED(obj) && !RVALUE_PINNED(obj);
 
       default:
@@ -8757,6 +8762,7 @@ gc_update_references(rb_objspace_t * objspace)
     gc_update_tbl_refs(objspace, objspace->obj_to_id_tbl);
     gc_update_table_refs(objspace, objspace->id_to_obj_tbl);
     gc_update_table_refs(objspace, global_symbols.str_sym);
+    gc_update_table_refs(objspace, finalizer_table);
 }
 
 static VALUE type_sym(size_t type);
