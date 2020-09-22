@@ -2692,7 +2692,7 @@ rb_str_freeze(VALUE str)
  * call-seq:
  *   +string -> new_string or self
  *
- * Returns +self+ if +self+ is frozen.
+ * Returns +self+ if +self+ is not frozen.
  *
  * Otherwise. returns <tt>self.dup</tt>, which is not frozen.
  */
@@ -2711,7 +2711,7 @@ str_uplus(VALUE str)
  * call-seq:
  *   -string -> frozen_string
  *
- * Returns a frozen duplicate of +self+, which may have already existed.
+ * Returns a frozen, possibly pre-existing copy of the string.
  *
  * The returned \String will be deduplicated as long as it does not have
  * any instance variables set on it.
@@ -3086,7 +3086,7 @@ rb_str_concat_literals(size_t num, const VALUE *strary)
  *    s.concat('bar', 'baz') # => "foobarbaz"
  *
  *  For each given object +object+ that is an \Integer,
- *  concatenates the value <tt>object.chr</tt> instead of +object+ itself:
+ *  the value is considered a codepoint and converted to a character before concatenation:
  *    s = 'foo'
  *    s.concat(32, 'bar', 32, 'baz') # => "foo bar baz"
  *
@@ -3123,7 +3123,9 @@ rb_str_concat_multi(int argc, VALUE *argv, VALUE str)
  *    s << 'bar' # => "foobar"
  *
  *  If +object+ is an \Integer,
- *  concatenates the value <tt>object.chr</tt> instead of +object+ itself:
+ *  the value is considered a codepoint and converted to a character before concatenation:
+ *    s = 'foo'
+ *    s << 33 # => "foo!"
  *
  *  Related: String#concat, which takes multiple arguments.
  */
