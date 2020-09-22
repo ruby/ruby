@@ -2384,14 +2384,16 @@ rb_check_string_type(VALUE str)
 
 /*
  *  call-seq:
- *     String.try_convert(obj) -> string or nil
+ *    String.try_convert(object) -> object, new_string, or nil
  *
- *  Try to convert <i>obj</i> into a String, using to_str method.
- *  Returns converted string or nil if <i>obj</i> cannot be converted
- *  for any reason.
+ *  If +object+ is a \String object, returns +object+.
  *
- *     String.try_convert("str")     #=> "str"
- *     String.try_convert(/re/)      #=> nil
+ *  Otherwise if +object+ responds to <tt>:to_str</tt>,
+ *  calls <tt>object.to_str</tt> and returns the result.
+ *
+ *  Returns +nil+ if +object+ does not respond to <tt>:to_str</tt>
+ *
+ *  Raises an exception unless <tt>object.to_str</tt> returns a \String object.
  */
 static VALUE
 rb_str_s_try_convert(VALUE dummy, VALUE str)
@@ -2688,11 +2690,11 @@ rb_str_freeze(VALUE str)
 
 /*
  * call-seq:
- *   +str  -> str (mutable)
+ *   +string -> new_string or self
  *
- * If the string is frozen, then return duplicated mutable string.
+ * Returns +self+ if +self+ is not frozen.
  *
- * If the string is not frozen, then return the string itself.
+ * Otherwise. returns <tt>self.dup</tt>, which is not frozen.
  */
 static VALUE
 str_uplus(VALUE str)
@@ -2707,11 +2709,11 @@ str_uplus(VALUE str)
 
 /*
  * call-seq:
- *   -str  -> str (frozen)
+ *   -string -> frozen_string
  *
  * Returns a frozen, possibly pre-existing copy of the string.
  *
- * The string will be deduplicated as long as it does not have
+ * The returned \String will be deduplicated as long as it does not have
  * any instance variables set on it.
  */
 static VALUE
@@ -3075,23 +3077,20 @@ rb_str_concat_literals(size_t num, const VALUE *strary)
 
 /*
  *  call-seq:
- *     str.concat(obj1, obj2, ...)          -> str
+ *     string.concat(*objects) -> new_string
  *
- *  Concatenates the given object(s) to <i>str</i>. If an object is an
- *  Integer, it is considered a codepoint and converted to a character
- *  before concatenation.
+ *  Returns a new \String containing the concatenation
+ *  of +self+ and all objects in +objects+:
  *
- *  +concat+ can take multiple arguments, and all the arguments are
- *  concatenated in order.
+ *    s = 'foo'
+ *    s.concat('bar', 'baz') # => "foobarbaz"
  *
- *     a = "hello "
- *     a.concat("world", 33)      #=> "hello world!"
- *     a                          #=> "hello world!"
+ *  For each given object +object+ that is an \Integer,
+ *  the value is considered a codepoint and converted to a character before concatenation:
+ *    s = 'foo'
+ *    s.concat(32, 'bar', 32, 'baz') # => "foo bar baz"
  *
- *     b = "sn"
- *     b.concat("_", b, "_", b)   #=> "sn_sn_sn"
- *
- *  See also String#<<, which takes a single argument.
+ *  Related: String#<<, which takes a single argument.
  */
 static VALUE
 rb_str_concat_multi(int argc, VALUE *argv, VALUE str)
@@ -3116,18 +3115,19 @@ rb_str_concat_multi(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str << obj      -> str
- *     str << integer  -> str
+ *    string << object -> str
  *
- *  Appends the given object to <i>str</i>. If the object is an
- *  Integer, it is considered a codepoint and converted to a character
- *  before being appended.
+ *  Returns a new \String containing the concatenation
+ *  of +self+ and +object+:
+ *    s = 'foo'
+ *    s << 'bar' # => "foobar"
  *
- *     a = "hello "
- *     a << "world"   #=> "hello world"
- *     a << 33        #=> "hello world!"
+ *  If +object+ is an \Integer,
+ *  the value is considered a codepoint and converted to a character before concatenation:
+ *    s = 'foo'
+ *    s << 33 # => "foo!"
  *
- *  See also String#concat, which takes multiple arguments.
+ *  Related: String#concat, which takes multiple arguments.
  */
 VALUE
 rb_str_concat(VALUE str1, VALUE str2)
@@ -3195,15 +3195,14 @@ rb_str_concat(VALUE str1, VALUE str2)
 
 /*
  *  call-seq:
- *     str.prepend(other_str1, other_str2, ...)  -> str
+ *    string.prepend(*other_strings)  -> str
  *
- *  Prepend---Prepend the given strings to <i>str</i>.
+ *  Returns a new \String containing the concatenation
+ *  of all given +other_strings+ and +self+:
+ *    s = 'foo'
+ *    s.prepend('bar', 'baz') # => "barbazfoo"
  *
- *     a = "!"
- *     a.prepend("hello ", "world") #=> "hello world!"
- *     a                            #=> "hello world!"
- *
- *  See also String#concat.
+ *  Related: String#concat.
  */
 
 static VALUE
@@ -3251,11 +3250,10 @@ rb_str_hash_cmp(VALUE str1, VALUE str2)
 
 /*
  * call-seq:
- *    str.hash   -> integer
+ *   string.hash -> integer
  *
- * Returns a hash based on the string's length, content and encoding.
- *
- * See also Object#hash.
+ * Returns the integer hash value for +self+.
+ * The value is based on the length, content and encoding of +self+.
  */
 
 static VALUE
