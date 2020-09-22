@@ -133,10 +133,27 @@ class TestMemoryView < Test::Unit::TestCase
     end
   end
 
+  def alignment_padding(total_size, alignment)
+    res = total_size % alignment
+    if res > 0
+      alignment - res
+    else
+      0
+    end
+  end
+
   def test_rb_memory_view_parse_item_format_with_alignment_compound
     total_size, members, err = MemoryViewTestUtils.parse_item_format("|ccc2f3x2d4cq!<")
-    assert_equal(72, total_size)
     assert_nil(err)
+
+    expected_total_size = 1 + 1 + 1*2
+    expected_total_size += alignment_padding(expected_total_size, FLOAT_ALIGNMENT)
+    expected_total_size += sizeof(:float)*3 + 1*2
+    expected_total_size += alignment_padding(expected_total_size, DOUBLE_ALIGNMENT)
+    expected_total_size += sizeof(:double)*4 + 1
+    expected_total_size += alignment_padding(expected_total_size, LONG_LONG_ALIGNMENT)
+    expected_total_size += sizeof("long long")
+    assert_equal(expected_total_size, total_size)
 
     expected_result = [
       {format: 'c', native_size_p: false, endianness: NATIVE_ENDIAN,  offset:  0, size: 1, repeat: 1},
