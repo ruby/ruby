@@ -47,10 +47,16 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
       r.close
 
       s1.send_io(s1)
-      # klass = UNIXSocket FIXME: [ruby-core:71860] [Bug #11778]
+      klass = UNIXSocket
+      r = s2.recv_io(klass)
+      assert_instance_of klass, r, 'recv_io with proper klass'
+      assert_not_equal s1.fileno, r.fileno
+      r.close
+
+      s1.send_io(s1)
       klass = IO
       r = s2.recv_io(klass, 'r+')
-      assert_instance_of klass, r, 'recv_io with proper klass'
+      assert_instance_of klass, r, 'recv_io with proper klass and mode'
       assert_not_equal s1.fileno, r.fileno
       r.close
     end
