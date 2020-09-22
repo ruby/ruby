@@ -233,6 +233,8 @@ module TestIRB
         Row.new(%q(  def bar0() = 3), nil, 2),
         Row.new(%q(  def bar1(a) = a), nil, 2),
         Row.new(%q(  def bar2(a, b) = a + b), nil, 2),
+        Row.new(%q(  def bar3() = :s), nil, 2),
+        Row.new(%q(  def bar4() = Time.now), nil, 2),
         Row.new(%q(end), 0, 0),
       ]
 
