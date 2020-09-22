@@ -161,6 +161,7 @@ static int
 iseq_extract_values(VALUE *code, size_t pos, iseq_value_itr_t * func, void *data, rb_vm_insns_translator_t * translator)
 {
     VALUE insn = translator((void *)code[pos]);
+    if (insn >= VM_INSTRUCTION_SIZE) rb_bug("invalid insn. translator=%p addr2insn=%p", (void *)translator, (void*)rb_vm_insn_addr2insn2);
     int len = insn_len(insn);
     int op_no;
     const char *types = insn_op_types(insn);
