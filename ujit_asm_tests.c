@@ -67,24 +67,10 @@ void run_tests()
     cb_init(cb, 4096);
 
     // add
-    /*
-    test(
-        delegate void (CodeBlock cb) { cb.add(X86Opnd(CL), X86Opnd(3)); },
-        "80C103"
-    );
-    test(
-        delegate void (CodeBlock cb) { cb.add(X86Opnd(CL), X86Opnd(BL)); },
-        "00D9"
-    );
-    test(
-        delegate void (CodeBlock cb) { cb.add(X86Opnd(CL), X86Opnd(SPL)); },
-        "4000E1"
-    );
-    test(
-        delegate void (CodeBlock cb) { cb.add(X86Opnd(CX), X86Opnd(BX)); },
-        "6601D9"
-    );
-    */
+    cb_set_pos(cb, 0); add(cb, CL, imm_opnd(3)); check_bytes(cb, "80C103");
+    cb_set_pos(cb, 0); add(cb, CL, BL); check_bytes(cb, "00D9");
+    cb_set_pos(cb, 0); add(cb, CL, SPL); check_bytes(cb, "4000E1");
+    cb_set_pos(cb, 0); add(cb, CX, BX); check_bytes(cb, "6601D9");
     cb_set_pos(cb, 0); add(cb, RAX, RBX); check_bytes(cb, "4801D8");
     cb_set_pos(cb, 0); add(cb, ECX, EDX); check_bytes(cb, "01D1");
     cb_set_pos(cb, 0); add(cb, RDX, R14); check_bytes(cb, "4C01F2");
@@ -120,12 +106,7 @@ void run_tests()
     cb_set_pos(cb, 0); cmovle(cb, ESI, mem_opnd(32, RSP, 4)); check_bytes(cb, "0F4E742404");
 
     // cmp
-    /*
-    test(
-        delegate void (CodeBlock cb) { cb.cmp(X86Opnd(CL), X86Opnd(DL)); },
-        "38D1"
-    );
-    */
+    cb_set_pos(cb, 0); cmp(cb, CL, DL); check_bytes(cb, "38D1");
     cb_set_pos(cb, 0); cmp(cb, ECX, EDI); check_bytes(cb, "39F9");
     cb_set_pos(cb, 0); cmp(cb, RDX, mem_opnd(64, R12, 0)); check_bytes(cb, "493B1424");
     cb_set_pos(cb, 0); cmp(cb, RAX, imm_opnd(2)); check_bytes(cb, "4883F802");
@@ -134,12 +115,7 @@ void run_tests()
     cb_set_pos(cb, 0); cqo(cb); check_bytes(cb, "4899");
 
     // dec
-    /*
-    test(
-        delegate void (CodeBlock cb) { cb.dec(X86Opnd(CX)); },
-        "66FFC9"
-    );
-    */
+    cb_set_pos(cb, 0); dec(cb, CX); check_bytes(cb, "66FFC9");
     cb_set_pos(cb, 0); dec(cb, EDX); check_bytes(cb, "FFCA");
 
     // div
@@ -155,12 +131,7 @@ void run_tests()
     */
 
     // inc
-    /*
-    test(
-        delegate void (CodeBlock cb) { cb.inc(X86Opnd(BL)); },
-        "FEC3"
-    );
-    */
+    cb_set_pos(cb, 0); inc(cb, BL); check_bytes(cb, "FEC3");
     cb_set_pos(cb, 0); inc(cb, ESP); check_bytes(cb, "FFC4");
     cb_set_pos(cb, 0); inc(cb, mem_opnd(32, RSP, 0)); check_bytes(cb, "FF0424");
     cb_set_pos(cb, 0); inc(cb, mem_opnd(64, RSP, 4)); check_bytes(cb, "48FF442404");
@@ -202,45 +173,20 @@ void run_tests()
         delegate void (CodeBlock cb) { cb.mov(X86Opnd(AL), X86Opnd(8, RCX, 0, 1, RDX)); },
         "8A0411"
     );
-    test(
-        delegate void (CodeBlock cb) { cb.mov(X86Opnd(CL), X86Opnd(R9L)); },
-        "4488C9"
-    );
     */
+    cb_set_pos(cb, 0); mov(cb, CL, R9B); check_bytes(cb, "4488C9");
     cb_set_pos(cb, 0); mov(cb, RBX, RAX); check_bytes(cb, "4889C3");
     cb_set_pos(cb, 0); mov(cb, RDI, RBX); check_bytes(cb, "4889DF");
-    /*
-    test(
-        delegate void (CodeBlock cb) { cb.mov(X86Opnd(SIL), X86Opnd(11)); },
-        "40B60B"
-    );
-    */
+    cb_set_pos(cb, 0); mov(cb, SIL, imm_opnd(11)); check_bytes(cb, "40B60B");
     cb_set_pos(cb, 0); mov(cb, mem_opnd(8, RSP, 0), imm_opnd(-3)); check_bytes(cb, "C60424FD");
     cb_set_pos(cb, 0); mov(cb, mem_opnd(64, RDI, 8), imm_opnd(1)); check_bytes(cb, "48C7470801000000");
 
     // movsx
-    /*
-    test(
-        delegate void (CodeBlock cb) { cb.movsx(X86Opnd(AX), X86Opnd(AL)); },
-        "660FBEC0"
-    );
-    test(
-        delegate void (CodeBlock cb) { cb.movsx(X86Opnd(EDX), X86Opnd(AL)); },
-        "0FBED0"
-    );
-    test(
-        delegate void (CodeBlock cb) { cb.movsx(X86Opnd(RAX), X86Opnd(BL)); },
-        "480FBEC3"
-    );
-    test(
-        delegate void (CodeBlock cb) { cb.movsx(X86Opnd(ECX), X86Opnd(AX)); },
-        "0FBFC8"
-    );
-    test(
-        delegate void (CodeBlock cb) { cb.movsx(X86Opnd(R11), X86Opnd(CL)); },
-        "4C0FBED9"
-    );
-    */
+    cb_set_pos(cb, 0); movsx(cb, AX, AL); check_bytes(cb, "660FBEC0");
+    cb_set_pos(cb, 0); movsx(cb, EDX, AL); check_bytes(cb, "0FBED0");
+    cb_set_pos(cb, 0); movsx(cb, RAX, BL); check_bytes(cb, "480FBEC3");
+    cb_set_pos(cb, 0); movsx(cb, ECX, AX); check_bytes(cb, "0FBFC8");
+    cb_set_pos(cb, 0); movsx(cb, R11, CL); check_bytes(cb, "4C0FBED9");
     cb_set_pos(cb, 0); movsx(cb, R10, mem_opnd(32, RSP, 12)); check_bytes(cb, "4C6354240C");
     cb_set_pos(cb, 0); movsx(cb, RAX, mem_opnd(8, RSP, 0)); check_bytes(cb, "480FBE0424");
 
@@ -251,12 +197,7 @@ void run_tests()
     cb_set_pos(cb, 0); nop(cb, 1); check_bytes(cb, "90");
 
     // not
-    /*
-    test(
-        delegate void (CodeBlock cb) { cb.not(X86Opnd(AX)); },
-        "66F7D0"
-    );
-    */
+    cb_set_pos(cb, 0); not(cb, AX); check_bytes(cb, "66F7D0");
     cb_set_pos(cb, 0); not(cb, EAX); check_bytes(cb, "F7D0");
     cb_set_pos(cb, 0); not(cb, mem_opnd(64, R12, 0)); check_bytes(cb, "49F71424");
     cb_set_pos(cb, 0); not(cb, mem_opnd(32, RSP, 301)); check_bytes(cb, "F794242D010000");
@@ -347,12 +288,7 @@ void run_tests()
     cb_set_pos(cb, 0); ret(cb); check_bytes(cb, "C3");
 
     // sal
-    /*
-    test(
-        delegate void (CodeBlock cb) { cb.sal(X86Opnd(CX), X86Opnd(1)); },
-        "66D1E1"
-    );
-    */
+    cb_set_pos(cb, 0); sal(cb, CX, imm_opnd(1)); check_bytes(cb, "66D1E1");
     cb_set_pos(cb, 0); sal(cb, ECX, imm_opnd(1)); check_bytes(cb, "D1E1");
     cb_set_pos(cb, 0); sal(cb, EBP, imm_opnd(5)); check_bytes(cb, "C1E505");
     cb_set_pos(cb, 0); sal(cb, mem_opnd(32, RSP, 68), imm_opnd(1)); check_bytes(cb, "D1642444");

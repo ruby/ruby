@@ -50,6 +50,42 @@ const x86opnd_t R13D = { OPND_REG, 32, .reg = { REG_GP, 13 }};
 const x86opnd_t R14D = { OPND_REG, 32, .reg = { REG_GP, 14 }};
 const x86opnd_t R15D = { OPND_REG, 32, .reg = { REG_GP, 15 }};
 
+// 16-bit GP registers
+const x86opnd_t AX   = { OPND_REG, 16, .reg = { REG_GP, 0 }};
+const x86opnd_t CX   = { OPND_REG, 16, .reg = { REG_GP, 1 }};
+const x86opnd_t DX   = { OPND_REG, 16, .reg = { REG_GP, 2 }};
+const x86opnd_t BX   = { OPND_REG, 16, .reg = { REG_GP, 3 }};
+const x86opnd_t SP   = { OPND_REG, 16, .reg = { REG_GP, 4 }};
+const x86opnd_t BP   = { OPND_REG, 16, .reg = { REG_GP, 5 }};
+const x86opnd_t SI   = { OPND_REG, 16, .reg = { REG_GP, 6 }};
+const x86opnd_t DI   = { OPND_REG, 16, .reg = { REG_GP, 7 }};
+const x86opnd_t R8W  = { OPND_REG, 16, .reg = { REG_GP, 8 }};
+const x86opnd_t R9W  = { OPND_REG, 16, .reg = { REG_GP, 9 }};
+const x86opnd_t R10W = { OPND_REG, 16, .reg = { REG_GP, 10 }};
+const x86opnd_t R11W = { OPND_REG, 16, .reg = { REG_GP, 11 }};
+const x86opnd_t R12W = { OPND_REG, 16, .reg = { REG_GP, 12 }};
+const x86opnd_t R13W = { OPND_REG, 16, .reg = { REG_GP, 13 }};
+const x86opnd_t R14W = { OPND_REG, 16, .reg = { REG_GP, 14 }};
+const x86opnd_t R15W = { OPND_REG, 16, .reg = { REG_GP, 15 }};
+
+// 8-bit GP registers
+const x86opnd_t AL   = { OPND_REG, 8, .reg = { REG_GP, 0 }};
+const x86opnd_t CL   = { OPND_REG, 8, .reg = { REG_GP, 1 }};
+const x86opnd_t DL   = { OPND_REG, 8, .reg = { REG_GP, 2 }};
+const x86opnd_t BL   = { OPND_REG, 8, .reg = { REG_GP, 3 }};
+const x86opnd_t SPL  = { OPND_REG, 8, .reg = { REG_GP, 4 }};
+const x86opnd_t BPL  = { OPND_REG, 8, .reg = { REG_GP, 5 }};
+const x86opnd_t SIL  = { OPND_REG, 8, .reg = { REG_GP, 6 }};
+const x86opnd_t DIL  = { OPND_REG, 8, .reg = { REG_GP, 7 }};
+const x86opnd_t R8B  = { OPND_REG, 8, .reg = { REG_GP, 8 }};
+const x86opnd_t R9B  = { OPND_REG, 8, .reg = { REG_GP, 9 }};
+const x86opnd_t R10B = { OPND_REG, 8, .reg = { REG_GP, 10 }};
+const x86opnd_t R11B = { OPND_REG, 8, .reg = { REG_GP, 11 }};
+const x86opnd_t R12B = { OPND_REG, 8, .reg = { REG_GP, 12 }};
+const x86opnd_t R13B = { OPND_REG, 8, .reg = { REG_GP, 13 }};
+const x86opnd_t R14B = { OPND_REG, 8, .reg = { REG_GP, 14 }};
+const x86opnd_t R15B = { OPND_REG, 8, .reg = { REG_GP, 15 }};
+
 // Compute the number of bits needed to encode a signed value
 size_t sig_imm_size(int64_t imm)
 {
@@ -1130,7 +1166,7 @@ void mov(codeblock_t* cb, x86opnd_t dst, x86opnd_t src)
 
             if (dst.num_bits == 16)
                 cb_write_byte(cb, 0x66);
-            if (rex_needed(src) || dst.num_bits == 64)
+            if (rex_needed(dst) || dst.num_bits == 64)
                 cb_write_rex(cb, dst.num_bits == 64, 0, 0, dst.reg.reg_no);
 
             cb_write_opcode(cb, (dst.num_bits == 8)? 0xB0:0xB8, dst);
