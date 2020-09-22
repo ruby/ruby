@@ -173,6 +173,42 @@ const x86opnd_t R13D;
 const x86opnd_t R14D;
 const x86opnd_t R15D;
 
+// 16-bit GP registers
+const x86opnd_t AX;
+const x86opnd_t CX;
+const x86opnd_t DX;
+const x86opnd_t BX;
+const x86opnd_t SP;
+const x86opnd_t BP;
+const x86opnd_t SI;
+const x86opnd_t DI;
+const x86opnd_t R8W;
+const x86opnd_t R9W;
+const x86opnd_t R10W;
+const x86opnd_t R11W;
+const x86opnd_t R12W;
+const x86opnd_t R13W;
+const x86opnd_t R14W;
+const x86opnd_t R15W;
+
+// 8-bit GP registers
+const x86opnd_t AL;
+const x86opnd_t CL;
+const x86opnd_t DL;
+const x86opnd_t BL;
+const x86opnd_t SPL;
+const x86opnd_t BPL;
+const x86opnd_t SIL;
+const x86opnd_t DIL;
+const x86opnd_t R8B;
+const x86opnd_t R9B;
+const x86opnd_t R10B;
+const x86opnd_t R11B;
+const x86opnd_t R12B;
+const x86opnd_t R13B;
+const x86opnd_t R14B;
+const x86opnd_t R15B;
+
 // Memory operand with base register and displacement/offset
 x86opnd_t mem_opnd(size_t num_bits, x86opnd_t base_reg, int32_t disp);
 
