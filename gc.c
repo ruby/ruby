@@ -7861,6 +7861,11 @@ gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
       case T_NODE:
       case T_CLASS:
         if (FL_TEST(obj, FL_FINALIZE)) {
+            /* The finalizer table is a numtable. It looks up objects by address.
+             * We can't mark the keys in the finalizer table because that would
+             * prevent the objects from being collected.  This check prevents
+             * objects that are keys in the finalizer table from being moved
+             * without directly pinning them. */
             if (st_is_member(finalizer_table, obj)) {
                 return FALSE;
             }
