@@ -212,6 +212,8 @@ ujit_compile_insn(rb_iseq_t *iseq, unsigned int insn_idx, unsigned int* next_uji
 
     // Directly return the next PC, which is a constant
     mov(cb, RAX, const_ptr_opnd(ctx.pc));
+    // Write PC back into the CFP
+    mov(cb, mem_opnd(64, RDI, 0), RAX);
 
     // Write the post call bytes
     ujit_instr_exit(cb);
