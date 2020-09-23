@@ -1072,13 +1072,11 @@ incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}known_errors.inc \
       {$(VPATH)}vm_call_iseq_optimized.inc $(srcdir)/revision.h \
       $(REVISION_H) \
       $(UNICODE_DATA_HEADERS) $(srcdir)/enc/jis/props.h \
-      {$(VPATH)}id.h {$(VPATH)}probes.dmyh {$(VPATH)}ujit_examples.h
+      {$(VPATH)}id.h {$(VPATH)}probes.dmyh
 
 insns: $(INSNS)
 
-ujit_examples.h: gen_ujit_examples.rb vm.$(OBJEXT)
-	$(ECHO) generating $@
-	$(Q) $(BASERUBY) $(srcdir)/gen_ujit_examples.rb
+ujit_examples.inc: vm.$(OBJEXT)
 
 id.h: $(tooldir)/generic_erb.rb $(srcdir)/template/id.h.tmpl $(srcdir)/defs/id.def
 	$(ECHO) generating $@
@@ -14546,7 +14544,7 @@ transient_heap.$(OBJEXT): {$(VPATH)}vm_core.h
 transient_heap.$(OBJEXT): {$(VPATH)}vm_debug.h
 transient_heap.$(OBJEXT): {$(VPATH)}vm_opts.h
 transient_heap.$(OBJEXT): {$(VPATH)}vm_sync.h
-ujit_compile.$(OBJEXT): {$(VPATH)}ujit_examples.h
+ujit_compile.$(OBJEXT): {$(VPATH)}ujit_examples.inc
 util.$(OBJEXT): $(hdrdir)/ruby.h
 util.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 util.$(OBJEXT): $(top_srcdir)/internal/compilers.h
