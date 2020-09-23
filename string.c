@@ -11106,7 +11106,7 @@ sym_casecmp(VALUE sym, VALUE other)
  * or if +other_symbol+ is not a symbol.
  *
  *   :foo.casecmp?(2)   #=> nil
- *   "\u{e4 f6 fc}".encode("ISO-8859-1").to_sym.casecmp?(:"\u{c4 d6 dc}")   # => nil
+ *   "\u{e4 f6 fc}".encode("ISO-8859-1").to_sym.casecmp?(:"\u{c4 d6 dc}")   #=> nil
  */
 
 static VALUE
