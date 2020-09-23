@@ -99,7 +99,7 @@ class TestMemoryView < Test::Unit::TestCase
       ["I",  false, NATIVE_ENDIAN,  INT_ALIGNMENT, sizeof(:int), 1],
       ["i!", true,  NATIVE_ENDIAN,  INT_ALIGNMENT, sizeof(:int), 1],
       ["I!", true,  NATIVE_ENDIAN,  INT_ALIGNMENT, sizeof(:int), 1],
-      ["i",  false, NATIVE_ENDIAN,  INT32_ALIGNMENT, sizeof(:int32_t), 1],
+      ["l",  false, NATIVE_ENDIAN,  INT32_ALIGNMENT, sizeof(:int32_t), 1],
       ["L",  false, NATIVE_ENDIAN,  INT32_ALIGNMENT, sizeof(:int32_t), 1],
       ["l!", true,  NATIVE_ENDIAN,  LONG_ALIGNMENT, sizeof(:long), 1],
       ["L!", true,  NATIVE_ENDIAN,  LONG_ALIGNMENT, sizeof(:long), 1],
