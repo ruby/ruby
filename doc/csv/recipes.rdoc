@@ -19,6 +19,7 @@ All code snippets on this page assume that the following has been executed:
   - {Convert Fields to Objects}[#label-Convert+Fields+to+Objects]
     - {Convert Fields to Objects Using Built-In Converters}[#label-Convert+Fields+to+Objects+Using+Built-In+Converters]
     - {Convert Fields to Objects Using Custom Converters}[#label-Convert+Fields+to+Objects+Using+Custom+Converters]
+  - {Filter Field Strings}[#label-Filter+Field+Strings]
 - {Generating: Output Formats}[#label-Generating-3A+Output+Formats]
   - {Generate to String}[#label-Generate+to+String]
     - {Generate to String Without Headers}[#label-Generate+to+String+Without+Headers]
@@ -187,6 +188,33 @@ Output:
   DateTime
 
 ==== Convert Fields to Objects Using Custom Converters
+
+This example defines and uses a custom field converter
+that converts each column-1 value to a \Rational object.
+
+Define a custom field converter:
+  rational_converter = proc do |field, field_context|
+    field_context.index == 1 ? field.to_r : field
+  end
+
+Without the new converter:
+  string = "foo,0\nbar,1\nbaz,2\n"
+  array = CSV.parse(string)
+  array # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
+
+With the new converter:
+  array = CSV.parse(string, converters: rational_converter)
+  array # => [["foo", (0/1)], ["bar", (1/1)], ["baz", (2/1)]]
+
+You can also register a custom field converter, then refer to it by name:
+  CSV::Converters[:rational] = rational_converter
+  array = CSV.parse(string, converters: :rational)
+  array # => [["foo", (0/1)], ["bar", (1/1)], ["baz", (2/1)]]
+
+==== Filter Field Strings
+
+This example defines and uses a custom field converter
+that strips whitespace from each field value.
 
 Define a custom field converter:
   strip_converter = proc {|field| field.strip }
