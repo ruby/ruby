@@ -17,8 +17,6 @@ static ID id_close;
 static ID id_block;
 static ID id_unblock;
 
-static ID id_kernel_sleep;
-
 static ID id_io_read;
 static ID id_io_write;
 static ID id_io_wait;
@@ -30,8 +28,6 @@ Init_Scheduler(void)
 
     id_block = rb_intern_const("block");
     id_unblock = rb_intern_const("unblock");
-
-    id_kernel_sleep = rb_intern_const("kernel_sleep");
 
     id_io_read = rb_intern_const("io_read");
     id_io_write = rb_intern_const("io_write");
@@ -104,18 +100,6 @@ rb_scheduler_timeout(struct timeval *timeout)
     }
 
     return Qnil;
-}
-
-VALUE
-rb_scheduler_kernel_sleep(VALUE scheduler, VALUE timeout)
-{
-    return rb_funcall(scheduler, id_kernel_sleep, 1, timeout);
-}
-
-VALUE
-rb_scheduler_kernel_sleepv(VALUE scheduler, int argc, VALUE * argv)
-{
-    return rb_funcallv(scheduler, id_kernel_sleep, argc, argv);
 }
 
 VALUE

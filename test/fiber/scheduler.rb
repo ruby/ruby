@@ -131,13 +131,6 @@ class Scheduler
     return true
   end
 
-  # Used for Kernel#sleep and Mutex#sleep
-  def kernel_sleep(duration = nil)
-    self.block(:sleep, duration)
-
-    return true
-  end
-
   # Used when blocking on synchronization (Mutex#lock, Queue#pop, SizedQueue#push, ...)
   def block(blocker, timeout = nil)
     # $stderr.puts [__method__, blocker, timeout].inspect

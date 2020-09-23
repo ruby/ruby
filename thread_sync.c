@@ -266,7 +266,7 @@ mutex_owned_p(rb_fiber_t *fiber, rb_mutex_t *mutex)
     }
 }
 
-static VALUE call_rb_scheduler_block(VALUE mutex) {
+static VALUE call_rb_scheduler_block_mutex_lock(VALUE mutex) {
     return rb_scheduler_block(rb_scheduler_current(), mutex, Qnil);
 }
 
@@ -306,7 +306,7 @@ do_mutex_lock(VALUE self, int interruptible_p)
             if (scheduler != Qnil) {
                 list_add_tail(&mutex->waitq, &w.node);
 
-                rb_ensure(call_rb_scheduler_block, self, remove_from_mutex_lock_waiters, (VALUE)&w.node);
+                rb_ensure(call_rb_scheduler_block_mutex_lock, self, remove_from_mutex_lock_waiters, (VALUE)&w.node);
 
                 if (!mutex->fiber) {
                     mutex->fiber = fiber;
@@ -521,6 +521,12 @@ rb_mutex_wait_for(VALUE time)
     return Qnil;
 }
 
+static VALUE sym_mutex_sleep;
+
+static VALUE call_rb_scheduler_block_mutex_sleep(VALUE timeout) {
+    return rb_scheduler_block(rb_scheduler_current(), sym_mutex_sleep, timeout);
+}
+
 VALUE
 rb_mutex_sleep(VALUE self, VALUE timeout)
 {
@@ -535,8 +541,7 @@ rb_mutex_sleep(VALUE self, VALUE timeout)
 
     VALUE scheduler = rb_scheduler_current();
     if (scheduler != Qnil) {
-        rb_scheduler_kernel_sleep(scheduler, timeout);
-        mutex_lock_uninterruptible(self);
+        rb_ensure(call_rb_scheduler_block_mutex_sleep, timeout, mutex_lock_uninterruptible, self);
     } else {
         if (NIL_P(timeout)) {
             rb_ensure(rb_mutex_sleep_forever, self, mutex_lock_uninterruptible, self);
@@ -1606,6 +1611,9 @@ Init_thread_sync(void)
     rb_define_alloc_func(rb_cConditionVariable, condvar_alloc);
 
     id_sleep = rb_intern("sleep");
+
+    sym_mutex_sleep = ID2SYM(rb_intern("mutex_sleep"));
+    rb_gc_register_mark_object(sym_mutex_sleep);
 
     rb_define_method(rb_cConditionVariable, "initialize", rb_condvar_initialize, 0);
     rb_undef_method(rb_cConditionVariable, "initialize_copy");

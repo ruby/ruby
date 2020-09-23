@@ -331,6 +331,7 @@ static ID id_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID;
 static ID id_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC;
 #endif
 static ID id_hertz;
+static VALUE sym_sleep;
 
 /* execv and execl are async-signal-safe since SUSv4 (POSIX.1-2008, XPG7) */
 #if defined(__sun) && !defined(_XPG7) /* Solaris 10, 9, ... */
@@ -4929,15 +4930,16 @@ rb_f_sleep(int argc, VALUE *argv, VALUE _)
     time_t beg = time(0);
     VALUE scheduler = rb_scheduler_current();
 
+    rb_check_arity(argc, 0, 1);
+
     if (scheduler != Qnil) {
-        rb_scheduler_kernel_sleepv(scheduler, argc, argv);
+        rb_scheduler_block(scheduler, sym_sleep, argc == 0 ? Qnil : argv[0]);
     }
     else {
         if (argc == 0) {
             rb_thread_sleep_forever();
         }
         else {
-            rb_check_arity(argc, 0, 1);
             rb_thread_wait_for(rb_time_interval(argv[0]));
         }
     }
@@ -8911,6 +8913,9 @@ Init_process(void)
     id_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC = rb_intern_const("MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC");
 #endif
     id_hertz = rb_intern_const("hertz");
+
+    sym_sleep = ID2SYM(rb_intern("sleep"));
+    rb_gc_register_mark_object(sym_sleep);
 
     InitVM(process);
 }

@@ -226,7 +226,7 @@ Outstanding ones only.
 
 * Kernel
 
-    * `Kernel.sleep(...)` invokes the scheduler hook `#kernel_sleep(...)` in a
+    * `Kernel.sleep(...)` invokes the scheduler hook `#block(...)` in a
       non-blocking execution context. [[Feature #16786]]
 
 * IO

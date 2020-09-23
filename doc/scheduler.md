@@ -21,12 +21,6 @@ class Scheduler
   def io_wait(io, events, timeout)
   end
 
-  # Sleep the current task for the specified duration, or forever if not
-  # specified.
-  # @param duration [Numeric] The amount of time to sleep in seconds.
-  def kernel_sleep(duration = nil)
-  end
-
   # Block the calling fiber.
   # @parameter blocker [Object] What we are waiting on, informational only.
   # @parameter timeout [Numeric | Nil] The amount of time to wait for in seconds.
@@ -82,7 +76,7 @@ Fiber.new do
   # May invoke `Fiber.scheduler&.io_wait`.
   io.write(...)
 
-  # Will invoke `Fiber.scheduler&.kernel_sleep`.
+  # Will invoke `Thread.scheduler&.block(:sleep, n)`.
   sleep(n)
 end.resume
 ~~~
