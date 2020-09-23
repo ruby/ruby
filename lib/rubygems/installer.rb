@@ -28,6 +28,7 @@ require 'fileutils'
 # file.  See Gem.pre_install and Gem.post_install for details.
 
 class Gem::Installer
+
   extend Gem::Deprecate
 
   ##
@@ -72,6 +73,7 @@ class Gem::Installer
   @install_lock = Mutex.new
 
   class << self
+
     ##
     # True if we've warned about PATH not including Gem.bindir
 
@@ -96,6 +98,7 @@ class Gem::Installer
     def exec_format
       @exec_format ||= Gem.default_exec_format
     end
+
   end
 
   ##
@@ -108,6 +111,7 @@ class Gem::Installer
   end
 
   class FakePackage
+
     attr_accessor :spec
 
     attr_accessor :dir_mode
@@ -133,6 +137,7 @@ class Gem::Installer
 
     def copy_to(path)
     end
+
   end
 
   ##
@@ -958,4 +963,5 @@ TEXT
 
     raise Gem::FilePermissionError.new(dir) unless File.writable? dir
   end
+
 end

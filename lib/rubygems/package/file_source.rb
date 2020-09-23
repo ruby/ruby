@@ -7,6 +7,7 @@
 # object to `Gem::Package.new`.
 
 class Gem::Package::FileSource < Gem::Package::Source # :nodoc: all
+
   attr_reader :path
 
   def initialize(path)
@@ -28,4 +29,5 @@ class Gem::Package::FileSource < Gem::Package::Source # :nodoc: all
   def with_read_io(&block)
     File.open path, 'rb', &block
   end
+
 end

@@ -3,6 +3,7 @@ require 'rubygems/test_case'
 require 'rubygems/spec_fetcher'
 
 class TestGemSpecFetcher < Gem::TestCase
+
   def tuple(*args)
     Gem::NameTuple.new(*args)
   end
@@ -334,4 +335,5 @@ class TestGemSpecFetcher < Gem::TestCase
     assert_equal({}, specs)
     assert_kind_of Gem::SourceFetchProblem, errors.first
   end
+
 end

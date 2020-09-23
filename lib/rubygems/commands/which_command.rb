@@ -2,6 +2,7 @@
 require 'rubygems/command'
 
 class Gem::Commands::WhichCommand < Gem::Command
+
   def initialize
     super 'which', 'Find the location of a library file you can require',
           :search_gems_first => false, :show_all => false
@@ -84,4 +85,5 @@ requiring to see why it does not behave as you expect.
   def usage # :nodoc:
     "#{program_name} FILE [FILE ...]"
   end
+
 end

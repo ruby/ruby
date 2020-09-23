@@ -6,6 +6,7 @@ require "rubygems/package"
 require "rubygems/command_manager"
 
 class TestGemCommandsHelpCommand < Gem::TestCase
+
   def setup
     super
 
@@ -70,4 +71,5 @@ class TestGemCommandsHelpCommand < Gem::TestCase
 
     yield @ui.output, @ui.error
   end
+
 end

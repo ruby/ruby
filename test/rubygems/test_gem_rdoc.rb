@@ -4,6 +4,7 @@ require 'rubygems/test_case'
 require 'rubygems/rdoc'
 
 class TestGemRDoc < Gem::TestCase
+
   Gem::RDoc.load_rdoc
 
   def setup
@@ -133,4 +134,5 @@ class TestGemRDoc < Gem::TestCase
       FileUtils.rm_r @a.doc_dir
     end
   end
+
 end

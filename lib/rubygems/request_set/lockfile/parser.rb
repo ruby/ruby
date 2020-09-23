@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 class Gem::RequestSet::Lockfile::Parser
+
   ###
   # Parses lockfiles
 
@@ -340,4 +341,5 @@ class Gem::RequestSet::Lockfile::Parser
   def unget(token) # :nodoc:
     @tokens.unshift token
   end
+
 end

@@ -4,6 +4,7 @@ require 'rubygems'
 require 'shellwords'
 
 class TestConfig < Gem::TestCase
+
   def test_datadir
     util_make_gems
     spec = Gem::Specification.find_by_name("a")
@@ -24,4 +25,5 @@ class TestConfig < Gem::TestCase
     assert_equal(Gem.ruby, ruby)
     assert_match(/\/bad_rake.rb\z/, rake)
   end
+
 end

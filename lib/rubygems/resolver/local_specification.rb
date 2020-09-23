@@ -3,6 +3,7 @@
 # A LocalSpecification comes from a .gem file on the local filesystem.
 
 class Gem::Resolver::LocalSpecification < Gem::Resolver::SpecSpecification
+
   ##
   # Returns +true+ if this gem is installable for the current platform.
 
@@ -36,4 +37,5 @@ class Gem::Resolver::LocalSpecification < Gem::Resolver::SpecSpecification
       q.text "source: #{@source.path}"
     end
   end
+
 end

@@ -5,6 +5,7 @@ require 'rubygems/validator'
 require 'rubygems/doctor'
 
 class Gem::Commands::CheckCommand < Gem::Command
+
   include Gem::VersionOption
 
   def initialize
@@ -89,4 +90,5 @@ specifications and will clean up gems that have been partially uninstalled.
   def usage # :nodoc:
     "#{program_name} [OPTIONS] [GEMNAME ...]"
   end
+
 end

@@ -3,6 +3,7 @@ require 'rubygems/test_case'
 require 'rubygems/request_set'
 
 class TestGemRequestSetGemDependencyAPI < Gem::TestCase
+
   def setup
     super
 
@@ -844,4 +845,5 @@ end
 
     assert_equal engine_version, RUBY_ENGINE_VERSION if engine
   end
+
 end unless Gem.java_platform?

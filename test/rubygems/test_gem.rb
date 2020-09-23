@@ -8,6 +8,7 @@ require 'tmpdir'
 require 'rbconfig'
 
 class TestGem < Gem::TestCase
+
   PLUGINS_LOADED = [] # rubocop:disable Style/MutableConstant
 
   PROJECT_DIR = File.expand_path('../../..', __FILE__).tap(&Gem::UNTAINT)
@@ -2032,4 +2033,5 @@ You may need to `gem install -g` to install missing gems
   def util_cache_dir
     File.join Gem.dir, "cache"
   end
+
 end

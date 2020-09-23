@@ -3,6 +3,7 @@ require 'rubygems/test_case'
 require 'rubygems/commands/stale_command'
 
 class TestGemCommandsStaleCommand < Gem::TestCase
+
   def setup
     super
     @stub_ui = Gem::MockGemUi.new
@@ -39,4 +40,5 @@ class TestGemCommandsStaleCommand < Gem::TestCase
     assert_equal("#{foo_bar.name}-#{foo_bar.version}", lines[0].split.first)
     assert_equal("#{bar_baz.name}-#{bar_baz.version}", lines[1].split.first)
   end
+
 end

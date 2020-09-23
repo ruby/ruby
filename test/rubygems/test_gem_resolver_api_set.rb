@@ -2,6 +2,7 @@
 require 'rubygems/test_case'
 
 class TestGemResolverAPISet < Gem::TestCase
+
   def setup
     super
 
@@ -203,4 +204,5 @@ class TestGemResolverAPISet < Gem::TestCase
 
     assert_empty set.instance_variable_get :@data
   end
+
 end

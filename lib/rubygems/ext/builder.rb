@@ -8,6 +8,7 @@
 require_relative '../user_interaction'
 
 class Gem::Ext::Builder
+
   include Gem::UserInteraction
 
   ##
@@ -226,4 +227,5 @@ EOF
 
     destination
   end
+
 end

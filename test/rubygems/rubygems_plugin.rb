@@ -11,6 +11,7 @@ module Gem::Commands
 end
 
 class Gem::Commands::InterruptCommand < Gem::Command
+
   def initialize
     super('interrupt', 'Raises an Interrupt Exception', {})
   end
@@ -18,6 +19,7 @@ class Gem::Commands::InterruptCommand < Gem::Command
   def execute
     raise Interrupt, "Interrupt exception"
   end
+
 end
 
 Gem::CommandManager.instance.register_command :interrupt

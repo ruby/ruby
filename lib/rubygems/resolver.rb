@@ -10,6 +10,7 @@ require 'rubygems/util/list'
 # all the requirements.
 
 class Gem::Resolver
+
   require 'rubygems/resolver/molinillo'
 
   ##
@@ -311,6 +312,7 @@ class Gem::Resolver
     end
   end
   private :amount_constrained
+
 end
 
 require 'rubygems/resolver/activation_request'

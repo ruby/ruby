@@ -3,6 +3,7 @@ require 'rubygems/test_case'
 require 'rubygems/commands/environment_command'
 
 class TestGemCommandsEnvironmentCommand < Gem::TestCase
+
   def setup
     super
 
@@ -140,4 +141,5 @@ class TestGemCommandsEnvironmentCommand < Gem::TestCase
     assert_equal "#{Gem.platforms.join File::PATH_SEPARATOR}\n", @ui.output
     assert_equal '', @ui.error
   end
+
 end

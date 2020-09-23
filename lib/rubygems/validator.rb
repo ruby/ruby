@@ -12,6 +12,7 @@ require 'rubygems/installer'
 # Validator performs various gem file and gem database validation
 
 class Gem::Validator
+
   include Gem::UserInteraction
 
   def initialize # :nodoc:
@@ -140,4 +141,5 @@ class Gem::Validator
 
     errors
   end
+
 end

@@ -7,6 +7,7 @@ require "rubygems/deprecate"
 # See `gem help platform` for information on platform matching.
 
 class Gem::Platform
+
   @local = nil
 
   attr_accessor :cpu
@@ -201,4 +202,5 @@ class Gem::Platform
   # This will be replaced with Gem::Platform::local.
 
   CURRENT = 'current'.freeze
+
 end

@@ -3,6 +3,7 @@ require 'rubygems/test_case'
 require 'rubygems/doctor'
 
 class TestGemDoctor < Gem::TestCase
+
   def gem(name)
     spec = quick_gem name do |gem|
       gem.files = %W[lib/#{name}.rb Rakefile]
@@ -191,4 +192,5 @@ Removed file plugins/a_badly_named_file.rb
 
     assert doctor.gem_repository?, 'gems installed'
   end
+
 end

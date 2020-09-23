@@ -5,6 +5,7 @@
 #
 
 class Gem::UriParser
+
   ##
   # Parses the #uri, raising if it's invalid
 
@@ -31,4 +32,5 @@ class Gem::UriParser
   rescue URI::InvalidURIError
     uri
   end
+
 end

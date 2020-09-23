@@ -150,6 +150,7 @@
 # a zero to give a sensible result.
 
 class Gem::Version
+
   autoload :Requirement, File.expand_path('requirement', __dir__)
 
   include Comparable
@@ -403,4 +404,5 @@ class Gem::Version
     numeric_segments = string_segments.slice!(0, string_start || string_segments.size)
     return numeric_segments, string_segments
   end
+
 end

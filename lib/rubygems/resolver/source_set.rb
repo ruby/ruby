@@ -4,6 +4,7 @@
 # Kind off like BestSet but filters the sources for gems
 
 class Gem::Resolver::SourceSet < Gem::Resolver::Set
+
   ##
   # Creates a SourceSet for the given +sources+ or Gem::sources if none are
   # specified.  +sources+ must be a Gem::SourceList.
@@ -42,4 +43,5 @@ class Gem::Resolver::SourceSet < Gem::Resolver::Set
     link = @links[name]
     @sets[link] ||= Gem::Source.new(link).dependency_resolver_set if link
   end
+
 end

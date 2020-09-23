@@ -17,6 +17,7 @@ require_relative 'user_interaction'
 # A very good example to look at is Gem::Commands::ContentsCommand
 
 class Gem::Command
+
   include Gem::UserInteraction
 
   OptionParser.accept Symbol do |value|
@@ -651,6 +652,7 @@ RubyGems is a package manager for Ruby.
   HELP
 
   # :startdoc:
+
 end
 
 ##

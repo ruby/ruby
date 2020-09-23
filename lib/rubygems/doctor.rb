@@ -12,6 +12,7 @@ require 'rubygems/user_interaction'
 # removing the bogus specification.
 
 class Gem::Doctor
+
   include Gem::UserInteraction
 
   ##
@@ -128,4 +129,5 @@ class Gem::Doctor
   rescue Errno::ENOENT
     # ignore
   end
+
 end

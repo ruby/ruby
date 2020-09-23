@@ -5,6 +5,7 @@ require 'rubygems/request_set'
 require 'rubygems/rdoc'
 
 class TestGemCommandsInstallCommand < Gem::TestCase
+
   def setup
     super
     common_installer_setup
@@ -1345,4 +1346,5 @@ ERROR:  Possible alternatives: non_existent_with_hint
     assert_equal "  a-3", out.shift
     assert_empty out
   end
+
 end

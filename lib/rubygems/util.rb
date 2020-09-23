@@ -71,9 +71,11 @@ module Gem::Util
   end
 
   class << self
+
     extend Gem::Deprecate
 
     rubygems_deprecate :silent_system
+
   end
 
   ##

@@ -5,6 +5,7 @@ require 'rubygems/command'
 require 'rubygems/dependency_installer'
 
 class TestGemInstallUpdateOptions < Gem::InstallerTestCase
+
   def setup
     super
 
@@ -192,4 +193,5 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
 
     assert_equal true, @cmd.options[:post_install_message]
   end
+
 end

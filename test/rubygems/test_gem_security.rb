@@ -11,6 +11,7 @@ if Gem.java_platform?
 end
 
 class TestGemSecurity < Gem::TestCase
+
   CHILD_KEY = load_key 'child'
 
   ALTERNATE_CERT = load_cert 'child'
@@ -309,4 +310,5 @@ class TestGemSecurity < Gem::TestCase
 
     assert_equal key.to_pem, key_from_file.to_pem
   end
+
 end if defined?(OpenSSL::SSL) && !Gem.java_platform?

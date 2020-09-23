@@ -4,6 +4,7 @@
 # dependency that was used to introduce this activation.
 
 class Gem::Resolver::ActivationRequest
+
   ##
   # The parent request for this activation request.
 
@@ -151,4 +152,5 @@ class Gem::Resolver::ActivationRequest
   def name_tuple
     @name_tuple ||= Gem::NameTuple.new(name, version, platform)
   end
+
 end

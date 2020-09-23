@@ -8,6 +8,7 @@
 require 'shellwords'
 
 class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
+
   def self.build(extension, dest_path, results, args=[], lib_dir=nil)
     require 'fileutils'
     require 'tempfile'
@@ -91,4 +92,5 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
     path[0..Dir.pwd.length - 1] = '.' if path.start_with?(Dir.pwd)
     path
   end
+
 end

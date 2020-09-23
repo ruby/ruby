@@ -10,6 +10,7 @@
 #   set.add_git_gem 'rake', 'git://example/rake.git', tag: 'rake-10.1.0'
 
 class Gem::Resolver::GitSet < Gem::Resolver::Set
+
   ##
   # The root directory for git gems in this set.  This is usually Gem.dir, the
   # installation directory for regular gems.
@@ -117,4 +118,5 @@ class Gem::Resolver::GitSet < Gem::Resolver::Set
       end
     end
   end
+
 end

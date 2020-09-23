@@ -5,6 +5,7 @@
 require "rubygems/user_interaction"
 
 class Gem::Security::Signer
+
   include Gem::UserInteraction
 
   ##
@@ -201,4 +202,5 @@ class Gem::Security::Signer
       end
     end
   end
+
 end

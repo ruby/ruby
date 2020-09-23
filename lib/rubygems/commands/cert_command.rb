@@ -3,6 +3,7 @@ require 'rubygems/command'
 require 'rubygems/security'
 
 class Gem::Commands::CertCommand < Gem::Command
+
   def initialize
     super 'cert', 'Manage RubyGems certificates and signing settings',
           :add => [], :remove => [], :list => [], :build => [], :sign => []
@@ -311,4 +312,5 @@ For further reading on signing gems see `ri Gem::Security`.
     # It's simple, but is all we need
     email =~ /\A.+@.+\z/
   end
+
 end if defined?(OpenSSL::SSL)

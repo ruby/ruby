@@ -5,6 +5,7 @@
 # wrap the data returned from the indexes.
 
 class Gem::NameTuple
+
   def initialize(name, version, platform="ruby")
     @name = name
     @version = version
@@ -118,4 +119,5 @@ class Gem::NameTuple
   def hash
     to_a.hash
   end
+
 end

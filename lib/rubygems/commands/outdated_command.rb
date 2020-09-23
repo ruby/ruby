@@ -5,6 +5,7 @@ require 'rubygems/spec_fetcher'
 require 'rubygems/version_option'
 
 class Gem::Commands::OutdatedCommand < Gem::Command
+
   include Gem::LocalRemoteOptions
   include Gem::VersionOption
 
@@ -29,4 +30,5 @@ update the gems with the update or install commands.
       say "#{spec.name} (#{spec.version} < #{remote_version})"
     end
   end
+
 end

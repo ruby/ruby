@@ -3,6 +3,7 @@ require 'rubygems/test_case'
 require 'rubygems/name_tuple'
 
 class TestGemNameTuple < Gem::TestCase
+
   def test_full_name
     n = Gem::NameTuple.new "a", Gem::Version.new(0), "ruby"
     assert_equal "a-0", n.full_name
@@ -39,4 +40,5 @@ class TestGemNameTuple < Gem::TestCase
 
     assert_equal 1, a_p.<=>(a)
   end
+
 end

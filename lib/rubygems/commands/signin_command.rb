@@ -3,6 +3,7 @@ require 'rubygems/command'
 require 'rubygems/gemcutter_utilities'
 
 class Gem::Commands::SigninCommand < Gem::Command
+
   include Gem::GemcutterUtilities
 
   def initialize
@@ -30,4 +31,5 @@ class Gem::Commands::SigninCommand < Gem::Command
   def execute
     sign_in options[:host]
   end
+
 end

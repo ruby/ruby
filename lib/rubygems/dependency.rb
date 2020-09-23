@@ -3,6 +3,7 @@
 # The Dependency class holds a Gem name and a Gem::Requirement.
 
 class Gem::Dependency
+
   ##
   # Valid dependency types.
   #--
@@ -343,4 +344,5 @@ class Gem::Dependency
       :released
     end
   end
+
 end

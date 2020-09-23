@@ -3,6 +3,7 @@ require 'rubygems/test_case'
 require 'rubygems/commands/open_command'
 
 class TestGemCommandsOpenCommand < Gem::TestCase
+
   def setup
     super
 
@@ -95,4 +96,5 @@ class TestGemCommandsOpenCommand < Gem::TestCase
     assert_match %r{'foo' is a default gem and can't be opened\.} , @ui.output
     assert_equal "", @ui.error
   end
+
 end

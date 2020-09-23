@@ -4,6 +4,7 @@
 # dependencies.
 
 class Gem::Source::Local < Gem::Source
+
   def initialize # :nodoc:
     @specs   = nil
     @api_uri = nil
@@ -128,4 +129,5 @@ class Gem::Source::Local < Gem::Source
       end
     end
   end
+
 end

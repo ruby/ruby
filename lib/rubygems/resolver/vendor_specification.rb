@@ -5,6 +5,7 @@
 # option.
 
 class Gem::Resolver::VendorSpecification < Gem::Resolver::SpecSpecification
+
   def ==(other) # :nodoc:
     self.class === other and
       @set  == other.set and
@@ -19,4 +20,5 @@ class Gem::Resolver::VendorSpecification < Gem::Resolver::SpecSpecification
   def install(options = {})
     yield nil
   end
+
 end

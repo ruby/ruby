@@ -4,6 +4,7 @@ require 'time'
 require 'rubygems/user_interaction'
 
 class Gem::Request
+
   extend Gem::UserInteraction
   include Gem::UserInteraction
 
@@ -284,6 +285,7 @@ class Gem::Request
 
     ua
   end
+
 end
 
 require 'rubygems/request/http_pool'

@@ -3,6 +3,7 @@ require 'rubygems/command'
 require 'rubygems/version_option'
 
 class Gem::Commands::OpenCommand < Gem::Command
+
   include Gem::VersionOption
 
   def initialize
@@ -81,4 +82,5 @@ class Gem::Commands::OpenCommand < Gem::Command
 
     say "Unable to find gem '#{name}'"
   end
+
 end

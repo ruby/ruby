@@ -5,6 +5,7 @@ unless Gem.java_platform? # jruby can't require the simple_gem file
   require 'rubygems/simple_gem'
 
   class TestGemPackageOld < Gem::TestCase
+
     def setup
       super
 
@@ -86,5 +87,6 @@ unless Gem.java_platform? # jruby can't require the simple_gem file
                    'and cannot be verified',
                    e.message
     end
+
   end
 end

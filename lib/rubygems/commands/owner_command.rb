@@ -5,6 +5,7 @@ require 'rubygems/gemcutter_utilities'
 require 'rubygems/text'
 
 class Gem::Commands::OwnerCommand < Gem::Command
+
   include Gem::Text
   include Gem::LocalRemoteOptions
   include Gem::GemcutterUtilities
@@ -108,4 +109,5 @@ permission to.
       request.add_field "OTP", options[:otp] if options[:otp]
     end
   end
+
 end

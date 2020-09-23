@@ -3,6 +3,7 @@ require 'rubygems/test_case'
 require 'rubygems/config_file'
 
 class TestGemConfigFile < Gem::TestCase
+
   def setup
     super
 
@@ -491,4 +492,5 @@ if you believe they were disclosed to a third party.
     util_config_file
     assert_equal(true, @cfg.disable_default_gem_server)
   end
+
 end

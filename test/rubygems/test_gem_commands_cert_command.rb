@@ -11,6 +11,7 @@ if Gem.java_platform?
 end
 
 class TestGemCommandsCertCommand < Gem::TestCase
+
   ALTERNATE_CERT = load_cert 'alternate'
   EXPIRED_PUBLIC_CERT = load_cert 'expired'
 
@@ -805,4 +806,5 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
     assert_equal "invalid argument: --sign #{nonexistent}: does not exist",
                  e.message
   end
+
 end if defined?(OpenSSL::SSL) && !Gem.java_platform?

@@ -3,6 +3,7 @@ require 'rubygems/test_case'
 require 'rubygems/commands/sources_command'
 
 class TestGemCommandsSourcesCommand < Gem::TestCase
+
   def setup
     super
 
@@ -421,4 +422,5 @@ beta-gems.example.com is not a URI
     assert_equal "source cache successfully updated\n", @ui.output
     assert_equal '', @ui.error
   end
+
 end

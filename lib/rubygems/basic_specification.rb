@@ -4,6 +4,7 @@
 # used by both Specification and StubSpecification.
 
 class Gem::BasicSpecification
+
   ##
   # Allows installation of extensions for git: gems.
 
@@ -38,8 +39,10 @@ class Gem::BasicSpecification
   end
 
   class << self
+
     extend Gem::Deprecate
     rubygems_deprecate :default_specifications_dir, "Gem.default_specifications_dir"
+
   end
 
   ##
@@ -342,4 +345,5 @@ class Gem::BasicSpecification
       false
     end
   end
+
 end

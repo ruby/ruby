@@ -4,6 +4,7 @@ require 'rubygems/user_interaction'
 require 'timeout'
 
 class TestGemSilentUI < Gem::TestCase
+
   def setup
     super
     @sui = Gem::SilentUI.new
@@ -113,4 +114,5 @@ class TestGemSilentUI < Gem::TestCase
     assert_empty out, 'No output'
     assert_empty err, 'No output'
   end
+
 end

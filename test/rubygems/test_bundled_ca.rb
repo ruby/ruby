@@ -15,6 +15,7 @@ require 'rubygems/request'
 #
 
 class TestBundledCA < Gem::TestCase
+
   THIS_FILE = File.expand_path __FILE__
 
   def bundled_certificate_store
@@ -58,4 +59,5 @@ class TestBundledCA < Gem::TestCase
   def test_accessing_new_index
     assert_https('fastly.rubygems.org')
   end
+
 end if defined?(OpenSSL::SSL)

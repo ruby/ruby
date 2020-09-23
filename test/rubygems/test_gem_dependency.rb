@@ -3,6 +3,7 @@ require 'rubygems/test_case'
 require 'rubygems/dependency'
 
 class TestGemDependency < Gem::TestCase
+
   def test_initialize
     d = dep "pkg", "> 1.0"
 
@@ -390,4 +391,5 @@ class TestGemDependency < Gem::TestCase
     assert_equal dep("a", " >= 1.a").identity, :abs_latest
     assert_equal dep("a").identity, :latest
   end
+
 end

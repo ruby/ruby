@@ -3,6 +3,7 @@ require 'rubygems/test_case'
 require 'rubygems/installer'
 
 class TestGemResolverGitSpecification < Gem::TestCase
+
   def setup
     super
 
@@ -109,4 +110,5 @@ class TestGemResolverGitSpecification < Gem::TestCase
 
     assert called
   end
+
 end

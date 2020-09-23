@@ -2,6 +2,7 @@
 require 'rubygems/test_case'
 
 class TestGemResolverInstallerSet < Gem::TestCase
+
   def test_add_always_install
     spec_fetcher do |fetcher|
       fetcher.download 'a', 1
@@ -254,4 +255,5 @@ class TestGemResolverInstallerSet < Gem::TestCase
     refute set.consider_local?
     refute set.consider_remote?
   end
+
 end

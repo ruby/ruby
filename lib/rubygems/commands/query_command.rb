@@ -4,6 +4,7 @@ require 'rubygems/query_utils'
 require 'rubygems/deprecate'
 
 class Gem::Commands::QueryCommand < Gem::Command
+
   extend Gem::Deprecate
   rubygems_deprecate_command
 
@@ -23,4 +24,5 @@ class Gem::Commands::QueryCommand < Gem::Command
 
     add_query_options
   end
+
 end

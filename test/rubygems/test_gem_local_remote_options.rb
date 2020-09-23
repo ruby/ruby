@@ -4,6 +4,7 @@ require 'rubygems/local_remote_options'
 require 'rubygems/command'
 
 class TestGemLocalRemoteOptions < Gem::TestCase
+
   def setup
     super
 
@@ -129,4 +130,5 @@ class TestGemLocalRemoteOptions < Gem::TestCase
 
     assert_equal [@gem_repo], Gem.sources
   end
+
 end

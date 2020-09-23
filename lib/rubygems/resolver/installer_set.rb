@@ -4,6 +4,7 @@
 # files
 
 class Gem::Resolver::InstallerSet < Gem::Resolver::Set
+
   ##
   # List of Gem::Specification objects that must always be installed.
 
@@ -222,4 +223,5 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
       @domain = :local unless remote
     end
   end
+
 end

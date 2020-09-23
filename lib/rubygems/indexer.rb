@@ -8,6 +8,7 @@ require 'tmpdir'
 # Top level class for building the gem repository index.
 
 class Gem::Indexer
+
   include Gem::UserInteraction
 
   ##
@@ -423,4 +424,5 @@ class Gem::Indexer
       Marshal.dump specs_index, io
     end
   end
+
 end

@@ -8,6 +8,7 @@
 # TarReader reads tar files and allows iteration over their items
 
 class Gem::Package::TarReader
+
   include Enumerable
 
   ##
@@ -119,6 +120,7 @@ class Gem::Package::TarReader
   ensure
     rewind
   end
+
 end
 
 require 'rubygems/package/tar_reader/entry'

@@ -29,6 +29,7 @@ require 'rubygems/rdoc'
 # TODO Refactor into a real WEBrick servlet to remove code duplication.
 
 class Gem::Server
+
   attr_reader :spec_dirs
 
   include ERB::Util
@@ -874,4 +875,5 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
 
     system("#{@launch} http://#{host}:#{@port}")
   end
+
 end

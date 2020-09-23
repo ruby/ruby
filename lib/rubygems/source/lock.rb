@@ -5,6 +5,7 @@
 # dependency lock files.
 
 class Gem::Source::Lock < Gem::Source
+
   ##
   # The wrapped Gem::Source
 
@@ -47,4 +48,5 @@ class Gem::Source::Lock < Gem::Source
   def uri # :nodoc:
     @wrapped.uri
   end
+
 end

@@ -2,6 +2,7 @@
 require 'rubygems/test_case'
 
 class TestGemResolverLockSet < Gem::TestCase
+
   def setup
     super
 
@@ -58,4 +59,5 @@ class TestGemResolverLockSet < Gem::TestCase
   def test_prefetch
     assert_respond_to @set, :prefetch
   end
+
 end

@@ -3,6 +3,7 @@ require 'rubygems/test_case'
 require 'rubygems/commands/check_command'
 
 class TestGemCommandsCheckCommand < Gem::TestCase
+
   def setup
     super
 
@@ -64,4 +65,5 @@ class TestGemCommandsCheckCommand < Gem::TestCase
     refute_path_exists b.gem_dir
     refute_path_exists b.spec_file
   end
+
 end

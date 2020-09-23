@@ -5,6 +5,7 @@
 # and +version+ are needed.
 
 class Gem::Resolver::IndexSpecification < Gem::Resolver::Specification
+
   ##
   # An IndexSpecification is created from the index format described in `gem
   # help generate_index`.
@@ -64,4 +65,5 @@ class Gem::Resolver::IndexSpecification < Gem::Resolver::Specification
         @source.fetch_spec tuple
       end
   end
+
 end

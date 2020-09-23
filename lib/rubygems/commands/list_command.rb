@@ -6,6 +6,7 @@ require 'rubygems/query_utils'
 # Searches for gems starting with the supplied argument.
 
 class Gem::Commands::ListCommand < Gem::Command
+
   include Gem::QueryUtils
 
   def initialize
@@ -38,4 +39,5 @@ To search for remote gems use the search command.
   def usage # :nodoc:
     "#{program_name} [REGEXP ...]"
   end
+
 end

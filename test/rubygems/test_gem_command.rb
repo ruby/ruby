@@ -3,10 +3,13 @@ require 'rubygems/test_case'
 require 'rubygems/command'
 
 class Gem::Command
+
   public :parser
+
 end
 
 class TestGemCommand < Gem::TestCase
+
   def setup
     super
 
@@ -385,4 +388,5 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
     assert_equal expected, @ui.error
   end
+
 end

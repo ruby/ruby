@@ -3,6 +3,7 @@ require 'rubygems/test_case'
 require 'rubygems/commands/mirror_command'
 
 class TestGemCommandsMirrorCommand < Gem::TestCase
+
   def setup
     super
 
@@ -16,4 +17,5 @@ class TestGemCommandsMirrorCommand < Gem::TestCase
 
     assert_match %r{Install the rubygems-mirror}i, @ui.error
   end
+
 end

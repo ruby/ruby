@@ -3,6 +3,7 @@ require 'rubygems/test_case'
 require 'rubygems/source'
 
 class TestGemSourceGit < Gem::TestCase
+
   def setup
     super
 
@@ -299,4 +300,5 @@ class TestGemSourceGit < Gem::TestCase
     assert_equal '291c4caac7feba8bb64c297987028acb3dde6cfe',
                  source.uri_hash
   end
+
 end

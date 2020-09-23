@@ -3,6 +3,7 @@ require 'rubygems/test_case'
 require 'rubygems/commands/yank_command'
 
 class TestGemCommandsYankCommand < Gem::TestCase
+
   def setup
     super
 
@@ -147,4 +148,5 @@ class TestGemCommandsYankCommand < Gem::TestCase
     assert_equal 'key', @fetcher.last_request['Authorization']
     assert_equal [yank_uri], @fetcher.paths
   end
+
 end

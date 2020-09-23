@@ -2,6 +2,7 @@
 require 'rubygems/test_case'
 
 class TestKernel < Gem::TestCase
+
   def setup
     super
 
@@ -136,4 +137,5 @@ class TestKernel < Gem::TestCase
       assert $:.any? {|p| %r{bundler-1/lib} =~ p }
     end
   end
+
 end

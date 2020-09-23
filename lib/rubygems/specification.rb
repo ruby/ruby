@@ -34,6 +34,7 @@ require 'rubygems/util/list'
 # items you may add to a specification.
 
 class Gem::Specification < Gem::BasicSpecification
+
   extend Gem::Deprecate
 
   # REFACTOR: Consider breaking out this version stuff into a separate
@@ -2662,4 +2663,5 @@ class Gem::Specification < Gem::BasicSpecification
   def raw_require_paths # :nodoc:
     @require_paths
   end
+
 end

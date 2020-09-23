@@ -3,6 +3,7 @@ require 'rubygems/test_case'
 require 'rubygems/source'
 
 class TestGemSourceSpecificFile < Gem::TestCase
+
   def setup
     super
 
@@ -72,4 +73,5 @@ class TestGemSourceSpecificFile < Gem::TestCase
     assert_equal(0, a1_source.<=>(a1_source), 'a1_source <=> a1_source')
     assert_equal(1, a2_source.<=>(a1_source), 'a2_source <=> a1_source')
   end
+
 end

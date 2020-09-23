@@ -5,6 +5,7 @@ require 'rubygems/security'
 require 'rubygems/commands/fetch_command'
 
 class TestGemCommandsFetchCommand < Gem::TestCase
+
   def setup
     super
 
@@ -121,4 +122,5 @@ class TestGemCommandsFetchCommand < Gem::TestCase
     assert_path_exists(File.join(@tempdir, a1.file_name),
                        "#{a1.full_name} not fetched")
   end
+
 end

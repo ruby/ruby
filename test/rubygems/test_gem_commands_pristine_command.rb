@@ -3,6 +3,7 @@ require 'rubygems/test_case'
 require 'rubygems/commands/pristine_command'
 
 class TestGemCommandsPristineCommand < Gem::TestCase
+
   def setup
     super
     common_installer_setup
@@ -655,4 +656,5 @@ class TestGemCommandsPristineCommand < Gem::TestCase
     assert @cmd.options[:extensions]
     assert @cmd.options[:extensions_set]
   end
+
 end

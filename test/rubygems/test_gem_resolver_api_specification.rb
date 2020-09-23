@@ -2,6 +2,7 @@
 require 'rubygems/test_case'
 
 class TestGemResolverAPISpecification < Gem::TestCase
+
   def test_initialize
     set = Gem::Resolver::APISet.new
     data = {
@@ -163,4 +164,5 @@ class TestGemResolverAPISpecification < Gem::TestCase
     assert_kind_of Gem::Specification, spec
     assert_equal 'j-1-java', spec.full_name
   end
+
 end

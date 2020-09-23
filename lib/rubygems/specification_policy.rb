@@ -1,6 +1,7 @@
 require 'rubygems/user_interaction'
 
 class Gem::SpecificationPolicy
+
   include Gem::UserInteraction
 
   VALID_NAME_PATTERN = /\A[a-zA-Z0-9\.\-\_]+\z/.freeze # :nodoc:
@@ -482,4 +483,5 @@ You have specified rake based extension, but rake is not added as dependency. It
   def help_text # :nodoc:
     "See https://guides.rubygems.org/specification-reference/ for help"
   end
+
 end

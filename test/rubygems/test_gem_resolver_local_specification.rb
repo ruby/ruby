@@ -3,6 +3,7 @@ require 'rubygems/test_case'
 require 'rubygems/available_set'
 
 class TestGemResolverLocalSpecification < Gem::TestCase
+
   def setup
     super
 
@@ -40,4 +41,5 @@ class TestGemResolverLocalSpecification < Gem::TestCase
 
     assert b_spec.installable_platform?
   end
+
 end

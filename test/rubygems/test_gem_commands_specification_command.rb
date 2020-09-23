@@ -3,6 +3,7 @@ require 'rubygems/test_case'
 require 'rubygems/commands/specification_command'
 
 class TestGemCommandsSpecificationCommand < Gem::TestCase
+
   def setup
     super
 
@@ -245,4 +246,5 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
     assert_match %r{s.name = "foo"}, @ui.output
     assert_equal '', @ui.error
   end
+
 end

@@ -11,7 +11,9 @@ if RUBY_VERSION >= "2.5"
     remove_method :warn
 
     class << self
+
       remove_method :warn
+
     end
 
     module_function define_method(:warn) {|*messages, **kw|

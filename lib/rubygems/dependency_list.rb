@@ -17,6 +17,7 @@ require 'rubygems/deprecate'
 # this class necessary anymore?  Especially #ok?, #why_not_ok?
 
 class Gem::DependencyList
+
   attr_reader :specs
 
   include Enumerable
@@ -239,4 +240,5 @@ class Gem::DependencyList
   def active_count(specs, ignored)
     specs.count {|spec| ignored[spec.full_name].nil? }
   end
+
 end

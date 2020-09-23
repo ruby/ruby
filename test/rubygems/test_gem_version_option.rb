@@ -4,6 +4,7 @@ require 'rubygems/command'
 require 'rubygems/version_option'
 
 class TestGemVersionOption < Gem::TestCase
+
   def setup
     super
 
@@ -161,4 +162,5 @@ class TestGemVersionOption < Gem::TestCase
 
     assert_equal expected, @cmd.options
   end
+
 end

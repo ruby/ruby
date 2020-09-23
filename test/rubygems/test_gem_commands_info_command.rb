@@ -3,6 +3,7 @@ require 'rubygems/test_case'
 require 'rubygems/commands/info_command'
 
 class TestGemCommandsInfoCommand < Gem::TestCase
+
   def setup
     super
 
@@ -40,4 +41,5 @@ class TestGemCommandsInfoCommand < Gem::TestCase
     assert_match %r{#{@gem.summary}\n}, @ui.output
     assert_match "", @ui.error
   end
+
 end

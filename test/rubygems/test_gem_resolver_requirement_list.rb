@@ -2,6 +2,7 @@
 require 'rubygems/test_case'
 
 class TestGemResolverRequirementList < Gem::TestCase
+
   def setup
     super
 
@@ -15,4 +16,5 @@ class TestGemResolverRequirementList < Gem::TestCase
 
     assert_equal [req], @list.each.to_a
   end
+
 end

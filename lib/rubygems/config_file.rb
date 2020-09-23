@@ -37,6 +37,7 @@ require 'rbconfig'
 # - per environment (gemrc files listed in the GEMRC environment variable)
 
 class Gem::ConfigFile
+
   include Gem::UserInteraction
 
   DEFAULT_BACKTRACE = false
@@ -496,4 +497,5 @@ if you believe they were disclosed to a third party.
       end
     end
   end
+
 end

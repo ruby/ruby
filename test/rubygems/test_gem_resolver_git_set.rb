@@ -2,6 +2,7 @@
 require 'rubygems/test_case'
 
 class TestGemResolverGitSet < Gem::TestCase
+
   def setup
     super
 
@@ -184,4 +185,5 @@ class TestGemResolverGitSet < Gem::TestCase
 
     assert_equal "#{@gemhome}2", spec.source.root_dir
   end
+
 end

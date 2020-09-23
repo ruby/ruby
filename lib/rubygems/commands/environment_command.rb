@@ -2,6 +2,7 @@
 require 'rubygems/command'
 
 class Gem::Commands::EnvironmentCommand < Gem::Command
+
   def initialize
     super 'environment', 'Display information about the RubyGems environment'
   end
@@ -171,4 +172,5 @@ lib/rubygems/defaults/operating_system.rb
 
     return nil
   end
+
 end

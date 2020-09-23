@@ -21,6 +21,7 @@ require 'rubygems/user_interaction'
 # file.  See Gem.pre_uninstall and Gem.post_uninstall for details.
 
 class Gem::Uninstaller
+
   include Gem::UserInteraction
 
   include Gem::InstallerUninstallerUtils
@@ -373,4 +374,5 @@ class Gem::Uninstaller
 
     raise e
   end
+
 end

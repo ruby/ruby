@@ -5,6 +5,7 @@
 # option.
 
 class Gem::Resolver::GitSpecification < Gem::Resolver::SpecSpecification
+
   def ==(other) # :nodoc:
     self.class === other and
       @set  == other.set and
@@ -53,4 +54,5 @@ class Gem::Resolver::GitSpecification < Gem::Resolver::SpecSpecification
       q.pp @source
     end
   end
+
 end

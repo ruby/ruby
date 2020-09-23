@@ -3,6 +3,7 @@ require 'rubygems/test_case'
 require 'rubygems/commands/push_command'
 
 class TestGemCommandsPushCommand < Gem::TestCase
+
   def setup
     super
 
@@ -409,4 +410,5 @@ class TestGemCommandsPushCommand < Gem::TestCase
   def singleton_gem_class
     class << Gem; self; end
   end
+
 end

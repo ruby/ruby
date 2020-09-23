@@ -5,6 +5,7 @@ require 'rubygems/version_option'
 require 'rubygems/package'
 
 class Gem::Commands::SpecificationCommand < Gem::Command
+
   include Gem::LocalRemoteOptions
   include Gem::VersionOption
 
@@ -142,4 +143,5 @@ Specific fields in the specification can be extracted in YAML format:
       say "\n"
     end
   end
+
 end

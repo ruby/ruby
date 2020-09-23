@@ -9,6 +9,7 @@
 # This method will eliminate nesting of composed sets.
 
 class Gem::Resolver::ComposedSet < Gem::Resolver::Set
+
   attr_reader :sets # :nodoc:
 
   ##
@@ -61,4 +62,5 @@ class Gem::Resolver::ComposedSet < Gem::Resolver::Set
   def prefetch(reqs)
     @sets.each {|s| s.prefetch(reqs) }
   end
+
 end
