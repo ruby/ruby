@@ -1567,7 +1567,7 @@ rb_str_resurrect(VALUE str)
 /*
  *  call-seq:
  *    String.new(string = '') -> new_string
- *    String.new(string = '', encoding: encoding _name) -> new_string
+ *    String.new(string = '', encoding: encoding) -> new_string
  *    String.new(string = '', capacity: size) -> new_string
  *
  *  Returns a new \String that is a copy of +string+.
