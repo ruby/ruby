@@ -28,7 +28,7 @@
 % RubyVM::TraceInstructions.to_a.each do |insn|
 <%= render 'trace_instruction', locals: { insn: insn } -%>
 % end
-% RubyVM::UJITExampleInstructions.to_a.each do |insn|
+% RubyVM::MicroJIT::ExampleInstructions.to_a.each do |insn|
 INSN_ENTRY(<%= insn.name %>)
 {
     START_OF_ORIGINAL_INSN(<%= insn.name %>);

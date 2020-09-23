@@ -1,0 +1,16 @@
+/* -*- C -*- */
+
+%# Copyright (c) 2020 Wu, Alan.  All rights reserved.
+%#
+%# This file is a part of  the programming language Ruby.  Permission is hereby
+%# granted, to either  redistribute and/or modify this file,  provided that the
+%# conditions mentioned  in the  file COPYING  are met.   Consult the  file for
+%# details.
+<%= render 'copyright' %>
+<%= render 'notice', locals: {
+    this_file: 'contains raw instruction bytes that helps MicroJIT generate code',
+    edit: __FILE__,
+} -%>
+
+static const uint8_t ujit_pre_call_bytes[] = { <%= RubyVM::MicroJIT.pre_call_bytes %> };
+static const uint8_t ujit_post_call_bytes[] = { <%= RubyVM::MicroJIT.post_call_bytes %> };
