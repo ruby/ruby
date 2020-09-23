@@ -4,7 +4,6 @@ require 'rubygems/dependency_list'
 require 'rubygems/uninstaller'
 
 class Gem::Commands::CleanupCommand < Gem::Command
-
   def initialize
     super 'cleanup',
           'Clean up old versions of installed gems',
@@ -181,5 +180,4 @@ If no gems are named all gems in GEM_HOME are cleaned.
     # Restore path Gem::Uninstaller may have changed
     Gem.use_paths @original_home, *@original_path
   end
-
 end

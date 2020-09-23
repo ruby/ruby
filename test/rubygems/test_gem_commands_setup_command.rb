@@ -4,7 +4,6 @@ require 'rubygems/test_case'
 require 'rubygems/commands/setup_command'
 
 class TestGemCommandsSetupCommand < Gem::TestCase
-
   bundler_gemspec = File.expand_path("../../../bundler/lib/bundler/version.rb", __FILE__)
   if File.exist?(bundler_gemspec)
     BUNDLER_VERS = File.read(bundler_gemspec).match(/VERSION = "(#{Gem::Version::VERSION_PATTERN})"/)[1]
@@ -418,5 +417,4 @@ class TestGemCommandsSetupCommand < Gem::TestCase
   def default_bundle_bin_path
     File.join @install_dir, 'bin', 'bundle'
   end
-
 end unless Gem.java_platform?

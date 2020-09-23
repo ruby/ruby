@@ -3,7 +3,6 @@ require 'rubygems/test_case'
 require "rubygems/text"
 
 class TestGemText < Gem::TestCase
-
   include Gem::Text
 
   def test_format_text
@@ -94,5 +93,4 @@ Without the wrapping, the text might not look good in the RSS feed.
   def test_clean_text
     assert_equal ".]2;nyan.", clean_text("\e]2;nyan\a")
   end
-
 end

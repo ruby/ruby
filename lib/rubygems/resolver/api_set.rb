@@ -4,7 +4,6 @@
 # Returns instances of APISpecification.
 
 class Gem::Resolver::APISet < Gem::Resolver::Set
-
   ##
   # The URI for the dependency API this APISet uses.
 
@@ -121,5 +120,4 @@ class Gem::Resolver::APISet < Gem::Resolver::Set
 
     @data[name]
   end
-
 end

@@ -4,7 +4,6 @@
 # with a spec that would be activated.
 
 class Gem::Resolver::Conflict
-
   ##
   # The specification that was activated prior to the conflict
 
@@ -151,5 +150,4 @@ class Gem::Resolver::Conflict
   def requester
     @failed_dep.requester
   end
-
 end

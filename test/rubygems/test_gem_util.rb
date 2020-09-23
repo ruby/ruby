@@ -3,7 +3,6 @@ require 'rubygems/test_case'
 require 'rubygems/util'
 
 class TestGemUtil < Gem::TestCase
-
   def test_class_popen
     skip "popen with a block does not behave well on jruby" if Gem.java_platform?
     assert_equal "0\n", Gem::Util.popen(*ruby_with_rubygems_in_load_path, '-e', 'p 0')
@@ -86,5 +85,4 @@ class TestGemUtil < Gem::TestCase
     path = "/home/skillet"
     assert_equal "/home/skillet", Gem::Util.correct_for_windows_path(path)
   end
-
 end

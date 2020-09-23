@@ -3,7 +3,6 @@ require 'rubygems/installer_test_case'
 require 'rubygems/uninstaller'
 
 class TestGemUninstaller < Gem::InstallerTestCase
-
   def setup
     super
     @installer = setup_base_installer
@@ -665,5 +664,4 @@ create_makefile '#{@spec.name}'
 
     refute File.exist?(plugin_path), 'last version uninstalled, but plugin still present'
   end
-
 end

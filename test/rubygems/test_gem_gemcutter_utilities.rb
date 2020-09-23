@@ -5,7 +5,6 @@ require 'rubygems/command'
 require 'rubygems/gemcutter_utilities'
 
 class TestGemGemcutterUtilities < Gem::TestCase
-
   def setup
     super
 
@@ -262,5 +261,4 @@ class TestGemGemcutterUtilities < Gem::TestCase
       @cmd.verify_api_key :missing
     end
   end
-
 end

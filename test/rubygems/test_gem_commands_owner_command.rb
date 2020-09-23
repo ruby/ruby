@@ -3,7 +3,6 @@ require 'rubygems/test_case'
 require 'rubygems/commands/owner_command'
 
 class TestGemCommandsOwnerCommand < Gem::TestCase
-
   def setup
     super
 
@@ -276,5 +275,4 @@ EOF
     assert_match 'Code: ', @otp_ui.output
     assert_equal '111111', @stub_fetcher.last_request['OTP']
   end
-
 end

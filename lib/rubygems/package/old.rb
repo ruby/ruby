@@ -12,7 +12,6 @@
 # Please pretend this doesn't exist.
 
 class Gem::Package::Old < Gem::Package
-
   undef_method :spec=
 
   ##
@@ -166,5 +165,4 @@ class Gem::Package::Old < Gem::Package
 
     true
   end
-
 end

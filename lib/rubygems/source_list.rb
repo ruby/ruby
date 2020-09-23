@@ -14,7 +14,6 @@
 # The most common way to get a SourceList is Gem.sources.
 
 class Gem::SourceList
-
   include Enumerable
 
   ##
@@ -148,5 +147,4 @@ class Gem::SourceList
       @sources.delete_if {|x| x.uri.to_s == source.to_s }
     end
   end
-
 end

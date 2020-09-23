@@ -83,7 +83,6 @@ end
 require "rubygems/command"
 
 class Gem::Command
-
   ##
   # Allows resetting the hash of specific args per command.  This method is
   # available when requiring 'rubygems/test_case'
@@ -91,7 +90,6 @@ class Gem::Command
   def self.specific_extra_args_hash=(value)
     @specific_extra_args_hash = value
   end
-
 end
 
 ##
@@ -101,7 +99,6 @@ end
 # your normal set of gems is not affected.
 
 class Gem::TestCase < Minitest::Test
-
   extend Gem::Deprecate
 
   attr_accessor :fetcher # :nodoc:
@@ -1270,7 +1267,6 @@ Also, a list:
   end
 
   class << self
-
     # :nodoc:
     ##
     # Return the join path, with escaping backticks, dollars, and
@@ -1286,7 +1282,6 @@ Also, a list:
         "\"#{path.gsub(/[`$"]/, '\\&')}\""
       end
     end
-
   end
 
   @@good_rake = "#{rubybin} #{escape_path(TEST_PATH, 'good_rake.rb')}"
@@ -1404,7 +1399,6 @@ Also, a list:
   # It is available by requiring Gem::TestCase.
 
   class StaticSet < Gem::Resolver::Set
-
     ##
     # A StaticSet ignores remote because it has a fixed set of gems.
 
@@ -1459,7 +1453,6 @@ Also, a list:
 
     def prefetch(reqs) # :nodoc:
     end
-
   end
 
   ##
@@ -1527,7 +1520,6 @@ Also, a list:
     PUBLIC_KEY  = nil
     PUBLIC_CERT = nil
   end if defined?(OpenSSL::SSL)
-
 end
 
 require 'rubygems/test_utilities'

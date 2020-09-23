@@ -10,7 +10,6 @@ require 'fileutils'
 # See `gem help uninstall`
 
 class Gem::Commands::UninstallCommand < Gem::Command
-
   include Gem::VersionOption
 
   def initialize
@@ -195,5 +194,4 @@ that is a dependency of an existing gem.  You can use the
   def uninstall(gem_name)
     Gem::Uninstaller.new(gem_name, options).uninstall
   end
-
 end

@@ -9,7 +9,6 @@ require "rubygems/deprecate"
 # together in RubyGems.
 
 class Gem::Requirement
-
   OPS = { #:nodoc:
     "="  =>  lambda {|v, r| v == r },
     "!=" =>  lambda {|v, r| v != r },
@@ -299,14 +298,11 @@ class Gem::Requirement
       end
     end
   end
-
 end
 
 class Gem::Version
-
   # This is needed for compatibility with older yaml
   # gemspecs.
 
   Requirement = Gem::Requirement # :nodoc:
-
 end

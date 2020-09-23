@@ -5,7 +5,6 @@ require 'rubygems/version_option'
 require 'rubygems/gemcutter_utilities'
 
 class Gem::Commands::YankCommand < Gem::Command
-
   include Gem::LocalRemoteOptions
   include Gem::VersionOption
   include Gem::GemcutterUtilities
@@ -97,5 +96,4 @@ data you will need to change them immediately and yank your gem.
   def get_platform_from_requirements(requirements)
     Gem.platforms[1].to_s if requirements.key? :added_platform
   end
-
 end

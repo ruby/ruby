@@ -4,7 +4,6 @@ require 'rubygems'
 require 'fileutils'
 
 class TestGemPathSupport < Gem::TestCase
-
   def setup
     super
 
@@ -140,5 +139,4 @@ class TestGemPathSupport < Gem::TestCase
     assert_equal dir, ps.home
     assert_equal [dir, not_existing], ps.path
   end
-
 end

@@ -13,7 +13,6 @@ module Gem::Security # :nodoc:
 end
 
 class Gem::Commands::UnpackCommand < Gem::Command
-
   include Gem::VersionOption
   include Gem::SecurityOption
 
@@ -173,5 +172,4 @@ command help for an example.
 
     path
   end
-
 end

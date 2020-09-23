@@ -4,7 +4,6 @@
 # Resolver specifications that are backed by a Gem::Specification.
 
 class Gem::Resolver::SpecSpecification < Gem::Resolver::Specification
-
   ##
   # A SpecSpecification is created for a +set+ for a Gem::Specification in
   # +spec+.  The +source+ is either where the +spec+ came from, or should be
@@ -52,5 +51,4 @@ class Gem::Resolver::SpecSpecification < Gem::Resolver::Specification
   def version
     spec.version
   end
-
 end

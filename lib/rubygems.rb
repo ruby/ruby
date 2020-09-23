@@ -1185,7 +1185,6 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # methods, and then we switch over to `class << self` here. Pick one or the
   # other.
   class << self
-
     ##
     # RubyGems distributors (like operating system package managers) can
     # disable RubyGems update by setting this to error message printed to
@@ -1308,7 +1307,6 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     def default_gem_load_paths
       @default_gem_load_paths ||= $LOAD_PATH[load_path_insert_index..-1]
     end
-
   end
 
   ##

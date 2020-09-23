@@ -5,7 +5,6 @@
 # It combines IndexSet and APISet
 
 class Gem::Resolver::BestSet < Gem::Resolver::ComposedSet
-
   ##
   # Creates a BestSet for the given +sources+ or Gem::sources if none are
   # specified.  +sources+ must be a Gem::SourceList.
@@ -74,5 +73,4 @@ class Gem::Resolver::BestSet < Gem::Resolver::ComposedSet
       index_set
     end
   end
-
 end

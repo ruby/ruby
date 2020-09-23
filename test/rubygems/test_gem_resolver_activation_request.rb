@@ -2,7 +2,6 @@
 require 'rubygems/test_case'
 
 class TestGemResolverActivationRequest < Gem::TestCase
-
   def setup
     super
 
@@ -40,5 +39,4 @@ class TestGemResolverActivationRequest < Gem::TestCase
 
     assert @req.installed?
   end
-
 end

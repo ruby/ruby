@@ -2,7 +2,6 @@
 require 'rubygems/test_case'
 
 class TestGemResolver < Gem::TestCase
-
   def setup
     super
 
@@ -789,5 +788,4 @@ class TestGemResolver < Gem::TestCase
     assert_match "No match for 'a (= 1)' on this platform. Found: c-p-1",
                  e.message
   end
-
 end

@@ -7,7 +7,6 @@ unless defined?(OpenSSL::SSL)
 end
 
 class TestGemSecurityPolicy < Gem::TestCase
-
   ALTERNATE_KEY    = load_key 'alternate'
   INVALID_KEY      = load_key 'invalid'
   CHILD_KEY        = load_key 'child'
@@ -533,5 +532,4 @@ class TestGemSecurityPolicy < Gem::TestCase
 
     return digests, signatures
   end
-
 end if defined?(OpenSSL::SSL)

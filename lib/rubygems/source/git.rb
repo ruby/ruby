@@ -11,7 +11,6 @@
 #   source.specs
 
 class Gem::Source::Git < Gem::Source
-
   ##
   # The name of the gem created by this git gem.
 
@@ -238,5 +237,4 @@ class Gem::Source::Git < Gem::Source
 
     Digest::SHA1.hexdigest normalized
   end
-
 end

@@ -4,7 +4,6 @@ require "rubygems/test_case"
 require "rubygems/validator"
 
 class TestGemValidator < Gem::TestCase
-
   def setup
     super
 
@@ -40,5 +39,4 @@ class TestGemValidator < Gem::TestCase
 
     assert_empty alien
   end
-
 end

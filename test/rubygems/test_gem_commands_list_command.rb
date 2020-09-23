@@ -3,7 +3,6 @@ require 'rubygems/test_case'
 require 'rubygems/commands/list_command'
 
 class TestGemCommandsListCommand < Gem::TestCase
-
   def setup
     super
 
@@ -30,5 +29,4 @@ class TestGemCommandsListCommand < Gem::TestCase
     assert_equal "true\n", @ui.output
     assert_equal '', @ui.error
   end
-
 end

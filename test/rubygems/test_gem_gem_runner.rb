@@ -2,7 +2,6 @@
 require 'rubygems/test_case'
 
 class TestGemGemRunner < Gem::TestCase
-
   def setup
     super
 
@@ -110,5 +109,4 @@ class TestGemGemRunner < Gem::TestCase
 
     assert_empty @ui.error
   end
-
 end

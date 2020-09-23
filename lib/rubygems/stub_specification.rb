@@ -5,7 +5,6 @@
 # information.
 
 class Gem::StubSpecification < Gem::BasicSpecification
-
   # :nodoc:
   PREFIX = "# stub: ".freeze
 
@@ -13,7 +12,6 @@ class Gem::StubSpecification < Gem::BasicSpecification
   OPEN_MODE = 'r:UTF-8:-'.freeze
 
   class StubLine # :nodoc: all
-
     attr_reader :name, :version, :platform, :require_paths, :extensions,
                 :full_name
 
@@ -56,7 +54,6 @@ class Gem::StubSpecification < Gem::BasicSpecification
         REQUIRE_PATHS[x] || x
       end
     end
-
   end
 
   def self.default_gemspec_stub(filename, base_dir, gems_dir)
@@ -212,5 +209,4 @@ class Gem::StubSpecification < Gem::BasicSpecification
   def stubbed?
     data.is_a? StubLine
   end
-
 end

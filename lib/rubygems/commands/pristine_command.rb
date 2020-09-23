@@ -5,7 +5,6 @@ require 'rubygems/installer'
 require 'rubygems/version_option'
 
 class Gem::Commands::PristineCommand < Gem::Command
-
   include Gem::VersionOption
 
   def initialize
@@ -188,5 +187,4 @@ extensions will be restored.
       say "Restored #{spec.full_name}"
     end
   end
-
 end

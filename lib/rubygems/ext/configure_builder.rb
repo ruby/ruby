@@ -6,7 +6,6 @@
 #++
 
 class Gem::Ext::ConfigureBuilder < Gem::Ext::Builder
-
   def self.build(extension, dest_path, results, args=[], lib_dir=nil)
     unless File.exist?('Makefile')
       cmd = "sh ./configure --prefix=#{dest_path}"
@@ -19,5 +18,4 @@ class Gem::Ext::ConfigureBuilder < Gem::Ext::Builder
 
     results
   end
-
 end

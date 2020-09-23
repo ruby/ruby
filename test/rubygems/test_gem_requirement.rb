@@ -3,7 +3,6 @@ require 'rubygems/test_case'
 require "rubygems/requirement"
 
 class TestGemRequirement < Gem::TestCase
-
   def test_concat
     r = req '>= 1'
 
@@ -427,5 +426,4 @@ class TestGemRequirement < Gem::TestCase
     refute req(requirement).satisfied_by?(v(version)),
       "#{requirement} is not satisfied by #{version}"
   end
-
 end

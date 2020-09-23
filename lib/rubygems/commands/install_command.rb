@@ -12,7 +12,6 @@ require 'rubygems/version_option'
 # See `gem help install`
 
 class Gem::Commands::InstallCommand < Gem::Command
-
   attr_reader :installed_specs # :nodoc:
 
   include Gem::VersionOption
@@ -270,5 +269,4 @@ You can use `i` command instead of `install`.
     gems = @installed_specs.length == 1 ? 'gem' : 'gems'
     say "#{@installed_specs.length} #{gems} installed"
   end
-
 end

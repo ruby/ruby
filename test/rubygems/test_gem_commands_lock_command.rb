@@ -3,7 +3,6 @@ require 'rubygems/test_case'
 require 'rubygems/commands/lock_command'
 
 class TestGemCommandsLockCommand < Gem::TestCase
-
   def setup
     super
 
@@ -64,5 +63,4 @@ gem 'd', '= 1'
 
     assert_equal 'Could not find gem c-1, try using the full name', e.message
   end
-
 end

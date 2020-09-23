@@ -2,7 +2,6 @@
 require 'rubygems/test_case'
 
 class TestGemResolverVendorSet < Gem::TestCase
-
   def setup
     super
 
@@ -79,5 +78,4 @@ class TestGemResolverVendorSet < Gem::TestCase
       @set.load_spec 'b', v(1), Gem::Platform::RUBY, nil
     end
   end
-
 end

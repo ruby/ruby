@@ -5,7 +5,6 @@ require "rubygems/version"
 require "minitest/benchmark"
 
 class TestGemVersion < Gem::TestCase
-
   class V < ::Gem::Version
   end
 
@@ -298,5 +297,4 @@ class TestGemVersion < Gem::TestCase
   def refute_version_equal(unexpected, actual)
     refute_equal v(unexpected), v(actual)
   end
-
 end
