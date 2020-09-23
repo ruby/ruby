@@ -142,6 +142,12 @@ class TestMemoryView < Test::Unit::TestCase
     end
   end
 
+  def test_rb_memory_view_parse_item_format_with_alignment_total_size_with_tail_padding
+    total_size, members, err = MemoryViewTestUtils.parse_item_format("|lc")
+    assert_nil(err)
+    assert_equal(2*INT32_ALIGNMENT, total_size)
+  end
+
   def test_rb_memory_view_parse_item_format_with_alignment_compound
     total_size, members, err = MemoryViewTestUtils.parse_item_format("|ccc2f3x2d4cq!<")
     assert_nil(err)

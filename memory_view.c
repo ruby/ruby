@@ -292,6 +292,7 @@ rb_memory_view_parse_item_format(const char *format,
     ssize_t total = 0;
     ssize_t len = 0;
     bool alignment = false;
+    ssize_t first_alignment_size = -1;
 
     const char *p = format;
     if (*p == '|') {  // alginment specifier
@@ -317,6 +318,9 @@ rb_memory_view_parse_item_format(const char *format,
             if (err) *err = q;
             return -1;
         }
+        if (first_alignment_size == -1) {
+            first_alignment_size = alignment_size;
+        }
 
         const ssize_t padding = alignment ? calculate_padding(total, alignment_size) : 0;
         total += padding + size * count;
@@ -324,6 +328,12 @@ rb_memory_view_parse_item_format(const char *format,
         if (*q != 'x') {
             ++len;
         }
+    }
+
+    // adjust total size with the alignment size of the first element
+    if (alignment && first_alignment_size > 0) {
+        const ssize_t padding = calculate_padding(total, first_alignment_size);
+        total += padding;
     }
 
     if (members && n_members) {
