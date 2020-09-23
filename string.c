@@ -3615,14 +3615,13 @@ rb_strseq_index(VALUE str, VALUE sub, long offset, int in_byte)
  *    'foo'.index(/oo/) # => 1
  *    'foo'.index(/ooo/) # => nil
  *
- *  \Integer argument +offset+, if given and non-negative, specifies the maximum starting position in the
- *   string to _end_ the search:
+ *  \Integer argument +offset+, if given, specifies the position in the
+ *  string to begin the search:
  *    'foo'.index('o', 1) # => 1
  *    'foo'.index('o', 2) # => 2
  *    'foo'.index('o', 3) # => nil
  *
- *  If +offset+ is a negative \Integer, the maximum starting position in the
- *  string to _end_ the search is the sum of the string's length and +offset+:
+ *  If +offset+ is negative, counts backward from the end of +self+:
  *    'foo'.index('o', -1) # => 2
  *    'foo'.index('o', -2) # => 1
  *    'foo'.index('o', -3) # => 1
@@ -3788,14 +3787,15 @@ rb_str_rindex(VALUE str, VALUE sub, long pos)
  *    'foo'.rindex(/oo/) # => 1
  *    'foo'.rindex(/ooo/) # => nil
  *
- *  \Integer argument +offset+, if given, specifies the position in the
- *  string to _end_ the search:
+ *  \Integer argument +offset+, if given and non-negative, specifies the maximum starting position in the
+ *   string to _end_ the search:
  *    'foo'.rindex('o', 0) # => nil
  *    'foo'.rindex('o', 1) # => 1
  *    'foo'.rindex('o', 2) # => 2
  *    'foo'.rindex('o', 3) # => 2
  *
- *  If +offset+ is negative, counts backward from the end of +self+:
+ *  If +offset+ is a negative \Integer, the maximum starting position in the
+ *  string to _end_ the search is the sum of the string's length and +offset+:
  *    'foo'.rindex('o', -1) # => 2
  *    'foo'.rindex('o', -2) # => 1
  *    'foo'.rindex('o', -3) # => nil
