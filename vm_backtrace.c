@@ -281,7 +281,9 @@ location_path(rb_backtrace_location_t *loc)
 }
 
 /*
- * Returns the file name of this frame.
+ * Returns the file name of this frame. This will generally be an absolute
+ * path, unless the frame is in the main script, in which case it will be the
+ * script location passed on the command line.
  *
  * For example, using +caller_locations.rb+ from Thread::Backtrace::Location
  *
@@ -315,7 +317,8 @@ location_realpath(rb_backtrace_location_t *loc)
 /*
  * Returns the full file path of this frame.
  *
- * Same as #path, but includes the absolute path.
+ * Same as #path, except that it will return absolute path
+ * even if the frame is in the main script.
  */
 static VALUE
 location_absolute_path_m(VALUE self)
