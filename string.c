@@ -11076,8 +11076,8 @@ sym_cmp(VALUE sym, VALUE other)
  * +nil+ is returned if the two symbols have incompatible encodings,
  * or if +other_symbol+ is not a symbol.
  *
- *   :foo.casecmp(2) # => nil
- *   "\u{e4 f6 fc}".encode("ISO-8859-1").to_sym.casecmp(:"\u{c4 d6 dc}") # => nil
+ *   :foo.casecmp(2)   #=> nil
+ *   "\u{e4 f6 fc}".encode("ISO-8859-1").to_sym.casecmp(:"\u{c4 d6 dc}")   #=> nil
  */
 
 static VALUE
