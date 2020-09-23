@@ -109,18 +109,8 @@ extern void *alloca();
 #define RB_REALLOC_N(var,type,n) \
     ((var) = RBIMPL_CAST((type *)ruby_xrealloc2((void *)(var), (n), sizeof(type))))
 
-/* I don't know why but __builtin_alloca_with_align's second argument
-   takes bits rather than bytes. */
-#if RBIMPL_HAS_BUILTIN(__builtin_alloca_with_align)
-# define ALLOCA_N(type, n)                              \
-    RBIMPL_CAST((type *)                                 \
-        __builtin_alloca_with_align(                    \
-            rbimpl_size_mul_or_raise(sizeof(type), (n)), \
-            RUBY_ALIGNOF(type) * CHAR_BIT))
-#else
-# define ALLOCA_N(type,n) \
+#define ALLOCA_N(type,n) \
     RBIMPL_CAST((type *)alloca(rbimpl_size_mul_or_raise(sizeof(type), (n))))
-#endif
 
 /* allocates _n_ bytes temporary buffer and stores VALUE including it
  * in _v_.  _n_ may be evaluated twice. */
