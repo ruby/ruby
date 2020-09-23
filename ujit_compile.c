@@ -9,9 +9,9 @@
 #include "ujit_asm.h"
 #include "ujit_utils.h"
 
-// TODO: give ujit_examples.h some more meaningful file name
+// TODO: give ujit_examples.inc some more meaningful file name
 // eg ujit_hook.h
-#include "ujit_examples.h"
+#include "ujit_examples.inc"
 
 // Code generation context
 typedef struct ctx_struct
