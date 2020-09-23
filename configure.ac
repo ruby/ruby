@@ -1460,26 +1460,44 @@ AS_IF([test "$rb_cv_va_args_macro" = yes], [
   AC_DEFINE(HAVE_VA_ARGS_MACRO)
 ])
 
-AC_CACHE_CHECK([for alignof() syntax], rb_cv_have_alignof,[
-rb_cv_have_alignof=no
-# Prefer alignof over _Alignof to allow C++ compiler to read ruby.h
-RUBY_WERROR_FLAG([
-for expr in \
-    "alignof" \
-    "_Alignof" \
-    "__alignof" \
-    "__alignof__" \
-;
-do
-    AC_TRY_COMPILE([
-    @%:@ifdef HAVE_STDALIGN_H
-    @%:@include <stdalign.h>
-    @%:@endif],[return (int)$expr(int);],
-        [rb_cv_have_alignof="$expr"; break], [])
-done
-])])
-AS_IF([test "$rb_cv_have_alignof" != no], [
-    AC_DEFINE_UNQUOTED(RUBY_ALIGNOF, $rb_cv_have_alignof)
+# We want C11's  `_Alignof`.  GCC (and alike) have  `__alignof__`, which behave
+# slightly differently  than the  C11's.  We cannot  use `__alignof__`  for our
+# purpose.   The problem  is, however,  that  old gcc  and old  clang had  both
+# implemented `_Alignof` as  a synonym of `__alignof__`.  They are  not what we
+# want.  We have to check sanity.
+#
+# See also: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=52023
+# See also: https://bugs.llvm.org/show_bug.cgi?id=26547
+AC_CACHE_CHECK([if _Alignof() works], rb_cv_have__alignof,[
+    rb_cv_have__alignof=no
+    RUBY_WERROR_FLAG([
+        AC_TRY_COMPILE([
+            @%:@ifdef HAVE_STDALIGN_H
+            @%:@include <stdalign.h>
+            @%:@endif
+            @%:@ifdef STDC_HEADERS
+            @%:@include <stddef.h>
+            @%:@endif
+            @%:@ifndef __GNUC__
+            @%:@define __extension__
+            @%:@endif
+        ], [
+            typedef struct conftest_tag {
+                char _;
+                double d;
+            } T;
+            static int conftest_ary@<:@
+                offsetof(T, d) == __extension__ _Alignof(double)
+                ? 1 : -1
+            @:>@;
+            return conftest_ary@<:@0@:>@;
+        ], [
+            rb_cv_have__alignof=yes
+        ])
+    ])
+])
+AS_IF([test "$rb_cv_have__alignof" != no], [
+    AC_DEFINE(HAVE__ALIGNOF)
 ])
 
 RUBY_FUNC_ATTRIBUTE(__const__, CONSTFUNC)
