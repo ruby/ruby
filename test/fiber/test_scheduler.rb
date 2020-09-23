@@ -10,7 +10,7 @@ class TestFiberScheduler < Test::Unit::TestCase
       end
     end
   end
-  
+
   def test_closed_at_thread_exit
     scheduler = Scheduler.new
 
