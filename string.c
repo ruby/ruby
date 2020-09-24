@@ -3851,25 +3851,25 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str =~ obj   -> integer or nil
+ *    string =~ regexp -> integer or nil
+ *    string =~ object -> integer or nil
  *
- *  Match---If <i>obj</i> is a Regexp, uses it as a pattern to match
- *  against the receiver, and returns the position the match starts,
- *  or +nil+ if there is no match. Otherwise, invokes <i>obj.=~</i>,
- *  passing the string as an argument.
- *  The default Object#=~ (deprecated) returns +nil+.
+ *  Returns the \Integer index of the first substring that matches
+ *  the given +regexp+, or +nil+ if no match found:
+ *    'foo' =~ /f/ # => 0
+ *    'foo' =~ /o/ # => 1
+ *    'foo' =~ /x/ # => nil
  *
- *     "cat o' 9 tails" =~ /\d/   #=> 7
- *     "cat o' 9 tails" =~ 9      #=> nil
+ *  If the given +object+ is not a \Regexp, returns the value
+ *  returned by <tt>object =~ self</tt>.
  *
- *  Note that <code>string =~ regexp</code> is not the same as
- *  <code>regexp =~ string</code>. Strings captured from named capture groups
- *  are assigned to local variables only in the second case.
- *
- *     "no. 9" =~ /(?<number>\d+)/
- *     number                        #=> nil (not assigned)
- *     /(?<number>\d+)/ =~ "no. 9"
- *     number                        #=> "9"
+ *  Note that <tt>string =~ regexp</tt> is different from <tt>regexp =~ string</tt>
+ *  (see {Regexp#=~}[https://ruby-doc.org/core-2.7.1/Regexp.html#method-i-3D-7E]):
+ *    number= nil
+ *    "no. 9" =~ /(?<number>\d+)/
+ *    number # => nil (not assigned)
+ *    /(?<number>\d+)/ =~ "no. 9"
+ *    number #=> "9"
  */
 
 static VALUE
@@ -3893,32 +3893,31 @@ static VALUE get_pat(VALUE);
 
 /*
  *  call-seq:
- *     str.match(pattern, pos=0)                   -> matchdata or nil
- *     str.match(pattern, pos=0) {|match| block }  -> obj
+ *    string.match(pattern, offset = 0) -> matchdata or nil
+ *    string.match(pattern, offset = 0) {|matchdata| ... } -> object
  *
- *  Converts <i>pattern</i> to a Regexp (if it isn't already one),
- *  then invokes its <code>match</code> method on the receiver.
- *  If the second parameter is present, it specifies the position
- *  in the string to begin the search.
+ *  Returns a \Matchdata object (or +nil+) based on +self+ and the given +pattern+.
  *
- *     'hello'.match('(.)\1')      #=> #<MatchData "ll" 1:"l">
- *     'hello'.match('(.)\1')[0]   #=> "ll"
- *     'hello'.match(/(.)\1/)[0]   #=> "ll"
- *     'hello'.match(/(.)\1/, 3)   #=> nil
- *     'hello'.match('xx')         #=> nil
+ *  - Computes +regexp+ by converting +pattern+ (if not already a \Regexp).
+ *      regexp = Regexp.new(pattern)
+ *  - Computes +matchdata+, which will be either a \MatchData object or +nil+
+ *    (see Regexp#match):
+ *      matchdata = <tt>regexp.match(self)
  *
- *  If a block is given, invokes the block with MatchData if match succeeds,
- *  so that you can write
+ *  With no block given, returns the computed +matchdata+:
+ *    'foo'.match('f') # => #<MatchData "f">
+ *    'foo'.match('o') # => #<MatchData "o">
+ *    'foo'.match('x') # => nil
  *
- *     str.match(pat) {|m| block }
+ *  If \Integer argument +offset+ is given, the search begins at index +offset+:
+ *    'foo'.match('f', 1) # => nil
+ *    'foo'.match('o', 1) # => #<MatchData "o">
  *
- *  instead of
- *
- *     if m = str.match(pat)
- *       # ...
- *     end
- *
- *  The return value in this case is the value from block execution.
+ *  With a block given, calls the block with the computed +matchdata+
+ *  and returns the block's return value:
+ *    'foo'.match(/o/) {|matchdata| matchdata } # => #<MatchData "o">
+ *    'foo'.match(/x/) {|matchdata| matchdata } # => nil
+ *    'foo'.match(/f/, 1) {|matchdata| matchdata } # => nil
  */
 
 static VALUE
