@@ -425,18 +425,6 @@ GET /
     assert_equal l, msg.size
   end
 
-  def test_empty_post
-    msg = <<-_end_of_message_
-      POST /path?foo=x;foo=y;foo=z;bar=1 HTTP/1.1
-      Host: test.ruby-lang.org:8080
-      Content-Type: application/x-www-form-urlencoded
-
-    _end_of_message_
-    req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
-    req.parse(StringIO.new(msg.gsub(/^ {6}/, "")))
-    req.body
-  end
-
   def test_bad_messages
     param = "foo=1;foo=2;foo=3;bar=x"
     msg = <<-_end_of_message_

@@ -522,7 +522,7 @@ module WEBrick
         if @remaining_size > 0 && @socket.eof?
           raise HTTPStatus::BadRequest, "invalid body size."
         end
-      elsif BODY_CONTAINABLE_METHODS.member?(@request_method) && !@socket.eof
+      elsif BODY_CONTAINABLE_METHODS.member?(@request_method)
         raise HTTPStatus::LengthRequired
       end
       return @body
