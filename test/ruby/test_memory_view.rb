@@ -217,4 +217,26 @@ class TestMemoryView < Test::Unit::TestCase
     assert_equal([8, 16, 48],
                  column_major_strides)
   end
+
+  def test_rb_memory_view_get_item_pointer
+    buf = [ 1, 2, 3, 4,
+            5, 6, 7, 8,
+            9, 10, 11, 12 ].pack("l!*")
+    shape = [3, 4]
+    mv = MemoryViewTestUtils::MultiDimensionalView.new(buf, shape, nil)
+    assert_equal(1, mv[[0, 0]])
+    assert_equal(4, mv[[0, 3]])
+    assert_equal(6, mv[[1, 1]])
+    assert_equal(10, mv[[2, 1]])
+
+    buf = [ 1, 2,  3,  4,  5,  6,  7,  8,
+            9, 10, 11, 12, 13, 14, 15, 16 ].pack("l!*")
+    shape = [2, 8]
+    strides = [4*sizeof(:long)*2, sizeof(:long)*2]
+    mv = MemoryViewTestUtils::MultiDimensionalView.new(buf, shape, strides)
+    assert_equal(1, mv[[0, 0]])
+    assert_equal(5, mv[[0, 2]])
+    assert_equal(9, mv[[1, 0]])
+    assert_equal(15, mv[[1, 3]])
+  end
 end

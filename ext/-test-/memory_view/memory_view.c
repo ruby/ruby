@@ -214,6 +214,122 @@ expstr_initialize(VALUE obj, VALUE s)
     return Qnil;
 }
 
+static int
+mdview_get_memory_view(VALUE obj, rb_memory_view_t *view, int flags)
+{
+    VALUE buf_v = rb_ivar_get(obj, id_str);
+    VALUE shape_v = rb_ivar_get(obj, SYM2ID(sym_shape));
+    VALUE strides_v = rb_ivar_get(obj, SYM2ID(sym_strides));
+
+    ssize_t i, ndim = RARRAY_LEN(shape_v);
+    ssize_t *shape = ALLOC_N(ssize_t, ndim);
+    ssize_t *strides = NULL;
+    if (!NIL_P(strides_v)) {
+        if (RARRAY_LEN(strides_v) != ndim) {
+            rb_raise(rb_eArgError, "strides has an invalid dimension");
+        }
+
+        strides = ALLOC_N(ssize_t, ndim);
+        for (i = 0; i < ndim; ++i) {
+            shape[i] = NUM2SSIZET(RARRAY_AREF(shape_v, i));
+            strides[i] = NUM2SSIZET(RARRAY_AREF(strides_v, i));
+        }
+    }
+    else {
+        for (i = 0; i < ndim; ++i) {
+            shape[i] = NUM2SSIZET(RARRAY_AREF(shape_v, i));
+        }
+    }
+
+    rb_memory_view_init_as_byte_array(view, obj, RSTRING_PTR(buf_v), RSTRING_LEN(buf_v), true);
+    view->format = "l";
+    view->item_size = sizeof(long);
+    view->ndim = ndim;
+    view->shape = shape;
+    view->strides = strides;
+
+    VALUE count = rb_hash_lookup2(exported_objects, obj, INT2FIX(0));
+    count = rb_funcall(count, '+', 1, INT2FIX(1));
+    rb_hash_aset(exported_objects, obj, count);
+
+    return 1;
+}
+
+static int
+mdview_release_memory_view(VALUE obj, rb_memory_view_t *view)
+{
+    VALUE count = rb_hash_lookup2(exported_objects, obj, INT2FIX(0));
+    if (INT2FIX(1) == count) {
+        rb_hash_delete(exported_objects, obj);
+    }
+    else if (INT2FIX(0) == count) {
+        rb_raise(rb_eRuntimeError, "Duplicated releasing of a memory view has been occurred for %"PRIsVALUE, obj);
+    }
+    else {
+        count = rb_funcall(count, '-', 1, INT2FIX(1));
+        rb_hash_aset(exported_objects, obj, count);
+    }
+
+    return 1;
+}
+
+static int
+mdview_memory_view_available_p(VALUE obj)
+{
+    return true;
+}
+
+static const rb_memory_view_entry_t mdview_memory_view_entry = {
+    mdview_get_memory_view,
+    mdview_release_memory_view,
+    mdview_memory_view_available_p
+};
+
+static VALUE
+mdview_initialize(VALUE obj, VALUE buf, VALUE shape, VALUE strides)
+{
+    Check_Type(buf, T_STRING);
+    Check_Type(shape, T_ARRAY);
+    if (!NIL_P(strides)) Check_Type(strides, T_ARRAY);
+
+    rb_ivar_set(obj, id_str, buf);
+    rb_ivar_set(obj, SYM2ID(sym_shape), shape);
+    rb_ivar_set(obj, SYM2ID(sym_strides), strides);
+    return Qnil;
+}
+
+static VALUE
+mdview_aref(VALUE obj, VALUE indices_v)
+{
+    Check_Type(indices_v, T_ARRAY);
+
+    rb_memory_view_t view;
+    if (!rb_memory_view_get(obj, &view, 0)) {
+        rb_raise(rb_eRuntimeError, "rb_memory_view_get: failed");
+    }
+
+    if (RARRAY_LEN(indices_v) != view.ndim) {
+        rb_raise(rb_eKeyError, "Indices has an invalid dimension");
+    }
+
+    VALUE buf_indices;
+    ssize_t *indices = ALLOCV_N(ssize_t, buf_indices, view.ndim);
+
+    ssize_t i;
+    for (i = 0; i < view.ndim; ++i) {
+        indices[i] = NUM2SSIZET(RARRAY_AREF(indices_v, i));
+    }
+
+    char *ptr = rb_memory_view_get_item_pointer(&view, indices);
+    ALLOCV_END(buf_indices);
+
+    long x = *(long *)ptr;
+    VALUE result = LONG2FIX(x);
+    rb_memory_view_release(&view);
+
+    return result;
+}
+
 void
 Init_memory_view(void)
 {
@@ -227,10 +343,13 @@ Init_memory_view(void)
     rb_define_module_function(mMemoryViewTestUtils, "fill_contiguous_strides", memory_view_fill_contiguous_strides, 4);
 
     VALUE cExportableString = rb_define_class_under(mMemoryViewTestUtils, "ExportableString", rb_cObject);
-
     rb_define_method(cExportableString, "initialize", expstr_initialize, 1);
-
     rb_memory_view_register(cExportableString, &exportable_string_memory_view_entry);
+
+    VALUE cMDView = rb_define_class_under(mMemoryViewTestUtils, "MultiDimensionalView", rb_cObject);
+    rb_define_method(cMDView, "initialize", mdview_initialize, 3);
+    rb_define_method(cMDView, "[]", mdview_aref, 1);
+    rb_memory_view_register(cMDView, &mdview_memory_view_entry);
 
     id_str = rb_intern("__str__");
     sym_format = ID2SYM(rb_intern("format"));

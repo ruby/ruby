@@ -407,7 +407,8 @@ rb_memory_view_get_item_pointer(rb_memory_view_t *view, const ssize_t *indices)
     uint8_t *ptr = view->data;
 
     if (view->ndim == 1) {
-        return ptr + indices[0] * view->item_size;
+        ssize_t stride = view->strides != NULL ? view->strides[0] : view->item_size;
+        return ptr + indices[0] * stride;
     }
 
     assert(view->shape != NULL);
@@ -415,8 +416,13 @@ rb_memory_view_get_item_pointer(rb_memory_view_t *view, const ssize_t *indices)
     int i;
     if (view->strides == NULL) {
         // row-major contiguous array
+        ssize_t stride = view->item_size;
         for (i = 0; i < view->ndim; ++i) {
-            ptr += indices[i] * view->shape[i] * view->item_size;
+            stride *= view->shape[i];
+        }
+        for (i = 0; i < view->ndim; ++i) {
+            stride /= view->shape[i];
+            ptr += indices[i] * stride;
         }
     }
     else if (view->sub_offsets == NULL) {
@@ -439,7 +445,8 @@ rb_memory_view_get_item_pointer(rb_memory_view_t *view, const ssize_t *indices)
 }
 
 static const rb_memory_view_entry_t *
-lookup_memory_view_entry(VALUE klass) {
+lookup_memory_view_entry(VALUE klass)
+{
     VALUE entry_obj = rb_ivar_get(klass, id_memory_view);
     while (NIL_P(entry_obj)) {
         klass = rb_class_get_superclass(klass);
