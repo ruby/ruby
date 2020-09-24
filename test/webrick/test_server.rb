@@ -162,15 +162,26 @@ class TestWEBrickServer < Test::Unit::TestCase
   end
 
   def test_shutdown_pipe
-    pipe = IO.pipe
-    server = WEBrick::GenericServer.new(
-      :ShutdownPipe => pipe,
-      :BindAddress => '0.0.0.0',
-      :Port => 0,
-      :Logger => WEBrick::Log.new([], WEBrick::BasicLog::WARN))
-    server_thread = Thread.start { server.start }
-    pipe.last.puts('')
-    assert_join_threads([server_thread])
+    loop_count = 0
+    server_threads = []
+    loop do
+      loop_count += 1
+      break if loop_count == 11
+
+      pipe = IO.pipe
+      server = WEBrick::GenericServer.new(
+        :ShutdownPipe => pipe,
+        :BindAddress => '0.0.0.0',
+        :Port => 0,
+        :Logger => WEBrick::Log.new([], WEBrick::BasicLog::WARN))
+      server_threads << Thread.start { server.start }
+      sleep 0.1 until server.status == :Running || !server_threads.last.status
+      if server_threads.last.status
+        pipe.last.puts('')
+        break
+      end
+    end
+    assert_join_threads(server_threads)
   end
 
   def test_port_numbers
