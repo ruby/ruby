@@ -47,6 +47,7 @@ struct rb_ractor_struct {
 
     bool incoming_port_closed;
     bool outgoing_port_closed;
+    bool yield_atexit;
 
     struct rb_ractor_waiting_list taking_ractors;
 

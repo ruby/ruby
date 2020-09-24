@@ -1138,6 +1138,7 @@ ractor_close_incoming(rb_execution_context_t *ec, rb_ractor_t *r)
             r->incoming_port_closed = true;
             if (ractor_wakeup(r, wait_recving, wakeup_by_close)) {
                 VM_ASSERT(r->incoming_queue.cnt == 0);
+                RUBY_DEBUG_LOG("cancel receiving", 0);
             }
         }
         else {
@@ -1149,15 +1150,15 @@ ractor_close_incoming(rb_execution_context_t *ec, rb_ractor_t *r)
 }
 
 static VALUE
-ractor_close_outgoing(rb_execution_context_t *ec, rb_ractor_t *cr)
+ractor_close_outgoing(rb_execution_context_t *ec, rb_ractor_t *r)
 {
     VALUE prev;
 
-    RACTOR_LOCK(cr);
+    RACTOR_LOCK(r);
     {
-        if (!cr->outgoing_port_closed) {
+        if (!r->outgoing_port_closed) {
             prev = Qfalse;
-            cr->outgoing_port_closed = true;
+            r->outgoing_port_closed = true;
         }
         else {
             prev = Qtrue;
@@ -1165,13 +1166,21 @@ ractor_close_outgoing(rb_execution_context_t *ec, rb_ractor_t *cr)
 
         // wakeup all taking ractors
         rb_ractor_t *taking_ractor;
-        while ((taking_ractor = ractor_waiting_list_shift(cr, &cr->taking_ractors)) != NULL) {
+        bp();
+        while ((taking_ractor = ractor_waiting_list_shift(r, &r->taking_ractors)) != NULL) {
+            rp(taking_ractor->self);
             RACTOR_LOCK(taking_ractor);
             ractor_wakeup(taking_ractor, wait_taking, wakeup_by_close);
             RACTOR_UNLOCK(taking_ractor);
         }
+
+        // raising yielding Ractor
+        if (!r->yield_atexit &&
+            ractor_wakeup(r, wait_yielding, wakeup_by_close)) {
+            RUBY_DEBUG_LOG("cancel yielding", 0);
+        }
     }
-    RACTOR_UNLOCK(cr);
+    RACTOR_UNLOCK(r);
     return prev;
 }
 
@@ -1362,7 +1371,7 @@ ractor_create(rb_execution_context_t *ec, VALUE self, VALUE loc, VALUE name, VAL
 }
 
 static void
-ractor_atexit_yield(rb_execution_context_t *ec, rb_ractor_t *cr, VALUE v, bool exc)
+ractor_yield_atexit(rb_execution_context_t *ec, rb_ractor_t *cr, VALUE v, bool exc)
 {
     ASSERT_ractor_unlocking(cr);
 
@@ -1382,6 +1391,8 @@ ractor_atexit_yield(rb_execution_context_t *ec, rb_ractor_t *cr, VALUE v, bool e
 
                 VM_ASSERT(cr->wait.status == wait_none);
                 cr->wait.status = wait_yielding;
+                VM_ASSERT(cr->yield_atexit == false);
+                cr->yield_atexit = true;
             }
             else {
                 retry = true; // another ractor is waiting for the yield.
@@ -1413,14 +1424,14 @@ void
 rb_ractor_atexit(rb_execution_context_t *ec, VALUE result)
 {
     rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
-    ractor_atexit_yield(ec, cr, result, false);
+    ractor_yield_atexit(ec, cr, result, false);
 }
 
 void
 rb_ractor_atexit_exception(rb_execution_context_t *ec)
 {
     rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
-    ractor_atexit_yield(ec, cr, ec->errinfo, true);
+    ractor_yield_atexit(ec, cr, ec->errinfo, true);
 }
 
 void
