@@ -1743,7 +1743,7 @@ Init_Ractor(void)
     rb_eRactorError       = rb_define_class_under(rb_cRactor, "Error", rb_eRuntimeError);
     rb_eRactorRemoteError = rb_define_class_under(rb_cRactor, "RemoteError", rb_eRactorError);
     rb_eRactorMovedError  = rb_define_class_under(rb_cRactor, "MovedError",  rb_eRactorError);
-    rb_eRactorClosedError = rb_define_class_under(rb_cRactor, "ClosedError", rb_eStopIteration);
+    rb_eRactorClosedError = rb_define_class_under(rb_cRactor, "ClosedError", rb_eRactorError);
 
     rb_cRactorMovedObject = rb_define_class_under(rb_cRactor, "MovedObject", rb_cBasicObject);
     rb_undef_alloc_func(rb_cRactorMovedObject);
