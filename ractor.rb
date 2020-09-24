@@ -89,9 +89,11 @@ class Ractor
   end
 
   private def recv
-    __builtin_cexpr! %q{
-      // TODO: check current actor
-      ractor_recv(ec, RACTOR_PTR(self))
+    __builtin_cstmt! %q{
+      if (rb_ec_ractor_ptr(ec)->self != self) {
+        rb_raise(rb_eNoMethodError, "private method `recv' called");
+      }
+      return ractor_recv(ec, RACTOR_PTR(self));
     }
   end
 

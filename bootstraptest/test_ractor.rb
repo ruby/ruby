@@ -99,6 +99,27 @@ assert_equal 'ok', %q{
   r.take
 }
 
+# Ractor#recv can be called directly in ractor block
+assert_equal 'ok', %q{
+  r = Ractor.new do
+    msg = recv
+  end
+  r.send 'ok'
+  r.take
+}
+
+# Ractor#recv can't be called from other ractor
+assert_equal "private method `recv' called", %q{
+  r = Ractor.new do
+    msg = recv
+  end
+  begin
+    r.__send__(:recv)
+  rescue NoMethodError => e
+    e.message
+  end
+}
+
 ###
 ###
 # Ractor still has several memory corruption so skip huge number of tests
@@ -185,10 +206,7 @@ assert_equal '[0, 1, 2, "end"]', %q{
 # Ractor#select should raise ClosedError if requested ractor is actively closed
 assert_equal '[]', %q{
   r1 = Ractor.new do
-    3.times do |index|
-      Ractor.yield index
-    end
-    'end'
+    Ractor.yield Ractor.recv
   end
   r1.close
   r2 = Ractor.new { Ractor.yield Ractor.recv }
