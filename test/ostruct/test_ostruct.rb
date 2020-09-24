@@ -184,12 +184,15 @@ class TC_OpenStruct < Test::Unit::TestCase
   end
 
   def test_does_not_redefine
+    $VERBOSE, verbose_bak = nil, $VERBOSE
     os = OpenStruct.new(foo: 42)
     def os.foo
       43
     end
     os.foo = 44
     assert_equal(43, os.foo)
+  ensure
+    $VERBOSE = verbose_bak
   end
 
   def test_allocate_subclass
