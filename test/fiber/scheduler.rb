@@ -24,6 +24,8 @@ class Scheduler
     @lock = Mutex.new
     @blocking = 0
     @ready = []
+
+    @urgent = nil
   end
 
   attr :readable
