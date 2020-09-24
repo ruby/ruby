@@ -26,14 +26,9 @@
 # include <stddef.h>
 #endif
 
-#include "ruby/internal/attr/artificial.h"
-#include "ruby/internal/attr/const.h"
-#include "ruby/internal/attr/constexpr.h"
-#include "ruby/internal/attr/forceinline.h"
 #include "ruby/internal/compiler_is.h"
 #include "ruby/internal/has/attribute.h"
 #include "ruby/internal/has/declspec_attribute.h"
-#include "ruby/internal/has/extension.h"
 #include "ruby/internal/has/feature.h"
 
 /**
@@ -95,24 +90,21 @@
 #elif defined(__cplusplus)
 # /* C++11 `alignof()` can be buggy. */
 # /* see: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=69560 */
-# /* But don't worry, we can use templates and `constexpr`. */
-# define RBIMPL_ALIGNOF(T) ruby::rbimpl_alignof<T>()
+# /* But don't worry, we can use templates. */
+# define RBIMPL_ALIGNOF(T) (static_cast<size_t>(ruby::rbimpl_alignof<T>::value))
 
 namespace ruby {
 template<typename T>
-RBIMPL_ATTR_CONSTEXPR(CXX11)
-RBIMPL_ATTR_ARTIFICIAL()
-RBIMPL_ATTR_FORCEINLINE()
-RBIMPL_ATTR_CONST()
-static size_t
-rbimpl_alignof()
-{
+struct rbimpl_alignof {
     typedef struct {
         char _;
         T t;
     } type;
-    return offsetof(type, t);
-}
+
+    enum {
+        value = offsetof(type, t)
+    };
+};
 }
 
 #elif RBIMPL_COMPILER_IS(MSVC)
