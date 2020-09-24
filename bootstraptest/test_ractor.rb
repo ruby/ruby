@@ -160,6 +160,51 @@ assert_equal 'true', %q{
   }.all?('ok')
 }
 
+# Ractor#select should raise ClosedError if requested ractor finished is terminated
+assert_equal '[0, 1, 2, "end"]', %q{
+  r1 = Ractor.new do
+    3.times do |index|
+      Ractor.yield index
+    end
+    'end'
+  end
+  r2 = Ractor.new { Ractor.yield Ractor.recv }
+
+  result = []
+  begin
+    loop do
+      _r, message = Ractor.select(r1, r2)
+      result << message
+    end
+    'Not reachable' # This line is not supposed to be reached
+  rescue Ractor::ClosedError => e
+    result.inspect
+  end
+}
+
+# Ractor#select should raise ClosedError if requested ractor is actively closed
+assert_equal '[]', %q{
+  r1 = Ractor.new do
+    3.times do |index|
+      Ractor.yield index
+    end
+    'end'
+  end
+  r1.close
+  r2 = Ractor.new { Ractor.yield Ractor.recv }
+
+  result = []
+  begin
+    loop do
+      _r, message = Ractor.select(r1, r2)
+      result << message
+    end
+    'Not reachable' # This line is not supposed to be reached
+  rescue Ractor::ClosedError => e
+    result.inspect
+  end
+}
+
 # Outgoing port of a ractor will be closed when the Ractor is terminated.
 assert_equal 'ok', %q{
   r = Ractor.new do
