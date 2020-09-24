@@ -460,6 +460,7 @@ ractor_basket_accept(struct rb_ractor_basket *b)
         break;
       case basket_type_copy_marshal:
         v = rb_marshal_load(b->v);
+        RB_GC_GUARD(b->v);
         break;
       case basket_type_exception:
         {
