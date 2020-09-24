@@ -257,6 +257,7 @@ assert_equal 'ok', %q{
     Ractor.recv
   end
 
+  sleep 0.01 # wait for Ractor.yield in r
   r.close_outgoing
   begin
     r.take
