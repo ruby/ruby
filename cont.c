@@ -940,9 +940,7 @@ cont_free(void *ptr)
     else {
         rb_fiber_t *fiber = (rb_fiber_t*)cont;
         coroutine_destroy(&fiber->context);
-        if (!fiber_is_root_p(fiber)) {
-            fiber_stack_release(fiber);
-        }
+        fiber_stack_release(fiber);
     }
 
     RUBY_FREE_UNLESS_NULL(cont->saved_vm_stack.ptr);
