@@ -86,6 +86,7 @@ void run_tests()
 
     // and
     cb_set_pos(cb, 0); and(cb, EBP, R12D); check_bytes(cb, "4421E5");
+    cb_set_pos(cb, 0); and(cb, mem_opnd(64, RAX, 0), imm_opnd(0x08)); check_bytes(cb, "48832008");
 
     // call
     {

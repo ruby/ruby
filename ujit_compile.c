@@ -13,6 +13,9 @@
 // eg ujit_hook.h
 #include "ujit_examples.inc"
 
+// Hash table of encoded instructions
+extern st_table *rb_encoded_insn_data;
+
 // Code generation context
 typedef struct ctx_struct
 {
@@ -24,7 +27,7 @@ typedef struct ctx_struct
 
 } ctx_t;
 
-// Code generation function
+// MicroJIT code generation function signature
 typedef void (*codegen_fn)(codeblock_t* cb, ctx_t* ctx);
 
 // Map from YARV opcodes to code generation functions
@@ -34,9 +37,7 @@ static st_table *gen_fns;
 static codeblock_t block;
 static codeblock_t* cb = NULL;
 
-// Hash table of encoded instructions
-extern st_table *rb_encoded_insn_data;
-
+// Initialize MicroJIT. Defined later in this file.
 static void ujit_init();
 
 // Ruby instruction entry
@@ -312,7 +313,7 @@ void gen_putself(codeblock_t* cb, ctx_t* ctx)
 
 void gen_getlocal_wc0(codeblock_t* cb, ctx_t* ctx)
 {
-    // Load block pointer from CFP
+    // Load environment pointer EP from CFP
     mov(cb, RDX, mem_opnd(64, RDI, 32));
 
     // Compute the offset from BP to the local
@@ -325,6 +326,55 @@ void gen_getlocal_wc0(codeblock_t* cb, ctx_t* ctx)
     // Write the local at SP
     x86opnd_t stack_top = ctx_stack_push(ctx, 1);
     mov(cb, stack_top, RCX);
+}
+
+void gen_setlocal_wc0(codeblock_t* cb, ctx_t* ctx)
+{
+    //vm_env_write(vm_get_ep(GET_EP(), level), -(int)idx, val);
+
+    /*
+    vm_env_write(const VALUE *ep, int index, VALUE v)
+    {
+        VALUE flags = ep[VM_ENV_DATA_INDEX_FLAGS];
+        if (LIKELY((flags & VM_ENV_FLAG_WB_REQUIRED) == 0)) {
+    	VM_STACK_ENV_WRITE(ep, index, v);
+        }
+        else {
+    	vm_env_write_slowpath(ep, index, v);
+        }
+    }
+    */
+
+    // Load environment pointer EP from CFP
+    mov(cb, RDX, mem_opnd(64, RDI, 32));
+
+    // We could and the flags directly from the mem operand?
+    x86opnd_t flags_opnd = mem_opnd(64, RAX, 8 * VM_ENV_DATA_INDEX_FLAGS);
+
+    // flags & VM_ENV_FLAG_WB_REQUIRED
+    and(cb, flags_opnd, imm_opnd(VM_ENV_FLAG_WB_REQUIRED));
+
+
+    // TODO: you need a label_idx to jump to here
+    // if (flags & VM_ENV_FLAG_WB_REQUIRED) != 0
+    //jnz(cb)
+
+
+
+
+
+
+
+    // Get value to write from the stack
+    x86opnd_t stack_top = ctx_stack_pop(ctx, 1);
+    mov(cb, RCX, stack_top);
+
+    // Compute the offset from BP to the local
+    int32_t local_idx = (int32_t)ctx_get_arg(ctx, 0);
+    const int32_t offs = -8 * local_idx;
+
+    // Store the local to the block
+    mov(cb, mem_opnd(64, RDX, offs), RCX);
 }
 
 static void ujit_init()
@@ -346,4 +396,5 @@ static void ujit_init()
     st_insert(gen_fns, (st_data_t)BIN(putobject_INT2FIX_1_), (st_data_t)&gen_putobject_int2fix);
     st_insert(gen_fns, (st_data_t)BIN(putself), (st_data_t)&gen_putself);
     st_insert(gen_fns, (st_data_t)BIN(getlocal_WC_0), (st_data_t)&gen_getlocal_wc0);
+    //st_insert(gen_fns, (st_data_t)BIN(setlocal_WC_0), (st_data_t)&gen_setlocal_wc0);
 }
