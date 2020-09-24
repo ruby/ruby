@@ -204,22 +204,20 @@ assert_equal '[0, 1, 2, "end"]', %q{
 }
 
 # Ractor#select should raise ClosedError if requested ractor is actively closed
-assert_equal '[]', %q{
+assert_equal 'ok', %q{
   r1 = Ractor.new do
     Ractor.yield Ractor.recv
   end
   r1.close
   r2 = Ractor.new { Ractor.yield Ractor.recv }
 
-  result = []
   begin
     loop do
       _r, message = Ractor.select(r1, r2)
-      result << message
     end
     'Not reachable' # This line is not supposed to be reached
   rescue Ractor::ClosedError => e
-    result.inspect
+    'ok'
   end
 }
 
