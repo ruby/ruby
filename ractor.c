@@ -927,7 +927,16 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, int alen, VALUE yield
         ractor_basket_setup(ec, &cr->wait.yielded_basket, yielded_value, move, false);
     }
 
-    // TODO: shuffle actions
+    // Shuffle actions
+    i = alen - 1;
+    while (i > 0) {
+        int j = (int)rb_random_ulong_limited(rb_cRandom, i);
+        struct ractor_select_action tmp;
+        tmp = actions[i];
+        actions[i] = actions[j];
+        actions[j] = tmp;
+        i--;
+    }
 
     while (1) {
         RUBY_DEBUG_LOG("try actions (%s)", wait_status_str(wait_status));
