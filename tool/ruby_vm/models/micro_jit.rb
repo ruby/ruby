@@ -12,6 +12,17 @@
 
 module RubyVM::MicroJIT
   class << self
+    def target_platform
+      # Note, checking RUBY_PLATRFORM doesn't work when cross compiling
+      @platform ||= if RUBY_PLATFORM.include?('darwin')
+        :darwin
+      elsif RUBY_PLATFORM.include?('linux')
+        :linux
+      else
+        :unknown
+      end
+    end
+
     def get_fileoff
       # use the load command to figure out the offset to the start of the content of vm.o
       `otool -l vm.o`.each_line do |line|
@@ -38,16 +49,58 @@ module RubyVM::MicroJIT
       bytes.unpack('q').first #  this is native endian but we want little endian. it's fine if the host moachine is x86
     end
 
+    def get_symbol_section_and_offset(name)
+      `objdump -w -t vm.o`.each_line do |line|
+        split_line = line.split
+        next unless split_line.size >= 6
+        # the table should go into a data section
+        if split_line[5].include?('insns_address_table') && split_line[3].include?('data')
+          p line if $DEBUG
+          return [split_line[3], Integer(split_line[0], 16)]
+        end
+      end
+      raise 'Failed to find section and offset for the the instruction address table'
+    end
+
+    def get_handler_offset(table_section, table_offset, insn_id)
+      target_offset = insn_id * 8 + table_offset
+      reloc_start_message = "RELOCATION RECORDS FOR [#{table_section}]:"
+      `objdump -w -r vm.o`.each_line do |line|
+        line.strip!
+        if (line == reloc_start_message)...(line.empty?)
+          split_line = line.split
+          next if split_line.first == 'RELOCATION'
+          next if split_line == ['OFFSET', 'TYPE', 'VALUE']
+          if Integer(split_line.first, 16) == target_offset
+            section, offset = split_line[2].split('+')
+            p line if $DEBUG
+            return section, Integer(offset, 16)
+          end
+        end
+      end
+      raise 'Failed to find relocation info for the target instruction'
+    end
+
+    def objdump_disassemble_command(offset)
+      case target_platform
+      when :darwin
+        "objdump --x86-asm-syntax=intel --start-address=#{offset} --stop-address=#{offset+50} -d vm.o"
+      when :linux
+        "objdump -M intel --start-address=#{offset} --stop-address=#{offset+50} -d vm.o"
+      else
+        raise "unkown platform"
+      end
+    end
+
     def disassemble(offset)
-      command = "objdump --x86-asm-syntax=intel --start-address=#{offset} --stop-address=#{offset+50} -d vm.o"
+      command = objdump_disassemble_command(offset)
       puts "Running: #{command}"
-      puts "feel free to verify with --reloc"
       disassembly = `#{command}`
       instructions = []
       puts disassembly if $DEBUG
       disassembly.each_line do |line|
         line = line.strip
-        match_data = /\h+: ((?:\h\h\s?)+)\s+(\w+)/.match(line)
+        match_data = /\s*\h+:\s*((?:\h\h\s)+)\s+(\w+)/.match(line)
         if match_data
           bytes = match_data[1]
           mnemonic = match_data[2]
@@ -91,8 +144,7 @@ module RubyVM::MicroJIT
       end
     end
 
-    def scrape
-      instruction_id = RubyVM::Instructions.find_index { |insn| insn.name == 'ujit_call_example' }
+    def darwin_scrape(instruction_id)
       fileoff = get_fileoff
       tc_table_offset = get_symbol_offset('vm_exec_core.insns_address_table')
       vm_exec_core_offset = get_symbol_offset('vm_exec_core')
@@ -104,6 +156,26 @@ module RubyVM::MicroJIT
       offset_to_handler_code_from_vm_exec_core = readint8b(offset_to_insn_in_tc_table)
       p offset_to_handler_code_from_vm_exec_core if $DEBUG
       disassemble(vm_exec_core_offset + offset_to_handler_code_from_vm_exec_core)
+    end
+
+    def linux_scrape(instruction_id)
+      table_section, table_offset = get_symbol_section_and_offset('vm_exec_core.insns_address_table')
+      p [table_section, table_offset] if $DEBUG
+      handler_section, handler_offset = get_handler_offset(table_section, table_offset, instruction_id)
+      p [handler_section, handler_offset] if $DEBUG
+      disassemble(handler_offset)
+    end
+
+    def scrape
+      instruction_id = RubyVM::Instructions.find_index { |insn| insn.name == 'ujit_call_example' }
+      case target_platform
+      when :darwin
+        darwin_scrape(instruction_id)
+      when :linux
+        linux_scrape(instruction_id)
+      else
+        raise 'Unkonwn platform. Only Mach-O on macOS and ELF on Linux are supported'
+      end
     end
 
     def comma_separated_hex_string(nums)
