@@ -3311,7 +3311,7 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
     }
 
     if (BUILTIN_TYPE(current_defined_class) != T_MODULE &&
-	!FL_TEST(current_defined_class, RMODULE_INCLUDED_INTO_REFINEMENT) &&
+	!FL_TEST_RAW(current_defined_class, RMODULE_INCLUDED_INTO_REFINEMENT) &&
         reg_cfp->iseq != method_entry_iseqptr(me) &&
         !rb_obj_is_kind_of(recv, current_defined_class)) {
 	VALUE m = RB_TYPE_P(current_defined_class, T_ICLASS) ?
@@ -3332,11 +3332,14 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
 		 " Specify all arguments explicitly.");
     }
 
+    ID mid = me->def->original_id;
+
     // update iseq. really? (TODO)
-    cd->ci = vm_ci_new_runtime(me->def->original_id,
+    cd->ci = vm_ci_new_runtime(mid,
                                vm_ci_flag(cd->ci),
                                vm_ci_argc(cd->ci),
                                vm_ci_kwarg(cd->ci));
+
     RB_OBJ_WRITTEN(reg_cfp->iseq, Qundef, cd->ci);
 
     klass = vm_search_normal_superclass(me->defined_class);
@@ -3349,8 +3352,6 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
     else {
         vm_search_method_fastpath((VALUE)reg_cfp->iseq, cd, klass);
         const rb_callable_method_entry_t *cached_cme = vm_cc_cme(cd->cc);
-
-        ID mid = vm_ci_mid(cd->ci);
 
         // define_method can cache for different method id
         if (cached_cme == NULL) {
