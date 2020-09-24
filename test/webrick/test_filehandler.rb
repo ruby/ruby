@@ -291,6 +291,13 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
   end
 
   def test_multibyte_char_in_path
+    if Encoding.default_external == Encoding.find('US-ASCII')
+      reset_encoding = true
+      verb = $VERBOSE
+      $VERBOSE = false
+      Encoding.default_external = Encoding.find('UTF-8')
+    end
+
     c = "\u00a7"
     begin
       c = c.encode('filesystem')
@@ -319,6 +326,11 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
           assert_equal("test_multibyte_char_in_path", res.body, log.call)
         }
       end
+    end
+  ensure
+    if reset_encoding
+      Encoding.default_external = Encoding.find('US-ASCII')
+      $VERBOSE = verb
     end
   end
 
