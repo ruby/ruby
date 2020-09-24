@@ -3943,7 +3943,6 @@ rb_str_match_m(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    string.match?(pattern) -> true or false
  *    string.match?(pattern, offset = 0) -> true or false
  *
  *  Returns +true+ or +false+ based on whether a match is found for +self+ and +pattern+.
