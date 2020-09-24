@@ -3860,6 +3860,9 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
  *    'foo' =~ /o/ # => 1
  *    'foo' =~ /x/ # => nil
  *
+ *  Note: also updates
+ *  {Regexp-related global variables}[Regexp.html#class-Regexp-label-Special+global+variables].
+ *
  *  If the given +object+ is not a \Regexp, returns the value
  *  returned by <tt>object =~ self</tt>.
  *
@@ -3897,6 +3900,9 @@ static VALUE get_pat(VALUE);
  *    string.match(pattern, offset = 0) {|matchdata| ... } -> object
  *
  *  Returns a \Matchdata object (or +nil+) based on +self+ and the given +pattern+.
+ *
+ *  Note: also updates
+ *  {Regexp-related global variables}[Regexp.html#class-Regexp-label-Special+global+variables].
  *
  *  - Computes +regexp+ by converting +pattern+ (if not already a \Regexp).
  *      regexp = Regexp.new(pattern)
@@ -3937,19 +3943,26 @@ rb_str_match_m(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.match?(pattern)        -> true or false
- *     str.match?(pattern, pos)   -> true or false
+ *    string.match?(pattern) -> true or false
+ *    string.match?(pattern, offset = 0) -> true or false
  *
- *  Converts _pattern_ to a +Regexp+ (if it isn't already one), then
- *  returns a +true+ or +false+ indicates whether the regexp is
- *  matched _str_ or not without updating <code>$~</code> and other
- *  related variables.  If the second parameter is present, it
- *  specifies the position in the string to begin the search.
+ *  Returns +true+ or +false+ based on whether a match is found for +self+ and +pattern+.
  *
- *     "Ruby".match?(/R.../)    #=> true
- *     "Ruby".match?(/R.../, 1) #=> false
- *     "Ruby".match?(/P.../)    #=> false
- *     $&                       #=> nil
+ *  Note: does not update
+ *  {Regexp-related global variables}[Regexp.html#class-Regexp-label-Special+global+variables].
+ *
+ *  Computes +regexp+ by converting +pattern+ (if not already a \Regexp).
+ *    regexp = Regexp.new(pattern)
+ *
+ *  Returns +true+ if <tt>self+.match(regexp)</tt> returns a \Matchdata object,
+ *  +false+ otherwise:
+ *    'foo'.match?(/o/) # => true
+ *    'foo'.match?('o') # => true
+ *    'foo'.match?(/x/) # => false
+ *
+ *  If \Integer argument +offset+ is given, the search begins at index +offset+:
+ *    'foo'.match?('f', 1) # => false
+ *    'foo'.match?('o', 1) # => true
  */
 
 static VALUE
