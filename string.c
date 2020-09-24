@@ -1954,7 +1954,7 @@ rb_str_empty(VALUE str)
  *    string + other_string -> new_string
  *
  *  Returns a new \String containing +other_string+ concatenated to +self+:
- *    "Hello from " + self.to_s   #=> "Hello from main"
+ *    "Hello from " + self.to_s # => "Hello from main"
  */
 
 VALUE
@@ -3318,15 +3318,21 @@ rb_str_cmp(VALUE str1, VALUE str2)
 
 /*
  *  call-seq:
- *     str == obj    -> true or false
- *     str === obj   -> true or false
+ *    string == object -> true or false
+ *    string === object -> true or false
  *
- *  Equality---Returns whether +str+ == +obj+, similar to Object#==.
+ *  Returns +true+ if +object+ has the same length and content;
+ *  as +self+; +false+ otherwise:
+ *    s = 'foo'
+ *    s == 'foo' # => true
+ *    s == 'food' # => false
+ *    s == 'FOO' # => false
  *
- *  If +obj+ is not an instance of String but responds to +to_str+, then the
- *  two strings are compared using <code>obj.==</code>.
+ *  Returns +false+ if the two strings' encodings are not compatible:
+ *    "\u{e4 f6 fc}".encode("ISO-8859-1") == ("\u{c4 d6 dc}") # => false
  *
- *  Otherwise, returns similarly to String#eql?, comparing length and content.
+ *  If +object+ is not an instance of \String but responds to +to_str+, then the
+ *  two strings are compared using <code>object.==</code>.
  */
 
 VALUE
@@ -3344,9 +3350,17 @@ rb_str_equal(VALUE str1, VALUE str2)
 
 /*
  * call-seq:
- *   str.eql?(other)   -> true or false
+ *   string.eql?(object) -> true or false
  *
- * Two strings are equal if they have the same length and content.
+ *  Returns +true+ if +object+ has the same length and content;
+ *  as +self+; +false+ otherwise:
+ *    s = 'foo'
+ *    s.eql?('foo') # => true
+ *    s.eql?('food') # => false
+ *    s.eql?('FOO') # => false
+ *
+ *  Returns +false+ if the two strings' encodings are not compatible:
+ *    "\u{e4 f6 fc}".encode("ISO-8859-1").eql?("\u{c4 d6 dc}") # => false
  */
 
 MJIT_FUNC_EXPORTED VALUE
@@ -3359,27 +3373,21 @@ rb_str_eql(VALUE str1, VALUE str2)
 
 /*
  *  call-seq:
- *     string <=> other_string   -> -1, 0, +1, or nil
+ *    string <=> other_string -> -1, 0, 1, or nil
  *
- *  Comparison---Returns -1, 0, +1, or +nil+ depending on whether +string+ is
- *  less than, equal to, or greater than +other_string+.
+ *  Compares +self+ and +other_string+, returning:
+ *  - -1 if +other_string+ is smaller.
+ *  - 0 if the two are equal.
+ *  - 1 if +other_string+ is larger.
+ *  - +nil+ if the two are incomparable.
  *
- *  +nil+ is returned if the two values are incomparable.
- *
- *  If the strings are of different lengths, and the strings are equal when
- *  compared up to the shortest length, then the longer string is considered
- *  greater than the shorter one.
- *
- *  <code><=></code> is the basis for the methods <code><</code>,
- *  <code><=</code>, <code>></code>, <code>>=</code>, and
- *  <code>between?</code>, included from module Comparable. The method
- *  String#== does not use Comparable#==.
- *
- *     "abcdef" <=> "abcde"     #=> 1
- *     "abcdef" <=> "abcdef"    #=> 0
- *     "abcdef" <=> "abcdefg"   #=> -1
- *     "abcdef" <=> "ABCDEF"    #=> 1
- *     "abcdef" <=> 1           #=> nil
+ *  Examples:
+ *    'foo' <=> 'foo' # => 0
+ *    'foo' <=> 'food' # => -1
+ *    'food' <=> 'foo' # => 1
+ *    'FOO' <=> 'foo' # => -1
+ *    'foo' <=> 'FOO' # => 1
+ *    'foo' <=> 1 # => nil
  */
 
 static VALUE
@@ -3399,22 +3407,21 @@ static VALUE str_casecmp_p(VALUE str1, VALUE str2);
 
 /*
  *  call-seq:
- *     str.casecmp(other_str)   -> -1, 0, +1, or nil
+ *    str.casecmp(other_str) -> -1, 0, 1, or nil
  *
- *  Case-insensitive version of String#<=>.
- *  Currently, case-insensitivity only works on characters A-Z/a-z,
- *  not all of Unicode. This is different from String#casecmp?.
+ *  Compares +self+ and +other_string+, ignoring case, and returning:
+ *  - -1 if +other_string+ is smaller.
+ *  - 0 if the two are equal.
+ *  - 1 if +other_string+ is larger.
+ *  - +nil+ if the two are incomparable.
  *
- *     "aBcDeF".casecmp("abcde")     #=> 1
- *     "aBcDeF".casecmp("abcdef")    #=> 0
- *     "aBcDeF".casecmp("abcdefg")   #=> -1
- *     "abcdef".casecmp("ABCDEF")    #=> 0
- *
- *  +nil+ is returned if the two strings have incompatible encodings,
- *  or if +other_str+ is not a string.
- *
- *     "foo".casecmp(2)   #=> nil
- *     "\u{e4 f6 fc}".encode("ISO-8859-1").casecmp("\u{c4 d6 dc}")   #=> nil
+ *  Examples:
+ *    'foo'.casecmp('foo') # => 0
+ *    'foo'.casecmp('food') # => -1
+ *    'food'.casecmp('foo') # => 1
+ *    'FOO'.casecmp('foo') # => 0
+ *    'foo'.casecmp('FOO') # => 0
+ *    'foo'.casecmp(1) # => nil
  */
 
 static VALUE
@@ -3486,22 +3493,18 @@ str_casecmp(VALUE str1, VALUE str2)
 
 /*
  *  call-seq:
- *     str.casecmp?(other_str)   -> true, false, or nil
+ *    string.casecmp?(other_string) -> true, false, or nil
  *
- *  Returns +true+ if +str+ and +other_str+ are equal after
- *  Unicode case folding, +false+ if they are not equal.
+ *  Returns +true+ if +self+ and +other_string+ are equal after
+ *  Unicode case folding, otherwise +false+:
+ *    'foo'.casecmp?('foo') # => true
+ *    'foo'.casecmp?('food') # => false
+ *    'food'.casecmp?('foo') # => true
+ *    'FOO'.casecmp?('foo') # => true
+ *    'foo'.casecmp?('FOO') # => true
  *
- *     "aBcDeF".casecmp?("abcde")     #=> false
- *     "aBcDeF".casecmp?("abcdef")    #=> true
- *     "aBcDeF".casecmp?("abcdefg")   #=> false
- *     "abcdef".casecmp?("ABCDEF")    #=> true
- *     "\u{e4 f6 fc}".casecmp?("\u{c4 d6 dc}")   #=> true
- *
- *  +nil+ is returned if the two strings have incompatible encodings,
- *  or if +other_str+ is not a string.
- *
- *     "foo".casecmp?(2)   #=> nil
- *     "\u{e4 f6 fc}".encode("ISO-8859-1").casecmp?("\u{c4 d6 dc}")   #=> nil
+ *  Returns +nil+ if the two values are incomparable:
+ *    'foo'.casecmp?(1) # => nil
  */
 
 static VALUE
@@ -3595,19 +3598,36 @@ rb_strseq_index(VALUE str, VALUE sub, long offset, int in_byte)
 
 /*
  *  call-seq:
- *     str.index(substring [, offset])   -> integer or nil
- *     str.index(regexp [, offset])      -> integer or nil
+ *    string.index(substring, offset = 0) -> integer or nil
+ *    string.index(regexp, offset = 0) -> integer or nil
  *
- *  Returns the index of the first occurrence of the given <i>substring</i> or
- *  pattern (<i>regexp</i>) in <i>str</i>. Returns <code>nil</code> if not
- *  found. If the second parameter is present, it specifies the position in the
- *  string to begin the search.
+ *  Returns the \Integer index of the first occurrence of the given +substring+,
+ *  or +nil+ if none found:
+ *    'foo'.index('f') # => 0
+ *    'foo'.index('o') # => 1
+ *    'foo'.index('oo') # => 1
+ *    'foo'.index('ooo') # => nil
  *
- *     "hello".index('e')             #=> 1
- *     "hello".index('lo')            #=> 3
- *     "hello".index('a')             #=> nil
- *     "hello".index(?e)              #=> 1
- *     "hello".index(/[aeiou]/, -3)   #=> 4
+ *  Returns the \Integer index of the first match for the given \Regexp +regexp+,
+ *  or +nil+ if none found:
+ *    'foo'.index(/f/) # => 0
+ *    'foo'.index(/o/) # => 1
+ *    'foo'.index(/oo/) # => 1
+ *    'foo'.index(/ooo/) # => nil
+ *
+ *  \Integer argument +offset+, if given, specifies the position in the
+ *  string to begin the search:
+ *    'foo'.index('o', 1) # => 1
+ *    'foo'.index('o', 2) # => 2
+ *    'foo'.index('o', 3) # => nil
+ *
+ *  If +offset+ is negative, counts backward from the end of +self+:
+ *    'foo'.index('o', -1) # => 2
+ *    'foo'.index('o', -2) # => 1
+ *    'foo'.index('o', -3) # => 1
+ *    'foo'.index('o', -4) # => nil
+ *
+ *  Related: String#rindex
  */
 
 static VALUE
@@ -3750,20 +3770,38 @@ rb_str_rindex(VALUE str, VALUE sub, long pos)
 
 /*
  *  call-seq:
- *     str.rindex(substring [, integer])   -> integer or nil
- *     str.rindex(regexp [, integer])   -> integer or nil
+ *    string.rindex(substring, offset = self.length) -> integer or nil
+ *    string.rindex(regexp, offset = self.length) -> integer or nil
  *
- *  Returns the index of the last occurrence of the given <i>substring</i> or
- *  pattern (<i>regexp</i>) in <i>str</i>. Returns <code>nil</code> if not
- *  found. If the second parameter is present, it specifies the position in the
- *  string to end the search---characters beyond this point will not be
- *  considered.
+ *  Returns the \Integer index of the _last_ occurrence of the given +substring+,
+ *  or +nil+ if none found:
+ *    'foo'.rindex('f') # => 0
+ *    'foo'.rindex('o') # => 2
+ *    'foo'.rindex('oo') # => 1
+ *    'foo'.rindex('ooo') # => nil
  *
- *     "hello".rindex('e')             #=> 1
- *     "hello".rindex('l')             #=> 3
- *     "hello".rindex('a')             #=> nil
- *     "hello".rindex(?e)              #=> 1
- *     "hello".rindex(/[aeiou]/, -2)   #=> 1
+ *  Returns the \Integer index of the _last_ match for the given \Regexp +regexp+,
+ *  or +nil+ if none found:
+ *    'foo'.rindex(/f/) # => 0
+ *    'foo'.rindex(/o/) # => 2
+ *    'foo'.rindex(/oo/) # => 1
+ *    'foo'.rindex(/ooo/) # => nil
+ *
+ *  \Integer argument +offset+, if given and non-negative, specifies the maximum starting position in the
+ *   string to _end_ the search:
+ *    'foo'.rindex('o', 0) # => nil
+ *    'foo'.rindex('o', 1) # => 1
+ *    'foo'.rindex('o', 2) # => 2
+ *    'foo'.rindex('o', 3) # => 2
+ *
+ *  If +offset+ is a negative \Integer, the maximum starting position in the
+ *  string to _end_ the search is the sum of the string's length and +offset+:
+ *    'foo'.rindex('o', -1) # => 2
+ *    'foo'.rindex('o', -2) # => 1
+ *    'foo'.rindex('o', -3) # => nil
+ *    'foo'.rindex('o', -4) # => nil
+ *
+ *  Related: String#index
  */
 
 static VALUE
