@@ -424,6 +424,33 @@ assert_equal "[[[1, true], [:sym, true], [:xyzzy, true], [\"frozen\", true], " \
   [sr, ur].inspect
 }
 
+# frozen Objects are shareable
+assert_equal [false, true, false].inspect, %q{
+  class C
+    def initialize freeze
+      @a = 1
+      @b = :sym
+      @c = 'frozen_str'
+      @c.freeze if freeze
+      @d = true
+    end
+  end
+
+  def check obj1
+    obj2 = Ractor.new obj1 do |obj|
+      obj
+    end.take
+
+    obj1.object_id == obj2.object_id
+  end
+
+  results = []
+  results << check(C.new(true))         # false
+  results << check(C.new(true).freeze)  # true
+  results << check(C.new(false).freeze) # false
+}
+
+
 # move example2: String
 # touching moved object causes an error
 assert_equal 'hello world', %q{
