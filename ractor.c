@@ -1776,6 +1776,22 @@ rb_ractor_shareable_p_hash_i(VALUE key, VALUE value, VALUE arg)
     return ST_CONTINUE;
 }
 
+static bool
+ractor_obj_ivars_shareable_p(VALUE obj)
+{
+    uint32_t len = ROBJECT_NUMIV(obj);
+    VALUE *ptr = ROBJECT_IVPTR(obj);
+
+    for (uint32_t i=0; i<len; i++) {
+        VALUE val = ptr[i];
+        if (val != Qundef && !rb_ractor_shareable_p(ptr[i])) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 MJIT_FUNC_EXPORTED bool
 rb_ractor_shareable_p_continue(VALUE obj)
 {
@@ -1825,6 +1841,13 @@ rb_ractor_shareable_p_continue(VALUE obj)
             else {
                 return false;
             }
+        }
+      case T_OBJECT:
+        if (RB_OBJ_FROZEN_RAW(obj) && ractor_obj_ivars_shareable_p(obj)) {
+            goto shareable;
+        }
+        else {
+            return false;
         }
       default:
         return false;
