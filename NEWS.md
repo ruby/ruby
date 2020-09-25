@@ -267,6 +267,15 @@ Outstanding ones only.
 
     * Update to Reline 0.1.5
 
+* Socket
+
+    * TCPSocket.new now supports `resolv_timeout`. [[Feature #17134]]
+
+      ```ruby
+      # it raises SocketError if name resolution is not finished within resolve_timeout.
+      tcp_socket = TCPSocket.new("example.com", 80, resolv_timeout: 10)
+      ```
+
 ## Compatibility issues
 
 Excluding feature bug fixes.
