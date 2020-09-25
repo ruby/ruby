@@ -427,6 +427,7 @@ assert_equal "ok", %q{
 
   class C; end
   module M; end
+  S = Struct.new(:a, :b, :c, :d)
 
   shareable_objects = [
     true,
@@ -445,6 +446,8 @@ assert_equal "ok", %q{
     [1, 2].freeze,   # frozen Array which only refers to shareable
     {a: 1}.freeze,   # frozen Hash which only refers to shareable
     [{a: 1}.freeze, 'str'.freeze].freeze, # nested frozen container
+    S.new(1, 2).freeze, # frozen Struct
+    S.new(1, 2, 3, 4).freeze, # frozen Struct
     C, # class
     M, # module
     Ractor.current, # Ractor
@@ -454,6 +457,9 @@ assert_equal "ok", %q{
     'mutable str'.dup,
     [:array],
     {hash: true},
+    S.new(1, 2),
+    S.new(1, 2, 3, 4),
+    S.new("a", 2).freeze, # frozen, but refers to an unshareable object
   ]
 
   results = []

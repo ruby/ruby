@@ -7,6 +7,7 @@
 #include "vm_sync.h"
 #include "ractor.h"
 #include "internal/error.h"
+#include "internal/struct.h"
 
 static VALUE rb_cRactor;
 static VALUE rb_eRactorError;
@@ -1785,6 +1786,22 @@ rb_ractor_shareable_p_hash_i(VALUE key, VALUE value, VALUE arg)
 }
 
 static bool
+ractor_struct_shareable_members_p(VALUE obj)
+{
+    VM_ASSERT(RB_TYPE_P(obj, T_STRUCT));
+
+    long len = RSTRUCT_LEN(obj);
+    const VALUE *ptr = RSTRUCT_CONST_PTR(obj);
+
+    for (long i=0; i<len; i++) {
+        if (!rb_ractor_shareable_p(ptr[i])) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool
 ractor_obj_ivars_shareable_p(VALUE obj)
 {
     uint32_t len = ROBJECT_NUMIV(obj);
@@ -1844,6 +1861,19 @@ rb_ractor_shareable_p_continue(VALUE obj)
             bool shareable = true;
             rb_hash_foreach(obj, rb_ractor_shareable_p_hash_i, (VALUE)&shareable);
             if (shareable) {
+                goto shareable;
+            }
+            else {
+                return false;
+            }
+        }
+      case T_STRUCT:
+        if (!RB_OBJ_FROZEN_RAW(obj) ||
+            FL_TEST_RAW(obj, RUBY_FL_EXIVAR)) {
+            return false;
+        }
+        else {
+            if (ractor_struct_shareable_members_p(obj)) {
                 goto shareable;
             }
             else {
