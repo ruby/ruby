@@ -724,6 +724,17 @@ assert_equal 'can not set constants with non-shareable objects by non-main Racto
   end
 }
 
+# define_method is not allowed
+assert_equal "defined in a different Ractor", %q{
+  str = "foo"
+  define_method(:buggy){|i| str << "#{i}"}
+  begin
+    Ractor.new{buggy(10)}.take
+  rescue => e
+    e.cause.message
+  end
+}
+
 # Immutable Array and Hash are shareable, so it can be shared with constants
 assert_equal '[1000, 3]', %q{
   A = Array.new(1000).freeze # [nil, ...]

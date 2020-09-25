@@ -430,6 +430,7 @@ rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *de
 	    }
 	  case VM_METHOD_TYPE_BMETHOD:
             RB_OBJ_WRITE(me, &def->body.bmethod.proc, (VALUE)opts);
+            RB_OBJ_WRITE(me, &def->body.bmethod.defined_ractor, GET_THREAD()->ractor->self);
 	    return;
 	  case VM_METHOD_TYPE_NOTIMPLEMENTED:
 	    setup_method_cfunc_struct(UNALIGNED_MEMBER_PTR(def, body.cfunc), rb_f_notimplement, -1);
@@ -471,6 +472,7 @@ method_definition_reset(const rb_method_entry_t *me)
 	break;
       case VM_METHOD_TYPE_BMETHOD:
         RB_OBJ_WRITTEN(me, Qundef, def->body.bmethod.proc);
+        RB_OBJ_WRITTEN(me, Qundef, def->body.bmethod.defined_ractor);
         /* give up to check all in a list */
         if (def->body.bmethod.hooks) rb_gc_writebarrier_remember((VALUE)me);
 	break;
