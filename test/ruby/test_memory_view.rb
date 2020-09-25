@@ -143,7 +143,7 @@ class TestMemoryView < Test::Unit::TestCase
   end
 
   def test_rb_memory_view_parse_item_format_with_alignment_total_size_with_tail_padding
-    total_size, members, err = MemoryViewTestUtils.parse_item_format("|lqc")
+    total_size, _members, err = MemoryViewTestUtils.parse_item_format("|lqc")
     assert_nil(err)
 
     expected_total_size = sizeof(:int32_t)
