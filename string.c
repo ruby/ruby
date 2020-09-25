@@ -4160,27 +4160,59 @@ static VALUE str_succ(VALUE str);
 
 /*
  *  call-seq:
- *     str.succ   -> new_str
- *     str.next   -> new_str
+ *    string.succ -> new_str
+ *    string.next -> new_str
  *
- *  Returns the successor to <i>str</i>. The successor is calculated by
- *  incrementing characters starting from the rightmost alphanumeric (or
- *  the rightmost character if there are no alphanumerics) in the
- *  string. Incrementing a digit always results in another digit, and
- *  incrementing a letter results in another letter of the same case.
- *  Incrementing nonalphanumerics uses the underlying character set's
- *  collating sequence.
+ *  Returns the successor to +self+. The successor is calculated by
+ *  incrementing characters.
  *
- *  If the increment generates a ``carry,'' the character to the left of
- *  it is incremented. This process repeats until there is no carry,
- *  adding an additional character if necessary.
+ *  The first character to be incremented is the rightmost alphanumeric:
+ *  or, if no alphanumerics, the rightmost character:
+ *    'THX1138'.succ # => "THX1139"
+ *    '<<koala>>'.succ # => "<<koalb>>"
+ *    '***'.succ # => '**+'
  *
- *     "abcd".succ        #=> "abce"
- *     "THX1138".succ     #=> "THX1139"
- *     "<<koala>>".succ   #=> "<<koalb>>"
- *     "1999zzz".succ     #=> "2000aaa"
- *     "ZZZ9999".succ     #=> "AAAA0000"
- *     "***".succ         #=> "**+"
+ *  The successor to a digit is another digit, "carrying" to the next-left
+ *  character for a "rollover" from 9 to 0, and prepending another digit
+ *  if necessary:
+ *    '00'.succ # => "01"
+ *    '09'.succ # => "10"
+ *    '99'.succ # => "100"
+ *
+ *  The successor to a letter is another letter of the same case,
+ *  carrying to the next-left character for a rollover,
+ *  and prepending another same-case letter if necessary:
+ *    'aa'.succ # => "ab"
+ *    'az'.succ # => "ba"
+ *    'zz'.succ # => "aaa"
+ *    'AA'.succ # => "AB"
+ *    'AZ'.succ # => "BA"
+ *    'ZZ'.succ # => "AAA"
+ *
+ *  The successor to a non-alphanumeric character is the next character
+ *  in the underlying character set's collating sequence,
+ *  carrying to the next-left character for a rollover,
+ *  and prepending another character if necessary:
+ *    s = 0.chr * 3
+ *    s # => "\x00\x00\x00"
+ *    s.succ # => "\x00\x00\x01"
+ *    s = 255.chr * 3
+ *    s # => "\xFF\xFF\xFF"
+ *    s.succ # => "\x01\x00\x00\x00"
+ *
+ *  Carrying can occur between and among all types of characters:
+ *    s = format("%s%s%s%s%s", 255.chr, '9', 'z', '9', 255.chr)
+ *    s # => "\xFF9z9\xFF"
+ *    s.succ # => "\xFF10a0\xFF"
+ *    s = format("%s%s%s%s%s", 'z', 255.chr, '9', 255.chr, 'z')
+ *    s # => "z\xFF9\xFFz"
+ *    s.succ # => "z\xFF9\xFFaa"
+ *    s = format("%s%s%s%s%s", '9', 'z', 255.chr, 'z', '9')
+ *    s # => "9z\xFFz9"
+ *    s.succ # => "10a\xFFa0"
+ *
+ *  The successor to an empty \String is a new empty \String:
+ *    ''.succ # => ""
  */
 
 VALUE
