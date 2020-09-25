@@ -163,6 +163,10 @@ Outstanding ones only.
             p C.ancestors #=> [C, M1, M2, Object, Kernel, BasicObject]
             ```
 
+* Range
+
+    * All Range objects are frozen. [Feature #15504]
+
 * Thread
 
     * Introduce `Thread#scheduler` for intercepting blocking operations and

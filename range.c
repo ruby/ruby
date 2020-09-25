@@ -58,6 +58,10 @@ range_init(VALUE range, VALUE beg, VALUE end, VALUE exclude_end)
     RANGE_SET_EXCL(range, exclude_end);
     RANGE_SET_BEG(range, beg);
     RANGE_SET_END(range, end);
+
+    if (CLASS_OF(range) == rb_cRange) {
+        rb_obj_freeze(range);
+    }
 }
 
 VALUE

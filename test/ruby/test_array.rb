@@ -2612,7 +2612,7 @@ class TestArray < Test::Unit::TestCase
 
   def test_zip_bug
     bug8153 = "ruby-core:53650"
-    r = 1..1
+    r = [1]
     def r.respond_to?(*)
       super
     end
