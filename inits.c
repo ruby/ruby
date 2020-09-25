@@ -70,6 +70,7 @@ rb_call_inits(void)
     CALL(Cont);
     CALL(Rational);
     CALL(Complex);
+    CALL(MemoryView);
     CALL(version);
     CALL(vm_trace);
     CALL(vm_stack_canary);
