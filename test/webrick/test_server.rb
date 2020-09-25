@@ -176,9 +176,13 @@ class TestWEBrickServer < Test::Unit::TestCase
         :Logger => WEBrick::Log.new([], WEBrick::BasicLog::WARN))
       server_threads << Thread.start { server.start }
       sleep 0.1 until server.status == :Running || !server_threads.last.status
-      if server_threads.last.status
-        pipe.last.puts('')
-        break
+      begin
+        if server_threads.last.status
+          pipe.last.puts('')
+          break
+        end
+      rescue IOError
+        nil
       end
     end
     assert_join_threads(server_threads)
