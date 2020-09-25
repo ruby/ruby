@@ -350,7 +350,7 @@ int rsock_socket(int domain, int type, int proto);
 int rsock_detect_cloexec(int fd);
 VALUE rsock_init_sock(VALUE sock, int fd);
 VALUE rsock_sock_s_socketpair(int argc, VALUE *argv, VALUE klass);
-VALUE rsock_init_inetsock(VALUE sock, VALUE remote_host, VALUE remote_serv, VALUE local_host, VALUE local_serv, int type, VALUE resolv_timeout);
+VALUE rsock_init_inetsock(VALUE sock, VALUE remote_host, VALUE remote_serv, VALUE local_host, VALUE local_serv, int type, VALUE resolv_timeout, VALUE connect_timeout);
 VALUE rsock_init_unixsock(VALUE sock, VALUE path, int server);
 
 struct rsock_send_arg {
@@ -375,7 +375,7 @@ VALUE rsock_s_recvfrom_nonblock(VALUE sock, VALUE len, VALUE flg, VALUE str,
 			        VALUE ex, enum sock_recv_type from);
 VALUE rsock_s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from);
 
-int rsock_connect(int fd, const struct sockaddr *sockaddr, int len, int socks);
+int rsock_connect(int fd, const struct sockaddr *sockaddr, int len, int socks, struct timeval *timeout);
 
 VALUE rsock_s_accept(VALUE klass, int fd, struct sockaddr *sockaddr, socklen_t *len);
 VALUE rsock_s_accept_nonblock(VALUE klass, VALUE ex, rb_io_t *fptr,
