@@ -353,6 +353,17 @@ Excluding feature bug fixes.
 * C API header file `ruby/ruby.h` was split. [[GH-2991]] Should have no impact
   on extension libraries, but users might experience slow compilations.
 
+* Memory view interface [EXPERIMENTAL]
+
+  * The memory view interface is a C-API set to exchange a raw memory area,
+    such as a numeric array and a bitmap image, between extension libraries.
+    The extension libraries can share also the metadata of the memory area
+    that consists of the shape, the element format, and so on.
+    Using these kinds of metadata, the extension libraries can share even
+    a multidimensional array appropriately.
+    This feature is designed by referring to Python's buffer protocol.
+    [[Feature #13767]] [[Feature #14722]]
+
 ## Implementation improvements
 
 * New method cache mechanism for Ractor [[Feature #16614]]
