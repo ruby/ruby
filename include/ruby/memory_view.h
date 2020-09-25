@@ -54,8 +54,8 @@ typedef struct {
     /* A string to describe the format of an element, or NULL for unsigned byte.
      * The format string is a sequence the following pack-template specifiers:
      *
-     *   c, C, s, s!, S, S!, n, v, i, i!, I, I!, l, l!,
-     *   L, L!, N, V, f, e, g, d, E, G, j, J, x
+     *   c, C, s, s!, S, S!, n, v, i, i!, I, I!, l, l!, L, L!,
+     *   N, V, f, e, g, q, q!, Q, Q!, d, E, G, j, J, x
      *
      * For example, "dd" for an element that consists of two double values,
      * and "CCC" for an element that consists of three bytes, such as
@@ -63,6 +63,11 @@ typedef struct {
      *
      * Also, the value endianness can be explicitly specified by '<' or '>'
      * following a value type specifier.
+     *
+     * The items are packed contiguously.  When you emulate the alignment of
+     * structure members, put '|' at the beginning of the format string,
+     * like "|iqc".  On x86_64 Linux ABI, the size of the item by this format
+     * is 24 bytes instead of 13 bytes.
      */
     const char *format;
 
