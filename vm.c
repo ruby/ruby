@@ -25,6 +25,7 @@
 #include "internal/re.h"
 #include "internal/symbol.h"
 #include "internal/vm.h"
+#include "internal/sanitizers.h"
 #include "iseq.h"
 #include "mjit.h"
 #include "ruby/st.h"
