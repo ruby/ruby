@@ -126,21 +126,6 @@ class TestClass < Test::Unit::TestCase
     end
   end
 
-  def test_descendants
-    a = Class.new
-    b = Class.new(a)
-    c = Class.new(b)
-
-    a_obj = a.new
-    def a_obj.force_singleton_class
-      42
-    end
-
-    assert_equal([a, b, c].sort, a.descendants.sort)
-    assert_equal([b, c].sort, b.descendants.sort)
-    assert_equal([c], c.descendants)
-  end
-
   def test_module_specific_methods
     assert_empty(Class.private_instance_methods(true) &
       [:module_function, :extend_object, :append_features, :prepend_features])
