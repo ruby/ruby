@@ -419,7 +419,7 @@ describe "Marshal.dump" do
       load.should == range
       load.instance_variable_get(:@foo).should == 42
     end
-  end
+  end unless (1...3).frozen? # Ruby 3.0 -
 
   describe "with a Time" do
     before :each do

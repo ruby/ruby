@@ -163,8 +163,8 @@ class TestRange < Test::Unit::TestCase
 
   def test_initialize_twice
     r = eval("1..2")
-    assert_raise(NameError) { r.instance_eval { initialize 3, 4 } }
-    assert_raise(NameError) { r.instance_eval { initialize_copy 3..4 } }
+    assert_raise(FrozenError) { r.instance_eval { initialize 3, 4 } }
+    assert_raise(FrozenError) { r.instance_eval { initialize_copy 3..4 } }
   end
 
   def test_uninitialized_range

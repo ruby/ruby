@@ -448,9 +448,9 @@ assert_equal "ok", %q{
     [{a: 1}.freeze, 'str'.freeze].freeze, # nested frozen container
     S.new(1, 2).freeze, # frozen Struct
     S.new(1, 2, 3, 4).freeze, # frozen Struct
-    (1..2).freeze, # Range on Struct
-    (1..).freeze,  # Range on Strcut
-    (..1).freeze,  # Range on Strcut
+    (1..2), # Range on Struct
+    (1..),  # Range on Strcut
+    (..1),  # Range on Strcut
     C, # class
     M, # module
     Ractor.current, # Ractor
@@ -463,7 +463,6 @@ assert_equal "ok", %q{
     S.new(1, 2),
     S.new(1, 2, 3, 4),
     S.new("a", 2).freeze, # frozen, but refers to an unshareable object
-    (1..2), (1..), (..1),
   ]
 
   results = []
