@@ -28,6 +28,14 @@ module Net
       end
     end
 
+    def setup
+      @server_threads = []
+    end
+
+    def teardown
+      @server_threads.each {|th| th.join }
+    end
+
     def test_critical
       smtp = Net::SMTP.new 'localhost', 25
 
@@ -187,25 +195,25 @@ module Net
     def test_start
       port = fake_server_start
       smtp = Net::SMTP.start('localhost', port)
-      smtp.quit
+      smtp.finish
     end
 
     def test_start_with_position_argument
       port = fake_server_start(helo: 'myname', user: 'account', password: 'password')
       smtp = Net::SMTP.start('localhost', port, 'myname', 'account', 'password', :plain)
-      smtp.quit
+      smtp.finish
     end
 
     def test_start_with_keyword_argument
       port = fake_server_start(helo: 'myname', user: 'account', password: 'password')
       smtp = Net::SMTP.start('localhost', port, helo: 'myname', user: 'account', secret: 'password', authtype: :plain)
-      smtp.quit
+      smtp.finish
     end
 
     def test_start_password_is_secret
       port = fake_server_start(helo: 'myname', user: 'account', password: 'password')
       smtp = Net::SMTP.start('localhost', port, helo: 'myname', user: 'account', password: 'password', authtype: :plain)
-      smtp.quit
+      smtp.finish
     end
 
     def test_start_invalid_number_of_arguments
@@ -219,28 +227,28 @@ module Net
       port = fake_server_start
       smtp = Net::SMTP.new('localhost', port)
       smtp.start
-      smtp.quit
+      smtp.finish
     end
 
     def test_start_instance_with_position_argument
       port = fake_server_start(helo: 'myname', user: 'account', password: 'password')
       smtp = Net::SMTP.new('localhost', port)
       smtp.start('myname', 'account', 'password', :plain)
-      smtp.quit
+      smtp.finish
     end
 
     def test_start_instance_with_keyword_argument
       port = fake_server_start(helo: 'myname', user: 'account', password: 'password')
       smtp = Net::SMTP.new('localhost', port)
       smtp.start(helo: 'myname', user: 'account', secret: 'password', authtype: :plain)
-      smtp.quit
+      smtp.finish
     end
 
     def test_start_instance_password_is_secret
       port = fake_server_start(helo: 'myname', user: 'account', password: 'password')
       smtp = Net::SMTP.new('localhost', port)
       smtp.start(helo: 'myname', user: 'account', password: 'password', authtype: :plain)
-      smtp.quit
+      smtp.finish
     end
 
     def test_start_instance_invalid_number_of_arguments
@@ -259,7 +267,7 @@ module Net
 
     def fake_server_start(helo: 'localhost', user: nil, password: nil)
       servers = Socket.tcp_server_sockets('localhost', 0)
-      Thread.start do
+      @server_threads << Thread.start do
         Thread.current.abort_on_exception = true
         sock = accept(servers)
         sock.puts "220 ready\r\n"
