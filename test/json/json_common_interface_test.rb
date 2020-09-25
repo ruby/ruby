@@ -152,7 +152,8 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
     temp_file_containing(@json) do |filespec|
       parsed_object = JSON.public_send(method_name, filespec, symbolize_names: true)
       key_classes = parsed_object.keys.map(&:class)
-      assert key_classes.include?(Symbol) && (! key_classes.include?(String))
+      assert_include(key_classes, Symbol)
+      assert_not_include(key_classes, String)
     end
   end
 
