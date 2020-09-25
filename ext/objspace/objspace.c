@@ -18,6 +18,7 @@
 #include "internal/compilers.h"
 #include "internal/hash.h"
 #include "internal/imemo.h"
+#include "internal/sanitizers.h"
 #include "node.h"
 #include "ruby/io.h"
 #include "ruby/re.h"
@@ -58,6 +59,9 @@ total_i(void *vstart, void *vend, size_t stride, void *ptr)
     struct total_data *data = (struct total_data *)ptr;
 
     for (v = (VALUE)vstart; v != (VALUE)vend; v += stride) {
+        void *ptr = asan_poisoned_object_p(v);
+        asan_unpoison_object(v, false);
+
 	if (RBASIC(v)->flags) {
 	    switch (BUILTIN_TYPE(v)) {
 	      case T_NONE:
@@ -72,6 +76,10 @@ total_i(void *vstart, void *vend, size_t stride, void *ptr)
 		}
 	    }
 	}
+
+        if (ptr) {
+            asan_poison_object(v);
+        }
     }
 
     return 0;
@@ -155,9 +163,16 @@ cos_i(void *vstart, void *vend, size_t stride, void *data)
     VALUE v = (VALUE)vstart;
 
     for (;v != (VALUE)vend; v += stride) {
+        void *ptr = asan_poisoned_object_p(v);
+        asan_unpoison_object(v, false);
+
 	if (RBASIC(v)->flags) {
 	    counts[BUILTIN_TYPE(v)] += rb_obj_memsize_of(v);
 	}
+
+        if (ptr) {
+            asan_poison_object(v);
+        }
     }
     return 0;
 }
@@ -261,6 +276,9 @@ cs_i(void *vstart, void *vend, size_t stride, void *n)
     VALUE v = (VALUE)vstart;
 
     for (; v != (VALUE)vend; v += stride) {
+        void *ptr = asan_poisoned_object_p(v);
+        asan_unpoison_object(v, false);
+
 	if (RBASIC(v)->flags && BUILTIN_TYPE(v) == T_SYMBOL) {
 	    ID id = RSYMBOL(v)->id;
 	    if ((id & ~ID_SCOPE_MASK) == 0) {
@@ -270,6 +288,10 @@ cs_i(void *vstart, void *vend, size_t stride, void *n)
 		counts->immortal++;
 	    }
 	}
+
+        if (ptr) {
+            asan_poison_object(v);
+        }
     }
 
     return 0;
@@ -500,6 +522,9 @@ cto_i(void *vstart, void *vend, size_t stride, void *data)
     VALUE v = (VALUE)vstart;
 
     for (; v != (VALUE)vend; v += stride) {
+        void *ptr = asan_poisoned_object_p(v);
+        asan_unpoison_object(v, false);
+
 	if (RBASIC(v)->flags && BUILTIN_TYPE(v) == T_DATA) {
 	    VALUE counter;
 	    VALUE key = RBASIC(v)->klass;
@@ -520,6 +545,10 @@ cto_i(void *vstart, void *vend, size_t stride, void *data)
 
 	    rb_hash_aset(hash, key, counter);
 	}
+
+        if (ptr) {
+            asan_poison_object(v);
+        }
     }
 
     return 0;
@@ -574,6 +603,9 @@ count_imemo_objects_i(void *vstart, void *vend, size_t stride, void *data)
     VALUE v = (VALUE)vstart;
 
     for (; v != (VALUE)vend; v += stride) {
+        void *ptr = asan_poisoned_object_p(v);
+        asan_unpoison_object(v, false);
+
 	if (RBASIC(v)->flags && BUILTIN_TYPE(v) == T_IMEMO) {
 	    VALUE counter;
 	    VALUE key = ID2SYM(imemo_type_ids[imemo_type(v)]);
@@ -589,6 +621,10 @@ count_imemo_objects_i(void *vstart, void *vend, size_t stride, void *data)
 
 	    rb_hash_aset(hash, key, counter);
 	}
+
+        if (ptr) {
+            asan_poison_object(v);
+        }
     }
 
     return 0;
