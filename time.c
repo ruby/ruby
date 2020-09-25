@@ -5860,29 +5860,26 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
 void
 Init_Time(void)
 {
-#undef rb_intern
-#define rb_intern(str) rb_intern_const(str)
-
-    id_submicro = rb_intern("submicro");
-    id_nano_num = rb_intern("nano_num");
-    id_nano_den = rb_intern("nano_den");
-    id_offset = rb_intern("offset");
-    id_zone = rb_intern("zone");
-    id_nanosecond = rb_intern("nanosecond");
-    id_microsecond = rb_intern("microsecond");
-    id_millisecond = rb_intern("millisecond");
-    id_nsec = rb_intern("nsec");
-    id_usec = rb_intern("usec");
-    id_local_to_utc = rb_intern("local_to_utc");
-    id_utc_to_local = rb_intern("utc_to_local");
-    id_year = rb_intern("year");
-    id_mon = rb_intern("mon");
-    id_mday = rb_intern("mday");
-    id_hour = rb_intern("hour");
-    id_min = rb_intern("min");
-    id_sec = rb_intern("sec");
-    id_isdst = rb_intern("isdst");
-    id_find_timezone = rb_intern("find_timezone");
+    id_submicro = rb_intern_const("submicro");
+    id_nano_num = rb_intern_const("nano_num");
+    id_nano_den = rb_intern_const("nano_den");
+    id_offset = rb_intern_const("offset");
+    id_zone = rb_intern_const("zone");
+    id_nanosecond = rb_intern_const("nanosecond");
+    id_microsecond = rb_intern_const("microsecond");
+    id_millisecond = rb_intern_const("millisecond");
+    id_nsec = rb_intern_const("nsec");
+    id_usec = rb_intern_const("usec");
+    id_local_to_utc = rb_intern_const("local_to_utc");
+    id_utc_to_local = rb_intern_const("utc_to_local");
+    id_year = rb_intern_const("year");
+    id_mon = rb_intern_const("mon");
+    id_mday = rb_intern_const("mday");
+    id_hour = rb_intern_const("hour");
+    id_min = rb_intern_const("min");
+    id_sec = rb_intern_const("sec");
+    id_isdst = rb_intern_const("isdst");
+    id_find_timezone = rb_intern_const("find_timezone");
 
     str_utc = rb_fstring_lit("UTC");
     rb_gc_register_mark_object(str_utc);

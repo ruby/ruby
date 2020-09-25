@@ -5459,15 +5459,12 @@ Init_Thread_Mutex()
 void
 Init_Thread(void)
 {
-#undef rb_intern
-#define rb_intern(str) rb_intern_const(str)
-
     VALUE cThGroup;
     rb_thread_t *th = GET_THREAD();
 
-    sym_never = ID2SYM(rb_intern("never"));
-    sym_immediate = ID2SYM(rb_intern("immediate"));
-    sym_on_blocking = ID2SYM(rb_intern("on_blocking"));
+    sym_never = ID2SYM(rb_intern_const("never"));
+    sym_immediate = ID2SYM(rb_intern_const("immediate"));
+    sym_on_blocking = ID2SYM(rb_intern_const("on_blocking"));
 
     rb_define_singleton_method(rb_cThread, "new", thread_s_new, -1);
     rb_define_singleton_method(rb_cThread, "start", thread_start, -2);
@@ -5547,7 +5544,7 @@ Init_Thread(void)
 	rb_define_const(cThGroup, "Default", th->thgroup);
     }
 
-    recursive_key = rb_intern("__recursive_key__");
+    recursive_key = rb_intern_const("__recursive_key__");
     rb_eThreadError = rb_define_class("ThreadError", rb_eStandardError);
 
     /* init thread core */

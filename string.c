@@ -11418,9 +11418,6 @@ sym_all_symbols(VALUE _)
 void
 Init_String(void)
 {
-#undef rb_intern
-#define rb_intern(str) rb_intern_const(str)
-
     rb_cString  = rb_define_class("String", rb_cObject);
     assert(rb_vm_fstring_table());
     st_foreach(rb_vm_fstring_table(), fstring_set_class_i, rb_cString);
@@ -11476,10 +11473,10 @@ Init_String(void)
     rb_define_method(rb_cString, "dump", rb_str_dump, 0);
     rb_define_method(rb_cString, "undump", str_undump, 0);
 
-    sym_ascii      = ID2SYM(rb_intern("ascii"));
-    sym_turkic     = ID2SYM(rb_intern("turkic"));
-    sym_lithuanian = ID2SYM(rb_intern("lithuanian"));
-    sym_fold       = ID2SYM(rb_intern("fold"));
+    sym_ascii      = ID2SYM(rb_intern_const("ascii"));
+    sym_turkic     = ID2SYM(rb_intern_const("turkic"));
+    sym_lithuanian = ID2SYM(rb_intern_const("lithuanian"));
+    sym_fold       = ID2SYM(rb_intern_const("fold"));
 
     rb_define_method(rb_cString, "upcase", rb_str_upcase, -1);
     rb_define_method(rb_cString, "downcase", rb_str_downcase, -1);
@@ -11572,8 +11569,8 @@ Init_String(void)
 
     /* define UnicodeNormalize module here so that we don't have to look it up */
     mUnicodeNormalize          = rb_define_module("UnicodeNormalize");
-    id_normalize               = rb_intern("normalize");
-    id_normalized_p            = rb_intern("normalized?");
+    id_normalize               = rb_intern_const("normalize");
+    id_normalized_p            = rb_intern_const("normalized?");
 
     rb_define_method(rb_cString, "unicode_normalize", rb_str_unicode_normalize, -1);
     rb_define_method(rb_cString, "unicode_normalize!", rb_str_unicode_normalize_bang, -1);

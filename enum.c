@@ -4172,9 +4172,6 @@ enum_uniq(VALUE obj)
 void
 Init_Enumerable(void)
 {
-#undef rb_intern
-#define rb_intern(str) rb_intern_const(str)
-
     rb_mEnumerable = rb_define_module("Enumerable");
 
     rb_define_method(rb_mEnumerable, "to_a", enum_to_a, -1);
@@ -4236,5 +4233,5 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "sum", enum_sum, -1);
     rb_define_method(rb_mEnumerable, "uniq", enum_uniq, 0);
 
-    id_next = rb_intern("next");
+    id_next = rb_intern_const("next");
 }

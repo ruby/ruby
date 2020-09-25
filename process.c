@@ -8441,8 +8441,6 @@ static VALUE rb_mProcID_Syscall;
 void
 InitVM_process(void)
 {
-#undef rb_intern
-#define rb_intern(str) rb_intern_const(str)
     rb_define_virtual_variable("$?", get_CHILD_STATUS, 0);
     rb_define_virtual_variable("$$", get_PROCESS_ID, 0);
 
@@ -8872,46 +8870,46 @@ InitVM_process(void)
 void
 Init_process(void)
 {
-    id_in = rb_intern("in");
-    id_out = rb_intern("out");
-    id_err = rb_intern("err");
-    id_pid = rb_intern("pid");
-    id_uid = rb_intern("uid");
-    id_gid = rb_intern("gid");
-    id_close = rb_intern("close");
-    id_child = rb_intern("child");
+    id_in = rb_intern_const("in");
+    id_out = rb_intern_const("out");
+    id_err = rb_intern_const("err");
+    id_pid = rb_intern_const("pid");
+    id_uid = rb_intern_const("uid");
+    id_gid = rb_intern_const("gid");
+    id_close = rb_intern_const("close");
+    id_child = rb_intern_const("child");
 #ifdef HAVE_SETPGID
-    id_pgroup = rb_intern("pgroup");
+    id_pgroup = rb_intern_const("pgroup");
 #endif
 #ifdef _WIN32
-    id_new_pgroup = rb_intern("new_pgroup");
+    id_new_pgroup = rb_intern_const("new_pgroup");
 #endif
-    id_unsetenv_others = rb_intern("unsetenv_others");
-    id_chdir = rb_intern("chdir");
-    id_umask = rb_intern("umask");
-    id_close_others = rb_intern("close_others");
-    id_ENV = rb_intern("ENV");
-    id_nanosecond = rb_intern("nanosecond");
-    id_microsecond = rb_intern("microsecond");
-    id_millisecond = rb_intern("millisecond");
-    id_second = rb_intern("second");
-    id_float_microsecond = rb_intern("float_microsecond");
-    id_float_millisecond = rb_intern("float_millisecond");
-    id_float_second = rb_intern("float_second");
-    id_GETTIMEOFDAY_BASED_CLOCK_REALTIME = rb_intern("GETTIMEOFDAY_BASED_CLOCK_REALTIME");
-    id_TIME_BASED_CLOCK_REALTIME = rb_intern("TIME_BASED_CLOCK_REALTIME");
+    id_unsetenv_others = rb_intern_const("unsetenv_others");
+    id_chdir = rb_intern_const("chdir");
+    id_umask = rb_intern_const("umask");
+    id_close_others = rb_intern_const("close_others");
+    id_ENV = rb_intern_const("ENV");
+    id_nanosecond = rb_intern_const("nanosecond");
+    id_microsecond = rb_intern_const("microsecond");
+    id_millisecond = rb_intern_const("millisecond");
+    id_second = rb_intern_const("second");
+    id_float_microsecond = rb_intern_const("float_microsecond");
+    id_float_millisecond = rb_intern_const("float_millisecond");
+    id_float_second = rb_intern_const("float_second");
+    id_GETTIMEOFDAY_BASED_CLOCK_REALTIME = rb_intern_const("GETTIMEOFDAY_BASED_CLOCK_REALTIME");
+    id_TIME_BASED_CLOCK_REALTIME = rb_intern_const("TIME_BASED_CLOCK_REALTIME");
 #ifdef HAVE_TIMES
-    id_TIMES_BASED_CLOCK_MONOTONIC = rb_intern("TIMES_BASED_CLOCK_MONOTONIC");
-    id_TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID = rb_intern("TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID");
+    id_TIMES_BASED_CLOCK_MONOTONIC = rb_intern_const("TIMES_BASED_CLOCK_MONOTONIC");
+    id_TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID = rb_intern_const("TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID");
 #endif
 #ifdef RUSAGE_SELF
-    id_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID = rb_intern("GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID");
+    id_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID = rb_intern_const("GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID");
 #endif
-    id_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID = rb_intern("CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID");
+    id_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID = rb_intern_const("CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID");
 #ifdef __APPLE__
-    id_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC = rb_intern("MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC");
+    id_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC = rb_intern_const("MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC");
 #endif
-    id_hertz = rb_intern("hertz");
+    id_hertz = rb_intern_const("hertz");
 
     InitVM(process);
 }

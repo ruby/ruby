@@ -4479,9 +4479,6 @@ InitVM_Object(void)
     rb_cClass =  rb_define_class("Class",  rb_cModule);
 #endif
 
-#undef rb_intern
-#define rb_intern(str) rb_intern_const(str)
-
     rb_define_private_method(rb_cBasicObject, "initialize", rb_obj_dummy0, 0);
     rb_define_alloc_func(rb_cBasicObject, rb_class_allocate_instance);
     rb_define_method(rb_cBasicObject, "==", rb_obj_equal, 1);

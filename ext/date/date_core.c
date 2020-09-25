@@ -9116,13 +9116,10 @@ d_lite_zero(VALUE x)
 void
 Init_date_core(void)
 {
-#undef rb_intern
-#define rb_intern(str) rb_intern_const(str)
-
-    id_cmp = rb_intern("<=>");
-    id_le_p = rb_intern("<=");
-    id_ge_p = rb_intern(">=");
-    id_eqeq_p = rb_intern("==");
+    id_cmp = rb_intern_const("<=>");
+    id_le_p = rb_intern_const("<=");
+    id_ge_p = rb_intern_const(">=");
+    id_eqeq_p = rb_intern_const("==");
 
     half_days_in_day = rb_rational_new2(INT2FIX(1), INT2FIX(2));
 
