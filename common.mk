@@ -10030,6 +10030,7 @@ ractor.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/serial.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/string.h
+ractor.$(OBJEXT): $(top_srcdir)/internal/struct.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/vm.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 ractor.$(OBJEXT): {$(VPATH)}assert.h
