@@ -83,11 +83,7 @@
  * @see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=69560
  * @see https://bugs.llvm.org/show_bug.cgi?id=26547
  */
-#if defined(__STDC_VERSION__) && defined(HAVE__ALIGNOF)
-# /* Autoconf detected availability of a sane `_Alignof()`. */
-# define RBIMPL_ALIGNOF(T) RB_GNUC_EXTENSION(_Alignof(T))
-
-#elif defined(__cplusplus)
+#if defined(__cplusplus)
 # /* C++11 `alignof()` can be buggy. */
 # /* see: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=69560 */
 # /* But don't worry, we can use templates. */
@@ -110,6 +106,10 @@ struct rbimpl_alignof {
 #elif RBIMPL_COMPILER_IS(MSVC)
 # /* Windows have no alignment glitch.*/
 # define RBIMPL_ALIGNOF __alignof
+
+#elif defined(HAVE__ALIGNOF)
+# /* Autoconf detected availability of a sane `_Alignof()`. */
+# define RBIMPL_ALIGNOF(T) RB_GNUC_EXTENSION(_Alignof(T))
 
 #else
 # /* :BEWARE:  This is  the last  resort.   If your  compiler somehow  supports
