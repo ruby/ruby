@@ -99,8 +99,12 @@ class TestDir < Test::Unit::TestCase
     ENV["HOME"] = @pwd
     Dir.chdir do
       assert_equal(@pwd, Dir.pwd)
-      Dir.chdir(@root)
-      assert_equal(@root, Dir.pwd)
+      assert_raise(RuntimeError) { Dir.chdir(@root) }
+      assert_equal(@pwd, Dir.pwd)
+      Dir.chdir(@root) do
+        assert_equal(@root, Dir.pwd)
+      end
+      assert_equal(@pwd, Dir.pwd)
     end
 
   ensure
@@ -118,6 +122,28 @@ class TestDir < Test::Unit::TestCase
       ENV["LOGDIR"] = @env_logdir
     else
       ENV.delete("LOGDIR")
+    end
+  end
+
+  def test_chdir_conflict
+    @pwd = Dir.pwd
+    q = Queue.new
+    t = Thread.new do
+      q.pop
+      Dir.chdir(@pwd) rescue $!
+    end
+    Dir.chdir(@pwd) do
+      q.push nil
+      assert_instance_of(RuntimeError, t.value)
+    end
+
+    t = Thread.new do
+      q.pop
+      Dir.chdir(@pwd){} rescue $!
+    end
+    Dir.chdir(@pwd) do
+      q.push nil
+      assert_instance_of(RuntimeError, t.value)
     end
   end
 

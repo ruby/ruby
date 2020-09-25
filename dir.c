@@ -1024,7 +1024,8 @@ chdir_restore(VALUE v)
  *  block. <code>chdir</code> blocks can be nested, but in a
  *  multi-threaded program an error will be raised if a thread attempts
  *  to open a <code>chdir</code> block while another thread has one
- *  open.
+ *  open or a call to <code>chdir</code> without a block occurs inside
+ *  a block passed to <code>chdir</code> (even in the same thread).
  *
  *     Dir.chdir("/var/spool/mail")
  *     puts Dir.pwd
@@ -1064,7 +1065,7 @@ dir_s_chdir(int argc, VALUE *argv, VALUE obj)
 
     if (chdir_blocking > 0) {
 	if (!rb_block_given_p() || rb_thread_current() != chdir_thread)
-	    rb_warn("conflicting chdir during another chdir block");
+            rb_raise(rb_eRuntimeError, "conflicting chdir during another chdir block");
     }
 
     if (rb_block_given_p()) {
