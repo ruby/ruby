@@ -7,6 +7,7 @@
 **********************************************************************/
 
 #include "internal.h"
+#include "internal/variable.h"
 #include "internal/util.h"
 #include "ruby/memory_view.h"
 
@@ -31,7 +32,7 @@ static const rb_data_type_t memory_view_entry_data_type = {
 bool
 rb_memory_view_register(VALUE klass, const rb_memory_view_entry_t *entry) {
     Check_Type(klass, T_CLASS);
-    VALUE entry_obj = rb_ivar_get(klass, id_memory_view);
+    VALUE entry_obj = rb_ivar_lookup(klass, id_memory_view, Qnil);
     if (! NIL_P(entry_obj)) {
         rb_warning("Duplicated registration of memory view to %"PRIsVALUE, klass);
         return 0;
@@ -447,14 +448,14 @@ rb_memory_view_get_item_pointer(rb_memory_view_t *view, const ssize_t *indices)
 static const rb_memory_view_entry_t *
 lookup_memory_view_entry(VALUE klass)
 {
-    VALUE entry_obj = rb_ivar_get(klass, id_memory_view);
+    VALUE entry_obj = rb_ivar_lookup(klass, id_memory_view, Qnil);
     while (NIL_P(entry_obj)) {
         klass = rb_class_get_superclass(klass);
 
         if (klass == rb_cBasicObject || klass == rb_cObject)
             return NULL;
 
-        entry_obj = rb_ivar_get(klass, id_memory_view);
+        entry_obj = rb_ivar_lookup(klass, id_memory_view, Qnil);
     }
 
     if (! rb_typeddata_is_kind_of(entry_obj, &memory_view_entry_data_type))
