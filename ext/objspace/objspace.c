@@ -52,30 +52,45 @@ struct total_data {
     VALUE klass;
 };
 
-static int
-total_i(void *vstart, void *vend, size_t stride, void *ptr)
+static void
+total_i(VALUE v, void *ptr)
 {
-    VALUE v;
     struct total_data *data = (struct total_data *)ptr;
+
+    switch (BUILTIN_TYPE(v)) {
+      case T_NONE:
+      case T_IMEMO:
+      case T_ICLASS:
+      case T_NODE:
+      case T_ZOMBIE:
+          return;
+      default:
+          if (data->klass == 0 || rb_obj_is_kind_of(v, data->klass)) {
+              data->total += rb_obj_memsize_of(v);
+          }
+    }
+}
+
+typedef void (*each_obj_with_flags)(VALUE, void*);
+
+struct obj_itr {
+    each_obj_with_flags cb;
+    void *data;
+};
+
+static int
+heap_iter(void *vstart, void *vend, size_t stride, void *ptr)
+{
+    struct obj_itr * ctx = (struct obj_itr *)ptr;
+    VALUE v;
 
     for (v = (VALUE)vstart; v != (VALUE)vend; v += stride) {
         void *poisoned = asan_poisoned_object_p(v);
         asan_unpoison_object(v, false);
 
-	if (RBASIC(v)->flags) {
-	    switch (BUILTIN_TYPE(v)) {
-	      case T_NONE:
-	      case T_IMEMO:
-	      case T_ICLASS:
-	      case T_NODE:
-	      case T_ZOMBIE:
-		continue;
-	      default:
-		if (data->klass == 0 || rb_obj_is_kind_of(v, data->klass)) {
-		    data->total += rb_obj_memsize_of(v);
-		}
-	    }
-	}
+        if (RBASIC(v)->flags) {
+            (*ctx->cb)(v, ctx->data);
+        }
 
         if (poisoned) {
             asan_poison_object(v);
@@ -83,6 +98,15 @@ total_i(void *vstart, void *vend, size_t stride, void *ptr)
     }
 
     return 0;
+}
+
+static void
+each_object_with_flags(each_obj_with_flags cb, void *ctx)
+{
+    struct obj_itr data;
+    data.cb = cb;
+    data.data = ctx;
+    rb_objspace_each_objects(heap_iter, &data);
 }
 
 /*
@@ -122,7 +146,7 @@ memsize_of_all_m(int argc, VALUE *argv, VALUE self)
 	rb_scan_args(argc, argv, "01", &data.klass);
     }
 
-    rb_objspace_each_objects(total_i, &data);
+    each_object_with_flags(total_i, &data);
     return SIZET2NUM(data.total);
 }
 
@@ -156,25 +180,11 @@ setup_hash(int argc, VALUE *argv)
     return hash;
 }
 
-static int
-cos_i(void *vstart, void *vend, size_t stride, void *data)
+static void
+cos_i(VALUE v, void *data)
 {
     size_t *counts = (size_t *)data;
-    VALUE v = (VALUE)vstart;
-
-    for (;v != (VALUE)vend; v += stride) {
-        void *ptr = asan_poisoned_object_p(v);
-        asan_unpoison_object(v, false);
-
-	if (RBASIC(v)->flags) {
-	    counts[BUILTIN_TYPE(v)] += rb_obj_memsize_of(v);
-	}
-
-        if (ptr) {
-            asan_poison_object(v);
-        }
-    }
-    return 0;
+    counts[BUILTIN_TYPE(v)] += rb_obj_memsize_of(v);
 }
 
 static VALUE
@@ -251,7 +261,7 @@ count_objects_size(int argc, VALUE *argv, VALUE os)
 	counts[i] = 0;
     }
 
-    rb_objspace_each_objects(cos_i, &counts[0]);
+    each_object_with_flags(cos_i, &counts[0]);
 
     for (i = 0; i <= T_MASK; i++) {
 	if (counts[i]) {
@@ -269,32 +279,20 @@ struct dynamic_symbol_counts {
     size_t immortal;
 };
 
-static int
-cs_i(void *vstart, void *vend, size_t stride, void *n)
+static void
+cs_i(VALUE v, void *n)
 {
     struct dynamic_symbol_counts *counts = (struct dynamic_symbol_counts *)n;
-    VALUE v = (VALUE)vstart;
 
-    for (; v != (VALUE)vend; v += stride) {
-        void *ptr = asan_poisoned_object_p(v);
-        asan_unpoison_object(v, false);
-
-	if (RBASIC(v)->flags && BUILTIN_TYPE(v) == T_SYMBOL) {
-	    ID id = RSYMBOL(v)->id;
-	    if ((id & ~ID_SCOPE_MASK) == 0) {
-		counts->mortal++;
-	    }
-	    else {
-		counts->immortal++;
-	    }
-	}
-
-        if (ptr) {
-            asan_poison_object(v);
+    if (BUILTIN_TYPE(v) == T_SYMBOL) {
+        ID id = RSYMBOL(v)->id;
+        if ((id & ~ID_SCOPE_MASK) == 0) {
+            counts->mortal++;
+        }
+        else {
+            counts->immortal++;
         }
     }
-
-    return 0;
 }
 
 size_t rb_sym_immortal_count(void);
@@ -332,7 +330,7 @@ count_symbols(int argc, VALUE *argv, VALUE os)
     VALUE hash = setup_hash(argc, argv);
 
     size_t immortal_symbols = rb_sym_immortal_count();
-    rb_objspace_each_objects(cs_i, &dynamic_counts);
+    each_object_with_flags(cs_i, &dynamic_counts);
 
     rb_hash_aset(hash, ID2SYM(rb_intern("mortal_dynamic_symbol")),   SIZET2NUM(dynamic_counts.mortal));
     rb_hash_aset(hash, ID2SYM(rb_intern("immortal_dynamic_symbol")), SIZET2NUM(dynamic_counts.immortal));
@@ -342,20 +340,15 @@ count_symbols(int argc, VALUE *argv, VALUE os)
     return hash;
 }
 
-static int
-cn_i(void *vstart, void *vend, size_t stride, void *n)
+static void
+cn_i(VALUE v, void *n)
 {
     size_t *nodes = (size_t *)n;
-    VALUE v = (VALUE)vstart;
 
-    for (; v != (VALUE)vend; v += stride) {
-	if (RBASIC(v)->flags && BUILTIN_TYPE(v) == T_NODE) {
-	    size_t s = nd_type((NODE *)v);
-	    nodes[s]++;
-	}
+    if (BUILTIN_TYPE(v) == T_NODE) {
+        size_t s = nd_type((NODE *)v);
+        nodes[s]++;
     }
-
-    return 0;
 }
 
 /*
@@ -392,7 +385,7 @@ count_nodes(int argc, VALUE *argv, VALUE os)
 	nodes[i] = 0;
     }
 
-    rb_objspace_each_objects(cn_i, &nodes[0]);
+    each_object_with_flags(cn_i, &nodes[0]);
 
     for (i=0; i<NODE_LAST; i++) {
 	if (nodes[i] != 0) {
@@ -515,43 +508,31 @@ count_nodes(int argc, VALUE *argv, VALUE os)
     return hash;
 }
 
-static int
-cto_i(void *vstart, void *vend, size_t stride, void *data)
+static void
+cto_i(VALUE v, void *data)
 {
     VALUE hash = (VALUE)data;
-    VALUE v = (VALUE)vstart;
 
-    for (; v != (VALUE)vend; v += stride) {
-        void *ptr = asan_poisoned_object_p(v);
-        asan_unpoison_object(v, false);
+    if (BUILTIN_TYPE(v) == T_DATA) {
+        VALUE counter;
+        VALUE key = RBASIC(v)->klass;
 
-	if (RBASIC(v)->flags && BUILTIN_TYPE(v) == T_DATA) {
-	    VALUE counter;
-	    VALUE key = RBASIC(v)->klass;
-
-	    if (key == 0) {
-		const char *name = rb_objspace_data_type_name(v);
-		if (name == 0) name = "unknown";
-		key = ID2SYM(rb_intern(name));
-	    }
-
-	    counter = rb_hash_aref(hash, key);
-	    if (NIL_P(counter)) {
-		counter = INT2FIX(1);
-	    }
-	    else {
-		counter = INT2FIX(FIX2INT(counter) + 1);
-	    }
-
-	    rb_hash_aset(hash, key, counter);
-	}
-
-        if (ptr) {
-            asan_poison_object(v);
+        if (key == 0) {
+            const char *name = rb_objspace_data_type_name(v);
+            if (name == 0) name = "unknown";
+            key = ID2SYM(rb_intern(name));
         }
-    }
 
-    return 0;
+        counter = rb_hash_aref(hash, key);
+        if (NIL_P(counter)) {
+            counter = INT2FIX(1);
+        }
+        else {
+            counter = INT2FIX(FIX2INT(counter) + 1);
+        }
+
+        rb_hash_aset(hash, key, counter);
+    }
 }
 
 /*
@@ -590,44 +571,32 @@ static VALUE
 count_tdata_objects(int argc, VALUE *argv, VALUE self)
 {
     VALUE hash = setup_hash(argc, argv);
-    rb_objspace_each_objects(cto_i, (void *)hash);
+    each_object_with_flags(cto_i, (void *)hash);
     return hash;
 }
 
 static ID imemo_type_ids[IMEMO_MASK+1];
 
-static int
-count_imemo_objects_i(void *vstart, void *vend, size_t stride, void *data)
+static void
+count_imemo_objects_i(VALUE v, void *data)
 {
     VALUE hash = (VALUE)data;
-    VALUE v = (VALUE)vstart;
 
-    for (; v != (VALUE)vend; v += stride) {
-        void *ptr = asan_poisoned_object_p(v);
-        asan_unpoison_object(v, false);
+    if (BUILTIN_TYPE(v) == T_IMEMO) {
+        VALUE counter;
+        VALUE key = ID2SYM(imemo_type_ids[imemo_type(v)]);
 
-	if (RBASIC(v)->flags && BUILTIN_TYPE(v) == T_IMEMO) {
-	    VALUE counter;
-	    VALUE key = ID2SYM(imemo_type_ids[imemo_type(v)]);
+        counter = rb_hash_aref(hash, key);
 
-	    counter = rb_hash_aref(hash, key);
-
-	    if (NIL_P(counter)) {
-		counter = INT2FIX(1);
-	    }
-	    else {
-		counter = INT2FIX(FIX2INT(counter) + 1);
-	    }
-
-	    rb_hash_aset(hash, key, counter);
-	}
-
-        if (ptr) {
-            asan_poison_object(v);
+        if (NIL_P(counter)) {
+            counter = INT2FIX(1);
         }
-    }
+        else {
+            counter = INT2FIX(FIX2INT(counter) + 1);
+        }
 
-    return 0;
+        rb_hash_aset(hash, key, counter);
+    }
 }
 
 /*
@@ -679,7 +648,7 @@ count_imemo_objects(int argc, VALUE *argv, VALUE self)
         imemo_type_ids[12] = rb_intern("imemo_callcache");
     }
 
-    rb_objspace_each_objects(count_imemo_objects_i, (void *)hash);
+    each_object_with_flags(count_imemo_objects_i, (void *)hash);
 
     return hash;
 }
