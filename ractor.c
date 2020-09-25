@@ -832,6 +832,10 @@ ractor_try_yield(rb_execution_context_t *ec, rb_ractor_t *cr, struct rb_ractor_b
     ASSERT_ractor_unlocking(cr);
     VM_ASSERT(basket->type != basket_type_none);
 
+    if (cr->outgoing_port_closed) {
+        rb_raise(rb_eRactorClosedError, "The outgoing-port is already closed");
+    }
+
     rb_ractor_t *r;
 
   retry_shift:
@@ -1015,6 +1019,10 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, int alen, VALUE yield
                         if (cr->taking_ractors.cnt > 0) {
                             RUBY_DEBUG_LOG("wakeup_none, but %u taking_ractors are waiting", cr->taking_ractors.cnt);
                             cr->wait.wakeup_status = wakeup_by_retry;
+                            goto skip_sleep;
+                        }
+                        else if (cr->outgoing_port_closed) {
+                            cr->wait.wakeup_status = wakeup_by_close;
                             goto skip_sleep;
                         }
                         break;

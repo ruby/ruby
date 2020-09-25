@@ -225,6 +225,27 @@ assert_equal 'ok', %q{
   end
 }
 
+# Ractor.yield raises Ractor::ClosedError when outgoing port is closed.
+assert_equal 'ok', %q{
+  r = Ractor.new Ractor.current do |main|
+    Ractor.recv
+    main << true
+    Ractor.yield 1
+  end
+
+  r.close_outgoing
+  r << true
+  Ractor.recv
+
+  begin
+    r.take
+  rescue Ractor::ClosedError
+    'ok'
+  else
+    'ng'
+  end
+}
+
 # Raise Ractor::ClosedError when try to send into a ractor with closed incoming port
 assert_equal 'ok', %q{
   r = Ractor.new { Ractor.recv }
