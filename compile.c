@@ -8636,8 +8636,8 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	VALUE flag = INT2FIX(excl);
 	const NODE *b = node->nd_beg;
 	const NODE *e = node->nd_end;
-        // TODO: Ractor can not use cached Range objects
-	if (0 && optimizable_range_item_p(b) && optimizable_range_item_p(e)) {
+
+        if (optimizable_range_item_p(b) && optimizable_range_item_p(e)) {
 	    if (!popped) {
                 VALUE bv = nd_type(b) == NODE_LIT ? b->nd_lit : Qnil;
                 VALUE ev = nd_type(e) == NODE_LIT ? e->nd_lit : Qnil;
