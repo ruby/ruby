@@ -179,5 +179,5 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
     ensure
       File.delete(filespec) if filespec && File.exist?(filespec)
     end
-    end
+  end
 end
