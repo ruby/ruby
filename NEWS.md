@@ -83,6 +83,8 @@ sufficient information, see the ChangeLog file or Redmine
 * Interpolated String literals are no longer frozen when
   `# frozen-string-literal: true` is used. [[Feature #17104]]
 
+* RBS is introduced. It is a type definition languaged for Ruby programs.
+
 ## Command line options
 
 ### `--help` option
@@ -389,6 +391,17 @@ Excluding feature bug fixes.
 * Eliminate VM register access on a method return
 
 * Optimize C method call a little
+
+## RBS
+
+* RBS is a new language for type definition of Ruby programs.
+  It allows writing types of classes and modules with advanced
+  types including union types, overloading, generics, and 
+  _interface types_ for duck typing.
+
+* Ruby ships with type definitions for core/stdlib classes.
+
+* `rbs` gem is bundled to load and process RBS files.
 
 ## Miscellaneous changes
 
