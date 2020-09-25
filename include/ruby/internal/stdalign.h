@@ -112,10 +112,19 @@ struct rbimpl_alignof {
 # define RBIMPL_ALIGNOF __alignof
 
 #else
-# /* :BEWARE: It is  an undefined behaviour to define a  struct/union inside of
-#  * `offsetof()`!  This section is the  last resort.  If your compiler somehow
-#  * supports querying  alignment of a type  please add your own  definition of
-#  * `RBIMPL_ALIGNOF` instead. */
+# /* :BEWARE:  This is  the last  resort.   If your  compiler somehow  supports
+#  * querying the alignment of a type,  you definitely should use that instead.
+#  * There are 2 known pitfalls for this fallback implementation:
+#  *
+#  * Fitst, it is either an undefined  behaviour (C) or an explicit error (C++)
+#  * to define a  struct inside of `offsetof`. C compilers  tend to accept such
+#  * things, but AFAIK C++ has no room to allow.
+#  *
+#  * Second, there exist T  such that `struct { char _; T t;  }` is invalid.  A
+#  * known example is  when T is a  struct with a flexible  array member.  Such
+#  * struct cannot be enclosed into another one.
+#  */
+# /* see: http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2083.htm */
 # /* see: http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2350.htm */
 # define RBIMPL_ALIGNOF(T) offsetof(struct { char _; T t; }, t)
 
