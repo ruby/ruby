@@ -4310,10 +4310,55 @@ str_succ(VALUE str)
 
 /*
  *  call-seq:
- *     str.succ!   -> str
- *     str.next!   -> str
+ *    string.succ! -> self
  *
- *  Equivalent to String#succ, but modifies the receiver in place.
+ *  Returns the successor to +self+ in place. The successor is calculated by
+ *  incrementing characters.
+ *
+ *  The first character to be incremented is the rightmost alphanumeric:
+ *  or, if no alphanumerics, the rightmost character:
+ *    'THX1138'.succ! # => "THX1139"
+ *    '<<koala>>'.succ! # => "<<koalb>>"
+ *    '***'.succ! # => '**+'
+ *
+ *  The successor to a digit is another digit, "carrying" to the next-left
+ *  character for a "rollover" from 9 to 0, and prepending another digit
+ *  if necessary:
+ *    '00'.succ! # => "01"
+ *    '09'.succ! # => "10"
+ *    '99'.succ! # => "100"
+ *
+ *  The successor to a letter is another letter of the same case,
+ *  carrying to the next-left character for a rollover,
+ *  and prepending another same-case letter if necessary:
+ *    'aa'.succ! # => "ab"
+ *    'az'.succ! # => "ba"
+ *    'zz'.succ! # => "aaa"
+ *    'AA'.succ! # => "AB"
+ *    'AZ'.succ! # => "BA"
+ *    'ZZ'.succ! # => "AAA"
+ *
+ *  The successor to a non-alphanumeric character is the next character
+ *  in the underlying character set's collating sequence,
+ *  carrying to the next-left character for a rollover,
+ *  and prepending another character if necessary:
+ *    s = 0.chr * 3
+ *    s # => "\x00\x00\x00"
+ *    s.succ! # => "\x00\x00\x01"
+ *    s = 255.chr * 3
+ *    s # => "\xFF\xFF\xFF"
+ *    s.succ! # => "\x01\x00\x00\x00"
+ *
+ *  Carrying can occur between and among mixtures of alphanumeric characters:
+ *    s = 'zz99zz99'
+ *    s.succ! # => "aaa00aa00"
+ *    s = '99zz99zz'
+ *    s.succ! # => "100aa00aa"
+ *
+ *  The successor to an empty \String is a new empty \String:
+ *    ''.succ! # => ""
+ *
+ *  String#next! is an alias for String#succ!.
  */
 
 static VALUE
