@@ -4418,10 +4418,9 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page,
 
     GC_ASSERT(!MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(dest), dest));
 
-    /* Since every destination slot is a T_NONE, we need this flag to
-     * differentiate between slots that just got freed, and slots that were
-     * already part of the freelist. FL_FROM_FREELIST is set on slots that
-     * were from the freelist */
+    /* T_NONE objects came from the free list.  If the object is *not* a
+     * T_NONE, it is an object that just got freed but hasn't been
+     * added to the freelist yet */
 
     if (BUILTIN_TYPE(dest) == T_NONE) {
         from_freelist = 1;
@@ -4648,6 +4647,7 @@ gc_fill_swept_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *s
                         } else {
                             (*freed_slots)++;
                         }
+                        (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)dest, sizeof(RVALUE));
                         heap_page_add_freeobj(objspace, sweep_page, dest);
                     } else {
                         /* Zombie slots don't get marked, but we can't reuse
@@ -5104,8 +5104,15 @@ gc_sweep(rb_objspace_t *objspace)
 #endif
 	gc_sweep_start(objspace);
         if (objspace->flags.during_compacting) {
+            struct heap_page *page = NULL;
+
+            list_for_each(&heap_eden->pages, page, page_node) {
+                page->flags.before_sweep = TRUE;
+            }
+
             gc_compact_start(objspace, heap_eden);
         }
+
 	gc_sweep_rest(objspace);
 #if !GC_ENABLE_LAZY_SWEEP
 	gc_prof_sweep_timer_stop(objspace);
