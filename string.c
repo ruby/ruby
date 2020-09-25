@@ -4161,7 +4161,6 @@ static VALUE str_succ(VALUE str);
 /*
  *  call-seq:
  *    string.succ -> new_str
- *    string.next -> new_str
  *
  *  Returns the successor to +self+. The successor is calculated by
  *  incrementing characters.
@@ -4200,19 +4199,16 @@ static VALUE str_succ(VALUE str);
  *    s # => "\xFF\xFF\xFF"
  *    s.succ # => "\x01\x00\x00\x00"
  *
- *  Carrying can occur between and among all types of characters:
- *    s = format("%s%s%s%s%s", 255.chr, '9', 'z', '9', 255.chr)
- *    s # => "\xFF9z9\xFF"
- *    s.succ # => "\xFF10a0\xFF"
- *    s = format("%s%s%s%s%s", 'z', 255.chr, '9', 255.chr, 'z')
- *    s # => "z\xFF9\xFFz"
- *    s.succ # => "z\xFF9\xFFaa"
- *    s = format("%s%s%s%s%s", '9', 'z', 255.chr, 'z', '9')
- *    s # => "9z\xFFz9"
- *    s.succ # => "10a\xFFa0"
+ *  Carrying can occur between and among mixtures of alphanumeric characters:
+ *    s = 'zz99zz99'
+ *    s.succ # => "aaa00aa00"
+ *    s = '99zz99zz'
+ *    s.succ # => "100aa00aa"
  *
  *  The successor to an empty \String is a new empty \String:
  *    ''.succ # => ""
+ *
+ *  String#next is an alias for String#succ.
  */
 
 VALUE
