@@ -20,6 +20,7 @@ struct inetsock_arg
     int type;
     int fd;
     VALUE resolv_timeout;
+    VALUE connect_timeout;
 };
 
 static VALUE
@@ -50,6 +51,14 @@ init_inetsock_internal(VALUE v)
     int fd, status = 0, local = 0;
     int family = AF_UNSPEC;
     const char *syscall = 0;
+    VALUE connect_timeout = arg->connect_timeout;
+    struct timeval tv_storage;
+    struct timeval *tv = NULL;
+
+    if (!NIL_P(connect_timeout)) {
+        tv_storage = rb_time_interval(connect_timeout);
+        tv = &tv_storage;
+    }
 
     arg->remote.res = rsock_addrinfo(arg->remote.host, arg->remote.serv,
 				     family, SOCK_STREAM,
@@ -116,7 +125,7 @@ init_inetsock_internal(VALUE v)
 
 	    if (status >= 0) {
 		status = rsock_connect(fd, res->ai_addr, res->ai_addrlen,
-				       (type == INET_SOCKS));
+				       (type == INET_SOCKS), tv);
 		syscall = "connect(2)";
 	    }
 	}
@@ -161,7 +170,7 @@ init_inetsock_internal(VALUE v)
 VALUE
 rsock_init_inetsock(VALUE sock, VALUE remote_host, VALUE remote_serv,
 	            VALUE local_host, VALUE local_serv, int type,
-		    VALUE resolv_timeout)
+		    VALUE resolv_timeout, VALUE connect_timeout)
 {
     struct inetsock_arg arg;
     arg.sock = sock;
@@ -174,6 +183,7 @@ rsock_init_inetsock(VALUE sock, VALUE remote_host, VALUE remote_serv,
     arg.type = type;
     arg.fd = -1;
     arg.resolv_timeout = resolv_timeout;
+    arg.connect_timeout = connect_timeout;
     return rb_ensure(init_inetsock_internal, (VALUE)&arg,
 		     inetsock_cleanup, (VALUE)&arg);
 }

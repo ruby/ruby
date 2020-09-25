@@ -348,6 +348,10 @@ Outstanding ones only.
 
     * Update to IRB 1.2.6
 
+* Socket
+
+    * Add :connect_timeout to TCPSocket.new [[Feature #17187]]
+
 * Net::HTTP
 
     * Net::HTTP#verify_hostname= and Net::HTTP#verify_hostname have been
