@@ -819,14 +819,12 @@ reduce0(RB_BLOCK_CALL_FUNC_ARGLIST(_, data))
 void
 Init_cparse(void)
 {
-#undef rb_intern
-#define rb_intern(str) rb_intern_const(str)
     VALUE Racc, Parser;
     ID id_racc = rb_intern("Racc");
 
     if (rb_const_defined(rb_cObject, id_racc)) {
         Racc = rb_const_get(rb_cObject, id_racc);
-        Parser = rb_const_get_at(Racc, rb_intern("Parser"));
+        Parser = rb_const_get_at(Racc, rb_intern_const("Parser"));
     }
     else {
         Racc = rb_define_module("Racc");
@@ -846,16 +844,16 @@ Init_cparse(void)
 
     RaccBug = rb_eRuntimeError;
 
-    id_yydebug      = rb_intern("@yydebug");
-    id_nexttoken    = rb_intern("next_token");
-    id_onerror      = rb_intern("on_error");
-    id_noreduce     = rb_intern("_reduce_none");
-    id_errstatus    = rb_intern("@racc_error_status");
+    id_yydebug      = rb_intern_const("@yydebug");
+    id_nexttoken    = rb_intern_const("next_token");
+    id_onerror      = rb_intern_const("on_error");
+    id_noreduce     = rb_intern_const("_reduce_none");
+    id_errstatus    = rb_intern_const("@racc_error_status");
 
-    id_d_shift       = rb_intern("racc_shift");
-    id_d_reduce      = rb_intern("racc_reduce");
-    id_d_accept      = rb_intern("racc_accept");
-    id_d_read_token  = rb_intern("racc_read_token");
-    id_d_next_state  = rb_intern("racc_next_state");
-    id_d_e_pop       = rb_intern("racc_e_pop");
+    id_d_shift       = rb_intern_const("racc_shift");
+    id_d_reduce      = rb_intern_const("racc_reduce");
+    id_d_accept      = rb_intern_const("racc_accept");
+    id_d_read_token  = rb_intern_const("racc_read_token");
+    id_d_next_state  = rb_intern_const("racc_next_state");
+    id_d_e_pop       = rb_intern_const("racc_e_pop");
 }

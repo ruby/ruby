@@ -2337,20 +2337,17 @@ void
 Init_Complex(void)
 {
     VALUE compat;
-#undef rb_intern
-#define rb_intern(str) rb_intern_const(str)
-
-    id_abs = rb_intern("abs");
-    id_arg = rb_intern("arg");
-    id_denominator = rb_intern("denominator");
-    id_numerator = rb_intern("numerator");
-    id_real_p = rb_intern("real?");
-    id_i_real = rb_intern("@real");
-    id_i_imag = rb_intern("@image"); /* @image, not @imag */
-    id_finite_p = rb_intern("finite?");
-    id_infinite_p = rb_intern("infinite?");
-    id_rationalize = rb_intern("rationalize");
-    id_PI = rb_intern("PI");
+    id_abs = rb_intern_const("abs");
+    id_arg = rb_intern_const("arg");
+    id_denominator = rb_intern_const("denominator");
+    id_numerator = rb_intern_const("numerator");
+    id_real_p = rb_intern_const("real?");
+    id_i_real = rb_intern_const("@real");
+    id_i_imag = rb_intern_const("@image"); /* @image, not @imag */
+    id_finite_p = rb_intern_const("finite?");
+    id_infinite_p = rb_intern_const("infinite?");
+    id_rationalize = rb_intern_const("rationalize");
+    id_PI = rb_intern_const("PI");
 
     rb_cComplex = rb_define_class("Complex", rb_cNumeric);
 

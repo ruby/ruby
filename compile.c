@@ -9115,18 +9115,16 @@ register_label(rb_iseq_t *iseq, struct st_table *labels_table, VALUE obj)
 static VALUE
 get_exception_sym2type(VALUE sym)
 {
-#undef rb_intern
-#define rb_intern(str) rb_intern_const(str)
     static VALUE symRescue, symEnsure, symRetry;
     static VALUE symBreak, symRedo, symNext;
 
     if (symRescue == 0) {
-	symRescue = ID2SYM(rb_intern("rescue"));
-	symEnsure = ID2SYM(rb_intern("ensure"));
-	symRetry  = ID2SYM(rb_intern("retry"));
-	symBreak  = ID2SYM(rb_intern("break"));
-	symRedo   = ID2SYM(rb_intern("redo"));
-	symNext   = ID2SYM(rb_intern("next"));
+	symRescue = ID2SYM(rb_intern_const("rescue"));
+	symEnsure = ID2SYM(rb_intern_const("ensure"));
+	symRetry  = ID2SYM(rb_intern_const("retry"));
+	symBreak  = ID2SYM(rb_intern_const("break"));
+	symRedo   = ID2SYM(rb_intern_const("redo"));
+	symNext   = ID2SYM(rb_intern_const("next"));
     }
 
     if (sym == symRescue) return CATCH_TYPE_RESCUE;
@@ -9192,7 +9190,7 @@ insn_make_insn_table(void)
     table = st_init_numtable_with_size(VM_INSTRUCTION_SIZE);
 
     for (i=0; i<VM_INSTRUCTION_SIZE; i++) {
-	st_insert(table, ID2SYM(rb_intern(insn_name(i))), i);
+	st_insert(table, ID2SYM(rb_intern_const(insn_name(i))), i);
     }
 
     return table;
@@ -9227,10 +9225,10 @@ iseq_build_callinfo_from_hash(rb_iseq_t *iseq, VALUE op)
     struct rb_callinfo_kwarg *kw_arg = 0;
 
     if (!NIL_P(op)) {
-	VALUE vmid = rb_hash_aref(op, ID2SYM(rb_intern("mid")));
-	VALUE vflag = rb_hash_aref(op, ID2SYM(rb_intern("flag")));
-	VALUE vorig_argc = rb_hash_aref(op, ID2SYM(rb_intern("orig_argc")));
-	VALUE vkw_arg = rb_hash_aref(op, ID2SYM(rb_intern("kw_arg")));
+	VALUE vmid = rb_hash_aref(op, ID2SYM(rb_intern_const("mid")));
+	VALUE vflag = rb_hash_aref(op, ID2SYM(rb_intern_const("flag")));
+	VALUE vorig_argc = rb_hash_aref(op, ID2SYM(rb_intern_const("orig_argc")));
+	VALUE vkw_arg = rb_hash_aref(op, ID2SYM(rb_intern_const("kw_arg")));
 
 	if (!NIL_P(vmid)) mid = SYM2ID(vmid);
 	if (!NIL_P(vflag)) flag = NUM2UINT(vflag);
@@ -9259,7 +9257,7 @@ iseq_build_callinfo_from_hash(rb_iseq_t *iseq, VALUE op)
 static rb_event_flag_t
 event_name_to_flag(VALUE sym)
 {
-#define CHECK_EVENT(ev) if (sym == ID2SYM(rb_intern(#ev))) return ev;
+#define CHECK_EVENT(ev) if (sym == ID2SYM(rb_intern_const(#ev))) return ev;
 		CHECK_EVENT(RUBY_EVENT_LINE);
 		CHECK_EVENT(RUBY_EVENT_CLASS);
 		CHECK_EVENT(RUBY_EVENT_END);
@@ -9464,7 +9462,7 @@ iseq_build_kw(rb_iseq_t *iseq, VALUE params, VALUE keywords)
     iseq->body->param.flags.has_kw = TRUE;
 
     keyword->num = len;
-#define SYM(s) ID2SYM(rb_intern(#s))
+#define SYM(s) ID2SYM(rb_intern_const(#s))
     (void)int_param(&keyword->bits_start, params, SYM(kwbits));
     i = keyword->bits_start - keyword->num;
     ids = (ID *)&iseq->body->local_table[i];
@@ -9577,7 +9575,7 @@ void
 rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc, VALUE locals, VALUE params,
 			 VALUE exception, VALUE body)
 {
-#define SYM(s) ID2SYM(rb_intern(#s))
+#define SYM(s) ID2SYM(rb_intern_const(#s))
     int i, len;
     unsigned int arg_size, local_size, stack_max;
     ID *tbl;
@@ -9585,7 +9583,7 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc, VALUE locals, VALUE params,
     VALUE labels_wrapper = Data_Wrap_Struct(0, rb_mark_set, st_free_table, labels_table);
     VALUE arg_opt_labels = rb_hash_aref(params, SYM(opt));
     VALUE keywords = rb_hash_aref(params, SYM(keyword));
-    VALUE sym_arg_rest = ID2SYM(rb_intern("#arg_rest"));
+    VALUE sym_arg_rest = ID2SYM(rb_intern_const("#arg_rest"));
     DECL_ANCHOR(anchor);
     INIT_ANCHOR(anchor);
 

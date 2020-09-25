@@ -7943,9 +7943,6 @@ rb_ary_deconstruct(VALUE ary)
 void
 Init_Array(void)
 {
-#undef rb_intern
-#define rb_intern(str) rb_intern_const(str)
-
     rb_cArray  = rb_define_class("Array", rb_cObject);
     rb_include_module(rb_cArray, rb_mEnumerable);
 

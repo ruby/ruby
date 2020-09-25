@@ -6912,11 +6912,9 @@ env_update(VALUE env, VALUE hash)
 void
 Init_Hash(void)
 {
-#undef rb_intern
-#define rb_intern(str) rb_intern_const(str)
-    id_hash = rb_intern("hash");
-    id_default = rb_intern("default");
-    id_flatten_bang = rb_intern("flatten!");
+    id_hash = rb_intern_const("hash");
+    id_default = rb_intern_const("default");
+    id_flatten_bang = rb_intern_const("flatten!");
     id_hash_iter_lev = rb_make_internal_id();
 
     rb_cHash = rb_define_class("Hash", rb_cObject);

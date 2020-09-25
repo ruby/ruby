@@ -2723,13 +2723,10 @@ void
 Init_Rational(void)
 {
     VALUE compat;
-#undef rb_intern
-#define rb_intern(str) rb_intern_const(str)
-
-    id_abs = rb_intern("abs");
-    id_integer_p = rb_intern("integer?");
-    id_i_num = rb_intern("@numerator");
-    id_i_den = rb_intern("@denominator");
+    id_abs = rb_intern_const("abs");
+    id_integer_p = rb_intern_const("integer?");
+    id_i_num = rb_intern_const("@numerator");
+    id_i_den = rb_intern_const("@denominator");
 
     rb_cRational = rb_define_class("Rational", rb_cNumeric);
 
