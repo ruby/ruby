@@ -11402,6 +11402,36 @@ sym_all_symbols(VALUE _)
     return rb_sym_all_symbols();
 }
 
+VALUE
+rb_str_to_interned_str(VALUE str)
+{
+    return rb_fstring(str);
+}
+
+VALUE
+rb_interned_str(const char *ptr, long len)
+{
+    return rb_fstring_new(ptr, len);
+}
+
+VALUE
+rb_interned_str_cstr(const char *ptr)
+{
+    return rb_fstring_cstr(ptr);
+}
+
+VALUE
+rb_enc_interned_str(const char *ptr, long len, rb_encoding *enc)
+{
+    return rb_fstring_enc_new(ptr, len, enc);
+}
+
+VALUE
+rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
+{
+    return rb_fstring_enc_new(ptr, strlen(ptr), enc);
+}
+
 /*
  *  A String object holds and manipulates an arbitrary sequence of
  *  bytes, typically representing characters. String objects may be created
