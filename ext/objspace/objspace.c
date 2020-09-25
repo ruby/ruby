@@ -59,7 +59,7 @@ total_i(void *vstart, void *vend, size_t stride, void *ptr)
     struct total_data *data = (struct total_data *)ptr;
 
     for (v = (VALUE)vstart; v != (VALUE)vend; v += stride) {
-        void *ptr = asan_poisoned_object_p(v);
+        void *poisoned = asan_poisoned_object_p(v);
         asan_unpoison_object(v, false);
 
 	if (RBASIC(v)->flags) {
@@ -77,7 +77,7 @@ total_i(void *vstart, void *vend, size_t stride, void *ptr)
 	    }
 	}
 
-        if (ptr) {
+        if (poisoned) {
             asan_poison_object(v);
         }
     }

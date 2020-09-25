@@ -240,6 +240,8 @@ invalidate_all_cc(void *vstart, void *vend, size_t stride, void *data)
 {
     VALUE v = (VALUE)vstart;
     for (; v != (VALUE)vend; v += stride) {
+        void *ptr = asan_poisoned_object_p(v);
+        asan_unpoison_object(v, false);
         if (RBASIC(v)->flags) { // liveness check
             if (RB_TYPE_P(v, T_CLASS) ||
                 RB_TYPE_P(v, T_ICLASS)) {
@@ -248,6 +250,9 @@ invalidate_all_cc(void *vstart, void *vend, size_t stride, void *data)
                 }
                 RCLASS_CC_TBL(v) = NULL;
             }
+        }
+        if (ptr) {
+            asan_poison_object(v);
         }
     }
     return 0; // continue to iteration
