@@ -143,9 +143,16 @@ class TestMemoryView < Test::Unit::TestCase
   end
 
   def test_rb_memory_view_parse_item_format_with_alignment_total_size_with_tail_padding
-    total_size, members, err = MemoryViewTestUtils.parse_item_format("|lc")
+    total_size, members, err = MemoryViewTestUtils.parse_item_format("|lqc")
     assert_nil(err)
-    assert_equal(2*INT32_ALIGNMENT, total_size)
+
+    expected_total_size = sizeof(:int32_t)
+    expected_total_size += alignment_padding(expected_total_size, INT32_ALIGNMENT)
+    expected_total_size += sizeof(:int64_t)
+    expected_total_size += alignment_padding(expected_total_size, INT64_ALIGNMENT)
+    expected_total_size += 1
+    expected_total_size += alignment_padding(expected_total_size, INT64_ALIGNMENT)
+    assert_equal(expected_total_size, total_size)
   end
 
   def test_rb_memory_view_parse_item_format_with_alignment_compound
