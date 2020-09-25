@@ -417,32 +417,64 @@ assert_equal 'no _dump_data is defined for class Thread', %q{
 }
 
 # send sharable and unsharable objects
-assert_equal "[[[1, true], [:sym, true], [:xyzzy, true], [\"frozen\", true], " \
-             "[(3/1), true], [(3+4i), true], [/regexp/, true], [C, true]], " \
-             "[[\"mutable str\", false], [[:array], false], [{:hash=>true}, false]]]", %q{
-  r = Ractor.new do
-    while v = Ractor.recv
+assert_equal "ok", %q{
+  echo_ractor = Ractor.new do
+    loop do
+      v = Ractor.recv
       Ractor.yield v
     end
   end
 
-  class C
+  class C; end
+  module M; end
+
+  shareable_objects = [
+    true,
+    false,
+    nil,
+    1,
+    1.1,    # Float
+    1+2r,   # Rational
+    3+4i,   # Complex
+    2**128, # Bignum
+    :sym,   # Symbol
+    'xyzzy'.to_sym, # dynamic symbol
+    'frozen'.freeze, # frozen String
+    /regexp/, # regexp literal
+    /reg{true}exp/.freeze, # frozen dregexp
+    [1, 2].freeze,   # frozen Array which only refers to shareable
+    {a: 1}.freeze,   # frozen Hash which only refers to shareable
+    [{a: 1}.freeze, 'str'.freeze].freeze, # nested frozen container
+    C, # class
+    M, # module
+    Ractor.current, # Ractor
+  ]
+
+  unshareable_objects = [
+    'mutable str'.dup,
+    [:array],
+    {hash: true},
+  ]
+
+  results = []
+
+  shareable_objects.map{|o|
+    echo_ractor << o
+    o2 = echo_ractor.take
+    results << "#{o} is copied" unless o.object_id == o2.object_id
+  }
+
+  unshareable_objects.map{|o|
+    echo_ractor << o
+    o2 = echo_ractor.take
+    results << "#{o.inspect} is not copied" if o.object_id == o2.object_id
+  }
+
+  if results.empty?
+    :ok
+  else
+    results.inspect
   end
-
-  sharable_objects = [1, :sym, 'xyzzy'.to_sym, 'frozen'.freeze, 1+2r, 3+4i, /regexp/, C]
-
-  sr = sharable_objects.map{|o|
-    r << o
-    o2 = r.take
-    [o, o.object_id == o2.object_id]
-  }
-
-  ur = unsharable_objects = ['mutable str'.dup, [:array], {hash: true}].map{|o|
-    r << o
-    o2 = r.take
-    [o, o.object_id == o2.object_id]
-  }
-  [sr, ur].inspect
 }
 
 # frozen Objects are shareable
