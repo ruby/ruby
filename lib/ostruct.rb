@@ -239,8 +239,6 @@ class OpenStruct
       end
       set_ostruct_member_value!(mname, args[0])
     elsif len == 0
-    elsif @table.key?(mid)
-      raise! ArgumentError, "wrong number of arguments (given #{len}, expected 0)"
     else
       begin
         super
