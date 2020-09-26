@@ -255,8 +255,30 @@ class TC_OpenStruct < Test::Unit::TestCase
   end
 
   def test_access_original_methods
-    os = OpenStruct.new(method: :foo)
+    os = OpenStruct.new(method: :foo, hash: 42)
     assert_equal(os.object_id, os.method!(:object_id).call)
+    assert_not_equal(42, os.hash!)
+  end
+
+  def test_override_subclass
+    c = Class.new(OpenStruct) {
+      def foo; :protect_me; end
+      private def bar; :protect_me; end
+      def inspect; 'protect me'; end
+    }
+    o = c.new(
+      foo: 1, bar: 2, inspect: '3', # in subclass: protected
+      table!: 4, # bang method: protected
+      each_pair: 5, to_s: 'hello', # others: not protected
+    )
+    # protected:
+    assert_equal(:protect_me, o.foo)
+    assert_equal(:protect_me, o.send(:bar))
+    assert_equal('protect me', o.inspect)
+    assert_not_equal(4, o.send(:table!))
+    # not protected:
+    assert_equal(5, o.each_pair)
+    assert_equal('hello', o.to_s)
   end
 
   def test_mistaken_subclass
