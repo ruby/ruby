@@ -83,7 +83,7 @@ sufficient information, see the ChangeLog file or Redmine
 * Interpolated String literals are no longer frozen when
   `# frozen-string-literal: true` is used. [[Feature #17104]]
 
-* RBS is introduced. It is a type definition languaged for Ruby programs.
+* RBS is introduced. It is a type definition language for Ruby programs.
 
 ## Command line options
 
