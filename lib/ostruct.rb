@@ -121,11 +121,10 @@ class OpenStruct
   #   data   # => #<OpenStruct country="Australia", capital="Canberra">
   #
   def initialize(hash=nil)
-    @table = {}
     if hash
-      hash.each_pair do |k, v|
-        set_ostruct_member_value!(k, v)
-      end
+      update_to_values!(hash)
+    else
+      @table = {}
     end
   end
 
@@ -137,7 +136,14 @@ class OpenStruct
 
   private def initialize_dup(orig) # :nodoc:
     super
-    initialize(@table)
+    update_to_values!(@table)
+  end
+
+  private def update_to_values!(hash) # :nodoc:
+    @table = {}
+    hash.each_pair do |k, v|
+      set_ostruct_member_value!(k, v)
+    end
   end
 
   #

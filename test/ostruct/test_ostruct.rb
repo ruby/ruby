@@ -204,6 +204,15 @@ class TC_OpenStruct < Test::Unit::TestCase
     assert_instance_of(c, os)
   end
 
+  def test_initialize_subclass
+    c = Class.new(OpenStruct) {
+      def initialize(x,y={})super(y);end
+    }
+    o = c.new(1, {a: 42})
+    assert_equal(42, o.dup.a)
+    assert_equal(42, o.clone.a)
+  end
+
   def test_private_method
     os = OpenStruct.new
     class << os
