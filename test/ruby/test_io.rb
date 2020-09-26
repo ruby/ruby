@@ -2737,7 +2737,7 @@ __END__
 
   def test_flush_in_finalizer1
     bug3910 = '[ruby-dev:42341]'
-    tmp = Tempfile.open("bug3910") {|t|
+    Tempfile.create("bug3910") {|t|
       path = t.path
       t.close
       fds = []
@@ -2757,12 +2757,11 @@ __END__
         f.close
       end
     }
-    tmp.close!
   end
 
   def test_flush_in_finalizer2
     bug3910 = '[ruby-dev:42341]'
-    Tempfile.open("bug3910") {|t|
+    Tempfile.create("bug3910") {|t|
       path = t.path
       t.close
       begin
@@ -2781,7 +2780,6 @@ __END__
           end
         }
       end
-      t.close!
     }
   end
 
@@ -3400,10 +3398,17 @@ __END__
 
       tempfiles = []
       (0..fd_setsize+1).map {|i|
-        tempfiles << Tempfile.open("test_io_select_with_many_files")
+        tempfiles << Tempfile.create("test_io_select_with_many_files")
       }
 
-      IO.select(tempfiles)
+      begin
+        IO.select(tempfiles)
+      ensure
+        tempfiles.each { |t|
+          t.close
+          File.unlink(t.path)
+        }
+      end
     }, bug8080, timeout: 100
   end if defined?(Process::RLIMIT_NOFILE)
 
