@@ -28,7 +28,7 @@ typedef unsigned int rb_atomic_t;
 
 typedef unsigned int rb_atomic_t; /* Anything OK */
 # define ATOMIC_FETCH_ADD(var, val) __sync_fetch_and_add(&(var), (val))
-# define ATOMIC_FETCH_SUB(var, var) __sync_fetch_and_sub(&(var), (val))
+# define ATOMIC_FETCH_SUB(var, val) __sync_fetch_and_sub(&(var), (val))
 # define ATOMIC_OR(var, val) __sync_fetch_and_or(&(var), (val))
 # define ATOMIC_EXCHANGE(var, val) __sync_lock_test_and_set(&(var), (val))
 # define ATOMIC_CAS(var, oldval, newval) __sync_val_compare_and_swap(&(var), (oldval), (newval))
