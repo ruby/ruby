@@ -60,7 +60,7 @@ udp_connect_internal(VALUE v)
     rb_io_check_closed(fptr = arg->fptr);
     fd = fptr->fd;
     for (res = arg->res->ai; res; res = res->ai_next) {
-	if (rsock_connect(fd, res->ai_addr, res->ai_addrlen, 0) >= 0) {
+	if (rsock_connect(fd, res->ai_addr, res->ai_addrlen, 0, NULL) >= 0) {
 	    return Qtrue;
 	}
     }
