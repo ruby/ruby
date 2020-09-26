@@ -2741,15 +2741,17 @@ __END__
       path = t.path
       t.close
       fds = []
+      ios = []
       assert_nothing_raised(TypeError, bug3910) do
         500.times {
           f = File.open(path, "w")
           f.instance_variable_set(:@test_flush_in_finalizer1, true)
           fds << f.fileno
+          ios << f
           f.print "hoge"
         }
       end
-      t
+      ios.each(&:close) if windows?
     }
   ensure
     ObjectSpace.each_object(File) {|f|
