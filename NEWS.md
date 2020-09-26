@@ -269,6 +269,14 @@ Outstanding ones only.
 
     * Update to IRB 1.2.6
 
+* OpenStruct
+
+    * Initialization no longer lazy [[Bug #12136]]
+    * Builtin methods can now be overridden safely. [[Bug #15409]]
+    * Implementation uses only methods ending with `!`.
+    * Ractor compatible.
+    * Use officially discouraged. Read "Caveats" section.
+
 * Reline
 
     * Update to Reline 0.1.5
