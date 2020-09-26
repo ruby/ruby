@@ -62,6 +62,8 @@
 #   first_pet                 # => #<OpenStruct name="Rowdy">
 #   first_pet == second_pet   # => true
 #
+# Ractor compatibility: A frozen OpenStruct with shareable values is itself shareable.
+#
 # == Caveats
 #
 # An OpenStruct utilizes Ruby's method lookup structure to find and define the
