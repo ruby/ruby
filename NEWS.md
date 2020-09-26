@@ -275,6 +275,7 @@ Outstanding ones only.
     * Builtin methods can now be overridden safely. [[Bug #15409]]
     * Implementation uses only methods ending with `!`.
     * Ractor compatible.
+    * Improved support for YAML [[Bug #8382]]
     * Use officially discouraged. Read "Caveats" section.
 
 * Reline
