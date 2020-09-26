@@ -6332,8 +6332,8 @@ env_to_h(VALUE _)
  *
  *  Returns a hash except the given keys from ENV and their values.
  *
- *     ENV                       #=> {"LANG"="en_US.UTF-8", "TERM"=>"xterm-256color", "HOME"=>"/Users/rhc"}
- *     ENV.except("TERM","HOME") #=> {"LANG"="en_US.UTF-8"}
+ *     ENV                       #=> {"LANG"=>"en_US.UTF-8", "TERM"=>"xterm-256color", "HOME"=>"/Users/rhc"}
+ *     ENV.except("TERM","HOME") #=> {"LANG"=>"en_US.UTF-8"}
  */
 static VALUE
 env_except(int argc, VALUE *argv, VALUE _)
