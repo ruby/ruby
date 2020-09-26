@@ -5,6 +5,8 @@
  *  Copyright, 2019, by Samuel Williams.
 */
 
+#include <sys/types.h>
+
 #include "Context.h"
 
 // http://gcc.gnu.org/onlinedocs/gcc/Alternate-Keywords.html
