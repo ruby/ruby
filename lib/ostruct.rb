@@ -76,6 +76,10 @@
 # Creating an open struct from a small Hash and accessing a few of the
 # entries can be 200 times slower than accessing the hash directly.
 #
+# This is a potential security issue; building OpenStruct from untrusted user data
+# (e.g. JSON web request) may be susceptible to a "symbol denial of service" attack
+# since the keys create methods and names of methods are never garbage collected.
+#
 # This may also be the source of incompatibilities between Ruby versions:
 #
 #   o = OpenStruct.new
@@ -191,14 +195,14 @@ class OpenStruct
   #
   # Provides marshalling support for use by the Marshal library.
   #
-  def marshal_dump
+  def marshal_dump # :nodoc:
     @table
   end
 
   #
   # Provides marshalling support for use by the Marshal library.
   #
-  def marshal_load(x)
+  def marshal_load(x) # :nodoc:
     x.each_key{|key| new_ostruct_member!(key)}
     @table = x
   end
@@ -253,7 +257,7 @@ class OpenStruct
   # :call-seq:
   #   ostruct[name]  -> object
   #
-  # Returns the value of an attribute.
+  # Returns the value of an attribute, or `nil` if there is no such attribute.
   #
   #   require "ostruct"
   #   person = OpenStruct.new("name" => "John Smith", "age" => 70)
@@ -313,7 +317,7 @@ class OpenStruct
   #
   #   person = OpenStruct.new(name: "John", age: 70, pension: 300)
   #
-  #   person.delete_field("age")   # => 70
+  #   person.delete_field!("age")  # => 70
   #   person                       # => #<OpenStruct name="John", pension=300>
   #
   # Setting the value to +nil+ will not remove the attribute:
@@ -388,11 +392,7 @@ class OpenStruct
   end
 
   # Computes a hash code for this OpenStruct.
-  # Two OpenStruct objects with the same content will have the same hash code
-  # (and will compare using #eql?).
-  #
-  # See also Object#hash.
-  def hash
+  def hash # :nodoc:
     @table.hash
   end
 
