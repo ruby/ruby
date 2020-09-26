@@ -94,17 +94,14 @@
 #   o.class # => :luxury
 #   o.class! # => OpenStruct
 #
-# It is recommended (but not enforced) to not use fields ending in `!`.
+# It is recommended (but not enforced) to not use fields ending in `!`;
+# Note that a subclass' methods may not be overwritten, nor can OpenStruct's own methods
+# ending with `!`.
 #
 # For all these reasons, consider not using OpenStruct at all.
 #
 class OpenStruct
   VERSION = "0.2.0"
-
-  instance_methods.each do |method|
-    new_name = "#{method}!"
-    alias_method new_name, method
-  end
 
   #
   # Creates a new OpenStruct object.  By default, the resulting OpenStruct
@@ -164,7 +161,7 @@ class OpenStruct
   #               # => {"country" => "AUSTRALIA", "capital" => "CANBERRA" }
   #
   def to_h(&block)
-    if block_given?
+    if block
       @table.to_h(&block)
     else
       @table.dup
@@ -210,12 +207,22 @@ class OpenStruct
   # define_singleton_method for both the getter method and the setter method.
   #
   def new_ostruct_member!(name) # :nodoc:
-    unless @table.key?(name)
-      define_singleton_method(name) { @table[name] }
-      define_singleton_method("#{name}=") {|x| @table[name] = x}
+    unless @table.key?(name) || is_method_protected!(name)
+      define_singleton_method!(name) { @table[name] }
+      define_singleton_method!("#{name}=") {|x| @table[name] = x}
     end
   end
   private :new_ostruct_member!
+
+  private def is_method_protected!(name) # :nodoc:
+    if !respond_to?(name, true)
+      false
+    elsif name.end_with?('!')
+      true
+    else
+      method!(name).owner < OpenStruct
+    end
+  end
 
   def freeze
     @table.freeze
@@ -226,18 +233,18 @@ class OpenStruct
     len = args.length
     if mname = mid[/.*(?==\z)/m]
       if len != 1
-        raise ArgumentError, "wrong number of arguments (given #{len}, expected 1)", caller(1)
+        raise! ArgumentError, "wrong number of arguments (given #{len}, expected 1)", caller(1)
       end
       set_ostruct_member_value!(mname, args[0])
     elsif len == 0
     elsif @table.key?(mid)
-      raise ArgumentError, "wrong number of arguments (given #{len}, expected 0)"
+      raise! ArgumentError, "wrong number of arguments (given #{len}, expected 0)"
     else
       begin
         super
       rescue NoMethodError => err
         err.backtrace.shift
-        raise
+        raise!
       end
     end
   end
@@ -293,7 +300,7 @@ class OpenStruct
     begin
       name = name.to_sym
     rescue NoMethodError
-      raise TypeError, "#{name} is not a symbol nor a string"
+      raise! TypeError, "#{name} is not a symbol nor a string"
     end
     @table.dig(name, *names)
   end
@@ -321,7 +328,7 @@ class OpenStruct
     rescue NameError
     end
     @table.delete(sym) do
-      raise NameError.new("no field `#{sym}' in #{self}", sym)
+      raise! NameError.new("no field `#{sym}' in #{self}", sym)
     end
   end
 
@@ -344,13 +351,13 @@ class OpenStruct
         ids.pop
       end
     end
-    ['#<', self.class, detail, '>'].join
+    ['#<', self.class!, detail, '>'].join
   end
   alias :to_s :inspect
 
   attr_reader :table # :nodoc:
-  protected :table
   alias table! table
+  protected :table!
 
   #
   # Compares this object and +other+ for equality.  An OpenStruct is equal to
@@ -388,4 +395,13 @@ class OpenStruct
   def hash
     @table.hash
   end
+
+  # Make all public methods (builtin or our own) accessible with `!`:
+  instance_methods.each do |method|
+    new_name = "#{method}!"
+    alias_method new_name, method
+  end
+  # Other builtin private methods we use:
+  alias_method :raise!, :raise
+  private :raise!
 end
