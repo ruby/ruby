@@ -411,7 +411,7 @@ Excluding feature bug fixes.
 
 * RBS is a new language for type definition of Ruby programs.
   It allows writing types of classes and modules with advanced
-  types including union types, overloading, generics, and 
+  types including union types, overloading, generics, and
   _interface types_ for duck typing.
 
 * Ruby ships with type definitions for core/stdlib classes.
