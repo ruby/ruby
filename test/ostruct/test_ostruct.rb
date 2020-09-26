@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 require 'test/unit'
 require 'ostruct'
+require 'yaml'
 
 class TC_OpenStruct < Test::Unit::TestCase
   def test_initialize
@@ -309,4 +310,24 @@ class TC_OpenStruct < Test::Unit::TestCase
     end.take
     assert obj1.object_id == obj2.object_id
   end if defined?(Ractor)
+
+  def test_legacy_yaml
+    s = "--- !ruby/object:OpenStruct\ntable:\n  :foo: 42\n"
+    o = YAML.load(s)
+    assert_equal(42, o.foo)
+
+    o = OpenStruct.new(table: {foo: 42})
+    assert_equal({foo: 42}, YAML.load(YAML.dump(o)).table)
+  end
+
+  def test_yaml
+    h = {name: "John Smith", age: 70, pension: 300.42}
+    yaml = "--- !ruby/object:OpenStruct\nname: John Smith\nage: 70\npension: 300.42\n"
+    os1 = OpenStruct.new(h)
+    os2 = YAML.load(os1.to_yaml)
+    assert_equal yaml, os1.to_yaml
+    assert_equal os1, os2
+    assert_equal true, os1.eql?(os2)
+    assert_equal 300.42, os2.pension
+  end
 end

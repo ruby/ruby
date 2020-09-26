@@ -398,6 +398,33 @@ class OpenStruct
     @table.hash
   end
 
+  #
+  # Provides marshalling support for use by the YAML library.
+  #
+  def encode_with(coder) # :nodoc:
+    @table.each_pair do |key, value|
+      coder[key.to_s] = value
+    end
+    if @table.size == 1 && @table.key?(:table) # support for legacy format
+      # in the very unlikely case of a single entry called 'table'
+      coder['legacy_support!'] = true # add a bogus second entry
+    end
+  end
+
+  #
+  # Provides marshalling support for use by the YAML library.
+  #
+  def init_with(coder) # :nodoc:
+    h = coder.map
+    if h.size == 1 # support for legacy format
+      key, val = h.first
+      if key == 'table'
+        h = val
+      end
+    end
+    update_to_values!(h)
+  end
+
   # Make all public methods (builtin or our own) accessible with `!`:
   instance_methods.each do |method|
     new_name = "#{method}!"
