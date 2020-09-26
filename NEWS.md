@@ -271,6 +271,7 @@ Outstanding ones only.
 
 * OpenStruct
 
+    * New class `OpenStruct::Strict` does not return `nil` for unknown attributes [[Feature #15815]]
     * Initialization no longer lazy [[Bug #12136]]
     * Builtin methods can now be overridden safely. [[Bug #15409]]
     * Implementation uses only methods ending with `!`.

@@ -330,4 +330,12 @@ class TC_OpenStruct < Test::Unit::TestCase
     assert_equal true, os1.eql?(os2)
     assert_equal 300.42, os2.pension
   end
+
+  def test_strict
+    o = OpenStruct::Strict.new(foo: 42)
+    assert_equal(42, o.foo)
+    assert_raise(NoMethodError) { o.bar }
+    o.bar = :ok
+    assert_equal(:ok, o.bar)
+  end
 end

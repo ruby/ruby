@@ -238,8 +238,11 @@ class OpenStruct
         raise! ArgumentError, "wrong number of arguments (given #{len}, expected 1)", caller(1)
       end
       set_ostruct_member_value!(mname, args[0])
-    elsif len == 0
     else
+      if len == 0
+        respond_to_unknown_attribute!(mname) { |val| return val }
+      end
+
       begin
         super
       rescue NoMethodError => err
@@ -247,6 +250,11 @@ class OpenStruct
         raise!
       end
     end
+  end
+
+  # Yield a value to return
+  private def respond_to_unknown_attribute!(_mname) # :nodoc
+    yield nil
   end
 
   #
@@ -427,4 +435,18 @@ class OpenStruct
   # Other builtin private methods we use:
   alias_method :raise!, :raise
   private :raise!
+
+  #
+  # An OpenStruct variant that will raise a `NoMethodError` instead of returning
+  # `nil` for unknown attributes.
+  #
+  #   o = OpenStruct::Strict.new(foo: 42)
+  #   o.foo # => 42
+  #   o.bar # raises `NoMethodError`
+  #
+  class Strict < OpenStruct
+    private def respond_to_unknown_attribute!(_mname) # :nodoc
+      # do nothing
+    end
+  end
 end
