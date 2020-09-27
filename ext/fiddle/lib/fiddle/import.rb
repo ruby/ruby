@@ -83,11 +83,7 @@ module Fiddle
         when Importer
           lib.handlers
         else
-          begin
-            Fiddle.dlopen(lib)
-          rescue DLError
-            raise(DLError, "can't load #{lib}")
-          end
+          Fiddle.dlopen(lib)
         end
       }.flatten()
       @handler = CompositeHandler.new(handles)
