@@ -449,8 +449,8 @@ assert_equal "ok", %q{
     S.new(1, 2).freeze, # frozen Struct
     S.new(1, 2, 3, 4).freeze, # frozen Struct
     (1..2), # Range on Struct
-    (1..),  # Range on Strcut
-    (..1),  # Range on Strcut
+    (1..),  # Range on Struct
+    (..1),  # Range on Struct
     C, # class
     M, # module
     Ractor.current, # Ractor
