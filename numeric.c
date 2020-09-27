@@ -3262,6 +3262,13 @@ rb_int_even_p(VALUE num)
     return int_even_p(num);
 }
 
+static VALUE
+int_bit_p(VALUE num, VALUE mask)
+{
+    mask = rb_to_int(mask);
+    return int_zero_p(rb_int_and(num, mask));
+}
+
 /*
  *  call-seq:
  *     int.allbits?(mask)  ->  true or false
@@ -3286,8 +3293,7 @@ int_allbits_p(VALUE num, VALUE mask)
 static VALUE
 int_anybits_p(VALUE num, VALUE mask)
 {
-    mask = rb_to_int(mask);
-    return int_zero_p(rb_int_and(num, mask)) ? Qfalse : Qtrue;
+    return int_bit_p(num, mask) ? Qfalse : Qtrue;
 }
 
 /*
@@ -3300,8 +3306,7 @@ int_anybits_p(VALUE num, VALUE mask)
 static VALUE
 int_nobits_p(VALUE num, VALUE mask)
 {
-    mask = rb_to_int(mask);
-    return int_zero_p(rb_int_and(num, mask));
+    return int_bit_p(num, mask);
 }
 
 /*
