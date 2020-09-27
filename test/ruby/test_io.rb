@@ -2737,7 +2737,7 @@ __END__
 
   def test_flush_in_finalizer1
     bug3910 = '[ruby-dev:42341]'
-    Tempfile.create("bug3910") {|t|
+    tmp = Tempfile.open("bug3910") {|t|
       path = t.path
       t.close
       fds = []
@@ -2757,6 +2757,7 @@ __END__
         f.close
       end
     }
+    tmp.close!
   end
 
   def test_flush_in_finalizer2
