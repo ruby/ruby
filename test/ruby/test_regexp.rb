@@ -42,7 +42,7 @@ class TestRegexp < Test::Unit::TestCase
 
   def test_yoshidam_net_20041111_1
     s = "[\xC2\xA0-\xC3\xBE]"
-    r = assert_warning(/ignored/) {Regexp.new(s, nil, "u")}
+    r = assert_deprecated_warning(/ignored/) {Regexp.new(s, nil, "u")}
     assert_match(r, "\xC3\xBE")
   end
 
@@ -665,9 +665,9 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_ignorecase
-    v = assert_warning(/variable \$= is no longer effective/) { $= }
+    v = assert_deprecated_warning(/variable \$= is no longer effective/) { $= }
     assert_equal(false, v)
-    assert_warning(/variable \$= is no longer effective; ignored/) { $= = nil }
+    assert_deprecated_warning(/variable \$= is no longer effective; ignored/) { $= = nil }
   end
 
   def test_match_setter
