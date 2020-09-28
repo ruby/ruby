@@ -283,7 +283,8 @@ new_struct(VALUE name, VALUE super)
     }
     id = rb_to_id(name);
     if (rb_const_defined_at(super, id)) {
-	rb_warn("redefining constant %"PRIsVALUE"::%"PRIsVALUE, super, name);
+        rb_category_warn("redefine",
+                "redefining constant %"PRIsVALUE"::%"PRIsVALUE, super, name);
 	rb_mod_remove_const(super, ID2SYM(id));
     }
     return rb_define_class_id_under(super, id, super);
