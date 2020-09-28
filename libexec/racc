@@ -71,10 +71,6 @@ def main
             'Uses CLASSNAME instead of Racc::Parser.') {|name|
     superclass = name
   }
-  parser.on('--runtime=FEATURE',
-            "Uses FEATURE instead of 'racc/parser'") {|feat|
-    runtime = feature
-  }
   parser.on('-C', '--check-only', 'Checks syntax and quit immediately.') {|fl|
     check_only = fl
   }
