@@ -4310,10 +4310,11 @@ str_succ(VALUE str)
 
 /*
  *  call-seq:
- *     str.succ!   -> str
- *     str.next!   -> str
+ *    string.succ! -> self
  *
- *  Equivalent to String#succ, but modifies the receiver in place.
+ *  Equivalent to String#succ, but modifies +self+ in place; returns +self+.
+ *
+ *  String#next! is an alias for String#succ!.
  */
 
 static VALUE
