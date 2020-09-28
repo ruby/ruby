@@ -1956,7 +1956,7 @@ rb_io_writev(VALUE io, int argc, const VALUE *argv)
 	if (io != rb_ractor_stderr() && RTEST(ruby_verbose)) {
 	    VALUE klass = CLASS_OF(io);
 	    char sep = FL_TEST(klass, FL_SINGLETON) ? (klass = io, '.') : '#';
-	    rb_warning("%+"PRIsVALUE"%c""write is outdated interface"
+            rb_category_warning(RB_WARN_CATEGORY_DEPRECATED, "%+"PRIsVALUE"%c""write is outdated interface"
 		       " which accepts just one argument",
 		       klass, sep);
 	}
@@ -7717,7 +7717,7 @@ rb_io_print(int argc, const VALUE *argv, VALUE out)
 	argv = &line;
     }
     if (argc > 1 && !NIL_P(rb_output_fs)) {
-        rb_warn("$, is set to non-nil value");
+        rb_category_warn(RB_WARN_CATEGORY_DEPRECATED, "$, is set to non-nil value");
     }
     for (i=0; i<argc; i++) {
 	if (!NIL_P(rb_output_fs) && i>0) {
@@ -10238,7 +10238,8 @@ rb_f_syscall(int argc, VALUE *argv, VALUE _)
     int i;
 
     if (RTEST(ruby_verbose)) {
-	rb_warning("We plan to remove a syscall function at future release. DL(Fiddle) provides safer alternative.");
+        rb_category_warning(RB_WARN_CATEGORY_DEPRECATED,
+            "We plan to remove a syscall function at future release. DL(Fiddle) provides safer alternative.");
     }
 
     if (argc == 0)
