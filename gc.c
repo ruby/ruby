@@ -9062,7 +9062,13 @@ gc_ref_update(void *vstart, void *vend, size_t stride, rb_objspace_t * objspace,
             if (RVALUE_PAGE_MARKING(page, v)) {
                 page->flags.has_remembered_objects = TRUE;
             }
-            gc_update_object_references(objspace, v);
+            if (page->flags.before_sweep) {
+                if (RVALUE_MARKED(v)) {
+                    gc_update_object_references(objspace, v);
+                }
+            } else {
+                gc_update_object_references(objspace, v);
+            }
         }
 
         if (poisoned) {
