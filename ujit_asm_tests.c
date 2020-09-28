@@ -64,7 +64,8 @@ void run_tests()
 
     codeblock_t cb_obj;
     codeblock_t* cb = &cb_obj;
-    cb_init(cb, 4096);
+    uint8_t* mem_block = alloc_exec_mem(4096);
+    cb_init(cb, mem_block, 4096);
 
     // add
     cb_set_pos(cb, 0); add(cb, CL, imm_opnd(3)); check_bytes(cb, "80C103");
@@ -313,25 +314,13 @@ void run_tests()
     cb_set_pos(cb, 0); sub(cb, RAX, imm_opnd(2)); check_bytes(cb, "4883E802");
 
     // test
-    /*
-    test(
-        delegate void (CodeBlock cb) { cb.instr(TEST, AL, 4); },
-        "A804"
-    );
-    test(
-        delegate void (CodeBlock cb) { cb.instr(TEST, CL, 255); },
-        "F6C1FF"
-    );
-    test(
-        delegate void (CodeBlock cb) { cb.instr(TEST, DL, 7); },
-        "F6C207"
-    );
-    test(
-        delegate void (CodeBlock cb) { cb.instr(TEST, DIL, 9); },
-        "",
-        "40F6C709"
-    );
-    */
+    cb_set_pos(cb, 0); test(cb, CL, imm_opnd(8)); check_bytes(cb, "F6C108");
+    cb_set_pos(cb, 0); test(cb, DL, imm_opnd(7)); check_bytes(cb, "F6C207");
+    cb_set_pos(cb, 0); test(cb, RCX, imm_opnd(8)); check_bytes(cb, "F6C108");
+    cb_set_pos(cb, 0); test(cb, mem_opnd(8, RDX, 8), imm_opnd(8)); check_bytes(cb, "F6420808");
+    cb_set_pos(cb, 0); test(cb, mem_opnd(8, RDX, 8), imm_opnd(255)); check_bytes(cb, "F64208FF");
+    cb_set_pos(cb, 0); test(cb, DX, imm_opnd(0xFFFF)); check_bytes(cb, "66F7C2FFFF");
+    cb_set_pos(cb, 0); test(cb, mem_opnd(16, RDX, 8), imm_opnd(0xFFFF)); check_bytes(cb, "66F74208FFFF");
 
     // xor
     cb_set_pos(cb, 0); xor(cb, EAX, EAX); check_bytes(cb, "31C0");

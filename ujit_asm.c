@@ -127,6 +127,14 @@ x86opnd_t mem_opnd(size_t num_bits, x86opnd_t base_reg, int32_t disp)
     return opnd;
 }
 
+x86opnd_t resize_opnd(x86opnd_t opnd, size_t num_bits)
+{
+    assert (num_bits % 8 == 0);
+    x86opnd_t sub = opnd;
+    sub.num_bits = num_bits;
+    return sub;
+}
+
 x86opnd_t imm_opnd(int64_t imm)
 {
     x86opnd_t opnd = {
@@ -149,11 +157,12 @@ x86opnd_t const_ptr_opnd(void* ptr)
     return opnd;
 }
 
-void cb_init(codeblock_t* cb, size_t mem_size)
+// Allocate a block of executable memory
+uint8_t* alloc_exec_mem(size_t mem_size)
 {
     // Map the memory as executable
-    cb->mem_block = (uint8_t*)mmap(
-        &cb_init,
+    uint8_t* mem_block = (uint8_t*)mmap(
+        &alloc_exec_mem,
         mem_size,
         PROT_READ | PROT_WRITE | PROT_EXEC,
         MAP_PRIVATE | MAP_ANON,
@@ -162,12 +171,19 @@ void cb_init(codeblock_t* cb, size_t mem_size)
     );
 
     // Check that the memory mapping was successful
-    if (cb->mem_block == MAP_FAILED)
+    if (mem_block == MAP_FAILED)
     {
         fprintf(stderr, "mmap call failed\n");
         exit(-1);
     }
 
+    return mem_block;
+}
+
+// Initialize a code block object
+void cb_init(codeblock_t* cb, uint8_t* mem_block, size_t mem_size)
+{
+    cb->mem_block = mem_block;
     cb->mem_size = mem_size;
     cb->write_pos = 0;
     cb->num_labels = 0;
@@ -801,6 +817,26 @@ void cb_write_jcc(codeblock_t* cb, const char* mnem, uint8_t op0, uint8_t op1, s
     cb_write_int(cb, 0, 32);
 }
 
+// Encode a relative jump to a pointer at a 32-bit offset (direct or conditional)
+void cb_write_jcc_ptr(codeblock_t* cb, const char* mnem, uint8_t op0, uint8_t op1, uint8_t* dst_ptr)
+{
+    //cb.writeASM(mnem, label);
+
+    // Write the opcode
+    cb_write_byte(cb, op0);
+    cb_write_byte(cb, op1);
+
+    // Pointer to the end of this jump
+    uint8_t* end_ptr = &cb->mem_block[cb->write_pos] + 4;
+
+    // Compute the jump offset
+    int64_t rel64 = (int64_t)(dst_ptr - end_ptr);
+    assert (rel64 >= -2147483648 && rel64 <= 2147483647);
+
+    // Write the relative 32-bit jump offset
+    cb_write_int(cb, (int32_t)rel64, 32);
+}
+
 // Encode a conditional move instruction
 void cb_write_cmov(codeblock_t* cb, const char* mnem, uint8_t opcode1, x86opnd_t dst, x86opnd_t src)
 {
@@ -1097,6 +1133,38 @@ void jpo (codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "jpo" , 0x0F, 0x
 void js  (codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "js"  , 0x0F, 0x88, label_idx); }
 void jz  (codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "jz"  , 0x0F, 0x84, label_idx); }
 
+/// jcc - Conditional relative jump to a pointer (32-bit offset)
+void ja_ptr  (codeblock_t* cb, uint8_t* ptr) { cb_write_jcc_ptr(cb, "ja"  , 0x0F, 0x87, ptr); }
+void jae_ptr (codeblock_t* cb, uint8_t* ptr) { cb_write_jcc_ptr(cb, "jae" , 0x0F, 0x83, ptr); }
+void jb_ptr  (codeblock_t* cb, uint8_t* ptr) { cb_write_jcc_ptr(cb, "jb"  , 0x0F, 0x82, ptr); }
+void jbe_ptr (codeblock_t* cb, uint8_t* ptr) { cb_write_jcc_ptr(cb, "jbe" , 0x0F, 0x86, ptr); }
+void jc_ptr  (codeblock_t* cb, uint8_t* ptr) { cb_write_jcc_ptr(cb, "jc"  , 0x0F, 0x82, ptr); }
+void je_ptr  (codeblock_t* cb, uint8_t* ptr) { cb_write_jcc_ptr(cb, "je"  , 0x0F, 0x84, ptr); }
+void jg_ptr  (codeblock_t* cb, uint8_t* ptr) { cb_write_jcc_ptr(cb, "jg"  , 0x0F, 0x8F, ptr); }
+void jge_ptr (codeblock_t* cb, uint8_t* ptr) { cb_write_jcc_ptr(cb, "jge" , 0x0F, 0x8D, ptr); }
+void jl_ptr  (codeblock_t* cb, uint8_t* ptr) { cb_write_jcc_ptr(cb, "jl"  , 0x0F, 0x8C, ptr); }
+void jle_ptr (codeblock_t* cb, uint8_t* ptr) { cb_write_jcc_ptr(cb, "jle" , 0x0F, 0x8E, ptr); }
+void jna_ptr (codeblock_t* cb, uint8_t* ptr) { cb_write_jcc_ptr(cb, "jna" , 0x0F, 0x86, ptr); }
+void jnae_ptr(codeblock_t* cb, uint8_t* ptr) { cb_write_jcc_ptr(cb, "jnae", 0x0F, 0x82, ptr); }
+void jnb_ptr (codeblock_t* cb, uint8_t* ptr) { cb_write_jcc_ptr(cb, "jnb" , 0x0F, 0x83, ptr); }
+void jnbe_ptr(codeblock_t* cb, uint8_t* ptr) { cb_write_jcc_ptr(cb, "jnbe", 0x0F, 0x87, ptr); }
+void jnc_ptr (codeblock_t* cb, uint8_t* ptr) { cb_write_jcc_ptr(cb, "jnc" , 0x0F, 0x83, ptr); }
+void jne_ptr (codeblock_t* cb, uint8_t* ptr) { cb_write_jcc_ptr(cb, "jne" , 0x0F, 0x85, ptr); }
+void jng_ptr (codeblock_t* cb, uint8_t* ptr) { cb_write_jcc_ptr(cb, "jng" , 0x0F, 0x8E, ptr); }
+void jnge_ptr(codeblock_t* cb, uint8_t* ptr) { cb_write_jcc_ptr(cb, "jnge", 0x0F, 0x8C, ptr); }
+void jnl_ptr (codeblock_t* cb, uint8_t* ptr) { cb_write_jcc_ptr(cb, "jnl" , 0x0F, 0x8D, ptr); }
+void jnle_ptr(codeblock_t* cb, uint8_t* ptr) { cb_write_jcc_ptr(cb, "jnle", 0x0F, 0x8F, ptr); }
+void jno_ptr (codeblock_t* cb, uint8_t* ptr) { cb_write_jcc_ptr(cb, "jno" , 0x0F, 0x81, ptr); }
+void jnp_ptr (codeblock_t* cb, uint8_t* ptr) { cb_write_jcc_ptr(cb, "jnp" , 0x0F, 0x8b, ptr); }
+void jns_ptr (codeblock_t* cb, uint8_t* ptr) { cb_write_jcc_ptr(cb, "jns" , 0x0F, 0x89, ptr); }
+void jnz_ptr (codeblock_t* cb, uint8_t* ptr) { cb_write_jcc_ptr(cb, "jnz" , 0x0F, 0x85, ptr); }
+void jo_ptr  (codeblock_t* cb, uint8_t* ptr) { cb_write_jcc_ptr(cb, "jo"  , 0x0F, 0x80, ptr); }
+void jp_ptr  (codeblock_t* cb, uint8_t* ptr) { cb_write_jcc_ptr(cb, "jp"  , 0x0F, 0x8A, ptr); }
+void jpe_ptr (codeblock_t* cb, uint8_t* ptr) { cb_write_jcc_ptr(cb, "jpe" , 0x0F, 0x8A, ptr); }
+void jpo_ptr (codeblock_t* cb, uint8_t* ptr) { cb_write_jcc_ptr(cb, "jpo" , 0x0F, 0x8B, ptr); }
+void js_ptr  (codeblock_t* cb, uint8_t* ptr) { cb_write_jcc_ptr(cb, "js"  , 0x0F, 0x88, ptr); }
+void jz_ptr  (codeblock_t* cb, uint8_t* ptr) { cb_write_jcc_ptr(cb, "jz"  , 0x0F, 0x84, ptr); }
+
 /// jmp - Direct relative jump to label
 void jmp(codeblock_t* cb, size_t label_idx)
 {
@@ -1118,19 +1186,6 @@ void jmp_rm(codeblock_t* cb, x86opnd_t opnd)
     //cb.writeASM("jmp", opnd);
     cb_write_rm(cb, false, false, NO_OPND, opnd, 4, 1, 0xFF);
 }
-
-/*
-/// jmp - Jump with relative 8-bit offset
-void jmp8(CodeBlock cb, int8_t offset)
-{
-    /// Opcode for direct jump with relative 8-bit offset
-    const ubyte JMP_REL8_OPCODE = 0xEB;
-
-    cb.writeASM("jmp", ((offset > 0)? "+":"-") ~ to!string(offset));
-    cb.writeByte(JMP_REL8_OPCODE);
-    cb.writeByte(offset);
-}
-*/
 
 // jmp - Jump with relative 32-bit offset
 void jmp32(codeblock_t* cb, int32_t offset)
@@ -1204,7 +1259,7 @@ void mov(codeblock_t* cb, x86opnd_t dst, x86opnd_t src)
             0xC6, // opMemImm8
             0xFF, // opMemImmSml (not available)
             0xFF, // opMemImmLrg
-            0xFF,  // opExtImm
+            0xFF, // opExtImm
             dst,
             src
         );
@@ -1515,6 +1570,30 @@ void sub(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1)
         opnd0,
         opnd1
     );
+}
+
+/// test - Logical Compare
+void test(codeblock_t* cb, x86opnd_t rm_opnd, x86opnd_t imm_opnd)
+{
+    assert (rm_opnd.type == OPND_REG || rm_opnd.type == OPND_MEM);
+    assert (imm_opnd.type == OPND_IMM);
+    assert (imm_opnd.imm >= 0);
+    assert (unsig_imm_size(imm_opnd.unsig_imm) <= 32);
+    assert (unsig_imm_size(imm_opnd.unsig_imm) <= rm_opnd.num_bits);
+
+    // Use the smallest operand size possible
+    rm_opnd = resize_opnd(rm_opnd, unsig_imm_size(imm_opnd.unsig_imm));
+
+    if (rm_opnd.num_bits == 8)
+    {
+        cb_write_rm(cb, false, false, NO_OPND, rm_opnd, 0x00, 1, 0xF6);
+        cb_write_int(cb, imm_opnd.imm, rm_opnd.num_bits);
+    }
+    else
+    {
+        cb_write_rm(cb, rm_opnd.num_bits == 16, false, NO_OPND, rm_opnd, 0x00, 1, 0xF7);
+        cb_write_int(cb, imm_opnd.imm, rm_opnd.num_bits);
+    }
 }
 
 /// Undefined opcode

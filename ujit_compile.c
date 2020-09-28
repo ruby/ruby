@@ -28,7 +28,7 @@ typedef struct ctx_struct
 } ctx_t;
 
 // MicroJIT code generation function signature
-typedef void (*codegen_fn)(codeblock_t* cb, ctx_t* ctx);
+typedef void (*codegen_fn)(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx);
 
 // Map from YARV opcodes to code generation functions
 static st_table *gen_fns;
@@ -37,24 +37,9 @@ static st_table *gen_fns;
 static codeblock_t block;
 static codeblock_t* cb = NULL;
 
-// Initialize MicroJIT. Defined later in this file.
-static void ujit_init();
-
-// Ruby instruction entry
-static void
-ujit_instr_entry(codeblock_t* cb)
-{
-    for (size_t i = 0; i < sizeof(ujit_pre_call_bytes); ++i)
-        cb_write_byte(cb, ujit_pre_call_bytes[i]);
-}
-
-// Ruby instruction exit
-static void
-ujit_instr_exit(codeblock_t* cb)
-{
-    for (size_t i = 0; i < sizeof(ujit_post_call_bytes); ++i)
-        cb_write_byte(cb, ujit_post_call_bytes[i]);
-}
+// Code block into which we write out-of-line machine code
+static codeblock_t outline_block;
+static codeblock_t* ocb = NULL;
 
 // Keep track of mapping from instructions to generated code
 // See comment for rb_encoded_insn_data in iseq.c
@@ -86,6 +71,15 @@ VALUE ctx_get_arg(ctx_t* ctx, size_t arg_idx)
 }
 
 /*
+Get an operand for the adjusted stack pointer address
+*/
+x86opnd_t ctx_sp_opnd(ctx_t* ctx, size_t n)
+{
+    int32_t offset = (ctx->stack_diff) * 8;
+    return mem_opnd(64, RSI, offset);
+}
+
+/*
 Make space on the stack for N values
 Return a pointer to the new stack top
 */
@@ -111,6 +105,66 @@ x86opnd_t ctx_stack_pop(ctx_t* ctx, size_t n)
     ctx->stack_diff -= n;
 
     return top;
+}
+
+// Initialize MicroJIT. Defined later in this file.
+static void ujit_init();
+
+// Ruby instruction entry
+static void
+ujit_gen_entry(codeblock_t* cb)
+{
+    for (size_t i = 0; i < sizeof(ujit_pre_call_bytes); ++i)
+        cb_write_byte(cb, ujit_pre_call_bytes[i]);
+}
+
+/**
+Generate an inline exit to return to the interpreter
+*/
+static void
+ujit_gen_exit(codeblock_t* cb, ctx_t* ctx, VALUE* exit_pc)
+{
+    // Write the adjusted SP back into the CFP
+    if (ctx->stack_diff != 0)
+    {
+        x86opnd_t stack_pointer = ctx_sp_opnd(ctx, 1);
+        lea(cb, RSI, stack_pointer);
+        mov(cb, mem_opnd(64, RDI, 8), RSI);
+    }
+
+    // Directly return the next PC, which is a constant
+    mov(cb, RAX, const_ptr_opnd(exit_pc));
+
+    // Write PC back into the CFP
+    mov(cb, mem_opnd(64, RDI, 0), RAX);
+
+    // Write the post call bytes
+    for (size_t i = 0; i < sizeof(ujit_post_call_bytes); ++i)
+        cb_write_byte(cb, ujit_post_call_bytes[i]);
+}
+
+/**
+Generate an out-of-line exit to return to the interpreter
+*/
+uint8_t*
+ujit_side_exit(codeblock_t* cb, ctx_t* ctx, VALUE* exit_pc)
+{
+    uint8_t* code_ptr = cb_get_ptr(cb, cb->write_pos);
+
+    // Write back the old instruction at the exit PC
+    // Otherwise the interpreter may jump right back to the
+    // JITted code we're trying to exit
+    const void * const *table = rb_vm_get_insns_address_table();
+    int opcode = (int)(*exit_pc);
+    void* old_instr = (void*)table[opcode];
+    mov(cb, RAX, const_ptr_opnd(exit_pc));
+    mov(cb, RCX, const_ptr_opnd(old_instr));
+    mov(cb, mem_opnd(64, RAX, 0), RCX);
+
+    // Generate the code to exit to the interpreters
+    ujit_gen_exit(cb, ctx, exit_pc);
+
+    return code_ptr;
 }
 
 /*
@@ -179,7 +233,7 @@ ujit_compile_insn(rb_iseq_t *iseq, unsigned int insn_idx, unsigned int* next_uji
         // Write the pre call bytes before the first instruction
         if (num_instrs == 0)
         {
-            ujit_instr_entry(cb);
+            ujit_gen_entry(cb);
 
             // Load the current SP from the CFP into RSI
             mov(cb, RSI, mem_opnd(64, RDI, 8));
@@ -187,7 +241,7 @@ ujit_compile_insn(rb_iseq_t *iseq, unsigned int insn_idx, unsigned int* next_uji
 
         // Call the code generation function
         codegen_fn gen_fn = (codegen_fn)st_gen_fn;
-        gen_fn(cb, &ctx);
+        gen_fn(cb, ocb, &ctx);
 
     	// Move to the next instruction
         insn_idx += insn_len(opcode);
@@ -202,56 +256,15 @@ ujit_compile_insn(rb_iseq_t *iseq, unsigned int insn_idx, unsigned int* next_uji
         return NULL;
     }
 
-    // Write the adjusted SP back into the CFP
-    if (ctx.stack_diff != 0)
-    {
-        // The stack pointer points one above the actual stack top
-        x86opnd_t stack_pointer = ctx_stack_push(&ctx, 1);
-        lea(cb, RSI, stack_pointer);
-        mov(cb, mem_opnd(64, RDI, 8), RSI);
-    }
-
-    // Directly return the next PC, which is a constant
-    mov(cb, RAX, const_ptr_opnd(ctx.pc));
-    // Write PC back into the CFP
-    mov(cb, mem_opnd(64, RDI, 0), RAX);
-
-    // Write the post call bytes
-    ujit_instr_exit(cb);
-
-    /*
-    // Hack to patch a relative 32-bit jump to the instruction handler
-    int next_opcode = (int)*ctx.pc;
-    const void * const *table = rb_vm_get_insns_address_table();
-    VALUE encoded = (VALUE)table[next_opcode];
-    uint8_t* p_handler = (uint8_t*)encoded;
-
-    uint8_t* p_code = &cb->mem_block[cb->write_pos];
-    int64_t rel64 = ((int64_t)p_handler) - ((int64_t)p_code - 2 + 5);
-
-    //printf("p_handler: %lld\n", (int64_t)p_handler);
-    //printf("rel64: %lld\n", rel64);
-
-    uint8_t byte0 = cb->mem_block[cb->write_pos - 2];
-    uint8_t byte1 = cb->mem_block[cb->write_pos - 1];
-
-    //printf("cb_init: %lld\n", (int64_t)&cb_init);
-    //printf("%lld\n", rel64);
-
-    if (byte0 == 0xFF && byte1 == 0x20 && rel64 >= -2147483648 && rel64 <= 2147483647)
-    {
-        //printf("%02X %02X\n", (int)byte0, (int)byte1);
-        cb->write_pos -= 2;
-        jmp32(cb, (int32_t)rel64);
-    }
-    */
+    // Generate code to exit to the interpreter
+    ujit_gen_exit(cb, &ctx, ctx.pc);
 
     addr2insn_bookkeeping(code_ptr, first_opcode);
 
     return code_ptr;
 }
 
-void gen_dup(codeblock_t* cb, ctx_t* ctx)
+void gen_dup(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 {
     x86opnd_t dup_val = ctx_stack_pop(ctx, 1);
     x86opnd_t loc0 = ctx_stack_push(ctx, 1);
@@ -261,25 +274,25 @@ void gen_dup(codeblock_t* cb, ctx_t* ctx)
     mov(cb, loc1, RAX);
 }
 
-void gen_nop(codeblock_t* cb, ctx_t* ctx)
+void gen_nop(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 {
     // Do nothing
 }
 
-void gen_pop(codeblock_t* cb, ctx_t* ctx)
+void gen_pop(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 {
     // Decrement SP
     ctx_stack_pop(ctx, 1);
 }
 
-void gen_putnil(codeblock_t* cb, ctx_t* ctx)
+void gen_putnil(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 {
     // Write constant at SP
     x86opnd_t stack_top = ctx_stack_push(ctx, 1);
     mov(cb, stack_top, imm_opnd(Qnil));
 }
 
-void gen_putobject(codeblock_t* cb, ctx_t* ctx)
+void gen_putobject(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 {
     // Get the argument
     VALUE object = ctx_get_arg(ctx, 0);
@@ -291,7 +304,7 @@ void gen_putobject(codeblock_t* cb, ctx_t* ctx)
     mov(cb, stack_top, RAX);
 }
 
-void gen_putobject_int2fix(codeblock_t* cb, ctx_t* ctx)
+void gen_putobject_int2fix(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 {
     int opcode = ctx_get_opcode(ctx);
     int cst_val = (opcode == BIN(putobject_INT2FIX_0_))? 0:1;
@@ -301,7 +314,7 @@ void gen_putobject_int2fix(codeblock_t* cb, ctx_t* ctx)
     mov(cb, stack_top, imm_opnd(INT2FIX(cst_val)));
 }
 
-void gen_putself(codeblock_t* cb, ctx_t* ctx)
+void gen_putself(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 {
     // Load self from CFP
     mov(cb, RAX, mem_opnd(64, RDI, 24));
@@ -311,7 +324,7 @@ void gen_putself(codeblock_t* cb, ctx_t* ctx)
     mov(cb, stack_top, RAX);
 }
 
-void gen_getlocal_wc0(codeblock_t* cb, ctx_t* ctx)
+void gen_getlocal_wc0(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 {
     // Load environment pointer EP from CFP
     mov(cb, RDX, mem_opnd(64, RDI, 32));
@@ -328,10 +341,8 @@ void gen_getlocal_wc0(codeblock_t* cb, ctx_t* ctx)
     mov(cb, stack_top, RCX);
 }
 
-void gen_setlocal_wc0(codeblock_t* cb, ctx_t* ctx)
+void gen_setlocal_wc0(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 {
-    //vm_env_write(vm_get_ep(GET_EP(), level), -(int)idx, val);
-
     /*
     vm_env_write(const VALUE *ep, int index, VALUE v)
     {
@@ -348,40 +359,35 @@ void gen_setlocal_wc0(codeblock_t* cb, ctx_t* ctx)
     // Load environment pointer EP from CFP
     mov(cb, RDX, mem_opnd(64, RDI, 32));
 
-    // We could and the flags directly from the mem operand?
-    x86opnd_t flags_opnd = mem_opnd(64, RAX, 8 * VM_ENV_DATA_INDEX_FLAGS);
-
     // flags & VM_ENV_FLAG_WB_REQUIRED
-    and(cb, flags_opnd, imm_opnd(VM_ENV_FLAG_WB_REQUIRED));
+    x86opnd_t flags_opnd = mem_opnd(64, RDX, 8 * VM_ENV_DATA_INDEX_FLAGS);
+    test(cb, flags_opnd, imm_opnd(VM_ENV_FLAG_WB_REQUIRED));
 
+    // Create a size-exit to fall back to the interpreter
+    uint8_t* side_exit = ujit_side_exit(ocb, ctx, ctx->pc);
 
-    // TODO: you need a label_idx to jump to here
     // if (flags & VM_ENV_FLAG_WB_REQUIRED) != 0
-    //jnz(cb)
+    jnz_ptr(cb, side_exit);
 
-
-
-
-
-
-
-    // Get value to write from the stack
+    // Pop the value to write from the stack
     x86opnd_t stack_top = ctx_stack_pop(ctx, 1);
     mov(cb, RCX, stack_top);
 
-    // Compute the offset from BP to the local
+    // Write the value at the environment pointer
     int32_t local_idx = (int32_t)ctx_get_arg(ctx, 0);
     const int32_t offs = -8 * local_idx;
-
-    // Store the local to the block
     mov(cb, mem_opnd(64, RDX, offs), RCX);
 }
 
 static void ujit_init()
 {
-    // 64MB ought to be enough for anybody
+    // Initialize the code blocks
+    size_t mem_size = 64 * 1024 * 1024;
+    uint8_t* mem_block = alloc_exec_mem(mem_size);
     cb = &block;
-    cb_init(cb, 64 * 1024 * 1024);
+    cb_init(cb, mem_block, mem_size/2);
+    ocb = &outline_block;
+    cb_init(ocb, mem_block + mem_size/2, mem_size/2);
 
     // Initialize the codegen function table
     gen_fns = rb_st_init_numtable();
@@ -396,5 +402,5 @@ static void ujit_init()
     st_insert(gen_fns, (st_data_t)BIN(putobject_INT2FIX_1_), (st_data_t)&gen_putobject_int2fix);
     st_insert(gen_fns, (st_data_t)BIN(putself), (st_data_t)&gen_putself);
     st_insert(gen_fns, (st_data_t)BIN(getlocal_WC_0), (st_data_t)&gen_getlocal_wc0);
-    //st_insert(gen_fns, (st_data_t)BIN(setlocal_WC_0), (st_data_t)&gen_setlocal_wc0);
+    st_insert(gen_fns, (st_data_t)BIN(setlocal_WC_0), (st_data_t)&gen_setlocal_wc0);
 }
