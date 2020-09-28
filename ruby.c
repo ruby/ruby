@@ -1441,7 +1441,7 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 #endif
             }
             else if (strncmp("ujit", s, 4) == 0) {
-                FEATURE_SET(opt->features, FEATURE_BIT(jit));
+                FEATURE_SET(opt->features, FEATURE_BIT(ujit));
             }
 	    else if (strcmp("yydebug", s) == 0) {
 		if (envopt) goto noenvopt_long;
