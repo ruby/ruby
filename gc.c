@@ -9336,7 +9336,7 @@ compat_key(VALUE key)
     if (!NIL_P(new_key)) {
 	static int warned = 0;
 	if (warned == 0) {
-	    rb_warn("GC.stat keys were changed from Ruby 2.1. "
+            rb_category_warn("deprecated", "GC.stat keys were changed from Ruby 2.1. "
 		    "In this case, you refer to obsolete `%"PRIsVALUE"' (new key is `%"PRIsVALUE"'). "
 		    "Please check <https://bugs.ruby-lang.org/issues/9924> for more information.",
 		    key, new_key);
@@ -9736,7 +9736,7 @@ ruby_gc_set_params(void)
 	/* ok */
     }
     else if (get_envparam_size("RUBY_FREE_MIN", &gc_params.heap_free_slots, 0)) {
-	rb_warn("RUBY_FREE_MIN is obsolete. Use RUBY_GC_HEAP_FREE_SLOTS instead.");
+        rb_category_warn("deprecated", "RUBY_FREE_MIN is obsolete. Use RUBY_GC_HEAP_FREE_SLOTS instead.");
     }
 
     /* RUBY_GC_HEAP_INIT_SLOTS */
@@ -9744,7 +9744,7 @@ ruby_gc_set_params(void)
 	gc_set_initial_pages();
     }
     else if (get_envparam_size("RUBY_HEAP_MIN_SLOTS", &gc_params.heap_init_slots, 0)) {
-	rb_warn("RUBY_HEAP_MIN_SLOTS is obsolete. Use RUBY_GC_HEAP_INIT_SLOTS instead.");
+        rb_category_warn("deprecated", "RUBY_HEAP_MIN_SLOTS is obsolete. Use RUBY_GC_HEAP_INIT_SLOTS instead.");
 	gc_set_initial_pages();
     }
 

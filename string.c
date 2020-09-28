@@ -8135,7 +8135,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 	rb_raise(rb_eTypeError, "value of $; must be String or Regexp");
     }
     else {
-        rb_warn("$; is set to non-nil value");
+        rb_category_warn("deprecated", "$; is set to non-nil value");
     }
     if (split_type != SPLIT_TYPE_AWK) {
         switch (BUILTIN_TYPE(spat)) {
@@ -8361,7 +8361,7 @@ get_rs(void)
 	(!RB_TYPE_P(rs, T_STRING) ||
 	 RSTRING_LEN(rs) != 1 ||
 	 RSTRING_PTR(rs)[0] != '\n')) {
-        rb_warn("$/ is set to non-default value");
+        rb_category_warn("deprecated", "$/ is set to non-default value");
     }
     return rs;
 }

@@ -1745,7 +1745,8 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     }
 
     if (opt->src.enc.name)
-	rb_warning("-K is specified; it is for 1.8 compatibility and may cause odd behavior");
+        rb_category_warning("deprecated",
+                "-K is specified; it is for 1.8 compatibility and may cause odd behavior");
 
 #if USE_MJIT
     if (opt->features.set & FEATURE_BIT(jit)) {

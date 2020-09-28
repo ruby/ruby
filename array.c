@@ -2702,7 +2702,7 @@ rb_ary_join_m(int argc, VALUE *argv, VALUE ary)
     if (rb_check_arity(argc, 0, 1) == 0 || NIL_P(sep = argv[0])) {
         sep = rb_output_fs;
         if (!NIL_P(sep)) {
-            rb_warn("$, is set to non-nil value");
+            rb_category_warn("deprecated", "$, is set to non-nil value");
         }
     }
 

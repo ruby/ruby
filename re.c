@@ -3464,7 +3464,7 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
 		flags |= ARG_ENCODING_NONE;
 	    }
 	    else {
-		rb_warn("encoding option is ignored - %s", kcode);
+                rb_category_warn("deprecated", "encoding option is ignored - %s", kcode);
 	    }
 	}
 	str = StringValue(argv[0]);
@@ -3919,27 +3919,27 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
 static VALUE
 kcode_getter(ID _x, VALUE *_y)
 {
-    rb_warn("variable $KCODE is no longer effective");
+    rb_category_warn("deprecated", "variable $KCODE is no longer effective");
     return Qnil;
 }
 
 static void
 kcode_setter(VALUE val, ID id, VALUE *_)
 {
-    rb_warn("variable $KCODE is no longer effective; ignored");
+    rb_category_warn("deprecated", "variable $KCODE is no longer effective; ignored");
 }
 
 static VALUE
 ignorecase_getter(ID _x, VALUE *_y)
 {
-    rb_warn("variable $= is no longer effective");
+    rb_category_warn("deprecated", "variable $= is no longer effective");
     return Qfalse;
 }
 
 static void
 ignorecase_setter(VALUE val, ID id, VALUE *_)
 {
-    rb_warn("variable $= is no longer effective; ignored");
+    rb_category_warn("deprecated", "variable $= is no longer effective; ignored");
 }
 
 static VALUE

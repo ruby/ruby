@@ -39,6 +39,12 @@ module Kernel
   #
   #    baz.rb:6: warning: invalid call to foo
   #
+  # If <code>category</code> keyword argument is given, passes the category
+  # to <code>Warning.warn</code>.  The category given must be be one of the
+  # following categories:
+  #
+  # :deprecated :: Used for warning for deprecated functionality that may
+  #                be removed in the future.
   def warn(*msgs, uplevel: nil, category: nil)
     Primitive.rb_warn_m(msgs, uplevel, category)
   end

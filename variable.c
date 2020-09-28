@@ -2427,10 +2427,10 @@ rb_const_warn_if_deprecated(const rb_const_entry_t *ce, VALUE klass, ID id)
     if (RB_CONST_DEPRECATED_P(ce) &&
         rb_warning_category_enabled_p(RB_WARN_CATEGORY_DEPRECATED)) {
 	if (klass == rb_cObject) {
-	    rb_warn("constant ::%"PRIsVALUE" is deprecated", QUOTE_ID(id));
+            rb_category_warn("deprecated", "constant ::%"PRIsVALUE" is deprecated", QUOTE_ID(id));
 	}
 	else {
-	    rb_warn("constant %"PRIsVALUE"::%"PRIsVALUE" is deprecated",
+            rb_category_warn("deprecated", "constant %"PRIsVALUE"::%"PRIsVALUE" is deprecated",
 		    rb_class_name(klass), QUOTE_ID(id));
 	}
     }

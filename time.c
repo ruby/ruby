@@ -4281,7 +4281,7 @@ rb_time_succ(VALUE time)
     struct time_object *tobj;
     struct time_object *tobj2;
 
-    rb_warn("Time#succ is obsolete; use time + 1");
+    rb_category_warn("deprecated", "Time#succ is obsolete; use time + 1");
     GetTimeval(time, tobj);
     time = time_new_timew(rb_cTime, wadd(tobj->timew, WINT2FIXWV(TIME_SCALE)));
     GetTimeval(time, tobj2);

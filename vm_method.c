@@ -2370,7 +2370,8 @@ vm_respond_to(rb_execution_context_t *ec, VALUE klass, VALUE obj, ID id, int pri
 	    }
 	    else if (!NIL_P(ruby_verbose)) {
 		VALUE location = rb_method_entry_location((const rb_method_entry_t *)cme);
-		rb_warn("%"PRIsVALUE"%c""respond_to?(:%"PRIsVALUE") uses"
+                rb_category_warn("deprecated",
+                        "%"PRIsVALUE"%c""respond_to?(:%"PRIsVALUE") uses"
 			" the deprecated method signature, which takes one parameter",
 			(FL_TEST(klass, FL_SINGLETON) ? obj : klass),
 			(FL_TEST(klass, FL_SINGLETON) ? '.' : '#'),

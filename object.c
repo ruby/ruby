@@ -1601,7 +1601,7 @@ static VALUE
 rb_obj_match(VALUE obj1, VALUE obj2)
 {
     if (rb_warning_category_enabled_p(RB_WARN_CATEGORY_DEPRECATED)) {
-        rb_warn("deprecated Object#=~ is called on %"PRIsVALUE
+        rb_category_warn("deprecated", "deprecated Object#=~ is called on %"PRIsVALUE
                 "; it always returns nil", rb_obj_class(obj1));
     }
     return Qnil;
@@ -2306,7 +2306,7 @@ VALUE
 rb_mod_attr(int argc, VALUE *argv, VALUE klass)
 {
     if (argc == 2 && (argv[1] == Qtrue || argv[1] == Qfalse)) {
-	rb_warning("optional boolean argument is obsoleted");
+        rb_category_warning("deprecated", "optional boolean argument is obsoleted");
 	rb_attr(klass, id_for_attr(klass, argv[0]), 1, RTEST(argv[1]), TRUE);
 	return Qnil;
     }
