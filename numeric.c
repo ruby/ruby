@@ -3417,7 +3417,7 @@ int_chr(int argc, VALUE *argv, VALUE num)
 	if (0xff < i) {
 	    enc = rb_default_internal_encoding();
 	    if (!enc) {
-		rb_raise(rb_eRangeError, "%d out of char range", i);
+		rb_raise(rb_eRangeError, "%u out of char range", i);
 	    }
 	    goto decode;
 	}

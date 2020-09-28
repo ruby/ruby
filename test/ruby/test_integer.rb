@@ -260,6 +260,7 @@ class TestInteger < Test::Unit::TestCase
     assert_equal("a", "a".ord.chr)
     assert_raise(RangeError) { (-1).chr }
     assert_raise(RangeError) { 0x100.chr }
+    assert_raise_with_message(RangeError, "3000000000 out of char range") { 3_000_000_000.chr }
   end
 
   def test_upto
