@@ -340,6 +340,7 @@ rb_native_mutex_unlock(rb_nativethread_lock_t *lock)
 #endif
 }
 
+RBIMPL_ATTR_MAYBE_UNUSED()
 static int
 native_mutex_trylock(rb_nativethread_lock_t *lock)
 {
