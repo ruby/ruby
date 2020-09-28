@@ -39,7 +39,7 @@ describe :hash_each, shared: true do
   end
 
   ruby_version_is "3.0" do
-    it "yields an Array of 2 elements when given a callable of arity 2" do
+    it "always yields an Array of 2 elements, even when given a callable of arity 2" do
       obj = Object.new
       def obj.foo(key, value)
       end
