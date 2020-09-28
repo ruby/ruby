@@ -51,7 +51,7 @@ def main
     logfilename = path
   }
   parser.on('-e', '--executable [RUBYPATH]', 'Makes executable parser.') {|path|
-    executable = true
+    make_executable = true
     rubypath = (path == 'ruby' ? nil : path)
   }
   parser.on('-E', '--embedded', "Embeds Racc runtime in output.") {
