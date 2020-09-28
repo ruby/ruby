@@ -45,6 +45,7 @@ module Kernel
   #
   # :deprecated :: Used for warning for deprecated functionality that may
   #                be removed in the future.
+  # :uninitialized_ivar :: Used for uninitialized instance variables.
   def warn(*msgs, uplevel: nil, category: nil)
     Primitive.rb_warn_m(msgs, uplevel, category)
   end

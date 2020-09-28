@@ -1182,7 +1182,9 @@ rb_ivar_get(VALUE obj, ID id)
 
     if (iv == Qundef) {
 	if (RTEST(ruby_verbose))
-	    rb_warning("instance variable %"PRIsVALUE" not initialized", QUOTE_ID(id));
+            rb_category_warning("uninitialized_ivar",
+                    "instance variable %"PRIsVALUE" not initialized",
+                    QUOTE_ID(id));
 	iv = Qnil;
     }
     return iv;
@@ -3444,7 +3446,8 @@ rb_iv_get(VALUE obj, const char *name)
 
     if (!id) {
         if (RTEST(ruby_verbose))
-            rb_warning("instance variable %s not initialized", name);
+            rb_category_warning("uninitialized_ivar",
+                    "instance variable %s not initialized", name);
         return Qnil;
     }
     return rb_ivar_get(obj, id);
