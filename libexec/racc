@@ -95,13 +95,13 @@ def main
     exit 0
   }
   parser.on('--runtime-version', 'Prints runtime version and quit.') {
-    printf "racc runtime version %s (rev. %s); %s\n",
+    printf "racc runtime version %s; %s\n",
            Racc::Parser::Racc_Runtime_Version,
            if Racc::Parser.racc_runtime_type == 'ruby'
-             sprintf('ruby core version %s (rev. %s)',
+             sprintf('ruby core version %s',
                      Racc::Parser::Racc_Runtime_Core_Version_R)
            else
-             sprintf('c core version %s (rev. %s)',
+             sprintf('c core version %s',
                      Racc::Parser::Racc_Runtime_Core_Version_C)
            end
     exit 0
