@@ -2544,6 +2544,8 @@ vm_ccs_free(struct rb_class_cc_entries *ccs, int alive, rb_objspace_t *objspace,
         for (int i=0; i<ccs->len; i++) {
             const struct rb_callcache *cc = ccs->entries[i].cc;
             if (!alive) {
+                void *ptr = asan_poisoned_object_p((VALUE)cc);
+                asan_unpoison_object((VALUE)cc, false);
                 // ccs can be free'ed.
                 if (is_pointer_to_heap(objspace, (void *)cc) &&
                     IMEMO_TYPE_P(cc, imemo_callcache) &&
@@ -2551,7 +2553,13 @@ vm_ccs_free(struct rb_class_cc_entries *ccs, int alive, rb_objspace_t *objspace,
                     // OK. maybe target cc.
                 }
                 else {
+                    if (ptr) {
+                        asan_poison_object((VALUE)cc);
+                    }
                     continue;
+                }
+                if (ptr) {
+                    asan_poison_object((VALUE)cc);
                 }
             }
             vm_cc_invalidate(cc);
