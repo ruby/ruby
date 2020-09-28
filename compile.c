@@ -852,7 +852,7 @@ rb_iseq_translate_threaded_code(rb_iseq_t *iseq)
     unsigned int next_ujit_idx = 0;
     unsigned int translated_len = 0;
 
-    bool ujit_disabled = false /*get_cmdline_flag()*/;
+    bool ujit_enabled = rb_ujit_enabled_p();
 
     VALUE *translated_insns = ALLOCV_N(VALUE, translated_insns_buf, iseq->body->iseq_size);
     for (insn_idx = 0; insn_idx < iseq->body->iseq_size; /* */) {
@@ -863,7 +863,7 @@ rb_iseq_translate_threaded_code(rb_iseq_t *iseq)
         uint8_t* native_code_ptr = NULL;
 
         // If ujit is enabled and hasn't already compiled this instruction
-        if (!ujit_disabled && insn_idx >= next_ujit_idx)
+        if (ujit_enabled && insn_idx >= next_ujit_idx)
             native_code_ptr = ujit_compile_insn(iseq, insn_idx, &next_ujit_idx);
 
         if (native_code_ptr)

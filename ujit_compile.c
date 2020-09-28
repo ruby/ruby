@@ -37,9 +37,6 @@ static st_table *gen_fns;
 static codeblock_t block;
 static codeblock_t* cb = NULL;
 
-// Initialize MicroJIT. Defined later in this file.
-static void ujit_init();
-
 // Ruby instruction entry
 static void
 ujit_instr_entry(codeblock_t* cb)
@@ -128,10 +125,8 @@ https://wiki.osdev.org/System_V_ABI#x86-64
 uint8_t *
 ujit_compile_insn(rb_iseq_t *iseq, unsigned int insn_idx, unsigned int* next_ujit_idx)
 {
-    // If not previously done, initialize ujit
-    if (!cb)
-    {
-        ujit_init();
+    if (!cb) {
+        return NULL;
     }
 
     // NOTE: if we are ever deployed in production, we
@@ -377,7 +372,14 @@ void gen_setlocal_wc0(codeblock_t* cb, ctx_t* ctx)
     mov(cb, mem_opnd(64, RDX, offs), RCX);
 }
 
-static void ujit_init()
+bool
+rb_ujit_enabled_p(void)
+{
+    return !!cb;
+}
+
+void
+rb_ujit_init(void)
 {
     // 64MB ought to be enough for anybody
     cb = &block;

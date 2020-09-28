@@ -59,6 +59,7 @@
 #include "internal/process.h"
 #include "internal/variable.h"
 #include "mjit.h"
+#include "ujit_compile.h"
 #include "ruby/encoding.h"
 #include "ruby/thread.h"
 #include "ruby/util.h"
@@ -100,6 +101,8 @@ void rb_warning_category_update(unsigned int mask, unsigned int bits);
     X(frozen_string_literal) \
     SEP \
     X(jit) \
+    SEP \
+    X(ujit)
     /* END OF FEATURES */
 #define EACH_DEBUG_FEATURES(X, SEP) \
     X(frozen_string_literal) \
@@ -226,6 +229,7 @@ cmdline_options_init(ruby_cmdline_options_t *opt)
 #ifdef MJIT_FORCE_ENABLE /* to use with: ./configure cppflags="-DMJIT_FORCE_ENABLE" */
     opt->features.set |= FEATURE_BIT(jit);
 #endif
+    opt->features.set |= FEATURE_BIT(ujit);
     return opt;
 }
 
@@ -323,6 +327,7 @@ usage(const char *name, int help, int highlight, int columns)
 	M("rubyopt", "",        "RUBYOPT environment variable (default: enabled)"),
 	M("frozen-string-literal", "", "freeze all string literals (default: disabled)"),
         M("jit", "",            "JIT compiler (default: disabled)"),
+        M("ujit", "",           "in-process JIT compiler (default: enabled)"),
     };
     static const struct message warn_categories[] = {
         M("deprecated", "",       "deprecated features"),
@@ -1414,6 +1419,9 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
                 rb_warn("MJIT support is disabled.");
 #endif
             }
+            else if (strncmp("ujit", s, 4) == 0) {
+                FEATURE_SET(opt->features, FEATURE_BIT(jit));
+            }
 	    else if (strcmp("yydebug", s) == 0) {
 		if (envopt) goto noenvopt_long;
 		opt->dump |= DUMP_BIT(yydebug);
@@ -1801,6 +1809,8 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         /* Using TMP_RUBY_PREFIX created by ruby_init_loadpath(). */
         mjit_init(&opt->mjit);
 #endif
+    if (opt->features.set & FEATURE_BIT(ujit))
+        rb_ujit_init();
 
     Init_ruby_description();
     Init_enc();
