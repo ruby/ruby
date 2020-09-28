@@ -150,6 +150,7 @@ module EnvUtil
     if RUBYLIB and lib = child_env["RUBYLIB"]
       child_env["RUBYLIB"] = [lib, RUBYLIB].join(File::PATH_SEPARATOR)
     end
+    child_env['ASAN_OPTIONS'] = ENV['ASAN_OPTIONS'] if ENV['ASAN_OPTIONS']
     args = [args] if args.kind_of?(String)
     pid = spawn(child_env, *precommand, rubybin, *args, **opt)
     in_c.close
