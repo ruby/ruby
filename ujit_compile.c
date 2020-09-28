@@ -190,6 +190,10 @@ ujit_compile_insn(rb_iseq_t *iseq, unsigned int insn_idx, unsigned int* next_uji
     {
         rb_bug("out of executable memory");
     }
+    if (ocb->write_pos + 1024 >= ocb->mem_size)
+    {
+        rb_bug("out of executable memory (outlined block)");
+    }
 
     // Align the current write positon to cache line boundaries
     cb_align_pos(cb, 64);
