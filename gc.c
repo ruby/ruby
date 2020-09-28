@@ -8727,33 +8727,30 @@ gc_ref_update(void *vstart, void *vend, size_t stride, void * data)
 
     /* For each object on the page */
     for (; v != (VALUE)vend; v += stride) {
-        if (!SPECIAL_CONST_P(v)) {
-            void *poisoned = asan_poisoned_object_p(v);
-            asan_unpoison_object(v, false);
+        void *poisoned = asan_poisoned_object_p(v);
+        asan_unpoison_object(v, false);
 
-            switch (BUILTIN_TYPE(v)) {
-              case T_NONE:
-                heap_page_add_freeobj(objspace, page, v);
-                free_slots++;
-                break;
-              case T_MOVED:
-                break;
-              case T_ZOMBIE:
-                break;
-              default:
-                if (RVALUE_WB_UNPROTECTED(v)) {
-                    page->flags.has_uncollectible_shady_objects = TRUE;
-                }
-                if (RVALUE_PAGE_MARKING(page, v)) {
-                    page->flags.has_remembered_objects = TRUE;
-                }
-                gc_update_object_references(objspace, v);
+        switch (BUILTIN_TYPE(v)) {
+          case T_NONE:
+            heap_page_add_freeobj(objspace, page, v);
+            free_slots++;
+            break;
+          case T_MOVED:
+            break;
+          case T_ZOMBIE:
+            break;
+          default:
+            if (RVALUE_WB_UNPROTECTED(v)) {
+                page->flags.has_uncollectible_shady_objects = TRUE;
             }
+            if (RVALUE_PAGE_MARKING(page, v)) {
+                page->flags.has_remembered_objects = TRUE;
+            }
+            gc_update_object_references(objspace, v);
+        }
 
-            if (poisoned) {
-                GC_ASSERT(BUILTIN_TYPE(v) == T_NONE);
-                asan_poison_object(v);
-            }
+        if (poisoned) {
+            asan_poison_object(v);
         }
     }
 
