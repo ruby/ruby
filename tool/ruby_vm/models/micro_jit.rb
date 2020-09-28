@@ -122,7 +122,7 @@ module RubyVM::MicroJIT
 
 
       raise 'rip reference in example makes copying unsafe' if handler_instructions.any? { |_, _, full_line| full_line.downcase.include?('rip') }
-      acceptable_mnemonics = %w(mov jmp lea call)
+      acceptable_mnemonics = %w(mov jmp lea call endbr64)
       unrecognized = nil
       handler_instructions.each { |i| unrecognized = i unless acceptable_mnemonics.include?(i[1]) }
       raise "found an unrecognized \"#{unrecognized[1]}\" instruction in the example. List of recognized instructions: #{acceptable_mnemonics.join(', ')}" if unrecognized
