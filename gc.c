@@ -4713,7 +4713,9 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
             gc_compact_finish(objspace, heap);
         } else {
             /* We anticipate filling the page, so NULL out the freelist. */
+            asan_unpoison_memory_region(&sweep_page->freelist, sizeof(RVALUE*), false);
             sweep_page->freelist = 0;
+            asan_poison_memory_region(&sweep_page->freelist, sizeof(RVALUE*));
             was_compacting = 1;
         }
     }
@@ -5079,8 +5081,6 @@ invalidate_moved_page(rb_objspace_t *objspace, struct heap_page *page)
                     GC_ASSERT(MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(forwarding_object), forwarding_object));
                     GC_ASSERT(BUILTIN_TYPE(forwarding_object) != T_MOVED);
                     GC_ASSERT(BUILTIN_TYPE(forwarding_object) != T_NONE);
-                    GC_ASSERT(BUILTIN_TYPE(object) != T_MOVED);
-                    GC_ASSERT(BUILTIN_TYPE(object) == T_NONE);
                 }
                 p++;
                 bitset >>= 1;
