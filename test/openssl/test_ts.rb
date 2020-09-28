@@ -181,6 +181,12 @@ _end_of_pem_
     assert_equal(42, qer2.nonce)
   end
 
+  def test_request_invalid_asn1
+    assert_raise(OpenSSL::Timestamp::TimestampError) do
+      OpenSSL::Timestamp::Request.new("*" * 44)
+    end
+  end
+
   def test_response_constants
     assert_equal(0, OpenSSL::Timestamp::Response::GRANTED)
     assert_equal(1, OpenSSL::Timestamp::Response::GRANTED_WITH_MODS)
@@ -335,6 +341,12 @@ _end_of_pem_
 
     assert_raise(OpenSSL::Timestamp::TimestampError) do
       fac.create_timestamp(ee_key, intermediate_cert, req)
+    end
+  end
+
+  def test_response_invalid_asn1
+    assert_raise(OpenSSL::Timestamp::TimestampError) do
+      OpenSSL::Timestamp::Response.new("*" * 44)
     end
   end
 
@@ -588,6 +600,12 @@ _end_of_pem_
     assert_equal(time.to_i, info.gen_time.to_i)
     assert_equal(false, info.ordering)
     assert_equal(123, info.nonce)
+  end
+
+  def test_token_info_invalid_asn1
+    assert_raise(OpenSSL::Timestamp::TimestampError) do
+      OpenSSL::Timestamp::TokenInfo.new("*" * 44)
+    end
   end
 
   private

@@ -211,8 +211,10 @@ ossl_ts_req_initialize(int argc, VALUE *argv, VALUE self)
     in = ossl_obj2bio(&arg);
     ts_req = d2i_TS_REQ_bio(in, &ts_req);
     BIO_free(in);
-    if (!ts_req)
+    if (!ts_req) {
+        DATA_PTR(self) = NULL;
         ossl_raise(eTimestampError, "Error when decoding the timestamp request");
+    }
     DATA_PTR(self) = ts_req;
 
     return self;
@@ -535,8 +537,10 @@ ossl_ts_resp_initialize(VALUE self, VALUE der)
     in  = ossl_obj2bio(&der);
     ts_resp = d2i_TS_RESP_bio(in, &ts_resp);
     BIO_free(in);
-    if (!ts_resp)
+    if (!ts_resp) {
+        DATA_PTR(self) = NULL;
         ossl_raise(eTimestampError, "Error when decoding the timestamp response");
+    }
     DATA_PTR(self) = ts_resp;
 
     return self;
@@ -874,8 +878,10 @@ ossl_ts_token_info_initialize(VALUE self, VALUE der)
     in  = ossl_obj2bio(&der);
     info = d2i_TS_TST_INFO_bio(in, &info);
     BIO_free(in);
-    if (!info)
+    if (!info) {
+        DATA_PTR(self) = NULL;
         ossl_raise(eTimestampError, "Error when decoding the timestamp token info");
+    }
     DATA_PTR(self) = info;
 
     return self;
