@@ -1076,6 +1076,14 @@ TRUE                 TrueClass   Synonym for true.
 =end
 
 describe "The predefined global constants" do
+  before :each do
+    @deprecated = Warning[:deprecated]
+    Warning[:deprecated] = true
+  end
+  after :each do
+    Warning[:deprecated] = @deprecated
+  end
+
   it "includes TRUE" do
     Object.const_defined?(:TRUE).should == true
     -> {

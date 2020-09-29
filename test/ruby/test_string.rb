@@ -1768,13 +1768,6 @@ CODE
       GC.start
       assert_equal([], "".split, bug)
     end;
-
-    begin
-      fs = $;
-      assert_warn(/`\$;' is deprecated/) {$; = " "}
-    ensure
-      EnvUtil.suppress_warning {$; = fs}
-    end
   end
 
   def test_split_encoding

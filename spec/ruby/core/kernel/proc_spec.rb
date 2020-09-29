@@ -49,6 +49,14 @@ describe "Kernel#proc" do
   end
 
   ruby_version_is "2.7" do
+    before :each do
+      @deprecated = Warning[:deprecated]
+      Warning[:deprecated] = true
+    end
+    after :each do
+      Warning[:deprecated] = @deprecated
+    end
+
     it "can be created when called with no block" do
       def some_method
         proc

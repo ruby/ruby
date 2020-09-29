@@ -80,6 +80,9 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err(%w(-W:experimental -e) + ['p Warning[:experimental]'], "", %w(true), [])
     assert_in_out_err(%w(-W:no-experimental -e) + ['p Warning[:experimental]'], "", %w(false), [])
     assert_in_out_err(%w(-W:qux), "", [], /unknown warning category: `qux'/)
+    assert_in_out_err(%w(-w -e) + ['p Warning[:deprecated]'], "", %w(true), [])
+    assert_in_out_err(%w(-W -e) + ['p Warning[:deprecated]'], "", %w(true), [])
+    assert_in_out_err(%w(-e) + ['p Warning[:deprecated]'], "", %w(false), [])
   ensure
     ENV['RUBYOPT'] = save_rubyopt
   end
@@ -333,6 +336,10 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err(%w(), "p $VERBOSE", ["true"])
     assert_in_out_err(%w(-W1), "p $VERBOSE", ["false"])
     assert_in_out_err(%w(-W0), "p $VERBOSE", ["nil"])
+    assert_in_out_err(%w(), "p Warning[:deprecated]", ["true"])
+    assert_in_out_err(%w(-W0), "p Warning[:deprecated]", ["false"])
+    assert_in_out_err(%w(-W1), "p Warning[:deprecated]", ["false"])
+    assert_in_out_err(%w(-W2), "p Warning[:deprecated]", ["true"])
     ENV['RUBYOPT'] = '-W:deprecated'
     assert_in_out_err(%w(), "p Warning[:deprecated]", ["true"])
     ENV['RUBYOPT'] = '-W:no-deprecated'

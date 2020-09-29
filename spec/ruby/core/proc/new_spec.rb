@@ -204,6 +204,14 @@ describe "Proc.new without a block" do
   end
 
   ruby_version_is "2.7" do
+    before :each do
+      @deprecated = Warning[:deprecated]
+      Warning[:deprecated] = true
+    end
+    after :each do
+      Warning[:deprecated] = @deprecated
+    end
+
     it "can be created if invoked from within a method with a block" do
       -> { ProcSpecs.new_proc_in_method { "hello" } }.should complain(/Capturing the given block using Proc.new is deprecated/)
     end

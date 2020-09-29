@@ -47,12 +47,13 @@ module EnvUtil
   class << self
     attr_accessor :timeout_scale
     attr_reader :original_internal_encoding, :original_external_encoding,
-                :original_verbose
+                :original_verbose, :original_warning
 
     def capture_global_values
       @original_internal_encoding = Encoding.default_internal
       @original_external_encoding = Encoding.default_external
       @original_verbose = $VERBOSE
+      @original_warning = %i[deprecated experimental].to_h {|i| [i, Warning[i]]}
     end
   end
 
@@ -192,11 +193,13 @@ module EnvUtil
     end
     stderr, $stderr = $stderr, stderr
     $VERBOSE = true
+    Warning[:deprecated] = true
     yield stderr
     return $stderr
   ensure
     stderr, $stderr = $stderr, stderr
     $VERBOSE = EnvUtil.original_verbose
+    EnvUtil.original_warning.each {|i, v| Warning[i] = v}
   end
   module_function :verbose_warning
 

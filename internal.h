@@ -1561,6 +1561,7 @@ typedef enum {
     RB_WARN_CATEGORY_NONE,
     RB_WARN_CATEGORY_DEPRECATED,
     RB_WARN_CATEGORY_EXPERIMENTAL,
+    RB_WARN_CATEGORY_ALL_BITS = 0x6, /* no RB_WARN_CATEGORY_NONE bit */
 } rb_warning_category_t;
 rb_warning_category_t rb_warning_category_from_name(VALUE category);
 bool rb_warning_category_enabled_p(rb_warning_category_t category);
