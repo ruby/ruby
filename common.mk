@@ -1296,7 +1296,7 @@ update-config_files: PHONY
 	    config.guess config.sub
 
 refresh-gems: update-bundled_gems prepare-gems
-prepare-gems: update-gems extract-gems
+prepare-gems: $(HAVE_BASERUBY:yes=update-gems) $(HAVE_BASERUBY:yes=extract-gems)
 
 update-gems$(gnumake:yes=-nongnumake): PHONY
 	$(ECHO) Downloading bundled gem files...
