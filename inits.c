@@ -87,6 +87,7 @@ rb_call_builtin_inits(void)
 #define BUILTIN(n) CALL(builtin_##n)
     BUILTIN(gc);
     BUILTIN(ractor);
+    BUILTIN(thread);
     BUILTIN(integer);
     BUILTIN(io);
     BUILTIN(dir);

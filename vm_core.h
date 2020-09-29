@@ -990,6 +990,9 @@ typedef struct rb_thread_struct {
     VALUE scheduler;
     unsigned blocking;
 
+    /* tvar */
+    struct tx_logs *tx;
+
     /* misc */
     VALUE name;
 

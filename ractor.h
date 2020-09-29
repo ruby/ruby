@@ -121,7 +121,6 @@ struct rb_ractor_struct {
 
     struct list_node vmlr_node;
 
-
     VALUE r_stdin;
     VALUE r_stdout;
     VALUE r_stderr;

@@ -53,6 +53,7 @@ native_tls_set(native_tls_key_t key, void *ptr)
 }
 
 void rb_native_mutex_lock(rb_nativethread_lock_t *lock);
+int  rb_native_mutex_trylock(rb_nativethread_lock_t *lock);
 void rb_native_mutex_unlock(rb_nativethread_lock_t *lock);
 void rb_native_mutex_initialize(rb_nativethread_lock_t *lock);
 void rb_native_mutex_destroy(rb_nativethread_lock_t *lock);

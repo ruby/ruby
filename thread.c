@@ -419,6 +419,7 @@ rb_thread_debug(
 #endif
 
 #include "thread_sync.c"
+#include "thread_tvar.c"
 
 void
 rb_vm_gvl_destroy(rb_global_vm_lock_t *gvl)
@@ -5567,6 +5568,7 @@ Init_Thread(void)
     rb_thread_create_timer_thread();
 
     Init_thread_sync();
+    Init_thread_tvar();
 }
 
 int
