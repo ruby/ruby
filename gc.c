@@ -5059,28 +5059,29 @@ invalidate_moved_page(rb_objspace_t *objspace, struct heap_page *page)
                     VALUE forwarding_object = (VALUE)p;
                     VALUE object;
 
-                    GC_ASSERT(BUILTIN_TYPE(forwarding_object) == T_MOVED);
-                    GC_ASSERT(MARKED_IN_BITMAP(GET_HEAP_PINNED_BITS(forwarding_object), forwarding_object));
-                    GC_ASSERT(!MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(forwarding_object), forwarding_object));
+                    if (BUILTIN_TYPE(forwarding_object) == T_MOVED) {
+                        GC_ASSERT(MARKED_IN_BITMAP(GET_HEAP_PINNED_BITS(forwarding_object), forwarding_object));
+                        GC_ASSERT(!MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(forwarding_object), forwarding_object));
 
-                    CLEAR_IN_BITMAP(GET_HEAP_PINNED_BITS(forwarding_object), forwarding_object);
+                        CLEAR_IN_BITMAP(GET_HEAP_PINNED_BITS(forwarding_object), forwarding_object);
 
-                    object = rb_gc_location(forwarding_object);
+                        object = rb_gc_location(forwarding_object);
 
-                    if (FL_TEST(forwarding_object, FL_FROM_FREELIST)) {
-                        empty_slots++; /* already freed */
-                    } else {
-                        freed_slots++;
+                        if (FL_TEST(forwarding_object, FL_FROM_FREELIST)) {
+                            empty_slots++; /* already freed */
+                        } else {
+                            freed_slots++;
+                        }
+
+                        gc_move(objspace, object, forwarding_object);
+                        /* forwarding_object is now our actual object, and "object"
+                         * is the free slot for the original page */
+                        heap_page_add_freeobj(objspace, GET_HEAP_PAGE(object), object);
+
+                        GC_ASSERT(MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(forwarding_object), forwarding_object));
+                        GC_ASSERT(BUILTIN_TYPE(forwarding_object) != T_MOVED);
+                        GC_ASSERT(BUILTIN_TYPE(forwarding_object) != T_NONE);
                     }
-
-                    gc_move(objspace, object, forwarding_object);
-                    /* forwarding_object is now our actual object, and "object"
-                     * is the free slot for the original page */
-                    heap_page_add_freeobj(objspace, GET_HEAP_PAGE(object), object);
-
-                    GC_ASSERT(MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(forwarding_object), forwarding_object));
-                    GC_ASSERT(BUILTIN_TYPE(forwarding_object) != T_MOVED);
-                    GC_ASSERT(BUILTIN_TYPE(forwarding_object) != T_NONE);
                 }
                 p++;
                 bitset >>= 1;
@@ -7795,6 +7796,7 @@ rb_gc_force_recycle(VALUE obj)
         }
         CLEAR_IN_BITMAP(GET_HEAP_UNCOLLECTIBLE_BITS(obj), obj);
         CLEAR_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(obj), obj);
+        CLEAR_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), obj);
 
 #if GC_ENABLE_INCREMENTAL_MARK
         if (is_incremental_marking(objspace)) {
