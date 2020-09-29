@@ -15292,6 +15292,7 @@ vm.$(OBJEXT): $(top_srcdir)/internal/parse.h
 vm.$(OBJEXT): $(top_srcdir)/internal/proc.h
 vm.$(OBJEXT): $(top_srcdir)/internal/random.h
 vm.$(OBJEXT): $(top_srcdir)/internal/re.h
+vm.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 vm.$(OBJEXT): $(top_srcdir)/internal/serial.h
 vm.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 vm.$(OBJEXT): $(top_srcdir)/internal/string.h
