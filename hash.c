@@ -3195,6 +3195,7 @@ transform_keys_i(VALUE key, VALUE value, VALUE result)
 /*
  *  call-seq:
  *    hash.transform_keys {|key| ... } -> new_hash
+ *    hash.transform_keys(hash2) -> new_hash
  *    hash.transform_keys -> new_enumerator
  *
  *  Returns a new \Hash object; each entry has:
