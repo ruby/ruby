@@ -322,7 +322,7 @@ module Racc
     def test_ifelse
       stderr = nil
       racc "-o#{@TAB_DIR}/ifelse", "#{ASSET_DIR}/ifelse.y", stdout_filter: ->(s) { stderr = s }
-      stderr = stderr.lines[1..-1].join if RUBY_PLATFORM.match? /java/
+      stderr = stderr.lines[1..-1].join if RUBY_PLATFORM.match?(/java/)
       assert_equal(<<~STDERR, stderr)
         1 useless nonterminals:
           dummy
