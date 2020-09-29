@@ -1673,6 +1673,7 @@ class TestHash < Test::Unit::TestCase
     x.default_proc = proc {|h, k| k}
     y = x.transform_values {|v| v ** 2 }
     assert_nil(y.default_proc)
+    assert_nil(y.default)
 
     y = x.transform_values.with_index {|v, i| "#{v}.#{i}" }
     assert_equal(%w(1.0  2.1  3.2), y.values_at(:a, :b, :c))
