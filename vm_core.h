@@ -763,7 +763,12 @@ typedef struct rb_control_frame_struct {
 #endif
 } rb_control_frame_t;
 
+#include <os/signpost.h>
+
 extern const rb_data_type_t ruby_threadptr_data_type;
+
+extern os_log_t event_log;
+extern unsigned long long signpost_id;
 
 static inline struct rb_thread_struct *
 rb_thread_ptr(VALUE thval)

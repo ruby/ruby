@@ -47,6 +47,11 @@
 #endif
 #include "probes_helper.h"
 
+#include <os/signpost.h>
+
+os_log_t event_log;
+unsigned long long signpost_id;
+
 VALUE rb_str_concat_literals(size_t, const VALUE*);
 
 /* :FIXME: This #ifdef is because we build pch in case of mswin and
@@ -3083,6 +3088,9 @@ Init_VM(void)
     VALUE klass;
     VALUE fcore;
     VALUE mjit;
+
+    event_log = os_log_create("RubyVM", OS_LOG_CATEGORY_POINTS_OF_INTEREST);
+    signpost_id = os_signpost_id_generate(event_log);
 
     /*
      * Document-class: RubyVM

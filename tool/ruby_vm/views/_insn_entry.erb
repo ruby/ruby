@@ -13,6 +13,7 @@ INSN_ENTRY(<%= insn.name %>)
 {
     /* ###  Declare that we have just entered into an instruction. ### */
     START_OF_ORIGINAL_INSN(<%= insn.name %>);
+    INSN_SIGNPOST_ENTER(<%=cstr insn.name %>);
     DEBUG_ENTER_INSN(<%=cstr insn.name %>);
 
     /* ###  Declare and assign variables. ### */
@@ -72,5 +73,6 @@ INSN_ENTRY(<%= insn.name %>)
 #   undef INSN_ATTR
 
     /* ### Leave the instruction. ### */
+    INSN_SIGNPOST_EXIT(<%=cstr insn.name %>);
     END_INSN(<%= insn.name %>);
 }

@@ -65,6 +65,9 @@ static void vm_insns_counter_count_insn(int insn) {}
 #endif
 /* #define DECL_SC_REG(r, reg) VALUE reg_##r */
 
+#define INSN_SIGNPOST_ENTER(name) os_signpost_interval_begin(event_log, signpost_id, name);
+#define INSN_SIGNPOST_EXIT(name) os_signpost_interval_end(event_log, signpost_id, name);
+
 #if !OPT_CALL_THREADED_CODE
 static VALUE
 vm_exec_core(rb_execution_context_t *ec, VALUE initial)
