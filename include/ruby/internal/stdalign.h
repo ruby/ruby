@@ -116,7 +116,7 @@ struct rbimpl_alignof {
 #  * querying the alignment of a type,  you definitely should use that instead.
 #  * There are 2 known pitfalls for this fallback implementation:
 #  *
-#  * Fitst, it is either an undefined  behaviour (C) or an explicit error (C++)
+#  * First, it is either an undefined  behaviour (C) or an explicit error (C++)
 #  * to define a  struct inside of `offsetof`. C compilers  tend to accept such
 #  * things, but AFAIK C++ has no room to allow.
 #  *
