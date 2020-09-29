@@ -143,6 +143,9 @@ Double-quote strings allow interpolation of other values using
 Any expression may be placed inside the interpolated section, but it's best to
 keep the expression small for readability.
 
+You can also use <tt>#@foo</tt> and <tt>#$foo</tt> as a shorthand for,
+respentively, <tt>#{ @foo }</tt> and <tt>#{ $foo }</tt>.
+
 Interpolation may be disabled by escaping the "#" character or using
 single-quote strings:
 
