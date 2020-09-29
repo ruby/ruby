@@ -4357,7 +4357,7 @@ str_upto_i(VALUE str, VALUE arg)
  *    a8 a9 b0 b1 b2 b3 b4 b5 b6
  *
  *  If argument +exclusive+ is given as a truthy object, the last value is omitted:
- *    'a8'.upto('b6', exclusive = true) {|s| print s, ' ' } # => "a8"
+ *    'a8'.upto('b6', true) {|s| print s, ' ' } # => "a8"
  *  Output:
  *    a8 a9 b0 b1 b2 b3 b4 b5
  *
