@@ -1,10 +1,15 @@
 # frozen_string_literal: true
 require 'rubygems/command'
 require 'rubygems/package'
+require 'rubygems/version_option'
 
 class Gem::Commands::BuildCommand < Gem::Command
+  include Gem::VersionOption
+
   def initialize
     super 'build', 'Build a gem from a gemspec'
+
+    add_platform_option
 
     add_option '--force', 'skip validation of the spec' do |value, options|
       options[:force] = true

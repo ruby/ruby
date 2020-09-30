@@ -549,7 +549,7 @@ module Psych
   #   end
   #   list # => ['foo', 'bar']
   #
-  def self.load_stream yaml, legacy_filename = NOT_GIVEN, filename: nil, fallback: []
+  def self.load_stream yaml, legacy_filename = NOT_GIVEN, filename: nil, fallback: [], **kwargs
     if legacy_filename != NOT_GIVEN
       warn_with_uplevel 'Passing filename with the 2nd argument of Psych.load_stream is deprecated. Use keyword argument like Psych.load_stream(yaml, filename: ...) instead.', uplevel: 1 if $VERBOSE
       filename = legacy_filename
@@ -557,10 +557,10 @@ module Psych
 
     result = if block_given?
                parse_stream(yaml, filename: filename) do |node|
-                 yield node.to_ruby
+                 yield node.to_ruby(**kwargs)
                end
              else
-               parse_stream(yaml, filename: filename).children.map(&:to_ruby)
+               parse_stream(yaml, filename: filename).children.map { |node| node.to_ruby(**kwargs) }
              end
 
     return fallback if result.is_a?(Array) && result.empty?
@@ -571,9 +571,9 @@ module Psych
   # Load the document contained in +filename+.  Returns the yaml contained in
   # +filename+ as a Ruby object, or if the file is empty, it returns
   # the specified +fallback+ return value, which defaults to +false+.
-  def self.load_file filename, fallback: false
+  def self.load_file filename, **kwargs
     File.open(filename, 'r:bom|utf-8') { |f|
-      self.load f, filename: filename, fallback: fallback
+      self.load f, filename: filename, **kwargs
     }
   end
 

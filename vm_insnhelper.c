@@ -673,8 +673,19 @@ rb_vm_frame_method_entry(const rb_control_frame_t *cfp)
     return check_method_entry(ep[VM_ENV_DATA_INDEX_ME_CREF], TRUE);
 }
 
+static rb_iseq_t *
+method_entry_iseqptr(const rb_callable_method_entry_t *me)
+{
+    switch (me->def->type) {
+      case VM_METHOD_TYPE_ISEQ:
+        return me->def->body.iseq.iseqptr;
+      default:
+        return NULL;
+    }
+}
+
 static rb_cref_t *
-method_entry_cref(rb_callable_method_entry_t *me)
+method_entry_cref(const rb_callable_method_entry_t *me)
 {
     switch (me->def->type) {
       case VM_METHOD_TYPE_ISEQ:
@@ -2656,9 +2667,14 @@ vm_call_bmethod_body(rb_execution_context_t *ec, struct rb_calling_info *calling
     rb_proc_t *proc;
     VALUE val;
     const struct rb_callcache *cc = cd->cc;
+    const rb_callable_method_entry_t *cme = vm_cc_cme(cc);
+
+    if (cme->def->body.bmethod.defined_ractor != rb_ec_ractor_ptr(ec)->self) {
+        rb_raise(rb_eRuntimeError, "defined in a different Ractor");
+    }
 
     /* control block frame */
-    GetProcPtr(vm_cc_cme(cc)->def->body.bmethod.proc, proc);
+    GetProcPtr(cme->def->body.bmethod.proc, proc);
     val = rb_vm_invoke_bmethod(ec, proc, calling->recv, calling->argc, argv, calling->kw_splat, calling->block_handler, vm_cc_cme(cc));
 
     return val;
@@ -3043,9 +3059,6 @@ search_refined_method(rb_execution_context_t *ec, rb_control_frame_t *cfp, struc
         if (ref_me) {
             if (vm_cc_call(cc) == vm_call_super_method) {
                 const rb_control_frame_t *top_cfp = current_method_entry(ec, cfp);
-                if (refinement == find_refinement(CREF_REFINEMENTS(vm_get_cref(top_cfp->ep)), vm_cc_cme(cc)->owner)) {
-                    continue;
-                }
                 const rb_callable_method_entry_t *top_me = rb_vm_frame_method_entry(top_cfp);
                 if (top_me && rb_method_definition_eq(ref_me->def, top_me->def)) {
                     continue;
@@ -3266,7 +3279,7 @@ static inline VALUE
 vm_search_normal_superclass(VALUE klass)
 {
     if (BUILTIN_TYPE(klass) == T_ICLASS &&
-	FL_TEST(RBASIC(klass)->klass, RMODULE_IS_REFINEMENT)) {
+	FL_TEST_RAW(RBASIC(klass)->klass, RMODULE_IS_REFINEMENT)) {
 	klass = RBASIC(klass)->klass;
     }
     klass = RCLASS_ORIGIN(klass);
@@ -3299,6 +3312,7 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
 
     if (BUILTIN_TYPE(current_defined_class) != T_MODULE &&
 	!FL_TEST(current_defined_class, RMODULE_INCLUDED_INTO_REFINEMENT) &&
+        reg_cfp->iseq != method_entry_iseqptr(me) &&
         !rb_obj_is_kind_of(recv, current_defined_class)) {
 	VALUE m = RB_TYPE_P(current_defined_class, T_ICLASS) ?
             RCLASS_INCLUDER(current_defined_class) : current_defined_class;

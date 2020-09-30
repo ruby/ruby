@@ -3859,8 +3859,16 @@ static int
 compile_dstr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node)
 {
     int cnt;
-    CHECK(compile_dstr_fragments(iseq, ret, node, &cnt));
-    ADD_INSN1(ret, nd_line(node), concatstrings, INT2FIX(cnt));
+    if (!node->nd_next) {
+        VALUE lit = rb_fstring(node->nd_lit);
+        const int line = (int)nd_line(node);
+        ADD_INSN1(ret, line, putstring, lit);
+        RB_OBJ_WRITTEN(iseq, Qundef, lit);
+    }
+    else {
+        CHECK(compile_dstr_fragments(iseq, ret, node, &cnt));
+        ADD_INSN1(ret, nd_line(node), concatstrings, INT2FIX(cnt));
+    }
     return COMPILE_OK;
 }
 

@@ -3195,6 +3195,7 @@ transform_keys_i(VALUE key, VALUE value, VALUE result)
 /*
  *  call-seq:
  *    hash.transform_keys {|key| ... } -> new_hash
+ *    hash.transform_keys(hash2) -> new_hash
  *    hash.transform_keys -> new_enumerator
  *
  *  Returns a new \Hash object; each entry has:
@@ -3350,6 +3351,7 @@ rb_hash_transform_values(VALUE hash)
 
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
     result = hash_copy(hash_alloc(rb_cHash), hash);
+    SET_DEFAULT(result, Qnil);
 
     if (!RHASH_EMPTY_P(hash)) {
         rb_hash_stlike_foreach_with_replace(result, transform_values_foreach_func, transform_values_foreach_replace, result);
@@ -6331,8 +6333,8 @@ env_to_h(VALUE _)
  *
  *  Returns a hash except the given keys from ENV and their values.
  *
- *     ENV                       #=> {"LANG"="en_US.UTF-8", "TERM"=>"xterm-256color", "HOME"=>"/Users/rhc"}
- *     ENV.except("TERM","HOME") #=> {"LANG"="en_US.UTF-8"}
+ *     ENV                       #=> {"LANG"=>"en_US.UTF-8", "TERM"=>"xterm-256color", "HOME"=>"/Users/rhc"}
+ *     ENV.except("TERM","HOME") #=> {"LANG"=>"en_US.UTF-8"}
  */
 static VALUE
 env_except(int argc, VALUE *argv, VALUE _)

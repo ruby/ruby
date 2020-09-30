@@ -125,6 +125,19 @@ class TestPsych < Psych::TestCase
     assert_equal %w{ foo bar }, docs
   end
 
+  def test_load_stream_freeze
+    docs = Psych.load_stream("--- foo\n...\n--- bar\n...", freeze: true)
+    assert_equal %w{ foo bar }, docs
+    docs.each do |string|
+      assert_predicate string, :frozen?
+    end
+  end
+
+  def test_load_stream_symbolize_names
+    docs = Psych.load_stream("---\nfoo: bar", symbolize_names: true)
+    assert_equal [{foo: 'bar'}], docs
+  end
+
   def test_load_stream_default_fallback
     assert_equal [], Psych.load_stream("")
   end
@@ -239,6 +252,27 @@ class TestPsych < Psych::TestCase
       t.write('--- hello world')
       t.close
       assert_equal 'hello world', Psych.load_file(t.path)
+    }
+  end
+
+  def test_load_file_freeze
+    Tempfile.create(['yikes', 'yml']) {|t|
+      t.binmode
+      t.write('--- hello world')
+      t.close
+
+      object = Psych.load_file(t.path, freeze: true)
+      assert_predicate object, :frozen?
+    }
+  end
+
+  def test_load_file_symbolize_names
+    Tempfile.create(['yikes', 'yml']) {|t|
+      t.binmode
+      t.write("---\nfoo: bar")
+      t.close
+
+      assert_equal({foo: 'bar'}, Psych.load_file(t.path, symbolize_names: true))
     }
   end
 

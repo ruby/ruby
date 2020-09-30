@@ -1006,7 +1006,6 @@ class TestArgf < Test::Unit::TestCase
         ARGF.lines {|l| s << l }
         p s
       };
-      assert_match(/deprecated/, f.gets)
       assert_equal("[\"1\\n\", \"2\\n\", \"3\\n\", \"4\\n\", \"5\\n\", \"6\\n\"]\n", f.read)
     end
   end
@@ -1017,7 +1016,6 @@ class TestArgf < Test::Unit::TestCase
         $stderr = $stdout
         print Marshal.dump(ARGF.bytes.to_a)
       };
-      assert_match(/deprecated/, f.gets)
       assert_equal([49, 10, 50, 10, 51, 10, 52, 10, 53, 10, 54, 10], Marshal.load(f.read))
     end
   end
@@ -1028,7 +1026,6 @@ class TestArgf < Test::Unit::TestCase
         $stderr = $stdout
         print [Marshal.dump(ARGF.chars.to_a)].pack('m')
       };
-      assert_match(/deprecated/, f.gets)
       assert_equal(["1", "\n", "2", "\n", "3", "\n", "4", "\n", "5", "\n", "6", "\n"], Marshal.load(f.read.unpack('m').first))
     end
   end
@@ -1039,7 +1036,6 @@ class TestArgf < Test::Unit::TestCase
         $stderr = $stdout
         print Marshal.dump(ARGF.codepoints.to_a)
       };
-      assert_match(/deprecated/, f.gets)
       assert_equal([49, 10, 50, 10, 51, 10, 52, 10, 53, 10, 54, 10], Marshal.load(f.read))
     end
   end

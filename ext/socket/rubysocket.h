@@ -321,6 +321,7 @@ int rsock_fd_family(int fd);
 struct rb_addrinfo *rsock_addrinfo(VALUE host, VALUE port, int family, int socktype, int flags);
 struct rb_addrinfo *rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack);
 #ifdef HAVE_GETADDRINFO_A
+struct rb_addrinfo *rsock_addrinfo_a(VALUE host, VALUE port, int family, int socktype, int flags, VALUE timeout);
 struct rb_addrinfo *rsock_getaddrinfo_a(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack, VALUE timeout);
 #endif
 
@@ -349,7 +350,7 @@ int rsock_socket(int domain, int type, int proto);
 int rsock_detect_cloexec(int fd);
 VALUE rsock_init_sock(VALUE sock, int fd);
 VALUE rsock_sock_s_socketpair(int argc, VALUE *argv, VALUE klass);
-VALUE rsock_init_inetsock(VALUE sock, VALUE remote_host, VALUE remote_serv, VALUE local_host, VALUE local_serv, int type);
+VALUE rsock_init_inetsock(VALUE sock, VALUE remote_host, VALUE remote_serv, VALUE local_host, VALUE local_serv, int type, VALUE resolv_timeout);
 VALUE rsock_init_unixsock(VALUE sock, VALUE path, int server);
 
 struct rsock_send_arg {

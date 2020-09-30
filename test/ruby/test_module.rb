@@ -1755,23 +1755,31 @@ class TestModule < Test::Unit::TestCase
     c = Class.new
     c.const_set(:FOO, "foo")
     c.deprecate_constant(:FOO)
-    assert_warn(/deprecated/) {c::FOO}
-    assert_warn(/#{c}::FOO is deprecated/) {Class.new(c)::FOO}
+    assert_warn(/deprecated/) do
+      Warning[:deprecated] = true
+      c::FOO
+    end
+    assert_warn(/#{c}::FOO is deprecated/) do
+      Warning[:deprecated] = true
+      Class.new(c)::FOO
+    end
     bug12382 = '[ruby-core:75505] [Bug #12382]'
-    assert_warn(/deprecated/, bug12382) {c.class_eval "FOO"}
-    Warning[:deprecated] = false
-    assert_warn('') {c::FOO}
-  end
-
-  NIL = nil
-  FALSE = false
-  deprecate_constant(:NIL, :FALSE)
-
-  def test_deprecate_nil_constant
-    w = EnvUtil.verbose_warning {2.times {FALSE}}
-    assert_equal(1, w.scan("::FALSE").size, w)
-    w = EnvUtil.verbose_warning {2.times {NIL}}
-    assert_equal(1, w.scan("::NIL").size, w)
+    assert_warn(/deprecated/, bug12382) do
+      Warning[:deprecated] = true
+      c.class_eval "FOO"
+    end
+    assert_warn('') do
+      Warning[:deprecated] = false
+      c::FOO
+    end
+    assert_warn('') do
+      Warning[:deprecated] = false
+      Class.new(c)::FOO
+    end
+    assert_warn('') do
+      Warning[:deprecated] = false
+      c.class_eval "FOO"
+    end
   end
 
   def test_constants_with_private_constant

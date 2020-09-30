@@ -181,7 +181,7 @@ module Psych
       end
 
       def visit_Exception o
-        dump_exception o, private_iv_get(o, 'mesg')
+        dump_exception o, o.message.to_s
       end
 
       def visit_NameError o

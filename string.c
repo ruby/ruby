@@ -1378,8 +1378,13 @@ rb_str_free(VALUE str)
 {
     if (FL_TEST(str, RSTRING_FSTR)) {
 	st_data_t fstr = (st_data_t)str;
-	st_delete(rb_vm_fstring_table(), &fstr, NULL);
-	RB_DEBUG_COUNTER_INC(obj_str_fstr);
+
+        RB_VM_LOCK_ENTER();
+        {
+            st_delete(rb_vm_fstring_table(), &fstr, NULL);
+            RB_DEBUG_COUNTER_INC(obj_str_fstr);
+        }
+        RB_VM_LOCK_LEAVE();
     }
 
     if (STR_EMBED_P(str)) {
@@ -1561,39 +1566,25 @@ rb_str_resurrect(VALUE str)
 
 /*
  *  call-seq:
- *     String.new(str='')                   -> new_str
- *     String.new(str='', encoding: enc)    -> new_str
- *     String.new(str='', capacity: size)   -> new_str
+ *    String.new(string = '') -> new_string
+ *    String.new(string = '', encoding: encoding) -> new_string
+ *    String.new(string = '', capacity: size) -> new_string
  *
- *  Argument +str+, if given, it must be a \String.
- *
- *  Argument +encoding+, if given, must be the \String name of an encoding
- *  that is compatible with +str+.
- *
- *  Argument +capacity+, if given, must be an \Integer.
- *
- *  The +str+, +encoding+, and +capacity+ arguments may all be used together:
- *    String.new('hello', encoding: 'UTF-8', capacity: 25)
- *
- *  Returns a new \String that is a copy of <i>str</i>.
- *
- *  ---
+ *  Returns a new \String that is a copy of +string+.
  *
  *  With no arguments, returns the empty string with the Encoding <tt>ASCII-8BIT</tt>:
  *    s = String.new
  *    s # => ""
  *    s.encoding # => #<Encoding:ASCII-8BIT>
  *
- *  With the single argument +str+, returns a copy of +str+
- *  with the same encoding as +str+:
+ *  With the single \String argument +string+, returns a copy of +string+
+ *  with the same encoding as +string+:
  *    s = String.new("Que veut dire \u{e7}a?")
  *    s # => "Que veut dire \u{e7}a?"
  *    s.encoding # => #<Encoding:UTF-8>
  *
  *  Literal strings like <tt>""</tt> or here-documents always use
  *  {script encoding}[Encoding.html#class-Encoding-label-Script+encoding], unlike String.new.
- *
- *  ---
  *
  *  With keyword +encoding+, returns a copy of +str+
  *  with the specified encoding:
@@ -1607,29 +1598,14 @@ rb_str_resurrect(VALUE str)
  *    s1 = 'foo'.force_encoding('ASCII')
  *    s0.encoding == s1.encoding # => true
  *
- *  ---
- *
  *  With keyword +capacity+, returns a copy of +str+;
  *  the given +capacity+ may set the size of the internal buffer,
  *  which may affect performance:
  *    String.new(capacity: 1) # => ""
  *    String.new(capacity: 4096) # => ""
  *
- *  No exception is raised for zero or negative values:
- *    String.new(capacity: 0) # => ""
- *    String.new(capacity: -1) # => ""
- *
- *  ---
- *
- *  Raises an exception if the given +encoding+ is not a valid encoding name:
- *    # Raises ArgumentError (unknown encoding name - FOO)
- *    String.new(encoding: 'FOO')
- *
- *  Raises an exception if the given +encoding+ is incompatible with +str+:
- *    utf8 = "Que veut dire \u{e7}a?"
- *    ascii = "Que veut dire \u{e7}a?".force_encoding('ASCII')
- *    # Raises Encoding::CompatibilityError (incompatible character encodings: UTF-8 and US-ASCII)
- *    utf8.include? ascii
+ *  The +string+, +encoding+, and +capacity+ arguments may all be used together:
+ *    String.new('hello', encoding: 'UTF-8', capacity: 25)
  */
 
 static VALUE
@@ -1921,10 +1897,15 @@ rb_str_strlen(VALUE str)
 
 /*
  *  call-seq:
- *     str.length   -> integer
- *     str.size     -> integer
+ *    string.length -> integer
  *
- *  Returns the character length of <i>str</i>.
+ *  Returns the count of characters (not bytes) in +self+:
+ *    "\x80\u3042".length # => 2
+ *    "hello".length # => 5
+ *
+ *  String#size is an alias for String#length.
+ *
+ *  Related: String#bytesize.
  */
 
 VALUE
@@ -1935,12 +1916,13 @@ rb_str_length(VALUE str)
 
 /*
  *  call-seq:
- *     str.bytesize  -> integer
+ *    string.bytesize -> integer
  *
- *  Returns the length of +str+ in bytes.
+ *  Returns the count  of bytes in +self+:
+ *    "\x80\u3042".bytesize # => 4
+ *    "hello".bytesize # => 5
  *
- *    "\x80\u3042".bytesize  #=> 4
- *    "hello".bytesize       #=> 5
+ *  Related: String#length.
  */
 
 static VALUE
@@ -1951,13 +1933,12 @@ rb_str_bytesize(VALUE str)
 
 /*
  *  call-seq:
- *     str.empty?   -> true or false
+ *    string.empty? -> true or false
  *
- *  Returns <code>true</code> if <i>str</i> has a length of zero.
- *
- *     "hello".empty?   #=> false
- *     " ".empty?       #=> false
- *     "".empty?        #=> true
+ *  Returns +true+ if the length of +self+ is zero, +false+ otherwise:
+ *    "hello".empty? # => false
+ *    " ".empty? # => false
+ *    "".empty? # => true
  */
 
 static VALUE
@@ -1970,12 +1951,10 @@ rb_str_empty(VALUE str)
 
 /*
  *  call-seq:
- *     str + other_str   -> new_str
+ *    string + other_string -> new_string
  *
- *  Concatenation---Returns a new String containing
- *  <i>other_str</i> concatenated to <i>str</i>.
- *
- *     "Hello from " + self.to_s   #=> "Hello from main"
+ *  Returns a new \String containing +other_string+ concatenated to +self+:
+ *    "Hello from " + self.to_s # => "Hello from main"
  */
 
 VALUE
@@ -2041,13 +2020,11 @@ rb_str_opt_plus(VALUE str1, VALUE str2)
 
 /*
  *  call-seq:
- *     str * integer   -> new_str
+ *    string * integer -> new_string
  *
- *  Copy --- Returns a new String containing +integer+ copies of the receiver.
- *  +integer+ must be greater than or equal to 0.
- *
- *     "Ho! " * 3   #=> "Ho! Ho! Ho! "
- *     "Ho! " * 0   #=> ""
+ *  Returns a new \String containing +integer+ copies of +self+:
+ *    "Ho! " * 3 # => "Ho! Ho! Ho! "
+ *    "Ho! " * 0 # => ""
  */
 
 VALUE
@@ -2107,17 +2084,17 @@ rb_str_times(VALUE str, VALUE times)
 
 /*
  *  call-seq:
- *     str % arg   -> new_str
+ *    string % object -> new_string
  *
- *  Format---Uses <i>str</i> as a format specification, and returns
- *  the result of applying it to <i>arg</i>. If the format
- *  specification contains more than one substitution, then <i>arg</i>
- *  must be an Array or Hash containing the values to be
- *  substituted. See Kernel#sprintf for details of the format string.
+ *  Returns the result of formatting +object+ into the format specification +self+
+ *  (see Kernel#sprintf for formatting details):
+ *    "%05d" % 123 # => "00123"
  *
- *     "%05d" % 123                              #=> "00123"
- *     "%-5s: %016x" % [ "ID", self.object_id ]  #=> "ID   : 00002b054ec93168"
- *     "foo = %{foo}" % { :foo => 'bar' }        #=> "foo = bar"
+ *  If +self+ contains multiple substitutions, +object+ must be
+ *  an \Array or \Hash containing the values to be substituted:
+ *    "%-5s: %016x" % [ "ID", self.object_id ] # => "ID   : 00002b054ec93168"
+ *    "foo = %{foo}" % {foo: 'bar'} # => "foo = bar"
+ *    "foo = %{foo}, baz = %{baz}" % {foo: 'bar', baz: 'bat'} # => "foo = bar, baz = bat"
  */
 
 static VALUE
@@ -2407,14 +2384,16 @@ rb_check_string_type(VALUE str)
 
 /*
  *  call-seq:
- *     String.try_convert(obj) -> string or nil
+ *    String.try_convert(object) -> object, new_string, or nil
  *
- *  Try to convert <i>obj</i> into a String, using to_str method.
- *  Returns converted string or nil if <i>obj</i> cannot be converted
- *  for any reason.
+ *  If +object+ is a \String object, returns +object+.
  *
- *     String.try_convert("str")     #=> "str"
- *     String.try_convert(/re/)      #=> nil
+ *  Otherwise if +object+ responds to <tt>:to_str</tt>,
+ *  calls <tt>object.to_str</tt> and returns the result.
+ *
+ *  Returns +nil+ if +object+ does not respond to <tt>:to_str</tt>
+ *
+ *  Raises an exception unless <tt>object.to_str</tt> returns a \String object.
  */
 static VALUE
 rb_str_s_try_convert(VALUE dummy, VALUE str)
@@ -2711,11 +2690,11 @@ rb_str_freeze(VALUE str)
 
 /*
  * call-seq:
- *   +str  -> str (mutable)
+ *   +string -> new_string or self
  *
- * If the string is frozen, then return duplicated mutable string.
+ * Returns +self+ if +self+ is not frozen.
  *
- * If the string is not frozen, then return the string itself.
+ * Otherwise. returns <tt>self.dup</tt>, which is not frozen.
  */
 static VALUE
 str_uplus(VALUE str)
@@ -2730,11 +2709,11 @@ str_uplus(VALUE str)
 
 /*
  * call-seq:
- *   -str  -> str (frozen)
+ *   -string -> frozen_string
  *
  * Returns a frozen, possibly pre-existing copy of the string.
  *
- * The string will be deduplicated as long as it does not have
+ * The returned \String will be deduplicated as long as it does not have
  * any instance variables set on it.
  */
 static VALUE
@@ -3098,23 +3077,20 @@ rb_str_concat_literals(size_t num, const VALUE *strary)
 
 /*
  *  call-seq:
- *     str.concat(obj1, obj2, ...)          -> str
+ *     string.concat(*objects) -> new_string
  *
- *  Concatenates the given object(s) to <i>str</i>. If an object is an
- *  Integer, it is considered a codepoint and converted to a character
- *  before concatenation.
+ *  Returns a new \String containing the concatenation
+ *  of +self+ and all objects in +objects+:
  *
- *  +concat+ can take multiple arguments, and all the arguments are
- *  concatenated in order.
+ *    s = 'foo'
+ *    s.concat('bar', 'baz') # => "foobarbaz"
  *
- *     a = "hello "
- *     a.concat("world", 33)      #=> "hello world!"
- *     a                          #=> "hello world!"
+ *  For each given object +object+ that is an \Integer,
+ *  the value is considered a codepoint and converted to a character before concatenation:
+ *    s = 'foo'
+ *    s.concat(32, 'bar', 32, 'baz') # => "foo bar baz"
  *
- *     b = "sn"
- *     b.concat("_", b, "_", b)   #=> "sn_sn_sn"
- *
- *  See also String#<<, which takes a single argument.
+ *  Related: String#<<, which takes a single argument.
  */
 static VALUE
 rb_str_concat_multi(int argc, VALUE *argv, VALUE str)
@@ -3139,18 +3115,19 @@ rb_str_concat_multi(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str << obj      -> str
- *     str << integer  -> str
+ *    string << object -> str
  *
- *  Appends the given object to <i>str</i>. If the object is an
- *  Integer, it is considered a codepoint and converted to a character
- *  before being appended.
+ *  Returns a new \String containing the concatenation
+ *  of +self+ and +object+:
+ *    s = 'foo'
+ *    s << 'bar' # => "foobar"
  *
- *     a = "hello "
- *     a << "world"   #=> "hello world"
- *     a << 33        #=> "hello world!"
+ *  If +object+ is an \Integer,
+ *  the value is considered a codepoint and converted to a character before concatenation:
+ *    s = 'foo'
+ *    s << 33 # => "foo!"
  *
- *  See also String#concat, which takes multiple arguments.
+ *  Related: String#concat, which takes multiple arguments.
  */
 VALUE
 rb_str_concat(VALUE str1, VALUE str2)
@@ -3218,15 +3195,14 @@ rb_str_concat(VALUE str1, VALUE str2)
 
 /*
  *  call-seq:
- *     str.prepend(other_str1, other_str2, ...)  -> str
+ *    string.prepend(*other_strings)  -> str
  *
- *  Prepend---Prepend the given strings to <i>str</i>.
+ *  Returns a new \String containing the concatenation
+ *  of all given +other_strings+ and +self+:
+ *    s = 'foo'
+ *    s.prepend('bar', 'baz') # => "barbazfoo"
  *
- *     a = "!"
- *     a.prepend("hello ", "world") #=> "hello world!"
- *     a                            #=> "hello world!"
- *
- *  See also String#concat.
+ *  Related: String#concat.
  */
 
 static VALUE
@@ -3274,11 +3250,10 @@ rb_str_hash_cmp(VALUE str1, VALUE str2)
 
 /*
  * call-seq:
- *    str.hash   -> integer
+ *   string.hash -> integer
  *
- * Returns a hash based on the string's length, content and encoding.
- *
- * See also Object#hash.
+ * Returns the integer hash value for +self+.
+ * The value is based on the length, content and encoding of +self+.
  */
 
 static VALUE
@@ -3343,15 +3318,21 @@ rb_str_cmp(VALUE str1, VALUE str2)
 
 /*
  *  call-seq:
- *     str == obj    -> true or false
- *     str === obj   -> true or false
+ *    string == object -> true or false
+ *    string === object -> true or false
  *
- *  Equality---Returns whether +str+ == +obj+, similar to Object#==.
+ *  Returns +true+ if +object+ has the same length and content;
+ *  as +self+; +false+ otherwise:
+ *    s = 'foo'
+ *    s == 'foo' # => true
+ *    s == 'food' # => false
+ *    s == 'FOO' # => false
  *
- *  If +obj+ is not an instance of String but responds to +to_str+, then the
- *  two strings are compared using <code>obj.==</code>.
+ *  Returns +false+ if the two strings' encodings are not compatible:
+ *    "\u{e4 f6 fc}".encode("ISO-8859-1") == ("\u{c4 d6 dc}") # => false
  *
- *  Otherwise, returns similarly to String#eql?, comparing length and content.
+ *  If +object+ is not an instance of \String but responds to +to_str+, then the
+ *  two strings are compared using <code>object.==</code>.
  */
 
 VALUE
@@ -3369,9 +3350,17 @@ rb_str_equal(VALUE str1, VALUE str2)
 
 /*
  * call-seq:
- *   str.eql?(other)   -> true or false
+ *   string.eql?(object) -> true or false
  *
- * Two strings are equal if they have the same length and content.
+ *  Returns +true+ if +object+ has the same length and content;
+ *  as +self+; +false+ otherwise:
+ *    s = 'foo'
+ *    s.eql?('foo') # => true
+ *    s.eql?('food') # => false
+ *    s.eql?('FOO') # => false
+ *
+ *  Returns +false+ if the two strings' encodings are not compatible:
+ *    "\u{e4 f6 fc}".encode("ISO-8859-1").eql?("\u{c4 d6 dc}") # => false
  */
 
 MJIT_FUNC_EXPORTED VALUE
@@ -3384,27 +3373,21 @@ rb_str_eql(VALUE str1, VALUE str2)
 
 /*
  *  call-seq:
- *     string <=> other_string   -> -1, 0, +1, or nil
+ *    string <=> other_string -> -1, 0, 1, or nil
  *
- *  Comparison---Returns -1, 0, +1, or +nil+ depending on whether +string+ is
- *  less than, equal to, or greater than +other_string+.
+ *  Compares +self+ and +other_string+, returning:
+ *  - -1 if +other_string+ is smaller.
+ *  - 0 if the two are equal.
+ *  - 1 if +other_string+ is larger.
+ *  - +nil+ if the two are incomparable.
  *
- *  +nil+ is returned if the two values are incomparable.
- *
- *  If the strings are of different lengths, and the strings are equal when
- *  compared up to the shortest length, then the longer string is considered
- *  greater than the shorter one.
- *
- *  <code><=></code> is the basis for the methods <code><</code>,
- *  <code><=</code>, <code>></code>, <code>>=</code>, and
- *  <code>between?</code>, included from module Comparable. The method
- *  String#== does not use Comparable#==.
- *
- *     "abcdef" <=> "abcde"     #=> 1
- *     "abcdef" <=> "abcdef"    #=> 0
- *     "abcdef" <=> "abcdefg"   #=> -1
- *     "abcdef" <=> "ABCDEF"    #=> 1
- *     "abcdef" <=> 1           #=> nil
+ *  Examples:
+ *    'foo' <=> 'foo' # => 0
+ *    'foo' <=> 'food' # => -1
+ *    'food' <=> 'foo' # => 1
+ *    'FOO' <=> 'foo' # => -1
+ *    'foo' <=> 'FOO' # => 1
+ *    'foo' <=> 1 # => nil
  */
 
 static VALUE
@@ -3424,22 +3407,21 @@ static VALUE str_casecmp_p(VALUE str1, VALUE str2);
 
 /*
  *  call-seq:
- *     str.casecmp(other_str)   -> -1, 0, +1, or nil
+ *    str.casecmp(other_str) -> -1, 0, 1, or nil
  *
- *  Case-insensitive version of String#<=>.
- *  Currently, case-insensitivity only works on characters A-Z/a-z,
- *  not all of Unicode. This is different from String#casecmp?.
+ *  Compares +self+ and +other_string+, ignoring case, and returning:
+ *  - -1 if +other_string+ is smaller.
+ *  - 0 if the two are equal.
+ *  - 1 if +other_string+ is larger.
+ *  - +nil+ if the two are incomparable.
  *
- *     "aBcDeF".casecmp("abcde")     #=> 1
- *     "aBcDeF".casecmp("abcdef")    #=> 0
- *     "aBcDeF".casecmp("abcdefg")   #=> -1
- *     "abcdef".casecmp("ABCDEF")    #=> 0
- *
- *  +nil+ is returned if the two strings have incompatible encodings,
- *  or if +other_str+ is not a string.
- *
- *     "foo".casecmp(2)   #=> nil
- *     "\u{e4 f6 fc}".encode("ISO-8859-1").casecmp("\u{c4 d6 dc}")   #=> nil
+ *  Examples:
+ *    'foo'.casecmp('foo') # => 0
+ *    'foo'.casecmp('food') # => -1
+ *    'food'.casecmp('foo') # => 1
+ *    'FOO'.casecmp('foo') # => 0
+ *    'foo'.casecmp('FOO') # => 0
+ *    'foo'.casecmp(1) # => nil
  */
 
 static VALUE
@@ -3511,22 +3493,18 @@ str_casecmp(VALUE str1, VALUE str2)
 
 /*
  *  call-seq:
- *     str.casecmp?(other_str)   -> true, false, or nil
+ *    string.casecmp?(other_string) -> true, false, or nil
  *
- *  Returns +true+ if +str+ and +other_str+ are equal after
- *  Unicode case folding, +false+ if they are not equal.
+ *  Returns +true+ if +self+ and +other_string+ are equal after
+ *  Unicode case folding, otherwise +false+:
+ *    'foo'.casecmp?('foo') # => true
+ *    'foo'.casecmp?('food') # => false
+ *    'food'.casecmp?('foo') # => true
+ *    'FOO'.casecmp?('foo') # => true
+ *    'foo'.casecmp?('FOO') # => true
  *
- *     "aBcDeF".casecmp?("abcde")     #=> false
- *     "aBcDeF".casecmp?("abcdef")    #=> true
- *     "aBcDeF".casecmp?("abcdefg")   #=> false
- *     "abcdef".casecmp?("ABCDEF")    #=> true
- *     "\u{e4 f6 fc}".casecmp?("\u{c4 d6 dc}")   #=> true
- *
- *  +nil+ is returned if the two strings have incompatible encodings,
- *  or if +other_str+ is not a string.
- *
- *     "foo".casecmp?(2)   #=> nil
- *     "\u{e4 f6 fc}".encode("ISO-8859-1").casecmp?("\u{c4 d6 dc}")   #=> nil
+ *  Returns +nil+ if the two values are incomparable:
+ *    'foo'.casecmp?(1) # => nil
  */
 
 static VALUE
@@ -3620,19 +3598,36 @@ rb_strseq_index(VALUE str, VALUE sub, long offset, int in_byte)
 
 /*
  *  call-seq:
- *     str.index(substring [, offset])   -> integer or nil
- *     str.index(regexp [, offset])      -> integer or nil
+ *    string.index(substring, offset = 0) -> integer or nil
+ *    string.index(regexp, offset = 0) -> integer or nil
  *
- *  Returns the index of the first occurrence of the given <i>substring</i> or
- *  pattern (<i>regexp</i>) in <i>str</i>. Returns <code>nil</code> if not
- *  found. If the second parameter is present, it specifies the position in the
- *  string to begin the search.
+ *  Returns the \Integer index of the first occurrence of the given +substring+,
+ *  or +nil+ if none found:
+ *    'foo'.index('f') # => 0
+ *    'foo'.index('o') # => 1
+ *    'foo'.index('oo') # => 1
+ *    'foo'.index('ooo') # => nil
  *
- *     "hello".index('e')             #=> 1
- *     "hello".index('lo')            #=> 3
- *     "hello".index('a')             #=> nil
- *     "hello".index(?e)              #=> 1
- *     "hello".index(/[aeiou]/, -3)   #=> 4
+ *  Returns the \Integer index of the first match for the given \Regexp +regexp+,
+ *  or +nil+ if none found:
+ *    'foo'.index(/f/) # => 0
+ *    'foo'.index(/o/) # => 1
+ *    'foo'.index(/oo/) # => 1
+ *    'foo'.index(/ooo/) # => nil
+ *
+ *  \Integer argument +offset+, if given, specifies the position in the
+ *  string to begin the search:
+ *    'foo'.index('o', 1) # => 1
+ *    'foo'.index('o', 2) # => 2
+ *    'foo'.index('o', 3) # => nil
+ *
+ *  If +offset+ is negative, counts backward from the end of +self+:
+ *    'foo'.index('o', -1) # => 2
+ *    'foo'.index('o', -2) # => 1
+ *    'foo'.index('o', -3) # => 1
+ *    'foo'.index('o', -4) # => nil
+ *
+ *  Related: String#rindex
  */
 
 static VALUE
@@ -3775,20 +3770,38 @@ rb_str_rindex(VALUE str, VALUE sub, long pos)
 
 /*
  *  call-seq:
- *     str.rindex(substring [, integer])   -> integer or nil
- *     str.rindex(regexp [, integer])   -> integer or nil
+ *    string.rindex(substring, offset = self.length) -> integer or nil
+ *    string.rindex(regexp, offset = self.length) -> integer or nil
  *
- *  Returns the index of the last occurrence of the given <i>substring</i> or
- *  pattern (<i>regexp</i>) in <i>str</i>. Returns <code>nil</code> if not
- *  found. If the second parameter is present, it specifies the position in the
- *  string to end the search---characters beyond this point will not be
- *  considered.
+ *  Returns the \Integer index of the _last_ occurrence of the given +substring+,
+ *  or +nil+ if none found:
+ *    'foo'.rindex('f') # => 0
+ *    'foo'.rindex('o') # => 2
+ *    'foo'.rindex('oo') # => 1
+ *    'foo'.rindex('ooo') # => nil
  *
- *     "hello".rindex('e')             #=> 1
- *     "hello".rindex('l')             #=> 3
- *     "hello".rindex('a')             #=> nil
- *     "hello".rindex(?e)              #=> 1
- *     "hello".rindex(/[aeiou]/, -2)   #=> 1
+ *  Returns the \Integer index of the _last_ match for the given \Regexp +regexp+,
+ *  or +nil+ if none found:
+ *    'foo'.rindex(/f/) # => 0
+ *    'foo'.rindex(/o/) # => 2
+ *    'foo'.rindex(/oo/) # => 1
+ *    'foo'.rindex(/ooo/) # => nil
+ *
+ *  \Integer argument +offset+, if given and non-negative, specifies the maximum starting position in the
+ *   string to _end_ the search:
+ *    'foo'.rindex('o', 0) # => nil
+ *    'foo'.rindex('o', 1) # => 1
+ *    'foo'.rindex('o', 2) # => 2
+ *    'foo'.rindex('o', 3) # => 2
+ *
+ *  If +offset+ is a negative \Integer, the maximum starting position in the
+ *  string to _end_ the search is the sum of the string's length and +offset+:
+ *    'foo'.rindex('o', -1) # => 2
+ *    'foo'.rindex('o', -2) # => 1
+ *    'foo'.rindex('o', -3) # => nil
+ *    'foo'.rindex('o', -4) # => nil
+ *
+ *  Related: String#index
  */
 
 static VALUE
@@ -3838,25 +3851,28 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str =~ obj   -> integer or nil
+ *    string =~ regexp -> integer or nil
+ *    string =~ object -> integer or nil
  *
- *  Match---If <i>obj</i> is a Regexp, uses it as a pattern to match
- *  against the receiver, and returns the position the match starts,
- *  or +nil+ if there is no match. Otherwise, invokes <i>obj.=~</i>,
- *  passing the string as an argument.
- *  The default Object#=~ (deprecated) returns +nil+.
+ *  Returns the \Integer index of the first substring that matches
+ *  the given +regexp+, or +nil+ if no match found:
+ *    'foo' =~ /f/ # => 0
+ *    'foo' =~ /o/ # => 1
+ *    'foo' =~ /x/ # => nil
  *
- *     "cat o' 9 tails" =~ /\d/   #=> 7
- *     "cat o' 9 tails" =~ 9      #=> nil
+ *  Note: also updates
+ *  {Regexp-related global variables}[Regexp.html#class-Regexp-label-Special+global+variables].
  *
- *  Note that <code>string =~ regexp</code> is not the same as
- *  <code>regexp =~ string</code>. Strings captured from named capture groups
- *  are assigned to local variables only in the second case.
+ *  If the given +object+ is not a \Regexp, returns the value
+ *  returned by <tt>object =~ self</tt>.
  *
- *     "no. 9" =~ /(?<number>\d+)/
- *     number                        #=> nil (not assigned)
- *     /(?<number>\d+)/ =~ "no. 9"
- *     number                        #=> "9"
+ *  Note that <tt>string =~ regexp</tt> is different from <tt>regexp =~ string</tt>
+ *  (see {Regexp#=~}[https://ruby-doc.org/core-2.7.1/Regexp.html#method-i-3D-7E]):
+ *    number= nil
+ *    "no. 9" =~ /(?<number>\d+)/
+ *    number # => nil (not assigned)
+ *    /(?<number>\d+)/ =~ "no. 9"
+ *    number #=> "9"
  */
 
 static VALUE
@@ -3880,32 +3896,34 @@ static VALUE get_pat(VALUE);
 
 /*
  *  call-seq:
- *     str.match(pattern, pos=0)                   -> matchdata or nil
- *     str.match(pattern, pos=0) {|match| block }  -> obj
+ *    string.match(pattern, offset = 0) -> matchdata or nil
+ *    string.match(pattern, offset = 0) {|matchdata| ... } -> object
  *
- *  Converts <i>pattern</i> to a Regexp (if it isn't already one),
- *  then invokes its <code>match</code> method on the receiver.
- *  If the second parameter is present, it specifies the position
- *  in the string to begin the search.
+ *  Returns a \Matchdata object (or +nil+) based on +self+ and the given +pattern+.
  *
- *     'hello'.match('(.)\1')      #=> #<MatchData "ll" 1:"l">
- *     'hello'.match('(.)\1')[0]   #=> "ll"
- *     'hello'.match(/(.)\1/)[0]   #=> "ll"
- *     'hello'.match(/(.)\1/, 3)   #=> nil
- *     'hello'.match('xx')         #=> nil
+ *  Note: also updates
+ *  {Regexp-related global variables}[Regexp.html#class-Regexp-label-Special+global+variables].
  *
- *  If a block is given, invokes the block with MatchData if match succeeds,
- *  so that you can write
+ *  - Computes +regexp+ by converting +pattern+ (if not already a \Regexp).
+ *      regexp = Regexp.new(pattern)
+ *  - Computes +matchdata+, which will be either a \MatchData object or +nil+
+ *    (see Regexp#match):
+ *      matchdata = <tt>regexp.match(self)
  *
- *     str.match(pat) {|m| block }
+ *  With no block given, returns the computed +matchdata+:
+ *    'foo'.match('f') # => #<MatchData "f">
+ *    'foo'.match('o') # => #<MatchData "o">
+ *    'foo'.match('x') # => nil
  *
- *  instead of
+ *  If \Integer argument +offset+ is given, the search begins at index +offset+:
+ *    'foo'.match('f', 1) # => nil
+ *    'foo'.match('o', 1) # => #<MatchData "o">
  *
- *     if m = str.match(pat)
- *       # ...
- *     end
- *
- *  The return value in this case is the value from block execution.
+ *  With a block given, calls the block with the computed +matchdata+
+ *  and returns the block's return value:
+ *    'foo'.match(/o/) {|matchdata| matchdata } # => #<MatchData "o">
+ *    'foo'.match(/x/) {|matchdata| matchdata } # => nil
+ *    'foo'.match(/f/, 1) {|matchdata| matchdata } # => nil
  */
 
 static VALUE
@@ -3925,19 +3943,25 @@ rb_str_match_m(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.match?(pattern)        -> true or false
- *     str.match?(pattern, pos)   -> true or false
+ *    string.match?(pattern, offset = 0) -> true or false
  *
- *  Converts _pattern_ to a +Regexp+ (if it isn't already one), then
- *  returns a +true+ or +false+ indicates whether the regexp is
- *  matched _str_ or not without updating <code>$~</code> and other
- *  related variables.  If the second parameter is present, it
- *  specifies the position in the string to begin the search.
+ *  Returns +true+ or +false+ based on whether a match is found for +self+ and +pattern+.
  *
- *     "Ruby".match?(/R.../)    #=> true
- *     "Ruby".match?(/R.../, 1) #=> false
- *     "Ruby".match?(/P.../)    #=> false
- *     $&                       #=> nil
+ *  Note: does not update
+ *  {Regexp-related global variables}[Regexp.html#class-Regexp-label-Special+global+variables].
+ *
+ *  Computes +regexp+ by converting +pattern+ (if not already a \Regexp).
+ *    regexp = Regexp.new(pattern)
+ *
+ *  Returns +true+ if <tt>self+.match(regexp)</tt> returns a \Matchdata object,
+ *  +false+ otherwise:
+ *    'foo'.match?(/o/) # => true
+ *    'foo'.match?('o') # => true
+ *    'foo'.match?(/x/) # => false
+ *
+ *  If \Integer argument +offset+ is given, the search begins at index +offset+:
+ *    'foo'.match?('f', 1) # => false
+ *    'foo'.match?('o', 1) # => true
  */
 
 static VALUE
@@ -4136,27 +4160,55 @@ static VALUE str_succ(VALUE str);
 
 /*
  *  call-seq:
- *     str.succ   -> new_str
- *     str.next   -> new_str
+ *    string.succ -> new_str
  *
- *  Returns the successor to <i>str</i>. The successor is calculated by
- *  incrementing characters starting from the rightmost alphanumeric (or
- *  the rightmost character if there are no alphanumerics) in the
- *  string. Incrementing a digit always results in another digit, and
- *  incrementing a letter results in another letter of the same case.
- *  Incrementing nonalphanumerics uses the underlying character set's
- *  collating sequence.
+ *  Returns the successor to +self+. The successor is calculated by
+ *  incrementing characters.
  *
- *  If the increment generates a ``carry,'' the character to the left of
- *  it is incremented. This process repeats until there is no carry,
- *  adding an additional character if necessary.
+ *  The first character to be incremented is the rightmost alphanumeric:
+ *  or, if no alphanumerics, the rightmost character:
+ *    'THX1138'.succ # => "THX1139"
+ *    '<<koala>>'.succ # => "<<koalb>>"
+ *    '***'.succ # => '**+'
  *
- *     "abcd".succ        #=> "abce"
- *     "THX1138".succ     #=> "THX1139"
- *     "<<koala>>".succ   #=> "<<koalb>>"
- *     "1999zzz".succ     #=> "2000aaa"
- *     "ZZZ9999".succ     #=> "AAAA0000"
- *     "***".succ         #=> "**+"
+ *  The successor to a digit is another digit, "carrying" to the next-left
+ *  character for a "rollover" from 9 to 0, and prepending another digit
+ *  if necessary:
+ *    '00'.succ # => "01"
+ *    '09'.succ # => "10"
+ *    '99'.succ # => "100"
+ *
+ *  The successor to a letter is another letter of the same case,
+ *  carrying to the next-left character for a rollover,
+ *  and prepending another same-case letter if necessary:
+ *    'aa'.succ # => "ab"
+ *    'az'.succ # => "ba"
+ *    'zz'.succ # => "aaa"
+ *    'AA'.succ # => "AB"
+ *    'AZ'.succ # => "BA"
+ *    'ZZ'.succ # => "AAA"
+ *
+ *  The successor to a non-alphanumeric character is the next character
+ *  in the underlying character set's collating sequence,
+ *  carrying to the next-left character for a rollover,
+ *  and prepending another character if necessary:
+ *    s = 0.chr * 3
+ *    s # => "\x00\x00\x00"
+ *    s.succ # => "\x00\x00\x01"
+ *    s = 255.chr * 3
+ *    s # => "\xFF\xFF\xFF"
+ *    s.succ # => "\x01\x00\x00\x00"
+ *
+ *  Carrying can occur between and among mixtures of alphanumeric characters:
+ *    s = 'zz99zz99'
+ *    s.succ # => "aaa00aa00"
+ *    s = '99zz99zz'
+ *    s.succ # => "100aa00aa"
+ *
+ *  The successor to an empty \String is a new empty \String:
+ *    ''.succ # => ""
+ *
+ *  String#next is an alias for String#succ.
  */
 
 VALUE
@@ -4258,10 +4310,11 @@ str_succ(VALUE str)
 
 /*
  *  call-seq:
- *     str.succ!   -> str
- *     str.next!   -> str
+ *    string.succ! -> self
  *
- *  Equivalent to String#succ, but modifies the receiver in place.
+ *  Equivalent to String#succ, but modifies +self+ in place; returns +self+.
+ *
+ *  String#next! is an alias for String#succ!.
  */
 
 static VALUE
@@ -4291,35 +4344,29 @@ str_upto_i(VALUE str, VALUE arg)
 
 /*
  *  call-seq:
- *     str.upto(other_str, exclusive=false) {|s| block }   -> str
- *     str.upto(other_str, exclusive=false)                -> an_enumerator
+ *    string.upto(other_string, exclusive = false) {|string| ... } -> self
+ *    string.upto(other_string, exclusive = false) -> new_enumerator
  *
- *  Iterates through successive values, starting at <i>str</i> and
- *  ending at <i>other_str</i> inclusive, passing each value in turn
- *  to the block. The String#succ method is used to generate each
- *  value.  If optional second argument exclusive is omitted or is
- *  false, the last value will be included; otherwise it will be
- *  excluded.
+ *  With a block given, calls the block with each \String value
+ *  returned by successive calls to String#succ;
+ *  the first value is +self+, the next is <tt>self.succ</tt>, and so on;
+ *  the sequence terminates when value +other_string+ is reached;
+ *  returns +self+:
+ *    'a8'.upto('b6') {|s| print s, ' ' } # => "a8"
+ *  Output:
+ *    a8 a9 b0 b1 b2 b3 b4 b5 b6
  *
- *  If no block is given, an enumerator is returned instead.
+ *  If argument +exclusive+ is given as a truthy object, the last value is omitted:
+ *    'a8'.upto('b6', true) {|s| print s, ' ' } # => "a8"
+ *  Output:
+ *    a8 a9 b0 b1 b2 b3 b4 b5
  *
- *     "a8".upto("b6") {|s| print s, ' ' }
- *     for s in "a8".."b6"
- *       print s, ' '
- *     end
+ *  If +other_string+ would not be reached, does not call the block:
+ *    '25'.upto('5') {|s| fail s }
+ *    'aa'.upto('a') {|s| fail s }
  *
- *  <em>produces:</em>
- *
- *     a8 a9 b0 b1 b2 b3 b4 b5 b6
- *     a8 a9 b0 b1 b2 b3 b4 b5 b6
- *
- *  If <i>str</i> and <i>other_str</i> contains only ascii numeric characters,
- *  both are recognized as decimal numbers. In addition, the width of
- *  string (e.g. leading zeros) is handled appropriately.
- *
- *     "9".upto("11").to_a   #=> ["9", "10", "11"]
- *     "25".upto("5").to_a   #=> []
- *     "07".upto("11").to_a  #=> ["07", "08", "09", "10", "11"]
+ *  With no block given, returns a new \Enumerator:
+ *    'a8'.upto('b6') # => #<Enumerator: "a8":upto("b6")>
  */
 
 static VALUE

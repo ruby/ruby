@@ -1769,6 +1769,12 @@ heap_pages_free_unused_pages(rb_objspace_t *objspace)
 		j++;
 	    }
 	}
+
+        struct heap_page *hipage = heap_pages_sorted[heap_allocated_pages - 1];
+        RVALUE *himem = hipage->start + hipage->total_slots;
+        GC_ASSERT(himem <= heap_pages_himem);
+        heap_pages_himem = himem;
+
 	GC_ASSERT(j == heap_allocated_pages);
     }
 }
@@ -2538,6 +2544,8 @@ vm_ccs_free(struct rb_class_cc_entries *ccs, int alive, rb_objspace_t *objspace,
         for (int i=0; i<ccs->len; i++) {
             const struct rb_callcache *cc = ccs->entries[i].cc;
             if (!alive) {
+                void *ptr = asan_poisoned_object_p((VALUE)cc);
+                asan_unpoison_object((VALUE)cc, false);
                 // ccs can be free'ed.
                 if (is_pointer_to_heap(objspace, (void *)cc) &&
                     IMEMO_TYPE_P(cc, imemo_callcache) &&
@@ -2545,7 +2553,13 @@ vm_ccs_free(struct rb_class_cc_entries *ccs, int alive, rb_objspace_t *objspace,
                     // OK. maybe target cc.
                 }
                 else {
+                    if (ptr) {
+                        asan_poison_object((VALUE)cc);
+                    }
                     continue;
+                }
+                if (ptr) {
+                    asan_poison_object((VALUE)cc);
                 }
             }
             vm_cc_invalidate(cc);
@@ -3395,7 +3409,7 @@ should_be_finalizable(VALUE obj)
  *        def initialize(data_needed_for_finalization)
  *          ObjectSpace.define_finalizer(self, self.class.create_finalizer(data_needed_for_finalization))
  *        end
- *      
+ *
  *        def self.create_finalizer(data_needed_for_finalization)
  *          proc {
  *            puts "finalizing #{data_needed_for_finalization}"
@@ -3408,7 +3422,7 @@ should_be_finalizable(VALUE obj)
  *          def initialize(data_needed_for_finalization)
  *            @data_needed_for_finalization = data_needed_for_finalization
  *          end
- *        
+ *
  *          def call(id)
  *            puts "finalizing #{@data_needed_for_finalization}"
  *          end
@@ -5046,11 +5060,19 @@ mark_set(rb_objspace_t *objspace, st_table *tbl)
     st_foreach(tbl, mark_key, (st_data_t)objspace);
 }
 
+static int
+pin_value(st_data_t key, st_data_t value, st_data_t data)
+{
+    rb_objspace_t *objspace = (rb_objspace_t *)data;
+    gc_mark_and_pin(objspace, (VALUE)value);
+    return ST_CONTINUE;
+}
+
 static void
 mark_finalizer_tbl(rb_objspace_t *objspace, st_table *tbl)
 {
     if (!tbl) return;
-    st_foreach(tbl, mark_value, (st_data_t)objspace);
+    st_foreach(tbl, pin_value, (st_data_t)objspace);
 }
 
 void
@@ -7333,15 +7355,19 @@ rb_gc_force_recycle(VALUE obj)
 void
 rb_gc_register_mark_object(VALUE obj)
 {
-    VALUE ary_ary = GET_VM()->mark_object_ary;
-    VALUE ary = rb_ary_last(0, 0, ary_ary);
+    RB_VM_LOCK_ENTER();
+    {
+        VALUE ary_ary = GET_VM()->mark_object_ary;
+        VALUE ary = rb_ary_last(0, 0, ary_ary);
 
-    if (ary == Qnil || RARRAY_LEN(ary) >= MARK_OBJECT_ARY_BUCKET_SIZE) {
-	ary = rb_ary_tmp_new(MARK_OBJECT_ARY_BUCKET_SIZE);
-	rb_ary_push(ary_ary, ary);
+        if (ary == Qnil || RARRAY_LEN(ary) >= MARK_OBJECT_ARY_BUCKET_SIZE) {
+            ary = rb_ary_tmp_new(MARK_OBJECT_ARY_BUCKET_SIZE);
+            rb_ary_push(ary_ary, ary);
+        }
+
+        rb_ary_push(ary, obj);
     }
-
-    rb_ary_push(ary, obj);
+    RB_VM_LOCK_LEAVE();
 }
 
 void
@@ -7731,7 +7757,7 @@ static inline void
 gc_enter(rb_objspace_t *objspace, const char *event, unsigned int *lock_lev)
 {
     // stop other ractors
-    
+
     RB_VM_LOCK_ENTER_LEV(lock_lev);
     rb_vm_barrier();
 
@@ -7847,6 +7873,11 @@ gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
       case T_NODE:
       case T_CLASS:
         if (FL_TEST(obj, FL_FINALIZE)) {
+            /* The finalizer table is a numtable. It looks up objects by address.
+             * We can't mark the keys in the finalizer table because that would
+             * prevent the objects from being collected.  This check prevents
+             * objects that are keys in the finalizer table from being moved
+             * without directly pinning them. */
             if (st_is_member(finalizer_table, obj)) {
                 return FALSE;
             }
@@ -8696,33 +8727,30 @@ gc_ref_update(void *vstart, void *vend, size_t stride, void * data)
 
     /* For each object on the page */
     for (; v != (VALUE)vend; v += stride) {
-        if (!SPECIAL_CONST_P(v)) {
-            void *poisoned = asan_poisoned_object_p(v);
-            asan_unpoison_object(v, false);
+        void *poisoned = asan_poisoned_object_p(v);
+        asan_unpoison_object(v, false);
 
-            switch (BUILTIN_TYPE(v)) {
-              case T_NONE:
-                heap_page_add_freeobj(objspace, page, v);
-                free_slots++;
-                break;
-              case T_MOVED:
-                break;
-              case T_ZOMBIE:
-                break;
-              default:
-                if (RVALUE_WB_UNPROTECTED(v)) {
-                    page->flags.has_uncollectible_shady_objects = TRUE;
-                }
-                if (RVALUE_PAGE_MARKING(page, v)) {
-                    page->flags.has_remembered_objects = TRUE;
-                }
-                gc_update_object_references(objspace, v);
+        switch (BUILTIN_TYPE(v)) {
+          case T_NONE:
+            heap_page_add_freeobj(objspace, page, v);
+            free_slots++;
+            break;
+          case T_MOVED:
+            break;
+          case T_ZOMBIE:
+            break;
+          default:
+            if (RVALUE_WB_UNPROTECTED(v)) {
+                page->flags.has_uncollectible_shady_objects = TRUE;
             }
+            if (RVALUE_PAGE_MARKING(page, v)) {
+                page->flags.has_remembered_objects = TRUE;
+            }
+            gc_update_object_references(objspace, v);
+        }
 
-            if (poisoned) {
-                GC_ASSERT(BUILTIN_TYPE(v) == T_NONE);
-                asan_poison_object(v);
-            }
+        if (poisoned) {
+            asan_poison_object(v);
         }
     }
 
@@ -11861,6 +11889,17 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
             APPENDF((BUFF_ARGS, "%.*s", str_len_no_raise(obj), RSTRING_PTR(obj)));
 	    break;
 	  }
+          case T_SYMBOL: {
+              VALUE fstr = RSYMBOL(obj)->fstr;
+              ID id = RSYMBOL(obj)->id;
+              if (RB_TYPE_P(fstr, T_STRING)) {
+                  APPENDF((BUFF_ARGS, ":%s id:%d", RSTRING_PTR(fstr), (unsigned int)id));
+              }
+              else {
+                  APPENDF((BUFF_ARGS, "(%p) id:%d", (void *)fstr, (unsigned int)id));
+              }
+              break;
+          }
           case T_MOVED: {
             APPENDF((BUFF_ARGS, "-> %p", (void*)rb_gc_location(obj)));
             break;

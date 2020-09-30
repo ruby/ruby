@@ -47,6 +47,61 @@ class TestFiberMutex < Test::Unit::TestCase
     thread.join
   end
 
+  def test_mutex_thread
+    mutex = Mutex.new
+    mutex.lock
+
+    thread = Thread.new do
+      scheduler = Scheduler.new
+      Thread.current.scheduler = scheduler
+
+      Fiber.schedule do
+        mutex.lock
+        sleep 0.1
+        mutex.unlock
+      end
+
+      scheduler.run
+    end
+
+    sleep 0.1
+    mutex.unlock
+
+    thread.join
+  end
+
+  def test_mutex_fiber_raise
+    mutex = Mutex.new
+    ran = false
+
+    main = Thread.new do
+      mutex.lock
+
+      thread = Thread.new do
+        scheduler = Scheduler.new
+        Thread.current.scheduler = scheduler
+
+        f = Fiber.schedule do
+          assert_raise_with_message(RuntimeError, "bye") do
+            assert_same scheduler, Thread.scheduler
+            mutex.lock
+          end
+          ran = true
+        end
+
+        Fiber.schedule do
+          f.raise "bye"
+        end
+      end
+
+      thread.join
+    end
+
+    main.join # causes mutex to be released
+    assert_equal false, mutex.locked?
+    assert_equal true, ran
+  end
+
   def test_condition_variable
     mutex = Mutex.new
     condition = ConditionVariable.new
@@ -113,6 +168,31 @@ class TestFiberMutex < Test::Unit::TestCase
     thread.join
 
     assert processed == 3
+  end
+
+  def test_queue_pop_waits
+    queue = Queue.new
+    running = false
+
+    thread = Thread.new do
+      scheduler = Scheduler.new
+      Thread.current.scheduler = scheduler
+
+      result = nil
+      Fiber.schedule do
+        result = queue.pop
+      end
+
+      running = true
+      scheduler.run
+      result
+    end
+
+    Thread.pass until running
+    sleep 0.1
+
+    queue << :done
+    assert_equal :done, thread.value
   end
 
   def test_mutex_deadlock

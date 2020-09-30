@@ -536,6 +536,17 @@ describe "Process.spawn" do
     File.read(@name).should == "glarkbang"
   end
 
+  platform_is_not :windows do
+    it "closes STDERR in the child if :err => :close" do
+      File.open(@name, 'w') do |file|
+        -> do
+          code = "begin; STDOUT.puts 'out'; STDERR.puts 'hello'; rescue => e; puts 'rescued'; end"
+          Process.wait Process.spawn(ruby_cmd(code), :out => file, :err => :close)
+        end.should output_to_fd("out\nrescued\n", file)
+      end
+    end
+  end
+
   # :close_others
 
   platform_is_not :windows do

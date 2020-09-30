@@ -484,7 +484,7 @@ class TestWEBrickHTTPServer < Test::Unit::TestCase
       TCPSocket.open(addr, port) do |c|
         c.write("GET / HTTP/1.0\r\n")
         junk = -"X-Junk: #{' ' * 1024}\r\n"
-        assert_raise(Errno::ECONNRESET, Errno::EPIPE) do
+        assert_raise(Errno::ECONNRESET, Errno::EPIPE, Errno::EPROTOTYPE) do
           loop { c.write(junk) }
         end
       end

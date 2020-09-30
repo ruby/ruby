@@ -17,7 +17,7 @@ describe "Kernel#warn" do
     Kernel.should have_private_instance_method(:warn)
   end
 
-  it "requires multiple arguments" do
+  it "accepts multiple arguments" do
     Kernel.method(:warn).arity.should < 0
   end
 
@@ -111,6 +111,38 @@ describe "Kernel#warn" do
       it "shows the caller of #require and not #require itself with RubyGems loaded" do
         file = fixture(__FILE__ , "warn_require_caller.rb")
         ruby_exe(file, options: "-rrubygems", args: "2>&1").should == "#{file}:2: warning: warn-require-warning\n"
+      end
+    end
+
+    ruby_version_is "3.0" do
+      it "accepts :category keyword with a symbol" do
+        -> {
+          $VERBOSE = true
+          warn("message", category: :deprecated)
+        }.should output(nil, "message\n")
+      end
+
+      it "accepts :category keyword with nil" do
+        -> {
+          $VERBOSE = true
+          warn("message", category: nil)
+        }.should output(nil, "message\n")
+      end
+
+      it "accepts :category keyword with object convertible to symbol" do
+        o = Object.new
+        def o.to_sym; :deprecated; end
+        -> {
+          $VERBOSE = true
+          warn("message", category: o)
+        }.should output(nil, "message\n")
+      end
+
+      it "raises if :category keyword is not nil and not convertible to symbol" do
+        -> {
+          $VERBOSE = true
+          warn("message", category: Object.new)
+        }.should raise_error(TypeError)
       end
     end
 

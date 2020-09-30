@@ -4,5 +4,5 @@ require_relative 'fixtures/http_server'
 require_relative 'shared/request_put'
 
 describe "Net::HTTP#request_put" do
-  it_behaves_like :net_ftp_request_put, :request_put
+  it_behaves_like :net_http_request_put, :request_put
 end

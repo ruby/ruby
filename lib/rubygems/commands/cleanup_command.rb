@@ -10,10 +10,16 @@ class Gem::Commands::CleanupCommand < Gem::Command
           :force => false, :install_dir => Gem.dir,
           :check_dev => true
 
-    add_option('-n', '-d', '--dryrun',
+    add_option('-n', '-d', '--dry-run',
                'Do not uninstall gems') do |value, options|
       options[:dryrun] = true
     end
+
+    add_option(:Deprecated, '--dryrun',
+               'Do not uninstall gems') do |value, options|
+      options[:dryrun] = true
+    end
+    deprecate_option('--dryrun', extra_msg: 'Use --dry-run instead')
 
     add_option('-D', '--[no-]check-development',
                'Check development dependencies while uninstalling',
@@ -41,7 +47,7 @@ class Gem::Commands::CleanupCommand < Gem::Command
   end
 
   def defaults_str # :nodoc:
-    "--no-dryrun"
+    "--no-dry-run"
   end
 
   def description # :nodoc:

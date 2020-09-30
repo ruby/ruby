@@ -418,19 +418,6 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
-  def test_codepoints
-    make_tempfile {|t|
-      bug2959 = '[ruby-core:28650]'
-      a = ""
-      File.open(t, 'rt') {|f|
-        assert_warn(/deprecated/) {
-          f.codepoints {|c| a << c}
-        }
-      }
-      assert_equal("foo\nbar\nbaz\n", a, bug2959)
-    }
-  end
-
   def test_rubydev33072
     t = make_tempfile
     path = t.path
@@ -1835,70 +1822,6 @@ class TestIO < Test::Unit::TestCase
     end)
   end
 
-  def test_lines
-    verbose, $VERBOSE = $VERBOSE, nil
-    pipe(proc do |w|
-      w.puts "foo"
-      w.puts "bar"
-      w.puts "baz"
-      w.close
-    end, proc do |r|
-      e = nil
-      assert_warn(/deprecated/) {
-        e = r.lines
-      }
-      assert_equal("foo\n", e.next)
-      assert_equal("bar\n", e.next)
-      assert_equal("baz\n", e.next)
-      assert_raise(StopIteration) { e.next }
-    end)
-  ensure
-    $VERBOSE = verbose
-  end
-
-  def test_bytes
-    verbose, $VERBOSE = $VERBOSE, nil
-    pipe(proc do |w|
-      w.binmode
-      w.puts "foo"
-      w.puts "bar"
-      w.puts "baz"
-      w.close
-    end, proc do |r|
-      e = nil
-      assert_warn(/deprecated/) {
-        e = r.bytes
-      }
-      (%w(f o o) + ["\n"] + %w(b a r) + ["\n"] + %w(b a z) + ["\n"]).each do |c|
-        assert_equal(c.ord, e.next)
-      end
-      assert_raise(StopIteration) { e.next }
-    end)
-  ensure
-    $VERBOSE = verbose
-  end
-
-  def test_chars
-    verbose, $VERBOSE = $VERBOSE, nil
-    pipe(proc do |w|
-      w.puts "foo"
-      w.puts "bar"
-      w.puts "baz"
-      w.close
-    end, proc do |r|
-      e = nil
-      assert_warn(/deprecated/) {
-        e = r.chars
-      }
-      (%w(f o o) + ["\n"] + %w(b a r) + ["\n"] + %w(b a z) + ["\n"]).each do |c|
-        assert_equal(c, e.next)
-      end
-      assert_raise(StopIteration) { e.next }
-    end)
-  ensure
-    $VERBOSE = verbose
-  end
-
   def test_readbyte
     pipe(proc do |w|
       w.binmode
@@ -2839,7 +2762,7 @@ __END__
 
   def test_flush_in_finalizer2
     bug3910 = '[ruby-dev:42341]'
-    Tempfile.open("bug3910") {|t|
+    Tempfile.create("bug3910") {|t|
       path = t.path
       t.close
       begin
@@ -2858,7 +2781,6 @@ __END__
           end
         }
       end
-      t.close!
     }
   end
 
@@ -3477,10 +3399,17 @@ __END__
 
       tempfiles = []
       (0..fd_setsize+1).map {|i|
-        tempfiles << Tempfile.open("test_io_select_with_many_files")
+        tempfiles << Tempfile.create("test_io_select_with_many_files")
       }
 
-      IO.select(tempfiles)
+      begin
+        IO.select(tempfiles)
+      ensure
+        tempfiles.each { |t|
+          t.close
+          File.unlink(t.path)
+        }
+      end
     }, bug8080, timeout: 100
   end if defined?(Process::RLIMIT_NOFILE)
 

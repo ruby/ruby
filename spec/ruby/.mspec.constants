@@ -41,6 +41,7 @@ ComparisonTest
 ConstantSpecsIncludedModule
 ConstantVisibility
 Coverage
+CoverageSpecs
 CustomArgumentError
 DRb
 DRbIdConv

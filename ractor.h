@@ -47,6 +47,7 @@ struct rb_ractor_struct {
 
     bool incoming_port_closed;
     bool outgoing_port_closed;
+    bool yield_atexit;
 
     struct rb_ractor_waiting_list taking_ractors;
 
@@ -254,12 +255,13 @@ rb_ractor_confirm_belonging(VALUE obj)
     uint32_t id = rb_ractor_belonging(obj);
 
     if (id == 0) {
-        if (!rb_ractor_shareable_p(obj)) {
+        if (UNLIKELY(!rb_ractor_shareable_p(obj))) {
             rp(obj);
             rb_bug("id == 0 but not shareable");
         }
     }
-    else if (id != rb_ractor_current_id()) {
+    else if (UNLIKELY(id != rb_ractor_current_id())) {
+        rp(obj);
         rb_bug("rb_ractor_confirm_belonging object-ractor id:%u, current-ractor id:%u", id, rb_ractor_current_id());
     }
     return obj;

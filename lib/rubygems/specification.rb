@@ -1957,6 +1957,8 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   eval <<-RUBY, binding, __FILE__, __LINE__ + 1
+    # frozen_string_literal: true
+
     def set_nil_attributes_to_nil
       #{@@nil_attributes.map {|key| "@#{key} = nil" }.join "; "}
     end
@@ -1990,6 +1992,10 @@ class Gem::Specification < Gem::BasicSpecification
 
     self.name = name if name
     self.version = version if version
+
+    if platform = Gem.platforms.last and platform != Gem::Platform::RUBY and platform != Gem::Platform.local
+      self.platform = platform
+    end
 
     yield self if block_given?
   end

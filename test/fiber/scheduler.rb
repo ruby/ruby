@@ -19,9 +19,13 @@ class Scheduler
     @writable = {}
     @waiting = {}
 
+    @closed = false
+
     @lock = Mutex.new
-    @locking = 0
-    @ready = Array.new
+    @blocking = 0
+    @ready = []
+
+    @urgent = nil
   end
 
   attr :readable
@@ -45,7 +49,7 @@ class Scheduler
   def run
     @urgent = IO.pipe
 
-    while @readable.any? or @writable.any? or @waiting.any? or @locking.positive?
+    while @readable.any? or @writable.any? or @waiting.any? or @blocking.positive?
       # Can only handle file descriptors up to 1024...
       readable, writable = IO.select(@readable.keys + [@urgent.first], @writable.keys, [], next_timeout)
 
@@ -68,8 +72,7 @@ class Scheduler
 
       if @waiting.any?
         time = current_time
-        waiting = @waiting
-        @waiting = {}
+        waiting, @waiting = @waiting, {}
 
         waiting.each do |fiber, timeout|
           if timeout <= time
@@ -84,7 +87,7 @@ class Scheduler
         ready = nil
 
         @lock.synchronize do
-          ready, @ready = @ready, Array.new
+          ready, @ready = @ready, []
         end
 
         ready.each do |fiber|
@@ -94,20 +97,24 @@ class Scheduler
     end
   ensure
     @urgent.each(&:close)
+    @urgent = nil
+  end
+
+  def close
+    self.run
+  ensure
+    @closed = true
+
+    # We freeze to detect any unintended modifications after the scheduler is closed:
+    self.freeze
+  end
+
+  def closed?
+    @closed
   end
 
   def current_time
     Process.clock_gettime(Process::CLOCK_MONOTONIC)
-  end
-
-  def kernel_sleep(duration = nil)
-    if duration
-      @waiting[Fiber.current] = current_time + duration
-    end
-
-    Fiber.yield
-
-    return true
   end
 
   def io_wait(io, events, duration)
@@ -124,20 +131,49 @@ class Scheduler
     return true
   end
 
-  def mutex_lock(mutex)
-    @locking += 1
+  # Used for Kernel#sleep and Mutex#sleep
+  def kernel_sleep(duration = nil)
+    # p [__method__, duration]
+    if duration
+      @waiting[Fiber.current] = current_time + duration
+    end
+
     Fiber.yield
-  ensure
-    @locking -= 1
+
+    return true
   end
 
-  def mutex_unlock(mutex, fiber)
+  # Used when blocking on synchronization (Mutex#lock, Queue#pop, SizedQueue#push, ...)
+  def block(blocker, timeout = nil)
+    # p [__method__, blocker, timeout]
+    if timeout
+      @waiting[Fiber.current] = current_time + timeout
+      begin
+        Fiber.yield
+      ensure
+        # Remove from @waiting in the case #unblock was called before the timeout expired:
+        @waiting.delete(Fiber.current)
+      end
+    else
+      @blocking += 1
+      begin
+        Fiber.yield
+      ensure
+        @blocking -= 1
+      end
+    end
+  end
+
+  # Used when synchronization wakes up a previously-blocked fiber (Mutex#unlock, Queue#push, ...).
+  # This might be called from another thread.
+  def unblock(blocker, fiber)
+    # p [__method__, blocker, fiber]
     @lock.synchronize do
       @ready << fiber
     end
 
     if io = @urgent&.last
-      @urgent.last.write_nonblock('.')
+      io.write_nonblock('.')
     end
   end
 

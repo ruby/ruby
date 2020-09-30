@@ -1,6 +1,12 @@
 require 'mspec/guards/version'
 
-if RUBY_ENGINE == "ruby"
+# Always enable deprecation warnings when running MSpec, as ruby/spec tests for them,
+# and like in most test frameworks, all warnings should be enabled by default (same as -w).
+if Object.const_defined?(:Warning) and Warning.respond_to?(:[]=)
+  Warning[:deprecated] = true
+end
+
+if Object.const_defined?(:Warning) and Warning.respond_to?(:warn)
   def Warning.warn(message)
     # Suppress any warning inside the method to prevent recursion
     verbose = $VERBOSE

@@ -188,7 +188,7 @@ class TestISeq < Test::Unit::TestCase
     assert_predicate(s1, :frozen?)
     assert_predicate(s2, :frozen?)
     assert_not_predicate(s3, :frozen?)
-    assert_predicate(s4, :frozen?) # should probably not be frozen, but unrealistic code
+    assert_not_predicate(s4, :frozen?)
   end
 
   # Safe call chain is not optimized when Coverage is running.

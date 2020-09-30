@@ -73,6 +73,11 @@ class TestRDocRDoc < RDoc::TestCase
     b = File.expand_path '../test_rdoc_text.rb', __FILE__
 
     assert_equal [a, b], @rdoc.gather_files([b, a, b])
+
+    assert_empty @rdoc.gather_files([b, a, b])
+
+    @rdoc.last_modified[a] -= 10
+    assert_equal [a, b], @rdoc.gather_files([b, a, b])
   end
 
   def test_handle_pipe
@@ -146,7 +151,7 @@ class TestRDocRDoc < RDoc::TestCase
       @rdoc.normalized_file_list [test_path, flag_file]
     end
 
-    files = files.map { |file| File.expand_path file }
+    files = files.map { |file, *| File.expand_path file }
 
     assert_equal [test_path], files
   end
@@ -156,7 +161,9 @@ class TestRDocRDoc < RDoc::TestCase
 
     files = @rdoc.normalized_file_list [__FILE__]
 
-    assert_empty files
+    files = files.collect {|file, mtime| file if mtime}.compact
+
+    assert_empty(files)
   end
 
   def test_normalized_file_list_non_file_directory
@@ -205,7 +212,7 @@ class TestRDocRDoc < RDoc::TestCase
       @rdoc.normalized_file_list [File.realpath(dir)]
     end
 
-    files = files.map { |file| File.expand_path file }
+    files = files.map { |file, *| File.expand_path file }
 
     assert_equal expected_files, files
   end
@@ -236,7 +243,7 @@ class TestRDocRDoc < RDoc::TestCase
       @rdoc.normalized_file_list [File.realpath(dir)]
     end
 
-    files = files.map { |file| File.expand_path file }
+    files = files.map { |file, *| File.expand_path file }
 
     assert_equal expected_files, files
   end

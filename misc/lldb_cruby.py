@@ -113,9 +113,31 @@ def lldb_inspect(debugger, target, result, val):
         print('immediate(%x)' % num, file=result)
     else:
         tRBasic = target.FindFirstType("struct RBasic").GetPointerType()
+        tRValue = target.FindFirstType("struct RVALUE")
+        tUintPtr = target.FindFirstType("uintptr_t") # bits_t
+
         val = val.Cast(tRBasic)
         flags = val.GetValueForExpressionPath("->flags").GetValueAsUnsigned()
         flaginfo = ""
+
+        num_in_page = (val.GetValueAsUnsigned() & HEAP_PAGE_ALIGN_MASK) // tRValue.GetByteSize();
+        bits_bitlength = tUintPtr.GetByteSize() * 8
+        bitmap_index = num_in_page // bits_bitlength
+        bitmap_offset = num_in_page & (bits_bitlength - 1)
+        bitmap_bit = 1 << bitmap_offset
+
+        page = get_page(lldb, target, val)
+        page_type = target.FindFirstType("struct heap_page").GetPointerType()
+        page.Cast(page_type)
+
+        print("bits [%s%s%s%s%s]" % (
+            check_bits(page, "uncollectible_bits", bitmap_index, bitmap_bit, "L"),
+            check_bits(page, "mark_bits", bitmap_index, bitmap_bit, "M"),
+            check_bits(page, "pinned_bits", bitmap_index, bitmap_bit, "P"),
+            check_bits(page, "marking_bits", bitmap_index, bitmap_bit, "R"),
+            check_bits(page, "wb_unprotected_bits", bitmap_index, bitmap_bit, "U"),
+            ), file=result)
+
         if (flags & RUBY_FL_PROMOTED) == RUBY_FL_PROMOTED:
             flaginfo += "[PROMOTED] "
         if (flags & RUBY_FL_FREEZE) == RUBY_FL_FREEZE:
@@ -285,6 +307,14 @@ def count_objects(debugger, command, ctx, result, internal_dict):
 
 def stack_dump_raw(debugger, command, ctx, result, internal_dict):
     ctx.frame.EvaluateExpression("rb_vmdebug_stack_dump_raw_current()")
+
+def check_bits(page, bitmap_name, bitmap_index, bitmap_bit, v):
+    bits = page.GetChildMemberWithName(bitmap_name)
+    plane = bits.GetChildAtIndex(bitmap_index).GetValueAsUnsigned()
+    if (plane & bitmap_bit) != 0:
+        return v
+    else:
+        return ' '
 
 def heap_page(debugger, command, ctx, result, internal_dict):
     target = debugger.GetSelectedTarget()

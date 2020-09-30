@@ -93,7 +93,7 @@ RSpec.describe "bundle pristine", :ruby_repo do
 
       bundle "pristine"
       expect(changes_txt).to be_file
-      expect(err).to include("Cannot pristine #{spec.name} (#{spec.version}#{spec.git_version}). Gem is locally overriden.")
+      expect(err).to include("Cannot pristine #{spec.name} (#{spec.version}#{spec.git_version}). Gem is locally overridden.")
     end
   end
 

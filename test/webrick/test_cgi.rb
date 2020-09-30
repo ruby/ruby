@@ -43,7 +43,7 @@ class TestWEBrickCGI < Test::Unit::TestCase
       http.request(req){|res| assert_equal("/path/info", res.body, log.call)}
       req = Net::HTTP::Get.new("/webrick.cgi/%3F%3F%3F?foo=bar")
       http.request(req){|res| assert_equal("/???", res.body, log.call)}
-      unless RUBY_PLATFORM =~ /mswin|mingw|cygwin|bccwin32/
+      unless RUBY_PLATFORM =~ /mswin|mingw|cygwin|bccwin32|java/
         # Path info of res.body is passed via ENV.
         # ENV[] returns different value on Windows depending on locale.
         req = Net::HTTP::Get.new("/webrick.cgi/%A4%DB%A4%B2/%A4%DB%A4%B2")

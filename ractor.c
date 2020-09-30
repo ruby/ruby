@@ -7,6 +7,7 @@
 #include "vm_sync.h"
 #include "ractor.h"
 #include "internal/error.h"
+#include "internal/struct.h"
 
 static VALUE rb_cRactor;
 static VALUE rb_eRactorError;
@@ -460,6 +461,7 @@ ractor_basket_accept(struct rb_ractor_basket *b)
         break;
       case basket_type_copy_marshal:
         v = rb_marshal_load(b->v);
+        RB_GC_GUARD(b->v);
         break;
       case basket_type_exception:
         {
@@ -492,7 +494,7 @@ ractor_copy_setup(struct rb_ractor_basket *b, VALUE obj)
 #if 0
         // TODO: consider custom copy protocol
         switch (BUILTIN_TYPE(obj)) {
-            
+
         }
 #endif
         b->v = rb_marshal_dump(obj, Qnil);
@@ -831,6 +833,10 @@ ractor_try_yield(rb_execution_context_t *ec, rb_ractor_t *cr, struct rb_ractor_b
     ASSERT_ractor_unlocking(cr);
     VM_ASSERT(basket->type != basket_type_none);
 
+    if (cr->outgoing_port_closed) {
+        rb_raise(rb_eRactorClosedError, "The outgoing-port is already closed");
+    }
+
     rb_ractor_t *r;
 
   retry_shift:
@@ -1016,6 +1022,10 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, int alen, VALUE yield
                             cr->wait.wakeup_status = wakeup_by_retry;
                             goto skip_sleep;
                         }
+                        else if (cr->outgoing_port_closed) {
+                            cr->wait.wakeup_status = wakeup_by_close;
+                            goto skip_sleep;
+                        }
                         break;
                     }
                 }
@@ -1137,6 +1147,7 @@ ractor_close_incoming(rb_execution_context_t *ec, rb_ractor_t *r)
             r->incoming_port_closed = true;
             if (ractor_wakeup(r, wait_recving, wakeup_by_close)) {
                 VM_ASSERT(r->incoming_queue.cnt == 0);
+                RUBY_DEBUG_LOG("cancel receiving", 0);
             }
         }
         else {
@@ -1148,15 +1159,15 @@ ractor_close_incoming(rb_execution_context_t *ec, rb_ractor_t *r)
 }
 
 static VALUE
-ractor_close_outgoing(rb_execution_context_t *ec, rb_ractor_t *cr)
+ractor_close_outgoing(rb_execution_context_t *ec, rb_ractor_t *r)
 {
     VALUE prev;
 
-    RACTOR_LOCK(cr);
+    RACTOR_LOCK(r);
     {
-        if (!cr->outgoing_port_closed) {
+        if (!r->outgoing_port_closed) {
             prev = Qfalse;
-            cr->outgoing_port_closed = true;
+            r->outgoing_port_closed = true;
         }
         else {
             prev = Qtrue;
@@ -1164,13 +1175,21 @@ ractor_close_outgoing(rb_execution_context_t *ec, rb_ractor_t *cr)
 
         // wakeup all taking ractors
         rb_ractor_t *taking_ractor;
-        while ((taking_ractor = ractor_waiting_list_shift(cr, &cr->taking_ractors)) != NULL) {
+        bp();
+        while ((taking_ractor = ractor_waiting_list_shift(r, &r->taking_ractors)) != NULL) {
+            rp(taking_ractor->self);
             RACTOR_LOCK(taking_ractor);
             ractor_wakeup(taking_ractor, wait_taking, wakeup_by_close);
             RACTOR_UNLOCK(taking_ractor);
         }
+
+        // raising yielding Ractor
+        if (!r->yield_atexit &&
+            ractor_wakeup(r, wait_yielding, wakeup_by_close)) {
+            RUBY_DEBUG_LOG("cancel yielding", 0);
+        }
     }
-    RACTOR_UNLOCK(cr);
+    RACTOR_UNLOCK(r);
     return prev;
 }
 
@@ -1224,6 +1243,7 @@ vm_insert_ractor(rb_vm_t *vm, rb_ractor_t *r)
         else {
             vm_ractor_blocking_cnt_inc(vm, r, __FILE__, __LINE__);
 
+            RUBY_DEBUG_LOG("ruby_multi_ractor=true", 0);
             // enable multi-ractor mode
             ruby_multi_ractor = true;
 
@@ -1309,6 +1329,16 @@ ractor_init(rb_ractor_t *r, VALUE name, VALUE loc)
     rb_ractor_living_threads_init(r);
 
     // naming
+    if (!NIL_P(name)) {
+        rb_encoding *enc;
+        StringValueCStr(name);
+        enc = rb_enc_get(name);
+        if (!rb_enc_asciicompat(enc)) {
+            rb_raise(rb_eArgError, "ASCII incompatible encoding (%s)",
+                 rb_enc_name(enc));
+        }
+        name = rb_str_new_frozen(name);
+    }
     r->name = name;
     r->loc = loc;
 }
@@ -1350,13 +1380,13 @@ ractor_create(rb_execution_context_t *ec, VALUE self, VALUE loc, VALUE name, VAL
 }
 
 static void
-ractor_atexit_yield(rb_execution_context_t *ec, rb_ractor_t *cr, VALUE v, bool exc)
+ractor_yield_atexit(rb_execution_context_t *ec, rb_ractor_t *cr, VALUE v, bool exc)
 {
     ASSERT_ractor_unlocking(cr);
 
     struct rb_ractor_basket basket;
     ractor_basket_setup(ec, &basket, v, Qfalse, exc);
- 
+
   retry:
     if (ractor_try_yield(ec, cr, &basket)) {
         // OK.
@@ -1370,6 +1400,8 @@ ractor_atexit_yield(rb_execution_context_t *ec, rb_ractor_t *cr, VALUE v, bool e
 
                 VM_ASSERT(cr->wait.status == wait_none);
                 cr->wait.status = wait_yielding;
+                VM_ASSERT(cr->yield_atexit == false);
+                cr->yield_atexit = true;
             }
             else {
                 retry = true; // another ractor is waiting for the yield.
@@ -1401,14 +1433,14 @@ void
 rb_ractor_atexit(rb_execution_context_t *ec, VALUE result)
 {
     rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
-    ractor_atexit_yield(ec, cr, result, false);
+    ractor_yield_atexit(ec, cr, result, false);
 }
 
 void
 rb_ractor_atexit_exception(rb_execution_context_t *ec)
 {
     rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
-    ractor_atexit_yield(ec, cr, ec->errinfo, true);
+    ractor_yield_atexit(ec, cr, ec->errinfo, true);
 }
 
 void
@@ -1753,6 +1785,38 @@ rb_ractor_shareable_p_hash_i(VALUE key, VALUE value, VALUE arg)
     return ST_CONTINUE;
 }
 
+static bool
+ractor_struct_shareable_members_p(VALUE obj)
+{
+    VM_ASSERT(RB_TYPE_P(obj, T_STRUCT));
+
+    long len = RSTRUCT_LEN(obj);
+    const VALUE *ptr = RSTRUCT_CONST_PTR(obj);
+
+    for (long i=0; i<len; i++) {
+        if (!rb_ractor_shareable_p(ptr[i])) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool
+ractor_obj_ivars_shareable_p(VALUE obj)
+{
+    uint32_t len = ROBJECT_NUMIV(obj);
+    VALUE *ptr = ROBJECT_IVPTR(obj);
+
+    for (uint32_t i=0; i<len; i++) {
+        VALUE val = ptr[i];
+        if (val != Qundef && !rb_ractor_shareable_p(ptr[i])) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 MJIT_FUNC_EXPORTED bool
 rb_ractor_shareable_p_continue(VALUE obj)
 {
@@ -1802,6 +1866,26 @@ rb_ractor_shareable_p_continue(VALUE obj)
             else {
                 return false;
             }
+        }
+      case T_STRUCT:
+        if (!RB_OBJ_FROZEN_RAW(obj) ||
+            FL_TEST_RAW(obj, RUBY_FL_EXIVAR)) {
+            return false;
+        }
+        else {
+            if (ractor_struct_shareable_members_p(obj)) {
+                goto shareable;
+            }
+            else {
+                return false;
+            }
+        }
+      case T_OBJECT:
+        if (RB_OBJ_FROZEN_RAW(obj) && ractor_obj_ivars_shareable_p(obj)) {
+            goto shareable;
+        }
+        else {
+            return false;
         }
       default:
         return false;

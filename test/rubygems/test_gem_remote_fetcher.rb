@@ -321,6 +321,8 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       local_path = File.join @tempdir, @a1.file_name
       inst = nil
       FileUtils.chmod 0555, @a1.cache_dir
+      FileUtils.mkdir_p File.join(Gem.user_dir, "cache") rescue nil
+      FileUtils.chmod 0555, File.join(Gem.user_dir, "cache")
 
       Dir.chdir @tempdir do
         inst = Gem::RemoteFetcher.fetcher
@@ -329,6 +331,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       assert_equal(File.join(@tempdir, @a1.file_name),
                    inst.download(@a1, local_path))
     ensure
+      FileUtils.chmod 0755, File.join(Gem.user_dir, "cache")
       FileUtils.chmod 0755, @a1.cache_dir
     end
 

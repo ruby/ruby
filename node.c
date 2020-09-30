@@ -741,6 +741,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	ANN("example: :\"foo#{ bar }baz\"");
       dlit:
 	F_LIT(nd_lit, "preceding string");
+	if (!node->nd_next) return;
 	F_NODE(nd_next->nd_head, "interpolation");
 	LAST_NODE;
 	F_NODE(nd_next->nd_next, "tailing strings");

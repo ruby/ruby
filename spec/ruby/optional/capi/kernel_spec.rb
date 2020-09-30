@@ -238,6 +238,18 @@ describe "C-API Kernel function" do
     end
   end
 
+  describe "rb_yield_values2" do
+    it "yields passed arguments" do
+      ret = nil
+      @s.rb_yield_values2([1, 2]) { |x, y| ret = x + y }
+      ret.should == 3
+    end
+
+    it "returns the result from block evaluation" do
+      @s.rb_yield_values2([1, 2]) { |x, y| x + y }.should == 3
+    end
+  end
+
   describe "rb_yield_splat" do
     it "yields with passed array's contents" do
       ret = nil

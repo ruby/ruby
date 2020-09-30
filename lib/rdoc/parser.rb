@@ -78,7 +78,7 @@ class RDoc::Parser
 
     return true if s[0, 2] == Marshal.dump('')[0, 2] or s.index("\x00")
 
-    mode = 'r:utf-8' # default source encoding has been chagened to utf-8
+    mode = 'r:utf-8' # default source encoding has been changed to utf-8
     s.sub!(/\A#!.*\n/, '')     # assume shebang line isn't longer than 1024.
     encoding = s[/^\s*\#\s*(?:-\*-\s*)?(?:en)?coding:\s*([^\s;]+?)(?:-\*-|[\s;])/, 1]
     mode = "rb:#{encoding}" if encoding

@@ -315,6 +315,10 @@ static VALUE object_spec_rb_iv_set(VALUE self, VALUE obj, VALUE name, VALUE valu
   return rb_iv_set(obj, RSTRING_PTR(name), value);
 }
 
+static VALUE object_spec_rb_ivar_count(VALUE self, VALUE obj) {
+  return ULONG2NUM(rb_ivar_count(obj));
+}
+
 static VALUE object_spec_rb_ivar_get(VALUE self, VALUE obj, VALUE sym_name) {
   return rb_ivar_get(obj, SYM2ID(sym_name));
 }
@@ -441,6 +445,7 @@ void Init_object_spec(void) {
   rb_define_method(cls, "rb_obj_instance_eval", object_spec_rb_obj_instance_eval, 1);
   rb_define_method(cls, "rb_iv_get", object_spec_rb_iv_get, 2);
   rb_define_method(cls, "rb_iv_set", object_spec_rb_iv_set, 3);
+  rb_define_method(cls, "rb_ivar_count", object_spec_rb_ivar_count, 1);
   rb_define_method(cls, "rb_ivar_get", object_spec_rb_ivar_get, 2);
   rb_define_method(cls, "rb_ivar_set", object_spec_rb_ivar_set, 3);
   rb_define_method(cls, "rb_ivar_defined", object_spec_rb_ivar_defined, 2);

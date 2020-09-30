@@ -662,6 +662,20 @@ rsock_addrinfo(VALUE host, VALUE port, int family, int socktype, int flags)
     return rsock_getaddrinfo(host, port, &hints, 1);
 }
 
+#ifdef HAVE_GETADDRINFO_A
+struct rb_addrinfo*
+rsock_addrinfo_a(VALUE host, VALUE port, int family, int socktype, int flags, VALUE timeout)
+{
+    struct addrinfo hints;
+
+    MEMZERO(&hints, struct addrinfo, 1);
+    hints.ai_family = family;
+    hints.ai_socktype = socktype;
+    hints.ai_flags = flags;
+    return rsock_getaddrinfo_a(host, port, &hints, 1, timeout);
+}
+#endif
+
 VALUE
 rsock_ipaddr(struct sockaddr *sockaddr, socklen_t sockaddrlen, int norevlookup)
 {

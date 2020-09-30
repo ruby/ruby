@@ -30,12 +30,14 @@ sync_wakeup(struct list_head *head, long max)
         list_del_init(&cur->node);
 
         if (cur->th->scheduler != Qnil) {
-            rb_scheduler_mutex_unlock(cur->th->scheduler, cur->self, rb_fiberptr_self(cur->fiber));
+            rb_scheduler_unblock(cur->th->scheduler, cur->self, rb_fiberptr_self(cur->fiber));
         }
 
         if (cur->th->status != THREAD_KILLED) {
-            rb_threadptr_interrupt(cur->th);
-            cur->th->status = THREAD_RUNNABLE;
+            if (cur->th->scheduler == Qnil) {
+                rb_threadptr_interrupt(cur->th);
+                cur->th->status = THREAD_RUNNABLE;
+            }
             if (--max == 0) return;
         }
     }
@@ -199,8 +201,6 @@ mutex_locked(rb_thread_t *th, VALUE self)
 	mutex->next_mutex = th->keeping_mutexes;
     }
     th->keeping_mutexes = mutex;
-
-    // th->blocking += 1;
 }
 
 /*
@@ -214,18 +214,17 @@ VALUE
 rb_mutex_trylock(VALUE self)
 {
     rb_mutex_t *mutex = mutex_ptr(self);
-    VALUE locked = Qfalse;
 
     if (mutex->fiber == 0) {
 	rb_fiber_t *fiber = GET_EC()->fiber_ptr;
 	rb_thread_t *th = GET_THREAD();
 	mutex->fiber = fiber;
-	locked = Qtrue;
 
 	mutex_locked(th, self);
+	return Qtrue;
     }
 
-    return locked;
+    return Qfalse;
 }
 
 /*
@@ -244,6 +243,16 @@ mutex_owned_p(rb_fiber_t *fiber, rb_mutex_t *mutex)
     else {
         return Qfalse;
     }
+}
+
+static VALUE call_rb_scheduler_block(VALUE mutex) {
+    return rb_scheduler_block(rb_thread_current_scheduler(), mutex, Qnil);
+}
+
+static VALUE remove_from_mutex_lock_waiters(VALUE arg) {
+    struct list_node *node = (struct list_node*)arg;
+    list_del(node);
+    return Qnil;
 }
 
 static VALUE
@@ -276,9 +285,7 @@ do_mutex_lock(VALUE self, int interruptible_p)
             if (scheduler != Qnil) {
                 list_add_tail(&mutex->waitq, &w.node);
 
-                rb_scheduler_mutex_lock(scheduler, self);
-
-                list_del(&w.node);
+                rb_ensure(call_rb_scheduler_block, self, remove_from_mutex_lock_waiters, (VALUE)&w.node);
 
                 if (!mutex->fiber) {
                     mutex->fiber = fiber;
@@ -394,28 +401,27 @@ rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_fiber_t *fiber)
 	struct sync_waiter *cur = 0, *next;
 	rb_mutex_t **th_mutex = &th->keeping_mutexes;
 
-        // th->blocking -= 1;
-
 	mutex->fiber = 0;
 	list_for_each_safe(&mutex->waitq, cur, next, node) {
 	    list_del_init(&cur->node);
 
             if (cur->th->scheduler != Qnil) {
-                rb_scheduler_mutex_unlock(cur->th->scheduler, cur->self, rb_fiberptr_self(cur->fiber));
+                rb_scheduler_unblock(cur->th->scheduler, cur->self, rb_fiberptr_self(cur->fiber));
+                goto found;
+            } else {
+                switch (cur->th->status) {
+                  case THREAD_RUNNABLE: /* from someone else calling Thread#run */
+                  case THREAD_STOPPED_FOREVER: /* likely (rb_mutex_lock) */
+                    rb_threadptr_interrupt(cur->th);
+                    goto found;
+                  case THREAD_STOPPED: /* probably impossible */
+                    rb_bug("unexpected THREAD_STOPPED");
+                  case THREAD_KILLED:
+                    /* not sure about this, possible in exit GC? */
+                    rb_bug("unexpected THREAD_KILLED");
+                    continue;
+                }
             }
-
-	    switch (cur->th->status) {
-	      case THREAD_RUNNABLE: /* from someone else calling Thread#run */
-	      case THREAD_STOPPED_FOREVER: /* likely (rb_mutex_lock) */
-		rb_threadptr_interrupt(cur->th);
-		goto found;
-	      case THREAD_STOPPED: /* probably impossible */
-		rb_bug("unexpected THREAD_STOPPED");
-	      case THREAD_KILLED:
-                /* not sure about this, possible in exit GC? */
-		rb_bug("unexpected THREAD_KILLED");
-		continue;
-	    }
 	}
       found:
 	while (*th_mutex != mutex) {
@@ -483,9 +489,9 @@ rb_mutex_abandon_all(rb_mutex_t *mutexes)
 #endif
 
 static VALUE
-rb_mutex_sleep_forever(VALUE time)
+rb_mutex_sleep_forever(VALUE self)
 {
-    rb_thread_sleep_deadly_allow_spurious_wakeup();
+    rb_thread_sleep_deadly_allow_spurious_wakeup(self);
     return Qnil;
 }
 
@@ -516,7 +522,7 @@ rb_mutex_sleep(VALUE self, VALUE timeout)
         mutex_lock_uninterruptible(self);
     } else {
         if (NIL_P(timeout)) {
-            rb_ensure(rb_mutex_sleep_forever, Qnil, mutex_lock_uninterruptible, self);
+            rb_ensure(rb_mutex_sleep_forever, self, mutex_lock_uninterruptible, self);
         } else {
             rb_hrtime_t rel = rb_timeval2hrtime(&t);
             rb_ensure(rb_mutex_wait_for, (VALUE)&rel, mutex_lock_uninterruptible, self);
@@ -904,9 +910,9 @@ rb_queue_push(VALUE self, VALUE obj)
 }
 
 static VALUE
-queue_sleep(VALUE arg)
+queue_sleep(VALUE self)
 {
-    rb_thread_sleep_deadly_allow_spurious_wakeup();
+    rb_thread_sleep_deadly_allow_spurious_wakeup(self);
     return Qnil;
 }
 

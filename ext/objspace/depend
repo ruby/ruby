@@ -343,6 +343,7 @@ objspace.o: $(top_srcdir)/internal/compilers.h
 objspace.o: $(top_srcdir)/internal/gc.h
 objspace.o: $(top_srcdir)/internal/hash.h
 objspace.o: $(top_srcdir)/internal/imemo.h
+objspace.o: $(top_srcdir)/internal/sanitizers.h
 objspace.o: $(top_srcdir)/internal/serial.h
 objspace.o: $(top_srcdir)/internal/static_assert.h
 objspace.o: $(top_srcdir)/internal/warnings.h
@@ -530,6 +531,7 @@ objspace_dump.o: $(top_srcdir)/internal/compilers.h
 objspace_dump.o: $(top_srcdir)/internal/gc.h
 objspace_dump.o: $(top_srcdir)/internal/hash.h
 objspace_dump.o: $(top_srcdir)/internal/imemo.h
+objspace_dump.o: $(top_srcdir)/internal/sanitizers.h
 objspace_dump.o: $(top_srcdir)/internal/serial.h
 objspace_dump.o: $(top_srcdir)/internal/static_assert.h
 objspace_dump.o: $(top_srcdir)/internal/string.h

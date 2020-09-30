@@ -66,9 +66,9 @@ describe :rbasic, shared: true do
     obj1, obj2 = @data.call
     initial = @specs.get_flags(obj1)
     @specs.get_flags(obj2).should == initial
-    @specs.set_flags(obj1, @taint | 1 << 14 | 1 << 16 | initial)
+    @specs.set_flags(obj1, 1 << 14 | 1 << 16 | initial)
     @specs.copy_flags(obj2, obj1)
-    @specs.get_flags(obj2).should == @taint | 1 << 14 | 1 << 16 | initial
+    @specs.get_flags(obj2).should == 1 << 14 | 1 << 16 | initial
     @specs.set_flags(obj1, initial)
     @specs.copy_flags(obj2, obj1)
     @specs.get_flags(obj2).should == initial

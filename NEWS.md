@@ -83,6 +83,8 @@ sufficient information, see the ChangeLog file or Redmine
 * Interpolated String literals are no longer frozen when
   `# frozen-string-literal: true` is used. [[Feature #17104]]
 
+* RBS is introduced. It is a type definition language for Ruby programs.
+
 ## Command line options
 
 ### `--help` option
@@ -161,6 +163,58 @@ Outstanding ones only.
             p C.ancestors #=> [C, M1, M2, Object, Kernel, BasicObject]
             ```
 
+* Range
+
+    * All Range objects are frozen. [Feature #15504]
+
+* Thread
+
+    * Introduce `Thread#scheduler` for intercepting blocking operations and
+      `Thread.scheduler` for accessing the current scheduler. See
+      doc/scheduler.md for more details. [[Feature #16786]]
+    * `Thread#blocking?` tells whether the current execution context is
+      blocking. [[Feature #16786]]
+    * `Thread#join` invokes the scheduler hooks `block`/`unblock` in a
+      non-blocking execution context. [[Feature #16786]]
+
+* Mutex
+
+    * `Mutex` is now acquired per-`Fiber` instead of per-`Thread`. This change
+      should be compatible for essentially all usages and avoids blocking when
+      using a scheduler. [[Feature #16792]]
+
+* Fiber
+
+    * `Fiber.new(blocking: true/false)` allows you to create non-blocking
+      execution contexts. [[Feature #16786]]
+    * `Fiber#blocking?` tells whether the fiber is non-blocking. [[Feature #16786]]
+    * `Fiber#backtrace` & `Fiber#backtrace_locations` provide per-fiber backtrace.
+      [[Feature #16815]]
+
+* Kernel
+
+    * `Kernel.sleep(...)` invokes the scheduler hook `#kernel_sleep(...)` in a
+      non-blocking execution context. [[Feature #16786]]
+
+* IO
+
+    * `IO#nonblock?` now defaults to `true`. [[Feature #16786]]
+    * `IO#wait_readable`, `IO#wait_writable`, `IO#read`, `IO#write` and other
+      related methods (e.g. `#puts`, `#gets`) may invoke the scheduler hook
+      `#io_wait(io, events, timeout)` in a non-blocking execution context.
+      [[Feature #16786]]
+
+* ConditionVariable
+
+    * `ConditionVariable#wait` may now invoke the `block`/`unblock` scheduler
+      hooks in a non-blocking context. [[Feature #16786]]
+
+* Queue / SizedQueue
+
+    * `Queue#pop`, `SizedQueue#push` and related methods may now invoke the
+      `block`/`unblock` scheduler hooks in a non-blocking context.
+      [[Feature #16786]]
+
 * Ractor
 
     * new class to enable parallel execution. See doc/ractor.md for
@@ -192,11 +246,11 @@ Outstanding ones only.
 
 * RubyGems
 
-    * Update to RubyGems 3.2.0.pre1
+    * Update to RubyGems 3.2.0.rc.1
 
 * Bundler
 
-    * Update to Bundler 2.2.0.dev
+    * Update to Bundler 2.2.0.rc.1
 
 * Net::HTTP
 
@@ -218,6 +272,15 @@ Outstanding ones only.
 * Reline
 
     * Update to Reline 0.1.5
+
+* Socket
+
+    * TCPSocket.new now supports `resolv_timeout`. [[Feature #17134]]
+
+      ```ruby
+      # it raises SocketError if name resolution is not finished within resolve_timeout.
+      tcp_socket = TCPSocket.new("example.com", 80, resolv_timeout: 10)
+      ```
 
 ## Compatibility issues
 
@@ -294,6 +357,17 @@ Excluding feature bug fixes.
 * C API header file `ruby/ruby.h` was split. [[GH-2991]] Should have no impact
   on extension libraries, but users might experience slow compilations.
 
+* Memory view interface [EXPERIMENTAL]
+
+  * The memory view interface is a C-API set to exchange a raw memory area,
+    such as a numeric array and a bitmap image, between extension libraries.
+    The extension libraries can share also the metadata of the memory area
+    that consists of the shape, the element format, and so on.
+    Using these kinds of metadata, the extension libraries can share even
+    a multidimensional array appropriately.
+    This feature is designed by referring to Python's buffer protocol.
+    [[Feature #13767]] [[Feature #14722]]
+
 ## Implementation improvements
 
 * New method cache mechanism for Ractor [[Feature #16614]]
@@ -333,6 +407,17 @@ Excluding feature bug fixes.
 
 * Optimize C method call a little
 
+## RBS
+
+* RBS is a new language for type definition of Ruby programs.
+  It allows writing types of classes and modules with advanced
+  types including union types, overloading, generics, and 
+  _interface types_ for duck typing.
+
+* Ruby ships with type definitions for core/stdlib classes.
+
+* `rbs` gem is bundled to load and process RBS files.
+
 ## Miscellaneous changes
 
 * Methods using `ruby2_keywords` will no longer keep empty keyword
@@ -354,10 +439,12 @@ Excluding feature bug fixes.
 [Feature #8948]:  https://bugs.ruby-lang.org/issues/8948
 [Feature #9573]:  https://bugs.ruby-lang.org/issues/9573
 [Bug #12706]:     https://bugs.ruby-lang.org/issues/12706
+[Feature #13767]: https://bugs.ruby-lang.org/issues/13767
 [Feature #14183]: https://bugs.ruby-lang.org/issues/14183
 [Bug #14266]:     https://bugs.ruby-lang.org/issues/14266
 [Feature #14413]: https://bugs.ruby-lang.org/issues/14413
 [Bug #14541]:     https://bugs.ruby-lang.org/issues/14541
+[Feature #14722]: https://bugs.ruby-lang.org/issues/14722
 [Feature #15575]: https://bugs.ruby-lang.org/issues/15575
 [Feature #15822]: https://bugs.ruby-lang.org/issues/15822
 [Feature #15921]: https://bugs.ruby-lang.org/issues/15921
@@ -375,8 +462,12 @@ Excluding feature bug fixes.
 [Feature #16686]: https://bugs.ruby-lang.org/issues/16686
 [Feature #16746]: https://bugs.ruby-lang.org/issues/16746
 [Feature #16754]: https://bugs.ruby-lang.org/issues/16754
+[Feature #16786]: https://bugs.ruby-lang.org/issues/16786
+[Feature #16792]: https://bugs.ruby-lang.org/issues/16792
+[Feature #16815]: https://bugs.ruby-lang.org/issues/16815
 [Feature #16828]: https://bugs.ruby-lang.org/issues/16828
-[Feature #17104]: https://bugs.ruby-lang.org/issues/17104
 [Misc #16961]:    https://bugs.ruby-lang.org/issues/16961
+[Feature #17104]: https://bugs.ruby-lang.org/issues/17104
 [Feature #17122]: https://bugs.ruby-lang.org/issues/17122
+[Feature #17134]: https://bugs.ruby-lang.org/issues/17134
 [GH-2991]:        https://github.com/ruby/ruby/pull/2991

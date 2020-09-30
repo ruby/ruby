@@ -239,7 +239,7 @@ io_wait(int argc, VALUE *argv, VALUE io)
         }
     } else if (argc == 2) {
         events = RB_NUM2UINT(argv[0]);
-        
+
         if (argv[1] != Qnil) {
           timeout = argv[1];
         }

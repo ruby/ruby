@@ -22,16 +22,14 @@
  */
 #include "ruby/internal/config.h"
 
-#ifdef HAVE_STDALIGN_H
-# include <stdalign.h>
+#ifdef STDC_HEADERS
+# include <stddef.h>
 #endif
 
 #include "ruby/internal/compiler_is.h"
-#include "ruby/internal/compiler_since.h"
-#include "ruby/internal/has/feature.h"
-#include "ruby/internal/has/extension.h"
 #include "ruby/internal/has/attribute.h"
 #include "ruby/internal/has/declspec_attribute.h"
+#include "ruby/internal/has/feature.h"
 
 /**
  * Wraps (or simulates) `alignas`. This is C++11's `alignas` and is _different_
@@ -75,50 +73,61 @@
 #endif
 
 /**
- * Wraps (or simulates)  `alignof`.  Unlike #RBIMPL_ALIGNAS, we  can safely say
- * both C/C++ definitions are effective.
+ * Wraps (or simulates) `alignof`.
+ *
+ * We want C11's `_Alignof`.  However in spite of its clear language, compilers
+ * (including GCC  and clang) tend to  have buggy implementations.  We  have to
+ * avoid such things to resort to our own version.
+ *
+ * @see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=52023
+ * @see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=69560
+ * @see https://bugs.llvm.org/show_bug.cgi?id=26547
  */
-#if defined(__cplusplus) && RBIMPL_HAS_EXTENSION(cxx_alignof)
-# define RBIMPL_ALIGNOF __extension__ alignof
+#if defined(__cplusplus)
+# /* C++11 `alignof()` can be buggy. */
+# /* see: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=69560 */
+# /* But don't worry, we can use templates. */
+# define RBIMPL_ALIGNOF(T) (static_cast<size_t>(ruby::rbimpl_alignof<T>::value))
 
-#elif defined(__cplusplus) && (__cplusplus >= 201103L)
-# define RBIMPL_ALIGNOF alignof
+namespace ruby {
+template<typename T>
+struct rbimpl_alignof {
+    typedef struct {
+        char _;
+        T t;
+    } type;
 
-#elif defined(__INTEL_CXX11_MODE__)
-# define RBIMPL_ALIGNOF alignof
-
-#elif defined(__GXX_EXPERIMENTAL_CXX0X__)
-# define RBIMPL_ALIGNOF alignof
-
-#elif defined(__STDC_VERSION__) && RBIMPL_HAS_EXTENSION(c_alignof)
-# define RBIMPL_ALIGNOF __extension__ _Alignof
-
-#elif defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)
-# define RBIMPL_ALIGNOF _Alignof
+    enum {
+        value = offsetof(type, t)
+    };
+};
+}
 
 #elif RBIMPL_COMPILER_IS(MSVC)
+# /* Windows have no alignment glitch.*/
 # define RBIMPL_ALIGNOF __alignof
 
-#elif defined(__GNUC__)
-# /* At least GCC 2.95 had this. */
-# define RBIMPL_ALIGNOF __extension__ __alignof__
+#elif defined(HAVE__ALIGNOF)
+# /* Autoconf detected availability of a sane `_Alignof()`. */
+# define RBIMPL_ALIGNOF(T) RB_GNUC_EXTENSION(_Alignof(T))
 
-#elif defined(__alignof_is_defined) || defined(__DOXYGEN__)
-# /* OK, we can safely take <stdalign.h> definition. */
-# define RBIMPL_ALIGNOF alignof
-
-#elif RBIMPL_COMPILER_SINCE(SunPro, 5, 9, 0)
-# /* According to their  manual, Sun Studio 12 introduced  __alignof__ for both
-#  * C/C++. */
-# define RBIMPL_ALIGNOF __alignof__
-
-#elif 0
-# /* THIS IS NG, you cannot define a new type inside of offsetof. */
+#else
+# /* :BEWARE:  This is  the last  resort.   If your  compiler somehow  supports
+#  * querying the alignment of a type,  you definitely should use that instead.
+#  * There are 2 known pitfalls for this fallback implementation:
+#  *
+#  * First, it is either an undefined  behaviour (C) or an explicit error (C++)
+#  * to define a  struct inside of `offsetof`. C compilers  tend to accept such
+#  * things, but AFAIK C++ has no room to allow.
+#  *
+#  * Second, there exist T  such that `struct { char _; T t;  }` is invalid.  A
+#  * known example is  when T is a  struct with a flexible  array member.  Such
+#  * struct cannot be enclosed into another one.
+#  */
+# /* see: http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2083.htm */
 # /* see: http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2350.htm */
 # define RBIMPL_ALIGNOF(T) offsetof(struct { char _; T t; }, t)
 
-#else
-# error :FIXME: add your compiler here to obtain an alignment.
 #endif
 
 #endif /* RBIMPL_STDALIGN_H */

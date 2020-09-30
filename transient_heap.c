@@ -716,6 +716,7 @@ transient_heap_block_evacuate(struct transient_heap* theap, struct transient_hea
 
     while (marked_index >= 0) {
         struct transient_alloc_header *header = alloc_header(block, marked_index);
+        asan_unpoison_memory_region(header, sizeof *header, true);
         VALUE obj = header->obj;
         TH_ASSERT(header->magic == TRANSIENT_HEAP_ALLOC_MAGIC);
         if (header->magic != TRANSIENT_HEAP_ALLOC_MAGIC) rb_bug("rb_transient_heap_mark: wrong header %s\n", rb_obj_info(obj));
@@ -744,6 +745,7 @@ transient_heap_block_evacuate(struct transient_heap* theap, struct transient_hea
             header->obj = Qundef; /* for debug */
         }
         marked_index = header->next_marked_index;
+        asan_poison_memory_region(header, sizeof *header);
     }
 }
 

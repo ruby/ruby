@@ -485,9 +485,15 @@ node_children(rb_ast_t *ast, const NODE *node)
       case NODE_DXSTR:
       case NODE_DREGX:
       case NODE_DSYM:
-        return rb_ary_new_from_args(3, node->nd_lit,
-                                    NEW_CHILD(ast, node->nd_next->nd_head),
-                                    NEW_CHILD(ast, node->nd_next->nd_next));
+        {
+            NODE *n = node->nd_next;
+            VALUE head = Qnil, next = Qnil;
+            if (n) {
+                head = NEW_CHILD(ast, n->nd_head);
+                next = NEW_CHILD(ast, n->nd_next);
+            }
+            return rb_ary_new_from_args(3, node->nd_lit, head, next);
+        }
       case NODE_EVSTR:
         return rb_ary_new_from_node_args(ast, 1, node->nd_body);
       case NODE_ARGSCAT:

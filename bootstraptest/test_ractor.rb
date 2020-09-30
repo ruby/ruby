@@ -8,6 +8,29 @@ assert_equal 'Ractor', %q{
   Ractor.new{}.class
 }
 
+# A Ractor can have a name
+assert_equal 'test-name', %q{
+  r = Ractor.new name: 'test-name' do
+  end
+  r.name
+}
+
+# If Ractor doesn't have a name, Ractor#name returns nil.
+assert_equal 'nil', %q{
+  r = Ractor.new do
+  end
+  r.name.inspect
+}
+
+# Raises exceptions if initialize with an invalid name
+assert_equal 'ok', %q{
+  begin
+    r = Ractor.new(name: [{}]) {}
+  rescue TypeError => e
+    'ok'
+  end
+}
+
 # Ractor.new must call with a block
 assert_equal "must be called with a block", %q{
   begin
@@ -15,6 +38,28 @@ assert_equal "must be called with a block", %q{
   rescue ArgumentError => e
     e.message
   end
+}
+
+# Ractor#inspect
+# Return only id and status for main ractor
+assert_equal "#<Ractor:#1 running>", %q{
+  Ractor.current.inspect
+}
+
+# Return id, loc, and status for no-name ractor
+assert_match /^#<Ractor:#([^ ]*?) .+:[0-9]+ terminated>$/, %q{
+  r = Ractor.new { '' }
+  r.take
+  sleep 0.1 until r.inspect =~ /terminated/
+  r.inspect
+}
+
+# Return id, name, loc, and status for named ractor
+assert_match /^#<Ractor:#([^ ]*?) Test Ractor .+:[0-9]+ terminated>$/, %q{
+  r = Ractor.new(name: 'Test Ractor') { '' }
+  r.take
+  sleep 0.1 until r.inspect =~ /terminated/
+  r.inspect
 }
 
 # A return value of a Ractor block will be a message from the Ractor.
@@ -102,7 +147,7 @@ assert_equal 'true', %q{
       rs.delete(r)
     }
 
-    if as.map{|r, o| r.inspect}.sort == all_rs.map{|r| r.inspect}.sort &&
+    if as.map{|r, o| r.object_id}.sort == all_rs.map{|r| r.object_id}.sort &&
        as.map{|r, o| o}.sort == (1..n).map{|i| "r#{i}"}.sort
       'ok'
     else
@@ -122,7 +167,7 @@ assert_equal 'ok', %q{
   end
 
   r.take
-  sleep 0.1 # wait for terminate
+  sleep 0.1 until r.inspect =~ /terminated/
 
   begin
     o = r.take
@@ -138,7 +183,7 @@ assert_equal 'ok', %q{
   end
 
   r.take # closed
-  sleep 0.1 # wait for terminate
+  sleep 0.1 until r.inspect =~ /terminated/
 
   begin
     r.send(1)
@@ -146,6 +191,117 @@ assert_equal 'ok', %q{
     'ok'
   else
     'ng'
+  end
+}
+
+# Raise Ractor::ClosedError when try to send into a closed actor
+assert_equal 'ok', %q{
+  r = Ractor.new { Ractor.recv }
+
+  r.close
+  begin
+    r.send(1)
+  rescue Ractor::ClosedError
+    'ok'
+  else
+    'ng'
+  end
+}
+
+# Raise Ractor::ClosedError when try to take from closed actor
+assert_equal 'ok', %q{
+  r = Ractor.new do
+    Ractor.yield 1
+    Ractor.recv
+  end
+
+  r.close
+  begin
+    r.take
+  rescue Ractor::ClosedError
+    'ok'
+  else
+    'ng'
+  end
+}
+
+# Ractor.yield raises Ractor::ClosedError when outgoing port is closed.
+assert_equal 'ok', %q{
+  r = Ractor.new Ractor.current do |main|
+    Ractor.recv
+    main << true
+    Ractor.yield 1
+  end
+
+  r.close_outgoing
+  r << true
+  Ractor.recv
+
+  begin
+    r.take
+  rescue Ractor::ClosedError
+    'ok'
+  else
+    'ng'
+  end
+}
+
+# Raise Ractor::ClosedError when try to send into a ractor with closed incoming port
+assert_equal 'ok', %q{
+  r = Ractor.new { Ractor.recv }
+  r.close_incoming
+
+  begin
+    r.send(1)
+  rescue Ractor::ClosedError
+    'ok'
+  else
+    'ng'
+  end
+}
+
+# A ractor with closed incoming port still can send messages out
+assert_equal '[1, 2]', %q{
+  r = Ractor.new do
+    Ractor.yield 1
+    2
+  end
+  r.close_incoming
+
+  [r.take, r.take]
+}
+
+# Raise Ractor::ClosedError when try to take from a ractor with closed outgoing port
+assert_equal 'ok', %q{
+  r = Ractor.new do
+    Ractor.yield 1
+    Ractor.recv
+  end
+
+  sleep 0.01 # wait for Ractor.yield in r
+  r.close_outgoing
+  begin
+    r.take
+  rescue Ractor::ClosedError
+    'ok'
+  else
+    'ng'
+  end
+}
+
+# A ractor with closed outgoing port still can receive messages from incoming port
+assert_equal 'ok', %q{
+  r = Ractor.new do
+    Ractor.recv
+  end
+
+  r.close_outgoing
+  begin
+    r.send(1)
+  rescue Ractor::ClosedError
+    'ng'
+  else
+    'ok'
   end
 }
 
@@ -242,7 +398,7 @@ assert_equal 'false', %q{
   r = Ractor.new obj do |msg|
     msg.object_id
   end
-  
+
   obj.object_id == r.take
 }
 
@@ -261,33 +417,101 @@ assert_equal 'no _dump_data is defined for class Thread', %q{
 }
 
 # send sharable and unsharable objects
-assert_equal "[[[1, true], [:sym, true], [:xyzzy, true], [\"frozen\", true], " \
-             "[(3/1), true], [(3+4i), true], [/regexp/, true], [C, true]], " \
-             "[[\"mutable str\", false], [[:array], false], [{:hash=>true}, false]]]", %q{
-  r = Ractor.new do
-    while v = Ractor.recv
+assert_equal "ok", %q{
+  echo_ractor = Ractor.new do
+    loop do
+      v = Ractor.recv
       Ractor.yield v
     end
   end
 
+  class C; end
+  module M; end
+  S = Struct.new(:a, :b, :c, :d)
+
+  shareable_objects = [
+    true,
+    false,
+    nil,
+    1,
+    1.1,    # Float
+    1+2r,   # Rational
+    3+4i,   # Complex
+    2**128, # Bignum
+    :sym,   # Symbol
+    'xyzzy'.to_sym, # dynamic symbol
+    'frozen'.freeze, # frozen String
+    /regexp/, # regexp literal
+    /reg{true}exp/.freeze, # frozen dregexp
+    [1, 2].freeze,   # frozen Array which only refers to shareable
+    {a: 1}.freeze,   # frozen Hash which only refers to shareable
+    [{a: 1}.freeze, 'str'.freeze].freeze, # nested frozen container
+    S.new(1, 2).freeze, # frozen Struct
+    S.new(1, 2, 3, 4).freeze, # frozen Struct
+    (1..2), # Range on Struct
+    (1..),  # Range on Struct
+    (..1),  # Range on Struct
+    C, # class
+    M, # module
+    Ractor.current, # Ractor
+  ]
+
+  unshareable_objects = [
+    'mutable str'.dup,
+    [:array],
+    {hash: true},
+    S.new(1, 2),
+    S.new(1, 2, 3, 4),
+    S.new("a", 2).freeze, # frozen, but refers to an unshareable object
+  ]
+
+  results = []
+
+  shareable_objects.map{|o|
+    echo_ractor << o
+    o2 = echo_ractor.take
+    results << "#{o} is copied" unless o.object_id == o2.object_id
+  }
+
+  unshareable_objects.map{|o|
+    echo_ractor << o
+    o2 = echo_ractor.take
+    results << "#{o.inspect} is not copied" if o.object_id == o2.object_id
+  }
+
+  if results.empty?
+    :ok
+  else
+    results.inspect
+  end
+}
+
+# frozen Objects are shareable
+assert_equal [false, true, false].inspect, %q{
   class C
+    def initialize freeze
+      @a = 1
+      @b = :sym
+      @c = 'frozen_str'
+      @c.freeze if freeze
+      @d = true
+    end
   end
 
-  sharable_objects = [1, :sym, 'xyzzy'.to_sym, 'frozen'.freeze, 1+2r, 3+4i, /regexp/, C]
+  def check obj1
+    obj2 = Ractor.new obj1 do |obj|
+      obj
+    end.take
 
-  sr = sharable_objects.map{|o|
-    r << o
-    o2 = r.take
-    [o, o.object_id == o2.object_id]
-  }
+    obj1.object_id == obj2.object_id
+  end
 
-  ur = unsharable_objects = ['mutable str'.dup, [:array], {hash: true}].map{|o|
-    r << o
-    o2 = r.take
-    [o, o.object_id == o2.object_id]
-  }
-  [sr, ur].inspect
+  results = []
+  results << check(C.new(true))         # false
+  results << check(C.new(true).freeze)  # true
+  results << check(C.new(false).freeze) # false
 }
+
 
 # move example2: String
 # touching moved object causes an error
@@ -339,7 +563,7 @@ assert_equal 'hello', %q{
 
   str = r.take
   begin
-    r.take 
+    r.take
   rescue Ractor::RemoteError
     str #=> "hello"
   end
@@ -499,6 +723,17 @@ assert_equal 'can not set constants with non-shareable objects by non-main Racto
   end
 }
 
+# define_method is not allowed
+assert_equal "defined in a different Ractor", %q{
+  str = "foo"
+  define_method(:buggy){|i| str << "#{i}"}
+  begin
+    Ractor.new{buggy(10)}.take
+  rescue => e
+    e.cause.message
+  end
+}
+
 # Immutable Array and Hash are shareable, so it can be shared with constants
 assert_equal '[1000, 3]', %q{
   A = Array.new(1000).freeze # [nil, ...]
@@ -507,18 +742,26 @@ assert_equal '[1000, 3]', %q{
   Ractor.new{ [A.size, H.size] }.take
 }
 
-# A Ractor can have a name
-assert_equal 'test-name', %q{
-  r = Ractor.new name: 'test-name' do
-  end
-  r.name
-}
+# Ractor.count
+assert_equal '[1, 4, 3, 2, 1]', %q{
+  counts = []
+  counts << Ractor.count
+  ractors = (1..3).map { Ractor.new { Ractor.recv } }
+  counts << Ractor.count
 
-# If Ractor doesn't have a name, Ractor#name returns nil.
-assert_equal 'nil', %q{
-  r = Ractor.new do
-  end
-  r.name.inspect
+  ractors[0].send('End 0').take
+  sleep 0.1 until ractors[0].inspect =~ /terminated/
+  counts << Ractor.count
+
+  ractors[1].send('End 1').take
+  sleep 0.1 until ractors[1].inspect =~ /terminated/
+  counts << Ractor.count
+
+  ractors[2].send('End 2').take
+  sleep 0.1 until ractors[2].inspect =~ /terminated/
+  counts << Ractor.count
+
+  counts.inspect
 }
 
 ###
@@ -538,4 +781,3 @@ assert_equal "#{N}#{N}", %Q{
 }
 
 end # if !ENV['GITHUB_WORKFLOW']
-

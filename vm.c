@@ -25,6 +25,7 @@
 #include "internal/re.h"
 #include "internal/symbol.h"
 #include "internal/vm.h"
+#include "internal/sanitizers.h"
 #include "iseq.h"
 #include "mjit.h"
 #include "ruby/st.h"
@@ -2658,11 +2659,10 @@ static void
 thread_compact(void *ptr)
 {
     rb_thread_t *th = ptr;
-    rb_fiber_update_self(th->ec->fiber_ptr);
 
-    if (th->root_fiber) rb_fiber_update_self(th->root_fiber);
-
-    rb_execution_context_update(th->ec);
+    if (!th->root_fiber) {
+        rb_execution_context_update(th->ec);
+    }
 }
 
 static void
