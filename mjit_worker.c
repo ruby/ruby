@@ -1267,10 +1267,10 @@ mjit_capture_cc_entries(const struct rb_iseq_constant_body *compiled_iseq, const
         const struct rb_callcache *cc = cc_entries[i];
 
         if (cc && vm_cc_markable(cc)) {
-            assert(BUILTIN_TYPE(cc) != T_MOVED);
-            assert(BUILTIN_TYPE(vm_cc_cme(cc)) != T_MOVED);
-            assert(!rb_objspace_garbage_object_p(cc));
-            assert(!rb_objspace_garbage_object_p(vm_cc_cme(cc)));
+            assert(BUILTIN_TYPE((VALUE)cc) != T_MOVED);
+            assert(BUILTIN_TYPE((VALUE)vm_cc_cme(cc)) != T_MOVED);
+            assert(!rb_objspace_garbage_object_p((VALUE)cc));
+            assert(!rb_objspace_garbage_object_p((VALUE)vm_cc_cme(cc)));
         }
     }
 
