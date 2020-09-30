@@ -9,7 +9,7 @@ describe "An Exception reaching the top level" do
     it "the Exception#cause is printed to STDERR with backtraces" do
       code = <<-RUBY
       def raise_cause
-        raise "the cause" 
+        raise "the cause"
       end
       def raise_wrapped
         raise "wrapped"
@@ -22,7 +22,7 @@ describe "An Exception reaching the top level" do
       RUBY
       lines = ruby_exe(code, args: "2>&1").lines
       lines.reject! { |l| l.include?('rescue in') }
-      lines.map! { |l| l.split(':')[2..-1].join(':').chomp }
+      lines.map! { |l| l.chomp[/:(in.+)/, 1] }
       lines.should == ["in `raise_wrapped': wrapped (RuntimeError)",
                        "in `<main>'",
                        "in `raise_cause': the cause (RuntimeError)",
