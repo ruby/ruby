@@ -820,6 +820,15 @@ describe "CApiObject" do
       end
     end
 
+    describe "rb_ivar_count" do
+      it "returns the number of instance variables" do
+        obj = Object.new
+        @o.rb_ivar_count(obj).should == 0
+        obj.instance_variable_set(:@foo, 42)
+        @o.rb_ivar_count(obj).should == 1
+      end
+    end
+
     describe "rb_ivar_get" do
       it "returns the instance variable on an object" do
         @o.rb_ivar_get(@test, :@foo).should == @test.instance_eval { @foo }

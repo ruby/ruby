@@ -270,6 +270,15 @@ static VALUE kernel_spec_rb_yield_values(VALUE self, VALUE obj1, VALUE obj2) {
   return rb_yield_values(2, obj1, obj2);
 }
 
+static VALUE kernel_spec_rb_yield_values2(VALUE self, VALUE ary) {
+  long len = RARRAY_LEN(ary);
+  VALUE *args = (VALUE*)alloca(sizeof(VALUE) * len);
+  for (int i = 0; i < len; i++) {
+    args[i] = rb_ary_entry(ary, i);
+  }
+  return rb_yield_values2((int)len, args);
+}
+
 static VALUE do_rec(VALUE obj, VALUE arg, int is_rec) {
   if(is_rec) {
     return obj;
@@ -351,6 +360,7 @@ void Init_kernel_spec(void) {
   rb_define_method(cls, "rb_yield_indirected", kernel_spec_rb_yield_indirected, 1);
   rb_define_method(cls, "rb_yield_define_each", kernel_spec_rb_yield_define_each, 1);
   rb_define_method(cls, "rb_yield_values", kernel_spec_rb_yield_values, 2);
+  rb_define_method(cls, "rb_yield_values2", kernel_spec_rb_yield_values2, 1);
   rb_define_method(cls, "rb_yield_splat", kernel_spec_rb_yield_splat, 1);
   rb_define_method(cls, "rb_exec_recursive", kernel_spec_rb_exec_recursive, 1);
   rb_define_method(cls, "rb_set_end_proc", kernel_spec_rb_set_end_proc, 1);
