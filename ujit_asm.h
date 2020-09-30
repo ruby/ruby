@@ -218,6 +218,13 @@ x86opnd_t imm_opnd(int64_t val);
 // Constant pointer operand
 x86opnd_t const_ptr_opnd(void* ptr);
 
+// Struct member operand
+#define member_opnd(base_reg, struct_type, member_name) mem_opnd( \
+    8 * sizeof(((struct_type*)0)->member_name), \
+    base_reg,                                   \
+    offsetof(struct_type, member_name)          \
+)
+
 // Code block methods
 uint8_t* alloc_exec_mem(size_t mem_size);
 void cb_init(codeblock_t* cb, uint8_t* mem_block, size_t mem_size);
