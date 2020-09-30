@@ -4611,6 +4611,8 @@ rb_str_aref(VALUE str, VALUE indx)
  *    string[regexp, capture = 0] -> new_string or nil
  *    string[substring] -> new_string or nil
  *
+ *  Returns the substring of +self+ specified by the given arguments.
+ *
  *  When the single \Integer argument +index+ is given,
  *  returns the 1-character substring found in +self+ at offset +index+:
  *    'bar'[2] # => "r"
@@ -4661,8 +4663,9 @@ rb_str_aref(VALUE str, VALUE indx)
  *    s[/(?<vowel>[aeiou])(?<non_vowel>[^aeiou])/, "non_vowel"] # => "l"
  *    s[/(?<vowel>[aeiou])(?<non_vowel>[^aeiou])/, :vowel] # => "e"
  *
- *  If an invalid capture group index is given, +nil+ is returned.  If an invalid
- *  capture group name is given, +IndexError+ is raised.
+ *  Returns +nil+ if an invalid capture group index is given.
+ *
+ *  Raises \IndexError if an invalid capture group name is given.
  *
  *  When the single \String argument +substring+ is given,
  *  returns the substring from +self+ if found, otherwise +nil+:
@@ -4875,26 +4878,86 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
 
 /*
  *  call-seq:
- *     str[integer] = new_str
- *     str[integer, integer] = new_str
- *     str[range] = aString
- *     str[regexp] = new_str
- *     str[regexp, integer] = new_str
- *     str[regexp, name] = new_str
- *     str[other_str] = new_str
+ *    self[index] = string -> string
+ *    self[start, length] = string -> string
+ *    self[range] = string -> string
+ *    self[regexp, capture = 0] = string -> string
+ *    self[substring] = string -> string
  *
- *  Element Assignment---Replaces some or all of the content of
- *  <i>str</i>. The portion of the string affected is determined using
- *  the same criteria as String#[]. If the replacement string is not
- *  the same length as the text it is replacing, the string will be
- *  adjusted accordingly. If the regular expression or string is used
- *  as the index doesn't match a position in the string, IndexError is
- *  raised. If the regular expression form is used, the optional
- *  second Integer allows you to specify which portion of the match to
- *  replace (effectively using the MatchData indexing rules. The forms
- *  that take an Integer will raise an IndexError if the value is out
- *  of range; the Range form will raise a RangeError, and the Regexp
- *  and String will raise an IndexError on negative match.
+ *  Replaces a substring in +self+ with a \String +string+
+ *  (which may also be +self+); returns +string+.
+ *
+ *  When the single \Integer argument +index+ is given,
+ *  replaces the 1-character substring in +self+ at offset +index+:
+ *    s = 'foo'
+ *    s[1] = '---' # => '---'
+ *    s # => "f---o"
+ *  Counts backward from the end of +self+ if +index+ is negative:
+ *    s = 'foo'
+ *    s[-2] = '---'
+ *    s # => "f---o"
+ *  Does nothing if +index+ is too large:
+ *    s = 'foo'
+ *    'foo'[3] = '---'
+ *    s # => "foo"
+ *
+ *  When the two \Integer arguments  +start+ and +length+ are given,
+ *  replaces the substring of the given +length+ at offset +index+:
+ *    s = 'foo'
+ *    s[0, 2] = '---'
+ *    s # => "---o"
+ *  Counts backward from the end of +self+ if +start+ is negative:
+ *    s = 'foo'
+ *    s[-2, 2] = '---'
+ *    s # => "f---"
+ *  Special case: appends +string+ too +self+ if +start+ is equal to the length of +self+:
+ *    s = 'foo'
+ *    s[3, 2] = '---'
+ *    s # => "foo---"
+ *  Replaces the trailing substring of +self+ if +length+ is large:
+ *    s = 'foo'
+ *    s[1, 50] = '---'
+ *    s # => "f---"
+ *
+ *  When the single \Range argument +range+ is given,
+ *  derives +start+ and +length+ values from the given +range+,
+ *  and replaces a substring as above:
+ *  - <tt>s[0..1] = '---'</tt> is equivalent to <tt>s[0, 2] = '---'</tt>
+ *  - <tt>s[0...1] = '---'</tt> is equivalent to <tt>s[0, 1] = '---'</tt>
+ *
+ *  When the \Regexp argument +regexp+ is given,
+ *  and the +capture+ argument is <tt>0</tt>,
+ *  replaces the first matching substring found in +self+:
+ *    s = 'foo'
+ *    s[/o/] = '---'
+ *    s # => "f---o"
+ *    s = 'hello there'
+ *    s[/[aeiou](.)\1/] = '---'
+ *    s # => "h---o there"
+ *
+ *  If argument +capture+ is given and not <tt>0</tt>,
+ *  it should be either an \Integer capture group index or a \String or \Symbol capture group name;
+ *  the method call replaces only the specified capture
+ *  (see {Regexp Capturing}[Regexp.html#class-Regexp-label-Capturing]):
+ *    s = 'hello there'
+ *    s[/[aeiou](.)\1/, 1] = '---'
+ *    s # => "he---lo there"
+ *    s = 'hello there'
+ *    s[/(?<vowel>[aeiou])(?<non_vowel>[^aeiou])/, "non_vowel"] = 'xxx'
+ *    s # => "hexxxlo there"
+ *    s = 'hello there'
+ *    s[/(?<vowel>[aeiou])(?<non_vowel>[^aeiou])/, :vowel] = '---'
+ *    s # => "h---llo there"
+ *
+ *  Raises \IndexError if an invalid capture group index or name is given.
+ *
+ *  When the single \String argument +substring+ is given,
+ *  replaces the substring in +self+ if found:
+ *    s = 'foo'
+ *    s['o'] = '---'
+ *    s # => "f---o"
+ *
+ *  Raises \IndexError if +substring+ is not found.
  */
 
 static VALUE
