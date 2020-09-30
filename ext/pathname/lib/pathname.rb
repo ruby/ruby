@@ -443,7 +443,9 @@ class Pathname
   def children(with_directory=true)
     with_directory = false if @path == '.'
     result = []
-    Dir.foreach(@path) {|e|
+    path = absolute? ? @path : expand_path.to_s
+
+    Dir.foreach(path) {|e|
       next if e == '.' || e == '..'
       if with_directory
         result << self.class.new(File.join(@path, e))

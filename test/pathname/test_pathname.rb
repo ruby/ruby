@@ -648,6 +648,10 @@ class TestPathname < Test::Unit::TestCase
     }
   end
 
+  def test_children_path_expansion
+    assert_nothing_raised { Pathname("~/").children }
+  end
+
   def test_each_child
     with_tmpchdir('rubytest-pathname') {|dir|
       open("a", "w") {}
