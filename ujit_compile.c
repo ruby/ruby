@@ -107,6 +107,15 @@ x86opnd_t ctx_stack_pop(ctx_t* ctx, size_t n)
     return top;
 }
 
+x86opnd_t ctx_stack_opnd(ctx_t* ctx, int32_t idx)
+{
+    // SP points just above the topmost value
+    int32_t offset = (ctx->stack_diff - 1 - idx) * 8;
+    x86opnd_t opnd = mem_opnd(64, RSI, offset);
+
+    return opnd;
+}
+
 // Ruby instruction entry
 static void
 ujit_gen_entry(codeblock_t* cb)
@@ -378,6 +387,70 @@ void gen_setlocal_wc0(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     mov(cb, mem_opnd(64, RDX, offs), RCX);
 }
 
+void gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
+{
+    // Create a size-exit to fall back to the interpreter
+    uint8_t* side_exit = ujit_side_exit(ocb, ctx, ctx->pc);
+
+    struct rb_call_data * cd = (struct rb_call_data *)ctx_get_arg(ctx, 0);
+    int32_t argc = (int32_t)vm_ci_argc(cd->ci);
+    const struct rb_callcache *cc = cd->cc;
+
+    ID mid = vm_ci_mid(cd->ci);
+    fprintf(stderr, "jitting method name %s argc: %lu\n", rb_id2name(mid), argc);
+
+    if (vm_ci_flag(cd->ci) & VM_CALL_ARGS_SIMPLE) {
+        fprintf(stderr, "its simple!\n");
+    }
+
+
+
+
+    mov(cb, RAX, const_ptr_opnd(cd));
+    x86opnd_t ptr_to_cc = mem_opnd(64, RAX, offsetof(struct rb_call_data, cc));
+    mov(cb, RAX, ptr_to_cc);
+
+    x86opnd_t ptr_to_klass = mem_opnd(64, RAX, offsetof(struct rb_callcache, klass));
+    x86opnd_t ptr_to_cme_ = mem_opnd(64, RAX, offsetof(struct rb_callcache, cme_));
+    mov(cb, RBX, ptr_to_klass);
+    mov(cb, RCX, ptr_to_cme_);
+
+
+
+    //print_str(cb, rb_id2name(mid));
+    //print_int(cb, RAX);
+
+
+
+
+    // Points to the receiver operand on the stack
+    x86opnd_t recv = ctx_stack_opnd(ctx, argc);
+    mov(cb, RDX, recv);
+    // Pointer to the klass field of the receiver
+    x86opnd_t klass_opnd = mem_opnd(64, RDX, offsetof(struct RBasic, klass));
+
+    print_int(cb, klass_opnd);
+
+    cmp(cb, RBX, klass_opnd);
+    jne_ptr(cb, side_exit);
+
+    print_str(cb, "cache klass hit");
+
+    //#define METHOD_ENTRY_INVALIDATED(me)         ((me)->flags & IMEMO_FL_USER5)
+    x86opnd_t flags_opnd = mem_opnd(64, RCX, offsetof( rb_callable_method_entry_t, flags));
+    test(cb, flags_opnd, imm_opnd(IMEMO_FL_USER5));
+    jnz_ptr(cb, side_exit);
+
+    print_str(cb, "method entry not invalidated!!!1");
+
+
+
+
+
+
+    jmp_ptr(cb, side_exit);
+}
+
 bool
 rb_ujit_enabled_p(void)
 {
@@ -409,4 +482,5 @@ rb_ujit_init(void)
     st_insert(gen_fns, (st_data_t)BIN(putself), (st_data_t)&gen_putself);
     st_insert(gen_fns, (st_data_t)BIN(getlocal_WC_0), (st_data_t)&gen_getlocal_wc0);
     st_insert(gen_fns, (st_data_t)BIN(setlocal_WC_0), (st_data_t)&gen_setlocal_wc0);
+    st_insert(gen_fns, (st_data_t)BIN(opt_send_without_block), (st_data_t)&gen_opt_send_without_block);
 }
