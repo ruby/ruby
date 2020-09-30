@@ -4643,22 +4643,26 @@ rb_str_aref(VALUE str, VALUE indx)
  *  - <tt>'foo'[0...1]</tt> is equivalent to <tt>'foo'[0, 1]</tt>.
  *
  *  When the \Regexp argument +regexp+ is given,
+ *  and the +capture+ argument is <tt>0</tt>,
  *  returns the first matching substring found in +self+,
  *  or +nil+ if none found:
  *    'foo'[/o/] # => "o"
  *    'foo'[/x/] # => nil
- *
- *  If argument +capture+ is also given,
- *  it may be either an \Integer capture group index or or a\String capture group name;
- *  the method call returns the \Matchdata as a \String
- *  (see {Regexp Capturing}[Regexp.html#class-Regexp-label-Capturing]):
  *    s = 'hello there'
  *    s[/[aeiou](.)\1/] # => "ell"
  *    s[/[aeiou](.)\1/, 0] # => "ell"
+ *
+ *  If argument +capture+ is given and not <tt>0</tt>,
+ *  it should be either an \Integer capture group index or a \String or \Symbol capture group name;
+ *  the method call returns only the specified capture
+ *  (see {Regexp Capturing}[Regexp.html#class-Regexp-label-Capturing]):
+ *    s = 'hello there'
  *    s[/[aeiou](.)\1/, 1] # => "l"
- *    s[/[aeiou](.)\1/, 2] # => nil
  *    s[/(?<vowel>[aeiou])(?<non_vowel>[^aeiou])/, "non_vowel"] # => "l"
- *    s[/(?<vowel>[aeiou])(?<non_vowel>[^aeiou])/, "vowel"] # => "e"
+ *    s[/(?<vowel>[aeiou])(?<non_vowel>[^aeiou])/, :vowel] # => "e"
+ *
+ *  If an invalid capture group index is given, +nil+ is returned.  If an invalid
+ *  capture group name is given, +IndexError+ is raised.
  *
  *  When the single \String argument +substring+ is given,
  *  returns the substring from +self+ if found, otherwise +nil+:
