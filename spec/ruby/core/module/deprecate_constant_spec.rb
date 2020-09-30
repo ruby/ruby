@@ -10,16 +10,6 @@ describe "Module#deprecate_constant" do
     @module.private_constant :PRIVATE
     @module.deprecate_constant :PRIVATE
     @pattern = /deprecated/
-    if Warning.respond_to?(:[])
-      @deprecated = Warning[:deprecated]
-      Warning[:deprecated] = true
-    end
-  end
-
-  after :each do
-    if Warning.respond_to?(:[])
-      Warning[:deprecated] = @deprecated
-    end
   end
 
   describe "when accessing the deprecated module" do
