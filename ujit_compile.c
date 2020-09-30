@@ -335,7 +335,7 @@ void gen_putself(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 void gen_getlocal_wc0(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 {
     // Load environment pointer EP from CFP
-    mov(cb, RDX, mem_opnd(64, RDI, 32));
+    mov(cb, RDX, member_opnd(RDI, rb_control_frame_t, ep));
 
     // Compute the offset from BP to the local
     int32_t local_idx = (int32_t)ctx_get_arg(ctx, 0);
@@ -365,7 +365,7 @@ void gen_setlocal_wc0(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     */
 
     // Load environment pointer EP from CFP
-    mov(cb, RDX, mem_opnd(64, RDI, 32));
+    mov(cb, RDX, member_opnd(RDI, rb_control_frame_t, ep));
 
     // flags & VM_ENV_FLAG_WB_REQUIRED
     x86opnd_t flags_opnd = mem_opnd(64, RDX, 8 * VM_ENV_DATA_INDEX_FLAGS);
@@ -397,31 +397,27 @@ void gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     const struct rb_callcache *cc = cd->cc;
 
     ID mid = vm_ci_mid(cd->ci);
-    fprintf(stderr, "jitting method name %s argc: %lu\n", rb_id2name(mid), argc);
+    //fprintf(stderr, "jitting call to \"%s\", argc: %lu\n", rb_id2name(mid), argc);
 
-    if (vm_ci_flag(cd->ci) & VM_CALL_ARGS_SIMPLE) {
-        fprintf(stderr, "its simple!\n");
+    // TODO: don't jit calls that aren't simple
+    // have this codegen function return false, make codegen stop?
+    if (vm_ci_flag(cd->ci) & VM_CALL_ARGS_SIMPLE)
+    {
+        //fprintf(stderr, "simple call\n");
     }
 
 
 
 
     mov(cb, RAX, const_ptr_opnd(cd));
-    x86opnd_t ptr_to_cc = mem_opnd(64, RAX, offsetof(struct rb_call_data, cc));
+    x86opnd_t ptr_to_cc = member_opnd(RAX, struct rb_call_data, cc);
     mov(cb, RAX, ptr_to_cc);
 
+    /*
     x86opnd_t ptr_to_klass = mem_opnd(64, RAX, offsetof(struct rb_callcache, klass));
     x86opnd_t ptr_to_cme_ = mem_opnd(64, RAX, offsetof(struct rb_callcache, cme_));
     mov(cb, RBX, ptr_to_klass);
     mov(cb, RCX, ptr_to_cme_);
-
-
-
-    //print_str(cb, rb_id2name(mid));
-    //print_int(cb, RAX);
-
-
-
 
     // Points to the receiver operand on the stack
     x86opnd_t recv = ctx_stack_opnd(ctx, argc);
@@ -442,7 +438,7 @@ void gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     jnz_ptr(cb, side_exit);
 
     print_str(cb, "method entry not invalidated!!!1");
-
+    */
 
 
 
