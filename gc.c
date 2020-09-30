@@ -507,6 +507,7 @@ typedef struct gc_profile_record {
     size_t heap_total_objects;
     size_t heap_use_size;
     size_t heap_total_size;
+    size_t moved_objects;
 
 #if GC_PROFILE_MORE_DETAIL
     double gc_mark_time;
@@ -792,6 +793,7 @@ typedef struct rb_objspace {
     struct {
         size_t considered_count_table[T_MASK];
         size_t moved_count_table[T_MASK];
+        size_t total_moved;
     } rcompactor;
 
 #if GC_ENABLE_INCREMENTAL_MARK
@@ -4464,6 +4466,7 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page,
                         if (gc_is_moveable_obj(objspace, (VALUE)p)) {
                             /* We were able to move "p" */
                             objspace->rcompactor.moved_count_table[BUILTIN_TYPE((VALUE)p)]++;
+                            objspace->rcompactor.total_moved++;
                             gc_move(objspace, (VALUE)p, dest);
                             gc_pin(objspace, (VALUE)p);
                             heap->compact_cursor_index = i;
@@ -4615,6 +4618,10 @@ gc_compact_finish(rb_objspace_t *objspace, rb_heap_t *heap)
     heap->compact_cursor = NULL;
     heap->compact_cursor_index = 0;
     objspace->profile.compact_count++;
+    if (gc_prof_enabled(objspace)) {
+        gc_profile_record *record = gc_prof_record(objspace);
+        record->moved_objects = objspace->rcompactor.total_moved - record->moved_objects;
+    }
     rb_clear_constant_cache();
     objspace->flags.during_compacting = FALSE;
 }
@@ -5098,6 +5105,11 @@ gc_compact_start(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     heap->compact_cursor = list_tail(&heap->pages, struct heap_page, page_node);
     heap->compact_cursor_index = 0;
+
+    if (gc_prof_enabled(objspace)) {
+        gc_profile_record *record = gc_prof_record(objspace);
+        record->moved_objects = objspace->rcompactor.total_moved;
+    }
 
     memset(objspace->rcompactor.considered_count_table, 0, T_MASK * sizeof(size_t));
     memset(objspace->rcompactor.moved_count_table, 0, T_MASK * sizeof(size_t));
@@ -9404,6 +9416,7 @@ enum gc_stat_sym {
     gc_stat_sym_major_gc_count,
     gc_stat_sym_compact_count,
     gc_stat_sym_read_barrier_faults,
+    gc_stat_sym_total_moved_objects,
     gc_stat_sym_remembered_wb_unprotected_objects,
     gc_stat_sym_remembered_wb_unprotected_objects_limit,
     gc_stat_sym_old_objects,
@@ -9478,6 +9491,7 @@ setup_gc_stat_symbols(void)
 	S(major_gc_count);
 	S(compact_count);
 	S(read_barrier_faults);
+	S(total_moved_objects);
 	S(remembered_wb_unprotected_objects);
 	S(remembered_wb_unprotected_objects_limit);
 	S(old_objects);
@@ -9646,6 +9660,7 @@ gc_stat_internal(VALUE hash_or_sym)
     SET(major_gc_count, objspace->profile.major_gc_count);
     SET(compact_count, objspace->profile.compact_count);
     SET(read_barrier_faults, objspace->profile.read_barrier_faults);
+    SET(total_moved_objects, objspace->rcompactor.total_moved);
     SET(remembered_wb_unprotected_objects, objspace->rgengc.uncollectible_wb_unprotected_objects);
     SET(remembered_wb_unprotected_objects_limit, objspace->rgengc.uncollectible_wb_unprotected_objects_limit);
     SET(old_objects, objspace->rgengc.old_objects);
@@ -11688,6 +11703,7 @@ gc_profile_record_get(VALUE _)
         rb_hash_aset(prof, ID2SYM(rb_intern("HEAP_USE_SIZE")), SIZET2NUM(record->heap_use_size));
         rb_hash_aset(prof, ID2SYM(rb_intern("HEAP_TOTAL_SIZE")), SIZET2NUM(record->heap_total_size));
         rb_hash_aset(prof, ID2SYM(rb_intern("HEAP_TOTAL_OBJECTS")), SIZET2NUM(record->heap_total_objects));
+        rb_hash_aset(prof, ID2SYM(rb_intern("MOVED_OBJECTS")), SIZET2NUM(record->moved_objects));
         rb_hash_aset(prof, ID2SYM(rb_intern("GC_IS_MARKED")), Qtrue);
 #if GC_PROFILE_MORE_DETAIL
         rb_hash_aset(prof, ID2SYM(rb_intern("GC_MARK_TIME")), DBL2NUM(record->gc_mark_time));
