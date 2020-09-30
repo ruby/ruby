@@ -96,6 +96,37 @@ class TC_Set < Test::Unit::TestCase
     assert_equal(true, set.empty?)
   end
 
+  def test_compact!
+    set = Set[1,2,nil]
+    ret = set.compact!
+
+    assert_equal(Set[1,2], set)
+    assert_equal(Set[1,2], ret)
+    assert_same(set, ret)
+
+    set = Set[1,2]
+    ret = set.compact!
+
+    assert_equal(Set[1,2], set)
+    assert_nil(ret)
+  end
+
+  def test_compact
+    set = Set[1,2,nil]
+    ret = set.compact
+
+    assert_equal(Set[1,2,nil], set)
+    assert_equal(Set[1,2], ret)
+    assert_not_same(set, ret)
+
+    set = Set[1,2]
+    ret = set.compact
+
+    assert_equal(Set[1,2], set)
+    assert_equal(Set[1,2], ret)
+    assert_not_same(set, ret)
+  end
+
   def test_replace
     set = Set[1,2]
     ret = set.replace('a'..'c')

@@ -168,6 +168,28 @@ class Set
     self
   end
 
+  # Removes the nil element from self. Returns self if the element was removed,
+  # otherwise nil.
+  #
+  #     set = Set[1, 'c', nil]            #=> #<Set: {1, "c", nil}>
+  #     set.compact!                      #=> #<Set: {1, "c"}>
+  #     set                               #=> #<Set: {1, "c"}>
+  def compact!
+    @hash.delete(nil) { return nil }
+    self
+  end
+
+  # Returns a new Set containing all non-nil elements from self.
+  #
+  #     set = Set[1, 'c', nil]            #=> #<Set: {1, "c", nil}>
+  #     set.compact                       #=> #<Set: {1, "c"}>
+  #     set                               #=> #<Set: {1, "c", nil}>
+  def compact
+    set = dup
+    set.compact!
+    set
+  end
+
   # Replaces the contents of the set with the contents of the given
   # enumerable object and returns self.
   #
