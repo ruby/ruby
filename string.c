@@ -4608,8 +4608,7 @@ rb_str_aref(VALUE str, VALUE indx)
  *    string[index] -> new_string or nil
  *    string[start, length] -> new_string or nil
  *    string[range] -> new_string or nil
- *    string[regexp] -> new_string or nil
- *    string[regexp, capture] -> new_string or nil
+ *    string[regexp, capture = 0] -> new_string or nil
  *    string[substring] -> new_string or nil
  *
  *  When the single \Integer argument +index+ is given,
@@ -4643,15 +4642,15 @@ rb_str_aref(VALUE str, VALUE indx)
  *  - <tt>'foo'[0..1]</tt> is equivalent to <tt>'foo'[0, 2]</tt>.
  *  - <tt>'foo'[0...1]</tt> is equivalent to <tt>'foo'[0, 1]</tt>.
  *
- *  When the single Regexp argument  +regexp+ is given,
+ *  When the \Regexp argument +regexp+ is given,
  *  returns the first matching substring found in +self+,
  *  or +nil+ if none found:
  *    'foo'[/o/] # => "o"
  *    'foo'[/x/] # => nil
  *
- *  When arguments +regexp+ (a \Regexp)
- *  and +capture+ (an \Integer capture group index or \String capture group name),
- *  returns the \Matchdata as a \String
+ *  If argument +capture+ is also given,
+ *  it may be either an \Integer capture group index or or a\String capture group name;
+ *  the method call returns the \Matchdata as a \String
  *  (see {Regexp Capturing}[Regexp.html#class-Regexp-label-Capturing]):
  *    s = 'hello there'
  *    s[/[aeiou](.)\1/] # => "ell"
