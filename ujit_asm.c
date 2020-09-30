@@ -823,7 +823,8 @@ void cb_write_jcc_ptr(codeblock_t* cb, const char* mnem, uint8_t op0, uint8_t op
     //cb.writeASM(mnem, label);
 
     // Write the opcode
-    cb_write_byte(cb, op0);
+    if (op0 != 0xFF)
+        cb_write_byte(cb, op0);
     cb_write_byte(cb, op1);
 
     // Pointer to the end of this jump
@@ -1101,7 +1102,7 @@ void inc(codeblock_t* cb, x86opnd_t opnd)
     );
 }
 
-/// jcc - Conditional relative jump to a label
+/// jcc - relative jumps to a label
 void ja  (codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "ja"  , 0x0F, 0x87, label_idx); }
 void jae (codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "jae" , 0x0F, 0x83, label_idx); }
 void jb  (codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "jb"  , 0x0F, 0x82, label_idx); }
@@ -1132,8 +1133,9 @@ void jpe (codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "jpe" , 0x0F, 0x
 void jpo (codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "jpo" , 0x0F, 0x8B, label_idx); }
 void js  (codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "js"  , 0x0F, 0x88, label_idx); }
 void jz  (codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "jz"  , 0x0F, 0x84, label_idx); }
+void jmp (codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "jmp" , 0xFF, 0xE9, label_idx); }
 
-/// jcc - Conditional relative jump to a pointer (32-bit offset)
+/// jcc - relative jumps to a pointer (32-bit offset)
 void ja_ptr  (codeblock_t* cb, uint8_t* ptr) { cb_write_jcc_ptr(cb, "ja"  , 0x0F, 0x87, ptr); }
 void jae_ptr (codeblock_t* cb, uint8_t* ptr) { cb_write_jcc_ptr(cb, "jae" , 0x0F, 0x83, ptr); }
 void jb_ptr  (codeblock_t* cb, uint8_t* ptr) { cb_write_jcc_ptr(cb, "jb"  , 0x0F, 0x82, ptr); }
@@ -1164,21 +1166,7 @@ void jpe_ptr (codeblock_t* cb, uint8_t* ptr) { cb_write_jcc_ptr(cb, "jpe" , 0x0F
 void jpo_ptr (codeblock_t* cb, uint8_t* ptr) { cb_write_jcc_ptr(cb, "jpo" , 0x0F, 0x8B, ptr); }
 void js_ptr  (codeblock_t* cb, uint8_t* ptr) { cb_write_jcc_ptr(cb, "js"  , 0x0F, 0x88, ptr); }
 void jz_ptr  (codeblock_t* cb, uint8_t* ptr) { cb_write_jcc_ptr(cb, "jz"  , 0x0F, 0x84, ptr); }
-
-/// jmp - Direct relative jump to label
-void jmp(codeblock_t* cb, size_t label_idx)
-{
-    //cb.writeASM(mnem, label);
-
-    /// Opcode for direct jump with relative 32-bit offset
-    cb_write_byte(cb, 0xE9);
-
-    // Add a reference to the label
-    cb_label_ref(cb, label_idx);
-
-    // Relative 32-bit offset to be patched
-    cb_write_int(cb, 0, 32);
-}
+void jmp_ptr (codeblock_t* cb, uint8_t* ptr) { cb_write_jcc_ptr(cb, "jmp" , 0xFF, 0xE9, ptr); }
 
 /// jmp - Indirect jump near to an R/M operand
 void jmp_rm(codeblock_t* cb, x86opnd_t opnd)
