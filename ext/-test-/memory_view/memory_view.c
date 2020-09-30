@@ -92,7 +92,7 @@ memory_view_item_size_from_format(VALUE mod, VALUE format)
     ssize_t item_size = rb_memory_view_item_size_from_format(c_str, &err);
     if (!err)
         return rb_assoc_new(SSIZET2NUM(item_size), Qnil);
-    else 
+    else
         return rb_assoc_new(SSIZET2NUM(item_size), rb_str_new_cstr(err));
 }
 
