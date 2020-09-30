@@ -160,12 +160,10 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
   def temp_file_containing(text, file_prefix = '')
     raise "This method must be called with a code block." unless block_given?
 
-    begin
-      Tempfile.create(file_prefix) do |file|
-        file << text
-        file.close
-        yield file.path
-      end
+    Tempfile.create(file_prefix) do |file|
+      file << text
+      file.close
+      yield file.path
     end
   end
 end
