@@ -269,6 +269,16 @@ Outstanding ones only.
 
     * Update to IRB 1.2.6
 
+* OpenStruct
+
+    * New class `OpenStruct::Strict` does not return `nil` for unknown attributes [[Feature #15815]]
+    * Initialization no longer lazy [[Bug #12136]]
+    * Builtin methods can now be overridden safely. [[Bug #15409]]
+    * Implementation uses only methods ending with `!`.
+    * Ractor compatible.
+    * Improved support for YAML [[Bug #8382]]
+    * Use officially discouraged. Read "Caveats" section.
+
 * Reline
 
     * Update to Reline 0.1.5
@@ -411,7 +421,7 @@ Excluding feature bug fixes.
 
 * RBS is a new language for type definition of Ruby programs.
   It allows writing types of classes and modules with advanced
-  types including union types, overloading, generics, and 
+  types including union types, overloading, generics, and
   _interface types_ for duck typing.
 
 * Ruby ships with type definitions for core/stdlib classes.
