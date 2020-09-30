@@ -35,4 +35,18 @@ class TestFiberScheduler < Test::Unit::TestCase
 
     thread.join
   end
+
+  def test_close_at_exit
+    assert_in_out_err %W[-I#{__dir__} -], <<-RUBY, ['Running Fiber'], [], success: true
+    require 'scheduler'
+
+    scheduler = Scheduler.new
+    Thread.current.scheduler = scheduler
+
+    Fiber.schedule do
+      sleep(0)
+      puts "Running Fiber"
+    end
+    RUBY
+  end
 end

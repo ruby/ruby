@@ -162,7 +162,11 @@ static void
 rb_ec_scheduler_finalize(rb_execution_context_t *ec)
 {
     rb_thread_t *thread = rb_ec_thread_ptr(ec);
-    rb_thread_scheduler_set(thread->self, Qnil);
+    EC_PUSH_TAG(ec);
+    if (EC_EXEC_TAG() == TAG_NONE) {
+        rb_thread_scheduler_set(thread->self, Qnil);
+    }
+    EC_POP_TAG();
 }
 
 static void
@@ -217,6 +221,10 @@ rb_ec_cleanup(rb_execution_context_t *ec, volatile int ex)
 
     rb_threadptr_interrupt(th);
     rb_threadptr_check_signal(th);
+
+    // If the user code defined a scheduler for the top level thread, run it:
+    rb_ec_scheduler_finalize(ec);
+
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
         th = th0;
@@ -277,9 +285,6 @@ rb_ec_cleanup(rb_execution_context_t *ec, volatile int ex)
 	    sysex = EXIT_FAILURE;
 	}
     }
-
-    // If the user code defined a scheduler for the top level thread, run it:
-    rb_ec_scheduler_finalize(ec);
 
     mjit_finish(true); // We still need ISeqs here.
 
