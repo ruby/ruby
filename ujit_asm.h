@@ -333,6 +333,7 @@ void jpo_ptr(codeblock_t* cb, uint8_t* ptr);
 void js_ptr(codeblock_t* cb, uint8_t* ptr);
 void jz_ptr(codeblock_t* cb, uint8_t* ptr);
 void jmp(codeblock_t* cb, size_t label_idx);
+void jmp_ptr(codeblock_t* cb, uint8_t* ptr);
 void jmp_rm(codeblock_t* cb, x86opnd_t opnd);
 void jmp32(codeblock_t* cb, int32_t offset);
 void lea(codeblock_t* cb, x86opnd_t dst, x86opnd_t src);
