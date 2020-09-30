@@ -4344,35 +4344,29 @@ str_upto_i(VALUE str, VALUE arg)
 
 /*
  *  call-seq:
- *     str.upto(other_str, exclusive=false) {|s| block }   -> str
- *     str.upto(other_str, exclusive=false)                -> an_enumerator
+ *    string.upto(other_string, exclusive = false) {|string| ... } -> self
+ *    string.upto(other_string, exclusive = false) -> new_enumerator
  *
- *  Iterates through successive values, starting at <i>str</i> and
- *  ending at <i>other_str</i> inclusive, passing each value in turn
- *  to the block. The String#succ method is used to generate each
- *  value.  If optional second argument exclusive is omitted or is
- *  false, the last value will be included; otherwise it will be
- *  excluded.
+ *  With a block given, calls the block with each \String value
+ *  returned by successive calls to String#succ;
+ *  the first value is +self+, the next is <tt>self.succ</tt>, and so on;
+ *  the sequence terminates when value +other_string+ is reached;
+ *  returns +self+:
+ *    'a8'.upto('b6') {|s| print s, ' ' } # => "a8"
+ *  Output:
+ *    a8 a9 b0 b1 b2 b3 b4 b5 b6
  *
- *  If no block is given, an enumerator is returned instead.
+ *  If argument +exclusive+ is given as a truthy object, the last value is omitted:
+ *    'a8'.upto('b6', true) {|s| print s, ' ' } # => "a8"
+ *  Output:
+ *    a8 a9 b0 b1 b2 b3 b4 b5
  *
- *     "a8".upto("b6") {|s| print s, ' ' }
- *     for s in "a8".."b6"
- *       print s, ' '
- *     end
+ *  If +other_string+ would not be reached, does not call the block:
+ *    '25'.upto('5') {|s| fail s }
+ *    'aa'.upto('a') {|s| fail s }
  *
- *  <em>produces:</em>
- *
- *     a8 a9 b0 b1 b2 b3 b4 b5 b6
- *     a8 a9 b0 b1 b2 b3 b4 b5 b6
- *
- *  If <i>str</i> and <i>other_str</i> contains only ascii numeric characters,
- *  both are recognized as decimal numbers. In addition, the width of
- *  string (e.g. leading zeros) is handled appropriately.
- *
- *     "9".upto("11").to_a   #=> ["9", "10", "11"]
- *     "25".upto("5").to_a   #=> []
- *     "07".upto("11").to_a  #=> ["07", "08", "09", "10", "11"]
+ *  With no block given, returns a new \Enumerator:
+ *    'a8'.upto('b6') # => #<Enumerator: "a8":upto("b6")>
  */
 
 static VALUE
