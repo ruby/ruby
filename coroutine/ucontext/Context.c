@@ -2,7 +2,7 @@
  *  This file is part of the "Coroutine" project and released under the MIT License.
  *
  *  Created by Samuel Williams on 24/6/2019.
- *  Copyright, 2019, by Samuel Williams. All rights reserved.
+ *  Copyright, 2019, by Samuel Williams.
 */
 
 /* According to Solaris' ucontext.h, makecontext, etc. are removed in SUSv4.
