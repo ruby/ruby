@@ -7,12 +7,13 @@ bundle = enable_config('bundled-libffi')
 if ! bundle
   dir_config 'libffi'
 
-  pkg_config("libffi")
+  pkg_config("libffi") and
+    ver = pkg_config("libffi", "modversion")
 
   if have_header(ffi_header = 'ffi.h')
     true
   elsif have_header(ffi_header = 'ffi/ffi.h')
-    $defs.push(format('-DUSE_HEADER_HACKS'))
+    $defs.push('-DUSE_HEADER_HACKS')
     true
   end and (have_library('ffi') || have_library('libffi'))
 end or
@@ -27,20 +28,20 @@ begin
     Dir.glob("#{$srcdir}/libffi-*/").each{|dir| FileUtils.rm_rf(dir)}
     extlibs.run(["--cache=#{cache_dir}", ext_dir])
   end
-  libffi_dir = bundle != false &&
+  ver = bundle != false &&
         Dir.glob("#{$srcdir}/libffi-*/")
         .map {|n| File.basename(n)}
         .max_by {|n| n.scan(/\d+/).map(&:to_i)}
-  unless libffi_dir
+  unless ver
     raise "missing libffi. Please install libffi."
   end
 
-  srcdir = "#{$srcdir}/#{libffi_dir}"
+  srcdir = "#{$srcdir}/#{ver}"
   ffi_header = 'ffi.h'
   libffi = Struct.new(*%I[dir srcdir builddir include lib a cflags ldflags opt arch]).new
-  libffi.dir = libffi_dir
+  libffi.dir = ver
   if $srcdir == "."
-    libffi.builddir = "#{libffi_dir}/#{RUBY_PLATFORM}"
+    libffi.builddir = "#{ver}/#{RUBY_PLATFORM}"
     libffi.srcdir = "."
   else
     libffi.builddir = libffi.dir
@@ -51,6 +52,7 @@ begin
   libffi.a = "#{libffi.lib}/libffi_convenience.#{$LIBEXT}"
   nowarn = CONFIG.merge("warnflags"=>"")
   libffi.cflags = RbConfig.expand("$(CFLAGS)".dup, nowarn)
+  ver = ver[/libffi-(.*)/, 1]
 
   FileUtils.mkdir_p(libffi.dir)
   libffi.opt = CONFIG['configure_args'][/'(-C)'/, 1]
@@ -110,6 +112,21 @@ begin
   $INCFLAGS << " -I" << libffi.include
 end
 
+if ver
+  ver = ver.gsub(/-rc\d+/, '') # If ver contains rc version, just ignored.
+  ver = (ver.split('.').map(&:to_i) + [0,0])[0,3]
+  $defs.push(%{-DRUBY_LIBFFI_MODVERSION=#{ '%d%03d%03d' % ver }})
+  warn "libffi_version: #{ver.join('.')}"
+end
+
+case
+when $mswin, $mingw, (ver && (ver <=> [3, 2]) >= 0)
+  $defs << "-DUSE_FFI_CLOSURE_ALLOC=1"
+when (ver && (ver <=> [3, 2]) < 0)
+else
+  have_func('ffi_closure_alloc', ffi_header)
+end
+
 have_header 'sys/mman.h'
 
 if have_header "dlfcn.h"
@@ -134,7 +151,7 @@ types.each do |type, signed|
   if /^\#define\s+SIZEOF_#{type}\s+(SIZEOF_(.+)|\d+)/ =~ config
     if size = $2 and size != 'VOIDP'
       size = types.fetch(size) {size}
-      $defs << format("-DTYPE_%s=TYPE_%s", signed||type, size)
+      $defs << "-DTYPE_#{signed||type}=TYPE_#{size}"
     end
     if signed
       check_signedness(type.downcase, "stddef.h")
