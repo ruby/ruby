@@ -8418,7 +8418,11 @@ gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free)
     CLEAR_IN_BITMAP(GET_HEAP_MARKING_BITS((VALUE)src), (VALUE)src);
 
     if (FL_TEST((VALUE)src, FL_EXIVAR)) {
+        /* Same deal as below. Generic ivars are held in st tables.
+         * Resizing the table could cause a GC to happen and we can't allow it */
+        VALUE already_disabled = rb_gc_disable_no_rest();
         rb_mv_generic_ivar((VALUE)src, (VALUE)dest);
+        if (already_disabled == Qfalse) rb_objspace_gc_enable(objspace);
     }
 
     st_data_t srcid = (st_data_t)src, id;
