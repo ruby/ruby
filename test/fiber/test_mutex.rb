@@ -11,10 +11,10 @@ class TestFiberMutex < Test::Unit::TestCase
       Thread.current.scheduler = scheduler
 
       Fiber.schedule do
-        refute Thread.current.blocking?
+        assert_not_predicate Thread.current, :blocking?
 
         mutex.synchronize do
-          refute Thread.current.blocking?
+          assert_not_predicate Thread.current, :blocking?
         end
       end
     end
@@ -136,7 +136,7 @@ class TestFiberMutex < Test::Unit::TestCase
 
     thread.join
 
-    assert signalled > 1
+    assert_operator signalled, :>, 1
   end
 
   def test_queue
@@ -167,7 +167,7 @@ class TestFiberMutex < Test::Unit::TestCase
 
     thread.join
 
-    assert processed == 3
+    assert_equal 3, processed
   end
 
   def test_queue_pop_waits
