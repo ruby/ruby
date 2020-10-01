@@ -3775,6 +3775,7 @@ rb_thread_scheduler_set(VALUE thread, VALUE scheduler)
     return th->scheduler;
 }
 
+#if 0 // no longer used
 /*
  *  call-seq:
  *     Thread.scheduler -> scheduler or nil
@@ -3788,6 +3789,7 @@ rb_thread_scheduler(VALUE klass)
 {
     return rb_thread_scheduler_if_nonblocking(rb_thread_current());
 }
+#endif
 
 VALUE
 rb_thread_current_scheduler()
