@@ -1175,8 +1175,10 @@ thread_join_sleep(VALUE arg)
     }
 
     while (target_th->status != THREAD_KILLED) {
-        if (th->scheduler != Qnil) {
-            rb_scheduler_block(th->scheduler, target_th->self, p->timeout);
+        VALUE scheduler = rb_thread_current_scheduler();
+
+        if (scheduler != Qnil) {
+            rb_scheduler_block(scheduler, target_th->self, p->timeout);
         } else if (!limit) {
             th->status = THREAD_STOPPED_FOREVER;
             rb_ractor_sleeper_threads_inc(th->ractor);
