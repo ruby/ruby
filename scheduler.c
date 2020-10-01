@@ -39,7 +39,9 @@ Init_Scheduler(void)
 
 VALUE rb_scheduler_close(VALUE scheduler)
 {
-    return rb_funcall(scheduler, id_close, 0);
+    if (rb_respond_to(scheduler, id_close)) {
+        return rb_funcall(scheduler, id_close, 0);
+    }
 }
 
 VALUE

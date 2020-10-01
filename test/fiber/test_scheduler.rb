@@ -49,4 +49,12 @@ class TestFiberScheduler < Test::Unit::TestCase
     end
     RUBY
   end
+
+  def test_optional_close
+    thread = Thread.new do
+      Thread.current.scheduler = Object.new
+    end
+    
+    thread.join
+  end
 end
