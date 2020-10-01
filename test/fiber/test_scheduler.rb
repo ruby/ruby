@@ -54,7 +54,7 @@ class TestFiberScheduler < Test::Unit::TestCase
     thread = Thread.new do
       Thread.current.scheduler = Object.new
     end
-    
+
     thread.join
   end
 end
