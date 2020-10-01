@@ -11,10 +11,10 @@ class TestFiberMutex < Test::Unit::TestCase
       Thread.current.scheduler = scheduler
 
       Fiber.schedule do
-        assert_equal Thread.scheduler, scheduler
+        refute Thread.current.blocking?
 
         mutex.synchronize do
-          assert Thread.scheduler
+          refute Thread.current.blocking?
         end
       end
     end
@@ -83,9 +83,9 @@ class TestFiberMutex < Test::Unit::TestCase
 
         f = Fiber.schedule do
           assert_raise_with_message(RuntimeError, "bye") do
-            assert_same scheduler, Thread.scheduler
             mutex.lock
           end
+
           ran = true
         end
 
@@ -196,8 +196,9 @@ class TestFiberMutex < Test::Unit::TestCase
   end
 
   def test_mutex_deadlock
-    err = /No live threads left. Deadlock\?/
-    assert_in_out_err %W[-I#{__dir__} -], <<-RUBY, ['in synchronize'], err, success: false
+    error_pattern = /No live threads left. Deadlock\?/
+
+    assert_in_out_err %W[-I#{__dir__} -], <<-RUBY, ['in synchronize'], error_pattern, success: false
     require 'scheduler'
     mutex = Mutex.new
 
@@ -206,8 +207,6 @@ class TestFiberMutex < Test::Unit::TestCase
       Thread.current.scheduler = scheduler
 
       Fiber.schedule do
-        raise unless Thread.scheduler == scheduler
-
         mutex.synchronize do
           puts 'in synchronize'
           Fiber.yield

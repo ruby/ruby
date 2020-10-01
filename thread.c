@@ -5519,7 +5519,7 @@ Init_Thread(void)
     rb_define_method(rb_cThread, "backtrace", rb_thread_backtrace_m, -1);
     rb_define_method(rb_cThread, "backtrace_locations", rb_thread_backtrace_locations_m, -1);
 
-    rb_define_singleton_method(rb_cThread, "scheduler", rb_thread_scheduler, 0);
+    // rb_define_singleton_method(rb_cThread, "scheduler", rb_thread_scheduler, 0);
     rb_define_method(rb_cThread, "scheduler", rb_thread_scheduler_get, 0);
     rb_define_method(rb_cThread, "scheduler=", rb_thread_scheduler_set, 1);
 
