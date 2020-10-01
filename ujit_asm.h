@@ -297,7 +297,7 @@ void jnc(codeblock_t* cb, size_t label_idx);
 void jne(codeblock_t* cb, size_t label_idx);
 void jng(codeblock_t* cb, size_t label_idx);
 void jnge(codeblock_t* cb, size_t label_idx);
-void jnl(codeblock_t* cb, size_t label_idx);
+// void jnl(codeblock_t* cb, size_t label_idx); // this conflicts with jnl(3)
 void jnle(codeblock_t* cb, size_t label_idx);
 void jno(codeblock_t* cb, size_t label_idx);
 void jnp(codeblock_t* cb, size_t label_idx);
