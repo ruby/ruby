@@ -736,7 +736,7 @@ class ERB
     end
 
     def warn_invalid_trim_mode(mode, uplevel:)
-      warn "Invalid ERB trim mode: #{mode.inspect} (trim_mode: nil, 0, 1, 2, or String composed of '%' and/or '-', '>', '<>')", uplevel: uplevel + 1
+      warn "Invalid ERB trim mode: #{mode.inspect} (trim_mode: nil, 0, 1, 2, or String composed of '%' and/or '-', '>', '<>')", uplevel: uplevel
     end
   end
 end

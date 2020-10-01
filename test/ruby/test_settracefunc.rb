@@ -1778,7 +1778,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     TracePoint.new(:c_call, &capture_events).enable{
       c.new
     }
-    assert_equal [:c_call, :itself, :initialize], events[1]
+    assert_equal [:c_call, :itself, :initialize], events[0]
     events.clear
 
     o = Class.new{

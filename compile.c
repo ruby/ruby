@@ -3465,6 +3465,30 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
         const struct rb_callinfo *ci = (struct rb_callinfo *)OPERAND_AT(iobj, 0);
         const rb_iseq_t *blockiseq = (rb_iseq_t *)OPERAND_AT(iobj, 1);
 
+        if (vm_ci_mid(ci) == idNew) {
+            VALUE *old_operands = iobj->operands;
+
+            assert(iobj->operand_size == 2);
+
+            iobj->insn_id = BIN(opt_new);
+            iseq->body->ci_size++;
+            iobj->operand_size = 3;
+            iobj->operands = compile_data_calloc2(iseq, iobj->operand_size, sizeof(VALUE));
+
+            const struct rb_callinfo *new_call = (struct rb_callinfo *)old_operands[0];
+            const struct rb_callinfo *init_call = vm_ci_new(
+                    idInitialize,
+                    vm_ci_flag(ci) | VM_CALL_FCALL,
+                    vm_ci_argc(ci),
+                    vm_ci_kwarg(ci));
+
+            iobj->operands[0] = (VALUE)new_call;
+            iobj->operands[1] = (VALUE)init_call;
+            iobj->operands[2] = old_operands[1];
+
+            return COMPILE_OK;
+        }
+
 #define SP_INSN(opt) insn_set_specialized_instruction(iseq, iobj, BIN(opt_##opt))
 	if (vm_ci_flag(ci) & VM_CALL_ARGS_SIMPLE) {
 	    switch (vm_ci_argc(ci)) {

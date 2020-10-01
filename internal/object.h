@@ -42,6 +42,7 @@ void rb_obj_copy_ivar(VALUE dest, VALUE obj);
 VALUE rb_false(VALUE obj);
 VALUE rb_convert_type_with_id(VALUE v, int t, const char* nam, ID mid);
 VALUE rb_obj_size(VALUE self, VALUE args, VALUE obj);
+VALUE rb_class_alloc(VALUE klass);
 MJIT_SYMBOL_EXPORT_END
 
 static inline void

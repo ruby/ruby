@@ -778,6 +778,25 @@ opt_send_without_block
     }
 }
 
+/* optimized new/initialize */
+DEFINE_INSN
+opt_new
+(CALL_DATA cd_new, CALL_DATA cd_init, ISEQ blockiseq)
+(...)
+(VALUE val)
+// attr bool handles_sp = true;
+// attr rb_snum_t sp_inc = sp_inc_of_sendish(cd_new->ci);
+// attr rb_snum_t comptime_sp_inc = sp_inc_of_sendish(ci_new);
+{
+    VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd_new->ci, blockiseq, false);
+    val = vm_opt_new(ec, GET_CFP(), cd_new, cd_init, bh);
+
+    if (val == Qundef) {
+        RESTORE_REGS();
+        NEXT_INSN();
+    }
+}
+
 DEFINE_INSN
 opt_str_freeze
 (VALUE str, CALL_DATA cd)
