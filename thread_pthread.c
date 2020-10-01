@@ -163,7 +163,7 @@ static const void *const condattr_monotonic = NULL;
 /* 100ms.  10ms is too small for user level thread scheduling
  * on recent Linux (tested on 2.6.35)
  */
-#define TIME_QUANTUM_MSEC (100)
+#define TIME_QUANTUM_MSEC (10)
 #define TIME_QUANTUM_USEC (TIME_QUANTUM_MSEC * 1000)
 #define TIME_QUANTUM_NSEC (TIME_QUANTUM_USEC * 1000)
 
