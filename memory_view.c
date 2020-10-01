@@ -78,7 +78,7 @@ rb_memory_view_is_column_major_contiguous(const rb_memory_view_t *view)
 
 /* Initialize strides array to represent the specified contiguous array. */
 void
-rb_memory_view_fill_contiguous_strides(const int ndim, const int item_size, const ssize_t *const shape, const int row_major_p, ssize_t *const strides)
+rb_memory_view_fill_contiguous_strides(const ssize_t ndim, const ssize_t item_size, const ssize_t *const shape, const int row_major_p, ssize_t *const strides)
 {
     ssize_t i, n = item_size;
     if (row_major_p) {
@@ -414,7 +414,7 @@ rb_memory_view_get_item_pointer(rb_memory_view_t *view, const ssize_t *indices)
 
     assert(view->shape != NULL);
 
-    int i;
+    ssize_t i;
     if (view->strides == NULL) {
         // row-major contiguous array
         ssize_t stride = view->item_size;
