@@ -43,6 +43,8 @@ rb_scheduler_close(VALUE scheduler)
     if (rb_respond_to(scheduler, id_close)) {
         return rb_funcall(scheduler, id_close, 0);
     }
+
+    return Qnil;
 }
 
 VALUE
