@@ -332,6 +332,24 @@ class TC_Set < Test::Unit::TestCase
     }
   end
 
+  def test_spacecraft_operator
+    set = Set[1,2,3]
+
+    assert_nil(set <=> 2)
+
+    assert_nil(set <=> set.to_a)
+
+    [Set, Set2].each { |klass|
+      assert_equal(-1,  set <=> klass[1,2,3,4], klass.name)
+      assert_equal( 0,  set <=> klass[3,2,1]  , klass.name)
+      assert_equal(nil, set <=> klass[1,2,4]  , klass.name)
+      assert_equal(+1,  set <=> klass[2,3]    , klass.name)
+      assert_equal(+1,  set <=> klass[]       , klass.name)
+
+      assert_equal(0, Set[] <=> klass[], klass.name)
+    }
+  end
+
   def assert_intersect(expected, set, other)
     case expected
     when true

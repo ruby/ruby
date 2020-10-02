@@ -45,9 +45,9 @@
 # == Comparison
 #
 # The comparison operators <, >, <=, and >= are implemented as
-# shorthand for the {proper_,}{subset?,superset?} methods.  However,
-# the <=> operator is intentionally left out because not every pair of
-# sets is comparable ({x, y} vs. {x, z} for example).
+# shorthand for the {proper_,}{subset?,superset?} methods.
+# The <=> operator reflects this order, or return `nil` for
+# sets that both have distinct elements ({x, y} vs. {x, z} for example).
 #
 # == Example
 #
@@ -301,6 +301,19 @@ class Set
     end
   end
   alias < proper_subset?
+
+  # Returns 0 if the set are equal,
+  # -1 / +1 if the set is a proper subset / superset of the given set,
+  # or nil if they both have unique elements.
+  def <=>(set)
+    return unless set.is_a?(Set)
+
+    case size <=> set.size
+    when -1 then -1 if proper_subset?(set)
+    when +1 then +1 if proper_superset?(set)
+    else 0 if self.==(set)
+    end
+  end
 
   # Returns true if the set and the given set have at least one
   # element in common.
