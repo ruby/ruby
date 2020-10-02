@@ -590,6 +590,19 @@ class TestISeq < Test::Unit::TestCase
     assert_equal([:func_ptr, :argc, :index, :name], invokebuiltin[1].keys)
   end
 
+  def test_iseq_builtin_load
+    Tempfile.create(["builtin", ".iseq"]) do |f|
+      f.binmode
+      f.write(RubyVM::InstructionSequence.of(1.method(:abs)).to_binary)
+      f.close
+      assert_normal_exit("#{<<~"begin;"}\n#{<<~'end;'}")
+      path = ""#{f.path.dump}
+      begin;
+        RubyVM::InstructionSequence.load_from_binary(File.binread(path))
+      end;
+    end
+  end
+
   def test_iseq_option_debug_level
     assert_raise(TypeError) {ISeq.compile("", debug_level: "")}
     assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}")
