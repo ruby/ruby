@@ -225,6 +225,14 @@ x86opnd_t const_ptr_opnd(void* ptr);
     offsetof(struct_type, member_name)          \
 )
 
+// Struct member operand with an array index
+#define member_opnd_idx(base_reg, struct_type, member_name, idx) mem_opnd( \
+    8 * sizeof(((struct_type*)0)->member_name),     \
+    base_reg,                                       \
+    (offsetof(struct_type, member_name) +           \
+     sizeof(((struct_type*)0)->member_name) * idx)  \
+)
+
 // Code block methods
 uint8_t* alloc_exec_mem(size_t mem_size);
 void cb_init(codeblock_t* cb, uint8_t* mem_block, size_t mem_size);
