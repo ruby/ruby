@@ -176,6 +176,7 @@ strscan_mark(void *ptr)
 {
     struct strscanner *p = ptr;
     rb_gc_mark(p->str);
+    rb_gc_mark(p->regex);
 }
 
 static void
@@ -212,6 +213,7 @@ strscan_s_allocate(VALUE klass)
     CLEAR_MATCH_STATUS(p);
     onig_region_init(&(p->regs));
     p->str = Qnil;
+    p->regex = Qnil;
     return obj;
 }
 
@@ -1168,7 +1170,7 @@ strscan_aref(VALUE self, VALUE idx)
             idx = rb_sym2str(idx);
             /* fall through */
         case T_STRING:
-            if (!p->regex) return Qnil;
+            if (!RTEST(p->regex)) return Qnil;
             RSTRING_GETMEM(idx, name, i);
             i = name_to_backref_number(&(p->regs), p->regex, name, name + i, rb_enc_get(idx));
             break;
