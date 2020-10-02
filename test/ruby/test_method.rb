@@ -1390,6 +1390,6 @@ class TestMethod < Test::Unit::TestCase
   end
 
   def test_invalidating_CC_ASAN
-    assert_ruby_status('using Module.new')
+    assert_ruby_status(['-e', 'using Module.new'])
   end
 end
