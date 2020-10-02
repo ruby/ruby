@@ -2660,6 +2660,8 @@ thread_compact(void *ptr)
 {
     rb_thread_t *th = ptr;
 
+    th->self = rb_gc_location(th->self);
+
     if (!th->root_fiber) {
         rb_execution_context_update(th->ec);
     }
