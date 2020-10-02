@@ -321,6 +321,9 @@ void run_tests()
     cb_set_pos(cb, 0); test(cb, mem_opnd(8, RDX, 8), imm_opnd(255)); check_bytes(cb, "F64208FF");
     cb_set_pos(cb, 0); test(cb, DX, imm_opnd(0xFFFF)); check_bytes(cb, "66F7C2FFFF");
     cb_set_pos(cb, 0); test(cb, mem_opnd(16, RDX, 8), imm_opnd(0xFFFF)); check_bytes(cb, "66F74208FFFF");
+    cb_set_pos(cb, 0); test(cb, mem_opnd(8, RSI, 0), imm_opnd(1)); check_bytes(cb, "F60601");
+    cb_set_pos(cb, 0); test(cb, mem_opnd(8, RSI, 16), imm_opnd(1)); check_bytes(cb, "F6461001");
+    cb_set_pos(cb, 0); test(cb, mem_opnd(8, RSI, -16), imm_opnd(1)); check_bytes(cb, "F646F001");
 
     // xor
     cb_set_pos(cb, 0); xor(cb, EAX, EAX); check_bytes(cb, "31C0");

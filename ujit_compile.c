@@ -387,11 +387,58 @@ void gen_setlocal_wc0(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     mov(cb, mem_opnd(64, RDX, offs), RCX);
 }
 
+void gen_opt_minus(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
+{
+    // Create a size-exit to fall back to the interpreter
+    // Note: we generate the side-exit before popping operands from the stack
+    uint8_t* side_exit = ujit_side_exit(ocb, ctx, ctx->pc);
+
+    // TODO: make a helper function for this
+    // Make sure that minus isn't redefined for integers
+    mov(cb, RAX, const_ptr_opnd(ruby_current_vm_ptr));
+    test(
+        cb,
+        member_opnd_idx(RAX, rb_vm_t, redefined_flag, BOP_MINUS),
+        imm_opnd(INTEGER_REDEFINED_OP_FLAG)
+    );
+    jnz_ptr(cb, side_exit);
+
+    // Get the operands and destination from the stack
+    x86opnd_t arg1 = ctx_stack_pop(ctx, 1);
+    x86opnd_t arg0 = ctx_stack_pop(ctx, 1);
+
+    // If not fixnums, fall back
+    test(cb, arg0, imm_opnd(RUBY_FIXNUM_FLAG));
+    jz_ptr(cb, side_exit);
+    test(cb, arg1, imm_opnd(RUBY_FIXNUM_FLAG));
+    jz_ptr(cb, side_exit);
+
+    // Subtract arg0 - arg1 and test for overflow
+    mov(cb, RAX, arg0);
+    sub(cb, RAX, arg1);
+    jo_ptr(cb, side_exit);
+    add(cb, RAX, imm_opnd(1));
+
+    /*
+    print_int(cb, arg0);
+    print_int(cb, arg1);
+    print_int(cb, RAX);
+    print_str(cb, "");
+    */
+
+    // Push the output on the stack
+    x86opnd_t dst = ctx_stack_push(ctx, 1);
+    mov(cb, dst, RAX);
+}
+
 void gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 {
     // Create a size-exit to fall back to the interpreter
     uint8_t* side_exit = ujit_side_exit(ocb, ctx, ctx->pc);
 
+
+
+    /*
     struct rb_call_data * cd = (struct rb_call_data *)ctx_get_arg(ctx, 0);
     int32_t argc = (int32_t)vm_ci_argc(cd->ci);
     const struct rb_callcache *cc = cd->cc;
@@ -406,12 +453,14 @@ void gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
         //fprintf(stderr, "simple call\n");
     }
 
-
-
-
     mov(cb, RAX, const_ptr_opnd(cd));
     x86opnd_t ptr_to_cc = member_opnd(RAX, struct rb_call_data, cc);
     mov(cb, RAX, ptr_to_cc);
+    */
+
+
+
+
 
     /*
     x86opnd_t ptr_to_klass = mem_opnd(64, RAX, offsetof(struct rb_callcache, klass));
@@ -478,5 +527,6 @@ rb_ujit_init(void)
     st_insert(gen_fns, (st_data_t)BIN(putself), (st_data_t)&gen_putself);
     st_insert(gen_fns, (st_data_t)BIN(getlocal_WC_0), (st_data_t)&gen_getlocal_wc0);
     st_insert(gen_fns, (st_data_t)BIN(setlocal_WC_0), (st_data_t)&gen_setlocal_wc0);
+    st_insert(gen_fns, (st_data_t)BIN(opt_minus), (st_data_t)&gen_opt_minus);
     st_insert(gen_fns, (st_data_t)BIN(opt_send_without_block), (st_data_t)&gen_opt_send_without_block);
 }
