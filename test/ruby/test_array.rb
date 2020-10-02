@@ -1648,6 +1648,13 @@ class TestArray < Test::Unit::TestCase
     TEST
   end
 
+  def test_sort_uncomparable
+    assert_raise(ArgumentError) {[1, Float::NAN].sort}
+    assert_raise(ArgumentError) {[1.0, Float::NAN].sort}
+    assert_raise(ArgumentError) {[Float::NAN, 1].sort}
+    assert_raise(ArgumentError) {[Float::NAN, 1.0].sort}
+  end
+
   def test_to_a
     a = @cls[ 1, 2, 3 ]
     a_id = a.__id__
@@ -1768,6 +1775,13 @@ class TestArray < Test::Unit::TestCase
     assert_same(obj, [obj, 1.0].min)
   end
 
+  def test_min_uncomparable
+    assert_raise(ArgumentError) {[1, Float::NAN].min}
+    assert_raise(ArgumentError) {[1.0, Float::NAN].min}
+    assert_raise(ArgumentError) {[Float::NAN, 1].min}
+    assert_raise(ArgumentError) {[Float::NAN, 1.0].min}
+  end
+
   def test_max
     assert_equal(1, [1].max)
     assert_equal(3, [1, 2, 3, 1, 2].max)
@@ -1789,6 +1803,13 @@ class TestArray < Test::Unit::TestCase
       def coerce(x) [x, 1] end
     end
     assert_same(obj, [obj, 1.0].max)
+  end
+
+  def test_max_uncomparable
+    assert_raise(ArgumentError) {[1, Float::NAN].max}
+    assert_raise(ArgumentError) {[1.0, Float::NAN].max}
+    assert_raise(ArgumentError) {[Float::NAN, 1].max}
+    assert_raise(ArgumentError) {[Float::NAN, 1.0].max}
   end
 
   def test_minmax

@@ -1518,7 +1518,9 @@ flo_cmp(VALUE x, VALUE y)
 MJIT_FUNC_EXPORTED int
 rb_float_cmp(VALUE x, VALUE y)
 {
-    return NUM2INT(flo_cmp(x, y));
+    VALUE c = flo_cmp(x, y);
+    if (NIL_P(c)) rb_cmperr(x, y);
+    return NUM2INT(c);
 }
 
 /*
