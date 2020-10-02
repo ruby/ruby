@@ -7294,7 +7294,7 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
             return COMPILE_NG;
         }
         else {
-            char inline_func[0x20];
+            char inline_func[DECIMAL_SIZE_OF_BITS(sizeof(int) * CHAR_BIT) + 1];
             bool cconst = false;
           retry:;
             const struct rb_builtin_function *bf = iseq_builtin_function_lookup(iseq, builtin_func);
@@ -7325,8 +7325,11 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
                     return COMPILE_NG;
                 }
 
+                if (GET_VM()->builtin_inline_index == INT_MAX) {
+                    rb_bug("builtin inline function index overflow:%s", builtin_func);
+                }
                 int inline_index = GET_VM()->builtin_inline_index++;
-                snprintf(inline_func, 0x20, "_bi%d", inline_index);
+                snprintf(inline_func, sizeof(inline_func), "_bi%d", inline_index);
                 builtin_func = inline_func;
                 args_node = NULL;
                 goto retry;
