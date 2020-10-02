@@ -864,26 +864,17 @@ blocks_clear_marked_index(struct transient_heap_block* block)
 static void
 transient_heap_block_update_refs(struct transient_heap* theap, struct transient_heap_block* block)
 {
-    int i=0, n=0;
+    int marked_index = block->info.last_marked_index;
 
-    while (i<block->info.index) {
-        void *ptr = &block->buff[i];
-        struct transient_alloc_header *header = ptr;
+    while (marked_index >= 0) {
+        struct transient_alloc_header *header = alloc_header(block, marked_index);
 
         asan_unpoison_memory_region(header, sizeof *header, false);
 
-        void *poisoned = asan_poisoned_object_p(header->obj);
-        asan_unpoison_object(header->obj, false);
-
         header->obj = rb_gc_location(header->obj);
 
-        if (poisoned) {
-            asan_poison_object(header->obj);
-        }
-
-        i += header->size;
+        marked_index = header->next_marked_index;
         asan_poison_memory_region(header, sizeof *header);
-        n++;
     }
 }
 
