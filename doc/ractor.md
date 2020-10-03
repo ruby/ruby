@@ -664,7 +664,7 @@ r = Ractor.new do
 end
 
 RN.times{
-  Ractor.new r do |next_r|
+  r = Ractor.new r do |next_r|
     next_r << Ractor.recv
   end
 }
