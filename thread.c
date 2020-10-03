@@ -720,7 +720,7 @@ thread_do_start_proc(rb_thread_t *th)
         VM_ASSERT(FIXNUM_P(args));
         args_len = FIX2INT(args);
         args_ptr = ALLOCA_N(VALUE, args_len);
-        rb_ractor_recv_parameters(th->ec, th->ractor, args_len, (VALUE *)args_ptr);
+        rb_ractor_receive_parameters(th->ec, th->ractor, args_len, (VALUE *)args_ptr);
         vm_check_ints_blocking(th->ec);
 
         // kick thread

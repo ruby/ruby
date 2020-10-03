@@ -53,10 +53,10 @@ struct rb_ractor_struct {
 
     struct ractor_wait {
         enum ractor_wait_status {
-            wait_none     = 0x00,
-            wait_recving  = 0x01,
-            wait_taking   = 0x02,
-            wait_yielding = 0x04,
+            wait_none      = 0x00,
+            wait_receiving = 0x01,
+            wait_taking    = 0x02,
+            wait_yielding  = 0x04,
         } status;
 
         enum ractor_wakeup_status {
@@ -132,7 +132,7 @@ VALUE rb_ractor_self(const rb_ractor_t *g);
 void rb_ractor_atexit(rb_execution_context_t *ec, VALUE result);
 void rb_ractor_atexit_exception(rb_execution_context_t *ec);
 void rb_ractor_teardown(rb_execution_context_t *ec);
-void rb_ractor_recv_parameters(rb_execution_context_t *ec, rb_ractor_t *g, int len, VALUE *ptr);
+void rb_ractor_receive_parameters(rb_execution_context_t *ec, rb_ractor_t *g, int len, VALUE *ptr);
 void rb_ractor_send_parameters(rb_execution_context_t *ec, rb_ractor_t *g, VALUE args);
 
 VALUE rb_thread_create_ractor(rb_ractor_t *g, VALUE args, VALUE proc); // defined in thread.c
