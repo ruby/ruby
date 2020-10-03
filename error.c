@@ -277,11 +277,11 @@ rb_warning_s_warn(int argc, VALUE *argv, VALUE mod)
  *
  *  Example:
  *    module MyWarningFilter
- *      def warn(message)
+ *      def warn(message, category: nil, **kwargs)
  *        if /some warning I want to ignore/.matches?(message)
  *          # ignore
  *        else
- *          super(message)
+ *          super
  *        end
  *      end
  *    end
