@@ -7,6 +7,8 @@
 
 #include "Context.h"
 
+#include <stdint.h>
+
 // http://gcc.gnu.org/onlinedocs/gcc/Alternate-Keywords.html
 #ifndef __GNUC__
 #define __asm__ asm
@@ -35,13 +37,22 @@ static void coroutine_flush_register_windows() {
 static void coroutine_flush_register_windows() {}
 #endif
 
-int coroutine_save_stack(struct coroutine_context * context) {
-    void *stack_pointer = &stack_pointer;
+__attribute__((noinline))
+void *coroutine_stack_pointer() {
+    return (void*)(
+        (char*)__builtin_frame_address(0)
+    );
+}
 
+// Save the current stack to a private area. It is likely that when restoring the stack, this stack frame will be incomplete. But that is acceptable since the previous stack frame which called `setjmp` should be correctly restored.
+__attribute__((noinline))
+int coroutine_save_stack_1(struct coroutine_context * context) {
     assert(context->stack);
     assert(context->base);
 
-    // At this point, you may need to ensure on architectures that use register windows, that all registers are flushed to the stack.
+    void *stack_pointer = coroutine_stack_pointer();
+
+    // At this point, you may need to ensure on architectures that use register windows, that all registers are flushed to the stack, otherwise the copy of the stack will not contain the valid registers:
     coroutine_flush_register_windows();
 
     // Save stack to private area:
@@ -59,15 +70,29 @@ int coroutine_save_stack(struct coroutine_context * context) {
         context->used = size;
     }
 
-    // Save registers / restore point:
-    return _setjmp(context->state);
+    // Initialized:
+    return 0;
+}
+
+// Copy the current stack to a private memory buffer.
+int coroutine_save_stack(struct coroutine_context * context) {
+    if (_setjmp(context->state)) {
+        // Restored.
+        return 1;
+    }
+
+    // We need to invoke the memory copy from one stack frame deeper than the one that calls setjmp. That is because if you don't do this, the setjmp might be restored into an invalid stack frame (truncated, etc):
+    return coroutine_save_stack_1(context);
 }
 
 __attribute__((noreturn, noinline))
-static void coroutine_restore_stack_padded(struct coroutine_context *context, void * buffer) {
-    void *stack_pointer = &stack_pointer;
+void coroutine_restore_stack_padded(struct coroutine_context *context, void * buffer) {
+    void *stack_pointer = coroutine_stack_pointer();
 
     assert(context->base);
+
+    // At this point, you may need to ensure on architectures that use register windows, that all registers are flushed to the stack, otherwise when we copy in the new stack, the registers would not be updated:
+    coroutine_flush_register_windows();
 
     // Restore stack from private area:
     if (stack_pointer < context->base) {
@@ -82,28 +107,24 @@ static void coroutine_restore_stack_padded(struct coroutine_context *context, vo
         memcpy(context->base, context->stack, context->used);
     }
 
-    // Restore registers:
-    // The `| (int)buffer` is to force the compiler NOT to elide he buffer and `alloca`.
-    _longjmp(context->state, 1 | (int)buffer);
+    // Restore registers. The `buffer` is to force the compiler NOT to elide he buffer and `alloca`:
+    _longjmp(context->state, (int)(1 | (intptr_t)buffer));
 }
-
-static const size_t GAP = 128;
 
 // In order to swap between coroutines, we need to swap the stack and registers.
 // `setjmp` and `longjmp` are able to swap registers, but what about swapping stacks? You can use `memcpy` to copy the current stack to a private area and `memcpy` to copy the private stack of the next coroutine to the main stack.
 // But if the stack yop are copying in to the main stack is bigger than the currently executing stack, the `memcpy` will clobber the current stack frame (including the context argument). So we use `alloca` to push the current stack frame *beyond* the stack we are about to copy in. This ensures the current stack frame in `coroutine_restore_stack_padded` remains valid for calling `longjmp`.
 __attribute__((noreturn))
 void coroutine_restore_stack(struct coroutine_context *context) {
-    void *stack_pointer = &stack_pointer;
+    void *stack_pointer = coroutine_stack_pointer();
     void *buffer = NULL;
-    ssize_t offset = 0;
 
     // We must ensure that the next stack frame is BEYOND the stack we are restoring:
     if (stack_pointer < context->base) {
-        offset = (char*)stack_pointer - ((char*)context->base - context->used) + GAP;
+        intptr_t offset = (intptr_t)stack_pointer - ((intptr_t)context->base - context->used);
         if (offset > 0) buffer = alloca(offset);
     } else {
-        offset = ((char*)context->base + context->used) - (char*)stack_pointer + GAP;
+        intptr_t offset = ((intptr_t)context->base + context->used) - (intptr_t)stack_pointer;
         if (offset > 0) buffer = alloca(offset);
     }
 
@@ -128,9 +149,9 @@ struct coroutine_context *coroutine_transfer(struct coroutine_context *current, 
     // It's possible to come here, even thought the current fiber has been terminated. We are never going to return so we don't bother saving the stack.
 
     if (current->stack) {
-      if (coroutine_save_stack(current) == 0) {
-          coroutine_restore_stack(target);
-      }
+        if (coroutine_save_stack(current) == 0) {
+            coroutine_restore_stack(target);
+        }
     } else {
         coroutine_restore_stack(target);
     }
