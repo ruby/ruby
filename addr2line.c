@@ -526,13 +526,25 @@ append_obj(obj_info_t **objp)
 }
 
 #ifdef USE_ELF
+/* Ideally we should check 4 paths to follow gnu_debuglink:
+ *
+ *   - /usr/lib/debug/.build-id/ab/cdef1234.debug
+ *   - /usr/bin/ruby.debug
+ *   - /usr/bin/.debug/ruby.debug
+ *   - /usr/lib/debug/usr/bin/ruby.debug.
+ *
+ * but we handle only two cases for now as the two formats are
+ * used by some linux distributions.
+ *
+ * See GDB's info for detail.
+ * https://sourceware.org/gdb/onlinedocs/gdb/Separate-Debug-Files.html
+ */
+
+// check the path pattern of "/usr/lib/debug/usr/bin/ruby.debug"
 static void
 follow_debuglink(const char *debuglink, int num_traces, void **traces,
 		 obj_info_t **objp, line_info_t *lines, int offset)
 {
-    /* Ideally we should check 4 paths to follow gnu_debuglink,
-       but we handle only one case for now as this format is used
-       by some linux distributions. See GDB's info for detail. */
     static const char global_debug_dir[] = "/usr/lib/debug";
     const size_t global_debug_dir_len = sizeof(global_debug_dir) - 1;
     char *p;
@@ -552,6 +564,37 @@ follow_debuglink(const char *debuglink, int num_traces, void **traces,
     memcpy(binary_filename, global_debug_dir, global_debug_dir_len);
     len += global_debug_dir_len;
     strlcpy(binary_filename + len, debuglink, PATH_MAX - len);
+
+    append_obj(objp);
+    o2 = *objp;
+    o2->base_addr = o1->base_addr;
+    o2->path = o1->path;
+    fill_lines(num_traces, traces, 0, objp, lines, offset);
+}
+
+// check the path pattern of "/usr/lib/debug/.build-id/ab/cdef1234.debug"
+static void
+follow_debuglink_build_id(const char *build_id, size_t build_id_size, int num_traces, void **traces,
+                          obj_info_t **objp, line_info_t *lines, int offset)
+{
+    static const char global_debug_dir[] = "/usr/lib/debug/.build-id/";
+    const size_t global_debug_dir_len = sizeof(global_debug_dir) - 1;
+    char *p;
+    obj_info_t *o1 = *objp, *o2;
+    size_t i;
+
+    if (PATH_MAX < global_debug_dir_len + 1 + build_id_size * 2 + 6) return;
+
+    memcpy(binary_filename, global_debug_dir, global_debug_dir_len);
+    p = binary_filename + global_debug_dir_len;
+    for (i = 0; i < build_id_size; i++) {
+        static const char tbl[] = "0123456789abcdef";
+        unsigned char n = build_id[i];
+        *p++ = tbl[n / 16];
+        *p++ = tbl[n % 16];
+        if (i == 0) *p++ = '/';
+    }
+    strcpy(p, ".debug");
 
     append_obj(objp);
     o2 = *objp;
@@ -1616,6 +1659,7 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
     ElfW(Ehdr) *ehdr;
     ElfW(Shdr) *shdr, *shstr_shdr;
     ElfW(Shdr) *gnu_debuglink_shdr = NULL;
+    ElfW(Shdr) *note_gnu_build_id = NULL;
     int fd;
     off_t filesize;
     char *file;
@@ -1688,6 +1732,11 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 	    /* if (!strcmp(section_name, ".dynsym")) */
 	    dynsym_shdr = shdr + i;
 	    break;
+          case SHT_NOTE:
+            if (!strcmp(section_name, ".note.gnu.build-id")) {
+                note_gnu_build_id = shdr + i;
+            }
+            break;
 	  case SHT_PROGBITS:
 	    if (!strcmp(section_name, ".gnu_debuglink")) {
 		gnu_debuglink_shdr = shdr + i;
@@ -1803,6 +1852,13 @@ use_symtab:
 			     num_traces, traces,
 			     objp, lines, offset);
 	}
+        if (note_gnu_build_id && check_debuglink) {
+            ElfW(Nhdr) *nhdr = (ElfW(Nhdr)*) (file + note_gnu_build_id->sh_offset);
+            const char *build_id = (char *)(nhdr + 1) + nhdr->n_namesz;
+            follow_debuglink_build_id(build_id, nhdr->n_descsz,
+			       num_traces, traces,
+			       objp, lines, offset);
+        }
 	goto finish;
     }
 
