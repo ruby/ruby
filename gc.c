@@ -11955,7 +11955,9 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 	    }
             else if (rb_ractor_p(obj)) {
                 rb_ractor_t *r = (void *)DATA_PTR(obj);
-                APPENDF((BUFF_ARGS, "r:%d", r->id));
+                if (r) {
+                    APPENDF((BUFF_ARGS, "r:%d", r->id));
+                }
             }
 	    else {
 		const char * const type_name = rb_objspace_data_type_name(obj);
