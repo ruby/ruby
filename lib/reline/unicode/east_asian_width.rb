@@ -1,6 +1,6 @@
 class Reline::Unicode::EastAsianWidth
   # This is based on EastAsianWidth.txt
-  # http://www.unicode.org/Public/12.1.0/ucd/EastAsianWidth.txt
+  # http://www.unicode.org/Public/13.0.0/ucd/EastAsianWidth.txt
 
   # Fullwidth
   TYPE_F = /^(
@@ -66,8 +66,7 @@ class Reline::Unicode::EastAsianWidth
     [\u{3099}-\u{30FF}] |
     [\u{3105}-\u{312F}] |
     [\u{3131}-\u{318E}] |
-    [\u{3190}-\u{31BA}] |
-    [\u{31C0}-\u{31E3}] |
+    [\u{3190}-\u{31E3}] |
     [\u{31F0}-\u{321E}] |
     [\u{3220}-\u{3247}] |
     [\u{3250}-\u{4DBF}] |
@@ -80,9 +79,11 @@ class Reline::Unicode::EastAsianWidth
     [\u{FE30}-\u{FE52}] |
     [\u{FE54}-\u{FE66}] |
     [\u{FE68}-\u{FE6B}] |
-    [\u{16FE0}-\u{16FE3}] |
+    [\u{16FE0}-\u{16FE4}] |
+    [\u{16FF0}-\u{16FF1}] |
     [\u{17000}-\u{187F7}] |
-    [\u{18800}-\u{18AF2}] |
+    [\u{18800}-\u{18CD5}] |
+    [\u{18D00}-\u{18D08}] |
     [\u{1B000}-\u{1B11E}] |
     [\u{1B150}-\u{1B152}] |
     [\u{1B164}-\u{1B167}] |
@@ -117,20 +118,22 @@ class Reline::Unicode::EastAsianWidth
     [\u{1F680}-\u{1F6C5}] |
     \u{1F6CC} |
     [\u{1F6D0}-\u{1F6D2}] |
-    \u{1F6D5} |
+    [\u{1F6D5}-\u{1F6D7}] |
     [\u{1F6EB}-\u{1F6EC}] |
-    [\u{1F6F4}-\u{1F6FA}] |
+    [\u{1F6F4}-\u{1F6FC}] |
     [\u{1F7E0}-\u{1F7EB}] |
-    [\u{1F90D}-\u{1F971}] |
-    [\u{1F973}-\u{1F976}] |
-    [\u{1F97A}-\u{1F9A2}] |
-    [\u{1F9A5}-\u{1F9AA}] |
-    [\u{1F9AE}-\u{1F9CA}] |
+    [\u{1F90C}-\u{1F93A}] |
+    [\u{1F93C}-\u{1F945}] |
+    [\u{1F947}-\u{1F978}] |
+    [\u{1F97A}-\u{1F9CB}] |
     [\u{1F9CD}-\u{1F9FF}] |
-    [\u{1FA70}-\u{1FA73}] |
+    [\u{1FA70}-\u{1FA74}] |
     [\u{1FA78}-\u{1FA7A}] |
-    [\u{1FA80}-\u{1FA82}] |
-    [\u{1FA90}-\u{1FA95}] |
+    [\u{1FA80}-\u{1FA86}] |
+    [\u{1FA90}-\u{1FAA8}] |
+    [\u{1FAB0}-\u{1FAB6}] |
+    [\u{1FAC0}-\u{1FAC2}] |
+    [\u{1FAD0}-\u{1FAD6}] |
     [\u{20000}-\u{2FFFD}] |
     [\u{30000}-\u{3FFFD}]
   )/x
@@ -411,7 +414,7 @@ class Reline::Unicode::EastAsianWidth
     \u{085E} |
     [\u{0860}-\u{086A}] |
     [\u{08A0}-\u{08B4}] |
-    [\u{08B6}-\u{08BD}] |
+    [\u{08B6}-\u{08C7}] |
     [\u{08D3}-\u{0983}] |
     [\u{0985}-\u{098C}] |
     [\u{098F}-\u{0990}] |
@@ -466,7 +469,7 @@ class Reline::Unicode::EastAsianWidth
     [\u{0B3C}-\u{0B44}] |
     [\u{0B47}-\u{0B48}] |
     [\u{0B4B}-\u{0B4D}] |
-    [\u{0B56}-\u{0B57}] |
+    [\u{0B55}-\u{0B57}] |
     [\u{0B5C}-\u{0B5D}] |
     [\u{0B5F}-\u{0B63}] |
     [\u{0B66}-\u{0B77}] |
@@ -510,15 +513,14 @@ class Reline::Unicode::EastAsianWidth
     [\u{0CE0}-\u{0CE3}] |
     [\u{0CE6}-\u{0CEF}] |
     [\u{0CF1}-\u{0CF2}] |
-    [\u{0D00}-\u{0D03}] |
-    [\u{0D05}-\u{0D0C}] |
+    [\u{0D00}-\u{0D0C}] |
     [\u{0D0E}-\u{0D10}] |
     [\u{0D12}-\u{0D44}] |
     [\u{0D46}-\u{0D48}] |
     [\u{0D4A}-\u{0D4F}] |
     [\u{0D54}-\u{0D63}] |
     [\u{0D66}-\u{0D7F}] |
-    [\u{0D82}-\u{0D83}] |
+    [\u{0D81}-\u{0D83}] |
     [\u{0D85}-\u{0D96}] |
     [\u{0D9A}-\u{0DB1}] |
     [\u{0DB3}-\u{0DBB}] |
@@ -605,7 +607,7 @@ class Reline::Unicode::EastAsianWidth
     [\u{1A7F}-\u{1A89}] |
     [\u{1A90}-\u{1A99}] |
     [\u{1AA0}-\u{1AAD}] |
-    [\u{1AB0}-\u{1ABE}] |
+    [\u{1AB0}-\u{1AC0}] |
     [\u{1B00}-\u{1B4B}] |
     [\u{1B50}-\u{1B7C}] |
     [\u{1B80}-\u{1BF3}] |
@@ -765,7 +767,7 @@ class Reline::Unicode::EastAsianWidth
     [\u{2B51}-\u{2B54}] |
     [\u{2B5A}-\u{2B73}] |
     [\u{2B76}-\u{2B95}] |
-    [\u{2B98}-\u{2C2E}] |
+    [\u{2B97}-\u{2C2E}] |
     [\u{2C30}-\u{2C5E}] |
     [\u{2C60}-\u{2CF3}] |
     [\u{2CF9}-\u{2D25}] |
@@ -782,14 +784,14 @@ class Reline::Unicode::EastAsianWidth
     [\u{2DC8}-\u{2DCE}] |
     [\u{2DD0}-\u{2DD6}] |
     [\u{2DD8}-\u{2DDE}] |
-    [\u{2DE0}-\u{2E4F}] |
+    [\u{2DE0}-\u{2E52}] |
     \u{303F} |
     [\u{4DC0}-\u{4DFF}] |
     [\u{A4D0}-\u{A62B}] |
     [\u{A640}-\u{A6F7}] |
     [\u{A700}-\u{A7BF}] |
-    [\u{A7C2}-\u{A7C6}] |
-    [\u{A7F7}-\u{A82B}] |
+    [\u{A7C2}-\u{A7CA}] |
+    [\u{A7F5}-\u{A82C}] |
     [\u{A830}-\u{A839}] |
     [\u{A840}-\u{A877}] |
     [\u{A880}-\u{A8C5}] |
@@ -809,7 +811,7 @@ class Reline::Unicode::EastAsianWidth
     [\u{AB11}-\u{AB16}] |
     [\u{AB20}-\u{AB26}] |
     [\u{AB28}-\u{AB2E}] |
-    [\u{AB30}-\u{AB67}] |
+    [\u{AB30}-\u{AB6B}] |
     [\u{AB70}-\u{ABED}] |
     [\u{ABF0}-\u{ABF9}] |
     [\u{D7B0}-\u{D7C6}] |
@@ -841,7 +843,7 @@ class Reline::Unicode::EastAsianWidth
     [\u{10100}-\u{10102}] |
     [\u{10107}-\u{10133}] |
     [\u{10137}-\u{1018E}] |
-    [\u{10190}-\u{1019B}] |
+    [\u{10190}-\u{1019C}] |
     \u{101A0} |
     [\u{101D0}-\u{101FD}] |
     [\u{10280}-\u{1029C}] |
@@ -901,8 +903,12 @@ class Reline::Unicode::EastAsianWidth
     [\u{10CFA}-\u{10D27}] |
     [\u{10D30}-\u{10D39}] |
     [\u{10E60}-\u{10E7E}] |
+    [\u{10E80}-\u{10EA9}] |
+    [\u{10EAB}-\u{10EAD}] |
+    [\u{10EB0}-\u{10EB1}] |
     [\u{10F00}-\u{10F27}] |
     [\u{10F30}-\u{10F59}] |
+    [\u{10FB0}-\u{10FCB}] |
     [\u{10FE0}-\u{10FF6}] |
     [\u{11000}-\u{1104D}] |
     [\u{11052}-\u{1106F}] |
@@ -911,10 +917,9 @@ class Reline::Unicode::EastAsianWidth
     [\u{110D0}-\u{110E8}] |
     [\u{110F0}-\u{110F9}] |
     [\u{11100}-\u{11134}] |
-    [\u{11136}-\u{11146}] |
+    [\u{11136}-\u{11147}] |
     [\u{11150}-\u{11176}] |
-    [\u{11180}-\u{111CD}] |
-    [\u{111D0}-\u{111DF}] |
+    [\u{11180}-\u{111DF}] |
     [\u{111E1}-\u{111F4}] |
     [\u{11200}-\u{11211}] |
     [\u{11213}-\u{1123E}] |
@@ -940,9 +945,8 @@ class Reline::Unicode::EastAsianWidth
     [\u{1135D}-\u{11363}] |
     [\u{11366}-\u{1136C}] |
     [\u{11370}-\u{11374}] |
-    [\u{11400}-\u{11459}] |
-    \u{1145B} |
-    [\u{1145D}-\u{1145F}] |
+    [\u{11400}-\u{1145B}] |
+    [\u{1145D}-\u{11461}] |
     [\u{11480}-\u{114C7}] |
     [\u{114D0}-\u{114D9}] |
     [\u{11580}-\u{115B5}] |
@@ -957,7 +961,14 @@ class Reline::Unicode::EastAsianWidth
     [\u{11730}-\u{1173F}] |
     [\u{11800}-\u{1183B}] |
     [\u{118A0}-\u{118F2}] |
-    \u{118FF} |
+    [\u{118FF}-\u{11906}] |
+    \u{11909} |
+    [\u{1190C}-\u{11913}] |
+    [\u{11915}-\u{11916}] |
+    [\u{11918}-\u{11935}] |
+    [\u{11937}-\u{11938}] |
+    [\u{1193B}-\u{11946}] |
+    [\u{11950}-\u{11959}] |
     [\u{119A0}-\u{119A7}] |
     [\u{119AA}-\u{119D7}] |
     [\u{119DA}-\u{119E4}] |
@@ -985,6 +996,7 @@ class Reline::Unicode::EastAsianWidth
     [\u{11D93}-\u{11D98}] |
     [\u{11DA0}-\u{11DA9}] |
     [\u{11EE0}-\u{11EF8}] |
+    \u{11FB0} |
     [\u{11FC0}-\u{11FF1}] |
     [\u{11FFF}-\u{12399}] |
     [\u{12400}-\u{1246E}] |
@@ -1102,9 +1114,10 @@ class Reline::Unicode::EastAsianWidth
     [\u{1F0B1}-\u{1F0BF}] |
     [\u{1F0C1}-\u{1F0CE}] |
     [\u{1F0D1}-\u{1F0F5}] |
-    [\u{1F10B}-\u{1F10C}] |
+    [\u{1F10B}-\u{1F10F}] |
     [\u{1F12E}-\u{1F12F}] |
-    [\u{1F16A}-\u{1F16C}] |
+    [\u{1F16A}-\u{1F16F}] |
+    \u{1F1AD} |
     [\u{1F1E6}-\u{1F1FF}] |
     [\u{1F321}-\u{1F32C}] |
     \u{1F336} |
@@ -1136,9 +1149,15 @@ class Reline::Unicode::EastAsianWidth
     [\u{1F850}-\u{1F859}] |
     [\u{1F860}-\u{1F887}] |
     [\u{1F890}-\u{1F8AD}] |
+    [\u{1F8B0}-\u{1F8B1}] |
     [\u{1F900}-\u{1F90B}] |
+    \u{1F93B} |
+    \u{1F946} |
     [\u{1FA00}-\u{1FA53}] |
     [\u{1FA60}-\u{1FA6D}] |
+    [\u{1FB00}-\u{1FB92}] |
+    [\u{1FB94}-\u{1FBCA}] |
+    [\u{1FBF0}-\u{1FBF9}] |
     \u{E0001} |
     [\u{E0020}-\u{E007F}]
   )/x
