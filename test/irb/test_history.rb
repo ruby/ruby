@@ -15,7 +15,9 @@ module TestIRB
 
     def test_history_save_1
       omit "Skip Editline" if /EditLine/n.match(Readline::VERSION)
-      _result_output, result_history_file = launch_irb_with_irbrc_and_irb_history(<<~IRBRC, <<~IRB_HISTORY) do |stdin|
+      assert_history_with_irbrc_and_irb_history(<<~EXPECTED_HISTORY, <<~IRBRC, <<~IRB_HISTORY) do |stdin|
+        exit
+      EXPECTED_HISTORY
         IRB.conf[:USE_READLINE] = true
         IRB.conf[:SAVE_HISTORY] = 1
         IRB.conf[:USE_READLINE] = true
@@ -27,15 +29,18 @@ module TestIRB
       IRB_HISTORY
         stdin.write("5\nexit\n")
       end
-
-      assert_equal(<<~HISTORY_FILE, result_history_file)
-        exit
-      HISTORY_FILE
     end
 
     def test_history_save_100
       omit "Skip Editline" if /EditLine/n.match(Readline::VERSION)
-      _result_output, result_history_file = launch_irb_with_irbrc_and_irb_history(<<~IRBRC, <<~IRB_HISTORY) do |stdin|
+      assert_history_with_irbrc_and_irb_history(<<~EXPECTED_HISTORY, <<~IRBRC, <<~IRB_HISTORY) do |stdin|
+        1
+        2
+        3
+        4
+        5
+        exit
+      EXPECTED_HISTORY
         IRB.conf[:USE_READLINE] = true
         IRB.conf[:SAVE_HISTORY] = 100
         IRB.conf[:USE_READLINE] = true
@@ -47,20 +52,18 @@ module TestIRB
       IRB_HISTORY
         stdin.write("5\nexit\n")
       end
+    end
 
-      assert_equal(<<~HISTORY_FILE, result_history_file)
+    def test_history_save_bignum
+      omit "Skip Editline" if /EditLine/n.match(Readline::VERSION)
+      assert_history_with_irbrc_and_irb_history(<<~EXPECTED_HISTORY, <<~IRBRC, <<~IRB_HISTORY) do |stdin|
         1
         2
         3
         4
         5
         exit
-      HISTORY_FILE
-    end
-
-    def test_history_save_bignum
-      omit "Skip Editline" if /EditLine/n.match(Readline::VERSION)
-      _result_output, result_history_file = launch_irb_with_irbrc_and_irb_history(<<~IRBRC, <<~IRB_HISTORY) do |stdin|
+      EXPECTED_HISTORY
         IRB.conf[:USE_READLINE] = true
         IRB.conf[:SAVE_HISTORY] = 10 ** 19
         IRB.conf[:USE_READLINE] = true
@@ -72,20 +75,18 @@ module TestIRB
       IRB_HISTORY
         stdin.write("5\nexit\n")
       end
+    end
 
-      assert_equal(<<~HISTORY_FILE, result_history_file)
+    def test_history_save_minus_as_infinity
+      omit "Skip Editline" if /EditLine/n.match(Readline::VERSION)
+      assert_history_with_irbrc_and_irb_history(<<~EXPECTED_HISTORY, <<~IRBRC, <<~IRB_HISTORY) do |stdin|
         1
         2
         3
         4
         5
         exit
-      HISTORY_FILE
-    end
-
-    def test_history_save_minus_as_infinity
-      omit "Skip Editline" if /EditLine/n.match(Readline::VERSION)
-      _result_output, result_history_file = launch_irb_with_irbrc_and_irb_history(<<~IRBRC, <<~IRB_HISTORY) do |stdin|
+      EXPECTED_HISTORY
         IRB.conf[:USE_READLINE] = true
         IRB.conf[:SAVE_HISTORY] = -1 # infinity
         IRB.conf[:USE_READLINE] = true
@@ -97,20 +98,11 @@ module TestIRB
       IRB_HISTORY
         stdin.write("5\nexit\n")
       end
-
-      assert_equal(<<~HISTORY_FILE, result_history_file)
-        1
-        2
-        3
-        4
-        5
-        exit
-      HISTORY_FILE
     end
 
     private
 
-    def launch_irb_with_irbrc_and_irb_history(irbrc, irb_history)
+    def assert_history_with_irbrc_and_irb_history(expected_history, irbrc, irb_history)
       result = nil
       result_history = nil
       backup_irbrc = ENV.delete("IRBRC")
@@ -128,7 +120,7 @@ module TestIRB
           yield(stdin, stdout)
           stdin.close
           stdout.flush
-          system('ruby', '-Ilib', '-Itest', '-W0', '-rirb', '-e', 'IRB.start(__FILE__)', in: stdin.path, out: stdout.path)
+          system('ruby', '-Ilib', '-Itest', '-W0', '-rirb', '-e', 'IRB.start(__FILE__)', in: stdin.path, out: stdout.path, err: stdout.path)
           result = stdout.read
           stdout.close
         end
@@ -136,7 +128,14 @@ module TestIRB
           result_history = f.read
         end
       end
-      [result, result_history]
+      assert_equal(expected_history, result_history, <<~MESSAGE)
+        expected:
+        #{expected_history}
+        but actual:
+        #{result_history}
+        and stdout and stderr ware
+        #{result}
+      MESSAGE
     ensure
       ENV["HOME"] = backup_home
       ENV["IRBRC"] = backup_irbrc
