@@ -306,7 +306,7 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/bigdecimal.gemspec", "ext/bigdecimal")
     `git checkout ext/bigdecimal/depend`
   else
-    sync_lib gem
+    sync_lib gem, upstream
   end
 end
 
@@ -412,24 +412,24 @@ def sync_default_gems_with_commits(gem, ranges, edit: nil)
   end
 end
 
-def sync_lib(repo)
-  unless File.directory?("../#{repo}")
-    abort %[Expected '../#{repo}' \(#{File.expand_path("../#{repo}")}\) to be a directory, but it wasn't.]
+def sync_lib(repo, upstream = nil)
+  unless upstream and File.directory?(upstream) or File.directory?(upstream = "../#{repo}")
+    abort %[Expected '#{upstream}' \(#{File.expand_path("#{upstream}")}\) to be a directory, but it wasn't.]
   end
   rm_rf(["lib/#{repo}.rb", "lib/#{repo}/*", "test/test_#{repo}.rb"])
-  cp_r(Dir.glob("../#{repo}/lib/*"), "lib")
+  cp_r(Dir.glob("#{upstream}/lib/*"), "lib")
   tests = if File.directory?("test/#{repo}")
             "test/#{repo}"
           else
             "test/test_#{repo}.rb"
           end
-  cp_r("../#{repo}/#{tests}", "test") if File.exist?("../#{repo}/#{tests}")
+  cp_r("#{upstream}/#{tests}", "test") if File.exist?("#{upstream}/#{tests}")
   gemspec = if File.directory?("lib/#{repo}")
               "lib/#{repo}/#{repo}.gemspec"
             else
               "lib/#{repo}.gemspec"
             end
-  cp_r("../#{repo}/#{repo}.gemspec", "#{gemspec}")
+  cp_r("#{upstream}/#{repo}.gemspec", "#{gemspec}")
 end
 
 def update_default_gems(gem)
