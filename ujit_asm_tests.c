@@ -116,10 +116,6 @@ void run_tests()
     // cqo
     cb_set_pos(cb, 0); cqo(cb); check_bytes(cb, "4899");
 
-    // dec
-    cb_set_pos(cb, 0); dec(cb, CX); check_bytes(cb, "66FFC9");
-    cb_set_pos(cb, 0); dec(cb, EDX); check_bytes(cb, "FFCA");
-
     // div
     /*
     test(
@@ -131,12 +127,6 @@ void run_tests()
         "F77424F4"
     );
     */
-
-    // inc
-    cb_set_pos(cb, 0); inc(cb, BL); check_bytes(cb, "FEC3");
-    cb_set_pos(cb, 0); inc(cb, ESP); check_bytes(cb, "FFC4");
-    cb_set_pos(cb, 0); inc(cb, mem_opnd(32, RSP, 0)); check_bytes(cb, "FF0424");
-    cb_set_pos(cb, 0); inc(cb, mem_opnd(64, RSP, 4)); check_bytes(cb, "48FF442404");
 
     // jcc
     {
