@@ -900,19 +900,6 @@ void cqo(codeblock_t* cb)
     cb_write_bytes(cb, 2, 0x48, 0x99);
 }
 
-// dec - Decrement integer by 1
-void dec(codeblock_t* cb, x86opnd_t opnd)
-{
-    write_rm_unary(
-        cb,
-        "dec",
-        0xFE, // opMemReg8
-        0xFF, // opMemRegPref
-        0x01, // opExt
-        opnd
-    );
-}
-
 /*
 // div - Unsigned integer division
 alias div = writeRMUnary!(
@@ -1010,19 +997,6 @@ void imul(CodeBlock cb, X86Opnd opnd0, X86Opnd opnd1, X86Opnd opnd2)
     }
 }
 */
-
-// inc - Increment integer by 1
-void inc(codeblock_t* cb, x86opnd_t opnd)
-{
-    write_rm_unary(
-        cb,
-        "inc",
-        0xFE, // opMemReg8
-        0xFF, // opMemRegPref
-        0x00, // opExt
-        opnd
-    );
-}
 
 /// jcc - relative jumps to a label
 void ja  (codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "ja"  , 0x0F, 0x87, label_idx); }
