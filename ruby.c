@@ -1803,6 +1803,8 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
          */
         rb_warning("-K is specified; it is for 1.8 compatibility and may cause odd behavior");
 
+    if (opt->features.set & FEATURE_BIT(ujit))
+        rb_ujit_init();
 #if USE_MJIT
     if (opt->features.set & FEATURE_BIT(jit)) {
         opt->mjit.on = TRUE; /* set mjit.on for ruby_show_version() API and check to call mjit_init() */
@@ -1869,8 +1871,6 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         /* Using TMP_RUBY_PREFIX created by ruby_init_loadpath(). */
         mjit_init(&opt->mjit);
 #endif
-    if (opt->features.set & FEATURE_BIT(ujit))
-        rb_ujit_init();
 
     Init_ruby_description();
     Init_enc();
