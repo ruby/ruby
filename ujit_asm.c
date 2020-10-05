@@ -43,12 +43,12 @@ size_t unsig_imm_size(uint64_t imm)
 
 x86opnd_t mem_opnd(size_t num_bits, x86opnd_t base_reg, int32_t disp)
 {
-    bool is_iprel = base_reg.reg.reg_type == REG_IP;
+    bool is_iprel = base_reg.as.reg.reg_type == REG_IP;
 
     x86opnd_t opnd = {
         OPND_MEM,
         num_bits,
-        .mem = { base_reg.reg.reg_no, 0, 0, false, is_iprel, disp }
+        .as.mem = { base_reg.as.reg.reg_no, 0, 0, false, is_iprel, disp }
     };
 
     return opnd;
@@ -67,7 +67,7 @@ x86opnd_t imm_opnd(int64_t imm)
     x86opnd_t opnd = {
         OPND_IMM,
         sig_imm_size(imm),
-        .imm = imm
+        .as.imm = imm
     };
 
     return opnd;
@@ -78,7 +78,7 @@ x86opnd_t const_ptr_opnd(void* ptr)
     x86opnd_t opnd = {
         OPND_IMM,
         64,
-        .unsig_imm = (uint64_t)ptr
+        .as.unsig_imm = (uint64_t)ptr
     };
 
     return opnd;
@@ -300,14 +300,14 @@ bool rex_needed(x86opnd_t opnd)
     if (opnd.type == OPND_REG)
     {
         return (
-            opnd.reg.reg_no > 7 ||
-            (opnd.num_bits == 8 && opnd.reg.reg_no >= 4 && opnd.reg.reg_no <= 7)
+            opnd.as.reg.reg_no > 7 ||
+            (opnd.num_bits == 8 && opnd.as.reg.reg_no >= 4 && opnd.as.reg.reg_no <= 7)
         );
     }
 
     if (opnd.type == OPND_MEM)
     {
-        return (opnd.mem.base_reg_no > 7) || (opnd.mem.has_idx && opnd.mem.idx_reg_no > 7);
+        return (opnd.as.mem.base_reg_no > 7) || (opnd.as.mem.has_idx && opnd.as.mem.idx_reg_no > 7);
     }
 
     assert (false);
@@ -320,9 +320,9 @@ bool sib_needed(x86opnd_t opnd)
         return false;
 
     return (
-        opnd.mem.has_idx ||
-        opnd.mem.base_reg_no == RSP.reg.reg_no ||
-        opnd.mem.base_reg_no == R12.reg.reg_no
+        opnd.as.mem.has_idx ||
+        opnd.as.mem.base_reg_no == RSP.as.reg.reg_no ||
+        opnd.as.mem.base_reg_no == R12.as.reg.reg_no
     );
 }
 
@@ -332,15 +332,15 @@ size_t disp_size(x86opnd_t opnd)
     assert (opnd.type == OPND_MEM);
 
     // If using RIP as the base, use disp32
-    if (opnd.mem.is_iprel)
+    if (opnd.as.mem.is_iprel)
     {
         return 32;
     }
 
     // Compute the required displacement size
-    if (opnd.mem.disp != 0)
+    if (opnd.as.mem.disp != 0)
     {
-        size_t num_bits = sig_imm_size(opnd.mem.disp);
+        size_t num_bits = sig_imm_size(opnd.as.mem.disp);
         assert (num_bits <= 32 && "displacement does not fit in 32 bits");
 
         // x86 can only encode 8-bit and 32-bit displacements
@@ -351,8 +351,8 @@ size_t disp_size(x86opnd_t opnd)
     }
 
     // If EBP or RBP or R13 is used as the base, displacement must be encoded
-    if (opnd.mem.base_reg_no == RBP.reg.reg_no ||
-        opnd.mem.base_reg_no == R13.reg.reg_no)
+    if (opnd.as.mem.base_reg_no == RBP.as.reg.reg_no ||
+        opnd.as.mem.base_reg_no == R13.as.reg.reg_no)
     {
         return 8;
     }
@@ -388,7 +388,7 @@ static void cb_write_rex(
 static void cb_write_opcode(codeblock_t* cb, uint8_t opcode, x86opnd_t reg)
 {
     // Write the reg field into the opcode byte
-    uint8_t op_byte = opcode | (reg.reg.reg_no & 7);
+    uint8_t op_byte = opcode | (reg.as.reg.reg_no & 7);
     cb_write_byte(cb, op_byte);
 }
 
@@ -429,21 +429,21 @@ void cb_write_rm(
 
         uint8_t r;
         if (r_opnd.type != OPND_NONE)
-            r = (r_opnd.reg.reg_no & 8)? 1:0;
+            r = (r_opnd.as.reg.reg_no & 8)? 1:0;
         else
             r = 0;
 
         uint8_t x;
-        if (need_sib && rm_opnd.mem.has_idx)
-            x = (rm_opnd.mem.idx_reg_no & 8)? 1:0;
+        if (need_sib && rm_opnd.as.mem.has_idx)
+            x = (rm_opnd.as.mem.idx_reg_no & 8)? 1:0;
         else
             x = 0;
 
         uint8_t b;
         if (rm_opnd.type == OPND_REG)
-            b = (rm_opnd.reg.reg_no & 8)? 1:0;
+            b = (rm_opnd.as.reg.reg_no & 8)? 1:0;
         else if (rm_opnd.type == OPND_MEM)
-            b = (rm_opnd.mem.base_reg_no & 8)? 1:0;
+            b = (rm_opnd.as.mem.base_reg_no & 8)? 1:0;
         else
             b = 0;
 
@@ -480,7 +480,7 @@ void cb_write_rm(
     else
     {
         size_t dsize = disp_size(rm_opnd);
-        if (dsize == 0 || rm_opnd.mem.is_iprel)
+        if (dsize == 0 || rm_opnd.as.mem.is_iprel)
             mod = 0;
         else if (dsize == 8)
             mod = 1;
@@ -495,7 +495,7 @@ void cb_write_rm(
     if (opExt != 0xFF)
         reg = opExt;
     else if (r_opnd.type == OPND_REG)
-        reg = r_opnd.reg.reg_no & 7;
+        reg = r_opnd.as.reg.reg_no & 7;
     else
         reg = 0;
 
@@ -503,14 +503,14 @@ void cb_write_rm(
     uint8_t rm;
     if (rm_opnd.type == OPND_REG)
     {
-        rm = rm_opnd.reg.reg_no & 7;
+        rm = rm_opnd.as.reg.reg_no & 7;
     }
     else
     {
         if (need_sib)
             rm = 4;
         else
-            rm = rm_opnd.mem.base_reg_no & 7;
+            rm = rm_opnd.as.mem.base_reg_no & 7;
     }
 
     // Encode and write the ModR/M byte
@@ -527,17 +527,17 @@ void cb_write_rm(
         assert (rm_opnd.type == OPND_MEM);
 
         // Encode the scale value
-        uint8_t scale = rm_opnd.mem.scale_exp;
+        uint8_t scale = rm_opnd.as.mem.scale_exp;
 
         // Encode the index value
         uint8_t index;
-        if (!rm_opnd.mem.has_idx)
+        if (!rm_opnd.as.mem.has_idx)
             index = 4;
         else
-            index = rm_opnd.mem.idx_reg_no & 7;
+            index = rm_opnd.as.mem.idx_reg_no & 7;
 
         // Encode the base register
-        uint8_t base = rm_opnd.mem.base_reg_no & 7;
+        uint8_t base = rm_opnd.as.mem.base_reg_no & 7;
 
         // Encode and write the SIB byte
         uint8_t sib_byte = (scale << 6) + (index << 3) + (base);
@@ -549,7 +549,7 @@ void cb_write_rm(
     {
         size_t dsize = disp_size(rm_opnd);
         if (dsize > 0)
-            cb_write_int(cb, rm_opnd.mem.disp, dsize);
+            cb_write_int(cb, rm_opnd.as.mem.disp, dsize);
     }
 }
 
@@ -656,7 +656,7 @@ void cb_write_rm_multi(
             else
                 cb_write_rm(cb, szPref, rexW, NO_OPND, opnd0, opExtImm, 1, opMemImmSml);
 
-            cb_write_int(cb, opnd1.imm, 8);
+            cb_write_int(cb, opnd1.as.imm, 8);
         }
 
         // 32-bit immediate
@@ -664,7 +664,7 @@ void cb_write_rm_multi(
         {
             assert (opnd1.num_bits <= opndSize && "immediate too large for dst");
             cb_write_rm(cb, szPref, rexW, NO_OPND, opnd0, opExtImm, 1, opMemImmLrg);
-            cb_write_int(cb, opnd1.imm, (opndSize > 32)? 32:opndSize);
+            cb_write_int(cb, opnd1.as.imm, (opndSize > 32)? 32:opndSize);
         }
 
         // Immediate too large
@@ -708,7 +708,7 @@ void cb_write_shift(
 
     if (opnd1.type == OPND_IMM)
     {
-        if (opnd1.imm == 1)
+        if (opnd1.as.imm == 1)
         {
             cb_write_rm(cb, szPref, rexW, NO_OPND, opnd0, opExt, 1, opMemOnePref);
         }
@@ -716,7 +716,7 @@ void cb_write_shift(
         {
             assert (opnd1.num_bits <= 8);
             cb_write_rm(cb, szPref, rexW, NO_OPND, opnd0, opExt, 1, opMemImmPref);
-            cb_write_byte(cb, (uint8_t)opnd1.imm);
+            cb_write_byte(cb, (uint8_t)opnd1.as.imm);
         }
     }
     /*
@@ -1109,17 +1109,17 @@ void mov(codeblock_t* cb, x86opnd_t dst, x86opnd_t src)
         {
             assert (
                 src.num_bits <= dst.num_bits ||
-                unsig_imm_size(src.imm) <= dst.num_bits
+                unsig_imm_size(src.as.imm) <= dst.num_bits
             );
 
             if (dst.num_bits == 16)
                 cb_write_byte(cb, 0x66);
             if (rex_needed(dst) || dst.num_bits == 64)
-                cb_write_rex(cb, dst.num_bits == 64, 0, 0, dst.reg.reg_no);
+                cb_write_rex(cb, dst.num_bits == 64, 0, 0, dst.as.reg.reg_no);
 
             cb_write_opcode(cb, (dst.num_bits == 8)? 0xB0:0xB8, dst);
 
-            cb_write_int(cb, src.imm, dst.num_bits);
+            cb_write_int(cb, src.as.imm, dst.num_bits);
         }
 
         // M + Imm
@@ -1132,7 +1132,7 @@ void mov(codeblock_t* cb, x86opnd_t dst, x86opnd_t src)
             else
                 cb_write_rm(cb, dst.num_bits == 16, dst.num_bits == 64, NO_OPND, dst, 0, 1, 0xC7);
 
-            cb_write_int(cb, src.imm, (dst.num_bits > 32)? 32:dst.num_bits);
+            cb_write_int(cb, src.as.imm, (dst.num_bits > 32)? 32:dst.num_bits);
         }
 
         else
@@ -1346,7 +1346,7 @@ void pop(codeblock_t* cb, x86opnd_t reg)
     //cb.writeASM("pop", reg);
 
     if (rex_needed(reg))
-        cb_write_rex(cb, false, 0, 0, reg.reg.reg_no);
+        cb_write_rex(cb, false, 0, 0, reg.as.reg.reg_no);
 
     cb_write_opcode(cb, 0x58, reg);
 }
@@ -1368,7 +1368,7 @@ void push(codeblock_t* cb, x86opnd_t reg)
     //cb.writeASM("push", reg);
 
     if (rex_needed(reg))
-        cb_write_rex(cb, false, 0, 0, reg.reg.reg_no);
+        cb_write_rex(cb, false, 0, 0, reg.as.reg.reg_no);
 
     cb_write_opcode(cb, 0x50, reg);
 }
@@ -1470,22 +1470,22 @@ void test(codeblock_t* cb, x86opnd_t rm_opnd, x86opnd_t imm_opnd)
 {
     assert (rm_opnd.type == OPND_REG || rm_opnd.type == OPND_MEM);
     assert (imm_opnd.type == OPND_IMM);
-    assert (imm_opnd.imm >= 0);
-    assert (unsig_imm_size(imm_opnd.unsig_imm) <= 32);
-    assert (unsig_imm_size(imm_opnd.unsig_imm) <= rm_opnd.num_bits);
+    assert (imm_opnd.as.imm >= 0);
+    assert (unsig_imm_size(imm_opnd.as.unsig_imm) <= 32);
+    assert (unsig_imm_size(imm_opnd.as.unsig_imm) <= rm_opnd.num_bits);
 
     // Use the smallest operand size possible
-    rm_opnd = resize_opnd(rm_opnd, unsig_imm_size(imm_opnd.unsig_imm));
+    rm_opnd = resize_opnd(rm_opnd, unsig_imm_size(imm_opnd.as.unsig_imm));
 
     if (rm_opnd.num_bits == 8)
     {
         cb_write_rm(cb, false, false, NO_OPND, rm_opnd, 0x00, 1, 0xF6);
-        cb_write_int(cb, imm_opnd.imm, rm_opnd.num_bits);
+        cb_write_int(cb, imm_opnd.as.imm, rm_opnd.num_bits);
     }
     else
     {
         cb_write_rm(cb, rm_opnd.num_bits == 16, false, NO_OPND, rm_opnd, 0x00, 1, 0xF7);
-        cb_write_int(cb, imm_opnd.imm, rm_opnd.num_bits);
+        cb_write_int(cb, imm_opnd.as.imm, rm_opnd.num_bits);
     }
 }
 
