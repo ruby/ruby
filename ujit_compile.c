@@ -512,7 +512,7 @@ rb_ujit_enabled_p(void)
 void
 rb_ujit_init(void)
 {
-    if (!ujit_scrape_successful && PLATFORM_SUPPORTED_P) {
+    if (!ujit_scrape_successful || !PLATFORM_SUPPORTED_P) {
         return;
     }
     // Initialize the code blocks
