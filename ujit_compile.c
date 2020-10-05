@@ -516,7 +516,7 @@ rb_ujit_init(void)
         return;
     }
     // Initialize the code blocks
-    size_t mem_size = 64 * 1024 * 1024;
+    size_t mem_size = 128 * 1024 * 1024;
     uint8_t* mem_block = alloc_exec_mem(mem_size);
     cb = &block;
     cb_init(cb, mem_block, mem_size/2);
