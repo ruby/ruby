@@ -179,7 +179,7 @@ module RubyVM::MicroJIT
       [true, comma_separated_hex_string(@pre_call_bytes), comma_separated_hex_string(@post_call_bytes)]
     rescue => e
       print_warning("scrape failed: #{e.message}")
-      [false, '', '']
+      [false, '0xcc', '0xcc']
     end
 
     def print_warning(text)
