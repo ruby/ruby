@@ -1,11 +1,12 @@
+// For MAP_ANONYMOUS on GNU/Linux
+#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <assert.h>
 
 #ifndef _WIN32
-// For MAP_ANONYMOUS on GNU/Linux
-#define _GNU_SOURCE
 // For mmapp()
 #include <sys/mman.h>
 #endif
