@@ -127,87 +127,87 @@ typedef struct X86Opnd
 
         // Unsigned immediate value
         uint64_t unsig_imm;
-    };
+    } as;
 
 } x86opnd_t;
 
 // Dummy none/null operand
-static const x86opnd_t NO_OPND = { OPND_NONE, 0, .imm = 0 };
+static const x86opnd_t NO_OPND = { OPND_NONE, 0, .as.imm = 0 };
 
 // Instruction pointer
-static const x86opnd_t RIP = { OPND_REG, 64, .reg = { REG_IP, 5 }};
+static const x86opnd_t RIP = { OPND_REG, 64, .as.reg = { REG_IP, 5 }};
 
 // 64-bit GP registers
-static const x86opnd_t RAX = { OPND_REG, 64, .reg = { REG_GP, 0 }};
-static const x86opnd_t RCX = { OPND_REG, 64, .reg = { REG_GP, 1 }};
-static const x86opnd_t RDX = { OPND_REG, 64, .reg = { REG_GP, 2 }};
-static const x86opnd_t RBX = { OPND_REG, 64, .reg = { REG_GP, 3 }};
-static const x86opnd_t RSP = { OPND_REG, 64, .reg = { REG_GP, 4 }};
-static const x86opnd_t RBP = { OPND_REG, 64, .reg = { REG_GP, 5 }};
-static const x86opnd_t RSI = { OPND_REG, 64, .reg = { REG_GP, 6 }};
-static const x86opnd_t RDI = { OPND_REG, 64, .reg = { REG_GP, 7 }};
-static const x86opnd_t R8  = { OPND_REG, 64, .reg = { REG_GP, 8 }};
-static const x86opnd_t R9  = { OPND_REG, 64, .reg = { REG_GP, 9 }};
-static const x86opnd_t R10 = { OPND_REG, 64, .reg = { REG_GP, 10 }};
-static const x86opnd_t R11 = { OPND_REG, 64, .reg = { REG_GP, 11 }};
-static const x86opnd_t R12 = { OPND_REG, 64, .reg = { REG_GP, 12 }};
-static const x86opnd_t R13 = { OPND_REG, 64, .reg = { REG_GP, 13 }};
-static const x86opnd_t R14 = { OPND_REG, 64, .reg = { REG_GP, 14 }};
-static const x86opnd_t R15 = { OPND_REG, 64, .reg = { REG_GP, 15 }};
+static const x86opnd_t RAX = { OPND_REG, 64, .as.reg = { REG_GP, 0 }};
+static const x86opnd_t RCX = { OPND_REG, 64, .as.reg = { REG_GP, 1 }};
+static const x86opnd_t RDX = { OPND_REG, 64, .as.reg = { REG_GP, 2 }};
+static const x86opnd_t RBX = { OPND_REG, 64, .as.reg = { REG_GP, 3 }};
+static const x86opnd_t RSP = { OPND_REG, 64, .as.reg = { REG_GP, 4 }};
+static const x86opnd_t RBP = { OPND_REG, 64, .as.reg = { REG_GP, 5 }};
+static const x86opnd_t RSI = { OPND_REG, 64, .as.reg = { REG_GP, 6 }};
+static const x86opnd_t RDI = { OPND_REG, 64, .as.reg = { REG_GP, 7 }};
+static const x86opnd_t R8  = { OPND_REG, 64, .as.reg = { REG_GP, 8 }};
+static const x86opnd_t R9  = { OPND_REG, 64, .as.reg = { REG_GP, 9 }};
+static const x86opnd_t R10 = { OPND_REG, 64, .as.reg = { REG_GP, 10 }};
+static const x86opnd_t R11 = { OPND_REG, 64, .as.reg = { REG_GP, 11 }};
+static const x86opnd_t R12 = { OPND_REG, 64, .as.reg = { REG_GP, 12 }};
+static const x86opnd_t R13 = { OPND_REG, 64, .as.reg = { REG_GP, 13 }};
+static const x86opnd_t R14 = { OPND_REG, 64, .as.reg = { REG_GP, 14 }};
+static const x86opnd_t R15 = { OPND_REG, 64, .as.reg = { REG_GP, 15 }};
 
 // 32-bit GP registers
-static const x86opnd_t EAX  = { OPND_REG, 32, .reg = { REG_GP, 0 }};
-static const x86opnd_t ECX  = { OPND_REG, 32, .reg = { REG_GP, 1 }};
-static const x86opnd_t EDX  = { OPND_REG, 32, .reg = { REG_GP, 2 }};
-static const x86opnd_t EBX  = { OPND_REG, 32, .reg = { REG_GP, 3 }};
-static const x86opnd_t ESP  = { OPND_REG, 32, .reg = { REG_GP, 4 }};
-static const x86opnd_t EBP  = { OPND_REG, 32, .reg = { REG_GP, 5 }};
-static const x86opnd_t ESI  = { OPND_REG, 32, .reg = { REG_GP, 6 }};
-static const x86opnd_t EDI  = { OPND_REG, 32, .reg = { REG_GP, 7 }};
-static const x86opnd_t R8D  = { OPND_REG, 32, .reg = { REG_GP, 8 }};
-static const x86opnd_t R9D  = { OPND_REG, 32, .reg = { REG_GP, 9 }};
-static const x86opnd_t R10D = { OPND_REG, 32, .reg = { REG_GP, 10 }};
-static const x86opnd_t R11D = { OPND_REG, 32, .reg = { REG_GP, 11 }};
-static const x86opnd_t R12D = { OPND_REG, 32, .reg = { REG_GP, 12 }};
-static const x86opnd_t R13D = { OPND_REG, 32, .reg = { REG_GP, 13 }};
-static const x86opnd_t R14D = { OPND_REG, 32, .reg = { REG_GP, 14 }};
-static const x86opnd_t R15D = { OPND_REG, 32, .reg = { REG_GP, 15 }};
+static const x86opnd_t EAX  = { OPND_REG, 32, .as.reg = { REG_GP, 0 }};
+static const x86opnd_t ECX  = { OPND_REG, 32, .as.reg = { REG_GP, 1 }};
+static const x86opnd_t EDX  = { OPND_REG, 32, .as.reg = { REG_GP, 2 }};
+static const x86opnd_t EBX  = { OPND_REG, 32, .as.reg = { REG_GP, 3 }};
+static const x86opnd_t ESP  = { OPND_REG, 32, .as.reg = { REG_GP, 4 }};
+static const x86opnd_t EBP  = { OPND_REG, 32, .as.reg = { REG_GP, 5 }};
+static const x86opnd_t ESI  = { OPND_REG, 32, .as.reg = { REG_GP, 6 }};
+static const x86opnd_t EDI  = { OPND_REG, 32, .as.reg = { REG_GP, 7 }};
+static const x86opnd_t R8D  = { OPND_REG, 32, .as.reg = { REG_GP, 8 }};
+static const x86opnd_t R9D  = { OPND_REG, 32, .as.reg = { REG_GP, 9 }};
+static const x86opnd_t R10D = { OPND_REG, 32, .as.reg = { REG_GP, 10 }};
+static const x86opnd_t R11D = { OPND_REG, 32, .as.reg = { REG_GP, 11 }};
+static const x86opnd_t R12D = { OPND_REG, 32, .as.reg = { REG_GP, 12 }};
+static const x86opnd_t R13D = { OPND_REG, 32, .as.reg = { REG_GP, 13 }};
+static const x86opnd_t R14D = { OPND_REG, 32, .as.reg = { REG_GP, 14 }};
+static const x86opnd_t R15D = { OPND_REG, 32, .as.reg = { REG_GP, 15 }};
 
 // 16-bit GP registers
-static const x86opnd_t AX   = { OPND_REG, 16, .reg = { REG_GP, 0 }};
-static const x86opnd_t CX   = { OPND_REG, 16, .reg = { REG_GP, 1 }};
-static const x86opnd_t DX   = { OPND_REG, 16, .reg = { REG_GP, 2 }};
-static const x86opnd_t BX   = { OPND_REG, 16, .reg = { REG_GP, 3 }};
-static const x86opnd_t SP   = { OPND_REG, 16, .reg = { REG_GP, 4 }};
-static const x86opnd_t BP   = { OPND_REG, 16, .reg = { REG_GP, 5 }};
-static const x86opnd_t SI   = { OPND_REG, 16, .reg = { REG_GP, 6 }};
-static const x86opnd_t DI   = { OPND_REG, 16, .reg = { REG_GP, 7 }};
-static const x86opnd_t R8W  = { OPND_REG, 16, .reg = { REG_GP, 8 }};
-static const x86opnd_t R9W  = { OPND_REG, 16, .reg = { REG_GP, 9 }};
-static const x86opnd_t R10W = { OPND_REG, 16, .reg = { REG_GP, 10 }};
-static const x86opnd_t R11W = { OPND_REG, 16, .reg = { REG_GP, 11 }};
-static const x86opnd_t R12W = { OPND_REG, 16, .reg = { REG_GP, 12 }};
-static const x86opnd_t R13W = { OPND_REG, 16, .reg = { REG_GP, 13 }};
-static const x86opnd_t R14W = { OPND_REG, 16, .reg = { REG_GP, 14 }};
-static const x86opnd_t R15W = { OPND_REG, 16, .reg = { REG_GP, 15 }};
+static const x86opnd_t AX   = { OPND_REG, 16, .as.reg = { REG_GP, 0 }};
+static const x86opnd_t CX   = { OPND_REG, 16, .as.reg = { REG_GP, 1 }};
+static const x86opnd_t DX   = { OPND_REG, 16, .as.reg = { REG_GP, 2 }};
+static const x86opnd_t BX   = { OPND_REG, 16, .as.reg = { REG_GP, 3 }};
+static const x86opnd_t SP   = { OPND_REG, 16, .as.reg = { REG_GP, 4 }};
+static const x86opnd_t BP   = { OPND_REG, 16, .as.reg = { REG_GP, 5 }};
+static const x86opnd_t SI   = { OPND_REG, 16, .as.reg = { REG_GP, 6 }};
+static const x86opnd_t DI   = { OPND_REG, 16, .as.reg = { REG_GP, 7 }};
+static const x86opnd_t R8W  = { OPND_REG, 16, .as.reg = { REG_GP, 8 }};
+static const x86opnd_t R9W  = { OPND_REG, 16, .as.reg = { REG_GP, 9 }};
+static const x86opnd_t R10W = { OPND_REG, 16, .as.reg = { REG_GP, 10 }};
+static const x86opnd_t R11W = { OPND_REG, 16, .as.reg = { REG_GP, 11 }};
+static const x86opnd_t R12W = { OPND_REG, 16, .as.reg = { REG_GP, 12 }};
+static const x86opnd_t R13W = { OPND_REG, 16, .as.reg = { REG_GP, 13 }};
+static const x86opnd_t R14W = { OPND_REG, 16, .as.reg = { REG_GP, 14 }};
+static const x86opnd_t R15W = { OPND_REG, 16, .as.reg = { REG_GP, 15 }};
 
 // 8-bit GP registers
-static const x86opnd_t AL   = { OPND_REG, 8, .reg = { REG_GP, 0 }};
-static const x86opnd_t CL   = { OPND_REG, 8, .reg = { REG_GP, 1 }};
-static const x86opnd_t DL   = { OPND_REG, 8, .reg = { REG_GP, 2 }};
-static const x86opnd_t BL   = { OPND_REG, 8, .reg = { REG_GP, 3 }};
-static const x86opnd_t SPL  = { OPND_REG, 8, .reg = { REG_GP, 4 }};
-static const x86opnd_t BPL  = { OPND_REG, 8, .reg = { REG_GP, 5 }};
-static const x86opnd_t SIL  = { OPND_REG, 8, .reg = { REG_GP, 6 }};
-static const x86opnd_t DIL  = { OPND_REG, 8, .reg = { REG_GP, 7 }};
-static const x86opnd_t R8B  = { OPND_REG, 8, .reg = { REG_GP, 8 }};
-static const x86opnd_t R9B  = { OPND_REG, 8, .reg = { REG_GP, 9 }};
-static const x86opnd_t R10B = { OPND_REG, 8, .reg = { REG_GP, 10 }};
-static const x86opnd_t R11B = { OPND_REG, 8, .reg = { REG_GP, 11 }};
-static const x86opnd_t R12B = { OPND_REG, 8, .reg = { REG_GP, 12 }};
-static const x86opnd_t R13B = { OPND_REG, 8, .reg = { REG_GP, 13 }};
-static const x86opnd_t R14B = { OPND_REG, 8, .reg = { REG_GP, 14 }};
-static const x86opnd_t R15B = { OPND_REG, 8, .reg = { REG_GP, 15 }};
+static const x86opnd_t AL   = { OPND_REG, 8, .as.reg = { REG_GP, 0 }};
+static const x86opnd_t CL   = { OPND_REG, 8, .as.reg = { REG_GP, 1 }};
+static const x86opnd_t DL   = { OPND_REG, 8, .as.reg = { REG_GP, 2 }};
+static const x86opnd_t BL   = { OPND_REG, 8, .as.reg = { REG_GP, 3 }};
+static const x86opnd_t SPL  = { OPND_REG, 8, .as.reg = { REG_GP, 4 }};
+static const x86opnd_t BPL  = { OPND_REG, 8, .as.reg = { REG_GP, 5 }};
+static const x86opnd_t SIL  = { OPND_REG, 8, .as.reg = { REG_GP, 6 }};
+static const x86opnd_t DIL  = { OPND_REG, 8, .as.reg = { REG_GP, 7 }};
+static const x86opnd_t R8B  = { OPND_REG, 8, .as.reg = { REG_GP, 8 }};
+static const x86opnd_t R9B  = { OPND_REG, 8, .as.reg = { REG_GP, 9 }};
+static const x86opnd_t R10B = { OPND_REG, 8, .as.reg = { REG_GP, 10 }};
+static const x86opnd_t R11B = { OPND_REG, 8, .as.reg = { REG_GP, 11 }};
+static const x86opnd_t R12B = { OPND_REG, 8, .as.reg = { REG_GP, 12 }};
+static const x86opnd_t R13B = { OPND_REG, 8, .as.reg = { REG_GP, 13 }};
+static const x86opnd_t R14B = { OPND_REG, 8, .as.reg = { REG_GP, 14 }};
+static const x86opnd_t R15B = { OPND_REG, 8, .as.reg = { REG_GP, 15 }};
 
 // Memory operand with base register and displacement/offset
 x86opnd_t mem_opnd(size_t num_bits, x86opnd_t base_reg, int32_t disp);
