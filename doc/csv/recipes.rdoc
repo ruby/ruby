@@ -46,16 +46,20 @@ All code snippets on this page assume that the following has been executed:
 
 === Parsing: Source Formats
 
+You can parse \CSV data from a \String, from a \File (via its path), or from an \IO stream.
+
 ==== Parse from \String
+
+You can parse \CSV data from a \String, with or without headers.
 
 ===== Parse from \String with Headers
 
-\Class method CSV.parse can read a source \String all at once,
-and so may have memory resource implications:
+Use class method CSV.parse with option +headers+ to read a source \String all at once
+(may have memory resource implications):
   string = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
   CSV.parse(string, headers: true) # => #<CSV::Table mode:col_or_row row_count:4>
 
-Instance method CSV#each can read a source \String one row at a time:
+Use instance method CSV#each with option +headers+ to read a source \String one row at a time:
   CSV.new(string, headers: true).each do |row|
     p row
   end
@@ -66,12 +70,12 @@ Ouput:
 
 ===== Parse from \String Without Headers
 
-\Class method CSV.parse can read a source \String all at once,
-and so may have memory resource implications:
+Use class method CSV.parse without option +headers+ to read a source \String all at once
+(may have memory resource implications):
   string = "foo,0\nbar,1\nbaz,2\n"
   CSV.parse(string) # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
 
-Instance method CSV#each can read a source \String one row at a time:
+Use instance method CSV#each without option +headers+ to read a source \String one row at a time:
   CSV.new(string).each do |row|
     p row
   end
@@ -82,15 +86,17 @@ Output:
 
 ==== Parse from \File
 
+You can parse \CSV data from a \File, with or without headers.
+
 ===== Parse from \File with Headers
 
-Instance method CSV#read can reada file all at once:
+Use instance method CSV#read with option +headers+ to read a file all at once:
   string = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
   path = 't.csv'
   File.write(path, string)
   CSV.read(path, headers: true) # => #<CSV::Table mode:col_or_row row_count:4>
 
-\Class method CSV.foreach can read one row at a time:
+Use class method CSV.foreach with option +headers+ to read one row at a time:
   CSV.foreach(path, headers: true) do |row|
     p row
   end
@@ -101,13 +107,13 @@ Output:
 
 ===== Parse from \File Without Headers
 
-\Class method CSV.read can read a file all at once:
+Use class method CSV.read without option +headers+ to read a file all at once:
   string = "foo,0\nbar,1\nbaz,2\n"
   path = 't.csv'
   File.write(path, string)
   CSV.read(path) # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
 
-\Class method CSV.foreach can read one row at a time:
+Use class method CSV.foreach without option +headers+ to read one row at a time:
   CSV.foreach(path) do |row|
     p row
   end
@@ -118,9 +124,11 @@ Output:
 
 ==== Parse from \IO Stream
 
+You can parse \CSV data from an \IO stream, with or without headers.
+
 ===== Parse from \IO Stream with Headers
 
-\Class method CSV.parse can read an \IO stream all at once:
+Use class method CSV.parse with option +headers+ to read an \IO stream all at once:
   string = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
   path = 't.csv'
   File.write(path, string)
@@ -128,7 +136,7 @@ Output:
     CSV.parse(file, headers: true)
   end # => #<CSV::Table mode:col_or_row row_count:4>
 
-\Class method CSV.foreach can read one row at a time:
+Use class method CSV.foreach with option +headers+ to read one row at a time:
   File.open(path) do |file|
     CSV.foreach(file, headers: true) do |row|
       p row
@@ -141,7 +149,7 @@ Output:
 
 ===== Parse from \IO Stream Without Headers
 
-\Class method CSV.parse can read an \IO stream all at once:
+Use class method CSV.parse without option +headers+ to read an \IO stream all at once:
   string = "foo,0\nbar,1\nbaz,2\n"
   path = 't.csv'
   File.write(path, string)
@@ -149,7 +157,7 @@ Output:
     CSV.parse(file)
   end # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
 
-\Class method CSV.foreach can read one row at a time:
+Use class method CSV.foreach without option +headers+ to read one row at a time:
   File.open(path) do |file|
     CSV.foreach(file) do |row|
       p row
@@ -162,9 +170,12 @@ Output:
 
 === Parsing: Field Converters
 
+You can use field converters to change parsed Strings into other objects,
+or to otherwise modify \String fields.
+
 ==== Convert Fields to Objects
 
-Use field converters to change parsed Strings into other, more specific, object.
+Use field converters to change parsed Strings into other, more specific, objects.
 
 ==== Convert Fields to Objects Using Built-In Converters
 
@@ -189,6 +200,7 @@ Output:
 
 ==== Convert Fields to Objects Using Custom Converters
 
+You can define custom field converters to convert \String fields into other objects.
 This example defines and uses a custom field converter
 that converts each column-1 value to a \Rational object.
 
@@ -213,6 +225,7 @@ You can also register a custom field converter, then refer to it by name:
 
 ==== Filter Field Strings
 
+You can define custom field converters to modify \String fields.
 This example defines and uses a custom field converter
 that strips whitespace from each field value.
 
@@ -235,11 +248,15 @@ You can also register a custom field converter, then refer to it by name:
 
 === Generating: Output Formats
 
+You can generate \CSV output to a \String, to a \File (via its path), or to an \IO stream.
+
 ==== Generate to \String
+
+You can generate \CSV output to a \String, with or without headers.
 
 ===== Generate to \String with Headers
 
-\Class method CSV.generate can generate to a \String.
+Use class method CSV.generate with option +headers+ to generate to a \String.
 
 This example uses method CSV#<< to append the rows
 that are to be generated:
@@ -252,7 +269,7 @@ that are to be generated:
 
 ===== Generate to \String Without Headers
 
-\Class method CSV.generate can generate to a \String.
+Use class method CSV.generate without option +headers+ to generate to a \String.
 
 This example uses method CSV#<< to append the rows
 that are to be generated:
@@ -265,9 +282,11 @@ that are to be generated:
 
 ==== Generate to \File
 
+You can generate /CSV data to a \File, with or without headers.
+
 ===== Generate to \File with Headers
 
-\Class method CSV.open can generate to a \File.
+Use class method CSV.open with option +headers+ generate to a \File.
 
 This example uses method CSV#<< to append the rows
 that are to be generated:
@@ -281,7 +300,7 @@ that are to be generated:
 
 ===== Generate to \File Without Headers
 
-\Class method CSV.open can generate to a \File.
+Use class method CSV.open without option +headers+ to generate to a \File.
 
 This example uses method CSV#<< to append the rows
 that are to be generated:
@@ -295,9 +314,11 @@ that are to be generated:
 
 ==== Generate to \IO Stream
 
+You can generate \CSV data to an \IO stream, with or without headers.
+
 ==== Generate to \IO Stream with Headers
 
-\\Classs method CSV.new can generate \CSV data to an \IO stream:
+Use class method CSV.new with option +headers+ to generate \CSV data to an \IO stream:
   path = 't.csv'
   File.open(path, 'w') do |file|
     csv = CSV.new(file, headers: ['Name', 'Value'], write_headers: true)
@@ -309,7 +330,7 @@ that are to be generated:
 
 ===== Generate to \IO Stream Without Headers
 
-\Class method CSV.new can generate \CSV data to an \IO stream:
+Use class method CSV.new without option +headers+ to generate \CSV data to an \IO stream:
   path = 't.csv'
   File.open(path, 'w') do |file|
     csv = CSV.new(file)
@@ -321,13 +342,17 @@ that are to be generated:
 
 === Filtering: Source and Output Formats
 
-\Class method CSV.filter provides a Unix-style filter for \CSV data.
-The source \CSV data is processed to form output \CSV data.
+You can use a Unix-style "filter" for \CSV data.
+The filter reads source \CSV data and writes output \CSV data as modified by the filter.
+The input and output \CSV data may be any mixture of \Strings and \IO streams.
 
 ==== Filter \String to \String
 
+You can filter one \String to another, with or without headers.
+
 ===== Filter \String to \String with Headers
 
+Use class method CSV.filter with option +headers+ to filter a \String to another \String:
   in_string = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
   out_string = ''
   CSV.filter(in_string, out_string, headers: true) do |row|
@@ -338,6 +363,7 @@ The source \CSV data is processed to form output \CSV data.
 
 ===== Filter \String to \String Without Headers
 
+Use class method CSV.filter without option +headers+ to filter a \String to another \String:
   in_string = "foo,0\nbar,1\nbaz,2\n"
   out_string = ''
   CSV.filter(in_string, out_string) do |row|
@@ -348,8 +374,11 @@ The source \CSV data is processed to form output \CSV data.
 
 ==== Filter \String to \IO Stream
 
+You can filter a \String to an \IO stream, with or without headers.
+
 ===== Filter \String to \IO Stream with Headers
 
+Use class method CSV.filter with option +headers+ to filter a \String to an \IO stream:
   in_string = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
   path = 't.csv'
   File.open(path, 'w') do |out_io|
@@ -362,6 +391,7 @@ The source \CSV data is processed to form output \CSV data.
 
 ===== Filter \String to \IO Stream Without Headers
 
+Use class method CSV.filter without option +headers+ to filter a \String to an \IO stream:
   in_string = "foo,0\nbar,1\nbaz,2\n"
   path = 't.csv'
   File.open(path, 'w') do |out_io|
@@ -374,8 +404,11 @@ The source \CSV data is processed to form output \CSV data.
 
 ==== Filter \IO Stream to \String
 
+You can filter an \IO stream to a \String, with or without headers.
+
 ===== Filter \IO Stream to \String with Headers
 
+Use class method CSV.filter with option +headers+ to filter an \IO stream to a \String:
   in_string = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
   path = 't.csv'
   File.write(path, in_string)
@@ -390,6 +423,7 @@ The source \CSV data is processed to form output \CSV data.
 
 ===== Filter \IO Stream to \String Without Headers
 
+Use class method CSV.filter without option +headers+ to filter an \IO stream to a \String:
   in_string = "foo,0\nbar,1\nbaz,2\n"
   path = 't.csv'
   File.write(path, in_string)
@@ -404,8 +438,11 @@ The source \CSV data is processed to form output \CSV data.
 
 ==== Filter \IO Stream to \IO Stream
 
+You can filter an \IO stream to another \IO stream, with or without headers.
+
 ===== Filter \IO Stream to \IO Stream with Headers
 
+Use class method CSV.filter with option +headers+ to filter an \IO stream to another \IO stream:
   in_path = 't.csv'
   in_string = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
   File.write(in_path, in_string)
@@ -422,6 +459,7 @@ The source \CSV data is processed to form output \CSV data.
 
 ===== Filter \IO Stream to \IO Stream Without Headers
 
+Use class method CSV.filter without option +headers+ to filter an \IO stream to another \IO stream:
   in_path = 't.csv'
   in_string = "foo,0\nbar,1\nbaz,2\n"
   File.write(in_path, in_string)
