@@ -4,6 +4,8 @@
 #include <assert.h>
 
 #ifndef _WIN32
+// For MAP_ANONYMOUS on GNU/Linux
+#define _GNU_SOURCE
 // For mmapp()
 #include <sys/mman.h>
 #endif
