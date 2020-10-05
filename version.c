@@ -13,6 +13,7 @@
 #include "version.h"
 #include "vm_core.h"
 #include "mjit.h"
+#include "ujit_compile.h"
 #include <stdio.h>
 
 #ifndef EXIT_SUCCESS
@@ -41,7 +42,9 @@ const char ruby_release_date[] = RUBY_RELEASE_DATE;
 const char ruby_platform[] = RUBY_PLATFORM;
 const int ruby_patchlevel = RUBY_PATCHLEVEL;
 const char ruby_description[] = RUBY_DESCRIPTION_WITH("");
+const char ruby_description_with_ujit[] = RUBY_DESCRIPTION_WITH(" +UJIT");
 static const char ruby_description_with_jit[] = RUBY_DESCRIPTION_WITH(" +JIT");
+static const char ruby_description_with_both_jits[] = RUBY_DESCRIPTION_WITH(" +JIT +UJIT");
 const char ruby_copyright[] = RUBY_COPYRIGHT;
 const char ruby_engine[] = "ruby";
 
@@ -102,10 +105,20 @@ Init_ruby_description(void)
     VALUE description;
 
     if (MJIT_OPTS_ON) {
-        description = MKSTR(description_with_jit);
+        if (rb_ujit_enabled_p()) {
+            description = MKSTR(description_with_both_jits);
+        }
+        else {
+            description = MKSTR(description_with_jit);
+        }
     }
     else {
-        description = MKSTR(description);
+        if (rb_ujit_enabled_p()) {
+            description = MKSTR(description_with_ujit);
+        }
+        else {
+            description = MKSTR(description);
+        }
     }
 
     /*
@@ -119,10 +132,20 @@ void
 ruby_show_version(void)
 {
     if (MJIT_OPTS_ON) {
-        PRINT(description_with_jit);
+        if (rb_ujit_enabled_p()) {
+            PRINT(description_with_both_jits);
+        }
+        else {
+            PRINT(description_with_jit);
+        }
     }
     else {
-        PRINT(description);
+        if (rb_ujit_enabled_p()) {
+            PRINT(description_with_ujit);
+        }
+        else {
+            PRINT(description);
+        }
     }
 #ifdef RUBY_LAST_COMMIT_TITLE
     fputs("last_commit=" RUBY_LAST_COMMIT_TITLE, stdout);
