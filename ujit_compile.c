@@ -505,6 +505,9 @@ rb_ujit_enabled_p(void)
 void
 rb_ujit_init(void)
 {
+    if (!ujit_scrape_successful) {
+        return;
+    }
     // Initialize the code blocks
     size_t mem_size = 64 * 1024 * 1024;
     uint8_t* mem_block = alloc_exec_mem(mem_size);

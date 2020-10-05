@@ -176,20 +176,20 @@ module RubyVM::MicroJIT
       else
         raise 'Unkonwn platform. Only Mach-O on macOS and ELF on Linux are supported'
       end
+      [true, comma_separated_hex_string(@pre_call_bytes), comma_separated_hex_string(@post_call_bytes)]
+    rescue => e
+      print_warning("scrape failed: #{e.message}")
+      [false, '', '']
+    end
+
+    def print_warning(text)
+      text = "ujit warning: #{text}"
+      text = "\x1b[1m#{text}\x1b[0m" if STDOUT.tty?
+      STDOUT.puts(text)
     end
 
     def comma_separated_hex_string(nums)
       nums.map{ |byte| '0x'+byte}.join(', ')
-    end
-
-    def pre_call_bytes
-      scrape unless @pre_call_bytes
-      comma_separated_hex_string(@pre_call_bytes)
-    end
-
-    def post_call_bytes
-      scrape unless @post_call_bytes
-      comma_separated_hex_string(@post_call_bytes)
     end
   end
 end

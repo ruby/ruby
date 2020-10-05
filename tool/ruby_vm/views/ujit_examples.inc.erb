@@ -12,5 +12,7 @@
     edit: __FILE__,
 } -%>
 
-static const uint8_t ujit_pre_call_bytes[] = { <%= RubyVM::MicroJIT.pre_call_bytes %> };
-static const uint8_t ujit_post_call_bytes[] = { <%= RubyVM::MicroJIT.post_call_bytes %> };
+% success, pre_call_bytes, post_call_bytes = RubyVM::MicroJIT.scrape
+static const uint8_t ujit_scrape_successful = <%= success %>;
+static const uint8_t ujit_pre_call_bytes[] = { <%= pre_call_bytes %> };
+static const uint8_t ujit_post_call_bytes[] = { <%= post_call_bytes %> };
