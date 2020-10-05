@@ -77,7 +77,7 @@ void print_str(codeblock_t* cb, const char* str)
     cb_write_byte(cb, 0);
 
     // Call the print function
-    mov(cb, RAX, const_ptr_opnd(&print_str_cfun));
+    mov(cb, RAX, const_ptr_opnd((void*)&print_str_cfun));
     call(cb, RAX);
 
     pop_regs(cb);
