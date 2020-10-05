@@ -1359,7 +1359,7 @@ $(MJIT_PRECOMPILED_HEADER): $(MJIT_PRECOMPILED_HEADER_NAME)
 	$(Q) $(MAKE_LINK) $(MJIT_PRECOMPILED_HEADER_NAME:.pch=.pdb) $(arch_hdrdir)/$(MJIT_PRECOMPILED_HEADER_NAME:.pch=.pdb)
 
 INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
-	  vmtc.inc vm.inc mjit_compile.inc
+	  vmtc.inc vm.inc mjit_compile.inc ujit_examples.inc
 
 !if [exit > insns_rules.mk]
 !else if [for %I in ($(INSNS)) do \
