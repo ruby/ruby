@@ -227,10 +227,10 @@ x86opnd_t const_ptr_opnd(void* ptr);
 
 // Struct member operand with an array index
 #define member_opnd_idx(base_reg, struct_type, member_name, idx) mem_opnd( \
-    8 * sizeof(((struct_type*)0)->member_name),     \
+    8 * sizeof(((struct_type*)0)->member_name[0]),     \
     base_reg,                                       \
     (offsetof(struct_type, member_name) +           \
-     sizeof(((struct_type*)0)->member_name) * idx)  \
+     sizeof(((struct_type*)0)->member_name[0]) * idx)  \
 )
 
 // Code block methods
