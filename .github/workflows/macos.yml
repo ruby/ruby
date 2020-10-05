@@ -5,7 +5,7 @@ jobs:
     runs-on: macos-latest
     strategy:
       matrix:
-        test_task: [ "check", "test-bundler-parallel", "test-bundled-gems", "leaked-globals" ]
+        test_task: [ "check", "test-bundler-parallel", "test-bundled-gems" ]
       fail-fast: false
     env:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}

@@ -4,7 +4,7 @@ jobs:
   make:
     strategy:
       matrix:
-        test_task: [ "check", "test-bundler-parallel", "test-bundled-gems", "test-all TESTS=--repeat-count=2", "leaked-globals" ]
+        test_task: [ "check", "test-bundler-parallel", "test-bundled-gems", "test-all TESTS=--repeat-count=2" ]
         os: [ubuntu-20.04, ubuntu-18.04, ubuntu-16.04]
         debug: ["", "-DRUBY_DEBUG"]
         exclude:
