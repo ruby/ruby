@@ -308,13 +308,14 @@ void gen_putnil(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 
 void gen_putobject(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 {
-    // Get the argument
-    VALUE object = ctx_get_arg(ctx, 0);
-    x86opnd_t ptr_imm = const_ptr_opnd((void*)object);
+    // Load the argument from the bytecode sequence.
+    // We need to do this as the argument can chanage due to GC compaction.
+    x86opnd_t pc_imm = const_ptr_opnd((void*)ctx->pc);
+    mov(cb, RAX, pc_imm);
+    mov(cb, RAX, mem_opnd(64, RAX, 8)); // One after the opcode
 
-    // Write constant at SP
+    // Write argument at SP
     x86opnd_t stack_top = ctx_stack_push(ctx, 1);
-    mov(cb, RAX, ptr_imm);
     mov(cb, stack_top, RAX);
 }
 
