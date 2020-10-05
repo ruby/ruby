@@ -48,7 +48,7 @@ void print_int(codeblock_t* cb, x86opnd_t opnd)
         mov(cb, RDI, opnd);
 
     // Call the print function
-    mov(cb, RAX, const_ptr_opnd(&print_int_cfun));
+    mov(cb, RAX, const_ptr_opnd((void*)&print_int_cfun));
     call(cb, RAX);
 
     pop_regs(cb);
