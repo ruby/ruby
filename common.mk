@@ -15465,6 +15465,7 @@ version.$(OBJEXT): {$(VPATH)}st.h
 version.$(OBJEXT): {$(VPATH)}subst.h
 version.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 version.$(OBJEXT): {$(VPATH)}thread_native.h
+version.$(OBJEXT): {$(VPATH)}ujit_compile.h
 version.$(OBJEXT): {$(VPATH)}version.c
 version.$(OBJEXT): {$(VPATH)}vm_core.h
 version.$(OBJEXT): {$(VPATH)}vm_opts.h
