@@ -3,8 +3,10 @@
 #include <stdarg.h>
 #include <assert.h>
 
+#ifndef _WIN32
 // For mmapp()
 #include <sys/mman.h>
+#endif
 
 #include "ujit_asm.h"
 
@@ -82,6 +84,7 @@ x86opnd_t const_ptr_opnd(void* ptr)
 // Allocate a block of executable memory
 uint8_t* alloc_exec_mem(size_t mem_size)
 {
+#ifndef _WIN32
     // Map the memory as executable
     uint8_t* mem_block = (uint8_t*)mmap(
         &alloc_exec_mem,
@@ -100,6 +103,9 @@ uint8_t* alloc_exec_mem(size_t mem_size)
     }
 
     return mem_block;
+#else
+    return NULL;
+#endif
 }
 
 // Initialize a code block object

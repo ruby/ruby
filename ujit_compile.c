@@ -13,6 +13,12 @@
 // eg ujit_hook.h
 #include "ujit_examples.inc"
 
+#ifdef _WIN32
+#define PLATFORM_SUPPORTED_P 0
+#else
+#define PLATFORM_SUPPORTED_P 1
+#endif
+
 // Hash table of encoded instructions
 extern st_table *rb_encoded_insn_data;
 
@@ -505,7 +511,7 @@ rb_ujit_enabled_p(void)
 void
 rb_ujit_init(void)
 {
-    if (!ujit_scrape_successful) {
+    if (!ujit_scrape_successful && PLATFORM_SUPPORTED_P) {
         return;
     }
     // Initialize the code blocks

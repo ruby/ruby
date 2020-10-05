@@ -41,7 +41,6 @@
 #include "builtin.h"
 #include "insns.inc"
 #include "insns_info.inc"
-#include <sys/mman.h>
 
 VALUE rb_cISeq;
 static VALUE iseqw_new(const rb_iseq_t *iseq);
