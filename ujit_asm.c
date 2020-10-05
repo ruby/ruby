@@ -90,7 +90,7 @@ uint8_t* alloc_exec_mem(size_t mem_size)
 #ifndef _WIN32
     // Map the memory as executable
     uint8_t* mem_block = (uint8_t*)mmap(
-        &alloc_exec_mem,
+        (void*)&alloc_exec_mem,
         mem_size,
         PROT_READ | PROT_WRITE | PROT_EXEC,
         MAP_PRIVATE | MAP_ANONYMOUS,
