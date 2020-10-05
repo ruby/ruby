@@ -25,16 +25,19 @@
 <%= render 'insn_entry', locals: { insn: insn } -%>
 % end
 %
-% RubyVM::TraceInstructions.to_a.each do |insn|
-<%= render 'trace_instruction', locals: { insn: insn } -%>
-% end
 % RubyVM::MicroJIT::ExampleInstructions.to_a.each do |insn|
 INSN_ENTRY(<%= insn.name %>)
 {
     START_OF_ORIGINAL_INSN(<%= insn.name %>);
+#if USE_MACHINE_REGS
     // assumes USE_MACHINE_REGS, aka reg_pc setup,
     // aka #define SET_PC(x) (reg_cfp->pc = reg_pc = (x))
     reg_pc = rb_ujit_empty_func(GET_CFP());
+#endif
     END_INSN(<%= insn.name %>);
 }
+% end
+%
+% RubyVM::TraceInstructions.to_a.each do |insn|
+<%= render 'trace_instruction', locals: { insn: insn } -%>
 % end

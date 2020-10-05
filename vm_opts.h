@@ -34,7 +34,7 @@
  * 2: call (function call for each insn dispatch)
  */
 #ifndef OPT_THREADED_CODE
-#define OPT_THREADED_CODE 0
+#define OPT_THREADED_CODE 2
 #endif
 
 #define OPT_DIRECT_THREADED_CODE (OPT_THREADED_CODE == 0)
