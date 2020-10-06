@@ -333,4 +333,10 @@ class TC_OpenStruct < Test::Unit::TestCase
     assert_equal true, os1.eql?(os2)
     assert_equal 300.42, os2.pension
   end
+
+  def test_marshal
+    o = OpenStruct.new(name: "John Smith", age: 70, pension: 300.42)
+    o2 = Marshal.load(Marshal.dump(o))
+    assert_equal o, o2
+  end
 end

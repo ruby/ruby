@@ -202,10 +202,7 @@ class OpenStruct
   #
   # Provides marshalling support for use by the Marshal library.
   #
-  def marshal_load(x) # :nodoc:
-    x.each_key{|key| new_ostruct_member!(key)}
-    @table = x
-  end
+  alias_method :marshal_load, :update_to_values! # :nodoc:
 
   #
   # Used internally to defined properties on the
