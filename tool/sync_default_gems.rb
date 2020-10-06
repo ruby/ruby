@@ -78,6 +78,7 @@ REPOSITORIES = {
   "resolv-replace": "ruby/resolv-replace",
   time: "ruby/time",
   pp: "ruby/pp",
+  prettyprint: "ruby/prettyprint",
 }
 
 def sync_default_gems(gem)

@@ -44,8 +44,6 @@ Zachary Scott (zzak)
   _unmaintained_
 [lib/mkmf.rb]
   _unmaintained_
-[lib/prettyprint.rb]
-  Tanaka Akira (akr)
 [lib/rubygems.rb, lib/rubygems/*]
   Eric Hodel (drbrain), Hiroshi SHIBATA (hsbt)
   https://github.com/rubygems/rubygems
@@ -196,6 +194,9 @@ Zachary Scott (zzak)
 [lib/pp.rb]
   Tanaka Akira (akr)
   https://github.com/ruby/pp
+[lib/prettyprint.rb]
+  Tanaka Akira (akr)
+  https://github.com/ruby/prettyprint
 [lib/prime.rb]
   Yuki Sonoda (yugui)
   https://github.com/ruby/prime
