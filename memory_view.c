@@ -35,17 +35,17 @@ rb_memory_view_register(VALUE klass, const rb_memory_view_entry_t *entry) {
     VALUE entry_obj = rb_ivar_lookup(klass, id_memory_view, Qnil);
     if (! NIL_P(entry_obj)) {
         rb_warning("Duplicated registration of memory view to %"PRIsVALUE, klass);
-        return 0;
+        return false;
     }
     else {
         entry_obj = TypedData_Wrap_Struct(0, &memory_view_entry_data_type, (void *)entry);
         rb_ivar_set(klass, id_memory_view, entry_obj);
-        return 1;
+        return true;
     }
 }
 
 /* Examine whether the given memory view has row-major order strides. */
-int
+bool
 rb_memory_view_is_row_major_contiguous(const rb_memory_view_t *view)
 {
     const ssize_t ndim = view->ndim;
@@ -54,14 +54,14 @@ rb_memory_view_is_row_major_contiguous(const rb_memory_view_t *view)
     ssize_t n = view->item_size;
     ssize_t i;
     for (i = ndim - 1; i >= 0; --i) {
-        if (strides[i] != n) return 0;
+        if (strides[i] != n) return false;
         n *= shape[i];
     }
-    return 1;
+    return true;
 }
 
 /* Examine whether the given memory view has column-major order strides. */
-int
+bool
 rb_memory_view_is_column_major_contiguous(const rb_memory_view_t *view)
 {
     const ssize_t ndim = view->ndim;
@@ -70,15 +70,15 @@ rb_memory_view_is_column_major_contiguous(const rb_memory_view_t *view)
     ssize_t n = view->item_size;
     ssize_t i;
     for (i = 0; i < ndim; ++i) {
-        if (strides[i] != n) return 0;
+        if (strides[i] != n) return false;
         n *= shape[i];
     }
-    return 1;
+    return true;
 }
 
 /* Initialize strides array to represent the specified contiguous array. */
 void
-rb_memory_view_fill_contiguous_strides(const ssize_t ndim, const ssize_t item_size, const ssize_t *const shape, const int row_major_p, ssize_t *const strides)
+rb_memory_view_fill_contiguous_strides(const ssize_t ndim, const ssize_t item_size, const ssize_t *const shape, const bool row_major_p, ssize_t *const strides)
 {
     ssize_t i, n = item_size;
     if (row_major_p) {
@@ -97,7 +97,7 @@ rb_memory_view_fill_contiguous_strides(const ssize_t ndim, const ssize_t item_si
 
 /* Initialize view to expose a simple byte array */
 int
-rb_memory_view_init_as_byte_array(rb_memory_view_t *view, VALUE obj, void *data, const ssize_t len, const int readonly)
+rb_memory_view_init_as_byte_array(rb_memory_view_t *view, VALUE obj, void *data, const ssize_t len, const bool readonly)
 {
     view->obj = obj;
     view->data = data;
