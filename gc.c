@@ -7522,7 +7522,6 @@ gc_mark_from(rb_objspace_t *objspace, VALUE obj, VALUE parent)
 {
     gc_mark_set_parent(objspace, parent);
     rgengc_check_relation(objspace, obj);
-    gc_pin(objspace, obj);
     if (gc_mark_set(objspace, obj) == FALSE) return;
     gc_aging(objspace, obj);
     gc_grey(objspace, obj);
@@ -7548,9 +7547,6 @@ gc_writebarrier_incremental(VALUE a, VALUE b, rb_objspace_t *objspace)
 		RVALUE_AGE_SET_OLD(objspace, b);
 
 		if (RVALUE_BLACK_P(b)) {
-                    if (UNLIKELY(objspace->flags.during_compacting)) {
-                        MARK_IN_BITMAP(GET_HEAP_PINNED_BITS(b), b);
-                    }
 		    gc_grey(objspace, b);
 		}
 	    }
@@ -7559,6 +7555,10 @@ gc_writebarrier_incremental(VALUE a, VALUE b, rb_objspace_t *objspace)
 		gc_remember_unprotected(objspace, b);
 	    }
 	}
+
+        if (UNLIKELY(objspace->flags.during_compacting)) {
+            MARK_IN_BITMAP(GET_HEAP_PINNED_BITS(b), b);
+        }
     }
 }
 #else
