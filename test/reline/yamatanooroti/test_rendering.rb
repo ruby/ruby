@@ -117,11 +117,9 @@ begin
     end
 
     def test_prompt
-      File.open(@inputrc_file, 'w') do |f|
-        f.write <<~'LINES'
-          "abc": "123"
-        LINES
-      end
+      write_inputrc <<~'LINES'
+        "abc": "123"
+      LINES
       start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl})
       sleep 0.5
       write("abc\n")
@@ -135,11 +133,9 @@ begin
     end
 
     def test_mode_icon_emacs
-      File.open(@inputrc_file, 'w') do |f|
-        f.write <<~LINES
-          set show-mode-in-prompt on
-        LINES
-      end
+      write_inputrc <<~LINES
+        set show-mode-in-prompt on
+      LINES
       start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl})
       sleep 0.5
       close
@@ -150,12 +146,10 @@ begin
     end
 
     def test_mode_icon_vi
-      File.open(@inputrc_file, 'w') do |f|
-        f.write <<~LINES
-          set editing-mode vi
-          set show-mode-in-prompt on
-        LINES
-      end
+      write_inputrc <<~LINES
+        set editing-mode vi
+        set show-mode-in-prompt on
+      LINES
       start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl})
       sleep 0.5
       write(":a\n\C-[k")
@@ -169,12 +163,10 @@ begin
     end
 
     def test_original_mode_icon_emacs
-      File.open(@inputrc_file, 'w') do |f|
-        f.write <<~LINES
-          set show-mode-in-prompt on
-          set emacs-mode-string [emacs]
-        LINES
-      end
+      write_inputrc <<~LINES
+        set show-mode-in-prompt on
+        set emacs-mode-string [emacs]
+      LINES
       start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl})
       close
       assert_screen(<<~EOC)
@@ -184,12 +176,10 @@ begin
     end
 
     def test_original_mode_icon_with_quote
-      File.open(@inputrc_file, 'w') do |f|
-        f.write <<~LINES
-          set show-mode-in-prompt on
-          set emacs-mode-string "[emacs]"
-        LINES
-      end
+      write_inputrc <<~LINES
+        set show-mode-in-prompt on
+        set emacs-mode-string "[emacs]"
+      LINES
       start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl})
       close
       assert_screen(<<~EOC)
@@ -199,14 +189,12 @@ begin
     end
 
     def test_original_mode_icon_vi
-      File.open(@inputrc_file, 'w') do |f|
-        f.write <<~LINES
-          set editing-mode vi
-          set show-mode-in-prompt on
-          set vi-ins-mode-string "{InS}"
-          set vi-cmd-mode-string "{CmD}"
-        LINES
-      end
+      write_inputrc <<~LINES
+        set editing-mode vi
+        set show-mode-in-prompt on
+        set vi-ins-mode-string "{InS}"
+        set vi-cmd-mode-string "{CmD}"
+      LINES
       start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl})
       write(":a\n\C-[k")
       close
@@ -216,6 +204,12 @@ begin
         => :a
         {CmD}prompt> :a
       EOC
+    end
+
+    private def write_inputrc(content)
+      File.open(@inputrc_file, 'w') do |f|
+        f.write content
+      end
     end
   end
 rescue LoadError, NameError
