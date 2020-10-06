@@ -29,7 +29,7 @@ jobs:
         working-directory: src
       - name: Set ENV
         run: |
-          echo '::set-env name=JOBS::'-j$((1 + $(sysctl -n hw.activecpu)))
+          echo "JOBS=-j$((1 + $(sysctl -n hw.activecpu)))" >> $GITHUB_ENV
       - run: autoconf
         working-directory: src
       - run: mkdir build

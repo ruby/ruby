@@ -161,8 +161,8 @@ jobs:
     steps:
       - name: setenv
         run: |
-          echo ::set-env name=${{ matrix.entry.key }}::${{ matrix.entry.value }}
-          echo ::set-env name=make::make -sj$((1 + $(nproc --all)))
+          echo "${{ matrix.entry.key }}=${{ matrix.entry.value }}" >> $GITHUB_ENV
+          echo "make=make -sj$((1 + $(nproc --all)))" >> $GITHUB_ENV
       - run: mkdir build
       - uses: actions/checkout@v2
         with:

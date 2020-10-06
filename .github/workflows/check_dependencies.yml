@@ -27,7 +27,7 @@ jobs:
           sudo bash -c 'IFS=:; for d in '"$PATH"'; do chmod -v go-w $d; done' || :
       - name: Set ENV
         run: |
-          echo '::set-env name=JOBS::'-j$((1 + $(nproc --all)))
+          echo "JOBS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
       - run: autoconf
         working-directory: src
       - name: Run configure
