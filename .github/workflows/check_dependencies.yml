@@ -20,8 +20,6 @@ jobs:
       - uses: actions/checkout@v2
         with:
           path: src
-      - run: ./src/tool/actions-commit-info.sh
-        id: commit_info
       - name: Fixed world writable dirs
         run: |
           chmod -v go-w $HOME $HOME/.config

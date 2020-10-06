@@ -21,8 +21,6 @@ jobs:
       - uses: actions/checkout@v2
         with:
           path: src
-      - run: ./src/tool/actions-commit-info.sh
-        id: commit_info
       - name: Install libraries
         run: |
           export WAITS='5 60'
