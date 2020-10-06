@@ -25,6 +25,10 @@
 #include "ruby/st.h"
 #include "symbol.h"
 
+#undef rb_funcall
+
+#include "ruby/ruby.h"
+
 /*
  *  call-seq:
  *    ObjectSpace.memsize_of(obj) -> Integer
@@ -707,7 +711,7 @@ iow_internal_object_id(VALUE self)
 }
 
 struct rof_data {
-    st_table *refs;
+    VALUE refs;
     VALUE internals;
 };
 
@@ -723,7 +727,7 @@ reachable_object_from_i(VALUE obj, void *data_ptr)
 	    val = iow_newobj(obj);
 	    rb_ary_push(data->internals, val);
 	}
-	st_insert(data->refs, key, val);
+	rb_hash_aset(data->refs, key, val);
     }
 }
 
@@ -781,20 +785,18 @@ static VALUE
 reachable_objects_from(VALUE self, VALUE obj)
 {
     if (rb_objspace_markable_object_p(obj)) {
-	VALUE ret = rb_ary_new();
 	struct rof_data data;
 
 	if (rb_typeddata_is_kind_of(obj, &iow_data_type)) {
 	    obj = (VALUE)DATA_PTR(obj);
 	}
 
-	data.refs = st_init_numtable();
+	data.refs = rb_ident_hash_new();
 	data.internals = rb_ary_new();
 
 	rb_objspace_reachable_objects_from(obj, reachable_object_from_i, &data);
 
-	st_foreach(data.refs, collect_values, (st_data_t)ret);
-	return ret;
+        return rb_funcall(data.refs, rb_intern("values"), 0);
     }
     else {
 	return Qnil;
