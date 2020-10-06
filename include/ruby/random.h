@@ -12,14 +12,7 @@
 
 #include "ruby/ruby.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
-RUBY_SYMBOL_EXPORT_BEGIN
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 typedef struct {
     VALUE seed;
@@ -76,13 +69,5 @@ double rb_int_pair_to_real(uint32_t a, uint32_t b, int excl);
 void rb_rand_bytes_int32(rb_random_get_int32_func *, rb_random_t *, void *, size_t);
 RUBY_EXTERN const rb_data_type_t rb_random_data_type;
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
-
+RBIMPL_SYMBOL_EXPORT_END()
 #endif /* RUBY_RANDOM_H */
