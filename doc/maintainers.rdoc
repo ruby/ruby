@@ -44,8 +44,6 @@ Zachary Scott (zzak)
   _unmaintained_
 [lib/mkmf.rb]
   _unmaintained_
-[lib/pp.rb]
-  Tanaka Akira (akr)
 [lib/prettyprint.rb]
   Tanaka Akira (akr)
 [lib/rubygems.rb, lib/rubygems/*]
@@ -195,6 +193,9 @@ Zachary Scott (zzak)
   Marc-Andre Lafortune (marcandre)
   https://github.com/ruby/ostruct
   https://rubygems.org/gems/ostruct
+[lib/pp.rb]
+  Tanaka Akira (akr)
+  https://github.com/ruby/pp
 [lib/prime.rb]
   Yuki Sonoda (yugui)
   https://github.com/ruby/prime

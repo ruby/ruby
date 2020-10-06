@@ -11,7 +11,6 @@ description.
 DEBUGGER__:: Debugging functionality for Ruby
 DRb:: Distributed object system for Ruby
 MakeMakefile:: Module used to generate a Makefile for C extensions
-PP:: Provides a PrettyPrinter for Ruby objects
 PrettyPrinter:: Implements a pretty printing algorithm for readable structure
 RbConfig:: Information of your configure and build of Ruby
 Gem:: Package management framework for Ruby
@@ -62,6 +61,7 @@ Observable:: Provides a mechanism for publish/subscribe pattern in Ruby
 Open3:: Provides access to stdin, stdout and stderr when running other programs
 OpenStruct:: Class to build custom data structures, similar to a Hash
 OpenURI:: An easy-to-use wrapper for Net::HTTP, Net::HTTPS and Net::FTP
+PP:: Provides a PrettyPrinter for Ruby objects
 Prime:: Prime numbers and factorization library
 PStore:: Implements a file based persistence mechanism based on a Hash
 Racc:: A LALR(1) parser generator written in Ruby.

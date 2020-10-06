@@ -77,6 +77,7 @@ REPOSITORIES = {
   resolv: "ruby/resolv",
   "resolv-replace": "ruby/resolv-replace",
   time: "ruby/time",
+  pp: "ruby/pp",
 }
 
 def sync_default_gems(gem)
