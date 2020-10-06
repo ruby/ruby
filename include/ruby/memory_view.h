@@ -118,10 +118,6 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
 /* memory_view.c */
 bool rb_memory_view_register(VALUE klass, const rb_memory_view_entry_t *entry);
 
-#define rb_memory_view_is_contiguous(view) ( \
-    rb_memory_view_is_row_major_contiguous(view) \
-    || rb_memory_view_is_column_major_contiguous(view))
-
 bool rb_memory_view_is_row_major_contiguous(const rb_memory_view_t *view);
 bool rb_memory_view_is_column_major_contiguous(const rb_memory_view_t *view);
 void rb_memory_view_fill_contiguous_strides(const ssize_t ndim, const ssize_t item_size, const ssize_t *const shape, const bool row_major_p, ssize_t *const strides);
@@ -137,5 +133,19 @@ int rb_memory_view_get(VALUE obj, rb_memory_view_t* memory_view, int flags);
 int rb_memory_view_release(rb_memory_view_t* memory_view);
 
 RBIMPL_SYMBOL_EXPORT_END()
+
+static inline bool
+rb_memory_view_is_contiguous(const rb_memory_view_t *view)
+{
+    if (rb_memory_view_is_row_major_contiguous(view)) {
+        return true;
+    }
+    else if (rb_memory_view_is_column_major_contiguous(view)) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
 
 #endif /* RUBY_BUFFER_H */
