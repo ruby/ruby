@@ -118,9 +118,13 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
 /* memory_view.c */
 bool rb_memory_view_register(VALUE klass, const rb_memory_view_entry_t *entry);
 
+RBIMPL_ATTR_PURE()
 bool rb_memory_view_is_row_major_contiguous(const rb_memory_view_t *view);
+RBIMPL_ATTR_PURE()
 bool rb_memory_view_is_column_major_contiguous(const rb_memory_view_t *view);
+RBIMPL_ATTR_NOALIAS()
 void rb_memory_view_fill_contiguous_strides(const ssize_t ndim, const ssize_t item_size, const ssize_t *const shape, const bool row_major_p, ssize_t *const strides);
+RBIMPL_ATTR_NOALIAS()
 int rb_memory_view_init_as_byte_array(rb_memory_view_t *view, VALUE obj, void *data, const ssize_t len, const bool readonly);
 ssize_t rb_memory_view_parse_item_format(const char *format,
                                          rb_memory_view_item_component_t **members,
@@ -134,6 +138,7 @@ int rb_memory_view_release(rb_memory_view_t* memory_view);
 
 RBIMPL_SYMBOL_EXPORT_END()
 
+RBIMPL_ATTR_PURE()
 static inline bool
 rb_memory_view_is_contiguous(const rb_memory_view_t *view)
 {
