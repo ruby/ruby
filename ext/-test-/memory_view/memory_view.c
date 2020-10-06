@@ -2,8 +2,7 @@
 #include "ruby/memory_view.h"
 
 #define STRUCT_ALIGNOF(T, result) do { \
-    struct S { char _; T t; }; \
-    (result) = (int)offsetof(struct S, t); \
+    (result) = RUBY_ALIGNOF(T); \
 } while(0)
 
 static ID id_str;
