@@ -31,9 +31,6 @@ typedef struct {
     rb_random_get_real_func *get_real;
 } rb_random_interface_t;
 
-#define rb_rand_if(obj) \
-    ((const rb_random_interface_t *)RTYPEDDATA_TYPE(obj)->data)
-
 #define RB_RANDOM_INTERFACE_DECLARE(prefix) \
     static void prefix##_init(rb_random_t *, const uint32_t *, size_t); \
     static unsigned int prefix##_get_int32(rb_random_t *); \
@@ -70,4 +67,16 @@ void rb_rand_bytes_int32(rb_random_get_int32_func *, rb_random_t *, void *, size
 RUBY_EXTERN const rb_data_type_t rb_random_data_type;
 
 RBIMPL_SYMBOL_EXPORT_END()
+
+RBIMPL_ATTR_PURE_UNLESS_DEBUG()
+/* :TODO: can this function be __attribute__((returns_nonnull)) or not? */
+static inline const rb_random_interface_t *
+rb_rand_if(VALUE obj)
+{
+    RBIMPL_ASSERT_OR_ASSUME(RTYPEDDATA_P(obj));
+    const struct rb_data_type_struct *t = RTYPEDDATA_TYPE(obj);
+    const void *ret = t->data;
+    return RBIMPL_CAST((const rb_random_interface_t *)ret);
+}
+
 #endif /* RUBY_RANDOM_H */
