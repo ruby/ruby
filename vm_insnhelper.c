@@ -3297,50 +3297,53 @@ vm_super_outside(void)
 static void
 vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *cd, VALUE recv)
 {
-    VALUE current_defined_class, klass;
+    VALUE klass;
     const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(reg_cfp);
 
-    if (!me) {
-	vm_super_outside();
-    }
+    ID mid = vm_ci_mid(cd->ci);
 
-    current_defined_class = me->defined_class;
+    if (!mid) {
+        VALUE current_defined_class;
 
-    if (!NIL_P(RCLASS_REFINED_CLASS(current_defined_class))) {
-	current_defined_class = RCLASS_REFINED_CLASS(current_defined_class);
-    }
-
-    if (BUILTIN_TYPE(current_defined_class) != T_MODULE &&
-	!FL_TEST_RAW(current_defined_class, RMODULE_INCLUDED_INTO_REFINEMENT) &&
-        reg_cfp->iseq != method_entry_iseqptr(me) &&
-        !rb_obj_is_kind_of(recv, current_defined_class)) {
-	VALUE m = RB_TYPE_P(current_defined_class, T_ICLASS) ?
-            RCLASS_INCLUDER(current_defined_class) : current_defined_class;
-
-        if (m) { /* not bound UnboundMethod */
-            rb_raise(rb_eTypeError,
-                     "self has wrong type to call super in this context: "
-                     "%"PRIsVALUE" (expected %"PRIsVALUE")",
-                     rb_obj_class(recv), m);
+        if (!me) {
+            vm_super_outside();
         }
+
+        current_defined_class = me->defined_class;
+
+        if (!NIL_P(RCLASS_REFINED_CLASS(current_defined_class))) {
+            current_defined_class = RCLASS_REFINED_CLASS(current_defined_class);
+        }
+
+        if (BUILTIN_TYPE(current_defined_class) != T_MODULE &&
+                !FL_TEST_RAW(current_defined_class, RMODULE_INCLUDED_INTO_REFINEMENT) &&
+                reg_cfp->iseq != method_entry_iseqptr(me) &&
+                !rb_obj_is_kind_of(recv, current_defined_class)) {
+            VALUE m = RB_TYPE_P(current_defined_class, T_ICLASS) ?
+                RCLASS_INCLUDER(current_defined_class) : current_defined_class;
+
+            if (m) { /* not bound UnboundMethod */
+                rb_raise(rb_eTypeError,
+                        "self has wrong type to call super in this context: "
+                        "%"PRIsVALUE" (expected %"PRIsVALUE")",
+                        rb_obj_class(recv), m);
+            }
+        }
+
+        if (me->def->type == VM_METHOD_TYPE_BMETHOD && (vm_ci_flag(cd->ci) & VM_CALL_ZSUPER)) {
+            rb_raise(rb_eRuntimeError,
+                    "implicit argument passing of super from method defined"
+                    " by define_method() is not supported."
+                    " Specify all arguments explicitly.");
+        }
+
+        mid = me->def->original_id;
+        cd->ci = vm_ci_new_runtime(mid,
+                                   vm_ci_flag(cd->ci),
+                                   vm_ci_argc(cd->ci),
+                                   vm_ci_kwarg(cd->ci));
+        RB_OBJ_WRITTEN(reg_cfp->iseq, Qundef, cd->ci);
     }
-
-    if (me->def->type == VM_METHOD_TYPE_BMETHOD && (vm_ci_flag(cd->ci) & VM_CALL_ZSUPER)) {
-	rb_raise(rb_eRuntimeError,
-		 "implicit argument passing of super from method defined"
-		 " by define_method() is not supported."
-		 " Specify all arguments explicitly.");
-    }
-
-    ID mid = me->def->original_id;
-
-    // update iseq. really? (TODO)
-    cd->ci = vm_ci_new_runtime(mid,
-                               vm_ci_flag(cd->ci),
-                               vm_ci_argc(cd->ci),
-                               vm_ci_kwarg(cd->ci));
-
-    RB_OBJ_WRITTEN(reg_cfp->iseq, Qundef, cd->ci);
 
     klass = vm_search_normal_superclass(me->defined_class);
 
