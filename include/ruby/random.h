@@ -52,13 +52,13 @@ typedef struct {
 #if defined _WIN32 && !defined __CYGWIN__
 typedef rb_data_type_t rb_random_data_type_t;
 # define RB_RANDOM_PARENT 0
-# define RB_RANDOM_DATA_INIT_PARENT(random_data) \
-    (random_data.parent = &rb_random_data_type)
 #else
 typedef const rb_data_type_t rb_random_data_type_t;
 # define RB_RANDOM_PARENT &rb_random_data_type
-# define RB_RANDOM_DATA_INIT_PARENT(random_data) ((void)0)
 #endif
+
+#define RB_RANDOM_DATA_INIT_PARENT(random_data) \
+    rbimpl_random_data_init_parent(&random_data)
 
 void rb_random_mark(void *ptr);
 void rb_random_base_init(rb_random_t *rnd);
@@ -77,6 +77,15 @@ rb_rand_if(VALUE obj)
     const struct rb_data_type_struct *t = RTYPEDDATA_TYPE(obj);
     const void *ret = t->data;
     return RBIMPL_CAST((const rb_random_interface_t *)ret);
+}
+
+RBIMPL_ATTR_NOALIAS()
+static inline void
+rbimpl_random_data_init_parent(rb_random_data_type_t *random_data)
+{
+#if defined _WIN32 && !defined __CYGWIN__
+    random_data->parent = &rb_random_data_type;
+#endif
 }
 
 #endif /* RUBY_RANDOM_H */
