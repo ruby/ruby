@@ -62,6 +62,7 @@
 #define TRANSIENT_HEAP_TOTAL_SIZE  (1024 * 1024 *   32) /* 32 MB */
 #define TRANSIENT_HEAP_ALLOC_MAX   (1024 *    2       ) /* 2 KB */
 #define TRANSIENT_HEAP_BLOCK_NUM   (TRANSIENT_HEAP_TOTAL_SIZE / TRANSIENT_HEAP_BLOCK_SIZE)
+#define TRANSIENT_HEAP_USABLE_SIZE TRANSIENT_HEAP_BLOCK_SIZE - sizeof(struct transient_heap_block_header)
 
 #define TRANSIENT_HEAP_ALLOC_MAGIC 0xfeab
 #define TRANSIENT_HEAP_ALLOC_ALIGN RUBY_ALIGNOF(void *)
@@ -77,13 +78,12 @@ enum transient_heap_status {
 
 struct transient_heap_block {
     struct transient_heap_block_header {
-        int16_t size; /* sizeof(block) = TRANSIENT_HEAP_BLOCK_SIZE - sizeof(struct transient_heap_block_header) */
         int16_t index;
         int16_t last_marked_index;
         int16_t objects;
         struct transient_heap_block *next_block;
     } info;
-    char buff[TRANSIENT_HEAP_BLOCK_SIZE - sizeof(struct transient_heap_block_header)];
+    char buff[TRANSIENT_HEAP_USABLE_SIZE];
 };
 
 struct transient_heap {
@@ -240,7 +240,6 @@ static void
 reset_block(struct transient_heap_block *block)
 {
     __msan_allocated_memory(block, sizeof block);
-    block->info.size = TRANSIENT_HEAP_BLOCK_SIZE - sizeof(struct transient_heap_block_header);
     block->info.index = 0;
     block->info.objects = 0;
     block->info.last_marked_index = TRANSIENT_HEAP_ALLOC_MARKING_LAST;
@@ -345,9 +344,9 @@ transient_heap_allocatable_header(struct transient_heap* theap, size_t size)
     struct transient_heap_block *block = theap->using_blocks;
 
     while (block) {
-        TH_ASSERT(block->info.size >= block->info.index);
+        TH_ASSERT(block->info.index <= TRANSIENT_HEAP_USABLE_SIZE);
 
-        if (block->info.size - block->info.index >= (int32_t)size) {
+        if (TRANSIENT_HEAP_USABLE_SIZE - block->info.index >= size) {
             struct transient_alloc_header *header = (void *)&block->buff[block->info.index];
             block->info.index += size;
             block->info.objects++;
@@ -470,7 +469,7 @@ blocks_alloc_header_to_block(struct transient_heap *theap, struct transient_heap
     struct transient_heap_block *block = blocks;
 
     while (block) {
-        if (block->buff <= (char *)header && (char *)header < block->buff + block->info.size) {
+        if (block->buff <= (char *)header && (char *)header < block->buff + TRANSIENT_HEAP_USABLE_SIZE) {
             return block;
         }
         block = block->info.next_block;
