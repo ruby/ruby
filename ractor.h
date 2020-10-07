@@ -25,6 +25,7 @@ struct rb_ractor_basket {
 
 struct rb_ractor_queue {
     struct rb_ractor_basket *baskets;
+    int start;
     int cnt;
     int size;
 };
