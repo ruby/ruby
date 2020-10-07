@@ -8334,6 +8334,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	debugp_param("lit", node->nd_lit);
 	if (!popped) {
 	    ADD_INSN1(ret, line, putobject, node->nd_lit);
+            RB_OBJ_WRITTEN(iseq, Qundef, node->nd_lit);
 	}
 	break;
       }
