@@ -26,6 +26,7 @@ class Scheduler
     @ready = []
 
     @urgent = IO.pipe
+    @scheduler_fiber = nil
   end
 
   attr :readable
@@ -47,7 +48,24 @@ class Scheduler
   end
 
   def run
-    while @readable.any? or @writable.any? or @waiting.any? or @blocking.positive?
+    @scheduler_fiber = Fiber.current
+    @urgent = IO.pipe
+
+    while @readable.any? or @writable.any? or @waiting.any? or @blocking.positive? or @ready.any?
+      if @ready.any?
+        ready = nil
+
+        @lock.synchronize do
+          ready, @ready = @ready, []
+        end
+
+        ready.each do |fiber|
+          fiber.transfer
+        end
+
+        next
+      end
+
       # Can only handle file descriptors up to 1024...
       readable, writable = IO.select(@readable.keys + [@urgent.first], @writable.keys, [], next_timeout)
 
@@ -56,7 +74,7 @@ class Scheduler
 
       readable&.each do |io|
         if fiber = @readable.delete(io)
-          fiber.resume
+          fiber.transfer
         elsif io == @urgent.first
           @urgent.first.read_nonblock(1024)
         end
@@ -64,7 +82,7 @@ class Scheduler
 
       writable&.each do |io|
         if fiber = @writable.delete(io)
-          fiber.resume
+          fiber.transfer
         end
       end
 
@@ -74,7 +92,7 @@ class Scheduler
 
         waiting.each do |fiber, timeout|
           if timeout <= time
-            fiber.resume
+            fiber.transfer
           else
             @waiting[fiber] = timeout
           end
@@ -89,10 +107,12 @@ class Scheduler
         end
 
         ready.each do |fiber|
-          fiber.resume
+          fiber.transfer
         end
       end
     end
+  ensure
+    @scheduler_fiber = nil
   end
 
   def close
@@ -126,7 +146,7 @@ class Scheduler
       @writable[io] = Fiber.current
     end
 
-    Fiber.yield
+    yield_back
 
     return true
   end
@@ -145,7 +165,7 @@ class Scheduler
     if timeout
       @waiting[Fiber.current] = current_time + timeout
       begin
-        Fiber.yield
+        yield_back
       ensure
         # Remove from @waiting in the case #unblock was called before the timeout expired:
         @waiting.delete(Fiber.current)
@@ -153,7 +173,7 @@ class Scheduler
     else
       @blocking += 1
       begin
-        Fiber.yield
+        yield_back
       ensure
         @blocking -= 1
       end
@@ -173,10 +193,20 @@ class Scheduler
     io.write_nonblock('.')
   end
 
+  def yield_back
+    if @scheduler_fiber
+      @scheduler_fiber.transfer
+    else
+      raise
+      # Fiber.yield
+    end
+  end
+
   def fiber(&block)
     fiber = Fiber.new(blocking: false, &block)
 
-    fiber.resume
+    # fiber.resume
+    @lock.synchronize { @ready << fiber }
 
     return fiber
   end
