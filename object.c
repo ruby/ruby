@@ -279,7 +279,7 @@ rb_obj_not_equal(VALUE obj1, VALUE obj2)
  * It returns the \a cl itself if it is neither a singleton class or a module.
  *
  * \param[in] cl a Class object.
- * \return the ancestor class found, or a falsey value if nothing found.
+ * \return the ancestor class found, or a false value if nothing found.
  */
 VALUE
 rb_class_real(VALUE cl)
