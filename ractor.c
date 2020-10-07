@@ -159,8 +159,9 @@ static void
 ractor_queue_mark(struct rb_ractor_queue *rq)
 {
     for (int i=0; i<rq->cnt; i++) {
-        rb_gc_mark(rq->baskets[i].v);
-        rb_gc_mark(rq->baskets[i].sender);
+        int idx = (rq->start + i) % rq->size;
+        rb_gc_mark(rq->baskets[idx].v);
+        rb_gc_mark(rq->baskets[idx].sender);
     }
 }
 
@@ -293,6 +294,7 @@ ractor_queue_setup(struct rb_ractor_queue *rq)
 {
     rq->size = 2;
     rq->cnt = 0;
+    rq->start = 0;
     rq->baskets = malloc(sizeof(struct rb_ractor_basket) * rq->size);
 }
 
@@ -311,12 +313,9 @@ ractor_queue_deq(rb_ractor_t *r, struct rb_ractor_queue *rq, struct rb_ractor_ba
     RACTOR_LOCK(r);
     {
         if (!ractor_queue_empty_p(r, rq)) {
-            // TODO: use good Queue data structure
-            *basket = rq->baskets[0];
+            *basket = rq->baskets[rq->start];
             rq->cnt--;
-            for (int i=0; i<rq->cnt; i++) {
-                rq->baskets[i] = rq->baskets[i+1];
-            }
+            rq->start = (rq->start + 1) % rq->size;
             b = true;
         }
         else {
@@ -334,10 +333,13 @@ ractor_queue_enq(rb_ractor_t *r, struct rb_ractor_queue *rq, struct rb_ractor_ba
     ASSERT_ractor_locking(r);
 
     if (rq->size <= rq->cnt) {
+        rq->baskets = realloc(rq->baskets, sizeof(struct rb_ractor_basket) * rq->size * 2);
+        for (int i=rq->size - rq->start; i<rq->cnt; i++) {
+            rq->baskets[i + rq->start] = rq->baskets[i + rq->start - rq->size];
+        }
         rq->size *= 2;
-        rq->baskets = realloc(rq->baskets, sizeof(struct rb_ractor_basket) * rq->size);
     }
-    rq->baskets[rq->cnt++] = *basket;
+    rq->baskets[(rq->start + rq->cnt++) % rq->size] = *basket;
     // fprintf(stderr, "%s %p->cnt:%d\n", __func__, rq, rq->cnt);
 }
 
