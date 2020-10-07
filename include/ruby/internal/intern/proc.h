@@ -50,6 +50,4 @@ VALUE rb_protect(VALUE (*)(VALUE), VALUE, int*);
 
 RBIMPL_SYMBOL_EXPORT_END()
 
-VALUE rb_callable_receiver(VALUE);
-
 #endif /* RBIMPL_INTERN_PROC_H */
