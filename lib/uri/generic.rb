@@ -643,7 +643,7 @@ module URI
     #
     def hostname
       v = self.host
-      /\A\[(.*)\]\z/ =~ v ? $1 : v
+      v&.start_with?('[') && v.length > 2 && v.end_with?(']') ? v[1..-2] : v
     end
 
     # Sets the host part of the URI as the argument with brackets for IPv6 addresses.
@@ -659,7 +659,7 @@ module URI
     # it is wrapped with brackets.
     #
     def hostname=(v)
-      v = "[#{v}]" if /\A\[.*\]\z/ !~ v && /:/ =~ v
+      v = "[#{v}]" if v&.index(':') && !v.start_with?('[') && !v.end_with?(']')
       self.host = v
     end
 
