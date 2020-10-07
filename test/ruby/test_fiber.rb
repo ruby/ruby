@@ -184,6 +184,34 @@ class TestFiber < Test::Unit::TestCase
     assert_equal([:baz], ary)
   end
 
+  def test_terminate_transferred_fiber
+    root_fiber = Fiber.current
+    log = []
+    fa1 = fa2 = fb1 = r1 = nil
+
+    fa1 = Fiber.new{
+      fa2 = Fiber.new{
+        log << :fa2_terminate
+      }
+      fa2.resume
+      log << :fa1_terminate
+    }
+    fb1 = Fiber.new{
+      fa1.transfer
+      log << :fb1_terminate
+    }
+
+    r1 = Fiber.new{
+      fb1.transfer
+      log << :r1_terminate
+    }
+
+    r1.resume
+    log << :root_terminate
+
+    assert_equal [:fa2_terminate, :fa1_terminate, :r1_terminate, :root_terminate], log
+  end
+
   def test_tls
     #
     def tvar(var, val)
@@ -278,28 +306,71 @@ class TestFiber < Test::Unit::TestCase
     assert_instance_of(Class, Fiber.new(&Class.new.method(:undef_method)).resume(:to_s), bug5083)
   end
 
-  def test_prohibit_resume_transferred_fiber
+  def test_prohibit_transfer_to_resuming_fiber
+    root_fiber = Fiber.current
+
     assert_raise(FiberError){
-      root_fiber = Fiber.current
-      f = Fiber.new{
-        root_fiber.transfer
-      }
-      f.transfer
-      f.resume
+      fiber = Fiber.new{ root_fiber.transfer }
+      fiber.resume
+    }
+
+    fa1 = Fiber.new{
+      fa2 = Fiber.new{ root_fiber.transfer }
+    }
+    fb1 = Fiber.new{
+      fb2 = Fiber.new{ root_fiber.transfer }
+    }
+    fa1.transfer
+    fb1.transfer
+
+    assert_raise(FiberError){
+      fa1.transfer
     }
     assert_raise(FiberError){
-      g=nil
-      f=Fiber.new{
-        g.resume
-        g.resume
-      }
-      g=Fiber.new{
-        f.resume
-        f.resume
-      }
-      f.transfer
+      fb1.transfer
     }
   end
+
+  def test_prohibit_transfer_to_yielding_fiber
+    root_fiber = Fiber.current
+    f1 = f2 = f3 = nil
+
+    f1 = Fiber.new{
+      f2 = Fiber.new{
+        f3 = Fiber.new{
+          p f3: Fiber.yield
+        }
+        f3.resume
+      }
+      f2.resume
+    }
+    f1.resume
+
+    assert_raise(FiberError){ f3.transfer 10 }
+  end
+
+  def test_prohibit_resume_to_transferring_fiber
+    root_fiber = Fiber.current
+
+    assert_raise(FiberError){
+      Fiber.new{
+        root_fiber.resume
+      }.transfer
+    }
+
+    f1 = f2 = nil
+    f1 = Fiber.new do
+      f2.transfer
+    end
+    f2 = Fiber.new do
+      f1.resume # attempt to resume transferring fiber
+    end
+
+    assert_raise(FiberError){
+      f1.transfer
+    }
+  end
+
 
   def test_fork_from_fiber
     skip 'fork not supported' unless Process.respond_to?(:fork)
