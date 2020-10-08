@@ -4,4 +4,4 @@ rake 13.0.1 https://github.com/ruby/rake
 test-unit 3.3.6 https://github.com/test-unit/test-unit
 rexml 3.2.4 https://github.com/ruby/rexml
 rss 0.2.9 https://github.com/ruby/rss
-rbs 0.12.2 https://github.com/ruby/rbs
+rbs master https://github.com/ruby/rbs
