@@ -4948,92 +4948,21 @@ rb_str_insert(VALUE str, VALUE idx, VALUE str2)
 
 /*
  *  call-seq:
- *    string.slice!(index) -> new_string or nil
- *    string.slice!(start, length) -> new_string or nil
- *    string.slice!(range) -> new_string or nil
- *    string.slice!(regexp, capture = 0) -> new_string or nil
- *    string.slice!(other_string) -> new_string or nil
+ *     str.slice!(integer)           -> new_str or nil
+ *     str.slice!(integer, integer)   -> new_str or nil
+ *     str.slice!(range)            -> new_str or nil
+ *     str.slice!(regexp)           -> new_str or nil
+ *     str.slice!(other_str)        -> new_str or nil
  *
- *  Deletes and returns the substring of +self+ specified by the arguments.
+ *  Deletes the specified portion from <i>str</i>, and returns the portion
+ *  deleted.
  *
- *  When the single \Integer argument +index+ is given,
- *  deletes and returns the 1-character substring found in +self+ at offset +index+:
- *    s = 'bar'
- *    s.slice!(2) # => "r"
- *    s # => "ba"
- *  Counts backward from the end of +self+ if +index+ is negative:
- *    s = 'foo'
- *    s.slice!(-3) # => "f"
- *    s # => "oo"
- *  Deletes nothing and returns +nil+ if +index+ is out of range.
- *
- *  When the two \Integer arguments  +start+ and +length+ are given,
- *  deletes and returns the substring of the given +length+ found in +self+ at offset +start+:
- *    s = 'foo'
- *    s.slice!(0, 2) # => "fo"
- *    s # => "o"
- *    s.slice!(0, 0) # => ""
- *    s # => "o"
- *  Counts backward from the end of +self+ if +start+ is negative:
- *    s = 'foo'
- *    s.slice!(-2, 2) # => "oo"
- *    s # => "f"
- *  Special case: deletes nothing and returns a new empty \String
- *  if +start+ is equal to the length of +self+:
- *    s = 'foo'
- *    s.slice!(3, 2) # => ""
- *    s # => "foo"
- *  Deletes nothing and returns +nil+ if +start+ is out of range.
- *
- *  Deletes and returns the trailing substring of +self+ if +length+ is large:
- *    s = 'foo'
- *    s.slice!(1, 50) # => "oo"
- *    s # => "f"
- *  Deletes nothing and returns +nil+ if +length+ is negative.
- *
- *  When the single \Range argument +range+ is given,
- *  derives +start+ and +length+ values from the given +range+,
- *  then deletes and returns values as above;
- *  for <tt>s = 'foo'</tt>:
- *    <tt>s.slice!(0..1) is equivalent to <tt>s.slice!(0, 2)</tt>.
- *    <tt>s.slice!(0...1) is equivalent to <tt>s.slice!(0, 1)</tt>.
- *
- *  When the \Regexp argument +regexp+ is given,
- *  and the +capture+ argument is <tt>0</tt>,
- *  deletes and returns the first matching substring found in +self+:
- *    s = 'foo'
- *    s.slice!(/o/) # => "o"
- *    s # => "fo"
- *    s = 'hello there'
- *    s.slice!(/[aeiou](.)\1/) # => "ell"
- *    s # => "ho there"
- *    s = 'hello there'
- *    s.slice!(/[aeiou](.)\1/, 0) # => "ell"
- *  Deletes nothing and returns +nil+ if no match found.
- *
- *  If argument +capture+ is given and not <tt>0</tt>,
- *  it should be either an \Integer capture group index or a \String or \Symbol capture group name;
- *  the method call deletes and returns only the specified capture
- *  (see {Regexp Capturing}[Regexp.html#class-Regexp-label-Capturing]):
- *    s = 'hello there'
- *    s.slice!(/[aeiou](.)\1/, 1) # => "l"
- *    s # => "helo there"
- *    s = 'hello there'
- *    s.slice!(/(?<vowel>[aeiou])(?<non_vowel>[^aeiou])/, "non_vowel") # => "l"
- *    s # => "helo there"
- *    s = 'hello there'
- *    s.slice!(/(?<vowel>[aeiou])(?<non_vowel>[^aeiou])/, :vowel) # => "e"
- *    s # => "hllo there"
- *
- *  Deletes nothing and returns +nil+ if an invalid capture group index is given.
- *  Raises IndexError if an invalid capture group name is given.
- *
- *  When the single \String argument +substring+ is given,
- *  deletes and returns the substring from +self+:
- *    s = 'foo'
- *    s.slice!('oo') # => "oo"
- *    s # => "f"
- *  Deletes nothing and returns +nil+ if the substring is not found.
+ *     string = "this is a string"
+ *     string.slice!(2)        #=> "i"
+ *     string.slice!(3..6)     #=> " is "
+ *     string.slice!(/s.*t/)   #=> "sa st"
+ *     string.slice!("r")      #=> "r"
+ *     string                  #=> "thing"
  */
 
 static VALUE
