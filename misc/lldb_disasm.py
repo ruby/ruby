@@ -73,8 +73,14 @@ class IseqDissassembler:
         iseq_size = val.GetValueForExpressionPath("->body->iseq_size").GetValueAsUnsigned()
         iseqs = val.GetValueForExpressionPath("->body->iseq_encoded")
         idx = 0
+        print("PC             IDX  insn_name(operands) ", file=self.result)
         while idx < iseq_size:
-            idx += self.iseq_extract_values(self.debugger, self.target, self.process, self.result, iseqs, idx)
+            m = self.iseq_extract_values(self.debugger, self.target, self.process, self.result, iseqs, idx)
+            if m < 1:
+                print("Error decoding", file=self.result)
+                return
+            else:
+                idx += m
 
     def build_addr2insn(self, target):
         tIntPtr = target.FindFirstType("intptr_t")
@@ -98,16 +104,21 @@ class IseqDissassembler:
     def iseq_extract_values(self, debugger, target, process, result, iseqs, n):
         tValueP      = target.FindFirstType("VALUE")
         sizeofValueP = tValueP.GetByteSize()
-        insn = target.CreateValueFromAddress(
-                "i", lldb.SBAddress(iseqs.unsigned + (n * sizeofValueP), target), tValueP)
+        pc = iseqs.unsigned + (n * sizeofValueP)
+        insn = target.CreateValueFromAddress("i", lldb.SBAddress(pc, target), tValueP)
         addr         = insn.GetValueAsUnsigned()
         orig_insn    = self.rb_vm_insn_addr2insn2(target, result, addr)
 
         name     = self.insn_name(target, process, result, orig_insn)
         length   = self.insn_len(target, orig_insn)
-        op_types = bytes(self.insn_op_types(target, process, result, orig_insn), 'utf-8')
+        op_str = self.insn_op_types(target, process, result, orig_insn)
+        op_types = bytes(op_str, 'utf-8')
 
-        print("%04d %s" % (n, name), file=result, end="")
+        if length != (len(op_types) + 1):
+            print("error decoding iseqs", file=result)
+            return -1
+
+        print("%0#14x %04d %s" % (pc, n, name), file=result, end="")
 
         if length == 1:
             print("", file=result)
@@ -131,50 +142,81 @@ class IseqDissassembler:
     def insn_len(self, target, offset):
         size_of_char = self.tChar.GetByteSize()
 
-        addr_of_table = target.FindSymbols("insn_len.t")[0].GetSymbol().GetStartAddress().GetLoadAddress(target)
+        symbol = target.FindSymbols("insn_len.t")[0].GetSymbol()
+        section = symbol.GetStartAddress().GetSection()
+        addr_of_table = symbol.GetStartAddress().GetOffset()
 
-        addr_in_table = addr_of_table + (offset * size_of_char)
-        addr = lldb.SBAddress(addr_in_table, target)
+        error = lldb.SBError()
+        length = section.GetSectionData().GetUnsignedInt8(error, addr_of_table + (offset * size_of_char))
 
-        return target.CreateValueFromAddress("y", addr, self.tChar).GetValueAsUnsigned()
+        if error.Success():
+            return length
+        else:
+            print("error getting length: ", error)
 
     def insn_op_types(self, target, process, result, insn):
         tUShort = target.FindFirstType("unsigned short")
-        self.tChar   = target.FindFirstType("char")
 
         size_of_short = tUShort.GetByteSize()
         size_of_char =  self.tChar.GetByteSize()
 
-        addr_of_table = target.FindSymbols("insn_op_types.y")[0].GetSymbol().GetStartAddress().GetLoadAddress(target)
-        addr_in_table = addr_of_table + (insn * size_of_short)
-        addr = lldb.SBAddress(addr_in_table, target)
-        offset = target.CreateValueFromAddress("y", addr, tUShort).GetValueAsUnsigned()
+        symbol = target.FindSymbols("insn_op_types.y")[0].GetSymbol()
+        section = symbol.GetStartAddress().GetSection()
+        addr_of_table = symbol.GetStartAddress().GetOffset()
 
-        addr_of_table = target.FindSymbols("insn_op_types.x")[0].GetSymbol().GetStartAddress().GetLoadAddress(target)
+        addr_in_table = addr_of_table + (insn * size_of_short)
+
+        error = lldb.SBError()
+        offset = section.GetSectionData().GetUnsignedInt16(error, addr_in_table)
+
+        if not error.Success():
+            print("error getting op type offset: ", error)
+
+        symbol = target.FindSymbols("insn_op_types.x")[0].GetSymbol()
+        section = symbol.GetStartAddress().GetSection()
+        addr_of_table = symbol.GetStartAddress().GetOffset()
         addr_in_name_table = addr_of_table + (offset * size_of_char)
 
         error = lldb.SBError()
-        return process.ReadCStringFromMemory(addr_in_name_table, 256, error)
+        types = section.GetSectionData().GetString(error, addr_in_name_table)
+        if error.Success():
+            return types
+        else:
+            print("error getting op types: ", error)
 
     def insn_name_table_offset(self, target, offset):
         tUShort = target.FindFirstType("unsigned short")
         size_of_short = tUShort.GetByteSize()
 
-        addr_of_table = target.FindSymbols("insn_name.y")[0].GetSymbol().GetStartAddress().GetLoadAddress(target)
+        symbol = target.FindSymbols("insn_name.y")[0].GetSymbol()
+        section = symbol.GetStartAddress().GetSection()
+        table_offset = symbol.GetStartAddress().GetOffset()
 
-        addr_in_table = addr_of_table + (offset * size_of_short)
-        addr = lldb.SBAddress(addr_in_table, target)
+        table_offset = table_offset + (offset * size_of_short)
 
-        return target.CreateValueFromAddress("y", addr, tUShort).GetValueAsUnsigned()
+        error = lldb.SBError()
+        offset = section.GetSectionData().GetUnsignedInt16(error, table_offset)
+
+        if error.Success():
+            return offset
+        else:
+            print("error getting insn name table offset: ", error)
 
     def insn_name(self, target, process, result, offset):
-        tCharP = target.FindFirstType("char*")
-        addr_of_table = target.FindSymbols("insn_name.x")[0].GetSymbol().GetStartAddress().GetLoadAddress(target)
+        symbol = target.FindSymbols("insn_name.x")[0].GetSymbol()
+        section = symbol.GetStartAddress().GetSection()
+        addr_of_table = symbol.GetStartAddress().GetOffset()
 
-        addr_in_name_table = addr_of_table + self.insn_name_table_offset(target, offset)
-        addr = lldb.SBAddress(addr_in_name_table, target)
+        name_table_offset = self.insn_name_table_offset(target, offset)
+        addr_in_name_table = addr_of_table + name_table_offset
+
         error = lldb.SBError()
-        return process.ReadCStringFromMemory(addr_in_name_table, 256, error)
+        name = section.GetSectionData().GetString(error, addr_in_name_table)
+
+        if error.Success():
+            return name
+        else:
+            print('error getting insn name', error)
 
 def disasm(debugger, command, result, internal_dict):
     disassembler = IseqDissassembler(debugger, command, result, internal_dict)
