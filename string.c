@@ -4611,6 +4611,8 @@ rb_str_aref(VALUE str, VALUE indx)
  *    string[regexp, capture = 0] -> new_string or nil
  *    string[substring] -> new_string or nil
  *
+ *  Returns the substring of +self+ specified by the arguments.
+ *
  *  When the single \Integer argument +index+ is given,
  *  returns the 1-character substring found in +self+ at offset +index+:
  *    'bar'[2] # => "r"
@@ -4915,19 +4917,17 @@ rb_str_aset_m(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.insert(index, other_str)   -> str
+ *    string.insert(index, other_string) -> self
  *
- *  Inserts <i>other_str</i> before the character at the given
- *  <i>index</i>, modifying <i>str</i>. Negative indices count from the
- *  end of the string, and insert <em>after</em> the given character.
- *  The intent is insert <i>aString</i> so that it starts at the given
- *  <i>index</i>.
+ *  Inserts the given +other_string+ into +self+; returns +self+.
  *
- *     "abcd".insert(0, 'X')    #=> "Xabcd"
- *     "abcd".insert(3, 'X')    #=> "abcXd"
- *     "abcd".insert(4, 'X')    #=> "abcdX"
- *     "abcd".insert(-3, 'X')   #=> "abXcd"
- *     "abcd".insert(-1, 'X')   #=> "abcdX"
+ *  If the \Integer +index+ is positive, inserts +other_string+ at offset +index+:
+ *    'foo'.insert(1, 'bar') # => "fbaroo"
+ *
+ *  If the \Integer +index+ is negative, counts backward from the end of +self+
+ *  and inserts +other_string+ at offset <tt>index+1</tt>
+ *  (that is, _after_ <tt>self[index]</tt>):
+ *    'foo'.insert(-2, 'bar') # => "fobaro"
  */
 
 static VALUE
