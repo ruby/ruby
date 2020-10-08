@@ -16,7 +16,7 @@
 
 #define RUBY_RELEASE_YEAR 2020
 #define RUBY_RELEASE_MONTH 10
-#define RUBY_RELEASE_DAY 8
+#define RUBY_RELEASE_DAY 9
 
 #include "ruby/version.h"
 
