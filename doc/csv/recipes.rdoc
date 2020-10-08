@@ -17,9 +17,18 @@ All code snippets on this page assume that the following has been executed:
     - {Parse from IO Stream Without Headers}[#label-Parse+from+IO+Stream+Without+Headers]
 - {Parsing: Field Converters}[#label-Parsing-3A+Field+Converters]
   - {Convert Fields to Objects}[#label-Convert+Fields+to+Objects]
-    - {Convert Fields to Objects Using Built-In Converters}[#label-Convert+Fields+to+Objects+Using+Built-In+Converters]
-    - {Convert Fields to Objects Using Custom Converters}[#label-Convert+Fields+to+Objects+Using+Custom+Converters]
+    - {Convert Fields to Integers}[#label-Convert+Fields+to+Integers]
+    - {Convert Fields to Floats}[#label-Convert+Fields+to+Floats]
+    - {Convert Fields to Numerics}[#label-Convert+Fields+to+Numerics]
+    - {Convert Fields to Dates}[#label-Convert+Fields+to+Dates]
+    - {Convert Fields to DateTimes}[#label-Convert+Fields+to+DateTimes]
+    - {Convert Assorted Fields to Objects}[#label-Convert+Assorted+Fields+to+Objects]
+    - {Convert Fields to Other Objects}[#label-Convert+Fields+to+Other+Objects]
   - {Filter Field Strings}[#label-Filter+Field+Strings]
+  - {Register Field Converters}[#label-Register+Field+Converters]
+  - {Use Multiple Field Converters}[#label-Use+Multiple+Field+Converters]
+    - {Specify Multiple Field Converters in Option :converters}[#label-Specify+Multiple+Field+Converters+in+Option+-3Aconverters]
+    - {Specify Multiple Field Converters in a Custom Converter List}[#label-Specify+Multiple+Field+Converters+in+a+Custom+Converter+List]
 - {Generating: Output Formats}[#label-Generating-3A+Output+Formats]
   - {Generate to String}[#label-Generate+to+String]
     - {Generate to String with Headers}[#label-Generate+to+String+with+Headers]
@@ -170,81 +179,122 @@ Output:
 
 === Parsing: Field Converters
 
-You can use field converters to change parsed Strings into other objects,
-or to otherwise modify \String fields.
+You can use field converters to change parsed \String fields into other objects,
+or to otherwise modify the \String fields.
 
 ==== Convert Fields to Objects
 
-Use field converters to change parsed Strings into other, more specific, objects.
+Use field converters to change parsed \String objects into other, more specific, objects.
 
-==== Convert Fields to Objects Using Built-In Converters
+There are built-in field converters for converting to objects of certain classes:
+- \Float
+- \Integer
+- \Date
+- \DateTime
 
-Without converters (all fields parsed as Strings):
-  source = "0,1.1,2020-09-19"
-  parsed = CSV.parse(source)
-  parsed # => [["0", "1.1", "2020-09-19"]]
-  parsed.first.each {|field| p field.class }
-Output:
-  String
-  String
-  String
+Other built-in field converters include:
+- <tt>:numeric</tt>: converts to \Integer and \Float.
+- <tt>:all</tt>: converts to \DateTime, \Integer, \Float.
 
-With built-in converters (see {Built-In Field Converters}[../../CSV.html#class-CSV-label-Built-In+Field+Converters]):
-  parsed = CSV.parse(source, converters: :all)
-  parsed # => [[0, 1.1, #<DateTime: 2020-09-19T00:00:00+00:00 ((2459112j,0s,0n),+0s,2299161j)>]]
-  parsed.first.each {|field| p field.class }
-Output:
-  Integer
-  Float
-  DateTime
+You can also define field converters to convert to objects of other classes.
 
-==== Convert Fields to Objects Using Custom Converters
+===== Convert Fields to Integers
 
-You can define custom field converters to convert \String fields into other objects.
+Convert fields to \Integer objects using built-in converter <tt>:integer</tt>:
+  source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+  parsed = CSV.parse(source, headers: true, converters: :integer)
+  parsed.map {|row| row['Value'].class} # => [Integer, Integer, Integer]
+
+===== Convert Fields to Floats
+
+Convert fields to \Float objects using built-in converter <tt>:float</tt>:
+  source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+  parsed = CSV.parse(source, headers: true, converters: :float)
+  parsed.map {|row| row['Value'].class} # => [Float, Float, Float]
+
+===== Convert Fields to Numerics
+
+Convert fields to \Integer and \Float objects using built-in converter <tt>:numeric</tt>:
+  source = "Name,Value\nfoo,0\nbar,1.1\nbaz,2.2\n"
+  parsed = CSV.parse(source, headers: true, converters: :numeric)
+  parsed.map {|row| row['Value'].class} # => [Integer, Float, Float]
+
+===== Convert Fields to Dates
+
+Convert fields to \Date objects using built-in converter <tt>:date</tt>:
+  source = "Name,Date\nfoo,2001-02-03\nbar,2001-02-04\nbaz,2001-02-03\n"
+  parsed = CSV.parse(source, headers: true, converters: :date)
+  parsed.map {|row| row['Date'].class} # => [Date, Date, Date]
+
+===== Convert Fields to DateTimes
+
+Convert fields to \DateTime objects using built-in converter <tt>:date_time</tt>:
+  source = "Name,DateTime\nfoo,2001-02-03\nbar,2001-02-04\nbaz,2020-05-07T14:59:00-05:00\n"
+  parsed = CSV.parse(source, headers: true, converters: :date_time)
+  parsed.map {|row| row['DateTime'].class} # => [DateTime, DateTime, DateTime]
+
+===== Convert Assorted Fields to Objects
+
+Convert assorted fields to objects using built-in converter <tt>:all</tt>:
+  source = "Type,Value\nInteger,0\nFloat,1.0\nDateTime,2001-02-04\n"
+  parsed = CSV.parse(source, headers: true, converters: :all)
+  parsed.map {|row| row['Value'].class} # => [Integer, Float, DateTime]
+
+===== Convert Fields to Other Objects
+
+Define a custom field converter to convert \String fields into other objects.
 This example defines and uses a custom field converter
-that converts each column-1 value to a \Rational object.
-
-Define a custom field converter:
+that converts each column-1 value to a \Rational object:
   rational_converter = proc do |field, field_context|
     field_context.index == 1 ? field.to_r : field
   end
-
-Without the new converter:
-  string = "foo,0\nbar,1\nbaz,2\n"
-  array = CSV.parse(string)
-  array # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
-
-With the new converter:
-  array = CSV.parse(string, converters: rational_converter)
-  array # => [["foo", (0/1)], ["bar", (1/1)], ["baz", (2/1)]]
-
-You can also register a custom field converter, then refer to it by name:
-  CSV::Converters[:rational] = rational_converter
-  array = CSV.parse(string, converters: :rational)
-  array # => [["foo", (0/1)], ["bar", (1/1)], ["baz", (2/1)]]
+  source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+  parsed = CSV.parse(source, headers: true, converters: rational_converter)
+  parsed.map {|row| row['Value'].class} # => [Rational, Rational, Rational]
 
 ==== Filter Field Strings
 
-You can define custom field converters to modify \String fields.
+Define a custom field converter to modify \String fields.
 This example defines and uses a custom field converter
-that strips whitespace from each field value.
-
-Define a custom field converter:
+that strips whitespace from each field value:
   strip_converter = proc {|field| field.strip }
+  source = "Name,Value\n foo , 0 \n bar , 1 \n baz , 2 \n"
+  parsed = CSV.parse(source, headers: true, converters: strip_converter)
+  parsed['Name'] # => ["foo", "bar", "baz"]
+  parsed['Value'] # => ["0", "1", "2"]
 
-Without the new converter:
-  string = " foo , 0 \n bar , 1 \n baz , 2 \n"
-  array = CSV.parse(string)
-  array # => [[" foo ", " 0 "], [" bar ", " 1 "], [" baz ", " 2 "]]
+==== Register Field Converters
 
-With the new converter:
-  array = CSV.parse(string, converters: strip_converter)
-  array # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
+Register a custom field converter, assigning it a name;
+then refer to the converter by its name:
+  CSV::Converters[:rational] = rational_converter
+  source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+  parsed = CSV.parse(source, headers: true, converters: :rational)
+  parsed['Value'] # => [(0/1), (1/1), (2/1)]
 
-You can also register a custom field converter, then refer to it by name:
+==== Use Multiple Field Converters
+
+You can use multiple field converters in either of these ways:
+- Specify converters in option <tt>:converters</tt>.
+- Specify converters in a custom converter list.
+
+===== Specify Multiple Field Converters in Option <tt>:converters</tt>
+
+Apply multiple field converters by specifying them in option <tt>:conveters</tt>:
+  source = "Name,Value\nfoo,0\nbar,1.0\nbaz,2.0\n"
+  parsed = CSV.parse(source, headers: true, converters: [:integer, :float])
+  parsed['Value'] # => [0, 1.0, 2.0]
+
+===== Specify Multiple Field Converters in a Custom Converter List
+
+Apply multiple field converters by defining and registering a custom converter list:
+  strip_converter = proc {|field| field.strip }
   CSV::Converters[:strip] = strip_converter
-  array = CSV.parse(string, converters: :strip)
-  array # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
+  CSV::Converters[:my_converters] = [:integer, :float, :strip]
+  source = "Name,Value\n foo , 0 \n bar , 1.0 \n baz , 2.0 \n"
+  parsed = CSV.parse(source, headers: true, converters: :my_converters)
+  parsed['Name'] # => ["foo", "bar", "baz"]
+  parsed['Value'] # => [0, 1.0, 2.0]
 
 === Generating: Output Formats
 
