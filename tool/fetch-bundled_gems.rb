@@ -18,7 +18,8 @@ else
   system(*%W"git clone #{u} #{n}") or abort
 end
 checkout = %w"git -c advice.detachedHead=false checkout"
-unless system(*checkout, v.sub(/\A(?=\d)/, 'v'), chdir: n)
+v = "v#{v}" if v =~ /\./
+unless system(*checkout, v, chdir: n)
   unless /\A\d/ =~ v and system(*checkout, v, chdir: n)
     abort
   end
