@@ -6,7 +6,7 @@
 [![Actions Status](https://github.com/ruby/ruby/workflows/Ubuntu/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"Ubuntu")
 [![Actions Status](https://github.com/ruby/ruby/workflows/Windows/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"Windows")
 
-# What's Ruby
+# WhaT is  Ruby
 
 Ruby is an interpreted object-oriented programming language often
 used for web development. It also offers many scripting features
@@ -60,7 +60,7 @@ Try the following command to see the list of branches:
     $ svn ls https://svn.ruby-lang.org/repos/ruby/branches/
 
 
-## Ruby home page
+## Ruby's home page
 
 https://www.ruby-lang.org/
 
@@ -156,7 +156,7 @@ Questions about the Ruby language can be asked on the Ruby-Talk mailing list
 (https://www.ruby-lang.org/en/community/mailing-lists) or on websites like
 (https://stackoverflow.com).
 
-Bugs should be reported at https://bugs.ruby-lang.org. Read [HowToReport] for more information.
+Bugs will be reported at https://bugs.ruby-lang.org. Read [HowToReport] for more information.
 
 [HowToReport]: https://bugs.ruby-lang.org/projects/ruby/wiki/HowToReport
 
