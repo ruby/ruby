@@ -520,12 +520,12 @@ static NODE *aryset(struct parser_params*,NODE*,NODE*,const YYLTYPE*);
 static NODE *attrset(struct parser_params*,NODE*,ID,ID,const YYLTYPE*);
 
 static void rb_backref_error(struct parser_params*,NODE*);
-static NODE *node_assign(struct parser_params*,NODE*,NODE*,const YYLTYPE*);
+static NODE *node_assign(struct parser_params*,NODE*,NODE*,int,const YYLTYPE*);
 
-static NODE *new_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, const YYLTYPE *loc);
+static NODE *new_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, int shareable, const YYLTYPE *loc);
 static NODE *new_ary_op_assign(struct parser_params *p, NODE *ary, NODE *args, ID op, NODE *rhs, const YYLTYPE *args_loc, const YYLTYPE *loc);
 static NODE *new_attr_op_assign(struct parser_params *p, NODE *lhs, ID atype, ID attr, ID op, NODE *rhs, const YYLTYPE *loc);
-static NODE *new_const_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, const YYLTYPE *loc);
+static NODE *new_const_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, int shareable, const YYLTYPE *loc);
 static NODE *new_bodystmt(struct parser_params *p, NODE *head, NODE *rescue, NODE *rescue_else, NODE *ensure, const YYLTYPE *loc);
 
 static NODE *const_decl(struct parser_params *p, NODE* path, const YYLTYPE *loc);
@@ -1180,6 +1180,7 @@ static int looking_at_eol_p(struct parser_params *p);
 %type <id>   f_kwrest f_label f_arg_asgn call_op call_op2 reswords relop dot_or_colon
 %type <id>   p_rest p_kwrest p_kwnorest p_any_kwrest p_kw_label
 %type <id>   f_no_kwarg f_any_kwrest args_forward excessed_comma
+%type <num>  shareable
 %token END_OF_INPUT 0	"end-of-input"
 %token <id> '.'
 /* escaped chars, should be ignored otherwise */
@@ -1518,99 +1519,99 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 		    /*% ripper: END!($3) %*/
 		    }
 		| command_asgn
-		| mlhs '=' command_call
+		| mlhs '=' shareable command_call
 		    {
 		    /*%%%*/
-			value_expr($3);
-			$$ = node_assign(p, $1, $3, &@$);
+			value_expr($4);
+			$$ = node_assign(p, $1, $4, $3, &@$);
 		    /*% %*/
-		    /*% ripper: massign!($1, $3) %*/
+		    /*% ripper: massign!($1, $4) %*/
 		    }
-		| lhs '=' mrhs
+		| lhs '=' shareable mrhs
 		    {
 		    /*%%%*/
-			value_expr($3);
-			$$ = node_assign(p, $1, $3, &@$);
+			value_expr($4);
+			$$ = node_assign(p, $1, $4, $3, &@$);
 		    /*% %*/
-		    /*% ripper: assign!($1, $3) %*/
+		    /*% ripper: assign!($1, $4) %*/
 		    }
-                | mlhs '=' mrhs_arg modifier_rescue stmt
+                | mlhs '=' shareable mrhs_arg modifier_rescue stmt
                     {
                     /*%%%*/
-                        YYLTYPE loc = code_loc_gen(&@4, &@5);
-                        value_expr($3);
-			$$ = node_assign(p, $1, NEW_RESCUE($3, NEW_RESBODY(0, remove_begin($5), 0, &loc), 0, &@$), &@$);
+                        YYLTYPE loc = code_loc_gen(&@5, &@6);
+                        value_expr($4);
+			$$ = node_assign(p, $1, NEW_RESCUE($4, NEW_RESBODY(0, remove_begin($6), 0, &loc), 0, &@$), $3, &@$);
                     /*% %*/
-                    /*% ripper: massign!($1, rescue_mod!($3, $5)) %*/
+                    /*% ripper: massign!($1, rescue_mod!($4, $6)) %*/
                     }
-		| mlhs '=' mrhs_arg
+		| mlhs '=' shareable mrhs_arg
 		    {
 		    /*%%%*/
-			$$ = node_assign(p, $1, $3, &@$);
+			$$ = node_assign(p, $1, $4, $3, &@$);
 		    /*% %*/
-		    /*% ripper: massign!($1, $3) %*/
+		    /*% ripper: massign!($1, $4) %*/
 		    }
 		| expr
 		;
 
-command_asgn	: lhs '=' command_rhs
+command_asgn	: lhs '=' shareable command_rhs
 		    {
 		    /*%%%*/
-			$$ = node_assign(p, $1, $3, &@$);
+			$$ = node_assign(p, $1, $4, $3, &@$);
 		    /*% %*/
-		    /*% ripper: assign!($1, $3) %*/
+		    /*% ripper: assign!($1, $4) %*/
 		    }
-		| var_lhs tOP_ASGN command_rhs
+		| var_lhs tOP_ASGN shareable command_rhs
 		    {
 		    /*%%%*/
-			$$ = new_op_assign(p, $1, $2, $3, &@$);
+			$$ = new_op_assign(p, $1, $2, $4, $3, &@$);
 		    /*% %*/
-		    /*% ripper: opassign!($1, $2, $3) %*/
+		    /*% ripper: opassign!($1, $2, $4) %*/
 		    }
-		| primary_value '[' opt_call_args rbracket tOP_ASGN command_rhs
+		| primary_value '[' opt_call_args rbracket tOP_ASGN shareable command_rhs
 		    {
 		    /*%%%*/
-			$$ = new_ary_op_assign(p, $1, $3, $5, $6, &@3, &@$);
+			$$ = new_ary_op_assign(p, $1, $3, $5, $7, &@3, &@$);
 		    /*% %*/
-		    /*% ripper: opassign!(aref_field!($1, escape_Qundef($3)), $5, $6) %*/
+		    /*% ripper: opassign!(aref_field!($1, escape_Qundef($3)), $5, $7) %*/
 
 		    }
-		| primary_value call_op tIDENTIFIER tOP_ASGN command_rhs
+		| primary_value call_op tIDENTIFIER tOP_ASGN shareable command_rhs
 		    {
 		    /*%%%*/
-			$$ = new_attr_op_assign(p, $1, $2, $3, $4, $5, &@$);
+			$$ = new_attr_op_assign(p, $1, $2, $3, $4, $6, &@$);
 		    /*% %*/
-		    /*% ripper: opassign!(field!($1, $2, $3), $4, $5) %*/
+		    /*% ripper: opassign!(field!($1, $2, $3), $4, $6) %*/
 		    }
-		| primary_value call_op tCONSTANT tOP_ASGN command_rhs
+		| primary_value call_op tCONSTANT tOP_ASGN shareable command_rhs
 		    {
 		    /*%%%*/
-			$$ = new_attr_op_assign(p, $1, $2, $3, $4, $5, &@$);
+			$$ = new_attr_op_assign(p, $1, $2, $3, $4, $6, &@$);
 		    /*% %*/
-		    /*% ripper: opassign!(field!($1, $2, $3), $4, $5) %*/
+		    /*% ripper: opassign!(field!($1, $2, $3), $4, $6) %*/
 		    }
-		| primary_value tCOLON2 tCONSTANT tOP_ASGN command_rhs
+		| primary_value tCOLON2 tCONSTANT tOP_ASGN shareable command_rhs
 		    {
 		    /*%%%*/
 			YYLTYPE loc = code_loc_gen(&@1, &@3);
-			$$ = new_const_op_assign(p, NEW_COLON2($1, $3, &loc), $4, $5, &@$);
+			$$ = new_const_op_assign(p, NEW_COLON2($1, $3, &loc), $4, $6, $5, &@$);
 		    /*% %*/
-		    /*% ripper: opassign!(const_path_field!($1, $3), $4, $5) %*/
+		    /*% ripper: opassign!(const_path_field!($1, $3), $4, $6) %*/
 		    }
-		| primary_value tCOLON2 tIDENTIFIER tOP_ASGN command_rhs
+		| primary_value tCOLON2 tIDENTIFIER tOP_ASGN shareable command_rhs
 		    {
 		    /*%%%*/
-			$$ = new_attr_op_assign(p, $1, ID2VAL(idCOLON2), $3, $4, $5, &@$);
+			$$ = new_attr_op_assign(p, $1, ID2VAL(idCOLON2), $3, $4, $6, &@$);
 		    /*% %*/
-		    /*% ripper: opassign!(field!($1, ID2VAL(idCOLON2), $3), $4, $5) %*/
+		    /*% ripper: opassign!(field!($1, ID2VAL(idCOLON2), $3), $4, $6) %*/
 		    }
-		| backref tOP_ASGN command_rhs
+		| backref tOP_ASGN shareable command_rhs
 		    {
 		    /*%%%*/
 			rb_backref_error(p, $1);
 			$$ = NEW_BEGIN(0, &@$);
 		    /*% %*/
-		    /*% ripper[error]: assign_error!(assign!(var_field(p, $1), $3)) %*/
+		    /*% ripper[error]: assign_error!(assign!(var_field(p, $1), $4)) %*/
 		    }
 		;
 
@@ -2236,70 +2237,70 @@ reswords	: keyword__LINE__ | keyword__FILE__ | keyword__ENCODING__
 		| keyword_while | keyword_until
 		;
 
-arg		: lhs '=' arg_rhs
+arg		: lhs '=' shareable arg_rhs
 		    {
 		    /*%%%*/
-			$$ = node_assign(p, $1, $3, &@$);
+			$$ = node_assign(p, $1, $4, $3, &@$);
 		    /*% %*/
-		    /*% ripper: assign!($1, $3) %*/
+		    /*% ripper: assign!($1, $4) %*/
 		    }
-		| var_lhs tOP_ASGN arg_rhs
+		| var_lhs tOP_ASGN shareable arg_rhs
 		    {
 		    /*%%%*/
-			$$ = new_op_assign(p, $1, $2, $3, &@$);
+			$$ = new_op_assign(p, $1, $2, $4, $3, &@$);
 		    /*% %*/
-		    /*% ripper: opassign!($1, $2, $3) %*/
+		    /*% ripper: opassign!($1, $2, $4) %*/
 		    }
-		| primary_value '[' opt_call_args rbracket tOP_ASGN arg_rhs
+		| primary_value '[' opt_call_args rbracket tOP_ASGN shareable arg_rhs
 		    {
 		    /*%%%*/
-			$$ = new_ary_op_assign(p, $1, $3, $5, $6, &@3, &@$);
+			$$ = new_ary_op_assign(p, $1, $3, $5, $7, &@3, &@$);
 		    /*% %*/
-		    /*% ripper: opassign!(aref_field!($1, escape_Qundef($3)), $5, $6) %*/
+		    /*% ripper: opassign!(aref_field!($1, escape_Qundef($3)), $5, $7) %*/
 		    }
-		| primary_value call_op tIDENTIFIER tOP_ASGN arg_rhs
+		| primary_value call_op tIDENTIFIER tOP_ASGN shareable arg_rhs
 		    {
 		    /*%%%*/
-			$$ = new_attr_op_assign(p, $1, $2, $3, $4, $5, &@$);
+			$$ = new_attr_op_assign(p, $1, $2, $3, $4, $6, &@$);
 		    /*% %*/
-		    /*% ripper: opassign!(field!($1, $2, $3), $4, $5) %*/
+		    /*% ripper: opassign!(field!($1, $2, $3), $4, $6) %*/
 		    }
-		| primary_value call_op tCONSTANT tOP_ASGN arg_rhs
+		| primary_value call_op tCONSTANT tOP_ASGN shareable arg_rhs
 		    {
 		    /*%%%*/
-			$$ = new_attr_op_assign(p, $1, $2, $3, $4, $5, &@$);
+			$$ = new_attr_op_assign(p, $1, $2, $3, $4, $6, &@$);
 		    /*% %*/
-		    /*% ripper: opassign!(field!($1, $2, $3), $4, $5) %*/
+		    /*% ripper: opassign!(field!($1, $2, $3), $4, $6) %*/
 		    }
-		| primary_value tCOLON2 tIDENTIFIER tOP_ASGN arg_rhs
+		| primary_value tCOLON2 tIDENTIFIER tOP_ASGN shareable arg_rhs
 		    {
 		    /*%%%*/
-			$$ = new_attr_op_assign(p, $1, ID2VAL(idCOLON2), $3, $4, $5, &@$);
+			$$ = new_attr_op_assign(p, $1, ID2VAL(idCOLON2), $3, $4, $6, &@$);
 		    /*% %*/
-		    /*% ripper: opassign!(field!($1, ID2VAL(idCOLON2), $3), $4, $5) %*/
+		    /*% ripper: opassign!(field!($1, ID2VAL(idCOLON2), $3), $4, $6) %*/
 		    }
-		| primary_value tCOLON2 tCONSTANT tOP_ASGN arg_rhs
+		| primary_value tCOLON2 tCONSTANT tOP_ASGN shareable arg_rhs
 		    {
 		    /*%%%*/
 			YYLTYPE loc = code_loc_gen(&@1, &@3);
-			$$ = new_const_op_assign(p, NEW_COLON2($1, $3, &loc), $4, $5, &@$);
+			$$ = new_const_op_assign(p, NEW_COLON2($1, $3, &loc), $4, $6, $5, &@$);
 		    /*% %*/
-		    /*% ripper: opassign!(const_path_field!($1, $3), $4, $5) %*/
+		    /*% ripper: opassign!(const_path_field!($1, $3), $4, $6) %*/
 		    }
-		| tCOLON3 tCONSTANT tOP_ASGN arg_rhs
+		| tCOLON3 tCONSTANT tOP_ASGN shareable arg_rhs
 		    {
 		    /*%%%*/
-			$$ = new_const_op_assign(p, NEW_COLON3($2, &@$), $3, $4, &@$);
+			$$ = new_const_op_assign(p, NEW_COLON3($2, &@$), $3, $5, $4, &@$);
 		    /*% %*/
-		    /*% ripper: opassign!(top_const_field!($2), $3, $4) %*/
+		    /*% ripper: opassign!(top_const_field!($2), $3, $5) %*/
 		    }
-		| backref tOP_ASGN arg_rhs
+		| backref tOP_ASGN shareable arg_rhs
 		    {
 		    /*%%%*/
 			rb_backref_error(p, $1);
 			$$ = NEW_BEGIN(0, &@$);
 		    /*% %*/
-		    /*% ripper[error]: assign_error!(opassign!(var_field(p, $1), $2, $3)) %*/
+		    /*% ripper[error]: assign_error!(opassign!(var_field(p, $1), $2, $4)) %*/
 		    }
 		| arg tDOT2 arg
 		    {
@@ -2530,6 +2531,16 @@ rel_expr	: arg relop arg   %prec '>'
 		    {
 			rb_warning1("comparison '%s' after comparison", WARN_ID($2));
 			$$ = call_bin_op(p, $1, $2, $3, &@2, &@$);
+		    }
+		;
+
+shareable	: tSP
+		    {
+			$$ = p->ctxt.shareable_constant_value;
+		    }
+		| none
+		    {
+			$$ = p->ctxt.shareable_constant_value;
 		    }
 		;
 
@@ -3038,10 +3049,10 @@ primary		: literal
 			    m->nd_next = $2;
 			    break;
 			  case NODE_MASGN: /* e.each {|*internal_var| a, b, c = (internal_var.length == 1 && Array === (tmp = internal_var[0]) ? tmp : internal_var); ... } */
-			    m->nd_next = node_assign(p, $2, NEW_FOR_MASGN(internal_var, &@2), &@2);
+			    m->nd_next = node_assign(p, $2, NEW_FOR_MASGN(internal_var, &@2), 0, &@2);
 			    break;
 			  default: /* e.each {|*internal_var| @a, B, c[1], d.attr = internal_val; ... } */
-			    m->nd_next = node_assign(p, NEW_MASGN(NEW_LIST($2, &@2), 0, &@2), internal_var, &@2);
+			    m->nd_next = node_assign(p, NEW_MASGN(NEW_LIST($2, &@2), 0, &@2), internal_var, 0, &@2);
 			}
 			/* {|*internal_id| <m> = internal_id; ... } */
 			args = new_args(p, m, 0, id, 0, new_args_tail(p, 0, 0, 0, &@2), &@2);
@@ -4441,7 +4452,7 @@ opt_rescue	: k_rescue exc_list exc_var then
 		    {
 		    /*%%%*/
 			$$ = NEW_RESBODY($2,
-					 $3 ? block_append(p, node_assign(p, $3, NEW_ERRINFO(&@3), &@3), $5) : $5,
+					 $3 ? block_append(p, node_assign(p, $3, NEW_ERRINFO(&@3), 0, &@3), $5) : $5,
 					 $6, &@$);
 			fixpos($$, $2?$2:$5);
 		    /*% %*/
@@ -10911,9 +10922,9 @@ mark_lvar_used(struct parser_params *p, NODE *rhs)
 extern VALUE rb_mRubyVMFrozenCore;
 
 static NODE *
-shareable_constant_value(struct parser_params *p, NODE *value, const YYLTYPE *loc)
+shareable_constant_value(struct parser_params *p, NODE *value, int shareable, const YYLTYPE *loc)
 {
-    if (p->ctxt.shareable_constant_value) {
+    if (shareable) {
 	NODE *fcore = NEW_LIT(rb_mRubyVMFrozenCore, loc);
 	value = NEW_CALL(fcore, rb_intern("make_shareable"),
 			NEW_LIST(value, loc), loc);
@@ -10922,13 +10933,13 @@ shareable_constant_value(struct parser_params *p, NODE *value, const YYLTYPE *lo
 }
 
 static NODE *
-node_assign(struct parser_params *p, NODE *lhs, NODE *rhs, const YYLTYPE *loc)
+node_assign(struct parser_params *p, NODE *lhs, NODE *rhs, int shareable, const YYLTYPE *loc)
 {
     if (!lhs) return 0;
 
     switch (nd_type(lhs)) {
       case NODE_CDECL:
-	rhs = shareable_constant_value(p, rhs, loc);
+	rhs = shareable_constant_value(p, rhs, shareable, loc);
 	/* fallthru */
 
       case NODE_GASGN:
@@ -11841,27 +11852,26 @@ new_unique_key_hash(struct parser_params *p, NODE *hash, const YYLTYPE *loc)
 
 #ifndef RIPPER
 static NODE *
-new_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, const YYLTYPE *loc)
+new_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, int shareable, const YYLTYPE *loc)
 {
     NODE *asgn;
 
     if (lhs) {
 	ID vid = lhs->nd_vid;
 	YYLTYPE lhs_loc = lhs->nd_loc;
-	bool shareable = false;
-	switch (nd_type(lhs)) {
-	  case NODE_CDECL:
-	  case NODE_COLON2:
-	  case NODE_COLON3:
-	    shareable = true;
-	    break;
-	  default:
-	    break;
+	if (shareable) {
+	    switch (nd_type(lhs)) {
+	      case NODE_CDECL:
+	      case NODE_COLON2:
+	      case NODE_COLON3:
+		break;
+	      default:
+		shareable = 0;
+		break;
+	    }
 	}
 	if (op == tOROP) {
-	    if (shareable) {
-		rhs = shareable_constant_value(p, rhs, &rhs->nd_loc);
-	    }
+	    rhs = shareable_constant_value(p, rhs, shareable, &rhs->nd_loc);
 	    lhs->nd_value = rhs;
 	    nd_set_loc(lhs, loc);
 	    asgn = NEW_OP_ASGN_OR(gettable(p, vid, &lhs_loc), lhs, loc);
@@ -11876,7 +11886,7 @@ new_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, const YYLTYP
 	}
 	else if (op == tANDOP) {
 	    if (shareable) {
-		rhs = shareable_constant_value(p, rhs, &rhs->nd_loc);
+		rhs = shareable_constant_value(p, rhs, shareable, &rhs->nd_loc);
 	    }
 	    lhs->nd_value = rhs;
 	    nd_set_loc(lhs, loc);
@@ -11886,7 +11896,7 @@ new_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, const YYLTYP
 	    asgn = lhs;
 	    rhs = NEW_CALL(gettable(p, vid, &lhs_loc), op, NEW_LIST(rhs, &rhs->nd_loc), loc);
 	    if (shareable) {
-		rhs = shareable_constant_value(p, rhs, &rhs->nd_loc);
+		rhs = shareable_constant_value(p, rhs, shareable, &rhs->nd_loc);
 	    }
 	    asgn->nd_value = rhs;
 	    nd_set_loc(asgn, loc);
@@ -11928,12 +11938,12 @@ new_attr_op_assign(struct parser_params *p, NODE *lhs,
 }
 
 static NODE *
-new_const_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, const YYLTYPE *loc)
+new_const_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, int shareable, const YYLTYPE *loc)
 {
     NODE *asgn;
 
     if (lhs) {
-	rhs = shareable_constant_value(p, rhs, loc);
+	rhs = shareable_constant_value(p, rhs, shareable, loc);
 	asgn = NEW_OP_CDECL(lhs, op, rhs, loc);
     }
     else {
@@ -12458,7 +12468,7 @@ reg_named_capture_assign_iter(const OnigUChar *name, const OnigUChar *name_end,
         return ST_CONTINUE;
 
     var = intern_cstr(s, len, enc);
-    node = node_assign(p, assignable(p, var, 0, arg->loc), NEW_LIT(ID2SYM(var), arg->loc), arg->loc);
+    node = node_assign(p, assignable(p, var, 0, arg->loc), NEW_LIT(ID2SYM(var), arg->loc), 0, arg->loc);
     succ = arg->succ_block;
     if (!succ) succ = NEW_BEGIN(0, arg->loc);
     succ = block_append(p, succ, node);
