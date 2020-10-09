@@ -26,8 +26,7 @@ begin
     end
 
     def test_history_back
-      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl})
-      sleep 0.5
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
       write(":a\n")
       write("\C-p")
       close
@@ -40,8 +39,7 @@ begin
     end
 
     def test_backspace
-      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl})
-      sleep 0.5
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
       write(":abc\C-h\n")
       close
       assert_screen(<<~EOC)
@@ -53,8 +51,7 @@ begin
     end
 
     def test_autowrap
-      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl})
-      sleep 0.5
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
       write('01234567890123456789012')
       close
       assert_screen(<<~EOC)
@@ -65,8 +62,7 @@ begin
     end
 
     def test_finish_autowrapped_line
-      start_terminal(10, 40, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl})
-      sleep 0.5
+      start_terminal(10, 40, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
       write("[{'user'=>{'email'=>'a@a', 'id'=>'ABC'}, 'version'=>4, 'status'=>'succeeded'}]\n")
       close
       assert_screen(<<~EOC)
@@ -82,8 +78,7 @@ begin
     end
 
     def test_finish_autowrapped_line_in_the_middle_of_lines
-      start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl})
-      sleep 0.5
+      start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
       write("[{'user'=>{'email'=>'abcdef@abcdef', 'id'=>'ABC'}, 'version'=>4, 'status'=>'succeeded'}]#{"\C-b"*7}\n")
       close
       assert_screen(<<~EOC)
@@ -101,8 +96,7 @@ begin
     end
 
     def test_finish_autowrapped_line_in_the_middle_of_multilines
-      start_terminal(30, 16, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl})
-      sleep 0.5
+      start_terminal(30, 16, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
       write("<<~EOM\n  ABCDEFG\nEOM\n")
       close
       assert_screen(<<~'EOC')
@@ -120,8 +114,7 @@ begin
       write_inputrc <<~'LINES'
         "abc": "123"
       LINES
-      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl})
-      sleep 0.5
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
       write("abc\n")
       close
       assert_screen(<<~EOC)
@@ -136,8 +129,7 @@ begin
       write_inputrc <<~LINES
         set show-mode-in-prompt on
       LINES
-      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl})
-      sleep 0.5
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
       close
       assert_screen(<<~EOC)
         Multiline REPL.
@@ -150,8 +142,7 @@ begin
         set editing-mode vi
         set show-mode-in-prompt on
       LINES
-      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl})
-      sleep 0.5
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
       write(":a\n\C-[k")
       close
       assert_screen(<<~EOC)
@@ -167,8 +158,7 @@ begin
         set show-mode-in-prompt on
         set emacs-mode-string [emacs]
       LINES
-      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl})
-      sleep 0.5
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
       close
       assert_screen(<<~EOC)
         Multiline REPL.
@@ -181,8 +171,7 @@ begin
         set show-mode-in-prompt on
         set emacs-mode-string "[emacs]"
       LINES
-      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl})
-      sleep 0.5
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
       close
       assert_screen(<<~EOC)
         Multiline REPL.
@@ -197,8 +186,7 @@ begin
         set vi-ins-mode-string "{InS}"
         set vi-cmd-mode-string "{CmD}"
       LINES
-      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl})
-      sleep 0.5
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
       write(":a\n\C-[k")
       close
       assert_screen(<<~EOC)
