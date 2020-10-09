@@ -1175,9 +1175,7 @@ ractor_close_outgoing(rb_execution_context_t *ec, rb_ractor_t *r)
 
         // wakeup all taking ractors
         rb_ractor_t *taking_ractor;
-        bp();
         while ((taking_ractor = ractor_waiting_list_shift(r, &r->taking_ractors)) != NULL) {
-            rp(taking_ractor->self);
             RACTOR_LOCK(taking_ractor);
             ractor_wakeup(taking_ractor, wait_taking, wakeup_by_close);
             RACTOR_UNLOCK(taking_ractor);
