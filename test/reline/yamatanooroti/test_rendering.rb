@@ -23,6 +23,7 @@ begin
       Dir.chdir(@pwd)
       FileUtils.rm_rf(@tmpdir)
       ENV['INPUTRC'] = @inputrc_backup
+      ENV.delete('RELINE_TEST_PROMPT') if ENV['RELINE_TEST_PROMPT']
     end
 
     def test_history_back
@@ -194,6 +195,33 @@ begin
         {InS}prompt> :a
         => :a
         {CmD}prompt> :a
+      EOC
+    end
+
+    def test_prompt_with_escape_sequence
+      ENV['RELINE_TEST_PROMPT'] = "\1\e[30m\2prompt> \1\e[m\2"
+      start_terminal(5, 15, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
+      write("123\n")
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        prompt> 123
+        => 123
+        prompt>
+      EOC
+    end
+
+    def test_prompt_with_escape_sequence_and_autowrap
+      ENV['RELINE_TEST_PROMPT'] = "\1\e[30m\2prompt> \1\e[m\2"
+      start_terminal(5, 15, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
+      write("12345678\n")
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        prompt> 1234567
+        8
+        => 12345678
+        prompt>
       EOC
     end
 
