@@ -1174,6 +1174,12 @@ x = __ENCODING__
     assert_equal(1, ex.message.scan(w).size, "same #{w.inspect} warning should be just once")
   end
 
+  def test_shareable_constant_value
+    assert_warning(/invalid value/) do
+      assert_valid_syntax("# shareable_constant_value: invalid-option", verbose: true)
+    end
+  end
+
 =begin
   def test_past_scope_variable
     assert_warning(/past scope/) {catch {|tag| eval("BEGIN{throw tag}; tap {a = 1}; a")}}

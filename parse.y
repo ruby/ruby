@@ -31,6 +31,7 @@ struct lex_context {
     unsigned int in_kwarg: 1;
     unsigned int in_def: 1;
     unsigned int in_class: 1;
+    unsigned int shareable_constant_value: 1;
 };
 
 #include "internal.h"
@@ -958,6 +959,7 @@ restore_defun(struct parser_params *p, NODE *name)
     YYSTYPE c = {.val = name->nd_cval};
     p->cur_arg = name->nd_vid;
     p->ctxt.in_def = c.ctxt.in_def;
+    p->ctxt.shareable_constant_value = c.ctxt.shareable_constant_value;
 }
 
 static void
@@ -3070,6 +3072,7 @@ primary		: literal
 		    /*% ripper: class!($2, $3, $5) %*/
 			local_pop(p);
 			p->ctxt.in_class = $<ctxt>1.in_class;
+			p->ctxt.shareable_constant_value = $<ctxt>1.shareable_constant_value;
 		    }
 		| k_class tLSHFT expr
 		    {
@@ -3091,6 +3094,7 @@ primary		: literal
 			local_pop(p);
 			p->ctxt.in_def = $<ctxt>1.in_def;
 			p->ctxt.in_class = $<ctxt>1.in_class;
+			p->ctxt.shareable_constant_value = $<ctxt>1.shareable_constant_value;
 		    }
 		| k_module cpath
 		    {
@@ -3113,6 +3117,7 @@ primary		: literal
 		    /*% ripper: module!($2, $4) %*/
 			local_pop(p);
 			p->ctxt.in_class = $<ctxt>1.in_class;
+			p->ctxt.shareable_constant_value = $<ctxt>1.shareable_constant_value;
 		    }
 		| defn_head
 		  f_arglist
@@ -7961,6 +7966,13 @@ parser_set_compile_option_flag(struct parser_params *p, const char *name, const 
 		 (b ? Qtrue : Qfalse));
 }
 
+static void
+parser_set_shareable_constant_value(struct parser_params *p, const char *name, const char *val)
+{
+    int b = parser_get_bool(p, name, val);
+    if (b >= 0) p->ctxt.shareable_constant_value = b;
+}
+
 # if WARN_PAST_SCOPE
 static void
 parser_set_past_scope(struct parser_params *p, const char *name, const char *val)
@@ -7980,6 +7992,7 @@ static const struct magic_comment magic_comments[] = {
     {"coding", magic_comment_encoding, parser_encode_length},
     {"encoding", magic_comment_encoding, parser_encode_length},
     {"frozen_string_literal", parser_set_compile_option_flag},
+    {"shareable_constant_value", parser_set_shareable_constant_value},
     {"warn_indent", parser_set_token_info},
 # if WARN_PAST_SCOPE
     {"warn_past_scope", parser_set_past_scope},
