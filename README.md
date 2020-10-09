@@ -6,7 +6,7 @@
 [![Actions Status](https://github.com/ruby/ruby/workflows/Ubuntu/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"Ubuntu")
 [![Actions Status](https://github.com/ruby/ruby/workflows/Windows/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"Windows")
 
-# What's Ruby
+# What is Ruby?
 
 Ruby is an interpreted object-oriented programming language often
 used for web development. It also offers many scripting features
