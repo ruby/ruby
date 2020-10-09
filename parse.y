@@ -10926,18 +10926,32 @@ mark_lvar_used(struct parser_params *p, NODE *rhs)
 }
 
 static NODE *
+shareable_constant_value(struct parser_params *p, NODE *value, const YYLTYPE *loc)
+{
+    if (p->ctxt.shareable_constant_value) {
+	NODE *ractor = NEW_COLON3(rb_intern("Ractor"), loc);
+	value = NEW_CALL(ractor, rb_intern("make_shareable"),
+			NEW_LIST(value, loc), loc);
+    }
+    return value;
+}
+
+static NODE *
 node_assign(struct parser_params *p, NODE *lhs, NODE *rhs, const YYLTYPE *loc)
 {
     if (!lhs) return 0;
 
     switch (nd_type(lhs)) {
+      case NODE_CDECL:
+	rhs = shareable_constant_value(p, rhs, loc);
+	/* fallthru */
+
       case NODE_GASGN:
       case NODE_IASGN:
       case NODE_LASGN:
       case NODE_DASGN:
       case NODE_DASGN_CURR:
       case NODE_MASGN:
-      case NODE_CDECL:
       case NODE_CVASGN:
 	lhs->nd_value = rhs;
 	nd_set_loc(lhs, loc);
