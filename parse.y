@@ -11876,7 +11876,20 @@ new_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, const YYLTYP
     if (lhs) {
 	ID vid = lhs->nd_vid;
 	YYLTYPE lhs_loc = lhs->nd_loc;
+	bool shareable = false;
+	switch (nd_type(lhs)) {
+	  case NODE_CDECL:
+	  case NODE_COLON2:
+	  case NODE_COLON3:
+	    shareable = true;
+	    break;
+	  default:
+	    break;
+	}
 	if (op == tOROP) {
+	    if (shareable) {
+		rhs = shareable_constant_value(p, rhs, &rhs->nd_loc);
+	    }
 	    lhs->nd_value = rhs;
 	    nd_set_loc(lhs, loc);
 	    asgn = NEW_OP_ASGN_OR(gettable(p, vid, &lhs_loc), lhs, loc);
@@ -11890,13 +11903,20 @@ new_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, const YYLTYP
 	    }
 	}
 	else if (op == tANDOP) {
+	    if (shareable) {
+		rhs = shareable_constant_value(p, rhs, &rhs->nd_loc);
+	    }
 	    lhs->nd_value = rhs;
 	    nd_set_loc(lhs, loc);
 	    asgn = NEW_OP_ASGN_AND(gettable(p, vid, &lhs_loc), lhs, loc);
 	}
 	else {
 	    asgn = lhs;
-	    asgn->nd_value = NEW_CALL(gettable(p, vid, &lhs_loc), op, NEW_LIST(rhs, &rhs->nd_loc), loc);
+	    rhs = NEW_CALL(gettable(p, vid, &lhs_loc), op, NEW_LIST(rhs, &rhs->nd_loc), loc);
+	    if (shareable) {
+		rhs = shareable_constant_value(p, rhs, &rhs->nd_loc);
+	    }
+	    asgn->nd_value = rhs;
 	    nd_set_loc(asgn, loc);
 	}
     }
@@ -11941,6 +11961,7 @@ new_const_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, const 
     NODE *asgn;
 
     if (lhs) {
+	rhs = shareable_constant_value(p, rhs, loc);
 	asgn = NEW_OP_CDECL(lhs, op, rhs, loc);
     }
     else {
