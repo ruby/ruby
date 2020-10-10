@@ -99,6 +99,27 @@ assert_equal 'ok', %q{
   r.take
 }
 
+# Ractor#recv can be called directly in ractor block
+assert_equal 'ok', %q{
+  r = Ractor.new do
+    msg = recv
+  end
+  r.send 'ok'
+  r.take
+}
+
+# Ractor#recv can't be called from other ractor
+assert_equal "private method `recv' called", %q{
+  r = Ractor.new do
+    msg = recv
+  end
+  begin
+    r.__send__(:recv)
+  rescue NoMethodError => e
+    e.message
+  end
+}
+
 ###
 ###
 # Ractor still has several memory corruption so skip huge number of tests
@@ -158,6 +179,46 @@ assert_equal 'true', %q{
   30.times.map{|i|
     test i
   }.all?('ok')
+}
+
+# Ractor#select should raise ClosedError if requested ractor finished is terminated
+assert_equal '[0, 1, 2, "end"]', %q{
+  r1 = Ractor.new do
+    3.times do |index|
+      Ractor.yield index
+    end
+    'end'
+  end
+  r2 = Ractor.new { Ractor.yield Ractor.recv }
+
+  result = []
+  begin
+    loop do
+      _r, message = Ractor.select(r1, r2)
+      result << message
+    end
+    'Not reachable' # This line is not supposed to be reached
+  rescue Ractor::ClosedError => e
+    result.inspect
+  end
+}
+
+# Ractor#select should raise ClosedError if requested ractor is actively closed
+assert_equal 'ok', %q{
+  r1 = Ractor.new do
+    Ractor.yield Ractor.recv
+  end
+  r1.close
+  r2 = Ractor.new { Ractor.yield Ractor.recv }
+
+  begin
+    loop do
+      _r, message = Ractor.select(r1, r2)
+    end
+    'Not reachable' # This line is not supposed to be reached
+  rescue Ractor::ClosedError => e
+    'ok'
+  end
 }
 
 # Outgoing port of a ractor will be closed when the Ractor is terminated.

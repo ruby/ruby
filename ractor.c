@@ -932,7 +932,16 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, int alen, VALUE yield
         ractor_basket_setup(ec, &cr->wait.yielded_basket, yielded_value, move, false);
     }
 
-    // TODO: shuffle actions
+    // Shuffle actions
+    i = alen - 1;
+    while (i > 0) {
+        int j = (int)rb_random_ulong_limited(rb_cRandom, i);
+        struct ractor_select_action tmp;
+        tmp = actions[i];
+        actions[i] = actions[j];
+        actions[j] = tmp;
+        i--;
+    }
 
     while (1) {
         RUBY_DEBUG_LOG("try actions (%s)", wait_status_str(wait_status));
@@ -1752,7 +1761,7 @@ Init_Ractor(void)
     rb_eRactorError       = rb_define_class_under(rb_cRactor, "Error", rb_eRuntimeError);
     rb_eRactorRemoteError = rb_define_class_under(rb_cRactor, "RemoteError", rb_eRactorError);
     rb_eRactorMovedError  = rb_define_class_under(rb_cRactor, "MovedError",  rb_eRactorError);
-    rb_eRactorClosedError = rb_define_class_under(rb_cRactor, "ClosedError", rb_eStopIteration);
+    rb_eRactorClosedError = rb_define_class_under(rb_cRactor, "ClosedError", rb_eRactorError);
 
     rb_cRactorMovedObject = rb_define_class_under(rb_cRactor, "MovedObject", rb_cBasicObject);
     rb_undef_alloc_func(rb_cRactorMovedObject);
