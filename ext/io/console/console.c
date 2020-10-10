@@ -546,7 +546,7 @@ console_getch(int argc, VALUE *argv, VALUE io)
 	    if (w < 0) rb_eof_error();
 	    if (!(w & RB_WAITFD_IN)) return Qnil;
 # else
-	    VALUE result = RB_NUM2INT(rb_io_wait(io, RUBY_IO_READABLE, timeout));
+	    VALUE result = rb_io_wait(io, RUBY_IO_READABLE, timeout);
 	    if (result == Qfalse) return Qnil;
 # endif
 	}
