@@ -537,7 +537,13 @@ console_getch(int argc, VALUE *argv, VALUE io)
 	    timeout = rb_scheduler_timeout(&tv);
 # endif
 	}
-	if (optp->vmin != 1) {
+	switch (optp->vmin) {
+	  case 1: /* default */
+	    break;
+	  case 0: /* return nil when timed out */
+	    if (optp->vtime) break;
+	    /* fallthru */
+	  default:
 	    rb_warning("min option ignored");
 	}
 	if (optp->intr) {
