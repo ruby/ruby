@@ -544,7 +544,7 @@ console_getch(int argc, VALUE *argv, VALUE io)
 	    if (optp->vtime) break;
 	    /* fallthru */
 	  default:
-	    rb_warning("min option ignored");
+	    rb_warning("min option larger than 1 ignored");
 	}
 	if (optp->intr) {
 # ifndef HAVE_RB_IO_WAIT
@@ -556,8 +556,8 @@ console_getch(int argc, VALUE *argv, VALUE io)
 	    if (result == Qfalse) return Qnil;
 # endif
 	}
-	else {
-	    rb_warning("vtime option ignored if intr flag is unset");
+	else if (optp->vtime) {
+	    rb_warning("Non-zero vtime option ignored if intr flag is unset");
 	}
     }
     len = (int)(VALUE)rb_thread_call_without_gvl(nogvl_getch, wbuf, RUBY_UBF_IO, 0);
