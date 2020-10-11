@@ -114,6 +114,22 @@ describe "Kernel#warn" do
       end
     end
 
+    guard -> { Kernel.instance_method(:tap).source_location } do
+      it "skips <internal: core library methods defined in Ruby" do
+        file, line = Kernel.instance_method(:tap).source_location
+        file.should.start_with?('<internal:')
+
+        file = fixture(__FILE__ , "warn_core_method.rb")
+        n = 9
+        ruby_exe(file, options: "--disable-gems", args: "2>&1").lines.should == [
+          "#{file}:#{n+0}: warning: use X instead\n",
+          "#{file}:#{n+1}: warning: use X instead\n",
+          "#{file}:#{n+2}: warning: use X instead\n",
+          "#{file}:#{n+4}: warning: use X instead\n",
+        ]
+      end
+    end
+
     ruby_version_is "3.0" do
       it "accepts :category keyword with a symbol" do
         -> {
