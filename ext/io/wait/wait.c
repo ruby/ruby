@@ -1,3 +1,4 @@
+/* -*- c-file-style: "ruby"; indent-tabs-mode: t -*- */
 /**********************************************************************
 
   io/wait.c -
@@ -232,7 +233,7 @@ io_wait(int argc, VALUE *argv, VALUE io)
 
     if (argc < 2 || (argc >= 2 && RB_SYMBOL_P(argv[1]))) {
 	if (argc > 0) {
-	  timeout = argv[0];
+	    timeout = argv[0];
 	}
 
 	for (int i = 1; i < argc; i += 1) {
@@ -243,7 +244,7 @@ io_wait(int argc, VALUE *argv, VALUE io)
 	events = RB_NUM2UINT(argv[0]);
 
 	if (argv[1] != Qnil) {
-	  timeout = argv[1];
+	    timeout = argv[1];
 	}
     }
     else {
