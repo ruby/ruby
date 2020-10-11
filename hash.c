@@ -6827,7 +6827,7 @@ env_update(VALUE env, VALUE hash)
  *
  *  === Default Values
  *
- *  The methods #[], #values_at and #dig need to return the value associated to a certain key
+ *  The methods #[], #values_at and #dig need to return the value associated to a certain key.
  *  When that key is not found, that value will be determined by its default proc (if any)
  *  or else its default (initially `nil`).
  *
