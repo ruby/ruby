@@ -214,7 +214,7 @@ module WEBrick
 
       def service(req, res)
         # if this class is mounted on "/" and /~username is requested.
-        # we're going to override path information before invoking service.
+        # we're going to override path informations before invoking service.
         if defined?(Etc) && @options[:UserDir] && req.script_name.empty?
           if %r|^(/~([^/]+))| =~ req.path_info
             script_name, user = $1, $2
