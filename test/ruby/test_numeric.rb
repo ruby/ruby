@@ -435,6 +435,26 @@ class TestNumeric < Test::Unit::TestCase
     assert_equal(12, 12.pow(1, 10000000001), '[Bug #14259]')
     assert_equal(12, 12.pow(1, 10000000002), '[Bug #14259]')
     assert_equal(17298641040, 12.pow(72387894339363242, 243682743764), '[Bug #14259]')
+
+    integers = [-2, -1, 0, 1, 2, 3, 6, 1234567890123456789]
+    integers.each do |i|
+      assert_equal(0, i.pow(0, 1), '[Bug #17257]')
+      assert_equal(1, i.pow(0, 2))
+      assert_equal(1, i.pow(0, 3))
+      assert_equal(1, i.pow(0, 6))
+      assert_equal(1, i.pow(0, 1234567890123456789))
+
+      assert_equal(0,  i.pow(0, -1))
+      assert_equal(-1, i.pow(0, -2))
+      assert_equal(-2, i.pow(0, -3))
+      assert_equal(-5, i.pow(0, -6))
+      assert_equal(-1234567890123456788, i.pow(0, -1234567890123456789))
+    end
+
+    assert_equal(0,  0.pow(2, 1))
+    assert_equal(0,  0.pow(3, 1))
+    assert_equal(0,  2.pow(3, 1))
+    assert_equal(0, -2.pow(3, 1))
   end
 
 end
