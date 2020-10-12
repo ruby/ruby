@@ -18,6 +18,7 @@ Gem::Specification.new do |spec|
       f.match(%r{\A(?:test|spec|features)/|\A\.(?:git|travis)})
     end
   end
+  spec.extensions    = %w[ext/io/nonblock/extconf.rb]
   spec.bindir        = "exe"
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
