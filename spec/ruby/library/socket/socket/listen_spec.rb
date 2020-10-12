@@ -41,8 +41,8 @@ describe 'Socket#listen' do
       end
 
       platform_is :android do
-        it 'raises Errno::EACCES' do
-          -> { @server.listen(1) }.should raise_error(Errno::EACCES)
+        it 'raises Errno::EOPNOTSUPP or Errno::EACCES' do
+          -> { @server.listen(1) }.should raise_error(-> exc { Errno::EACCES === exc || Errno::EOPNOTSUPP === exc })
         end
       end
     end
