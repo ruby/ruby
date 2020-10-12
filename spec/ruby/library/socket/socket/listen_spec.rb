@@ -34,8 +34,16 @@ describe 'Socket#listen' do
         @server.close
       end
 
-      it 'raises Errno::EOPNOTSUPP' do
-        -> { @server.listen(1) }.should raise_error(Errno::EOPNOTSUPP)
+      platform_is_not :android do
+        it 'raises Errno::EOPNOTSUPP' do
+          -> { @server.listen(1) }.should raise_error(Errno::EOPNOTSUPP)
+        end
+      end
+
+      platform_is :android do
+        it 'raises Errno::EACCES' do
+          -> { @server.listen(1) }.should raise_error(Errno::EACCES)
+        end
       end
     end
 

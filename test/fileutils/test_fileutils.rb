@@ -72,8 +72,13 @@ class TestFileUtils < Test::Unit::TestCase
     end
 
     def check_have_hardlink?
-      File.link nil, nil
-    rescue NotImplementedError
+      Dir.mktmpdir do |dir|
+        Dir.chdir(dir) do
+          File.write "dummy", "dummy"
+          File.link "dummy", "hardlink"
+        end
+      end
+    rescue NotImplementedError, Errno::EACCES
       return false
     rescue
       return true
