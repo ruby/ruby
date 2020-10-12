@@ -11,7 +11,7 @@ ruby_version_is "2.7" do
 
     it "can be standalone in operator that deconstructs value" do
       eval(<<-RUBY).should == [0, 1]
-        [0, 1] in [a, b]
+        [0, 1] => [a, b]
         [a, b]
       RUBY
     end

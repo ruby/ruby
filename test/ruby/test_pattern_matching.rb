@@ -272,7 +272,7 @@ class TestPatternMatching < Test::Unit::TestCase
     end
 
     assert_syntax_error(%q{
-      0 in [a, a]
+      0 => [a, a]
     }, /duplicated variable name/)
   end
 
@@ -737,10 +737,10 @@ END
   end
 
   def test_find_pattern
-    [0, 1, 2] in [*, 1 => a, *]
+    [0, 1, 2] => [*, 1 => a, *]
     assert_equal(1, a)
 
-    [0, 1, 2] in [*a, 1 => b, *c]
+    [0, 1, 2] => [*a, 1 => b, *c]
     assert_equal([0], a)
     assert_equal(1, b)
     assert_equal([2], c)
@@ -763,7 +763,7 @@ END
       end
     end
 
-    [0, 1, 2] in [*a, 1 => b, 2 => c, *d]
+    [0, 1, 2] => [*a, 1 => b, 2 => c, *d]
     assert_equal([0], a)
     assert_equal(1, b)
     assert_equal(2, c)
@@ -1451,18 +1451,18 @@ END
 
   ################################################################
 
-  def test_modifier_in
-    1 in a
+  def test_assoc
+    1 => a
     assert_equal 1, a
     assert_raise(NoMatchingPatternError) do
-      {a: 1} in {a: 0}
+      {a: 1} => {a: 0}
     end
-    assert_syntax_error("if {} in {a:}; end", /void value expression/)
+    assert_syntax_error("if {} => {a:}; end", /void value expression/)
     assert_syntax_error(%q{
-      1 in a, b
+      1 => a, b
     }, /unexpected/, '[ruby-core:95098]')
     assert_syntax_error(%q{
-      1 in a:
+      1 => a:
     }, /unexpected/, '[ruby-core:95098]')
   end
 
@@ -1480,7 +1480,7 @@ END
 
   def test_experimental_warning
     assert_experimental_warning("case 0; in 0; end")
-    assert_experimental_warning("0 in 0")
+    assert_experimental_warning("0 => 0")
   end
 end
 END_of_GUARD

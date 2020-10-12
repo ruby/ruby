@@ -412,7 +412,7 @@ eot
       [:@int, "0", [1, 5]],
       [:in, [:aryptn, nil, nil, nil, nil], [[:void_stmt]], nil]],
 
-    [__LINE__, %q{ 0 in [*, a, *] }] =>
+    [__LINE__, %q{ 0 => [*, a, *] }] =>
     [:case,
       [:@int, "0", [1, 0]],
       [:in,
@@ -424,7 +424,7 @@ eot
         nil,
         nil]],
 
-    [__LINE__, %q{ 0 in [*a, b, *c] }] =>
+    [__LINE__, %q{ 0 => [*a, b, *c] }] =>
     [:case,
       [:@int, "0", [1, 0]],
       [:in,
@@ -436,7 +436,7 @@ eot
         nil,
         nil]],
 
-    [__LINE__, %q{ 0 in A(*a, b, c, *d) }] =>
+    [__LINE__, %q{ 0 => A(*a, b, c, *d) }] =>
     [:case,
       [:@int, "0", [1, 0]],
       [:in,
