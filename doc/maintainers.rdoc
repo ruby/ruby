@@ -38,8 +38,6 @@ Zachary Scott (zzak)
 
 === Libraries
 
-[lib/drb.rb, lib/drb/*]
-  Masatoshi SEKI (seki)
 [lib/debug.rb]
   _unmaintained_
 [lib/mkmf.rb]
@@ -116,6 +114,9 @@ Zachary Scott (zzak)
 [lib/did_you_mean.rb]
   Yuki Nishijima (yuki24)
   https://github.com/ruby/did_you_mean
+[lib/drb.rb, lib/drb/*]
+  Masatoshi SEKI (seki)
+  https://github.com/ruby/drb
 [lib/erb.rb]
   Masatoshi SEKI (seki), Takashi Kokubun (k0kubun)
   https://github.com/ruby/erb

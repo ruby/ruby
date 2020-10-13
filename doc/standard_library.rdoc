@@ -9,7 +9,6 @@ description.
 == Libraries
 
 DEBUGGER__:: Debugging functionality for Ruby
-DRb:: Distributed object system for Ruby
 MakeMakefile:: Module used to generate a Makefile for C extensions
 RbConfig:: Information of your configure and build of Ruby
 Gem:: Package management framework for Ruby
@@ -39,6 +38,7 @@ CGI:: Support for the Common Gateway Interface protocol
 CSV:: Provides an interface to read and write CSV files and data
 Delegator:: Provides three abilities to delegate method calls to an object
 DidYouMean:: "Did you mean?" experience in Ruby
+DRb:: Distributed object system for Ruby
 English.rb:: Require 'English.rb' to reference global variables with less cryptic names
 ERB:: An easy to use but powerful templating system for Ruby
 FileUtils:: Several file utility methods for copying, moving, removing, etc

@@ -79,6 +79,7 @@ REPOSITORIES = {
   time: "ruby/time",
   pp: "ruby/pp",
   prettyprint: "ruby/prettyprint",
+  drb: "ruby/drb",
 }
 
 def sync_default_gems(gem)
