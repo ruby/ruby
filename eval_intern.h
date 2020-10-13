@@ -127,14 +127,26 @@ LONG WINAPI rb_w32_stack_overflow_handler(struct _EXCEPTION_POINTERS *);
       rb_fiber_start(); \
   } while (0)
 
+void rb_ec_vm_lock_rec_release(rb_execution_context_t *ec, int lock_rec);
+
+static inline void
+rb_ec_vm_lock_rec_check(rb_execution_context_t *ec, int lock_rec)
+{
+    if (rb_ec_vm_lock_rec(ec) != lock_rec) {
+        rb_ec_vm_lock_rec_release(ec, lock_rec);
+    }
+}
+
 #define EC_PUSH_TAG(ec) do { \
   rb_execution_context_t * const _ec = (ec); \
   struct rb_vm_tag _tag; \
   _tag.state = TAG_NONE; \
   _tag.tag = Qundef; \
-  _tag.prev = _ec->tag;
+  _tag.prev = _ec->tag; \
+  _tag.lock_rec = rb_ec_vm_lock_rec(_ec); \
 
 #define EC_POP_TAG() \
+  rb_ec_vm_lock_rec_check(_ec, _tag.lock_rec); \
   _ec->tag = _tag.prev; \
 } while (0)
 
