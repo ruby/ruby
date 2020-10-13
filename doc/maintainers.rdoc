@@ -64,8 +64,6 @@ Zachary Scott (zzak)
   Koichi Sasada (ko1)
 [ext/objspace]
   _unmaintained_
-[ext/pathname]
-  Tanaka Akira (akr)
 [ext/pty]
   _unmaintained_
 [ext/ripper]
@@ -334,6 +332,9 @@ Zachary Scott (zzak)
   Kazuki Yamaguchi (rhe)
   https://github.com/ruby/openssl
   https://rubygems.org/gems/openssl
+[ext/pathname]
+  Tanaka Akira (akr)
+  https://github.com/ruby/pathname
 [ext/psych]
   Aaron Patterson (tenderlove), Hiroshi SHIBATA (hsbt)
   https://github.com/ruby/psych

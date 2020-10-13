@@ -20,7 +20,6 @@ Coverage:: Provides coverage measurement for Ruby
 Digest:: Provides a framework for message digest libraries
 Monitor:: Provides an object or module to use safely by more than one thread
 objspace:: Extends ObjectSpace module to add methods for internal statistics
-Pathname:: Representation of the name of a file or directory on the filesystem
 PTY:: Creates and manages pseudo terminals
 Ripper:: Provides an interface for parsing Ruby programs into S-expressions
 Socket:: Access underlying OS socket implementations
@@ -60,6 +59,7 @@ Observable:: Provides a mechanism for publish/subscribe pattern in Ruby
 Open3:: Provides access to stdin, stdout and stderr when running other programs
 OpenStruct:: Class to build custom data structures, similar to a Hash
 OpenURI:: An easy-to-use wrapper for Net::HTTP, Net::HTTPS and Net::FTP
+Pathname:: Representation of the name of a file or directory on the filesystem
 PP:: Provides a PrettyPrinter for Ruby objects
 PrettyPrinter:: Implements a pretty printing algorithm for readable structure
 Prime:: Prime numbers and factorization library

@@ -80,6 +80,7 @@ REPOSITORIES = {
   pp: "ruby/pp",
   prettyprint: "ruby/prettyprint",
   drb: "ruby/drb",
+  pathname: "ruby/pathname",
 }
 
 def sync_default_gems(gem)
@@ -308,6 +309,12 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/test/bigdecimal", "test")
     cp_r("#{upstream}/bigdecimal.gemspec", "ext/bigdecimal")
     `git checkout ext/bigdecimal/depend`
+  when "pathname"
+    rm_rf(%w[ext/pathname test/pathname])
+    cp_r("#{upstream}/ext/pathname", "ext")
+    cp_r("#{upstream}/test/pathname", "test")
+    cp_r("#{upstream}/pathname.gemspec", "ext/pathname")
+    `git checkout ext/pathname/depend`
   else
     sync_lib gem, upstream
   end
