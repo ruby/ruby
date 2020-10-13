@@ -15,6 +15,7 @@
 #include "debug_counter.h"
 #include "ruby.h"
 #include "vm_core.h"
+#include "ujit_compile.h"
 
 // Special address values of a function generated from the
 // corresponding iseq by MJIT:
@@ -152,13 +153,18 @@ mjit_exec(rb_execution_context_t *ec)
     const rb_iseq_t *iseq;
     struct rb_iseq_constant_body *body;
 
-    if (!mjit_call_p)
+    if (!mjit_call_p && !rb_ujit_enabled_p())
         return Qundef;
     RB_DEBUG_COUNTER_INC(mjit_exec);
 
     iseq = ec->cfp->iseq;
     body = iseq->body;
     body->total_calls++;
+
+    const int ujit_call_threashold = 10;
+    if (body->total_calls == ujit_call_threashold) {
+        rb_ujit_compile_iseq(iseq);
+    }
 
     mjit_func_t func = body->jit_func;
     if (UNLIKELY((uintptr_t)func <= LAST_JIT_ISEQ_FUNC)) {
