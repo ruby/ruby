@@ -246,3 +246,25 @@ rb_vm_barrier(void)
         }
     }
 }
+
+void
+rb_ec_vm_lock_rec_release(rb_execution_context_t *ec, int recorded_lock_rec)
+{
+    int current_lock_rec = rb_ec_vm_lock_rec(ec);
+    unsigned int lev;
+
+    bp();
+
+    if (recorded_lock_rec > current_lock_rec) {
+        for (; recorded_lock_rec > current_lock_rec; current_lock_rec++) {
+            RB_VM_LOCK_ENTER_LEV(&lev);
+        }
+    }
+    else {
+        for (; recorded_lock_rec < current_lock_rec; current_lock_rec--) {
+            RB_VM_LOCK_LEAVE_LEV(&lev);
+        }
+    }
+
+    VM_ASSERT(recorded_lock_rec == rb_ec_vm_lock_rec(ec));
+}
