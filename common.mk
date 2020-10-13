@@ -4617,13 +4617,17 @@ encoding.$(OBJEXT): {$(VPATH)}internal/variable.h
 encoding.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 encoding.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 encoding.$(OBJEXT): {$(VPATH)}missing.h
+encoding.$(OBJEXT): {$(VPATH)}node.h
 encoding.$(OBJEXT): {$(VPATH)}onigmo.h
 encoding.$(OBJEXT): {$(VPATH)}oniguruma.h
+encoding.$(OBJEXT): {$(VPATH)}ractor_pub.h
 encoding.$(OBJEXT): {$(VPATH)}regenc.h
 encoding.$(OBJEXT): {$(VPATH)}ruby_assert.h
 encoding.$(OBJEXT): {$(VPATH)}st.h
 encoding.$(OBJEXT): {$(VPATH)}subst.h
 encoding.$(OBJEXT): {$(VPATH)}util.h
+encoding.$(OBJEXT): {$(VPATH)}vm_debug.h
+encoding.$(OBJEXT): {$(VPATH)}vm_sync.h
 enum.$(OBJEXT): $(hdrdir)/ruby.h
 enum.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 enum.$(OBJEXT): $(top_srcdir)/internal/array.h
