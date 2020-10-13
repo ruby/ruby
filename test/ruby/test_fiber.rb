@@ -185,7 +185,6 @@ class TestFiber < Test::Unit::TestCase
   end
 
   def test_terminate_transferred_fiber
-    root_fiber = Fiber.current
     log = []
     fa1 = fa2 = fb1 = r1 = nil
 
@@ -315,10 +314,10 @@ class TestFiber < Test::Unit::TestCase
     }
 
     fa1 = Fiber.new{
-      fa2 = Fiber.new{ root_fiber.transfer }
+      _fa2 = Fiber.new{ root_fiber.transfer }
     }
     fb1 = Fiber.new{
-      fb2 = Fiber.new{ root_fiber.transfer }
+      _fb2 = Fiber.new{ root_fiber.transfer }
     }
     fa1.transfer
     fb1.transfer
@@ -332,7 +331,6 @@ class TestFiber < Test::Unit::TestCase
   end
 
   def test_prohibit_transfer_to_yielding_fiber
-    root_fiber = Fiber.current
     f1 = f2 = f3 = nil
 
     f1 = Fiber.new{
