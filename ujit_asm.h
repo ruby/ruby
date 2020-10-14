@@ -285,6 +285,7 @@ void cmovz(codeblock_t* cb, x86opnd_t dst, x86opnd_t src);
 void cmp(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1);
 void cdq(codeblock_t* cb);
 void cqo(codeblock_t* cb);
+void int3(codeblock_t* cb);
 void ja(codeblock_t* cb, size_t label_idx);
 void jae(codeblock_t* cb, size_t label_idx);
 void jb(codeblock_t* cb, size_t label_idx);
