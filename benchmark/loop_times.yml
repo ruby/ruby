@@ -1,0 +1,5 @@
+benchmark:
+  - 10.times
+  - 10.times{|e|}
+  - 1000.times{|e|}
+  - 30_000_000.times{|e|}
