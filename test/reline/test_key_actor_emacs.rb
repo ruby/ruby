@@ -1281,6 +1281,36 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_equal(%w{foo_foo foo_bar foo_baz}, @line_editor.instance_variable_get(:@menu_info).list)
   end
 
+  def test_completion_duplicated_list
+    @line_editor.completion_proc = proc { |word|
+      %w{
+        foo_foo
+        foo_foo
+        foo_bar
+      }.map { |i|
+        i.encode(@encoding)
+      }
+    }
+    input_keys('foo_')
+    assert_byte_pointer_size('foo_')
+    assert_cursor(4)
+    assert_cursor_max(4)
+    assert_line('foo_')
+    assert_equal(nil, @line_editor.instance_variable_get(:@menu_info))
+    input_keys("\C-i", false)
+    assert_byte_pointer_size('foo_')
+    assert_cursor(4)
+    assert_cursor_max(4)
+    assert_line('foo_')
+    assert_equal(nil, @line_editor.instance_variable_get(:@menu_info))
+    input_keys("\C-i", false)
+    assert_byte_pointer_size('foo_')
+    assert_cursor(4)
+    assert_cursor_max(4)
+    assert_line('foo_')
+    assert_equal(%w{foo_foo foo_bar}, @line_editor.instance_variable_get(:@menu_info).list)
+  end
+
   def test_completion
     @line_editor.completion_proc = proc { |word|
       %w{

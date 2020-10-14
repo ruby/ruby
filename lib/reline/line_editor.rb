@@ -565,7 +565,7 @@ class Reline::LineEditor
       else
         i&.start_with?(target)
       end
-    }
+    }.uniq
     if is_menu
       menu(target, list)
       return nil
