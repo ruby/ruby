@@ -426,13 +426,6 @@ void gen_opt_minus(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     jo_ptr(cb, side_exit);
     add(cb, RAX, imm_opnd(1));
 
-    /*
-    print_int(cb, arg0);
-    print_int(cb, arg1);
-    print_int(cb, RAX);
-    print_str(cb, "");
-    */
-
     // Push the output on the stack
     x86opnd_t dst = ctx_stack_push(ctx, 1);
     mov(cb, dst, RAX);
