@@ -208,7 +208,6 @@ typedef struct rb_context_struct {
 
 /*
  * Fiber status:
- * Fiber status:
  *    [Fiber.new] ------> FIBER_CREATED
  *                        | [Fiber#resume]
  *                        v
