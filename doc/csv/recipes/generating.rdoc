@@ -1,0 +1,113 @@
+== Recipes for Generating \CSV
+
+For other recipes, see {Recipes for CSV}[./recipes_rdoc.html].
+
+All code snippets on this page assume that the following has been executed:
+  require 'csv'
+
+=== Contents
+
+- {Output Formats}[#label-Output+Formats]
+  - {Generating to a String}[#label-Generating+to+a+String]
+    - {Recipe: Generate to String with Headers}[#label-Recipe-3A+Generate+to+String+with+Headers]
+    - {Recipe: Generate to String Without Headers}[#label-Recipe-3A+Generate+to+String+Without+Headers]
+  - {Generating to a File}[#label-Generating+to+a+File]
+    - {Recipe: Generate to File with Headers}[#label-Recipe-3A+Generate+to+File+with+Headers]
+    - {Recipe: Generate to File Without Headers}[#label-Recipe-3A+Generate+to+File+Without+Headers]
+  - {Generating to IO an Stream}[#label-Generating+to+an+IO+Stream]
+    - {Recipe: Generate to IO Stream with Headers}[#label-Recipe-3A+Generate+to+IO+Stream+with+Headers]
+    - {Recipe: Generate to IO Stream Without Headers}[#label-Recipe-3A+Generate+to+IO+Stream+Without+Headers]
+
+=== Output Formats
+
+You can generate \CSV output to a \String, to a \File (via its path), or to an \IO stream.
+
+==== Generating to a \String
+
+You can generate \CSV output to a \String, with or without headers.
+
+===== Recipe: Generate to \String with Headers
+
+Use class method CSV.generate with option +headers+ to generate to a \String.
+
+This example uses method CSV#<< to append the rows
+that are to be generated:
+  output_string = CSV.generate('', headers: ['Name', 'Value'], write_headers: true) do |csv|
+    csv << ['Foo', 0]
+    csv << ['Bar', 1]
+    csv << ['Baz', 2]
+  end
+  output_string # => "Name,Value\nFoo,0\nBar,1\nBaz,2\n"
+
+===== Recipe: Generate to \String Without Headers
+
+Use class method CSV.generate without option +headers+ to generate to a \String.
+
+This example uses method CSV#<< to append the rows
+that are to be generated:
+  output_string = CSV.generate do |csv|
+    csv << ['Foo', 0]
+    csv << ['Bar', 1]
+    csv << ['Baz', 2]
+  end
+  output_string # => "Foo,0\nBar,1\nBaz,2\n"
+
+==== Generating to a \File
+
+You can generate /CSV data to a \File, with or without headers.
+
+===== Recipe: Generate to \File with Headers
+
+Use class method CSV.open with option +headers+ generate to a \File.
+
+This example uses method CSV#<< to append the rows
+that are to be generated:
+  path = 't.csv'
+  CSV.open(path, 'w', headers: ['Name', 'Value'], write_headers: true) do |csv|
+    csv << ['Foo', 0]
+    csv << ['Bar', 1]
+    csv << ['Baz', 2]
+  end
+  p File.read(path) # => "Name,Value\nFoo,0\nBar,1\nBaz,2\n"
+
+===== Recipe: Generate to \File Without Headers
+
+Use class method CSV.open without option +headers+ to generate to a \File.
+
+This example uses method CSV#<< to append the rows
+that are to be generated:
+  path = 't.csv'
+  CSV.open(path, 'w') do |csv|
+    csv << ['Foo', 0]
+    csv << ['Bar', 1]
+    csv << ['Baz', 2]
+  end
+  p File.read(path) # => "Foo,0\nBar,1\nBaz,2\n"
+
+==== Generating to an \IO Stream
+
+You can generate \CSV data to an \IO stream, with or without headers.
+
+==== Recipe: Generate to \IO Stream with Headers
+
+Use class method CSV.new with option +headers+ to generate \CSV data to an \IO stream:
+  path = 't.csv'
+  File.open(path, 'w') do |file|
+    csv = CSV.new(file, headers: ['Name', 'Value'], write_headers: true)
+    csv << ['Foo', 0]
+    csv << ['Bar', 1]
+    csv << ['Baz', 2]
+  end
+  p File.read(path) # => "Name,Value\nFoo,0\nBar,1\nBaz,2\n"
+
+===== Recipe: Generate to \IO Stream Without Headers
+
+Use class method CSV.new without option +headers+ to generate \CSV data to an \IO stream:
+  path = 't.csv'
+  File.open(path, 'w') do |file|
+    csv = CSV.new(file)
+    csv << ['Foo', 0]
+    csv << ['Bar', 1]
+    csv << ['Baz', 2]
+  end
+  p File.read(path) # => "Foo,0\nBar,1\nBaz,2\n"

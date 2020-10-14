@@ -43,8 +43,15 @@ Gem::Specification.new do |spec|
     "LICENSE.txt",
     "NEWS.md",
     "README.md",
-    "doc/csv/recipes.rdoc"
   ]
+  recipes_dir = File.join(doc_dir, "csv", "recipes")
+  if File.exist?(recipes_dir)
+    Dir.chdir(recipes_dir) do
+      Dir.glob("**/*.rdoc").each do |recipe_file|
+        rdoc_files << "doc/csv/recipes/#{recipe_file}"
+      end
+    end
+  end
   spec.extra_rdoc_files = rdoc_files
 
   spec.required_ruby_version = ">= 2.5.0"

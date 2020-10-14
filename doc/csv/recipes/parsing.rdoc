@@ -1,11 +1,13 @@
-== Recipes
+== Recipes for Parsing \CSV
+
+For other recipes, see {Recipes for CSV}[./recipes_rdoc.html].
 
 All code snippets on this page assume that the following has been executed:
   require 'csv'
 
 === Contents
 
-- {Parsing: Source Formats}[#label-Parsing-3A+Source+Formats]
+- {Source Formats}[#label-Source+Formats]
   - {Parsing from a String}[#label-Parsing+from+a+String]
     - {Recipe: Parse from String with Headers}[#label-Recipe-3A+Parse+from+String+with+Headers]
     - {Recipe: Parse from String Without Headers}[#label-Recipe-3A+Parse+from+String+Without+Headers]
@@ -15,7 +17,7 @@ All code snippets on this page assume that the following has been executed:
   - {Parsing from an IO Stream}[#label-Parsing+from+an+IO+Stream]
     - {Recipe: Parse from IO Stream with Headers}[#label-Recipe-3A+Parse+from+IO+Stream+with+Headers]
     - {Recipe: Parse from IO Stream Without Headers}[#label-Recipe-3A+Parse+from+IO+Stream+Without+Headers]
-- {Parsing: Field Converters}[#label-Parsing-3A+Field+Converters]
+- {Converting Fields}[#label-Converting+Fields]
   - {Converting Fields to Objects}[#label-Converting+Fields+to+Objects]
     - {Recipe: Convert Fields to Integers}[#label-Recipe-3A+Convert+Fields+to+Integers]
     - {Recipe: Convert Fields to Floats}[#label-Recipe-3A+Convert+Fields+to+Floats]
@@ -29,31 +31,16 @@ All code snippets on this page assume that the following has been executed:
   - {Using Multiple Field Converters}[#label-Using+Multiple+Field+Converters]
     - {Recipe: Specify Multiple Field Converters in Option :converters}[#label-Recipe-3A+Specify+Multiple+Field+Converters+in+Option+-3Aconverters]
     - {Recipe: Specify Multiple Field Converters in a Custom Converter List}[#label-Recipe-3A+Specify+Multiple+Field+Converters+in+a+Custom+Converter+List]
-- {Generating: Output Formats}[#label-Generating-3A+Output+Formats]
-  - {Generating to a String}[#label-Generating+to+a+String]
-    - {Recipe: Generate to String with Headers}[#label-Recipe-3A+Generate+to+String+with+Headers]
-    - {Recipe: Generate to String Without Headers}[#label-Recipe-3A+Generate+to+String+Without+Headers]
-  - {Generating to a File}[#label-Generating+to+a+File]
-    - {Recipe: Generate to File with Headers}[#label-Recipe-3A+Generate+to+File+with+Headers]
-    - {Recipe: Generate to File Without Headers}[#label-Recipe-3A+Generate+to+File+Without+Headers]
-  - {Generating to IO an Stream}[#label-Generating+to+an+IO+Stream]
-    - {Recipe: Generate to IO Stream with Headers}[#label-Recipe-3A+Generate+to+IO+Stream+with+Headers]
-    - {Recipe: Generate to IO Stream Without Headers}[#label-Recipe-3A+Generate+to+IO+Stream+Without+Headers]
-- {Filtering: Source and Output Formats}[#label-Filtering-3A+Source+and+Output+Formats]
-  - {Filtering String to String}[#label-Filtering+String+to+String]
-    - {Recipe: Filter String to String with Headers}[#label-Recipe-3A+Filter+String+to+String+with+Headers]
-    - {Recipe: Filter String to String Without Headers}[#label-Recipe-3A+Filter+String+to+String+Without+Headers]
-  - {Filtering String to IO Stream}[#label-Filtering+String+to+IO+Stream]
-    - {Recipe: Filter String to IO Stream with Headers}[#label-Recipe-3A+Filter+String+to+IO+Stream+with+Headers]
-    - {Recipe: Filter String to IO Stream Without Headers}[#label-Recipe-3A+Filter+String+to+IO+Stream+Without+Headers]
-  - {Filtering IO Stream to String}[#label-Filtering+IO+Stream+to+String]
-    - {Recipe: Filter IO Stream to String with Headers}[#label-Recipe-3A+Filter+IO+Stream+to+String+with+Headers]
-    - {Recipe: Filter IO Stream to String Without Headers}[#label-Recipe-3A+Filter+IO+Stream+to+String+Without+Headers]
-  - {Filtering IO Stream to IO Stream}[#label-Filtering+IO+Stream+to+IO+Stream]
-    - {Recipe: Filter IO Stream to IO Stream with Headers}[#label-Recipe-3A+Filter+IO+Stream+to+IO+Stream+with+Headers]
-    - {Recipe: Filter IO Stream to IO Stream Without Headers}[#label-Recipe-3A+Filter+IO+Stream+to+IO+Stream+Without+Headers]
+- {Converting Headers}[#label-Converting+Headers]
+  - {Recipe: Convert Headers to Lowercase}[#label-Recipe-3A+Convert+Headers+to+Lowercase]
+  - {Recipe: Convert Headers to Symbols}[#label-Recipe-3A+Convert+Headers+to+Symbols]
+  - {Recipe: Filter Header Strings}[#label-Recipe-3A+Filter+Header+Strings]
+  - {Recipe: Register Header Converters}[#label-Recipe-3A+Register+Header+Converters]
+  - {Using Multiple Header Converters}[#label-Using+Multiple+Header+Converters]
+    - {Recipe: Specify Multiple Header Converters in Option :header_converters}[#label-Recipe-3A+Specify+Multiple+Header+Converters+in+Option+-3Aheader_converters]
+    - {Recipe: Specify Multiple Header Converters in a Custom Header Converter List}[#label-Recipe-3A+Specify+Multiple+Header+Converters+in+a+Custom+Header+Converter+List]
 
-=== Parsing: Source Formats
+=== Source Formats
 
 You can parse \CSV data from a \String, from a \File (via its path), or from an \IO stream.
 
@@ -177,7 +164,7 @@ Output:
   ["bar", "1"]
   ["baz", "2"]
 
-=== Parsing: Field Converters
+=== Converting Fields
 
 You can use field converters to change parsed \String fields into other objects,
 or to otherwise modify the \String fields.
@@ -267,6 +254,9 @@ that strips whitespace from each field value:
 
 Register a custom field converter, assigning it a name;
 then refer to the converter by its name:
+  rational_converter = proc do |field, field_context|
+    field_context.index == 1 ? field.to_r : field
+  end
   CSV::Converters[:rational] = rational_converter
   source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
   parsed = CSV.parse(source, headers: true, converters: :rational)
@@ -296,230 +286,68 @@ Apply multiple field converters by defining and registering a custom converter l
   parsed['Name'] # => ["foo", "bar", "baz"]
   parsed['Value'] # => [0, 1.0, 2.0]
 
-=== Generating: Output Formats
+=== Converting Headers
 
-You can generate \CSV output to a \String, to a \File (via its path), or to an \IO stream.
+You can use header converters to modify parsed \String headers.
 
-==== Generating to a \String
+Built-in header converters include:
+- <tt>:symbol</tt>: converts \String header to \Symbol.
+- <tt>:downcase</tt>: converts \String header to lowercase.
 
-You can generate \CSV output to a \String, with or without headers.
+You can also define header converters to otherwise modify header \Strings.
 
-===== Recipe: Generate to \String with Headers
+==== Recipe: Convert Headers to Lowercase
 
-Use class method CSV.generate with option +headers+ to generate to a \String.
+Convert headers to lowercase using built-in converter <tt>:downcase</tt>:
+  source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+  parsed = CSV.parse(source, headers: true, header_converters: :downcase)
+  parsed.headers # => ["name", "value"]
 
-This example uses method CSV#<< to append the rows
-that are to be generated:
-  output_string = CSV.generate('', headers: ['Name', 'Value'], write_headers: true) do |csv|
-    csv << ['Foo', 0]
-    csv << ['Bar', 1]
-    csv << ['Baz', 2]
-  end
-  output_string # => "Name,Value\nFoo,0\nBar,1\nBaz,2\n"
+==== Recipe: Convert Headers to Symbols
 
-===== Recipe: Generate to \String Without Headers
+Convert headers to downcased Symbols using built-in converter <tt>:symbol</tt>:
+  source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+  parsed = CSV.parse(source, headers: true, header_converters: :symbol)
+  parsed.headers # => [:name, :value]
+  parsed.headers.map {|header| header.class} # => [Symbol, Symbol]
 
-Use class method CSV.generate without option +headers+ to generate to a \String.
+==== Recipe: Filter Header Strings
 
-This example uses method CSV#<< to append the rows
-that are to be generated:
-  output_string = CSV.generate do |csv|
-    csv << ['Foo', 0]
-    csv << ['Bar', 1]
-    csv << ['Baz', 2]
-  end
-  output_string # => "Foo,0\nBar,1\nBaz,2\n"
+Define a custom header converter to modify \String fields.
+This example defines and uses a custom header converter
+that capitalizes each header \String:
+  capitalize_converter = proc {|header| header.capitalize }
+  source = "NAME,VALUE\nfoo,0\nbar,1\nbaz,2\n"
+  parsed = CSV.parse(source, headers: true, header_converters: capitalize_converter)
+  parsed.headers # => ["Name", "Value"]
 
-==== Generating to a \File
+==== Recipe: Register Header Converters
 
-You can generate /CSV data to a \File, with or without headers.
+Register a custom header converter, assigning it a name;
+then refer to the converter by its name:
+  capitalize_converter = proc {|header| header.capitalize }
+  CSV::HeaderConverters[:capitalize] = capitalize_converter
+  source = "NAME,VALUE\nfoo,0\nbar,1\nbaz,2\n"
+  parsed = CSV.parse(source, headers: true, header_converters: :capitalize)
+  parsed.headers # => ["Name", "Value"]
 
-===== Recipe: Generate to \File with Headers
+==== Using Multiple Header Converters
 
-Use class method CSV.open with option +headers+ generate to a \File.
+You can use multiple header converters in either of these ways:
+- Specify header converters in option <tt>:header_converters</tt>.
+- Specify header converters in a custom header converter list.
 
-This example uses method CSV#<< to append the rows
-that are to be generated:
-  path = 't.csv'
-  CSV.open(path, 'w', headers: ['Name', 'Value'], write_headers: true) do |csv|
-    csv << ['Foo', 0]
-    csv << ['Bar', 1]
-    csv << ['Baz', 2]
-  end
-  p File.read(path) # => "Name,Value\nFoo,0\nBar,1\nBaz,2\n"
+===== Recipe: Specify Multiple Header Converters in Option :header_converters
 
-===== Recipe: Generate to \File Without Headers
+Apply multiple header converters by specifying them in option <tt>:header_conveters</tt>:
+  source = "Name,Value\nfoo,0\nbar,1.0\nbaz,2.0\n"
+  parsed = CSV.parse(source, headers: true, header_converters: [:downcase, :symbol])
+  parsed.headers # => [:name, :value]
 
-Use class method CSV.open without option +headers+ to generate to a \File.
+===== Recipe: Specify Multiple Header Converters in a Custom Header Converter List
 
-This example uses method CSV#<< to append the rows
-that are to be generated:
-  path = 't.csv'
-  CSV.open(path, 'w') do |csv|
-    csv << ['Foo', 0]
-    csv << ['Bar', 1]
-    csv << ['Baz', 2]
-  end
-  p File.read(path) # => "Foo,0\nBar,1\nBaz,2\n"
-
-==== Generating to an \IO Stream
-
-You can generate \CSV data to an \IO stream, with or without headers.
-
-==== Recipe: Generate to \IO Stream with Headers
-
-Use class method CSV.new with option +headers+ to generate \CSV data to an \IO stream:
-  path = 't.csv'
-  File.open(path, 'w') do |file|
-    csv = CSV.new(file, headers: ['Name', 'Value'], write_headers: true)
-    csv << ['Foo', 0]
-    csv << ['Bar', 1]
-    csv << ['Baz', 2]
-  end
-  p File.read(path) # => "Name,Value\nFoo,0\nBar,1\nBaz,2\n"
-
-===== Recipe: Generate to \IO Stream Without Headers
-
-Use class method CSV.new without option +headers+ to generate \CSV data to an \IO stream:
-  path = 't.csv'
-  File.open(path, 'w') do |file|
-    csv = CSV.new(file)
-    csv << ['Foo', 0]
-    csv << ['Bar', 1]
-    csv << ['Baz', 2]
-  end
-  p File.read(path) # => "Foo,0\nBar,1\nBaz,2\n"
-
-=== Filtering: Source and Output Formats
-
-You can use a Unix-style "filter" for \CSV data.
-The filter reads source \CSV data and writes output \CSV data as modified by the filter.
-The input and output \CSV data may be any mixture of \Strings and \IO streams.
-
-==== Filtering \String to \String
-
-You can filter one \String to another, with or without headers.
-
-===== Recipe: Filter \String to \String with Headers
-
-Use class method CSV.filter with option +headers+ to filter a \String to another \String:
-  in_string = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
-  out_string = ''
-  CSV.filter(in_string, out_string, headers: true) do |row|
-    row[0] = row[0].upcase
-    row[1] *= 4
-  end
-  out_string # => "Name,Value\nFOO,0000\nBAR,1111\nBAZ,2222\n"
-
-===== Recipe: Filter \String to \String Without Headers
-
-Use class method CSV.filter without option +headers+ to filter a \String to another \String:
-  in_string = "foo,0\nbar,1\nbaz,2\n"
-  out_string = ''
-  CSV.filter(in_string, out_string) do |row|
-    row[0] = row[0].upcase
-    row[1] *= 4
-  end
-  out_string # => "FOO,0000\nBAR,1111\nBAZ,2222\n"
-
-==== Filtering \String to \IO Stream
-
-You can filter a \String to an \IO stream, with or without headers.
-
-===== Recipe: Filter \String to \IO Stream with Headers
-
-Use class method CSV.filter with option +headers+ to filter a \String to an \IO stream:
-  in_string = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
-  path = 't.csv'
-  File.open(path, 'w') do |out_io|
-    CSV.filter(in_string, out_io, headers: true) do |row|
-      row[0] = row[0].upcase
-      row[1] *= 4
-    end
-  end
-  p File.read(path) # => "Name,Value\nFOO,0000\nBAR,1111\nBAZ,2222\n"
-
-===== Recipe: Filter \String to \IO Stream Without Headers
-
-Use class method CSV.filter without option +headers+ to filter a \String to an \IO stream:
-  in_string = "foo,0\nbar,1\nbaz,2\n"
-  path = 't.csv'
-  File.open(path, 'w') do |out_io|
-    CSV.filter(in_string, out_io) do |row|
-      row[0] = row[0].upcase
-      row[1] *= 4
-    end
-  end
-  p File.read(path) # => "FOO,0000\nBAR,1111\nBAZ,2222\n"
-
-==== Filtering \IO Stream to \String
-
-You can filter an \IO stream to a \String, with or without headers.
-
-===== Recipe: Filter \IO Stream to \String with Headers
-
-Use class method CSV.filter with option +headers+ to filter an \IO stream to a \String:
-  in_string = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
-  path = 't.csv'
-  File.write(path, in_string)
-  out_string = ''
-  File.open(path, headers: true) do |in_io|
-    CSV.filter(in_io, out_string, headers: true) do |row|
-      row[0] = row[0].upcase
-      row[1] *= 4
-    end
-  end
-  out_string # => "Name,Value\nFOO,0000\nBAR,1111\nBAZ,2222\n"
-
-===== Recipe: Filter \IO Stream to \String Without Headers
-
-Use class method CSV.filter without option +headers+ to filter an \IO stream to a \String:
-  in_string = "foo,0\nbar,1\nbaz,2\n"
-  path = 't.csv'
-  File.write(path, in_string)
-  out_string = ''
-  File.open(path) do |in_io|
-    CSV.filter(in_io, out_string) do |row|
-      row[0] = row[0].upcase
-      row[1] *= 4
-    end
-  end
-  out_string # => "FOO,0000\nBAR,1111\nBAZ,2222\n"
-
-==== Filtering \IO Stream to \IO Stream
-
-You can filter an \IO stream to another \IO stream, with or without headers.
-
-===== Recipe: Filter \IO Stream to \IO Stream with Headers
-
-Use class method CSV.filter with option +headers+ to filter an \IO stream to another \IO stream:
-  in_path = 't.csv'
-  in_string = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
-  File.write(in_path, in_string)
-  out_path = 'u.csv'
-  File.open(in_path) do |in_io|
-    File.open(out_path, 'w') do |out_io|
-      CSV.filter(in_io, out_io, headers: true) do |row|
-        row[0] = row[0].upcase
-        row[1] *= 4
-      end
-    end
-  end
-  p File.read(out_path) # => "Name,Value\nFOO,0000\nBAR,1111\nBAZ,2222\n"
-
-===== Recipe: Filter \IO Stream to \IO Stream Without Headers
-
-Use class method CSV.filter without option +headers+ to filter an \IO stream to another \IO stream:
-  in_path = 't.csv'
-  in_string = "foo,0\nbar,1\nbaz,2\n"
-  File.write(in_path, in_string)
-  out_path = 'u.csv'
-  File.open(in_path) do |in_io|
-    File.open(out_path, 'w') do |out_io|
-      CSV.filter(in_io, out_io) do |row|
-        row[0] = row[0].upcase
-        row[1] *= 4
-      end
-    end
-  end
-  p File.read(out_path) # => "FOO,0000\nBAR,1111\nBAZ,2222\n"
+Apply multiple header converters by defining and registering a custom header converter list:
+  CSV::HeaderConverters[:my_header_converters] = [:symbol, :downcase]
+  source = "NAME,VALUE\nfoo,0\nbar,1.0\nbaz,2.0\n"
+  parsed = CSV.parse(source, headers: true, header_converters: :my_header_converters)
+  parsed.headers # => [:name, :value]
