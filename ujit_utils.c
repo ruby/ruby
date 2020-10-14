@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 #include "ujit_utils.h"
 #include "ujit_asm.h"
 
@@ -49,6 +50,24 @@ void print_int(codeblock_t* cb, x86opnd_t opnd)
 
     // Call the print function
     mov(cb, RAX, const_ptr_opnd((void*)&print_int_cfun));
+    call(cb, RAX);
+
+    pop_regs(cb);
+}
+
+static void print_ptr_cfun(int64_t val)
+{
+    printf("%llX\n", val);
+}
+
+void print_ptr(codeblock_t* cb, x86opnd_t opnd)
+{
+    assert (opnd.num_bits == 64);
+
+    push_regs(cb);
+
+    mov(cb, RDI, opnd);
+    mov(cb, RAX, const_ptr_opnd((void*)&print_ptr_cfun));
     call(cb, RAX);
 
     pop_regs(cb);
