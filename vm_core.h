@@ -794,7 +794,7 @@ struct rb_vm_tag {
     rb_jmpbuf_t buf;
     struct rb_vm_tag *prev;
     enum ruby_tag_type state;
-    int lock_rec;
+    unsigned int lock_rec;
 };
 
 STATIC_ASSERT(rb_vm_tag_buf_offset, offsetof(struct rb_vm_tag, buf) > 0);
@@ -1798,8 +1798,12 @@ rb_current_vm(void)
     return ruby_current_vm_ptr;
 }
 
-static inline int
-rb_ec_vm_lock_rec(rb_execution_context_t *ec)
+void rb_ec_vm_lock_rec_release(const rb_execution_context_t *ec,
+                               unsigned int recorded_lock_rec,
+                               unsigned int current_lock_rec);
+
+static inline unsigned int
+rb_ec_vm_lock_rec(const rb_execution_context_t *ec)
 {
     rb_vm_t *vm = rb_ec_vm_ptr(ec);
 

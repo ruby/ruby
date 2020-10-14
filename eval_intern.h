@@ -127,16 +127,6 @@ LONG WINAPI rb_w32_stack_overflow_handler(struct _EXCEPTION_POINTERS *);
       rb_fiber_start(); \
   } while (0)
 
-void rb_ec_vm_lock_rec_release(rb_execution_context_t *ec, int lock_rec);
-
-static inline void
-rb_ec_vm_lock_rec_check(rb_execution_context_t *ec, int lock_rec)
-{
-    if (rb_ec_vm_lock_rec(ec) != lock_rec) {
-        rb_ec_vm_lock_rec_release(ec, lock_rec);
-    }
-}
-
 #define EC_PUSH_TAG(ec) do { \
   rb_execution_context_t * const _ec = (ec); \
   struct rb_vm_tag _tag; \
@@ -146,7 +136,6 @@ rb_ec_vm_lock_rec_check(rb_execution_context_t *ec, int lock_rec)
   _tag.lock_rec = rb_ec_vm_lock_rec(_ec); \
 
 #define EC_POP_TAG() \
-  rb_ec_vm_lock_rec_check(_ec, _tag.lock_rec); \
   _ec->tag = _tag.prev; \
 } while (0)
 
@@ -169,12 +158,23 @@ rb_ec_vm_lock_rec_check(rb_execution_context_t *ec, int lock_rec)
 # define VAR_NOCLOBBERED(var) var
 #endif
 
+static inline void
+rb_ec_vm_lock_rec_check(const rb_execution_context_t *ec, unsigned int recorded_lock_rec)
+{
+    unsigned int current_lock_rec = rb_ec_vm_lock_rec(ec);
+    if (current_lock_rec != recorded_lock_rec) {
+        rb_ec_vm_lock_rec_release(ec, recorded_lock_rec, current_lock_rec);
+    }
+}
+
 /* clear ec->tag->state, and return the value */
 static inline int
 rb_ec_tag_state(const rb_execution_context_t *ec)
 {
-    enum ruby_tag_type state = ec->tag->state;
-    ec->tag->state = TAG_NONE;
+    struct rb_vm_tag *tag = ec->tag;
+    enum ruby_tag_type state = tag->state;
+    tag->state = TAG_NONE;
+    rb_ec_vm_lock_rec_check(ec, tag->lock_rec);
     return state;
 }
 
