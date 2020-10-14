@@ -37,6 +37,7 @@
 #include "variable.h"
 #include "vm_core.h"
 #include "ractor_pub.h"
+#include "vm_sync.h"
 
 typedef void rb_gvar_compact_t(void *var);
 
@@ -896,6 +897,8 @@ IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(ID id)
 static inline struct st_table *
 generic_ivtbl(VALUE obj, ID id, bool force_check_ractor)
 {
+    ASSERT_vm_locking();
+
     if ((force_check_ractor || rb_is_instance_id(id)) && // not internal ID
         UNLIKELY(rb_ractor_shareable_p(obj) && !rb_ractor_main_p())) {
         rb_raise(rb_eRuntimeError, "can not access instance variables of shareable objects from non-main Ractors");
@@ -909,22 +912,28 @@ generic_ivtbl_no_ractor_check(VALUE obj)
     return generic_ivtbl(obj, 0, false);
 }
 
-MJIT_FUNC_EXPORTED struct st_table *
-rb_ivar_generic_ivtbl(VALUE obj)
-{
-    return generic_ivtbl(obj, 0, true);
-}
-
 static int
 gen_ivtbl_get(VALUE obj, ID id, struct gen_ivtbl **ivtbl)
 {
     st_data_t data;
+    int r = 0;
 
-    if (st_lookup(generic_ivtbl(obj, id, false), (st_data_t)obj, &data)) {
-	*ivtbl = (struct gen_ivtbl *)data;
-	return 1;
+    RB_VM_LOCK_ENTER();
+    {
+        if (st_lookup(generic_ivtbl(obj, id, false), (st_data_t)obj, &data)) {
+            *ivtbl = (struct gen_ivtbl *)data;
+            r = 1;
+        }
     }
-    return 0;
+    RB_VM_LOCK_LEAVE();
+
+    return r;
+}
+
+MJIT_FUNC_EXPORTED int
+rb_ivar_generic_ivtbl_lookup(VALUE obj, struct gen_ivtbl **ivtbl)
+{
+    return gen_ivtbl_get(obj, 0, ivtbl);
 }
 
 static VALUE
@@ -1275,8 +1284,13 @@ generic_ivar_set(VALUE obj, ID id, VALUE val)
     ivup.iv_extended = 0;
     ivup.u.iv_index_tbl = iv_index_tbl_make(obj);
     iv_index_tbl_extend(&ivup, id);
-    st_update(generic_ivtbl(obj, id, false), (st_data_t)obj, generic_ivar_update,
-	      (st_data_t)&ivup);
+
+    RB_VM_LOCK_ENTER();
+    {
+        st_update(generic_ivtbl(obj, id, false), (st_data_t)obj, generic_ivar_update,
+                  (st_data_t)&ivup);
+    }
+    RB_VM_LOCK_LEAVE();
 
     ivup.u.ivtbl->ivptr[ivup.index] = val;
 
@@ -1590,8 +1604,12 @@ rb_copy_generic_ivar(VALUE clone, VALUE obj)
 	 * c.ivtbl may change in gen_ivar_copy due to realloc,
 	 * no need to free
 	 */
-        generic_ivtbl_no_ractor_check(clone);
-	st_insert(generic_ivtbl_no_ractor_check(obj), (st_data_t)clone, (st_data_t)c.ivtbl);
+        RB_VM_LOCK_ENTER();
+        {
+            generic_ivtbl_no_ractor_check(clone);
+            st_insert(generic_ivtbl_no_ractor_check(obj), (st_data_t)clone, (st_data_t)c.ivtbl);
+        }
+        RB_VM_LOCK_LEAVE();
     }
     return;
 

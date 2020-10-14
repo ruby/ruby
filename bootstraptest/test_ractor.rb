@@ -780,6 +780,7 @@ assert_equal "#{N}#{N}", %Q{
   }.map{|r| r.take}.join
 }
 
+# enc_table
 assert_equal "#{N/10}", %Q{
   Ractor.new do
     loop do
@@ -792,6 +793,22 @@ assert_equal "#{N/10}", %Q{
   #{N/10}.times{|i|
     src.replicate("test-enc-\#{i}")
   }
+}
+
+# Generic ivtbl
+n = N/2
+assert_equal "#{n}#{n}", %Q{
+  2.times.map{
+    Ractor.new do
+      #{n}.times do
+        obj = ''
+        obj.instance_variable_set("@a", 1)
+        obj.instance_variable_set("@b", 1)
+        obj.instance_variable_set("@c", 1)
+        obj.instance_variable_defined?("@a")
+      end
+    end
+  }.map{|r| r.take}.join
 }
 
 end # if !ENV['GITHUB_WORKFLOW']
