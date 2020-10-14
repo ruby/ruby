@@ -385,7 +385,6 @@ rb_event_flag_t ruby_vm_event_flags;
 rb_event_flag_t ruby_vm_event_enabled_global_flags;
 unsigned int    ruby_vm_event_local_num;
 
-rb_serial_t ruby_vm_global_method_state = 1;
 rb_serial_t ruby_vm_global_constant_state = 1;
 rb_serial_t ruby_vm_class_serial = 1;
 
@@ -456,7 +455,6 @@ rb_dtrace_setup(rb_execution_context_t *ec, VALUE klass, ID id,
  *  This hash includes information about method/constant cache serials:
  *
  *    {
- *      :global_method_state=>251,
  *      :global_constant_state=>481,
  *      :class_serial=>9029
  *    }
@@ -470,7 +468,7 @@ rb_dtrace_setup(rb_execution_context_t *ec, VALUE klass, ID id,
 static VALUE
 vm_stat(int argc, VALUE *argv, VALUE self)
 {
-    static VALUE sym_global_method_state, sym_global_constant_state, sym_class_serial;
+    static VALUE sym_global_constant_state, sym_class_serial;
     VALUE arg = Qnil;
     VALUE hash = Qnil, key = Qnil;
 
@@ -487,9 +485,8 @@ vm_stat(int argc, VALUE *argv, VALUE self)
 	hash = rb_hash_new();
     }
 
-    if (sym_global_method_state == 0) {
+    if (sym_global_constant_state == 0) {
 #define S(s) sym_##s = ID2SYM(rb_intern_const(#s))
-	S(global_method_state);
 	S(global_constant_state);
 	S(class_serial);
 #undef S
@@ -501,7 +498,6 @@ vm_stat(int argc, VALUE *argv, VALUE self)
     else if (hash != Qnil) \
 	rb_hash_aset(hash, sym_##name, SERIALT2NUM(attr));
 
-    SET(global_method_state, ruby_vm_global_method_state);
     SET(global_constant_state, ruby_vm_global_constant_state);
     SET(class_serial, ruby_vm_class_serial);
 #undef SET
