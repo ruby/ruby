@@ -96,15 +96,13 @@ class Array
   #  Related: #each_index, #reverse_each.
   #
   def each
-    unless block_given?
+    unless Primitive.block_given_p
       return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'
     end
-    size = Primitive.cexpr! 'rb_ary_length(self)'
-    result = Primitive.cexpr! 'rb_ary_new2(RARRAY_LEN(self))'    
+    size = Primitive.cexpr! 'rb_ary_length(self)' 
     i = 0
     while i < size
-      temp = yield(Primitive.cexpr! 'RARRAY_AREF(self, FIX2INT(i))')
-      Primitive.cexpr! 'rb_ary_push(result, temp)'
+      yield Primitive.cexpr! 'RARRAY_AREF(self, FIX2INT(i))' 
       i += 1
     end
     return self
