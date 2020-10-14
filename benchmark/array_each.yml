@@ -1,0 +1,5 @@
+benchmark:
+  - Array.new(10).each
+  - Array.new(10).each{|v|}
+  - Array.new(1000).each{|v|}
+  - Array.new(30_000_000).each{|v|}

@@ -56,4 +56,57 @@ class Array
   def sample(n = (ary = false), random: Random)
     Primitive.rb_ary_sample(random, n, ary)
   end
+
+  #
+  #  call-seq:
+  #    array.each {|element| ... } -> self
+  #    array.each -> Enumerator
+  #
+  #  Iterates over array elements.
+  #
+  #  When a block given, passes each successive array element to the block;
+  #  returns +self+:
+  #    a = [:foo, 'bar', 2]
+  #    a.each {|element|  puts "#{element.class} #{element}" }
+  #
+  #  Output:
+  #    Symbol foo
+  #    String bar
+  #    Integer 2
+  #
+  #  Allows the array to be modified during iteration:
+  #    a = [:foo, 'bar', 2]
+  #    a.each {|element| puts element; a.clear if element.to_s.start_with?('b') }
+  #
+  #  Output:
+  #    foo
+  #    bar
+  #
+  #  When no block given, returns a new \Enumerator:
+  #    a = [:foo, 'bar', 2]
+  #    e = a.each
+  #    e # => #<Enumerator: [:foo, "bar", 2]:each>
+  #    a1 = e.each {|element|  puts "#{element.class} #{element}" }
+  #
+  #  Output:
+  #    Symbol foo
+  #    String bar
+  #    Integer 2
+  #
+  #  Related: #each_index, #reverse_each.
+  #
+  def each
+    unless block_given?
+      return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'
+    end
+    size = Primitive.cexpr! 'rb_ary_length(self)'
+    result = Primitive.cexpr! 'rb_ary_new2(RARRAY_LEN(self))'    
+    i = 0
+    while i < size
+      temp = yield(Primitive.cexpr! 'RARRAY_AREF(self, FIX2INT(i))')
+      Primitive.cexpr! 'rb_ary_push(result, temp)'
+      i += 1
+    end
+    return self
+  end
 end
