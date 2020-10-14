@@ -909,6 +909,13 @@ void cqo(codeblock_t* cb)
     cb_write_bytes(cb, 2, 0x48, 0x99);
 }
 
+/// Interrupt 3 - trap to debugger
+void int3(codeblock_t* cb)
+{
+    //cb.writeASM("INT 3");
+    cb_write_byte(cb, 0xCC);
+}
+
 /*
 // div - Unsigned integer division
 alias div = writeRMUnary!(
