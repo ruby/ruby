@@ -1101,7 +1101,7 @@ vm_getivar(VALUE obj, ID id, IVC ic, const struct rb_callcache *cc, int is_attr)
         else if (FL_TEST_RAW(obj, FL_EXIVAR)) {
             struct gen_ivtbl *ivtbl;
 
-            if (LIKELY(st_lookup(rb_ivar_generic_ivtbl(obj), (st_data_t)obj, (st_data_t *)&ivtbl)) &&
+            if (LIKELY(rb_ivar_generic_ivtbl_lookup(obj, &ivtbl)) &&
                 LIKELY(index < ivtbl->numiv)) {
                 val = ivtbl->ivptr[index];
             }
@@ -1123,7 +1123,7 @@ vm_getivar(VALUE obj, ID id, IVC ic, const struct rb_callcache *cc, int is_attr)
 	}
         else if (FL_TEST_RAW(obj, FL_EXIVAR)) {
             struct gen_ivtbl *ivtbl;
-            if (LIKELY(st_lookup(rb_ivar_generic_ivtbl(obj), (st_data_t)obj, (st_data_t *)&ivtbl))) {
+            if (LIKELY(rb_ivar_generic_ivtbl_lookup(obj, &ivtbl))) {
                 numiv = ivtbl->numiv;
                 ivptr = ivtbl->ivptr;
                 iv_index_tbl = RCLASS_IV_INDEX_TBL(rb_obj_class(obj));

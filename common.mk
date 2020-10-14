@@ -15082,6 +15082,7 @@ variable.$(OBJEXT): {$(VPATH)}variable.h
 variable.$(OBJEXT): {$(VPATH)}vm_core.h
 variable.$(OBJEXT): {$(VPATH)}vm_debug.h
 variable.$(OBJEXT): {$(VPATH)}vm_opts.h
+variable.$(OBJEXT): {$(VPATH)}vm_sync.h
 version.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 version.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 version.$(OBJEXT): $(CCAN_DIR)/list/list.h
