@@ -116,6 +116,7 @@ vm_lock_leave(rb_vm_t *vm, unsigned int *lev APPEND_LOCATION_ARGS)
     VM_ASSERT(vm->ractor.sync.lock_rec == *lev);
 
     vm->ractor.sync.lock_rec--;
+    *lev = vm->ractor.sync.lock_rec;
 
     if (vm->ractor.sync.lock_rec == 0) {
         vm->ractor.sync.lock_owner = NULL;
@@ -248,21 +249,19 @@ rb_vm_barrier(void)
 }
 
 void
-rb_ec_vm_lock_rec_release(rb_execution_context_t *ec, int recorded_lock_rec)
+rb_ec_vm_lock_rec_release(const rb_execution_context_t *ec,
+                          unsigned int recorded_lock_rec,
+                          unsigned int current_lock_rec)
 {
-    int current_lock_rec = rb_ec_vm_lock_rec(ec);
-    unsigned int lev;
+    VM_ASSERT(recorded_lock_rec != current_lock_rec);
 
-    bp();
-
-    if (recorded_lock_rec > current_lock_rec) {
-        for (; recorded_lock_rec > current_lock_rec; current_lock_rec++) {
-            RB_VM_LOCK_ENTER_LEV(&lev);
-        }
+    if (UNLIKELY(recorded_lock_rec > current_lock_rec)) {
+        rb_bug("unexpected situation - recordd:%u current:%u",
+               recorded_lock_rec, current_lock_rec);
     }
     else {
-        for (; recorded_lock_rec < current_lock_rec; current_lock_rec--) {
-            RB_VM_LOCK_LEAVE_LEV(&lev);
+        while (recorded_lock_rec < current_lock_rec) {
+            RB_VM_LOCK_LEAVE_LEV(&current_lock_rec);
         }
     }
 
