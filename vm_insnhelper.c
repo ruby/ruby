@@ -83,7 +83,10 @@ NORETURN(MJIT_STATIC void rb_ec_stack_overflow(rb_execution_context_t *ec, int c
 MJIT_STATIC void
 rb_ec_stack_overflow(rb_execution_context_t *ec, int crit)
 {
-    if (crit || rb_during_gc()) {
+    if (rb_during_gc()) {
+        rb_bug("system stack overflow during GC. Faulty native extension?");
+    }
+    if (crit) {
 	ec->raised_flag = RAISED_STACKOVERFLOW;
 	ec->errinfo = rb_ec_vm_ptr(ec)->special_exceptions[ruby_error_stackfatal];
 	EC_JUMP_TAG(ec, TAG_RAISE);
