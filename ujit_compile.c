@@ -2,6 +2,7 @@
 #include "insns.inc"
 #include "internal.h"
 #include "vm_core.h"
+#include "vm_sync.h"
 #include "vm_callinfo.h"
 #include "builtin.h"
 #include "internal/compile.h"
@@ -528,6 +529,7 @@ void
 rb_ujit_compile_iseq(const rb_iseq_t *iseq)
 {
 #if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
+    RB_VM_LOCK();
     VALUE *encoded = (VALUE *)iseq->body->iseq_encoded;
 
     unsigned int insn_idx;
@@ -549,6 +551,7 @@ rb_ujit_compile_iseq(const rb_iseq_t *iseq)
         }
         insn_idx += len;
     }
+    RB_VM_UNLOCK();
 #endif
 }
 
