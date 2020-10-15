@@ -463,13 +463,16 @@ gen_opt_minus(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 bool
 gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 {
+    // Definitions relevant to the call cache are in vm_callinfo.h
+
     struct rb_call_data * cd = (struct rb_call_data *)ctx_get_arg(ctx, 0);
     int32_t argc = (int32_t)vm_ci_argc(cd->ci);
     const struct rb_callcache *cc = cd->cc;
 
     // Callee method ID
     ID mid = vm_ci_mid(cd->ci);
-    //fprintf(stderr, "jitting call to \"%s\", argc: %lu\n", rb_id2name(mid), argc);
+
+    //printf("jitting call to \"%s\", argc: %lu\n", rb_id2name(mid), argc);
 
     // Don't JIT calls with keyword splat
     if (vm_ci_flag(cd->ci) & VM_CALL_KW_SPLAT)
@@ -477,15 +480,34 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
         return false;
     }
 
-    // Don't jit calls that aren't simple
+    // Don't JIT calls that aren't simple
     if (!(vm_ci_flag(cd->ci) & VM_CALL_ARGS_SIMPLE))
     {
         return false;
     }
 
+    // Don't JIT if the inline cache is not set
+    if (cd->cc == vm_cc_empty())
+    {
+        //printf("call cache is empty\n");
+        return false;
+    }
+
+    /*
+    // Don't JIT if this is not a C call
+    if (cd->cc->call_ != vm_call_cfunc_with_frame)
+    {
+        return false;
+    }
+    */
+
+
+
     // TODO: stop if the inline cache isn't filled
 
     // TODO: stop if this isn't a C call
+
+
 
 
 
@@ -528,12 +550,13 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     mov(cb, recv_opnd, RDX);
 
 
-    //print_int(cb, recv_opnd);
 
     // Pointer to the klass field of the receiver
     x86opnd_t klass_opnd = mem_opnd(64, RDX, offsetof(struct RBasic, klass));
 
-
+    // IDEA: Aaron suggested we could possibly treat a changed
+    // class pointer as a cache miss
+    // Check if we have a cache hit
     cmp(cb, R9, klass_opnd);
     jne_ptr(cb, side_exit);
     //print_int(cb, klass_opnd);
