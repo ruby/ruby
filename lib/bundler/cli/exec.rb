@@ -34,7 +34,7 @@ module Bundler
       end
     end
 
-  private
+    private
 
     def validate_cmd!
       return unless cmd.nil?

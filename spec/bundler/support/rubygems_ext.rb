@@ -71,7 +71,7 @@ module Spec
       install_gems(test_gemfile, test_lockfile)
     end
 
-  private
+    private
 
     # Some rubygems versions include loaded specs when loading gemspec stubs
     # from the file system. In this situation, that makes bundler incorrectly

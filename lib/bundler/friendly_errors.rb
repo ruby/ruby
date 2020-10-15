@@ -4,7 +4,7 @@ require_relative "vendored_thor"
 
 module Bundler
   module FriendlyErrors
-  module_function
+    module_function
 
     def log_error(error)
       case error
@@ -51,7 +51,7 @@ module Bundler
     end
 
     def request_issue_report_for(e)
-      Bundler.ui.info <<-EOS.gsub(/^ {8}/, "")
+      Bundler.ui.error <<-EOS.gsub(/^ {8}/, ""), nil, nil
         --- ERROR REPORT TEMPLATE -------------------------------------------------------
         # Error Report
 
@@ -94,7 +94,7 @@ module Bundler
 
       Bundler.ui.error "Unfortunately, an unexpected error occurred, and Bundler cannot continue."
 
-      Bundler.ui.warn <<-EOS.gsub(/^ {8}/, "")
+      Bundler.ui.error <<-EOS.gsub(/^ {8}/, ""), nil, :yellow
 
         First, try this link to see if there are any existing issue reports for this error:
         #{issues_url(e)}

@@ -147,7 +147,7 @@ module Bundler
       sorted.each(&b)
     end
 
-  private
+    private
 
     def sorted
       rake = @specs.find {|s| s.name == "rake" }

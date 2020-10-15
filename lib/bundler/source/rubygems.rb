@@ -291,7 +291,7 @@ module Bundler
         names
       end
 
-    protected
+      protected
 
       def credless_remotes
         remotes.map(&method(:suppress_configured_credentials))
@@ -465,7 +465,7 @@ module Bundler
         Bundler.app_cache
       end
 
-    private
+      private
 
       # Checks if the requested spec exists in the global cache. If it does,
       # we copy it to the download path, and if it does not, we download it.

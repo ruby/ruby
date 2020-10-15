@@ -107,10 +107,13 @@ RSpec.describe "bundle install with install-time dependencies" do
 
         bundle :install, :env => { "DEBUG_RESOLVER_TREE" => "1" }
 
+        activated_groups = "net_b (1.0) (ruby)"
+        activated_groups += ", net_b (1.0) (#{local_platforms.join(", ")})" if local_platforms.any? && local_platforms != ["ruby"]
+
         expect(err).to include(" net_b").
           and include("BUNDLER: Starting resolution").
           and include("BUNDLER: Finished resolution").
-          and include("Attempting to activate")
+          and include("Attempting to activate [#{activated_groups}]")
       end
     end
   end
@@ -233,7 +236,7 @@ RSpec.describe "bundle install with install-time dependencies" do
 
       describe "with a < requirement" do
         let(:ruby_requirement) { %("< 5000") }
-        let(:error_message_requirement) { Gem::Requirement.new(["< 5000", "= #{Bundler::RubyVersion.system.to_gem_version_with_patchlevel}"]).to_s }
+        let(:error_message_requirement) { "< 5000" }
 
         it_behaves_like "ruby version conflicts"
       end
@@ -241,7 +244,7 @@ RSpec.describe "bundle install with install-time dependencies" do
       describe "with a compound requirement" do
         let(:reqs) { ["> 0.1", "< 5000"] }
         let(:ruby_requirement) { reqs.map(&:dump).join(", ") }
-        let(:error_message_requirement) { Gem::Requirement.new(reqs + ["= #{Bundler::RubyVersion.system.to_gem_version_with_patchlevel}"]).to_s }
+        let(:error_message_requirement) { Gem::Requirement.new(reqs).to_s }
 
         it_behaves_like "ruby version conflicts"
       end

@@ -15,6 +15,7 @@ require "rspec/expectations"
 require "rspec/mocks"
 
 require_relative "support/builders"
+require_relative "support/build_metadata"
 require_relative "support/filters"
 require_relative "support/helpers"
 require_relative "support/indexes"

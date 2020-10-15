@@ -864,6 +864,24 @@ RSpec.describe "bundle install with git sources" do
     expect(the_bundle).to include_gems "has_submodule 1.0"
   end
 
+  it "does not warn when deiniting submodules" do
+    build_git "submodule", "1.0"
+    build_git "has_submodule", "1.0"
+
+    sys_exec "git submodule add #{lib_path("submodule-1.0")} submodule-1.0", :dir => lib_path("has_submodule-1.0")
+    sys_exec "git commit -m \"submodulator\"", :dir => lib_path("has_submodule-1.0")
+
+    install_gemfile <<-G
+      git "#{lib_path("has_submodule-1.0")}" do
+        gem "has_submodule"
+      end
+    G
+    expect(err).to be_empty
+
+    expect(the_bundle).to include_gems "has_submodule 1.0"
+    expect(the_bundle).to_not include_gems "submodule 1.0"
+  end
+
   it "handles implicit updates when modifying the source info" do
     git = build_git "foo"
 

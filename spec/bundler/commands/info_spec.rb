@@ -66,6 +66,7 @@ RSpec.describe "bundle info" do
 \tHomepage: http://example.com
 \tDocumentation: https://www.example.info/gems/bestgemever/0.0.1
 \tSource Code: https://example.com/user/bestgemever
+\tFunding: https://example.com/has_metadata/funding
 \tWiki: https://example.com/user/bestgemever/wiki
 \tChangelog: https://example.com/user/bestgemever/CHANGELOG.md
 \tBug Tracker: https://example.com/user/bestgemever/issues

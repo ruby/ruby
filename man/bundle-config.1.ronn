@@ -47,7 +47,7 @@ configuration only from the local application.
 Executing bundle with the `BUNDLE_IGNORE_CONFIG` environment variable set will
 cause it to ignore all configuration.
 
-Executing `bundle config set disable_multisource true` upgrades the warning about
+Executing `bundle config set --local disable_multisource true` upgrades the warning about
 the Gemfile containing multiple primary sources to an error. Executing `bundle
 config unset disable_multisource` downgrades this error to a warning.
 
@@ -59,7 +59,7 @@ application's configuration (normally, `./.bundle/config`).
 
 However, this will be changed in bundler 3, so it's better not to rely on this
 behavior. If these options must be remembered, it's better to set them using
-`bundle config` (e.g., `bundle config set path foo`).
+`bundle config` (e.g., `bundle config set --local path foo`).
 
 The options that can be configured are:
 
@@ -103,7 +103,7 @@ pass configuration flags to `gem install` to specify where to find the
 Since the specific location of that executable can change from machine
 to machine, you can specify these flags on a per-machine basis.
 
-    bundle config set build.mysql --with-mysql-config=/usr/local/mysql/bin/mysql_config
+    bundle config set --global build.mysql --with-mysql-config=/usr/local/mysql/bin/mysql_config
 
 After running this command, every time bundler needs to install the
 `mysql` gem, it will pass along the flags you specified.
@@ -150,7 +150,8 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    Install executables from gems in the bundle to the specified directory.
    Defaults to `false`.
 * `cache_all` (`BUNDLE_CACHE_ALL`):
-   Cache all gems, including path and git gems.
+   Cache all gems, including path and git gems. This needs to be explicitly
+   configured on bundler 1 and bundler 2, but will be the default on bundler 3.
 * `cache_all_platforms` (`BUNDLE_CACHE_ALL_PLATFORMS`):
    Cache gems for all platforms.
 * `cache_path` (`BUNDLE_CACHE_PATH`):
@@ -299,11 +300,11 @@ Bundler also allows you to work against a git repository locally
 instead of using the remote version. This can be achieved by setting
 up a local override:
 
-    bundle config set local.GEM_NAME /path/to/local/git/repository
+    bundle config set --local local.GEM_NAME /path/to/local/git/repository
 
 For example, in order to use a local Rack repository, a developer could call:
 
-    bundle config set local.rack ~/Work/git/rack
+    bundle config set --local local.rack ~/Work/git/rack
 
 Now instead of checking out the remote git repository, the local
 override will be used. Similar to a path source, every time the local
@@ -333,21 +334,21 @@ Bundler supports overriding gem sources with mirrors. This allows you to
 configure rubygems.org as the gem source in your Gemfile while still using your
 mirror to fetch gems.
 
-    bundle config set mirror.SOURCE_URL MIRROR_URL
+    bundle config set --global mirror.SOURCE_URL MIRROR_URL
 
 For example, to use a mirror of rubygems.org hosted at rubygems-mirror.org:
 
-    bundle config set mirror.http://rubygems.org http://rubygems-mirror.org
+    bundle config set --global mirror.http://rubygems.org http://rubygems-mirror.org
 
 Each mirror also provides a fallback timeout setting. If the mirror does not
 respond within the fallback timeout, Bundler will try to use the original
 server instead of the mirror.
 
-    bundle config set mirror.SOURCE_URL.fallback_timeout TIMEOUT
+    bundle config set --global mirror.SOURCE_URL.fallback_timeout TIMEOUT
 
 For example, to fall back to rubygems.org after 3 seconds:
 
-    bundle config set mirror.https://rubygems.org.fallback_timeout 3
+    bundle config set --global mirror.https://rubygems.org.fallback_timeout 3
 
 The default fallback timeout is 0.1 seconds, but the setting can currently
 only accept whole seconds (for example, 1, 15, or 30).
@@ -357,12 +358,12 @@ only accept whole seconds (for example, 1, 15, or 30).
 Bundler allows you to configure credentials for any gem source, which allows
 you to avoid putting secrets into your Gemfile.
 
-    bundle config set SOURCE_HOSTNAME USERNAME:PASSWORD
+    bundle config set --global SOURCE_HOSTNAME USERNAME:PASSWORD
 
 For example, to save the credentials of user `claudette` for the gem source at
 `gems.longerous.com`, you would run:
 
-    bundle config set gems.longerous.com claudette:s00pers3krit
+    bundle config set --global gems.longerous.com claudette:s00pers3krit
 
 Or you can set the credentials as an environment variable like this:
 
@@ -370,7 +371,7 @@ Or you can set the credentials as an environment variable like this:
 
 For gems with a git source with HTTP(S) URL you can specify credentials like so:
 
-    bundle config set https://github.com/bundler/bundler.git username:password
+    bundle config set --global https://github.com/bundler/bundler.git username:password
 
 Or you can set the credentials as an environment variable like so:
 

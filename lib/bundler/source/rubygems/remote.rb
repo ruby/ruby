@@ -39,7 +39,7 @@ module Bundler
           "rubygems remote at #{anonymized_uri}"
         end
 
-      private
+        private
 
         def apply_auth(uri, auth)
           if auth && uri.userinfo.nil?

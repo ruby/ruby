@@ -3,8 +3,6 @@ require_relative '../../../../uri/lib/uri'
 require 'cgi' # for escaping
 require_relative '../../../../connection_pool/lib/connection_pool'
 
-autoload :OpenSSL, 'openssl'
-
 ##
 # Persistent connections for Net::HTTP
 #
@@ -149,9 +147,14 @@ class Bundler::Persistent::Net::HTTP::Persistent
   EPOCH = Time.at 0 # :nodoc:
 
   ##
-  # Is OpenSSL available?  This test works with autoload
+  # Is OpenSSL available?
 
-  HAVE_OPENSSL = defined? OpenSSL::SSL # :nodoc:
+  HAVE_OPENSSL = begin # :nodoc:
+                   require 'openssl'
+                   true
+                 rescue LoadError
+                   false
+                 end
 
   ##
   # The default connection pool size is 1/4 the allowed open files

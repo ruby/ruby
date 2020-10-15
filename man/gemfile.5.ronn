@@ -120,8 +120,8 @@ Each _gem_ `MAY` have one or more version specifiers.
 ### REQUIRE AS
 
 Each _gem_ `MAY` specify files that should be used when autorequiring via
-`Bundler.require`. You may pass an array with multiple files or `true` if file
-you want `required` has same name as _gem_ or `false` to
+`Bundler.require`. You may pass an array with multiple files or `true` if the file
+you want `required` has the same name as _gem_ or `false` to
 prevent any file from being autorequired.
 
     gem "redis", :require => ["redis/connection/hiredis", "redis"]
@@ -163,8 +163,8 @@ not install with the `without` configuration.
 
 To specify multiple groups to ignore, specify a list of groups separated by spaces.
 
-    bundle config set without test
-    bundle config set without development test
+    bundle config set --local without test
+    bundle config set --local without development test
 
 Also, calling `Bundler.setup` with no parameters, or calling `require "bundler/setup"`
 will setup all groups except for the ones you excluded via `--without` (since they

@@ -116,7 +116,7 @@ module Bundler
       @rubygems_aggregate.remotes
     end
 
-  private
+    private
 
     def rubygems_aggregate_class
       Source::Rubygems
@@ -147,7 +147,7 @@ module Bundler
       if source.uri =~ /^git\:/
         Bundler.ui.warn "The git source `#{source.uri}` uses the `git` protocol, " \
           "which transmits data without encryption. Disable this warning with " \
-          "`bundle config set git.allow_insecure true`, or switch to the `https` " \
+          "`bundle config set --local git.allow_insecure true`, or switch to the `https` " \
           "protocol to keep your data secure."
       end
     end

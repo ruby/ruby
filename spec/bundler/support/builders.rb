@@ -322,9 +322,20 @@ module Spec
             "documentation_uri" => "https://www.example.info/gems/bestgemever/0.0.1",
             "homepage_uri"      => "https://bestgemever.example.io",
             "mailing_list_uri"  => "https://groups.example.com/bestgemever",
+            "funding_uri"       => "https://example.com/has_metadata/funding",
             "source_code_uri"   => "https://example.com/user/bestgemever",
             "wiki_uri"          => "https://example.com/user/bestgemever/wiki",
           }
+        end
+
+        build_gem "has_funding", "1.2.3" do |s|
+          s.metadata = {
+            "funding_uri"       => "https://example.com/has_funding/funding",
+          }
+        end
+
+        build_gem "gem_with_dependent_funding", "1.0" do |s|
+          s.add_dependency "has_funding"
         end
       end
     end
@@ -461,7 +472,7 @@ module Spec
       build_with(PluginBuilder, name, args, &blk)
     end
 
-  private
+    private
 
     def build_with(builder, name, args, &blk)
       @_build_path ||= nil
@@ -758,7 +769,7 @@ module Spec
 
         gem_path = File.expand_path("#{@spec.full_name}.gem", lib_path)
         if opts[:to_system]
-          @context.system_gems gem_path
+          @context.system_gems gem_path, :default => opts[:default]
         elsif opts[:to_bundle]
           @context.system_gems gem_path, :path => @context.default_bundle_path
         else

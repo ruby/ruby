@@ -98,7 +98,7 @@ module Bundler
       level == :minor
     end
 
-  private
+    private
 
     def filter_dep_specs(spec_groups, locked_spec)
       res = spec_groups.select do |spec_group|

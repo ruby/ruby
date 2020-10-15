@@ -17,7 +17,7 @@ module Bundler
         path_sources + git_sources + rubygems_sources + [metadata_source]
       end
 
-    private
+      private
 
       def rubygems_aggregate_class
         Plugin::Installer::Rubygems

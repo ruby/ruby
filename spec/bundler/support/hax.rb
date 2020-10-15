@@ -9,6 +9,8 @@ module Gem
     Gem.ruby = ENV["RUBY"]
   end
 
+  @default_dir = ENV["BUNDLER_GEM_DEFAULT_DIR"] if ENV["BUNDLER_GEM_DEFAULT_DIR"]
+
   if ENV["BUNDLER_SPEC_PLATFORM"]
     class Platform
       @local = new(ENV["BUNDLER_SPEC_PLATFORM"])

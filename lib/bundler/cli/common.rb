@@ -14,6 +14,20 @@ module Bundler
       Bundler.ui.info msg
     end
 
+    def self.output_fund_metadata_summary
+      definition = Bundler.definition
+      current_dependencies = definition.requested_dependencies
+      current_specs = definition.specs
+
+      count = current_dependencies.count {|dep| current_specs[dep.name].first.metadata.key?("funding_uri") }
+
+      return if count.zero?
+
+      intro = count > 1 ? "#{count} installed gems you directly depend on are" : "#{count} installed gem you directly depend on is"
+      message = "#{intro} looking for funding.\n  Run `bundle fund` for details"
+      Bundler.ui.info message
+    end
+
     def self.output_without_groups_message(command)
       return if Bundler.settings[:without].empty?
       Bundler.ui.confirm without_groups_message(command)

@@ -130,7 +130,7 @@ module Bundler
       Bundler.ui.warn(warning.join("\n"))
     end
 
-  private
+    private
 
     def failed_specs
       @specs.select(&:failed?)

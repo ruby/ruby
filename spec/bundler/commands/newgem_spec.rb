@@ -12,11 +12,12 @@ RSpec.describe "bundle gem" do
 
   def bundle_exec_rubocop
     prepare_gemspec(bundled_app(gem_name, "#{gem_name}.gemspec"))
-    rubocop_version = RUBY_VERSION > "2.4" ? "0.85.1" : "0.80.1"
+    rubocop_version = RUBY_VERSION > "2.4" ? "0.90.0" : "0.80.1"
     gems = ["minitest", "rake", "rake-compiler", "rspec", "rubocop -v #{rubocop_version}", "test-unit"]
+    gems += ["rubocop-ast -v 0.4.0"] if rubocop_version == "0.90.0"
     path = Bundler.feature_flag.default_install_uses_path? ? local_gem_path(:base => bundled_app(gem_name)) : system_gem_path
     realworld_system_gems gems, :path => path
-    bundle "exec rubocop --config .rubocop.yml", :dir => bundled_app(gem_name)
+    bundle "exec rubocop --debug --config .rubocop.yml", :dir => bundled_app(gem_name)
   end
 
   let(:generated_gemspec) { Bundler.load_gemspec_uncached(bundled_app(gem_name).join("#{gem_name}.gemspec")) }

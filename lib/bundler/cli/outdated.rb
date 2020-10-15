@@ -127,7 +127,7 @@ module Bundler
       end
     end
 
-  private
+    private
 
     def groups_text(group_text, groups)
       "#{group_text}#{groups.split(",").size > 1 ? "s" : ""} \"#{groups}\""

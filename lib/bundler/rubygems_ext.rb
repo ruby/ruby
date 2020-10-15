@@ -85,7 +85,7 @@ module Gem
       dependencies - development_dependencies
     end
 
-  private
+    private
 
     def dependencies_to_gemfile(dependencies, group = nil)
       gemfile = String.new
@@ -129,6 +129,35 @@ module Gem
     end
   end
 
+  # comparison is done order independently since rubygems 3.2.0.rc.2
+  unless Gem::Requirement.new("> 1", "< 2") == Gem::Requirement.new("< 2", "> 1")
+    class Requirement
+      module OrderIndependentComparison
+        def ==(other)
+          if _requirements_sorted? && other._requirements_sorted?
+            super
+          else
+            _with_sorted_requirements == other._with_sorted_requirements
+          end
+        end
+
+        protected
+
+        def _requirements_sorted?
+          return @_are_requirements_sorted if defined?(@_are_requirements_sorted)
+          strings = as_list
+          @_are_requirements_sorted = strings == strings.sort
+        end
+
+        def _with_sorted_requirements
+          @_with_sorted_requirements ||= _requirements_sorted? ? self : self.class.new(as_list.sort)
+        end
+      end
+
+      prepend OrderIndependentComparison
+    end
+  end
+
   class Platform
     JAVA  = Gem::Platform.new("java") unless defined?(JAVA)
     MSWIN = Gem::Platform.new("mswin32") unless defined?(MSWIN)
@@ -143,6 +172,22 @@ module Gem
 
     undef_method :eql? if method_defined? :eql?
     alias_method :eql?, :==
+  end
+
+  require "rubygems/util"
+
+  Util.singleton_class.module_eval do
+    if Util.singleton_methods.include?(:glob_files_in_dir) # since 3.0.0.beta.2
+      remove_method :glob_files_in_dir
+    end
+
+    def glob_files_in_dir(glob, base_path)
+      if RUBY_VERSION >= "2.5"
+        Dir.glob(glob, :base => base_path).map! {|f| File.expand_path(f, base_path) }
+      else
+        Dir.glob(File.join(base_path.to_s.gsub(/[\[\]]/, '\\\\\\&'), glob)).map! {|f| File.expand_path(f) }
+      end
+    end
   end
 end
 

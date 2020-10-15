@@ -136,11 +136,13 @@ module Bundler
           if submodules
             git_retry "submodule update --init --recursive", :dir => destination
           elsif Gem::Version.create(version) >= Gem::Version.create("2.9.0")
-            git_retry "submodule deinit --all --force", :dir => destination
+            inner_command = "git -C $toplevel submodule deinit --force $sm_path"
+            inner_command = inner_command.gsub("$") { '\$' } unless Bundler::WINDOWS
+            git_retry "submodule foreach --quiet \"#{inner_command}\"", :dir => destination
           end
         end
 
-      private
+        private
 
         def git_null(command, dir: SharedHelpers.pwd)
           check_allowed(command)

@@ -38,7 +38,7 @@ module Bundler
         false
       end
 
-    private
+      private
 
       def log_specs(debug_msg)
         if Bundler.ui.debug?

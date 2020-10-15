@@ -87,13 +87,13 @@ module Bundler
         name.hash ^ version.hash ^ sorted_activated_platforms.hash ^ source.hash
       end
 
-    protected
+      protected
 
       def sorted_activated_platforms
         @activated_platforms.sort_by(&:to_s)
       end
 
-    private
+      private
 
       def __dependencies
         @dependencies = Hash.new do |dependencies, platform|

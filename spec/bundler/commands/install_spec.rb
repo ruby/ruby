@@ -497,11 +497,21 @@ RSpec.describe "bundle install with gem sources" do
             #{Bundler::VERSION}
         L
       end
+
+      it "does not crash when unlocking" do
+        gemfile <<-G
+          ruby '>= 2.1.0'
+        G
+
+        bundle "update"
+
+        expect(err).not_to include("Could not find gem 'Ruby")
+      end
     end
   end
 
   describe "when Bundler root contains regex chars" do
-    it "doesn't blow up" do
+    it "doesn't blow up when using the `gem` DSL" do
       root_dir = tmp("foo[]bar")
 
       FileUtils.mkdir_p(root_dir)
@@ -509,6 +519,22 @@ RSpec.describe "bundle install with gem sources" do
       build_lib "foo"
       gemfile = <<-G
         gem 'foo', :path => "#{lib_path("foo-1.0")}"
+      G
+      File.open("#{root_dir}/Gemfile", "w") do |file|
+        file.puts gemfile
+      end
+
+      bundle :install, :dir => root_dir
+    end
+
+    it "doesn't blow up when using the `gemspec` DSL" do
+      root_dir = tmp("foo[]bar")
+
+      FileUtils.mkdir_p(root_dir)
+
+      build_lib "foo", :path => root_dir
+      gemfile = <<-G
+        gemspec
       G
       File.open("#{root_dir}/Gemfile", "w") do |file|
         file.puts gemfile
