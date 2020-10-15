@@ -179,7 +179,7 @@ module Bundler
       @sources.uniq! # need to use uniq! here instead of checking for the item before adding
     end
 
-  private
+    private
 
     def specs_by_name(name)
       @specs[name].values

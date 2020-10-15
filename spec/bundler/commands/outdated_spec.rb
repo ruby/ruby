@@ -555,7 +555,7 @@ RSpec.describe "bundle outdated" do
     end
   end
 
-  context "after bundle config set deployment true" do
+  context "after bundle config set --local deployment true" do
     before do
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo2)}"
@@ -563,7 +563,7 @@ RSpec.describe "bundle outdated" do
         gem "rack"
         gem "foo"
       G
-      bundle "config set deployment true"
+      bundle "config set --local deployment true"
     end
 
     it "outputs a helpful message about being in deployment mode" do

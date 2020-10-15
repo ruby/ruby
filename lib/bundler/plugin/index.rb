@@ -133,7 +133,7 @@ module Bundler
         @hooks[event] || []
       end
 
-    private
+      private
 
       # Reads the index file from the directory and initializes the instance
       # variables.

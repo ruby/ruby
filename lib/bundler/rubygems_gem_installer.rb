@@ -34,7 +34,7 @@ module Bundler
       end
     end
 
-  private
+    private
 
     def validate_bundler_checksum(checksum)
       return true if Bundler.settings[:disable_checksum_validation]
@@ -60,7 +60,7 @@ module Bundler
 
           If you wish to continue installing the downloaded gem, and are certain it does not pose a \
           security issue despite the mismatching checksum, do the following:
-          1. run `bundle config set disable_checksum_validation true` to turn off checksum verification
+          1. run `bundle config set --local disable_checksum_validation true` to turn off checksum verification
           2. run `bundle install`
 
           (More info: The expected SHA256 checksum was #{checksum.inspect}, but the \

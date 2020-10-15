@@ -34,7 +34,7 @@ module Spec
     end
 
     def dev_gemfile
-      @dev_gemfile ||= source_root.join("dev_gems.rb")
+      @dev_gemfile ||= git_root.join("dev_gems.rb")
     end
 
     def bindir
@@ -208,18 +208,6 @@ module Spec
       File.open(version_file, "w") {|f| f << contents }
     end
 
-    def replace_build_metadata(build_metadata, dir: source_root)
-      build_metadata_file = File.expand_path("lib/bundler/build_metadata.rb", dir)
-
-      ivars = build_metadata.sort.map do |k, v|
-        "    @#{k} = #{loaded_gemspec.send(:ruby_code, v)}"
-      end.join("\n")
-
-      contents = File.read(build_metadata_file)
-      contents.sub!(/^(\s+# begin ivars).+(^\s+# end ivars)/m, "\\1\n#{ivars}\n\\2")
-      File.open(build_metadata_file, "w") {|f| f << contents }
-    end
-
     def ruby_core?
       # avoid to warnings
       @ruby_core ||= nil
@@ -231,11 +219,7 @@ module Spec
       end
     end
 
-    def git_commit_sha
-      ruby_core_tarball? ? "unknown" : sys_exec("git rev-parse --short HEAD", :dir => source_root).strip
-    end
-
-  private
+    private
 
     def git_ls_files(glob)
       skip "Not running on a git context, since running tests from a tarball" if ruby_core_tarball?

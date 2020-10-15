@@ -39,7 +39,7 @@ module Bundler
       s
     end
 
-  private
+    private
 
     def method_missing(*args, &blk)
       @dep.send(*args, &blk)

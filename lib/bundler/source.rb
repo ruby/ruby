@@ -63,7 +63,7 @@ module Bundler
       )
     end
 
-  private
+    private
 
     def version_color(spec_version, locked_spec_version)
       if Gem::Version.correct?(spec_version) && Gem::Version.correct?(locked_spec_version)

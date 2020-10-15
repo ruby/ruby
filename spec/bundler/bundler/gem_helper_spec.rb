@@ -239,7 +239,7 @@ RSpec.describe Bundler::GemHelper do
           before do
             mock_build_message app_name, app_version
             mock_confirm_message "Tagged v#{app_version}."
-            mock_confirm_message "Pushed git commits and tags."
+            mock_confirm_message "Pushed git commits and release tag."
 
             sys_exec("git push -u origin master", :dir => app_path)
           end
@@ -262,7 +262,7 @@ RSpec.describe Bundler::GemHelper do
           before do
             Bundler::GemHelper.tag_prefix = "foo-"
             mock_build_message app_name, app_version
-            mock_confirm_message "Pushed git commits and tags."
+            mock_confirm_message "Pushed git commits and release tag."
 
             sys_exec("git push -u origin master", :dir => app_path)
             expect(subject).to receive(:rubygem_push).with(app_gem_path.to_s)

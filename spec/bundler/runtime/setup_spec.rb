@@ -623,6 +623,26 @@ RSpec.describe "Bundler.setup" do
       expect(the_bundle).to include_gems "activesupport 2.3.2"
     end
 
+    it "remembers --without and does not bail on bare Bundler.setup, even in the case of path gems no longer available" do
+      bundle "config --local without development"
+
+      path = bundled_app(File.join("vendor", "foo"))
+      build_lib "foo", :path => path
+
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem "activesupport", "2.3.2"
+        gem 'foo', :path => 'vendor/foo', :group => :development
+      G
+
+      FileUtils.rm_rf(path)
+
+      ruby "require 'bundler'; Bundler.setup", :env => { "DEBUG" => "1" }
+      expect(out).to include("Assuming that source at `vendor/foo` has not changed since fetching its specs errored")
+      expect(out).to include("Found no changes, using resolution from the lockfile")
+      expect(err).to be_empty
+    end
+
     it "remembers --without and does not include groups passed to Bundler.setup" do
       bundle "config --local without rails"
       install_gemfile <<-G

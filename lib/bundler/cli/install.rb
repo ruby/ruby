@@ -53,7 +53,7 @@ module Bundler
 
       if options["binstubs"]
         Bundler::SharedHelpers.major_deprecation 2,
-          "The --binstubs option will be removed in favor of `bundle binstubs`"
+          "The --binstubs option will be removed in favor of `bundle binstubs --all`"
       end
 
       Plugin.gemfile_install(Bundler.default_gemfile) if Bundler.feature_flag.plugins?
@@ -82,6 +82,8 @@ module Bundler
         require_relative "clean"
         Bundler::CLI::Clean.new(options).run
       end
+
+      Bundler::CLI::Common.output_fund_metadata_summary
     rescue GemNotFound, VersionConflict => e
       if options[:local] && Bundler.app_cache.exist?
         Bundler.ui.warn "Some gems seem to be missing from your #{Bundler.settings.app_cache_path} directory."
@@ -100,7 +102,7 @@ module Bundler
       raise e
     end
 
-  private
+    private
 
     def warn_if_root
       return if Bundler.settings[:silence_root_warning] || Bundler::WINDOWS || !Process.uid.zero?

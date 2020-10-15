@@ -73,7 +73,7 @@ RSpec.describe "command plugins" do
 
     expect(out).not_to include("Installed plugin copycat")
 
-    expect(err).to include("Failed to install plugin")
+    expect(err).to include("Failed to install the following plugins: `copycat`")
 
     expect(err).to include("Command(s) `mahcommand` declared by copycat are already registered.")
   end

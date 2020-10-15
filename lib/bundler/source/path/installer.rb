@@ -40,7 +40,7 @@ module Bundler
           Bundler.rm_rf(@tmp_dir) if Bundler.requires_sudo?
         end
 
-      private
+        private
 
         def generate_bin
           super

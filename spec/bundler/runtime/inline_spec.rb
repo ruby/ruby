@@ -339,4 +339,34 @@ RSpec.describe "bundler/inline#gemfile" do
     expect(last_command).to be_success
     expect(out).to include("BUNDLE_GEMFILE is empty")
   end
+
+  it "does not error out if library requires optional dependencies" do
+    Dir.mkdir tmp("path_without_gemfile")
+
+    foo_code = <<~RUBY
+      begin
+        gem "bar"
+      rescue LoadError
+      end
+
+      puts "WIN"
+    RUBY
+
+    build_lib "foo", "1.0.0" do |s|
+      s.write "lib/foo.rb", foo_code
+    end
+
+    script <<-RUBY, :dir => tmp("path_without_gemfile")
+      gemfile do
+        path "#{lib_path}" do
+          gem "foo", require: false
+        end
+      end
+
+      require "foo"
+    RUBY
+
+    expect(out).to eq("WIN")
+    expect(err).to be_empty
+  end
 end

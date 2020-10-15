@@ -98,7 +98,7 @@ RSpec.describe "bundler plugin install" do
 
       bundle "plugin install charlie --source #{file_uri_for(gem_repo2)}"
 
-      expect(err).to include("plugins.rb was not found")
+      expect(err).to include("Failed to install the following plugins: `charlie`. The underlying error was: plugins.rb was not found")
 
       expect(global_plugin_gem("charlie-1.0")).not_to be_directory
 

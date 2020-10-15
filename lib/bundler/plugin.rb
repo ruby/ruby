@@ -16,7 +16,7 @@ module Bundler
 
     PLUGIN_FILE_NAME = "plugins.rb".freeze
 
-  module_function
+    module_function
 
     def reset!
       instance_variables.each {|i| remove_instance_variable(i) }
@@ -39,12 +39,11 @@ module Bundler
 
       save_plugins names, specs
     rescue PluginError => e
-      if specs
-        specs_to_delete = Hash[specs.select {|k, _v| names.include?(k) && !index.commands.values.include?(k) }]
-        specs_to_delete.values.each {|spec| Bundler.rm_rf(spec.full_gem_path) }
-      end
+      specs_to_delete = specs.select {|k, _v| names.include?(k) && !index.commands.values.include?(k) }
+      specs_to_delete.each_value {|spec| Bundler.rm_rf(spec.full_gem_path) }
 
-      Bundler.ui.error "Failed to install plugin #{name}: #{e.message}\n  #{e.backtrace.join("\n ")}"
+      names_list = names.map {|name| "`#{name}`" }.join(", ")
+      Bundler.ui.error "Failed to install the following plugins: #{names_list}. The underlying error was: #{e.message}.\n #{e.backtrace.join("\n ")}"
     end
 
     # Uninstalls plugins by the given names

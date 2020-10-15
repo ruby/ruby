@@ -74,7 +74,7 @@ module Bundler
         end
       end
 
-    private
+      private
 
       def validate_uri_scheme!(uri)
         return if uri.scheme =~ /\Ahttps?\z/

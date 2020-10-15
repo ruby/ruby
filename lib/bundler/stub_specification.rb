@@ -83,7 +83,7 @@ module Bundler
       stub.raw_require_paths
     end
 
-  private
+    private
 
     def _remote_specification
       @_remote_specification ||= begin

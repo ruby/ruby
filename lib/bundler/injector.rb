@@ -74,7 +74,7 @@ module Bundler
       end
     end
 
-  private
+    private
 
     def conservative_version(spec)
       version = spec.version

@@ -42,7 +42,7 @@ module Bundler
           "Your network or your gem server is probably having issues right now."
       end
 
-    private
+      private
 
       # cached gem specification path, if one exists
       def gemspec_cached_path(spec_file_name)

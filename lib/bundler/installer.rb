@@ -196,7 +196,7 @@ module Bundler
       end
     end
 
-  private
+    private
 
     # the order that the resolver provides is significant, since
     # dependencies might affect the installation of a gem.

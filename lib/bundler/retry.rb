@@ -32,7 +32,7 @@ module Bundler
     end
     alias_method :attempts, :attempt
 
-  private
+    private
 
     def run(&block)
       @failed = false

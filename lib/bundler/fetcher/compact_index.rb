@@ -83,7 +83,7 @@ module Bundler
         true
       end
 
-    private
+      private
 
       def compact_index_client
         @compact_index_client ||=

@@ -212,7 +212,7 @@ module Bundler
       filesystem_access(gemfile_path) {|g| File.open(g, "w") {|file| file.puts contents } }
     end
 
-  private
+    private
 
     def validate_bundle_path
       path_separator = Bundler.rubygems.path_separator
