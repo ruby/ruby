@@ -15,15 +15,10 @@ require 'rubygems/request'
 #
 
 class TestBundledCA < Gem::TestCase
-  THIS_FILE = File.expand_path __FILE__
-
   def bundled_certificate_store
     store = OpenSSL::X509::Store.new
 
-    ssl_cert_glob =
-      File.expand_path '../../../lib/rubygems/ssl_certs/*/*.pem', THIS_FILE
-
-    Dir[ssl_cert_glob].each do |ssl_cert|
+    Gem::Request.get_cert_files.each do |ssl_cert|
       store.add_file ssl_cert
     end
 
