@@ -29,9 +29,9 @@ class TestGemCommandsSetupCommand < Gem::TestCase
       bundler/lib/bundler/templates/.circleci/config.yml
       bundler/lib/bundler/templates/.travis.yml
       bundler/man/bundle-b.1
-      bundler/man/bundle-b.1.txt
+      bundler/man/bundle-b.1.ronn
       bundler/man/gemfile.5
-      bundler/man/gemfile.5.txt
+      bundler/man/gemfile.5.ronn
     ]
 
     create_dummy_files(filelist)
@@ -166,12 +166,12 @@ class TestGemCommandsSetupCommand < Gem::TestCase
   end
 
   def test_bundler_man1_files_in
-    assert_equal %w[bundle-b.1 bundle-b.1.txt],
+    assert_equal %w[bundle-b.1 bundle-b.1.ronn],
                  @cmd.bundler_man1_files_in('bundler/man').sort
   end
 
   def test_bundler_man5_files_in
-    assert_equal %w[gemfile.5 gemfile.5.txt],
+    assert_equal %w[gemfile.5 gemfile.5.ronn],
                  @cmd.bundler_man5_files_in('bundler/man').sort
   end
 
@@ -199,9 +199,9 @@ class TestGemCommandsSetupCommand < Gem::TestCase
       @cmd.install_man dir
 
       assert_path_exists File.join("#{dir}/man1", 'bundle-b.1')
-      assert_path_exists File.join("#{dir}/man1", 'bundle-b.1.txt')
+      assert_path_exists File.join("#{dir}/man1", 'bundle-b.1.ronn')
       assert_path_exists File.join("#{dir}/man5", 'gemfile.5')
-      assert_path_exists File.join("#{dir}/man5", 'gemfile.5.txt')
+      assert_path_exists File.join("#{dir}/man5", 'gemfile.5.ronn')
     end
   end
 
@@ -307,14 +307,14 @@ class TestGemCommandsSetupCommand < Gem::TestCase
 
     ruby_1             = File.join man, 'man1', 'ruby.1'
     bundle_b_1         = File.join man, 'man1', 'bundle-b.1'
+    bundle_b_1_ronn    = File.join man, 'man1', 'bundle-b.1.ronn'
     bundle_b_1_txt     = File.join man, 'man1', 'bundle-b.1.txt'
-    bundle_old_b_1     = File.join man, 'man1', 'bundle-old_b.1'
-    bundle_old_b_1_txt = File.join man, 'man1', 'bundle-old_b.1.txt'
     gemfile_5          = File.join man, 'man5', 'gemfile.5'
+    gemfile_5_ronn     = File.join man, 'man5', 'gemfile.5.ronn'
     gemfile_5_txt      = File.join man, 'man5', 'gemfile.5.txt'
 
-    files_that_go   = [bundle_old_b_1, bundle_old_b_1_txt]
-    files_that_stay = [ruby_1, bundle_b_1, bundle_b_1_txt, gemfile_5, gemfile_5_txt]
+    files_that_go   = [bundle_b_1_txt, gemfile_5_txt]
+    files_that_stay = [ruby_1, bundle_b_1, bundle_b_1_ronn, gemfile_5, gemfile_5_ronn]
 
     create_dummy_files(files_that_go + files_that_stay)
 
@@ -333,8 +333,6 @@ class TestGemCommandsSetupCommand < Gem::TestCase
 
     File.open 'History.txt', 'w' do |io|
       io.puts <<-HISTORY_TXT
-# coding: UTF-8
-
 === #{Gem::VERSION} / 2013-03-26
 
 * Bug fixes:

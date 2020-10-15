@@ -109,8 +109,6 @@ class Gem::TestCase < Minitest::Test
 
   TEST_PATH = ENV.fetch('RUBYGEMS_TEST_PATH', File.expand_path('../../../test/rubygems', __FILE__))
 
-  SPECIFICATIONS = File.expand_path(File.join(TEST_PATH, "specifications"), __FILE__)
-
   def assert_activate(expected, *specs)
     specs.each do |spec|
       case spec
