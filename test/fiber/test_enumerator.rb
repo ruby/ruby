@@ -20,7 +20,7 @@ class TestFiberEnumerator < Test::Unit::TestCase
 
     thread = Thread.new do
       scheduler = Scheduler.new
-      Thread.current.scheduler = scheduler
+      Fiber.set_scheduler scheduler
 
       e = i.to_enum(:each_char)
 

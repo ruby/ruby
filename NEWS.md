@@ -198,10 +198,10 @@ Outstanding ones only.
 
 * Thread
 
-    * Introduce `Thread#scheduler` for intercepting blocking operations and
-      `Thread.scheduler` for accessing the current scheduler. See
+    * Introduce `Fiber.set_scheduler` for intercepting blocking operations and
+      `Fiber.scheduler` for accessing the current scheduler. See
       doc/scheduler.md for more details. [[Feature #16786]]
-    * `Thread#blocking?` tells whether the current execution context is
+    * `Fiber.blocking?` tells whether the current execution context is
       blocking. [[Feature #16786]]
     * `Thread#join` invokes the scheduler hooks `block`/`unblock` in a
       non-blocking execution context. [[Feature #16786]]

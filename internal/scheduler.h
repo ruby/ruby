@@ -12,6 +12,12 @@
 #include "ruby/ruby.h"
 #include "ruby/intern.h"
 
+VALUE rb_scheduler_get();
+VALUE rb_scheduler_set(VALUE scheduler);
+
+VALUE rb_scheduler_current();
+VALUE rb_thread_scheduler_current(VALUE thread);
+
 VALUE rb_scheduler_timeout(struct timeval *timeout);
 
 VALUE rb_scheduler_close(VALUE scheduler);

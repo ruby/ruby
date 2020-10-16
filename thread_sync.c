@@ -246,7 +246,7 @@ mutex_owned_p(rb_fiber_t *fiber, rb_mutex_t *mutex)
 }
 
 static VALUE call_rb_scheduler_block(VALUE mutex) {
-    return rb_scheduler_block(rb_thread_current_scheduler(), mutex, Qnil);
+    return rb_scheduler_block(rb_scheduler_current(), mutex, Qnil);
 }
 
 static VALUE remove_from_mutex_lock_waiters(VALUE arg) {
@@ -281,7 +281,7 @@ do_mutex_lock(VALUE self, int interruptible_p)
         }
 
         while (mutex->fiber != fiber) {
-            VALUE scheduler = rb_thread_current_scheduler();
+            VALUE scheduler = rb_scheduler_current();
             if (scheduler != Qnil) {
                 list_add_tail(&mutex->waitq, &w.node);
 
@@ -516,7 +516,7 @@ rb_mutex_sleep(VALUE self, VALUE timeout)
     rb_mutex_unlock(self);
     time_t beg = time(0);
 
-    VALUE scheduler = rb_thread_current_scheduler();
+    VALUE scheduler = rb_scheduler_current();
     if (scheduler != Qnil) {
         rb_scheduler_kernel_sleep(scheduler, timeout);
         mutex_lock_uninterruptible(self);

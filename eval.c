@@ -30,6 +30,7 @@
 #include "internal/object.h"
 #include "internal/thread.h"
 #include "internal/variable.h"
+#include "internal/scheduler.h"
 #include "iseq.h"
 #include "mjit.h"
 #include "probes.h"
@@ -149,12 +150,11 @@ ruby_options(int argc, char **argv)
 static void
 rb_ec_scheduler_finalize(rb_execution_context_t *ec)
 {
-    rb_thread_t *thread = rb_ec_thread_ptr(ec);
     enum ruby_tag_type state;
 
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-        rb_thread_scheduler_set(thread->self, Qnil);
+        rb_scheduler_set(Qnil);
     }
     else {
         state = error_handle(ec, state);
