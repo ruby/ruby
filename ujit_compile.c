@@ -520,6 +520,7 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
         return false;
     }
 
+    //printf("call to C function \"%s\", argc: %lu\n", rb_id2name(mid), argc);
 
     // Things we need to do at run-time:
     // - Check that the cached klass matches
@@ -530,6 +531,33 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     // - Call the C function
     // - Remove the frame
 
+    // Create a size-exit to fall back to the interpreter
+    uint8_t* side_exit = ujit_side_exit(ocb, ctx, ctx->pc);
+
+    // Points to the receiver operand on the stack
+    x86opnd_t recv = ctx_stack_opnd(ctx, argc);
+    mov(cb, RCX, recv);
+
+    //print_str(cb, rb_id2name(mid));
+    //print_ptr(cb, RCX);
+
+    // TODO: guard_is_object() helper function?
+    // Check that the receiver is an object
+    cmp(cb, RCX, imm_opnd(0));
+    je_ptr(cb, side_exit);
+    test(cb, RCX, imm_opnd(RUBY_IMMEDIATE_MASK | RUBY_Qnil));
+    jnz_ptr(cb, side_exit);
+
+    // Pointer to the klass field of the receiver &(recv->klass)
+    x86opnd_t klass_opnd = mem_opnd(64, RCX, offsetof(struct RBasic, klass));
+
+    // IDEA: Aaron suggested we could possibly treat a changed
+    // class pointer as a cache miss
+    // Check if we have a cache hit
+    mov(cb, RAX, const_ptr_opnd((void*)cd->cc->klass));
+    cmp(cb, RAX, klass_opnd);
+    jne_ptr(cb, side_exit);
+    //print_str(cb, "cache klass hit");
 
 
 
@@ -539,7 +567,23 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 
 
 
-    return false;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    jmp_ptr(cb, side_exit);
+    return true;
 
     /*
     // Create a size-exit to fall back to the interpreter
