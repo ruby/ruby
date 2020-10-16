@@ -213,7 +213,7 @@ getinstancevariable
 /* "instance variable not initialized" warning can be hooked. */
 // attr bool leaf = false; /* has rb_warning() */
 {
-    val = vm_getinstancevariable(GET_SELF(), id, ic);
+    val = vm_getinstancevariable(GET_ISEQ(), GET_SELF(), id, ic);
 }
 
 /* Set value of instance variable id of self to val. */
@@ -224,7 +224,7 @@ setinstancevariable
 ()
 // attr bool leaf = false; /* has rb_check_frozen_internal() */
 {
-    vm_setinstancevariable(GET_SELF(), id, val, ic);
+    vm_setinstancevariable(GET_ISEQ(), GET_SELF(), id, val, ic);
 }
 
 /* Get value of class variable id of klass as val. */

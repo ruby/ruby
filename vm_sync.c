@@ -124,14 +124,14 @@ vm_lock_leave(rb_vm_t *vm, unsigned int *lev APPEND_LOCATION_ARGS)
     }
 }
 
-void
+MJIT_FUNC_EXPORTED void
 rb_vm_lock_enter_body(unsigned int *lev APPEND_LOCATION_ARGS)
 {
     rb_vm_t *vm = GET_VM();
     vm_lock_enter(vm, vm_locked(vm), lev APPEND_LOCATION_PARAMS);
 }
 
-void
+MJIT_FUNC_EXPORTED void
 rb_vm_lock_leave_body(unsigned int *lev APPEND_LOCATION_ARGS)
 {
     vm_lock_leave(GET_VM(), lev APPEND_LOCATION_PARAMS);

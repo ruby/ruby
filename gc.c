@@ -2535,6 +2535,19 @@ rb_free_const_table(struct rb_id_table *tbl)
     rb_id_table_free(tbl);
 }
 
+static int
+free_iv_index_tbl_free_i(st_data_t key, st_data_t value, st_data_t data)
+{
+    xfree((void *)value);
+    return ST_CONTINUE;
+}
+
+static void
+iv_index_tbl_free(struct st_table *tbl)
+{
+    st_foreach(tbl, free_iv_index_tbl_free_i, 0);
+}
+
 // alive: if false, target pointers can be freed already.
 //        To check it, we need objspace parameter.
 static void
@@ -2756,7 +2769,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	    rb_free_const_table(RCLASS_CONST_TBL(obj));
 	}
 	if (RCLASS_IV_INDEX_TBL(obj)) {
-	    st_free_table(RCLASS_IV_INDEX_TBL(obj));
+            iv_index_tbl_free(RCLASS_IV_INDEX_TBL(obj));
 	}
 	if (RCLASS_EXT(obj)->subclasses) {
 	    if (BUILTIN_TYPE(obj) == T_MODULE) {
@@ -4088,6 +4101,7 @@ obj_memsize_of(VALUE obj, int use_all_types)
 		size += st_memsize(RCLASS_IV_TBL(obj));
 	    }
 	    if (RCLASS_IV_INDEX_TBL(obj)) {
+                // TODO: more correct value
 		size += st_memsize(RCLASS_IV_INDEX_TBL(obj));
 	    }
 	    if (RCLASS(obj)->ptr->iv_tbl) {
@@ -8543,12 +8557,26 @@ update_subclass_entries(rb_objspace_t *objspace, rb_subclass_entry_t *entry)
     }
 }
 
+static int
+update_iv_index_tbl_i(st_data_t key, st_data_t value, st_data_t arg)
+{
+    rb_objspace_t *objspace = (rb_objspace_t *)arg;
+    struct rb_iv_index_tbl_entry *ent = (struct rb_iv_index_tbl_entry *)value;
+    UPDATE_IF_MOVED(objspace, ent->class_value);
+    return ST_CONTINUE;
+}
+
 static void
 update_class_ext(rb_objspace_t *objspace, rb_classext_t *ext)
 {
     UPDATE_IF_MOVED(objspace, ext->origin_);
     UPDATE_IF_MOVED(objspace, ext->refined_class);
     update_subclass_entries(objspace, ext->subclasses);
+
+    // ext->iv_index_tbl
+    if (ext->iv_index_tbl) {
+        st_foreach(ext->iv_index_tbl, update_iv_index_tbl_i, (st_data_t)objspace);
+    }
 }
 
 static void

@@ -6760,6 +6760,7 @@ iseq.$(OBJEXT): $(hdrdir)/ruby.h
 iseq.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/array.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/bits.h
+iseq.$(OBJEXT): $(top_srcdir)/internal/class.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/compile.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/error.h

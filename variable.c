@@ -879,6 +879,29 @@ rb_alias_variable(ID name1, ID name2)
     entry1->var = entry2->var;
 }
 
+static bool
+iv_index_tbl_lookup(struct st_table *tbl, ID id, uint32_t *indexp)
+{
+    struct rb_iv_index_tbl_entry *ent;
+    int r;
+
+    if (tbl == NULL) return false;
+
+    RB_VM_LOCK_ENTER();
+    {
+        r = st_lookup(tbl, (st_data_t)id, (st_data_t *)&ent);
+    }
+    RB_VM_LOCK_LEAVE();
+
+    if (r) {
+        *indexp = ent->index;
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
 static void
 IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(ID id)
 {
@@ -943,9 +966,9 @@ generic_ivar_delete(VALUE obj, ID id, VALUE undef)
 
     if (gen_ivtbl_get(obj, id, &ivtbl)) {
 	st_table *iv_index_tbl = RCLASS_IV_INDEX_TBL(rb_obj_class(obj));
-	st_data_t index;
+        uint32_t index;
 
-	if (iv_index_tbl && st_lookup(iv_index_tbl, (st_data_t)id, &index)) {
+        if (iv_index_tbl && iv_index_tbl_lookup(iv_index_tbl, id, &index)) {
 	    if (index < ivtbl->numiv) {
 		VALUE ret = ivtbl->ivptr[index];
 
@@ -964,9 +987,9 @@ generic_ivar_get(VALUE obj, ID id, VALUE undef)
 
     if (gen_ivtbl_get(obj, id, &ivtbl)) {
 	st_table *iv_index_tbl = RCLASS_IV_INDEX_TBL(rb_obj_class(obj));
-	st_data_t index;
+        uint32_t index;
 
-	if (iv_index_tbl && st_lookup(iv_index_tbl, (st_data_t)id, &index)) {
+	if (iv_index_tbl && iv_index_tbl_lookup(iv_index_tbl, id, &index)) {
 	    if (index < ivtbl->numiv) {
 		VALUE ret = ivtbl->ivptr[index];
 
@@ -1025,6 +1048,8 @@ iv_index_tbl_newsize(struct ivar_update *ivup)
 static int
 generic_ivar_update(st_data_t *k, st_data_t *v, st_data_t u, int existing)
 {
+    ASSERT_vm_locking();
+
     struct ivar_update *ivup = (struct ivar_update *)u;
     struct gen_ivtbl *ivtbl = 0;
 
@@ -1048,10 +1073,9 @@ generic_ivar_defined(VALUE obj, ID id)
 {
     struct gen_ivtbl *ivtbl;
     st_table *iv_index_tbl = RCLASS_IV_INDEX_TBL(rb_obj_class(obj));
-    st_data_t index;
+    uint32_t index;
 
-    if (!iv_index_tbl) return Qfalse;
-    if (!st_lookup(iv_index_tbl, (st_data_t)id, &index)) return Qfalse;
+    if (!iv_index_tbl_lookup(iv_index_tbl, id, &index)) return Qfalse;
     if (!gen_ivtbl_get(obj, id, &ivtbl)) return Qfalse;
 
     if ((index < ivtbl->numiv) && (ivtbl->ivptr[index] != Qundef))
@@ -1064,12 +1088,11 @@ static int
 generic_ivar_remove(VALUE obj, ID id, VALUE *valp)
 {
     struct gen_ivtbl *ivtbl;
-    st_data_t key = (st_data_t)id;
-    st_data_t index;
+    uint32_t index;
     st_table *iv_index_tbl = RCLASS_IV_INDEX_TBL(rb_obj_class(obj));
 
     if (!iv_index_tbl) return 0;
-    if (!st_lookup(iv_index_tbl, key, &index)) return 0;
+    if (!iv_index_tbl_lookup(iv_index_tbl, id, &index)) return 0;
     if (!gen_ivtbl_get(obj, id, &ivtbl)) return 0;
 
     if (index < ivtbl->numiv) {
@@ -1150,31 +1173,37 @@ gen_ivtbl_count(const struct gen_ivtbl *ivtbl)
 VALUE
 rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
 {
-    VALUE val, *ptr;
-    struct st_table *iv_index_tbl;
-    uint32_t len;
-    st_data_t index;
+    VALUE val;
 
     if (SPECIAL_CONST_P(obj)) return undef;
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        len = ROBJECT_NUMIV(obj);
-        ptr = ROBJECT_IVPTR(obj);
-        iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
-        if (!iv_index_tbl) break;
-        if (!st_lookup(iv_index_tbl, (st_data_t)id, &index)) break;
-        if (len <= index) break;
-        val = ptr[index];
-        if (val != Qundef)
-            return val;
-	break;
+        {
+            uint32_t index;
+            uint32_t len = ROBJECT_NUMIV(obj);
+            VALUE *ptr = ROBJECT_IVPTR(obj);
+
+            if (iv_index_tbl_lookup(ROBJECT_IV_INDEX_TBL(obj), id, &index) &&
+                index < len &&
+                (val = ptr[index]) != Qundef) {
+                return val;
+            }
+            else {
+                break;
+            }
+        }
       case T_CLASS:
       case T_MODULE:
-        IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(id);
-	if (RCLASS_IV_TBL(obj) &&
-		st_lookup(RCLASS_IV_TBL(obj), (st_data_t)id, &index))
-	    return (VALUE)index;
-	break;
+        {
+            IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(id);
+            if (RCLASS_IV_TBL(obj) &&
+                st_lookup(RCLASS_IV_TBL(obj), (st_data_t)id, (st_data_t *)&val)) {
+                return val;
+            }
+            else {
+                break;
+            }
+        }
       default:
 	if (FL_TEST(obj, FL_EXIVAR))
 	    return generic_ivar_get(obj, id, undef);
@@ -1208,8 +1237,7 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
 {
     VALUE val, *ptr;
     struct st_table *iv_index_tbl;
-    uint32_t len;
-    st_data_t index;
+    uint32_t len, index;
 
     rb_check_frozen(obj);
     switch (BUILTIN_TYPE(obj)) {
@@ -1217,20 +1245,23 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
         len = ROBJECT_NUMIV(obj);
         ptr = ROBJECT_IVPTR(obj);
         iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
-        if (!iv_index_tbl) break;
-        if (!st_lookup(iv_index_tbl, (st_data_t)id, &index)) break;
-        if (len <= index) break;
-        val = ptr[index];
-        ptr[index] = Qundef;
-        if (val != Qundef)
-            return val;
-	break;
+        if (iv_index_tbl_lookup(iv_index_tbl, id, &index) &&
+            index < len) {
+            val = ptr[index];
+            ptr[index] = Qundef;
+
+            if (val != Qundef) {
+                return val;
+            }
+        }
+        break;
       case T_CLASS:
       case T_MODULE:
         IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(id);
 	if (RCLASS_IV_TBL(obj) &&
-		st_delete(RCLASS_IV_TBL(obj), (st_data_t *)&id, &index))
-	    return (VALUE)index;
+            st_delete(RCLASS_IV_TBL(obj), (st_data_t *)&id, (st_data_t *)&val)) {
+            return val;
+        }
 	break;
       default:
 	if (FL_TEST(obj, FL_EXIVAR))
@@ -1247,46 +1278,57 @@ rb_attr_delete(VALUE obj, ID id)
 }
 
 static st_table *
-iv_index_tbl_make(VALUE obj)
+iv_index_tbl_make(VALUE obj, VALUE klass)
 {
-    VALUE klass = rb_obj_class(obj);
     st_table *iv_index_tbl;
 
-    if (!klass) {
+    if (UNLIKELY(!klass)) {
         rb_raise(rb_eTypeError, "hidden object cannot have instance variables");
     }
-    if (!(iv_index_tbl = RCLASS_IV_INDEX_TBL(klass))) {
-	iv_index_tbl = RCLASS_IV_INDEX_TBL(klass) = st_init_numtable();
+
+    if ((iv_index_tbl = RCLASS_IV_INDEX_TBL(klass)) == NULL) {
+        RB_VM_LOCK_ENTER();
+        if ((iv_index_tbl = RCLASS_IV_INDEX_TBL(klass)) == NULL) {
+            iv_index_tbl = RCLASS_IV_INDEX_TBL(klass) = st_init_numtable();
+        }
+        RB_VM_LOCK_LEAVE();
     }
 
     return iv_index_tbl;
 }
 
 static void
-iv_index_tbl_extend(struct ivar_update *ivup, ID id)
+iv_index_tbl_extend(struct ivar_update *ivup, ID id, VALUE klass)
 {
-    if (st_lookup(ivup->u.iv_index_tbl, (st_data_t)id, &ivup->index)) {
+    ASSERT_vm_locking();
+    struct rb_iv_index_tbl_entry *ent;
+
+    if (st_lookup(ivup->u.iv_index_tbl, (st_data_t)id, (st_data_t *)&ent)) {
+        ivup->index = ent->index;
 	return;
     }
     if (ivup->u.iv_index_tbl->num_entries >= INT_MAX) {
 	rb_raise(rb_eArgError, "too many instance variables");
     }
-    ivup->index = (st_data_t)ivup->u.iv_index_tbl->num_entries;
-    st_add_direct(ivup->u.iv_index_tbl, (st_data_t)id, ivup->index);
+    ent = ALLOC(struct rb_iv_index_tbl_entry);
+    ent->index = ivup->index = (uint32_t)ivup->u.iv_index_tbl->num_entries;
+    ent->class_value = klass;
+    ent->class_serial = RCLASS_SERIAL(klass);
+    st_add_direct(ivup->u.iv_index_tbl, (st_data_t)id, (st_data_t)ent);
     ivup->iv_extended = 1;
 }
 
 static void
 generic_ivar_set(VALUE obj, ID id, VALUE val)
 {
+    VALUE klass = rb_obj_class(obj);
     struct ivar_update ivup;
-
     ivup.iv_extended = 0;
-    ivup.u.iv_index_tbl = iv_index_tbl_make(obj);
-    iv_index_tbl_extend(&ivup, id);
+    ivup.u.iv_index_tbl = iv_index_tbl_make(obj, klass);
 
     RB_VM_LOCK_ENTER();
     {
+        iv_index_tbl_extend(&ivup, id, klass);
         st_update(generic_ivtbl(obj, id, false), (st_data_t)obj, generic_ivar_update,
                   (st_data_t)&ivup);
     }
@@ -1361,12 +1403,18 @@ rb_obj_transient_heap_evacuate(VALUE obj, int promote)
 static VALUE
 obj_ivar_set(VALUE obj, ID id, VALUE val)
 {
+    VALUE klass = rb_obj_class(obj);
     struct ivar_update ivup;
     uint32_t i, len;
-
     ivup.iv_extended = 0;
-    ivup.u.iv_index_tbl = iv_index_tbl_make(obj);
-    iv_index_tbl_extend(&ivup, id);
+    ivup.u.iv_index_tbl = iv_index_tbl_make(obj, klass);
+
+    RB_VM_LOCK_ENTER();
+    {
+        iv_index_tbl_extend(&ivup, id, klass);
+    }
+    RB_VM_LOCK_LEAVE();
+
     len = ROBJECT_NUMIV(obj);
     if (len <= ivup.index) {
         VALUE *ptr = ROBJECT_IVPTR(obj);
@@ -1390,6 +1438,7 @@ obj_ivar_set(VALUE obj, ID id, VALUE val)
             else {
                 newptr = obj_ivar_heap_realloc(obj, len, newsize);
             }
+
             for (; len < newsize; len++) {
                 newptr[len] = Qundef;
             }
@@ -1445,18 +1494,17 @@ rb_ivar_defined(VALUE obj, ID id)
 {
     VALUE val;
     struct st_table *iv_index_tbl;
-    st_data_t index;
+    uint32_t index;
 
     if (SPECIAL_CONST_P(obj)) return Qfalse;
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
         iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
-        if (!iv_index_tbl) break;
-        if (!st_lookup(iv_index_tbl, (st_data_t)id, &index)) break;
-        if (ROBJECT_NUMIV(obj) <= index) break;
-        val = ROBJECT_IVPTR(obj)[index];
-        if (val != Qundef)
+        if (iv_index_tbl_lookup(iv_index_tbl, id, &index) &&
+            index < ROBJECT_NUMIV(obj) &&
+            (val = ROBJECT_IVPTR(obj)[index]) != Qundef) {
             return Qtrue;
+        }
 	break;
       case T_CLASS:
       case T_MODULE:
@@ -1473,80 +1521,72 @@ rb_ivar_defined(VALUE obj, ID id)
 }
 
 typedef int rb_ivar_foreach_callback_func(ID key, VALUE val, st_data_t arg);
+st_data_t rb_st_nth_key(st_table *tab, st_index_t index);
 
-struct obj_ivar_tag {
-    VALUE obj;
-    rb_ivar_foreach_callback_func *func;
-    st_data_t arg;
-};
-
-static int
-obj_ivar_i(st_data_t key, st_data_t index, st_data_t arg)
+static ID
+iv_index_tbl_nth_id(st_table *iv_index_tbl, uint32_t index)
 {
-    struct obj_ivar_tag *data = (struct obj_ivar_tag *)arg;
-    if (index < ROBJECT_NUMIV(data->obj)) {
-        VALUE val = ROBJECT_IVPTR(data->obj)[index];
-        if (val != Qundef) {
-            return (data->func)((ID)key, val, data->arg);
+    st_data_t key;
+    RB_VM_LOCK_ENTER();
+    {
+        key = rb_st_nth_key(iv_index_tbl, index);
+    }
+    RB_VM_LOCK_LEAVE();
+    return (ID)key;
+}
+
+static inline bool
+ivar_each_i(st_table *iv_index_tbl, VALUE val, uint32_t i, rb_ivar_foreach_callback_func *func, st_data_t arg)
+{
+    if (val != Qundef) {
+        ID id = iv_index_tbl_nth_id(iv_index_tbl, i);
+        switch (func(id, val, arg)) {
+          case ST_CHECK:
+          case ST_CONTINUE:
+            break;
+          case ST_STOP:
+            return true;
+          default:
+            rb_bug("unreachable");
         }
     }
-    return ST_CONTINUE;
+    return false;
 }
 
 static void
 obj_ivar_each(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg)
 {
-    st_table *tbl;
-    struct obj_ivar_tag data;
+    st_table *iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
+    if (!iv_index_tbl) return;
+    uint32_t i=0;
 
-    tbl = ROBJECT_IV_INDEX_TBL(obj);
-    if (!tbl)
-        return;
-
-    data.obj = obj;
-    data.func = (int (*)(ID key, VALUE val, st_data_t arg))func;
-    data.arg = arg;
-
-    st_foreach_safe(tbl, obj_ivar_i, (st_data_t)&data);
-}
-
-struct gen_ivar_tag {
-    struct gen_ivtbl *ivtbl;
-    rb_ivar_foreach_callback_func *func;
-    st_data_t arg;
-};
-
-static int
-gen_ivar_each_i(st_data_t key, st_data_t index, st_data_t data)
-{
-    struct gen_ivar_tag *arg = (struct gen_ivar_tag *)data;
-
-    if (index < arg->ivtbl->numiv) {
-        VALUE val = arg->ivtbl->ivptr[index];
-        if (val != Qundef) {
-            return (arg->func)((ID)key, val, arg->arg);
+    for (i=0; i < ROBJECT_NUMIV(obj); i++) {
+        VALUE val = ROBJECT_IVPTR(obj)[i];
+        if (ivar_each_i(iv_index_tbl, val, i, func, arg)) {
+            return;
         }
     }
-    return ST_CONTINUE;
 }
 
 static void
 gen_ivar_each(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg)
 {
-    struct gen_ivar_tag data;
+    struct gen_ivtbl *ivtbl;
     st_table *iv_index_tbl = RCLASS_IV_INDEX_TBL(rb_obj_class(obj));
-
     if (!iv_index_tbl) return;
-    if (!gen_ivtbl_get(obj, 0, &data.ivtbl)) return;
+    if (!gen_ivtbl_get(obj, 0, &ivtbl)) return;
 
-    data.func = (int (*)(ID key, VALUE val, st_data_t arg))func;
-    data.arg = arg;
-
-    st_foreach_safe(iv_index_tbl, gen_ivar_each_i, (st_data_t)&data);
+    for (uint32_t i=0; i<ivtbl->numiv; i++) {
+        VALUE val = ivtbl->ivptr[i];
+        if (ivar_each_i(iv_index_tbl, val, i, func, arg)) {
+            return;
+        }
+    }
 }
 
 struct givar_copy {
     VALUE obj;
+    VALUE klass;
     st_table *iv_index_tbl;
     struct gen_ivtbl *ivtbl;
 };
@@ -1559,7 +1599,13 @@ gen_ivar_copy(ID id, VALUE val, st_data_t arg)
 
     ivup.iv_extended = 0;
     ivup.u.iv_index_tbl = c->iv_index_tbl;
-    iv_index_tbl_extend(&ivup, id);
+
+    RB_VM_LOCK_ENTER();
+    {
+        iv_index_tbl_extend(&ivup, id, c->klass);
+    }
+    RB_VM_LOCK_LEAVE();
+
     if (ivup.index >= c->ivtbl->numiv) {
 	uint32_t newsize = iv_index_tbl_newsize(&ivup);
 	c->ivtbl = gen_ivtbl_resize(c->ivtbl, newsize);
@@ -1597,8 +1643,10 @@ rb_copy_generic_ivar(VALUE clone, VALUE obj)
 	    FL_SET(clone, FL_EXIVAR);
 	}
 
-	c.iv_index_tbl = iv_index_tbl_make(clone);
-	c.obj = clone;
+        VALUE klass = rb_obj_class(clone);
+	c.iv_index_tbl = iv_index_tbl_make(clone, klass);
+        c.obj = clone;
+        c.klass = klass;
 	gen_ivar_each(obj, gen_ivar_copy, (st_data_t)&c);
 	/*
 	 * c.ivtbl may change in gen_ivar_copy due to realloc,
@@ -1652,7 +1700,7 @@ rb_ivar_count(VALUE obj)
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-	if ((tbl = ROBJECT_IV_INDEX_TBL(obj)) != 0) {
+	if (ROBJECT_IV_INDEX_TBL(obj) != 0) {
 	    st_index_t i, count, num = ROBJECT_NUMIV(obj);
 	    const VALUE *const ivptr = ROBJECT_IVPTR(obj);
 	    for (i = count = 0; i < num; ++i) {
@@ -1773,7 +1821,7 @@ rb_obj_remove_instance_variable(VALUE obj, VALUE name)
     const ID id = id_for_var(obj, name, an, instance);
     st_data_t n, v;
     struct st_table *iv_index_tbl;
-    st_data_t index;
+    uint32_t index;
 
     rb_check_frozen(obj);
     if (!id) {
@@ -1783,11 +1831,9 @@ rb_obj_remove_instance_variable(VALUE obj, VALUE name)
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
         iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
-        if (!iv_index_tbl) break;
-        if (!st_lookup(iv_index_tbl, (st_data_t)id, &index)) break;
-        if (ROBJECT_NUMIV(obj) <= index) break;
-        val = ROBJECT_IVPTR(obj)[index];
-        if (val != Qundef) {
+        if (iv_index_tbl_lookup(iv_index_tbl, id, &index) &&
+            index < ROBJECT_NUMIV(obj) &&
+            (val = ROBJECT_IVPTR(obj)[index]) != Qundef) {
             ROBJECT_IVPTR(obj)[index] = Qundef;
             return val;
         }
