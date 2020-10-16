@@ -2495,6 +2495,36 @@ rb_vm_update_references(void *ptr)
 }
 
 void
+rb_vm_each_stack_value(void *ptr, void (*cb)(VALUE, void*), void *ctx)
+{
+    if (ptr) {
+        rb_vm_t *vm = ptr;
+        rb_ractor_t *r = 0;
+        list_for_each(&vm->ractor.set, r, vmlr_node) {
+            VM_ASSERT(rb_ractor_status_p(r, ractor_blocking) ||
+                      rb_ractor_status_p(r, ractor_running));
+            if (r->threads.cnt > 0) {
+                rb_thread_t *th = 0;
+                list_for_each(&r->threads.set, th, lt_node) {
+                    VM_ASSERT(th != NULL);
+                    rb_execution_context_t * ec = th->ec;
+                    if (ec->vm_stack) {
+                        VALUE *p = ec->vm_stack;
+                        VALUE *sp = ec->cfp->sp;
+                        while (p <= sp) {
+                            if (!rb_special_const_p(*p)) {
+                                cb(*p, ctx);
+                            }
+                            p++;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void
 rb_vm_mark(void *ptr)
 {
     RUBY_MARK_ENTER("vm");
