@@ -642,7 +642,32 @@ class TestRingServer < Test::Unit::TestCase
   end
 
   def test_do_reply
+    # temporaliry redefine Rinda::RingServer#do_reply for a debugging purpose
+    Rinda::RingServer.class_eval do
+      alias do_reply_back do_reply
+      def do_reply
+        tuple = @ts.take([:lookup_ring, nil], @renewer)
+        Thread.new do
+          begin
+            tuple[1].call(@ts)
+          rescue
+            p :in_thread, $!, *$!.backtrace
+            nil
+          end
+        end
+      rescue
+        p :out_of_thread, $!, *$!.backtrace
+      end
+    end
+
     with_timeout(30) {_test_do_reply}
+
+  ensure
+    Rinda::RingServer.class_eval do
+      remove_method :do_reply
+      alias do_reply do_reply_back
+      remove_method :do_reply_back
+    end
   end
 
   def _test_do_reply
