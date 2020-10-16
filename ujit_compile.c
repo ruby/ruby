@@ -541,12 +541,17 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     //print_str(cb, rb_id2name(mid));
     //print_ptr(cb, RCX);
 
+    // IDEA: may be able to eliminate this in some cases if we know the previous instruction?
     // TODO: guard_is_object() helper function?
+    // FIXME: an object can have QNil bit 1000 set
+    // need to check for immediate mask, Qnil and Qfalse
     // Check that the receiver is an object
-    cmp(cb, RCX, imm_opnd(0));
-    je_ptr(cb, side_exit);
-    test(cb, RCX, imm_opnd(RUBY_IMMEDIATE_MASK | RUBY_Qnil));
+    test(cb, RCX, imm_opnd(RUBY_IMMEDIATE_MASK));
     jnz_ptr(cb, side_exit);
+    cmp(cb, RCX, imm_opnd(Qfalse));
+    je_ptr(cb, side_exit);
+    cmp(cb, RCX, imm_opnd(Qnil));
+    je_ptr(cb, side_exit);
 
     // Pointer to the klass field of the receiver &(recv->klass)
     x86opnd_t klass_opnd = mem_opnd(64, RCX, offsetof(struct RBasic, klass));
