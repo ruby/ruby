@@ -493,21 +493,21 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
         return false;
     }
 
-    /*
     // Don't JIT if this is not a C call
-    if (cd->cc->call_ != vm_call_cfunc_with_frame)
+    if (vm_cc_cme(cd->cc)->def->type != VM_METHOD_TYPE_CFUNC)
     {
         return false;
     }
-    */
 
 
-
-    // TODO: stop if the inline cache isn't filled
-
-    // TODO: stop if this isn't a C call
-
-
+    // Things we need to do at run-time:
+    // - Check that the cached klass matches
+    // - Check that method entry is not invalidated
+    // - ???
+    // - Create a new frame
+    //   - copy function arguments?
+    // - Call the C function
+    // - Remove the frame
 
 
 
