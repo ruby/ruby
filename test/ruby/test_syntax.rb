@@ -1392,7 +1392,7 @@ eom
     obj = Object.new
     def obj.test
       x = nil
-      y = (return until x unless x)
+      _y = (return until x unless x)
     end
     assert_nil obj.test, "[Bug #16695]"
   end
