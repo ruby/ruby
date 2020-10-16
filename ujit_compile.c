@@ -2,8 +2,10 @@
 #include "insns.inc"
 #include "internal.h"
 #include "vm_core.h"
+#include "vm_sync.h"
 #include "vm_callinfo.h"
 #include "builtin.h"
+#include "internal/compile.h"
 #include "insns_info.inc"
 #include "ujit_compile.h"
 #include "ujit_asm.h"
@@ -19,6 +21,8 @@
 #define PLATFORM_SUPPORTED_P 1
 #endif
 
+bool rb_ujit_enabled;
+
 // Hash table of encoded instructions
 extern st_table *rb_encoded_insn_data;
 
@@ -26,10 +30,12 @@ extern st_table *rb_encoded_insn_data;
 typedef struct ctx_struct
 {
     // Current PC
-    VALUE* pc;
+    VALUE *pc;
 
     // Difference between the current stack pointer and actual stack top
     int32_t stack_diff;
+
+    const rb_iseq_t *iseq;
 
 } ctx_t;
 
@@ -63,11 +69,24 @@ addr2insn_bookkeeping(void *code_ptr, int insn)
     }
 }
 
-// Get the current instruction opcode from the context object
-int ctx_get_opcode(ctx_t* ctx)
+static int
+opcode_at_pc(const rb_iseq_t *iseq, const VALUE *pc)
 {
-    return (int)(*ctx->pc);
+    const VALUE at_pc = *pc;
+    if (FL_TEST_RAW((VALUE)iseq, ISEQ_TRANSLATED)) {
+        return rb_vm_insn_addr2insn((const void *)at_pc);
+    }
+    else {
+        return (int)at_pc;
+    }
 }
+
+// Get the current instruction opcode from the context object
+int ctx_get_opcode(ctx_t *ctx)
+{
+    return opcode_at_pc(ctx->iseq, ctx->pc);
+}
+
 
 // Get an instruction argument from the context object
 VALUE ctx_get_arg(ctx_t* ctx, size_t arg_idx)
@@ -167,7 +186,7 @@ ujit_side_exit(codeblock_t* cb, ctx_t* ctx, VALUE* exit_pc)
     // Otherwise the interpreter may jump right back to the
     // JITted code we're trying to exit
     const void * const *table = rb_vm_get_insns_address_table();
-    int opcode = (int)(*exit_pc);
+    int opcode = opcode_at_pc(ctx->iseq, exit_pc);
     void* old_instr = (void*)table[opcode];
     mov(cb, RAX, const_ptr_opnd(exit_pc));
     mov(cb, RCX, const_ptr_opnd(old_instr));
@@ -192,11 +211,12 @@ System V ABI reference:
 https://wiki.osdev.org/System_V_ABI#x86-64
 */
 uint8_t *
-ujit_compile_insn(rb_iseq_t *iseq, unsigned int insn_idx, unsigned int* next_ujit_idx)
+ujit_compile_insn(const rb_iseq_t *iseq, unsigned int insn_idx, unsigned int* next_ujit_idx)
 {
     if (!cb) {
         return NULL;
     }
+    VALUE *encoded = iseq->body->iseq_encoded;
 
     // NOTE: if we are ever deployed in production, we
     // should probably just log an error and return NULL here,
@@ -218,19 +238,20 @@ ujit_compile_insn(rb_iseq_t *iseq, unsigned int insn_idx, unsigned int* next_uji
     //printf("write pos: %ld\n", cb->write_pos);
 
     // Get the first opcode in the sequence
-    int first_opcode = (int)iseq->body->iseq_encoded[insn_idx];
+    int first_opcode = opcode_at_pc(iseq, &encoded[insn_idx]);
 
     // Create codegen context
     ctx_t ctx;
     ctx.pc = NULL;
     ctx.stack_diff = 0;
+    ctx.iseq = iseq;
 
     // For each instruction to compile
     size_t num_instrs;
     for (num_instrs = 0;; ++num_instrs)
     {
         // Set the current PC
-        ctx.pc = &iseq->body->iseq_encoded[insn_idx];
+        ctx.pc = &encoded[insn_idx];
 
         // Get the current opcode
         int opcode = ctx_get_opcode(&ctx);
@@ -616,10 +637,35 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     */
 }
 
-bool
-rb_ujit_enabled_p(void)
+
+void
+rb_ujit_compile_iseq(const rb_iseq_t *iseq)
 {
-    return !!cb;
+#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
+    RB_VM_LOCK();
+    VALUE *encoded = (VALUE *)iseq->body->iseq_encoded;
+
+    unsigned int insn_idx;
+    unsigned int next_ujit_idx = 0;
+
+    for (insn_idx = 0; insn_idx < iseq->body->iseq_size; /* */) {
+        int insn = opcode_at_pc(iseq, &encoded[insn_idx]);
+        int len = insn_len(insn);
+
+        uint8_t *native_code_ptr = NULL;
+
+        // If ujit hasn't already compiled this instruction
+        if (insn_idx >= next_ujit_idx) {
+            native_code_ptr = ujit_compile_insn(iseq, insn_idx, &next_ujit_idx);
+        }
+
+        if (native_code_ptr) {
+            encoded[insn_idx] = (VALUE)native_code_ptr;
+        }
+        insn_idx += len;
+    }
+    RB_VM_UNLOCK();
+#endif
 }
 
 void
@@ -629,6 +675,8 @@ rb_ujit_init(void)
     {
         return;
     }
+
+    rb_ujit_enabled = true;
 
     // Initialize the code blocks
     size_t mem_size = 128 * 1024 * 1024;

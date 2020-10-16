@@ -845,46 +845,16 @@ rb_iseq_translate_threaded_code(rb_iseq_t *iseq)
 {
 #if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
     const void * const *table = rb_vm_get_insns_address_table();
+    unsigned int i;
     VALUE *encoded = (VALUE *)iseq->body->iseq_encoded;
-    VALUE translated_insns_buf;
 
-    unsigned int insn_idx, translated_idx;
-    unsigned int next_ujit_idx = 0;
-    unsigned int translated_len = 0;
-
-    bool ujit_enabled = rb_ujit_enabled_p();
-
-    VALUE *translated_insns = ALLOCV_N(VALUE, translated_insns_buf, iseq->body->iseq_size);
-    for (insn_idx = 0; insn_idx < iseq->body->iseq_size; /* */) {
-        int insn = (int)encoded[insn_idx];
-        int len = insn_len(insn);
-        VALUE translated;
-
-        uint8_t* native_code_ptr = NULL;
-
-        // If ujit is enabled and hasn't already compiled this instruction
-        if (ujit_enabled && insn_idx >= next_ujit_idx)
-            native_code_ptr = ujit_compile_insn(iseq, insn_idx, &next_ujit_idx);
-
-        if (native_code_ptr)
-            translated = (VALUE)native_code_ptr;
-        else
-            translated = (VALUE)table[insn];
-        translated_insns[translated_len++] = translated;
-
-    	insn_idx += len;
+    for (i = 0; i < iseq->body->iseq_size; /* */ ) {
+	int insn = (int)iseq->body->iseq_encoded[i];
+	int len = insn_len(insn);
+	encoded[i] = (VALUE)table[insn];
+	i += len;
     }
-
-    insn_idx = 0;
-    for (translated_idx = 0; translated_idx < translated_len; translated_idx++) {
-        int insn = (int)encoded[insn_idx];
-        int len = insn_len(insn);
-        encoded[insn_idx] = translated_insns[translated_idx];
-        insn_idx += len;
-    }
-
     FL_SET((VALUE)iseq, ISEQ_TRANSLATED);
-    ALLOCV_END(translated_insns_buf);
 #endif
     return COMPILE_OK;
 }
