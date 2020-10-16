@@ -19,7 +19,7 @@ def fetch_topics(topics)
     end.resume
   end
 
-  Thread.scheduler&.run
+  Thread.fiber_scheduler&.run
 
   return responses
 end
@@ -32,7 +32,7 @@ def sweep(repeats: 3, **options)
     Thread.new do
       Benchmark.realtime do
         scheduler = Scheduler.new
-        Thread.current.scheduler = scheduler
+        Fiber.set_scheduler scheduler
 
         repeats.times do
           Fiber.new(**options) do
