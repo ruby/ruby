@@ -795,6 +795,9 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
     // setup native thread
     gvl_acquire(rb_ractor_gvl(th->ractor), th);
     ruby_thread_set_native(th);
+    rb_ractor_set_current_ec(th->ractor, th->ec);
+
+    if (GET_EC() != th->ec) rb_bug("!!");
 
     // setup ractor
     if (rb_ractor_status_p(th->ractor, ractor_blocking)) {
@@ -892,9 +895,6 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
         rb_fiber_close(th->ec->fiber_ptr);
     }
 
-    thread_cleanup_func(th, FALSE);
-    VM_ASSERT(th->ec->vm_stack == NULL);
-
     if (th->invoke_type == thread_invoke_type_ractor_proc) {
         // after rb_ractor_living_threads_remove()
         // GC will happen anytime and this ractor can be collected (and destroy GVL).
@@ -906,6 +906,9 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
         rb_ractor_living_threads_remove(th->ractor, th);
         gvl_release(rb_ractor_gvl(th->ractor));
     }
+
+    thread_cleanup_func(th, FALSE);
+    VM_ASSERT(th->ec->vm_stack == NULL);
 
     return 0;
 }
@@ -5574,7 +5577,7 @@ ruby_native_thread_p(void)
 {
     rb_thread_t *th = ruby_thread_from_native();
 
-    return th != 0;
+    return th != NULL;
 }
 
 static void

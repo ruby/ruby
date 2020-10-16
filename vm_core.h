@@ -1721,8 +1721,7 @@ RUBY_EXTERN rb_vm_t *ruby_current_vm_ptr;
 RUBY_EXTERN rb_event_flag_t ruby_vm_event_flags;
 RUBY_EXTERN rb_event_flag_t ruby_vm_event_enabled_global_flags;
 RUBY_EXTERN unsigned int    ruby_vm_event_local_num;
-
-RUBY_EXTERN native_tls_key_t ruby_current_ec_key;
+RUBY_EXTERN native_tls_key_t ruby_native_thread_key;
 
 RUBY_SYMBOL_EXPORT_END
 
@@ -1762,26 +1761,27 @@ rb_ec_vm_ptr(const rb_execution_context_t *ec)
     }
 }
 
-static inline rb_execution_context_t *
-rb_current_execution_context(void)
-{
-    rb_execution_context_t *ec = native_tls_get(ruby_current_ec_key);
-    VM_ASSERT(ec != NULL);
-    return ec;
-}
-
 static inline rb_thread_t *
 rb_current_thread(void)
 {
-    const rb_execution_context_t *ec = GET_EC();
-    return rb_ec_thread_ptr(ec);
+    rb_thread_t *cth = native_tls_get(ruby_native_thread_key);
+    return cth;
+}
+
+static inline rb_execution_context_t *
+rb_current_execution_context(void)
+{
+    rb_thread_t *cth = GET_THREAD();
+    VM_ASSERT(cth->ec != NULL);
+    return cth->ec;
 }
 
 static inline rb_ractor_t *
 rb_current_ractor(void)
 {
-    const rb_execution_context_t *ec = GET_EC();
-    return rb_ec_ractor_ptr(ec);
+    const rb_thread_t *cth = rb_current_thread();
+    VM_ASSERT(cth->ractor != NULL);
+    return cth->ractor;
 }
 
 static inline rb_vm_t *
