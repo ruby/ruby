@@ -258,9 +258,8 @@ static VALUE remove_from_mutex_lock_waiters(VALUE arg) {
 static VALUE
 do_mutex_lock(VALUE self, int interruptible_p)
 {
-    rb_execution_context_t *ec = GET_EC();
-    rb_thread_t *th = ec->thread_ptr;
-    rb_fiber_t *fiber = ec->fiber_ptr;
+    rb_thread_t *th = GET_THREAD();
+    rb_fiber_t *fiber = th->ec->fiber_ptr;
     rb_mutex_t *mutex = mutex_ptr(self);
 
     /* When running trap handler */
@@ -959,15 +958,15 @@ queue_do_pop(VALUE self, struct rb_queue *q, int should_block)
             return queue_closed_result(self, q);
         }
         else {
-            rb_execution_context_t *ec = GET_EC();
+            rb_thread_t *th = GET_THREAD();
             struct queue_waiter qw;
 
             assert(RARRAY_LEN(q->que) == 0);
             assert(queue_closed_p(self) == 0);
 
             qw.w.self = self;
-            qw.w.th = ec->thread_ptr;
-            qw.w.fiber = ec->fiber_ptr;
+            qw.w.th = th;
+            qw.w.fiber = th->ec->fiber_ptr;
 
             qw.as.q = q;
             list_add_tail(queue_waitq(qw.as.q), &qw.w.node);
@@ -1205,13 +1204,13 @@ rb_szqueue_push(int argc, VALUE *argv, VALUE self)
             break;
         }
         else {
-            rb_execution_context_t *ec = GET_EC();
+            rb_thread_t *th = GET_THREAD();
             struct queue_waiter qw;
             struct list_head *pushq = szqueue_pushq(sq);
 
             qw.w.self = self;
-            qw.w.th = ec->thread_ptr;
-            qw.w.fiber = ec->fiber_ptr;
+            qw.w.th = th;
+            qw.w.fiber = th->ec->fiber_ptr;
 
             qw.as.sq = sq;
             list_add_tail(pushq, &qw.w.node);
@@ -1450,7 +1449,7 @@ delete_from_waitq(VALUE v)
 static VALUE
 rb_condvar_wait(int argc, VALUE *argv, VALUE self)
 {
-    rb_execution_context_t *ec = GET_EC();
+    rb_thread_t *th = GET_THREAD();
 
     struct rb_condvar *cv = condvar_ptr(self);
     struct sleep_call args;
@@ -1459,8 +1458,8 @@ rb_condvar_wait(int argc, VALUE *argv, VALUE self)
 
     struct sync_waiter w = {
         .self = args.mutex,
-        .th = ec->thread_ptr,
-        .fiber = ec->fiber_ptr,
+        .th = th,
+        .fiber = th->ec->fiber_ptr,
     };
 
     list_add_tail(&cv->waitq, &w.node);

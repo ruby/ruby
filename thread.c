@@ -797,8 +797,6 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
     ruby_thread_set_native(th);
     rb_ractor_set_current_ec(th->ractor, th->ec);
 
-    if (GET_EC() != th->ec) rb_bug("!!");
-
     // setup ractor
     if (rb_ractor_status_p(th->ractor, ractor_blocking)) {
         RB_VM_LOCK();
@@ -930,11 +928,11 @@ struct thread_create_params {
 static VALUE
 thread_create_core(VALUE thval, struct thread_create_params *params)
 {
-    rb_execution_context_t *ec = GET_EC();
-    rb_thread_t *th = rb_thread_ptr(thval), *current_th = rb_ec_thread_ptr(ec);
+    rb_thread_t *cth = GET_THREAD();
+    rb_thread_t *th = rb_thread_ptr(thval);
     int err;
 
-    if (OBJ_FROZEN(current_th->thgroup)) {
+    if (OBJ_FROZEN(cth->thgroup)) {
 	rb_raise(rb_eThreadError,
 		 "can't start a new thread (frozen ThreadGroup)");
     }
@@ -957,7 +955,7 @@ thread_create_core(VALUE thval, struct thread_create_params *params)
         th->invoke_arg.proc.proc = rb_proc_isolate_bang(params->proc);
         th->invoke_arg.proc.args = INT2FIX(RARRAY_LENINT(params->args));
         th->invoke_arg.proc.kw_splat = rb_keyword_given_p();
-        rb_ractor_send_parameters(ec, params->g, params->args);
+        rb_ractor_send_parameters(cth->ec, params->g, params->args);
         break;
 
       case thread_invoke_type_func:
@@ -970,12 +968,12 @@ thread_create_core(VALUE thval, struct thread_create_params *params)
         rb_bug("unreachable");
     }
 
-    th->priority = current_th->priority;
-    th->thgroup = current_th->thgroup;
+    th->priority = cth->priority;
+    th->thgroup = cth->thgroup;
 
     th->pending_interrupt_queue = rb_ary_tmp_new(0);
     th->pending_interrupt_queue_checked = 0;
-    th->pending_interrupt_mask_stack = rb_ary_dup(current_th->pending_interrupt_mask_stack);
+    th->pending_interrupt_mask_stack = rb_ary_dup(cth->pending_interrupt_mask_stack);
     RBASIC_CLEAR_CLASS(th->pending_interrupt_mask_stack);
 
     rb_native_mutex_initialize(&th->interrupt_lock);
@@ -1209,9 +1207,8 @@ thread_join_sleep(VALUE arg)
 static VALUE
 thread_join(rb_thread_t *target_th, VALUE timeout)
 {
-    rb_execution_context_t *ec = GET_EC();
-    rb_thread_t *th = ec->thread_ptr;
-    rb_fiber_t *fiber = ec->fiber_ptr;
+    rb_thread_t *th = GET_THREAD();
+    rb_fiber_t *fiber = th->ec->fiber_ptr;
 
     if (th == target_th) {
         rb_raise(rb_eThreadError, "Target thread must not be current thread");
@@ -1648,30 +1645,30 @@ rb_nogvl(void *(*func)(void *), void *data1,
          int flags)
 {
     void *val = 0;
-    rb_execution_context_t *ec = GET_EC();
-    rb_thread_t *th = rb_ec_thread_ptr(ec);
+    rb_thread_t *cth = GET_THREAD();
+    rb_execution_context_t *ec = cth->ec;
     int saved_errno = 0;
     VALUE ubf_th = Qfalse;
 
     if (ubf == RUBY_UBF_IO || ubf == RUBY_UBF_PROCESS) {
 	ubf = ubf_select;
-	data2 = th;
+	data2 = cth;
     }
-    else if (ubf && rb_ractor_living_thread_num(th->ractor) == 1) {
+    else if (ubf && rb_ractor_living_thread_num(cth->ractor) == 1) {
         if (flags & RB_NOGVL_UBF_ASYNC_SAFE) {
-            th->vm->ubf_async_safe = 1;
+            cth->vm->ubf_async_safe = 1;
         }
         else {
             ubf_th = rb_thread_start_unblock_thread();
         }
     }
 
-    BLOCKING_REGION(th, {
+    BLOCKING_REGION(cth, {
 	val = func(data1);
 	saved_errno = errno;
     }, ubf, data2, flags & RB_NOGVL_INTR_FAIL);
 
-    th->vm->ubf_async_safe = 0;
+    cth->vm->ubf_async_safe = 0;
 
     if ((flags & RB_NOGVL_INTR_FAIL) == 0) {
 	RUBY_VM_CHECK_INTS_BLOCKING(ec);
@@ -2223,8 +2220,7 @@ static VALUE
 rb_thread_s_handle_interrupt(VALUE self, VALUE mask_arg)
 {
     VALUE mask;
-    rb_execution_context_t * volatile ec = GET_EC();
-    rb_thread_t * volatile th = rb_ec_thread_ptr(ec);
+    rb_thread_t * volatile th = GET_THREAD();
     volatile VALUE r = Qnil;
     enum ruby_tag_type state;
 

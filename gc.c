@@ -8764,8 +8764,7 @@ extern rb_symbols_t ruby_global_symbols;
 static void
 gc_update_references(rb_objspace_t * objspace)
 {
-    rb_execution_context_t *ec = GET_EC();
-    rb_vm_t *vm = rb_ec_vm_ptr(ec);
+    rb_vm_t *vm = GET_VM();
 
     objspace_each_objects_without_setup(objspace, gc_ref_update, objspace);
     rb_vm_update_references(vm);

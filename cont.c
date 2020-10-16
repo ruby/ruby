@@ -2001,9 +2001,10 @@ rb_threadptr_root_fiber_terminate(rb_thread_t *th)
 static inline rb_fiber_t*
 fiber_current(void)
 {
-    rb_execution_context_t *ec = GET_EC();
+    rb_thread_t *cth = GET_THREAD();
+    rb_execution_context_t *ec = cth->ec;
     if (ec->fiber_ptr->cont.self == 0) {
-        root_fiber_alloc(rb_ec_thread_ptr(ec));
+        root_fiber_alloc(cth);
     }
     return ec->fiber_ptr;
 }
