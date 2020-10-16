@@ -225,8 +225,7 @@ struct iseq_inline_cache_entry {
 };
 
 struct iseq_inline_iv_cache_entry {
-    rb_serial_t ic_serial;
-    size_t index;
+    struct rb_iv_index_tbl_entry *entry;
 };
 
 union iseq_inline_storage_entry {

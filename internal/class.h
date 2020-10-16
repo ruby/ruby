@@ -25,8 +25,14 @@ struct rb_subclass_entry {
     struct rb_subclass_entry *next;
 };
 
+struct rb_iv_index_tbl_entry {
+    uint32_t index;
+    rb_serial_t class_serial;
+    VALUE class_value;
+};
+
 struct rb_classext_struct {
-    struct st_table *iv_index_tbl;
+    struct st_table *iv_index_tbl; // ID -> struct rb_iv_index_tbl_entry
     struct st_table *iv_tbl;
 #if SIZEOF_SERIAL_T == SIZEOF_VALUE /* otherwise m_tbl is in struct RClass */
     struct rb_id_table *m_tbl;
