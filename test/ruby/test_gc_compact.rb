@@ -4,29 +4,33 @@ require 'fiddle'
 
 class TestGCCompact < Test::Unit::TestCase
   def test_enable_autocompact
-    GC.disable_autocompact
-    assert GC.enable_autocompact
-    refute GC.enable_autocompact
-    GC.disable_autocompact
+    before = GC.auto_compact
+    GC.auto_compact = true
+    assert GC.auto_compact
+  ensure
+    GC.auto_compact = before
   end
 
   def test_disable_autocompact
-    GC.disable_autocompact
-    assert GC.disable_autocompact
-    GC.enable_autocompact
-    refute GC.disable_autocompact
+    before = GC.auto_compact
+    GC.auto_compact = false
+    refute GC.auto_compact
+  ensure
+    GC.auto_compact = before
   end
 
   def test_major_compacts
-    GC.enable_autocompact
+    before = GC.auto_compact
+    GC.auto_compact = true
     compact = GC.stat :compact_count
     GC.start
     assert_operator GC.stat(:compact_count), :>, compact
   ensure
-    GC.disable_autocompact
+    GC.auto_compact = before
   end
 
   def test_implicit_compaction_does_something
+    before = GC.auto_compact
     list = []
     list2 = []
 
@@ -37,7 +41,7 @@ class TestGCCompact < Test::Unit::TestCase
       Object.new
     }
     count = GC.stat :compact_count
-    GC.enable_autocompact
+    GC.auto_compact = true
     loop do
       break if count < GC.stat(:compact_count)
       list2 << Object.new
@@ -46,7 +50,7 @@ class TestGCCompact < Test::Unit::TestCase
     refute_predicate compact_stats[:considered], :empty?
     refute_predicate compact_stats[:moved], :empty?
   ensure
-    GC.disable_autocompact
+    GC.auto_compact = before
   end
 
   def test_gc_compact_stats

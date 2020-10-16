@@ -9831,19 +9831,16 @@ gc_disable(rb_execution_context_t *ec, VALUE _)
 }
 
 static VALUE
-gc_enable_autocompact(rb_execution_context_t *ec, VALUE _)
+gc_set_auto_compact(rb_execution_context_t *ec, VALUE _, VALUE v)
 {
-    int old = ruby_enable_autocompact;
-    ruby_enable_autocompact = 1;
-    return old ? Qfalse : Qtrue;
+    ruby_enable_autocompact = RTEST(v);
+    return v;
 }
 
 static VALUE
-gc_disable_autocompact(rb_execution_context_t *ec, VALUE _)
+gc_get_auto_compact(rb_execution_context_t *ec, VALUE _)
 {
-    int old = ruby_enable_autocompact;
-    ruby_enable_autocompact = 0;
-    return old ? Qfalse : Qtrue;
+    return ruby_enable_autocompact ? Qtrue : Qfalse;
 }
 
 static int
