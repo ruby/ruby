@@ -39,29 +39,24 @@ module GC
   end
 
   #  call-seq:
-  #     GC.enable_autocompact    -> true or false
+  #     GC.auto_compact    -> true or false
   #
-  #  Enables automatic compaction on major GC, returning +true+ if automatic
-  #  compaction was previously disabled.
+  #  Returns whether or not automatic compaction has been enabled.
   #
-  #     GC.disable_autocompact   #=> false
-  #     GC.enable_autocompact    #=> true
-  #     GC.enable_autocompact    #=> false
-  #
-  def self.enable_autocompact
-    Primitive.gc_enable_autocompact
+  def self.auto_compact
+    Primitive.gc_get_auto_compact
   end
 
   #  call-seq:
-  #     GC.disable_autocompact    -> true or false
+  #     GC.auto_compact = flag
   #
-  #  Disables automatic compaction on major GC, returning +true+ if automatic
-  #  compaction was already disabled.
+  #  Updates automatic compaction mode.
   #
-  #     GC.disable_autocompact   #=> false
-  #     GC.disable_autocompact   #=> true
-  def self.disable_autocompact
-    Primitive.gc_disable_autocompact
+  #  When enabled, the compactor will execute on every major collection.
+  #
+  #  Enabling compaction will degrade performance on major collections.
+  def self.auto_compact=(flag)
+    Primitive.gc_set_auto_compact(flag)
   end
 
   #  call-seq:
