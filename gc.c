@@ -4607,12 +4607,40 @@ static void install_handlers(void)
 #endif
 
 static void
+revert_stack_objects(VALUE stack_obj, void *ctx)
+{
+    rb_objspace_t * objspace = (rb_objspace_t*)ctx;
+
+    if (BUILTIN_TYPE(stack_obj) == T_MOVED) {
+        /* For now we'll revert the whole page if the object made it to the
+         * stack.  I think we can change this to move just the one object
+         * back though */
+        invalidate_moved_page(objspace, GET_HEAP_PAGE(stack_obj));
+    }
+}
+
+static void
+check_stack_for_moved(rb_objspace_t *objspace)
+{
+    rb_execution_context_t *ec = GET_EC();
+    rb_vm_t *vm = rb_ec_vm_ptr(ec);
+    rb_vm_each_stack_value(vm, revert_stack_objects, (void*)objspace);
+}
+
+static void
 gc_compact_finish(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     GC_ASSERT(heap->sweeping_page == heap->compact_cursor);
 
     gc_unprotect_pages(objspace, heap);
     uninstall_handlers();
+
+    /* The mutator is allowed to run during incremental sweeping. T_MOVED
+     * objects can get pushed on the stack and when the compaction process
+     * finishes up, it may remove the read barrier before anything has a
+     * chance to read from the T_MOVED address. To fix this, we scan the stack
+     * then revert any moved objects that made it to the stack. */
+    check_stack_for_moved(objspace);
 
     gc_update_references(objspace, heap);
     heap->compact_cursor = NULL;
