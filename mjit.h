@@ -161,10 +161,12 @@ mjit_exec(rb_execution_context_t *ec)
     body = iseq->body;
     body->total_calls++;
 
+#ifndef MJIT_HEADER
     const int ujit_call_threashold = 10;
     if (body->total_calls == ujit_call_threashold) {
         rb_ujit_compile_iseq(iseq);
     }
+#endif
 
     mjit_func_t func = body->jit_func;
     if (UNLIKELY((uintptr_t)func <= LAST_JIT_ISEQ_FUNC)) {
