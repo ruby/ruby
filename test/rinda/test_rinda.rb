@@ -620,7 +620,6 @@ end
 class TestRingServer < Test::Unit::TestCase
 
   def setup
-    @aoe_back = Thread.abort_on_exception
     @port = Rinda::Ring_PORT
 
     @ts = Rinda::TupleSpace.new
@@ -628,7 +627,6 @@ class TestRingServer < Test::Unit::TestCase
     @server = DRb.start_service("druby://localhost:0")
   end
   def teardown
-    Thread.abort_on_exception = @aoe_back
     @rs.shutdown
     # implementation-dependent
     @ts.instance_eval{
@@ -802,12 +800,7 @@ class TestRingServer < Test::Unit::TestCase
     tl = nil
     th = Thread.new(Thread.current) do |mth|
       sleep n
-      puts "...timeout! Show the backtraces of all living threads"
-      (tl = Thread.list - tl0).each_with_index do |t, i|
-        puts "Thread #{ i }: #{ t.inspect }", *t.backtrace, ""
-        t.raise(Timeout::Error)
-      end
-      puts "and then raise Timeout::Error to the main thread"
+      (tl = Thread.list - tl0).each {|t|t.raise(Timeout::Error)}
       mth.raise(Timeout::Error)
     end
     tl0 << th
