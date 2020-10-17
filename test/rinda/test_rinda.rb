@@ -673,11 +673,11 @@ class TestRingServer < Test::Unit::TestCase
   def _test_do_reply
     called = nil
 
-    callback = proc { |ts|
+    callback_orig = proc { |ts|
       called = ts
     }
 
-    callback = DRb::DRbObject.new callback
+    callback = DRb::DRbObject.new callback_orig
 
     @ts.write [:lookup_ring, callback]
 
