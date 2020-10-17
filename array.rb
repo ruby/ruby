@@ -56,4 +56,37 @@ class Array
   def sample(n = (ary = false), random: Random)
     Primitive.rb_ary_sample(random, n, ary)
   end
+
+  #
+  #  call-seq:
+  #    array.map {|element| ... } -> new_array
+  #    array.map -> new_enumerator
+  #
+  #  Calls the block, if given, with each element of +self+;
+  #  returns a new \Array whose elements are the return values from the block:
+  #    a = [:foo, 'bar', 2]
+  #    a1 = a.map {|element| element.class }
+  #    a1 # => [Symbol, String, Integer]
+  #
+  #  Returns a new \Enumerator if no block given:
+  #    a = [:foo, 'bar', 2]
+  #    a1 = a.map
+  #    a1 # => #<Enumerator: [:foo, "bar", 2]:map>
+  #
+  #  Array#collect is an alias for Array#map.
+  #
+  def map
+    if !Primitive.block_given_p
+      return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'
+    end
+    result = Primitive.cexpr! 'rb_ary_new2(RARRAY_LEN(self))'
+    i = 0
+    size = self.size
+    while i < size
+      tmp = yield Primitive.cexpr! 'RARRAY_AREF(self, NUM2LONG(i))'
+      Primitive.cexpr! 'rb_ary_push(result, tmp)'
+      i += 1
+    end
+    return result
+  end
 end
