@@ -541,6 +541,7 @@ objspace_dump.o: $(top_srcdir)/method.h
 objspace_dump.o: $(top_srcdir)/node.h
 objspace_dump.o: $(top_srcdir)/ruby_assert.h
 objspace_dump.o: $(top_srcdir)/ruby_atomic.h
+objspace_dump.o: $(top_srcdir)/thread_local.h
 objspace_dump.o: $(top_srcdir)/thread_pthread.h
 objspace_dump.o: $(top_srcdir)/vm_core.h
 objspace_dump.o: $(top_srcdir)/vm_opts.h

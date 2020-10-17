@@ -83,24 +83,4 @@ typedef struct rb_global_vm_lock_struct {
     int wait_yield;
 } rb_global_vm_lock_t;
 
-typedef pthread_key_t native_tls_key_t;
-
-static inline void *
-native_tls_get(native_tls_key_t key)
-{
-    void *ptr = pthread_getspecific(key);
-    if (UNLIKELY(ptr == NULL)) {
-        rb_bug("pthread_getspecific returns NULL");
-    }
-    return ptr;
-}
-
-static inline void
-native_tls_set(native_tls_key_t key, void *ptr)
-{
-    if (UNLIKELY(pthread_setspecific(key, ptr) != 0)) {
-        rb_bug("pthread_setspecific error");
-    }
-}
-
 #endif /* RUBY_THREAD_PTHREAD_H */

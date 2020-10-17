@@ -13,6 +13,7 @@
 
 #include "gc.h"
 #include "mjit.h"
+#include "thread_local.h"
 
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
@@ -550,18 +551,18 @@ native_cond_timeout(rb_nativethread_cond_t *cond, const rb_hrtime_t rel)
 #define native_cleanup_push pthread_cleanup_push
 #define native_cleanup_pop  pthread_cleanup_pop
 
-static pthread_key_t ruby_native_thread_key;
-
 static void
 null_func(int i)
 {
     /* null */
 }
 
+thread_local rb_thread_t *rb_local_thread = NULL;
+
 static rb_thread_t *
 ruby_thread_from_native(void)
 {
-    return pthread_getspecific(ruby_native_thread_key);
+    return rb_local_thread;
 }
 
 static int
@@ -570,7 +571,10 @@ ruby_thread_set_native(rb_thread_t *th)
     if (th && th->ec) {
         rb_ractor_set_current_ec(th->ractor, th->ec);
     }
-    return pthread_setspecific(ruby_native_thread_key, th) == 0;
+
+    rb_local_thread = th;
+
+    return 1;
 }
 
 static void native_thread_init(rb_thread_t *th);
@@ -587,12 +591,7 @@ Init_native_thread(rb_thread_t *th)
         if (r) condattr_monotonic = NULL;
     }
 #endif
-    if (pthread_key_create(&ruby_native_thread_key, 0) == EAGAIN) {
-        rb_bug("pthread_key_create failed (ruby_native_thread_key)");
-    }
-    if (pthread_key_create(&ruby_current_ec_key, 0) == EAGAIN) {
-        rb_bug("pthread_key_create failed (ruby_current_ec_key)");
-    }
+
     th->thread_id = pthread_self();
     ruby_thread_set_native(th);
     fill_thread_id_str(th);
@@ -631,7 +630,7 @@ native_thread_destroy(rb_thread_t *th)
      * gets called from an interposing function wrapper
      */
     if (USE_THREAD_CACHE)
-        ruby_thread_set_native(0);
+        ruby_thread_set_native(NULL);
 }
 
 #if USE_THREAD_CACHE

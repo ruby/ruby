@@ -205,7 +205,7 @@ rb_ractor_thread_switch(rb_ractor_t *cr, rb_thread_t *th)
 static inline void
 rb_ractor_set_current_ec(rb_ractor_t *cr, rb_execution_context_t *ec)
 {
-    native_tls_set(ruby_current_ec_key, ec);
+    rb_current_execution_context_set(ec);
 
     if (cr->threads.running_ec != ec) {
         if (0) fprintf(stderr, "rb_ractor_set_current_ec ec:%p->%p\n",

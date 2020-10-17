@@ -2050,6 +2050,7 @@ ast.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 ast.$(OBJEXT): {$(VPATH)}st.h
 ast.$(OBJEXT): {$(VPATH)}subst.h
 ast.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
+ast.$(OBJEXT): {$(VPATH)}thread_local.h
 ast.$(OBJEXT): {$(VPATH)}thread_native.h
 ast.$(OBJEXT): {$(VPATH)}util.h
 ast.$(OBJEXT): {$(VPATH)}vm_core.h
@@ -2417,6 +2418,7 @@ builtin.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 builtin.$(OBJEXT): {$(VPATH)}st.h
 builtin.$(OBJEXT): {$(VPATH)}subst.h
 builtin.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
+builtin.$(OBJEXT): {$(VPATH)}thread_local.h
 builtin.$(OBJEXT): {$(VPATH)}thread_native.h
 builtin.$(OBJEXT): {$(VPATH)}vm_core.h
 builtin.$(OBJEXT): {$(VPATH)}vm_opts.h
@@ -2610,6 +2612,7 @@ class.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 class.$(OBJEXT): {$(VPATH)}st.h
 class.$(OBJEXT): {$(VPATH)}subst.h
 class.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
+class.$(OBJEXT): {$(VPATH)}thread_local.h
 class.$(OBJEXT): {$(VPATH)}thread_native.h
 class.$(OBJEXT): {$(VPATH)}vm_core.h
 class.$(OBJEXT): {$(VPATH)}vm_opts.h
@@ -2997,6 +3000,7 @@ compile.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 compile.$(OBJEXT): {$(VPATH)}st.h
 compile.$(OBJEXT): {$(VPATH)}subst.h
 compile.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
+compile.$(OBJEXT): {$(VPATH)}thread_local.h
 compile.$(OBJEXT): {$(VPATH)}thread_native.h
 compile.$(OBJEXT): {$(VPATH)}util.h
 compile.$(OBJEXT): {$(VPATH)}vm_callinfo.h
@@ -3376,6 +3380,7 @@ cont.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 cont.$(OBJEXT): {$(VPATH)}st.h
 cont.$(OBJEXT): {$(VPATH)}subst.h
 cont.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
+cont.$(OBJEXT): {$(VPATH)}thread_local.h
 cont.$(OBJEXT): {$(VPATH)}thread_native.h
 cont.$(OBJEXT): {$(VPATH)}vm_core.h
 cont.$(OBJEXT): {$(VPATH)}vm_debug.h
@@ -3571,6 +3576,7 @@ debug.$(OBJEXT): {$(VPATH)}st.h
 debug.$(OBJEXT): {$(VPATH)}subst.h
 debug.$(OBJEXT): {$(VPATH)}symbol.h
 debug.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
+debug.$(OBJEXT): {$(VPATH)}thread_local.h
 debug.$(OBJEXT): {$(VPATH)}thread_native.h
 debug.$(OBJEXT): {$(VPATH)}util.h
 debug.$(OBJEXT): {$(VPATH)}vm_callinfo.h
@@ -5194,6 +5200,7 @@ error.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 error.$(OBJEXT): {$(VPATH)}st.h
 error.$(OBJEXT): {$(VPATH)}subst.h
 error.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
+error.$(OBJEXT): {$(VPATH)}thread_local.h
 error.$(OBJEXT): {$(VPATH)}thread_native.h
 error.$(OBJEXT): {$(VPATH)}vm_core.h
 error.$(OBJEXT): {$(VPATH)}vm_opts.h
@@ -5405,6 +5412,7 @@ eval.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 eval.$(OBJEXT): {$(VPATH)}st.h
 eval.$(OBJEXT): {$(VPATH)}subst.h
 eval.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
+eval.$(OBJEXT): {$(VPATH)}thread_local.h
 eval.$(OBJEXT): {$(VPATH)}thread_native.h
 eval.$(OBJEXT): {$(VPATH)}vm.h
 eval.$(OBJEXT): {$(VPATH)}vm_core.h
@@ -5833,6 +5841,7 @@ gc.$(OBJEXT): {$(VPATH)}subst.h
 gc.$(OBJEXT): {$(VPATH)}symbol.h
 gc.$(OBJEXT): {$(VPATH)}thread.h
 gc.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
+gc.$(OBJEXT): {$(VPATH)}thread_local.h
 gc.$(OBJEXT): {$(VPATH)}thread_native.h
 gc.$(OBJEXT): {$(VPATH)}transient_heap.h
 gc.$(OBJEXT): {$(VPATH)}util.h
@@ -6021,6 +6030,7 @@ golf_prelude.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 golf_prelude.$(OBJEXT): {$(VPATH)}st.h
 golf_prelude.$(OBJEXT): {$(VPATH)}subst.h
 golf_prelude.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
+golf_prelude.$(OBJEXT): {$(VPATH)}thread_local.h
 golf_prelude.$(OBJEXT): {$(VPATH)}thread_native.h
 golf_prelude.$(OBJEXT): {$(VPATH)}vm_core.h
 golf_prelude.$(OBJEXT): {$(VPATH)}vm_opts.h
@@ -6957,6 +6967,7 @@ iseq.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 iseq.$(OBJEXT): {$(VPATH)}st.h
 iseq.$(OBJEXT): {$(VPATH)}subst.h
 iseq.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
+iseq.$(OBJEXT): {$(VPATH)}thread_local.h
 iseq.$(OBJEXT): {$(VPATH)}thread_native.h
 iseq.$(OBJEXT): {$(VPATH)}util.h
 iseq.$(OBJEXT): {$(VPATH)}vm_callinfo.h
@@ -7158,6 +7169,7 @@ load.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 load.$(OBJEXT): {$(VPATH)}st.h
 load.$(OBJEXT): {$(VPATH)}subst.h
 load.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
+load.$(OBJEXT): {$(VPATH)}thread_local.h
 load.$(OBJEXT): {$(VPATH)}thread_native.h
 load.$(OBJEXT): {$(VPATH)}util.h
 load.$(OBJEXT): {$(VPATH)}vm_core.h
@@ -8364,6 +8376,7 @@ miniinit.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 miniinit.$(OBJEXT): {$(VPATH)}st.h
 miniinit.$(OBJEXT): {$(VPATH)}subst.h
 miniinit.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
+miniinit.$(OBJEXT): {$(VPATH)}thread_local.h
 miniinit.$(OBJEXT): {$(VPATH)}thread_native.h
 miniinit.$(OBJEXT): {$(VPATH)}trace_point.rb
 miniinit.$(OBJEXT): {$(VPATH)}vm_core.h
@@ -8597,6 +8610,7 @@ mjit.$(OBJEXT): {$(VPATH)}st.h
 mjit.$(OBJEXT): {$(VPATH)}subst.h
 mjit.$(OBJEXT): {$(VPATH)}thread.h
 mjit.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
+mjit.$(OBJEXT): {$(VPATH)}thread_local.h
 mjit.$(OBJEXT): {$(VPATH)}thread_native.h
 mjit.$(OBJEXT): {$(VPATH)}util.h
 mjit.$(OBJEXT): {$(VPATH)}vm_callinfo.h
@@ -8807,6 +8821,7 @@ mjit_compile.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 mjit_compile.$(OBJEXT): {$(VPATH)}st.h
 mjit_compile.$(OBJEXT): {$(VPATH)}subst.h
 mjit_compile.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
+mjit_compile.$(OBJEXT): {$(VPATH)}thread_local.h
 mjit_compile.$(OBJEXT): {$(VPATH)}thread_native.h
 mjit_compile.$(OBJEXT): {$(VPATH)}vm_callinfo.h
 mjit_compile.$(OBJEXT): {$(VPATH)}vm_core.h
@@ -8995,6 +9010,7 @@ node.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 node.$(OBJEXT): {$(VPATH)}st.h
 node.$(OBJEXT): {$(VPATH)}subst.h
 node.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
+node.$(OBJEXT): {$(VPATH)}thread_local.h
 node.$(OBJEXT): {$(VPATH)}thread_native.h
 node.$(OBJEXT): {$(VPATH)}vm_core.h
 node.$(OBJEXT): {$(VPATH)}vm_opts.h
@@ -9979,6 +9995,7 @@ proc.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 proc.$(OBJEXT): {$(VPATH)}st.h
 proc.$(OBJEXT): {$(VPATH)}subst.h
 proc.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
+proc.$(OBJEXT): {$(VPATH)}thread_local.h
 proc.$(OBJEXT): {$(VPATH)}thread_native.h
 proc.$(OBJEXT): {$(VPATH)}vm_core.h
 proc.$(OBJEXT): {$(VPATH)}vm_opts.h
@@ -10183,6 +10200,7 @@ process.$(OBJEXT): {$(VPATH)}st.h
 process.$(OBJEXT): {$(VPATH)}subst.h
 process.$(OBJEXT): {$(VPATH)}thread.h
 process.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
+process.$(OBJEXT): {$(VPATH)}thread_local.h
 process.$(OBJEXT): {$(VPATH)}thread_native.h
 process.$(OBJEXT): {$(VPATH)}util.h
 process.$(OBJEXT): {$(VPATH)}vm_core.h
@@ -10380,6 +10398,7 @@ ractor.$(OBJEXT): {$(VPATH)}st.h
 ractor.$(OBJEXT): {$(VPATH)}subst.h
 ractor.$(OBJEXT): {$(VPATH)}thread.h
 ractor.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
+ractor.$(OBJEXT): {$(VPATH)}thread_local.h
 ractor.$(OBJEXT): {$(VPATH)}thread_native.h
 ractor.$(OBJEXT): {$(VPATH)}vm_core.h
 ractor.$(OBJEXT): {$(VPATH)}vm_debug.h
@@ -12295,6 +12314,7 @@ ruby.$(OBJEXT): {$(VPATH)}st.h
 ruby.$(OBJEXT): {$(VPATH)}subst.h
 ruby.$(OBJEXT): {$(VPATH)}thread.h
 ruby.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
+ruby.$(OBJEXT): {$(VPATH)}thread_local.h
 ruby.$(OBJEXT): {$(VPATH)}thread_native.h
 ruby.$(OBJEXT): {$(VPATH)}util.h
 ruby.$(OBJEXT): {$(VPATH)}vm_core.h
@@ -12811,6 +12831,7 @@ signal.$(OBJEXT): {$(VPATH)}signal.c
 signal.$(OBJEXT): {$(VPATH)}st.h
 signal.$(OBJEXT): {$(VPATH)}subst.h
 signal.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
+signal.$(OBJEXT): {$(VPATH)}thread_local.h
 signal.$(OBJEXT): {$(VPATH)}thread_native.h
 signal.$(OBJEXT): {$(VPATH)}vm_core.h
 signal.$(OBJEXT): {$(VPATH)}vm_opts.h
@@ -13754,6 +13775,7 @@ struct.$(OBJEXT): {$(VPATH)}st.h
 struct.$(OBJEXT): {$(VPATH)}struct.c
 struct.$(OBJEXT): {$(VPATH)}subst.h
 struct.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
+struct.$(OBJEXT): {$(VPATH)}thread_local.h
 struct.$(OBJEXT): {$(VPATH)}thread_native.h
 struct.$(OBJEXT): {$(VPATH)}transient_heap.h
 struct.$(OBJEXT): {$(VPATH)}vm_core.h
@@ -14152,6 +14174,7 @@ thread.$(OBJEXT): {$(VPATH)}thread.c
 thread.$(OBJEXT): {$(VPATH)}thread.h
 thread.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).c
 thread.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
+thread.$(OBJEXT): {$(VPATH)}thread_local.h
 thread.$(OBJEXT): {$(VPATH)}thread_native.h
 thread.$(OBJEXT): {$(VPATH)}thread_sync.c
 thread.$(OBJEXT): {$(VPATH)}timev.h
@@ -15075,6 +15098,7 @@ variable.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 variable.$(OBJEXT): {$(VPATH)}st.h
 variable.$(OBJEXT): {$(VPATH)}subst.h
 variable.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
+variable.$(OBJEXT): {$(VPATH)}thread_local.h
 variable.$(OBJEXT): {$(VPATH)}thread_native.h
 variable.$(OBJEXT): {$(VPATH)}transient_heap.h
 variable.$(OBJEXT): {$(VPATH)}util.h
@@ -15266,6 +15290,7 @@ version.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 version.$(OBJEXT): {$(VPATH)}st.h
 version.$(OBJEXT): {$(VPATH)}subst.h
 version.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
+version.$(OBJEXT): {$(VPATH)}thread_local.h
 version.$(OBJEXT): {$(VPATH)}thread_native.h
 version.$(OBJEXT): {$(VPATH)}version.c
 version.$(OBJEXT): {$(VPATH)}vm_core.h
@@ -15489,6 +15514,7 @@ vm.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 vm.$(OBJEXT): {$(VPATH)}st.h
 vm.$(OBJEXT): {$(VPATH)}subst.h
 vm.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
+vm.$(OBJEXT): {$(VPATH)}thread_local.h
 vm.$(OBJEXT): {$(VPATH)}thread_native.h
 vm.$(OBJEXT): {$(VPATH)}variable.h
 vm.$(OBJEXT): {$(VPATH)}vm.c
@@ -15691,6 +15717,7 @@ vm_backtrace.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}st.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}subst.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
+vm_backtrace.$(OBJEXT): {$(VPATH)}thread_local.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}thread_native.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}vm_backtrace.c
 vm_backtrace.$(OBJEXT): {$(VPATH)}vm_core.h
@@ -15881,6 +15908,7 @@ vm_dump.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 vm_dump.$(OBJEXT): {$(VPATH)}st.h
 vm_dump.$(OBJEXT): {$(VPATH)}subst.h
 vm_dump.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
+vm_dump.$(OBJEXT): {$(VPATH)}thread_local.h
 vm_dump.$(OBJEXT): {$(VPATH)}thread_native.h
 vm_dump.$(OBJEXT): {$(VPATH)}vm_core.h
 vm_dump.$(OBJEXT): {$(VPATH)}vm_debug.h
@@ -16077,6 +16105,7 @@ vm_sync.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 vm_sync.$(OBJEXT): {$(VPATH)}st.h
 vm_sync.$(OBJEXT): {$(VPATH)}subst.h
 vm_sync.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
+vm_sync.$(OBJEXT): {$(VPATH)}thread_local.h
 vm_sync.$(OBJEXT): {$(VPATH)}thread_native.h
 vm_sync.$(OBJEXT): {$(VPATH)}vm_core.h
 vm_sync.$(OBJEXT): {$(VPATH)}vm_debug.h
@@ -16271,6 +16300,7 @@ vm_trace.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 vm_trace.$(OBJEXT): {$(VPATH)}st.h
 vm_trace.$(OBJEXT): {$(VPATH)}subst.h
 vm_trace.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
+vm_trace.$(OBJEXT): {$(VPATH)}thread_local.h
 vm_trace.$(OBJEXT): {$(VPATH)}thread_native.h
 vm_trace.$(OBJEXT): {$(VPATH)}trace_point.rbinc
 vm_trace.$(OBJEXT): {$(VPATH)}vm_core.h

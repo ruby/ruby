@@ -12,6 +12,7 @@
 #ifdef THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION
 
 #include <process.h>
+#include "thread_local.h"
 
 #define TIME_QUANTUM_USEC (10 * 1000)
 #define RB_CONDATTR_CLOCK_MONOTONIC 1 /* no effect */
@@ -129,10 +130,12 @@ gvl_destroy(rb_global_vm_lock_t *gvl)
     CloseHandle(gvl->lock);
 }
 
+thread_local rb_thread_t *rb_local_thread = NULL;
+
 static rb_thread_t *
 ruby_thread_from_native(void)
 {
-    return TlsGetValue(ruby_native_thread_key);
+    return rb_local_thread;
 }
 
 static int
@@ -141,18 +144,15 @@ ruby_thread_set_native(rb_thread_t *th)
     if (th && th->ec) {
         rb_ractor_set_current_ec(th->ractor, th->ec);
     }
-    return TlsSetValue(ruby_native_thread_key, th);
+
+    rb_local_thread = th;
+
+    return 1;
 }
 
 void
 Init_native_thread(rb_thread_t *th)
 {
-    if ((ruby_current_ec_key = TlsAlloc()) == TLS_OUT_OF_INDEXES) {
-        rb_bug("TlsAlloc() for ruby_current_ec_key fails");
-    }
-    if ((ruby_native_thread_key = TlsAlloc()) == TLS_OUT_OF_INDEXES) {
-        rb_bug("TlsAlloc() for ruby_native_thread_key fails");
-    }
     ruby_thread_set_native(th);
     DuplicateHandle(GetCurrentProcess(),
 		    GetCurrentThread(),
