@@ -206,7 +206,7 @@ class TestMethod < Test::Unit::TestCase
     o = Object.new
     def o.foo; end
     assert_kind_of(Integer, o.method(:foo).hash)
-    assert_equal(Array.instance_method(:map).hash, Array.instance_method(:collect).hash)
+    assert_not_equal(Array.instance_method(:map).hash, Array.instance_method(:collect).hash)
     assert_kind_of(String, o.method(:foo).hash.to_s)
   end
 
