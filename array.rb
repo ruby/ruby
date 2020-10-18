@@ -76,16 +76,16 @@ class Array
   #  Array#collect is an alias for Array#map.
   #
   def map
-    if !Primitive.block_given_p
+    unless Primitive.block_given_p
       return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'
     end
     result = Primitive.cexpr! 'rb_ary_new2(RARRAY_LEN(self))'
     i = 0
-    size = self.size
+    size = Primitive.cexpr! 'rb_ary_length(self)'
     while i < size
       tmp = yield Primitive.cexpr! 'RARRAY_AREF(self, NUM2LONG(i))'
       Primitive.cexpr! 'rb_ary_push(result, tmp)'
-      i += 1
+      i = Primitive.cexpr! 'rb_int_succ(i)'
     end
     return result
   end
