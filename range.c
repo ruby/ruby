@@ -1329,6 +1329,28 @@ rb_range_values(VALUE range, VALUE *begp, VALUE *endp, int *exclp)
     return (int)Qtrue;
 }
 
+/* Extract the components of a Range.
+ *
+ * You can use +err+ to control the behavior of out-of-range and exception.
+ *
+ * When +err+ is 0 or 2, if the begin offset is greater than +len+,
+ * it is out-of-range.  The +RangeError+ is raised only if +err+ is 2,
+ * in this case.  If +err+ is 0, +Qnil+ will be returned.
+ *
+ * When +err+ is 1, the begin and end offsets won't be adjusted even if they
+ * are greater than +len+.  It allows +rb_ary_aset+ extends arrays.
+ *
+ * If the begin component of the given range is negative and is too-large
+ * abstract value, the +RangeError+ is raised only +err+ is 1 or 2.
+ *
+ * The case of <code>err = 0</code> is used in item accessing methods such as
+ * +rb_ary_aref+, +rb_ary_slice_bang+, and +rb_str_aref+.
+ *
+ * The case of <code>err = 1</code> is used in Array's methods such as
+ * +rb_ary_aset+ and +rb_ary_fill+.
+ *
+ * The case of <code>err = 2</code> is used in +rb_str_aset+.
+ */
 VALUE
 rb_range_component_beg_len(VALUE b, VALUE e, int excl,
                            long *begp, long *lenp, long len, int err)
