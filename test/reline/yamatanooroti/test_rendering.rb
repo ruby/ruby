@@ -200,7 +200,7 @@ begin
 
     def test_prompt_with_escape_sequence
       ENV['RELINE_TEST_PROMPT'] = "\1\e[30m\2prompt> \1\e[m\2"
-      start_terminal(5, 15, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
+      start_terminal(5, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
       write("123\n")
       close
       assert_screen(<<~EOC)
@@ -213,32 +213,32 @@ begin
 
     def test_prompt_with_escape_sequence_and_autowrap
       ENV['RELINE_TEST_PROMPT'] = "\1\e[30m\2prompt> \1\e[m\2"
-      start_terminal(5, 15, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
-      write("12345678\n")
+      start_terminal(5, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
+      write("1234567890123\n")
       close
       assert_screen(<<~EOC)
         Multiline REPL.
-        prompt> 1234567
-        8
-        => 12345678
+        prompt> 123456789012
+        3
+        => 1234567890123
         prompt>
       EOC
     end
 
     def test_multiline_and_autowrap
-      start_terminal(10, 15, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
-      write("def aaaaaa\n  33333333\n        end\C-a\C-pputs\C-e\e\C-m88888888888")
+      start_terminal(10, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
+      write("def aaaaaaaaaa\n  33333333\n           end\C-a\C-pputs\C-e\e\C-m888888888888888")
       close
       assert_screen(<<~EOC)
         Multiline REPL.
-        prompt> def aaa
-        aaa
-        prompt> puts  3
-        3333333
-        prompt> 8888888
-        8888
-        prompt>
-         end
+        prompt> def aaaaaaaa
+        aa
+        prompt> puts  333333
+        33
+        prompt> 888888888888
+        888
+        prompt>            e
+        nd
       EOC
     end
 
@@ -316,7 +316,7 @@ begin
 
     # f002483b27cdb325c5edf9e0fe4fa4e1c71c4b0e
     def test_insert_line_in_the_middle_of_line
-      start_terminal(5, 15, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
+      start_terminal(5, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
       write("333\C-b\C-b\e\C-m8")
       close
       assert_screen(<<~EOC)
@@ -328,12 +328,12 @@ begin
 
     # 9d8978961c5de5064f949d56d7e0286df9e18f43
     def test_insert_line_in_the_middle_of_line_at_last_line_of_screen
-      start_terminal(3, 15, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
-      write("3333333333\C-a\C-f\e\C-m")
+      start_terminal(3, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
+      write("333333333333333\C-a\C-f\e\C-m")
       close
       assert_screen(<<~EOC)
         prompt> 3
-        prompt> 3333333
+        prompt> 333333333333
         33
       EOC
     end
@@ -350,7 +350,7 @@ begin
     end
 
     def test_multiline_incremental_search
-      start_terminal(5, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
+      start_terminal(6, 25, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
       write("def a\n  8\nend\ndef b\n  3\nend\C-s8")
       close
       assert_screen(<<~EOC)
