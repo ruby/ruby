@@ -1694,6 +1694,7 @@ array.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 array.$(OBJEXT): $(top_srcdir)/internal/vm.h
 array.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 array.$(OBJEXT): {$(VPATH)}array.c
+array.$(OBJEXT): {$(VPATH)}array.rb
 array.$(OBJEXT): {$(VPATH)}array.rbinc
 array.$(OBJEXT): {$(VPATH)}assert.h
 array.$(OBJEXT): {$(VPATH)}backward/2/assume.h
