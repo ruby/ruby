@@ -302,6 +302,7 @@ VALUE rb_iseq_defined_string(enum defined_type type);
 VALUE rb_iseq_local_variables(const rb_iseq_t *iseq);
 
 NOINLINE(VALUE *rb_ujit_empty_func(rb_control_frame_t *cfp));
+NOINLINE(VALUE *rb_ujit_empty_func_with_ec(rb_control_frame_t *cfp, rb_execution_context_t *ec));
 
 
 RUBY_SYMBOL_EXPORT_END
