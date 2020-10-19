@@ -163,7 +163,7 @@ mjit_exec(rb_execution_context_t *ec)
 
 #ifndef MJIT_HEADER
     const int ujit_call_threashold = 10;
-    if (body->total_calls == ujit_call_threashold) {
+    if (body->total_calls == ujit_call_threashold && !mjit_call_p) {
         rb_ujit_compile_iseq(iseq);
     }
 #endif
