@@ -3977,8 +3977,10 @@ cached_object_id(VALUE obj)
         id = objspace->next_object_id;
         objspace->next_object_id = rb_int_plus(id, INT2FIX(OBJ_ID_INCREMENT));
 
+        VALUE already_disabled = rb_gc_disable_no_rest();
         st_insert(objspace->obj_to_id_tbl, (st_data_t)obj, (st_data_t)id);
         st_insert(objspace->id_to_obj_tbl, (st_data_t)id, (st_data_t)obj);
+        if (already_disabled == Qfalse) rb_objspace_gc_enable(objspace);
         FL_SET(obj, FL_SEEN_OBJ_ID);
 
         return id;
