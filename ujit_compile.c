@@ -74,7 +74,7 @@ opcode_at_pc(const rb_iseq_t *iseq, const VALUE *pc)
 {
     const VALUE at_pc = *pc;
     if (FL_TEST_RAW((VALUE)iseq, ISEQ_TRANSLATED)) {
-        return rb_vm_insn_addr2insn((const void *)at_pc);
+        return rb_vm_insn_addr2opcode((const void *)at_pc);
     }
     else {
         return (int)at_pc;
