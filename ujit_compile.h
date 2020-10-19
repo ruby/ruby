@@ -11,7 +11,7 @@ typedef struct rb_iseq_struct rb_iseq_t;
 #endif
 
 RUBY_SYMBOL_EXPORT_BEGIN
-extern bool rb_ujit_enabled;
+RUBY_EXTERN bool rb_ujit_enabled;
 RUBY_SYMBOL_EXPORT_END
 
 static inline
