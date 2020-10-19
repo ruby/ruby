@@ -61,7 +61,7 @@ class TestEncoding < Test::Unit::TestCase
     assert_instance_of(Encoding, Encoding::ISO_2022_JP.replicate("ISO-2022-JP-ANOTHER#{Time.now.to_f}"))
     bug3127 = '[ruby-dev:40954]'
     assert_raise(TypeError, bug3127) {Encoding::UTF_8.replicate(0)}
-    assert_raise(ArgumentError, bug3127) {Encoding::UTF_8.replicate("\0")}
+    assert_raise_with_message(ArgumentError, /\bNUL\b/, bug3127) {Encoding::UTF_8.replicate("\0")}
     END;
   end
 
@@ -79,6 +79,12 @@ class TestEncoding < Test::Unit::TestCase
 
       assert_equal(e, (("x"*30).force_encoding(e)*1).encoding)
       GC.start
+
+      name = "A" * 64
+      Encoding.list.each do |enc|
+        assert_raise(ArgumentError) {enc.replicate(name)}
+        name.succ!
+      end
     end;
   end
 

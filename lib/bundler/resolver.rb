@@ -158,10 +158,10 @@ module Bundler
         # spec group.
         sg_ruby = sg.copy_for(Gem::Platform::RUBY)
         selected_sgs << sg_ruby if sg_ruby
-        sg_all_platforms = nil
         all_platforms = @platforms + [platform]
-        sorted_all_platforms = self.class.sort_platforms(all_platforms)
-        sorted_all_platforms.reverse_each do |other_platform|
+        next if all_platforms.to_a == [Gem::Platform::RUBY]
+        sg_all_platforms = nil
+        self.class.sort_platforms(all_platforms).reverse_each do |other_platform|
           if sg_all_platforms.nil?
             sg_all_platforms = sg.copy_for(other_platform)
           else
@@ -250,7 +250,7 @@ module Bundler
       ["00", *platform.to_a.map {|part| part || "" }]
     end
 
-  private
+    private
 
     # returns an integer \in (-\infty, 0]
     # a number closer to 0 means the dependency is less constraining

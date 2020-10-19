@@ -12,7 +12,7 @@ module Bundler
         [name, version, platform_string] <=> [other.name, other.version, other.platform_string]
       end
 
-    protected
+      protected
 
       def platform_string
         platform_string = platform.to_s
@@ -89,7 +89,7 @@ module Bundler
         if search && Gem::Platform.new(search.platform) != platform_object && !search.runtime_dependencies.-(dependencies.reject {|d| d.type == :development }).empty?
           Bundler.ui.warn "Unable to use the platform-specific (#{search.platform}) version of #{name} (#{version}) " \
             "because it has different dependencies from the #{platform} version. " \
-            "To use the platform-specific version of the gem, run `bundle config set specific_platform true` and install again."
+            "To use the platform-specific version of the gem, run `bundle config set --local specific_platform true` and install again."
           search = source.specs.search(self).last
         end
         search.dependencies = dependencies if search && (search.is_a?(RemoteSpecification) || search.is_a?(EndpointSpecification))
@@ -118,7 +118,7 @@ module Bundler
       " #{source.revision[0..6]}"
     end
 
-  private
+    private
 
     def to_ary
       nil

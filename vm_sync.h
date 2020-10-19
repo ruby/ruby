@@ -80,8 +80,8 @@ rb_vm_lock_leave(unsigned int *lev, const char *file, int line)
 #define RB_VM_LOCK()       rb_vm_lock(__FILE__, __LINE__)
 #define RB_VM_UNLOCK()     rb_vm_unlock(__FILE__, __LINE__)
 
-#define RB_VM_LOCK_ENTER_LEV(levp) rb_vm_lock_enter(levp, __FILE__, __LINE__);
-#define RB_VM_LOCK_LEAVE_LEV(levp) rb_vm_lock_leave(levp, __FILE__, __LINE__);
+#define RB_VM_LOCK_ENTER_LEV(levp) rb_vm_lock_enter(levp, __FILE__, __LINE__)
+#define RB_VM_LOCK_LEAVE_LEV(levp) rb_vm_lock_leave(levp, __FILE__, __LINE__)
 
 #define RB_VM_LOCK_ENTER()  { unsigned int _lev; RB_VM_LOCK_ENTER_LEV(&_lev);
 #define RB_VM_LOCK_LEAVE()    RB_VM_LOCK_LEAVE_LEV(&_lev); }

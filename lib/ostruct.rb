@@ -62,6 +62,8 @@
 #   first_pet                 # => #<OpenStruct name="Rowdy">
 #   first_pet == second_pet   # => true
 #
+# Ractor compatibility: A frozen OpenStruct with shareable values is itself shareable.
+#
 # == Caveats
 #
 # An OpenStruct utilizes Ruby's method lookup structure to find and define the
@@ -73,6 +75,10 @@
 # of these properties compared to using a Hash or a Struct.
 # Creating an open struct from a small Hash and accessing a few of the
 # entries can be 200 times slower than accessing the hash directly.
+#
+# This is a potential security issue; building OpenStruct from untrusted user data
+# (e.g. JSON web request) may be susceptible to a "symbol denial of service" attack
+# since the keys create methods and names of methods are never garbage collected.
 #
 # This may also be the source of incompatibilities between Ruby versions:
 #
@@ -94,17 +100,14 @@
 #   o.class # => :luxury
 #   o.class! # => OpenStruct
 #
-# It is recommended (but not enforced) to not use fields ending in `!`.
+# It is recommended (but not enforced) to not use fields ending in `!`;
+# Note that a subclass' methods may not be overwritten, nor can OpenStruct's own methods
+# ending with `!`.
 #
 # For all these reasons, consider not using OpenStruct at all.
 #
 class OpenStruct
   VERSION = "0.2.0"
-
-  instance_methods.each do |method|
-    new_name = "#{method}!"
-    alias_method new_name, method
-  end
 
   #
   # Creates a new OpenStruct object.  By default, the resulting OpenStruct
@@ -121,11 +124,10 @@ class OpenStruct
   #   data   # => #<OpenStruct country="Australia", capital="Canberra">
   #
   def initialize(hash=nil)
-    @table = {}
     if hash
-      hash.each_pair do |k, v|
-        set_ostruct_member_value!(k, v)
-      end
+      update_to_values!(hash)
+    else
+      @table = {}
     end
   end
 
@@ -137,7 +139,14 @@ class OpenStruct
 
   private def initialize_dup(orig) # :nodoc:
     super
-    initialize(@table)
+    update_to_values!(@table)
+  end
+
+  private def update_to_values!(hash) # :nodoc:
+    @table = {}
+    hash.each_pair do |k, v|
+      set_ostruct_member_value!(k, v)
+    end
   end
 
   #
@@ -158,7 +167,7 @@ class OpenStruct
   #               # => {"country" => "AUSTRALIA", "capital" => "CANBERRA" }
   #
   def to_h(&block)
-    if block_given?
+    if block
       @table.to_h(&block)
     else
       @table.dup
@@ -186,17 +195,15 @@ class OpenStruct
   #
   # Provides marshalling support for use by the Marshal library.
   #
-  def marshal_dump
+  def marshal_dump # :nodoc:
     @table
   end
 
   #
   # Provides marshalling support for use by the Marshal library.
   #
-  def marshal_load(x)
-    x.each_key{|key| new_ostruct_member!(key)}
-    @table = x
-  end
+  alias_method :marshal_load, :update_to_values! # :nodoc:
+  public :marshal_load
 
   #
   # Used internally to defined properties on the
@@ -204,12 +211,22 @@ class OpenStruct
   # define_singleton_method for both the getter method and the setter method.
   #
   def new_ostruct_member!(name) # :nodoc:
-    unless @table.key?(name)
-      define_singleton_method(name) { @table[name] }
-      define_singleton_method("#{name}=") {|x| @table[name] = x}
+    unless @table.key?(name) || is_method_protected!(name)
+      define_singleton_method!(name) { @table[name] }
+      define_singleton_method!("#{name}=") {|x| @table[name] = x}
     end
   end
   private :new_ostruct_member!
+
+  private def is_method_protected!(name) # :nodoc:
+    if !respond_to?(name, true)
+      false
+    elsif name.end_with?('!')
+      true
+    else
+      method!(name).owner < OpenStruct
+    end
+  end
 
   def freeze
     @table.freeze
@@ -220,18 +237,16 @@ class OpenStruct
     len = args.length
     if mname = mid[/.*(?==\z)/m]
       if len != 1
-        raise ArgumentError, "wrong number of arguments (given #{len}, expected 1)", caller(1)
+        raise! ArgumentError, "wrong number of arguments (given #{len}, expected 1)", caller(1)
       end
       set_ostruct_member_value!(mname, args[0])
     elsif len == 0
-    elsif @table.key?(mid)
-      raise ArgumentError, "wrong number of arguments (given #{len}, expected 0)"
     else
       begin
         super
       rescue NoMethodError => err
         err.backtrace.shift
-        raise
+        raise!
       end
     end
   end
@@ -240,7 +255,7 @@ class OpenStruct
   # :call-seq:
   #   ostruct[name]  -> object
   #
-  # Returns the value of an attribute.
+  # Returns the value of an attribute, or `nil` if there is no such attribute.
   #
   #   require "ostruct"
   #   person = OpenStruct.new("name" => "John Smith", "age" => 70)
@@ -287,7 +302,7 @@ class OpenStruct
     begin
       name = name.to_sym
     rescue NoMethodError
-      raise TypeError, "#{name} is not a symbol nor a string"
+      raise! TypeError, "#{name} is not a symbol nor a string"
     end
     @table.dig(name, *names)
   end
@@ -300,7 +315,7 @@ class OpenStruct
   #
   #   person = OpenStruct.new(name: "John", age: 70, pension: 300)
   #
-  #   person.delete_field("age")   # => 70
+  #   person.delete_field!("age")  # => 70
   #   person                       # => #<OpenStruct name="John", pension=300>
   #
   # Setting the value to +nil+ will not remove the attribute:
@@ -315,7 +330,7 @@ class OpenStruct
     rescue NameError
     end
     @table.delete(sym) do
-      raise NameError.new("no field `#{sym}' in #{self}", sym)
+      raise! NameError.new("no field `#{sym}' in #{self}", sym)
     end
   end
 
@@ -338,13 +353,13 @@ class OpenStruct
         ids.pop
       end
     end
-    ['#<', self.class, detail, '>'].join
+    ['#<', self.class!, detail, '>'].join
   end
   alias :to_s :inspect
 
   attr_reader :table # :nodoc:
-  protected :table
   alias table! table
+  protected :table!
 
   #
   # Compares this object and +other+ for equality.  An OpenStruct is equal to
@@ -375,11 +390,43 @@ class OpenStruct
   end
 
   # Computes a hash code for this OpenStruct.
-  # Two OpenStruct objects with the same content will have the same hash code
-  # (and will compare using #eql?).
-  #
-  # See also Object#hash.
-  def hash
+  def hash # :nodoc:
     @table.hash
   end
+
+  #
+  # Provides marshalling support for use by the YAML library.
+  #
+  def encode_with(coder) # :nodoc:
+    @table.each_pair do |key, value|
+      coder[key.to_s] = value
+    end
+    if @table.size == 1 && @table.key?(:table) # support for legacy format
+      # in the very unlikely case of a single entry called 'table'
+      coder['legacy_support!'] = true # add a bogus second entry
+    end
+  end
+
+  #
+  # Provides marshalling support for use by the YAML library.
+  #
+  def init_with(coder) # :nodoc:
+    h = coder.map
+    if h.size == 1 # support for legacy format
+      key, val = h.first
+      if key == 'table'
+        h = val
+      end
+    end
+    update_to_values!(h)
+  end
+
+  # Make all public methods (builtin or our own) accessible with `!`:
+  instance_methods.each do |method|
+    new_name = "#{method}!"
+    alias_method new_name, method
+  end
+  # Other builtin private methods we use:
+  alias_method :raise!, :raise
+  private :raise!
 end

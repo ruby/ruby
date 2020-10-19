@@ -83,7 +83,7 @@ module Bundler
         gem_line ? parse_gem(gem_line) : nil
       end
 
-    private
+      private
 
       def lines(path)
         return [] unless path.file?

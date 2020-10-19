@@ -1,3 +1,4 @@
+/* -*- c-file-style: "ruby"; indent-tabs-mode: t -*- */
 /**********************************************************************
 
   io/wait.c -
@@ -69,15 +70,16 @@ io_wait_event(VALUE io, int event, VALUE timeout)
     VALUE result = rb_io_wait(io, RB_INT2NUM(event), timeout);
 
     if (!RB_TEST(result)) {
-        return Qnil;
+	return Qnil;
     }
 
     int mask = RB_NUM2INT(result);
 
     if (mask & event) {
-        return io;
-    } else {
-        return Qfalse;
+	return io;
+    }
+    else {
+	return Qfalse;
     }
 }
 
@@ -230,35 +232,37 @@ io_wait(int argc, VALUE *argv, VALUE io)
     rb_io_event_t events = 0;
 
     if (argc < 2 || (argc >= 2 && RB_SYMBOL_P(argv[1]))) {
-        if (argc > 0) {
-          timeout = argv[0];
-        }
+	if (argc > 0) {
+	    timeout = argv[0];
+	}
 
-        for (int i = 1; i < argc; i += 1) {
-            events |= wait_mode_sym(argv[i]);
-        }
-    } else if (argc == 2) {
-        events = RB_NUM2UINT(argv[0]);
+	for (int i = 1; i < argc; i += 1) {
+	    events |= wait_mode_sym(argv[i]);
+	}
+    }
+    else if (argc == 2) {
+	events = RB_NUM2UINT(argv[0]);
 
-        if (argv[1] != Qnil) {
-          timeout = argv[1];
-        }
-    } else {
-        // TODO error
-        return Qnil;
+	if (argv[1] != Qnil) {
+	    timeout = argv[1];
+	}
+    }
+    else {
+	// TODO error
+	return Qnil;
     }
 
     if (events == 0) {
-        events = RUBY_IO_READABLE;
+	events = RUBY_IO_READABLE;
     }
 
     if (events & RUBY_IO_READABLE) {
-        rb_io_t *fptr = NULL;
-        RB_IO_POINTER(io, fptr);
+	rb_io_t *fptr = NULL;
+	RB_IO_POINTER(io, fptr);
 
-        if (rb_io_read_pending(fptr)) {
-            return Qtrue;
-        }
+	if (rb_io_read_pending(fptr)) {
+	    return Qtrue;
+	}
     }
 
     return io_wait_event(io, events, timeout);

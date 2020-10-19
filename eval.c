@@ -147,8 +147,27 @@ ruby_options(int argc, char **argv)
 }
 
 static void
+rb_ec_scheduler_finalize(rb_execution_context_t *ec)
+{
+    rb_thread_t *thread = rb_ec_thread_ptr(ec);
+    enum ruby_tag_type state;
+
+    EC_PUSH_TAG(ec);
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+        rb_thread_scheduler_set(thread->self, Qnil);
+    }
+    else {
+        state = error_handle(ec, state);
+    }
+    EC_POP_TAG();
+}
+
+static void
 rb_ec_teardown(rb_execution_context_t *ec)
 {
+    // If the user code defined a scheduler for the top level thread, run it:
+    rb_ec_scheduler_finalize(ec);
+
     EC_PUSH_TAG(ec);
     if (EC_EXEC_TAG() == TAG_NONE) {
         rb_vm_trap_exit(rb_ec_vm_ptr(ec));
@@ -156,17 +175,6 @@ rb_ec_teardown(rb_execution_context_t *ec)
     EC_POP_TAG();
     rb_ec_exec_end_proc(ec);
     rb_ec_clear_all_trace_func(ec);
-}
-
-static void
-rb_ec_scheduler_finalize(rb_execution_context_t *ec)
-{
-    rb_thread_t *thread = rb_ec_thread_ptr(ec);
-    EC_PUSH_TAG(ec);
-    if (EC_EXEC_TAG() == TAG_NONE) {
-        rb_thread_scheduler_set(thread->self, Qnil);
-    }
-    EC_POP_TAG();
 }
 
 static void
@@ -221,9 +229,6 @@ rb_ec_cleanup(rb_execution_context_t *ec, volatile int ex)
 
     rb_threadptr_interrupt(th);
     rb_threadptr_check_signal(th);
-
-    // If the user code defined a scheduler for the top level thread, run it:
-    rb_ec_scheduler_finalize(ec);
 
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {

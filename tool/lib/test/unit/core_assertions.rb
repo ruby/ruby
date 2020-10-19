@@ -456,6 +456,78 @@ eom
         ex
       end
 
+      MINI_DIR = File.join(File.dirname(File.dirname(File.expand_path(__FILE__))), "minitest") #:nodoc:
+
+      # :call-seq:
+      #   assert(test, [failure_message])
+      #
+      #Tests if +test+ is true.
+      #
+      #+msg+ may be a String or a Proc. If +msg+ is a String, it will be used
+      #as the failure message. Otherwise, the result of calling +msg+ will be
+      #used as the message if the assertion fails.
+      #
+      #If no +msg+ is given, a default message will be used.
+      #
+      #    assert(false, "This was expected to be true")
+      def assert(test, *msgs)
+        case msg = msgs.first
+        when String, Proc
+        when nil
+          msgs.shift
+        else
+          bt = caller.reject { |s| s.start_with?(MINI_DIR) }
+          raise ArgumentError, "assertion message must be String or Proc, but #{msg.class} was given.", bt
+        end unless msgs.empty?
+        super
+      end
+
+      # :call-seq:
+      #   assert_respond_to( object, method, failure_message = nil )
+      #
+      #Tests if the given Object responds to +method+.
+      #
+      #An optional failure message may be provided as the final argument.
+      #
+      #    assert_respond_to("hello", :reverse)  #Succeeds
+      #    assert_respond_to("hello", :does_not_exist)  #Fails
+      def assert_respond_to(obj, (meth, *priv), msg = nil)
+        unless priv.empty?
+          msg = message(msg) {
+            "Expected #{mu_pp(obj)} (#{obj.class}) to respond to ##{meth}#{" privately" if priv[0]}"
+          }
+          return assert obj.respond_to?(meth, *priv), msg
+        end
+        #get rid of overcounting
+        if caller_locations(1, 1)[0].path.start_with?(MINI_DIR)
+          return if obj.respond_to?(meth)
+        end
+        super(obj, meth, msg)
+      end
+
+      # :call-seq:
+      #   assert_not_respond_to( object, method, failure_message = nil )
+      #
+      #Tests if the given Object does not respond to +method+.
+      #
+      #An optional failure message may be provided as the final argument.
+      #
+      #    assert_not_respond_to("hello", :reverse)  #Fails
+      #    assert_not_respond_to("hello", :does_not_exist)  #Succeeds
+      def assert_not_respond_to(obj, (meth, *priv), msg = nil)
+        unless priv.empty?
+          msg = message(msg) {
+            "Expected #{mu_pp(obj)} (#{obj.class}) to not respond to ##{meth}#{" privately" if priv[0]}"
+          }
+          return assert !obj.respond_to?(meth, *priv), msg
+        end
+        #get rid of overcounting
+        if caller_locations(1, 1)[0].path.start_with?(MINI_DIR)
+          return unless obj.respond_to?(meth)
+        end
+        refute_respond_to(obj, meth, msg)
+      end
+
       # pattern_list is an array which contains regexp and :*.
       # :* means any sequence.
       #

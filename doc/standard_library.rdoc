@@ -9,10 +9,7 @@ description.
 == Libraries
 
 DEBUGGER__:: Debugging functionality for Ruby
-DRb:: Distributed object system for Ruby
 MakeMakefile:: Module used to generate a Makefile for C extensions
-PP:: Provides a PrettyPrinter for Ruby objects
-PrettyPrinter:: Implements a pretty printing algorithm for readable structure
 RbConfig:: Information of your configure and build of Ruby
 Gem:: Package management framework for Ruby
 un.rb:: Utilities to replace common UNIX commands
@@ -20,10 +17,8 @@ un.rb:: Utilities to replace common UNIX commands
 == Extensions
 
 Coverage:: Provides coverage measurement for Ruby
-Digest:: Provides a framework for message digest libraries
 Monitor:: Provides an object or module to use safely by more than one thread
 objspace:: Extends ObjectSpace module to add methods for internal statistics
-Pathname:: Representation of the name of a file or directory on the filesystem
 PTY:: Creates and manages pseudo terminals
 Ripper:: Provides an interface for parsing Ruby programs into S-expressions
 Socket:: Access underlying OS socket implementations
@@ -41,6 +36,8 @@ CGI:: Support for the Common Gateway Interface protocol
 CSV:: Provides an interface to read and write CSV files and data
 Delegator:: Provides three abilities to delegate method calls to an object
 DidYouMean:: "Did you mean?" experience in Ruby
+Digest:: Provides a framework for message digest libraries
+DRb:: Distributed object system for Ruby
 English.rb:: Require 'English.rb' to reference global variables with less cryptic names
 ERB:: An easy to use but powerful templating system for Ruby
 FileUtils:: Several file utility methods for copying, moving, removing, etc
@@ -62,6 +59,9 @@ Observable:: Provides a mechanism for publish/subscribe pattern in Ruby
 Open3:: Provides access to stdin, stdout and stderr when running other programs
 OpenStruct:: Class to build custom data structures, similar to a Hash
 OpenURI:: An easy-to-use wrapper for Net::HTTP, Net::HTTPS and Net::FTP
+Pathname:: Representation of the name of a file or directory on the filesystem
+PP:: Provides a PrettyPrinter for Ruby objects
+PrettyPrinter:: Implements a pretty printing algorithm for readable structure
 Prime:: Prime numbers and factorization library
 PStore:: Implements a file based persistence mechanism based on a Hash
 Racc:: A LALR(1) parser generator written in Ruby.

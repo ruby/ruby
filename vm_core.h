@@ -225,8 +225,7 @@ struct iseq_inline_cache_entry {
 };
 
 struct iseq_inline_iv_cache_entry {
-    rb_serial_t ic_serial;
-    size_t index;
+    struct rb_iv_index_tbl_entry *entry;
 };
 
 union iseq_inline_storage_entry {
@@ -794,6 +793,7 @@ struct rb_vm_tag {
     rb_jmpbuf_t buf;
     struct rb_vm_tag *prev;
     enum ruby_tag_type state;
+    unsigned int lock_rec;
 };
 
 STATIC_ASSERT(rb_vm_tag_buf_offset, offsetof(struct rb_vm_tag, buf) > 0);
@@ -1795,6 +1795,23 @@ rb_current_vm(void)
 #endif
 
     return ruby_current_vm_ptr;
+}
+
+void rb_ec_vm_lock_rec_release(const rb_execution_context_t *ec,
+                               unsigned int recorded_lock_rec,
+                               unsigned int current_lock_rec);
+
+static inline unsigned int
+rb_ec_vm_lock_rec(const rb_execution_context_t *ec)
+{
+    rb_vm_t *vm = rb_ec_vm_ptr(ec);
+
+    if (vm->ractor.sync.lock_owner != rb_ec_ractor_ptr(ec)) {
+        return 0;
+    }
+    else {
+        return vm->ractor.sync.lock_rec;
+    }
 }
 
 #else

@@ -345,9 +345,26 @@ class TestPathname < Test::Unit::TestCase
   def has_symlink?
     begin
       File.symlink("", "")
-    rescue NotImplementedError, Errno::EACCES
+    rescue NotImplementedError
       return false
     rescue Errno::ENOENT
+      return false
+    rescue Errno::EACCES
+      return false
+    end
+    return true
+  end
+
+  def has_hardlink?
+    begin
+      with_tmpchdir("rubytest-pathname") {|dir|
+        File.write("dummy", "dummy")
+        File.link("dummy", "hardlink")
+      }
+    rescue NotImplementedError
+      return false
+    rescue Errno::EACCES
+      return false
     end
     return true
   end
@@ -886,6 +903,7 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def test_make_link
+    return if !has_hardlink?
     with_tmpchdir('rubytest-pathname') {|dir|
       open("a", "w") {|f| f.write "abc" }
       Pathname("l").make_link(Pathname("a"))

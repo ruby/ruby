@@ -109,7 +109,7 @@ module Bundler
            "bundler:#{bundler_version}#{prerelease_text}`.\n"
     end
 
-  private
+    private
 
     TYPES = {
       GIT    => Bundler::Source::Git,

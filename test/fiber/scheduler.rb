@@ -101,6 +101,8 @@ class Scheduler
   end
 
   def close
+    raise "Scheduler already closed!" if @closed
+
     self.run
   ensure
     @closed = true

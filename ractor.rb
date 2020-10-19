@@ -1,7 +1,7 @@
 class Ractor
   # Create a new Ractor with args and a block.
   # args are passed via incoming channel.
-  # A block (Proc) will be isolated (can't acccess to outer variables)
+  # A block (Proc) will be isolated (can't access to outer variables)
   #
   # A ractor has default two channels:
   # an incoming channel and an outgoing channel.
@@ -14,23 +14,23 @@ class Ractor
   # The result of the block is sent via the outgoing channel
   # and other
   #
-  # r = Ractor.new do
-  #   Ractor.recv    # recv via r's mailbox => 1
-  #   Ractor.recv    # recv via r's mailbox => 2
-  #   Ractor.yield 3 # yield a message (3) and wait for taking by another ractor.
-  #   'ok'           # the return value will be yielded.
-  #                  # and r's incoming/outgoing ports are closed automatically.
-  # end
-  # r.send 1 # send a message (1) into r's mailbox.
-  # r <<   2 # << is an alias of `send`.
-  # p r.take   # take a message from r's outgoing port #=> 3
-  # p r.take   #                                        => 'ok'
-  # p r.take   # raise Ractor::ClosedError
+  #   r = Ractor.new do
+  #     Ractor.receive # receive via r's mailbox => 1
+  #     Ractor.receive # receive via r's mailbox => 2
+  #     Ractor.yield 3 # yield a message (3) and wait for taking by another ractor.
+  #     'ok'           # the return value will be yielded.
+  #                    # and r's incoming/outgoing ports are closed automatically.
+  #   end
+  #   r.send 1 # send a message (1) into r's mailbox.
+  #   r <<   2 # << is an alias of `send`.
+  #   p r.take   # take a message from r's outgoing port => 3
+  #   p r.take   # => 'ok'
+  #   p r.take   # raise Ractor::ClosedError
   #
   # other options:
   #   name: Ractor's name
   #
-  def self.new *args, name: nil, &block
+  def self.new(*args, name: nil, &block)
     b = block # TODO: builtin bug
     raise ArgumentError, "must be called with a block" unless block
     loc = caller_locations(1, 1).first
@@ -53,24 +53,24 @@ class Ractor
 
   # Multiplex multiple Ractor communications.
   #
-  # r, obj = Ractor.select(r1, r2)
-  # #=> wait for taking from r1 or r2
-  # #   returned obj is a taken object from Ractor r
+  #   r, obj = Ractor.select(r1, r2)
+  #   #=> wait for taking from r1 or r2
+  #   #   returned obj is a taken object from Ractor r
   #
-  # r, obj = Ractor.select(r1, r2, Ractor.current)
-  # #=> wait for taking from r1 or r2
-  # #         or recv from incoming queue
-  # #   If recv is succeed, then obj is received value
-  # #   and r is :recv (Ractor.current)
+  #   r, obj = Ractor.select(r1, r2, Ractor.current)
+  #   #=> wait for taking from r1 or r2
+  #   #         or receive from incoming queue
+  #   #   If receive is succeed, then obj is received value
+  #   #   and r is :receive (Ractor.current)
   #
-  # r, obj = Ractor.select(r1, r2, Ractor.current, yield_value: obj)
-  # #=> wait for taking from r1 or r2
-  # #         or recv from incoming queue
-  # #         or yield (Ractor.yield) obj
-  # #   If yield is succeed, then obj is nil
-  # #   and r is :yield
+  #   r, obj = Ractor.select(r1, r2, Ractor.current, yield_value: obj)
+  #   #=> wait for taking from r1 or r2
+  #   #         or receive from incoming queue
+  #   #         or yield (Ractor.yield) obj
+  #   #   If yield is succeed, then obj is nil
+  #   #   and r is :yield
   #
-  def self.select *ractors, yield_value: yield_unspecified = true, move: false
+  def self.select(*ractors, yield_value: yield_unspecified = true, move: false)
     __builtin_cstmt! %q{
       const VALUE *rs = RARRAY_CONST_PTR_TRANSIENT(ractors);
       VALUE rv;
@@ -82,34 +82,40 @@ class Ractor
   end
 
   # Receive an incoming message from Ractor's incoming queue.
-  def self.recv
+  def self.receive
     __builtin_cexpr! %q{
-      ractor_recv(ec, rb_ec_ractor_ptr(ec))
+      ractor_receive(ec, rb_ec_ractor_ptr(ec))
     }
   end
 
-  private def recv
+  class << self
+    alias recv receive
+  end
+
+  private def receive
     __builtin_cexpr! %q{
       // TODO: check current actor
-      ractor_recv(ec, RACTOR_PTR(self))
+      ractor_receive(ec, RACTOR_PTR(self))
     }
   end
+  alias recv receive
 
   # Send a message to a Ractor's incoming queue.
   #
   # # Example:
   #   r = Ractor.new do
-  #     p Ractor.recv #=> 'ok'
+  #     p Ractor.receive #=> 'ok'
   #   end
   #   r.send 'ok' # send to r's incoming queue.
-  def send obj, move: false
+  def send(obj, move: false)
     __builtin_cexpr! %q{
       ractor_send(ec, RACTOR_PTR(self), obj, move)
     }
   end
+  alias << send
 
   # yield a message to the ractor's outgoing port.
-  def self.yield obj, move: false
+  def self.yield(obj, move: false)
     __builtin_cexpr! %q{
       ractor_yield(ec, rb_ec_ractor_ptr(ec), obj, move)
     }
@@ -125,8 +131,6 @@ class Ractor
       ractor_take(ec, RACTOR_PTR(self))
     }
   end
-
-  alias << send
 
   def inspect
     loc  = __builtin_cexpr! %q{ RACTOR_PTR(self)->loc }

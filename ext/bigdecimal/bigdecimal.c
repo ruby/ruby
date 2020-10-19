@@ -4181,7 +4181,7 @@ VpAlloc(size_t mx, const char *szVal, int strict_p, int exc)
         /* at least mx digits. */
         /* szVal==NULL ==> allocate zero value. */
         vp = VpAllocReal(mx);
-        /* xmalloc() alway returns(or throw interruption) */
+        /* xmalloc() always returns(or throw interruption) */
         vp->MaxPrec = mx;    /* set max precision */
         VpSetZero(vp, 1);    /* initialize vp to zero. */
         return vp;
@@ -4357,7 +4357,7 @@ VpAlloc(size_t mx, const char *szVal, int strict_p, int exc)
     nalloc = Max(nalloc, mx);
     mx = nalloc;
     vp = VpAllocReal(mx);
-    /* xmalloc() alway returns(or throw interruption) */
+    /* xmalloc() always returns(or throw interruption) */
     vp->MaxPrec = mx;        /* set max precision */
     VpSetZero(vp, sign);
     VpCtoV(vp, psz, ni, psz + ipf, nf, psz + ipe, ne);

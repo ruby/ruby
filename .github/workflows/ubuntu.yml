@@ -40,8 +40,6 @@ jobs:
       - uses: actions/checkout@v2
         with:
           path: src
-      - run: ./src/tool/actions-commit-info.sh
-        id: commit_info
       - name: Fixed world writable dirs
         run: |
           chmod -v go-w $HOME $HOME/.config
@@ -49,7 +47,7 @@ jobs:
           sudo bash -c 'IFS=:; for d in '"$PATH"'; do chmod -v go-w $d; done' || :
       - name: Set ENV
         run: |
-          echo '::set-env name=JOBS::'-j$((1 + $(nproc --all)))
+          echo "JOBS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
       - run: autoconf
         working-directory: src
       - run: mkdir build

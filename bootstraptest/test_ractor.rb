@@ -90,10 +90,10 @@ assert_equal 'ok', %q{
 }
 
 # Ractor#send passes an object with copy to a Ractor
-# and Ractor.recv in the Ractor block can receive the passed value.
+# and Ractor.receive in the Ractor block can receive the passed value.
 assert_equal 'ok', %q{
   r = Ractor.new do
-    msg = Ractor.recv
+    msg = Ractor.receive
   end
   r.send 'ok'
   r.take
@@ -196,7 +196,7 @@ assert_equal 'ok', %q{
 
 # Raise Ractor::ClosedError when try to send into a closed actor
 assert_equal 'ok', %q{
-  r = Ractor.new { Ractor.recv }
+  r = Ractor.new { Ractor.receive }
 
   r.close
   begin
@@ -212,7 +212,7 @@ assert_equal 'ok', %q{
 assert_equal 'ok', %q{
   r = Ractor.new do
     Ractor.yield 1
-    Ractor.recv
+    Ractor.receive
   end
 
   r.close
@@ -228,14 +228,14 @@ assert_equal 'ok', %q{
 # Ractor.yield raises Ractor::ClosedError when outgoing port is closed.
 assert_equal 'ok', %q{
   r = Ractor.new Ractor.current do |main|
-    Ractor.recv
+    Ractor.receive
     main << true
     Ractor.yield 1
   end
 
   r.close_outgoing
   r << true
-  Ractor.recv
+  Ractor.receive
 
   begin
     r.take
@@ -248,7 +248,7 @@ assert_equal 'ok', %q{
 
 # Raise Ractor::ClosedError when try to send into a ractor with closed incoming port
 assert_equal 'ok', %q{
-  r = Ractor.new { Ractor.recv }
+  r = Ractor.new { Ractor.receive }
   r.close_incoming
 
   begin
@@ -275,7 +275,7 @@ assert_equal '[1, 2]', %q{
 assert_equal 'ok', %q{
   r = Ractor.new do
     Ractor.yield 1
-    Ractor.recv
+    Ractor.receive
   end
 
   sleep 0.01 # wait for Ractor.yield in r
@@ -292,7 +292,7 @@ assert_equal 'ok', %q{
 # A ractor with closed outgoing port still can receive messages from incoming port
 assert_equal 'ok', %q{
   r = Ractor.new do
-    Ractor.recv
+    Ractor.receive
   end
 
   r.close_outgoing
@@ -305,11 +305,11 @@ assert_equal 'ok', %q{
   end
 }
 
-# multiple Ractors can recv (wait) from one Ractor
+# multiple Ractors can receive (wait) from one Ractor
 assert_equal '[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]', %q{
   pipe = Ractor.new do
     loop do
-      Ractor.yield Ractor.recv
+      Ractor.yield Ractor.receive
     end
   end
 
@@ -330,7 +330,7 @@ assert_equal '[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]', %q{
   }.sort
 }
 
-# Ractor.select also support multiple take, recv and yiled
+# Ractor.select also support multiple take, receive and yield
 assert_equal '[true, true, true]', %q{
   RN = 10
   CR = Ractor.current
@@ -341,29 +341,29 @@ assert_equal '[true, true, true]', %q{
       'take'
     end
   }
-  recv = []
+  received = []
   take = []
-  yiel = []
+  yielded = []
   until rs.empty?
     r, v = Ractor.select(CR, *rs, yield_value: 'yield')
     case r
-    when :recv
-      recv << v
+    when :receive
+      received << v
     when :yield
-      yiel << v
+      yielded << v
     else
       take << v
       rs.delete r
     end
   end
-  [recv.all?('sendyield'), yiel.all?(nil), take.all?('take')]
+  [received.all?('sendyield'), yielded.all?(nil), take.all?('take')]
 }
 
 # multiple Ractors can send to one Ractor
 assert_equal '[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]', %q{
   pipe = Ractor.new do
     loop do
-      Ractor.yield Ractor.recv
+      Ractor.yield Ractor.receive
     end
   end
 
@@ -378,7 +378,7 @@ assert_equal '[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]', %q{
   }.sort
 }
 
-# an exception in a Ractor will be re-raised at Ractor#recv
+# an exception in a Ractor will be re-raised at Ractor#receive
 assert_equal '[RuntimeError, "ok", true]', %q{
   r = Ractor.new do
     raise 'ok' # exception will be transferred receiver
@@ -420,7 +420,7 @@ assert_equal 'no _dump_data is defined for class Thread', %q{
 assert_equal "ok", %q{
   echo_ractor = Ractor.new do
     loop do
-      v = Ractor.recv
+      v = Ractor.receive
       Ractor.yield v
     end
   end
@@ -518,7 +518,7 @@ assert_equal [false, true, false].inspect, %q{
 assert_equal 'hello world', %q{
   # move
   r = Ractor.new do
-    obj = Ractor.recv
+    obj = Ractor.receive
     obj << ' world'
   end
 
@@ -538,7 +538,7 @@ assert_equal 'hello world', %q{
 # move example2: Array
 assert_equal '[0, 1]', %q{
   r = Ractor.new do
-    ary = Ractor.recv
+    ary = Ractor.receive
     ary << 1
   end
 
@@ -746,7 +746,7 @@ assert_equal '[1000, 3]', %q{
 assert_equal '[1, 4, 3, 2, 1]', %q{
   counts = []
   counts << Ractor.count
-  ractors = (1..3).map { Ractor.new { Ractor.recv } }
+  ractors = (1..3).map { Ractor.new { Ractor.receive } }
   counts << Ractor.count
 
   ractors[0].send('End 0').take
@@ -777,6 +777,37 @@ assert_equal "#{N}#{N}", %Q{
     Ractor.new{
       N.times{|i| -(i.to_s)}
     }
+  }.map{|r| r.take}.join
+}
+
+# enc_table
+assert_equal "#{N/10}", %Q{
+  Ractor.new do
+    loop do
+      Encoding.find("test-enc-#{rand(5_000)}").inspect
+    rescue ArgumentError => e
+    end
+  end
+
+  src = Encoding.find("UTF-8")
+  #{N/10}.times{|i|
+    src.replicate("test-enc-\#{i}")
+  }
+}
+
+# Generic ivtbl
+n = N/2
+assert_equal "#{n}#{n}", %Q{
+  2.times.map{
+    Ractor.new do
+      #{n}.times do
+        obj = ''
+        obj.instance_variable_set("@a", 1)
+        obj.instance_variable_set("@b", 1)
+        obj.instance_variable_set("@c", 1)
+        obj.instance_variable_defined?("@a")
+      end
+    end
   }.map{|r| r.take}.join
 }
 

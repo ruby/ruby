@@ -148,7 +148,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
   end
 
   def test_execute_rubyforge_project_warning
-    rubyforge_gemspec = File.join SPECIFICATIONS, "rubyforge-0.0.1.gemspec"
+    rubyforge_gemspec = File.expand_path File.join("specifications", "rubyforge-0.0.1.gemspec"), __dir__
 
     @cmd.options[:args] = [rubyforge_gemspec]
 

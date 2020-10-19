@@ -165,13 +165,6 @@ AS_CASE(["${build_os}"],
 ],
 [aix*], [
     AC_PATH_TOOL([NM], [nm], [/usr/ccs/bin/nm], [/usr/ccs/bin:$PATH])
-],
-[darwin*], [
-    AS_IF([libtool 2>&1 | grep no_warning_for_no_symbols > /dev/null], [
-        ac_cv_prog_ac_ct_RANLIB=:
-        ac_cv_prog_ac_ct_AR='libtool -static'
-        rb_cv_arflags='-no_warning_for_no_symbols -o'
-    ])
 ])
 AS_CASE(["${target_os}"],
 [cygwin*|mingw*], [

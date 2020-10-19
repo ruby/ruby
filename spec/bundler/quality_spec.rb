@@ -105,7 +105,7 @@ RSpec.describe "The library itself" do
   end
 
   it "has no malformed whitespace" do
-    exempt = /\.gitmodules|fixtures|vendor|LICENSE|vcr_cassettes|rbreadline\.diff|\.txt$/
+    exempt = /\.gitmodules|fixtures|vendor|LICENSE|vcr_cassettes|rbreadline\.diff|index\.txt$/
     error_messages = []
     tracked_files.each do |filename|
       next if filename =~ exempt
@@ -126,7 +126,7 @@ RSpec.describe "The library itself" do
   end
 
   it "does not include any leftover debugging or development mechanisms" do
-    exempt = %r{quality_spec.rb|support/helpers|vcr_cassettes|\.md|\.ronn|\.txt|\.5|\.1}
+    exempt = %r{quality_spec.rb|support/helpers|vcr_cassettes|\.md|\.ronn|index\.txt|\.5|\.1}
     error_messages = []
     tracked_files.each do |filename|
       next if filename =~ exempt
@@ -190,7 +190,7 @@ RSpec.describe "The library itself" do
         line.scan(/Bundler\.settings\[:#{key_pattern}\]/).flatten.each {|s| all_settings[s] << "referenced at `#{filename}:#{number.succ}`" }
       end
     end
-    documented_settings = File.read("man/bundle-config.ronn")[/LIST OF AVAILABLE KEYS.*/m].scan(/^\* `#{key_pattern}`/).flatten
+    documented_settings = File.read("man/bundle-config.1.ronn")[/LIST OF AVAILABLE KEYS.*/m].scan(/^\* `#{key_pattern}`/).flatten
 
     documented_settings.each do |s|
       all_settings.delete(s)
@@ -261,7 +261,7 @@ RSpec.describe "The library itself" do
     expect(all_bad_requires).to be_empty, "#{all_bad_requires.size} internal requires that should use `require_relative`: #{all_bad_requires}"
   end
 
-private
+  private
 
   def each_line(filename, &block)
     File.readlines(filename, :encoding => "UTF-8").each_with_index(&block)

@@ -130,7 +130,7 @@ class TestFileExhaustive < Test::Unit::TestCase
     @hardlinkfile = make_tmp_filename("hardlinkfile")
     begin
       File.link(regular_file, @hardlinkfile)
-    rescue NotImplementedError, Errno::EINVAL	# EINVAL for Windows Vista
+    rescue NotImplementedError, Errno::EINVAL, Errno::EACCES   # EINVAL for Windows Vista, EACCES for Android Termux
       @hardlinkfile = nil
     end
     @hardlinkfile

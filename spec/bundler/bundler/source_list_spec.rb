@@ -75,7 +75,7 @@ RSpec.describe Bundler::SourceList do
         let(:msg) do
           "The git source `git://existing-git.org/path.git` " \
           "uses the `git` protocol, which transmits data without encryption. " \
-          "Disable this warning with `bundle config set git.allow_insecure true`, " \
+          "Disable this warning with `bundle config set --local git.allow_insecure true`, " \
           "or switch to the `https` protocol to keep your data secure."
         end
 

@@ -467,17 +467,23 @@ rb_num_coerce_cmp(VALUE x, VALUE y, ID func)
     return Qnil;
 }
 
+static VALUE
+ensure_cmp(VALUE c, VALUE x, VALUE y)
+{
+    if (NIL_P(c)) rb_cmperr(x, y);
+    return c;
+}
+
 VALUE
 rb_num_coerce_relop(VALUE x, VALUE y, ID func)
 {
-    VALUE c, x0 = x, y0 = y;
+    VALUE x0 = x, y0 = y;
 
-    if (!do_coerce(&x, &y, FALSE) ||
-	NIL_P(c = rb_funcall(x, func, 1, y))) {
+    if (!do_coerce(&x, &y, FALSE)) {
 	rb_cmperr(x0, y0);
-	return Qnil;		/* not reached */
+	UNREACHABLE_RETURN(Qnil);
     }
-    return c;
+    return ensure_cmp(rb_funcall(x, func, 1, y), x0, y0);
 }
 
 NORETURN(static VALUE num_sadded(VALUE x, VALUE name));
@@ -1518,7 +1524,7 @@ flo_cmp(VALUE x, VALUE y)
 MJIT_FUNC_EXPORTED int
 rb_float_cmp(VALUE x, VALUE y)
 {
-    return NUM2INT(flo_cmp(x, y));
+    return NUM2INT(ensure_cmp(flo_cmp(x, y), x, y));
 }
 
 /*
@@ -5091,7 +5097,7 @@ int_upto(VALUE from, VALUE to)
 	    rb_yield(i);
 	    i = rb_funcall(i, '+', 1, INT2FIX(1));
 	}
-	if (NIL_P(c)) rb_cmperr(i, to);
+	ensure_cmp(c, i, to);
     }
     return from;
 }

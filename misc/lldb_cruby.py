@@ -14,6 +14,149 @@ import shlex
 HEAP_PAGE_ALIGN_LOG = 14
 HEAP_PAGE_ALIGN_MASK = (~(~0 << HEAP_PAGE_ALIGN_LOG))
 
+class BackTrace:
+    VM_FRAME_MAGIC_METHOD = 0x11110001
+    VM_FRAME_MAGIC_BLOCK = 0x22220001
+    VM_FRAME_MAGIC_CLASS = 0x33330001
+    VM_FRAME_MAGIC_TOP = 0x44440001
+    VM_FRAME_MAGIC_CFUNC = 0x55550001
+    VM_FRAME_MAGIC_IFUNC = 0x66660001
+    VM_FRAME_MAGIC_EVAL = 0x77770001
+    VM_FRAME_MAGIC_RESCUE = 0x78880001
+    VM_FRAME_MAGIC_DUMMY = 0x79990001
+
+    VM_FRAME_MAGIC_MASK = 0x7fff0001
+
+    VM_FRAME_MAGIC_NAME = {
+            VM_FRAME_MAGIC_TOP: "TOP",
+            VM_FRAME_MAGIC_METHOD: "METHOD",
+            VM_FRAME_MAGIC_CLASS: "CLASS",
+            VM_FRAME_MAGIC_BLOCK: "BLOCK",
+            VM_FRAME_MAGIC_CFUNC: "CFUNC",
+            VM_FRAME_MAGIC_IFUNC: "IFUNC",
+            VM_FRAME_MAGIC_EVAL: "EVAL",
+            VM_FRAME_MAGIC_RESCUE: "RESCUE",
+            0: "-----"
+    }
+
+    def __init__(self, debugger, command, result, internal_dict):
+        self.debugger = debugger
+        self.command = command
+        self.result = result
+
+        self.target = debugger.GetSelectedTarget()
+        self.process = self.target.GetProcess()
+        self.thread = self.process.GetSelectedThread()
+        self.frame = self.thread.GetSelectedFrame()
+        self.tRString = self.target.FindFirstType("struct RString").GetPointerType()
+        self.tRArray = self.target.FindFirstType("struct RArray").GetPointerType()
+
+        rb_cft_len = len("rb_control_frame_t")
+        method_type_length = sorted(map(len, self.VM_FRAME_MAGIC_NAME.values()), reverse=True)[0]
+        # cfp address, method type, function name
+        self.fmt = "%%-%ds %%-%ds %%s" % (rb_cft_len, method_type_length)
+
+    def vm_frame_magic(self, cfp):
+        ep = cfp.GetValueForExpressionPath("->ep")
+        frame_type = ep.GetChildAtIndex(0).GetValueAsUnsigned() & self.VM_FRAME_MAGIC_MASK
+        return self.VM_FRAME_MAGIC_NAME.get(frame_type, "(none)")
+
+    def rb_iseq_path_str(self, iseq):
+        tRBasic = self.target.FindFirstType("struct RBasic").GetPointerType()
+
+        pathobj = iseq.GetValueForExpressionPath("->body->location.pathobj")
+        pathobj = pathobj.Cast(tRBasic)
+        flags = pathobj.GetValueForExpressionPath("->flags").GetValueAsUnsigned()
+        flType = flags & RUBY_T_MASK
+
+        if flType == RUBY_T_ARRAY:
+            pathobj = pathobj.Cast(self.tRArray)
+
+            if flags & RUBY_FL_USER1:
+                len = ((flags & (RUBY_FL_USER3|RUBY_FL_USER4)) >> (RUBY_FL_USHIFT+3))
+                ptr = pathobj.GetValueForExpressionPath("->as.ary")
+            else:
+                len = pathobj.GetValueForExpressionPath("->as.heap.len").GetValueAsSigned()
+                ptr = pathobj.GetValueForExpressionPath("->as.heap.ptr")
+
+            pathobj = ptr.GetChildAtIndex(0)
+
+        pathobj = pathobj.Cast(self.tRString)
+        ptr, len = string2cstr(pathobj)
+        err = lldb.SBError()
+        path = self.target.process.ReadMemory(ptr, len, err)
+        if err.Success():
+            return path.decode("utf-8")
+        else:
+            return "unknown"
+
+    def dump_iseq_frame(self, cfp, iseq):
+        m = self.vm_frame_magic(cfp)
+
+        if iseq.GetValueAsUnsigned():
+            iseq_label = iseq.GetValueForExpressionPath("->body->location.label")
+            path = self.rb_iseq_path_str(iseq)
+            ptr, len = string2cstr(iseq_label.Cast(self.tRString))
+
+            err = lldb.SBError()
+            iseq_name = self.target.process.ReadMemory(ptr, len, err)
+            if err.Success():
+                iseq_name = iseq_name.decode("utf-8")
+            else:
+                iseq_name = "error!!"
+
+        else:
+            print("No iseq", file=self.result)
+
+        print(self.fmt % (("%0#12x" % cfp.GetAddress().GetLoadAddress(self.target)), m, "%s %s" % (path, iseq_name)), file=self.result)
+
+    def dump_cfunc_frame(self, cfp):
+        print(self.fmt % ("%0#12x" % (cfp.GetAddress().GetLoadAddress(self.target)), "CFUNC", ""), file=self.result)
+
+    def print_bt(self, ec):
+        tRbExecutionContext_t = self.target.FindFirstType("rb_execution_context_t")
+        ec = ec.Cast(tRbExecutionContext_t.GetPointerType())
+        vm_stack = ec.GetValueForExpressionPath("->vm_stack")
+        vm_stack_size = ec.GetValueForExpressionPath("->vm_stack_size")
+
+        last_cfp_frame = ec.GetValueForExpressionPath("->cfp")
+        cfp_type_p = last_cfp_frame.GetType()
+
+        stack_top = vm_stack.GetValueAsUnsigned() + (
+                vm_stack_size.GetValueAsUnsigned() * vm_stack.GetType().GetByteSize())
+
+        cfp_frame_size = cfp_type_p.GetPointeeType().GetByteSize()
+
+        start_cfp = stack_top
+        # Skip dummy frames
+        start_cfp -= cfp_frame_size
+        start_cfp -= cfp_frame_size
+
+        last_cfp = last_cfp_frame.GetValueAsUnsigned()
+
+        size = ((start_cfp - last_cfp) / cfp_frame_size) + 1
+
+        print(self.fmt % ("rb_control_frame_t", "TYPE", ""), file=self.result)
+
+        curr_addr = start_cfp
+
+        while curr_addr >= last_cfp:
+            cfp = self.target.CreateValueFromAddress("cfp", lldb.SBAddress(curr_addr, self.target), cfp_type_p.GetPointeeType())
+            ep = cfp.GetValueForExpressionPath("->ep")
+            iseq = cfp.GetValueForExpressionPath("->iseq")
+
+            frame_type = ep.GetChildAtIndex(0).GetValueAsUnsigned() & self.VM_FRAME_MAGIC_MASK
+
+            if iseq.GetValueAsUnsigned():
+                pc = cfp.GetValueForExpressionPath("->pc")
+                if pc.GetValueAsUnsigned():
+                    self.dump_iseq_frame(cfp, iseq)
+            else:
+                if frame_type == self.VM_FRAME_MAGIC_CFUNC:
+                    self.dump_cfunc_frame(cfp)
+
+            curr_addr -= cfp_frame_size
+
 def lldb_init(debugger):
     target = debugger.GetSelectedTarget()
     global SIZEOF_VALUE
@@ -360,6 +503,25 @@ def dump_node(debugger, command, ctx, result, internal_dict):
     dump = ctx.frame.EvaluateExpression("(struct RString*)rb_parser_dump_tree((NODE*)(%s), 0)" % node)
     output_string(ctx, result, dump)
 
+def rb_backtrace(debugger, command, result, internal_dict):
+    bt = BackTrace(debugger, command, result, internal_dict)
+    frame = bt.frame
+
+    if command:
+        if frame.IsValid():
+            val = frame.EvaluateExpression(command)
+        else:
+            val = target.EvaluateExpression(command)
+
+        error = val.GetError()
+        if error.Fail():
+            print >> result, error
+            return
+    else:
+        print("Need an EC for now")
+
+    bt.print_bt(val)
+
 def __lldb_init_module(debugger, internal_dict):
     debugger.HandleCommand("command script add -f lldb_cruby.lldb_rp rp")
     debugger.HandleCommand("command script add -f lldb_cruby.count_objects rb_count_objects")
@@ -367,5 +529,6 @@ def __lldb_init_module(debugger, internal_dict):
     debugger.HandleCommand("command script add -f lldb_cruby.dump_node dump_node")
     debugger.HandleCommand("command script add -f lldb_cruby.heap_page heap_page")
     debugger.HandleCommand("command script add -f lldb_cruby.heap_page_body heap_page_body")
+    debugger.HandleCommand("command script add -f lldb_cruby.rb_backtrace rbbt")
     lldb_init(debugger)
     print("lldb scripts for ruby has been installed.")

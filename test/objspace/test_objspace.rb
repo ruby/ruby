@@ -318,8 +318,9 @@ class TestObjSpace < Test::Unit::TestCase
           ObjectSpace.dump_all(output: :stdout)
         end
 
-        dump_my_heap_please
+        p dump_my_heap_please
       end;
+      assert_equal 'nil', output.pop
       heap = output.find_all { |l|
         obj = JSON.parse(l)
         obj['type'] == "IMEMO" && obj['imemo_type']
@@ -335,8 +336,9 @@ class TestObjSpace < Test::Unit::TestCase
           ObjectSpace.dump_all(output: :stdout, full: true)
         end
 
-        dump_my_heap_please
+        p dump_my_heap_please
       end;
+      assert_equal 'nil', output.pop
       heap = output.find_all { |l| JSON.parse(l)['type'] == "NONE" }
       assert_operator heap.length, :>, 0
     end
@@ -356,8 +358,9 @@ class TestObjSpace < Test::Unit::TestCase
           ObjectSpace.dump_all(output: :stdout, since: gc_gen)
         end
 
-        dump_my_heap_please
+        p dump_my_heap_please
       end;
+      assert_equal 'nil', output.pop
       since = output.shift.to_i
       assert_operator output.size, :>, 0
       generations = output.map { |l| JSON.parse(l)["generation"] }.uniq.sort
@@ -374,8 +377,9 @@ class TestObjSpace < Test::Unit::TestCase
           ObjectSpace.dump_all(output: $stdout)
         end
 
-        dump_my_heap_please
+        p $stdout == dump_my_heap_please
       end;
+      assert_equal 'true', output.pop
       needle = JSON.parse(output.first)
       addr = needle['address']
       found  = output.drop(1).find { |l| JSON.parse(l)['address'] == addr }
@@ -392,8 +396,9 @@ class TestObjSpace < Test::Unit::TestCase
           ObjectSpace.dump_all(output: $stdout)
         end
 
-        dump_my_heap_please
+        p $stdout == dump_my_heap_please
       end;
+      assert_equal 'true', output.pop
       needle = JSON.parse(output.first)
       addr = needle['class']
       found  = output.drop(1).find { |l| JSON.parse(l)['address'] == addr }
@@ -430,8 +435,9 @@ class TestObjSpace < Test::Unit::TestCase
           ObjectSpace.dump_all(output: $stdout)
         end
 
-        dump_my_heap_please
+        p $stdout == dump_my_heap_please
       end;
+      assert_equal 'true', output.pop
       needle = JSON.parse(output.first)
       addr = needle['address']
       found  = output.drop(1).find { |l| (JSON.parse(l)['references'] || []).include? addr }
@@ -452,8 +458,9 @@ class TestObjSpace < Test::Unit::TestCase
           ObjectSpace.dump_all(output: :stdout)
         end
 
-        dump_my_heap_please
+        p dump_my_heap_please
       end;
+      assert_equal 'nil', output.pop
       assert_match(entry, output.grep(/TEST STRING/).join("\n"))
     end
 

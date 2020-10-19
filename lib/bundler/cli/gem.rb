@@ -192,7 +192,7 @@ module Bundler
       raise GenericSystemCallError.new(e, "There was a conflict while creating the new gem.")
     end
 
-  private
+    private
 
     def resolve_name(name)
       SharedHelpers.pwd.join(name).basename.to_s

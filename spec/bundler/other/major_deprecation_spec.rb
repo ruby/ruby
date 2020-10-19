@@ -113,7 +113,7 @@ RSpec.describe "major deprecations" do
       expect(deprecations).to include(
         "The `--path` flag is deprecated because it relies on being " \
         "remembered across bundler invocations, which bundler will no " \
-        "longer do in future versions. Instead please use `bundle config set " \
+        "longer do in future versions. Instead please use `bundle config set --local " \
         "path 'vendor/bundle'`, and stop using this flag"
       )
     end
@@ -135,8 +135,30 @@ RSpec.describe "major deprecations" do
       expect(deprecations).to include(
         "The `--path` flag is deprecated because it relies on being " \
         "remembered across bundler invocations, which bundler will no " \
-        "longer do in future versions. Instead please use `bundle config set " \
+        "longer do in future versions. Instead please use `bundle config set --local " \
         "path 'vendor/bundle'`, and stop using this flag"
+      )
+    end
+
+    pending "should fail with a helpful error", :bundler => "3"
+  end
+
+  context "bundle cache --all" do
+    before do
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rack"
+      G
+
+      bundle "cache --all", :raise_on_error => false
+    end
+
+    it "should print a deprecation warning", :bundler => "2" do
+      expect(deprecations).to include(
+        "The `--all` flag is deprecated because it relies on being " \
+        "remembered across bundler invocations, which bundler will no " \
+        "longer do in future versions. Instead please use `bundle config set " \
+        "cache_all true`, and stop using this flag"
       )
     end
 
@@ -271,7 +293,7 @@ RSpec.describe "major deprecations" do
     end
 
     it "should output a deprecation warning", :bundler => "2" do
-      expect(deprecations).to include("The --binstubs option will be removed in favor of `bundle binstubs`")
+      expect(deprecations).to include("The --binstubs option will be removed in favor of `bundle binstubs --all`")
     end
 
     pending "fails with a helpful error", :bundler => "3"
@@ -339,7 +361,7 @@ RSpec.describe "major deprecations" do
             "The `#{flag_name}` flag is deprecated because it relies on " \
             "being remembered across bundler invocations, which bundler " \
             "will no longer do in future versions. Instead please use " \
-            "`bundle config set #{option_name} '#{value}'`, and stop using this flag"
+            "`bundle config set --local #{option_name} '#{value}'`, and stop using this flag"
           )
         end
 
@@ -362,7 +384,7 @@ RSpec.describe "major deprecations" do
         "Using `source` more than once without a block is a security risk, and " \
         "may result in installing unexpected gems. To resolve this warning, use " \
         "a block to indicate which gems should come from the secondary source. " \
-        "To upgrade this warning to an error, run `bundle config set " \
+        "To upgrade this warning to an error, run `bundle config set --local " \
         "disable_multisource true`."
       )
     end

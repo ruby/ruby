@@ -48,6 +48,7 @@ VALUE rb_cProc;
 static rb_block_call_func bmcall;
 static int method_arity(VALUE);
 static int method_min_max_arity(VALUE, int *max);
+static VALUE proc_binding(VALUE self);
 
 #define attached id__attached__
 
@@ -2740,13 +2741,16 @@ rb_obj_method_arity(VALUE obj, ID id)
 }
 
 VALUE
-rb_callable_receiver(VALUE callable) {
+rb_callable_receiver(VALUE callable)
+{
     if (rb_obj_is_proc(callable)) {
-        VALUE binding = rb_funcall(callable, rb_intern("binding"), 0);
+        VALUE binding = proc_binding(callable);
         return rb_funcall(binding, rb_intern("receiver"), 0);
-    } else if (rb_obj_is_method(callable)) {
+    }
+    else if (rb_obj_is_method(callable)) {
         return method_receiver(callable);
-    } else {
+    }
+    else {
         return Qundef;
     }
 }

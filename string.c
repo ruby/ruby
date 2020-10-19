@@ -4605,71 +4605,73 @@ rb_str_aref(VALUE str, VALUE indx)
 
 /*
  *  call-seq:
- *     str[index]                 -> new_str or nil
- *     str[start, length]         -> new_str or nil
- *     str[range]                 -> new_str or nil
- *     str[regexp]                -> new_str or nil
- *     str[regexp, capture]       -> new_str or nil
- *     str[match_str]             -> new_str or nil
- *     str.slice(index)           -> new_str or nil
- *     str.slice(start, length)   -> new_str or nil
- *     str.slice(range)           -> new_str or nil
- *     str.slice(regexp)          -> new_str or nil
- *     str.slice(regexp, capture) -> new_str or nil
- *     str.slice(match_str)       -> new_str or nil
+ *    string[index] -> new_string or nil
+ *    string[start, length] -> new_string or nil
+ *    string[range] -> new_string or nil
+ *    string[regexp, capture = 0] -> new_string or nil
+ *    string[substring] -> new_string or nil
  *
- *  Element Reference --- If passed a single +index+, returns a substring of
- *  one character at that index. If passed a +start+ index and a +length+,
- *  returns a substring containing +length+ characters starting at the
- *  +start+ index. If passed a +range+, its beginning and end are interpreted as
- *  offsets delimiting the substring to be returned.
+ *  Returns the substring of +self+ specified by the arguments.
  *
- *  In these three cases, if an index is negative, it is counted from the end
- *  of the string.  For the +start+ and +range+ cases the starting index
- *  is just before a character and an index matching the string's size.
- *  Additionally, an empty string is returned when the starting index for a
- *  character range is at the end of the string.
+ *  When the single \Integer argument +index+ is given,
+ *  returns the 1-character substring found in +self+ at offset +index+:
+ *    'bar'[2] # => "r"
+ *  Counts backward from the end of +self+ if +index+ is negative:
+ *    'foo'[-3] # => "f"
+ *  Returns +nil+ if +index+ is out of range:
+ *    'foo'[3] # => nil
+ *    'foo'[-4] # => nil
  *
- *  Returns +nil+ if the initial index falls outside the string or the length
- *  is negative.
+ *  When the two \Integer arguments  +start+ and +length+ are given,
+ *  returns the substring of the given +length+ found in +self+ at offset +start+:
+ *    'foo'[0, 2] # => "fo"
+ *    'foo'[0, 0] # => ""
+ *  Counts backward from the end of +self+ if +start+ is negative:
+ *    'foo'[-2, 2] # => "oo"
+ *  Special case: returns a new empty \String if +start+ is equal to the length of +self+:
+ *    'foo'[3, 2] # => ""
+ *  Returns +nil+ if +start+ is out of range:
+ *    'foo'[4, 2] # => nil
+ *    'foo'[-4, 2] # => nil
+ *  Returns the trailing substring of +self+ if +length+ is large:
+ *    'foo'[1, 50] # => "oo"
+ *  Returns +nil+ if +length+ is negative:
+ *    'foo'[0, -1] # => nil
  *
- *  If a +Regexp+ is supplied, the matching portion of the string is
- *  returned.  If a +capture+ follows the regular expression, which may be a
- *  capture group index or name, follows the regular expression that component
- *  of the MatchData is returned instead.
+ *  When the single \Range argument +range+ is given,
+ *  derives +start+ and +length+ values from the given +range+,
+ *  and returns values as above:
+ *  - <tt>'foo'[0..1]</tt> is equivalent to <tt>'foo'[0, 2]</tt>.
+ *  - <tt>'foo'[0...1]</tt> is equivalent to <tt>'foo'[0, 1]</tt>.
  *
- *  If a +match_str+ is given, that string is returned if it occurs in
- *  the string.
+ *  When the \Regexp argument +regexp+ is given,
+ *  and the +capture+ argument is <tt>0</tt>,
+ *  returns the first matching substring found in +self+,
+ *  or +nil+ if none found:
+ *    'foo'[/o/] # => "o"
+ *    'foo'[/x/] # => nil
+ *    s = 'hello there'
+ *    s[/[aeiou](.)\1/] # => "ell"
+ *    s[/[aeiou](.)\1/, 0] # => "ell"
  *
- *  Returns +nil+ if the regular expression does not match or the match string
- *  cannot be found.
+ *  If argument +capture+ is given and not <tt>0</tt>,
+ *  it should be either an \Integer capture group index or a \String or \Symbol capture group name;
+ *  the method call returns only the specified capture
+ *  (see {Regexp Capturing}[Regexp.html#class-Regexp-label-Capturing]):
+ *    s = 'hello there'
+ *    s[/[aeiou](.)\1/, 1] # => "l"
+ *    s[/(?<vowel>[aeiou])(?<non_vowel>[^aeiou])/, "non_vowel"] # => "l"
+ *    s[/(?<vowel>[aeiou])(?<non_vowel>[^aeiou])/, :vowel] # => "e"
  *
- *     a = "hello there"
+ *  If an invalid capture group index is given, +nil+ is returned.  If an invalid
+ *  capture group name is given, +IndexError+ is raised.
  *
- *     a[1]                   #=> "e"
- *     a[2, 3]                #=> "llo"
- *     a[2..3]                #=> "ll"
+ *  When the single \String argument +substring+ is given,
+ *  returns the substring from +self+ if found, otherwise +nil+:
+ *    'foo'['oo'] # => "oo"
+ *    'foo'['xx'] # => nil
  *
- *     a[-3, 2]               #=> "er"
- *     a[7..-2]               #=> "her"
- *     a[-4..-2]              #=> "her"
- *     a[-2..-4]              #=> ""
- *
- *     a[11, 0]               #=> ""
- *     a[11]                  #=> nil
- *     a[12, 0]               #=> nil
- *     a[12..-1]              #=> nil
- *
- *     a[/[aeiou](.)\1/]      #=> "ell"
- *     a[/[aeiou](.)\1/, 0]   #=> "ell"
- *     a[/[aeiou](.)\1/, 1]   #=> "l"
- *     a[/[aeiou](.)\1/, 2]   #=> nil
- *
- *     a[/(?<vowel>[aeiou])(?<non_vowel>[^aeiou])/, "non_vowel"] #=> "l"
- *     a[/(?<vowel>[aeiou])(?<non_vowel>[^aeiou])/, "vowel"]     #=> "e"
- *
- *     a["lo"]                #=> "lo"
- *     a["bye"]               #=> nil
+ *  String#slice is an alias for String#[].
  */
 
 static VALUE
@@ -4915,19 +4917,17 @@ rb_str_aset_m(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.insert(index, other_str)   -> str
+ *    string.insert(index, other_string) -> self
  *
- *  Inserts <i>other_str</i> before the character at the given
- *  <i>index</i>, modifying <i>str</i>. Negative indices count from the
- *  end of the string, and insert <em>after</em> the given character.
- *  The intent is insert <i>aString</i> so that it starts at the given
- *  <i>index</i>.
+ *  Inserts the given +other_string+ into +self+; returns +self+.
  *
- *     "abcd".insert(0, 'X')    #=> "Xabcd"
- *     "abcd".insert(3, 'X')    #=> "abcXd"
- *     "abcd".insert(4, 'X')    #=> "abcdX"
- *     "abcd".insert(-3, 'X')   #=> "abXcd"
- *     "abcd".insert(-1, 'X')   #=> "abcdX"
+ *  If the \Integer +index+ is positive, inserts +other_string+ at offset +index+:
+ *    'foo'.insert(1, 'bar') # => "fbaroo"
+ *
+ *  If the \Integer +index+ is negative, counts backward from the end of +self+
+ *  and inserts +other_string+ at offset <tt>index+1</tt>
+ *  (that is, _after_ <tt>self[index]</tt>):
+ *    'foo'.insert(-2, 'bar') # => "fobaro"
  */
 
 static VALUE

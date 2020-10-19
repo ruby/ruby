@@ -1388,4 +1388,8 @@ class TestMethod < Test::Unit::TestCase
     assert_operator nummodule, :>, 0
     assert_operator nummethod, :>, 0
   end
+
+  def test_invalidating_CC_ASAN
+    assert_ruby_status(['-e', 'using Module.new'])
+  end
 end

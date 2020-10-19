@@ -1388,6 +1388,15 @@ eom
     assert_nil obj.test
   end
 
+  def test_assignment_return_in_loop
+    obj = Object.new
+    def obj.test
+      x = nil
+      _y = (return until x unless x)
+    end
+    assert_nil obj.test, "[Bug #16695]"
+  end
+
   def test_method_call_location
     line = __LINE__+5
     e = assert_raise(NoMethodError) do
@@ -1429,7 +1438,12 @@ eom
     end
     assert_equal("class ok", k.rescued("ok"))
     assert_equal("instance ok", k.new.rescued("ok"))
-    assert_syntax_error('def foo=() = 42', /setter method cannot be defined in an endless method definition/)
+
+    error = /setter method cannot be defined in an endless method definition/
+    assert_syntax_error('def foo=() = 42', error)
+    assert_syntax_error('def obj.foo=() = 42', error)
+    assert_syntax_error('def foo=() = 42 rescue nil', error)
+    assert_syntax_error('def obj.foo=() = 42 rescue nil', error)
   end
 
   def test_methoddef_in_cond
@@ -1498,6 +1512,11 @@ eom
     assert_valid_syntax("tap {a = (true ? true : break)}")
     assert_valid_syntax("tap {a = (break if false)}")
     assert_valid_syntax("tap {a = (break unless true)}")
+  end
+
+  def test_tautological_condition
+    assert_valid_syntax("def f() return if false and invalid; nil end")
+    assert_valid_syntax("def f() return unless true or invalid; nil end")
   end
 
   def test_argument_forwarding

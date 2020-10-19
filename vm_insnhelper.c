@@ -83,7 +83,10 @@ NORETURN(MJIT_STATIC void rb_ec_stack_overflow(rb_execution_context_t *ec, int c
 MJIT_STATIC void
 rb_ec_stack_overflow(rb_execution_context_t *ec, int crit)
 {
-    if (crit || rb_during_gc()) {
+    if (rb_during_gc()) {
+        rb_bug("system stack overflow during GC. Faulty native extension?");
+    }
+    if (crit) {
 	ec->raised_flag = RAISED_STACKOVERFLOW;
 	ec->errinfo = rb_ec_vm_ptr(ec)->special_exceptions[ruby_error_stackfatal];
 	EC_JUMP_TAG(ec, TAG_RAISE);
@@ -1076,9 +1079,25 @@ vm_search_const_defined_class(const VALUE cbase, ID id)
     return 0;
 }
 
-ALWAYS_INLINE(static VALUE vm_getivar(VALUE, ID, IVC, const struct rb_callcache *, int));
+static bool
+iv_index_tbl_lookup(struct st_table *iv_index_tbl, ID id, struct rb_iv_index_tbl_entry **ent)
+{
+    int found;
+
+    if (iv_index_tbl == NULL) return false;
+
+    RB_VM_LOCK_ENTER();
+    {
+        found = st_lookup(iv_index_tbl, (st_data_t)id, (st_data_t *)ent);
+    }
+    RB_VM_LOCK_LEAVE();
+
+    return found ? true : false;
+}
+
+ALWAYS_INLINE(static VALUE vm_getivar(VALUE, ID, const rb_iseq_t *, IVC, const struct rb_callcache *, int));
 static inline VALUE
-vm_getivar(VALUE obj, ID id, IVC ic, const struct rb_callcache *cc, int is_attr)
+vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_callcache *cc, int is_attr)
 {
 #if OPT_IC_FOR_IVAR
     VALUE val = Qundef;
@@ -1089,8 +1108,8 @@ vm_getivar(VALUE obj, ID id, IVC ic, const struct rb_callcache *cc, int is_attr)
     else if (LIKELY(is_attr ?
                     RB_DEBUG_COUNTER_INC_UNLESS(ivar_get_ic_miss_unset, vm_cc_attr_index(cc) > 0) :
                     RB_DEBUG_COUNTER_INC_UNLESS(ivar_get_ic_miss_serial,
-                                                ic->ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass)))) {
-        st_index_t index = !is_attr ? ic->index : (vm_cc_attr_index(cc) - 1);
+                                                ic->entry && ic->entry->class_serial == RCLASS_SERIAL(RBASIC(obj)->klass)))) {
+        uint32_t index = !is_attr ? ic->entry->index : (vm_cc_attr_index(cc) - 1);
 
         RB_DEBUG_COUNTER_INC(ivar_get_ic_hit);
 
@@ -1101,7 +1120,7 @@ vm_getivar(VALUE obj, ID id, IVC ic, const struct rb_callcache *cc, int is_attr)
         else if (FL_TEST_RAW(obj, FL_EXIVAR)) {
             struct gen_ivtbl *ivtbl;
 
-            if (LIKELY(st_lookup(rb_ivar_generic_ivtbl(obj), (st_data_t)obj, (st_data_t *)&ivtbl)) &&
+            if (LIKELY(rb_ivar_generic_ivtbl_lookup(obj, &ivtbl)) &&
                 LIKELY(index < ivtbl->numiv)) {
                 val = ivtbl->ivptr[index];
             }
@@ -1113,8 +1132,6 @@ vm_getivar(VALUE obj, ID id, IVC ic, const struct rb_callcache *cc, int is_attr)
         st_index_t numiv;
         VALUE *ivptr;
 
-        st_data_t index;
-
         if (BUILTIN_TYPE(obj) == T_OBJECT) {
             iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
             numiv = ROBJECT_NUMIV(obj);
@@ -1123,7 +1140,7 @@ vm_getivar(VALUE obj, ID id, IVC ic, const struct rb_callcache *cc, int is_attr)
 	}
         else if (FL_TEST_RAW(obj, FL_EXIVAR)) {
             struct gen_ivtbl *ivtbl;
-            if (LIKELY(st_lookup(rb_ivar_generic_ivtbl(obj), (st_data_t)obj, (st_data_t *)&ivtbl))) {
+            if (LIKELY(rb_ivar_generic_ivtbl_lookup(obj, &ivtbl))) {
                 numiv = ivtbl->numiv;
                 ivptr = ivtbl->ivptr;
                 iv_index_tbl = RCLASS_IV_INDEX_TBL(rb_obj_class(obj));
@@ -1140,17 +1157,19 @@ vm_getivar(VALUE obj, ID id, IVC ic, const struct rb_callcache *cc, int is_attr)
 
       fill:
         if (iv_index_tbl) {
-            if (st_lookup(iv_index_tbl, id, &index)) {
+            struct rb_iv_index_tbl_entry *ent;
+
+            if (iv_index_tbl_lookup(iv_index_tbl, id, &ent)) {
                 if (!is_attr) {
-                    ic->index = index;
-                    ic->ic_serial = RCLASS_SERIAL(RBASIC(obj)->klass);
+                    ic->entry = ent;
+                    RB_OBJ_WRITTEN(iseq, Qundef, ent->class_value);
                 }
                 else { /* call_info */
-                    vm_cc_attr_index_set(cc, (int)index + 1);
+                    vm_cc_attr_index_set(cc, (int)ent->index + 1);
                 }
 
-                if (index < numiv) {
-                    val = ivptr[index];
+                if (ent->index < numiv) {
+                    val = ivptr[ent->index];
                 }
             }
         }
@@ -1179,20 +1198,20 @@ vm_getivar(VALUE obj, ID id, IVC ic, const struct rb_callcache *cc, int is_attr)
 }
 
 static inline VALUE
-vm_setivar(VALUE obj, ID id, VALUE val, IVC ic, const struct rb_callcache *cc, int is_attr)
+vm_setivar(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, const struct rb_callcache *cc, int is_attr)
 {
 #if OPT_IC_FOR_IVAR
     rb_check_frozen_internal(obj);
 
     if (LIKELY(RB_TYPE_P(obj, T_OBJECT))) {
 	VALUE klass = RBASIC(obj)->klass;
-	st_data_t index;
+	uint32_t index;
 
 	if (LIKELY(
-	    (!is_attr && RB_DEBUG_COUNTER_INC_UNLESS(ivar_set_ic_miss_serial, ic->ic_serial == RCLASS_SERIAL(klass))) ||
-	    ( is_attr && RB_DEBUG_COUNTER_INC_UNLESS(ivar_set_ic_miss_unset, vm_cc_attr_index(cc) > 0)))) {
+	    (!is_attr && RB_DEBUG_COUNTER_INC_UNLESS(ivar_set_ic_miss_serial, ic->entry && ic->entry->class_serial  == RCLASS_SERIAL(klass))) ||
+            ( is_attr && RB_DEBUG_COUNTER_INC_UNLESS(ivar_set_ic_miss_unset, vm_cc_attr_index(cc) > 0)))) {
 	    VALUE *ptr = ROBJECT_IVPTR(obj);
-	    index = !is_attr ? ic->index : vm_cc_attr_index(cc)-1;
+	    index = !is_attr ? ic->entry->index : vm_cc_attr_index(cc)-1;
 
 	    if (RB_DEBUG_COUNTER_INC_UNLESS(ivar_set_ic_miss_oorange, index < ROBJECT_NUMIV(obj))) {
 		RB_OBJ_WRITE(obj, &ptr[index], val);
@@ -1202,17 +1221,18 @@ vm_setivar(VALUE obj, ID id, VALUE val, IVC ic, const struct rb_callcache *cc, i
 	}
 	else {
 	    struct st_table *iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
+            struct rb_iv_index_tbl_entry *ent;
 
-	    if (iv_index_tbl && st_lookup(iv_index_tbl, (st_data_t)id, &index)) {
+            if (iv_index_tbl_lookup(iv_index_tbl, id, &ent)) {
                 if (!is_attr) {
-                    ic->index = index;
-                    ic->ic_serial = RCLASS_SERIAL(klass);
+                    ic->entry = ent;
+                    RB_OBJ_WRITTEN(iseq, Qundef, ent->class_value);
                 }
-		else if (index >= INT_MAX) {
+		else if (ent->index >= INT_MAX) {
 		    rb_raise(rb_eArgError, "too many instance variables");
 		}
 		else {
-		    vm_cc_attr_index_set(cc, (int)(index + 1));
+		    vm_cc_attr_index_set(cc, (int)(ent->index + 1));
 		}
 	    }
 	    /* fall through */
@@ -1227,15 +1247,15 @@ vm_setivar(VALUE obj, ID id, VALUE val, IVC ic, const struct rb_callcache *cc, i
 }
 
 static inline VALUE
-vm_getinstancevariable(VALUE obj, ID id, IVC ic)
+vm_getinstancevariable(const rb_iseq_t *iseq, VALUE obj, ID id, IVC ic)
 {
-    return vm_getivar(obj, id, ic, NULL, FALSE);
+    return vm_getivar(obj, id, iseq, ic, NULL, FALSE);
 }
 
 static inline void
-vm_setinstancevariable(VALUE obj, ID id, VALUE val, IVC ic)
+vm_setinstancevariable(const rb_iseq_t *iseq, VALUE obj, ID id, VALUE val, IVC ic)
 {
-    vm_setivar(obj, id, val, ic, 0, 0);
+    vm_setivar(obj, id, val, iseq, ic, 0, 0);
 }
 
 static VALUE
@@ -2648,7 +2668,7 @@ vm_call_ivar(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_call
     const struct rb_callcache *cc = cd->cc;
     RB_DEBUG_COUNTER_INC(ccf_ivar);
     cfp->sp -= 1;
-    return vm_getivar(calling->recv, vm_cc_cme(cc)->def->body.attr.id, NULL, cc, TRUE);
+    return vm_getivar(calling->recv, vm_cc_cme(cc)->def->body.attr.id, NULL, NULL, cc, TRUE);
 }
 
 static VALUE
@@ -2658,7 +2678,7 @@ vm_call_attrset(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_c
     RB_DEBUG_COUNTER_INC(ccf_attrset);
     VALUE val = *(cfp->sp - 1);
     cfp->sp -= 2;
-    return vm_setivar(calling->recv, vm_cc_cme(cc)->def->body.attr.id, val, NULL, cc, 1);
+    return vm_setivar(calling->recv, vm_cc_cme(cc)->def->body.attr.id, val, NULL, NULL, cc, 1);
 }
 
 static inline VALUE
@@ -3311,7 +3331,7 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
     }
 
     if (BUILTIN_TYPE(current_defined_class) != T_MODULE &&
-	!FL_TEST(current_defined_class, RMODULE_INCLUDED_INTO_REFINEMENT) &&
+	!FL_TEST_RAW(current_defined_class, RMODULE_INCLUDED_INTO_REFINEMENT) &&
         reg_cfp->iseq != method_entry_iseqptr(me) &&
         !rb_obj_is_kind_of(recv, current_defined_class)) {
 	VALUE m = RB_TYPE_P(current_defined_class, T_ICLASS) ?
@@ -3332,11 +3352,14 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
 		 " Specify all arguments explicitly.");
     }
 
+    ID mid = me->def->original_id;
+
     // update iseq. really? (TODO)
-    cd->ci = vm_ci_new_runtime(me->def->original_id,
+    cd->ci = vm_ci_new_runtime(mid,
                                vm_ci_flag(cd->ci),
                                vm_ci_argc(cd->ci),
                                vm_ci_kwarg(cd->ci));
+
     RB_OBJ_WRITTEN(reg_cfp->iseq, Qundef, cd->ci);
 
     klass = vm_search_normal_superclass(me->defined_class);
@@ -3349,8 +3372,6 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
     else {
         vm_search_method_fastpath((VALUE)reg_cfp->iseq, cd, klass);
         const rb_callable_method_entry_t *cached_cme = vm_cc_cme(cd->cc);
-
-        ID mid = vm_ci_mid(cd->ci);
 
         // define_method can cache for different method id
         if (cached_cme == NULL) {

@@ -2333,6 +2333,8 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                                               ic_index, body->is_size);
 			    }
 			    generated_iseq[code_index + 1 + j] = (VALUE)ic;
+
+                            if (type == TS_IVC) FL_SET(iseqv, ISEQ_MARKABLE_ISEQ);
 			    break;
 			}
                         case TS_CALLDATA:
@@ -2856,7 +2858,6 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	    goto again;
 	}
         else if (IS_INSN_ID(diobj, leave)) {
-	    INSN *pop;
 	    /*
 	     *  jump LABEL
 	     *  ...
@@ -2864,7 +2865,6 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	     *  leave
 	     * =>
 	     *  leave
-	     *  pop
 	     *  ...
 	     * LABEL:
 	     *  leave
@@ -2874,9 +2874,6 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
             iobj->insn_id = BIN(leave);
 	    iobj->operand_size = 0;
 	    iobj->insn_info = diobj->insn_info;
-	    /* adjust stack depth */
-	    pop = new_insn_body(iseq, diobj->insn_info.line_no, BIN(pop), 0);
-            ELEM_INSERT_NEXT(&iobj->link, &pop->link);
 	    goto again;
 	}
         else if (IS_INSN(iobj->link.prev) &&
@@ -3895,7 +3892,10 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *co
 	    LABEL *label = NEW_LABEL(nd_line(cond));
 	    CHECK(compile_branch_condition(iseq, ret, cond->nd_1st, label,
 					   else_label));
-	    if (!label->refcnt) break;
+            if (!label->refcnt) {
+                ADD_INSN(ret, nd_line(cond), putnil);
+                break;
+            }
 	    ADD_LABEL(ret, label);
 	    cond = cond->nd_2nd;
 	    goto again;
@@ -3905,7 +3905,10 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *co
 	    LABEL *label = NEW_LABEL(nd_line(cond));
 	    CHECK(compile_branch_condition(iseq, ret, cond->nd_1st, then_label,
 					   label));
-	    if (!label->refcnt) break;
+            if (!label->refcnt) {
+                ADD_INSN(ret, nd_line(cond), putnil);
+                break;
+            }
 	    ADD_LABEL(ret, label);
 	    cond = cond->nd_2nd;
 	    goto again;
@@ -5383,6 +5386,9 @@ compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int 
 		branches);
 	    end_label = NEW_LABEL(line);
 	    ADD_INSNL(then_seq, line, jump, end_label);
+            if (!popped) {
+                ADD_INSN(then_seq, line, pop);
+            }
 	}
 	ADD_SEQ(ret, then_seq);
     }
@@ -7295,7 +7301,8 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
             return COMPILE_NG;
         }
         else {
-            char inline_func[0x20];
+# define BUILTIN_INLINE_PREFIX "_bi"
+            char inline_func[DECIMAL_SIZE_OF_BITS(sizeof(int) * CHAR_BIT) + sizeof(BUILTIN_INLINE_PREFIX)];
             bool cconst = false;
           retry:;
             const struct rb_builtin_function *bf = iseq_builtin_function_lookup(iseq, builtin_func);
@@ -7326,8 +7333,11 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
                     return COMPILE_NG;
                 }
 
+                if (GET_VM()->builtin_inline_index == INT_MAX) {
+                    rb_bug("builtin inline function index overflow:%s", builtin_func);
+                }
                 int inline_index = GET_VM()->builtin_inline_index++;
-                snprintf(inline_func, 0x20, "_bi%d", inline_index);
+                snprintf(inline_func, sizeof(inline_func), BUILTIN_INLINE_PREFIX "%d", inline_index);
                 builtin_func = inline_func;
                 args_node = NULL;
                 goto retry;
@@ -8331,6 +8341,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	debugp_param("lit", node->nd_lit);
 	if (!popped) {
 	    ADD_INSN1(ret, line, putobject, node->nd_lit);
+            RB_OBJ_WRITTEN(iseq, Qundef, node->nd_lit);
 	}
 	break;
       }
@@ -8645,8 +8656,8 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	VALUE flag = INT2FIX(excl);
 	const NODE *b = node->nd_beg;
 	const NODE *e = node->nd_end;
-        // TODO: Ractor can not use cached Range objects
-	if (0 && optimizable_range_item_p(b) && optimizable_range_item_p(e)) {
+
+        if (optimizable_range_item_p(b) && optimizable_range_item_p(e)) {
 	    if (!popped) {
                 VALUE bv = nd_type(b) == NODE_LIT ? b->nd_lit : Qnil;
                 VALUE ev = nd_type(e) == NODE_LIT ? e->nd_lit : Qnil;

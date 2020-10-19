@@ -50,6 +50,31 @@ RSpec.describe "bundle install across platforms" do
     expect(the_bundle).to include_gems "platform_specific 1.0 JAVA"
   end
 
+  it "pulls the pure ruby version on jruby if the java platform is not present in the lockfile and bundler is run in frozen mode", :jruby do
+    lockfile <<-G
+      GEM
+        remote: #{file_uri_for(gem_repo1)}
+        specs:
+          platform_specific (1.0)
+
+      PLATFORMS
+        ruby
+
+      DEPENDENCIES
+        platform_specific
+    G
+
+    bundle "config set --local frozen true"
+
+    install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
+
+      gem "platform_specific"
+    G
+
+    expect(the_bundle).to include_gems "platform_specific 1.0 RUBY"
+  end
+
   it "works with gems that have different dependencies" do
     simulate_platform "java"
     install_gemfile <<-G
@@ -250,10 +275,39 @@ RSpec.describe "bundle install across platforms" do
 
     expect(err).to include "Unable to use the platform-specific (universal-darwin) version of facter (2.4.6) " \
       "because it has different dependencies from the ruby version. " \
-      "To use the platform-specific version of the gem, run `bundle config set specific_platform true` and install again."
+      "To use the platform-specific version of the gem, run `bundle config set --local specific_platform true` and install again."
 
     expect(the_bundle).to include_gem "facter 2.4.6"
     expect(the_bundle).not_to include_gem "CFPropertyList"
+  end
+
+  it "works with gems with platform-specific dependency having different requirements order" do
+    simulate_platform x64_mac
+
+    update_repo2 do
+      build_gem "fspath", "3"
+      build_gem "image_optim_pack", "1.2.3" do |s|
+        s.add_runtime_dependency "fspath", ">= 2.1", "< 4"
+      end
+      build_gem "image_optim_pack", "1.2.3" do |s|
+        s.platform = "universal-darwin"
+        s.add_runtime_dependency "fspath", "< 4", ">= 2.1"
+      end
+    end
+
+    install_gemfile <<-G
+      source "#{file_uri_for(gem_repo2)}"
+    G
+
+    install_gemfile <<-G
+      source "#{file_uri_for(gem_repo2)}"
+
+      gem "image_optim_pack"
+    G
+
+    expect(err).not_to include "Unable to use the platform-specific"
+
+    expect(the_bundle).to include_gem "image_optim_pack 1.2.3 universal-darwin"
   end
 
   it "fetches gems again after changing the version of Ruby" do

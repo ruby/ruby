@@ -1476,7 +1476,7 @@ RSpec.describe "the lockfile format" do
     expect(err).to match(/git checkout HEAD -- Gemfile.lock/i)
   end
 
-private
+  private
 
   def prerelease?(version)
     Gem::Version.new(version).prerelease?

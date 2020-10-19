@@ -1262,7 +1262,8 @@ io_fflush(rb_io_t *fptr)
 }
 
 VALUE
-rb_io_wait(VALUE io, VALUE events, VALUE timeout) {
+rb_io_wait(VALUE io, VALUE events, VALUE timeout)
+{
     VALUE scheduler = rb_thread_current_scheduler();
 
     if (scheduler != Qnil) {

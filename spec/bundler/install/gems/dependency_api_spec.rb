@@ -664,7 +664,7 @@ RSpec.describe "gemcutter's dependency API" do
 
       it "shows instructions if auth is not provided for the source" do
         bundle :install, :artifice => "endpoint_strict_basic_authentication", :raise_on_error => false
-        expect(err).to include("bundle config set #{source_hostname} username:password")
+        expect(err).to include("bundle config set --global #{source_hostname} username:password")
       end
 
       it "fails if authentication has already been provided, but failed" do

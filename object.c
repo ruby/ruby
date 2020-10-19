@@ -279,7 +279,7 @@ rb_obj_not_equal(VALUE obj1, VALUE obj2)
  * It returns the \a cl itself if it is neither a singleton class or a module.
  *
  * \param[in] cl a Class object.
- * \return the ancestor class found, or a falsey value if nothing found.
+ * \return the ancestor class found, or Qfalse if nothing found.
  */
 VALUE
 rb_class_real(VALUE cl)
@@ -318,14 +318,6 @@ static VALUE
 rb_obj_singleton_class(VALUE obj)
 {
     return rb_singleton_class(obj);
-}
-
-struct st_table *
-rb_obj_iv_index_tbl(const struct RObject *obj)
-{
-    /* This is a function that practically never gets used.  Just to keep
-     * backwards compatibility to ruby 2.x. */
-    return ROBJECT_IV_INDEX_TBL((VALUE)obj);
 }
 
 /*! \private */

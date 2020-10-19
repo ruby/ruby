@@ -174,32 +174,6 @@ RSpec.describe "bundle cache with git" do
     expect(the_bundle).to include_gems "has_submodule 1.0"
   end
 
-  it "displays warning message when detecting git repo in Gemfile", :bundler => "< 3" do
-    build_git "foo"
-
-    install_gemfile <<-G
-      gem "foo", :git => '#{lib_path("foo-1.0")}'
-    G
-
-    bundle :cache
-
-    expect(err).to include("Your Gemfile contains path and git dependencies.")
-  end
-
-  it "does not display warning message if cache_all is set in bundle config" do
-    build_git "foo"
-
-    install_gemfile <<-G
-      gem "foo", :git => '#{lib_path("foo-1.0")}'
-    G
-
-    bundle "config set cache_all true"
-    bundle :cache
-    bundle :cache
-
-    expect(err).not_to include("Your Gemfile contains path and git dependencies.")
-  end
-
   it "caches pre-evaluated gemspecs" do
     git = build_git "foo"
 

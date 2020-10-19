@@ -1688,7 +1688,6 @@ InitVM_Random(void)
     rb_undef_alloc_func(base);
     rb_cRandom = rb_define_class("Random", base);
     rb_const_set(rb_cRandom, id_base, base);
-    rb_set_class_path(base, rb_cRandom, "Base");
     rb_define_alloc_func(rb_cRandom, random_alloc);
     rb_define_method(base, "initialize", random_init, -1);
     rb_define_method(base, "rand", random_rand, -1);

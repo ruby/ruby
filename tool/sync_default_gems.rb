@@ -77,6 +77,11 @@ REPOSITORIES = {
   resolv: "ruby/resolv",
   "resolv-replace": "ruby/resolv-replace",
   time: "ruby/time",
+  pp: "ruby/pp",
+  prettyprint: "ruby/prettyprint",
+  drb: "ruby/drb",
+  pathname: "ruby/pathname",
+  digest: "ruby/digest",
 }
 
 def sync_default_gems(gem)
@@ -305,8 +310,22 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/test/bigdecimal", "test")
     cp_r("#{upstream}/bigdecimal.gemspec", "ext/bigdecimal")
     `git checkout ext/bigdecimal/depend`
+  when "pathname"
+    rm_rf(%w[ext/pathname test/pathname])
+    cp_r("#{upstream}/ext/pathname", "ext")
+    cp_r("#{upstream}/test/pathname", "test")
+    cp_r("#{upstream}/pathname.gemspec", "ext/pathname")
+    `git checkout ext/pathname/depend`
+  when "digest"
+    rm_rf(%w[ext/digest test/digest])
+    cp_r("#{upstream}/ext/digest", "ext")
+    mkdir_p("#{upstream}/ext/digest/lib")
+    cp_r("#{upstream}/lib/digest.rb", "ext/digest/lib")
+    cp_r("#{upstream}/test/digest", "test")
+    cp_r("#{upstream}/digest.gemspec", "ext/digest")
+    `git checkout ext/digest/depend ext/digest/*/depend`
   else
-    sync_lib gem
+    sync_lib gem, upstream
   end
 end
 
@@ -399,7 +418,7 @@ def sync_default_gems_with_commits(gem, ranges, edit: nil)
 
     prefix = "[#{(REPOSITORIES[gem.to_sym])}]".gsub(/\//, '\/')
     suffix = "https://github.com/#{(REPOSITORIES[gem.to_sym])}/commit/#{sha[0,10]}"
-    `git filter-branch -f --msg-filter 'sed "1s/^/#{prefix} /" && echo && echo #{suffix}' -- HEAD~1..HEAD`
+    `git filter-branch -f --msg-filter 'grep "" - | sed "1s/^/#{prefix} /" && echo && echo #{suffix}' -- HEAD~1..HEAD`
     unless $?.success?
       puts "Failed to modify commit message of #{sha}"
       break
@@ -412,24 +431,24 @@ def sync_default_gems_with_commits(gem, ranges, edit: nil)
   end
 end
 
-def sync_lib(repo)
-  unless File.directory?("../#{repo}")
-    abort %[Expected '../#{repo}' \(#{File.expand_path("../#{repo}")}\) to be a directory, but it wasn't.]
+def sync_lib(repo, upstream = nil)
+  unless upstream and File.directory?(upstream) or File.directory?(upstream = "../#{repo}")
+    abort %[Expected '#{upstream}' \(#{File.expand_path("#{upstream}")}\) to be a directory, but it wasn't.]
   end
   rm_rf(["lib/#{repo}.rb", "lib/#{repo}/*", "test/test_#{repo}.rb"])
-  cp_r(Dir.glob("../#{repo}/lib/*"), "lib")
+  cp_r(Dir.glob("#{upstream}/lib/*"), "lib")
   tests = if File.directory?("test/#{repo}")
             "test/#{repo}"
           else
             "test/test_#{repo}.rb"
           end
-  cp_r("../#{repo}/#{tests}", "test") if File.exist?("../#{repo}/#{tests}")
+  cp_r("#{upstream}/#{tests}", "test") if File.exist?("#{upstream}/#{tests}")
   gemspec = if File.directory?("lib/#{repo}")
               "lib/#{repo}/#{repo}.gemspec"
             else
               "lib/#{repo}.gemspec"
             end
-  cp_r("../#{repo}/#{repo}.gemspec", "#{gemspec}")
+  cp_r("#{upstream}/#{repo}.gemspec", "#{gemspec}")
 end
 
 def update_default_gems(gem)

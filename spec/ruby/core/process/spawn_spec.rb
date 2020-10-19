@@ -536,7 +536,7 @@ describe "Process.spawn" do
     File.read(@name).should == "glarkbang"
   end
 
-  platform_is_not :windows do
+  platform_is_not :windows, :android do
     it "closes STDERR in the child if :err => :close" do
       File.open(@name, 'w') do |file|
         -> do

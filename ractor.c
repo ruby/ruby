@@ -159,8 +159,9 @@ static void
 ractor_queue_mark(struct rb_ractor_queue *rq)
 {
     for (int i=0; i<rq->cnt; i++) {
-        rb_gc_mark(rq->baskets[i].v);
-        rb_gc_mark(rq->baskets[i].sender);
+        int idx = (rq->start + i) % rq->size;
+        rb_gc_mark(rq->baskets[idx].v);
+        rb_gc_mark(rq->baskets[idx].sender);
     }
 }
 
@@ -293,6 +294,7 @@ ractor_queue_setup(struct rb_ractor_queue *rq)
 {
     rq->size = 2;
     rq->cnt = 0;
+    rq->start = 0;
     rq->baskets = malloc(sizeof(struct rb_ractor_basket) * rq->size);
 }
 
@@ -311,12 +313,9 @@ ractor_queue_deq(rb_ractor_t *r, struct rb_ractor_queue *rq, struct rb_ractor_ba
     RACTOR_LOCK(r);
     {
         if (!ractor_queue_empty_p(r, rq)) {
-            // TODO: use good Queue data structure
-            *basket = rq->baskets[0];
+            *basket = rq->baskets[rq->start];
             rq->cnt--;
-            for (int i=0; i<rq->cnt; i++) {
-                rq->baskets[i] = rq->baskets[i+1];
-            }
+            rq->start = (rq->start + 1) % rq->size;
             b = true;
         }
         else {
@@ -334,10 +333,13 @@ ractor_queue_enq(rb_ractor_t *r, struct rb_ractor_queue *rq, struct rb_ractor_ba
     ASSERT_ractor_locking(r);
 
     if (rq->size <= rq->cnt) {
+        rq->baskets = realloc(rq->baskets, sizeof(struct rb_ractor_basket) * rq->size * 2);
+        for (int i=rq->size - rq->start; i<rq->cnt; i++) {
+            rq->baskets[i + rq->start] = rq->baskets[i + rq->start - rq->size];
+        }
         rq->size *= 2;
-        rq->baskets = realloc(rq->baskets, sizeof(struct rb_ractor_basket) * rq->size);
     }
-    rq->baskets[rq->cnt++] = *basket;
+    rq->baskets[(rq->start + rq->cnt++) % rq->size] = *basket;
     // fprintf(stderr, "%s %p->cnt:%d\n", __func__, rq, rq->cnt);
 }
 
@@ -503,7 +505,7 @@ ractor_copy_setup(struct rb_ractor_basket *b, VALUE obj)
 }
 
 static VALUE
-ractor_try_recv(rb_execution_context_t *ec, rb_ractor_t *r)
+ractor_try_receive(rb_execution_context_t *ec, rb_ractor_t *r)
 {
     struct rb_ractor_queue *rq = &r->incoming_queue;
     struct rb_ractor_basket basket;
@@ -553,13 +555,13 @@ wait_status_str(enum ractor_wait_status wait_status)
 {
     switch ((int)wait_status) {
       case wait_none: return "none";
-      case wait_recving: return "recving";
+      case wait_receiving: return "receiving";
       case wait_taking: return "taking";
       case wait_yielding: return "yielding";
-      case wait_recving|wait_taking: return "recving|taking";
-      case wait_recving|wait_yielding: return "recving|yielding";
+      case wait_receiving|wait_taking: return "receiving|taking";
+      case wait_receiving|wait_yielding: return "receiving|yielding";
       case wait_taking|wait_yielding: return "taking|yielding";
-      case wait_recving|wait_taking|wait_yielding: return "recving|taking|yielding";
+      case wait_receiving|wait_taking|wait_yielding: return "receiving|taking|yielding";
     }
     rb_bug("unrechable");
 }
@@ -715,18 +717,18 @@ ractor_waiting_list_shift(rb_ractor_t *r, struct rb_ractor_waiting_list *wl)
 }
 
 static VALUE
-ractor_recv(rb_execution_context_t *ec, rb_ractor_t *r)
+ractor_receive(rb_execution_context_t *ec, rb_ractor_t *r)
 {
     VM_ASSERT(r == rb_ec_ractor_ptr(ec));
     VALUE v;
 
-    while ((v = ractor_try_recv(ec, r)) == Qundef) {
+    while ((v = ractor_try_receive(ec, r)) == Qundef) {
         RACTOR_LOCK(r);
         {
             if (ractor_queue_empty_p(r, &r->incoming_queue)) {
                 VM_ASSERT(r->wait.status == wait_none);
                 VM_ASSERT(r->wait.wakeup_status == wakeup_none);
-                r->wait.status = wait_recving;
+                r->wait.status = wait_receiving;
 
                 ractor_sleep(ec, r);
 
@@ -752,7 +754,7 @@ ractor_send_basket(rb_execution_context_t *ec, rb_ractor_t *r, struct rb_ractor_
         }
         else {
             ractor_queue_enq(r, rq, b);
-            if (ractor_wakeup(r, wait_recving, wakeup_by_send)) {
+            if (ractor_wakeup(r, wait_receiving, wakeup_by_send)) {
                 RUBY_DEBUG_LOG("wakeup", 0);
             }
         }
@@ -890,7 +892,7 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, int alen, VALUE yield
     struct ractor_select_action {
         enum ractor_select_action_type {
             ractor_select_action_take,
-            ractor_select_action_recv,
+            ractor_select_action_receive,
             ractor_select_action_yield,
         } type;
         VALUE v;
@@ -906,9 +908,9 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, int alen, VALUE yield
         VALUE v = rs[i];
 
         if (v == crv) {
-            actions[i].type = ractor_select_action_recv;
+            actions[i].type = ractor_select_action_receive;
             actions[i].v = Qnil;
-            wait_status |= wait_recving;
+            wait_status |= wait_receiving;
         }
         else if (rb_ractor_p(v)) {
             actions[i].type = ractor_select_action_take;
@@ -949,10 +951,10 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, int alen, VALUE yield
                     goto cleanup;
                 }
                 break;
-              case ractor_select_action_recv:
-                v = ractor_try_recv(ec, cr);
+              case ractor_select_action_receive:
+                v = ractor_try_receive(ec, cr);
                 if (v != Qundef) {
-                    *ret_r = ID2SYM(rb_intern("recv"));
+                    *ret_r = ID2SYM(rb_intern("receive"));
                     ret = v;
                     goto cleanup;
                 }
@@ -988,7 +990,7 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, int alen, VALUE yield
                 ractor_register_taking(r, cr);
                 break;
               case ractor_select_action_yield:
-              case ractor_select_action_recv:
+              case ractor_select_action_receive:
                 break;
             }
         }
@@ -1009,7 +1011,7 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, int alen, VALUE yield
                             goto skip_sleep;
                         }
                         break;
-                      case ractor_select_action_recv:
+                      case ractor_select_action_receive:
                         if (cr->incoming_queue.cnt > 0) {
                             RUBY_DEBUG_LOG("wakeup_none, but incoming_queue has %u messages", cr->incoming_queue.cnt);
                             cr->wait.wakeup_status = wakeup_by_retry;
@@ -1052,7 +1054,7 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, int alen, VALUE yield
                 r = RACTOR_PTR(actions[i].v);
                 ractor_waiting_list_del(r, &r->taking_ractors, cr);
                 break;
-              case ractor_select_action_recv:
+              case ractor_select_action_receive:
               case ractor_select_action_yield:
                 break;
             }
@@ -1072,7 +1074,7 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, int alen, VALUE yield
             break;
           case wakeup_by_send:
             // OK.
-            // retry loop and try_recv will succss.
+            // retry loop and try_receive will succss.
             break;
           case wakeup_by_yield:
             // take was succeeded!
@@ -1145,7 +1147,7 @@ ractor_close_incoming(rb_execution_context_t *ec, rb_ractor_t *r)
         if (!r->incoming_port_closed) {
             prev = Qfalse;
             r->incoming_port_closed = true;
-            if (ractor_wakeup(r, wait_recving, wakeup_by_close)) {
+            if (ractor_wakeup(r, wait_receiving, wakeup_by_close)) {
                 VM_ASSERT(r->incoming_queue.cnt == 0);
                 RUBY_DEBUG_LOG("cancel receiving", 0);
             }
@@ -1175,9 +1177,7 @@ ractor_close_outgoing(rb_execution_context_t *ec, rb_ractor_t *r)
 
         // wakeup all taking ractors
         rb_ractor_t *taking_ractor;
-        bp();
         while ((taking_ractor = ractor_waiting_list_shift(r, &r->taking_ractors)) != NULL) {
-            rp(taking_ractor->self);
             RACTOR_LOCK(taking_ractor);
             ractor_wakeup(taking_ractor, wait_taking, wakeup_by_close);
             RACTOR_UNLOCK(taking_ractor);
@@ -1444,10 +1444,10 @@ rb_ractor_atexit_exception(rb_execution_context_t *ec)
 }
 
 void
-rb_ractor_recv_parameters(rb_execution_context_t *ec, rb_ractor_t *r, int len, VALUE *ptr)
+rb_ractor_receive_parameters(rb_execution_context_t *ec, rb_ractor_t *r, int len, VALUE *ptr)
 {
     for (int i=0; i<len; i++) {
-        ptr[i] = ractor_recv(ec, r);
+        ptr[i] = ractor_receive(ec, r);
     }
 }
 

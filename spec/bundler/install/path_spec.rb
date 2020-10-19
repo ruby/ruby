@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 RSpec.describe "bundle install" do
-  describe "with --path" do
+  describe "with path configured" do
     before :each do
       build_gem "rack", "1.0.0", :to_system => true do |s|
         s.write "lib/rack.rb", "puts 'FAIL'"
@@ -13,10 +13,18 @@ RSpec.describe "bundle install" do
       G
     end
 
-    it "does not use available system gems with bundle --path vendor/bundle", :bundler => "< 3" do
+    it "does not use available system gems with `vendor/bundle" do
       bundle "config --local path vendor/bundle"
       bundle :install
       expect(the_bundle).to include_gems "rack 1.0.0"
+    end
+
+    it "uses system gems with `path.system` configured with more priority than `path`" do
+      bundle "config --local path.system true"
+      bundle "config --global path vendor/bundle"
+      bundle :install
+      run "require 'rack'", :raise_on_error => false
+      expect(out).to include("FAIL")
     end
 
     it "handles paths with regex characters in them" do
@@ -30,7 +38,7 @@ RSpec.describe "bundle install" do
       dir.rmtree
     end
 
-    it "prints a warning to let the user know what has happened with bundle --path vendor/bundle" do
+    it "prints a message to let the user know where gems where installed" do
       bundle "config --local path vendor/bundle"
       bundle :install
       expect(out).to include("gems are installed into `./vendor/bundle`")

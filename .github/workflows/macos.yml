@@ -21,8 +21,6 @@ jobs:
       - uses: actions/checkout@v2
         with:
           path: src
-      - run: ./src/tool/actions-commit-info.sh
-        id: commit_info
       - name: Install libraries
         run: |
           export WAITS='5 60'
@@ -31,7 +29,7 @@ jobs:
         working-directory: src
       - name: Set ENV
         run: |
-          echo '::set-env name=JOBS::'-j$((1 + $(sysctl -n hw.activecpu)))
+          echo "JOBS=-j$((1 + $(sysctl -n hw.activecpu)))" >> $GITHUB_ENV
       - run: autoconf
         working-directory: src
       - run: mkdir build

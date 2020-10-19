@@ -53,6 +53,14 @@ require 'tmpdir'
 #      file.unlink   # deletes the temp file
 #   end
 #
+# Tempfile.create { ... } exists for this purpose and is more convenient to use.
+# Note that Tempfile.create returns a File instance instead of a Tempfile, which
+# also avoids the overhead and complications of delegation.
+#
+#   Tempfile.open('foo') do |file|
+#      # ...do something with file...
+#   end
+#
 # === Unlink after creation
 #
 # On POSIX systems, it's possible to unlink a file right after creating it,
@@ -81,6 +89,10 @@ require 'tmpdir'
 class Tempfile < DelegateClass(File)
   # Creates a temporary file with permissions 0600 (= only readable and
   # writable by the owner) and opens it with mode "w+".
+  #
+  # It is recommended to use Tempfile.create { ... } instead when possible,
+  # because that method avoids the cost of delegation and does not rely on a
+  # finalizer to close and unlink the file, which is unreliable.
   #
   # The +basename+ parameter is used to determine the name of the
   # temporary file. You can either pass a String or an Array with
@@ -263,19 +275,26 @@ class Tempfile < DelegateClass(File)
 
     # Creates a new Tempfile.
     #
+    # This method is not recommended and exists mostly for backward compatibility.
+    # Please use Tempfile.create instead, which avoids the cost of delegation,
+    # does not rely on a finalizer, and also unlinks the file when given a block.
+    #
+    # Tempfile.open is still appropriate if you need the Tempfile to be unlinked
+    # by a finalizer and you cannot explicitly know where in the program the
+    # Tempfile can be unlinked safely.
+    #
     # If no block is given, this is a synonym for Tempfile.new.
     #
     # If a block is given, then a Tempfile object will be constructed,
-    # and the block is run with said object as argument. The Tempfile
+    # and the block is run with the Tempfile object as argument. The Tempfile
     # object will be automatically closed after the block terminates.
-    # The call returns the value of the block.
+    # However, the file will *not* be unlinked and needs to be manually unlinked
+    # with Tempfile#close! or Tempfile#unlink. The finalizer will try to unlink
+    # but should not be relied upon as it can keep the file on the disk much
+    # longer than intended. For instance, on CRuby, finalizers can be delayed
+    # due to conservative stack scanning and references left in unused memory.
     #
-    # Unlike Tempfile.create, Tempfile.open when called with a block
-    # does not unlink the temporary file when the block exits. When using
-    # Tempfile.open, the temporary file is not unlinked from the file
-    # system unless Tempfile#unlink or Tempfile#close! is called directly,
-    # or until the Tempfile instance is garbage collected. Due to this,
-    # most callers of Tempfile.open with a block should use Tempfile.create instead.
+    # The call returns the value of the block.
     #
     # In any case, all arguments (<code>*args</code>) will be passed to Tempfile.new.
     #
@@ -306,22 +325,22 @@ class Tempfile < DelegateClass(File)
   end
 end
 
-# Creates a temporary file as usual File object (not Tempfile).
-# It doesn't use finalizer and delegation.
+# Creates a temporary file as a usual File object (not a Tempfile).
+# It does not use finalizer and delegation, which makes it more efficient and reliable.
 #
 # If no block is given, this is similar to Tempfile.new except
-# creating File instead of Tempfile.
-# The created file is not removed automatically.
-# You should use File.unlink to remove it.
+# creating File instead of Tempfile. In that case, the created file is
+# not removed automatically. You should use File.unlink to remove it.
 #
 # If a block is given, then a File object will be constructed,
 # and the block is invoked with the object as the argument.
 # The File object will be automatically closed and
-# the temporary file is removed after the block terminates.
+# the temporary file is removed after the block terminates,
+# releasing all resources that the block created.
 # The call returns the value of the block.
 #
 # In any case, all arguments (+basename+, +tmpdir+, +mode+, and
-# <code>**options</code>) will be treated as Tempfile.new.
+# <code>**options</code>) will be treated the same as for Tempfile.new.
 #
 #   Tempfile.create('foo', '/home/temp') do |f|
 #      # ... do something with f ...

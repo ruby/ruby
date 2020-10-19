@@ -4623,13 +4623,17 @@ encoding.$(OBJEXT): {$(VPATH)}internal/variable.h
 encoding.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 encoding.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 encoding.$(OBJEXT): {$(VPATH)}missing.h
+encoding.$(OBJEXT): {$(VPATH)}node.h
 encoding.$(OBJEXT): {$(VPATH)}onigmo.h
 encoding.$(OBJEXT): {$(VPATH)}oniguruma.h
+encoding.$(OBJEXT): {$(VPATH)}ractor_pub.h
 encoding.$(OBJEXT): {$(VPATH)}regenc.h
 encoding.$(OBJEXT): {$(VPATH)}ruby_assert.h
 encoding.$(OBJEXT): {$(VPATH)}st.h
 encoding.$(OBJEXT): {$(VPATH)}subst.h
 encoding.$(OBJEXT): {$(VPATH)}util.h
+encoding.$(OBJEXT): {$(VPATH)}vm_debug.h
+encoding.$(OBJEXT): {$(VPATH)}vm_sync.h
 enum.$(OBJEXT): $(hdrdir)/ruby.h
 enum.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 enum.$(OBJEXT): $(top_srcdir)/internal/array.h
@@ -6762,6 +6766,7 @@ iseq.$(OBJEXT): $(hdrdir)/ruby.h
 iseq.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/array.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/bits.h
+iseq.$(OBJEXT): $(top_srcdir)/internal/class.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/compile.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/error.h
@@ -15282,6 +15287,7 @@ variable.$(OBJEXT): {$(VPATH)}variable.h
 variable.$(OBJEXT): {$(VPATH)}vm_core.h
 variable.$(OBJEXT): {$(VPATH)}vm_debug.h
 variable.$(OBJEXT): {$(VPATH)}vm_opts.h
+variable.$(OBJEXT): {$(VPATH)}vm_sync.h
 version.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 version.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 version.$(OBJEXT): $(CCAN_DIR)/list/list.h

@@ -3,14 +3,14 @@ require "rubygems/test_case"
 require "rubygems/stub_specification"
 
 class TestStubSpecification < Gem::TestCase
-  FOO = File.join SPECIFICATIONS, "foo-0.0.1-x86-mswin32.gemspec"
-  BAR = File.join SPECIFICATIONS, "bar-0.0.2.gemspec"
+  FOO = File.expand_path File.join("specifications", "foo-0.0.1-x86-mswin32.gemspec"), __dir__
+  BAR = File.expand_path File.join("specifications", "bar-0.0.2.gemspec"), __dir__
 
   def setup
     super
 
-    @base_dir = File.dirname(SPECIFICATIONS)
-    @gems_dir = File.join File.dirname(SPECIFICATIONS), 'gem'
+    @base_dir = __dir__
+    @gems_dir = File.join __dir__, 'gem'
     @foo = Gem::StubSpecification.gemspec_stub FOO, @base_dir, @gems_dir
   end
 

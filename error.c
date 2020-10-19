@@ -239,6 +239,8 @@ rb_warning_s_aset(VALUE mod, VALUE category, VALUE flag)
  * Writes warning message +msg+ to $stderr. This method is called by
  * Ruby for all emitted warnings. A +category+ may be included with
  * the warning, but is ignored by default.
+ *
+ * See the documentation of the Warning module for how to customize this.
  */
 
 static VALUE
@@ -265,11 +267,30 @@ rb_warning_s_warn(int argc, VALUE *argv, VALUE mod)
  *  Warning.warn is called for all warnings issued by Ruby.
  *  By default, warnings are printed to $stderr.
  *
- *  By overriding Warning.warn, you can change how warnings are
- *  handled by Ruby, either filtering some warnings, and/or outputting
- *  warnings somewhere other than $stderr.  When Warning.warn is
- *  overridden, super can be called to get the default behavior of
- *  printing the warning to $stderr.
+ *  Changing the behavior of Warning.warn is useful to customize how warnings are
+ *  handled by Ruby, for instance by filtering some warnings, and/or outputting
+ *  warnings somewhere other than $stderr.
+ *
+ *  If you want to change the behavior of Warning.warn you should use
+ *  +Warning.extend(MyNewModuleWithWarnMethod)+ and you can use `super`
+ *  to get the default behavior of printing the warning to $stderr.
+ *
+ *  Example:
+ *    module MyWarningFilter
+ *      def warn(message, category: nil, **kwargs)
+ *        if /some warning I want to ignore/.matches?(message)
+ *          # ignore
+ *        else
+ *          super
+ *        end
+ *      end
+ *    end
+ *    Warning.extend MyWarningFilter
+ *
+ *  You should never redefine Warning#warn (the instance method), as that will
+ *  then no longer provide a way to use the default behavior.
+ *
+ *  The +warning+ gem provides convenient ways to customize Warning.warn.
  */
 
 static VALUE

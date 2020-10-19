@@ -24,6 +24,9 @@ when true
   # rb_funcallv: 2.1.0
   # RARRAY_CONST_PTR: 2.1.0
   # rb_sym2str: 2.2.0
+  if have_func("rb_scheduler_timeout")
+    have_func("rb_io_wait")
+  end
   $defs << "-D""ENABLE_IO_GETPASS=1"
   create_makefile("io/console") {|conf|
     conf << "\n""VK_HEADER = #{vk_header}\n"

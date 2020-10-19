@@ -11,6 +11,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
+      VCVARS: C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     steps:
       - uses: actions/cache@v2
@@ -40,20 +41,17 @@ jobs:
       - uses: actions/checkout@v2
         with:
           path: src
-      - run: ./src/tool/actions-commit-info.sh
-        shell: bash
-        id: commit_info
       - run: md build
         shell: cmd
       - name: Configure
         run: |
-          call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          call "%VCVARS%"
           ../src/win32/configure.bat --disable-install-doc --without-ext=+,dbm,gdbm --enable-bundled-libffi --with-opt-dir=C:/vcpkg/installed/x64-windows --with-openssl-dir="C:/Program Files/OpenSSL-Win64"
         working-directory: build
         shell: cmd
       - name: nmake
         run: |
-          call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          call "%VCVARS%"
           set YACC=win_bison
           echo on
           nmake incs
@@ -64,7 +62,7 @@ jobs:
       - name: nmake test
         timeout-minutes: 30
         run: |
-          call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          call "%VCVARS%"
           nmake ${{ matrix.test_task }}
         working-directory: build
         shell: cmd

@@ -43,8 +43,12 @@ update process below under [CONSERVATIVE UPDATING][].
 
 ## OPTIONS
 
-To apply any of `--binstubs`, `--deployment`, `--path`, or `--without` every
-time `bundle install` is run, use `bundle config` (see bundle-config(1)).
+The `--clean`, `--deployment`, `--frozen`, `--no-prune`, `--path`, `--shebang`,
+`--system`, `--without` and `--with` options are deprecated because they only
+make sense if they are applied to every subsequent `bundle install` run
+automatically and that requires `bundler` to silently remember them. Since
+`bundler` will no longer remember CLI flags in future versions, `bundle config`
+(see bundle-config(1)) should be used to apply them permanently.
 
 * `--binstubs[=<directory>]`:
   Binstubs are scripts that wrap around executables. Bundler creates a small Ruby
@@ -64,10 +68,14 @@ time `bundle install` is run, use `bundle config` (see bundle-config(1)).
   in the current Gemfile(5). Don't worry, gems currently in use will not be
   removed.
 
+  This option is deprecated in favor of the `clean` setting.
+
 * `--deployment`:
   In [deployment mode][DEPLOYMENT MODE], Bundler will 'roll-out' the bundle for
   production or CI use. Please check carefully if you want to have this option
   enabled in your development environment.
+
+  This option is deprecated in favor of the `deployment` setting.
 
 * `--redownload`:
   Force download every gem, even if the required versions are already available
@@ -76,6 +84,8 @@ time `bundle install` is run, use `bundle config` (see bundle-config(1)).
 * `--frozen`:
   Do not allow the Gemfile.lock to be updated after this install. Exits
   non-zero if there are going to be changes to the Gemfile.lock.
+
+  This option is deprecated in favor of the `frozen` setting.
 
 * `--full-index`:
   Bundler will not call Rubygems' API endpoint (default) but download and cache
@@ -107,12 +117,16 @@ time `bundle install` is run, use `bundle config` (see bundle-config(1)).
 * `--no-prune`:
   Don't remove stale gems from the cache when the installation finishes.
 
+  This option is deprecated in favor of the `no_prune` setting.
+
 * `--path=<path>`:
   The location to install the specified gems to. This defaults to Rubygems'
   setting. Bundler shares this location with Rubygems, `gem install ...` will
   have gem installed there, too. Therefore, gems installed without a
   `--path ...` setting will show up by calling `gem list`. Accordingly, gems
   installed to other locations will not get listed.
+
+  This option is deprecated in favor of the `path` setting.
 
 * `--quiet`:
   Do not print progress information to the standard output. Instead, Bundler
@@ -127,6 +141,8 @@ time `bundle install` is run, use `bundle config` (see bundle-config(1)).
   `--shebang jruby` these executables will be changed to execute `jruby`
   instead.
 
+  This option is deprecated in favor of the `shebang` setting.
+
 * `--standalone[=<list>]`:
   Makes a bundle that can work without depending on Rubygems or Bundler at
   runtime. A space separated list of groups to install has to be specified.
@@ -138,6 +154,8 @@ time `bundle install` is run, use `bundle config` (see bundle-config(1)).
 * `--system`:
   Installs the gems specified in the bundle to the system's Rubygems location.
   This overrides any previous configuration of `--path`.
+
+  This option is deprecated in favor of the `system` setting.
 
 * `--trust-policy=[<policy>]`:
   Apply the Rubygems security policy <policy>, where policy is one of
@@ -151,10 +169,14 @@ time `bundle install` is run, use `bundle config` (see bundle-config(1)).
   in the remembered list of groups given to --without, it is removed
   from that list.
 
+  This option is deprecated in favor of the `with` setting.
+
 * `--without=<list>`:
   A space-separated list of groups referencing gems to skip during installation.
   If a group is given that is in the remembered list of groups given
   to --with, it is removed from that list.
+
+  This option is deprecated in favor of the `without` setting.
 
 ## DEPLOYMENT MODE
 

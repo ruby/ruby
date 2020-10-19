@@ -1234,7 +1234,7 @@ static VALUE
 rb_f_autoload(VALUE obj, VALUE sym, VALUE file)
 {
     VALUE klass = rb_class_real(rb_vm_cbase());
-    if (NIL_P(klass)) {
+    if (!klass) {
 	rb_raise(rb_eTypeError, "Can not set autoload on singleton class");
     }
     return rb_mod_autoload(klass, sym, file);

@@ -720,7 +720,7 @@ thread_do_start_proc(rb_thread_t *th)
         VM_ASSERT(FIXNUM_P(args));
         args_len = FIX2INT(args);
         args_ptr = ALLOCA_N(VALUE, args_len);
-        rb_ractor_recv_parameters(th->ec, th->ractor, args_len, (VALUE *)args_ptr);
+        rb_ractor_receive_parameters(th->ec, th->ractor, args_len, (VALUE *)args_ptr);
         vm_check_ints_blocking(th->ec);
 
         // kick thread
@@ -1175,8 +1175,10 @@ thread_join_sleep(VALUE arg)
     }
 
     while (target_th->status != THREAD_KILLED) {
-        if (th->scheduler != Qnil) {
-            rb_scheduler_block(th->scheduler, target_th->self, p->timeout);
+        VALUE scheduler = rb_thread_current_scheduler();
+
+        if (scheduler != Qnil) {
+            rb_scheduler_block(scheduler, target_th->self, p->timeout);
         } else if (!limit) {
             th->status = THREAD_STOPPED_FOREVER;
             rb_ractor_sleeper_threads_inc(th->ractor);
@@ -3775,6 +3777,7 @@ rb_thread_scheduler_set(VALUE thread, VALUE scheduler)
     return th->scheduler;
 }
 
+#if 0 // no longer used
 /*
  *  call-seq:
  *     Thread.scheduler -> scheduler or nil
@@ -3788,6 +3791,7 @@ rb_thread_scheduler(VALUE klass)
 {
     return rb_thread_scheduler_if_nonblocking(rb_thread_current());
 }
+#endif
 
 VALUE
 rb_thread_current_scheduler()
@@ -5519,7 +5523,7 @@ Init_Thread(void)
     rb_define_method(rb_cThread, "backtrace", rb_thread_backtrace_m, -1);
     rb_define_method(rb_cThread, "backtrace_locations", rb_thread_backtrace_locations_m, -1);
 
-    rb_define_singleton_method(rb_cThread, "scheduler", rb_thread_scheduler, 0);
+    // rb_define_singleton_method(rb_cThread, "scheduler", rb_thread_scheduler, 0);
     rb_define_method(rb_cThread, "scheduler", rb_thread_scheduler_get, 0);
     rb_define_method(rb_cThread, "scheduler=", rb_thread_scheduler_set, 1);
 

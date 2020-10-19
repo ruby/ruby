@@ -625,6 +625,32 @@ RSpec.describe "bundle clean" do
     expect(out).to eq("1.0")
   end
 
+  it "when using --force, it doesn't remove default gem binaries" do
+    skip "does not work on ruby 3.0 because it changes the path to look for default gems, tsort is a default gem there, and we can't install it either like we do with fiddle because it doesn't yet exist" unless RUBY_VERSION < "3.0.0"
+
+    skip "does not work on rubygems versions where `--install_dir` doesn't respect --default" unless Gem::Installer.for_spec(loaded_gemspec, :install_dir => "/foo").default_spec_file == "/foo/specifications/default/bundler-#{Bundler::VERSION}.gemspec" # Since rubygems 3.2.0.rc.2
+
+    default_irb_version = ruby "gem 'irb', '< 999999'; require 'irb'; puts IRB::VERSION", :raise_on_error => false
+    skip "irb isn't a default gem" if default_irb_version.empty?
+
+    build_repo2 do
+      # simulate executable for default gem
+      build_gem "irb", default_irb_version, :to_system => true, :default => true do |s|
+        s.executables = "irb"
+      end
+    end
+
+    realworld_system_gems "fiddle"
+
+    install_gemfile <<-G
+      source "#{file_uri_for(gem_repo2)}"
+    G
+
+    bundle "clean --force", :env => { "BUNDLER_GEM_DEFAULT_DIR" => system_gem_path.to_s }
+
+    expect(out).not_to include("Removing irb")
+  end
+
   it "doesn't blow up on path gems without a .gemspec" do
     relative_path = "vendor/private_gems/bar-1.0"
     absolute_path = bundled_app(relative_path)

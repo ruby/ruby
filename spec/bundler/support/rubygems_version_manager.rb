@@ -51,7 +51,7 @@ class RubygemsVersionManager
     end
   end
 
-private
+  private
 
   def use_system?
     @source.nil?

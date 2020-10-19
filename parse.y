@@ -956,8 +956,21 @@ rescued_expr(struct parser_params *p, NODE *arg, NODE *rescue,
 static void
 restore_defun(struct parser_params *p, NODE *name)
 {
+    YYSTYPE c = {.val = name->nd_cval};
     p->cur_arg = name->nd_vid;
-    p->ctxt.in_def = name->nd_state & 1;
+    p->ctxt.in_def = c.ctxt.in_def;
+}
+
+static void
+endless_method_name(struct parser_params *p, NODE *defn, const YYLTYPE *loc)
+{
+#ifdef RIPPER
+    defn = defn->nd_defn;
+#endif
+    ID mid = defn->nd_mid;
+    if (is_attrset_id(mid)) {
+	yyerror1(loc, "setter method cannot be defined in an endless method definition");
+    }
 }
 
 #ifndef RIPPER
@@ -1689,12 +1702,12 @@ def_name	: fname
 		    {
 			ID fname = get_id($1);
 			ID cur_arg = p->cur_arg;
-			int in_def = p->ctxt.in_def;
+			YYSTYPE c = {.ctxt = p->ctxt};
 			numparam_name(p, fname);
 			local_push(p, 0);
 			p->cur_arg = 0;
 			p->ctxt.in_def = 1;
-			$<node>$ = NEW_NODE(NODE_SELF, /*vid*/cur_arg, /*mid*/fname, /*state*/in_def, &@$);
+			$<node>$ = NEW_NODE(NODE_SELF, /*vid*/cur_arg, /*mid*/fname, /*cval*/c.val, &@$);
 		    /*%%%*/
 		    /*%
 			$$ = NEW_RIPPER(fname, get_value($1), $$, &NULL_LOC);
@@ -2476,9 +2489,7 @@ arg		: lhs '=' arg_rhs
 		    }
 		| defn_head f_paren_args '=' arg
 		    {
-			if (is_attrset_id($<node>1->nd_mid)) {
-			    yyerror1(&@1, "setter method cannot be defined in an endless method definition");
-			}
+			endless_method_name(p, $<node>1, &@1);
 			token_info_drop(p, "def", @1.beg_pos);
 			restore_defun(p, $<node>1->nd_defn);
 		    /*%%%*/
@@ -2489,6 +2500,7 @@ arg		: lhs '=' arg_rhs
 		    }
 		| defn_head f_paren_args '=' arg modifier_rescue arg
 		    {
+			endless_method_name(p, $<node>1, &@1);
 			token_info_drop(p, "def", @1.beg_pos);
 			restore_defun(p, $<node>1->nd_defn);
 		    /*%%%*/
@@ -2500,6 +2512,7 @@ arg		: lhs '=' arg_rhs
 		    }
 		| defs_head f_paren_args '=' arg
 		    {
+			endless_method_name(p, $<node>1, &@1);
 			restore_defun(p, $<node>1->nd_defn);
 		    /*%%%*/
 			$$ = set_defun_body(p, $1, $2, $4, &@$);
@@ -2511,6 +2524,7 @@ arg		: lhs '=' arg_rhs
 		    }
 		| defs_head f_paren_args '=' arg modifier_rescue arg
 		    {
+			endless_method_name(p, $<node>1, &@1);
 			restore_defun(p, $<node>1->nd_defn);
 		    /*%%%*/
 			$4 = rescued_expr(p, $4, $6, &@4, &@5, &@6);
@@ -3068,7 +3082,6 @@ primary		: literal
 			    YYLTYPE loc = code_loc_gen(&@1, &@2);
 			    yyerror1(&loc, "class definition in method body");
 			}
-			$<ctxt>1 = p->ctxt;
 			p->ctxt.in_class = 1;
 			local_push(p, 0);
 		    }
@@ -3087,7 +3100,6 @@ primary		: literal
 		    }
 		| k_class tLSHFT expr
 		    {
-			$<ctxt>$ = p->ctxt;
 			p->ctxt.in_def = 0;
 			p->ctxt.in_class = 0;
 			local_push(p, 0);
@@ -3104,8 +3116,8 @@ primary		: literal
 		    /*% %*/
 		    /*% ripper: sclass!($3, $6) %*/
 			local_pop(p);
-			p->ctxt.in_def = $<ctxt>4.in_def;
-			p->ctxt.in_class = $<ctxt>4.in_class;
+			p->ctxt.in_def = $<ctxt>1.in_def;
+			p->ctxt.in_class = $<ctxt>1.in_class;
 		    }
 		| k_module cpath
 		    {
@@ -3113,7 +3125,6 @@ primary		: literal
 			    YYLTYPE loc = code_loc_gen(&@1, &@2);
 			    yyerror1(&loc, "module definition in method body");
 			}
-			$<ctxt>1 = p->ctxt;
 			p->ctxt.in_class = 1;
 			local_push(p, 0);
 		    }
@@ -3249,12 +3260,14 @@ k_for		: keyword_for
 k_class		: keyword_class
 		    {
 			token_info_push(p, "class", &@$);
+			$<ctxt>$ = p->ctxt;
 		    }
 		;
 
 k_module	: keyword_module
 		    {
 			token_info_push(p, "module", &@$);
+			$<ctxt>$ = p->ctxt;
 		    }
 		;
 

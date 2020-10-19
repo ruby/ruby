@@ -660,11 +660,30 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     }
     assert_equal true, thru_def
     assert_equal '[def(foo,[],bodystmt([void()]))]', parse('def foo ;end')
+  end
 
-    thru_def = false
-    tree = parse('def foo() = 42', :on_def) {thru_def = true}
-    assert_equal true, thru_def
+  def test_endless_def
+    events = %i[on_def on_parse_error]
+    thru = nil
+    hook = ->(name, *) {thru[name] = true}
+
+    thru = {}
+    tree = parse('def foo() = 42', events, &hook)
+    assert_equal({on_def: true}, thru)
     assert_equal '[def(foo,[],42)]', tree
+
+    thru = {}
+    tree = parse('def foo() = 42 rescue 0', events, &hook)
+    assert_equal({on_def: true}, thru)
+    assert_equal '[def(foo,[],rescue_mod(42,0))]', tree
+
+    thru = {}
+    tree = parse('def foo=() = 42', events, &hook)
+    assert_equal({on_def: true, on_parse_error: true}, thru)
+
+    thru = {}
+    tree = parse('def foo=() = 42 rescue 0', events, &hook)
+    assert_equal({on_def: true, on_parse_error: true}, thru)
   end
 
   def test_defined
@@ -682,11 +701,30 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     thru_parse_error = false
     tree = parse('def foo&.bar; end', :on_parse_error) {thru_parse_error = true}
     assert_equal(true, thru_parse_error)
+  end
 
-    thru_defs = false
-    tree = parse('def foo.bar() = 42', :on_defs) {thru_defs = true}
-    assert_equal true, thru_defs
+  def test_endless_defs
+    events = %i[on_defs on_parse_error]
+    thru = nil
+    hook = ->(name, *) {thru[name] = true}
+
+    thru = {}
+    tree = parse('def foo.bar() = 42', events, &hook)
+    assert_equal({on_defs: true}, thru)
     assert_equal '[defs(vcall(foo),.,bar,[],42)]', tree
+
+    thru = {}
+    tree = parse('def foo.bar() = 42 rescue 0', events, &hook)
+    assert_equal({on_defs: true}, thru)
+    assert_equal '[defs(vcall(foo),.,bar,[],rescue_mod(42,0))]', tree
+
+    thru = {}
+    tree = parse('def foo.bar=() = 42', events, &hook)
+    assert_equal({on_defs: true, on_parse_error: true}, thru)
+
+    thru = {}
+    tree = parse('def foo.bar=() = 42 rescue 0', events, &hook)
+    assert_equal({on_defs: true, on_parse_error: true}, thru)
   end
 
   def test_do_block

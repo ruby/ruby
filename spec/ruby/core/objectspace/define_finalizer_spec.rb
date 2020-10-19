@@ -94,7 +94,7 @@ describe "ObjectSpace.define_finalizer" do
       ruby_exe(code, :args => "2>&1").should include("warning: finalizer references object to be finalized\n")
     end
 
-    it "warns if the finalizer was a block in the reciever" do
+    it "warns if the finalizer was a block in the receiver" do
       code = <<-RUBY
         class CapturesSelf
           def initialize

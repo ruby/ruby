@@ -32,9 +32,6 @@ jobs:
       - uses: actions/checkout@v2
         with:
           path: src
-      - run: ./src/tool/actions-commit-info.sh
-        shell: bash
-        id: commit_info
       - name: Set up Ruby & MSYS2
         uses: MSP-Greg/setup-ruby-pkgs@v1
         with:

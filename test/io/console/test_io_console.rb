@@ -471,6 +471,10 @@ defined?(IO.console) and TestIO_Console.class_eval do
     ensure
       IO.console(:close)
     end
+
+    def test_getch_timeout
+      assert_nil(IO.console.getch(intr: true, time: 0.1, min: 0))
+    end
   end
 end
 

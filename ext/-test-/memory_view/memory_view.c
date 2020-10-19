@@ -2,8 +2,7 @@
 #include "ruby/memory_view.h"
 
 #define STRUCT_ALIGNOF(T, result) do { \
-    struct S { char _; T t; }; \
-    (result) = (int)offsetof(struct S, t); \
+    (result) = RUBY_ALIGNOF(T); \
 } while(0)
 
 static ID id_str;
@@ -185,7 +184,7 @@ memory_view_get_memory_view_info(VALUE mod, VALUE obj)
 static VALUE
 memory_view_fill_contiguous_strides(VALUE mod, VALUE ndim_v, VALUE item_size_v, VALUE shape_v, VALUE row_major_p)
 {
-    int i, ndim = FIX2INT(ndim_v);
+    ssize_t i, ndim = NUM2SSIZET(ndim_v);
 
     Check_Type(shape_v, T_ARRAY);
     ssize_t *shape = ALLOC_N(ssize_t, ndim);

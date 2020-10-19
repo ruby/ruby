@@ -38,16 +38,10 @@ Zachary Scott (zzak)
 
 === Libraries
 
-[lib/drb.rb, lib/drb/*]
-  Masatoshi SEKI (seki)
 [lib/debug.rb]
   _unmaintained_
 [lib/mkmf.rb]
   _unmaintained_
-[lib/pp.rb]
-  Tanaka Akira (akr)
-[lib/prettyprint.rb]
-  Tanaka Akira (akr)
 [lib/rubygems.rb, lib/rubygems/*]
   Eric Hodel (drbrain), Hiroshi SHIBATA (hsbt)
   https://github.com/rubygems/rubygems
@@ -62,16 +56,12 @@ Zachary Scott (zzak)
   Koichi Sasada (ko1)
 [ext/coverage]
   Yusuke Endoh (mame)
-[ext/digest, ext/digest/*]
-  Akinori MUSHA (knu)
 [ext/fiber]
   Koichi Sasada (ko1)
 [ext/monitor]
   Koichi Sasada (ko1)
 [ext/objspace]
   _unmaintained_
-[ext/pathname]
-  Tanaka Akira (akr)
 [ext/pty]
   _unmaintained_
 [ext/ripper]
@@ -120,6 +110,12 @@ Zachary Scott (zzak)
 [lib/did_you_mean.rb]
   Yuki Nishijima (yuki24)
   https://github.com/ruby/did_you_mean
+[ext/digest, ext/digest/*]
+  Akinori MUSHA (knu)
+  https://github.com/ruby/digest
+[lib/drb.rb, lib/drb/*]
+  Masatoshi SEKI (seki)
+  https://github.com/ruby/drb
 [lib/erb.rb]
   Masatoshi SEKI (seki), Takashi Kokubun (k0kubun)
   https://github.com/ruby/erb
@@ -195,6 +191,12 @@ Zachary Scott (zzak)
   Marc-Andre Lafortune (marcandre)
   https://github.com/ruby/ostruct
   https://rubygems.org/gems/ostruct
+[lib/pp.rb]
+  Tanaka Akira (akr)
+  https://github.com/ruby/pp
+[lib/prettyprint.rb]
+  Tanaka Akira (akr)
+  https://github.com/ruby/prettyprint
 [lib/prime.rb]
   Yuki Sonoda (yugui)
   https://github.com/ruby/prime
@@ -331,6 +333,9 @@ Zachary Scott (zzak)
   Kazuki Yamaguchi (rhe)
   https://github.com/ruby/openssl
   https://rubygems.org/gems/openssl
+[ext/pathname]
+  Tanaka Akira (akr)
+  https://github.com/ruby/pathname
 [ext/psych]
   Aaron Patterson (tenderlove), Hiroshi SHIBATA (hsbt)
   https://github.com/ruby/psych

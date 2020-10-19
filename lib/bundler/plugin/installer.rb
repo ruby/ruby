@@ -41,7 +41,7 @@ module Bundler
         install_from_specs specs
       end
 
-    private
+      private
 
       def check_sources_consistency!(options)
         if options.key?(:git) && options.key?(:local_git)
