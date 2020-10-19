@@ -484,7 +484,11 @@ gen_opt_minus(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 bool
 gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 {
-    // Definitions relevant to the call cache are in vm_callinfo.h
+    // Relevant definitions:
+    // vm_call_cfunc_with_frame : vm_insnhelper.c
+    // rb_callcache             : vm_callinfo.h
+    // invoker, cfunc logic     : method.h, vm_method.c
+    // rb_callable_method_entry_t: method.h
 
     struct rb_call_data * cd = (struct rb_call_data *)ctx_get_arg(ctx, 0);
     int32_t argc = (int32_t)vm_ci_argc(cd->ci);
@@ -514,22 +518,25 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
         return false;
     }
 
+    const rb_callable_method_entry_t *me = vm_cc_cme(cd->cc);
+
     // Don't JIT if this is not a C call
-    if (vm_cc_cme(cd->cc)->def->type != VM_METHOD_TYPE_CFUNC)
+    if (me->def->type != VM_METHOD_TYPE_CFUNC)
+    {
+        return false;
+    }
+
+    const rb_method_cfunc_t *cfunc = UNALIGNED_MEMBER_PTR(me->def, body.cfunc);
+
+    // Don't jit if the argument count doesn't match
+    if (cfunc->argc < 0 || cfunc->argc != argc)
     {
         return false;
     }
 
     //printf("call to C function \"%s\", argc: %lu\n", rb_id2name(mid), argc);
-
-    // Things we need to do at run-time:
-    // - Check that the cached klass matches
-    // - Check that method entry is not invalidated
-    // - ???
-    // - Create a new frame
-    //   - copy function arguments?
-    // - Call the C function
-    // - Remove the frame
+    //print_str(cb, rb_id2name(mid));
+    //print_ptr(cb, RCX);
 
     // Create a size-exit to fall back to the interpreter
     uint8_t* side_exit = ujit_side_exit(ocb, ctx, ctx->pc);
@@ -538,11 +545,10 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     x86opnd_t recv = ctx_stack_opnd(ctx, argc);
     mov(cb, RCX, recv);
 
-    //print_str(cb, rb_id2name(mid));
-    //print_ptr(cb, RCX);
-
-    // IDEA: may be able to eliminate this in some cases if we know the previous instruction?
+    // IDEA: we may be able to eliminate this in some cases if we know the previous instruction?
     // TODO: guard_is_object() helper function?
+    //
+    // Check that the receiver is a heap object
     test(cb, RCX, imm_opnd(RUBY_IMMEDIATE_MASK));
     jnz_ptr(cb, side_exit);
     cmp(cb, RCX, imm_opnd(Qfalse));
@@ -553,20 +559,127 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     // Pointer to the klass field of the receiver &(recv->klass)
     x86opnd_t klass_opnd = mem_opnd(64, RCX, offsetof(struct RBasic, klass));
 
-    // IDEA: Aaron suggested we could possibly treat a changed
-    // class pointer as a cache miss
+    // FIXME: currently assuming that cc->klass doesn't change
+    // Ideally we would like the GC to update the klass pointer
+    //
     // Check if we have a cache hit
     mov(cb, RAX, const_ptr_opnd((void*)cd->cc->klass));
     cmp(cb, RAX, klass_opnd);
     jne_ptr(cb, side_exit);
-    //print_str(cb, "cache klass hit");
+
+    // NOTE: there *has to be* a way to optimize the entry invalidated check
+    // Could we have Ruby invalidate the JIT code instead of invalidating CME?
+    //
+    // Check that the method entry is not invalidated
+    // cd->cc->cme->flags
+    // #define METHOD_ENTRY_INVALIDATED(me) ((me)->flags & IMEMO_FL_USER5)
+    mov(cb, RAX, const_ptr_opnd(cd));
+    x86opnd_t ptr_to_cc = member_opnd(RAX, struct rb_call_data, cc);
+    mov(cb, RAX, ptr_to_cc);
+    x86opnd_t ptr_to_cme_ = mem_opnd(64, RAX, offsetof(struct rb_callcache, cme_));
+    mov(cb, RAX, ptr_to_cme_);
+    x86opnd_t flags_opnd = mem_opnd(64, RAX, offsetof(rb_callable_method_entry_t, flags));
+    test(cb, flags_opnd, imm_opnd(IMEMO_FL_USER5));
+    jnz_ptr(cb, side_exit);
+
+
+    // NOTE: stack frame setup may not be needed for some C functions
+
+    // TODO: do we need this check?
+    //vm_check_frame(type, specval, cref_or_me, iseq);
+
+    // FIXME: stack overflow check
+    //vm_check_canary(ec, sp);
+
+
+
+
+    // TODO: under construction, stop here for now
+    jmp_ptr(cb, side_exit);
+    return true;
 
 
 
 
 
 
+    // FIXME: for now, we hardcode ec
+    // TODO: hardcode EC
 
+    // Allocate a new CFP
+    //ec->cfp--;
+
+
+
+
+    // Increment the stack pointer by 3
+    //sp += 3
+
+    // Write method entry at sp[-2]
+    //sp[-2] = me;
+
+    // Write block handller at sp[-1]
+    //VALUE recv = calling->recv;
+    //VALUE block_handler = calling->block_handler;
+    //sp[-1] = block_handler;
+
+    // Write env flags at sp[0]
+    uint64_t frame_type = VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL;
+    //sp[0] = frame_type;
+
+
+
+    // Setup the new frame
+    /*
+    *cfp = (const struct rb_control_frame_struct) {
+        .pc         = 0,
+        .sp         = sp,
+        .iseq       = 0,
+        .self       = recv,
+        .ep         = sp - 1,
+        .block_code = 0,
+        .__bp__     = sp,
+    };
+    ec->cfp = cfp;
+    */
+
+
+
+
+    // NOTE: we need a helper to pop multiple values here
+    // Pop the C function arguments from the stack (in the caller)
+    //reg_cfp->sp -= orig_argc + 1;
+
+
+
+
+
+    // Save the MicroJIT registers
+    push(cb, RDI);
+    push(cb, RSI);
+
+
+
+
+    // Call the function
+    //VALUE ret = (cfunc->func)(recv, argv[0], argv[1]);
+
+
+
+
+    // Restore MicroJIT registers
+    pop(cb, RSI);
+    pop(cb, RDI);
+
+
+
+
+
+    // TODO: later
+    // RUBY_VM_CHECK_INTS(ec);
+
+    // Pop the stack frame
+    //ec->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
 
 
 
@@ -586,103 +699,7 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 
     jmp_ptr(cb, side_exit);
     return true;
-
-    /*
-    // Create a size-exit to fall back to the interpreter
-    uint8_t* side_exit = ujit_side_exit(ocb, ctx, ctx->pc);
-
-    struct rb_calling_info *calling = (struct rb_calling_info*)malloc(sizeof(struct rb_calling_info));
-    calling->block_handler = VM_BLOCK_HANDLER_NONE;
-    calling->kw_splat = 0;
-    calling->argc = argc;
-
-    mov(cb, RAX, const_ptr_opnd(cd));
-    x86opnd_t ptr_to_cc = member_opnd(RAX, struct rb_call_data, cc);
-    mov(cb, RAX, ptr_to_cc);
-
-    x86opnd_t ptr_to_klass = mem_opnd(64, RAX, offsetof(struct rb_callcache, klass));
-    x86opnd_t ptr_to_cme_ = mem_opnd(64, RAX, offsetof(struct rb_callcache, cme_));
-    x86opnd_t ptr_to_call_ = mem_opnd(64, RAX, offsetof(struct rb_callcache, call_));
-    mov(cb, R9, ptr_to_klass);
-    mov(cb, RCX, ptr_to_cme_);
-
-    // Points to the receiver operand on the stack
-    x86opnd_t recv = ctx_stack_opnd(ctx, argc);
-    mov(cb, RDX, recv);
-    //print_int(cb, recv);
-
-    // Store calling->recv
-    mov(cb, R8, const_ptr_opnd(calling));
-    x86opnd_t recv_opnd = mem_opnd(64, R8, offsetof(struct rb_calling_info, recv));
-    mov(cb, recv_opnd, RDX);
-
-
-
-    // Pointer to the klass field of the receiver
-    x86opnd_t klass_opnd = mem_opnd(64, RDX, offsetof(struct RBasic, klass));
-
-    // IDEA: Aaron suggested we could possibly treat a changed
-    // class pointer as a cache miss
-    // Check if we have a cache hit
-    cmp(cb, R9, klass_opnd);
-    jne_ptr(cb, side_exit);
-    //print_int(cb, klass_opnd);
-    print_str(cb, "cache klass hit");
-
-    //#define METHOD_ENTRY_INVALIDATED(me)         ((me)->flags & IMEMO_FL_USER5)
-    x86opnd_t flags_opnd = mem_opnd(64, RCX, offsetof( rb_callable_method_entry_t, flags));
-    test(cb, flags_opnd, imm_opnd(IMEMO_FL_USER5));
-    jnz_ptr(cb, side_exit);
-
-    push(cb, RDI);
-    push(cb, RSI);
-
-    x86opnd_t ptr_to_pc = mem_opnd(64, RDI, offsetof(rb_control_frame_t, pc));
-    mov(cb, ptr_to_pc, const_ptr_opnd(ctx->pc + insn_len(BIN(opt_send_without_block))));
-
-    // Write the adjusted SP back into the CFP
-    if (ctx->stack_diff != 0)
-    {
-        x86opnd_t stack_pointer = ctx_sp_opnd(ctx, 1);
-        lea(cb, RSI, stack_pointer);
-        mov(cb, mem_opnd(64, RDI, 8), RSI);
-    }
-
-    // val = vm_cc_call(cc)(ec, GET_CFP(), &calling, cd);
-    mov(cb, RSI, RDI);
-    mov(cb, RDI, const_ptr_opnd(rb_current_execution_context()));
-    mov(cb, RDX, R8);
-    print_int(cb, RDX);
-    mov(cb, RCX, const_ptr_opnd(cd));
-
-    call(cb, ptr_to_call_);
-
-    pop(cb, RSI);
-    pop(cb, RDI);
-
-    size_t continue_in_jit = cb_new_label(cb, "continue_in_jit");
-    cmp(cb, RAX, imm_opnd(Qundef));
-    jne(cb, continue_in_jit);
-
-    //print_str(cb, "method entry not invalidated!!!1");
-
-    mov(cb, RDI, const_ptr_opnd(rb_current_execution_context()));
-    mov(cb, RDI, mem_opnd(64, RDI, offsetof(rb_execution_context_t, cfp)));
-
-    // Read the PC from the CFP
-    mov(cb, RAX, mem_opnd(64, RDI, 0));
-
-    // Write the post call bytes
-    for (size_t i = 0; i < sizeof(ujit_post_call_bytes); ++i)
-        cb_write_byte(cb, ujit_post_call_bytes[i]);
-
-    cb_write_label(cb, continue_in_jit);
-    cb_link_labels(cb);
-
-    return true;
-    */
 }
-
 
 void
 rb_ujit_compile_iseq(const rb_iseq_t *iseq)
