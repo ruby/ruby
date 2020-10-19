@@ -1470,8 +1470,8 @@ MJIT_FUNC_EXPORTED bool
 rb_ractor_main_p_(void)
 {
     VM_ASSERT(rb_multi_ractor_p());
-    rb_execution_context_t *ec = GET_EC();
-    return rb_ec_ractor_ptr(ec) == rb_ec_vm_ptr(ec)->ractor.main_ractor;
+    rb_thread_t *cth = GET_THREAD();
+    return cth->ractor == cth->vm->ractor.main_ractor;
 }
 
 bool

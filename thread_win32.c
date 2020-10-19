@@ -25,8 +25,6 @@
 #define ubf_timer_disarm() do {} while (0)
 #define ubf_list_atfork() do {} while (0)
 
-static volatile DWORD ruby_native_thread_key = TLS_OUT_OF_INDEXES;
-
 static int w32_wait_events(HANDLE *events, int count, DWORD timeout, rb_thread_t *th);
 
 static void
@@ -138,18 +136,12 @@ ruby_thread_from_native(void)
 static int
 ruby_thread_set_native(rb_thread_t *th)
 {
-    if (th && th->ec) {
-        rb_ractor_set_current_ec(th->ractor, th->ec);
-    }
     return TlsSetValue(ruby_native_thread_key, th);
 }
 
 void
 Init_native_thread(rb_thread_t *th)
 {
-    if ((ruby_current_ec_key = TlsAlloc()) == TLS_OUT_OF_INDEXES) {
-        rb_bug("TlsAlloc() for ruby_current_ec_key fails");
-    }
     if ((ruby_native_thread_key = TlsAlloc()) == TLS_OUT_OF_INDEXES) {
         rb_bug("TlsAlloc() for ruby_native_thread_key fails");
     }
