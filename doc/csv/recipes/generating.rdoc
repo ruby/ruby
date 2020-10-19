@@ -17,6 +17,9 @@ All code snippets on this page assume that the following has been executed:
   - {Generating to IO an Stream}[#label-Generating+to+an+IO+Stream]
     - {Recipe: Generate to IO Stream with Headers}[#label-Recipe-3A+Generate+to+IO+Stream+with+Headers]
     - {Recipe: Generate to IO Stream Without Headers}[#label-Recipe-3A+Generate+to+IO+Stream+Without+Headers]
+- {Converting Fields}[#label-Converting+Fields]
+  - {Recipe: Filter Generated Field Strings}[#label-Recipe-3A+Filter+Generated+Field+Strings]
+  - {Recipe: Specify Multiple Write Converters}[#label-Recipe-3A+Specify+Multiple+Write+Converters]
 
 === Output Formats
 
@@ -111,3 +114,36 @@ Use class method CSV.new without option +headers+ to generate \CSV data to an \I
     csv << ['Baz', 2]
   end
   p File.read(path) # => "Foo,0\nBar,1\nBaz,2\n"
+
+=== Converting Fields
+
+You can use _write_ _converters_ to convert fields when generating \CSV.
+
+==== Recipe: Filter Generated Field Strings
+
+Use option <tt>:write_converters</tt> and a custom converter to convert field values when generating \CSV.
+
+This example defines and uses a custom write converter to strip whitespace from generated fields:
+  strip_converter = proc {|field| field.respond_to?(:strip) ? field.strip : field }
+  output_string = CSV.generate(write_converters: strip_converter) do |csv|
+    csv << [' foo ', 0]
+    csv << [' bar ', 1]
+    csv << [' baz ', 2]
+  end
+  output_string # => "foo,0\nbar,1\nbaz,2\n"
+
+==== Recipe: Specify Multiple Write Converters
+
+Use option <tt>:write_converters</tt> and multiple custom coverters
+to convert field values when generating \CSV.
+
+This example defines and uses two custom write converters to strip and upcase generated fields:
+  strip_converter = proc {|field| field.respond_to?(:strip) ? field.strip : field }
+  upcase_converter = proc {|field| field.respond_to?(:upcase) ? field.upcase : field }
+  converters = [strip_converter, upcase_converter]
+  output_string = CSV.generate(write_converters: converters) do |csv|
+    csv << [' foo ', 0]
+    csv << [' bar ', 1]
+    csv << [' baz ', 2]
+  end
+  output_string # => "FOO,0\nBAR,1\nBAZ,2\n"

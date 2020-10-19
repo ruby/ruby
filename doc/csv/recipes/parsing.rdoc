@@ -17,6 +17,25 @@ All code snippets on this page assume that the following has been executed:
   - {Parsing from an IO Stream}[#label-Parsing+from+an+IO+Stream]
     - {Recipe: Parse from IO Stream with Headers}[#label-Recipe-3A+Parse+from+IO+Stream+with+Headers]
     - {Recipe: Parse from IO Stream Without Headers}[#label-Recipe-3A+Parse+from+IO+Stream+Without+Headers]
+- {RFC 4180 Compliance}[#label-RFC+4180+Compliance]
+  - {Row Separator}[#label-Row+Separator]
+    - {Recipe: Handle Compliant Row Separator}[#label-Recipe-3A+Handle+Compliant+Row+Separator]
+    - {Recipe: Handle Non-Compliant Row Separator}[#label-Recipe-3A+Handle+Non-Compliant+Row+Separator]
+  - {Column Separator}[#label-Column+Separator]
+    - {Recipe: Handle Compliant Column Separator}[#label-Recipe-3A+Handle+Compliant+Column+Separator]
+    - {Recipe: Handle Non-Compliant Column Separator}[#label-Recipe-3A+Handle+Non-Compliant+Column+Separator]
+  - {Quote Character}[#label-Quote+Character]
+    - {Recipe: Handle Compliant Quote Character}[#label-Recipe-3A+Handle+Compliant+Quote+Character]
+    - {Recipe: Handle Non-Compliant Quote Character}[#label-Recipe-3A+Handle+Non-Compliant+Quote+Character]
+  - {Recipe: Allow Liberal Parsing}[#label-Recipe-3A+Allow+Liberal+Parsing]
+- {Special Handling}[#label-Special+Handling]
+  - {Special Line Handling}[#label-Special+Line+Handling]
+    - {Recipe: Ignore Blank Lines}[#label-Recipe-3A+Ignore+Blank+Lines]
+    - {Recipe: Ignore Selected Lines}[#label-Recipe-3A+Ignore+Selected+Lines]
+  - {Special Field Handling}[#label-Special+Field+Handling]
+    - {Recipe: Strip Fields}[#label-Recipe-3A+Strip+Fields]
+    - {Recipe: Handle Null Fields}[#label-Recipe-3A+Handle+Null+Fields]
+    - {Recipe: Handle Empty Fields}[#label-Recipe-3A+Handle+Empty+Fields]
 - {Converting Fields}[#label-Converting+Fields]
   - {Converting Fields to Objects}[#label-Converting+Fields+to+Objects]
     - {Recipe: Convert Fields to Integers}[#label-Recipe-3A+Convert+Fields+to+Integers]
@@ -164,6 +183,143 @@ Output:
   ["bar", "1"]
   ["baz", "2"]
 
+=== RFC 4180 Compliance
+
+By default, \CSV parses data that is compliant with
+{RFC 4180}[https://tools.ietf.org/html/rfc4180]
+with respect to:
+- Row separator.
+- Column separator.
+- Quote character.
+
+==== Row Separator
+
+RFC 4180 specifies the row separator CRLF (Ruby "\r\n").
+
+Although the \CSV default row separator is "\n",
+the parser also by default handles row seperator "\r" and the RFC-compliant "\r\n".
+
+===== Recipe: Handle Compliant Row Separator
+
+For strict compliance, use option +:row_sep+ to specify row separator "\r\n",
+which allows the compliant row separator:
+  source = "foo,1\r\nbar,1\r\nbaz,2\r\n"
+  CSV.parse(source, row_sep: "\r\n") # => [["foo", "1"], ["bar", "1"], ["baz", "2"]]
+But rejects other row separators:
+  source = "foo,1\nbar,1\nbaz,2\n"
+  CSV.parse(source, row_sep: "\r\n") # Raised MalformedCSVError
+  source = "foo,1\rbar,1\rbaz,2\r"
+  CSV.parse(source, row_sep: "\r\n") # Raised MalformedCSVError
+  source = "foo,1\n\rbar,1\n\rbaz,2\n\r"
+  CSV.parse(source, row_sep: "\r\n") # Raised MalformedCSVError
+
+===== Recipe: Handle Non-Compliant Row Separator
+
+For data with non-compliant row separators, use option +:row_sep+.
+This example source uses semicolon (';') as its row separator:
+  source = "foo,1;bar,1;baz,2;"
+  CSV.parse(source, row_sep: ';') # => [["foo", "1"], ["bar", "1"], ["baz", "2"]]
+
+==== Column Separator
+
+RFC 4180 specifies column separator COMMA (Ruby ',').
+
+===== Recipe: Handle Compliant Column Separator
+
+Because the \CSV default comma separator is ',',
+you need not specify option +:col_sep+ for compliant data:
+  source = "foo,1\nbar,1\nbaz,2\n"
+  CSV.parse(source) # => [["foo", "1"], ["bar", "1"], ["baz", "2"]]
+
+===== Recipe: Handle Non-Compliant Column Separator
+
+For data with non-compliant column separators, use option +:col_sep+.
+This example source uses TAB ("\t") as its column separator:
+  source = "foo,1\tbar,1\tbaz,2"
+  CSV.parse(source, col_sep: "\t") # => [["foo", "1"], ["bar", "1"], ["baz", "2"]]
+
+==== Quote Character
+
+RFC 4180 specifies quote character DQUOTE (Ruby '"').
+
+===== Recipe: Handle Compliant Quote Character
+
+Because the \CSV default quote character is '"',
+you need not specify option +:quote_char+ for compliant data:
+  source = "\"foo\",\"1\"\n\"bar\",\"1\"\n\"baz\",\"2\"\n"
+  CSV.parse(source) # => [["foo", "1"], ["bar", "1"], ["baz", "2"]]
+
+===== Recipe: Handle Non-Compliant Quote Character
+
+For data with non-compliant quote characters, use option +:quote_char+.
+This example source uses SQUOTE ("'") as its quote character:
+  source = "'foo','1'\n'bar','1'\n'baz','2'\n"
+  CSV.parse(source, quote_char: "'") # => [["foo", "1"], ["bar", "1"], ["baz", "2"]]
+
+==== Recipe: Allow Liberal Parsing
+
+Use option +:liberal_parsing+ to specify that \CSV should
+attempt to parse input not conformant with RFC 4180, such as double quotes in unquoted fields:
+  source = 'is,this "three, or four",fields'
+  CSV.parse(source) # Raises MalformedCSVError
+  CSV.parse(source, liberal_parsing: true) # => [["is", "this \"three", " or four\"", "fields"]]
+
+=== Special Handling
+
+You can use parsing options to specify special handling for certain lines and fields.
+
+==== Special Line Handling
+
+Use parsing options to specify special handling for blank lines, or for other selected lines.
+
+===== Recipe: Ignore Blank Lines
+
+Use option +:skip_blanks+ to ignore blank lines:
+  source = <<-EOT
+  foo,0
+
+  bar,1
+  baz,2
+
+  ,
+  EOT
+  parsed = CSV.parse(source, skip_blanks: true)
+  parsed # => [["foo", "0"], ["bar", "1"], ["baz", "2"], [nil, nil]]
+
+===== Recipe: Ignore Selected Lines
+
+Use option +:skip_lines+ to ignore selected lines.
+  source = <<-EOT
+  # Comment
+  foo,0
+  bar,1
+  baz,2
+  # Another comment
+  EOT
+  parsed = CSV.parse(source, skip_lines: /^#/)
+  parsed # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
+
+==== Special Field Handling
+
+Use parsing options to specify special handling for certain field values.
+
+===== Recipe: Strip Fields
+
+Use option +:strip+ to strip parsed field values:
+  CSV.parse_line(' a , b ', strip: true) # => ["a", "b"]
+
+===== Recipe: Handle Null Fields
+
+Use option +:nil_value+ to specify a value that will replace each field
+that is null (no text):
+  CSV.parse_line('a,,b,,c', nil_value: 0) # => ["a", 0, "b", 0, "c"]
+
+===== Recipe: Handle Empty Fields
+
+Use option +:empty_value+ to specify a value that will replace each field
+that is empty (\String of length 0);
+  CSV.parse_line('a,"",b,"",c', empty_value: 'x') # => ["a", "x", "b", "x", "c"]
+
 === Converting Fields
 
 You can use field converters to change parsed \String fields into other objects,
@@ -180,49 +336,49 @@ There are built-in field converters for converting to objects of certain classes
 - \DateTime
 
 Other built-in field converters include:
-- <tt>:numeric</tt>: converts to \Integer and \Float.
-- <tt>:all</tt>: converts to \DateTime, \Integer, \Float.
+- +:numeric+: converts to \Integer and \Float.
+- +:all+: converts to \DateTime, \Integer, \Float.
 
 You can also define field converters to convert to objects of other classes.
 
 ===== Recipe: Convert Fields to Integers
 
-Convert fields to \Integer objects using built-in converter <tt>:integer</tt>:
+Convert fields to \Integer objects using built-in converter +:integer+:
   source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
   parsed = CSV.parse(source, headers: true, converters: :integer)
   parsed.map {|row| row['Value'].class} # => [Integer, Integer, Integer]
 
 ===== Recipe: Convert Fields to Floats
 
-Convert fields to \Float objects using built-in converter <tt>:float</tt>:
+Convert fields to \Float objects using built-in converter +:float+:
   source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
   parsed = CSV.parse(source, headers: true, converters: :float)
   parsed.map {|row| row['Value'].class} # => [Float, Float, Float]
 
 ===== Recipe: Convert Fields to Numerics
 
-Convert fields to \Integer and \Float objects using built-in converter <tt>:numeric</tt>:
+Convert fields to \Integer and \Float objects using built-in converter +:numeric+:
   source = "Name,Value\nfoo,0\nbar,1.1\nbaz,2.2\n"
   parsed = CSV.parse(source, headers: true, converters: :numeric)
   parsed.map {|row| row['Value'].class} # => [Integer, Float, Float]
 
 ===== Recipe: Convert Fields to Dates
 
-Convert fields to \Date objects using built-in converter <tt>:date</tt>:
+Convert fields to \Date objects using built-in converter +:date+:
   source = "Name,Date\nfoo,2001-02-03\nbar,2001-02-04\nbaz,2001-02-03\n"
   parsed = CSV.parse(source, headers: true, converters: :date)
   parsed.map {|row| row['Date'].class} # => [Date, Date, Date]
 
 ===== Recipe: Convert Fields to DateTimes
 
-Convert fields to \DateTime objects using built-in converter <tt>:date_time</tt>:
+Convert fields to \DateTime objects using built-in converter +:date_time+:
   source = "Name,DateTime\nfoo,2001-02-03\nbar,2001-02-04\nbaz,2020-05-07T14:59:00-05:00\n"
   parsed = CSV.parse(source, headers: true, converters: :date_time)
   parsed.map {|row| row['DateTime'].class} # => [DateTime, DateTime, DateTime]
 
 ===== Recipe: Convert Assorted Fields to Objects
 
-Convert assorted fields to objects using built-in converter <tt>:all</tt>:
+Convert assorted fields to objects using built-in converter +:all+:
   source = "Type,Value\nInteger,0\nFloat,1.0\nDateTime,2001-02-04\n"
   parsed = CSV.parse(source, headers: true, converters: :all)
   parsed.map {|row| row['Value'].class} # => [Integer, Float, DateTime]
@@ -265,12 +421,12 @@ then refer to the converter by its name:
 ==== Using Multiple Field Converters
 
 You can use multiple field converters in either of these ways:
-- Specify converters in option <tt>:converters</tt>.
+- Specify converters in option +:converters+.
 - Specify converters in a custom converter list.
 
-===== Recipe: Specify Multiple Field Converters in Option <tt>:converters</tt>
+===== Recipe: Specify Multiple Field Converters in Option +:converters+
 
-Apply multiple field converters by specifying them in option <tt>:conveters</tt>:
+Apply multiple field converters by specifying them in option +:conveters+:
   source = "Name,Value\nfoo,0\nbar,1.0\nbaz,2.0\n"
   parsed = CSV.parse(source, headers: true, converters: [:integer, :float])
   parsed['Value'] # => [0, 1.0, 2.0]
@@ -291,21 +447,21 @@ Apply multiple field converters by defining and registering a custom converter l
 You can use header converters to modify parsed \String headers.
 
 Built-in header converters include:
-- <tt>:symbol</tt>: converts \String header to \Symbol.
-- <tt>:downcase</tt>: converts \String header to lowercase.
+- +:symbol+: converts \String header to \Symbol.
+- +:downcase+: converts \String header to lowercase.
 
 You can also define header converters to otherwise modify header \Strings.
 
 ==== Recipe: Convert Headers to Lowercase
 
-Convert headers to lowercase using built-in converter <tt>:downcase</tt>:
+Convert headers to lowercase using built-in converter +:downcase+:
   source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
   parsed = CSV.parse(source, headers: true, header_converters: :downcase)
   parsed.headers # => ["name", "value"]
 
 ==== Recipe: Convert Headers to Symbols
 
-Convert headers to downcased Symbols using built-in converter <tt>:symbol</tt>:
+Convert headers to downcased Symbols using built-in converter +:symbol+:
   source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
   parsed = CSV.parse(source, headers: true, header_converters: :symbol)
   parsed.headers # => [:name, :value]
@@ -334,12 +490,12 @@ then refer to the converter by its name:
 ==== Using Multiple Header Converters
 
 You can use multiple header converters in either of these ways:
-- Specify header converters in option <tt>:header_converters</tt>.
+- Specify header converters in option +:header_converters+.
 - Specify header converters in a custom header converter list.
 
 ===== Recipe: Specify Multiple Header Converters in Option :header_converters
 
-Apply multiple header converters by specifying them in option <tt>:header_conveters</tt>:
+Apply multiple header converters by specifying them in option +:header_conveters+:
   source = "Name,Value\nfoo,0\nbar,1.0\nbaz,2.0\n"
   parsed = CSV.parse(source, headers: true, header_converters: [:downcase, :symbol])
   parsed.headers # => [:name, :value]
