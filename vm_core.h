@@ -1721,8 +1721,6 @@ RUBY_EXTERN rb_event_flag_t ruby_vm_event_flags;
 RUBY_EXTERN rb_event_flag_t ruby_vm_event_enabled_global_flags;
 RUBY_EXTERN unsigned int    ruby_vm_event_local_num;
 
-RUBY_EXTERN native_tls_key_t ruby_current_ec_key;
-
 RUBY_SYMBOL_EXPORT_END
 
 #define GET_VM()     rb_current_vm()
@@ -1764,7 +1762,15 @@ rb_ec_vm_ptr(const rb_execution_context_t *ec)
 static inline rb_execution_context_t *
 rb_current_execution_context(void)
 {
+#ifdef RB_THREAD_LOCAL_SPECIFIER
+  #if __APPLE__
+    rb_execution_context_t *ec = rb_current_ec();
+  #else
+    rb_execution_context_t *ec = ruby_current_ec;
+  #endif
+#else
     rb_execution_context_t *ec = native_tls_get(ruby_current_ec_key);
+#endif
     VM_ASSERT(ec != NULL);
     return ec;
 }

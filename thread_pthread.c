@@ -550,7 +550,11 @@ native_cond_timeout(rb_nativethread_cond_t *cond, const rb_hrtime_t rel)
 #define native_cleanup_push pthread_cleanup_push
 #define native_cleanup_pop  pthread_cleanup_pop
 
+#ifdef RB_THREAD_LOCAL_SPECIFIER
+static RB_THREAD_LOCAL_SPECIFIER rb_thread_t *ruby_native_thread;
+#else
 static pthread_key_t ruby_native_thread_key;
+#endif
 
 static void
 null_func(int i)
@@ -561,7 +565,11 @@ null_func(int i)
 static rb_thread_t *
 ruby_thread_from_native(void)
 {
+#ifdef RB_THREAD_LOCAL_SPECIFIER
+    return ruby_native_thread;
+#else
     return pthread_getspecific(ruby_native_thread_key);
+#endif
 }
 
 static int
@@ -570,7 +578,12 @@ ruby_thread_set_native(rb_thread_t *th)
     if (th && th->ec) {
         rb_ractor_set_current_ec(th->ractor, th->ec);
     }
+#ifdef RB_THREAD_LOCAL_SPECIFIER
+    ruby_native_thread = th;
+    return 1;
+#else
     return pthread_setspecific(ruby_native_thread_key, th) == 0;
+#endif
 }
 
 static void native_thread_init(rb_thread_t *th);
@@ -587,12 +600,15 @@ Init_native_thread(rb_thread_t *th)
         if (r) condattr_monotonic = NULL;
     }
 #endif
+
+#ifndef RB_THREAD_LOCAL_SPECIFIER
     if (pthread_key_create(&ruby_native_thread_key, 0) == EAGAIN) {
         rb_bug("pthread_key_create failed (ruby_native_thread_key)");
     }
     if (pthread_key_create(&ruby_current_ec_key, 0) == EAGAIN) {
         rb_bug("pthread_key_create failed (ruby_current_ec_key)");
     }
+#endif
     th->thread_id = pthread_self();
     ruby_thread_set_native(th);
     fill_thread_id_str(th);
