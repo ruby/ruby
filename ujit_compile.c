@@ -543,9 +543,6 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 
     // IDEA: may be able to eliminate this in some cases if we know the previous instruction?
     // TODO: guard_is_object() helper function?
-    // FIXME: an object can have QNil bit 1000 set
-    // need to check for immediate mask, Qnil and Qfalse
-    // Check that the receiver is an object
     test(cb, RCX, imm_opnd(RUBY_IMMEDIATE_MASK));
     jnz_ptr(cb, side_exit);
     cmp(cb, RCX, imm_opnd(Qfalse));
