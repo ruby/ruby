@@ -381,6 +381,20 @@ VALUE ruby_vm_const_missing_count = 0;
 rb_vm_t *ruby_current_vm_ptr = NULL;
 thread_local rb_execution_context_t *rb_local_execution_context = NULL;
 
+rb_execution_context_t *
+rb_current_execution_context(void)
+{
+    VM_ASSERT(rb_local_execution_context != NULL);
+
+    return rb_local_execution_context;
+}
+
+void
+rb_current_execution_context_set(rb_execution_context_t *ec)
+{
+    rb_local_execution_context = ec;
+}
+
 rb_event_flag_t ruby_vm_event_flags;
 rb_event_flag_t ruby_vm_event_enabled_global_flags;
 unsigned int    ruby_vm_event_local_num;
