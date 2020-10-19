@@ -764,6 +764,12 @@ assert_equal '[1, 4, 3, 2, 1]', %q{
   counts.inspect
 }
 
+# deep_freeze(skip_shareable: true)
+assert_equal '[true, false]', %q{
+  a = ['s', Ractor.new{}].deep_freeze(skip_shareable: true)
+  [a[0].frozen?, a[1].frozen?]
+}
+
 ###
 ### Synchronization tests
 ###

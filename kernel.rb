@@ -148,6 +148,16 @@ module Kernel
     yield(self)
   end
 
+  #
+  # call-seq:
+  #   obj.deep_freeze
+  #
+  # Freeze all traversal objects.
+  #
+  def deep_freeze skip_shareable: false
+    Primitive.obj_deep_freeze skip_shareable
+  end
+
   module_function
 
   #

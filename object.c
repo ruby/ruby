@@ -24,11 +24,13 @@
 #include "internal.h"
 #include "internal/array.h"
 #include "internal/class.h"
+#include "internal/complex.h"
 #include "internal/error.h"
 #include "internal/eval.h"
 #include "internal/inits.h"
 #include "internal/numeric.h"
 #include "internal/object.h"
+#include "internal/rational.h"
 #include "internal/struct.h"
 #include "internal/symbol.h"
 #include "internal/variable.h"
@@ -36,7 +38,10 @@
 #include "ruby/encoding.h"
 #include "ruby/st.h"
 #include "ruby/util.h"
+#include "ruby/re.h"
+#include "variable.h"
 #include "builtin.h"
+#include "ractor.h"
 
 /*!
  * \defgroup object Core objects and their operations
@@ -4679,6 +4684,256 @@ InitVM_Object(void)
     rb_define_method(rb_cFalseClass, "===", case_equal, 1);
     rb_undef_alloc_func(rb_cFalseClass);
     rb_undef_method(CLASS_OF(rb_cFalseClass), "new");
+}
+
+// 2: stop search
+// 1: skip child
+// 0: continue
+typedef int (*rb_obj_traverse_func)(VALUE obj, void *data);
+typedef int (*rb_obj_traverse_iterate_func)(VALUE obj, void *data);
+
+struct obj_hash_traverse_data {
+    bool stop;
+    rb_obj_traverse_func func;
+    void *data;
+    st_table *rec;
+};
+
+static int rb_obj_traverse_i(VALUE obj, rb_obj_traverse_func func, void *data, st_table *rec);
+
+static int
+obj_hash_traverse_i(VALUE key, VALUE val, VALUE ptr)
+{
+    struct obj_hash_traverse_data *data = (struct obj_hash_traverse_data *)ptr;
+
+    if (rb_obj_traverse_i(key, data->func, data->data, data->rec)) {
+        data->stop = true;
+        return ST_STOP;
+    }
+
+    if (rb_obj_traverse_i(val, data->func, data->data, data->rec)) {
+        data->stop = true;
+        return ST_STOP;
+    }
+
+    return ST_CONTINUE;
+}
+
+static int
+rb_obj_traverse_i(VALUE obj, rb_obj_traverse_func func, void *data, st_table *rec)
+{
+    if (RB_SPECIAL_CONST_P(obj)) {
+        return 0;
+    }
+    else {
+        if (st_insert(rec, obj, 1)) {
+            // already traversed
+            return 0;
+        }
+
+        switch (func(obj, data)) {
+          case 0: break;
+          case 1: return 0;
+          case 2: return 1;
+        }
+
+        if (FL_TEST(obj, FL_EXIVAR)) {
+            struct gen_ivtbl *ivtbl;
+            rb_ivar_generic_ivtbl_lookup(obj, &ivtbl);
+            for (uint32_t i = 0; i < ivtbl->numiv; i++) {
+                VALUE val = ivtbl->ivptr[i];
+                if (val != Qundef) {
+                    if (rb_obj_traverse_i(val, func, data, rec)) {
+                        return 1;
+                    }
+                }
+            }
+        }
+
+        switch (BUILTIN_TYPE(obj)) {
+          // no child node
+          case T_STRING:
+          case T_FLOAT:
+          case T_BIGNUM:
+          case T_REGEXP:
+          case T_FILE:
+          case T_SYMBOL:
+          case T_MATCH:
+            break;
+
+          case T_OBJECT:
+            {
+                uint32_t len = ROBJECT_NUMIV(obj);
+                VALUE *ptr = ROBJECT_IVPTR(obj);
+
+                for (uint32_t i=0; i<len; i++) {
+                    VALUE val = ptr[i];
+                    if (val != Qundef) {
+                        if (rb_obj_traverse_i(val, func, data, rec)) {
+                            return 1;
+                        }
+                    }
+                }
+            }
+            break;
+
+          case T_ARRAY:
+            {
+                for (int i = 0; i < RARRAY_LENINT(obj); i++) {
+                    VALUE e = rb_ary_entry(obj, i);
+                    if (rb_obj_traverse_i(e, func, data, rec)) {
+                        return 1;
+                    }
+                }
+            }
+            break;
+
+          case T_HASH:
+            {
+                struct obj_hash_traverse_data d = {
+                    .stop = 0,
+                    .func = func,
+                    .data = data,
+                    .rec  = rec,
+                };
+                rb_hash_foreach(obj, obj_hash_traverse_i, (VALUE)&d);
+                if (d.stop) return 1;
+            }
+            break;
+
+          case T_STRUCT:
+            {
+                long len = RSTRUCT_LEN(obj);
+                const VALUE *ptr = RSTRUCT_CONST_PTR(obj);
+
+                for (long i=0; i<len; i++) {
+                    if (rb_obj_traverse_i(ptr[i], func, data, rec)) {
+                        return 1;
+                    }
+                }
+            }
+            break;
+
+          case T_RATIONAL:
+            if (rb_obj_traverse_i(RRATIONAL(obj)->num, func, data, rec)) return 1;
+            if (rb_obj_traverse_i(RRATIONAL(obj)->den, func, data, rec)) return 1;
+            break;
+          case T_COMPLEX:
+            if (rb_obj_traverse_i(RCOMPLEX(obj)->real, func, data, rec)) return 1;
+            if (rb_obj_traverse_i(RCOMPLEX(obj)->imag, func, data, rec)) return 1;
+            break;
+
+          case T_DATA:
+            {
+                // TODO
+            }
+            break;
+
+          case T_CLASS:
+          case T_MODULE:
+          case T_ICLASS:
+            // TODO
+            break;
+
+          default:
+            rp(obj);
+            rb_bug("unreachable");
+        }
+    }
+    return 0;
+}
+
+struct obj_traverse_iterate_data {
+    rb_obj_traverse_iterate_func func;
+    void *data;
+};
+
+static int
+obj_traverse_iterate_i(st_data_t key, st_data_t val, st_data_t ptr)
+{
+    struct obj_traverse_iterate_data *data = (struct obj_traverse_iterate_data *)ptr;
+
+    if (data->func(key, data->data)) {
+        return ST_STOP;
+    }
+    else {
+        return ST_CONTINUE;
+    }
+}
+
+// 0: traverse all
+// 1: stopped
+int
+rb_obj_traverse(VALUE obj,
+                rb_obj_traverse_func tfunc, void *tdata,
+                rb_obj_traverse_iterate_func iter_func, void *iter_data)
+{
+    st_table *rec = st_init_numtable();
+    if (rb_obj_traverse_i(obj, tfunc, tdata, rec)) {
+        st_free_table(rec);
+        return 1;
+    }
+    else {
+        struct obj_traverse_iterate_data data = {
+            .func = iter_func,
+            .data = iter_data,
+        };
+        st_foreach(rec, obj_traverse_iterate_i, (st_data_t)&data);
+        st_free_table(rec);
+        return 0;
+    }
+}
+
+static int
+traverse_all_i(VALUE obj, void *data)
+{
+    return 0;
+}
+
+static int
+freeze_all_i(VALUE obj, void *data)
+{
+    rb_obj_freeze(obj);
+    return 0;
+}
+
+static int
+traverse_unshareable_i(VALUE obj, void *data)
+{
+    if (rb_ractor_shareable_p(obj)) {
+        return 1;
+    }
+    else {
+        return 0;
+    }
+}
+
+static int
+freeze_unshareable_i(VALUE obj, void *data)
+{
+    if (rb_ractor_shareable_p(obj)) {
+        return 0;
+    }
+    else {
+        rb_obj_freeze(obj);
+        return 0;
+    }
+}
+
+static VALUE
+obj_deep_freeze(rb_execution_context_t *ec, VALUE self, VALUE skip_shareable)
+{
+    if (RTEST(skip_shareable)) {
+        rb_obj_traverse(self,
+                        traverse_unshareable_i, NULL,
+                        freeze_unshareable_i, NULL);
+    }
+    else {
+        rb_obj_traverse(self,
+                        traverse_all_i, NULL,
+                        freeze_all_i, NULL);
+    }
+    return self;
 }
 
 #include "kernel.rbinc"

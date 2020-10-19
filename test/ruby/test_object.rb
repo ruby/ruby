@@ -990,4 +990,71 @@ class TestObject < Test::Unit::TestCase
       end
     EOS
   end
+
+  def test_deep_freeze
+    c = Class.new do
+      def initialize
+        @a = 'foo'
+        @b = 'bar'
+      end
+      attr_reader :a, :b
+    end
+    s = Struct.new(:s1, :s2)
+    str = "hello"
+    str.instance_variable_set("@iv", "hello")
+    /a/ =~ 'a'
+    m = $~
+    n = Class.new(Numeric){
+      def /(other)
+        1
+      end
+    }
+
+    a = [ary = ['a', 2],  # 0
+         {a: "hello"},    # 1
+         c.new,           # 2
+         s.new("x", "y"), # 3
+         ("a".."b"),      # 4
+         str,             # 5
+         ary,             # 6 cycle
+         /regexp/,        # 7
+         /#{'r'.upcase}/, # 8
+         m,               # 9
+         Complex(n.new,0),# 10
+         Rational(n.new,0),# 11
+         true,
+         false,
+         nil,
+         1, 1.2, 1+3r, 1+4i, # Numeric
+     ]
+
+    a.deep_freeze
+
+    assert_predicate(a, :frozen?)
+    assert_predicate(a[0], :frozen?)
+    assert_predicate(a[0][0], :frozen?)
+    assert_predicate(a[1], :frozen?)
+    assert_predicate(a[1][:a], :frozen?)
+    assert_predicate(a[2], :frozen?)
+    assert_predicate(a[2].a, :frozen?)
+    assert_predicate(a[2].b, :frozen?)
+    assert_predicate(a[3], :frozen?)
+    assert_predicate(a[3].s1, :frozen?)
+    assert_predicate(a[3].s2, :frozen?)
+    assert_predicate(a[4], :frozen?)
+    assert_predicate(a[4].begin, :frozen?)
+    assert_predicate(a[4].end, :frozen?)
+    assert_predicate(a[5], :frozen?)
+    assert_predicate(a[5].instance_variable_get('@iv'), :frozen?)
+    assert_predicate(a[6], :frozen?)
+    assert_predicate(a[7], :frozen?)
+    assert_predicate(a[8], :frozen?)
+    assert_predicate(a[9], :frozen?)
+    assert_predicate(a[10], :frozen?)
+    assert_predicate(a[10].real, :frozen?)
+    assert_predicate(a[10].imag, :frozen?)
+    assert_predicate(a[11], :frozen?)
+    assert_predicate(a[11].numerator, :frozen?)
+    assert_predicate(a[11].denominator, :frozen?)
+  end
 end
