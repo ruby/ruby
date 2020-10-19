@@ -153,18 +153,24 @@ mjit_exec(rb_execution_context_t *ec)
     const rb_iseq_t *iseq;
     struct rb_iseq_constant_body *body;
 
-    if (!mjit_call_p && !rb_ujit_enabled_p())
-        return Qundef;
-    RB_DEBUG_COUNTER_INC(mjit_exec);
-
-    iseq = ec->cfp->iseq;
-    body = iseq->body;
-    body->total_calls++;
-
-    const int ujit_call_threashold = 10;
-    if (body->total_calls == ujit_call_threashold) {
-        rb_ujit_compile_iseq(iseq);
+    if (mjit_call_p || rb_ujit_enabled_p()) {
+        iseq = ec->cfp->iseq;
+        body = iseq->body;
+        body->total_calls++;
     }
+
+#ifndef MJIT_HEADER
+    const int ujit_call_threashold = 10;
+    if (rb_ujit_enabled_p() && !mjit_call_p && body->total_calls == ujit_call_threashold)  {
+        rb_ujit_compile_iseq(iseq);
+        return Qundef;
+    }
+#endif
+
+    if (!mjit_call_p)
+        return Qundef;
+
+    RB_DEBUG_COUNTER_INC(mjit_exec);
 
     mjit_func_t func = body->jit_func;
     if (UNLIKELY((uintptr_t)func <= LAST_JIT_ISEQ_FUNC)) {

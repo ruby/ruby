@@ -10,7 +10,9 @@ typedef struct rb_iseq_struct rb_iseq_t;
 #define rb_iseq_t rb_iseq_t
 #endif
 
-extern bool rb_ujit_enabled;
+RUBY_SYMBOL_EXPORT_BEGIN
+RUBY_EXTERN bool rb_ujit_enabled;
+RUBY_SYMBOL_EXPORT_END
 
 static inline
 bool rb_ujit_enabled_p(void)
