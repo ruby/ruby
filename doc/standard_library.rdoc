@@ -17,7 +17,6 @@ un.rb:: Utilities to replace common UNIX commands
 == Extensions
 
 Coverage:: Provides coverage measurement for Ruby
-Digest:: Provides a framework for message digest libraries
 Monitor:: Provides an object or module to use safely by more than one thread
 objspace:: Extends ObjectSpace module to add methods for internal statistics
 PTY:: Creates and manages pseudo terminals
@@ -37,6 +36,7 @@ CGI:: Support for the Common Gateway Interface protocol
 CSV:: Provides an interface to read and write CSV files and data
 Delegator:: Provides three abilities to delegate method calls to an object
 DidYouMean:: "Did you mean?" experience in Ruby
+Digest:: Provides a framework for message digest libraries
 DRb:: Distributed object system for Ruby
 English.rb:: Require 'English.rb' to reference global variables with less cryptic names
 ERB:: An easy to use but powerful templating system for Ruby

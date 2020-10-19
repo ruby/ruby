@@ -81,6 +81,7 @@ REPOSITORIES = {
   prettyprint: "ruby/prettyprint",
   drb: "ruby/drb",
   pathname: "ruby/pathname",
+  digest: "ruby/digest",
 }
 
 def sync_default_gems(gem)
@@ -315,6 +316,14 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/test/pathname", "test")
     cp_r("#{upstream}/pathname.gemspec", "ext/pathname")
     `git checkout ext/pathname/depend`
+  when "digest"
+    rm_rf(%w[ext/digest test/digest])
+    cp_r("#{upstream}/ext/digest", "ext")
+    mkdir_p("#{upstream}/ext/digest/lib")
+    cp_r("#{upstream}/lib/digest.rb", "ext/digest/lib")
+    cp_r("#{upstream}/test/digest", "test")
+    cp_r("#{upstream}/digest.gemspec", "ext/digest")
+    `git checkout ext/digest/depend ext/digest/*/depend`
   else
     sync_lib gem, upstream
   end

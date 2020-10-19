@@ -56,8 +56,6 @@ Zachary Scott (zzak)
   Koichi Sasada (ko1)
 [ext/coverage]
   Yusuke Endoh (mame)
-[ext/digest, ext/digest/*]
-  Akinori MUSHA (knu)
 [ext/fiber]
   Koichi Sasada (ko1)
 [ext/monitor]
@@ -112,6 +110,9 @@ Zachary Scott (zzak)
 [lib/did_you_mean.rb]
   Yuki Nishijima (yuki24)
   https://github.com/ruby/did_you_mean
+[ext/digest, ext/digest/*]
+  Akinori MUSHA (knu)
+  https://github.com/ruby/digest
 [lib/drb.rb, lib/drb/*]
   Masatoshi SEKI (seki)
   https://github.com/ruby/drb

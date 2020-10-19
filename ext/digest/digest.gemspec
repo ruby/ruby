@@ -3,7 +3,7 @@
 
 Gem::Specification.new do |spec|
   spec.name          = "digest"
-  spec.version       = "0.1.0"
+  spec.version       = "1.0.0"
   spec.authors       = ["Akinori MUSHA"]
   spec.email         = ["knu@idaemons.org"]
 
@@ -24,9 +24,20 @@ Gem::Specification.new do |spec|
     "ext/digest/sha2/sha2.c", "ext/digest/sha2/sha2.h", "ext/digest/sha2/sha2cc.h", "ext/digest/sha2/sha2init.c",
     "ext/digest/sha2/sha2ossl.h", "ext/digest/test.sh", "ext/openssl/deprecation.rb", "lib/digest.rb"
   ]
+  spec.required_ruby_version = ">= 2.3.0"
+
   spec.bindir        = "exe"
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
+  spec.extensions    = %w[
+    ext/digest/extconf.rb
+    ext/digest/bubblebabble/extconf.rb
+    ext/digest/md5/extconf.rb
+    ext/digest/rmd160/extconf.rb
+    ext/digest/sha1/extconf.rb
+    ext/digest/sha2/extconf.rb
+  ]
+  spec.metadata["msys2_mingw_dependencies"] = "openssl"
 
   spec.add_development_dependency "bundler"
   spec.add_development_dependency "rake"
