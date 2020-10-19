@@ -101,7 +101,7 @@ Get an operand for the adjusted stack pointer address
 x86opnd_t ctx_sp_opnd(ctx_t* ctx, size_t n)
 {
     int32_t offset = (ctx->stack_diff) * 8;
-    return mem_opnd(64, RSI, offset);
+    return mem_opnd(64, R9, offset);
 }
 
 /*
@@ -114,7 +114,7 @@ x86opnd_t ctx_stack_push(ctx_t* ctx, size_t n)
 
     // SP points just above the topmost value
     int32_t offset = (ctx->stack_diff - 1) * 8;
-    return mem_opnd(64, RSI, offset);
+    return mem_opnd(64, R9, offset);
 }
 
 /*
@@ -125,7 +125,7 @@ x86opnd_t ctx_stack_pop(ctx_t* ctx, size_t n)
 {
     // SP points just above the topmost value
     int32_t offset = (ctx->stack_diff - 1) * 8;
-    x86opnd_t top = mem_opnd(64, RSI, offset);
+    x86opnd_t top = mem_opnd(64, R9, offset);
 
     ctx->stack_diff -= n;
 
@@ -136,7 +136,7 @@ x86opnd_t ctx_stack_opnd(ctx_t* ctx, int32_t idx)
 {
     // SP points just above the topmost value
     int32_t offset = (ctx->stack_diff - 1 - idx) * 8;
-    x86opnd_t opnd = mem_opnd(64, RSI, offset);
+    x86opnd_t opnd = mem_opnd(64, R9, offset);
 
     return opnd;
 }
@@ -159,8 +159,8 @@ ujit_gen_exit(codeblock_t* cb, ctx_t* ctx, VALUE* exit_pc)
     if (ctx->stack_diff != 0)
     {
         x86opnd_t stack_pointer = ctx_sp_opnd(ctx, 1);
-        lea(cb, RSI, stack_pointer);
-        mov(cb, mem_opnd(64, RDI, 8), RSI);
+        lea(cb, R9, stack_pointer);
+        mov(cb, mem_opnd(64, RDI, 8), R9);
     }
 
     // Directly return the next PC, which is a constant
@@ -205,7 +205,7 @@ Eventually, this will handle multiple instructions in a sequence
 MicroJIT code gets a pointer to the cfp as the first argument in RDI
 See rb_ujit_empty_func(rb_control_frame_t *cfp) in iseq.c
 
-Throughout the generated code, we store the current stack pointer in RSI
+Throughout the generated code, we store the current stack pointer in R9
 
 System V ABI reference:
 https://wiki.osdev.org/System_V_ABI#x86-64
@@ -270,8 +270,8 @@ ujit_compile_insn(const rb_iseq_t *iseq, unsigned int insn_idx, unsigned int* ne
         {
             ujit_gen_entry(cb);
 
-            // Load the current SP from the CFP into RSI
-            mov(cb, RSI, mem_opnd(64, RDI, 8));
+            // Load the current SP from the CFP into R9
+            mov(cb, R9, mem_opnd(64, RDI, 8));
         }
 
         // Call the code generation function
@@ -656,7 +656,7 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 
     // Save the MicroJIT registers
     push(cb, RDI);
-    push(cb, RSI);
+    push(cb, R9);
 
 
 
@@ -668,7 +668,7 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 
 
     // Restore MicroJIT registers
-    pop(cb, RSI);
+    pop(cb, R9);
     pop(cb, RDI);
 
 
