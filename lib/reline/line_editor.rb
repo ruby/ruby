@@ -56,6 +56,14 @@ class Reline::LineEditor
     reset_variables(encoding: encoding)
   end
 
+  def simplified_rendering?
+    if finished?
+      false
+    else
+      not @rerender_all and not finished? and Reline::IOGate.in_pasting?
+    end
+  end
+
   private def check_multiline_prompt(buffer, prompt)
     if @vi_arg
       prompt = "(arg: #{@vi_arg}) "
@@ -66,6 +74,7 @@ class Reline::LineEditor
     else
       prompt = @prompt
     end
+    return [prompt, calculate_width(prompt, true), [prompt] * buffer.size] if simplified_rendering?
     if @prompt_proc
       prompt_list = @prompt_proc.(buffer)
       prompt_list.map!{ prompt } if @vi_arg or @searching_prompt
@@ -297,6 +306,11 @@ class Reline::LineEditor
     @byte_pointer = new_byte_pointer
   end
 
+  def rerender_all
+    @rerender_all = true
+    rerender
+  end
+
   def rerender
     return if @line.nil?
     if @menu_info
@@ -523,6 +537,7 @@ class Reline::LineEditor
       end
     end
     Reline::IOGate.erase_after_cursor
+    Reline::IOGate.move_cursor_column(0)
     if with_control
       # Just after rendring, so the cursor is on the last line.
       if finished?
@@ -537,7 +552,7 @@ class Reline::LineEditor
   end
 
   private def modify_lines(before)
-    return before if before.nil? || before.empty?
+    return before if before.nil? || before.empty? || simplified_rendering?
 
     if after = @output_modifier_proc&.call("#{before.join("\n")}\n", complete: finished?)
       after.lines("\n").map { |l| l.chomp('') }
@@ -836,7 +851,7 @@ class Reline::LineEditor
     unless completion_occurs
       @completion_state = CompletionState::NORMAL
     end
-    if @is_multiline and @auto_indent_proc
+    if @is_multiline and @auto_indent_proc and not simplified_rendering?
       process_auto_indent
     end
   end
@@ -1038,6 +1053,7 @@ class Reline::LineEditor
 
   def finish
     @finished = true
+    @rerender_all = true
     @config.reset
   end
 

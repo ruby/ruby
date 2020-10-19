@@ -235,13 +235,19 @@ module Reline
       line_editor.rerender
 
       begin
+        prev_pasting_state = false
         loop do
+          prev_pasting_state = Reline::IOGate.in_pasting?
           read_io(config.keyseq_timeout) { |inputs|
             inputs.each { |c|
               line_editor.input_key(c)
               line_editor.rerender
             }
           }
+          if prev_pasting_state == true and not Reline::IOGate.in_pasting? and not line_editor.finished?
+            prev_pasting_state = false
+            line_editor.rerender_all
+          end
           break if line_editor.finished?
         end
         Reline::IOGate.move_cursor_column(0)

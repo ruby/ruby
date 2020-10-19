@@ -67,6 +67,10 @@ class Reline::GeneralIO
   def self.set_winch_handler(&handler)
   end
 
+  def self.in_pasting?
+    false
+  end
+
   def self.prep
   end
 

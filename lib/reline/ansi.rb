@@ -80,6 +80,22 @@ class Reline::ANSI
     nil
   end
 
+  def self.in_pasting?
+    not Reline::IOGate.empty_buffer?
+  end
+
+  def self.empty_buffer?
+    unless @@buf.empty?
+      return false
+    end
+    rs, = IO.select([@@input], [], [], 0.00001)
+    if rs and rs[0]
+      false
+    else
+      true
+    end
+  end
+
   def self.ungetc(c)
     @@buf.unshift(c)
   end
