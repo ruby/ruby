@@ -379,7 +379,26 @@ VALUE rb_block_param_proxy;
 #define ruby_vm_redefined_flag GET_VM()->redefined_flag
 VALUE ruby_vm_const_missing_count = 0;
 rb_vm_t *ruby_current_vm_ptr = NULL;
+
+#ifdef RB_THREAD_LOCAL_SPECIFIER
+RB_THREAD_LOCAL_SPECIFIER rb_execution_context_t *ruby_current_ec;
+
+#ifdef __APPLE__
+  rb_execution_context_t *
+  rb_current_ec(void)
+  {
+      return ruby_current_ec;
+  }
+  void
+  rb_current_ec_set(rb_execution_context_t *ec)
+  {
+      ruby_current_ec = ec;
+  }
+#endif
+
+#else
 native_tls_key_t ruby_current_ec_key;
+#endif
 
 rb_event_flag_t ruby_vm_event_flags;
 rb_event_flag_t ruby_vm_event_enabled_global_flags;

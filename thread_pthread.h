@@ -83,6 +83,14 @@ typedef struct rb_global_vm_lock_struct {
     int wait_yield;
 } rb_global_vm_lock_t;
 
+
+#if __STDC_VERSION__ >= 201112
+  #define RB_THREAD_LOCAL_SPECIFIER _Thread_local
+#elif defined(__GNUC__)
+  /* note that ICC (linux) and Clang are covered by __GNUC__ */
+  #define RB_THREAD_LOCAL_SPECIFIER __thread
+#else
+
 typedef pthread_key_t native_tls_key_t;
 
 static inline void *
@@ -102,5 +110,20 @@ native_tls_set(native_tls_key_t key, void *ptr)
         rb_bug("pthread_setspecific error");
     }
 }
+#endif
+
+RUBY_SYMBOL_EXPORT_BEGIN
+#ifdef RB_THREAD_LOCAL_SPECIFIER
+  #if __APPLE__
+    // on Darwin, TLS can not be accessed across .so
+    struct rb_execution_context_struct *rb_current_ec();
+    void rb_current_ec_set(struct rb_execution_context_struct *);
+  #else
+    RUBY_EXTERN RB_THREAD_LOCAL_SPECIFIER struct rb_execution_context_struct *ruby_current_ec;
+  #endif
+#else
+  RUBY_EXTERN native_tls_key_t ruby_current_ec_key;
+#endif
+RUBY_SYMBOL_EXPORT_END
 
 #endif /* RUBY_THREAD_PTHREAD_H */
