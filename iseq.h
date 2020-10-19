@@ -159,6 +159,8 @@ const rb_iseq_t *rb_iseq_load_iseq(VALUE fname);
 unsigned int *rb_iseq_insns_info_decode_positions(const struct rb_iseq_constant_body *body);
 #endif
 
+int rb_vm_insn_addr2opcode(const void *addr);
+
 RUBY_SYMBOL_EXPORT_BEGIN
 
 /* compile.c */
