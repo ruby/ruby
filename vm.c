@@ -60,8 +60,6 @@ MJIT_FUNC_EXPORTED
 #endif
 VALUE vm_exec(rb_execution_context_t *, int);
 
-thread_local rb_execution_context_t *rb_local_execution_context = NULL;
-
 PUREFUNC(static inline const VALUE *VM_EP_LEP(const VALUE *));
 static inline const VALUE *
 VM_EP_LEP(const VALUE *ep)
@@ -381,6 +379,7 @@ VALUE rb_block_param_proxy;
 #define ruby_vm_redefined_flag GET_VM()->redefined_flag
 VALUE ruby_vm_const_missing_count = 0;
 rb_vm_t *ruby_current_vm_ptr = NULL;
+thread_local rb_execution_context_t *rb_local_execution_context = NULL;
 
 rb_event_flag_t ruby_vm_event_flags;
 rb_event_flag_t ruby_vm_event_enabled_global_flags;

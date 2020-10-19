@@ -1722,6 +1722,8 @@ RUBY_EXTERN rb_event_flag_t ruby_vm_event_flags;
 RUBY_EXTERN rb_event_flag_t ruby_vm_event_enabled_global_flags;
 RUBY_EXTERN unsigned int    ruby_vm_event_local_num;
 
+RUBY_EXTERN thread_local rb_execution_context_t *rb_local_execution_context;
+
 RUBY_SYMBOL_EXPORT_END
 
 #define GET_VM()     rb_current_vm()
@@ -1759,8 +1761,6 @@ rb_ec_vm_ptr(const rb_execution_context_t *ec)
 	return NULL;
     }
 }
-
-extern thread_local rb_execution_context_t *rb_local_execution_context;
 
 static inline rb_execution_context_t *
 rb_current_execution_context(void)
