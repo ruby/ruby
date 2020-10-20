@@ -3292,8 +3292,10 @@ os_obj_of_i(void *vstart, void *vend, size_t stride, void *data)
 	volatile VALUE v = (VALUE)p;
 	if (!internal_object_p(v)) {
 	    if (!oes->of || rb_obj_is_kind_of(v, oes->of)) {
-		rb_yield(v);
-		oes->num++;
+                if (!rb_multi_ractor_p() || rb_ractor_shareable_p(v)) {
+                    rb_yield(v);
+                    oes->num++;
+                }
 	    }
 	}
     }
