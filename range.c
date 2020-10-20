@@ -1332,7 +1332,7 @@ rb_range_values(VALUE range, VALUE *begp, VALUE *endp, int *exclp)
 VALUE
 rb_range_beg_len(VALUE range, long *begp, long *lenp, long len, int err)
 {
-    long beg, end, origbeg, origend;
+    long beg, end;
     VALUE b, e;
     int excl;
 
@@ -1341,8 +1341,6 @@ rb_range_beg_len(VALUE range, long *begp, long *lenp, long len, int err)
     beg = NIL_P(b) ? 0 : NUM2LONG(b);
     end = NIL_P(e) ? -1 : NUM2LONG(e);
     if (NIL_P(e)) excl = 0;
-    origbeg = beg;
-    origend = end;
     if (beg < 0) {
 	beg += len;
 	if (beg < 0)
@@ -1368,8 +1366,7 @@ rb_range_beg_len(VALUE range, long *begp, long *lenp, long len, int err)
 
   out_of_range:
     if (err) {
-	rb_raise(rb_eRangeError, "%ld..%s%ld out of range",
-		 origbeg, excl ? "." : "", origend);
+	rb_raise(rb_eRangeError, "%+"PRIsVALUE" out of range", range);
     }
     return Qnil;
 }

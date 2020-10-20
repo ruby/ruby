@@ -2381,6 +2381,9 @@ class TestArray < Test::Unit::TestCase
     assert_raise(ArgumentError) { [0].freeze[0, 0, 0] = 0 }
     assert_raise(TypeError) { [0][:foo] = 0 }
     assert_raise(FrozenError) { [0].freeze[:foo] = 0 }
+
+    # [Bug #17271]
+    assert_raise_with_message(RangeError, "-7.. out of range") { [*0..5][-7..] = 1 }
   end
 
   def test_first2
