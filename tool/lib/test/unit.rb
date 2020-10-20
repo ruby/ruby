@@ -125,6 +125,7 @@ module Test
             filter = /\A(?=.*#{filter})(?!.*#{negative})/
           end
           if Regexp === filter
+            filter = filter.dup
             # bypass conversion in minitest
             def filter.=~(other)    # :nodoc:
               super unless Regexp === other
