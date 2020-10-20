@@ -173,4 +173,10 @@ class Ractor
       rb_ractor_shareable_p(obj) ? Qtrue : Qfalse;
     }
   end
+
+  def self.make_shareable obj
+    __builtin_cexpr! %q{
+      rb_ractor_make_shareable(obj);
+    }
+  end
 end
