@@ -618,7 +618,7 @@ assert_equal 'true', %q{
 
   def ractor_local_globals
     /a(b)(c)d/ =~ 'abcd' # for $~
-    `echo foo` unless  /solaris/ !~ RUBY_PLATFORM
+    `echo foo` unless  /solaris/ =~ RUBY_PLATFORM
 
     {
      # ractor-local (derived from created ractor): debug
