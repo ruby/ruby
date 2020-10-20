@@ -3177,6 +3177,12 @@ m_core_hash_merge_kwd(VALUE recv, VALUE hash, VALUE kw)
 }
 
 static VALUE
+m_core_make_shareable(VALUE recv, VALUE obj)
+{
+    return rb_obj_freeze(obj);
+}
+
+static VALUE
 core_hash_merge_kwd(VALUE hash, VALUE kw)
 {
     rb_hash_foreach(rb_to_hash_type(kw), kwmerge_i, hash);
@@ -3340,6 +3346,7 @@ Init_VM(void)
     rb_define_method_id(klass, id_core_raise, f_raise, -1);
     rb_define_method_id(klass, idProc, f_proc, 0);
     rb_define_method_id(klass, idLambda, f_lambda, 0);
+    rb_define_method(klass, "make_shareable", m_core_make_shareable, 1);
     rb_obj_freeze(fcore);
     RBASIC_CLEAR_CLASS(klass);
     rb_obj_freeze(klass);
