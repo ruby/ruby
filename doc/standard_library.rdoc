@@ -115,3 +115,5 @@ Rake:: Ruby build program with capabilities similar to make
 Test::Unit:: A compatibility layer for MiniTest
 REXML:: An XML toolkit for Ruby
 RSS:: Family of libraries that support various formats of XML "feeds"
+RBS:: RBS is a language to describe the structure of Ruby programs
+TypeProf:: A type analysis tool for Ruby code based on abstract interpretation
