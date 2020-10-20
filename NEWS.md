@@ -83,7 +83,9 @@ sufficient information, see the ChangeLog file or Redmine
 * Interpolated String literals are no longer frozen when
   `# frozen-string-literal: true` is used. [[Feature #17104]]
 
-* RBS is introduced. It is a type definition language for Ruby programs.
+* A static analysis foundation is introduced.  See "Static analysis" section in detail.
+  * RBS is introduced. It is a type definition language for Ruby programs.
+  * TypeProf is experimentally bundled. It is a type analysis tool for Ruby programs.
 
 ## Command line options
 
@@ -417,7 +419,9 @@ Excluding feature bug fixes.
 
 * Optimize C method call a little
 
-## RBS
+## Statis analysis
+
+### RBS
 
 * RBS is a new language for type definition of Ruby programs.
   It allows writing types of classes and modules with advanced
@@ -427,6 +431,35 @@ Excluding feature bug fixes.
 * Ruby ships with type definitions for core/stdlib classes.
 
 * `rbs` gem is bundled to load and process RBS files.
+
+### TypeProf
+
+* TypeProf is a type analysis tool for Ruby code based on abstract interpretation.
+  * It reads non-annotated Ruby code, tries inferring its type signature, and prints
+    the analysis result in RBS format.
+  * Though it supports only a subset of the Ruby language yet, we will continuously
+    improve the coverage of language features, the analysis performance, and usability.
+
+```ruby
+# test.rb
+def foo(x)
+  if x > 10
+    x.to_s
+  else
+    nil
+  end
+end
+
+foo(42)
+```
+
+```
+$ typeprof test.rb
+# Classes
+class Object
+  def foo : (Integer) -> String?
+end
+```
 
 ## Miscellaneous changes
 
