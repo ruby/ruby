@@ -611,13 +611,6 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     print_str(cb, "calling CFUNC:");
     print_str(cb, rb_id2name(mid));
 
-    // Allocate a new CFP (ec->cfp--)
-    sub(
-        cb,
-        member_opnd(REG_EC, rb_execution_context_t, cfp),
-        imm_opnd(sizeof(rb_control_frame_t))
-    );
-
     // Increment the stack pointer by 3 (in the callee)
     // sp += 3
     lea(cb, REG0, ctx_sp_opnd(ctx));
@@ -625,23 +618,30 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 
     // TODO
     /*
-    // Write method entry at sp[-2]
+    // Write method entry at sp[-3]
     // sp[-2] = me;
     mov(cb, REG1, const_ptr_opnd(cd));
     x86opnd_t ptr_to_cc = member_opnd(REG1, struct rb_call_data, cc);
     mov(cb, REG1, ptr_to_cc);
     x86opnd_t ptr_to_cme_ = mem_opnd(64, REG1, offsetof(struct rb_callcache, cme_));
-    mov(cb, mem_opnd(64, REG0, 8 * -2), ptr_to_cme_);
+    mov(cb, mem_opnd(64, REG0, 8 * -3), ptr_to_cme_);
     */
 
-    // Write block handler at sp[-1]
+    // Write block handler at sp[-2]
     // sp[-1] = block_handler;
-    mov(cb, mem_opnd(64, REG0, 8 * -1), imm_opnd(VM_BLOCK_HANDLER_NONE));
+    mov(cb, mem_opnd(64, REG0, 8 * -2), imm_opnd(VM_BLOCK_HANDLER_NONE));
 
-    // Write env flags at sp[0]
+    // Write env flags at sp[-1]
     // sp[0] = frame_type;
     uint64_t frame_type = VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL;
-    mov(cb, mem_opnd(64, REG0, 0), imm_opnd(frame_type));
+    mov(cb, mem_opnd(64, REG0, 8 * -1), imm_opnd(frame_type));
+
+    // Allocate a new CFP (ec->cfp--)
+    sub(
+        cb,
+        member_opnd(REG_EC, rb_execution_context_t, cfp),
+        imm_opnd(sizeof(rb_control_frame_t))
+    );
 
     // Setup the new frame
     // *cfp = (const struct rb_control_frame_struct) {
@@ -653,7 +653,7 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     //    .block_code = 0,
     //    .__bp__     = sp,
     // };
-    lea(cb, REG1, member_opnd(REG_EC, rb_execution_context_t, cfp));
+    mov(cb, REG1, member_opnd(REG_EC, rb_execution_context_t, cfp));
     mov(cb, member_opnd(REG1, rb_control_frame_t, pc), imm_opnd(0));
     mov(cb, member_opnd(REG1, rb_control_frame_t, sp), REG0);
     mov(cb, member_opnd(REG1, rb_control_frame_t, iseq), imm_opnd(0));
@@ -671,7 +671,7 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 
     // Maintain 16-byte RSP alignment
     if (argc % 2 == 0)
-        push(cb, RAX);
+        sub(cb, RSP, imm_opnd(8));
 
     // Copy SP into RAX because REG_SP will get overwritten
     lea(cb, RAX, ctx_sp_opnd(ctx));
@@ -680,7 +680,7 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     for (int32_t i = argc; i >= 0; --i)
     {
         // Recv is at index argc
-        x86opnd_t stack_opnd = mem_opnd(64, RAX, (i+1) * 8);
+        x86opnd_t stack_opnd = mem_opnd(64, RAX, -(i+1) * 8);
         x86opnd_t c_arg_reg = C_ARG_REGS[i];
         mov(cb, c_arg_reg, stack_opnd);
     }
@@ -697,18 +697,18 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 
     print_str(cb, "after C call");
 
-    // Push the return value on the Ruby stack
-    x86opnd_t stack_ret = ctx_stack_push(ctx, 1);
-    mov(cb, stack_ret, RAX);
-
     // Maintain 16-byte RSP alignment
     if (argc % 2 == 0)
-        pop(cb, RAX);
+        add(cb, RSP, imm_opnd(8));
 
     // Restore MicroJIT registers
     pop(cb, REG_SP);
     pop(cb, REG_EC);
     pop(cb, REG_CFP);
+
+    // Push the return value on the Ruby stack
+    x86opnd_t stack_ret = ctx_stack_push(ctx, 1);
+    mov(cb, stack_ret, RAX);
 
     // TODO: later
     // RUBY_VM_CHECK_INTS(ec);
