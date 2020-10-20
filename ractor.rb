@@ -51,10 +51,6 @@ class Ractor
     }
   end
 
-  def self.make_shareable(obj)
-    obj.freeze
-  end
-
   # Multiplex multiple Ractor communications.
   #
   #   r, obj = Ractor.select(r1, r2)

@@ -10908,12 +10908,14 @@ mark_lvar_used(struct parser_params *p, NODE *rhs)
     }
 }
 
+extern VALUE rb_mRubyVMFrozenCore;
+
 static NODE *
 shareable_constant_value(struct parser_params *p, NODE *value, const YYLTYPE *loc)
 {
     if (p->ctxt.shareable_constant_value) {
-	NODE *ractor = NEW_COLON3(rb_intern("Ractor"), loc);
-	value = NEW_CALL(ractor, rb_intern("make_shareable"),
+	NODE *fcore = NEW_LIT(rb_mRubyVMFrozenCore, loc);
+	value = NEW_CALL(fcore, rb_intern("make_shareable"),
 			NEW_LIST(value, loc), loc);
     }
     return value;
