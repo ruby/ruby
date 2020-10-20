@@ -13,10 +13,11 @@
 class RubyVM::MicroJIT::ExampleInstructions
   include RubyVM::CEscape
 
-  attr_reader :name
+  attr_reader :name, :call_line
 
-  def initialize name
+  def initialize(name, call_line)
     @name = name
+    @call_line = call_line
   end
 
   def pretty_name
@@ -63,7 +64,10 @@ class RubyVM::MicroJIT::ExampleInstructions
     false
   end
 
-  @all_examples = [new('ujit_call_example')]
+  @all_examples = [
+    new('ujit_call_example', 'reg_pc = rb_ujit_empty_func(GET_CFP());'),
+    new('ujit_call_example_with_ec', 'reg_pc = rb_ujit_empty_func_with_ec(GET_CFP(), ec);')
+  ]
 
   def self.to_a
     @all_examples

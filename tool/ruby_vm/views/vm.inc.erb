@@ -32,7 +32,7 @@ INSN_ENTRY(<%= insn.name %>)
 #if USE_MACHINE_REGS
     // assumes USE_MACHINE_REGS, aka reg_pc setup,
     // aka #define SET_PC(x) (reg_cfp->pc = reg_pc = (x))
-    reg_pc = rb_ujit_empty_func(GET_CFP());
+    <%= insn.call_line %>
 #endif
     END_INSN(<%= insn.name %>);
 }

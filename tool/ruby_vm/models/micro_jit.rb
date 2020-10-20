@@ -128,20 +128,23 @@ module RubyVM::MicroJIT
       raise "found an unrecognized \"#{unrecognized[1]}\" instruction in the example. List of recognized instructions: #{acceptable_mnemonics.join(', ')}" if unrecognized
       raise 'found multiple jmp instructions' if handler_instructions.count { |_, mnemonic, _| mnemonic == 'jmp' } > 1
       raise "the jmp instruction seems to be relative which isn't copiable" if instructions[jmp_idx][0].split.size > 4
+      raise 'no call instructions found' if handler_instructions.count { |_, mnemonic, _| mnemonic == 'call' } == 0
       raise 'found multiple call instructions' if handler_instructions.count { |_, mnemonic, _| mnemonic == 'call' } > 1
       call_idx = handler_instructions.find_index { |_, mnemonic, _| mnemonic == 'call' }
 
 
-      @pre_call_bytes = []
-      @post_call_bytes = []
+      pre_call_bytes = []
+      post_call_bytes = []
 
       handler_instructions.take(call_idx).each do |bytes, mnemonic, _|
-        @pre_call_bytes += bytes.split
+        pre_call_bytes += bytes.split
       end
 
       handler_instructions[call_idx + 1, handler_instructions.size].each do |bytes, _, _|
-        @post_call_bytes += bytes.split
+        post_call_bytes += bytes.split
       end
+
+      [pre_call_bytes, post_call_bytes]
     end
 
     def darwin_scrape(instruction_id)
@@ -166,8 +169,19 @@ module RubyVM::MicroJIT
       disassemble(handler_offset)
     end
 
-    def scrape
-      instruction_id = RubyVM::Instructions.find_index { |insn| insn.name == 'ujit_call_example' }
+    def make_result(success, pre_call, post_call, pre_call_with_ec, post_call_with_ec)
+      [success ? 1 : 0,
+       [
+         ['ujit_pre_call_bytes', comma_separated_hex_string(pre_call)],
+         ['ujit_post_call_bytes', comma_separated_hex_string(post_call)],
+         ['ujit_pre_call_with_ec_bytes', comma_separated_hex_string(pre_call_with_ec)],
+         ['ujit_post_call_with_ec_bytes', comma_separated_hex_string(post_call_with_ec)]
+       ]
+      ]
+    end
+
+    def scrape_instruction(instruction_id)
+      raise unless instruction_id.is_a?(Integer)
       case target_platform
       when :darwin
         darwin_scrape(instruction_id)
@@ -176,10 +190,15 @@ module RubyVM::MicroJIT
       else
         raise 'Unkonwn platform. Only Mach-O on macOS and ELF on Linux are supported'
       end
-      [true, comma_separated_hex_string(@pre_call_bytes), comma_separated_hex_string(@post_call_bytes)]
+    end
+
+    def scrape
+      pre, post = scrape_instruction(RubyVM::Instructions.find_index { |insn| insn.name == 'ujit_call_example' })
+      pre_with_ec, post_with_ec = scrape_instruction(RubyVM::Instructions.find_index { |insn| insn.name == 'ujit_call_example_with_ec' })
+      make_result(true, pre, post, pre_with_ec, post_with_ec)
     rescue => e
       print_warning("scrape failed: #{e.message}")
-      [false, '0xcc', '0xcc']
+      make_result(false, ['cc'], ['cc'], ['cc'], ['cc'])
     end
 
     def print_warning(text)

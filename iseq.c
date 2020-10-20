@@ -3170,6 +3170,25 @@ rb_vm_insn_addr2insn(const void *addr)
     rb_bug("rb_vm_insn_addr2insn: invalid insn address: %p", addr);
 }
 
+// Unlike rb_vm_insn_addr2insn, this function can return trace opcode variants.
+int
+rb_vm_insn_addr2opcode(const void *addr)
+{
+    st_data_t key = (st_data_t)addr;
+    st_data_t val;
+
+    if (st_lookup(rb_encoded_insn_data, key, &val)) {
+        insn_data_t *e = (insn_data_t *)val;
+        int opcode = e->insn;
+        if (addr == e->trace_encoded_insn) {
+            opcode += VM_INSTRUCTION_SIZE/2;
+        }
+        return opcode;
+    }
+
+    rb_bug("rb_vm_insn_addr2opcode: invalid insn address: %p", addr);
+}
+
 static inline int
 encoded_iseq_trace_instrument(VALUE *iseq_encoded_insn, rb_event_flag_t turnon)
 {
@@ -3367,6 +3386,13 @@ rb_ujit_empty_func(rb_control_frame_t *cfp)
     // it's put in this file instead of say, compile.c to dodge long C compile time.
     // it just needs to be in a different unit from vm.o so the compiler can't see the definition
     // and is forced to emit a call that respects the calling convention.
+    return NULL;
+}
+
+VALUE *
+rb_ujit_empty_func_with_ec(rb_control_frame_t *cfp, rb_execution_context_t *ec)
+{
+    // see rb_ujit_empty_func
     return NULL;
 }
 

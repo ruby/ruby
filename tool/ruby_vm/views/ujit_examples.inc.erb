@@ -12,7 +12,8 @@
     edit: __FILE__,
 } -%>
 
-% success, pre_call_bytes, post_call_bytes = RubyVM::MicroJIT.scrape
+% success, byte_arrays = RubyVM::MicroJIT.scrape
 static const uint8_t ujit_scrape_successful = <%= success %>;
-static const uint8_t ujit_pre_call_bytes[] = { <%= pre_call_bytes %> };
-static const uint8_t ujit_post_call_bytes[] = { <%= post_call_bytes %> };
+% byte_arrays.each do |(name, bytes)|
+static const uint8_t <%= name %>[] = { <%= bytes %> };
+% end
