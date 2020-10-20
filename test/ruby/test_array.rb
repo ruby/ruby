@@ -1525,12 +1525,16 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[*a.values_at(*idx)], a.slice((3..90)%2))
     idx = 90.step(3, -2).to_a
     assert_equal(@cls[*a.values_at(*idx)], a.slice((90 .. 3)% -2))
+  end
 
-    # Edge cases: It might be good to modify the behaviors of the followings.
+  def test_slice_out_of_range
+    a = @cls[*(1..100).to_a]
+
     assert_nil(a.slice(-101..-1))
     assert_nil(a.slice(-101..))
-    assert_nil(a.slice((-101..-1)%2))
-    assert_nil(a.slice((-101..)%2))
+
+    assert_raise_with_message(RangeError, "((-101..-1).%(2)) out of range") { a.slice((-101..-1)%2) }
+    assert_raise_with_message(RangeError, "((-101..).%(2)) out of range") { a.slice((-101..)%2) }
 
     assert_nil(a.slice(10, -3))
     assert_equal @cls[], a.slice(10..7)

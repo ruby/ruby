@@ -3439,7 +3439,22 @@ rb_arithmetic_sequence_beg_len_step(VALUE obj, long *begp, long *lenp, long *ste
         aseq.end = tmp;
     }
 
-    return rb_range_component_beg_len(aseq.begin, aseq.end, aseq.exclude_end, begp, lenp, len, err);
+    if (err == 0 && (step < -1 || step > 1)) {
+        if (rb_range_component_beg_len(aseq.begin, aseq.end, aseq.exclude_end, begp, lenp, len, 1) == Qtrue) {
+            if (*begp > len)
+                goto out_of_range;
+            if (*lenp > len)
+                goto out_of_range;
+            return Qtrue;
+        }
+    }
+    else {
+        return rb_range_component_beg_len(aseq.begin, aseq.end, aseq.exclude_end, begp, lenp, len, err);
+    }
+
+  out_of_range:
+    rb_raise(rb_eRangeError, "%+"PRIsVALUE" out of range", obj);
+    return Qnil;
 }
 
 /*
