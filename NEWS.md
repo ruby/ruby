@@ -190,6 +190,7 @@ Outstanding ones only.
     * `Fiber#blocking?` tells whether the fiber is non-blocking. [[Feature #16786]]
     * `Fiber#backtrace` & `Fiber#backtrace_locations` provide per-fiber backtrace.
       [[Feature #16815]]
+    * The limitation of `Fiber#transfer` is relaxed. [Bug #17221]
 
 * Kernel
 
