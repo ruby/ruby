@@ -36,6 +36,8 @@ rb_ractor_shareable_p(VALUE obj)
     }
 }
 
+VALUE rb_ractor_make_shareable(VALUE obj);
+
 RUBY_SYMBOL_EXPORT_BEGIN
 
 VALUE rb_ractor_stdin(void);

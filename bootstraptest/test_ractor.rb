@@ -832,6 +832,80 @@ assert_equal '0', %q{
   }.take
 }
 
+# Ractor.make_shareable(obj)
+assert_equal 'true', %q{
+  class C
+    def initialize
+      @a = 'foo'
+      @b = 'bar'
+    end
+    attr_reader :a, :b
+  end
+  S = Struct.new(:s1, :s2)
+  str = "hello"
+  str.instance_variable_set("@iv", "hello")
+  /a/ =~ 'a'
+  m = $~
+  class N < Numeric
+    def /(other)
+      1
+    end
+  end
+  ary = []; ary << ary
+
+  a = [[1, ['2', '3']],
+       {Object.new => "hello"},
+       C.new,
+       S.new("x", "y"),
+       ("a".."b"),
+       str,
+       ary,             # cycle
+       /regexp/,
+       /#{'r'.upcase}/,
+       m,
+       Complex(N.new,0),
+       Rational(N.new,0),
+       true,
+       false,
+       nil,
+       1, 1.2, 1+3r, 1+4i, # Numeric
+  ]
+  Ractor.make_shareable(a)
+
+  # check all frozen
+  a.each{|o|
+    raise o.inspect unless o.frozen?
+
+    case o
+    when C
+      raise o.a.inspect unless o.a.frozen?
+      raise o.b.inspect unless o.b.frozen?
+    when Rational
+      raise o.numerator.inspect unless o.numerator.frozen?
+    when Complex
+      raise o.real.inspect unless o.real.frozen?
+    when Array
+      if o[0] == 1
+        raise o[1][1].inspect unless o[1][1].frozen?
+      end
+    when Hash
+      o.each{|k, v|
+        raise k.inspect unless k.frozen?
+        raise v.inspect unless v.frozen?
+      }
+    end
+  }
+
+  Ractor.shareable?(a)
+}
+
+# Ractor.make_shareable(obj) doesn't freeze shareable objects
+assert_equal 'true', %q{
+  r = Ractor.new{}
+  Ractor.make_shareable(a = [r])
+  [a.frozen?, a[0].frozen?] == [true, false]
+}
+
 ###
 ### Synchronization tests
 ###
