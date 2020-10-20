@@ -99,15 +99,14 @@ class Array
     unless Primitive.block_given_p
       return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'
     end
-    size = self.size
     i = 0
     tp = TracePoint.new(:b_call) do |tp|
       tp.binding.eval("-> m { $~ = m }").call($~)
       tp.disable
     end
-    while i < size
+    while i < self.size
       tp.enable
-      yield self[i]
+      yield Primitive.cexpr! 'RARRAY_AREF(self, NUM2LONG(i))'
       i += 1
     end
     return self
