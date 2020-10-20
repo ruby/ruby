@@ -823,6 +823,15 @@ assert_equal '[1, 4, 3, 2, 1]', %q{
   counts.inspect
 }
 
+# ObjectSpace.each_object can not handle unshareable objects with Ractors
+assert_equal '0', %q{
+  Ractor.new{
+    n = 0
+    ObjectSpace.each_object{|o| n += 1 unless Ractor.shareable?(o)}
+    n
+  }.take
+}
+
 ###
 ### Synchronization tests
 ###
