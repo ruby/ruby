@@ -602,6 +602,7 @@ rb_last_status_set(int status, rb_pid_t pid)
     th->last_status = rb_obj_alloc(rb_cProcessStatus);
     rb_ivar_set(th->last_status, id_status, INT2FIX(status));
     rb_ivar_set(th->last_status, id_pid, PIDT2NUM(pid));
+    rb_obj_freeze(th->last_status);
 }
 
 void
