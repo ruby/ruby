@@ -26,7 +26,7 @@
 #define A_ID(id) add_id(buf, (id))
 #define A_INT(val) rb_str_catf(buf, "%d", (val))
 #define A_LONG(val) rb_str_catf(buf, "%ld", (val))
-#define A_LIT(lit) AR(rb_inspect(lit))
+#define A_LIT(lit) AR(rb_dump_literal(lit))
 #define A_NODE_HEADER(node, term) \
     rb_str_catf(buf, "@ %s (line: %d, location: (%d,%d)-(%d,%d))%s"term, \
 		ruby_node_name(nd_type(node)), nd_line(node), \
@@ -78,6 +78,25 @@
     }
 
 #define LAST_NODE (next_indent = "    ")
+
+VALUE
+rb_dump_literal(VALUE lit)
+{
+    if (!RB_SPECIAL_CONST_P(lit)) {
+        VALUE str;
+        switch (RB_BUILTIN_TYPE(lit)) {
+          case T_CLASS: case T_MODULE: case T_ICLASS:
+            str = rb_class_path(lit);
+            if (FL_TEST(lit, FL_SINGLETON)) {
+                str = rb_sprintf("<%"PRIsVALUE">", str);
+            }
+            return str;
+          default:
+            break;
+        }
+    }
+    return rb_inspect(lit);
+}
 
 static void
 add_indent(VALUE buf, VALUE indent)

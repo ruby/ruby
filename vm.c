@@ -3123,6 +3123,7 @@ Init_VM(void)
 
     /* FrozenCore (hidden) */
     fcore = rb_class_new(rb_cBasicObject);
+    rb_set_class_path(fcore, rb_cRubyVM, "FrozenCore");
     RBASIC(fcore)->flags = T_ICLASS;
     klass = rb_singleton_class(fcore);
     rb_define_method_id(klass, id_core_set_method_alias, m_core_set_method_alias, 3);
