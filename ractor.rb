@@ -166,4 +166,11 @@ class Ractor
     close_incoming
     close_outgoing
   end
+
+  # utility method
+  def self.shareable? obj
+    __builtin_cexpr! %q{
+      rb_ractor_shareable_p(obj) ? Qtrue : Qfalse;
+    }
+  end
 end
