@@ -61,8 +61,8 @@ static codeblock_t* ocb = NULL;
 #define REG_SP RDX
 
 // Scratch registers used by MicroJIT
-#define REG0 RCX
-#define REG1 R8
+#define REG0 RAX
+#define REG1 RCX
 
 // Keep track of mapping from instructions to generated code
 // See comment for rb_encoded_insn_data in iseq.c
@@ -109,7 +109,7 @@ VALUE ctx_get_arg(ctx_t* ctx, size_t arg_idx)
 /*
 Get an operand for the adjusted stack pointer address
 */
-x86opnd_t ctx_sp_opnd(ctx_t* ctx, size_t n)
+x86opnd_t ctx_sp_opnd(ctx_t* ctx)
 {
     int32_t offset = (ctx->stack_diff) * 8;
     return mem_opnd(64, REG_SP, offset);
@@ -169,7 +169,7 @@ ujit_gen_exit(codeblock_t* cb, ctx_t* ctx, VALUE* exit_pc)
     // Write the adjusted SP back into the CFP
     if (ctx->stack_diff != 0)
     {
-        x86opnd_t stack_pointer = ctx_sp_opnd(ctx, 1);
+        x86opnd_t stack_pointer = ctx_sp_opnd(ctx);
         lea(cb, REG_SP, stack_pointer);
         mov(cb, member_opnd(REG_CFP, rb_control_frame_t, sp), REG_SP);
     }
@@ -528,13 +528,19 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 
     const rb_method_cfunc_t *cfunc = UNALIGNED_MEMBER_PTR(me->def, body.cfunc);
 
-    // Don't jit if the argument count doesn't match
+    // Don't JIT if the argument count doesn't match
     if (cfunc->argc < 0 || cfunc->argc != argc)
     {
         return false;
     }
 
-    //printf("call to C function \"%s\", argc: %lu\n", rb_id2name(mid), argc);
+    // Don't JIT functions that need C stack arguments for now
+    if (argc + 1 > NUM_C_ARG_REGS)
+    {
+        return false;
+    }
+
+    //printf("JITting call to C function \"%s\", argc: %lu\n", rb_id2name(mid), argc);
     //print_str(cb, rb_id2name(mid));
     //print_ptr(cb, RCX);
 
@@ -543,28 +549,25 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 
     // Points to the receiver operand on the stack
     x86opnd_t recv = ctx_stack_opnd(ctx, argc);
-    mov(cb, RCX, recv);
+    mov(cb, REG0, recv);
 
-    // IDEA: we may be able to eliminate this in some cases if we know the previous instruction?
-    // TODO: guard_is_object() helper function?
-    //
     // Check that the receiver is a heap object
-    test(cb, RCX, imm_opnd(RUBY_IMMEDIATE_MASK));
+    test(cb, REG0, imm_opnd(RUBY_IMMEDIATE_MASK));
     jnz_ptr(cb, side_exit);
-    cmp(cb, RCX, imm_opnd(Qfalse));
+    cmp(cb, REG0, imm_opnd(Qfalse));
     je_ptr(cb, side_exit);
-    cmp(cb, RCX, imm_opnd(Qnil));
+    cmp(cb, REG0, imm_opnd(Qnil));
     je_ptr(cb, side_exit);
 
     // Pointer to the klass field of the receiver &(recv->klass)
-    x86opnd_t klass_opnd = mem_opnd(64, RCX, offsetof(struct RBasic, klass));
+    x86opnd_t klass_opnd = mem_opnd(64, REG0, offsetof(struct RBasic, klass));
 
     // FIXME: currently assuming that cc->klass doesn't change
     // Ideally we would like the GC to update the klass pointer
     //
     // Check if we have a cache hit
-    mov(cb, RAX, const_ptr_opnd((void*)cd->cc->klass));
-    cmp(cb, RAX, klass_opnd);
+    mov(cb, REG1, const_ptr_opnd((void*)cd->cc->klass));
+    cmp(cb, REG1, klass_opnd);
     jne_ptr(cb, side_exit);
 
     // NOTE: there *has to be* a way to optimize the entry invalidated check
@@ -573,12 +576,12 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     // Check that the method entry is not invalidated
     // cd->cc->cme->flags
     // #define METHOD_ENTRY_INVALIDATED(me) ((me)->flags & IMEMO_FL_USER5)
-    mov(cb, RAX, const_ptr_opnd(cd));
-    x86opnd_t ptr_to_cc = member_opnd(RAX, struct rb_call_data, cc);
-    mov(cb, RAX, ptr_to_cc);
-    x86opnd_t ptr_to_cme_ = mem_opnd(64, RAX, offsetof(struct rb_callcache, cme_));
-    mov(cb, RAX, ptr_to_cme_);
-    x86opnd_t flags_opnd = mem_opnd(64, RAX, offsetof(rb_callable_method_entry_t, flags));
+    mov(cb, REG1, const_ptr_opnd(cd));
+    x86opnd_t ptr_to_cc = member_opnd(REG1, struct rb_call_data, cc);
+    mov(cb, REG1, ptr_to_cc);
+    x86opnd_t ptr_to_cme_ = mem_opnd(64, REG1, offsetof(struct rb_callcache, cme_));
+    mov(cb, REG1, ptr_to_cme_);
+    x86opnd_t flags_opnd = mem_opnd(64, REG1, offsetof(rb_callable_method_entry_t, flags));
     test(cb, flags_opnd, imm_opnd(IMEMO_FL_USER5));
     jnz_ptr(cb, side_exit);
 
@@ -589,7 +592,7 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     // TODO: do we need this check?
     //vm_check_frame(type, specval, cref_or_me, iseq);
 
-    // FIXME: stack overflow check
+    // TODO: stack overflow check
     //vm_check_canary(ec, sp);
 
 
@@ -604,100 +607,119 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 
 
 
-    // Allocate a new CFP
-    //ec->cfp--;
 
+    print_str(cb, "calling CFUNC:");
+    print_str(cb, rb_id2name(mid));
 
+    // Allocate a new CFP (ec->cfp--)
+    sub(
+        cb,
+        member_opnd(REG_EC, rb_execution_context_t, cfp),
+        imm_opnd(sizeof(rb_control_frame_t))
+    );
 
+    // Increment the stack pointer by 3 (in the callee)
+    // sp += 3
+    lea(cb, REG0, ctx_sp_opnd(ctx));
+    add(cb, REG0, imm_opnd(8 * 3));
 
-    // Increment the stack pointer by 3
-    //sp += 3
-
-    // Write method entry at sp[-2]
-    //sp[-2] = me;
-
-    // Write block handller at sp[-1]
-    //VALUE recv = calling->recv;
-    //VALUE block_handler = calling->block_handler;
-    //sp[-1] = block_handler;
-
-    // Write env flags at sp[0]
-    uint64_t frame_type = VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL;
-    //sp[0] = frame_type;
-
-
-
-    // Setup the new frame
+    // TODO
     /*
-    *cfp = (const struct rb_control_frame_struct) {
-        .pc         = 0,
-        .sp         = sp,
-        .iseq       = 0,
-        .self       = recv,
-        .ep         = sp - 1,
-        .block_code = 0,
-        .__bp__     = sp,
-    };
-    ec->cfp = cfp;
+    // Write method entry at sp[-2]
+    // sp[-2] = me;
+    mov(cb, REG1, const_ptr_opnd(cd));
+    x86opnd_t ptr_to_cc = member_opnd(REG1, struct rb_call_data, cc);
+    mov(cb, REG1, ptr_to_cc);
+    x86opnd_t ptr_to_cme_ = mem_opnd(64, REG1, offsetof(struct rb_callcache, cme_));
+    mov(cb, mem_opnd(64, REG0, 8 * -2), ptr_to_cme_);
     */
 
+    // Write block handler at sp[-1]
+    // sp[-1] = block_handler;
+    mov(cb, mem_opnd(64, REG0, 8 * -1), imm_opnd(VM_BLOCK_HANDLER_NONE));
 
+    // Write env flags at sp[0]
+    // sp[0] = frame_type;
+    uint64_t frame_type = VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL;
+    mov(cb, mem_opnd(64, REG0, 0), imm_opnd(frame_type));
 
-
-    // NOTE: we need a helper to pop multiple values here
-    // Pop the C function arguments from the stack (in the caller)
-    //reg_cfp->sp -= orig_argc + 1;
-
-
-
-
+    // Setup the new frame
+    // *cfp = (const struct rb_control_frame_struct) {
+    //    .pc         = 0,
+    //    .sp         = sp,
+    //    .iseq       = 0,
+    //    .self       = recv,
+    //    .ep         = sp - 1,
+    //    .block_code = 0,
+    //    .__bp__     = sp,
+    // };
+    lea(cb, REG1, member_opnd(REG_EC, rb_execution_context_t, cfp));
+    mov(cb, member_opnd(REG1, rb_control_frame_t, pc), imm_opnd(0));
+    mov(cb, member_opnd(REG1, rb_control_frame_t, sp), REG0);
+    mov(cb, member_opnd(REG1, rb_control_frame_t, iseq), imm_opnd(0));
+    mov(cb, member_opnd(REG1, rb_control_frame_t, block_code), imm_opnd(0));
+    mov(cb, member_opnd(REG1, rb_control_frame_t, __bp__), REG0);
+    sub(cb, REG0, imm_opnd(1));
+    mov(cb, member_opnd(REG1, rb_control_frame_t, ep), REG0);
+    mov(cb, REG0, recv);
+    mov(cb, member_opnd(REG1, rb_control_frame_t, self), REG0);
 
     // Save the MicroJIT registers
     push(cb, REG_CFP);
     push(cb, REG_EC);
     push(cb, REG_SP);
 
+    // Maintain 16-byte RSP alignment
+    if (argc % 2 == 0)
+        push(cb, RAX);
 
+    // Copy SP into RAX because REG_SP will get overwritten
+    lea(cb, RAX, ctx_sp_opnd(ctx));
 
+    // Copy the arguments from the stack to the C argument registers
+    for (int32_t i = argc; i >= 0; --i)
+    {
+        // Recv is at index argc
+        x86opnd_t stack_opnd = mem_opnd(64, RAX, (i+1) * 8);
+        x86opnd_t c_arg_reg = C_ARG_REGS[i];
+        mov(cb, c_arg_reg, stack_opnd);
+    }
 
-    // Call the function
-    //VALUE ret = (cfunc->func)(recv, argv[0], argv[1]);
+    // Pop the C function arguments from the stack (in the caller)
+    ctx_stack_pop(ctx, argc + 1);
 
+    print_str(cb, "before C call");
 
+    // Call the C function
+    // VALUE ret = (cfunc->func)(recv, argv[0], argv[1]);
+    mov(cb, REG0, const_ptr_opnd(cfunc->func));
+    call(cb, REG0);
 
+    print_str(cb, "after C call");
+
+    // Push the return value on the Ruby stack
+    x86opnd_t stack_ret = ctx_stack_push(ctx, 1);
+    mov(cb, stack_ret, RAX);
+
+    // Maintain 16-byte RSP alignment
+    if (argc % 2 == 0)
+        pop(cb, RAX);
 
     // Restore MicroJIT registers
     pop(cb, REG_SP);
     pop(cb, REG_EC);
     pop(cb, REG_CFP);
 
-
-
-
-
     // TODO: later
     // RUBY_VM_CHECK_INTS(ec);
 
-    // Pop the stack frame
-    //ec->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+    // Pop the stack frame (ec->cfp++)
+    add(
+        cb,
+        member_opnd(REG_EC, rb_execution_context_t, cfp),
+        imm_opnd(sizeof(rb_control_frame_t))
+    );
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    jmp_ptr(cb, side_exit);
     return true;
 }
 
