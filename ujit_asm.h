@@ -209,6 +209,10 @@ static const x86opnd_t R13B = { OPND_REG, 8, .as.reg = { REG_GP, 13 }};
 static const x86opnd_t R14B = { OPND_REG, 8, .as.reg = { REG_GP, 14 }};
 static const x86opnd_t R15B = { OPND_REG, 8, .as.reg = { REG_GP, 15 }};
 
+// C argument registers
+#define NUM_C_ARG_REGS 6
+#define C_ARG_REGS ( (x86opnd_t[]){ RDI, RSI, RDX, RCX, R8, R9 } )
+
 // Memory operand with base register and displacement/offset
 x86opnd_t mem_opnd(size_t num_bits, x86opnd_t base_reg, int32_t disp);
 
