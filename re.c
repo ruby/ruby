@@ -19,6 +19,7 @@
 #include "internal/imemo.h"
 #include "internal/re.h"
 #include "internal/string.h"
+#include "internal/variable.h"
 #include "regint.h"
 #include "ruby/encoding.h"
 #include "ruby/re.h"
@@ -4051,6 +4052,12 @@ Init_Regexp(void)
     rb_define_virtual_variable("$`", prematch_getter, 0);
     rb_define_virtual_variable("$'", postmatch_getter, 0);
     rb_define_virtual_variable("$+", last_paren_match_getter, 0);
+
+    rb_gvar_ractor_local("$~");
+    rb_gvar_ractor_local("$&");
+    rb_gvar_ractor_local("$`");
+    rb_gvar_ractor_local("$'");
+    rb_gvar_ractor_local("$+");
 
     rb_define_virtual_variable("$=", ignorecase_getter, ignorecase_setter);
     rb_define_virtual_variable("$KCODE", kcode_getter, kcode_setter);

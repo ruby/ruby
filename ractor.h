@@ -125,6 +125,8 @@ struct rb_ractor_struct {
     VALUE r_stdin;
     VALUE r_stdout;
     VALUE r_stderr;
+    VALUE verbose;
+    VALUE debug;
 }; // rb_ractor_t is defined in vm_core.h
 
 rb_ractor_t *rb_ractor_main_alloc(void);
