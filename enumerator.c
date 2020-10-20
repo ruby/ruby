@@ -3410,15 +3410,51 @@ rb_arithmetic_sequence_extract(VALUE obj, rb_arithmetic_sequence_components_t *c
         component->exclude_end = arith_seq_exclude_end_p(obj);
         return 1;
     }
-    else if (rb_obj_is_kind_of(obj, rb_cRange)) {
-        component->begin = RANGE_BEG(obj);
-        component->end   = RANGE_END(obj);
+    else if (rb_range_values(obj, &component->begin, &component->end, &component->exclude_end)) {
         component->step  = INT2FIX(1);
-        component->exclude_end = RTEST(RANGE_EXCL(obj));
         return 1;
     }
 
     return 0;
+}
+
+VALUE
+rb_arithmetic_sequence_beg_len_step(VALUE obj, long *begp, long *lenp, long *stepp, long len, int err)
+{
+    RUBY_ASSERT(begp != NULL);
+    RUBY_ASSERT(lenp != NULL);
+    RUBY_ASSERT(stepp != NULL);
+
+    rb_arithmetic_sequence_components_t aseq;
+    if (!rb_arithmetic_sequence_extract(obj, &aseq)) {
+        return Qfalse;
+    }
+
+    long step = NIL_P(aseq.step) ? 1 : NUM2LONG(aseq.step);
+    *stepp = step;
+
+    if (step < 0) {
+        VALUE tmp = aseq.begin;
+        aseq.begin = aseq.end;
+        aseq.end = tmp;
+    }
+
+    if (err == 0 && (step < -1 || step > 1)) {
+        if (rb_range_component_beg_len(aseq.begin, aseq.end, aseq.exclude_end, begp, lenp, len, 1) == Qtrue) {
+            if (*begp > len)
+                goto out_of_range;
+            if (*lenp > len)
+                goto out_of_range;
+            return Qtrue;
+        }
+    }
+    else {
+        return rb_range_component_beg_len(aseq.begin, aseq.end, aseq.exclude_end, begp, lenp, len, err);
+    }
+
+  out_of_range:
+    rb_raise(rb_eRangeError, "%+"PRIsVALUE" out of range", obj);
+    return Qnil;
 }
 
 /*
