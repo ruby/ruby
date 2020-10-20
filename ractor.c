@@ -1373,6 +1373,10 @@ ractor_create(rb_execution_context_t *ec, VALUE self, VALUE loc, VALUE name, VAL
     r->r_stdout = rb_io_prep_stdout();
     r->r_stderr = rb_io_prep_stderr();
 
+    rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
+    r->verbose = cr->verbose;
+    r->debug = cr->debug;
+
     rb_thread_create_ractor(r, args, block);
 
     RB_GC_GUARD(rv);

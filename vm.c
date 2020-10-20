@@ -3515,28 +3515,18 @@ Init_top_self(void)
     rb_define_alias(rb_singleton_class(rb_vm_top_self()), "inspect", "to_s");
 }
 
-static VALUE *
-ruby_vm_verbose_ptr(rb_vm_t *vm)
-{
-    return &vm->verbose;
-}
-
-static VALUE *
-ruby_vm_debug_ptr(rb_vm_t *vm)
-{
-    return &vm->debug;
-}
-
 VALUE *
 rb_ruby_verbose_ptr(void)
 {
-    return ruby_vm_verbose_ptr(GET_VM());
+    rb_ractor_t *cr = GET_RACTOR();
+    return &cr->verbose;
 }
 
 VALUE *
 rb_ruby_debug_ptr(void)
 {
-    return ruby_vm_debug_ptr(GET_VM());
+    rb_ractor_t *cr = GET_RACTOR();
+    return &cr->debug;
 }
 
 /* iseq.c */

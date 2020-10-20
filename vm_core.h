@@ -633,7 +633,7 @@ typedef struct rb_vm_struct {
     struct list_head workqueue; /* <=> rb_workqueue_job.jnode */
     rb_nativethread_lock_t workqueue_lock;
 
-    VALUE verbose, debug, orig_progname, progname;
+    VALUE orig_progname, progname;
     VALUE coverages;
     int coverage_mode;
 

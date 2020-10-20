@@ -8445,6 +8445,10 @@ InitVM_process(void)
 #define rb_intern(str) rb_intern_const(str)
     rb_define_virtual_variable("$?", get_CHILD_STATUS, 0);
     rb_define_virtual_variable("$$", get_PROCESS_ID, 0);
+
+    rb_gvar_ractor_local("$$");
+    rb_gvar_ractor_local("$?");
+
     rb_define_global_function("exec", f_exec, -1);
     rb_define_global_function("fork", rb_f_fork, 0);
     rb_define_global_function("exit!", rb_f_exit_bang, -1);
