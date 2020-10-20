@@ -582,8 +582,9 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     test(cb, flags_opnd, imm_opnd(IMEMO_FL_USER5));
     jnz_ptr(cb, side_exit);
 
-
-    // NOTE: stack frame setup may not be needed for some C functions
+    // IDEA: stack frame setup may not be needed for some C functions
+    // We could profile the most called C functions and identify which are safe
+    // This may help us eliminate stack overflow checks as well
 
     // TODO: do we need this check?
     //vm_check_frame(type, specval, cref_or_me, iseq);
@@ -605,6 +606,8 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 
     // FIXME: for now, we hardcode ec
     // TODO: hardcode EC
+    //mov(cb, RDI, const_ptr_opnd(rb_current_execution_context()));
+
 
     // Allocate a new CFP
     //ec->cfp--;
