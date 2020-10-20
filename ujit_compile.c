@@ -53,6 +53,17 @@ static codeblock_t* cb = NULL;
 static codeblock_t outline_block;
 static codeblock_t* ocb = NULL;
 
+// Register MicroJIT receives the CFP and EC into
+#define REG_CFP RDI
+#define REG_EC RSI
+
+// Register MicroJIT loads the SP into
+#define REG_SP RDX
+
+// Scratch registers used by MicroJIT
+#define REG0 RCX
+#define REG1 R8
+
 // Keep track of mapping from instructions to generated code
 // See comment for rb_encoded_insn_data in iseq.c
 static void
@@ -101,7 +112,7 @@ Get an operand for the adjusted stack pointer address
 x86opnd_t ctx_sp_opnd(ctx_t* ctx, size_t n)
 {
     int32_t offset = (ctx->stack_diff) * 8;
-    return mem_opnd(64, R9, offset);
+    return mem_opnd(64, REG_SP, offset);
 }
 
 /*
@@ -114,7 +125,7 @@ x86opnd_t ctx_stack_push(ctx_t* ctx, size_t n)
 
     // SP points just above the topmost value
     int32_t offset = (ctx->stack_diff - 1) * 8;
-    return mem_opnd(64, R9, offset);
+    return mem_opnd(64, REG_SP, offset);
 }
 
 /*
@@ -125,7 +136,7 @@ x86opnd_t ctx_stack_pop(ctx_t* ctx, size_t n)
 {
     // SP points just above the topmost value
     int32_t offset = (ctx->stack_diff - 1) * 8;
-    x86opnd_t top = mem_opnd(64, R9, offset);
+    x86opnd_t top = mem_opnd(64, REG_SP, offset);
 
     ctx->stack_diff -= n;
 
@@ -136,7 +147,7 @@ x86opnd_t ctx_stack_opnd(ctx_t* ctx, int32_t idx)
 {
     // SP points just above the topmost value
     int32_t offset = (ctx->stack_diff - 1 - idx) * 8;
-    x86opnd_t opnd = mem_opnd(64, R9, offset);
+    x86opnd_t opnd = mem_opnd(64, REG_SP, offset);
 
     return opnd;
 }
@@ -159,15 +170,13 @@ ujit_gen_exit(codeblock_t* cb, ctx_t* ctx, VALUE* exit_pc)
     if (ctx->stack_diff != 0)
     {
         x86opnd_t stack_pointer = ctx_sp_opnd(ctx, 1);
-        lea(cb, R9, stack_pointer);
-        mov(cb, mem_opnd(64, RDI, 8), R9);
+        lea(cb, REG_SP, stack_pointer);
+        mov(cb, member_opnd(REG_CFP, rb_control_frame_t, sp), REG_SP);
     }
 
     // Directly return the next PC, which is a constant
     mov(cb, RAX, const_ptr_opnd(exit_pc));
-
-    // Write PC back into the CFP
-    mov(cb, mem_opnd(64, RDI, 0), RAX);
+    mov(cb, member_opnd(REG_CFP, rb_control_frame_t, pc), RAX);
 
     // Write the post call bytes
     for (size_t i = 0; i < sizeof(ujit_post_call_with_ec_bytes); ++i)
@@ -201,21 +210,12 @@ ujit_side_exit(codeblock_t* cb, ctx_t* ctx, VALUE* exit_pc)
 /*
 Generate a chunk of machine code for one individual bytecode instruction
 Eventually, this will handle multiple instructions in a sequence
-
-MicroJIT code gets a pointer to the cfp as the first argument in RDI
-See rb_ujit_empty_func(rb_control_frame_t *cfp) in iseq.c
-
-Throughout the generated code, we store the current stack pointer in R9
-
-System V ABI reference:
-https://wiki.osdev.org/System_V_ABI#x86-64
 */
 uint8_t *
 ujit_compile_insn(const rb_iseq_t *iseq, unsigned int insn_idx, unsigned int* next_ujit_idx)
 {
-    if (!cb) {
-        return NULL;
-    }
+    assert (cb != NULL);
+
     VALUE *encoded = iseq->body->iseq_encoded;
 
     // NOTE: if we are ever deployed in production, we
@@ -270,8 +270,8 @@ ujit_compile_insn(const rb_iseq_t *iseq, unsigned int insn_idx, unsigned int* ne
         {
             ujit_gen_entry(cb);
 
-            // Load the current SP from the CFP into R9
-            mov(cb, R9, mem_opnd(64, RDI, 8));
+            // Load the current SP from the CFP into REG_SP
+            mov(cb, REG_SP, member_opnd(REG_CFP, rb_control_frame_t, sp));
         }
 
         // Call the code generation function
@@ -371,7 +371,7 @@ bool
 gen_putself(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 {
     // Load self from CFP
-    mov(cb, RAX, mem_opnd(64, RDI, 24));
+    mov(cb, RAX, member_opnd(REG_CFP, rb_control_frame_t, self));
 
     // Write it on the stack
     x86opnd_t stack_top = ctx_stack_push(ctx, 1);
@@ -384,18 +384,18 @@ bool
 gen_getlocal_wc0(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 {
     // Load environment pointer EP from CFP
-    mov(cb, RDX, member_opnd(RDI, rb_control_frame_t, ep));
+    mov(cb, REG0, member_opnd(REG_CFP, rb_control_frame_t, ep));
 
     // Compute the offset from BP to the local
     int32_t local_idx = (int32_t)ctx_get_arg(ctx, 0);
     const int32_t offs = -8 * local_idx;
 
     // Load the local from the block
-    mov(cb, RCX, mem_opnd(64, RDX, offs));
+    mov(cb, REG0, mem_opnd(64, REG0, offs));
 
     // Write the local at SP
     x86opnd_t stack_top = ctx_stack_push(ctx, 1);
-    mov(cb, stack_top, RCX);
+    mov(cb, stack_top, REG0);
 
     return true;
 }
@@ -417,10 +417,10 @@ gen_setlocal_wc0(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     */
 
     // Load environment pointer EP from CFP
-    mov(cb, RDX, member_opnd(RDI, rb_control_frame_t, ep));
+    mov(cb, REG0, member_opnd(REG_CFP, rb_control_frame_t, ep));
 
     // flags & VM_ENV_FLAG_WB_REQUIRED
-    x86opnd_t flags_opnd = mem_opnd(64, RDX, 8 * VM_ENV_DATA_INDEX_FLAGS);
+    x86opnd_t flags_opnd = mem_opnd(64, REG0, 8 * VM_ENV_DATA_INDEX_FLAGS);
     test(cb, flags_opnd, imm_opnd(VM_ENV_FLAG_WB_REQUIRED));
 
     // Create a size-exit to fall back to the interpreter
@@ -431,12 +431,12 @@ gen_setlocal_wc0(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 
     // Pop the value to write from the stack
     x86opnd_t stack_top = ctx_stack_pop(ctx, 1);
-    mov(cb, RCX, stack_top);
+    mov(cb, REG1, stack_top);
 
     // Write the value at the environment pointer
     int32_t local_idx = (int32_t)ctx_get_arg(ctx, 0);
     const int32_t offs = -8 * local_idx;
-    mov(cb, mem_opnd(64, RDX, offs), RCX);
+    mov(cb, mem_opnd(64, REG0, offs), REG1);
 
     return true;
 }
@@ -604,11 +604,6 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 
 
 
-    // FIXME: for now, we hardcode ec
-    // TODO: hardcode EC
-    //mov(cb, RDI, const_ptr_opnd(rb_current_execution_context()));
-
-
     // Allocate a new CFP
     //ec->cfp--;
 
@@ -658,8 +653,9 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 
 
     // Save the MicroJIT registers
-    push(cb, RDI);
-    push(cb, R9);
+    push(cb, REG_CFP);
+    push(cb, REG_EC);
+    push(cb, REG_SP);
 
 
 
@@ -671,8 +667,9 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 
 
     // Restore MicroJIT registers
-    pop(cb, R9);
-    pop(cb, RDI);
+    pop(cb, REG_SP);
+    pop(cb, REG_EC);
+    pop(cb, REG_CFP);
 
 
 
