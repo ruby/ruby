@@ -35,26 +35,35 @@ static void coroutine_flush_register_windows() {
 static void coroutine_flush_register_windows() {}
 #endif
 
+__attribute__((noinline))
+volatile void *volatile coroutine_save_stack_pointer(volatile char *volatile buf) {
+    volatile void *volatile stack_pointer = &stack_pointer;
+    return stack_pointer;
+}
+
 int coroutine_save_stack(struct coroutine_context * context) {
-    void *stack_pointer = &stack_pointer;
+    volatile void *volatile stack_pointer;
+    volatile char buf[128];
 
     assert(context->stack);
     assert(context->base);
 
-    // At this point, you may need to ensure on architectures that use register windows, that all registers are flushed to the stack.
-    coroutine_flush_register_windows();
-
+    stack_pointer = coroutine_save_stack_pointer((volatile char *volatile)buf);
     // Save stack to private area:
     if (stack_pointer < context->base) {
         size_t size = (char*)context->base - (char*)stack_pointer;
         assert(size <= context->size);
 
+        // At this point, you may need to ensure on architectures that use register windows, that all registers are flushed to the stack.
+        coroutine_flush_register_windows();
         memcpy(context->stack, stack_pointer, size);
         context->used = size;
     } else {
         size_t size = (char*)stack_pointer - (char*)context->base;
         assert(size <= context->size);
 
+        // At this point, you may need to ensure on architectures that use register windows, that all registers are flushed to the stack.
+        coroutine_flush_register_windows();
         memcpy(context->stack, context->base, size);
         context->used = size;
     }
@@ -64,7 +73,7 @@ int coroutine_save_stack(struct coroutine_context * context) {
 }
 
 __attribute__((noreturn, noinline))
-static void coroutine_restore_stack_padded(struct coroutine_context *context, void * buffer) {
+static void coroutine_restore_stack_padded(struct coroutine_context *context, volatile long* buffer) {
     void *stack_pointer = &stack_pointer;
 
     assert(context->base);
@@ -74,17 +83,19 @@ static void coroutine_restore_stack_padded(struct coroutine_context *context, vo
         void * bottom = (char*)context->base - context->used;
         assert(bottom > stack_pointer);
 
+        coroutine_flush_register_windows();
         memcpy(bottom, context->stack, context->used);
     } else {
         void * top = (char*)context->base + context->used;
         assert(top < stack_pointer);
 
+        coroutine_flush_register_windows();
         memcpy(context->base, context->stack, context->used);
     }
 
     // Restore registers:
     // The `| (int)buffer` is to force the compiler NOT to elide he buffer and `alloca`.
-    _longjmp(context->state, 1 | (int)buffer);
+    _longjmp(context->state, 1 | (int)(long)buffer);
 }
 
 static const size_t GAP = 128;
@@ -92,24 +103,40 @@ static const size_t GAP = 128;
 // In order to swap between coroutines, we need to swap the stack and registers.
 // `setjmp` and `longjmp` are able to swap registers, but what about swapping stacks? You can use `memcpy` to copy the current stack to a private area and `memcpy` to copy the private stack of the next coroutine to the main stack.
 // But if the stack yop are copying in to the main stack is bigger than the currently executing stack, the `memcpy` will clobber the current stack frame (including the context argument). So we use `alloca` to push the current stack frame *beyond* the stack we are about to copy in. This ensures the current stack frame in `coroutine_restore_stack_padded` remains valid for calling `longjmp`.
-__attribute__((noreturn))
-void coroutine_restore_stack(struct coroutine_context *context) {
-    void *stack_pointer = &stack_pointer;
-    void *buffer = NULL;
-    ssize_t offset = 0;
+__attribute__((noreturn, noinline))
+void coroutine_restore_stack_0(struct coroutine_context *context, volatile long *addr_in_prev_frame) {
+    volatile long space[1];
 
     // We must ensure that the next stack frame is BEYOND the stack we are restoring:
-    if (stack_pointer < context->base) {
-        offset = (char*)stack_pointer - ((char*)context->base - context->used) + GAP;
-        if (offset > 0) buffer = alloca(offset);
+    if (addr_in_prev_frame < (long *)context->base) {
+        if (addr_in_prev_frame > &space[0]) {
+            volatile long *volatile end = (volatile long *volatile)context->base - context->used;
+            if (&space[0] > end - GAP) {
+                volatile long *volatile sp = alloca(sizeof(long) * (&space[0] - end));
+                space[0] = *sp;
+                coroutine_restore_stack_0(context, &space[0]);
+            }
+        }
     } else {
-        offset = ((char*)context->base + context->used) - (char*)stack_pointer + GAP;
-        if (offset > 0) buffer = alloca(offset);
+        if (addr_in_prev_frame <= &space[0]) {
+            volatile long *volatile end = (volatile long *volatile)context->base + context->used;
+            if (&space[0] < end + GAP) {
+                volatile long *volatile sp = alloca(sizeof(long) * (end - &space[0]));
+                space[0] = *sp;
+                coroutine_restore_stack_0(context, &space[0]);
+            }
+        }
     }
 
     assert(context->used > 0);
 
-    coroutine_restore_stack_padded(context, buffer);
+    coroutine_restore_stack_padded(context, &space[0]);
+}
+
+__attribute__((noreturn, noinline))
+void coroutine_restore_stack(struct coroutine_context *context) {
+    volatile long stack_pointer;
+    coroutine_restore_stack_0(context, &stack_pointer);
 }
 
 struct coroutine_context *coroutine_transfer(struct coroutine_context *current, struct coroutine_context *target)
