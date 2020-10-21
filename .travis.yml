@@ -233,28 +233,6 @@ env:
         zlib1g-dev:armhf
         zlib1g:armhf
 
-  - &spec-on-old-ruby
-    language: ruby
-    before_install:
-    install:
-    before_script: chmod -R u+w spec/ruby
-    # -j randomly hangs.
-    script: ruby -C spec/ruby ../mspec/bin/mspec .
-
-  - &rubyspec25
-    name: Check ruby/spec version guards on Ruby 2.5
-    rvm: 2.5.7
-    <<: *spec-on-old-ruby
-    after_failure:
-      - echo "ruby/spec failed on Ruby 2.5. This is likely because of a missing ruby_version_is guard, please add it. See spec/README.md."
-
-  - &rubyspec27
-    name: Check ruby/spec version guards on Ruby 2.7
-    rvm: 2.7.0
-    <<: *spec-on-old-ruby
-    after_failure:
-      - echo "ruby/spec failed on Ruby 2.7. This is likely because of a missing ruby_version_is guard, please add it. See spec/README.md."
-
   - &baseruby
     name: "BASERUBY: Ruby 2.2"
     <<: *gcc-8
@@ -268,8 +246,6 @@ matrix:
     - <<: *x86_64-linux
     - <<: *i686-linux
     - <<: *baseruby
-    - <<: *rubyspec25
-    - <<: *rubyspec27
     # Build every commit (Allowed Failures):
     - <<: *arm32-linux
     - <<: *arm64-linux
