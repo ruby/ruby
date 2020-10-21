@@ -75,12 +75,24 @@ describe "Array#flatten" do
     [[obj]].flatten(1)
   end
 
-  it "returns subclass instance for Array subclasses" do
-    ArraySpecs::MyArray[].flatten.should be_an_instance_of(ArraySpecs::MyArray)
-    ArraySpecs::MyArray[1, 2, 3].flatten.should be_an_instance_of(ArraySpecs::MyArray)
-    ArraySpecs::MyArray[1, [2], 3].flatten.should be_an_instance_of(ArraySpecs::MyArray)
-    ArraySpecs::MyArray[1, [2, 3], 4].flatten.should == ArraySpecs::MyArray[1, 2, 3, 4]
-    [ArraySpecs::MyArray[1, 2, 3]].flatten.should be_an_instance_of(Array)
+  ruby_version_is ''...'3.0' do
+    it "returns subclass instance for Array subclasses" do
+      ArraySpecs::MyArray[].flatten.should be_an_instance_of(ArraySpecs::MyArray)
+      ArraySpecs::MyArray[1, 2, 3].flatten.should be_an_instance_of(ArraySpecs::MyArray)
+      ArraySpecs::MyArray[1, [2], 3].flatten.should be_an_instance_of(ArraySpecs::MyArray)
+      ArraySpecs::MyArray[1, [2, 3], 4].flatten.should == ArraySpecs::MyArray[1, 2, 3, 4]
+      [ArraySpecs::MyArray[1, 2, 3]].flatten.should be_an_instance_of(Array)
+    end
+  end
+
+  ruby_version_is '3.0' do
+    it "returns Array instance for Array subclasses" do
+      ArraySpecs::MyArray[].flatten.should be_an_instance_of(Array)
+      ArraySpecs::MyArray[1, 2, 3].flatten.should be_an_instance_of(Array)
+      ArraySpecs::MyArray[1, [2], 3].flatten.should be_an_instance_of(Array)
+      ArraySpecs::MyArray[1, [2, 3], 4].flatten.should == Array[1, 2, 3, 4]
+      [ArraySpecs::MyArray[1, 2, 3]].flatten.should be_an_instance_of(Array)
+    end
   end
 
   it "is not destructive" do

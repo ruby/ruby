@@ -397,28 +397,56 @@ describe :array_slice, shared: true do
       @array = ArraySpecs::MyArray[1, 2, 3, 4, 5]
     end
 
-    it "returns a subclass instance with [n, m]" do
-      @array.send(@method, 0, 2).should be_an_instance_of(ArraySpecs::MyArray)
+    ruby_version_is ''...'3.0' do
+      it "returns a subclass instance with [n, m]" do
+        @array.send(@method, 0, 2).should be_an_instance_of(ArraySpecs::MyArray)
+      end
+
+      it "returns a subclass instance with [-n, m]" do
+        @array.send(@method, -3, 2).should be_an_instance_of(ArraySpecs::MyArray)
+      end
+
+      it "returns a subclass instance with [n..m]" do
+        @array.send(@method, 1..3).should be_an_instance_of(ArraySpecs::MyArray)
+      end
+
+      it "returns a subclass instance with [n...m]" do
+        @array.send(@method, 1...3).should be_an_instance_of(ArraySpecs::MyArray)
+      end
+
+      it "returns a subclass instance with [-n..-m]" do
+        @array.send(@method, -3..-1).should be_an_instance_of(ArraySpecs::MyArray)
+      end
+
+      it "returns a subclass instance with [-n...-m]" do
+        @array.send(@method, -3...-1).should be_an_instance_of(ArraySpecs::MyArray)
+      end
     end
 
-    it "returns a subclass instance with [-n, m]" do
-      @array.send(@method, -3, 2).should be_an_instance_of(ArraySpecs::MyArray)
-    end
+    ruby_version_is '3.0' do
+      it "returns a Array instance with [n, m]" do
+        @array.send(@method, 0, 2).should be_an_instance_of(Array)
+      end
 
-    it "returns a subclass instance with [n..m]" do
-      @array.send(@method, 1..3).should be_an_instance_of(ArraySpecs::MyArray)
-    end
+      it "returns a Array instance with [-n, m]" do
+        @array.send(@method, -3, 2).should be_an_instance_of(Array)
+      end
 
-    it "returns a subclass instance with [n...m]" do
-      @array.send(@method, 1...3).should be_an_instance_of(ArraySpecs::MyArray)
-    end
+      it "returns a Array instance with [n..m]" do
+        @array.send(@method, 1..3).should be_an_instance_of(Array)
+      end
 
-    it "returns a subclass instance with [-n..-m]" do
-      @array.send(@method, -3..-1).should be_an_instance_of(ArraySpecs::MyArray)
-    end
+      it "returns a Array instance with [n...m]" do
+        @array.send(@method, 1...3).should be_an_instance_of(Array)
+      end
 
-    it "returns a subclass instance with [-n...-m]" do
-      @array.send(@method, -3...-1).should be_an_instance_of(ArraySpecs::MyArray)
+      it "returns a Array instance with [-n..-m]" do
+        @array.send(@method, -3..-1).should be_an_instance_of(Array)
+      end
+
+      it "returns a Array instance with [-n...-m]" do
+        @array.send(@method, -3...-1).should be_an_instance_of(Array)
+      end
     end
 
     it "returns an empty array when m == n with [m...n]" do
