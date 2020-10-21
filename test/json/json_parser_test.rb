@@ -224,8 +224,8 @@ class JSONParserTest < Test::Unit::TestCase
     assert_predicate parse('"foo"', :freeze => true), :frozen?
 
     if string_deduplication_available?
-      assert_same -'foo', parse('"foo"', :freeze => true)
-      assert_same -'foo', parse('{"foo": 1}', :freeze => true).keys.first
+      assert_same(-'foo', parse('"foo"', :freeze => true))
+      assert_same(-'foo', parse('{"foo": 1}', :freeze => true).keys.first)
     end
   end
 
