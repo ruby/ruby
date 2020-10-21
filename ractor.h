@@ -121,12 +121,17 @@ struct rb_ractor_struct {
 
     struct list_node vmlr_node;
 
-
     VALUE r_stdin;
     VALUE r_stdout;
     VALUE r_stderr;
     VALUE verbose;
     VALUE debug;
+
+    // gc.c rb_objspace_reachable_objects_from
+    struct gc_mark_func_data_struct {
+        void *data;
+        void (*mark_func)(VALUE v, void *data);
+    } *mfd;
 }; // rb_ractor_t is defined in vm_core.h
 
 rb_ractor_t *rb_ractor_main_alloc(void);
