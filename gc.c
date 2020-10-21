@@ -8834,10 +8834,12 @@ gc_compact(rb_objspace_t *objspace, int use_toward_empty, int use_double_pages, 
 
     objspace->flags.during_compacting = TRUE;
     {
+        mjit_gc_start_hook();
         /* pin objects referenced by maybe pointers */
         garbage_collect(objspace, GPR_DEFAULT_REASON);
         /* compact */
         gc_compact_after_gc(objspace, use_toward_empty, use_double_pages, use_verifier);
+        mjit_gc_exit_hook();
     }
     objspace->flags.during_compacting = FALSE;
 }

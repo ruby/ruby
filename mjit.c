@@ -96,7 +96,7 @@ mjit_gc_start_hook(void)
         rb_native_cond_wait(&mjit_client_wakeup, &mjit_engine_mutex);
         verbose(4, "Getting wakeup from a worker for GC");
     }
-    in_gc = true;
+    in_gc++;
     CRITICAL_SECTION_FINISH(4, "mjit_gc_start_hook");
 }
 
@@ -108,9 +108,14 @@ mjit_gc_exit_hook(void)
     if (!mjit_enabled)
         return;
     CRITICAL_SECTION_START(4, "mjit_gc_exit_hook");
-    in_gc = false;
-    verbose(4, "Sending wakeup signal to workers after GC");
-    rb_native_cond_broadcast(&mjit_gc_wakeup);
+    in_gc--;
+    if (in_gc < 0) { // Don't allow underflow
+        in_gc = 0;
+    }
+    if (!in_gc) {
+        verbose(4, "Sending wakeup signal to workers after GC");
+        rb_native_cond_broadcast(&mjit_gc_wakeup);
+    }
     CRITICAL_SECTION_FINISH(4, "mjit_gc_exit_hook");
 }
 
