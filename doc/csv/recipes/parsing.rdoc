@@ -58,6 +58,9 @@ All code snippets on this page assume that the following has been executed:
   - {Using Multiple Header Converters}[#label-Using+Multiple+Header+Converters]
     - {Recipe: Specify Multiple Header Converters in Option :header_converters}[#label-Recipe-3A+Specify+Multiple+Header+Converters+in+Option+-3Aheader_converters]
     - {Recipe: Specify Multiple Header Converters in a Custom Header Converter List}[#label-Recipe-3A+Specify+Multiple+Header+Converters+in+a+Custom+Header+Converter+List]
+- {Diagnostics}[#label-Diagnostics]
+  - {Recipe: Capture Unconverted Fields}[#label-Recipe-3A+Capture+Unconverted+Fields]
+  - {Recipe: Capture Field Info}[#label-Recipe-3A+Capture+Field+Info]
 
 === Source Formats
 
@@ -507,3 +510,34 @@ Apply multiple header converters by defining and registering a custom header con
   source = "NAME,VALUE\nfoo,0\nbar,1.0\nbaz,2.0\n"
   parsed = CSV.parse(source, headers: true, header_converters: :my_header_converters)
   parsed.headers # => [:name, :value]
+
+=== Diagnostics
+
+==== Recipe: Capture Unconverted Fields
+
+To capture unconverted field values, use option +:unconverted_fields+:
+  source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+  parsed = CSV.parse(source, converters: :integer, unconverted_fields: true)
+  parsed # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
+  parsed.each {|row| p row.unconverted_fields }
+Output:
+  ["Name", "Value"]
+  ["foo", "0"]
+  ["bar", "1"]
+  ["baz", "2"]
+
+==== Recipe: Capture Field Info
+
+To capture field info in a custom converter, accept two block arguments.
+The first is the field value; the second is a +CSV::FieldInfo+ object:
+  strip_converter = proc {|field, field_info| p field_info; field.strip }
+  source = " foo , 0 \n bar , 1 \n baz , 2 \n"
+  parsed = CSV.parse(source, converters: strip_converter)
+  parsed # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
+Output:
+  #<struct CSV::FieldInfo index=0, line=1, header=nil>
+  #<struct CSV::FieldInfo index=1, line=1, header=nil>
+  #<struct CSV::FieldInfo index=0, line=2, header=nil>
+  #<struct CSV::FieldInfo index=1, line=2, header=nil>
+  #<struct CSV::FieldInfo index=0, line=3, header=nil>
+  #<struct CSV::FieldInfo index=1, line=3, header=nil>
