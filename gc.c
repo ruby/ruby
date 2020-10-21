@@ -690,11 +690,6 @@ typedef struct rb_objspace {
 	rb_atomic_t finalizing;
     } atomic_flags;
 
-    struct mark_func_data_struct {
-	void *data;
-	void (*mark_func)(VALUE v, void *data);
-    } *mark_func_data;
-
     mark_stack_t mark_stack;
     size_t marked_slots;
 
@@ -1071,12 +1066,6 @@ static inline void gc_prof_set_heap_info(rb_objspace_t *);
 #endif
 PRINTF_ARGS(static void gc_report_body(int level, rb_objspace_t *objspace, const char *fmt, ...), 3, 4);
 static const char *obj_info(VALUE obj);
-
-#define PUSH_MARK_FUNC_DATA(v) do { \
-    struct mark_func_data_struct *prev_mark_func_data = objspace->mark_func_data; \
-    objspace->mark_func_data = (v);
-
-#define POP_MARK_FUNC_DATA() objspace->mark_func_data = prev_mark_func_data;} while (0)
 
 /*
  * 1 - TSC (H/W Time Stamp Counter)
@@ -5138,7 +5127,7 @@ mark_hash(rb_objspace_t *objspace, VALUE hash)
     }
 
     if (RHASH_AR_TABLE_P(hash)) {
-        if (objspace->mark_func_data == NULL && RHASH_TRANSIENT_P(hash)) {
+        if (LIKELY(during_gc) && RHASH_TRANSIENT_P(hash)) {
             rb_transient_heap_mark(hash, RHASH_AR_TABLE(hash));
         }
     }
@@ -5453,11 +5442,12 @@ gc_aging(rb_objspace_t *objspace, VALUE obj)
 }
 
 NOINLINE(static void gc_mark_ptr(rb_objspace_t *objspace, VALUE obj));
+static void reachable_objects_from_callback(VALUE obj);
 
 static void
 gc_mark_ptr(rb_objspace_t *objspace, VALUE obj)
 {
-    if (LIKELY(objspace->mark_func_data == NULL)) {
+    if (LIKELY(during_gc)) {
 	rgengc_check_relation(objspace, obj);
 	if (!gc_mark_set(objspace, obj)) return; /* already marked */
         if (RB_TYPE_P(obj, T_NONE)) {
@@ -5468,7 +5458,7 @@ gc_mark_ptr(rb_objspace_t *objspace, VALUE obj)
 	gc_grey(objspace, obj);
     }
     else {
-	objspace->mark_func_data->mark_func(obj, objspace->mark_func_data->data);
+        reachable_objects_from_callback(obj);
     }
 }
 
@@ -5477,7 +5467,7 @@ gc_pin(rb_objspace_t *objspace, VALUE obj)
 {
     GC_ASSERT(is_markable_object(objspace, obj));
     if (UNLIKELY(objspace->flags.during_compacting)) {
-        if (LIKELY(objspace->mark_func_data == NULL)) {
+        if (LIKELY(during_gc)) {
             MARK_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), obj);
         }
     }
@@ -5678,7 +5668,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
                 gc_mark(objspace, ptr[i]);
 	    }
 
-            if (objspace->mark_func_data == NULL) {
+            if (LIKELY(during_gc)) {
                 if (!FL_TEST_RAW(obj, RARRAY_EMBED_FLAG) &&
                     RARRAY_TRANSIENT_P(obj)) {
                     rb_transient_heap_mark(obj, ptr);
@@ -5719,7 +5709,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
                     gc_mark(objspace, ptr[i]);
                 }
 
-                if (objspace->mark_func_data == NULL &&
+                if (LIKELY(during_gc) &&
                     ROBJ_TRANSIENT_P(obj)) {
                     rb_transient_heap_mark(obj, ptr);
                 }
@@ -5770,7 +5760,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
                 gc_mark(objspace, ptr[i]);
             }
 
-            if (objspace->mark_func_data == NULL &&
+            if (LIKELY(during_gc) &&
                 RSTRUCT_TRANSIENT_P(obj)) {
                 rb_transient_heap_mark(obj, ptr);
             }
@@ -6429,7 +6419,7 @@ gc_verify_internal_consistency_m(VALUE dummy)
 }
 
 static void
-gc_verify_internal_consistency(rb_objspace_t *objspace)
+gc_verify_internal_consistency_(rb_objspace_t *objspace)
 {
     struct verify_internal_consistency_struct data = {0};
 
@@ -6500,6 +6490,17 @@ gc_verify_internal_consistency(rb_objspace_t *objspace)
     }
 
     gc_report(5, objspace, "gc_verify_internal_consistency: OK\n");
+}
+
+static void
+gc_verify_internal_consistency(rb_objspace_t *objspace)
+{
+    unsigned int prev_during_gc = during_gc;
+    during_gc = FALSE; // stop gc here
+    {
+        gc_verify_internal_consistency_(objspace);
+    }
+    during_gc = prev_during_gc;
 }
 
 void
@@ -6780,35 +6781,31 @@ gc_marks_continue(rb_objspace_t *objspace, rb_heap_t *heap)
     unsigned int lock_lev;
     gc_enter(objspace, "marks_continue", &lock_lev);
 
-    PUSH_MARK_FUNC_DATA(NULL);
-    {
-        int slots = 0;
-        const char *from;
+    int slots = 0;
+    const char *from;
 
-	if (heap->pooled_pages) {
-	    while (heap->pooled_pages && slots < HEAP_PAGE_OBJ_LIMIT) {
-		struct heap_page *page = heap_move_pooled_pages_to_free_pages(heap);
-		slots += page->free_slots;
-	    }
-	    from = "pooled-pages";
-	}
-	else if (heap_increment(objspace, heap)) {
-	    slots = heap->free_pages->free_slots;
-	    from = "incremented-pages";
-	}
-
-	if (slots > 0) {
-	    gc_report(2, objspace, "gc_marks_continue: provide %d slots from %s.\n",
-                      slots, from);
-	    gc_marks_step(objspace, objspace->rincgc.step_slots);
-	}
-	else {
-	    gc_report(2, objspace, "gc_marks_continue: no more pooled pages (stack depth: %"PRIdSIZE").\n",
-                      mark_stack_size(&objspace->mark_stack));
-	    gc_marks_rest(objspace);
-	}
+    if (heap->pooled_pages) {
+        while (heap->pooled_pages && slots < HEAP_PAGE_OBJ_LIMIT) {
+            struct heap_page *page = heap_move_pooled_pages_to_free_pages(heap);
+            slots += page->free_slots;
+        }
+        from = "pooled-pages";
     }
-    POP_MARK_FUNC_DATA();
+    else if (heap_increment(objspace, heap)) {
+        slots = heap->free_pages->free_slots;
+        from = "incremented-pages";
+    }
+
+    if (slots > 0) {
+        gc_report(2, objspace, "gc_marks_continue: provide %d slots from %s.\n",
+                  slots, from);
+        gc_marks_step(objspace, objspace->rincgc.step_slots);
+    }
+    else {
+        gc_report(2, objspace, "gc_marks_continue: no more pooled pages (stack depth: %"PRIdSIZE").\n",
+                  mark_stack_size(&objspace->mark_stack));
+        gc_marks_rest(objspace);
+    }
 
     gc_exit(objspace, "marks_continue", &lock_lev);
 #endif
@@ -6819,23 +6816,19 @@ gc_marks(rb_objspace_t *objspace, int full_mark)
 {
     gc_prof_mark_timer_start(objspace);
 
-    PUSH_MARK_FUNC_DATA(NULL);
-    {
-	/* setup marking */
+    /* setup marking */
 
-	gc_marks_start(objspace, full_mark);
-	if (!is_incremental_marking(objspace)) {
-	    gc_marks_rest(objspace);
-	}
+    gc_marks_start(objspace, full_mark);
+    if (!is_incremental_marking(objspace)) {
+        gc_marks_rest(objspace);
+    }
 
 #if RGENGC_PROFILE > 0
-	if (gc_prof_record(objspace)) {
-	    gc_profile_record *record = gc_prof_record(objspace);
-	    record->old_objects = objspace->rgengc.old_objects;
-	}
-#endif
+    if (gc_prof_record(objspace)) {
+        gc_profile_record *record = gc_prof_record(objspace);
+        record->old_objects = objspace->rgengc.old_objects;
     }
-    POP_MARK_FUNC_DATA();
+#endif
     gc_prof_mark_timer_stop(objspace);
 }
 
@@ -7677,10 +7670,8 @@ gc_rest(rb_objspace_t *objspace)
         if (RGENGC_CHECK_MODE >= 2) gc_verify_internal_consistency(objspace);
 
 	if (is_incremental_marking(objspace)) {
-	    PUSH_MARK_FUNC_DATA(NULL);
-	    gc_marks_rest(objspace);
-	    POP_MARK_FUNC_DATA();
-	}
+            gc_marks_rest(objspace);
+        }
 	if (is_lazy_sweeping(heap_eden)) {
 	    gc_sweep_rest(objspace);
 	}
@@ -9805,18 +9796,30 @@ ruby_gc_set_params(void)
 #endif
 }
 
+static void
+reachable_objects_from_callback(VALUE obj)
+{
+    rb_ractor_t *cr = GET_RACTOR();
+    cr->mfd->mark_func(obj, cr->mfd->data);
+}
+
 void
 rb_objspace_reachable_objects_from(VALUE obj, void (func)(VALUE, void *), void *data)
 {
     rb_objspace_t *objspace = &rb_objspace;
 
+    if (during_gc) rb_bug("rb_objspace_reachable_objects_from() is not supported while during_gc == true");
+
     if (is_markable_object(objspace, obj)) {
-	struct mark_func_data_struct mfd;
-	mfd.mark_func = func;
-	mfd.data = data;
-	PUSH_MARK_FUNC_DATA(&mfd);
+        rb_ractor_t *cr = GET_RACTOR();
+        struct gc_mark_func_data_struct mfd = {
+            .mark_func = func,
+            .data = data,
+        }, *prev_mfd = cr->mfd;
+
+        cr->mfd = &mfd;
 	gc_mark_children(objspace, obj);
-	POP_MARK_FUNC_DATA();
+        cr->mfd = prev_mfd;
     }
 }
 
@@ -9843,18 +9846,21 @@ rb_objspace_reachable_objects_from_root(void (func)(const char *category, VALUE,
 static void
 objspace_reachable_objects_from_root(rb_objspace_t *objspace, void (func)(const char *category, VALUE, void *), void *passing_data)
 {
-    struct root_objects_data data;
-    struct mark_func_data_struct mfd;
+    if (during_gc) rb_bug("objspace_reachable_objects_from_root() is not supported while during_gc == true");
 
-    data.func = func;
-    data.data = passing_data;
+    rb_ractor_t *cr = GET_RACTOR();
+    struct root_objects_data data = {
+        .func = func,
+        .data = passing_data,
+    };
+    struct gc_mark_func_data_struct mfd = {
+        .mark_func = root_objects_from,
+        .data = &data,
+    }, *prev_mfd = cr->mfd;
 
-    mfd.mark_func = root_objects_from;
-    mfd.data = &data;
-
-    PUSH_MARK_FUNC_DATA(&mfd);
+    cr->mfd = &mfd;
     gc_mark_roots(objspace, &data.category);
-    POP_MARK_FUNC_DATA();
+    cr->mfd = prev_mfd;
 }
 
 /*
