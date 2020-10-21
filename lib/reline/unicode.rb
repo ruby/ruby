@@ -72,20 +72,32 @@ class Reline::Unicode
     }.join
   end
 
+  require 'reline/unicode/east_asian_width'
+
+  MBCharWidthRE = /
+    (?<width_2_1>
+      [#{ EscapedChars.map {|c| "\\x%02x" % c.ord }.join }] (?# ^ + char, such as ^M, ^H, ^[, ...)
+    )
+  | (?<width_3>^\u{2E3B}) (?# THREE-EM DASH)
+  | (?<width_0>^\p{M})
+  | (?<width_2_2>
+      #{ EastAsianWidth::TYPE_F }
+    | #{ EastAsianWidth::TYPE_W }
+    )
+  | (?<width_1>
+      #{ EastAsianWidth::TYPE_H }
+    | #{ EastAsianWidth::TYPE_NA }
+    | #{ EastAsianWidth::TYPE_N }
+    )
+  /x
+
   def self.get_mbchar_width(mbchar)
-    case mbchar.encode(Encoding::UTF_8)
-    when *EscapedChars # ^ + char, such as ^M, ^H, ^[, ...
-      2
-    when /^\u{2E3B}/ # THREE-EM DASH
-      3
-    when /^\p{M}/
-      0
-    when EastAsianWidth::TYPE_A
-      Reline.ambiguous_width
-    when EastAsianWidth::TYPE_F, EastAsianWidth::TYPE_W
-      2
-    when EastAsianWidth::TYPE_H, EastAsianWidth::TYPE_NA, EastAsianWidth::TYPE_N
-      1
+    m = mbchar.encode(Encoding::UTF_8).match(MBCharWidthRE)
+    case
+    when m[:width_2_1], m[:width_2_2] then 2
+    when m[:width_3] then 3
+    when m[:width_0] then 0
+    when m[:width_1] then 1
     else
       nil
     end
@@ -591,5 +603,3 @@ class Reline::Unicode
     [byte_size, width]
   end
 end
-
-require 'reline/unicode/east_asian_width'

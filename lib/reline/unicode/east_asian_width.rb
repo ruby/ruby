@@ -1,16 +1,16 @@
 class Reline::Unicode::EastAsianWidth
   # This is based on EastAsianWidth.txt
-  # http://www.unicode.org/Public/13.0.0/ucd/EastAsianWidth.txt
+  # EastAsianWidth.txt
 
   # Fullwidth
-  TYPE_F = /^([#{ %W(
+  TYPE_F = /^[#{ %W(
     \u{3000}
     \u{FF01}-\u{FF60}
     \u{FFE0}-\u{FFE6}
-  ).join }])/
+  ).join }]/
 
   # Halfwidth
-  TYPE_H = /^([#{ %W(
+  TYPE_H = /^[#{ %W(
     \u{20A9}
     \u{FF61}-\u{FFBE}
     \u{FFC2}-\u{FFC7}
@@ -18,10 +18,10 @@ class Reline::Unicode::EastAsianWidth
     \u{FFD2}-\u{FFD7}
     \u{FFDA}-\u{FFDC}
     \u{FFE8}-\u{FFEE}
-  ).join }])/
+  ).join }]/
 
   # Wide
-  TYPE_W = /^([#{ %W(
+  TYPE_W = /^[#{ %W(
     \u{1100}-\u{115F}
     \u{231A}-\u{231B}
     \u{2329}-\u{232A}
@@ -136,10 +136,10 @@ class Reline::Unicode::EastAsianWidth
     \u{1FAD0}-\u{1FAD6}
     \u{20000}-\u{2FFFD}
     \u{30000}-\u{3FFFD}
-  ).join }])/
+  ).join }]/
 
   # Narrow
-  TYPE_NA = /^([#{ %W(
+  TYPE_NA = /^[#{ %W(
     \u{0020}-\u{007E}
     \u{00A2}-\u{00A3}
     \u{00A5}-\u{00A6}
@@ -147,10 +147,10 @@ class Reline::Unicode::EastAsianWidth
     \u{00AF}
     \u{27E6}-\u{27ED}
     \u{2985}-\u{2986}
-  ).join }])/
+  ).join }]/
 
   # Ambiguous
-  TYPE_A = /^([#{ %W(
+  TYPE_A = /^[#{ %W(
     \u{00A1}
     \u{00A4}
     \u{00A7}-\u{00A8}
@@ -330,10 +330,10 @@ class Reline::Unicode::EastAsianWidth
     \u{E0100}-\u{E01EF}
     \u{F0000}-\u{FFFFD}
     \u{100000}-\u{10FFFD}
-  ).join }])/
+  ).join }]/
 
   # Neutral
-  TYPE_N = /^([#{ %W(
+  TYPE_N = /^[#{ %W(
     \u{0000}-\u{001F}
     \u{007F}-\u{00A0}
     \u{00A9}
@@ -1160,5 +1160,5 @@ class Reline::Unicode::EastAsianWidth
     \u{1FBF0}-\u{1FBF9}
     \u{E0001}
     \u{E0020}-\u{E007F}
-  ).join }])/
+  ).join }]/
 end
