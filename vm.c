@@ -3164,7 +3164,7 @@ m_core_hash_merge_kwd(VALUE recv, VALUE hash, VALUE kw)
 static VALUE
 m_core_make_shareable(VALUE recv, VALUE obj)
 {
-    return rb_obj_freeze(obj);
+    return rb_ractor_make_shareable(obj);
 }
 
 static VALUE
