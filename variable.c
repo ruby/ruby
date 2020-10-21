@@ -923,7 +923,8 @@ generic_ivtbl(VALUE obj, ID id, bool force_check_ractor)
     ASSERT_vm_locking();
 
     if ((force_check_ractor || rb_is_instance_id(id)) && // not internal ID
-        UNLIKELY(rb_ractor_shareable_p(obj) && !rb_ractor_main_p())) {
+        UNLIKELY(!rb_ractor_main_p()) &&
+        UNLIKELY(rb_ractor_shareable_p(obj))) {
         rb_raise(rb_eRuntimeError, "can not access instance variables of shareable objects from non-main Ractors");
     }
     return generic_iv_tbl_;
@@ -2952,7 +2953,7 @@ rb_const_set(VALUE klass, ID id, VALUE val)
 		 QUOTE_ID(id));
     }
 
-    if (!rb_ractor_shareable_p(val) && !rb_ractor_main_p()) {
+    if (!rb_ractor_main_p() && !rb_ractor_shareable_p(val)) {
         rb_raise(rb_eNameError, "can not set constants with non-shareable objects by non-main Ractors");
     }
 
