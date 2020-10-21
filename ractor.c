@@ -2065,17 +2065,13 @@ rb_obj_traverse(VALUE obj,
 static int
 frozen_shareable_p(VALUE obj)
 {
-    switch (BUILTIN_TYPE(obj)) {
-      case T_DATA:
-        if (RTYPEDDATA_P(obj)) {
-            const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
-            if (type->flags & RUBY_TYPED_FROZEN_SHAREABLE) {
-                return true;
-            }
-        }
-        return false;
-      default:
+    if (!RB_TYPE_P(obj, T_DATA) ||
+        (RTYPEDDATA_P(obj) &&
+         RTYPEDDATA_TYPE(obj)->flags & RUBY_TYPED_FROZEN_SHAREABLE)) {
         return true;
+    }
+    else {
+        return false;
     }
 }
 
