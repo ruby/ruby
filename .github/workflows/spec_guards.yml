@@ -1,0 +1,40 @@
+name: Rubyspec Guard Checks
+
+on: [push, pull_request]
+
+jobs:
+  rubyspec:
+    name: Rubyspec
+    runs-on: ubuntu-20.04
+    if: "!contains(github.event.head_commit.message, '[ci skip]')"
+    strategy:
+      matrix:
+        ruby:
+#         - ruby-2.1
+#         - ruby-2.2
+#         - ruby-2.3
+#         - ruby-2.4
+          - ruby-2.5
+          - ruby-2.6
+          - ruby-2.7
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+      - run: ruby ../mspec/bin/mspec
+        working-directory: spec/ruby
+      - uses: k0kubun/action-slack@v2.0.0
+        with:
+          payload: |
+            {
+              "ci": "GitHub Actions",
+              "env": "${{ github.workflow }} / rubyspec @ ${{ matrix.ruby }}",
+              "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "commit": "${{ github.sha }}",
+              "branch": "${{ github.ref }}".split('/').reverse()[0]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
+        if: failure() && github.event_name == 'push'
