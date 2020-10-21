@@ -820,7 +820,7 @@ void
 Init_cparse(void)
 {
     VALUE Racc, Parser;
-    ID id_racc = rb_intern("Racc");
+    ID id_racc = rb_intern_const("Racc");
 
     if (rb_const_defined(rb_cObject, id_racc)) {
         Racc = rb_const_get(rb_cObject, id_racc);

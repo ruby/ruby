@@ -5686,7 +5686,7 @@ Init_tm(VALUE outer, const char *name)
 #endif
     rb_define_method(tm, "initialize", tm_initialize, -1);
     rb_define_method(tm, "utc", tm_to_time, 0);
-    rb_alias(tm, rb_intern("to_time"), rb_intern("utc"));
+    rb_alias(tm, rb_intern_const("to_time"), rb_intern_const("utc"));
     rb_define_singleton_method(tm, "from_time", tm_from_time, 1);
     /* :startdoc:*/
 

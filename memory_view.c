@@ -502,5 +502,5 @@ rb_memory_view_release(rb_memory_view_t* view)
 void
 Init_MemoryView(void)
 {
-    id_memory_view = rb_intern("__memory_view__");
+    id_memory_view = rb_intern_const("__memory_view__");
 }

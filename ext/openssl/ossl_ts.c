@@ -1247,24 +1247,24 @@ Init_ossl_ts(void)
      * timestamp server rejects the message imprint algorithm used in the
      * +Request+
      */
-    sBAD_ALG = rb_intern("BAD_ALG");
+    sBAD_ALG = rb_intern_const("BAD_ALG");
 
     /*
      * Possible return value for +Response#failure_info+. Indicates that the
      * timestamp server was not able to process the +Request+ properly.
      */
-    sBAD_REQUEST = rb_intern("BAD_REQUEST");
+    sBAD_REQUEST = rb_intern_const("BAD_REQUEST");
     /*
      * Possible return value for +Response#failure_info+. Indicates that the
      * timestamp server was not able to parse certain data in the +Request+.
      */
-    sBAD_DATA_FORMAT = rb_intern("BAD_DATA_FORMAT");
+    sBAD_DATA_FORMAT = rb_intern_const("BAD_DATA_FORMAT");
 
-    sTIME_NOT_AVAILABLE = rb_intern("TIME_NOT_AVAILABLE");
-    sUNACCEPTED_POLICY = rb_intern("UNACCEPTED_POLICY");
-    sUNACCEPTED_EXTENSION = rb_intern("UNACCEPTED_EXTENSION");
-    sADD_INFO_NOT_AVAILABLE = rb_intern("ADD_INFO_NOT_AVAILABLE");
-    sSYSTEM_FAILURE = rb_intern("SYSTEM_FAILURE");
+    sTIME_NOT_AVAILABLE = rb_intern_const("TIME_NOT_AVAILABLE");
+    sUNACCEPTED_POLICY = rb_intern_const("UNACCEPTED_POLICY");
+    sUNACCEPTED_EXTENSION = rb_intern_const("UNACCEPTED_EXTENSION");
+    sADD_INFO_NOT_AVAILABLE = rb_intern_const("ADD_INFO_NOT_AVAILABLE");
+    sSYSTEM_FAILURE = rb_intern_const("SYSTEM_FAILURE");
 
     /* Document-class: OpenSSL::Timestamp
      * Provides classes and methods to request, create and validate
@@ -1503,11 +1503,11 @@ Init_ossl_ts(void)
      *
      */
     cTimestampFactory = rb_define_class_under(mTimestamp, "Factory", rb_cObject);
-    rb_attr(cTimestampFactory, rb_intern("allowed_digests"), 1, 1, 0);
-    rb_attr(cTimestampFactory, rb_intern("default_policy_id"), 1, 1, 0);
-    rb_attr(cTimestampFactory, rb_intern("serial_number"), 1, 1, 0);
-    rb_attr(cTimestampFactory, rb_intern("gen_time"), 1, 1, 0);
-    rb_attr(cTimestampFactory, rb_intern("additional_certs"), 1, 1, 0);
+    rb_attr(cTimestampFactory, rb_intern_const("allowed_digests"), 1, 1, 0);
+    rb_attr(cTimestampFactory, rb_intern_const("default_policy_id"), 1, 1, 0);
+    rb_attr(cTimestampFactory, rb_intern_const("serial_number"), 1, 1, 0);
+    rb_attr(cTimestampFactory, rb_intern_const("gen_time"), 1, 1, 0);
+    rb_attr(cTimestampFactory, rb_intern_const("additional_certs"), 1, 1, 0);
     rb_define_method(cTimestampFactory, "create_timestamp", ossl_tsfac_create_ts, 3);
 }
 
