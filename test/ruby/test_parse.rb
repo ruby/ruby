@@ -1181,20 +1181,24 @@ x = __ENCODING__
     a = Class.new.class_eval("#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       # shareable_constant_value: true
-      A = []
+      A = [[1]]
     end;
     assert_predicate(a, :frozen?)
+    assert_equal([1], a[0])
+    assert_predicate(a[0], :frozen?)
     a, b = Class.new.class_eval("#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       # shareable_constant_value: false
       class X # shareable_constant_value: true
-        A = []
+        A = [[1]]
       end
       B = []
       [X::A, B]
     end;
     assert_predicate(a, :frozen?)
     assert_not_predicate(b, :frozen?)
+    assert_equal([1], a[0])
+    assert_predicate(a[0], :frozen?)
   end
 
 =begin
