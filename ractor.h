@@ -257,7 +257,7 @@ rb_ractor_setup_belonging(VALUE obj)
 static inline uint32_t
 rb_ractor_belonging(VALUE obj)
 {
-    if (rb_ractor_shareable_p(obj)) {
+    if (SPECIAL_CONST_P(obj) || RB_OBJ_SHAREABLE_P(obj)) {
         return 0;
     }
     else {
@@ -277,8 +277,13 @@ rb_ractor_confirm_belonging(VALUE obj)
         }
     }
     else if (UNLIKELY(id != rb_ractor_current_id())) {
-        rp(obj);
-        rb_bug("rb_ractor_confirm_belonging object-ractor id:%u, current-ractor id:%u", id, rb_ractor_current_id());
+        if (rb_ractor_shareable_p(obj)) {
+            // ok
+        }
+        else {
+            rp(obj);
+            rb_bug("rb_ractor_confirm_belonging object-ractor id:%u, current-ractor id:%u", id, rb_ractor_current_id());
+        }
     }
     return obj;
 }
