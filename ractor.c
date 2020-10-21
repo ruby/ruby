@@ -1870,8 +1870,15 @@ rb_ractor_stderr_set(VALUE err)
 // 2: stop search
 // 1: skip child
 // 0: continue
-typedef int (*rb_obj_traverse_enter_func)(VALUE obj);
-typedef int (*rb_obj_traverse_leave_func)(VALUE obj);
+
+enum obj_traverse_iterator_result {
+    traverse_cont,
+    traverse_skip,
+    traverse_stop,
+};
+
+typedef enum obj_traverse_iterator_result (*rb_obj_traverse_enter_func)(VALUE obj);
+typedef enum obj_traverse_iterator_result (*rb_obj_traverse_leave_func)(VALUE obj);
 
 struct obj_traverse_data {
     rb_obj_traverse_enter_func enter_func;
@@ -1933,18 +1940,17 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
     if (RB_SPECIAL_CONST_P(obj)) return 0;
 
     switch (data->enter_func(obj)) {
-      case 0: break;
-      case 1: return 0; // skip children
-      case 2: return 1; // stop search
-      default: rb_bug("rb_obj_traverse_func should return 0 to 2");
+      case traverse_cont: break;
+      case traverse_skip: return 0; // skip children
+      case traverse_stop: return 1; // stop search
     }
 
-    if (st_insert(obj_traverse_rec(data), obj, 1)) {
+    if (UNLIKELY(st_insert(obj_traverse_rec(data), obj, 1))) {
         // already traversed
         return 0;
     }
 
-    if (FL_TEST(obj, FL_EXIVAR)) {
+    if (UNLIKELY(FL_TEST_RAW(obj, FL_EXIVAR))) {
         struct gen_ivtbl *ivtbl;
         rb_ivar_generic_ivtbl_lookup(obj, &ivtbl);
         for (uint32_t i = 0; i < ivtbl->numiv; i++) {
@@ -2038,11 +2044,11 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
         rb_bug("unreachable");
     }
 
-    switch (data->leave_func(obj)) {
-      case 0:
-      case 1: return 0; // terminate
-      case 2: return 1; // stop search
-      default: rb_bug("rb_obj_traverse_func should return 0 to 2");
+    if (data->leave_func(obj) == traverse_stop) {
+        return 1;
+    }
+    else {
+        return 0;
     }
 }
 
@@ -2075,35 +2081,34 @@ frozen_shareable_p(VALUE obj)
     }
 }
 
-static int
+static enum obj_traverse_iterator_result
 make_shareable_check_shareable(VALUE obj)
 {
     VM_ASSERT(!SPECIAL_CONST_P(obj));
 
     if (RB_OBJ_SHAREABLE_P(obj)) {
-        return 1;
+        return traverse_skip;
     }
-    else {
-        if (!frozen_shareable_p(obj)) {
-            rb_raise(rb_eRactorError, "can not make shareable object for %"PRIsVALUE, obj);
-        }
+    else if (!frozen_shareable_p(obj)) {
+        rb_raise(rb_eRactorError, "can not make shareable object for %"PRIsVALUE, obj);
     }
 
-    if (!OBJ_FROZEN(obj)) {
+    if (!RB_OBJ_FROZEN_RAW(obj)) {
         rb_funcall(obj, idFreeze, 0);
 
-        if (UNLIKELY(!OBJ_FROZEN(obj))) {
+        if (UNLIKELY(!RB_OBJ_FROZEN_RAW(obj))) {
             rb_raise(rb_eRactorError, "#freeze does not freeze object correctly");
         }
     }
-    return 0;
+
+    return traverse_cont;
 }
 
-static int
+static enum obj_traverse_iterator_result
 mark_shareable(VALUE obj)
 {
     FL_SET_RAW(obj, RUBY_FL_SHAREABLE);
-    return 0;
+    return traverse_cont;
 }
 
 VALUE
@@ -2115,25 +2120,25 @@ rb_ractor_make_shareable(VALUE obj)
     return obj;
 }
 
-static int
+static enum obj_traverse_iterator_result
 shareable_p_enter(VALUE obj)
 {
     if (RB_OBJ_SHAREABLE_P(obj)) {
-        return 1;
+        return traverse_skip;
     }
     else if (RB_TYPE_P(obj, T_CLASS)  ||
              RB_TYPE_P(obj, T_MODULE) ||
              RB_TYPE_P(obj, T_ICLASS)) {
         // TODO: remove it
         mark_shareable(obj);
-        return 1;
+        return traverse_skip;
     }
     else if (RB_OBJ_FROZEN_RAW(obj) &&
              frozen_shareable_p(obj)) {
-        return 0;
+        return traverse_cont;
     }
 
-    return 2; // fail
+    return traverse_stop; // fail
 }
 
 MJIT_FUNC_EXPORTED bool
