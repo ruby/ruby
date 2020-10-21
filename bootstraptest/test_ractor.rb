@@ -734,6 +734,18 @@ assert_equal 'can not access instance variables of shareable objects from non-ma
   end
 }
 
+# But a sharable object is frozen, it is allowed to access ivars from non-main Ractor
+assert_equal '11', %q{
+  [Object.new, [], ].map{|obj|
+    obj.instance_variable_set('@a', 1)
+    Ractor.make_shareable obj = obj.freeze
+
+    Ractor.new obj do |obj|
+      obj.instance_variable_get('@a')
+    end.take.to_s
+  }.join
+}
+
 # cvar in sharable-objects are not allowed to access from non-main Ractor
 assert_equal 'can not access class variables from non-main Ractors', %q{
   class C

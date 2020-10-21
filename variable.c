@@ -922,7 +922,8 @@ generic_ivtbl(VALUE obj, ID id, bool force_check_ractor)
 {
     ASSERT_vm_locking();
 
-    if ((force_check_ractor || rb_is_instance_id(id)) && // not internal ID
+    if ((force_check_ractor || LIKELY(rb_is_instance_id(id)) /* not internal ID */ )  &&
+        !RB_OBJ_FROZEN_RAW(obj) &&
         UNLIKELY(!rb_ractor_main_p()) &&
         UNLIKELY(rb_ractor_shareable_p(obj))) {
         rb_raise(rb_eRuntimeError, "can not access instance variables of shareable objects from non-main Ractors");
