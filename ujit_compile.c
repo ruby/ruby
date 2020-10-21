@@ -563,12 +563,14 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     // Pointer to the klass field of the receiver &(recv->klass)
     x86opnd_t klass_opnd = mem_opnd(64, REG0, offsetof(struct RBasic, klass));
 
-    // FIXME: currently assuming that cc->klass doesn't change
-    // Ideally we would like the GC to update the klass pointer
-    //
-    // Check if we have a cache hit
-    mov(cb, REG1, const_ptr_opnd((void*)cd->cc->klass));
-    cmp(cb, REG1, klass_opnd);
+    // Load the call cache into REG1
+    mov(cb, REG1, const_ptr_opnd(cd));
+    x86opnd_t ptr_to_cc = member_opnd(REG1, struct rb_call_data, cc);
+    mov(cb, REG1, ptr_to_cc);
+
+    // Check the class of the receiver against the call cache
+    mov(cb, REG0, klass_opnd);
+    cmp(cb, REG0, mem_opnd(64, REG1, offsetof(struct rb_callcache, klass)));
     jne_ptr(cb, side_exit);
 
     // NOTE: there *has to be* a way to optimize the entry invalidated check
@@ -577,9 +579,6 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     // Check that the method entry is not invalidated
     // cd->cc->cme->flags
     // #define METHOD_ENTRY_INVALIDATED(me) ((me)->flags & IMEMO_FL_USER5)
-    mov(cb, REG1, const_ptr_opnd(cd));
-    x86opnd_t ptr_to_cc = member_opnd(REG1, struct rb_call_data, cc);
-    mov(cb, REG1, ptr_to_cc);
     x86opnd_t ptr_to_cme_ = mem_opnd(64, REG1, offsetof(struct rb_callcache, cme_));
     mov(cb, REG1, ptr_to_cme_);
     x86opnd_t flags_opnd = mem_opnd(64, REG1, offsetof(rb_callable_method_entry_t, flags));
