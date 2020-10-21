@@ -492,12 +492,9 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 
     struct rb_call_data * cd = (struct rb_call_data *)ctx_get_arg(ctx, 0);
     int32_t argc = (int32_t)vm_ci_argc(cd->ci);
-    const struct rb_callcache *cc = cd->cc;
 
     // Callee method ID
     ID mid = vm_ci_mid(cd->ci);
-
-    //printf("jitting call to \"%s\", argc: %lu\n", rb_id2name(mid), argc);
 
     // Don't JIT calls with keyword splat
     if (vm_ci_flag(cd->ci) & VM_CALL_KW_SPLAT)
@@ -541,8 +538,6 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     }
 
     //printf("JITting call to C function \"%s\", argc: %lu\n", rb_id2name(mid), argc);
-    //print_str(cb, rb_id2name(mid));
-    //print_ptr(cb, RCX);
 
     // Create a size-exit to fall back to the interpreter
     uint8_t* side_exit = ujit_side_exit(ocb, ctx, ctx->pc);
@@ -550,6 +545,12 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     // Points to the receiver operand on the stack
     x86opnd_t recv = ctx_stack_opnd(ctx, argc);
     mov(cb, REG0, recv);
+
+    //print_str(cb, "");
+    //print_str(cb, "calling CFUNC:");
+    //print_str(cb, rb_id2name(mid));
+    //print_str(cb, "recv");
+    //print_ptr(cb, recv);
 
     // Check that the receiver is a heap object
     test(cb, REG0, imm_opnd(RUBY_IMMEDIATE_MASK));
@@ -608,8 +609,10 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 
 
 
-    print_str(cb, "calling CFUNC:");
-    print_str(cb, rb_id2name(mid));
+
+
+
+
 
     // Increment the stack pointer by 3 (in the callee)
     // sp += 3
@@ -677,10 +680,11 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     lea(cb, RAX, ctx_sp_opnd(ctx));
 
     // Copy the arguments from the stack to the C argument registers
-    for (int32_t i = argc; i >= 0; --i)
+    // self is the 0th argument and is at index argc from the stack top
+    for (int32_t i = 0; i < argc + 1; ++i)
     {
-        // Recv is at index argc
-        x86opnd_t stack_opnd = mem_opnd(64, RAX, -(i+1) * 8);
+        x86opnd_t stack_opnd = mem_opnd(64, RAX, -(argc + 1 - i) * 8);
+        //print_ptr(cb, stack_opnd);
         x86opnd_t c_arg_reg = C_ARG_REGS[i];
         mov(cb, c_arg_reg, stack_opnd);
     }
