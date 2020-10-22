@@ -110,7 +110,7 @@ mjit_gc_exit_hook(void)
     CRITICAL_SECTION_START(4, "mjit_gc_exit_hook");
     in_gc--;
     if (in_gc < 0) { // Don't allow underflow
-        in_gc = 0;
+        rb_bug("negative in_gc");
     }
     if (!in_gc) {
         verbose(4, "Sending wakeup signal to workers after GC");
