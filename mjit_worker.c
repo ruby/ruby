@@ -1261,17 +1261,6 @@ mjit_capture_cc_entries(const struct rb_iseq_constant_body *compiled_iseq, const
     // Capture cc to cc_enties
     for (unsigned int i = 0; i < captured_iseq->ci_size; i++) {
         cc_entries[i] = captured_iseq->call_data[i].cc;
-
-        // Adding assertions to debug GC problem.
-        // FIXME: remove these when we find it
-        const struct rb_callcache *cc = cc_entries[i];
-
-        if (cc && vm_cc_markable(cc)) {
-            assert(BUILTIN_TYPE((VALUE)cc) != T_MOVED);
-            assert(BUILTIN_TYPE((VALUE)vm_cc_cme(cc)) != T_MOVED);
-            assert(!rb_objspace_garbage_object_p((VALUE)cc));
-            assert(!rb_objspace_garbage_object_p((VALUE)vm_cc_cme(cc)));
-        }
     }
 
     return cc_entries_index;
