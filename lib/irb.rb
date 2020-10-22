@@ -400,7 +400,7 @@ module IRB
     irb.run(@CONF)
   end
 
-  # Calls each event hook of <code>IRB.conf[:TA_EXIT]</code> when the current session quits.
+  # Calls each event hook of <code>IRB.conf[:AT_EXIT]</code> when the current session quits.
   def IRB.irb_at_exit
     @CONF[:AT_EXIT].each{|hook| hook.call}
   end
