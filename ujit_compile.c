@@ -537,8 +537,6 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
         return false;
     }
 
-    //printf("JITting call to C function \"%s\", argc: %lu\n", rb_id2name(mid), argc);
-
     // Create a size-exit to fall back to the interpreter
     uint8_t* side_exit = ujit_side_exit(ocb, ctx, ctx->pc);
 
@@ -546,6 +544,7 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     x86opnd_t recv = ctx_stack_opnd(ctx, argc);
     mov(cb, REG0, recv);
 
+    //printf("JITting call to C function \"%s\", argc: %lu\n", rb_id2name(mid), argc);
     //print_str(cb, "");
     //print_str(cb, "calling CFUNC:");
     //print_str(cb, rb_id2name(mid));
@@ -563,7 +562,7 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     // Pointer to the klass field of the receiver &(recv->klass)
     x86opnd_t klass_opnd = mem_opnd(64, REG0, offsetof(struct RBasic, klass));
 
-    // Load the call cache into REG1
+    // Load the call cache pointer into REG1
     mov(cb, REG1, const_ptr_opnd(cd));
     x86opnd_t ptr_to_cc = member_opnd(REG1, struct rb_call_data, cc);
     mov(cb, REG1, ptr_to_cc);
@@ -595,46 +594,21 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     // TODO: stack overflow check
     //vm_check_canary(ec, sp);
 
-
-
-
-    // TODO: under construction, stop here for now
-    jmp_ptr(cb, side_exit);
-    return true;
-
-
-
-
-
-
-
-
-
-
-
-
     // Increment the stack pointer by 3 (in the callee)
     // sp += 3
     lea(cb, REG0, ctx_sp_opnd(ctx));
     add(cb, REG0, imm_opnd(8 * 3));
 
-    // TODO
-    /*
     // Write method entry at sp[-3]
-    // sp[-2] = me;
-    mov(cb, REG1, const_ptr_opnd(cd));
-    x86opnd_t ptr_to_cc = member_opnd(REG1, struct rb_call_data, cc);
-    mov(cb, REG1, ptr_to_cc);
-    x86opnd_t ptr_to_cme_ = mem_opnd(64, REG1, offsetof(struct rb_callcache, cme_));
-    mov(cb, mem_opnd(64, REG0, 8 * -3), ptr_to_cme_);
-    */
+    // sp[-3] = me;
+    mov(cb, mem_opnd(64, REG0, 8 * -3), REG1);
 
     // Write block handler at sp[-2]
-    // sp[-1] = block_handler;
+    // sp[-2] = block_handler;
     mov(cb, mem_opnd(64, REG0, 8 * -2), imm_opnd(VM_BLOCK_HANDLER_NONE));
 
     // Write env flags at sp[-1]
-    // sp[0] = frame_type;
+    // sp[-1] = frame_type;
     uint64_t frame_type = VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL;
     mov(cb, mem_opnd(64, REG0, 8 * -1), imm_opnd(frame_type));
 
@@ -661,7 +635,7 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     mov(cb, member_opnd(REG1, rb_control_frame_t, iseq), imm_opnd(0));
     mov(cb, member_opnd(REG1, rb_control_frame_t, block_code), imm_opnd(0));
     mov(cb, member_opnd(REG1, rb_control_frame_t, __bp__), REG0);
-    sub(cb, REG0, imm_opnd(1));
+    sub(cb, REG0, imm_opnd(sizeof(VALUE)));
     mov(cb, member_opnd(REG1, rb_control_frame_t, ep), REG0);
     mov(cb, REG0, recv);
     mov(cb, member_opnd(REG1, rb_control_frame_t, self), REG0);
@@ -672,8 +646,7 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     push(cb, REG_SP);
 
     // Maintain 16-byte RSP alignment
-    if (argc % 2 == 0)
-        sub(cb, RSP, imm_opnd(8));
+    sub(cb, RSP, imm_opnd(8));
 
     // Copy SP into RAX because REG_SP will get overwritten
     lea(cb, RAX, ctx_sp_opnd(ctx));
@@ -691,18 +664,17 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     // Pop the C function arguments from the stack (in the caller)
     ctx_stack_pop(ctx, argc + 1);
 
-    print_str(cb, "before C call");
+    //print_str(cb, "before C call");
 
     // Call the C function
     // VALUE ret = (cfunc->func)(recv, argv[0], argv[1]);
     mov(cb, REG0, const_ptr_opnd(cfunc->func));
     call(cb, REG0);
 
-    print_str(cb, "after C call");
+    //print_str(cb, "after C call");
 
     // Maintain 16-byte RSP alignment
-    if (argc % 2 == 0)
-        add(cb, RSP, imm_opnd(8));
+    add(cb, RSP, imm_opnd(8));
 
     // Restore MicroJIT registers
     pop(cb, REG_SP);
