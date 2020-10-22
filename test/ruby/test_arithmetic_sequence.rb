@@ -162,11 +162,6 @@ class TestArithmeticSequence < Test::Unit::TestCase
     assert_equal([], seq.first(1))
     assert_equal([], seq.first(3))
 
-    seq = 1.step(10, by: 0)
-    assert_equal(1, seq.first)
-    assert_equal([1], seq.first(1))
-    assert_equal([1, 1, 1], seq.first(3))
-
     seq = 10.0.step(-1.0, by: -2.0)
     assert_equal(10.0, seq.first)
     assert_equal([10.0], seq.first(1))
@@ -340,9 +335,6 @@ class TestArithmeticSequence < Test::Unit::TestCase
     [10, 8, 6, 4, 2].each do |i|
       assert_equal(i, seq.next)
     end
-
-    seq = ((1/10r)..(1/2r)).step(0)
-    assert_equal(1/10r, seq.next)
   end
 
   def test_next_bug15444

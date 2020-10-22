@@ -271,8 +271,10 @@ class TestRange < Test::Unit::TestCase
     assert_kind_of(Enumerator::ArithmeticSequence, (1..).step(2))
 
     assert_raise(ArgumentError) { (0..10).step(-1) { } }
+    assert_raise(ArgumentError) { (0..10).step(0) }
     assert_raise(ArgumentError) { (0..10).step(0) { } }
     assert_raise(ArgumentError) { (0..).step(-1) { } }
+    assert_raise(ArgumentError) { (0..).step(0) }
     assert_raise(ArgumentError) { (0..).step(0) { } }
 
     a = []
@@ -303,6 +305,7 @@ class TestRange < Test::Unit::TestCase
     (2**32-1 .. 2**32+1).step(2) {|x| a << x }
     assert_equal([4294967295, 4294967297], a)
     zero = (2**32).coerce(0).first
+    assert_raise(ArgumentError) { (2**32-1 .. 2**32+1).step(zero) }
     assert_raise(ArgumentError) { (2**32-1 .. 2**32+1).step(zero) { } }
     a = []
     (2**32-1 .. ).step(2) {|x| a << x; break if a.size == 2 }
