@@ -261,8 +261,10 @@ describe :numeric_step, :shared => true do
       step_enum_class = Enumerator::ArithmeticSequence
     end
 
-    it "returns an #{step_enum_class} when step is 0" do
-      @step.call(1, 2, 0).should be_an_instance_of(step_enum_class)
+    ruby_version_is ""..."3.0" do
+      it "returns an #{step_enum_class} when step is 0" do
+        @step.call(1, 2, 0).should be_an_instance_of(step_enum_class)
+      end
     end
 
     it "returns an #{step_enum_class} when not passed a block and self > stop" do
