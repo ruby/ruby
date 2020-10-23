@@ -1626,10 +1626,8 @@ RUBY_DECL_ATTRIBUTE([__nonnull__(n)], [RUBY_FUNC_NONNULL(n,x)], [rb_cv_func_nonn
 RUBY_APPEND_OPTION(XCFLAGS, -DRUBY_EXPORT)
 
 AC_ARG_ENABLE(mathn,
-    AS_HELP_STRING([--disable-mathn], [disable canonicalization for mathn]),
-    [mathn=$enableval], [mathn=yes])
-test "x$mathn" = xyes || mathn=
-AC_SUBST(MATHN, $mathn)
+    AS_HELP_STRING([--enable-mathn], [enable canonicalization for mathn]),
+    [AC_MSG_ERROR([mathn support has been dropped])])
 
 AC_CACHE_CHECK(for function name string predefined identifier,
     rb_cv_function_name_string,
