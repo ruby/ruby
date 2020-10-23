@@ -254,6 +254,7 @@ void cb_link_labels(codeblock_t* cb);
 // Encode individual instructions into a code block
 void add(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1);
 void and(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1);
+void call_ptr(codeblock_t* cb, x86opnd_t scratch_reg, uint8_t* dst_ptr);
 void call_label(codeblock_t* cb, size_t label_idx);
 void call(codeblock_t* cb, x86opnd_t opnd);
 void cmova(codeblock_t* cb, x86opnd_t dst, x86opnd_t src);

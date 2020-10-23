@@ -758,7 +758,7 @@ void cb_write_jcc_ptr(codeblock_t* cb, const char* mnem, uint8_t op0, uint8_t op
         cb_write_byte(cb, op0);
     cb_write_byte(cb, op1);
 
-    // Pointer to the end of this jump
+    // Pointer to the end of this jump instruction
     uint8_t* end_ptr = &cb->mem_block[cb->write_pos] + 4;
 
     // Compute the jump offset
@@ -820,6 +820,40 @@ void and(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1)
         opnd0,
         opnd1
     );
+}
+
+// call - Call to a pointer with a 32-bit displacement offset
+void call_rel32(codeblock_t* cb, int32_t rel32)
+{
+    //cb.writeASM("call", rel32);
+
+    // Write the opcode
+    cb_write_byte(cb, 0xE8);
+
+    // Write the relative 32-bit jump offset
+    cb_write_int(cb, (int32_t)rel32, 32);
+}
+
+// call - Call a pointer, encode with a 32-bit offset if possible
+void call_ptr(codeblock_t* cb, x86opnd_t scratch_reg, uint8_t* dst_ptr)
+{
+    assert (scratch_reg.type == OPND_REG);
+
+    // Pointer to the end of this call instruction
+    uint8_t* end_ptr = &cb->mem_block[cb->write_pos] + 5;
+
+    // Compute the jump offset
+    int64_t rel64 = (int64_t)(dst_ptr - end_ptr);
+
+    // If the offset fits in 32-bit
+    if (rel64 >= -2147483648 && rel64 <= 2147483647)
+    {
+        return call_rel32(cb, (int32_t)rel64);
+    }
+
+    // Move the pointer into the scratch register and call
+    mov(cb, scratch_reg, const_ptr_opnd(dst_ptr));
+    call(cb, scratch_reg);
 }
 
 /// call - Call to label with 32-bit offset
