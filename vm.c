@@ -739,18 +739,22 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
 
     if (!VM_ENV_LOCAL_P(ep)) {
 	const VALUE *prev_ep = VM_ENV_PREV_EP(ep);
+        if (prev_ep) {
+            if (!VM_ENV_ESCAPED_P(prev_ep)) {
+                rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
 
-	if (!VM_ENV_ESCAPED_P(prev_ep)) {
-	    rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+                while (prev_cfp->ep != prev_ep) {
+                    prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(prev_cfp);
+                    VM_ASSERT(prev_cfp->ep != NULL);
+                }
 
-	    while (prev_cfp->ep != prev_ep) {
-		prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(prev_cfp);
-		VM_ASSERT(prev_cfp->ep != NULL);
-	    }
-
-	    vm_make_env_each(ec, prev_cfp);
-	    VM_FORCE_WRITE_SPECIAL_CONST(&ep[VM_ENV_DATA_INDEX_SPECVAL], VM_GUARDED_PREV_EP(prev_cfp->ep));
-	}
+                vm_make_env_each(ec, prev_cfp);
+                VM_FORCE_WRITE_SPECIAL_CONST(&ep[VM_ENV_DATA_INDEX_SPECVAL], VM_GUARDED_PREV_EP(prev_cfp->ep));
+            }
+        }
+        else {
+            // isolated
+        }
     }
     else {
 	VALUE block_handler = VM_ENV_BLOCK_HANDLER(ep);
@@ -836,7 +840,9 @@ rb_vm_env_prev_env(const rb_env_t *env)
 	return NULL;
     }
     else {
-	return VM_ENV_ENVVAL_PTR(VM_ENV_PREV_EP(ep));
+        const VALUE *prev_ep = VM_ENV_PREV_EP(ep);
+        if (prev_ep == NULL) return NULL; // isolated Proc
+        return VM_ENV_ENVVAL_PTR(prev_ep);
     }
 }
 
@@ -988,35 +994,39 @@ rb_proc_isolate_bang(VALUE self)
 {
     // check accesses
     const rb_iseq_t *iseq = vm_proc_iseq(self);
-    if (iseq && iseq->body->outer_variables) {
-        struct collect_outer_variable_name_data data = {
-            .ary = Qfalse,
-            .yield = false,
-        };
 
-        rb_id_table_foreach(iseq->body->outer_variables, collect_outer_variable_names, (void *)&data);
+    if (iseq) {
+        rb_proc_t *proc = (rb_proc_t *)RTYPEDDATA_DATA(self);
+        if (proc->block.type != block_type_iseq) rb_raise(rb_eRuntimeError, "not supported yet");
 
-        if (data.ary != Qfalse) {
-            VALUE str = rb_ary_join(data.ary, rb_str_new2(", "));
-            if (data.yield) {
-                rb_raise(rb_eArgError, "can not isolate a Proc because it accesses outer variables (%s) and uses `yield'.",
-                         StringValueCStr(str));
+        if (iseq->body->outer_variables) {
+            struct collect_outer_variable_name_data data = {
+                .ary = Qfalse,
+                .yield = false,
+            };
+
+            rb_id_table_foreach(iseq->body->outer_variables, collect_outer_variable_names, (void *)&data);
+
+            if (data.ary != Qfalse) {
+                VALUE str = rb_ary_join(data.ary, rb_str_new2(", "));
+                if (data.yield) {
+                    rb_raise(rb_eArgError, "can not isolate a Proc because it accesses outer variables (%s) and uses `yield'.",
+                             StringValueCStr(str));
+                }
+                else {
+                    rb_raise(rb_eArgError, "can not isolate a Proc because it accesses outer variables (%s).",
+                             StringValueCStr(str));
+                }
             }
             else {
-                rb_raise(rb_eArgError, "can not isolate a Proc because it accesses outer variables (%s).",
-                         StringValueCStr(str));
+                VM_ASSERT(data.yield);
+                rb_raise(rb_eArgError, "can not isolate a Proc because it uses `yield'.");
             }
         }
-        else {
-            VM_ASSERT(data.yield);
-            rb_raise(rb_eArgError, "can not isolate a Proc because it uses `yield'.");
-        }
-        
+        proc->is_isolated = TRUE;
+        *((VALUE **)&proc->block.as.captured.ep) = NULL;
     }
 
-    rb_proc_t *proc = (rb_proc_t *)RTYPEDDATA_DATA(self);
-    proc->is_isolated = TRUE;
-    // proc->block
     return self;
 }
 
