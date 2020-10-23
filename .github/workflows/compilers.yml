@@ -92,7 +92,6 @@ jobs:
           - { key: append_configure, name: valgrind,             value: '--with-valgrind' }
           - { key: append_configure, name: 'coroutine=ucontext', value: '--with-coroutine=ucontext' }
           - { key: append_configure, name: 'coroutine=copy',     value: '--with-coroutine=copy' }
-          - { key: append_configure, name: disable-mathn,        value: '--disable-mathn' }
           - { key: append_configure, name: disable-jit-support,  value: '--disable-jit-support' }
           - { key: append_configure, name: disable-dln,          value: '--disable-dln' }
           - { key: append_configure, name: disable-rubygems,     value: '--disable-rubygems' }
