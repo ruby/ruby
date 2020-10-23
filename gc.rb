@@ -218,6 +218,10 @@ module GC
   # object, that object should be pushed on the mark stack, and will
   # make a SEGV.
   def self.verify_compaction_references(toward: nil, double_heap: false)
+    if double_heap
+      Primitive.gc_double_heap_size
+    end
+
     if toward == :empty
       Primitive.gc_sort_heap_by_empty_slots
     end

@@ -8547,6 +8547,16 @@ gc_sort_heap_by_empty_slots(rb_execution_context_t *ec, VALUE self)
     return Qnil;
 }
 
+static VALUE
+gc_double_heap_size(rb_execution_context_t *ec, VALUE self)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+
+    heap_add_pages(objspace, heap_eden, heap_allocated_pages);
+
+    return Qnil;
+}
+
 static void
 gc_ref_update_array(rb_objspace_t * objspace, VALUE v)
 {
