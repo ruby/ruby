@@ -1914,7 +1914,7 @@ heap_add_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *page)
     /* Adding to eden heap during incremental sweeping is forbidden */
     GC_ASSERT(!(heap == heap_eden && heap->sweeping_page));
     page->flags.in_tomb = (heap == heap_tomb);
-    list_add(&heap->pages, &page->page_node);
+    list_add_tail(&heap->pages, &page->page_node);
     heap->total_pages++;
     heap->total_slots += page->total_slots;
 }
@@ -5036,7 +5036,7 @@ gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap)
 
     do {
 	int free_slots = gc_page_sweep(objspace, heap, sweep_page);
-	heap->sweeping_page = list_next(&heap->pages, sweep_page, page_node);
+        heap->sweeping_page = list_next(&heap->pages, sweep_page, page_node);
 
 	if (sweep_page->final_slots + free_slots == sweep_page->total_slots &&
 	    heap_pages_freeable_pages > 0 &&
