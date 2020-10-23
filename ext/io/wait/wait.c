@@ -211,7 +211,7 @@ wait_mode_sym(VALUE mode)
 /*
  * call-seq:
  *   io.wait(events, timeout) -> event mask or false.
- *   io.wait(timeout = nil, mode = :read) -> event mask or false (deprecated)
+ *   io.wait(timeout = nil, mode = :read) -> event mask or false.
  *
  * Waits until the IO becomes ready for the specified events and returns the
  * subset of events that become ready, or +false+ when times out.
@@ -222,34 +222,32 @@ wait_mode_sym(VALUE mode)
  * Returns +true+ immediately when buffered data is available.
  *
  * Optional parameter +mode+ is one of +:read+, +:write+, or
- * +:read_write+ (deprecated).
+ * +:read_write+.
  */
 
 static VALUE
 io_wait(int argc, VALUE *argv, VALUE io)
 {
-    VALUE timeout = Qnil;
+    VALUE timeout = Qundef;
     rb_io_event_t events = 0;
 
-    if (argc < 2 || (argc >= 2 && RB_SYMBOL_P(argv[1]))) {
-	if (argc > 0) {
-	    timeout = argv[0];
+    if (argc != 2 || (RB_SYMBOL_P(argv[0]) || RB_SYMBOL_P(argv[1]))) {
+	for (int i = 0; i < argc; i += 1) {
+	    if (RB_SYMBOL_P(argv[i])) {
+		events |= wait_mode_sym(argv[i]);
+	    }
+	    else if (timeout == Qundef) {
+		rb_time_interval(timeout = argv[i]);
+	    }
+	    else {
+		rb_raise(rb_eArgError, "timeout given more than once");
+	    }
 	}
-
-	for (int i = 1; i < argc; i += 1) {
-	    events |= wait_mode_sym(argv[i]);
-	}
+	if (timeout == Qundef) timeout = Qnil;
     }
-    else if (argc == 2) {
+    else /* argc == 2 */ {
 	events = RB_NUM2UINT(argv[0]);
-
-	if (argv[1] != Qnil) {
-	    timeout = argv[1];
-	}
-    }
-    else {
-	// TODO error
-	return Qnil;
+	timeout = argv[1];
     }
 
     if (events == 0) {
