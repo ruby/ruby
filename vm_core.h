@@ -418,7 +418,7 @@ struct rb_iseq_constant_body {
 
     char catch_except_p; /* If a frame of this ISeq may catch exception, set TRUE */
     bool builtin_inline_p; // This ISeq's builtin func is safe to be inlined by MJIT
-    char access_outer_variables;
+    struct rb_id_table *outer_variables;
 
 #if USE_MJIT
     /* The following fields are MJIT related info.  */

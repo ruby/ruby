@@ -130,6 +130,7 @@ rb_iseq_free(const rb_iseq_t *iseq)
 	    ruby_xfree((void *)body->param.keyword);
 	}
 	compile_data_free(ISEQ_COMPILE_DATA(iseq));
+        if (body->outer_variables) rb_id_table_free(body->outer_variables);
 	ruby_xfree(body);
     }
 

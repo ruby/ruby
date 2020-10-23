@@ -963,13 +963,55 @@ rb_proc_dup(VALUE self)
     return procval;
 }
 
+struct collect_outer_variable_name_data {
+    VALUE ary;
+    bool yield;
+};
+
+static enum rb_id_table_iterator_result
+collect_outer_variable_names(ID id, VALUE val, void *ptr)
+{
+    struct collect_outer_variable_name_data *data = (struct collect_outer_variable_name_data *)ptr;
+
+    if (id == rb_intern("yield")) {
+        data->yield = true;
+    }
+    else {
+        if (data->ary == Qfalse) data->ary = rb_ary_new();
+        rb_ary_push(data->ary, rb_id2str(id));
+    }
+    return ID_TABLE_CONTINUE;
+}
+
 VALUE
 rb_proc_isolate_bang(VALUE self)
 {
     // check accesses
     const rb_iseq_t *iseq = vm_proc_iseq(self);
-    if (iseq && iseq->body->access_outer_variables) {
-        rb_raise(rb_eArgError, "can not isolate a Proc because it can accesses outer variables.");
+    if (iseq && iseq->body->outer_variables) {
+        struct collect_outer_variable_name_data data = {
+            .ary = Qfalse,
+            .yield = false,
+        };
+
+        rb_id_table_foreach(iseq->body->outer_variables, collect_outer_variable_names, (void *)&data);
+
+        if (data.ary != Qfalse) {
+            VALUE str = rb_ary_join(data.ary, rb_str_new2(", "));
+            if (data.yield) {
+                rb_raise(rb_eArgError, "can not isolate a Proc because it accesses outer variables (%s) and uses `yield'.",
+                         StringValueCStr(str));
+            }
+            else {
+                rb_raise(rb_eArgError, "can not isolate a Proc because it accesses outer variables (%s).",
+                         StringValueCStr(str));
+            }
+        }
+        else {
+            VM_ASSERT(data.yield);
+            rb_raise(rb_eArgError, "can not isolate a Proc because it uses `yield'.");
+        }
+        
     }
 
     rb_proc_t *proc = (rb_proc_t *)RTYPEDDATA_DATA(self);
