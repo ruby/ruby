@@ -1538,6 +1538,57 @@ class TestProc < Test::Unit::TestCase
     assert_equal(42, Module.new { extend self
       def m1(&b) b end; def m2(); m1 { next 42 } end }.m2.call)
   end
+
+  def test_isolate
+    assert_raise_with_message ArgumentError, /\(a\)/ do
+      a = :a
+      Proc.new{p a}.isolate.call
+    end
+
+    assert_raise_with_message ArgumentError, /\(a\)/ do
+      a = :a
+      1.times{
+        Proc.new{p a}.isolate.call
+      }
+    end
+
+    assert_raise_with_message ArgumentError, /yield/ do
+      Proc.new{yield}.isolate.call
+    end
+
+    # binding
+
+    :a.tap{|a|
+      :b.tap{|b|
+        Proc.new{
+          :c.tap{|c|
+            assert_equal :c, eval('c')
+
+            assert_raise_with_message SyntaxError, /\`a\'/ do
+              eval('p a')
+            end
+
+            assert_raise_with_message SyntaxError, /\`b\'/ do
+              eval('p b')
+            end
+
+            assert_raise_with_message SyntaxError, /can not yield from isolated Proc/ do
+              eval('p yield')
+            end
+
+            assert_equal :c, binding.local_variable_get(:c)
+
+            assert_raise_with_message NameError, /local variable \`a\' is not defined/ do
+              binding.local_variable_get(:a)
+            end
+
+            assert_equal [:c], local_variables
+            assert_equal [:c], binding.local_variables
+          }
+        }.isolate.call
+      }
+    }
+  end
 end
 
 class TestProcKeywords < Test::Unit::TestCase

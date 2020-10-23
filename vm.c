@@ -739,21 +739,16 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
 
     if (!VM_ENV_LOCAL_P(ep)) {
 	const VALUE *prev_ep = VM_ENV_PREV_EP(ep);
-        if (prev_ep) {
-            if (!VM_ENV_ESCAPED_P(prev_ep)) {
-                rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+        if (!VM_ENV_ESCAPED_P(prev_ep)) {
+            rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
 
-                while (prev_cfp->ep != prev_ep) {
-                    prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(prev_cfp);
-                    VM_ASSERT(prev_cfp->ep != NULL);
-                }
-
-                vm_make_env_each(ec, prev_cfp);
-                VM_FORCE_WRITE_SPECIAL_CONST(&ep[VM_ENV_DATA_INDEX_SPECVAL], VM_GUARDED_PREV_EP(prev_cfp->ep));
+            while (prev_cfp->ep != prev_ep) {
+                prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(prev_cfp);
+                VM_ASSERT(prev_cfp->ep != NULL);
             }
-        }
-        else {
-            // isolated
+
+            vm_make_env_each(ec, prev_cfp);
+            VM_FORCE_WRITE_SPECIAL_CONST(&ep[VM_ENV_DATA_INDEX_SPECVAL], VM_GUARDED_PREV_EP(prev_cfp->ep));
         }
     }
     else {
@@ -841,7 +836,6 @@ rb_vm_env_prev_env(const rb_env_t *env)
     }
     else {
         const VALUE *prev_ep = VM_ENV_PREV_EP(ep);
-        if (prev_ep == NULL) return NULL; // isolated Proc
         return VM_ENV_ENVVAL_PTR(prev_ep);
     }
 }
@@ -861,6 +855,7 @@ static void
 collect_local_variables_in_env(const rb_env_t *env, const struct local_var_list *vars)
 {
     do {
+        if (VM_ENV_FLAGS(env->ep, VM_ENV_FLAG_ISOLATED)) break;
 	collect_local_variables_in_iseq(env->iseq, vars);
     } while ((env = rb_vm_env_prev_env(env)) != NULL);
 }
@@ -989,6 +984,38 @@ collect_outer_variable_names(ID id, VALUE val, void *ptr)
     return ID_TABLE_CONTINUE;
 }
 
+static const rb_env_t *
+env_copy(const VALUE *src_ep)
+{
+    const rb_env_t *src_env = (rb_env_t *)VM_ENV_ENVVAL(src_ep);
+    VALUE *env_body = ZALLOC_N(VALUE, src_env->env_size); // fill with Qfalse
+    VALUE *ep = &env_body[src_env->env_size - 2];
+
+    VM_ASSERT(src_env->ep == src_ep);
+
+    ep[VM_ENV_DATA_INDEX_ME_CREF] = src_ep[VM_ENV_DATA_INDEX_ME_CREF];
+    ep[VM_ENV_DATA_INDEX_FLAGS]   = src_ep[VM_ENV_DATA_INDEX_FLAGS] | VM_ENV_FLAG_ISOLATED;
+
+    if (!VM_ENV_LOCAL_P(src_ep)) {
+        const VALUE *prev_ep = VM_ENV_PREV_EP(src_env->ep);
+        const rb_env_t *new_prev_env = env_copy(prev_ep);
+        ep[VM_ENV_DATA_INDEX_SPECVAL] = VM_GUARDED_PREV_EP(new_prev_env->ep);
+    }
+    else {
+        ep[VM_ENV_DATA_INDEX_SPECVAL] = VM_BLOCK_HANDLER_NONE;
+    }
+    return vm_env_new(ep, env_body, src_env->env_size, src_env->iseq);
+}
+
+static void
+proc_isolate_env(VALUE self, rb_proc_t *proc)
+{
+    const struct rb_captured_block *captured = &proc->block.as.captured;
+    const rb_env_t *env = env_copy(captured->ep);
+    *((const VALUE **)&proc->block.as.captured.ep) = env->ep;
+    RB_OBJ_WRITTEN(self, Qundef, env);
+}
+
 VALUE
 rb_proc_isolate_bang(VALUE self)
 {
@@ -1023,8 +1050,9 @@ rb_proc_isolate_bang(VALUE self)
                 rb_raise(rb_eArgError, "can not isolate a Proc because it uses `yield'.");
             }
         }
+
+        proc_isolate_env(self, proc);
         proc->is_isolated = TRUE;
-        *((VALUE **)&proc->block.as.captured.ep) = NULL;
     }
 
     return self;

@@ -1319,9 +1319,12 @@ new_child_iseq(rb_iseq_t *iseq, const NODE *const node,
     ast.line_count = -1;
 
     debugs("[new_child_iseq]> ---------------------------------------\n");
+    int isolated_depth = ISEQ_COMPILE_DATA(iseq)->isolated_depth;
     ret_iseq = rb_iseq_new_with_opt(&ast, name,
 				    rb_iseq_path(iseq), rb_iseq_realpath(iseq),
-				    INT2FIX(line_no), parent, type, ISEQ_COMPILE_DATA(iseq)->option);
+                                    INT2FIX(line_no), parent,
+                                    isolated_depth ? isolated_depth + 1 : 0,
+                                    type, ISEQ_COMPILE_DATA(iseq)->option);
     debugs("[new_child_iseq]< ---------------------------------------\n");
     return ret_iseq;
 }
@@ -1603,6 +1606,17 @@ iseq_block_param_id_p(const rb_iseq_t *iseq, ID id, int *pidx, int *plevel)
 static void
 access_outer_variables(const rb_iseq_t *iseq, int level, ID id, bool write)
 {
+    int isolated_depth = ISEQ_COMPILE_DATA(iseq)->isolated_depth;
+
+    if (isolated_depth && level >= isolated_depth) {
+        if (id == rb_intern("yield")) {
+            COMPILE_ERROR(iseq, ISEQ_LAST_LINE(iseq), "can not yield from isolated Proc", rb_id2name(id));
+        }
+        else {
+            COMPILE_ERROR(iseq, ISEQ_LAST_LINE(iseq), "can not access variable `%s' from isolated Proc", rb_id2name(id));
+        }
+    }
+
     for (int i=0; i<level; i++) {
         VALUE val;
         struct rb_id_table *ovs = iseq->body->outer_variables;
@@ -8238,7 +8252,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
         for (; tmp_iseq != iseq->body->local_iseq; level++ ) {
             tmp_iseq = tmp_iseq->body->parent_iseq;
         }
-        access_outer_variables(iseq, level, rb_intern("yield"), true);
+        if (level > 0) access_outer_variables(iseq, level, rb_intern("yield"), true);
 	break;
       }
       case NODE_LVAR:{
