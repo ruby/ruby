@@ -415,6 +415,8 @@ def lldb_inspect(debugger, target, result, val):
             print("T_IMEMO: ", file=result)
             append_command_output(debugger, "p (enum imemo_type) %d" % imemo_type, result)
             append_command_output(debugger, "p *(struct MEMO *) %0#x" % val.GetValueAsUnsigned(), result)
+            if imemo_type == 6:
+                print("complemented={} cached={} invalidated={}".format((flags & RUBY_FL_USER7) > 0, (flags & RUBY_FL_USER8) > 0, (flags & RUBY_FL_USER9) > 0), file=result)
         elif flType == RUBY_T_ZOMBIE:
             tRZombie = target.FindFirstType("struct RZombie").GetPointerType()
             val = val.Cast(tRZombie)
