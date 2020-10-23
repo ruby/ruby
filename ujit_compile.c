@@ -668,8 +668,7 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 
     // Call the C function
     // VALUE ret = (cfunc->func)(recv, argv[0], argv[1]);
-    mov(cb, REG0, const_ptr_opnd(cfunc->func));
-    call(cb, REG0);
+    call_ptr(cb, REG0, cfunc->func);
 
     //print_str(cb, "after C call");
 
