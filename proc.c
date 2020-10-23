@@ -3245,6 +3245,8 @@ proc_binding(VALUE self)
     GetProcPtr(self, proc);
     block = &proc->block;
 
+    if (proc->is_isolated) rb_raise(rb_eArgError, "Can't create Binding from isolated Proc");
+
   again:
     switch (vm_block_type(block)) {
       case block_type_iseq:

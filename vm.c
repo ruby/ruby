@@ -1016,6 +1016,7 @@ rb_proc_isolate_bang(VALUE self)
 
     rb_proc_t *proc = (rb_proc_t *)RTYPEDDATA_DATA(self);
     proc->is_isolated = TRUE;
+    // proc->block
     return self;
 }
 
