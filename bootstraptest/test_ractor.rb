@@ -926,7 +926,13 @@ assert_equal 'true', %q{
       @a = 'foo'
       @b = 'bar'
     end
-    attr_reader :a, :b
+
+    def freeze
+      @c = [:freeze_called]
+      super
+    end
+
+    attr_reader :a, :b, :c
   end
   S = Struct.new(:s1, :s2)
   str = "hello"
@@ -967,6 +973,7 @@ assert_equal 'true', %q{
     when C
       raise o.a.inspect unless o.a.frozen?
       raise o.b.inspect unless o.b.frozen?
+      raise o.c.inspect unless o.c.frozen? && o.c == [:freeze_called]
     when Rational
       raise o.numerator.inspect unless o.numerator.frozen?
     when Complex
