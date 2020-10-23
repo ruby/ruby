@@ -8497,31 +8497,6 @@ gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free)
 }
 
 static int
-count_pinned(struct heap_page *page)
-{
-    int pinned = 0;
-    int i;
-
-    for (i = 0; i < HEAP_PAGE_BITMAP_LIMIT; i++) {
-        pinned += popcount_bits(page->pinned_bits[i]);
-    }
-
-    return pinned;
-}
-
-static int
-compare_pinned(const void *left, const void *right, void *dummy)
-{
-    struct heap_page *left_page;
-    struct heap_page *right_page;
-
-    left_page = *(struct heap_page * const *)left;
-    right_page = *(struct heap_page * const *)right;
-
-    return right_page->pinned_slots - left_page->pinned_slots;
-}
-
-static int
 compare_free_slots(const void *left, const void *right, void *dummy)
 {
     struct heap_page *left_page;
@@ -8530,7 +8505,46 @@ compare_free_slots(const void *left, const void *right, void *dummy)
     left_page = *(struct heap_page * const *)left;
     right_page = *(struct heap_page * const *)right;
 
-    return right_page->free_slots - left_page->free_slots;
+    return left_page->free_slots - right_page->free_slots;
+}
+
+static VALUE
+gc_sort_heap_by_empty_slots(rb_execution_context_t *ec, VALUE self)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+
+    size_t total_pages = heap_eden->total_pages;
+    size_t size = size_mul_or_raise(total_pages, sizeof(struct heap_page *), rb_eRuntimeError);
+    struct heap_page *page = 0, **page_list = malloc(size);
+    size_t i = 0;
+
+    gc_rest(objspace);
+
+    list_for_each(&heap_eden->pages, page, page_node) {
+        page_list[i++] = page;
+        GC_ASSERT(page != NULL);
+    }
+    GC_ASSERT(total_pages > 0);
+    GC_ASSERT((size_t)i == total_pages);
+
+    /* Sort the heap so "filled pages" are first. `heap_add_page` adds to the
+     * head of the list, so empty pages will end up at the start of the heap */
+    ruby_qsort(page_list, total_pages, sizeof(struct heap_page *), compare_free_slots, NULL);
+
+    /* Reset the eden heap */
+    list_head_init(&objspace->eden_heap.pages);
+    heap_eden->free_pages = NULL;
+
+    for (i = 0; i < total_pages; i++) {
+        list_add(&heap_eden->pages, &page_list[i]->page_node);
+        if (page_list[i]->free_slots != 0) {
+            heap_add_freepage(heap_eden, page_list[i]);
+        }
+    }
+
+    free(page_list);
+
+    return Qnil;
 }
 
 static void
