@@ -415,6 +415,13 @@ range_step(int argc, VALUE *argv, VALUE range)
     step = (!rb_check_arity(argc, 0, 1) ? INT2FIX(1) : argv[0]);
 
     if (!rb_block_given_p()) {
+        if (!rb_obj_is_kind_of(step, rb_cNumeric)) {
+            step = rb_to_int(step);
+        }
+        if (rb_equal(step, INT2FIX(0))) {
+            rb_raise(rb_eArgError, "step can't be 0");
+        }
+
         const VALUE b_num_p = rb_obj_is_kind_of(b, rb_cNumeric);
         const VALUE e_num_p = rb_obj_is_kind_of(e, rb_cNumeric);
         if ((b_num_p && (NIL_P(e) || e_num_p)) || (NIL_P(b) && e_num_p)) {

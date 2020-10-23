@@ -2695,9 +2695,9 @@ num_step_check_fix_args(int argc, VALUE *to, VALUE *step, VALUE by, int fix_nil,
         if (argc > 1 && NIL_P(*step)) {
             rb_raise(rb_eTypeError, "step must be numeric");
         }
-        if (!allow_zero_step && rb_equal(*step, INT2FIX(0))) {
-            rb_raise(rb_eArgError, "step can't be 0");
-        }
+    }
+    if (!allow_zero_step && rb_equal(*step, INT2FIX(0))) {
+        rb_raise(rb_eArgError, "step can't be 0");
     }
     if (NIL_P(*step)) {
 	*step = INT2FIX(1);
@@ -2800,6 +2800,9 @@ num_step(int argc, VALUE *argv, VALUE from)
         }
         if (NIL_P(step)) {
             step = INT2FIX(1);
+        }
+        else if (rb_equal(step, INT2FIX(0))) {
+            rb_raise(rb_eArgError, "step can't be 0");
         }
         if ((NIL_P(to) || rb_obj_is_kind_of(to, rb_cNumeric)) &&
             rb_obj_is_kind_of(step, rb_cNumeric)) {
