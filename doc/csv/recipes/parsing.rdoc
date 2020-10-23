@@ -197,14 +197,14 @@ with respect to:
 
 ==== Row Separator
 
-RFC 4180 specifies the row separator CRLF (Ruby "\r\n").
+RFC 4180 specifies the row separator CRLF (Ruby <tt>"\r\n"</tt>).
 
-Although the \CSV default row separator is "\n",
-the parser also by default handles row seperator "\r" and the RFC-compliant "\r\n".
+Although the \CSV default row separator is <tt>"\n"</tt>,
+the parser also by default handles row separator <tt>"\r"</tt> and the RFC-compliant <tt>"\r\n"</tt>.
 
 ===== Recipe: Handle Compliant Row Separator
 
-For strict compliance, use option +:row_sep+ to specify row separator "\r\n",
+For strict compliance, use option +:row_sep+ to specify row separator <tt>"\r\n"</tt>,
 which allows the compliant row separator:
   source = "foo,1\r\nbar,1\r\nbaz,2\r\n"
   CSV.parse(source, row_sep: "\r\n") # => [["foo", "1"], ["bar", "1"], ["baz", "2"]]
@@ -219,13 +219,13 @@ But rejects other row separators:
 ===== Recipe: Handle Non-Compliant Row Separator
 
 For data with non-compliant row separators, use option +:row_sep+.
-This example source uses semicolon (';') as its row separator:
+This example source uses semicolon (<tt>";"</tt>) as its row separator:
   source = "foo,1;bar,1;baz,2;"
   CSV.parse(source, row_sep: ';') # => [["foo", "1"], ["bar", "1"], ["baz", "2"]]
 
 ==== Column Separator
 
-RFC 4180 specifies column separator COMMA (Ruby ',').
+RFC 4180 specifies column separator COMMA (Ruby <tt>","</tt>).
 
 ===== Recipe: Handle Compliant Column Separator
 
@@ -237,17 +237,17 @@ you need not specify option +:col_sep+ for compliant data:
 ===== Recipe: Handle Non-Compliant Column Separator
 
 For data with non-compliant column separators, use option +:col_sep+.
-This example source uses TAB ("\t") as its column separator:
+This example source uses TAB (<tt>"\t"</tt>) as its column separator:
   source = "foo,1\tbar,1\tbaz,2"
   CSV.parse(source, col_sep: "\t") # => [["foo", "1"], ["bar", "1"], ["baz", "2"]]
 
 ==== Quote Character
 
-RFC 4180 specifies quote character DQUOTE (Ruby '"').
+RFC 4180 specifies quote character DQUOTE (Ruby <tt>"\""</tt>).
 
 ===== Recipe: Handle Compliant Quote Character
 
-Because the \CSV default quote character is '"',
+Because the \CSV default quote character is <tt>"\""</tt>,
 you need not specify option +:quote_char+ for compliant data:
   source = "\"foo\",\"1\"\n\"bar\",\"1\"\n\"baz\",\"2\"\n"
   CSV.parse(source) # => [["foo", "1"], ["bar", "1"], ["baz", "2"]]
@@ -255,7 +255,7 @@ you need not specify option +:quote_char+ for compliant data:
 ===== Recipe: Handle Non-Compliant Quote Character
 
 For data with non-compliant quote characters, use option +:quote_char+.
-This example source uses SQUOTE ("'") as its quote character:
+This example source uses SQUOTE (<tt>"'"</tt>) as its quote character:
   source = "'foo','1'\n'bar','1'\n'baz','2'\n"
   CSV.parse(source, quote_char: "'") # => [["foo", "1"], ["bar", "1"], ["baz", "2"]]
 
