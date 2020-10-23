@@ -493,9 +493,6 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     struct rb_call_data * cd = (struct rb_call_data *)ctx_get_arg(ctx, 0);
     int32_t argc = (int32_t)vm_ci_argc(cd->ci);
 
-    // Callee method ID
-    ID mid = vm_ci_mid(cd->ci);
-
     // Don't JIT calls with keyword splat
     if (vm_ci_flag(cd->ci) & VM_CALL_KW_SPLAT)
     {
@@ -544,6 +541,8 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     x86opnd_t recv = ctx_stack_opnd(ctx, argc);
     mov(cb, REG0, recv);
 
+    // Callee method ID
+    //ID mid = vm_ci_mid(cd->ci);
     //printf("JITting call to C function \"%s\", argc: %lu\n", rb_id2name(mid), argc);
     //print_str(cb, "");
     //print_str(cb, "calling CFUNC:");
@@ -668,7 +667,7 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 
     // Call the C function
     // VALUE ret = (cfunc->func)(recv, argv[0], argv[1]);
-    call_ptr(cb, REG0, cfunc->func);
+    call_ptr(cb, REG0, (void*)cfunc->func);
 
     //print_str(cb, "after C call");
 
