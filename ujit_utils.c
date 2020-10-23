@@ -36,7 +36,7 @@ void pop_regs(codeblock_t* cb)
 
 static void print_int_cfun(int64_t val)
 {
-    printf("%lld\n", val);
+    printf("%lld\n", (long long int)val);
 }
 
 void print_int(codeblock_t* cb, x86opnd_t opnd)
