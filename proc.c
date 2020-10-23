@@ -424,7 +424,11 @@ get_local_variable_ptr(const rb_env_t **envp, ID lid)
     const rb_env_t *env = *envp;
     do {
 	if (!VM_ENV_FLAGS(env->ep, VM_FRAME_FLAG_CFRAME)) {
-	    const rb_iseq_t *iseq = env->iseq;
+            if (VM_ENV_FLAGS(env->ep, VM_ENV_FLAG_ISOLATED)) {
+                return NULL;
+            }
+
+            const rb_iseq_t *iseq = env->iseq;
 	    unsigned int i;
 
 	    VM_ASSERT(rb_obj_is_iseq((VALUE)iseq));
@@ -3245,6 +3249,8 @@ proc_binding(VALUE self)
     GetProcPtr(self, proc);
     block = &proc->block;
 
+    if (proc->is_isolated) rb_raise(rb_eArgError, "Can't create Binding from isolated Proc");
+
   again:
     switch (vm_block_type(block)) {
       case block_type_iseq:
@@ -4065,6 +4071,7 @@ Init_Proc(void)
     rb_define_method(rb_cProc, "source_location", rb_proc_location, 0);
     rb_define_method(rb_cProc, "parameters", rb_proc_parameters, 0);
     rb_define_method(rb_cProc, "ruby2_keywords", proc_ruby2_keywords, 0);
+    // rb_define_method(rb_cProc, "isolate", rb_proc_isolate, 0); is not accepted.
 
     /* Exceptions */
     rb_eLocalJumpError = rb_define_class("LocalJumpError", rb_eStandardError);

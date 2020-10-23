@@ -1461,6 +1461,23 @@ eval_make_iseq(VALUE src, VALUE fname, int line, const rb_binding_t *bind,
     VALUE realpath = Qnil;
     rb_iseq_t *iseq = NULL;
     rb_ast_t *ast;
+    int isolated_depth = 0;
+    {
+        int depth = 1;
+        const VALUE *ep = vm_block_ep(base_block);
+
+        while (1) {
+            if (VM_ENV_FLAGS(ep, VM_ENV_FLAG_ISOLATED)) {
+                isolated_depth = depth;
+                break;
+            }
+            else if (VM_ENV_LOCAL_P(ep)) {
+                break;
+            }
+            ep = VM_ENV_PREV_EP(ep);
+            depth++;
+        }
+    }
 
     if (!fname) {
 	fname = rb_source_location(&line);
@@ -1477,10 +1494,10 @@ eval_make_iseq(VALUE src, VALUE fname, int line, const rb_binding_t *bind,
     rb_parser_set_context(parser, parent, FALSE);
     ast = rb_parser_compile_string_path(parser, fname, src, line);
     if (ast->body.root) {
-	iseq = rb_iseq_new_with_opt(&ast->body,
-				    parent->body->location.label,
-				    fname, realpath, INT2FIX(line),
-				    parent, ISEQ_TYPE_EVAL, NULL);
+        iseq = rb_iseq_new_eval(&ast->body,
+                                parent->body->location.label,
+                                fname, realpath, INT2FIX(line),
+                                parent, isolated_depth);
     }
     rb_ast_dispose(ast);
 
