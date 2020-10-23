@@ -20,7 +20,7 @@
 // respect RUBY_DUBUG: if given n is 0, then use RUBY_DEBUG
 #define N_OR_RUBY_DEBUG(n) (((n) > 0) ? (n) : RUBY_DEBUG)
 
-#define VM_CHECK_MODE N_OR_RUBY_DEBUG(1)
+#define VM_CHECK_MODE N_OR_RUBY_DEBUG(0)
 #endif
 
 /**
