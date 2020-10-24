@@ -53,17 +53,17 @@ class Ractor
 
   # Multiplex multiple Ractor communications.
   #
-  #   r, obj = Ractor.select(r1, r2)
+  #   obj, r = Ractor.select(r1, r2)
   #   #=> wait for taking from r1 or r2
   #   #   returned obj is a taken object from Ractor r
   #
-  #   r, obj = Ractor.select(r1, r2, Ractor.current)
+  #   obj, r = Ractor.select(r1, r2, Ractor.current)
   #   #=> wait for taking from r1 or r2
   #   #         or receive from incoming queue
   #   #   If receive is succeed, then obj is received value
   #   #   and r is :receive (Ractor.current)
   #
-  #   r, obj = Ractor.select(r1, r2, Ractor.current, yield_value: obj)
+  #   obj, r = Ractor.select(r1, r2, Ractor.current, yield_value: obj)
   #   #=> wait for taking from r1 or r2
   #   #         or receive from incoming queue
   #   #         or yield (Ractor.yield) obj
@@ -77,7 +77,7 @@ class Ractor
       VALUE v = ractor_select(ec, rs, RARRAY_LENINT(ractors),
                               yield_unspecified == Qtrue ? Qundef : yield_value,
                               (bool)RTEST(move) ? true : false, &rv);
-      return rb_ary_new_from_args(2, rv, v);
+      return rb_ary_new_from_args(2, v, rv);
     }
   end
 

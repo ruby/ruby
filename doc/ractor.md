@@ -268,14 +268,14 @@ Connection example: Ractor.yield(obj) on r1 and r2,
 ### Wait for multiple Ractors with `Ractor.select`
 
 You can wait multiple Ractor's `yield` with `Ractor.select(*ractors)`.
-The return value of `Ractor.select()` is `[r, msg]` where `r` is yielding Ractor and `msg` is yielded message.
+The return value of `Ractor.select()` is `[msg, r]` where `msg` is yielded message and `r` is yielding Ractor.
 
 Wait for a single ractor (same as `Ractor.take`):
 
 ```ruby
 r1 = Ractor.new{'r1'}
 
-r, obj = Ractor.select(r1)
+obj, r = Ractor.select(r1)
 r == r1 and obj == 'r1' #=> true
 ```
 
@@ -288,12 +288,12 @@ rs = [r1, r2]
 as = []
 
 # Wait for r1 or r2's Ractor.yield
-r, obj = Ractor.select(*rs)
+obj, r = Ractor.select(*rs)
 rs.delete(r)
 as << obj
 
 # Second try (rs only contain not-closed ractors)
-r, obj = Ractor.select(*rs)
+obj, r = Ractor.select(*rs)
 rs.delete(r)
 as << obj
 as.sort == ['r1', 'r2'] #=> true
@@ -319,7 +319,7 @@ Complex example:
     pipe << i
   }
   RN.times.map{
-    r, n = Ractor.select(*rs)
+    n, r = Ractor.select(*rs)
     rs.delete r
     n
   }.sort #=> [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -693,7 +693,7 @@ rs = (1..RN).map do |i|
 end
 
 until rs.empty?
-  r, v = Ractor.select(*rs)
+  v, r = Ractor.select(*rs)
   rs.delete r
   p answer: v
 end
@@ -725,7 +725,7 @@ end
 }
 
 pp (1..N).map{
-  _r, (n, b) = Ractor.select(*workers)
+  (n, b), = Ractor.select(*workers)
   [n, b]
 }.sort_by{|(n, b)| n}
 ```
@@ -801,8 +801,7 @@ rs = (1..10).map{|i|
 r.send "r0"
 p Ractor.receive #=> "r0r10r9r8r7r6r5r4r3r2r1"
 r.send "r0"
-p Ractor.select(*rs, Ractor.current) #=> [:receive, "r0r10r9r8r7r6r5r4r3r2r1"]
-[:receive, "r0r10r9r8r7r6r5r4r3r2r1"]
+p Ractor.select(*rs, Ractor.current) #=> ["r0r10r9r8r7r6r5r4r3r2r1", :receive]
 r.send "e0"
 p Ractor.select(*rs, Ractor.current)
 #=>
@@ -837,7 +836,7 @@ r.send "r0"
 p Ractor.receive #=> "r0r10r9r8r7r6r5r4r3r2r1"
 r.send "r0"
 p Ractor.select(*rs, Ractor.current)
-[:receive, "r0r10r9r8r7r6r5r4r3r2r1"]
+["r0r10r9r8r7r6r5r4r3r2r1", :receive]
 msg = 'e0'
 begin
   r.send msg
@@ -879,5 +878,5 @@ rescue Ractor::RemoteError
   retry
 end
 
-#=> [:receive, "x0r9r9r8r7r6r5r4r3r2r1"]
+#=> ["x0r9r9r8r7r6r5r4r3r2r1", :receive]
 ```

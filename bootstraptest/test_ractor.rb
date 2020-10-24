@@ -109,11 +109,11 @@ else
 
 # Ractor.select(*ractors) receives a values from a ractors.
 # It is similar to select(2) and Go's select syntax.
-# The return value is [ch, received_value]
+# The return value is [received_value, ractor]
 assert_equal 'ok', %q{
   # select 1
   r1 = Ractor.new{'r1'}
-  r, obj = Ractor.select(r1)
+  obj, r = Ractor.select(r1)
   'ok' if r == r1 and obj == 'r1'
 }
 
@@ -123,10 +123,10 @@ assert_equal '["r1", "r2"]', %q{
   r2 = Ractor.new{'r2'}
   rs = [r1, r2]
   as = []
-  r, obj = Ractor.select(*rs)
+  obj, r = Ractor.select(*rs)
   rs.delete(r)
   as << obj
-  r, obj = Ractor.select(*rs)
+  obj, = Ractor.select(*rs)
   as << obj
   as.sort #=> ["r1", "r2"]
 }
@@ -142,7 +142,7 @@ assert_equal 'true', %q{
     all_rs = rs.dup
 
     n.times{
-      r, obj = Ractor.select(*rs)
+      obj, r = Ractor.select(*rs)
       as << [r, obj]
       rs.delete(r)
     }
@@ -324,7 +324,7 @@ assert_equal '[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]', %q{
     pipe << i
   }
   RN.times.map{
-    r, n = Ractor.select(*rs)
+    n, r = Ractor.select(*rs)
     rs.delete r
     n
   }.sort
@@ -345,7 +345,7 @@ assert_equal '[true, true, true]', %q{
   take = []
   yielded = []
   until rs.empty?
-    r, v = Ractor.select(CR, *rs, yield_value: 'yield')
+    v, r = Ractor.select(CR, *rs, yield_value: 'yield')
     case r
     when :receive
       received << v
@@ -663,7 +663,7 @@ assert_equal 'true', %q{
      '$stderr' => $stderr.inspect,
     }
   end
-  
+
   h = Ractor.new do
     ractor_local_globals
   end.take
