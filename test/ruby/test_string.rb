@@ -2089,6 +2089,8 @@ CODE
 
   def test_swapcase
     assert_equal(S("hi&LOW"), S("HI&low").swapcase)
+    s = S("")
+    assert_not_same(s, s.swapcase)
   end
 
   def test_swapcase!

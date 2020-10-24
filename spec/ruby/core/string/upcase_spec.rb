@@ -73,8 +73,16 @@ describe "String#upcase" do
     end
   end
 
-  it "returns a subclass instance for subclasses" do
-    StringSpecs::MyString.new("fooBAR").upcase.should be_an_instance_of(StringSpecs::MyString)
+  ruby_version_is ''...'3.0' do
+    it "returns a subclass instance for subclasses" do
+      StringSpecs::MyString.new("fooBAR").upcase.should be_an_instance_of(StringSpecs::MyString)
+    end
+  end
+
+  ruby_version_is '3.0' do
+    it "returns a String instance for subclasses" do
+      StringSpecs::MyString.new("fooBAR").upcase.should be_an_instance_of(String)
+    end
   end
 end
 

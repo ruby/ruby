@@ -46,9 +46,18 @@ describe "String#chomp" do
       end
     end
 
-    it "returns subclass instances when called on a subclass" do
-      str = StringSpecs::MyString.new("hello\n").chomp
-      str.should be_an_instance_of(StringSpecs::MyString)
+    ruby_version_is ''...'3.0' do
+      it "returns subclass instances when called on a subclass" do
+        str = StringSpecs::MyString.new("hello\n").chomp
+        str.should be_an_instance_of(StringSpecs::MyString)
+      end
+    end
+
+    ruby_version_is '3.0' do
+      it "returns String instances when called on a subclass" do
+        str = StringSpecs::MyString.new("hello\n").chomp
+        str.should be_an_instance_of(String)
+      end
     end
 
     it "removes trailing characters that match $/ when it has been assigned a value" do
