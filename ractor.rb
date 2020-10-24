@@ -150,21 +150,26 @@ class Ractor
     attr_reader :ractor
   end
 
+  # Closes the incoming port and returns its previous state.
   def close_incoming
     __builtin_cexpr! %q{
       ractor_close_incoming(ec, RACTOR_PTR(self));
     }
   end
 
+  # Closes the outgoing port and returns its previous state.
   def close_outgoing
     __builtin_cexpr! %q{
       ractor_close_outgoing(ec, RACTOR_PTR(self));
     }
   end
 
+  # Closes both incoming and outgoing ports.
   def close
     close_incoming
     close_outgoing
+
+    self
   end
 
   # utility method
