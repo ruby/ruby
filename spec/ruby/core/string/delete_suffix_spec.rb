@@ -41,9 +41,18 @@ describe "String#delete_suffix" do
     'hello'.delete_suffix(o).should == 'h'
   end
 
-  it "returns a subclass instance when called on a subclass instance" do
-    s = StringSpecs::MyString.new('hello')
-    s.delete_suffix('ello').should be_an_instance_of(StringSpecs::MyString)
+  ruby_version_is ''...'3.0' do
+    it "returns a subclass instance when called on a subclass instance" do
+      s = StringSpecs::MyString.new('hello')
+      s.delete_suffix('ello').should be_an_instance_of(StringSpecs::MyString)
+    end
+  end
+
+  ruby_version_is '3.0' do
+    it "returns a String instance when called on a subclass instance" do
+      s = StringSpecs::MyString.new('hello')
+      s.delete_suffix('ello').should be_an_instance_of(String)
+    end
   end
 end
 

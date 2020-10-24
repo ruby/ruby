@@ -13,13 +13,13 @@ class Test_StringCStr < Test::Unit::TestCase
   end
 
   def test_long
-    s = Bug::String.new("abcdef")*100000
+    s = Bug::String.new(Bug::String.new("abcdef")*100000)
     s.cstr_unterm('x')
     assert_equal(0, s.cstr_term, Bug4319)
   end
 
   def test_shared
-    s = Bug::String.new("abcdef")*5
+    s = Bug::String.new(Bug::String.new("abcdef")*5)
     s = s.unterminated_substring(0, 29)
     assert_equal(0, s.cstr_term, Bug4319)
   end
@@ -28,7 +28,7 @@ class Test_StringCStr < Test::Unit::TestCase
     s0 = Bug::String.new("abcdefgh"*8)
 
     [4, 4*3-1, 8*3-1, 64].each do |n|
-      s = s0[0, n]
+      s = Bug::String.new(s0[0, n])
       s.cstr_unterm('x')
       s.freeze
       assert_equal(0, s.cstr_term)
@@ -67,7 +67,7 @@ class Test_StringCStr < Test::Unit::TestCase
     n = 100
     len = str.size * n
     WCHARS.each do |enc|
-      s = Bug::String.new(str.encode(enc))*n
+      s = Bug::String.new(Bug::String.new(str.encode(enc))*n)
       s.cstr_unterm('x')
       assert_nothing_raised(ArgumentError, enc.name) {s.cstr_term}
       s.set_len(s.bytesize / 2)
