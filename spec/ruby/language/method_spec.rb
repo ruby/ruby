@@ -596,8 +596,19 @@ describe "A method" do
       m(a: 1, b: 2).should == { a: 1, b: 2 }
       m(*[]).should == {}
       m(**{}).should == {}
-      m(**{a: 1, b: 2}, **{a: 4, c: 7}).should == { a: 4, b: 2, c: 7 }
+      suppress_warning {
+        eval "m(**{a: 1, b: 2}, **{a: 4, c: 7})"
+      }.should == { a: 4, b: 2, c: 7 }
       -> { m(2) }.should raise_error(ArgumentError)
+    end
+
+    ruby_version_is "2.7" do
+      evaluate <<-ruby do
+        def m(**k); k end;
+        ruby
+
+        m("a" => 1).should == { "a" => 1 }
+      end
     end
 
     evaluate <<-ruby do
@@ -1626,6 +1637,20 @@ describe "A method" do
       result.should == [1, 1, [], 2, 3, 2, 4, { h: 5, i: 6 }, l]
     end
 
+    ruby_version_is "2.7" do
+      evaluate <<-ruby do
+        def m(a, **nil); a end;
+        ruby
+
+        m({a: 1}).should == {a: 1}
+        m({"a" => 1}).should == {"a" => 1}
+
+        -> { m(a: 1) }.should raise_error(ArgumentError)
+        -> { m(**{a: 1}) }.should raise_error(ArgumentError)
+        -> { m("a" => 1) }.should raise_error(ArgumentError)
+      end
+    end
+
     ruby_version_is ''...'3.0' do
       evaluate <<-ruby do
           def m(a, b = nil, c = nil, d, e: nil, **f)
@@ -1665,6 +1690,32 @@ describe "A method" do
     end
   end
 
+  ruby_version_is '2.7' do
+    context 'when passing an empty keyword splat to a method that does not accept keywords' do
+      evaluate <<-ruby do
+          def m(*a); a; end
+        ruby
+
+        h = {}
+        m(**h).should == []
+      end
+    end
+  end
+
+  ruby_version_is '2.7'...'3.0' do
+    context 'when passing an empty keyword splat to a method that does not accept keywords' do
+      evaluate <<-ruby do
+          def m(a); a; end
+        ruby
+        h = {}
+
+        -> do
+          m(**h).should == {}
+        end.should complain(/warning: Passing the keyword argument as the last hash parameter is deprecated/)
+      end
+    end
+  end
+
   ruby_version_is ''...'3.0' do
     context "assigns keyword arguments from a passed Hash without modifying it" do
       evaluate <<-ruby do
@@ -1683,6 +1734,18 @@ describe "A method" do
   end
 
   ruby_version_is '3.0' do
+    context 'when passing an empty keyword splat to a method that does not accept keywords' do
+      evaluate <<-ruby do
+          def m(a); a; end
+        ruby
+        h = {}
+
+        -> do
+          m(**h).should == {}
+        end.should raise_error(ArgumentError)
+      end
+    end
+
     context "raises ArgumentError if passing hash as keyword arguments" do
       evaluate <<-ruby do
           def m(a: nil); a; end

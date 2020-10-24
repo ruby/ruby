@@ -933,6 +933,14 @@ describe "Global variable $-d" do
 end
 
 describe "Global variable $VERBOSE" do
+  before :each do
+    @verbose = $VERBOSE
+  end
+
+  after :each do
+    $VERBOSE = @verbose
+  end
+
   it "converts truthy values to true" do
     [true, 1, 0, [], ""].each do |true_value|
       $VERBOSE = true_value

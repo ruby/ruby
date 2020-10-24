@@ -157,6 +157,23 @@ describe "A constant on a singleton class" do
   end
 end
 
+describe "Defining yield in singleton class" do
+  ruby_version_is "2.7"..."3.0" do
+    it 'emits a deprecation warning' do
+      code = <<~RUBY
+          def m
+            class << Object.new
+              yield
+            end
+          end
+          m { :ok }
+        RUBY
+
+      -> { eval(code) }.should complain(/warning: `yield' in class syntax will not be supported from Ruby 3.0/)
+    end
+  end
+end
+
 describe "Defining instance methods on a singleton class" do
   before :each do
     @k = ClassSpecs::K.new

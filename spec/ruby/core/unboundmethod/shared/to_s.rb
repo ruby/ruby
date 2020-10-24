@@ -22,4 +22,13 @@ describe :unboundmethod_to_s, shared: true do
     @from_module.send(@method).should =~ /\bUnboundMethodSpecs::Mod\b/
     @from_method.send(@method).should =~ /\bUnboundMethodSpecs::Methods\b/
   end
+
+  it "returns a String including all details" do
+    @from_module.send(@method).should.start_with? "#<UnboundMethod: UnboundMethodSpecs::Methods(UnboundMethodSpecs::Mod)#from_mod"
+    @from_method.send(@method).should.start_with? "#<UnboundMethod: UnboundMethodSpecs::Methods(UnboundMethodSpecs::Mod)#from_mod"
+  end
+
+  it "does not show the defining module if it is the same as the origin" do
+    UnboundMethodSpecs::A.instance_method(:baz).send(@method).should.start_with? "#<UnboundMethod: UnboundMethodSpecs::A#baz"
+  end
 end

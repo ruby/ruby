@@ -121,6 +121,10 @@ describe "C-API Thread function" do
       thr.value.should be_true
     end
 
+    it "runs a native function with the global lock unlocked" do
+      @t.rb_thread_call_without_gvl_native_function.should == Process.pid
+    end
+
     guard -> { platform_is :mingw and ruby_version_is ""..."2.7" } do
       it "runs a C function with the global lock unlocked and unlocks IO with the generic RUBY_UBF_IO" do
         thr = Thread.new do

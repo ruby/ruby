@@ -73,6 +73,14 @@ static void* blocking_gvl_func_for_udf_io(void *data) {
   }
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-function-type"
+static VALUE thread_spec_rb_thread_call_without_gvl_native_function(VALUE self) {
+  pid_t ret = (pid_t) (long) rb_thread_call_without_gvl((void *(*)(void *)) getpid, 0, RUBY_UBF_IO, 0);
+  return LONG2FIX(ret);
+}
+#pragma GCC diagnostic pop
+
 /* Returns true if the thread is interrupted. */
 static VALUE thread_spec_rb_thread_call_without_gvl_with_ubf_io(VALUE self) {
   int fds[2];
@@ -134,6 +142,7 @@ void Init_thread_spec(void) {
   VALUE cls = rb_define_class("CApiThreadSpecs", rb_cObject);
   rb_define_method(cls, "rb_thread_alone", thread_spec_rb_thread_alone, 0);
   rb_define_method(cls, "rb_thread_call_without_gvl", thread_spec_rb_thread_call_without_gvl, 0);
+  rb_define_method(cls, "rb_thread_call_without_gvl_native_function", thread_spec_rb_thread_call_without_gvl_native_function, 0);
   rb_define_method(cls, "rb_thread_call_without_gvl_with_ubf_io", thread_spec_rb_thread_call_without_gvl_with_ubf_io, 0);
   rb_define_method(cls, "rb_thread_current", thread_spec_rb_thread_current, 0);
   rb_define_method(cls, "rb_thread_local_aref", thread_spec_rb_thread_local_aref, 2);
