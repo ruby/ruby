@@ -81,7 +81,7 @@ class Dir
   #   File::FNM_DOTMATCH flag or something like <code>"{*,.*}"</code>.
   #
   # <code>**</code>::
-  #   Matches directories recursively.
+  #   Matches directories recursively or files expansively.
   #
   # <code>?</code>::
   #   Matches any one character. Equivalent to <code>/.{1}/</code> in regexp.
