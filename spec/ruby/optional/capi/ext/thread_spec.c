@@ -73,13 +73,19 @@ static void* blocking_gvl_func_for_udf_io(void *data) {
   }
 }
 
+#if defined(__GNUC__) || defined(__clang__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wcast-function-type"
+#endif
+
 static VALUE thread_spec_rb_thread_call_without_gvl_native_function(VALUE self) {
   pid_t ret = (pid_t) (long) rb_thread_call_without_gvl((void *(*)(void *)) getpid, 0, RUBY_UBF_IO, 0);
   return LONG2FIX(ret);
 }
+
+#if defined(__GNUC__) || defined(__clang__)
 #pragma GCC diagnostic pop
+#endif
 
 /* Returns true if the thread is interrupted. */
 static VALUE thread_spec_rb_thread_call_without_gvl_with_ubf_io(VALUE self) {
