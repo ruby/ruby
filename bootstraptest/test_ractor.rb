@@ -663,7 +663,7 @@ assert_equal 'true', %q{
      '$stderr' => $stderr.inspect,
     }
   end
-  
+
   h = Ractor.new do
     ractor_local_globals
   end.take
