@@ -81,6 +81,7 @@ assert_equal 'ok', %q{
   r.take
 }
 
+# Pass multiple arguments to Ractor.new
 assert_equal 'ok', %q{
   # ping-pong with two args
   r =  Ractor.new 'ping', 'pong' do |msg, msg2|
@@ -117,6 +118,7 @@ assert_equal 'ok', %q{
   'ok' if r == r1 and obj == 'r1'
 }
 
+# Ractor.select from two ractors.
 assert_equal '["r1", "r2"]', %q{
   # select 2
   r1 = Ractor.new{'r1'}
@@ -131,6 +133,7 @@ assert_equal '["r1", "r2"]', %q{
   as.sort #=> ["r1", "r2"]
 }
 
+# Ractor.select from multiple ractors.
 assert_equal 'true', %q{
   def test n
     rs = (1..n).map do |i|
@@ -178,6 +181,7 @@ assert_equal 'ok', %q{
   end
 }
 
+# Raise Ractor::ClosedError when try to send into a terminated ractor
 assert_equal 'ok', %q{
   r = Ractor.new do
   end
