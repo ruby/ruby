@@ -2069,28 +2069,44 @@ rb_obj_traverse(VALUE obj,
 }
 
 static int
-frozen_shareable_p(VALUE obj)
+frozen_shareable_p(VALUE obj, bool *made_shareable)
 {
-    if (!RB_TYPE_P(obj, T_DATA) ||
-        (RTYPEDDATA_P(obj) &&
-         RTYPEDDATA_TYPE(obj)->flags & RUBY_TYPED_FROZEN_SHAREABLE)) {
+    if (!RB_TYPE_P(obj, T_DATA)) {
         return true;
     }
-    else {
-        return false;
+    else if (RTYPEDDATA_P(obj)) {
+        const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
+        if (type->flags & RUBY_TYPED_FROZEN_SHAREABLE) {
+            return true;
+        }
+        else if (made_shareable && rb_obj_is_proc(obj)) {
+            // special path to make shareable Proc.
+            rb_proc_ractor_make_shareable(obj);
+            *made_shareable = true;
+            VM_ASSERT(RB_OBJ_SHAREABLE_P(obj));
+            return false;
+        }
     }
+
+    return false;
 }
 
 static enum obj_traverse_iterator_result
 make_shareable_check_shareable(VALUE obj)
 {
     VM_ASSERT(!SPECIAL_CONST_P(obj));
+    bool made_shareable = false;
 
     if (RB_OBJ_SHAREABLE_P(obj)) {
         return traverse_skip;
     }
-    else if (!frozen_shareable_p(obj)) {
-        rb_raise(rb_eRactorError, "can not make shareable object for %"PRIsVALUE, obj);
+    else if (!frozen_shareable_p(obj, &made_shareable)) {
+        if (made_shareable) {
+            return traverse_skip;
+        }
+        else {
+            rb_raise(rb_eRactorError, "can not make shareable object for %"PRIsVALUE, obj);
+        }
     }
 
     if (!RB_OBJ_FROZEN_RAW(obj)) {
@@ -2134,7 +2150,7 @@ shareable_p_enter(VALUE obj)
         return traverse_skip;
     }
     else if (RB_OBJ_FROZEN_RAW(obj) &&
-             frozen_shareable_p(obj)) {
+             frozen_shareable_p(obj, NULL)) {
         return traverse_cont;
     }
 

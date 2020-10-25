@@ -1065,6 +1065,7 @@ typedef struct {
 
 VALUE rb_proc_isolate(VALUE self);
 VALUE rb_proc_isolate_bang(VALUE self);
+VALUE rb_proc_ractor_make_shareable(VALUE self);
 
 typedef struct {
     VALUE flags; /* imemo header */

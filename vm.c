@@ -966,7 +966,9 @@ rb_proc_dup(VALUE self)
 
 struct collect_outer_variable_name_data {
     VALUE ary;
+    VALUE read_only;
     bool yield;
+    bool isolate;
 };
 
 static enum rb_id_table_iterator_result
@@ -978,40 +980,62 @@ collect_outer_variable_names(ID id, VALUE val, void *ptr)
         data->yield = true;
     }
     else {
-        if (data->ary == Qfalse) data->ary = rb_ary_new();
-        rb_ary_push(data->ary, rb_id2str(id));
+        if (data->isolate ||
+            val == Qtrue /* write */) {
+            if (data->ary == Qfalse) data->ary = rb_ary_new();
+            rb_ary_push(data->ary, rb_id2str(id));
+        }
+        else {
+            if (data->read_only == Qfalse) data->read_only = rb_ary_new();
+            rb_ary_push(data->read_only, rb_id2str(id));
+        }
     }
     return ID_TABLE_CONTINUE;
 }
 
 static const rb_env_t *
-env_copy(const VALUE *src_ep)
+env_copy(const VALUE *src_ep, VALUE read_only_variables)
 {
     const rb_env_t *src_env = (rb_env_t *)VM_ENV_ENVVAL(src_ep);
+    VM_ASSERT(src_env->ep == src_ep);
+
     VALUE *env_body = ZALLOC_N(VALUE, src_env->env_size); // fill with Qfalse
     VALUE *ep = &env_body[src_env->env_size - 2];
 
-    VM_ASSERT(src_env->ep == src_ep);
+    if (read_only_variables) {
+        for (int i=0; i<RARRAY_LENINT(read_only_variables); i++) {
+            ID id = SYM2ID(rb_str_intern(RARRAY_AREF(read_only_variables, i)));
+
+            for (unsigned int j=0; j<src_env->iseq->body->local_table_size; j++) {
+                if (id ==  src_env->iseq->body->local_table[j]) {
+                    env_body[j] = rb_ractor_make_shareable(src_env->env[j]);
+                    rb_ary_delete_at(read_only_variables, i);
+                    break;
+                }
+            }
+        }
+    }
 
     ep[VM_ENV_DATA_INDEX_ME_CREF] = src_ep[VM_ENV_DATA_INDEX_ME_CREF];
     ep[VM_ENV_DATA_INDEX_FLAGS]   = src_ep[VM_ENV_DATA_INDEX_FLAGS] | VM_ENV_FLAG_ISOLATED;
 
     if (!VM_ENV_LOCAL_P(src_ep)) {
         const VALUE *prev_ep = VM_ENV_PREV_EP(src_env->ep);
-        const rb_env_t *new_prev_env = env_copy(prev_ep);
+        const rb_env_t *new_prev_env = env_copy(prev_ep, read_only_variables);
         ep[VM_ENV_DATA_INDEX_SPECVAL] = VM_GUARDED_PREV_EP(new_prev_env->ep);
     }
     else {
         ep[VM_ENV_DATA_INDEX_SPECVAL] = VM_BLOCK_HANDLER_NONE;
     }
+
     return vm_env_new(ep, env_body, src_env->env_size, src_env->iseq);
 }
 
 static void
-proc_isolate_env(VALUE self, rb_proc_t *proc)
+proc_isolate_env(VALUE self, rb_proc_t *proc, VALUE read_only_variables)
 {
     const struct rb_captured_block *captured = &proc->block.as.captured;
-    const rb_env_t *env = env_copy(captured->ep);
+    const rb_env_t *env = env_copy(captured->ep, read_only_variables);
     *((const VALUE **)&proc->block.as.captured.ep) = env->ep;
     RB_OBJ_WRITTEN(self, Qundef, env);
 }
@@ -1019,7 +1043,6 @@ proc_isolate_env(VALUE self, rb_proc_t *proc)
 VALUE
 rb_proc_isolate_bang(VALUE self)
 {
-    // check accesses
     const rb_iseq_t *iseq = vm_proc_iseq(self);
 
     if (iseq) {
@@ -1028,10 +1051,10 @@ rb_proc_isolate_bang(VALUE self)
 
         if (iseq->body->outer_variables) {
             struct collect_outer_variable_name_data data = {
+                .isolate = true,
                 .ary = Qfalse,
                 .yield = false,
             };
-
             rb_id_table_foreach(iseq->body->outer_variables, collect_outer_variable_names, (void *)&data);
 
             if (data.ary != Qfalse) {
@@ -1051,10 +1074,11 @@ rb_proc_isolate_bang(VALUE self)
             }
         }
 
-        proc_isolate_env(self, proc);
+        proc_isolate_env(self, proc, Qfalse);
         proc->is_isolated = TRUE;
     }
 
+    FL_SET_RAW(self, RUBY_FL_SHAREABLE);
     return self;
 }
 
@@ -1064,6 +1088,53 @@ rb_proc_isolate(VALUE self)
     VALUE dst = rb_proc_dup(self);
     rb_proc_isolate_bang(dst);
     return dst;
+}
+
+VALUE
+rb_proc_ractor_make_shareable(VALUE self)
+{
+    const rb_iseq_t *iseq = vm_proc_iseq(self);
+
+    if (iseq) {
+        rb_proc_t *proc = (rb_proc_t *)RTYPEDDATA_DATA(self);
+        if (proc->block.type != block_type_iseq) rb_raise(rb_eRuntimeError, "not supported yet");
+
+        VALUE read_only_variables = Qfalse;
+
+        if (iseq->body->outer_variables) {
+            struct collect_outer_variable_name_data data = {
+                .isolate = false,
+                .ary = Qfalse,
+                .read_only = Qfalse,
+                .yield = false,
+            };
+
+            rb_id_table_foreach(iseq->body->outer_variables, collect_outer_variable_names, (void *)&data);
+
+            if (data.ary != Qfalse) {
+                VALUE str = rb_ary_join(data.ary, rb_str_new2(", "));
+                if (data.yield) {
+                    rb_raise(rb_eArgError, "can not make a Proc shareable because it accesses outer variables (%s) and uses `yield'.",
+                             StringValueCStr(str));
+                }
+                else {
+                    rb_raise(rb_eArgError, "can not make a Proc shareable because it accesses outer variables (%s).",
+                             StringValueCStr(str));
+                }
+            }
+            else if (data.yield) {
+                rb_raise(rb_eArgError, "can not make a Proc shareable because it uses `yield'.");
+            }
+
+            read_only_variables = data.read_only;
+        }
+
+        proc_isolate_env(self, proc, read_only_variables);
+        proc->is_isolated = TRUE;
+    }
+
+    FL_SET_RAW(self, RUBY_FL_SHAREABLE);
+    return self;
 }
 
 MJIT_FUNC_EXPORTED VALUE
