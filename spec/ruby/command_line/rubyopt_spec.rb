@@ -68,13 +68,13 @@ describe "Processing RUBYOPT" do
 
     it "suppresses experimental warnings for '-W:no-experimental'" do
       ENV["RUBYOPT"] = '-W:no-experimental'
-      result = ruby_exe('0 in a', args: '2>&1')
+      result = ruby_exe('case 0; in a; end', args: '2>&1')
       result.should == ""
     end
 
     it "suppresses deprecation and experimental warnings for '-W:no-deprecated -W:no-experimental'" do
       ENV["RUBYOPT"] = '-W:no-deprecated -W:no-experimental'
-      result = ruby_exe('($; = "") in a', args: '2>&1')
+      result = ruby_exe('case ($; = ""); in a; end', args: '2>&1')
       result.should == ""
     end
   end
