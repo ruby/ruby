@@ -165,6 +165,14 @@ class Rational_Test < Test::Unit::TestCase
     if (1.0/0).infinite?
       assert_raise(FloatDomainError){Rational(1.0/0)}
     end
+
+    bug16518 = "[ruby-core:96942] [Bug #16518]"
+    cls = Class.new(Numeric) do
+      def /(y); 42; end
+      def to_r; 1r; end
+      def to_int; 1; end
+    end
+    assert_equal(1/2r, Rational(cls.new, 2))
   end
 
   def test_attr
