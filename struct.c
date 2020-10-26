@@ -139,7 +139,6 @@ struct_set_members(VALUE klass, VALUE /* frozen hidden array */ members)
     }
     rb_ivar_set(klass, id_members, members);
     rb_ivar_set(klass, id_back_members, back);
-
     return members;
 }
 
@@ -473,6 +472,34 @@ rb_struct_define(const char *name, ...)
     if (!name) st = anonymous_struct(rb_cStruct);
     else st = new_struct(rb_str_new2(name), rb_cStruct);
     return setup_struct(st, ary);
+}
+
+static VALUE
+cached_anonymous_struct(VALUE syms, VALUE cache)
+{
+    VALUE klass = rb_hash_lookup(cache, syms);
+    if (RTEST(klass)) {
+        return klass;
+    }
+    else {
+      return Qnil;
+    }
+}
+
+VALUE
+rb_struct_define_syms(VALUE syms)
+{
+    VALUE cache = GET_VM()->anonymous_struct_literal_cache;
+    VALUE klass = cached_anonymous_struct(syms, cache);
+
+    if (RTEST(klass)) {
+        return klass;
+    }
+    else {
+        VALUE st = anonymous_struct(rb_cStruct);
+        rb_hash_aset(cache, syms, st);
+        return setup_struct(st, syms);
+    }
 }
 
 VALUE
@@ -1421,6 +1448,8 @@ InitVM_Struct(void)
 
     rb_define_method(rb_cStruct, "deconstruct", rb_struct_to_a, 0);
     rb_define_method(rb_cStruct, "deconstruct_keys", rb_struct_deconstruct_keys, 1);
+
+    rb_gc_register_mark_object(GET_VM()->anonymous_struct_literal_cache = rb_hash_new());
 }
 
 #undef rb_intern

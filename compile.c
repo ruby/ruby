@@ -4417,6 +4417,45 @@ compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int meth
     return 1;
 }
 
+VALUE rb_struct_define_syms(VALUE syms); // struct.c
+
+static int
+compile_struct(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popped)
+{
+    int line = (int)nd_line(node);
+    NODE *list = node->nd_head;
+    VALUE syms = rb_ary_new();
+    INSN *iobj = NULL;
+
+    if (!popped) {
+        ADD_INSN1(ret, line, putobject, Qnil);
+        iobj = (INSN *)LAST_ELEMENT(ret);
+    }
+
+    int i = 0;
+    while (list) {
+        // key
+        VALUE sym = list->nd_head->nd_lit;
+        RUBY_ASSERT(SYMBOL_P(sym));
+        rb_ary_push(syms, sym);
+
+        // val
+        list = list->nd_next;
+        CHECK(COMPILE_(ret, "struct value", list->nd_head, popped));
+
+        list = list->nd_next;
+        i++;
+    }
+
+    if (!popped) {
+        rb_obj_freeze(syms);
+        VALUE klass = rb_struct_define_syms(syms);
+        iobj->operands[0] = klass;
+        ADD_SEND(ret, line, rb_intern("new"), INT2FIX(i));
+    }
+    return 1;
+}
+
 VALUE
 rb_node_case_when_optimizable_literal(const NODE *const node)
 {
@@ -8176,6 +8215,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
       case NODE_HASH:
         CHECK(compile_hash(iseq, ret, node, FALSE, popped) >= 0);
         break;
+      case NODE_STRUCT:
+        CHECK(compile_struct(iseq, ret, node, popped) >= 0);
+        break;
       case NODE_RETURN:
 	CHECK(compile_return(iseq, ret, node, popped));
 	break;
@@ -11101,6 +11143,7 @@ enum ibf_object_class_index {
     IBF_OBJECT_CLASS_STANDARD_ERROR,
     IBF_OBJECT_CLASS_NO_MATCHING_PATTERN_ERROR,
     IBF_OBJECT_CLASS_TYPE_ERROR,
+    IBF_OBJECT_CLASS_STRUCT,
 };
 
 struct ibf_object_regexp {
@@ -11174,7 +11217,9 @@ ibf_load_object_unsupported(const struct ibf_load *load, const struct ibf_object
 static void
 ibf_dump_object_class(struct ibf_dump *dump, VALUE obj)
 {
+    VALUE struct_members = Qundef;
     enum ibf_object_class_index cindex;
+
     if (obj == rb_cObject) {
         cindex = IBF_OBJECT_CLASS_OBJECT;
     }
@@ -11190,12 +11235,21 @@ ibf_dump_object_class(struct ibf_dump *dump, VALUE obj)
     else if (obj == rb_eTypeError) {
         cindex = IBF_OBJECT_CLASS_TYPE_ERROR;
     }
+    else if (rb_class_search_ancestor(obj, rb_cStruct)) {
+        cindex = IBF_OBJECT_CLASS_STRUCT;
+        struct_members = rb_struct_s_members(obj);
+    }
     else {
-        rb_obj_info_dump(obj);
+        rp(obj);
+        rp(CLASS_OF(obj));
         rb_p(obj);
         rb_bug("unsupported class");
     }
     ibf_dump_write_small_value(dump, (VALUE)cindex);
+    if (struct_members != Qundef) {
+        long mem_index = (long)ibf_dump_object(dump, struct_members);
+        ibf_dump_write_small_value(dump, mem_index);
+    }
 }
 
 static VALUE
@@ -11214,6 +11268,13 @@ ibf_load_object_class(const struct ibf_load *load, const struct ibf_object_heade
         return rb_eNoMatchingPatternError;
       case IBF_OBJECT_CLASS_TYPE_ERROR:
         return rb_eTypeError;
+      case IBF_OBJECT_CLASS_STRUCT:
+        {
+            long struct_members_index = ibf_load_small_value(load, &offset);
+            VALUE members = ibf_load_object(load, struct_members_index);
+            rb_obj_freeze(members);
+            return rb_struct_define_syms(members);
+        }
     }
 
     rb_raise(rb_eArgError, "ibf_load_object_class: unknown class (%d)", (int)cindex);
