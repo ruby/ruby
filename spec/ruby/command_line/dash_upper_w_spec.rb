@@ -32,10 +32,10 @@ ruby_version_is "2.7" do
 
   describe "The -W command line option with :no-experimental" do
     it "suppresses experimental warnings" do
-      result = ruby_exe('0 in a', args: '2>&1')
+      result = ruby_exe('case 0; in a; end', args: '2>&1')
       result.should =~ /is experimental/
 
-      result = ruby_exe('0 in a', options: '-W:no-experimental', args: '2>&1')
+      result = ruby_exe('case 0; in a; end', options: '-W:no-experimental', args: '2>&1')
       result.should == ""
     end
   end

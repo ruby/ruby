@@ -1150,7 +1150,7 @@ static int looking_at_eol_p(struct parser_params *p);
 %type <node> string_contents xstring_contents regexp_contents string_content
 %type <node> words symbols symbol_list qwords qsymbols word_list qword_list qsym_list word
 %type <node> literal numeric simple_numeric ssym dsym symbol cpath def_name defn_head defs_head
-%type <node> top_compstmt top_stmts top_stmt begin_block rassign
+%type <node> top_compstmt top_stmts top_stmt begin_block
 %type <node> bodystmt compstmt stmts stmt_or_begin stmt expr arg primary command command_call method_call
 %type <node> expr_value expr_value_do arg_value primary_value fcall rel_expr
 %type <node> if_tail opt_else case_body case_args cases opt_rescue exc_list exc_var opt_ensure
@@ -1242,7 +1242,7 @@ static int looking_at_eol_p(struct parser_params *p);
 %nonassoc tLOWEST
 %nonassoc tLBRACE_ARG
 
-%nonassoc  modifier_if modifier_unless modifier_while modifier_until keyword_in
+%nonassoc  modifier_if modifier_unless modifier_while modifier_until
 %left  keyword_or keyword_and
 %right keyword_not
 %nonassoc keyword_defined
@@ -1548,38 +1548,7 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 		    /*% %*/
 		    /*% ripper: massign!($1, $3) %*/
 		    }
-		| rassign
 		| expr
-		;
-
-rassign 	: arg_value tASSOC lhs
-		    {
-		    /*%%%*/
-			$$ = node_assign(p, $3, $1, &@$);
-		    /*% %*/
-		    /*% ripper: assign!($3, $1) %*/
-		    }
-		| arg_value tASSOC mlhs
-		    {
-		    /*%%%*/
-			$$ = node_assign(p, $3, $1, &@$);
-		    /*% %*/
-		    /*% ripper: massign!($3, $1) %*/
-		    }
-		| rassign tASSOC lhs
-		    {
-		    /*%%%*/
-			$$ = node_assign(p, $3, $1, &@$);
-		    /*% %*/
-		    /*% ripper: assign!($3, $1) %*/
-		    }
-		| rassign tASSOC mlhs
-		    {
-		    /*%%%*/
-			$$ = node_assign(p, $3, $1, &@$);
-		    /*% %*/
-		    /*% ripper: massign!($3, $1) %*/
-		    }
 		;
 
 command_asgn	: lhs '=' command_rhs
@@ -1677,7 +1646,7 @@ expr		: command_call
 		    {
 			$$ = call_uni_op(p, method_cond(p, $2, &@2), '!', &@1, &@$);
 		    }
-		| arg keyword_in
+		| arg tASSOC
 		    {
 			value_expr($1);
 			SET_LEX_STATE(EXPR_BEG|EXPR_LABEL);
