@@ -115,23 +115,19 @@ class Dir
   #    Dir.glob("*", File::FNM_DOTMATCH)   #=> [".", "..", "config.h", "main.rb"]
   #    Dir.glob(["*.rb", "*.h"])           #=> ["main.rb", "config.h"]
   #
-  #    rbfiles = File.join("**", "*.rb")
-  #    Dir.glob(rbfiles)                   #=> ["main.rb",
+  #    Dir.glob("**/*.rb")                 #=> ["main.rb",
   #                                        #    "lib/song.rb",
   #                                        #    "lib/song/karaoke.rb"]
   #
-  #    Dir.glob(rbfiles, base: "lib")      #=> ["song.rb",
+  #    Dir.glob("**/*.rb", base: "lib")    #=> ["song.rb",
   #                                        #    "song/karaoke.rb"]
   #
-  #    libdirs = File.join("**", "lib")
-  #    Dir.glob(libdirs)                   #=> ["lib"]
+  #    Dir.glob("**/lib")                  #=> ["lib"]
   #
-  #    librbfiles = File.join("**", "lib", "**", "*.rb")
-  #    Dir.glob(librbfiles)                #=> ["lib/song.rb",
+  #    Dir.glob("**/lib/**/*.rb")          #=> ["lib/song.rb",
   #                                        #    "lib/song/karaoke.rb"]
   #
-  #    librbfiles = File.join("**", "lib", "*.rb")
-  #    Dir.glob(librbfiles)                #=> ["lib/song.rb"]
+  #    Dir.glob("**/lib/*.rb")             #=> ["lib/song.rb"]
   def self.glob(pattern, _flags = 0, flags: _flags, base: nil, sort: true)
     Primitive.dir_s_glob(pattern, flags, base, sort)
   end
