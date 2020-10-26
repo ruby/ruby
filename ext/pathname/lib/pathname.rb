@@ -591,6 +591,15 @@ class Pathname    # * FileUtils *
     nil
   end
 
+  # Changes file permissions.
+  #
+  # See FileUtils.chmod
+  def chmod(mode)
+    require 'fileutils'
+    FileUtils.chmod(mode, self)
+    return 1
+  end
+
   # Recursively deletes a directory, including all directories beneath it.
   #
   # See FileUtils.rm_rf

@@ -849,6 +849,11 @@ class TestPathname < Test::Unit::TestCase
       path.chmod(0444)
       assert_equal(0444, path.stat.mode & 0777)
       path.chmod(old)
+
+      skip "Windows has different symbolic mode" if /mswin|mingw/ =~ RUBY_PLATFORM
+      path.chmod("u=wrx,g=rx,o=x")
+      assert_equal(0751, path.stat.mode & 0777)
+      path.chmod(old)
     }
   end
 
