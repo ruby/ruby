@@ -285,25 +285,19 @@ class << File
   #    File.fnmatch('*',   '.profile', File::FNM_DOTMATCH)  #=> true  # period by default.
   #    File.fnmatch('.*',  '.profile')                      #=> true
   #
-  #    rbfiles = '**/*.rb'
-  #    File.fnmatch(rbfiles, 'main.rb')                    #=> false
-  #    File.fnmatch(rbfiles, './main.rb')                  #=> false
-  #    File.fnmatch(rbfiles, 'lib/song.rb')                #=> true
+  #    File.fnmatch('**/*.rb', 'main.rb')                  #=> false
+  #    File.fnmatch('**/*.rb', './main.rb')                #=> false
+  #    File.fnmatch('**/*.rb', 'lib/song.rb')              #=> true
   #    File.fnmatch('**.rb', 'main.rb')                    #=> true
   #    File.fnmatch('**.rb', './main.rb')                  #=> false
   #    File.fnmatch('**.rb', 'lib/song.rb')                #=> true
   #    File.fnmatch('*',     'dave/.profile')              #=> true
   #
-  #    pattern = '*/*'
-  #    File.fnmatch(pattern, 'dave/.profile', File::FNM_PATHNAME)  #=> false
-  #    File.fnmatch(pattern, 'dave/.profile', File::FNM_PATHNAME | File::FNM_DOTMATCH) #=> true
-  #
-  #    pattern = '**/foo'
-  #    File.fnmatch(pattern, 'a/b/c/foo', File::FNM_PATHNAME)     #=> true
-  #    File.fnmatch(pattern, '/a/b/c/foo', File::FNM_PATHNAME)    #=> true
-  #    File.fnmatch(pattern, 'c:/a/b/c/foo', File::FNM_PATHNAME)  #=> true
-  #    File.fnmatch(pattern, 'a/.b/c/foo', File::FNM_PATHNAME)    #=> false
-  #    File.fnmatch(pattern, 'a/.b/c/foo', File::FNM_PATHNAME | File::FNM_DOTMATCH) #=> true
+  #    File.fnmatch('**/foo', 'a/b/c/foo', File::FNM_PATHNAME)     #=> true
+  #    File.fnmatch('**/foo', '/a/b/c/foo', File::FNM_PATHNAME)    #=> true
+  #    File.fnmatch('**/foo', 'c:/a/b/c/foo', File::FNM_PATHNAME)  #=> true
+  #    File.fnmatch('**/foo', 'a/.b/c/foo', File::FNM_PATHNAME)    #=> false
+  #    File.fnmatch('**/foo', 'a/.b/c/foo', File::FNM_PATHNAME | File::FNM_DOTMATCH) #=> true
   def fnmatch(pattern, path, flags = nil)
   end
   alias fnmatch? fnmatch
