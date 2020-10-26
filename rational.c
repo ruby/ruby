@@ -2673,8 +2673,16 @@ nurat_convert(VALUE klass, VALUE numv, VALUE denv, int raise)
             }
         }
         if ((k_numeric_p(a1) && k_numeric_p(a2)) &&
-                (!f_integer_p(a1) || !f_integer_p(a2)))
+                (!f_integer_p(a1) || !f_integer_p(a2))) {
+            VALUE tmp = rb_protect(to_rational, a1, &state);
+            if (!state) {
+                a1 = tmp;
+            }
+            else {
+                rb_set_errinfo(Qnil);
+            }
             return f_div(a1, a2);
+        }
     }
 
     a1 = nurat_int_value(a1);
