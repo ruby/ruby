@@ -1430,8 +1430,6 @@ eom
     assert_syntax_error('private def obj.foo = 42', /unexpected '='/)
     assert_valid_syntax('private def obj.foo() = 42')
     assert_valid_syntax('private def obj.inc(x) = x + 1')
-    eval('def self.inc(x) = x + 1 => @x')
-    assert_equal(:inc, @x)
     k = Class.new do
       class_eval('def rescued(x) = raise("to be caught") rescue "instance #{x}"')
       class_eval('def self.rescued(x) = raise("to be caught") rescue "class #{x}"')
@@ -1715,10 +1713,13 @@ eom
   end
 
   def test_rightward_assign
-    assert_equal(1, eval("1 => a"))
-    assert_equal([2,3], eval("13.divmod(5) => a,b; [a, b]"))
-    assert_equal([2,3,2,3], eval("13.divmod(5) => a,b => c, d; [a, b, c, d]"))
-    assert_equal(3, eval("1+2 => a"))
+    a = b = nil
+    EnvUtil.suppress_warning {eval("1 => a")}
+    assert_equal(1, a)
+    EnvUtil.suppress_warning {eval("13.divmod(5) => [a,b]")}
+    assert_equal([2,3], [a, b])
+    EnvUtil.suppress_warning {eval("1+2 => a")}
+    assert_equal(3, a)
   end
 
   private
