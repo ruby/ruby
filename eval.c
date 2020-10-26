@@ -2084,6 +2084,9 @@ Init_eval(void)
     rb_define_virtual_variable("$@", errat_getter, errat_setter);
     rb_define_virtual_variable("$!", errinfo_getter, 0);
 
+    rb_gvar_ractor_local("$@");
+    rb_gvar_ractor_local("$!");
+
     rb_define_global_function("raise", f_raise, -1);
     rb_define_global_function("fail", f_raise, -1);
 

@@ -2323,9 +2323,6 @@ rb_marshal_load_with_proc(VALUE port, VALUE proc)
 void
 Init_marshal(void)
 {
-#undef rb_intern
-#define rb_intern(str) rb_intern_const(str)
-
     VALUE rb_mMarshal = rb_define_module("Marshal");
 #define set_id(sym) sym = rb_intern_const(name_##sym)
     set_id(s_dump);

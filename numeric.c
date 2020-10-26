@@ -5542,16 +5542,13 @@ rb_int_s_isqrt(VALUE self, VALUE num)
 void
 Init_Numeric(void)
 {
-#undef rb_intern
-#define rb_intern(str) rb_intern_const(str)
-
 #ifdef _UNICOSMP
     /* Turn off floating point exceptions for divide by zero, etc. */
     _set_Creg(0, 0);
 #endif
-    id_coerce = rb_intern("coerce");
-    id_to = rb_intern("to");
-    id_by = rb_intern("by");
+    id_coerce = rb_intern_const("coerce");
+    id_to = rb_intern_const("to");
+    id_by = rb_intern_const("by");
 
     rb_eZeroDivError = rb_define_class("ZeroDivisionError", rb_eStandardError);
     rb_eFloatDomainError = rb_define_class("FloatDomainError", rb_eRangeError);

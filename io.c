@@ -13423,9 +13423,6 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
 void
 Init_IO(void)
 {
-#undef rb_intern
-#define rb_intern(str) rb_intern_const(str)
-
     VALUE rb_cARGF;
 #ifdef __CYGWIN__
 #include <sys/cygwin.h>
@@ -13443,12 +13440,12 @@ Init_IO(void)
     rb_eIOError = rb_define_class("IOError", rb_eStandardError);
     rb_eEOFError = rb_define_class("EOFError", rb_eIOError);
 
-    id_write = rb_intern("write");
-    id_read = rb_intern("read");
-    id_getc = rb_intern("getc");
-    id_flush = rb_intern("flush");
-    id_readpartial = rb_intern("readpartial");
-    id_set_encoding = rb_intern("set_encoding");
+    id_write = rb_intern_const("write");
+    id_read = rb_intern_const("read");
+    id_getc = rb_intern_const("getc");
+    id_flush = rb_intern_const("flush");
+    id_readpartial = rb_intern_const("readpartial");
+    id_set_encoding = rb_intern_const("set_encoding");
 
     rb_define_global_function("syscall", rb_f_syscall, -1);
 
@@ -13543,6 +13540,7 @@ Init_IO(void)
     rb_define_hooked_variable("$\\", &rb_output_rs, 0, deprecated_str_setter);
 
     rb_define_virtual_variable("$_", get_LAST_READ_LINE, set_LAST_READ_LINE);
+    rb_gvar_ractor_local("$_");
 
     rb_define_method(rb_cIO, "initialize_copy", rb_io_init_copy, 1);
     rb_define_method(rb_cIO, "reopen", rb_io_reopen, -1);
@@ -13764,6 +13762,8 @@ Init_IO(void)
     ARGF.filename = rb_str_new2("-");
 
     rb_define_hooked_variable("$-i", &argf, opt_i_get, opt_i_set);
+    rb_gvar_ractor_local("$-i");
+
     rb_define_hooked_variable("$*", &argf, argf_argv_getter, rb_gvar_readonly_setter);
 
 #if defined (_WIN32) || defined(__CYGWIN__)
@@ -13774,33 +13774,33 @@ Init_IO(void)
 
     rb_define_method(rb_cFile, "initialize",  rb_file_initialize, -1);
 
-    sym_mode = ID2SYM(rb_intern("mode"));
-    sym_perm = ID2SYM(rb_intern("perm"));
-    sym_flags = ID2SYM(rb_intern("flags"));
-    sym_extenc = ID2SYM(rb_intern("external_encoding"));
-    sym_intenc = ID2SYM(rb_intern("internal_encoding"));
+    sym_mode = ID2SYM(rb_intern_const("mode"));
+    sym_perm = ID2SYM(rb_intern_const("perm"));
+    sym_flags = ID2SYM(rb_intern_const("flags"));
+    sym_extenc = ID2SYM(rb_intern_const("external_encoding"));
+    sym_intenc = ID2SYM(rb_intern_const("internal_encoding"));
     sym_encoding = ID2SYM(rb_id_encoding());
-    sym_open_args = ID2SYM(rb_intern("open_args"));
-    sym_textmode = ID2SYM(rb_intern("textmode"));
-    sym_binmode = ID2SYM(rb_intern("binmode"));
-    sym_autoclose = ID2SYM(rb_intern("autoclose"));
-    sym_normal = ID2SYM(rb_intern("normal"));
-    sym_sequential = ID2SYM(rb_intern("sequential"));
-    sym_random = ID2SYM(rb_intern("random"));
-    sym_willneed = ID2SYM(rb_intern("willneed"));
-    sym_dontneed = ID2SYM(rb_intern("dontneed"));
-    sym_noreuse = ID2SYM(rb_intern("noreuse"));
-    sym_SET = ID2SYM(rb_intern("SET"));
-    sym_CUR = ID2SYM(rb_intern("CUR"));
-    sym_END = ID2SYM(rb_intern("END"));
+    sym_open_args = ID2SYM(rb_intern_const("open_args"));
+    sym_textmode = ID2SYM(rb_intern_const("textmode"));
+    sym_binmode = ID2SYM(rb_intern_const("binmode"));
+    sym_autoclose = ID2SYM(rb_intern_const("autoclose"));
+    sym_normal = ID2SYM(rb_intern_const("normal"));
+    sym_sequential = ID2SYM(rb_intern_const("sequential"));
+    sym_random = ID2SYM(rb_intern_const("random"));
+    sym_willneed = ID2SYM(rb_intern_const("willneed"));
+    sym_dontneed = ID2SYM(rb_intern_const("dontneed"));
+    sym_noreuse = ID2SYM(rb_intern_const("noreuse"));
+    sym_SET = ID2SYM(rb_intern_const("SET"));
+    sym_CUR = ID2SYM(rb_intern_const("CUR"));
+    sym_END = ID2SYM(rb_intern_const("END"));
 #ifdef SEEK_DATA
-    sym_DATA = ID2SYM(rb_intern("DATA"));
+    sym_DATA = ID2SYM(rb_intern_const("DATA"));
 #endif
 #ifdef SEEK_HOLE
-    sym_HOLE = ID2SYM(rb_intern("HOLE"));
+    sym_HOLE = ID2SYM(rb_intern_const("HOLE"));
 #endif
-    sym_wait_readable = ID2SYM(rb_intern("wait_readable"));
-    sym_wait_writable = ID2SYM(rb_intern("wait_writable"));
+    sym_wait_readable = ID2SYM(rb_intern_const("wait_readable"));
+    sym_wait_writable = ID2SYM(rb_intern_const("wait_writable"));
 }
 
 #include "io.rbinc"

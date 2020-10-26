@@ -378,3 +378,7 @@ Zachary Scott (zzak)
   https://github.com/ruby/rexml
 [rss]
   https://github.com/ruby/rss
+[rbs]
+  https://github.com/ruby/rbs
+[typeprof]
+  http://github.com/ruby/typeprof

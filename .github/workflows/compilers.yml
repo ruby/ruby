@@ -159,18 +159,18 @@ jobs:
     container: ghcr.io/ruby/ruby-ci-image:latest
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     steps:
+      - run: mkdir build
+        working-directory:
       - name: setenv
         run: |
           echo "${{ matrix.entry.key }}=${{ matrix.entry.value }}" >> $GITHUB_ENV
           echo "make=make -sj$((1 + $(nproc --all)))" >> $GITHUB_ENV
-      - run: mkdir build
       - uses: actions/checkout@v2
         with:
           path: src
       - run: autoconf
         working-directory: src
       - name: Run configure
-        working-directory: build
         run: |
           if [ -n "${crosshost}" ]; then
             ../src/configure -C \
@@ -184,27 +184,18 @@ jobs:
               --with-gcc="${default_cc} ${append_cc}"
           fi
       - run: $make extract-extlibs
-        working-directory: build
       - run: $make incs
-        working-directory: build
       - run: $make
-        working-directory: build
       - run: $make test
-        working-directory: build
       - run: $make install
-        working-directory: build
         if: "matrix.entry.name == '-O3'"
       - run: /usr/local/bin/gem install --no-doc timezone tzinfo
-        working-directory: build
         if: "matrix.entry.name == '-O3'"
       - run: $make test-tool
-        working-directory: build
         if: "matrix.entry.name == '-O3'"
       - run: $make test-all TESTS='-- ruby -ext-'
-        working-directory: build
         if: "matrix.entry.name == '-O3'"
       - run: $make test-spec
-        working-directory: build
         if: "matrix.entry.name == '-O3'"
 
       - uses: k0kubun/action-slack@v2.0.0
@@ -220,3 +211,7 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: failure() && github.event_name == 'push'
+
+defaults:
+  run:
+    working-directory: build

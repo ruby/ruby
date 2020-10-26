@@ -64,6 +64,7 @@
 #include "ruby/thread.h"
 #include "ruby/util.h"
 #include "ruby/version.h"
+#include "ruby/internal/error.h"
 
 #ifndef MAXPATHLEN
 # define MAXPATHLEN 1024
@@ -2031,6 +2032,10 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     rb_define_readonly_boolean("$-l", opt->do_line);
     rb_define_readonly_boolean("$-a", opt->do_split);
 
+    rb_gvar_ractor_local("$-p");
+    rb_gvar_ractor_local("$-l");
+    rb_gvar_ractor_local("$-a");
+
     if ((rb_e_script = opt->e_script) != 0) {
         rb_gc_register_mark_object(opt->e_script);
     }
@@ -2440,16 +2445,24 @@ forbid_setid(const char *s, const ruby_cmdline_options_t *opt)
         rb_raise(rb_eSecurityError, "no %s allowed while running setgid", s);
 }
 
+static VALUE
+verbose_getter(ID id, VALUE *ptr)
+{
+    return *rb_ruby_verbose_ptr();
+}
+
 static void
 verbose_setter(VALUE val, ID id, VALUE *variable)
 {
-    *variable = RTEST(val) ? Qtrue : val;
+    *rb_ruby_verbose_ptr() = RTEST(val) ? Qtrue : val;
 }
 
 static VALUE
-opt_W_getter(ID id, VALUE *variable)
+opt_W_getter(ID id, VALUE *dmy)
 {
-    switch (*variable) {
+    VALUE v = *rb_ruby_verbose_ptr();
+
+    switch (v) {
       case Qnil:
 	return INT2FIX(0);
       case Qfalse:
@@ -2461,16 +2474,35 @@ opt_W_getter(ID id, VALUE *variable)
     }
 }
 
+static VALUE
+debug_getter(ID id, VALUE *dmy)
+{
+    return *rb_ruby_debug_ptr();
+}
+
+static void
+debug_setter(VALUE val, ID id, VALUE *dmy)
+{
+    *rb_ruby_debug_ptr() = val;
+}
+
 /*! Defines built-in variables */
 void
 ruby_prog_init(void)
 {
-    rb_define_hooked_variable("$VERBOSE", &ruby_verbose, 0, verbose_setter);
-    rb_define_hooked_variable("$-v", &ruby_verbose, 0, verbose_setter);
-    rb_define_hooked_variable("$-w", &ruby_verbose, 0, verbose_setter);
-    rb_define_hooked_variable("$-W", &ruby_verbose, opt_W_getter, rb_gvar_readonly_setter);
-    rb_define_variable("$DEBUG", &ruby_debug);
-    rb_define_variable("$-d", &ruby_debug);
+    rb_define_virtual_variable("$VERBOSE", verbose_getter, verbose_setter);
+    rb_define_virtual_variable("$-v",      verbose_getter, verbose_setter);
+    rb_define_virtual_variable("$-w",      verbose_getter, verbose_setter);
+    rb_define_virtual_variable("$-W",      opt_W_getter,   rb_gvar_readonly_setter);
+    rb_define_virtual_variable("$DEBUG",   debug_getter,   debug_setter);
+    rb_define_virtual_variable("$-d",      debug_getter,   debug_setter);
+
+    rb_gvar_ractor_local("$VERBOSE");
+    rb_gvar_ractor_local("$-v");
+    rb_gvar_ractor_local("$-w");
+    rb_gvar_ractor_local("$-W");
+    rb_gvar_ractor_local("$DEBUG");
+    rb_gvar_ractor_local("$-d");
 
     rb_define_hooked_variable("$0", &rb_progname, 0, set_arg0);
     rb_define_hooked_variable("$PROGRAM_NAME", &rb_progname, 0, set_arg0);

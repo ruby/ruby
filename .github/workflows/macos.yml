@@ -11,6 +11,8 @@ jobs:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     steps:
+      - run: mkdir build
+        working-directory:
       - name: Disable Firewall
         run: |
           sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
@@ -32,20 +34,14 @@ jobs:
           echo "JOBS=-j$((1 + $(sysctl -n hw.activecpu)))" >> $GITHUB_ENV
       - run: autoconf
         working-directory: src
-      - run: mkdir build
       - name: Run configure
         run: ../src/configure -C --disable-install-doc --with-openssl-dir=$(brew --prefix openssl@1.1) --with-readline-dir=$(brew --prefix readline)
-        working-directory: build
       - run: make $JOBS incs
-        working-directory: build
       - run: make $JOBS
-        working-directory: build
       - run: make prepare-gems
-        working-directory: build
         if: matrix.test_task == 'check'
       - run: make $JOBS -s ${{ matrix.test_task }}
         timeout-minutes: 60
-        working-directory: build
         env:
           RUBY_TESTOPTS: "-q --tty=no"
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: "rexml"
@@ -62,3 +58,7 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: failure() && github.event_name == 'push'
+
+defaults:
+  run:
+    working-directory: build

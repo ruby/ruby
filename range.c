@@ -1329,49 +1329,79 @@ rb_range_values(VALUE range, VALUE *begp, VALUE *endp, int *exclp)
     return (int)Qtrue;
 }
 
+/* Extract the components of a Range.
+ *
+ * You can use +err+ to control the behavior of out-of-range and exception.
+ *
+ * When +err+ is 0 or 2, if the begin offset is greater than +len+,
+ * it is out-of-range.  The +RangeError+ is raised only if +err+ is 2,
+ * in this case.  If +err+ is 0, +Qnil+ will be returned.
+ *
+ * When +err+ is 1, the begin and end offsets won't be adjusted even if they
+ * are greater than +len+.  It allows +rb_ary_aset+ extends arrays.
+ *
+ * If the begin component of the given range is negative and is too-large
+ * abstract value, the +RangeError+ is raised only +err+ is 1 or 2.
+ *
+ * The case of <code>err = 0</code> is used in item accessing methods such as
+ * +rb_ary_aref+, +rb_ary_slice_bang+, and +rb_str_aref+.
+ *
+ * The case of <code>err = 1</code> is used in Array's methods such as
+ * +rb_ary_aset+ and +rb_ary_fill+.
+ *
+ * The case of <code>err = 2</code> is used in +rb_str_aset+.
+ */
 VALUE
-rb_range_beg_len(VALUE range, long *begp, long *lenp, long len, int err)
+rb_range_component_beg_len(VALUE b, VALUE e, int excl,
+                           long *begp, long *lenp, long len, int err)
 {
-    long beg, end, origbeg, origend;
-    VALUE b, e;
-    int excl;
+    long beg, end;
 
-    if (!rb_range_values(range, &b, &e, &excl))
-	return Qfalse;
     beg = NIL_P(b) ? 0 : NUM2LONG(b);
     end = NIL_P(e) ? -1 : NUM2LONG(e);
     if (NIL_P(e)) excl = 0;
-    origbeg = beg;
-    origend = end;
     if (beg < 0) {
-	beg += len;
-	if (beg < 0)
-	    goto out_of_range;
+        beg += len;
+        if (beg < 0)
+            goto out_of_range;
     }
     if (end < 0)
-	end += len;
+        end += len;
     if (!excl)
-	end++;			/* include end point */
+        end++;			/* include end point */
     if (err == 0 || err == 2) {
-	if (beg > len)
-	    goto out_of_range;
-	if (end > len)
-	    end = len;
+        if (beg > len)
+            goto out_of_range;
+        if (end > len)
+            end = len;
     }
     len = end - beg;
     if (len < 0)
-	len = 0;
+        len = 0;
 
     *begp = beg;
     *lenp = len;
     return Qtrue;
 
   out_of_range:
-    if (err) {
-	rb_raise(rb_eRangeError, "%ld..%s%ld out of range",
-		 origbeg, excl ? "." : "", origend);
-    }
     return Qnil;
+}
+
+VALUE
+rb_range_beg_len(VALUE range, long *begp, long *lenp, long len, int err)
+{
+    VALUE b, e;
+    int excl;
+
+    if (!rb_range_values(range, &b, &e, &excl))
+        return Qfalse;
+
+    VALUE res = rb_range_component_beg_len(b, e, excl, begp, lenp, len, err);
+    if (NIL_P(res) && err) {
+        rb_raise(rb_eRangeError, "%+"PRIsVALUE" out of range", range);
+    }
+
+    return res;
 }
 
 /*
@@ -1809,12 +1839,9 @@ range_count(int argc, VALUE *argv, VALUE range)
 void
 Init_Range(void)
 {
-#undef rb_intern
-#define rb_intern(str) rb_intern_const(str)
-
-    id_beg = rb_intern("begin");
-    id_end = rb_intern("end");
-    id_excl = rb_intern("excl");
+    id_beg = rb_intern_const("begin");
+    id_end = rb_intern_const("end");
+    id_excl = rb_intern_const("excl");
 
     rb_cRange = rb_struct_define_without_accessor(
         "Range", rb_cObject, range_alloc,

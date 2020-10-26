@@ -350,35 +350,35 @@ Init_memory_view(void)
     rb_define_method(cMDView, "[]", mdview_aref, 1);
     rb_memory_view_register(cMDView, &mdview_memory_view_entry);
 
-    id_str = rb_intern("__str__");
-    sym_format = ID2SYM(rb_intern("format"));
-    sym_native_size_p = ID2SYM(rb_intern("native_size_p"));
-    sym_offset = ID2SYM(rb_intern("offset"));
-    sym_size = ID2SYM(rb_intern("size"));
-    sym_repeat = ID2SYM(rb_intern("repeat"));
-    sym_obj = ID2SYM(rb_intern("obj"));
-    sym_len = ID2SYM(rb_intern("len"));
-    sym_readonly = ID2SYM(rb_intern("readonly"));
-    sym_format = ID2SYM(rb_intern("format"));
-    sym_item_size = ID2SYM(rb_intern("item_size"));
-    sym_ndim = ID2SYM(rb_intern("ndim"));
-    sym_shape = ID2SYM(rb_intern("shape"));
-    sym_strides = ID2SYM(rb_intern("strides"));
-    sym_sub_offsets = ID2SYM(rb_intern("sub_offsets"));
-    sym_endianness = ID2SYM(rb_intern("endianness"));
-    sym_little_endian = ID2SYM(rb_intern("little_endian"));
-    sym_big_endian = ID2SYM(rb_intern("big_endian"));
+    id_str = rb_intern_const("__str__");
+    sym_format = ID2SYM(rb_intern_const("format"));
+    sym_native_size_p = ID2SYM(rb_intern_const("native_size_p"));
+    sym_offset = ID2SYM(rb_intern_const("offset"));
+    sym_size = ID2SYM(rb_intern_const("size"));
+    sym_repeat = ID2SYM(rb_intern_const("repeat"));
+    sym_obj = ID2SYM(rb_intern_const("obj"));
+    sym_len = ID2SYM(rb_intern_const("len"));
+    sym_readonly = ID2SYM(rb_intern_const("readonly"));
+    sym_format = ID2SYM(rb_intern_const("format"));
+    sym_item_size = ID2SYM(rb_intern_const("item_size"));
+    sym_ndim = ID2SYM(rb_intern_const("ndim"));
+    sym_shape = ID2SYM(rb_intern_const("shape"));
+    sym_strides = ID2SYM(rb_intern_const("strides"));
+    sym_sub_offsets = ID2SYM(rb_intern_const("sub_offsets"));
+    sym_endianness = ID2SYM(rb_intern_const("endianness"));
+    sym_little_endian = ID2SYM(rb_intern_const("little_endian"));
+    sym_big_endian = ID2SYM(rb_intern_const("big_endian"));
 
 #ifdef WORDS_BIGENDIAN
-    rb_const_set(mMemoryViewTestUtils, rb_intern("NATIVE_ENDIAN"), sym_big_endian);
+    rb_const_set(mMemoryViewTestUtils, rb_intern_const("NATIVE_ENDIAN"), sym_big_endian);
 #else
-    rb_const_set(mMemoryViewTestUtils, rb_intern("NATIVE_ENDIAN"), sym_little_endian);
+    rb_const_set(mMemoryViewTestUtils, rb_intern_const("NATIVE_ENDIAN"), sym_little_endian);
 #endif
 
 #define DEF_ALIGNMENT_CONST(type, TYPE) do { \
     int alignment; \
     STRUCT_ALIGNOF(type, alignment); \
-    rb_const_set(mMemoryViewTestUtils, rb_intern(#TYPE "_ALIGNMENT"), INT2FIX(alignment)); \
+    rb_const_set(mMemoryViewTestUtils, rb_intern_const(#TYPE "_ALIGNMENT"), INT2FIX(alignment)); \
 } while(0)
 
     DEF_ALIGNMENT_CONST(short, SHORT);

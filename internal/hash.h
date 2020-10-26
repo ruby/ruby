@@ -83,6 +83,8 @@ VALUE rb_hash_set_pair(VALUE hash, VALUE pair);
 int rb_hash_stlike_delete(VALUE hash, st_data_t *pkey, st_data_t *pval);
 int rb_hash_stlike_foreach_with_replace(VALUE hash, st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg);
 int rb_hash_stlike_update(VALUE hash, st_data_t key, st_update_callback_func *func, st_data_t arg);
+extern st_table *rb_hash_st_table(VALUE hash);
+
 static inline unsigned RHASH_AR_TABLE_SIZE_RAW(VALUE h);
 static inline VALUE RHASH_IFNONE(VALUE h);
 static inline size_t RHASH_SIZE(VALUE h);
@@ -135,7 +137,6 @@ RHASH_AR_TABLE(VALUE h)
 static inline st_table *
 RHASH_ST_TABLE(VALUE h)
 {
-    extern st_table *rb_hash_st_table(VALUE hash);
     return rb_hash_st_table(h)
 }
 

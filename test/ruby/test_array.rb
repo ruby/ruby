@@ -1496,8 +1496,45 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[10, 11, 12], a.slice(-91..-89))
     assert_equal(@cls[10, 11, 12], a.slice(-91..-89))
 
+    assert_equal(@cls[5, 8, 11], a.slice((4..12)%3))
+    assert_equal(@cls[95, 97, 99], a.slice((94..)%2))
+
+    #        [0] [1] [2] [3] [4] [5] [6] [7]
+    # ary = [ 1   2   3   4   5   6   7   8  ... ]
+    #        (0)         (1)         (2)           <- (..7) % 3
+    #            (2)         (1)         (0)       <- (7..) % -3
+    assert_equal(@cls[1, 4, 7], a.slice((..7)%3))
+    assert_equal(@cls[8, 5, 2], a.slice((7..)% -3))
+
+    #             [-98] [-97] [-96] [-95] [-94] [-93] [-92] [-91] [-90]
+    # ary = [ ...   3     4     5     6     7     8     9     10    11  ... ]
+    #              (0)               (1)               (2)                    <- (-98..-90) % 3
+    #                          (2)               (1)               (0)        <- (-90..-98) % -3
+    assert_equal(@cls[3, 6, 9], a.slice((-98..-90)%3))
+    assert_equal(@cls[11, 8, 5], a.slice((-90..-98)% -3))
+
+    #             [ 48] [ 49] [ 50] [ 51] [ 52] [ 53]
+    #             [-52] [-51] [-50] [-49] [-48] [-47]
+    # ary = [ ...   49    50    51    52    53    54  ... ]
+    #              (0)         (1)         (2)              <- (48..-47) % 2
+    #                    (2)         (1)          (0)       <- (-47..48) % -2
+    assert_equal(@cls[49, 51, 53], a.slice((48..-47)%2))
+    assert_equal(@cls[54, 52, 50], a.slice((-47..48)% -2))
+
+    idx = ((3..90) % 2).to_a
+    assert_equal(@cls[*a.values_at(*idx)], a.slice((3..90)%2))
+    idx = 90.step(3, -2).to_a
+    assert_equal(@cls[*a.values_at(*idx)], a.slice((90 .. 3)% -2))
+  end
+
+  def test_slice_out_of_range
+    a = @cls[*(1..100).to_a]
+
     assert_nil(a.slice(-101..-1))
     assert_nil(a.slice(-101..))
+
+    assert_raise_with_message(RangeError, "((-101..-1).%(2)) out of range") { a.slice((-101..-1)%2) }
+    assert_raise_with_message(RangeError, "((-101..).%(2)) out of range") { a.slice((-101..)%2) }
 
     assert_nil(a.slice(10, -3))
     assert_equal @cls[], a.slice(10..7)
@@ -2381,6 +2418,9 @@ class TestArray < Test::Unit::TestCase
     assert_raise(ArgumentError) { [0].freeze[0, 0, 0] = 0 }
     assert_raise(TypeError) { [0][:foo] = 0 }
     assert_raise(FrozenError) { [0].freeze[:foo] = 0 }
+
+    # [Bug #17271]
+    assert_raise_with_message(RangeError, "-7.. out of range") { [*0..5][-7..] = 1 }
   end
 
   def test_first2
@@ -2411,7 +2451,6 @@ class TestArray < Test::Unit::TestCase
 
   def test_aref
     assert_raise(ArgumentError) { [][0, 0, 0] }
-    assert_raise(TypeError) { [][(1..10).step(2)] }
   end
 
   def test_fetch

@@ -121,10 +121,17 @@ struct rb_ractor_struct {
 
     struct list_node vmlr_node;
 
-
     VALUE r_stdin;
     VALUE r_stdout;
     VALUE r_stderr;
+    VALUE verbose;
+    VALUE debug;
+
+    // gc.c rb_objspace_reachable_objects_from
+    struct gc_mark_func_data_struct {
+        void *data;
+        void (*mark_func)(VALUE v, void *data);
+    } *mfd;
 }; // rb_ractor_t is defined in vm_core.h
 
 rb_ractor_t *rb_ractor_main_alloc(void);
@@ -205,7 +212,15 @@ rb_ractor_thread_switch(rb_ractor_t *cr, rb_thread_t *th)
 static inline void
 rb_ractor_set_current_ec(rb_ractor_t *cr, rb_execution_context_t *ec)
 {
+#ifdef RB_THREAD_LOCAL_SPECIFIER
+  #if __APPLE__
+    rb_current_ec_set(ec);
+  #else
+    ruby_current_ec = ec;
+  #endif
+#else
     native_tls_set(ruby_current_ec_key, ec);
+#endif
 
     if (cr->threads.running_ec != ec) {
         if (0) fprintf(stderr, "rb_ractor_set_current_ec ec:%p->%p\n",
@@ -242,7 +257,7 @@ rb_ractor_setup_belonging(VALUE obj)
 static inline uint32_t
 rb_ractor_belonging(VALUE obj)
 {
-    if (rb_ractor_shareable_p(obj)) {
+    if (SPECIAL_CONST_P(obj) || RB_OBJ_SHAREABLE_P(obj)) {
         return 0;
     }
     else {
@@ -262,8 +277,13 @@ rb_ractor_confirm_belonging(VALUE obj)
         }
     }
     else if (UNLIKELY(id != rb_ractor_current_id())) {
-        rp(obj);
-        rb_bug("rb_ractor_confirm_belonging object-ractor id:%u, current-ractor id:%u", id, rb_ractor_current_id());
+        if (rb_ractor_shareable_p(obj)) {
+            // ok
+        }
+        else {
+            rp(obj);
+            rb_bug("rb_ractor_confirm_belonging object-ractor id:%u, current-ractor id:%u", id, rb_ractor_current_id());
+        }
     }
     return obj;
 }

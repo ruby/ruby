@@ -2573,6 +2573,8 @@ nurat_convert(VALUE klass, VALUE numv, VALUE denv, int raise)
     VALUE a1 = numv, a2 = denv;
     int state;
 
+    assert(a1 != Qundef);
+
     if (NIL_P(a1) || NIL_P(a2)) {
         if (!raise) return Qnil;
         rb_raise(rb_eTypeError, "can't convert nil into Rational");
@@ -2588,20 +2590,46 @@ nurat_convert(VALUE klass, VALUE numv, VALUE denv, int raise)
             a2 = RCOMPLEX(a2)->real;
     }
 
-    if (RB_FLOAT_TYPE_P(a1)) {
+    if (RB_INTEGER_TYPE_P(a1)) {
+        // nothing to do
+    }
+    else if (RB_FLOAT_TYPE_P(a1)) {
         a1 = float_to_r(a1);
+    }
+    else if (RB_TYPE_P(a1, T_RATIONAL)) {
+        // nothing to do
     }
     else if (RB_TYPE_P(a1, T_STRING)) {
         a1 = string_to_r_strict(a1, raise);
         if (!raise && NIL_P(a1)) return Qnil;
     }
+    else if (!rb_respond_to(a1, idTo_r)) {
+        VALUE tmp = rb_protect(rb_check_to_int, a1, NULL);
+        rb_set_errinfo(Qnil);
+        if (!NIL_P(tmp)) {
+            a1 = tmp;
+        }
+    }
 
-    if (RB_FLOAT_TYPE_P(a2)) {
+    if (RB_INTEGER_TYPE_P(a2)) {
+        // nothing to do
+    }
+    else if (RB_FLOAT_TYPE_P(a2)) {
         a2 = float_to_r(a2);
+    }
+    else if (RB_TYPE_P(a2, T_RATIONAL)) {
+        // nothing to do
     }
     else if (RB_TYPE_P(a2, T_STRING)) {
         a2 = string_to_r_strict(a2, raise);
         if (!raise && NIL_P(a2)) return Qnil;
+    }
+    else if (a2 != Qundef && !rb_respond_to(a2, idTo_r)) {
+        VALUE tmp = rb_protect(rb_check_to_int, a2, NULL);
+        rb_set_errinfo(Qnil);
+        if (!NIL_P(tmp)) {
+            a2 = tmp;
+        }
     }
 
     if (RB_TYPE_P(a1, T_RATIONAL)) {
@@ -2610,7 +2638,7 @@ nurat_convert(VALUE klass, VALUE numv, VALUE denv, int raise)
     }
 
     if (a2 == Qundef) {
-        if (!k_integer_p(a1)) {
+        if (!RB_INTEGER_TYPE_P(a1)) {
             if (!raise) {
                 VALUE result = rb_protect(to_rational, a1, NULL);
                 rb_set_errinfo(Qnil);
@@ -2723,13 +2751,10 @@ void
 Init_Rational(void)
 {
     VALUE compat;
-#undef rb_intern
-#define rb_intern(str) rb_intern_const(str)
-
-    id_abs = rb_intern("abs");
-    id_integer_p = rb_intern("integer?");
-    id_i_num = rb_intern("@numerator");
-    id_i_den = rb_intern("@denominator");
+    id_abs = rb_intern_const("abs");
+    id_integer_p = rb_intern_const("integer?");
+    id_i_num = rb_intern_const("@numerator");
+    id_i_den = rb_intern_const("@denominator");
 
     rb_cRational = rb_define_class("Rational", rb_cNumeric);
 

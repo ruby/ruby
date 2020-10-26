@@ -63,4 +63,8 @@ void rb_native_cond_timedwait(rb_nativethread_cond_t *cond, rb_nativethread_lock
 void rb_native_cond_initialize(rb_nativethread_cond_t *cond);
 void rb_native_cond_destroy(rb_nativethread_cond_t *cond);
 
+RUBY_SYMBOL_EXPORT_BEGIN
+RUBY_EXTERN native_tls_key_t ruby_current_ec_key;
+RUBY_SYMBOL_EXPORT_END
+
 #endif /* RUBY_THREAD_WIN32_H */

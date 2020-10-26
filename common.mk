@@ -1355,7 +1355,7 @@ test-bundled-gems-prepare: $(TEST_RUNNABLE)-test-bundled-gems-prepare
 no-test-bundled-gems-prepare: no-test-bundled-gems-precheck
 yes-test-bundled-gems-prepare: yes-test-bundled-gems-precheck
 	$(XRUBY) -C "$(srcdir)" bin/gem install --no-document \
-		--install-dir .bundle --conservative "bundler" "minitest:~> 5" "test-unit" "rake" "hoe" "yard" "pry" "packnga" "rexml" "json-schema"
+		--install-dir .bundle --conservative "bundler" "minitest:~> 5" "test-unit" "rake" "hoe" "yard" "pry" "packnga" "rexml" "json-schema" "rbs"
 
 PREPARE_BUNDLED_GEMS = test-bundled-gems-prepare
 test-bundled-gems: $(TEST_RUNNABLE)-test-bundled-gems
@@ -10206,10 +10206,17 @@ ractor.$(OBJEXT): $(CCAN_DIR)/list/list.h
 ractor.$(OBJEXT): $(CCAN_DIR)/str/str.h
 ractor.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/array.h
+ractor.$(OBJEXT): $(top_srcdir)/internal/bignum.h
+ractor.$(OBJEXT): $(top_srcdir)/internal/bits.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+ractor.$(OBJEXT): $(top_srcdir)/internal/complex.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/error.h
+ractor.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/gc.h
+ractor.$(OBJEXT): $(top_srcdir)/internal/hash.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+ractor.$(OBJEXT): $(top_srcdir)/internal/numeric.h
+ractor.$(OBJEXT): $(top_srcdir)/internal/rational.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/serial.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/string.h
@@ -10233,6 +10240,7 @@ ractor.$(OBJEXT): {$(VPATH)}debug.h
 ractor.$(OBJEXT): {$(VPATH)}debug_counter.h
 ractor.$(OBJEXT): {$(VPATH)}defines.h
 ractor.$(OBJEXT): {$(VPATH)}encoding.h
+ractor.$(OBJEXT): {$(VPATH)}gc.h
 ractor.$(OBJEXT): {$(VPATH)}id.h
 ractor.$(OBJEXT): {$(VPATH)}id_table.h
 ractor.$(OBJEXT): {$(VPATH)}intern.h
@@ -10394,6 +10402,7 @@ ractor.$(OBJEXT): {$(VPATH)}subst.h
 ractor.$(OBJEXT): {$(VPATH)}thread.h
 ractor.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 ractor.$(OBJEXT): {$(VPATH)}thread_native.h
+ractor.$(OBJEXT): {$(VPATH)}variable.h
 ractor.$(OBJEXT): {$(VPATH)}vm_core.h
 ractor.$(OBJEXT): {$(VPATH)}vm_debug.h
 ractor.$(OBJEXT): {$(VPATH)}vm_opts.h
@@ -10956,6 +10965,7 @@ re.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 re.$(OBJEXT): $(top_srcdir)/internal/re.h
 re.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 re.$(OBJEXT): $(top_srcdir)/internal/string.h
+re.$(OBJEXT): $(top_srcdir)/internal/variable.h
 re.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 re.$(OBJEXT): {$(VPATH)}assert.h
 re.$(OBJEXT): {$(VPATH)}backward/2/assume.h
@@ -10968,9 +10978,11 @@ re.$(OBJEXT): {$(VPATH)}backward/2/long_long.h
 re.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 re.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 re.$(OBJEXT): {$(VPATH)}config.h
+re.$(OBJEXT): {$(VPATH)}constant.h
 re.$(OBJEXT): {$(VPATH)}defines.h
 re.$(OBJEXT): {$(VPATH)}encindex.h
 re.$(OBJEXT): {$(VPATH)}encoding.h
+re.$(OBJEXT): {$(VPATH)}id_table.h
 re.$(OBJEXT): {$(VPATH)}intern.h
 re.$(OBJEXT): {$(VPATH)}internal.h
 re.$(OBJEXT): {$(VPATH)}internal/anyargs.h

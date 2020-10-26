@@ -54,9 +54,6 @@ env:
 
 .org.ruby-lang.ci.matrix-definitions:
 
-  - &cron-only
-    if: (type = cron) AND (branch = master) AND (fork = false)
-
   - &make-test-only
     script:
       - $SETARCH make -s test TESTOPTS="${TESTOPTS=$JOBS -q --tty=no}"
@@ -79,15 +76,12 @@ env:
         g++-8
         libffi-dev
         libgdbm-dev
-        libgmp-dev
-        libjemalloc-dev
         libncurses5-dev
         libncursesw5-dev
         libreadline6-dev
         libssl-dev
         libyaml-dev
         openssl
-        valgrind
         zlib1g-dev
 
   - &clang-8
@@ -107,15 +101,12 @@ env:
         llvm-8-tools
         libffi-dev
         libgdbm-dev
-        libgmp-dev
-        libjemalloc-dev
         libncurses5-dev
         libncursesw5-dev
         libreadline6-dev
         libssl-dev
         libyaml-dev
         openssl
-        valgrind
         zlib1g-dev
 
   # --------
@@ -134,92 +125,9 @@ env:
     arch: s390x
     <<: *gcc-8
 
-  - &jemalloc
-    name: --with-jemalloc
-    <<: *gcc-8
-    <<: *cron-only
-    env:
-      - CONFIG_FLAG='--with-gmp --with-jemalloc --with-valgrind'
-
-  - &assertions
-    name: RUBY_DEBUG=1
-    <<: *gcc-8
-    #<<: *cron-only
-    <<: *make-test-only
-    env:
-      - GEMS_FOR_TEST=
-      - cppflags='-DRUBY_DEBUG -DVM_CHECK_MODE=1 -DTRANSIENT_HEAP_CHECK_MODE -DRGENGC_CHECK_MODE -DENC_DEBUG'
-
-  - &VM_CHECK_MODE
-    name: VM_CHECK_MODE=3
-    <<: *gcc-8
-    <<: *cron-only
-    <<: *make-test-only
-    env:
-      - GEMS_FOR_TEST=
-      - cppflags=-DVM_CHECK_MODE=0x0003
-
-  - &SUPPORT_JOKE
-    name: SUPPORT_JOKE
-    <<: *gcc-8
-    <<: *cron-only
-    <<: *make-test-only
-    env:
-      - BEFORE_INSTALL="sed vm_opts.h -e 's/OPT_SUPPORT_JOKE *0/OPT_SUPPORT_JOKE 1/' -i"
-
-  - &CPDEBUG
-    name: CPDEBUG
-    <<: *gcc-8
-    <<: *cron-only
-    <<: *make-test-only
-    env:
-      - cppflags=-DCPDEBUG
-
-  - &WITH_COROUTINE_UCONTEXT
-    name: COROUTINE=ucontext
-    <<: *gcc-8
-    <<: *cron-only
-    env:
-      - CONFIG_FLAG='--with-coroutine=ucontext'
-
-  - &WITH_COROUTINE_COPY
-    name: COROUTINE=copy
-    <<: *gcc-8
-    <<: *cron-only
-    env:
-      - CONFIG_FLAG='--with-coroutine=copy'
-
-  - &TOKEN_THREADED_CODE
-    name: TOKEN_THREADED_CODE
-    <<: *gcc-8
-    <<: *cron-only
-    <<: *make-test-only
-    env:
-      - GEMS_FOR_TEST=
-      - cppflags=-DOPT_THREADED_CODE=1
-
-  - &CALL_THREADED_CODE
-    name: CALL_THREADED_CODE
-    <<: *gcc-8
-    <<: *cron-only
-    <<: *make-test-only
-    env:
-      - GEMS_FOR_TEST=
-      - cppflags=-DOPT_THREADED_CODE=2
-
-  - &NO_THREADED_CODE
-    name: NO_THREADED_CODE
-    <<: *gcc-8
-    <<: *cron-only
-    <<: *make-test-only
-    env:
-      - GEMS_FOR_TEST=
-      - cppflags=-DOPT_THREADED_CODE=3
-
   - &ASAN
     name: -fsanitize=address
     <<: *clang-8
-    #<<: *cron-only
     <<: *make-test-only
     env:
       - GEMS_FOR_TEST=
@@ -234,7 +142,6 @@ env:
   - &MSAN
     name: -fsanitize=memory
     <<: *clang-8
-    #<<: *cron-only
     <<: *make-test-only
     env:
       - GEMS_FOR_TEST=
@@ -247,7 +154,6 @@ env:
   - &UBSAN
     name: -fsanitize=undefined
     <<: *clang-8
-    #<<: *cron-only
     <<: *make-test-only
     env:
       - GEMS_FOR_TEST=
@@ -327,39 +233,6 @@ env:
         zlib1g-dev:armhf
         zlib1g:armhf
 
-  - &pedanticism
-    name: -std=c99 -pedantic
-    compiler: clang
-    <<: *make-test-only
-    env:
-      - GEMS_FOR_TEST=
-      - GCC_FLAGS='-std=c99 -Werror=pedantic -pedantic-errors'
-      - CONFIG_FLAG=
-      - JOBS=
-      - >-
-        warnflags='
-        -Wall
-        -Wextra
-        -Werror=deprecated-declarations
-        -Werror=division-by-zero
-        -Werror=extra-tokens
-        -Werror=implicit-function-declaration
-        -Werror=implicit-int
-        -Werror=pointer-arith
-        -Werror=shorten-64-to-32
-        -Werror=write-strings
-        -Wmissing-noreturn
-        -Wno-constant-logical-operand
-        -Wno-missing-field-initializers
-        -Wno-overlength-strings
-        -Wno-parentheses-equality
-        -Wno-self-assign
-        -Wno-tautological-compare
-        -Wno-unused-local-typedef
-        -Wno-unused-parameter
-        -Wunused-variable'
-      - LDFLAGS=-Wno-unused-command-line-argument
-
   - &spec-on-old-ruby
     language: ruby
     before_install:
@@ -389,50 +262,14 @@ env:
     language: ruby
     rvm: 2.2
 
-  - &dependency
-    name: Check dependencies in makefiles
-    language: ruby
-    before_install:
-    install:
-    before_script:
-      - |-
-        ruby -e 'new = []
-          Dir.glob("ext/**/extconf.rb") {|ex|
-            unless File.exist?(dep = File.dirname(ex)+"/depend")
-              puts "Adding "+dep
-              File.copy_stream("template/depend.tmpl", dep)
-              new << dep
-            end
-          }
-          exec("git", "add", *new) unless new.empty?'
-      - git diff --cached
-      - "> config.status"
-      - "> .rbconfig.time"
-      - sed -f tool/prereq.status template/Makefile.in common.mk > Makefile
-      - make touch-unicode-files
-      - make -s $JOBS $UPDATE_UNICODE -o update-src up
-      - make -s $JOBS srcs
-      - rm -f config.status Makefile rbconfig.rb .rbconfig.time
-      - $SETARCH ./configure -C --disable-install-doc --prefix=$RUBY_PREFIX --disable-rubygems --with-gcc 'optflags=-O0' 'debugflags=-save-temps=obj -g'
-      - ruby tool/update-deps --fix
-    script:
-      - git diff --no-ext-diff --ignore-submodules --exit-code
-    after_failure:
-      - echo "Dependencies need to update"
-    env:
-      - CONFIG_FLAG=
-
 matrix:
   include:
     # Build every commit:
     - <<: *x86_64-linux
     - <<: *i686-linux
-    - <<: *pedanticism
-    - <<: *assertions
     - <<: *baseruby
     - <<: *rubyspec25
     - <<: *rubyspec27
-    - <<: *dependency
     # Build every commit (Allowed Failures):
     - <<: *arm32-linux
     - <<: *arm64-linux
@@ -440,16 +277,6 @@ matrix:
     - <<: *ASAN
     - <<: *MSAN
     - <<: *UBSAN
-    # Cron only:
-    - <<: *jemalloc
-    - <<: *VM_CHECK_MODE
-    - <<: *SUPPORT_JOKE
-    - <<: *CPDEBUG
-    - <<: *WITH_COROUTINE_UCONTEXT
-    - <<: *WITH_COROUTINE_COPY
-    - <<: *TOKEN_THREADED_CODE
-    - <<: *CALL_THREADED_CODE
-    - <<: *NO_THREADED_CODE
   allow_failures:
     - name: arm32-linux
     - name: arm64-linux

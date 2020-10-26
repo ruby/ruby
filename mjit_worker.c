@@ -220,8 +220,8 @@ static rb_nativethread_cond_t mjit_client_wakeup;
 static rb_nativethread_cond_t mjit_worker_wakeup;
 // A thread conditional to wake up workers if at the end of GC.
 static rb_nativethread_cond_t mjit_gc_wakeup;
-// True when GC is working.
-static bool in_gc = false;
+// Greater than 0 when GC is working.
+static int in_gc = 0;
 // True when JIT is working.
 static bool in_jit = false;
 // True when JIT compaction is running.

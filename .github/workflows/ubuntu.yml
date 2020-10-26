@@ -29,6 +29,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     steps:
+      - run: mkdir build
+        working-directory:
       - name: Install libraries
         run: |
           set -x
@@ -50,25 +52,18 @@ jobs:
           echo "JOBS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
       - run: autoconf
         working-directory: src
-      - run: mkdir build
       - name: Run configure
         run: ../src/configure -C --disable-install-doc cppflags=${{ matrix.debug }}
-        working-directory: build
       - run: make $JOBS incs
-        working-directory: build
       - run: make $JOBS
-        working-directory: build
       - run: make prepare-gems
-        working-directory: build
         if: matrix.test_task == 'check'
       - name: Create dummy files in build dir
         run: |
           ./miniruby -e '(("a".."z").to_a+("A".."Z").to_a+("0".."9").to_a+%w[foo bar test zzz]).each{|basename|File.write("#{basename}.rb", "raise %(do not load #{basename}.rb)")}'
-        working-directory: build
         if: matrix.test_task == 'check'
       - run: make $JOBS -s ${{ matrix.test_task }}
         timeout-minutes: 30
-        working-directory: build
         env:
           RUBY_TESTOPTS: "-q --tty=no"
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: ""
@@ -85,3 +80,7 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: failure() && github.event_name == 'push'
+
+defaults:
+  run:
+    working-directory: build

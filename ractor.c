@@ -6,8 +6,13 @@
 #include "vm_core.h"
 #include "vm_sync.h"
 #include "ractor.h"
+#include "internal/complex.h"
 #include "internal/error.h"
+#include "internal/hash.h"
+#include "internal/rational.h"
 #include "internal/struct.h"
+#include "variable.h"
+#include "gc.h"
 
 static VALUE rb_cRactor;
 static VALUE rb_eRactorError;
@@ -1373,6 +1378,10 @@ ractor_create(rb_execution_context_t *ec, VALUE self, VALUE loc, VALUE name, VAL
     r->r_stdout = rb_io_prep_stdout();
     r->r_stderr = rb_io_prep_stderr();
 
+    rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
+    r->verbose = cr->verbose;
+    r->debug = cr->debug;
+
     rb_thread_create_ractor(r, args, block);
 
     RB_GC_GUARD(rv);
@@ -1739,8 +1748,6 @@ rb_vm_main_ractor_ec(rb_vm_t *vm)
     return vm->ractor.main_ractor->threads.running_ec;
 }
 
-#include "ractor.rbinc"
-
 static VALUE
 ractor_moved_missing(int argc, VALUE *argv, VALUE self)
 {
@@ -1771,128 +1778,6 @@ Init_Ractor(void)
     rb_define_method(rb_cRactorMovedObject, "instance_exec", ractor_moved_missing, -1);
 
     rb_obj_freeze(rb_cRactorMovedObject);
-}
-
-static int
-rb_ractor_shareable_p_hash_i(VALUE key, VALUE value, VALUE arg)
-{
-    // TODO: should we need to avoid recursion to prevent stack overflow?
-    if (!rb_ractor_shareable_p(key) || !rb_ractor_shareable_p(value)) {
-        bool *shareable = (bool*)arg;
-        *shareable = false;
-        return ST_STOP;
-    }
-    return ST_CONTINUE;
-}
-
-static bool
-ractor_struct_shareable_members_p(VALUE obj)
-{
-    VM_ASSERT(RB_TYPE_P(obj, T_STRUCT));
-
-    long len = RSTRUCT_LEN(obj);
-    const VALUE *ptr = RSTRUCT_CONST_PTR(obj);
-
-    for (long i=0; i<len; i++) {
-        if (!rb_ractor_shareable_p(ptr[i])) {
-            return false;
-        }
-    }
-    return true;
-}
-
-static bool
-ractor_obj_ivars_shareable_p(VALUE obj)
-{
-    uint32_t len = ROBJECT_NUMIV(obj);
-    VALUE *ptr = ROBJECT_IVPTR(obj);
-
-    for (uint32_t i=0; i<len; i++) {
-        VALUE val = ptr[i];
-        if (val != Qundef && !rb_ractor_shareable_p(ptr[i])) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-MJIT_FUNC_EXPORTED bool
-rb_ractor_shareable_p_continue(VALUE obj)
-{
-    switch (BUILTIN_TYPE(obj)) {
-      case T_CLASS:
-      case T_MODULE:
-      case T_ICLASS:
-        goto shareable;
-
-      case T_FLOAT:
-      case T_COMPLEX:
-      case T_RATIONAL:
-      case T_BIGNUM:
-      case T_SYMBOL:
-        VM_ASSERT(RB_OBJ_FROZEN_RAW(obj));
-        goto shareable;
-
-      case T_STRING:
-      case T_REGEXP:
-        if (RB_OBJ_FROZEN_RAW(obj) &&
-            !FL_TEST_RAW(obj, RUBY_FL_EXIVAR)) {
-            goto shareable;
-        }
-        return false;
-      case T_ARRAY:
-        if (!RB_OBJ_FROZEN_RAW(obj) ||
-            FL_TEST_RAW(obj, RUBY_FL_EXIVAR)) {
-            return false;
-        }
-        else {
-            for (int i = 0; i < RARRAY_LEN(obj); i++) {
-                if (!rb_ractor_shareable_p(rb_ary_entry(obj, i))) return false;
-            }
-            goto shareable;
-        }
-      case T_HASH:
-        if (!RB_OBJ_FROZEN_RAW(obj) ||
-            FL_TEST_RAW(obj, RUBY_FL_EXIVAR)) {
-            return false;
-        }
-        else {
-            bool shareable = true;
-            rb_hash_foreach(obj, rb_ractor_shareable_p_hash_i, (VALUE)&shareable);
-            if (shareable) {
-                goto shareable;
-            }
-            else {
-                return false;
-            }
-        }
-      case T_STRUCT:
-        if (!RB_OBJ_FROZEN_RAW(obj) ||
-            FL_TEST_RAW(obj, RUBY_FL_EXIVAR)) {
-            return false;
-        }
-        else {
-            if (ractor_struct_shareable_members_p(obj)) {
-                goto shareable;
-            }
-            else {
-                return false;
-            }
-        }
-      case T_OBJECT:
-        if (RB_OBJ_FROZEN_RAW(obj) && ractor_obj_ivars_shareable_p(obj)) {
-            goto shareable;
-        }
-        else {
-            return false;
-        }
-      default:
-        return false;
-    }
-  shareable:
-    FL_SET_RAW(obj, RUBY_FL_SHAREABLE);
-    return true;
 }
 
 void
@@ -1979,3 +1864,294 @@ rb_ractor_stderr_set(VALUE err)
         RB_OBJ_WRITE(cr->self, &cr->r_stderr, err);
     }
 }
+
+/// traverse function
+
+// 2: stop search
+// 1: skip child
+// 0: continue
+
+enum obj_traverse_iterator_result {
+    traverse_cont,
+    traverse_skip,
+    traverse_stop,
+};
+
+typedef enum obj_traverse_iterator_result (*rb_obj_traverse_enter_func)(VALUE obj);
+typedef enum obj_traverse_iterator_result (*rb_obj_traverse_leave_func)(VALUE obj);
+
+struct obj_traverse_data {
+    rb_obj_traverse_enter_func enter_func;
+    rb_obj_traverse_leave_func leave_func;
+
+    st_table *rec;
+    VALUE rec_hash;
+};
+
+
+struct obj_traverse_callback_data {
+    bool stop;
+    struct obj_traverse_data *data;
+};
+
+static int obj_traverse_i(VALUE obj, struct obj_traverse_data *data);
+
+static int
+obj_hash_traverse_i(VALUE key, VALUE val, VALUE ptr)
+{
+    struct obj_traverse_callback_data *d = (struct obj_traverse_callback_data *)ptr;
+
+    if (obj_traverse_i(key, d->data)) {
+        d->stop = true;
+        return ST_STOP;
+    }
+
+    if (obj_traverse_i(val, d->data)) {
+        d->stop = true;
+        return ST_STOP;
+    }
+
+    return ST_CONTINUE;
+}
+
+static void
+obj_tdata_traverse_i(VALUE obj, void *ptr)
+{
+    struct obj_traverse_callback_data *d = (struct obj_traverse_callback_data *)ptr;
+
+    if (obj_traverse_i(obj, d->data)) {
+        d->stop = true;
+    }
+}
+
+static struct st_table *
+obj_traverse_rec(struct obj_traverse_data *data)
+{
+    if (UNLIKELY(!data->rec)) {
+        data->rec_hash = rb_ident_hash_new();
+        data->rec = rb_hash_st_table(data->rec_hash);
+    }
+    return data->rec;
+}
+
+static int
+obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
+{
+    if (RB_SPECIAL_CONST_P(obj)) return 0;
+
+    switch (data->enter_func(obj)) {
+      case traverse_cont: break;
+      case traverse_skip: return 0; // skip children
+      case traverse_stop: return 1; // stop search
+    }
+
+    if (UNLIKELY(st_insert(obj_traverse_rec(data), obj, 1))) {
+        // already traversed
+        return 0;
+    }
+
+    if (UNLIKELY(FL_TEST_RAW(obj, FL_EXIVAR))) {
+        struct gen_ivtbl *ivtbl;
+        rb_ivar_generic_ivtbl_lookup(obj, &ivtbl);
+        for (uint32_t i = 0; i < ivtbl->numiv; i++) {
+            VALUE val = ivtbl->ivptr[i];
+            if (val != Qundef && obj_traverse_i(val, data)) return 1;
+        }
+    }
+
+    switch (BUILTIN_TYPE(obj)) {
+      // no child node
+      case T_STRING:
+      case T_FLOAT:
+      case T_BIGNUM:
+      case T_REGEXP:
+      case T_FILE:
+      case T_SYMBOL:
+      case T_MATCH:
+        break;
+
+      case T_OBJECT:
+        {
+            uint32_t len = ROBJECT_NUMIV(obj);
+            VALUE *ptr = ROBJECT_IVPTR(obj);
+
+            for (uint32_t i=0; i<len; i++) {
+                VALUE val = ptr[i];
+                if (val != Qundef && obj_traverse_i(val, data)) return 1;
+            }
+        }
+        break;
+
+      case T_ARRAY:
+        {
+            for (int i = 0; i < RARRAY_LENINT(obj); i++) {
+                VALUE e = rb_ary_entry(obj, i);
+                if (obj_traverse_i(e, data)) return 1;
+            }
+        }
+        break;
+
+      case T_HASH:
+        {
+            if (obj_traverse_i(RHASH_IFNONE(obj), data)) return 1;
+
+            struct obj_traverse_callback_data d = {
+                .stop = false,
+                .data = data,
+            };
+            rb_hash_foreach(obj, obj_hash_traverse_i, (VALUE)&d);
+            if (d.stop) return 1;
+        }
+        break;
+
+      case T_STRUCT:
+        {
+            long len = RSTRUCT_LEN(obj);
+            const VALUE *ptr = RSTRUCT_CONST_PTR(obj);
+
+            for (long i=0; i<len; i++) {
+                if (obj_traverse_i(ptr[i], data)) return 1;
+            }
+        }
+        break;
+
+      case T_RATIONAL:
+        if (obj_traverse_i(RRATIONAL(obj)->num, data)) return 1;
+        if (obj_traverse_i(RRATIONAL(obj)->den, data)) return 1;
+        break;
+      case T_COMPLEX:
+        if (obj_traverse_i(RCOMPLEX(obj)->real, data)) return 1;
+        if (obj_traverse_i(RCOMPLEX(obj)->imag, data)) return 1;
+        break;
+
+      case T_DATA:
+        {
+            struct obj_traverse_callback_data d = {
+                .stop = false,
+                .data = data,
+            };
+            rb_objspace_reachable_objects_from(obj, obj_tdata_traverse_i, &d);
+            if (d.stop) return 1;
+        }
+        break;
+
+      // unreachable
+      case T_CLASS:
+      case T_MODULE:
+      case T_ICLASS:
+      default:
+        rp(obj);
+        rb_bug("unreachable");
+    }
+
+    if (data->leave_func(obj) == traverse_stop) {
+        return 1;
+    }
+    else {
+        return 0;
+    }
+}
+
+// 0: traverse all
+// 1: stopped
+static int
+rb_obj_traverse(VALUE obj,
+                rb_obj_traverse_enter_func enter_func,
+                rb_obj_traverse_leave_func leave_func)
+{
+    struct obj_traverse_data data = {
+        .enter_func = enter_func,
+        .leave_func = leave_func,
+        .rec = NULL,
+    };
+
+    return obj_traverse_i(obj, &data);
+}
+
+static int
+frozen_shareable_p(VALUE obj)
+{
+    if (!RB_TYPE_P(obj, T_DATA) ||
+        (RTYPEDDATA_P(obj) &&
+         RTYPEDDATA_TYPE(obj)->flags & RUBY_TYPED_FROZEN_SHAREABLE)) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
+static enum obj_traverse_iterator_result
+make_shareable_check_shareable(VALUE obj)
+{
+    VM_ASSERT(!SPECIAL_CONST_P(obj));
+
+    if (RB_OBJ_SHAREABLE_P(obj)) {
+        return traverse_skip;
+    }
+    else if (!frozen_shareable_p(obj)) {
+        rb_raise(rb_eRactorError, "can not make shareable object for %"PRIsVALUE, obj);
+    }
+
+    if (!RB_OBJ_FROZEN_RAW(obj)) {
+        rb_funcall(obj, idFreeze, 0);
+
+        if (UNLIKELY(!RB_OBJ_FROZEN_RAW(obj))) {
+            rb_raise(rb_eRactorError, "#freeze does not freeze object correctly");
+        }
+    }
+
+    return traverse_cont;
+}
+
+static enum obj_traverse_iterator_result
+mark_shareable(VALUE obj)
+{
+    FL_SET_RAW(obj, RUBY_FL_SHAREABLE);
+    return traverse_cont;
+}
+
+VALUE
+rb_ractor_make_shareable(VALUE obj)
+{
+    rb_obj_traverse(obj,
+                    make_shareable_check_shareable,
+                    mark_shareable);
+    return obj;
+}
+
+static enum obj_traverse_iterator_result
+shareable_p_enter(VALUE obj)
+{
+    if (RB_OBJ_SHAREABLE_P(obj)) {
+        return traverse_skip;
+    }
+    else if (RB_TYPE_P(obj, T_CLASS)  ||
+             RB_TYPE_P(obj, T_MODULE) ||
+             RB_TYPE_P(obj, T_ICLASS)) {
+        // TODO: remove it
+        mark_shareable(obj);
+        return traverse_skip;
+    }
+    else if (RB_OBJ_FROZEN_RAW(obj) &&
+             frozen_shareable_p(obj)) {
+        return traverse_cont;
+    }
+
+    return traverse_stop; // fail
+}
+
+MJIT_FUNC_EXPORTED bool
+rb_ractor_shareable_p_continue(VALUE obj)
+{
+    if (rb_obj_traverse(obj,
+                        shareable_p_enter,
+                        mark_shareable)) {
+        return false;
+    }
+    else {
+        return true;
+    }
+}
+
+#include "ractor.rbinc"

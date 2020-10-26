@@ -24,6 +24,8 @@ jobs:
       fail-fast: false
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     steps:
+      - run: mkdir build
+        working-directory:
       - name: git config
         run: |
           git config --system core.autocrlf false
@@ -50,14 +52,13 @@ jobs:
           }
       - name: misc setup, autoreconf
         run: |
-          mkdir build
           mkdir install
           mkdir temp
           cd src
           sh -c "autoreconf -fi"
+        working-directory:
 
       - name: configure
-        working-directory: build
         run: |
           # Actions uses UTF8, causes test failures, similar to normal OS setup
           $PSDefaultParameterValues['*:Encoding'] = 'utf8'
@@ -70,26 +71,22 @@ jobs:
           # Get-Content ./config.log | foreach {Write-Output $_}
 
       - name: update
-        working-directory: build
         run: |
           $jobs = [int](2 * $env:NUMBER_OF_PROCESSORS)
           make -j $jobs incs
 
       - name: download gems
-        working-directory: build
         run: |
           $jobs = [int](2 * $env:NUMBER_OF_PROCESSORS)
           make -j $jobs update-gems
 
       - name: make all
         timeout-minutes: 40
-        working-directory: build
         run: |
           $jobs = [int](2 * $env:NUMBER_OF_PROCESSORS)
           make -j $jobs
 
       - name: make install
-        working-directory: build
         run: |
           # Actions uses UTF8, causes test failures, similar to normal OS setup
           $PSDefaultParameterValues['*:Encoding'] = 'utf8'
@@ -99,13 +96,11 @@ jobs:
 
       - name: test
         timeout-minutes: 5
-        working-directory: build
         run: |
           make test
 
       - name: test-all
         timeout-minutes: 60
-        working-directory: build
         run: |
           # Actions uses UTF8, causes test failures, similar to normal OS setup
           $PSDefaultParameterValues['*:Encoding'] = 'utf8'
@@ -139,3 +134,7 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: failure() && github.event_name == 'push'
+
+defaults:
+  run:
+    working-directory: build

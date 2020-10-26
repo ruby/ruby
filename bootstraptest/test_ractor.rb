@@ -611,6 +611,65 @@ assert_equal 'ok', %q{
   'ok'
 }
 
+# $DEBUG, $VERBOSE are Ractor local
+assert_equal 'true', %q{
+  $DEBUG = true
+  $VERBOSE = true
+
+  def ractor_local_globals
+    /a(b)(c)d/ =~ 'abcd' # for $~
+    `echo foo` unless  /solaris/ =~ RUBY_PLATFORM
+
+    {
+     # ractor-local (derived from created ractor): debug
+     '$DEBUG' => $DEBUG,
+     '$-d' => $-d,
+
+     # ractor-local (derived from created ractor): verbose
+     '$VERBOSE' => $VERBOSE,
+     '$-w' => $-w,
+     '$-W' => $-W,
+     '$-v' => $-v,
+
+     # process-local (readonly): other commandline parameters
+     '$-p' => $-p,
+     '$-l' => $-l,
+     '$-a' => $-a,
+
+     # process-local (readonly): getpid
+     '$$'  => $$,
+
+     # thread local: process result
+     '$?'  => $?,
+
+     # scope local: match
+     '$~'  => $~.inspect,
+     '$&'  => $&,
+     '$`'  => $`,
+     '$\''  => $',
+     '$+'  => $+,
+     '$1'  => $1,
+
+     # scope local: last line
+     '$_' => $_,
+
+     # scope local: last backtrace
+     '$@' => $@,
+     '$!' => $!,
+
+     # ractor local: stdin, out, err
+     '$stdin'  => $stdin.inspect,
+     '$stdout' => $stdout.inspect,
+     '$stderr' => $stderr.inspect,
+    }
+  end
+  
+  h = Ractor.new do
+    ractor_local_globals
+  end.take
+  ractor_local_globals == h #=> true
+}
+
 # selfs are different objects
 assert_equal 'false', %q{
   r = Ractor.new do
@@ -673,6 +732,18 @@ assert_equal 'can not access instance variables of shareable objects from non-ma
   rescue Ractor::RemoteError => e
     e.cause.message
   end
+}
+
+# But a sharable object is frozen, it is allowed to access ivars from non-main Ractor
+assert_equal '11', %q{
+  [Object.new, [], ].map{|obj|
+    obj.instance_variable_set('@a', 1)
+    Ractor.make_shareable obj = obj.freeze
+
+    Ractor.new obj do |obj|
+      obj.instance_variable_get('@a')
+    end.take.to_s
+  }.join
 }
 
 # cvar in sharable-objects are not allowed to access from non-main Ractor
@@ -762,6 +833,89 @@ assert_equal '[1, 4, 3, 2, 1]', %q{
   counts << Ractor.count
 
   counts.inspect
+}
+
+# ObjectSpace.each_object can not handle unshareable objects with Ractors
+assert_equal '0', %q{
+  Ractor.new{
+    n = 0
+    ObjectSpace.each_object{|o| n += 1 unless Ractor.shareable?(o)}
+    n
+  }.take
+}
+
+# Ractor.make_shareable(obj)
+assert_equal 'true', %q{
+  class C
+    def initialize
+      @a = 'foo'
+      @b = 'bar'
+    end
+    attr_reader :a, :b
+  end
+  S = Struct.new(:s1, :s2)
+  str = "hello"
+  str.instance_variable_set("@iv", "hello")
+  /a/ =~ 'a'
+  m = $~
+  class N < Numeric
+    def /(other)
+      1
+    end
+  end
+  ary = []; ary << ary
+
+  a = [[1, ['2', '3']],
+       {Object.new => "hello"},
+       C.new,
+       S.new("x", "y"),
+       ("a".."b"),
+       str,
+       ary,             # cycle
+       /regexp/,
+       /#{'r'.upcase}/,
+       m,
+       Complex(N.new,0),
+       Rational(N.new,0),
+       true,
+       false,
+       nil,
+       1, 1.2, 1+3r, 1+4i, # Numeric
+  ]
+  Ractor.make_shareable(a)
+
+  # check all frozen
+  a.each{|o|
+    raise o.inspect unless o.frozen?
+
+    case o
+    when C
+      raise o.a.inspect unless o.a.frozen?
+      raise o.b.inspect unless o.b.frozen?
+    when Rational
+      raise o.numerator.inspect unless o.numerator.frozen?
+    when Complex
+      raise o.real.inspect unless o.real.frozen?
+    when Array
+      if o[0] == 1
+        raise o[1][1].inspect unless o[1][1].frozen?
+      end
+    when Hash
+      o.each{|k, v|
+        raise k.inspect unless k.frozen?
+        raise v.inspect unless v.frozen?
+      }
+    end
+  }
+
+  Ractor.shareable?(a)
+}
+
+# Ractor.make_shareable(obj) doesn't freeze shareable objects
+assert_equal 'true', %q{
+  r = Ractor.new{}
+  Ractor.make_shareable(a = [r])
+  [a.frozen?, a[0].frozen?] == [true, false]
 }
 
 ###

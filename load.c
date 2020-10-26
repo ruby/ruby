@@ -1265,15 +1265,13 @@ rb_f_autoload_p(int argc, VALUE *argv, VALUE obj)
 void
 Init_load(void)
 {
-#undef rb_intern
-#define rb_intern(str) rb_intern2((str), strlen(str))
     rb_vm_t *vm = GET_VM();
     static const char var_load_path[] = "$:";
     ID id_load_path = rb_intern2(var_load_path, sizeof(var_load_path)-1);
 
     rb_define_hooked_variable(var_load_path, (VALUE*)vm, load_path_getter, rb_gvar_readonly_setter);
-    rb_alias_variable(rb_intern("$-I"), id_load_path);
-    rb_alias_variable(rb_intern("$LOAD_PATH"), id_load_path);
+    rb_alias_variable(rb_intern_const("$-I"), id_load_path);
+    rb_alias_variable(rb_intern_const("$LOAD_PATH"), id_load_path);
     vm->load_path = rb_ary_new();
     vm->expanded_load_path = rb_ary_tmp_new(0);
     vm->load_path_snapshot = rb_ary_tmp_new(0);

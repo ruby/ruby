@@ -128,6 +128,13 @@ class Rational_Test < Test::Unit::TestCase
     assert_raise(TypeError){Rational(Object.new, Object.new)}
     assert_raise(TypeError){Rational(1, Object.new)}
 
+    bug12485 = '[ruby-core:75995] [Bug #12485]'
+    o = Object.new
+    def o.to_int; 1; end
+    assert_equal(1, Rational(o, 1), bug12485)
+    assert_equal(1, Rational(1, o), bug12485)
+    assert_equal(1, Rational(o, o), bug12485)
+
     o = Object.new
     def o.to_r; 1/42r; end
     assert_equal(1/42r, Rational(o))
@@ -832,6 +839,18 @@ class Rational_Test < Test::Unit::TestCase
     }
     assert_nothing_raised(TypeError) {
       assert_equal(nil, Rational(1, Object.new, exception: false))
+    }
+
+    bug12485 = '[ruby-core:75995] [Bug #12485]'
+    assert_nothing_raised(RuntimeError, bug12485) {
+      o = Object.new
+      def o.to_int; raise; end
+      assert_equal(nil, Rational(o, exception: false))
+    }
+    assert_nothing_raised(RuntimeError, bug12485) {
+      o = Object.new
+      def o.to_int; raise; end
+      assert_equal(nil, Rational(1, o, exception: false))
     }
 
     o = Object.new;

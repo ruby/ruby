@@ -14,6 +14,8 @@ jobs:
       RUN_OPTS: '--disable-gems ${{ matrix.jit_opts }}'
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
     steps:
+      - run: mkdir build
+        working-directory:
       - name: Install libraries
         run: |
           set -x
@@ -35,25 +37,17 @@ jobs:
           echo "JOBS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
       - run: autoconf
         working-directory: src
-      - run: mkdir build
       - name: Run configure
         run: ../src/configure -C --disable-install-doc
-        working-directory: build
       - run: make $JOBS incs
-        working-directory: build
       - run: make $JOBS
-        working-directory: build
       - run: sudo make $JOBS -s install
-        working-directory: build
       - run: make $JOBS -s test RUN_OPTS="$RUN_OPTS"
         timeout-minutes: 10
-        working-directory: build
       - run: make $JOBS -s test-all RUN_OPTS="$RUN_OPTS"
         timeout-minutes: 10
-        working-directory: build
       - run: make $JOBS -s test-spec RUN_OPTS="$RUN_OPTS"
         timeout-minutes: 5
-        working-directory: build
       - uses: k0kubun/action-slack@v2.0.0
         with:
           payload: |
@@ -67,3 +61,7 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: failure() && github.event_name == 'push'
+
+defaults:
+  run:
+    working-directory: build

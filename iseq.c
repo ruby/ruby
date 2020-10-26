@@ -1864,6 +1864,7 @@ local_var_name(const rb_iseq_t *diseq, VALUE level, VALUE op)
 }
 
 int rb_insn_unified_local_var_level(VALUE);
+VALUE rb_dump_literal(VALUE lit);
 
 VALUE
 rb_insn_operand_intern(const rb_iseq_t *iseq,
@@ -1939,7 +1940,7 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
 		break;
 	    }
 	}
-	ret = rb_inspect(op);
+	ret = rb_dump_literal(op);
 	if (CLASS_OF(op) == rb_cISeq) {
 	    if (child) {
 		rb_ary_push(child, op);
