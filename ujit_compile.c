@@ -581,9 +581,6 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     cmp(cb, REG0, mem_opnd(64, REG1, offsetof(struct rb_callcache, klass)));
     jne_ptr(cb, side_exit);
 
-    // NOTE: there *has to be* a way to optimize the entry invalidated check
-    // Could we have Ruby invalidate the JIT code instead of invalidating CME?
-    //
     // Check that the method entry is not invalidated
     // cd->cc->cme->flags
     // #define METHOD_ENTRY_INVALIDATED(me) ((me)->flags & IMEMO_FL_USER5)
