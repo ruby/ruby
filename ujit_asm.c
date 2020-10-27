@@ -1507,26 +1507,39 @@ void sub(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1)
 }
 
 /// test - Logical Compare
-void test(codeblock_t* cb, x86opnd_t rm_opnd, x86opnd_t imm_opnd)
+void test(codeblock_t* cb, x86opnd_t rm_opnd, x86opnd_t test_opnd)
 {
     assert (rm_opnd.type == OPND_REG || rm_opnd.type == OPND_MEM);
-    assert (imm_opnd.type == OPND_IMM);
-    assert (imm_opnd.as.imm >= 0);
-    assert (unsig_imm_size(imm_opnd.as.unsig_imm) <= 32);
-    assert (unsig_imm_size(imm_opnd.as.unsig_imm) <= rm_opnd.num_bits);
+    assert (test_opnd.type == OPND_REG || test_opnd.type == OPND_IMM);
 
-    // Use the smallest operand size possible
-    rm_opnd = resize_opnd(rm_opnd, unsig_imm_size(imm_opnd.as.unsig_imm));
-
-    if (rm_opnd.num_bits == 8)
+    // If the second operand is an immediate
+    if (test_opnd.type == OPND_IMM)
     {
-        cb_write_rm(cb, false, false, NO_OPND, rm_opnd, 0x00, 1, 0xF6);
-        cb_write_int(cb, imm_opnd.as.imm, rm_opnd.num_bits);
+        x86opnd_t imm_opnd = test_opnd;
+        assert (imm_opnd.as.imm >= 0);
+        assert (unsig_imm_size(imm_opnd.as.unsig_imm) <= 32);
+        assert (unsig_imm_size(imm_opnd.as.unsig_imm) <= rm_opnd.num_bits);
+
+        // Use the smallest operand size possible
+        rm_opnd = resize_opnd(rm_opnd, unsig_imm_size(imm_opnd.as.unsig_imm));
+
+        if (rm_opnd.num_bits == 8)
+        {
+            cb_write_rm(cb, false, false, NO_OPND, rm_opnd, 0x00, 1, 0xF6);
+            cb_write_int(cb, imm_opnd.as.imm, rm_opnd.num_bits);
+        }
+        else
+        {
+            cb_write_rm(cb, rm_opnd.num_bits == 16, false, NO_OPND, rm_opnd, 0x00, 1, 0xF7);
+            cb_write_int(cb, imm_opnd.as.imm, rm_opnd.num_bits);
+        }
     }
     else
     {
-        cb_write_rm(cb, rm_opnd.num_bits == 16, false, NO_OPND, rm_opnd, 0x00, 1, 0xF7);
-        cb_write_int(cb, imm_opnd.as.imm, rm_opnd.num_bits);
+        // For now, 32-bit operands only
+        assert (test_opnd.num_bits == rm_opnd.num_bits);
+        assert (test_opnd.num_bits == 32);
+        cb_write_rm(cb, false, false, test_opnd, rm_opnd, 0xFF, 1, 0x85);
     }
 }
 
