@@ -1049,7 +1049,7 @@ module Net
         raise FTPProtoError, "invalid time-val: #{value}"
       end
       usec = fractions.to_i * 10 ** (6 - fractions.to_s.size)
-      Time.send(local ? :local : :utc, year, month, day, hour, min, sec, usec)
+      Time.public_send(local ? :local : :utc, year, month, day, hour, min, sec, usec)
     }
     FACT_PARSERS = Hash.new(CASE_DEPENDENT_PARSER)
     FACT_PARSERS["size"] = DECIMAL_PARSER

@@ -1228,7 +1228,7 @@ or the PAGER environment variable.
   # +cache+ indicate if it is a class or instance method.
 
   def load_method store, cache, klass, type, name
-    methods = store.send(cache)[klass]
+    methods = store.public_send(cache)[klass]
 
     return unless methods
 

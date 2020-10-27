@@ -219,7 +219,7 @@ module Observable
     if defined? @observer_state and @observer_state
       if defined? @observer_peers
         @observer_peers.each do |k, v|
-          k.send v, *arg
+          k.__send__(v, *arg)
         end
       end
       @observer_state = false

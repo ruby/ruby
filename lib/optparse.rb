@@ -1749,7 +1749,7 @@ XXX
   #
   def visit(id, *args, &block)
     @stack.reverse_each do |el|
-      el.send(id, *args, &block)
+      el.__send__(id, *args, &block)
     end
     nil
   end

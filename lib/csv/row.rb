@@ -84,7 +84,7 @@ class CSV
     def field(header_or_index, minimum_index = 0)
       # locate the pair
       finder = (header_or_index.is_a?(Integer) || header_or_index.is_a?(Range)) ? :[] : :assoc
-      pair   = @row[minimum_index..-1].send(finder, header_or_index)
+      pair   = @row[minimum_index..-1].public_send(finder, header_or_index)
 
       # return the field if we have a pair
       if pair.nil?

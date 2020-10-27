@@ -1542,7 +1542,7 @@ module Net
 
     class RawData # :nodoc:
       def send_data(imap, tag)
-        imap.send(:put_string, @data)
+        imap.__send__(:put_string, @data)
       end
 
       def validate
@@ -1557,7 +1557,7 @@ module Net
 
     class Atom # :nodoc:
       def send_data(imap, tag)
-        imap.send(:put_string, @data)
+        imap.__send__(:put_string, @data)
       end
 
       def validate
@@ -1572,7 +1572,7 @@ module Net
 
     class QuotedString # :nodoc:
       def send_data(imap, tag)
-        imap.send(:send_quoted_string, @data)
+        imap.__send__(:send_quoted_string, @data)
       end
 
       def validate
@@ -1587,7 +1587,7 @@ module Net
 
     class Literal # :nodoc:
       def send_data(imap, tag)
-        imap.send(:send_literal, @data, tag)
+        imap.__send__(:send_literal, @data, tag)
       end
 
       def validate
@@ -1602,7 +1602,7 @@ module Net
 
     class MessageSet # :nodoc:
       def send_data(imap, tag)
-        imap.send(:put_string, format_internal(@data))
+        imap.__send__(:put_string, format_internal(@data))
       end
 
       def validate
