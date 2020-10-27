@@ -314,6 +314,7 @@ void run_tests()
     cb_set_pos(cb, 0); test(cb, mem_opnd(8, RSI, 0), imm_opnd(1)); check_bytes(cb, "F60601");
     cb_set_pos(cb, 0); test(cb, mem_opnd(8, RSI, 16), imm_opnd(1)); check_bytes(cb, "F6461001");
     cb_set_pos(cb, 0); test(cb, mem_opnd(8, RSI, -16), imm_opnd(1)); check_bytes(cb, "F646F001");
+    cb_set_pos(cb, 0); test(cb, mem_opnd(32, RSI, 64), EAX); check_bytes(cb, "854640");
 
     // xor
     cb_set_pos(cb, 0); xor(cb, EAX, EAX); check_bytes(cb, "31C0");
