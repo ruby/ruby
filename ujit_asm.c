@@ -73,7 +73,7 @@ x86opnd_t imm_opnd(int64_t imm)
     return opnd;
 }
 
-x86opnd_t const_ptr_opnd(void* ptr)
+x86opnd_t const_ptr_opnd(const void *ptr)
 {
     x86opnd_t opnd = {
         OPND_IMM,
