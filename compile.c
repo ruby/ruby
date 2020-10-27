@@ -7432,6 +7432,9 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
             // always mark as FCALL for private methods
             flag |= VM_CALL_FCALL;
 
+            // mark OPT_SEND for protected methods
+            flag |= VM_CALL_OPT_SEND;
+
             ADD_SEND_R(ret, line, send_mid, argc, parent_block, INT2FIX(flag), keywords);
             goto end_call;
         }
