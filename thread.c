@@ -3065,7 +3065,7 @@ rb_thread_abort_exc_set(VALUE thread, VALUE val)
  *
  *  There is also an instance level method to set this for a specific thread,
  *  see #report_on_exception=.
-  *
+ *
  */
 
 static VALUE
@@ -3109,6 +3109,52 @@ static VALUE
 rb_thread_s_report_exc_set(VALUE self, VALUE val)
 {
     GET_THREAD()->vm->thread_report_on_exception = RTEST(val);
+    return val;
+}
+
+
+/*
+ *  call-seq:
+ *     Thread.ignore_deadlock -> true or false
+ *
+ *  Returns the status of the global ``ignore deadlock'' condition.
+ *  The default is +false+, so that deadlock conditions are not ignored.
+ *
+ *  See also ::ignore_deadlock=.
+ *
+ */
+
+static VALUE
+rb_thread_s_ignore_deadlock(VALUE _)
+{
+    return GET_THREAD()->vm->ignore_deadlock ? Qtrue : Qfalse;
+}
+
+
+/*
+ *  call-seq:
+ *     Thread.ignore_deadlock = boolean   -> true or false
+ *
+ *  Returns the new state.
+ *  When set to +true+, the VM will not check for deadlock conditions.
+ *  It is only useful to set this if your application can break a
+ *  deadlock condition via some other means, such as a signal.
+ *
+ *     Thread.ignore_deadlock = true
+ *     queue = Queue.new
+ *
+ *     trap(:SIGUSR1){queue.push "Received signal"}
+ *
+ *     # raises fatal error unless ignoring deadlock
+ *     puts queue.pop
+ *
+ *  See also ::ignore_deadlock.
+ */
+
+static VALUE
+rb_thread_s_ignore_deadlock_set(VALUE self, VALUE val)
+{
+    GET_THREAD()->vm->ignore_deadlock = RTEST(val);
     return val;
 }
 
@@ -5480,6 +5526,8 @@ Init_Thread(void)
     rb_define_singleton_method(rb_cThread, "abort_on_exception=", rb_thread_s_abort_exc_set, 1);
     rb_define_singleton_method(rb_cThread, "report_on_exception", rb_thread_s_report_exc, 0);
     rb_define_singleton_method(rb_cThread, "report_on_exception=", rb_thread_s_report_exc_set, 1);
+    rb_define_singleton_method(rb_cThread, "ignore_deadlock", rb_thread_s_ignore_deadlock, 0);
+    rb_define_singleton_method(rb_cThread, "ignore_deadlock=", rb_thread_s_ignore_deadlock_set, 1);
 #if THREAD_DEBUG < 0
     rb_define_singleton_method(rb_cThread, "DEBUG", rb_thread_s_debug, 0);
     rb_define_singleton_method(rb_cThread, "DEBUG=", rb_thread_s_debug_set, 1);
@@ -5616,6 +5664,7 @@ rb_check_deadlock(rb_ractor_t *r)
     int sleeper_num = rb_ractor_sleeper_thread_num(r);
     int ltnum = rb_ractor_living_thread_num(r);
 
+    if (GET_THREAD()->vm->ignore_deadlock) return;
     if (ltnum > sleeper_num) return;
     if (ltnum < sleeper_num) rb_bug("sleeper must not be more than vm_living_thread_num(vm)");
     if (patrol_thread && patrol_thread != GET_THREAD()) return;

@@ -490,6 +490,16 @@ class TestThread < Test::Unit::TestCase
     end;
   end
 
+  def test_ignore_deadlock
+    assert_in_out_err([], <<-INPUT, %w(false :sig), [], timeout: 1, timeout_error: nil)
+      p Thread.ignore_deadlock
+      q = Queue.new
+      trap(:SIGTERM){q.push :sig}
+      Thread.ignore_deadlock = true
+      p q.pop
+    INPUT
+  end
+
   def test_status_and_stop_p
     a = ::Thread.new {
       Thread.current.report_on_exception = false
