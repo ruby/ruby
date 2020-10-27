@@ -1333,6 +1333,14 @@ class TestPathname < Test::Unit::TestCase
     }
   end
 
+  def test_mktmpdir
+    Pathname.mktmpdir do |dir|
+      assert_equal Pathname(dir), dir
+      assert dir.directory?
+      assert dir.exist?
+    end
+  end
+
   def test_s_getwd
     wd = Pathname.getwd
     assert_kind_of(Pathname, wd)
