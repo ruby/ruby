@@ -63,6 +63,8 @@ static codeblock_t* ocb = NULL;
 // Scratch registers used by MicroJIT
 #define REG0 RAX
 #define REG1 RCX
+#define REG0_32 EAX
+#define REG1_32 ECX
 
 // Keep track of mapping from instructions to generated code
 // See comment for rb_encoded_insn_data in iseq.c
@@ -537,6 +539,13 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     // Create a size-exit to fall back to the interpreter
     uint8_t* side_exit = ujit_side_exit(ocb, ctx, ctx->pc);
 
+    // Check for interrupts
+    // RUBY_VM_CHECK_INTS(ec)
+    mov(cb, REG0_32, member_opnd(REG_EC, rb_execution_context_t, interrupt_mask));
+    not(cb, REG0_32);
+    test(cb, member_opnd(REG_EC, rb_execution_context_t, interrupt_flag), REG0_32);
+    jnz_ptr(cb, side_exit);
+
     // Points to the receiver operand on the stack
     x86opnd_t recv = ctx_stack_opnd(ctx, argc);
     mov(cb, REG0, recv);
@@ -682,9 +691,6 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     // Push the return value on the Ruby stack
     x86opnd_t stack_ret = ctx_stack_push(ctx, 1);
     mov(cb, stack_ret, RAX);
-
-    // TODO: later
-    // RUBY_VM_CHECK_INTS(ec);
 
     // Pop the stack frame (ec->cfp++)
     add(
