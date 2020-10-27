@@ -483,6 +483,21 @@ gen_opt_minus(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     return true;
 }
 
+MJIT_FUNC_EXPORTED VALUE rb_hash_has_key(VALUE hash, VALUE key);
+
+bool
+cfunc_needs_frame(const rb_method_cfunc_t *cfunc)
+{
+    void* fptr = (void*)cfunc->func;
+
+    // Leaf C functions do not need a stack frame
+    // or a stack overflow check
+    return !(
+        // Hash#key?
+        fptr == (void*)rb_hash_has_key
+    );
+}
+
 bool
 gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 {
@@ -590,64 +605,61 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     test(cb, flags_opnd, imm_opnd(IMEMO_FL_USER5));
     jnz_ptr(cb, side_exit);
 
-    // IDEA: stack frame setup may not be needed for some C functions
-    // We could profile the most called C functions and identify which are safe
-    // This may help us eliminate stack overflow checks as well
+    // If this function needs a Ruby stack frame
+    if (cfunc_needs_frame(cfunc))
+    {
+        // Stack overflow check
+        // #define CHECK_VM_STACK_OVERFLOW0(cfp, sp, margin)
+        // REG_CFP <= REG_SP + 4 * sizeof(VALUE) + sizeof(rb_control_frame_t)
+        lea(cb, REG0, ctx_sp_opnd(ctx, sizeof(VALUE) * 4 + sizeof(rb_control_frame_t)));
+        cmp(cb, REG_CFP, REG0);
+        jle_ptr(cb, side_exit);
 
+        // Increment the stack pointer by 3 (in the callee)
+        // sp += 3
+        lea(cb, REG0, ctx_sp_opnd(ctx, sizeof(VALUE) * 3));
 
+        // Write method entry at sp[-3]
+        // sp[-3] = me;
+        mov(cb, mem_opnd(64, REG0, 8 * -3), REG1);
 
+        // Write block handler at sp[-2]
+        // sp[-2] = block_handler;
+        mov(cb, mem_opnd(64, REG0, 8 * -2), imm_opnd(VM_BLOCK_HANDLER_NONE));
 
-    // Stack overflow check
-    // #define CHECK_VM_STACK_OVERFLOW0(cfp, sp, margin)
-    // REG_CFP <= REG_SP + 4 * sizeof(VALUE) + sizeof(rb_control_frame_t)
-    lea(cb, REG0, ctx_sp_opnd(ctx, sizeof(VALUE) * 4 + sizeof(rb_control_frame_t)));
-    cmp(cb, REG_CFP, REG0);
-    jle_ptr(cb, side_exit);
+        // Write env flags at sp[-1]
+        // sp[-1] = frame_type;
+        uint64_t frame_type = VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL;
+        mov(cb, mem_opnd(64, REG0, 8 * -1), imm_opnd(frame_type));
 
-    // Increment the stack pointer by 3 (in the callee)
-    // sp += 3
-    lea(cb, REG0, ctx_sp_opnd(ctx, sizeof(VALUE) * 3));
+        // Allocate a new CFP (ec->cfp--)
+        sub(
+            cb,
+            member_opnd(REG_EC, rb_execution_context_t, cfp),
+            imm_opnd(sizeof(rb_control_frame_t))
+        );
 
-    // Write method entry at sp[-3]
-    // sp[-3] = me;
-    mov(cb, mem_opnd(64, REG0, 8 * -3), REG1);
-
-    // Write block handler at sp[-2]
-    // sp[-2] = block_handler;
-    mov(cb, mem_opnd(64, REG0, 8 * -2), imm_opnd(VM_BLOCK_HANDLER_NONE));
-
-    // Write env flags at sp[-1]
-    // sp[-1] = frame_type;
-    uint64_t frame_type = VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL;
-    mov(cb, mem_opnd(64, REG0, 8 * -1), imm_opnd(frame_type));
-
-    // Allocate a new CFP (ec->cfp--)
-    sub(
-        cb,
-        member_opnd(REG_EC, rb_execution_context_t, cfp),
-        imm_opnd(sizeof(rb_control_frame_t))
-    );
-
-    // Setup the new frame
-    // *cfp = (const struct rb_control_frame_struct) {
-    //    .pc         = 0,
-    //    .sp         = sp,
-    //    .iseq       = 0,
-    //    .self       = recv,
-    //    .ep         = sp - 1,
-    //    .block_code = 0,
-    //    .__bp__     = sp,
-    // };
-    mov(cb, REG1, member_opnd(REG_EC, rb_execution_context_t, cfp));
-    mov(cb, member_opnd(REG1, rb_control_frame_t, pc), imm_opnd(0));
-    mov(cb, member_opnd(REG1, rb_control_frame_t, sp), REG0);
-    mov(cb, member_opnd(REG1, rb_control_frame_t, iseq), imm_opnd(0));
-    mov(cb, member_opnd(REG1, rb_control_frame_t, block_code), imm_opnd(0));
-    mov(cb, member_opnd(REG1, rb_control_frame_t, __bp__), REG0);
-    sub(cb, REG0, imm_opnd(sizeof(VALUE)));
-    mov(cb, member_opnd(REG1, rb_control_frame_t, ep), REG0);
-    mov(cb, REG0, recv);
-    mov(cb, member_opnd(REG1, rb_control_frame_t, self), REG0);
+        // Setup the new frame
+        // *cfp = (const struct rb_control_frame_struct) {
+        //    .pc         = 0,
+        //    .sp         = sp,
+        //    .iseq       = 0,
+        //    .self       = recv,
+        //    .ep         = sp - 1,
+        //    .block_code = 0,
+        //    .__bp__     = sp,
+        // };
+        mov(cb, REG1, member_opnd(REG_EC, rb_execution_context_t, cfp));
+        mov(cb, member_opnd(REG1, rb_control_frame_t, pc), imm_opnd(0));
+        mov(cb, member_opnd(REG1, rb_control_frame_t, sp), REG0);
+        mov(cb, member_opnd(REG1, rb_control_frame_t, iseq), imm_opnd(0));
+        mov(cb, member_opnd(REG1, rb_control_frame_t, block_code), imm_opnd(0));
+        mov(cb, member_opnd(REG1, rb_control_frame_t, __bp__), REG0);
+        sub(cb, REG0, imm_opnd(sizeof(VALUE)));
+        mov(cb, member_opnd(REG1, rb_control_frame_t, ep), REG0);
+        mov(cb, REG0, recv);
+        mov(cb, member_opnd(REG1, rb_control_frame_t, self), REG0);
+    }
 
     // Save the MicroJIT registers
     push(cb, REG_CFP);
@@ -693,12 +705,16 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     x86opnd_t stack_ret = ctx_stack_push(ctx, 1);
     mov(cb, stack_ret, RAX);
 
-    // Pop the stack frame (ec->cfp++)
-    add(
-        cb,
-        member_opnd(REG_EC, rb_execution_context_t, cfp),
-        imm_opnd(sizeof(rb_control_frame_t))
-    );
+    // If this function needs a Ruby stack frame
+    if (cfunc_needs_frame(cfunc))
+    {
+        // Pop the stack frame (ec->cfp++)
+        add(
+            cb,
+            member_opnd(REG_EC, rb_execution_context_t, cfp),
+            imm_opnd(sizeof(rb_control_frame_t))
+        );
+    }
 
     return true;
 }
