@@ -7408,12 +7408,8 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
     }
 
     // optimize __send__ with a literal method name
-    if (mid == id__send__) {
+    if (mid == id__send__ && node->nd_args) {
         const NODE *argn = node->nd_args;
-        if (!argn) {
-            COMPILE_ERROR(ERROR_ARGS "__send__ requires more than 1 argument");
-            return COMPILE_NG;
-        }
         if (nd_type(argn) == NODE_LIST && nd_type(argn->nd_head) == NODE_LIT &&
             SYMBOL_P(argn->nd_head->nd_lit)) {
             ID send_mid = SYM2ID(argn->nd_head->nd_lit);
