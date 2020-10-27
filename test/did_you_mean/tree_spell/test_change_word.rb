@@ -32,7 +32,7 @@ class ChangeWordTest < Test::Unit::TestCase
     assert_match @cw.transposition(n - 1, +1), 'spec/services/anything_spce'
     assert_match @cw.transposition(4, +1), 'specs/ervices/anything_spec'
     assert_match @cw.transposition(4, -1), 'spe/cservices/anything_spec'
-    assert_match @cw.transposition(21, -1), 'spec/services/anything_spec'
+    assert_match @cw.transposition(21, -1), 'spec/services/anythign_spec'
     assert_match @cw.transposition(21, +1), 'spec/services/anythin_gspec'
   end
 end
