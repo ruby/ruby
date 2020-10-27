@@ -972,6 +972,12 @@ module Net   #:nodoc:
     private :do_start
 
     def connect
+      if use_ssl?
+        # reference early to load OpenSSL before connecting,
+        # as OpenSSL may take time to load.
+        @ssl_context = OpenSSL::SSL::SSLContext.new
+      end
+
       if proxy? then
         conn_addr = proxy_address
         conn_port = proxy_port
@@ -1018,7 +1024,6 @@ module Net   #:nodoc:
             end
           end
         end
-        @ssl_context = OpenSSL::SSL::SSLContext.new
         @ssl_context.set_params(ssl_parameters)
         @ssl_context.session_cache_mode =
           OpenSSL::SSL::SSLContext::SESSION_CACHE_CLIENT |
