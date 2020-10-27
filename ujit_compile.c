@@ -111,9 +111,9 @@ VALUE ctx_get_arg(ctx_t* ctx, size_t arg_idx)
 /*
 Get an operand for the adjusted stack pointer address
 */
-x86opnd_t ctx_sp_opnd(ctx_t* ctx)
+x86opnd_t ctx_sp_opnd(ctx_t* ctx, int32_t offset_bytes)
 {
-    int32_t offset = (ctx->stack_diff) * 8;
+    int32_t offset = (ctx->stack_diff) * 8 + offset_bytes;
     return mem_opnd(64, REG_SP, offset);
 }
 
@@ -171,7 +171,7 @@ ujit_gen_exit(codeblock_t* cb, ctx_t* ctx, VALUE* exit_pc)
     // Write the adjusted SP back into the CFP
     if (ctx->stack_diff != 0)
     {
-        x86opnd_t stack_pointer = ctx_sp_opnd(ctx);
+        x86opnd_t stack_pointer = ctx_sp_opnd(ctx, 0);
         lea(cb, REG_SP, stack_pointer);
         mov(cb, member_opnd(REG_CFP, rb_control_frame_t, sp), REG_SP);
     }
@@ -487,10 +487,11 @@ bool
 gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 {
     // Relevant definitions:
-    // vm_call_cfunc_with_frame : vm_insnhelper.c
-    // rb_callcache             : vm_callinfo.h
-    // invoker, cfunc logic     : method.h, vm_method.c
-    // rb_callable_method_entry_t: method.h
+    // rb_execution_context_t       : vm_core.h
+    // invoker, cfunc logic         : method.h, vm_method.c
+    // rb_callable_method_entry_t   : method.h
+    // vm_call_cfunc_with_frame     : vm_insnhelper.c
+    // rb_callcache                 : vm_callinfo.h
 
     struct rb_call_data * cd = (struct rb_call_data *)ctx_get_arg(ctx, 0);
     int32_t argc = (int32_t)vm_ci_argc(cd->ci);
@@ -596,16 +597,19 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     // We could profile the most called C functions and identify which are safe
     // This may help us eliminate stack overflow checks as well
 
-    // TODO: do we need this check?
-    //vm_check_frame(type, specval, cref_or_me, iseq);
 
-    // TODO: stack overflow check
-    //vm_check_canary(ec, sp);
+
+
+    // Stack overflow check
+    // #define CHECK_VM_STACK_OVERFLOW0(cfp, sp, margin)
+    // REG_CFP <= REG_SP + 4 * sizeof(VALUE) + sizeof(rb_control_frame_t)
+    lea(cb, REG0, ctx_sp_opnd(ctx, sizeof(VALUE) * 4 + sizeof(rb_control_frame_t)));
+    cmp(cb, REG_CFP, REG0);
+    jle_ptr(cb, side_exit);
 
     // Increment the stack pointer by 3 (in the callee)
     // sp += 3
-    lea(cb, REG0, ctx_sp_opnd(ctx));
-    add(cb, REG0, imm_opnd(8 * 3));
+    lea(cb, REG0, ctx_sp_opnd(ctx, sizeof(VALUE) * 3));
 
     // Write method entry at sp[-3]
     // sp[-3] = me;
@@ -657,7 +661,7 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     sub(cb, RSP, imm_opnd(8));
 
     // Copy SP into RAX because REG_SP will get overwritten
-    lea(cb, RAX, ctx_sp_opnd(ctx));
+    lea(cb, RAX, ctx_sp_opnd(ctx, 0));
 
     // Copy the arguments from the stack to the C argument registers
     // self is the 0th argument and is at index argc from the stack top
