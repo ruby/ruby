@@ -4287,8 +4287,16 @@ vm_opt_send_method_id(struct rb_control_frame_struct *reg_cfp,
     POP();
     VALUE flag = VM_CALL_FCALL|VM_CALL_OPT_SEND|vm_ci_flag(cd->ci);
     const struct rb_callinfo_kwarg *kwarg = vm_ci_kwarg(cd->ci);
-    send->ci = VM_CI_ON_STACK(mid, flag, i, kwarg);
-    send->cd.ci = &send->ci;
+#if USE_EMBED_CI
+    if (VM_CI_EMBEDDABLE_P(mid, flag, i, kwarg)) {
+        send->cd.ci = vm_ci_new_id(mid, flag, i, kwarg);
+    }
+    else
+#endif
+    {
+        send->ci = VM_CI_ON_STACK(mid, flag, i, kwarg);
+        send->cd.ci = &send->ci;
+    }
 #ifdef MJIT_HEADER
     send->cd.cc = rb_vm_empty_cc();
 #else
