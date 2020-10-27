@@ -7429,9 +7429,8 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
             debugp_param("call args argc", argc);
             debugp_param("call method", ID2SYM(mid));
 
-            if ((int)type == NODE_FCALL) {
-                flag |= VM_CALL_FCALL;
-            }
+            // always mark as FCALL for private methods
+            flag |= VM_CALL_FCALL;
 
             ADD_SEND_R(ret, line, send_mid, argc, parent_block, INT2FIX(flag), keywords);
             goto end_call;
