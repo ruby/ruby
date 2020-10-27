@@ -7407,6 +7407,37 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
         ADD_CALL_RECEIVER(recv, line);
     }
 
+    // optimize __send__ with a literal method name
+    if (mid == id__send__) {
+        const NODE *argn = node->nd_args;
+        if (!argn) {
+            COMPILE_ERROR(ERROR_ARGS "__send__ requires more than 1 argument");
+            return COMPILE_NG;
+        }
+        if (nd_type(argn) == NODE_LIST && nd_type(argn->nd_head) == NODE_LIT &&
+            SYMBOL_P(argn->nd_head->nd_lit)) {
+            ID send_mid = SYM2ID(argn->nd_head->nd_lit);
+            const NODE *send_argn = argn->nd_next;
+
+            // args
+            argc = setup_args(iseq, args, send_argn, &flag, &keywords);
+            CHECK(!NIL_P(argc));
+
+            ADD_SEQ(ret, recv);
+            ADD_SEQ(ret, args);
+
+            debugp_param("call args argc", argc);
+            debugp_param("call method", ID2SYM(mid));
+
+            if ((int)type == NODE_FCALL) {
+                flag |= VM_CALL_FCALL;
+            }
+
+            ADD_SEND_R(ret, line, send_mid, argc, parent_block, INT2FIX(flag), keywords);
+            goto end_call;
+        }
+    }
+
     /* args */
     if (type != NODE_VCALL) {
         argc = setup_args(iseq, args, node->nd_args, &flag, &keywords);
@@ -7432,6 +7463,7 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
 
     ADD_SEND_R(ret, line, mid, argc, parent_block, INT2FIX(flag), keywords);
 
+  end_call:
     qcall_branch_end(iseq, ret, else_label, branches, node, line);
     if (popped) {
         ADD_INSN(ret, line, pop);
