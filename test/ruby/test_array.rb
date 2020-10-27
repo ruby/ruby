@@ -2408,20 +2408,24 @@ class TestArray < Test::Unit::TestCase
     assert_equal([1,2,3], [1,2,3,4,5,0].take(3))
     assert_raise(ArgumentError, '[ruby-dev:34123]') { [1,2].take(-1) }
     assert_equal([1,2], [1,2].take(1000000000), '[ruby-dev:34123]')
+    assert_instance_of(Array, @cls[1,2,3,4,5,0].take(3))
   end
 
   def test_take_while
     assert_equal([1,2], [1,2,3,4,5,0].take_while {|i| i < 3 })
+    assert_instance_of(Array, @cls[1,2,3,4,5,0].take_while {|i| i < 3 })
   end
 
   def test_drop
     assert_equal([4,5,0], [1,2,3,4,5,0].drop(3))
     assert_raise(ArgumentError, '[ruby-dev:34123]') { [1,2].drop(-1) }
     assert_equal([], [1,2].drop(1000000000), '[ruby-dev:34123]')
+    assert_instance_of(Array, @cls[1,2,3,4,5,0].drop(3))
   end
 
   def test_drop_while
     assert_equal([3,4,5,0], [1,2,3,4,5,0].drop_while {|i| i < 3 })
+    assert_instance_of(Array, @cls[1,2,3,4,5,0].drop_while {|i| i < 3 })
   end
 
   LONGP = [127, 63, 31, 15, 7].map {|x| 2**x-1 }.find do |x|
