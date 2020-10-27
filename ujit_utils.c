@@ -55,7 +55,7 @@ void print_int(codeblock_t* cb, x86opnd_t opnd)
     pop_regs(cb);
 }
 
-static void print_ptr_cfun(int64_t val)
+static void print_ptr_cfun(void* val)
 {
     printf("%llX\n", val);
 }
