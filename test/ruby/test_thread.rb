@@ -491,10 +491,10 @@ class TestThread < Test::Unit::TestCase
   end
 
   def test_ignore_deadlock
-    assert_in_out_err([], <<-INPUT, %w(false :sig), [], timeout: 1, timeout_error: nil)
+    assert_in_out_err([], <<-INPUT, %w(false :sig), [], :signal=>:INT, timeout: 1, timeout_error: nil)
       p Thread.ignore_deadlock
       q = Queue.new
-      trap(:SIGTERM){q.push :sig}
+      trap(:INT){q.push :sig}
       Thread.ignore_deadlock = true
       p q.pop
     INPUT
