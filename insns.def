@@ -767,6 +767,8 @@ send
 // attr rb_snum_t comptime_sp_inc = sp_inc_of_sendish(ci);
 {
     VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, false);
+    struct vm_opt_send_args send;
+    cd = vm_opt_send_method_id(reg_cfp, cd, &send);
     val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);
 
     if (val == Qundef) {
@@ -786,6 +788,8 @@ opt_send_without_block
 // attr rb_snum_t comptime_sp_inc = sp_inc_of_sendish(ci);
 {
     VALUE bh = VM_BLOCK_HANDLER_NONE;
+    struct vm_opt_send_args send;
+    cd = vm_opt_send_method_id(reg_cfp, cd, &send);
     val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);
 
     if (val == Qundef) {

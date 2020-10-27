@@ -4263,6 +4263,40 @@ vm_sendish(
 #endif
 }
 
+struct vm_opt_send_args {
+    struct rb_call_data cd;
+    struct rb_callinfo ci;
+};
+
+static CALL_DATA
+vm_opt_send_method_id(struct rb_control_frame_struct *reg_cfp,
+                      struct rb_call_data *cd,
+                      struct vm_opt_send_args *send)
+{
+    int argc = vm_ci_argc(cd->ci);
+    if (argc < 1) return cd;
+    if (vm_ci_mid(cd->ci) != id__send__) return cd;
+
+    int i = argc - 1;
+    VALUE sym = TOPN(i);
+    if (!SYMBOL_P(sym)) return cd;
+    ID mid = SYM2ID(sym);
+    if (i > 0) {
+        MEMMOVE(&TOPN(i), &TOPN(i-1), VALUE, i);
+    }
+    POP();
+    VALUE flag = VM_CALL_FCALL|VM_CALL_OPT_SEND|vm_ci_flag(cd->ci);
+    const struct rb_callinfo_kwarg *kwarg = vm_ci_kwarg(cd->ci);
+    send->ci = VM_CI_ON_STACK(mid, flag, i, kwarg);
+    send->cd.ci = &send->ci;
+#ifdef MJIT_HEADER
+    send->cd.cc = rb_vm_empty_cc();
+#else
+    send->cd.cc = &vm_empty_cc;
+#endif
+    return &send->cd;
+}
+
 static VALUE
 vm_opt_str_freeze(VALUE str, int bop, ID id)
 {
