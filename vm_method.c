@@ -3,6 +3,7 @@
  */
 
 #include "id_table.h"
+#include "ujit_compile.h"
 
 #define METHOD_DEBUG 0
 
@@ -113,6 +114,19 @@ rb_vm_mtbl_dump(const char *msg, VALUE klass, ID target_mid)
     vm_mtbl_dump(klass, target_mid);
 }
 
+void
+rb_vm_cc_invalidate(const struct rb_callcache *cc)
+{
+    VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
+    VM_ASSERT(cc != vm_cc_empty());
+    VM_ASSERT(cc->klass != 0); // should be enable
+
+    *(VALUE *)&cc->klass = 0;
+    rb_ujit_method_lookup_change((VALUE)cc);
+    RB_DEBUG_COUNTER_INC(cc_ent_invalidate);
+}
+
+
 static inline void
 vm_me_invalidate_cache(rb_callable_method_entry_t *cme)
 {
@@ -120,6 +134,7 @@ vm_me_invalidate_cache(rb_callable_method_entry_t *cme)
     VM_ASSERT(callable_method_entry_p(cme));
     METHOD_ENTRY_INVALIDATED_SET(cme);
     RB_DEBUG_COUNTER_INC(cc_cme_invalidate);
+    rb_ujit_method_lookup_change((VALUE)cme);
 }
 
 void

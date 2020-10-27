@@ -220,7 +220,7 @@ x86opnd_t mem_opnd(size_t num_bits, x86opnd_t base_reg, int32_t disp);
 x86opnd_t imm_opnd(int64_t val);
 
 // Constant pointer operand
-x86opnd_t const_ptr_opnd(void* ptr);
+x86opnd_t const_ptr_opnd(const void *ptr);
 
 // Struct member operand
 #define member_opnd(base_reg, struct_type, member_name) mem_opnd( \
