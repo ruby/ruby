@@ -172,7 +172,7 @@ class Rational_Test < Test::Unit::TestCase
       def to_r; 1r; end
       def to_int; 1; end
     end
-    assert_equal(1/2r, Rational(cls.new, 2))
+    assert_equal(1/2r, Rational(cls.new, 2), bug16518)
   end
 
   def test_attr
