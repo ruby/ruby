@@ -1676,10 +1676,7 @@ r_cover_p(VALUE range, VALUE beg, VALUE end, VALUE val)
 static VALUE
 range_dumper(VALUE range)
 {
-    VALUE v;
-    NEWOBJ_OF(m, struct RObject, rb_cObject, T_OBJECT | (RGENGC_WB_PROTECTED_OBJECT ? FL_WB_PROTECTED : 1));
-
-    v = (VALUE)m;
+    VALUE v = rb_obj_alloc(rb_cObject);
 
     rb_ivar_set(v, id_excl, RANGE_EXCL(range));
     rb_ivar_set(v, id_beg, RANGE_BEG(range));
