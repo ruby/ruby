@@ -6448,13 +6448,16 @@ keylist_delete(VALUE keys, VALUE key)
     long keylen, elen;
     const char *keyptr, *eptr;
     RSTRING_GETMEM(key, keyptr, keylen);
+    /* Don't stop at first key, as it is possible to have
+       multiple environment values with the same key.
+    */
     for (long i=0; i<RARRAY_LEN(keys); i++) {
         VALUE e = RARRAY_AREF(keys, i);
         RSTRING_GETMEM(e, eptr, elen);
         if (elen != keylen) continue;
         if (!ENVNMATCH(keyptr, eptr, elen)) continue;
         rb_ary_delete_at(keys, i);
-        return;
+        i--;
     }
 }
 
