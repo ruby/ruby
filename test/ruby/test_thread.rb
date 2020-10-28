@@ -491,6 +491,9 @@ class TestThread < Test::Unit::TestCase
   end
 
   def test_ignore_deadlock
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      skip "can't trap a signal from another process on Windows"
+    end
     assert_in_out_err([], <<-INPUT, %w(false :sig), [], :signal=>:INT, timeout: 1, timeout_error: nil)
       p Thread.ignore_deadlock
       q = Queue.new
