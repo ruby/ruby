@@ -595,7 +595,7 @@ typedef struct rb_vm_struct {
     unsigned int running: 1;
     unsigned int thread_abort_on_exception: 1;
     unsigned int thread_report_on_exception: 1;
-    unsigned int ignore_deadlock: 1;
+    unsigned int thread_ignore_deadlock: 1;
 
     /* object management */
     VALUE mark_object_ary;

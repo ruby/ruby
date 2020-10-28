@@ -3127,7 +3127,7 @@ rb_thread_s_report_exc_set(VALUE self, VALUE val)
 static VALUE
 rb_thread_s_ignore_deadlock(VALUE _)
 {
-    return GET_THREAD()->vm->ignore_deadlock ? Qtrue : Qfalse;
+    return GET_THREAD()->vm->thread_ignore_deadlock ? Qtrue : Qfalse;
 }
 
 
@@ -3154,7 +3154,7 @@ rb_thread_s_ignore_deadlock(VALUE _)
 static VALUE
 rb_thread_s_ignore_deadlock_set(VALUE self, VALUE val)
 {
-    GET_THREAD()->vm->ignore_deadlock = RTEST(val);
+    GET_THREAD()->vm->thread_ignore_deadlock = RTEST(val);
     return val;
 }
 
@@ -5659,12 +5659,13 @@ debug_deadlock_check(rb_ractor_t *r, VALUE msg)
 static void
 rb_check_deadlock(rb_ractor_t *r)
 {
+    if (GET_THREAD()->vm->thread_ignore_deadlock) return;
+
     int found = 0;
     rb_thread_t *th = NULL;
     int sleeper_num = rb_ractor_sleeper_thread_num(r);
     int ltnum = rb_ractor_living_thread_num(r);
 
-    if (GET_THREAD()->vm->ignore_deadlock) return;
     if (ltnum > sleeper_num) return;
     if (ltnum < sleeper_num) rb_bug("sleeper must not be more than vm_living_thread_num(vm)");
     if (patrol_thread && patrol_thread != GET_THREAD()) return;
