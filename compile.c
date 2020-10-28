@@ -7407,38 +7407,27 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
         ADD_CALL_RECEIVER(recv, line);
     }
 
+    const NODE *argn = node->nd_args;
+
     // optimize __send__ with a literal method name
-    if (mid == id__send__ && node->nd_args) {
-        const NODE *argn = node->nd_args;
-        if (nd_type(argn) == NODE_LIST && nd_type(argn->nd_head) == NODE_LIT &&
-            SYMBOL_P(argn->nd_head->nd_lit)) {
-            ID send_mid = SYM2ID(argn->nd_head->nd_lit);
-            const NODE *send_argn = argn->nd_next;
+    if (mid == id__send__ && argn &&
+        nd_type(argn) == NODE_LIST && nd_type(argn->nd_head) == NODE_LIT &&
+        SYMBOL_P(argn->nd_head->nd_lit)) {
+        mid = SYM2ID(argn->nd_head->nd_lit);
+        argn = argn->nd_next;
 
-            // args
-            argc = setup_args(iseq, args, send_argn, &flag, &keywords);
-            CHECK(!NIL_P(argc));
+        // type is not NODE_VCALL because of arguments
 
-            ADD_SEQ(ret, recv);
-            ADD_SEQ(ret, args);
+        // always mark as FCALL for private methods
+        flag |= VM_CALL_FCALL;
 
-            debugp_param("call args argc", argc);
-            debugp_param("call method", ID2SYM(mid));
-
-            // always mark as FCALL for private methods
-            flag |= VM_CALL_FCALL;
-
-            // mark OPT_SEND for protected methods
-            flag |= VM_CALL_OPT_SEND;
-
-            ADD_SEND_R(ret, line, send_mid, argc, parent_block, INT2FIX(flag), keywords);
-            goto end_call;
-        }
+        // mark OPT_SEND for protected methods
+        flag |= VM_CALL_OPT_SEND;
     }
 
     /* args */
     if (type != NODE_VCALL) {
-        argc = setup_args(iseq, args, node->nd_args, &flag, &keywords);
+        argc = setup_args(iseq, args, argn, &flag, &keywords);
         CHECK(!NIL_P(argc));
     }
     else {
