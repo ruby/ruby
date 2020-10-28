@@ -8207,11 +8207,9 @@ gc_ref_update_object(rb_objspace_t * objspace, VALUE v)
 {
     VALUE *ptr = ROBJECT_IVPTR(v);
 
-    if (ptr) {
-        uint32_t i, len = ROBJECT_NUMIV(v);
-        for (i = 0; i < len; i++) {
-            UPDATE_IF_MOVED(objspace, ptr[i]);
-        }
+    uint32_t i, len = ROBJECT_NUMIV(v);
+    for (i = 0; i < len; i++) {
+        UPDATE_IF_MOVED(objspace, ptr[i]);
     }
 }
 
