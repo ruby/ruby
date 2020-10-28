@@ -7606,7 +7606,7 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
 	int e = rb_freopen(rb_str_encode_ospath(fptr->pathv),
 			   rb_io_oflags_modestr(oflags),
 			   fptr->stdio_file);
-	if (e) rb_syserr_fail_path(e, fptr->pathv);
+        if (e) rb_syserr_fail_path(e, fptr->pathv);
         fptr->fd = fileno(fptr->stdio_file);
         rb_fd_fix_cloexec(fptr->fd);
 #ifdef USE_SETVBUF
