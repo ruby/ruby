@@ -7205,6 +7205,92 @@ delegate_call_p(const rb_iseq_t *iseq, unsigned int argc, const LINK_ANCHOR *arg
 }
 
 static int
+compile_builtin_function_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int line, int popped,
+                              const rb_iseq_t *parent_block, LINK_ANCHOR *args, const char *builtin_func)
+{
+    NODE *args_node = node->nd_args;
+
+    if (parent_block != NULL) {
+        COMPILE_ERROR(iseq, line, "should not call builtins here.");
+        return COMPILE_NG;
+    }
+    else {
+# define BUILTIN_INLINE_PREFIX "_bi"
+        char inline_func[DECIMAL_SIZE_OF_BITS(sizeof(int) * CHAR_BIT) + sizeof(BUILTIN_INLINE_PREFIX)];
+        bool cconst = false;
+      retry:;
+        const struct rb_builtin_function *bf = iseq_builtin_function_lookup(iseq, builtin_func);
+
+        if (bf == NULL) {
+            if (strcmp("cstmt!", builtin_func) == 0 ||
+                strcmp("cexpr!", builtin_func) == 0) {
+                // ok
+            }
+            else if (strcmp("cconst!", builtin_func) == 0) {
+                cconst = true;
+            }
+            else if (strcmp("cinit!", builtin_func) == 0) {
+                // ignore
+                GET_VM()->builtin_inline_index++;
+                return COMPILE_OK;
+            }
+            else if (strcmp("attr!", builtin_func) == 0) {
+                // There's only "inline" attribute for now
+                iseq->body->builtin_inline_p = true;
+                return COMPILE_OK;
+            }
+            else if (1) {
+                rb_bug("can't find builtin function:%s", builtin_func);
+            }
+            else {
+                COMPILE_ERROR(ERROR_ARGS "can't find builtin function:%s", builtin_func);
+                return COMPILE_NG;
+            }
+
+            if (GET_VM()->builtin_inline_index == INT_MAX) {
+                rb_bug("builtin inline function index overflow:%s", builtin_func);
+            }
+            int inline_index = GET_VM()->builtin_inline_index++;
+            snprintf(inline_func, sizeof(inline_func), BUILTIN_INLINE_PREFIX "%d", inline_index);
+            builtin_func = inline_func;
+            args_node = NULL;
+            goto retry;
+        }
+
+        if (cconst) {
+            typedef VALUE(*builtin_func0)(void *, VALUE);
+            VALUE const_val = (*(builtin_func0)bf->func_ptr)(NULL, Qnil);
+            ADD_INSN1(ret, line, putobject, const_val);
+            return COMPILE_OK;
+        }
+
+        // fprintf(stderr, "func_name:%s -> %p\n", builtin_func, bf->func_ptr);
+
+        unsigned int flag = 0;
+        struct rb_callinfo_kwarg *keywords = NULL;
+        VALUE argc = setup_args(iseq, args, args_node, &flag, &keywords);
+
+        if (FIX2INT(argc) != bf->argc) {
+            COMPILE_ERROR(ERROR_ARGS "argc is not match for builtin function:%s (expect %d but %d)",
+                          builtin_func, bf->argc, FIX2INT(argc));
+            return COMPILE_NG;
+        }
+
+        unsigned int start_index;
+        if (delegate_call_p(iseq, FIX2INT(argc), args, &start_index)) {
+            ADD_INSN2(ret, line, opt_invokebuiltin_delegate, bf, INT2FIX(start_index));
+        }
+        else {
+            ADD_SEQ(ret, args);
+            ADD_INSN1(ret,line, invokebuiltin, bf);
+        }
+
+        if (popped) ADD_INSN(ret, line, pop);
+        return COMPILE_OK;
+    }
+}
+
+static int
 compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, const enum node_type type, int line, int popped)
 {
     /* call:  obj.method(...)
@@ -7289,90 +7375,12 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
         }
     }
 #endif
-    const char *builtin_func;
-    NODE *args_node = node->nd_args;
 
+    const char *builtin_func;
     if (UNLIKELY(iseq_has_builtin_function_table(iseq)) &&
         (builtin_func = iseq_builtin_function_name(type, node->nd_recv, mid)) != NULL) {
-
-        if (parent_block != NULL) {
-            COMPILE_ERROR(iseq, line, "should not call builtins here.");
-            return COMPILE_NG;
-        }
-        else {
-# define BUILTIN_INLINE_PREFIX "_bi"
-            char inline_func[DECIMAL_SIZE_OF_BITS(sizeof(int) * CHAR_BIT) + sizeof(BUILTIN_INLINE_PREFIX)];
-            bool cconst = false;
-          retry:;
-            const struct rb_builtin_function *bf = iseq_builtin_function_lookup(iseq, builtin_func);
-
-            if (bf == NULL) {
-                if (strcmp("cstmt!", builtin_func) == 0 ||
-                    strcmp("cexpr!", builtin_func) == 0) {
-                    // ok
-                }
-                else if (strcmp("cconst!", builtin_func) == 0) {
-                    cconst = true;
-                }
-                else if (strcmp("cinit!", builtin_func) == 0) {
-                    // ignore
-                    GET_VM()->builtin_inline_index++;
-                    return COMPILE_OK;
-                }
-                else if (strcmp("attr!", builtin_func) == 0) {
-                    // There's only "inline" attribute for now
-                    iseq->body->builtin_inline_p = true;
-                    return COMPILE_OK;
-                }
-                else if (1) {
-                    rb_bug("can't find builtin function:%s", builtin_func);
-                }
-                else {
-                    COMPILE_ERROR(ERROR_ARGS "can't find builtin function:%s", builtin_func);
-                    return COMPILE_NG;
-                }
-
-                if (GET_VM()->builtin_inline_index == INT_MAX) {
-                    rb_bug("builtin inline function index overflow:%s", builtin_func);
-                }
-                int inline_index = GET_VM()->builtin_inline_index++;
-                snprintf(inline_func, sizeof(inline_func), BUILTIN_INLINE_PREFIX "%d", inline_index);
-                builtin_func = inline_func;
-                args_node = NULL;
-                goto retry;
-            }
-
-            if (cconst) {
-                typedef VALUE(*builtin_func0)(void *, VALUE);
-                VALUE const_val = (*(builtin_func0)bf->func_ptr)(NULL, Qnil);
-                ADD_INSN1(ret, line, putobject, const_val);
-                return COMPILE_OK;
-            }
-
-            // fprintf(stderr, "func_name:%s -> %p\n", builtin_func, bf->func_ptr);
-
-            argc = setup_args(iseq, args, args_node, &flag, &keywords);
-
-            if (FIX2INT(argc) != bf->argc) {
-                COMPILE_ERROR(ERROR_ARGS "argc is not match for builtin function:%s (expect %d but %d)",
-                              builtin_func, bf->argc, FIX2INT(argc));
-                return COMPILE_NG;
-            }
-
-            unsigned int start_index;
-            if (delegate_call_p(iseq, FIX2INT(argc), args, &start_index)) {
-                ADD_INSN2(ret, line, opt_invokebuiltin_delegate, bf, INT2FIX(start_index));
-            }
-            else {
-                ADD_SEQ(ret, args);
-                ADD_INSN1(ret,line, invokebuiltin, bf);
-            }
-
-            if (popped) ADD_INSN(ret, line, pop);
-            return COMPILE_OK;
-        }
+        return compile_builtin_function_call(iseq, ret, node, line, popped, parent_block, args, builtin_func);
     }
-
 
     /* receiver */
     if (type == NODE_CALL || type == NODE_OPCALL || type == NODE_QCALL) {
