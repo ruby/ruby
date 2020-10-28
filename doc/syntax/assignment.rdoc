@@ -92,8 +92,9 @@ Now any reference to +big_calculation+ is considered a local variable and will
 be cached.  To call the method, use <code>self.big_calculation</code>.
 
 You can force a method call by using empty argument parentheses as shown above
-or by using an explicit receiver like <code>self.</code>.  Using an explicit
-receiver may raise a NameError if the method's visibility is not public.
+or by using an explicit receiver like <code>self</code>.  Using an explicit
+receiver may raise a NameError if the method's visibility is not public or the
+receiver is the literal <code>self</code>.
 
 Another commonly confusing case is when using a modifier +if+:
 
@@ -108,6 +109,28 @@ method.
 The confusion comes from the out-of-order execution of the expression.  First
 the local variable is assigned-to then you attempt to call a nonexistent
 method.
+
+== Local Variables and eval
+
+Using +eval+ to evaluate Ruby code will allow access to local variables defined
+in the same scope, even if the local variables are not defined until after the
+call to +eval+.  However, local variables defined inside the call to +eval+
+will not be reflected in the surrounding scope.  Inside the call to +eval+,
+local variables defined in the surrounding scope and local variables defined
+inside the call to +eval+ will be accessible.  However, you will not be able
+to access local variables defined in previous or subsequent calls to +eval+ in
+the same scope. Consider each +eval+ call a separate nested scope. Example:
+
+  def m
+    eval "bar = 1"
+    lvs = eval "baz = 2; ary = [local_variables, foo, baz]; x = 2; ary"
+    eval "quux = 3"
+    foo = 1
+    lvs << local_variables
+  end
+
+  m
+  # => [[:baz, :ary, :x, :lvs, :foo], nil, 2, [:lvs, :foo]]
 
 == Instance Variables
 

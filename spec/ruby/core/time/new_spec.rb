@@ -15,7 +15,7 @@ end
 
 describe "Time.new with a utc_offset argument" do
   it "returns a non-UTC time" do
-    Time.new(2000, 1, 1, 0, 0, 0, 0).utc?.should == false
+    Time.new(2000, 1, 1, 0, 0, 0, 0).should_not.utc?
   end
 
   it "returns a Time with a UTC offset of the specified number of Integer seconds" do
@@ -76,42 +76,48 @@ describe "Time.new with a utc_offset argument" do
 
   # [Bug #8679], r47676
   it "disallows a value for minutes greater than 59" do
-    lambda {
+    -> {
       Time.new(2000, 1, 1, 0, 0, 0, "+01:60")
     }.should raise_error(ArgumentError)
-    lambda {
+    -> {
       Time.new(2000, 1, 1, 0, 0, 0, "+01:99")
     }.should raise_error(ArgumentError)
   end
 
   it "raises ArgumentError if the String argument is not of the form (+|-)HH:MM" do
-    lambda { Time.new(2000, 1, 1, 0, 0, 0, "3600") }.should raise_error(ArgumentError)
+    -> { Time.new(2000, 1, 1, 0, 0, 0, "3600") }.should raise_error(ArgumentError)
   end
 
   it "raises ArgumentError if the hour value is greater than 23" do
-    lambda { Time.new(2000, 1, 1, 0, 0, 0, "+24:00") }.should raise_error(ArgumentError)
+    -> { Time.new(2000, 1, 1, 0, 0, 0, "+24:00") }.should raise_error(ArgumentError)
   end
 
   it "raises ArgumentError if the String argument is not in an ASCII-compatible encoding" do
-    lambda { Time.new(2000, 1, 1, 0, 0, 0, "-04:10".encode("UTF-16LE")) }.should raise_error(ArgumentError)
+    -> { Time.new(2000, 1, 1, 0, 0, 0, "-04:10".encode("UTF-16LE")) }.should raise_error(ArgumentError)
   end
 
   it "raises ArgumentError if the argument represents a value less than or equal to -86400 seconds" do
     Time.new(2000, 1, 1, 0, 0, 0, -86400 + 1).utc_offset.should == (-86400 + 1)
-    lambda { Time.new(2000, 1, 1, 0, 0, 0, -86400) }.should raise_error(ArgumentError)
+    -> { Time.new(2000, 1, 1, 0, 0, 0, -86400) }.should raise_error(ArgumentError)
   end
 
   it "raises ArgumentError if the argument represents a value greater than or equal to 86400 seconds" do
     Time.new(2000, 1, 1, 0, 0, 0, 86400 - 1).utc_offset.should == (86400 - 1)
-    lambda { Time.new(2000, 1, 1, 0, 0, 0, 86400) }.should raise_error(ArgumentError)
+    -> { Time.new(2000, 1, 1, 0, 0, 0, 86400) }.should raise_error(ArgumentError)
   end
 
   it "raises ArgumentError if the seconds argument is negative" do
-    lambda { Time.new(2000, 1, 1, 0, 0, -1) }.should raise_error(ArgumentError)
+    -> { Time.new(2000, 1, 1, 0, 0, -1) }.should raise_error(ArgumentError)
   end
 
   it "raises ArgumentError if the utc_offset argument is greater than or equal to 10e9" do
-    lambda { Time.new(2000, 1, 1, 0, 0, 0, 1000000000) }.should raise_error(ArgumentError)
+    -> { Time.new(2000, 1, 1, 0, 0, 0, 1000000000) }.should raise_error(ArgumentError)
+  end
+
+  it "raises ArgumentError if the month is greater than 12" do
+    # For some reason MRI uses a different message for month in 13-15 and month>=16
+    -> { Time.new(2000, 13, 1, 0, 0, 0, "+01:00") }.should raise_error(ArgumentError, /(mon|argument) out of range/)
+    -> { Time.new(2000, 16, 1, 0, 0, 0, "+01:00") }.should raise_error(ArgumentError, "argument out of range")
   end
 end
 
@@ -123,6 +129,10 @@ ruby_version_is "2.6" do
 
       time.zone.should == zone
       time.utc_offset.should == 5*3600+30*60
+      ruby_version_is "3.0" do
+        time.wday.should == 6
+        time.yday.should == 1
+      end
     end
 
     it "accepts timezone argument that must have #local_to_utc and #utc_to_local methods" do
@@ -134,7 +144,7 @@ ruby_version_is "2.6" do
         time
       end
 
-      lambda {
+      -> {
         Time.new(2000, 1, 1, 12, 0, 0, zone).should be_kind_of(Time)
       }.should_not raise_error
     end
@@ -145,7 +155,7 @@ ruby_version_is "2.6" do
         time
       end
 
-      lambda {
+      -> {
         Time.new(2000, 1, 1, 12, 0, 0, zone)
       }.should raise_error(TypeError, /can't convert \w+ into an exact number/)
     end
@@ -156,7 +166,7 @@ ruby_version_is "2.6" do
         time
       end
 
-      lambda {
+      -> {
         Time.new(2000, 1, 1, 12, 0, 0, zone).should be_kind_of(Time)
       }.should_not raise_error
     end
@@ -170,7 +180,7 @@ ruby_version_is "2.6" do
           Time.utc(t.year, t.mon, t.day, t.hour - 1, t.min, t.sec)
         end
 
-        lambda {
+        -> {
           Time.new(2000, 1, 1, 12, 0, 0, zone).should be_kind_of(Time)
           Time.new(2000, 1, 1, 12, 0, 0, zone).utc_offset.should == 60*60
         }.should_not raise_error
@@ -182,7 +192,7 @@ ruby_version_is "2.6" do
           Class.new(Time).utc(t.year, t.mon, t.day, t.hour - 1, t.min, t.sec)
         end
 
-        lambda {
+        -> {
           Time.new(2000, 1, 1, 12, 0, 0, zone).should be_kind_of(Time)
           Time.new(2000, 1, 1, 12, 0, 0, zone).utc_offset.should == 60*60
         }.should_not raise_error
@@ -194,7 +204,7 @@ ruby_version_is "2.6" do
           Struct.new(:to_i).new(time.to_i - 60*60)
         end
 
-        lambda {
+        -> {
           Time.new(2000, 1, 1, 12, 0, 0, zone).should be_kind_of(Time)
           Time.new(2000, 1, 1, 12, 0, 0, zone).utc_offset.should == 60*60
         }.should_not raise_error
@@ -220,7 +230,7 @@ ruby_version_is "2.6" do
           Time.utc(t.year, t.mon, t.day + 1, t.hour, t.min, t.sec)
         end
 
-        lambda {
+        -> {
           Time.new(2000, 1, 1, 12, 0, 0, zone)
         }.should raise_error(ArgumentError, "utc_offset out of range")
       end
@@ -265,7 +275,7 @@ ruby_version_is "2.6" do
 
     context "#name method" do
       it "uses the optional #name method for marshaling" do
-        zone = TimeSpecs::TimezoneWithName.new(name: "Asia/Colombo", offset: (5*3600+30*60))
+        zone = TimeSpecs::TimezoneWithName.new(name: "Asia/Colombo")
         time = Time.new(2000, 1, 1, 12, 0, 0, zone)
         time_loaded = Marshal.load(Marshal.dump(time))
 
@@ -277,14 +287,14 @@ ruby_version_is "2.6" do
         zone = TimeSpecs::Timezone.new(offset: (5*3600+30*60))
         time = Time.new(2000, 1, 1, 12, 0, 0, zone)
 
-        lambda {
+        -> {
           Marshal.dump(time)
         }.should raise_error(NoMethodError, /undefined method `name' for/)
       end
     end
 
     it "the #abbr method is used by '%Z' in #strftime" do
-      zone = TimeSpecs::TimezoneWithAbbr.new(abbr: "MMT", offset: (5*3600+30*60))
+      zone = TimeSpecs::TimezoneWithAbbr.new(name: "Asia/Colombo")
       time = Time.new(2000, 1, 1, 12, 0, 0, zone)
 
       time.strftime("%Z").should == "MMT"
@@ -292,11 +302,11 @@ ruby_version_is "2.6" do
 
     # At loading marshaled data, a timezone name will be converted to a timezone object
     # by find_timezone class method, if the method is defined.
-    # Similary, that class method will be called when a timezone argument does not have
+    # Similarly, that class method will be called when a timezone argument does not have
     # the necessary methods mentioned above.
     context "subject's class implements .find_timezone method" do
       it "calls .find_timezone to build a time object at loading marshaled data" do
-        zone = TimeSpecs::TimezoneWithName.new(name: "Asia/Colombo", offset: (5*3600+30*60))
+        zone = TimeSpecs::TimezoneWithName.new(name: "Asia/Colombo")
         time = TimeSpecs::TimeWithFindTimezone.new(2000, 1, 1, 12, 0, 0, zone)
         time_loaded = Marshal.load(Marshal.dump(time))
 
@@ -317,7 +327,7 @@ ruby_version_is "2.6" do
 
       it "does not call .find_timezone if passed any not string/numeric/timezone timezone argument" do
         [Object.new, [], {}, :"some zone"].each do |zone|
-          lambda {
+          -> {
             TimeSpecs::TimeWithFindTimezone.new(2000, 1, 1, 12, 0, 0, zone)
           }.should raise_error(TypeError, /can't convert \w+ into an exact number/)
         end

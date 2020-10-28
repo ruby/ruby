@@ -13,7 +13,7 @@ describe :file_executable, shared: true do
     rm_r @file1, @file2
   end
 
-  platform_is_not :windows do
+  platform_is_not :windows, :android do
     it "returns true if named file is executable by the effective user id of the process, otherwise false" do
       @object.send(@method, '/etc/passwd').should == false
       @object.send(@method, @file1).should == true
@@ -31,13 +31,13 @@ describe :file_executable, shared: true do
   end
 
   it "raises an ArgumentError if not passed one argument" do
-    lambda { @object.send(@method) }.should raise_error(ArgumentError)
+    -> { @object.send(@method) }.should raise_error(ArgumentError)
   end
 
   it "raises a TypeError if not passed a String type" do
-    lambda { @object.send(@method, 1)     }.should raise_error(TypeError)
-    lambda { @object.send(@method, nil)   }.should raise_error(TypeError)
-    lambda { @object.send(@method, false) }.should raise_error(TypeError)
+    -> { @object.send(@method, 1)     }.should raise_error(TypeError)
+    -> { @object.send(@method, nil)   }.should raise_error(TypeError)
+    -> { @object.send(@method, false) }.should raise_error(TypeError)
   end
 end
 

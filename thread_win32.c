@@ -28,8 +28,6 @@
 static volatile DWORD ruby_native_thread_key = TLS_OUT_OF_INDEXES;
 
 static int w32_wait_events(HANDLE *events, int count, DWORD timeout, rb_thread_t *th);
-void rb_native_mutex_lock(rb_nativethread_lock_t *lock);
-void rb_native_mutex_unlock(rb_nativethread_lock_t *lock);
 
 static void
 w32_error(const char *func)
@@ -97,38 +95,38 @@ w32_mutex_create(void)
 #define GVL_DEBUG 0
 
 static void
-gvl_acquire(rb_vm_t *vm, rb_thread_t *th)
+gvl_acquire(rb_global_vm_lock_t *gvl, rb_thread_t *th)
 {
-    w32_mutex_lock(vm->gvl.lock);
+    w32_mutex_lock(gvl->lock);
     if (GVL_DEBUG) fprintf(stderr, "gvl acquire (%p): acquire\n", th);
 }
 
 static void
-gvl_release(rb_vm_t *vm)
+gvl_release(rb_global_vm_lock_t *gvl)
 {
-    ReleaseMutex(vm->gvl.lock);
+    ReleaseMutex(gvl->lock);
 }
 
 static void
-gvl_yield(rb_vm_t *vm, rb_thread_t *th)
+gvl_yield(rb_global_vm_lock_t *gvl, rb_thread_t *th)
 {
-  gvl_release(th->vm);
+  gvl_release(gvl);
   native_thread_yield();
-  gvl_acquire(vm, th);
+  gvl_acquire(gvl, th);
 }
 
-static void
-gvl_init(rb_vm_t *vm)
+void
+rb_gvl_init(rb_global_vm_lock_t *gvl)
 {
     if (GVL_DEBUG) fprintf(stderr, "gvl init\n");
-    vm->gvl.lock = w32_mutex_create();
+    gvl->lock = w32_mutex_create();
 }
 
 static void
-gvl_destroy(rb_vm_t *vm)
+gvl_destroy(rb_global_vm_lock_t *gvl)
 {
     if (GVL_DEBUG) fprintf(stderr, "gvl destroy\n");
-    CloseHandle(vm->gvl.lock);
+    CloseHandle(gvl->lock);
 }
 
 static rb_thread_t *
@@ -140,13 +138,21 @@ ruby_thread_from_native(void)
 static int
 ruby_thread_set_native(rb_thread_t *th)
 {
+    if (th && th->ec) {
+        rb_ractor_set_current_ec(th->ractor, th->ec);
+    }
     return TlsSetValue(ruby_native_thread_key, th);
 }
 
 void
 Init_native_thread(rb_thread_t *th)
 {
-    ruby_native_thread_key = TlsAlloc();
+    if ((ruby_current_ec_key = TlsAlloc()) == TLS_OUT_OF_INDEXES) {
+        rb_bug("TlsAlloc() for ruby_current_ec_key fails");
+    }
+    if ((ruby_native_thread_key = TlsAlloc()) == TLS_OUT_OF_INDEXES) {
+        rb_bug("TlsAlloc() for ruby_native_thread_key fails");
+    }
     ruby_thread_set_native(th);
     DuplicateHandle(GetCurrentProcess(),
 		    GetCurrentThread(),
@@ -256,7 +262,7 @@ typedef LPTHREAD_START_ROUTINE w32_thread_start_func;
 static HANDLE
 w32_create_thread(DWORD stack_size, w32_thread_start_func func, void *val)
 {
-    return start_thread(0, stack_size, func, val, CREATE_SUSPENDED, 0);
+    return start_thread(0, stack_size, func, val, CREATE_SUSPENDED | STACK_SIZE_PARAM_IS_A_RESERVATION, 0);
 }
 
 int
@@ -334,6 +340,7 @@ rb_native_mutex_unlock(rb_nativethread_lock_t *lock)
 #endif
 }
 
+RBIMPL_ATTR_MAYBE_UNUSED()
 static int
 native_mutex_trylock(rb_nativethread_lock_t *lock)
 {
@@ -458,7 +465,6 @@ rb_native_cond_wait(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *mutex)
     native_cond_timedwait_ms(cond, mutex, INFINITE);
 }
 
-#if 0
 static unsigned long
 abs_timespec_to_timeout_ms(const struct timespec *ts)
 {
@@ -485,6 +491,19 @@ native_cond_timedwait(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *mute
 	return ETIMEDOUT;
 
     return native_cond_timedwait_ms(cond, mutex, timeout_ms);
+}
+
+static struct timespec native_cond_timeout(rb_nativethread_cond_t *cond, struct timespec timeout_rel);
+
+void
+rb_native_cond_timedwait(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *mutex, unsigned long msec)
+{
+    struct timespec rel = {
+        .tv_sec = msec / 1000,
+        .tv_nsec = (msec % 1000) * 1000 * 1000,
+    };
+    struct timespec ts = native_cond_timeout(cond, rel);
+    native_cond_timedwait(cond, mutex, &ts);
 }
 
 static struct timespec
@@ -516,7 +535,6 @@ native_cond_timeout(rb_nativethread_cond_t *cond, struct timespec timeout_rel)
 
     return timeout;
 }
-#endif
 
 void
 rb_native_cond_initialize(rb_nativethread_cond_t *cond)
@@ -582,7 +600,7 @@ thread_start_func_1(void *th_ptr)
     thread_debug("thread created (th: %p, thid: %p, event: %p)\n", th,
 		 th->thread_id, th->native_thread_data.interrupt_event);
 
-    thread_start_func_2(th, th->ec->machine.stack_start, rb_ia64_bsp());
+    thread_start_func_2(th, th->ec->machine.stack_start);
 
     w32_close_handle(thread_id);
     thread_debug("thread deleted (th: %p)\n", th);
@@ -592,7 +610,7 @@ thread_start_func_1(void *th_ptr)
 static int
 native_thread_create(rb_thread_t *th)
 {
-    size_t stack_size = 4 * 1024; /* 4KB is the minimum commit size */
+    const size_t stack_size = th->vm->default_params.thread_machine_stack_size + th->vm->default_params.thread_vm_stack_size;
     th->thread_id = w32_create_thread(stack_size, thread_start_func_1, th);
 
     if ((th->thread_id) == 0) {
@@ -694,9 +712,13 @@ timer_thread_func(void *dummy)
     rb_w32_set_thread_description(GetCurrentThread(), L"ruby-timer-thread");
     while (WaitForSingleObject(timer_thread.lock, TIME_QUANTUM_USEC/1000) ==
 	   WAIT_TIMEOUT) {
-	timer_thread_function();
+        rb_execution_context_t *running_ec = vm->ractor.main_ractor->threads.running_ec;
+
+        if (running_ec) {
+            timer_thread_function(running_ec);
+        }
 	ruby_sigchld_handler(vm); /* probably no-op */
-	rb_threadptr_check_signal(vm->main_thread);
+	rb_threadptr_check_signal(vm->ractor.main_thread);
     }
     thread_debug("timer killed\n");
     return 0;

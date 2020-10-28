@@ -1,4 +1,3 @@
-# coding: utf-8
 # frozen_string_literal: true
 
 require 'rubygems/test_case'
@@ -8,7 +7,6 @@ unless defined?(OpenSSL::SSL)
 end
 
 class TestGemSecurityPolicy < Gem::TestCase
-
   ALTERNATE_KEY    = load_key 'alternate'
   INVALID_KEY      = load_key 'invalid'
   CHILD_KEY        = load_key 'child'
@@ -34,7 +32,7 @@ class TestGemSecurityPolicy < Gem::TestCase
       s.files = %w[lib/code.rb]
     end
 
-    @digest = Gem::Security::DIGEST_ALGORITHM
+    @digest = OpenSSL::Digest.new Gem::Security::DIGEST_NAME
     @trust_dir = Gem::Security.trust_dir.dir # HACK use the object
 
     @no        = Gem::Security::NoSecurity
@@ -293,7 +291,7 @@ class TestGemSecurityPolicy < Gem::TestCase
 
   def test_subject
     assert_equal 'email:nobody@example', @no.subject(PUBLIC_CERT)
-    assert_equal '/C=JP/O=JIN.GR.JP/OU=RRR/CN=CA', @no.subject(CA_CERT)
+    assert_equal '/C=JP/ST=Tokyo/O=RubyGemsTest/CN=CA', @no.subject(CA_CERT)
   end
 
   def test_verify
@@ -397,13 +395,11 @@ class TestGemSecurityPolicy < Gem::TestCase
   def test_verify_wrong_digest_type
     Gem::Security.trust_dir.trust_cert PUBLIC_CERT
 
-    sha512 = OpenSSL::Digest::SHA512
-
-    data = sha512.new
+    data = OpenSSL::Digest.new('SHA512')
     data << 'hello'
 
     digests    = { 'SHA512' => { 0 => data } }
-    signature  = PRIVATE_KEY.sign sha512.new, data.digest
+    signature  = PRIVATE_KEY.sign 'sha512', data.digest
     signatures = { 0 => signature }
 
     e = assert_raises Gem::Security::Exception do
@@ -482,7 +478,7 @@ class TestGemSecurityPolicy < Gem::TestCase
     def s.full_name() 'metadata.gz' end
 
     digests = package.digest s
-    digests[Gem::Security::DIGEST_NAME]['data.tar.gz'] = @digest.new 'hello'
+    digests[Gem::Security::DIGEST_NAME]['data.tar.gz'] = @digest.hexdigest 'hello'
 
     metadata_gz_digest = digests[Gem::Security::DIGEST_NAME]['metadata.gz']
 
@@ -511,7 +507,7 @@ class TestGemSecurityPolicy < Gem::TestCase
     def s.full_name() 'metadata.gz' end
 
     digests = package.digest s
-    digests[Gem::Security::DIGEST_NAME]['data.tar.gz'] = @digest.new 'hello'
+    digests[Gem::Security::DIGEST_NAME]['data.tar.gz'] = @digest.hexdigest 'hello'
 
     assert_raises Gem::Security::Exception do
       @high.verify_signatures @spec, digests, {}
@@ -536,5 +532,4 @@ class TestGemSecurityPolicy < Gem::TestCase
 
     return digests, signatures
   end
-
 end if defined?(OpenSSL::SSL)

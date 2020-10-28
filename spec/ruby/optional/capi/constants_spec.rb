@@ -11,28 +11,40 @@ describe "C-API constant" do
     @s.rb_cArray.should == Array
   end
 
-  ruby_version_is ""..."2.4" do
-    specify "rb_cBignum references the Bignum class" do
-      @s.rb_cBignum.should == Bignum
-    end
+  specify "rb_cBasicObject references the BasicObject class" do
+    @s.rb_cBasicObject.should == BasicObject
+  end
+
+  specify "rb_cBinding references the Binding class" do
+    @s.rb_cBinding.should == Binding
   end
 
   specify "rb_cClass references the Class class" do
     @s.rb_cClass.should == Class
   end
 
+  specify "rb_cComplex references the Complex class" do
+    @s.rb_cComplex.should == Complex
+  end
+
   specify "rb_mComparable references the Comparable module" do
     @s.rb_mComparable.should == Comparable
   end
 
-  ruby_version_is ""..."2.5" do
-    specify "rb_cData references the Data class" do
-      @s.rb_cData.should == Data
-    end
+  specify "rb_cDir references the Dir class" do
+    @s.rb_cDir.should == Dir
+  end
+
+  specify "rb_cEncoding references the Encoding class" do
+    @s.rb_cEncoding.should == Encoding
   end
 
   specify "rb_mEnumerable references the Enumerable module" do
     @s.rb_mEnumerable.should == Enumerable
+  end
+
+  specify "rb_cEnumerator references the Enumerator class" do
+    @s.rb_cEnumerator.should == Enumerator
   end
 
   specify "rb_cFalseClass references the FalseClass class" do
@@ -43,14 +55,16 @@ describe "C-API constant" do
     @s.rb_cFile.should == File
   end
 
-  ruby_version_is ""..."2.4" do
-    specify "rb_cFixnum references the Fixnum class" do
-      @s.rb_cFixnum.should == Fixnum
-    end
+  specify "rb_mFileTest references the FileTest module" do
+    @s.rb_mFileTest.should == FileTest
   end
 
   specify "rb_cFloat references the Float class" do
     @s.rb_cFloat.should == Float
+  end
+
+  specify "rb_mGC references the GC module" do
+    @s.rb_mGC.should == GC
   end
 
   specify "rb_cHash references the Hash class" do
@@ -69,8 +83,16 @@ describe "C-API constant" do
     @s.rb_mKernel.should == Kernel
   end
 
+  specify "rb_mMath references the Math module" do
+    @s.rb_mMath.should == Math
+  end
+
   specify "rb_cMatch references the MatchData class" do
     @s.rb_cMatch.should == MatchData
+  end
+
+  specify "rb_cMethod references the Method class" do
+    @s.rb_cMethod.should == Method
   end
 
   specify "rb_cModule references the Module class" do
@@ -89,12 +111,32 @@ describe "C-API constant" do
     @s.rb_cObject.should == Object
   end
 
+  specify "rb_cProc references the Proc class" do
+    @s.rb_cProc.should == Proc
+  end
+
+  specify "rb_mProcess references the Process module" do
+    @s.rb_mProcess.should == Process
+  end
+
+  specify "rb_cRandom references the Random class" do
+    @s.rb_cRandom.should == Random
+  end
+
   specify "rb_cRange references the Range class" do
     @s.rb_cRange.should == Range
   end
 
+  specify "rb_cRational references the Rational class" do
+    @s.rb_cRational.should == Rational
+  end
+
   specify "rb_cRegexp references the Regexp class" do
     @s.rb_cRegexp.should == Regexp
+  end
+
+  specify "rb_cStat references the File::Stat class" do
+    @s.rb_cStat.should == File::Stat
   end
 
   specify "rb_cString references the String class" do
@@ -121,18 +163,9 @@ describe "C-API constant" do
     @s.rb_cTrueClass.should == TrueClass
   end
 
-  specify "rb_cProc references the Proc class" do
-    @s.rb_cProc.should == Proc
+  specify "rb_cUnboundMethod references the UnboundMethod class" do
+    @s.rb_cUnboundMethod.should == UnboundMethod
   end
-
-  specify "rb_cMethod references the Method class" do
-    @s.rb_cMethod.should == Method
-  end
-
-  specify "rb_cDir references the Dir class" do
-    @s.rb_cDir.should == Dir
-  end
-
 end
 
 describe "C-API exception constant" do
@@ -142,6 +175,14 @@ describe "C-API exception constant" do
 
   specify "rb_eArgError references the ArgumentError class" do
     @s.rb_eArgError.should == ArgumentError
+  end
+
+  specify "rb_eEncodingError references the EncodingError class" do
+    @s.rb_eEncodingError.should == EncodingError
+  end
+
+  specify "rb_eEncCompatError references the Encoding::CompatibilityError" do
+    @s.rb_eEncCompatError.should == Encoding::CompatibilityError
   end
 
   specify "rb_eEOFError references the EOFError class" do
@@ -156,8 +197,18 @@ describe "C-API exception constant" do
     @s.rb_eException.should == Exception
   end
 
+  specify "rb_eFatal references the fatal class" do
+    fatal = @s.rb_eFatal
+    fatal.should be_kind_of(Class)
+    fatal.should < Exception
+  end
+
   specify "rb_eFloatDomainError references the FloatDomainError class" do
     @s.rb_eFloatDomainError.should == FloatDomainError
+  end
+
+  specify "rb_eFrozenError references the FrozenError class" do
+    @s.rb_eFrozenError.should == FrozenError
   end
 
   specify "rb_eIndexError references the IndexError class" do
@@ -172,6 +223,10 @@ describe "C-API exception constant" do
     @s.rb_eIOError.should == IOError
   end
 
+  specify "rb_eKeyError references the KeyError class" do
+    @s.rb_eKeyError.should == KeyError
+  end
+
   specify "rb_eLoadError references the LoadError class" do
     @s.rb_eLoadError.should == LoadError
   end
@@ -182,10 +237,6 @@ describe "C-API exception constant" do
 
   specify "rb_eMathDomainError references the Math::DomainError class" do
     @s.rb_eMathDomainError.should == Math::DomainError
-  end
-
-  specify "rb_eEncCompatError references the Encoding::CompatibilityError" do
-    @s.rb_eEncCompatError.should == Encoding::CompatibilityError
   end
 
   specify "rb_eNameError references the NameError class" do
@@ -230,6 +281,10 @@ describe "C-API exception constant" do
 
   specify "rb_eStandardError references the StandardError class" do
     @s.rb_eStandardError.should == StandardError
+  end
+
+  specify "rb_eStopIteration references the StopIteration class" do
+    @s.rb_eStopIteration.should == StopIteration
   end
 
   specify "rb_eSyntaxError references the SyntaxError class" do

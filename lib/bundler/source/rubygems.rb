@@ -1,12 +1,11 @@
 # frozen_string_literal: true
 
-require "uri"
 require "rubygems/user_interaction"
 
 module Bundler
   class Source
     class Rubygems < Source
-      autoload :Remote, "bundler/source/rubygems/remote"
+      autoload :Remote, File.expand_path("rubygems/remote", __dir__)
 
       # Use the API when installing less than X gems
       API_REQUEST_LIMIT = 500
@@ -51,7 +50,7 @@ module Bundler
       end
 
       def can_lock?(spec)
-        return super if Bundler.feature_flag.lockfile_uses_separate_rubygems_sources?
+        return super if Bundler.feature_flag.disable_multisource?
         spec.source.is_a?(Rubygems)
       end
 
@@ -106,7 +105,7 @@ module Bundler
           end
         end
 
-        if installed?(spec) && !force
+        if (installed?(spec) || Plugin.installed?(spec.name)) && !force
           print_using_message "Using #{version_message(spec)}"
           return nil # no post-install message
         end
@@ -120,8 +119,14 @@ module Bundler
           uris.uniq!
           Installer.ambiguous_gems << [spec.name, *uris] if uris.length > 1
 
-          s = Bundler.rubygems.spec_from_gem(fetch_gem(spec), Bundler.settings["trust-policy"])
-          spec.__swap__(s)
+          path = fetch_gem(spec)
+          begin
+            s = Bundler.rubygems.spec_from_gem(path, Bundler.settings["trust-policy"])
+            spec.__swap__(s)
+          rescue StandardError
+            Bundler.rm_rf(path)
+            raise
+          end
         end
 
         unless Bundler.settings[:no_install]
@@ -140,20 +145,17 @@ module Bundler
 
           Bundler.mkdir_p bin_path, :no_sudo => true unless spec.executables.empty? || Bundler.rubygems.provides?(">= 2.7.5")
 
-          installed_spec = nil
-          Bundler.rubygems.preserve_paths do
-            installed_spec = Bundler::RubyGemsGemInstaller.at(
-              path,
-              :install_dir         => install_path.to_s,
-              :bin_dir             => bin_path.to_s,
-              :ignore_dependencies => true,
-              :wrappers            => true,
-              :env_shebang         => true,
-              :build_args          => opts[:build_args],
-              :bundler_expected_checksum => spec.respond_to?(:checksum) && spec.checksum,
-              :bundler_extension_cache_path => extension_cache_path(spec)
-            ).install
-          end
+          installed_spec = Bundler::RubyGemsGemInstaller.at(
+            path,
+            :install_dir         => install_path.to_s,
+            :bin_dir             => bin_path.to_s,
+            :ignore_dependencies => true,
+            :wrappers            => true,
+            :env_shebang         => true,
+            :build_args          => opts[:build_args],
+            :bundler_expected_checksum => spec.respond_to?(:checksum) && spec.checksum,
+            :bundler_extension_cache_path => extension_cache_path(spec)
+          ).install
           spec.full_gem_path = installed_spec.full_gem_path
 
           # SUDO HAX
@@ -289,7 +291,7 @@ module Bundler
         names
       end
 
-    protected
+      protected
 
       def credless_remotes
         remotes.map(&method(:suppress_configured_credentials))
@@ -322,9 +324,10 @@ module Bundler
       def normalize_uri(uri)
         uri = uri.to_s
         uri = "#{uri}/" unless uri =~ %r{/$}
-        uri = URI(uri)
+        require_relative "../vendored_uri"
+        uri = Bundler::URI(uri)
         raise ArgumentError, "The source must be an absolute URI. For example:\n" \
-          "source 'https://rubygems.org'" if !uri.absolute? || (uri.is_a?(URI::HTTP) && uri.host.nil?)
+          "source 'https://rubygems.org'" if !uri.absolute? || (uri.is_a?(Bundler::URI::HTTP) && uri.host.nil?)
         uri
       end
 
@@ -462,7 +465,7 @@ module Bundler
         Bundler.app_cache
       end
 
-    private
+      private
 
       # Checks if the requested spec exists in the global cache. If it does,
       # we copy it to the download path, and if it does not, we download it.

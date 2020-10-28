@@ -2,14 +2,12 @@
 require 'rubygems/command'
 
 class Gem::Commands::EnvironmentCommand < Gem::Command
-
   def initialize
     super 'environment', 'Display information about the RubyGems environment'
   end
 
   def arguments # :nodoc:
     args = <<-EOF
-          packageversion  display the package version
           gemdir          display the path where gems are installed
           gempath         display path used to search for gems
           version         display the gem format version
@@ -76,8 +74,6 @@ lib/rubygems/defaults/operating_system.rb
     arg = options[:args][0]
     out <<
       case arg
-      when /^packageversion/ then
-        Gem::RubyGemsPackageVersion
       when /^version/ then
         Gem::VERSION
       when /^gemdir/, /^gemhome/, /^home/, /^GEM_HOME/ then
@@ -130,7 +126,7 @@ lib/rubygems/defaults/operating_system.rb
 
     out << "  - RUBYGEMS PLATFORMS:\n"
     Gem.platforms.each do |platform|
-      out << "    - #{platform}\n"
+      out << "     - #{platform}\n"
     end
 
     out << "  - GEM PATHS:\n"
@@ -175,5 +171,4 @@ lib/rubygems/defaults/operating_system.rb
 
     return nil
   end
-
 end

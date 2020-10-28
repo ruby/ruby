@@ -32,6 +32,11 @@ describe "Ruby character strings" do
     "#@my_ip".should == 'xxx'
   end
 
+  it "does not interpolate invalid variable names" do
+    "#@".should == '#@'
+    "#$%".should == '#$%'
+  end
+
   it "has characters [.(=?!# end simple # interpolation" do
     "#@ip[".should == 'xxx['
     "#@ip.".should == 'xxx.'
@@ -51,24 +56,26 @@ describe "Ruby character strings" do
     "#\$".should == '#$'
   end
 
-  it "taints the result of interpolation when an interpolated value is tainted" do
-    "#{"".taint}".tainted?.should be_true
+  ruby_version_is ''...'2.7' do
+    it "taints the result of interpolation when an interpolated value is tainted" do
+      "#{"".taint}".tainted?.should be_true
 
-    @ip.taint
-    "#@ip".tainted?.should be_true
+      @ip.taint
+      "#@ip".tainted?.should be_true
 
-    $ip.taint
-    "#$ip".tainted?.should be_true
-  end
+      $ip.taint
+      "#$ip".tainted?.should be_true
+    end
 
-  it "untrusts the result of interpolation when an interpolated value is untrusted" do
-    "#{"".untrust}".untrusted?.should be_true
+    it "untrusts the result of interpolation when an interpolated value is untrusted" do
+      "#{"".untrust}".untrusted?.should be_true
 
-    @ip.untrust
-    "#@ip".untrusted?.should be_true
+      @ip.untrust
+      "#@ip".untrusted?.should be_true
 
-    $ip.untrust
-    "#$ip".untrusted?.should be_true
+      $ip.untrust
+      "#$ip".untrusted?.should be_true
+    end
   end
 
   it "allows using non-alnum characters as string delimiters" do
@@ -195,11 +202,11 @@ describe "Ruby character strings" do
     # TODO: spec other source encodings
     describe "with ASCII_8BIT source encoding" do
       it "produces an ASCII string when escaping ASCII characters via \\u" do
-        "\u0000".encoding.should == Encoding::ASCII_8BIT
+        "\u0000".encoding.should == Encoding::BINARY
       end
 
       it "produces an ASCII string when escaping ASCII characters via \\u{}" do
-        "\u{0000}".encoding.should == Encoding::ASCII_8BIT
+        "\u{0000}".encoding.should == Encoding::BINARY
       end
 
       it "produces a UTF-8-encoded string when escaping non-ASCII characters via \\u" do
@@ -257,33 +264,48 @@ describe "Ruby String literals" do
 
 end
 
-with_feature :encoding do
-  describe "Ruby String interpolation" do
-    it "creates a String having an Encoding compatible with all components" do
-      a = "\u3042"
-      b = "abc".encode("ascii-8bit")
+describe "Ruby String interpolation" do
+  it "permits an empty expression" do
+    s = "#{}" # rubocop:disable Lint/EmptyInterpolation
+    s.should.empty?
+    s.should_not.frozen?
+  end
 
-      str = "#{a} x #{b}"
+  it "returns a string with the source encoding by default" do
+    "a#{"b"}c".encoding.should == Encoding::BINARY
+    eval('"a#{"b"}c"'.force_encoding("us-ascii")).encoding.should == Encoding::US_ASCII
+    eval("# coding: US-ASCII \n 'a#{"b"}c'").encoding.should == Encoding::US_ASCII
+  end
 
-      str.should == "\xe3\x81\x82\x20\x78\x20\x61\x62\x63".force_encoding("utf-8")
-      str.encoding.should == Encoding::UTF_8
-    end
+  it "returns a string with the source encoding, even if the components have another encoding" do
+    a = "abc".force_encoding("euc-jp")
+    "#{a}".encoding.should == Encoding::BINARY
 
-    it "creates a String having the Encoding of the components when all are the same Encoding" do
-      a = "abc".force_encoding("euc-jp")
-      b = "def".force_encoding("euc-jp")
-      str = '"#{a} x #{b}"'.force_encoding("euc-jp")
+    b = "abc".encode("utf-8")
+    "#{b}".encoding.should == Encoding::BINARY
+  end
 
-      result = eval(str)
-      result.should == "\x61\x62\x63\x20\x78\x20\x64\x65\x66".force_encoding("euc-jp")
-      result.encoding.should == Encoding::EUC_JP
-    end
+  it "raises an Encoding::CompatibilityError if the Encodings are not compatible" do
+    a = "\u3042"
+    b = "\xff".force_encoding "binary"
 
-    it "raises an Encoding::CompatibilityError if the Encodings are not compatible" do
-      a = "\u3042"
-      b = "\xff".force_encoding "ascii-8bit"
+    -> { "#{a} #{b}" }.should raise_error(Encoding::CompatibilityError)
+  end
 
-      lambda { "#{a} #{b}" }.should raise_error(Encoding::CompatibilityError)
+  it "creates a non-frozen String" do
+    code = <<~'RUBY'
+    "a#{6*7}c"
+    RUBY
+    eval(code).should_not.frozen?
+  end
+
+  ruby_version_is "3.0" do
+    it "creates a non-frozen String when # frozen-string-literal: true is used" do
+      code = <<~'RUBY'
+      # frozen-string-literal: true
+      "a#{6*7}c"
+      RUBY
+      eval(code).should_not.frozen?
     end
   end
 end

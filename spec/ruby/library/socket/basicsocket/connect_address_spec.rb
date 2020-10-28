@@ -10,7 +10,7 @@ describe 'Socket#connect_address' do
     it 'raises SocketError' do
       @sock = Socket.new(:INET, :STREAM)
 
-      lambda { @sock.connect_address }.should raise_error(SocketError)
+      -> { @sock.connect_address }.should raise_error(SocketError)
     end
   end
 
@@ -110,7 +110,7 @@ describe 'Socket#connect_address' do
         end
 
         it 'raises SocketError' do
-          lambda { @client.connect_address }.should raise_error(SocketError)
+          -> { @client.connect_address }.should raise_error(SocketError)
         end
       end
     end

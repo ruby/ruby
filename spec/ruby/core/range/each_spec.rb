@@ -32,13 +32,35 @@ describe "Range#each" do
     a.should == [x, y]
   end
 
+  ruby_version_is "2.6" do
+    it "works with endless ranges" do
+      a = []
+      eval("(-2..)").each { |x| break if x > 2; a << x }
+      a.should == [-2, -1, 0, 1, 2]
+
+      a = []
+      eval("(-2...)").each { |x| break if x > 2; a << x }
+      a.should == [-2, -1, 0, 1, 2]
+    end
+
+    it "works with String endless ranges" do
+      a = []
+      eval("('A'..)").each { |x| break if x > "D"; a << x }
+      a.should == ["A", "B", "C", "D"]
+
+      a = []
+      eval("('A'...)").each { |x| break if x > "D"; a << x }
+      a.should == ["A", "B", "C", "D"]
+    end
+  end
+
   it "raises a TypeError if the first element does not respond to #succ" do
-    lambda { (0.5..2.4).each { |i| i } }.should raise_error(TypeError)
+    -> { (0.5..2.4).each { |i| i } }.should raise_error(TypeError)
 
     b = mock('x')
     (a = mock('1')).should_receive(:<=>).with(b).and_return(1)
 
-    lambda { (a..b).each { |i| i } }.should raise_error(TypeError)
+    -> { (a..b).each { |i| i } }.should raise_error(TypeError)
   end
 
   it "returns self" do
@@ -54,7 +76,7 @@ describe "Range#each" do
 
   it "raises a TypeError if the first element is a Time object" do
     t = Time.now
-    lambda { (t..t+1).each { |i| i } }.should raise_error(TypeError)
+    -> { (t..t+1).each { |i| i } }.should raise_error(TypeError)
   end
 
   it "passes each Symbol element by using #succ" do

@@ -3,8 +3,8 @@ require_relative 'fixtures/classes'
 
 describe "Array#empty?" do
   it "returns true if the array has no elements" do
-    [].empty?.should == true
-    [1].empty?.should == false
-    [1, 2].empty?.should == false
+    [].should.empty?
+    [1].should_not.empty?
+    [1, 2].should_not.empty?
   end
 end

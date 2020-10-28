@@ -1985,10 +1985,6 @@ fole_s_connect(int argc, VALUE *argv, VALUE self)
 
     rb_scan_args(argc, argv, "1*", &svr_name, &others);
     StringValue(svr_name);
-    if (rb_safe_level() > 0 && OBJ_TAINTED(svr_name)) {
-        rb_raise(rb_eSecurityError, "insecure connection - `%s'",
-		StringValuePtr(svr_name));
-    }
 
     /* get CLSID from OLE server name */
     pBuf = ole_vstr2wc(svr_name);
@@ -2478,16 +2474,8 @@ fole_initialize(int argc, VALUE *argv, VALUE self)
     rb_scan_args(argc, argv, "11*:", &svr_name, &host, &others, &opts);
 
     StringValue(svr_name);
-    if (rb_safe_level() > 0 && OBJ_TAINTED(svr_name)) {
-        rb_raise(rb_eSecurityError, "insecure object creation - `%s'",
-                 StringValuePtr(svr_name));
-    }
     if (!NIL_P(host)) {
         StringValue(host);
-        if (rb_safe_level() > 0 && OBJ_TAINTED(host)) {
-            rb_raise(rb_eSecurityError, "insecure object creation - `%s'",
-                     StringValuePtr(host));
-        }
         return ole_create_dcom(self, svr_name, host, others);
     }
 
@@ -2663,7 +2651,7 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
         /*------------------------------------------
           hash object ==> named dispatch parameters
         --------------------------------------------*/
-        cNamedArgs = rb_long2int(RHASH_SIZE(param));
+        cNamedArgs = rb_long2int((long)RHASH_SIZE(param));
         op.dp.cArgs = cNamedArgs + argc - 2;
         op.pNamedArgs = ALLOCA_N(OLECHAR*, cNamedArgs + 1);
         op.dp.rgvarg = ALLOCA_N(VARIANTARG, op.dp.cArgs);
@@ -3974,6 +3962,7 @@ check_nano_server(void)
     }
 }
 
+LCID cWIN32OLE_lcid;
 
 void
 Init_win32ole(void)

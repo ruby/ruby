@@ -30,8 +30,8 @@ describe "BigDecimal#+" do
   end
 
   it "returns NaN if NaN is involved" do
-    (@one + @nan).nan?.should == true
-    (@nan + @one).nan?.should == true
+    (@one + @nan).should.nan?
+    (@nan + @one).should.nan?
   end
 
   it "returns Infinity or -Infinity if these are involved" do
@@ -41,7 +41,14 @@ describe "BigDecimal#+" do
   end
 
   it "returns NaN if Infinity + (- Infinity)" do
-    (@infinity + @infinity_minus).nan?.should == true
+    (@infinity + @infinity_minus).should.nan?
   end
 
+  describe "with Object" do
+    it "tries to coerce the other operand to self" do
+      object = mock("Object")
+      object.should_receive(:coerce).with(@one).and_return([@one, BigDecimal("42")])
+      (@one + object).should == BigDecimal("43")
+    end
+  end
 end

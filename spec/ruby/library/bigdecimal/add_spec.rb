@@ -73,6 +73,20 @@ describe "BigDecimal#add" do
 #    BigDecimal("0.88").add(0.0, 1).should == BigDecimal("0.9")
 #  end
 
+  describe "with Object" do
+    it "tries to coerce the other operand to self" do
+      object = mock("Object")
+      object.should_receive(:coerce).with(@frac_3).and_return([@frac_3, @frac_4])
+      @frac_3.add(object, 1).should == BigDecimal("0.1E16")
+    end
+  end
+
+  describe "with Rational" do
+    it "produces a BigDecimal" do
+      (@three + Rational(500, 2)).should == BigDecimal("0.253e3")
+    end
+  end
+
   it "favors the precision specified in the second argument over the global limit" do
     BigDecimalSpecs.with_limit(1) do
       BigDecimal('0.888').add(@zero, 3).should == BigDecimal('0.888')
@@ -122,8 +136,8 @@ describe "BigDecimal#add" do
   end
 
   it "returns NaN if NaN is involved" do
-    @one.add(@nan, 10000).nan?.should == true
-    @nan.add(@one, 1).nan?.should == true
+    @one.add(@nan, 10000).should.nan?
+    @nan.add(@one, 1).should.nan?
   end
 
   it "returns Infinity or -Infinity if these are involved" do
@@ -152,27 +166,27 @@ describe "BigDecimal#add" do
   end
 
   it "returns NaN if Infinity + (- Infinity)" do
-    @infinity.add(@infinity_minus, 10000).nan?.should == true
-    @infinity_minus.add(@infinity, 10000).nan?.should == true
+    @infinity.add(@infinity_minus, 10000).should.nan?
+    @infinity_minus.add(@infinity, 10000).should.nan?
   end
 
   it "raises TypeError when adds nil" do
-    lambda {
+    -> {
       @one.add(nil, 10)
     }.should raise_error(TypeError)
-    lambda {
+    -> {
       @one.add(nil, 0)
     }.should raise_error(TypeError)
   end
 
   it "raises TypeError when precision parameter is nil" do
-    lambda {
+    -> {
       @one.add(@one, nil)
     }.should raise_error(TypeError)
   end
 
   it "raises ArgumentError when precision parameter is negative" do
-    lambda {
+    -> {
       @one.add(@one, -10)
     }.should raise_error(ArgumentError)
   end

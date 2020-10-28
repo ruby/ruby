@@ -1,3 +1,3 @@
 class Bundler::Thor
-  VERSION = "0.20.0"
+  VERSION = "1.0.1"
 end

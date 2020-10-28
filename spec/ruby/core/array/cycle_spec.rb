@@ -6,7 +6,7 @@ describe "Array#cycle" do
     ScratchPad.record []
 
     @array = [1, 2, 3]
-    @prc = lambda { |x| ScratchPad << x }
+    @prc = -> x { ScratchPad << x }
   end
 
   it "does not yield and returns nil when the array is empty and passed value is an integer" do
@@ -46,13 +46,13 @@ describe "Array#cycle" do
   end
 
   it "does not rescue StopIteration when not passed a count" do
-    lambda do
+    -> do
       @array.cycle { raise StopIteration }
     end.should raise_error(StopIteration)
   end
 
   it "does not rescue StopIteration when passed a count" do
-    lambda do
+    -> do
       @array.cycle(3) { raise StopIteration }
     end.should raise_error(StopIteration)
   end
@@ -74,23 +74,23 @@ describe "Array#cycle" do
     count = mock("cycle count 2")
     count.should_receive(:to_int).and_return("2")
 
-    lambda { @array.cycle(count, &@prc) }.should raise_error(TypeError)
+    -> { @array.cycle(count, &@prc) }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if passed a String" do
-    lambda { @array.cycle("4") { } }.should raise_error(TypeError)
+    -> { @array.cycle("4") { } }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if passed an Object" do
-    lambda { @array.cycle(mock("cycle count")) { } }.should raise_error(TypeError)
+    -> { @array.cycle(mock("cycle count")) { } }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if passed true" do
-    lambda { @array.cycle(true) { } }.should raise_error(TypeError)
+    -> { @array.cycle(true) { } }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if passed false" do
-    lambda { @array.cycle(false) { } }.should raise_error(TypeError)
+    -> { @array.cycle(false) { } }.should raise_error(TypeError)
   end
 
   before :all do

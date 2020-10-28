@@ -6,6 +6,10 @@ describe "Exception#inspect" do
     Exception.new.inspect.should == "#<Exception: Exception>"
   end
 
+  it "keeps message encoding" do
+    Exception.new('å').inspect.should == "#<Exception: å>"
+  end
+
   it "includes #to_s when the result is non-empty" do
     ExceptionSpecs::OverrideToS.new.inspect.should == "#<ExceptionSpecs::OverrideToS: this is from #to_s>"
   end

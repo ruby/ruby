@@ -3,6 +3,16 @@ require 'test/unit'
 require '-test-/debug'
 
 class SampleClassForTestProfileFrames
+  class << self
+    attr_accessor :sample4
+  end
+
+  self.sample4 = Module.new do
+    def self.corge(block)
+      Sample2.new.baz(block)
+    end
+  end
+
   class Sample2
     def baz(block)
       instance_eval "def zab(block) block.call end"
@@ -10,8 +20,16 @@ class SampleClassForTestProfileFrames
     end
   end
 
+  module Sample3
+    class << self
+      def qux(block)
+        SampleClassForTestProfileFrames.sample4.corge(block)
+      end
+    end
+  end
+
   def self.bar(block)
-    Sample2.new.baz(block)
+    Sample3.qux(block)
   end
 
   def foo(block)
@@ -26,60 +44,76 @@ class TestProfileFrames < Test::Unit::TestCase
     }.resume
 
     labels = [
+      nil,
       "test_profile_frames",
       "zab",
       "baz",
+      "corge",
+      "qux",
       "bar",
       "foo",
       "test_profile_frames",
     ]
     base_labels = [
+      nil,
       "test_profile_frames",
       "zab",
       "baz",
+      "corge",
+      "qux",
       "bar",
       "foo",
       "test_profile_frames",
     ]
     full_labels = [
+      "Bug::Debug.profile_frames",
       "TestProfileFrames#test_profile_frames",
       "#{obj.inspect}.zab",
       "SampleClassForTestProfileFrames::Sample2#baz",
+      "#{SampleClassForTestProfileFrames.sample4.inspect}.corge",
+      "SampleClassForTestProfileFrames::Sample3.qux",
       "SampleClassForTestProfileFrames.bar",
       "SampleClassForTestProfileFrames#foo",
       "TestProfileFrames#test_profile_frames",
     ]
     classes = [
+      Bug::Debug,
       TestProfileFrames,
       obj,
       SampleClassForTestProfileFrames::Sample2,
+      SampleClassForTestProfileFrames.sample4,
+      SampleClassForTestProfileFrames::Sample3,
       SampleClassForTestProfileFrames, # singleton method
       SampleClassForTestProfileFrames,
       TestProfileFrames,
     ]
     singleton_method_p = [
-      false, true, false, true, false, false, false,
+      true, false, true, false, true, true, true, false, false, false,
     ]
     method_names = [
+      "profile_frames",
       "test_profile_frames",
       "zab",
       "baz",
+      "corge",
+      "qux",
       "bar",
       "foo",
       "test_profile_frames",
     ]
     qualified_method_names = [
+      "Bug::Debug.profile_frames",
       "TestProfileFrames#test_profile_frames",
       "#{obj.inspect}.zab",
       "SampleClassForTestProfileFrames::Sample2#baz",
+      "#{SampleClassForTestProfileFrames.sample4.inspect}.corge",
+      "SampleClassForTestProfileFrames::Sample3.qux",
       "SampleClassForTestProfileFrames.bar",
       "SampleClassForTestProfileFrames#foo",
       "TestProfileFrames#test_profile_frames",
     ]
-    paths = [ file=__FILE__, "(eval)", file, file, file, file ]
-    absolute_paths = [ file, nil, file, file, file, file ]
-
-    # pp frames
+    paths = [ nil, file=__FILE__, "(eval)", file, file, file, file, file, file, nil ]
+    absolute_paths = [ "<cfunc>", file, nil, file, file, file, file, file, file, nil ]
 
     assert_equal(labels.size, frames.size)
 
@@ -92,8 +126,8 @@ class TestProfileFrames < Test::Unit::TestCase
       assert_equal(base_labels[i], base_label, err_msg)
       assert_equal(singleton_method_p[i], singleton_p, err_msg)
       assert_equal(method_names[i], method_name, err_msg)
-      assert_match(qualified_method_names[i], qualified_method_name, err_msg)
-      assert_match(full_labels[i], full_label, err_msg)
+      assert_equal(qualified_method_names[i], qualified_method_name, err_msg)
+      assert_equal(full_labels[i], full_label, err_msg)
       assert_match(classes[i].inspect, classpath, err_msg)
       if label == method_name
         c = classes[i]

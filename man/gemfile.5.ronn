@@ -120,13 +120,13 @@ Each _gem_ `MAY` have one or more version specifiers.
 ### REQUIRE AS
 
 Each _gem_ `MAY` specify files that should be used when autorequiring via
-`Bundler.require`. You may pass an array with multiple files or `true` if file
-you want `required` has same name as _gem_ or `false` to
+`Bundler.require`. You may pass an array with multiple files or `true` if the file
+you want `required` has the same name as _gem_ or `false` to
 prevent any file from being autorequired.
 
     gem "redis", :require => ["redis/connection/hiredis", "redis"]
     gem "webmock", :require => false
-    gem "debugger", :require => true
+    gem "byebug", :require => true
 
 The argument defaults to the name of the gem. For example, these are identical:
 
@@ -159,15 +159,12 @@ The Bundler runtime allows its two main methods, `Bundler.setup` and
     Bundler.require(:test)           # requires the _test_ group
 
 The Bundler CLI allows you to specify a list of groups whose gems `bundle install` should
-not install with the `--without` option. To specify multiple groups to ignore, specify a
-list of groups separated by spaces.
+not install with the `without` configuration.
 
-    bundle install --without test
-    bundle install --without development test
+To specify multiple groups to ignore, specify a list of groups separated by spaces.
 
-After running `bundle install --without test`, bundler will remember that you excluded
-the test group in the last installation. The next time you run `bundle install`,
-without any `--without option`, bundler will recall it.
+    bundle config set --local without test
+    bundle config set --local without development test
 
 Also, calling `Bundler.setup` with no parameters, or calling `require "bundler/setup"`
 will setup all groups except for the ones you excluded via `--without` (since they
@@ -176,7 +173,7 @@ are not available).
 Note that on `bundle install`, bundler downloads and evaluates all gems, in order to
 create a single canonical list of all of the required gems and their dependencies.
 This means that you cannot list different versions of the same gems in different
-groups. For more details, see [Understanding Bundler](http://bundler.io/rationale.html).
+groups. For more details, see [Understanding Bundler](https://bundler.io/rationale.html).
 
 ### PLATFORMS
 
@@ -310,14 +307,13 @@ Git repositories support a number of additional options.
 
   * `branch`, `tag`, and `ref`:
     You `MUST` only specify at most one of these options. The default
-    is `:branch => "master"`
-  * For example:
+    is `:branch => "master"`.  For example:
 
-      git "https://github.com/rails/rails.git", :branch => "5-0-stable" do
+      gem "rails", :git => "https://github.com/rails/rails.git", :branch => "5-0-stable"
 
-      git "https://github.com/rails/rails.git", :tag => "v5.0.0" do
+      gem "rails", :git => "https://github.com/rails/rails.git", :tag => "v5.0.0"
 
-      git "https://github.com/rails/rails.git", :ref => "4aded" do
+      gem "rails", :git => "https://github.com/rails/rails.git", :ref => "4aded"
 
   * `submodules`:
     For reference, a [git submodule](https://git-scm.com/book/en/v2/Git-Tools-Submodules)

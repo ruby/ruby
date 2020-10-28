@@ -2,7 +2,6 @@
 require 'rubygems/test_case'
 
 class TestGemResolverBestSet < Gem::TestCase
-
   def setup
     super
 
@@ -30,7 +29,7 @@ class TestGemResolverBestSet < Gem::TestCase
 
     found = set.find_all req
 
-    assert_equal %w[a-1], found.map { |s| s.full_name }
+    assert_equal %w[a-1], found.map {|s| s.full_name }
   end
 
   def test_find_all_fallback
@@ -50,7 +49,7 @@ class TestGemResolverBestSet < Gem::TestCase
 
     found = set.find_all req
 
-    assert_equal %w[a-1], found.map { |s| s.full_name }
+    assert_equal %w[a-1], found.map {|s| s.full_name }
   end
 
   def test_find_all_local
@@ -133,5 +132,4 @@ class TestGemResolverBestSet < Gem::TestCase
 
     assert_equal error, e
   end
-
 end

@@ -5,7 +5,6 @@ require 'rubygems/spec_fetcher'
 require 'rubygems/local_remote_options'
 
 class Gem::Commands::SourcesCommand < Gem::Command
-
   include Gem::LocalRemoteOptions
 
   def initialize
@@ -43,6 +42,8 @@ class Gem::Commands::SourcesCommand < Gem::Command
 
     source = Gem::Source.new source_uri
 
+    check_typo_squatting(source)
+
     begin
       if Gem.sources.include? source
         say "source #{source_uri} already present in the cache"
@@ -59,6 +60,18 @@ class Gem::Commands::SourcesCommand < Gem::Command
     rescue Gem::RemoteFetcher::FetchError => e
       say "Error fetching #{source_uri}:\n\t#{e.message}"
       terminate_interaction 1
+    end
+  end
+
+  def check_typo_squatting(source)
+    if source.typo_squatting?("rubygems.org")
+      question = <<-QUESTION.chomp
+#{source.uri.to_s} is too similar to https://rubygems.org
+
+Do you want to add this source?
+      QUESTION
+
+      terminate_interaction 1 unless ask_yes_no question
     end
   end
 
@@ -122,7 +135,7 @@ RubyGems has been configured to serve gems via the following URLs through
 its history:
 
 * http://gems.rubyforge.org (RubyGems 1.3.6 and earlier)
-* http://rubygems.org       (RubyGems 1.3.7 through 1.8.25)
+* https://rubygems.org/       (RubyGems 1.3.7 through 1.8.25)
 * https://rubygems.org      (RubyGems 2.0.1 and newer)
 
 Since all of these sources point to the same set of gems you only need one
@@ -139,8 +152,8 @@ before it is added.
 
 To remove a source use the --remove argument:
 
-    $ gem sources --remove http://rubygems.org
-    http://rubygems.org removed from sources
+    $ gem sources --remove https://rubygems.org/
+    https://rubygems.org/ removed from sources
 
     EOF
   end
@@ -206,5 +219,4 @@ To remove a source use the --remove argument:
       say "*** Unable to remove #{desc} source cache ***"
     end
   end
-
 end

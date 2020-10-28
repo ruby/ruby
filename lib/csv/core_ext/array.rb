@@ -4,6 +4,6 @@ class Array # :nodoc:
   #   ["CSV", "data"].to_csv
   #     #=> "CSV,data\n"
   def to_csv(**options)
-    CSV.generate_line(self, options)
+    CSV.generate_line(self, **options)
   end
 end

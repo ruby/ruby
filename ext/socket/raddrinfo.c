@@ -199,6 +199,27 @@ nogvl_getaddrinfo(void *arg)
 }
 #endif
 
+#ifdef HAVE_GETADDRINFO_A
+struct gai_suspend_arg
+{
+    struct gaicb *req;
+    struct timespec *timeout;
+};
+
+static void *
+nogvl_gai_suspend(void *arg)
+{
+    int ret;
+    struct gai_suspend_arg *ptr = arg;
+    struct gaicb const *wait_reqs[1];
+
+    wait_reqs[0] = ptr->req;
+    ret = gai_suspend(wait_reqs, 1, ptr->timeout);
+
+    return (void *)(VALUE)ret;
+}
+#endif
+
 static int
 numeric_getaddrinfo(const char *node, const char *service,
         const struct addrinfo *hints,
@@ -318,6 +339,60 @@ rb_getaddrinfo(const char *node, const char *service,
     return ret;
 }
 
+#ifdef HAVE_GETADDRINFO_A
+int
+rb_getaddrinfo_a(const char *node, const char *service,
+               const struct addrinfo *hints,
+               struct rb_addrinfo **res, struct timespec *timeout)
+{
+    struct addrinfo *ai;
+    int ret;
+    int allocated_by_malloc = 0;
+
+    ret = numeric_getaddrinfo(node, service, hints, &ai);
+    if (ret == 0)
+        allocated_by_malloc = 1;
+    else {
+	struct gai_suspend_arg arg;
+	struct gaicb *reqs[1];
+	struct gaicb req;
+
+	req.ar_name = node;
+	req.ar_service = service;
+	req.ar_request = hints;
+
+	reqs[0] = &req;
+	ret = getaddrinfo_a(GAI_NOWAIT, reqs, 1, NULL);
+	if (ret) return ret;
+
+	arg.req = &req;
+	arg.timeout = timeout;
+
+	ret = (int)(VALUE)rb_thread_call_without_gvl(nogvl_gai_suspend, &arg, RUBY_UBF_IO, 0);
+        if (ret && ret != EAI_ALLDONE) {
+            /* EAI_ALLDONE indicates that the request already completed and gai_suspend was redundant */
+            /* on Ubuntu 18.04 (or other systems), gai_suspend(3) returns EAI_SYSTEM/ENOENT on timeout */
+            if (ret == EAI_SYSTEM && errno == ENOENT) {
+                return EAI_AGAIN;
+            } else {
+                return ret;
+            }
+        }
+
+
+	ret = gai_error(reqs[0]);
+	ai = reqs[0]->ar_result;
+    }
+
+    if (ret == 0) {
+        *res = (struct rb_addrinfo *)xmalloc(sizeof(struct rb_addrinfo));
+        (*res)->allocated_by_malloc = allocated_by_malloc;
+        (*res)->ai = ai;
+    }
+    return ret;
+}
+#endif
+
 void
 rb_freeaddrinfo(struct rb_addrinfo *ai)
 {
@@ -429,10 +504,6 @@ str_is_number(const char *p)
 #define str_equal(ptr, len, name) \
     ((ptr)[0] == name[0] && \
      rb_strlen_lit(name) == (len) && memcmp(ptr, name, len) == 0)
-#define SafeStringValueCStr(v) do {\
-    StringValueCStr(v);\
-    rb_check_safe_obj(v);\
-} while(0)
 
 static char*
 host_str(VALUE host, char *hbuf, size_t hbuflen, int *flags_ptr)
@@ -451,7 +522,7 @@ host_str(VALUE host, char *hbuf, size_t hbuflen, int *flags_ptr)
         const char *name;
         size_t len;
 
-        SafeStringValueCStr(host);
+        StringValueCStr(host);
         RSTRING_GETMEM(host, name, len);
         if (!len || str_equal(name, len, "<any>")) {
             make_inetaddr(INADDR_ANY, hbuf, hbuflen);
@@ -490,7 +561,7 @@ port_str(VALUE port, char *pbuf, size_t pbuflen, int *flags_ptr)
         const char *serv;
         size_t len;
 
-        SafeStringValueCStr(port);
+        StringValueCStr(port);
         RSTRING_GETMEM(port, serv, len);
         if (len >= pbuflen) {
             rb_raise(rb_eArgError, "service name too long (%"PRIuSIZE")",
@@ -530,6 +601,42 @@ rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_h
     return res;
 }
 
+#ifdef HAVE_GETADDRINFO_A
+struct rb_addrinfo*
+rsock_getaddrinfo_a(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack, VALUE timeout)
+{
+    struct rb_addrinfo* res = NULL;
+    char *hostp, *portp;
+    int error;
+    char hbuf[NI_MAXHOST], pbuf[NI_MAXSERV];
+    int additional_flags = 0;
+
+    hostp = host_str(host, hbuf, sizeof(hbuf), &additional_flags);
+    portp = port_str(port, pbuf, sizeof(pbuf), &additional_flags);
+
+    if (socktype_hack && hints->ai_socktype == 0 && str_is_number(portp)) {
+       hints->ai_socktype = SOCK_DGRAM;
+    }
+    hints->ai_flags |= additional_flags;
+
+    if (NIL_P(timeout)) {
+        error = rb_getaddrinfo_a(hostp, portp, hints, &res, (struct timespec *)NULL);
+    } else {
+        struct timespec _timeout = rb_time_timespec_interval(timeout);
+        error = rb_getaddrinfo_a(hostp, portp, hints, &res, &_timeout);
+    }
+
+    if (error) {
+        if (hostp && hostp[strlen(hostp)-1] == '\n') {
+            rb_raise(rb_eSocket, "newline at the end of hostname");
+        }
+        rsock_raise_socket_error("getaddrinfo_a", error);
+    }
+
+    return res;
+}
+#endif
+
 int
 rsock_fd_family(int fd)
 {
@@ -554,6 +661,20 @@ rsock_addrinfo(VALUE host, VALUE port, int family, int socktype, int flags)
     hints.ai_flags = flags;
     return rsock_getaddrinfo(host, port, &hints, 1);
 }
+
+#ifdef HAVE_GETADDRINFO_A
+struct rb_addrinfo*
+rsock_addrinfo_a(VALUE host, VALUE port, int family, int socktype, int flags, VALUE timeout)
+{
+    struct addrinfo hints;
+
+    MEMZERO(&hints, struct addrinfo, 1);
+    hints.ai_family = family;
+    hints.ai_socktype = socktype;
+    hints.ai_flags = flags;
+    return rsock_getaddrinfo_a(host, port, &hints, 1, timeout);
+}
+#endif
 
 VALUE
 rsock_ipaddr(struct sockaddr *sockaddr, socklen_t sockaddrlen, int norevlookup)
@@ -597,16 +718,21 @@ rsock_ipaddr(struct sockaddr *sockaddr, socklen_t sockaddrlen, int norevlookup)
 }
 
 #ifdef HAVE_SYS_UN_H
+static long
+unixsocket_len(const struct sockaddr_un *su, socklen_t socklen)
+{
+    const char *s = su->sun_path, *e = (const char*)su + socklen;
+    while (s < e && *(e-1) == '\0')
+        e--;
+    return e - s;
+}
+
 VALUE
 rsock_unixpath_str(struct sockaddr_un *sockaddr, socklen_t len)
 {
-    char *s, *e;
-    s = sockaddr->sun_path;
-    e = (char *)sockaddr + len;
-    while (s < e && *(e-1) == '\0')
-        e--;
-    if (s <= e)
-        return rb_str_new(s, e-s);
+    long n = unixsocket_len(sockaddr, len);
+    if (n >= 0)
+        return rb_str_new(sockaddr->sun_path, n);
     else
         return rb_str_new2("");
 }
@@ -649,8 +775,9 @@ struct hostent_arg {
 };
 
 static VALUE
-make_hostent_internal(struct hostent_arg *arg)
+make_hostent_internal(VALUE v)
 {
+    struct hostent_arg *arg = (void *)v;
     VALUE host = arg->host;
     struct addrinfo* addr = arg->addr->ai;
     VALUE (*ipaddr)(struct sockaddr*, socklen_t) = arg->ipaddr;
@@ -811,7 +938,7 @@ rsock_addrinfo_new(struct sockaddr *addr, socklen_t len,
 static struct rb_addrinfo *
 call_getaddrinfo(VALUE node, VALUE service,
                  VALUE family, VALUE socktype, VALUE protocol, VALUE flags,
-                 int socktype_hack)
+                 int socktype_hack, VALUE timeout)
 {
     struct addrinfo hints;
     struct rb_addrinfo *res;
@@ -828,7 +955,12 @@ call_getaddrinfo(VALUE node, VALUE service,
     if (!NIL_P(flags)) {
 	hints.ai_flags = NUM2INT(flags);
     }
+
+#ifdef HAVE_GETADDRINFO_A
+    res = rsock_getaddrinfo_a(node, service, &hints, socktype_hack, timeout);
+#else
     res = rsock_getaddrinfo(node, service, &hints, socktype_hack);
+#endif
 
     if (res == NULL)
 	rb_raise(rb_eSocket, "host not found");
@@ -842,13 +974,13 @@ init_addrinfo_getaddrinfo(rb_addrinfo_t *rai, VALUE node, VALUE service,
                           VALUE family, VALUE socktype, VALUE protocol, VALUE flags,
                           VALUE inspectnode, VALUE inspectservice)
 {
-    struct rb_addrinfo *res = call_getaddrinfo(node, service, family, socktype, protocol, flags, 1);
+    struct rb_addrinfo *res = call_getaddrinfo(node, service, family, socktype, protocol, flags, 1, Qnil);
     VALUE canonname;
     VALUE inspectname = rb_str_equal(node, inspectnode) ? Qnil : make_inspectname(inspectnode, inspectservice, res->ai);
 
     canonname = Qnil;
     if (res->ai->ai_canonname) {
-        canonname = rb_tainted_str_new_cstr(res->ai->ai_canonname);
+        canonname = rb_str_new_cstr(res->ai->ai_canonname);
         OBJ_FREEZE(canonname);
     }
 
@@ -898,8 +1030,6 @@ make_inspectname(VALUE node, VALUE service, struct addrinfo *res)
             rb_str_catf(inspectname, ":%d", FIX2INT(service));
     }
     if (!NIL_P(inspectname)) {
-        OBJ_INFECT(inspectname, node);
-        OBJ_INFECT(inspectname, service);
         OBJ_FREEZE(inspectname);
     }
     return inspectname;
@@ -912,13 +1042,13 @@ addrinfo_firstonly_new(VALUE node, VALUE service, VALUE family, VALUE socktype, 
     VALUE canonname;
     VALUE inspectname;
 
-    struct rb_addrinfo *res = call_getaddrinfo(node, service, family, socktype, protocol, flags, 0);
+    struct rb_addrinfo *res = call_getaddrinfo(node, service, family, socktype, protocol, flags, 0, Qnil);
 
     inspectname = make_inspectname(node, service, res->ai);
 
     canonname = Qnil;
     if (res->ai->ai_canonname) {
-        canonname = rb_tainted_str_new_cstr(res->ai->ai_canonname);
+        canonname = rb_str_new_cstr(res->ai->ai_canonname);
         OBJ_FREEZE(canonname);
     }
 
@@ -932,13 +1062,13 @@ addrinfo_firstonly_new(VALUE node, VALUE service, VALUE family, VALUE socktype, 
 }
 
 static VALUE
-addrinfo_list_new(VALUE node, VALUE service, VALUE family, VALUE socktype, VALUE protocol, VALUE flags)
+addrinfo_list_new(VALUE node, VALUE service, VALUE family, VALUE socktype, VALUE protocol, VALUE flags, VALUE timeout)
 {
     VALUE ret;
     struct addrinfo *r;
     VALUE inspectname;
 
-    struct rb_addrinfo *res = call_getaddrinfo(node, service, family, socktype, protocol, flags, 0);
+    struct rb_addrinfo *res = call_getaddrinfo(node, service, family, socktype, protocol, flags, 0, timeout);
 
     inspectname = make_inspectname(node, service, res->ai);
 
@@ -948,7 +1078,7 @@ addrinfo_list_new(VALUE node, VALUE service, VALUE family, VALUE socktype, VALUE
         VALUE canonname = Qnil;
 
         if (r->ai_canonname) {
-            canonname = rb_tainted_str_new_cstr(r->ai_canonname);
+            canonname = rb_str_new_cstr(r->ai_canonname);
             OBJ_FREEZE(canonname);
         }
 
@@ -984,6 +1114,12 @@ init_unix_addrinfo(rb_addrinfo_t *rai, VALUE path, int socktype)
     len = rsock_unix_sockaddr_len(path);
     init_addrinfo(rai, (struct sockaddr *)&un, len,
 		  PF_UNIX, socktype, 0, Qnil, Qnil);
+}
+
+static long
+rai_unixsocket_len(const rb_addrinfo_t *rai)
+{
+    return unixsocket_len(&rai->addr.un, rai->sockaddr_len);
 }
 #endif
 
@@ -1114,16 +1250,16 @@ addrinfo_initialize(int argc, VALUE *argv, VALUE self)
 }
 
 static int
-get_afamily(struct sockaddr *addr, socklen_t len)
+get_afamily(const struct sockaddr *addr, socklen_t len)
 {
-    if ((socklen_t)((char*)&addr->sa_family + sizeof(addr->sa_family) - (char*)addr) <= len)
+    if ((socklen_t)((const char*)&addr->sa_family + sizeof(addr->sa_family) - (char*)addr) <= len)
         return addr->sa_family;
     else
         return AF_UNSPEC;
 }
 
 static int
-ai_get_afamily(rb_addrinfo_t *rai)
+ai_get_afamily(const rb_addrinfo_t *rai)
 {
     return get_afamily(&rai->addr.addr, rai->sockaddr_len);
 }
@@ -1232,16 +1368,15 @@ rsock_inspect_sockaddr(struct sockaddr *sockaddr_arg, socklen_t socklen, VALUE r
           {
             struct sockaddr_un *addr = &sockaddr->un;
             char *p, *s, *e;
+            long len = unixsocket_len(addr, socklen);
             s = addr->sun_path;
-            e = (char*)addr + socklen;
-            while (s < e && *(e-1) == '\0')
-                e--;
-            if (e < s)
+            if (len < 0)
                 rb_str_cat2(ret, "too-short-AF_UNIX-sockaddr");
-            else if (s == e)
+            else if (len == 0)
                 rb_str_cat2(ret, "empty-path-AF_UNIX-sockaddr");
             else {
                 int printable_only = 1;
+                e = s + len;
                 p = s;
                 while (p < e) {
                     printable_only = printable_only && ISPRINT(*p) && !ISSPACE(*p);
@@ -1567,13 +1702,7 @@ addrinfo_mdump(VALUE self)
 #ifdef HAVE_SYS_UN_H
       case AF_UNIX:
       {
-        struct sockaddr_un *su = &rai->addr.un;
-        char *s, *e;
-        s = su->sun_path;
-        e = (char*)su + rai->sockaddr_len;
-        while (s < e && *(e-1) == '\0')
-            e--;
-        sockaddr = rb_str_new(s, e-s);
+        sockaddr = rb_str_new(rai->addr.un.sun_path, rai_unixsocket_len(rai));
         break;
       }
 #endif
@@ -1691,7 +1820,7 @@ addrinfo_mload(VALUE self, VALUE ary)
 #endif
         res = call_getaddrinfo(rb_ary_entry(pair, 0), rb_ary_entry(pair, 1),
                                INT2NUM(pfamily), INT2NUM(socktype), INT2NUM(protocol),
-                               INT2NUM(flags), 1);
+                               INT2NUM(flags), 1, Qnil);
 
         len = res->ai->ai_addrlen;
         memcpy(&ss, res->ai->ai_addr, res->ai->ai_addrlen);
@@ -1788,7 +1917,6 @@ addrinfo_to_sockaddr(VALUE self)
     rb_addrinfo_t *rai = get_addrinfo(self);
     VALUE ret;
     ret = rb_str_new((char*)&rai->addr, rai->sockaddr_len);
-    OBJ_INFECT(ret, self);
     return ret;
 }
 
@@ -1796,7 +1924,7 @@ addrinfo_to_sockaddr(VALUE self)
  * call-seq:
  *   addrinfo.canonname => string or nil
  *
- * returns the canonical name as an string.
+ * returns the canonical name as a string.
  *
  * nil is returned if no canonical name.
  *
@@ -2307,27 +2435,26 @@ addrinfo_unix_path(VALUE self)
     rb_addrinfo_t *rai = get_addrinfo(self);
     int family = ai_get_afamily(rai);
     struct sockaddr_un *addr;
-    char *s, *e;
+    long n;
 
     if (family != AF_UNIX)
 	rb_raise(rb_eSocket, "need AF_UNIX address");
 
     addr = &rai->addr.un;
 
-    s = addr->sun_path;
-    e = (char*)addr + rai->sockaddr_len;
-    if (e < s)
+    n = rai_unixsocket_len(rai);
+    if (n < 0)
         rb_raise(rb_eSocket, "too short AF_UNIX address: %"PRIuSIZE" bytes given for minimum %"PRIuSIZE" bytes.",
-            (size_t)rai->sockaddr_len, (size_t)(s - (char *)addr));
-    if (addr->sun_path + sizeof(addr->sun_path) < e)
+                 (size_t)rai->sockaddr_len, offsetof(struct sockaddr_un, sun_path));
+    if ((long)sizeof(addr->sun_path) < n)
         rb_raise(rb_eSocket,
             "too long AF_UNIX path (%"PRIuSIZE" bytes given but %"PRIuSIZE" bytes max)",
-            (size_t)(e - addr->sun_path), sizeof(addr->sun_path));
-    while (s < e && *(e-1) == '\0')
-        e--;
-    return rb_str_new(s, e-s);
+            (size_t)n, sizeof(addr->sun_path));
+    return rb_str_new(addr->sun_path, n);
 }
 #endif
+
+static ID id_timeout;
 
 /*
  * call-seq:
@@ -2375,10 +2502,16 @@ addrinfo_unix_path(VALUE self)
 static VALUE
 addrinfo_s_getaddrinfo(int argc, VALUE *argv, VALUE self)
 {
-    VALUE node, service, family, socktype, protocol, flags;
+    VALUE node, service, family, socktype, protocol, flags, opts, timeout;
 
-    rb_scan_args(argc, argv, "24", &node, &service, &family, &socktype, &protocol, &flags);
-    return addrinfo_list_new(node, service, family, socktype, protocol, flags);
+    rb_scan_args(argc, argv, "24:", &node, &service, &family, &socktype,
+		 &protocol, &flags, &opts);
+    rb_get_kwargs(opts, &id_timeout, 0, 1, &timeout);
+    if (timeout == Qundef) {
+	timeout = Qnil;
+    }
+
+    return addrinfo_list_new(node, service, family, socktype, protocol, flags, timeout);
 }
 
 /*
@@ -2466,7 +2599,6 @@ addrinfo_s_unix(int argc, VALUE *argv, VALUE self)
     addr = addrinfo_s_allocate(rb_cAddrinfo);
     DATA_PTR(addr) = rai = alloc_addrinfo();
     init_unix_addrinfo(rai, path, socktype);
-    OBJ_INFECT(addr, path);
     return addr;
 }
 
@@ -2563,6 +2695,8 @@ rsock_init_addrinfo(void)
      * The Addrinfo class maps <tt>struct addrinfo</tt> to ruby.  This
      * structure identifies an Internet host and a service.
      */
+    id_timeout = rb_intern("timeout");
+
     rb_cAddrinfo = rb_define_class("Addrinfo", rb_cData);
     rb_define_alloc_func(rb_cAddrinfo, addrinfo_s_allocate);
     rb_define_method(rb_cAddrinfo, "initialize", addrinfo_initialize, -1);

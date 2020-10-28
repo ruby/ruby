@@ -1,7 +1,9 @@
 # frozen_string_literal: true
+
 require 'fiddle.so'
-require 'fiddle/function'
 require 'fiddle/closure'
+require 'fiddle/function'
+require 'fiddle/version'
 
 module Fiddle
   if WINDOWS

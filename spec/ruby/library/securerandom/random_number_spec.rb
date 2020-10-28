@@ -1,8 +1,12 @@
 require_relative '../../spec_helper'
+require_relative '../../core/random/shared/rand'
 
 require 'securerandom'
 
 describe "SecureRandom.random_number" do
+  it_behaves_like :random_number, :rand, SecureRandom
+  it_behaves_like :random_number, :random_number, SecureRandom
+
   it "generates a random positive number smaller then the positive integer argument" do
     (1..64).each do |idx|
       num = SecureRandom.random_number(idx)
@@ -86,7 +90,7 @@ describe "SecureRandom.random_number" do
   end
 
   it "raises ArgumentError if the argument is non-numeric" do
-    lambda {
+    -> {
       SecureRandom.random_number(Object.new)
     }.should raise_error(ArgumentError)
   end

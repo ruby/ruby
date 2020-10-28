@@ -18,7 +18,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def setup
-    @dir = Dir.mktmpdir("rubytest-file")
+    @dir = Dir.mktmpdir("ruby-test")
     File.chown(-1, Process.gid, @dir)
   end
 
@@ -70,7 +70,7 @@ class TestFileExhaustive < Test::Unit::TestCase
 
   def notownedfile
     return @notownedfile if defined? @notownedfile
-    if Process.euid != 0
+    if Process.euid != File.stat("/").uid
       @notownedfile = '/'
     else
       @notownedfile = nil
@@ -130,7 +130,7 @@ class TestFileExhaustive < Test::Unit::TestCase
     @hardlinkfile = make_tmp_filename("hardlinkfile")
     begin
       File.link(regular_file, @hardlinkfile)
-    rescue NotImplementedError, Errno::EINVAL	# EINVAL for Windows Vista
+    rescue NotImplementedError, Errno::EINVAL, Errno::EACCES   # EINVAL for Windows Vista, EACCES for Android Termux
       @hardlinkfile = nil
     end
     @hardlinkfile
@@ -623,6 +623,23 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_raise(Errno::ENOENT) { File.ctime(nofile) }
   end
 
+  def test_birthtime
+    skip if RUBY_PLATFORM =~ /android/
+    [regular_file, utf8_file].each do |file|
+      t1 = File.birthtime(file)
+      t2 = File.open(file) {|f| f.birthtime}
+      assert_kind_of(Time, t1)
+      assert_kind_of(Time, t2)
+      assert_equal(t1, t2)
+    rescue Errno::ENOSYS, NotImplementedError
+      # ignore unsupporting filesystems
+    rescue Errno::EPERM
+      # Docker prohibits statx syscall by the default.
+      skip("statx(2) is prohibited by seccomp")
+    end
+    assert_raise(Errno::ENOENT) { File.birthtime(nofile) }
+  end if File.respond_to?(:birthtime)
+
   def test_chmod
     [regular_file, utf8_file].each do |file|
       assert_equal(1, File.chmod(0444, file))
@@ -667,7 +684,6 @@ class TestFileExhaustive < Test::Unit::TestCase
   def test_utime_symlinkfile
     return unless symlinkfile
     t = Time.local(2000)
-    stat = File.lstat(symlinkfile)
     assert_equal(1, File.utime(t, t, symlinkfile))
     assert_equal(t, File.stat(regular_file).atime)
     assert_equal(t, File.stat(regular_file).mtime)
@@ -1043,32 +1059,6 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_match(%r"\A#{DRIVE}/foo\z"i, File.expand_path('/foo'))
   end
 
-  def test_expand_path_returns_tainted_strings_or_not
-    assert_equal(true, File.expand_path('foo').tainted?)
-    assert_equal(true, File.expand_path('foo'.taint).tainted?)
-    assert_equal(true, File.expand_path('/foo'.taint).tainted?)
-    assert_equal(true, File.expand_path('foo', 'bar').tainted?)
-    assert_equal(true, File.expand_path('foo', '/bar'.taint).tainted?)
-    assert_equal(true, File.expand_path('foo'.taint, '/bar').tainted?)
-    assert_equal(true, File.expand_path('~').tainted?) if ENV["HOME"]
-
-    if DRIVE
-      assert_equal(true, File.expand_path('/foo').tainted?)
-      assert_equal(false, File.expand_path('//foo').tainted?)
-      assert_equal(true, File.expand_path('C:/foo'.taint).tainted?)
-      assert_equal(false, File.expand_path('C:/foo').tainted?)
-      assert_equal(true, File.expand_path('foo', '/bar').tainted?)
-      assert_equal(true, File.expand_path('foo', 'C:/bar'.taint).tainted?)
-      assert_equal(true, File.expand_path('foo'.taint, 'C:/bar').tainted?)
-      assert_equal(false, File.expand_path('foo', 'C:/bar').tainted?)
-      assert_equal(false, File.expand_path('C:/foo/../bar').tainted?)
-      assert_equal(false, File.expand_path('foo', '//bar').tainted?)
-    else
-      assert_equal(false, File.expand_path('/foo').tainted?)
-      assert_equal(false, File.expand_path('foo', '/bar').tainted?)
-    end
-  end
-
   def test_expand_path_converts_a_pathname_to_an_absolute_pathname_using_home_as_base
     old_home = ENV["HOME"]
     home = ENV["HOME"] = "#{DRIVE}/UserHome"
@@ -1274,21 +1264,23 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_equal(".test", File.extname(regular_file))
     assert_equal(".test", File.extname(utf8_file))
     prefixes = ["", "/", ".", "/.", "bar/.", "/bar/."]
-    infixes = ["", " ", "."]
+    infixes = ["", " "]
     infixes2 = infixes + [".ext "]
     appendixes = [""]
     if NTFS
       appendixes << " " << "." << "::$DATA" << "::$DATA.bar"
+    else
+      appendixes << [".", "."]
     end
     prefixes.each do |prefix|
-      appendixes.each do |appendix|
+      appendixes.each do |appendix, ext = ""|
         infixes.each do |infix|
           path = "#{prefix}foo#{infix}#{appendix}"
-          assert_equal("", File.extname(path), "File.extname(#{path.inspect})")
+          assert_equal(ext, File.extname(path), "File.extname(#{path.inspect})")
         end
         infixes2.each do |infix|
           path = "#{prefix}foo#{infix}.ext#{appendix}"
-          assert_equal(".ext", File.extname(path), "File.extname(#{path.inspect})")
+          assert_equal(ext.empty? ? ".ext" : appendix, File.extname(path), "File.extname(#{path.inspect})")
         end
       end
     end

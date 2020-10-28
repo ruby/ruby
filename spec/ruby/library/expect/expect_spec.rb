@@ -37,7 +37,7 @@ platform_is_not :windows do
       @write << "prompt> hello"
       @read.close
 
-      lambda {
+      -> {
         @read.expect("hello")
       }.should raise_error(IOError)
     end

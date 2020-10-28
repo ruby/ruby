@@ -13,7 +13,7 @@ describe "ARGF.readchar" do
 
   it "raises EOFError when end of stream reached" do
     argf [@file1, @file2] do
-      lambda { while @argf.readchar; end }.should raise_error(EOFError)
+      -> { while @argf.readchar; end }.should raise_error(EOFError)
     end
   end
 end

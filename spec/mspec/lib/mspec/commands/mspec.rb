@@ -21,7 +21,7 @@ class MSpecMain < MSpecScript
     config[:launch]   = []
   end
 
-  def options(argv=ARGV)
+  def options(argv = ARGV)
     config[:command] = argv.shift if ["ci", "run", "tag"].include?(argv[0])
 
     options = MSpecOptions.new "mspec [COMMAND] [options] (FILE|DIRECTORY|GLOB)+", 30, config
@@ -90,8 +90,7 @@ class MSpecMain < MSpecScript
 
   def multi_exec(argv)
     require 'mspec/runner/formatters/multi'
-    formatter = MultiFormatter.new
-    warn "formatter options is ignored due to multi option" if config[:formatter]
+    formatter = config_formatter.extend(MultiFormatter)
 
     require 'mspec/runner/parallel'
     processes = cores(@files.size)

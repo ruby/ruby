@@ -14,7 +14,7 @@ Gem::Specification.new do |spec|
   spec.summary       = %q{Mixin to extend objects to be handled like a Mutex.}
   spec.description   = %q{Mixin to extend objects to be handled like a Mutex.}
   spec.homepage      = "https://github.com/ruby/mutex_m"
-  spec.license       = "BSD-2-Clause"
+  spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
   spec.files         = [".gitignore", ".travis.yml", "Gemfile", "LICENSE.txt", "README.md", "Rakefile", "bin/console", "bin/setup", "lib/mutex_m.rb", "mutex_m.gemspec"]
   spec.bindir        = "exe"

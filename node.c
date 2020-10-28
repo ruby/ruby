@@ -9,8 +9,13 @@
 
 **********************************************************************/
 
+#include "internal.h"
+#include "internal/hash.h"
+#include "internal/variable.h"
 #include "ruby/ruby.h"
 #include "vm_core.h"
+
+#define NODE_BUF_DEFAULT_LEN 16
 
 #define A(str) rb_str_cat2(buf, (str))
 #define AR(str) rb_str_concat(buf, (str))
@@ -21,7 +26,7 @@
 #define A_ID(id) add_id(buf, (id))
 #define A_INT(val) rb_str_catf(buf, "%d", (val))
 #define A_LONG(val) rb_str_catf(buf, "%ld", (val))
-#define A_LIT(lit) AR(rb_inspect(lit))
+#define A_LIT(lit) AR(rb_dump_literal(lit))
 #define A_NODE_HEADER(node, term) \
     rb_str_catf(buf, "@ %s (line: %d, location: (%d,%d)-(%d,%d))%s"term, \
 		ruby_node_name(nd_type(node)), nd_line(node), \
@@ -58,7 +63,7 @@
 #define SIMPLE_FIELD1(name, ann)    SIMPLE_FIELD(FIELD_NAME_LEN(name, ann), FIELD_NAME_DESC(name, ann))
 #define F_CUSTOM1(name, ann)	    SIMPLE_FIELD1(#name, ann)
 #define F_ID(name, ann) 	    SIMPLE_FIELD1(#name, ann) A_ID(node->name)
-#define F_GENTRY(name, ann)	    SIMPLE_FIELD1(#name, ann) A_ID((node->name)->id)
+#define F_GENTRY(name, ann)	    SIMPLE_FIELD1(#name, ann) A_ID(node->name)
 #define F_INT(name, ann)	    SIMPLE_FIELD1(#name, ann) A_INT(node->name)
 #define F_LONG(name, ann)	    SIMPLE_FIELD1(#name, ann) A_LONG(node->name)
 #define F_LIT(name, ann)	    SIMPLE_FIELD1(#name, ann) A_LIT(node->name)
@@ -73,6 +78,25 @@
     }
 
 #define LAST_NODE (next_indent = "    ")
+
+VALUE
+rb_dump_literal(VALUE lit)
+{
+    if (!RB_SPECIAL_CONST_P(lit)) {
+        VALUE str;
+        switch (RB_BUILTIN_TYPE(lit)) {
+          case T_CLASS: case T_MODULE: case T_ICLASS:
+            str = rb_class_path(lit);
+            if (FL_TEST(lit, FL_SINGLETON)) {
+                str = rb_sprintf("<%"PRIsVALUE">", str);
+            }
+            return str;
+          default:
+            break;
+        }
+    }
+    return rb_inspect(lit);
+}
 
 static void
 add_indent(VALUE buf, VALUE indent)
@@ -92,7 +116,7 @@ add_id(VALUE buf, ID id)
 	    A(":"); AR(str);
 	}
 	else {
-	    A("(internal variable)");
+            rb_str_catf(buf, "(internal variable: 0x%"PRIsVALUE")", id);
 	}
     }
 }
@@ -112,7 +136,7 @@ dump_array(VALUE buf, VALUE indent, int comment, const NODE *node)
     const char *next_indent = default_indent;
     F_LONG(nd_alen, "length");
     F_NODE(nd_head, "element");
-    while (node->nd_next && nd_type(node->nd_next) == NODE_ARRAY) {
+    while (node->nd_next && nd_type(node->nd_next) == NODE_LIST) {
 	node = node->nd_next;
 	F_NODE(nd_head, "element");
     }
@@ -195,6 +219,14 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	LAST_NODE;
 	F_NODE(nd_body, "when clauses");
 	return;
+      case NODE_CASE3:
+        ANN("case statement (pattern matching)");
+        ANN("format: case [nd_head]; [nd_body]; end");
+        ANN("example: case x; in 1; foo; in 2; bar; else baz; end");
+        F_NODE(nd_head, "case expr");
+        LAST_NODE;
+        F_NODE(nd_body, "in clauses");
+        return;
 
       case NODE_WHEN:
 	ANN("when clause");
@@ -205,6 +237,16 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	LAST_NODE;
 	F_NODE(nd_next, "next when clause");
 	return;
+
+      case NODE_IN:
+        ANN("in clause");
+        ANN("format: in [nd_head]; [nd_body]; (in or else) [nd_next]");
+        ANN("example: case x; in 1; foo; in 2; bar; else baz; end");
+        F_NODE(nd_head, "in pattern");
+        F_NODE(nd_body, "in body");
+        LAST_NODE;
+        F_NODE(nd_next, "next in clause");
+        return;
 
       case NODE_WHILE:
 	ANN("while statement");
@@ -537,8 +579,8 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	ANN("example: super");
 	return;
 
-      case NODE_ARRAY:
-	ANN("array constructor");
+      case NODE_LIST:
+	ANN("list constructor");
 	ANN("format: [ [nd_head], [nd_next].. ] (length: [nd_alen])");
 	ANN("example: [1, 2, 3]");
 	goto ary;
@@ -550,14 +592,14 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	dump_array(buf, indent, comment, node);
 	return;
 
-      case NODE_ZARRAY:
-	ANN("empty array constructor");
+      case NODE_ZLIST:
+	ANN("empty list constructor");
 	ANN("format: []");
 	ANN("example: []");
 	return;
 
       case NODE_HASH:
-	if (!node->nd_alen) {
+        if (!node->nd_brace) {
 	    ANN("keyword arguments");
 	    ANN("format: nd_head");
 	    ANN("example: a: 1, b: 2");
@@ -567,8 +609,8 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	    ANN("format: { [nd_head] }");
 	    ANN("example: { 1 => 2, 3 => 4 }");
 	}
-	F_CUSTOM1(nd_alen, "keyword arguments or hash literal") {
-	    switch (node->nd_alen) {
+        F_CUSTOM1(nd_brace, "keyword arguments or hash literal") {
+            switch (node->nd_brace) {
 	      case 0: A("0 (keyword argument)"); break;
 	      case 1: A("1 (hash literal)"); break;
 	    }
@@ -718,6 +760,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	ANN("example: :\"foo#{ bar }baz\"");
       dlit:
 	F_LIT(nd_lit, "preceding string");
+	if (!node->nd_next) return;
 	F_NODE(nd_next->nd_head, "interpolation");
 	LAST_NODE;
 	F_NODE(nd_next->nd_next, "tailing strings");
@@ -934,15 +977,6 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	F_NODE(nd_args, "arguments");
 	return;
 
-      case NODE_METHREF:
-        ANN("method reference");
-        ANN("format: [nd_recv].:[nd_mid]");
-        ANN("example: foo.:method");
-        F_NODE(nd_recv, "receiver");
-        LAST_NODE;
-        F_ID(nd_mid, "method name");
-        return;
-
       case NODE_LAMBDA:
 	ANN("lambda expression");
 	ANN("format: -> [nd_body]");
@@ -992,7 +1026,14 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	F_INT(nd_ainfo->post_args_num, "count of mandatory post-arguments");
 	F_NODE(nd_ainfo->post_init, "initialization of post-arguments");
 	F_ID(nd_ainfo->first_post_arg, "first post argument");
-	F_ID(nd_ainfo->rest_arg, "rest argument");
+        F_CUSTOM1(nd_ainfo->rest_arg, "rest argument") {
+            if (node->nd_ainfo->rest_arg == NODE_SPECIAL_EXCESSIVE_COMMA) {
+                A("1 (excessed comma)");
+            }
+            else {
+                A_ID(node->nd_ainfo->rest_arg);
+            }
+        }
 	F_ID(nd_ainfo->block_arg, "block argument");
 	F_NODE(nd_ainfo->opt_args, "optional arguments");
 	F_NODE(nd_ainfo->kw_args, "keyword arguments");
@@ -1016,6 +1057,56 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	LAST_NODE;
 	F_NODE(nd_body, "body");
 	return;
+
+      case NODE_ARYPTN:
+        ANN("array pattern");
+        ANN("format: [nd_pconst]([pre_args], ..., *[rest_arg], [post_args], ...)");
+        F_NODE(nd_pconst, "constant");
+        F_NODE(nd_apinfo->pre_args, "pre arguments");
+        if (NODE_NAMED_REST_P(node->nd_apinfo->rest_arg)) {
+            F_NODE(nd_apinfo->rest_arg, "rest argument");
+        }
+        else {
+            F_MSG(nd_apinfo->rest_arg, "rest argument", "NODE_SPECIAL_NO_NAME_REST (rest argument without name)");
+        }
+        LAST_NODE;
+        F_NODE(nd_apinfo->post_args, "post arguments");
+        return;
+
+      case NODE_FNDPTN:
+        ANN("find pattern");
+        ANN("format: [nd_pconst](*[pre_rest_arg], args, ..., *[post_rest_arg])");
+        F_NODE(nd_pconst, "constant");
+        if (NODE_NAMED_REST_P(node->nd_fpinfo->pre_rest_arg)) {
+            F_NODE(nd_fpinfo->pre_rest_arg, "pre rest argument");
+        }
+        else {
+            F_MSG(nd_fpinfo->pre_rest_arg, "pre rest argument", "NODE_SPECIAL_NO_NAME_REST (rest argument without name)");
+        }
+        F_NODE(nd_fpinfo->args, "arguments");
+
+        LAST_NODE;
+        if (NODE_NAMED_REST_P(node->nd_fpinfo->post_rest_arg)) {
+            F_NODE(nd_fpinfo->post_rest_arg, "post rest argument");
+        }
+        else {
+            F_MSG(nd_fpinfo->post_rest_arg, "post rest argument", "NODE_SPECIAL_NO_NAME_REST (rest argument without name)");
+        }
+        return;
+
+      case NODE_HSHPTN:
+        ANN("hash pattern");
+        ANN("format: [nd_pconst]([nd_pkwargs], ..., **[nd_pkwrestarg])");
+        F_NODE(nd_pconst, "constant");
+        F_NODE(nd_pkwargs, "keyword arguments");
+        LAST_NODE;
+        if (node->nd_pkwrestarg == NODE_SPECIAL_NO_REST_KEYWORD) {
+            F_MSG(nd_pkwrestarg, "keyword rest argument", "NODE_SPECIAL_NO_REST_KEYWORD (**nil)");
+        }
+        else {
+            F_NODE(nd_pkwrestarg, "keyword rest argument");
+        }
+        return;
 
       case NODE_ARGS_AUX:
       case NODE_LAST:
@@ -1060,30 +1151,52 @@ rb_node_init(NODE *n, enum node_type type, VALUE a0, VALUE a1, VALUE a2)
 
 typedef struct node_buffer_elem_struct {
     struct node_buffer_elem_struct *next;
+    long len;
     NODE buf[FLEX_ARY_LEN];
 } node_buffer_elem_t;
 
-struct node_buffer_struct {
+typedef struct {
     long idx, len;
     node_buffer_elem_t *head;
     node_buffer_elem_t *last;
-    VALUE mark_ary;
+} node_buffer_list_t;
+
+struct node_buffer_struct {
+    node_buffer_list_t unmarkable;
+    node_buffer_list_t markable;
+    ID *local_tables;
+    VALUE mark_hash;
 };
+
+static void
+init_node_buffer_list(node_buffer_list_t * nb, node_buffer_elem_t *head)
+{
+    nb->idx = 0;
+    nb->len = NODE_BUF_DEFAULT_LEN;
+    nb->head = nb->last = head;
+    nb->head->len = nb->len;
+    nb->head->next = NULL;
+}
 
 static node_buffer_t *
 rb_node_buffer_new(void)
 {
-    node_buffer_t *nb = xmalloc(sizeof(node_buffer_t) + offsetof(node_buffer_elem_t, buf) + 16 * sizeof(NODE));
-    nb->idx = 0;
-    nb->len = 16;
-    nb->head = nb->last = (node_buffer_elem_t*) &nb[1];
-    nb->head->next = NULL;
-    nb->mark_ary = rb_ary_tmp_new(0);
+    const size_t bucket_size = offsetof(node_buffer_elem_t, buf) + NODE_BUF_DEFAULT_LEN * sizeof(NODE);
+    const size_t alloc_size = sizeof(node_buffer_t) + (bucket_size * 2);
+    STATIC_ASSERT(
+        integer_overflow,
+        offsetof(node_buffer_elem_t, buf) + NODE_BUF_DEFAULT_LEN * sizeof(NODE)
+        > sizeof(node_buffer_t) + 2 * sizeof(node_buffer_elem_t));
+    node_buffer_t *nb = ruby_xmalloc(alloc_size);
+    init_node_buffer_list(&nb->unmarkable, (node_buffer_elem_t*)&nb[1]);
+    init_node_buffer_list(&nb->markable, (node_buffer_elem_t*)((size_t)nb->unmarkable.head + bucket_size));
+    nb->local_tables = 0;
+    nb->mark_hash = Qnil;
     return nb;
 }
 
 static void
-rb_node_buffer_free(node_buffer_t *nb)
+node_buffer_list_free(node_buffer_list_t * nb)
 {
     node_buffer_elem_t *nbe = nb->head;
 
@@ -1092,23 +1205,67 @@ rb_node_buffer_free(node_buffer_t *nb)
 	nbe = nbe->next;
 	xfree(buf);
     }
+}
+
+static void
+rb_node_buffer_free(node_buffer_t *nb)
+{
+    node_buffer_list_free(&nb->unmarkable);
+    node_buffer_list_free(&nb->markable);
+    ID * local_table = nb->local_tables;
+    while (local_table) {
+        unsigned int size = (unsigned int)*local_table;
+        ID * next_table = (ID *)local_table[size + 1];
+        xfree(local_table);
+        local_table = next_table;
+    }
     xfree(nb);
 }
 
-NODE *
-rb_ast_newnode(rb_ast_t *ast)
+static NODE *
+ast_newnode_in_bucket(node_buffer_list_t *nb)
 {
-    node_buffer_t *nb = ast->node_buffer;
     if (nb->idx >= nb->len) {
 	long n = nb->len * 2;
 	node_buffer_elem_t *nbe;
-	nbe = xmalloc(offsetof(node_buffer_elem_t, buf) + n * sizeof(NODE));
+        nbe = rb_xmalloc_mul_add(n, sizeof(NODE), offsetof(node_buffer_elem_t, buf));
+        nbe->len = n;
 	nb->idx = 0;
 	nb->len = n;
 	nbe->next = nb->head;
 	nb->head = nbe;
     }
     return &nb->head->buf[nb->idx++];
+}
+
+NODE *
+rb_ast_newnode(rb_ast_t *ast, enum node_type type)
+{
+    node_buffer_t *nb = ast->node_buffer;
+    switch (type) {
+      case NODE_MATCH:
+      case NODE_LIT:
+      case NODE_STR:
+      case NODE_XSTR:
+      case NODE_DSTR:
+      case NODE_DXSTR:
+      case NODE_DREGX:
+      case NODE_DSYM:
+      case NODE_ARGS:
+      case NODE_ARYPTN:
+      case NODE_FNDPTN:
+        return ast_newnode_in_bucket(&nb->markable);
+      default:
+        return ast_newnode_in_bucket(&nb->unmarkable);
+    }
+}
+
+void
+rb_ast_add_local_table(rb_ast_t *ast, ID *buf)
+{
+    unsigned int size = (unsigned int)*buf;
+    buf[size + 1] = (ID)ast->node_buffer->local_tables;
+    ast->node_buffer->local_tables = buf;
 }
 
 void
@@ -1123,16 +1280,110 @@ rb_ast_t *
 rb_ast_new(void)
 {
     node_buffer_t *nb = rb_node_buffer_new();
-    VALUE mark_ary = nb->mark_ary;
     rb_ast_t *ast = (rb_ast_t *)rb_imemo_new(imemo_ast, 0, 0, 0, (VALUE)nb);
-    RB_OBJ_WRITTEN(ast, Qnil, mark_ary);
     return ast;
+}
+
+typedef void node_itr_t(void *ctx, NODE * node);
+
+static void
+iterate_buffer_elements(node_buffer_elem_t *nbe, long len, node_itr_t *func, void *ctx)
+{
+    long cursor;
+    for (cursor = 0; cursor < len; cursor++) {
+        func(ctx, &nbe->buf[cursor]);
+    }
+}
+
+static void
+iterate_node_values(node_buffer_list_t *nb, node_itr_t * func, void *ctx)
+{
+    node_buffer_elem_t *nbe = nb->head;
+
+    /* iterate over the head first because it's not full */
+    iterate_buffer_elements(nbe, nb->idx, func, ctx);
+
+    nbe = nbe->next;
+    while (nbe) {
+        iterate_buffer_elements(nbe, nbe->len, func, ctx);
+        nbe = nbe->next;
+    }
+}
+
+static void
+mark_ast_value(void *ctx, NODE * node)
+{
+    switch (nd_type(node)) {
+      case NODE_ARGS:
+        {
+            struct rb_args_info *args = node->nd_ainfo;
+            rb_gc_mark_movable(args->imemo);
+            break;
+        }
+      case NODE_MATCH:
+      case NODE_LIT:
+      case NODE_STR:
+      case NODE_XSTR:
+      case NODE_DSTR:
+      case NODE_DXSTR:
+      case NODE_DREGX:
+      case NODE_DSYM:
+      case NODE_ARYPTN:
+      case NODE_FNDPTN:
+        rb_gc_mark_movable(node->nd_lit);
+        break;
+      default:
+        rb_bug("unreachable node %s", ruby_node_name(nd_type(node)));
+    }
+}
+
+static void
+update_ast_value(void *ctx, NODE * node)
+{
+    switch (nd_type(node)) {
+      case NODE_ARGS:
+        {
+            struct rb_args_info *args = node->nd_ainfo;
+            args->imemo = rb_gc_location(args->imemo);
+            break;
+        }
+      case NODE_MATCH:
+      case NODE_LIT:
+      case NODE_STR:
+      case NODE_XSTR:
+      case NODE_DSTR:
+      case NODE_DXSTR:
+      case NODE_DREGX:
+      case NODE_DSYM:
+      case NODE_ARYPTN:
+      case NODE_FNDPTN:
+        node->nd_lit = rb_gc_location(node->nd_lit);
+        break;
+      default:
+        rb_bug("unreachable");
+    }
+}
+
+void
+rb_ast_update_references(rb_ast_t *ast)
+{
+    if (ast->node_buffer) {
+        node_buffer_t *nb = ast->node_buffer;
+
+        iterate_node_values(&nb->markable, update_ast_value, NULL);
+    }
 }
 
 void
 rb_ast_mark(rb_ast_t *ast)
 {
-    if (ast->node_buffer) rb_gc_mark(ast->node_buffer->mark_ary);
+    if (ast->node_buffer) rb_gc_mark(ast->node_buffer->mark_hash);
+    if (ast->body.compile_option) rb_gc_mark(ast->body.compile_option);
+    if (ast->node_buffer) {
+        node_buffer_t *nb = ast->node_buffer;
+
+        iterate_node_values(&nb->markable, mark_ast_value, NULL);
+    }
 }
 
 void
@@ -1144,6 +1395,32 @@ rb_ast_free(rb_ast_t *ast)
     }
 }
 
+static size_t
+buffer_list_size(node_buffer_list_t *nb)
+{
+    size_t size = 0;
+    node_buffer_elem_t *nbe = nb->head;
+    while (nbe != nb->last) {
+        nbe = nbe->next;
+        size += offsetof(node_buffer_elem_t, buf) + nb->len * sizeof(NODE);
+    }
+    return size;
+}
+
+size_t
+rb_ast_memsize(const rb_ast_t *ast)
+{
+    size_t size = 0;
+    node_buffer_t *nb = ast->node_buffer;
+
+    if (nb) {
+        size += sizeof(node_buffer_t) + offsetof(node_buffer_elem_t, buf) + NODE_BUF_DEFAULT_LEN * sizeof(NODE);
+        size += buffer_list_size(&nb->unmarkable);
+        size += buffer_list_size(&nb->markable);
+    }
+    return size;
+}
+
 void
 rb_ast_dispose(rb_ast_t *ast)
 {
@@ -1153,5 +1430,8 @@ rb_ast_dispose(rb_ast_t *ast)
 void
 rb_ast_add_mark_object(rb_ast_t *ast, VALUE obj)
 {
-    rb_ary_push(ast->node_buffer->mark_ary, obj);
+    if (NIL_P(ast->node_buffer->mark_hash)) {
+        RB_OBJ_WRITE(ast, &ast->node_buffer->mark_hash, rb_ident_hash_new());
+    }
+    rb_hash_aset(ast->node_buffer->mark_hash, obj, Qtrue);
 }

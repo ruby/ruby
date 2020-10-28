@@ -22,13 +22,14 @@ class TestStringIO < Test::Unit::TestCase
     assert_raise(ArgumentError) { StringIO.new('', 'rx') }
     assert_raise(ArgumentError) { StringIO.new('', 'rbt') }
     assert_raise(TypeError) { StringIO.new(nil) }
-    assert_raise(TypeError) { StringIO.new('str', nil) }
 
     o = Object.new
     def o.to_str
       nil
     end
     assert_raise(TypeError) { StringIO.new(o) }
+
+    o = Object.new
     def o.to_str
       'str'
     end
@@ -179,17 +180,6 @@ class TestStringIO < Test::Unit::TestCase
     f.close unless f.closed?
   end
 
-  def test_write_infection
-    bug9769 = '[ruby-dev:48118] [Bug #9769]'
-    s = "".untaint
-    f = StringIO.new(s, "w")
-    f.print("bar".taint)
-    f.close
-    assert_predicate(s, :tainted?, bug9769)
-  ensure
-    f.close unless f.closed?
-  end
-
   def test_write_encoding
     s = "".force_encoding(Encoding::UTF_8)
     f = StringIO.new(s)
@@ -197,10 +187,43 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal(Encoding::UTF_8, s.encoding, "honor the original encoding over ASCII-8BIT")
   end
 
+  def test_write_encoding_conversion
+    convertible = "\u{3042}"
+    inconvertible = "\u{1f363}"
+    conversion_encoding = Encoding::Windows_31J
+
+    s = StringIO.new.set_encoding(conversion_encoding)
+    s.write(convertible)
+    assert_equal(conversion_encoding, s.string.encoding)
+
+    s = StringIO.new.set_encoding(Encoding::UTF_8)
+    s.write("foo".force_encoding("ISO-8859-1"), convertible)
+    assert_equal(Encoding::UTF_8, s.string.encoding)
+
+    s = StringIO.new.set_encoding(Encoding::US_ASCII)
+    s.write("foo".force_encoding("US-ASCII"), convertible)
+    assert_equal(Encoding::UTF_8, s.string.encoding)
+
+    all_assertions do |a|
+      [
+        inconvertible,
+        convertible + inconvertible,
+        [convertible, inconvertible],
+        ["a", inconvertible],
+      ].each do |data|
+        a.for(data.inspect) do
+          s = StringIO.new.set_encoding(conversion_encoding)
+          assert_raise(Encoding::CompatibilityError) do
+            s.write(*data)
+          end
+        end
+      end
+    end
+  end
+
   def test_write_integer_overflow
-    long_max = (1 << (RbConfig::SIZEOF["long"] * 8 - 1)) - 1
     f = StringIO.new
-    f.pos = long_max
+    f.pos = RbConfig::LIMITS["LONG_MAX"]
     assert_raise(ArgumentError) {
       f.write("pos + len overflows")
     }
@@ -502,6 +525,16 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal([49, 50, 51, 52], f.each_codepoint.to_a)
   end
 
+  def test_each_codepoint_enumerator
+    io = StringIO.new('你好построить')
+
+    chinese_part = io.each_codepoint.take(2).pack('U*')
+    russian_part = io.read(40).force_encoding('UTF-8')
+
+    assert_equal("你好", chinese_part)
+    assert_equal("построить", russian_part)
+  end
+
   def test_gets2
     f = StringIO.new("foo\nbar\nbaz\n")
     assert_equal("fo", f.gets(2))
@@ -766,7 +799,7 @@ class TestStringIO < Test::Unit::TestCase
 
   def test_overflow
     skip if RbConfig::SIZEOF["void*"] > RbConfig::SIZEOF["long"]
-    limit = (1 << (RbConfig::SIZEOF["void*"]*8-1)) - 0x10
+    limit = RbConfig::LIMITS["INTPTR_MAX"] - 0x10
     assert_separately(%w[-rstringio], "#{<<-"begin;"}\n#{<<-"end;"}")
     begin;
       limit = #{limit}
@@ -781,6 +814,43 @@ class TestStringIO < Test::Unit::TestCase
       s.gets("xxx", limit)
       assert_equal(0x100000, s.pos)
     end;
+  end
+
+  def test_encoding_write
+    s = StringIO.new("", "w:utf-32be")
+    s.print "abc"
+    assert_equal("abc".encode("utf-32be"), s.string)
+  end
+
+  def test_encoding_read
+    s = StringIO.new("abc".encode("utf-32be"), "r:utf-8")
+    assert_equal("\0\0\0a\0\0\0b\0\0\0c", s.read)
+  end
+
+  %w/UTF-8 UTF-16BE UTF-16LE UTF-32BE UTF-32LE/.each do |name|
+    define_method("test_strip_bom:#{name}") do
+      text = "\uFEFF\u0100a"
+      content = text.encode(name)
+      result = StringIO.new(content, mode: 'rb:BOM|UTF-8').read
+      assert_equal(Encoding.find(name), result.encoding, name)
+      assert_equal(content[1..-1].b, result.b, name)
+
+      StringIO.open(content) {|f|
+        assert_equal(Encoding.find(name), f.set_encoding_by_bom)
+      }
+    end
+  end
+
+  def test_binary_encoding_read_and_default_internal
+    verbose, $VERBOSE = $VERBOSE, nil
+    default_internal = Encoding.default_internal
+    Encoding.default_internal = Encoding::UTF_8
+    $VERBOSE = verbose
+    assert_equal Encoding::BINARY, StringIO.new("Hello".b).read.encoding
+  ensure
+    $VERBOSE = nil
+    Encoding.default_internal = default_internal
+    $VERBOSE = verbose
   end
 
   def assert_string(content, encoding, str, mesg = nil)

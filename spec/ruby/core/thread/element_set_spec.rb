@@ -6,19 +6,19 @@ describe "Thread#[]=" do
     Thread.current[:value] = nil
   end
 
-  it "raises a #{frozen_error_class} if the thread is frozen" do
+  it "raises a FrozenError if the thread is frozen" do
     Thread.new do
       th = Thread.current
       th.freeze
       -> {
         th[:foo] = "bar"
-      }.should raise_error(frozen_error_class, /frozen/)
+      }.should raise_error(FrozenError, /frozen/)
     end.join
   end
 
   it "raises exceptions on the wrong type of keys" do
-    lambda { Thread.current[nil] = true }.should raise_error(TypeError)
-    lambda { Thread.current[5] = true }.should raise_error(TypeError)
+    -> { Thread.current[nil] = true }.should raise_error(TypeError)
+    -> { Thread.current[5] = true }.should raise_error(TypeError)
   end
 
   it "is not shared across fibers" do

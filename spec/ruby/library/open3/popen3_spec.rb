@@ -38,6 +38,4 @@ describe "Open3.popen3" do
       out.read.should == "foo"
     end
   end
-
-  it "needs to be reviewed for spec completeness"
 end

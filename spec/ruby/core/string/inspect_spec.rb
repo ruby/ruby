@@ -3,14 +3,16 @@ require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
 describe "String#inspect" do
-  it "taints the result if self is tainted" do
-    "foo".taint.inspect.tainted?.should == true
-    "foo\n".taint.inspect.tainted?.should == true
-  end
+  ruby_version_is ''...'2.7' do
+    it "taints the result if self is tainted" do
+      "foo".taint.inspect.should.tainted?
+      "foo\n".taint.inspect.should.tainted?
+    end
 
-  it "untrusts the result if self is untrusted" do
-    "foo".untrust.inspect.untrusted?.should == true
-    "foo\n".untrust.inspect.untrusted?.should == true
+    it "untrusts the result if self is untrusted" do
+      "foo".untrust.inspect.should.untrusted?
+      "foo\n".untrust.inspect.should.untrusted?
+    end
   end
 
   it "does not return a subclass instance" do
@@ -317,6 +319,10 @@ describe "String#inspect" do
     0.chr.inspect.should == '"\\x00"'
   end
 
+  it "uses \\x notation for broken UTF-8 sequences" do
+    "\xF0\x9F".inspect.should == '"\\xF0\\x9F"'
+  end
+
   describe "when default external is UTF-8" do
     before :each do
       @extenc, Encoding.default_external = Encoding.default_external, Encoding::UTF_8
@@ -487,6 +493,14 @@ describe "String#inspect" do
         [0376.chr('utf-8'), '"þ"'],
         [0377.chr('utf-8'), '"ÿ"']
       ].should be_computed_by(:inspect)
+    end
+  end
+
+  describe "when the string's encoding is different than the result's encoding" do
+    describe "and the string's encoding is ASCII-compatible but the characters are non-ASCII" do
+      it "returns a string with the non-ASCII characters replaced by \\x notation" do
+        "\u{3042}".encode("EUC-JP").inspect.should == '"\\x{A4A2}"'
+      end
     end
   end
 end

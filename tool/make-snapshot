@@ -7,18 +7,18 @@ require 'fileutils'
 require 'shellwords'
 require 'tmpdir'
 require 'pathname'
-require File.expand_path("../vcs", __FILE__)
-require File.expand_path("../colorize", __FILE__)
+require 'yaml'
+require 'json'
+require File.expand_path("../lib/vcs", __FILE__)
+require File.expand_path("../lib/colorize", __FILE__)
 STDOUT.sync = true
 
 $srcdir ||= nil
-$exported = nil if ($exported ||= nil) == ""
 $archname = nil if ($archname ||= nil) == ""
 $keep_temp ||= nil
 $patch_file ||= nil
 $packages ||= nil
 $digests ||= nil
-$s3 ||= nil
 $tooldir = File.expand_path("..", __FILE__)
 $unicode_version = nil if ($unicode_version ||= nil) == ""
 $colorize = Colorize.new
@@ -28,7 +28,6 @@ def usage
 usage: #{File.basename $0} [option...] new-directory-to-save [version ...]
 options:
   -srcdir=PATH          source directory path
-  -exported=PATH        make snapshot from already exported working directory
   -archname=NAME        make the basename of snapshots NAME
   -keep_temp            keep temporary working directory
   -patch_file=PATCH     apply PATCH file after export
@@ -37,29 +36,26 @@ options:
   -unicode_version=VER  Unicode version to generate encodings
   -svn[=URL]            make snapshot from SVN repository
                         (#{SVNURL})
-  -git[=URL]            make snapshot from GIT repository
-                        (#{GITURL})
-  -s3=PATH              s3 bucket path(default=tmp)
   -help, --help         show this message
 version:
-  trunk, stable, branches/*, tags/*, X.Y, X.Y.Z, X.Y.Z-pL
+  master, trunk, stable, branches/*, tags/*, X.Y, X.Y.Z, X.Y.Z-pL
 each versions may be followed by optional @revision.
 USAGE
 end
 
 DIGESTS = %w[SHA1 SHA256 SHA512]
 PACKAGES = {
+  "tar"  => %w".tar",
   "bzip" => %w".tar.bz2 bzip2 -c",
   "gzip" => %w".tar.gz  gzip -c",
   "xz"   => %w".tar.xz  xz -c",
-  "zip"  => %w".zip     zip -qr",
+  "zip"  => %w".zip     zip -Xqr",
 }
-
-if system("7z", out: IO::NULL)
+DEFAULT_PACKAGES = PACKAGES.keys - ["tar"]
+if !$no7z and system("7z", out: IO::NULL)
   PACKAGES["gzip"] = %w".tar.gz 7z a dummy -tgzip -mx -so"
-  PACKAGES["zip"]  = %w".zip    7z a -tzip  -mx" << {out: IO::NULL}
-end
-if gzip = ENV.delete("GZIP")
+  PACKAGES["zip"]  = %w".zip    7z a -tzip  -mx -mtc=off" << {out: IO::NULL}
+elsif gzip = ENV.delete("GZIP")
   PACKAGES["gzip"].concat(gzip.shellsplit)
 end
 
@@ -70,7 +66,8 @@ if mflags = ENV["GNUMAKEFLAGS"] and /\A-(\S*)j\d*/ =~ mflags
 end
 ENV["LC_ALL"] = ENV["LANG"] = "C"
 SVNURL = URI.parse("https://svn.ruby-lang.org/repos/ruby/")
-GITURL = URI.parse("https://git.ruby-lang.org/ruby.git")
+# https git clone is disabled at git.ruby-lang.org/ruby.git.
+GITURL = URI.parse("https://github.com/ruby/ruby.git")
 RUBY_VERSION_PATTERN = /^\#define\s+RUBY_VERSION\s+"([\d.]+)"/
 
 ENV["VPATH"] ||= "include/ruby"
@@ -83,6 +80,7 @@ ENV["MINIRUBY"] ||= "ruby"
 ENV["PROGRAM"] ||= "ruby"
 ENV["AUTOCONF"] ||= "autoconf"
 ENV["BUILTIN_TRANSOBJS"] ||= "newline.o"
+ENV["TZ"] = "UTC"
 
 class String
   # for older ruby
@@ -104,12 +102,12 @@ end
 
 $packages &&= $packages.split(/[, ]+/).tap {|pkg|
   if all = pkg.index("all")
-    pkg[all, 1] = PACKAGES.keys - pkg
+    pkg[all, 1] = DEFAULT_PACKAGES - pkg
   end
   pkg -= PACKAGES.keys
   pkg.empty? or abort "#{File.basename $0}: unknown packages - #{pkg.join(", ")}"
 }
-$packages ||= PACKAGES.keys
+$packages ||= DEFAULT_PACKAGES
 
 $digests &&= $digests.split(/[, ]+/).tap {|dig|
   dig -= DIGESTS
@@ -143,17 +141,20 @@ end
 unless destdir = ARGV.shift
   abort usage
 end
-revisions = ARGV.empty? ? ["trunk"] : ARGV
-unless tmp = $exported
-  FileUtils.mkpath(destdir)
-  destdir = File.expand_path(destdir)
-  tmp = Dir.mktmpdir("ruby-snapshot")
-  FileUtils.mkpath(tmp)
-  at_exit {
-    Dir.chdir "/"
-    FileUtils.rm_rf(tmp)
-  } unless $keep_temp
+revisions = ARGV.empty? ? [nil] : ARGV
+
+if $exported
+  abort "#{File.basename $0}: -exported option is deprecated; use -srcdir instead"
 end
+
+FileUtils.mkpath(destdir)
+destdir = File.expand_path(destdir)
+tmp = Dir.mktmpdir("ruby-snapshot")
+FileUtils.mkpath(tmp)
+at_exit {
+  Dir.chdir "/"
+  FileUtils.rm_rf(tmp)
+} unless $keep_temp
 
 def tar_create(tarball, dir)
   require 'rubygems'
@@ -164,7 +165,10 @@ def tar_create(tarball, dir)
   uname = gname = "ruby"
   File.open(tarball, "wb") do |f|
     w = Gem::Package::TarWriter.new(f)
-    Dir.glob("#{dir}/**/*", File::FNM_DOTMATCH) do |path|
+    list = Dir.glob("#{dir}/**/*", File::FNM_DOTMATCH)
+    list.reject! {|name| name.end_with?("/.")}
+    list.sort_by! {|name| name.split("/")}
+    list.each do |path|
       next if File.basename(path) == "."
       s = File.stat(path)
       mode = 0644
@@ -198,14 +202,57 @@ rescue => e
   false
 end
 
+def touch_all(time, pattern, opt, &cond)
+  Dir.glob(pattern, opt) do |n|
+    stat = File.stat(n)
+    if stat.file? or stat.directory?
+      next if cond and !yield(n, stat)
+      File.utime(time, time, n)
+    end
+  end
+rescue
+  false
+else
+  true
+end
+
+class MAKE < Struct.new(:prog, :args)
+  def initialize(vars)
+    vars = vars.map {|arg| arg.join("=")}
+    super(ENV["MAKE"] || ENV["make"] || "make", vars)
+  end
+
+  def run(target)
+    err = IO.pipe do |r, w|
+      begin
+        pid = Process.spawn(self.prog, *self.args, target, {:err => w, r => :close})
+        w.close
+        r.read
+      ensure
+        Process.wait(pid)
+      end
+    end
+    if $?.success?
+      true
+    else
+      STDERR.puts err
+      $colorize.fail("#{target} failed")
+      false
+    end
+  end
+end
+
 def package(vcs, rev, destdir, tmp = nil)
+  pwd = Dir.pwd
   patchlevel = false
   prerelease = false
-  if revision = rev[/@(\d+)\z/, 1]
+  if rev and revision = rev[/@(\h+)\z/, 1]
     rev = $`
   end
   case rev
-  when /\Atrunk\z/
+  when nil
+    url = nil
+  when /\A(?:master|trunk)\z/
     url = vcs.trunk
   when /\Abranches\//
     url = vcs.branch($')
@@ -234,7 +281,16 @@ def package(vcs, rev, destdir, tmp = nil)
     warn "#{$0}: unknown version - #{rev}"
     return
   end
-  revision ||= vcs.get_revisions(url)[1]
+  if info = vcs.get_revisions(url)
+    modified = info[2]
+  else
+    modified = Time.now - 10
+  end
+  if !revision and info
+    revision = info
+    url ||= vcs.branch(revision[3])
+    revision = revision[1]
+  end
   version = nil
   unless revision
     url = vcs.trunk
@@ -245,34 +301,23 @@ def package(vcs, rev, destdir, tmp = nil)
     end
     revision = vcs.get_revisions(url)[1]
   end
-  v = nil
-  if $exported
-    if String === $exported
-      v = $exported
-    end
-  else
-    v = "ruby"
-    puts "Exporting #{rev}@#{revision}"
-    exported = tmp ? File.join(tmp, v) : v
-    unless vcs.export(revision, url, exported, true) {|line| print line}
-      warn("Export failed")
-      return
-    end
-    if $srcdir
-      Dir.glob($srcdir + "/{tool/config.{guess,sub},gems/*.gem,.downloaded-cache/*,enc/unicode/data/**/*.txt}") do |file|
-        puts "copying #{file}"
-        dest = exported + file[$srcdir.size..-1]
-        FileUtils.mkpath(File.dirname(dest))
-        begin
-          FileUtils.ln(file, dest, force: true)
-          next unless File.symlink?(dest)
-          File.unlink(dest)
-        rescue SystemCallError
-        end
-        begin
-          FileUtils.cp_r(file, dest, preserve: true)
-        rescue SystemCallError
-        end
+
+  v = "ruby"
+  puts "Exporting #{rev}@#{revision}"
+  exported = tmp ? File.join(tmp, v) : v
+  unless vcs.export(revision, url, exported, true) {|line| print line}
+    warn("Export failed")
+    return
+  end
+  if $srcdir
+    Dir.glob($srcdir + "/{tool/config.{guess,sub},gems/*.gem,.downloaded-cache/*,enc/unicode/data/**/*.txt}") do |file|
+      puts "copying #{file}"
+      dest = exported + file[$srcdir.size..-1]
+      FileUtils.mkpath(File.dirname(dest))
+      begin
+        FileUtils.cp_r(file, dest)
+        FileUtils.chmod_R("a+rwX,go-w", dest)
+      rescue SystemCallError
       end
     end
   end
@@ -286,7 +331,13 @@ def package(vcs, rev, destdir, tmp = nil)
     v = v[0]
   end
 
-  open("#{v}/revision.h", "wb") {|f| f.puts "#define RUBY_REVISION #{revision}"}
+  open("#{v}/revision.h", "wb") {|f|
+    short = vcs.short_revision(revision)
+    f.puts "#define RUBY_REVISION #{short.inspect}"
+    unless short == revision
+      f.puts "#define RUBY_FULL_REVISION #{revision.inspect}"
+    end
+  }
   version ||= (versionhdr = IO.read("#{v}/version.h"))[RUBY_VERSION_PATTERN, 1]
   version ||=
     begin
@@ -301,52 +352,49 @@ def package(vcs, rev, destdir, tmp = nil)
     unless tag.empty?
       versionhdr ||= IO.read("#{v}/version.h")
       patchlevel = versionhdr[/^\#define\s+RUBY_PATCHLEVEL\s+(\d+)/, 1]
-      tag = (patchlevel ? "p#{patchlevel}" : "r#{revision}")
+      tag = (patchlevel ? "p#{patchlevel}" : vcs.revision_name(revision))
     end
   elsif prerelease
     versionhdr ||= IO.read("#{v}/version.h")
     versionhdr.sub!(/^\#define\s+RUBY_PATCHLEVEL_STR\s+"\K.+?(?=")/, tag)
     IO.write("#{v}/version.h", versionhdr)
   else
-    tag ||= "r#{revision}"
+    tag ||= vcs.revision_name(revision)
   end
-  unless v == $exported
-    if $archname
-      n = $archname
-    elsif tag.empty?
-      n = "ruby-#{version}"
-    else
-      n = "ruby-#{version}-#{tag}"
-    end
-    File.directory?(n) or File.rename v, n
-    v = n
+
+  if $archname
+    n = $archname
+  elsif tag.empty?
+    n = "ruby-#{version}"
+  else
+    n = "ruby-#{version}-#{tag}"
   end
-  system(*%W"patch -d #{v} -p0 -i #{$patch_file}") if $patch_file
-  if !$exported or $patch_file
-    colors = %w[red yellow green cyan blue magenta]
-    "take a breath, and go ahead".scan(/./) do |c|
-      if c == ' '
-        print c
-      else
-        colors.push(color = colors.shift)
-        print $colorize.decorate(c, color)
-      end
-      sleep(c == "," ? 0.7 : 0.05)
-    end
-    puts
+  File.directory?(n) or File.rename v, n
+  v = n
+
+  if $patch_file && !system(*%W"patch -d #{v} -p0 -i #{$patch_file}")
+    puts $colorize.fail("patching failed")
+    return
   end
   def (clean = []).add(n) push(n); n end
   Dir.chdir(v) do
     unless File.exist?("ChangeLog")
-      # get last revision from previous ChangeLog archive
-      last_ChangeLog = Dir["doc/ChangeLog-*"].grep(/-(\d+)\z/) {|n| [$1.to_i, n]}.max[1]
-      open(last_ChangeLog) do |f|
-        f.readline
-        unless /\Ar(\d+) / =~ f.readline
-          abort "#{File.basename $0}: Cannot find revision from '#{last_ChangeLog}'"
+      vcs.export_changelog(url, nil, revision, "ChangeLog")
+    end
+
+    unless touch_all(modified, "**/*", File::FNM_DOTMATCH)
+      modified = nil
+      colors = %w[red yellow green cyan blue magenta]
+      "take a breath, and go ahead".scan(/./) do |c|
+        if c == ' '
+          print c
+        else
+          colors.push(color = colors.shift)
+          print $colorize.decorate(c, color)
         end
-        vcs.export_changelog(url, $1.to_i, revision.to_i, "ChangeLog")
+        sleep(c == "," ? 0.7 : 0.05)
       end
+      puts
     end
 
     File.open(clean.add("cross.rb"), "w") do |f|
@@ -386,7 +434,8 @@ def package(vcs, rev, destdir, tmp = nil)
       File.open("#{defaults}/ruby.rb", "w") {}
       miniruby = ENV['MINIRUBY'] + " -I. -I#{extout} -rcross"
       baseruby = ENV["BASERUBY"]
-      mk = IO.read("Makefile.in").gsub(/^@.*\n/, '')
+      mk = (IO.read("template/Makefile.in") rescue IO.read("Makefile.in")).
+             gsub(/^@.*\n/, '')
       vars = {
         "EXTOUT"=>extout,
         "PATH_SEPARATOR"=>File::PATH_SEPARATOR,
@@ -402,26 +451,47 @@ def package(vcs, rev, destdir, tmp = nil)
       status.scan(/^s([%,])@([A-Za-z_][A-Za-z_0-9]*)@\1(.*?)\1g$/) do
         vars[$2] ||= $3
       end
+      vars.delete("UNICODE_FILES") # for stable branches
       vars["UNICODE_VERSION"] = $unicode_version if $unicode_version
       args = vars.dup
       mk.gsub!(/@([A-Za-z_]\w*)@/) {args.delete($1); vars[$1] || ENV[$1]}
-      mk << commonmk.gsub(/\{\$([^(){}]*)[^{}]*\}/, "")
+      mk << commonmk.gsub(/\{\$([^(){}]*)[^{}]*\}/, "").sub(/^revision\.tmp::$/, '\& Makefile')
       mk << <<-'APPEND'
 
-prepare-package: prereq update-download clean-cache $(CLEAN_CACHE)
-clean-cache $(CLEAN_CACHE): after-update
-update-download:: update-gems
+update-download:: touch-unicode-files
+prepare-package: prereq after-update
+clean-cache: $(CLEAN_CACHE)
 after-update:: extract-gems
 extract-gems: update-gems
 update-gems:
-$(UNICODE_SRC_DATA_DIR)/.unicode-tables.time: update-unicode
+$(UNICODE_SRC_DATA_DIR)/.unicode-tables.time:
+touch-unicode-files:
       APPEND
       open(clean.add("Makefile"), "w") do |f|
         f.puts mk
       end
+      File.open(clean.add("revision.tmp"), "w") {}
+      File.open(clean.add(".revision.time"), "w") {}
       ENV["CACHE_SAVE"] = "no"
-      system(ENV["MAKE"] || ENV["make"] || "make", "prepare-package", *args.map {|arg| arg.join("=")})
-      clean.push("rbconfig.rb", ".rbconfig.time", "enc.mk")
+      make = MAKE.new(args)
+      return unless make.run("update-download")
+      clean.push("rbconfig.rb", ".rbconfig.time", "enc.mk", "ext/ripper/y.output", ".revision.time")
+      Dir.glob("**/*") do |dest|
+        next unless File.symlink?(dest)
+        orig = File.expand_path(File.readlink(dest), File.dirname(dest))
+        File.unlink(dest)
+        FileUtils.cp_r(orig, dest)
+      end
+      File.utime(modified, modified, *Dir.glob(["tool/config.{guess,sub}", "gems/*.gem", "tool"]))
+      return unless make.run("prepare-package")
+      return unless make.run("clean-cache")
+      if modified
+        new_time = modified + 2
+        touch_all(new_time, "**/*", File::FNM_DOTMATCH) do |name, stat|
+          stat.mtime > modified unless clean.include?(name)
+        end
+        modified = new_time
+      end
       print "prerequisites"
     else
       system(*%W"#{YACC} -o parse.c parse.y")
@@ -432,12 +502,19 @@ $(UNICODE_SRC_DATA_DIR)/.unicode-tables.time: update-unicode
     if File.exist?("gems/bundled_gems")
       gems = Dir.glob("gems/*.gem")
       gems -= File.readlines("gems/bundled_gems").map {|line|
+        next if /^\s*(?:#|$)/ =~ line
         name, version, _ = line.split(' ')
         "gems/#{name}-#{version}.gem"
       }
       FileUtils.rm_f(gems)
     else
       FileUtils.rm_rf("gems")
+    end
+    if modified
+      touch_all(modified, "**/*/", 0) do |name, stat|
+        stat.mtime > modified
+      end
+      File.utime(modified, modified, ".")
     end
     unless $?.success?
       puts $colorize.fail(" failed")
@@ -464,10 +541,12 @@ $(UNICODE_SRC_DATA_DIR)/.unicode-tables.time: update-unicode
       if tarball
         next if tarball.empty?
       else
-        tarball = "#{$archname||v}.tar"
+        tarball = ext == ".tar" ? file : "#{$archname||v}.tar"
         print "creating tarball... #{tarball}"
         if tar_create(tarball, v)
           puts $colorize.pass(" done")
+          File.utime(modified, modified, tarball) if modified
+          next if tarball == file
         else
           puts $colorize.fail(" failed")
           tarball = ""
@@ -495,7 +574,8 @@ $(UNICODE_SRC_DATA_DIR)/.unicode-tables.time: update-unicode
     end
   end.compact
 ensure
-  FileUtils.rm_rf(v) if v and !$exported and !$keep_temp
+  FileUtils.rm_rf(tmp ? File.join(tmp, v) : v) if v and !$keep_temp
+  Dir.chdir(pwd)
 end
 
 if [$srcdir, ($svn||=nil), ($git||=nil)].compact.size > 1
@@ -506,10 +586,17 @@ if $srcdir
 elsif $svn
   vcs = VCS::SVN.new($svn == true ? SVNURL : URI.parse($svn))
 elsif $git
-  vcs = VCS::GIT.new($git == true ? GITURL : URI.parse($git))
+  abort "#{File.basename $0}: use -srcdir with cloned local repository"
 else
-  vcs = VCS::SVN.new(SVNURL)
+  begin
+    vcs = VCS.detect(File.expand_path("../..", __FILE__))
+  rescue VCS::NotFoundError
+    vcs = VCS::SVN.new(SVNURL)
+  end
 end
+
+release_date = Time.now.getutc
+info = {}
 
 success = true
 revisions.collect {|rev| package(vcs, rev, destdir, tmp)}.flatten.each do |name|
@@ -518,17 +605,40 @@ revisions.collect {|rev| package(vcs, rev, destdir, tmp)}.flatten.each do |name|
     next
   end
   str = open(name, "rb") {|f| f.read}
-  if $s3
-    %x[aws s3 cp #{name} s3://ftp.r-l.o/pub/#{$s3}/#{Pathname(name).basename}]
-    FileUtils.rm_f name
-    name = "https://s3.amazonaws.com/ftp.r-l.o/pub/#{$s3}/#{Pathname(name).basename}"
+  pathname = Pathname(name)
+  basename = pathname.basename.to_s
+  extname = pathname.extname.sub(/\A\./, '')
+  version = basename[/\Aruby-(.*)\.(?:tar|zip)/, 1]
+  key = basename[/\A(.*)\.(?:tar|zip)/, 1]
+  info[key] ||= Hash.new{|h,k|h[k]={}}
+  info[key]['version'] = version if version
+  info[key]['date'] = release_date.strftime('%Y-%m-%d')
+  if version
+    info[key]['post'] = "/en/news/#{release_date.strftime('%Y/%m/%d')}/ruby-#{version.tr('.', '-')}-released/"
+    info[key]['url'][extname] = "https://cache.ruby-lang.org/pub/ruby/#{version[/\A\d+\.\d+/]}/#{basename}"
+  else
+    info[key]['filename'][extname] = basename
   end
+  info[key]['size'][extname] = str.bytesize
   puts "* #{$colorize.pass(name)}"
-  puts "  SIZE:   #{str.bytesize} bytes"
+  puts "      SIZE:   #{str.bytesize} bytes"
   $digests.each do |alg|
-    printf "  %-8s%s\n", "#{alg}:", Digest.const_get(alg).hexdigest(str)
+    digest = Digest(alg).hexdigest(str)
+    info[key][alg.downcase][extname] = digest
+    printf "      %-8s%s\n", "#{alg}:", digest
   end
 end
+
+yaml = info.values.to_yaml
+json = info.values.to_json
+puts "#{$colorize.pass('YAML:')}"
+puts yaml
+puts "#{$colorize.pass('JSON:')}"
+puts json
+infodir = Pathname(destdir) + 'info'
+infodir.mkpath
+(infodir+'info.yml').write(yaml)
+(infodir+'info.json').write(json)
 
 exit false if !success
 

@@ -21,6 +21,5 @@ The mirror command has been moved to the rubygems-mirror gem.
     def execute
       alert_error "Install the rubygems-mirror gem for the mirror command"
     end
-
   end
 end

@@ -30,5 +30,4 @@ class Gem::Commands::SigninCommand < Gem::Command
   def execute
     sign_in options[:host]
   end
-
 end

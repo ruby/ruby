@@ -10,19 +10,19 @@ class TestTracepointObj < Test::Unit::TestCase
   end
 
   def test_tracks_objspace_events
-    result = Bug.tracepoint_track_objspace_events{
+    result = EnvUtil.suppress_warning {eval(<<-EOS, nil, __FILE__, __LINE__+1)}
+    Bug.tracepoint_track_objspace_events {
       99
       'abc'
       _="foobar"
-      Object.new
       nil
     }
+    EOS
 
     newobj_count, free_count, gc_start_count, gc_end_mark_count, gc_end_sweep_count, *newobjs = *result
-    assert_equal 2, newobj_count
-    assert_equal 2, newobjs.size
+    assert_equal 1, newobj_count
+    assert_equal 1, newobjs.size
     assert_equal 'foobar', newobjs[0]
-    assert_equal Object, newobjs[1].class
     assert_operator free_count, :>=, 0
     assert_operator gc_start_count, :==, gc_end_mark_count
     assert_operator gc_start_count, :>=, gc_end_sweep_count
@@ -41,7 +41,7 @@ class TestTracepointObj < Test::Unit::TestCase
     GC.stat(stat2)
     GC.enable
 
-    newobj_count, free_count, gc_start_count, gc_end_mark_count, gc_end_sweep_count, *newobjs = *result
+    newobj_count, free_count, gc_start_count, gc_end_mark_count, gc_end_sweep_count, = *result
 
     assert_operator stat2[:total_allocated_objects] - stat1[:total_allocated_objects], :>=, newobj_count
     assert_operator 1_000_000, :<=, newobj_count
@@ -62,9 +62,11 @@ class TestTracepointObj < Test::Unit::TestCase
     bug8492 = '[ruby-dev:47400] [Bug #8492]: infinite after_gc_start_hook reentrance'
     assert_nothing_raised(Timeout::Error, bug8492) do
       assert_in_out_err(%w[-r-test-/tracepoint], <<-'end;', /\A[1-9]/, timeout: 2)
-        stress, GC.stress = GC.stress, false
         count = 0
-        Bug.after_gc_start_hook = proc {count += 1}
+        hook = proc {count += 1}
+        def run(hook)
+        stress, GC.stress = GC.stress, false
+        Bug.after_gc_start_hook = hook
         begin
           GC.stress = true
           3.times {Object.new}
@@ -72,9 +74,15 @@ class TestTracepointObj < Test::Unit::TestCase
           GC.stress = stress
           Bug.after_gc_start_hook = nil
         end
+        end
+        run(hook)
         puts count
       end;
     end
+  end
+
+  def test_teardown_with_active_GC_end_hook
+    assert_separately([], 'require("-test-/tracepoint"); Bug.after_gc_exit_hook = proc {}')
   end
 
 end

@@ -1,0 +1,6 @@
+#!/bin/sh
+prefix="/${0%/*}"
+prefix="${prefix%/*}"
+ruby="${bindir}/${RUBY_INSTALL_NAME}"
+lldbinit="${rubylibdir}/lldb_cruby.py"
+exec lldb -O "command script import $lldbinit" "$ruby" -- "$@"

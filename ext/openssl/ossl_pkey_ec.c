@@ -1564,6 +1564,34 @@ ossl_ec_point_to_octet_string(VALUE self, VALUE conversion_form)
 
 /*
  * call-seq:
+ *   point.add(point) => point
+ *
+ * Performs elliptic curve point addition.
+ */
+static VALUE ossl_ec_point_add(VALUE self, VALUE other)
+{
+    EC_POINT *point_self, *point_other, *point_result;
+    const EC_GROUP *group;
+    VALUE group_v = rb_attr_get(self, id_i_group);
+    VALUE result;
+
+    GetECPoint(self, point_self);
+    GetECPoint(other, point_other);
+    GetECGroup(group_v, group);
+
+    result = rb_obj_alloc(cEC_POINT);
+    ossl_ec_point_initialize(1, &group_v, result);
+    GetECPoint(result, point_result);
+
+    if (EC_POINT_add(group, point_result, point_self, point_other, ossl_bn_ctx) != 1) {
+        ossl_raise(eEC_POINT, "EC_POINT_add");
+    }
+
+    return result;
+}
+
+/*
+ * call-seq:
  *   point.mul(bn1 [, bn2]) => point
  *   point.mul(bns, points [, bn2]) => point
  *
@@ -1786,6 +1814,7 @@ void Init_ossl_ec(void)
 /* all the other methods */
 
     rb_define_method(cEC_POINT, "to_octet_string", ossl_ec_point_to_octet_string, 1);
+    rb_define_method(cEC_POINT, "add", ossl_ec_point_add, 1);
     rb_define_method(cEC_POINT, "mul", ossl_ec_point_mul, -1);
 
     id_i_group = rb_intern("@group");

@@ -14,12 +14,12 @@ describe "Math.tan" do
   end
 
   it "returns NaN if called with +-Infinity" do
-    Math.tan(infinity_value).nan?.should == true
-    Math.tan(-infinity_value).nan?.should == true
+    Math.tan(infinity_value).should.nan?
+    Math.tan(-infinity_value).should.nan?
   end
 
   it "raises a TypeError if the argument cannot be coerced with Float()" do
-    lambda { Math.tan("test") }.should raise_error(TypeError)
+    -> { Math.tan("test") }.should raise_error(TypeError)
   end
 
   it "returns NaN given NaN" do
@@ -27,7 +27,7 @@ describe "Math.tan" do
   end
 
   it "raises a TypeError if the argument is nil" do
-    lambda { Math.tan(nil) }.should raise_error(TypeError)
+    -> { Math.tan(nil) }.should raise_error(TypeError)
   end
 
   it "accepts any argument that can be coerced with Float()" do

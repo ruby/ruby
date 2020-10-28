@@ -74,7 +74,7 @@ module Bundler
       end
     end
 
-  private
+    private
 
     def conservative_version(spec)
       version = spec.version
@@ -111,8 +111,10 @@ module Bundler
         end
 
         source = ", :source => \"#{d.source}\"" unless d.source.nil?
+        git = ", :git => \"#{d.git}\"" unless d.git.nil?
+        branch = ", :branch => \"#{d.branch}\"" unless d.branch.nil?
 
-        %(gem #{name}#{requirement}#{group}#{source})
+        %(gem #{name}#{requirement}#{group}#{source}#{git}#{branch})
       end.join("\n")
     end
 
@@ -123,7 +125,7 @@ module Bundler
       end
     end
 
-    # evalutes a gemfile to remove the specified gem
+    # evaluates a gemfile to remove the specified gem
     # from it.
     def remove_deps(gemfile_path)
       initial_gemfile = IO.readlines(gemfile_path)
@@ -136,8 +138,8 @@ module Bundler
 
       removed_deps = remove_gems_from_dependencies(builder, @deps, gemfile_path)
 
-      # abort the opertion if no gems were removed
-      # no need to operate on gemfile furthur
+      # abort the operation if no gems were removed
+      # no need to operate on gemfile further
       return [] if removed_deps.empty?
 
       cleaned_gemfile = remove_gems_from_gemfile(@deps, gemfile_path)
@@ -153,8 +155,8 @@ module Bundler
 
     # @param [Dsl]      builder Dsl object of current Gemfile.
     # @param [Array]    gems Array of names of gems to be removed.
-    # @param [Pathname] path of the Gemfile
-    # @return [Array]   removed_deps Array of removed dependencies.
+    # @param [Pathname] gemfile_path Path of the Gemfile.
+    # @return [Array]   Array of removed dependencies.
     def remove_gems_from_dependencies(builder, gems, gemfile_path)
       removed_deps = []
 
@@ -178,10 +180,21 @@ module Bundler
     def remove_gems_from_gemfile(gems, gemfile_path)
       patterns = /gem\s+(['"])#{Regexp.union(gems)}\1|gem\s*\((['"])#{Regexp.union(gems)}\2\)/
 
-      # remove lines which match the regex
-      new_gemfile = IO.readlines(gemfile_path).reject {|line| line.match(patterns) }
+      new_gemfile = []
+      multiline_removal = false
+      IO.readlines(gemfile_path).each do |line|
+        if line.match(patterns)
+          multiline_removal = line.rstrip.end_with?(",")
+          # skip lines which match the regex
+          next
+        end
 
-      # remove lone \n and append them with other strings
+        # skip followup lines until line does not end with ','
+        new_gemfile << line unless multiline_removal
+        multiline_removal = line.rstrip.end_with?(",") if multiline_removal
+      end
+
+      # remove line \n and append them with other strings
       new_gemfile.each_with_index do |_line, index|
         if new_gemfile[index + 1] == "\n"
           new_gemfile[index] += new_gemfile[index + 1]
@@ -206,7 +219,7 @@ module Bundler
         nested_blocks -= 1
 
         gemfile.each_with_index do |line, index|
-          next unless !line.nil? && line.include?(block_name)
+          next unless !line.nil? && line.strip.start_with?(block_name)
           if gemfile[index + 1] =~ /^\s*end\s*$/
             gemfile[index] = nil
             gemfile[index + 1] = nil
@@ -222,7 +235,7 @@ module Bundler
     # @param [Array] removed_deps      Array of removed dependencies.
     # @param [Array] initial_gemfile   Contents of original Gemfile before any operation.
     def cross_check_for_errors(gemfile_path, original_deps, removed_deps, initial_gemfile)
-      # evalute the new gemfile to look for any failure cases
+      # evaluate the new gemfile to look for any failure cases
       builder = Dsl.new
       builder.eval_gemfile(gemfile_path)
 

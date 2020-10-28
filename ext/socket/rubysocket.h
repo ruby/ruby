@@ -1,12 +1,22 @@
 #ifndef RUBY_SOCKET_H
 #define RUBY_SOCKET_H 1
 
-#include "ruby/ruby.h"
-#include "ruby/io.h"
-#include "ruby/thread.h"
-#include "ruby/util.h"
-#include "internal.h"
+#include "ruby/config.h"
+#include RUBY_EXTCONF_H
+
+#ifdef __sun
+/* (Recent?)  Solaris' <nfs/nfs.h> have conflicting definition of T_DATA.  Let
+ * us honour system definition by undefining ours.
+ *
+ * See also [ruby-core:4261]
+ */
+# include "ruby/ruby.h"
+# undef T_DATA
+#endif
+
+#include <errno.h>
 #include <stdio.h>
+
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -26,13 +36,7 @@
 #  if defined(_MSC_VER)
 #    undef HAVE_TYPE_STRUCT_SOCKADDR_DL
 #  endif
-/*
- * FIXME: failures if we make nonblocking the default
- * [ruby-core:89973] [ruby-core:89976] [ruby-core:89977] [Bug #14968]
- */
-#  define RSOCK_NONBLOCK_DEFAULT (0)
 #else
-#  define RSOCK_NONBLOCK_DEFAULT (0)
 #  include <sys/socket.h>
 #  include <netinet/in.h>
 #  ifdef HAVE_NETINET_IN_SYSTM_H
@@ -56,11 +60,10 @@
 #ifdef HAVE_NETPACKET_PACKET_H
 #  include <netpacket/packet.h>
 #endif
+
 #ifdef HAVE_NET_ETHERNET_H
 #  include <net/ethernet.h>
 #endif
-
-#include <errno.h>
 
 #ifdef HAVE_SYS_UN_H
 #  include <sys/un.h>
@@ -87,12 +90,15 @@
 #  endif
 #  include <ifaddrs.h>
 #endif
+
 #ifdef HAVE_SYS_IOCTL_H
 #  include <sys/ioctl.h>
 #endif
+
 #ifdef HAVE_SYS_SOCKIO_H
 #  include <sys/sockio.h>
 #endif
+
 #ifdef HAVE_NET_IF_H
 #  include <net/if.h>
 #endif
@@ -100,15 +106,39 @@
 #ifdef HAVE_SYS_PARAM_H
 #  include <sys/param.h>
 #endif
+
 #ifdef HAVE_SYS_UCRED_H
 #  include <sys/ucred.h>
 #endif
+
 #ifdef HAVE_UCRED_H
 #  include <ucred.h>
 #endif
+
 #ifdef HAVE_NET_IF_DL_H
 #  include <net/if_dl.h>
 #endif
+
+#ifdef SOCKS5
+#  include <socks.h>
+#endif
+
+#ifndef HAVE_GETADDRINFO
+#  include "addrinfo.h"
+#endif
+
+#include "internal.h"
+#include "internal/array.h"
+#include "internal/error.h"
+#include "internal/gc.h"
+#include "internal/io.h"
+#include "internal/thread.h"
+#include "internal/vm.h"
+#include "ruby/io.h"
+#include "ruby/ruby.h"
+#include "ruby/thread.h"
+#include "ruby/util.h"
+#include "sockport.h"
 
 #ifndef HAVE_TYPE_SOCKLEN_T
 typedef int socklen_t;
@@ -143,11 +173,6 @@ unsigned int if_nametoindex(const char *);
  */
 #define pseudo_AF_FTIP pseudo_AF_RTIP
 
-#ifndef HAVE_GETADDRINFO
-#  include "addrinfo.h"
-#endif
-
-#include "sockport.h"
 
 #ifndef NI_MAXHOST
 #  define NI_MAXHOST 1025
@@ -229,7 +254,6 @@ typedef union {
 #define INET_SOCKS  2
 
 extern int rsock_do_not_reverse_lookup;
-extern int rsock_cmsg_cloexec_state;
 #define FMODE_NOREVLOOKUP 0x100
 
 /* common socket families only */
@@ -255,9 +279,7 @@ extern VALUE rb_eSocket;
 
 #ifdef SOCKS
 extern VALUE rb_cSOCKSSocket;
-#  ifdef SOCKS5
-#    include <socks.h>
-#  else
+#  ifndef SOCKS5
 void SOCKSinit();
 int Rconnect();
 #  endif
@@ -298,6 +320,11 @@ int rb_getnameinfo(const struct sockaddr *sa, socklen_t salen, char *host, size_
 int rsock_fd_family(int fd);
 struct rb_addrinfo *rsock_addrinfo(VALUE host, VALUE port, int family, int socktype, int flags);
 struct rb_addrinfo *rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack);
+#ifdef HAVE_GETADDRINFO_A
+struct rb_addrinfo *rsock_addrinfo_a(VALUE host, VALUE port, int family, int socktype, int flags, VALUE timeout);
+struct rb_addrinfo *rsock_getaddrinfo_a(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack, VALUE timeout);
+#endif
+
 VALUE rsock_fd_socket_addrinfo(int fd, struct sockaddr *addr, socklen_t len);
 VALUE rsock_io_socket_addrinfo(VALUE io, struct sockaddr *addr, socklen_t len);
 
@@ -323,7 +350,7 @@ int rsock_socket(int domain, int type, int proto);
 int rsock_detect_cloexec(int fd);
 VALUE rsock_init_sock(VALUE sock, int fd);
 VALUE rsock_sock_s_socketpair(int argc, VALUE *argv, VALUE klass);
-VALUE rsock_init_inetsock(VALUE sock, VALUE remote_host, VALUE remote_serv, VALUE local_host, VALUE local_serv, int type);
+VALUE rsock_init_inetsock(VALUE sock, VALUE remote_host, VALUE remote_serv, VALUE local_host, VALUE local_serv, int type, VALUE resolv_timeout);
 VALUE rsock_init_unixsock(VALUE sock, VALUE path, int server);
 
 struct rsock_send_arg {

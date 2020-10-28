@@ -16,7 +16,7 @@ with_feature :readline do
     end
 
     it "returns an ArgumentError if not given an Proc or #call" do
-      lambda { Readline.completion_proc = "test" }.should raise_error(ArgumentError)
+      -> { Readline.completion_proc = "test" }.should raise_error(ArgumentError)
     end
   end
 end

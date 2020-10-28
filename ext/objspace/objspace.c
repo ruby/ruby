@@ -12,19 +12,28 @@
 
 **********************************************************************/
 
-#include <ruby/io.h>
-#include "internal.h"
-#include <ruby/st.h>
-#include <ruby/re.h>
-#include "node.h"
 #include "gc.h"
+#include "internal.h"
+#include "internal/class.h"
+#include "internal/compilers.h"
+#include "internal/hash.h"
+#include "internal/imemo.h"
+#include "internal/sanitizers.h"
+#include "node.h"
+#include "ruby/io.h"
+#include "ruby/re.h"
+#include "ruby/st.h"
 #include "symbol.h"
+
+#undef rb_funcall
+
+#include "ruby/ruby.h"
 
 /*
  *  call-seq:
  *    ObjectSpace.memsize_of(obj) -> Integer
  *
- *  Return consuming memory size of obj.
+ *  Return consuming memory size of obj in bytes.
  *
  *  Note that the return size is incomplete.  You need to deal with this
  *  information as only a *HINT*. Especially, the size of +T_DATA+ may not be
@@ -47,37 +56,68 @@ struct total_data {
     VALUE klass;
 };
 
-static int
-total_i(void *vstart, void *vend, size_t stride, void *ptr)
+static void
+total_i(VALUE v, void *ptr)
 {
-    VALUE v;
     struct total_data *data = (struct total_data *)ptr;
 
+    switch (BUILTIN_TYPE(v)) {
+      case T_NONE:
+      case T_IMEMO:
+      case T_ICLASS:
+      case T_NODE:
+      case T_ZOMBIE:
+          return;
+      default:
+          if (data->klass == 0 || rb_obj_is_kind_of(v, data->klass)) {
+              data->total += rb_obj_memsize_of(v);
+          }
+    }
+}
+
+typedef void (*each_obj_with_flags)(VALUE, void*);
+
+struct obj_itr {
+    each_obj_with_flags cb;
+    void *data;
+};
+
+static int
+heap_iter(void *vstart, void *vend, size_t stride, void *ptr)
+{
+    struct obj_itr * ctx = (struct obj_itr *)ptr;
+    VALUE v;
+
     for (v = (VALUE)vstart; v != (VALUE)vend; v += stride) {
-	if (RBASIC(v)->flags) {
-	    switch (BUILTIN_TYPE(v)) {
-	      case T_NONE:
-	      case T_IMEMO:
-	      case T_ICLASS:
-	      case T_NODE:
-	      case T_ZOMBIE:
-		continue;
-	      default:
-		if (data->klass == 0 || rb_obj_is_kind_of(v, data->klass)) {
-		    data->total += rb_obj_memsize_of(v);
-		}
-	    }
-	}
+        void *poisoned = asan_poisoned_object_p(v);
+        asan_unpoison_object(v, false);
+
+        if (RBASIC(v)->flags) {
+            (*ctx->cb)(v, ctx->data);
+        }
+
+        if (poisoned) {
+            asan_poison_object(v);
+        }
     }
 
     return 0;
+}
+
+static void
+each_object_with_flags(each_obj_with_flags cb, void *ctx)
+{
+    struct obj_itr data;
+    data.cb = cb;
+    data.data = ctx;
+    rb_objspace_each_objects(heap_iter, &data);
 }
 
 /*
  *  call-seq:
  *    ObjectSpace.memsize_of_all([klass]) -> Integer
  *
- *  Return consuming memory size of all living objects.
+ *  Return consuming memory size of all living objects in bytes.
  *
  *  If +klass+ (should be Class object) is given, return the total memory size
  *  of instances of the given class.
@@ -110,7 +150,7 @@ memsize_of_all_m(int argc, VALUE *argv, VALUE self)
 	rb_scan_args(argc, argv, "01", &data.klass);
     }
 
-    rb_objspace_each_objects(total_i, &data);
+    each_object_with_flags(total_i, &data);
     return SIZET2NUM(data.total);
 }
 
@@ -137,24 +177,18 @@ setup_hash(int argc, VALUE *argv)
         hash = rb_hash_new();
     }
     else if (!RHASH_EMPTY_P(hash)) {
-        st_foreach(RHASH_TBL(hash), set_zero_i, hash);
+        /* WB: no new reference */
+        st_foreach(RHASH_TBL_RAW(hash), set_zero_i, hash);
     }
 
     return hash;
 }
 
-static int
-cos_i(void *vstart, void *vend, size_t stride, void *data)
+static void
+cos_i(VALUE v, void *data)
 {
     size_t *counts = (size_t *)data;
-    VALUE v = (VALUE)vstart;
-
-    for (;v != (VALUE)vend; v += stride) {
-	if (RBASIC(v)->flags) {
-	    counts[BUILTIN_TYPE(v)] += rb_obj_memsize_of(v);
-	}
-    }
-    return 0;
+    counts[BUILTIN_TYPE(v)] += rb_obj_memsize_of(v);
 }
 
 static VALUE
@@ -188,6 +222,7 @@ type2sym(enum ruby_value_type i)
 	CASE_TYPE(T_IMEMO);
 	CASE_TYPE(T_NODE);
 	CASE_TYPE(T_ICLASS);
+        CASE_TYPE(T_MOVED);
 	CASE_TYPE(T_ZOMBIE);
 #undef CASE_TYPE
       default: rb_bug("type2sym: unknown type (%d)", i);
@@ -230,7 +265,7 @@ count_objects_size(int argc, VALUE *argv, VALUE os)
 	counts[i] = 0;
     }
 
-    rb_objspace_each_objects(cos_i, &counts[0]);
+    each_object_with_flags(cos_i, &counts[0]);
 
     for (i = 0; i <= T_MASK; i++) {
 	if (counts[i]) {
@@ -248,25 +283,20 @@ struct dynamic_symbol_counts {
     size_t immortal;
 };
 
-static int
-cs_i(void *vstart, void *vend, size_t stride, void *n)
+static void
+cs_i(VALUE v, void *n)
 {
     struct dynamic_symbol_counts *counts = (struct dynamic_symbol_counts *)n;
-    VALUE v = (VALUE)vstart;
 
-    for (; v != (VALUE)vend; v += stride) {
-	if (RBASIC(v)->flags && BUILTIN_TYPE(v) == T_SYMBOL) {
-	    ID id = RSYMBOL(v)->id;
-	    if ((id & ~ID_SCOPE_MASK) == 0) {
-		counts->mortal++;
-	    }
-	    else {
-		counts->immortal++;
-	    }
-	}
+    if (BUILTIN_TYPE(v) == T_SYMBOL) {
+        ID id = RSYMBOL(v)->id;
+        if ((id & ~ID_SCOPE_MASK) == 0) {
+            counts->mortal++;
+        }
+        else {
+            counts->immortal++;
+        }
     }
-
-    return 0;
 }
 
 size_t rb_sym_immortal_count(void);
@@ -304,7 +334,7 @@ count_symbols(int argc, VALUE *argv, VALUE os)
     VALUE hash = setup_hash(argc, argv);
 
     size_t immortal_symbols = rb_sym_immortal_count();
-    rb_objspace_each_objects(cs_i, &dynamic_counts);
+    each_object_with_flags(cs_i, &dynamic_counts);
 
     rb_hash_aset(hash, ID2SYM(rb_intern("mortal_dynamic_symbol")),   SIZET2NUM(dynamic_counts.mortal));
     rb_hash_aset(hash, ID2SYM(rb_intern("immortal_dynamic_symbol")), SIZET2NUM(dynamic_counts.immortal));
@@ -314,20 +344,15 @@ count_symbols(int argc, VALUE *argv, VALUE os)
     return hash;
 }
 
-static int
-cn_i(void *vstart, void *vend, size_t stride, void *n)
+static void
+cn_i(VALUE v, void *n)
 {
     size_t *nodes = (size_t *)n;
-    VALUE v = (VALUE)vstart;
 
-    for (; v != (VALUE)vend; v += stride) {
-	if (RBASIC(v)->flags && BUILTIN_TYPE(v) == T_NODE) {
-	    size_t s = nd_type((NODE *)v);
-	    nodes[s]++;
-	}
+    if (BUILTIN_TYPE(v) == T_NODE) {
+        size_t s = nd_type((NODE *)v);
+        nodes[s]++;
     }
-
-    return 0;
 }
 
 /*
@@ -364,7 +389,7 @@ count_nodes(int argc, VALUE *argv, VALUE os)
 	nodes[i] = 0;
     }
 
-    rb_objspace_each_objects(cn_i, &nodes[0]);
+    each_object_with_flags(cn_i, &nodes[0]);
 
     for (i=0; i<NODE_LAST; i++) {
 	if (nodes[i] != 0) {
@@ -377,7 +402,9 @@ count_nodes(int argc, VALUE *argv, VALUE os)
 		COUNT_NODE(NODE_UNLESS);
 		COUNT_NODE(NODE_CASE);
 		COUNT_NODE(NODE_CASE2);
+		COUNT_NODE(NODE_CASE3);
 		COUNT_NODE(NODE_WHEN);
+		COUNT_NODE(NODE_IN);
 		COUNT_NODE(NODE_WHILE);
 		COUNT_NODE(NODE_UNTIL);
 		COUNT_NODE(NODE_ITER);
@@ -413,8 +440,8 @@ count_nodes(int argc, VALUE *argv, VALUE os)
 		COUNT_NODE(NODE_QCALL);
 		COUNT_NODE(NODE_SUPER);
 		COUNT_NODE(NODE_ZSUPER);
-		COUNT_NODE(NODE_ARRAY);
-		COUNT_NODE(NODE_ZARRAY);
+		COUNT_NODE(NODE_LIST);
+		COUNT_NODE(NODE_ZLIST);
 		COUNT_NODE(NODE_VALUES);
 		COUNT_NODE(NODE_HASH);
 		COUNT_NODE(NODE_RETURN);
@@ -471,7 +498,9 @@ count_nodes(int argc, VALUE *argv, VALUE os)
 		COUNT_NODE(NODE_DSYM);
 		COUNT_NODE(NODE_ATTRASGN);
 		COUNT_NODE(NODE_LAMBDA);
-                COUNT_NODE(NODE_METHREF);
+		COUNT_NODE(NODE_ARYPTN);
+		COUNT_NODE(NODE_FNDPTN);
+		COUNT_NODE(NODE_HSHPTN);
 #undef COUNT_NODE
 	      case NODE_LAST: break;
 	    }
@@ -483,36 +512,31 @@ count_nodes(int argc, VALUE *argv, VALUE os)
     return hash;
 }
 
-static int
-cto_i(void *vstart, void *vend, size_t stride, void *data)
+static void
+cto_i(VALUE v, void *data)
 {
     VALUE hash = (VALUE)data;
-    VALUE v = (VALUE)vstart;
 
-    for (; v != (VALUE)vend; v += stride) {
-	if (RBASIC(v)->flags && BUILTIN_TYPE(v) == T_DATA) {
-	    VALUE counter;
-	    VALUE key = RBASIC(v)->klass;
+    if (BUILTIN_TYPE(v) == T_DATA) {
+        VALUE counter;
+        VALUE key = RBASIC(v)->klass;
 
-	    if (key == 0) {
-		const char *name = rb_objspace_data_type_name(v);
-		if (name == 0) name = "unknown";
-		key = ID2SYM(rb_intern(name));
-	    }
+        if (key == 0) {
+            const char *name = rb_objspace_data_type_name(v);
+            if (name == 0) name = "unknown";
+            key = ID2SYM(rb_intern(name));
+        }
 
-	    counter = rb_hash_aref(hash, key);
-	    if (NIL_P(counter)) {
-		counter = INT2FIX(1);
-	    }
-	    else {
-		counter = INT2FIX(FIX2INT(counter) + 1);
-	    }
+        counter = rb_hash_aref(hash, key);
+        if (NIL_P(counter)) {
+            counter = INT2FIX(1);
+        }
+        else {
+            counter = INT2FIX(FIX2INT(counter) + 1);
+        }
 
-	    rb_hash_aset(hash, key, counter);
-	}
+        rb_hash_aset(hash, key, counter);
     }
-
-    return 0;
 }
 
 /*
@@ -551,37 +575,32 @@ static VALUE
 count_tdata_objects(int argc, VALUE *argv, VALUE self)
 {
     VALUE hash = setup_hash(argc, argv);
-    rb_objspace_each_objects(cto_i, (void *)hash);
+    each_object_with_flags(cto_i, (void *)hash);
     return hash;
 }
 
 static ID imemo_type_ids[IMEMO_MASK+1];
 
-static int
-count_imemo_objects_i(void *vstart, void *vend, size_t stride, void *data)
+static void
+count_imemo_objects_i(VALUE v, void *data)
 {
     VALUE hash = (VALUE)data;
-    VALUE v = (VALUE)vstart;
 
-    for (; v != (VALUE)vend; v += stride) {
-	if (RBASIC(v)->flags && BUILTIN_TYPE(v) == T_IMEMO) {
-	    VALUE counter;
-	    VALUE key = ID2SYM(imemo_type_ids[imemo_type(v)]);
+    if (BUILTIN_TYPE(v) == T_IMEMO) {
+        VALUE counter;
+        VALUE key = ID2SYM(imemo_type_ids[imemo_type(v)]);
 
-	    counter = rb_hash_aref(hash, key);
+        counter = rb_hash_aref(hash, key);
 
-	    if (NIL_P(counter)) {
-		counter = INT2FIX(1);
-	    }
-	    else {
-		counter = INT2FIX(FIX2INT(counter) + 1);
-	    }
+        if (NIL_P(counter)) {
+            counter = INT2FIX(1);
+        }
+        else {
+            counter = INT2FIX(FIX2INT(counter) + 1);
+        }
 
-	    rb_hash_aset(hash, key, counter);
-	}
+        rb_hash_aset(hash, key, counter);
     }
-
-    return 0;
 }
 
 /*
@@ -618,7 +637,7 @@ count_imemo_objects(int argc, VALUE *argv, VALUE self)
     VALUE hash = setup_hash(argc, argv);
 
     if (imemo_type_ids[0] == 0) {
-	imemo_type_ids[0] = rb_intern("imemo_none");
+        imemo_type_ids[0] = rb_intern("imemo_env");
 	imemo_type_ids[1] = rb_intern("imemo_cref");
 	imemo_type_ids[2] = rb_intern("imemo_svar");
 	imemo_type_ids[3] = rb_intern("imemo_throw_data");
@@ -627,10 +646,13 @@ count_imemo_objects(int argc, VALUE *argv, VALUE self)
 	imemo_type_ids[6] = rb_intern("imemo_ment");
 	imemo_type_ids[7] = rb_intern("imemo_iseq");
 	imemo_type_ids[8] = rb_intern("imemo_tmpbuf");
-	imemo_type_ids[9] = rb_intern("imemo_parser_strterm");
+        imemo_type_ids[9] = rb_intern("imemo_ast");
+        imemo_type_ids[10] = rb_intern("imemo_parser_strterm");
+        imemo_type_ids[11] = rb_intern("imemo_callinfo");
+        imemo_type_ids[12] = rb_intern("imemo_callcache");
     }
 
-    rb_objspace_each_objects(count_imemo_objects_i, (void *)hash);
+    each_object_with_flags(count_imemo_objects_i, (void *)hash);
 
     return hash;
 }
@@ -654,12 +676,12 @@ static const rb_data_type_t iow_data_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
-static VALUE rb_mInternalObjectWrapper;
+static VALUE rb_cInternalObjectWrapper;
 
 static VALUE
 iow_newobj(VALUE obj)
 {
-    return TypedData_Wrap_Struct(rb_mInternalObjectWrapper, &iow_data_type, (void *)obj);
+    return TypedData_Wrap_Struct(rb_cInternalObjectWrapper, &iow_data_type, (void *)obj);
 }
 
 /* Returns the type of the internal object. */
@@ -689,7 +711,7 @@ iow_internal_object_id(VALUE self)
 }
 
 struct rof_data {
-    st_table *refs;
+    VALUE refs;
     VALUE internals;
 };
 
@@ -705,7 +727,7 @@ reachable_object_from_i(VALUE obj, void *data_ptr)
 	    val = iow_newobj(obj);
 	    rb_ary_push(data->internals, val);
 	}
-	st_insert(data->refs, key, val);
+	rb_hash_aset(data->refs, key, val);
     }
 }
 
@@ -763,20 +785,18 @@ static VALUE
 reachable_objects_from(VALUE self, VALUE obj)
 {
     if (rb_objspace_markable_object_p(obj)) {
-	VALUE ret = rb_ary_new();
 	struct rof_data data;
 
 	if (rb_typeddata_is_kind_of(obj, &iow_data_type)) {
 	    obj = (VALUE)DATA_PTR(obj);
 	}
 
-	data.refs = st_init_numtable();
+	data.refs = rb_ident_hash_new();
 	data.internals = rb_ary_new();
 
 	rb_objspace_reachable_objects_from(obj, reachable_object_from_i, &data);
 
-	st_foreach(data.refs, collect_values, (st_data_t)ret);
-	return ret;
+        return rb_funcall(data.refs, rb_intern("values"), 0);
     }
     else {
 	return Qnil;
@@ -855,7 +875,8 @@ wrap_klass_iow(VALUE klass)
     if (!RTEST(klass)) {
 	return Qnil;
     }
-    else if (RB_TYPE_P(klass, T_ICLASS)) {
+    else if (RB_TYPE_P(klass, T_ICLASS) ||
+             CLASS_OF(klass) == Qfalse /* hidden object */) {
 	return iow_newobj(klass);
     }
     else {
@@ -881,8 +902,13 @@ objspace_internal_class_of(VALUE self, VALUE obj)
 	obj = (VALUE)DATA_PTR(obj);
     }
 
-    klass = CLASS_OF(obj);
-    return wrap_klass_iow(klass);
+    if (RB_TYPE_P(obj, T_IMEMO)) {
+        return Qnil;
+    }
+    else {
+        klass = CLASS_OF(obj);
+        return wrap_klass_iow(klass);
+    }
 }
 
 /*
@@ -968,10 +994,10 @@ Init_objspace(void)
      *
      * You can use the #type method to check the type of the internal object.
      */
-    rb_mInternalObjectWrapper = rb_define_class_under(rb_mObjSpace, "InternalObjectWrapper", rb_cObject);
-    rb_define_method(rb_mInternalObjectWrapper, "type", iow_type, 0);
-    rb_define_method(rb_mInternalObjectWrapper, "inspect", iow_inspect, 0);
-    rb_define_method(rb_mInternalObjectWrapper, "internal_object_id", iow_internal_object_id, 0);
+    rb_cInternalObjectWrapper = rb_define_class_under(rb_mObjSpace, "InternalObjectWrapper", rb_cObject);
+    rb_define_method(rb_cInternalObjectWrapper, "type", iow_type, 0);
+    rb_define_method(rb_cInternalObjectWrapper, "inspect", iow_inspect, 0);
+    rb_define_method(rb_cInternalObjectWrapper, "internal_object_id", iow_internal_object_id, 0);
 
     Init_object_tracing(rb_mObjSpace);
     Init_objspace_dump(rb_mObjSpace);

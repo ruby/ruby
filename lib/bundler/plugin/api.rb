@@ -23,7 +23,7 @@ module Bundler
   # and hooks).
   module Plugin
     class API
-      autoload :Source, "bundler/plugin/api/source"
+      autoload :Source, File.expand_path("api/source", __dir__)
 
       # The plugins should declare that they handle a command through this helper.
       #

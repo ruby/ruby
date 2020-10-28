@@ -19,21 +19,26 @@ class TestRDocMarkupToHtmlCrossref < XrefTestCase
 
   def test_convert_CROSSREF_label
     result = @to.convert 'C1@foo'
-    assert_equal para("<a href=\"C1.html#label-foo\">foo at <code>C1</code></a>"), result
+    assert_equal para("<a href=\"C1.html#class-C1-label-foo\">foo at <code>C1</code></a>"), result
 
     result = @to.convert 'C1#m@foo'
     assert_equal para("<a href=\"C1.html#method-i-m-label-foo\">foo at <code>C1#m</code></a>"),
                  result
   end
 
+  def test_convert_CROSSREF_label_for_md
+    result = @to.convert 'EXAMPLE@foo'
+    assert_equal para("<a href=\"EXAMPLE_md.html#label-foo\">foo at <code>EXAMPLE</code></a>"), result
+  end
+
   def test_convert_CROSSREF_label_period
     result = @to.convert 'C1@foo.'
-    assert_equal para("<a href=\"C1.html#label-foo\">foo at <code>C1</code></a>."), result
+    assert_equal para("<a href=\"C1.html#class-C1-label-foo\">foo at <code>C1</code></a>."), result
   end
 
   def test_convert_CROSSREF_label_space
     result = @to.convert 'C1@foo+bar'
-    assert_equal para("<a href=\"C1.html#label-foo+bar\">foo bar at <code>C1</code></a>"),
+    assert_equal para("<a href=\"C1.html#class-C1-label-foo+bar\">foo bar at <code>C1</code></a>"),
                  result
   end
 
@@ -84,6 +89,20 @@ class TestRDocMarkupToHtmlCrossref < XrefTestCase
     assert_equal para("<a href=\"C1.html#method-c-25\"><code>C1::%</code></a>"), result
   end
 
+  def test_convert_RDOCLINK_rdoc_ref_method_escape_html
+    m = @c1.add_method RDoc::AnyMethod.new nil, '<<'
+    m.singleton = false
+
+    result = @to.convert 'rdoc-ref:C1#<<'
+
+    assert_equal para("<a href=\"C1.html#method-i-3C-3C\"><code>C1#&lt;&lt;</code></a>"), result
+    m.singleton = true
+
+    result = @to.convert 'rdoc-ref:C1::<<'
+
+    assert_equal para("<a href=\"C1.html#method-c-3C-3C\"><code>C1::&lt;&lt;</code></a>"), result
+  end
+
   def test_convert_RDOCLINK_rdoc_ref_method_percent_label
     m = @c1.add_method RDoc::AnyMethod.new nil, '%'
     m.singleton = false
@@ -104,7 +123,7 @@ class TestRDocMarkupToHtmlCrossref < XrefTestCase
   def test_convert_RDOCLINK_rdoc_ref_label
     result = @to.convert 'rdoc-ref:C1@foo'
 
-    assert_equal para("<a href=\"C1.html#label-foo\">foo at <code>C1</code></a>"), result,
+    assert_equal para("<a href=\"C1.html#class-C1-label-foo\">foo at <code>C1</code></a>"), result,
                  'rdoc-ref:C1@foo'
   end
 
@@ -130,6 +149,13 @@ class TestRDocMarkupToHtmlCrossref < XrefTestCase
 
     assert_equal "<a href=\"C1.html#method-i-m\"><code>m</code></a>",
                  REGEXP_HANDLING('#m')
+  end
+
+  def test_handle_regexp_CROSSREF_with_arg_looks_like_TIDYLINK
+    result = @to.convert 'C1.m[:sym]'
+
+    assert_equal para("<a href=\"C1.html#method-c-m\"><code>C1.m[:sym]</code></a>"), result,
+                 'C1.m[:sym]'
   end
 
   def test_handle_regexp_HYPERLINK_rdoc

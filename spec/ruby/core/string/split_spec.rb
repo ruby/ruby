@@ -3,19 +3,17 @@ require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
 describe "String#split with String" do
-  with_feature :encoding do
-    it "throws an ArgumentError if the pattern is not a valid string" do
-      str = 'проверка'
-      broken_str = 'проверка'
-      broken_str.force_encoding('binary')
-      broken_str.chop!
-      broken_str.force_encoding('utf-8')
-      lambda { str.split(broken_str) }.should raise_error(ArgumentError)
-    end
+  it "throws an ArgumentError if the pattern is not a valid string" do
+    str = 'проверка'
+    broken_str = 'проверка'
+    broken_str.force_encoding('binary')
+    broken_str.chop!
+    broken_str.force_encoding('utf-8')
+    -> { str.split(broken_str) }.should raise_error(ArgumentError)
+  end
 
-    it "splits on multibyte characters" do
-      "ありがりがとう".split("が").should == ["あり", "り", "とう"]
-    end
+  it "splits on multibyte characters" do
+    "ありがりがとう".split("が").should == ["あり", "り", "とう"]
   end
 
   it "returns an array of substrings based on splitting on the given string" do
@@ -65,25 +63,44 @@ describe "String#split with String" do
   end
 
   it "defaults to $; when string isn't given or nil" do
-    begin
+    suppress_warning do
       old_fs = $;
+      begin
+        [",", ":", "", "XY", nil].each do |fs|
+          $; = fs
 
-      [",", ":", "", "XY", nil].each do |fs|
-        $; = fs
+          ["x,y,z,,,", "1:2:", "aXYbXYcXY", ""].each do |str|
+            expected = str.split(fs || " ")
 
-        ["x,y,z,,,", "1:2:", "aXYbXYcXY", ""].each do |str|
-          expected = str.split(fs || " ")
+            str.split(nil).should == expected
+            str.split.should == expected
 
-          str.split(nil).should == expected
-          str.split.should == expected
+            str.split(nil, -1).should == str.split(fs || " ", -1)
+            str.split(nil, 0).should == str.split(fs || " ", 0)
+            str.split(nil, 2).should == str.split(fs || " ", 2)
+          end
+        end
+      ensure
+        $; = old_fs
+      end
+    end
 
-          str.split(nil, -1).should == str.split(fs || " ", -1)
-          str.split(nil, 0).should == str.split(fs || " ", 0)
-          str.split(nil, 2).should == str.split(fs || " ", 2)
+    ruby_version_is "2.7" do
+      context "when $; is not nil" do
+        before do
+          suppress_warning do
+            @old_value, $; = $;, 'foobar'
+          end
+        end
+
+        after do
+          $; = @old_value
+        end
+
+        it "warns" do
+          -> { "".split }.should complain(/warning: \$; is set to non-nil value/)
         end
       end
-    ensure
-      $; = old_fs
     end
   end
 
@@ -166,16 +183,18 @@ describe "String#split with String" do
     s.split(':').first.should == 'silly'
   end
 
-  it "taints the resulting strings if self is tainted" do
-    ["", "x.y.z.", "  x  y  "].each do |str|
-      ["", ".", " "].each do |pat|
-        [-1, 0, 1, 2].each do |limit|
-          str.dup.taint.split(pat).each do |x|
-            x.tainted?.should == true
-          end
+  ruby_version_is ''...'2.7' do
+    it "taints the resulting strings if self is tainted" do
+      ["", "x.y.z.", "  x  y  "].each do |str|
+        ["", ".", " "].each do |pat|
+          [-1, 0, 1, 2].each do |limit|
+            str.dup.taint.split(pat).each do |x|
+              x.should.tainted?
+            end
 
-          str.split(pat.dup.taint).each do |x|
-            x.tainted?.should == false
+            str.split(pat.dup.taint).each do |x|
+              x.should_not.tainted?
+            end
           end
         end
       end
@@ -238,25 +257,26 @@ describe "String#split with Regexp" do
   end
 
   it "defaults to $; when regexp isn't given or nil" do
-    begin
+    suppress_warning do
       old_fs = $;
+      begin
+        [/,/, /:/, //, /XY/, /./].each do |fs|
+          $; = fs
 
-      [/,/, /:/, //, /XY/, /./].each do |fs|
-        $; = fs
+          ["x,y,z,,,", "1:2:", "aXYbXYcXY", ""].each do |str|
+            expected = str.split(fs)
 
-        ["x,y,z,,,", "1:2:", "aXYbXYcXY", ""].each do |str|
-          expected = str.split(fs)
+            str.split(nil).should == expected
+            str.split.should == expected
 
-          str.split(nil).should == expected
-          str.split.should == expected
-
-          str.split(nil, -1).should == str.split(fs, -1)
-          str.split(nil, 0).should == str.split(fs, 0)
-          str.split(nil, 2).should == str.split(fs, 2)
+            str.split(nil, -1).should == str.split(fs, -1)
+            str.split(nil, 0).should == str.split(fs, 0)
+            str.split(nil, 2).should == str.split(fs, 2)
+          end
         end
+      ensure
+        $; = old_fs
       end
-    ensure
-      $; = old_fs
     end
   end
 
@@ -316,8 +336,8 @@ describe "String#split with Regexp" do
   end
 
   it "returns a type error if limit can't be converted to an integer" do
-    lambda {"1.2.3.4".split(".", "three")}.should raise_error(TypeError)
-    lambda {"1.2.3.4".split(".", nil)    }.should raise_error(TypeError)
+    -> {"1.2.3.4".split(".", "three")}.should raise_error(TypeError)
+    -> {"1.2.3.4".split(".", nil)    }.should raise_error(TypeError)
   end
 
   it "doesn't set $~" do
@@ -355,29 +375,31 @@ describe "String#split with Regexp" do
     s.split(/:/).first.should == 'silly'
   end
 
-  it "taints the resulting strings if self is tainted" do
-    ["", "x:y:z:", "  x  y  "].each do |str|
-      [//, /:/, /\s+/].each do |pat|
-        [-1, 0, 1, 2].each do |limit|
-          str.dup.taint.split(pat, limit).each do |x|
-            # See the spec below for why the conditional is here
-            x.tainted?.should be_true unless x.empty?
+  ruby_version_is ''...'2.7' do
+    it "taints the resulting strings if self is tainted" do
+      ["", "x:y:z:", "  x  y  "].each do |str|
+        [//, /:/, /\s+/].each do |pat|
+          [-1, 0, 1, 2].each do |limit|
+            str.dup.taint.split(pat, limit).each do |x|
+              # See the spec below for why the conditional is here
+              x.tainted?.should be_true unless x.empty?
+            end
           end
         end
       end
     end
-  end
 
-  it "taints an empty string if self is tainted" do
-    ":".taint.split(//, -1).last.tainted?.should be_true
-  end
+    it "taints an empty string if self is tainted" do
+      ":".taint.split(//, -1).last.tainted?.should be_true
+    end
 
-  it "doesn't taints the resulting strings if the Regexp is tainted" do
-    ["", "x:y:z:", "  x  y  "].each do |str|
-      [//, /:/, /\s+/].each do |pat|
-        [-1, 0, 1, 2].each do |limit|
-          str.split(pat.dup.taint, limit).each do |x|
-            x.tainted?.should be_false
+    it "doesn't taints the resulting strings if the Regexp is tainted" do
+      ["", "x:y:z:", "  x  y  "].each do |str|
+        [//, /:/, /\s+/].each do |pat|
+          [-1, 0, 1, 2].each do |limit|
+            str.split(pat.dup.taint, limit).each do |x|
+              x.tainted?.should be_false
+            end
           end
         end
       end
@@ -400,28 +422,88 @@ describe "String#split with Regexp" do
     broken_str.force_encoding('binary')
     broken_str.chop!
     broken_str.force_encoding('utf-8')
-    lambda{ broken_str.split(/\r\n|\r|\n/) }.should raise_error(ArgumentError)
+    ->{ broken_str.split(/\r\n|\r|\n/) }.should raise_error(ArgumentError)
   end
 
   ruby_version_is "2.6" do
-    it "yields each split substrings if a block is given" do
-      a = []
-      returned_object = "chunky bacon".split(" ") { |str| a << str.capitalize }
+    context "when a block is given" do
+      it "yields each split substring with default pattern" do
+        a = []
+        returned_object = "chunky bacon".split { |str| a << str.capitalize }
 
-      returned_object.should == "chunky bacon"
-      a.should == ["Chunky", "Bacon"]
+        returned_object.should == "chunky bacon"
+        a.should == ["Chunky", "Bacon"]
+      end
+
+      it "yields the string when limit is 1" do
+        a = []
+        returned_object = "chunky bacon".split("", 1) { |str| a << str.capitalize }
+
+        returned_object.should == "chunky bacon"
+        a.should == ["Chunky bacon"]
+      end
+
+      it "yields each split letter" do
+        a = []
+        returned_object = "chunky".split("", 0) { |str| a << str.capitalize }
+
+        returned_object.should == "chunky"
+        a.should == %w(C H U N K Y)
+      end
+
+      it "yields each split substring with a pattern" do
+        a = []
+        returned_object = "chunky-bacon".split("-", 0) { |str| a << str.capitalize }
+
+        returned_object.should == "chunky-bacon"
+        a.should == ["Chunky", "Bacon"]
+      end
+
+      it "yields each split substring with empty regexp pattern" do
+        a = []
+        returned_object = "chunky".split(//) { |str| a << str.capitalize }
+
+        returned_object.should == "chunky"
+        a.should == %w(C H U N K Y)
+      end
+
+      it "yields each split substring with empty regexp pattern and limit" do
+        a = []
+        returned_object = "chunky".split(//, 3) { |str| a << str.capitalize }
+
+        returned_object.should == "chunky"
+        a.should == %w(C H Unky)
+      end
+
+      it "yields each split substring with a regexp pattern" do
+        a = []
+        returned_object = "chunky:bacon".split(/:/) { |str| a << str.capitalize }
+
+        returned_object.should == "chunky:bacon"
+        a.should == ["Chunky", "Bacon"]
+      end
+
+      it "returns a string as is (and doesn't call block) if it is empty" do
+        a = []
+        returned_object = "".split { |str| a << str.capitalize }
+
+        returned_object.should == ""
+        a.should == []
+      end
     end
 
     describe "for a String subclass" do
-      a = []
-      StringSpecs::MyString.new("a|b").split("|") { |str| a << str }
-      first, last = a
+      it "yields instances of the same subclass" do
+        a = []
+        StringSpecs::MyString.new("a|b").split("|") { |str| a << str }
+        first, last = a
 
-      first.should be_an_instance_of(StringSpecs::MyString)
-      first.should == "a"
+        first.should be_an_instance_of(StringSpecs::MyString)
+        first.should == "a"
 
-      last.should be_an_instance_of(StringSpecs::MyString)
-      last.should == "b"
+        last.should be_an_instance_of(StringSpecs::MyString)
+        last.should == "b"
+      end
     end
   end
 end

@@ -46,8 +46,8 @@ describe "Array#insert" do
   end
 
   it "raises an IndexError if the negative index is out of bounds" do
-    lambda { [].insert(-2, 1)  }.should raise_error(IndexError)
-    lambda { [1].insert(-3, 2) }.should raise_error(IndexError)
+    -> { [].insert(-2, 1)  }.should raise_error(IndexError)
+    -> { [1].insert(-3, 2) }.should raise_error(IndexError)
   end
 
   it "does nothing of no object is passed" do
@@ -64,15 +64,15 @@ describe "Array#insert" do
   end
 
   it "raises an ArgumentError if no argument passed" do
-    lambda { [].insert() }.should raise_error(ArgumentError)
+    -> { [].insert() }.should raise_error(ArgumentError)
   end
 
-  it "raises a #{frozen_error_class} on frozen arrays when the array is modified" do
-    lambda { ArraySpecs.frozen_array.insert(0, 'x') }.should raise_error(frozen_error_class)
+  it "raises a FrozenError on frozen arrays when the array is modified" do
+    -> { ArraySpecs.frozen_array.insert(0, 'x') }.should raise_error(FrozenError)
   end
 
   # see [ruby-core:23666]
-  it "raises a #{frozen_error_class} on frozen arrays when the array would not be modified" do
-    lambda { ArraySpecs.frozen_array.insert(0) }.should raise_error(frozen_error_class)
+  it "raises a FrozenError on frozen arrays when the array would not be modified" do
+    -> { ArraySpecs.frozen_array.insert(0) }.should raise_error(FrozenError)
   end
 end

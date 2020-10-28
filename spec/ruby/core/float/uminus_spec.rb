@@ -23,6 +23,6 @@ describe "Float#-@" do
   end
 
   it "returns NaN for NaN" do
-    nan_value.send(:-@).nan?.should == true
+    nan_value.send(:-@).should.nan?
   end
 end

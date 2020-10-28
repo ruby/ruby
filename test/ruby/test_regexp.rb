@@ -161,6 +161,10 @@ class TestRegexp < Test::Unit::TestCase
     s = "foo"
     s[/(?<bar>o)/, "bar"] = "baz"
     assert_equal("fbazo", s)
+
+    /.*/ =~ "abc"
+    "a".sub("a", "")
+    assert_raise(IndexError) {Regexp.last_match(:_id)}
   end
 
   def test_named_capture_with_nul
@@ -622,7 +626,7 @@ class TestRegexp < Test::Unit::TestCase
 
   def test_dup
     assert_equal(//, //.dup)
-    assert_raise(TypeError) { //.instance_eval { initialize_copy(nil) } }
+    assert_raise(TypeError) { //.dup.instance_eval { initialize_copy(nil) } }
   end
 
   def test_regsub
@@ -952,7 +956,12 @@ class TestRegexp < Test::Unit::TestCase
   def test_cclass_R
     assert_match(/\A\R\z/, "\r")
     assert_match(/\A\R\z/, "\n")
+    assert_match(/\A\R\z/, "\f")
+    assert_match(/\A\R\z/, "\v")
     assert_match(/\A\R\z/, "\r\n")
+    assert_match(/\A\R\z/, "\u0085")
+    assert_match(/\A\R\z/, "\u2028")
+    assert_match(/\A\R\z/, "\u2029")
   end
 
   def test_cclass_X
@@ -997,6 +1006,8 @@ class TestRegexp < Test::Unit::TestCase
     assert_raise(TypeError) { Regexp.allocate.names }
     assert_raise(TypeError) { Regexp.allocate.named_captures }
 
+    assert_not_respond_to(MatchData, :allocate)
+=begin
     assert_raise(TypeError) { MatchData.allocate.hash }
     assert_raise(TypeError) { MatchData.allocate.regexp }
     assert_raise(TypeError) { MatchData.allocate.names }
@@ -1019,6 +1030,7 @@ class TestRegexp < Test::Unit::TestCase
     assert_raise(TypeError) { $` }
     assert_raise(TypeError) { $' }
     assert_raise(TypeError) { $+ }
+=end
   end
 
   def test_unicode
@@ -1075,6 +1087,9 @@ class TestRegexp < Test::Unit::TestCase
     assert_no_match(/^\p{age=3.0}$/u, "\u2754")
     assert_no_match(/^\p{age=2.0}$/u, "\u2754")
     assert_no_match(/^\p{age=1.1}$/u, "\u2754")
+
+    assert_no_match(/^\p{age=12.0}$/u, "\u32FF")
+    assert_match(/^\p{age=12.1}$/u, "\u32FF")
   end
 
   MatchData_A = eval("class MatchData_\u{3042} < MatchData; self; end")
@@ -1085,7 +1100,9 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal(a, b, '[ruby-core:24748]')
     h = {a => 42}
     assert_equal(42, h[b], '[ruby-core:24748]')
+=begin
     assert_match(/#<TestRegexp::MatchData_\u{3042}:/, MatchData_A.allocate.inspect)
+=end
 
     h = /^(?<@time>\d+): (?<body>.*)/.match("123456: hoge fuga")
     assert_equal("123456", h["@time"])
@@ -1121,6 +1138,8 @@ class TestRegexp < Test::Unit::TestCase
 
     bug8151 = '[ruby-core:53649]'
     assert_warning(/\A\z/, bug8151) { Regexp.new('(?:[\u{33}])').to_s }
+
+    assert_warning(%r[/.*/\Z]) { Regexp.new("[\n\n]") }
   end
 
   def test_property_warn

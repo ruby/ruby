@@ -1,0 +1,4 @@
+
+class A
+rule
+end

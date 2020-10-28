@@ -2,6 +2,14 @@ require_relative '../../spec_helper'
 require_relative '../enumerable/shared/enumeratorized'
 
 describe "ENV.reject!" do
+  before :each do
+    @foo = ENV["foo"]
+  end
+
+  after :each do
+    ENV["foo"] = @foo
+  end
+
   it "rejects entries based on key" do
     ENV["foo"] = "bar"
     ENV.reject! { |k, v| k == "foo" }
@@ -17,19 +25,23 @@ describe "ENV.reject!" do
   it "returns itself or nil" do
     ENV.reject! { false }.should == nil
     ENV["foo"] = "bar"
-    ENV.reject! { |k, v| k == "foo" }.should == ENV
+    ENV.reject! { |k, v| k == "foo" }.should equal(ENV)
     ENV["foo"].should == nil
   end
 
   it "returns an Enumerator if called without a block" do
-    ENV.reject!.should be_an_instance_of(Enumerator)
+    ENV["foo"] = "bar"
+    enum = ENV.reject!
+    enum.should be_an_instance_of(Enumerator)
+    enum.each { |k, v| k == "foo" }.should equal(ENV)
+    ENV["foo"].should == nil
   end
 
   it "doesn't raise if empty" do
     orig = ENV.to_hash
     begin
       ENV.clear
-      lambda { ENV.reject! }.should_not raise_error(LocalJumpError)
+      -> { ENV.reject! }.should_not raise_error(LocalJumpError)
     ensure
       ENV.replace orig
     end
@@ -39,6 +51,14 @@ describe "ENV.reject!" do
 end
 
 describe "ENV.reject" do
+  before :each do
+    @foo = ENV["foo"]
+  end
+
+  after :each do
+    ENV["foo"] = @foo
+  end
+
   it "rejects entries based on key" do
     ENV["foo"] = "bar"
     e = ENV.reject { |k, v| k == "foo" }
@@ -60,14 +80,18 @@ describe "ENV.reject" do
   end
 
   it "returns an Enumerator if called without a block" do
-    ENV.reject.should be_an_instance_of(Enumerator)
+    ENV["foo"] = "bar"
+    enum = ENV.reject
+    enum.should be_an_instance_of(Enumerator)
+    enum.each { |k, v| k == "foo"}
+    ENV["foo"] = nil
   end
 
   it "doesn't raise if empty" do
     orig = ENV.to_hash
     begin
       ENV.clear
-      lambda { ENV.reject }.should_not raise_error(LocalJumpError)
+      -> { ENV.reject }.should_not raise_error(LocalJumpError)
     ensure
       ENV.replace orig
     end

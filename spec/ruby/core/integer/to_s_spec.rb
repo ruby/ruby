@@ -13,10 +13,10 @@ describe "Integer#to_s" do
       end
 
       it "raises an ArgumentError if the base is less than 2 or higher than 36" do
-        lambda { 123.to_s(-1) }.should raise_error(ArgumentError)
-        lambda { 123.to_s(0)  }.should raise_error(ArgumentError)
-        lambda { 123.to_s(1)  }.should raise_error(ArgumentError)
-        lambda { 123.to_s(37) }.should raise_error(ArgumentError)
+        -> { 123.to_s(-1) }.should raise_error(ArgumentError)
+        -> { 123.to_s(0)  }.should raise_error(ArgumentError)
+        -> { 123.to_s(1)  }.should raise_error(ArgumentError)
+        -> { 123.to_s(37) }.should raise_error(ArgumentError)
       end
     end
 
@@ -29,24 +29,22 @@ describe "Integer#to_s" do
       end
     end
 
-    with_feature :encoding do
-      before :each do
-        @internal = Encoding.default_internal
-      end
+    before :each do
+      @internal = Encoding.default_internal
+    end
 
-      after :each do
-        Encoding.default_internal = @internal
-      end
+    after :each do
+      Encoding.default_internal = @internal
+    end
 
-      it "returns a String in US-ASCII encoding when Encoding.default_internal is nil" do
-        Encoding.default_internal = nil
-        1.to_s.encoding.should equal(Encoding::US_ASCII)
-      end
+    it "returns a String in US-ASCII encoding when Encoding.default_internal is nil" do
+      Encoding.default_internal = nil
+      1.to_s.encoding.should equal(Encoding::US_ASCII)
+    end
 
-      it "returns a String in US-ASCII encoding when Encoding.default_internal is not nil" do
-        Encoding.default_internal = Encoding::IBM437
-        1.to_s.encoding.should equal(Encoding::US_ASCII)
-      end
+    it "returns a String in US-ASCII encoding when Encoding.default_internal is not nil" do
+      Encoding.default_internal = Encoding::IBM437
+      1.to_s.encoding.should equal(Encoding::US_ASCII)
     end
   end
 
@@ -61,10 +59,10 @@ describe "Integer#to_s" do
       end
 
       it "raises an ArgumentError if the base is less than 2 or higher than 36" do
-        lambda { 123.to_s(-1) }.should raise_error(ArgumentError)
-        lambda { 123.to_s(0) }.should raise_error(ArgumentError)
-        lambda { 123.to_s(1) }.should raise_error(ArgumentError)
-        lambda { 123.to_s(37) }.should raise_error(ArgumentError)
+        -> { 123.to_s(-1) }.should raise_error(ArgumentError)
+        -> { 123.to_s(0) }.should raise_error(ArgumentError)
+        -> { 123.to_s(1) }.should raise_error(ArgumentError)
+        -> { 123.to_s(37) }.should raise_error(ArgumentError)
       end
     end
 
@@ -76,24 +74,22 @@ describe "Integer#to_s" do
       end
     end
 
-    with_feature :encoding do
-      before :each do
-        @internal = Encoding.default_internal
-      end
+    before :each do
+      @internal = Encoding.default_internal
+    end
 
-      after :each do
-        Encoding.default_internal = @internal
-      end
+    after :each do
+      Encoding.default_internal = @internal
+    end
 
-      it "returns a String in US-ASCII encoding when Encoding.default_internal is nil" do
-        Encoding.default_internal = nil
-        bignum_value.to_s.encoding.should equal(Encoding::US_ASCII)
-      end
+    it "returns a String in US-ASCII encoding when Encoding.default_internal is nil" do
+      Encoding.default_internal = nil
+      bignum_value.to_s.encoding.should equal(Encoding::US_ASCII)
+    end
 
-      it "returns a String in US-ASCII encoding when Encoding.default_internal is not nil" do
-        Encoding.default_internal = Encoding::IBM437
-        bignum_value.to_s.encoding.should equal(Encoding::US_ASCII)
-      end
+    it "returns a String in US-ASCII encoding when Encoding.default_internal is not nil" do
+      Encoding.default_internal = Encoding::IBM437
+      bignum_value.to_s.encoding.should equal(Encoding::US_ASCII)
     end
   end
 end

@@ -3,6 +3,6 @@ module RDoc
   ##
   # RDoc version you are using
 
-  VERSION = '6.1.0'
+  VERSION = '6.2.1'
 
 end

@@ -5,14 +5,14 @@ RSpec.describe "bundle update" do
 
   before do
     gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gem 'rack', "< 1.0"
       gem 'thin'
     G
 
-    bundle! "config #{config}" if config
+    bundle "config set #{config}" if config
 
-    bundle! :install
+    bundle :install
   end
 
   shared_examples "a config observer" do
@@ -47,12 +47,12 @@ RSpec.describe "bundle update" do
   context "when listed gem is updated" do
     before do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem 'rack'
         gem 'thin'
       G
 
-      bundle! :update, :all => bundle_update_requires_all?
+      bundle :update, :all => true
     end
 
     it_behaves_like "a post-install message outputter"
@@ -62,12 +62,12 @@ RSpec.describe "bundle update" do
   context "when dependency triggers update" do
     before do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem 'rack-obama'
         gem 'thin'
       G
 
-      bundle! :update, :all => bundle_update_requires_all?
+      bundle :update, :all => true
     end
 
     it_behaves_like "a post-install message outputter"

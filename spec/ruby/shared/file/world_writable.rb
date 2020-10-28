@@ -34,9 +34,9 @@ describe :file_world_writable, shared: true do
     end
 
     it "returns a Fixnum if the file is a directory and chmod 777" do
-      dir = rand().to_s + '-ww'
+      dir = tmp(rand().to_s + '-ww')
       Dir.mkdir(dir)
-      Dir.exist?(dir).should be_true
+      Dir.should.exist?(dir)
       File.chmod(0777, dir)
       @object.world_writable?(dir).should be_an_instance_of(Fixnum)
       Dir.rmdir(dir)

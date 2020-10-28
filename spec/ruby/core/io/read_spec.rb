@@ -24,35 +24,35 @@ describe "IO.read" do
   end
 
   it "accepts an empty options Hash" do
-    IO.read(@fname, {}).should == @contents
+    IO.read(@fname, **{}).should == @contents
   end
 
   it "accepts a length, and empty options Hash" do
-    IO.read(@fname, 3, {}).should == @contents[0, 3]
+    IO.read(@fname, 3, **{}).should == @contents[0, 3]
   end
 
   it "accepts a length, offset, and empty options Hash" do
-    IO.read(@fname, 3, 0, {}).should == @contents[0, 3]
+    IO.read(@fname, 3, 0, **{}).should == @contents[0, 3]
   end
 
   it "raises an IOError if the options Hash specifies write mode" do
-    lambda { IO.read(@fname, 3, 0, {mode: "w"}) }.should raise_error(IOError)
+    -> { IO.read(@fname, 3, 0, mode: "w") }.should raise_error(IOError)
   end
 
   it "raises an IOError if the options Hash specifies append only mode" do
-    lambda { IO.read(@fname, {mode: "a"}) }.should raise_error(IOError)
+    -> { IO.read(@fname, mode: "a") }.should raise_error(IOError)
   end
 
   it "reads the file if the options Hash includes read mode" do
-    IO.read(@fname, {mode: "r"}).should == @contents
+    IO.read(@fname, mode: "r").should == @contents
   end
 
   it "reads the file if the options Hash includes read/write mode" do
-    IO.read(@fname, {mode: "r+"}).should == @contents
+    IO.read(@fname, mode: "r+").should == @contents
   end
 
   it "reads the file if the options Hash includes read/write append mode" do
-    IO.read(@fname, {mode: "a+"}).should == @contents
+    IO.read(@fname, mode: "a+").should == @contents
   end
 
   it "treats second nil argument as no length limit" do
@@ -79,32 +79,30 @@ describe "IO.read" do
 
   it "raises an Errno::ENOENT when the requested file does not exist" do
     rm_r @fname
-    lambda { IO.read @fname }.should raise_error(Errno::ENOENT)
+    -> { IO.read @fname }.should raise_error(Errno::ENOENT)
   end
 
   it "raises a TypeError when not passed a String type" do
-    lambda { IO.read nil }.should raise_error(TypeError)
+    -> { IO.read nil }.should raise_error(TypeError)
   end
 
   it "raises an ArgumentError when not passed a valid length" do
-    lambda { IO.read @fname, -1 }.should raise_error(ArgumentError)
+    -> { IO.read @fname, -1 }.should raise_error(ArgumentError)
   end
 
   it "raises an Errno::EINVAL when not passed a valid offset" do
-    lambda { IO.read @fname, 0, -1  }.should raise_error(Errno::EINVAL)
-    lambda { IO.read @fname, -1, -1 }.should raise_error(Errno::EINVAL)
+    -> { IO.read @fname, 0, -1  }.should raise_error(Errno::EINVAL)
+    -> { IO.read @fname, -1, -1 }.should raise_error(Errno::EINVAL)
   end
 
-  with_feature :encoding do
-    it "uses the external encoding specified via the :external_encoding option" do
-      str = IO.read(@fname, external_encoding: Encoding::ISO_8859_1)
-      str.encoding.should == Encoding::ISO_8859_1
-    end
+  it "uses the external encoding specified via the :external_encoding option" do
+    str = IO.read(@fname, external_encoding: Encoding::ISO_8859_1)
+    str.encoding.should == Encoding::ISO_8859_1
+  end
 
-    it "uses the external encoding specified via the :encoding option" do
-      str = IO.read(@fname, encoding: Encoding::ISO_8859_1)
-      str.encoding.should == Encoding::ISO_8859_1
-    end
+  it "uses the external encoding specified via the :encoding option" do
+    str = IO.read(@fname, encoding: Encoding::ISO_8859_1)
+    str.encoding.should == Encoding::ISO_8859_1
   end
 end
 
@@ -117,7 +115,7 @@ describe "IO.read from a pipe" do
     IO.read(cmd).should == "hello\n"
   end
 
-  with_feature :fork do
+  platform_is_not :windows do
     it "opens a pipe to a fork if the rest is -" do
       str = IO.read("|-")
       if str # parent
@@ -139,7 +137,7 @@ describe "IO.read from a pipe" do
 
   platform_is_not :windows do
     it "raises Errno::ESPIPE if passed an offset" do
-      lambda {
+      -> {
         IO.read("|sh -c 'echo hello'", 1, 1)
       }.should raise_error(Errno::ESPIPE)
     end
@@ -150,7 +148,7 @@ quarantine! do # The process tried to write to a nonexistent pipe.
     # TODO: It should raise Errno::ESPIPE on Windows as well
     # once https://bugs.ruby-lang.org/issues/12230 is fixed.
     it "raises Errno::EINVAL if passed an offset" do
-      lambda {
+      -> {
         IO.read("|cmd.exe /C echo hello", 1, 1)
       }.should raise_error(Errno::EINVAL)
     end
@@ -218,7 +216,7 @@ describe "IO#read" do
 
   it "is at end-of-file when everything has been read" do
     @io.read
-    @io.eof?.should == true
+    @io.should.eof?
   end
 
   it "reads the contents of a file" do
@@ -303,7 +301,7 @@ describe "IO#read" do
   end
 
   it "raises IOError on closed stream" do
-    lambda { IOSpecs.closed_io.read }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.read }.should raise_error(IOError)
   end
 
 
@@ -382,16 +380,16 @@ describe "IO#read in binary mode" do
 
     result = File.open(@name, "rb") { |f| f.read }.chomp
 
-    result.encoding.should == Encoding::ASCII_8BIT
+    result.encoding.should == Encoding::BINARY
     xE2 = [226].pack('C*')
-    result.should == ("abc" + xE2 + "def").force_encoding(Encoding::ASCII_8BIT)
+    result.should == ("abc" + xE2 + "def").force_encoding(Encoding::BINARY)
   end
 
   it "does not transcode file contents when an internal encoding is specified" do
     result = File.open(@name, "r:binary:utf-8") { |f| f.read }.chomp
-    result.encoding.should == Encoding::ASCII_8BIT
+    result.encoding.should == Encoding::BINARY
     xE2 = [226].pack('C*')
-    result.should == ("abc" + xE2 + "def").force_encoding(Encoding::ASCII_8BIT)
+    result.should == ("abc" + xE2 + "def").force_encoding(Encoding::BINARY)
   end
 end
 
@@ -422,169 +420,167 @@ describe "IO.read with BOM" do
   it "reads a file without a bom" do
     name = fixture __FILE__, "no_bom_UTF-8.txt"
     result = File.read(name, mode: "rb:BOM|utf-8")
-    result.force_encoding("ascii-8bit").should == "UTF-8\n"
+    result.force_encoding("binary").should == "UTF-8\n"
   end
 
   it "reads a file with a utf-8 bom" do
     name = fixture __FILE__, "bom_UTF-8.txt"
     result = File.read(name, mode: "rb:BOM|utf-16le")
-    result.force_encoding("ascii-8bit").should == "UTF-8\n"
+    result.force_encoding("binary").should == "UTF-8\n"
   end
 
   it "reads a file with a utf-16le bom" do
     name = fixture __FILE__, "bom_UTF-16LE.txt"
     result = File.read(name, mode: "rb:BOM|utf-8")
-    result.force_encoding("ascii-8bit").should == "U\x00T\x00F\x00-\x001\x006\x00L\x00E\x00\n\x00"
+    result.force_encoding("binary").should == "U\x00T\x00F\x00-\x001\x006\x00L\x00E\x00\n\x00"
   end
 
   it "reads a file with a utf-16be bom" do
     name = fixture __FILE__, "bom_UTF-16BE.txt"
     result = File.read(name, mode: "rb:BOM|utf-8")
-    result.force_encoding("ascii-8bit").should == "\x00U\x00T\x00F\x00-\x001\x006\x00B\x00E\x00\n"
+    result.force_encoding("binary").should == "\x00U\x00T\x00F\x00-\x001\x006\x00B\x00E\x00\n"
   end
 
   it "reads a file with a utf-32le bom" do
     name = fixture __FILE__, "bom_UTF-32LE.txt"
     result = File.read(name, mode: "rb:BOM|utf-8")
-    result.force_encoding("ascii-8bit").should == "U\x00\x00\x00T\x00\x00\x00F\x00\x00\x00-\x00\x00\x003\x00\x00\x002\x00\x00\x00L\x00\x00\x00E\x00\x00\x00\n\x00\x00\x00"
+    result.force_encoding("binary").should == "U\x00\x00\x00T\x00\x00\x00F\x00\x00\x00-\x00\x00\x003\x00\x00\x002\x00\x00\x00L\x00\x00\x00E\x00\x00\x00\n\x00\x00\x00"
   end
 
   it "reads a file with a utf-32be bom" do
     name = fixture __FILE__, "bom_UTF-32BE.txt"
     result = File.read(name, mode: "rb:BOM|utf-8")
-    result.force_encoding("ascii-8bit").should == "\x00\x00\x00U\x00\x00\x00T\x00\x00\x00F\x00\x00\x00-\x00\x00\x003\x00\x00\x002\x00\x00\x00B\x00\x00\x00E\x00\x00\x00\n"
+    result.force_encoding("binary").should == "\x00\x00\x00U\x00\x00\x00T\x00\x00\x00F\x00\x00\x00-\x00\x00\x003\x00\x00\x002\x00\x00\x00B\x00\x00\x00E\x00\x00\x00\n"
   end
 end
 
-with_feature :encoding do
-  describe :io_read_internal_encoding, shared: true do
-    it "returns a transcoded String" do
-      @io.read.should == "ありがとう\n"
-    end
-
-    it "sets the String encoding to the internal encoding" do
-      @io.read.encoding.should equal(Encoding::UTF_8)
-    end
-
-    describe "when passed nil for limit" do
-      it "sets the buffer to a transcoded String" do
-        result = @io.read(nil, buf = "")
-        buf.should equal(result)
-        buf.should == "ありがとう\n"
-      end
-
-      it "sets the buffer's encoding to the internal encoding" do
-        buf = "".force_encoding Encoding::ISO_8859_1
-        @io.read(nil, buf)
-        buf.encoding.should equal(Encoding::UTF_8)
-      end
-    end
+describe :io_read_internal_encoding, shared: true do
+  it "returns a transcoded String" do
+    @io.read.should == "ありがとう\n"
   end
 
-  describe :io_read_size_internal_encoding, shared: true do
-    it "reads bytes when passed a size" do
-      @io.read(2).should == [164, 162].pack('C*').force_encoding(Encoding::ASCII_8BIT)
+  it "sets the String encoding to the internal encoding" do
+    @io.read.encoding.should equal(Encoding::UTF_8)
+  end
+
+  describe "when passed nil for limit" do
+    it "sets the buffer to a transcoded String" do
+      result = @io.read(nil, buf = "")
+      buf.should equal(result)
+      buf.should == "ありがとう\n"
     end
 
-    it "returns a String in ASCII-8BIT when passed a size" do
-      @io.read(4).encoding.should equal(Encoding::ASCII_8BIT)
-    end
-
-    it "does not change the buffer's encoding when passed a limit" do
+    it "sets the buffer's encoding to the internal encoding" do
       buf = "".force_encoding Encoding::ISO_8859_1
-      @io.read(4, buf)
-      buf.should == [164, 162, 164, 234].pack('C*').force_encoding(Encoding::ISO_8859_1)
-      buf.encoding.should equal(Encoding::ISO_8859_1)
+      @io.read(nil, buf)
+      buf.encoding.should equal(Encoding::UTF_8)
+    end
+  end
+end
+
+describe :io_read_size_internal_encoding, shared: true do
+  it "reads bytes when passed a size" do
+    @io.read(2).should == [164, 162].pack('C*').force_encoding(Encoding::BINARY)
+  end
+
+  it "returns a String in BINARY when passed a size" do
+    @io.read(4).encoding.should equal(Encoding::BINARY)
+  end
+
+  it "does not change the buffer's encoding when passed a limit" do
+    buf = "".force_encoding Encoding::ISO_8859_1
+    @io.read(4, buf)
+    buf.should == [164, 162, 164, 234].pack('C*').force_encoding(Encoding::ISO_8859_1)
+    buf.encoding.should equal(Encoding::ISO_8859_1)
+  end
+
+  it "truncates the buffer but does not change the buffer's encoding when no data remains" do
+    buf = "abc".force_encoding Encoding::ISO_8859_1
+    @io.read
+
+    @io.read(1, buf).should be_nil
+    buf.size.should == 0
+    buf.encoding.should equal(Encoding::ISO_8859_1)
+  end
+end
+
+describe "IO#read" do
+  describe "when IO#external_encoding and IO#internal_encoding are nil" do
+    before :each do
+      @name = tmp("io_read.txt")
+      touch(@name) { |f| f.write "\x00\x01\x02" }
+      @io = new_io @name, "r+"
     end
 
-    it "truncates the buffer but does not change the buffer's encoding when no data remains" do
-      buf = "abc".force_encoding Encoding::ISO_8859_1
-      @io.read
+    after :each do
+      @io.close if @io
+      rm_r @name
+    end
 
-      @io.read(1, buf).should be_nil
-      buf.size.should == 0
-      buf.encoding.should equal(Encoding::ISO_8859_1)
+    it "sets the String encoding to Encoding.default_external" do
+      @io.read.encoding.should equal(Encoding.default_external)
     end
   end
 
-  describe "IO#read" do
-    describe "when IO#external_encoding and IO#internal_encoding are nil" do
-      before :each do
-        @name = tmp("io_read.txt")
-        touch(@name) { |f| f.write "\x00\x01\x02" }
-        @io = new_io @name, "r+"
-      end
-
-      after :each do
-        @io.close if @io
-        rm_r @name
-      end
-
-      it "sets the String encoding to Encoding.default_external" do
-        @io.read.encoding.should equal(Encoding.default_external)
-      end
+  describe "with internal encoding" do
+    after :each do
+      @io.close if @io
     end
 
-    describe "with internal encoding" do
-      after :each do
-        @io.close if @io
+    describe "not specified" do
+      before :each do
+        @io = IOSpecs.io_fixture "read_euc_jp.txt", "r:euc-jp"
       end
 
-      describe "not specified" do
-        before :each do
-          @io = IOSpecs.io_fixture "read_euc_jp.txt", "r:euc-jp"
-        end
-
-        it "does not transcode the String" do
-          @io.read.should == ("ありがとう\n").encode(Encoding::EUC_JP)
-        end
-
-        it "sets the String encoding to the external encoding" do
-          @io.read.encoding.should equal(Encoding::EUC_JP)
-        end
-
-        it_behaves_like :io_read_size_internal_encoding, nil
+      it "does not transcode the String" do
+        @io.read.should == ("ありがとう\n").encode(Encoding::EUC_JP)
       end
 
-      describe "specified by open mode" do
-        before :each do
-          @io = IOSpecs.io_fixture "read_euc_jp.txt", "r:euc-jp:utf-8"
-        end
-
-        it_behaves_like :io_read_internal_encoding, nil
-        it_behaves_like :io_read_size_internal_encoding, nil
+      it "sets the String encoding to the external encoding" do
+        @io.read.encoding.should equal(Encoding::EUC_JP)
       end
 
-      describe "specified by mode: option" do
-        before :each do
-          @io = IOSpecs.io_fixture "read_euc_jp.txt", mode: "r:euc-jp:utf-8"
-        end
+      it_behaves_like :io_read_size_internal_encoding, nil
+    end
 
-        it_behaves_like :io_read_internal_encoding, nil
-        it_behaves_like :io_read_size_internal_encoding, nil
+    describe "specified by open mode" do
+      before :each do
+        @io = IOSpecs.io_fixture "read_euc_jp.txt", "r:euc-jp:utf-8"
       end
 
-      describe "specified by internal_encoding: option" do
-        before :each do
-          options = { mode: "r",
-                      internal_encoding: "utf-8",
-                      external_encoding: "euc-jp" }
-          @io = IOSpecs.io_fixture "read_euc_jp.txt", options
-        end
+      it_behaves_like :io_read_internal_encoding, nil
+      it_behaves_like :io_read_size_internal_encoding, nil
+    end
 
-        it_behaves_like :io_read_internal_encoding, nil
-        it_behaves_like :io_read_size_internal_encoding, nil
+    describe "specified by mode: option" do
+      before :each do
+        @io = IOSpecs.io_fixture "read_euc_jp.txt", mode: "r:euc-jp:utf-8"
       end
 
-      describe "specified by encoding: option" do
-        before :each do
-          options = { mode: "r", encoding: "euc-jp:utf-8" }
-          @io = IOSpecs.io_fixture "read_euc_jp.txt", options
-        end
+      it_behaves_like :io_read_internal_encoding, nil
+      it_behaves_like :io_read_size_internal_encoding, nil
+    end
 
-        it_behaves_like :io_read_internal_encoding, nil
-        it_behaves_like :io_read_size_internal_encoding, nil
+    describe "specified by internal_encoding: option" do
+      before :each do
+        options = { mode: "r",
+                    internal_encoding: "utf-8",
+                    external_encoding: "euc-jp" }
+        @io = IOSpecs.io_fixture "read_euc_jp.txt", options
       end
+
+      it_behaves_like :io_read_internal_encoding, nil
+      it_behaves_like :io_read_size_internal_encoding, nil
+    end
+
+    describe "specified by encoding: option" do
+      before :each do
+        options = { mode: "r", encoding: "euc-jp:utf-8" }
+        @io = IOSpecs.io_fixture "read_euc_jp.txt", options
+      end
+
+      it_behaves_like :io_read_internal_encoding, nil
+      it_behaves_like :io_read_size_internal_encoding, nil
     end
   end
 end

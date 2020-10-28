@@ -40,10 +40,12 @@ describe :string_each_line, shared: true do
     b.should == ["foo\n", "🤡🤡🤡🤡🤡🤡🤡\n", "bar\n", "baz\n"]
   end
 
-  it "taints substrings that are passed to the block if self is tainted" do
-    "one\ntwo\r\nthree".taint.send(@method) { |s| s.tainted?.should == true }
+  ruby_version_is ''...'2.7' do
+    it "taints substrings that are passed to the block if self is tainted" do
+      "one\ntwo\r\nthree".taint.send(@method) { |s| s.should.tainted? }
 
-    "x.y.".send(@method, ".".taint) { |s| s.tainted?.should == false }
+      "x.y.".send(@method, ".".taint) { |s| s.should_not.tainted? }
+    end
   end
 
   it "passes self as a whole to the block if the separator is nil" do
@@ -52,28 +54,14 @@ describe :string_each_line, shared: true do
     a.should == ["one\ntwo\r\nthree"]
   end
 
-  ruby_version_is ''...'2.5' do
-    it "yields paragraphs (broken by 2 or more successive newlines) when passed ''" do
-      a = []
-      "hello\nworld\n\n\nand\nuniverse\n\n\n\n\n".send(@method, '') { |s| a << s }
-      a.should == ["hello\nworld\n\n\n", "and\nuniverse\n\n\n\n\n"]
+  it "yields paragraphs (broken by 2 or more successive newlines) when passed '' and replaces multiple newlines with only two ones" do
+    a = []
+    "hello\nworld\n\n\nand\nuniverse\n\n\n\n\n".send(@method, '') { |s| a << s }
+    a.should == ["hello\nworld\n\n", "and\nuniverse\n\n"]
 
-      a = []
-      "hello\nworld\n\n\nand\nuniverse\n\n\n\n\ndog".send(@method, '') { |s| a << s }
-      a.should == ["hello\nworld\n\n\n", "and\nuniverse\n\n\n\n\n", "dog"]
-    end
-  end
-
-  ruby_version_is '2.5' do
-    it "yields paragraphs (broken by 2 or more successive newlines) when passed '' and replaces multiple newlines with only two ones" do
-      a = []
-      "hello\nworld\n\n\nand\nuniverse\n\n\n\n\n".send(@method, '') { |s| a << s }
-      a.should == ["hello\nworld\n\n", "and\nuniverse\n\n"]
-
-      a = []
-      "hello\nworld\n\n\nand\nuniverse\n\n\n\n\ndog".send(@method, '') { |s| a << s }
-      a.should == ["hello\nworld\n\n", "and\nuniverse\n\n", "dog"]
-    end
+    a = []
+    "hello\nworld\n\n\nand\nuniverse\n\n\n\n\ndog".send(@method, '') { |s| a << s }
+    a.should == ["hello\nworld\n\n", "and\nuniverse\n\n", "dog"]
   end
 
   describe "uses $/" do
@@ -82,7 +70,7 @@ describe :string_each_line, shared: true do
     end
 
     after :each do
-      $/ = @before_separator
+      suppress_warning {$/ = @before_separator}
     end
 
     it "as the separator when none is given" do
@@ -94,10 +82,10 @@ describe :string_each_line, shared: true do
           expected = []
           str.send(@method, sep) { |x| expected << x }
 
-          $/ = sep
+          suppress_warning {$/ = sep}
 
           actual = []
-          str.send(@method) { |x| actual << x }
+          suppress_warning {str.send(@method) { |x| actual << x }}
 
           actual.should == expected
         end
@@ -133,8 +121,8 @@ describe :string_each_line, shared: true do
   end
 
   it "raises a TypeError when the separator can't be converted to a string" do
-    lambda { "hello world".send(@method, false) {}     }.should raise_error(TypeError)
-    lambda { "hello world".send(@method, mock('x')) {} }.should raise_error(TypeError)
+    -> { "hello world".send(@method, false) {}     }.should raise_error(TypeError)
+    -> { "hello world".send(@method, mock('x')) {} }.should raise_error(TypeError)
   end
 
   it "accepts a string separator" do
@@ -142,37 +130,35 @@ describe :string_each_line, shared: true do
   end
 
   it "raises a TypeError when the separator is a symbol" do
-    lambda { "hello world".send(@method, :o).to_a }.should raise_error(TypeError)
+    -> { "hello world".send(@method, :o).to_a }.should raise_error(TypeError)
   end
 
-  ruby_version_is '2.4' do
-    context "when `chomp` keyword argument is passed" do
-      it "removes new line characters when separator is not specified" do
-        a = []
-        "hello \nworld\n".send(@method, chomp: true) { |s| a << s }
-        a.should == ["hello ", "world"]
+  context "when `chomp` keyword argument is passed" do
+    it "removes new line characters when separator is not specified" do
+      a = []
+      "hello \nworld\n".send(@method, chomp: true) { |s| a << s }
+      a.should == ["hello ", "world"]
 
-        a = []
-        "hello \r\nworld\r\n".send(@method, chomp: true) { |s| a << s }
-        a.should == ["hello ", "world"]
-      end
+      a = []
+      "hello \r\nworld\r\n".send(@method, chomp: true) { |s| a << s }
+      a.should == ["hello ", "world"]
+    end
 
-      it "removes only specified separator" do
-        a = []
-        "hello world".send(@method, ' ', chomp: true) { |s| a << s }
-        a.should == ["hello", "world"]
-      end
+    it "removes only specified separator" do
+      a = []
+      "hello world".send(@method, ' ', chomp: true) { |s| a << s }
+      a.should == ["hello", "world"]
+    end
 
-      # https://bugs.ruby-lang.org/issues/14257
-      it "ignores new line characters when separator is specified" do
-        a = []
-        "hello\n world\n".send(@method, ' ', chomp: true) { |s| a << s }
-        a.should == ["hello\n", "world\n"]
+    # https://bugs.ruby-lang.org/issues/14257
+    it "ignores new line characters when separator is specified" do
+      a = []
+      "hello\n world\n".send(@method, ' ', chomp: true) { |s| a << s }
+      a.should == ["hello\n", "world\n"]
 
-        a = []
-        "hello\r\n world\r\n".send(@method, ' ', chomp: true) { |s| a << s }
-        a.should == ["hello\r\n", "world\r\n"]
-      end
+      a = []
+      "hello\r\n world\r\n".send(@method, ' ', chomp: true) { |s| a << s }
+      a.should == ["hello\r\n", "world\r\n"]
     end
   end
 end

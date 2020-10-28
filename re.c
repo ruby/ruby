@@ -9,13 +9,21 @@
 
 **********************************************************************/
 
+#include "ruby/internal/config.h"
+
+#include <ctype.h>
+
+#include "encindex.h"
+#include "internal.h"
+#include "internal/hash.h"
+#include "internal/imemo.h"
+#include "internal/re.h"
+#include "internal/string.h"
+#include "internal/variable.h"
+#include "regint.h"
 #include "ruby/encoding.h"
 #include "ruby/re.h"
 #include "ruby/util.h"
-#include "internal.h"
-#include "regint.h"
-#include "encindex.h"
-#include <ctype.h>
 
 VALUE rb_eRegexpError;
 
@@ -304,8 +312,10 @@ char_to_option(int c)
     return val;
 }
 
+enum { OPTBUF_SIZE = 4 };
+
 static char *
-option_to_str(char str[4], int options)
+option_to_str(char str[OPTBUF_SIZE], int options)
 {
     char *p = str;
     if (options & ONIG_OPTION_MULTILINE) *p++ = 'm';
@@ -455,14 +465,13 @@ rb_reg_desc(const char *s, long len, VALUE re)
     rb_reg_expr_str(str, s, len, enc, resenc, '/');
     rb_str_buf_cat2(str, "/");
     if (re) {
-	char opts[4];
+	char opts[OPTBUF_SIZE];
 	rb_reg_check(re);
 	if (*option_to_str(opts, RREGEXP_PTR(re)->options))
 	    rb_str_buf_cat2(str, opts);
 	if (RBASIC(re)->flags & REG_ENCODING_NONE)
 	    rb_str_buf_cat2(str, "n");
     }
-    OBJ_INFECT(str, re);
     return str;
 }
 
@@ -488,7 +497,6 @@ rb_reg_source(VALUE re)
 
     rb_reg_check(re);
     str = rb_str_dup(RREGEXP_SRC(re));
-    if (OBJ_TAINTED(re)) OBJ_TAINT(str);
     return str;
 }
 
@@ -521,11 +529,11 @@ static VALUE rb_reg_str_with_term(VALUE re, int term);
  *
  *  Returns a string containing the regular expression and its options (using the
  *  <code>(?opts:source)</code> notation. This string can be fed back in to
- *  <code>Regexp::new</code> to a regular expression with the same semantics as
- *  the original. (However, <code>Regexp#==</code> may not return true when
- *  comparing the two, as the source of the regular expression itself may
- *  differ, as the example shows).  <code>Regexp#inspect</code> produces a
- *  generally more readable version of <i>rxp</i>.
+ *  Regexp::new to a regular expression with the same semantics as the
+ *  original. (However, <code>Regexp#==</code> may not return true
+ *  when comparing the two, as the source of the regular expression
+ *  itself may differ, as the example shows).  Regexp#inspect produces
+ *  a generally more readable version of <i>rxp</i>.
  *
  *      r1 = /ab+c/ix           #=> /ab+c/ix
  *      s1 = r1.to_s            #=> "(?ix-m:ab+c)"
@@ -549,7 +557,7 @@ rb_reg_str_with_term(VALUE re, int term)
     long len;
     const UChar* ptr;
     VALUE str = rb_str_buf_new2("(?");
-    char optbuf[5];
+    char optbuf[OPTBUF_SIZE + 1]; /* for '-' */
     rb_encoding *enc = rb_enc_get(re);
 
     rb_reg_check(re);
@@ -647,7 +655,6 @@ rb_reg_str_with_term(VALUE re, int term)
     }
     rb_enc_copy(str, re);
 
-    OBJ_INFECT(str, re);
     return str;
 }
 
@@ -664,7 +671,7 @@ rb_reg_raise(const char *s, long len, const char *err, VALUE re)
 static VALUE
 rb_enc_reg_error_desc(const char *s, long len, rb_encoding *enc, int options, const char *err)
 {
-    char opts[6];
+    char opts[OPTBUF_SIZE + 1];	/* for '/' */
     VALUE desc = rb_str_buf_new2(err);
     rb_encoding *resenc = rb_default_internal_encoding();
     if (resenc == NULL) resenc = rb_default_external_encoding();
@@ -726,11 +733,11 @@ rb_reg_casefold_p(VALUE re)
  *  call-seq:
  *     rxp.options   -> integer
  *
- *  Returns the set of bits corresponding to the options used when creating this
- *  Regexp (see <code>Regexp::new</code> for details. Note that additional bits
- *  may be set in the returned options: these are used internally by the regular
- *  expression code. These extra bits are ignored if the options are passed to
- *  <code>Regexp::new</code>.
+ *  Returns the set of bits corresponding to the options used when
+ *  creating this Regexp (see Regexp::new for details. Note that
+ *  additional bits may be set in the returned options: these are used
+ *  internally by the regular expression code. These extra bits are
+ *  ignored if the options are passed to Regexp::new.
  *
  *     Regexp::IGNORECASE                  #=> 1
  *     Regexp::EXTENDED                    #=> 2
@@ -884,10 +891,9 @@ make_regexp(const char *s, long len, rb_encoding *enc, int flags, onig_errmsg_bu
 /*
  *  Document-class: MatchData
  *
- *  <code>MatchData</code> encapsulates the result of matching a Regexp against
- *  string. It is returned by Regexp#match and
- *  String#match, and also stored in a global variable returned by
- *  Regexp.last_match.
+ *  MatchData encapsulates the result of matching a Regexp against
+ *  string. It is returned by Regexp#match and String#match, and also
+ *  stored in a global variable returned by Regexp.last_match.
  *
  *  Usage:
  *
@@ -917,16 +923,16 @@ make_regexp(const char *s, long len, rb_encoding *enc, int flags, onig_errmsg_bu
  *
  *  == Global variables equivalence
  *
- *  Parts of last <code>MatchData</code> (returned by Regexp.last_match) are also
+ *  Parts of last MatchData (returned by Regexp.last_match) are also
  *  aliased as global variables:
  *
- *  * <code>$~</code> is <code>Regexp.last_match</code>;
- *  * <code>$&</code> is <code>Regexp.last_match[0]</code>;
+ *  * <code>$~</code> is Regexp.last_match;
+ *  * <code>$&</code> is Regexp.last_match<code>[ 0 ]</code>;
  *  * <code>$1</code>, <code>$2</code>, and so on are
- *    <code>Regexp.last_match[i]</code> (captures by number);
- *  * <code>$`</code> is <code>Regexp.last_match.pre_match</code>;
- *  * <code>$'</code> is <code>Regexp.last_match.post_match</code>;
- *  * <code>$+</code> is <code>Regexp.last_match[-1]</code> (the last capture).
+ *    Regexp.last_match<code>[ i ]</code> (captures by number);
+ *  * <code>$`</code> is Regexp.last_match<code>.pre_match</code>;
+ *  * <code>$'</code> is Regexp.last_match<code>.post_match</code>;
+ *  * <code>$+</code> is Regexp.last_match<code>[ -1 ]</code> (the last capture).
  *
  *  See also "Special global variables" section in Regexp documentation.
  */
@@ -984,7 +990,7 @@ update_char_offset(VALUE match)
     rb_encoding *enc;
     pair_t *pairs;
 
-    if (rm->char_offset_updated)
+    if (rm->char_offset_num_allocated)
         return;
 
     regs = &rm->regs;
@@ -1001,7 +1007,6 @@ update_char_offset(VALUE match)
             rm->char_offset[i].beg = BEG(i);
             rm->char_offset[i].end = END(i);
         }
-        rm->char_offset_updated = 1;
         return;
     }
 
@@ -1040,15 +1045,13 @@ update_char_offset(VALUE match)
         found = bsearch(&key, pairs, num_pos, sizeof(pair_t), pair_byte_cmp);
         rm->char_offset[i].end = found->char_pos;
     }
-
-    rm->char_offset_updated = 1;
 }
 
 static void
 match_check(VALUE match)
 {
     if (!RMATCH(match)->regexp) {
-	rb_raise(rb_eTypeError, "uninitialized Match");
+	rb_raise(rb_eTypeError, "uninitialized MatchData");
     }
 }
 
@@ -1067,17 +1070,13 @@ match_init_copy(VALUE obj, VALUE orig)
     if (rb_reg_region_copy(&rm->regs, RMATCH_REGS(orig)))
 	rb_memerror();
 
-    if (!RMATCH(orig)->rmatch->char_offset_updated) {
-        rm->char_offset_updated = 0;
-    }
-    else {
+    if (RMATCH(orig)->rmatch->char_offset_num_allocated) {
         if (rm->char_offset_num_allocated < rm->regs.num_regs) {
             REALLOC_N(rm->char_offset, struct rmatch_offset, rm->regs.num_regs);
             rm->char_offset_num_allocated = rm->regs.num_regs;
         }
         MEMCPY(rm->char_offset, RMATCH(orig)->rmatch->char_offset,
                struct rmatch_offset, rm->regs.num_regs);
-        rm->char_offset_updated = 1;
 	RB_GC_GUARD(orig);
     }
 
@@ -1300,6 +1299,12 @@ rb_match_busy(VALUE match)
     FL_SET(match, MATCH_BUSY);
 }
 
+void
+rb_match_unbusy(VALUE match)
+{
+    FL_UNSET(match, MATCH_BUSY);
+}
+
 int
 rb_match_count(VALUE match)
 {
@@ -1335,11 +1340,10 @@ match_set_string(VALUE m, VALUE string, long pos, long len)
 
     match->str = string;
     match->regexp = Qnil;
-    onig_region_resize(&rmatch->regs, 1);
+    int err = onig_region_resize(&rmatch->regs, 1);
+    if (err) rb_memerror();
     rmatch->regs.beg[0] = pos;
     rmatch->regs.end[0] = pos + len;
-    rmatch->char_offset_updated = 0;
-    OBJ_INFECT(match, string);
 }
 
 void
@@ -1480,8 +1484,10 @@ rb_reg_prepare_re0(VALUE re, VALUE str, onig_errmsg_buffer err)
 	rb_raise(rb_eArgError, "regexp preprocess failed: %s", err);
     }
 
-    r = onig_new(&reg, (UChar* )RSTRING_PTR(unescaped),
-		 (UChar* )(RSTRING_PTR(unescaped) + RSTRING_LEN(unescaped)),
+    const char *ptr;
+    long len;
+    RSTRING_GETMEM(unescaped, ptr, len);
+    r = onig_new(&reg, (UChar *)ptr, (UChar *)(ptr + len),
 		 reg->options, enc,
 		 OnigDefaultSyntax, &einfo);
     if (r) {
@@ -1538,12 +1544,15 @@ rb_reg_search0(VALUE re, VALUE str, long pos, int reverse, int set_backref_str)
     long result;
     VALUE match;
     struct re_registers regi, *regs = &regi;
-    char *range = RSTRING_PTR(str);
+    char *start, *range;
+    long len;
     regex_t *reg;
     int tmpreg;
     onig_errmsg_buffer err = "";
 
-    if (pos > RSTRING_LEN(str) || pos < 0) {
+    RSTRING_GETMEM(str, start, len);
+    range = start;
+    if (pos > len || pos < 0) {
 	rb_backref_set(Qnil);
 	return -1;
     }
@@ -1565,12 +1574,12 @@ rb_reg_search0(VALUE re, VALUE str, long pos, int reverse, int set_backref_str)
 	MEMZERO(regs, struct re_registers, 1);
     }
     if (!reverse) {
-	range += RSTRING_LEN(str);
+	range += len;
     }
     result = onig_search(reg,
-			 (UChar*)(RSTRING_PTR(str)),
-			 ((UChar*)(RSTRING_PTR(str)) + RSTRING_LEN(str)),
-			 ((UChar*)(RSTRING_PTR(str)) + pos),
+			 (UChar*)start,
+			 ((UChar*)(start + len)),
+			 ((UChar*)(start + pos)),
 			 ((UChar*)range),
 			 regs, ONIG_OPTION_NONE);
     if (!tmpreg) RREGEXP(re)->usecnt--;
@@ -1603,20 +1612,13 @@ rb_reg_search0(VALUE re, VALUE str, long pos, int reverse, int set_backref_str)
 	onig_region_free(regs, 0);
 	if (err) rb_memerror();
     }
-    else {
-	FL_UNSET(match, FL_TAINT);
-    }
 
     if (set_backref_str) {
 	RMATCH(match)->str = rb_str_new4(str);
-	OBJ_INFECT(match, str);
     }
 
     RMATCH(match)->regexp = re;
-    RMATCH(match)->rmatch->char_offset_updated = 0;
     rb_backref_set(match);
-
-    OBJ_INFECT(match, re);
 
     return result;
 }
@@ -1653,10 +1655,13 @@ rb_reg_start_with_p(VALUE re, VALUE str)
     if (NIL_P(match)) {
 	MEMZERO(regs, struct re_registers, 1);
     }
+    const char *ptr;
+    long len;
+    RSTRING_GETMEM(str, ptr, len);
     result = onig_match(reg,
-	    (UChar*)(RSTRING_PTR(str)),
-	    ((UChar*)(RSTRING_PTR(str)) + RSTRING_LEN(str)),
-	    (UChar*)(RSTRING_PTR(str)),
+	    (UChar*)(ptr),
+	    ((UChar*)(ptr + len)),
+	    (UChar*)(ptr),
 	    regs, ONIG_OPTION_NONE);
     if (!tmpreg) RREGEXP(re)->usecnt--;
     if (tmpreg) {
@@ -1688,18 +1693,11 @@ rb_reg_start_with_p(VALUE re, VALUE str)
 	onig_region_free(regs, 0);
 	if (err) rb_memerror();
     }
-    else {
-	FL_UNSET(match, FL_TAINT);
-    }
 
     RMATCH(match)->str = rb_str_new4(str);
-    OBJ_INFECT(match, str);
 
     RMATCH(match)->regexp = re;
-    RMATCH(match)->rmatch->char_offset_updated = 0;
     rb_backref_set(match);
-
-    OBJ_INFECT(match, re);
 
     return true;
 }
@@ -1744,7 +1742,6 @@ rb_reg_nth_match(int nth, VALUE match)
     end = END(nth);
     len = end - start;
     str = rb_str_subseq(RMATCH(match)->str, start, len);
-    OBJ_INFECT(str, match);
     return str;
 }
 
@@ -1777,7 +1774,6 @@ rb_reg_match_pre(VALUE match)
     regs = RMATCH_REGS(match);
     if (BEG(0) == -1) return Qnil;
     str = rb_str_subseq(RMATCH(match)->str, 0, BEG(0));
-    if (OBJ_TAINTED(match)) OBJ_TAINT(str);
     return str;
 }
 
@@ -1807,7 +1803,6 @@ rb_reg_match_post(VALUE match)
     str = RMATCH(match)->str;
     pos = END(0);
     str = rb_str_subseq(str, pos, RSTRING_LEN(str) - pos);
-    if (OBJ_TAINTED(match)) OBJ_TAINT(str);
     return str;
 }
 
@@ -1829,25 +1824,25 @@ rb_reg_match_last(VALUE match)
 }
 
 static VALUE
-last_match_getter(void)
+last_match_getter(ID _x, VALUE *_y)
 {
     return rb_reg_last_match(rb_backref_get());
 }
 
 static VALUE
-prematch_getter(void)
+prematch_getter(ID _x, VALUE *_y)
 {
     return rb_reg_match_pre(rb_backref_get());
 }
 
 static VALUE
-postmatch_getter(void)
+postmatch_getter(ID _x, VALUE *_y)
 {
     return rb_reg_match_post(rb_backref_get());
 }
 
 static VALUE
-last_paren_match_getter(void)
+last_paren_match_getter(ID _x, VALUE *_y)
 {
     return rb_reg_match_last(rb_backref_get());
 }
@@ -1859,7 +1854,6 @@ match_array(VALUE match, int start)
     VALUE ary;
     VALUE target;
     int i;
-    int taint = OBJ_TAINTED(match);
 
     match_check(match);
     regs = RMATCH_REGS(match);
@@ -1872,7 +1866,6 @@ match_array(VALUE match, int start)
 	}
 	else {
 	    VALUE str = rb_str_subseq(target, regs->beg[i], regs->end[i]-regs->beg[i]);
-	    if (taint) OBJ_TAINT(str);
 	    rb_ary_push(ary, str);
 	}
     }
@@ -1930,6 +1923,7 @@ match_captures(VALUE match)
 static int
 name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name, const char* name_end)
 {
+    if (NIL_P(regexp)) return -1;
     return onig_name_to_backref_number(RREGEXP_PTR(regexp),
 	(const unsigned char *)name, (const unsigned char *)name_end, regs);
 }
@@ -2009,12 +2003,12 @@ match_ary_aref(VALUE match, VALUE idx, VALUE result)
  *     mtch[range]           -> array
  *     mtch[name]            -> str or nil
  *
- *  Match Reference -- <code>MatchData</code> acts as an array, and may be
- *  accessed using the normal array indexing techniques.  <code>mtch[0]</code>
- *  is equivalent to the special variable <code>$&</code>, and returns the
- *  entire matched string.  <code>mtch[1]</code>, <code>mtch[2]</code>, and so
- *  on return the values of the matched backreferences (portions of the
- *  pattern between parentheses).
+ *  Match Reference -- MatchData acts as an array, and may be accessed
+ *  using the normal array indexing techniques.  <code>mtch[0]</code>
+ *  is equivalent to the special variable <code>$&</code>, and returns
+ *  the entire matched string.  <code>mtch[1]</code>,
+ *  <code>mtch[2]</code>, and so on return the values of the matched
+ *  backreferences (portions of the pattern between parentheses).
  *
  *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
  *     m          #=> #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
@@ -2133,8 +2127,6 @@ match_to_s(VALUE match)
 
     match_check(match);
     if (NIL_P(str)) str = rb_str_new(0,0);
-    if (OBJ_TAINTED(match)) OBJ_TAINT(str);
-    if (OBJ_TAINTED(RMATCH(match)->str)) OBJ_TAINT(str);
     return str;
 }
 
@@ -2895,7 +2887,6 @@ rb_reg_initialize_str(VALUE obj, VALUE str, int options, onig_errmsg_buffer err,
     }
     ret = rb_reg_initialize(obj, RSTRING_PTR(str), RSTRING_LEN(str), enc,
 			    options, err, sourcefile, sourceline);
-    OBJ_INFECT(obj, str);
     if (ret == 0) reg_set_source(obj, str, str_enc);
     return ret;
 }
@@ -2953,7 +2944,9 @@ rb_reg_init_str_enc(VALUE re, VALUE s, rb_encoding *enc, int options)
 MJIT_FUNC_EXPORTED VALUE
 rb_reg_new_ary(VALUE ary, int opt)
 {
-    return rb_reg_new_str(rb_reg_preprocess_dregexp(ary, opt), opt);
+    VALUE re = rb_reg_new_str(rb_reg_preprocess_dregexp(ary, opt), opt);
+    rb_obj_freeze(re);
+    return re;
 }
 
 VALUE
@@ -2988,6 +2981,7 @@ rb_reg_compile(VALUE str, int options, const char *sourcefile, int sourceline)
 	return Qnil;
     }
     FL_SET(re, REG_LITERAL);
+    rb_obj_freeze(re);
     return re;
 }
 
@@ -3284,14 +3278,14 @@ rb_reg_match2(VALUE re)
 
 /*
  *  call-seq:
- *     rxp.match(str)       -> matchdata or nil
- *     rxp.match(str,pos)   -> matchdata or nil
+ *     rxp.match(str, pos=0)                   -> matchdata or nil
+ *     rxp.match(str, pos=0) {|match| block }  -> obj
  *
- *  Returns a <code>MatchData</code> object describing the match, or
- *  <code>nil</code> if there was no match. This is equivalent to retrieving the
- *  value of the special variable <code>$~</code> following a normal match.
- *  If the second parameter is present, it specifies the position in the string
- *  to begin the search.
+ *  Returns a MatchData object describing the match, or
+ *  <code>nil</code> if there was no match. This is equivalent to
+ *  retrieving the value of the special variable <code>$~</code>
+ *  following a normal match.  If the second parameter is present, it
+ *  specifies the position in the string to begin the search.
  *
  *     /(.)(.)(.)/.match("abc")[2]   #=> "b"
  *     /(.)(.)/.match("abc", 1)[2]   #=> "c"
@@ -3418,7 +3412,7 @@ rb_reg_match_p(VALUE re, VALUE str, long pos)
 /*
  * Document-method: compile
  *
- * Alias for <code>Regexp.new</code>
+ * Alias for Regexp.new
  */
 
 /*
@@ -3529,8 +3523,9 @@ rb_reg_quote(VALUE str)
     }
     t = RSTRING_PTR(tmp);
     /* copy upto metacharacter */
-    memcpy(t, RSTRING_PTR(str), s - RSTRING_PTR(str));
-    t += s - RSTRING_PTR(str);
+    const char *p = RSTRING_PTR(str);
+    memcpy(t, p, s - p);
+    t += s - p;
 
     while (s < send) {
         c = rb_enc_ascget(s, send, &clen, enc);
@@ -3578,7 +3573,6 @@ rb_reg_quote(VALUE str)
         t += rb_enc_mbcput(c, t, enc);
     }
     rb_str_resize(tmp, t - RSTRING_PTR(tmp));
-    OBJ_INFECT(tmp, str);
     return tmp;
 }
 
@@ -3589,8 +3583,8 @@ rb_reg_quote(VALUE str)
  *     Regexp.quote(str)    -> string
  *
  *  Escapes any characters that would have special meaning in a regular
- *  expression. Returns a new escaped string, or self if no characters are
- *  escaped.  For any string,
+ *  expression. Returns a new escaped string with the same or compatible
+ *  encoding. For any string,
  *  <code>Regexp.new(Regexp.escape(<i>str</i>))=~<i>str</i></code> will be true.
  *
  *     Regexp.escape('\*?{}.')   #=> \\\*\?\{\}\.
@@ -3763,11 +3757,12 @@ rb_reg_s_union(VALUE self, VALUE args0)
  *     Regexp.union(pat1, pat2, ...)            -> new_regexp
  *     Regexp.union(pats_ary)                   -> new_regexp
  *
- *  Return a <code>Regexp</code> object that is the union of the given
- *  <em>pattern</em>s, i.e., will match any of its parts. The <em>pattern</em>s
- *  can be Regexp objects, in which case their options will be preserved, or
- *  Strings. If no patterns are given, returns <code>/(?!)/</code>.
- *  The behavior is unspecified if any given <em>pattern</em> contains capture.
+ *  Return a Regexp object that is the union of the given
+ *  <em>pattern</em>s, i.e., will match any of its parts. The
+ *  <em>pattern</em>s can be Regexp objects, in which case their
+ *  options will be preserved, or Strings. If no patterns are given,
+ *  returns <code>/(?!)/</code>.  The behavior is unspecified if any
+ *  given <em>pattern</em> contains capture.
  *
  *     Regexp.union                         #=> /(?!)/
  *     Regexp.union("penzance")             #=> /penzance/
@@ -3808,10 +3803,12 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
     rb_encoding *str_enc = rb_enc_get(str);
     rb_encoding *src_enc = rb_enc_get(src);
     int acompat = rb_enc_asciicompat(str_enc);
+    long n;
 #define ASCGET(s,e,cl) (acompat ? (*(cl)=1,ISASCII((s)[0])?(s)[0]:-1) : rb_enc_ascget((s), (e), (cl), str_enc))
 
-    p = s = RSTRING_PTR(str);
-    e = s + RSTRING_LEN(str);
+    RSTRING_GETMEM(str, s, n);
+    p = s;
+    e = s + n;
 
     while (s < e) {
         int c = ASCGET(s, e, &clen);
@@ -3923,27 +3920,27 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
 }
 
 static VALUE
-kcode_getter(void)
+kcode_getter(ID _x, VALUE *_y)
 {
     rb_warn("variable $KCODE is no longer effective");
     return Qnil;
 }
 
 static void
-kcode_setter(VALUE val, ID id)
+kcode_setter(VALUE val, ID id, VALUE *_)
 {
     rb_warn("variable $KCODE is no longer effective; ignored");
 }
 
 static VALUE
-ignorecase_getter(void)
+ignorecase_getter(ID _x, VALUE *_y)
 {
     rb_warn("variable $= is no longer effective");
     return Qfalse;
 }
 
 static void
-ignorecase_setter(VALUE val, ID id)
+ignorecase_setter(VALUE val, ID id, VALUE *_)
 {
     rb_warn("variable $= is no longer effective; ignored");
 }
@@ -3958,8 +3955,14 @@ match_getter(void)
     return match;
 }
 
+static VALUE
+get_LAST_MATCH_INFO(ID _x, VALUE *_y)
+{
+    return match_getter();
+}
+
 static void
-match_setter(VALUE val)
+match_setter(VALUE val, ID _x, VALUE *_y)
 {
     if (!NIL_P(val)) {
 	Check_Type(val, T_MATCH);
@@ -3996,7 +3999,7 @@ match_setter(VALUE val)
  */
 
 static VALUE
-rb_reg_s_last_match(int argc, VALUE *argv)
+rb_reg_s_last_match(int argc, VALUE *argv, VALUE _)
 {
     if (rb_check_arity(argc, 0, 1) == 1) {
         VALUE match = rb_backref_get();
@@ -4029,9 +4032,9 @@ re_warn(const char *s)
 /*
  *  Document-class: Regexp
  *
- *  A <code>Regexp</code> holds a regular expression, used to match a pattern
- *  against strings. Regexps are created using the <code>/.../</code> and
- *  <code>%r{...}</code> literals, and by the <code>Regexp::new</code>
+ *  A Regexp holds a regular expression, used to match a pattern
+ *  against strings. Regexps are created using the <code>/.../</code>
+ *  and <code>%r{...}</code> literals, and by the Regexp::new
  *  constructor.
  *
  *  :include: doc/regexp.rdoc
@@ -4046,11 +4049,17 @@ Init_Regexp(void)
     onig_set_warn_func(re_warn);
     onig_set_verb_warn_func(re_warn);
 
-    rb_define_virtual_variable("$~", match_getter, match_setter);
+    rb_define_virtual_variable("$~", get_LAST_MATCH_INFO, match_setter);
     rb_define_virtual_variable("$&", last_match_getter, 0);
     rb_define_virtual_variable("$`", prematch_getter, 0);
     rb_define_virtual_variable("$'", postmatch_getter, 0);
     rb_define_virtual_variable("$+", last_paren_match_getter, 0);
+
+    rb_gvar_ractor_local("$~");
+    rb_gvar_ractor_local("$&");
+    rb_gvar_ractor_local("$`");
+    rb_gvar_ractor_local("$'");
+    rb_gvar_ractor_local("$+");
 
     rb_define_virtual_variable("$=", ignorecase_getter, ignorecase_setter);
     rb_define_virtual_variable("$KCODE", kcode_getter, kcode_setter);
@@ -4101,6 +4110,7 @@ Init_Regexp(void)
     rb_cMatch  = rb_define_class("MatchData", rb_cObject);
     rb_define_alloc_func(rb_cMatch, match_alloc);
     rb_undef_method(CLASS_OF(rb_cMatch), "new");
+    rb_undef_method(CLASS_OF(rb_cMatch), "allocate");
 
     rb_define_method(rb_cMatch, "initialize_copy", match_init_copy, 1);
     rb_define_method(rb_cMatch, "regexp", match_regexp, 0);

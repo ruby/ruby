@@ -1,10 +1,3 @@
-unless defined? Channel
-  require 'thread'
-  class Channel < Queue
-    alias receive shift
-  end
-end
-
 module ThreadSpecs
 
   class SubThread < Thread
@@ -14,11 +7,12 @@ module ThreadSpecs
   end
 
   class Status
-    attr_reader :thread, :inspect, :status
+    attr_reader :thread, :inspect, :status, :to_s
     def initialize(thread)
       @thread = thread
       @alive = thread.alive?
       @inspect = thread.inspect
+      @to_s = thread.to_s
       @status = thread.status
       @stop = thread.stop?
     end
@@ -188,7 +182,7 @@ module ThreadSpecs
 
   def self.join_dying_thread_with_outer_ensure(kill_method_name=:kill)
     t = dying_thread_with_outer_ensure(kill_method_name) { yield }
-    lambda { t.join }.should raise_error(RuntimeError, "In dying thread")
+    -> { t.join }.should raise_error(RuntimeError, "In dying thread")
     return t
   end
 

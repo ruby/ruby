@@ -8,11 +8,11 @@ describe "Zlib::GzipFile#close" do
     Zlib::GzipWriter.wrap io do |gzio|
       gzio.close
 
-      gzio.closed?.should == true
+      gzio.should.closed?
 
-      lambda { gzio.orig_name }.should \
+      -> { gzio.orig_name }.should \
         raise_error(Zlib::GzipFile::Error, 'closed gzip stream')
-      lambda { gzio.comment }.should \
+      -> { gzio.comment }.should \
         raise_error(Zlib::GzipFile::Error, 'closed gzip stream')
     end
 

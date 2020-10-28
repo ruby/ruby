@@ -1,4 +1,4 @@
-require "bundler/vendor/thor/lib/thor/shell/basic"
+require_relative "basic"
 
 class Bundler::Thor
   module Shell
@@ -97,7 +97,11 @@ class Bundler::Thor
     protected
 
       def can_display_colors?
-        stdout.tty?
+        stdout.tty? && !are_colors_disabled?
+      end
+
+      def are_colors_disabled?
+        !ENV['NO_COLOR'].nil?
       end
 
       # Overwrite show_diff to show diff with colors if Diff::LCS is

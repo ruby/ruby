@@ -12,15 +12,14 @@
 class ContextState
   attr_reader :state, :parent, :parents, :children, :examples, :to_s
 
-  def initialize(mod, options=nil)
-    @to_s = mod.to_s
-    if options.is_a? Hash
-      @options = options
-    else
-      @to_s += "#{".:#".include?(options[0,1]) ? "" : " "}#{options}" if options
-      @options = { }
-    end
-    @options[:shared] ||= false
+  MOCK_VERIFY = -> { Mock.verify_count }
+  MOCK_CLEANUP = -> { Mock.cleanup }
+  EXPECTATION_MISSING = -> { raise SpecExpectationNotFoundError }
+
+  def initialize(description, options = nil)
+    raise "#describe options should be a Hash or nil" unless Hash === options or options.nil?
+    @to_s = description.to_s
+    @shared = options && options[:shared]
 
     @parsed   = false
     @before   = { :all => [], :each => [] }
@@ -28,13 +27,10 @@ class ContextState
     @pre      = {}
     @post     = {}
     @examples = []
+    @state    = nil
     @parent   = nil
     @parents  = [self]
     @children = []
-
-    @mock_verify         = Proc.new { Mock.verify_count }
-    @mock_cleanup        = Proc.new { Mock.cleanup }
-    @expectation_missing = Proc.new { raise SpecExpectationNotFoundError }
   end
 
   # Remove caching when a ContextState is dup'd for shared specs.
@@ -46,7 +42,7 @@ class ContextState
   # Returns true if this is a shared +ContextState+. Essentially, when
   # created with: describe "Something", :shared => true { ... }
   def shared?
-    return @options[:shared]
+    @shared
   end
 
   # Set the parent (enclosing) +ContextState+ for this state. Creates
@@ -127,6 +123,7 @@ class ContextState
   # Creates an ExampleState instance for the block and stores it
   # in a list of examples to evaluate unless the example is filtered.
   def it(desc, &block)
+    raise "nested #it" if @state
     example = ExampleState.new(self, desc, block)
     MSpec.actions :add, example
     return if MSpec.guarded?
@@ -174,7 +171,7 @@ class ContextState
   # so that exceptions are handled and tallied. Returns true and does
   # NOT evaluate any blocks if +check+ is true and
   # <tt>MSpec.mode?(:pretend)</tt> is true.
-  def protect(what, blocks, check=true)
+  def protect(what, blocks, check = true)
     return true if check and MSpec.mode? :pretend
     Array(blocks).all? { |block| MSpec.protect what, &block }
   end
@@ -205,7 +202,7 @@ class ContextState
       if protect "before :all", pre(:all)
         @examples.each do |state|
           MSpec.repeat do
-            @state  = state
+            @state = state
             example = state.example
             MSpec.actions :before, state
 
@@ -214,20 +211,20 @@ class ContextState
               if example
                 passed = protect nil, example
                 MSpec.actions :example, state, example
-                protect nil, @expectation_missing unless MSpec.expectation? or !passed
+                protect nil, EXPECTATION_MISSING if !MSpec.expectation? and passed
               end
             end
             protect "after :each", post(:each)
-            protect "Mock.verify_count", @mock_verify
+            protect "Mock.verify_count", MOCK_VERIFY
 
-            protect "Mock.cleanup", @mock_cleanup
+            protect "Mock.cleanup", MOCK_CLEANUP
             MSpec.actions :after, state
             @state = nil
           end
         end
         protect "after :all", post(:all)
       else
-        protect "Mock.cleanup", @mock_cleanup
+        protect "Mock.cleanup", MOCK_CLEANUP
       end
 
       MSpec.actions :leave

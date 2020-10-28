@@ -28,8 +28,8 @@ RSpec.describe "bundle install with gemfile that uses eval_gemfile" do
 
   context "eval-ed Gemfile has relative-path gems" do
     before do
-      build_lib("a", :path => "gems/a")
-      create_file "nested/Gemfile-nested", <<-G
+      build_lib("a", :path => bundled_app("gems/a"))
+      create_file bundled_app("nested/Gemfile-nested"), <<-G
         gem "a", :path => "../gems/a"
       G
 
@@ -39,15 +39,16 @@ RSpec.describe "bundle install with gemfile that uses eval_gemfile" do
     end
 
     it "installs the path gem" do
-      bundle! :install
+      bundle :install
       expect(the_bundle).to include_gem("a 1.0")
     end
 
     # Make sure that we are properly comparing path based gems between the
     # parsed lockfile and the evaluated gemfile.
-    it "bundles with --deployment" do
-      bundle! :install
-      bundle! :install, forgotten_command_line_options(:deployment => true)
+    it "bundles with deployment mode configured" do
+      bundle :install
+      bundle "config --local deployment true"
+      bundle :install
     end
   end
 
@@ -71,10 +72,10 @@ RSpec.describe "bundle install with gemfile that uses eval_gemfile" do
       create_file "other/Gemfile-other", "gem 'rack'"
       create_file "other/Gemfile", "eval_gemfile 'Gemfile-other'"
       create_file "Gemfile-alt", <<-G
-        source "file:#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         eval_gemfile "other/Gemfile"
       G
-      install_gemfile! "eval_gemfile File.expand_path('Gemfile-alt')"
+      install_gemfile "eval_gemfile File.expand_path('Gemfile-alt')"
 
       expect(the_bundle).to include_gem "rack 1.0.0"
     end

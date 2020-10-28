@@ -7,24 +7,28 @@
 #   v2 = dispatch0(void_stmt);
 #   $$ = dispatch2(stmts_add, v1, v2);
 
+$dollar = "$$"
+alias $$ $dollar
+
 class DSL
   def initialize(code, options)
     @events = {}
     @error = options.include?("error")
     @brace = options.include?("brace")
-    @final = options.include?("final")
+    if options.include?("final")
+      @final = "p->result"
+    else
+      @final = (options.grep(/\A\$(?:\$|\d+)\z/)[0] || "$$")
+    end
     @vars = 0
 
     # create $1 == "$1", $2 == "$2", ...
-    re, s = "", ""
-    1.upto(9) do |n|
-      re << "(..)"
-      s << "$#{ n }"
-    end
-    /#{ re }/ =~ s
+    s = (1..20).map {|n| "$#{n}"}
+    re = Array.new(s.size, "([^\0]+)")
+    /#{re.join("\0")}/ =~ s.join("\0")
 
     # struct parser_params *p
-    p = "p"
+    p = p = "p"
 
     @code = ""
     @last_value = eval(code)
@@ -37,9 +41,7 @@ class DSL
   undef class
 
   def generate
-    s = "$$"
-    s = "p->result" if @final
-    s = "#@code#{ s }=#@last_value;"
+    s = "#@code#@final=#@last_value;"
     s = "{VALUE #{ (1..@vars).map {|v| "v#{ v }" }.join(",") };#{ s }}" if @vars > 0
     s << "ripper_error(p);" if @error
     s = "{#{ s }}" if @brace
@@ -72,7 +74,7 @@ class DSL
   def method_missing(event, *args)
     if event.to_s =~ /!\z/
       add_event(event, args)
-    elsif args.empty? and /\Aid[A-Z]/ =~ event.to_s
+    elsif args.empty? and /\Aid[A-Z_]/ =~ event.to_s
       event
     else
       "#{ event }(#{ args.join(", ") })"

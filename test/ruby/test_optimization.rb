@@ -272,7 +272,7 @@ class TestRubyOptimization < Test::Unit::TestCase
     unless file
       loc, = caller_locations(1, 1)
       file = loc.path
-      line ||= loc.lineno
+      line ||= loc.lineno + 1
     end
     RubyVM::InstructionSequence.new("proc {|_|_.class_eval {#{src}}}",
                                     file, (path || file), line,
@@ -347,7 +347,7 @@ class TestRubyOptimization < Test::Unit::TestCase
   def test_tailcall_inhibited_by_rescue
     bug12082 = '[ruby-core:73871] [Bug #12082]'
 
-    tailcall("#{<<-"begin;"}\n#{<<~"end;"}")
+    EnvUtil.suppress_warning {tailcall("#{<<-"begin;"}\n#{<<~"end;"}")}
     begin;
       def to_be_rescued
         return do_raise
@@ -398,7 +398,7 @@ class TestRubyOptimization < Test::Unit::TestCase
         foo
       end;1
     end;
-    status, _err = EnvUtil.invoke_ruby([], "", true, true, {}) {
+    status, _err = EnvUtil.invoke_ruby([], "", true, true, **{}) {
       |in_p, out_p, err_p, pid|
       in_p.write(script)
       in_p.close
@@ -425,7 +425,7 @@ class TestRubyOptimization < Test::Unit::TestCase
   def test_tailcall_condition_block
     bug = '[ruby-core:78015] [Bug #12905]'
 
-    src = "#{<<-"begin;"}\n#{<<~"end;"}"
+    src = "#{<<-"begin;"}\n#{<<~"end;"}", __FILE__, nil, __LINE__+1
     begin;
       def run(current, final)
         if current < final
@@ -437,18 +437,34 @@ class TestRubyOptimization < Test::Unit::TestCase
     end;
 
     obj = Object.new
-    self.class.tailcall(obj.singleton_class, src, tailcall: false)
+    self.class.tailcall(obj.singleton_class, *src, tailcall: false)
     e = assert_raise(SystemStackError) {
       obj.run(1, Float::INFINITY)
     }
     level = e.backtrace_locations.size
     obj = Object.new
-    self.class.tailcall(obj.singleton_class, src, tailcall: true)
+    self.class.tailcall(obj.singleton_class, *src, tailcall: true)
     level *= 2
     mesg = message {"#{bug}: #{$!.backtrace_locations.size} / #{level} stack levels"}
     assert_nothing_raised(SystemStackError, mesg) {
       obj.run(1, level)
     }
+  end
+
+  def test_tailcall_not_to_grow_stack
+    skip 'currently JIT-ed code always creates a new stack frame' if RubyVM::MJIT.enabled?
+    bug16161 = '[ruby-core:94881]'
+
+    tailcall("#{<<-"begin;"}\n#{<<~"end;"}")
+    begin;
+      def foo(n)
+        return :ok if n < 1
+        foo(n - 1)
+      end
+    end;
+    assert_nothing_raised(SystemStackError, bug16161) do
+      assert_equal(:ok, foo(1_000_000), bug16161)
+    end
   end
 
   class Bug10557
@@ -685,27 +701,16 @@ class TestRubyOptimization < Test::Unit::TestCase
 
   def test_block_parameter_should_not_create_objects
     assert_separately [], <<-END
-      #
       def foo &b
       end
       h1 = {}; h2 = {}
-      ObjectSpace.count_objects(h1) # reharsal
+      ObjectSpace.count_objects(h1) # rehearsal
+      GC.start; GC.disable          # to disable GC while foo{}
       ObjectSpace.count_objects(h1)
       foo{}
       ObjectSpace.count_objects(h2)
 
-      assert_equal 0, h2[:TOTAL] - h1[:TOTAL]
-    END
-  end
-
-  def test_block_parameter_should_restore_safe_level
-    assert_separately [], <<-END
-      #
-      def foo &b
-        $SAFE = 1
-        b.call
-      end
-      assert_equal 1, foo{$SAFE}
+      assert_equal 0, h2[:T_DATA] - h1[:T_DATA] # Proc is T_DATA
     END
   end
 
@@ -751,6 +756,7 @@ class TestRubyOptimization < Test::Unit::TestCase
     h = {}
     assert_equal(bug, eval('{ok: 42, **h}; bug'))
     assert_equal(:ok, eval('{ok: bug = :ok, **h}; bug'))
+    assert_empty(h)
   end
 
   def test_overwritten_blockparam
@@ -795,6 +801,21 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_equal(:ok, x.bug(:ok))
   end
 
+  def test_jump_elimination_with_optimized_out_block_2
+    x = Object.new
+    def x.bug
+      a = "aaa"
+      ok = :NG
+      if a == "bbb" || a == "ccc" then
+        a = a
+      else
+        ok = :ok
+      end
+      ok
+    end
+    assert_equal(:ok, x.bug)
+  end
+
   def test_peephole_jump_after_newarray
     i = 0
     %w(1) || 2 while (i += 1) < 100
@@ -807,6 +828,21 @@ class TestRubyOptimization < Test::Unit::TestCase
       assert_raise(RuntimeError) {
         begin raise ensure nil if nil end
       }
+    end;
+  end
+
+  def test_optimized_rescue
+    assert_in_out_err("", "#{<<~"begin;"}\n#{<<~'end;'}", [], /END \(RuntimeError\)/)
+    begin;
+      if false
+        begin
+          require "some_mad_stuff"
+        rescue LoadError
+          puts "no mad stuff loaded"
+        end
+      end
+
+      raise  "END"
     end;
   end
 end

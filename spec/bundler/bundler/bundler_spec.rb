@@ -1,4 +1,3 @@
-# encoding: utf-8
 # frozen_string_literal: true
 
 require "bundler"
@@ -125,7 +124,15 @@ RSpec.describe Bundler do
 
   describe "#which" do
     let(:executable) { "executable" }
-    let(:path) { %w[/a /b c ../d /e] }
+
+    let(:path) do
+      if Gem.win_platform?
+        %w[C:/a C:/b C:/c C:/../d C:/e]
+      else
+        %w[/a /b c ../d /e]
+      end
+    end
+
     let(:expected) { "executable" }
 
     before do
@@ -150,7 +157,13 @@ RSpec.describe Bundler do
     it_behaves_like "it returns the correct executable"
 
     context "when the executable in inside a quoted path" do
-      let(:expected) { "/e/executable" }
+      let(:expected) do
+        if Gem.win_platform?
+          "C:/e/executable"
+        else
+          "/e/executable"
+        end
+      end
       it_behaves_like "it returns the correct executable"
     end
 
@@ -177,12 +190,12 @@ RSpec.describe Bundler do
       let(:bundler_ui) { Bundler.ui }
       it "should raise a friendly error" do
         allow(File).to receive(:exist?).and_return(true)
-        allow(bundler_fileutils).to receive(:remove_entry_secure).and_raise(ArgumentError)
+        allow(::Bundler::FileUtils).to receive(:remove_entry_secure).and_raise(ArgumentError)
         allow(File).to receive(:world_writable?).and_return(true)
         message = <<EOF
 It is a security vulnerability to allow your home directory to be world-writable, and bundler can not continue.
 You should probably consider fixing this issue by running `chmod o-w ~` on *nix.
-Please refer to http://ruby-doc.org/stdlib-2.1.2/libdoc/fileutils/rdoc/FileUtils.html#method-c-remove_entry_secure for details.
+Please refer to https://ruby-doc.org/stdlib-2.1.2/libdoc/fileutils/rdoc/FileUtils.html#method-c-remove_entry_secure for details.
 EOF
         expect(bundler_ui).to receive(:warn).with(message)
         expect { Bundler.send(:rm_rf, bundled_app) }.to raise_error(Bundler::PathError)
@@ -193,9 +206,11 @@ EOF
   describe "#mkdir_p" do
     it "creates a folder at the given path" do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
+
+      allow(Bundler).to receive(:root).and_return(bundled_app)
 
       Bundler.mkdir_p(bundled_app.join("foo", "bar"))
       expect(bundled_app.join("foo", "bar")).to exist
@@ -233,16 +248,13 @@ EOF
           path = "/home/oggy"
           allow(Bundler.rubygems).to receive(:user_home).and_return(path)
           allow(File).to receive(:directory?).with(path).and_return false
-          allow(Etc).to receive(:getlogin).and_return("USER")
-          allow(Dir).to receive(:tmpdir).and_return("/TMP")
-          allow(FileTest).to receive(:exist?).with("/TMP/bundler/home").and_return(true)
-          expect(FileUtils).to receive(:mkpath).with("/TMP/bundler/home/USER")
+          allow(Bundler).to receive(:tmp).and_return(Pathname.new("/tmp/trulyrandom"))
           message = <<EOF
 `/home/oggy` is not a directory.
-Bundler will use `/TMP/bundler/home/USER' as your home directory temporarily.
+Bundler will use `/tmp/trulyrandom' as your home directory temporarily.
 EOF
           expect(Bundler.ui).to receive(:warn).with(message)
-          expect(Bundler.user_home).to eq(Pathname("/TMP/bundler/home/USER"))
+          expect(Bundler.user_home).to eq(Pathname("/tmp/trulyrandom"))
         end
       end
 
@@ -255,16 +267,13 @@ EOF
           allow(File).to receive(:directory?).with(path).and_return true
           allow(File).to receive(:writable?).with(path).and_return false
           allow(File).to receive(:directory?).with(dotbundle).and_return false
-          allow(Etc).to receive(:getlogin).and_return("USER")
-          allow(Dir).to receive(:tmpdir).and_return("/TMP")
-          allow(FileTest).to receive(:exist?).with("/TMP/bundler/home").and_return(true)
-          expect(FileUtils).to receive(:mkpath).with("/TMP/bundler/home/USER")
+          allow(Bundler).to receive(:tmp).and_return(Pathname.new("/tmp/trulyrandom"))
           message = <<EOF
 `/home/oggy` is not writable.
-Bundler will use `/TMP/bundler/home/USER' as your home directory temporarily.
+Bundler will use `/tmp/trulyrandom' as your home directory temporarily.
 EOF
           expect(Bundler.ui).to receive(:warn).with(message)
-          expect(Bundler.user_home).to eq(Pathname("/TMP/bundler/home/USER"))
+          expect(Bundler.user_home).to eq(Pathname("/tmp/trulyrandom"))
         end
 
         context ".bundle exists and have correct permissions" do
@@ -283,28 +292,14 @@ EOF
     context "home directory is not set" do
       it "should issue warning and return a temporary user home" do
         allow(Bundler.rubygems).to receive(:user_home).and_return(nil)
-        allow(Etc).to receive(:getlogin).and_return("USER")
-        allow(Dir).to receive(:tmpdir).and_return("/TMP")
-        allow(FileTest).to receive(:exist?).with("/TMP/bundler/home").and_return(true)
-        expect(FileUtils).to receive(:mkpath).with("/TMP/bundler/home/USER")
+        allow(Bundler).to receive(:tmp).and_return(Pathname.new("/tmp/trulyrandom"))
         message = <<EOF
 Your home directory is not set.
-Bundler will use `/TMP/bundler/home/USER' as your home directory temporarily.
+Bundler will use `/tmp/trulyrandom' as your home directory temporarily.
 EOF
         expect(Bundler.ui).to receive(:warn).with(message)
-        expect(Bundler.user_home).to eq(Pathname("/TMP/bundler/home/USER"))
+        expect(Bundler.user_home).to eq(Pathname("/tmp/trulyrandom"))
       end
-    end
-  end
-
-  describe "#tmp_home_path" do
-    it "should create temporary user home" do
-      allow(Dir).to receive(:tmpdir).and_return("/TMP")
-      allow(FileTest).to receive(:exist?).with("/TMP/bundler/home").and_return(false)
-      expect(FileUtils).to receive(:mkpath).once.ordered.with("/TMP/bundler/home")
-      expect(FileUtils).to receive(:mkpath).once.ordered.with("/TMP/bundler/home/USER")
-      expect(File).to receive(:chmod).with(0o777, "/TMP/bundler/home")
-      expect(Bundler.tmp_home_path("USER", "")).to eq(Pathname("/TMP/bundler/home/USER"))
     end
   end
 
@@ -313,10 +308,9 @@ EOF
     let(:bundle_path) { Pathname("#{tmpdir}/bundle") }
 
     def clear_cached_requires_sudo
-      # Private in ruby 1.8.7
       return unless Bundler.instance_variable_defined?(:@requires_sudo_ran)
-      Bundler.send(:remove_instance_variable, :@requires_sudo_ran)
-      Bundler.send(:remove_instance_variable, :@requires_sudo)
+      Bundler.remove_instance_variable(:@requires_sudo_ran)
+      Bundler.remove_instance_variable(:@requires_sudo)
     end
 
     before do
@@ -344,7 +338,7 @@ EOF
       end
 
       context "with unwritable files in a parent dir" do
-        # Regression test for https://github.com/bundler/bundler/pull/6316
+        # Regression test for https://github.com/rubygems/bundler/pull/6316
         # It doesn't matter if there are other unwritable files so long as
         # bundle_path can be created
         before do
@@ -372,60 +366,51 @@ EOF
         it { should be true }
       end
     end
-  end
 
-  describe "#requires_sudo?" do
-    before do
-      allow(Bundler).to receive(:which).with("sudo").and_return("/usr/bin/sudo")
-      FileUtils.mkdir_p("tmp/vendor/bundle")
-      FileUtils.mkdir_p("tmp/vendor/bin_dir")
-    end
-    after do
-      FileUtils.rm_rf("tmp/vendor/bundle")
-      FileUtils.rm_rf("tmp/vendor/bin_dir")
-      if Bundler.respond_to?(:remove_instance_variable)
-        Bundler.remove_instance_variable(:@requires_sudo_ran)
-        Bundler.remove_instance_variable(:@requires_sudo)
-      else
-        # TODO: Remove these code when Bundler drops Ruby 1.8.7 support
-        Bundler.send(:remove_instance_variable, :@requires_sudo_ran)
-        Bundler.send(:remove_instance_variable, :@requires_sudo)
-      end
-    end
-    context "writable paths" do
-      it "should return false and display nothing" do
-        allow(Bundler).to receive(:bundle_path).and_return(Pathname("tmp/vendor/bundle"))
-        expect(Bundler.ui).to_not receive(:warn)
-        expect(Bundler.requires_sudo?).to eq(false)
-      end
-    end
-    context "unwritable paths" do
+    context "path writability" do
       before do
-        FileUtils.touch("tmp/vendor/bundle/unwritable1.txt")
-        FileUtils.touch("tmp/vendor/bundle/unwritable2.txt")
-        FileUtils.touch("tmp/vendor/bin_dir/unwritable3.txt")
-        FileUtils.chmod(0o400, "tmp/vendor/bundle/unwritable1.txt")
-        FileUtils.chmod(0o400, "tmp/vendor/bundle/unwritable2.txt")
-        FileUtils.chmod(0o400, "tmp/vendor/bin_dir/unwritable3.txt")
+        FileUtils.mkdir_p("tmp/vendor/bundle")
+        FileUtils.mkdir_p("tmp/vendor/bin_dir")
       end
-      it "should return true and display warn message" do
-        allow(Bundler).to receive(:bundle_path).and_return(Pathname("tmp/vendor/bundle"))
-        bin_dir = Pathname("tmp/vendor/bin_dir/")
+      after do
+        FileUtils.rm_rf("tmp/vendor/bundle")
+        FileUtils.rm_rf("tmp/vendor/bin_dir")
+      end
+      context "writable paths" do
+        it "should return false and display nothing" do
+          allow(Bundler).to receive(:bundle_path).and_return(Pathname("tmp/vendor/bundle"))
+          expect(Bundler.ui).to_not receive(:warn)
+          expect(Bundler.requires_sudo?).to eq(false)
+        end
+      end
+      context "unwritable paths" do
+        before do
+          FileUtils.touch("tmp/vendor/bundle/unwritable1.txt")
+          FileUtils.touch("tmp/vendor/bundle/unwritable2.txt")
+          FileUtils.touch("tmp/vendor/bin_dir/unwritable3.txt")
+          FileUtils.chmod(0o400, "tmp/vendor/bundle/unwritable1.txt")
+          FileUtils.chmod(0o400, "tmp/vendor/bundle/unwritable2.txt")
+          FileUtils.chmod(0o400, "tmp/vendor/bin_dir/unwritable3.txt")
+        end
+        it "should return true and display warn message" do
+          allow(Bundler).to receive(:bundle_path).and_return(Pathname("tmp/vendor/bundle"))
+          bin_dir = Pathname("tmp/vendor/bin_dir/")
 
-        # allow File#writable? to be called with args other than the stubbed on below
-        allow(File).to receive(:writable?).and_call_original
+          # allow File#writable? to be called with args other than the stubbed on below
+          allow(File).to receive(:writable?).and_call_original
 
-        # fake make the directory unwritable
-        allow(File).to receive(:writable?).with(bin_dir).and_return(false)
-        allow(Bundler).to receive(:system_bindir).and_return(Pathname("tmp/vendor/bin_dir/"))
-        message = <<-MESSAGE.chomp
+          # fake make the directory unwritable
+          allow(File).to receive(:writable?).with(bin_dir).and_return(false)
+          allow(Bundler).to receive(:system_bindir).and_return(Pathname("tmp/vendor/bin_dir/"))
+          message = <<-MESSAGE.chomp
 Following files may not be writable, so sudo is needed:
   tmp/vendor/bin_dir/
   tmp/vendor/bundle/unwritable1.txt
   tmp/vendor/bundle/unwritable2.txt
 MESSAGE
-        expect(Bundler.ui).to receive(:warn).with(message)
-        expect(Bundler.requires_sudo?).to eq(true)
+          expect(Bundler.ui).to receive(:warn).with(message)
+          expect(Bundler.requires_sudo?).to eq(true)
+        end
       end
     end
   end
@@ -465,6 +450,7 @@ MESSAGE
 
       it "should use custom home path as root for other paths" do
         ENV["BUNDLE_USER_HOME"] = bundle_user_home_custom.to_s
+        allow(Bundler.rubygems).to receive(:user_home).and_raise
         expect(Bundler.user_bundle_path).to           eq(bundle_user_home_custom)
         expect(Bundler.user_bundle_path("home")).to   eq(bundle_user_home_custom)
         expect(Bundler.user_bundle_path("cache")).to  eq(bundle_user_home_custom.join("cache"))

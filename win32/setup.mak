@@ -31,7 +31,6 @@ i586-mswin32: -prologue- -i586- -epilogue-
 i686-mswin32: -prologue- -i686- -epilogue-
 alpha-mswin32: -prologue- -alpha- -epilogue-
 x64-mswin64: -prologue- -x64- -epilogue-
-ia64-mswin64: -prologue- -ia64- -epilogue-
 
 -prologue-: -basic-vars-
 -generic-: -osname-
@@ -133,9 +132,6 @@ int main(void) {return (EnumProcesses(NULL,0,NULL) ? 0 : 1);}
 <<
 
 -version-: nul verconf.mk
-	@$(CPP) -I$(srcdir) -I$(srcdir)/include <<"Creating $(MAKEFILE)" | findstr "=" >>$(MAKEFILE)
-MSC_VER = _MSC_VER
-<<
 
 verconf.mk: nul
 	@$(CPP) -I$(srcdir) -I$(srcdir)/include <<"Creating $(@)" > $(*F).bat && cmd /c $(*F).bat > $(@)
@@ -153,6 +149,12 @@ echo TEENY = RUBY_VERSION_TEENY
 #if defined RUBY_PATCHLEVEL && RUBY_PATCHLEVEL < 0
 echo RUBY_DEVEL = yes
 #endif
+set /a MSC_VER = _MSC_VER
+#if _MSC_VER > 1900
+set /a MSC_VER_LOWER = MSC_VER/10*10+0
+set /a MSC_VER_UPPER = MSC_VER/10*10+9
+#endif
+set MSC_VER
 del %0 & exit
 <<
 
@@ -178,8 +180,6 @@ RUBY_SO_NAME = $(RUBY_SO_NAME)
 	@$(CPP) <<conftest.c 2>nul | findstr = >>$(MAKEFILE)
 #if defined _M_X64
 MACHINE = x64
-#elif defined _M_IA64
-MACHINE = ia64
 #else
 MACHINE = x86
 #endif
@@ -192,8 +192,6 @@ MACHINE = x86
 	@echo MACHINE = alpha>>$(MAKEFILE)
 -x64-: -osname64-
 	@echo MACHINE = x64>>$(MAKEFILE)
--ia64-: -osname64-
-	@echo MACHINE = ia64>>$(MAKEFILE)
 -ix86-: -osname32-
 	@echo MACHINE = x86>>$(MAKEFILE)
 

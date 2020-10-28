@@ -19,7 +19,7 @@ describe "Zlib::GzipFile#comment" do
     Zlib::GzipWriter.wrap @io do |gzio|
       gzio.close
 
-      lambda { gzio.comment }.should \
+      -> { gzio.comment }.should \
         raise_error(Zlib::GzipFile::Error, 'closed gzip stream')
     end
   end

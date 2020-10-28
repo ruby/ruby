@@ -130,8 +130,10 @@ module TestMkmf::Base
   def mkmf(*args, &block)
     @stdout.clear
     stdout, @stdout.origin, $stdout = @stdout.origin, $stdout, @stdout
+    verbose, $VERBOSE = $VERBOSE, false
     @mkmfobj.instance_eval(*args, &block)
   ensure
+    $VERBOSE = verbose
     $stdout, @stdout.origin = @stdout.origin, stdout
   end
 
@@ -147,7 +149,7 @@ end
 class TestMkmf
   include TestMkmf::Base
 
-  def assert_separately(args, src, *rest)
-    super(args + ["-r#{__FILE__}"], "extend TestMkmf::Base; setup\nEND{teardown}\n#{src}", *rest)
+  def assert_separately(args, src, *rest, **options)
+    super(args + ["-r#{__FILE__}"], "extend TestMkmf::Base; setup\nEND{teardown}\n#{src}", *rest, **options)
   end
 end

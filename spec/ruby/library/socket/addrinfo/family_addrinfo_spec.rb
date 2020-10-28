@@ -4,7 +4,7 @@ describe 'Addrinfo#family_addrinfo' do
   it 'raises ArgumentError if no arguments are given' do
     addr = Addrinfo.tcp('127.0.0.1', 0)
 
-    lambda { addr.family_addrinfo }.should raise_error(ArgumentError)
+    -> { addr.family_addrinfo }.should raise_error(ArgumentError)
   end
 
   describe 'using multiple arguments' do
@@ -14,11 +14,11 @@ describe 'Addrinfo#family_addrinfo' do
       end
 
       it 'raises ArgumentError if only 1 argument is given' do
-        lambda { @source.family_addrinfo('127.0.0.1') }.should raise_error(ArgumentError)
+        -> { @source.family_addrinfo('127.0.0.1') }.should raise_error(ArgumentError)
       end
 
       it 'raises ArgumentError if more than 2 arguments are given' do
-        lambda { @source.family_addrinfo('127.0.0.1', 0, 666) }.should raise_error(ArgumentError)
+        -> { @source.family_addrinfo('127.0.0.1', 0, 666) }.should raise_error(ArgumentError)
       end
 
       it 'returns an Addrinfo when a host and port are given' do
@@ -57,7 +57,7 @@ describe 'Addrinfo#family_addrinfo' do
         end
 
         it 'raises ArgumentError if more than 1 argument is given' do
-          lambda { @source.family_addrinfo('foo', 'bar') }.should raise_error(ArgumentError)
+          -> { @source.family_addrinfo('foo', 'bar') }.should raise_error(ArgumentError)
         end
 
         it 'returns an Addrinfo when a UNIX socket path is given' do
@@ -99,17 +99,17 @@ describe 'Addrinfo#family_addrinfo' do
 
     it 'raises ArgumentError if more than 1 argument is given' do
       input = Addrinfo.tcp('127.0.0.2', 0)
-      lambda { @source.family_addrinfo(input, 666) }.should raise_error(ArgumentError)
+      -> { @source.family_addrinfo(input, 666) }.should raise_error(ArgumentError)
     end
 
     it "raises ArgumentError if the protocol families don't match" do
       input = Addrinfo.tcp('::1', 0)
-      lambda { @source.family_addrinfo(input) }.should raise_error(ArgumentError)
+      -> { @source.family_addrinfo(input) }.should raise_error(ArgumentError)
     end
 
     it "raises ArgumentError if the socket types don't match" do
       input = Addrinfo.udp('127.0.0.1', 0)
-      lambda { @source.family_addrinfo(input) }.should raise_error(ArgumentError)
+      -> { @source.family_addrinfo(input) }.should raise_error(ArgumentError)
     end
   end
 end

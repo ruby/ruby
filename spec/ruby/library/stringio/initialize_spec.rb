@@ -110,9 +110,9 @@ describe "StringIO#initialize when passed [Object, mode]" do
     io.closed_write?.should be_false
   end
 
-  it "raises a #{frozen_error_class} when passed a frozen String in truncate mode as StringIO backend" do
+  it "raises a FrozenError when passed a frozen String in truncate mode as StringIO backend" do
     io = StringIO.allocate
-    lambda { io.send(:initialize, "example".freeze, IO::TRUNC) }.should raise_error(frozen_error_class)
+    -> { io.send(:initialize, "example".freeze, IO::TRUNC) }.should raise_error(FrozenError)
   end
 
   it "tries to convert the passed mode to a String using #to_str" do
@@ -126,9 +126,9 @@ describe "StringIO#initialize when passed [Object, mode]" do
 
   it "raises an Errno::EACCES error when passed a frozen string with a write-mode" do
     (str = "example").freeze
-    lambda { @io.send(:initialize, str, "r+") }.should raise_error(Errno::EACCES)
-    lambda { @io.send(:initialize, str, "w") }.should raise_error(Errno::EACCES)
-    lambda { @io.send(:initialize, str, "a") }.should raise_error(Errno::EACCES)
+    -> { @io.send(:initialize, str, "r+") }.should raise_error(Errno::EACCES)
+    -> { @io.send(:initialize, str, "w") }.should raise_error(Errno::EACCES)
+    -> { @io.send(:initialize, str, "a") }.should raise_error(Errno::EACCES)
   end
 end
 
@@ -184,26 +184,39 @@ describe "StringIO#initialize when passed no arguments" do
   end
 end
 
-describe "StringIO#initialize sets the encoding to" do
+describe "StringIO#initialize sets" do
   before :each do
     @external = Encoding.default_external
+    @internal = Encoding.default_internal
     Encoding.default_external = Encoding::ISO_8859_2
+    Encoding.default_internal = Encoding::ISO_8859_2
   end
 
   after :each do
     Encoding.default_external = @external
+    Encoding.default_internal = @internal
   end
 
-  it "Encoding.default_external when passed no arguments" do
+  it "the encoding to Encoding.default_external when passed no arguments" do
     io = StringIO.new
     io.external_encoding.should == Encoding::ISO_8859_2
     io.string.encoding.should == Encoding::ISO_8859_2
   end
 
-  it "the same as the encoding of the String when passed a String" do
+  it "the encoding to the encoding of the String when passed a String" do
     s = ''.force_encoding(Encoding::EUC_JP)
     io = StringIO.new(s)
-    io.external_encoding.should == Encoding::EUC_JP
     io.string.encoding.should == Encoding::EUC_JP
+  end
+
+  guard_not -> { # [Bug #16497]
+    stringio_version = StringIO.const_defined?(:VERSION) ? StringIO::VERSION : "0.0.2"
+    version_is(stringio_version, "0.0.3"..."0.1.1")
+  } do
+    it "the #external_encoding to the encoding of the String when passed a String" do
+      s = ''.force_encoding(Encoding::EUC_JP)
+      io = StringIO.new(s)
+      io.external_encoding.should == Encoding::EUC_JP
+    end
   end
 end

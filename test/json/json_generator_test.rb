@@ -40,6 +40,43 @@ class JSONGeneratorTest < Test::Unit::TestCase
 EOT
   end
 
+  def silence
+    v = $VERBOSE
+    $VERBOSE = nil
+    yield
+  ensure
+    $VERBOSE = v
+  end
+
+  def test_remove_const_segv
+    stress = GC.stress
+    const = JSON::SAFE_STATE_PROTOTYPE.dup
+
+    bignum_too_long_to_embed_as_string = 1234567890123456789012345
+    expect = bignum_too_long_to_embed_as_string.to_s
+    GC.stress = true
+
+    10.times do |i|
+      tmp = bignum_too_long_to_embed_as_string.to_json
+      raise "'\#{expect}' is expected, but '\#{tmp}'" unless tmp == expect
+    end
+
+    silence do
+      JSON.const_set :SAFE_STATE_PROTOTYPE, nil
+    end
+
+    10.times do |i|
+      assert_raise TypeError do
+        bignum_too_long_to_embed_as_string.to_json
+      end
+    end
+  ensure
+    GC.stress = stress
+    silence do
+      JSON.const_set :SAFE_STATE_PROTOTYPE, const
+    end
+  end if JSON.const_defined?("Ext") && RUBY_ENGINE != 'jruby'
+
   def test_generate
     json = generate(@hash)
     assert_equal(parse(@json2), parse(json))
@@ -55,6 +92,11 @@ EOT
   end
 
   def test_generate_pretty
+    json = pretty_generate({})
+    assert_equal(<<'EOT'.chomp, json)
+{
+}
+EOT
     json = pretty_generate(@hash)
     # hashes aren't (insertion) ordered on every ruby implementation
     # assert_equal(@json3, json)
@@ -136,6 +178,7 @@ EOT
       :ascii_only            => false,
       :buffer_initial_length => 1024,
       :depth                 => 0,
+      :escape_slash          => false,
       :indent                => "  ",
       :max_nesting           => 100,
       :object_nl             => "\n",
@@ -152,6 +195,7 @@ EOT
       :ascii_only            => false,
       :buffer_initial_length => 1024,
       :depth                 => 0,
+      :escape_slash          => false,
       :indent                => "",
       :max_nesting           => 100,
       :object_nl             => "",
@@ -168,6 +212,7 @@ EOT
       :ascii_only            => false,
       :buffer_initial_length => 1024,
       :depth                 => 0,
+      :escape_slash          => false,
       :indent                => "",
       :max_nesting           => 0,
       :object_nl             => "",
@@ -356,6 +401,10 @@ EOT
     json = '["/"]'
     assert_equal json, generate(data)
     #
+    data = [ '/' ]
+    json = '["\/"]'
+    assert_equal json, generate(data, :escape_slash => true)
+    #
     data = ['"']
     json = '["\""]'
     assert_equal json, generate(data)
@@ -372,6 +421,12 @@ EOT
     end
     assert_nothing_raised(SystemStackError) do
       assert_equal '["foo"]', JSON.generate([s.new('foo')])
+    end
+  end
+
+  if defined?(Encoding)
+    def test_nonutf8_encoding
+      assert_equal("\"5\u{b0}\"", "5\xb0".force_encoding("iso-8859-1").to_json)
     end
   end
 end

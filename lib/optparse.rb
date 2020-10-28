@@ -169,7 +169,7 @@
 # - Array -- Strings separated by ',' (e.g. 1,2,3)
 # - Regexp -- Regular expressions. Also includes options.
 #
-# We can also add our own coercions, which we will cover soon.
+# We can also add our own coercions, which we will cover below.
 #
 # ==== Using Built-in Conversions
 #
@@ -419,6 +419,8 @@
 # have any questions, file a ticket at http://bugs.ruby-lang.org.
 #
 class OptionParser
+  OptionParser::Version = "0.1.0"
+
   # :stopdoc:
   NoArgument = [NO_ARGUMENT = :NONE, nil].freeze
   RequiredArgument = [REQUIRED_ARGUMENT = :REQUIRED, true].freeze
@@ -592,7 +594,7 @@ class OptionParser
     #            +max+ columns.
     # +indent+:: Prefix string indents all summarized lines.
     #
-    def summarize(sdone = [], ldone = [], width = 1, max = width - 1, indent = "")
+    def summarize(sdone = {}, ldone = {}, width = 1, max = width - 1, indent = "")
       sopts, lopts = [], [], nil
       @short.each {|s| sdone.fetch(s) {sopts << s}; sdone[s] = true} if @short
       @long.each {|s| ldone.fetch(s) {lopts << s}; ldone[s] = true} if @long
@@ -864,6 +866,10 @@ class OptionParser
     #
     def complete(id, opt, icase = false, *pat, &block)
       __send__(id).complete(opt, icase, *pat, &block)
+    end
+
+    def get_candidates(id)
+      yield __send__(id).keys
     end
 
     #
@@ -1544,7 +1550,10 @@ XXX
 
   #
   # Parses command line arguments +argv+ in order. When a block is given,
-  # each non-option argument is yielded.
+  # each non-option argument is yielded. When optional +into+ keyword
+  # argument is provided, the parsed option values are stored there via
+  # <code>[]=</code> method (so it can be Hash, or OpenStruct, or other
+  # similar object).
   #
   # Returns the rest of +argv+ left unparsed.
   #
@@ -1640,7 +1649,10 @@ XXX
 
   #
   # Parses command line arguments +argv+ in permutation mode and returns
-  # list of non-option arguments.
+  # list of non-option arguments. When optional +into+ keyword
+  # argument is provided, the parsed option values are stored there via
+  # <code>[]=</code> method (so it can be Hash, or OpenStruct, or other
+  # similar object).
   #
   def permute(*argv, into: nil)
     argv = argv[0].dup if argv.size == 1 and Array === argv[0]
@@ -1661,6 +1673,9 @@ XXX
   #
   # Parses command line arguments +argv+ in order when environment variable
   # POSIXLY_CORRECT is set, and in permutation mode otherwise.
+  # When optional +into+ keyword argument is provided, the parsed option
+  # values are stored there via <code>[]=</code> method (so it can be Hash,
+  # or OpenStruct, or other similar object).
   #
   def parse(*argv, into: nil)
     argv = argv[0].dup if argv.size == 1 and Array === argv[0]
@@ -1734,7 +1749,7 @@ XXX
   #
   def visit(id, *args, &block)
     @stack.reverse_each do |el|
-      el.send(id, *args, &block)
+      el.__send__(id, *args, &block)
     end
     nil
   end
@@ -1764,12 +1779,27 @@ XXX
     if pat.empty?
       search(typ, opt) {|sw| return [sw, opt]} # exact match or...
     end
-    raise AmbiguousOption, catch(:ambiguous) {
+    ambiguous = catch(:ambiguous) {
       visit(:complete, typ, opt, icase, *pat) {|o, *sw| return sw}
-      raise InvalidOption, opt
     }
+    exc = ambiguous ? AmbiguousOption : InvalidOption
+    raise exc.new(opt, additional: self.method(:additional_message).curry[typ])
   end
   private :complete
+
+  #
+  # Returns additional info.
+  #
+  def additional_message(typ, opt)
+    return unless typ and opt and defined?(DidYouMean::SpellChecker)
+    all_candidates = []
+    visit(:get_candidates, typ) do |candidates|
+      all_candidates.concat(candidates)
+    end
+    all_candidates.select! {|cand| cand.is_a?(String) }
+    checker = DidYouMean::SpellChecker.new(dictionary: all_candidates)
+    DidYouMean.formatter.message_for(all_candidates & checker.correct(opt))
+  end
 
   def candidate(word)
     list = []
@@ -1806,13 +1836,26 @@ XXX
   # is not present. Returns whether successfully loaded.
   #
   # +filename+ defaults to basename of the program without suffix in a
-  # directory ~/.options.
+  # directory ~/.options, then the basename with '.options' suffix
+  # under XDG and Haiku standard places.
   #
   def load(filename = nil)
-    begin
-      filename ||= File.expand_path(File.basename($0, '.*'), '~/.options')
-    rescue
-      return false
+    unless filename
+      basename = File.basename($0, '.*')
+      return true if load(File.expand_path(basename, '~/.options')) rescue nil
+      basename << ".options"
+      return [
+        # XDG
+        ENV['XDG_CONFIG_HOME'],
+        '~/.config',
+        *ENV['XDG_CONFIG_DIRS']&.split(File::PATH_SEPARATOR),
+
+        # Haiku
+        '~/config/settings',
+      ].any? {|dir|
+        next if !dir or dir.empty?
+        load(File.expand_path(basename, dir)) rescue nil
+      }
     end
     begin
       parse(*IO.readlines(filename).each {|s| s.chomp!})
@@ -1984,13 +2027,16 @@ XXX
     # Reason which caused the error.
     Reason = 'parse error'
 
-    def initialize(*args)
+    def initialize(*args, additional: nil)
+      @additional = additional
+      @arg0, = args
       @args = args
       @reason = nil
     end
 
     attr_reader :args
     attr_writer :reason
+    attr_accessor :additional
 
     #
     # Pushes back erred argument(s) to +argv+.
@@ -2035,7 +2081,7 @@ XXX
     # Default stringizing method to emit standard error message.
     #
     def message
-      reason + ': ' + args.join(' ')
+      "#{reason}: #{args.join(' ')}#{additional[@arg0] if additional}"
     end
 
     alias to_s message

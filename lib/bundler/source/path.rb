@@ -3,7 +3,7 @@
 module Bundler
   class Source
     class Path < Source
-      autoload :Installer, "bundler/source/path/installer"
+      autoload :Installer, File.expand_path("path/installer", __dir__)
 
       attr_reader :path, :options, :root_path, :original_path
       attr_writer :name
@@ -20,11 +20,16 @@ module Bundler
         @allow_cached = false
         @allow_remote = false
 
-        @root_path = options["root_path"] || Bundler.root
+        @root_path = options["root_path"] || root
 
         if options["path"]
           @path = Pathname.new(options["path"])
-          @path = expand(@path) unless @path.relative?
+          expanded_path = expand(@path)
+          @path = if @path.relative?
+            expanded_path.relative_path_from(root_path.expand_path)
+          else
+            expanded_path
+          end
         end
 
         @name    = options["name"]
@@ -120,14 +125,18 @@ module Bundler
         @expanded_original_path ||= expand(original_path)
       end
 
-    private
+      private
 
       def expanded_path
         @expanded_path ||= expand(path)
       end
 
       def expand(somepath)
-        somepath.expand_path(root_path)
+        if Bundler.current_ruby.jruby? # TODO: Unify when https://github.com/rubygems/bundler/issues/7598 fixed upstream and all supported jrubies include the fix
+          somepath.expand_path(root_path).expand_path
+        else
+          somepath.expand_path(root_path)
+        end
       rescue ArgumentError => e
         Bundler.ui.debug(e)
         raise PathError, "There was an error while trying to use the path " \
@@ -136,7 +145,7 @@ module Bundler
 
       def lockfile_path
         return relative_path(original_path) if original_path.absolute?
-        expand(original_path).relative_path_from(Bundler.root)
+        expand(original_path).relative_path_from(root)
       end
 
       def app_cache_path(custom_path = nil)
@@ -162,7 +171,7 @@ module Bundler
 
         if File.directory?(expanded_path)
           # We sort depth-first since `<<` will override the earlier-found specs
-          Dir["#{expanded_path}/#{@glob}"].sort_by {|p| -p.split(File::SEPARATOR).size }.each do |file|
+          Gem::Util.glob_files_in_dir(@glob, expanded_path).sort_by {|p| -p.split(File::SEPARATOR).size }.each do |file|
             next unless spec = load_gemspec(file)
             spec.source = self
 
@@ -191,10 +200,10 @@ module Bundler
         else
           message = String.new("The path `#{expanded_path}` ")
           message << if File.exist?(expanded_path)
-                       "is not a directory."
-                     else
-                       "does not exist."
-                     end
+            "is not a directory."
+          else
+            "does not exist."
+          end
           raise PathError, message
         end
 

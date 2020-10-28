@@ -1,7 +1,7 @@
 #!/bin/sh
 # usage:
 #   edit $(srcdir)/test.rb
-#   git bisect start `git svn find-rev <rBADREV>` `git svn find-rev <rGOODREV>`
+#   git bisect start <bad> <good>
 #   cd <builddir>
 #   make bisect (or bisect-ruby for full ruby)
 

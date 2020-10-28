@@ -1,22 +1,21 @@
-/**********************************************************************
-
-  thread_native.h -
-
-  $Author: ko1 $
-  created at: Wed May 14 19:37:31 2014
-
-  Copyright (C) 2014 Yukihiro Matsumoto
-
-**********************************************************************/
-
-#ifndef RUBY_THREAD_NATIVE_H
+#ifndef RUBY_THREAD_NATIVE_H                         /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_THREAD_NATIVE_H 1
+/**
+ * @file
+ * @author     $Author: ko1 $
+ * @date       Wed May 14 19:37:31 2014
+ * @copyright  Copyright (C) 2014 Yukihiro Matsumoto
+ * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
+ *             Permission  is hereby  granted,  to  either redistribute  and/or
+ *             modify this file, provided that  the conditions mentioned in the
+ *             file COPYING are met.  Consult the file for details.
+ */
 
 /*
  * This file contains wrapper APIs for native thread primitives
  * which Ruby interpreter uses.
  *
- * Now, we only suppors pthread and Windows threads.
+ * Now, we only support pthread and Windows threads.
  *
  * If you want to use Ruby's Mutex and so on to synchronize Ruby Threads,
  * please use Mutex directly.

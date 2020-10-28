@@ -51,11 +51,11 @@ describe "String#setbyte" do
   end
 
   it "raises an IndexError if the index is greater than the String bytesize" do
-    lambda { "?".setbyte(1, 97) }.should raise_error(IndexError)
+    -> { "?".setbyte(1, 97) }.should raise_error(IndexError)
   end
 
   it "raises an IndexError if the negative index is greater magnitude than the String bytesize" do
-    lambda { "???".setbyte(-5, 97) }.should raise_error(IndexError)
+    -> { "???".setbyte(-5, 97) }.should raise_error(IndexError)
   end
 
   it "sets a byte at an index greater than String size" do
@@ -75,14 +75,14 @@ describe "String#setbyte" do
     str1.should_not == "ledgehog"
   end
 
-  it "raises a #{frozen_error_class} if self is frozen" do
+  it "raises a FrozenError if self is frozen" do
     str = "cold".freeze
     str.frozen?.should be_true
-    lambda { str.setbyte(3,96) }.should raise_error(frozen_error_class)
+    -> { str.setbyte(3,96) }.should raise_error(FrozenError)
   end
 
   it "raises a TypeError unless the second argument is an Integer" do
-    lambda { "a".setbyte(0,'a') }.should raise_error(TypeError)
+    -> { "a".setbyte(0,'a') }.should raise_error(TypeError)
   end
 
   it "calls #to_int to convert the index" do

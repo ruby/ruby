@@ -23,7 +23,7 @@ class OpenStruct
     }
   end
 
-  # Stores class name (OpenStruct) with this struct's values <tt>v</tt> as a
+  # Stores class name (OpenStruct) with this struct's values <tt>t</tt> as a
   # JSON string.
   def to_json(*args)
     as_json.to_json(*args)

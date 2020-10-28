@@ -1,0 +1,7 @@
+prelude: |
+  Const = 1
+benchmark:
+  vm_const: |
+    j = Const
+    k = Const
+loop_count: 30000000

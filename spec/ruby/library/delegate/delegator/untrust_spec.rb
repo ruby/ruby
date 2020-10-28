@@ -6,18 +6,20 @@ describe "Delegator#untrust" do
     @delegate = DelegateSpecs::Delegator.new("")
   end
 
-  it "returns self" do
-    @delegate.untrust.equal?(@delegate).should be_true
-  end
+  ruby_version_is ''...'2.7' do
+    it "returns self" do
+      @delegate.untrust.equal?(@delegate).should be_true
+    end
 
-  it "untrusts the delegator" do
-    @delegate.__setobj__(nil)
-    @delegate.untrust
-    @delegate.untrusted?.should be_true
-  end
+    it "untrusts the delegator" do
+      @delegate.__setobj__(nil)
+      @delegate.untrust
+      @delegate.untrusted?.should be_true
+    end
 
-  it "untrusts the delegated object" do
-    @delegate.untrust
-    @delegate.__getobj__.untrusted?.should be_true
+    it "untrusts the delegated object" do
+      @delegate.untrust
+      @delegate.__getobj__.untrusted?.should be_true
+    end
   end
 end

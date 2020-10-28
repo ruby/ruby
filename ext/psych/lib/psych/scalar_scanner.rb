@@ -14,16 +14,15 @@ module Psych
               |\.(nan|NaN|NAN)(?# not a number))$/x
 
     # Taken from http://yaml.org/type/int.html
-    INTEGER = /^(?:[-+]?0b[0-1_]+          (?# base 2)
-                  |[-+]?0[0-7_]+           (?# base 8)
-                  |[-+]?(?:0|[1-9][0-9_]*) (?# base 10)
-                  |[-+]?0x[0-9a-fA-F_]+    (?# base 16))$/x
+    INTEGER = /^(?:[-+]?0b[0-1_,]+          (?# base 2)
+                  |[-+]?0[0-7_,]+           (?# base 8)
+                  |[-+]?(?:0|[1-9][0-9_,]*) (?# base 10)
+                  |[-+]?0x[0-9a-fA-F_,]+    (?# base 16))$/x
 
     attr_reader :class_loader
 
     # Create a new scanner
     def initialize class_loader
-      @string_cache = {}
       @symbol_cache = {}
       @class_loader = class_loader
     end
@@ -31,81 +30,70 @@ module Psych
     # Tokenize +string+ returning the Ruby object
     def tokenize string
       return nil if string.empty?
-      return string if @string_cache.key?(string)
       return @symbol_cache[string] if @symbol_cache.key?(string)
 
-      case string
       # Check for a String type, being careful not to get caught by hash keys, hex values, and
       # special floats (e.g., -.inf).
-      when /^[^\d\.:-]?[A-Za-z_\s!@#\$%\^&\*\(\)\{\}\<\>\|\/\\~;=]+/, /\n/
-        if string.length > 5
-          @string_cache[string] = true
-          return string
-        end
+      if string.match?(/^[^\d\.:-]?[A-Za-z_\s!@#\$%\^&\*\(\)\{\}\<\>\|\/\\~;=]+/) || string.match?(/\n/)
+        return string if string.length > 5
 
-        case string
-        when /^[^ytonf~]/i
-          @string_cache[string] = true
+        if string.match?(/^[^ytonf~]/i)
           string
-        when '~', /^null$/i
+        elsif string == '~' || string.match?(/^null$/i)
           nil
-        when /^(yes|true|on)$/i
+        elsif string.match?(/^(yes|true|on)$/i)
           true
-        when /^(no|false|off)$/i
+        elsif string.match?(/^(no|false|off)$/i)
           false
         else
-          @string_cache[string] = true
           string
         end
-      when TIME
+      elsif string.match?(TIME)
         begin
           parse_time string
         rescue ArgumentError
           string
         end
-      when /^\d{4}-(?:1[012]|0\d|\d)-(?:[12]\d|3[01]|0\d|\d)$/
+      elsif string.match?(/^\d{4}-(?:1[012]|0\d|\d)-(?:[12]\d|3[01]|0\d|\d)$/)
         require 'date'
         begin
           class_loader.date.strptime(string, '%Y-%m-%d')
         rescue ArgumentError
           string
         end
-      when /^\.inf$/i
+      elsif string.match?(/^\.inf$/i)
         Float::INFINITY
-      when /^-\.inf$/i
+      elsif string.match?(/^-\.inf$/i)
         -Float::INFINITY
-      when /^\.nan$/i
+      elsif string.match?(/^\.nan$/i)
         Float::NAN
-      when /^:./
+      elsif string.match?(/^:./)
         if string =~ /^:(["'])(.*)\1/
           @symbol_cache[string] = class_loader.symbolize($2.sub(/^:/, ''))
         else
           @symbol_cache[string] = class_loader.symbolize(string.sub(/^:/, ''))
         end
-      when /^[-+]?[0-9][0-9_]*(:[0-5]?[0-9]){1,2}$/
+      elsif string.match?(/^[-+]?[0-9][0-9_]*(:[0-5]?[0-9]){1,2}$/)
         i = 0
         string.split(':').each_with_index do |n,e|
           i += (n.to_i * 60 ** (e - 2).abs)
         end
         i
-      when /^[-+]?[0-9][0-9_]*(:[0-5]?[0-9]){1,2}\.[0-9_]*$/
+      elsif string.match?(/^[-+]?[0-9][0-9_]*(:[0-5]?[0-9]){1,2}\.[0-9_]*$/)
         i = 0
         string.split(':').each_with_index do |n,e|
           i += (n.to_f * 60 ** (e - 2).abs)
         end
         i
-      when FLOAT
-        if string =~ /\A[-+]?\.\Z/
-          @string_cache[string] = true
+      elsif string.match?(FLOAT)
+        if string.match?(/\A[-+]?\.\Z/)
           string
         else
           Float(string.gsub(/[,_]|\.([Ee]|$)/, '\1'))
         end
+      elsif string.match?(INTEGER)
+        parse_int string
       else
-        int = parse_int string.gsub(/[,_]/, '')
-        return int if int
-
-        @string_cache[string] = true
         string
       end
     end
@@ -113,8 +101,7 @@ module Psych
     ###
     # Parse and return an int from +string+
     def parse_int string
-      return unless INTEGER === string
-      Integer(string)
+      Integer(string.gsub(/[,_]/, ''))
     end
 
     ###

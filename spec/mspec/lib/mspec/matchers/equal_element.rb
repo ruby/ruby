@@ -37,12 +37,12 @@ class EqualElementMatcher
   end
 
   def failure_message
-    ["Expected #{@actual.pretty_inspect}",
+    ["Expected #{MSpec.format(@actual)}",
      "to be a '#{@element}' element with #{attributes_for_failure_message} and #{content_for_failure_message}"]
   end
 
   def negative_failure_message
-    ["Expected #{@actual.pretty_inspect}",
+    ["Expected #{MSpec.format(@actual)}",
       "not to be a '#{@element}' element with #{attributes_for_failure_message} and #{content_for_failure_message}"]
   end
 

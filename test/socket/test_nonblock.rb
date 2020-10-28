@@ -185,11 +185,11 @@ class TestSocketNonblock < Test::Unit::TestCase
   def udp_pair
     s1 = UDPSocket.new
     s1.bind('127.0.0.1', 0)
-    af, port1, host, addr1 = s1.addr
+    _, port1, _, addr1 = s1.addr
 
     s2 = UDPSocket.new
     s2.bind('127.0.0.1', 0)
-    af, port2, host, addr2 = s2.addr
+    _, port2, _, addr2 = s2.addr
 
     s1.connect(addr2, port2)
     s2.connect(addr1, port1)

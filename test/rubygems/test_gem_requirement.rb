@@ -3,7 +3,6 @@ require 'rubygems/test_case'
 require "rubygems/requirement"
 
 class TestGemRequirement < Gem::TestCase
-
   def test_concat
     r = req '>= 1'
 
@@ -23,6 +22,8 @@ class TestGemRequirement < Gem::TestCase
     refute_requirement_equal "~> 1.3", "~> 1.3.0"
     refute_requirement_equal "~> 1.3.0", "~> 1.3"
 
+    assert_requirement_equal ["> 2", "~> 1.3", "~> 1.3.1"], ["~> 1.3.1", "~> 1.3", "> 2"]
+
     assert_requirement_equal ["> 2", "~> 1.3"], ["> 2.0", "~> 1.3"]
     assert_requirement_equal ["> 2.0", "~> 1.3"], ["> 2", "~> 1.3"]
 
@@ -35,7 +36,6 @@ class TestGemRequirement < Gem::TestCase
     assert_requirement_equal "= 2", ["2"]
     assert_requirement_equal "= 2", v(2)
     assert_requirement_equal "2.0", "2"
-    assert_requirement_equal ["= 2", ">= 2"], [">= 2", "= 2"]
   end
 
   def test_create
@@ -81,6 +81,12 @@ class TestGemRequirement < Gem::TestCase
 
     assert_equal ['=', Gem::Version.new(2)],
       Gem::Requirement.parse(Gem::Version.new('2'))
+  end
+
+  if RUBY_VERSION >= '2.5'
+    def test_parse_deduplication
+      assert_same '~>', Gem::Requirement.parse('~> 1').first
+    end
   end
 
   def test_parse_bad
@@ -266,6 +272,12 @@ class TestGemRequirement < Gem::TestCase
     assert_satisfied_by "3.0.rc2",     "< 3.0.1"
 
     assert_satisfied_by "3.0.rc2",     "> 0"
+
+    assert_satisfied_by "5.0.0.rc2",   "~> 5.a"
+    refute_satisfied_by "5.0.0.rc2",   "~> 5.x"
+
+    assert_satisfied_by "5.0.0",       "~> 5.a"
+    assert_satisfied_by "5.0.0",       "~> 5.x"
   end
 
   def test_illformed_requirements
@@ -385,8 +397,8 @@ class TestGemRequirement < Gem::TestCase
     r2 = req('2.0', '1.0')
     assert_equal r1.hash, r2.hash
 
-    r1 = req('1.0', '2.0').tap { |r| r.concat(['3.0']) }
-    r2 = req('3.0', '1.0').tap { |r| r.concat(['2.0']) }
+    r1 = req('1.0', '2.0').tap {|r| r.concat(['3.0']) }
+    r2 = req('3.0', '1.0').tap {|r| r.concat(['2.0']) }
     assert_equal r1.hash, r2.hash
   end
 

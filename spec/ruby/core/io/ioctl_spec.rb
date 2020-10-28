@@ -4,12 +4,12 @@ require_relative 'fixtures/classes'
 describe "IO#ioctl" do
   platform_is_not :windows do
     it "raises IOError on closed stream" do
-      lambda { IOSpecs.closed_io.ioctl(5, 5) }.should raise_error(IOError)
+      -> { IOSpecs.closed_io.ioctl(5, 5) }.should raise_error(IOError)
     end
   end
 
   platform_is :linux do
-    platform_is "86" do # x86 / x86_64
+    guard -> { RUBY_PLATFORM.include?("86") } do # x86 / x86_64
       it "resizes an empty String to match the output size" do
         File.open(__FILE__, 'r') do |f|
           buffer = ''
@@ -20,12 +20,12 @@ describe "IO#ioctl" do
       end
     end
 
-    it "raises an Errno error when ioctl fails" do
+    it "raises a system call error when ioctl fails" do
       File.open(__FILE__, 'r') do |f|
-        lambda {
+        -> {
           # TIOCGWINSZ in /usr/include/asm-generic/ioctls.h
           f.ioctl 0x5413, nil
-        }.should raise_error(Errno::ENOTTY)
+        }.should raise_error(SystemCallError)
       end
     end
   end

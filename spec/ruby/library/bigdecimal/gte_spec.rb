@@ -17,7 +17,7 @@ describe "BigDecimal#>=" do
       def coerce(other)
         return [other, BigDecimal('123')]
       end
-      def >= (other)
+      def >=(other)
         BigDecimal('123') >= other
       end
     end
@@ -72,15 +72,13 @@ describe "BigDecimal#>=" do
     (@infinity_neg >= @infinity).should == false
   end
 
-  ruby_bug "#13674", ""..."2.4" do
-    it "properly handles Float infinity values" do
-      @values.each { |val|
-        (val >= @float_infinity).should == false
-        (@float_infinity >= val).should == true
-        (val >= @float_infinity_neg).should == true
-        (@float_infinity_neg >= val).should == false
-      }
-    end
+  it "properly handles Float infinity values" do
+    @values.each { |val|
+      (val >= @float_infinity).should == false
+      (@float_infinity >= val).should == true
+      (val >= @float_infinity_neg).should == true
+      (@float_infinity_neg >= val).should == false
+    }
   end
 
   it "properly handles NaN values" do
@@ -92,11 +90,11 @@ describe "BigDecimal#>=" do
   end
 
   it "returns nil if the argument is nil" do
-    lambda {@zero         >= nil }.should raise_error(ArgumentError)
-    lambda {@infinity     >= nil }.should raise_error(ArgumentError)
-    lambda {@infinity_neg >= nil }.should raise_error(ArgumentError)
-    lambda {@mixed        >= nil }.should raise_error(ArgumentError)
-    lambda {@pos_int      >= nil }.should raise_error(ArgumentError)
-    lambda {@neg_frac     >= nil }.should raise_error(ArgumentError)
+    -> {@zero         >= nil }.should raise_error(ArgumentError)
+    -> {@infinity     >= nil }.should raise_error(ArgumentError)
+    -> {@infinity_neg >= nil }.should raise_error(ArgumentError)
+    -> {@mixed        >= nil }.should raise_error(ArgumentError)
+    -> {@pos_int      >= nil }.should raise_error(ArgumentError)
+    -> {@neg_frac     >= nil }.should raise_error(ArgumentError)
   end
 end

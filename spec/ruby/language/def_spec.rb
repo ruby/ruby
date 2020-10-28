@@ -82,12 +82,32 @@ end
 describe "An instance method" do
   it "raises an error with too few arguments" do
     def foo(a, b); end
-    lambda { foo 1 }.should raise_error(ArgumentError, 'wrong number of arguments (given 1, expected 2)')
+    -> { foo 1 }.should raise_error(ArgumentError, 'wrong number of arguments (given 1, expected 2)')
   end
 
   it "raises an error with too many arguments" do
     def foo(a); end
-    lambda { foo 1, 2 }.should raise_error(ArgumentError, 'wrong number of arguments (given 2, expected 1)')
+    -> { foo 1, 2 }.should raise_error(ArgumentError, 'wrong number of arguments (given 2, expected 1)')
+  end
+
+  it "raises FrozenError with the correct class name" do
+    -> {
+      Module.new do
+        self.freeze
+        def foo; end
+      end
+    }.should raise_error(FrozenError) { |e|
+      e.message.should.start_with? "can't modify frozen module"
+    }
+
+    -> {
+      Class.new do
+        self.freeze
+        def foo; end
+      end
+    }.should raise_error(FrozenError){ |e|
+      e.message.should.start_with? "can't modify frozen class"
+    }
   end
 end
 
@@ -113,12 +133,12 @@ describe "An instance method definition with a splat" do
   end
 
   it "allows only a single * argument" do
-    lambda { eval 'def foo(a, *b, *c); end' }.should raise_error(SyntaxError)
+    -> { eval 'def foo(a, *b, *c); end' }.should raise_error(SyntaxError)
   end
 
   it "requires the presence of any arguments that precede the *" do
     def foo(a, b, *c); end
-    lambda { foo 1 }.should raise_error(ArgumentError, 'wrong number of arguments (given 1, expected 2+)')
+    -> { foo 1 }.should raise_error(ArgumentError, 'wrong number of arguments (given 1, expected 2+)')
   end
 end
 
@@ -151,7 +171,7 @@ describe "An instance method with a default argument" do
     def foo(a, b = 2)
       [a,b]
     end
-    lambda { foo }.should raise_error(ArgumentError, 'wrong number of arguments (given 0, expected 1..2)')
+    -> { foo }.should raise_error(ArgumentError, 'wrong number of arguments (given 0, expected 1..2)')
     foo(1).should == [1, 2]
   end
 
@@ -159,7 +179,7 @@ describe "An instance method with a default argument" do
     def foo(a, b = 2, *c)
       [a,b,c]
     end
-    lambda { foo }.should raise_error(ArgumentError, 'wrong number of arguments (given 0, expected 1+)')
+    -> { foo }.should raise_error(ArgumentError, 'wrong number of arguments (given 0, expected 1+)')
     foo(1).should == [1,2,[]]
   end
 
@@ -177,17 +197,32 @@ describe "An instance method with a default argument" do
     foo(2,3,3).should == [2,3,[3]]
   end
 
-  it "shadows an existing method with the same name as the local" do
-    def bar
-      1
+  ruby_version_is ''...'2.7' do
+    it "warns and uses a nil value when there is an existing local method with same name" do
+      def bar
+        1
+      end
+      -> {
+        eval "def foo(bar = bar)
+          bar
+        end"
+      }.should complain(/circular argument reference/)
+      foo.should == nil
+      foo(2).should == 2
     end
-    -> {
-      eval "def foo(bar = bar)
-        bar
-      end"
-    }.should complain(/circular argument reference/)
-    foo.should == nil
-    foo(2).should == 2
+  end
+
+  ruby_version_is '2.7' do
+    it "raises a syntaxError an existing method with the same name as the local variable" do
+      def bar
+        1
+      end
+      -> {
+        eval "def foo(bar = bar)
+          bar
+        end"
+      }.should raise_error(SyntaxError)
+    end
   end
 
   it "calls a method with the same name as the local when explicitly using ()" do
@@ -246,10 +281,29 @@ describe "A singleton method definition" do
     (obj==2).should == 2
   end
 
-  it "raises #{frozen_error_class} if frozen" do
+  it "raises FrozenError if frozen" do
     obj = Object.new
     obj.freeze
-    lambda { def obj.foo; end }.should raise_error(frozen_error_class)
+    -> { def obj.foo; end }.should raise_error(FrozenError)
+  end
+
+  it "raises FrozenError with the correct class name" do
+    obj = Object.new
+    obj.freeze
+    -> { def obj.foo; end }.should raise_error(FrozenError){ |e|
+      e.message.should.start_with? "can't modify frozen object"
+    }
+
+    c = obj.singleton_class
+    -> { def c.foo; end }.should raise_error(FrozenError){ |e|
+      e.message.should.start_with? "can't modify frozen Class"
+    }
+
+    m = Module.new
+    m.freeze
+    -> { def m.foo; end }.should raise_error(FrozenError){ |e|
+      e.message.should.start_with? "can't modify frozen Module"
+    }
   end
 end
 
@@ -322,7 +376,7 @@ describe "A method defined with extreme default arguments" do
   end
 
   it "may use a lambda as a default" do
-    def foo(output = 'a', prc = lambda {|n| output * n})
+    def foo(output = 'a', prc = -> n { output * n })
       prc.call(5)
     end
     foo.should == 'aaaaa'
@@ -368,7 +422,7 @@ describe "A singleton method defined with extreme default arguments" do
 
   it "may use a lambda as a default" do
     a = Object.new
-    def a.foo(output = 'a', prc = lambda {|n| output * n})
+    def a.foo(output = 'a', prc = -> n { output * n })
       prc.call(5)
     end
     a.foo.should == 'aaaaa'
@@ -384,7 +438,7 @@ describe "A method definition inside a metaclass scope" do
     end
 
     DefSpecSingleton.a_class_method.should == DefSpecSingleton
-    lambda { Object.a_class_method }.should raise_error(NoMethodError)
+    -> { Object.a_class_method }.should raise_error(NoMethodError)
   end
 
   it "can create a singleton method" do
@@ -394,15 +448,15 @@ describe "A method definition inside a metaclass scope" do
     end
 
     obj.a_singleton_method.should == obj
-    lambda { Object.new.a_singleton_method }.should raise_error(NoMethodError)
+    -> { Object.new.a_singleton_method }.should raise_error(NoMethodError)
   end
 
-  it "raises #{frozen_error_class} if frozen" do
+  it "raises FrozenError if frozen" do
     obj = Object.new
     obj.freeze
 
     class << obj
-      lambda { def foo; end }.should raise_error(frozen_error_class)
+      -> { def foo; end }.should raise_error(FrozenError)
     end
   end
 end
@@ -438,11 +492,11 @@ describe "A nested method definition" do
       end
     end
 
-    lambda { DefSpecNested.a_class_method }.should raise_error(NoMethodError)
+    -> { DefSpecNested.a_class_method }.should raise_error(NoMethodError)
     DefSpecNested.create_class_method.should == DefSpecNested
     DefSpecNested.a_class_method.should == DefSpecNested
-    lambda { Object.a_class_method }.should raise_error(NoMethodError)
-    lambda { DefSpecNested.new.a_class_method }.should raise_error(NoMethodError)
+    -> { Object.a_class_method }.should raise_error(NoMethodError)
+    -> { DefSpecNested.new.a_class_method }.should raise_error(NoMethodError)
   end
 
   it "creates a singleton method when evaluated in the metaclass of an instance" do
@@ -460,7 +514,7 @@ describe "A nested method definition" do
     obj.a_singleton_method.should == obj
 
     other = DefSpecNested.new
-    lambda { other.a_singleton_method }.should raise_error(NoMethodError)
+    -> { other.a_singleton_method }.should raise_error(NoMethodError)
   end
 
   it "creates a method in the surrounding context when evaluated in a def expr.method" do
@@ -559,7 +613,7 @@ describe "A method definition inside an instance_eval" do
     obj.an_instance_eval_method.should == obj
 
     other = Object.new
-    lambda { other.an_instance_eval_method }.should raise_error(NoMethodError)
+    -> { other.an_instance_eval_method }.should raise_error(NoMethodError)
   end
 
   it "creates a singleton method when evaluated inside a metaclass" do
@@ -572,7 +626,7 @@ describe "A method definition inside an instance_eval" do
     obj.a_metaclass_eval_method.should == obj
 
     other = Object.new
-    lambda { other.a_metaclass_eval_method }.should raise_error(NoMethodError)
+    -> { other.a_metaclass_eval_method }.should raise_error(NoMethodError)
   end
 
   it "creates a class method when the receiver is a class" do
@@ -581,7 +635,7 @@ describe "A method definition inside an instance_eval" do
     end
 
     DefSpecNested.an_instance_eval_class_method.should == DefSpecNested
-    lambda { Object.an_instance_eval_class_method }.should raise_error(NoMethodError)
+    -> { Object.an_instance_eval_class_method }.should raise_error(NoMethodError)
   end
 
   it "creates a class method when the receiver is an anonymous class" do
@@ -593,7 +647,7 @@ describe "A method definition inside an instance_eval" do
     end
 
     m.klass_method.should == :test
-    lambda { Object.klass_method }.should raise_error(NoMethodError)
+    -> { Object.klass_method }.should raise_error(NoMethodError)
   end
 
   it "creates a class method when instance_eval is within class" do
@@ -606,7 +660,7 @@ describe "A method definition inside an instance_eval" do
     end
 
     m.klass_method.should == :test
-    lambda { Object.klass_method }.should raise_error(NoMethodError)
+    -> { Object.klass_method }.should raise_error(NoMethodError)
   end
 end
 
@@ -619,7 +673,7 @@ describe "A method definition inside an instance_exec" do
     end
 
     DefSpecNested.an_instance_exec_class_method.should == 1
-    lambda { Object.an_instance_exec_class_method }.should raise_error(NoMethodError)
+    -> { Object.an_instance_exec_class_method }.should raise_error(NoMethodError)
   end
 
   it "creates a class method when the receiver is an anonymous class" do
@@ -633,7 +687,7 @@ describe "A method definition inside an instance_exec" do
     end
 
     m.klass_method.should == 1
-    lambda { Object.klass_method }.should raise_error(NoMethodError)
+    -> { Object.klass_method }.should raise_error(NoMethodError)
   end
 
   it "creates a class method when instance_exec is within class" do
@@ -648,7 +702,7 @@ describe "A method definition inside an instance_exec" do
     end
 
     m.klass_method.should == 2
-    lambda { Object.klass_method }.should raise_error(NoMethodError)
+    -> { Object.klass_method }.should raise_error(NoMethodError)
   end
 end
 
@@ -668,7 +722,7 @@ describe "A method definition in an eval" do
     other = DefSpecNested.new
     other.an_eval_instance_method.should == other
 
-    lambda { Object.new.an_eval_instance_method }.should raise_error(NoMethodError)
+    -> { Object.new.an_eval_instance_method }.should raise_error(NoMethodError)
   end
 
   it "creates a class method" do
@@ -684,8 +738,8 @@ describe "A method definition in an eval" do
     DefSpecNestedB.eval_class_method.should == DefSpecNestedB
     DefSpecNestedB.an_eval_class_method.should == DefSpecNestedB
 
-    lambda { Object.an_eval_class_method }.should raise_error(NoMethodError)
-    lambda { DefSpecNestedB.new.an_eval_class_method}.should raise_error(NoMethodError)
+    -> { Object.an_eval_class_method }.should raise_error(NoMethodError)
+    -> { DefSpecNestedB.new.an_eval_class_method}.should raise_error(NoMethodError)
   end
 
   it "creates a singleton method" do
@@ -703,7 +757,7 @@ describe "A method definition in an eval" do
     obj.an_eval_singleton_method.should == obj
 
     other = DefSpecNested.new
-    lambda { other.an_eval_singleton_method }.should raise_error(NoMethodError)
+    -> { other.an_eval_singleton_method }.should raise_error(NoMethodError)
   end
 end
 
@@ -729,7 +783,7 @@ describe "a method definition that sets more than one default parameter all to t
   end
 
   it "only allows overriding the default value of the first such parameter in each set" do
-    lambda { foo(1,2) }.should raise_error(ArgumentError, 'wrong number of arguments (given 2, expected 0..1)')
+    -> { foo(1,2) }.should raise_error(ArgumentError, 'wrong number of arguments (given 2, expected 0..1)')
   end
 
   def bar(a=b=c=1,d=2)
@@ -740,7 +794,7 @@ describe "a method definition that sets more than one default parameter all to t
     bar.should == [1,1,1,2]
     bar(3).should == [3,nil,nil,2]
     bar(3,4).should == [3,nil,nil,4]
-    lambda { bar(3,4,5) }.should raise_error(ArgumentError, 'wrong number of arguments (given 3, expected 0..2)')
+    -> { bar(3,4,5) }.should raise_error(ArgumentError, 'wrong number of arguments (given 3, expected 0..2)')
   end
 end
 
@@ -750,7 +804,7 @@ describe "The def keyword" do
       module DefSpecsLambdaVisibility
         private
 
-        lambda {
+        -> {
           def some_method; end
         }.call
       end

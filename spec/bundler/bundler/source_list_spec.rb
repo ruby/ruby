@@ -75,7 +75,7 @@ RSpec.describe Bundler::SourceList do
         let(:msg) do
           "The git source `git://existing-git.org/path.git` " \
           "uses the `git` protocol, which transmits data without encryption. " \
-          "Disable this warning with `bundle config git.allow_insecure true`, " \
+          "Disable this warning with `bundle config set --local git.allow_insecure true`, " \
           "or switch to the `https` protocol to keep your data secure."
         end
 
@@ -125,8 +125,8 @@ RSpec.describe Bundler::SourceList do
       it "adds the provided remote to the beginning of the aggregate source" do
         source_list.add_rubygems_remote("https://othersource.org")
         expect(returned_source.remotes).to eq [
-          URI("https://othersource.org/"),
-          URI("https://rubygems.org/"),
+          Bundler::URI("https://othersource.org/"),
+          Bundler::URI("https://rubygems.org/"),
         ]
       end
     end
@@ -393,19 +393,19 @@ RSpec.describe Bundler::SourceList do
 
     it "returns all sources, without combining rubygems sources", :bundler => "3" do
       expect(source_list.lock_sources).to eq [
+        Bundler::Source::Git.new("uri" => "git://first-git.org/path.git"),
+        Bundler::Source::Git.new("uri" => "git://second-git.org/path.git"),
+        Bundler::Source::Git.new("uri" => "git://third-git.org/path.git"),
+        ASourcePlugin.new("uri" => "https://second-plugin.org/random"),
+        ASourcePlugin.new("uri" => "https://third-bar.org/foo"),
+        Bundler::Source::Path.new("path" => "/first/path/to/gem"),
+        Bundler::Source::Path.new("path" => "/second/path/to/gem"),
+        Bundler::Source::Path.new("path" => "/third/path/to/gem"),
         Bundler::Source::Rubygems.new,
         Bundler::Source::Rubygems.new("remotes" => ["https://duplicate-rubygems.org"]),
         Bundler::Source::Rubygems.new("remotes" => ["https://first-rubygems.org"]),
         Bundler::Source::Rubygems.new("remotes" => ["https://second-rubygems.org"]),
         Bundler::Source::Rubygems.new("remotes" => ["https://third-rubygems.org"]),
-        Bundler::Source::Git.new("uri" => "git://first-git.org/path.git"),
-        Bundler::Source::Git.new("uri" => "git://second-git.org/path.git"),
-        Bundler::Source::Git.new("uri" => "git://third-git.org/path.git"),
-        Bundler::Source::Path.new("path" => "/first/path/to/gem"),
-        Bundler::Source::Path.new("path" => "/second/path/to/gem"),
-        Bundler::Source::Path.new("path" => "/third/path/to/gem"),
-        ASourcePlugin.new("uri" => "https://second-plugin.org/random"),
-        ASourcePlugin.new("uri" => "https://third-bar.org/foo"),
       ]
     end
   end

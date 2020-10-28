@@ -37,11 +37,11 @@ describe "Module#prepend" do
   end
 
   it "raises a TypeError when the argument is not a Module" do
-    lambda { ModuleSpecs::Basic.prepend(Class.new) }.should raise_error(TypeError)
+    -> { ModuleSpecs::Basic.prepend(Class.new) }.should raise_error(TypeError)
   end
 
   it "does not raise a TypeError when the argument is an instance of a subclass of Module" do
-    lambda { ModuleSpecs::SubclassSpec.prepend(ModuleSpecs::Subclass.new) }.should_not raise_error(TypeError)
+    -> { ModuleSpecs::SubclassSpec.prepend(ModuleSpecs::Subclass.new) }.should_not raise_error(TypeError)
   end
 
   it "imports constants" do
@@ -128,17 +128,34 @@ describe "Module#prepend" do
     c.dup.new.should be_kind_of(m)
   end
 
-  it "keeps the module in the chain when dupping an intermediate module" do
-    m1 = Module.new { def calc(x) x end }
-    m2 = Module.new { prepend(m1) }
-    c1 = Class.new { prepend(m2) }
-    m2dup = m2.dup
-    m2dup.ancestors.should == [m2dup,m1,m2]
-    c2 = Class.new { prepend(m2dup) }
-    c1.ancestors[0,3].should == [m1,m2,c1]
-    c1.new.should be_kind_of(m1)
-    c2.ancestors[0,4].should == [m2dup,m1,m2,c2]
-    c2.new.should be_kind_of(m1)
+  ruby_version_is '0'...'3.0' do
+    it "keeps the module in the chain when dupping an intermediate module" do
+      m1 = Module.new { def calc(x) x end }
+      m2 = Module.new { prepend(m1) }
+      c1 = Class.new { prepend(m2) }
+      m2dup = m2.dup
+      m2dup.ancestors.should == [m2dup,m1,m2]
+      c2 = Class.new { prepend(m2dup) }
+      c1.ancestors[0,3].should == [m1,m2,c1]
+      c1.new.should be_kind_of(m1)
+      c2.ancestors[0,4].should == [m2dup,m1,m2,c2]
+      c2.new.should be_kind_of(m1)
+    end
+  end
+
+  ruby_version_is '3.0' do
+    it "uses only new module when dupping the module" do
+      m1 = Module.new { def calc(x) x end }
+      m2 = Module.new { prepend(m1) }
+      c1 = Class.new { prepend(m2) }
+      m2dup = m2.dup
+      m2dup.ancestors.should == [m1,m2dup]
+      c2 = Class.new { prepend(m2dup) }
+      c1.ancestors[0,3].should == [m1,m2,c1]
+      c1.new.should be_kind_of(m1)
+      c2.ancestors[0,3].should == [m1,m2dup,c2]
+      c2.new.should be_kind_of(m1)
+    end
   end
 
   it "depends on prepend_features to add the module" do
@@ -204,7 +221,7 @@ describe "Module#prepend" do
         super << :class
       end
     end
-    lambda { c.new.chain }.should raise_error(NoMethodError)
+    -> { c.new.chain }.should raise_error(NoMethodError)
   end
 
   it "calls prepended after prepend_features" do
@@ -224,31 +241,19 @@ describe "Module#prepend" do
   end
 
   it "detects cyclic prepends" do
-    lambda {
+    -> {
       module ModuleSpecs::P
         prepend ModuleSpecs::P
       end
     }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is ''...'2.4' do
-    it "accepts no-arguments" do
-      lambda {
-        Module.new do
-          prepend
-        end
-      }.should_not raise_error
-    end
-  end
-
-  ruby_version_is '2.4' do
-    it "doesn't accept no-arguments" do
-      lambda {
-        Module.new do
-          prepend
-        end
-      }.should raise_error(ArgumentError)
-    end
+  it "doesn't accept no-arguments" do
+    -> {
+      Module.new do
+        prepend
+      end
+    }.should raise_error(ArgumentError)
   end
 
   it "returns the class it's included into" do

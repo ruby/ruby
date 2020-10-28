@@ -4,7 +4,6 @@ require 'rubygems/request_set'
 require 'rubygems/request_set/lockfile'
 
 class TestGemRequestSetLockfile < Gem::TestCase
-
   def setup
     super
 

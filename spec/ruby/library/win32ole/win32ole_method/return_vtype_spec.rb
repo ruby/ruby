@@ -8,7 +8,7 @@ platform_is :windows do
     end
 
     it "raises ArgumentError if argument is given" do
-      lambda { @m_browse_for_folder.return_vtype(1) }.should raise_error ArgumentError
+      -> { @m_browse_for_folder.return_vtype(1) }.should raise_error ArgumentError
     end
 
     it "returns expected value for Shell Control's 'BrowseForFolder' method" do

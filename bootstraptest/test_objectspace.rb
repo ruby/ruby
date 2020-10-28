@@ -44,3 +44,12 @@ assert_normal_exit %q{
     Thread.new {}
   end
 }, '[ruby-core:37858]'
+
+assert_equal 'ok', %q{
+  objects_and_ids = 1000.times.map { o = Object.new; [o, o.object_id] }
+  objects_and_ids.each { |expected, id|
+    actual = ObjectSpace._id2ref(id)
+    raise "expected #{expected.inspect}, got #{actual.inspect}" unless actual.equal?(expected)
+  }
+  'ok'
+}

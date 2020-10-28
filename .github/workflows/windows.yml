@@ -1,0 +1,80 @@
+name: Windows
+on: [push, pull_request]
+jobs:
+  make:
+    strategy:
+      matrix:
+        test_task: [test]
+        os: [windows-2019]
+        vs: [2019]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+    env:
+      GITPULLOPTIONS: --no-tags origin ${{github.ref}}
+      VCVARS: C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat
+    if: "!contains(github.event.head_commit.message, '[ci skip]')"
+    steps:
+      - run: md build
+        working-directory:
+      - uses: actions/cache@v2
+        with:
+          path: C:\vcpkg\downloads
+          key: ${{ runner.os }}-vcpkg-download-${{ matrix.os }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-vcpkg-download-${{ matrix.os }}-
+            ${{ runner.os }}-vcpkg-download-
+      - name: Install libraries with vcpkg
+        run: |
+          vcpkg --triplet x64-windows install readline zlib
+      - uses: actions/cache@v2
+        with:
+          path: C:\Users\runneradmin\AppData\Local\Temp\chocolatey
+          key: ${{ runner.os }}-chocolatey-${{ matrix.os }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-chocolatey-${{ matrix.os }}-
+            ${{ runner.os }}-chocolatey-
+      - name: Install libraries with chocolatey
+        run: |
+          choco install --no-progress openssl
+          choco install --no-progress winflexbison3 --version=2.5.18.20190508
+      - name: git config
+        run: |
+          git config --system advice.detachedHead 0
+      - uses: actions/checkout@v2
+        with:
+          path: src
+      - name: Configure
+        run: |
+          call "%VCVARS%"
+          ../src/win32/configure.bat --disable-install-doc --without-ext=+,dbm,gdbm --enable-bundled-libffi --with-opt-dir=C:/vcpkg/installed/x64-windows --with-openssl-dir="C:/Program Files/OpenSSL-Win64"
+      - name: nmake
+        run: |
+          call "%VCVARS%"
+          set YACC=win_bison
+          echo on
+          nmake incs
+          nmake extract-extlibs
+          nmake
+      - name: nmake test
+        timeout-minutes: 30
+        run: |
+          call "%VCVARS%"
+          nmake ${{ matrix.test_task }}
+      - uses: k0kubun/action-slack@v2.0.0
+        with:
+          payload: |
+            {
+              "ci": "GitHub Actions",
+              "env": "${{ matrix.os }} / ${{ matrix.test_task }}",
+              "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "commit": "${{ github.sha }}",
+              "branch": "${{ github.ref }}".split('/').reverse()[0]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
+        if: failure() && github.event_name == 'push'
+
+defaults:
+  run:
+    working-directory: build
+    shell: cmd

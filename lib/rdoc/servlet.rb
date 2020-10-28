@@ -102,9 +102,9 @@ class RDoc::Servlet < WEBrick::HTTPServlet::AbstractServlet
     res.body = File.read asset_path
 
     res.content_type = case req.path
-                       when /css$/ then 'text/css'
-                       when /js$/  then 'application/javascript'
-                       else             'application/octet-stream'
+                       when /\.css\z/ then 'text/css'
+                       when /\.js\z/  then 'application/javascript'
+                       else                'application/octet-stream'
                        end
   end
 
@@ -112,7 +112,7 @@ class RDoc::Servlet < WEBrick::HTTPServlet::AbstractServlet
   # GET request entry point.  Fills in +res+ for the path, etc. in +req+.
 
   def do_GET req, res
-    req.path.sub!(/^#{Regexp.escape @mount_path}/o, '') if @mount_path
+    req.path.sub!(/\A#{Regexp.escape @mount_path}/, '') if @mount_path
 
     case req.path
     when '/' then
@@ -145,11 +145,14 @@ class RDoc::Servlet < WEBrick::HTTPServlet::AbstractServlet
   # +generator+ is used to create the page.
 
   def documentation_page store, generator, path, req, res
-    name = path.sub(/.html$/, '').gsub '/', '::'
+    text_name = path.chomp '.html'
+    name = text_name.gsub '/', '::'
 
     if klass = store.find_class_or_module(name) then
       res.body = generator.generate_class klass
-    elsif page = store.find_text_page(name.sub(/_([^_]*)$/, '.\1')) then
+    elsif page = store.find_text_page(name.sub(/_([^_]*)\z/, '.\1')) then
+      res.body = generator.generate_page page
+    elsif page = store.find_text_page(text_name.sub(/_([^_]*)\z/, '.\1')) then
       res.body = generator.generate_page page
     else
       not_found generator, req, res
@@ -416,7 +419,7 @@ version.  If you're viewing Ruby's documentation, include the version of ruby.
       RDoc::Store.new RDoc::RI::Paths.system_dir, :system
     when 'site' then
       RDoc::Store.new RDoc::RI::Paths.site_dir, :site
-    when /^extra-(\d+)$/ then
+    when /\Aextra-(\d+)\z/ then
       index = $1.to_i - 1
       ri_dir = installed_docs[index][4]
       RDoc::Store.new ri_dir, :extra

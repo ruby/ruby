@@ -35,6 +35,25 @@ module Fiddle
       end
     end
 
+    def test_argument_type_conversion
+      type = Struct.new(:int, :call_count) do
+        def initialize(int)
+          super(int, 0)
+        end
+        def to_int
+          raise "exhausted" if (self.call_count += 1) > 1
+          self.int
+        end
+      end
+      type_arg = type.new(TYPE_DOUBLE)
+      type_result = type.new(TYPE_DOUBLE)
+      assert_nothing_raised(RuntimeError) do
+        Function.new(@libm['sin'], [type_arg], type_result)
+      end
+      assert_equal(1, type_arg.call_count)
+      assert_equal(1, type_result.call_count)
+    end
+
     def test_call
       func = Function.new(@libm['sin'], [TYPE_DOUBLE], TYPE_DOUBLE)
       assert_in_delta 1.0, func.call(90 * Math::PI / 180), 0.0001
@@ -92,13 +111,14 @@ module Fiddle
       n1 = f.call(nil, 0, msec)
       n2 = th.value
       t1 = Process.clock_gettime(Process::CLOCK_MONOTONIC, :millisecond)
-      assert_in_delta(msec, t1 - t0, 180, 'slept amount of time')
+      delta = EnvUtil.apply_timeout_scale(180)
+      assert_in_delta(msec, t1 - t0, delta, 'slept amount of time')
       assert_equal(0, n1, perror("poll(2) in main-thread"))
       assert_equal(0, n2, perror("poll(2) in sub-thread"))
     end
 
     def test_no_memory_leak
-      prep = 'r = Fiddle::Function.new(Fiddle.dlopen(nil)["rb_obj_tainted"], [Fiddle::TYPE_UINTPTR_T], Fiddle::TYPE_UINTPTR_T); a = "a"'
+      prep = 'r = Fiddle::Function.new(Fiddle.dlopen(nil)["rb_obj_frozen_p"], [Fiddle::TYPE_UINTPTR_T], Fiddle::TYPE_UINTPTR_T); a = "a"'
       code = 'begin r.call(a); rescue TypeError; end'
       assert_no_memory_leak(%w[-W0 -rfiddle], "#{prep}\n1000.times{#{code}}", "10_000.times {#{code}}", limit: 1.2)
     end

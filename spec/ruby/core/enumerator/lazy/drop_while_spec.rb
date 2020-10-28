@@ -40,7 +40,7 @@ describe "Enumerator::Lazy#drop_while" do
   end
 
   it "raises an ArgumentError when not given a block" do
-    lambda { @yieldsmixed.drop_while }.should raise_error(ArgumentError)
+    -> { @yieldsmixed.drop_while }.should raise_error(ArgumentError)
   end
 
   describe "on a nested Lazy" do
@@ -56,5 +56,11 @@ describe "Enumerator::Lazy#drop_while" do
         ScratchPad.recorded.should == [:before_yield]
       end
     end
+  end
+
+  it "works with an infinite enumerable" do
+    s = 0..Float::INFINITY
+    s.lazy.drop_while { |n| n < 100 }.first(100).should ==
+      s.first(200).drop_while { |n| n < 100 }
   end
 end

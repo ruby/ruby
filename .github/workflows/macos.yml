@@ -1,0 +1,64 @@
+name: macOS
+on: [push, pull_request]
+jobs:
+  make:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        test_task: [ "check", "test-bundler-parallel", "test-bundled-gems", "leaked-globals" ]
+      fail-fast: false
+    env:
+      GITPULLOPTIONS: --no-tags origin ${{github.ref}}
+    if: "!contains(github.event.head_commit.message, '[ci skip]')"
+    steps:
+      - run: mkdir build
+        working-directory:
+      - name: Disable Firewall
+        run: |
+          sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
+          sudo /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate
+      - name: git config
+        run: |
+          git config --global advice.detachedHead 0
+      - uses: actions/checkout@v2
+        with:
+          path: src
+      - name: Install libraries
+        run: |
+          export WAITS='5 60'
+          tool/travis_retry.sh brew upgrade
+          tool/travis_retry.sh brew install gdbm gmp libffi openssl@1.1 zlib autoconf automake libtool readline
+        working-directory: src
+      - name: Set ENV
+        run: |
+          echo "JOBS=-j$((1 + $(sysctl -n hw.activecpu)))" >> $GITHUB_ENV
+      - run: autoconf
+        working-directory: src
+      - name: Run configure
+        run: ../src/configure -C --disable-install-doc --with-openssl-dir=$(brew --prefix openssl@1.1) --with-readline-dir=$(brew --prefix readline)
+      - run: make $JOBS incs
+      - run: make $JOBS
+      - run: make prepare-gems
+        if: matrix.test_task == 'check'
+      - run: make $JOBS -s ${{ matrix.test_task }}
+        timeout-minutes: 60
+        env:
+          RUBY_TESTOPTS: "-q --tty=no"
+          TEST_BUNDLED_GEMS_ALLOW_FAILURES: "rexml"
+      - uses: k0kubun/action-slack@v2.0.0
+        with:
+          payload: |
+            {
+              "ci": "GitHub Actions",
+              "env": "${{ github.workflow }} / ${{ matrix.test_task }}",
+              "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "commit": "${{ github.sha }}",
+              "branch": "${{ github.ref }}".split('/').reverse()[0]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
+        if: failure() && github.event_name == 'push'
+
+defaults:
+  run:
+    working-directory: build

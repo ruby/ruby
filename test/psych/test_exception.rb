@@ -23,6 +23,20 @@ module Psych
       $VERBOSE = @orig_verbose
     end
 
+    def make_ex msg = 'oh no!'
+      begin
+        raise msg
+      rescue ::Exception => e
+        e
+      end
+    end
+
+    def test_backtrace
+      err     = make_ex
+      new_err = Psych.load(Psych.dump(err))
+      assert_equal err.backtrace, new_err.backtrace
+    end
+
     def test_naming_exception
       err     = String.xxx rescue $!
       new_err = Psych.load(Psych.dump(err))
@@ -140,7 +154,8 @@ module Psych
 
     def test_convert
       w = Psych.load(Psych.dump(@wups))
-      assert_equal @wups, w
+      assert_equal @wups.message, w.message
+      assert_equal @wups.backtrace, w.backtrace
       assert_equal 1, w.foo
       assert_equal 2, w.bar
     end

@@ -27,11 +27,11 @@ describe :determinant, shared: true do
   end
 
   it "raises an error for rectangular matrices" do
-    lambda {
+    -> {
       Matrix[[1], [2], [3]].send(@method)
     }.should raise_error(Matrix::ErrDimensionMismatch)
 
-    lambda {
+    -> {
       Matrix.empty(3,0).send(@method)
     }.should raise_error(Matrix::ErrDimensionMismatch)
   end

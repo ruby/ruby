@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require "bundler/dependency"
-require "bundler/ruby_dsl"
+require_relative "dependency"
+require_relative "ruby_dsl"
 
 module Bundler
   class Dsl
@@ -44,8 +44,8 @@ module Bundler
       @gemfile = expanded_gemfile_path
       @gemfiles << expanded_gemfile_path
       contents ||= Bundler.read_file(@gemfile.to_s)
-      instance_eval(contents.dup.untaint, gemfile.to_s, 1)
-    rescue Exception => e
+      instance_eval(contents.dup.tap{|x| x.untaint if RUBY_VERSION < "2.7" }, gemfile.to_s, 1)
+    rescue Exception => e # rubocop:disable Lint/RescueException
       message = "There was an error " \
         "#{e.is_a?(GemfileEvalError) ? "evaluating" : "parsing"} " \
         "`#{File.basename gemfile.to_s}`: #{e.message}"
@@ -63,7 +63,7 @@ module Bundler
       development_group = opts[:development_group] || :development
       expanded_path     = gemfile_root.join(path)
 
-      gemspecs = Dir[File.join(expanded_path, "{,*}.gemspec")].map {|g| Bundler.load_gemspec(g) }.compact
+      gemspecs = Gem::Util.glob_files_in_dir("{,*}.gemspec", expanded_path).map {|g| Bundler.load_gemspec(g) }.compact
       gemspecs.reject! {|s| s.name != name } if name
       Index.sort_specs(gemspecs)
       specs_by_name_and_version = gemspecs.group_by {|s| [s.name, s.version] }
@@ -75,8 +75,7 @@ module Bundler
 
         @gemspecs << spec
 
-        gem_platforms = Bundler::Dependency::REVERSE_PLATFORM_MAP[Bundler::GemHelpers.generic_local_platform]
-        gem spec.name, :name => spec.name, :path => path, :glob => glob, :platforms => gem_platforms
+        gem spec.name, :name => spec.name, :path => path, :glob => glob
 
         group(development_group) do
           spec.development_dependencies.each do |dep|
@@ -128,7 +127,7 @@ module Bundler
         else
           Bundler.ui.warn "Your Gemfile lists the gem #{current.name} (#{current.requirement}) more than once.\n" \
                           "You should probably keep only one of them.\n" \
-                          "Remove any duplicate entries and specify the gem only once (per group).\n" \
+                          "Remove any duplicate entries and specify the gem only once.\n" \
                           "While it's not a problem now, it could cause errors if you change the version of one of them later."
         end
 
@@ -194,7 +193,7 @@ module Bundler
               "    end\n\n"
 
         raise DeprecatedError, msg if Bundler.feature_flag.disable_multisource?
-        SharedHelpers.major_deprecation(3, msg.strip)
+        SharedHelpers.major_deprecation(2, msg.strip)
       end
 
       source_options = normalize_hash(options).merge(
@@ -223,7 +222,6 @@ module Bundler
 
     def github(repo, options = {})
       raise ArgumentError, "GitHub sources require a block" unless block_given?
-      raise DeprecatedError, "The #github method has been removed" if Bundler.feature_flag.skip_default_git_sources?
       github_uri  = @git_sources["github"].call(repo)
       git_options = normalize_hash(options).merge("uri" => github_uri)
       git_source  = @sources.add_git_source(git_options)
@@ -281,46 +279,23 @@ module Bundler
       raise GemfileError, "Undefined local variable or method `#{name}' for Gemfile"
     end
 
-  private
+    private
 
     def add_git_sources
-      return if Bundler.feature_flag.skip_default_git_sources?
-
       git_source(:github) do |repo_name|
         warn_deprecated_git_source(:github, <<-'RUBY'.strip, 'Change any "reponame" :github sources to "username/reponame".')
 "https://github.com/#{repo_name}.git"
         RUBY
-        # It would be better to use https instead of the git protocol, but this
-        # can break deployment of existing locked bundles when switching between
-        # different versions of Bundler. The change will be made in 2.0, which
-        # does not guarantee compatibility with the 1.x series.
-        #
-        # See https://github.com/bundler/bundler/pull/2569 for discussion
-        #
-        # This can be overridden by adding this code to your Gemfiles:
-        #
-        #   git_source(:github) do |repo_name|
-        #     repo_name = "#{repo_name}/#{repo_name}" unless repo_name.include?("/")
-        #     "https://github.com/#{repo_name}.git"
-        #   end
         repo_name = "#{repo_name}/#{repo_name}" unless repo_name.include?("/")
-        # TODO: 2.0 upgrade this setting to the default
-        if Bundler.settings["github.https"]
-          Bundler::SharedHelpers.major_deprecation 3, "The `github.https` setting will be removed"
-          "https://github.com/#{repo_name}.git"
-        else
-          "git://github.com/#{repo_name}.git"
-        end
+        "https://github.com/#{repo_name}.git"
       end
 
-      # TODO: 2.0 remove this deprecated git source
       git_source(:gist) do |repo_name|
         warn_deprecated_git_source(:gist, '"https://gist.github.com/#{repo_name}.git"')
 
         "https://gist.github.com/#{repo_name}.git"
       end
 
-      # TODO: 2.0 remove this deprecated git source
       git_source(:bitbucket) do |repo_name|
         warn_deprecated_git_source(:bitbucket, <<-'RUBY'.strip)
 user_name, repo_name = repo_name.split("/")
@@ -363,9 +338,7 @@ repo_name ||= user_name
       if name =~ /\s/
         raise GemfileError, %('#{name}' is not a valid gem name because it contains whitespace)
       end
-      if name.empty?
-        raise GemfileError, %(an empty gem name is not valid)
-      end
+      raise GemfileError, %(an empty gem name is not valid) if name.empty?
 
       normalize_hash(opts)
 
@@ -443,10 +416,10 @@ repo_name ||= user_name
       message = String.new
       message << "You passed #{invalid_keys.map {|k| ":" + k }.join(", ")} "
       message << if invalid_keys.size > 1
-                   "as options for #{command}, but they are invalid."
-                 else
-                   "as an option for #{command}, but it is invalid."
-                 end
+        "as options for #{command}, but they are invalid."
+      else
+        "as an option for #{command}, but it is invalid."
+      end
 
       message << " Valid options are: #{valid_keys.join(", ")}."
       message << " You may be able to resolve this by upgrading Bundler to the newest version."
@@ -456,7 +429,7 @@ repo_name ||= user_name
     def normalize_source(source)
       case source
       when :gemcutter, :rubygems, :rubyforge
-        Bundler::SharedHelpers.major_deprecation 3, "The source :#{source} is deprecated because HTTP " \
+        Bundler::SharedHelpers.major_deprecation 2, "The source :#{source} is deprecated because HTTP " \
           "requests are insecure.\nPlease change your source to 'https://" \
           "rubygems.org' if possible, or 'http://rubygems.org' if not."
         "http://rubygems.org"
@@ -474,23 +447,22 @@ repo_name ||= user_name
         msg = "This Gemfile contains multiple primary sources. " \
           "Each source after the first must include a block to indicate which gems " \
           "should come from that source"
-        unless Bundler.feature_flag.bundler_3_mode?
+        unless Bundler.feature_flag.bundler_2_mode?
           msg += ". To downgrade this error to a warning, run " \
-            "`bundle config --delete disable_multisource`"
+            "`bundle config unset disable_multisource`"
         end
         raise GemfileEvalError, msg
       else
-        Bundler::SharedHelpers.major_deprecation 3, "Your Gemfile contains multiple primary sources. " \
+        Bundler::SharedHelpers.major_deprecation 2, "Your Gemfile contains multiple primary sources. " \
           "Using `source` more than once without a block is a security risk, and " \
           "may result in installing unexpected gems. To resolve this warning, use " \
           "a block to indicate which gems should come from the secondary source. " \
-          "To upgrade this warning to an error, run `bundle config " \
+          "To upgrade this warning to an error, run `bundle config set --local " \
           "disable_multisource true`."
       end
     end
 
     def warn_deprecated_git_source(name, replacement, additional_message = nil)
-      # TODO: 2.0 remove deprecation
       additional_message &&= " #{additional_message}"
       replacement = if replacement.count("\n").zero?
         "{|repo_name| #{replacement} }"
@@ -499,7 +471,7 @@ repo_name ||= user_name
       end
 
       Bundler::SharedHelpers.major_deprecation 3, <<-EOS
-The :#{name} git source is deprecated, and will be removed in Bundler 3.0.#{additional_message} Add this code to the top of your Gemfile to ensure it continues to work:
+The :#{name} git source is deprecated, and will be removed in the future.#{additional_message} Add this code to the top of your Gemfile to ensure it continues to work:
 
     git_source(:#{name}) #{replacement}
 
@@ -595,13 +567,13 @@ The :#{name} git source is deprecated, and will be removed in Bundler 3.0.#{addi
         end
       end
 
-    private
+      private
 
       def parse_line_number_from_description
         description = self.description
         if dsl_path && description =~ /((#{Regexp.quote File.expand_path(dsl_path)}|#{Regexp.quote dsl_path.to_s}):\d+)/
           trace_line = Regexp.last_match[1]
-          description = description.sub(/#{Regexp.quote trace_line}:\s*/, "").sub("\n", " - ")
+          description = description.sub(/\n.*\n(\.\.\.)? *\^~+$/, "").sub(/#{Regexp.quote trace_line}:\s*/, "").sub("\n", " - ")
         end
         [trace_line, description]
       end

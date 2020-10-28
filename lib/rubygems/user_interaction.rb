@@ -5,14 +5,16 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'rubygems/util'
 require 'rubygems/deprecate'
+require 'rubygems/text'
 
 ##
 # Module that defines the default UserInteraction.  Any class including this
 # module will have access to the +ui+ method that returns the default UI.
 
 module Gem::DefaultUserInteraction
+
+  include Gem::Text
 
   ##
   # The default UI is a class variable of the singleton class for this
@@ -162,7 +164,7 @@ module Gem::UserInteraction
   # is true.
 
   def verbose(msg = nil)
-    say(msg || yield) if Gem.configuration.really_verbose
+    say(clean_text(msg || yield)) if Gem.configuration.really_verbose
   end
 end
 
@@ -170,7 +172,6 @@ end
 # Gem::StreamUI implements a simple stream based user interface.
 
 class Gem::StreamUI
-
   extend Gem::Deprecate
 
   ##
@@ -227,7 +228,7 @@ class Gem::StreamUI
     @outs.puts question
 
     list.each_with_index do |item, index|
-      @outs.puts " #{index+1}. #{item}"
+      @outs.puts " #{index + 1}. #{item}"
     end
 
     @outs.print "> "
@@ -320,7 +321,7 @@ class Gem::StreamUI
 
   def _gets_noecho
     require_io_console
-    @ins.noecho {@ins.gets}
+    @ins.noecho { @ins.gets }
   end
 
   ##
@@ -356,14 +357,6 @@ class Gem::StreamUI
   end
 
   ##
-  # Display a debug message on the same location as error messages.
-
-  def debug(statement)
-    @errs.puts statement
-  end
-  deprecate :debug, :none, 2018, 12
-
-  ##
   # Terminate the application with exit code +status+, running any exit
   # handlers that might have been defined.
 
@@ -393,7 +386,6 @@ class Gem::StreamUI
   # An absolutely silent progress reporter.
 
   class SilentProgressReporter
-
     ##
     # The count of items is never updated for the silent progress reporter.
 
@@ -424,7 +416,6 @@ class Gem::StreamUI
   # A basic dotted progress reporter.
 
   class SimpleProgressReporter
-
     include Gem::DefaultUserInteraction
 
     ##
@@ -462,14 +453,12 @@ class Gem::StreamUI
     def done
       @out.puts "\n#{@terminal_message}"
     end
-
   end
 
   ##
   # A progress reporter that prints out messages about the current progress.
 
   class VerboseProgressReporter
-
     include Gem::DefaultUserInteraction
 
     ##
@@ -523,7 +512,6 @@ class Gem::StreamUI
   # An absolutely silent download reporter.
 
   class SilentDownloadReporter
-
     ##
     # The silent download reporter ignores all arguments
 
@@ -555,7 +543,6 @@ class Gem::StreamUI
   # A progress reporter that behaves nicely with threaded downloading.
 
   class ThreadedDownloadReporter
-
     MUTEX = Mutex.new
 
     ##
@@ -598,6 +585,7 @@ class Gem::StreamUI
     end
 
     private
+
     def locked_puts(message)
       MUTEX.synchronize do
         @out.puts message
@@ -611,7 +599,6 @@ end
 # STDOUT, and STDERR.
 
 class Gem::ConsoleUI < Gem::StreamUI
-
   ##
   # The Console UI has no arguments as it defaults to reading input from
   # stdin, output to stdout and warnings or errors to stderr.
@@ -625,7 +612,6 @@ end
 # SilentUI is a UI choice that is absolutely silent.
 
 class Gem::SilentUI < Gem::StreamUI
-
   ##
   # The SilentUI has no arguments as it does not use any stream.
 

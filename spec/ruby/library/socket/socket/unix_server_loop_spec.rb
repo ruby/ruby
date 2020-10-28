@@ -13,7 +13,7 @@ with_feature :unix_socket do
 
     describe 'when no connections are available' do
       it 'blocks the caller' do
-        lambda { Socket.unix_server_loop(@path) }.should block_caller
+        -> { Socket.unix_server_loop(@path) }.should block_caller
       end
     end
 
@@ -39,9 +39,16 @@ with_feature :unix_socket do
           end
         end
 
-        @client = SocketSpecs.wait_until_success { Socket.unix(@path) }
+        SocketSpecs.loop_with_timeout do
+          begin
+            @client = Socket.unix(@path)
+          rescue SystemCallError
+            sleep 0.01
+            :retry
+          end
+        end
 
-        thread.join(2)
+        thread.join
 
         @sock.should be_an_instance_of(Socket)
         addr.should be_an_instance_of(Addrinfo)

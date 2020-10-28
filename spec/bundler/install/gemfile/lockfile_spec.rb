@@ -2,7 +2,7 @@
 
 RSpec.describe "bundle install with a lockfile present" do
   let(:gf) { <<-G }
-    source "file://#{gem_repo1}"
+    source "#{file_uri_for(gem_repo1)}"
 
     gem "rack", "1.0.0"
   G
@@ -16,12 +16,12 @@ RSpec.describe "bundle install with a lockfile present" do
 
     context "with plugins disabled" do
       before do
-        bundle! "config plugins false"
+        bundle "config set plugins false"
         subject
       end
 
       it "does not evaluate the gemfile twice" do
-        bundle! :install
+        bundle :install
 
         with_env_vars("BUNDLER_SPEC_NO_APPEND" => "1") { expect(the_bundle).to include_gem "rack 1.0.0" }
 
@@ -31,10 +31,10 @@ RSpec.describe "bundle install with a lockfile present" do
       end
 
       context "when the gem is not installed" do
-        before { FileUtils.rm_rf ".bundle" }
+        before { FileUtils.rm_rf bundled_app(".bundle") }
 
         it "does not evaluate the gemfile twice" do
-          bundle! :install
+          bundle :install
 
           with_env_vars("BUNDLER_SPEC_NO_APPEND" => "1") { expect(the_bundle).to include_gem "rack 1.0.0" }
 

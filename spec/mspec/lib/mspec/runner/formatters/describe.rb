@@ -1,5 +1,4 @@
 require 'mspec/runner/formatters/dotted'
-require 'mspec/runner/actions/tally'
 
 class DescribeFormatter < DottedFormatter
   # Callback for the MSpec :finish event. Prints a summary of

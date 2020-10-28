@@ -5,7 +5,7 @@ with_feature :unix_socket do
   describe 'UNIXSocket#initialize' do
     describe 'using a non existing path' do
       it 'raises Errno::ENOENT' do
-        lambda { UNIXSocket.new(SocketSpecs.socket_path) }.should raise_error(Errno::ENOENT)
+        -> { UNIXSocket.new(SocketSpecs.socket_path) }.should raise_error(Errno::ENOENT)
       end
     end
 

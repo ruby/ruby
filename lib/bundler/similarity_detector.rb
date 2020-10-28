@@ -26,9 +26,9 @@ module Bundler
       end
     end
 
-  protected
+    protected
 
-    # http://www.informit.com/articles/article.aspx?p=683059&seqNum=36
+    # https://www.informit.com/articles/article.aspx?p=683059&seqNum=36
     def levenshtein_distance(this, that, ins = 2, del = 2, sub = 1)
       # ins, del, sub are weighted costs
       return nil if this.nil?
@@ -51,7 +51,7 @@ module Bundler
           dm[i][j] = [
             dm[i - 1][j - 1] + (this[j - 1] == that[i - 1] ? 0 : sub),
             dm[i][j - 1] + ins,
-            dm[i - 1][j] + del
+            dm[i - 1][j] + del,
           ].min
         end
       end

@@ -1,10 +1,10 @@
 # frozen_string_literal: true
+require 'rubygems/deprecate'
+
 ##
 # This module contains various utility methods as module methods.
 
 module Gem::Util
-
-  @silent_mutex = nil
 
   ##
   # Zlib::GzipReader wrapper that unzips +data+.
@@ -14,7 +14,13 @@ module Gem::Util
     require 'stringio'
     data = StringIO.new(data, 'r')
 
-    unzipped = Zlib::GzipReader.new(data).read
+    gzip_reader = begin
+                    Zlib::GzipReader.new(data)
+                  rescue Zlib::GzipFile::Error => e
+                    raise e.class, e.inspect, e.backtrace
+                  end
+
+    unzipped = gzip_reader.read
     unzipped.force_encoding Encoding::BINARY
     unzipped
   end
@@ -28,7 +34,9 @@ module Gem::Util
     zipped = StringIO.new(String.new, 'w')
     zipped.set_encoding Encoding::BINARY
 
-    Zlib::GzipWriter.wrap zipped do |io| io.write data end
+    Zlib::GzipWriter.wrap zipped do |io|
+      io.write data
+    end
 
     zipped.string
   end
@@ -42,29 +50,10 @@ module Gem::Util
   end
 
   ##
-  # This calls IO.popen where it accepts an array for a +command+ (Ruby 1.9+)
-  # and implements an IO.popen-like behavior where it does not accept an array
-  # for a command.
+  # This calls IO.popen and reads the result
 
   def self.popen(*command)
     IO.popen command, &:read
-  rescue TypeError # ruby 1.8 only supports string command
-    r, w = IO.pipe
-
-    pid = fork do
-      STDIN.close
-      STDOUT.reopen w
-
-      exec(*command)
-    end
-
-    w.close
-
-    begin
-      return r.read
-    ensure
-      Process.wait pid
-    end
   end
 
   ##
@@ -78,26 +67,13 @@ module Gem::Util
     else
       cmds = command.dup
     end
-    return system(*(cmds << opt))
-  rescue TypeError
-    @silent_mutex ||= Mutex.new
+    system(*(cmds << opt))
+  end
 
-    @silent_mutex.synchronize do
-      begin
-        stdout = STDOUT.dup
-        stderr = STDERR.dup
+  class << self
+    extend Gem::Deprecate
 
-        STDOUT.reopen IO::NULL, 'w'
-        STDERR.reopen IO::NULL, 'w'
-
-        return system(*command)
-      ensure
-        STDOUT.reopen stdout
-        STDERR.reopen stderr
-        stdout.close
-        stderr.close
-      end
-    end
+    rubygems_deprecate :silent_system
   end
 
   ##
@@ -125,6 +101,18 @@ module Gem::Util
       Dir.glob(glob, base: base_path).map! {|f| File.expand_path(f, base_path) }
     else
       Dir.glob(File.expand_path(glob, base_path))
+    end
+  end
+
+  ##
+  # Corrects +path+ (usually returned by `URI.parse().path` on Windows), that
+  # comes with a leading slash.
+
+  def self.correct_for_windows_path(path)
+    if path[0].chr == '/' && path[1].chr =~ /[a-z]/i && path[2].chr == ':'
+      path[1..-1]
+    else
+      path
     end
   end
 

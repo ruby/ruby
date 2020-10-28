@@ -19,5 +19,19 @@ describe "Exception#to_s" do
 end
 
 describe "NameError#to_s" do
-  it "needs to be reviewed for spec completeness"
+  it "raises its own message for an undefined variable" do
+    begin
+      puts not_defined
+    rescue => exception
+      exception.message.should =~ /undefined local variable or method `not_defined'/
+    end
+  end
+
+  it "raises its own message for an undefined constant" do
+    begin
+      puts NotDefined
+    rescue => exception
+      exception.message.should =~ /uninitialized constant NotDefined/
+    end
+  end
 end

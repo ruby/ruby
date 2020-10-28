@@ -14,35 +14,35 @@ describe "The undef keyword" do
       @undef_class.class_eval do
         undef meth
       end
-      lambda { @obj.meth(5) }.should raise_error(NoMethodError)
+      -> { @obj.meth(5) }.should raise_error(NoMethodError)
     end
 
     it "with a simple symbol" do
       @undef_class.class_eval do
         undef :meth
       end
-      lambda { @obj.meth(5) }.should raise_error(NoMethodError)
+      -> { @obj.meth(5) }.should raise_error(NoMethodError)
     end
 
     it "with a single quoted symbol" do
       @undef_class.class_eval do
         undef :'meth'
       end
-      lambda { @obj.meth(5) }.should raise_error(NoMethodError)
+      -> { @obj.meth(5) }.should raise_error(NoMethodError)
     end
 
     it "with a double quoted symbol" do
       @undef_class.class_eval do
         undef :"meth"
       end
-      lambda { @obj.meth(5) }.should raise_error(NoMethodError)
+      -> { @obj.meth(5) }.should raise_error(NoMethodError)
     end
 
     it "with a interpolated symbol" do
       @undef_class.class_eval do
         undef :"#{'meth'}"
       end
-      lambda { @obj.meth(5) }.should raise_error(NoMethodError)
+      -> { @obj.meth(5) }.should raise_error(NoMethodError)
     end
   end
 
@@ -61,7 +61,7 @@ describe "The undef keyword" do
 
   it "raises a NameError when passed a missing name" do
     Class.new do
-      lambda {
+      -> {
          undef not_exist
       }.should raise_error(NameError) { |e|
         # a NameError and not a NoMethodError

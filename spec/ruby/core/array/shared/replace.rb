@@ -52,9 +52,9 @@ describe :array_replace, shared: true do
     [].send(@method, ArraySpecs::ToAryArray[5, 6, 7]).should == [5, 6, 7]
   end
 
-  it "raises a #{frozen_error_class} on a frozen array" do
-    lambda {
+  it "raises a FrozenError on a frozen array" do
+    -> {
       ArraySpecs.frozen_array.send(@method, ArraySpecs.frozen_array)
-    }.should raise_error(frozen_error_class)
+    }.should raise_error(FrozenError)
   end
 end

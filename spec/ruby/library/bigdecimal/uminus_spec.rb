@@ -53,6 +53,6 @@ describe "BigDecimal#-@" do
     @zero_neg.send(:-@).should == @zero
     @zero_neg.send(:-@).sign.should == 1
 
-    @nan.send(:-@).nan?.should == true
+    @nan.send(:-@).should.nan?
   end
 end

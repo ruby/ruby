@@ -17,7 +17,7 @@ describe "Array#*" do
 
   it "raises a TypeError if the argument can neither be converted to a string nor an integer" do
     obj = mock('not a string or integer')
-    lambda{ [1,2] * obj }.should raise_error(TypeError)
+    ->{ [1,2] * obj }.should raise_error(TypeError)
   end
 
   it "converts the passed argument to a String rather than an Integer" do
@@ -28,15 +28,15 @@ describe "Array#*" do
   end
 
   it "raises a TypeError is the passed argument is nil" do
-    lambda{ [1,2] * nil }.should raise_error(TypeError)
+    ->{ [1,2] * nil }.should raise_error(TypeError)
   end
 
   it "raises an ArgumentError when passed 2 or more arguments" do
-    lambda{ [1,2].send(:*, 1, 2) }.should raise_error(ArgumentError)
+    ->{ [1,2].send(:*, 1, 2) }.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError when passed no arguments" do
-    lambda{ [1,2].send(:*) }.should raise_error(ArgumentError)
+    ->{ [1,2].send(:*) }.should raise_error(ArgumentError)
   end
 end
 
@@ -65,8 +65,8 @@ describe "Array#* with an integer" do
   end
 
   it "raises an ArgumentError when passed a negative integer" do
-    lambda { [ 1, 2, 3 ] * -1 }.should raise_error(ArgumentError)
-    lambda { [] * -1 }.should raise_error(ArgumentError)
+    -> { [ 1, 2, 3 ] * -1 }.should raise_error(ArgumentError)
+    -> { [] * -1 }.should raise_error(ArgumentError)
   end
 
   describe "with a subclass of Array" do
@@ -88,42 +88,44 @@ describe "Array#* with an integer" do
     end
   end
 
-  it "copies the taint status of the original array even if the passed count is 0" do
-    ary = [1, 2, 3]
-    ary.taint
-    (ary * 0).tainted?.should == true
-  end
+  ruby_version_is ''...'2.7' do
+    it "copies the taint status of the original array even if the passed count is 0" do
+      ary = [1, 2, 3]
+      ary.taint
+      (ary * 0).should.tainted?
+    end
 
-  it "copies the taint status of the original array even if the array is empty" do
-    ary = []
-    ary.taint
-    (ary * 3).tainted?.should == true
-  end
+    it "copies the taint status of the original array even if the array is empty" do
+      ary = []
+      ary.taint
+      (ary * 3).should.tainted?
+    end
 
-  it "copies the taint status of the original array if the passed count is not 0" do
-    ary = [1, 2, 3]
-    ary.taint
-    (ary * 1).tainted?.should == true
-    (ary * 2).tainted?.should == true
-  end
+    it "copies the taint status of the original array if the passed count is not 0" do
+      ary = [1, 2, 3]
+      ary.taint
+      (ary * 1).should.tainted?
+      (ary * 2).should.tainted?
+    end
 
-  it "copies the untrusted status of the original array even if the passed count is 0" do
-    ary = [1, 2, 3]
-    ary.untrust
-    (ary * 0).untrusted?.should == true
-  end
+    it "copies the untrusted status of the original array even if the passed count is 0" do
+      ary = [1, 2, 3]
+      ary.untrust
+      (ary * 0).should.untrusted?
+    end
 
-  it "copies the untrusted status of the original array even if the array is empty" do
-    ary = []
-    ary.untrust
-    (ary * 3).untrusted?.should == true
-  end
+    it "copies the untrusted status of the original array even if the array is empty" do
+      ary = []
+      ary.untrust
+      (ary * 3).should.untrusted?
+    end
 
-  it "copies the untrusted status of the original array if the passed count is not 0" do
-    ary = [1, 2, 3]
-    ary.untrust
-    (ary * 1).untrusted?.should == true
-    (ary * 2).untrusted?.should == true
+    it "copies the untrusted status of the original array if the passed count is not 0" do
+      ary = [1, 2, 3]
+      ary.untrust
+      (ary * 1).should.untrusted?
+      (ary * 2).should.untrusted?
+    end
   end
 end
 

@@ -88,19 +88,19 @@ describe "Dir.chdir" do
   end
 
   it "raises an Errno::ENOENT if the directory does not exist" do
-    lambda { Dir.chdir DirSpecs.nonexistent }.should raise_error(Errno::ENOENT)
-    lambda { Dir.chdir(DirSpecs.nonexistent) { } }.should raise_error(Errno::ENOENT)
+    -> { Dir.chdir DirSpecs.nonexistent }.should raise_error(Errno::ENOENT)
+    -> { Dir.chdir(DirSpecs.nonexistent) { } }.should raise_error(Errno::ENOENT)
   end
 
   it "raises an Errno::ENOENT if the original directory no longer exists" do
     dir1 = tmp('/testdir1')
     dir2 = tmp('/testdir2')
-    File.exist?(dir1).should == false
-    File.exist?(dir2).should == false
+    File.should_not.exist?(dir1)
+    File.should_not.exist?(dir2)
     Dir.mkdir dir1
     Dir.mkdir dir2
     begin
-      lambda {
+      -> {
         Dir.chdir dir1 do
           Dir.chdir(dir2) { Dir.unlink dir1 }
         end

@@ -142,7 +142,7 @@ class TestCSVParseGeneral < Test::Unit::TestCase
     error = assert_raise(CSV::MalformedCSVError) do
       CSV.parse_line("1,2\r,3", row_sep: "\n")
     end
-    assert_equal("Unquoted fields do not allow \\r or \\n in line 1.",
+    assert_equal("Unquoted fields do not allow new line <\"\\r\"> in line 1.",
                  error.message)
   end
 
@@ -158,7 +158,7 @@ line,5,jkl
     error = assert_raise(CSV::MalformedCSVError) do
       CSV.parse(csv)
     end
-    assert_equal("Unquoted fields do not allow \\r or \\n in line 4.",
+    assert_equal("Unquoted fields do not allow new line <\"\\r\"> in line 4.",
                  error.message)
   end
 
@@ -233,11 +233,25 @@ line,5,jkl
     assert_equal([["a"]], CSV.parse("a\r\n"))
   end
 
+  def test_seeked_string_io
+    input_with_bom = StringIO.new("\ufeffあ,い,う\r\na,b,c\r\n")
+    input_with_bom.read(3)
+    assert_equal([
+                   ["あ", "い", "う"],
+                   ["a", "b", "c"],
+                 ],
+                 CSV.new(input_with_bom).each.to_a)
+  end
+
   private
-  def assert_parse_errors_out(*args)
+  def assert_parse_errors_out(data, **options)
     assert_raise(CSV::MalformedCSVError) do
-      Timeout.timeout(0.2) do
-        CSV.parse(*args)
+      timeout = 0.2
+      if defined?(RubyVM::MJIT.enabled?) and RubyVM::MJIT.enabled?
+        timeout = 5  # for --jit-wait
+      end
+      Timeout.timeout(timeout) do
+        CSV.parse(data, **options)
         fail("Parse didn't error out")
       end
     end

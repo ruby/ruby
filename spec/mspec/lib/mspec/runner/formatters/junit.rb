@@ -1,19 +1,18 @@
-require 'mspec/expectations/expectations'
 require 'mspec/runner/formatters/yaml'
 
 class JUnitFormatter < YamlFormatter
-  def initialize(out=nil)
-    super
+  def initialize(out = nil)
+    super(out)
     @tests = []
   end
 
   def after(state = nil)
-    super
+    super(state)
     @tests << {:test => state, :exception => false} unless exception?
   end
 
   def exception(exception)
-    super
+    super(exception)
     @tests << {:test => exception, :exception => true}
   end
 

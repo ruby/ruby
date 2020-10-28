@@ -38,14 +38,14 @@ describe "Integer#remainder" do
     end
 
     it "raises a ZeroDivisionError if other is zero and not a Float" do
-      lambda { bignum_value(66).remainder(0) }.should raise_error(ZeroDivisionError)
+      -> { bignum_value(66).remainder(0) }.should raise_error(ZeroDivisionError)
     end
 
     it "does raises ZeroDivisionError if other is zero and a Float" do
       a = bignum_value(7)
       b = bignum_value(32)
-      lambda { a.remainder(0.0) }.should raise_error(ZeroDivisionError)
-      lambda { b.remainder(-0.0) }.should raise_error(ZeroDivisionError)
+      -> { a.remainder(0.0) }.should raise_error(ZeroDivisionError)
+      -> { b.remainder(-0.0) }.should raise_error(ZeroDivisionError)
     end
   end
 end

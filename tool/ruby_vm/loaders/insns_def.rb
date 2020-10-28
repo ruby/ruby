@@ -11,6 +11,7 @@
 # details.
 
 require_relative '../helpers/scanner'
+require_relative './vm_opts_h'
 
 json    = []
 scanner = RubyVM::Scanner.new '../../../insns.def'
@@ -20,7 +21,7 @@ grammar = %r'
     (?<keyword>  typedef | extern | static | auto | register |
                  struct  | union  | enum                           ){0}
     (?<C>        (?: \g<block> | [^{}]+ )*                         ){0}
-    (?<block>    \{ \g<ws>* ^ \g<C> $ \g<ws>* \}                   ){0}
+    (?<block>    \{ \g<ws>*   \g<C>   \g<ws>* \}                   ){0}
     (?<ws>       \g<comment> | \s                                  ){0}
     (?<ident>    [_a-zA-Z] [0-9_a-zA-Z]*                           ){0}
     (?<type>     (?: \g<keyword> \g<ws>+ )* \g<ident>              ){0}
@@ -33,7 +34,7 @@ grammar = %r'
                  (?<pragma:name> \g<ident>  )              \g<ws>*
                  =                                         \g<ws>*
                  (?<pragma:expr> .+?;       )              \g<ws>* ){0}
-    (?<insn>     DEFINE_INSN                               \g<ws>+
+    (?<insn>     DEFINE_INSN(_IF\((?<insn:if>\w+)\))?      \g<ws>+
                  (?<insn:name>   \g<ident>  )              \g<ws>*
      [(] \g<ws>* (?<insn:opes>   \g<argv>   ) \g<ws>* [)]  \g<ws>*
      [(] \g<ws>* (?<insn:pops>   \g<argv>   ) \g<ws>* [)]  \g<ws>*
@@ -52,6 +53,7 @@ until scanner.eos? do
 
   l1   = scanner.scan!(/\G#{grammar}\g<insn>/o)
   name = scanner["insn:name"]
+  opt  = scanner["insn:if"]
   ope  = split.(scanner["insn:opes"])
   pop  = split.(scanner["insn:pops"])
   ret  = split.(scanner["insn:rets"])
@@ -67,21 +69,23 @@ until scanner.eos? do
   end
 
   l3 = scanner.scan!(/\G#{grammar}\g<block>/o)
-  json << {
-    name: name,
-    location: [path, l1],
-    signature: {
+  if opt.nil? || RubyVM::VmOptsH[opt]
+    json << {
       name: name,
-      ope: ope,
-      pop: pop,
-      ret: ret,
-    },
-    attributes: attrs,
-    expr: {
-      location: [path, l3],
-      expr: scanner["block"],
-    },
-  }
+      location: [path, l1],
+      signature: {
+        name: name,
+        ope: ope,
+        pop: pop,
+        ret: ret,
+      },
+      attributes: attrs,
+      expr: {
+        location: [path, l3],
+        expr: scanner["block"],
+      },
+    }
+  end
 end
 
 RubyVM::InsnsDef = json

@@ -28,10 +28,17 @@ describe "Date.iso8601" do
   end
 
   it "raises an ArgumentError when passed a Symbol without a valid Date" do
-    lambda { Date.iso8601(:test) }.should raise_error(ArgumentError)
+    -> { Date.iso8601(:test) }.should raise_error(ArgumentError)
   end
 
   it "raises a TypeError when passed an Object" do
-    lambda { Date.iso8601(Object.new) }.should raise_error(TypeError)
+    -> { Date.iso8601(Object.new) }.should raise_error(TypeError)
+  end
+end
+
+describe "Date._iso8601" do
+  it "returns an empty hash if the argument is a invalid Date" do
+    h = Date._iso8601('invalid')
+    h.should == {}
   end
 end

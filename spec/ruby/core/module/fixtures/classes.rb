@@ -6,6 +6,9 @@ module ModuleSpecs
 
   CONST = :plain_constant
 
+  class NamedClass
+  end
+
   module PrivConstModule
     PRIVATE_CONSTANT = 1
     private_constant :PRIVATE_CONSTANT
@@ -384,6 +387,12 @@ module ModuleSpecs
       rescue RuntimeError
         return :good
       end
+    end
+
+    class Parent
+    end
+
+    class Child < Parent
     end
 
     module FromThread

@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require_relative 'utils'
 
 if defined?(OpenSSL) && defined?(OpenSSL::PKey::DSA)
@@ -37,8 +37,8 @@ class OpenSSL::TestPKeyDSA < OpenSSL::PKeyTestCase
     dsa512 = Fixtures.pkey("dsa512")
     data = "Sign me!"
     if defined?(OpenSSL::Digest::DSS1)
-      signature = dsa512.sign(OpenSSL::Digest::DSS1.new, data)
-      assert_equal true, dsa512.verify(OpenSSL::Digest::DSS1.new, signature, data)
+      signature = dsa512.sign(OpenSSL::Digest.new('DSS1'), data)
+      assert_equal true, dsa512.verify(OpenSSL::Digest.new('DSS1'), signature, data)
     end
 
     signature = dsa512.sign("SHA1", data)
@@ -56,7 +56,7 @@ class OpenSSL::TestPKeyDSA < OpenSSL::PKeyTestCase
   def test_sys_sign_verify
     key = Fixtures.pkey("dsa256")
     data = 'Sign me!'
-    digest = OpenSSL::Digest::SHA1.digest(data)
+    digest = OpenSSL::Digest.digest('SHA1', data)
     sig = key.syssign(digest)
     assert(key.sysverify(digest, sig))
   end
@@ -189,6 +189,13 @@ fWLOqqkzFeRrYMDzUpl36XktY6Yq8EJYlW9pCMmBVNy/dQ==
     assert_equal key.params, key2.params
     key2.set_pqg(key2.p + 1, key2.q, key2.g)
     assert_not_equal key.params, key2.params
+  end
+
+  def test_marshal
+    key = Fixtures.pkey("dsa1024")
+    deserialized = Marshal.load(Marshal.dump(key))
+
+    assert_equal key.to_der, deserialized.to_der
   end
 
   private

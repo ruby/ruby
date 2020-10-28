@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require "bundler/worker"
-require "bundler/installer/gem_installer"
+require_relative "../worker"
+require_relative "gem_installer"
 
 module Bundler
   class ParallelInstaller
@@ -91,10 +91,6 @@ module Bundler
     end
 
     def call
-      # Since `autoload` has the potential for threading issues on 1.8.7
-      # TODO:  remove in bundler 2.0
-      require "bundler/gem_remote_fetcher" if RUBY_VERSION < "1.9"
-
       check_for_corrupt_lockfile
 
       if @size > 1
@@ -103,7 +99,7 @@ module Bundler
         install_serially
       end
 
-      handle_error if @specs.any?(&:failed?)
+      handle_error if failed_specs.any?
       @specs
     ensure
       worker_pool && worker_pool.stop
@@ -115,7 +111,7 @@ module Bundler
           s,
           s.missing_lockfile_dependencies(@specs.map(&:name)),
         ]
-      end.reject { |a| a.last.empty? }
+      end.reject {|a| a.last.empty? }
       return if missing_dependencies.empty?
 
       warning = []
@@ -134,7 +130,11 @@ module Bundler
       Bundler.ui.warn(warning.join("\n"))
     end
 
-  private
+    private
+
+    def failed_specs
+      @specs.select(&:failed?)
+    end
 
     def install_with_worker
       enqueue_specs
@@ -150,7 +150,7 @@ module Bundler
     end
 
     def worker_pool
-      @worker_pool ||= Bundler::Worker.new @size, "Parallel Installer", lambda { |spec_install, worker_num|
+      @worker_pool ||= Bundler::Worker.new @size, "Parallel Installer", lambda {|spec_install, worker_num|
         do_install(spec_install, worker_num)
       }
     end
@@ -160,17 +160,13 @@ module Bundler
       gem_installer = Bundler::GemInstaller.new(
         spec_install.spec, @installer, @standalone, worker_num, @force
       )
-      success, message = begin
-        gem_installer.install_from_spec
-      rescue RuntimeError => e
-        raise e, "#{e}\n\n#{require_tree_for_spec(spec_install.spec)}"
-      end
+      success, message = gem_installer.install_from_spec
       if success
         spec_install.state = :installed
         spec_install.post_install_message = message unless message.nil?
       else
-        spec_install.state = :failed
         spec_install.error = "#{message}\n\n#{require_tree_for_spec(spec_install.spec)}"
+        spec_install.state = :failed
       end
       Plugin.hook(Plugin::Events::GEM_AFTER_INSTALL, spec_install)
       spec_install
@@ -194,11 +190,11 @@ module Bundler
     end
 
     def handle_error
-      errors = @specs.select(&:failed?).map(&:error)
+      errors = failed_specs.map(&:error)
       if exception = errors.find {|e| e.is_a?(Bundler::BundlerError) }
         raise exception
       end
-      raise Bundler::InstallError, errors.map(&:to_s).join("\n\n")
+      raise Bundler::InstallError, errors.join("\n\n")
     end
 
     def require_tree_for_spec(spec)

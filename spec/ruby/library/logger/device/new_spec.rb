@@ -31,7 +31,7 @@ describe "Logger::LogDevice#new" do
     l.write("Test message")
     l.close
 
-    File.exist?(path).should be_true
+    File.should.exist?(path)
     File.open(path) do |f|
       f.readlines.should_not be_empty
     end
@@ -40,8 +40,8 @@ describe "Logger::LogDevice#new" do
   end
 
   it "receives options via a hash as second argument" do
-    lambda { Logger::LogDevice.new(STDERR,
-                                   { shift_age: 8, shift_size: 10
-                                   })}.should_not raise_error
+    -> {
+      Logger::LogDevice.new(STDERR, shift_age: 8, shift_size: 10)
+    }.should_not raise_error
   end
 end

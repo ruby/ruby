@@ -1,34 +1,25 @@
 # frozen_string_literal: true
 
 RSpec.describe "bundle help" do
-  # RubyGems 1.4+ no longer load gem plugins so this test is no longer needed
-  it "complains if older versions of bundler are installed", :rubygems => "< 1.4" do
-    system_gems "bundler-0.8.1"
-
-    bundle "help"
-    expect(err).to include("older than 0.9")
-    expect(err).to include("running `gem cleanup bundler`.")
-  end
-
-  it "uses mann when available" do
+  it "uses man when available" do
     with_fake_man do
       bundle "help gemfile"
     end
     expect(out).to eq(%(["#{root}/man/gemfile.5"]))
   end
 
-  it "prefixes bundle commands with bundle- when finding the groff files" do
+  it "prefixes bundle commands with bundle- when finding the man files" do
     with_fake_man do
       bundle "help install"
     end
     expect(out).to eq(%(["#{root}/man/bundle-install.1"]))
   end
 
-  it "simply outputs the txt file when there is no man on the path" do
+  it "simply outputs the human readable file when there is no man on the path" do
     with_path_as("") do
       bundle "help install"
     end
-    expect(out).to match(/BUNDLE-INSTALL/)
+    expect(out).to match(/bundle-install/)
   end
 
   it "still outputs the old help for commands that do not have man pages yet" do
@@ -37,6 +28,8 @@ RSpec.describe "bundle help" do
   end
 
   it "looks for a binary and executes it with --help option if it's named bundler-<task>" do
+    skip "Could not find command testtasks, probably because not a windows friendly executable" if Gem.win_platform?
+
     File.open(tmp("bundler-testtasks"), "w", 0o755) do |f|
       f.puts "#!/usr/bin/env ruby\nputs ARGV.join(' ')\n"
     end
@@ -45,7 +38,6 @@ RSpec.describe "bundle help" do
       bundle "help testtasks"
     end
 
-    expect(exitstatus).to be_zero if exitstatus
     expect(out).to eq("--help")
   end
 
@@ -79,9 +71,9 @@ RSpec.describe "bundle help" do
 
   it "has helpful output when using --help flag for a non-existent command" do
     with_fake_man do
-      bundle "instill -h"
+      bundle "instill -h", :raise_on_error => false
     end
-    expect(out).to include('Could not find command "instill".')
+    expect(err).to include('Could not find command "instill".')
   end
 
   it "is called when only using the --help flag" do

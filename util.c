@@ -10,21 +10,24 @@
 **********************************************************************/
 
 #if defined __MINGW32__ || defined __MINGW64__
-#define MINGW_HAS_SECURE_API 1
+# define MINGW_HAS_SECURE_API 1
+#endif
+
+#include "ruby/internal/config.h"
+
+#include <ctype.h>
+#include <errno.h>
+#include <float.h>
+#include <math.h>
+#include <stdio.h>
+
+#ifdef _WIN32
+# include "missing/file.h"
 #endif
 
 #include "internal.h"
-
-#include <ctype.h>
-#include <stdio.h>
-#include <errno.h>
-#include <math.h>
-#include <float.h>
-
-#ifdef _WIN32
-#include "missing/file.h"
-#endif
-
+#include "internal/sanitizers.h"
+#include "internal/util.h"
 #include "ruby/util.h"
 
 const char ruby_hexdigits[] = "0123456789abcdef0123456789ABCDEF";

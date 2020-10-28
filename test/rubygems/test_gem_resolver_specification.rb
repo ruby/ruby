@@ -2,7 +2,6 @@
 require 'rubygems/test_case'
 
 class TestGemResolverSpecification < Gem::TestCase
-
   class TestSpec < Gem::Resolver::Specification
     attr_writer :source
     attr_reader :spec
@@ -60,5 +59,4 @@ class TestGemResolverSpecification < Gem::TestCase
 
     assert_equal source, a_spec.source
   end
-
 end

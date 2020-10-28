@@ -3,34 +3,40 @@
 module Bundler
   class CLI::Cache
     attr_reader :options
+
     def initialize(options)
       @options = options
     end
 
     def run
-      Bundler.definition.validate_runtime!
-      Bundler.definition.resolve_with_cache!
+      Bundler.ui.level = "error" if options[:quiet]
+      Bundler.settings.set_command_option_if_given :path, options[:path]
+      Bundler.settings.set_command_option_if_given :cache_path, options["cache-path"]
+
       setup_cache_all
-      Bundler.settings.set_command_option_if_given :cache_all_platforms, options["all-platforms"]
-      Bundler.load.cache
-      Bundler.settings.set_command_option_if_given :no_prune, options["no-prune"]
-      Bundler.load.lock
-    rescue GemNotFound => e
-      Bundler.ui.error(e.message)
-      Bundler.ui.warn "Run `bundle install` to install missing gems."
-      exit 1
+      install
+
+      # TODO: move cache contents here now that all bundles are locked
+      custom_path = Bundler.settings[:path] if options[:path]
+
+      Bundler.settings.temporary(:cache_all_platforms => options["all-platforms"]) do
+        Bundler.load.cache(custom_path)
+      end
     end
 
-  private
+    private
+
+    def install
+      require_relative "install"
+      options = self.options.dup
+      options["local"] = false if Bundler.settings[:cache_all_platforms]
+      Bundler::CLI::Install.new(options).run
+    end
 
     def setup_cache_all
-      Bundler.settings.set_command_option_if_given :cache_all, options[:all]
+      all = options.fetch(:all, Bundler.feature_flag.cache_all? || nil)
 
-      if Bundler.definition.has_local_dependencies? && !Bundler.feature_flag.cache_all?
-        Bundler.ui.warn "Your Gemfile contains path and git dependencies. If you want "    \
-          "to package them as well, please pass the --all flag. This will be the default " \
-          "on Bundler 2.0."
-      end
+      Bundler.settings.set_command_option_if_given :cache_all, all
     end
   end
 end

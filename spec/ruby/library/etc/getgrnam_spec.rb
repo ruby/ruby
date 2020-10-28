@@ -11,7 +11,7 @@ platform_is :windows do
   end
 end
 
-platform_is_not :windows do
+platform_is_not :windows, :android do
   describe "Etc.getgrnam" do
     it "returns a Etc::Group struct instance for the given group" do
       gr_name = Etc.getgrent.name
@@ -21,7 +21,7 @@ platform_is_not :windows do
     end
 
     it "only accepts strings as argument" do
-      lambda {
+      -> {
         Etc.getgrnam(123)
         Etc.getgrnam(nil)
       }.should raise_error(TypeError)

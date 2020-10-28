@@ -21,7 +21,7 @@
 # See Net::POP3 for documentation.
 #
 
-require_relative 'protocol'
+require 'net/protocol'
 require 'digest/md5'
 require 'timeout'
 
@@ -194,9 +194,8 @@ module Net
   # String. Normally the unique-id is a hash of the message.
   #
   class POP3 < Protocol
-
-    # svn revision of this library
-    Revision = %q$Revision$.split[1]
+    # version of this library
+    VERSION = "0.1.0"
 
     #
     # Class Parameters
@@ -549,6 +548,7 @@ module Net
         context = OpenSSL::SSL::SSLContext.new
         context.set_params(@ssl_params)
         s = OpenSSL::SSL::SSLSocket.new(s, context)
+        s.hostname = @address
         s.sync_close = true
         ssl_socket_connect(s, @open_timeout)
         if context.verify_mode != OpenSSL::SSL::VERIFY_NONE
@@ -969,7 +969,7 @@ module Net
           getok('UIDL')
           table = {}
           @socket.each_list_item do |line|
-            num, uid = line.split
+            num, uid = line.split(' ')
             table[num.to_i] = uid
           end
           return table

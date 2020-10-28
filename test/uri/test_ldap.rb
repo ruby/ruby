@@ -95,6 +95,10 @@ class TestLDAP < Test::Unit::TestCase
       u.select(:scheme, :host, :not_exist, :port)
     end
   end
+
+  def test_parse_invalid_uri
+    assert_raise(URI::InvalidURIError) {URI.parse("ldap:https://example.com")}
+  end
 end
 
 

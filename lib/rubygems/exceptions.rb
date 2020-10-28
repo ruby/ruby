@@ -1,25 +1,11 @@
 # frozen_string_literal: true
-# TODO: the documentation in here is terrible.
-#
-# Each exception needs a brief description and the scenarios where it is
-# likely to be raised
 
 require 'rubygems/deprecate'
 
 ##
 # Base exception class for RubyGems.  All exception raised by RubyGems are a
 # subclass of this one.
-class Gem::Exception < RuntimeError
-
-  ##
-  #--
-  # TODO: remove in RubyGems 4, nobody sets this
-
-  attr_accessor :source_exception # :nodoc:
-
-  extend Gem::Deprecate
-  deprecate :source_exception, :none, 2018, 12
-end
+class Gem::Exception < RuntimeError; end
 
 class Gem::CommandLineError < Gem::Exception; end
 
@@ -33,7 +19,6 @@ class Gem::DependencyRemovalException < Gem::Exception; end
 # and #conflicting_dependencies
 
 class Gem::DependencyResolutionError < Gem::DependencyError
-
   attr_reader :conflict
 
   def initialize(conflict)
@@ -46,7 +31,6 @@ class Gem::DependencyResolutionError < Gem::DependencyError
   def conflicting_dependencies
     @conflict.conflicting_dependencies
   end
-
 end
 
 ##
@@ -74,7 +58,6 @@ class Gem::EndOfYAMLException < Gem::Exception; end
 # operating on the given directory.
 
 class Gem::FilePermissionError < Gem::Exception
-
   attr_reader :directory
 
   def initialize(directory)
@@ -82,7 +65,6 @@ class Gem::FilePermissionError < Gem::Exception
 
     super "You don't have write permissions for the #{directory} directory."
   end
-
 end
 
 ##
@@ -97,7 +79,6 @@ class Gem::GemNotFoundException < Gem::Exception; end
 # Raised by the DependencyInstaller when a specific gem cannot be found
 
 class Gem::SpecificGemNotFoundException < Gem::GemNotFoundException
-
   ##
   # Creates a new SpecificGemNotFoundException for a gem with the given +name+
   # and +version+.  Any +errors+ encountered when attempting to find the gem
@@ -125,7 +106,6 @@ class Gem::SpecificGemNotFoundException < Gem::GemNotFoundException
   # Errors encountered attempting to find the gem.
 
   attr_reader :errors
-
 end
 
 ##
@@ -133,7 +113,6 @@ end
 # inability to find a valid possible spec for a request.
 
 class Gem::ImpossibleDependenciesError < Gem::Exception
-
   attr_reader :conflicts
   attr_reader :request
 
@@ -161,7 +140,6 @@ class Gem::ImpossibleDependenciesError < Gem::Exception
   def dependency
     @request.dependency
   end
-
 end
 
 class Gem::InstallError < Gem::Exception; end
@@ -211,7 +189,6 @@ class Gem::VerificationError < Gem::Exception; end
 # exit_code
 
 class Gem::SystemExitException < SystemExit
-
   ##
   # The exit code for the process
 
@@ -225,7 +202,6 @@ class Gem::SystemExitException < SystemExit
 
     super "Exiting RubyGems with exit_code #{exit_code}"
   end
-
 end
 
 ##
@@ -233,7 +209,6 @@ end
 # there is no spec.
 
 class Gem::UnsatisfiableDependencyError < Gem::DependencyError
-
   ##
   # The unsatisfiable dependency.  This is a
   # Gem::Resolver::DependencyRequest, not a Gem::Dependency
@@ -251,7 +226,7 @@ class Gem::UnsatisfiableDependencyError < Gem::DependencyError
 
   def initialize(dep, platform_mismatch=nil)
     if platform_mismatch and !platform_mismatch.empty?
-      plats = platform_mismatch.map { |x| x.platform.to_s }.sort.uniq
+      plats = platform_mismatch.map {|x| x.platform.to_s }.sort.uniq
       super "Unable to resolve dependency: No match for '#{dep}' on this platform. Found: #{plats.join(', ')}"
     else
       if dep.explicit?
@@ -278,7 +253,6 @@ class Gem::UnsatisfiableDependencyError < Gem::DependencyError
   def version
     @dependency.requirement
   end
-
 end
 
 ##

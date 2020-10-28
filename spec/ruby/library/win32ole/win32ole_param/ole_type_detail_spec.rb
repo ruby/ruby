@@ -9,7 +9,7 @@ platform_is :windows do
     end
 
     it "raises ArgumentError if argument is given" do
-      lambda { @param_overwritefiles.ole_type_detail(1) }.should raise_error ArgumentError
+      -> { @param_overwritefiles.ole_type_detail(1) }.should raise_error ArgumentError
     end
 
     it "returns ['BOOL'] for 3rd parameter of FileSystemObject's 'CopyFile' method" do

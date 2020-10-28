@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 require 'rubygems/dependency'
 require 'rubygems/exceptions'
-require 'rubygems/util'
 require 'rubygems/util/list'
 
 ##
@@ -115,7 +114,7 @@ class Gem::Resolver
   def explain(stage, *data) # :nodoc:
     return unless DEBUG_RESOLVER
 
-    d = data.map { |x| x.pretty_inspect }.join(", ")
+    d = data.map {|x| x.pretty_inspect }.join(", ")
     $stderr.printf "%10s %s\n", stage.to_s.upcase, d
   end
 
@@ -124,7 +123,10 @@ class Gem::Resolver
 
     data = yield
     $stderr.printf "%10s (%d entries)\n", stage.to_s.upcase, data.size
-    PP.pp data, $stderr unless data.empty?
+    unless data.empty?
+      require 'pp'
+      PP.pp data, $stderr
+    end
   end
 
   ##
@@ -185,7 +187,7 @@ class Gem::Resolver
 
   def resolve
     locking_dg = Molinillo::DependencyGraph.new
-    Molinillo::Resolver.new(self, self).resolve(@needed.map { |d| DependencyRequest.new d, nil }, locking_dg).tsort.map(&:payload).compact
+    Molinillo::Resolver.new(self, self).resolve(@needed.map {|d| DependencyRequest.new d, nil }, locking_dg).tsort.map(&:payload).compact
   rescue Molinillo::VersionConflict => e
     conflict = e.conflicts.values.first
     raise Gem::DependencyResolutionError, Conflict.new(conflict.requirement_trees.first.first, conflict.existing, conflict.requirement)
@@ -202,7 +204,7 @@ class Gem::Resolver
 
     if (skip_dep_gems = skip_gems[dependency.name]) && !skip_dep_gems.empty?
       matching = all.select do |api_spec|
-        skip_dep_gems.any? { |s| api_spec.version == s.version }
+        skip_dep_gems.any? {|s| api_spec.version == s.version }
       end
 
       all = matching unless matching.empty?
@@ -231,22 +233,22 @@ class Gem::Resolver
       raise exc
     end
 
-    groups = Hash.new { |hash, key| hash[key] = [] }
+    groups = Hash.new {|hash, key| hash[key] = [] }
 
     # create groups & sources in the same loop
-    sources = possibles.map { |spec|
+    sources = possibles.map do |spec|
       source = spec.source
       groups[source] << spec
       source
-    }.uniq.reverse
+    end.uniq.reverse
 
     activation_requests = []
 
     sources.each do |source|
       groups[source].
-        sort_by { |spec| [spec.version, Gem::Platform.local =~ spec.platform ? 1 : 0] }.
-        map { |spec| ActivationRequest.new spec, dependency, [] }.
-        each { |activation_request| activation_requests << activation_request }
+        sort_by {|spec| [spec.version, Gem::Platform.local =~ spec.platform ? 1 : 0] }.
+        map {|spec| ActivationRequest.new spec, dependency }.
+        each {|activation_request| activation_requests << activation_request }
     end
 
     activation_requests
@@ -309,7 +311,6 @@ class Gem::Resolver
     end
   end
   private :amount_constrained
-
 end
 
 require 'rubygems/resolver/activation_request'

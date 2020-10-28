@@ -44,6 +44,7 @@ class Bundler::Thor
       @shorts = {}
       @switches = {}
       @extra = []
+      @stopped_parsing_after_extra_index = nil
 
       options.each do |option|
         @switches[option.switch_name] = option
@@ -66,6 +67,7 @@ class Bundler::Thor
       if result == OPTS_END
         shift
         @parsing_options = false
+        @stopped_parsing_after_extra_index ||= @extra.size
         super
       else
         result
@@ -95,10 +97,12 @@ class Bundler::Thor
 
             switch = normalize_switch(switch)
             option = switch_option(switch)
-            @assigns[option.human_name] = parse_peek(switch, option)
+            result = parse_peek(switch, option)
+            assign_result!(option, result)
           elsif @stop_on_unknown
             @parsing_options = false
             @extra << shifted
+            @stopped_parsing_after_extra_index ||= @extra.size
             @extra << shift while peek
             break
           elsif match
@@ -120,13 +124,24 @@ class Bundler::Thor
     end
 
     def check_unknown!
+      to_check = @stopped_parsing_after_extra_index ? @extra[0...@stopped_parsing_after_extra_index] : @extra
+
       # an unknown option starts with - or -- and has no more --'s afterward.
-      unknown = @extra.select { |str| str =~ /^--?(?:(?!--).)*$/ }
-      raise UnknownArgumentError, "Unknown switches '#{unknown.join(', ')}'" unless unknown.empty?
+      unknown = to_check.select { |str| str =~ /^--?(?:(?!--).)*$/ }
+      raise UnknownArgumentError.new(@switches.keys, unknown) unless unknown.empty?
     end
 
   protected
 
+  def assign_result!(option, result)
+    if option.repeatable && option.type == :hash
+      (@assigns[option.human_name] ||= {}).merge!(result)
+    elsif option.repeatable
+      (@assigns[option.human_name] ||= []) << result
+    else
+      @assigns[option.human_name] = result
+    end
+  end
     # Check if the current value in peek is a registered switch.
     #
     # Two booleans are returned.  The first is true if the current value
@@ -156,7 +171,7 @@ class Bundler::Thor
     end
 
     def switch?(arg)
-      switch_option(normalize_switch(arg))
+      !switch_option(normalize_switch(arg)).nil?
     end
 
     def switch_option(arg)
@@ -189,7 +204,7 @@ class Bundler::Thor
           shift
           false
         else
-          !no_or_skip?(switch)
+          @switches.key?(switch) || !no_or_skip?(switch)
         end
       else
         @switches.key?(switch) || !no_or_skip?(switch)

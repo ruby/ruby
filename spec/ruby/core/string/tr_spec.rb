@@ -22,11 +22,11 @@ describe "String#tr" do
   end
 
   it "raises an ArgumentError a descending range in the replacement as containing just the start character" do
-    lambda { "hello".tr("a-y", "z-b") }.should raise_error(ArgumentError)
+    -> { "hello".tr("a-y", "z-b") }.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError a descending range in the source as empty" do
-    lambda { "hello".tr("l-a", "z") }.should raise_error(ArgumentError)
+    -> { "hello".tr("l-a", "z") }.should raise_error(ArgumentError)
   end
 
   it "translates chars not in from_string when it starts with a ^" do
@@ -61,43 +61,43 @@ describe "String#tr" do
     StringSpecs::MyString.new("hello").tr("e", "a").should be_an_instance_of(StringSpecs::MyString)
   end
 
-  it "taints the result when self is tainted" do
-    ["h", "hello"].each do |str|
-      tainted_str = str.dup.taint
+  ruby_version_is ''...'2.7' do
+    it "taints the result when self is tainted" do
+      ["h", "hello"].each do |str|
+        tainted_str = str.dup.taint
 
-      tainted_str.tr("e", "a").tainted?.should == true
+        tainted_str.tr("e", "a").should.tainted?
 
-      str.tr("e".taint, "a").tainted?.should == false
-      str.tr("e", "a".taint).tainted?.should == false
+        str.tr("e".taint, "a").should_not.tainted?
+        str.tr("e", "a".taint).should_not.tainted?
+      end
     end
   end
 
-  with_feature :encoding do
-    # http://redmine.ruby-lang.org/issues/show/1839
-    it "can replace a 7-bit ASCII character with a multibyte one" do
-      a = "uber"
-      a.encoding.should == Encoding::UTF_8
-      b = a.tr("u","ü")
-      b.should == "über"
-      b.encoding.should == Encoding::UTF_8
-    end
-
-    it "can replace a multibyte character with a single byte one" do
-      a = "über"
-      a.encoding.should == Encoding::UTF_8
-      b = a.tr("ü","u")
-      b.should == "uber"
-      b.encoding.should == Encoding::UTF_8
-    end
-
-    it "does not replace a multibyte character where part of the bytes match the tr string" do
-      str = "椎名深夏"
-      a = "\u0080\u0082\u0083\u0084\u0085\u0086\u0087\u0088\u0089\u008A\u008B\u008C\u008E\u0091\u0092\u0093\u0094\u0095\u0096\u0097\u0098\u0099\u009A\u009B\u009C\u009E\u009F"
-      b = "€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ"
-      str.tr(a, b).should == "椎名深夏"
-    end
-
+  # http://redmine.ruby-lang.org/issues/show/1839
+  it "can replace a 7-bit ASCII character with a multibyte one" do
+    a = "uber"
+    a.encoding.should == Encoding::UTF_8
+    b = a.tr("u","ü")
+    b.should == "über"
+    b.encoding.should == Encoding::UTF_8
   end
+
+  it "can replace a multibyte character with a single byte one" do
+    a = "über"
+    a.encoding.should == Encoding::UTF_8
+    b = a.tr("ü","u")
+    b.should == "uber"
+    b.encoding.should == Encoding::UTF_8
+  end
+
+  it "does not replace a multibyte character where part of the bytes match the tr string" do
+    str = "椎名深夏"
+    a = "\u0080\u0082\u0083\u0084\u0085\u0086\u0087\u0088\u0089\u008A\u008B\u008C\u008E\u0091\u0092\u0093\u0094\u0095\u0096\u0097\u0098\u0099\u009A\u009B\u009C\u009E\u009F"
+    b = "€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ"
+    str.tr(a, b).should == "椎名深夏"
+  end
+
 end
 
 describe "String#tr!" do
@@ -122,10 +122,10 @@ describe "String#tr!" do
     s.should == "hello"
   end
 
-  it "raises a #{frozen_error_class} if self is frozen" do
+  it "raises a FrozenError if self is frozen" do
     s = "abcdefghijklmnopqR".freeze
-    lambda { s.tr!("cdefg", "12") }.should raise_error(frozen_error_class)
-    lambda { s.tr!("R", "S")      }.should raise_error(frozen_error_class)
-    lambda { s.tr!("", "")        }.should raise_error(frozen_error_class)
+    -> { s.tr!("cdefg", "12") }.should raise_error(FrozenError)
+    -> { s.tr!("R", "S")      }.should raise_error(FrozenError)
+    -> { s.tr!("", "")        }.should raise_error(FrozenError)
   end
 end

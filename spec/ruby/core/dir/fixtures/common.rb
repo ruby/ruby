@@ -22,7 +22,7 @@ module DirSpecs
       [0xe9].pack('U')
     ].each do |dir|
       begin
-        Dir.rmdir dir
+        Dir.rmdir mock_dir(dir)
       rescue
       end
     end

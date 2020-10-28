@@ -2116,6 +2116,28 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("D\u00FCrst", "\xC4\xDC\x99\xA2\xA3", 'IBM037') # Dürst
   end
 
+  def test_CESU_8
+    check_both_ways("aijrszAIJRSZ09", "aijrszAIJRSZ09", 'CESU-8') # single bytes
+
+    # check NULL explicitly
+    # this is different in CESU-8 and in Java modified UTF-8 strings
+    check_both_ways("\0", "\0", 'CESU-8')
+
+    # U+0080 U+00FC U+00FF U+0100 U+0400 U+0700 U+07FF
+    two_byte_chars = "\xC2\x80\x20\xC3\xBC\x20\xC3\xBF\x20\xC4\x80\x20\xD0\x80\x20\xDC\x80\x20\xDF\xBF"
+    check_both_ways(two_byte_chars, two_byte_chars, 'CESU-8')
+
+    # U+0800 U+2200 U+4E00 U+D7FF U+E000 U+FFFF
+    three_byte_chars = "\xE0\xA0\x80\x20\xE2\x88\x80\x20\xE4\xB8\x80\x20\xED\x9F\xBF\x20\xEE\x80\x80\x20\xEF\xBF\xBF"
+    check_both_ways(three_byte_chars, three_byte_chars, 'CESU-8')
+
+    # characters outside BMP (double surrogates in CESU-8)
+    # U+10000 U+20000 U+50000 U+10FFFF
+    utf8 = "\xF0\x90\x80\x80 \xF0\xA0\x80\x80 \xF1\x90\x80\x80 \xF4\x8F\xBF\xBF"
+    cesu = "\xED\xA0\x80\xED\xB0\x80 \xED\xA1\x80\xED\xB0\x80 \xED\xA4\x80\xED\xB0\x80 \xED\xAF\xBF\xED\xBF\xBF"
+    check_both_ways(utf8, cesu, 'CESU-8')
+  end
+
   def test_nothing_changed
     a = "James".force_encoding("US-ASCII")
     b = a.encode("Shift_JIS")
@@ -2159,6 +2181,14 @@ class TestTranscode < Test::Unit::TestCase
       self % x.unpack("U")
     end
     assert_equal("U+3042", "\u{3042}".encode("US-ASCII", fallback: fallback.method(:escape)))
+  end
+
+  def test_fallback_aref
+    fallback = Object.new
+    def fallback.[](x)
+      "U+%.4X" % x.unpack("U")
+    end
+    assert_equal("U+3042", "\u{3042}".encode("US-ASCII", fallback: fallback))
   end
 
   bug8940 = '[ruby-core:57318] [Bug #8940]'
@@ -2220,12 +2250,19 @@ class TestTranscode < Test::Unit::TestCase
                  "#{bug} coderange should not have side effects")
   end
 
-  def test_universal_newline
+  def test_newline_options
     bug11324 = '[ruby-core:69841] [Bug #11324]'
     usascii = Encoding::US_ASCII
     s = "A\nB\r\nC".force_encoding(usascii)
     assert_equal("A\nB\nC", s.encode(usascii, universal_newline: true), bug11324)
     assert_equal("A\nB\nC", s.encode(usascii, universal_newline: true, undef: :replace), bug11324)
     assert_equal("A\nB\nC", s.encode(usascii, universal_newline: true, undef: :replace, replace: ''), bug11324)
+    assert_equal("A\nB\nC", s.encode(usascii, newline: :universal))
+    assert_equal("A\nB\nC", s.encode(usascii, newline: :universal, undef: :replace))
+    assert_equal("A\nB\nC", s.encode(usascii, newline: :universal, undef: :replace, replace: ''))
+    assert_equal("A\rB\r\rC", s.encode(usascii, cr_newline: true))
+    assert_equal("A\rB\r\rC", s.encode(usascii, newline: :cr))
+    assert_equal("A\r\nB\r\r\nC", s.encode(usascii, crlf_newline: true))
+    assert_equal("A\r\nB\r\r\nC", s.encode(usascii, newline: :crlf))
   end
 end

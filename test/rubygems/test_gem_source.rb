@@ -4,7 +4,6 @@ require 'rubygems/source'
 require 'rubygems/indexer'
 
 class TestGemSource < Gem::TestCase
-
   def tuple(*args)
     Gem::NameTuple.new(*args)
   end
@@ -55,8 +54,6 @@ class TestGemSource < Gem::TestCase
   end
 
   def test_dependency_resolver_set_file_uri
-    skip 'install builder gem' unless defined? Builder::XChar
-
     Gem::Indexer.new(@tempdir).generate_index
 
     source = Gem::Source.new "file://#{@tempdir}/"
@@ -125,7 +122,7 @@ class TestGemSource < Gem::TestCase
   end
 
   def test_load_specs
-    released = @source.load_specs(:released).map { |spec| spec.full_name }
+    released = @source.load_specs(:released).map {|spec| spec.full_name }
     assert_equal %W[a-2 a-1 b-2], released
 
     cache_dir = File.join Gem.spec_cache_dir, 'gems.example.com%80'
@@ -199,30 +196,30 @@ class TestGemSource < Gem::TestCase
     installed = Gem::Source::Installed.new
     local     = Gem::Source::Local.new
 
-    assert_equal( 0, remote.   <=>(remote),    'remote    <=> remote')
+    assert_equal(0, remote.<=>(remote), 'remote <=> remote')
 
-    assert_equal(-1, remote.   <=>(specific),  'remote    <=> specific')
-    assert_equal( 1, specific. <=>(remote),    'specific  <=> remote')
+    assert_equal(-1, remote.<=>(specific), 'remote <=> specific')
+    assert_equal(1, specific.<=>(remote), 'specific <=> remote')
 
-    assert_equal(-1, remote.   <=>(local),     'remote    <=> local')
-    assert_equal( 1, local.    <=>(remote),    'local     <=> remote')
+    assert_equal(-1, remote.<=>(local), 'remote <=> local')
+    assert_equal(1, local.<=>(remote), 'local <=> remote')
 
-    assert_equal(-1, remote.   <=>(installed), 'remote    <=> installed')
-    assert_equal( 1, installed.<=>(remote),    'installed <=> remote')
+    assert_equal(-1, remote.<=>(installed), 'remote <=> installed')
+    assert_equal(1, installed.<=>(remote), 'installed <=> remote')
 
     no_uri = @source.dup
     no_uri.instance_variable_set :@uri, nil
 
-    assert_equal(-1, remote.   <=>(no_uri),    'remote <=> no_uri')
+    assert_equal(-1, remote.<=>(no_uri), 'remote <=> no_uri')
   end
 
   def test_spaceship_order_is_preserved_when_uri_differs
     sourceA = Gem::Source.new "http://example.com/a"
     sourceB = Gem::Source.new "http://example.com/b"
 
-    assert_equal( 0, sourceA. <=>(sourceA), 'sourceA <=> sourceA')
-    assert_equal( 1, sourceA. <=>(sourceB), 'sourceA <=> sourceB')
-    assert_equal( 1, sourceB. <=>(sourceA), 'sourceB <=> sourceA')
+    assert_equal(0, sourceA.<=>(sourceA), 'sourceA <=> sourceA')
+    assert_equal(1, sourceA.<=>(sourceB), 'sourceA <=> sourceB')
+    assert_equal(1, sourceB.<=>(sourceA), 'sourceB <=> sourceA')
   end
 
   def test_update_cache_eh
@@ -235,4 +232,17 @@ class TestGemSource < Gem::TestCase
     refute @source.update_cache?
   end
 
+  def test_typo_squatting
+    rubygems_source = Gem::Source.new("https://rubgems.org")
+    assert rubygems_source.typo_squatting?("rubygems.org")
+    assert rubygems_source.typo_squatting?("rubyagems.org")
+    assert rubygems_source.typo_squatting?("rubyasgems.org")
+    refute rubygems_source.typo_squatting?("rubysertgems.org")
+  end
+
+  def test_typo_squatting_custom_distance_threshold
+    rubygems_source = Gem::Source.new("https://rubgems.org")
+    distance_threshold = 5
+    assert rubygems_source.typo_squatting?("rubysertgems.org", distance_threshold)
+  end
 end

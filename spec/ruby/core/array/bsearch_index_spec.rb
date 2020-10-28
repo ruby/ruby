@@ -21,7 +21,7 @@ describe "Array#bsearch_index" do
   end
 
   it "raises a TypeError when block returns a String" do
-    lambda { [1, 2, 3].bsearch_index { "not ok" } }.should raise_error(TypeError)
+    -> { [1, 2, 3].bsearch_index { "not ok" } }.should raise_error(TypeError)
   end
 
   it "returns nil when block is empty" do

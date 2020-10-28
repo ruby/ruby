@@ -1,0 +1,19 @@
+prelude: |
+  small_flat_ary = 5.times.to_a
+  large_flat_ary = 100.times.to_a
+  small_pairs_ary = [[1, 2]] * 5
+  large_pairs_ary = [[1, 2]] * 100
+  mostly_flat_ary = 100.times.to_a.push([101, 102])
+
+benchmark:
+  small_flat_ary.flatten: small_flat_ary.flatten
+  small_flat_ary.flatten!: small_flat_ary.flatten!
+  large_flat_ary.flatten: large_flat_ary.flatten
+  large_flat_ary.flatten!: large_flat_ary.flatten!
+  small_pairs_ary.flatten: small_pairs_ary.flatten
+  small_pairs_ary.flatten!: small_pairs_ary.dup.flatten!
+  large_pairs_ary.flatten: large_pairs_ary.flatten
+  large_pairs_ary.flatten!: large_pairs_ary.dup.flatten!
+  mostly_flat_ary.flatten: mostly_flat_ary.flatten
+  mostly_flat_ary.flatten!: mostly_flat_ary.dup.flatten!
+loop_count: 10000

@@ -21,7 +21,7 @@ describe "Time#succ" do
   end
 
   it "is obsolete" do
-    lambda {
+    -> {
       Time.at(100).succ
     }.should complain(/Time#succ is obsolete/)
   end
@@ -30,7 +30,7 @@ describe "Time#succ" do
     context "zone is a timezone object" do
       it "preserves time zone" do
         zone = TimeSpecs::Timezone.new(offset: (5*3600+30*60))
-        time = Time.new(2012, 1, 1, 12, 0, 0, zone) - 60*60
+        time = Time.new(2012, 1, 1, 12, 0, 0, zone) - 1
 
         time.zone.should == zone
       end

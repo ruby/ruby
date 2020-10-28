@@ -49,16 +49,14 @@ describe :getoptlong_get, shared: true do
 
   it "raises a if an argument was required, but none given" do
     argv [ "--size" ] do
-      lambda { @opts.send(@method) }.should raise_error(GetoptLong::MissingArgument)
+      -> { @opts.send(@method) }.should raise_error(GetoptLong::MissingArgument)
     end
   end
 
-  ruby_version_is "2.5" do
-    # https://bugs.ruby-lang.org/issues/13858
-    it "returns multiline argument" do
-      argv [ "--size=\n10k\n" ] do
-        @opts.send(@method).should == [ "--size", "\n10k\n" ]
-      end
+  # https://bugs.ruby-lang.org/issues/13858
+  it "returns multiline argument" do
+    argv [ "--size=\n10k\n" ] do
+      @opts.send(@method).should == [ "--size", "\n10k\n" ]
     end
   end
 end

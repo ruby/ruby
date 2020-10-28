@@ -187,8 +187,8 @@ class TestISeq < Test::Unit::TestCase
     s1, s2, s3, s4 = compile(code, line, {frozen_string_literal: true}).eval
     assert_predicate(s1, :frozen?)
     assert_predicate(s2, :frozen?)
-    assert_predicate(s3, :frozen?)
-    assert_predicate(s4, :frozen?)
+    assert_not_predicate(s3, :frozen?)
+    assert_not_predicate(s4, :frozen?)
   end
 
   # Safe call chain is not optimized when Coverage is running.
@@ -246,9 +246,12 @@ class TestISeq < Test::Unit::TestCase
       end
     end
     assert_equal([m1, e1.message], [m2, e2.message], feature11951)
-    e1, e2 = e1.message.lines
-    assert_send([e1, :start_with?, __FILE__])
-    assert_send([e2, :start_with?, __FILE__])
+    message = e1.message.each_line
+    message.with_index(1) do |line, i|
+      next if /^ / =~ line
+      assert_send([line, :start_with?, __FILE__],
+                  proc {message.map {|l, j| (i == j ? ">" : " ") + l}.join("")})
+    end
   end
 
   def test_compile_file_error
@@ -280,9 +283,9 @@ class TestISeq < Test::Unit::TestCase
 
   def test_inspect
     %W[foo \u{30d1 30b9}].each do |name|
-      assert_match /@#{name}/, ISeq.compile("", name).inspect, name
+      assert_match(/@#{name}/, ISeq.compile("", name).inspect, name)
       m = ISeq.compile("class TestISeq::Inspect; def #{name}; end; instance_method(:#{name}); end").eval
-      assert_match /:#{name}@/, ISeq.of(m).inspect, name
+      assert_match(/:#{name}@/, ISeq.of(m).inspect, name)
     end
   end
 
@@ -384,7 +387,7 @@ class TestISeq < Test::Unit::TestCase
       type = ary[9]
       name = ary[5]
       line = ary[13].first
-      case ary[9]
+      case type
       when :method
         assert_equal "foo", name
         assert_equal 3, line
@@ -430,6 +433,27 @@ class TestISeq < Test::Unit::TestCase
     assert_iseq_to_binary("@x ||= (1..2)")
   end
 
+  def test_to_binary_pattern_matching
+    code = "case foo; in []; end"
+    iseq = compile(code)
+    assert_include(iseq.disasm, "TypeError")
+    assert_include(iseq.disasm, "NoMatchingPatternError")
+    EnvUtil.suppress_warning do
+      assert_iseq_to_binary(code, "[Feature #14912]")
+    end
+  end
+
+  def test_to_binary_dumps_nokey
+    iseq = assert_iseq_to_binary(<<-RUBY)
+      o = Object.new
+      class << o
+        def foo(**nil); end
+      end
+      o
+    RUBY
+    assert_equal([[:nokey]], iseq.eval.singleton_method(:foo).parameters)
+  end
+
   def test_to_binary_line_info
     assert_iseq_to_binary("#{<<~"begin;"}\n#{<<~'end;'}", '[Bug #14660]').eval
     begin;
@@ -441,6 +465,11 @@ class TestISeq < Test::Unit::TestCase
         attr_reader :i
       end
     end;
+
+    # cleanup
+    ::Object.class_eval do
+      remove_const :P
+    end
   end
 
   def collect_from_binary_tracepoint_lines(tracepoint_type, filename)
@@ -449,7 +478,7 @@ class TestISeq < Test::Unit::TestCase
         class B
           2.times {
             def self.foo
-              a = 'good day'
+              _a = 'good day'
               raise
             rescue
               'dear reader'
@@ -461,12 +490,13 @@ class TestISeq < Test::Unit::TestCase
     RUBY
 
     iseq_bin = iseq.to_binary
+    iseq = ISeq.load_from_binary(iseq_bin)
     lines = []
     TracePoint.new(tracepoint_type){|tp|
       next unless tp.path == filename
       lines << tp.lineno
     }.enable{
-      ISeq.load_from_binary(iseq_bin).eval
+      EnvUtil.suppress_warning {iseq.eval}
     }
 
     lines
@@ -533,5 +563,22 @@ class TestISeq < Test::Unit::TestCase
       # ISeq objects should be same for same src
       assert_equal iseq1.object_id, iseq2.object_id
     }
+  end
+
+  def test_iseq_builtin_to_a
+    invokebuiltin = eval(EnvUtil.invoke_ruby(['-e', <<~EOS], '', true).first)
+      insns = RubyVM::InstructionSequence.of([].method(:pack)).to_a.last
+      p insns.find { |insn| insn.is_a?(Array) && insn[0] == :opt_invokebuiltin_delegate_leave }
+    EOS
+    assert_not_nil(invokebuiltin)
+    assert_equal([:func_ptr, :argc, :index, :name], invokebuiltin[1].keys)
+  end
+
+  def test_iseq_option_debug_level
+    assert_raise(TypeError) {ISeq.compile("", debug_level: "")}
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      RubyVM::InstructionSequence.compile("", debug_level: 5)
+    end;
   end
 end

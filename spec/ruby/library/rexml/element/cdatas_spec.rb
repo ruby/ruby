@@ -1,24 +1,27 @@
-require 'rexml/document'
 require_relative '../../../spec_helper'
 
-describe "REXML::Element#cdatas" do
-  before :each do
-    @e = REXML::Element.new("Root")
-  end
+ruby_version_is ''...'3.0' do
+  require 'rexml/document'
 
-  it "returns the array of children cdatas" do
-    c = REXML::CData.new("Primary")
-    d = REXML::CData.new("Secondary")
-    @e << c
-    @e << d
-    @e.cdatas.should == [c, d]
-  end
+  describe "REXML::Element#cdatas" do
+    before :each do
+      @e = REXML::Element.new("Root")
+    end
 
-  it "freezes the returned array" do
-    @e.cdatas.frozen?.should == true
-  end
+    it "returns the array of children cdatas" do
+      c = REXML::CData.new("Primary")
+      d = REXML::CData.new("Secondary")
+      @e << c
+      @e << d
+      @e.cdatas.should == [c, d]
+    end
 
-  it "returns an empty array if element has no cdata" do
-    @e.cdatas.should == []
+    it "freezes the returned array" do
+      @e.cdatas.should.frozen?
+    end
+
+    it "returns an empty array if element has no cdata" do
+      @e.cdatas.should == []
+    end
   end
 end

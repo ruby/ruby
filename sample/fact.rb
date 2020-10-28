@@ -4,6 +4,6 @@ def fact(n)
   n.downto(1) do |i|
     f *= i
   end
-  return f
+  f
 end
-print fact(ARGV[0].to_i), "\n"
+puts fact(ARGV[0].to_i)

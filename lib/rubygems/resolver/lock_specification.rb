@@ -6,7 +6,6 @@
 # lockfile.
 
 class Gem::Resolver::LockSpecification < Gem::Resolver::Specification
-
   attr_reader :sources
 
   def initialize(set, name, version, sources, platform)
@@ -71,9 +70,9 @@ class Gem::Resolver::LockSpecification < Gem::Resolver::Specification
   # A specification constructed from the lockfile is returned
 
   def spec
-    @spec ||= Gem::Specification.find { |spec|
+    @spec ||= Gem::Specification.find do |spec|
       spec.name == @name and spec.version == @version
-    }
+    end
 
     @spec ||= Gem::Specification.new do |s|
       s.name     = @name
@@ -83,5 +82,4 @@ class Gem::Resolver::LockSpecification < Gem::Resolver::Specification
       s.dependencies.concat @dependencies
     end
   end
-
 end

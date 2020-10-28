@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'minitest_helper'
+require_relative 'helper'
 
 class TestRDocMarkupPreProcess < RDoc::TestCase
 
@@ -73,7 +73,7 @@ contents of a string.
 
   def test_include_file_in_other_directory
     content = nil
-    out, err = capture_io do
+    out, err = capture_output do
       content = @pp.include_file "test.txt", '', nil
     end
 

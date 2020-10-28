@@ -117,4 +117,18 @@ describe "Hash#[]" do
     key = HashSpecs::KeyWithPrivateHash.new
     { key => 42 }[key].should == 42
   end
+
+  it "does not dispatch to hash for Boolean, Integer, Float, String, or Symbol" do
+    code = <<-EOC
+      load '#{fixture __FILE__, "name.rb"}'
+      hash = { true => 42, false => 42, 1 => 42, 2.0 => 42, "hello" => 42, :ok => 42 }
+      [true, false, 1, 2.0, "hello", :ok].each do |value|
+        raise "incorrect value" unless hash[value] == 42
+      end
+      puts "Ok."
+    EOC
+    result = ruby_exe(code, args: "2>&1")
+    result.should == "Ok.\n"
+  end
+
 end

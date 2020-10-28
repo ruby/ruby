@@ -17,9 +17,9 @@
 
 /* OS support note:
  * BSDs have explicit_bzero().
- * OS-X has memset_s().
+ * macOS has memset_s().
  * Windows has SecureZeroMemory() since XP.
- * Linux has none. *Sigh*
+ * Linux has explicit_bzero() since glibc 2.25, musl libc 1.1.20.
  */
 
 /*
@@ -33,7 +33,13 @@
 
 #undef explicit_bzero
 #ifndef HAVE_EXPLICIT_BZERO
- #ifdef HAVE_MEMSET_S
+ #ifdef HAVE_EXPLICIT_MEMSET
+void
+explicit_bzero(void *b, size_t len)
+{
+    (void)explicit_memset(b, 0, len);
+}
+ #elif defined HAVE_MEMSET_S
 void
 explicit_bzero(void *b, size_t len)
 {

@@ -30,7 +30,7 @@ describe "Array#flatten" do
 
   it "raises a TypeError when the passed Object can't be converted to an Integer" do
     obj = mock("Not converted")
-    lambda { [ 1, 2, [3, [4, 5] ] ].flatten(obj) }.should raise_error(TypeError)
+    -> { [ 1, 2, [3, [4, 5] ] ].flatten(obj) }.should raise_error(TypeError)
   end
 
   it "does not call flatten on elements" do
@@ -46,13 +46,13 @@ describe "Array#flatten" do
   it "raises an ArgumentError on recursive arrays" do
     x = []
     x << x
-    lambda { x.flatten }.should raise_error(ArgumentError)
+    -> { x.flatten }.should raise_error(ArgumentError)
 
     x = []
     y = []
     x << y
     y << x
-    lambda { x.flatten }.should raise_error(ArgumentError)
+    -> { x.flatten }.should raise_error(ArgumentError)
   end
 
   it "flattens any element which responds to #to_ary, using the return value of said method" do
@@ -106,23 +106,13 @@ describe "Array#flatten" do
 
     it "raises a TypeError if #to_ary does not return an Array" do
       @obj.should_receive(:to_ary).and_return(1)
-      lambda { [@obj].flatten }.should raise_error(TypeError)
+      -> { [@obj].flatten }.should raise_error(TypeError)
     end
 
-    ruby_version_is ""..."2.5" do
-      it "calls respond_to_missing?(:to_ary, false) to try coercing" do
-        def @obj.respond_to_missing?(*args) ScratchPad << args; false end
-        [@obj].flatten.should == [@obj]
-        ScratchPad.recorded.should == [[:to_ary, false]]
-      end
-    end
-
-    ruby_version_is "2.5" do
-      it "calls respond_to_missing?(:to_ary, true) to try coercing" do
-        def @obj.respond_to_missing?(*args) ScratchPad << args; false end
-        [@obj].flatten.should == [@obj]
-        ScratchPad.recorded.should == [[:to_ary, true]]
-      end
+    it "calls respond_to_missing?(:to_ary, true) to try coercing" do
+      def @obj.respond_to_missing?(*args) ScratchPad << args; false end
+      [@obj].flatten.should == [@obj]
+      ScratchPad.recorded.should == [[:to_ary, true]]
     end
 
     it "does not call #to_ary if not defined when #respond_to_missing? returns false" do
@@ -135,7 +125,7 @@ describe "Array#flatten" do
     it "calls #to_ary if not defined when #respond_to_missing? returns true" do
       def @obj.respond_to_missing?(name, priv) ScratchPad << name; true end
 
-      lambda { [@obj].flatten }.should raise_error(NoMethodError)
+      -> { [@obj].flatten }.should raise_error(NoMethodError)
       ScratchPad.recorded.should == [:to_ary]
     end
 
@@ -145,12 +135,14 @@ describe "Array#flatten" do
     end
   end
 
-  it "returns a tainted array if self is tainted" do
-    [].taint.flatten.tainted?.should be_true
-  end
+  ruby_version_is ''...'2.7' do
+    it "returns a tainted array if self is tainted" do
+      [].taint.flatten.tainted?.should be_true
+    end
 
-  it "returns an untrusted array if self is untrusted" do
-    [].untrust.flatten.untrusted?.should be_true
+    it "returns an untrusted array if self is untrusted" do
+      [].untrust.flatten.untrusted?.should be_true
+    end
   end
 
   it "performs respond_to? and method_missing-aware checks when coercing elements to array" do
@@ -226,7 +218,7 @@ describe "Array#flatten!" do
 
   it "raises a TypeError when the passed Object can't be converted to an Integer" do
     obj = mock("Not converted")
-    lambda { [ 1, 2, [3, [4, 5] ] ].flatten!(obj) }.should raise_error(TypeError)
+    -> { [ 1, 2, [3, [4, 5] ] ].flatten!(obj) }.should raise_error(TypeError)
   end
 
   it "does not call flatten! on elements" do
@@ -242,13 +234,13 @@ describe "Array#flatten!" do
   it "raises an ArgumentError on recursive arrays" do
     x = []
     x << x
-    lambda { x.flatten! }.should raise_error(ArgumentError)
+    -> { x.flatten! }.should raise_error(ArgumentError)
 
     x = []
     y = []
     x << y
     y << x
-    lambda { x.flatten! }.should raise_error(ArgumentError)
+    -> { x.flatten! }.should raise_error(ArgumentError)
   end
 
   it "flattens any elements which responds to #to_ary, using the return value of said method" do
@@ -270,15 +262,15 @@ describe "Array#flatten!" do
     ary.should == [1, 2, 3]
   end
 
-  it "raises a #{frozen_error_class} on frozen arrays when the array is modified" do
+  it "raises a FrozenError on frozen arrays when the array is modified" do
     nested_ary = [1, 2, []]
     nested_ary.freeze
-    lambda { nested_ary.flatten! }.should raise_error(frozen_error_class)
+    -> { nested_ary.flatten! }.should raise_error(FrozenError)
   end
 
   # see [ruby-core:23663]
-  it "raises a #{frozen_error_class} on frozen arrays when the array would not be modified" do
-    lambda { ArraySpecs.frozen_array.flatten! }.should raise_error(frozen_error_class)
-    lambda { ArraySpecs.empty_frozen_array.flatten! }.should raise_error(frozen_error_class)
+  it "raises a FrozenError on frozen arrays when the array would not be modified" do
+    -> { ArraySpecs.frozen_array.flatten! }.should raise_error(FrozenError)
+    -> { ArraySpecs.empty_frozen_array.flatten! }.should raise_error(FrozenError)
   end
 end

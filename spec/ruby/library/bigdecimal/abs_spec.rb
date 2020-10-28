@@ -38,7 +38,7 @@ describe "BigDecimal#abs" do
   it "properly handles special values" do
     @infinity.abs.should == @infinity
     @infinity_minus.abs.should == @infinity
-    @nan.abs.nan?.should == true # have to do it this way, since == doesn't work on NaN
+    @nan.abs.should.nan? # have to do it this way, since == doesn't work on NaN
     @zero.abs.should == 0
     @zero.abs.sign.should == BigDecimal::SIGN_POSITIVE_ZERO
     @zero_pos.abs.should == 0

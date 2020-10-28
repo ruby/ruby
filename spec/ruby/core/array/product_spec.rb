@@ -3,7 +3,7 @@ require_relative 'fixtures/classes'
 
 describe "Array#product" do
   it "returns converted arguments using :to_ary" do
-    lambda{ [1].product(2..3) }.should raise_error(TypeError)
+    ->{ [1].product(2..3) }.should raise_error(TypeError)
     ar = ArraySpecs::ArrayConvertible.new(2,3)
     [1].product(ar).should == [[1,2],[1,3]]
     ar.called.should == :to_ary
@@ -24,7 +24,7 @@ describe "Array#product" do
 
   it "does not attempt to produce an unreasonable number of products" do
     a = (0..100).to_a
-    lambda do
+    -> do
       a.product(a, a, a, a, a, a, a, a, a, a)
     end.should raise_error(RangeError)
   end
@@ -49,7 +49,7 @@ describe "Array#product" do
 
     it "will ignore unreasonable numbers of products and yield anyway" do
       a = (0..100).to_a
-      lambda do
+      -> do
         a.product(a, a, a, a, a, a, a, a, a, a)
       end.should raise_error(RangeError)
     end

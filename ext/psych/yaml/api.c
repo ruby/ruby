@@ -118,7 +118,12 @@ yaml_string_join(
 YAML_DECLARE(int)
 yaml_stack_extend(void **start, void **top, void **end)
 {
-    void *new_start = yaml_realloc(*start, ((char *)*end - (char *)*start)*2);
+    void *new_start;
+
+    if ((char *)*end - (char *)*start >= INT_MAX / 2)
+	return 0;
+
+    new_start = yaml_realloc(*start, ((char *)*end - (char *)*start)*2);
 
     if (!new_start) return 0;
 
@@ -618,10 +623,10 @@ yaml_token_delete(yaml_token_t *token)
  */
 
 static int
-yaml_check_utf8(yaml_char_t *start, size_t length)
+yaml_check_utf8(const yaml_char_t *start, size_t length)
 {
-    yaml_char_t *end = start+length;
-    yaml_char_t *pointer = start;
+    const yaml_char_t *end = start+length;
+    const yaml_char_t *pointer = start;
 
     while (pointer < end) {
         unsigned char octet;
@@ -789,7 +794,7 @@ yaml_document_end_event_initialize(yaml_event_t *event, int implicit)
  */
 
 YAML_DECLARE(int)
-yaml_alias_event_initialize(yaml_event_t *event, yaml_char_t *anchor)
+yaml_alias_event_initialize(yaml_event_t *event, const yaml_char_t *anchor)
 {
     yaml_mark_t mark = { 0, 0, 0 };
     yaml_char_t *anchor_copy = NULL;
@@ -814,8 +819,8 @@ yaml_alias_event_initialize(yaml_event_t *event, yaml_char_t *anchor)
 
 YAML_DECLARE(int)
 yaml_scalar_event_initialize(yaml_event_t *event,
-        yaml_char_t *anchor, yaml_char_t *tag,
-        yaml_char_t *value, int length,
+        const yaml_char_t *anchor, const yaml_char_t *tag,
+        const yaml_char_t *value, int length,
         int plain_implicit, int quoted_implicit,
         yaml_scalar_style_t style)
 {
@@ -840,7 +845,7 @@ yaml_scalar_event_initialize(yaml_event_t *event,
     }
 
     if (length < 0) {
-        length = strlen((char *)value);
+        length = (int)strlen((char *)value);
     }
 
     if (!yaml_check_utf8(value, length)) goto error;
@@ -868,7 +873,7 @@ error:
 
 YAML_DECLARE(int)
 yaml_sequence_start_event_initialize(yaml_event_t *event,
-        yaml_char_t *anchor, yaml_char_t *tag, int implicit,
+        const yaml_char_t *anchor, const yaml_char_t *tag, int implicit,
         yaml_sequence_style_t style)
 {
     yaml_mark_t mark = { 0, 0, 0 };
@@ -923,7 +928,7 @@ yaml_sequence_end_event_initialize(yaml_event_t *event)
 
 YAML_DECLARE(int)
 yaml_mapping_start_event_initialize(yaml_event_t *event,
-        yaml_char_t *anchor, yaml_char_t *tag, int implicit,
+        const yaml_char_t *anchor, const yaml_char_t *tag, int implicit,
         yaml_mapping_style_t style)
 {
     yaml_mark_t mark = { 0, 0, 0 };
@@ -1117,12 +1122,7 @@ error:
 YAML_DECLARE(void)
 yaml_document_delete(yaml_document_t *document)
 {
-    struct {
-        yaml_error_type_t error;
-    } context;
     yaml_tag_directive_t *tag_directive;
-
-    context.error = YAML_NO_ERROR;  /* Eliminate a compliler warning. */
 
     assert(document);   /* Non-NULL document object is expected. */
 
@@ -1193,7 +1193,7 @@ yaml_document_get_root_node(yaml_document_t *document)
 
 YAML_DECLARE(int)
 yaml_document_add_scalar(yaml_document_t *document,
-        yaml_char_t *tag, yaml_char_t *value, int length,
+        const yaml_char_t *tag, const yaml_char_t *value, int length,
         yaml_scalar_style_t style)
 {
     struct {
@@ -1216,7 +1216,7 @@ yaml_document_add_scalar(yaml_document_t *document,
     if (!tag_copy) goto error;
 
     if (length < 0) {
-        length = strlen((char *)value);
+        length = (int)strlen((char *)value);
     }
 
     if (!yaml_check_utf8(value, length)) goto error;
@@ -1228,7 +1228,7 @@ yaml_document_add_scalar(yaml_document_t *document,
     SCALAR_NODE_INIT(node, tag_copy, value_copy, length, style, mark, mark);
     if (!PUSH(&context, document->nodes, node)) goto error;
 
-    return document->nodes.top - document->nodes.start;
+    return (int)(document->nodes.top - document->nodes.start);
 
 error:
     yaml_free(tag_copy);
@@ -1243,7 +1243,7 @@ error:
 
 YAML_DECLARE(int)
 yaml_document_add_sequence(yaml_document_t *document,
-        yaml_char_t *tag, yaml_sequence_style_t style)
+        const yaml_char_t *tag, yaml_sequence_style_t style)
 {
     struct {
         yaml_error_type_t error;
@@ -1273,7 +1273,7 @@ yaml_document_add_sequence(yaml_document_t *document,
             style, mark, mark);
     if (!PUSH(&context, document->nodes, node)) goto error;
 
-    return document->nodes.top - document->nodes.start;
+    return (int)(document->nodes.top - document->nodes.start);
 
 error:
     STACK_DEL(&context, items);
@@ -1288,7 +1288,7 @@ error:
 
 YAML_DECLARE(int)
 yaml_document_add_mapping(yaml_document_t *document,
-        yaml_char_t *tag, yaml_mapping_style_t style)
+        const yaml_char_t *tag, yaml_mapping_style_t style)
 {
     struct {
         yaml_error_type_t error;
@@ -1318,7 +1318,7 @@ yaml_document_add_mapping(yaml_document_t *document,
             style, mark, mark);
     if (!PUSH(&context, document->nodes, node)) goto error;
 
-    return document->nodes.top - document->nodes.start;
+    return (int)(document->nodes.top - document->nodes.start);
 
 error:
     STACK_DEL(&context, pairs);

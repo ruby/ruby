@@ -1,7 +1,7 @@
 # frozen_string_literal: false
 require 'test/unit'
 require 'digest'
-require_relative '../lib/with_different_ofs.rb'
+require_relative '../lib/with_different_ofs'
 
 class TestDigestExtend < Test::Unit::TestCase
   extend DifferentOFS

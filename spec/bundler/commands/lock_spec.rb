@@ -13,15 +13,15 @@ RSpec.describe "bundle lock" do
 
   before :each do
     gemfile <<-G
-      source "file://localhost#{repo}"
+      source "#{file_uri_for(repo)}"
       gem "rails"
       gem "with_license"
       gem "foo"
     G
 
-    @lockfile = strip_lockfile(normalize_uri_file(<<-L))
+    @lockfile = strip_lockfile(<<-L)
       GEM
-        remote: file://localhost#{repo}/
+        remote: #{file_uri_for(repo)}/
         specs:
           actionmailer (2.3.2)
             activesupport (= 2.3.2)
@@ -38,8 +38,8 @@ RSpec.describe "bundle lock" do
             actionpack (= 2.3.2)
             activerecord (= 2.3.2)
             activeresource (= 2.3.2)
-            rake (= 10.0.2)
-          rake (10.0.2)
+            rake (= 13.0.1)
+          rake (13.0.1)
           with_license (1.0)
 
       PLATFORMS
@@ -78,22 +78,49 @@ RSpec.describe "bundle lock" do
   it "writes a lockfile when there is an outdated lockfile using --update" do
     lockfile @lockfile.gsub("2.3.2", "2.3.1")
 
-    bundle! "lock --update"
+    bundle "lock --update"
 
     expect(read_lockfile).to eq(@lockfile)
   end
 
   it "does not fetch remote specs when using the --local option" do
-    bundle "lock --update --local"
+    bundle "lock --update --local", :raise_on_error => false
 
-    expect(out).to match(/sources listed in your Gemfile|installed locally/)
+    expect(err).to match(/sources listed in your Gemfile|installed locally/)
+  end
+
+  it "works with --gemfile flag" do
+    create_file "CustomGemfile", <<-G
+      source "#{file_uri_for(repo)}"
+      gem "foo"
+    G
+    lockfile = strip_lockfile(<<-L)
+      GEM
+        remote: #{file_uri_for(repo)}/
+        specs:
+          foo (1.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        foo
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+    bundle "lock --gemfile CustomGemfile"
+
+    expect(out).to match(/Writing lockfile to.+CustomGemfile\.lock/)
+    expect(read_lockfile("CustomGemfile.lock")).to eq(lockfile)
+    expect { read_lockfile }.to raise_error(Errno::ENOENT)
   end
 
   it "writes to a custom location using --lockfile" do
     bundle "lock --lockfile=lock"
 
     expect(out).to match(/Writing lockfile to.+lock/)
-    expect(read_lockfile "lock").to eq(@lockfile)
+    expect(read_lockfile("lock")).to eq(@lockfile)
     expect { read_lockfile }.to raise_error(Errno::ENOENT)
   end
 
@@ -106,7 +133,7 @@ RSpec.describe "bundle lock" do
   end
 
   it "update specific gems using --update" do
-    lockfile @lockfile.gsub("2.3.2", "2.3.1").gsub("10.0.2", "10.0.1")
+    lockfile @lockfile.gsub("2.3.2", "2.3.1").gsub("13.0.1", "10.0.1")
 
     bundle "lock --update rails rake"
 
@@ -116,10 +143,23 @@ RSpec.describe "bundle lock" do
   it "errors when updating a missing specific gems using --update" do
     lockfile @lockfile
 
-    bundle "lock --update blahblah"
-    expect(out).to eq("Could not find gem 'blahblah'.")
+    bundle "lock --update blahblah", :raise_on_error => false
+    expect(err).to eq("Could not find gem 'blahblah'.")
 
     expect(read_lockfile).to eq(@lockfile)
+  end
+
+  it "can lock without downloading gems" do
+    gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
+
+      gem "thin"
+      gem "rack_middleware", :group => "test"
+    G
+    bundle "config set without test"
+    bundle "config set path .bundle"
+    bundle "lock"
+    expect(bundled_app(".bundle")).not_to exist
   end
 
   # see update_spec for more coverage on same options. logic is shared so it's not necessary
@@ -142,7 +182,7 @@ RSpec.describe "bundle lock" do
 
       # establish a lockfile set to 1.4.3
       install_gemfile <<-G
-        source "file://#{gem_repo4}"
+        source "#{file_uri_for(gem_repo4)}"
         gem 'foo', '1.4.3'
         gem 'bar', '2.0.3'
         gem 'qux', '1.0.0'
@@ -151,10 +191,12 @@ RSpec.describe "bundle lock" do
       # remove 1.4.3 requirement and bar altogether
       # to setup update specs below
       gemfile <<-G
-        source "file://#{gem_repo4}"
+        source "#{file_uri_for(gem_repo4)}"
         gem 'foo'
         gem 'qux'
       G
+
+      allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
     end
 
     it "single gem updates dependent gem to minor" do
@@ -171,41 +213,45 @@ RSpec.describe "bundle lock" do
   end
 
   it "supports adding new platforms" do
-    bundle! "lock --add-platform java x86-mingw32"
+    bundle "lock --add-platform java x86-mingw32"
 
+    allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
     lockfile = Bundler::LockfileParser.new(read_lockfile)
     expect(lockfile.platforms).to match_array(local_platforms.unshift(java, mingw).uniq)
   end
 
   it "supports adding the `ruby` platform" do
-    bundle! "lock --add-platform ruby"
+    bundle "lock --add-platform ruby"
+
+    allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
     lockfile = Bundler::LockfileParser.new(read_lockfile)
     expect(lockfile.platforms).to match_array(local_platforms.unshift("ruby").uniq)
   end
 
   it "warns when adding an unknown platform" do
     bundle "lock --add-platform foobarbaz"
-    expect(out).to include("The platform `foobarbaz` is unknown to RubyGems and adding it will likely lead to resolution errors")
+    expect(err).to include("The platform `foobarbaz` is unknown to RubyGems and adding it will likely lead to resolution errors")
   end
 
   it "allows removing platforms" do
-    bundle! "lock --add-platform java x86-mingw32"
+    bundle "lock --add-platform java x86-mingw32"
 
+    allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
     lockfile = Bundler::LockfileParser.new(read_lockfile)
     expect(lockfile.platforms).to match_array(local_platforms.unshift(java, mingw).uniq)
 
-    bundle! "lock --remove-platform java"
+    bundle "lock --remove-platform java"
 
     lockfile = Bundler::LockfileParser.new(read_lockfile)
     expect(lockfile.platforms).to match_array(local_platforms.unshift(mingw).uniq)
   end
 
   it "errors when removing all platforms" do
-    bundle "lock --remove-platform #{local_platforms.join(" ")}"
-    expect(last_command.bundler_err).to include("Removing all platforms from the bundle is not allowed")
+    bundle "lock --remove-platform #{local_platforms.join(" ")}", :raise_on_error => false
+    expect(err).to include("Removing all platforms from the bundle is not allowed")
   end
 
-  # from https://github.com/bundler/bundler/issues/4896
+  # from https://github.com/rubygems/bundler/issues/4896
   it "properly adds platforms when platform requirements come from different dependencies" do
     build_repo4 do
       build_gem "ffi", "1.9.14"
@@ -236,17 +282,17 @@ RSpec.describe "bundle lock" do
     end
 
     gemfile <<-G
-      source "file://localhost#{gem_repo4}"
+      source "#{file_uri_for(gem_repo4)}"
 
       gem "mixlib-shellout"
       gem "gssapi"
     G
 
-    simulate_platform(mingw) { bundle! :lock }
+    simulate_platform(mingw) { bundle :lock }
 
-    expect(the_bundle.lockfile).to read_as(normalize_uri_file(strip_whitespace(<<-G)))
+    lockfile_should_be <<-G
       GEM
-        remote: file://localhost#{gem_repo4}/
+        remote: #{file_uri_for(gem_repo4)}/
         specs:
           ffi (1.9.14-x86-mingw32)
           gssapi (1.2.0)
@@ -267,11 +313,11 @@ RSpec.describe "bundle lock" do
          #{Bundler::VERSION}
     G
 
-    simulate_platform(rb) { bundle! :lock }
+    simulate_platform(rb) { bundle :lock }
 
-    expect(the_bundle.lockfile).to read_as(normalize_uri_file(strip_whitespace(<<-G)))
+    lockfile_should_be <<-G
       GEM
-        remote: file://localhost#{gem_repo4}/
+        remote: #{file_uri_for(gem_repo4)}/
         specs:
           ffi (1.9.14)
           ffi (1.9.14-x86-mingw32)
@@ -307,14 +353,14 @@ RSpec.describe "bundle lock" do
     end
 
     it "does not implicitly update" do
-      bundle! "lock"
+      bundle "lock"
 
       expect(read_lockfile).to eq(@lockfile)
     end
 
     it "accounts for changes in the gemfile" do
       gemfile gemfile.gsub('"foo"', '"foo", "2.0"')
-      bundle! "lock"
+      bundle "lock"
 
       expect(read_lockfile).to eq(@lockfile.sub("foo (1.0)", "foo (2.0)").sub(/foo$/, "foo (= 2.0)"))
     end

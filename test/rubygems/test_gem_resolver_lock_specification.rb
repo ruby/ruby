@@ -4,7 +4,6 @@ require 'rubygems/installer'
 require 'rubygems/resolver'
 
 class TestGemResolverLockSpecification < Gem::TestCase
-
   def setup
     super
 
@@ -95,5 +94,4 @@ class TestGemResolverLockSpecification < Gem::TestCase
 
     assert_same real_spec, l_spec.spec
   end
-
 end

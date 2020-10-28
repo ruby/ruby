@@ -128,7 +128,6 @@ FILES_NEED_VPATH = %w[
   optunifs.inc
   parse.c
   parse.h
-  prelude.c
   probes.dmyh
   vm.inc
   vmtc.inc
@@ -205,13 +204,15 @@ def in_makefile(target, source)
     when *FILES_SAME_NAME_TOP then source2 = "$(top_srcdir)/#{source}"
     when %r{\A\.ext/include/[^/]+/ruby/} then source2 = $'
     when %r{\Ainclude/ruby/} then source2 = $'
+    when %r{\Aenc/unicode/[\d.]+/} then source2 = '$(UNICODE_HDR_DIR)/' + $'
     when %r{\Aenc/} then source2 = source
     else source2 = "$(top_srcdir)/#{source}"
     end
     ["enc/depend", target2, source2]
   when %r{\Aext/}
-    unless File.exist?("#{File.dirname(target)}/extconf.rb")
-      warn "warning: not found: #{File.dirname(target)}/extconf.rb"
+    targetdir = File.dirname(target)
+    unless File.exist?("#{targetdir}/extconf.rb")
+      warn "warning: not found: #{targetdir}/extconf.rb"
     end
     target2 = File.basename(target)
     relpath = Pathname(source).relative_path_from(Pathname(target).dirname).to_s
@@ -223,8 +224,9 @@ def in_makefile(target, source)
     when *FILES_SAME_NAME_TOP then source2 = "$(top_srcdir)/#{source}"
     when %r{\A\.ext/include/[^/]+/ruby/} then source2 = "$(arch_hdrdir)/ruby/#{$'}"
     when %r{\Ainclude/} then source2 = "$(hdrdir)/#{$'}"
-    when %r{\A#{Regexp.escape File.dirname(target)}/extconf\.h\z} then source2 = "$(RUBY_EXTCONF_H)"
-    when %r{\A#{Regexp.escape File.dirname(target)}/} then source2 = $'
+    when %r{\A#{Regexp.escape targetdir}/extconf\.h\z} then source2 = "$(RUBY_EXTCONF_H)"
+    when %r{\A#{Regexp.escape targetdir}/} then source2 = $'
+    when %r{\A#{Regexp.escape File.dirname(targetdir)}/} then source2 = "$(srcdir)/../#{$'}"
     else source2 = "$(top_srcdir)/#{source}"
     end
     ["#{File.dirname(target)}/depend", target2, source2]
@@ -260,7 +262,7 @@ end
 
 def read_make_deps(cwd)
   dependencies = {}
-  make_p, make_p_stderr, make_p_status = Open3.capture3("make -p all miniruby ruby golf")
+  make_p, make_p_stderr, make_p_status = Open3.capture3("make -p all miniruby exe/ruby golf")
   File.open('update-deps.make.out.log', 'w') {|f| f.print make_p }
   File.open('update-deps.make.err.log', 'w') {|f| f.print make_p_stderr }
   if !make_p_status.success?
@@ -297,6 +299,7 @@ def read_make_deps(cwd)
       target = rule_target
       deps = rule_sources
       deps = deps.scan(%r{[/0-9a-zA-Z._-]+})
+      deps.delete_if {|dep| /\.time\z/ =~ dep} # skip timestamp
       next if /\.o\z/ !~ target.to_s
       next if /\A\./ =~ target.to_s # skip rules such as ".c.o"
       #p [curdir, target, deps]
@@ -336,6 +339,7 @@ def read_single_cc_deps(path_i, cwd)
     next if /\A\# \d+ "(.*)"/ !~ line
     dep = $1
     next if %r{\A<.*>\z} =~ dep # omit <command-line>, etc.
+    next if /\.erb\z/ =~ dep
     compiler_wd ||= dep
     files[dep] = true
   }
@@ -359,6 +363,9 @@ def read_single_cc_deps(path_i, cwd)
     next if !dep.to_s.start_with?(cwd.to_s) # omit system headers.
     deps << dep
   }
+  if deps.include?(cwd + "probes.h")
+    deps << (cwd + "probes.dmyh")
+  end
   deps
 end
 

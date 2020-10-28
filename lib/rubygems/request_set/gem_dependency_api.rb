@@ -31,7 +31,6 @@
 # See `gem help install` and `gem help gem_dependencies` for further details.
 
 class Gem::RequestSet::GemDependencyAPI
-
   ENGINE_MAP = { # :nodoc:
     :jruby        => %w[jruby],
     :jruby_18     => %w[jruby],
@@ -43,11 +42,12 @@ class Gem::RequestSet::GemDependencyAPI
     :mri_20       => %w[ruby],
     :mri_21       => %w[ruby],
     :rbx          => %w[rbx],
-    :ruby         => %w[ruby rbx maglev],
-    :ruby_18      => %w[ruby rbx maglev],
-    :ruby_19      => %w[ruby rbx maglev],
-    :ruby_20      => %w[ruby rbx maglev],
-    :ruby_21      => %w[ruby rbx maglev],
+    :truffleruby  => %w[truffleruby],
+    :ruby         => %w[ruby rbx maglev truffleruby],
+    :ruby_18      => %w[ruby rbx maglev truffleruby],
+    :ruby_19      => %w[ruby rbx maglev truffleruby],
+    :ruby_20      => %w[ruby rbx maglev truffleruby],
+    :ruby_21      => %w[ruby rbx maglev truffleruby],
   }.freeze
 
   mswin     = Gem::Platform.new 'x86-mswin32'
@@ -85,6 +85,7 @@ class Gem::RequestSet::GemDependencyAPI
     :ruby_19      => Gem::Platform::RUBY,
     :ruby_20      => Gem::Platform::RUBY,
     :ruby_21      => Gem::Platform::RUBY,
+    :truffleruby  => Gem::Platform::RUBY,
     :x64_mingw    => x64_mingw,
     :x64_mingw_20 => x64_mingw,
     :x64_mingw_21 => x64_mingw
@@ -126,6 +127,7 @@ class Gem::RequestSet::GemDependencyAPI
     :ruby_19      => tilde_gt_1_9_0,
     :ruby_20      => tilde_gt_2_0_0,
     :ruby_21      => tilde_gt_2_1_0,
+    :truffleruby  => gt_eq_0,
     :x64_mingw    => gt_eq_0,
     :x64_mingw_20 => tilde_gt_2_0_0,
     :x64_mingw_21 => tilde_gt_2_1_0,
@@ -203,7 +205,7 @@ class Gem::RequestSet::GemDependencyAPI
     @git_set            = @set.git_set
     @git_sources        = {}
     @installing         = false
-    @requires           = Hash.new { |h, name| h[name] = [] }
+    @requires           = Hash.new {|h, name| h[name] = [] }
     @vendor_set         = @set.vendor_set
     @source_set         = @set.source_set
     @gem_sources        = {}
@@ -232,7 +234,7 @@ class Gem::RequestSet::GemDependencyAPI
     return unless (groups & @without_groups).empty?
 
     dependencies.each do |dep|
-      @set.gem dep.name, *dep.requirement
+      @set.gem dep.name, *dep.requirement.as_list
     end
   end
 
@@ -277,7 +279,7 @@ class Gem::RequestSet::GemDependencyAPI
   # Loads the gem dependency file and returns self.
 
   def load
-    instance_eval File.read(@path).untaint, @path, 1
+    instance_eval File.read(@path).tap(&Gem::UNTAINT), @path, 1
 
     self
   end
@@ -440,7 +442,7 @@ Gem dependencies file #{@path} requires #{name} more than once.
 Gem dependencies file #{@path} includes git reference for both ref and branch but only ref is used.
       WARNING
     end
-    if (ref||branch) && tag
+    if (ref || branch) && tag
       warn <<-WARNING
 Gem dependencies file #{@path} includes git reference for both ref/branch and tag but only ref/branch is used.
       WARNING
@@ -480,7 +482,7 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
 
   def gem_group(name, options) # :nodoc:
     g = options.delete :group
-    all_groups  = g ? Array(g) : []
+    all_groups = g ? Array(g) : []
 
     groups = options.delete :groups
     all_groups |= groups if groups
@@ -779,7 +781,7 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
   # You may also provide +engine:+ and +engine_version:+ options to restrict
   # this gem dependencies file to a particular ruby engine and its engine
   # version.  This matching is performed by using the RUBY_ENGINE and
-  # engine_specific VERSION constants.  (For JRuby, JRUBY_VERSION).
+  # RUBY_ENGINE_VERSION constants.
 
   def ruby(version, options = {})
     engine         = options[:engine]
@@ -806,11 +808,9 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
     end
 
     if engine_version
-      my_engine_version = Object.const_get "#{Gem.ruby_engine.upcase}_VERSION"
-
-      if engine_version != my_engine_version
+      if engine_version != RUBY_ENGINE_VERSION
         message =
-          "Your Ruby engine version is #{Gem.ruby_engine} #{my_engine_version}, " +
+          "Your Ruby engine version is #{Gem.ruby_engine} #{RUBY_ENGINE_VERSION}, " +
           "but your #{gem_deps_file} requires #{engine} #{engine_version}"
 
         raise Gem::RubyVersionMismatch, message
@@ -841,5 +841,4 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
 
     Gem.sources << url
   end
-
 end

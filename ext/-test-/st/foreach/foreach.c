@@ -106,7 +106,7 @@ unp_fec(VALUE self, VALUE test)
 }
 
 static int
-unp_fe_i(st_data_t key, st_data_t val, st_data_t args, int error)
+unp_fe_i(st_data_t key, st_data_t val, st_data_t args)
 {
     struct checker *c = (struct checker *)args;
 

@@ -1,4 +1,4 @@
-# -*- encoding: ascii-8bit -*-
+# -*- encoding: binary -*-
 require_relative '../../../spec_helper'
 require_relative '../fixtures/classes'
 require_relative 'shared/basic'
@@ -97,8 +97,8 @@ describe "Array#pack with format 'H'" do
     ].should be_computed_by(:pack, "H")
   end
 
-  it "returns an ASCII-8BIT string" do
-    ["41"].pack("H").encoding.should == Encoding::ASCII_8BIT
+  it "returns a binary string" do
+    ["41"].pack("H").encoding.should == Encoding::BINARY
   end
 end
 
@@ -194,7 +194,7 @@ describe "Array#pack with format 'h'" do
     ].should be_computed_by(:pack, "h")
   end
 
-  it "returns an ASCII-8BIT string" do
-    ["41"].pack("h").encoding.should == Encoding::ASCII_8BIT
+  it "returns a binary string" do
+    ["41"].pack("h").encoding.should == Encoding::BINARY
   end
 end

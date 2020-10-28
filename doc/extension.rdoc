@@ -190,16 +190,6 @@ rb_str_new_literal(const char *ptr) ::
 
   Creates a new Ruby string from a C string literal.
 
-rb_tainted_str_new(const char *ptr, long len) ::
-
-  Creates a new tainted Ruby string.  Strings from external data
-  sources should be tainted.
-
-rb_tainted_str_new2(const char *ptr) ::
-rb_tainted_str_new_cstr(const char *ptr) ::
-
-  Creates a new tainted Ruby string from a C string.
-
 rb_sprintf(const char *format, ...) ::
 rb_vsprintf(const char *format, va_list ap) ::
 
@@ -458,6 +448,18 @@ you may rely on:
 
   VALUE rb_call_super(int argc, const VALUE *argv)
 
+To specify whether keyword arguments are passed when calling super:
+
+  VALUE rb_call_super(int argc, const VALUE *argv, int kw_splat)
+
++kw_splat+ can have these possible values (used by all methods that accept
++kw_splat+ argument):
+
+RB_NO_KEYWORDS :: Do not pass keywords
+RB_PASS_KEYWORDS :: Pass keywords, final argument should be a hash of keywords
+RB_PASS_CALLED_KEYWORDS :: Pass keywords if current method was called with
+                           keywords, useful for argument delegation
+
 To achieve the receiver of the current scope (if no other way is
 available), you can use:
 
@@ -674,7 +676,8 @@ member of the struct.
                   void (*dmark)(void*);
                   void (*dfree)(void*);
                   size_t (*dsize)(const void *);
-                  void *reserved[2];
+                  void (*dcompact)(void*);
+                  void *reserved[1];
           } function;
           const rb_data_type_t *parent;
           void *data;
@@ -706,7 +709,15 @@ Its parameter is a pointer to your struct.
 You can pass 0 as dsize if it is hard to implement such a function.
 But it is still recommended to avoid 0.
 
-You have to fill reserved and parent with 0.
+dcompact is invoked when memory compaction took place.
+Referred Ruby objects that were marked by rb_gc_mark_movable()
+can here be updated per rb_gc_location().
+
+You have to fill reserved with 0.
+
+parent can point to another C type definition that the Ruby object
+is inherited from. Then TypedData_Get_Struct() does also accept
+derived objects.
 
 You can fill "data" with an arbitrary value for your use.
 Ruby does nothing with the member.
@@ -722,7 +733,7 @@ RUBY_TYPED_FREE_IMMEDIATELY ::
   You can specify this flag if the dfree never unlocks Ruby's
   internal lock (GVL).
 
-  If this flag is not set, Ruby defers invokation of dfree()
+  If this flag is not set, Ruby defers invocation of dfree()
   and invokes dfree() at the same time as finalizers.
 
 RUBY_TYPED_WB_PROTECTED ::
@@ -1196,10 +1207,6 @@ void Check_Type(VALUE value, int type) ::
 
   Ensures +value+ is of the given internal +type+ or raises a TypeError
 
-SafeStringValue(value) ::
-
-  Checks that +value+ is a String and is not tainted
-
 === Data Type Conversion
 
 FIX2INT(value), INT2FIX(i) ::
@@ -1398,7 +1405,7 @@ rb_scan_args(int argc, VALUE *argv, const char *fmt, ...) ::
   according to the format string.  The format can be described in ABNF
   as follows:
 
-    scan-arg-spec  := param-arg-spec [option-hash-arg-spec] [block-arg-spec]
+    scan-arg-spec  := param-arg-spec [keyword-arg-spec] [block-arg-spec]
 
     param-arg-spec := pre-arg-spec [post-arg-spec] / post-arg-spec /
                       pre-opt-post-arg-spec
@@ -1407,7 +1414,7 @@ rb_scan_args(int argc, VALUE *argv, const char *fmt, ...) ::
                       [num-of-trailing-mandatory-args]
     pre-opt-post-arg-spec := num-of-leading-mandatory-args num-of-optional-args
                              num-of-trailing-mandatory-args
-    option-hash-arg-spec := sym-for-option-hash-arg
+    keyword-arg-spec := sym-for-keyword-arg
     block-arg-spec := sym-for-block-arg
 
     num-of-leading-mandatory-args  := DIGIT ; The number of leading
@@ -1419,18 +1426,10 @@ rb_scan_args(int argc, VALUE *argv, const char *fmt, ...) ::
                                             ; captured as a ruby array
     num-of-trailing-mandatory-args := DIGIT ; The number of trailing
                                             ; mandatory arguments
-    sym-for-option-hash-arg        := ":"   ; Indicates that an option
-                                            ; hash is captured if the last
-                                            ; argument is a hash or can be
-                                            ; converted to a hash with
-                                            ; #to_hash.  When the last
-                                            ; argument is nil, it is
-                                            ; captured if it is not
-                                            ; ambiguous to take it as
-                                            ; empty option hash; i.e. '*'
-                                            ; is not specified and
-                                            ; arguments are given more
-                                            ; than sufficient.
+    sym-for-keyword-arg            := ":"   ; Indicates that keyword
+                                            ; argument captured as a hash.
+                                            ; If keyword arguments are not
+                                            ; provided, returns nil.
     sym-for-block-arg              := "&"   ; Indicates that an iterator
                                             ; block should be captured if
                                             ; given
@@ -1444,6 +1443,19 @@ rb_scan_args(int argc, VALUE *argv, const char *fmt, ...) ::
 
   The number of given arguments, excluding an option hash or iterator
   block, is returned.
+
+rb_scan_args_kw(int kw_splat, int argc, VALUE *argv, const char *fmt, ...) ::
+
+  The same as +rb_scan_args+, except the +kw_splat+ argument specifies whether
+  keyword arguments are provided (instead of being determined by the call
+  from Ruby to the C function). +kw_splat+ should be one of the following
+  values:
+
+  RB_SCAN_ARGS_PASS_CALLED_KEYWORDS :: Same behavior as +rb_scan_args+.
+  RB_SCAN_ARGS_KEYWORDS :: The final argument should be a hash treated as
+                           keywords.
+  RB_SCAN_ARGS_LAST_HASH_KEYWORDS :: Treat a final argument as keywords if it
+                                     is a hash, and not as keywords otherwise.
 
 int rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, VALUE *values) ::
 
@@ -1483,10 +1495,40 @@ VALUE rb_funcallv(VALUE recv, ID mid, int argc, VALUE *argv) ::
   Invokes a method, passing arguments as an array of values.
   Able to call even private/protected methods.
 
+VALUE rb_funcallv_kw(VALUE recv, ID mid, int argc, VALUE *argv, int kw_splat) ::
+
+  Same as rb_funcallv, using +kw_splat+ to determine whether keyword
+  arguments are passed.
+
 VALUE rb_funcallv_public(VALUE recv, ID mid, int argc, VALUE *argv) ::
 
   Invokes a method, passing arguments as an array of values.
   Able to call only public methods.
+
+VALUE rb_funcallv_public_kw(VALUE recv, ID mid, int argc, VALUE *argv, int kw_splat) ::
+
+  Same as rb_funcallv_public, using +kw_splat+ to determine whether keyword
+  arguments are passed.
+
+VALUE rb_funcall_passing_block(VALUE recv, ID mid, int argc, const VALUE* argv) ::
+
+  Same as rb_funcallv_public, except is passes the currently active block as
+  the block when calling the method.
+
+VALUE rb_funcall_passing_block_kw(VALUE recv, ID mid, int argc, const VALUE* argv, int kw_splat) ::
+
+  Same as rb_funcall_passing_block, using +kw_splat+ to determine whether
+  keyword arguments are passed.
+
+VALUE rb_funcall_with_block(VALUE recv, ID mid, int argc, const VALUE *argv, VALUE passed_procval) ::
+
+  Same as rb_funcallv_public, except +passed_procval+ specifies the block to
+  pass to the method.
+
+VALUE rb_funcall_with_block_kw(VALUE recv, ID mid, int argc, const VALUE *argv, VALUE passed_procval, int kw_splat) ::
+
+  Same as rb_funcall_with_block, using +kw_splat+ to determine whether
+  keyword arguments are passed.
 
 VALUE rb_eval_string(const char *str) ::
 
@@ -1532,6 +1574,11 @@ VALUE rb_block_call(VALUE recv, ID mid, int argc, VALUE * argv, VALUE (*func) (A
   whereas yielded values can be gotten via argc/argv of the third/fourth
   arguments.
 
+VALUE rb_block_call_kw(VALUE recv, ID mid, int argc, VALUE * argv, VALUE (*func) (ANYARGS), VALUE data2, int kw_splat) ::
+
+  Same as rb_funcall_with_block, using +kw_splat+ to determine whether
+  keyword arguments are passed.
+
 \[OBSOLETE] VALUE rb_iterate(VALUE (*func1)(), VALUE arg1, VALUE (*func2)(), VALUE arg2) ::
 
   Calls the function func1, supplying func2 as the block.  func1 will be
@@ -1543,7 +1590,32 @@ VALUE rb_block_call(VALUE recv, ID mid, int argc, VALUE * argv, VALUE (*func) (A
 
 VALUE rb_yield(VALUE val) ::
 
-  Evaluates the block with value val.
+  Yields val as a single argument to the block.
+
+VALUE rb_yield_values(int n, ...) ::
+
+  Yields +n+ number of arguments to the block, using one C argument per Ruby
+  argument.
+
+VALUE rb_yield_values2(int n, VALUE *argv) ::
+
+  Yields +n+ number of arguments to the block, with all Ruby arguments in the
+  C argv array.
+
+VALUE rb_yield_values_kw(int n, VALUE *argv, int kw_splat) ::
+
+  Same as rb_yield_values2, using +kw_splat+ to determine whether
+  keyword arguments are passed.
+
+VALUE rb_yield_splat(VALUE args) ::
+
+  Same as rb_yield_values2, except arguments are specified by the Ruby
+  array +args+.
+
+VALUE rb_yield_splat_kw(VALUE args, int kw_splat) ::
+
+  Same as rb_yield_splat, using +kw_splat+ to determine whether
+  keyword arguments are passed.
 
 VALUE rb_rescue(VALUE (*func1)(ANYARGS), VALUE arg1, VALUE (*func2)(ANYARGS), VALUE arg2) ::
 
@@ -1817,6 +1889,49 @@ RB_EVENT_HOOKS_HAVE_CALLBACK_DATA ::
   Means that rb_add_event_hook() takes the third argument `data', to be
   passed to the given event hook function.
 
+=== Defining backward compatible macros for keyword argument functions
+
+Most ruby C extensions are designed to support multiple Ruby versions.
+In order to correctly support Ruby 2.7+ in regards to keyword
+argument separation, C extensions need to use <code>*_kw</code>
+functions.  However, these functions do not exist in Ruby 2.6 and
+below, so in those cases macros should be defined to allow you to use
+the same code on multiple Ruby versions.  Here are example macros
+you can use in extensions that support Ruby 2.6 (or below) when using
+the <code>*_kw</code> functions introduced in Ruby 2.7.
+
+  #ifndef RB_PASS_KEYWORDS
+  /* Only define macros on Ruby <2.7 */
+  #define rb_funcallv_kw(o, m, c, v, kw) rb_funcallv(o, m, c, v)
+  #define rb_funcallv_public_kw(o, m, c, v, kw) rb_funcallv_public(o, m, c, v)
+  #define rb_funcall_passing_block_kw(o, m, c, v, kw) rb_funcall_passing_block(o, m, c, v)
+  #define rb_funcall_with_block_kw(o, m, c, v, b, kw) rb_funcall_with_block(o, m, c, v, b)
+  #define rb_scan_args_kw(kw, c, v, s, ...) rb_scan_args(c, v, s, __VA_ARGS__)
+  #define rb_call_super_kw(c, v, kw) rb_call_super(c, v)
+  #define rb_yield_values_kw(c, v, kw) rb_yield_values2(c, v)
+  #define rb_yield_splat_kw(a, kw) rb_yield_splat(a)
+  #define rb_block_call_kw(o, m, c, v, f, p, kw) rb_block_call(o, m, c, v, f, p)
+  #define rb_fiber_resume_kw(o, c, v, kw) rb_fiber_resume(o, c, v)
+  #define rb_fiber_yield_kw(c, v, kw) rb_fiber_yield(c, v)
+  #define rb_enumeratorize_with_size_kw(o, m, c, v, f, kw) rb_enumeratorize_with_size(o, m, c, v, f)
+  #define SIZED_ENUMERATOR_KW(obj, argc, argv, size_fn, kw_splat) \
+      rb_enumeratorize_with_size((obj), ID2SYM(rb_frame_this_func()), \
+                                 (argc), (argv), (size_fn))
+  #define RETURN_SIZED_ENUMERATOR_KW(obj, argc, argv, size_fn, kw_splat) do { \
+          if (!rb_block_given_p())                                            \
+              return SIZED_ENUMERATOR(obj, argc, argv, size_fn);              \
+      } while (0)
+  #define RETURN_ENUMERATOR_KW(obj, argc, argv, kw_splat) RETURN_SIZED_ENUMERATOR(obj, argc, argv, 0)
+  #define rb_check_funcall_kw(o, m, c, v, kw) rb_check_funcall(o, m, c, v)
+  #define rb_obj_call_init_kw(o, c, v, kw) rb_obj_call_init(o, c, v)
+  #define rb_class_new_instance_kw(c, v, k, kw) rb_class_new_instance(c, v, k)
+  #define rb_proc_call_kw(p, a, kw) rb_proc_call(p, a)
+  #define rb_proc_call_with_block_kw(p, c, v, b, kw) rb_proc_call_with_block(p, c, v, b)
+  #define rb_method_call_kw(c, v, m, kw) rb_method_call(c, v, m)
+  #define rb_method_call_with_block_kw(c, v, m, b, kw) rb_method_call_with_block(c, v, m, b)
+  #define rb_eval_cmd_kwd(c, a, kw) rb_eval_cmd(c, a, 0)
+  #endif
+
 == Appendix C. Functions available for use in extconf.rb
 
 See documentation for {mkmf}[rdoc-ref:MakeMakefile].
@@ -1918,7 +2033,7 @@ Before inserting write barriers, you need to know about RGenGC algorithm
 available in include/ruby/ruby.h. An example is available in iseq.c.
 
 For a complete guide for RGenGC and write barriers, please refer to
-<https://bugs.ruby-lang.org/projects/ruby-trunk/wiki/RGenGC>.
+<https://bugs.ruby-lang.org/projects/ruby-master/wiki/RGenGC>.
 
 == Appendix E. RB_GC_GUARD to protect from premature GC
 

@@ -6,7 +6,7 @@ describe "Array#drop" do
   end
 
   it "raises an ArgumentError if the number of elements specified is negative" do
-   lambda { [1, 2].drop(-3) }.should raise_error(ArgumentError)
+   -> { [1, 2].drop(-3) }.should raise_error(ArgumentError)
   end
 
   it "returns an empty Array if all elements are dropped" do
@@ -29,5 +29,23 @@ describe "Array#drop" do
     ary = [nil, 1, 2]
     ary.shift
     ary.drop(1).should == [2]
+  end
+
+  it "tries to convert the passed argument to an Integer using #to_int" do
+    obj = mock("to_int")
+    obj.should_receive(:to_int).and_return(2)
+
+    [1, 2, 3].drop(obj).should == [3]
+  end
+
+  it "raises a TypeError when the passed argument can't be coerced to Integer" do
+    -> { [1, 2].drop("cat") }.should raise_error(TypeError)
+  end
+
+  it "raises a TypeError when the passed argument isn't an integer and #to_int returns non-Integer" do
+    obj = mock("to_int")
+    obj.should_receive(:to_int).and_return("cat")
+
+    -> { [1, 2].drop(obj) }.should raise_error(TypeError)
   end
 end

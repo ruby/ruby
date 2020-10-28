@@ -3,7 +3,7 @@
 module Bundler
   # A stub yaml serializer that can handle only hashes and strings (as of now).
   module YAMLSerializer
-  module_function
+    module_function
 
     def dump(hash)
       yaml = String.new("---")
@@ -32,7 +32,7 @@ module Bundler
       (.*) # value
       \1 # matching closing quote
       $
-    /xo
+    /xo.freeze
 
     HASH_REGEX = /
       ^
@@ -40,12 +40,11 @@ module Bundler
       (.+) # key
       (?::(?=(?:\s|$))) # :  (without the lookahead the #key includes this when : is present in value)
       [ ]?
-      (?: !\s)? # optional exclamation mark found with ruby 1.9.3
       (['"]?) # optional opening quote
       (.*) # value
       \3 # matching closing quote
       $
-    /xo
+    /xo.freeze
 
     def load(str)
       res = {}

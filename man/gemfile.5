@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "GEMFILE" "5" "January 2019" "" ""
+.TH "GEMFILE" "5" "October 2020" "" ""
 .
 .SH "NAME"
 \fBGemfile\fR \- A format for describing gem dependencies for Ruby programs
@@ -150,7 +150,7 @@ gem "RedCloth", ">= 4\.1\.0", "< 4\.2\.0"
 .IP "" 0
 .
 .SS "REQUIRE AS"
-Each \fIgem\fR \fBMAY\fR specify files that should be used when autorequiring via \fBBundler\.require\fR\. You may pass an array with multiple files or \fBtrue\fR if file you want \fBrequired\fR has same name as \fIgem\fR or \fBfalse\fR to prevent any file from being autorequired\.
+Each \fIgem\fR \fBMAY\fR specify files that should be used when autorequiring via \fBBundler\.require\fR\. You may pass an array with multiple files or \fBtrue\fR if the file you want \fBrequired\fR has the same name as \fIgem\fR or \fBfalse\fR to prevent any file from being autorequired\.
 .
 .IP "" 4
 .
@@ -158,7 +158,7 @@ Each \fIgem\fR \fBMAY\fR specify files that should be used when autorequiring vi
 
 gem "redis", :require => ["redis/connection/hiredis", "redis"]
 gem "webmock", :require => false
-gem "debugger", :require => true
+gem "byebug", :require => true
 .
 .fi
 .
@@ -218,27 +218,27 @@ Bundler\.require(:test)           # requires the _test_ group
 .IP "" 0
 .
 .P
-The Bundler CLI allows you to specify a list of groups whose gems \fBbundle install\fR should not install with the \fB\-\-without\fR option\. To specify multiple groups to ignore, specify a list of groups separated by spaces\.
+The Bundler CLI allows you to specify a list of groups whose gems \fBbundle install\fR should not install with the \fBwithout\fR configuration\.
+.
+.P
+To specify multiple groups to ignore, specify a list of groups separated by spaces\.
 .
 .IP "" 4
 .
 .nf
 
-bundle install \-\-without test
-bundle install \-\-without development test
+bundle config set \-\-local without test
+bundle config set \-\-local without development test
 .
 .fi
 .
 .IP "" 0
 .
 .P
-After running \fBbundle install \-\-without test\fR, bundler will remember that you excluded the test group in the last installation\. The next time you run \fBbundle install\fR, without any \fB\-\-without option\fR, bundler will recall it\.
-.
-.P
 Also, calling \fBBundler\.setup\fR with no parameters, or calling \fBrequire "bundler/setup"\fR will setup all groups except for the ones you excluded via \fB\-\-without\fR (since they are not available)\.
 .
 .P
-Note that on \fBbundle install\fR, bundler downloads and evaluates all gems, in order to create a single canonical list of all of the required gems and their dependencies\. This means that you cannot list different versions of the same gems in different groups\. For more details, see Understanding Bundler \fIhttp://bundler\.io/rationale\.html\fR\.
+Note that on \fBbundle install\fR, bundler downloads and evaluates all gems, in order to create a single canonical list of all of the required gems and their dependencies\. This means that you cannot list different versions of the same gems in different groups\. For more details, see Understanding Bundler \fIhttps://bundler\.io/rationale\.html\fR\.
 .
 .SS "PLATFORMS"
 If a gem should only be used in a particular platform or set of platforms, you can specify them\. Platforms are essentially identical to groups, except that you do not need to use the \fB\-\-without\fR install\-time flag to exclude groups of gems for other platforms\.
@@ -409,19 +409,16 @@ Git repositories support a number of additional options\.
 .
 .TP
 \fBbranch\fR, \fBtag\fR, and \fBref\fR
-You \fBMUST\fR only specify at most one of these options\. The default is \fB:branch => "master"\fR
-.
-.TP
-For example:
+You \fBMUST\fR only specify at most one of these options\. The default is \fB:branch => "master"\fR\. For example:
 .
 .IP
-git "https://github\.com/rails/rails\.git", :branch => "5\-0\-stable" do
+gem "rails", :git => "https://github\.com/rails/rails\.git", :branch => "5\-0\-stable"
 .
 .IP
-git "https://github\.com/rails/rails\.git", :tag => "v5\.0\.0" do
+gem "rails", :git => "https://github\.com/rails/rails\.git", :tag => "v5\.0\.0"
 .
 .IP
-git "https://github\.com/rails/rails\.git", :ref => "4aded" do
+gem "rails", :git => "https://github\.com/rails/rails\.git", :ref => "4aded"
 .
 .TP
 \fBsubmodules\fR

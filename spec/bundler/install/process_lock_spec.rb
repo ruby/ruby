@@ -12,8 +12,8 @@ RSpec.describe "process lock spec" do
         end
       end
 
-      install_gemfile! <<-G
-        source "file://#{gem_repo1}"
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
 
@@ -21,7 +21,7 @@ RSpec.describe "process lock spec" do
       expect(the_bundle).to include_gems "rack 1.0"
     end
 
-    context "when creating a lock raises Errno::ENOTSUP", :ruby => ">= 1.9" do
+    context "when creating a lock raises Errno::ENOTSUP" do
       before { allow(File).to receive(:open).and_raise(Errno::ENOTSUP) }
 
       it "skips creating the lock file and yields" do

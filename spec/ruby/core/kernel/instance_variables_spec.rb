@@ -4,12 +4,14 @@ require_relative 'fixtures/classes'
 describe "Kernel#instance_variables" do
   describe "immediate values" do
     it "returns an empty array if no instance variables are defined" do
-      0.instance_variables.should == []
+      [0, 0.5, true, false, nil].each do |value|
+        value.instance_variables.should == []
+      end
     end
 
     it "returns the correct array if an instance variable is added" do
       a = 0
-      lambda{ a.instance_variable_set("@test", 1) }.should raise_error(RuntimeError)
+      ->{ a.instance_variable_set("@test", 1) }.should raise_error(RuntimeError)
     end
   end
 

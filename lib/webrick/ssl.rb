@@ -122,7 +122,7 @@ module WEBrick
       ef.issuer_certificate = cert
       cert.extensions = [
         ef.create_extension("basicConstraints","CA:FALSE"),
-        ef.create_extension("keyUsage", "keyEncipherment"),
+        ef.create_extension("keyUsage", "keyEncipherment, digitalSignature, keyAgreement, dataEncipherment"),
         ef.create_extension("subjectKeyIdentifier", "hash"),
         ef.create_extension("extendedKeyUsage", "serverAuth"),
         ef.create_extension("nsComment", comment),
@@ -130,7 +130,7 @@ module WEBrick
       aki = ef.create_extension("authorityKeyIdentifier",
                                 "keyid:always,issuer:always")
       cert.add_extension(aki)
-      cert.sign(rsa, OpenSSL::Digest::SHA256.new)
+      cert.sign(rsa, "SHA256")
 
       return [ cert, rsa ]
     end

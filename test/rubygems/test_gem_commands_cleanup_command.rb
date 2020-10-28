@@ -4,7 +4,6 @@ require 'rubygems/commands/cleanup_command'
 require 'rubygems/installer'
 
 class TestGemCommandsCleanupCommand < Gem::TestCase
-
   def setup
     super
 
@@ -23,8 +22,19 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
   end
 
   def test_handle_options_dry_run
-    @cmd.handle_options %w[--dryrun]
+    @cmd.handle_options %w[--dry-run]
     assert @cmd.options[:dryrun]
+  end
+
+  def test_handle_options_deprecated_dry_run
+    use_ui @ui do
+      @cmd.handle_options %w[--dryrun]
+      assert @cmd.options[:dryrun]
+    end
+
+    assert_equal \
+      "WARNING:  The \"--dryrun\" option has been deprecated and will be removed in future versions of Rubygems. Use --dry-run instead\n",
+      @ui.error
   end
 
   def test_handle_options_n
@@ -56,8 +66,13 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
   end
 
   def test_execute_all_dependencies
-    @b_1 = util_spec 'b', 1 do |s| s.add_dependency 'a', '1' end
-    @b_2 = util_spec 'b', 2 do |s| s.add_dependency 'a', '2' end
+    @b_1 = util_spec 'b', 1 do |s|
+      s.add_dependency 'a', '1'
+    end
+
+    @b_2 = util_spec 'b', 2 do |s|
+      s.add_dependency 'a', '2'
+    end
 
     install_gem @b_1
     install_gem @b_2
@@ -71,8 +86,13 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
   end
 
   def test_execute_dev_dependencies
-    @b_1 = util_spec 'b', 1 do |s| s.add_development_dependency 'a', '1' end
-    @c_1 = util_spec 'c', 1 do |s| s.add_development_dependency 'a', '2' end
+    @b_1 = util_spec 'b', 1 do |s|
+      s.add_development_dependency 'a', '1'
+    end
+
+    @c_1 = util_spec 'c', 1 do |s|
+      s.add_development_dependency 'a', '2'
+    end
 
     install_gem @b_1
     install_gem @c_1
@@ -85,8 +105,13 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
   end
 
   def test_execute_without_dev_dependencies
-    @b_1 = util_spec 'b', 1 do |s| s.add_development_dependency 'a', '1' end
-    @c_1 = util_spec 'c', 1 do |s| s.add_development_dependency 'a', '2' end
+    @b_1 = util_spec 'b', 1 do |s|
+      s.add_development_dependency 'a', '1'
+    end
+
+    @c_1 = util_spec 'c', 1 do |s|
+      s.add_development_dependency 'a', '2'
+    end
 
     install_gem @b_1
     install_gem @c_1
@@ -205,7 +230,7 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
       @cmd.execute
     end
 
-    assert_match %r%^Skipped default gems: b-2%, @ui.output
+    assert_match %r{^Skipped default gems: b-2}, @ui.output
     assert_empty @ui.error
   end
 

@@ -12,7 +12,7 @@ describe "Tempfile#initialize" do
 
   it "opens a new tempfile with the passed name in the passed directory" do
     @tempfile.send(:initialize, "basename", tmp(""))
-    File.exist?(@tempfile.path).should be_true
+    File.should.exist?(@tempfile.path)
 
     tmpdir = tmp("")
     path = @tempfile.path
@@ -37,5 +37,10 @@ describe "Tempfile#initialize" do
   it "accepts encoding options" do
     @tempfile.send(:initialize, ['shiftjis', 'yml'], encoding: 'SHIFT_JIS')
     @tempfile.external_encoding.should == Encoding::Shift_JIS
+  end
+
+  it "does not try to modify the arguments" do
+    @tempfile.send(:initialize, ['frozen'.freeze, 'txt'.freeze], encoding: Encoding::IBM437)
+    @tempfile.external_encoding.should == Encoding::IBM437
   end
 end

@@ -3,30 +3,35 @@ require 'timeout'
 
 describe "Timeout.timeout" do
   it "raises Timeout::Error when it times out with no specified error type" do
-    lambda {
+    -> {
       Timeout.timeout(1) do
-        sleep 3
+        sleep
       end
     }.should raise_error(Timeout::Error)
   end
 
   it "raises specified error type when it times out" do
-    lambda do
+    -> do
       Timeout.timeout(1, StandardError) do
-        sleep 3
+        sleep
       end
     end.should raise_error(StandardError)
   end
 
-  it "does not wait too long" do
-    before_time = Time.now
-    lambda do
-      Timeout.timeout(1, StandardError) do
-        sleep 3
+  it "raises specified error type with specified message when it times out" do
+    -> do
+      Timeout.timeout(1, StandardError, "foobar") do
+        sleep
       end
-    end.should raise_error(StandardError)
+    end.should raise_error(StandardError, "foobar")
+  end
 
-    (Time.now - before_time).should be_close(1.0, 0.5)
+  it "raises specified error type with a default message when it times out if message is nil" do
+    -> do
+      Timeout.timeout(1, StandardError, nil) do
+        sleep
+      end
+    end.should raise_error(StandardError, "execution expired")
   end
 
   it "returns back the last value in the block" do

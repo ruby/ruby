@@ -1,4 +1,4 @@
-# -*- encoding: ascii-8bit -*-
+# -*- encoding: binary -*-
 require_relative '../../../spec_helper'
 
 describe :range_cover_and_include, shared: true do
@@ -19,6 +19,13 @@ describe :range_cover_and_include, shared: true do
     (0.5...2.4).send(@method, 2.4).should == false
   end
 
+  ruby_version_is "2.6" do
+    it "returns true if other is an element of self for endless ranges" do
+      eval("(1..)").send(@method, 2.4).should == true
+      eval("(0.5...)").send(@method, 2.4).should == true
+    end
+  end
+
   it "compares values using <=>" do
     rng = (1..5)
     m = mock("int")
@@ -29,8 +36,8 @@ describe :range_cover_and_include, shared: true do
   end
 
   it "raises an ArgumentError without exactly one argument" do
-    lambda{ (1..2).send(@method) }.should raise_error(ArgumentError)
-    lambda{ (1..2).send(@method, 1, 2) }.should raise_error(ArgumentError)
+    ->{ (1..2).send(@method) }.should raise_error(ArgumentError)
+    ->{ (1..2).send(@method, 1, 2) }.should raise_error(ArgumentError)
   end
 
   it "returns true if argument is equal to the first value of the range" do

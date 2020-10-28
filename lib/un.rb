@@ -22,7 +22,7 @@
 #   ruby -run -e touch -- [OPTION] FILE
 #   ruby -run -e wait_writable -- [OPTION] FILE
 #   ruby -run -e mkmf -- [OPTION] EXTNAME [OPTION]
-#   ruby -run -e httpd -- [OPTION] DocumentRoot
+#   ruby -run -e httpd -- [OPTION] [DocumentRoot]
 #   ruby -run -e help [COMMAND]
 
 require "fileutils"
@@ -88,7 +88,7 @@ def cp
     options[:preserve] = true if options.delete :p
     dest = argv.pop
     argv = argv[0] if argv.size == 1
-    FileUtils.send cmd, argv, dest, options
+    FileUtils.__send__ cmd, argv, dest, **options
   end
 end
 
@@ -109,7 +109,7 @@ def ln
     options[:force] = true if options.delete :f
     dest = argv.pop
     argv = argv[0] if argv.size == 1
-    FileUtils.send cmd, argv, dest, options
+    FileUtils.__send__ cmd, argv, dest, **options
   end
 end
 
@@ -125,7 +125,7 @@ def mv
   setup do |argv, options|
     dest = argv.pop
     argv = argv[0] if argv.size == 1
-    FileUtils.mv argv, dest, options
+    FileUtils.mv argv, dest, **options
   end
 end
 
@@ -144,7 +144,7 @@ def rm
     cmd = "rm"
     cmd += "_r" if options.delete :r
     options[:force] = true if options.delete :f
-    FileUtils.send cmd, argv, options
+    FileUtils.__send__ cmd, argv, **options
   end
 end
 
@@ -161,7 +161,7 @@ def mkdir
   setup("p") do |argv, options|
     cmd = "mkdir"
     cmd += "_p" if options.delete :p
-    FileUtils.send cmd, argv, options
+    FileUtils.__send__ cmd, argv, **options
   end
 end
 
@@ -177,7 +177,7 @@ end
 def rmdir
   setup("p") do |argv, options|
     options[:parents] = true if options.delete :p
-    FileUtils.rmdir argv, options
+    FileUtils.rmdir argv, **options
   end
 end
 
@@ -202,7 +202,7 @@ def install
     (group = options.delete :g) and options[:group] = group
     dest = argv.pop
     argv = argv[0] if argv.size == 1
-    FileUtils.install argv, dest, options
+    FileUtils.install argv, dest, **options
   end
 end
 
@@ -218,7 +218,7 @@ def chmod
   setup do |argv, options|
     mode = argv.shift
     mode = /\A\d/ =~ mode ? mode.oct : mode
-    FileUtils.chmod mode, argv, options
+    FileUtils.chmod mode, argv, **options
   end
 end
 
@@ -232,7 +232,7 @@ end
 
 def touch
   setup do |argv, options|
-    FileUtils.touch argv, options
+    FileUtils.touch argv, **options
   end
 end
 
@@ -304,7 +304,7 @@ end
 ##
 # Run WEBrick HTTP server.
 #
-#   ruby -run -e httpd -- [OPTION] DocumentRoot
+#   ruby -run -e httpd -- [OPTION] [DocumentRoot]
 #
 #   --bind-address=ADDR         address to bind
 #   --port=NUM                  listening port number

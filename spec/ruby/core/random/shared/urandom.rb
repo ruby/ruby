@@ -8,13 +8,13 @@ describe :random_urandom, shared: true do
   end
 
   it "raises an ArgumentError on a negative size" do
-    lambda {
+    -> {
       Random.send(@method, -1)
     }.should raise_error(ArgumentError)
   end
 
-  it "returns an ASCII-8BIT String" do
-    Random.send(@method, 15).encoding.should == Encoding::ASCII_8BIT
+  it "returns a binary String" do
+    Random.send(@method, 15).encoding.should == Encoding::BINARY
   end
 
   it "returns a random binary String" do

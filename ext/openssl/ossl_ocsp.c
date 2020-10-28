@@ -1489,13 +1489,15 @@ ossl_ocspcid_initialize_copy(VALUE self, VALUE other)
  * call-seq:
  *   OpenSSL::OCSP::CertificateId.new(subject, issuer, digest = nil) -> certificate_id
  *   OpenSSL::OCSP::CertificateId.new(der_string)                    -> certificate_id
+ *   OpenSSL::OCSP::CertificateId.new(obj)                           -> certificate_id
  *
  * Creates a new OpenSSL::OCSP::CertificateId for the given _subject_ and
  * _issuer_ X509 certificates.  The _digest_ is a digest algorithm that is used
  * to compute the hash values. This defaults to SHA-1.
  *
  * If only one argument is given, decodes it as DER representation of a
- * certificate ID.
+ * certificate ID or generates certificate ID from the object that responds to
+ * the to_der method.
  */
 static VALUE
 ossl_ocspcid_initialize(int argc, VALUE *argv, VALUE self)
@@ -1717,7 +1719,7 @@ Init_ossl_ocsp(void)
      * subject certificate so the CA knows which certificate we are asking
      * about:
      *
-     *   digest = OpenSSL::Digest::SHA1.new
+     *   digest = OpenSSL::Digest.new('SHA1')
      *   certificate_id =
      *     OpenSSL::OCSP::CertificateId.new subject, issuer, digest
      *
@@ -1734,18 +1736,11 @@ Init_ossl_ocsp(void)
      * To submit the request to the CA for verification we need to extract the
      * OCSP URI from the subject certificate:
      *
-     *   authority_info_access = subject.extensions.find do |extension|
-     *     extension.oid == 'authorityInfoAccess'
-     *   end
-     *
-     *   descriptions = authority_info_access.value.split "\n"
-     *   ocsp = descriptions.find do |description|
-     *     description.start_with? 'OCSP'
-     *   end
+     *   ocsp_uris = subject.ocsp_uris
      *
      *   require 'uri'
      *
-     *   ocsp_uri = URI ocsp[/URI:(.*)/, 1]
+     *   ocsp_uri = URI ocsp_uris[0]
      *
      * To submit the request we'll POST the request to the OCSP URI (per RFC
      * 2560).  Note that we only handle HTTP requests and don't handle any

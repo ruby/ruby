@@ -13,7 +13,7 @@
 #
 # (3) restart zsh.
 #
-# (4) geneate completion files once.
+# (4) generate completion files once.
 #      generate-complete-function/ruby/optparse COMMAND1
 #      generate-complete-function/ruby/optparse COMMAND2
 #

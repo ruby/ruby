@@ -21,7 +21,7 @@ platform_is_not :windows do
       end
 
       it "returns nil if the log is closed" do
-        Syslog.opened?.should == false
+        Syslog.should_not.opened?
         Syslog.ident.should == nil
       end
 

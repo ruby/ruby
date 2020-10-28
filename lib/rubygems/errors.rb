@@ -25,14 +25,15 @@ module Gem
   # system.  Instead of rescuing from this class, make sure to rescue from the
   # superclass Gem::LoadError to catch all types of load errors.
   class MissingSpecError < Gem::LoadError
-    def initialize(name, requirement)
+    def initialize(name, requirement, extra_message=nil)
       @name        = name
       @requirement = requirement
+      @extra_message = extra_message
     end
 
     def message # :nodoc:
       build_message +
-        "Checked in 'GEM_PATH=#{Gem.path.join(File::PATH_SEPARATOR)}', execute `gem env` for more information"
+        "Checked in 'GEM_PATH=#{Gem.path.join(File::PATH_SEPARATOR)}' #{@extra_message}, execute `gem env` for more information"
     end
 
     private
@@ -69,7 +70,6 @@ module Gem
   # Raised when there are conflicting gem specs loaded
 
   class ConflictError < LoadError
-
     ##
     # A Hash mapping conflicting specifications to the dependencies that
     # caused the conflict
@@ -86,9 +86,9 @@ module Gem
       @conflicts = conflicts
       @name      = target.name
 
-      reason = conflicts.map { |act, dependencies|
+      reason = conflicts.map do |act, dependencies|
         "#{act.full_name} conflicts with #{dependencies.join(", ")}"
-      }.join ", "
+      end.join ", "
 
       # TODO: improve message by saying who activated `con`
 
@@ -105,7 +105,6 @@ module Gem
   # in figuring out why a gem couldn't be installed.
   #
   class PlatformMismatch < ErrorReason
-
     ##
     # the name of the gem
     attr_reader :name
@@ -150,7 +149,6 @@ module Gem
   # data from a source
 
   class SourceFetchProblem < ErrorReason
-
     ##
     # Creates a new SourceFetchProblem for the given +source+ and +error+.
 

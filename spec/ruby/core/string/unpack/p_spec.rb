@@ -15,11 +15,13 @@ describe "String#unpack with format 'P'" do
     packed = ["hello"].pack("P")
     packed.unpack("P5").should == ["hello"]
     packed.dup.unpack("P5").should == ["hello"]
-    lambda { packed.to_sym.to_s.unpack("P5") }.should raise_error(ArgumentError, /no associated pointer/)
+    -> { packed.to_sym.to_s.unpack("P5") }.should raise_error(ArgumentError, /no associated pointer/)
   end
 
-  it "taints the unpacked string" do
-    ["hello"].pack("P").unpack("P5").first.tainted?.should be_true
+  ruby_version_is ''...'2.7' do
+    it "taints the unpacked string" do
+      ["hello"].pack("P").unpack("P5").first.tainted?.should be_true
+    end
   end
 
   it "reads as many characters as specified" do
@@ -43,10 +45,12 @@ describe "String#unpack with format 'p'" do
     packed = ["hello"].pack("p")
     packed.unpack("p").should == ["hello"]
     packed.dup.unpack("p").should == ["hello"]
-    lambda { packed.to_sym.to_s.unpack("p") }.should raise_error(ArgumentError, /no associated pointer/)
+    -> { packed.to_sym.to_s.unpack("p") }.should raise_error(ArgumentError, /no associated pointer/)
   end
 
-  it "taints the unpacked string" do
-    ["hello"].pack("p").unpack("p").first.tainted?.should be_true
+  ruby_version_is ''...'2.7' do
+    it "taints the unpacked string" do
+      ["hello"].pack("p").unpack("p").first.tainted?.should be_true
+    end
   end
 end

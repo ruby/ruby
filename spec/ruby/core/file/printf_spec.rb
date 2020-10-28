@@ -2,7 +2,7 @@ require_relative '../../spec_helper'
 require_relative '../kernel/shared/sprintf'
 
 describe "File#printf" do
-  it_behaves_like :kernel_sprintf, -> (format, *args) {
+  it_behaves_like :kernel_sprintf, -> format, *args {
     begin
       @filename = tmp("printf.txt")
 

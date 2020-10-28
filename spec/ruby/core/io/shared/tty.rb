@@ -7,8 +7,7 @@ describe :io_tty, shared: true do
         # check to enabled tty
         File.open('/dev/tty') {}
       rescue Errno::ENXIO
-        # workaround for not configured environment like OS X
-        1.should == 1
+        skip "workaround for not configured environment like OS X"
       else
         File.open('/dev/tty') { |f| f.send(@method) }.should == true
       end
@@ -20,6 +19,6 @@ describe :io_tty, shared: true do
   end
 
   it "raises IOError on closed stream" do
-    lambda { IOSpecs.closed_io.send @method }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.send @method }.should raise_error(IOError)
   end
 end

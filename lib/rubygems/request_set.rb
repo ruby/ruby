@@ -15,7 +15,6 @@ require 'tsort'
 #   #=> ["nokogiri-1.6.0", "mini_portile-0.5.1", "pg-0.17.0"]
 
 class Gem::RequestSet
-
   include TSort
 
   ##
@@ -184,7 +183,7 @@ class Gem::RequestSet
       if req.installed?
         req.spec.spec.build_extensions
 
-        if @always_install.none? { |spec| spec == req.spec.spec }
+        if @always_install.none? {|spec| spec == req.spec.spec }
           yield req, nil if block_given?
           next
         end
@@ -269,7 +268,7 @@ class Gem::RequestSet
     gem_home, ENV['GEM_HOME'] = ENV['GEM_HOME'], dir
 
     existing = force ? [] : specs_in(dir)
-    existing.delete_if { |s| @always_install.include? s }
+    existing.delete_if {|s| @always_install.include? s }
 
     dir = File.expand_path dir
 
@@ -283,7 +282,7 @@ class Gem::RequestSet
     sorted_requests.each do |request|
       spec = request.spec
 
-      if existing.find { |s| s.full_name == spec.full_name }
+      if existing.find {|s| s.full_name == spec.full_name }
         yield request, nil if block_given?
         next
       end
@@ -334,7 +333,7 @@ class Gem::RequestSet
 
     @git_set.root_dir = @install_dir
 
-    lock_file = "#{File.expand_path(path)}.lock".dup.untaint
+    lock_file = "#{File.expand_path(path)}.lock".dup.tap(&Gem::UNTAINT)
     begin
       tokenizer = Gem::RequestSet::Lockfile::Tokenizer.from_file lock_file
       parser = tokenizer.make_parser self, []
@@ -386,7 +385,7 @@ class Gem::RequestSet
       q.text 'sets:'
 
       q.breakable
-      q.pp @sets.map { |set| set.class }
+      q.pp @sets.map {|set| set.class }
     end
   end
 
@@ -440,7 +439,7 @@ class Gem::RequestSet
   end
 
   def specs
-    @specs ||= @requests.map { |r| r.full_spec }
+    @specs ||= @requests.map {|r| r.full_spec }
   end
 
   def specs_in(dir)
@@ -457,9 +456,9 @@ class Gem::RequestSet
     node.spec.dependencies.each do |dep|
       next if dep.type == :development and not @development
 
-      match = @requests.find { |r|
+      match = @requests.find do |r|
         dep.match? r.spec.name, r.spec.version, @prerelease
-      }
+      end
 
       unless match
         next if dep.type == :development and @development_shallow
@@ -471,7 +470,6 @@ class Gem::RequestSet
       yield match
     end
   end
-
 end
 
 require 'rubygems/request_set/gem_dependency_api'

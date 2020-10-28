@@ -30,11 +30,11 @@ describe "Array#shift" do
     array[0..2].should == ['two', 3.0, array]
   end
 
-  it "raises a #{frozen_error_class} on a frozen array" do
-    lambda { ArraySpecs.frozen_array.shift }.should raise_error(frozen_error_class)
+  it "raises a FrozenError on a frozen array" do
+    -> { ArraySpecs.frozen_array.shift }.should raise_error(FrozenError)
   end
-  it "raises a #{frozen_error_class} on an empty frozen array" do
-    lambda { ArraySpecs.empty_frozen_array.shift }.should raise_error(frozen_error_class)
+  it "raises a FrozenError on an empty frozen array" do
+    -> { ArraySpecs.empty_frozen_array.shift }.should raise_error(FrozenError)
   end
 
   describe "passed a number n as an argument" do
@@ -90,7 +90,7 @@ describe "Array#shift" do
     end
 
     it "raises an ArgumentError if n is negative" do
-      lambda{ [1, 2, 3].shift(-1) }.should raise_error(ArgumentError)
+      ->{ [1, 2, 3].shift(-1) }.should raise_error(ArgumentError)
     end
 
     it "tries to convert n to an Integer using #to_int" do
@@ -105,30 +105,32 @@ describe "Array#shift" do
     end
 
     it "raises a TypeError when the passed n cannot be coerced to Integer" do
-      lambda{ [1, 2].shift("cat") }.should raise_error(TypeError)
-      lambda{ [1, 2].shift(nil) }.should raise_error(TypeError)
+      ->{ [1, 2].shift("cat") }.should raise_error(TypeError)
+      ->{ [1, 2].shift(nil) }.should raise_error(TypeError)
     end
 
     it "raises an ArgumentError if more arguments are passed" do
-      lambda{ [1, 2].shift(1, 2) }.should raise_error(ArgumentError)
+      ->{ [1, 2].shift(1, 2) }.should raise_error(ArgumentError)
     end
 
     it "does not return subclass instances with Array subclass" do
       ArraySpecs::MyArray[1, 2, 3].shift(2).should be_an_instance_of(Array)
     end
 
-    it "returns an untainted array even if the array is tainted" do
-      ary = [1, 2].taint
-      ary.shift(2).tainted?.should be_false
-      ary.shift(0).tainted?.should be_false
-    end
+    ruby_version_is ''...'2.7' do
+      it "returns an untainted array even if the array is tainted" do
+        ary = [1, 2].taint
+        ary.shift(2).tainted?.should be_false
+        ary.shift(0).tainted?.should be_false
+      end
 
-    it "keeps taint status" do
-      a = [1, 2].taint
-      a.shift(2)
-      a.tainted?.should be_true
-      a.shift(2)
-      a.tainted?.should be_true
+      it "keeps taint status" do
+        a = [1, 2].taint
+        a.shift(2)
+        a.tainted?.should be_true
+        a.shift(2)
+        a.tainted?.should be_true
+      end
     end
   end
 end

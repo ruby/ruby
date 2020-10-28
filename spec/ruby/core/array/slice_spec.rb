@@ -116,8 +116,8 @@ describe "Array#slice!" do
     a.slice!(from .. to).should == [2, 3, 4]
     a.should == [1, 5]
 
-    lambda { a.slice!("a" .. "b")  }.should raise_error(TypeError)
-    lambda { a.slice!(from .. "b") }.should raise_error(TypeError)
+    -> { a.slice!("a" .. "b")  }.should raise_error(TypeError)
+    -> { a.slice!(from .. "b") }.should raise_error(TypeError)
   end
 
   it "returns last element for consecutive calls at zero index" do
@@ -150,8 +150,20 @@ describe "Array#slice!" do
     a.should == [1, 2]
   end
 
-  it "raises a #{frozen_error_class} on a frozen array" do
-    lambda { ArraySpecs.frozen_array.slice!(0, 0) }.should raise_error(frozen_error_class)
+  it "raises a FrozenError on a frozen array" do
+    -> { ArraySpecs.frozen_array.slice!(0, 0) }.should raise_error(FrozenError)
+  end
+
+  ruby_version_is "2.6" do
+    it "works with endless ranges" do
+      a = [1, 2, 3]
+      a.slice!(eval("(1..)")).should == [2, 3]
+      a.should == [1]
+
+      a = [1, 2, 3]
+      a.slice!(eval("(2...)")).should == [3]
+      a.should == [1, 2]
+    end
   end
 end
 

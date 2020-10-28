@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "thread"
-
 module Bundler
   class Worker
     POISON = Object.new
@@ -50,7 +48,7 @@ module Bundler
       stop_threads
     end
 
-  private
+    private
 
     def process_queue(i)
       loop do
@@ -62,7 +60,7 @@ module Bundler
 
     def apply_func(obj, i)
       @func.call(obj, i)
-    rescue Exception => e
+    rescue Exception => e # rubocop:disable Lint/RescueException
       WrappedException.new(e)
     end
 

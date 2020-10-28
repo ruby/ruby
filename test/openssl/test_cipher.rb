@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require_relative 'utils'
 
 if defined?(OpenSSL)
@@ -36,8 +36,8 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
     cipher.pkcs5_keyivgen(pass, salt, num, "MD5")
     s1 = cipher.update(pt) << cipher.final
 
-    d1 = num.times.inject(pass + salt) {|out, _| OpenSSL::Digest::MD5.digest(out) }
-    d2 = num.times.inject(d1 + pass + salt) {|out, _| OpenSSL::Digest::MD5.digest(out) }
+    d1 = num.times.inject(pass + salt) {|out, _| OpenSSL::Digest.digest('MD5', out) }
+    d2 = num.times.inject(d1 + pass + salt) {|out, _| OpenSSL::Digest.digest('MD5', out) }
     key = (d1 + d2)[0, 24]
     iv = (d1 + d2)[24, 8]
     cipher = new_encryptor("DES-EDE3-CBC", key: key, iv: iv)
@@ -148,12 +148,12 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
   def test_AES
     pt = File.read(__FILE__)
     %w(ECB CBC CFB OFB).each{|mode|
-      c1 = OpenSSL::Cipher::AES256.new(mode)
+      c1 = OpenSSL::Cipher.new("AES-256-#{mode}")
       c1.encrypt
       c1.pkcs5_keyivgen("passwd")
       ct = c1.update(pt) + c1.final
 
-      c2 = OpenSSL::Cipher::AES256.new(mode)
+      c2 = OpenSSL::Cipher.new("AES-256-#{mode}")
       c2.decrypt
       c2.pkcs5_keyivgen("passwd")
       assert_equal(pt, c2.update(ct) + c2.final)
@@ -163,7 +163,7 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
   def test_update_raise_if_key_not_set
     assert_raise(OpenSSL::Cipher::CipherError) do
       # it caused OpenSSL SEGV by uninitialized key [Bug #2768]
-      OpenSSL::Cipher::AES128.new("ECB").update "." * 17
+      OpenSSL::Cipher.new("AES-128-ECB").update "." * 17
     end
   end
 
@@ -303,6 +303,21 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
       cipher = OpenSSL::Cipher.new("aes-128-cfb").encrypt
       cipher.auth_data = "123"
     }
+  end
+
+  def test_crypt_after_key
+    key = ["2b7e151628aed2a6abf7158809cf4f3c"].pack("H*")
+    %w'ecb cbc cfb ctr gcm'.each do |c|
+      cipher = OpenSSL::Cipher.new("aes-128-#{c}")
+      cipher.key = key
+      cipher.encrypt
+      assert_raise(OpenSSL::Cipher::CipherError) { cipher.update("") }
+
+      cipher = OpenSSL::Cipher.new("aes-128-#{c}")
+      cipher.key = key
+      cipher.decrypt
+      assert_raise(OpenSSL::Cipher::CipherError) { cipher.update("") }
+    end
   end
 
   private

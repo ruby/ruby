@@ -212,9 +212,18 @@ module WEBrick
 
       # :stopdoc:
 
+      def set_filesystem_encoding(str)
+        enc = Encoding.find('filesystem')
+        if enc == Encoding::US_ASCII
+          str.b
+        else
+          str.dup.force_encoding(enc)
+        end
+      end
+
       def service(req, res)
         # if this class is mounted on "/" and /~username is requested.
-        # we're going to override path informations before invoking service.
+        # we're going to override path information before invoking service.
         if defined?(Etc) && @options[:UserDir] && req.script_name.empty?
           if %r|^(/~([^/]+))| =~ req.path_info
             script_name, user = $1, $2
@@ -298,7 +307,7 @@ module WEBrick
       end
 
       def exec_handler(req, res)
-        raise HTTPStatus::NotFound, "`#{req.path}' not found" unless @root
+        raise HTTPStatus::NotFound, "`#{req.path}' not found." unless @root
         if set_filename(req, res)
           handler = get_handler(req, res)
           call_callback(:HandlerCallback, req, res)
@@ -324,11 +333,12 @@ module WEBrick
       end
 
       def set_filename(req, res)
-        res.filename = @root.dup
+        res.filename = @root
         path_info = req.path_info.scan(%r|/[^/]*|)
 
         path_info.unshift("")  # dummy for checking @root dir
         while base = path_info.first
+          base = set_filesystem_encoding(base)
           break if base == "/"
           break unless File.directory?(File.expand_path(res.filename + base))
           shift_path_info(req, res, path_info)
@@ -336,6 +346,7 @@ module WEBrick
         end
 
         if base = path_info.first
+          base = set_filesystem_encoding(base)
           if base == "/"
             if file = search_index_file(req, res)
               shift_path_info(req, res, path_info, file)
@@ -364,7 +375,7 @@ module WEBrick
 
       def shift_path_info(req, res, path_info, base=nil)
         tmp = path_info.shift
-        base = base || tmp
+        base = base || set_filesystem_encoding(tmp)
         req.path_info = path_info.join
         req.script_name << base
         res.filename = File.expand_path(res.filename + base)

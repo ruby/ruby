@@ -49,7 +49,7 @@ module KernelSpecs
 
   def self.chomp(str, method, sep="\n")
     code = "$_ = #{str.inspect}; $/ = #{sep.inspect}; #{method}; print $_"
-    IO.popen([*ruby_exe, "-n", "-e", code], "r+") do |io|
+    IO.popen([*ruby_exe, "-W0", "-n", "-e", code], "r+") do |io|
       io.puts
       io.close_write
       io.read
@@ -328,12 +328,34 @@ module KernelSpecs
     def inner
       b = mp { return :good }
 
-      pr = lambda { |x| x.call }
+      pr = -> x { x.call }
 
       pr.call(b)
 
       # We shouldn't be here, b should have unwinded through
       return :bad
+    end
+  end
+
+  module LambdaSpecs
+    module ZSuper
+      def lambda
+        super
+      end
+    end
+
+    class ForwardBlockWithZSuper
+      prepend(ZSuper)
+    end
+
+    module Ampersand
+      def lambda(&block)
+        suppress_warning {super(&block)}
+      end
+    end
+
+    class SuperAmpersand
+      prepend(Ampersand)
     end
   end
 
@@ -424,6 +446,20 @@ module KernelSpecs
     def f2_call_lineno; method(:f3).source_location[1] + 1; end
     def f3_call_lineno; method(:f4).source_location[1] + 1; end
   end
+
+  CustomRangeInteger = Struct.new(:value) do
+    def to_int; value; end
+    def <=>(other); to_int <=> other.to_int; end
+    def -(other); self.class.new(to_int - other.to_int); end
+    def +(other); self.class.new(to_int + other.to_int); end
+  end
+
+  CustomRangeFloat = Struct.new(:value) do
+    def to_f; value; end
+    def <=>(other); to_f <=> other.to_f; end
+    def -(other); to_f - other.to_f; end
+    def +(other); self.class.new(to_f + other.to_f); end
+  end
 end
 
 class EvalSpecs
@@ -452,14 +488,5 @@ class EvalSpecs
     f = __FILE__
     eval "true", binding, "(eval)", 1
     return f
-  end
-end
-
-# for Kernel#sleep to have Channel in it's specs
-# TODO: switch directly to queue for both Kernel#sleep and Thread specs?
-unless defined? Channel
-  require 'thread'
-  class Channel < Queue
-    alias receive shift
   end
 end

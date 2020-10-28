@@ -13,13 +13,19 @@
 #ifdef SOCKS
 /*
  * call-seq:
- *   SOCKSSocket.new(host, serv) => socket
+ *   SOCKSSocket.new(host, port) => socket
  *
- * Opens a SOCKS connection to +host+ via the SOCKS server +serv+.
+ * Opens a SOCKS connection to +host+ via the SOCKS server.
+ *
+ * The SOCKS server configuration varies by implementation
+ *
+ * When using the Dante libsocks/libsocksd implementation it is configured as SOCKS_SERVER env var.
+ *
+ * See: https://manpages.debian.org/testing/dante-client/socksify.1.en.html for full env variable support.
  *
  */
 static VALUE
-socks_init(VALUE sock, VALUE host, VALUE serv)
+socks_init(VALUE sock, VALUE host, VALUE port)
 {
     static int init = 0;
 
@@ -28,7 +34,7 @@ socks_init(VALUE sock, VALUE host, VALUE serv)
 	init = 1;
     }
 
-    return rsock_init_inetsock(sock, host, serv, Qnil, Qnil, INET_SOCKS);
+    return rsock_init_inetsock(sock, host, port, Qnil, Qnil, INET_SOCKS, Qnil);
 }
 
 #ifdef SOCKS5

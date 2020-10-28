@@ -50,7 +50,6 @@ class CGI
         require 'digest/md5'
         md5 = Digest::MD5.hexdigest(id)[0,16]
         path = dir+"/"+prefix+md5
-        path.untaint
         if File::exist?(path)
           @hash = nil
         else

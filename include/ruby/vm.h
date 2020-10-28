@@ -1,31 +1,23 @@
-/**********************************************************************
-
-  ruby/vm.h -
-
-  $Author$
-  created at: Sat May 31 15:17:36 2008
-
-  Copyright (C) 2008 Yukihiro Matsumoto
-
-**********************************************************************/
-
-#ifndef RUBY_VM_H
+#ifndef RUBY_VM_H                                    /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_VM_H 1
+/**
+ * @file
+ * @author     $Author$
+ * @date       Sat May 31 15:17:36 2008
+ * @copyright  Copyright (C) 2008 Yukihiro Matsumoto
+ * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
+ *             Permission  is hereby  granted,  to  either redistribute  and/or
+ *             modify this file, provided that  the conditions mentioned in the
+ *             file COPYING are met.  Consult the file for details.
+ */
+#include "ruby/internal/dllexport.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
-RUBY_SYMBOL_EXPORT_BEGIN
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 /* Place holder.
  *
  * We will prepare VM creation/control APIs on 1.9.2 or later.
- * If you have an interest about it, please see mvm branch.
- * https://svn.ruby-lang.org/cgi-bin/viewvc.cgi/branches/mvm/
+ *
  */
 
 /* VM type declaration */
@@ -52,13 +44,6 @@ int ruby_vm_destruct(ruby_vm_t *vm);
  */
 void ruby_vm_at_exit(void(*func)(ruby_vm_t *));
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RBIMPL_SYMBOL_EXPORT_END()
 
 #endif /* RUBY_VM_H */

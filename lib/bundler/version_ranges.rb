@@ -5,11 +5,42 @@ module Bundler
     NEq = Struct.new(:version)
     ReqR = Struct.new(:left, :right)
     class ReqR
-      Endpoint = Struct.new(:version, :inclusive)
+      Endpoint = Struct.new(:version, :inclusive) do
+        def <=>(other)
+          if version.equal?(INFINITY)
+            return 0 if other.version.equal?(INFINITY)
+            return 1
+          elsif other.version.equal?(INFINITY)
+            return -1
+          end
+
+          comp = version <=> other.version
+          return comp unless comp.zero?
+
+          if inclusive && !other.inclusive
+            1
+          elsif !inclusive && other.inclusive
+            -1
+          else
+            0
+          end
+        end
+      end
+
       def to_s
         "#{left.inclusive ? "[" : "("}#{left.version}, #{right.version}#{right.inclusive ? "]" : ")"}"
       end
-      INFINITY = Object.new.freeze
+      INFINITY = begin
+        inf = Object.new
+        def inf.to_s
+          "∞"
+        end
+        def inf.<=>(other)
+          return 0 if other.equal?(self)
+          1
+        end
+        inf.freeze
+      end
       ZERO = Gem::Version.new("0.a")
 
       def cover?(v)
@@ -30,6 +61,15 @@ module Bundler
 
       def single?
         left.version == right.version
+      end
+
+      def <=>(other)
+        return -1 if other.equal?(INFINITY)
+
+        comp = left <=> other.left
+        return comp unless comp.zero?
+
+        right <=> other.right
       end
 
       UNIVERSAL = ReqR.new(ReqR::Endpoint.new(Gem::Version.new("0.a"), true), ReqR::Endpoint.new(ReqR::INFINITY, false)).freeze
@@ -57,7 +97,7 @@ module Bundler
       end.uniq
       ranges, neqs = ranges.partition {|r| !r.is_a?(NEq) }
 
-      [ranges.sort_by {|range| [range.left.version, range.left.inclusive ? 0 : 1] }, neqs.map(&:version)]
+      [ranges.sort, neqs.map(&:version)]
     end
 
     def self.empty?(ranges, neqs)
@@ -66,8 +106,14 @@ module Bundler
         next false if curr_range.single? && neqs.include?(curr_range.left.version)
         next curr_range if last_range.right.version == ReqR::INFINITY
         case last_range.right.version <=> curr_range.left.version
-        when 1 then next curr_range
-        when 0 then next(last_range.right.inclusive && curr_range.left.inclusive && !neqs.include?(curr_range.left.version) && curr_range)
+        # higher
+        when 1 then next ReqR.new(curr_range.left, last_range.right)
+        # equal
+        when 0
+          if last_range.right.inclusive && curr_range.left.inclusive && !neqs.include?(curr_range.left.version)
+            ReqR.new(curr_range.left, [curr_range.right, last_range.right].max)
+          end
+        # lower
         when -1 then next false
         end
       end

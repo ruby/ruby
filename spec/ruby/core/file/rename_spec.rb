@@ -14,24 +14,24 @@ describe "File.rename" do
   end
 
   it "renames a file" do
-    File.exist?(@old).should == true
-    File.exist?(@new).should == false
+    File.should.exist?(@old)
+    File.should_not.exist?(@new)
     File.rename(@old, @new)
-    File.exist?(@old).should == false
-    File.exist?(@new).should == true
+    File.should_not.exist?(@old)
+    File.should.exist?(@new)
   end
 
   it "raises an Errno::ENOENT if the source does not exist" do
     rm_r @old
-    lambda { File.rename(@old, @new) }.should raise_error(Errno::ENOENT)
+    -> { File.rename(@old, @new) }.should raise_error(Errno::ENOENT)
   end
 
   it "raises an ArgumentError if not passed two arguments" do
-    lambda { File.rename        }.should raise_error(ArgumentError)
-    lambda { File.rename(@file) }.should raise_error(ArgumentError)
+    -> { File.rename        }.should raise_error(ArgumentError)
+    -> { File.rename(@file) }.should raise_error(ArgumentError)
   end
 
   it "raises a TypeError if not passed String types" do
-    lambda { File.rename(1, 2)  }.should raise_error(TypeError)
+    -> { File.rename(1, 2)  }.should raise_error(TypeError)
   end
 end

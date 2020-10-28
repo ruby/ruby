@@ -21,8 +21,8 @@ RSpec.describe "gemcutter's dependency API" do
       gem " sinatra"
     G
 
-    bundle :install, :artifice => "endpoint"
-    expect(out).to include("' sinatra' is not a valid gem name because it contains whitespace.")
+    bundle :install, :artifice => "endpoint", :raise_on_error => false
+    expect(err).to include("' sinatra' is not a valid gem name because it contains whitespace.")
   end
 
   it "should handle nested dependencies" do
@@ -53,14 +53,16 @@ RSpec.describe "gemcutter's dependency API" do
     expect(the_bundle).to include_gems "net-sftp 1.1.1"
   end
 
-  it "should use the endpoint when using --deployment" do
+  it "should use the endpoint when using deployment mode" do
     gemfile <<-G
       source "#{source_uri}"
       gem "rack"
     G
     bundle :install, :artifice => "endpoint"
 
-    bundle! :install, forgotten_command_line_options(:deployment => true, :path => "vendor/bundle").merge(:artifice => "endpoint")
+    bundle "config --local deployment true"
+    bundle "config --local path vendor/bundle"
+    bundle :install, :artifice => "endpoint"
     expect(out).to include("Fetching gem metadata from #{source_uri}")
     expect(the_bundle).to include_gems "rack 1.0.0"
   end
@@ -73,7 +75,7 @@ RSpec.describe "gemcutter's dependency API" do
 
     gemfile <<-G
       source "#{source_uri}"
-      git "file:///#{lib_path("foo-1.0")}" do
+      git "#{file_uri_for(lib_path("foo-1.0"))}" do
         gem 'foo'
       end
     G
@@ -83,7 +85,7 @@ RSpec.describe "gemcutter's dependency API" do
     expect(the_bundle).to include_gems("rails 2.3.2")
   end
 
-  it "handles git dependencies that are in rubygems using --deployment" do
+  it "handles git dependencies that are in rubygems using deployment mode" do
     build_git "foo" do |s|
       s.executables = "foobar"
       s.add_dependency "rails", "2.3.2"
@@ -91,25 +93,27 @@ RSpec.describe "gemcutter's dependency API" do
 
     gemfile <<-G
       source "#{source_uri}"
-      gem 'foo', :git => "file:///#{lib_path("foo-1.0")}"
+      gem 'foo', :git => "#{file_uri_for(lib_path("foo-1.0"))}"
     G
 
     bundle :install, :artifice => "endpoint"
 
-    bundle "install --deployment", :artifice => "endpoint"
+    bundle "config --local deployment true"
+    bundle :install, :artifice => "endpoint"
 
     expect(the_bundle).to include_gems("rails 2.3.2")
   end
 
-  it "doesn't fail if you only have a git gem with no deps when using --deployment" do
+  it "doesn't fail if you only have a git gem with no deps when using deployment mode" do
     build_git "foo"
     gemfile <<-G
       source "#{source_uri}"
-      gem 'foo', :git => "file:///#{lib_path("foo-1.0")}"
+      gem 'foo', :git => "#{file_uri_for(lib_path("foo-1.0"))}"
     G
 
     bundle "install", :artifice => "endpoint"
-    bundle! :install, forgotten_command_line_options(:deployment => true).merge(:artifice => "endpoint")
+    bundle "config --local deployment true"
+    bundle :install, :artifice => "endpoint"
 
     expect(the_bundle).to include_gems("foo 1.0")
   end
@@ -215,8 +219,8 @@ RSpec.describe "gemcutter's dependency API" do
       gem "rack"
     G
 
-    bundle :install, :artifice => "endpoint_redirect"
-    expect(out).to match(/Too many redirects/)
+    bundle :install, :artifice => "endpoint_redirect", :raise_on_error => false
+    expect(err).to match(/Too many redirects/)
   end
 
   context "when --full-index is specified" do
@@ -237,7 +241,7 @@ RSpec.describe "gemcutter's dependency API" do
         gem "rack"
       G
 
-      bundle! "update --full-index", :artifice => "endpoint", :all => bundle_update_requires_all?
+      bundle "update --full-index", :artifice => "endpoint", :all => true
       expect(out).to include("Fetching source index from #{source_uri}")
       expect(the_bundle).to include_gems "rack 1.0.0"
     end
@@ -320,7 +324,7 @@ RSpec.describe "gemcutter's dependency API" do
       gem 'somegem', '1.0.0'
     G
 
-    bundle! :install, :artifice => "endpoint_extra_api"
+    bundle :install, :artifice => "endpoint_extra_api"
 
     expect(the_bundle).to include_gems "somegem 1.0.0"
     expect(the_bundle).to include_gems "activesupport 1.2.3"
@@ -378,21 +382,18 @@ RSpec.describe "gemcutter's dependency API" do
         s.add_dependency "foo"
       end
       build_gem "missing"
-      # need to hit the limit
-      1.upto(Bundler::Source::Rubygems::API_REQUEST_LIMIT) do |i|
-        build_gem "gem#{i}"
-      end
 
       FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
     end
 
-    gemfile <<-G
+    api_request_limit = low_api_request_limit_for(gem_repo2)
+
+    install_gemfile <<-G, :artifice => "endpoint_extra_missing", :env => { "BUNDLER_SPEC_API_REQUEST_LIMIT" => api_request_limit.to_s }.merge(env_for_missing_prerelease_default_gem_activation)
       source "#{source_uri}"
       source "#{source_uri}/extra"
       gem "back_deps"
     G
 
-    bundle :install, :artifice => "endpoint_extra_missing"
     expect(the_bundle).to include_gems "back_deps 1.0"
   end
 
@@ -402,22 +403,19 @@ RSpec.describe "gemcutter's dependency API" do
         s.add_dependency "foo"
       end
       build_gem "missing"
-      # need to hit the limit
-      1.upto(Bundler::Source::Rubygems::API_REQUEST_LIMIT) do |i|
-        build_gem "gem#{i}"
-      end
 
       FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
     end
 
-    gemfile <<-G
+    api_request_limit = low_api_request_limit_for(gem_repo2)
+
+    install_gemfile <<-G, :artifice => "endpoint_extra_missing", :env => { "BUNDLER_SPEC_API_REQUEST_LIMIT" => api_request_limit.to_s }.merge(env_for_missing_prerelease_default_gem_activation)
       source "#{source_uri}"
       source "#{source_uri}/extra" do
         gem "back_deps"
       end
     G
 
-    bundle :install, :artifice => "endpoint_extra_missing"
     expect(the_bundle).to include_gems "back_deps 1.0"
   end
 
@@ -452,7 +450,7 @@ RSpec.describe "gemcutter's dependency API" do
     expect(the_bundle).to include_gems "back_deps 1.0"
   end
 
-  it "fetches again when more dependencies are found in subsequent sources using --deployment with blocks" do
+  it "fetches again when more dependencies are found in subsequent sources using deployment mode with blocks" do
     build_repo2 do
       build_gem "back_deps" do |s|
         s.add_dependency "foo"
@@ -469,7 +467,8 @@ RSpec.describe "gemcutter's dependency API" do
 
     bundle :install, :artifice => "endpoint_extra"
 
-    bundle "install --deployment", :artifice => "endpoint_extra"
+    bundle "config --local deployment true"
+    bundle "install", :artifice => "endpoint_extra"
     expect(the_bundle).to include_gems "back_deps 1.0"
   end
 
@@ -555,7 +554,7 @@ RSpec.describe "gemcutter's dependency API" do
     let(:user)     { "user" }
     let(:password) { "pass" }
     let(:basic_auth_source_uri) do
-      uri          = URI.parse(source_uri)
+      uri          = Bundler::URI.parse(source_uri)
       uri.user     = user
       uri.password = password
 
@@ -590,20 +589,20 @@ RSpec.describe "gemcutter's dependency API" do
         gem "rack"
       G
 
-      bundle :install, :artifice => "endpoint_500"
+      bundle :install, :artifice => "endpoint_500", :raise_on_error => false
       expect(out).not_to include("#{user}:#{password}")
     end
 
     it "strips http basic auth creds when warning about ambiguous sources", :bundler => "< 3" do
       gemfile <<-G
         source "#{basic_auth_source_uri}"
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
 
       bundle :install, :artifice => "endpoint_basic_authentication"
-      expect(out).to include("Warning: the gem 'rack' was found in multiple sources.")
-      expect(out).not_to include("#{user}:#{password}")
+      expect(err).to include("Warning: the gem 'rack' was found in multiple sources.")
+      expect(err).not_to include("#{user}:#{password}")
       expect(the_bundle).to include_gems "rack 1.0.0"
     end
 
@@ -626,7 +625,7 @@ RSpec.describe "gemcutter's dependency API" do
       end
 
       it "reads authentication details by host name from bundle config" do
-        bundle "config #{source_hostname} #{user}:#{password}"
+        bundle "config set #{source_hostname} #{user}:#{password}"
 
         bundle :install, :artifice => "endpoint_strict_basic_authentication"
 
@@ -636,7 +635,7 @@ RSpec.describe "gemcutter's dependency API" do
 
       it "reads authentication details by full url from bundle config" do
         # The trailing slash is necessary here; Fetcher canonicalizes the URI.
-        bundle "config #{source_uri}/ #{user}:#{password}"
+        bundle "config set #{source_uri}/ #{user}:#{password}"
 
         bundle :install, :artifice => "endpoint_strict_basic_authentication"
 
@@ -645,7 +644,7 @@ RSpec.describe "gemcutter's dependency API" do
       end
 
       it "should use the API" do
-        bundle "config #{source_hostname} #{user}:#{password}"
+        bundle "config set #{source_hostname} #{user}:#{password}"
         bundle :install, :artifice => "endpoint_strict_basic_authentication"
         expect(out).to include("Fetching gem metadata from #{source_uri}")
         expect(the_bundle).to include_gems "rack 1.0.0"
@@ -657,22 +656,22 @@ RSpec.describe "gemcutter's dependency API" do
           gem "rack"
         G
 
-        bundle "config #{source_hostname} otheruser:wrong"
+        bundle "config set #{source_hostname} otheruser:wrong"
 
         bundle :install, :artifice => "endpoint_strict_basic_authentication"
         expect(the_bundle).to include_gems "rack 1.0.0"
       end
 
       it "shows instructions if auth is not provided for the source" do
-        bundle :install, :artifice => "endpoint_strict_basic_authentication"
-        expect(out).to include("bundle config #{source_hostname} username:password")
+        bundle :install, :artifice => "endpoint_strict_basic_authentication", :raise_on_error => false
+        expect(err).to include("bundle config set --global #{source_hostname} username:password")
       end
 
       it "fails if authentication has already been provided, but failed" do
-        bundle "config #{source_hostname} #{user}:wrong"
+        bundle "config set #{source_hostname} #{user}:wrong"
 
-        bundle :install, :artifice => "endpoint_strict_basic_authentication"
-        expect(out).to include("Bad username or password")
+        bundle :install, :artifice => "endpoint_strict_basic_authentication", :raise_on_error => false
+        expect(err).to include("Bad username or password")
       end
     end
 
@@ -710,8 +709,8 @@ RSpec.describe "gemcutter's dependency API" do
         gem "rack"
       G
 
-      bundle :install, :env => { "RUBYOPT" => "-I#{bundled_app("broken_ssl")}" }
-      expect(out).to include("OpenSSL")
+      bundle :install, :env => { "RUBYOPT" => opt_add("-I#{bundled_app("broken_ssl")}", ENV["RUBYOPT"]) }, :raise_on_error => false
+      expect(err).to include("OpenSSL")
     end
   end
 
@@ -730,31 +729,27 @@ RSpec.describe "gemcutter's dependency API" do
         gem "rack"
       G
 
-      bundle :install
-      expect(out).to match(/could not verify the SSL certificate/i)
+      bundle :install, :raise_on_error => false
+      expect(err).to match(/could not verify the SSL certificate/i)
     end
   end
 
   context ".gemrc with sources is present" do
-    before do
+    it "uses other sources declared in the Gemfile" do
       File.open(home(".gemrc"), "w") do |file|
         file.puts({ :sources => ["https://rubygems.org"] }.to_yaml)
       end
-    end
 
-    after do
-      home(".gemrc").rmtree
-    end
+      begin
+        gemfile <<-G
+          source "#{source_uri}"
+          gem 'rack'
+        G
 
-    it "uses other sources declared in the Gemfile" do
-      gemfile <<-G
-        source "#{source_uri}"
-        gem 'rack'
-      G
-
-      bundle "install", :artifice => "endpoint_marshal_fail"
-
-      expect(exitstatus).to eq(0) if exitstatus
+        bundle "install", :artifice => "endpoint_marshal_fail"
+      ensure
+        home(".gemrc").rmtree
+      end
     end
   end
 end

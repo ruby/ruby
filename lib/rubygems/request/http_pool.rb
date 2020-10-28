@@ -43,5 +43,4 @@ class Gem::Request::HTTPPool # :nodoc:
     connection.start
     connection
   end
-
 end

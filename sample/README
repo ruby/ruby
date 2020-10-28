@@ -16,7 +16,6 @@ fib.pl		Fibonacci number (Perl)
 fib.py		Fibonacci number (Python)
 fib.rb		Fibonacci number (Ruby)
 fib.scm		Fibonacci number (Scheme)
-freq.rb		count word occurrence
 from.rb		scan mail spool
 fullpath.rb	convert ls -lR to fullpath format
 less.rb		front end for less
@@ -29,7 +28,6 @@ mpart.rb	split file int multi part
 observ.rb	observer design pattern sample
 occur.pl	count word occurrence (Perl)
 occur.rb	count word occurrence (Ruby)
-occur2.rb	count word occurrence - another style
 philos.rb	famous dining philosophers
 pi.rb		calculate PI
 rcs.awk		random character stereogram (AWK)

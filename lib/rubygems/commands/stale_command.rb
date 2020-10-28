@@ -32,7 +32,7 @@ longer using.
       end
     end
 
-    gem_to_atime.sort_by { |_, atime| atime }.each do |name, atime|
+    gem_to_atime.sort_by {|_, atime| atime }.each do |name, atime|
       say "#{name} at #{atime.strftime '%c'}"
     end
   end

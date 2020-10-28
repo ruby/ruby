@@ -1,6 +1,6 @@
 print "a,"
 
-print lambda {
+print -> {
   print "b,"
   break "break,"
   print "c,"

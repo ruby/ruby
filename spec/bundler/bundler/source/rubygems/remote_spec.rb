@@ -11,8 +11,8 @@ RSpec.describe Bundler::Source::Rubygems::Remote do
     allow(Digest(:MD5)).to receive(:hexdigest).with(duck_type(:to_s)) {|string| "MD5HEX(#{string})" }
   end
 
-  let(:uri_no_auth) { URI("https://gems.example.com") }
-  let(:uri_with_auth) { URI("https://#{credentials}@gems.example.com") }
+  let(:uri_no_auth) { Bundler::URI("https://gems.example.com") }
+  let(:uri_with_auth) { Bundler::URI("https://#{credentials}@gems.example.com") }
   let(:credentials) { "username:password" }
 
   context "when the original URI has no credentials" do
@@ -22,8 +22,9 @@ RSpec.describe Bundler::Source::Rubygems::Remote do
       end
 
       it "applies configured credentials" do
-        Bundler.settings.temporary(uri_no_auth.to_s => credentials)
-        expect(remote(uri_no_auth).uri).to eq(uri_with_auth)
+        Bundler.settings.temporary(uri_no_auth.to_s => credentials) do
+          expect(remote(uri_no_auth).uri).to eq(uri_with_auth)
+        end
       end
     end
 
@@ -33,8 +34,9 @@ RSpec.describe Bundler::Source::Rubygems::Remote do
       end
 
       it "does not apply given credentials" do
-        Bundler.settings.temporary(uri_no_auth.to_s => credentials)
-        expect(remote(uri_no_auth).anonymized_uri).to eq(uri_no_auth)
+        Bundler.settings.temporary(uri_no_auth.to_s => credentials) do
+          expect(remote(uri_no_auth).anonymized_uri).to eq(uri_no_auth)
+        end
       end
     end
 
@@ -44,8 +46,9 @@ RSpec.describe Bundler::Source::Rubygems::Remote do
       end
 
       it "only applies the given user" do
-        Bundler.settings.temporary(uri_no_auth.to_s => credentials)
-        expect(remote(uri_no_auth).cache_slug).to eq("gems.example.com.username.443.MD5HEX(gems.example.com.username.443./)")
+        Bundler.settings.temporary(uri_no_auth.to_s => credentials) do
+          expect(remote(uri_no_auth).cache_slug).to eq("gems.example.com.username.443.MD5HEX(gems.example.com.username.443./)")
+        end
       end
     end
   end
@@ -86,11 +89,11 @@ RSpec.describe Bundler::Source::Rubygems::Remote do
   end
 
   context "when the original URI has only a username" do
-    let(:uri) { URI("https://SeCrEt-ToKeN@gem.fury.io/me/") }
+    let(:uri) { Bundler::URI("https://SeCrEt-ToKeN@gem.fury.io/me/") }
 
     describe "#anonymized_uri" do
       it "returns the URI without username and password" do
-        expect(remote(uri).anonymized_uri).to eq(URI("https://gem.fury.io/me/"))
+        expect(remote(uri).anonymized_uri).to eq(Bundler::URI("https://gem.fury.io/me/"))
       end
     end
 
@@ -102,11 +105,13 @@ RSpec.describe Bundler::Source::Rubygems::Remote do
   end
 
   context "when a mirror with inline credentials is configured for the URI" do
-    let(:uri) { URI("https://rubygems.org/") }
-    let(:mirror_uri_with_auth) { URI("https://username:password@rubygems-mirror.org/") }
-    let(:mirror_uri_no_auth) { URI("https://rubygems-mirror.org/") }
+    let(:uri) { Bundler::URI("https://rubygems.org/") }
+    let(:mirror_uri_with_auth) { Bundler::URI("https://username:password@rubygems-mirror.org/") }
+    let(:mirror_uri_no_auth) { Bundler::URI("https://rubygems-mirror.org/") }
 
-    before { Bundler.settings.set_local("mirror.https://rubygems.org/", mirror_uri_with_auth.to_s) }
+    before { Bundler.settings.temporary("mirror.https://rubygems.org/" => mirror_uri_with_auth.to_s) }
+
+    after { Bundler.settings.temporary("mirror.https://rubygems.org/" => nil) }
 
     specify "#uri returns the mirror URI with credentials" do
       expect(remote(uri).uri).to eq(mirror_uri_with_auth)
@@ -126,13 +131,18 @@ RSpec.describe Bundler::Source::Rubygems::Remote do
   end
 
   context "when a mirror with configured credentials is configured for the URI" do
-    let(:uri) { URI("https://rubygems.org/") }
-    let(:mirror_uri_with_auth) { URI("https://#{credentials}@rubygems-mirror.org/") }
-    let(:mirror_uri_no_auth) { URI("https://rubygems-mirror.org/") }
+    let(:uri) { Bundler::URI("https://rubygems.org/") }
+    let(:mirror_uri_with_auth) { Bundler::URI("https://#{credentials}@rubygems-mirror.org/") }
+    let(:mirror_uri_no_auth) { Bundler::URI("https://rubygems-mirror.org/") }
 
     before do
       Bundler.settings.temporary("mirror.https://rubygems.org/" => mirror_uri_no_auth.to_s)
       Bundler.settings.temporary(mirror_uri_no_auth.to_s => credentials)
+    end
+
+    after do
+      Bundler.settings.temporary("mirror.https://rubygems.org/" => nil)
+      Bundler.settings.temporary(mirror_uri_no_auth.to_s => nil)
     end
 
     specify "#uri returns the mirror URI with credentials" do

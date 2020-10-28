@@ -2,7 +2,6 @@
 require 'rubygems/test_case'
 
 class TestGemResolverVendorSpecification < Gem::TestCase
-
   def setup
     super
 
@@ -79,5 +78,4 @@ class TestGemResolverVendorSpecification < Gem::TestCase
 
     assert_equal v(1), v_spec.version
   end
-
 end

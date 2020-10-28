@@ -12,7 +12,6 @@ require 'rubygems/installer'
 # Validator performs various gem file and gem database validation
 
 class Gem::Validator
-
   include Gem::UserInteraction
 
   def initialize # :nodoc:
@@ -25,7 +24,7 @@ class Gem::Validator
     installed_files = []
 
     Find.find gem_directory do |file_name|
-      fn = file_name[gem_directory.size..file_name.size-1].sub(/^\//, "")
+      fn = file_name[gem_directory.size..file_name.size - 1].sub(/^\//, "")
       installed_files << fn unless
         fn =~ /CVS/ || fn.empty? || File.directory?(file_name)
     end
@@ -60,7 +59,7 @@ class Gem::Validator
   # TODO needs further cleanup
 
   def alien(gems=[])
-    errors = Hash.new { |h,k| h[k] = {} }
+    errors = Hash.new {|h,k| h[k] = {} }
 
     Gem::Specification.each do |spec|
       next unless gems.include? spec.name unless gems.empty?
@@ -91,17 +90,17 @@ class Gem::Validator
         File.open gem_path, Gem.binary_mode do |file|
           package = Gem::Package.new gem_path
 
-          good, gone = package.contents.partition { |file_name|
+          good, gone = package.contents.partition do |file_name|
             File.exist? File.join(gem_directory, file_name)
-          }
+          end
 
           gone.sort.each do |path|
             errors[gem_name][path] = "Missing file"
           end
 
-          good, unreadable = good.partition { |file_name|
+          good, unreadable = good.partition do |file_name|
             File.readable? File.join(gem_directory, file_name)
-          }
+          end
 
           unreadable.sort.each do |path|
             errors[gem_name][path] = "Unreadable file"

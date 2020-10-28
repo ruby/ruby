@@ -3,7 +3,6 @@
 # = uri/common.rb
 #
 # Author:: Akira Yamada <akira@ruby-lang.org>
-# Revision:: $Id$
 # License::
 #   You can redistribute it and/or modify it under the same term as Ruby.
 #
@@ -61,88 +60,26 @@ module URI
     module_function :make_components_hash
   end
 
-  # Module for escaping unsafe characters with codes.
-  module Escape
-    #
-    # == Synopsis
-    #
-    #   URI.escape(str [, unsafe])
-    #
-    # == Args
-    #
-    # +str+::
-    #   String to replaces in.
-    # +unsafe+::
-    #   Regexp that matches all symbols that must be replaced with codes.
-    #   By default uses <tt>UNSAFE</tt>.
-    #   When this argument is a String, it represents a character set.
-    #
-    # == Description
-    #
-    # Escapes the string, replacing all unsafe characters with codes.
-    #
-    # This method is obsolete and should not be used. Instead, use
-    # CGI.escape, URI.encode_www_form or URI.encode_www_form_component
-    # depending on your specific use case.
-    #
-    # == Usage
-    #
-    #   require 'uri'
-    #
-    #   enc_uri = URI.escape("http://example.com/?a=\11\15")
-    #   # => "http://example.com/?a=%09%0D"
-    #
-    #   URI.unescape(enc_uri)
-    #   # => "http://example.com/?a=\t\r"
-    #
-    #   URI.escape("@?@!", "!?")
-    #   # => "@%3F@%21"
-    #
-    def escape(*arg)
-      warn "URI.escape is obsolete", uplevel: 1 if $VERBOSE
-      DEFAULT_PARSER.escape(*arg)
-    end
-    alias encode escape
-    #
-    # == Synopsis
-    #
-    #   URI.unescape(str)
-    #
-    # == Args
-    #
-    # +str+::
-    #   String to unescape.
-    #
-    # == Description
-    #
-    # This method is obsolete and should not be used. Instead, use
-    # CGI.unescape, URI.decode_www_form or URI.decode_www_form_component
-    # depending on your specific use case.
-    #
-    # == Usage
-    #
-    #   require 'uri'
-    #
-    #   enc_uri = URI.escape("http://example.com/?a=\11\15")
-    #   # => "http://example.com/?a=%09%0D"
-    #
-    #   URI.unescape(enc_uri)
-    #   # => "http://example.com/?a=\t\r"
-    #
-    def unescape(*arg)
-      warn "URI.unescape is obsolete", uplevel: 1 if $VERBOSE
-      DEFAULT_PARSER.unescape(*arg)
-    end
-    alias decode unescape
-  end # module Escape
-
-  extend Escape
   include REGEXP
 
   @@schemes = {}
   # Returns a Hash of the defined schemes.
   def self.scheme_list
     @@schemes
+  end
+
+  #
+  # Construct a URI instance, using the scheme to detect the appropriate class
+  # from +URI.scheme_list+.
+  #
+  def self.for(scheme, *arguments, default: Generic)
+    if scheme
+      uri_class = @@schemes[scheme.upcase] || default
+    else
+      uri_class = default
+    end
+
+    return uri_class.new(scheme, *arguments)
   end
 
   #
@@ -362,7 +299,7 @@ module URI
   # If +enc+ is given, convert +str+ to the encoding before percent encoding.
   #
   # This is an implementation of
-  # http://www.w3.org/TR/2013/CR-html5-20130806/forms.html#url-encoded-form-data.
+  # https://www.w3.org/TR/2013/CR-html5-20130806/forms.html#url-encoded-form-data.
   #
   # See URI.decode_www_form_component, URI.encode_www_form.
   def self.encode_www_form_component(str, enc=nil)
@@ -370,7 +307,7 @@ module URI
     if str.encoding != Encoding::ASCII_8BIT
       if enc && enc != Encoding::ASCII_8BIT
         str.encode!(Encoding::UTF_8, invalid: :replace, undef: :replace)
-        str.encode!(enc, fallback: ->(x){"&#{x.ord};"})
+        str.encode!(enc, fallback: ->(x){"&##{x.ord};"})
       end
       str.force_encoding(Encoding::ASCII_8BIT)
     end
@@ -403,7 +340,7 @@ module URI
   # This method doesn't handle files.  When you send a file, use
   # multipart/form-data.
   #
-  # This refers http://url.spec.whatwg.org/#concept-urlencoded-serializer
+  # This refers https://url.spec.whatwg.org/#concept-urlencoded-serializer
   #
   #    URI.encode_www_form([["q", "ruby"], ["lang", "en"]])
   #    #=> "q=ruby&lang=en"

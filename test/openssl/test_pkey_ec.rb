@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require_relative 'utils'
 
 if defined?(OpenSSL) && defined?(OpenSSL::PKey::EC)
@@ -50,6 +50,13 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
     assert_equal(true, ec.private?)
     ec = OpenSSL::PKey::EC.generate("prime256v1")
     assert_equal(true, ec.private?)
+  end
+
+  def test_marshal
+    key = Fixtures.pkey("p256")
+    deserialized = Marshal.load(Marshal.dump(key))
+
+    assert_equal key.to_der, deserialized.to_der
   end
 
   def test_check_key
@@ -289,6 +296,27 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
     assert_equal true, point.on_curve?
   end
 
+  def test_ec_point_add
+    begin
+      group = OpenSSL::PKey::EC::Group.new(:GFp, 17, 2, 2)
+      group.point_conversion_form = :uncompressed
+      gen = OpenSSL::PKey::EC::Point.new(group, B(%w{ 04 05 01 }))
+      group.set_generator(gen, 19, 1)
+
+      point_a = OpenSSL::PKey::EC::Point.new(group, B(%w{ 04 06 03 }))
+      point_b = OpenSSL::PKey::EC::Point.new(group, B(%w{ 04 10 0D }))
+    rescue OpenSSL::PKey::EC::Group::Error
+      pend "Patched OpenSSL rejected curve" if /unsupported field/ =~ $!.message
+      raise
+    end
+
+    result = point_a.add(point_b)
+    assert_equal B(%w{ 04 0D 07 }), result.to_octet_string(:uncompressed)
+
+    assert_raise(TypeError) { point_a.add(nil) }
+    assert_raise(ArgumentError) { point_a.add }
+  end
+
   def test_ec_point_mul
     begin
       # y^2 = x^3 + 2x + 2 over F_17
@@ -309,8 +337,14 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
       result_b1 = point_a.mul([3], [])
       assert_equal B(%w{ 04 10 0D }), result_b1.to_octet_string(:uncompressed)
       # 3 * point_a + 2 * point_a = 3 * (6, 3) + 2 * (6, 3) = (7, 11)
-      result_b1 = point_a.mul([3, 2], [point_a])
-      assert_equal B(%w{ 04 07 0B }), result_b1.to_octet_string(:uncompressed)
+      begin
+        result_b1 = point_a.mul([3, 2], [point_a])
+      rescue OpenSSL::PKey::EC::Point::Error
+        # LibreSSL doesn't support multiple entries in first argument
+        raise if $!.message !~ /called a function you should not call/
+      else
+        assert_equal B(%w{ 04 07 0B }), result_b1.to_octet_string(:uncompressed)
+      end
       # 3 * point_a + 5 * point_a.group.generator = 3 * (6, 3) + 5 * (5, 1) = (13, 10)
       result_b1 = point_a.mul([3], [], 5)
       assert_equal B(%w{ 04 0D 0A }), result_b1.to_octet_string(:uncompressed)

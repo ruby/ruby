@@ -3,23 +3,32 @@ require 'mkmf'
 
 # :stopdoc:
 
+libffi_version = nil
+have_libffi = false
 bundle = enable_config('bundled-libffi')
-if ! bundle
+unless bundle
   dir_config 'libffi'
 
-  pkg_config("libffi") and
-    ver = pkg_config("libffi", "modversion")
+  if pkg_config("libffi")
+    libffi_version = pkg_config("libffi", "modversion")
+  end
 
+  have_ffi_header = false
   if have_header(ffi_header = 'ffi.h')
-    true
+    have_ffi_header = true
   elsif have_header(ffi_header = 'ffi/ffi.h')
-    $defs.push(format('-DUSE_HEADER_HACKS'))
-    true
-  end and (have_library('ffi') || have_library('libffi'))
-end or
-begin
+    $defs.push('-DUSE_HEADER_HACKS')
+    have_ffi_header = true
+  end
+  if have_ffi_header && (have_library('ffi') || have_library('libffi'))
+    have_libffi = true
+  end
+end
+
+unless have_libffi
   # for https://github.com/ruby/fiddle
-  if bundle && File.exist?("../../bin/extlibs.rb")
+  extlibs_rb = File.expand_path("../../bin/extlibs.rb", $srcdir)
+  if bundle && File.exist?(extlibs_rb)
     require "fileutils"
     require_relative "../../bin/extlibs"
     extlibs = ExtLibs.new
@@ -28,31 +37,32 @@ begin
     Dir.glob("#{$srcdir}/libffi-*/").each{|dir| FileUtils.rm_rf(dir)}
     extlibs.run(["--cache=#{cache_dir}", ext_dir])
   end
-  ver = bundle != false &&
-        Dir.glob("#{$srcdir}/libffi-*/")
-        .map {|n| File.basename(n)}
-        .max_by {|n| n.scan(/\d+/).map(&:to_i)}
-  unless ver
+  if bundle != false
+    libffi_package_name = Dir.glob("#{$srcdir}/libffi-*/")
+                            .map {|n| File.basename(n)}
+                            .max_by {|n| n.scan(/\d+/).map(&:to_i)}
+  end
+  unless libffi_package_name
     raise "missing libffi. Please install libffi."
   end
 
-  srcdir = "#{$srcdir}/#{ver}"
+  libffi_srcdir = "#{$srcdir}/#{libffi_package_name}"
   ffi_header = 'ffi.h'
   libffi = Struct.new(*%I[dir srcdir builddir include lib a cflags ldflags opt arch]).new
-  libffi.dir = ver
+  libffi.dir = libffi_package_name
   if $srcdir == "."
-    libffi.builddir = "#{ver}/#{RUBY_PLATFORM}"
+    libffi.builddir = libffi_package_name
     libffi.srcdir = "."
   else
     libffi.builddir = libffi.dir
-    libffi.srcdir = relative_from(srcdir, "..")
+    libffi.srcdir = relative_from(libffi_srcdir, "..")
   end
   libffi.include = "#{libffi.builddir}/include"
   libffi.lib = "#{libffi.builddir}/.libs"
   libffi.a = "#{libffi.lib}/libffi_convenience.#{$LIBEXT}"
   nowarn = CONFIG.merge("warnflags"=>"")
   libffi.cflags = RbConfig.expand("$(CFLAGS)".dup, nowarn)
-  ver = ver[/libffi-(.*)/, 1]
+  libffi_version = libffi_package_name[/libffi-(.*)/, 1]
 
   FileUtils.mkdir_p(libffi.dir)
   libffi.opt = CONFIG['configure_args'][/'(-C)'/, 1]
@@ -81,7 +91,6 @@ begin
   args.concat %W[
     --srcdir=#{libffi.srcdir}
     --host=#{libffi.arch}
-    --enable-builddir=#{RUBY_PLATFORM}
   ]
   args << ($enable_shared || !$static ? '--enable-shared' : '--enable-static')
   args << libffi.opt if libffi.opt
@@ -98,7 +107,7 @@ begin
       begin
         IO.copy_stream(libffi.dir + "/config.log", Logging.instance_variable_get(:@logfile))
       rescue SystemCallError => e
-        Logfile.message("%s\n", e.message)
+        Logging.message("%s\n", e.message)
       end
       raise "failed to configure libffi. Please install libffi."
     end
@@ -107,15 +116,31 @@ begin
     FileUtils.rm_f("#{libffi.include}/ffitarget.h")
   end
   unless File.file?("#{libffi.include}/ffitarget.h")
-    FileUtils.cp("#{srcdir}/src/x86/ffitarget.h", libffi.include, preserve: true)
+    FileUtils.cp("#{libffi_srcdir}/src/x86/ffitarget.h", libffi.include, preserve: true)
   end
   $INCFLAGS << " -I" << libffi.include
 end
 
-if ver
-  ver = ver.gsub(/-rc\d+/, '') # If ver contains rc version, just ignored.
-  ver = (ver.split('.') + [0,0])[0,3]
-  $defs.push(%{-DRUBY_LIBFFI_MODVERSION=#{ '%d%03d%03d' % ver }})
+if libffi_version
+  # If libffi_version contains rc version, just ignored.
+  libffi_version = libffi_version.gsub(/-rc\d+/, '')
+  libffi_version = (libffi_version.split('.').map(&:to_i) + [0,0])[0,3]
+  $defs.push(%{-DRUBY_LIBFFI_MODVERSION=#{ '%d%03d%03d' % libffi_version }})
+  warn "libffi_version: #{libffi_version.join('.')}"
+end
+
+case
+when $mswin, $mingw, (libffi_version && (libffi_version <=> [3, 2]) >= 0)
+  $defs << "-DUSE_FFI_CLOSURE_ALLOC=1"
+when (libffi_version && (libffi_version <=> [3, 2]) < 0)
+else
+  have_func('ffi_closure_alloc', ffi_header)
+end
+
+if libffi
+  $defs << "-DHAVE_FFI_PREP_CIF_VAR"
+else
+  have_func('ffi_prep_cif_var', ffi_header)
 end
 
 have_header 'sys/mman.h'
@@ -142,7 +167,7 @@ types.each do |type, signed|
   if /^\#define\s+SIZEOF_#{type}\s+(SIZEOF_(.+)|\d+)/ =~ config
     if size = $2 and size != 'VOIDP'
       size = types.fetch(size) {size}
-      $defs << format("-DTYPE_%s=TYPE_%s", signed||type, size)
+      $defs << "-DTYPE_#{signed||type}=TYPE_#{size}"
     end
     if signed
       check_signedness(type.downcase, "stddef.h")

@@ -4,15 +4,15 @@ require_relative 'fixtures/classes'
 
 describe "String#index" do
   it "raises a TypeError if passed nil" do
-    lambda { "abc".index nil }.should raise_error(TypeError)
+    -> { "abc".index nil }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if passed a boolean" do
-    lambda { "abc".index true }.should raise_error(TypeError)
+    -> { "abc".index true }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if passed a Symbol" do
-    lambda { "abc".index :a }.should raise_error(TypeError)
+    -> { "abc".index :a }.should raise_error(TypeError)
   end
 
   it "calls #to_str to convert the first argument" do
@@ -28,7 +28,7 @@ describe "String#index" do
   end
 
   it "raises a TypeError if passed a Fixnum" do
-    lambda { "abc".index 97 }.should raise_error(TypeError)
+    -> { "abc".index 97 }.should raise_error(TypeError)
   end
 end
 
@@ -140,25 +140,23 @@ describe "String#index with String" do
     "I’ve got a multibyte character.\n".index("\n\n").should == nil
   end
 
-  with_feature :encoding do
-    it "returns the character index of a multibyte character" do
-      "ありがとう".index("が").should == 2
-    end
+  it "returns the character index of a multibyte character" do
+    "ありがとう".index("が").should == 2
+  end
 
-    it "returns the character index after offset" do
-      "われわれ".index("わ", 1).should == 2
-    end
+  it "returns the character index after offset" do
+    "われわれ".index("わ", 1).should == 2
+  end
 
-    it "returns the character index after a partial first match" do
-      "</</h".index("</h").should == 2
-    end
+  it "returns the character index after a partial first match" do
+    "</</h".index("</h").should == 2
+  end
 
-    it "raises an Encoding::CompatibilityError if the encodings are incompatible" do
-      char = "れ".encode Encoding::EUC_JP
-      lambda do
-        "あれ".index char
-      end.should raise_error(Encoding::CompatibilityError)
-    end
+  it "raises an Encoding::CompatibilityError if the encodings are incompatible" do
+    char = "れ".encode Encoding::EUC_JP
+    -> do
+      "あれ".index char
+    end.should raise_error(Encoding::CompatibilityError)
   end
 end
 
@@ -293,24 +291,22 @@ describe "String#index with Regexp" do
     "RWOARW".index(/R./, obj).should == 4
   end
 
-  with_feature :encoding do
-    it "returns the character index of a multibyte character" do
-      "ありがとう".index(/が/).should == 2
-    end
+  it "returns the character index of a multibyte character" do
+    "ありがとう".index(/が/).should == 2
+  end
 
-    it "returns the character index after offset" do
-      "われわれ".index(/わ/, 1).should == 2
-    end
+  it "returns the character index after offset" do
+    "われわれ".index(/わ/, 1).should == 2
+  end
 
-    it "treats the offset as a character index" do
-      "われわわれ".index(/わ/, 3).should == 3
-    end
+  it "treats the offset as a character index" do
+    "われわわれ".index(/わ/, 3).should == 3
+  end
 
-    it "raises an Encoding::CompatibilityError if the encodings are incompatible" do
-      re = Regexp.new "れ".encode(Encoding::EUC_JP)
-      lambda do
-        "あれ".index re
-      end.should raise_error(Encoding::CompatibilityError)
-    end
+  it "raises an Encoding::CompatibilityError if the encodings are incompatible" do
+    re = Regexp.new "れ".encode(Encoding::EUC_JP)
+    -> do
+      "あれ".index re
+    end.should raise_error(Encoding::CompatibilityError)
   end
 end

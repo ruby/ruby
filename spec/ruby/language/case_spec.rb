@@ -252,7 +252,7 @@ describe "The 'case'-construct" do
   end
 
   it "raises a SyntaxError when 'else' is used when no 'when' is given" do
-    lambda {
+    -> {
       eval <<-CODE
       case 4
       else
@@ -263,7 +263,7 @@ describe "The 'case'-construct" do
   end
 
   it "raises a SyntaxError when 'else' is used before a 'when' was given" do
-    lambda {
+    -> {
       eval <<-CODE
       case 4
       else
@@ -423,5 +423,14 @@ describe "The 'case'-construct with no target expression" do
     when (raise if 2+2 == 3; /a/)
       :called
     end.should == :called
+  end
+
+  # Homogeneous cases are often optimized to avoid === using a jump table, and should be tested separately.
+  # See https://github.com/jruby/jruby/issues/6440
+  it "handles homogeneous cases" do
+    case
+    when 1; 'foo'
+    when 2; 'bar'
+    end.should == 'foo'
   end
 end

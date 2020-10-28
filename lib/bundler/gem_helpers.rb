@@ -2,7 +2,7 @@
 
 module Bundler
   module GemHelpers
-    GENERIC_CACHE = {} # rubocop:disable MutableConstant
+    GENERIC_CACHE = { Gem::Platform::RUBY => Gem::Platform::RUBY } # rubocop:disable Style/MutableConstant
     GENERICS = [
       [Gem::Platform.new("java"), Gem::Platform.new("java")],
       [Gem::Platform.new("mswin32"), Gem::Platform.new("mswin32")],
@@ -10,12 +10,10 @@ module Bundler
       [Gem::Platform.new("universal-mingw32"), Gem::Platform.new("universal-mingw32")],
       [Gem::Platform.new("x64-mingw32"), Gem::Platform.new("x64-mingw32")],
       [Gem::Platform.new("x86_64-mingw32"), Gem::Platform.new("x64-mingw32")],
-      [Gem::Platform.new("mingw32"), Gem::Platform.new("x86-mingw32")]
+      [Gem::Platform.new("mingw32"), Gem::Platform.new("x86-mingw32")],
     ].freeze
 
     def generic(p)
-      return p if p == Gem::Platform::RUBY
-
       GENERIC_CACHE[p] ||= begin
         _, found = GENERICS.find do |match, _generic|
           p.os == match.os && (!match.cpu || p.cpu == match.cpu)
@@ -26,9 +24,14 @@ module Bundler
     module_function :generic
 
     def generic_local_platform
-      generic(Bundler.local_platform)
+      generic(local_platform)
     end
     module_function :generic_local_platform
+
+    def local_platform
+      Bundler.local_platform
+    end
+    module_function :local_platform
 
     def platform_specificity_match(spec_platform, user_platform)
       spec_platform = Gem::Platform.new(spec_platform)

@@ -10,7 +10,7 @@
 /* insn <%= insn.pretty_name %> */
 INSN_ENTRY(<%= insn.name %>)
 {
-    vm_trace(ec, GET_CFP(), GET_PC());
+    vm_trace(ec, GET_CFP());
     DISPATCH_ORIGINAL_INSN(<%= insn.jump_destination %>);
     END_INSN(<%= insn.name %>);
 }

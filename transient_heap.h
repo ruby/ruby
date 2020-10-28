@@ -1,3 +1,5 @@
+#ifndef RUBY_TRANSIENT_HEAP_H
+#define RUBY_TRANSIENT_HEAP_H
 /**********************************************************************
 
   transient_heap.h - declarations of transient_heap related APIs.
@@ -5,9 +7,6 @@
   Copyright (C) 2018 Koichi Sasada
 
 **********************************************************************/
-
-#ifndef RUBY_TRANSIENT_HEAP_H
-#define RUBY_TRANSIENT_HEAP_H
 
 #include "internal.h"
 
@@ -30,6 +29,7 @@ void  rb_transient_heap_mark(VALUE obj, const void *ptr);
 void rb_transient_heap_promote(VALUE obj);
 void rb_transient_heap_start_marking(int full_marking);
 void rb_transient_heap_finish_marking(void);
+void rb_transient_heap_update_references(void);
 
 /* for debug API */
 void rb_transient_heap_dump(void);
@@ -48,6 +48,7 @@ void rb_struct_transient_heap_evacuate(VALUE st, int promote);
 #define rb_transient_heap_verify() ((void)0)
 #define rb_transient_heap_promote(obj) ((void)0)
 #define rb_transient_heap_start_marking(full_marking) ((void)0)
+#define rb_transient_heap_update_references() ((void)0)
 #define rb_transient_heap_finish_marking() ((void)0)
 #define rb_transient_heap_mark(obj, ptr) ((void)0)
 

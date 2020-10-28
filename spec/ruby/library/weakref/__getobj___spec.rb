@@ -10,7 +10,7 @@ describe "WeakRef#__getobj__" do
 
   it "raises WeakRef::RefError if the object is no longer reachable" do
     ref = WeakRefSpec.make_dead_weakref
-    lambda {
+    -> {
       ref.__getobj__
     }.should raise_error(WeakRef::RefError)
   end

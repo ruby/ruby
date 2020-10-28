@@ -8,8 +8,16 @@ def infinity_value
   1/0.0
 end
 
-def bignum_value(plus=0)
+def bignum_value(plus = 0)
   0x8000_0000_0000_0000 + plus
+end
+
+def max_long
+  2**(0.size * 8 - 1) - 1
+end
+
+def min_long
+  -(2**(0.size * 8 - 1))
 end
 
 # This is a bit hairy, but we need to be able to write specs that cover the

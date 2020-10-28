@@ -22,7 +22,7 @@ module IRB # :nodoc:
     def set_last_value(value)
       _set_last_value(value)
 
-      if @eval_history
+      if defined?(@eval_history) && @eval_history
         @eval_history_values.push @line_no, @last_value
         @workspace.evaluate self, "__ = IRB.CurrentContext.instance_eval{@eval_history_values}"
       end
@@ -30,9 +30,13 @@ module IRB # :nodoc:
       @last_value
     end
 
-    # The command result history limit.
+    remove_method :eval_history= if method_defined?(:eval_history=)
+    # The command result history limit. This method is not available until
+    # #eval_history= was called with non-nil value (directly or via
+    # setting <code>IRB.conf[:EVAL_HISTORY]</code> in <code>.irbrc</code>).
     attr_reader :eval_history
-    # Sets command result history limit.
+    # Sets command result history limit. Default value is set from
+    # <code>IRB.conf[:EVAL_HISTORY]</code>.
     #
     # +no+ is an Integer or +nil+.
     #
@@ -41,6 +45,9 @@ module IRB # :nodoc:
     # If +no+ is 0, the number of history items is unlimited.
     #
     # If +no+ is +nil+, execution result history isn't used (default).
+    #
+    # History values are available via <code>__</code> variable, see
+    # IRB::History.
     def eval_history=(no)
       if no
         if defined?(@eval_history) && @eval_history
@@ -58,20 +65,51 @@ module IRB # :nodoc:
     end
   end
 
-  class History # :nodoc:
+  # Represents history of results of previously evaluated commands.
+  #
+  # Available via <code>__</code> variable, only if <code>IRB.conf[:EVAL_HISTORY]</code>
+  # or <code>IRB::CurrentContext().eval_history</code> is non-nil integer value
+  # (by default it is +nil+).
+  #
+  # Example (in `irb`):
+  #
+  #    # Initialize history
+  #    IRB::CurrentContext().eval_history = 10
+  #    # => 10
+  #
+  #    # Perform some commands...
+  #    1 + 2
+  #    # => 3
+  #    puts 'x'
+  #    # x
+  #    # => nil
+  #    raise RuntimeError
+  #    # ...error raised
+  #
+  #    # Inspect history (format is "<item number> <evaluated value>":
+  #    __
+  #    # => 1 10
+  #    # 2 3
+  #    # 3 nil
+  #
+  #    __[1]
+  #    # => 10
+  #
+  class History
 
-    def initialize(size = 16)
+    def initialize(size = 16)  # :nodoc:
       @size = size
       @contents = []
     end
 
-    def size(size)
+    def size(size) # :nodoc:
       if size != 0 && size < @size
         @contents = @contents[@size - size .. @size]
       end
       @size = size
     end
 
+    # Get one item of the content (both positive and negative indexes work).
     def [](idx)
       begin
         if idx >= 0
@@ -84,14 +122,14 @@ module IRB # :nodoc:
       end
     end
 
-    def push(no, val)
+    def push(no, val)  # :nodoc:
       @contents.push [no, val]
       @contents.shift if @size != 0 && @contents.size > @size
     end
 
     alias real_inspect inspect
 
-    def inspect
+    def inspect  # :nodoc:
       if @contents.empty?
         return real_inspect
       end
@@ -115,5 +153,3 @@ module IRB # :nodoc:
     end
   end
 end
-
-

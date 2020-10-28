@@ -1044,7 +1044,7 @@ describe "The -H, --random option" do
   end
 
   it "registers the MSpec randomize mode" do
-    MSpec.should_receive(:randomize).twice
+    MSpec.should_receive(:randomize=).twice
     ["-H", "--random"].each do |opt|
       @options.parse opt
     end
@@ -1281,5 +1281,24 @@ describe "The -d, --debug option" do
       $MSPEC_DEBUG.should be_true
       $MSPEC_DEBUG = nil
     end
+  end
+end
+
+describe "MSpecOptions#all" do
+  it "includes all options" do
+    meth = MSpecOptions.instance_method(:all)
+    file, line = meth.source_location
+    contents = File.read(file)
+    lines = contents.lines
+
+    from = line
+    to = from
+    to += 1 until /^\s*end\s*$/ =~ lines[to]
+    calls = lines[from...to].map(&:strip)
+
+    option_methods = contents.scan(/def (\w+).*\n\s*on\(/).map(&:first)
+    option_methods[0].sub!("configure", "configure {}")
+
+    calls.should == option_methods
   end
 end

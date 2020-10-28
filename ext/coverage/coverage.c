@@ -8,9 +8,12 @@
 
 ************************************************/
 
+#include "gc.h"
+#include "internal/hash.h"
+#include "internal/thread.h"
+#include "internal/sanitizers.h"
 #include "ruby.h"
 #include "vm_core.h"
-#include "gc.h"
 
 static int current_mode;
 static VALUE me2counter = Qnil;
@@ -54,7 +57,7 @@ rb_coverage_start(int argc, VALUE *argv, VALUE klass)
     }
 
     if (mode & COVERAGE_TARGET_METHODS) {
-	me2counter = rb_hash_new_compare_by_id();
+        me2counter = rb_ident_hash_new();
     }
     else {
 	me2counter = Qnil;
@@ -74,36 +77,62 @@ rb_coverage_start(int argc, VALUE *argv, VALUE klass)
     return Qnil;
 }
 
+struct branch_coverage_result_builder
+{
+    int id;
+    VALUE result;
+    VALUE children;
+    VALUE counters;
+};
+
+static int
+branch_coverage_ii(VALUE _key, VALUE branch, VALUE v)
+{
+    struct branch_coverage_result_builder *b = (struct branch_coverage_result_builder *) v;
+
+    VALUE target_label = RARRAY_AREF(branch, 0);
+    VALUE target_first_lineno = RARRAY_AREF(branch, 1);
+    VALUE target_first_column = RARRAY_AREF(branch, 2);
+    VALUE target_last_lineno = RARRAY_AREF(branch, 3);
+    VALUE target_last_column = RARRAY_AREF(branch, 4);
+    long counter_idx = FIX2LONG(RARRAY_AREF(branch, 5));
+    rb_hash_aset(b->children, rb_ary_new_from_args(6, target_label, LONG2FIX(b->id++), target_first_lineno, target_first_column, target_last_lineno, target_last_column), RARRAY_AREF(b->counters, counter_idx));
+
+    return ST_CONTINUE;
+}
+
+static int
+branch_coverage_i(VALUE _key, VALUE branch_base, VALUE v)
+{
+    struct branch_coverage_result_builder *b = (struct branch_coverage_result_builder *) v;
+
+    VALUE base_type = RARRAY_AREF(branch_base, 0);
+    VALUE base_first_lineno = RARRAY_AREF(branch_base, 1);
+    VALUE base_first_column = RARRAY_AREF(branch_base, 2);
+    VALUE base_last_lineno = RARRAY_AREF(branch_base, 3);
+    VALUE base_last_column = RARRAY_AREF(branch_base, 4);
+    VALUE branches = RARRAY_AREF(branch_base, 5);
+    VALUE children = rb_hash_new();
+    rb_hash_aset(b->result, rb_ary_new_from_args(6, base_type, LONG2FIX(b->id++), base_first_lineno, base_first_column, base_last_lineno, base_last_column), children);
+    b->children = children;
+    rb_hash_foreach(branches, branch_coverage_ii, v);
+
+    return ST_CONTINUE;
+}
+
 static VALUE
 branch_coverage(VALUE branches)
 {
-    VALUE ret = rb_hash_new();
-    VALUE structure = rb_ary_dup(RARRAY_AREF(branches, 0));
-    VALUE counters = rb_ary_dup(RARRAY_AREF(branches, 1));
-    int i, j;
-    long id = 0;
+    VALUE structure = RARRAY_AREF(branches, 0);
 
-    for (i = 0; i < RARRAY_LEN(structure); i++) {
-	VALUE branches = RARRAY_AREF(structure, i);
-	VALUE base_type = RARRAY_AREF(branches, 0);
-	VALUE base_first_lineno = RARRAY_AREF(branches, 1);
-	VALUE base_first_column = RARRAY_AREF(branches, 2);
-	VALUE base_last_lineno = RARRAY_AREF(branches, 3);
-	VALUE base_last_column = RARRAY_AREF(branches, 4);
-	VALUE children = rb_hash_new();
-	rb_hash_aset(ret, rb_ary_new_from_args(6, base_type, LONG2FIX(id++), base_first_lineno, base_first_column, base_last_lineno, base_last_column), children);
-	for (j = 5; j < RARRAY_LEN(branches); j += 6) {
-	    VALUE target_label = RARRAY_AREF(branches, j);
-	    VALUE target_first_lineno = RARRAY_AREF(branches, j + 1);
-	    VALUE target_first_column = RARRAY_AREF(branches, j + 2);
-	    VALUE target_last_lineno = RARRAY_AREF(branches, j + 3);
-	    VALUE target_last_column = RARRAY_AREF(branches, j + 4);
-	    int idx = FIX2INT(RARRAY_AREF(branches, j + 5));
-	    rb_hash_aset(children, rb_ary_new_from_args(6, target_label, LONG2FIX(id++), target_first_lineno, target_first_column, target_last_lineno, target_last_column), RARRAY_AREF(counters, idx));
-	}
-    }
+    struct branch_coverage_result_builder b;
+    b.id = 0;
+    b.result = rb_hash_new();
+    b.counters = RARRAY_AREF(branches, 1);
 
-    return ret;
+    rb_hash_foreach(structure, branch_coverage_i, (VALUE)&b);
+
+    return b.result;
 }
 
 static int
@@ -122,6 +151,9 @@ method_coverage_i(void *vstart, void *vend, size_t stride, void *data)
     VALUE ncoverages = *(VALUE*)data, v;
 
     for (v = (VALUE)vstart; v != (VALUE)vend; v += stride) {
+        void *poisoned = asan_poisoned_object_p(v);
+        asan_unpoison_object(v, false);
+
 	if (RB_TYPE_P(v, T_IMEMO) && imemo_type(v) == imemo_ment) {
 	    const rb_method_entry_t *me = (rb_method_entry_t *) v;
 	    VALUE path, first_lineno, first_column, last_lineno, last_column;
@@ -161,6 +193,10 @@ method_coverage_i(void *vstart, void *vend, size_t stride, void *data)
 		rb_hash_aset(methods, key, rcount);
 	    }
 	}
+
+        if (poisoned) {
+            asan_poison_object(v);
+        }
     }
     return 0;
 }
@@ -224,7 +260,8 @@ rb_coverage_peek_result(VALUE klass)
     if (!RTEST(coverages)) {
 	rb_raise(rb_eRuntimeError, "coverage measurement is not enabled");
     }
-    st_foreach(RHASH_TBL(coverages), coverage_peek_result_i, ncoverages);
+    OBJ_WB_UNPROTECT(coverages);
+    st_foreach(RHASH_TBL_RAW(coverages), coverage_peek_result_i, ncoverages);
 
     if (current_mode & COVERAGE_TARGET_METHODS) {
 	rb_objspace_each_objects(method_coverage_i, &ncoverages);

@@ -16,7 +16,7 @@ class TestCSVTable < Test::Unit::TestCase
     @header_table = CSV::Table.new(
       [CSV::Row.new(%w{A B C}, %w{A B C}, true)] + @rows
     )
-    
+
     @header_only_table = CSV::Table.new([], headers: %w{A B C})
   end
 

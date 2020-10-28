@@ -16,7 +16,7 @@ with_feature :unix_socket do
 
     describe 'without a client' do
       it 'blocks the calling thread' do
-        lambda { @server.sysaccept }.should block_caller
+        -> { @server.sysaccept }.should block_caller
       end
     end
 

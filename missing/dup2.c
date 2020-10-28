@@ -11,7 +11,7 @@
  * Return fd2 if all went well; return BADEXIT otherwise.
  */
 
-#include "ruby/config.h"
+#include "ruby/internal/config.h"
 
 #if defined(HAVE_FCNTL)
 # include <fcntl.h>

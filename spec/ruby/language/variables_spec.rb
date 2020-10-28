@@ -46,7 +46,7 @@ describe "Multiple assignment" do
       x = mock("multi-assign single RHS")
       x.should_receive(:to_ary).and_return(1)
 
-      lambda { a, b, c = x }.should raise_error(TypeError)
+      -> { a, b, c = x }.should raise_error(TypeError)
     end
 
     it "does not call #to_a to convert an Object RHS when assigning a simple MLHS" do
@@ -127,7 +127,7 @@ describe "Multiple assignment" do
       x = mock("multi-assign splat")
       x.should_receive(:to_ary).and_return(1)
 
-      lambda { *a = x }.should raise_error(TypeError)
+      -> { *a = x }.should raise_error(TypeError)
     end
 
     it "does not call #to_ary on an Array subclass" do
@@ -160,7 +160,7 @@ describe "Multiple assignment" do
       x = mock("multi-assign splat")
       x.should_receive(:to_ary).and_return(1)
 
-      lambda { a, *b, c = x }.should raise_error(TypeError)
+      -> { a, *b, c = x }.should raise_error(TypeError)
     end
 
     it "does not call #to_a to convert an Object RHS with a MLHS" do
@@ -256,7 +256,7 @@ describe "Multiple assignment" do
       x = mock("multi-assign attributes")
       x.should_receive(:m).and_return(y)
 
-      lambda { a, b = x.m }.should raise_error(TypeError)
+      -> { a, b = x.m }.should raise_error(TypeError)
     end
 
     it "assigns values from a RHS method call with receiver and arguments" do
@@ -354,6 +354,16 @@ describe "Multiple assignment" do
       a.should be_an_instance_of(Array)
     end
 
+    it "unfreezes the array returned from calling 'to_a' on the splatted value" do
+      obj = Object.new
+      def obj.to_a
+        [1,2].freeze
+      end
+      res = *obj
+      res.should == [1,2]
+      res.should_not.frozen?
+    end
+
     it "consumes values for an anonymous splat" do
       a = 1
       (* = *a).should == [1]
@@ -407,7 +417,7 @@ describe "Multiple assignment" do
       x = mock("multi-assign RHS splat")
       x.should_receive(:to_a).and_return(1)
 
-      lambda { *a = *x }.should raise_error(TypeError)
+      -> { *a = *x }.should raise_error(TypeError)
     end
 
     it "does not call #to_ary to convert an Object RHS with a single splat LHS" do
@@ -453,7 +463,7 @@ describe "Multiple assignment" do
       x = mock("multi-assign splat")
       x.should_receive(:to_a).and_return(1)
 
-      lambda { a = *x }.should raise_error(TypeError)
+      -> { a = *x }.should raise_error(TypeError)
     end
 
     it "calls #to_a to convert an Object splat RHS when assigned to a simple MLHS" do
@@ -468,7 +478,7 @@ describe "Multiple assignment" do
       x = mock("multi-assign splat")
       x.should_receive(:to_a).and_return(1)
 
-      lambda { a, b, c = *x }.should raise_error(TypeError)
+      -> { a, b, c = *x }.should raise_error(TypeError)
     end
 
     it "does not call #to_ary to convert an Object splat RHS when assigned to a simple MLHS" do
@@ -491,7 +501,7 @@ describe "Multiple assignment" do
       x = mock("multi-assign splat")
       x.should_receive(:to_a).and_return(1)
 
-      lambda { a, *b, c = *x }.should raise_error(TypeError)
+      -> { a, *b, c = *x }.should raise_error(TypeError)
     end
 
     it "does not call #to_ary to convert an Object RHS with a MLHS" do
@@ -569,7 +579,7 @@ describe "Multiple assignment" do
       x = mock("multi-assign splat MRHS")
       x.should_receive(:to_a).and_return(1)
 
-      lambda { a, *b = 1, *x }.should raise_error(TypeError)
+      -> { a, *b = 1, *x }.should raise_error(TypeError)
     end
 
     it "does not call #to_ary to convert a splatted Object as part of a MRHS with a splat MRHS" do
@@ -592,7 +602,7 @@ describe "Multiple assignment" do
       x = mock("multi-assign splat MRHS")
       x.should_receive(:to_a).and_return(1)
 
-      lambda { a, *b = *x, 1 }.should raise_error(TypeError)
+      -> { a, *b = *x, 1 }.should raise_error(TypeError)
     end
 
     it "does not call #to_ary to convert a splatted Object with a splat MRHS" do
@@ -641,7 +651,7 @@ describe "Multiple assignment" do
       x = mock("multi-assign mixed RHS")
       x.should_receive(:to_ary).and_return(x)
 
-      lambda { a, (b, c), d = 1, x, 3, 4 }.should raise_error(TypeError)
+      -> { a, (b, c), d = 1, x, 3, 4 }.should raise_error(TypeError)
     end
 
     it "calls #to_a to convert a splatted Object value in a MRHS" do
@@ -665,7 +675,7 @@ describe "Multiple assignment" do
       x = mock("multi-assign mixed splatted RHS")
       x.should_receive(:to_ary).and_return(x)
 
-      lambda { a, *b, (c, d) = 1, 2, 3, *x }.should raise_error(TypeError)
+      -> { a, *b, (c, d) = 1, 2, 3, *x }.should raise_error(TypeError)
     end
 
     it "does not call #to_ary to convert an Object when the position receiving the value is a simple variable" do
@@ -784,5 +794,34 @@ describe 'Local variable shadowing' do
 
       result.should == [3, 3, 3]
     end
+  end
+end
+
+describe 'Allowed characters' do
+  ruby_version_is "2.6" do
+    # new feature in 2.6 -- https://bugs.ruby-lang.org/issues/13770
+    it 'does not allow non-ASCII upcased characters at the beginning' do
+      -> do
+        eval <<-CODE
+          def test
+            ἍBB = 1
+          end
+        CODE
+      end.should raise_error(SyntaxError, /dynamic constant assignment/)
+    end
+  end
+
+  it 'allows non-ASCII lowercased characters at the beginning' do
+    result = nil
+
+    eval <<-CODE
+      def test
+        μ = 1
+      end
+
+      result = test
+    CODE
+
+    result.should == 1
   end
 end

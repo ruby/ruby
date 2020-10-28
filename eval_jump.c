@@ -35,7 +35,7 @@ rb_call_end_proc(VALUE data)
  */
 
 static VALUE
-rb_f_at_exit(void)
+rb_f_at_exit(VALUE _)
 {
     VALUE proc;
 
@@ -107,11 +107,10 @@ exec_end_procs_chain(struct end_proc_data *volatile *procs, VALUE *errp)
     }
 }
 
-void
-rb_exec_end_proc(void)
+static void
+rb_ec_exec_end_proc(rb_execution_context_t * ec)
 {
     enum ruby_tag_type state;
-    rb_execution_context_t * volatile ec = GET_EC();
     volatile VALUE errinfo = ec->errinfo;
 
     EC_PUSH_TAG(ec);
@@ -122,7 +121,7 @@ rb_exec_end_proc(void)
     }
     else {
 	EC_TMPPOP_TAG();
-	error_handle(state);
+        error_handle(ec, state);
 	if (!NIL_P(ec->errinfo)) errinfo = ec->errinfo;
 	EC_REPUSH_TAG();
 	goto again;

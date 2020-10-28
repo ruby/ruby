@@ -22,9 +22,11 @@ with_feature :readline do
         File.read(@out).should == "test"
       end
 
-      it "taints the returned strings" do
-        ruby_exe('File.write ARGV[0], Readline.readline.tainted?', @options)
-        File.read(@out).should == "true"
+      ruby_version_is ''...'2.7' do
+        it "taints the returned strings" do
+          ruby_exe('File.write ARGV[0], Readline.readline.tainted?', @options)
+          File.read(@out).should == "true"
+        end
       end
     end
   end

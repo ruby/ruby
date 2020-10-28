@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "<%= config[:namespaced_path] %>/version"
 <%- if config[:ext] -%>
 require "<%= config[:namespaced_path] %>/<%= config[:underscored_name] %>"

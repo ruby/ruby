@@ -36,14 +36,12 @@ describe "Regexps with modifiers" do
     /foo/imox.match("foo").to_a.should == ["foo"]
     /foo/imoximox.match("foo").to_a.should == ["foo"]
 
-    lambda { eval('/foo/a') }.should raise_error(SyntaxError)
+    -> { eval('/foo/a') }.should raise_error(SyntaxError)
   end
 
-  ruby_version_is "2.4" do
-    it "supports (?~) (absent operator)" do
-      Regexp.new("(?~foo)").match("hello").to_a.should == ["hello"]
-      "foo".scan(Regexp.new("(?~foo)")).should == ["fo","o",""]
-    end
+  it "supports (?~) (absent operator)" do
+    Regexp.new("(?~foo)").match("hello").to_a.should == ["hello"]
+    "foo".scan(Regexp.new("(?~foo)")).should == ["fo","o",""]
   end
 
   it "supports (?imx-imx) (inline modifiers)" do
@@ -78,7 +76,7 @@ describe "Regexps with modifiers" do
     /(?i-i)foo/.match("FOO").should be_nil
     /(?ii)foo/.match("FOO").to_a.should == ["FOO"]
     /(?-)foo/.match("foo").to_a.should == ["foo"]
-    lambda { eval('/(?o)/') }.should raise_error(SyntaxError)
+    -> { eval('/(?o)/') }.should raise_error(SyntaxError)
   end
 
   it "supports (?imx-imx:expr) (scoped inline modifiers)" do
@@ -98,7 +96,7 @@ describe "Regexps with modifiers" do
     /(?i-i:foo)/.match("FOO").should be_nil
     /(?ii:foo)/.match("FOO").to_a.should == ["FOO"]
     /(?-:)foo/.match("foo").to_a.should == ["foo"]
-    lambda { eval('/(?o:)/') }.should raise_error(SyntaxError)
+    -> { eval('/(?o:)/') }.should raise_error(SyntaxError)
   end
 
   it "supports . with /m" do
@@ -106,7 +104,7 @@ describe "Regexps with modifiers" do
     /./m.match("\n").to_a.should == ["\n"]
   end
 
-  it "supports ASII/Unicode modifiers" do
+  it "supports ASCII/Unicode modifiers" do
     eval('/(?a)[[:alpha:]]+/').match("a\u3042").to_a.should == ["a"]
     eval('/(?d)[[:alpha:]]+/').match("a\u3042").to_a.should == ["a\u3042"]
     eval('/(?u)[[:alpha:]]+/').match("a\u3042").to_a.should == ["a\u3042"]

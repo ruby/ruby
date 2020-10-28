@@ -20,6 +20,6 @@ describe "Socket::BasicSocket#getpeername" do
   end
 
   it 'raises Errno::ENOTCONN for a disconnected socket' do
-    lambda { @server.getpeername }.should raise_error(Errno::ENOTCONN)
+    -> { @server.getpeername }.should raise_error(Errno::ENOTCONN)
   end
 end

@@ -1,15 +1,8 @@
 # frozen_string_literal: true
 require 'rubygems/command'
 require 'rubygems/security'
-begin
-  require 'openssl'
-rescue LoadError => e
-  raise unless (e.respond_to?(:path) && e.path == 'openssl') ||
-               e.message =~ / -- openssl$/
-end
 
 class Gem::Commands::CertCommand < Gem::Command
-
   def initialize
     super 'cert', 'Manage RubyGems certificates and signing settings',
           :add => [], :remove => [], :list => [], :build => [], :sign => []
@@ -186,7 +179,7 @@ class Gem::Commands::CertCommand < Gem::Command
       subject = certificate.subject.to_s
       subject.downcase.index filter
     end.sort_by do |certificate, _|
-      certificate.subject.to_a.map { |name, data,| [name, data] }
+      certificate.subject.to_a.map {|name, data,| [name, data] }
     end.each do |certificate, path|
       yield certificate, path
     end
@@ -318,6 +311,4 @@ For further reading on signing gems see `ri Gem::Security`.
     # It's simple, but is all we need
     email =~ /\A.+@.+\z/
   end
-
-
 end if defined?(OpenSSL::SSL)

@@ -1,4 +1,3 @@
-# encoding: utf-8
 # frozen_string_literal: true
 
 RSpec.describe "bundle install" do
@@ -11,11 +10,11 @@ RSpec.describe "bundle install" do
 
     it "still installs correctly" do
       gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "yaml_spec"
       G
       bundle :install
-      expect(err).to lack_errors
+      expect(err).to be_empty
     end
 
     it "still installs correctly when using path" do
@@ -24,11 +23,13 @@ RSpec.describe "bundle install" do
       install_gemfile <<-G
         gem 'yaml_spec', :path => "#{lib_path("yaml_spec-1.0")}"
       G
-      expect(err).to lack_errors
+      expect(err).to be_empty
     end
   end
 
   it "should use gemspecs in the system cache when available" do
+    skip "weird incompatible marshal file format error" if Gem.win_platform?
+
     gemfile <<-G
       source "http://localtestserver.gem"
       gem 'rack'
@@ -48,11 +49,11 @@ RSpec.describe "bundle install" do
   end
 
   it "does not hang when gemspec has incompatible encoding" do
-    create_file "foo.gemspec", <<-G
+    create_file("foo.gemspec", <<-G)
       Gem::Specification.new do |gem|
         gem.name = "pry-byebug"
         gem.version = "3.4.2"
-        gem.author = "David Rodriguez"
+        gem.author = "David Rodríguez"
         gem.summary = "Good stuff"
       end
     G
@@ -65,8 +66,6 @@ RSpec.describe "bundle install" do
   end
 
   it "reads gemspecs respecting their encoding" do
-    skip "Unicode is not supported on Ruby 1.x without extra work" if RUBY_VERSION < "2.0"
-
     create_file "version.rb", <<-RUBY
       module Persistent💎
         VERSION = "0.0.1"
@@ -110,7 +109,7 @@ RSpec.describe "bundle install" do
         s.required_ruby_version = "#{RUBY_VERSION}.#{RUBY_PATCHLEVEL}"
       end
 
-      install_gemfile <<-G
+      install_gemfile <<-G, :raise_on_error => false
         ruby '#{RUBY_VERSION}', :engine_version => '#{RUBY_VERSION}', :engine => 'ruby', :patchlevel => '#{RUBY_PATCHLEVEL}'
         gemspec
       G
@@ -124,14 +123,14 @@ RSpec.describe "bundle install" do
         s.required_ruby_version = "#{RUBY_VERSION}.#{patchlevel}"
       end
 
-      install_gemfile <<-G
+      install_gemfile <<-G, :raise_on_error => false
         ruby '#{RUBY_VERSION}', :engine_version => '#{RUBY_VERSION}', :engine => 'ruby', :patchlevel => '#{patchlevel}'
         gemspec
       G
 
-      expect(out).to include("Ruby patchlevel")
-      expect(out).to include("but your Gemfile specified")
-      expect(exitstatus).to eq(18) if exitstatus
+      expect(err).to include("Ruby patchlevel")
+      expect(err).to include("but your Gemfile specified")
+      expect(exitstatus).to eq(18)
     end
 
     it "fails and complains about version on version mismatch" do
@@ -141,14 +140,14 @@ RSpec.describe "bundle install" do
         s.required_ruby_version = version
       end
 
-      install_gemfile <<-G
+      install_gemfile <<-G, :raise_on_error => false
         ruby '#{version}', :engine_version => '#{version}', :engine => 'ruby'
         gemspec
       G
 
-      expect(out).to include("Ruby version")
-      expect(out).to include("but your Gemfile specified")
-      expect(exitstatus).to eq(18) if exitstatus
+      expect(err).to include("Ruby version")
+      expect(err).to include("but your Gemfile specified")
+      expect(exitstatus).to eq(18)
     end
   end
 end

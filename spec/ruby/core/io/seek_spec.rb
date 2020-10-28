@@ -17,7 +17,7 @@ describe "IO#seek" do
   end
 
   it "moves the read position relative to the current position with SEEK_CUR" do
-    lambda { @io.seek(-1) }.should raise_error(Errno::EINVAL)
+    -> { @io.seek(-1) }.should raise_error(Errno::EINVAL)
     @io.seek(10, IO::SEEK_CUR)
     @io.readline.should == "igne une.\n"
     @io.seek(-5, IO::SEEK_CUR)
@@ -44,21 +44,21 @@ describe "IO#seek" do
   it "moves the read position and clears EOF with SEEK_SET" do
     value = @io.read
     @io.seek(0, IO::SEEK_SET)
-    @io.eof?.should == false
+    @io.should_not.eof?
     value.should == @io.read
   end
 
   it "moves the read position and clears EOF with SEEK_CUR" do
     value = @io.read
     @io.seek(-1, IO::SEEK_CUR)
-    @io.eof?.should == false
+    @io.should_not.eof?
     value[-1].should == @io.read[0]
   end
 
   it "moves the read position and clears EOF with SEEK_END" do
     value = @io.read
     @io.seek(-1, IO::SEEK_END)
-    @io.eof?.should == false
+    @io.should_not.eof?
     value[-1].should == @io.read[0]
   end
 

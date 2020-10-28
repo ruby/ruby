@@ -37,7 +37,6 @@ require 'rbconfig'
 # - per environment (gemrc files listed in the GEMRC environment variable)
 
 class Gem::ConfigFile
-
   include Gem::UserInteraction
 
   DEFAULT_BACKTRACE = false
@@ -168,23 +167,7 @@ class Gem::ConfigFile
   # TODO: parse options upstream, pass in options directly
 
   def initialize(args)
-    @config_file_name = nil
-    need_config_file_name = false
-
-    arg_list = []
-
-    args.each do |arg|
-      if need_config_file_name
-        @config_file_name = arg
-        need_config_file_name = false
-      elsif arg =~ /^--config-file=(.*)/
-        @config_file_name = $1
-      elsif arg =~ /^--config-file$/
-        need_config_file_name = true
-      else
-        arg_list << arg
-      end
-    end
+    set_config_file_name(args)
 
     @backtrace = DEFAULT_BACKTRACE
     @bulk_threshold = DEFAULT_BULK_THRESHOLD
@@ -196,13 +179,15 @@ class Gem::ConfigFile
     operating_system_config = Marshal.load Marshal.dump(OPERATING_SYSTEM_DEFAULTS)
     platform_config = Marshal.load Marshal.dump(PLATFORM_DEFAULTS)
     system_config = load_file SYSTEM_WIDE_CONFIG_FILE
-    user_config = load_file config_file_name.dup.untaint
-    environment_config = (ENV['GEMRC'] || '').split(/[:;]/).inject({}) do |result, file|
-      result.merge load_file file
-    end
+    user_config = load_file config_file_name.dup.tap(&Gem::UNTAINT)
+
+    environment_config = (ENV['GEMRC'] || '')
+      .split(File::PATH_SEPARATOR).inject({}) do |result, file|
+        result.merge load_file file
+      end
 
     @hash = operating_system_config.merge platform_config
-    unless arg_list.index '--norc'
+    unless args.index '--norc'
       @hash = @hash.merge system_config
       @hash = @hash.merge user_config
       @hash = @hash.merge environment_config
@@ -226,7 +211,7 @@ class Gem::ConfigFile
     @api_keys         = nil
     @rubygems_api_key = nil
 
-    handle_arguments arg_list
+    handle_arguments args
   end
 
   ##
@@ -275,7 +260,12 @@ if you believe they were disclosed to a third party.
   # Location of RubyGems.org credentials
 
   def credentials_path
-    File.join Gem.user_home, '.gem', 'credentials'
+    credentials = File.join Gem.user_home, '.gem', 'credentials'
+    if File.exist? credentials
+      credentials
+    else
+      File.join Gem.data_home, "gem", "credentials"
+    end
   end
 
   def load_api_keys
@@ -348,7 +338,7 @@ if you believe they were disclosed to a third party.
     yaml_errors = [ArgumentError]
     yaml_errors << Psych::SyntaxError if defined?(Psych::SyntaxError)
 
-    return {} unless filename and File.exist? filename
+    return {} unless filename && !filename.empty? && File.exist?(filename)
 
     begin
       content = Gem::SafeYAML.load(File.read(filename))
@@ -443,7 +433,7 @@ if you believe they were disclosed to a third party.
     yaml_hash[:ssl_client_cert] =
       @hash[:ssl_client_cert] if @hash.key? :ssl_client_cert
 
-    keys = yaml_hash.keys.map { |key| key.to_s }
+    keys = yaml_hash.keys.map {|key| key.to_s }
     keys << 'debug'
     re = Regexp.union(*keys)
 
@@ -458,6 +448,10 @@ if you believe they were disclosed to a third party.
 
   # Writes out this config file, replacing its source.
   def write
+    unless File.exist?(File.dirname(config_file_name))
+      FileUtils.mkdir_p File.dirname(config_file_name)
+    end
+
     File.open config_file_name, 'w' do |io|
       io.write to_yaml
     end
@@ -484,4 +478,22 @@ if you believe they were disclosed to a third party.
 
   attr_reader :hash
   protected :hash
+
+  private
+
+  def set_config_file_name(args)
+    @config_file_name = ENV["GEMRC"]
+    need_config_file_name = false
+
+    args.each do |arg|
+      if need_config_file_name
+        @config_file_name = arg
+        need_config_file_name = false
+      elsif arg =~ /^--config-file=(.*)/
+        @config_file_name = $1
+      elsif arg =~ /^--config-file$/
+        need_config_file_name = true
+      end
+    end
+  end
 end

@@ -1,6 +1,6 @@
-# generated automatically by aclocal 1.16.1 -*- Autoconf -*-
+# generated automatically by aclocal 1.16.2 -*- Autoconf -*-
 
-# Copyright (C) 1996-2018 Free Software Foundation, Inc.
+# Copyright (C) 1996-2020 Free Software Foundation, Inc.
 
 # This file is free software; the Free Software Foundation
 # gives unlimited permission to copy and/or distribute it,
@@ -41,6 +41,7 @@ m4_include([tool/m4/ruby_rm_recursive.m4])
 m4_include([tool/m4/ruby_setjmp_type.m4])
 m4_include([tool/m4/ruby_stack_grow_direction.m4])
 m4_include([tool/m4/ruby_try_cflags.m4])
+m4_include([tool/m4/ruby_try_cxxflags.m4])
 m4_include([tool/m4/ruby_try_ldflags.m4])
 m4_include([tool/m4/ruby_type_attribute.m4])
 m4_include([tool/m4/ruby_universal_arch.m4])

@@ -14,44 +14,44 @@ require 'mspec/guards'
 describe VersionGuard, "#match?" do
   before :each do
     hide_deprecation_warnings
-    stub_const "VersionGuard::FULL_RUBY_VERSION", SpecVersion.new('1.8.6')
+    @current = '1.8.6'
   end
 
   it "returns true when the argument is equal to RUBY_VERSION" do
-    VersionGuard.new('1.8.6').match?.should == true
+    VersionGuard.new(@current, '1.8.6').match?.should == true
   end
 
   it "returns true when the argument is less than RUBY_VERSION" do
-    VersionGuard.new('1.8').match?.should == true
-    VersionGuard.new('1.8.5').match?.should == true
+    VersionGuard.new(@current, '1.8').match?.should == true
+    VersionGuard.new(@current, '1.8.5').match?.should == true
   end
 
   it "returns false when the argument is greater than RUBY_VERSION" do
-    VersionGuard.new('1.8.7').match?.should == false
-    VersionGuard.new('1.9.2').match?.should == false
+    VersionGuard.new(@current, '1.8.7').match?.should == false
+    VersionGuard.new(@current, '1.9.2').match?.should == false
   end
 
   it "returns true when the argument range includes RUBY_VERSION" do
-    VersionGuard.new('1.8.5'..'1.8.7').match?.should == true
-    VersionGuard.new('1.8'..'1.9').match?.should == true
-    VersionGuard.new('1.8'...'1.9').match?.should == true
-    VersionGuard.new('1.8'..'1.8.6').match?.should == true
-    VersionGuard.new('1.8.5'..'1.8.6').match?.should == true
-    VersionGuard.new(''...'1.8.7').match?.should == true
+    VersionGuard.new(@current, '1.8.5'..'1.8.7').match?.should == true
+    VersionGuard.new(@current, '1.8'..'1.9').match?.should == true
+    VersionGuard.new(@current, '1.8'...'1.9').match?.should == true
+    VersionGuard.new(@current, '1.8'..'1.8.6').match?.should == true
+    VersionGuard.new(@current, '1.8.5'..'1.8.6').match?.should == true
+    VersionGuard.new(@current, ''...'1.8.7').match?.should == true
   end
 
   it "returns false when the argument range does not include RUBY_VERSION" do
-    VersionGuard.new('1.8.7'..'1.8.9').match?.should == false
-    VersionGuard.new('1.8.4'..'1.8.5').match?.should == false
-    VersionGuard.new('1.8.4'...'1.8.6').match?.should == false
-    VersionGuard.new('1.8.5'...'1.8.6').match?.should == false
-    VersionGuard.new(''...'1.8.6').match?.should == false
+    VersionGuard.new(@current, '1.8.7'..'1.8.9').match?.should == false
+    VersionGuard.new(@current, '1.8.4'..'1.8.5').match?.should == false
+    VersionGuard.new(@current, '1.8.4'...'1.8.6').match?.should == false
+    VersionGuard.new(@current, '1.8.5'...'1.8.6').match?.should == false
+    VersionGuard.new(@current, ''...'1.8.6').match?.should == false
   end
 end
 
 describe Object, "#ruby_version_is" do
   before :each do
-    @guard = VersionGuard.new 'x.x.x'
+    @guard = VersionGuard.new '1.2.3', 'x.x.x'
     VersionGuard.stub(:new).and_return(@guard)
     ScratchPad.clear
   end
@@ -86,5 +86,27 @@ describe Object, "#ruby_version_is" do
     lambda do
       ruby_version_is("") { raise Exception }
     end.should raise_error(Exception)
+  end
+end
+
+describe Object, "#version_is" do
+  before :each do
+    hide_deprecation_warnings
+  end
+
+  it "returns the expected values" do
+    version_is('1.2.3', '1.2.2').should == true
+    version_is('1.2.3', '1.2.3').should == true
+    version_is('1.2.3', '1.2.4').should == false
+
+    version_is('1.2.3', '1').should == true
+    version_is('1.2.3', '1.0').should == true
+    version_is('1.2.3', '2').should == false
+    version_is('1.2.3', '2.0').should == false
+
+    version_is('1.2.3', '1.2.2'..'1.2.4').should == true
+    version_is('1.2.3', '1.2.2'..'1.2.3').should == true
+    version_is('1.2.3', '1.2.2'...'1.2.3').should == false
+    version_is('1.2.3', '1.2.3'..'1.2.4').should == true
   end
 end

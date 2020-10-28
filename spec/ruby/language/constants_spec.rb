@@ -49,10 +49,10 @@ describe "Literal (A::X) constant resolution" do
     end
 
     it "does not search the singleton class of the class or module" do
-      lambda do
+      -> do
         ConstantSpecs::ContainerA::ChildA::CS_CONST14
       end.should raise_error(NameError)
-      lambda { ConstantSpecs::CS_CONST14 }.should raise_error(NameError)
+      -> { ConstantSpecs::CS_CONST14 }.should raise_error(NameError)
     end
   end
 
@@ -112,7 +112,7 @@ describe "Literal (A::X) constant resolution" do
         CS_CONST108 = :const108_1
       end
 
-      lambda do
+      -> do
         ConstantSpecs::ContainerB::ChildB::CS_CONST108
       end.should raise_error(NameError)
 
@@ -122,7 +122,7 @@ describe "Literal (A::X) constant resolution" do
         end
       end
 
-      lambda { ConstantSpecs::CS_CONST108 }.should raise_error(NameError)
+      -> { ConstantSpecs::CS_CONST108 }.should raise_error(NameError)
     end
 
     it "returns the updated value when a constant is reassigned" do
@@ -151,7 +151,37 @@ describe "Literal (A::X) constant resolution" do
   end
 
   it "raises a NameError if no constant is defined in the search path" do
-    lambda { ConstantSpecs::ParentA::CS_CONSTX }.should raise_error(NameError)
+    -> { ConstantSpecs::ParentA::CS_CONSTX }.should raise_error(NameError)
+  end
+
+  ruby_version_is "3.0" do
+    it "uses the module or class #name to craft the error message" do
+      mod = Module.new do
+        def self.name
+          "ModuleName"
+        end
+
+        def self.inspect
+          "<unusable info>"
+        end
+      end
+
+      -> { mod::DOES_NOT_EXIST }.should raise_error(NameError, /uninitialized constant ModuleName::DOES_NOT_EXIST/)
+    end
+
+    it "uses the module or class #inspect to craft the error message if they are anonymous" do
+      mod = Module.new do
+        def self.name
+          nil
+        end
+
+        def self.inspect
+          "<unusable info>"
+        end
+      end
+
+      -> { mod::DOES_NOT_EXIST }.should raise_error(NameError, /uninitialized constant <unusable info>::DOES_NOT_EXIST/)
+    end
   end
 
   it "sends #const_missing to the original class or module scope" do
@@ -163,10 +193,10 @@ describe "Literal (A::X) constant resolution" do
   end
 
   it "raises a TypeError if a non-class or non-module qualifier is given" do
-    lambda { CS_CONST1::CS_CONST }.should raise_error(TypeError)
-    lambda { 1::CS_CONST         }.should raise_error(TypeError)
-    lambda { "mod"::CS_CONST     }.should raise_error(TypeError)
-    lambda { false::CS_CONST     }.should raise_error(TypeError)
+    -> { CS_CONST1::CS_CONST }.should raise_error(TypeError)
+    -> { 1::CS_CONST         }.should raise_error(TypeError)
+    -> { "mod"::CS_CONST     }.should raise_error(TypeError)
+    -> { false::CS_CONST     }.should raise_error(TypeError)
   end
 end
 
@@ -212,7 +242,7 @@ describe "Constant resolution within methods" do
     end
 
     it "does not search the lexical scope of the caller" do
-      lambda { ConstantSpecs::ClassA.const16 }.should raise_error(NameError)
+      -> { ConstantSpecs::ClassA.const16 }.should raise_error(NameError)
     end
 
     it "searches the lexical scope of a block" do
@@ -225,7 +255,7 @@ describe "Constant resolution within methods" do
     end
 
     it "does not search the lexical scope of qualifying modules" do
-      lambda do
+      -> do
         ConstantSpecs::ContainerA::ChildA.const23
       end.should raise_error(NameError)
     end
@@ -302,7 +332,7 @@ describe "Constant resolution within methods" do
     it "does not search the lexical scope of the caller" do
       ConstantSpecs::ClassB::CS_CONST209 = :const209
 
-      lambda { ConstantSpecs::ClassB.const209 }.should raise_error(NameError)
+      -> { ConstantSpecs::ClassB.const209 }.should raise_error(NameError)
     end
 
     it "searches the lexical scope of a block" do
@@ -337,14 +367,14 @@ describe "Constant resolution within methods" do
     it "does not search the lexical scope of qualifying modules" do
       ConstantSpecs::ContainerB::CS_CONST214 = :const214
 
-      lambda do
+      -> do
         ConstantSpecs::ContainerB::ChildB.const214
       end.should raise_error(NameError)
     end
   end
 
   it "raises a NameError if no constant is defined in the search path" do
-    lambda { ConstantSpecs::ParentA.constx }.should raise_error(NameError)
+    -> { ConstantSpecs::ParentA.constx }.should raise_error(NameError)
   end
 
   it "sends #const_missing to the original class or module scope" do
@@ -425,23 +455,13 @@ end
 
 describe "top-level constant lookup" do
   context "on a class" do
-    ruby_version_is "" ... "2.5" do
-      it "searches Object successfully after searching other scopes" do
-        ->() {
-          String::Hash.should == Hash
-        }.should complain(/toplevel constant Hash referenced by/)
-      end
-    end
-
-    ruby_version_is "2.5" do
-      it "does not search Object after searching other scopes" do
-        ->() { String::Hash }.should raise_error(NameError)
-      end
+    it "does not search Object after searching other scopes" do
+      -> { String::Hash }.should raise_error(NameError)
     end
   end
 
   it "searches Object unsuccessfully when searches on a module" do
-    ->() { Enumerable::Hash }.should raise_error(NameError)
+    -> { Enumerable::Hash }.should raise_error(NameError)
   end
 end
 
@@ -455,7 +475,7 @@ describe "Module#private_constant marked constants" do
       mod.const_set :Foo, false
     }.should complain(/already initialized constant/)
 
-    lambda {mod::Foo}.should raise_error(NameError)
+    -> {mod::Foo}.should raise_error(NameError)
   end
 
   ruby_version_is "2.6" do
@@ -473,19 +493,19 @@ describe "Module#private_constant marked constants" do
 
   describe "in a module" do
     it "cannot be accessed from outside the module" do
-      lambda do
+      -> do
         ConstantVisibility::PrivConstModule::PRIVATE_CONSTANT_MODULE
       end.should raise_error(NameError)
     end
 
     it "cannot be reopened as a module from scope where constant would be private" do
-      lambda do
+      -> do
         module ConstantVisibility::ModuleContainer::PrivateModule; end
       end.should raise_error(NameError)
     end
 
     it "cannot be reopened as a class from scope where constant would be private" do
-      lambda do
+      -> do
         class ConstantVisibility::ModuleContainer::PrivateClass; end
       end.should raise_error(NameError)
     end
@@ -541,19 +561,19 @@ describe "Module#private_constant marked constants" do
 
   describe "in a class" do
     it "cannot be accessed from outside the class" do
-      lambda do
+      -> do
         ConstantVisibility::PrivConstClass::PRIVATE_CONSTANT_CLASS
       end.should raise_error(NameError)
     end
 
     it "cannot be reopened as a module" do
-      lambda do
+      -> do
         module ConstantVisibility::ClassContainer::PrivateModule; end
       end.should raise_error(NameError)
     end
 
     it "cannot be reopened as a class" do
-      lambda do
+      -> do
         class ConstantVisibility::ClassContainer::PrivateClass; end
       end.should raise_error(NameError)
     end
@@ -609,7 +629,7 @@ describe "Module#private_constant marked constants" do
 
   describe "in Object" do
     it "cannot be accessed using ::Const form" do
-      lambda do
+      -> do
         ::PRIVATE_CONSTANT_IN_OBJECT
       end.should raise_error(NameError)
     end
@@ -629,14 +649,14 @@ describe "Module#private_constant marked constants" do
 
   describe "NameError by #private_constant" do
     it "has :receiver and :name attributes" do
-      lambda do
+      -> do
         ConstantVisibility::PrivConstClass::PRIVATE_CONSTANT_CLASS
       end.should raise_error(NameError) {|e|
         e.receiver.should == ConstantVisibility::PrivConstClass
         e.name.should == :PRIVATE_CONSTANT_CLASS
       }
 
-      lambda do
+      -> do
         ConstantVisibility::PrivConstModule::PRIVATE_CONSTANT_MODULE
       end.should raise_error(NameError) {|e|
         e.receiver.should == ConstantVisibility::PrivConstModule
@@ -645,19 +665,17 @@ describe "Module#private_constant marked constants" do
     end
 
     it "has the defined class as the :name attribute" do
-      lambda do
+      -> do
         ConstantVisibility::PrivConstClassChild::PRIVATE_CONSTANT_CLASS
       end.should raise_error(NameError) {|e|
         e.receiver.should == ConstantVisibility::PrivConstClass
         e.name.should == :PRIVATE_CONSTANT_CLASS
       }
 
-      lambda do
+      -> do
         ConstantVisibility::PrivConstModuleChild::PRIVATE_CONSTANT_MODULE
       end.should raise_error(NameError) {|e|
-        ruby_bug "#14853", ""..."2.5.2" do
-          e.receiver.should == ConstantVisibility::PrivConstModule
-        end
+        e.receiver.should == ConstantVisibility::PrivConstModule
         e.name.should == :PRIVATE_CONSTANT_MODULE
       }
     end

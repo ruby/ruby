@@ -10,21 +10,21 @@
 #
 #
 
-require "e2mmap"
-
 module IRB
   # An abstract output class for IO in irb. This is mainly used internally by
   # IRB::Notifier. You can define your own output method to use with Irb.new,
   # or Context.new
   class OutputMethod
-    extend Exception2MessageMapper
-    def_exception :NotImplementedError, "Need to define `%s'"
-
+    class NotImplementedError < StandardError
+      def initialize(val)
+        super("Need to define `#{val}'")
+      end
+    end
 
     # Open this method to implement your own output method, raises a
     # NotImplementedError if you don't define #print in your own class.
     def print(*opts)
-      OutputMethod.Raise NotImplementedError, "print"
+      raise NotImplementedError, "print"
     end
 
     # Prints the given +opts+, with a newline delimiter.

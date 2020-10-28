@@ -8,39 +8,67 @@ description.
 
 == Libraries
 
+DEBUGGER__:: Debugging functionality for Ruby
+MakeMakefile:: Module used to generate a Makefile for C extensions
+RbConfig:: Information of your configure and build of Ruby
+Gem:: Package management framework for Ruby
+un.rb:: Utilities to replace common UNIX commands
+
+== Extensions
+
+Coverage:: Provides coverage measurement for Ruby
+Monitor:: Provides an object or module to use safely by more than one thread
+objspace:: Extends ObjectSpace module to add methods for internal statistics
+PTY:: Creates and manages pseudo terminals
+Ripper:: Provides an interface for parsing Ruby programs into S-expressions
+Socket:: Access underlying OS socket implementations
+WIN32OLE:: Provides an interface for OLE Automation in Ruby
+
+= Default gems
+
+== Libraries
+
 Abbrev:: Calculates a set of unique abbreviations for a given set of strings
 Base64:: Support for encoding and decoding binary data using a Base64 representation
 Benchmark:: Provides methods to measure and report the time used to execute code
+Bundler:: Manage your Ruby application's gem dependencies
 CGI:: Support for the Common Gateway Interface protocol
-DEBUGGER__:: Debugging functionality for Ruby
+CSV:: Provides an interface to read and write CSV files and data
 Delegator:: Provides three abilities to delegate method calls to an object
+DidYouMean:: "Did you mean?" experience in Ruby
+Digest:: Provides a framework for message digest libraries
 DRb:: Distributed object system for Ruby
 English.rb:: Require 'English.rb' to reference global variables with less cryptic names
 ERB:: An easy to use but powerful templating system for Ruby
+FileUtils:: Several file utility methods for copying, moving, removing, etc
 Find:: This module supports top-down traversal of a set of file paths
+Forwardable:: Provides delegation of specified methods to a designated object
 GetoptLong:: Parse command line options similar to the GNU C getopt_long()
-MakeMakefile:: Module used to generate a Makefile for C extensions
-Monitor:: Provides an object or module to use safely by more than one thread
+IPAddr:: Provides methods to manipulate IPv4 and IPv6 IP addresses
+IRB:: Interactive Ruby command-line tool for REPL (Read Eval Print Loop)
+OptionParser:: Ruby-oriented class for command-line option analysis
+Logger:: Provides a simple logging utility for outputting messages
+Matrix:: Represents a mathematical matrix.
+Mutex_m:: Mixin to extend objects to be handled like a Mutex
 Net::FTP:: Support for the File Transfer Protocol
 Net::HTTP:: HTTP client api for Ruby
 Net::IMAP:: Ruby client api for Internet Message Access Protocol
 Net::POP3:: Ruby client library for POP3
 Net::SMTP:: Simple Mail Transfer Protocol client library for Ruby
 Observable:: Provides a mechanism for publish/subscribe pattern in Ruby
-OpenURI:: An easy-to-use wrapper for Net::HTTP, Net::HTTPS and Net::FTP
 Open3:: Provides access to stdin, stdout and stderr when running other programs
-OptionParser:: Ruby-oriented class for command-line option analysis
+OpenStruct:: Class to build custom data structures, similar to a Hash
+OpenURI:: An easy-to-use wrapper for Net::HTTP, Net::HTTPS and Net::FTP
+Pathname:: Representation of the name of a file or directory on the filesystem
 PP:: Provides a PrettyPrinter for Ruby objects
 PrettyPrinter:: Implements a pretty printing algorithm for readable structure
-profile.rb:: Runs the Ruby Profiler__
-Profiler__:: Provides a way to profile your Ruby application
+Prime:: Prime numbers and factorization library
 PStore:: Implements a file based persistence mechanism based on a Hash
 Racc:: A LALR(1) parser generator written in Ruby.
-RbConfig:: Information of your configure and build of Ruby
-resolv-replace.rb:: Replace Socket DNS with Resolv
 Resolv::  Thread-aware DNS resolver library in Ruby
+resolv-replace.rb:: Replace Socket DNS with Resolv
+RDoc:: Produces HTML and command-line documentation for Ruby
 Rinda:: The Linda distributed computing paradigm in Ruby
-Gem:: Package management framework for Ruby
 SecureRandom:: Interface for secure random number generator
 Set:: Provides a class to deal with collections of unordered, unique values
 Shellwords:: Manipulates strings with word parsing rules of UNIX Bourne shell
@@ -49,53 +77,12 @@ Tempfile:: A utility class for managing temporary files
 Time:: Extends the Time class with methods for parsing and conversion
 Timeout:: Auto-terminate potentially long-running operations in Ruby
 tmpdir.rb:: Extends the Dir class to manage the OS temporary file path
-TSort:: Topological sorting using Tarjan's algorithm
-un.rb:: Utilities to replace common UNIX commands
-URI:: A Ruby module providing support for Uniform Resource Identifiers
-WeakRef:: Allows a referenced object to be garbage-collected
-YAML:: Ruby client library for the Psych YAML implementation
-
-== Extensions
-
-Coverage:: Provides coverage measurement for Ruby
-Digest:: Provides a framework for message digest libraries
-IO:: Extensions for Ruby IO class, including #wait and ::console
-NKF:: Ruby extension for Network Kanji Filter
-objspace:: Extends ObjectSpace module to add methods for internal statistics
-Pathname:: Representation of the name of a file or directory on the filesystem
-PTY:: Creates and manages pseudo terminals
-Readline:: Provides an interface for GNU Readline and Edit Line (libedit)
-Ripper:: Provides an interface for parsing Ruby programs into S-expressions
-Socket:: Access underlying OS socket implementations
-Syslog:: Ruby interface for the POSIX system logging facility
-WIN32OLE:: Provides an interface for OLE Automation in Ruby
-
-= Default gems
-
-== Libraries
-
-Bundler:: Manage your Ruby application's gem dependencies
-CMath:: Provides Trigonometric and Transcendental functions for complex numbers
-CSV:: Provides an interface to read and write CSV files and data
-E2MM:: Module for defining custom exceptions with specific messages
-FileUtils:: Several file utility methods for copying, moving, removing, etc
-Forwardable:: Provides delegation of specified methods to a designated object
-IPAddr:: Provides methods to manipulate IPv4 and IPv6 IP addresses
-IRB:: Interactive Ruby command-line tool for REPL (Read Eval Print Loop)
-Logger:: Provides a simple logging utility for outputting messages
-Matrix:: Represents a mathematical matrix.
-Mutex_m:: Mixin to extend objects to be handled like a Mutex
-OpenStruct:: Class to build custom data structures, similar to a Hash
-Prime:: Prime numbers and factorization library
-RDoc:: Produces HTML and command-line documentation for Ruby
-REXML:: An XML toolkit for Ruby
-RSS:: Family of libraries that support various formats of XML "feeds"
-Scanf:: A Ruby implementation of the C function scanf(3)
-Shell:: An idiomatic Ruby interface for common UNIX shell commands
-Synchronizer:: A module that provides a two-phase lock with a counter
-ThreadsWait:: Watches for termination of multiple threads
 Tracer:: Outputs a source level execution trace of a Ruby program
+TSort:: Topological sorting using Tarjan's algorithm
+URI:: A Ruby module providing support for Uniform Resource Identifiers
 WEBrick:: An HTTP server toolkit for Ruby
+YAML:: Ruby client library for the Psych YAML implementation
+WeakRef:: Allows a referenced object to be garbage-collected
 
 == Extensions
 
@@ -107,23 +94,26 @@ Etc:: Provides access to information typically stored in UNIX /etc directory
 Fcntl:: Loads constants defined in the OS fcntl.h C header file
 Fiddle:: A libffi wrapper for Ruby
 GDBM:: Ruby extension for the GNU dbm (gdbm) library
-IO::console:: Console interface
+IO:: Extensions for Ruby IO class, including #wait, #nonblock and ::console
 JSON:: Implements Javascript Object Notation for Ruby
+NKF:: Ruby extension for Network Kanji Filter
 OpenSSL:: Provides SSL, TLS and general purpose cryptography for Ruby
 Psych:: A YAML parser and emitter for Ruby
-SDBM:: Provides a simple file-based key-value store with String keys and values
+Readline:: Provides an interface for GNU Readline and Edit Line (libedit)
 StringIO:: Pseudo I/O on String objects
 StringScanner:: Provides lexical scanning operations on a String
+Syslog:: Ruby interface for the POSIX system logging facility
 Zlib:: Ruby interface for the zlib compression/decompression library
 
 = Bundled gems
 
 == Libraries
 
-DidYouMean:: "Did you mean?" experience in Ruby
 MiniTest:: A test suite with TDD, BDD, mocking and benchmarking
-Net::Telnet:: Telnet client library for Ruby
 PowerAssert:: Power Assert for Ruby.
 Rake:: Ruby build program with capabilities similar to make
 Test::Unit:: A compatibility layer for MiniTest
-XMLRPC:: Remote Procedure Call over HTTP support for Ruby
+REXML:: An XML toolkit for Ruby
+RSS:: Family of libraries that support various formats of XML "feeds"
+RBS:: RBS is a language to describe the structure of Ruby programs
+TypeProf:: A type analysis tool for Ruby code based on abstract interpretation

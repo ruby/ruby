@@ -11,7 +11,7 @@ describe "Process::Status#exitstatus" do
 
   describe "for a child that raised SignalException" do
     before :each do
-      ruby_exe("raise SignalException, 'SIGTERM'")
+      ruby_exe("Process.kill(:KILL, $$); exit(42)")
     end
 
     platform_is_not :windows do

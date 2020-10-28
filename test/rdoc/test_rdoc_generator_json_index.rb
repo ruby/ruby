@@ -1,7 +1,7 @@
 # coding: US-ASCII
 # frozen_string_literal: true
 
-require 'minitest_helper'
+require_relative 'helper'
 
 class TestRDocGeneratorJsonIndex < RDoc::TestCase
 
@@ -106,7 +106,7 @@ class TestRDocGeneratorJsonIndex < RDoc::TestCase
 
     # This is dirty hack on JRuby for MiniTest 4
     assert orig_file.mtime.inspect == generated_file.mtime.inspect,
-      '.js files should be tha same timestamp of original'
+      '.js files should be the same timestamp of original'
 
     json = File.read 'js/search_index.js'
 
@@ -168,7 +168,7 @@ class TestRDocGeneratorJsonIndex < RDoc::TestCase
     begin
       require 'zlib'
     rescue LoadError
-      skip "no zlib"
+      omit "no zlib"
     end
     @g.generate
     @g.generate_gzipped

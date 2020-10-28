@@ -2,26 +2,26 @@
 require_relative '../spec_helper'
 require_relative '../fixtures/classes'
 
-describe "Socket#gethostbyname" do
+describe "Socket.gethostbyname" do
   it "returns broadcast address info for '<broadcast>'" do
-    addr = Socket.gethostbyname('<broadcast>');
-    addr.should == ["255.255.255.255", [], 2, "\377\377\377\377"]
+    addr = suppress_warning { Socket.gethostbyname('<broadcast>') }
+    addr.should == ["255.255.255.255", [], 2, "\xFF\xFF\xFF\xFF"]
   end
 
   it "returns broadcast address info for '<any>'" do
-    addr = Socket.gethostbyname('<any>');
-    addr.should == ["0.0.0.0", [], 2, "\000\000\000\000"]
+    addr = suppress_warning { Socket.gethostbyname('<any>') }
+    addr.should == ["0.0.0.0", [], 2, "\x00\x00\x00\x00"]
   end
 end
 
 describe 'Socket.gethostbyname' do
   it 'returns an Array' do
-    Socket.gethostbyname('127.0.0.1').should be_an_instance_of(Array)
+    suppress_warning { Socket.gethostbyname('127.0.0.1') }.should be_an_instance_of(Array)
   end
 
   describe 'the returned Array' do
     before do
-      @array = Socket.gethostbyname('127.0.0.1')
+      @array = suppress_warning { Socket.gethostbyname('127.0.0.1') }
     end
 
     it 'includes the hostname as the first value' do
@@ -54,7 +54,7 @@ describe 'Socket.gethostbyname' do
   describe 'using <broadcast> as the input address' do
     describe 'the returned Array' do
       before do
-        @addr = Socket.gethostbyname('<broadcast>')
+        @addr = suppress_warning { Socket.gethostbyname('<broadcast>') }
       end
 
       it 'includes the broadcast address as the first value' do
@@ -74,7 +74,7 @@ describe 'Socket.gethostbyname' do
   describe 'using <any> as the input address' do
     describe 'the returned Array' do
       before do
-        @addr = Socket.gethostbyname('<any>')
+        @addr = suppress_warning { Socket.gethostbyname('<any>') }
       end
 
       it 'includes the wildcard address as the first value' do
@@ -94,7 +94,7 @@ describe 'Socket.gethostbyname' do
   describe 'using an IPv4 address' do
     describe 'the returned Array' do
       before do
-        @addr = Socket.gethostbyname('127.0.0.1')
+        @addr = suppress_warning { Socket.gethostbyname('127.0.0.1') }
       end
 
       it 'includes the IP address as the first value' do
@@ -115,7 +115,7 @@ describe 'Socket.gethostbyname' do
     describe 'using an IPv6 address' do
       describe 'the returned Array' do
         before do
-          @addr = Socket.gethostbyname('::1')
+          @addr = suppress_warning { Socket.gethostbyname('::1') }
         end
 
         it 'includes the IP address as the first value' do

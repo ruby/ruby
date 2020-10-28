@@ -38,7 +38,7 @@ describe :io_each, shared: true do
     end
 
     it "raises an IOError when self is not readable" do
-      lambda { IOSpecs.closed_io.send(@method) {} }.should raise_error(IOError)
+      -> { IOSpecs.closed_io.send(@method) {} }.should raise_error(IOError)
     end
 
     it "makes line count accessible via lineno" do
@@ -74,7 +74,7 @@ describe :io_each, shared: true do
     describe "when limit is 0" do
       it "raises an ArgumentError" do
         # must pass block so Enumerator is evaluated and raises
-        lambda { @io.send(@method, 0){} }.should raise_error(ArgumentError)
+        -> { @io.send(@method, 0){} }.should raise_error(ArgumentError)
       end
     end
   end
@@ -156,12 +156,10 @@ describe :io_each, shared: true do
     end
   end
 
-  ruby_version_is "2.4" do
-    describe "when passed chomp" do
-      it "yields each line without trailing newline characters to the passed block" do
-        @io.send(@method, chomp: true) { |s| ScratchPad << s }
-        ScratchPad.recorded.should == IOSpecs.lines_without_newline_characters
-      end
+  describe "when passed chomp" do
+    it "yields each line without trailing newline characters to the passed block" do
+      @io.send(@method, chomp: true) { |s| ScratchPad << s }
+      ScratchPad.recorded.should == IOSpecs.lines_without_newline_characters
     end
   end
 end
@@ -170,12 +168,12 @@ describe :io_each_default_separator, shared: true do
   before :each do
     @io = IOSpecs.io_fixture "lines.txt"
     ScratchPad.record []
-    @sep, $/ = $/, " "
+    suppress_warning {@sep, $/ = $/, " "}
   end
 
   after :each do
     @io.close if @io
-    $/ = @sep
+    suppress_warning {$/ = @sep}
   end
 
   it "uses $/ as the default line separator" do

@@ -551,6 +551,21 @@ class TestSyslogLogger < TestSyslogRootLogger
     assert_equal facility|Syslog::LOG_DEBUG,   msg.priority
   end
 
+  class CustomSyslogLogger < Syslog::Logger
+    def level
+      Logger::INFO
+    end
+  end
+
+  def test_overriding_level
+    @logger = CustomSyslogLogger.new
+    log = log_add Logger::INFO, 'msg'
+    assert_equal 'msg', log.msg
+
+    log = log_add Logger::DEBUG, 'msg'
+    assert_nil log.msg
+  end
+
 end if defined?(Syslog)
 
 

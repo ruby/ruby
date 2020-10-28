@@ -6,29 +6,33 @@ describe "Kernel#sleep" do
     Kernel.should have_private_instance_method(:sleep)
   end
 
+  it "returns an Integer" do
+    sleep(0.001).should be_kind_of(Integer)
+  end
+
   it "accepts a Float" do
-    sleep(0.1).should be_close(0, 2)
+    sleep(0.001).should >= 0
   end
 
   it "accepts a Fixnum" do
-    sleep(0).should be_close(0, 2)
+    sleep(0).should >= 0
   end
 
   it "accepts a Rational" do
-    sleep(Rational(1, 9)).should be_close(0, 2)
+    sleep(Rational(1, 999)).should >= 0
   end
 
   it "raises an ArgumentError when passed a negative duration" do
-    lambda { sleep(-0.1) }.should raise_error(ArgumentError)
-    lambda { sleep(-1) }.should raise_error(ArgumentError)
+    -> { sleep(-0.1) }.should raise_error(ArgumentError)
+    -> { sleep(-1) }.should raise_error(ArgumentError)
   end
 
   it "raises a TypeError when passed nil" do
-    lambda { sleep(nil)   }.should raise_error(TypeError)
+    -> { sleep(nil)   }.should raise_error(TypeError)
   end
 
   it "raises a TypeError when passed a String" do
-    lambda { sleep('2')   }.should raise_error(TypeError)
+    -> { sleep('2')   }.should raise_error(TypeError)
   end
 
   it "pauses execution indefinitely if not given a duration" do

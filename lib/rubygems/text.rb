@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require 'rubygems'
 
 ##
 # A collection of text-wrangling methods
@@ -65,12 +64,12 @@ module Gem::Text
     x = nil
 
     str1.each_char.each_with_index do |char1,i|
-      e = i+1
+      e = i + 1
 
       str2.each_char.each_with_index do |char2,j|
         cost = (char1 == char2) ? 0 : 1
         x = min3(
-             d[j+1] + 1, # insertion
+             d[j + 1] + 1, # insertion
              e + 1,      # deletion
              d[j] + cost # substitution
            )

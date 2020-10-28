@@ -43,7 +43,7 @@ module Fiddle
     end
 
     def test_set_ctypes
-      union = CStructEntity.malloc [TYPE_INT, TYPE_LONG]
+      union = CStructEntity.malloc [TYPE_INT, TYPE_LONG], Fiddle::RUBY_FREE
       union.assign_names %w[int long]
 
       # this test is roundabout because the stored ctypes are not accessible
@@ -55,20 +55,20 @@ module Fiddle
     end
 
     def test_aref_pointer_array
-      team = CStructEntity.malloc([[TYPE_VOIDP, 2]])
+      team = CStructEntity.malloc([[TYPE_VOIDP, 2]], Fiddle::RUBY_FREE)
       team.assign_names(["names"])
-      alice = Fiddle::Pointer.malloc(6)
+      alice = Fiddle::Pointer.malloc(6, Fiddle::RUBY_FREE)
       alice[0, 6] = "Alice\0"
-      bob = Fiddle::Pointer.malloc(4)
+      bob = Fiddle::Pointer.malloc(4, Fiddle::RUBY_FREE)
       bob[0, 4] = "Bob\0"
       team["names"] = [alice, bob]
       assert_equal(["Alice", "Bob"], team["names"].map(&:to_s))
     end
 
     def test_aref_pointer
-      user = CStructEntity.malloc([TYPE_VOIDP])
+      user = CStructEntity.malloc([TYPE_VOIDP], Fiddle::RUBY_FREE)
       user.assign_names(["name"])
-      alice = Fiddle::Pointer.malloc(6)
+      alice = Fiddle::Pointer.malloc(6, Fiddle::RUBY_FREE)
       alice[0, 6] = "Alice\0"
       user["name"] = alice
       assert_equal("Alice", user["name"].to_s)

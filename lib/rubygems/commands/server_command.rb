@@ -3,7 +3,6 @@ require 'rubygems/command'
 require 'rubygems/server'
 
 class Gem::Commands::ServerCommand < Gem::Command
-
   def initialize
     super 'server', 'Documentation and gem repository HTTP server',
           :port => 8808, :gemdir => [], :daemon => false
@@ -82,5 +81,4 @@ You can set up a shortcut to gem server documentation using the URL:
     options[:gemdir] = Gem.path if options[:gemdir].empty?
     Gem::Server.run options
   end
-
 end

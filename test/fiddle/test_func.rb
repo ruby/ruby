@@ -11,18 +11,6 @@ module Fiddle
       assert_nil f.call(10)
     end
 
-    def test_syscall_with_tainted_string
-      f = Function.new(@libc['system'], [TYPE_VOIDP], TYPE_INT)
-      Thread.new {
-        $SAFE = 1
-        assert_raise(SecurityError) do
-          f.call("uname -rs".dup.taint)
-        end
-      }.join
-    ensure
-      $SAFE = 0
-    end
-
     def test_sinf
       begin
         f = Function.new(@libm['sinf'], [TYPE_FLOAT], TYPE_FLOAT)
@@ -90,6 +78,50 @@ module Fiddle
       buff = "9341"
       EnvUtil.under_gc_stress {qsort.call(buff, buff.size, 1, cb)}
       assert_equal("1349", buff, bug4929)
+    end
+
+    def test_snprintf
+      unless Fiddle.const_defined?("TYPE_VARIADIC")
+        skip "libffi doesn't support variadic arguments"
+      end
+      if Fiddle::WINDOWS
+        snprintf_name = "_snprintf"
+      else
+        snprintf_name = "snprintf"
+      end
+      begin
+        snprintf_pointer = @libc[snprintf_name]
+      rescue Fiddle::DLError
+        skip "Can't find #{snprintf_name}: #{$!.message}"
+      end
+      snprintf = Function.new(snprintf_pointer,
+                              [
+                                TYPE_VOIDP,
+                                TYPE_SIZE_T,
+                                TYPE_VOIDP,
+                                TYPE_VARIADIC,
+                              ],
+                              TYPE_INT)
+      output_buffer = " " * 1024
+      output = Pointer[output_buffer]
+
+      written = snprintf.call(output,
+                              output.size,
+                              "int: %d, string: %.*s\n",
+                              TYPE_INT, -29,
+                              TYPE_INT, 4,
+                              TYPE_VOIDP, "Hello")
+      assert_equal("int: -29, string: Hell\n",
+                   output_buffer[0, written])
+
+      written = snprintf.call(output,
+                              output.size,
+                              "string: %.*s, uint: %u\n",
+                              TYPE_INT, 2,
+                              TYPE_VOIDP, "Hello",
+                              TYPE_INT, 29)
+      assert_equal("string: He, uint: 29\n",
+                   output_buffer[0, written])
     end
   end
 end if defined?(Fiddle)

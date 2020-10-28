@@ -3,7 +3,6 @@ require 'rubygems/test_case'
 require 'rubygems/installer'
 
 class TestGemResolverGitSpecification < Gem::TestCase
-
   def setup
     super
 
@@ -63,6 +62,7 @@ class TestGemResolverGitSpecification < Gem::TestCase
   # functional test for Gem::Ext::Builder
 
   def test_install_extension
+    skip if Gem.java_platform?
     name, _, repository, = git_gem 'a', 1 do |s|
       s.extensions << 'ext/extconf.rb'
     end
@@ -109,5 +109,4 @@ class TestGemResolverGitSpecification < Gem::TestCase
 
     assert called
   end
-
 end

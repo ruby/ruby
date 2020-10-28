@@ -71,11 +71,12 @@ describe :stringio_each_no_arguments, shared: true do
   it "uses $/ as the default line separator" do
     seen = []
     begin
-      old_rs, $/ = $/, " "
+      old_rs = $/
+      suppress_warning {$/ = " "}
       @io.send(@method) {|s| seen << s }
       seen.should eql(["a ", "b ", "c ", "d ", "e\n1 ", "2 ", "3 ", "4 ", "5"])
     ensure
-      $/ = old_rs
+      suppress_warning {$/ = old_rs}
     end
   end
 
@@ -96,11 +97,11 @@ end
 describe :stringio_each_not_readable, shared: true do
   it "raises an IOError" do
     io = StringIO.new("a b c d e", "w")
-    lambda { io.send(@method) { |b| b } }.should raise_error(IOError)
+    -> { io.send(@method) { |b| b } }.should raise_error(IOError)
 
     io = StringIO.new("a b c d e")
     io.close_read
-    lambda { io.send(@method) { |b| b } }.should raise_error(IOError)
+    -> { io.send(@method) { |b| b } }.should raise_error(IOError)
   end
 end
 

@@ -49,3 +49,16 @@ rb_digest_##name##_finish(void *ctx, unsigned char *ptr) \
 { \
     return name##_Final(ptr, ctx); \
 }
+
+static inline VALUE
+rb_digest_namespace(void)
+{
+    rb_require("digest");
+    return rb_path2class("Digest");
+}
+
+static inline ID
+rb_id_metadata(void)
+{
+    return rb_intern_const("metadata");
+}

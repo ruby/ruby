@@ -19,6 +19,8 @@ module TestWEBrick
     Ruby = EnvUtil.rubybin
     remove_const :CGIRunner
     CGIRunner = "\"#{Ruby}\" \"#{WEBrick::Config::LIBDIR}/httpservlet/cgi_runner.rb\"" # :nodoc:
+    remove_const :CGIRunnerArray
+    CGIRunnerArray = [Ruby, "#{WEBrick::Config::LIBDIR}/httpservlet/cgi_runner.rb"] # :nodoc:
   end
 
   RubyBin = "\"#{EnvUtil.rubybin}\""
@@ -26,6 +28,12 @@ module TestWEBrick
   RubyBin << " \"-I#{File.expand_path("../..", File.dirname(__FILE__))}/lib\""
   RubyBin << " \"-I#{File.dirname(EnvUtil.rubybin)}/.ext/common\""
   RubyBin << " \"-I#{File.dirname(EnvUtil.rubybin)}/.ext/#{RUBY_PLATFORM}\""
+
+  RubyBinArray = [EnvUtil.rubybin]
+  RubyBinArray << "--disable-gems"
+  RubyBinArray << "-I" << "#{File.expand_path("../..", File.dirname(__FILE__))}/lib"
+  RubyBinArray << "-I" << "#{File.dirname(EnvUtil.rubybin)}/.ext/common"
+  RubyBinArray << "-I" << "#{File.dirname(EnvUtil.rubybin)}/.ext/#{RUBY_PLATFORM}"
 
   require "test/unit" unless defined?(Test::Unit)
   include Test::Unit::Assertions
@@ -45,7 +53,7 @@ module TestWEBrick
       :Logger => WEBrick::Log.new(log_ary, WEBrick::BasicLog::WARN),
       :AccessLog => [[access_log_ary, ""]]
     }.update(config))
-    server = capture_io {break klass.new(config)}
+    server = capture_output {break klass.new(config)}
     server_thread = server.start
     server_thread2 = Thread.new {
       server_thread.join

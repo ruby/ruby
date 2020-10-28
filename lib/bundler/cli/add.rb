@@ -2,34 +2,46 @@
 
 module Bundler
   class CLI::Add
+    attr_reader :gems, :options, :version
+
     def initialize(options, gems)
       @gems = gems
       @options = options
-      @options[:group] = @options[:group].split(",").map(&:strip) if !@options[:group].nil? && !@options[:group].empty?
+      @options[:group] = options[:group].split(",").map(&:strip) unless options[:group].nil?
+      @version = options[:version].split(",").map(&:strip) unless options[:version].nil?
     end
 
     def run
-      raise InvalidOption, "You can not specify `--strict` and `--optimistic` at the same time." if @options[:strict] && @options[:optimistic]
+      validate_options!
+      inject_dependencies
+      perform_bundle_install unless options["skip-install"]
+    end
 
-      # raise error when no gems are specified
-      raise InvalidOption, "Please specify gems to add." if @gems.empty?
+    private
 
-      version = @options[:version].nil? ? nil : @options[:version].split(",").map(&:strip)
+    def perform_bundle_install
+      Installer.install(Bundler.root, Bundler.definition)
+      Bundler.load.cache if Bundler.app_cache.exist?
+    end
 
-      unless version.nil?
-        version.each do |v|
-          raise InvalidOption, "Invalid gem requirement pattern '#{v}'" unless Gem::Requirement::PATTERN =~ v.to_s
-        end
-      end
-
-      dependencies = @gems.map {|g| Bundler::Dependency.new(g, version, @options) }
+    def inject_dependencies
+      dependencies = gems.map {|g| Bundler::Dependency.new(g, version, options) }
 
       Injector.inject(dependencies,
-        :conservative_versioning => @options[:version].nil?, # Perform conservative versioning only when version is not specified
-        :optimistic => @options[:optimistic],
-        :strict => @options[:strict])
+        :conservative_versioning => options[:version].nil?, # Perform conservative versioning only when version is not specified
+        :optimistic => options[:optimistic],
+        :strict => options[:strict])
+    end
 
-      Installer.install(Bundler.root, Bundler.definition) unless @options["skip-install"]
+    def validate_options!
+      raise InvalidOption, "You can not specify `--strict` and `--optimistic` at the same time." if options[:strict] && options[:optimistic]
+
+      # raise error when no gems are specified
+      raise InvalidOption, "Please specify gems to add." if gems.empty?
+
+      version.to_a.each do |v|
+        raise InvalidOption, "Invalid gem requirement pattern '#{v}'" unless Gem::Requirement::PATTERN =~ v.to_s
+      end
     end
   end
 end

@@ -23,14 +23,14 @@ class Bundler::Thor
       destination = args.first || source
       source = File.expand_path(find_in_source_paths(source.to_s))
 
-      create_file destination, nil, config do
+      resulting_destination = create_file destination, nil, config do
         content = File.binread(source)
         content = yield(content) if block
         content
       end
       if config[:mode] == :preserve
         mode = File.stat(source).mode
-        chmod(destination, mode, config)
+        chmod(resulting_destination, mode, config)
       end
     end
 
@@ -60,6 +60,9 @@ class Bundler::Thor
     # destination. If a block is given instead of destination, the content of
     # the url is yielded and used as location.
     #
+    # +get+ relies on open-uri, so passing application user input would provide
+    # a command injection attack vector.
+    #
     # ==== Parameters
     # source<String>:: the address of the given content.
     # destination<String>:: the relative path to the destination root.
@@ -77,13 +80,13 @@ class Bundler::Thor
       config = args.last.is_a?(Hash) ? args.pop : {}
       destination = args.first
 
-      if source =~ %r{^https?\://}
+      render = if source =~ %r{^https?\://}
         require "open-uri"
+        URI.send(:open, source) { |input| input.binmode.read }
       else
         source = File.expand_path(find_in_source_paths(source.to_s))
+        open(source) { |input| input.binmode.read }
       end
-
-      render = open(source) { |input| input.binmode.read }
 
       destination ||= if block_given?
         block.arity == 1 ? yield(render) : yield
@@ -117,7 +120,13 @@ class Bundler::Thor
       context = config.delete(:context) || instance_eval("binding")
 
       create_file destination, nil, config do
-        content = CapturableERB.new(::File.binread(source), nil, "-", "@output_buffer").tap do |erb|
+        match = ERB.version.match(/(\d+\.\d+\.\d+)/)
+        capturable_erb = if match && match[1] >= "2.2.0" # Ruby 2.6+
+          CapturableERB.new(::File.binread(source), :trim_mode => "-", :eoutvar => "@output_buffer")
+        else
+          CapturableERB.new(::File.binread(source), nil, "-", "@output_buffer")
+        end
+        content = capturable_erb.tap do |erb|
           erb.filename = source
         end.result(context)
         content = yield(content) if block
@@ -301,7 +310,7 @@ class Bundler::Thor
     def comment_lines(path, flag, *args)
       flag = flag.respond_to?(:source) ? flag.source : flag
 
-      gsub_file(path, /^(\s*)([^#|\n]*#{flag})/, '\1# \2', *args)
+      gsub_file(path, /^(\s*)([^#\n]*#{flag})/, '\1# \2', *args)
     end
 
     # Removes a file at the given location.

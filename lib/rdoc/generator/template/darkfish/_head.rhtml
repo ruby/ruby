@@ -7,14 +7,16 @@
   var index_rel_prefix = "<%= rel_prefix %>/";
 </script>
 
-<script src="<%= asset_rel_prefix %>/js/jquery.js"></script>
-<script src="<%= asset_rel_prefix %>/js/darkfish.js"></script>
+<script src="<%= asset_rel_prefix %>/js/navigation.js" defer></script>
+<script src="<%= asset_rel_prefix %>/js/search.js" defer></script>
+<script src="<%= asset_rel_prefix %>/js/search_index.js" defer></script>
+<script src="<%= asset_rel_prefix %>/js/searcher.js" defer></script>
+<script src="<%= asset_rel_prefix %>/js/darkfish.js" defer></script>
 
 <link href="<%= asset_rel_prefix %>/css/fonts.css" rel="stylesheet">
 <link href="<%= asset_rel_prefix %>/css/rdoc.css" rel="stylesheet">
-<% if @options.template_stylesheets.flatten.any? then %>
-<%   @options.template_stylesheets.flatten.each do |stylesheet| %>
+<%- if @options.template_stylesheets.flatten.any? then -%>
+<%-   @options.template_stylesheets.flatten.each do |stylesheet| -%>
 <link href="<%= asset_rel_prefix %>/<%= File.basename stylesheet %>" rel="stylesheet">
-<%   end %>
-<% end %>
-
+<%-   end -%>
+<%- end -%>

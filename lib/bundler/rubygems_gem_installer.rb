@@ -4,12 +4,6 @@ require "rubygems/installer"
 
 module Bundler
   class RubyGemsGemInstaller < Gem::Installer
-    unless respond_to?(:at)
-      def self.at(*args)
-        new(*args)
-      end
-    end
-
     def check_executable_overwrite(filename)
       # Bundler needs to install gems regardless of binstub overwriting
     end
@@ -20,7 +14,7 @@ module Bundler
 
     def build_extensions
       extension_cache_path = options[:bundler_extension_cache_path]
-      return super unless extension_cache_path && extension_dir = Bundler.rubygems.spec_extension_dir(spec)
+      return super unless extension_cache_path && extension_dir = spec.extension_dir
 
       extension_dir = Pathname.new(extension_dir)
       build_complete = SharedHelpers.filesystem_access(extension_cache_path.join("gem.build_complete"), :read, &:file?)
@@ -40,7 +34,7 @@ module Bundler
       end
     end
 
-  private
+    private
 
     def validate_bundler_checksum(checksum)
       return true if Bundler.settings[:disable_checksum_validation]
@@ -66,7 +60,7 @@ module Bundler
 
           If you wish to continue installing the downloaded gem, and are certain it does not pose a \
           security issue despite the mismatching checksum, do the following:
-          1. run `bundle config disable_checksum_validation true` to turn off checksum verification
+          1. run `bundle config set --local disable_checksum_validation true` to turn off checksum verification
           2. run `bundle install`
 
           (More info: The expected SHA256 checksum was #{checksum.inspect}, but the \

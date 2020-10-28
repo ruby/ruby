@@ -25,13 +25,13 @@ describe "Numeric#real" do
 
   it "raises an ArgumentError if given any arguments" do
     @numbers.each do |number|
-      lambda { number.real(number) }.should raise_error(ArgumentError)
+      -> { number.real(number) }.should raise_error(ArgumentError)
     end
   end
 end
 
 describe "Numeric#real?" do
   it "returns true" do
-    NumericSpecs::Subclass.new.real?.should == true
+    NumericSpecs::Subclass.new.should.real?
   end
 end

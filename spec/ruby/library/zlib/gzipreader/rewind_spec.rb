@@ -2,8 +2,7 @@ require_relative '../../../spec_helper'
 require 'stringio'
 require 'zlib'
 
-describe "GzipReader#rewind" do
-
+describe "Zlib::GzipReader#rewind" do
   before :each do
     @data = '12345abcde'
     @zip = [31, 139, 8, 0, 44, 220, 209, 71, 0, 3, 51, 52, 50, 54, 49, 77,

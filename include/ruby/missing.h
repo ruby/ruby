@@ -1,52 +1,50 @@
-/************************************************
-
-  missing.h - prototype for *.c in ./missing, and
-  	      for missing timeval struct
-
-  $Author$
-  created at: Sat May 11 23:46:03 JST 2002
-
-************************************************/
-
-#ifndef RUBY_MISSING_H
+#ifndef RUBY_MISSING_H                               /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_MISSING_H 1
+/**
+ * @file
+ * @author     $Author$
+ * @date       Sat May 11 23:46:03 JST 2002
+ * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
+ *             Permission  is hereby  granted,  to  either redistribute  and/or
+ *             modify this file, provided that  the conditions mentioned in the
+ *             file COPYING are met.  Consult the file for details.
+ * @brief      Prototype for *.c in ./missing, and for missing timeval struct.
+ */
+#include "ruby/internal/config.h"
+
+#ifdef STDC_HEADERS
+# include <stddef.h>
+#endif
 
 #if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
+# include <cmath>
+#else
+# include <math.h> /* for INFINITY and NAN */
 #endif
 
-#include "ruby/config.h"
-#include <stddef.h>
-#include <math.h> /* for INFINITY and NAN */
 #ifdef RUBY_ALTERNATIVE_MALLOC_HEADER
 # include RUBY_ALTERNATIVE_MALLOC_HEADER
 #endif
-#ifdef RUBY_EXTCONF_H
-#include RUBY_EXTCONF_H
-#endif
 
-#if !defined(HAVE_STRUCT_TIMEVAL) || !defined(HAVE_STRUCT_TIMESPEC)
 #if defined(HAVE_TIME_H)
 # include <time.h>
 #endif
+
 #if defined(HAVE_SYS_TIME_H)
 # include <sys/time.h>
 #endif
+
+#ifdef HAVE_IEEEFP_H
+# include <ieeefp.h>
 #endif
+
+#include "ruby/internal/dllexport.h"
 
 #ifndef M_PI
 # define M_PI 3.14159265358979323846
 #endif
 #ifndef M_PI_2
 # define M_PI_2 (M_PI/2)
-#endif
-
-#ifndef RUBY_SYMBOL_EXPORT_BEGIN
-# define RUBY_SYMBOL_EXPORT_BEGIN /* begin */
-# define RUBY_SYMBOL_EXPORT_END   /* end */
 #endif
 
 #if !defined(HAVE_STRUCT_TIMEVAL)
@@ -57,6 +55,10 @@ struct timeval {
 #endif /* HAVE_STRUCT_TIMEVAL */
 
 #if !defined(HAVE_STRUCT_TIMESPEC)
+/* :BEWARE: @shyouhei warns that  IT IS A WRONG IDEA to  define our own version
+ * of struct timespec here.  `clock_gettime` is  a system call, and your kernel
+ * could expect  something other  than just `long`  (results stack  smashing if
+ * that happens).  See also https://ewontfix.com/19/ */
 struct timespec {
     time_t tv_sec;	/* seconds */
     long tv_nsec;	/* nanoseconds */
@@ -70,14 +72,7 @@ struct timezone {
 };
 #endif
 
-#ifdef RUBY_EXPORT
-#undef RUBY_EXTERN
-#endif
-#ifndef RUBY_EXTERN
-#define RUBY_EXTERN extern
-#endif
-
-RUBY_SYMBOL_EXPORT_BEGIN
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 #ifndef HAVE_ACOSH
 RUBY_EXTERN double acosh(double);
@@ -161,36 +156,35 @@ RUBY_EXTERN const union bytesequence4_or_float rb_nan;
 # define HUGE_VAL ((double)INFINITY)
 #endif
 
-#ifndef isinf
-# ifndef HAVE_ISINF
-#  if defined(HAVE_FINITE) && defined(HAVE_ISNAN)
-#    ifdef HAVE_IEEEFP_H
-#    include <ieeefp.h>
-#    endif
-#  define isinf(x) (!finite(x) && !isnan(x))
-#  elif defined(__cplusplus) && __cplusplus >= 201103L
-#    include <cmath> // it must include constexpr bool isinf(double);
-#  else
+#if defined(isinf)
+# /* Take that. */
+#elif defined(HAVE_ISINF)
+# /* Take that. */
+#elif defined(HAVE_FINITE) && defined(HAVE_ISNAN)
+# define isinf(x) (!finite(x) && !isnan(x))
+#elif defined(__cplusplus) && __cplusplus >= 201103L
+# // <cmath> must include constexpr bool isinf(double);
+#else
 RUBY_EXTERN int isinf(double);
-#  endif
-# endif
 #endif
 
-#ifndef isnan
-# ifndef HAVE_ISNAN
-#  if defined(__cplusplus) && __cplusplus >= 201103L
-#    include <cmath> // it must include constexpr bool isnan(double);
-#  else
+#if defined(isnan)
+# /* Take that. */
+#elif defined(HAVE_ISNAN)
+# /* Take that. */
+#elif defined(__cplusplus) && __cplusplus >= 201103L
+# // <cmath> must include constexpr bool isnan(double);
+#else
 RUBY_EXTERN int isnan(double);
-#  endif
-# endif
 #endif
 
-#ifndef isfinite
-# ifndef HAVE_ISFINITE
-#   define HAVE_ISFINITE 1
-#   define isfinite(x) finite(x)
-# endif
+#if defined(isfinite)
+# /* Take that. */
+#elif defined(HAVE_ISFINITE)
+# /* Take that. */
+#else
+# define HAVE_ISFINITE 1
+# define isfinite(x) finite(x)
 #endif
 
 #ifndef HAVE_NAN
@@ -247,8 +241,8 @@ RUBY_EXTERN int ffs(int);
 #endif
 
 #ifdef BROKEN_CLOSE
-#include <sys/types.h>
-#include <sys/socket.h>
+# include <sys/types.h>
+# include <sys/socket.h>
 RUBY_EXTERN int ruby_getpeername(int, struct sockaddr *, socklen_t *);
 RUBY_EXTERN int ruby_getsockname(int, struct sockaddr *, socklen_t *);
 RUBY_EXTERN int ruby_shutdown(int, int);
@@ -259,20 +253,14 @@ RUBY_EXTERN int ruby_close(int);
 RUBY_EXTERN void setproctitle(const char *fmt, ...);
 #endif
 
-#ifndef HAVE_EXPLICIT_BZERO
+#ifdef HAVE_EXPLICIT_BZERO
+# /* Take that. */
+#elif defined(SecureZeroMemory)
+# define explicit_bzero(b, len) SecureZeroMemory(b, len)
+#else
 RUBY_EXTERN void explicit_bzero(void *b, size_t len);
-# if defined SecureZeroMemory
-#   define explicit_bzero(b, len) SecureZeroMemory(b, len)
-# endif
 #endif
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RBIMPL_SYMBOL_EXPORT_END()
 
 #endif /* RUBY_MISSING_H */

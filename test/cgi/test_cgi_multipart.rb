@@ -355,7 +355,7 @@ class CGIMultipartTest < Test::Unit::TestCase
       require 'stringio'
       ENV['REQUEST_METHOD'] = 'POST'
       ENV['CONTENT_TYPE'] = 'multipart/form-data; boundary=foobar1234'
-      body = <<-BODY
+      body = <<-BODY.gsub(/\n/, "\r\n")
 --foobar1234
 Content-Disposition: form-data: name=\"name1\"
 
@@ -370,7 +370,6 @@ Content-Type: text/html
 
 --foobar1234--
 BODY
-      body.gsub!(/\n/, "\r\n")
       ENV['CONTENT_LENGTH'] = body.size.to_s
       $stdin = StringIO.new(body)
       CGI.new

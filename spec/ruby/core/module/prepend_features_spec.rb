@@ -23,21 +23,23 @@ describe "Module#prepend_features" do
   end
 
   it "raises an ArgumentError on a cyclic prepend" do
-    lambda {
+    -> {
       ModuleSpecs::CyclicPrepend.send(:prepend_features, ModuleSpecs::CyclicPrepend)
     }.should raise_error(ArgumentError)
   end
 
-  it "copies own tainted status to the given module" do
-    other = Module.new
-    Module.new.taint.send :prepend_features, other
-    other.tainted?.should be_true
-  end
+  ruby_version_is ''...'2.7' do
+    it "copies own tainted status to the given module" do
+      other = Module.new
+      Module.new.taint.send :prepend_features, other
+      other.tainted?.should be_true
+    end
 
-  it "copies own untrusted status to the given module" do
-    other = Module.new
-    Module.new.untrust.send :prepend_features, other
-    other.untrusted?.should be_true
+    it "copies own untrusted status to the given module" do
+      other = Module.new
+      Module.new.untrust.send :prepend_features, other
+      other.untrusted?.should be_true
+    end
   end
 
   it "clears caches of the given module" do
@@ -68,7 +70,7 @@ describe "Module#prepend_features" do
     end
 
     it "raises a TypeError if calling after rebinded to Class" do
-      lambda {
+      -> {
         Module.instance_method(:prepend_features).bind(Class.new).call Module.new
       }.should raise_error(TypeError)
     end

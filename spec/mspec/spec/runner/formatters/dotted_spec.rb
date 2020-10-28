@@ -91,7 +91,7 @@ describe DottedFormatter, "#exception" do
     @formatter.exception?.should be_true
   end
 
-  it "addes the exception to the list of exceptions" do
+  it "adds the exception to the list of exceptions" do
     @formatter.exceptions.should == []
     @formatter.exception @error
     @formatter.exception @failure

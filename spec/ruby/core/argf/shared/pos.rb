@@ -25,7 +25,7 @@ describe :argf_pos, shared: true do
   it "raises an ArgumentError when called on a closed stream" do
     argf [@file1] do
       @argf.read
-      lambda { @argf.send(@method) }.should raise_error(ArgumentError)
+      -> { @argf.send(@method) }.should raise_error(ArgumentError)
     end
   end
 end

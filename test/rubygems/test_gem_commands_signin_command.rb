@@ -4,9 +4,10 @@ require 'rubygems/commands/signin_command'
 require 'rubygems/installer'
 
 class TestGemCommandsSigninCommand < Gem::TestCase
-
   def setup
     super
+
+    credential_setup
 
     Gem.configuration.rubygems_api_key = nil
     Gem.configuration.api_keys.clear
@@ -15,18 +16,18 @@ class TestGemCommandsSigninCommand < Gem::TestCase
   end
 
   def teardown
-    credentials_path = Gem.configuration.credentials_path
-    File.delete(credentials_path)  if File.exist?(credentials_path)
+    credential_teardown
+
     super
   end
 
   def test_execute_when_not_already_signed_in
-    sign_in_ui = util_capture() { @cmd.execute }
+    sign_in_ui = util_capture { @cmd.execute }
     assert_match %r{Signed in.}, sign_in_ui.output
   end
 
   def test_execute_when_already_signed_in_with_same_host
-    host            = 'http://some-gemcutter-compatible-host.org'
+    host = 'http://some-gemcutter-compatible-host.org'
 
     util_capture(nil, host) { @cmd.execute }
     old_credentials = YAML.load_file Gem.configuration.credentials_path
@@ -38,10 +39,10 @@ class TestGemCommandsSigninCommand < Gem::TestCase
   end
 
   def test_execute_when_already_signed_in_with_different_host
-    api_key     = 'a5fdbb6ba150cbb83aad2bb2fede64cf04045xxxx'
+    api_key = 'a5fdbb6ba150cbb83aad2bb2fede64cf04045xxxx'
 
     util_capture(nil, nil, api_key) { @cmd.execute }
-    host        = 'http://some-gemcutter-compatible-host.org'
+    host = 'http://some-gemcutter-compatible-host.org'
 
     util_capture(nil, host, api_key) { @cmd.execute }
     credentials = YAML.load_file Gem.configuration.credentials_path
@@ -64,7 +65,7 @@ class TestGemCommandsSigninCommand < Gem::TestCase
   end
 
   def test_execute_with_valid_creds_set_for_default_host
-    util_capture {@cmd.execute}
+    util_capture { @cmd.execute }
 
     api_key     = 'a5fdbb6ba150cbb83aad2bb2fede64cf040453903'
     credentials = YAML.load_file Gem.configuration.credentials_path
@@ -87,7 +88,7 @@ class TestGemCommandsSigninCommand < Gem::TestCase
     fetcher.data[data_key]     = response
     Gem::RemoteFetcher.fetcher = fetcher
 
-    sign_in_ui                 = ui_stub || Gem::MockGemUi.new("#{email}\n#{password}\n")
+    sign_in_ui = ui_stub || Gem::MockGemUi.new("#{email}\n#{password}\n")
 
     use_ui sign_in_ui do
       yield

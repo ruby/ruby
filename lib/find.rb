@@ -15,7 +15,7 @@
 #
 #   Find.find(ENV["HOME"]) do |path|
 #     if FileTest.directory?(path)
-#       if File.basename(path)[0] == ?.
+#       if File.basename(path).start_with?('.')
 #         Find.prune       # Don't look any further into this directory.
 #       else
 #         next
@@ -46,7 +46,7 @@ module Find
       ps = [path]
       while file = ps.shift
         catch(:prune) do
-          yield file.dup.taint
+          yield file.dup
           begin
             s = File.lstat(file)
           rescue Errno::ENOENT, Errno::EACCES, Errno::ENOTDIR, Errno::ELOOP, Errno::ENAMETOOLONG
@@ -63,7 +63,7 @@ module Find
             fs.sort!
             fs.reverse_each {|f|
               f = File.join(file, f)
-              ps.unshift f.untaint
+              ps.unshift f
             }
           end
         end

@@ -2,43 +2,35 @@ require_relative '../../spec_helper'
 
 describe "Process.exec" do
   it "raises Errno::ENOENT for an empty string" do
-    lambda { Process.exec "" }.should raise_error(Errno::ENOENT)
+    -> { Process.exec "" }.should raise_error(Errno::ENOENT)
   end
 
   it "raises Errno::ENOENT for a command which does not exist" do
-    lambda { Process.exec "bogus-noent-script.sh" }.should raise_error(Errno::ENOENT)
+    -> { Process.exec "bogus-noent-script.sh" }.should raise_error(Errno::ENOENT)
   end
 
   it "raises an ArgumentError if the command includes a null byte" do
-    lambda { Process.exec "\000" }.should raise_error(ArgumentError)
+    -> { Process.exec "\000" }.should raise_error(ArgumentError)
   end
 
   unless File.executable?(__FILE__) # Some FS (e.g. vboxfs) locate all files executable
     platform_is_not :windows do
       it "raises Errno::EACCES when the file does not have execute permissions" do
-        lambda { Process.exec __FILE__ }.should raise_error(Errno::EACCES)
+        -> { Process.exec __FILE__ }.should raise_error(Errno::EACCES)
       end
     end
 
     platform_is :windows do
       it "raises Errno::EACCES or Errno::ENOEXEC when the file is not an executable file" do
-        lambda { Process.exec __FILE__ }.should raise_error(SystemCallError) { |e|
+        -> { Process.exec __FILE__ }.should raise_error(SystemCallError) { |e|
           [Errno::EACCES, Errno::ENOEXEC].should include(e.class)
         }
       end
     end
   end
 
-  platform_is_not :openbsd do
-    it "raises Errno::EACCES when passed a directory" do
-      lambda { Process.exec File.dirname(__FILE__) }.should raise_error(Errno::EACCES)
-    end
-  end
-
-  platform_is :openbsd do
-    it "raises Errno::EISDIR when passed a directory" do
-      lambda { Process.exec File.dirname(__FILE__) }.should raise_error(Errno::EISDIR)
-    end
+  it "raises Errno::EACCES when passed a directory" do
+    -> { Process.exec File.dirname(__FILE__) }.should raise_error(Errno::EACCES)
   end
 
   it "runs the specified command, replacing current process" do
@@ -179,9 +171,9 @@ describe "Process.exec" do
     end
 
     it "raises an ArgumentError if the Array does not have exactly two elements" do
-      lambda { Process.exec([]) }.should raise_error(ArgumentError)
-      lambda { Process.exec([:a]) }.should raise_error(ArgumentError)
-      lambda { Process.exec([:a, :b, :c]) }.should raise_error(ArgumentError)
+      -> { Process.exec([]) }.should raise_error(ArgumentError)
+      -> { Process.exec([:a]) }.should raise_error(ArgumentError)
+      -> { Process.exec([:a, :b, :c]) }.should raise_error(ArgumentError)
     end
   end
 
@@ -200,9 +192,9 @@ describe "Process.exec" do
         it "maps the key to a file descriptor in the child that inherits the file descriptor from the parent specified by the value" do
           map_fd_fixture = fixture __FILE__, "map_fd.rb"
           cmd = <<-EOC
-            f = File.open("#{@name}", "w+")
+            f = File.open(#{@name.inspect}, "w+")
             child_fd = f.fileno + 1
-            File.open("#{@child_fd_file}", "w") { |io| io.print child_fd }
+            File.open(#{@child_fd_file.inspect}, "w") { |io| io.print child_fd }
             Process.exec "#{ruby_cmd(map_fd_fixture)} \#{child_fd}", { child_fd => f }
             EOC
 
@@ -211,6 +203,35 @@ describe "Process.exec" do
           child_fd.to_i.should > STDERR.fileno
 
           File.read(@name).should == "writing to fd: #{child_fd}"
+        end
+
+        it "lets the process after exec have specified file descriptor despite close_on_exec" do
+          map_fd_fixture = fixture __FILE__, "map_fd.rb"
+          cmd = <<-EOC
+            f = File.open(#{@name.inspect}, 'w+')
+            puts(f.fileno, f.close_on_exec?)
+            STDOUT.flush
+            Process.exec("#{ruby_cmd(map_fd_fixture)} \#{f.fileno}", f.fileno => f.fileno)
+            EOC
+
+          output = ruby_exe(cmd, escape: true)
+          child_fd, close_on_exec = output.split
+
+          child_fd.to_i.should > STDERR.fileno
+          close_on_exec.should == 'true'
+          File.read(@name).should == "writing to fd: #{child_fd}"
+        end
+
+        it "sets close_on_exec to false on specified fd even when it fails" do
+          cmd = <<-EOC
+            f = File.open(#{__FILE__.inspect}, 'r')
+            puts(f.close_on_exec?)
+            Process.exec('/', f.fileno => f.fileno) rescue nil
+            puts(f.close_on_exec?)
+            EOC
+
+          output = ruby_exe(cmd, escape: true)
+          output.split.should == ['true', 'false']
         end
       end
     end

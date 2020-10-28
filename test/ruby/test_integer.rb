@@ -10,7 +10,46 @@ class TestInteger < Test::Unit::TestCase
     self.class.bdsize(x)
   end
 
+  FIXNUM_MIN = RbConfig::LIMITS['FIXNUM_MIN']
+  FIXNUM_MAX = RbConfig::LIMITS['FIXNUM_MAX']
+
   def test_aref
+
+    [
+      *-16..16,
+      *(FIXNUM_MIN-2)..(FIXNUM_MIN+2),
+      *(FIXNUM_MAX-2)..(FIXNUM_MAX+2),
+    ].each do |n|
+      (-64..64).each do |idx|
+        assert_equal((n >> idx) & 1, n[idx])
+      end
+      [*-66..-62, *-34..-30, *-5..5, *30..34, *62..66].each do |idx|
+        (0..100).each do |len|
+          assert_equal((n >> idx) & ((1 << len) - 1), n[idx, len], "#{ n }[#{ idx }, #{ len }]")
+        end
+        (0..100).each do |len|
+          assert_equal((n >> idx) & ((1 << (len + 1)) - 1), n[idx..idx+len], "#{ n }[#{ idx }..#{ idx+len }]")
+          assert_equal((n >> idx) & ((1 << len) - 1), n[idx...idx+len], "#{ n }[#{ idx }...#{ idx+len }]")
+        end
+
+        # endless
+        assert_equal((n >> idx), n[idx..], "#{ n }[#{ idx }..]")
+        assert_equal((n >> idx), n[idx...], "#{ n }[#{ idx }...#]")
+
+        # beginless
+        if idx >= 0 && n & ((1 << (idx + 1)) - 1) != 0
+          assert_raise(ArgumentError, "#{ n }[..#{ idx }]") { n[..idx] }
+        else
+          assert_equal(0, n[..idx], "#{ n }[..#{ idx }]")
+        end
+        if idx >= 0 && n & ((1 << idx) - 1) != 0
+          assert_raise(ArgumentError, "#{ n }[...#{ idx }]") { n[...idx] }
+        else
+          assert_equal(0, n[...idx], "#{ n }[...#{ idx }]")
+        end
+      end
+    end
+
     # assert_equal(1, (1 << 0x40000000)[0x40000000], "[ruby-dev:31271]")
     # assert_equal(0, (-1 << 0x40000001)[0x40000000], "[ruby-dev:31271]")
     big_zero = 0x40000000.coerce(0)[0]
@@ -153,6 +192,12 @@ class TestInteger < Test::Unit::TestCase
     end;
   end
 
+  def test_Integer_with_invalid_exception
+    assert_raise(ArgumentError) {
+      Integer("0", exception: 1)
+    }
+  end
+
   def test_Integer_with_exception_keyword
     assert_nothing_raised(ArgumentError) {
       assert_equal(nil, Integer("1z", exception: false))
@@ -215,6 +260,7 @@ class TestInteger < Test::Unit::TestCase
     assert_equal("a", "a".ord.chr)
     assert_raise(RangeError) { (-1).chr }
     assert_raise(RangeError) { 0x100.chr }
+    assert_raise_with_message(RangeError, "3000000000 out of char range") { 3_000_000_000.chr }
   end
 
   def test_upto
@@ -595,6 +641,9 @@ class TestInteger < Test::Unit::TestCase
       failures << n  unless root*root <= n && (root+1)*(root+1) > n
     end
     assert_empty(failures, bug13440)
+
+    x = 0xffff_ffff_ffff_ffff
+    assert_equal(x, Integer.sqrt(x ** 2), "[ruby-core:95453]")
   end
 
   def test_fdiv

@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'minitest_helper'
+require_relative 'helper'
 
 class TestRDocMarkupToMarkdown < RDoc::Markup::TextFormatterTestCase
 
@@ -363,9 +363,9 @@ words words words words
 
   def test_convert_TIDYLINK
     result = @to.convert \
-      '{DSL}[http://en.wikipedia.org/wiki/Domain-specific_language]'
+      '{DSL}[https://en.wikipedia.org/wiki/Domain-specific_language]'
 
-    expected = "[DSL](http://en.wikipedia.org/wiki/Domain-specific_language)\n"
+    expected = "[DSL](https://en.wikipedia.org/wiki/Domain-specific_language)\n"
 
     assert_equal expected, result
   end

@@ -1,4 +1,4 @@
-#include "internal.h"
+#include "internal/rational.h"
 
 #if defined(HAVE_LIBGMP) && defined(HAVE_GMP_H)
 static VALUE
@@ -29,9 +29,17 @@ gcd_gmp(VALUE x, VALUE y)
 #define gcd_gmp rb_f_notimplement
 #endif
 
+static VALUE
+s_rational_raw(VALUE klass, VALUE x, VALUE y)
+{
+    return rb_rational_raw(x, y);
+}
+
 void
 Init_rational(VALUE klass)
 {
     rb_define_method(rb_cInteger, "gcd_normal", gcd_normal, 1);
     rb_define_method(rb_cInteger, "gcd_gmp", gcd_gmp, 1);
+
+    rb_define_singleton_method(rb_cRational, "raw", s_rational_raw, 2);
 }

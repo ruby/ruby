@@ -53,20 +53,20 @@ make benchmark
 # Or compare with specific ruby binary
 make benchmark COMPARE_RUBY="/path/to/ruby --jit"
 
-# Run vm1 benchmarks
-make benchmark ITEM=vm1
+# Run vm benchmarks
+make benchmark ITEM=vm
 
 # Run some limited benchmarks in ITEM-matched files
-make benchmark ITEM=vm1 OPTS=--filter=block
+make benchmark ITEM=vm OPTS=--filter=block
 
 # You can specify the benchmark by an exact filename instead of using the default argument:
 # ARGS = $$(find $(srcdir)/benchmark -maxdepth 1 -name '*$(ITEM)*.yml' -o -name '*$(ITEM)*.rb')
-make benchmark ARGS=../benchmark/erb_render.yml
+make benchmark ARGS=benchmark/erb_render.yml
 
 # You can specify any option via $OPTS
 make benchmark OPTS="--help"
 
 # With `make benchmark`, some special runner plugins are available:
 #   -r peak, -r size, -r total, -r utime, -r stime, -r cutime, -r cstime
-make benchmark ITEM=vm2_bigarray OPTS="-r peak"
+make benchmark ITEM=vm_bigarray OPTS="-r peak"
 ```

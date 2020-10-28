@@ -126,16 +126,16 @@ describe "Kernel.Complex()" do
 
   describe "when passed a non-Numeric second argument" do
     it "raises TypeError" do
-      lambda { Complex(:sym, :sym) }.should raise_error(TypeError)
-      lambda { Complex(0,    :sym) }.should raise_error(TypeError)
+      -> { Complex(:sym, :sym) }.should raise_error(TypeError)
+      -> { Complex(0,    :sym) }.should raise_error(TypeError)
     end
   end
 
   describe "when passed nil" do
     it "raises TypeError" do
-      lambda { Complex(nil) }.should raise_error(TypeError, "can't convert nil into Complex")
-      lambda { Complex(0, nil) }.should raise_error(TypeError, "can't convert nil into Complex")
-      lambda { Complex(nil, 0) }.should raise_error(TypeError, "can't convert nil into Complex")
+      -> { Complex(nil) }.should raise_error(TypeError, "can't convert nil into Complex")
+      -> { Complex(0, nil) }.should raise_error(TypeError, "can't convert nil into Complex")
+      -> { Complex(nil, 0) }.should raise_error(TypeError, "can't convert nil into Complex")
     end
   end
 
@@ -155,7 +155,7 @@ describe "Kernel.Complex()" do
 
       describe "and [non-Numeric, Numeric] argument" do
         it "throws a TypeError" do
-          lambda { Complex(:sym, 0, exception: false) }.should raise_error(TypeError, "not a real")
+          -> { Complex(:sym, 0, exception: false) }.should raise_error(TypeError, "not a real")
         end
       end
 
@@ -175,13 +175,11 @@ describe "Kernel.Complex()" do
         end
       end
 
-      ruby_bug "#15525", "2.6"..."2.6.1" do
-        describe "and nil arguments" do
-          it "swallows an error" do
-            Complex(nil, exception: false).should == nil
-            Complex(0, nil, exception: false).should == nil
-            Complex(nil, 0, exception: false).should == nil
-          end
+      describe "and nil arguments" do
+        it "swallows an error" do
+          Complex(nil, exception: false).should == nil
+          Complex(0, nil, exception: false).should == nil
+          Complex(nil, 0, exception: false).should == nil
         end
       end
     end

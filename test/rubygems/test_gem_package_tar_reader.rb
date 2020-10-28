@@ -3,7 +3,6 @@ require 'rubygems/package/tar_test_case'
 require 'rubygems/package'
 
 class TestGemPackageTarReader < Gem::Package::TarTestCase
-
   def test_each_entry
     tar = tar_dir_header "foo", "bar", 0, Time.now
     tar << tar_file_header("bar", "baz", 0, 0, Time.now)
@@ -85,5 +84,4 @@ class TestGemPackageTarReader < Gem::Package::TarTestCase
   ensure
     io.close!
   end
-
 end

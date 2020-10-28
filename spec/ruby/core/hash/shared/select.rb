@@ -74,12 +74,12 @@ describe :hash_select!, shared: true do
     { a: 1 }.send(@method) { |k,v| v <= 1 }.should == nil
   end
 
-  it "raises a #{frozen_error_class} if called on an empty frozen instance" do
-    lambda { HashSpecs.empty_frozen_hash.send(@method) { false } }.should raise_error(frozen_error_class)
+  it "raises a FrozenError if called on an empty frozen instance" do
+    -> { HashSpecs.empty_frozen_hash.send(@method) { false } }.should raise_error(FrozenError)
   end
 
-  it "raises a #{frozen_error_class} if called on a frozen instance that would not be modified" do
-    lambda { HashSpecs.frozen_hash.send(@method) { true } }.should raise_error(frozen_error_class)
+  it "raises a FrozenError if called on a frozen instance that would not be modified" do
+    -> { HashSpecs.frozen_hash.send(@method) { true } }.should raise_error(FrozenError)
   end
 
   it_should_behave_like :hash_iteration_no_block

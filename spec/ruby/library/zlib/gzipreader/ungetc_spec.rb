@@ -2,7 +2,7 @@ require_relative '../../../spec_helper'
 require 'stringio'
 require 'zlib'
 
-describe 'GzipReader#ungetc' do
+describe "Zlib::GzipReader#ungetc" do
   before :each do
     @data = '12345abcde'
     @zip = [31, 139, 8, 0, 44, 220, 209, 71, 0, 3, 51, 52, 50, 54, 49, 77,
@@ -21,11 +21,9 @@ describe 'GzipReader#ungetc' do
         @gz.read.should == 'x12345abcde'
       end
 
-      ruby_bug "#13616", ""..."2.6" do
-        it 'decrements pos' do
-          @gz.ungetc 'x'
-          @gz.pos.should == -1
-        end
+      it 'decrements pos' do
+        @gz.ungetc 'x'
+        @gz.pos.should == -1
       end
     end
 
@@ -35,11 +33,9 @@ describe 'GzipReader#ungetc' do
         @gz.read.should == 'ŷ12345abcde'
       end
 
-      ruby_bug "#13616", ""..."2.6" do
-        it 'decrements pos' do
-          @gz.ungetc 'ŷ'
-          @gz.pos.should == -2
-        end
+      it 'decrements pos' do
+        @gz.ungetc 'ŷ'
+        @gz.pos.should == -2
       end
     end
 
@@ -49,11 +45,9 @@ describe 'GzipReader#ungetc' do
         @gz.read.should == 'xŷž12345abcde'
       end
 
-      ruby_bug "#13616", ""..."2.6" do
-        it 'decrements pos' do
-          @gz.ungetc 'xŷž'
-          @gz.pos.should == -5
-        end
+      it 'decrements pos' do
+        @gz.ungetc 'xŷž'
+        @gz.pos.should == -5
       end
     end
 
@@ -63,11 +57,9 @@ describe 'GzipReader#ungetc' do
         @gz.read.should == '!12345abcde'
       end
 
-      ruby_bug "#13616", ""..."2.6" do
-        it 'decrements pos' do
-          @gz.ungetc 0x21
-          @gz.pos.should == -1
-        end
+      it 'decrements pos' do
+        @gz.ungetc 0x21
+        @gz.pos.should == -1
       end
     end
 

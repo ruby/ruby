@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
-require "bundler/plugin/api"
+require_relative "plugin/api"
 
 module Bundler
   module Plugin
-    autoload :DSL,        "bundler/plugin/dsl"
-    autoload :Events,     "bundler/plugin/events"
-    autoload :Index,      "bundler/plugin/index"
-    autoload :Installer,  "bundler/plugin/installer"
-    autoload :SourceList, "bundler/plugin/source_list"
+    autoload :DSL,        File.expand_path("plugin/dsl", __dir__)
+    autoload :Events,     File.expand_path("plugin/events", __dir__)
+    autoload :Index,      File.expand_path("plugin/index", __dir__)
+    autoload :Installer,  File.expand_path("plugin/installer", __dir__)
+    autoload :SourceList, File.expand_path("plugin/source_list", __dir__)
 
     class MalformattedPlugin < PluginError; end
     class UndefinedCommandError < PluginError; end
@@ -16,7 +16,7 @@ module Bundler
 
     PLUGIN_FILE_NAME = "plugins.rb".freeze
 
-  module_function
+    module_function
 
     def reset!
       instance_variables.each {|i| remove_instance_variable(i) }
@@ -39,12 +39,57 @@ module Bundler
 
       save_plugins names, specs
     rescue PluginError => e
-      if specs
-        specs_to_delete = Hash[specs.select {|k, _v| names.include?(k) && !index.commands.values.include?(k) }]
-        specs_to_delete.values.each {|spec| Bundler.rm_rf(spec.full_gem_path) }
+      specs_to_delete = specs.select {|k, _v| names.include?(k) && !index.commands.values.include?(k) }
+      specs_to_delete.each_value {|spec| Bundler.rm_rf(spec.full_gem_path) }
+
+      names_list = names.map {|name| "`#{name}`" }.join(", ")
+      Bundler.ui.error "Failed to install the following plugins: #{names_list}. The underlying error was: #{e.message}.\n #{e.backtrace.join("\n ")}"
+    end
+
+    # Uninstalls plugins by the given names
+    #
+    # @param [Array<String>] names the names of plugins to be uninstalled
+    def uninstall(names, options)
+      if names.empty? && !options[:all]
+        Bundler.ui.error "No plugins to uninstall. Specify at least 1 plugin to uninstall.\n"\
+          "Use --all option to uninstall all the installed plugins."
+        return
       end
 
-      Bundler.ui.error "Failed to install plugin #{name}: #{e.message}\n  #{e.backtrace.join("\n ")}"
+      names = index.installed_plugins if options[:all]
+      if names.any?
+        names.each do |name|
+          if index.installed?(name)
+            Bundler.rm_rf(index.plugin_path(name))
+            index.unregister_plugin(name)
+            Bundler.ui.info "Uninstalled plugin #{name}"
+          else
+            Bundler.ui.error "Plugin #{name} is not installed \n"
+          end
+        end
+      else
+        Bundler.ui.info "No plugins installed"
+      end
+    end
+
+    # List installed plugins and commands
+    #
+    def list
+      installed_plugins = index.installed_plugins
+      if installed_plugins.any?
+        output = String.new
+        installed_plugins.each do |plugin|
+          output << "#{plugin}\n"
+          output << "-----\n"
+          index.plugin_commands(plugin).each do |command|
+            output << "  #{command}\n"
+          end
+          output << "\n"
+        end
+      else
+        output = "No plugins installed"
+      end
+      Bundler.ui.info output
     end
 
     # Evaluates the Gemfile with a limited DSL and installs the plugins
@@ -53,20 +98,22 @@ module Bundler
     # @param [Pathname] gemfile path
     # @param [Proc] block that can be evaluated for (inline) Gemfile
     def gemfile_install(gemfile = nil, &inline)
-      builder = DSL.new
-      if block_given?
-        builder.instance_eval(&inline)
-      else
-        builder.eval_gemfile(gemfile)
+      Bundler.settings.temporary(:frozen => false, :deployment => false) do
+        builder = DSL.new
+        if block_given?
+          builder.instance_eval(&inline)
+        else
+          builder.eval_gemfile(gemfile)
+        end
+        definition = builder.to_definition(nil, true)
+
+        return if definition.dependencies.empty?
+
+        plugins = definition.dependencies.map(&:name).reject {|p| index.installed? p }
+        installed_specs = Installer.new.install_definition(definition)
+
+        save_plugins plugins, installed_specs, builder.inferred_plugins
       end
-      definition = builder.to_definition(nil, true)
-
-      return if definition.dependencies.empty?
-
-      plugins = definition.dependencies.map(&:name).reject {|p| index.installed? p }
-      installed_specs = Installer.new.install_definition(definition)
-
-      save_plugins plugins, installed_specs, builder.inferred_plugins
     rescue RuntimeError => e
       unless e.is_a?(GemfileError)
         Bundler.ui.error "Failed to install plugin: #{e.message}\n  #{e.backtrace[0]}"
@@ -234,7 +281,7 @@ module Bundler
       @hooks_by_event = Hash.new {|h, k| h[k] = [] }
 
       load_paths = spec.load_paths
-      add_to_load_path(load_paths)
+      Bundler.rubygems.add_to_load_path(load_paths)
       path = Pathname.new spec.full_gem_path
 
       begin
@@ -266,7 +313,7 @@ module Bundler
       # done to avoid conflicts
       path = index.plugin_path(name)
 
-      add_to_load_path(index.load_paths(name))
+      Bundler.rubygems.add_to_load_path(index.load_paths(name))
 
       load path.join(PLUGIN_FILE_NAME)
 
@@ -276,17 +323,8 @@ module Bundler
       raise
     end
 
-    def add_to_load_path(load_paths)
-      if insert_index = Bundler.rubygems.load_path_insert_index
-        $LOAD_PATH.insert(insert_index, *load_paths)
-      else
-        $LOAD_PATH.unshift(*load_paths)
-      end
-    end
-
     class << self
-      private :load_plugin, :register_plugin, :save_plugins, :validate_plugin!,
-        :add_to_load_path
+      private :load_plugin, :register_plugin, :save_plugins, :validate_plugin!
     end
   end
 end

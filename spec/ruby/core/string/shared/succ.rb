@@ -65,9 +65,11 @@ describe :string_succ, shared: true do
     StringSpecs::MyString.new("z").send(@method).should be_an_instance_of(StringSpecs::MyString)
   end
 
-  it "taints the result if self is tainted" do
-    ["", "a", "z", "Z", "9", "\xFF", "\xFF\xFF"].each do |s|
-      s.taint.send(@method).tainted?.should == true
+  ruby_version_is ''...'2.7' do
+    it "taints the result if self is tainted" do
+      ["", "a", "z", "Z", "9", "\xFF", "\xFF\xFF"].each do |s|
+        s.taint.send(@method).should.tainted?
+      end
     end
   end
 end
@@ -81,8 +83,8 @@ describe :string_succ_bang, shared: true do
     end
   end
 
-  it "raises a #{frozen_error_class} if self is frozen" do
-    lambda { "".freeze.send(@method)     }.should raise_error(frozen_error_class)
-    lambda { "abcd".freeze.send(@method) }.should raise_error(frozen_error_class)
+  it "raises a FrozenError if self is frozen" do
+    -> { "".freeze.send(@method)     }.should raise_error(FrozenError)
+    -> { "abcd".freeze.send(@method) }.should raise_error(FrozenError)
   end
 end

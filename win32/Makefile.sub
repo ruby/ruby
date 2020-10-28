@@ -1,9 +1,10 @@
-# -*- makefile -*-
+# -*- mode: makefile; indent-tabs-mode: t -*-
 
 SHELL = $(COMSPEC)
 ECHO1 = $(V:1=@:)
 RUNCMD = $(COMSPEC) /c
 MKFILES = Makefile verconf.mk
+NULLCMD = type nul
 NULL = nul
 CHDIR = cd
 PATH_SEPARATOR = ;
@@ -89,7 +90,7 @@ IFCHANGE = $(COMSPEC) /C $(srcdir:/=\)\win32\ifchange.bat
 RM = $(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat
 RMDIR = $(COMSPEC) /C $(srcdir:/=\)\win32\rmdirs.bat
 RMDIRS = $(COMSPEC) /C $(srcdir:/=\)\win32\rmdirs.bat
-RMALL = $(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat -r
+RMALL = $(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat -f -r
 MAKEDIRS = $(COMSPEC) /E:ON /C $(srcdir:/=\)\win32\makedirs.bat
 CP = copy > nul
 MV = move > nul
@@ -242,7 +243,7 @@ COMPILERFLAG  = -Zm600
 !if $(MSC_VER) >= 1400
 WARNFLAGS = -W2 -wd4100 -wd4127 -wd4210 -wd4214 -wd4255 -wd4574 \
 	    -wd4668 -wd4710 -wd4711 -wd4820 -wd4996 \
-	    -we4028 -we4142
+	    -we4028 -we4142 -we4047
 !else
 WARNFLAGS = -W2
 !endif
@@ -290,19 +291,18 @@ MISSING = $(MISSING) acosh.obj cbrt.obj erf.obj nan.obj tgamma.obj
 MISSING = $(MISSING) explicit_bzero.obj
 !endif
 DLNOBJ = dln.obj
+
 !if "$(ARCH)" == "x64"
-COROUTINE_OBJ = coroutine/Win64/Context.obj
+COROUTINE_OBJ = coroutine/win64/Context.obj
+COROUTINE_SRC = $(COROUTINE_OBJ:.obj=.asm)
 !elseif "$(ARCH)" == "i386"
-COROUTINE_OBJ = coroutine/Win32/Context.obj
+COROUTINE_OBJ = coroutine/win32/Context.obj
+COROUTINE_SRC = $(COROUTINE_OBJ:.obj=.asm)
 !else
-COROUTINE_OBJ =
+COROUTINE_OBJ = coroutine/copy/Context.obj
+COROUTINE_SRC = $(COROUTINE_OBJ:.obj=.c)
 !endif
-!if "$(COROUTINE_OBJ)" == ""
-# get rid of empty value not to leave VPATH only in dependencies
-COROUTINE_H = coroutine/Win32/Context.h
-!else
 COROUTINE_H = $(COROUTINE_OBJ:.obj=.h)
-!endif
 
 ARFLAGS = -machine:$(MACHINE) -out:
 LD = $(CC)
@@ -383,7 +383,7 @@ MINIRUBY = .\miniruby$(EXEEXT) -I$(srcdir)/lib -I.
 RUNRUBY = .\$(PROGRAM) -I$(srcdir)/lib -I"$(EXTOUT)/$(arch)" -I.
 !endif
 MINIRUBY = $(MINIRUBY) $(MINIRUBYOPT)
-RUNRUBY = $(RUNRUBY) "$(srcdir)/tool/runruby.rb" --extout="$(EXTOUT)" $(RUNRUBYOPT) -- $(RUN_OPTS)
+RUNRUBY = $(RUNRUBY) "$(tooldir)/runruby.rb" --extout="$(EXTOUT)" $(RUNRUBYOPT) -- $(RUN_OPTS)
 !if "$(CROSS_COMPILING)" == "yes"
 XRUBY = $(MINIRUBY)
 BOOTSTRAPRUBY = $(BASERUBY)
@@ -399,7 +399,7 @@ RUBY = ruby
 DTRACE_EXT = dmyh
 
 !if !defined(STACK)
-!if "$(ARCH)" == "x64" || "$(ARCH)" == "ia64"
+!if "$(ARCH)" == "x64"
 STACK = 0x400000
 !else
 STACK = 0x200000
@@ -473,6 +473,7 @@ EXTOBJS = dmyext.$(OBJEXT)
 arch_hdrdir = $(EXTOUT)/include/$(arch)
 top_srcdir = $(srcdir)
 hdrdir = $(srcdir)/include
+tooldir = $(srcdir)/tool
 VPATH = $(arch_hdrdir)/ruby;$(hdrdir)/ruby;$(srcdir);$(srcdir)/missing;$(win_srcdir)
 
 !ifndef GIT
@@ -495,15 +496,10 @@ HAVE_GIT = no
 ! endif
 !endif
 
-!if exist($(srcdir)/.svn)
-VCS = svn
-VCSUP = $(VCS) up $(SVNUPOPTIONS)
-!else if exist($(srcdir)/.git/svn)
-VCS = $(GIT) svn
-VCSUP = $(VCS) rebase $(GITSVNREBASEOPTIONS)
+!if defined(VCS)
 !else if exist($(srcdir)/.git)
 VCS = $(GIT)
-VCSUP = $(VCS) pull $(GITPULLOPTIONS)
+VCSUP = $(VCS) pull --rebase $(GITPULLOPTIONS)
 !else
 VCSUP = rem
 !endif
@@ -531,11 +527,6 @@ NEWLINE_C = enc/trans/newline.c
 MINIPRELUDE_C = $(srcdir)/miniprelude.c
 !else
 MINIPRELUDE_C = miniprelude.c
-!endif
-!if !exist(prelude.c) && exist($(srcdir)/prelude.c)
-PRELUDE_C = $(srcdir)/prelude.c
-!else
-PRELUDE_C = prelude.c
 !endif
 !if !exist(golf_prelude.c) && exist($(srcdir)/golf_prelude.c)
 GOLF_PRELUDE_C = $(srcdir)/golf_prelude.c
@@ -616,9 +607,15 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 	@$(IFCHANGE) "--timestamp=$(@:/=\)" $(RUBY_CONFIG_H:/=\) <<
 #ifndef $(guard)
 #define $(guard) 1
-#if _MSC_VER != $(MSC_VER)
-#error MSC version unmatch: _MSC_VER: $(MSC_VER) is expected.
+!if defined(MSC_VER_LOWER)
+#if (_MSC_VER < $(MSC_VER_LOWER)) || (_MSC_VER > $(MSC_VER_UPPER))
+#error MSC version unmatch: $(MSC_VER_LOWER)..$(MSC_VER_UPPER) is expected.
 #endif
+!else
+#if _MSC_VER != $(MSC_VER)
+#error MSC version unmatch: $(MSC_VER) is expected.
+#endif
+!endif
 #define RUBY_MSVCRT_VERSION $(RT_VER)
 #define STDC_HEADERS 1
 #define HAVE_SYS_TYPES_H 1
@@ -645,13 +642,15 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define SIZEOF_LONG_LONG 0
 !endif
 #define SIZEOF___INT64 8
+#ifndef _INTEGRAL_MAX_BITS
 #define _INTEGRAL_MAX_BITS 64
+#endif
 !if $(LARGEFILE_SUPPORT)
 #define SIZEOF_OFF_T 8
 !else
 #define SIZEOF_OFF_T 4
 !endif
-!if "$(ARCH)" == "x64" || "$(ARCH)" == "ia64"
+!if "$(ARCH)" == "x64"
 #define SIZEOF_VOIDP 8
 !else
 #define SIZEOF_VOIDP 4
@@ -673,7 +672,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define NUM2CLOCKID(v) NUM2INT(v)
 #define SIZEOF_CLOCK_T 4
 #define SIZEOF_RLIM_T 0
-!if "$(ARCH)" == "x64" || "$(ARCH)" == "ia64"
+!if "$(ARCH)" == "x64"
 #define SIZEOF_SIZE_T 8
 #define SIZEOF_PTRDIFF_T 8
 #define SIZEOF_INTPTR_T 8
@@ -700,7 +699,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !endif
 !if $(MSC_VER) >= 1300
 #define DEPRECATED(x) __declspec(deprecated) x
-#define DEPRECATED_TYPE(mesg, x) __declspec(deprecated mesg) x
+#define RUBY_CXX_DEPRECATED(mesg) __declspec(deprecated(mesg))
 #define NOINLINE(x) __declspec(noinline) x
 !endif
 #define ALWAYS_INLINE(x) __forceinline x
@@ -717,7 +716,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !else
 #define PACKED_STRUCT(x) x
 !endif
-!if "$(ARCH)" == "x86" || "$(ARCH)" == "x64" || "$(ARCH)" == "ia64"
+!if "$(ARCH)" == "x86" || "$(ARCH)" == "x64"
 #define PACKED_STRUCT_UNALIGNED(x) PACKED_STRUCT(x)
 !else
 #define PACKED_STRUCT_UNALIGNED(x) x
@@ -783,7 +782,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define HAVE_INTPTR_T 1
 #define HAVE_UINTPTR_T 1
 #define HAVE_SSIZE_T 1
-!if "$(ARCH)" == "x64" || "$(ARCH)" == "ia64"
+!if "$(ARCH)" == "x64"
 #define ssize_t __int64
 #define PRI_PTR_PREFIX "I64"
 !else
@@ -860,25 +859,28 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define HAVE_QSORT_S
 !endif
 #define HAVE_TYPE_NET_LUID 1
+!if $(MSC_VER) >= 1600
+#define HAVE_NULLPTR 1
+!endif
 #define SETPGRP_VOID 1
 #define RSHIFT(x,y) ((x)>>(int)y)
 #define HAVE_RB_FD_INIT 1
 #define RUBY_SETJMP(env) _setjmp(env)
 #define RUBY_LONGJMP(env,val) longjmp(env,val)
 #define RUBY_JMP_BUF jmp_buf
+#ifndef __cplusplus
 #define inline __inline
 !if $(MSC_VER) >= 1800
 #define restrict __restrict
 !else
 #define restrict /* not supported */
 !endif
+#endif
 #define NEED_IO_SEEK_BETWEEN_RW 1
-!if "$(MACHINE)" == "x86" || "$(ARCH)" == "x64" || "$(ARCH)" == "ia64"
+!if "$(MACHINE)" == "x86" || "$(ARCH)" == "x64"
 #define STACK_GROW_DIRECTION -1
 !endif
-!if "$(COROUTINE_OBJ)" != ""
-#define FIBER_USE_COROUTINE "$(COROUTINE_H)"
-!endif
+#define COROUTINE_H "$(COROUTINE_H)"
 #define DEFAULT_KCODE KCODE_NONE
 #define LOAD_RELATIVE 1
 #define DLEXT ".so"
@@ -1046,6 +1048,7 @@ s,@COMPILE_CXX@,$$(CXX) $$(INCFLAGS) $$(CXXFLAGS) $$(CPPFLAGS) $$(COUTFLAG)$$(@)
 s,@ASSEMBLE_C@,$$(CC) $$(CFLAGS) $$(CPPFLAGS) -Fa$$(@) -c $$(CSRCFLAG)$$(<:\=/),;t t
 s,@ASSEMBLE_CXX@,$$(CXX) $$(CXXFLAGS) $$(CPPFLAGS) -Fa$$(@) -c -Tp$$(<:\=/),;t t
 s,@COMPILE_RULES@,{$$(*VPATH*)}.%s.%s: .%s.%s:,;t t
+s,@CXX_EXT@,cpp,;t t
 s,@RULE_SUBST@,{.;$$(VPATH)}%s,;t t
 s,@TRY_LINK@,$$(CC) -Feconftest $$(INCFLAGS) -I$$(hdrdir) $$(CPPFLAGS) $$(CFLAGS) $$(src) $$(LOCAL_LIBS) $$(LIBS) -link $$(LDFLAGS) $$(LIBPATH) $$(XLDFLAGS),;t t
 s,@COMMON_LIBS@,$(COMMON_LIBS),;t t
@@ -1192,7 +1195,7 @@ ext/clean.mk ext/distclean.mk ext/realclean.mk::
 	$(Q)if exist $(EXTS_MK) $(MAKE) -k -f $(EXTS_MK) top_srcdir=$(srcdir) $(*F)
 
 ext/clean gems/clean ext/distclean gems/distclean ext/realclean gems/realclean::
-		$(Q)cd $(@D) && for /R $(EXTS) %I in (.) \
+		$(Q)cd $(@D) 2>nul && (for /R $(EXTS) %I in (.) \
 		do $(Q)if exist %I\Makefile ( \
 		    cd %I && ( \
 		    call set n=%I && \
@@ -1202,11 +1205,11 @@ ext/clean gems/clean ext/distclean gems/distclean ext/realclean gems/realclean::
 		    $(MAKE) $(MFLAGS) $(@F) & \
 		    cd %CD% & \
 		    $(RMDIRS) %I \
-		) )
+		))) || @
 
 ext/distclean gems/distclean ext/realclean gems/realclean::
-		$(Q)cd $(@D) && for /R $(EXTS) %I in (exts.mk*) \
-		do $(Q)(del %I & rmdir %~dpI)
+		$(Q)cd $(@D) 2>nul && (for /R $(EXTS) %I in (exts.mk*) \
+		do $(Q)(del %I & rmdir %~dpI)) || @
 		-$(Q)rmdir $(@D) 2> nul || @
 
 clean-enc distclean-enc realclean-enc:
@@ -1224,28 +1227,24 @@ $(RCFILES): $(RBCONFIG) $(srcdir)/revision.h $(srcdir)/win32/resource.rb
 			-so_name=$(RUBY_SO_NAME) \
 			. $(icondirs) $(win_srcdir)
 
-test-bundled-gems-run:
-	$(Q) for /f %G in ($(srcdir)/gems/bundled_gems) do @( \
-	  echo testing %G gem & \
-	  $(XRUBY) -C $(srcdir)/gems/src/%G -Ilib ../../../.bundle/bin/rake || \
-	  exit /b %STATUS% \
-	)
-
 update-benchmark-driver:
 	$(GIT) clone https://github.com/benchmark-driver/benchmark-driver $(srcdir)/benchmark/benchmark-driver || \
 	  $(GIT) -C $(srcdir)/benchmark/benchmark-driver pull origin master
 
 $(ruby_pc): $(RBCONFIG)
-	@$(BOOTSTRAPRUBY) $(srcdir)/tool/expand-config.rb \
+	@$(BOOTSTRAPRUBY) $(tooldir)/expand-config.rb \
 		-output=$@ -mode=$(INSTALL_DATA_MODE) -config=rbconfig.rb \
 		$(srcdir)/template/ruby.pc.in
 
-{$(srcdir)/coroutine/Win32}.asm{coroutine/Win32}.obj:
+{$(srcdir)/coroutine/win32}.asm{coroutine/win32}.obj:
 	$(ECHO) assembling $(<:\=/)
 	$(Q) $(AS) $(ASFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(<:\=/)
-{$(srcdir)/coroutine/Win64}.asm{coroutine/Win64}.obj:
+{$(srcdir)/coroutine/win64}.asm{coroutine/win64}.obj:
 	$(ECHO) assembling $(<:\=/)
 	$(Q) $(AS) $(ASFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(<:\=/)
+{$(srcdir)/coroutine/copy}.c{coroutine/copy}.obj:
+	$(ECHO) compiling $(<:\=/)
+	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(<:\=/)
 
 {$(srcdir)/enc/trans}.c.obj:
 	$(ECHO) compiling $(<:\=/)
@@ -1367,9 +1366,9 @@ INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
 	@for %J in (\
 "%I: $$(srcdir)/insns.def {$$(VPATH)}vm_opts.h \" \
 "	  $$(srcdir)/defs/opt_operand.def $$(srcdir)/defs/opt_insn_unif.def \" \
-"	  $$(srcdir)/tool/insns2vm.rb" \
+"	  $$(tooldir)/insns2vm.rb" \
 "	@$$(RM) $$(PROGRAM)" \
-"	$$(BASERUBY) -Ku $$(srcdir)/tool/insns2vm.rb $$(INSNS2VMOPT) %I" \
+"	$$(Q) $$(BASERUBY) -Ku $$(tooldir)/insns2vm.rb $$(INSNS2VMOPT) %I" \
 "" \
 ) do @echo.%~J>>insns_rules.mk]
 !else

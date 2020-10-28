@@ -13,36 +13,55 @@
 % insn.opes.each_with_index do |ope, i|
     MAYBE_UNUSED(<%= ope.fetch(:decl) %>) = (<%= ope.fetch(:type) %>)operands[<%= i %>];
 % end
-% # compiler: Use copied IC to avoid race condition
-    IC ic_copy = &(status->is_entries + ((union iseq_inline_storage_entry *)ic - body->is_entries))->cache;
+% # compiler: Use copied IVC to avoid race condition
+    IVC ic_copy = &(status->is_entries + ((union iseq_inline_storage_entry *)ic - body->is_entries))->iv_cache;
 %
-% # compiler: Consider cfp->self as T_OBJECT if ic_copy->ic_serial is set
-    if (ic_copy->ic_serial) {
+    if (!status->compile_info->disable_ivar_cache && ic_copy->entry) { // Only ic_copy is enabled.
 % # JIT: optimize away motion of sp and pc. This path does not call rb_warning() and so it's always leaf and not `handles_sp`.
 % # <%= render 'mjit_compile_pc_and_sp', locals: { insn: insn } -%>
 %
-% # JIT: prepare vm_getivar's arguments and variables
+% # JIT: prepare vm_getivar/vm_setivar arguments and variables
         fprintf(f, "{\n");
         fprintf(f, "    VALUE obj = GET_SELF();\n");
-        fprintf(f, "    const rb_serial_t ic_serial = (rb_serial_t)%"PRI_SERIALT_PREFIX"u;\n", ic_copy->ic_serial);
-        fprintf(f, "    const st_index_t index = %"PRIuSIZE";\n", ic_copy->ic_value.index);
-% # JIT: cache hit path of vm_getivar, or cancel JIT.
+        fprintf(f, "    const uint32_t index = %u;\n", (ic_copy->entry->index));
+        if (status->merge_ivar_guards_p) {
+% # JIT: Access ivar without checking these VM_ASSERTed prerequisites as we checked them in the beginning of `mjit_compile_body`
+            fprintf(f, "    VM_ASSERT(RB_TYPE_P(obj, T_OBJECT));\n");
+            fprintf(f, "    VM_ASSERT((rb_serial_t)%"PRI_SERIALT_PREFIX"u == RCLASS_SERIAL(RBASIC(obj)->klass));\n", ic_copy->entry->class_serial);
+            fprintf(f, "    VM_ASSERT(index < ROBJECT_NUMIV(obj));\n");
 % if insn.name == 'setinstancevariable'
-        fprintf(f, "    VALUE val = stack[%d];\n", b->stack_size - 1);
-        fprintf(f, "    if (LIKELY(RB_TYPE_P(obj, T_OBJECT) && ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass) && index < ROBJECT_NUMIV(obj))) {\n");
-        fprintf(f, "        VALUE *ptr = ROBJECT_IVPTR(obj);\n");
-        fprintf(f, "        RB_OBJ_WRITE(obj, &ptr[index], val);\n");
-        fprintf(f, "    }\n");
+            fprintf(f, "    if (LIKELY(!RB_OBJ_FROZEN(obj) && %sRB_FL_ANY_RAW(obj, ROBJECT_EMBED))) {\n", status->max_ivar_index >= ROBJECT_EMBED_LEN_MAX ? "!" : "");
+            fprintf(f, "        RB_OBJ_WRITE(obj, &ROBJECT(obj)->as.%s, stack[%d]);\n",
+                    status->max_ivar_index >= ROBJECT_EMBED_LEN_MAX ? "heap.ivptr[index]" : "ary[index]", b->stack_size - 1);
+            fprintf(f, "    }\n");
 % else
-        fprintf(f, "    VALUE val;\n");
-        fprintf(f, "    if (LIKELY(RB_TYPE_P(obj, T_OBJECT) && ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass) && index < ROBJECT_NUMIV(obj) && (val = ROBJECT_IVPTR(obj)[index]) != Qundef)) {\n");
-        fprintf(f, "        stack[%d] = val;\n", b->stack_size);
-        fprintf(f, "    }\n");
+            fprintf(f, "    VALUE val;\n");
+            fprintf(f, "    if (LIKELY(%sRB_FL_ANY_RAW(obj, ROBJECT_EMBED) && (val = ROBJECT(obj)->as.%s) != Qundef)) {\n",
+                    status->max_ivar_index >= ROBJECT_EMBED_LEN_MAX ? "!" : "",
+                    status->max_ivar_index >= ROBJECT_EMBED_LEN_MAX ? "heap.ivptr[index]" : "ary[index]");
+            fprintf(f, "        stack[%d] = val;\n", b->stack_size);
+            fprintf(f, "    }\n");
+%end
+        }
+        else {
+            fprintf(f, "    const rb_serial_t ic_serial = (rb_serial_t)%"PRI_SERIALT_PREFIX"u;\n", ic_copy->entry->class_serial);
+% # JIT: cache hit path of vm_getivar/vm_setivar, or cancel JIT (recompile it with exivar)
+% if insn.name == 'setinstancevariable'
+            fprintf(f, "    if (LIKELY(RB_TYPE_P(obj, T_OBJECT) && ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass) && index < ROBJECT_NUMIV(obj) && !RB_OBJ_FROZEN(obj))) {\n");
+            fprintf(f, "        VALUE *ptr = ROBJECT_IVPTR(obj);\n");
+            fprintf(f, "        RB_OBJ_WRITE(obj, &ptr[index], stack[%d]);\n", b->stack_size - 1);
+            fprintf(f, "    }\n");
+% else
+            fprintf(f, "    VALUE val;\n");
+            fprintf(f, "    if (LIKELY(RB_TYPE_P(obj, T_OBJECT) && ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass) && index < ROBJECT_NUMIV(obj) && (val = ROBJECT_IVPTR(obj)[index]) != Qundef)) {\n");
+            fprintf(f, "        stack[%d] = val;\n", b->stack_size);
+            fprintf(f, "    }\n");
 % end
+        }
         fprintf(f, "    else {\n");
         fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
-        fprintf(f, "        reg_cfp->sp = (VALUE *)reg_cfp->bp + %d;\n", b->stack_size + 1);
-        fprintf(f, "        goto cancel;\n");
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "        goto ivar_cancel;\n");
         fprintf(f, "    }\n");
 
 % # compiler: Move JIT compiler's internal stack pointer
@@ -50,5 +69,33 @@
         fprintf(f, "}\n");
         break;
     }
+% if insn.name == 'getinstancevariable'
+    else if (!status->compile_info->disable_exivar_cache && ic_copy->entry) {
+% # JIT: optimize away motion of sp and pc. This path does not call rb_warning() and so it's always leaf and not `handles_sp`.
+% # <%= render 'mjit_compile_pc_and_sp', locals: { insn: insn } -%>
+%
+% # JIT: prepare vm_getivar's arguments and variables
+        fprintf(f, "{\n");
+        fprintf(f, "    VALUE obj = GET_SELF();\n");
+        fprintf(f, "    const rb_serial_t ic_serial = (rb_serial_t)%"PRI_SERIALT_PREFIX"u;\n", ic_copy->entry->class_serial);
+        fprintf(f, "    const uint32_t index = %u;\n", ic_copy->entry->index);
+% # JIT: cache hit path of vm_getivar, or cancel JIT (recompile it without any ivar optimization)
+        fprintf(f, "    struct gen_ivtbl *ivtbl;\n");
+        fprintf(f, "    VALUE val;\n");
+        fprintf(f, "    if (LIKELY(FL_TEST_RAW(obj, FL_EXIVAR) && ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass) && rb_ivar_generic_ivtbl_lookup(obj, &ivtbl) && index < ivtbl->numiv && (val = ivtbl->ivptr[index]) != Qundef)) {\n");
+        fprintf(f, "        stack[%d] = val;\n", b->stack_size);
+        fprintf(f, "    }\n");
+        fprintf(f, "    else {\n");
+        fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "        goto exivar_cancel;\n");
+        fprintf(f, "    }\n");
+
+% # compiler: Move JIT compiler's internal stack pointer
+        b->stack_size += <%= insn.call_attribute('sp_inc') %>;
+        fprintf(f, "}\n");
+        break;
+    }
+% end
 }
-#endif /* OPT_IC_FOR_IVAR */
+#endif // OPT_IC_FOR_IVAR

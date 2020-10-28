@@ -2,45 +2,26 @@
 
 require "pathname"
 
-if defined?(Gem::QuickLoader)
-  # Gem Prelude makes me a sad panda :'(
-  Gem::QuickLoader.load_full_rubygems_library
-end
-
-require "rubygems"
 require "rubygems/specification"
 
-begin
-  # Possible use in Gem::Specification#source below and require
-  # shouldn't be deferred.
-  require "rubygems/source"
-rescue LoadError
-  # Not available before RubyGems 2.0.0, ignore
-  nil
-end
+# Possible use in Gem::Specification#source below and require
+# shouldn't be deferred.
+require "rubygems/source"
 
-require "bundler/match_platform"
+require_relative "match_platform"
 
 module Gem
-  @loaded_stacks = Hash.new {|h, k| h[k] = [] }
-
   class Specification
     attr_accessor :remote, :location, :relative_loaded_from
 
-    if instance_methods(false).map(&:to_sym).include?(:source)
-      remove_method :source
-      attr_writer :source
-      def source
-        (defined?(@source) && @source) || Gem::Source::Installed.new
-      end
-    else
-      attr_accessor :source
+    remove_method :source
+    attr_writer :source
+    def source
+      (defined?(@source) && @source) || Gem::Source::Installed.new
     end
 
     alias_method :rg_full_gem_path, :full_gem_path
     alias_method :rg_loaded_from,   :loaded_from
-
-    attr_writer :full_gem_path unless instance_methods.include?(:full_gem_path=)
 
     def full_gem_path
       # this cannot check source.is_a?(Bundler::Plugin::API::Source)
@@ -48,7 +29,7 @@ module Gem
       # gems at that time, this method could be called inside another require,
       # thus raising with that constant being undefined. Better to check a method
       if source.respond_to?(:path) || (source.respond_to?(:bundler_plugin_api_source?) && source.bundler_plugin_api_source?)
-        Pathname.new(loaded_from).dirname.expand_path(source.root).to_s.untaint
+        Pathname.new(loaded_from).dirname.expand_path(source.root).to_s.tap{|x| x.untaint if RUBY_VERSION < "2.7" }
       else
         rg_full_gem_path
       end
@@ -63,32 +44,20 @@ module Gem
     end
 
     def load_paths
-      return full_require_paths if respond_to?(:full_require_paths)
+      full_require_paths
+    end
 
-      require_paths.map do |require_path|
-        if require_path.include?(full_gem_path)
-          require_path
-        else
-          File.join(full_gem_path, require_path)
-        end
+    alias_method :rg_extension_dir, :extension_dir
+    def extension_dir
+      @bundler_extension_dir ||= if source.respond_to?(:extension_dir_name)
+        unique_extension_dir = [source.extension_dir_name, File.basename(full_gem_path)].uniq.join("-")
+        File.expand_path(File.join(extensions_dir, unique_extension_dir))
+      else
+        rg_extension_dir
       end
     end
 
-    if method_defined?(:extension_dir)
-      alias_method :rg_extension_dir, :extension_dir
-      def extension_dir
-        @bundler_extension_dir ||= if source.respond_to?(:extension_dir_name)
-          File.expand_path(File.join(extensions_dir, source.extension_dir_name))
-        else
-          rg_extension_dir
-        end
-      end
-    end
-
-    # RubyGems 1.8+ used only.
-    methods = instance_methods(false)
-    gem_dir = methods.first.is_a?(String) ? "gem_dir" : :gem_dir
-    remove_method :gem_dir if methods.include?(gem_dir)
+    remove_method :gem_dir if instance_methods(false).include?(:gem_dir)
     def gem_dir
       full_gem_path
     end
@@ -116,7 +85,7 @@ module Gem
       dependencies - development_dependencies
     end
 
-  private
+    private
 
     def dependencies_to_gemfile(dependencies, group = nil)
       gemfile = String.new
@@ -158,32 +127,35 @@ module Gem
       end
       out
     end
-
-    # Backport of performance enhancement added to RubyGems 1.4
-    def matches_spec?(spec)
-      # name can be a Regexp, so use ===
-      return false unless name === spec.name
-      return true  if requirement.none?
-
-      requirement.satisfied_by?(spec.version)
-    end unless allocate.respond_to?(:matches_spec?)
   end
 
-  class Requirement
-    # Backport of performance enhancement added to RubyGems 1.4
-    def none?
-      # note that it might be tempting to replace with with RubyGems 2.0's
-      # improved implementation. Don't. It requires `DefaultRequirement` to be
-      # defined, and more importantantly, these overrides are not used when the
-      # running RubyGems defines these methods
-      to_s == ">= 0"
-    end unless allocate.respond_to?(:none?)
+  # comparison is done order independently since rubygems 3.2.0.rc.2
+  unless Gem::Requirement.new("> 1", "< 2") == Gem::Requirement.new("< 2", "> 1")
+    class Requirement
+      module OrderIndependentComparison
+        def ==(other)
+          if _requirements_sorted? && other._requirements_sorted?
+            super
+          else
+            _with_sorted_requirements == other._with_sorted_requirements
+          end
+        end
 
-    # Backport of performance enhancement added to RubyGems 2.2
-    def exact?
-      return false unless @requirements.size == 1
-      @requirements[0][0] == "="
-    end unless allocate.respond_to?(:exact?)
+        protected
+
+        def _requirements_sorted?
+          return @_are_requirements_sorted if defined?(@_are_requirements_sorted)
+          strings = as_list
+          @_are_requirements_sorted = strings == strings.sort
+        end
+
+        def _with_sorted_requirements
+          @_with_sorted_requirements ||= _requirements_sorted? ? self : self.class.new(as_list.sort)
+        end
+      end
+
+      prepend OrderIndependentComparison
+    end
   end
 
   class Platform
@@ -200,6 +172,22 @@ module Gem
 
     undef_method :eql? if method_defined? :eql?
     alias_method :eql?, :==
+  end
+
+  require "rubygems/util"
+
+  Util.singleton_class.module_eval do
+    if Util.singleton_methods.include?(:glob_files_in_dir) # since 3.0.0.beta.2
+      remove_method :glob_files_in_dir
+    end
+
+    def glob_files_in_dir(glob, base_path)
+      if RUBY_VERSION >= "2.5"
+        Dir.glob(glob, :base => base_path).map! {|f| File.expand_path(f, base_path) }
+      else
+        Dir.glob(File.join(base_path.to_s.gsub(/[\[\]]/, '\\\\\\&'), glob)).map! {|f| File.expand_path(f) }
+      end
+    end
   end
 end
 

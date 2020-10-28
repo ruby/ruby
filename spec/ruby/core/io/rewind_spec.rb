@@ -21,7 +21,7 @@ describe "IO#rewind" do
   it "positions the instance to the beginning of input and clears EOF" do
     value = @io.read
     @io.rewind
-    @io.eof?.should == false
+    @io.should_not.eof?
     value.should == @io.read
   end
 
@@ -33,6 +33,6 @@ describe "IO#rewind" do
   end
 
   it "raises IOError on closed stream" do
-    lambda { IOSpecs.closed_io.rewind }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.rewind }.should raise_error(IOError)
   end
 end

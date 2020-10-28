@@ -22,6 +22,7 @@ class TestMethod < Test::Unit::TestCase
   def mo5(a, *b, c) end
   def mo6(a, *b, c, &d) end
   def mo7(a, b = nil, *c, d, &e) end
+  def mo8(a, b = nil, *, d, &e) end
   def ma1((a), &b) nil && a end
   def mk1(**) end
   def mk2(**o) nil && o end
@@ -30,6 +31,9 @@ class TestMethod < Test::Unit::TestCase
   def mk5(a, b = nil, **o) nil && o end
   def mk6(a, b = nil, c, **o) nil && o end
   def mk7(a, b = nil, *c, d, **o) nil && o end
+  def mk8(a, b = nil, *c, d, e:, f: nil, **o) nil && o end
+  def mnk(**nil) end
+  def mf(...) end
 
   class Base
     def foo() :base end
@@ -99,6 +103,12 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(:derived, um.bind(Derived.new).call)
     assert_raise(TypeError) do
       um.bind(Base.new)
+    end
+
+    # cleanup
+    Derived.class_eval do
+      remove_method :foo
+      def foo() :derived; end
     end
   end
 
@@ -197,6 +207,7 @@ class TestMethod < Test::Unit::TestCase
     def o.foo; end
     assert_kind_of(Integer, o.method(:foo).hash)
     assert_equal(Array.instance_method(:map).hash, Array.instance_method(:collect).hash)
+    assert_kind_of(String, o.method(:foo).hash.to_s)
   end
 
   def test_owner
@@ -431,32 +442,37 @@ class TestMethod < Test::Unit::TestCase
 
   def test_inspect
     o = Object.new
-    def o.foo; end
+    def o.foo; end; line_no = __LINE__
     m = o.method(:foo)
-    assert_equal("#<Method: #{ o.inspect }.foo>", m.inspect)
+    assert_equal("#<Method: #{ o.inspect }.foo() #{__FILE__}:#{line_no}>", m.inspect)
     m = o.method(:foo)
-    assert_equal("#<UnboundMethod: #{ class << o; self; end.inspect }#foo>", m.unbind.inspect)
+    assert_match("#<UnboundMethod: #{ class << o; self; end.inspect }#foo() #{__FILE__}:#{line_no}", m.unbind.inspect)
 
     c = Class.new
-    c.class_eval { def foo; end; }
+    c.class_eval { def foo; end; }; line_no = __LINE__
     m = c.new.method(:foo)
-    assert_equal("#<Method: #{ c.inspect }#foo>", m.inspect)
+    assert_equal("#<Method: #{ c.inspect }#foo() #{__FILE__}:#{line_no}>", m.inspect)
     m = c.instance_method(:foo)
-    assert_equal("#<UnboundMethod: #{ c.inspect }#foo>", m.inspect)
+    assert_equal("#<UnboundMethod: #{ c.inspect }#foo() #{__FILE__}:#{line_no}>", m.inspect)
 
     c2 = Class.new(c)
     c2.class_eval { private :foo }
     m2 = c2.new.method(:foo)
-    assert_equal("#<Method: #{ c2.inspect }(#{ c.inspect })#foo>", m2.inspect)
+    assert_equal("#<Method: #{ c2.inspect }(#{ c.inspect })#foo() #{__FILE__}:#{line_no}>", m2.inspect)
 
     bug7806 = '[ruby-core:52048] [Bug #7806]'
     c3 = Class.new(c)
     c3.class_eval { alias bar foo }
     m3 = c3.new.method(:bar)
-    assert_equal("#<Method: #{c3.inspect}(#{c.inspect})#bar(foo)>", m3.inspect, bug7806)
+    assert_equal("#<Method: #{c3.inspect}(#{c.inspect})#bar(foo)() #{__FILE__}:#{line_no}>", m3.inspect, bug7806)
 
-    m.taint
-    assert_predicate(m.inspect, :tainted?, "inspect result should be infected")
+    bug15608 = '[ruby-core:91570] [Bug #15608]'
+    c4 = Class.new(c)
+    c4.class_eval { alias bar foo }
+    o = c4.new
+    o.singleton_class
+    m4 = o.method(:bar)
+    assert_equal("#<Method: #{c4.inspect}(#{c.inspect})#bar(foo)() #{__FILE__}:#{line_no}>", m4.inspect, bug15608)
   end
 
   def test_callee_top_level
@@ -494,6 +510,22 @@ class TestMethod < Test::Unit::TestCase
     assert_include mmethods, :meth, 'normal methods are public by default'
   end
 
+  def test_respond_to_missing_argument
+    obj = Struct.new(:mid).new
+    def obj.respond_to_missing?(id, *)
+      self.mid = id
+      true
+    end
+    assert_kind_of(Method, obj.method("bug15640"))
+    assert_kind_of(Symbol, obj.mid)
+    assert_equal("bug15640", obj.mid.to_s)
+
+    arg = Struct.new(:to_str).new("bug15640_2")
+    assert_kind_of(Method, obj.method(arg))
+    assert_kind_of(Symbol, obj.mid)
+    assert_equal("bug15640_2", obj.mid.to_s)
+  end
+
   define_method(:pm0) {||}
   define_method(:pm1) {|a|}
   define_method(:pm2) {|a, b|}
@@ -512,6 +544,8 @@ class TestMethod < Test::Unit::TestCase
   define_method(:pmk5) {|a, b = nil, **o|}
   define_method(:pmk6) {|a, b = nil, c, **o|}
   define_method(:pmk7) {|a, b = nil, *c, d, **o|}
+  define_method(:pmk8) {|a, b = nil, *c, d, e:, f: nil, **o|}
+  define_method(:pmnk) {|**nil|}
 
   def test_bound_parameters
     assert_equal([], method(:m0).parameters)
@@ -524,6 +558,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:rest, :b], [:req, :c]], method(:mo5).parameters)
     assert_equal([[:req, :a], [:rest, :b], [:req, :c], [:block, :d]], method(:mo6).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:block, :e]], method(:mo7).parameters)
+    assert_equal([[:req, :a], [:opt, :b], [:rest], [:req, :d], [:block, :e]], method(:mo8).parameters)
     assert_equal([[:req], [:block, :b]], method(:ma1).parameters)
     assert_equal([[:keyrest]], method(:mk1).parameters)
     assert_equal([[:keyrest, :o]], method(:mk2).parameters)
@@ -532,6 +567,10 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:keyrest, :o]], method(:mk5).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:req, :c], [:keyrest, :o]], method(:mk6).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], method(:mk7).parameters)
+    assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyreq, :e], [:key, :f], [:keyrest, :o]], method(:mk8).parameters)
+    assert_equal([[:nokey]], method(:mnk).parameters)
+    # pending
+    assert_equal([[:rest, :*], [:block, :&]], method(:mf).parameters)
   end
 
   def test_unbound_parameters
@@ -545,6 +584,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:rest, :b], [:req, :c]], self.class.instance_method(:mo5).parameters)
     assert_equal([[:req, :a], [:rest, :b], [:req, :c], [:block, :d]], self.class.instance_method(:mo6).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:block, :e]], self.class.instance_method(:mo7).parameters)
+    assert_equal([[:req, :a], [:opt, :b], [:rest], [:req, :d], [:block, :e]], self.class.instance_method(:mo8).parameters)
     assert_equal([[:req], [:block, :b]], self.class.instance_method(:ma1).parameters)
     assert_equal([[:keyrest]], self.class.instance_method(:mk1).parameters)
     assert_equal([[:keyrest, :o]], self.class.instance_method(:mk2).parameters)
@@ -553,6 +593,10 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:keyrest, :o]], self.class.instance_method(:mk5).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:req, :c], [:keyrest, :o]], self.class.instance_method(:mk6).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], self.class.instance_method(:mk7).parameters)
+    assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyreq, :e], [:key, :f], [:keyrest, :o]], self.class.instance_method(:mk8).parameters)
+    assert_equal([[:nokey]], self.class.instance_method(:mnk).parameters)
+    # pending
+    assert_equal([[:rest, :*], [:block, :&]], self.class.instance_method(:mf).parameters)
   end
 
   def test_bmethod_bound_parameters
@@ -574,6 +618,8 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:keyrest, :o]], method(:pmk5).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:req, :c], [:keyrest, :o]], method(:pmk6).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], method(:pmk7).parameters)
+    assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyreq, :e], [:key, :f], [:keyrest, :o]], method(:pmk8).parameters)
+    assert_equal([[:nokey]], method(:pmnk).parameters)
   end
 
   def test_bmethod_unbound_parameters
@@ -596,6 +642,63 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:keyrest, :o]], self.class.instance_method(:pmk5).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:req, :c], [:keyrest, :o]], self.class.instance_method(:pmk6).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], self.class.instance_method(:pmk7).parameters)
+    assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyreq, :e], [:key, :f], [:keyrest, :o]], self.class.instance_method(:pmk8).parameters)
+    assert_equal([[:nokey]], self.class.instance_method(:pmnk).parameters)
+  end
+
+  def test_hidden_parameters
+    instance_eval("def m((_)"+",(_)"*256+");end")
+    assert_empty(method(:m).parameters.map{|_,n|n}.compact)
+  end
+
+  def test_method_parameters_inspect
+    assert_include(method(:m0).inspect, "()")
+    assert_include(method(:m1).inspect, "(a)")
+    assert_include(method(:m2).inspect, "(a, b)")
+    assert_include(method(:mo1).inspect, "(a=..., &b)")
+    assert_include(method(:mo2).inspect, "(a, b=...)")
+    assert_include(method(:mo3).inspect, "(*a)")
+    assert_include(method(:mo4).inspect, "(a, *b, &c)")
+    assert_include(method(:mo5).inspect, "(a, *b, c)")
+    assert_include(method(:mo6).inspect, "(a, *b, c, &d)")
+    assert_include(method(:mo7).inspect, "(a, b=..., *c, d, &e)")
+    assert_include(method(:mo8).inspect, "(a, b=..., *, d, &e)")
+    assert_include(method(:ma1).inspect, "(_, &b)")
+    assert_include(method(:mk1).inspect, "(**)")
+    assert_include(method(:mk2).inspect, "(**o)")
+    assert_include(method(:mk3).inspect, "(a, **o)")
+    assert_include(method(:mk4).inspect, "(a=..., **o)")
+    assert_include(method(:mk5).inspect, "(a, b=..., **o)")
+    assert_include(method(:mk6).inspect, "(a, b=..., c, **o)")
+    assert_include(method(:mk7).inspect, "(a, b=..., *c, d, **o)")
+    assert_include(method(:mk8).inspect, "(a, b=..., *c, d, e:, f: ..., **o)")
+    assert_include(method(:mnk).inspect, "(**nil)")
+    assert_include(method(:mf).inspect, "(...)")
+  end
+
+  def test_unbound_method_parameters_inspect
+    assert_include(self.class.instance_method(:m0).inspect, "()")
+    assert_include(self.class.instance_method(:m1).inspect, "(a)")
+    assert_include(self.class.instance_method(:m2).inspect, "(a, b)")
+    assert_include(self.class.instance_method(:mo1).inspect, "(a=..., &b)")
+    assert_include(self.class.instance_method(:mo2).inspect, "(a, b=...)")
+    assert_include(self.class.instance_method(:mo3).inspect, "(*a)")
+    assert_include(self.class.instance_method(:mo4).inspect, "(a, *b, &c)")
+    assert_include(self.class.instance_method(:mo5).inspect, "(a, *b, c)")
+    assert_include(self.class.instance_method(:mo6).inspect, "(a, *b, c, &d)")
+    assert_include(self.class.instance_method(:mo7).inspect, "(a, b=..., *c, d, &e)")
+    assert_include(self.class.instance_method(:mo8).inspect, "(a, b=..., *, d, &e)")
+    assert_include(self.class.instance_method(:ma1).inspect, "(_, &b)")
+    assert_include(self.class.instance_method(:mk1).inspect, "(**)")
+    assert_include(self.class.instance_method(:mk2).inspect, "(**o)")
+    assert_include(self.class.instance_method(:mk3).inspect, "(a, **o)")
+    assert_include(self.class.instance_method(:mk4).inspect, "(a=..., **o)")
+    assert_include(self.class.instance_method(:mk5).inspect, "(a, b=..., **o)")
+    assert_include(self.class.instance_method(:mk6).inspect, "(a, b=..., c, **o)")
+    assert_include(self.class.instance_method(:mk7).inspect, "(a, b=..., *c, d, **o)")
+    assert_include(self.class.instance_method(:mk8).inspect, "(a, b=..., *c, d, e:, f: ..., **o)")
+    assert_include(self.class.instance_method(:mnk).inspect, "(**nil)")
+    assert_include(self.class.instance_method(:mf).inspect, "(...)")
   end
 
   def test_public_method_with_zsuper_method
@@ -645,7 +748,8 @@ class TestMethod < Test::Unit::TestCase
     assert_nothing_raised { mv3 }
 
     assert_nothing_raised { self.mv1 }
-    assert_raise(NoMethodError) { self.mv2 }
+    assert_nothing_raised { self.mv2 }
+    assert_raise(NoMethodError) { (self).mv2 }
     assert_nothing_raised { self.mv3 }
 
     v = Visibility.new
@@ -700,7 +804,9 @@ class TestMethod < Test::Unit::TestCase
     assert_instance_of String, __dir__
     assert_equal(File.dirname(File.realpath(__FILE__)), __dir__)
     bug8436 = '[ruby-core:55123] [Bug #8436]'
-    assert_equal(__dir__, eval("__dir__", binding), bug8436)
+    file, line = *binding.source_location
+    file = File.realpath(file)
+    assert_equal(__dir__, eval("__dir__", binding, file, line), bug8436)
     bug8662 = '[ruby-core:56099] [Bug #8662]'
     assert_equal("arbitrary", eval("__dir__", binding, "arbitrary/file.rb"), bug8662)
     assert_equal("arbitrary", Object.new.instance_eval("__dir__", "arbitrary/file.rb"), bug8662)
@@ -722,7 +828,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(c, c.instance_method(:foo).owner)
     assert_equal(c, x.method(:foo).owner)
     assert_equal(x.singleton_class, x.method(:bar).owner)
-    assert_not_equal(x.method(:foo), x.method(:bar), bug7613)
+    assert_equal(x.method(:foo), x.method(:bar), bug7613)
     assert_equal(c, x.method(:zot).owner, bug7993)
     assert_equal(c, c.instance_method(:zot).owner, bug7993)
   end
@@ -901,6 +1007,36 @@ class TestMethod < Test::Unit::TestCase
     assert_nil(m.super_method)
   end
 
+  def test_super_method_bind_unbind_clone
+    bug15629_m1 = Module.new do
+      def foo; end
+    end
+
+    bug15629_m2 = Module.new do
+      def foo; end
+    end
+
+    bug15629_c = Class.new do
+      include bug15629_m1
+      include bug15629_m2
+    end
+
+    o  = bug15629_c.new
+    m = o.method(:foo)
+    sm = m.super_method
+    im = bug15629_c.instance_method(:foo)
+    sim = im.super_method
+
+    assert_equal(sm, m.clone.super_method)
+    assert_equal(sim, m.unbind.super_method)
+    assert_equal(sim, m.unbind.clone.super_method)
+    assert_equal(sim, im.clone.super_method)
+    assert_equal(sm, m.unbind.bind(o).super_method)
+    assert_equal(sm, m.unbind.clone.bind(o).super_method)
+    assert_equal(sm, im.bind(o).super_method)
+    assert_equal(sm, im.clone.bind(o).super_method)
+  end
+
   def test_super_method_removed
     c1 = Class.new {private def foo; end}
     c2 = Class.new(c1) {public :foo}
@@ -944,6 +1080,86 @@ class TestMethod < Test::Unit::TestCase
       '[ruby-core:85231] [Bug #14421]'
   end
 
+  def test_super_method_alias
+    c0 = Class.new do
+      def m1
+        [:C0_m1]
+      end
+      def m2
+        [:C0_m2]
+      end
+    end
+
+    c1 = Class.new(c0) do
+      def m1
+        [:C1_m1] + super
+      end
+      alias m2 m1
+    end
+
+    c2 = Class.new(c1) do
+      def m2
+        [:C2_m2] + super
+      end
+    end
+    o1 = c2.new
+    assert_equal([:C2_m2, :C1_m1, :C0_m1], o1.m2)
+
+    m = o1.method(:m2)
+    assert_equal([:C2_m2, :C1_m1, :C0_m1], m.call)
+
+    m = m.super_method
+    assert_equal([:C1_m1, :C0_m1], m.call)
+
+    m = m.super_method
+    assert_equal([:C0_m1], m.call)
+
+    assert_nil(m.super_method)
+  end
+
+  def test_super_method_alias_to_prepended_module
+    m = Module.new do
+      def m1
+        [:P_m1] + super
+      end
+
+      def m2
+        [:P_m2] + super
+      end
+    end
+
+    c0 = Class.new do
+      def m1
+        [:C0_m1]
+      end
+    end
+
+    c1 = Class.new(c0) do
+      def m1
+        [:C1_m1] + super
+      end
+      prepend m
+      alias m2 m1
+    end
+
+    o1 = c1.new
+    assert_equal([:P_m2, :P_m1, :C1_m1, :C0_m1], o1.m2)
+
+    m = o1.method(:m2)
+    assert_equal([:P_m2, :P_m1, :C1_m1, :C0_m1], m.call)
+
+    m = m.super_method
+    assert_equal([:P_m1, :C1_m1, :C0_m1], m.call)
+
+    m = m.super_method
+    assert_equal([:C1_m1, :C0_m1], m.call)
+
+    m = m.super_method
+    assert_equal([:C0_m1], m.call)
+
+    assert_nil(m.super_method)
+  end
+
   def rest_parameter(*rest)
     rest
   end
@@ -980,17 +1196,22 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([:bar, :foo], b.local_variables.sort, bug11012)
   end
 
-  class MethodInMethodClass
-    def m1
-      def m2
-      end
+  MethodInMethodClass_Setup = -> do
+    remove_const :MethodInMethodClass if defined? MethodInMethodClass
 
-      self.class.send(:define_method, :m3){} # [Bug #11754]
+    class MethodInMethodClass
+      def m1
+        def m2
+        end
+        self.class.send(:define_method, :m3){} # [Bug #11754]
+      end
+      private
     end
-    private
   end
 
   def test_method_in_method_visibility_should_be_public
+    MethodInMethodClass_Setup.call
+
     assert_equal([:m1].sort, MethodInMethodClass.public_instance_methods(false).sort)
     assert_equal([].sort, MethodInMethodClass.private_instance_methods(false).sort)
 
@@ -1038,6 +1259,27 @@ class TestMethod < Test::Unit::TestCase
     assert_separately [], body
     # without trace insn
     assert_separately [], "RubyVM::InstructionSequence.compile_option = {trace_instruction: false}\n" + body
+  end
+
+  def test_zsuper_private_override_instance_method
+    assert_separately(%w(--disable-gems), <<-'end;', timeout: 30)
+      # Bug #16942 [ruby-core:98691]
+      module M
+        def x
+        end
+      end
+
+      module M2
+        prepend Module.new
+        include M
+        private :x
+      end
+
+      ::Object.prepend(M2)
+
+      m = Object.instance_method(:x)
+      assert_equal M, m.owner
+    end;
   end
 
   def test_eqq
@@ -1096,22 +1338,58 @@ class TestMethod < Test::Unit::TestCase
     }
   end
 
-  def test_method_reference_operator
-    m = 1.:succ
-    assert_equal(1.method(:succ), m)
-    assert_equal(2, m.())
-    m = 1.:+
-    assert_equal(1.method(:+), m)
-    assert_equal(42, m.(41))
-    m = 1.:-@
-    assert_equal(1.method(:-@), m)
-    assert_equal(-1, m.())
-    o = Object.new
-    def o.foo; 42; end
-    m = o.method(:foo)
-    assert_equal(m, o.:foo)
-    def o.method(m); nil; end
-    assert_equal(m, o.:foo)
-    assert_nil(o.method(:foo))
+  def test_umethod_bind_call
+    foo = Base.instance_method(:foo)
+    assert_equal(:base, foo.bind_call(Base.new))
+    assert_equal(:base, foo.bind_call(Derived.new))
+
+    plus = Integer.instance_method(:+)
+    assert_equal(3, plus.bind_call(1, 2))
+  end
+
+  def test_method_list
+    # chkbuild lists all methods.
+    # The following code emulate this listing.
+
+    # use_symbol = Object.instance_methods[0].is_a?(Symbol)
+    nummodule = nummethod = 0
+    mods = []
+    ObjectSpace.each_object(Module) {|m| mods << m if m.name }
+    mods = mods.sort_by {|m| m.name }
+    mods.each {|mod|
+      nummodule += 1
+      mc = mod.kind_of?(Class) ? "class" : "module"
+      puts_line = "#{mc} #{mod.name} #{(mod.ancestors - [mod]).inspect}"
+      puts_line = puts_line # prevent unused var warning
+      mod.singleton_methods(false).sort.each {|methname|
+        nummethod += 1
+        meth = mod.method(methname)
+        line = "#{mod.name}.#{methname} #{meth.arity}"
+        line << " not-implemented" if !mod.respond_to?(methname)
+        # puts line
+      }
+      ms = mod.instance_methods(false)
+      if true or use_symbol
+        ms << :initialize if mod.private_instance_methods(false).include? :initialize
+      else
+        ms << "initialize" if mod.private_instance_methods(false).include? "initialize"
+      end
+
+      ms.sort.each {|methname|
+        nummethod += 1
+        meth = mod.instance_method(methname)
+        line = "#{mod.name}\##{methname} #{meth.arity}"
+        line << " not-implemented" if /\(not-implemented\)/ =~ meth.inspect
+        # puts line
+      }
+    }
+    # puts "#{nummodule} modules, #{nummethod} methods"
+
+    assert_operator nummodule, :>, 0
+    assert_operator nummethod, :>, 0
+  end
+
+  def test_invalidating_CC_ASAN
+    assert_ruby_status(['-e', 'using Module.new'])
   end
 end

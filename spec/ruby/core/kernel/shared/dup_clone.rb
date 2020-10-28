@@ -52,14 +52,16 @@ describe :kernel_dup_clone, shared: true do
     o2.original.should equal(o)
   end
 
-  it "preserves tainted state from the original" do
-    o = ObjectSpecDupInitCopy.new
-    o2 = o.send(@method)
-    o.taint
-    o3 = o.send(@method)
+  ruby_version_is ''...'2.7' do
+    it "preserves tainted state from the original" do
+      o = ObjectSpecDupInitCopy.new
+      o2 = o.send(@method)
+      o.taint
+      o3 = o.send(@method)
 
-    o2.tainted?.should == false
-    o3.tainted?.should == true
+      o2.should_not.tainted?
+      o3.should.tainted?
+    end
   end
 
   it "does not preserve the object_id" do
@@ -69,81 +71,45 @@ describe :kernel_dup_clone, shared: true do
     o2.object_id.should_not == old_object_id
   end
 
-  it "preserves untrusted state from the original" do
-    o = ObjectSpecDupInitCopy.new
-    o2 = o.send(@method)
-    o.untrust
-    o3 = o.send(@method)
+  ruby_version_is ''...'2.7' do
+    it "preserves untrusted state from the original" do
+      o = ObjectSpecDupInitCopy.new
+      o2 = o.send(@method)
+      o.untrust
+      o3 = o.send(@method)
 
-    o2.untrusted?.should == false
-    o3.untrusted?.should == true
-  end
-
-  ruby_version_is ''...'2.4' do
-    it "raises a TypeError for NilClass" do
-      lambda { nil.send(@method) }.should raise_error(TypeError)
-    end
-
-    it "raises a TypeError for TrueClass" do
-      lambda { true.send(@method) }.should raise_error(TypeError)
-    end
-
-    it "raises a TypeError for FalseClass" do
-      lambda { false.send(@method) }.should raise_error(TypeError)
-    end
-
-    it "raises a TypeError for Fixnum" do
-      lambda { 1.send(@method) }.should raise_error(TypeError)
-    end
-
-    it "raises a TypeError for Symbol" do
-      lambda { :my_symbol.send(@method) }.should raise_error(TypeError)
+      o2.should_not.untrusted?
+      o3.should.untrusted?
     end
   end
 
-  ruby_version_is '2.4' do
-    it "returns nil for NilClass" do
-      nil.send(@method).should == nil
-    end
-
-    it "returns true for TrueClass" do
-      true.send(@method).should == true
-    end
-
-    it "returns false for FalseClass" do
-      false.send(@method).should == false
-    end
-
-    it "returns the same Integer for Integer" do
-      1.send(@method).should == 1
-    end
-
-    it "returns the same Symbol for Symbol" do
-      :my_symbol.send(@method).should == :my_symbol
-    end
+  it "returns nil for NilClass" do
+    nil.send(@method).should == nil
   end
 
-  ruby_version_is ''...'2.5' do
-    it "raises a TypeError for Complex" do
-      c = Complex(1.3, 3.1)
-      lambda { c.send(@method) }.should raise_error(TypeError)
-    end
-
-    it "raises a TypeError for Rational" do
-      r = Rational(1, 3)
-      lambda { r.send(@method) }.should raise_error(TypeError)
-    end
+  it "returns true for TrueClass" do
+    true.send(@method).should == true
   end
 
-  ruby_version_is '2.5' do
-    it "returns self for Complex" do
-      c = Complex(1.3, 3.1)
-      c.send(@method).should equal c
-    end
+  it "returns false for FalseClass" do
+    false.send(@method).should == false
+  end
 
-    it "returns self for Rational" do
-      r = Rational(1, 3)
-      r.send(@method).should equal r
-    end
+  it "returns the same Integer for Integer" do
+    1.send(@method).should == 1
+  end
+
+  it "returns the same Symbol for Symbol" do
+    :my_symbol.send(@method).should == :my_symbol
+  end
+
+  it "returns self for Complex" do
+    c = Complex(1.3, 3.1)
+    c.send(@method).should equal c
+  end
+
+  it "returns self for Rational" do
+    r = Rational(1, 3)
+    r.send(@method).should equal r
   end
 end

@@ -7,6 +7,6 @@ describe :tempfile_unlink, shared: true do
     @tempfile.close
     path = @tempfile.path
     @tempfile.send(@method)
-    File.exist?(path).should be_false
+    File.should_not.exist?(path)
   end
 end

@@ -121,6 +121,15 @@ class TestSocket < Test::Unit::TestCase
     }
   end
 
+  def test_ip_address_list_include_localhost
+    begin
+      list = Socket.ip_address_list
+    rescue NotImplementedError
+      return
+    end
+    assert_includes list.map(&:ip_address), Addrinfo.tcp("localhost", 0).ip_address
+  end
+
   def test_tcp
     TCPServer.open(0) {|serv|
       addr = serv.connect_address
@@ -380,11 +389,10 @@ class TestSocket < Test::Unit::TestCase
             in6_ifreq = [ifr_name,ai.to_sockaddr].pack('a16A*')
             s.ioctl(ulSIOCGIFFLAGS, in6_ifreq)
             next true if in6_ifreq.unpack('A16L1').last & ulIFF_POINTOPOINT != 0
-          else
-            ifconfig ||= `/sbin/ifconfig`
-            next true if ifconfig.scan(/^(\w+):(.*(?:\n\t.*)*)/).find do|ifname, value|
-              value.include?(ai.ip_address) && value.include?('POINTOPOINT')
-            end
+          end
+          ifconfig ||= `/sbin/ifconfig`
+          next true if ifconfig.scan(/^(\w+):(.*(?:\n\t.*)*)/).find do |_ifname, value|
+            value.include?(ai.ip_address) && value.include?('POINTOPOINT')
           end
         end
         false
@@ -467,7 +475,8 @@ class TestSocket < Test::Unit::TestCase
         end while IO.select([r], nil, nil, 0.1).nil?
         n
       end
-      assert_equal([[s1],[],[]], IO.select([s1], nil, nil, 30))
+      timeout = (RubyVM::MJIT.enabled? ? 120 : 30) # for --jit-wait
+      assert_equal([[s1],[],[]], IO.select([s1], nil, nil, timeout))
       msg, _, _, stamp = s1.recvmsg
       assert_equal("a", msg)
       assert(stamp.cmsg_is?(:SOCKET, type))
@@ -736,6 +745,7 @@ class TestSocket < Test::Unit::TestCase
     ret, addr, rflags = s1.recvmsg(10, 0)
     assert_equal "b" * 10, ret
     assert_equal Socket::MSG_TRUNC, rflags & Socket::MSG_TRUNC if !rflags.nil?
+    addr
   ensure
     s1.close
     s2.close

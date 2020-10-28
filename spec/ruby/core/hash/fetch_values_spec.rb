@@ -12,10 +12,14 @@ describe "Hash#fetch_values" do
       @hash.fetch_values(:a).should == [1]
       @hash.fetch_values(:a, :c).should == [1, 3]
     end
+
+    it "returns the values for keys ordered in the order of the requested keys" do
+      @hash.fetch_values(:c, :a).should == [3, 1]
+    end
   end
 
   describe "with unmatched keys" do
-    it_behaves_like :key_error, ->(obj, key) { obj.fetch_values(key) }, Hash.new(a: 5)
+    it_behaves_like :key_error, -> obj, key { obj.fetch_values(key) }, Hash.new(a: 5)
 
     it "returns the default value from block" do
       @hash.fetch_values(:z) { |key| "`#{key}' is not found" }.should == ["`z' is not found"]

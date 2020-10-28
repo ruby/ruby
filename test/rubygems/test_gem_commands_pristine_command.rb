@@ -3,7 +3,6 @@ require 'rubygems/test_case'
 require 'rubygems/commands/pristine_command'
 
 class TestGemCommandsPristineCommand < Gem::TestCase
-
   def setup
     super
     common_installer_setup
@@ -53,8 +52,60 @@ class TestGemCommandsPristineCommand < Gem::TestCase
     assert_empty out, out.inspect
   end
 
+  def test_execute_user_install
+    FileUtils.chmod 0555, @gemhome
+
+    a = util_spec "a" do |s|
+      s.executables = %w[foo]
+      s.files = %w[bin/foo lib/a.rb]
+    end
+
+    write_file File.join(@tempdir, "lib", "a.rb") do |fp|
+      fp.puts "puts __FILE__"
+    end
+
+    write_file File.join(@tempdir, "bin", "foo") do |fp|
+      fp.puts "#!/usr/bin/ruby"
+    end
+
+    install_gem_user(a)
+
+    Gem::Specification.dirs = [Gem.dir, Gem.user_dir]
+
+    foo_path  = File.join(Gem.user_dir, "gems", a.full_name, "bin", "foo")
+    a_rb_path = File.join(Gem.user_dir, "gems", a.full_name, "lib", "a.rb")
+
+    write_file foo_path do |io|
+      io.puts("I changed it!")
+    end
+
+    write_file a_rb_path do |io|
+      io.puts("I changed it!")
+    end
+
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    assert_equal "#!/usr/bin/ruby\n", File.read(foo_path), foo_path
+    assert_equal "puts __FILE__\n", File.read(a_rb_path), a_rb_path
+
+    out = @ui.output.split("\n")
+
+    assert_equal "Restoring gems to pristine condition...", out.shift
+    assert_equal "Restored #{a.full_name}", out.shift
+    assert_empty out, out.inspect
+  ensure
+    FileUtils.chmod(0755, @gemhome)
+  end
+
   def test_execute_all
-    a = util_spec 'a' do |s| s.executables = %w[foo] end
+    a = util_spec 'a' do |s|
+      s.executables = %w[foo]
+    end
+
     write_file File.join(@tempdir, 'bin', 'foo') do |fp|
       fp.puts "#!/usr/bin/ruby"
     end
@@ -108,15 +159,15 @@ class TestGemCommandsPristineCommand < Gem::TestCase
 
     ruby_exec = sprintf Gem.default_exec_format, 'ruby'
 
-    if win_platform?
-      assert_match %r%\A#!\s*#{ruby_exec}%, File.read(gem_exec)
-    else
-      assert_match %r%\A#!\s*/usr/bin/env #{ruby_exec}%, File.read(gem_exec)
-    end
+    bin_env = win_platform? ? "" : %w[/usr/bin/env /bin/env].find {|f| File.executable?(f) } + " "
+
+    assert_match %r{\A#!\s*#{bin_env}#{ruby_exec}}, File.read(gem_exec)
   end
 
   def test_execute_extensions_explicit
-    a = util_spec 'a' do |s| s.extensions << 'ext/a/extconf.rb' end
+    a = util_spec 'a' do |s|
+      s.extensions << 'ext/a/extconf.rb'
+    end
 
     ext_path = File.join @tempdir, 'ext', 'a', 'extconf.rb'
     write_file ext_path do |io|
@@ -152,14 +203,15 @@ class TestGemCommandsPristineCommand < Gem::TestCase
   end
 
   def test_execute_no_extension
-    a = util_spec 'a' do |s| s.extensions << 'ext/a/extconf.rb' end
+    a = util_spec 'a' do |s|
+      s.extensions << 'ext/a/extconf.rb'
+    end
 
     ext_path = File.join @tempdir, 'ext', 'a', 'extconf.rb'
     write_file ext_path do |io|
       io.write "# extconf.rb\nrequire 'mkmf'; create_makefile 'a'"
     end
 
-    util_build_gem a
     install_gem a
 
     @cmd.options[:args] = %w[a]
@@ -178,7 +230,9 @@ class TestGemCommandsPristineCommand < Gem::TestCase
   end
 
   def test_execute_with_extension_with_build_args
-    a = util_spec 'a' do |s| s.extensions << 'ext/a/extconf.rb' end
+    a = util_spec 'a' do |s|
+      s.extensions << 'ext/a/extconf.rb'
+    end
 
     ext_path = File.join @tempdir, 'ext', 'a', 'extconf.rb'
     write_file ext_path do |io|
@@ -191,7 +245,7 @@ class TestGemCommandsPristineCommand < Gem::TestCase
       RUBY
     end
 
-    build_args = %w!--with-awesome=true --sweet!
+    build_args = %w[--with-awesome=true --sweet]
 
     install_gem a, :build_args => build_args
 
@@ -400,7 +454,7 @@ class TestGemCommandsPristineCommand < Gem::TestCase
       end
     end
 
-    assert_match %r|at least one gem name|, e.message
+    assert_match %r{at least one gem name}, e.message
   end
 
   def test_execute_only_executables
@@ -430,6 +484,42 @@ class TestGemCommandsPristineCommand < Gem::TestCase
     end
 
     assert File.exist? gem_exec
+    refute File.exist? gem_lib
+  end
+
+  def test_execute_only_plugins
+    a = util_spec 'a' do |s|
+      s.executables = %w[foo]
+      s.files = %w[bin/foo lib/a.rb lib/rubygems_plugin.rb]
+    end
+    write_file File.join(@tempdir, 'lib', 'a.rb') do |fp|
+      fp.puts "puts __FILE__"
+    end
+    write_file File.join(@tempdir, 'lib', 'rubygems_plugin.rb') do |fp|
+      fp.puts "puts __FILE__"
+    end
+    write_file File.join(@tempdir, 'bin', 'foo') do |fp|
+      fp.puts "#!/usr/bin/ruby"
+    end
+
+    install_gem a
+
+    gem_lib = File.join @gemhome, 'gems', a.full_name, 'lib', 'a.rb'
+    gem_plugin = File.join @gemhome, 'plugins', 'a_plugin.rb'
+    gem_exec = File.join @gemhome, 'bin', 'foo'
+
+    FileUtils.rm gem_exec
+    FileUtils.rm gem_plugin
+    FileUtils.rm gem_lib
+
+    @cmd.handle_options %w[--all --only-plugins]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    refute File.exist? gem_exec
+    assert File.exist? gem_plugin
     refute File.exist? gem_lib
   end
 
@@ -505,6 +595,49 @@ class TestGemCommandsPristineCommand < Gem::TestCase
     assert_empty(@ui.error)
   end
 
+  def test_execute_multi_platform
+    a = util_spec 'a' do |s|
+      s.extensions << 'ext/a/extconf.rb'
+    end
+
+    b = util_spec 'b' do |s|
+      s.extensions << 'ext/a/extconf.rb'
+      s.platform = Gem::Platform.new("java")
+    end
+
+    ext_path = File.join @tempdir, 'ext', 'a', 'extconf.rb'
+    write_file ext_path do |io|
+      io.write <<-'RUBY'
+      File.open "Makefile", "w" do |f|
+        f.puts "clean:\n\techo cleaned\n"
+        f.puts "all:\n\techo built\n"
+        f.puts "install:\n\techo installed\n"
+      end
+      RUBY
+    end
+
+    install_gem a
+    install_gem b
+
+    @cmd.options[:extensions]     = true
+    @cmd.options[:extensions_set] = true
+    @cmd.options[:args] = []
+
+    util_set_arch "x86_64-darwin" do
+      use_ui @ui do
+        @cmd.execute
+      end
+    end
+
+    out = @ui.output.split "\n"
+
+    assert_equal 'Restoring gems to pristine condition...', out.shift
+    assert_equal 'Building native extensions. This could take a while...',
+                 out.shift
+    assert_equal "Restored #{a.full_name}", out.shift
+    assert_empty out, out.inspect
+  end
+
   def test_handle_options
     @cmd.handle_options %w[]
 
@@ -522,5 +655,4 @@ class TestGemCommandsPristineCommand < Gem::TestCase
     assert @cmd.options[:extensions]
     assert @cmd.options[:extensions_set]
   end
-
 end

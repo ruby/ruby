@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require 'rubygems/source'
 
 ##
 # The SourceList represents the sources rubygems has been configured to use.
@@ -15,7 +14,6 @@ require 'rubygems/source'
 # The most common way to get a SourceList is Gem.sources.
 
 class Gem::SourceList
-
   include Enumerable
 
   ##
@@ -50,6 +48,8 @@ class Gem::SourceList
   # String.
 
   def <<(obj)
+    require "uri"
+
     src = case obj
           when URI
             Gem::Source.new(obj)
@@ -88,7 +88,7 @@ class Gem::SourceList
   # Yields each source URI in the list.
 
   def each
-    @sources.each { |s| yield s.uri.to_s }
+    @sources.each {|s| yield s.uri.to_s }
   end
 
   ##
@@ -113,7 +113,7 @@ class Gem::SourceList
   # Returns an Array of source URI Strings.
 
   def to_a
-    @sources.map { |x| x.uri.to_s }
+    @sources.map {|x| x.uri.to_s }
   end
 
   alias_method :to_ary, :to_a
@@ -133,7 +133,7 @@ class Gem::SourceList
     if other.kind_of? Gem::Source
       @sources.include? other
     else
-      @sources.find { |x| x.uri.to_s == other.to_s }
+      @sources.find {|x| x.uri.to_s == other.to_s }
     end
   end
 
@@ -144,7 +144,7 @@ class Gem::SourceList
     if source.kind_of? Gem::Source
       @sources.delete source
     else
-      @sources.delete_if { |x| x.uri.to_s == source.to_s }
+      @sources.delete_if {|x| x.uri.to_s == source.to_s }
     end
   end
 end

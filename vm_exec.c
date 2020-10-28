@@ -15,6 +15,36 @@
 static void vm_analysis_insn(int insn);
 #endif
 
+#if USE_INSNS_COUNTER
+static size_t rb_insns_counter[VM_INSTRUCTION_SIZE];
+
+static void
+vm_insns_counter_count_insn(int insn)
+{
+    rb_insns_counter[insn]++;
+}
+
+__attribute__((destructor))
+static void
+vm_insns_counter_show_results_at_exit(void)
+{
+    int insn_end = (ruby_vm_event_enabled_global_flags & ISEQ_TRACE_EVENTS)
+        ? VM_INSTRUCTION_SIZE : VM_INSTRUCTION_SIZE / 2;
+
+    size_t total = 0;
+    for (int insn = 0; insn < insn_end; insn++)
+        total += rb_insns_counter[insn];
+
+    for (int insn = 0; insn < insn_end; insn++) {
+        fprintf(stderr, "[RUBY_INSNS_COUNTER]\t%-32s%'12"PRIuSIZE" (%4.1f%%)\n",
+                insn_name(insn), rb_insns_counter[insn],
+                100.0 * rb_insns_counter[insn] / total);
+    }
+}
+#else
+static void vm_insns_counter_count_insn(int insn) {}
+#endif
+
 #if VMDEBUG > 0
 #define DECL_SC_REG(type, r, reg) register type reg_##r
 
@@ -27,21 +57,13 @@ static void vm_analysis_insn(int insn);
 #elif defined(__GNUC__) && defined(__powerpc64__)
 #define DECL_SC_REG(type, r, reg) register type reg_##r __asm__("r" reg)
 
+#elif defined(__GNUC__) && defined(__aarch64__)
+#define DECL_SC_REG(type, r, reg) register type reg_##r __asm__("x" reg)
+
 #else
 #define DECL_SC_REG(type, r, reg) register type reg_##r
 #endif
 /* #define DECL_SC_REG(r, reg) VALUE reg_##r */
-
-#if VM_DEBUG_STACKOVERFLOW
-NORETURN(static void vm_stack_overflow_for_insn(void));
-static void
-vm_stack_overflow_for_insn(void)
-{
-    rb_bug("CHECK_VM_STACK_OVERFLOW_FOR_INSN: should not overflow here. "
-	   "Please contact ruby-core/dev with your (a part of) script. "
-	   "This check will be removed soon.");
-}
-#endif
 
 #if !OPT_CALL_THREADED_CODE
 static VALUE
@@ -72,6 +94,11 @@ vm_exec_core(rb_execution_context_t *ec, VALUE initial)
 #elif defined(__GNUC__) && defined(__powerpc64__)
     DECL_SC_REG(const VALUE *, pc, "14");
     DECL_SC_REG(rb_control_frame_t *, cfp, "15");
+#define USE_MACHINE_REGS 1
+
+#elif defined(__GNUC__) && defined(__aarch64__)
+    DECL_SC_REG(const VALUE *, pc, "19");
+    DECL_SC_REG(rb_control_frame_t *, cfp, "20");
 #define USE_MACHINE_REGS 1
 
 #else

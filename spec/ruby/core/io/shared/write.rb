@@ -23,7 +23,7 @@ describe :io_write, shared: true do
   end
 
   it "checks if the file is writable if writing more than zero bytes" do
-    lambda { @readonly_file.send(@method, "abcde") }.should raise_error(IOError)
+    -> { @readonly_file.send(@method, "abcde") }.should raise_error(IOError)
   end
 
   it "returns the number of bytes written" do
@@ -50,7 +50,7 @@ describe :io_write, shared: true do
 
   it "does not warn if called after IO#read" do
     @file.read(5)
-    lambda { @file.send(@method, "fghij") }.should_not complain
+    -> { @file.send(@method, "fghij") }.should_not complain
   end
 
   it "writes to the current position after IO#read" do
@@ -66,7 +66,17 @@ describe :io_write, shared: true do
   end
 
   it "raises IOError on closed stream" do
-    lambda { IOSpecs.closed_io.send(@method, "hello") }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.send(@method, "hello") }.should raise_error(IOError)
+  end
+
+  it "does not modify the passed argument" do
+    File.open(@filename, "w") do |f|
+      f.set_encoding(Encoding::IBM437)
+      # A character whose codepoint differs between UTF-8 and IBM437
+      f.write "ƒ".freeze
+    end
+
+    File.binread(@filename).bytes.should == [159]
   end
 
   describe "on a pipe" do
@@ -85,9 +95,15 @@ describe :io_write, shared: true do
       @r.read.should == "foo"
     end
 
-    it "raises Errno::EPIPE if the read end is closed and does not die from SIGPIPE" do
-      @r.close
-      -> { @w.send(@method, "foo") }.should raise_error(Errno::EPIPE, /Broken pipe/)
+    # [ruby-core:90895] MJIT worker may leave fd open in a forked child.
+    # For instance, MJIT creates a worker before @r.close with fork(), @r.close happens,
+    # and the MJIT worker keeps the pipe open until the worker execve().
+    # TODO: consider acquiring GVL from MJIT worker.
+    guard_not -> { defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? } do
+      it "raises Errno::EPIPE if the read end is closed and does not die from SIGPIPE" do
+        @r.close
+        -> { @w.send(@method, "foo") }.should raise_error(Errno::EPIPE, /Broken pipe/)
+      end
     end
   end
 end

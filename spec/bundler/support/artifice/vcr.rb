@@ -1,15 +1,9 @@
 # frozen_string_literal: true
 
 require "net/http"
-if RUBY_VERSION < "1.9"
-  begin
-    require "net/https"
-  rescue LoadError
-    nil # net/https or openssl
-  end
-end # but only for 1.8
+require_relative "../path"
 
-CASSETTE_PATH = File.expand_path("../vcr_cassettes", __FILE__)
+CASSETTE_PATH = "#{Spec::Path.spec_dir}/support/artifice/vcr_cassettes"
 CASSETTE_NAME = ENV.fetch("BUNDLER_SPEC_VCR_CASSETTE_NAME") { "realworld" }
 
 class BundlerVCRHTTP < Net::HTTP
@@ -37,7 +31,6 @@ class BundlerVCRHTTP < Net::HTTP
 
     def recorded_response?
       return true if ENV["BUNDLER_SPEC_PRE_RECORDED"]
-      return false if ENV["BUNDLER_SPEC_FORCE_RECORD"]
       request_pair_paths.all? {|f| File.exist?(f) }
     end
 
@@ -85,7 +78,7 @@ class BundlerVCRHTTP < Net::HTTP
     end
 
     def read_stored_request(path)
-      contents = File.read(path)
+      contents = File.binread(path)
       headers = {}
       method = nil
       path = nil

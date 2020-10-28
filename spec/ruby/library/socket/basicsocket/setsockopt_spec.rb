@@ -38,7 +38,7 @@ describe "BasicSocket#setsockopt" do
 
   platform_is_not :windows do
     it "raises EINVAL if passed wrong linger value" do
-      lambda do
+      -> do
         @sock.setsockopt(Socket::SOL_SOCKET, Socket::SO_LINGER, 0)
       end.should raise_error(Errno::EINVAL)
     end
@@ -70,7 +70,7 @@ describe "BasicSocket#setsockopt" do
       n.should_not == [0].pack("i")
 
       platform_is_not :windows do
-        lambda {
+        -> {
           @sock.setsockopt(Socket::SOL_SOCKET, Socket::SO_OOBINLINE, "")
         }.should raise_error(SystemCallError)
       end
@@ -80,7 +80,7 @@ describe "BasicSocket#setsockopt" do
       n.should_not == [0].pack("i")
 
       platform_is_not :windows do
-        lambda {
+        -> {
           @sock.setsockopt(Socket::SOL_SOCKET, Socket::SO_OOBINLINE, "0")
         }.should raise_error(SystemCallError)
       end
@@ -90,13 +90,13 @@ describe "BasicSocket#setsockopt" do
       n.should == [0].pack("i")
 
       platform_is_not :windows do
-        lambda {
+        -> {
           @sock.setsockopt(Socket::SOL_SOCKET, Socket::SO_OOBINLINE, "1")
         }.should raise_error(SystemCallError)
       end
 
       platform_is_not :windows do
-        lambda {
+        -> {
           @sock.setsockopt(Socket::SOL_SOCKET, Socket::SO_OOBINLINE, "\x00\x00\x00")
         }.should raise_error(SystemCallError)
       end
@@ -125,7 +125,7 @@ describe "BasicSocket#setsockopt" do
     n = @sock.getsockopt(Socket::SOL_SOCKET, Socket::SO_SNDBUF).to_s
     n.unpack('i')[0].should >= 1
 
-    lambda {
+    -> {
       @sock.setsockopt(Socket::SOL_SOCKET, Socket::SO_SNDBUF, nil).should == 0
     }.should raise_error(TypeError)
 
@@ -137,23 +137,23 @@ describe "BasicSocket#setsockopt" do
     n = @sock.getsockopt(Socket::SOL_SOCKET, Socket::SO_SNDBUF).to_s
     n.unpack('i')[0].should >= 2
 
-    lambda {
+    -> {
       @sock.setsockopt(Socket::SOL_SOCKET, Socket::SO_SNDBUF, "")
     }.should raise_error(SystemCallError)
 
-    lambda {
+    -> {
       @sock.setsockopt(Socket::SOL_SOCKET, Socket::SO_SNDBUF, "bla")
     }.should raise_error(SystemCallError)
 
-    lambda {
+    -> {
       @sock.setsockopt(Socket::SOL_SOCKET, Socket::SO_SNDBUF, "0")
     }.should raise_error(SystemCallError)
 
-    lambda {
+    -> {
       @sock.setsockopt(Socket::SOL_SOCKET, Socket::SO_SNDBUF, "1")
     }.should raise_error(SystemCallError)
 
-    lambda {
+    -> {
       @sock.setsockopt(Socket::SOL_SOCKET, Socket::SO_SNDBUF, "\x00\x00\x00")
     }.should raise_error(SystemCallError)
 
@@ -224,7 +224,7 @@ describe 'BasicSocket#setsockopt' do
 
     describe 'using separate arguments with Symbols' do
       it 'raises TypeError when the first argument is nil' do
-        lambda { @socket.setsockopt(nil, :REUSEADDR, true) }.should raise_error(TypeError)
+        -> { @socket.setsockopt(nil, :REUSEADDR, true) }.should raise_error(TypeError)
       end
 
       it 'sets a boolean option' do
@@ -251,7 +251,7 @@ describe 'BasicSocket#setsockopt' do
 
       platform_is_not :windows do
         it 'raises Errno::EINVAL when setting an invalid option value' do
-          lambda { @socket.setsockopt(:SOCKET, :OOBINLINE, 'bla') }.should raise_error(Errno::EINVAL)
+          -> { @socket.setsockopt(:SOCKET, :OOBINLINE, 'bla') }.should raise_error(Errno::EINVAL)
         end
       end
     end
@@ -305,12 +305,12 @@ describe 'BasicSocket#setsockopt' do
 
       it 'raises ArgumentError when passing 2 arguments' do
         option = Socket::Option.bool(:INET, :SOCKET, :REUSEADDR, true)
-        lambda { @socket.setsockopt(option, :REUSEADDR) }.should raise_error(ArgumentError)
+        -> { @socket.setsockopt(option, :REUSEADDR) }.should raise_error(ArgumentError)
       end
 
       it 'raises TypeError when passing 3 arguments' do
         option = Socket::Option.bool(:INET, :SOCKET, :REUSEADDR, true)
-        lambda { @socket.setsockopt(option, :REUSEADDR, true) }.should raise_error(TypeError)
+        -> { @socket.setsockopt(option, :REUSEADDR, true) }.should raise_error(TypeError)
       end
     end
   end

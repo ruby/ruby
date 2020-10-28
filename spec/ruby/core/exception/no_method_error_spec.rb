@@ -64,7 +64,7 @@ describe "NoMethodError#message" do
       NoMethodErrorSpecs::NoMethodErrorC.new.a_private_method
     rescue Exception => e
       e.should be_kind_of(NoMethodError)
-      e.message.match(/private method/).should_not == nil
+      e.message.lines[0].should =~ /private method `a_private_method' called for #<NoMethodErrorSpecs::NoMethodErrorC:0x[\h]+>/
     end
   end
 
@@ -101,6 +101,38 @@ describe "NoMethodError#message" do
       message = e.message
       message.should =~ /undefined method.+\bbar\b/
       message.should include test_class.inspect
+    end
+  end
+
+  ruby_version_is "3.0" do
+    it "uses #name to display the receiver if it is a class or a module" do
+      klass = Class.new { def self.name; "MyClass"; end }
+      begin
+        klass.foo
+      rescue NoMethodError => error
+        error.message.lines.first.should == "undefined method `foo' for MyClass:Class"
+      end
+
+      mod = Module.new { def self.name; "MyModule"; end }
+      begin
+        mod.foo
+      rescue NoMethodError => error
+        error.message.lines.first.should == "undefined method `foo' for MyModule:Module"
+      end
+    end
+  end
+end
+
+describe "NoMethodError#dup" do
+  it "copies the name, arguments and receiver" do
+    begin
+      receiver = Object.new
+      receiver.foo(:one, :two)
+    rescue NoMethodError => nme
+      no_method_error_dup = nme.dup
+      no_method_error_dup.name.should == :foo
+      no_method_error_dup.receiver.should == receiver
+      no_method_error_dup.args.should == [:one, :two]
     end
   end
 end

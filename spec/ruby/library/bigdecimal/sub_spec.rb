@@ -7,12 +7,15 @@ describe "BigDecimal#sub" do
     @one = BigDecimal("1")
     @zero = BigDecimal("0")
     @two = BigDecimal("2")
+    @three = BigDecimal("3")
     @nan = BigDecimal("NaN")
     @infinity = BigDecimal("Infinity")
     @infinity_minus = BigDecimal("-Infinity")
     @one_minus = BigDecimal("-1")
     @frac_1 = BigDecimal("1E-99999")
     @frac_2 = BigDecimal("0.9E-99999")
+    @frac_3 = BigDecimal("12345E10")
+    @frac_4 = BigDecimal("98765E10")
   end
 
   it "returns a - b with given precision" do
@@ -32,14 +35,28 @@ describe "BigDecimal#sub" do
     @frac_1.sub(@frac_1, 1000000).should == @zero
   end
 
+  describe "with Object" do
+    it "tries to coerce the other operand to self" do
+      object = mock("Object")
+      object.should_receive(:coerce).with(@frac_3).and_return([@frac_3, @frac_4])
+      @frac_3.sub(object, 1).should == BigDecimal("-0.9E15")
+    end
+  end
+
+  describe "with Rational" do
+    it "produces a BigDecimal" do
+      (@three - Rational(500, 2)).should == BigDecimal('-0.247e3')
+    end
+  end
+
   it "returns NaN if NaN is involved" do
-    @one.sub(@nan, 1).nan?.should == true
-    @nan.sub(@one, 1).nan?.should == true
+    @one.sub(@nan, 1).should.nan?
+    @nan.sub(@one, 1).should.nan?
   end
 
   it "returns NaN if both values are infinite with the same signs" do
-    @infinity.sub(@infinity, 1).nan?.should == true
-    @infinity_minus.sub(@infinity_minus, 1).nan?.should == true
+    @infinity.sub(@infinity, 1).should.nan?
+    @infinity_minus.sub(@infinity_minus, 1).should.nan?
   end
 
   it "returns Infinity or -Infinity if these are involved" do

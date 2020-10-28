@@ -1,5 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
+require 'envutil'
 require 'uri'
 
 module URI
@@ -81,6 +82,8 @@ class TestCommon < Test::Unit::TestCase
                    "\u3042".encode("sjis"), Encoding::UTF_8))
     assert_equal("B0", URI.encode_www_form_component(
                    "\u3042".encode("sjis"), Encoding::UTF_16LE))
+    assert_equal("%26%23730%3B", URI.encode_www_form_component(
+                   "\u02DA", Encoding::WINDOWS_1252))
 
     # invalid
     assert_equal("%EF%BF%BD%EF%BF%BD", URI.encode_www_form_component(

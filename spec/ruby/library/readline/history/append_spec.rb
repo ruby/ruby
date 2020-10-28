@@ -22,7 +22,7 @@ with_feature :readline do
     end
 
     it "raises a TypeError when the passed Object can't be converted to a String" do
-      lambda { Readline::HISTORY << mock("Object") }.should raise_error(TypeError)
+      -> { Readline::HISTORY << mock("Object") }.should raise_error(TypeError)
     end
   end
 end

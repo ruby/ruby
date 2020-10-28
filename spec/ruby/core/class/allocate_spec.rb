@@ -14,7 +14,7 @@ describe "Class#allocate" do
 
   it "throws an exception when calling a method on a new instance" do
     klass = Class.allocate
-    lambda do
+    -> do
       klass.new
     end.should raise_error(Exception)
   end
@@ -30,11 +30,11 @@ describe "Class#allocate" do
       end
     end
 
-    klass.allocate.initialized?.should == false
+    klass.allocate.should_not.initialized?
   end
 
   it "raises TypeError for #superclass" do
-    lambda do
+    -> do
       Class.allocate.superclass
     end.should raise_error(TypeError)
   end

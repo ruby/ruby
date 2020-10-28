@@ -1,4 +1,4 @@
-require "bundler/vendor/thor/lib/thor/actions/empty_directory"
+require_relative "empty_directory"
 
 class Bundler::Thor
   module Actions
@@ -21,9 +21,14 @@ class Bundler::Thor
     #     gems.split(" ").map{ |gem| "  config.gem :#{gem}" }.join("\n")
     #   end
     #
+    WARNINGS = { unchanged_no_flag: 'File unchanged! The supplied flag value not found!' }
+
     def insert_into_file(destination, *args, &block)
       data = block_given? ? block : args.shift
-      config = args.shift
+
+      config = args.shift || {}
+      config[:after] = /\z/ unless config.key?(:before) || config.key?(:after)
+
       action InjectIntoFile.new(self, destination, data, config)
     end
     alias_method :inject_into_file, :insert_into_file
@@ -45,8 +50,6 @@ class Bundler::Thor
       end
 
       def invoke!
-        say_status :invoke
-
         content = if @behavior == :after
           '\0' + replacement
         else
@@ -54,7 +57,11 @@ class Bundler::Thor
         end
 
         if exists?
-          replace!(/#{flag}/, content, config[:force])
+          if replace!(/#{flag}/, content, config[:force])
+            say_status(:invoke)
+          else
+            say_status(:unchanged, warning: WARNINGS[:unchanged_no_flag], color: :red)
+          end
         else
           unless pretend?
             raise Bundler::Thor::Error, "The file #{ destination } does not appear to exist"
@@ -78,7 +85,7 @@ class Bundler::Thor
 
     protected
 
-      def say_status(behavior)
+      def say_status(behavior, warning: nil, color: nil)
         status = if behavior == :invoke
           if flag == /\A/
             :prepend
@@ -87,11 +94,13 @@ class Bundler::Thor
           else
             :insert
           end
+        elsif warning
+          warning
         else
           :subtract
         end
 
-        super(status, config[:verbose])
+        super(status, (color || config[:verbose]))
       end
 
       # Adds the content to the file.
@@ -100,8 +109,10 @@ class Bundler::Thor
         return if pretend?
         content = File.read(destination)
         if force || !content.include?(replacement)
-          content.gsub!(regexp, string)
+          success = content.gsub!(regexp, string)
+
           File.open(destination, "wb") { |file| file.write(content) }
+          success
         end
       end
     end

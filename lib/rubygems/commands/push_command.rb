@@ -51,23 +51,14 @@ The push command will use ~/.gem/credentials to authenticate to a server, but yo
     gem_name = get_one_gem_name
     default_gem_server, push_host = get_hosts_for(gem_name)
 
-    default_host = nil
-    user_defined_host = nil
-
-    if @user_defined_host
-      user_defined_host = options[:host]
-    else
-      default_host = options[:host]
-    end
-
-    @host = if user_defined_host
-              user_defined_host
+    @host = if @user_defined_host
+              options[:host]
             elsif default_gem_server
               default_gem_server
             elsif push_host
               push_host
             else
-              default_host
+              options[:host]
             end
 
     sign_in @host
@@ -78,36 +69,7 @@ The push command will use ~/.gem/credentials to authenticate to a server, but yo
   def send_gem(name)
     args = [:post, "api/v1/gems"]
 
-    latest_rubygems_version = Gem.latest_rubygems_version
-
-    if latest_rubygems_version < Gem.rubygems_version and
-         Gem.rubygems_version.prerelease? and
-         Gem::Version.new('2.0.0.rc.2') != Gem.rubygems_version
-      alert_error <<-ERROR
-You are using a beta release of RubyGems (#{Gem::VERSION}) which is not
-allowed to push gems.  Please downgrade or upgrade to a release version.
-
-The latest released RubyGems version is #{latest_rubygems_version}
-
-You can upgrade or downgrade to the latest release version with:
-
-  gem update --system=#{latest_rubygems_version}
-
-      ERROR
-      terminate_interaction 1
-    end
-
-    gem_data = Gem::Package.new(name)
-
-    unless @host
-      @host = gem_data.spec.metadata['default_gem_server']
-    end
-
-    push_host = nil
-
-    if gem_data.spec.metadata.has_key?('allowed_push_host')
-      push_host = gem_data.spec.metadata['allowed_push_host']
-    end
+    _, push_host = get_hosts_for(name)
 
     @host ||= push_host
 
@@ -118,22 +80,18 @@ You can upgrade or downgrade to the latest release version with:
 
     response = send_push_request(name, args)
 
-    if need_otp? response
-      response = send_push_request(name, args, true)
-    end
-
     with_response response
   end
 
   private
 
-  def send_push_request(name, args, use_otp = false)
+  def send_push_request(name, args)
     rubygems_api_request(*args) do |request|
       request.body = Gem.read_binary name
       request.add_field "Content-Length", request.body.size
       request.add_field "Content-Type",   "application/octet-stream"
       request.add_field "Authorization",  api_key
-      request.add_field "OTP", options[:otp] if use_otp
+      request.add_field "OTP", options[:otp] if options[:otp]
     end
   end
 

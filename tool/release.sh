@@ -1,38 +1,19 @@
-#!/bin/sh
+#!/bin/bash
+# Bash version 3.2+ is required for regexp
 
-RUBYDIR=/home/ftp/pub/ruby
 EXTS='.tar.gz .tar.bz2 .tar.xz .zip'
 
-releases=`ls ruby-*|grep -o 'ruby-[0-9]\{1,\}\.[0-9]\{1,\}\.[0-9]\{1,\}\(-\(preview\|rc\|p\)[0-9]\{1,4\}\)\?'|uniq`
+ver=$1
+if [[ $ver =~ ^([1-9]\.[0-9])\.([0-9]|[1-9][0-9]|0-(preview[1-9]|rc[1-9]))$ ]]; then
+  :
+else
+  echo $ver is not valid release version
+  exit 1
+fi
 
-# check files
-for r in $releases
-do
-  echo "checking files for $r..."
-  for ext in $EXTS
-  do
-    if ! [ -f $r$ext ];then
-      echo "ERROR: $r$ext not found"
-      exit 1
-    fi
-  done
-  echo "files are ok"
-done
-
-# version directory
-for r in $releases
-do
-  xy=`echo $r|grep -o '[0-9]\.[0-9]'`
-  preview=`echo $r|grep -o -- '-\(preview\|rc\)'`
-  dir="${RUBYDIR}/$xy"
-  echo "$dir"
-  mkdir -p $dir
-  for ext in $EXTS
-  do
-    cp $r$ext $dir/$r$ext
-    ln -sf $xy/$r$ext ${RUBYDIR}/$r$ext
-    if [ x$preview = x ];then
-      ln -sf $xy/$r$ext ${RUBYDIR}/ruby-$xy-stable$ext
-    fi
-  done
+short=${BASH_REMATCH[1]}
+echo $ver
+echo $short
+for ext in $EXTS; do
+  aws --profile ruby s3 cp s3://ftp.r-l.o/pub/tmp/ruby-$ver-draft$ext s3://ftp.r-l.o/pub/ruby/$short/ruby-$ver$ext
 done

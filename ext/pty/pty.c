@@ -1,45 +1,51 @@
-#include	"ruby/config.h"
+#include "ruby/config.h"
+
 #ifdef RUBY_EXTCONF_H
-#include RUBY_EXTCONF_H
+# include RUBY_EXTCONF_H
 #endif
-#include	<stdlib.h>
-#include	<stdio.h>
-#include	<sys/types.h>
-#include	<sys/stat.h>
-#include	<sys/file.h>
-#include	<fcntl.h>
-#include	<errno.h>
+
+#include <ctype.h>
+#include <errno.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/file.h>
+#include <fcntl.h>
+
 #ifdef HAVE_PWD_H
-#include	<pwd.h>
+# include <pwd.h>
 #endif
+
 #ifdef HAVE_SYS_IOCTL_H
-#include	<sys/ioctl.h>
+# include <sys/ioctl.h>
 #endif
+
 #ifdef HAVE_LIBUTIL_H
-#include	<libutil.h>
+# include <libutil.h>
 #endif
+
 #ifdef HAVE_UTIL_H
-#include	<util.h>
+# include <util.h>
 #endif
+
 #ifdef HAVE_PTY_H
-#include	<pty.h>
+# include <pty.h>
 #endif
+
 #if defined(HAVE_SYS_PARAM_H)
-  /* for __FreeBSD_version */
+ /* for __FreeBSD_version */
 # include <sys/param.h>
 #endif
+
 #ifdef HAVE_SYS_WAIT_H
-#include <sys/wait.h>
+# include <sys/wait.h>
 #else
-#define WIFSTOPPED(status)    (((status) & 0xff) == 0x7f)
+# define WIFSTOPPED(status) (((status) & 0xff) == 0x7f)
 #endif
-#include <ctype.h>
 
-#include "ruby/io.h"
-#include "internal.h"
-#include "ruby/util.h"
-
-#include <signal.h>
 #ifdef HAVE_SYS_STROPTS_H
 #include <sys/stropts.h>
 #endif
@@ -47,6 +53,12 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+
+#include "internal.h"
+#include "internal/process.h"
+#include "internal/signal.h"
+#include "ruby/io.h"
+#include "ruby/util.h"
 
 #define	DEVICELEN	16
 
@@ -247,7 +259,7 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     int masterfd = -1, slavefd = -1;
     char *slavedevice;
 
-#if defined(__sun) || (defined(__FreeBSD__) && __FreeBSD_version < 902000)
+#if defined(__sun) || defined(__OpenBSD__) || (defined(__FreeBSD__) && __FreeBSD_version < 902000)
     /* workaround for Solaris 10: grantpt() doesn't work if FD_CLOEXEC is set.  [ruby-dev:44688] */
     /* FreeBSD 9.2 or later supports O_CLOEXEC
      * http://www.freebsd.org/cgi/query-pr.cgi?pr=162374 */
@@ -452,11 +464,11 @@ pty_close_pty(VALUE assoc)
 /*
  * call-seq:
  *   PTY.open => [master_io, slave_file]
- *   PTY.open {|master_io, slave_file| ... } => block value
+ *   PTY.open {|(master_io, slave_file)| ... } => block value
  *
  * Allocates a pty (pseudo-terminal).
  *
- * In the block form, yields two arguments <tt>master_io, slave_file</tt>
+ * In the block form, yields an array of two elements (<tt>master_io, slave_file</tt>)
  * and the value of the block is returned from +open+.
  *
  * The IO and File are both closed after the block completes if they haven't
@@ -520,8 +532,9 @@ pty_open(VALUE klass)
 }
 
 static VALUE
-pty_detach_process(struct pty_info *info)
+pty_detach_process(VALUE v)
 {
+    struct pty_info *info = (void *)v;
 #ifdef WNOHANG
     int st;
     if (rb_waitpid(info->child_pid, &st, WNOHANG) <= 0)
@@ -681,7 +694,7 @@ static VALUE cPTY;
  * Document-class: PTY
  *
  * Creates and manages pseudo terminals (PTYs).  See also
- * http://en.wikipedia.org/wiki/Pseudo_terminal
+ * https://en.wikipedia.org/wiki/Pseudo_terminal
  *
  * PTY allows you to allocate new terminals using ::open or ::spawn a new
  * terminal with a specific command.

@@ -42,7 +42,7 @@ describe :float_modulo, shared: true do
   end
 
   it "raises a ZeroDivisionError if other is zero" do
-    lambda { 1.0.send(@method, 0) }.should raise_error(ZeroDivisionError)
-    lambda { 1.0.send(@method, 0.0) }.should raise_error(ZeroDivisionError)
+    -> { 1.0.send(@method, 0) }.should raise_error(ZeroDivisionError)
+    -> { 1.0.send(@method, 0.0) }.should raise_error(ZeroDivisionError)
   end
 end

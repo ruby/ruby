@@ -18,6 +18,12 @@ describe "Literal Regexps" do
     /Hello/.should be_kind_of(Regexp)
   end
 
+  ruby_version_is "3.0" do
+    it "is frozen" do
+      /Hello/.should.frozen?
+    end
+  end
+
   it "caches the Regexp object" do
     rs = []
     2.times do |i|
@@ -27,7 +33,7 @@ describe "Literal Regexps" do
   end
 
   it "throws SyntaxError for malformed literals" do
-    lambda { eval('/(/') }.should raise_error(SyntaxError)
+    -> { eval('/(/') }.should raise_error(SyntaxError)
   end
 
   #############################################################################
@@ -54,7 +60,7 @@ describe "Literal Regexps" do
 
   it "disallows first part of paired delimiters to be used as non-paired delimiters" do
     LanguageSpecs.paired_delimiters.each do |p0, p1|
-      lambda { eval("%r#{p0} foo #{p0}") }.should raise_error(SyntaxError)
+      -> { eval("%r#{p0} foo #{p0}") }.should raise_error(SyntaxError)
     end
   end
 
@@ -65,11 +71,11 @@ describe "Literal Regexps" do
   end
 
   it "disallows alphabets as non-paired delimiter with %r" do
-    lambda { eval('%ra foo a') }.should raise_error(SyntaxError)
+    -> { eval('%ra foo a') }.should raise_error(SyntaxError)
   end
 
   it "disallows spaces after %r and delimiter" do
-    lambda { eval('%r !foo!') }.should raise_error(SyntaxError)
+    -> { eval('%r !foo!') }.should raise_error(SyntaxError)
   end
 
   it "allows unescaped / to be used with %r" do
@@ -107,6 +113,12 @@ describe "Literal Regexps" do
 
   it "supports (?<= ) (positive lookbehind)" do
     /foo.(?<=\d)/.match("fooA foo1").to_a.should == ["foo1"]
+  end
+
+  # https://bugs.ruby-lang.org/issues/13671
+  it "raises a RegexpError for lookbehind with specific characters" do
+    r =  Regexp.new("(?<!dss)", Regexp::IGNORECASE)
+    -> { r =~ "✨" }.should raise_error(RegexpError)
   end
 
   it "supports (?<! ) (negative lookbehind)" do
@@ -168,30 +180,10 @@ describe "Literal Regexps" do
     end
   end
 
-  ruby_version_is '2.4' do
-    it "support handling unicode 9.0 characters with POSIX bracket expressions" do
-      char_lowercase = "\u{104D8}" # OSAGE SMALL LETTER A
-      /[[:lower:]]/.match(char_lowercase).to_s.should == char_lowercase
-      char_uppercase = "\u{104B0}" # OSAGE CAPITAL LETTER A
-      /[[:upper:]]/.match(char_uppercase).to_s.should == char_uppercase
-    end
-  end
-
-  ruby_version_is ""..."2.4" do
-    it "does not support handling unicode 9.0 characters with POSIX bracket expressions" do
-      char_lowercase = "\u{104D8}" # OSAGE SMALL LETTER A
-      /[[:lower:]]/.match(char_lowercase).should == nil
-
-      char_uppercase = "\u{104B0}" # OSAGE CAPITAL LETTER A
-      /[[:upper:]]/.match(char_lowercase).should == nil
-    end
-
-    it "supports handling unicode 8.0 characters with POSIX bracket expressions" do
-      char_lowercase = "\u{A7B5}" # LATIN SMALL LETTER BETA
-      /[[:lower:]]/.match(char_lowercase).to_s.should == char_lowercase
-
-      char_uppercase = "\u{A7B4}" # LATIN CAPITAL LETTER BETA
-      /[[:upper:]]/.match(char_uppercase).to_s.should == char_uppercase
-    end
+  it "support handling unicode 9.0 characters with POSIX bracket expressions" do
+    char_lowercase = "\u{104D8}" # OSAGE SMALL LETTER A
+    /[[:lower:]]/.match(char_lowercase).to_s.should == char_lowercase
+    char_uppercase = "\u{104B0}" # OSAGE CAPITAL LETTER A
+    /[[:upper:]]/.match(char_uppercase).to_s.should == char_uppercase
   end
 end

@@ -25,6 +25,6 @@ describe "SortedSet#initialize" do
   it "raises on incompatible <=> comparison" do
     # Use #to_a here as elements are sorted only when needed.
     # Therefore the <=> incompatibility is only noticed on sorting.
-    lambda { SortedSet.new(['00', nil]).to_a }.should raise_error(ArgumentError)
+    -> { SortedSet.new(['00', nil]).to_a }.should raise_error(ArgumentError)
   end
 end

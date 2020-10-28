@@ -1,0 +1,6 @@
+prelude: |
+  x = y = 'z'
+benchmark:
+  vm_dstr: |
+    str = "foo#{x}bar#{y}baz"
+loop_count: 6000000

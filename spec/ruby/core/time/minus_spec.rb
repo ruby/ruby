@@ -20,18 +20,18 @@ describe "Time#-" do
   end
 
   it "raises a TypeError if given argument is a coercible String" do
-    lambda { Time.now - "1" }.should raise_error(TypeError)
-    lambda { Time.now - "0.1" }.should raise_error(TypeError)
-    lambda { Time.now - "1/3" }.should raise_error(TypeError)
+    -> { Time.now - "1" }.should raise_error(TypeError)
+    -> { Time.now - "0.1" }.should raise_error(TypeError)
+    -> { Time.now - "1/3" }.should raise_error(TypeError)
   end
 
   it "raises TypeError on argument that can't be coerced" do
-    lambda { Time.now - Object.new }.should raise_error(TypeError)
-    lambda { Time.now - "stuff" }.should raise_error(TypeError)
+    -> { Time.now - Object.new }.should raise_error(TypeError)
+    -> { Time.now - "stuff" }.should raise_error(TypeError)
   end
 
   it "raises TypeError on nil argument" do
-    lambda { Time.now - nil }.should raise_error(TypeError)
+    -> { Time.now - nil }.should raise_error(TypeError)
   end
 
   it "tracks microseconds" do
@@ -79,11 +79,11 @@ describe "Time#-" do
   end
 
   it "returns a UTC time if self is UTC" do
-    (Time.utc(2012) - 10).utc?.should == true
+    (Time.utc(2012) - 10).should.utc?
   end
 
   it "returns a non-UTC time if self is non-UTC" do
-    (Time.local(2012) - 10).utc?.should == false
+    (Time.local(2012) - 10).should_not.utc?
   end
 
   it "returns a time with the same fixed offset as self" do
@@ -92,17 +92,17 @@ describe "Time#-" do
 
   it "preserves time zone" do
     time_with_zone = Time.now.utc
-    time_with_zone.zone.should == (time_with_zone - 60*60).zone
+    time_with_zone.zone.should == (time_with_zone - 1).zone
 
     time_with_zone = Time.now
-    time_with_zone.zone.should == (time_with_zone - 60*60).zone
+    time_with_zone.zone.should == (time_with_zone - 1).zone
   end
 
   ruby_version_is "2.6" do
     context "zone is a timezone object" do
       it "preserves time zone" do
         zone = TimeSpecs::Timezone.new(offset: (5*3600+30*60))
-        time = Time.new(2012, 1, 1, 12, 0, 0, zone) - 60*60
+        time = Time.new(2012, 1, 1, 12, 0, 0, zone) - 1
 
         time.zone.should == zone
       end

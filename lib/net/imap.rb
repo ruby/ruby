@@ -18,7 +18,7 @@ require "socket"
 require "monitor"
 require "digest/md5"
 require "strscan"
-require_relative 'protocol'
+require 'net/protocol'
 begin
   require "openssl"
 rescue LoadError
@@ -201,6 +201,8 @@ module Net
   #    Unicode", RFC 2152, May 1997.
   #
   class IMAP < Protocol
+    VERSION = "0.1.0"
+
     include MonitorMixin
     if defined?(OpenSSL::SSL)
       include OpenSSL
@@ -903,8 +905,9 @@ module Net
     #     end
     #   }
     #
-    def add_response_handler(handler = Proc.new)
-      @response_handlers.push(handler)
+    def add_response_handler(handler = nil, &block)
+      raise ArgumentError, "two Procs are passed" if handler && block
+      @response_handlers.push(block || handler)
     end
 
     # Removes the response handler.
@@ -959,7 +962,7 @@ module Net
         put_string("#{tag} IDLE#{CRLF}")
 
         begin
-          add_response_handler(response_handler)
+          add_response_handler(&response_handler)
           @idle_done_cond = new_cond
           @idle_done_cond.wait(timeout)
           @idle_done_cond = nil
@@ -1267,7 +1270,7 @@ module Net
           @logout_command_tag = tag
         end
         if block
-          add_response_handler(block)
+          add_response_handler(&block)
         end
         begin
           return get_tagged_response(tag, cmd)
@@ -1530,6 +1533,7 @@ module Net
       end
       @sock = SSLSocket.new(@sock, context)
       @sock.sync_close = true
+      @sock.hostname = @host if @sock.respond_to? :hostname=
       ssl_socket_connect(@sock, @open_timeout)
       if context.verify_mode != VERIFY_NONE
         @sock.post_connection_check(@host)
@@ -1538,7 +1542,7 @@ module Net
 
     class RawData # :nodoc:
       def send_data(imap, tag)
-        imap.send(:put_string, @data)
+        imap.__send__(:put_string, @data)
       end
 
       def validate
@@ -1553,7 +1557,7 @@ module Net
 
     class Atom # :nodoc:
       def send_data(imap, tag)
-        imap.send(:put_string, @data)
+        imap.__send__(:put_string, @data)
       end
 
       def validate
@@ -1568,7 +1572,7 @@ module Net
 
     class QuotedString # :nodoc:
       def send_data(imap, tag)
-        imap.send(:send_quoted_string, @data)
+        imap.__send__(:send_quoted_string, @data)
       end
 
       def validate
@@ -1583,7 +1587,7 @@ module Net
 
     class Literal # :nodoc:
       def send_data(imap, tag)
-        imap.send(:send_literal, @data, tag)
+        imap.__send__(:send_literal, @data, tag)
       end
 
       def validate
@@ -1598,7 +1602,7 @@ module Net
 
     class MessageSet # :nodoc:
       def send_data(imap, tag)
-        imap.send(:put_string, format_internal(@data))
+        imap.__send__(:put_string, format_internal(@data))
       end
 
       def validate
@@ -3237,7 +3241,7 @@ module Net
             if atom
               atom
             else
-              symbol = flag.capitalize.untaint.intern
+              symbol = flag.capitalize.intern
               @flag_symbols[symbol] = true
               if @flag_symbols.length > IMAP.max_flag_count
                 raise FlagCountError, "number of flag symbols exceeded"

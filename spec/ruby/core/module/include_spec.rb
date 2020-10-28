@@ -40,11 +40,11 @@ describe "Module#include" do
   end
 
   it "raises a TypeError when the argument is not a Module" do
-    lambda { ModuleSpecs::Basic.include(Class.new) }.should raise_error(TypeError)
+    -> { ModuleSpecs::Basic.include(Class.new) }.should raise_error(TypeError)
   end
 
   it "does not raise a TypeError when the argument is an instance of a subclass of Module" do
-    lambda { ModuleSpecs::SubclassSpec.include(ModuleSpecs::Subclass.new) }.should_not raise_error(TypeError)
+    -> { ModuleSpecs::SubclassSpec.include(ModuleSpecs::Subclass.new) }.should_not raise_error(TypeError)
   end
 
   it "imports constants to modules and classes" do
@@ -158,31 +158,19 @@ describe "Module#include" do
   end
 
   it "detects cyclic includes" do
-    lambda {
+    -> {
       module ModuleSpecs::M
         include ModuleSpecs::M
       end
     }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is ''...'2.4' do
-    it "accepts no-arguments" do
-      lambda {
-        Module.new do
-          include
-        end
-      }.should_not raise_error
-    end
-  end
-
-  ruby_version_is '2.4' do
-    it "doesn't accept no-arguments" do
-      lambda {
-        Module.new do
-          include
-        end
-      }.should raise_error(ArgumentError)
-    end
+  it "doesn't accept no-arguments" do
+    -> {
+      Module.new do
+        include
+      end
+    }.should raise_error(ArgumentError)
   end
 
   it "returns the class it's included into" do
@@ -264,7 +252,7 @@ describe "Module#include?" do
   end
 
   it "raises a TypeError when no module was given" do
-    lambda { ModuleSpecs::Child.include?("Test") }.should raise_error(TypeError)
-    lambda { ModuleSpecs::Child.include?(ModuleSpecs::Parent) }.should raise_error(TypeError)
+    -> { ModuleSpecs::Child.include?("Test") }.should raise_error(TypeError)
+    -> { ModuleSpecs::Child.include?(ModuleSpecs::Parent) }.should raise_error(TypeError)
   end
 end

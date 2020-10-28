@@ -74,6 +74,26 @@ class TestLambdaParameters < Test::Unit::TestCase
     assert_raise(ArgumentError, bug9605) {proc(&plus).call [1,2]}
   end
 
+  def pass_along(&block)
+    lambda(&block)
+  end
+
+  def pass_along2(&block)
+    pass_along(&block)
+  end
+
+  def test_create_non_lambda_for_proc_one_level
+    f = pass_along {}
+    refute_predicate(f, :lambda?, '[Bug #15620]')
+    assert_nothing_raised(ArgumentError) { f.call(:extra_arg) }
+  end
+
+  def test_create_non_lambda_for_proc_two_levels
+    f = pass_along2 {}
+    refute_predicate(f, :lambda?, '[Bug #15620]')
+    assert_nothing_raised(ArgumentError) { f.call(:extra_arg) }
+  end
+
   def test_instance_exec
     bug12568 = '[ruby-core:76300] [Bug #12568]'
     assert_nothing_raised(ArgumentError, bug12568) do
@@ -157,6 +177,21 @@ class TestLambdaParameters < Test::Unit::TestCase
     assert_equal(42, return_in_callee(42), feature8693)
   end
 
+  def break_in_current(val)
+    1.tap(&->(*) {break 0})
+    val
+  end
+
+  def break_in_callee(val)
+    yield_block(&->(*) {break 0})
+    val
+  end
+
+  def test_break
+    assert_equal(42, break_in_current(42))
+    assert_equal(42, break_in_callee(42))
+  end
+
   def test_do_lambda_source_location
     exp_lineno = __LINE__ + 3
     lmd = ->(x,
@@ -179,5 +214,32 @@ class TestLambdaParameters < Test::Unit::TestCase
     file, lineno = lmd.source_location
     assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
     assert_equal(exp_lineno, lineno, "must be at the beginning of the block")
+  end
+
+  def test_not_orphan_return
+    assert_equal(42, Module.new { extend self
+      def m1(&b) b.call end; def m2(); m1(&-> { return 42 }) end }.m2)
+    assert_equal(42, Module.new { extend self
+      def m1(&b) b end; def m2(); m1(&-> { return 42 }).call end }.m2)
+    assert_equal(42, Module.new { extend self
+      def m1(&b) b end; def m2(); m1(&-> { return 42 }) end }.m2.call)
+  end
+
+  def test_not_orphan_break
+    assert_equal(42, Module.new { extend self
+      def m1(&b) b.call end; def m2(); m1(&-> { break 42 }) end }.m2)
+    assert_equal(42, Module.new { extend self
+      def m1(&b) b end; def m2(); m1(&-> { break 42 }).call end }.m2)
+    assert_equal(42, Module.new { extend self
+      def m1(&b) b end; def m2(); m1(&-> { break 42 }) end }.m2.call)
+  end
+
+  def test_not_orphan_next
+    assert_equal(42, Module.new { extend self
+      def m1(&b) b.call end; def m2(); m1(&-> { next 42 }) end }.m2)
+    assert_equal(42, Module.new { extend self
+      def m1(&b) b end; def m2(); m1(&-> { next 42 }).call end }.m2)
+    assert_equal(42, Module.new { extend self
+      def m1(&b) b end; def m2(); m1(&-> { next 42 }) end }.m2.call)
   end
 end

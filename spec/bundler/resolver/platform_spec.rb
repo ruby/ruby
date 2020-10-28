@@ -28,6 +28,98 @@ RSpec.describe "Resolving platform craziness" do
     end
   end
 
+  it "takes the latest ruby gem, even if an older platform specific version is available" do
+    @index = build_index do
+      gem "foo", "1.0.0"
+      gem "foo", "1.0.0", "x64-mingw32"
+      gem "foo", "1.1.0"
+    end
+    dep "foo"
+    platforms "x64-mingw32"
+
+    should_resolve_as %w[foo-1.1.0]
+  end
+
+  it "takes the ruby version if the platform version is incompatible" do
+    @index = build_index do
+      gem "bar", "1.0.0"
+      gem "foo", "1.0.0"
+      gem "foo", "1.0.0", "x64-mingw32" do
+        dep "bar", "< 1"
+      end
+    end
+    dep "foo"
+    platforms "x64-mingw32"
+
+    should_resolve_as %w[foo-1.0.0]
+  end
+
+  it "prefers the platform specific gem to the ruby version" do
+    @index = build_index do
+      gem "foo", "1.0.0"
+      gem "foo", "1.0.0", "x64-mingw32"
+    end
+    dep "foo"
+    platforms "x64-mingw32"
+
+    should_resolve_as %w[foo-1.0.0-x64-mingw32]
+  end
+
+  it "takes the latest ruby gem if the platform specific gem doesn't match the required_ruby_version" do
+    @index = build_index do
+      gem "foo", "1.0.0"
+      gem "foo", "1.0.0", "x64-mingw32"
+      gem "foo", "1.1.0"
+      gem "foo", "1.1.0", "x64-mingw32" do |s|
+        s.required_ruby_version = [">= 2.0", "< 2.4"]
+      end
+      gem "Ruby\0", "2.5.1"
+    end
+    dep "foo"
+    dep "Ruby\0", "2.5.1"
+    platforms "x64-mingw32"
+
+    should_resolve_as %w[foo-1.1.0]
+  end
+
+  it "takes the latest ruby gem with required_ruby_version if the platform specific gem doesn't match the required_ruby_version" do
+    @index = build_index do
+      gem "foo", "1.0.0"
+      gem "foo", "1.0.0", "x64-mingw32"
+      gem "foo", "1.1.0" do |s|
+        s.required_ruby_version = [">= 2.0"]
+      end
+      gem "foo", "1.1.0", "x64-mingw32" do |s|
+        s.required_ruby_version = [">= 2.0", "< 2.4"]
+      end
+      gem "Ruby\0", "2.5.1"
+    end
+    dep "foo"
+    dep "Ruby\0", "2.5.1"
+    platforms "x64-mingw32"
+
+    should_resolve_as %w[foo-1.1.0]
+  end
+
+  it "takes the latest ruby gem if the platform specific gem doesn't match the required_ruby_version with multiple platforms" do
+    @index = build_index do
+      gem "foo", "1.0.0"
+      gem "foo", "1.0.0", "x64-mingw32"
+      gem "foo", "1.1.0" do |s|
+        s.required_ruby_version = [">= 2.0"]
+      end
+      gem "foo", "1.1.0", "x64-mingw32" do |s|
+        s.required_ruby_version = [">= 2.0", "< 2.4"]
+      end
+      gem "Ruby\0", "2.5.1"
+    end
+    dep "foo"
+    dep "Ruby\0", "2.5.1"
+    platforms "x86_64-linux", "x64-mingw32"
+
+    should_resolve_as %w[foo-1.1.0]
+  end
+
   describe "with mingw32" do
     before :each do
       @index = build_index do
@@ -90,11 +182,11 @@ RSpec.describe "Resolving platform craziness" do
       end
     end
 
-    it "reports on the conflict" do
+    it "takes the ruby version as fallback" do
       platforms "ruby", "java"
       dep "foo"
 
-      should_conflict_on "baz"
+      should_resolve_as %w[bar-1.0.0 baz-1.0.0 foo-1.0.0]
     end
   end
 end

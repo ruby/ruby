@@ -225,6 +225,8 @@ class TestRefinement < Test::Unit::TestCase
     end
   end
   def test_method_should_use_refinements
+    skip if Minitest::Unit.current_repeat_count > 0
+
     foo = Foo.new
     assert_raise(NameError) { foo.method(:z) }
     assert_equal("FooExt#z", FooExtClient.method_z(foo).call)
@@ -235,7 +237,7 @@ class TestRefinement < Test::Unit::TestCase
       meth.call(3)
     EOS
     assert_equal(:refine_pow, eval_using(MethodIntegerPowEx, "2.pow(3)"))
-    assert_equal(:refine_pow, eval_using(MethodIntegerPowEx, "2.:pow.(3)"))
+    assert_equal(:refine_pow, eval_using(MethodIntegerPowEx, "2.method(:pow).(3)"))
   end
 
   module InstanceMethodIntegerPowEx
@@ -246,6 +248,8 @@ class TestRefinement < Test::Unit::TestCase
     end
   end
   def test_instance_method_should_use_refinements
+    skip if Minitest::Unit.current_repeat_count > 0
+
     foo = Foo.new
     assert_raise(NameError) { Foo.instance_method(:z) }
     assert_equal("FooExt#z", FooExtClient.instance_method_z(foo).bind(foo).call)
@@ -538,7 +542,7 @@ class TestRefinement < Test::Unit::TestCase
 
   def test_main_using_is_private
     assert_raise(NoMethodError) do
-      eval("self.using Module.new", Sandbox::BINDING)
+      eval("recv = self; recv.using Module.new", Sandbox::BINDING)
     end
   end
 
@@ -916,7 +920,7 @@ class TestRefinement < Test::Unit::TestCase
         #{PrependAfterRefine_CODE}
         undef PrependAfterRefine
       }
-    }, timeout: 30
+    }, timeout: 60
   end
 
   def test_prepend_after_refine
@@ -1562,6 +1566,7 @@ class TestRefinement < Test::Unit::TestCase
         undef :foo
       end
     end
+    ext
   end
 
   def test_call_refined_method_in_duplicate_module
@@ -2063,7 +2068,6 @@ class TestRefinement < Test::Unit::TestCase
 
   def test_tostring
     assert_equal("ok", ToString.new.string)
-    assert_predicate(ToString.new.taint.string, :tainted?)
   end
 
   class ToSymbol
@@ -2096,7 +2100,7 @@ class TestRefinement < Test::Unit::TestCase
         end
       }
       def call
-        ToProc.call &self
+        ToProc.call(&self)
       end
     end
 
@@ -2111,7 +2115,7 @@ class TestRefinement < Test::Unit::TestCase
       }
 
       def call
-        ToProc.call &self
+        ToProc.call(&self)
       end
     end
 
@@ -2127,14 +2131,14 @@ class TestRefinement < Test::Unit::TestCase
       }
 
       def call
-        ToProc.call &self
+        ToProc.call(&self)
       end
     end
 
 
     class NonProc
       def call
-        ToProc.call &self
+        ToProc.call(&self)
       end
     end
 
@@ -2144,9 +2148,9 @@ class TestRefinement < Test::Unit::TestCase
       end
 
       def call
-        ToProc.call &self
+        ToProc.call(&self)
       end
-      end
+    end
 
     class ToProcAndMethodMissing
       def method_missing *args
@@ -2163,7 +2167,7 @@ class TestRefinement < Test::Unit::TestCase
       }
 
       def call
-        ToProc.call &self
+        ToProc.call(&self)
       end
     end
 
@@ -2182,7 +2186,7 @@ class TestRefinement < Test::Unit::TestCase
       }
 
       def call
-        ToProc.call &self
+        ToProc.call(&self)
       end
     end
   end
@@ -2242,6 +2246,38 @@ class TestRefinement < Test::Unit::TestCase
     INPUT
   end
 
+  def test_call_method_in_unused_refinement
+    bug15720 = '[ruby-core:91916] [Bug #15720]'
+    assert_in_out_err([], <<-INPUT, ["ok"], [], bug15720)
+      module M1
+        refine Kernel do
+          def foo
+            'foo called!'
+          end
+        end
+      end
+
+      module M2
+        refine Kernel do
+          def bar
+            'bar called!'
+          end
+        end
+      end
+
+      using M1
+
+      foo
+
+      begin
+        bar
+      rescue NameError
+      end
+
+      puts "ok"
+    INPUT
+  end
+
   def test_super_from_refined_module
     a = EnvUtil.labeled_module("A") do
       def foo;"[A#{super}]";end
@@ -2259,6 +2295,150 @@ class TestRefinement < Test::Unit::TestCase
       end
     end
     assert_equal("[C[A[B]]]", c.new.foo, '[ruby-dev:50390] [Bug #14232]')
+    d
+  end
+
+  class RefineInUsing
+    module M1
+      refine RefineInUsing do
+        def foo
+          :ok
+        end
+      end
+    end
+
+    module M2
+      using M1
+      refine RefineInUsing do
+        def call_foo
+	  RefineInUsing.new.foo
+        end
+      end
+    end
+
+    using M2
+    def self.test
+      new.call_foo
+    end
+  end
+
+  def test_refine_in_using
+    assert_equal(:ok, RefineInUsing.test)
+  end
+
+  class Bug16242
+    module OtherM
+    end
+
+    module M
+      prepend OtherM
+
+      refine M do
+        def refine_method
+          "refine_method"
+        end
+      end
+      using M
+
+      def hoge
+        refine_method
+      end
+    end
+
+    class X
+      include M
+    end
+  end
+
+  def test_refine_prepended_module
+    assert_equal("refine_method", Bug16242::X.new.hoge)
+  end
+
+  module Bug13446
+    module Enumerable
+      def sum(*args)
+        i = 0
+        args.each { |arg| i += a }
+        i
+      end
+    end
+
+    using Module.new {
+      refine Enumerable do
+        alias :orig_sum :sum
+      end
+    }
+
+    module Enumerable
+      def sum(*args)
+        orig_sum(*args)
+      end
+    end
+
+    class GenericEnumerable
+      include Enumerable
+    end
+
+    Enumerable.prepend(Module.new)
+  end
+
+  def test_prepend_refined_module
+    assert_equal(0, Bug13446::GenericEnumerable.new.sum)
+  end
+
+  def test_unbound_refine_method
+    a = EnvUtil.labeled_class("A") do
+      def foo
+        self.class
+      end
+    end
+    b = EnvUtil.labeled_class("B")
+    bar = EnvUtil.labeled_module("R") do
+      break refine a do
+        def foo
+          super
+        end
+      end
+    end
+    assert_raise(TypeError) do
+      bar.instance_method(:foo).bind(b.new)
+    end
+  end
+
+  def test_refine_frozen_class
+    verbose_bak, $VERBOSE = $VERBOSE, nil
+    singleton_class.instance_variable_set(:@x, self)
+    class << self
+      c = Class.new do
+        def foo
+          :cfoo
+        end
+      end
+      foo = Module.new do
+        refine c do
+          def foo
+            :rfoo
+          end
+        end
+      end
+      using foo
+      @x.assert_equal(:rfoo, c.new.foo)
+      c.freeze
+      foo.module_eval do
+        refine c do
+          def foo
+            :rfoo2
+          end
+          def bar
+            :rbar
+          end
+        end
+      end
+      @x.assert_equal(:rfoo2, c.new.foo)
+      @x.assert_equal(:rbar, c.new.bar, '[ruby-core:71391] [Bug #11669]')
+    end
+  ensure
+    $VERBOSE = verbose_bak
   end
 
   private

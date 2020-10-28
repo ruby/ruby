@@ -1,4 +1,4 @@
-require 'pp'
+require 'mspec/utils/format'
 require 'mspec/helpers/io'
 require 'mspec/helpers/scratch'
 

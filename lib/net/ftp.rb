@@ -17,7 +17,7 @@
 
 require "socket"
 require "monitor"
-require_relative "protocol"
+require "net/protocol"
 require "time"
 begin
   require "openssl"
@@ -85,6 +85,7 @@ module Net
     end
 
     # :stopdoc:
+    VERSION = "0.1.0"
     FTP_PORT = 21
     CRLF = "\r\n"
     DEFAULT_BLOCKSIZE = BufferedIO::BUFSIZE
@@ -182,16 +183,16 @@ module Net
     # The available options are:
     #
     # port::      Port number (default value is 21)
-    # ssl::       If options[:ssl] is true, then an attempt will be made
+    # ssl::       If +options+[:ssl] is true, then an attempt will be made
     #             to use SSL (now TLS) to connect to the server.  For this
     #             to work OpenSSL [OSSL] and the Ruby OpenSSL [RSSL]
-    #             extensions need to be installed.  If options[:ssl] is a
+    #             extensions need to be installed.  If +options+[:ssl] is a
     #             hash, it's passed to OpenSSL::SSL::SSLContext#set_params
     #             as parameters.
     # private_data_connection::  If true, TLS is used for data connections.
-    #                            Default: +true+ when options[:ssl] is true.
-    # username::  Username for login.  If options[:username] is the string
-    #             "anonymous" and the options[:password] is +nil+,
+    #                            Default: +true+ when +options+[:ssl] is true.
+    # username::  Username for login.  If +options+[:username] is the string
+    #             "anonymous" and the +options+[:password] is +nil+,
     #             "anonymous@" is used as a password.
     # password::  Password for login.
     # account::   Account information for ACCT.
@@ -631,14 +632,12 @@ module Net
         with_binary(true) do
           begin
             conn = transfercmd(cmd, rest_offset)
-            loop do
-              data = conn.read(blocksize)
-              break if data == nil
+            while data = conn.read(blocksize)
               yield(data)
             end
-            conn.shutdown(Socket::SHUT_WR)
+            conn.shutdown(Socket::SHUT_WR) rescue nil
             conn.read_timeout = 1
-            conn.read
+            conn.read rescue nil
           ensure
             conn.close if conn
           end
@@ -658,14 +657,12 @@ module Net
         with_binary(false) do
           begin
             conn = transfercmd(cmd)
-            loop do
-              line = conn.gets
-              break if line == nil
+            while line = conn.gets
               yield(line.sub(/\r?\n\z/, ""), !line.match(/\n\z/).nil?)
             end
-            conn.shutdown(Socket::SHUT_WR)
+            conn.shutdown(Socket::SHUT_WR) rescue nil
             conn.read_timeout = 1
-            conn.read
+            conn.read rescue nil
           ensure
             conn.close if conn
           end
@@ -686,14 +683,18 @@ module Net
       end
       synchronize do
         with_binary(true) do
-          conn = transfercmd(cmd)
-          loop do
-            buf = file.read(blocksize)
-            break if buf == nil
-            conn.write(buf)
-            yield(buf) if block_given?
+          begin
+            conn = transfercmd(cmd)
+            while buf = file.read(blocksize)
+              conn.write(buf)
+              yield(buf) if block_given?
+            end
+            conn.shutdown(Socket::SHUT_WR) rescue nil
+            conn.read_timeout = 1
+            conn.read rescue nil
+          ensure
+            conn.close if conn
           end
-          conn.close
           voidresp
         end
       end
@@ -715,17 +716,21 @@ module Net
     def storlines(cmd, file) # :yield: line
       synchronize do
         with_binary(false) do
-          conn = transfercmd(cmd)
-          loop do
-            buf = file.gets
-            break if buf == nil
-            if buf[-2, 2] != CRLF
-              buf = buf.chomp + CRLF
+          begin
+            conn = transfercmd(cmd)
+            while buf = file.gets
+              if buf[-2, 2] != CRLF
+                buf = buf.chomp + CRLF
+              end
+              conn.write(buf)
+              yield(buf) if block_given?
             end
-            conn.write(buf)
-            yield(buf) if block_given?
+            conn.shutdown(Socket::SHUT_WR) rescue nil
+            conn.read_timeout = 1
+            conn.read rescue nil
+          ensure
+            conn.close if conn
           end
-          conn.close
           voidresp
         end
       end
@@ -1040,11 +1045,11 @@ module Net
     TIME_PARSER = ->(value, local = false) {
       unless /\A(?<year>\d{4})(?<month>\d{2})(?<day>\d{2})
             (?<hour>\d{2})(?<min>\d{2})(?<sec>\d{2})
-            (\.(?<fractions>\d+))?/x =~ value
+            (?:\.(?<fractions>\d+))?/x =~ value
         raise FTPProtoError, "invalid time-val: #{value}"
       end
       usec = fractions.to_i * 10 ** (6 - fractions.to_s.size)
-      Time.send(local ? :local : :utc, year, month, day, hour, min, sec, usec)
+      Time.public_send(local ? :local : :utc, year, month, day, hour, min, sec, usec)
     }
     FACT_PARSERS = Hash.new(CASE_DEPENDENT_PARSER)
     FACT_PARSERS["size"] = DECIMAL_PARSER
@@ -1236,8 +1241,9 @@ module Net
 
     #
     # Returns the status (STAT command).
-    # pathname - when stat is invoked with pathname as a parameter it acts like
-    #            list but alot faster and over the same tcp session.
+    #
+    # pathname:: when stat is invoked with pathname as a parameter it acts like
+    #            list but a lot faster and over the same tcp session.
     #
     def status(pathname = nil)
       line = pathname ? "STAT #{pathname}" : "STAT"
@@ -1298,6 +1304,41 @@ module Net
     end
 
     #
+    # Issues a FEAT command
+    #
+    # Returns an array of supported optional features
+    #
+    def features
+      resp = sendcmd("FEAT")
+      if !resp.start_with?("211")
+        raise FTPReplyError, resp
+      end
+
+      feats = []
+      resp.split("\n").each do |line|
+        next if !line.start_with?(' ') # skip status lines
+
+        feats << line.strip
+      end
+
+      return feats
+    end
+
+    #
+    # Issues an OPTS command
+    # - name Should be the name of the option to set
+    # - params is any optional parameters to supply with the option
+    #
+    # example: option('UTF8', 'ON') => 'OPTS UTF8 ON'
+    #
+    def option(name, params = nil)
+      cmd = "OPTS #{name}"
+      cmd += " #{params}" if params
+
+      voidcmd(cmd)
+    end
+
+    #
     # Closes the connection.  Further operations are impossible until you open
     # a new connection with #connect.
     #
@@ -1329,7 +1370,7 @@ module Net
       if !resp.start_with?("227")
         raise FTPReplyError, resp
       end
-      if m = /\((?<host>\d+(,\d+){3}),(?<port>\d+,\d+)\)/.match(resp)
+      if m = /\((?<host>\d+(?:,\d+){3}),(?<port>\d+,\d+)\)/.match(resp)
         return parse_pasv_ipv4_host(m["host"]), parse_pasv_port(m["port"])
       else
         raise FTPProtoError, resp
@@ -1345,9 +1386,9 @@ module Net
       if !resp.start_with?("228")
         raise FTPReplyError, resp
       end
-      if m = /\(4,4,(?<host>\d+(,\d+){3}),2,(?<port>\d+,\d+)\)/.match(resp)
+      if m = /\(4,4,(?<host>\d+(?:,\d+){3}),2,(?<port>\d+,\d+)\)/.match(resp)
         return parse_pasv_ipv4_host(m["host"]), parse_pasv_port(m["port"])
-      elsif m = /\(6,16,(?<host>\d+(,(\d+)){15}),2,(?<port>\d+,\d+)\)/.match(resp)
+      elsif m = /\(6,16,(?<host>\d+(?:,\d+){15}),2,(?<port>\d+,\d+)\)/.match(resp)
         return parse_pasv_ipv6_host(m["host"]), parse_pasv_port(m["port"])
       else
         raise FTPProtoError, resp
@@ -1456,7 +1497,7 @@ module Net
 
     if defined?(OpenSSL::SSL::SSLSocket)
       class BufferedSSLSocket <  BufferedSocket
-        def initialize(*args)
+        def initialize(*args, **options)
           super
           @is_shutdown = false
         end

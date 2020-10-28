@@ -11,16 +11,26 @@
 
 **********************************************************************/
 
-#include "ruby/encoding.h"
-#include "ruby/re.h"
-#include "internal.h"
-#include "id.h"
+#include "ruby/internal/config.h"
+
 #include <math.h>
 #include <stdarg.h>
 
 #ifdef HAVE_IEEEFP_H
-#include <ieeefp.h>
+# include <ieeefp.h>
 #endif
+
+#include "id.h"
+#include "internal.h"
+#include "internal/error.h"
+#include "internal/hash.h"
+#include "internal/numeric.h"
+#include "internal/object.h"
+#include "internal/sanitizers.h"
+#include "internal/symbol.h"
+#include "internal/util.h"
+#include "ruby/encoding.h"
+#include "ruby/re.h"
 
 #define BIT_DIGITS(N)   (((N)*146)/485 + 1)  /* log2(10) =~ 146/485 */
 
@@ -194,267 +204,6 @@ get_hash(volatile VALUE *hash, int argc, const VALUE *argv)
     return (*hash = tmp);
 }
 
-/*
- *  call-seq:
- *     format(format_string [, arguments...] )   -> string
- *     sprintf(format_string [, arguments...] )  -> string
- *
- *  Returns the string resulting from applying <i>format_string</i> to
- *  any additional arguments.  Within the format string, any characters
- *  other than format sequences are copied to the result.
- *
- *  The syntax of a format sequence is as follows.
- *
- *    %[flags][width][.precision]type
- *
- *  A format
- *  sequence consists of a percent sign, followed by optional flags,
- *  width, and precision indicators, then terminated with a field type
- *  character.  The field type controls how the corresponding
- *  <code>sprintf</code> argument is to be interpreted, while the flags
- *  modify that interpretation.
- *
- *  The field type characters are:
- *
- *      Field |  Integer Format
- *      ------+--------------------------------------------------------------
- *        b   | Convert argument as a binary number.
- *            | Negative numbers will be displayed as a two's complement
- *            | prefixed with `..1'.
- *        B   | Equivalent to `b', but uses an uppercase 0B for prefix
- *            | in the alternative format by #.
- *        d   | Convert argument as a decimal number.
- *        i   | Identical to `d'.
- *        o   | Convert argument as an octal number.
- *            | Negative numbers will be displayed as a two's complement
- *            | prefixed with `..7'.
- *        u   | Identical to `d'.
- *        x   | Convert argument as a hexadecimal number.
- *            | Negative numbers will be displayed as a two's complement
- *            | prefixed with `..f' (representing an infinite string of
- *            | leading 'ff's).
- *        X   | Equivalent to `x', but uses uppercase letters.
- *
- *      Field |  Float Format
- *      ------+--------------------------------------------------------------
- *        e   | Convert floating point argument into exponential notation
- *            | with one digit before the decimal point as [-]d.dddddde[+-]dd.
- *            | The precision specifies the number of digits after the decimal
- *            | point (defaulting to six).
- *        E   | Equivalent to `e', but uses an uppercase E to indicate
- *            | the exponent.
- *        f   | Convert floating point argument as [-]ddd.dddddd,
- *            | where the precision specifies the number of digits after
- *            | the decimal point.
- *        g   | Convert a floating point number using exponential form
- *            | if the exponent is less than -4 or greater than or
- *            | equal to the precision, or in dd.dddd form otherwise.
- *            | The precision specifies the number of significant digits.
- *        G   | Equivalent to `g', but use an uppercase `E' in exponent form.
- *        a   | Convert floating point argument as [-]0xh.hhhhp[+-]dd,
- *            | which is consisted from optional sign, "0x", fraction part
- *            | as hexadecimal, "p", and exponential part as decimal.
- *        A   | Equivalent to `a', but use uppercase `X' and `P'.
- *
- *      Field |  Other Format
- *      ------+--------------------------------------------------------------
- *        c   | Argument is the numeric code for a single character or
- *            | a single character string itself.
- *        p   | The valuing of argument.inspect.
- *        s   | Argument is a string to be substituted.  If the format
- *            | sequence contains a precision, at most that many characters
- *            | will be copied.
- *        %   | A percent sign itself will be displayed.  No argument taken.
- *
- *  The flags modifies the behavior of the formats.
- *  The flag characters are:
- *
- *    Flag     | Applies to    | Meaning
- *    ---------+---------------+-----------------------------------------
- *    space    | bBdiouxX      | Leave a space at the start of
- *             | aAeEfgG       | non-negative numbers.
- *             | (numeric fmt) | For `o', `x', `X', `b' and `B', use
- *             |               | a minus sign with absolute value for
- *             |               | negative values.
- *    ---------+---------------+-----------------------------------------
- *    (digit)$ | all           | Specifies the absolute argument number
- *             |               | for this field.  Absolute and relative
- *             |               | argument numbers cannot be mixed in a
- *             |               | sprintf string.
- *    ---------+---------------+-----------------------------------------
- *     #       | bBoxX         | Use an alternative format.
- *             | aAeEfgG       | For the conversions `o', increase the precision
- *             |               | until the first digit will be `0' if
- *             |               | it is not formatted as complements.
- *             |               | For the conversions `x', `X', `b' and `B'
- *             |               | on non-zero, prefix the result with ``0x'',
- *             |               | ``0X'', ``0b'' and ``0B'', respectively.
- *             |               | For `a', `A', `e', `E', `f', `g', and 'G',
- *             |               | force a decimal point to be added,
- *             |               | even if no digits follow.
- *             |               | For `g' and 'G', do not remove trailing zeros.
- *    ---------+---------------+-----------------------------------------
- *    +        | bBdiouxX      | Add a leading plus sign to non-negative
- *             | aAeEfgG       | numbers.
- *             | (numeric fmt) | For `o', `x', `X', `b' and `B', use
- *             |               | a minus sign with absolute value for
- *             |               | negative values.
- *    ---------+---------------+-----------------------------------------
- *    -        | all           | Left-justify the result of this conversion.
- *    ---------+---------------+-----------------------------------------
- *    0 (zero) | bBdiouxX      | Pad with zeros, not spaces.
- *             | aAeEfgG       | For `o', `x', `X', `b' and `B', radix-1
- *             | (numeric fmt) | is used for negative numbers formatted as
- *             |               | complements.
- *    ---------+---------------+-----------------------------------------
- *    *        | all           | Use the next argument as the field width.
- *             |               | If negative, left-justify the result. If the
- *             |               | asterisk is followed by a number and a dollar
- *             |               | sign, use the indicated argument as the width.
- *
- *  Examples of flags:
- *
- *   # `+' and space flag specifies the sign of non-negative numbers.
- *   sprintf("%d", 123)  #=> "123"
- *   sprintf("%+d", 123) #=> "+123"
- *   sprintf("% d", 123) #=> " 123"
- *
- *   # `#' flag for `o' increases number of digits to show `0'.
- *   # `+' and space flag changes format of negative numbers.
- *   sprintf("%o", 123)   #=> "173"
- *   sprintf("%#o", 123)  #=> "0173"
- *   sprintf("%+o", -123) #=> "-173"
- *   sprintf("%o", -123)  #=> "..7605"
- *   sprintf("%#o", -123) #=> "..7605"
- *
- *   # `#' flag for `x' add a prefix `0x' for non-zero numbers.
- *   # `+' and space flag disables complements for negative numbers.
- *   sprintf("%x", 123)   #=> "7b"
- *   sprintf("%#x", 123)  #=> "0x7b"
- *   sprintf("%+x", -123) #=> "-7b"
- *   sprintf("%x", -123)  #=> "..f85"
- *   sprintf("%#x", -123) #=> "0x..f85"
- *   sprintf("%#x", 0)    #=> "0"
- *
- *   # `#' for `X' uses the prefix `0X'.
- *   sprintf("%X", 123)  #=> "7B"
- *   sprintf("%#X", 123) #=> "0X7B"
- *
- *   # `#' flag for `b' add a prefix `0b' for non-zero numbers.
- *   # `+' and space flag disables complements for negative numbers.
- *   sprintf("%b", 123)   #=> "1111011"
- *   sprintf("%#b", 123)  #=> "0b1111011"
- *   sprintf("%+b", -123) #=> "-1111011"
- *   sprintf("%b", -123)  #=> "..10000101"
- *   sprintf("%#b", -123) #=> "0b..10000101"
- *   sprintf("%#b", 0)    #=> "0"
- *
- *   # `#' for `B' uses the prefix `0B'.
- *   sprintf("%B", 123)  #=> "1111011"
- *   sprintf("%#B", 123) #=> "0B1111011"
- *
- *   # `#' for `e' forces to show the decimal point.
- *   sprintf("%.0e", 1)  #=> "1e+00"
- *   sprintf("%#.0e", 1) #=> "1.e+00"
- *
- *   # `#' for `f' forces to show the decimal point.
- *   sprintf("%.0f", 1234)  #=> "1234"
- *   sprintf("%#.0f", 1234) #=> "1234."
- *
- *   # `#' for `g' forces to show the decimal point.
- *   # It also disables stripping lowest zeros.
- *   sprintf("%g", 123.4)   #=> "123.4"
- *   sprintf("%#g", 123.4)  #=> "123.400"
- *   sprintf("%g", 123456)  #=> "123456"
- *   sprintf("%#g", 123456) #=> "123456."
- *
- *  The field width is an optional integer, followed optionally by a
- *  period and a precision.  The width specifies the minimum number of
- *  characters that will be written to the result for this field.
- *
- *  Examples of width:
- *
- *   # padding is done by spaces,       width=20
- *   # 0 or radix-1.             <------------------>
- *   sprintf("%20d", 123)   #=> "                 123"
- *   sprintf("%+20d", 123)  #=> "                +123"
- *   sprintf("%020d", 123)  #=> "00000000000000000123"
- *   sprintf("%+020d", 123) #=> "+0000000000000000123"
- *   sprintf("% 020d", 123) #=> " 0000000000000000123"
- *   sprintf("%-20d", 123)  #=> "123                 "
- *   sprintf("%-+20d", 123) #=> "+123                "
- *   sprintf("%- 20d", 123) #=> " 123                "
- *   sprintf("%020x", -123) #=> "..ffffffffffffffff85"
- *
- *  For
- *  numeric fields, the precision controls the number of decimal places
- *  displayed.  For string fields, the precision determines the maximum
- *  number of characters to be copied from the string.  (Thus, the format
- *  sequence <code>%10.10s</code> will always contribute exactly ten
- *  characters to the result.)
- *
- *  Examples of precisions:
- *
- *   # precision for `d', 'o', 'x' and 'b' is
- *   # minimum number of digits               <------>
- *   sprintf("%20.8d", 123)  #=> "            00000123"
- *   sprintf("%20.8o", 123)  #=> "            00000173"
- *   sprintf("%20.8x", 123)  #=> "            0000007b"
- *   sprintf("%20.8b", 123)  #=> "            01111011"
- *   sprintf("%20.8d", -123) #=> "           -00000123"
- *   sprintf("%20.8o", -123) #=> "            ..777605"
- *   sprintf("%20.8x", -123) #=> "            ..ffff85"
- *   sprintf("%20.8b", -11)  #=> "            ..110101"
- *
- *   # "0x" and "0b" for `#x' and `#b' is not counted for
- *   # precision but "0" for `#o' is counted.  <------>
- *   sprintf("%#20.8d", 123)  #=> "            00000123"
- *   sprintf("%#20.8o", 123)  #=> "            00000173"
- *   sprintf("%#20.8x", 123)  #=> "          0x0000007b"
- *   sprintf("%#20.8b", 123)  #=> "          0b01111011"
- *   sprintf("%#20.8d", -123) #=> "           -00000123"
- *   sprintf("%#20.8o", -123) #=> "            ..777605"
- *   sprintf("%#20.8x", -123) #=> "          0x..ffff85"
- *   sprintf("%#20.8b", -11)  #=> "          0b..110101"
- *
- *   # precision for `e' is number of
- *   # digits after the decimal point           <------>
- *   sprintf("%20.8e", 1234.56789) #=> "      1.23456789e+03"
- *
- *   # precision for `f' is number of
- *   # digits after the decimal point               <------>
- *   sprintf("%20.8f", 1234.56789) #=> "       1234.56789000"
- *
- *   # precision for `g' is number of
- *   # significant digits                          <------->
- *   sprintf("%20.8g", 1234.56789) #=> "           1234.5679"
- *
- *   #                                         <------->
- *   sprintf("%20.8g", 123456789)  #=> "       1.2345679e+08"
- *
- *   # precision for `s' is
- *   # maximum number of characters                    <------>
- *   sprintf("%20.8s", "string test") #=> "            string t"
- *
- *  Examples:
- *
- *     sprintf("%d %04x", 123, 123)               #=> "123 007b"
- *     sprintf("%08b '%4s'", 123, 123)            #=> "01111011 ' 123'"
- *     sprintf("%1$*2$s %2$d %1$s", "hello", 8)   #=> "   hello 8 hello"
- *     sprintf("%1$*2$s %2$d", "hello", -8)       #=> "hello    -8"
- *     sprintf("%+g:% g:%-g", 1.23, 1.23, 1.23)   #=> "+1.23: 1.23:1.23"
- *     sprintf("%u", -123)                        #=> "-123"
- *
- *  For more complex formatting, Ruby supports a reference by name.
- *  %<name>s style uses format style, but %{name} style doesn't.
- *
- *  Examples:
- *    sprintf("%<foo>d : %<bar>f", { :foo => 1, :bar => 2 })
- *      #=> 1 : 2.000000
- *    sprintf("%{foo}f", { :foo => 1 })
- *      # => "1f"
- */
-
 VALUE
 rb_f_sprintf(int argc, const VALUE *argv)
 {
@@ -476,7 +225,6 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     int width, prec, flags = FNONE;
     int nextarg = 1;
     int posarg = 0;
-    int tainted = 0;
     VALUE nextvalue;
     VALUE tmp;
     VALUE orig;
@@ -500,7 +248,6 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 
     ++argc;
     --argv;
-    if (OBJ_TAINTED(fmt)) tainted = 1;
     StringValue(fmt);
     enc = rb_enc_get(fmt);
     orig = fmt;
@@ -510,7 +257,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     blen = 0;
     bsiz = 120;
     result = rb_str_buf_new(bsiz);
-    rb_enc_copy(result, fmt);
+    rb_enc_associate(result, enc);
     buf = RSTRING_PTR(result);
     memset(buf, 0, bsiz);
     ENC_CODERANGE_SET(result, coderange);
@@ -677,6 +424,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	  case '\n':
 	  case '\0':
 	    p--;
+            /* fall through */
 	  case '%':
 	    if (flags != FNONE) {
 		rb_raise(rb_eArgError, "invalid format character - %%");
@@ -739,7 +487,6 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		else {
 		    str = rb_obj_as_string(arg);
 		}
-		if (OBJ_TAINTED(str)) tainted = 1;
 		len = RSTRING_LEN(str);
 		rb_str_set_len(result, blen);
 		if (coderange != ENC_CODERANGE_BROKEN && scanned < blen) {
@@ -1191,7 +938,6 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     }
     rb_str_resize(result, blen);
 
-    if (tainted) OBJ_TAINT(result);
     return result;
 }
 
@@ -1248,10 +994,6 @@ fmt_setup(char *buf, size_t size, int c, int flags, int width, int prec)
 #endif
 #define lower_hexdigits (ruby_hexdigits+0)
 #define upper_hexdigits (ruby_hexdigits+16)
-#if defined RUBY_USE_SETJMPEX && RUBY_USE_SETJMPEX
-# undef MAYBE_UNUSED
-# define MAYBE_UNUSED(x) x = 0
-#endif
 #include "vsnprintf.c"
 
 static char *
@@ -1402,7 +1144,6 @@ ruby__sfvextra(rb_printf_buffer *fp, size_t valsize, void *valp, long *sz, int s
     StringValueCStr(value);
     RSTRING_GETMEM(value, cp, *sz);
     ((rb_printf_buffer_extra *)fp)->value = value;
-    OBJ_INFECT(result, value);
     return cp;
 }
 

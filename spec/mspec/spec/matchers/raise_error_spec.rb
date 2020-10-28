@@ -12,7 +12,7 @@ describe RaiseErrorMatcher do
     matcher.matches?(proc).should == true
   end
 
-  it "executes it's optional block if matched" do
+  it "executes its optional block if matched" do
     run = false
     proc = Proc.new { raise ExpectedException }
     matcher = RaiseErrorMatcher.new(ExpectedException, nil) { |error|
@@ -62,16 +62,21 @@ describe RaiseErrorMatcher do
     matcher.matches?(proc).should == false
   end
 
-  it "provides a useful failure message" do
-    exc = UnexpectedException.new("unexpected")
-    matcher = RaiseErrorMatcher.new(ExpectedException, "expected")
+  it "provides a useful failure message when the exception class differs" do
+    exc = UnexpectedException.new("message")
+    matcher = RaiseErrorMatcher.new(ExpectedException, "message")
 
     matcher.matching_exception?(exc).should == false
-    lambda {
+    begin
       matcher.matches?(Proc.new { raise exc })
-    }.should raise_error(UnexpectedException)
-    matcher.failure_message.should ==
-      ["Expected ExpectedException (expected)", "but got UnexpectedException (unexpected)"]
+    rescue UnexpectedException => e
+      matcher.failure_message.should ==
+        ["Expected ExpectedException (message)", "but got: UnexpectedException (message)"]
+      ExceptionState.new(nil, nil, e).message.should ==
+        "Expected ExpectedException (message)\nbut got: UnexpectedException (message)"
+    else
+      raise "no exception"
+    end
   end
 
   it "provides a useful failure message when the proc raises the expected exception with an unexpected message" do
@@ -79,11 +84,33 @@ describe RaiseErrorMatcher do
     matcher = RaiseErrorMatcher.new(ExpectedException, "expected")
 
     matcher.matching_exception?(exc).should == false
-    lambda {
+    begin
       matcher.matches?(Proc.new { raise exc })
-    }.should raise_error(ExpectedException)
-    matcher.failure_message.should ==
-      ["Expected ExpectedException (expected)", "but got ExpectedException (unexpected)"]
+    rescue ExpectedException => e
+      matcher.failure_message.should ==
+        ["Expected ExpectedException (expected)", "but got: ExpectedException (unexpected)"]
+      ExceptionState.new(nil, nil, e).message.should ==
+        "Expected ExpectedException (expected)\nbut got: ExpectedException (unexpected)"
+    else
+      raise "no exception"
+    end
+  end
+
+  it "provides a useful failure message when both the exception class and message differ" do
+    exc = UnexpectedException.new("unexpected")
+    matcher = RaiseErrorMatcher.new(ExpectedException, "expected")
+
+    matcher.matching_exception?(exc).should == false
+    begin
+      matcher.matches?(Proc.new { raise exc })
+    rescue UnexpectedException => e
+      matcher.failure_message.should ==
+          ["Expected ExpectedException (expected)", "but got: UnexpectedException (unexpected)"]
+      ExceptionState.new(nil, nil, e).message.should ==
+          "Expected ExpectedException (expected)\nbut got: UnexpectedException (unexpected)"
+    else
+      raise "no exception"
+    end
   end
 
   it "provides a useful failure message when no exception is raised" do
@@ -111,7 +138,7 @@ describe RaiseErrorMatcher do
     matcher = RaiseErrorMatcher.new(ExpectedException, "expected")
     matcher.matches?(proc)
     matcher.failure_message.should ==
-      ["Expected ExpectedException (expected)", "but no exception was raised (#pretty_inspect raised ArgumentError; A #<Object> was returned)"]
+      ["Expected ExpectedException (expected)", "but no exception was raised (#<Object>(#pretty_inspect raised #<ArgumentError: bad>) was returned)"]
   end
 
   it "provides a useful negative failure message" do
@@ -127,6 +154,6 @@ describe RaiseErrorMatcher do
     matcher = RaiseErrorMatcher.new(Exception, nil)
     matcher.matches?(proc)
     matcher.negative_failure_message.should ==
-      ["Expected to not get Exception", "but got UnexpectedException (unexpected)"]
+      ["Expected to not get Exception", "but got: UnexpectedException (unexpected)"]
   end
 end

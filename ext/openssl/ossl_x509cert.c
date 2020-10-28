@@ -788,7 +788,7 @@ Init_ossl_x509cert(void)
      *   root_ca.add_extension(ef.create_extension("keyUsage","keyCertSign, cRLSign", true))
      *   root_ca.add_extension(ef.create_extension("subjectKeyIdentifier","hash",false))
      *   root_ca.add_extension(ef.create_extension("authorityKeyIdentifier","keyid:always",false))
-     *   root_ca.sign(root_key, OpenSSL::Digest::SHA256.new)
+     *   root_ca.sign(root_key, OpenSSL::Digest.new('SHA256'))
      *
      * The next step is to create the end-entity certificate using the root CA
      * certificate.
@@ -807,7 +807,7 @@ Init_ossl_x509cert(void)
      *   ef.issuer_certificate = root_ca
      *   cert.add_extension(ef.create_extension("keyUsage","digitalSignature", true))
      *   cert.add_extension(ef.create_extension("subjectKeyIdentifier","hash",false))
-     *   cert.sign(root_key, OpenSSL::Digest::SHA256.new)
+     *   cert.sign(root_key, OpenSSL::Digest.new('SHA256'))
      *
      */
     cX509Cert = rb_define_class_under(mX509, "Certificate", rb_cObject);

@@ -2,45 +2,34 @@ require_relative '../../../spec_helper'
 require_relative '../fixtures/classes'
 
 describe "Delegator#eql?" do
-  ruby_version_is ""..."2.5" do
-    it "is delegated" do
-      base = mock('base')
-      delegator = DelegateSpecs::Delegator.new(base)
-      base.should_receive(:eql?).with(42).and_return(:foo)
-      delegator.eql?(42).should == :foo
-    end
+  it "returns true when compared with same delegator" do
+    base = mock('base')
+    delegator = DelegateSpecs::Delegator.new(base)
+
+    delegator.eql?(delegator).should be_true
   end
 
-  ruby_version_is "2.5" do
-    it "returns true when compared with same delegator" do
-      base = mock('base')
-      delegator = DelegateSpecs::Delegator.new(base)
+  it "returns true when compared with the inner object" do
+    base = mock('base')
+    delegator = DelegateSpecs::Delegator.new(base)
 
-      delegator.eql?(delegator).should be_true
-    end
+    delegator.eql?(base).should be_true
+  end
 
-    it "returns true when compared with the inner object" do
-      base = mock('base')
-      delegator = DelegateSpecs::Delegator.new(base)
+  it "returns false when compared with the delegator with other object" do
+    base = mock('base')
+    other = mock('other')
+    delegator0 = DelegateSpecs::Delegator.new(base)
+    delegator1 = DelegateSpecs::Delegator.new(other)
 
-      delegator.eql?(base).should be_true
-    end
+    delegator0.eql?(delegator1).should be_false
+  end
 
-    it "returns false when compared with the delegator with other object" do
-      base = mock('base')
-      other = mock('other')
-      delegator0 = DelegateSpecs::Delegator.new(base)
-      delegator1 = DelegateSpecs::Delegator.new(other)
+  it "returns false when compared with the other object" do
+    base = mock('base')
+    other = mock('other')
+    delegator = DelegateSpecs::Delegator.new(base)
 
-      delegator0.eql?(delegator1).should be_false
-    end
-
-    it "returns false when compared with the other object" do
-      base = mock('base')
-      other = mock('other')
-      delegator = DelegateSpecs::Delegator.new(base)
-
-      delegator.eql?(other).should be_false
-    end
+    delegator.eql?(other).should be_false
   end
 end

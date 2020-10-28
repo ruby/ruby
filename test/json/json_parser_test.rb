@@ -91,22 +91,22 @@ class JSONParserTest < Test::Unit::TestCase
     assert_raise(JSON::ParserError) { parse('+23') }
     assert_raise(JSON::ParserError) { parse('.23') }
     assert_raise(JSON::ParserError) { parse('023') }
-    assert_equal 23, parse('23')
-    assert_equal -23, parse('-23')
-    assert_equal_float 3.141, parse('3.141')
-    assert_equal_float -3.141, parse('-3.141')
-    assert_equal_float 3.141, parse('3141e-3')
-    assert_equal_float 3.141, parse('3141.1e-3')
-    assert_equal_float 3.141, parse('3141E-3')
-    assert_equal_float 3.141, parse('3141.0E-3')
-    assert_equal_float -3.141, parse('-3141.0e-3')
-    assert_equal_float -3.141, parse('-3141e-3')
+    assert_equal(23, parse('23'))
+    assert_equal(-23, parse('-23'))
+    assert_equal_float(3.141, parse('3.141'))
+    assert_equal_float(-3.141, parse('-3.141'))
+    assert_equal_float(3.141, parse('3141e-3'))
+    assert_equal_float(3.141, parse('3141.1e-3'))
+    assert_equal_float(3.141, parse('3141E-3'))
+    assert_equal_float(3.141, parse('3141.0E-3'))
+    assert_equal_float(-3.141, parse('-3141.0e-3'))
+    assert_equal_float(-3.141, parse('-3141e-3'))
     assert_raise(ParserError) { parse('NaN') }
     assert parse('NaN', :allow_nan => true).nan?
     assert_raise(ParserError) { parse('Infinity') }
-    assert_equal 1.0/0, parse('Infinity', :allow_nan => true)
+    assert_equal(1.0/0, parse('Infinity', :allow_nan => true))
     assert_raise(ParserError) { parse('-Infinity') }
-    assert_equal -1.0/0, parse('-Infinity', :allow_nan => true)
+    assert_equal(-1.0/0, parse('-Infinity', :allow_nan => true))
   end
 
   def test_parse_bigdecimals
@@ -218,6 +218,17 @@ class JSONParserTest < Test::Unit::TestCase
     end
   end
 
+  def test_freeze
+    assert_predicate parse('{}', :freeze => true), :frozen?
+    assert_predicate parse('[]', :freeze => true), :frozen?
+    assert_predicate parse('"foo"', :freeze => true), :frozen?
+
+    if string_deduplication_available?
+      assert_same(-'foo', parse('"foo"', :freeze => true))
+      assert_same(-'foo', parse('{"foo": 1}', :freeze => true).keys.first)
+    end
+  end
+
   def test_parse_comments
     json = <<EOT
 {
@@ -292,6 +303,10 @@ EOT
     #
     json = '["\\\'"]'
     data = ["'"]
+    assert_equal data, parse(json)
+
+    json = '["\/"]'
+    data = [ '/' ]
     assert_equal data, parse(json)
   end
 
@@ -463,6 +478,16 @@ EOT
   end
 
   private
+
+  def string_deduplication_available?
+    r1 = rand.to_s
+    r2 = r1.dup
+    begin
+      (-r1).equal?(-r2)
+    rescue NoMethodError
+      false # No String#-@
+    end
+  end
 
   def assert_equal_float(expected, actual, delta = 1e-2)
     Array === expected and expected = expected.first

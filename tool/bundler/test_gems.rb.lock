@@ -1,0 +1,40 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    artifice (0.6)
+      rack-test
+    builder (3.2.4)
+    compact_index (0.13.0)
+    mustermann (1.1.1)
+      ruby2_keywords (~> 0.0.1)
+    rack (2.0.8)
+    rack-protection (2.0.8.1)
+      rack
+    rack-test (1.1.0)
+      rack (>= 1.0, < 3)
+    rake (13.0.1)
+    ruby-graphviz (1.2.4)
+    ruby2_keywords (0.0.2)
+    sinatra (2.0.8.1)
+      mustermann (~> 1.0)
+      rack (~> 2.0)
+      rack-protection (= 2.0.8.1)
+      tilt (~> 2.0)
+    tilt (2.0.10)
+
+PLATFORMS
+  java
+  ruby
+
+DEPENDENCIES
+  artifice (~> 0.6.0)
+  builder (~> 3.2)
+  compact_index (~> 0.13.0)
+  rack (= 2.0.8)
+  rack-test (~> 1.1)
+  rake (= 13.0.1)
+  ruby-graphviz (= 1.2.4)
+  sinatra (~> 2.0)
+
+BUNDLED WITH
+   2.2.0.dev

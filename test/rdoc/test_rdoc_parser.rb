@@ -1,7 +1,7 @@
 # -*- coding: us-ascii -*-
 # frozen_string_literal: true
 
-require 'minitest_helper'
+require_relative 'helper'
 
 class TestRDocParser < RDoc::TestCase
 
@@ -47,7 +47,7 @@ class TestRDocParser < RDoc::TestCase
   end
 
   def test_class_binary_large_japanese_rdoc
-    capture_io do
+    capture_output do
       begin
         extenc, Encoding.default_external =
           Encoding.default_external, Encoding::US_ASCII
@@ -104,7 +104,7 @@ class TestRDocParser < RDoc::TestCase
   end
 
   def test_class_for_forbidden
-    skip 'chmod not supported' if Gem.win_platform?
+    omit 'chmod not supported' if Gem.win_platform?
 
     tf = Tempfile.open 'forbidden' do |io|
       begin

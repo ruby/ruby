@@ -21,7 +21,7 @@ module Bundler
         when Net::HTTPSuccess, Net::HTTPNotModified
           response
         when Net::HTTPRedirection
-          new_uri = URI.parse(response["location"])
+          new_uri = Bundler::URI.parse(response["location"])
           if new_uri.host == uri.host
             new_uri.user = uri.user
             new_uri.password = uri.password
@@ -34,10 +34,13 @@ module Bundler
           fetch(uri, new_headers)
         when Net::HTTPRequestEntityTooLarge
           raise FallbackError, response.body
+        when Net::HTTPTooManyRequests
+          raise TooManyRequestsError, response.body
         when Net::HTTPUnauthorized
+          raise BadAuthenticationError, uri.host if uri.userinfo
           raise AuthenticationRequiredError, uri.host
         when Net::HTTPNotFound
-          raise FallbackError, "Net::HTTPNotFound"
+          raise FallbackError, "Net::HTTPNotFound: #{URICredentialsFilter.credential_filtered_uri(uri)}"
         else
           raise HTTPError, "#{response.class}#{": #{response.body}" unless response.body.empty?}"
         end
@@ -71,7 +74,7 @@ module Bundler
         end
       end
 
-    private
+      private
 
       def validate_uri_scheme!(uri)
         return if uri.scheme =~ /\Ahttps?\z/

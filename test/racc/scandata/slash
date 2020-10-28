@@ -1,0 +1,10 @@
+{
+    # here's many '/'s
+    i = 5/1            # div
+    re = /regex/       # regexp
+    i /= 5             # div
+    result = 5 / 1     # div
+    result = 5/ 1      # div
+    call(/regex/)      # regexp
+    call /regex/       # regexp
+}

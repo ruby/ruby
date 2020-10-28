@@ -1,4 +1,4 @@
-# -*- encoding: ascii-8bit -*-
+# -*- encoding: binary -*-
 require_relative '../../../spec_helper'
 require_relative '../fixtures/classes'
 require_relative 'shared/basic'
@@ -285,16 +285,16 @@ describe "Array#pack with format 'm'" do
 
   it "raises a TypeError if #to_str does not return a String" do
     obj = mock("pack m non-string")
-    lambda { [obj].pack("m") }.should raise_error(TypeError)
+    -> { [obj].pack("m") }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if passed nil" do
-    lambda { [nil].pack("m") }.should raise_error(TypeError)
+    -> { [nil].pack("m") }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if passed an Integer" do
-    lambda { [0].pack("m") }.should raise_error(TypeError)
-    lambda { [bignum_value].pack("m") }.should raise_error(TypeError)
+    -> { [0].pack("m") }.should raise_error(TypeError)
+    -> { [bignum_value].pack("m") }.should raise_error(TypeError)
   end
 
   it "does not emit a newline if passed zero as the count modifier" do

@@ -18,7 +18,7 @@ class HaveInstanceMethodMatcher < MethodMatcher
 end
 
 module MSpecMatchers
-  private def have_instance_method(method, include_super=true)
+  private def have_instance_method(method, include_super = true)
     HaveInstanceMethodMatcher.new method, include_super
   end
 end

@@ -5,9 +5,11 @@ require 'rubygems/command'
 require 'rubygems/gemcutter_utilities'
 
 class TestGemGemcutterUtilities < Gem::TestCase
-
   def setup
     super
+
+    credential_setup
+
     # below needed for random testing, class property
     Gem.configuration.disable_default_gem_server = nil
 
@@ -21,6 +23,8 @@ class TestGemGemcutterUtilities < Gem::TestCase
   def teardown
     ENV['RUBYGEMS_HOST'] = nil
     Gem.configuration.rubygems_api_key = nil
+
+    credential_teardown
 
     super
   end
@@ -90,7 +94,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
   end
 
   def test_sign_in
-    api_key     = 'a5fdbb6ba150cbb83aad2bb2fede64cf040453903'
+    api_key = 'a5fdbb6ba150cbb83aad2bb2fede64cf040453903'
     util_sign_in [api_key, 200, 'OK']
 
     assert_match %r{Enter your RubyGems.org credentials.}, @sign_in_ui.output
@@ -102,7 +106,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
   end
 
   def test_sign_in_with_host
-    api_key     = 'a5fdbb6ba150cbb83aad2bb2fede64cf040453903'
+    api_key = 'a5fdbb6ba150cbb83aad2bb2fede64cf040453903'
 
     util_sign_in [api_key, 200, 'OK'], 'http://example.com', ['http://example.com']
 
@@ -116,7 +120,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
   end
 
   def test_sign_in_with_host_nil
-    api_key     = 'a5fdbb6ba150cbb83aad2bb2fede64cf040453903'
+    api_key = 'a5fdbb6ba150cbb83aad2bb2fede64cf040453903'
 
     util_sign_in [api_key, 200, 'OK'], nil, [nil]
 
@@ -130,7 +134,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
   end
 
   def test_sign_in_with_host_ENV
-    api_key     = 'a5fdbb6ba150cbb83aad2bb2fede64cf040453903'
+    api_key = 'a5fdbb6ba150cbb83aad2bb2fede64cf040453903'
     util_sign_in [api_key, 200, 'OK'], 'http://example.com'
 
     assert_match "Enter your http://example.com credentials.",
@@ -143,7 +147,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
   end
 
   def test_sign_in_skips_with_existing_credentials
-    api_key     = 'a5fdbb6ba150cbb83aad2bb2fede64cf040453903'
+    api_key = 'a5fdbb6ba150cbb83aad2bb2fede64cf040453903'
     Gem.configuration.rubygems_api_key = api_key
 
     util_sign_in [api_key, 200, 'OK']
@@ -152,8 +156,8 @@ class TestGemGemcutterUtilities < Gem::TestCase
   end
 
   def test_sign_in_skips_with_key_override
-    api_key     = 'a5fdbb6ba150cbb83aad2bb2fede64cf040453903'
-    Gem.configuration.api_keys[:KEY]  = 'other'
+    api_key = 'a5fdbb6ba150cbb83aad2bb2fede64cf040453903'
+    Gem.configuration.api_keys[:KEY] = 'other'
     @cmd.options[:key] = :KEY
     util_sign_in [api_key, 200, 'OK']
 
@@ -173,7 +177,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
     assert_match %r{Enter your RubyGems.org credentials.}, @sign_in_ui.output
     assert_match %r{Signed in.}, @sign_in_ui.output
 
-    credentials   = YAML.load_file Gem.configuration.credentials_path
+    credentials = YAML.load_file Gem.configuration.credentials_path
     assert_equal api_key, credentials[:rubygems_api_key]
     assert_equal other_api_key, credentials[:other_api_key]
   end
@@ -257,5 +261,4 @@ class TestGemGemcutterUtilities < Gem::TestCase
       @cmd.verify_api_key :missing
     end
   end
-
 end

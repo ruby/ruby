@@ -45,7 +45,7 @@ describe "Process.spawn" do
   end
 
   it "executes the given command" do
-    lambda { Process.wait Process.spawn("echo spawn") }.should output_to_fd("spawn\n")
+    -> { Process.wait Process.spawn("echo spawn") }.should output_to_fd("spawn\n")
   end
 
   it "returns the process ID of the new process as a Fixnum" do
@@ -67,43 +67,43 @@ describe "Process.spawn" do
   describe "with a single argument" do
     platform_is_not :windows do
       it "subjects the specified command to shell expansion" do
-        lambda { Process.wait Process.spawn("echo *") }.should_not output_to_fd("*\n")
+        -> { Process.wait Process.spawn("echo *") }.should_not output_to_fd("*\n")
       end
 
       it "creates an argument array with shell parsing semantics for whitespace" do
-        lambda { Process.wait Process.spawn("echo a b  c   d") }.should output_to_fd("a b c d\n")
+        -> { Process.wait Process.spawn("echo a b  c   d") }.should output_to_fd("a b c d\n")
       end
     end
 
     platform_is :windows do
       # There is no shell expansion on Windows
       it "does not subject the specified command to shell expansion on Windows" do
-        lambda { Process.wait Process.spawn("echo *") }.should output_to_fd("*\n")
+        -> { Process.wait Process.spawn("echo *") }.should output_to_fd("*\n")
       end
 
       it "does not create an argument array with shell parsing semantics for whitespace on Windows" do
-        lambda { Process.wait Process.spawn("echo a b  c   d") }.should output_to_fd("a b  c   d\n")
+        -> { Process.wait Process.spawn("echo a b  c   d") }.should output_to_fd("a b  c   d\n")
       end
     end
 
     it "calls #to_str to convert the argument to a String" do
       o = mock("to_str")
       o.should_receive(:to_str).and_return("echo foo")
-      lambda { Process.wait Process.spawn(o) }.should output_to_fd("foo\n")
+      -> { Process.wait Process.spawn(o) }.should output_to_fd("foo\n")
     end
 
     it "raises an ArgumentError if the command includes a null byte" do
-      lambda { Process.spawn "\000" }.should raise_error(ArgumentError)
+      -> { Process.spawn "\000" }.should raise_error(ArgumentError)
     end
 
     it "raises a TypeError if the argument does not respond to #to_str" do
-      lambda { Process.spawn :echo }.should raise_error(TypeError)
+      -> { Process.spawn :echo }.should raise_error(TypeError)
     end
   end
 
   describe "with multiple arguments" do
     it "does not subject the arguments to shell expansion" do
-      lambda { Process.wait Process.spawn("echo", "*") }.should output_to_fd("*\n")
+      -> { Process.wait Process.spawn("echo", "*") }.should output_to_fd("*\n")
     end
 
     it "preserves whitespace in passed arguments" do
@@ -112,36 +112,36 @@ describe "Process.spawn" do
         # The echo command on Windows takes quotes literally
         out = "\"a b  c   d\"\n"
       end
-      lambda { Process.wait Process.spawn("echo", "a b  c   d") }.should output_to_fd(out)
+      -> { Process.wait Process.spawn("echo", "a b  c   d") }.should output_to_fd(out)
     end
 
     it "calls #to_str to convert the arguments to Strings" do
       o = mock("to_str")
       o.should_receive(:to_str).and_return("foo")
-      lambda { Process.wait Process.spawn("echo", o) }.should output_to_fd("foo\n")
+      -> { Process.wait Process.spawn("echo", o) }.should output_to_fd("foo\n")
     end
 
     it "raises an ArgumentError if an argument includes a null byte" do
-      lambda { Process.spawn "echo", "\000" }.should raise_error(ArgumentError)
+      -> { Process.spawn "echo", "\000" }.should raise_error(ArgumentError)
     end
 
     it "raises a TypeError if an argument does not respond to #to_str" do
-      lambda { Process.spawn "echo", :foo }.should raise_error(TypeError)
+      -> { Process.spawn "echo", :foo }.should raise_error(TypeError)
     end
   end
 
   describe "with a command array" do
     it "uses the first element as the command name and the second as the argv[0] value" do
       platform_is_not :windows do
-        lambda { Process.wait Process.spawn(["/bin/sh", "argv_zero"], "-c", "echo $0") }.should output_to_fd("argv_zero\n")
+        -> { Process.wait Process.spawn(["/bin/sh", "argv_zero"], "-c", "echo $0") }.should output_to_fd("argv_zero\n")
       end
       platform_is :windows do
-        lambda { Process.wait Process.spawn(["cmd.exe", "/C"], "/C", "echo", "argv_zero") }.should output_to_fd("argv_zero\n")
+        -> { Process.wait Process.spawn(["cmd.exe", "/C"], "/C", "echo", "argv_zero") }.should output_to_fd("argv_zero\n")
       end
     end
 
     it "does not subject the arguments to shell expansion" do
-      lambda { Process.wait Process.spawn(["echo", "echo"], "*") }.should output_to_fd("*\n")
+      -> { Process.wait Process.spawn(["echo", "echo"], "*") }.should output_to_fd("*\n")
     end
 
     it "preserves whitespace in passed arguments" do
@@ -150,47 +150,47 @@ describe "Process.spawn" do
         # The echo command on Windows takes quotes literally
         out = "\"a b  c   d\"\n"
       end
-      lambda { Process.wait Process.spawn(["echo", "echo"], "a b  c   d") }.should output_to_fd(out)
+      -> { Process.wait Process.spawn(["echo", "echo"], "a b  c   d") }.should output_to_fd(out)
     end
 
     it "calls #to_ary to convert the argument to an Array" do
       o = mock("to_ary")
       platform_is_not :windows do
         o.should_receive(:to_ary).and_return(["/bin/sh", "argv_zero"])
-        lambda { Process.wait Process.spawn(o, "-c", "echo $0") }.should output_to_fd("argv_zero\n")
+        -> { Process.wait Process.spawn(o, "-c", "echo $0") }.should output_to_fd("argv_zero\n")
       end
       platform_is :windows do
         o.should_receive(:to_ary).and_return(["cmd.exe", "/C"])
-        lambda { Process.wait Process.spawn(o, "/C", "echo", "argv_zero") }.should output_to_fd("argv_zero\n")
+        -> { Process.wait Process.spawn(o, "/C", "echo", "argv_zero") }.should output_to_fd("argv_zero\n")
       end
     end
 
     it "calls #to_str to convert the first element to a String" do
       o = mock("to_str")
       o.should_receive(:to_str).and_return("echo")
-      lambda { Process.wait Process.spawn([o, "echo"], "foo") }.should output_to_fd("foo\n")
+      -> { Process.wait Process.spawn([o, "echo"], "foo") }.should output_to_fd("foo\n")
     end
 
     it "calls #to_str to convert the second element to a String" do
       o = mock("to_str")
       o.should_receive(:to_str).and_return("echo")
-      lambda { Process.wait Process.spawn(["echo", o], "foo") }.should output_to_fd("foo\n")
+      -> { Process.wait Process.spawn(["echo", o], "foo") }.should output_to_fd("foo\n")
     end
 
     it "raises an ArgumentError if the Array does not have exactly two elements" do
-      lambda { Process.spawn([]) }.should raise_error(ArgumentError)
-      lambda { Process.spawn([:a]) }.should raise_error(ArgumentError)
-      lambda { Process.spawn([:a, :b, :c]) }.should raise_error(ArgumentError)
+      -> { Process.spawn([]) }.should raise_error(ArgumentError)
+      -> { Process.spawn([:a]) }.should raise_error(ArgumentError)
+      -> { Process.spawn([:a, :b, :c]) }.should raise_error(ArgumentError)
     end
 
     it "raises an ArgumentError if the Strings in the Array include a null byte" do
-      lambda { Process.spawn ["\000", "echo"] }.should raise_error(ArgumentError)
-      lambda { Process.spawn ["echo", "\000"] }.should raise_error(ArgumentError)
+      -> { Process.spawn ["\000", "echo"] }.should raise_error(ArgumentError)
+      -> { Process.spawn ["echo", "\000"] }.should raise_error(ArgumentError)
     end
 
     it "raises a TypeError if an element in the Array does not respond to #to_str" do
-      lambda { Process.spawn ["echo", :echo] }.should raise_error(TypeError)
-      lambda { Process.spawn [:echo, "echo"] }.should raise_error(TypeError)
+      -> { Process.spawn ["echo", :echo] }.should raise_error(TypeError)
+      -> { Process.spawn [:echo, "echo"] }.should raise_error(TypeError)
     end
   end
 
@@ -207,13 +207,9 @@ describe "Process.spawn" do
 
   it "unsets environment variables whose value is nil" do
     ENV["FOO"] = "BAR"
-    Process.wait Process.spawn({"FOO" => nil}, "echo #{@var}>#{@name}")
-    expected = "\n"
-    platform_is :windows do
-      # Windows does not expand the variable if it is unset
-      expected = "#{@var}\n"
-    end
-    File.read(@name).should == expected
+    -> do
+      Process.wait Process.spawn({"FOO" => nil}, ruby_cmd("p ENV['FOO']"))
+    end.should output_to_fd("nil\n")
   end
 
   it "calls #to_hash to convert the environment" do
@@ -238,19 +234,19 @@ describe "Process.spawn" do
   end
 
   it "raises an ArgumentError if an environment key includes an equals sign" do
-    lambda do
+    -> do
       Process.spawn({"FOO=" => "BAR"}, "echo #{@var}>#{@name}")
     end.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError if an environment key includes a null byte" do
-    lambda do
+    -> do
       Process.spawn({"\000" => "BAR"}, "echo #{@var}>#{@name}")
     end.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError if an environment value includes a null byte" do
-    lambda do
+    -> do
       Process.spawn({"FOO" => "\000"}, "echo #{@var}>#{@name}")
     end.should raise_error(ArgumentError)
   end
@@ -294,25 +290,25 @@ describe "Process.spawn" do
 
   platform_is_not :windows do
     it "joins the current process group by default" do
-      lambda do
+      -> do
         Process.wait Process.spawn(ruby_cmd("print Process.getpgid(Process.pid)"))
       end.should output_to_fd(Process.getpgid(Process.pid).to_s)
     end
 
     it "joins the current process if pgroup: false" do
-      lambda do
+      -> do
         Process.wait Process.spawn(ruby_cmd("print Process.getpgid(Process.pid)"), pgroup: false)
       end.should output_to_fd(Process.getpgid(Process.pid).to_s)
     end
 
     it "joins the current process if pgroup: nil" do
-      lambda do
+      -> do
         Process.wait Process.spawn(ruby_cmd("print Process.getpgid(Process.pid)"), pgroup: nil)
       end.should output_to_fd(Process.getpgid(Process.pid).to_s)
     end
 
     it "joins a new process group if pgroup: true" do
-      process = lambda do
+      process = -> do
         Process.wait Process.spawn(ruby_cmd("print Process.getpgid(Process.pid)"), pgroup: true)
       end
 
@@ -321,7 +317,7 @@ describe "Process.spawn" do
     end
 
     it "joins a new process group if pgroup: 0" do
-      process = lambda do
+      process = -> do
         Process.wait Process.spawn(ruby_cmd("print Process.getpgid(Process.pid)"), pgroup: 0)
       end
 
@@ -331,23 +327,33 @@ describe "Process.spawn" do
 
     it "joins the specified process group if pgroup: pgid" do
       pgid = Process.getpgid(Process.pid)
-      lambda do
-        Process.wait Process.spawn(ruby_cmd("print Process.getpgid(Process.pid)"), pgroup: pgid)
-      end.should output_to_fd(pgid.to_s)
+      # The process group is not available on all platforms.
+      # See "man proc" - /proc/[pid]/stat - (5) pgrp
+      # In Travis arm64 environment, the value is 0.
+      #
+      # $ cat /proc/[pid]/stat
+      # 19179 (ruby) S 19160 0 0 ...
+      unless pgid.zero?
+        -> do
+          Process.wait Process.spawn(ruby_cmd("print Process.getpgid(Process.pid)"), pgroup: pgid)
+        end.should output_to_fd(pgid.to_s)
+      else
+        skip "The process group is not available."
+      end
     end
 
     it "raises an ArgumentError if given a negative :pgroup option" do
-      lambda { Process.spawn("echo", pgroup: -1) }.should raise_error(ArgumentError)
+      -> { Process.spawn("echo", pgroup: -1) }.should raise_error(ArgumentError)
     end
 
     it "raises a TypeError if given a symbol as :pgroup option" do
-      lambda { Process.spawn("echo", pgroup: :true) }.should raise_error(TypeError)
+      -> { Process.spawn("echo", pgroup: :true) }.should raise_error(TypeError)
     end
   end
 
   platform_is :windows do
     it "raises an ArgumentError if given :pgroup option" do
-      lambda { Process.spawn("echo", pgroup: false) }.should raise_error(ArgumentError)
+      -> { Process.spawn("echo", pgroup: false) }.should raise_error(ArgumentError)
     end
   end
 
@@ -358,7 +364,7 @@ describe "Process.spawn" do
   # :chdir
 
   it "uses the current working directory as its working directory" do
-    lambda do
+    -> do
       Process.wait Process.spawn(ruby_cmd("print Dir.pwd"))
     end.should output_to_fd(Dir.pwd)
   end
@@ -374,7 +380,7 @@ describe "Process.spawn" do
     end
 
     it "changes to the directory passed for :chdir" do
-      lambda do
+      -> do
         Process.wait Process.spawn(ruby_cmd("print Dir.pwd"), chdir: @dir)
       end.should output_to_fd(@dir)
     end
@@ -383,7 +389,7 @@ describe "Process.spawn" do
       dir = mock("spawn_to_path")
       dir.should_receive(:to_path).and_return(@dir)
 
-      lambda do
+      -> do
         Process.wait Process.spawn(ruby_cmd("print Dir.pwd"), chdir: dir)
       end.should output_to_fd(@dir)
     end
@@ -409,7 +415,7 @@ describe "Process.spawn" do
 
       it "kills extra chdir processes" do
         pid = nil
-        Dir.chdir("/tmp") do
+        Dir.chdir("/") do
           pid = Process.spawn("sleep 10")
         end
 
@@ -424,7 +430,7 @@ describe "Process.spawn" do
           sleep(1)
 
           children.each do |child|
-            lambda do
+            -> do
               Process.kill("TERM", child)
             end.should raise_error(Errno::ESRCH)
           end
@@ -436,14 +442,14 @@ describe "Process.spawn" do
   # :umask
 
   it "uses the current umask by default" do
-    lambda do
+    -> do
       Process.wait Process.spawn(ruby_cmd("print File.umask"))
     end.should output_to_fd(File.umask.to_s)
   end
 
   platform_is_not :windows do
     it "sets the umask if given the :umask option" do
-      lambda do
+      -> do
         Process.wait Process.spawn(ruby_cmd("print File.umask"), umask: 146)
       end.should output_to_fd("146")
     end
@@ -453,7 +459,7 @@ describe "Process.spawn" do
 
   it "redirects STDOUT to the given file descriptor if out: Fixnum" do
     File.open(@name, 'w') do |file|
-      lambda do
+      -> do
         Process.wait Process.spawn("echo glark", out: file.fileno)
       end.should output_to_fd("glark\n", file)
     end
@@ -461,7 +467,7 @@ describe "Process.spawn" do
 
   it "redirects STDOUT to the given file if out: IO" do
     File.open(@name, 'w') do |file|
-      lambda do
+      -> do
         Process.wait Process.spawn("echo glark", out: file)
       end.should output_to_fd("glark\n", file)
     end
@@ -479,7 +485,7 @@ describe "Process.spawn" do
 
   it "redirects STDERR to the given file descriptor if err: Fixnum" do
     File.open(@name, 'w') do |file|
-      lambda do
+      -> do
         Process.wait Process.spawn("echo glark>&2", err: file.fileno)
       end.should output_to_fd("glark\n", file)
     end
@@ -487,7 +493,7 @@ describe "Process.spawn" do
 
   it "redirects STDERR to the given file descriptor if err: IO" do
     File.open(@name, 'w') do |file|
-      lambda do
+      -> do
         Process.wait Process.spawn("echo glark>&2", err: file)
       end.should output_to_fd("glark\n", file)
     end
@@ -500,7 +506,7 @@ describe "Process.spawn" do
 
   it "redirects STDERR to child STDOUT if :err => [:child, :out]" do
     File.open(@name, 'w') do |file|
-      lambda do
+      -> do
         Process.wait Process.spawn("echo glark>&2", :out => file, :err => [:child, :out])
       end.should output_to_fd("glark\n", file)
     end
@@ -508,7 +514,7 @@ describe "Process.spawn" do
 
   it "redirects both STDERR and STDOUT to the given file descriptor" do
     File.open(@name, 'w') do |file|
-      lambda do
+      -> do
         Process.wait Process.spawn(ruby_cmd("print(:glark); STDOUT.flush; STDERR.print(:bang)"),
                                    [:out, :err] => file.fileno)
       end.should output_to_fd("glarkbang", file)
@@ -517,7 +523,7 @@ describe "Process.spawn" do
 
   it "redirects both STDERR and STDOUT to the given IO" do
     File.open(@name, 'w') do |file|
-      lambda do
+      -> do
         Process.wait Process.spawn(ruby_cmd("print(:glark); STDOUT.flush; STDERR.print(:bang)"),
                                    [:out, :err] => file)
       end.should output_to_fd("glarkbang", file)
@@ -528,6 +534,17 @@ describe "Process.spawn" do
     touch @name
     Process.wait Process.spawn(ruby_cmd("print(:glark); STDOUT.flush; STDERR.print(:bang)"), [:out, :err] => @name)
     File.read(@name).should == "glarkbang"
+  end
+
+  platform_is_not :windows, :android do
+    it "closes STDERR in the child if :err => :close" do
+      File.open(@name, 'w') do |file|
+        -> do
+          code = "begin; STDOUT.puts 'out'; STDERR.puts 'hello'; rescue => e; puts 'rescued'; end"
+          Process.wait Process.spawn(ruby_cmd(code), :out => file, :err => :close)
+        end.should output_to_fd("out\nrescued\n", file)
+      end
+    end
   end
 
   # :close_others
@@ -626,35 +643,35 @@ describe "Process.spawn" do
   # error handling
 
   it "raises an ArgumentError if passed no command arguments" do
-    lambda { Process.spawn }.should raise_error(ArgumentError)
+    -> { Process.spawn }.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError if passed env or options but no command arguments" do
-    lambda { Process.spawn({}) }.should raise_error(ArgumentError)
+    -> { Process.spawn({}) }.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError if passed env and options but no command arguments" do
-    lambda { Process.spawn({}, {}) }.should raise_error(ArgumentError)
+    -> { Process.spawn({}, {}) }.should raise_error(ArgumentError)
   end
 
   it "raises an Errno::ENOENT for an empty string" do
-    lambda { Process.spawn "" }.should raise_error(Errno::ENOENT)
+    -> { Process.spawn "" }.should raise_error(Errno::ENOENT)
   end
 
   it "raises an Errno::ENOENT if the command does not exist" do
-    lambda { Process.spawn "nonesuch" }.should raise_error(Errno::ENOENT)
+    -> { Process.spawn "nonesuch" }.should raise_error(Errno::ENOENT)
   end
 
   unless File.executable?(__FILE__) # Some FS (e.g. vboxfs) locate all files executable
     platform_is_not :windows do
       it "raises an Errno::EACCES when the file does not have execute permissions" do
-        lambda { Process.spawn __FILE__ }.should raise_error(Errno::EACCES)
+        -> { Process.spawn __FILE__ }.should raise_error(Errno::EACCES)
       end
     end
 
     platform_is :windows do
       it "raises Errno::EACCES or Errno::ENOEXEC when the file is not an executable file" do
-        lambda { Process.spawn __FILE__ }.should raise_error(SystemCallError) { |e|
+        -> { Process.spawn __FILE__ }.should raise_error(SystemCallError) { |e|
           [Errno::EACCES, Errno::ENOEXEC].should include(e.class)
         }
       end
@@ -662,17 +679,17 @@ describe "Process.spawn" do
   end
 
   it "raises an Errno::EACCES or Errno::EISDIR when passed a directory" do
-    lambda { Process.spawn File.dirname(__FILE__) }.should raise_error(SystemCallError) { |e|
+    -> { Process.spawn File.dirname(__FILE__) }.should raise_error(SystemCallError) { |e|
       [Errno::EACCES, Errno::EISDIR].should include(e.class)
     }
   end
 
   it "raises an ArgumentError when passed a string key in options" do
-    lambda { Process.spawn("echo", "chdir" => Dir.pwd) }.should raise_error(ArgumentError)
+    -> { Process.spawn("echo", "chdir" => Dir.pwd) }.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError when passed an unknown option key" do
-    lambda { Process.spawn("echo", nonesuch: :foo) }.should raise_error(ArgumentError)
+    -> { Process.spawn("echo", nonesuch: :foo) }.should raise_error(ArgumentError)
   end
 
   platform_is_not :windows, :aix do

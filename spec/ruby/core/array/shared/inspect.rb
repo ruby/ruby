@@ -55,7 +55,7 @@ describe :array_inspect, shared: true do
     obj.should_receive(:inspect).and_return(obj)
     obj.should_receive(:to_s).and_raise(Exception)
 
-    lambda { [obj].send(@method) }.should raise_error(Exception)
+    -> { [obj].send(@method) }.should raise_error(Exception)
   end
 
   it "represents a recursive element with '[...]'" do
@@ -64,28 +64,30 @@ describe :array_inspect, shared: true do
     ArraySpecs.empty_recursive_array.send(@method).should == "[[...]]"
   end
 
-  it "taints the result if the Array is non-empty and tainted" do
-    [1, 2].taint.send(@method).tainted?.should be_true
-  end
+  ruby_version_is ''...'2.7' do
+    it "taints the result if the Array is non-empty and tainted" do
+      [1, 2].taint.send(@method).tainted?.should be_true
+    end
 
-  it "does not taint the result if the Array is tainted but empty" do
-    [].taint.send(@method).tainted?.should be_false
-  end
+    it "does not taint the result if the Array is tainted but empty" do
+      [].taint.send(@method).tainted?.should be_false
+    end
 
-  it "taints the result if an element is tainted" do
-    ["str".taint].send(@method).tainted?.should be_true
-  end
+    it "taints the result if an element is tainted" do
+      ["str".taint].send(@method).tainted?.should be_true
+    end
 
-  it "untrusts the result if the Array is untrusted" do
-    [1, 2].untrust.send(@method).untrusted?.should be_true
-  end
+    it "untrusts the result if the Array is untrusted" do
+      [1, 2].untrust.send(@method).untrusted?.should be_true
+    end
 
-  it "does not untrust the result if the Array is untrusted but empty" do
-    [].untrust.send(@method).untrusted?.should be_false
-  end
+    it "does not untrust the result if the Array is untrusted but empty" do
+      [].untrust.send(@method).untrusted?.should be_false
+    end
 
-  it "untrusts the result if an element is untrusted" do
-    ["str".untrust].send(@method).untrusted?.should be_true
+    it "untrusts the result if an element is untrusted" do
+      ["str".untrust].send(@method).untrusted?.should be_true
+    end
   end
 
   describe "with encoding" do

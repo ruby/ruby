@@ -210,6 +210,16 @@ class TestCaseMappingPreliminary < Test::Unit::TestCase
     assert_equal "\u10D0\u10D1\u10D2", "\u10D0\u10D1\u10D2".capitalize
   end
 
+  def test_shift_jis_downcase_ascii
+    s = ("A".."Z").map {|c| "\x89#{c}"}.join("").force_encoding("Shift_JIS")
+    assert_equal s, s.downcase(:ascii)
+  end
+
+  def test_shift_jis_upcase_ascii
+    s = ("a".."z").map {|c| "\x89#{c}"}.join("").force_encoding("Shift_JIS")
+    assert_equal s, s.upcase(:ascii)
+  end
+
   def no_longer_a_test_buffer_allocations
     assert_equal 'TURKISH*ı'*10, ('I'*10).downcase(:turkic)
     assert_equal 'TURKISH*ı'*100, ('I'*100).downcase(:turkic)

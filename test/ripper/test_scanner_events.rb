@@ -15,13 +15,23 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
   def test_event_coverage
     dispatched = Ripper::SCANNER_EVENTS.map {|event,_| event }
     dispatched.each do |e|
-      assert_equal true, respond_to?("test_#{e}", true), "event not tested: #{e}"
+      assert_respond_to(self, ["test_#{e}", true], "event not tested: #{e}")
     end
   end
 
-  def scan(target, str)
+  def scan(target, str, &error)
     sym = "on_#{target}".intern
-    Ripper.lex(str).select {|_1,type,_2| type == sym }.map {|_1,_2,tok| tok }
+    lexer = Ripper::Lexer.new(str)
+    if error
+      lexer.singleton_class.class_eval do
+        define_method(:on_error) {|ev|
+          yield __callee__, ev, token()
+        }
+        alias on_parse_error on_error
+        alias compile_error on_error
+      end
+    end
+    lexer.lex.select {|_,type,_| type == sym }.map {|_,_,tok| tok }
   end
 
   def test_tokenize
@@ -259,6 +269,8 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  scan('embvar', '"#@ivar"')
     assert_equal ['#'],
                  scan('embvar', '"#@@cvar"')
+    assert_equal [],
+                 scan('embvar', '"#@1"')
     assert_equal [],
                  scan('embvar', '"#lvar"')
     assert_equal [],
@@ -550,8 +562,6 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  scan('op', ':[]=')
     assert_equal ['&.'],
                  scan('op', 'a&.f')
-    assert_equal %w(.:),
-                 scan('op', 'obj.:foo')
     assert_equal [],
                  scan('op', %q[`make all`])
   end
@@ -742,6 +752,7 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
     assert_equal [" E\n\n"],
                  scan('tstring_content', "<<""'E'\n E\n\n"),
                  bug10392
+                 scan('tstring_content', "tap{<<""EOS}\n""there\n""heredoc\#@1xxx\nEOS")
   end
 
   def test_heredoc_end
@@ -888,6 +899,13 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  scan('ignored_nl', "1;\r\n")
   end
 
+  def test_ignored_sp
+    assert_equal [],
+                 scan('ignored_sp', "<<~EOS\nheredoc\nEOS")
+    assert_equal ["  "],
+                 scan('ignored_sp', "<<~EOS\n  heredoc\nEOS")
+  end
+
   def test___end__
     assert_equal [],
                  scan('__end__', "")
@@ -910,6 +928,22 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  scan('CHAR', "?a")
     assert_equal [],
                  scan('CHAR', "@ivar")
+
+    assert_equal ["?\\M-H"], scan('CHAR', '?\\M-H')
+
+    assert_equal ["?\\u0041"],
+                 scan('CHAR', "?\\u0041")
+
+    assert_equal ["?\\u{41}"],
+                 scan('CHAR', "?\\u{41}")
+
+    err = nil
+    assert_equal [], scan('CHAR', '?\\M ') {|*e| err = e}
+    assert_equal([:on_parse_error, "Invalid escape character syntax", "?\\M "], err)
+
+    err = nil
+    scan('CHAR', '?\u{41 42}') {|*e| err = e}
+    assert_equal [:on_parse_error, "Multiple codepoints at single character literal", "42"], err
   end
 
   def test_label
@@ -937,4 +971,21 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  scan('tlambda_arg', '-> {}')
   end
 
+  def test_invalid_char
+    err = nil
+    assert_equal(['a'], scan('ident', "\ea") {|*e| err = e})
+    assert_equal(:compile_error, err[0])
+    assert_match(/Invalid char/, err[1])
+    assert_equal("\e", err[2])
+  end
+
+  def test_invalid_hex_escape
+    err = nil
+    assert_equal ['U'], scan('tstring_content', '"\\xU"') {|*e| err = e}
+    assert_equal [:on_parse_error, "invalid hex escape", "\\x"], err
+
+    err = nil
+    assert_equal ['U'], scan('tstring_content', '/\\xU/') {|*e| err = e}
+    assert_equal [:on_parse_error, "invalid hex escape", "\\x"], err
+  end
 end if ripper_test

@@ -30,7 +30,7 @@ describe "A class definition" do
   end
 
   it "raises TypeError if constant given as class name exists and is not a Module" do
-    lambda {
+    -> {
       class ClassSpecsNumber
       end
     }.should raise_error(TypeError)
@@ -38,19 +38,19 @@ describe "A class definition" do
 
   # test case known to be detecting bugs (JRuby, MRI)
   it "raises TypeError if the constant qualifying the class is nil" do
-    lambda {
+    -> {
       class nil::Foo
       end
     }.should raise_error(TypeError)
   end
 
   it "raises TypeError if any constant qualifying the class is not a Module" do
-    lambda {
+    -> {
       class ClassSpecs::Number::MyClass
       end
     }.should raise_error(TypeError)
 
-    lambda {
+    -> {
       class ClassSpecsNumber::MyClass
       end
     }.should raise_error(TypeError)
@@ -64,7 +64,7 @@ describe "A class definition" do
     module ClassSpecs
       class SuperclassResetToSubclass < L
       end
-      lambda {
+      -> {
         class SuperclassResetToSubclass < M
         end
       }.should raise_error(TypeError, /superclass mismatch/)
@@ -77,7 +77,7 @@ describe "A class definition" do
       end
       SuperclassReopenedBasicObject.superclass.should == A
 
-      lambda {
+      -> {
         class SuperclassReopenedBasicObject < BasicObject
         end
       }.should raise_error(TypeError, /superclass mismatch/)
@@ -92,7 +92,7 @@ describe "A class definition" do
       end
       SuperclassReopenedObject.superclass.should == A
 
-      lambda {
+      -> {
         class SuperclassReopenedObject < Object
         end
       }.should raise_error(TypeError, /superclass mismatch/)
@@ -117,7 +117,7 @@ describe "A class definition" do
       class NoSuperclassSet
       end
 
-      lambda {
+      -> {
         class NoSuperclassSet < String
         end
       }.should raise_error(TypeError, /superclass mismatch/)
@@ -127,7 +127,7 @@ describe "A class definition" do
   it "allows using self as the superclass if self is a class" do
     ClassSpecs::I::J.superclass.should == ClassSpecs::I
 
-    lambda {
+    -> {
       class ShouldNotWork < self; end
     }.should raise_error(TypeError)
   end
@@ -148,7 +148,7 @@ describe "A class definition" do
   it "raises a TypeError if inheriting from a metaclass" do
     obj = mock("metaclass super")
     meta = obj.singleton_class
-    lambda { class ClassSpecs::MetaclassSuper < meta; end }.should raise_error(TypeError)
+    -> { class ClassSpecs::MetaclassSuper < meta; end }.should raise_error(TypeError)
   end
 
   it "allows the declaration of class variables in the body" do
@@ -210,16 +210,16 @@ describe "A class definition" do
   describe "within a block creates a new class in the lexical scope" do
     it "for named classes at the toplevel" do
       klass = Class.new do
-        class Howdy
+        class CS_CONST_CLASS_SPECS
         end
 
         def self.get_class_name
-          Howdy.name
+          CS_CONST_CLASS_SPECS.name
         end
       end
 
-      Howdy.name.should == 'Howdy'
-      klass.get_class_name.should == 'Howdy'
+      klass.get_class_name.should == 'CS_CONST_CLASS_SPECS'
+      ::CS_CONST_CLASS_SPECS.name.should == 'CS_CONST_CLASS_SPECS'
     end
 
     it "for named classes in a module" do
@@ -274,7 +274,7 @@ describe "A class definition extending an object (sclass)" do
   end
 
   it "raises a TypeError when trying to extend numbers" do
-    lambda {
+    -> {
       eval <<-CODE
         class << 1
           def xyz
@@ -285,11 +285,29 @@ describe "A class definition extending an object (sclass)" do
     }.should raise_error(TypeError)
   end
 
+  it "raises a TypeError when trying to extend non-Class" do
+    error_msg = /superclass must be a Class/
+    -> { class TestClass < "";              end }.should raise_error(TypeError, error_msg)
+    -> { class TestClass < 1;               end }.should raise_error(TypeError, error_msg)
+    -> { class TestClass < :symbol;         end }.should raise_error(TypeError, error_msg)
+    -> { class TestClass < mock('o');       end }.should raise_error(TypeError, error_msg)
+    -> { class TestClass < Module.new;      end }.should raise_error(TypeError, error_msg)
+    -> { class TestClass < BasicObject.new; end }.should raise_error(TypeError, error_msg)
+  end
+
   ruby_version_is ""..."3.0" do
     it "allows accessing the block of the original scope" do
       suppress_warning do
         ClassSpecs.sclass_with_block { 123 }.should == 123
       end
+    end
+  end
+
+  ruby_version_is "3.0" do
+    it "does not allow accessing the block of the original scope" do
+      -> {
+        ClassSpecs.sclass_with_block { 123 }
+      }.should raise_error(SyntaxError)
     end
   end
 
@@ -310,11 +328,11 @@ describe "Reopening a class" do
   end
 
   it "raises a TypeError when superclasses mismatch" do
-    lambda { class ClassSpecs::A < Array; end }.should raise_error(TypeError)
+    -> { class ClassSpecs::A < Array; end }.should raise_error(TypeError)
   end
 
   it "adds new methods to subclasses" do
-    lambda { ClassSpecs::M.m }.should raise_error(NoMethodError)
+    -> { ClassSpecs::M.m }.should raise_error(NoMethodError)
     class ClassSpecs::L
       def self.m
         1

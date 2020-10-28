@@ -1,4 +1,4 @@
-require_relative '../../spec_helper'
+require_relative 'spec_helper'
 require_relative 'shared/to_hash'
 
 describe "ENV.to_h" do
@@ -17,6 +17,11 @@ describe "ENV.to_h" do
       it "converts [key, value] pairs returned by the block to a hash" do
         ENV.replace("a" => "b", "c" => "d")
         ENV.to_h { |k, v| [k, v.upcase] }.should == { 'a' => "B", 'c' => "D" }
+      end
+
+      it "does not require the array elements to be strings" do
+        ENV.replace("a" => "b", "c" => "d")
+        ENV.to_h { |k, v| [k.to_sym, v.to_sym] }.should == { :a => :b, :c => :d }
       end
 
       it "raises ArgumentError if block returns longer or shorter array" do

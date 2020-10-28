@@ -182,6 +182,58 @@ DEPENDENCIES
     assert_path_exists File.join @gemhome, 'specifications', 'b-1.gemspec'
   end
 
+  def test_install_from_gemdeps_complex_dependencies
+    quick_gem("z", 1)
+    quick_gem("z", "1.0.1")
+    quick_gem("z", "1.0.2")
+    quick_gem("z", "1.0.3")
+    quick_gem("z", 2)
+
+    spec_fetcher do |fetcher|
+      fetcher.download "z", 1
+    end
+
+    rs = Gem::RequestSet.new
+    installed = []
+
+    File.open 'Gemfile.lock', 'w' do |io|
+      io.puts <<-LOCKFILE
+GEM
+  remote: #{@gem_repo}
+  specs:
+    z (1)
+
+PLATFORMS
+  #{Gem::Platform::RUBY}
+
+DEPENDENCIES
+  z (~> 1.0, >= 1.0.1)
+      LOCKFILE
+    end
+
+    File.open 'testo.gemspec', 'w' do |io|
+      io.puts <<-LOCKFILE
+Gem::Specification.new do |spec|
+  spec.name = 'testo'
+  spec.version = '1.0.0'
+  spec.add_dependency('z', '~> 1.0', '>= 1.0.1')
+end
+      LOCKFILE
+    end
+
+    File.open 'Gemfile', 'w' do |io|
+      io.puts("gemspec")
+    end
+
+    rs.install_from_gemdeps :gemdeps => 'Gemfile' do |req, installer|
+      installed << req.full_name
+    end
+
+    assert_includes installed, 'z-1.0.3'
+
+    assert_path_exists File.join @gemhome, 'specifications', 'z-1.0.3.gemspec'
+  end
+
   def test_install_from_gemdeps_version_mismatch
     spec_fetcher do |fetcher|
       fetcher.gem 'a', 2
@@ -271,7 +323,7 @@ ruby "0"
     res = rs.resolve StaticSet.new([a, b])
     assert_equal 2, res.size
 
-    names = res.map { |s| s.full_name }.sort
+    names = res.map {|s| s.full_name }.sort
 
     assert_equal ["a-2", "b-2"], names
 
@@ -290,7 +342,7 @@ ruby "0"
     res = rs.resolve StaticSet.new([a, b, c])
     assert_equal 3, res.size
 
-    names = res.map { |s| s.full_name }.sort
+    names = res.map {|s| s.full_name }.sort
 
     assert_equal %w[a-1.b b-1.b c-1.1.b], names
   end
@@ -311,8 +363,14 @@ ruby "0"
   end
 
   def test_resolve_development_shallow
-    a = util_spec 'a', 1 do |s| s.add_development_dependency 'b' end
-    b = util_spec 'b', 1 do |s| s.add_development_dependency 'c' end
+    a = util_spec 'a', 1 do |s|
+      s.add_development_dependency 'b'
+    end
+
+    b = util_spec 'b', 1 do |s|
+      s.add_development_dependency 'c'
+    end
+
     c = util_spec 'c', 1
 
     a_spec = Gem::Resolver::SpecSpecification.new nil, a
@@ -337,9 +395,9 @@ ruby "0"
     rs = Gem::RequestSet.new
 
     tf = Tempfile.open 'gem.deps.rb' do |io|
-      io.puts <<-gems_deps_rb
+      io.puts <<-GEMS_DEPS_RB
         gem "#{name}", :git => "#{repository}"
-      gems_deps_rb
+      GEMS_DEPS_RB
 
       io.flush
 
@@ -351,12 +409,12 @@ ruby "0"
     res = rs.resolve
     assert_equal 1, res.size
 
-    names = res.map { |s| s.full_name }.sort
+    names = res.map {|s| s.full_name }.sort
 
     assert_equal %w[a-1], names
 
     assert_equal [@DR::BestSet, @DR::GitSet, @DR::VendorSet, @DR::SourceSet],
-                 rs.sets.map { |set| set.class }
+                 rs.sets.map {|set| set.class }
   end
 
   def test_resolve_ignore_dependencies
@@ -370,7 +428,7 @@ ruby "0"
     res = rs.resolve StaticSet.new([a, b])
     assert_equal 1, res.size
 
-    names = res.map { |s| s.full_name }.sort
+    names = res.map {|s| s.full_name }.sort
 
     assert_equal %w[a-2], names
   end
@@ -400,10 +458,10 @@ ruby "0"
     rs = Gem::RequestSet.new
 
     tf = Tempfile.open 'gem.deps.rb' do |io|
-      io.puts <<-gems_deps_rb
+      io.puts <<-GEMS_DEPS_RB
         gem "#{a_name}", :path => "#{a_directory}"
         gem "#{b_name}", :path => "#{b_directory}"
-      gems_deps_rb
+      GEMS_DEPS_RB
 
       io.flush
 
@@ -415,12 +473,12 @@ ruby "0"
     res = rs.resolve
     assert_equal 2, res.size
 
-    names = res.map { |s| s.full_name }.sort
+    names = res.map {|s| s.full_name }.sort
 
     assert_equal ["a-1", "b-2"], names
 
     assert_equal [@DR::BestSet, @DR::GitSet, @DR::VendorSet, @DR::SourceSet],
-                 rs.sets.map { |set| set.class }
+                 rs.sets.map {|set| set.class }
   end
 
   def test_sorted_requests
@@ -433,8 +491,8 @@ ruby "0"
 
     rs.resolve StaticSet.new([a, b, c])
 
-    names = rs.sorted_requests.map { |s| s.full_name }
-    assert_equal %w!c-2 b-2 a-2!, names
+    names = rs.sorted_requests.map {|s| s.full_name }
+    assert_equal %w[c-2 b-2 a-2], names
   end
 
   def test_install
@@ -462,14 +520,14 @@ ruby "0"
       installers << installer
     end
 
-    assert_equal %w[b-1 a-1], reqs.map { |req| req.full_name }
+    assert_equal %w[b-1 a-1], reqs.map {|req| req.full_name }
     assert_equal %w[b-1 a-1],
-                 installers.map { |installer| installer.spec.full_name }
+                 installers.map {|installer| installer.spec.full_name }
 
     assert_path_exists File.join @gemhome, 'specifications', 'a-1.gemspec'
     assert_path_exists File.join @gemhome, 'specifications', 'b-1.gemspec'
 
-    assert_equal %w[b-1 a-1], installed.map { |s| s.full_name }
+    assert_equal %w[b-1 a-1], installed.map {|s| s.full_name }
 
     assert done_installing_ran
   end
@@ -492,7 +550,7 @@ ruby "0"
     assert_path_exists File.join @tempdir, 'specifications', 'a-1.gemspec'
     assert_path_exists File.join @tempdir, 'specifications', 'b-1.gemspec'
 
-    assert_equal %w!b-1 a-1!, installed.map { |s| s.full_name }
+    assert_equal %w[b-1 a-1], installed.map {|s| s.full_name }
   end
 
   def test_install_into_development_shallow
@@ -524,12 +582,18 @@ ruby "0"
       assert_equal @tempdir, ENV['GEM_HOME']
     end
 
-    assert_equal %w[a-1 b-1], installed.map { |s| s.full_name }.sort
+    assert_equal %w[a-1 b-1], installed.map {|s| s.full_name }.sort
   end
 
   def test_sorted_requests_development_shallow
-    a = util_spec 'a', 1 do |s| s.add_development_dependency 'b' end
-    b = util_spec 'b', 1 do |s| s.add_development_dependency 'c' end
+    a = util_spec 'a', 1 do |s|
+      s.add_development_dependency 'b'
+    end
+
+    b = util_spec 'b', 1 do |s|
+      s.add_development_dependency 'c'
+    end
+
     c = util_spec 'c', 1
 
     rs = Gem::RequestSet.new
@@ -543,12 +607,18 @@ ruby "0"
 
     rs.resolve StaticSet.new [a_spec, b_spec, c_spec]
 
-    assert_equal %w[b-1 a-1], rs.sorted_requests.map { |req| req.full_name }
+    assert_equal %w[b-1 a-1], rs.sorted_requests.map {|req| req.full_name }
   end
 
   def test_tsort_each_child_development
-    a = util_spec 'a', 1 do |s| s.add_development_dependency 'b' end
-    b = util_spec 'b', 1 do |s| s.add_development_dependency 'c' end
+    a = util_spec 'a', 1 do |s|
+      s.add_development_dependency 'b'
+    end
+
+    b = util_spec 'b', 1 do |s|
+      s.add_development_dependency 'c'
+    end
+
     c = util_spec 'c', 1
 
     rs = Gem::RequestSet.new
@@ -566,12 +636,18 @@ ruby "0"
 
     deps = rs.enum_for(:tsort_each_child, a_req).to_a
 
-    assert_equal %w[b], deps.map { |dep| dep.name }
+    assert_equal %w[b], deps.map {|dep| dep.name }
   end
 
   def test_tsort_each_child_development_shallow
-    a = util_spec 'a', 1 do |s| s.add_development_dependency 'b' end
-    b = util_spec 'b', 1 do |s| s.add_development_dependency 'c' end
+    a = util_spec 'a', 1 do |s|
+      s.add_development_dependency 'b'
+    end
+
+    b = util_spec 'b', 1 do |s|
+      s.add_development_dependency 'c'
+    end
+
     c = util_spec 'c', 1
 
     rs = Gem::RequestSet.new
@@ -591,5 +667,4 @@ ruby "0"
 
     assert_empty deps
   end
-
 end

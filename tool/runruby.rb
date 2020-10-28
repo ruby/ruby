@@ -6,6 +6,12 @@
 show = false
 precommand = []
 srcdir = File.realpath('..', File.dirname(__FILE__))
+case
+when ENV['RUNRUBY_USE_GDB'] == 'true'
+  debugger = :gdb
+when ENV['RUNRUBY_USE_LLDB'] == 'true'
+  debugger = :lldb
+end
 while arg = ARGV[0]
   break ARGV.shift if arg == '--'
   case arg
@@ -79,7 +85,8 @@ config = File.read(conffile)
 config.sub!(/^(\s*)RUBY_VERSION\b.*(\sor\s*)\n.*\n/, '')
 config = Module.new {module_eval(config, conffile)}::RbConfig::CONFIG
 
-ruby = File.join(archdir, config["RUBY_INSTALL_NAME"]+config['EXEEXT'])
+install_name = config["RUBY_INSTALL_NAME"]+config['EXEEXT']
+ruby = File.join(archdir, install_name)
 unless File.exist?(ruby)
   abort "#{ruby} is not found.\nTry `make' first, then `make test', please.\n"
 end
@@ -100,13 +107,12 @@ env = {
   'RUBY_FIBER_MACHINE_STACK_SIZE' => '1',
 }
 
-runner = File.join(abs_archdir, "exe/ruby#{config['EXEEXT']}")
+runner = File.join(abs_archdir, "exe/#{install_name}")
 runner = nil unless File.exist?(runner)
 abs_ruby = runner || File.expand_path(ruby)
 env["RUBY"] = abs_ruby
 env["GEM_PATH"] = env["GEM_HOME"] = File.expand_path(".bundle", srcdir)
-env["BUNDLE_RUBY"] = abs_ruby
-env["BUNDLE_GEM"] = "#{abs_ruby} -rrubygems #{srcdir}/bin/gem --backtrace"
+env["GEM_COMMAND"] = "#{abs_ruby} -rrubygems #{srcdir}/bin/gem --backtrace"
 env["PATH"] = [File.dirname(abs_ruby), abs_archdir, ENV["PATH"]].compact.join(File::PATH_SEPARATOR)
 
 if e = ENV["RUBYLIB"]
@@ -132,17 +138,22 @@ end
 
 ENV.update env
 
-if debugger or ENV['RUNRUBY_USE_GDB'] == 'true'
-  if debugger == :gdb or !debugger
-    debugger = %w'gdb'
+if debugger
+  case debugger
+  when :gdb, nil
+    debugger = %W'gdb -x #{srcdir}/.gdbinit'
     if File.exist?(gdb = 'run.gdb') or
       File.exist?(gdb = File.join(abs_archdir, 'run.gdb'))
       debugger.push('-x', gdb)
     end
     debugger << '--args'
-  end
-  if debugger == :lldb
-    debugger = %w'lldb --'
+  when :lldb
+    debugger = ['lldb', '-O', "command script import #{srcdir}/misc/lldb_cruby.py"]
+    if File.exist?(lldb = 'run.lldb') or
+      File.exist?(lldb = File.join(abs_archdir, 'run.lldb'))
+      debugger.push('-s', lldb)
+    end
+    debugger << '--'
   end
 
   if idx = precommand.index(:debugger)

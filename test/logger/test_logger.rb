@@ -1,7 +1,6 @@
 # coding: US-ASCII
 # frozen_string_literal: false
-require 'test/unit'
-require 'logger'
+require_relative 'helper'
 require 'tempfile'
 
 class TestLogger < Test::Unit::TestCase
@@ -217,6 +216,13 @@ class TestLogger < Test::Unit::TestCase
     assert_equal(STDOUT, logger.instance_variable_get(:@logdev).dev)
   end
 
+  def test_reopen_nil_logdevice
+    logger = Logger.new(File::NULL)
+    assert_nothing_raised do
+      logger.reopen(STDOUT)
+    end
+  end
+
   def test_add
     logger = Logger.new(nil)
     logger.progname = "my_progname"
@@ -239,6 +245,29 @@ class TestLogger < Test::Unit::TestCase
     logger = Logger.new(nil)
     log = log_add(logger, INFO, nil, false)
     assert_equal("false\n", log.msg)
+  end
+
+  def test_add_binary_data_with_binmode_logdev
+    EnvUtil.with_default_internal(Encoding::UTF_8) do
+      begin
+        tempfile = Tempfile.new("logger")
+        tempfile.close
+        filename = tempfile.path
+        File.unlink(filename)
+
+        logger = Logger.new filename, binmode: true
+        logger.level = Logger::DEBUG
+
+        str = +"\x80"
+        str.force_encoding("ASCII-8BIT")
+
+        logger.add Logger::DEBUG, str
+        assert_equal(2, File.binread(filename).split(/\n/).size)
+      ensure
+        logger.close
+        tempfile.unlink
+      end
+    end
   end
 
   def test_level_log
@@ -340,5 +369,25 @@ class TestLogger < Test::Unit::TestCase
     msg = r.read
     r.close
     assert_equal("msg2\n\n", msg)
+  end
+
+  class CustomLogger < Logger
+    def level
+      INFO
+    end
+  end
+
+  def test_overriding_level
+    logger = CustomLogger.new(nil)
+    log = log(logger, :info) { "msg" }
+    assert_equal "msg\n", log.msg
+    #
+    log = log(logger, :debug) { "msg" }
+    assert_nil log.msg
+  end
+
+  def test_does_not_instantiate_log_device_for_File_NULL
+    l = Logger.new(File::NULL)
+    assert_nil(l.instance_variable_get(:@logdev))
   end
 end

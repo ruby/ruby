@@ -2,8 +2,7 @@ require_relative '../../../spec_helper'
 require 'stringio'
 require 'zlib'
 
-describe "GzipReader#eof?" do
-
+describe "Zlib::GzipReader#eof?" do
   before :each do
     @data = '{"a":1234}'
     @zip = [31, 139, 8, 0, 0, 0, 0, 0, 0, 3, 171, 86, 74, 84, 178, 50,
@@ -49,8 +48,7 @@ describe "GzipReader#eof?" do
       gz.read(1).should == @data[i, 1]
     end
     gz.eof?.should be_true
-    gz.read().should == ""
+    gz.read.should == ""
     gz.eof?.should be_true
   end
-
 end

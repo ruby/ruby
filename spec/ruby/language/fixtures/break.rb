@@ -163,7 +163,7 @@ module BreakSpecs
     # on the call stack when the lambda is invoked.
     def break_in_defining_scope(value=true)
       note :a
-      note lambda {
+      note -> {
         note :b
         if value
           break :break
@@ -177,7 +177,7 @@ module BreakSpecs
 
     def break_in_nested_scope
       note :a
-      l = lambda do
+      l = -> do
         note :b
         break :break
         note :c
@@ -197,7 +197,7 @@ module BreakSpecs
 
     def break_in_nested_scope_yield
       note :a
-      l = lambda do
+      l = -> do
         note :b
         break :break
         note :c
@@ -217,7 +217,7 @@ module BreakSpecs
 
     def break_in_nested_scope_block
       note :a
-      l = lambda do
+      l = -> do
         note :b
         break :break
         note :c
@@ -251,7 +251,7 @@ module BreakSpecs
     # active on the call stack when the lambda is invoked.
     def create_lambda
       note :la
-      l = lambda do
+      l = -> do
         note :lb
         break :break
         note :lc

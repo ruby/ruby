@@ -1,3 +1,5 @@
+#ifndef DLN_H
+#define DLN_H
 /**********************************************************************
 
   dln.h -
@@ -9,24 +11,7 @@
 
 **********************************************************************/
 
-#ifndef DLN_H
-#define DLN_H
-
-#ifdef __cplusplus
-# ifndef  HAVE_PROTOTYPES
-#  define HAVE_PROTOTYPES 1
-# endif
-# ifndef  HAVE_STDARG_PROTOTYPES
-#  define HAVE_STDARG_PROTOTYPES 1
-# endif
-#endif
-
-#undef _
-#ifdef HAVE_PROTOTYPES
-# define _(args) args
-#else
-# define _(args) ()
-#endif
+#include "ruby/defines.h"       /* for RUBY_SYMBOL_EXPORT_BEGIN */
 
 RUBY_SYMBOL_EXPORT_BEGIN
 

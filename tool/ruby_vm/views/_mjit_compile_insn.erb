@@ -7,7 +7,6 @@
 % # details.
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
 % # compiler: Prepare operands which may be used by `insn.call_attribute`
 % insn.opes.each_with_index do |ope, i|
         MAYBE_UNUSED(<%= ope.fetch(:decl) %>) = (<%= ope.fetch(:type) %>)operands[<%= i %>];
@@ -34,8 +33,8 @@
 %   case ope.fetch(:type)
 %   when 'ID'
         comment_id(f, (ID)operands[<%= i %>]);
-%   when 'CALL_INFO'
-        comment_id(f, ((CALL_INFO)operands[<%= i %>])->mid);
+%   when 'CALL_DATA'
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[<%= i %>])->ci));
 %   when 'VALUE'
         if (SYMBOL_P((VALUE)operands[<%= i %>])) comment_id(f, SYM2ID((VALUE)operands[<%= i %>]));
 %   end
@@ -61,11 +60,12 @@
 %
 % # JIT: We should evaluate ISeq modified for TracePoint if it's enabled. Note: This is slow.
 % unless insn.always_leaf?
-        fprintf(f, "    if (UNLIKELY(ruby_vm_event_enabled_global_flags & ISEQ_TRACE_EVENTS)) {\n");
-        fprintf(f, "        reg_cfp->sp = (VALUE *)reg_cfp->bp + %d;\n", b->stack_size + (int)<%= insn.call_attribute('sp_inc') %> + 1);
+        fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)<%= insn.call_attribute('sp_inc') %>);
         if (!pc_moved_p) {
             fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
         }
+        fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
         fprintf(f, "        goto cancel;\n");
         fprintf(f, "    }\n");
 % end
@@ -75,9 +75,14 @@
     }
     fprintf(f, "}\n");
 %
-% # compiler: If insn has conditional JUMP, the branch which is not targeted by JUMP should be compiled too.
+% # compiler: If insn has conditional JUMP, the code should go to the branch not targeted by JUMP next.
 % if insn.expr.expr =~ /if\s+\([^{}]+\)\s+\{[^{}]+JUMP\([^)]+\);[^{}]+\}/
-    compile_insns(f, body, b->stack_size, pos + insn_len(insn), status);
+    if (ALREADY_COMPILED_P(status, pos + insn_len(insn))) {
+        fprintf(f, "goto label_%d;\n", pos + insn_len(insn));
+    }
+    else {
+        compile_insns(f, body, b->stack_size, pos + insn_len(insn), status);
+    }
 % end
 %
 % # compiler: If insn returns (leave) or does longjmp (throw), the branch should no longer be compiled. TODO: create attr for it?

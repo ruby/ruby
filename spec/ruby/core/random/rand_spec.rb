@@ -1,9 +1,10 @@
 require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative 'shared/rand'
 
 describe "Random.rand" do
-  it "returns a Float if no max argument is passed" do
-    Random.rand.should be_kind_of(Float)
-  end
+  it_behaves_like :random_number, :rand, Random.new
+  it_behaves_like :random_number, :rand, Random
 
   it "returns a Float >= 0 if no max argument is passed" do
     floats = 200.times.map { Random.rand }
@@ -21,10 +22,6 @@ describe "Random.rand" do
     Random.srand 33
     floats_b = 20.times.map { Random.rand }
     floats_a.should == floats_b
-  end
-
-  it "returns an Integer if an Integer argument is passed" do
-    Random.rand(20).should be_kind_of(Integer)
   end
 
   it "returns an Integer >= 0 if an Integer argument is passed" do
@@ -83,13 +80,13 @@ describe "Random#rand with Fixnum" do
   end
 
   it "raises an ArgumentError when the argument is 0" do
-    lambda do
+    -> do
       Random.new.rand(0)
     end.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError when the argument is negative" do
-    lambda do
+    -> do
       Random.new.rand(-12)
     end.should raise_error(ArgumentError)
   end
@@ -122,7 +119,7 @@ describe "Random#rand with Bignum" do
   end
 
   it "raises an ArgumentError when the argument is negative" do
-    lambda do
+    -> do
       Random.new.rand(-bignum_value)
     end.should raise_error(ArgumentError)
   end
@@ -154,7 +151,7 @@ describe "Random#rand with Float" do
   end
 
   it "raises an ArgumentError when the argument is negative" do
-    lambda do
+    -> do
       Random.new.rand(-1.234567)
     end.should raise_error(ArgumentError)
   end
@@ -163,6 +160,12 @@ end
 describe "Random#rand with Range" do
   it "returns an element from the Range" do
     Random.new.rand(20..43).should be_an_instance_of(Fixnum)
+  end
+
+  it "supports custom object types" do
+    rand(RandomSpecs::CustomRangeInteger.new(1)..RandomSpecs::CustomRangeInteger.new(42)).should be_an_instance_of(RandomSpecs::CustomRangeInteger)
+    rand(RandomSpecs::CustomRangeFloat.new(1.0)..RandomSpecs::CustomRangeFloat.new(42.0)).should be_an_instance_of(RandomSpecs::CustomRangeFloat)
+    rand(Time.now..Time.now).should be_an_instance_of(Time)
   end
 
   it "returns an object that is a member of the Range" do
@@ -203,13 +206,13 @@ describe "Random#rand with Range" do
   end
 
   it "raises an ArgumentError when the startpoint lacks #+ and #- methods" do
-    lambda do
+    -> do
       Random.new.rand(Object.new..67)
     end.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError when the endpoint lacks #+ and #- methods" do
-    lambda do
+    -> do
       Random.new.rand(68..Object.new)
     end.should raise_error(ArgumentError)
   end

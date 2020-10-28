@@ -23,40 +23,80 @@ class TestDefined < Test::Unit::TestCase
     return !defined?(yield)
   end
 
-  def test_defined
+  def test_defined_global_variable
     $x = nil
 
     assert(defined?($x))		# global variable
     assert_equal('global-variable', defined?($x))# returns description
+  end
 
+  def test_defined_local_variable
     assert_nil(defined?(foo))		# undefined
     foo=5
     assert(defined?(foo))		# local variable
+  end
 
+  def test_defined_constant
     assert(defined?(Array))		# constant
     assert(defined?(::Array))		# toplevel constant
     assert(defined?(File::Constants))	# nested constant
+  end
+
+  def test_defined_public_method
     assert(defined?(Object.new))	# method
     assert(defined?(Object::new))	# method
-    assert(!defined?(Object.print))	# private method
-    assert(defined?(1 == 2))		# operator expression
+  end
 
+  def test_defined_private_method
+    assert(!defined?(Object.print))	# private method
+  end
+
+  def test_defined_operator
+    assert(defined?(1 == 2))		# operator expression
+  end
+
+  def test_defined_protected_method
     f = Foo.new
     assert_nil(defined?(f.foo))         # protected method
     f.bar(f) { |v| assert(v) }
+    f.bar(Class.new(Foo).new) { |v| assert(v, "inherited protected method") }
+  end
+
+  def test_defined_undefined_method
+    f = Foo.new
     assert_nil(defined?(f.quux))        # undefined method
+  end
+
+  def test_defined_undefined_argument
+    f = Foo.new
     assert_nil(defined?(f.baz(x)))      # undefined argument
     x = 0
     assert(defined?(f.baz(x)))
     assert_nil(defined?(f.quux(x)))
     assert(defined?(print(x)))
     assert_nil(defined?(quux(x)))
+  end
+
+  def test_defined_attrasgn
+    f = Foo.new
     assert(defined?(f.attr = 1))
     f.attrasgn_test { |v| assert(v) }
+  end
 
+  def test_defined_undef
+    x = Object.new
+    def x.foo; end
+    assert(defined?(x.foo))
+    x.instance_eval {undef :foo}
+    assert(!defined?(x.foo), "undefed method should not be defined?")
+  end
+
+  def test_defined_yield
     assert(defined_test)		# not iterator
     assert(!defined_test{})	        # called as iterator
+  end
 
+  def test_defined_matchdata
     /a/ =~ ''
     assert_equal nil, defined?($&)
     assert_equal nil, defined?($`)
@@ -85,12 +125,16 @@ class TestDefined < Test::Unit::TestCase
     assert_equal 'global-variable', defined?($+)
     assert_equal 'global-variable', defined?($1)
     assert_equal nil, defined?($2)
+  end
 
+  def test_defined_literal
     assert_equal("nil", defined?(nil))
     assert_equal("true", defined?(true))
     assert_equal("false", defined?(false))
     assert_equal("expression", defined?(1))
+  end
 
+  def test_defined_empty_paren_expr
     bug8224 = '[ruby-core:54024] [Bug #8224]'
     (1..3).each do |level|
       expr = "("*level+")"*level
@@ -256,5 +300,54 @@ class TestDefined < Test::Unit::TestCase
 
   def test_top_level_constant_not_defined
     assert_nil(defined?(TestDefined::Object))
+  end
+
+  class RefinedClass
+  end
+
+  module RefiningModule
+    refine RefinedClass do
+      def pub
+      end
+
+      private
+
+      def priv
+      end
+    end
+
+    def self.call_without_using(x = RefinedClass.new)
+      defined?(x.pub)
+    end
+
+    def self.vcall_without_using(x = RefinedClass.new)
+      x.instance_eval {defined?(priv)}
+    end
+
+    using self
+
+    def self.call_with_using(x = RefinedClass.new)
+      defined?(x.pub)
+    end
+
+    def self.vcall_with_using(x = RefinedClass.new)
+      x.instance_eval {defined?(priv)}
+    end
+  end
+
+  def test_defined_refined_call_without_using
+    assert(!RefiningModule.call_without_using, "refined public method without using")
+  end
+
+  def test_defined_refined_vcall_without_using
+    assert(!RefiningModule.vcall_without_using, "refined private method without using")
+  end
+
+  def test_defined_refined_call_with_using
+    assert(RefiningModule.call_with_using, "refined public method with using")
+  end
+
+  def test_defined_refined_vcall_with_using
+    assert(RefiningModule.vcall_with_using, "refined private method with using")
   end
 end

@@ -18,6 +18,7 @@
 *.orig
 *.pch
 *.pdb
+*.rbinc
 *.rej
 *.s
 *.sav
@@ -26,7 +27,6 @@
 *.swp
 *.yarb
 *~
-.*-*
 .*.list
 .*.time
 .DS_Store
@@ -36,6 +36,8 @@
 .pc
 .ppack
 .svn
+.time
+.ruby-version
 Makefile
 cygruby*.def
 extconf.h
@@ -44,6 +46,7 @@ y.tab.c
 *.gcda
 *.gcno
 *.gcov
+*.vscode
 lcov*.info
 
 # /
@@ -54,7 +57,11 @@ lcov*.info
 /*.pc
 /*.rc
 /*_prelude.c
+/.downloaded-cache
+/.top-enc.mk
+/build*/
 /COPYING.LIB
+/ChangeLog
 /Doxyfile
 /GNUmakefile
 /README.atheos
@@ -112,6 +119,7 @@ lcov*.info
 /rename2.h
 /repack
 /revision.h
+/revision.tmp
 /riscos
 /rubicon
 /ruby
@@ -130,6 +138,11 @@ lcov*.info
 /web
 /yasmdata.rb
 
+# /bin/
+
+/bin/*.exe
+/bin/*.dll
+
 # /benchmark/
 /benchmark/bm_require.data
 /benchmark/bmx_*.rb
@@ -144,24 +157,24 @@ lcov*.info
 
 # /coroutine/
 !/coroutine/**/*.s
-/coroutine/**/.time
 
 # /enc/trans/
 /enc/trans/*.c
 /enc/trans/*.def
 /enc/trans/*.exp
 /enc/trans/*.lib
-/enc/trans/.time
 
 # /exe/
 /exe/goruby
 /exe/ruby
-/exe/.time
 
 # /ext/
 /ext/extinit.c
 /ext/configure-ext.mk
 /ext/*/exts.mk
+
+# /ext/-test-/cxxanyargs
+/ext/-test-/cxxanyargs/failure*.failed
 
 # /ext/-test-/win32/dln/
 /ext/-test-/win32/dln/dlntest.dll
@@ -180,6 +193,7 @@ lcov*.info
 
 # /ext/ripper/
 /ext/ripper/eventids1.c
+/ext/ripper/.eventids2-check
 /ext/ripper/eventids2table.c
 /ext/ripper/ripper.*
 /ext/ripper/ids1
@@ -195,6 +209,10 @@ lcov*.info
 /gems/src
 /gems/*-*
 
+# /lib/
+/lib/ruby/[1-9]*.*
+/lib/ruby/vendor_ruby
+
 # /spec/bundler
 /.rspec_status
 
@@ -204,7 +222,6 @@ lcov*.info
 
 # /win32/
 /win32/*.ico
-/win32/.time
 
 # MJIT
 /rb_mjit_header.h

@@ -9,7 +9,6 @@ class Gem::RequestSet::Lockfile
   # Raised when a lockfile cannot be parsed
 
   class ParseError < Gem::Exception
-
     ##
     # The column where the error was encountered
 
@@ -77,15 +76,17 @@ class Gem::RequestSet::Lockfile
     @gem_deps_file = File.expand_path(gem_deps_file)
     @gem_deps_dir  = File.dirname(@gem_deps_file)
 
-    @gem_deps_file.untaint unless gem_deps_file.tainted?
+    if RUBY_VERSION < '2.7'
+      @gem_deps_file.untaint unless gem_deps_file.tainted?
+    end
 
-    @platforms      = []
+    @platforms = []
   end
 
   def add_DEPENDENCIES(out) # :nodoc:
     out << "DEPENDENCIES"
 
-    out.concat @dependencies.sort_by { |name,| name }.map { |name, requirement|
+    out.concat @dependencies.sort_by {|name,| name }.map {|name, requirement|
       "  #{name}#{requirement.for_lockfile}"
     }
 
@@ -99,12 +100,12 @@ class Gem::RequestSet::Lockfile
       request.spec.source.uri
     end
 
-    source_groups.sort_by { |group,| group.to_s }.map do |group, requests|
+    source_groups.sort_by {|group,| group.to_s }.map do |group, requests|
       out << "GEM"
       out << "  remote: #{group}"
       out << "  specs:"
 
-      requests.sort_by { |request| request.name }.each do |request|
+      requests.sort_by {|request| request.name }.each do |request|
         next if request.spec.name == 'bundler'
         platform = "-#{request.spec.platform}" unless
           Gem::Platform::RUBY == request.spec.platform
@@ -136,10 +137,10 @@ class Gem::RequestSet::Lockfile
       out << "  revision: #{revision}"
       out << "  specs:"
 
-      requests.sort_by { |request| request.name }.each do |request|
+      requests.sort_by {|request| request.name }.each do |request|
         out << "    #{request.name} (#{request.version})"
 
-        dependencies = request.spec.dependencies.sort_by { |dep| dep.name }
+        dependencies = request.spec.dependencies.sort_by {|dep| dep.name }
         dependencies.each do |dep|
           out << "      #{dep.name}#{dep.requirement.for_lockfile}"
         end
@@ -153,7 +154,7 @@ class Gem::RequestSet::Lockfile
     base = File.expand_path(base)
 
     if dest.index(base) == 0
-      offset = dest[base.size+1..-1]
+      offset = dest[base.size + 1..-1]
 
       return '.' unless offset
 
@@ -181,9 +182,9 @@ class Gem::RequestSet::Lockfile
   def add_PLATFORMS(out) # :nodoc:
     out << "PLATFORMS"
 
-    platforms = requests.map { |request| request.spec.platform }.uniq
+    platforms = requests.map {|request| request.spec.platform }.uniq
 
-    platforms = platforms.sort_by { |platform| platform.to_s }
+    platforms = platforms.sort_by {|platform| platform.to_s }
 
     platforms.each do |platform|
       out << "  #{platform}"
@@ -193,7 +194,7 @@ class Gem::RequestSet::Lockfile
   end
 
   def spec_groups
-    requests.group_by { |request| request.spec.class }
+    requests.group_by {|request| request.spec.class }
   end
 
   ##

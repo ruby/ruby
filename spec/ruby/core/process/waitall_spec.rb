@@ -13,7 +13,7 @@ describe "Process.waitall" do
   end
 
   it "takes no arguments" do
-    lambda { Process.waitall(0) }.should raise_error(ArgumentError)
+    -> { Process.waitall(0) }.should raise_error(ArgumentError)
   end
 
   platform_is_not :windows do
@@ -24,7 +24,7 @@ describe "Process.waitall" do
       pids << Process.fork { Process.exit! 0 }
       Process.waitall
       pids.each { |pid|
-        lambda { Process.kill(0, pid) }.should raise_error(Errno::ESRCH)
+        -> { Process.kill(0, pid) }.should raise_error(Errno::ESRCH)
       }
     end
 

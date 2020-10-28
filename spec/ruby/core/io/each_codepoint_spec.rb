@@ -38,6 +38,6 @@ describe "IO#each_codepoint" do
   end
 
   it "raises an exception at incomplete character before EOF when conversion takes place" do
-    lambda { @io.each_codepoint {} }.should raise_error(ArgumentError)
+    -> { @io.each_codepoint {} }.should raise_error(ArgumentError)
   end
 end

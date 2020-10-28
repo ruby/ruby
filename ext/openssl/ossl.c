@@ -338,7 +338,7 @@ ossl_clear_error(void)
  * implementation.
  */
 VALUE
-ossl_get_errors(void)
+ossl_get_errors(VALUE _)
 {
     VALUE ary;
     long e;
@@ -605,6 +605,35 @@ static void Init_ossl_locks(void)
 #endif /* !HAVE_OPENSSL_110_THREADING_API */
 
 /*
+ * call-seq:
+ *   OpenSSL.fixed_length_secure_compare(string, string) -> boolean
+ *
+ * Constant time memory comparison for fixed length strings, such as results
+ * of HMAC calculations.
+ *
+ * Returns +true+ if the strings are identical, +false+ if they are of the same
+ * length but not identical. If the length is different, +ArgumentError+ is
+ * raised.
+ */
+static VALUE
+ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
+{
+    const unsigned char *p1 = (const unsigned char *)StringValuePtr(str1);
+    const unsigned char *p2 = (const unsigned char *)StringValuePtr(str2);
+    long len1 = RSTRING_LEN(str1);
+    long len2 = RSTRING_LEN(str2);
+
+    if (len1 != len2) {
+        ossl_raise(rb_eArgError, "inputs must be of equal length");
+    }
+
+    switch (CRYPTO_memcmp(p1, p2, len1)) {
+        case 0:	return Qtrue;
+        default: return Qfalse;
+    }
+}
+
+/*
  * OpenSSL provides SSL, TLS and general purpose cryptography.  It wraps the
  * OpenSSL[https://www.openssl.org/] library.
  *
@@ -635,7 +664,7 @@ static void Init_ossl_locks(void)
  * ahold of the key may use it unless it is encrypted.  In order to securely
  * export a key you may export it with a pass phrase.
  *
- *   cipher = OpenSSL::Cipher.new 'AES-128-CBC'
+ *   cipher = OpenSSL::Cipher.new 'AES-256-CBC'
  *   pass_phrase = 'my secure pass phrase goes here'
  *
  *   key_secure = key.export cipher, pass_phrase
@@ -710,16 +739,14 @@ static void Init_ossl_locks(void)
  * To sign a document, a cryptographically secure hash of the document is
  * computed first, which is then signed using the private key.
  *
- *   digest = OpenSSL::Digest::SHA256.new
- *   signature = key.sign digest, document
+ *   signature = key.sign 'SHA256', document
  *
  * To validate the signature, again a hash of the document is computed and
  * the signature is decrypted using the public key. The result is then
  * compared to the hash just computed, if they are equal the signature was
  * valid.
  *
- *   digest = OpenSSL::Digest::SHA256.new
- *   if key.verify digest, signature, document
+ *   if key.verify 'SHA256', signature, document
  *     puts 'Valid'
  *   else
  *     puts 'Invalid'
@@ -745,7 +772,7 @@ static void Init_ossl_locks(void)
  * using PBKDF2. PKCS #5 v2.0 recommends at least 8 bytes for the salt,
  * the number of iterations largely depends on the hardware being used.
  *
- *   cipher = OpenSSL::Cipher.new 'AES-128-CBC'
+ *   cipher = OpenSSL::Cipher.new 'AES-256-CBC'
  *   cipher.encrypt
  *   iv = cipher.random_iv
  *
@@ -753,7 +780,7 @@ static void Init_ossl_locks(void)
  *   salt = OpenSSL::Random.random_bytes 16
  *   iter = 20000
  *   key_len = cipher.key_len
- *   digest = OpenSSL::Digest::SHA256.new
+ *   digest = OpenSSL::Digest.new('SHA256')
  *
  *   key = OpenSSL::PKCS5.pbkdf2_hmac(pwd, salt, iter, key_len, digest)
  *   cipher.key = key
@@ -768,7 +795,7 @@ static void Init_ossl_locks(void)
  * Use the same steps as before to derive the symmetric AES key, this time
  * setting the Cipher up for decryption.
  *
- *   cipher = OpenSSL::Cipher.new 'AES-128-CBC'
+ *   cipher = OpenSSL::Cipher.new 'AES-256-CBC'
  *   cipher.decrypt
  *   cipher.iv = iv # the one generated with #random_iv
  *
@@ -776,7 +803,7 @@ static void Init_ossl_locks(void)
  *   salt = ... # the one generated above
  *   iter = 20000
  *   key_len = cipher.key_len
- *   digest = OpenSSL::Digest::SHA256.new
+ *   digest = OpenSSL::Digest.new('SHA256')
  *
  *   key = OpenSSL::PKCS5.pbkdf2_hmac(pwd, salt, iter, key_len, digest)
  *   cipher.key = key
@@ -803,7 +830,7 @@ static void Init_ossl_locks(void)
  *
  * First set up the cipher for encryption
  *
- *   encryptor = OpenSSL::Cipher.new 'AES-128-CBC'
+ *   encryptor = OpenSSL::Cipher.new 'AES-256-CBC'
  *   encryptor.encrypt
  *   encryptor.pkcs5_keyivgen pass_phrase, salt
  *
@@ -816,7 +843,7 @@ static void Init_ossl_locks(void)
  *
  * Use a new Cipher instance set up for decryption
  *
- *   decryptor = OpenSSL::Cipher.new 'AES-128-CBC'
+ *   decryptor = OpenSSL::Cipher.new 'AES-256-CBC'
  *   decryptor.decrypt
  *   decryptor.pkcs5_keyivgen pass_phrase, salt
  *
@@ -833,7 +860,7 @@ static void Init_ossl_locks(void)
  * signature.
  *
  *   key = OpenSSL::PKey::RSA.new 2048
- *   name = OpenSSL::X509::Name.parse 'CN=nobody/DC=example'
+ *   name = OpenSSL::X509::Name.parse '/CN=nobody/DC=example'
  *
  *   cert = OpenSSL::X509::Certificate.new
  *   cert.version = 2
@@ -872,7 +899,7 @@ static void Init_ossl_locks(void)
  * certificate.
  *
  *   cert.issuer = name
- *   cert.sign key, OpenSSL::Digest::SHA1.new
+ *   cert.sign key, OpenSSL::Digest.new('SHA1')
  *
  *   open 'certificate.pem', 'w' do |io| io.write cert.to_pem end
  *
@@ -904,7 +931,7 @@ static void Init_ossl_locks(void)
  *   ca_key = OpenSSL::PKey::RSA.new 2048
  *   pass_phrase = 'my secure pass phrase goes here'
  *
- *   cipher = OpenSSL::Cipher.new 'AES-128-CBC'
+ *   cipher = OpenSSL::Cipher.new 'AES-256-CBC'
  *
  *   open 'ca_key.pem', 'w', 0400 do |io|
  *     io.write ca_key.export(cipher, pass_phrase)
@@ -915,7 +942,7 @@ static void Init_ossl_locks(void)
  * A CA certificate is created the same way we created a certificate above, but
  * with different extensions.
  *
- *   ca_name = OpenSSL::X509::Name.parse 'CN=ca/DC=example'
+ *   ca_name = OpenSSL::X509::Name.parse '/CN=ca/DC=example'
  *
  *   ca_cert = OpenSSL::X509::Certificate.new
  *   ca_cert.serial = 0
@@ -948,7 +975,7 @@ static void Init_ossl_locks(void)
  *
  * Root CA certificates are self-signed.
  *
- *   ca_cert.sign ca_key, OpenSSL::Digest::SHA1.new
+ *   ca_cert.sign ca_key, OpenSSL::Digest.new('SHA1')
  *
  * The CA certificate is saved to disk so it may be distributed to all the
  * users of the keys this CA will sign.
@@ -966,7 +993,7 @@ static void Init_ossl_locks(void)
  *   csr.version = 0
  *   csr.subject = name
  *   csr.public_key = key.public_key
- *   csr.sign key, OpenSSL::Digest::SHA1.new
+ *   csr.sign key, OpenSSL::Digest.new('SHA1')
  *
  * A CSR is saved to disk and sent to the CA for signing.
  *
@@ -1010,7 +1037,7 @@ static void Init_ossl_locks(void)
  *   csr_cert.add_extension \
  *     extension_factory.create_extension('subjectKeyIdentifier', 'hash')
  *
- *   csr_cert.sign ca_key, OpenSSL::Digest::SHA1.new
+ *   csr_cert.sign ca_key, OpenSSL::Digest.new('SHA1')
  *
  *   open 'csr_cert.pem', 'w' do |io|
  *     io.write csr_cert.to_pem
@@ -1125,11 +1152,7 @@ Init_openssl(void)
      */
     mOSSL = rb_define_module("OpenSSL");
     rb_global_variable(&mOSSL);
-
-    /*
-     * OpenSSL ruby extension version
-     */
-    rb_define_const(mOSSL, "VERSION", rb_str_new2(OSSL_VERSION));
+    rb_define_singleton_method(mOSSL, "fixed_length_secure_compare", ossl_crypto_fixed_length_secure_compare, 2);
 
     /*
      * Version of OpenSSL the ruby OpenSSL extension was built with
@@ -1205,6 +1228,9 @@ Init_openssl(void)
     Init_ossl_pkey();
     Init_ossl_rand();
     Init_ossl_ssl();
+#ifndef OPENSSL_NO_TS
+    Init_ossl_ts();
+#endif
     Init_ossl_x509();
     Init_ossl_ocsp();
     Init_ossl_engine();

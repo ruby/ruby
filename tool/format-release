@@ -1,45 +1,33 @@
 #!/usr/bin/env ruby
-#
-# Tool to update w.r-l.o files on release
-#
-# This receives `make dist`'s output, and prints
-#
-# * links and digests of tarballs for releate article
-# * patch for below data files
-#   * _data/branches.yml
-#   * _data/downloads.yml
-#   * _data/releases.yml
-#
-# To apply the patch, `patch -p1 < patch.txt`
+# https://rubygems.org/gems/diffy
 require "diffy"
+require "open-uri"
+require "yaml"
 
 Diffy::Diff.default_options.merge!(
   include_diff_info: true,
   context: 1,
 )
-WWW = Dir.pwd # workdir of https://github.com/ruby/www.ruby-lang.org
 
 class Tarball
-  attr_reader :version, :sha256
+  attr_reader :version, :size, :sha1, :sha256, :sha512
 
-  def initialize(path, size, sha1, sha256, sha512)
-    /\A\/(?:[^\/\n]*\/)*(?:ruby-(?<ver>(?<xy>\d+\.\d+)\.\d+(?:-(?:preview|rc)\d+)?)[0-9a-z.\-]+)/ =~ path \
-      or raise "tarball path doesn't mach regexp"
-    @path = path
+  def initialize(version, url, size, sha1, sha256, sha512)
+    @url = url
     @size = size
     @sha1 = sha1
     @sha256 = sha256
     @sha512 = sha512
-    @version = ver
-    @xy = xy
+    @version = version
+    @xy = version[/\A\d+\.\d+/]
   end
 
-  def gz?;  @path.end_with?('.gz'); end
-  def zip?; @path.end_with?('.zip'); end
-  def bz2?; @path.end_with?('.bz2'); end
-  def xz?;  @path.end_with?('.xz'); end
+  def gz?;  @url.end_with?('.gz'); end
+  def zip?; @url.end_with?('.zip'); end
+  def bz2?; @url.end_with?('.bz2'); end
+  def xz?;  @url.end_with?('.xz'); end
 
-  def ext; @path[/(?:zip|tar\.(?:gz|bz2|xz))\z/]; end
+  def ext; @url[/(?:zip|tar\.(?:gz|bz2|xz))\z/]; end
 
   def to_md
     <<eom
@@ -57,37 +45,64 @@ eom
   #   SHA1:   21f62c369661a2ab1b521fd2fa8191a4273e12a1
   #   SHA256: 97cea8aa63dfa250ba6902b658a7aa066daf817b22f82b7ee28f44aec7c2e394
   #   SHA512: 1e2042324821bb4e110af7067f52891606dcfc71e640c194ab1c117f0b941550e0b3ac36ad3511214ac80c536b9e5cfaf8789eec74cf56971a832ea8fc4e6d94
-  def self.parse(io)
-    ary = []
-    ver = nil
-    io.read.scan(/^\* .*(?:\n .*)*/) do |unit|
-      path, size, sha1, sha256, sha512 = unit.lines.map(&:chomp)
-      path.slice!(0, 2)
-      size = size[/\d+/].to_i
-      sha1 = sha1[/\h{40}/]
-      sha256 = sha256[/\h{64}/]
-      sha512 = sha512[/\h{128}/]
-      tarball = Tarball.new(path, size, sha1, sha256, sha512)
-      if ver
-        raise "mixed versions" if tarball.version != ver
-      else
-        ver = tarball.version
-      end
-      ary << tarball
+  def self.parse(wwwdir, version)
+    unless /\A(\d+)\.(\d+)\.(\d+)(?:-(?:preview|rc)\d+)?\z/ =~ version
+      raise "unexpected version string '#{version}'"
     end
-    xy = ver[/\A\d+\.\d+/]
-    ary.each do |tarball|
-      puts tarball.to_md
+    x = $1.to_i
+    y = $2.to_i
+    z = $3.to_i
+    # previous tag for git diff --shortstat
+    # It's only for x.y.0 release
+    if z != 0
+      prev_tag = nil
+    elsif y != 0
+      prev_tag = "v#{x}_#{y-1}_0"
+      prev_ver = "#{x}.#{y-1}.0"
+    elsif x == 3 && y == 0 && z == 0
+      prev_tag = "v2_7_0"
+      prev_ver = "2.7.0"
+    else
+      raise "unexpected version for prev_ver '#{version}'"
     end
-    update_branches_yml(ver, xy)
-    update_downloads_yml(ver, xy)
-    update_releases_yml(ver, xy, ary)
-    ary
+
+    uri = "https://cache.ruby-lang.org/pub/tmp/ruby-info-#{version}-draft.yml"
+    info = YAML.load(URI(uri).read)
+    if info.size != 1
+      raise "unexpected info.yml '#{uri}'"
+    end
+    tarballs = []
+    info[0]["size"].each_key do |ext|
+      url = info[0]["url"][ext]
+      size = info[0]["size"][ext]
+      sha1 = info[0]["sha1"][ext]
+      sha256 = info[0]["sha256"][ext]
+      sha512 = info[0]["sha512"][ext]
+      tarball = Tarball.new(version, url, size, sha1, sha256, sha512)
+      tarballs << tarball
+    end
+
+    if prev_tag
+      # show diff shortstat
+      tag = "v#{version.gsub(/[.\-]/, '_')}"
+      stat = `git diff --shortstat #{prev_tag}..#{tag}`
+      files_changed, insertions, deletions = stat.scan(/\d+/)
+    end
+
+    xy = version[/\A\d+\.\d+/]
+    #puts "## Download\n\n"
+    #tarballs.each do |tarball|
+    #  puts tarball.to_md
+    #end
+    update_branches_yml(version, xy, wwwdir)
+    update_downloads_yml(version, xy, wwwdir)
+    update_releases_yml(version, xy, tarballs, wwwdir, files_changed, insertions, deletions)
+    tarballs
   end
 
-  def self.update_branches_yml(ver, xy)
+  def self.update_branches_yml(ver, xy, wwwdir)
     filename = "_data/branches.yml"
-    orig_data = File.read(File.join(WWW, filename))
+    orig_data = File.read(File.join(wwwdir, filename))
     data = orig_data.dup
     if data.include?("\n- name: #{xy}\n")
       data.sub!(/\n- name: #{Regexp.escape(xy)}\n(?:  .*\n)*/) do |node|
@@ -121,9 +136,9 @@ eom
     end
   end
 
-  def self.update_downloads_yml(ver, xy)
+  def self.update_downloads_yml(ver, xy, wwwdir)
     filename = "_data/downloads.yml"
-    orig_data = File.read(File.join(WWW, filename))
+    orig_data = File.read(File.join(wwwdir, filename))
     data = orig_data.dup
 
     if /^preview:\n\n(?:  .*\n)*  - #{Regexp.escape(xy)}\./ =~ data
@@ -148,26 +163,45 @@ eom
     end
   end
 
-  def self.update_releases_yml(ver, xy, ary)
+  def self.update_releases_yml(ver, xy, ary, wwwdir, files_changed, insertions, deletions)
     filename = "_data/releases.yml"
-    orig_data = File.read(File.join(WWW, filename))
+    orig_data = File.read(File.join(wwwdir, filename))
     data = orig_data.dup
 
-    date = Time.now
+    date = Time.now.utc # use utc to use previous day in midnight
     entry = <<eom
 - version: #{ver}
   date: #{date.strftime("%Y-%m-%d")}
   post: /en/news/#{date.strftime("%Y/%m/%d")}/ruby-#{ver.tr('.', '-')}-released/
+  stats:
+    files_changed: #{files_changed}
+    insertions: #{insertions}
+    deletions: #{deletions}
   url:
     gz:  https://cache.ruby-lang.org/pub/ruby/#{xy}/ruby-#{ver}.tar.gz
     zip: https://cache.ruby-lang.org/pub/ruby/#{xy}/ruby-#{ver}.zip
     bz2: https://cache.ruby-lang.org/pub/ruby/#{xy}/ruby-#{ver}.tar.bz2
     xz:  https://cache.ruby-lang.org/pub/ruby/#{xy}/ruby-#{ver}.tar.xz
+  size:
+    gz:  #{ary.find{|x|x.gz? }.size}
+    zip: #{ary.find{|x|x.zip?}.size}
+    bz2: #{ary.find{|x|x.bz2?}.size}
+    xz:  #{ary.find{|x|x.xz? }.size}
+  sha1:
+    gz:  #{ary.find{|x|x.gz? }.sha1}
+    zip: #{ary.find{|x|x.zip?}.sha1}
+    bz2: #{ary.find{|x|x.bz2?}.sha1}
+    xz:  #{ary.find{|x|x.xz? }.sha1}
   sha256:
     gz:  #{ary.find{|x|x.gz? }.sha256}
     zip: #{ary.find{|x|x.zip?}.sha256}
     bz2: #{ary.find{|x|x.bz2?}.sha256}
     xz:  #{ary.find{|x|x.xz? }.sha256}
+  sha512:
+    gz:  #{ary.find{|x|x.gz? }.sha512}
+    zip: #{ary.find{|x|x.zip?}.sha512}
+    bz2: #{ary.find{|x|x.bz2?}.sha512}
+    xz:  #{ary.find{|x|x.xz? }.sha512}
 eom
 
     if data.include?("\n- version: #{ver}\n")
@@ -199,6 +233,13 @@ eom
 end
 
 def main
-  Tarball.parse(ARGF)
+  if ARGV.size != 2
+    STDERR.puts "usage: format-release <dir-of-w.r-l.o> <version>"
+    exit
+  end
+  wwwdir = ARGV.shift
+  version = ARGV.shift
+  Tarball.parse(wwwdir, version)
 end
+
 main

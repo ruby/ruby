@@ -35,6 +35,29 @@ class TestMonitor < Test::Unit::TestCase
     assert_equal((1..10).to_a, ary)
   end
 
+  def test_exit
+    m = Monitor.new
+    m.enter
+    assert_equal true, m.mon_owned?
+    m.exit
+    assert_equal false, m.mon_owned?
+
+    assert_raise ThreadError do
+      m.exit
+    end
+
+    assert_equal false, m.mon_owned?
+
+    m.enter
+    Thread.new{
+      assert_raise(ThreadError) do
+        m.exit
+      end
+    }.join
+    assert_equal true, m.mon_owned?
+    m.exit
+  end
+
   def test_enter_second_after_killed_thread
     th = Thread.start {
       @monitor.enter
@@ -172,6 +195,8 @@ class TestMonitor < Test::Unit::TestCase
       assert @monitor.mon_locked?
       assert @monitor.mon_owned?
     end
+  ensure
+    th.join
   end
 
   def test_cond
@@ -196,6 +221,35 @@ class TestMonitor < Test::Unit::TestCase
       end
     end
     assert_join_threads([th, th2])
+  end
+
+  class NewCondTest
+    include MonitorMixin
+    attr_reader :cond
+    def initialize
+      @cond = new_cond
+      super # mon_initialize
+    end
+  end
+
+  def test_new_cond_before_initialize
+    assert NewCondTest.new.cond.instance_variable_get(:@monitor) != nil
+  end
+
+  class KeywordInitializeParent
+    def initialize(x:)
+    end
+  end
+
+  class KeywordInitializeChild < KeywordInitializeParent
+    include MonitorMixin
+    def initialize
+      super(x: 1)
+    end
+  end
+
+  def test_initialize_with_keyword_arg
+    assert KeywordInitializeChild.new
   end
 
   def test_timedwait
@@ -271,24 +325,24 @@ class TestMonitor < Test::Unit::TestCase
   end
 
   def test_wait_interruption
-    queue = Queue.new
     cond = @monitor.new_cond
-    @monitor.define_singleton_method(:mon_enter_for_cond) do |*args|
-      queue.deq
-      super(*args)
-    end
+
     th = Thread.start {
       @monitor.synchronize do
         begin
           cond.wait(0.1)
+          @monitor.mon_owned?
         rescue Interrupt
-          @monitor.instance_variable_get(:@mon_owner)
+          @monitor.mon_owned?
         end
       end
     }
     sleep(0.1)
     th.raise(Interrupt)
-    queue.enq(nil)
-    assert_equal th, th.value
+
+    begin
+      assert_equal true, th.value
+    rescue Interrupt
+    end
   end
 end

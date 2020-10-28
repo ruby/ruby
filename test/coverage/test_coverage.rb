@@ -359,6 +359,38 @@ class TestCoverage < Test::Unit::TestCase
     end;
   end
 
+  def test_branch_coverage_for_pattern_matching
+    result = {
+      :branches=> {
+        [:case, 0,  3, 4,  8, 7] => {[:in, 1,  5, 6,  5, 7]=>2, [:in, 2, 7, 6, 7, 7]=>0, [:else, 3,  3, 4,  8, 7]=>1},
+        [:case, 4, 12, 2, 17, 5] => {[:in, 5, 14, 4, 14, 5]=>2,                          [:else, 6, 16, 4, 16, 5]=>1}},
+    }
+    assert_coverage(<<~"end;", { branches: true }, result)
+      def foo(x)
+        begin
+          case x
+          in 0
+            0
+          in 1
+            1
+          end
+        rescue NoMatchingPatternError
+        end
+
+        case x
+        in 0
+          0
+        else
+          1
+        end
+      end
+
+      foo(0)
+      foo(0)
+      foo(2)
+    end;
+  end
+
   def test_branch_coverage_for_safe_method_invocation
     result = {
       :branches=>{
@@ -695,5 +727,37 @@ class TestCoverage < Test::Unit::TestCase
         assert_equal([0, 0, 0, nil, 0, nil, nil], Coverage.line_stub("test.rb"))
       }
     }
+  end
+
+  def test_stop_wrong_peephole_optimization
+    result = {
+      :lines => [1, 1, 1, nil]
+    }
+    assert_coverage(<<~"end;", { lines: true }, result)
+      raise if 1 == 2
+      while true
+        break
+      end
+    end;
+  end
+
+  def test_branch_coverage_in_ensure_clause
+    result = {
+      :branches => {
+        [:if, 0, 4, 2, 4, 11] => {
+          [:then, 1, 4, 2, 4, 5] => 1,
+          [:else, 2, 4, 2, 4, 11] => 1,
+        }
+      }
+    }
+    assert_coverage(<<~"end;", { branches: true }, result) # Bug #16967
+      def foo
+        yield
+      ensure
+        :ok if $!
+      end
+      foo {}
+      foo { raise } rescue nil
+    end;
   end
 end

@@ -53,6 +53,14 @@ require 'tmpdir'
 #      file.unlink   # deletes the temp file
 #   end
 #
+# Tempfile.create { ... } exists for this purpose and is more convenient to use.
+# Note that Tempfile.create returns a File instance instead of a Tempfile, which
+# also avoids the overhead and complications of delegation.
+#
+#   Tempfile.open('foo') do |file|
+#      # ...do something with file...
+#   end
+#
 # === Unlink after creation
 #
 # On POSIX systems, it's possible to unlink a file right after creating it,
@@ -82,6 +90,10 @@ class Tempfile < DelegateClass(File)
   # Creates a temporary file with permissions 0600 (= only readable and
   # writable by the owner) and opens it with mode "w+".
   #
+  # It is recommended to use Tempfile.create { ... } instead when possible,
+  # because that method avoids the cost of delegation and does not rely on a
+  # finalizer to close and unlink the file, which is unreliable.
+  #
   # The +basename+ parameter is used to determine the name of the
   # temporary file. You can either pass a String or an Array with
   # 2 String elements. In the former form, the temporary file's base
@@ -98,10 +110,6 @@ class Tempfile < DelegateClass(File)
   #
   # The temporary file will be placed in the directory as specified
   # by the +tmpdir+ parameter. By default, this is +Dir.tmpdir+.
-  # When $SAFE > 0 and the given +tmpdir+ is tainted, it uses
-  # '/tmp' as the temporary directory. Please note that ENV values
-  # are tainted by default, and +Dir.tmpdir+'s return value might
-  # come from environment variables (e.g. <tt>$TMPDIR</tt>).
   #
   #   file = Tempfile.new('hello', '/home/aisaka')
   #   file.path  # => something like: "/home/aisaka/hello2843-8392-92849382--0"
@@ -128,9 +136,9 @@ class Tempfile < DelegateClass(File)
 
     @unlinked = false
     @mode = mode|File::RDWR|File::CREAT|File::EXCL
-    ::Dir::Tmpname.create(basename, tmpdir, options) do |tmpname, n, opts|
+    ::Dir::Tmpname.create(basename, tmpdir, **options) do |tmpname, n, opts|
       opts[:perm] = 0600
-      @tmpfile = File.open(tmpname, @mode, opts)
+      @tmpfile = File.open(tmpname, @mode, **opts)
       @opts = opts.freeze
     end
     ObjectSpace.define_finalizer(self, Remover.new(@tmpfile))
@@ -142,7 +150,7 @@ class Tempfile < DelegateClass(File)
   def open
     _close
     mode = @mode & ~(File::CREAT|File::EXCL)
-    @tmpfile = File.open(@tmpfile.path, mode, @opts)
+    @tmpfile = File.open(@tmpfile.path, mode, **@opts)
     __setobj__(@tmpfile)
   end
 
@@ -234,7 +242,7 @@ class Tempfile < DelegateClass(File)
 
   # :stopdoc:
   def inspect
-    if closed?
+    if @tmpfile.closed?
       "#<#{self.class}:#{path} (closed)>"
     else
       "#<#{self.class}:#{path}>"
@@ -267,11 +275,25 @@ class Tempfile < DelegateClass(File)
 
     # Creates a new Tempfile.
     #
+    # This method is not recommended and exists mostly for backward compatibility.
+    # Please use Tempfile.create instead, which avoids the cost of delegation,
+    # does not rely on a finalizer, and also unlinks the file when given a block.
+    #
+    # Tempfile.open is still appropriate if you need the Tempfile to be unlinked
+    # by a finalizer and you cannot explicitly know where in the program the
+    # Tempfile can be unlinked safely.
+    #
     # If no block is given, this is a synonym for Tempfile.new.
     #
     # If a block is given, then a Tempfile object will be constructed,
-    # and the block is run with said object as argument. The Tempfile
+    # and the block is run with the Tempfile object as argument. The Tempfile
     # object will be automatically closed after the block terminates.
+    # However, the file will *not* be unlinked and needs to be manually unlinked
+    # with Tempfile#close! or Tempfile#unlink. The finalizer will try to unlink
+    # but should not be relied upon as it can keep the file on the disk much
+    # longer than intended. For instance, on CRuby, finalizers can be delayed
+    # due to conservative stack scanning and references left in unused memory.
+    #
     # The call returns the value of the block.
     #
     # In any case, all arguments (<code>*args</code>) will be passed to Tempfile.new.
@@ -287,8 +309,8 @@ class Tempfile < DelegateClass(File)
     #   ensure
     #      f.close
     #   end
-    def open(*args)
-      tempfile = new(*args)
+    def open(*args, **kw)
+      tempfile = new(*args, **kw)
 
       if block_given?
         begin
@@ -303,22 +325,22 @@ class Tempfile < DelegateClass(File)
   end
 end
 
-# Creates a temporary file as usual File object (not Tempfile).
-# It doesn't use finalizer and delegation.
+# Creates a temporary file as a usual File object (not a Tempfile).
+# It does not use finalizer and delegation, which makes it more efficient and reliable.
 #
 # If no block is given, this is similar to Tempfile.new except
-# creating File instead of Tempfile.
-# The created file is not removed automatically.
-# You should use File.unlink to remove it.
+# creating File instead of Tempfile. In that case, the created file is
+# not removed automatically. You should use File.unlink to remove it.
 #
 # If a block is given, then a File object will be constructed,
 # and the block is invoked with the object as the argument.
 # The File object will be automatically closed and
-# the temporary file is removed after the block terminates.
+# the temporary file is removed after the block terminates,
+# releasing all resources that the block created.
 # The call returns the value of the block.
 #
 # In any case, all arguments (+basename+, +tmpdir+, +mode+, and
-# <code>**options</code>) will be treated as Tempfile.new.
+# <code>**options</code>) will be treated the same as for Tempfile.new.
 #
 #   Tempfile.create('foo', '/home/temp') do |f|
 #      # ... do something with f ...
@@ -326,10 +348,10 @@ end
 #
 def Tempfile.create(basename="", tmpdir=nil, mode: 0, **options)
   tmpfile = nil
-  Dir::Tmpname.create(basename, tmpdir, options) do |tmpname, n, opts|
+  Dir::Tmpname.create(basename, tmpdir, **options) do |tmpname, n, opts|
     mode |= File::RDWR|File::CREAT|File::EXCL
     opts[:perm] = 0600
-    tmpfile = File.open(tmpname, mode, opts)
+    tmpfile = File.open(tmpname, mode, **opts)
   end
   if block_given?
     begin

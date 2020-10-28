@@ -1,0 +1,18 @@
+prelude: |
+  str1 = [*"A".."Z",*"0".."9"].join("")
+  str10 = str1 * 10
+  str100 = str10 * 10
+  str1000 = str100 * 10
+  nonascii1 = [*"\u{c0}".."\u{df}"].join("")
+  nonascii10 = nonascii1 * 10
+  nonascii100 = nonascii10 * 10
+  nonascii1000 = nonascii100 * 10
+benchmark:
+  downcase-1: str1.upcase
+  downcase-10: str10.upcase
+  downcase-100: str100.upcase
+  downcase-1000: str1000.upcase
+  downcase-nonascii1: nonascii1.downcase
+  downcase-nonascii10: nonascii10.downcase
+  downcase-nonascii100: nonascii100.downcase
+  downcase-nonascii1000: nonascii1000.downcase

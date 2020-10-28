@@ -1,5 +1,5 @@
 require_relative '../spec_helper'
-require_relative 'fixtures/hash_strings_ascii8bit'
+require_relative 'fixtures/hash_strings_binary'
 require_relative 'fixtures/hash_strings_utf8'
 require_relative 'fixtures/hash_strings_usascii'
 
@@ -38,7 +38,7 @@ describe "Hash literal" do
     key.reverse!
     h["foo"].should == "bar"
     h.keys.first.should == "foo"
-    h.keys.first.frozen?.should == true
+    h.keys.first.should.frozen?
     key.should == "oof"
   end
 
@@ -63,7 +63,7 @@ describe "Hash literal" do
   end
 
   it "with '==>' in the middle raises SyntaxError" do
-    lambda { eval("{:a ==> 1}") }.should raise_error(SyntaxError)
+    -> { eval("{:a ==> 1}") }.should raise_error(SyntaxError)
   end
 
   it "constructs a new hash with the given elements" do
@@ -128,25 +128,34 @@ describe "Hash literal" do
     {a: 1, **obj, c: 3}.should == {a:1, b: 2, c: 3, d: 4}
   end
 
-  it "raises a TypeError if any splatted elements keys are not symbols" do
-    h = {1 => 2, b: 3}
-    lambda { {a: 1, **h} }.should raise_error(TypeError)
+  ruby_version_is ""..."2.7" do
+    it "raises a TypeError if any splatted elements keys are not symbols" do
+      h = {1 => 2, b: 3}
+      -> { {a: 1, **h} }.should raise_error(TypeError)
+    end
+  end
+
+  ruby_version_is "2.7" do
+    it "allows splatted elements keys that are not symbols" do
+      h = {1 => 2, b: 3}
+      {a: 1, **h}.should == {a: 1, 1 => 2, b: 3}
+    end
   end
 
   it "raises a TypeError if #to_hash does not return a Hash" do
     obj = mock("hash splat")
     obj.should_receive(:to_hash).and_return(obj)
 
-    lambda { {**obj} }.should raise_error(TypeError)
+    -> { {**obj} }.should raise_error(TypeError)
   end
 
   it "does not change encoding of literal string keys during creation" do
-    ascii8bit_hash = HashStringsASCII8BIT.literal_hash
+    binary_hash = HashStringsBinary.literal_hash
     utf8_hash = HashStringsUTF8.literal_hash
     usascii_hash = HashStringsUSASCII.literal_hash
 
-    ascii8bit_hash.keys.first.encoding.should == Encoding::ASCII_8BIT
-    ascii8bit_hash.keys.first.should == utf8_hash.keys.first
+    binary_hash.keys.first.encoding.should == Encoding::BINARY
+    binary_hash.keys.first.should == utf8_hash.keys.first
     utf8_hash.keys.first.encoding.should == Encoding::UTF_8
     utf8_hash.keys.first.should == usascii_hash.keys.first
     usascii_hash.keys.first.encoding.should == Encoding::US_ASCII

@@ -1,21 +1,17 @@
 require 'mspec/guards/version'
 
-if RUBY_ENGINE == "ruby" and ruby_version_is("2.4")
-  ruby_version_is "2.4"..."2.5" do
-    # Kernel#warn does not delegate to Warning.warn in 2.4
-    module Kernel
-      remove_method :warn
-      def warn(*messages)
-        return if $VERBOSE == nil or messages.empty?
-        msg = messages.join("\n")
-        msg += "\n" unless msg.end_with?("\n")
-        Warning.warn(msg)
-      end
-      private :warn
-    end
-  end
+# Always enable deprecation warnings when running MSpec, as ruby/spec tests for them,
+# and like in most test frameworks, all warnings should be enabled by default (same as -w).
+if Object.const_defined?(:Warning) and Warning.respond_to?(:[]=)
+  Warning[:deprecated] = true
+end
 
+if Object.const_defined?(:Warning) and Warning.respond_to?(:warn)
   def Warning.warn(message)
+    # Suppress any warning inside the method to prevent recursion
+    verbose = $VERBOSE
+    $VERBOSE = nil
+
     if Thread.current[:in_mspec_complain_matcher]
       return $stderr.write(message)
     end
@@ -49,12 +45,14 @@ if RUBY_ENGINE == "ruby" and ruby_version_is("2.4")
     when /\/(argf|io|stringio)\/.+(ARGF|IO)#(lines|chars|bytes|codepoints) is deprecated/
     when /Thread\.exclusive is deprecated.+\n.+thread\/exclusive_spec\.rb/
     when /hash\/shared\/index\.rb:\d+: warning: Hash#index is deprecated; use Hash#key/
-    when /env\/shared\/key\.rb:\d+: warning: ENV\.index is deprecated; use ENV\.key/
     when /exponent(_spec)?\.rb:\d+: warning: in a\*\*b, b may be too big/
     when /enumerator\/(new_spec|initialize_spec)\.rb:\d+: warning: Enumerator\.new without a block is deprecated/
+    when /Pattern matching is experimental, and the behavior may change in future versions of Ruby!/
     else
       $stderr.write message
     end
+  ensure
+    $VERBOSE = verbose
   end
 else
   $VERBOSE = nil unless ENV['OUTPUT_WARNINGS']

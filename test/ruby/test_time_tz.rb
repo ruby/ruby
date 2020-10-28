@@ -9,7 +9,7 @@ class TestTimeTZ < Test::Unit::TestCase
   case RUBY_PLATFORM
   when /linux/
     force_tz_test = true
-  when /darwin|freebsd/
+  when /darwin|freebsd|openbsd/
     has_lisbon_tz = false
     force_tz_test = true
   end
@@ -156,6 +156,12 @@ class TestTimeTZ < Test::Unit::TestCase
     }
   end
 
+  def test_asia_kuala_lumpur
+    with_tz(tz="Asia/Kuala_Lumpur") {
+      assert_time_constructor(tz, "1933-01-01 00:20:00 +0720", :local, [1933])
+    }
+  end
+
   def test_canada_newfoundland
     with_tz(tz="America/St_Johns") {
       assert_time_constructor(tz, "2007-11-03 23:00:59 -0230", :new, [2007,11,3,23,0,59,:dst])
@@ -213,7 +219,6 @@ class TestTimeTZ < Test::Unit::TestCase
 
   def test_right_utc
     with_tz(tz="right/UTC") {
-      ::Bug::Time.reset_leap_second_info
       assert_time_constructor(tz, "2008-12-31 23:59:59 UTC", :utc, [2008,12,31,23,59,59])
       assert_time_constructor(tz, "2008-12-31 23:59:60 UTC", :utc, [2008,12,31,23,59,60])
       assert_time_constructor(tz, "2009-01-01 00:00:00 UTC", :utc, [2008,12,31,24,0,0])
@@ -223,25 +228,23 @@ class TestTimeTZ < Test::Unit::TestCase
 
   def test_right_utc_switching
     with_tz("UTC") { # ensure no leap second timezone
-      ::Bug::Time.reset_leap_second_info
       assert_equal(4102444800, Time.utc(2100,1,1,0,0,0).to_i)
       with_tz(tz="right/UTC") {
         assert_time_constructor(tz, "2008-12-31 23:59:59 UTC", :utc, [2008,12,31,23,59,59])
-        assert_time_constructor(tz, "2009-01-01 00:00:00 UTC", :utc, [2008,12,31,23,59,60])
+        assert_time_constructor(tz, "2008-12-31 23:59:60 UTC", :utc, [2008,12,31,23,59,60])
         assert_time_constructor(tz, "2009-01-01 00:00:00 UTC", :utc, [2008,12,31,24,0,0])
         assert_time_constructor(tz, "2009-01-01 00:00:00 UTC", :utc, [2009,1,1,0,0,0])
-        assert_equal(4102444800, Time.utc(2100,1,1,0,0,0).to_i)
+        assert_not_equal(4102444800, Time.utc(2100,1,1,0,0,0).to_i)
       }
     }
     with_tz("right/UTC") {
-      ::Bug::Time.reset_leap_second_info
       assert_not_equal(4102444800, Time.utc(2100,1,1,0,0,0).to_i)
       with_tz(tz="UTC") {
         assert_time_constructor(tz, "2008-12-31 23:59:59 UTC", :utc, [2008,12,31,23,59,59])
         assert_time_constructor(tz, "2009-01-01 00:00:00 UTC", :utc, [2008,12,31,23,59,60])
         assert_time_constructor(tz, "2009-01-01 00:00:00 UTC", :utc, [2008,12,31,24,0,0])
         assert_time_constructor(tz, "2009-01-01 00:00:00 UTC", :utc, [2009,1,1,0,0,0])
-        assert_not_equal(4102444800, Time.utc(2100,1,1,0,0,0).to_i)
+        assert_equal(4102444800, Time.utc(2100,1,1,0,0,0).to_i)
       }
     }
   end if has_right_tz
@@ -370,7 +373,6 @@ class TestTimeTZ < Test::Unit::TestCase
       mesg = "#{mesg_utc}.localtime"
       define_method(gen_test_name(tz)) {
         with_tz(tz) {
-          ::Bug::Time.reset_leap_second_info
           t = nil
           assert_nothing_raised(mesg) { t = Time.utc(*u) }
           assert_equal(expected_utc, time_to_s(t), mesg_utc)
@@ -544,28 +546,47 @@ Europe/Lisbon  Sun Dec 31 23:59:59 1911 UT = Sun Dec 31 23:23:14 1911 LMT isdst=
 End
 
   class TZ
-    attr_reader :name, :abbr, :offset
+    attr_reader :name
 
-    def initialize(name, abbr, offset)
+    def initialize(name, abbr, offset, abbr2 = nil, offset2 = nil)
       @name = name
       @abbr = abbr
       @offset = offset
+      @abbr2 = abbr2
+      @offset2 = offset2
+    end
+
+    def dst?(t)
+      return false unless @offset2
+      case t when Integer
+        return nil
+      end
+      case t.mon
+      when 4..9
+        true
+      else
+        false
+      end
+    end
+
+    def offset(t)
+      (dst?(t) ? @offset2 : @offset)
     end
 
     def local_to_utc(t)
-      t - @offset
+      t - offset(t)
     end
 
     def utc_to_local(t)
-      t + @offset
+      t + offset(t)
     end
 
     def abbr(t)
-      @abbr
+      dst?(t) ? @abbr2 : @abbr
     end
 
     def ==(other)
-      @name == other.name and @abbr == other.abbr(0) and @offset == other.offset
+      @name == other.name and abbr(0) == other.abbr(0) and offset(0) == other.offset(0)
     end
 
     def inspect
@@ -576,28 +597,49 @@ end
 
 module TestTimeTZ::WithTZ
   def subtest_new(time_class, tz, tzarg, tzname, abbr, utc_offset)
+    abbr, abbr2 = *abbr
+    utc_offset, utc_offset2 = *utc_offset
     t = time_class.new(2018, 9, 1, 12, 0, 0, tzarg)
+    utc_offset, abbr = utc_offset2, abbr2 if tz.dst?(t)
     assert_equal([2018, 9, 1, 12, 0, 0, tz], [t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.zone])
     h, m = (-utc_offset / 60).divmod(60)
     assert_equal(time_class.utc(2018, 9, 1, 12+h, m, 0).to_i, t.to_i)
+    assert_equal(6, t.wday)
+    assert_equal(244, t.yday)
+  end
+
+  def subtest_now(time_class, tz, tzarg, tzname, abbr, utc_offset)
+    t = time_class.now(in: tzarg)
+    assert_equal(tz, t.zone)
   end
 
   def subtest_getlocal(time_class, tz, tzarg, tzname, abbr, utc_offset)
-    t = time_class.utc(2018, 9, 1, 12, 0, 0).getlocal(tzarg)
+    abbr, abbr2 = *abbr
+    utc_offset, utc_offset2 = *utc_offset
+    utc = time_class.utc(2018, 9, 1, 12, 0, 0)
+    utc_offset, abbr = utc_offset2, abbr2 if tz.dst?(utc)
+    t = utc.getlocal(tzarg)
     h, m = (utc_offset / 60).divmod(60)
     assert_equal([2018, 9, 1, 12+h, m, 0, tz], [t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.zone])
     assert_equal(time_class.utc(2018, 9, 1, 12, 0, 0), t)
   end
 
   def subtest_strftime(time_class, tz, tzarg, tzname, abbr, utc_offset)
+    abbr, abbr2 = *abbr
+    utc_offset, utc_offset2 = *utc_offset
     t = time_class.new(2018, 9, 1, 12, 0, 0, tzarg)
+    utc_offset, abbr = utc_offset2, abbr2 if tz.dst?(t)
     h, m = (utc_offset.abs / 60).divmod(60)
     h = -h if utc_offset < 0
     assert_equal("%+.2d%.2d %s" % [h, m, abbr], t.strftime("%z %Z"))
+    assert_equal("34 35 35", t.strftime("%U %V %W"))
   end
 
   def subtest_plus(time_class, tz, tzarg, tzname, abbr, utc_offset)
+    abbr, abbr2 = *abbr
+    utc_offset, utc_offset2 = *utc_offset
     t = time_class.new(2018, 9, 1, 12, 0, 0, tzarg) + 4000
+    utc_offset, abbr = utc_offset2, abbr2 if tz.dst?(t)
     assert_equal([2018, 9, 1, 13, 6, 40, tz], [t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.zone])
     m, s = (4000-utc_offset).divmod(60)
     h, m = m.divmod(60)
@@ -605,8 +647,11 @@ module TestTimeTZ::WithTZ
   end
 
   def subtest_at(time_class, tz, tzarg, tzname, abbr, utc_offset)
-    h, m = (utc_offset / 60).divmod(60)
+    abbr, abbr2 = *abbr
+    utc_offset, utc_offset2 = *utc_offset
     utc = time_class.utc(2018, 9, 1, 12, 0, 0)
+    utc_offset, abbr = utc_offset2, abbr2 if tz.dst?(utc)
+    h, m = (utc_offset / 60).divmod(60)
     t = time_class.at(utc, in: tzarg)
     assert_equal([2018, 9, 1, 12+h, m, 0, tz], [t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.zone])
     assert_equal(utc.to_i, t.to_i)
@@ -616,6 +661,12 @@ module TestTimeTZ::WithTZ
     assert_equal(utc, t.to_i)
   end
 
+  def subtest_to_a(time_class, tz, tzarg, tzname, abbr, utc_offset)
+    t = time_class.new(2018, 9, 1, 12, 0, 0, tzarg)
+    ary = t.to_a
+    assert_equal(ary, [t.sec, t.min, t.hour, t.mday, t.mon, t.year, t.wday, t.yday, t.isdst, t.zone])
+  end
+
   def subtest_marshal(time_class, tz, tzarg, tzname, abbr, utc_offset)
     t = time_class.new(2018, 9, 1, 12, 0, 0, tzarg)
     t2 = Marshal.load(Marshal.dump(t))
@@ -623,6 +674,7 @@ module TestTimeTZ::WithTZ
     assert_equal(t.utc_offset, t2.utc_offset)
     assert_equal(t.utc_offset, (t2+1).utc_offset)
     assert_instance_of(t.zone.class, t2.zone)
+    assert_equal(t.dst?, t2.dst?)
   end
 
   def test_invalid_zone
@@ -647,22 +699,30 @@ module TestTimeTZ::WithTZ
 
   ZONES = {
     "Asia/Tokyo" => ["JST", +9*3600],
-    "America/Los_Angeles" => ["PDT", -7*3600],
+    "America/Los_Angeles" => ["PST", -8*3600, "PDT", -7*3600],
     "Africa/Ndjamena" => ["WAT", +1*3600],
   }
 
-  def make_timezone(tzname, abbr, utc_offset)
+  def make_timezone(tzname, abbr, utc_offset, abbr2 = nil, utc_offset2 = nil)
     self.class::TIME_CLASS.find_timezone(tzname)
+  end
+
+  def subtest_dst?(time_class, tz, tzarg, tzname, abbr, utc_offset)
+    t = time_class.new(2018, 6, 22, 12, 0, 0, tzarg)
+    return unless tz.dst?(t)
+    assert_predicate t, :dst?
+    t = time_class.new(2018, 12, 22, 12, 0, 0, tzarg)
+    assert_not_predicate t, :dst?
   end
 
   instance_methods(false).grep(/\Asub(?=test_)/) do |subtest|
     test = $'
-    ZONES.each_pair do |tzname, (abbr, utc_offset)|
+    ZONES.each_pair do |tzname, (abbr, utc_offset, abbr2, utc_offset2)|
       define_method("#{test}@#{tzname}") do
-        tz = make_timezone(tzname, abbr, utc_offset)
+        tz = make_timezone(tzname, abbr, utc_offset, abbr2, utc_offset2)
         time_class = self.class::TIME_CLASS
-        __send__(subtest, time_class, tz, tz, tzname, abbr, utc_offset)
-        __send__(subtest, time_class, tz, tzname, tzname, abbr, utc_offset)
+        __send__(subtest, time_class, tz, tz, tzname, [abbr, abbr2], [utc_offset, utc_offset2])
+        __send__(subtest, time_class, tz, tzname, tzname, [abbr, abbr2], [utc_offset, utc_offset2])
       end
     end
   end
@@ -689,8 +749,8 @@ class TestTimeTZ::DummyTZ < Test::Unit::TestCase
     end
   end
 
-  def self.make_timezone(tzname, abbr, utc_offset)
-    TestTimeTZ::TZ.new(tzname, abbr, utc_offset)
+  def self.make_timezone(tzname, abbr, utc_offset, abbr2 = nil, utc_offset2 = nil)
+    TestTimeTZ::TZ.new(tzname, abbr, utc_offset, abbr2, utc_offset2)
   end
 end
 

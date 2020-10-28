@@ -12,14 +12,14 @@ end
 class TestNetHTTPS < Test::Unit::TestCase
   include TestNetHTTPUtils
 
-  def self.fixture(key)
+  def self.read_fixture(key)
     File.read(File.expand_path("../fixtures/#{key}", __dir__))
   end
 
-  CA_CERT = OpenSSL::X509::Certificate.new(fixture("cacert.pem"))
-  SERVER_KEY = OpenSSL::PKey.read(fixture("server.key"))
-  SERVER_CERT = OpenSSL::X509::Certificate.new(fixture("server.crt"))
-  DHPARAMS = OpenSSL::PKey::DH.new(fixture("dhparams.pem"))
+  CA_CERT = OpenSSL::X509::Certificate.new(read_fixture("cacert.pem"))
+  SERVER_KEY = OpenSSL::PKey.read(read_fixture("server.key"))
+  SERVER_CERT = OpenSSL::X509::Certificate.new(read_fixture("server.crt"))
+  DHPARAMS = OpenSSL::PKey::DH.new(read_fixture("dhparams.pem"))
   TEST_STORE = OpenSSL::X509::Store.new.tap {|s| s.add_cert(CA_CERT) }
 
   CONFIG = {
@@ -44,10 +44,86 @@ class TestNetHTTPS < Test::Unit::TestCase
     http.request_get("/") {|res|
       assert_equal($test_net_http_data, res.body)
     }
-    assert_equal(CA_CERT.to_der, certs[0].to_der)
-    assert_equal(SERVER_CERT.to_der, certs[1].to_der)
+    # TODO: OpenSSL 1.1.1h seems to yield only SERVER_CERT; need to check the incompatibility
+    certs.zip([CA_CERT, SERVER_CERT][-certs.size..]) do |actual, expected|
+      assert_equal(expected.to_der, actual.to_der)
+    end
   rescue SystemCallError
     skip $!
+  end
+
+  def test_get_SNI
+    http = Net::HTTP.new("localhost", config("port"))
+    http.ipaddr = config('host')
+    http.use_ssl = true
+    http.cert_store = TEST_STORE
+    certs = []
+    http.verify_callback = Proc.new do |preverify_ok, store_ctx|
+      certs << store_ctx.current_cert
+      preverify_ok
+    end
+    http.request_get("/") {|res|
+      assert_equal($test_net_http_data, res.body)
+    }
+    # TODO: OpenSSL 1.1.1h seems to yield only SERVER_CERT; need to check the incompatibility
+    certs.zip([CA_CERT, SERVER_CERT][-certs.size..]) do |actual, expected|
+      assert_equal(expected.to_der, actual.to_der)
+    end
+  end
+
+  def test_get_SNI_proxy
+    TCPServer.open("127.0.0.1", 0) {|serv|
+      _, port, _, _ = serv.addr
+      client_thread = Thread.new {
+        proxy = Net::HTTP.Proxy("127.0.0.1", port, 'user', 'password')
+        http = proxy.new("foo.example.org", 8000)
+        http.ipaddr = "192.0.2.1"
+        http.use_ssl = true
+        http.cert_store = TEST_STORE
+        certs = []
+        http.verify_callback = Proc.new do |preverify_ok, store_ctx|
+          certs << store_ctx.current_cert
+          preverify_ok
+        end
+        begin
+          http.start
+        rescue EOFError
+        end
+      }
+      server_thread = Thread.new {
+        sock = serv.accept
+        begin
+          proxy_request = sock.gets("\r\n\r\n")
+          assert_equal(
+            "CONNECT 192.0.2.1:8000 HTTP/1.1\r\n" +
+            "Host: foo.example.org:8000\r\n" +
+            "Proxy-Authorization: Basic dXNlcjpwYXNzd29yZA==\r\n" +
+            "\r\n",
+            proxy_request,
+            "[ruby-dev:25673]")
+        ensure
+          sock.close
+        end
+      }
+      assert_join_threads([client_thread, server_thread])
+    }
+
+  end
+
+  def test_get_SNI_failure
+    TestNetHTTPUtils.clean_http_proxy_env do
+      http = Net::HTTP.new("invalidservername", config("port"))
+      http.ipaddr = config('host')
+      http.use_ssl = true
+      http.cert_store = TEST_STORE
+      certs = []
+      http.verify_callback = Proc.new do |preverify_ok, store_ctx|
+        certs << store_ctx.current_cert
+        preverify_ok
+      end
+      @log_tester = lambda {|_| }
+      assert_raise(OpenSSL::SSL::SSLError){ http.start }
+    end
   end
 
   def test_post
@@ -70,6 +146,14 @@ class TestNetHTTPS < Test::Unit::TestCase
     http = Net::HTTP.new("localhost", config("port"))
     http.use_ssl = true
     http.cert_store = TEST_STORE
+
+    if OpenSSL::OPENSSL_LIBRARY_VERSION =~ /LibreSSL (\d+\.\d+)/ && $1.to_f > 3.19
+      # LibreSSL 3.2 defaults to TLSv1.3 in server and client, which doesn't currently
+      # support session resuse.  Limiting the version to the TLSv1.2 stack allows
+      # this test to continue to work on LibreSSL 3.2+.  LibreSSL may eventually
+      # support session reuse, but there are no current plans to do so.
+      http.ssl_version = :TLSv1
+    end
 
     http.start
     http.get("/")
@@ -130,6 +214,31 @@ class TestNetHTTPS < Test::Unit::TestCase
     }
   rescue SystemCallError
     skip $!
+  end
+
+  def test_skip_hostname_verification
+    TestNetHTTPUtils.clean_http_proxy_env do
+      http = Net::HTTP.new('invalidservername', config('port'))
+      http.ipaddr = config('host')
+      http.use_ssl = true
+      http.cert_store = TEST_STORE
+      http.verify_hostname = false
+      assert_nothing_raised { http.start }
+    ensure
+      http.finish if http&.started?
+    end
+  end
+
+  def test_fail_if_verify_hostname_is_true
+    TestNetHTTPUtils.clean_http_proxy_env do
+      http = Net::HTTP.new('invalidservername', config('port'))
+      http.ipaddr = config('host')
+      http.use_ssl = true
+      http.cert_store = TEST_STORE
+      http.verify_hostname = true
+      @log_tester = lambda { |_| }
+      assert_raise(OpenSSL::SSL::SSLError) { http.start }
+    end
   end
 
   def test_certificate_verify_failure

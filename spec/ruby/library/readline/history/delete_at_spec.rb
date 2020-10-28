@@ -31,15 +31,17 @@ with_feature :readline do
     end
 
     it "raises an IndexError when the given index is greater than the history size" do
-      lambda { Readline::HISTORY.delete_at(10) }.should raise_error(IndexError)
-      lambda { Readline::HISTORY.delete_at(-10) }.should raise_error(IndexError)
+      -> { Readline::HISTORY.delete_at(10) }.should raise_error(IndexError)
+      -> { Readline::HISTORY.delete_at(-10) }.should raise_error(IndexError)
     end
 
-    it "taints the returned strings" do
-      Readline::HISTORY.push("1", "2", "3")
-      Readline::HISTORY.delete_at(0).tainted?.should be_true
-      Readline::HISTORY.delete_at(0).tainted?.should be_true
-      Readline::HISTORY.delete_at(0).tainted?.should be_true
+  ruby_version_is ''...'2.7' do
+      it "taints the returned strings" do
+        Readline::HISTORY.push("1", "2", "3")
+        Readline::HISTORY.delete_at(0).tainted?.should be_true
+        Readline::HISTORY.delete_at(0).tainted?.should be_true
+        Readline::HISTORY.delete_at(0).tainted?.should be_true
+      end
     end
   end
 end

@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 require 'rubygems/command'
-require 'rubygems/installer'
 require 'rubygems/version_option'
 require 'rubygems/security_option'
 require 'rubygems/remote_fetcher'
+require 'rubygems/package'
 
 # forward-declare
 
@@ -13,7 +13,6 @@ module Gem::Security # :nodoc:
 end
 
 class Gem::Commands::UnpackCommand < Gem::Command
-
   include Gem::VersionOption
   include Gem::SecurityOption
 
@@ -85,7 +84,7 @@ command help for an example.
       end
 
       if @options[:spec]
-        spec, metadata = get_metadata path, security_policy
+        spec, metadata = Gem::Package.raw_spec(path, security_policy)
 
         if metadata.nil?
           alert_error "--spec is unsupported on '#{name}' (old format gem)"
@@ -157,7 +156,7 @@ command help for an example.
 
     specs = dependency.matching_specs
 
-    selected = specs.max_by { |s| s.version }
+    selected = specs.max_by {|s| s.version }
 
     return Gem::RemoteFetcher.fetcher.download_to_cache(dependency) unless
       selected
@@ -173,32 +172,4 @@ command help for an example.
 
     path
   end
-
-  ##
-  # Extracts the Gem::Specification and raw metadata from the .gem file at
-  # +path+.
-  #--
-  # TODO move to Gem::Package as #raw_spec or something
-
-  def get_metadata(path, security_policy = nil)
-    format = Gem::Package.new path, security_policy
-    spec = format.spec
-
-    metadata = nil
-
-    File.open path, Gem.binary_mode do |io|
-      tar = Gem::Package::TarReader.new io
-      tar.each_entry do |entry|
-        case entry.full_name
-        when 'metadata' then
-          metadata = entry.read
-        when 'metadata.gz' then
-          metadata = Gem::Util.gunzip entry.read
-        end
-      end
-    end
-
-    return spec, metadata
-  end
-
 end

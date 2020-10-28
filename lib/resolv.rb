@@ -166,13 +166,14 @@ class Resolv
   # Resolv::Hosts is a hostname resolver that uses the system hosts file.
 
   class Hosts
-    begin
-      raise LoadError unless /mswin|mingw|cygwin/ =~ RUBY_PLATFORM
-      require 'win32/resolv'
-      DefaultFileName = Win32::Resolv.get_hosts_path || IO::NULL
-    rescue LoadError
-      DefaultFileName = '/etc/hosts'
+    if /mswin|mingw|cygwin/ =~ RUBY_PLATFORM and
+      begin
+        require 'win32/resolv'
+        DefaultFileName = Win32::Resolv.get_hosts_path || IO::NULL
+      rescue LoadError
+      end
     end
+    DefaultFileName ||= '/etc/hosts'
 
     ##
     # Creates a new Resolv::Hosts, using +filename+ for its data source.
@@ -193,15 +194,12 @@ class Resolv
               line.sub!(/#.*/, '')
               addr, hostname, *aliases = line.split(/\s+/)
               next unless addr
-              addr.untaint
-              hostname.untaint
               @addr2name[addr] = [] unless @addr2name.include? addr
               @addr2name[addr] << hostname
               @addr2name[addr] += aliases
               @name2addr[hostname] = [] unless @name2addr.include? hostname
               @name2addr[hostname] << addr
               aliases.each {|n|
-                n.untaint
                 @name2addr[n] = [] unless @name2addr.include? n
                 @name2addr[n] << addr
               }
@@ -451,6 +449,8 @@ class Resolv
       case address
       when Name
         ptr = address
+      when IPv4, IPv6
+        ptr = address.to_name
       when IPv4::Regex
         ptr = IPv4.create(address).to_name
       when IPv6::Regex
@@ -511,10 +511,15 @@ class Resolv
 
     def fetch_resource(name, typeclass)
       lazy_initialize
-      requester = make_udp_requester
+      begin
+        requester = make_udp_requester
+      rescue Errno::EACCES
+        # fall back to TCP
+      end
       senders = {}
       begin
         @config.resolv(name) {|candidate, tout, nameserver, port|
+          requester ||= make_tcp_requester(nameserver, port)
           msg = Message.new
           msg.rd = 1
           msg.add_question(candidate, typeclass)
@@ -547,7 +552,7 @@ class Resolv
           end
         }
       ensure
-        requester.close
+        requester&.close
       end
     end
 
@@ -762,6 +767,7 @@ class Resolv
         end
 
         def sender(msg, data, host, port=Port)
+          host = Addrinfo.ip(host).ip_address
           lazy_initialize
           sock = @socks_hash[host.index(':') ? "::" : "0.0.0.0"]
           return nil if !sock
@@ -956,7 +962,6 @@ class Resolv
           f.each {|line|
             line.sub!(/[#;].*/, '')
             keyword, *args = line.split(/\s+/)
-            args.each(&:untaint)
             next unless keyword
             case keyword
             when 'nameserver'
@@ -2528,7 +2533,7 @@ class Resolv
     attr_reader :address
 
     def to_s # :nodoc:
-      address = sprintf("%X:%X:%X:%X:%X:%X:%X:%X", *@address.unpack("nnnnnnnn"))
+      address = sprintf("%x:%x:%x:%x:%x:%x:%x:%x", *@address.unpack("nnnnnnnn"))
       unless address.sub!(/(^|:)0(:0)+(:|$)/, '::')
         address.sub!(/(^|:)0(:|$)/, '::')
       end

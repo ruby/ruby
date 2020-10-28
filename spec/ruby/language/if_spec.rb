@@ -1,22 +1,20 @@
 require_relative '../spec_helper'
 
 describe "The if expression" do
-  ruby_version_is '2.4' do
-    describe "accepts multiple assignments in conditional expression" do
-      before(:each) { ScratchPad.record([]) }
-      after(:each)  { ScratchPad.clear }
+  describe "accepts multiple assignments in conditional expression" do
+    before(:each) { ScratchPad.record([]) }
+    after(:each)  { ScratchPad.clear }
 
-      it 'with non-nil values' do
-        ary = [1, 2]
-        eval "if (a, b = ary); ScratchPad.record [a, b]; end"
-        ScratchPad.recorded.should == [1, 2]
-      end
+    it 'with non-nil values' do
+      ary = [1, 2]
+      eval "if (a, b = ary); ScratchPad.record [a, b]; end"
+      ScratchPad.recorded.should == [1, 2]
+    end
 
-      it 'with nil values' do
-        ary = nil
-        eval "if (a, b = ary); else; ScratchPad.record [a, b]; end"
-        ScratchPad.recorded.should == [nil, nil]
-      end
+    it 'with nil values' do
+      ary = nil
+      eval "if (a, b = ary); else; ScratchPad.record [a, b]; end"
+      ScratchPad.recorded.should == [nil, nil]
     end
   end
 
@@ -235,22 +233,19 @@ describe "The if expression" do
   describe "with a boolean range ('flip-flop' operator)" do
     before :each do
       ScratchPad.record []
-      @verbose = $VERBOSE
-      $VERBOSE = nil
     end
 
     after :each do
       ScratchPad.clear
-      $VERBOSE = @verbose
     end
 
     it "mimics an awk conditional with a single-element inclusive-end range" do
-      eval "10.times { |i| ScratchPad << i if (i == 4)..(i == 4) }"
+      10.times { |i| ScratchPad << i if (i == 4)..(i == 4) }
       ScratchPad.recorded.should == [4]
     end
 
     it "mimics an awk conditional with a many-element inclusive-end range" do
-      eval "10.times { |i| ScratchPad << i if (i == 4)..(i == 7) }"
+      10.times { |i| ScratchPad << i if (i == 4)..(i == 7) }
       ScratchPad.recorded.should == [4, 5, 6, 7]
     end
 
@@ -260,12 +255,12 @@ describe "The if expression" do
     end
 
     it "mimics a sed conditional with a many-element exclusive-end range" do
-      eval "10.times { |i| ScratchPad << i if (i == 4)...(i == 5) }"
+      10.times { |i| ScratchPad << i if (i == 4)...(i == 5) }
       ScratchPad.recorded.should == [4, 5]
     end
 
     it "allows combining two flip-flops" do
-      eval "10.times { |i| ScratchPad << i if (i == 4)...(i == 5) or (i == 7)...(i == 8) }"
+      10.times { |i| ScratchPad << i if (i == 4)...(i == 5) or (i == 7)...(i == 8) }
       ScratchPad.recorded.should == [4, 5, 7, 8]
     end
 
@@ -283,18 +278,18 @@ describe "The if expression" do
 
     it "evaluates the second conditions lazily with inclusive-end range" do
       collector = proc { |i| ScratchPad << i }
-      eval "10.times { |i| i if (i == 4)...collector[i] }"
+      10.times { |i| i if (i == 4)...collector[i] }
       ScratchPad.recorded.should == [5]
     end
 
     it "evaluates the second conditions lazily with exclusive-end range" do
       collector = proc { |i| ScratchPad << i }
-      eval "10.times { |i| i if (i == 4)..collector[i] }"
+      10.times { |i| i if (i == 4)..collector[i] }
       ScratchPad.recorded.should == [4]
     end
 
     it "scopes state by flip-flop" do
-      store_me = eval("proc { |i| ScratchPad << i if (i == 4)..(i == 7) }")
+      store_me = proc { |i| ScratchPad << i if (i == 4)..(i == 7) }
       store_me[1]
       store_me[4]
       proc { store_me[1] }.call
@@ -309,18 +304,6 @@ describe "The if expression" do
       6.times(&a)
       6.times(&b)
       ScratchPad.recorded.should == [4, 5, 4, 5]
-    end
-
-    ruby_version_is "2.6" do
-      it 'is deprecated' do
-        i = 4
-
-        -> do
-          eval "ScratchPad << 'it works' if (i == 4)..(i == 7)"
-        end.should complain(/flip-flop is deprecated/)
-
-        ScratchPad.recorded.should == ['it works']
-      end
     end
   end
 end

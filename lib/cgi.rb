@@ -253,7 +253,7 @@
 #           end
 #         end +
 #         cgi.pre do
-#           CGI::escapeHTML(
+#           CGI.escapeHTML(
 #             "params: #{cgi.params.inspect}\n" +
 #             "cookies: #{cgi.cookies.inspect}\n" +
 #             ENV.collect do |key, value|
@@ -288,6 +288,7 @@
 #
 
 class CGI
+  VERSION = "0.1.0"
 end
 
 require 'cgi/core'

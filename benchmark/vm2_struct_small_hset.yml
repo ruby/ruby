@@ -1,7 +1,0 @@
-prelude: |
-  s = Struct.new(:a, :b, :c)
-  x = s.new
-benchmark:
-  vm2_struct_small_hset: |
-    x[:a] = 1
-loop_count: 6000000

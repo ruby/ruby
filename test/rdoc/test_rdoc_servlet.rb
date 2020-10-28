@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'minitest_helper'
+require_relative 'helper'
 
 class TestRDocServlet < RDoc::TestCase
 
@@ -45,7 +45,8 @@ class TestRDocServlet < RDoc::TestCase
     @orig_base = RDoc::RI::Paths::BASE
     RDoc::RI::Paths::BASE.replace @base
     @orig_ri_path_homedir = RDoc::RI::Paths::HOMEDIR
-    RDoc::RI::Paths::HOMEDIR.replace @home_dir
+    RDoc::RI::Paths.send :remove_const, :HOMEDIR
+    RDoc::RI::Paths.const_set :HOMEDIR, @home_dir
 
     RDoc::RI::Paths.instance_variable_set \
       :@gemdirs, %w[/nonexistent/gems/example-1.0/ri]
@@ -60,7 +61,8 @@ class TestRDocServlet < RDoc::TestCase
     FileUtils.rm_rf @tempdir
 
     RDoc::RI::Paths::BASE.replace @orig_base
-    RDoc::RI::Paths::HOMEDIR.replace @orig_ri_path_homedir
+    RDoc::RI::Paths.send :remove_const, :HOMEDIR
+    RDoc::RI::Paths.const_set :HOMEDIR, @orig_ri_path_homedir
     RDoc::RI::Paths.instance_variable_set :@gemdirs, nil
   end
 
@@ -166,7 +168,7 @@ class TestRDocServlet < RDoc::TestCase
     @req.header['if-modified-since'] = [(Time.now + 10).httpdate]
     @req.path = '/ruby/Missing.html'
 
-    assert_raises WEBrick::HTTPStatus::NotModified do
+    assert_raise WEBrick::HTTPStatus::NotModified do
       @s.do_GET @req, @res
     end
   end
@@ -224,12 +226,24 @@ class TestRDocServlet < RDoc::TestCase
 
     generator = @s.generator_for store
 
-    readme = store.add_file 'README.rdoc', parser: RDoc::Parser::Simple
+    store.add_file 'README.rdoc', parser: RDoc::Parser::Simple
 
     @s.documentation_page store, generator, 'README_rdoc.html', @req, @res
 
     assert_match %r%<title>README - </title>%, @res.body
     assert_match %r%<body [^>]+ class="file">%,      @res.body
+  end
+
+  def test_documentation_page_page_with_nesting
+    store = RDoc::Store.new
+
+    generator = @s.generator_for store
+
+    store.add_file 'nesting/README.rdoc', parser: RDoc::Parser::Simple
+
+    @s.documentation_page store, generator, 'nesting/README_rdoc.html', @req, @res
+
+    assert_equal 200, @res.status
   end
 
   def test_documentation_source
@@ -282,7 +296,7 @@ class TestRDocServlet < RDoc::TestCase
   end
 
   def test_if_modified_since
-    skip 'File.utime on directory not supported' if Gem.win_platform?
+    omit 'File.utime on directory not supported' if Gem.win_platform?
 
     temp_dir do
       now = Time.now
@@ -295,7 +309,7 @@ class TestRDocServlet < RDoc::TestCase
   end
 
   def test_if_modified_since_not_modified
-    skip 'File.utime on directory not supported' if Gem.win_platform?
+    omit 'File.utime on directory not supported' if Gem.win_platform?
 
     temp_dir do
       now = Time.now
@@ -303,7 +317,7 @@ class TestRDocServlet < RDoc::TestCase
 
       @req.header['if-modified-since'] = [(now + 10).httpdate]
 
-      assert_raises WEBrick::HTTPStatus::NotModified do
+      assert_raise WEBrick::HTTPStatus::NotModified do
         @s.if_modified_since @req, @res, '.'
       end
 
@@ -478,7 +492,7 @@ class TestRDocServlet < RDoc::TestCase
   def test_store_for_missing_documentation
     FileUtils.mkdir_p(File.join @gem_doc_dir, 'spec-1.0', 'ri')
 
-    e = assert_raises WEBrick::HTTPStatus::NotFound do
+    e = assert_raise WEBrick::HTTPStatus::NotFound do
       @s.store_for 'spec-1.0'
     end
 
@@ -487,7 +501,7 @@ class TestRDocServlet < RDoc::TestCase
   end
 
   def test_store_for_missing_gem
-    e = assert_raises WEBrick::HTTPStatus::NotFound do
+    e = assert_raise WEBrick::HTTPStatus::NotFound do
       @s.store_for 'missing'
     end
 

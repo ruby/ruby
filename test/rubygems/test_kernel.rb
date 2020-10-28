@@ -2,7 +2,6 @@
 require 'rubygems/test_case'
 
 class TestKernel < Gem::TestCase
-
   def setup
     super
 
@@ -19,7 +18,7 @@ class TestKernel < Gem::TestCase
 
   def test_gem
     assert gem('a', '= 1'), "Should load"
-    assert $:.any? { |p| %r{a-1/lib} =~ p }
+    assert $:.any? {|p| %r{a-1/lib} =~ p }
   end
 
   def test_gem_default
@@ -49,13 +48,13 @@ class TestKernel < Gem::TestCase
   def test_gem_redundant
     assert gem('a', '= 1'), "Should load"
     refute gem('a', '= 1'), "Should not load"
-    assert_equal 1, $:.select { |p| %r{a-1/lib} =~ p }.size
+    assert_equal 1, $:.select {|p| %r{a-1/lib} =~ p }.size
   end
 
   def test_gem_overlapping
     assert gem('a', '= 1'), "Should load"
     refute gem('a', '>= 1'), "Should not load"
-    assert_equal 1, $:.select { |p| %r{a-1/lib} =~ p }.size
+    assert_equal 1, $:.select {|p| %r{a-1/lib} =~ p }.size
   end
 
   def test_gem_prerelease
@@ -82,13 +81,30 @@ class TestKernel < Gem::TestCase
     assert_match(/activated a-1/, ex.message)
     assert_equal 'a', ex.name
 
-    assert $:.any? { |p| %r{a-1/lib} =~ p }
-    refute $:.any? { |p| %r{a-2/lib} =~ p }
+    assert $:.any? {|p| %r{a-1/lib} =~ p }
+    refute $:.any? {|p| %r{a-2/lib} =~ p }
   end
 
   def test_gem_not_adding_bin
     assert gem('a', '= 1'), "Should load"
-    refute $:.any? { |p| %r{a-1/bin} =~ p }
+    refute $:.any? {|p| %r{a-1/bin} =~ p }
+  end
+
+  def test_gem_failing_inside_require_doesnt_cause_double_exceptions
+    File.write("activate.rb", "gem('a', '= 999')\n")
+
+    require "open3"
+
+    output, _ = Open3.capture2e(
+      { "GEM_HOME" => Gem.paths.home },
+      *ruby_with_rubygems_in_load_path,
+      "-r",
+      "./activate.rb"
+    )
+
+    load_errors = output.split("\n").select {|line| line.include?("Could not find") }
+
+    assert_equal 1, load_errors.size
   end
 
   def test_gem_bundler
@@ -96,7 +112,7 @@ class TestKernel < Gem::TestCase
     quick_gem 'bundler', '2.a'
 
     assert gem('bundler')
-    assert $:.any? { |p| %r{bundler-1/lib} =~ p }
+    assert $:.any? {|p| %r{bundler-1/lib} =~ p }
   end
 
   def test_gem_bundler_missing_bundler_version
@@ -117,7 +133,7 @@ class TestKernel < Gem::TestCase
       quick_gem 'bundler', '2.a'
 
       assert gem('bundler', '>= 0.a')
-      assert $:.any? { |p| %r{bundler-1/lib} =~ p }
+      assert $:.any? {|p| %r{bundler-1/lib} =~ p }
     end
   end
 end

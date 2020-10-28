@@ -387,6 +387,21 @@ class TestArgf < Test::Unit::TestCase
     assert_equal("foo", File.read(name+suffix))
   end
 
+  def test_inplace_bug_17117
+    assert_in_out_err(["-", @t1.path], "#{<<~"{#"}#{<<~'};'}")
+    {#
+      #!/usr/bin/ruby -pi.bak
+      BEGIN {
+        GC.start
+        arr = []
+        1000000.times { |x| arr << "fooo#{x}" }
+      }
+      puts "hello"
+    };
+    assert_equal("hello\n1\nhello\n2\n", File.read(@t1.path))
+    assert_equal("1\n2\n", File.read("#{@t1.path}.bak"))
+  end
+
   def test_encoding
     ruby('-e', "#{<<~"{#"}\n#{<<~'};'}", @t1.path, @t2.path, @t3.path) do |f|
       {#
@@ -725,6 +740,13 @@ class TestArgf < Test::Unit::TestCase
                       ["\"a\\n\\n\"", "\"b\\n\""], [])
   end
 
+  def test_each_line_chomp
+    assert_in_out_err(['-e', 'ARGF.each_line(chomp: false) {|para| p para}'], "a\nb\n",
+                      ["\"a\\n\"", "\"b\\n\""], [])
+    assert_in_out_err(['-e', 'ARGF.each_line(chomp: true) {|para| p para}'], "a\nb\n",
+                      ["\"a\"", "\"b\""], [])
+  end
+
   def test_each_byte
     ruby('-e', "#{<<~"{#"}\n#{<<~'};'}", @t1.path, @t2.path, @t3.path) do |f|
       {#
@@ -984,7 +1006,6 @@ class TestArgf < Test::Unit::TestCase
         ARGF.lines {|l| s << l }
         p s
       };
-      assert_match(/deprecated/, f.gets)
       assert_equal("[\"1\\n\", \"2\\n\", \"3\\n\", \"4\\n\", \"5\\n\", \"6\\n\"]\n", f.read)
     end
   end
@@ -995,7 +1016,6 @@ class TestArgf < Test::Unit::TestCase
         $stderr = $stdout
         print Marshal.dump(ARGF.bytes.to_a)
       };
-      assert_match(/deprecated/, f.gets)
       assert_equal([49, 10, 50, 10, 51, 10, 52, 10, 53, 10, 54, 10], Marshal.load(f.read))
     end
   end
@@ -1006,7 +1026,6 @@ class TestArgf < Test::Unit::TestCase
         $stderr = $stdout
         print [Marshal.dump(ARGF.chars.to_a)].pack('m')
       };
-      assert_match(/deprecated/, f.gets)
       assert_equal(["1", "\n", "2", "\n", "3", "\n", "4", "\n", "5", "\n", "6", "\n"], Marshal.load(f.read.unpack('m').first))
     end
   end
@@ -1017,7 +1036,6 @@ class TestArgf < Test::Unit::TestCase
         $stderr = $stdout
         print Marshal.dump(ARGF.codepoints.to_a)
       };
-      assert_match(/deprecated/, f.gets)
       assert_equal([49, 10, 50, 10, 51, 10, 52, 10, 53, 10, 54, 10], Marshal.load(f.read))
     end
   end

@@ -9,6 +9,9 @@
 #
 #
 #
+
+require "delegate"
+
 module IRB # :nodoc:
   class WorkSpace
     # Creates a new workspace.
@@ -49,17 +52,21 @@ EOF
           @binding = BINDING_QUEUE.pop
 
         when 3	# binding in function on TOPLEVEL_BINDING(default)
-          @binding = eval("def irb_binding; private; binding; end; irb_binding",
+          @binding = eval("self.class.remove_method(:irb_binding) if defined?(irb_binding); private; def irb_binding; binding; end; irb_binding",
                           TOPLEVEL_BINDING,
                           __FILE__,
                           __LINE__ - 3)
         end
       end
+
       if main.empty?
         @main = eval("self", @binding)
       else
         @main = main[0]
-        IRB.conf[:__MAIN__] = @main
+      end
+      IRB.conf[:__MAIN__] = @main
+
+      unless main.empty?
         case @main
         when Module
           @binding = eval("IRB.conf[:__MAIN__].module_eval('binding', __FILE__, __LINE__)", @binding, __FILE__, __LINE__)
@@ -67,10 +74,32 @@ EOF
           begin
             @binding = eval("IRB.conf[:__MAIN__].instance_eval('binding', __FILE__, __LINE__)", @binding, __FILE__, __LINE__)
           rescue TypeError
-            IRB.fail CantChangeBinding, @main.inspect
+            fail CantChangeBinding, @main.inspect
           end
         end
       end
+
+      case @main
+      when Object
+        use_delegator = @main.frozen?
+      else
+        use_delegator = true
+      end
+
+      if use_delegator
+        @main = SimpleDelegator.new(@main)
+        IRB.conf[:__MAIN__] = @main
+        @main.singleton_class.class_eval do
+          private
+          define_method(:exit) do |*a, &b|
+            # Do nothing, will be overridden
+          end
+          define_method(:binding, Kernel.instance_method(:binding))
+          define_method(:local_variables, Kernel.instance_method(:local_variables))
+        end
+        @binding = eval("IRB.conf[:__MAIN__].instance_eval('binding', __FILE__, __LINE__)", @binding, *@binding.source_location)
+      end
+
       @binding.local_variable_set(:_, nil)
     end
 
@@ -95,46 +124,55 @@ EOF
 
     # error message manipulator
     def filter_backtrace(bt)
+      return nil if bt =~ /\/irb\/.*\.rb/
+      return nil if bt =~ /\/irb\.rb/
       case IRB.conf[:CONTEXT_MODE]
-      when 0
-        return nil if bt =~ /\(irb_local_binding\)/
       when 1
-        if(bt =~ %r!/tmp/irb-binding! or
-            bt =~ %r!irb/.*\.rb! or
-            bt =~ /irb\.rb/)
-          return nil
-        end
-      when 2
-        return nil if bt =~ /irb\/.*\.rb/
-        return nil if bt =~ /irb\.rb/
+        return nil if bt =~ %r!/tmp/irb-binding!
       when 3
-        return nil if bt =~ /irb\/.*\.rb/
-        return nil if bt =~ /irb\.rb/
         bt = bt.sub(/:\s*in `irb_binding'/, '')
       end
       bt
     end
 
     def code_around_binding
-      file, pos = @binding.source_location
+      if @binding.respond_to?(:source_location)
+        file, pos = @binding.source_location
+      else
+        file, pos = @binding.eval('[__FILE__, __LINE__]')
+      end
 
-      unless defined?(::SCRIPT_LINES__[file]) && lines = ::SCRIPT_LINES__[file]
+      if defined?(::SCRIPT_LINES__[file]) && lines = ::SCRIPT_LINES__[file]
+        code = ::SCRIPT_LINES__[file].join('')
+      else
         begin
-          lines = File.readlines(file)
+          code = File.read(file)
         rescue SystemCallError
           return
         end
+      end
+
+      # NOT using #use_colorize? of IRB.conf[:MAIN_CONTEXT] because this method may be called before IRB::Irb#run
+      use_colorize = IRB.conf.fetch(:USE_COLORIZE, true)
+      if use_colorize
+        lines = Color.colorize_code(code).lines
+      else
+        lines = code.lines
       end
       pos -= 1
 
       start_pos = [pos - 5, 0].max
       end_pos   = [pos + 5, lines.size - 1].min
 
-      fmt = " %2s %#{end_pos.to_s.length}d: %s"
+      if use_colorize
+        fmt = " %2s #{Color.colorize("%#{end_pos.to_s.length}d", [:BLUE, :BOLD])}: %s"
+      else
+        fmt = " %2s %#{end_pos.to_s.length}d: %s"
+      end
       body = (start_pos..end_pos).map do |current_pos|
         sprintf(fmt, pos == current_pos ? '=>' : '', current_pos + 1, lines[current_pos])
       end.join("")
-      "\nFrom: #{file} @ line #{pos + 1} :\n\n#{body}\n"
+      "\nFrom: #{file} @ line #{pos + 1} :\n\n#{body}#{Color.clear}\n"
     end
 
     def IRB.delete_caller

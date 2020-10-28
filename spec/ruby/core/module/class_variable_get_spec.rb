@@ -15,14 +15,14 @@ describe "Module#class_variable_get" do
 
   it "raises a NameError for a class variable named '@@'" do
     c = Class.new
-    lambda { c.send(:class_variable_get, "@@") }.should raise_error(NameError)
-    lambda { c.send(:class_variable_get, :"@@") }.should raise_error(NameError)
+    -> { c.send(:class_variable_get, "@@") }.should raise_error(NameError)
+    -> { c.send(:class_variable_get, :"@@") }.should raise_error(NameError)
   end
 
   it "raises a NameError for a class variables with the given name defined in an extended module" do
     c = Class.new
     c.extend ModuleSpecs::MVars
-    lambda {
+    -> {
       c.send(:class_variable_get, "@@mvar")
     }.should raise_error(NameError)
   end
@@ -49,15 +49,15 @@ describe "Module#class_variable_get" do
   it "raises a NameError when an uninitialized class variable is accessed" do
     c = Class.new
     [:@@no_class_var, "@@no_class_var"].each do |cvar|
-      lambda  { c.send(:class_variable_get, cvar) }.should raise_error(NameError)
+      ->  { c.send(:class_variable_get, cvar) }.should raise_error(NameError)
     end
   end
 
   it "raises a NameError when the given name is not allowed" do
     c = Class.new
 
-    lambda { c.send(:class_variable_get, :invalid_name)   }.should raise_error(NameError)
-    lambda { c.send(:class_variable_get, "@invalid_name") }.should raise_error(NameError)
+    -> { c.send(:class_variable_get, :invalid_name)   }.should raise_error(NameError)
+    -> { c.send(:class_variable_get, "@invalid_name") }.should raise_error(NameError)
   end
 
   it "converts a non string/symbol/fixnum name to string using to_str" do
@@ -69,8 +69,8 @@ describe "Module#class_variable_get" do
   it "raises a TypeError when the given names can't be converted to strings using to_str" do
     c = Class.new { class_variable_set :@@class_var, "test" }
     o = mock('123')
-    lambda { c.send(:class_variable_get, o) }.should raise_error(TypeError)
+    -> { c.send(:class_variable_get, o) }.should raise_error(TypeError)
     o.should_receive(:to_str).and_return(123)
-    lambda { c.send(:class_variable_get, o) }.should raise_error(TypeError)
+    -> { c.send(:class_variable_get, o) }.should raise_error(TypeError)
   end
 end

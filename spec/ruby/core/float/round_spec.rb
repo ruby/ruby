@@ -16,9 +16,9 @@ describe "Float#round" do
   end
 
   it "raises FloatDomainError for exceptional values" do
-    lambda { (+infinity_value).round }.should raise_error(FloatDomainError)
-    lambda { (-infinity_value).round }.should raise_error(FloatDomainError)
-    lambda { nan_value.round }.should raise_error(FloatDomainError)
+    -> { (+infinity_value).round }.should raise_error(FloatDomainError)
+    -> { (-infinity_value).round }.should raise_error(FloatDomainError)
+    -> { nan_value.round }.should raise_error(FloatDomainError)
   end
 
   it "rounds self to an optionally given precision" do
@@ -35,20 +35,20 @@ describe "Float#round" do
   end
 
   it "raises a TypeError when its argument can not be converted to an Integer" do
-    lambda { 1.0.round("4") }.should raise_error(TypeError)
-    lambda { 1.0.round(nil) }.should raise_error(TypeError)
+    -> { 1.0.round("4") }.should raise_error(TypeError)
+    -> { 1.0.round(nil) }.should raise_error(TypeError)
   end
 
   it "raises FloatDomainError for exceptional values when passed a non-positive precision" do
-    lambda { Float::INFINITY.round( 0) }.should raise_error(FloatDomainError)
-    lambda { Float::INFINITY.round(-2) }.should raise_error(FloatDomainError)
-    lambda { (-Float::INFINITY).round( 0) }.should raise_error(FloatDomainError)
-    lambda { (-Float::INFINITY).round(-2) }.should raise_error(FloatDomainError)
+    -> { Float::INFINITY.round( 0) }.should raise_error(FloatDomainError)
+    -> { Float::INFINITY.round(-2) }.should raise_error(FloatDomainError)
+    -> { (-Float::INFINITY).round( 0) }.should raise_error(FloatDomainError)
+    -> { (-Float::INFINITY).round(-2) }.should raise_error(FloatDomainError)
   end
 
   it "raises RangeError for NAN when passed a non-positive precision" do
-    lambda { Float::NAN.round(0) }.should raise_error(RangeError)
-    lambda { Float::NAN.round(-2) }.should raise_error(RangeError)
+    -> { Float::NAN.round(0) }.should raise_error(RangeError)
+    -> { Float::NAN.round(-2) }.should raise_error(RangeError)
   end
 
   it "returns self for exceptional values when passed a non-negative precision" do
@@ -83,17 +83,48 @@ describe "Float#round" do
     -2.4e200.round(-200).should eql( -2 * 10 ** 200 )
   end
 
-  ruby_version_is "2.4" do
-    it "returns different rounded values depending on the half option" do
-      2.5.round(half: :up).should      eql(3)
-      2.5.round(half: :down).should    eql(2)
-      2.5.round(half: :even).should    eql(2)
-      3.5.round(half: :up).should      eql(4)
-      3.5.round(half: :down).should    eql(3)
-      3.5.round(half: :even).should    eql(4)
-      (-2.5).round(half: :up).should   eql(-3)
-      (-2.5).round(half: :down).should eql(-2)
-      (-2.5).round(half: :even).should eql(-2)
+  it "returns different rounded values depending on the half option" do
+    2.5.round(half: nil).should      eql(3)
+    2.5.round(half: :up).should      eql(3)
+    2.5.round(half: :down).should    eql(2)
+    2.5.round(half: :even).should    eql(2)
+    3.5.round(half: nil).should      eql(4)
+    3.5.round(half: :up).should      eql(4)
+    3.5.round(half: :down).should    eql(3)
+    3.5.round(half: :even).should    eql(4)
+    (-2.5).round(half: nil).should   eql(-3)
+    (-2.5).round(half: :up).should   eql(-3)
+    (-2.5).round(half: :down).should eql(-2)
+    (-2.5).round(half: :even).should eql(-2)
+  end
+
+  it "rounds self to an optionally given precision with a half option" do
+    5.55.round(1, half: nil).should eql(5.6)
+    5.55.round(1, half: :up).should eql(5.6)
+    5.55.round(1, half: :down).should eql(5.5)
+    5.55.round(1, half: :even).should eql(5.6)
+  end
+
+  it "raises FloatDomainError for exceptional values with a half option" do
+    -> { (+infinity_value).round(half: :up) }.should raise_error(FloatDomainError)
+    -> { (-infinity_value).round(half: :down) }.should raise_error(FloatDomainError)
+    -> { nan_value.round(half: :even) }.should raise_error(FloatDomainError)
+  end
+
+  it "raise for a non-existent round mode" do
+    -> { 14.2.round(half: :nonsense) }.should raise_error(ArgumentError, "invalid rounding mode: nonsense")
+  end
+
+  describe "when 0.0 is given" do
+    it "returns self for positive ndigits" do
+      (0.0).round(5).inspect.should == "0.0"
+      (-0.0).round(1).inspect.should == "-0.0"
+    end
+
+    it "returns 0 for 0 or undefined ndigits" do
+      (0.0).round.should == 0
+      (-0.0).round(0).should == 0
+      (0.0).round(half: :up) == 0
     end
   end
 end

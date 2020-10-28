@@ -22,7 +22,7 @@ require 'mspec/runner/actions/filter'
 #            spec description strings
 
 class TagAction < ActionFilter
-  def initialize(action, outcome, tag, comment, tags=nil, descs=nil)
+  def initialize(action, outcome, tag, comment, tags = nil, descs = nil)
     super tags, descs
     @action = action
     @outcome = outcome

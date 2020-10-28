@@ -324,7 +324,6 @@ rb_gdbm_fetch(GDBM_FILE dbm, datum key)
 
     str = rb_str_new(val.dptr, val.dsize);
     free(val.dptr);
-    OBJ_TAINT(str);
     return str;
 }
 
@@ -365,7 +364,6 @@ rb_gdbm_firstkey(GDBM_FILE dbm)
 
     str = rb_str_new(key.dptr, key.dsize);
     free(key.dptr);
-    OBJ_TAINT(str);
     return str;
 }
 
@@ -386,7 +384,6 @@ rb_gdbm_nextkey(GDBM_FILE dbm, VALUE keystr)
 
     str = rb_str_new(key2.dptr, key2.dsize);
     free(key2.dptr);
-    OBJ_TAINT(str);
     return str;
 }
 

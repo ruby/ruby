@@ -2,17 +2,17 @@
 ##  This file is part of the "Coroutine" project and released under the MIT License.
 ##
 ##  Created by Samuel Williams on 10/5/2018.
-##  Copyright, 2018, by Samuel Williams. All rights reserved.
+##  Copyright, 2018, by Samuel Williams.
 ##
+
+#define TOKEN_PASTE(x,y) x##y
+#define PREFIXED_SYMBOL(prefix,name) TOKEN_PASTE(prefix,name)
 
 .text
 
-# For older linkers
-.globl _coroutine_transfer
-_coroutine_transfer:
+.globl PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer)
+PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer):
 
-.globl coroutine_transfer
-coroutine_transfer:
 	# Save caller state
 	pushq %rbp
 	pushq %rbx
@@ -27,7 +27,7 @@ coroutine_transfer:
 	# Restore callee stack pointer
 	movq (%rsi), %rsp
 
-	# Restore callee stack
+	# Restore callee state
 	popq %r15
 	popq %r14
 	popq %r13

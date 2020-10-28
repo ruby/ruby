@@ -6,10 +6,8 @@ class PlatformGuard < SpecGuard
       case name
       when :rubinius
         RUBY_ENGINE.start_with?('rbx')
-      when :ruby, :jruby, :truffleruby, :ironruby, :macruby, :maglev, :topaz, :opal
-        RUBY_ENGINE.start_with?(name.to_s)
       else
-        raise "unknown implementation #{name}"
+        RUBY_ENGINE.start_with?(name.to_s)
       end
     end
   end
@@ -28,8 +26,11 @@ class PlatformGuard < SpecGuard
   def self.os?(*oses)
     oses.any? do |os|
       raise ":java is not a valid OS" if os == :java
-      if os == :windows
+      case os
+      when :windows
         PLATFORM =~ /(mswin|mingw)/
+      when :wsl
+        wsl?
       else
         PLATFORM.include?(os.to_s)
       end
@@ -38,6 +39,14 @@ class PlatformGuard < SpecGuard
 
   def self.windows?
     os?(:windows)
+  end
+
+  def self.wsl?
+    if defined?(@wsl_p)
+      @wsl_p
+    else
+      @wsl_p = `uname -r`.match?(/microsoft/i)
+    end
   end
 
   WORD_SIZE = 1.size * 8

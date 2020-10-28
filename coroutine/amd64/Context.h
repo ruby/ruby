@@ -2,43 +2,42 @@
  *  This file is part of the "Coroutine" project and released under the MIT License.
  *
  *  Created by Samuel Williams on 10/5/2018.
- *  Copyright, 2018, by Samuel Williams. All rights reserved.
+ *  Copyright, 2018, by Samuel Williams.
 */
 
 #pragma once
 
 #include <assert.h>
+#include <stddef.h>
+#include <stdint.h>
 #include <string.h>
-
-#if __cplusplus
-extern "C" {
-#endif
 
 #define COROUTINE __attribute__((noreturn)) void
 
-const size_t COROUTINE_REGISTERS = 6;
+enum {COROUTINE_REGISTERS = 6};
 
-typedef struct
+struct coroutine_context
 {
     void **stack_pointer;
-} coroutine_context;
+};
 
-typedef COROUTINE(* coroutine_start)(coroutine_context *from, coroutine_context *self);
+typedef COROUTINE(* coroutine_start)(struct coroutine_context *from, struct coroutine_context *self);
+
+static inline void coroutine_initialize_main(struct coroutine_context * context) {
+    context->stack_pointer = NULL;
+}
 
 static inline void coroutine_initialize(
-    coroutine_context *context,
+    struct coroutine_context *context,
     coroutine_start start,
-    void *stack_pointer,
-    size_t stack_size
+    void *stack,
+    size_t size
 ) {
-    /* Force 16-byte alignment */
-    context->stack_pointer = (void**)((uintptr_t)stack_pointer & ~0xF);
+    assert(start && stack && size >= 1024);
 
-    if (!start) {
-        assert(!context->stack_pointer);
-        /* We are main coroutine for this thread */
-        return;
-    }
+    // Stack grows down. Force 16-byte alignment.
+    char * top = (char*)stack + size;
+    context->stack_pointer = (void**)((uintptr_t)top & ~0xF);
 
     *--context->stack_pointer = NULL;
     *--context->stack_pointer = (void*)start;
@@ -47,13 +46,9 @@ static inline void coroutine_initialize(
     memset(context->stack_pointer, 0, sizeof(void*) * COROUTINE_REGISTERS);
 }
 
-coroutine_context * coroutine_transfer(coroutine_context * current, coroutine_context * target);
+struct coroutine_context * coroutine_transfer(struct coroutine_context * current, struct coroutine_context * target);
 
-static inline void coroutine_destroy(coroutine_context * context)
+static inline void coroutine_destroy(struct coroutine_context * context)
 {
     context->stack_pointer = NULL;
 }
-
-#if __cplusplus
-}
-#endif

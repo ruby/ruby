@@ -15,11 +15,11 @@ describe "A singleton class" do
   end
 
   it "raises a TypeError for Fixnum's" do
-    lambda { 1.singleton_class }.should raise_error(TypeError)
+    -> { 1.singleton_class }.should raise_error(TypeError)
   end
 
   it "raises a TypeError for symbols" do
-    lambda { :symbol.singleton_class }.should raise_error(TypeError)
+    -> { :symbol.singleton_class }.should raise_error(TypeError)
   end
 
   it "is a singleton Class instance" do
@@ -74,7 +74,7 @@ describe "A singleton class" do
   end
 
   it "doesn't have singleton class" do
-    lambda { bignum_value.singleton_class.superclass.should == Bignum }.should raise_error(TypeError)
+    -> { bignum_value.singleton_class.superclass.should == Bignum }.should raise_error(TypeError)
   end
 end
 
@@ -112,11 +112,11 @@ describe "A constant on a singleton class" do
     class << @object
       CONST
     end
-    lambda { CONST }.should raise_error(NameError)
+    -> { CONST }.should raise_error(NameError)
   end
 
   it "cannot be accessed via object::CONST" do
-    lambda do
+    -> do
       @object::CONST
     end.should raise_error(TypeError)
   end
@@ -127,7 +127,7 @@ describe "A constant on a singleton class" do
       CONST = 100
     end
 
-    lambda do
+    -> do
       @object::CONST
     end.should raise_error(NameError)
   end
@@ -143,7 +143,7 @@ describe "A constant on a singleton class" do
   it "is not preserved when the object is duped" do
     @object = @object.dup
 
-    lambda do
+    -> do
       class << @object; CONST; end
     end.should raise_error(NameError)
   end
@@ -153,6 +153,23 @@ describe "A constant on a singleton class" do
 
     class << @object
       CONST.should_not be_nil
+    end
+  end
+end
+
+describe "Defining yield in singleton class" do
+  ruby_version_is "2.7"..."3.0" do
+    it 'emits a deprecation warning' do
+      code = <<~RUBY
+          def m
+            class << Object.new
+              yield
+            end
+          end
+          m { :ok }
+        RUBY
+
+      -> { eval(code) }.should complain(/warning: `yield' in class syntax will not be supported from Ruby 3.0/)
     end
   end
 end
@@ -280,13 +297,13 @@ end
 
 describe "Instantiating a singleton class" do
   it "raises a TypeError when new is called" do
-    lambda {
+    -> {
       Object.new.singleton_class.new
     }.should raise_error(TypeError)
   end
 
   it "raises a TypeError when allocate is called" do
-    lambda {
+    -> {
       Object.new.singleton_class.allocate
     }.should raise_error(TypeError)
   end

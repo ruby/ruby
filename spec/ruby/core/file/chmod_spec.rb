@@ -105,12 +105,12 @@ describe "File.chmod" do
     File.chmod(0, mock_to_path(@file))
   end
 
-  it "throws a TypeError if the given path is not coercable into a string" do
-    lambda { File.chmod(0, []) }.should raise_error(TypeError)
+  it "throws a TypeError if the given path is not coercible into a string" do
+    -> { File.chmod(0, []) }.should raise_error(TypeError)
   end
 
   it "raises an error for a non existent path" do
-    lambda {
+    -> {
       File.chmod(0644, "#{@file}.not.existing")
     }.should raise_error(Errno::ENOENT)
   end

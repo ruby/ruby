@@ -5,14 +5,13 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'fileutils'
-require 'tempfile'
 require 'shellwords'
 
 class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
-  FileEntry = FileUtils::Entry_ # :nodoc:
-
   def self.build(extension, dest_path, results, args=[], lib_dir=nil)
+    require 'fileutils'
+    require 'tempfile'
+
     tmp_dest = Dir.mktmpdir(".gem.", ".")
 
     # Some versions of `mktmpdir` return absolute paths, which will break make
@@ -26,7 +25,7 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
     # Details: https://github.com/rubygems/rubygems/issues/977#issuecomment-171544940
     tmp_dest = get_relative_path(tmp_dest)
 
-    Tempfile.open %w"siteconf .rb", "." do |siteconf|
+    Tempfile.open %w[siteconf .rb], "." do |siteconf|
       siteconf.puts "require 'rbconfig'"
       siteconf.puts "dest_path = #{tmp_dest.dump}"
       %w[sitearchdir sitelibdir].each do |dir|
@@ -44,15 +43,15 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
         cmd.push(*args)
 
         begin
-          run cmd, results
-        ensure
-          if File.exist? 'mkmf.log'
-            unless $?.success?
-              results << "To see why this extension failed to compile, please check" \
-                " the mkmf.log which can be found here:\n"
-              results << "  " + File.join(dest_path, 'mkmf.log') + "\n"
+          run(cmd, results) do |s, r|
+            if File.exist? 'mkmf.log'
+              unless s.success?
+                r << "To see why this extension failed to compile, please check" \
+                  " the mkmf.log which can be found here:\n"
+                r << "  " + File.join(dest_path, 'mkmf.log') + "\n"
+              end
+              FileUtils.mv 'mkmf.log', dest_path
             end
-            FileUtils.mv 'mkmf.log', dest_path
           end
           siteconf.unlink
         end
@@ -66,11 +65,11 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
           if Gem.install_extension_in_lib and lib_dir
             FileUtils.mkdir_p lib_dir
             entries = Dir.entries(tmp_dest) - %w[. ..]
-            entries = entries.map { |entry| File.join tmp_dest, entry }
+            entries = entries.map {|entry| File.join tmp_dest, entry }
             FileUtils.cp_r entries, lib_dir, :remove_destination => true
           end
 
-          FileEntry.new(tmp_dest).traverse do |ent|
+          FileUtils::Entry_.new(tmp_dest).traverse do |ent|
             destent = ent.class.new(dest_path, ent.rel)
             destent.exist? or FileUtils.mv(ent.path, destent.path)
           end
@@ -87,9 +86,9 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
   end
 
   private
+
   def self.get_relative_path(path)
-    path[0..Dir.pwd.length-1] = '.' if path.start_with?(Dir.pwd)
+    path[0..Dir.pwd.length - 1] = '.' if path.start_with?(Dir.pwd)
     path
   end
-
 end

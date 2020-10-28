@@ -3,10 +3,14 @@ module DifferentOFS
   module WithDifferentOFS
     def setup
       super
+      verbose, $VERBOSE = $VERBOSE, nil
       @ofs, $, = $,, "-"
+      $VERBOSE = verbose
     end
     def teardown
+      verbose, $VERBOSE = $VERBOSE, nil
       $, = @ofs
+      $VERBOSE = verbose
       super
     end
   end

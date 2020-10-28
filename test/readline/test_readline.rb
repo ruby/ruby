@@ -1,14 +1,10 @@
 # frozen_string_literal: false
-begin
-  require "readline"
-rescue LoadError
-else
-  require "test/unit"
-  require "tempfile"
-  require "timeout"
-end
+require_relative "helper"
+require "test/unit"
+require "tempfile"
+require "timeout"
 
-class TestReadline < Test::Unit::TestCase
+module BasetestReadline
   INPUTRC = "INPUTRC"
   SAVED_ENV = %w[COLUMNS LINES]
 
@@ -25,94 +21,108 @@ class TestReadline < Test::Unit::TestCase
       Readline.point = 0
     rescue NotImplementedError
     end
+    Readline.special_prefixes = ""
+    Readline.completion_append_character = nil
     Readline.input = nil
     Readline.output = nil
     SAVED_ENV.each_with_index {|k, i| ENV[k] = @saved_env[i] }
   end
 
-  if !/EditLine/n.match(Readline::VERSION)
-    def test_readline
-      with_temp_stdio do |stdin, stdout|
-        stdin.write("hello\n")
-        stdin.close
-        stdout.flush
-        line = replace_stdio(stdin.path, stdout.path) {
-          Readline.readline("> ", true)
-        }
-        assert_equal("hello", line)
-        assert_equal(true, line.tainted?)
-        stdout.rewind
-        assert_equal("> ", stdout.read(2))
-        assert_equal(1, Readline::HISTORY.length)
-        assert_equal("hello", Readline::HISTORY[0])
-        Thread.start {
-          $SAFE = 1
-          assert_raise(SecurityError) do
-            replace_stdio(stdin.path, stdout.path) do
-              Readline.readline("> ".taint)
+  def test_readline
+    Readline::HISTORY.clear
+    omit "Skip Editline" if /EditLine/n.match(Readline::VERSION)
+    with_temp_stdio do |stdin, stdout|
+      stdin.write("hello\n")
+      stdin.close
+      stdout.flush
+      line = replace_stdio(stdin.path, stdout.path) {
+        Readline.readline("> ", true)
+      }
+      assert_equal("hello", line)
+      assert_equal(true, line.tainted?) if RUBY_VERSION < '2.7'
+      stdout.rewind
+      assert_equal("> ", stdout.read(2))
+      assert_equal(1, Readline::HISTORY.length)
+      assert_equal("hello", Readline::HISTORY[0])
+
+      # Work around lack of SecurityError in Reline
+      # test mode with tainted prompt.
+      # Also skip test on Ruby 2.7+, where $SAFE/taint is deprecated.
+      if RUBY_VERSION < '2.7' && defined?(TestRelineAsReadline) && !kind_of?(TestRelineAsReadline)
+        begin
+          Thread.start {
+            $SAFE = 1
+            assert_raise(SecurityError) do
+              replace_stdio(stdin.path, stdout.path) do
+                Readline.readline("> ".taint)
+              end
             end
-          end
-        }.join
-      ensure
-        $SAFE = 0
+          }.join
+        ensure
+          $SAFE = 0
+        end
       end
     end
+  end
 
-    # line_buffer
-    # point
-    def test_line_buffer__point
-      begin
-        Readline.line_buffer
-        Readline.point
-      rescue NotImplementedError
-        return
-      end
+  # line_buffer
+  # point
+  def test_line_buffer__point
+    omit "Skip Editline" if /EditLine/n.match(Readline::VERSION)
+    omit "GNU Readline has special behaviors" if defined?(Reline) and Readline == Reline
+    begin
+      Readline.line_buffer
+      Readline.point
+    rescue NotImplementedError
+      return
+    end
 
-      with_temp_stdio do |stdin, stdout|
-        actual_text = nil
-        actual_line_buffer = nil
-        actual_point = nil
-        Readline.completion_proc = ->(text) {
-          actual_text = text
-          actual_point = Readline.point
-          actual_line_buffer = Readline.line_buffer
-          stdin.write(" finish\n")
-          stdin.flush
-          stdout.flush
-          return ["complete"]
-        }
-
-        stdin.write("first second\t")
+    with_temp_stdio do |stdin, stdout|
+      actual_text = nil
+      actual_line_buffer = nil
+      actual_point = nil
+      Readline.completion_proc = ->(text) {
+        actual_text = text
+        actual_point = Readline.point
+        actual_line_buffer = Readline.line_buffer
+        stdin.write(" finish\n")
         stdin.flush
-        Readline.completion_append_character = " "
-        replace_stdio(stdin.path, stdout.path) {
-          Readline.readline("> ", false)
-        }
-        assert_equal("second", actual_text)
-        assert_equal("first second", actual_line_buffer)
-        assert_equal(12, actual_point)
-        assert_equal("first complete  finish", Readline.line_buffer)
-        assert_equal(Encoding.find("locale"), Readline.line_buffer.encoding)
-        assert_equal(true, Readline.line_buffer.tainted?)
-        assert_equal(22, Readline.point)
+        stdout.flush
+        return ["complete"]
+      }
 
-        stdin.rewind
-        stdout.rewind
+      stdin.write("first second\t")
+      stdin.flush
+      Readline.completion_append_character = " "
+      replace_stdio(stdin.path, stdout.path) {
+        Readline.readline("> ", false)
+      }
+      assert_equal("second", actual_text)
+      assert_equal("first second", actual_line_buffer)
+      assert_equal(12, actual_point)
+      assert_equal("first complete  finish", Readline.line_buffer)
+      assert_equal(Encoding.find("locale"), Readline.line_buffer.encoding)
+      assert_equal(true, Readline.line_buffer.tainted?) if RUBY_VERSION < '2.7'
 
-        stdin.write("first second\t")
-        stdin.flush
-        Readline.completion_append_character = nil
-        replace_stdio(stdin.path, stdout.path) {
-          Readline.readline("> ", false)
-        }
-        assert_equal("second", actual_text)
-        assert_equal("first second", actual_line_buffer)
-        assert_equal(12, actual_point)
-        assert_equal("first complete finish", Readline.line_buffer)
-        assert_equal(Encoding.find("locale"), Readline.line_buffer.encoding)
-        assert_equal(true, Readline.line_buffer.tainted?)
-        assert_equal(21, Readline.point)
-      end
+      assert_equal(22, Readline.point)
+
+      stdin.rewind
+      stdout.rewind
+
+      stdin.write("first second\t")
+      stdin.flush
+      Readline.completion_append_character = nil
+      replace_stdio(stdin.path, stdout.path) {
+        Readline.readline("> ", false)
+      }
+      assert_equal("second", actual_text)
+      assert_equal("first second", actual_line_buffer)
+      assert_equal(12, actual_point)
+      assert_equal("first complete finish", Readline.line_buffer)
+      assert_equal(Encoding.find("locale"), Readline.line_buffer.encoding)
+      assert_equal(true, Readline.line_buffer.tainted?) if RUBY_VERSION < '2.7'
+
+      assert_equal(21, Readline.point)
     end
   end
 
@@ -140,13 +150,17 @@ class TestReadline < Test::Unit::TestCase
 
   def test_completion_case_fold
     expected = [true, false, "string", {"a" => "b"}]
+    completion_case_fold = Readline.completion_case_fold
     expected.each do |e|
       Readline.completion_case_fold = e
       assert_equal(e, Readline.completion_case_fold)
     end
+  ensure
+    Readline.completion_case_fold = completion_case_fold
   end
 
   def test_completion_proc_empty_result
+    omit "Skip Editline" if /EditLine/n.match(Readline::VERSION)
     with_temp_stdio do |stdin, stdout|
       stdin.write("first\t")
       stdin.flush
@@ -165,7 +179,7 @@ class TestReadline < Test::Unit::TestCase
       rescue NotimplementedError
       end
     end
-  end if !/EditLine/n.match(Readline::VERSION)
+  end
 
   def test_get_screen_size
     begin
@@ -225,11 +239,12 @@ class TestReadline < Test::Unit::TestCase
   end
 
   def test_completion_encoding
+    omit "Skip Editline" if /EditLine/n.match(Readline::VERSION)
     bug5941 = '[Bug #5941]'
     append_character = Readline.completion_append_character
     Readline.completion_append_character = ""
     completion_case_fold = Readline.completion_case_fold
-    locale = Encoding.find("locale")
+    locale = get_default_internal_encoding
     if locale == Encoding::UTF_8
       enc1 = Encoding::EUC_JP
     else
@@ -252,7 +267,7 @@ class TestReadline < Test::Unit::TestCase
     end or
     begin
       return if assert_under_utf8
-      skip("missing test for locale #{locale.name}")
+      omit("missing test for locale #{locale.name}")
     end
     expected = results[0][0...1]
     Readline.completion_case_fold = false
@@ -264,9 +279,10 @@ class TestReadline < Test::Unit::TestCase
       with_pipe {|r, w| w << "\t"}
     end
   ensure
+    return if /EditLine/n.match(Readline::VERSION)
     Readline.completion_case_fold = completion_case_fold
     Readline.completion_append_character = append_character
-  end if !/EditLine/n.match(Readline::VERSION)
+  end
 
   # basic_word_break_characters
   # completer_word_break_characters
@@ -275,32 +291,6 @@ class TestReadline < Test::Unit::TestCase
   # filename_quote_characters
   # special_prefixes
   def test_some_characters_methods
-    method_names = [
-                    "basic_word_break_characters",
-                    "completer_word_break_characters",
-                    "basic_quote_characters",
-                    "completer_quote_characters",
-                    "filename_quote_characters",
-                    "special_prefixes",
-                   ]
-    method_names.each do |method_name|
-      begin
-        begin
-          enc = get_default_internal_encoding
-          saved = Readline.send(method_name.to_sym)
-          expecteds = [" ", " .,|\t", ""]
-          expecteds.each do |e|
-            Readline.send((method_name + "=").to_sym, e)
-            res = Readline.send(method_name.to_sym)
-            assert_equal(e, res)
-            assert_equal(enc, res.encoding)
-          end
-        ensure
-          Readline.send((method_name + "=").to_sym, saved) if saved
-        end
-      rescue NotImplementedError
-      end
-    end
   end
 
   def test_closed_outstream
@@ -325,6 +315,7 @@ class TestReadline < Test::Unit::TestCase
   end
 
   def test_point
+    omit "Skip Editline" if /EditLine/n.match(Readline::VERSION)
     assert_equal(0, Readline.point)
     Readline.insert_text('12345')
     assert_equal(5, Readline.point)
@@ -336,9 +327,10 @@ class TestReadline < Test::Unit::TestCase
 
     assert_equal('1234abc5', Readline.line_buffer)
   rescue NotImplementedError
-  end if !/EditLine/n.match(Readline::VERSION)
+  end
 
   def test_insert_text
+    omit "Skip Editline" if /EditLine/n.match(Readline::VERSION)
     str = "test_insert_text"
     assert_equal(0, Readline.point)
     assert_equal(Readline, Readline.insert_text(str))
@@ -366,9 +358,10 @@ class TestReadline < Test::Unit::TestCase
     Readline.delete_text
     assert_equal("", Readline.line_buffer)
   rescue NotImplementedError
-  end if !/EditLine/n.match(Readline::VERSION)
+  end
 
   def test_delete_text
+    omit "Skip Editline" if /EditLine/n.match(Readline::VERSION)
     str = "test_insert_text"
     assert_equal(0, Readline.point)
     assert_equal(Readline, Readline.insert_text(str))
@@ -376,16 +369,19 @@ class TestReadline < Test::Unit::TestCase
     assert_equal(str, Readline.line_buffer)
     Readline.delete_text
 
-    # NOTE: unexpected but GNU Readline's spec
-    assert_equal(16, Readline.point)
-    assert_equal("", Readline.line_buffer)
-    assert_equal(Readline, Readline.insert_text(str))
-    assert_equal(32, Readline.point)
-    assert_equal("", Readline.line_buffer)
+    if !defined?(Reline) or Readline != Reline
+      # NOTE: unexpected but GNU Readline's spec
+      assert_equal(16, Readline.point)
+      assert_equal("", Readline.line_buffer)
+      assert_equal(Readline, Readline.insert_text(str))
+      assert_equal(32, Readline.point)
+      assert_equal("", Readline.line_buffer)
+    end
   rescue NotImplementedError
-  end if !/EditLine/n.match(Readline::VERSION)
+  end
 
   def test_modify_text_in_pre_input_hook
+    omit "Skip Editline" if /EditLine/n.match(Readline::VERSION)
     with_temp_stdio {|stdin, stdout|
       begin
         stdin.write("world\n")
@@ -399,7 +395,11 @@ class TestReadline < Test::Unit::TestCase
           line = Readline.readline("> ")
           assert_equal("hello world", line)
         end
-        assert_equal("> hello world\n", stdout.read)
+        # Readline 4.3 doesn't include inserted text or input
+        # Reline's rendering logic is tricky
+        if Readline::VERSION != '4.3' and (!defined?(Reline) or Readline != Reline)
+          assert_equal("> hello world\n", stdout.read)
+        end
         stdout.close
       rescue NotImplementedError
       ensure
@@ -409,10 +409,13 @@ class TestReadline < Test::Unit::TestCase
         end
       end
     }
-  end if !/EditLine|\A4\.3\z/n.match(Readline::VERSION)
+  end
 
   def test_input_metachar
-    skip("Won't pass on mingw w/readline 7.0.005 [ruby-core:45682]") if mingw?
+    omit "Skip Editline" if /EditLine/n.match(Readline::VERSION)
+    # test will pass on Windows reline, but not readline
+    omit "Won't pass on mingw readline.so using 8.0.001" if /mingw/ =~ RUBY_PLATFORM and defined?(TestReadline) and kind_of?(TestReadline)
+    omit 'Needs GNU Readline 6 or later' if /mswin|mingw/ =~ RUBY_PLATFORM and defined?(TestReadline) and kind_of?(TestReadline) and Readline::VERSION < '6.0'
     bug6601 = '[ruby-core:45682]'
     Readline::HISTORY << "hello"
     wo = nil
@@ -423,14 +426,16 @@ class TestReadline < Test::Unit::TestCase
     assert_equal("hello", line, bug6601)
   ensure
     wo&.close
+    return if /EditLine/n.match(Readline::VERSION)
     Readline.delete_text
     Readline::HISTORY.clear
-  end if !/EditLine/n.match(Readline::VERSION)
+  end
 
   def test_input_metachar_multibyte
+    omit "Skip Editline" if /EditLine/n.match(Readline::VERSION)
     unless Encoding.find("locale") == Encoding::UTF_8
       return if assert_under_utf8
-      skip 'this test needs UTF-8 locale'
+      omit 'this test needs UTF-8 locale'
     end
     bug6602 = '[ruby-core:45683]'
     Readline::HISTORY << "\u3042\u3093"
@@ -451,11 +456,14 @@ class TestReadline < Test::Unit::TestCase
       end
     end
   ensure
+    return if /EditLine/n.match(Readline::VERSION)
     Readline.delete_text
     Readline::HISTORY.clear
-  end if !/EditLine/n.match(Readline::VERSION)
+  end
 
   def test_refresh_line
+    omit "Only when refresh_line exists" unless Readline.respond_to?(:refresh_line)
+    omit unless respond_to?(:assert_ruby_status)
     bug6232 = '[ruby-core:43957] [Bug #6232] refresh_line after set_screen_size'
     with_temp_stdio do |stdin, stdout|
       replace_stdio(stdin.path, stdout.path) do
@@ -465,7 +473,7 @@ class TestReadline < Test::Unit::TestCase
         end;
       end
     end
-  end if Readline.respond_to?(:refresh_line)
+  end
 
   def test_setting_quoting_detection_proc
     return unless Readline.respond_to?(:quoting_detection_proc=)
@@ -482,79 +490,159 @@ class TestReadline < Test::Unit::TestCase
   def test_using_quoting_detection_proc
     saved_completer_quote_characters = Readline.completer_quote_characters
     saved_completer_word_break_characters = Readline.completer_word_break_characters
+
+    # skip if previous value is nil because Readline... = nil is not allowed.
+    skip unless saved_completer_quote_characters
+    skip unless saved_completer_word_break_characters
+
     return unless Readline.respond_to?(:quoting_detection_proc=)
 
-    passed_text = nil
-    line = nil
+    begin
+      passed_text = nil
+      line = nil
 
-    with_temp_stdio do |stdin, stdout|
-      replace_stdio(stdin.path, stdout.path) do
-        Readline.completion_proc = ->(text) do
-          passed_text = text
-          ['completion']
-        end
-        Readline.completer_quote_characters = '\'"'
-        Readline.completer_word_break_characters = ' '
-        Readline.quoting_detection_proc = ->(text, index) do
-          index > 0 && text[index-1] == '\\'
-        end
+      with_temp_stdio do |stdin, stdout|
+        replace_stdio(stdin.path, stdout.path) do
+          Readline.completion_proc = ->(text) do
+            passed_text = text
+            ['completion'].map { |i|
+              i.encode(Encoding.default_external)
+            }
+          end
+          Readline.completer_quote_characters = '\'"'
+          Readline.completer_word_break_characters = ' '
+          Readline.quoting_detection_proc = ->(text, index) do
+            index > 0 && text[index-1] == '\\'
+          end
 
-        stdin.write("first second\\ third\t")
-        stdin.flush
-        line = Readline.readline('> ', false)
+          stdin.write("first second\\ third\t")
+          stdin.flush
+          line = Readline.readline('> ', false)
+        end
       end
-    end
 
-    assert_equal('second\\ third', passed_text)
-    assert_equal('first completion', line)
-  ensure
-    Readline.completer_quote_characters = saved_completer_quote_characters
-    Readline.completer_word_break_characters = saved_completer_word_break_characters
+      assert_equal('second\\ third', passed_text)
+      assert_equal('first completion', line.chomp(' '))
+    ensure
+      Readline.completer_quote_characters = saved_completer_quote_characters
+      Readline.completer_word_break_characters = saved_completer_word_break_characters
+    end
   end
 
   def test_using_quoting_detection_proc_with_multibyte_input
+    Readline.completion_append_character = nil
     saved_completer_quote_characters = Readline.completer_quote_characters
     saved_completer_word_break_characters = Readline.completer_word_break_characters
+
+    # skip if previous value is nil because Readline... = nil is not allowed.
+    skip unless saved_completer_quote_characters
+    skip unless saved_completer_word_break_characters
+
     return unless Readline.respond_to?(:quoting_detection_proc=)
-    unless Encoding.find("locale") == Encoding::UTF_8
+    unless get_default_internal_encoding == Encoding::UTF_8
       return if assert_under_utf8
-      skip 'this test needs UTF-8 locale'
+      omit 'this test needs UTF-8 locale'
     end
 
-    passed_text = nil
-    escaped_char_indexes = []
+    begin
+      passed_text = nil
+      escaped_char_indexes = []
+      line = nil
+
+      with_temp_stdio do |stdin, stdout|
+        replace_stdio(stdin.path, stdout.path) do
+          Readline.completion_proc = ->(text) do
+            passed_text = text
+            ['completion'].map { |i|
+              i.encode(Encoding.default_external)
+            }
+          end
+          Readline.completer_quote_characters = '\'"'
+          Readline.completer_word_break_characters = ' '
+          Readline.quoting_detection_proc = ->(text, index) do
+            escaped = index > 0 && text[index-1] == '\\'
+            escaped_char_indexes << index if escaped
+            escaped
+          end
+
+          stdin.write("\u3042\u3093 second\\ third\t")
+          stdin.flush
+          line = Readline.readline('> ', false)
+        end
+      end
+
+      assert_equal([10], escaped_char_indexes)
+      assert_equal('second\\ third', passed_text)
+      assert_equal("\u3042\u3093 completion#{Readline.completion_append_character}", line)
+    ensure
+      Readline.completer_quote_characters = saved_completer_quote_characters
+      Readline.completer_word_break_characters = saved_completer_word_break_characters
+    end
+  end
+
+  def test_simple_completion
+    omit "Skip Editline" if /EditLine/n.match(Readline::VERSION)
+
     line = nil
 
-    with_temp_stdio do |stdin, stdout|
-      replace_stdio(stdin.path, stdout.path) do
+    open(IO::NULL, 'w') do |null|
+      IO.pipe do |r, w|
+        Readline.input = r
+        Readline.output = null
         Readline.completion_proc = ->(text) do
-          passed_text = text
-          ['completion']
+          ['abcde', 'abc12'].map { |i|
+            i.encode(get_default_internal_encoding)
+          }
         end
-        Readline.completer_quote_characters = '\'"'
-        Readline.completer_word_break_characters = ' '
-        Readline.quoting_detection_proc = ->(text, index) do
-          escaped = index > 0 && text[index-1] == '\\'
-          escaped_char_indexes << index if escaped
-          escaped
+        w.write("a\t\n")
+        w.flush
+        begin
+          stderr = $stderr.dup
+          $stderr.reopen(null)
+          line = Readline.readline('> ', false)
+        ensure
+          $stderr.reopen(stderr)
+          stderr.close
         end
+      end
+    end
 
-        stdin.write("\u3042\u3093 second\\ third\t")
-        stdin.flush
+    assert_equal('abc', line)
+  end
+
+  def test_completion_with_completion_append_character
+    omit "Skip Editline" if /EditLine/n.match(Readline::VERSION)
+    omit "Readline.completion_append_character is not implemented" unless Readline.respond_to?(:completion_append_character=)
+    line = nil
+
+    append_character = Readline.completion_append_character
+    open(IO::NULL, 'w') do |null|
+      IO.pipe do |r, w|
+        Readline.input = r
+        Readline.output = null
+        Readline.completion_append_character = '!'
+        Readline.completion_proc = ->(text) do
+          ['abcde'].map { |i|
+            i.encode(get_default_internal_encoding)
+          }
+        end
+        w.write("a\t\n")
+        w.flush
         line = Readline.readline('> ', false)
       end
     end
 
-    assert_equal([10], escaped_char_indexes)
-    assert_equal('second\\ third', passed_text)
-    assert_equal("\u3042\u3093 completion", line)
+    assert_equal('abcde!', line)
   ensure
-    Readline.completer_quote_characters = saved_completer_quote_characters
-    Readline.completer_word_break_characters = saved_completer_word_break_characters
+    return if /EditLine/n.match(Readline::VERSION)
+    return unless Readline.respond_to?(:completion_append_character=)
+    Readline.completion_append_character = append_character
   end
 
   def test_completion_quote_character_completing_unquoted_argument
     return unless Readline.respond_to?(:completion_quote_character)
+
+    saved_completer_quote_characters = Readline.completer_quote_characters
 
     quote_character = "original value"
     Readline.completion_proc = -> (_) do
@@ -572,10 +660,14 @@ class TestReadline < Test::Unit::TestCase
     end
 
     assert_nil(quote_character)
+  ensure
+    Readline.completer_quote_characters = saved_completer_quote_characters if saved_completer_quote_characters
   end
 
   def test_completion_quote_character_completing_quoted_argument
     return unless Readline.respond_to?(:completion_quote_character)
+
+    saved_completer_quote_characters = Readline.completer_quote_characters
 
     quote_character = "original value"
     Readline.completion_proc = -> (_) do
@@ -593,14 +685,19 @@ class TestReadline < Test::Unit::TestCase
     end
 
     assert_equal("'", quote_character)
+  ensure
+    Readline.completer_quote_characters = saved_completer_quote_characters if saved_completer_quote_characters
   end
 
   def test_completion_quote_character_after_completion
     return unless Readline.respond_to?(:completion_quote_character)
     if /solaris/i =~ RUBY_PLATFORM
       # http://rubyci.s3.amazonaws.com/solaris11s-sunc/ruby-trunk/log/20181228T102505Z.fail.html.gz
-      skip 'This test does not succeed on Oracle Developer Studio for now'
+      omit 'This test does not succeed on Oracle Developer Studio for now'
     end
+    omit 'Needs GNU Readline 6 or later' if /mswin|mingw/ =~ RUBY_PLATFORM and defined?(TestReadline) and kind_of?(TestReadline) and Readline::VERSION < '6.0'
+
+    saved_completer_quote_characters = Readline.completer_quote_characters
 
     Readline.completion_proc = -> (_) { [] }
     Readline.completer_quote_characters = "'\""
@@ -614,6 +711,8 @@ class TestReadline < Test::Unit::TestCase
     end
 
     assert_nil(Readline.completion_quote_character)
+  ensure
+    Readline.completer_quote_characters = saved_completer_quote_characters if saved_completer_quote_characters
   end
 
   private
@@ -647,7 +746,7 @@ class TestReadline < Test::Unit::TestCase
     Tempfile.create("test_readline_stdin") {|stdin|
       Tempfile.create("test_readline_stdout") {|stdout|
         yield stdin, stdout
-        if windows?
+        if /mswin|mingw/ =~ RUBY_PLATFORM
           # needed since readline holds refs to tempfiles, can't delete on Windows
           Readline.input = STDIN
           Readline.output = STDOUT
@@ -683,9 +782,35 @@ class TestReadline < Test::Unit::TestCase
     return false if ENV['LC_ALL'] == 'UTF-8'
     loc = caller_locations(1, 1)[0].base_label.to_s
     assert_separately([{"LC_ALL"=>"UTF-8"}, "-r", __FILE__], <<SRC)
-#skip "test \#{ENV['LC_ALL']}"
+#omit "test \#{ENV['LC_ALL']}"
 #{self.class.name}.new(#{loc.dump}).run(Test::Unit::Runner.new)
 SRC
     return true
   end
-end if defined?(::Readline)
+end
+
+class TestReadline < Test::Unit::TestCase
+  include BasetestReadline
+
+  def setup
+    use_ext_readline
+    super
+  end
+end if defined?(ReadlineSo) && ENV["TEST_READLINE_OR_RELINE"] != "Reline"
+
+class TestRelineAsReadline < Test::Unit::TestCase
+  include BasetestReadline
+
+  def setup
+    use_lib_reline
+    super
+  end
+
+  def get_default_internal_encoding
+    if RUBY_PLATFORM =~ /mswin|mingw/
+      Encoding.default_internal || Encoding::UTF_8
+    else
+      super
+    end
+  end
+end if defined?(Reline) && ENV["TEST_READLINE_OR_RELINE"] != "Readline"

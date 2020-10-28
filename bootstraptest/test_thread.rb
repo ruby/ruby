@@ -1,4 +1,14 @@
-# Thread and Fiber
+show_limit %q{
+  threads = []
+  begin
+    threads << Thread.new{sleep}
+
+    raise Exception, "skipping" if threads.count >= 10_000
+  rescue Exception => error
+    puts "Thread count: #{threads.count} (#{error})"
+    break
+  end while true
+} if false # disable to pass CI
 
 assert_equal %q{ok}, %q{
   Thread.new{
@@ -36,7 +46,7 @@ begin
     }
   }
 rescue ThreadError => e
-  :ok if /can't create Thread/ =~ e.message
+  /can't create Thread/ =~ e.message ? :ok : e.message
 end
 }
 assert_equal %q{ok}, %q{
@@ -50,7 +60,7 @@ begin
     }
   }
 rescue ThreadError => e
-  :ok if /can't create Thread/ =~ e.message
+  /can't create Thread/ =~ e.message ? :ok : e.message
 end
 }
 assert_equal %q{ok}, %q{
@@ -299,10 +309,6 @@ assert_equal 'ok', %q{
 }, '[ruby-dev:34492]'
 
 assert_normal_exit %q{
-  at_exit { Fiber.new{}.resume }
-}
-
-assert_normal_exit %q{
   g = enum_for(:local_variables)
   loop { g.next }
 }, '[ruby-dev:34128]'
@@ -325,10 +331,6 @@ assert_normal_exit %q{
 assert_normal_exit %q{
   g = Module.enum_for(:new)
   loop { g.next }
-}, '[ruby-dev:34128]'
-
-assert_normal_exit %q{
-  Fiber.new(&Object.method(:class_eval)).resume("foo")
 }, '[ruby-dev:34128]'
 
 assert_normal_exit %q{
@@ -482,3 +484,17 @@ assert_equal 'foo', %q{
   GC.start
   f.call.source
 }
+assert_normal_exit %q{
+  class C
+    def inspect
+      sleep 0.5
+      'C!!'
+    end
+  end
+  Thread.new{
+    loop{
+      p C.new
+    }
+  }
+  sleep 0.1
+}, timeout: 5

@@ -66,7 +66,6 @@ class TestGemRequestSetLockfileParser < Gem::TestCase
     assert_equal File.expand_path("#{@gem_deps_file}.lock"), e.path
   end
 
-
   def test_parse
     write_lockfile <<-LOCKFILE.strip
 GEM
@@ -94,7 +93,7 @@ DEPENDENCIES
 
     assert lockfile_set, 'could not find a LockSet'
 
-    assert_equal %w[a-2], lockfile_set.specs.map { |tuple| tuple.full_name }
+    assert_equal %w[a-2], lockfile_set.specs.map {|tuple| tuple.full_name }
   end
 
   def test_parse_dependencies
@@ -124,7 +123,7 @@ DEPENDENCIES
 
     assert lockfile_set, 'could not find a LockSet'
 
-    assert_equal %w[a-2], lockfile_set.specs.map { |tuple| tuple.full_name }
+    assert_equal %w[a-2], lockfile_set.specs.map {|tuple| tuple.full_name }
   end
 
   def test_parse_DEPENDENCIES_git
@@ -218,7 +217,7 @@ DEPENDENCIES
 
     assert lockfile_set, 'found a LockSet'
 
-    assert_equal %w[a-2], lockfile_set.specs.map { |s| s.full_name }
+    assert_equal %w[a-2], lockfile_set.specs.map {|s| s.full_name }
   end
 
   def test_parse_GEM_remote_multiple
@@ -246,10 +245,10 @@ DEPENDENCIES
 
     assert lockfile_set, 'found a LockSet'
 
-    assert_equal %w[a-2], lockfile_set.specs.map { |s| s.full_name }
+    assert_equal %w[a-2], lockfile_set.specs.map {|s| s.full_name }
 
     assert_equal %w[https://gems.example/ https://other.example/],
-                 lockfile_set.specs.flat_map { |s| s.sources.map{ |src| src.uri.to_s } }
+                 lockfile_set.specs.flat_map {|s| s.sources.map{|src| src.uri.to_s } }
   end
 
   def test_parse_GIT
@@ -284,7 +283,7 @@ DEPENDENCIES
 
     assert git_set, 'could not find a GitSet'
 
-    assert_equal %w[a-2], git_set.specs.values.map { |s| s.full_name }
+    assert_equal %w[a-2], git_set.specs.values.map {|s| s.full_name }
 
     assert_equal [dep('b', '>= 3'), dep('c')],
                  git_set.specs.values.first.dependencies
@@ -438,7 +437,7 @@ DEPENDENCIES
 
     assert vendor_set, 'could not find a VendorSet'
 
-    assert_equal %w[a-1], vendor_set.specs.values.map { |s| s.full_name }
+    assert_equal %w[a-1], vendor_set.specs.values.map {|s| s.full_name }
 
     spec = vendor_set.load_spec 'a', nil, nil, nil
 
@@ -497,14 +496,14 @@ DEPENDENCIES
 
     assert lockfile_set, 'could not find a LockSet'
 
-    assert_equal %w[a-2 b-3], lockfile_set.specs.map { |tuple| tuple.full_name }
+    assert_equal %w[a-2 b-3], lockfile_set.specs.map {|tuple| tuple.full_name }
 
     expected = [
       Gem::Platform::RUBY,
       Gem::Platform.new('x86_64-linux'),
     ]
 
-    assert_equal expected, lockfile_set.specs.map { |tuple| tuple.platform }
+    assert_equal expected, lockfile_set.specs.map {|tuple| tuple.platform }
 
     spec = lockfile_set.specs.first
 

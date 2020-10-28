@@ -57,7 +57,7 @@ numhash_aset(VALUE self, VALUE key, VALUE data)
 }
 
 static int
-numhash_i(st_data_t key, st_data_t value, st_data_t arg)
+numhash_i(st_data_t key, st_data_t value, st_data_t arg, int _)
 {
     VALUE ret;
     ret = rb_yield_values(3, (VALUE)key, (VALUE)value, (VALUE)arg);
@@ -135,4 +135,3 @@ Init_numhash(void)
     rb_define_method(st, "size", numhash_size, 0);
     rb_define_method(st, "delete_safe", numhash_delete_safe, 1);
 }
-

@@ -1,4 +1,5 @@
 require_relative '../../spec_helper'
+require_relative '../../fixtures/code_loading'
 require_relative 'fixtures/classes'
 require 'thread'
 
@@ -11,22 +12,43 @@ describe "Module#autoload?" do
   it "returns nil if no file has been registered for a constant" do
     ModuleSpecs::Autoload.autoload?(:Manualload).should be_nil
   end
+
+  it "returns the name of the file that will be autoloaded if an ancestor defined that autoload" do
+    ModuleSpecs::Autoload::Parent.autoload :AnotherAutoload, "another_autoload.rb"
+    ModuleSpecs::Autoload::Child.autoload?(:AnotherAutoload).should == "another_autoload.rb"
+  end
+
+  ruby_version_is "2.7" do
+    it "returns nil if an ancestor defined that autoload but recursion is disabled" do
+      ModuleSpecs::Autoload::Parent.autoload :InheritedAutoload, "inherited_autoload.rb"
+      ModuleSpecs::Autoload::Child.autoload?(:InheritedAutoload, false).should be_nil
+    end
+
+    it "returns the name of the file that will be loaded if recursion is disabled but the autoload is defined on the class itself" do
+      ModuleSpecs::Autoload::Child.autoload :ChildAutoload, "child_autoload.rb"
+      ModuleSpecs::Autoload::Child.autoload?(:ChildAutoload, false).should == "child_autoload.rb"
+    end
+  end
 end
 
 describe "Module#autoload" do
   before :all do
     @non_existent = fixture __FILE__, "no_autoload.rb"
+    CodeLoadingSpecs.preload_rubygems
   end
 
   before :each do
     @loaded_features = $".dup
-    @frozen_module = Module.new.freeze
 
     ScratchPad.clear
+    @remove = []
   end
 
   after :each do
     $".replace @loaded_features
+    @remove.each { |const|
+      ModuleSpecs::Autoload.send :remove_const, const
+    }
   end
 
   it "registers a file to load the first time the named constant is accessed" do
@@ -39,16 +61,29 @@ describe "Module#autoload" do
     ModuleSpecs::Autoload.should have_constant(:B)
   end
 
+  it "can be overridden with a second autoload on the same constant" do
+    ModuleSpecs::Autoload.autoload :Overridden, @non_existent
+    @remove << :Overridden
+    ModuleSpecs::Autoload.autoload?(:Overridden).should == @non_existent
+
+    path = fixture(__FILE__, "autoload_overridden.rb")
+    ModuleSpecs::Autoload.autoload :Overridden, path
+    ModuleSpecs::Autoload.autoload?(:Overridden).should == path
+
+    ModuleSpecs::Autoload::Overridden.should == :overridden
+  end
+
   it "loads the registered constant when it is accessed" do
     ModuleSpecs::Autoload.should_not have_constant(:X)
     ModuleSpecs::Autoload.autoload :X, fixture(__FILE__, "autoload_x.rb")
+    @remove << :X
     ModuleSpecs::Autoload::X.should == :x
-    ModuleSpecs::Autoload.send(:remove_const, :X)
   end
 
   it "loads the registered constant into a dynamically created class" do
     cls = Class.new { autoload :C, fixture(__FILE__, "autoload_c.rb") }
     ModuleSpecs::Autoload::DynClass = cls
+    @remove << :DynClass
 
     ScratchPad.recorded.should be_nil
     ModuleSpecs::Autoload::DynClass::C.new.loaded.should == :dynclass_c
@@ -58,6 +93,7 @@ describe "Module#autoload" do
   it "loads the registered constant into a dynamically created module" do
     mod = Module.new { autoload :D, fixture(__FILE__, "autoload_d.rb") }
     ModuleSpecs::Autoload::DynModule = mod
+    @remove << :DynModule
 
     ScratchPad.recorded.should be_nil
     ModuleSpecs::Autoload::DynModule::D.new.loaded.should == :dynmodule_d
@@ -95,6 +131,7 @@ describe "Module#autoload" do
 
   it "does not load the file when the constant is already set" do
     ModuleSpecs::Autoload.autoload :I, fixture(__FILE__, "autoload_i.rb")
+    @remove << :I
     ModuleSpecs::Autoload.const_set :I, 3
     ModuleSpecs::Autoload::I.should == 3
     ScratchPad.recorded.should be_nil
@@ -116,6 +153,7 @@ describe "Module#autoload" do
   it "does not load the file if the file is manually required" do
     filename = fixture(__FILE__, "autoload_k.rb")
     ModuleSpecs::Autoload.autoload :KHash, filename
+    @remove << :KHash
 
     require filename
     ScratchPad.recorded.should == :loaded
@@ -135,8 +173,8 @@ describe "Module#autoload" do
     ScratchPad.clear
 
     ModuleSpecs::Autoload.autoload :S, filename
+    @remove << :S
     ModuleSpecs::Autoload.autoload?(:S).should be_nil
-    ModuleSpecs::Autoload.send(:remove_const, :S)
   end
 
   it "retains the autoload even if the request to require fails" do
@@ -145,7 +183,7 @@ describe "Module#autoload" do
     ModuleSpecs::Autoload.autoload :NotThere, filename
     ModuleSpecs::Autoload.autoload?(:NotThere).should == filename
 
-    lambda {
+    -> {
       require filename
     }.should raise_error(LoadError)
 
@@ -166,6 +204,13 @@ describe "Module#autoload" do
     ModuleSpecs::Autoload.use_ex1.should == :good
   end
 
+  it "considers an autoload constant as loaded when autoload is called for/from the current file" do
+    filename = fixture(__FILE__, "autoload_during_require_current_file.rb")
+    require filename
+
+    ScratchPad.recorded.should be_nil
+  end
+
   describe "interacting with defined?" do
     it "does not load the file when referring to the constant in defined?" do
       module ModuleSpecs::Autoload::Dog
@@ -182,11 +227,10 @@ describe "Module#autoload" do
       module ModuleSpecs::Autoload
         autoload :GoodParent, fixture(__FILE__, "autoload_nested.rb")
       end
+      @remove << :GoodParent
 
       defined?(ModuleSpecs::Autoload::GoodParent::Nested).should == 'constant'
       ScratchPad.recorded.should == :loaded
-
-      ModuleSpecs::Autoload.send(:remove_const, :GoodParent)
     end
 
     it "returns nil when it fails to load an autoloaded parent when referencing a nested constant" do
@@ -199,11 +243,12 @@ describe "Module#autoload" do
     end
   end
 
-  describe "the autoload is removed when the same file is required directly without autoload" do
+  describe "the autoload is triggered when the same file is required directly" do
     before :each do
       module ModuleSpecs::Autoload
         autoload :RequiredDirectly, fixture(__FILE__, "autoload_required_directly.rb")
       end
+      @remove << :RequiredDirectly
       @path = fixture(__FILE__, "autoload_required_directly.rb")
       @check = -> {
         [
@@ -212,10 +257,6 @@ describe "Module#autoload" do
         ]
       }
       ScratchPad.record @check
-    end
-
-    after :each do
-      ModuleSpecs::Autoload.send(:remove_const, :RequiredDirectly)
     end
 
     it "with a full path" do
@@ -242,7 +283,7 @@ describe "Module#autoload" do
       nested_require = -> {
         result = nil
         ScratchPad.record -> {
-          result = [@check.call, Thread.new { @check.call }.value]
+          result = @check.call
         }
         require nested
         result
@@ -251,10 +292,56 @@ describe "Module#autoload" do
 
       @check.call.should == ["constant", @path]
       require @path
-      cur, other = ScratchPad.recorded
-      cur.should == [nil, nil]
-      other.should == [nil, nil]
+      ScratchPad.recorded.should == [nil, nil]
       @check.call.should == ["constant", nil]
+    end
+
+    it "does not raise an error if the autoload constant was not defined" do
+      module ModuleSpecs::Autoload
+        autoload :RequiredDirectlyNoConstant, fixture(__FILE__, "autoload_required_directly_no_constant.rb")
+      end
+      @path = fixture(__FILE__, "autoload_required_directly_no_constant.rb")
+      @remove << :RequiredDirectlyNoConstant
+      @check = -> {
+        [
+            defined?(ModuleSpecs::Autoload::RequiredDirectlyNoConstant),
+            ModuleSpecs::Autoload.constants(false).include?(:RequiredDirectlyNoConstant),
+            ModuleSpecs::Autoload.const_defined?(:RequiredDirectlyNoConstant),
+            ModuleSpecs::Autoload.autoload?(:RequiredDirectlyNoConstant)
+        ]
+      }
+      ScratchPad.record @check
+      @check.call.should == ["constant", true, true, @path]
+      $:.push File.dirname(@path)
+      begin
+        require "autoload_required_directly_no_constant.rb"
+      ensure
+        $:.pop
+      end
+      ScratchPad.recorded.should == [nil, true, false, nil]
+      @check.call.should == [nil, true, false, nil]
+    end
+  end
+
+  describe "after the autoload is triggered by require" do
+    before :each do
+      @path = tmp("autoload.rb")
+    end
+
+    after :each do
+      rm_r @path
+    end
+
+    it "the mapping feature to autoload is removed, and a new autoload with the same path is considered" do
+      ModuleSpecs::Autoload.autoload :RequireMapping1, @path
+      touch(@path) { |f| f.puts "ModuleSpecs::Autoload::RequireMapping1 = 1" }
+      ModuleSpecs::Autoload::RequireMapping1.should == 1
+
+      $LOADED_FEATURES.delete(@path)
+      ModuleSpecs::Autoload.autoload :RequireMapping2, @path[0...-3]
+      @remove << :RequireMapping2
+      touch(@path) { |f| f.puts "ModuleSpecs::Autoload::RequireMapping2 = 2" }
+      ModuleSpecs::Autoload::RequireMapping2.should == 2
     end
   end
 
@@ -262,11 +349,8 @@ describe "Module#autoload" do
     before :each do
       @path = fixture(__FILE__, "autoload_during_autoload.rb")
       ModuleSpecs::Autoload.autoload :DuringAutoload, @path
+      @remove << :DuringAutoload
       raise unless ModuleSpecs::Autoload.autoload?(:DuringAutoload) == @path
-    end
-
-    after :each do
-      ModuleSpecs::Autoload.send(:remove_const, :DuringAutoload)
     end
 
     def check_before_during_thread_after(&check)
@@ -328,13 +412,13 @@ describe "Module#autoload" do
     ModuleSpecs::Autoload.should have_constant(:Fail)
     ModuleSpecs::Autoload.autoload?(:Fail).should == @non_existent
 
-    lambda { ModuleSpecs::Autoload::Fail }.should raise_error(LoadError)
+    -> { ModuleSpecs::Autoload::Fail }.should raise_error(LoadError)
 
     ModuleSpecs::Autoload.should have_constant(:Fail)
     ModuleSpecs::Autoload.const_defined?(:Fail).should == true
     ModuleSpecs::Autoload.autoload?(:Fail).should == @non_existent
 
-    lambda { ModuleSpecs::Autoload::Fail }.should raise_error(LoadError)
+    -> { ModuleSpecs::Autoload::Fail }.should raise_error(LoadError)
   end
 
   it "does not remove the constant from Module#constants if load raises a RuntimeError and keeps it as an autoload" do
@@ -346,14 +430,14 @@ describe "Module#autoload" do
     ModuleSpecs::Autoload.should have_constant(:Raise)
     ModuleSpecs::Autoload.autoload?(:Raise).should == path
 
-    lambda { ModuleSpecs::Autoload::Raise }.should raise_error(RuntimeError)
+    -> { ModuleSpecs::Autoload::Raise }.should raise_error(RuntimeError)
     ScratchPad.recorded.should == [:raise]
 
     ModuleSpecs::Autoload.should have_constant(:Raise)
     ModuleSpecs::Autoload.const_defined?(:Raise).should == true
     ModuleSpecs::Autoload.autoload?(:Raise).should == path
 
-    lambda { ModuleSpecs::Autoload::Raise }.should raise_error(RuntimeError)
+    -> { ModuleSpecs::Autoload::Raise }.should raise_error(RuntimeError)
     ScratchPad.recorded.should == [:raise, :raise]
   end
 
@@ -366,7 +450,7 @@ describe "Module#autoload" do
     ModuleSpecs::Autoload.should have_constant(:O)
     ModuleSpecs::Autoload.autoload?(:O).should == path
 
-    lambda { ModuleSpecs::Autoload::O }.should raise_error(NameError)
+    -> { ModuleSpecs::Autoload::O }.should raise_error(NameError)
 
     ModuleSpecs::Autoload.should have_constant(:O)
     ModuleSpecs::Autoload.const_defined?(:O).should == false
@@ -409,6 +493,9 @@ describe "Module#autoload" do
   it "does not load the file when accessing the constants table of the module" do
     ModuleSpecs::Autoload.autoload :P, @non_existent
     ModuleSpecs::Autoload.const_defined?(:P).should be_true
+    ruby_bug "[Bug #15780]", ""..."2.7" do
+      ModuleSpecs::Autoload.const_defined?("P").should be_true
+    end
   end
 
   it "loads the file when opening a module that is the autoloaded constant" do
@@ -419,16 +506,17 @@ describe "Module#autoload" do
         X = get_value
       end
     end
+    @remove << :U
 
     ModuleSpecs::Autoload::U::V::X.should == :autoload_uvx
   end
 
-  it "loads the file that defines subclass XX::YY < YY and YY is a top level constant" do
+  it "loads the file that defines subclass XX::CS_CONST_AUTOLOAD < CS_CONST_AUTOLOAD and CS_CONST_AUTOLOAD is a top level constant" do
     module ModuleSpecs::Autoload::XX
-      autoload :YY, fixture(__FILE__, "autoload_subclass.rb")
+      autoload :CS_CONST_AUTOLOAD, fixture(__FILE__, "autoload_subclass.rb")
     end
 
-    ModuleSpecs::Autoload::XX::YY.superclass.should == YY
+    ModuleSpecs::Autoload::XX::CS_CONST_AUTOLOAD.superclass.should == CS_CONST_AUTOLOAD
   end
 
   describe "after autoloading searches for the constant like the original lookup" do
@@ -473,7 +561,8 @@ describe "Module#autoload" do
       end
     end
 
-    it "and fails when finding the undefined autoload constant in the the current scope when declared in current and defined in parent" do
+    it "and fails when finding the undefined autoload constant in the current scope when declared in current and defined in parent" do
+      @remove << :DeclaredInCurrentDefinedInParent
       module ModuleSpecs::Autoload
         ScratchPad.record -> {
           DeclaredInCurrentDefinedInParent = :declared_in_current_defined_in_parent
@@ -494,6 +583,7 @@ describe "Module#autoload" do
     end
 
     it "in the included modules" do
+      @remove << :DefinedInIncludedModule
       module ModuleSpecs::Autoload
         ScratchPad.record -> {
           module DefinedInIncludedModule
@@ -507,6 +597,7 @@ describe "Module#autoload" do
     end
 
     it "in the included modules of the superclass" do
+      @remove << :DefinedInSuperclassIncludedModule
       module ModuleSpecs::Autoload
         class LookupAfterAutoloadSuper
         end
@@ -528,6 +619,7 @@ describe "Module#autoload" do
     end
 
     it "in the prepended modules" do
+      @remove << :DefinedInPrependedModule
       module ModuleSpecs::Autoload
         ScratchPad.record -> {
           module DefinedInPrependedModule
@@ -567,10 +659,10 @@ describe "Module#autoload" do
         end
       end
     end
+    @remove << :W
 
     ModuleSpecs::Autoload::W::Y.should be_kind_of(Class)
     ScratchPad.recorded.should == :loaded
-    ModuleSpecs::Autoload::W.send(:remove_const, :Y)
   end
 
   it "does not call #require a second time and does not warn if already loading the same feature with #require" do
@@ -587,6 +679,27 @@ describe "Module#autoload" do
     ModuleSpecs::Autoload::AutoloadDuringRequire.should be_kind_of(Class)
   end
 
+  it "does not call #require a second time and does not warn if feature sets and trigger autoload on itself" do
+    main = TOPLEVEL_BINDING.eval("self")
+    main.should_not_receive(:require)
+
+    -> {
+      Kernel.require fixture(__FILE__, "autoload_self_during_require.rb")
+    }.should_not complain(verbose: true)
+    ModuleSpecs::Autoload::AutoloadSelfDuringRequire.should be_kind_of(Class)
+  end
+
+  it "handles multiple autoloads in the same file" do
+    $LOAD_PATH.unshift(File.expand_path('../fixtures/multi', __FILE__))
+    begin
+      require 'foo/bar_baz'
+      ModuleSpecs::Autoload::Foo::Bar.should be_kind_of(Class)
+      ModuleSpecs::Autoload::Foo::Baz.should be_kind_of(Class)
+    ensure
+      $LOAD_PATH.shift
+    end
+  end
+
   it "calls #to_path on non-string filenames" do
     p = mock('path')
     p.should_receive(:to_path).and_return @non_existent
@@ -594,26 +707,27 @@ describe "Module#autoload" do
   end
 
   it "raises an ArgumentError when an empty filename is given" do
-    lambda { ModuleSpecs.autoload :A, "" }.should raise_error(ArgumentError)
+    -> { ModuleSpecs.autoload :A, "" }.should raise_error(ArgumentError)
   end
 
   it "raises a NameError when the constant name starts with a lower case letter" do
-    lambda { ModuleSpecs.autoload "a", @non_existent }.should raise_error(NameError)
+    -> { ModuleSpecs.autoload "a", @non_existent }.should raise_error(NameError)
   end
 
   it "raises a NameError when the constant name starts with a number" do
-    lambda { ModuleSpecs.autoload "1two", @non_existent }.should raise_error(NameError)
+    -> { ModuleSpecs.autoload "1two", @non_existent }.should raise_error(NameError)
   end
 
   it "raises a NameError when the constant name has a space in it" do
-    lambda { ModuleSpecs.autoload "a name", @non_existent }.should raise_error(NameError)
+    -> { ModuleSpecs.autoload "a name", @non_existent }.should raise_error(NameError)
   end
 
   it "shares the autoload request across dup'ed copies of modules" do
     require fixture(__FILE__, "autoload_s.rb")
+    @remove << :S
     filename = fixture(__FILE__, "autoload_t.rb")
     mod1 = Module.new { autoload :T, filename }
-    lambda {
+    -> {
       ModuleSpecs::Autoload::S = mod1
     }.should complain(/already initialized constant/)
     mod2 = mod1.dup
@@ -622,7 +736,7 @@ describe "Module#autoload" do
     mod2.autoload?(:T).should == filename
 
     mod1::T.should == :autoload_t
-    lambda { mod2::T }.should raise_error(NameError)
+    -> { mod2::T }.should raise_error(NameError)
   end
 
   it "raises a TypeError if opening a class with a different superclass than the class defined in the autoload file" do
@@ -630,7 +744,7 @@ describe "Module#autoload" do
     class ModuleSpecs::Autoload::ZZ
     end
 
-    lambda do
+    -> do
       class ModuleSpecs::Autoload::Z < ModuleSpecs::Autoload::ZZ
       end
     end.should raise_error(TypeError)
@@ -639,20 +753,21 @@ describe "Module#autoload" do
   it "raises a TypeError if not passed a String or object responding to #to_path for the filename" do
     name = mock("autoload_name.rb")
 
-    lambda { ModuleSpecs::Autoload.autoload :Str, name }.should raise_error(TypeError)
+    -> { ModuleSpecs::Autoload.autoload :Str, name }.should raise_error(TypeError)
   end
 
   it "calls #to_path on non-String filename arguments" do
     name = mock("autoload_name.rb")
     name.should_receive(:to_path).and_return("autoload_name.rb")
 
-    lambda { ModuleSpecs::Autoload.autoload :Str, name }.should_not raise_error
+    -> { ModuleSpecs::Autoload.autoload :Str, name }.should_not raise_error
   end
 
   describe "on a frozen module" do
-    it "raises a #{frozen_error_class} before setting the name" do
-      lambda { @frozen_module.autoload :Foo, @non_existent }.should raise_error(frozen_error_class)
-      @frozen_module.should_not have_constant(:Foo)
+    it "raises a FrozenError before setting the name" do
+      frozen_module = Module.new.freeze
+      -> { frozen_module.autoload :Foo, @non_existent }.should raise_error(FrozenError)
+      frozen_module.should_not have_constant(:Foo)
     end
   end
 
@@ -675,6 +790,7 @@ describe "Module#autoload" do
   describe "(concurrently)" do
     it "blocks a second thread while a first is doing the autoload" do
       ModuleSpecs::Autoload.autoload :Concur, fixture(__FILE__, "autoload_concur.rb")
+      @remove << :Concur
 
       start = false
 
@@ -717,8 +833,6 @@ describe "Module#autoload" do
       t2_val.should == t1_val
 
       t2_exc.should be_nil
-
-      ModuleSpecs::Autoload.send(:remove_const, :Concur)
     end
 
     # https://bugs.ruby-lang.org/issues/10892

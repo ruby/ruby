@@ -18,7 +18,7 @@ RSpec.describe Bundler::Fetcher::Index do
 
   context "error handling" do
     shared_examples_for "the error is properly handled" do
-      let(:remote_uri) { URI("http://remote-uri.org") }
+      let(:remote_uri) { Bundler::URI("http://remote-uri.org") }
       before do
         allow(subject).to receive(:remote_uri).and_return(remote_uri)
       end
@@ -35,9 +35,26 @@ RSpec.describe Bundler::Fetcher::Index do
       context "when a 401 response occurs" do
         let(:error_message) { "401" }
 
-        it "should raise a Bundler::Fetcher::AuthenticationRequiredError" do
-          expect { subject.specs(gem_names) }.to raise_error(Bundler::Fetcher::AuthenticationRequiredError,
-            %r{Authentication is required for http://remote-uri.org})
+        before do
+          allow(remote_uri).to receive(:userinfo).and_return(userinfo)
+        end
+
+        context "and there was userinfo" do
+          let(:userinfo) { double(:userinfo) }
+
+          it "should raise a Bundler::Fetcher::BadAuthenticationError" do
+            expect { subject.specs(gem_names) }.to raise_error(Bundler::Fetcher::BadAuthenticationError,
+              %r{Bad username or password for http://remote-uri.org})
+          end
+        end
+
+        context "and there was no userinfo" do
+          let(:userinfo) { nil }
+
+          it "should raise a Bundler::Fetcher::AuthenticationRequiredError" do
+            expect { subject.specs(gem_names) }.to raise_error(Bundler::Fetcher::AuthenticationRequiredError,
+              %r{Authentication is required for http://remote-uri.org})
+          end
         end
       end
 

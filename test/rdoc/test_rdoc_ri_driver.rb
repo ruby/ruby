@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'minitest_helper'
+require_relative 'helper'
 
 class TestRDocRIDriver < RDoc::TestCase
 
@@ -13,8 +13,9 @@ class TestRDocRIDriver < RDoc::TestCase
     FileUtils.mkdir_p @home_ri
 
     @orig_ri = ENV['RI']
-    @orig_home = ENV['HOME']
     ENV['HOME'] = @tmpdir
+    @rdoc_home = File.join ENV["HOME"], ".rdoc"
+    FileUtils.mkdir_p @rdoc_home
     ENV.delete 'RI'
 
     @options = RDoc::RI::Driver.default_options
@@ -31,11 +32,10 @@ class TestRDocRIDriver < RDoc::TestCase
   end
 
   def teardown
-    super
-
-    ENV['HOME'] = @orig_home
     ENV['RI'] = @orig_ri
     FileUtils.rm_rf @tmpdir
+
+    super
   end
 
   DUMMY_PAGER = ":;\n"
@@ -50,7 +50,7 @@ class TestRDocRIDriver < RDoc::TestCase
   def test_self_dump
     util_store
 
-    out, = capture_io do
+    out, = capture_output do
       RDoc::RI::Driver.dump @store1.cache_path
     end
 
@@ -81,7 +81,7 @@ class TestRDocRIDriver < RDoc::TestCase
       @RM::Rule.new(1),
       @RM::Paragraph.new('Also found in:'),
       @RM::Verbatim.new("ruby core", "\n",
-                        "~/.rdoc", "\n"))
+                        @rdoc_home, "\n"))
 
     assert_equal expected, out
   end
@@ -231,7 +231,7 @@ class TestRDocRIDriver < RDoc::TestCase
       doc(
         head(1, 'Foo::Bar#blah'),
         blank_line,
-        para('(from ~/.rdoc)'),
+        para("(from #{@rdoc_home})"),
         head(3, 'Implementation from Bar'),
         rule(1),
         verb("blah(5) => 5\n",
@@ -254,7 +254,7 @@ class TestRDocRIDriver < RDoc::TestCase
       doc(
         head(1, 'Qux#aliased'),
         blank_line,
-        para('(from ~/.rdoc)'),
+        para("(from #{@rdoc_home})"),
         rule(1),
         blank_line,
         para('alias comment'),
@@ -280,7 +280,7 @@ class TestRDocRIDriver < RDoc::TestCase
       doc(
         head(1, 'Foo::Bar#attr'),
         blank_line,
-        para('(from ~/.rdoc)'),
+        para("(from #{@rdoc_home})"),
         rule(1),
         blank_line,
         blank_line)
@@ -299,7 +299,7 @@ class TestRDocRIDriver < RDoc::TestCase
       doc(
         head(1, 'Bar#inherit'),
         blank_line,
-        para('(from ~/.rdoc)'),
+        para("(from #{@rdoc_home})"),
         head(3, 'Implementation from Foo'),
         rule(1),
         blank_line,
@@ -343,13 +343,13 @@ class TestRDocRIDriver < RDoc::TestCase
       doc(
         head(1, 'Foo#inherit'),
         blank_line,
-        para('(from ~/.rdoc)'),
+        para("(from #{@rdoc_home})"),
         rule(1),
         blank_line,
         blank_line,
         head(1, 'Foo#override'),
         blank_line,
-        para('(from ~/.rdoc)'),
+        para("(from #{@rdoc_home})"),
         rule(1),
         blank_line,
         para('must not be displayed in Bar#override'),
@@ -381,7 +381,7 @@ class TestRDocRIDriver < RDoc::TestCase
     doc = @RM::Document.new
     doc << @RM::IndentedParagraph.new(0, 'new, parse, foo, bar, baz')
 
-    out, = capture_io do
+    out, = capture_output do
       driver.display doc
     end
 
@@ -550,7 +550,7 @@ class TestRDocRIDriver < RDoc::TestCase
     doc = @RM::Document.new(
             @RM::Paragraph.new('hi'))
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.display doc
     end
 
@@ -560,7 +560,7 @@ class TestRDocRIDriver < RDoc::TestCase
   def test_display_class
     util_store
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.display_class 'Foo::Bar'
     end
 
@@ -584,7 +584,7 @@ class TestRDocRIDriver < RDoc::TestCase
 
     @driver.show_all = true
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.display_class 'Foo::Bar'
     end
 
@@ -606,7 +606,7 @@ class TestRDocRIDriver < RDoc::TestCase
   def test_display_class_ambiguous
     util_multi_store
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.display_class 'Ambiguous'
     end
 
@@ -616,7 +616,7 @@ class TestRDocRIDriver < RDoc::TestCase
   def test_display_class_multi_no_doc
     util_multi_store
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.display_class 'Foo::Baz'
     end
 
@@ -630,7 +630,7 @@ class TestRDocRIDriver < RDoc::TestCase
   def test_display_class_superclass
     util_multi_store
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.display_class 'Bar'
     end
 
@@ -640,7 +640,7 @@ class TestRDocRIDriver < RDoc::TestCase
   def test_display_class_module
     util_store
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.display_class 'Inc'
     end
 
@@ -648,7 +648,7 @@ class TestRDocRIDriver < RDoc::TestCase
   end
 
   def test_display_class_page
-    out, = capture_io do
+    out, = capture_output do
       @driver.display_class 'ruby:README'
     end
 
@@ -658,7 +658,7 @@ class TestRDocRIDriver < RDoc::TestCase
   def test_display_method
     util_store
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.display_method 'Foo::Bar#blah'
     end
 
@@ -670,7 +670,7 @@ class TestRDocRIDriver < RDoc::TestCase
   def test_display_method_attribute
     util_store
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.display_method 'Foo::Bar#attr'
     end
 
@@ -681,7 +681,7 @@ class TestRDocRIDriver < RDoc::TestCase
   def test_display_method_inherited
     util_multi_store
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.display_method 'Bar#inherit'
     end
 
@@ -692,7 +692,7 @@ class TestRDocRIDriver < RDoc::TestCase
   def test_display_method_overridden
     util_multi_store
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.display_method 'Bar#override'
     end
 
@@ -702,7 +702,7 @@ class TestRDocRIDriver < RDoc::TestCase
   def test_display_name
     util_store
 
-    out, = capture_io do
+    out, = capture_output do
       assert_equal true, @driver.display_name('home:README.rdoc')
     end
 
@@ -717,7 +717,7 @@ This is a README
   def test_display_name_not_found_class
     util_store
 
-    out, = capture_io do
+    out, = capture_output do
       assert_equal false, @driver.display_name('Foo::B')
     end
 
@@ -734,7 +734,7 @@ Foo::Baz
   def test_display_name_not_found_method
     util_store
 
-    out, = capture_io do
+    out, = capture_output do
       assert_equal false, @driver.display_name('Foo::Bar#b')
     end
 
@@ -751,7 +751,7 @@ Foo::Bar#bother
   def test_display_name_not_found_special
     util_store
 
-    assert_raises RDoc::RI::Driver::NotFoundError do
+    assert_raise RDoc::RI::Driver::NotFoundError do
       assert_equal false, @driver.display_name('Set#[]')
     end
   end
@@ -759,7 +759,7 @@ Foo::Bar#bother
   def test_display_method_params
     util_store
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.display_method 'Foo::Bar#bother'
     end
 
@@ -769,7 +769,7 @@ Foo::Bar#bother
   def test_display_page
     util_store
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.display_page 'home:README.rdoc'
     end
 
@@ -779,7 +779,7 @@ Foo::Bar#bother
   def test_display_page_add_extension
     util_store
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.display_page 'home:README'
     end
 
@@ -798,11 +798,11 @@ Foo::Bar#bother
 
     @store1.save_page other
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.display_page 'home:README'
     end
 
-    assert_match %r%= README pages in ~/\.rdoc%, out
+    assert_match %r%= README pages in #{@rdoc_home}%, out
     assert_match %r%README\.rdoc%,               out
     assert_match %r%README\.md%,                 out
   end
@@ -819,7 +819,7 @@ Foo::Bar#bother
 
     @store1.save_page other
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.display_page 'home:README.EXT'
     end
 
@@ -838,7 +838,7 @@ Foo::Bar#bother
 
     @store1.save_page other
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.display_page 'home:globals'
     end
 
@@ -848,15 +848,15 @@ Foo::Bar#bother
   def test_display_page_missing
     util_store
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.display_page 'home:missing'
     end
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.display_page_list @store1
     end
 
-    assert_match %r%= Pages in ~/\.rdoc%, out
+    assert_match %r%= Pages in #{@rdoc_home}%, out
     assert_match %r%README\.rdoc%,        out
   end
 
@@ -872,11 +872,11 @@ Foo::Bar#bother
 
     @store1.save_page other
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.display_page_list @store1
     end
 
-    assert_match %r%= Pages in ~/\.rdoc%, out
+    assert_match %r%= Pages in #{@rdoc_home}%, out
     assert_match %r%README\.rdoc%,        out
     assert_match %r%OTHER\.rdoc%,         out
   end
@@ -887,7 +887,7 @@ Foo::Bar#bother
     assert_equal 'Foo',       @driver.expand_class('F')
     assert_equal 'Foo::Bar',  @driver.expand_class('F::Bar')
 
-    assert_raises RDoc::RI::Driver::NotFoundError do
+    assert_raise RDoc::RI::Driver::NotFoundError do
       @driver.expand_class 'F::B'
     end
   end
@@ -903,7 +903,7 @@ Foo::Bar#bother
     @store1.save
 
     @driver.stores = [@store1]
-    assert_raises RDoc::RI::Driver::NotFoundError do
+    assert_raise RDoc::RI::Driver::NotFoundError do
       @driver.expand_class 'F'
     end
     assert_equal 'Foo::Bar',  @driver.expand_class('F::Bar')
@@ -931,7 +931,7 @@ Foo::Bar#bother
     assert_equal 'Foo',       @driver.expand_name('F')
     assert_equal 'Foo::Bar#', @driver.expand_name('F::Bar#')
 
-    e = assert_raises RDoc::RI::Driver::NotFoundError do
+    e = assert_raise RDoc::RI::Driver::NotFoundError do
       @driver.expand_name 'Z'
     end
 
@@ -942,7 +942,7 @@ Foo::Bar#bother
     assert_equal 'ruby:README', @driver.expand_name('ruby:README')
     assert_equal 'ruby:',       @driver.expand_name('ruby:')
 
-    e = assert_raises RDoc::RI::Driver::NotFoundError do
+    e = assert_raise RDoc::RI::Driver::NotFoundError do
       @driver.expand_name 'nonexistent_gem:'
     end
 
@@ -1021,7 +1021,7 @@ Foo::Bar#bother
     assert_equal 'gem-1.0', @driver.find_store('gem-1.0')
     assert_equal 'gem-1.0', @driver.find_store('gem')
 
-    e = assert_raises RDoc::RI::Driver::NotFoundError do
+    e = assert_raise RDoc::RI::Driver::NotFoundError do
       @driver.find_store 'nonexistent'
     end
 
@@ -1029,21 +1029,21 @@ Foo::Bar#bother
   end
 
   def test_did_you_mean
-    skip 'skip test with did_you_men' unless defined? DidYouMean::SpellChecker
+    omit 'skip test with did_you_men' unless defined? DidYouMean::SpellChecker
 
     util_ancestors_store
 
-    e = assert_raises RDoc::RI::Driver::NotFoundError do
+    e = assert_raise RDoc::RI::Driver::NotFoundError do
       @driver.lookup_method 'Foo.i_methdo'
     end
     assert_equal "Nothing known about Foo.i_methdo\nDid you mean?  i_method", e.message
 
-    e = assert_raises RDoc::RI::Driver::NotFoundError do
+    e = assert_raise RDoc::RI::Driver::NotFoundError do
       @driver.lookup_method 'Foo#i_methdo'
     end
     assert_equal "Nothing known about Foo#i_methdo\nDid you mean?  i_method", e.message
 
-    e = assert_raises RDoc::RI::Driver::NotFoundError do
+    e = assert_raise RDoc::RI::Driver::NotFoundError do
       @driver.lookup_method 'Foo::i_methdo'
     end
     assert_equal "Nothing known about Foo::i_methdo\nDid you mean?  c_method", e.message
@@ -1111,7 +1111,7 @@ Foo::Bar#bother
   def test_list_known_classes
     util_store
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.list_known_classes
     end
 
@@ -1121,7 +1121,7 @@ Foo::Bar#bother
   def test_list_known_classes_name
     util_store
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.list_known_classes %w[F I]
     end
 
@@ -1227,7 +1227,7 @@ Foo::Bar#bother
 
     with_dummy_pager do
       @driver.page do |io|
-        skip "couldn't find a standard pager" if io == $stdout
+        omit "couldn't find a standard pager" if io == $stdout
 
         assert @driver.paging?
       end
@@ -1239,7 +1239,6 @@ Foo::Bar#bother
   # this test is too fragile. Perhaps using Process.spawn will make this
   # reliable
   def _test_page_in_presence_of_child_status
-    skip 'this test hangs on travis-ci.org' if ENV['CI']
     @driver.use_stdout = false
 
     with_dummy_pager do
@@ -1407,7 +1406,7 @@ Foo::Bar#bother
 
     pager = with_dummy_pager do @driver.setup_pager end
 
-    skip "couldn't find a standard pager" unless pager
+    omit "couldn't find a standard pager" unless pager
 
     assert @driver.paging?
   ensure

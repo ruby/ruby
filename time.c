@@ -11,35 +11,48 @@
 
 #define _DEFAULT_SOURCE
 #define _BSD_SOURCE
-#include "ruby/encoding.h"
-#include "internal.h"
-#include <sys/types.h>
-#include <time.h>
+#include "ruby/internal/config.h"
+
 #include <errno.h>
-
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-
 #include <float.h>
 #include <math.h>
+#include <time.h>
+#include <sys/types.h>
+
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
 
 #ifdef HAVE_STRINGS_H
-#include <strings.h>
+# include <strings.h>
 #endif
 
 #if defined(HAVE_SYS_TIME_H)
-#include <sys/time.h>
+# include <sys/time.h>
 #endif
 
-#include "timev.h"
 #include "id.h"
+#include "internal.h"
+#include "internal/array.h"
+#include "internal/compar.h"
+#include "internal/numeric.h"
+#include "internal/rational.h"
+#include "internal/string.h"
+#include "internal/time.h"
+#include "internal/variable.h"
+#include "ruby/encoding.h"
+#include "timev.h"
 
-static ID id_divmod, id_submicro, id_nano_num, id_nano_den, id_offset, id_zone;
-static ID id_quo, id_div;
+static ID id_submicro, id_nano_num, id_nano_den, id_offset, id_zone;
 static ID id_nanosecond, id_microsecond, id_millisecond, id_nsec, id_usec;
 static ID id_local_to_utc, id_utc_to_local, id_find_timezone;
-static ID id_year, id_mon, id_mday, id_hour, id_min, id_sec, id_isdst, id_name;
+static ID id_year, id_mon, id_mday, id_hour, id_min, id_sec, id_isdst;
+static VALUE str_utc, str_empty;
+
+#define id_quo idQuo
+#define id_div idDiv
+#define id_divmod idDivmod
+#define id_name idName
 #define UTC_ZONE Qundef
 
 #ifndef TM_IS_TIME
@@ -138,9 +151,8 @@ modv(VALUE x, VALUE y)
 #define neg(x) (subv(INT2FIX(0), (x)))
 
 static VALUE
-quov(VALUE x, VALUE y)
+quor(VALUE x, VALUE y)
 {
-    VALUE ret;
     if (FIXNUM_P(x) && FIXNUM_P(y)) {
         long a, b, c;
         a = FIX2LONG(x);
@@ -152,7 +164,13 @@ quov(VALUE x, VALUE y)
             return LONG2FIX(c);
         }
     }
-    ret = rb_numeric_quo(x, y);
+    return rb_numeric_quo(x, y);
+}
+
+static VALUE
+quov(VALUE x, VALUE y)
+{
+    VALUE ret = quor(x, y);
     if (RB_TYPE_P(ret, T_RATIONAL) &&
         RRATIONAL(ret)->den == INT2FIX(1)) {
         ret = RRATIONAL(ret)->num;
@@ -295,7 +313,7 @@ v2w(VALUE v)
 {
     if (RB_TYPE_P(v, T_RATIONAL)) {
         if (RRATIONAL(v)->den != LONG2FIX(1))
-            return v;
+            return WIDEVAL_WRAP(v);
         v = RRATIONAL(v)->num;
     }
 #if WIDEVALUE_IS_WIDER
@@ -494,47 +512,37 @@ num_exact(VALUE v)
 {
     VALUE tmp;
 
-    if (NIL_P(v)) {
-	rb_raise(rb_eTypeError, "can't convert nil into an exact number");
-    }
-    else if (RB_INTEGER_TYPE_P(v)) {
+    switch (TYPE(v)) {
+      case T_FIXNUM:
+      case T_BIGNUM:
         return v;
-    }
-    else if (RB_TYPE_P(v, T_RATIONAL)) {
-	goto rational;
-    }
-    else if (RB_TYPE_P(v, T_STRING)) {
-        goto typeerror;
-    }
-    else {
+
+      case T_RATIONAL:
+        return rb_rational_canonicalize(v);
+
+      default:
         if ((tmp = rb_check_funcall(v, idTo_r, 0, NULL)) != Qundef) {
             /* test to_int method availability to reject non-Numeric
              * objects such as String, Time, etc which have to_r method. */
-            if (!rb_respond_to(v, idTo_int)) goto typeerror;
+            if (!rb_respond_to(v, idTo_int)) {
+                /* FALLTHROUGH */
+            }
+            else if (RB_INTEGER_TYPE_P(tmp)) {
+                return tmp;
+            }
+            else if (RB_TYPE_P(tmp, T_RATIONAL)) {
+                return rb_rational_canonicalize(tmp);
+            }
         }
         else if (!NIL_P(tmp = rb_check_to_int(v))) {
             return tmp;
         }
-        else {
-            goto typeerror;
-        }
-    }
 
-    if (RB_INTEGER_TYPE_P(tmp)) {
-        v = tmp;
-    }
-    else if (RB_TYPE_P(tmp, T_RATIONAL)) {
-        v = tmp;
-      rational:
-        if (RRATIONAL(v)->den == INT2FIX(1))
-            v = RRATIONAL(v)->num;
-    }
-    else {
-      typeerror:
+      case T_NIL:
+      case T_STRING:
 	rb_raise(rb_eTypeError, "can't convert %"PRIsVALUE" into an exact number",
 		 rb_obj_class(v));
     }
-    return v;
 }
 
 /* time_t */
@@ -545,10 +553,16 @@ rb_time_magnify(wideval_t w)
     return wmul(w, WINT2FIXWV(TIME_SCALE));
 }
 
+static VALUE
+rb_time_unmagnify_to_rational(wideval_t w)
+{
+    return quor(w2v(w), INT2FIX(TIME_SCALE));
+}
+
 static wideval_t
 rb_time_unmagnify(wideval_t w)
 {
-    return wquo(w, WINT2FIXWV(TIME_SCALE));
+    return v2w(rb_time_unmagnify_to_rational(w));
 }
 
 static VALUE
@@ -632,7 +646,7 @@ VALUE rb_cTime;
 static VALUE rb_cTimeTM;
 
 static int obj2int(VALUE obj);
-static uint32_t obj2ubits(VALUE obj, size_t bits);
+static uint32_t obj2ubits(VALUE obj, unsigned int bits);
 static VALUE obj2vint(VALUE obj);
 static uint32_t month_arg(VALUE arg);
 static VALUE validate_utc_offset(VALUE utc_offset);
@@ -658,6 +672,22 @@ static int leap_year_p(long y);
 static VALUE tm_from_time(VALUE klass, VALUE time);
 
 bool ruby_tz_uptodate_p;
+void ruby_reset_leap_second_info(void);
+
+void
+ruby_reset_timezone(void)
+{
+    ruby_tz_uptodate_p = false;
+    ruby_reset_leap_second_info();
+}
+
+static void
+update_tz(void)
+{
+    if (ruby_tz_uptodate_p) return;
+    ruby_tz_uptodate_p = true;
+    tzset();
+}
 
 static struct tm *
 rb_localtime_r(const time_t *t, struct tm *result)
@@ -665,10 +695,7 @@ rb_localtime_r(const time_t *t, struct tm *result)
 #if defined __APPLE__ && defined __LP64__
     if (*t != (time_t)(int)*t) return NULL;
 #endif
-    if (!ruby_tz_uptodate_p) {
-	ruby_tz_uptodate_p = 1;
-	tzset();
-    }
+    update_tz();
 #ifdef HAVE_GMTIME_R
     result = localtime_r(t, result);
 #else
@@ -996,7 +1023,7 @@ gmtimew_noleapsecond(wideval_t timew, struct vtm *vtm)
     }
 
     vtm->utc_offset = INT2FIX(0);
-    vtm->zone = rb_fstring_lit("UTC");
+    vtm->zone = str_utc;
 }
 
 static struct tm *
@@ -1276,7 +1303,7 @@ gmtimew(wideval_t timew, struct vtm *result)
 static struct tm *localtime_with_gmtoff_zone(const time_t *t, struct tm *result, long *gmtoff, VALUE *zone);
 
 /*
- * The idea is borrowed from Perl:
+ * The idea, extrapolate localtime() function, is borrowed from Perl:
  * http://web.archive.org/web/20080211114141/http://use.perl.org/articles/08/02/07/197204.shtml
  *
  * compat_common_month_table is generated by the following program.
@@ -1428,7 +1455,7 @@ guess_local_offset(struct vtm *vtm_utc, int *isdst_ret, VALUE *zone_ret)
 
     timev = w2v(rb_time_unmagnify(timegmw(&vtm2)));
     t = NUM2TIMET(timev);
-    zone = rb_fstring_lit("UTC");
+    zone = str_utc;
     if (localtime_with_gmtoff_zone(&t, &tm, &gmtoff, &zone)) {
         if (isdst_ret)
             *isdst_ret = tm.tm_isdst;
@@ -1738,6 +1765,14 @@ static VALUE time_get_tm(VALUE, struct time_object *);
 	time_get_tm((time), (tobj)); \
     } \
   } while (0)
+#define MAKE_TM_ENSURE(time, tobj, cond) \
+    do { \
+        MAKE_TM(time, tobj); \
+        if (!(cond)) { \
+            VALUE zone = (tobj)->vtm.zone; \
+            if (!NIL_P(zone)) zone_localtime(zone, (time)); \
+        } \
+    } while (0)
 
 static void
 time_mark(void *ptr)
@@ -1804,7 +1839,6 @@ static void
 time_modify(VALUE time)
 {
     rb_check_frozen(time);
-    rb_check_trusted(time);
 }
 
 static wideval_t
@@ -1941,10 +1975,8 @@ vtm_add_offset(struct vtm *vtm, VALUE off, int sign)
             vtm->subsecx = subv(vtm->subsecx, INT2FIX(TIME_SCALE));
             sec += 1;
         }
-        goto not_zero_sec;
     }
     if (sec) {
-      not_zero_sec:
         /* If sec + subsec == 0, don't change vtm->sec.
          * It may be 60 which is a leap second. */
         sec += vtm->sec;
@@ -2055,8 +2087,7 @@ utc_offset_arg(VALUE arg)
         int n = 0;
         char *s = RSTRING_PTR(tmp);
         if (!rb_enc_str_asciicompat_p(tmp)) {
-	  invalid_utc_offset:
-            return Qnil;
+            goto invalid_utc_offset;
 	}
 	switch (RSTRING_LEN(tmp)) {
           case 1:
@@ -2087,6 +2118,7 @@ utc_offset_arg(VALUE arg)
 	    if (s[6] != ':') goto invalid_utc_offset;
 	    if (!ISDIGIT(s[7]) || !ISDIGIT(s[8])) goto invalid_utc_offset;
 	    n += (s[7] * 10 + s[8] - '0' * 11);
+            /* fall through */
 	  case 6:
 	    if (s[0] != '+' && s[0] != '-') goto invalid_utc_offset;
 	    if (!ISDIGIT(s[1]) || !ISDIGIT(s[2])) goto invalid_utc_offset;
@@ -2106,6 +2138,8 @@ utc_offset_arg(VALUE arg)
     else {
         return num_exact(arg);
     }
+  invalid_utc_offset:
+    return Qnil;
 }
 
 static void
@@ -2178,7 +2212,7 @@ extract_vtm(VALUE time, struct vtm *vtm, VALUE subsecx)
         *vtm = tobj->vtm;
         t = rb_time_unmagnify(tobj->timew);
         if (TZMODE_FIXOFF_P(tobj) && vtm->utc_offset != INT2FIX(0))
-            t = wadd(t, vtm->utc_offset);
+            t = wadd(t, v2w(vtm->utc_offset));
     }
     else if (RB_TYPE_P(time, T_STRUCT)) {
 #define AREF(x) rb_struct_aref(time, ID2SYM(id_##x))
@@ -2200,6 +2234,16 @@ extract_vtm(VALUE time, struct vtm *vtm, VALUE subsecx)
     return t;
 }
 
+static void
+zone_set_dst(VALUE zone, struct time_object *tobj, VALUE tm)
+{
+    ID id_dst_p;
+    VALUE dst;
+    CONST_ID(id_dst_p, "dst?");
+    dst = rb_check_funcall(zone, id_dst_p, 1, &tm);
+    tobj->vtm.isdst = (dst != Qundef && RTEST(dst));
+}
+
 static int
 zone_timelocal(VALUE zone, VALUE time)
 {
@@ -2219,6 +2263,7 @@ zone_timelocal(VALUE zone, VALUE time)
         s = wadd(s, v2w(tobj->vtm.subsecx));
     }
     tobj->timew = s;
+    zone_set_dst(zone, tobj, tm);
     return 1;
 }
 
@@ -2238,6 +2283,7 @@ zone_localtime(VALUE zone, VALUE time)
     s = extract_vtm(local, &tobj->vtm, subsecx);
     tobj->tm_got = 1;
     zone_set_offset(zone, tobj, s, t);
+    zone_set_dst(zone, tobj, tm);
     return 1;
 }
 
@@ -2260,7 +2306,7 @@ time_init_1(int argc, VALUE *argv, VALUE time)
 
     vtm.wday = VTM_WDAY_INITVAL;
     vtm.yday = 0;
-    vtm.zone = rb_fstring_lit("");
+    vtm.zone = str_empty;
 
     /*                             year  mon   mday  hour  min   sec   off */
     rb_scan_args(argc, argv, "16", &v[0],&v[1],&v[2],&v[3],&v[4],&v[5],&v[6]);
@@ -2356,12 +2402,12 @@ time_init_1(int argc, VALUE *argv, VALUE time)
  *  It is initialized to the current system time if no argument is given.
  *
  *  *Note:* The new object will use the resolution available on your
- *  system clock, and may include fractional seconds.
+ *  system clock, and may include subsecond.
  *
  *  If one or more arguments are specified, the time is initialized to the
  *  specified time.
  *
- *  +sec+ may have fraction if it is a rational.
+ *  +sec+ may have subsecond if it is a rational.
  *
  *  +tz+ specifies the timezone.
  *  It can be an offset from UTC, given either as a string such as "+09:00"
@@ -2370,11 +2416,11 @@ time_init_1(int argc, VALUE *argv, VALUE time)
  *  Or it can be a timezone object,
  *  see {Timezone argument}[#class-Time-label-Timezone+argument] for details.
  *
- *     a = Time.new      #=> 2007-11-19 07:50:02 -0600
- *     b = Time.new      #=> 2007-11-19 07:50:02 -0600
+ *     a = Time.new      #=> 2020-07-21 01:27:44.917547285 +0900
+ *     b = Time.new      #=> 2020-07-21 01:27:44.917617713 +0900
  *     a == b            #=> false
- *     "%.6f" % a.to_f   #=> "1195480202.282373"
- *     "%.6f" % b.to_f   #=> "1195480202.283415"
+ *     "%.6f" % a.to_f   #=> "1595262464.917547"
+ *     "%.6f" % b.to_f   #=> "1595262464.917618"
  *
  *     Time.new(2008,6,21, 13,30,0, "+09:00") #=> 2008-06-21 13:30:00 +0900
  *
@@ -2671,6 +2717,28 @@ rb_time_timespec(VALUE time)
     return time_timespec(time, FALSE);
 }
 
+struct timespec
+rb_time_timespec_interval(VALUE num)
+{
+    return time_timespec(num, TRUE);
+}
+
+enum {
+    TMOPT_IN,
+    TMOPT_MAX_
+};
+
+static bool
+get_tmopt(VALUE opts, VALUE vals[TMOPT_MAX_])
+{
+    ID ids[TMOPT_MAX_];
+
+    if (NIL_P(opts)) return false;
+    CONST_ID(ids[TMOPT_IN], "in");
+    rb_get_kwargs(opts, ids, 0, TMOPT_MAX_, vals);
+    return true;
+}
+
 /*
  *  call-seq:
  *     Time.now -> time
@@ -2682,9 +2750,16 @@ rb_time_timespec(VALUE time)
  */
 
 static VALUE
-time_s_now(VALUE klass)
+time_s_now(int argc, VALUE *argv, VALUE klass)
 {
-    return rb_class_new_instance(0, NULL, klass);
+    VALUE vals[TMOPT_MAX_], opts, t, zone = Qundef;
+    rb_scan_args(argc, argv, ":", &opts);
+    if (get_tmopt(opts, vals)) zone = vals[TMOPT_IN];
+    t = rb_class_new_instance(0, NULL, klass);
+    if (zone != Qundef) {
+        time_zonelocal(t, zone);
+    }
+    return t;
 }
 
 static int
@@ -2728,10 +2803,12 @@ get_scale(VALUE unit)
  *  +seconds+ and +microseconds_with_frac+ since the Epoch.
  *  +seconds_with_frac+ and +microseconds_with_frac+
  *  can be an Integer, Float, Rational, or other Numeric.
- *  non-portable feature allows the offset to be negative on some systems.
  *
  *  If +in+ argument is given, the result is in that timezone or UTC offset, or
  *  if a numeric argument is given, the result is in local time.
+ *  The +in+ argument accepts the same types of arguments as +tz+ argument of
+ *  Time.new: string, number of seconds, or a timezone object.
+ *
  *
  *     Time.at(0)                                #=> 1969-12-31 18:00:00 -0600
  *     Time.at(Time.at(0))                       #=> 1969-12-31 18:00:00 -0600
@@ -2740,21 +2817,26 @@ get_scale(VALUE unit)
  *     Time.at(946684800.2).usec                 #=> 200000
  *     Time.at(946684800, 123456.789).nsec       #=> 123456789
  *     Time.at(946684800, 123456789, :nsec).nsec #=> 123456789
+ *
+ *     Time.at(1582721899, in: "+09:00")         #=> 2020-02-26 21:58:19 +0900
+ *     Time.at(1582721899, in: "UTC")            #=> 2020-02-26 12:58:19 UTC
+ *     Time.at(1582721899, in: "C")              #=> 2020-02-26 13:58:19 +0300
+ *     Time.at(1582721899, in: 32400)            #=> 2020-02-26 21:58:19 +0900
+ *
+ *     require 'tzinfo'
+ *     Time.at(1582721899, in: TZInfo::Timezone.get('Europe/Kiev'))
+ *                                               #=> 2020-02-26 14:58:19 +0200
  */
 
 static VALUE
 time_s_at(int argc, VALUE *argv, VALUE klass)
 {
     VALUE time, t, unit = Qundef, zone = Qundef, opts;
+    VALUE vals[TMOPT_MAX_];
     wideval_t timew;
 
     argc = rb_scan_args(argc, argv, "12:", &time, &t, &unit, &opts);
-    if (!NIL_P(opts)) {
-        ID ids[1];
-        VALUE vals[numberof(ids)];
-
-        CONST_ID(ids[0], "in");
-        rb_get_kwargs(opts, ids, 0, 1, vals);
+    if (get_tmopt(opts, vals)) {
         zone = vals[0];
     }
     if (argc >= 2) {
@@ -2797,20 +2879,16 @@ obj2int(VALUE obj)
     return NUM2INT(obj);
 }
 
+/* bits should be 0 <= x <= 31 */
 static uint32_t
-obj2ubits(VALUE obj, size_t bits)
+obj2ubits(VALUE obj, unsigned int bits)
 {
-    static const uint32_t u32max = (uint32_t)-1;
-    const uint32_t usable_mask = ~(u32max << bits);
-    uint32_t rv;
-    int tmp = obj2int(obj);
+    const unsigned int usable_mask = (1U << bits) - 1;
+    unsigned int rv = (unsigned int)obj2int(obj);
 
-    if (tmp < 0)
-	rb_raise(rb_eArgError, "argument out of range");
-    rv = tmp;
     if ((rv & usable_mask) != rv)
 	rb_raise(rb_eArgError, "argument out of range");
-    return rv;
+    return (uint32_t)rv;
 }
 
 static VALUE
@@ -2856,6 +2934,10 @@ static uint32_t
 month_arg(VALUE arg)
 {
     int i, mon;
+
+    if (FIXNUM_P(arg)) {
+        return obj2ubits(arg, 4);
+    }
 
     VALUE s = rb_check_string_type(arg);
     if (!NIL_P(s) && RSTRING_LEN(s) > 0) {
@@ -2930,7 +3012,7 @@ time_arg(int argc, const VALUE *argv, struct vtm *vtm)
     vtm->wday = 0;
     vtm->yday = 0;
     vtm->isdst = 0;
-    vtm->zone = rb_fstring_lit("");
+    vtm->zone = str_empty;
 
     if (argc == 10) {
 	v[0] = argv[5];
@@ -3015,7 +3097,16 @@ time_arg(int argc, const VALUE *argv, struct vtm *vtm)
 static int
 leap_year_p(long y)
 {
-    return ((y % 4 == 0) && (y % 100 != 0)) || (y % 400 == 0);
+    /* TODO:
+     *  ensure about negative years in proleptic Gregorian calendar.
+     */
+    unsigned long uy = (unsigned long)(LIKELY(y >= 0) ? y : -y);
+
+    if (LIKELY(uy % 4 != 0)) return 0;
+
+    unsigned long century = uy / 100;
+    if (LIKELY(uy != century * 100)) return 1;
+    return century % 4 == 0;
 }
 
 static time_t
@@ -3079,15 +3170,8 @@ find_time_t(struct tm *tptr, int utc_p, time_t *tp)
 
     find_dst = 0 < tptr->tm_isdst;
 
-#if defined(HAVE_MKTIME)
-    tm0 = *tptr;
-    if (!utc_p && (guess = mktime(&tm0)) != -1) {
-        tm = GUESS(&guess);
-        if (tm && tmcmp(tptr, tm) == 0) {
-            goto found;
-        }
-    }
-#endif
+    /* /etc/localtime might be changed. reload it. */
+    update_tz();
 
     tm0 = *tptr;
     if (tm0.tm_mon < 0) {
@@ -3188,8 +3272,8 @@ find_time_t(struct tm *tptr, int utc_p, time_t *tp)
     status = 1;
 
     while (guess_lo + 1 < guess_hi) {
+      binsearch:
         if (status == 0) {
-          binsearch:
             guess = guess_lo / 2 + guess_hi / 2;
             if (guess <= guess_lo)
                 guess = guess_lo + 1;
@@ -3213,11 +3297,12 @@ find_time_t(struct tm *tptr, int utc_p, time_t *tp)
                 status = 0;
             }
             if (guess <= guess_lo || guess_hi <= guess) {
-                /* Precious guess is invalid. try binary search. */
+                /* Previous guess is invalid. try binary search. */
 #ifdef DEBUG_GUESSRANGE
                 if (guess <= guess_lo) fprintf(stderr, "too small guess: %ld <= %ld\n", guess, guess_lo);
                 if (guess_hi <= guess) fprintf(stderr, "too big guess: %ld <= %ld\n", guess_hi, guess);
 #endif
+                status = 0;
                 goto binsearch;
             }
         }
@@ -3238,64 +3323,8 @@ find_time_t(struct tm *tptr, int utc_p, time_t *tp)
             DEBUG_REPORT_GUESSRANGE;
         }
         else {
-          found:
-	    if (!utc_p) {
-		/* If localtime is nonmonotonic, another result may exist. */
-		time_t guess2;
-		if (find_dst) {
-		    guess2 = guess - 2 * 60 * 60;
-		    tm = LOCALTIME(&guess2, result);
-		    if (tm) {
-			if (tptr->tm_hour != (tm->tm_hour + 2) % 24 ||
-			    tptr->tm_min != tm->tm_min ||
-			    tptr->tm_sec != tm->tm_sec) {
-			    guess2 -= (tm->tm_hour - tptr->tm_hour) * 60 * 60 +
-				      (tm->tm_min - tptr->tm_min) * 60 +
-				      (tm->tm_sec - tptr->tm_sec);
-			    if (tptr->tm_mday != tm->tm_mday)
-				guess2 += 24 * 60 * 60;
-			    if (guess != guess2) {
-				tm = LOCALTIME(&guess2, result);
-				if (tm && tmcmp(tptr, tm) == 0) {
-				    if (guess < guess2)
-					*tp = guess;
-				    else
-					*tp = guess2;
-                                    return NULL;
-				}
-			    }
-			}
-		    }
-		}
-		else {
-		    guess2 = guess + 2 * 60 * 60;
-		    tm = LOCALTIME(&guess2, result);
-		    if (tm) {
-			if ((tptr->tm_hour + 2) % 24 != tm->tm_hour ||
-			    tptr->tm_min != tm->tm_min ||
-			    tptr->tm_sec != tm->tm_sec) {
-			    guess2 -= (tm->tm_hour - tptr->tm_hour) * 60 * 60 +
-				      (tm->tm_min - tptr->tm_min) * 60 +
-				      (tm->tm_sec - tptr->tm_sec);
-			    if (tptr->tm_mday != tm->tm_mday)
-				guess2 -= 24 * 60 * 60;
-			    if (guess != guess2) {
-				tm = LOCALTIME(&guess2, result);
-				if (tm && tmcmp(tptr, tm) == 0) {
-				    if (guess < guess2)
-					*tp = guess2;
-				    else
-					*tp = guess;
-                                    return NULL;
-				}
-			    }
-			}
-		    }
-		}
-	    }
-            *tp = guess;
-            return NULL;
-	}
+            goto found;
+        }
     }
 
     /* Given argument has no corresponding time_t. Let's extrapolate. */
@@ -3310,18 +3339,76 @@ find_time_t(struct tm *tptr, int utc_p, time_t *tp)
 
     *tp = guess_lo +
           ((tptr->tm_year - tm_lo.tm_year) * 365 +
-           ((tptr->tm_year-69)/4) -
-           ((tptr->tm_year-1)/100) +
-           ((tptr->tm_year+299)/400) -
-           ((tm_lo.tm_year-69)/4) +
-           ((tm_lo.tm_year-1)/100) -
-           ((tm_lo.tm_year+299)/400) +
+           DIV((tptr->tm_year-69), 4) -
+           DIV((tptr->tm_year-1), 100) +
+           DIV((tptr->tm_year+299), 400) -
+           DIV((tm_lo.tm_year-69), 4) +
+           DIV((tm_lo.tm_year-1), 100) -
+           DIV((tm_lo.tm_year+299), 400) +
            tptr_tm_yday -
            tm_lo.tm_yday) * 86400 +
           (tptr->tm_hour - tm_lo.tm_hour) * 3600 +
           (tptr->tm_min - tm_lo.tm_min) * 60 +
           (tptr->tm_sec - (tm_lo.tm_sec == 60 ? 59 : tm_lo.tm_sec));
 
+    return NULL;
+
+  found:
+    if (!utc_p) {
+        /* If localtime is nonmonotonic, another result may exist. */
+        time_t guess2;
+        if (find_dst) {
+            guess2 = guess - 2 * 60 * 60;
+            tm = LOCALTIME(&guess2, result);
+            if (tm) {
+                if (tptr->tm_hour != (tm->tm_hour + 2) % 24 ||
+                    tptr->tm_min != tm->tm_min ||
+                    tptr->tm_sec != tm->tm_sec) {
+                    guess2 -= (tm->tm_hour - tptr->tm_hour) * 60 * 60 +
+                        (tm->tm_min - tptr->tm_min) * 60 +
+                        (tm->tm_sec - tptr->tm_sec);
+                    if (tptr->tm_mday != tm->tm_mday)
+                        guess2 += 24 * 60 * 60;
+                    if (guess != guess2) {
+                        tm = LOCALTIME(&guess2, result);
+                        if (tm && tmcmp(tptr, tm) == 0) {
+                            if (guess < guess2)
+                                *tp = guess;
+                            else
+                                *tp = guess2;
+                            return NULL;
+                        }
+                    }
+                }
+            }
+        }
+        else {
+            guess2 = guess + 2 * 60 * 60;
+            tm = LOCALTIME(&guess2, result);
+            if (tm) {
+                if ((tptr->tm_hour + 2) % 24 != tm->tm_hour ||
+                    tptr->tm_min != tm->tm_min ||
+                    tptr->tm_sec != tm->tm_sec) {
+                    guess2 -= (tm->tm_hour - tptr->tm_hour) * 60 * 60 +
+                        (tm->tm_min - tptr->tm_min) * 60 +
+                        (tm->tm_sec - tptr->tm_sec);
+                    if (tptr->tm_mday != tm->tm_mday)
+                        guess2 -= 24 * 60 * 60;
+                    if (guess != guess2) {
+                        tm = LOCALTIME(&guess2, result);
+                        if (tm && tmcmp(tptr, tm) == 0) {
+                            if (guess < guess2)
+                                *tp = guess2;
+                            else
+                                *tp = guess;
+                            return NULL;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    *tp = guess;
     return NULL;
 
   out_of_range:
@@ -3431,7 +3518,7 @@ time_s_mkutc(int argc, VALUE *argv, VALUE klass)
  *   Time.mktime(year, month, day, hour, min, sec, usec_with_frac) -> time
  *   Time.mktime(sec, min, hour, day, month, year, dummy, dummy, isdst, dummy) -> time
  *
- *  Same as Time::gm, but interprets the values in the
+ *  Same as Time.utc, but interprets the values in the
  *  local time zone.
  *
  *     Time.local(2000,"jan",1,20,15,1)   #=> 2000-01-01 20:15:01 -0600
@@ -3454,9 +3541,10 @@ time_s_mktime(int argc, VALUE *argv, VALUE klass)
  *  Returns the value of _time_ as an integer number of seconds
  *  since the Epoch.
  *
- *     t = Time.now
- *     "%10.5f" % t.to_f   #=> "1270968656.89607"
- *     t.to_i              #=> 1270968656
+ *  If _time_ contains subsecond, they are truncated.
+ *
+ *     t = Time.now        #=> 2020-07-21 01:41:29.746012609 +0900
+ *     t.to_i              #=> 1595263289
  */
 
 static VALUE
@@ -3474,13 +3562,22 @@ time_to_i(VALUE time)
  *
  *  Returns the value of _time_ as a floating point number of
  *  seconds since the Epoch.
+ *  The return value approximate the exact value in the Time object
+ *  because floating point numbers cannot represent all rational numbers
+ *  exactly.
  *
- *     t = Time.now
- *     "%10.5f" % t.to_f   #=> "1270968744.77658"
- *     t.to_i              #=> 1270968744
+ *     t = Time.now        #=> 2020-07-20 22:00:29.38740268 +0900
+ *     t.to_f              #=> 1595250029.3874028
+ *     t.to_i              #=> 1595250029
  *
  *  Note that IEEE 754 double is not accurate enough to represent
  *  the exact number of nanoseconds since the Epoch.
+ *  (IEEE 754 double has 53bit mantissa.
+ *  So it can represent exact number of nanoseconds only in
+ *  `2 ** 53 / 1_000_000_000 / 60 / 60 / 24 = 104.2` days.)
+ *  When Ruby uses a nanosecond-resolution clock function,
+ *  such as +clock_gettime+ of POSIX, to obtain the current time,
+ *  Time#to_f can lost information of a Time object created with +Time.now+.
  */
 
 static VALUE
@@ -3499,12 +3596,11 @@ time_to_f(VALUE time)
  *  Returns the value of _time_ as a rational number of seconds
  *  since the Epoch.
  *
- *     t = Time.now
- *     t.to_r            #=> (1270968792716287611/1000000000)
+ *     t = Time.now      #=> 2020-07-20 22:03:45.212167333 +0900
+ *     t.to_r            #=> (1595250225212167333/1000000000)
  *
- *  This methods is intended to be used to get an accurate value
- *  representing the nanoseconds since the Epoch. You can use this method
- *  to convert _time_ to another Epoch.
+ *  This method is intended to be used to get an accurate value
+ *  representing the seconds (including subsecond) since the Epoch.
  */
 
 static VALUE
@@ -3514,7 +3610,7 @@ time_to_r(VALUE time)
     VALUE v;
 
     GetTimeval(time, tobj);
-    v = w2v(rb_time_unmagnify(tobj->timew));
+    v = rb_time_unmagnify_to_rational(tobj->timew);
     if (!RB_TYPE_P(v, T_RATIONAL)) {
         v = rb_Rational1(v);
     }
@@ -3526,11 +3622,19 @@ time_to_r(VALUE time)
  *     time.usec    -> int
  *     time.tv_usec -> int
  *
- *  Returns the number of microseconds for _time_.
+ *  Returns the number of microseconds for the subsecond part of _time_.
+ *  The result is a non-negative integer less than 10**6.
  *
- *     t = Time.now        #=> 2007-11-19 08:03:26 -0600
- *     "%10.6f" % t.to_f   #=> "1195481006.775195"
- *     t.usec              #=> 775195
+ *     t = Time.now        #=> 2020-07-20 22:05:58.459785953 +0900
+ *     t.usec              #=> 459785
+ *
+ *  If _time_ has fraction of microsecond (such as nanoseconds),
+ *  it is truncated.
+ *
+ *     t = Time.new(2000,1,1,0,0,0.666_777_888_999r)
+ *     t.usec              #=> 666777
+ *
+ *  Time#subsec can be used to obtain the subsecond part exactly.
  */
 
 static VALUE
@@ -3551,17 +3655,19 @@ time_usec(VALUE time)
  *     time.nsec    -> int
  *     time.tv_nsec -> int
  *
- *  Returns the number of nanoseconds for _time_.
+ *  Returns the number of nanoseconds for the subsecond part of _time_.
+ *  The result is a non-negative integer less than 10**9.
  *
- *     t = Time.now        #=> 2007-11-17 15:18:03 +0900
- *     "%10.9f" % t.to_f   #=> "1195280283.536151409"
- *     t.nsec              #=> 536151406
+ *     t = Time.now        #=> 2020-07-20 22:07:10.963933942 +0900
+ *     t.nsec              #=> 963933942
  *
- *  The lowest digits of #to_f and #nsec are different because
- *  IEEE 754 double is not accurate enough to represent
- *  the exact number of nanoseconds since the Epoch.
+ *  If _time_ has fraction of nanosecond (such as picoseconds),
+ *  it is truncated.
  *
- *  The more accurate value is returned by #nsec.
+ *     t = Time.new(2000,1,1,0,0,0.666_777_888_999r)
+ *     t.nsec              #=> 666777888
+ *
+ *  Time#subsec can be used to obtain the subsecond part exactly.
  */
 
 static VALUE
@@ -3577,19 +3683,21 @@ time_nsec(VALUE time)
  *  call-seq:
  *     time.subsec    -> number
  *
- *  Returns the fraction for _time_.
+ *  Returns the subsecond for _time_.
  *
  *  The return value can be a rational number.
  *
- *     t = Time.now        #=> 2009-03-26 22:33:12 +0900
- *     "%10.9f" % t.to_f   #=> "1238074392.940563917"
- *     t.subsec            #=> (94056401/100000000)
+ *     t = Time.now        #=> 2020-07-20 15:40:26.867462289 +0900
+ *     t.subsec            #=> (867462289/1000000000)
  *
- *  The lowest digits of #to_f and #subsec are different because
- *  IEEE 754 double is not accurate enough to represent
- *  the rational number.
+ *     t = Time.now        #=> 2020-07-20 15:40:50.313828595 +0900
+ *     t.subsec            #=> (62765719/200000000)
  *
- *  The more accurate value is returned by #subsec.
+ *     t = Time.new(2000,1,1,2,3,4) #=> 2000-01-01 02:03:04 +0900
+ *     t.subsec                     #=> 0
+ *
+ *     Time.new(2000,1,1,0,0,1/3r,"UTC").subsec #=> (1/3)
+ *
  */
 
 static VALUE
@@ -3605,9 +3713,9 @@ time_subsec(VALUE time)
  *  call-seq:
  *     time <=> other_time -> -1, 0, +1, or nil
  *
- *  Comparison---Compares +time+ with +other_time+.
+ *  Compares +time+ with +other_time+.
  *
- *  -1, 0, +1 or nil depending on whether +time+ is less  than, equal to, or
+ *  -1, 0, +1 or nil depending on whether +time+ is less than, equal to, or
  *  greater than +other_time+.
  *
  *  +nil+ is returned if the two values are incomparable.
@@ -3650,7 +3758,7 @@ time_cmp(VALUE time1, VALUE time2)
  *  time.eql?(other_time)
  *
  * Returns +true+ if _time_ and +other_time+ are
- * both Time objects with the same seconds and fractional seconds.
+ * both Time objects with the same seconds (including subsecond) from the Epoch.
  */
 
 static VALUE
@@ -3852,7 +3960,7 @@ time_gmtime(VALUE time)
 	time_modify(time);
     }
 
-    vtm.zone = rb_fstring_lit("UTC");
+    vtm.zone = str_utc;
     GMTIMEW(tobj->timew, &vtm);
     tobj->vtm = vtm;
 
@@ -4004,7 +4112,6 @@ time_asctime(VALUE time)
 
 /*
  *  call-seq:
- *     time.inspect -> string
  *     time.to_s    -> string
  *
  *  Returns a string representing _time_. Equivalent to calling
@@ -4028,6 +4135,53 @@ time_to_s(VALUE time)
         return strftimev("%Y-%m-%d %H:%M:%S UTC", time, rb_usascii_encoding());
     else
         return strftimev("%Y-%m-%d %H:%M:%S %z", time, rb_usascii_encoding());
+}
+
+/*
+ *  call-seq:
+ *     time.inspect -> string
+ *
+ *  Returns a detailed string representing _time_. Unlike to_s,
+ *  preserves subsecond in the representation for easier debugging.
+ *
+ *     t = Time.now
+ *     t.inspect                             #=> "2012-11-10 18:16:12.261257655 +0100"
+ *     t.strftime "%Y-%m-%d %H:%M:%S.%N %z"  #=> "2012-11-10 18:16:12.261257655 +0100"
+ *
+ *     t.utc.inspect                          #=> "2012-11-10 17:16:12.261257655 UTC"
+ *     t.strftime "%Y-%m-%d %H:%M:%S.%N UTC"  #=> "2012-11-10 17:16:12.261257655 UTC"
+ */
+
+static VALUE
+time_inspect(VALUE time)
+{
+    struct time_object *tobj;
+    VALUE str, subsec;
+
+    GetTimeval(time, tobj);
+    str = strftimev("%Y-%m-%d %H:%M:%S", time, rb_usascii_encoding());
+    subsec = w2v(wmod(tobj->timew, WINT2FIXWV(TIME_SCALE)));
+    if (FIXNUM_P(subsec) && FIX2LONG(subsec) == 0) {
+    }
+    else if (FIXNUM_P(subsec) && FIX2LONG(subsec) < TIME_SCALE) {
+        long len;
+        rb_str_catf(str, ".%09ld", FIX2LONG(subsec));
+        for (len=RSTRING_LEN(str); RSTRING_PTR(str)[len-1] == '0' && len > 0; len--)
+            ;
+        rb_str_resize(str, len);
+    }
+    else {
+        rb_str_cat_cstr(str, " ");
+        subsec = quov(subsec, INT2FIX(TIME_SCALE));
+        rb_str_concat(str, rb_obj_as_string(subsec));
+    }
+    if (TZMODE_UTC_P(tobj)) {
+        rb_str_cat_cstr(str, " UTC");
+    }
+    else {
+        rb_str_concat(str, strftimev(" %z", time, rb_usascii_encoding()));
+    }
+    return str;
 }
 
 static VALUE
@@ -4057,11 +4211,11 @@ time_add(const struct time_object *tobj, VALUE torig, VALUE offset, int sign)
  *  call-seq:
  *     time + numeric -> time
  *
- *  Addition --- Adds some number of seconds (possibly fractional) to
+ *  Adds some number of seconds (possibly including subsecond) to
  *  _time_ and returns that value as a new Time object.
  *
- *     t = Time.now         #=> 2007-11-19 08:22:21 -0600
- *     t + (60 * 60 * 24)   #=> 2007-11-20 08:22:21 -0600
+ *     t = Time.now         #=> 2020-07-20 22:14:43.170490982 +0900
+ *     t + (60 * 60 * 24)   #=> 2020-07-21 22:14:43.170490982 +0900
  */
 
 static VALUE
@@ -4081,14 +4235,14 @@ time_plus(VALUE time1, VALUE time2)
  *     time - other_time -> float
  *     time - numeric    -> time
  *
- *  Difference --- Returns a difference in seconds as a Float
+ *  Returns a difference in seconds as a Float
  *  between _time_ and +other_time+, or subtracts the given number
  *  of seconds in +numeric+ from _time_.
  *
- *     t = Time.now       #=> 2007-11-19 08:23:10 -0600
- *     t2 = t + 2592000   #=> 2007-12-19 08:23:10 -0600
+ *     t = Time.now       #=> 2020-07-20 22:15:49.302766336 +0900
+ *     t2 = t + 2592000   #=> 2020-08-19 22:15:49.302766336 +0900
  *     t2 - t             #=> 2592000.0
- *     t2 - 2592000       #=> 2007-11-19 08:23:10 -0600
+ *     t2 - 2592000       #=> 2020-07-20 22:15:49.302766336 +0900
  */
 
 static VALUE
@@ -4140,76 +4294,162 @@ rb_time_succ(VALUE time)
 
 #define time_succ rb_time_succ
 
+static VALUE
+ndigits_denominator(VALUE ndigits)
+{
+    long nd = NUM2LONG(ndigits);
+
+    if (nd < 0) {
+        rb_raise(rb_eArgError, "negative ndigits given");
+    }
+    if (nd == 0) {
+        return INT2FIX(1);
+    }
+    return rb_rational_new(INT2FIX(1),
+                           rb_int_positive_pow(10, (unsigned long)nd));
+}
+
 /*
  * call-seq:
  *   time.round([ndigits])   -> new_time
  *
- * Rounds sub seconds to a given precision in decimal digits (0 digits by default).
+ * Rounds subsecond to a given precision in decimal digits (0 digits by default).
  * It returns a new Time object.
  * +ndigits+ should be zero or a positive integer.
  *
- *     require 'time'
- *
- *     t = Time.utc(2010,3,30, 5,43,"25.123456789".to_r)
- *     t.iso8601(10)           #=> "2010-03-30T05:43:25.1234567890Z"
- *     t.round.iso8601(10)     #=> "2010-03-30T05:43:25.0000000000Z"
- *     t.round(0).iso8601(10)  #=> "2010-03-30T05:43:25.0000000000Z"
- *     t.round(1).iso8601(10)  #=> "2010-03-30T05:43:25.1000000000Z"
- *     t.round(2).iso8601(10)  #=> "2010-03-30T05:43:25.1200000000Z"
- *     t.round(3).iso8601(10)  #=> "2010-03-30T05:43:25.1230000000Z"
- *     t.round(4).iso8601(10)  #=> "2010-03-30T05:43:25.1235000000Z"
- *     t.round(5).iso8601(10)  #=> "2010-03-30T05:43:25.1234600000Z"
- *     t.round(6).iso8601(10)  #=> "2010-03-30T05:43:25.1234570000Z"
- *     t.round(7).iso8601(10)  #=> "2010-03-30T05:43:25.1234568000Z"
- *     t.round(8).iso8601(10)  #=> "2010-03-30T05:43:25.1234567900Z"
- *     t.round(9).iso8601(10)  #=> "2010-03-30T05:43:25.1234567890Z"
- *     t.round(10).iso8601(10) #=> "2010-03-30T05:43:25.1234567890Z"
+ *     t = Time.utc(2010,3,30, 5,43,25.123456789r)
+ *     t                       #=> 2010-03-30 05:43:25.123456789 UTC
+ *     t.round                 #=> 2010-03-30 05:43:25 UTC
+ *     t.round(0)              #=> 2010-03-30 05:43:25 UTC
+ *     t.round(1)              #=> 2010-03-30 05:43:25.1 UTC
+ *     t.round(2)              #=> 2010-03-30 05:43:25.12 UTC
+ *     t.round(3)              #=> 2010-03-30 05:43:25.123 UTC
+ *     t.round(4)              #=> 2010-03-30 05:43:25.1235 UTC
  *
  *     t = Time.utc(1999,12,31, 23,59,59)
- *     (t + 0.4).round.iso8601(3)    #=> "1999-12-31T23:59:59.000Z"
- *     (t + 0.49).round.iso8601(3)   #=> "1999-12-31T23:59:59.000Z"
- *     (t + 0.5).round.iso8601(3)    #=> "2000-01-01T00:00:00.000Z"
- *     (t + 1.4).round.iso8601(3)    #=> "2000-01-01T00:00:00.000Z"
- *     (t + 1.49).round.iso8601(3)   #=> "2000-01-01T00:00:00.000Z"
- *     (t + 1.5).round.iso8601(3)    #=> "2000-01-01T00:00:01.000Z"
+ *     (t + 0.4).round         #=> 1999-12-31 23:59:59 UTC
+ *     (t + 0.49).round        #=> 1999-12-31 23:59:59 UTC
+ *     (t + 0.5).round         #=> 2000-01-01 00:00:00 UTC
+ *     (t + 1.4).round         #=> 2000-01-01 00:00:00 UTC
+ *     (t + 1.49).round        #=> 2000-01-01 00:00:00 UTC
+ *     (t + 1.5).round         #=> 2000-01-01 00:00:01 UTC
  *
- *     t = Time.utc(1999,12,31, 23,59,59)
- *     (t + 0.123456789).round(4).iso8601(6)  #=> "1999-12-31T23:59:59.123500Z"
+ *     t = Time.utc(1999,12,31, 23,59,59)     #=> 1999-12-31 23:59:59 UTC
+ *     (t + 0.123456789).round(4).iso8601(6)  #=> 1999-12-31 23:59:59.1235 UTC
  */
 
 static VALUE
 time_round(int argc, VALUE *argv, VALUE time)
 {
-    VALUE ndigits, v, a, b, den;
-    long nd;
+    VALUE ndigits, v, den;
     struct time_object *tobj;
 
     if (!rb_check_arity(argc, 0, 1) || NIL_P(ndigits = argv[0]))
-        ndigits = INT2FIX(0);
+        den = INT2FIX(1);
     else
-        ndigits = rb_to_int(ndigits);
-
-    nd = NUM2LONG(ndigits);
-    if (nd < 0)
-	rb_raise(rb_eArgError, "negative ndigits given");
+        den = ndigits_denominator(ndigits);
 
     GetTimeval(time, tobj);
     v = w2v(rb_time_unmagnify(tobj->timew));
 
-    a = INT2FIX(1);
-    b = INT2FIX(10);
-    while (0 < nd) {
-        if (nd & 1)
-            a = mulv(a, b);
-        b = mulv(b, b);
-        nd = nd >> 1;
-    }
-    den = quov(INT2FIX(1), a);
     v = modv(v, den);
     if (lt(v, quov(den, INT2FIX(2))))
         return time_add(tobj, time, v, -1);
     else
         return time_add(tobj, time, subv(den, v), 1);
+}
+
+/*
+ * call-seq:
+ *   time.floor([ndigits])   -> new_time
+ *
+ * Floors subsecond to a given precision in decimal digits (0 digits by default).
+ * It returns a new Time object.
+ * +ndigits+ should be zero or a positive integer.
+ *
+ *     t = Time.utc(2010,3,30, 5,43,25.123456789r)
+ *     t                       #=> 2010-03-30 05:43:25.123456789 UTC
+ *     t.floor                 #=> 2010-03-30 05:43:25 UTC
+ *     t.floor(0)              #=> 2010-03-30 05:43:25 UTC
+ *     t.floor(1)              #=> 2010-03-30 05:43:25.1 UTC
+ *     t.floor(2)              #=> 2010-03-30 05:43:25.12 UTC
+ *     t.floor(3)              #=> 2010-03-30 05:43:25.123 UTC
+ *     t.floor(4)              #=> 2010-03-30 05:43:25.1234 UTC
+ *
+ *     t = Time.utc(1999,12,31, 23,59,59)
+ *     (t + 0.4).floor    #=> 1999-12-31 23:59:59 UTC
+ *     (t + 0.9).floor    #=> 1999-12-31 23:59:59 UTC
+ *     (t + 1.4).floor    #=> 2000-01-01 00:00:00 UTC
+ *     (t + 1.9).floor    #=> 2000-01-01 00:00:00 UTC
+ *
+ *     t = Time.utc(1999,12,31, 23,59,59)
+ *     (t + 0.123456789).floor(4)  #=> 1999-12-31 23:59:59.1234 UTC
+ */
+
+static VALUE
+time_floor(int argc, VALUE *argv, VALUE time)
+{
+    VALUE ndigits, v, den;
+    struct time_object *tobj;
+
+    if (!rb_check_arity(argc, 0, 1) || NIL_P(ndigits = argv[0]))
+        den = INT2FIX(1);
+    else
+        den = ndigits_denominator(ndigits);
+
+    GetTimeval(time, tobj);
+    v = w2v(rb_time_unmagnify(tobj->timew));
+
+    v = modv(v, den);
+    return time_add(tobj, time, v, -1);
+}
+
+/*
+ * call-seq:
+ *   time.ceil([ndigits])   -> new_time
+ *
+ * Ceils subsecond to a given precision in decimal digits (0 digits by default).
+ * It returns a new Time object.
+ * +ndigits+ should be zero or a positive integer.
+ *
+ *     t = Time.utc(2010,3,30, 5,43,25.0123456789r)
+ *     t                      #=> 2010-03-30 05:43:25 123456789/10000000000 UTC
+ *     t.ceil                 #=> 2010-03-30 05:43:26 UTC
+ *     t.ceil(0)              #=> 2010-03-30 05:43:26 UTC
+ *     t.ceil(1)              #=> 2010-03-30 05:43:25.1 UTC
+ *     t.ceil(2)              #=> 2010-03-30 05:43:25.02 UTC
+ *     t.ceil(3)              #=> 2010-03-30 05:43:25.013 UTC
+ *     t.ceil(4)              #=> 2010-03-30 05:43:25.0124 UTC
+ *
+ *     t = Time.utc(1999,12,31, 23,59,59)
+ *     (t + 0.4).ceil         #=> 2000-01-01 00:00:00 UTC
+ *     (t + 0.9).ceil         #=> 2000-01-01 00:00:00 UTC
+ *     (t + 1.4).ceil         #=> 2000-01-01 00:00:01 UTC
+ *     (t + 1.9).ceil         #=> 2000-01-01 00:00:01 UTC
+ *
+ *     t = Time.utc(1999,12,31, 23,59,59)
+ *     (t + 0.123456789).ceil(4)  #=> 1999-12-31 23:59:59.1235 UTC
+ */
+
+static VALUE
+time_ceil(int argc, VALUE *argv, VALUE time)
+{
+    VALUE ndigits, v, den;
+    struct time_object *tobj;
+
+    if (!rb_check_arity(argc, 0, 1) || NIL_P(ndigits = argv[0]))
+        den = INT2FIX(1);
+    else
+        den = ndigits_denominator(ndigits);
+
+    GetTimeval(time, tobj);
+    v = w2v(rb_time_unmagnify(tobj->timew));
+
+    v = modv(v, den);
+    if (!rb_equal(v, INT2FIX(0))) {
+        v = subv(den, v);
+    }
+    return time_add(tobj, time, v, 1);
 }
 
 /*
@@ -4219,7 +4459,7 @@ time_round(int argc, VALUE *argv, VALUE time)
  *  Returns the second of the minute (0..60) for _time_.
  *
  *  *Note:* Seconds range from zero to 60 to allow the system to inject
- *  leap seconds. See http://en.wikipedia.org/wiki/Leap_second for further
+ *  leap seconds. See https://en.wikipedia.org/wiki/Leap_second for further
  *  details.
  *
  *     t = Time.now   #=> 2007-11-19 08:25:02 -0600
@@ -4281,7 +4521,7 @@ time_hour(VALUE time)
  *     time.day  -> integer
  *     time.mday -> integer
  *
- *  Returns the day of the month (1..n) for _time_.
+ *  Returns the day of the month (1..31) for _time_.
  *
  *     t = Time.now   #=> 2007-11-19 08:27:03 -0600
  *     t.day          #=> 19
@@ -4364,15 +4604,12 @@ time_wday(VALUE time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    MAKE_TM(time, tobj);
+    MAKE_TM_ENSURE(time, tobj, tobj->vtm.wday != VTM_WDAY_INITVAL);
     return INT2FIX((int)tobj->vtm.wday);
 }
 
 #define wday_p(n) {\
-    struct time_object *tobj;\
-    GetTimeval(time, tobj);\
-    MAKE_TM(time, tobj);\
-    return (tobj->vtm.wday == (n)) ? Qtrue : Qfalse;\
+    return (time_wday(time) == INT2FIX(n)) ? Qtrue : Qfalse; \
 }
 
 /*
@@ -4503,7 +4740,7 @@ time_yday(VALUE time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    MAKE_TM(time, tobj);
+    MAKE_TM_ENSURE(time, tobj, tobj->vtm.yday != 0);
     return INT2FIX(tobj->vtm.yday);
 }
 
@@ -4539,6 +4776,9 @@ time_isdst(VALUE time)
 
     GetTimeval(time, tobj);
     MAKE_TM(time, tobj);
+    if (tobj->vtm.isdst == VTM_ISDST_INITVAL) {
+        rb_raise(rb_eRuntimeError, "isdst is not set yet");
+    }
     return tobj->vtm.isdst ? Qtrue : Qfalse;
 }
 
@@ -4617,7 +4857,7 @@ rb_time_utc_offset(VALUE time)
  *
  *  See the individual methods for an explanation of the
  *  valid ranges of each value. The ten elements can be passed directly
- *  to Time::utc or Time::local to create a
+ *  to Time.utc or Time.local to create a
  *  new Time object.
  *
  *     t = Time.now     #=> 2007-11-19 08:36:01 -0600
@@ -4630,7 +4870,7 @@ time_to_a(VALUE time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    MAKE_TM(time, tobj);
+    MAKE_TM_ENSURE(time, tobj, tobj->vtm.yday != 0);
     return rb_ary_new3(10,
 		    INT2FIX(tobj->vtm.sec),
 		    INT2FIX(tobj->vtm.min),
@@ -4872,7 +5112,7 @@ time_strftime(VALUE time, VALUE format)
     VALUE tmp;
 
     GetTimeval(time, tobj);
-    MAKE_TM(time, tobj);
+    MAKE_TM_ENSURE(time, tobj, tobj->vtm.yday != 0);
     StringValue(format);
     if (!rb_enc_str_asciicompat_p(format)) {
 	rb_raise(rb_eArgError, "format should have ASCII compatible encoding");
@@ -4894,13 +5134,17 @@ time_strftime(VALUE time, VALUE format)
     }
 }
 
+int ruby_marshal_write_long(long x, char *buf);
+
+enum {base_dump_size = 8};
+
 /* :nodoc: */
 static VALUE
 time_mdump(VALUE time)
 {
     struct time_object *tobj;
     unsigned long p, s;
-    char buf[8];
+    char buf[base_dump_size + sizeof(long) + 1];
     int i;
     VALUE str;
 
@@ -4909,19 +5153,33 @@ time_mdump(VALUE time)
     long usec, nsec;
     VALUE subsecx, nano, subnano, v, zone;
 
+    VALUE year_extend = Qnil;
+    const int max_year = 1900+0xffff;
+
     GetTimeval(time, tobj);
 
     gmtimew(tobj->timew, &vtm);
 
     if (FIXNUM_P(vtm.year)) {
         year = FIX2LONG(vtm.year);
-        if (year < 1900 || 1900+0xffff < year)
-            rb_raise(rb_eArgError, "year too %s to marshal: %ld UTC",
-                     (year < 1900 ? "small" : "big"), year);
+        if (year > max_year) {
+            year_extend = INT2FIX(year - max_year);
+            year = max_year;
+        }
+        else if (year < 1900) {
+            year_extend = LONG2NUM(1900 - year);
+            year = 1900;
+        }
     }
     else {
-        rb_raise(rb_eArgError, "year too %s to marshal: %"PRIsVALUE" UTC",
-                 (le(vtm.year, INT2FIX(1900)) ? "small" : "big"), vtm.year);
+        if (rb_int_positive_p(vtm.year)) {
+            year_extend = rb_int_minus(vtm.year, INT2FIX(max_year));
+            year = max_year;
+        }
+        else {
+            year_extend = rb_int_minus(INT2FIX(1900), vtm.year);
+            year = 1900;
+        }
     }
 
     subsecx = vtm.subsecx;
@@ -4953,7 +5211,30 @@ time_mdump(VALUE time)
 	s = RSHIFT(s, 8);
     }
 
-    str = rb_str_new(buf, 8);
+    if (!NIL_P(year_extend)) {
+        /*
+         * Append extended year distance from 1900..(1900+0xffff).  In
+         * each cases, there is no sign as the value is positive.  The
+         * format is length (marshaled long) + little endian packed
+         * binary (like as Fixnum and Bignum).
+         */
+        size_t ysize = rb_absint_size(year_extend, NULL);
+        char *p, *const buf_year_extend = buf + base_dump_size;
+        if (ysize > LONG_MAX ||
+            (i = ruby_marshal_write_long((long)ysize, buf_year_extend)) < 0) {
+            rb_raise(rb_eArgError, "year too %s to marshal: %"PRIsVALUE" UTC",
+                     (year == 1900 ? "small" : "big"), vtm.year);
+        }
+        i += base_dump_size;
+        str = rb_str_new(NULL, i + ysize);
+        p = RSTRING_PTR(str);
+        memcpy(p, buf, i);
+        p += i;
+        rb_integer_pack(year_extend, p, ysize, 1, 0, INTEGER_PACK_LITTLE_ENDIAN);
+    }
+    else {
+        str = rb_str_new(buf, base_dump_size);
+    }
     rb_copy_generic_ivar(str, time);
     if (!rb_equal(nano, INT2FIX(0))) {
         if (RB_TYPE_P(nano, T_RATIONAL)) {
@@ -5025,11 +5306,13 @@ mload_zone(VALUE time, VALUE zone)
     VALUE z, args[2];
     args[0] = time;
     args[1] = zone;
-    z = rb_rescue(mload_findzone, (VALUE)args, (VALUE (*)(ANYARGS))NULL, Qnil);
+    z = rb_rescue(mload_findzone, (VALUE)args, 0, Qnil);
     if (NIL_P(z)) return rb_fstring(zone);
     if (RB_TYPE_P(z, T_STRING)) return rb_fstring(z);
     return z;
 }
+
+long ruby_marshal_read_long(const char **buf, long len);
 
 /* :nodoc: */
 static VALUE
@@ -5043,7 +5326,7 @@ time_mload(VALUE time, VALUE str)
     struct vtm vtm;
     int i, gmt;
     long nsec;
-    VALUE submicro, nano_num, nano_den, offset, zone;
+    VALUE submicro, nano_num, nano_den, offset, zone, year;
     wideval_t timew;
 
     time_modify(time);
@@ -5057,8 +5340,9 @@ time_mload(VALUE time, VALUE str)
     get_attr(nano_num, {});
     get_attr(nano_den, {});
     get_attr(submicro, {});
-    get_attr(offset, (offset = rb_rescue(validate_utc_offset, offset, NULL, Qnil)));
-    get_attr(zone, (zone = rb_rescue(validate_zone_name, zone, NULL, Qnil)));
+    get_attr(offset, (offset = rb_rescue(validate_utc_offset, offset, 0, Qnil)));
+    get_attr(zone, (zone = rb_rescue(validate_zone_name, zone, 0, Qnil)));
+    get_attr(year, {});
 
 #undef get_attr
 
@@ -5066,8 +5350,8 @@ time_mload(VALUE time, VALUE str)
 
     StringValue(str);
     buf = (unsigned char *)RSTRING_PTR(str);
-    if (RSTRING_LEN(str) != 8) {
-	rb_raise(rb_eTypeError, "marshaled time format differ");
+    if (RSTRING_LEN(str) < base_dump_size) {
+        goto invalid_format;
     }
 
     p = s = 0;
@@ -5090,7 +5374,26 @@ time_mload(VALUE time, VALUE str)
 	p &= ~(1UL<<31);
 	gmt        = (int)((p >> 30) & 0x1);
 
-	vtm.year = INT2FIX(((int)(p >> 14) & 0xffff) + 1900);
+        if (NIL_P(year)) {
+            year = INT2FIX(((int)(p >> 14) & 0xffff) + 1900);
+        }
+        if (RSTRING_LEN(str) > base_dump_size) {
+            long len = RSTRING_LEN(str) - base_dump_size;
+            long ysize = 0;
+            VALUE year_extend;
+            const char *ybuf = (const char *)(buf += base_dump_size);
+            ysize = ruby_marshal_read_long(&ybuf, len);
+            len -= ybuf - (const char *)buf;
+            if (ysize < 0 || ysize > len) goto invalid_format;
+            year_extend = rb_integer_unpack(ybuf, ysize, 1, 0, INTEGER_PACK_LITTLE_ENDIAN);
+            if (year == INT2FIX(1900)) {
+                year = rb_int_minus(year, year_extend);
+            }
+            else {
+                year = rb_int_plus(year, year_extend);
+            }
+        }
+        vtm.year = year;
 	vtm.mon  = ((int)(p >> 10) & 0xf) + 1;
 	vtm.mday = (int)(p >>  5) & 0x1f;
 	vtm.hour = (int) p        & 0x1f;
@@ -5099,7 +5402,7 @@ time_mload(VALUE time, VALUE str)
         vtm.utc_offset = INT2FIX(0);
 	vtm.yday = vtm.wday = 0;
 	vtm.isdst = 0;
-	vtm.zone = rb_fstring_lit("");
+	vtm.zone = str_empty;
 
 	usec = (long)(s & 0xfffff);
         nsec = usec * 1000;
@@ -5147,9 +5450,14 @@ end_submicro: ;
     if (!NIL_P(zone)) {
         zone = mload_zone(time, zone);
 	tobj->vtm.zone = zone;
+        zone_localtime(zone, time);
     }
 
     return time;
+
+  invalid_format:
+    rb_raise(rb_eTypeError, "marshaled time format differ");
+    UNREACHABLE_RETURN(Qundef);
 }
 
 /* :nodoc: */
@@ -5351,7 +5659,7 @@ Init_tm(VALUE outer, const char *name)
     rb_define_method(tm, "utc?", time_utc_p, 0);
     rb_define_method(tm, "gmt?", time_utc_p, 0);
     rb_define_method(tm, "to_s", time_to_s, 0);
-    rb_define_method(tm, "inspect", time_to_s, 0);
+    rb_define_method(tm, "inspect", time_inspect, 0);
     rb_define_method(tm, "to_a", time_to_a, 0);
     rb_define_method(tm, "tv_sec", time_to_i, 0);
     rb_define_method(tm, "tv_usec", time_usec, 0);
@@ -5378,7 +5686,7 @@ Init_tm(VALUE outer, const char *name)
 #endif
     rb_define_method(tm, "initialize", tm_initialize, -1);
     rb_define_method(tm, "utc", tm_to_time, 0);
-    rb_alias(tm, rb_intern("to_time"), rb_intern("utc"));
+    rb_alias(tm, rb_intern_const("to_time"), rb_intern_const("utc"));
     rb_define_singleton_method(tm, "from_time", tm_from_time, 1);
     /* :startdoc:*/
 
@@ -5411,22 +5719,26 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
     if (abbr != Qundef) {
         goto found;
     }
-    abbr = rb_check_funcall_default(zone, rb_intern("name"), 0, 0, Qnil);
+    abbr = rb_check_funcall_default(zone, idName, 0, 0, Qnil);
   found:
     return rb_obj_as_string(abbr);
 }
 
 /*
  *  Time is an abstraction of dates and times. Time is stored internally as
- *  the number of seconds with fraction since the _Epoch_, January 1, 1970
- *  00:00 UTC. Also see the library module Date. The Time class treats GMT
+ *  the number of seconds with subsecond since the _Epoch_,
+ *  1970-01-01 00:00:00 UTC.
+ *
+ *  The Time class treats GMT
  *  (Greenwich Mean Time) and UTC (Coordinated Universal Time) as equivalent.
  *  GMT is the older way of referring to these baseline times but persists in
  *  the names of calls on POSIX systems.
  *
- *  All times may have fraction. Be aware of this fact when comparing times
+ *  All times may have subsecond. Be aware of this fact when comparing times
  *  with each other -- times that are apparently equal when displayed may be
  *  different when compared.
+ *  (Since Ruby 2.7.0, Time#inspect shows subsecond but
+ *  Time#to_s still doesn't show subsecond.)
  *
  *  Since Ruby 1.9.2, Time implementation uses a signed 63 bit integer,
  *  Bignum or Rational.
@@ -5441,9 +5753,9 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
  *
  *  == Creating a new Time instance
  *
- *  You can create a new instance of Time with Time::new. This will use the
- *  current system time. Time::now is an alias for this. You can also
- *  pass parts of the time to Time::new such as year, month, minute, etc. When
+ *  You can create a new instance of Time with Time.new. This will use the
+ *  current system time. Time.now is an alias for this. You can also
+ *  pass parts of the time to Time.new such as year, month, minute, etc. When
  *  you want to construct a time this way you must pass at least a year. If you
  *  pass the year with nothing else time will default to January 1 of that year
  *  at 00:00:00 with the current system timezone. Here are some examples:
@@ -5461,13 +5773,13 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
  *    tz = timezone("Europe/Athens") # Eastern European Time, UTC+2
  *    Time.new(2002, 10, 31, 2, 2, 2, tz) #=> 2002-10-31 02:02:02 +0200
  *
- *  You can also use Time::gm, Time::local and Time::utc to infer GMT,
+ *  You can also use Time.local and Time.utc to infer
  *  local and UTC timezones instead of using the current system
  *  setting.
  *
- *  You can also create a new time using Time::at which takes the number of
- *  seconds (or fraction of seconds) since the {Unix
- *  Epoch}[http://en.wikipedia.org/wiki/Unix_time].
+ *  You can also create a new time using Time.at which takes the number of
+ *  seconds (with subsecond) since the {Unix
+ *  Epoch}[https://en.wikipedia.org/wiki/Unix_time].
  *
  *    Time.at(628232400) #=> 1989-11-28 00:00:00 -0500
  *
@@ -5514,16 +5826,16 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
  *  == Timezone argument
  *
  *  A timezone argument must have +local_to_utc+ and +utc_to_local+
- *  methods, and may have +name+ and +abbr+ methods.
+ *  methods, and may have +name+, +abbr+, and +dst?+ methods.
  *
  *  The +local_to_utc+ method should convert a Time-like object from
  *  the timezone to UTC, and +utc_to_local+ is the opposite.  The
  *  result also should be a Time or Time-like object (not necessary to
  *  be the same class).  The #zone of the result is just ignored.
  *  Time-like argument to these methods is similar to a Time object in
- *  UTC without sub-second; it has attribute readers for the parts,
+ *  UTC without subsecond; it has attribute readers for the parts,
  *  e.g. #year, #month, and so on, and epoch time readers, #to_i.  The
- *  sub-second attributes are fixed as 0, and #utc_offset, #zone,
+ *  subsecond attributes are fixed as 0, and #utc_offset, #zone,
  *  #isdst, and their aliases are same as a Time object in UTC.
  *  Also #to_time, #+, and #- methods are defined.
  *
@@ -5533,51 +5845,52 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
  *
  *  The +abbr+ method is used by '%Z' in #strftime.
  *
+ *  The +dst?+ method is called with a +Time+ value and should return whether
+ *  the +Time+ value is in daylight savings time in the zone.
+ *
  *  === Auto conversion to Timezone
  *
  *  At loading marshaled data, a timezone name will be converted to a timezone
  *  object by +find_timezone+ class method, if the method is defined.
  *
- *  Similary, that class method will be called when a timezone argument does
+ *  Similarly, that class method will be called when a timezone argument does
  *  not have the necessary methods mentioned above.
  */
 
 void
 Init_Time(void)
 {
-#undef rb_intern
-#define rb_intern(str) rb_intern_const(str)
+    id_submicro = rb_intern_const("submicro");
+    id_nano_num = rb_intern_const("nano_num");
+    id_nano_den = rb_intern_const("nano_den");
+    id_offset = rb_intern_const("offset");
+    id_zone = rb_intern_const("zone");
+    id_nanosecond = rb_intern_const("nanosecond");
+    id_microsecond = rb_intern_const("microsecond");
+    id_millisecond = rb_intern_const("millisecond");
+    id_nsec = rb_intern_const("nsec");
+    id_usec = rb_intern_const("usec");
+    id_local_to_utc = rb_intern_const("local_to_utc");
+    id_utc_to_local = rb_intern_const("utc_to_local");
+    id_year = rb_intern_const("year");
+    id_mon = rb_intern_const("mon");
+    id_mday = rb_intern_const("mday");
+    id_hour = rb_intern_const("hour");
+    id_min = rb_intern_const("min");
+    id_sec = rb_intern_const("sec");
+    id_isdst = rb_intern_const("isdst");
+    id_find_timezone = rb_intern_const("find_timezone");
 
-    id_quo = rb_intern("quo");
-    id_div = rb_intern("div");
-    id_divmod = rb_intern("divmod");
-    id_submicro = rb_intern("submicro");
-    id_nano_num = rb_intern("nano_num");
-    id_nano_den = rb_intern("nano_den");
-    id_offset = rb_intern("offset");
-    id_zone = rb_intern("zone");
-    id_nanosecond = rb_intern("nanosecond");
-    id_microsecond = rb_intern("microsecond");
-    id_millisecond = rb_intern("millisecond");
-    id_nsec = rb_intern("nsec");
-    id_usec = rb_intern("usec");
-    id_local_to_utc = rb_intern("local_to_utc");
-    id_utc_to_local = rb_intern("utc_to_local");
-    id_year = rb_intern("year");
-    id_mon = rb_intern("mon");
-    id_mday = rb_intern("mday");
-    id_hour = rb_intern("hour");
-    id_min = rb_intern("min");
-    id_sec = rb_intern("sec");
-    id_isdst = rb_intern("isdst");
-    id_name = rb_intern("name");
-    id_find_timezone = rb_intern("find_timezone");
+    str_utc = rb_fstring_lit("UTC");
+    rb_gc_register_mark_object(str_utc);
+    str_empty = rb_fstring_lit("");
+    rb_gc_register_mark_object(str_empty);
 
     rb_cTime = rb_define_class("Time", rb_cObject);
     rb_include_module(rb_cTime, rb_mComparable);
 
     rb_define_alloc_func(rb_cTime, time_s_alloc);
-    rb_define_singleton_method(rb_cTime, "now", time_s_now, 0);
+    rb_define_singleton_method(rb_cTime, "now", time_s_now, -1);
     rb_define_singleton_method(rb_cTime, "at", time_s_at, -1);
     rb_define_singleton_method(rb_cTime, "utc", time_s_mkutc, -1);
     rb_define_singleton_method(rb_cTime, "gm", time_s_mkutc, -1);
@@ -5603,7 +5916,7 @@ Init_Time(void)
     rb_define_method(rb_cTime, "ctime", time_asctime, 0);
     rb_define_method(rb_cTime, "asctime", time_asctime, 0);
     rb_define_method(rb_cTime, "to_s", time_to_s, 0);
-    rb_define_method(rb_cTime, "inspect", time_to_s, 0);
+    rb_define_method(rb_cTime, "inspect", time_inspect, 0);
     rb_define_method(rb_cTime, "to_a", time_to_a, 0);
 
     rb_define_method(rb_cTime, "+", time_plus, 1);
@@ -5611,6 +5924,8 @@ Init_Time(void)
 
     rb_define_method(rb_cTime, "succ", time_succ, 0);
     rb_define_method(rb_cTime, "round", time_round, -1);
+    rb_define_method(rb_cTime, "floor", time_floor, -1);
+    rb_define_method(rb_cTime, "ceil", time_ceil, -1);
 
     rb_define_method(rb_cTime, "sec", time_sec, 0);
     rb_define_method(rb_cTime, "min", time_min, 0);

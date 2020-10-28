@@ -17,9 +17,9 @@ class TestLazyEnumerator < Test::Unit::TestCase
       @enum.each do |v|
         @current = v
         if v.is_a? Enumerable
-          yield *v
+          yield(*v)
         else
-          yield v
+          yield(v)
         end
       end
     end
@@ -158,6 +158,10 @@ class TestLazyEnumerator < Test::Unit::TestCase
   def test_flat_map_hash
     assert_equal([{?a=>97}, {?b=>98}, {?c=>99}], [?a, ?b, ?c].flat_map {|x| {x=>x.ord}})
     assert_equal([{?a=>97}, {?b=>98}, {?c=>99}], [?a, ?b, ?c].lazy.flat_map {|x| {x=>x.ord}}.force)
+  end
+
+  def test_flat_map_take
+    assert_equal([1,2]*3, [[1,2]].cycle.lazy.take(3).flat_map {|x| x}.to_a)
   end
 
   def test_reject
@@ -452,6 +456,14 @@ class TestLazyEnumerator < Test::Unit::TestCase
 EOS
   end
 
+  def test_lazy_eager
+    lazy = [1, 2, 3].lazy.map { |x| x * 2 }
+    enum = lazy.eager
+    assert_equal Enumerator, enum.class
+    assert_equal 3, enum.size
+    assert_equal [1, 2, 3], enum.map { |x| x / 2 }
+  end
+
   def test_lazy_to_enum
     lazy = [1, 2, 3].lazy
     def lazy.foo(*args)
@@ -464,6 +476,54 @@ EOS
     assert_equal [[:hello, :world], [:hello, :world]], enum.to_a
 
     assert_equal [1, 2, 3], lazy.to_enum.to_a
+  end
+
+  def test_lazy_to_enum_lazy_methods
+    a = [1, 2, 3].to_enum
+    pr = proc{|x| [x, x * 2]}
+    selector = proc{|x| x*2 if x % 2 == 0}
+
+    [
+      [:with_index, nil],
+      [:with_index, 10, nil],
+      [:with_index, 10, pr],
+      [:map, nil],
+      [:map, pr],
+      [:collect, nil],
+      [:flat_map, nil],
+      [:flat_map, pr],
+      [:collect_concat, nil],
+      [:select, nil],
+      [:select, selector],
+      [:find_all, nil],
+      [:filter, nil],
+      [:filter_map, selector],
+      [:filter_map, nil],
+      [:reject, selector],
+      [:grep, selector, nil],
+      [:grep, selector, pr],
+      [:grep_v, selector, nil],
+      [:grep_v, selector, pr],
+      [:zip, a, nil],
+      [:take, 3, nil],
+      [:take_while, nil],
+      [:take_while, selector],
+      [:drop, 1, nil],
+      [:drop_while, nil],
+      [:drop_while, selector],
+      [:uniq, nil],
+      [:uniq, proc{|x| x.odd?}],
+    ].each do |args|
+      block = args.pop
+      assert_equal [1, 2, 3].to_enum.to_enum(*args).first(2).to_a, [1, 2, 3].to_enum.lazy.to_enum(*args).first(2).to_a
+      assert_equal (0..50).to_enum.to_enum(*args).first(2).to_a, (0..50000).to_enum.lazy.to_enum(*args).first(2).to_a
+      if block
+        assert_equal [1, 2, 3, 4].to_enum.to_enum(*args).map(&block).first(2).to_a, [1, 2, 3, 4].to_enum.lazy.to_enum(*args).map(&block).first(2).to_a
+        unless args.first == :take_while || args.first == :drop_while
+          assert_equal (0..50).to_enum.to_enum(*args).map(&block).first(2).to_a, (0..50000).to_enum.lazy.to_enum(*args).map(&block).first(2).to_a
+        end
+      end
+    end
   end
 
   def test_size
@@ -577,5 +637,49 @@ EOS
     end
     assert_equal([1, 2, 3, 4, 5, 10], u.first(6))
     assert_equal([1, 2, 3, 4, 5, 10], u.first(6))
+  end
+
+  def test_filter_map
+    e = (1..Float::INFINITY).lazy.filter_map do |x|
+      raise "too big" if x > 10000
+      (x**2) % 10 if x.even?
+    end
+    assert_equal([4, 6, 6, 4, 0, 4], e.first(6))
+    assert_equal([4, 6, 6, 4, 0, 4], e.first(6))
+  end
+
+  def test_with_index
+    feature7877 = '[ruby-dev:47025] [Feature #7877]'
+    leibniz = ->(n) {
+      (0..Float::INFINITY).lazy.with_index.map {|i, j|
+        raise IndexError, "limit exceeded (#{n})" unless j < n
+        ((-1) ** j) / (2*i+1).to_f
+      }.take(n).reduce(:+)
+    }
+    assert_nothing_raised(IndexError, feature7877) {
+      assert_in_epsilon(Math::PI/4, leibniz[1000])
+    }
+
+    a = []
+    ary = (0..Float::INFINITY).lazy.with_index(2) {|i, j| a << [i-1, j] }.take(2).to_a
+    assert_equal([[-1, 2], [0, 3]], a)
+    assert_equal([0, 1], ary)
+
+    a = []
+    ary = (0..Float::INFINITY).lazy.with_index(2, &->(i,j) { a << [i-1, j] }).take(2).to_a
+    assert_equal([[-1, 2], [0, 3]], a)
+    assert_equal([0, 1], ary)
+
+    ary = (0..Float::INFINITY).lazy.with_index(2).map {|i, j| [i-1, j] }.take(2).to_a
+    assert_equal([[-1, 2], [0, 3]], ary)
+
+    ary = (0..Float::INFINITY).lazy.with_index(2).map(&->(i, j) { [i-1, j] }).take(2).to_a
+    assert_equal([[-1, 2], [0, 3]], ary)
+
+    ary = (0..Float::INFINITY).lazy.with_index(2).take(2).to_a
+    assert_equal([[0, 2], [1, 3]], ary)
+
+    ary = (0..Float::INFINITY).lazy.with_index.take(2).to_a
+    assert_equal([[0, 0], [1, 1]], ary)
   end
 end

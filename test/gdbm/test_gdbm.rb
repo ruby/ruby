@@ -143,7 +143,7 @@ if defined? GDBM
 
     def open_db_child(dbname, *opts)
       opts = [0644, *opts].map(&:inspect).join(', ')
-      args = [EnvUtil.rubybin, "-rgdbm", "-e", <<-SRC, dbname]
+      args = [EnvUtil.rubybin, "-Ilib", "-rgdbm", "-e", <<-SRC, dbname]
       STDOUT.sync = true
       gdbm = GDBM.open(ARGV.shift, #{opts})
       puts gdbm.class

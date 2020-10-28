@@ -11,7 +11,7 @@ describe :queue_enq, shared: true do
   it "is an error for a closed queue" do
     q = @object.call
     q.close
-    lambda {
+    -> {
       q.send @method, Object.new
     }.should raise_error(ClosedQueueError)
   end

@@ -1,0 +1,5 @@
+benchmark:
+  float: "Float(42)"
+  float_true: "Float(42, exception: true)"
+  float_false: "Float(42, exception: false)"
+loop_count: 10000

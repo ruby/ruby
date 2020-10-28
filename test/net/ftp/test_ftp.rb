@@ -530,6 +530,7 @@ class FTPTest < Test::Unit::TestCase
       sock.print("553 Requested action not taken.\r\n")
       commands.push(sock.gets)
       sock.print("200 Switching to Binary mode.\r\n")
+      [host, port]
     }
     begin
       begin
@@ -711,6 +712,7 @@ class FTPTest < Test::Unit::TestCase
       host, port = process_port_or_eprt(sock, line)
       commands.push(sock.gets)
       sock.print("550 Requested action not taken.\r\n")
+      [host, port]
     }
     begin
       begin
@@ -760,6 +762,7 @@ class FTPTest < Test::Unit::TestCase
     begin
       begin
         ftp = Net::FTP.new
+        ftp.read_timeout *= 5 if RubyVM::MJIT.enabled? # for --jit-wait
         ftp.connect(SERVER_ADDR, server.port)
         ftp.login
         assert_match(/\AUSER /, commands.shift)
@@ -804,6 +807,7 @@ class FTPTest < Test::Unit::TestCase
     begin
       begin
         ftp = Net::FTP.new
+        ftp.read_timeout *= 5 if RubyVM::MJIT.enabled? # for --jit-wait
         ftp.connect(SERVER_ADDR, server.port)
         ftp.login
         assert_match(/\AUSER /, commands.shift)
@@ -937,6 +941,7 @@ class FTPTest < Test::Unit::TestCase
       host, port = process_port_or_eprt(sock, line)
       commands.push(sock.gets)
       sock.print("452 Requested file action aborted.\r\n")
+      [host, port]
     }
     begin
       begin
@@ -1527,6 +1532,105 @@ EOF
     end
   end
 
+  def test_features
+    commands = []
+    server = create_ftp_server { |sock|
+      sock.print("220 (test_ftp).\r\n")
+      commands.push(sock.gets)
+      sock.print("211-Features\r\n")
+      sock.print(" LANG EN*\r\n")
+      sock.print(" UTF8\r\n")
+      sock.print("211 End\r\n")
+    }
+    begin
+      begin
+        ftp = Net::FTP.new
+        ftp.read_timeout *= 5 if RubyVM::MJIT.enabled? # for --jit-wait
+        ftp.connect(SERVER_ADDR, server.port)
+        assert_equal(['LANG EN*', 'UTF8'], ftp.features)
+        assert_equal("FEAT\r\n", commands.shift)
+        assert_equal(nil, commands.shift)
+      ensure
+        ftp.close if ftp
+      end
+    ensure
+      server.close
+    end
+  end
+
+  def test_features_not_implemented
+    commands = []
+    server = create_ftp_server { |sock|
+      sock.print("220 (test_ftp).\r\n")
+      commands.push(sock.gets)
+      sock.print("502 Not Implemented\r\n")
+    }
+    begin
+      begin
+        ftp = Net::FTP.new
+        ftp.read_timeout *= 5 if RubyVM::MJIT.enabled? # for --jit-wait
+        ftp.connect(SERVER_ADDR, server.port)
+        assert_raise(Net::FTPPermError) do
+          ftp.features
+        end
+        assert_equal("FEAT\r\n", commands.shift)
+        assert_equal(nil, commands.shift)
+      ensure
+        ftp.close if ftp
+      end
+    ensure
+      server.close
+    end
+
+  end
+
+  def test_option
+    commands = []
+    server = create_ftp_server { |sock|
+      sock.print("220 (test_ftp)\r\n")
+      commands.push(sock.gets)
+      sock.print("200 OPTS UTF8 command successful\r\n")
+    }
+    begin
+      begin
+        ftp = Net::FTP.new
+        ftp.read_timeout *= 5 if RubyVM::MJIT.enabled? # for --jit-wait
+        ftp.connect(SERVER_ADDR, server.port)
+        ftp.option("UTF8", "ON")
+        assert_equal("OPTS UTF8 ON\r\n", commands.shift)
+        assert_equal(nil, commands.shift)
+      ensure
+        ftp.close if ftp
+      end
+    ensure
+      server.close
+    end
+  end
+
+  def test_option_not_implemented
+    commands = []
+    server = create_ftp_server { |sock|
+      sock.print("220 (test_ftp)\r\n")
+      commands.push(sock.gets)
+      sock.print("502 Not implemented\r\n")
+    }
+    begin
+      begin
+        ftp = Net::FTP.new
+        ftp.connect(SERVER_ADDR, server.port)
+        assert_raise(Net::FTPPermError) do
+          ftp.option("UTF8", "ON")
+        end
+        assert_equal("OPTS UTF8 ON\r\n", commands.shift)
+        assert_equal(nil, commands.shift)
+      ensure
+        ftp.close if ftp
+      end
+    ensure
+      server.close
+    end
+  end
+
   def test_mlst
     commands = []
     server = create_ftp_server { |sock|
@@ -1549,6 +1653,7 @@ EOF
     begin
       begin
         ftp = Net::FTP.new
+        ftp.read_timeout *= 5 if RubyVM::MJIT.enabled? # for --jit-wait
         ftp.connect(SERVER_ADDR, server.port)
         entry = ftp.mlst("foo")
         assert_equal("/foo", entry.pathname)
@@ -1635,6 +1740,7 @@ EOF
     begin
       begin
         ftp = Net::FTP.new
+        ftp.read_timeout *= 5 if RubyVM::MJIT.enabled? # for --jit-wait
         ftp.connect(SERVER_ADDR, server.port)
         ftp.login
         assert_match(/\AUSER /, commands.shift)
@@ -1673,6 +1779,7 @@ EOF
 
   def test_parse257
     ftp = Net::FTP.new
+    ftp.read_timeout *= 5 if RubyVM::MJIT.enabled? # for --jit-wait
     assert_equal('/foo/bar',
                  ftp.send(:parse257, '257 "/foo/bar" directory created'))
     assert_equal('/foo/bar"baz',
@@ -1811,6 +1918,7 @@ EOF
                          port: port,
                          ssl: { ca_file: CA_FILE },
                          passive: false)
+      ftp.read_timeout *= 5 if RubyVM::MJIT.enabled? # for --jit-wait
       begin
         assert_equal("AUTH TLS\r\n", commands.shift)
         assert_equal("PBSZ 0\r\n", commands.shift)
@@ -1895,6 +2003,7 @@ EOF
                          port: port,
                          ssl: { ca_file: CA_FILE },
                          passive: true)
+      ftp.read_timeout *= 5 if RubyVM::MJIT.enabled? # for --jit-wait
       begin
         assert_equal("AUTH TLS\r\n", commands.shift)
         assert_equal("PBSZ 0\r\n", commands.shift)
@@ -1970,6 +2079,7 @@ EOF
                          ssl: { ca_file: CA_FILE },
                          private_data_connection: false,
                          passive: false)
+      ftp.read_timeout *= 5 if RubyVM::MJIT.enabled? # for --jit-wait
       begin
         assert_equal("AUTH TLS\r\n", commands.shift)
         ftp.login
@@ -2039,6 +2149,7 @@ EOF
                          ssl: { ca_file: CA_FILE },
                          private_data_connection: false,
                          passive: true)
+      ftp.read_timeout *= 5 if RubyVM::MJIT.enabled? # for --jit-wait
       begin
         assert_equal("AUTH TLS\r\n", commands.shift)
         ftp.login
@@ -2119,6 +2230,7 @@ EOF
         ftp = Net::FTP.new(SERVER_NAME,
                            port: server.port,
                            ssl: { ca_file: CA_FILE })
+        ftp.read_timeout *= 5 if RubyVM::MJIT.enabled? # for --jit-wait
         assert_equal("AUTH TLS\r\n", commands.shift)
         assert_equal("PBSZ 0\r\n", commands.shift)
         assert_equal("PROT P\r\n", commands.shift)
@@ -2171,7 +2283,7 @@ EOF
           begin
             ftp = Net::FTP.new
             ftp.resume = resume
-            ftp.read_timeout = RubyVM::MJIT.enabled? ? 5 : 0.2 # use large timeout for --jit-wait
+            ftp.read_timeout = (defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?) ? 300 : 0.2 # use large timeout for --jit-wait
             ftp.connect(SERVER_ADDR, server.port)
             ftp.login
             assert_match(/\AUSER /, commands.shift)
@@ -2230,6 +2342,7 @@ EOF
       chdir_to_tmpdir do
         begin
           ftp = Net::FTP.new
+          ftp.read_timeout *= 5 if RubyVM::MJIT.enabled? # for --jit-wait
           ftp.connect(SERVER_ADDR, server.port)
           ftp.login
           assert_match(/\AUSER /, commands.shift)
@@ -2280,7 +2393,7 @@ EOF
         File.binwrite("./|echo hello", binary_data)
         begin
           ftp = Net::FTP.new
-          ftp.read_timeout = 0.2
+          ftp.read_timeout = RubyVM::MJIT.enabled? ? 300 : 0.2 # use large timeout for --jit-wait
           ftp.connect(SERVER_ADDR, server.port)
           ftp.login
           assert_match(/\AUSER /, commands.shift)
@@ -2335,6 +2448,7 @@ EOF
         end
         begin
           ftp = Net::FTP.new
+          ftp.read_timeout *= 5 if RubyVM::MJIT.enabled? # for --jit-wait
           ftp.connect(SERVER_ADDR, server.port)
           ftp.login
           assert_match(/\AUSER /, commands.shift)

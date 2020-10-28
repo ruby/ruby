@@ -696,15 +696,6 @@ class TC_Set < Test::Unit::TestCase
     assert_equal(set, ret.flatten)
   end
 
-  def test_taintness
-    orig = set = Set[1,2,3]
-    assert_equal false, set.tainted?
-    assert_same orig, set.taint
-    assert_equal true, set.tainted?
-    assert_same orig, set.untaint
-    assert_equal false, set.tainted?
-  end
-
   def test_freeze
     orig = set = Set[1,2,3]
     assert_equal false, set.frozen?
@@ -737,6 +728,17 @@ class TC_Set < Test::Unit::TestCase
     assert_raise(FrozenError) {
       set2.add 5
     }
+  end
+
+  def test_freeze_clone_false
+    set1 = Set[1,2,3]
+    set1.freeze
+    set2 = set1.clone(freeze: false)
+
+    assert_not_predicate set2, :frozen?
+    set2.add 5
+    assert_equal Set[1,2,3,5], set2
+    assert_equal Set[1,2,3], set1
   end
 
   def test_inspect
@@ -798,6 +800,9 @@ class TC_SortedSet < Test::Unit::TestCase
   def test_sortedset
     s = SortedSet[4,5,3,1,2]
 
+    a = s.to_a
+    assert_equal([1,2,3,4,5], a)
+    a << -1
     assert_equal([1,2,3,4,5], s.to_a)
 
     prev = nil

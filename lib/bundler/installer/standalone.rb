@@ -12,17 +12,16 @@ module Bundler
       end
       File.open File.join(bundler_path, "setup.rb"), "w" do |file|
         file.puts "require 'rbconfig'"
-        file.puts "# ruby 1.8.7 doesn't define RUBY_ENGINE"
-        file.puts "ruby_engine = defined?(RUBY_ENGINE) ? RUBY_ENGINE : 'ruby'"
+        file.puts "ruby_engine = RUBY_ENGINE"
         file.puts "ruby_version = RbConfig::CONFIG[\"ruby_version\"]"
         file.puts "path = File.expand_path('..', __FILE__)"
         paths.each do |path|
-          file.puts %($:.unshift "\#{path}/#{path}")
+          file.puts %($:.unshift File.expand_path("\#{path}/#{path}"))
         end
       end
     end
 
-  private
+    private
 
     def paths
       @specs.map do |spec|

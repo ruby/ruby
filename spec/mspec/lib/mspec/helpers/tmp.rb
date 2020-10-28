@@ -3,11 +3,16 @@
 # should clean up any temporary files created so that the temp
 # directory is empty when the process exits.
 
-SPEC_TEMP_DIR = File.expand_path(ENV["SPEC_TEMP_DIR"] || "rubyspec_temp")
+SPEC_TEMP_DIR_PID = Process.pid
+
+if spec_temp_dir = ENV["SPEC_TEMP_DIR"]
+  spec_temp_dir = File.realdirpath(spec_temp_dir)
+else
+  spec_temp_dir = "#{File.realpath(Dir.pwd)}/rubyspec_temp/#{SPEC_TEMP_DIR_PID}"
+end
+SPEC_TEMP_DIR = spec_temp_dir
 
 SPEC_TEMP_UNIQUIFIER = "0"
-
-SPEC_TEMP_DIR_PID = Process.pid
 
 at_exit do
   begin
@@ -30,8 +35,8 @@ all specs are cleaning up temporary files:
   end
 end
 
-def tmp(name, uniquify=true)
-  Dir.mkdir SPEC_TEMP_DIR unless Dir.exist? SPEC_TEMP_DIR
+def tmp(name, uniquify = true)
+  mkdir_p SPEC_TEMP_DIR unless Dir.exist? SPEC_TEMP_DIR
 
   if uniquify and !name.empty?
     slash = name.rindex "/"

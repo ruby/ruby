@@ -5,6 +5,7 @@ describe 'TracePoint#event' do
   it 'returns the type of event' do
     event_name = nil
     TracePoint.new(:end, :call) do |tp|
+      next unless TracePointSpec.target_thread?
       event_name = tp.event
     end.enable do
       TracePointSpec.test

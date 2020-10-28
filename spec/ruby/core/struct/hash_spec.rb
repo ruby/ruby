@@ -19,6 +19,20 @@ describe "Struct#hash" do
     car.hash.should == similar_car.hash
   end
 
+  it "returns different hashes for structs with different values" do
+    s1 = StructClasses::Ruby.new('2.7.0', 'linux')
+    s2 = StructClasses::Ruby.new('2.7.0', 'macos')
+    s1.hash.should_not == s2.hash
+  end
+
+  it "returns different hashes for structs with different values when using keyword_init: true" do
+    key = :"1 non symbol member"
+    struct_class = Struct.new(key, keyword_init: true)
+    t1 = struct_class.new(key => 1)
+    t2 = struct_class.new(key => 2)
+    t1.hash.should_not == t2.hash
+  end
+
   it "allows for overriding methods in an included module" do
     mod = Module.new do
       def hash

@@ -3596,7 +3596,7 @@ Tue Oct 22 19:19:05 2013  Koichi Sasada  <ko1@atdot.net>
 	    maintains all pages.
 	    For example, pages are allocated from the heap_pages.
 
-	  See https://bugs.ruby-lang.org/projects/ruby-trunk/wiki/GC_design
+	  See https://bugs.ruby-lang.org/projects/ruby-master/wiki/GC_design
 	  and https://bugs.ruby-lang.org/attachments/4015/data-heap_structure_with_multiple_heaps.png
 	  for more details.
 
@@ -8612,7 +8612,7 @@ Wed Jul 17 14:31:13 2013  Koichi Sasada  <ko1@atdot.net>
 	  (4) heap::sorted is an array of "slots", sorted by an address of
 	      slot::body.
 
-	  See https://bugs.ruby-lang.org/projects/ruby-trunk/wiki/GC_design
+	  See https://bugs.ruby-lang.org/projects/ruby-master/wiki/GC_design
 	  for more details (figure).
 
 	* gc.c: Avoid "heaps" terminology. It is ambiguous.

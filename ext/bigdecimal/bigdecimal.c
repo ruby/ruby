@@ -14,6 +14,7 @@
 #include "ruby/util.h"
 
 #ifndef BIGDECIMAL_DEBUG
+# undef NDEBUG
 # define NDEBUG
 #endif
 #include <assert.h>
@@ -123,6 +124,30 @@ rb_rational_den(VALUE rat)
     return RRATIONAL(rat)->den;
 #else
     return rb_funcall(rat, rb_intern("denominator"), 0);
+#endif
+}
+#endif
+
+#ifndef HAVE_RB_COMPLEX_REAL
+static inline VALUE
+rb_complex_real(VALUE cmp)
+{
+#ifdef HAVE_TYPE_STRUCT_RCOMPLEX
+  return RCOMPLEX(cmp)->real;
+#else
+  return rb_funcall(cmp, rb_intern("real"), 0);
+#endif
+}
+#endif
+
+#ifndef HAVE_RB_COMPLEX_IMAG
+static inline VALUE
+rb_complex_imag(VALUE cmp)
+{
+#ifdef HAVE_TYPE_STRUCT_RCOMPLEX
+  return RCOMPLEX(cmp)->imag;
+#else
+  return rb_funcall(cmp, rb_intern("imag"), 0);
 #endif
 }
 #endif
@@ -276,7 +301,6 @@ again:
 #ifdef ENABLE_NUMERIC_STRING
       case T_STRING:
 	StringValueCStr(v);
-	rb_check_safe_obj(v);
 	return VpCreateRbObject(RSTRING_LEN(v) + VpBaseFig() + 1,
 				RSTRING_PTR(v));
 #endif /* ENABLE_NUMERIC_STRING */
@@ -344,8 +368,8 @@ BigDecimal_prec(VALUE self)
     VALUE obj;
 
     GUARD_OBJ(p, GetVpValue(self, 1));
-    obj = rb_assoc_new(INT2NUM(p->Prec*VpBaseFig()),
-		       INT2NUM(p->MaxPrec*VpBaseFig()));
+    obj = rb_assoc_new(SIZET2NUM(p->Prec*VpBaseFig()),
+		       SIZET2NUM(p->MaxPrec*VpBaseFig()));
     return obj;
 }
 
@@ -418,7 +442,6 @@ BigDecimal_load(VALUE self, VALUE str)
     unsigned long m=0;
 
     pch = (unsigned char *)StringValueCStr(str);
-    rb_check_safe_obj(str);
     /* First get max prec */
     while((*pch) != (unsigned char)'\0' && (ch = *pch++) != (unsigned char)':') {
         if(!ISDIGIT(ch)) {
@@ -1756,11 +1779,14 @@ BigDecimal_fix(VALUE self)
  * round(n, mode)
  *
  * Round to the nearest integer (by default), returning the result as a
- * BigDecimal.
+ * BigDecimal if n is specified, or as an Integer if it isn't.
  *
  *	BigDecimal('3.14159').round #=> 3
  *	BigDecimal('8.7').round #=> 9
  *	BigDecimal('-9.9').round #=> -10
+ *
+ *	BigDecimal('3.14159').round(2).class.name #=> "BigDecimal"
+ *	BigDecimal('3.14159').round.class.name #=> "Integer"
  *
  * If n is specified and positive, the fractional part of the result has no
  * more than that many digits.
@@ -2027,7 +2053,6 @@ BigDecimal_to_s(int argc, VALUE *argv, VALUE self)
     if (rb_scan_args(argc, argv, "01", &f) == 1) {
 	if (RB_TYPE_P(f, T_STRING)) {
 	    psz = StringValueCStr(f);
-	    rb_check_safe_obj(f);
 	    if (*psz == ' ') {
 		fPlus = 1;
 		psz++;
@@ -2067,7 +2092,7 @@ BigDecimal_to_s(int argc, VALUE *argv, VALUE self)
 	nc += (nc + mc - 1) / mc + 1;
     }
 
-    str = rb_str_new(0, nc);
+    str = rb_usascii_str_new(0, nc);
     psz = RSTRING_PTR(str);
 
     if (fmt) {
@@ -2132,7 +2157,7 @@ BigDecimal_split(VALUE self)
     rb_ary_push(obj, str);
     rb_str_resize(str, strlen(psz1));
     rb_ary_push(obj, INT2FIX(10));
-    rb_ary_push(obj, INT2NUM(e));
+    rb_ary_push(obj, SSIZET2NUM(e));
     return obj;
 }
 
@@ -2145,7 +2170,7 @@ static VALUE
 BigDecimal_exponent(VALUE self)
 {
     ssize_t e = VpExponent10(GetVpValue(self, 1));
-    return INT2NUM(e);
+    return SSIZET2NUM(e);
 }
 
 /* Returns a string representation of self.
@@ -2560,6 +2585,10 @@ BigDecimal_clone(VALUE self)
   return self;
 }
 
+#ifdef HAVE_RB_OPTS_EXCEPTION_P
+int rb_opts_exception_p(VALUE opts, int default_value);
+#define opts_exception_p(opts) rb_opts_exception_p((opts), 1)
+#else
 static int
 opts_exception_p(VALUE opts)
 {
@@ -2568,12 +2597,20 @@ opts_exception_p(VALUE opts)
     if (!kwds[0]) {
         kwds[0] = rb_intern_const("exception");
     }
-    rb_get_kwargs(opts, kwds, 0, 1, &exception);
+    if (!rb_get_kwargs(opts, kwds, 0, 1, &exception)) return 1;
+    switch (exception) {
+      case Qtrue: case Qfalse:
+        break;
+      default:
+        rb_raise(rb_eArgError, "true or false is expected as exception: %+"PRIsVALUE,
+                 exception);
+    }
     return exception != Qfalse;
 }
+#endif
 
 static Real *
-BigDecimal_new(int argc, VALUE *argv)
+VpNewVarArg(int argc, VALUE *argv)
 {
     size_t mf;
     VALUE  opts = Qnil;
@@ -2616,6 +2653,7 @@ BigDecimal_new(int argc, VALUE *argv)
         }
     }
 
+  retry:
     switch (TYPE(iniValue)) {
       case T_DATA:
 	if (is_kind_of_BigDecimal(iniValue)) {
@@ -2652,6 +2690,18 @@ BigDecimal_new(int argc, VALUE *argv)
 		     RB_OBJ_CLASSNAME(iniValue));
 	}
 	return GetVpValueWithPrec(iniValue, mf, 1);
+
+      case T_COMPLEX:
+        {
+            VALUE im;
+            im = rb_complex_imag(iniValue);
+            if (!is_zero(im)) {
+                rb_raise(rb_eArgError,
+                         "Unable to make a BigDecimal from non-zero imaginary number");
+            }
+            iniValue = rb_complex_real(iniValue);
+            goto retry;
+        }
 
       case T_STRING:
 	/* fall through */
@@ -2710,14 +2760,31 @@ f_BigDecimal(int argc, VALUE *argv, VALUE self)
     Real *pv;
     VALUE obj;
 
+    if (argc > 0 && CLASS_OF(argv[0]) == rb_cBigDecimal) {
+        if (argc == 1 || (argc == 2 && RB_TYPE_P(argv[1], T_HASH))) return argv[0];
+    }
     obj = TypedData_Wrap_Struct(rb_cBigDecimal, &BigDecimal_data_type, 0);
-    pv = BigDecimal_new(argc, argv);
+    pv = VpNewVarArg(argc, argv);
     if (pv == NULL) return Qnil;
     SAVE(pv);
     if (ToValue(pv)) pv = VpCopy(NULL, pv);
     RTYPEDDATA_DATA(obj) = pv;
     RB_OBJ_FREEZE(obj);
     return pv->obj = obj;
+}
+
+static VALUE
+BigDecimal_s_interpret_loosely(VALUE klass, VALUE str)
+{
+    ENTER(1);
+    char const *c_str;
+    Real *pv;
+
+    c_str = StringValueCStr(str);
+    GUARD_OBJ(pv, VpAlloc(0, c_str, 0, 1));
+    pv->obj = TypedData_Wrap_Struct(klass, &BigDecimal_data_type, pv);
+    RB_OBJ_FREEZE(pv->obj);
+    return pv->obj;
 }
 
  /* call-seq:
@@ -2736,7 +2803,7 @@ static VALUE
 BigDecimal_limit(int argc, VALUE *argv, VALUE self)
 {
     VALUE  nFig;
-    VALUE  nCur = INT2NUM(VpGetPrecLimit());
+    VALUE  nCur = SIZET2NUM(VpGetPrecLimit());
 
     if (rb_scan_args(argc, argv, "01", &nFig) == 1) {
 	int nf;
@@ -2939,6 +3006,10 @@ BigMath_s_exp(VALUE klass, VALUE x, VALUE vprec)
     n = prec + rmpd_double_figures();
     negative = BIGDECIMAL_NEGATIVE_P(vx);
     if (negative) {
+        VALUE x_zero = INT2NUM(1);
+        VALUE x_copy = f_BigDecimal(1, &x_zero, klass);
+        x = BigDecimal_initialize_copy(x_copy, x);
+        vx = DATA_PTR(x);
 	VpSetSign(vx, 1);
     }
 
@@ -3140,20 +3211,6 @@ get_vp_value:
     return y;
 }
 
-VALUE
-rmpd_util_str_to_d(VALUE str)
-{
-  ENTER(1);
-  char const *c_str;
-  Real *pv;
-
-  c_str = StringValueCStr(str);
-  GUARD_OBJ(pv, VpAlloc(0, c_str, 0, 1));
-  pv->obj = TypedData_Wrap_Struct(rb_cBigDecimal, &BigDecimal_data_type, pv);
-  RB_OBJ_FREEZE(pv->obj);
-  return pv->obj;
-}
-
 /* Document-class: BigDecimal
  * BigDecimal provides arbitrary-precision floating point decimal arithmetic.
  *
@@ -3300,6 +3357,7 @@ Init_bigdecimal(void)
     /* Class methods */
     rb_undef_method(CLASS_OF(rb_cBigDecimal), "allocate");
     rb_undef_method(CLASS_OF(rb_cBigDecimal), "new");
+    rb_define_singleton_method(rb_cBigDecimal, "interpret_loosely", BigDecimal_s_interpret_loosely, 1);
     rb_define_singleton_method(rb_cBigDecimal, "mode", BigDecimal_mode, -1);
     rb_define_singleton_method(rb_cBigDecimal, "limit", BigDecimal_limit, -1);
     rb_define_singleton_method(rb_cBigDecimal, "double_fig", BigDecimal_double_fig, 0);
@@ -3430,7 +3488,6 @@ Init_bigdecimal(void)
 
 
     /* instance methods */
-    rb_define_method(rb_cBigDecimal, "initialize_copy", BigDecimal_initialize_copy, 1);
     rb_define_method(rb_cBigDecimal, "precs", BigDecimal_prec, 0);
 
     rb_define_method(rb_cBigDecimal, "add", BigDecimal_add2, 2);
@@ -4124,7 +4181,7 @@ VpAlloc(size_t mx, const char *szVal, int strict_p, int exc)
         /* at least mx digits. */
         /* szVal==NULL ==> allocate zero value. */
         vp = VpAllocReal(mx);
-        /* xmalloc() alway returns(or throw interruption) */
+        /* xmalloc() always returns(or throw interruption) */
         vp->MaxPrec = mx;    /* set max precision */
         VpSetZero(vp, 1);    /* initialize vp to zero. */
         return vp;
@@ -4281,7 +4338,7 @@ VpAlloc(size_t mx, const char *szVal, int strict_p, int exc)
 
     psz[i] = '\0';
 
-    if (((ni == 0 || dot_seen) && nf == 0) || (exp_seen && ne == 0)) {
+    if (strict_p && (((ni == 0 || dot_seen) && nf == 0) || (exp_seen && ne == 0))) {
         VALUE str;
       invalid_value:
         if (!strict_p) {
@@ -4300,7 +4357,7 @@ VpAlloc(size_t mx, const char *szVal, int strict_p, int exc)
     nalloc = Max(nalloc, mx);
     mx = nalloc;
     vp = VpAllocReal(mx);
-    /* xmalloc() alway returns(or throw interruption) */
+    /* xmalloc() always returns(or throw interruption) */
     vp->MaxPrec = mx;        /* set max precision */
     VpSetZero(vp, sign);
     VpCtoV(vp, psz, ni, psz + ipf, nf, psz + ipe, ne);

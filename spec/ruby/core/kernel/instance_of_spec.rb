@@ -1,7 +1,7 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
-describe Kernel, "#instance_of?" do
+describe "Kernel#instance_of?" do
   before :each do
     @o = KernelSpecs::InstanceClass.new
   end
@@ -33,8 +33,8 @@ describe Kernel, "#instance_of?" do
   end
 
   it "raises a TypeError if given an object that is not a Class nor a Module" do
-    lambda { @o.instance_of?(Object.new) }.should raise_error(TypeError)
-    lambda { @o.instance_of?('KernelSpecs::InstanceClass') }.should raise_error(TypeError)
-    lambda { @o.instance_of?(1) }.should raise_error(TypeError)
+    -> { @o.instance_of?(Object.new) }.should raise_error(TypeError)
+    -> { @o.instance_of?('KernelSpecs::InstanceClass') }.should raise_error(TypeError)
+    -> { @o.instance_of?(1) }.should raise_error(TypeError)
   end
 end

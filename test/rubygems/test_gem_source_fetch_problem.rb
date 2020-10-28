@@ -2,7 +2,6 @@
 require 'rubygems/test_case'
 
 class TestGemSourceFetchProblem < Gem::TestCase
-
   def test_exception
     source = Gem::Source.new @gem_repo
     error  = RuntimeError.new 'test'

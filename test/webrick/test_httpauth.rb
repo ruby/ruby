@@ -58,6 +58,9 @@ class TestWEBrickHTTPAuth < Test::Unit::TestCase
   end
 
   [nil, :crypt, :bcrypt].each do |hash_algo|
+    # OpenBSD does not support insecure DES-crypt
+    next if /openbsd/ =~ RUBY_PLATFORM && hash_algo != :bcrypt
+
     begin
       case hash_algo
       when :crypt
@@ -215,7 +218,7 @@ class TestWEBrickHTTPAuth < Test::Unit::TestCase
             res["www-authenticate"].scan(DIGESTRES_) do |key, quoted, token|
               params[key.downcase] = token || quoted.delete('\\')
             end
-             params['uri'] = "http://#{addr}:#{port}#{path}"
+            params['uri'] = "http://#{addr}:#{port}#{path}"
           end
 
           g['Authorization'] = credentials_for_request('webrick', "supersecretpassword", params)
@@ -305,6 +308,28 @@ class TestWEBrickHTTPAuth < Test::Unit::TestCase
         end
       }
     }
+  end
+
+  def test_digest_auth_invalid
+    digest_auth = WEBrick::HTTPAuth::DigestAuth.new(Realm: 'realm', UserDB: '')
+
+    def digest_auth.error(fmt, *)
+    end
+
+    def digest_auth.try_bad_request(len)
+      request = {"Authorization" => %[Digest a="#{'\b'*len}]}
+      authenticate request, nil
+    end
+
+    bad_request = WEBrick::HTTPStatus::BadRequest
+    t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    assert_raise(bad_request) {digest_auth.try_bad_request(10)}
+    limit = (Process.clock_gettime(Process::CLOCK_MONOTONIC) - t0)
+    [20, 50, 100, 200].each do |len|
+      assert_raise(bad_request) do
+        Timeout.timeout(len*limit) {digest_auth.try_bad_request(len)}
+      end
+    end
   end
 
   private

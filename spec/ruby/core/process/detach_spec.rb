@@ -23,7 +23,7 @@ describe "Process.detach" do
       it "reaps the child process's status automatically" do
         pid = Process.fork { Process.exit! }
         Process.detach(pid).join
-        lambda { Process.waitpid(pid) }.should raise_error(Errno::ECHILD)
+        -> { Process.waitpid(pid) }.should raise_error(Errno::ECHILD)
       end
     end
 

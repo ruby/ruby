@@ -121,7 +121,7 @@ RSpec.describe "Bundler.require" do
       Bundler.require
     R
 
-    expect(err).to eq_err("ZOMG LOAD ERROR")
+    expect(err_without_deprecations).to eq("ZOMG LOAD ERROR")
   end
 
   it "displays a helpful message if the required gem throws an error" do
@@ -135,7 +135,7 @@ RSpec.describe "Bundler.require" do
       end
     G
 
-    run "Bundler.require"
+    run "Bundler.require", :raise_on_error => false
     expect(err).to match("error while trying to load the gem 'faulty'")
     expect(err).to match("Gem Internal Error Message")
   end
@@ -155,12 +155,12 @@ RSpec.describe "Bundler.require" do
       begin
         Bundler.require
       rescue LoadError => e
-        $stderr.puts "ZOMG LOAD ERROR: \#{e.message}"
+        warn "ZOMG LOAD ERROR: \#{e.message}"
       end
     RUBY
     run(cmd)
 
-    expect(err).to eq_err("ZOMG LOAD ERROR: cannot load such file -- load-bar")
+    expect(err_without_deprecations).to eq("ZOMG LOAD ERROR: cannot load such file -- load-bar")
   end
 
   describe "with namespaced gems" do
@@ -168,7 +168,6 @@ RSpec.describe "Bundler.require" do
       build_lib "jquery-rails", "1.0.0" do |s|
         s.write "lib/jquery/rails.rb", "puts 'jquery/rails'"
       end
-      lib_path("jquery-rails-1.0.0/lib/jquery-rails.rb").rmtree
     end
 
     it "requires gem names that are namespaced" do
@@ -193,12 +192,12 @@ RSpec.describe "Bundler.require" do
       G
 
       cmd = <<-RUBY
-        require 'bundler'
+        require '#{lib_dir}/bundler'
         Bundler.require
       RUBY
       ruby(cmd)
 
-      expect(err).to lack_errors
+      expect(err).to be_empty
     end
 
     it "does not mangle explicitly given requires" do
@@ -211,7 +210,7 @@ RSpec.describe "Bundler.require" do
       load_error_run <<-R, "jquery-rails"
         Bundler.require
       R
-      expect(err).to eq_err("ZOMG LOAD ERROR")
+      expect(err_without_deprecations).to eq("ZOMG LOAD ERROR")
     end
 
     it "handles the case where regex fails" do
@@ -229,19 +228,18 @@ RSpec.describe "Bundler.require" do
         begin
           Bundler.require
         rescue LoadError => e
-          $stderr.puts "ZOMG LOAD ERROR" if e.message.include?("Could not open library 'libfuuu-1.0'")
+          warn "ZOMG LOAD ERROR" if e.message.include?("Could not open library 'libfuuu-1.0'")
         end
       RUBY
       run(cmd)
 
-      expect(err).to eq_err("ZOMG LOAD ERROR")
+      expect(err_without_deprecations).to eq("ZOMG LOAD ERROR")
     end
 
     it "doesn't swallow the error when the library has an unrelated error" do
       build_lib "load-fuuu", "1.0.0" do |s|
         s.write "lib/load/fuuu.rb", "raise LoadError.new(\"cannot load such file -- load-bar\")"
       end
-      lib_path("load-fuuu-1.0.0/lib/load-fuuu.rb").rmtree
 
       gemfile <<-G
         path "#{lib_path}" do
@@ -253,24 +251,24 @@ RSpec.describe "Bundler.require" do
         begin
           Bundler.require
         rescue LoadError => e
-          $stderr.puts "ZOMG LOAD ERROR: \#{e.message}"
+          warn "ZOMG LOAD ERROR: \#{e.message}"
         end
       RUBY
       run(cmd)
 
-      expect(err).to eq_err("ZOMG LOAD ERROR: cannot load such file -- load-bar")
+      expect(err_without_deprecations).to eq("ZOMG LOAD ERROR: cannot load such file -- load-bar")
     end
   end
 
   describe "using bundle exec" do
     it "requires the locked gems" do
-      bundle "exec ruby -e 'Bundler.require'", :env => { :RUBYOPT => "-r#{spec_dir.join("support/hax")}" }
+      bundle "exec ruby -e 'Bundler.require'"
       expect(out).to eq("two")
 
-      bundle "exec ruby -e 'Bundler.require(:bar)'", :env => { :RUBYOPT => "-r#{spec_dir.join("support/hax")}" }
+      bundle "exec ruby -e 'Bundler.require(:bar)'"
       expect(out).to eq("baz\nqux")
 
-      bundle "exec ruby -e 'Bundler.require(:default, :bar)'", :env => { :RUBYOPT => "-r#{spec_dir.join("support/hax")}" }
+      bundle "exec ruby -e 'Bundler.require(:default, :bar)'"
       expect(out).to eq("baz\nqux\ntwo")
     end
   end
@@ -366,18 +364,18 @@ RSpec.describe "Bundler.require" do
         load_error_run <<-R, "no_such_file_omg"
           Bundler.require
         R
-        expect(err).to eq_err("ZOMG LOAD ERROR")
+        expect(err_without_deprecations).to eq("ZOMG LOAD ERROR")
       end
     end
   end
 
-  it "does not load rubygems gemspecs that are used", :rubygems => ">= 2.5.2" do
-    install_gemfile! <<-G
-      source "file://#{gem_repo1}"
+  it "does not load rubygems gemspecs that are used" do
+    install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "rack"
     G
 
-    run! <<-R
+    run <<-R
       path = File.join(Gem.dir, "specifications", "rack-1.0.0.gemspec")
       contents = File.read(path)
       contents = contents.lines.to_a.insert(-2, "\n  raise 'broken gemspec'\n").join
@@ -386,7 +384,7 @@ RSpec.describe "Bundler.require" do
       end
     R
 
-    run! <<-R
+    run <<-R
       Bundler.require
       puts "WIN"
     R
@@ -394,14 +392,14 @@ RSpec.describe "Bundler.require" do
     expect(out).to eq("WIN")
   end
 
-  it "does not load git gemspecs that are used", :rubygems => ">= 2.5.2" do
+  it "does not load git gemspecs that are used" do
     build_git "foo"
 
-    install_gemfile! <<-G
+    install_gemfile <<-G
       gem "foo", :git => "#{lib_path("foo-1.0")}"
     G
 
-    run! <<-R
+    run <<-R
       path = Gem.loaded_specs["foo"].loaded_from
       contents = File.read(path)
       contents = contents.lines.to_a.insert(-2, "\n  raise 'broken gemspec'\n").join
@@ -410,7 +408,7 @@ RSpec.describe "Bundler.require" do
       end
     R
 
-    run! <<-R
+    run <<-R
       Bundler.require
       puts "WIN"
     R
@@ -422,22 +420,24 @@ end
 RSpec.describe "Bundler.require with platform specific dependencies" do
   it "does not require the gems that are pinned to other platforms" do
     install_gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
 
       platforms :#{not_local_tag} do
-        gem "fail", :require => "omgomg"
+        gem "platform_specific", :require => "omgomg"
       end
 
       gem "rack", "1.0.0"
     G
 
     run "Bundler.require"
-    expect(err).to lack_errors
+    expect(err).to be_empty
   end
 
   it "requires gems pinned to multiple platforms, including the current one" do
+    skip "platform issues" if Gem.win_platform?
+
     install_gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
 
       platforms :#{not_local_tag}, :#{local_tag} do
         gem "rack", :require => "rack"
@@ -447,6 +447,6 @@ RSpec.describe "Bundler.require with platform specific dependencies" do
     run "Bundler.require; puts RACK"
 
     expect(out).to eq("1.0.0")
-    expect(err).to lack_errors
+    expect(err).to be_empty
   end
 end

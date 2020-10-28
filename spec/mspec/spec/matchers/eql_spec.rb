@@ -22,12 +22,12 @@ describe EqlMatcher do
   it "provides a useful failure message" do
     matcher = EqlMatcher.new("red")
     matcher.matches?("red")
-    matcher.failure_message.should == ["Expected \"red\"\n", "to have same value and type as \"red\"\n"]
+    matcher.failure_message.should == ["Expected \"red\"", "to have same value and type as \"red\""]
   end
 
   it "provides a useful negative failure message" do
     matcher = EqlMatcher.new(1)
     matcher.matches?(1.0)
-    matcher.negative_failure_message.should == ["Expected 1.0\n", "not to have same value or type as 1\n"]
+    matcher.negative_failure_message.should == ["Expected 1.0", "not to have same value or type as 1"]
   end
 end

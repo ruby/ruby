@@ -119,7 +119,19 @@ class HTTPHeaderTest < Test::Unit::TestCase
   class D; include Net::HTTPHeader; end
 
   def test_nil_variable_header
-    assert_nothing_raised { D.new.initialize_http_header({Authorization: nil}) }
+    assert_nothing_raised do
+      assert_warning("#{__FILE__}:#{__LINE__+1}: warning: net/http: nil HTTP header: Authorization\n") do
+        D.new.initialize_http_header({Authorization: nil})
+      end
+    end
+  end
+
+  def test_duplicated_variable_header
+    assert_nothing_raised do
+      assert_warning("#{__FILE__}:#{__LINE__+1}: warning: net/http: duplicated HTTP header: Authorization\n") do
+        D.new.initialize_http_header({"AUTHORIZATION": "yes", "Authorization": "no"})
+      end
+    end
   end
 
   def test_delete

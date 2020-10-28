@@ -1,0 +1,15 @@
+---
+- test/core_ext/name_error_extension_test.rb
+- test/edit_distance/jaro_winkler_test.rb
+- test/fixtures/book.rb
+- test/spell_checker_test.rb
+- test/spell_checking/class_name_check_test.rb
+- test/spell_checking/key_name_check_test.rb
+- test/spell_checking/method_name_check_test.rb
+- test/spell_checking/uncorrectable_name_check_test.rb
+- test/spell_checking/variable_name_check_test.rb
+- test/test_helper.rb
+- test/tree_spell_checker_test.rb
+- test/tree_spell_explore_test.rb
+- test/tree_spell_human_typo_test.rb
+- test/verbose_formatter_test.rb

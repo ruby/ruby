@@ -35,7 +35,7 @@ describe "Kernel#binding" do
   end
 
   it "raises a NameError on undefined variable" do
-    lambda { eval("a_fake_variable", @b1) }.should raise_error(NameError)
+    -> { eval("a_fake_variable", @b1) }.should raise_error(NameError)
   end
 
   it "uses the closure's self as self in the binding" do

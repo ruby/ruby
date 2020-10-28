@@ -14,7 +14,7 @@ describe "File.ctime" do
     File.ctime(@file).should be_kind_of(Time)
   end
 
-  guard -> { platform_is :linux or (platform_is :windows and ruby_version_is '2.5') } do
+  platform_is :linux, :windows do
     it "returns the change time for the named file (the time at which directory information about the file was changed, not the file itself) with microseconds." do
       supports_subseconds = Integer(`stat -c%z '#{__FILE__}'`[/\.(\d+)/, 1], 10)
       if supports_subseconds != 0
@@ -30,7 +30,7 @@ describe "File.ctime" do
   end
 
   it "raises an Errno::ENOENT exception if the file is not found" do
-    lambda { File.ctime('bogus') }.should raise_error(Errno::ENOENT)
+    -> { File.ctime('bogus') }.should raise_error(Errno::ENOENT)
   end
 end
 

@@ -49,23 +49,31 @@ class Bundler::Thor
 
       formatted ||= "".dup
 
-      # Add usage with required arguments
-      formatted << if klass && !klass.arguments.empty?
-                     usage.to_s.gsub(/^#{name}/) do |match|
-                       match << " " << klass.arguments.map(&:usage).compact.join(" ")
-                     end
-                   else
-                     usage.to_s
-                   end
+      Array(usage).map do |specific_usage|
+        formatted_specific_usage = formatted
 
-      # Add required options
-      formatted << " #{required_options}"
+        formatted_specific_usage += required_arguments_for(klass, specific_usage)
 
-      # Strip and go!
-      formatted.strip
+        # Add required options
+        formatted_specific_usage += " #{required_options}"
+
+        # Strip and go!
+        formatted_specific_usage.strip
+      end.join("\n")
     end
 
   protected
+
+    # Add usage with required arguments
+    def required_arguments_for(klass, usage)
+      if klass && !klass.arguments.empty?
+        usage.to_s.gsub(/^#{name}/) do |match|
+          match << " " << klass.arguments.map(&:usage).compact.join(" ")
+        end
+      else
+        usage.to_s
+      end
+    end
 
     def not_debugging?(instance)
       !(instance.class.respond_to?(:debugging) && instance.class.debugging)
@@ -97,8 +105,7 @@ class Bundler::Thor
     def handle_argument_error?(instance, error, caller)
       not_debugging?(instance) && (error.message =~ /wrong number of arguments/ || error.message =~ /given \d*, expected \d*/) && begin
         saned = sans_backtrace(error.backtrace, caller)
-        # Ruby 1.9 always include the called method in the backtrace
-        saned.empty? || (saned.size == 1 && RUBY_VERSION >= "1.9")
+        saned.empty? || saned.size == 1
       end
     end
 

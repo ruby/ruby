@@ -32,9 +32,11 @@ describe "Hash#reject" do
       HashSpecs::MyHash[1 => 2, 3 => 4].reject { true }.should be_kind_of(Hash)
     end
 
-    it "does not taint the resulting hash" do
-      h = { a: 1 }.taint
-      h.reject {false}.tainted?.should == false
+    ruby_version_is ''...'2.7' do
+      it "does not taint the resulting hash" do
+        h = { a: 1 }.taint
+        h.reject {false}.should_not.tainted?
+      end
     end
   end
 
@@ -87,12 +89,12 @@ describe "Hash#reject!" do
     reject_bang_pairs.should == delete_if_pairs
   end
 
-  it "raises a #{frozen_error_class} if called on a frozen instance that is modified" do
-    lambda { HashSpecs.empty_frozen_hash.reject! { true } }.should raise_error(frozen_error_class)
+  it "raises a FrozenError if called on a frozen instance that is modified" do
+    -> { HashSpecs.empty_frozen_hash.reject! { true } }.should raise_error(FrozenError)
   end
 
-  it "raises a #{frozen_error_class} if called on a frozen instance that would not be modified" do
-    lambda { HashSpecs.frozen_hash.reject! { false } }.should raise_error(frozen_error_class)
+  it "raises a FrozenError if called on a frozen instance that would not be modified" do
+    -> { HashSpecs.frozen_hash.reject! { false } }.should raise_error(FrozenError)
   end
 
   it_behaves_like :hash_iteration_no_block, :reject!

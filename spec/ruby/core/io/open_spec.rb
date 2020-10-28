@@ -38,7 +38,7 @@ describe "IO.open" do
   end
 
   it "propagates an exception raised by #close that is not a StandardError" do
-    lambda do
+    -> do
       IO.open(@fd, "w") do |io|
         IOSpecs.io_mock(io, :close) do
           super()
@@ -51,7 +51,7 @@ describe "IO.open" do
   end
 
   it "propagates an exception raised by #close that is a StandardError" do
-    lambda do
+    -> do
       IO.open(@fd, "w") do |io|
         IOSpecs.io_mock(io, :close) do
           super()

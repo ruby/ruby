@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require_relative "utils"
 
 if defined?(OpenSSL)
@@ -66,22 +66,22 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
     ee1_cert = issue_cert(@ee1, @dsa256, 10, ee_exts, ca2_cert, @rsa1024)
     ee2_cert = issue_cert(@ee2, @dsa512, 20, ee_exts, ca2_cert, @rsa1024)
     ee3_cert = issue_cert(@ee2, @dsa512, 30,  ee_exts, ca2_cert, @rsa1024,
-                          not_before: now-100, not_after: now-1)
+                          not_before: now-100, not_after: now-50)
     ee4_cert = issue_cert(@ee2, @dsa512, 40, ee_exts, ca2_cert, @rsa1024,
                           not_before: now+1000, not_after: now+2000,)
 
     revoke_info = []
     crl1   = issue_crl(revoke_info, 1, now, now+1800, [],
-                       ca1_cert, @rsa2048, OpenSSL::Digest::SHA1.new)
+                       ca1_cert, @rsa2048, OpenSSL::Digest.new('SHA1'))
     revoke_info = [ [2, now, 1], ]
     crl1_2 = issue_crl(revoke_info, 2, now, now+1800, [],
-                       ca1_cert, @rsa2048, OpenSSL::Digest::SHA1.new)
+                       ca1_cert, @rsa2048, OpenSSL::Digest.new('SHA1'))
     revoke_info = [ [20, now, 1], ]
     crl2   = issue_crl(revoke_info, 1, now, now+1800, [],
-                       ca2_cert, @rsa1024, OpenSSL::Digest::SHA1.new)
+                       ca2_cert, @rsa1024, OpenSSL::Digest.new('SHA1'))
     revoke_info = []
     crl2_2 = issue_crl(revoke_info, 2, now-100, now-1, [],
-                       ca2_cert, @rsa1024, OpenSSL::Digest::SHA1.new)
+                       ca2_cert, @rsa1024, OpenSSL::Digest.new('SHA1'))
 
     assert_equal(true, ca1_cert.verify(ca1_cert.public_key))   # self signed
     assert_equal(true, ca2_cert.verify(ca1_cert.public_key))   # issued by ca1
@@ -128,7 +128,7 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
     assert_equal(@ee2.to_der, chain[0].subject.to_der)
     assert_equal(@ca2.to_der, chain[1].subject.to_der)
     assert_equal(@ca1.to_der, chain[2].subject.to_der)
-    assert_equal(false, store.verify(ee3_cert))
+    assert_equal(false, store.verify(ee3_cert), "now=#{now.inspect} Time.now=#{Time.now.inspect} store=#{store.inspect} ee3_cert=#{ee3_cert.inspect}")
     assert_equal(OpenSSL::X509::V_ERR_CERT_HAS_EXPIRED, store.error)
     assert_match(/expire/i, store.error_string)
     assert_equal(false, store.verify(ee4_cert))
@@ -220,10 +220,10 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
 
     revoke_info = []
     crl1 = issue_crl(revoke_info, 1, now, now+1800, [],
-                     ca1_cert, @rsa2048, OpenSSL::Digest::SHA1.new)
+                     ca1_cert, @rsa2048, OpenSSL::Digest.new('SHA1'))
     revoke_info = [ [2, now, 1], ]
     crl2 = issue_crl(revoke_info, 2, now+1800, now+3600, [],
-                     ca1_cert, @rsa2048, OpenSSL::Digest::SHA1.new)
+                     ca1_cert, @rsa2048, OpenSSL::Digest.new('SHA1'))
     store.add_crl(crl1)
     assert_raise(OpenSSL::X509::StoreError){
       store.add_crl(crl2) # add CRL issued by same CA twice.

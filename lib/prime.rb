@@ -84,7 +84,7 @@ end
 # There are few implementations of generator.
 #
 # [+Prime+::+EratosthenesGenerator+]
-#   Uses eratosthenes' sieve.
+#   Uses Eratosthenes' sieve.
 # [+Prime+::+TrialDivisionGenerator+]
 #   Uses the trial division method.
 # [+Prime+::+Generator23+]
@@ -96,7 +96,7 @@ end
 
 class Prime
 
-  VERSION = "0.1.0"
+  VERSION = "0.1.1"
 
   include Enumerable
   include Singleton
@@ -141,6 +141,19 @@ class Prime
     generator.each(&block)
   end
 
+  # Returns true if +obj+ is an Integer and is prime.  Also returns
+  # true if +obj+ is a Module that is an ancestor of +Prime+.
+  # Otherwise returns false.
+  def include?(obj)
+    case obj
+    when Integer
+      prime?(obj)
+    when Module
+      Module.instance_method(:include?).bind(Prime).call(obj)
+    else
+      false
+    end
+  end
 
   # Returns true if +value+ is a prime number, else returns false.
   #
@@ -161,17 +174,23 @@ class Prime
 
   # Re-composes a prime factorization and returns the product.
   #
+  # For the decomposition:
+  #
+  #   [[p_1, e_1], [p_2, e_2], ..., [p_n, e_n]],
+  #
+  # it returns:
+  #
+  #   p_1**e_1 * p_2**e_2 * ... * p_n**e_n.
+  #
   # == Parameters
-  # +pd+:: Array of pairs of integers. The each internal
-  #        pair consists of a prime number -- a prime factor --
-  #        and a natural number -- an exponent.
+  # +pd+:: Array of pairs of integers.
+  #        Each pair consists of a prime number -- a prime factor --
+  #        and a natural number -- its exponent (multiplicity).
   #
   # == Example
-  # For <tt>[[p_1, e_1], [p_2, e_2], ...., [p_n, e_n]]</tt>, it returns:
+  #   Prime.int_from_prime_division([[3, 2], [5, 1]])  #=> 45
+  #   3**2 * 5                                         #=> 45
   #
-  #   p_1**e_1 * p_2**e_2 * .... * p_n**e_n.
-  #
-  #   Prime.int_from_prime_division([[2,2], [3,1]])  #=> 12
   def int_from_prime_division(pd)
     pd.inject(1){|value, (prime, index)|
       value * prime**index
@@ -180,27 +199,32 @@ class Prime
 
   # Returns the factorization of +value+.
   #
+  # For an arbitrary integer:
+  #
+  #   p_1**e_1 * p_2**e_2 * ... * p_n**e_n,
+  #
+  # prime_division returns an array of pairs of integers:
+  #
+  #   [[p_1, e_1], [p_2, e_2], ..., [p_n, e_n]].
+  #
+  # Each pair consists of a prime number -- a prime factor --
+  # and a natural number -- its exponent (multiplicity).
+  #
   # == Parameters
   # +value+:: An arbitrary integer.
   # +generator+:: Optional. A pseudo-prime generator.
   #               +generator+.succ must return the next
-  #               pseudo-prime number in the ascending
-  #               order. It must generate all prime numbers,
-  #               but may also generate non prime numbers too.
+  #               pseudo-prime number in ascending order.
+  #               It must generate all prime numbers,
+  #               but may also generate non-prime numbers, too.
   #
   # === Exceptions
   # +ZeroDivisionError+:: when +value+ is zero.
   #
   # == Example
-  # For an arbitrary integer:
   #
-  #   n = p_1**e_1 * p_2**e_2 * .... * p_n**e_n,
-  #
-  # prime_division(n) returns:
-  #
-  #   [[p_1, e_1], [p_2, e_2], ...., [p_n, e_n]].
-  #
-  #   Prime.prime_division(12) #=> [[2,2], [3,1]]
+  #   Prime.prime_division(45)  #=> [[3, 2], [5, 1]]
+  #   3**2 * 5                  #=> 45
   #
   def prime_division(value, generator = Prime::Generator23.new)
     raise ZeroDivisionError if value == 0

@@ -5,12 +5,11 @@ require 'webrick'
 begin
   require 'webrick/https'
 rescue LoadError => e
-  raise unless (e.respond_to?(:path) && e.path == 'openssl') ||
-               e.message =~ / -- openssl$/
+  raise unless e.path == 'openssl'
 end
 
 unless defined?(OpenSSL::SSL)
-  warn 'Skipping Gem::Request tests.  openssl not found.'
+  warn 'Skipping Gem::RemoteFetcher tests.  openssl not found.'
 end
 
 require 'rubygems/remote_fetcher'
@@ -32,7 +31,6 @@ require 'minitest/mock'
 # proxy is configured.
 
 class TestGemRemoteFetcher < Gem::TestCase
-
   include Gem::DefaultUserInteraction
 
   SERVER_DATA = <<-EOY.freeze
@@ -53,7 +51,6 @@ gems:
     homepage: http://rake.rubyforge.org
     description: Rake is a Make-like program implemented in Ruby. Tasks and dependencies are specified in standard Ruby syntax.
     autorequire:
-    default_executable: rake
     bindir: bin
     has_rdoc: true
     required_ruby_version: !ruby/object:Gem::Version::Requirement
@@ -79,12 +76,10 @@ gems:
 
   PROXY_DATA = SERVER_DATA.gsub(/0.4.11/, '0.4.2')
 
-  DIR = File.expand_path(File.dirname(__FILE__))
-
   # Generated via:
   #   x = OpenSSL::PKey::DH.new(2048) # wait a while...
   #   x.to_s => pem
-  TEST_KEY_DH2048 =  OpenSSL::PKey::DH.new <<-_end_of_pem_
+  TEST_KEY_DH2048 = OpenSSL::PKey::DH.new <<-_END_OF_PEM_
 -----BEGIN DH PARAMETERS-----
 MIIBCAKCAQEA3Ze2EHSfYkZLUn557torAmjBgPsqzbodaRaGZtgK1gEU+9nNJaFV
 G1JKhmGUiEDyIW7idsBpe4sX/Wqjnp48Lr8IeI/SlEzLdoGpf05iRYXC8Cm9o8aM
@@ -93,7 +88,7 @@ cfmVgoSEAo9YLBpzoji2jHkO7Q5IPt4zxbTdlmmGFLc/GO9q7LGHhC+rcMcNTGsM
 NP0fuvVAIB158VnQ0liHSwcl6+9vE1mL0Jo/qEXQxl0+UdKDjaGfTsn6HIrwTnmJ
 PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 -----END DH PARAMETERS-----
-    _end_of_pem_
+    _END_OF_PEM_
 
   def setup
     @proxies = %w[https_proxy http_proxy HTTP_PROXY http_proxy_user HTTP_PROXY_USER http_proxy_pass HTTP_PROXY_PASS no_proxy NO_PROXY]
@@ -101,23 +96,23 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     @proxies.each {|k| ENV[k] = nil }
 
     super
-    self.class.start_servers
-    self.class.enable_yaml = true
-    self.class.enable_zip = false
+    start_servers
+    self.enable_yaml = true
+    self.enable_zip = false
 
-    base_server_uri = "http://localhost:#{self.class.normal_server_port}"
-    @proxy_uri = "http://localhost:#{self.class.proxy_server_port}"
+    base_server_uri = "http://localhost:#{normal_server_port}"
+    @proxy_uri = "http://localhost:#{proxy_server_port}"
 
     @server_uri = base_server_uri + "/yaml"
     @server_z_uri = base_server_uri + "/yaml.Z"
 
-    # REFACTOR: copied from test_gem_dependency_installer.rb
-    @gems_dir = File.join @tempdir, 'gems'
     @cache_dir = File.join @gemhome, "cache"
-    FileUtils.mkdir @gems_dir
 
     # TODO: why does the remote fetcher need it written to disk?
-    @a1, @a1_gem = util_gem 'a', '1' do |s| s.executables << 'a_bin' end
+    @a1, @a1_gem = util_gem 'a', '1' do |s|
+      s.executables << 'a_bin'
+    end
+
     @a1.loaded_from = File.join(@gemhome, 'specifications', @a1.full_name)
 
     Gem::RemoteFetcher.fetcher = nil
@@ -127,7 +122,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
   def teardown
     @fetcher.close_all
-    self.class.stop_servers
+    stop_servers
     super
     Gem.configuration[:http_proxy] = nil
     @proxies.each_with_index {|k, i| ENV[k] = @old_proxies[i] }
@@ -151,36 +146,22 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     assert_equal proxy_uri, fetcher.instance_variable_get(:@proxy).to_s
   end
 
-  def test_fetch_size_bad_uri
+  def test_fetch_path_bad_uri
     fetcher = Gem::RemoteFetcher.new nil
     @fetcher = fetcher
 
     e = assert_raises ArgumentError do
-      fetcher.fetch_size 'gems.example.com/yaml'
+      @fetcher.fetch_path("gems.example.com/yaml", nil, true)
     end
 
     assert_equal 'uri scheme is invalid: nil', e.message
   end
 
-  def test_fetch_size_socket_error
-    fetcher = Gem::RemoteFetcher.new nil
-    @fetcher = fetcher
-    def fetcher.request(uri, request_class, last_modified = nil)
-      raise SocketError, "oops"
-    end
-
-    uri = 'http://gems.example.com/yaml'
-    e = assert_raises Gem::RemoteFetcher::FetchError do
-      fetcher.fetch_size uri
-    end
-
-    assert_equal "SocketError: oops (#{uri})", e.message
-  end
-
   def test_no_proxy
     use_ui @stub_ui do
       assert_data_from_server @fetcher.fetch_path(@server_uri)
-      assert_equal SERVER_DATA.size, @fetcher.fetch_size(@server_uri)
+      response = @fetcher.fetch_path(@server_uri, nil, true)
+      assert_equal SERVER_DATA.size, response['content-length'].to_i
     end
   end
 
@@ -340,6 +321,8 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       local_path = File.join @tempdir, @a1.file_name
       inst = nil
       FileUtils.chmod 0555, @a1.cache_dir
+      FileUtils.mkdir_p File.join(Gem.user_dir, "cache") rescue nil
+      FileUtils.chmod 0555, File.join(Gem.user_dir, "cache")
 
       Dir.chdir @tempdir do
         inst = Gem::RemoteFetcher.fetcher
@@ -348,6 +331,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       assert_equal(File.join(@tempdir, @a1.file_name),
                    inst.download(@a1, local_path))
     ensure
+      FileUtils.chmod 0755, File.join(Gem.user_dir, "cache")
       FileUtils.chmod 0755, @a1.cache_dir
     end
 
@@ -511,7 +495,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       fetcher.fetch_path url
     end
 
-    assert_match %r|ECONNREFUSED:.*connect\(2\) \(#{Regexp.escape url}\)\z|,
+    assert_match %r{ECONNREFUSED:.*connect\(2\) \(#{Regexp.escape url}\)\z},
                  e.message
     assert_equal url, e.uri
   end
@@ -648,10 +632,11 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     assert_equal "murphy", fetcher.fetch_path(@server_uri)
   end
 
-  def assert_fetch_s3(url)
+  def assert_fetch_s3(url, signature, token=nil, region='us-east-1', instance_profile_json=nil)
     fetcher = Gem::RemoteFetcher.new nil
     @fetcher = fetcher
     $fetched_uri = nil
+    $instance_profile = instance_profile_json
 
     def fetcher.request(uri, request_class, last_modified = nil)
       $fetched_uri = uri
@@ -660,13 +645,21 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       res
     end
 
-    def fetcher.s3_expiration
-      1395098371
+    def fetcher.s3_uri_signer(uri)
+      require 'json'
+      s3_uri_signer = Gem::S3URISigner.new(uri)
+      def s3_uri_signer.ec2_metadata_credentials_json
+        JSON.parse($instance_profile)
+      end
+      # Running sign operation to make sure uri.query is not mutated
+      s3_uri_signer.sign
+      raise "URI query is not empty: #{uri.query}" unless uri.query.nil?
+      s3_uri_signer
     end
 
     data = fetcher.fetch_s3 URI.parse(url)
 
-    assert_equal 'https://my-bucket.s3.amazonaws.com/gems/specs.4.8.gz?AWSAccessKeyId=testuser&Expires=1395098371&Signature=eUTr7NkpZEet%2BJySE%2BfH6qukroI%3D', $fetched_uri.to_s
+    assert_equal "https://my-bucket.s3.#{region}.amazonaws.com/gems/specs.4.8.gz?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=testuser%2F20190624%2F#{region}%2Fs3%2Faws4_request&X-Amz-Date=20190624T050641Z&X-Amz-Expires=86400#{token ? "&X-Amz-Security-Token=" + token : ""}&X-Amz-SignedHeaders=host&X-Amz-Signature=#{signature}", $fetched_uri.to_s
     assert_equal 'success', data
   ensure
     $fetched_uri = nil
@@ -677,14 +670,132 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       'my-bucket' => {:id => 'testuser', :secret => 'testpass'}
     }
     url = 's3://my-bucket/gems/specs.4.8.gz'
-    assert_fetch_s3 url
+    Time.stub :now, Time.at(1561353581) do
+      assert_fetch_s3 url, '20f974027db2f3cd6193565327a7c73457a138efb1a63ea248d185ce6827d41b'
+    end
   ensure
+    Gem.configuration[:s3_source] = nil
+  end
+
+  def test_fetch_s3_config_creds_with_region
+    Gem.configuration[:s3_source] = {
+      'my-bucket' => {:id => 'testuser', :secret => 'testpass', :region => 'us-west-2'}
+    }
+    url = 's3://my-bucket/gems/specs.4.8.gz'
+    Time.stub :now, Time.at(1561353581) do
+      assert_fetch_s3 url, '4afc3010757f1fd143e769f1d1dabd406476a4fc7c120e9884fd02acbb8f26c9', nil, 'us-west-2'
+    end
+  ensure
+    Gem.configuration[:s3_source] = nil
+  end
+
+  def test_fetch_s3_config_creds_with_token
+    Gem.configuration[:s3_source] = {
+      'my-bucket' => {:id => 'testuser', :secret => 'testpass', :security_token => 'testtoken'}
+    }
+    url = 's3://my-bucket/gems/specs.4.8.gz'
+    Time.stub :now, Time.at(1561353581) do
+      assert_fetch_s3 url, '935160a427ef97e7630f799232b8f208c4a4e49aad07d0540572a2ad5fe9f93c', 'testtoken'
+    end
+  ensure
+    Gem.configuration[:s3_source] = nil
+  end
+
+  def test_fetch_s3_env_creds
+    ENV['AWS_ACCESS_KEY_ID'] = 'testuser'
+    ENV['AWS_SECRET_ACCESS_KEY'] = 'testpass'
+    ENV['AWS_SESSION_TOKEN'] = nil
+    Gem.configuration[:s3_source] = {
+      'my-bucket' => {:provider => 'env'}
+    }
+    url = 's3://my-bucket/gems/specs.4.8.gz'
+    Time.stub :now, Time.at(1561353581) do
+      assert_fetch_s3 url, '20f974027db2f3cd6193565327a7c73457a138efb1a63ea248d185ce6827d41b'
+    end
+  ensure
+    ENV.each_key {|key| ENV.delete(key) if key.start_with?('AWS') }
+    Gem.configuration[:s3_source] = nil
+  end
+
+  def test_fetch_s3_env_creds_with_region
+    ENV['AWS_ACCESS_KEY_ID'] = 'testuser'
+    ENV['AWS_SECRET_ACCESS_KEY'] = 'testpass'
+    ENV['AWS_SESSION_TOKEN'] = nil
+    Gem.configuration[:s3_source] = {
+      'my-bucket' => {:provider => 'env', :region => 'us-west-2'}
+    }
+    url = 's3://my-bucket/gems/specs.4.8.gz'
+    Time.stub :now, Time.at(1561353581) do
+      assert_fetch_s3 url, '4afc3010757f1fd143e769f1d1dabd406476a4fc7c120e9884fd02acbb8f26c9', nil, 'us-west-2'
+    end
+  ensure
+    ENV.each_key {|key| ENV.delete(key) if key.start_with?('AWS') }
+    Gem.configuration[:s3_source] = nil
+  end
+
+  def test_fetch_s3_env_creds_with_token
+    ENV['AWS_ACCESS_KEY_ID'] = 'testuser'
+    ENV['AWS_SECRET_ACCESS_KEY'] = 'testpass'
+    ENV['AWS_SESSION_TOKEN'] = 'testtoken'
+    Gem.configuration[:s3_source] = {
+      'my-bucket' => {:provider => 'env'}
+    }
+    url = 's3://my-bucket/gems/specs.4.8.gz'
+    Time.stub :now, Time.at(1561353581) do
+      assert_fetch_s3 url, '935160a427ef97e7630f799232b8f208c4a4e49aad07d0540572a2ad5fe9f93c', 'testtoken'
+    end
+  ensure
+    ENV.each_key {|key| ENV.delete(key) if key.start_with?('AWS') }
     Gem.configuration[:s3_source] = nil
   end
 
   def test_fetch_s3_url_creds
     url = 's3://testuser:testpass@my-bucket/gems/specs.4.8.gz'
-    assert_fetch_s3 url
+    Time.stub :now, Time.at(1561353581) do
+      assert_fetch_s3 url, '20f974027db2f3cd6193565327a7c73457a138efb1a63ea248d185ce6827d41b'
+    end
+  end
+
+  def test_fetch_s3_instance_profile_creds
+    Gem.configuration[:s3_source] = {
+      'my-bucket' => {:provider => 'instance_profile'}
+    }
+
+    url = 's3://my-bucket/gems/specs.4.8.gz'
+    Time.stub :now, Time.at(1561353581) do
+      assert_fetch_s3 url, '20f974027db2f3cd6193565327a7c73457a138efb1a63ea248d185ce6827d41b', nil, 'us-east-1',
+                      '{"AccessKeyId": "testuser", "SecretAccessKey": "testpass"}'
+    end
+  ensure
+    Gem.configuration[:s3_source] = nil
+  end
+
+  def test_fetch_s3_instance_profile_creds_with_region
+    Gem.configuration[:s3_source] = {
+      'my-bucket' => {:provider => 'instance_profile', :region => 'us-west-2'}
+    }
+
+    url = 's3://my-bucket/gems/specs.4.8.gz'
+    Time.stub :now, Time.at(1561353581) do
+      assert_fetch_s3 url, '4afc3010757f1fd143e769f1d1dabd406476a4fc7c120e9884fd02acbb8f26c9', nil, 'us-west-2',
+                      '{"AccessKeyId": "testuser", "SecretAccessKey": "testpass"}'
+    end
+  ensure
+    Gem.configuration[:s3_source] = nil
+  end
+
+  def test_fetch_s3_instance_profile_creds_with_token
+    Gem.configuration[:s3_source] = {
+      'my-bucket' => {:provider => 'instance_profile'}
+    }
+
+    url = 's3://my-bucket/gems/specs.4.8.gz'
+    Time.stub :now, Time.at(1561353581) do
+      assert_fetch_s3 url, '935160a427ef97e7630f799232b8f208c4a4e49aad07d0540572a2ad5fe9f93c', 'testtoken', 'us-east-1',
+                      '{"AccessKeyId": "testuser", "SecretAccessKey": "testpass", "Token": "testtoken"}'
+    end
+  ensure
+    Gem.configuration[:s3_source] = nil
   end
 
   def refute_fetch_s3(url, expected_message)
@@ -766,7 +877,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
   def test_yaml_error_on_size
     use_ui @stub_ui do
-      self.class.enable_yaml = false
+      self.enable_yaml = false
       fetcher = Gem::RemoteFetcher.new nil
       @fetcher = fetcher
       assert_error { fetcher.size }
@@ -774,22 +885,20 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   def test_ssl_connection
-    ssl_server = self.class.start_ssl_server
-    temp_ca_cert = File.join(DIR, 'ca_cert.pem')
+    ssl_server = start_ssl_server
+    temp_ca_cert = File.join(__dir__, 'ca_cert.pem')
     with_configured_fetcher(":ssl_ca_cert: #{temp_ca_cert}") do |fetcher|
       fetcher.fetch_path("https://localhost:#{ssl_server.config[:Port]}/yaml")
     end
   end
 
   def test_ssl_client_cert_auth_connection
-    skip 'openssl is missing' unless defined?(OpenSSL::SSL)
-
-    ssl_server = self.class.start_ssl_server({
+    ssl_server = start_ssl_server({
       :SSLVerifyClient =>
-        OpenSSL::SSL::VERIFY_PEER|OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT})
+        OpenSSL::SSL::VERIFY_PEER | OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT})
 
-    temp_ca_cert = File.join(DIR, 'ca_cert.pem')
-    temp_client_cert = File.join(DIR, 'client.pem')
+    temp_ca_cert = File.join(__dir__, 'ca_cert.pem')
+    temp_client_cert = File.join(__dir__, 'client.pem')
 
     with_configured_fetcher(
       ":ssl_ca_cert: #{temp_ca_cert}\n" +
@@ -799,14 +908,12 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   def test_do_not_allow_invalid_client_cert_auth_connection
-    skip 'openssl is missing' unless defined?(OpenSSL::SSL)
-
-    ssl_server = self.class.start_ssl_server({
+    ssl_server = start_ssl_server({
       :SSLVerifyClient =>
-        OpenSSL::SSL::VERIFY_PEER|OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT})
+        OpenSSL::SSL::VERIFY_PEER | OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT})
 
-    temp_ca_cert = File.join(DIR, 'ca_cert.pem')
-    temp_client_cert = File.join(DIR, 'invalid_client.pem')
+    temp_ca_cert = File.join(__dir__, 'ca_cert.pem')
+    temp_client_cert = File.join(__dir__, 'invalid_client.pem')
 
     with_configured_fetcher(
       ":ssl_ca_cert: #{temp_ca_cert}\n" +
@@ -818,7 +925,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   def test_do_not_allow_insecure_ssl_connection_by_default
-    ssl_server = self.class.start_ssl_server
+    ssl_server = start_ssl_server
     with_configured_fetcher do |fetcher|
       assert_raises Gem::RemoteFetcher::FetchError do
         fetcher.fetch_path("https://localhost:#{ssl_server.config[:Port]}/yaml")
@@ -827,15 +934,15 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   def test_ssl_connection_allow_verify_none
-    ssl_server = self.class.start_ssl_server
+    ssl_server = start_ssl_server
     with_configured_fetcher(":ssl_verify_mode: 0") do |fetcher|
       fetcher.fetch_path("https://localhost:#{ssl_server.config[:Port]}/yaml")
     end
   end
 
   def test_do_not_follow_insecure_redirect
-    ssl_server = self.class.start_ssl_server
-    temp_ca_cert = File.join(DIR, 'ca_cert.pem')
+    ssl_server = start_ssl_server
+    temp_ca_cert = File.join(__dir__, 'ca_cert.pem')
     expected_error_message =
       "redirecting to non-https resource: #{@server_uri} (https://localhost:#{ssl_server.config[:Port]}/insecure_redirect?to=#{@server_uri})"
 
@@ -849,7 +956,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   def test_nil_ca_cert
-    ssl_server = self.class.start_ssl_server
+    ssl_server = start_ssl_server
     temp_ca_cert = nil
 
     with_configured_fetcher(":ssl_ca_cert: #{temp_ca_cert}") do |fetcher|
@@ -899,157 +1006,143 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     end
   end
 
-  class << self
-    attr_reader :normal_server, :proxy_server
-    attr_accessor :enable_zip, :enable_yaml
+  private
 
-    def start_servers
-      @normal_server ||= start_server(SERVER_DATA)
-      @proxy_server  ||= start_server(PROXY_DATA)
-      @enable_yaml = true
-      @enable_zip = false
+  attr_reader :normal_server, :proxy_server
+  attr_accessor :enable_zip, :enable_yaml
+
+  def start_servers
+    @normal_server ||= start_server(SERVER_DATA)
+    @proxy_server  ||= start_server(PROXY_DATA)
+    @enable_yaml = true
+    @enable_zip = false
+    @ssl_server = nil
+    @ssl_server_thread = nil
+  end
+
+  def stop_servers
+    if @normal_server
+      @normal_server.kill.join
+      @normal_server = nil
+    end
+    if @proxy_server
+      @proxy_server.kill.join
+      @proxy_server = nil
+    end
+    if @ssl_server
+      @ssl_server.stop
       @ssl_server = nil
+    end
+    if @ssl_server_thread
+      @ssl_server_thread.kill.join
       @ssl_server_thread = nil
     end
-
-    def stop_servers
-      if @normal_server
-        @normal_server.kill.join
-        @normal_server = nil
-      end
-      if @proxy_server
-        @proxy_server.kill.join
-        @proxy_server = nil
-      end
-      if @ssl_server
-        @ssl_server.stop
-        @ssl_server = nil
-      end
-      if @ssl_server_thread
-        @ssl_server_thread.kill.join
-        @ssl_server_thread = nil
-      end
-      utils = WEBrick::Utils    # TimeoutHandler is since 1.9
-      utils::TimeoutHandler.terminate if defined?(utils::TimeoutHandler.terminate)
-    end
-
-    def normal_server_port
-      @normal_server[:server].config[:Port]
-    end
-
-    def proxy_server_port
-      @proxy_server[:server].config[:Port]
-    end
-
-    DIR = File.expand_path(File.dirname(__FILE__))
-
-    def start_ssl_server(config = {})
-      raise MiniTest::Skip, 'openssl not installed' unless
-        defined?(OpenSSL::SSL)
-
-      null_logger = NilLog.new
-      server = WEBrick::HTTPServer.new({
-        :Port => 0,
-        :Logger => null_logger,
-        :AccessLog => [],
-        :SSLEnable => true,
-        :SSLCACertificateFile => File.join(DIR, 'ca_cert.pem'),
-        :SSLCertificate => cert('ssl_cert.pem'),
-        :SSLPrivateKey => key('ssl_key.pem'),
-        :SSLVerifyClient => nil,
-        :SSLCertName => nil
-      }.merge(config))
-      server.mount_proc("/yaml") { |req, res|
-        res.body = "--- true\n"
-      }
-      server.mount_proc("/insecure_redirect") { |req, res|
-        res.set_redirect(WEBrick::HTTPStatus::MovedPermanently, req.query['to'])
-      }
-      server.ssl_context.tmp_dh_callback = proc { TEST_KEY_DH2048 }
-      t = Thread.new do
-        begin
-          server.start
-        rescue Exception => ex
-          abort ex.message
-          puts "ERROR during server thread: #{ex.message}"
-        ensure
-          server.shutdown
-        end
-      end
-      while server.status != :Running
-        sleep 0.1
-        unless t.alive?
-          t.join
-          raise
-        end
-      end
-      @ssl_server = server
-      @ssl_server_thread = t
-      server
-    end
-
-    private
-
-    def start_server(data)
-      null_logger = NilLog.new
-      s = WEBrick::HTTPServer.new(
-        :Port            => 0,
-        :DocumentRoot    => nil,
-        :Logger          => null_logger,
-        :AccessLog       => null_logger
-      )
-      s.mount_proc("/kill") { |req, res| s.shutdown }
-      s.mount_proc("/yaml") { |req, res|
-        if req["X-Captain"]
-          res.body = req["X-Captain"]
-        elsif @enable_yaml
-          res.body = data
-          res['Content-Type'] = 'text/plain'
-          res['content-length'] = data.size
-        else
-          res.status = "404"
-          res.body = "<h1>NOT FOUND</h1>"
-          res['Content-Type'] = 'text/html'
-        end
-      }
-      s.mount_proc("/yaml.Z") { |req, res|
-        if @enable_zip
-          res.body = Zlib::Deflate.deflate(data)
-          res['Content-Type'] = 'text/plain'
-        else
-          res.status = "404"
-          res.body = "<h1>NOT FOUND</h1>"
-          res['Content-Type'] = 'text/html'
-        end
-      }
-      th = Thread.new do
-        begin
-          s.start
-        rescue Exception => ex
-          abort "ERROR during server thread: #{ex.message}"
-        ensure
-          s.shutdown
-        end
-      end
-      th[:server] = s
-      th
-    end
-
-    def cert(filename)
-      OpenSSL::X509::Certificate.new(File.read(File.join(DIR, filename)))
-    end
-
-    def key(filename)
-      OpenSSL::PKey::RSA.new(File.read(File.join(DIR, filename)))
-    end
+    utils = WEBrick::Utils # TimeoutHandler is since 1.9
+    utils::TimeoutHandler.terminate if defined?(utils::TimeoutHandler.terminate)
   end
 
-  def test_correct_for_windows_path
-    path = "/C:/WINDOWS/Temp/gems"
-    assert_equal "C:/WINDOWS/Temp/gems", @fetcher.correct_for_windows_path(path)
-
-    path = "/home/skillet"
-    assert_equal "/home/skillet", @fetcher.correct_for_windows_path(path)
+  def normal_server_port
+    @normal_server[:server].config[:Port]
   end
 
+  def proxy_server_port
+    @proxy_server[:server].config[:Port]
+  end
+
+  def start_ssl_server(config = {})
+    skip "starting this test server fails randomly on jruby" if Gem.java_platform?
+
+    null_logger = NilLog.new
+    server = WEBrick::HTTPServer.new({
+      :Port => 0,
+      :Logger => null_logger,
+      :AccessLog => [],
+      :SSLEnable => true,
+      :SSLCACertificateFile => File.join(__dir__, 'ca_cert.pem'),
+      :SSLCertificate => cert('ssl_cert.pem'),
+      :SSLPrivateKey => key('ssl_key.pem'),
+      :SSLVerifyClient => nil,
+      :SSLCertName => nil
+    }.merge(config))
+    server.mount_proc("/yaml") do |req, res|
+      res.body = "--- true\n"
+    end
+    server.mount_proc("/insecure_redirect") do |req, res|
+      res.set_redirect(WEBrick::HTTPStatus::MovedPermanently, req.query['to'])
+    end
+    server.ssl_context.tmp_dh_callback = proc { TEST_KEY_DH2048 }
+    t = Thread.new do
+      begin
+        server.start
+      rescue Exception => ex
+        puts "ERROR during server thread: #{ex.message}"
+        raise
+      ensure
+        server.shutdown
+      end
+    end
+    while server.status != :Running
+      sleep 0.1
+      unless t.alive?
+        t.join
+        raise
+      end
+    end
+    @ssl_server = server
+    @ssl_server_thread = t
+    server
+  end
+
+  def start_server(data)
+    null_logger = NilLog.new
+    s = WEBrick::HTTPServer.new(
+      :Port            => 0,
+      :DocumentRoot    => nil,
+      :Logger          => null_logger,
+      :AccessLog       => null_logger
+    )
+    s.mount_proc("/kill") {|req, res| s.shutdown }
+    s.mount_proc("/yaml") do |req, res|
+      if req["X-Captain"]
+        res.body = req["X-Captain"]
+      elsif @enable_yaml
+        res.body = data
+        res['Content-Type'] = 'text/plain'
+        res['content-length'] = data.size
+      else
+        res.status = "404"
+        res.body = "<h1>NOT FOUND</h1>"
+        res['Content-Type'] = 'text/html'
+      end
+    end
+    s.mount_proc("/yaml.Z") do |req, res|
+      if @enable_zip
+        res.body = Zlib::Deflate.deflate(data)
+        res['Content-Type'] = 'text/plain'
+      else
+        res.status = "404"
+        res.body = "<h1>NOT FOUND</h1>"
+        res['Content-Type'] = 'text/html'
+      end
+    end
+    th = Thread.new do
+      begin
+        s.start
+      rescue Exception => ex
+        abort "ERROR during server thread: #{ex.message}"
+      ensure
+        s.shutdown
+      end
+    end
+    th[:server] = s
+    th
+  end
+
+  def cert(filename)
+    OpenSSL::X509::Certificate.new(File.read(File.join(__dir__, filename)))
+  end
+
+  def key(filename)
+    OpenSSL::PKey::RSA.new(File.read(File.join(__dir__, filename)))
+  end
 end if defined?(OpenSSL::SSL)

@@ -5,7 +5,6 @@
 # dependency resolution in the resolver is included.
 
 class Gem::Resolver::Specification
-
   ##
   # The dependencies of the gem for this specification
 

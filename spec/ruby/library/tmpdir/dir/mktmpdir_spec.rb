@@ -39,7 +39,7 @@ describe "Dir.mktmpdir when passed a block" do
     Dir.mktmpdir do |path|
       @tmpdir = path
       called = true
-      path.start_with?(@real_tmp_root).should be_true
+      path.should.start_with?(@real_tmp_root)
     end
     called.should be_true
   end
@@ -110,8 +110,8 @@ end
 
 describe "Dir.mktmpdir when passed [Object]" do
   it "raises an ArgumentError" do
-    lambda { Dir.mktmpdir(Object.new) }.should raise_error(ArgumentError)
-    lambda { Dir.mktmpdir(:symbol) }.should raise_error(ArgumentError)
-    lambda { Dir.mktmpdir(10) }.should raise_error(ArgumentError)
+    -> { Dir.mktmpdir(Object.new) }.should raise_error(ArgumentError)
+    -> { Dir.mktmpdir(:symbol) }.should raise_error(ArgumentError)
+    -> { Dir.mktmpdir(10) }.should raise_error(ArgumentError)
   end
 end

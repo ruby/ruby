@@ -1,3 +1,5 @@
+gnumake = yes
+
 include Makefile
 
 ENABLE_SHARED=@ENABLE_SHARED@
@@ -94,13 +96,5 @@ $(RUBYDEF): $(LIBRUBY_A) $(PREP) $(RBCONFIG)
 
 clean-local::
 	@$(RM) $(RUBYDEF)
-
-ifeq (@target_os@,cygwin)
-cygwin-$(RUBY_INSTALL_NAME)$(MAJOR)$(MINOR)0.dll: $(LIBRUBY_A) $(RUBYDEF)
-	$(ECHO) generating $@
-	$(Q) @DLLWRAP@ -s --def=$(RUBYDEF) -o $@
-endif
-
-clean-local::
 	@$(RM) $(RUBY_EXP) $(RCFILES:.rc=.res.@OBJEXT@)
 	@$(RM) $(RCFILES)

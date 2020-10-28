@@ -27,15 +27,15 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
   end
 
   def test_parser
-    assert_match /::Parser\z/, JSON.parser.name
+    assert_match(/::Parser\z/, JSON.parser.name)
   end
 
   def test_generator
-    assert_match /::Generator\z/, JSON.generator.name
+    assert_match(/::Generator\z/, JSON.generator.name)
   end
 
   def test_state
-    assert_match /::Generator::State\z/, JSON.state.name
+    assert_match(/::Generator::State\z/, JSON.state.name)
   end
 
   def test_create_id
@@ -56,7 +56,7 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
   end
 
   def test_parse_bang
-    assert_equal [ 1, NaN, 3, ], JSON.parse!('[ 1, NaN, 3 ]')
+    assert_equal [ 1, Infinity, 3, ], JSON.parse!('[ 1, Infinity, 3 ]')
   end
 
   def test_generate
@@ -122,5 +122,48 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
   def test_JSON
     assert_equal @json, JSON(@hash)
     assert_equal @hash, JSON(@json)
+  end
+
+  def test_load_file
+    test_load_shared(:load_file)
+  end
+
+  def test_load_file!
+    test_load_shared(:load_file!)
+  end
+
+  def test_load_file_with_option
+    test_load_file_with_option_shared(:load_file)
+  end
+
+  def test_load_file_with_option!
+    test_load_file_with_option_shared(:load_file!)
+  end
+
+  private
+
+  def test_load_shared(method_name)
+    temp_file_containing(@json) do |filespec|
+      assert_equal JSON.public_send(method_name, filespec), @hash
+    end
+  end
+
+  def test_load_file_with_option_shared(method_name)
+    temp_file_containing(@json) do |filespec|
+      parsed_object = JSON.public_send(method_name, filespec, symbolize_names: true)
+      key_classes = parsed_object.keys.map(&:class)
+      assert_include(key_classes, Symbol)
+      assert_not_include(key_classes, String)
+    end
+  end
+
+  def temp_file_containing(text, file_prefix = '')
+    raise "This method must be called with a code block." unless block_given?
+
+    Tempfile.create(file_prefix) do |file|
+      file << text
+      file.close
+      yield file.path
+    end
   end
 end

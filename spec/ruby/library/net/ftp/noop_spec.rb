@@ -28,11 +28,11 @@ describe "Net::FTP#noop" do
 
   it "raises a Net::FTPPermError when the response code is 500" do
     @server.should_receive(:noop).and_respond("500 Syntax error, command unrecognized.")
-    lambda { @ftp.noop }.should raise_error(Net::FTPPermError)
+    -> { @ftp.noop }.should raise_error(Net::FTPPermError)
   end
 
   it "raises a Net::FTPTempError when the response code is 421" do
     @server.should_receive(:noop).and_respond("421 Service not available, closing control connection.")
-    lambda { @ftp.noop }.should raise_error(Net::FTPTempError)
+    -> { @ftp.noop }.should raise_error(Net::FTPTempError)
   end
 end

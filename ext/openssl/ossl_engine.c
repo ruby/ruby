@@ -93,9 +93,6 @@ static const rb_data_type_t ossl_engine_type = {
 static VALUE
 ossl_engine_s_load(int argc, VALUE *argv, VALUE klass)
 {
-#if !defined(HAVE_ENGINE_LOAD_BUILTIN_ENGINES)
-    return Qnil;
-#else
     VALUE name;
 
     rb_scan_args(argc, argv, "01", &name);
@@ -104,10 +101,10 @@ ossl_engine_s_load(int argc, VALUE *argv, VALUE klass)
         return Qtrue;
     }
     StringValueCStr(name);
-#ifndef OPENSSL_NO_STATIC_ENGINE
 #if HAVE_ENGINE_LOAD_DYNAMIC
     OSSL_ENGINE_LOAD_IF_MATCH(dynamic, DYNAMIC);
 #endif
+#ifndef OPENSSL_NO_STATIC_ENGINE
 #if HAVE_ENGINE_LOAD_4758CCA
     OSSL_ENGINE_LOAD_IF_MATCH(4758cca, 4758CCA);
 #endif
@@ -144,20 +141,13 @@ ossl_engine_s_load(int argc, VALUE *argv, VALUE klass)
 #if HAVE_ENGINE_LOAD_GOST
     OSSL_ENGINE_LOAD_IF_MATCH(gost, GOST);
 #endif
+#endif
 #if HAVE_ENGINE_LOAD_CRYPTODEV
     OSSL_ENGINE_LOAD_IF_MATCH(cryptodev, CRYPTODEV);
-#endif
-#if HAVE_ENGINE_LOAD_AESNI
-    OSSL_ENGINE_LOAD_IF_MATCH(aesni, AESNI);
-#endif
-#endif
-#ifdef HAVE_ENGINE_LOAD_OPENBSD_DEV_CRYPTO
-    OSSL_ENGINE_LOAD_IF_MATCH(openbsd_dev_crypto, OPENBSD_DEV_CRYPTO);
 #endif
     OSSL_ENGINE_LOAD_IF_MATCH(openssl, OPENSSL);
     rb_warning("no such builtin loader for `%"PRIsVALUE"'", name);
     return Qnil;
-#endif /* HAVE_ENGINE_LOAD_BUILTIN_ENGINES */
 }
 
 /*

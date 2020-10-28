@@ -3,9 +3,11 @@ require 'rubygems/test_case'
 require 'rubygems/commands/push_command'
 
 class TestGemCommandsPushCommand < Gem::TestCase
-
   def setup
     super
+
+    credential_setup
+
     ENV["RUBYGEMS_HOST"] = nil
     Gem.host = Gem::DEFAULT_HOST
     Gem.configuration.disable_default_gem_server = false
@@ -27,7 +29,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
 
     @cmd = Gem::Commands::PushCommand.new
 
-    class << Gem
+    singleton_gem_class.class_eval do
       alias_method :orig_latest_rubygems_version, :latest_rubygems_version
 
       def latest_rubygems_version
@@ -37,9 +39,11 @@ class TestGemCommandsPushCommand < Gem::TestCase
   end
 
   def teardown
+    credential_teardown
+
     super
 
-    class << Gem
+    singleton_gem_class.class_eval do
       remove_method :latest_rubygems_version
       alias_method :latest_rubygems_version, :orig_latest_rubygems_version
     end
@@ -132,7 +136,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     ENV["RUBYGEMS_HOST"] = @host
     Gem.configuration.disable_default_gem_server = true
     @response = "Successfully registered gem: freewill (1.0.0)"
-    @fetcher.data["#{@host}/api/v1/gems"]  = [@response, 200, 'OK']
+    @fetcher.data["#{@host}/api/v1/gems"] = [@response, 200, 'OK']
 
     send_battery
   end
@@ -160,14 +164,14 @@ class TestGemCommandsPushCommand < Gem::TestCase
     FileUtils.rm Gem.configuration.credentials_path
 
     @response = "Successfully registered gem: freebird (1.0.1)"
-    @fetcher.data["#{@host}/api/v1/gems"]  = [@response, 200, 'OK']
+    @fetcher.data["#{@host}/api/v1/gems"] = [@response, 200, 'OK']
 
     send_battery
   end
 
   def test_sending_gem
     @response = "Successfully registered gem: freewill (1.0.0)"
-    @fetcher.data["#{@host}/api/v1/gems"]  = [@response, 200, 'OK']
+    @fetcher.data["#{@host}/api/v1/gems"] = [@response, 200, 'OK']
 
     send_battery
   end
@@ -195,7 +199,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     FileUtils.rm Gem.configuration.credentials_path
 
     @response = "Successfully registered gem: freebird (1.0.1)"
-    @fetcher.data["#{@host}/api/v1/gems"]  = [@response, 200, 'OK']
+    @fetcher.data["#{@host}/api/v1/gems"] = [@response, 200, 'OK']
     send_battery
   end
 
@@ -210,7 +214,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     ENV["GEM_HOST_API_KEY"] = "PRIVKEY"
 
     @response = "Successfully registered gem: freebird (1.0.1)"
-    @fetcher.data["#{@host}/api/v1/gems"]  = [@response, 200, 'OK']
+    @fetcher.data["#{@host}/api/v1/gems"] = [@response, 200, 'OK']
     send_battery
   end
 
@@ -237,7 +241,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     FileUtils.rm Gem.configuration.credentials_path
 
     @response = "Successfully registered gem: freebird (1.0.1)"
-    @fetcher.data["#{@host}/api/v1/gems"]  = [@response, 200, 'OK']
+    @fetcher.data["#{@host}/api/v1/gems"] = [@response, 200, 'OK']
     send_battery
   end
 
@@ -246,8 +250,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
       spec.metadata['allowed_push_host'] = "https://privategemserver.example"
     end
 
-
-    response = %{ERROR:  "#{@host}" is not allowed by the gemspec, which only allows "https://privategemserver.example"}
+    response = %(ERROR:  "#{@host}" is not allowed by the gemspec, which only allows "https://privategemserver.example")
 
     assert_raises Gem::MockGemUi::TermError do
       send_battery
@@ -311,7 +314,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     FileUtils.rm Gem.configuration.credentials_path
 
     @response = "Successfully registered gem: freebird (1.0.1)"
-    @fetcher.data["#{host}/api/v1/gems"]  = [@response, 200, 'OK']
+    @fetcher.data["#{host}/api/v1/gems"] = [@response, 200, 'OK']
 
     # do not set @host
     use_ui(@ui) { @cmd.send_gem(@path) }
@@ -356,7 +359,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     end
     Gem.configuration.load_api_keys
 
-    @cmd.handle_options %w(-k other)
+    @cmd.handle_options %w[-k other]
     @cmd.instance_variable_set :@host, @host
     @cmd.send_gem(@path)
 
@@ -368,10 +371,10 @@ class TestGemCommandsPushCommand < Gem::TestCase
     response_fail = "You have enabled multifactor authentication but your request doesn't have the correct OTP code. Please check it and retry."
     response_success = 'Successfully registered gem: freewill (1.0.0)'
 
-    @fetcher.data["#{Gem.host}/api/v1/gems"] = proc do
-      @call_count ||= 0
-      (@call_count += 1).odd? ? [response_fail, 401, 'Unauthorized'] : [response_success, 200, 'OK']
-    end
+    @fetcher.data["#{Gem.host}/api/v1/gems"] = [
+      [response_fail, 401, 'Unauthorized'],
+      [response_success, 200, 'OK']
+    ]
 
     @otp_ui = Gem::MockGemUi.new "111111\n"
     use_ui @otp_ui do
@@ -401,4 +404,9 @@ class TestGemCommandsPushCommand < Gem::TestCase
     assert_equal '111111', @fetcher.last_request['OTP']
   end
 
+  private
+
+  def singleton_gem_class
+    class << Gem; self; end
+  end
 end

@@ -1,4 +1,4 @@
-# -*- encoding: ascii-8bit -*-
+# -*- encoding: binary -*-
 
 describe :string_unpack_16bit_le, shared: true do
   it "decodes one short for a single format character" do

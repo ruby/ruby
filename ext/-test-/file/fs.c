@@ -89,6 +89,9 @@ get_noatime_p(VALUE self, VALUE str)
        rb_sys_fail_str(str);
     }
 # ifdef HAVE_STRUCT_STATFS_F_FLAGS
+#  ifdef MNT_STRICTATIME
+    if (!(st.f_flags & MNT_STRICTATIME)) return Qtrue;
+#  endif
 #  ifdef MNT_NOATIME
     return st.f_flags & MNT_NOATIME ? Qtrue : Qfalse;
 #  elif defined(ST_NOATIME)

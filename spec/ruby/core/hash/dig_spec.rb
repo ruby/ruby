@@ -28,7 +28,7 @@ describe "Hash#dig" do
   end
 
   it "raises an ArgumentError if no arguments provided" do
-    lambda { { the: 'borg' }.dig() }.should raise_error(ArgumentError)
+    -> { { the: 'borg' }.dig() }.should raise_error(ArgumentError)
   end
 
   it "handles type-mixed deep digging" do
@@ -47,8 +47,8 @@ describe "Hash#dig" do
   it "raises TypeError if an intermediate element does not respond to #dig" do
     h = {}
     h[:foo] = [ { bar: [ 1 ] }, [ nil, 'str' ] ]
-    lambda { h.dig(:foo, 0, :bar, 0, 0) }.should raise_error(TypeError)
-    lambda { h.dig(:foo, 1, 1, 0) }.should raise_error(TypeError)
+    -> { h.dig(:foo, 0, :bar, 0, 0) }.should raise_error(TypeError)
+    -> { h.dig(:foo, 1, 1, 0) }.should raise_error(TypeError)
   end
 
   it "calls #dig on the result of #[] with the remaining arguments" do

@@ -9,7 +9,7 @@ platform_is_not :windows do
     end
   end
 
-  platform_is_not :cygwin do
+  platform_is_not :cygwin, :android do
     as_user do
       describe "Dir.chroot as regular user" do
         before :all do
@@ -21,17 +21,17 @@ platform_is_not :windows do
         end
 
         it "raises an Errno::EPERM exception if the directory exists" do
-          lambda { Dir.chroot('.') }.should raise_error(Errno::EPERM)
+          -> { Dir.chroot('.') }.should raise_error(Errno::EPERM)
         end
 
         it "raises a SystemCallError if the directory doesn't exist" do
-          lambda { Dir.chroot('xgwhwhsjai2222jg') }.should raise_error(SystemCallError)
+          -> { Dir.chroot('xgwhwhsjai2222jg') }.should raise_error(SystemCallError)
         end
 
         it "calls #to_path on non-String argument" do
           p = mock('path')
           p.should_receive(:to_path).and_return('.')
-          lambda { Dir.chroot(p) }.should raise_error(Errno::EPERM)
+          -> { Dir.chroot(p) }.should raise_error(Errno::EPERM)
         end
       end
     end

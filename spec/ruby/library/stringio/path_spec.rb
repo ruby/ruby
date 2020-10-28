@@ -3,6 +3,6 @@ require_relative 'fixtures/classes'
 
 describe "StringIO#path" do
   it "is not defined" do
-    lambda { StringIO.new("path").path }.should raise_error(NoMethodError)
+    -> { StringIO.new("path").path }.should raise_error(NoMethodError)
   end
 end

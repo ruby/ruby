@@ -1,8 +1,6 @@
 #include <ruby.h>
 #include <fiddle.h>
 
-#define SafeStringValueCStr(v) (rb_check_safe_obj(rb_string_value(&v)), StringValueCStr(v))
-
 VALUE rb_cHandle;
 
 struct dl_handle {
@@ -145,11 +143,11 @@ rb_fiddle_handle_initialize(int argc, VALUE argv[], VALUE self)
 	cflag = RTLD_LAZY | RTLD_GLOBAL;
 	break;
       case 1:
-	clib = NIL_P(lib) ? NULL : SafeStringValueCStr(lib);
+	clib = NIL_P(lib) ? NULL : StringValueCStr(lib);
 	cflag = RTLD_LAZY | RTLD_GLOBAL;
 	break;
       case 2:
-	clib = NIL_P(lib) ? NULL : SafeStringValueCStr(lib);
+	clib = NIL_P(lib) ? NULL : StringValueCStr(lib);
 	cflag = NUM2INT(flag);
 	break;
       default:
@@ -319,7 +317,7 @@ fiddle_handle_sym(void *handle, VALUE symbol)
 # define CHECK_DLERROR
 #endif
     void (*func)();
-    const char *name = SafeStringValueCStr(symbol);
+    const char *name = StringValueCStr(symbol);
 
 #ifdef HAVE_DLERROR
     dlerror();

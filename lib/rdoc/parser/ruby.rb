@@ -244,6 +244,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
     comment = RDoc::Encoding.change_encoding comment, @encoding if @encoding
     first_line = true
     first_comment_tk_kind = nil
+    line_no = nil
 
     tk = get_tk
 
@@ -260,6 +261,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
         break if first_comment_tk_kind and not first_comment_tk_kind === tk[:kind]
         first_comment_tk_kind = tk[:kind]
 
+        line_no = tk[:line_no] if first_line
         first_line = false
         comment << comment_body
         tk = get_tk
@@ -273,7 +275,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
     unget_tk tk
 
-    new_comment comment
+    new_comment comment, line_no
   end
 
   ##
@@ -376,7 +378,11 @@ class RDoc::Parser::Ruby < RDoc::Parser
       record_location container
 
       get_tk
-      skip_tkspace_without_nl
+      skip_tkspace
+      if :on_lparen == peek_tk[:kind] # ProcObjectInConstant::()
+        parse_method_or_yield_parameters
+        break
+      end
       name_t = get_tk
       unless :on_const == name_t[:kind] || :on_ident == name_t[:kind]
         raise RDoc::Error, "Invalid class or module definition: #{given_name}"
@@ -666,8 +672,9 @@ class RDoc::Parser::Ruby < RDoc::Parser
   ##
   # Creates a comment with the correct format
 
-  def new_comment comment
-    c = RDoc::Comment.new comment, @top_level
+  def new_comment comment, line_no = nil
+    c = RDoc::Comment.new comment, @top_level, :ruby
+    c.line = line_no
     c.format = @markup
     c
   end
@@ -1058,13 +1065,14 @@ class RDoc::Parser::Ruby < RDoc::Parser
   def parse_comment container, tk, comment
     return parse_comment_tomdoc container, tk, comment if @markup == 'tomdoc'
     column  = tk[:char_no]
-    line_no = tk[:line_no]
+    line_no = comment.line.nil? ? tk[:line_no] : comment.line
 
     comment.text = comment.text.sub(/(^# +:?)(singleton-)(method:)/, '\1\3')
     singleton = !!$~
 
     co =
       if (comment.text = comment.text.sub(/^# +:?method: *(\S*).*?\n/i, '')) && !!$~ then
+        line_no += $`.count("\n")
         parse_comment_ghost container, comment.text, $1, column, line_no, comment
       elsif (comment.text = comment.text.sub(/# +:?(attr(_reader|_writer|_accessor)?): *(\S*).*?\n/i, '')) && !!$~ then
         parse_comment_attr container, $1, $3, comment
@@ -1776,18 +1784,20 @@ class RDoc::Parser::Ruby < RDoc::Parser
             comment = RDoc::Encoding.change_encoding comment, @encoding if @encoding
           end
 
+          line_no = nil
           while tk and (:on_comment == tk[:kind] or :on_embdoc == tk[:kind]) do
             comment_body = retrieve_comment_body(tk)
+            line_no = tk[:line_no] if comment.empty?
             comment += comment_body
-            comment += "\n" unless "\n" == comment_body.chars.to_a.last
+            comment << "\n" unless comment_body =~ /\n\z/
 
-            if comment_body.size > 1 && "\n" == comment_body.chars.to_a.last then
+            if comment_body.size > 1 && comment_body =~ /\n\z/ then
               skip_tkspace_without_nl # leading spaces
             end
             tk = get_tk
           end
 
-          comment = new_comment comment
+          comment = new_comment comment, line_no
 
           unless comment.empty? then
             look_for_directives_in container, comment

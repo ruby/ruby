@@ -20,9 +20,6 @@ Literals create objects you can use in your program.  Literals include:
 +true+ is a true value.  All objects except +nil+ and +false+ evaluate to a
 true value in conditional expressions.
 
-(There are also the constants +TRUE+, +FALSE+ and +NIL+, but the lowercase
-literal forms are preferred.)
-
 == Numbers
 
 You can write integers of any size as follows:
@@ -146,6 +143,10 @@ Double-quote strings allow interpolation of other values using
 Any expression may be placed inside the interpolated section, but it's best to
 keep the expression small for readability.
 
+You can also use <tt>#@foo</tt>, <tt>#@@foo</tt> and <tt>#$foo</tt> as a
+shorthand for, respectively, <tt>#{ @foo }</tt>, <tt>#{ @@foo }</tt> and
+<tt>#{ $foo }</tt>.
+
 Interpolation may be disabled by escaping the "#" character or using
 single-quote strings:
 
@@ -193,7 +194,7 @@ a single codepoint in the script encoding:
   ?\C-\M-a #=> "\x81", same as above
   ?あ      #=> "あ"
 
-=== Here Documents
+=== Here Documents (heredocs)
 
 If you are writing a large block of text you may use a "here document" or
 "heredoc":
@@ -254,6 +255,9 @@ behaves like Kernel#`:
   puts <<-`HEREDOC`
   cat #{__FILE__}
   HEREDOC
+
+When surrounding with quotes, any character but that quote and newline
+(CR and/or LF) can be used as the identifier.
 
 To call a method on a heredoc place it after the opening identifier:
 
@@ -334,6 +338,7 @@ its ending value.
   (1..2)  # includes its ending value
   (1...2) # excludes its ending value
   (1..)   # endless range, representing infinite sequence from 1 to Infinity
+  (..1)   # beginless range, representing infinite sequence from -Infinity to 1
 
 You may create a range of any object.  See the Range documentation for details
 on the methods you need to implement.

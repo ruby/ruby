@@ -24,7 +24,7 @@ module Bundler
           return unless spec
           path = spec.full_gem_path
           unless File.directory?(path)
-            Bundler.ui.warn "The gem #{gem_name} has been deleted. It was installed at:"
+            return Bundler.ui.warn "The gem #{gem_name} has been deleted. It was installed at: #{path}"
           end
         end
         return Bundler.ui.info(path)
@@ -53,7 +53,7 @@ module Bundler
       end
     end
 
-  private
+    private
 
     def fetch_latest_specs
       definition = Bundler.definition(true)

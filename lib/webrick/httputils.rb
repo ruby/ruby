@@ -95,6 +95,7 @@ module WEBrick
       "tif"   => "image/tiff",
       "tiff"  => "image/tiff",
       "txt"   => "text/plain",
+      "wasm"  => "application/wasm",
       "xbm"   => "image/x-xbitmap",
       "xhtml" => "text/html",
       "xls"   => "application/vnd.ms-excel",
@@ -161,10 +162,7 @@ module WEBrick
         end
       }
       header.each{|key, values|
-        values.each{|value|
-          value.strip!
-          value.gsub!(/\s+/, " ")
-        }
+        values.each(&:strip!)
       }
       header
     end

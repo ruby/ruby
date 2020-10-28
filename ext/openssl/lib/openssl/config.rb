@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 =begin
 = Ruby-space definitions that completes C-space funcs for Config
 
@@ -37,7 +37,7 @@ module OpenSSL
       def parse(string)
         c = new()
         parse_config(StringIO.new(string)).each do |section, hash|
-          c[section] = hash
+          c.set_section(section, hash)
         end
         c
       end
@@ -53,9 +53,8 @@ module OpenSSL
       def parse_config(io)
         begin
           parse_config_lines(io)
-        rescue ConfigError => e
-          e.message.replace("error in line #{io.lineno}: " + e.message)
-          raise
+        rescue => error
+          raise ConfigError, "error in line #{io.lineno}: " + error.message
         end
       end
 
@@ -77,29 +76,44 @@ module OpenSSL
       def parse_config_lines(io)
         section = 'default'
         data = {section => {}}
-        while definition = get_definition(io)
+        io_stack = [io]
+        while definition = get_definition(io_stack)
           definition = clear_comments(definition)
           next if definition.empty?
-          if definition[0] == ?[
+          case definition
+          when /\A\[/
             if /\[([^\]]*)\]/ =~ definition
               section = $1.strip
               data[section] ||= {}
             else
               raise ConfigError, "missing close square bracket"
             end
-          else
-            if /\A([^:\s]*)(?:::([^:\s]*))?\s*=(.*)\z/ =~ definition
-              if $2
-                section = $1
-                key = $2
-              else
-                key = $1
-              end
-              value = unescape_value(data, section, $3)
-              (data[section] ||= {})[key] = value.strip
+          when /\A\.include (\s*=\s*)?(.+)\z/
+            path = $2
+            if File.directory?(path)
+              files = Dir.glob(File.join(path, "*.{cnf,conf}"), File::FNM_EXTGLOB)
             else
-              raise ConfigError, "missing equal sign"
+              files = [path]
             end
+
+            files.each do |filename|
+              begin
+                io_stack << StringIO.new(File.read(filename))
+              rescue
+                raise ConfigError, "could not include file '%s'" % filename
+              end
+            end
+          when /\A([^:\s]*)(?:::([^:\s]*))?\s*=(.*)\z/
+            if $2
+              section = $1
+              key = $2
+            else
+              key = $1
+            end
+            value = unescape_value(data, section, $3)
+            (data[section] ||= {})[key] = value.strip
+          else
+            raise ConfigError, "missing equal sign"
           end
         end
         data
@@ -212,10 +226,10 @@ module OpenSSL
         scanned.join
       end
 
-      def get_definition(io)
-        if line = get_line(io)
+      def get_definition(io_stack)
+        if line = get_line(io_stack)
           while /[^\\]\\\z/ =~ line
-            if extra = get_line(io)
+            if extra = get_line(io_stack)
               line += extra
             else
               break
@@ -225,9 +239,12 @@ module OpenSSL
         end
       end
 
-      def get_line(io)
-        if line = io.gets
-          line.gsub(/[\r\n]*/, '')
+      def get_line(io_stack)
+        while io = io_stack.last
+          if line = io.gets
+            return line.gsub(/[\r\n]*/, '')
+          end
+          io_stack.pop
         end
       end
     end
@@ -249,7 +266,7 @@ module OpenSSL
       if filename
         File.open(filename.to_s) do |file|
           Config.parse_config(file).each do |section, hash|
-            self[section] = hash
+            set_section(section, hash)
           end
         end
       end
@@ -298,6 +315,8 @@ module OpenSSL
     end
 
     ##
+    # *Deprecated in v2.2.0*. This method will be removed in a future release.
+    #
     # Set the target _key_ with a given _value_ under a specific _section_.
     #
     # Given the following configurating file being loaded:
@@ -352,6 +371,8 @@ module OpenSSL
     end
 
     ##
+    # *Deprecated in v2.2.0*. This method will be removed in a future release.
+    #
     # Sets a specific _section_ name with a Hash _pairs_.
     #
     # Given the following configuration being created:
@@ -377,9 +398,13 @@ module OpenSSL
     #
     def []=(section, pairs)
       check_modify
-      @data[section] ||= {}
+      set_section(section, pairs)
+    end
+
+    def set_section(section, pairs) # :nodoc:
+      hash = @data[section] ||= {}
       pairs.each do |key, value|
-        self.add_value(section, key, value)
+        hash[key] = value
       end
     end
 
@@ -464,6 +489,8 @@ module OpenSSL
     end
 
     def check_modify
+      warn "#{caller(2, 1)[0]}: warning: do not modify OpenSSL::Config; this " \
+        "method is deprecated and will be removed in a future release."
       raise TypeError.new("Insecure: can't modify OpenSSL config") if frozen?
     end
 

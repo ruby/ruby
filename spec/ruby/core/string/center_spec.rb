@@ -47,12 +47,14 @@ describe "String#center with length, padding" do
     "radiology".center(8, '-').should == "radiology"
   end
 
-  it "taints result when self or padstr is tainted" do
-    "x".taint.center(4).tainted?.should == true
-    "x".taint.center(0).tainted?.should == true
-    "".taint.center(0).tainted?.should == true
-    "x".taint.center(4, "*").tainted?.should == true
-    "x".center(4, "*".taint).tainted?.should == true
+  ruby_version_is ''...'2.7' do
+    it "taints result when self or padstr is tainted" do
+      "x".taint.center(4).should.tainted?
+      "x".taint.center(0).should.tainted?
+      "".taint.center(0).should.tainted?
+      "x".taint.center(4, "*").should.tainted?
+      "x".center(4, "*".taint).should.tainted?
+    end
   end
 
   it "calls #to_int to convert length to an integer" do
@@ -65,10 +67,10 @@ describe "String#center with length, padding" do
   end
 
   it "raises a TypeError when length can't be converted to an integer" do
-    lambda { "hello".center("x")       }.should raise_error(TypeError)
-    lambda { "hello".center("x", "y")  }.should raise_error(TypeError)
-    lambda { "hello".center([])        }.should raise_error(TypeError)
-    lambda { "hello".center(mock('x')) }.should raise_error(TypeError)
+    -> { "hello".center("x")       }.should raise_error(TypeError)
+    -> { "hello".center("x", "y")  }.should raise_error(TypeError)
+    -> { "hello".center([])        }.should raise_error(TypeError)
+    -> { "hello".center(mock('x')) }.should raise_error(TypeError)
   end
 
   it "calls #to_str to convert padstr to a String" do
@@ -79,14 +81,14 @@ describe "String#center with length, padding" do
   end
 
   it "raises a TypeError when padstr can't be converted to a string" do
-    lambda { "hello".center(20, 100)       }.should raise_error(TypeError)
-    lambda { "hello".center(20, [])      }.should raise_error(TypeError)
-    lambda { "hello".center(20, mock('x')) }.should raise_error(TypeError)
+    -> { "hello".center(20, 100)       }.should raise_error(TypeError)
+    -> { "hello".center(20, [])      }.should raise_error(TypeError)
+    -> { "hello".center(20, mock('x')) }.should raise_error(TypeError)
   end
 
   it "raises an ArgumentError if padstr is empty" do
-    lambda { "hello".center(10, "") }.should raise_error(ArgumentError)
-    lambda { "hello".center(0, "")  }.should raise_error(ArgumentError)
+    -> { "hello".center(10, "") }.should raise_error(ArgumentError)
+    -> { "hello".center(0, "")  }.should raise_error(ArgumentError)
   end
 
   it "returns subclass instances when called on subclasses" do
@@ -98,36 +100,36 @@ describe "String#center with length, padding" do
     "foo".center(10, StringSpecs::MyString.new("x")).should be_an_instance_of(String)
   end
 
-  it "when padding is tainted and self is untainted returns a tainted string if and only if length is longer than self" do
-    "hello".center(4, 'X'.taint).tainted?.should be_false
-    "hello".center(5, 'X'.taint).tainted?.should be_false
-    "hello".center(6, 'X'.taint).tainted?.should be_true
+  ruby_version_is ''...'2.7' do
+    it "when padding is tainted and self is untainted returns a tainted string if and only if length is longer than self" do
+      "hello".center(4, 'X'.taint).tainted?.should be_false
+      "hello".center(5, 'X'.taint).tainted?.should be_false
+      "hello".center(6, 'X'.taint).tainted?.should be_true
+    end
   end
 
-  with_feature :encoding do
-    describe "with width" do
-      it "returns a String in the same encoding as the original" do
-        str = "abc".force_encoding Encoding::IBM437
-        result = str.center 6
-        result.should == " abc  "
-        result.encoding.should equal(Encoding::IBM437)
-      end
+  describe "with width" do
+    it "returns a String in the same encoding as the original" do
+      str = "abc".force_encoding Encoding::IBM437
+      result = str.center 6
+      result.should == " abc  "
+      result.encoding.should equal(Encoding::IBM437)
+    end
+  end
+
+  describe "with width, pattern" do
+    it "returns a String in the compatible encoding" do
+      str = "abc".force_encoding Encoding::IBM437
+      result = str.center 6, "あ"
+      result.should == "あabcああ"
+      result.encoding.should equal(Encoding::UTF_8)
     end
 
-    describe "with width, pattern" do
-      it "returns a String in the compatible encoding" do
-        str = "abc".force_encoding Encoding::IBM437
-        result = str.center 6, "あ"
-        result.should == "あabcああ"
-        result.encoding.should equal(Encoding::UTF_8)
-      end
-
-      it "raises an Encoding::CompatibilityError if the encodings are incompatible" do
-        pat = "ア".encode Encoding::EUC_JP
-        lambda do
-          "あれ".center 5, pat
-        end.should raise_error(Encoding::CompatibilityError)
-      end
+    it "raises an Encoding::CompatibilityError if the encodings are incompatible" do
+      pat = "ア".encode Encoding::EUC_JP
+      -> do
+        "あれ".center 5, pat
+      end.should raise_error(Encoding::CompatibilityError)
     end
   end
 end

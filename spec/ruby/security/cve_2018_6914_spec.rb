@@ -1,56 +1,55 @@
 require_relative '../spec_helper'
 
 require 'tempfile'
+require 'tmpdir'
 
 describe "CVE-2018-6914 is resisted by" do
-  before :all do
-    @traversal_path = Array.new(Dir.pwd.split('/').count, '..').join('/') + Dir.pwd + '/'
-    @traversal_path.delete!(':') if /mswin|mingw/ =~ RUBY_PLATFORM
+  before :each do
+    @tmpdir = ENV['TMPDIR']
+    @dir = tmp("CVE-2018-6914")
+    Dir.mkdir(@dir, 0700)
+    ENV['TMPDIR'] = @dir
+    @dir << '/'
+
+    @tempfile = nil
+  end
+
+  after :each do
+    ENV['TMPDIR'] = @tmpdir
+    @tempfile.close! if @tempfile
+    rm_r @dir
   end
 
   it "Tempfile.open by deleting separators" do
-    begin
-      expect = Dir.glob(@traversal_path + '*').count
-      t = Tempfile.open([@traversal_path, 'foo'])
-      actual = Dir.glob(@traversal_path + '*').count
-      actual.should == expect
-    ensure
-      t.close!
-    end
+    @tempfile = Tempfile.open(['../', 'foo'])
+    actual = @tempfile.path
+    File.absolute_path(actual).should.start_with?(@dir)
   end
 
   it "Tempfile.new by deleting separators" do
-    begin
-      expect = Dir.glob(@traversal_path + '*').count
-      t = Tempfile.new(@traversal_path + 'foo')
-      actual = Dir.glob(@traversal_path + '*').count
-      actual.should == expect
-    ensure
-      t.close!
-    end
+    @tempfile = Tempfile.new('../foo')
+    actual = @tempfile.path
+    File.absolute_path(actual).should.start_with?(@dir)
   end
 
   it "Tempfile.create by deleting separators" do
-    expect = Dir.glob(@traversal_path + '*').count
-    Tempfile.create(@traversal_path + 'foo') do
-      actual = Dir.glob(@traversal_path + '*').count
-      actual.should == expect
+    actual = Tempfile.create('../foo') do |t|
+      t.path
     end
+    File.absolute_path(actual).should.start_with?(@dir)
   end
 
   it "Dir.mktmpdir by deleting separators" do
-    expect = Dir.glob(@traversal_path + '*').count
-    Dir.mktmpdir(@traversal_path + 'foo') do
-      actual = Dir.glob(@traversal_path + '*').count
-      actual.should == expect
+    actual = Dir.mktmpdir('../foo') do |path|
+      path
     end
+    File.absolute_path(actual).should.start_with?(@dir)
   end
 
   it "Dir.mktmpdir with an array by deleting separators" do
-    expect = Dir.glob(@traversal_path + '*').count
-    Dir.mktmpdir([@traversal_path, 'foo']) do
-      actual = Dir.glob(@traversal_path + '*').count
-      actual.should == expect
+    actual = Dir.mktmpdir(['../', 'foo']) do |path|
+      path
     end
+    File.absolute_path(actual).should.start_with?(@dir)
   end
 end

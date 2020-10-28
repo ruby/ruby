@@ -5,7 +5,6 @@
 # It combines IndexSet and APISet
 
 class Gem::Resolver::BestSet < Gem::Resolver::ComposedSet
-
   ##
   # Creates a BestSet for the given +sources+ or Gem::sources if none are
   # specified.  +sources+ must be a Gem::SourceList.
@@ -63,9 +62,9 @@ class Gem::Resolver::BestSet < Gem::Resolver::ComposedSet
     uri = URI uri unless URI === uri
     uri.query = nil
 
-    raise error unless api_set = @sets.find { |set|
+    raise error unless api_set = @sets.find do |set|
       Gem::Resolver::APISet === set and set.dep_uri == uri
-    }
+    end
 
     index_set = Gem::Resolver::IndexSet.new api_set.source
 
@@ -74,5 +73,4 @@ class Gem::Resolver::BestSet < Gem::Resolver::ComposedSet
       index_set
     end
   end
-
 end

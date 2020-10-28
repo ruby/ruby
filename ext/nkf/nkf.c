@@ -168,7 +168,6 @@ rb_nkf_convert(VALUE obj, VALUE opt, VALUE src)
     /* use _result_ end */
 
     rb_str_set_len(tmp, output_ctr);
-    OBJ_INFECT(tmp, src);
 
     if (mimeout_f)
 	rb_enc_associate(tmp, rb_usascii_encoding());

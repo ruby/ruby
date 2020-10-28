@@ -75,6 +75,7 @@ class HTTPRequestTest < Test::Unit::TestCase
     assert_equal "example.com", req['Host']
 
     assert_raise(ArgumentError){ Net::HTTP::Get.new(URI("urn:ietf:rfc:7231")) }
+    assert_raise(ArgumentError){ Net::HTTP::Get.new(URI("http://")) }
   end
 
   def test_header_set

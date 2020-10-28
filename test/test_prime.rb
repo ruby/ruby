@@ -27,6 +27,14 @@ class TestPrime < Test::Unit::TestCase
     assert_equal PRIMES, primes
   end
 
+  def test_include?
+    assert_equal(false, Prime.include?(nil))
+    assert_equal(true, Prime.include?(3))
+    assert_equal(false, Prime.include?(4))
+    assert_equal(true, Prime.include?(Enumerable))
+    assert_equal(false, Prime.include?(Comparable))
+  end
+
   def test_integer_each_prime
     primes = []
     Integer.each_prime(1000) do |p|
@@ -74,7 +82,7 @@ class TestPrime < Test::Unit::TestCase
   end
 
   def test_new
-    exception = assert_raise(NoMethodError) { Prime.new }
+    assert_raise(NoMethodError) { Prime.new }
   end
 
   def test_enumerator_succ
@@ -269,6 +277,7 @@ class TestPrime < Test::Unit::TestCase
       end
     ensure
       class << Integer
+        remove_method :sqrt
         alias_method :sqrt, :org_sqrt
         remove_method :org_sqrt
       end

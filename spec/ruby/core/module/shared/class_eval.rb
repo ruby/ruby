@@ -14,7 +14,7 @@ describe :module_class_eval, shared: true do
         'foo'
       end
     end
-    lambda {42.foo}.should raise_error(NoMethodError)
+    -> {42.foo}.should raise_error(NoMethodError)
   end
 
   it "resolves constants in the caller scope" do
@@ -59,7 +59,7 @@ describe :module_class_eval, shared: true do
 
   it "raises a TypeError when the given filename can't be converted to string using to_str" do
     (file = mock('123')).should_receive(:to_str).and_return(123)
-    lambda { ModuleSpecs.send(@method, "1+1", file) }.should raise_error(TypeError)
+    -> { ModuleSpecs.send(@method, "1+1", file) }.should raise_error(TypeError)
   end
 
   it "converts non string eval-string to string using to_str" do
@@ -69,24 +69,24 @@ describe :module_class_eval, shared: true do
 
   it "raises a TypeError when the given eval-string can't be converted to string using to_str" do
     o = mock('x')
-    lambda { ModuleSpecs.send(@method, o) }.should raise_error(TypeError)
+    -> { ModuleSpecs.send(@method, o) }.should raise_error(TypeError)
 
     (o = mock('123')).should_receive(:to_str).and_return(123)
-    lambda { ModuleSpecs.send(@method, o) }.should raise_error(TypeError)
+    -> { ModuleSpecs.send(@method, o) }.should raise_error(TypeError)
   end
 
   it "raises an ArgumentError when no arguments and no block are given" do
-    lambda { ModuleSpecs.send(@method) }.should raise_error(ArgumentError)
+    -> { ModuleSpecs.send(@method) }.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError when more than 3 arguments are given" do
-    lambda {
+    -> {
       ModuleSpecs.send(@method, "1 + 1", "some file", 0, "bogus")
     }.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError when a block and normal arguments are given" do
-    lambda {
+    -> {
       ModuleSpecs.send(@method, "1 + 1") { 1 + 1 }
     }.should raise_error(ArgumentError)
   end
@@ -111,5 +111,49 @@ describe :module_class_eval, shared: true do
 
     a.attribute.should == "A"
     b.attribute.should == "B"
+  end
+
+  it "activates refinements from the eval scope" do
+    refinery = Module.new do
+      refine ModuleSpecs::NamedClass do
+        def foo
+          "bar"
+        end
+      end
+    end
+
+    mid = @method
+    result = nil
+
+    Class.new do
+      using refinery
+
+      result = send(mid, "ModuleSpecs::NamedClass.new.foo")
+    end
+
+    result.should == "bar"
+  end
+
+  it "activates refinements from the eval scope with block" do
+    refinery = Module.new do
+      refine ModuleSpecs::NamedClass do
+        def foo
+          "bar"
+        end
+      end
+    end
+
+    mid = @method
+    result = nil
+
+    Class.new do
+      using refinery
+
+      result = send(mid) do
+        ModuleSpecs::NamedClass.new.foo
+      end
+    end
+
+    result.should == "bar"
   end
 end

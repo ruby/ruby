@@ -40,10 +40,10 @@ describe :kernel_kind_of, shared: true do
   end
 
   it "raises a TypeError if given an object that is not a Class nor a Module" do
-    lambda { @o.send(@method, 1) }.should raise_error(TypeError)
-    lambda { @o.send(@method, 'KindaClass') }.should raise_error(TypeError)
-    lambda { @o.send(@method, :KindaClass) }.should raise_error(TypeError)
-    lambda { @o.send(@method, Object.new) }.should raise_error(TypeError)
+    -> { @o.send(@method, 1) }.should raise_error(TypeError)
+    -> { @o.send(@method, 'KindaClass') }.should raise_error(TypeError)
+    -> { @o.send(@method, :KindaClass) }.should raise_error(TypeError)
+    -> { @o.send(@method, Object.new) }.should raise_error(TypeError)
   end
 
   it "does not take into account `class` method overriding" do

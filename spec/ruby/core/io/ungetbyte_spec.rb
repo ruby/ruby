@@ -43,7 +43,7 @@ describe "IO#ungetbyte" do
     end
 
     it "... but not for Bignum argument (eh?)" do
-      lambda {
+      -> {
         @io.ungetbyte(0x4f7574206f6620636861722072616e6765)
       }.should raise_error(TypeError)
     end
@@ -52,7 +52,7 @@ describe "IO#ungetbyte" do
   ruby_version_is '2.6'...'2.6.1' do
     it "is an RangeError if the integer is not in 8bit" do
       for i in [4095, 0x4f7574206f6620636861722072616e6765] do
-        lambda { @io.ungetbyte(i) }.should raise_error(RangeError)
+        -> { @io.ungetbyte(i) }.should raise_error(RangeError)
       end
     end
   end
@@ -66,8 +66,12 @@ describe "IO#ungetbyte" do
     end
   end
 
+  it "raises IOError on stream not opened for reading" do
+    -> { STDOUT.ungetbyte(42) }.should raise_error(IOError, "not opened for reading")
+  end
+
   it "raises an IOError if the IO is closed" do
     @io.close
-    lambda { @io.ungetbyte(42) }.should raise_error(IOError)
+    -> { @io.ungetbyte(42) }.should raise_error(IOError)
   end
 end

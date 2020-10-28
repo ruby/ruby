@@ -2,13 +2,7 @@ require_relative '../../spec_helper'
 require_relative 'shared/arithmetic_coerce'
 
 describe "Integer#/" do
-  ruby_version_is "2.4"..."2.5" do
-    it_behaves_like :integer_arithmetic_coerce_rescue, :/
-  end
-
-  ruby_version_is "2.5" do
-    it_behaves_like :integer_arithmetic_coerce_not_rescue, :/
-  end
+  it_behaves_like :integer_arithmetic_coerce_not_rescue, :/
 
   context "fixnum" do
     it "returns self divided by the given argument" do
@@ -27,7 +21,7 @@ describe "Integer#/" do
     end
 
     it "raises a ZeroDivisionError if the given argument is zero and not a Float" do
-      lambda { 1 / 0 }.should raise_error(ZeroDivisionError)
+      -> { 1 / 0 }.should raise_error(ZeroDivisionError)
     end
 
     it "does NOT raise ZeroDivisionError if the given argument is zero and is a Float" do
@@ -41,9 +35,9 @@ describe "Integer#/" do
     end
 
     it "raises a TypeError when given a non-Integer" do
-      lambda { 13 / mock('10') }.should raise_error(TypeError)
-      lambda { 13 / "10"       }.should raise_error(TypeError)
-      lambda { 13 / :symbol    }.should raise_error(TypeError)
+      -> { 13 / mock('10') }.should raise_error(TypeError)
+      -> { 13 / "10"       }.should raise_error(TypeError)
+      -> { 13 / :symbol    }.should raise_error(TypeError)
     end
   end
 
@@ -83,13 +77,13 @@ describe "Integer#/" do
     end
 
     it "raises a ZeroDivisionError if other is zero and not a Float" do
-      lambda { @bignum / 0 }.should raise_error(ZeroDivisionError)
+      -> { @bignum / 0 }.should raise_error(ZeroDivisionError)
     end
 
     it "raises a TypeError when given a non-numeric" do
-      lambda { @bignum / mock('10') }.should raise_error(TypeError)
-      lambda { @bignum / "2" }.should raise_error(TypeError)
-      lambda { @bignum / :symbol }.should raise_error(TypeError)
+      -> { @bignum / mock('10') }.should raise_error(TypeError)
+      -> { @bignum / "2" }.should raise_error(TypeError)
+      -> { @bignum / :symbol }.should raise_error(TypeError)
     end
   end
 end

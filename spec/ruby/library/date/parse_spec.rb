@@ -23,7 +23,7 @@ describe "Date#parse" do
 
   # Specs using numbers
   it "throws an argument error for a single digit" do
-    lambda{ Date.parse("1") }.should raise_error(ArgumentError)
+    ->{ Date.parse("1") }.should raise_error(ArgumentError)
   end
 
   it "parses DD as month day number" do
@@ -66,8 +66,25 @@ describe "Date#parse" do
   end
 
   it "raises a TypeError trying to parse non-String-like object" do
-    lambda { Date.parse(1) }.should raise_error(TypeError)
-    lambda { Date.parse(:invalid) }.should raise_error(TypeError)
+    -> { Date.parse(1) }.should raise_error(TypeError)
+    -> { Date.parse(:invalid) }.should raise_error(TypeError)
+  end
+
+  it "coerces using to_str" do
+    c = Class.new do
+      attr_accessor :string
+      def to_str
+        @string
+      end
+    end
+    o = c.new
+    o.string = "19101101"
+
+    d = Date.parse(o)
+    d.should == Date.civil(1910, 11, 1)
+
+    # parse should not modify string value
+    o.to_str.should == "19101101"
   end
 end
 

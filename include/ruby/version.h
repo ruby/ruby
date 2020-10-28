@@ -1,17 +1,17 @@
-/**********************************************************************
-
-  ruby/version.h -
-
-  $Author$
-  created at: Wed May 13 12:56:56 JST 2009
-
-  Copyright (C) 1993-2009 Yukihiro Matsumoto
-  Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
-  Copyright (C) 2000  Information-technology Promotion Agency, Japan
-
-**********************************************************************/
-
-/*
+#ifndef RUBY_VERSION_H                               /*-*-C++-*-vi:se ft=cpp:*/
+#define RUBY_VERSION_H 1
+/**
+ * @file
+ * @author     $Author$
+ * @date       Wed May 13 12:56:56 JST 2009
+ * @copyright  Copyright (C) 1993-2009 Yukihiro Matsumoto
+ * @copyright  Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
+ * @copyright  Copyright (C) 2000  Information-technology Promotion Agency, Japan
+ * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
+ *             Permission  is hereby  granted,  to  either redistribute  and/or
+ *             modify this file, provided that  the conditions mentioned in the
+ *             file COPYING are met.  Consult the file for details.
+ *
  * This file contains only
  * - never-changeable information, and
  * - interfaces accessible from extension libraries.
@@ -20,9 +20,6 @@
  * check the features with mkmf.rb instead.
  */
 
-#ifndef RUBY_VERSION_H
-#define RUBY_VERSION_H 1
-
 /* The origin. */
 #define RUBY_AUTHOR "Yukihiro Matsumoto"
 #define RUBY_BIRTH_YEAR 1993
@@ -30,20 +27,16 @@
 #define RUBY_BIRTH_DAY 24
 
 /* API version */
-#define RUBY_API_VERSION_MAJOR 2
-#define RUBY_API_VERSION_MINOR 7
+#define RUBY_API_VERSION_MAJOR 3
+#define RUBY_API_VERSION_MINOR 0
 #define RUBY_API_VERSION_TEENY 0
 #define RUBY_API_VERSION_CODE (RUBY_API_VERSION_MAJOR*10000+RUBY_API_VERSION_MINOR*100+RUBY_API_VERSION_TEENY)
 
 #ifdef RUBY_EXTERN
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
-RUBY_SYMBOL_EXPORT_BEGIN
+/* Internal note: this file could be included from verconf.mk _before_
+ * generating config.h, on Windows.  The #ifdef above is to trick such
+ * situation. */
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 /*
  * Interfaces from extension libraries.
@@ -61,14 +54,7 @@ RUBY_EXTERN const char ruby_description[];
 RUBY_EXTERN const char ruby_copyright[];
 RUBY_EXTERN const char ruby_engine[];
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RBIMPL_SYMBOL_EXPORT_END()
 #endif
 
 #endif

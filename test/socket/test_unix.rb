@@ -47,10 +47,16 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
       r.close
 
       s1.send_io(s1)
-      # klass = UNIXSocket FIXME: [ruby-core:71860] [Bug #11778]
+      klass = UNIXSocket
+      r = s2.recv_io(klass)
+      assert_instance_of klass, r, 'recv_io with proper klass'
+      assert_not_equal s1.fileno, r.fileno
+      r.close
+
+      s1.send_io(s1)
       klass = IO
       r = s2.recv_io(klass, 'r+')
-      assert_instance_of klass, r, 'recv_io with proper klass'
+      assert_instance_of klass, r, 'recv_io with proper klass and mode'
       assert_not_equal s1.fileno, r.fileno
       r.close
     end
@@ -542,16 +548,20 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
 
   def test_getcred_xucred
     return if /freebsd|darwin/ !~ RUBY_PLATFORM
-    Dir.mktmpdir {|d|
+    Dir.mktmpdir do |d|
       sockpath = "#{d}/sock"
       serv = Socket.unix_server_socket(sockpath)
-      Socket.unix(sockpath)
+      u = Socket.unix(sockpath)
       s, = serv.accept
       cred = s.getsockopt(0, Socket::LOCAL_PEERCRED)
       inspect = cred.inspect
       assert_match(/ euid=#{Process.euid} /, inspect)
       assert_match(/ \(xucred\)/, inspect)
-    }
+    ensure
+      s&.close
+      u&.close
+      serv&.close
+    end
   end
 
   def test_sendcred_ucred

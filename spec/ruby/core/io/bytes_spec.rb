@@ -31,13 +31,13 @@ describe "IO#bytes" do
 
   it "raises an IOError on closed stream" do
     enum = IOSpecs.closed_io.bytes
-    lambda { enum.first }.should raise_error(IOError)
+    -> { enum.first }.should raise_error(IOError)
   end
 
   it "raises an IOError on an enumerator for a stream that has been closed" do
     enum = @io.bytes
     enum.first.should == 86
     @io.close
-    lambda { enum.first }.should raise_error(IOError)
+    -> { enum.first }.should raise_error(IOError)
   end
 end

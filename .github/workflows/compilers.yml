@@ -1,0 +1,217 @@
+name: Compilations
+
+on: [push, pull_request]
+
+# Github actions does not support YAML anchors.  This creative use of
+# environment variables (plus the "echo ::set-env" hack) is to reroute that
+# restriction.
+env:
+  default_cc: clang-11
+  append_cc: ''
+  crosshost: ''
+
+  # -O1 is faster than -O3 in our tests... Majority of time are consumed trying
+  # to optimize binaries.  Also Github Actions runs on a relatively modern CPU
+  # compared to, say, GCC 4 or Clang 3.  We don't specify `-march=native`
+  # because compilers tend not understand what the CPU is.
+  optflags: '-O1'
+
+  # -g0 disables backtraces when SEGV.  Do not set that.
+  debugflags: '-ggdb3'
+
+  default_configure: >-
+    --enable-debug-env
+    --disable-install-doc
+    --with-ext=-test-/cxxanyargs,+
+  append_configure: >-
+    --without-valgrind
+    --without-jemalloc
+    --without-gmp
+
+  UPDATE_UNICODE: >-
+    UNICODE_FILES=.
+    UNICODE_PROPERTY_FILES=.
+    UNICODE_AUXILIARY_FILES=.
+    UNICODE_EMOJI_FILES=.
+  CONFIGURE_TTY: never
+  GITPULLOPTIONS: --no-tags origin ${{github.ref}}
+  RUBY_DEBUG: ci rgengc
+  RUBY_TESTOPTS: >-
+    -q
+    --color=always
+    --tty=no
+
+jobs:
+  compile:
+    strategy:
+      fail-fast: false
+      matrix:
+        entry:
+          - { key: default_cc, name: gcc-10,    value: gcc-10 }
+          - { key: default_cc, name: gcc-9,     value: gcc-9 }
+          - { key: default_cc, name: gcc-8,     value: gcc-8 }
+          - { key: default_cc, name: gcc-7,     value: gcc-7 }
+          - { key: default_cc, name: gcc-6,     value: gcc-6 }
+          - { key: default_cc, name: gcc-5,     value: gcc-5 }
+          - { key: default_cc, name: gcc-4.8,   value: gcc-4.8 }
+          - { key: default_cc, name: clang-12,  value: clang-12 }
+          - { key: default_cc, name: clang-11,  value: clang-11 }
+          - { key: default_cc, name: clang-10,  value: clang-10 }
+          - { key: default_cc, name: clang-9,   value: clang-9 }
+          - { key: default_cc, name: clang-8,   value: clang-8 }
+          - { key: default_cc, name: clang-7,   value: clang-7 }
+          - { key: default_cc, name: clang-6.0, value: clang-6.0 }
+          - { key: default_cc, name: clang-5.0, value: clang-5.0 }
+          - { key: default_cc, name: clang-4.0, value: clang-4.0 }
+          - { key: default_cc, name: clang-3.9, value: clang-3.9 }
+
+          - { key: crosshost, name: aarch64-linux-gnu,     value: aarch64-linux-gnu }
+#         - { key: crosshost, name: arm-linux-gnueabi,     value: arm-linux-gnueabi }
+#         - { key: crosshost, name: arm-linux-gnueabihf,   value: arm-linux-gnueabihf }
+#         - { key: crosshost, name: i686-w64-mingw32,      value: i686-w64-mingw32 }
+#         - { key: crosshost, name: powerpc-linux-gnu,     value: powerpc-linux-gnu }
+          - { key: crosshost, name: powerpc64le-linux-gnu, value: powerpc64le-linux-gnu }
+          - { key: crosshost, name: s390x-linux-gnu,       value: s390x-linux-gnu }
+          - { key: crosshost, name: x86_64-w64-mingw32,    value: x86_64-w64-mingw32 }
+
+          - { key: append_cc, name: c99,   value: '-std=c99   -Werror=pedantic -pedantic-errors' }
+          - { key: append_cc, name: c11,   value: '-std=c11   -Werror=pedantic -pedantic-errors' }
+          - { key: append_cc, name: c17,   value: '-std=c17   -Werror=pedantic -pedantic-errors' }
+          - { key: append_cc, name: c2x,   value: '-std=c2x   -Werror=pedantic -pedantic-errors' }
+          - { key: CXXFLAGS,  name: c++98, value: '-std=c++98 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }
+          - { key: CXXFLAGS,  name: c++11, value: '-std=c++11 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }
+          - { key: CXXFLAGS,  name: c++14, value: '-std=c++14 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }
+          - { key: CXXFLAGS,  name: c++17, value: '-std=c++17 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }
+          - { key: CXXFLAGS,  name: c++2a, value: '-std=c++2a -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }
+
+          - { key: optflags, name: '-O0', value: '-O0 -march=x86-64 -mtune=generic' }
+          - { key: optflags, name: '-O3', value: '-O3 -march=x86-64 -mtune=generic' }
+
+          - { key: append_configure, name: gmp,                  value: '--with-gmp' }
+          - { key: append_configure, name: jemalloc,             value: '--with-jemalloc' }
+          - { key: append_configure, name: valgrind,             value: '--with-valgrind' }
+          - { key: append_configure, name: 'coroutine=ucontext', value: '--with-coroutine=ucontext' }
+          - { key: append_configure, name: 'coroutine=copy',     value: '--with-coroutine=copy' }
+          - { key: append_configure, name: disable-mathn,        value: '--disable-mathn' }
+          - { key: append_configure, name: disable-jit-support,  value: '--disable-jit-support' }
+          - { key: append_configure, name: disable-dln,          value: '--disable-dln' }
+          - { key: append_configure, name: disable-rubygems,     value: '--disable-rubygems' }
+
+          - { key: cppflags, name: OPT_THREADED_CODE=1,            value: '-DOPT_THREADED_CODE=1' }
+          - { key: cppflags, name: OPT_THREADED_CODE=2,            value: '-DOPT_THREADED_CODE=2' }
+          - { key: cppflags, name: OPT_THREADED_CODE=3,            value: '-DOPT_THREADED_CODE=3' }
+
+          - { key: cppflags, name: NDEBUG,                         value: '-DNDEBUG' }
+          - { key: cppflags, name: RUBY_DEBUG,                     value: '-DRUBY_DEBUG' }
+          - { key: cppflags, name: ARRAY_DEBUG,                    value: '-DARRAY_DEBUG' }
+          - { key: cppflags, name: BIGNUM_DEBUG,                   value: '-DBIGNUM_DEBUG' }
+          - { key: cppflags, name: CCAN_LIST_DEBUG,                value: '-DCCAN_LIST_DEBUG' }
+          - { key: cppflags, name: CPDEBUG=-1,                     value: '-DCPDEBUG=-1' }
+          - { key: cppflags, name: ENC_DEBUG,                      value: '-DENC_DEBUG' }
+          - { key: cppflags, name: GC_DEBUG,                       value: '-DGC_DEBUG' }
+          - { key: cppflags, name: HASH_DEBUG,                     value: '-DHASH_DEBUG' }
+          - { key: cppflags, name: ID_TABLE_DEBUG,                 value: '-DID_TABLE_DEBUG' }
+          - { key: cppflags, name: RGENGC_DEBUG=-1,                value: '-DRGENGC_DEBUG=-1' }
+          - { key: cppflags, name: SYMBOL_DEBUG,                   value: '-DSYMBOL_DEBUG' }
+          - { key: cppflags, name: THREAD_DEBUG=-1,                value: '-DTHREAD_DEBUG=-1' }
+
+          - { key: cppflags, name: RGENGC_CHECK_MODE,              value: '-DRGENGC_CHECK_MODE' }
+          - { key: cppflags, name: TRANSIENT_HEAP_CHECK_MODE,      value: '-DTRANSIENT_HEAP_CHECK_MODE' }
+          - { key: cppflags, name: VM_CHECK_MODE,                  value: '-DVM_CHECK_MODE' }
+
+          - { key: cppflags, name: USE_EMBED_CI=0,                 value: '-DUSE_EMBED_CI=0' }
+          - { key: cppflags, name: USE_FLONUM=0,                   value: '-DUSE_FLONUM=0' }
+#         - { key: cppflags, name: USE_GC_MALLOC_OBJ_INFO_DETAILS, value: '-DUSE_GC_MALLOC_OBJ_INFO_DETAILS' }
+          - { key: cppflags, name: USE_LAZY_LOAD,                  value: '-DUSE_LAZY_LOAD' }
+          - { key: cppflags, name: USE_RINCGC=0,                   value: '-DUSE_RINCGC=0' }
+          - { key: cppflags, name: USE_SYMBOL_GC=0,                value: '-DUSE_SYMBOL_GC=0' }
+          - { key: cppflags, name: USE_THREAD_CACHE=0,             value: '-DUSE_THREAD_CACHE=0' }
+          - { key: cppflags, name: USE_TRANSIENT_HEAP=0,           value: '-DUSE_TRANSIENT_HEAP=0' }
+          - { key: cppflags, name: USE_RUBY_DEBUG_LOG=1,           value: '-DUSE_RUBY_DEBUG_LOG=1' }
+
+          - { key: cppflags, name: DEBUG_FIND_TIME_NUMGUESS,       value: '-DDEBUG_FIND_TIME_NUMGUESS' }
+          - { key: cppflags, name: DEBUG_INTEGER_PACK,             value: '-DDEBUG_INTEGER_PACK' }
+          - { key: cppflags, name: ENABLE_PATH_CHECK,              value: '-DENABLE_PATH_CHECK' }
+
+          - { key: cppflags, name: GC_DEBUG_STRESS_TO_CLASS,       value: '-DGC_DEBUG_STRESS_TO_CLASS' }
+          - { key: cppflags, name: GC_ENABLE_LAZY_SWEEP=0,         value: '-DGC_ENABLE_LAZY_SWEEP=0' }
+          - { key: cppflags, name: GC_PROFILE_DETAIL_MEMOTY,       value: '-DGC_PROFILE_DETAIL_MEMOTY' }
+          - { key: cppflags, name: GC_PROFILE_MORE_DETAIL,         value: '-DGC_PROFILE_MORE_DETAIL' }
+
+          - { key: cppflags, name: CALC_EXACT_MALLOC_SIZE,         value: '-DCALC_EXACT_MALLOC_SIZE' }
+          - { key: cppflags, name: MALLOC_ALLOCATED_SIZE_CHECK,    value: '-DMALLOC_ALLOCATED_SIZE_CHECK' }
+
+          - { key: cppflags, name: IBF_ISEQ_ENABLE_LOCAL_BUFFER,   value: '-DIBF_ISEQ_ENABLE_LOCAL_BUFFER' }
+
+          - { key: cppflags, name: RGENGC_ESTIMATE_OLDMALLOC,      value: '-DRGENGC_ESTIMATE_OLDMALLOC' }
+          - { key: cppflags, name: RGENGC_FORCE_MAJOR_GC,          value: '-DRGENGC_FORCE_MAJOR_GC' }
+          - { key: cppflags, name: RGENGC_OBJ_INFO,                value: '-DRGENGC_OBJ_INFO' }
+          - { key: cppflags, name: RGENGC_OLD_NEWOBJ_CHECK,        value: '-DRGENGC_OLD_NEWOBJ_CHECK' }
+          - { key: cppflags, name: RGENGC_PROFILE,                 value: '-DRGENGC_PROFILE' }
+
+          - { key: cppflags, name: VM_DEBUG_BP_CHECK,              value: '-DVM_DEBUG_BP_CHECK' }
+          - { key: cppflags, name: VM_DEBUG_VERIFY_METHOD_CACHE,   value: '-DVM_DEBUG_VERIFY_METHOD_CACHE' }
+
+          - { key: cppflags, name: MJIT_FORCE_ENABLE,              value: '-DMJIT_FORCE_ENABLE' }
+
+    name: ${{ matrix.entry.name }}
+    runs-on: ubuntu-latest
+    container: ghcr.io/ruby/ruby-ci-image:latest
+    if: "!contains(github.event.head_commit.message, '[ci skip]')"
+    steps:
+      - run: mkdir build
+        working-directory:
+      - name: setenv
+        run: |
+          echo "${{ matrix.entry.key }}=${{ matrix.entry.value }}" >> $GITHUB_ENV
+          echo "make=make -sj$((1 + $(nproc --all)))" >> $GITHUB_ENV
+      - uses: actions/checkout@v2
+        with:
+          path: src
+      - run: autoconf
+        working-directory: src
+      - name: Run configure
+        run: |
+          if [ -n "${crosshost}" ]; then
+            ../src/configure -C \
+              ${default_configure} \
+              ${append_configure} \
+              --host="${crosshost}"
+          else
+            ../src/configure -C \
+              ${default_configure} \
+              ${append_configure} \
+              --with-gcc="${default_cc} ${append_cc}"
+          fi
+      - run: $make extract-extlibs
+      - run: $make incs
+      - run: $make
+      - run: $make test
+      - run: $make install
+        if: "matrix.entry.name == '-O3'"
+      - run: /usr/local/bin/gem install --no-doc timezone tzinfo
+        if: "matrix.entry.name == '-O3'"
+      - run: $make test-tool
+        if: "matrix.entry.name == '-O3'"
+      - run: $make test-all TESTS='-- ruby -ext-'
+        if: "matrix.entry.name == '-O3'"
+      - run: $make test-spec
+        if: "matrix.entry.name == '-O3'"
+
+      - uses: k0kubun/action-slack@v2.0.0
+        with:
+          payload: |
+            {
+              "ci": "GitHub Actions",
+              "env": "${{ github.workflow }} / ${{ matrix.entry.name }}",
+              "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "commit": "${{ github.sha }}",
+              "branch": "${{ github.ref }}".split('/').reverse()[0]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
+        if: failure() && github.event_name == 'push'
+
+defaults:
+  run:
+    working-directory: build

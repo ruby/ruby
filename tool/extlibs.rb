@@ -5,10 +5,29 @@
 
 require 'digest'
 require_relative 'downloader'
+require_relative 'lib/colorize'
+
+class Vars < Hash
+  def pattern
+    /\$\((#{Regexp.union(keys)})\)/
+  end
+
+  def expand(str)
+    if empty?
+      str
+    else
+      str.gsub(pattern) {self[$1]}
+    end
+  end
+end
 
 class ExtLibs
+  def initialize
+    @colorize = Colorize.new
+  end
+
   def cache_file(url, cache_dir)
-    Downloader.cache_file(url, nil, :cache_dir => cache_dir)
+    Downloader.cache_file(url, nil, cache_dir).to_path
   end
 
   def do_download(url, cache_dir)
@@ -23,16 +42,12 @@ class ExtLibs
         $stdout.flush
       end
       hd = Digest(name.upcase).file(cache).hexdigest
-      if hd == sum
-        if $VERBOSE
-          $stdout.puts " OK"
-          $stdout.flush
-        end
-      else
-        if $VERBOSE
-          $stdout.puts " NG"
-          $stdout.flush
-        end
+      if $VERBOSE
+        $stdout.print " "
+        $stdout.puts hd == sum ? @colorize.pass("OK") : @colorize.fail("NG")
+        $stdout.flush
+      end
+      unless hd == sum
         raise "checksum mismatch: #{cache}, #{name}:#{hd}, expected #{sum}"
       end
     end
@@ -77,6 +92,46 @@ class ExtLibs
     end
     Process.wait(Process.spawn("patch", "-d", dest, "-i", patch, *args))
     $?.success? or raise "failed to patch #{patch}"
+  end
+
+  def do_link(file, src, dest)
+    file = File.join(dest, file)
+    if (target = src).start_with?("/")
+      target = File.join([".."] * file.count("/"), src)
+    end
+    return unless File.exist?(File.expand_path(target, File.dirname(file)))
+    File.unlink(file) rescue nil
+    begin
+      File.symlink(target, file)
+    rescue
+    else
+      if $VERBOSE
+        $stdout.puts "linked #{target} to #{file}"
+        $stdout.flush
+      end
+      return
+    end
+    begin
+      src = src.sub(/\A\//, '')
+      File.copy_stream(src, file)
+    rescue
+      if $VERBOSE
+        $stdout.puts "failed to link #{src} to #{file}: #{$!.message}"
+      end
+    else
+      if $VERBOSE
+        $stdout.puts "copied #{src} to #{file}"
+      end
+    end
+  end
+
+  def do_exec(command, dir, dest)
+    dir = dir ? File.join(dest, dir) : dest
+    if $VERBOSE
+      $stdout.puts "running #{command.dump} under #{dir}"
+      $stdout.flush
+    end
+    system(command, chdir: dir) or raise "failed #{command.dump}"
   end
 
   def do_command(mode, dest, url, cache_dir, chksums)
@@ -142,17 +197,35 @@ class ExtLibs
           $stdout.puts "downloading for #{list}"
           $stdout.flush
         end
+        vars = Vars.new
         extracted = false
         dest = File.dirname(list)
         url = chksums = nil
         IO.foreach(list) do |line|
           line.sub!(/\s*#.*/, '')
+          if /^(\w+)\s*=\s*(.*)/ =~ line
+            vars[$1] = vars.expand($2)
+            next
+          end
           if chksums
             chksums.concat(line.split)
           elsif /^\t/ =~ line
             if extracted and (mode == :all or mode == :patch)
-              patch, *args = line.split
+              patch, *args = line.split.map {|s| vars.expand(s)}
               do_patch(dest, patch, args)
+            end
+            next
+          elsif /^!\s*(?:chdir:\s*([^|\s]+)\|\s*)?(.*)/ =~ line
+            if extracted and (mode == :all or mode == :patch)
+              command = vars.expand($2.strip)
+              chdir = $1 and chdir = vars.expand(chdir)
+              do_exec(command, chdir, dest)
+            end
+            next
+          elsif /->/ =~ line
+            if extracted and (mode == :all or mode == :patch)
+              link, file = $`.strip, $'.strip
+              do_link(vars.expand(link), vars.expand(file), dest)
             end
             next
           else
@@ -162,7 +235,11 @@ class ExtLibs
             chksums.pop
             next
           end
-          next unless url
+          unless url
+            chksums = nil
+            next
+          end
+          url = vars.expand(url)
           begin
             extracted = do_command(mode, dest, url, cache_dir, chksums)
           rescue => e

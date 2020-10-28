@@ -1285,6 +1285,30 @@ ossl_asn1obj_get_ln(VALUE self)
     return ret;
 }
 
+/*
+ *  call-seq:
+ *     oid == other_oid => true or false
+ *
+ *  Returns +true+ if _other_oid_ is the same as _oid_
+ */
+static VALUE
+ossl_asn1obj_eq(VALUE self, VALUE other)
+{
+    VALUE valSelf, valOther;
+    int nidSelf, nidOther;
+
+    valSelf = ossl_asn1_get_value(self);
+    valOther = ossl_asn1_get_value(other);
+
+    if ((nidSelf = OBJ_txt2nid(StringValueCStr(valSelf))) == NID_undef)
+	ossl_raise(eASN1Error, "OBJ_txt2nid");
+
+    if ((nidOther = OBJ_txt2nid(StringValueCStr(valOther))) == NID_undef)
+	ossl_raise(eASN1Error, "OBJ_txt2nid");
+
+    return nidSelf == nidOther ? Qtrue : Qfalse;
+}
+
 static VALUE
 asn1obj_get_oid_i(VALUE vobj)
 {
@@ -1818,13 +1842,14 @@ do{\
     rb_define_method(cASN1ObjectId, "oid", ossl_asn1obj_get_oid, 0);
     rb_define_alias(cASN1ObjectId, "short_name", "sn");
     rb_define_alias(cASN1ObjectId, "long_name", "ln");
+    rb_define_method(cASN1ObjectId, "==", ossl_asn1obj_eq, 1);
     rb_attr(cASN1BitString, rb_intern("unused_bits"), 1, 1, 0);
 
     rb_define_method(cASN1EndOfContent, "initialize", ossl_asn1eoc_initialize, 0);
     rb_define_method(cASN1EndOfContent, "to_der", ossl_asn1eoc_to_der, 0);
 
     class_tag_map = rb_hash_new();
-    rb_global_variable(&class_tag_map);
+    rb_gc_register_mark_object(class_tag_map);
     rb_hash_aset(class_tag_map, cASN1EndOfContent, INT2NUM(V_ASN1_EOC));
     rb_hash_aset(class_tag_map, cASN1Boolean, INT2NUM(V_ASN1_BOOLEAN));
     rb_hash_aset(class_tag_map, cASN1Integer, INT2NUM(V_ASN1_INTEGER));

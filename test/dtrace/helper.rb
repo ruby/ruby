@@ -19,9 +19,7 @@ if RUBY_PLATFORM =~ /linux/
   impl = :stap
   begin
     require 'etc'
-    login = Etc.getlogin
-    ok = Etc.getgrnam('stapusr').mem.include?(login) &&
-           Etc.getgrnam('stapdev').mem.include?(login)
+    ok = (%w[stapusr stapdev].map {|g|(Etc.getgrnam(g) || raise(ArgumentError)).gid} & Process.groups).size == 2
   rescue LoadError, ArgumentError
   end unless ok
 end
@@ -32,7 +30,6 @@ if ok
     begin
       require 'pty'
     rescue LoadError
-      ok = false
     end
   end
 end
@@ -52,7 +49,17 @@ else
   warn "don't know how to check if built with #{impl} support"
   cmd = false
 end
-ok &= system(*cmd, err: IO::NULL, out: IO::NULL) if cmd
+
+NEEDED_ENVS = [RbConfig::CONFIG["LIBPATHENV"], "RUBY", "RUBYOPT"].compact
+
+if cmd and ok
+  sudocmd = []
+  if sudo
+    sudocmd << sudo
+    NEEDED_ENVS.each {|name| val = ENV[name] and sudocmd << "#{name}=#{val}"}
+  end
+  ok = system(*sudocmd, *cmd, err: IO::NULL, out: IO::NULL)
+end
 
 module DTrace
   class TestCase < Test::Unit::TestCase
@@ -70,7 +77,7 @@ module DTrace
           Process.wait(pid)
         end
         lines
-      end
+      end if defined?(PTY)
     end
 
     # only handles simple cases, use a Hash for d_program
@@ -136,8 +143,8 @@ module DTrace
         cmd = [*DTRACE_CMD, "-q", "-s", d_path, "-c", cmd ]
       end
       if sudo = @@sudo
-        [RbConfig::CONFIG["LIBPATHENV"], "RUBY", "RUBYOPT"].each do |name|
-          if name and val = ENV[name]
+        NEEDED_ENVS.each do |name|
+          if val = ENV[name]
             cmd.unshift("#{name}=#{val}")
           end
         end

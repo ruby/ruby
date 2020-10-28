@@ -18,7 +18,7 @@ class TestDir_M17N < Test::Unit::TestCase
         filename = #{code}.chr('UTF-8').force_encoding("#{encoding}")
         File.open(filename, "w") {}
         opts = {:encoding => Encoding.default_external} if /mswin|mingw/ =~ RUBY_PLATFORM
-        ents = Dir.entries(".", opts)
+        ents = Dir.entries(".", **(opts||{}))
         assert_include(ents, filename)
       EOS
 
@@ -26,7 +26,7 @@ class TestDir_M17N < Test::Unit::TestCase
       assert_separately(%w[-EASCII-8BIT], <<-EOS, :chdir=>dir)
         filename = #{code}.chr('UTF-8').force_encoding("ASCII-8BIT")
         opts = {:encoding => Encoding.default_external} if /mswin|mingw/ =~ RUBY_PLATFORM
-        ents = Dir.entries(".", opts)
+        ents = Dir.entries(".", **(opts||{}))
         expected_filename = #{code}.chr('UTF-8').encode(Encoding.find("filesystem")) rescue expected_filename = "?"
         expected_filename = expected_filename.force_encoding("ASCII-8BIT")
         if /mswin|mingw/ =~ RUBY_PLATFORM
@@ -35,7 +35,7 @@ class TestDir_M17N < Test::Unit::TestCase
           when ents.include?(expected_filename)
             filename = expected_filename
           else
-            ents = Dir.entries(".", {:encoding => Encoding.find("filesystem")})
+            ents = Dir.entries(".", :encoding => Encoding.find("filesystem"))
             filename = expected_filename
           end
         end
@@ -52,7 +52,7 @@ class TestDir_M17N < Test::Unit::TestCase
         filename = "\u3042"
         File.open(filename, "w") {}
         opts = {:encoding => Encoding.default_external} if /mswin|mingw/ =~ RUBY_PLATFORM
-        ents = Dir.entries(".", opts)
+        ents = Dir.entries(".", **(opts||{}))
         assert_include(ents, filename)
       EOS
     }
@@ -67,7 +67,7 @@ class TestDir_M17N < Test::Unit::TestCase
         filename = "\xff".force_encoding("ASCII-8BIT") # invalid byte sequence as UTF-8
         File.open(filename, "w") {}
         opts = {:encoding => Encoding.default_external} if /mswin|mingw/ =~ RUBY_PLATFORM
-        ents = Dir.entries(".", opts)
+        ents = Dir.entries(".", **(opts||{}))
         filename = "%FF" if /darwin/ =~ RUBY_PLATFORM && ents.include?("%FF")
         assert_include(ents, filename)
       EOS
@@ -75,7 +75,7 @@ class TestDir_M17N < Test::Unit::TestCase
         filename = "\xff".force_encoding("UTF-8") # invalid byte sequence as UTF-8
         File.open(filename, "w") {}
         opts = {:encoding => Encoding.default_external} if /mswin|mingw/ =~ RUBY_PLATFORM
-        ents = Dir.entries(".", opts)
+        ents = Dir.entries(".", **(opts||{}))
         filename = "%FF" if /darwin/ =~ RUBY_PLATFORM && ents.include?("%FF")
         assert_include(ents, filename)
       EOS
@@ -88,7 +88,7 @@ class TestDir_M17N < Test::Unit::TestCase
         filename = "\xc2\xa1".force_encoding("utf-8")
         File.open(filename, "w") {}
         opts = {:encoding => Encoding.default_external} if /mswin|mingw/ =~ RUBY_PLATFORM
-        ents = Dir.entries(".", opts)
+        ents = Dir.entries(".", **(opts||{}))
         assert_include(ents, filename)
       EOS
       assert_separately(%w[-EUTF-8], <<-'EOS', :chdir=>d)
@@ -125,13 +125,13 @@ class TestDir_M17N < Test::Unit::TestCase
         filename = "\u3042"
         File.open(filename, "w") {}
         opts = {:encoding => Encoding.default_external} if /mswin|mingw/ =~ RUBY_PLATFORM
-        ents = Dir.entries(".", opts)
+        ents = Dir.entries(".", **(opts||{}))
         assert_include(ents, filename)
       EOS
       assert_separately(%w[-EUTF-8:EUC-JP], <<-'EOS', :chdir=>d)
         filename = "\xA4\xA2".force_encoding("euc-jp")
         opts = {:encoding => Encoding.default_external} if /mswin|mingw/ =~ RUBY_PLATFORM
-        ents = Dir.entries(".", opts)
+        ents = Dir.entries(".", **(opts||{}))
         assert_include(ents, filename)
       EOS
       assert_separately(%w[-EUTF-8:EUC-JP], <<-'EOS', :chdir=>d)
@@ -151,7 +151,7 @@ class TestDir_M17N < Test::Unit::TestCase
         File.open(filename1, "w") {}
         File.open(filename2, "w") {}
         opts = {:encoding => Encoding.default_external} if /mswin|mingw/ =~ RUBY_PLATFORM
-        ents = Dir.entries(".", opts)
+        ents = Dir.entries(".", **(opts||{}))
         assert_include(ents, filename1)
         assert_include(ents, filename2)
       EOS
@@ -159,7 +159,7 @@ class TestDir_M17N < Test::Unit::TestCase
         filename1 = "\u2661" # WHITE HEART SUIT which is not representable in EUC-JP
         filename2 = "\xA4\xA2".force_encoding("euc-jp") # HIRAGANA LETTER A in EUC-JP
         opts = {:encoding => Encoding.default_external} if /mswin|mingw/ =~ RUBY_PLATFORM
-        ents = Dir.entries(".", opts)
+        ents = Dir.entries(".", **(opts||{}))
         assert_include(ents, filename1)
         assert_include(ents, filename2)
       EOS
@@ -183,7 +183,7 @@ class TestDir_M17N < Test::Unit::TestCase
         filename = "\xA4\xA2".force_encoding("euc-jp")
         File.open(filename, "w") {}
         opts = {:encoding => Encoding.default_external} if /mswin|mingw/ =~ RUBY_PLATFORM
-        ents = Dir.entries(".", opts)
+        ents = Dir.entries(".", **(opts||{}))
         ents.each {|e| e.force_encoding("ASCII-8BIT") }
         if /darwin/ =~ RUBY_PLATFORM
           filename = filename.encode("utf-8")
@@ -200,7 +200,7 @@ class TestDir_M17N < Test::Unit::TestCase
         filename = "\xA4\xA2".force_encoding("euc-jp")
         File.open(filename, "w") {}
         opts = {:encoding => Encoding.default_external} if /mswin|mingw/ =~ RUBY_PLATFORM
-        ents = Dir.entries(".", opts)
+        ents = Dir.entries(".", **(opts||{}))
         if /darwin/ =~ RUBY_PLATFORM
           filename = filename.encode("utf-8").force_encoding("euc-jp")
         end
@@ -210,14 +210,14 @@ class TestDir_M17N < Test::Unit::TestCase
         filename = "\xA4\xA2".force_encoding('ASCII-8BIT')
         win_expected_filename = filename.encode(Encoding.find("filesystem"), "euc-jp") rescue "?"
         opts = {:encoding => Encoding.default_external} if /mswin|mingw/ =~ RUBY_PLATFORM
-        ents = Dir.entries(".", opts)
+        ents = Dir.entries(".", **(opts||{}))
         unless ents.include?(filename)
           case RUBY_PLATFORM
           when /darwin/
             filename = filename.encode("utf-8", "euc-jp").b
           when /mswin|mingw/
             if ents.include?(win_expected_filename.b)
-              ents = Dir.entries(".", {:encoding => Encoding.find("filesystem")})
+              ents = Dir.entries(".", :encoding => Encoding.find("filesystem"))
               filename = win_expected_filename
             end
           end
@@ -246,7 +246,7 @@ class TestDir_M17N < Test::Unit::TestCase
         filename = "\xA4\xA2".force_encoding("euc-jp")
         File.open(filename, "w") {}
         opts = {:encoding => Encoding.default_external} if /mswin|mingw/ =~ RUBY_PLATFORM
-        ents = Dir.entries(".", opts)
+        ents = Dir.entries(".", **(opts||{}))
         if /darwin/ =~ RUBY_PLATFORM
           filename = filename.encode("utf-8", "euc-jp").force_encoding("euc-jp")
         end
@@ -255,7 +255,7 @@ class TestDir_M17N < Test::Unit::TestCase
       assert_separately(%w[-EEUC-JP:UTF-8], <<-'EOS', :chdir=>d)
         filename = "\u3042"
         opts = {:encoding => Encoding.default_external} if /mswin|mingw/ =~ RUBY_PLATFORM
-        ents = Dir.entries(".", opts)
+        ents = Dir.entries(".", **(opts||{}))
         if /darwin/ =~ RUBY_PLATFORM
           filename = filename.force_encoding("euc-jp")
         end
@@ -420,7 +420,7 @@ class TestDir_M17N < Test::Unit::TestCase
       else
         orig.each {|o| o.force_encoding(enc) }
       end
-      ents = Dir.entries(".", opts).reject {|n| /\A\./ =~ n}
+      ents = Dir.entries(".", **(opts||{})).reject {|n| /\A\./ =~ n}
       ents.sort!
       PP.assert_equal(orig, ents, bug7267)
     }

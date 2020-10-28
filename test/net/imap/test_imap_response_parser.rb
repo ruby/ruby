@@ -20,30 +20,17 @@ class IMAPResponseParserTest < Test::Unit::TestCase
     end
   end
 
-  def test_flag_list_safe
-    parser = Net::IMAP::ResponseParser.new
-    response = lambda {
-      $SAFE = 1
-      parser.parse(<<EOF.gsub(/\n/, "\r\n").taint)
-* LIST (\\HasChildren) "." "INBOX"
-EOF
-    }.call
-    assert_equal [:Haschildren], response.data.attr
-  ensure
-    $SAFE = 0
-  end
-
   def test_flag_list_too_many_flags
     parser = Net::IMAP::ResponseParser.new
     assert_nothing_raised do
       3.times do |i|
-      parser.parse(<<EOF.gsub(/\n/, "\r\n").taint)
+      parser.parse(<<EOF.gsub(/\n/, "\r\n"))
 * LIST (\\Foo#{i}) "." "INBOX"
 EOF
       end
     end
     assert_raise(Net::IMAP::FlagCountError) do
-      parser.parse(<<EOF.gsub(/\n/, "\r\n").taint)
+      parser.parse(<<EOF.gsub(/\n/, "\r\n"))
 * LIST (\\Foo3) "." "INBOX"
 EOF
     end
@@ -53,7 +40,7 @@ EOF
     parser = Net::IMAP::ResponseParser.new
     assert_nothing_raised do
       100.times do
-      parser.parse(<<EOF.gsub(/\n/, "\r\n").taint)
+      parser.parse(<<EOF.gsub(/\n/, "\r\n"))
 * LIST (\\Foo) "." "INBOX"
 EOF
       end
@@ -62,7 +49,7 @@ EOF
 
   def test_flag_xlist_inbox
     parser = Net::IMAP::ResponseParser.new
-    response = parser.parse(<<EOF.gsub(/\n/, "\r\n").taint)
+    response = parser.parse(<<EOF.gsub(/\n/, "\r\n"))
 * XLIST (\\Inbox) "." "INBOX"
 EOF
     assert_equal [:Inbox], response.data.attr
@@ -70,7 +57,7 @@ EOF
 
   def test_resp_text_code
     parser = Net::IMAP::ResponseParser.new
-    response = parser.parse(<<EOF.gsub(/\n/, "\r\n").taint)
+    response = parser.parse(<<EOF.gsub(/\n/, "\r\n"))
 * OK [CLOSED] Previous mailbox closed.
 EOF
     assert_equal "CLOSED", response.data.code.name
@@ -78,15 +65,15 @@ EOF
 
   def test_search_response
     parser = Net::IMAP::ResponseParser.new
-    response = parser.parse(<<EOF.gsub(/\n/, "\r\n").taint)
+    response = parser.parse(<<EOF.gsub(/\n/, "\r\n"))
 * SEARCH
 EOF
     assert_equal [], response.data
-    response = parser.parse(<<EOF.gsub(/\n/, "\r\n").taint)
+    response = parser.parse(<<EOF.gsub(/\n/, "\r\n"))
 * SEARCH 1
 EOF
     assert_equal [1], response.data
-    response = parser.parse(<<EOF.gsub(/\n/, "\r\n").taint)
+    response = parser.parse(<<EOF.gsub(/\n/, "\r\n"))
 * SEARCH 1 2 3
 EOF
     assert_equal [1, 2, 3], response.data
@@ -94,11 +81,11 @@ EOF
 
   def test_search_response_of_yahoo
     parser = Net::IMAP::ResponseParser.new
-    response = parser.parse(<<EOF.gsub(/\n/, "\r\n").taint)
+    response = parser.parse(<<EOF.gsub(/\n/, "\r\n"))
 * SEARCH 1\s
 EOF
     assert_equal [1], response.data
-    response = parser.parse(<<EOF.gsub(/\n/, "\r\n").taint)
+    response = parser.parse(<<EOF.gsub(/\n/, "\r\n"))
 * SEARCH 1 2 3\s
 EOF
     assert_equal [1, 2, 3], response.data
@@ -106,12 +93,12 @@ EOF
 
   def test_msg_att_extra_space
     parser = Net::IMAP::ResponseParser.new
-    response = parser.parse(<<EOF.gsub(/\n/, "\r\n").taint)
+    response = parser.parse(<<EOF.gsub(/\n/, "\r\n"))
 * 1 FETCH (UID 92285)
 EOF
     assert_equal 92285, response.data.attr["UID"]
 
-    response = parser.parse(<<EOF.gsub(/\n/, "\r\n").taint)
+    response = parser.parse(<<EOF.gsub(/\n/, "\r\n"))
 * 1 FETCH (UID 92285 )
 EOF
     assert_equal 92285, response.data.attr["UID"]
@@ -120,7 +107,7 @@ EOF
   def test_msg_att_parse_error
     parser = Net::IMAP::ResponseParser.new
     e = assert_raise(Net::IMAP::ResponseParseError) {
-      parser.parse(<<EOF.gsub(/\n/, "\r\n").taint)
+      parser.parse(<<EOF.gsub(/\n/, "\r\n"))
 * 123 FETCH (UNKNOWN 92285)
 EOF
     }
@@ -129,13 +116,13 @@ EOF
 
   def test_msg_att_rfc822_text
     parser = Net::IMAP::ResponseParser.new
-    response = parser.parse(<<EOF.gsub(/\n/, "\r\n").taint)
+    response = parser.parse(<<EOF.gsub(/\n/, "\r\n"))
 * 123 FETCH (RFC822 {5}
 foo
 )
 EOF
     assert_equal("foo\r\n", response.data.attr["RFC822"])
-    response = parser.parse(<<EOF.gsub(/\n/, "\r\n").taint)
+    response = parser.parse(<<EOF.gsub(/\n/, "\r\n"))
 * 123 FETCH (RFC822[] {5}
 foo
 )
@@ -146,7 +133,7 @@ EOF
   # [Bug #6397] [ruby-core:44849]
   def test_body_type_attachment
     parser = Net::IMAP::ResponseParser.new
-    response = parser.parse(<<EOF.gsub(/\n/, "\r\n").taint)
+    response = parser.parse(<<EOF.gsub(/\n/, "\r\n"))
 * 980 FETCH (UID 2862 BODYSTRUCTURE ((("TEXT" "PLAIN" ("CHARSET" "iso-8859-1") NIL NIL "7BIT" 416 21 NIL NIL NIL)("TEXT" "HTML" ("CHARSET" "iso-8859-1") NIL NIL "7BIT" 1493 32 NIL NIL NIL) "ALTERNATIVE" ("BOUNDARY" "Boundary_(ID_IaecgfnXwG5bn3x8lIeGIQ)") NIL NIL)("MESSAGE" "RFC822" ("NAME" "Fw_ ____ _____ ____.eml") NIL NIL "7BIT" 1980088 NIL ("ATTACHMENT" ("FILENAME" "Fw_ ____ _____ ____.eml")) NIL) "MIXED" ("BOUNDARY" "Boundary_(ID_eDdLc/j0mBIzIlR191pHjA)") NIL NIL))
 EOF
     assert_equal("Fw_ ____ _____ ____.eml",
@@ -155,7 +142,7 @@ EOF
 
   def assert_parseable(s)
     parser = Net::IMAP::ResponseParser.new
-    parser.parse(s.gsub(/\n/, "\r\n").taint)
+    parser.parse(s.gsub(/\n/, "\r\n"))
   end
 
   # [Bug #7146]
@@ -184,7 +171,7 @@ EOF
   # [Bug #8167]
   def test_msg_delivery_status_with_extra_data
     parser = Net::IMAP::ResponseParser.new
-    response = parser.parse(<<EOF.gsub(/\n/, "\r\n").taint)
+    response = parser.parse(<<EOF.gsub(/\n/, "\r\n"))
 * 29021 FETCH (RFC822.SIZE 3162 UID 113622 RFC822.HEADER {1155}
 Return-path: <>
 Envelope-to: info@xxxxxxxx.si
@@ -227,7 +214,7 @@ EOF
   # [Bug #8281]
   def test_acl
     parser = Net::IMAP::ResponseParser.new
-    response = parser.parse(<<EOF.gsub(/\n/, "\r\n").taint)
+    response = parser.parse(<<EOF.gsub(/\n/, "\r\n"))
 * ACL "INBOX/share" "imshare2copy1366146467@xxxxxxxxxxxxxxxxxx.com" lrswickxteda
 EOF
     assert_equal("ACL", response.name)

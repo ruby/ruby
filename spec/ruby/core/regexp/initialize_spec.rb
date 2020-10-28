@@ -5,11 +5,19 @@ describe "Regexp#initialize" do
     Regexp.should have_private_method(:initialize)
   end
 
-  it "raises a SecurityError on a Regexp literal" do
-    lambda { //.send(:initialize, "") }.should raise_error(SecurityError)
+  ruby_version_is ""..."3.0" do
+    it "raises a SecurityError on a Regexp literal" do
+      -> { //.send(:initialize, "") }.should raise_error(SecurityError)
+    end
+  end
+
+  ruby_version_is "3.0" do
+    it "raises a FrozenError on a Regexp literal" do
+      -> { //.send(:initialize, "") }.should raise_error(FrozenError)
+    end
   end
 
   it "raises a TypeError on an initialized non-literal Regexp" do
-    lambda { Regexp.new("").send(:initialize, "") }.should raise_error(TypeError)
+    -> { Regexp.new("").send(:initialize, "") }.should raise_error(TypeError)
   end
 end

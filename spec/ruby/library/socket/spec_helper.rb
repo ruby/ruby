@@ -1,10 +1,6 @@
 require_relative '../../spec_helper'
 require 'socket'
 
-if %w[rbx truffleruby].include?(RUBY_ENGINE)
-  MSpec.enable_feature :pure_ruby_addrinfo
-end
-
 MSpec.enable_feature :sock_packet if Socket.const_defined?(:SOCK_PACKET)
 MSpec.enable_feature :unix_socket unless PlatformGuard.windows?
 MSpec.enable_feature :udp_cork if Socket.const_defined?(:UDP_CORK)

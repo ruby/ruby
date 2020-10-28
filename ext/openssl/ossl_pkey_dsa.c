@@ -513,7 +513,7 @@ ossl_dsa_to_public_key(VALUE self)
  * === Example
  *  dsa = OpenSSL::PKey::DSA.new(2048)
  *  doc = "Sign me"
- *  digest = OpenSSL::Digest::SHA1.digest(doc)
+ *  digest = OpenSSL::Digest.digest('SHA1', doc)
  *  sig = dsa.syssign(digest)
  *
  *
@@ -558,7 +558,7 @@ ossl_dsa_sign(VALUE self, VALUE data)
  * === Example
  *  dsa = OpenSSL::PKey::DSA.new(2048)
  *  doc = "Sign me"
- *  digest = OpenSSL::Digest::SHA1.digest(doc)
+ *  digest = OpenSSL::Digest.digest('SHA1', doc)
  *  sig = dsa.syssign(digest)
  *  puts dsa.sysverify(digest, sig) # => true
  *

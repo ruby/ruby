@@ -6,6 +6,7 @@ require 'etc'
 require_relative 'fileasserts'
 require 'pathname'
 require 'tmpdir'
+require 'stringio'
 require 'test/unit'
 
 class TestFileUtils < Test::Unit::TestCase
@@ -50,7 +51,11 @@ class TestFileUtils < Test::Unit::TestCase
     end
 
     def check_have_symlink?
-      File.symlink "", ""
+      Dir.mktmpdir do |dir|
+        Dir.chdir(dir) do
+          File.symlink "symlink", "symlink"
+        end
+      end
     rescue NotImplementedError, Errno::EACCES
       return false
     rescue
@@ -67,8 +72,13 @@ class TestFileUtils < Test::Unit::TestCase
     end
 
     def check_have_hardlink?
-      File.link nil, nil
-    rescue NotImplementedError
+      Dir.mktmpdir do |dir|
+        Dir.chdir(dir) do
+          File.write "dummy", "dummy"
+          File.link "dummy", "hardlink"
+        end
+      end
+    rescue NotImplementedError, Errno::EACCES
       return false
     rescue
       return true
@@ -381,6 +391,16 @@ class TestFileUtils < Test::Unit::TestCase
     assert_same_file 'tmp/cpr_src/b', 'tmp/cpr_dest/b'
     assert_same_file 'tmp/cpr_src/c', 'tmp/cpr_dest/c'
     assert_directory 'tmp/cpr_dest/d'
+    assert_raise(ArgumentError) do
+      cp_r 'tmp/cpr_src', './tmp/cpr_src'
+    end
+    assert_raise(ArgumentError) do
+      cp_r './tmp/cpr_src', 'tmp/cpr_src'
+    end
+    assert_raise(ArgumentError) do
+      cp_r './tmp/cpr_src', File.expand_path('tmp/cpr_src')
+    end
+
     my_rm_rf 'tmp/cpr_src'
     my_rm_rf 'tmp/cpr_dest'
 
@@ -429,6 +449,35 @@ class TestFileUtils < Test::Unit::TestCase
       cp_r 'tmp/cross', 'tmp/cross2', :preserve => true
     }
   end if have_symlink? and !no_broken_symlink?
+
+  def test_cp_r_fifo
+    Dir.mkdir('tmp/cpr_src')
+    File.mkfifo 'tmp/cpr_src/fifo', 0600
+    cp_r 'tmp/cpr_src', 'tmp/cpr_dest'
+    assert_equal(true, File.pipe?('tmp/cpr_dest/fifo'))
+  end if File.respond_to?(:mkfifo)
+
+  def test_cp_r_dev
+    devs = Dir['/dev/*']
+    chardev = devs.find{|f| File.chardev?(f)}
+    blockdev = devs.find{|f| File.blockdev?(f)}
+    Dir.mkdir('tmp/cpr_dest')
+    assert_raise(RuntimeError) { cp_r chardev, 'tmp/cpr_dest/cd' } if chardev
+    assert_raise(RuntimeError) { cp_r blockdev, 'tmp/cpr_dest/bd' } if blockdev
+  end
+
+  begin
+    require 'socket'
+  rescue LoadError
+  else
+    def test_cp_r_socket
+      pend "Skipping socket test on JRuby" if RUBY_ENGINE == 'jruby'
+      Dir.mkdir('tmp/cpr_src')
+      UNIXServer.new('tmp/cpr_src/socket').close
+      cp_r 'tmp/cpr_src', 'tmp/cpr_dest'
+      assert_equal(true, File.socket?('tmp/cpr_dest/socket'))
+    end if defined?(UNIXServer)
+  end
 
   def test_cp_r_pathname
     # pathname
@@ -701,6 +750,34 @@ class TestFileUtils < Test::Unit::TestCase
     assert_file_not_exist 'tmp/tmpdir3'
   end
 
+  def test_remove_entry_cjk_path
+    dir = "tmpdir\u3042"
+    my_rm_rf dir
+
+    Dir.mkdir dir
+    File.write("#{dir}/\u3042.txt", "test_remove_entry_cjk_path")
+
+    remove_entry dir
+    assert_file_not_exist dir
+  end
+
+  def test_remove_entry_multibyte_path
+    c = "\u00a7"
+    begin
+      c = c.encode('filesystem')
+    rescue EncodingError
+      c = c.b
+    end
+    dir = "tmpdir#{c}"
+    my_rm_rf dir
+
+    Dir.mkdir dir
+    File.write("#{dir}/#{c}.txt", "test_remove_entry_multibyte_path")
+
+    remove_entry dir
+    assert_file_not_exist dir
+  end
+
   def test_remove_entry_secure
     check_singleton :remove_entry_secure
 
@@ -741,12 +818,14 @@ class TestFileUtils < Test::Unit::TestCase
     assert_file_not_exist 'tmp/tmpdir/a'
     assert_file_not_exist 'tmp/tmpdir/c'
 
-    File.chmod(01777, 'tmp/tmpdir')
-    if File.sticky?('tmp/tmpdir')
-      Dir.mkdir 'tmp/tmpdir/d', 0
-      assert_raise(Errno::EACCES) {remove_entry_secure 'tmp/tmpdir/d'}
-      File.chmod 0777, 'tmp/tmpdir/d'
-      Dir.rmdir 'tmp/tmpdir/d'
+    unless root_in_posix?
+      File.chmod(01777, 'tmp/tmpdir')
+      if File.sticky?('tmp/tmpdir')
+        Dir.mkdir 'tmp/tmpdir/d', 0
+        assert_raise(Errno::EACCES) {remove_entry_secure 'tmp/tmpdir/d'}
+        File.chmod 0777, 'tmp/tmpdir/d'
+        Dir.rmdir 'tmp/tmpdir/d'
+      end
     end
 
     Dir.rmdir 'tmp/tmpdir'
@@ -1010,7 +1089,7 @@ class TestFileUtils < Test::Unit::TestCase
       else
         tmpdir = Dir.pwd
       end
-      skip "No drive letter" unless /\A[a-z]:/i =~ tmpdir
+      pend "No drive letter" unless /\A[a-z]:/i =~ tmpdir
       drive = "./#{$&}"
       assert_file_not_exist drive
       mkdir_p "#{tmpdir}/none/dir"
@@ -1117,6 +1196,32 @@ class TestFileUtils < Test::Unit::TestCase
       install 'tmp/aaa', 'tmp/bbb', :group => "nobody", :noop => true
     }
   end
+
+  def test_install_mode_option
+    File.open('tmp/a', 'w') {|f| f.puts 'aaa' }
+    install 'tmp/a', 'tmp/b', :mode => "u=wrx,g=rx,o=x"
+    assert_filemode 0751, 'tmp/b'
+    install 'tmp/b', 'tmp/c', :mode => "g+w-x"
+    assert_filemode 0761, 'tmp/c'
+    install 'tmp/c', 'tmp/d', :mode => "o+r,g=o+w,o-r,u-o" # 761 => 763 => 773 => 771 => 671
+    assert_filemode 0671, 'tmp/d'
+    install 'tmp/d', 'tmp/e', :mode => "go=u"
+    assert_filemode 0666, 'tmp/e'
+    install 'tmp/e', 'tmp/f', :mode => "u=wrx,g=,o="
+    assert_filemode 0700, 'tmp/f'
+    install 'tmp/f', 'tmp/g', :mode => "u=rx,go="
+    assert_filemode 0500, 'tmp/g'
+    install 'tmp/g', 'tmp/h', :mode => "+wrx"
+    assert_filemode 0777, 'tmp/h'
+    install 'tmp/h', 'tmp/i', :mode => "u+s,o=s"
+    assert_filemode 04770, 'tmp/i'
+    install 'tmp/i', 'tmp/j', :mode => "u-w,go-wrx"
+    assert_filemode 04500, 'tmp/j'
+    install 'tmp/j', 'tmp/k', :mode => "+s"
+    assert_filemode 06500, 'tmp/k'
+    install 'tmp/a', 'tmp/l', :mode => "o+X"
+    assert_equal_filemode 'tmp/a', 'tmp/l'
+  end if have_file_perm?
 
   def test_chmod
     check_singleton :chmod
@@ -1630,6 +1735,29 @@ class TestFileUtils < Test::Unit::TestCase
 
   def test_chdir
     check_singleton :chdir
+  end
+
+  def test_chdir_verbose
+    assert_output_lines(["cd .", "cd -"], FileUtils) do
+      FileUtils.chdir('.', verbose: true){}
+    end
+  end
+
+  def test_chdir_verbose_frozen
+    o = Object.new
+    o.extend(FileUtils)
+    o.singleton_class.send(:public, :chdir)
+    o.freeze
+    orig_stderr = $stderr
+    $stderr = StringIO.new
+    o.chdir('.', verbose: true){}
+    $stderr.rewind
+    assert_equal(<<-END, $stderr.read)
+cd .
+cd -
+    END
+  ensure
+    $stderr = orig_stderr if orig_stderr
   end
 
   def test_getwd

@@ -55,31 +55,52 @@ module TimeSpecs
     end
   end
 
-  class TimezoneWithAbbr < Timezone
-    def initialize(options)
-      super
-      @abbr = options[:abbr]
-    end
-
-    def abbr(time)
-      @abbr
-    end
-  end
+  Z = Struct.new(:offset, :abbr)
+  Zone = Struct.new(:std, :dst, :dst_range)
+  Zones = {
+    "Asia/Colombo" => Zone[Z[5*3600+30*60, "MMT"], nil, nil],
+    "Europe/Kiev" => Zone[Z[2*3600, "EET"], Z[3*3600, "EEST"], 4..10],
+    "PST" => Zone[Z[(-9*60*60), "PST"], nil, nil],
+  }
 
   class TimezoneWithName < Timezone
+    attr_reader :name
+
     def initialize(options)
-      super
       @name = options[:name]
+      @std, @dst, @dst_range = *Zones[@name]
     end
 
-    def name
-      @name
+    def dst?(t)
+      @dst_range&.cover?(t.mon)
+    end
+
+    def zone(t)
+      (dst?(t) ? @dst : @std)
+    end
+
+    def utc_offset(t)
+      zone(t)&.offset || 0
+    end
+
+    def abbr(t)
+      zone(t)&.abbr
+    end
+
+    def local_to_utc(t)
+      t - utc_offset(t)
+    end
+
+    def utc_to_local(t)
+      t + utc_offset(t)
     end
   end
 
   class TimeWithFindTimezone < Time
     def self.find_timezone(name)
-      TimezoneWithName.new(name: name.to_s, offset: -10*60*60)
+      TimezoneWithName.new(name: name.to_s)
     end
   end
+
+  TimezoneWithAbbr = TimezoneWithName
 end

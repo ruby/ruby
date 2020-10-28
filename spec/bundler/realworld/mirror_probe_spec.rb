@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "thread"
+require_relative "../support/silent_logger"
 
 RSpec.describe "fetching dependencies with a not available mirror", :realworld => true do
   let(:mirror) { @mirror_uri }
@@ -71,13 +71,13 @@ RSpec.describe "fetching dependencies with a not available mirror", :realworld =
         gem 'weakling'
       G
 
-      bundle :install, :artifice => nil
+      bundle :install, :artifice => nil, :raise_on_error => false
 
       expect(out).to include("Fetching source index from #{mirror}")
-      expect(out).to include("Retrying fetcher due to error (2/4): Bundler::HTTPError Could not fetch specs from #{mirror}")
-      expect(out).to include("Retrying fetcher due to error (3/4): Bundler::HTTPError Could not fetch specs from #{mirror}")
-      expect(out).to include("Retrying fetcher due to error (4/4): Bundler::HTTPError Could not fetch specs from #{mirror}")
-      expect(out).to include("Could not fetch specs from #{mirror}")
+      expect(err).to include("Retrying fetcher due to error (2/4): Bundler::HTTPError Could not fetch specs from #{mirror}")
+      expect(err).to include("Retrying fetcher due to error (3/4): Bundler::HTTPError Could not fetch specs from #{mirror}")
+      expect(err).to include("Retrying fetcher due to error (4/4): Bundler::HTTPError Could not fetch specs from #{mirror}")
+      expect(err).to include("Could not fetch specs from #{mirror}")
     end
 
     it "prints each error and warning on a new line" do
@@ -86,10 +86,10 @@ RSpec.describe "fetching dependencies with a not available mirror", :realworld =
         gem 'weakling'
       G
 
-      bundle :install, :artifice => nil
+      bundle :install, :artifice => nil, :raise_on_error => false
 
-      expect(last_command.stdout).to include "Fetching source index from #{mirror}/"
-      expect(last_command.bundler_err).to include <<-EOS.strip
+      expect(out).to include "Fetching source index from #{mirror}/"
+      expect(err).to include <<-EOS.strip
 Retrying fetcher due to error (2/4): Bundler::HTTPError Could not fetch specs from #{mirror}/
 Retrying fetcher due to error (3/4): Bundler::HTTPError Could not fetch specs from #{mirror}/
 Retrying fetcher due to error (4/4): Bundler::HTTPError Could not fetch specs from #{mirror}/
@@ -109,13 +109,13 @@ Could not fetch specs from #{mirror}/
         gem 'weakling'
       G
 
-      bundle :install, :artifice => nil
+      bundle :install, :artifice => nil, :raise_on_error => false
 
       expect(out).to include("Fetching source index from #{mirror}")
-      expect(out).to include("Retrying fetcher due to error (2/4): Bundler::HTTPError Could not fetch specs from #{mirror}")
-      expect(out).to include("Retrying fetcher due to error (3/4): Bundler::HTTPError Could not fetch specs from #{mirror}")
-      expect(out).to include("Retrying fetcher due to error (4/4): Bundler::HTTPError Could not fetch specs from #{mirror}")
-      expect(out).to include("Could not fetch specs from #{mirror}")
+      expect(err).to include("Retrying fetcher due to error (2/4): Bundler::HTTPError Could not fetch specs from #{mirror}")
+      expect(err).to include("Retrying fetcher due to error (3/4): Bundler::HTTPError Could not fetch specs from #{mirror}")
+      expect(err).to include("Retrying fetcher due to error (4/4): Bundler::HTTPError Could not fetch specs from #{mirror}")
+      expect(err).to include("Could not fetch specs from #{mirror}")
     end
   end
 
@@ -123,7 +123,7 @@ Could not fetch specs from #{mirror}/
     @server_port = find_unused_port
     @server_uri = "http://#{host}:#{@server_port}"
 
-    require File.expand_path("../../support/artifice/endpoint", __FILE__)
+    require_relative "../support/artifice/endpoint"
 
     @server_thread = Thread.new do
       Rack::Server.start(:app       => Endpoint,

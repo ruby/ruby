@@ -132,7 +132,8 @@ LONG WINAPI rb_w32_stack_overflow_handler(struct _EXCEPTION_POINTERS *);
   struct rb_vm_tag _tag; \
   _tag.state = TAG_NONE; \
   _tag.tag = Qundef; \
-  _tag.prev = _ec->tag;
+  _tag.prev = _ec->tag; \
+  _tag.lock_rec = rb_ec_vm_lock_rec(_ec); \
 
 #define EC_POP_TAG() \
   _ec->tag = _tag.prev; \
@@ -157,29 +158,23 @@ LONG WINAPI rb_w32_stack_overflow_handler(struct _EXCEPTION_POINTERS *);
 # define VAR_NOCLOBBERED(var) var
 #endif
 
-#if defined(USE_UNALIGNED_MEMBER_ACCESS) && USE_UNALIGNED_MEMBER_ACCESS && \
-    defined(__clang__)
-# define UNALIGNED_MEMBER_ACCESS(expr) __extension__({ \
-    COMPILER_WARNING_PUSH; \
-    COMPILER_WARNING_IGNORED(-Waddress-of-packed-member); \
-    typeof(expr) unaligned_member_access_result = (expr); \
-    COMPILER_WARNING_POP; \
-    unaligned_member_access_result; \
-})
-#else
-# define UNALIGNED_MEMBER_ACCESS(expr) expr
-#endif
-#define UNALIGNED_MEMBER_PTR(ptr, mem) UNALIGNED_MEMBER_ACCESS(&(ptr)->mem)
-
-#undef RB_OBJ_WRITE
-#define RB_OBJ_WRITE(a, slot, b) UNALIGNED_MEMBER_ACCESS(rb_obj_write((VALUE)(a), (VALUE *)(slot), (VALUE)(b), __FILE__, __LINE__))
+static inline void
+rb_ec_vm_lock_rec_check(const rb_execution_context_t *ec, unsigned int recorded_lock_rec)
+{
+    unsigned int current_lock_rec = rb_ec_vm_lock_rec(ec);
+    if (current_lock_rec != recorded_lock_rec) {
+        rb_ec_vm_lock_rec_release(ec, recorded_lock_rec, current_lock_rec);
+    }
+}
 
 /* clear ec->tag->state, and return the value */
 static inline int
 rb_ec_tag_state(const rb_execution_context_t *ec)
 {
-    enum ruby_tag_type state = ec->tag->state;
-    ec->tag->state = TAG_NONE;
+    struct rb_vm_tag *tag = ec->tag;
+    enum ruby_tag_type state = tag->state;
+    tag->state = TAG_NONE;
+    rb_ec_vm_lock_rec_check(ec, tag->lock_rec);
     return state;
 }
 
@@ -267,9 +262,6 @@ CREF_OMOD_SHARED_UNSET(rb_cref_t *cref)
     cref->flags &= ~CREF_FL_OMOD_SHARED;
 }
 
-void rb_thread_cleanup(void);
-void rb_thread_wait_other_threads(void);
-
 enum {
     RAISED_EXCEPTION = 1,
     RAISED_STACKOVERFLOW = 2,
@@ -294,9 +286,7 @@ NORETURN(void rb_print_undef(VALUE, ID, rb_method_visibility_t));
 NORETURN(void rb_print_undef_str(VALUE, VALUE));
 NORETURN(void rb_print_inaccessible(VALUE, ID, rb_method_visibility_t));
 NORETURN(void rb_vm_localjump_error(const char *,VALUE, int));
-#if 0
 NORETURN(void rb_vm_jump_tag_but_local_jump(int));
-#endif
 
 VALUE rb_vm_make_jump_tag_but_local_jump(int state, VALUE val);
 rb_cref_t *rb_vm_cref(void);
@@ -309,6 +299,7 @@ VALUE rb_vm_cbase(void);
 /* vm_backtrace.c */
 VALUE rb_ec_backtrace_object(const rb_execution_context_t *ec);
 VALUE rb_ec_backtrace_str_ary(const rb_execution_context_t *ec, long lev, long n);
+VALUE rb_ec_backtrace_location_ary(const rb_execution_context_t *ec, long lev, long n, bool skip_internal);
 
 #ifndef CharNext		/* defined as CharNext[AW] on Windows. */
 # ifdef HAVE_MBLEN

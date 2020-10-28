@@ -2,13 +2,7 @@ require_relative '../../spec_helper'
 require_relative 'shared/comparison_coerce'
 
 describe "Integer#<" do
-  ruby_version_is "2.4"..."2.5" do
-    it_behaves_like :integer_comparison_coerce_rescue, :<
-  end
-
-  ruby_version_is "2.5" do
-    it_behaves_like :integer_comparison_coerce_not_rescue, :<
-  end
+  it_behaves_like :integer_comparison_coerce_not_rescue, :<
 
   context "fixnum" do
     it "returns true if self is less than the given argument" do
@@ -23,8 +17,8 @@ describe "Integer#<" do
     end
 
     it "raises an ArgumentError when given a non-Integer" do
-      lambda { 5 < "4"       }.should raise_error(ArgumentError)
-      lambda { 5 < mock('x') }.should raise_error(ArgumentError)
+      -> { 5 < "4"       }.should raise_error(ArgumentError)
+      -> { 5 < mock('x') }.should raise_error(ArgumentError)
     end
   end
 
@@ -44,8 +38,8 @@ describe "Integer#<" do
     end
 
     it "raises an ArgumentError when given a non-Integer" do
-      lambda { @bignum < "4" }.should raise_error(ArgumentError)
-      lambda { @bignum < mock('str') }.should raise_error(ArgumentError)
+      -> { @bignum < "4" }.should raise_error(ArgumentError)
+      -> { @bignum < mock('str') }.should raise_error(ArgumentError)
     end
   end
 end

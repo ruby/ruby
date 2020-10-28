@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "bundler/gem_helpers"
+require_relative "gem_helpers"
 
 module Bundler
   module MatchPlatform

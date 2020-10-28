@@ -7,7 +7,6 @@
 # first.
 
 class Gem::Resolver::RequirementList
-
   include Enumerable
 
   ##

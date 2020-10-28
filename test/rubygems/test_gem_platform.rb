@@ -4,7 +4,6 @@ require 'rubygems/platform'
 require 'rbconfig'
 
 class TestGemPlatform < Gem::TestCase
-
   def test_self_local
     util_set_arch 'i686-darwin8.10.1'
 
@@ -76,6 +75,7 @@ class TestGemPlatform < Gem::TestCase
       'i386-solaris2.8'        => ['x86',       'solaris',   '2.8'],
       'mswin32'                => ['x86',       'mswin32',   nil],
       'x86_64-linux'           => ['x86_64',    'linux',     nil],
+      'x86_64-linux-musl'      => ['x86_64',    'linux',     'musl'],
       'x86_64-openbsd3.9'      => ['x86_64',    'openbsd',   '3.9'],
       'x86_64-openbsd4.0'      => ['x86_64',    'openbsd',   '4.0'],
       'x86_64-openbsd'         => ['x86_64',    'openbsd',   nil],
@@ -211,13 +211,13 @@ class TestGemPlatform < Gem::TestCase
     assert((arm   === Gem::Platform.local), 'arm   === armv5')
     assert((armv5 === Gem::Platform.local), 'armv5 === armv5')
     refute((armv7 === Gem::Platform.local), 'armv7 === armv5')
-    refute((Gem::Platform.local ===   arm), 'armv5 === arm')
+    refute((Gem::Platform.local === arm), 'armv5 === arm')
 
     util_set_arch 'armv7-linux'
     assert((arm   === Gem::Platform.local), 'arm   === armv7')
     refute((armv5 === Gem::Platform.local), 'armv5 === armv7')
     assert((armv7 === Gem::Platform.local), 'armv7 === armv7')
-    refute((Gem::Platform.local ===   arm), 'armv7 === arm')
+    refute((Gem::Platform.local === arm), 'armv7 === arm')
   end
 
   def test_equals3_version

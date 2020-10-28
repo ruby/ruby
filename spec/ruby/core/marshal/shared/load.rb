@@ -1,6 +1,5 @@
 # -*- encoding: binary -*-
 require_relative '../fixtures/marshal_data'
-require 'stringio'
 
 describe :marshal_load, shared: true do
   before :all do
@@ -9,7 +8,7 @@ describe :marshal_load, shared: true do
 
   it "raises an ArgumentError when the dumped data is truncated" do
     obj = {first: 1, second: 2, third: 3}
-    lambda { Marshal.send(@method, Marshal.dump(obj)[0, 5]) }.should raise_error(ArgumentError)
+    -> { Marshal.send(@method, Marshal.dump(obj)[0, 5]) }.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError when the dumped class is missing" do
@@ -17,7 +16,7 @@ describe :marshal_load, shared: true do
     kaboom = Marshal.dump(KaBoom.new)
     Object.send(:remove_const, :KaBoom)
 
-    lambda { Marshal.send(@method, kaboom) }.should raise_error(ArgumentError)
+    -> { Marshal.send(@method, kaboom) }.should raise_error(ArgumentError)
   end
 
   describe "when called with a proc" do
@@ -162,105 +161,107 @@ describe :marshal_load, shared: true do
     marshal_data[0] = (Marshal::MAJOR_VERSION).chr
     marshal_data[1] = (Marshal::MINOR_VERSION + 1).chr
 
-    lambda { Marshal.send(@method, marshal_data) }.should raise_error(TypeError)
+    -> { Marshal.send(@method, marshal_data) }.should raise_error(TypeError)
 
     marshal_data = '\xff\xff'
     marshal_data[0] = (Marshal::MAJOR_VERSION - 1).chr
     marshal_data[1] = (Marshal::MINOR_VERSION).chr
 
-    lambda { Marshal.send(@method, marshal_data) }.should raise_error(TypeError)
+    -> { Marshal.send(@method, marshal_data) }.should raise_error(TypeError)
   end
 
   it "raises EOFError on loading an empty file" do
     temp_file = tmp("marshal.rubyspec.tmp.#{Process.pid}")
     file = File.new(temp_file, "w+")
     begin
-      lambda { Marshal.send(@method, file) }.should raise_error(EOFError)
+      -> { Marshal.send(@method, file) }.should raise_error(EOFError)
     ensure
       file.close
       rm_r temp_file
     end
   end
 
-  it "returns an untainted object if source is untainted" do
-    x = Object.new
-    y = Marshal.send(@method, Marshal.dump(x))
-    y.tainted?.should be_false
-  end
-
-  describe "when source is tainted" do
-    it "returns a tainted object" do
+  ruby_version_is ''...'2.7' do
+    it "returns an untainted object if source is untainted" do
       x = Object.new
-      x.taint
-      s = Marshal.dump(x)
-      y = Marshal.send(@method, s)
-      y.tainted?.should be_true
+      y = Marshal.send(@method, Marshal.dump(x))
+      y.tainted?.should be_false
+    end
 
-      # note that round-trip via Marshal does not preserve
-      # the taintedness at each level of the nested structure
-      y = Marshal.send(@method, Marshal.dump([[x]]))
+    describe "when source is tainted" do
+      it "returns a tainted object" do
+        x = Object.new
+        x.taint
+        s = Marshal.dump(x)
+        y = Marshal.send(@method, s)
+        y.tainted?.should be_true
+
+        # note that round-trip via Marshal does not preserve
+        # the taintedness at each level of the nested structure
+        y = Marshal.send(@method, Marshal.dump([[x]]))
+        y.tainted?.should be_true
+        y.first.tainted?.should be_true
+        y.first.first.tainted?.should be_true
+      end
+
+      it "does not taint Symbols" do
+        x = [:x]
+        y = Marshal.send(@method, Marshal.dump(x).taint)
+        y.tainted?.should be_true
+        y.first.tainted?.should be_false
+      end
+
+      it "does not taint Fixnums" do
+        x = [1]
+        y = Marshal.send(@method, Marshal.dump(x).taint)
+        y.tainted?.should be_true
+        y.first.tainted?.should be_false
+      end
+
+      it "does not taint Bignums" do
+        x = [bignum_value]
+        y = Marshal.send(@method, Marshal.dump(x).taint)
+        y.tainted?.should be_true
+        y.first.tainted?.should be_false
+      end
+
+      it "does not taint Floats" do
+        x = [1.2]
+        y = Marshal.send(@method, Marshal.dump(x).taint)
+        y.tainted?.should be_true
+        y.first.tainted?.should be_false
+      end
+    end
+
+    it "preserves taintedness of nested structure" do
+      x = Object.new
+      a = [[x]]
+      x.taint
+      y = Marshal.send(@method, Marshal.dump(a))
       y.tainted?.should be_true
       y.first.tainted?.should be_true
       y.first.first.tainted?.should be_true
     end
 
-    it "does not taint Symbols" do
-      x = [:x]
-      y = Marshal.send(@method, Marshal.dump(x).taint)
-      y.tainted?.should be_true
-      y.first.tainted?.should be_false
+    it "returns a trusted object if source is trusted" do
+      x = Object.new
+      y = Marshal.send(@method, Marshal.dump(x))
+      y.untrusted?.should be_false
     end
 
-    it "does not taint Fixnums" do
-      x = [1]
-      y = Marshal.send(@method, Marshal.dump(x).taint)
-      y.tainted?.should be_true
-      y.first.tainted?.should be_false
+    it "returns an untrusted object if source is untrusted" do
+      x = Object.new
+      x.untrust
+      y = Marshal.send(@method, Marshal.dump(x))
+      y.untrusted?.should be_true
+
+      # note that round-trip via Marshal does not preserve
+      # the untrustedness at each level of the nested structure
+      y = Marshal.send(@method, Marshal.dump([[x]]))
+      y.untrusted?.should be_true
+      y.first.untrusted?.should be_true
+      y.first.first.untrusted?.should be_true
     end
-
-    it "does not taint Bignums" do
-      x = [bignum_value]
-      y = Marshal.send(@method, Marshal.dump(x).taint)
-      y.tainted?.should be_true
-      y.first.tainted?.should be_false
-    end
-
-    it "does not taint Floats" do
-      x = [1.2]
-      y = Marshal.send(@method, Marshal.dump(x).taint)
-      y.tainted?.should be_true
-      y.first.tainted?.should be_false
-    end
-  end
-
-  it "preserves taintedness of nested structure" do
-    x = Object.new
-    a = [[x]]
-    x.taint
-    y = Marshal.send(@method, Marshal.dump(a))
-    y.tainted?.should be_true
-    y.first.tainted?.should be_true
-    y.first.first.tainted?.should be_true
-  end
-
-  it "returns a trusted object if source is trusted" do
-    x = Object.new
-    y = Marshal.send(@method, Marshal.dump(x))
-    y.untrusted?.should be_false
-  end
-
-  it "returns an untrusted object if source is untrusted" do
-    x = Object.new
-    x.untrust
-    y = Marshal.send(@method, Marshal.dump(x))
-    y.untrusted?.should be_true
-
-    # note that round-trip via Marshal does not preserve
-    # the untrustedness at each level of the nested structure
-    y = Marshal.send(@method, Marshal.dump([[x]]))
-    y.untrusted?.should be_true
-    y.first.untrusted?.should be_true
-    y.first.first.untrusted?.should be_true
   end
 
   # Note: Ruby 1.9 should be compatible with older marshal format
@@ -408,8 +409,9 @@ describe :marshal_load, shared: true do
     end
 
     it "loads a string through StringIO stream" do
-        obj = "This is a string which should be unmarshalled through StringIO stream!"
-        Marshal.send(@method, StringIO.new(Marshal.dump(obj))).should == obj
+      require 'stringio'
+      obj = "This is a string which should be unmarshalled through StringIO stream!"
+      Marshal.send(@method, StringIO.new(Marshal.dump(obj))).should == obj
     end
 
     it "loads a string with an ivar" do
@@ -422,38 +424,36 @@ describe :marshal_load, shared: true do
       str.should be_an_instance_of(UserCustomConstructorString)
     end
 
-    with_feature :encoding do
-      it "loads a US-ASCII String" do
-        str = "abc".force_encoding("us-ascii")
-        data = "\x04\bI\"\babc\x06:\x06EF"
-        result = Marshal.send(@method, data)
-        result.should == str
-        result.encoding.should equal(Encoding::US_ASCII)
-      end
+    it "loads a US-ASCII String" do
+      str = "abc".force_encoding("us-ascii")
+      data = "\x04\bI\"\babc\x06:\x06EF"
+      result = Marshal.send(@method, data)
+      result.should == str
+      result.encoding.should equal(Encoding::US_ASCII)
+    end
 
-      it "loads a UTF-8 String" do
-        str = "\x6d\xc3\xb6\x68\x72\x65".force_encoding("utf-8")
-        data = "\x04\bI\"\vm\xC3\xB6hre\x06:\x06ET"
-        result = Marshal.send(@method, data)
-        result.should == str
-        result.encoding.should equal(Encoding::UTF_8)
-      end
+    it "loads a UTF-8 String" do
+      str = "\x6d\xc3\xb6\x68\x72\x65".force_encoding("utf-8")
+      data = "\x04\bI\"\vm\xC3\xB6hre\x06:\x06ET"
+      result = Marshal.send(@method, data)
+      result.should == str
+      result.encoding.should equal(Encoding::UTF_8)
+    end
 
-      it "loads a String in another encoding" do
-        str = "\x6d\x00\xf6\x00\x68\x00\x72\x00\x65\x00".force_encoding("utf-16le")
-        data = "\x04\bI\"\x0Fm\x00\xF6\x00h\x00r\x00e\x00\x06:\rencoding\"\rUTF-16LE"
-        result = Marshal.send(@method, data)
-        result.should == str
-        result.encoding.should equal(Encoding::UTF_16LE)
-      end
+    it "loads a String in another encoding" do
+      str = "\x6d\x00\xf6\x00\x68\x00\x72\x00\x65\x00".force_encoding("utf-16le")
+      data = "\x04\bI\"\x0Fm\x00\xF6\x00h\x00r\x00e\x00\x06:\rencoding\"\rUTF-16LE"
+      result = Marshal.send(@method, data)
+      result.should == str
+      result.encoding.should equal(Encoding::UTF_16LE)
+    end
 
-      it "loads a String as ASCII-8BIT if no encoding is specified at the end" do
-        str = "\xC3\xB8".force_encoding("ASCII-8BIT")
-        data = "\x04\b\"\a\xC3\xB8".force_encoding("UTF-8")
-        result = Marshal.send(@method, data)
-        result.encoding.should == Encoding::ASCII_8BIT
-        result.should == str
-      end
+    it "loads a String as BINARY if no encoding is specified at the end" do
+      str = "\xC3\xB8".force_encoding("BINARY")
+      data = "\x04\b\"\a\xC3\xB8".force_encoding("UTF-8")
+      result = Marshal.send(@method, data)
+      result.encoding.should == Encoding::BINARY
+      result.should == str
     end
   end
 
@@ -531,6 +531,19 @@ describe :marshal_load, shared: true do
       loaded.message.should == obj.message
       loaded.backtrace.should == obj.backtrace
     end
+
+    it "loads an marshalled exception with ivars" do
+      s = 'hi'
+      arr = [:so, :so, s, s]
+      obj = Exception.new("foo")
+      obj.instance_variable_set :@arr, arr
+
+      loaded = Marshal.send(@method, "\x04\bo:\x0EException\b:\tmesg\"\bfoo:\abt0:\t@arr[\t:\aso;\t\"\ahi@\b")
+      new_arr = loaded.instance_variable_get :@arr
+
+      loaded.message.should == obj.message
+      new_arr.should == arr
+    end
   end
 
   describe "for an Object" do
@@ -569,7 +582,7 @@ describe :marshal_load, shared: true do
     end
 
     it "raises ArgumentError if the object from an 'o' stream is not dumpable as 'o' type user class" do
-      lambda do
+      -> do
         Marshal.send(@method, "\x04\bo:\tFile\001\001:\001\005@path\"\x10/etc/passwd")
       end.should raise_error(ArgumentError)
     end
@@ -600,17 +613,17 @@ describe :marshal_load, shared: true do
         data = Marshal.dump(MarshalSpec::SwappedClass.new)
 
         MarshalSpec.set_swapped_class(Class.new(Array))
-        lambda { Marshal.send(@method, data) }.should raise_error(ArgumentError)
+        -> { Marshal.send(@method, data) }.should raise_error(ArgumentError)
 
         MarshalSpec.set_swapped_class(Class.new)
-        lambda { Marshal.send(@method, data) }.should raise_error(ArgumentError)
+        -> { Marshal.send(@method, data) }.should raise_error(ArgumentError)
       end
     end
   end
 
   describe "for a Regexp" do
     it "loads an extended Regexp" do
-      obj = /[a-z]/.extend(Meths, MethsMore)
+      obj = /[a-z]/.dup.extend(Meths, MethsMore)
       new_obj = Marshal.send(@method, "\004\be:\nMethse:\016MethsMore/\n[a-z]\000")
 
       new_obj.should == obj
@@ -704,7 +717,7 @@ describe :marshal_load, shared: true do
        "\004\bi\004\0",
        "\004\bi\004\0\0",
        "\004\bi\004\0\0\0"].each do |invalid|
-        lambda { Marshal.send(@method, invalid) }.should raise_error(ArgumentError)
+        -> { Marshal.send(@method, invalid) }.should raise_error(ArgumentError)
       end
     end
 
@@ -801,11 +814,11 @@ describe :marshal_load, shared: true do
     end
 
     it "raises ArgumentError if given the name of a non-Module" do
-      lambda { Marshal.send(@method, "\x04\bc\vKernel") }.should raise_error(ArgumentError)
+      -> { Marshal.send(@method, "\x04\bc\vKernel") }.should raise_error(ArgumentError)
     end
 
     it "raises ArgumentError if given a nonexistent class" do
-      lambda { Marshal.send(@method, "\x04\bc\vStrung") }.should raise_error(ArgumentError)
+      -> { Marshal.send(@method, "\x04\bc\vStrung") }.should raise_error(ArgumentError)
     end
   end
 
@@ -815,7 +828,7 @@ describe :marshal_load, shared: true do
     end
 
     it "raises ArgumentError if given the name of a non-Class" do
-      lambda { Marshal.send(@method, "\x04\bm\vString") }.should raise_error(ArgumentError)
+      -> { Marshal.send(@method, "\x04\bm\vString") }.should raise_error(ArgumentError)
     end
 
     it "loads an old module" do
@@ -854,13 +867,13 @@ describe :marshal_load, shared: true do
 
       data = "\x04\bd:\x1AUnloadableDumpableDirI\"\x06.\x06:\x06ET"
 
-      lambda { Marshal.send(@method, data) }.should raise_error(TypeError)
+      -> { Marshal.send(@method, data) }.should raise_error(TypeError)
     end
 
     it "raises ArgumentError when the local class is a regular object" do
       data = "\004\bd:\020UserDefined\0"
 
-      lambda { Marshal.send(@method, data) }.should raise_error(ArgumentError)
+      -> { Marshal.send(@method, data) }.should raise_error(ArgumentError)
     end
   end
 
@@ -873,7 +886,7 @@ describe :marshal_load, shared: true do
 
     it "raises an ArgumentError" do
       message = "undefined class/module NamespaceTest::SameName"
-      lambda { Marshal.send(@method, @data) }.should raise_error(ArgumentError, message)
+      -> { Marshal.send(@method, @data) }.should raise_error(ArgumentError, message)
     end
   end
 
@@ -882,6 +895,6 @@ describe :marshal_load, shared: true do
     @data = Marshal.dump(NamespaceTest::KaBoom.new)
     NamespaceTest.send(:remove_const, :KaBoom)
 
-    lambda { Marshal.send(@method, @data) }.should raise_error(ArgumentError, /NamespaceTest::KaBoom/)
+    -> { Marshal.send(@method, @data) }.should raise_error(ArgumentError, /NamespaceTest::KaBoom/)
   end
 end

@@ -13,7 +13,7 @@
 #pragma clang diagnostic ignored "-Wgcc-compat"
 #endif
 
-#include "ruby/config.h"
+#include "ruby/internal/config.h"
 #include "ruby/defines.h"
 #include "ruby/missing.h"
 #include "addr2line.h"
@@ -21,11 +21,11 @@
 #include <stdio.h>
 #include <errno.h>
 
-#ifdef HAVE_STDBOOL_H
-#include <stdbool.h>
-#else
-#include "missing/stdbool.h"
+#ifdef HAVE_LIBPROC_H
+#include <libproc.h>
 #endif
+
+#include "ruby/internal/stdbool.h"
 
 #if defined(USE_ELF) || defined(HAVE_MACH_O_LOADER_H)
 
@@ -187,7 +187,7 @@ struct debug_section_definition {
 };
 
 /* Avoid consuming stack as this module may be used from signal handler */
-static char binary_filename[PATH_MAX];
+static char binary_filename[PATH_MAX + 1];
 
 static unsigned long
 uleb128(char **p)
@@ -432,7 +432,7 @@ parse_debug_line_cu(int num_traces, void **traces, char **debug_line,
 	    /*basic_block = 1; */
 	    break;
 	case DW_LNS_const_add_pc:
-	    a = ((255 - header.opcode_base) / header.line_range) *
+	    a = ((255UL - header.opcode_base) / header.line_range) *
 		header.minimum_instruction_length;
 	    addr += a;
 	    break;
@@ -1092,7 +1092,7 @@ debug_info_reader_read_value(DebugInfoReader *reader, uint64_t form, DebugInfoVa
         set_uint_value(v, uleb128(&reader->p));
         break;
       case DW_FORM_indirect:
-        /* TODO: read the refered value */
+        /* TODO: read the referred value */
         set_uint_value(v, uleb128(&reader->p));
         break;
       case DW_FORM_sec_offset:
@@ -1907,7 +1907,7 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
             uint32_t offset = __builtin_bswap32(arch->offset);
             /* fprintf(stderr,"%d: fat %d %x/%x %x/%x\n",__LINE__, i, mhp->cputype,mhp->cpusubtype, cputype,cpusubtype); */
             if (mhp->cputype == cputype &&
-                    (mhp->cpusubtype & ~CPU_SUBTYPE_MASK) == cpusubtype) {
+                    (cpu_subtype_t)(mhp->cpusubtype & ~CPU_SUBTYPE_MASK) == cpusubtype) {
                 p = file + offset;
                 file = p;
                 header = (struct LP(mach_header) *)p;
@@ -1980,9 +1980,9 @@ found_mach_header:
             {
                 struct symtab_command *cmd = (struct symtab_command *)lcmd;
                 struct LP(nlist) *nl = (struct LP(nlist) *)(file + cmd->symoff);
-                char *strtab = file + cmd->stroff, *sname;
+                char *strtab = file + cmd->stroff, *sname = 0;
                 uint32_t j;
-                uintptr_t saddr;
+                uintptr_t saddr = 0;
                 /* kprintf("[%2d]: %x/symtab %p\n", i, cmd->cmd, p); */
                 for (j = 0; j < cmd->nsyms; j++) {
                     uintptr_t symsize, d;
@@ -2050,6 +2050,7 @@ main_exe_path(void)
 {
 # define PROC_SELF_EXE "/proc/self/exe"
     ssize_t len = readlink(PROC_SELF_EXE, binary_filename, PATH_MAX);
+    if (len < 0) return 0;
     binary_filename[len] = 0;
     return len;
 }
@@ -2065,6 +2066,15 @@ main_exe_path(void)
 	return -1;
     }
     len--; /* sysctl sets strlen+1 */
+    return len;
+}
+#elif defined(HAVE_LIBPROC_H)
+static ssize_t
+main_exe_path(void)
+{
+    int len = proc_pidpath(getpid(), binary_filename, PATH_MAX);
+    if (len == 0) return 0;
+    binary_filename[len] = 0;
     return len;
 }
 #else

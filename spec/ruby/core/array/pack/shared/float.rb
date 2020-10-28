@@ -1,4 +1,4 @@
-# -*- encoding: ascii-8bit -*-
+# -*- encoding: binary -*-
 
 describe :array_pack_float_le, shared: true do
   it "encodes a positive Float" do
@@ -14,7 +14,7 @@ describe :array_pack_float_le, shared: true do
   end
 
   it "raises a TypeError if passed a String representation of a floating point number" do
-    lambda { ["13"].pack(pack_format) }.should raise_error(TypeError)
+    -> { ["13"].pack(pack_format) }.should raise_error(TypeError)
   end
 
   it "encodes the number of array elements specified by the count modifier" do
@@ -42,7 +42,7 @@ describe :array_pack_float_le, shared: true do
   end
 
   it "encodes NaN" do
-    nans = ["\x00\x00\xc0\xff", "\x00\x00\xc0\x7f"]
+    nans = ["\x00\x00\xc0\xff", "\x00\x00\xc0\x7f", "\xFF\xFF\xFF\x7F"]
     nans.should include([nan_value].pack(pack_format))
   end
 
@@ -69,7 +69,7 @@ describe :array_pack_float_be, shared: true do
   end
 
   it "raises a TypeError if passed a String representation of a floating point number" do
-    lambda { ["13"].pack(pack_format) }.should raise_error(TypeError)
+    -> { ["13"].pack(pack_format) }.should raise_error(TypeError)
   end
 
   it "encodes the number of array elements specified by the count modifier" do
@@ -97,7 +97,7 @@ describe :array_pack_float_be, shared: true do
   end
 
   it "encodes NaN" do
-    nans = ["\xff\xc0\x00\x00", "\x7f\xc0\x00\x00"]
+    nans = ["\xff\xc0\x00\x00", "\x7f\xc0\x00\x00", "\x7F\xFF\xFF\xFF"]
     nans.should include([nan_value].pack(pack_format))
   end
 
@@ -124,7 +124,7 @@ describe :array_pack_double_le, shared: true do
   end
 
   it "raises a TypeError if passed a String representation of a floating point number" do
-    lambda { ["13"].pack(pack_format) }.should raise_error(TypeError)
+    -> { ["13"].pack(pack_format) }.should raise_error(TypeError)
   end
 
   it "encodes the number of array elements specified by the count modifier" do
@@ -152,7 +152,11 @@ describe :array_pack_double_le, shared: true do
   end
 
   it "encodes NaN" do
-    nans = ["\x00\x00\x00\x00\x00\x00\xf8\xff", "\x00\x00\x00\x00\x00\x00\xf8\x7f"]
+    nans = [
+      "\x00\x00\x00\x00\x00\x00\xf8\xff",
+      "\x00\x00\x00\x00\x00\x00\xf8\x7f",
+      "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\x7F"
+    ]
     nans.should include([nan_value].pack(pack_format))
   end
 
@@ -179,7 +183,7 @@ describe :array_pack_double_be, shared: true do
   end
 
   it "raises a TypeError if passed a String representation of a floating point number" do
-    lambda { ["13"].pack(pack_format) }.should raise_error(TypeError)
+    -> { ["13"].pack(pack_format) }.should raise_error(TypeError)
   end
 
   it "encodes the number of array elements specified by the count modifier" do
@@ -207,7 +211,11 @@ describe :array_pack_double_be, shared: true do
   end
 
   it "encodes NaN" do
-    nans = ["\xff\xf8\x00\x00\x00\x00\x00\x00", "\x7f\xf8\x00\x00\x00\x00\x00\x00"]
+    nans = [
+      "\xff\xf8\x00\x00\x00\x00\x00\x00",
+      "\x7f\xf8\x00\x00\x00\x00\x00\x00",
+      "\x7F\xFF\xFF\xFF\xFF\xFF\xFF\xFF"
+    ]
     nans.should include([nan_value].pack(pack_format))
   end
 

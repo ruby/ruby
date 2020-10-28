@@ -3,10 +3,10 @@ require_relative 'fixtures/classes'
 
 describe "Thread.new" do
   it "creates a thread executing the given block" do
-    c = Channel.new
-    Thread.new { c << true }.join
-    c << false
-    c.receive.should == true
+    q = Queue.new
+    Thread.new { q << true }.join
+    q << false
+    q.pop.should == true
   end
 
   it "can pass arguments to the thread block" do
@@ -18,7 +18,7 @@ describe "Thread.new" do
   end
 
   it "raises an exception when not given a block" do
-    lambda { Thread.new }.should raise_error(ThreadError)
+    -> { Thread.new }.should raise_error(ThreadError)
   end
 
   it "creates a subclass of thread calls super with a block in initialize" do
@@ -34,7 +34,7 @@ describe "Thread.new" do
       end
     end
 
-    lambda {
+    -> {
       c.new
     }.should raise_error(ThreadError)
   end
@@ -53,4 +53,31 @@ describe "Thread.new" do
     ScratchPad.recorded.should == [:good, :in_thread]
   end
 
+  it "releases Mutexes held by the Thread when the Thread finishes" do
+    m1 = Mutex.new
+    m2 = Mutex.new
+    t = Thread.new {
+      m1.lock
+      m1.should.locked?
+      m2.lock
+      m2.should.locked?
+    }
+    t.join
+    m1.should_not.locked?
+    m2.should_not.locked?
+  end
+
+  it "releases Mutexes held by the Thread when the Thread finishes, also with Mutex#synchronize" do
+    m = Mutex.new
+    t = Thread.new {
+      m.synchronize {
+        m.unlock
+        m.lock
+      }
+      m.lock
+      m.should.locked?
+    }
+    t.join
+    m.should_not.locked?
+  end
 end

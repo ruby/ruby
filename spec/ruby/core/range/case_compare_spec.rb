@@ -13,7 +13,7 @@ describe "Range#===" do
     it "requires #succ method to be implemented" do
       range = RangeSpecs::WithoutSucc.new(0)..RangeSpecs::WithoutSucc.new(10)
 
-      lambda do
+      -> do
         range === RangeSpecs::WithoutSucc.new(2)
       end.should raise_error(TypeError, /can't iterate from/)
     end
@@ -24,5 +24,10 @@ describe "Range#===" do
       range = RangeSpecs::WithoutSucc.new(0)..RangeSpecs::WithoutSucc.new(10)
       (range === RangeSpecs::WithoutSucc.new(2)).should == true
     end
+  end
+
+  ruby_version_is "2.7" do
+    it_behaves_like :range_cover_and_include, :===
+    it_behaves_like :range_cover, :===
   end
 end

@@ -1,13 +1,13 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "BUNDLE\-UPDATE" "1" "January 2019" "" ""
+.TH "BUNDLE\-UPDATE" "1" "October 2020" "" ""
 .
 .SH "NAME"
 \fBbundle\-update\fR \- Update your gems to the latest available versions
 .
 .SH "SYNOPSIS"
-\fBbundle update\fR \fI*gems\fR [\-\-all] [\-\-group=NAME] [\-\-source=NAME] [\-\-local] [\-\-ruby] [\-\-bundler[=VERSION]] [\-\-full\-index] [\-\-jobs=JOBS] [\-\-quiet] [\-\-force] [\-\-patch|\-\-minor|\-\-major] [\-\-strict] [\-\-conservative]
+\fBbundle update\fR \fI*gems\fR [\-\-all] [\-\-group=NAME] [\-\-source=NAME] [\-\-local] [\-\-ruby] [\-\-bundler[=VERSION]] [\-\-full\-index] [\-\-jobs=JOBS] [\-\-quiet] [\-\-patch|\-\-minor|\-\-major] [\-\-redownload] [\-\-strict] [\-\-conservative]
 .
 .SH "DESCRIPTION"
 Update the gems specified (all gems, if \fB\-\-all\fR flag is used), ignoring the previously installed gems specified in the \fBGemfile\.lock\fR\. In general, you should use bundle install(1) \fIbundle\-install\.1\.html\fR to install the same exact gems and versions across machines\.
@@ -58,8 +58,8 @@ Retry failed network or git requests for \fInumber\fR times\.
 Only output warnings and errors\.
 .
 .TP
-\fB\-\-force\fR
-Force downloading every gem\. \fB\-\-redownload\fR is an alias of this option\.
+\fB\-\-redownload\fR
+Force downloading every gem\.
 .
 .TP
 \fB\-\-patch\fR

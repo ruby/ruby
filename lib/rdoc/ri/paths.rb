@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rdoc/ri'
+require_relative '../rdoc'
 
 ##
 # The directories where ri data lives.  Paths can be enumerated via ::each, or
@@ -12,23 +12,9 @@ module RDoc::RI::Paths
 
   version = RbConfig::CONFIG['ruby_version']
 
-  BASE    = if RbConfig::CONFIG.key? 'ridir' then
-              File.join RbConfig::CONFIG['ridir'], version
-            else
-              File.join RbConfig::CONFIG['datadir'], 'ri', version
-            end
+  BASE    = File.join RbConfig::CONFIG['ridir'], version
 
-  homedir = begin
-              File.expand_path('~')
-            rescue ArgumentError
-            end
-
-  homedir ||= ENV['HOME'] ||
-              ENV['USERPROFILE'] || ENV['HOMEPATH'] # for 1.8 compatibility
-
-  HOMEDIR = if homedir then
-              File.join homedir, ".rdoc"
-            end
+  HOMEDIR = RDoc.home
   #:startdoc:
 
   ##

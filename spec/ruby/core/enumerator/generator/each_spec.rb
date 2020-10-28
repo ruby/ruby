@@ -21,7 +21,7 @@ describe "Enumerator::Generator#each" do
   end
 
   it "raises a LocalJumpError if no block given" do
-    lambda { @generator.each }.should raise_error(LocalJumpError)
+    -> { @generator.each }.should raise_error(LocalJumpError)
   end
 
   it "returns the block returned value" do

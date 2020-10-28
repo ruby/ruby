@@ -42,16 +42,20 @@ describe "Regexps with encoding modifiers" do
     /./n.encoding.should == Encoding::US_ASCII
   end
 
-  it 'uses ASCII-8BIT as /n encoding if not all chars are 7-bit' do
-    /\xFF/n.encoding.should == Encoding::ASCII_8BIT
+  it 'uses BINARY when is not initialized' do
+    Regexp.allocate.encoding.should == Encoding::BINARY
+  end
+
+  it 'uses BINARY as /n encoding if not all chars are 7-bit' do
+    /\xFF/n.encoding.should == Encoding::BINARY
   end
 
   it 'preserves US-ASCII as /n encoding through interpolation if all chars are 7-bit' do
     /.#{/./}/n.encoding.should == Encoding::US_ASCII
   end
 
-  it 'preserves ASCII-8BIT as /n encoding through interpolation if all chars are 7-bit' do
-    /\xFF#{/./}/n.encoding.should == Encoding::ASCII_8BIT
+  it 'preserves BINARY as /n encoding through interpolation if all chars are 7-bit' do
+    /\xFF#{/./}/n.encoding.should == Encoding::BINARY
   end
 
   it "supports /s (Windows_31J encoding)" do
@@ -99,5 +103,29 @@ describe "Regexps with encoding modifiers" do
 
   it "selects last of multiple encoding specifiers" do
     /foo/ensuensuens.should == /foo/s
+  end
+
+  it "raises Encoding::CompatibilityError when trying match against different encodings" do
+    -> { /\A[[:space:]]*\z/.match(" ".encode("UTF-16LE")) }.should raise_error(Encoding::CompatibilityError)
+  end
+
+  it "raises Encoding::CompatibilityError when trying match? against different encodings" do
+    -> { /\A[[:space:]]*\z/.match?(" ".encode("UTF-16LE")) }.should raise_error(Encoding::CompatibilityError)
+  end
+
+  it "raises Encoding::CompatibilityError when trying =~ against different encodings" do
+    -> { /\A[[:space:]]*\z/ =~ " ".encode("UTF-16LE") }.should raise_error(Encoding::CompatibilityError)
+  end
+
+  it "computes the Regexp Encoding for each interpolated Regexp instance" do
+    make_regexp = -> str { /#{str}/ }
+
+    r = make_regexp.call("été".force_encoding(Encoding::UTF_8))
+    r.should.fixed_encoding?
+    r.encoding.should == Encoding::UTF_8
+
+    r = make_regexp.call("abc".force_encoding(Encoding::UTF_8))
+    r.should_not.fixed_encoding?
+    r.encoding.should == Encoding::US_ASCII
   end
 end

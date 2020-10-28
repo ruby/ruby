@@ -189,57 +189,6 @@ class TestMarshal < Test::Unit::TestCase
     end
   end
 
-  def test_taint
-    x = Object.new
-    x.taint
-    s = Marshal.dump(x)
-    assert_equal(true, s.tainted?)
-    y = Marshal.load(s)
-    assert_equal(true, y.tainted?)
-  end
-
-  def test_taint_each_object
-    x = Object.new
-    obj = [[x]]
-
-    # clean object causes crean stream
-    assert_equal(false, obj.tainted?)
-    assert_equal(false, obj.first.tainted?)
-    assert_equal(false, obj.first.first.tainted?)
-    s = Marshal.dump(obj)
-    assert_equal(false, s.tainted?)
-
-    # tainted object causes tainted stream
-    x.taint
-    assert_equal(false, obj.tainted?)
-    assert_equal(false, obj.first.tainted?)
-    assert_equal(true, obj.first.first.tainted?)
-    t = Marshal.dump(obj)
-    assert_equal(true, t.tainted?)
-
-    # clean stream causes clean objects
-    assert_equal(false, s.tainted?)
-    y = Marshal.load(s)
-    assert_equal(false, y.tainted?)
-    assert_equal(false, y.first.tainted?)
-    assert_equal(false, y.first.first.tainted?)
-
-    # tainted stream causes tainted objects
-    assert_equal(true, t.tainted?)
-    y = Marshal.load(t)
-    assert_equal(true, y.tainted?)
-    assert_equal(true, y.first.tainted?)
-    assert_equal(true, y.first.first.tainted?)
-
-    # same tests by different senario
-    s.taint
-    assert_equal(true, s.tainted?)
-    y = Marshal.load(s)
-    assert_equal(true, y.tainted?)
-    assert_equal(true, y.first.tainted?)
-    assert_equal(true, y.first.first.tainted?)
-  end
-
   def test_symbol2
     [:ruby, :"\u{7d05}\u{7389}"].each do |sym|
       assert_equal(sym, Marshal.load(Marshal.dump(sym)), '[ruby-core:24788]')
@@ -499,16 +448,6 @@ class TestMarshal < Test::Unit::TestCase
   module TestModule
   end
 
-  def test_marshal_load_should_not_taint_classes
-    bug7325 = '[ruby-core:49198]'
-    for c in [TestClass, TestModule]
-      assert_not_predicate(c, :tainted?)
-      c2 = Marshal.load(Marshal.dump(c).taint)
-      assert_same(c, c2)
-      assert_not_predicate(c, :tainted?, bug7325)
-    end
-  end
-
   class Bug7627 < Struct.new(:bar)
     attr_accessor :foo
 
@@ -620,15 +559,6 @@ class TestMarshal < Test::Unit::TestCase
     assert_equal(Marshal.dump(bare), Marshal.dump(packed))
   end
 
-  def test_untainted_numeric
-    bug8945 = '[ruby-core:57346] [Bug #8945] Numerics never be tainted'
-    b = RbConfig::LIMITS['FIXNUM_MAX'] + 1
-    tainted = [0, 1.0, 1.72723e-77, b].select do |x|
-      Marshal.load(Marshal.dump(x).taint).tainted?
-    end
-    assert_empty(tainted.map {|x| [x, x.class]}, bug8945)
-  end
-
   class Bug9523
     attr_reader :cc
     def marshal_dump
@@ -666,7 +596,8 @@ class TestMarshal < Test::Unit::TestCase
   end
 
   def test_unloadable_data
-    c = eval("class Unloadable\u{23F0 23F3}<Time;;self;end")
+    name = "Unloadable\u{23F0 23F3}"
+    c = eval("class #{name} < Time;;self;end")
     c.class_eval {
       alias _dump_data _dump
       undef _dump
@@ -675,10 +606,16 @@ class TestMarshal < Test::Unit::TestCase
     assert_raise_with_message(TypeError, /Unloadable\u{23F0 23F3}/) {
       Marshal.load(d)
     }
+
+    # cleanup
+    self.class.class_eval do
+      remove_const name
+    end
   end
 
   def test_unloadable_userdef
-    c = eval("class Userdef\u{23F0 23F3}<Time;self;end")
+    name = "Userdef\u{23F0 23F3}"
+    c = eval("class #{name} < Time;self;end")
     class << c
       undef _load
     end
@@ -686,6 +623,11 @@ class TestMarshal < Test::Unit::TestCase
     assert_raise_with_message(TypeError, /Userdef\u{23F0 23F3}/) {
       Marshal.load(d)
     }
+
+    # cleanup
+    self.class.class_eval do
+      remove_const name
+    end
   end
 
   def test_unloadable_usrmarshal
@@ -701,15 +643,16 @@ class TestMarshal < Test::Unit::TestCase
 
   def test_no_internal_ids
     opt = %w[--disable=gems]
-    args = [opt, 'Marshal.dump("",STDOUT)', true, true, encoding: Encoding::ASCII_8BIT]
-    out, err, status = EnvUtil.invoke_ruby(*args)
+    args = [opt, 'Marshal.dump("",STDOUT)', true, true]
+    kw = {encoding: Encoding::ASCII_8BIT}
+    out, err, status = EnvUtil.invoke_ruby(*args, **kw)
     assert_empty(err)
     assert_predicate(status, :success?)
     expected = out
 
     opt << "--enable=frozen-string-literal"
     opt << "--debug=frozen-string-literal"
-    out, err, status = EnvUtil.invoke_ruby(*args)
+    out, err, status = EnvUtil.invoke_ruby(*args, **kw)
     assert_empty(err)
     assert_predicate(status, :success?)
     assert_equal(expected, out)
@@ -778,5 +721,94 @@ class TestMarshal < Test::Unit::TestCase
   def test_marshal_keyword_init_struct
     obj = Bug14314.new(foo: 42)
     assert_equal obj, Marshal.load(Marshal.dump(obj))
+  end
+
+  class Bug15968
+    attr_accessor :bar, :baz
+
+    def initialize
+      self.bar = Bar.new(self)
+    end
+
+    class Bar
+      attr_accessor :foo
+
+      def initialize(foo)
+        self.foo = foo
+      end
+
+      def marshal_dump
+        if self.foo.baz
+          self.foo.remove_instance_variable(:@baz)
+        else
+          self.foo.baz = :problem
+        end
+        {foo: self.foo}
+      end
+
+      def marshal_load(data)
+        self.foo = data[:foo]
+      end
+    end
+  end
+
+  def test_marshal_dump_adding_instance_variable
+    obj = Bug15968.new
+    assert_raise_with_message(RuntimeError, /instance variable added/) do
+      Marshal.dump(obj)
+    end
+  end
+
+  def test_marshal_dump_removing_instance_variable
+    obj = Bug15968.new
+    obj.baz = :Bug15968
+    assert_raise_with_message(RuntimeError, /instance variable removed/) do
+      Marshal.dump(obj)
+    end
+  end
+
+  ruby2_keywords def ruby2_keywords_hash(*a)
+    a.last
+  end
+
+  def ruby2_keywords_test(key: 1)
+    key
+  end
+
+  def test_marshal_with_ruby2_keywords_hash
+    flagged_hash = ruby2_keywords_hash(key: 42)
+    hash = Marshal.load(Marshal.dump(flagged_hash))
+    assert_equal(42, ruby2_keywords_test(*[hash]))
+  end
+
+  def exception_test
+    raise
+  end
+
+  def test_marshal_exception
+    begin
+      exception_test
+    rescue => e
+      e2 = Marshal.load(Marshal.dump(e))
+      assert_equal(e.message, e2.message)
+      assert_equal(e.backtrace, e2.backtrace)
+      assert_nil(e2.backtrace_locations) # temporal
+    end
+  end
+
+  def nameerror_test
+    unknown_method
+  end
+
+  def test_marshal_nameerror
+    begin
+      nameerror_test
+    rescue NameError => e
+      e2 = Marshal.load(Marshal.dump(e))
+      assert_equal(e.message, e2.message)
+      assert_equal(e.name, e2.name)
+      assert_equal(e.backtrace, e2.backtrace)
+      assert_nil(e2.backtrace_locations) # temporal
+    end
   end
 end

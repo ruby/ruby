@@ -1,6 +1,10 @@
 #ifndef RUBY_TIMEV_H
 #define RUBY_TIMEV_H
+#include "ruby/ruby.h"
 
+#if 0
+struct vtm {/* dummy for TAGS */};
+#endif
 PACKED_STRUCT_UNALIGNED(struct vtm {
     VALUE year; /* 2000 for example.  Integer. */
     VALUE subsecx; /* 0 <= subsecx < TIME_SCALE.  possibly Rational. */

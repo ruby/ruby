@@ -12,11 +12,13 @@ IMPLS = {
   },
   mri: {
     git: "https://github.com/ruby/ruby.git",
-    master: "trunk",
   },
 }
 
 MSPEC = ARGV.delete('--mspec')
+
+CHECK_LAST_MERGE = ENV['CHECK_LAST_MERGE'] != 'false'
+TEST_MASTER = ENV['TEST_MASTER'] != 'false'
 
 MSPEC_REPO = File.expand_path("../../..", __FILE__)
 raise MSPEC_REPO if !Dir.exist?(MSPEC_REPO) or !Dir.exist?("#{MSPEC_REPO}/.git")
@@ -33,6 +35,9 @@ BRIGHT_RED = "\e[31;1m"
 BRIGHT_YELLOW = "\e[33;1m"
 RESET = "\e[0m"
 
+# git filter-branch --subdirectory-filter works fine for our use case
+ENV['FILTER_BRANCH_SQUELCH_WARNING'] = '1'
+
 class RubyImplementation
   attr_reader :name
 
@@ -43,10 +48,6 @@ class RubyImplementation
 
   def git_url
     @data[:git]
-  end
-
-  def default_branch
-    @data[:master] || "master"
   end
 
   def repo_name
@@ -96,7 +97,7 @@ def update_repo(impl)
   Dir.chdir(impl.repo_name) do
     puts Dir.pwd
 
-    sh "git", "checkout", impl.default_branch
+    sh "git", "checkout", "master"
     sh "git", "pull"
   end
 end
@@ -137,14 +138,14 @@ def rebase_commits(impl)
       else
         last_merge = `git log --grep='^#{impl.last_merge_message}' -n 1 --format='%H %ct'`
       end
-      last_merge, commit_timestamp = last_merge.chomp.split(' ')
+      last_merge, commit_timestamp = last_merge.split(' ')
 
       raise "Could not find last merge" unless last_merge
       puts "Last merge is #{last_merge}"
 
       commit_date = Time.at(Integer(commit_timestamp))
       days_since_last_merge = (NOW-commit_date) / 86400
-      if days_since_last_merge > 60
+      if CHECK_LAST_MERGE and days_since_last_merge > 60
         raise "#{days_since_last_merge.floor} days since last merge, probably wrong commit"
       end
 
@@ -156,15 +157,19 @@ def rebase_commits(impl)
   end
 end
 
+def new_commits?(impl)
+  Dir.chdir(SOURCE_REPO) do
+    diff = `git diff master #{impl.rebased_branch}`
+    !diff.empty?
+  end
+end
+
 def test_new_specs
   require "yaml"
   Dir.chdir(SOURCE_REPO) do
-    versions = YAML.load_file(".travis.yml")
-    versions = if versions.include? "matrix"
-      versions["matrix"]["include"].map { |job| job["rvm"] }
-    else
-      versions["rvm"]
-    end
+    workflow = YAML.load_file(".github/workflows/ci.yml")
+    job_name = MSPEC ? "test" : "specs"
+    versions = workflow.dig("jobs", job_name, "strategy", "matrix", "ruby")
     versions = versions.grep(/^\d+\./) # Test on MRI
     min_version, max_version = versions.minmax
 
@@ -177,7 +182,7 @@ def test_new_specs
 
     run_test[min_version]
     run_test[max_version]
-    run_test["trunk"]
+    run_test["ruby-master"] if TEST_MASTER
   end
 end
 
@@ -187,15 +192,15 @@ def verify_commits(impl)
     puts "Manually check commit messages:"
     print "Press enter >"
     STDIN.gets
-    sh "git", "log", "master..."
+    system "git", "log", "master..."
   end
 end
 
 def fast_forward_master(impl)
   Dir.chdir(SOURCE_REPO) do
     sh "git", "checkout", "master"
-    sh "git", "merge", "--ff-only", "#{impl.name}-rebased"
-    sh "git", "branch", "--delete", "#{impl.name}-rebased"
+    sh "git", "merge", "--ff-only", impl.rebased_branch
+    sh "git", "branch", "--delete", impl.rebased_branch
   end
 end
 
@@ -214,10 +219,15 @@ def main(impls)
     update_repo(impl)
     filter_commits(impl)
     rebase_commits(impl)
-    test_new_specs
-    verify_commits(impl)
-    fast_forward_master(impl)
-    check_ci
+    if new_commits?(impl)
+      test_new_specs
+      verify_commits(impl)
+      fast_forward_master(impl)
+      check_ci
+    else
+      STDERR.puts "#{BRIGHT_YELLOW}No new commits#{RESET}"
+      fast_forward_master(impl)
+    end
   end
 end
 

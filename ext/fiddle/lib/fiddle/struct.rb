@@ -20,6 +20,33 @@ module Fiddle
     end
   end
 
+  # Wrapper for arrays within a struct
+  class StructArray < Array
+    include ValueUtil
+
+    def initialize(ptr, type, initial_values)
+      @ptr = ptr
+      @type = type
+      @align = PackInfo::ALIGN_MAP[type]
+      @size = Fiddle::PackInfo::SIZE_MAP[type]
+      @pack_format = Fiddle::PackInfo::PACK_MAP[type]
+      super(initial_values.collect { |v| unsigned_value(v, type) })
+    end
+
+    def to_ptr
+      @ptr
+    end
+
+    def []=(index, value)
+      if index < 0 || index >= size
+        raise IndexError, 'index %d outside of array bounds 0...%d' % [index, size]
+      end
+
+      to_ptr[index * @size, @size] = [value].pack(@pack_format)
+      super(index, value)
+    end
+  end
+
   # Used to construct C classes (CUnion, CStruct, etc)
   #
   # Fiddle::Importer#struct and Fiddle::Importer#union wrap this functionality in an
@@ -46,7 +73,12 @@ module Fiddle
     #
     #   MyStruct = Fiddle::CStructBuilder.create(Fiddle::CUnion, types, members)
     #
-    #   obj = MyStruct.allocate
+    #   obj = MyStruct.malloc
+    #   begin
+    #     ...
+    #   ensure
+    #     Fiddle.free obj.to_ptr
+    #   end
     #
     def create(klass, types, members)
       new_class = Class.new(klass){
@@ -54,6 +86,8 @@ module Fiddle
           @entity = klass.entity_class.new(addr, types)
           @entity.assign_names(members)
         }
+        define_method(:[]) { |*args| @entity.send(:[], *args) }
+        define_method(:[]=) { |*args| @entity.send(:[]=, *args) }
         define_method(:to_ptr){ @entity }
         define_method(:to_i){ @entity.to_i }
         members.each{|name|
@@ -83,7 +117,7 @@ module Fiddle
 
     # Allocates a C struct with the +types+ provided.
     #
-    # When the instance is garbage collected, the C function +func+ is called.
+    # See Fiddle::Pointer.malloc for memory management issues.
     def CStructEntity.malloc(types, func = nil)
       addr = Fiddle.malloc(CStructEntity.size(types))
       CStructEntity.new(addr, types, func)
@@ -148,8 +182,21 @@ module Fiddle
       @size = PackInfo.align(offset, max_align)
     end
 
-    # Fetch struct member +name+
-    def [](name)
+    # Fetch struct member +name+ if only one argument is specified. If two
+    # arguments are specified, the first is an offset and the second is a
+    # length and this method returns the string of +length+ bytes beginning at
+    # +offset+.
+    #
+    # Examples:
+    #
+    #     my_struct = struct(['int id']).malloc
+    #     my_struct.id = 1
+    #     my_struct['id'] # => 1
+    #     my_struct[0, 4] # => "\x01\x00\x00\x00".b
+    #
+    def [](*args)
+      return super(*args) if args.size > 1
+      name = args[0]
       idx = @members.index(name)
       if( idx.nil? )
         raise(ArgumentError, "no such member: #{name}")
@@ -176,14 +223,26 @@ module Fiddle
       if( ty.is_a?(Integer) && (ty < 0) )
         return unsigned_value(val, ty)
       elsif( ty.is_a?(Array) && (ty[0] < 0) )
-        return val.collect{|v| unsigned_value(v,ty[0])}
+        return StructArray.new(self + @offset[idx], ty[0], val)
       else
         return val
       end
     end
 
-    # Set struct member +name+, to value +val+
-    def []=(name, val)
+    # Set struct member +name+, to value +val+. If more arguments are
+    # specified, writes the string of bytes to the memory at the given
+    # +offset+ and +length+.
+    #
+    # Examples:
+    #
+    #     my_struct = struct(['int id']).malloc
+    #     my_struct['id'] = 1
+    #     my_struct[0, 4] = "\x01\x00\x00\x00".b
+    #     my_struct.id # => 1
+    #
+    def []=(*args)
+      return super(*args) if args.size > 2
+      name, val = *args
       idx = @members.index(name)
       if( idx.nil? )
         raise(ArgumentError, "no such member: #{name}")
@@ -213,7 +272,7 @@ module Fiddle
 
     # Allocates a C union the +types+ provided.
     #
-    # When the instance is garbage collected, the C function +func+ is called.
+    # See Fiddle::Pointer.malloc for memory management issues.
     def CUnionEntity.malloc(types, func=nil)
       addr = Fiddle.malloc(CUnionEntity.size(types))
       CUnionEntity.new(addr, types, func)

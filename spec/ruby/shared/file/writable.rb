@@ -8,7 +8,7 @@ describe :file_writable, shared: true do
   end
 
   it "returns true if named file is writable by the effective user id of the process, otherwise false" do
-    platform_is_not :windows do
+    platform_is_not :windows, :android do
       as_user do
         @object.send(@method, "/etc/passwd").should == false
       end

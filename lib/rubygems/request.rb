@@ -4,7 +4,6 @@ require 'time'
 require 'rubygems/user_interaction'
 
 class Gem::Request
-
   extend Gem::UserInteraction
   include Gem::UserInteraction
 
@@ -13,12 +12,13 @@ class Gem::Request
   def self.create_with_proxy(uri, request_class, last_modified, proxy) # :nodoc:
     cert_files = get_cert_files
     proxy ||= get_proxy_from_env(uri.scheme)
-    pool       = ConnectionPools.new proxy_uri(proxy), cert_files
+    pool = ConnectionPools.new proxy_uri(proxy), cert_files
 
     new(uri, request_class, last_modified, pool.pool_for(uri))
   end
 
   def self.proxy_uri(proxy) # :nodoc:
+    require "uri"
     case proxy
     when :no_proxy then nil
     when URI::HTTP then proxy
@@ -45,7 +45,7 @@ class Gem::Request
   end
 
   def self.configure_connection_for_https(connection, cert_files)
-    require 'net/https'
+    require 'openssl'
     connection.use_ssl = true
     connection.verify_mode =
       Gem.configuration.ssl_verify_mode || OpenSSL::SSL::VERIFY_PEER
@@ -77,12 +77,6 @@ class Gem::Request
     end
 
     connection
-  rescue LoadError => e
-    raise unless (e.respond_to?(:path) && e.path == 'openssl') ||
-                 e.message =~ / -- openssl$/
-
-    raise Gem::Exception.new(
-            'Unable to require openssl, install OpenSSL and rebuild Ruby (preferred) or use non-HTTPS sources')
   end
 
   def self.verify_certificate(store_context)
@@ -168,10 +162,12 @@ class Gem::Request
 
     no_env_proxy = env_proxy.nil? || env_proxy.empty?
 
-    return :no_proxy if scheme == 'https' && no_env_proxy
-    return get_proxy_from_env 'http' if no_env_proxy and _scheme != 'http'
-    return :no_proxy                 if no_env_proxy
+    if no_env_proxy
+      return (_scheme == 'https' || _scheme == 'http') ?
+        :no_proxy : get_proxy_from_env('http')
+    end
 
+    require "uri"
     uri = URI(Gem::UriFormatter.new(env_proxy).normalize)
 
     if uri and uri.user.nil? and uri.password.nil?
@@ -284,11 +280,10 @@ class Gem::Request
     end
     ua << ")"
 
-    ua << " #{RUBY_ENGINE}" if defined?(RUBY_ENGINE) and RUBY_ENGINE != 'ruby'
+    ua << " #{RUBY_ENGINE}" if RUBY_ENGINE != 'ruby'
 
     ua
   end
-
 end
 
 require 'rubygems/request/http_pool'

@@ -12,9 +12,11 @@ with_feature :readline do
       Readline::HISTORY.pop
     end
 
-    it "returns tainted objects" do
-      Readline::HISTORY[0].tainted?.should be_true
-      Readline::HISTORY[1].tainted?.should be_true
+    ruby_version_is ''...'2.7' do
+      it "returns tainted objects" do
+        Readline::HISTORY[0].tainted?.should be_true
+        Readline::HISTORY[1].tainted?.should be_true
+      end
     end
 
     it "returns the history item at the passed index" do
@@ -28,13 +30,13 @@ with_feature :readline do
     end
 
     it "raises an IndexError when there is no item at the passed index" do
-      lambda { Readline::HISTORY[-10] }.should raise_error(IndexError)
-      lambda { Readline::HISTORY[-9] }.should raise_error(IndexError)
-      lambda { Readline::HISTORY[-8] }.should raise_error(IndexError)
+      -> { Readline::HISTORY[-10] }.should raise_error(IndexError)
+      -> { Readline::HISTORY[-9] }.should raise_error(IndexError)
+      -> { Readline::HISTORY[-8] }.should raise_error(IndexError)
 
-      lambda { Readline::HISTORY[8] }.should raise_error(IndexError)
-      lambda { Readline::HISTORY[9] }.should raise_error(IndexError)
-      lambda { Readline::HISTORY[10] }.should raise_error(IndexError)
+      -> { Readline::HISTORY[8] }.should raise_error(IndexError)
+      -> { Readline::HISTORY[9] }.should raise_error(IndexError)
+      -> { Readline::HISTORY[10] }.should raise_error(IndexError)
     end
   end
 end

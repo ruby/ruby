@@ -555,7 +555,13 @@ class RDoc::Options
 
     @files << @page_dir.to_s
 
-    page_dir = @page_dir.expand_path.relative_path_from @root
+    page_dir = nil
+    begin
+      page_dir = @page_dir.expand_path.relative_path_from @root
+    rescue ArgumentError
+      # On Windows, sometimes crosses different drive letters.
+      page_dir = @page_dir.expand_path
+    end
 
     @page_dir = page_dir
   end
@@ -749,7 +755,7 @@ Usage: #{opt.program_name} [options] [names...]
 
       opt.on("--[no-]force-update", "-U",
              "Forces rdoc to scan all sources even if",
-             "newer than the flag file.") do |value|
+             "no files are newer than the flag file.") do |value|
         @force_update = value
       end
 
@@ -1154,8 +1160,17 @@ Usage: #{opt.program_name} [options] [names...]
 
     path.reject do |item|
       path = Pathname.new(item).expand_path
-      relative = path.relative_path_from(dot).to_s
-      relative.start_with? '..'
+      is_reject = nil
+      relative = nil
+      begin
+        relative = path.relative_path_from(dot).to_s
+      rescue ArgumentError
+        # On Windows, sometimes crosses different drive letters.
+        is_reject = true
+      else
+        is_reject = relative.start_with? '..'
+      end
+      is_reject
     end
   end
 

@@ -1,7 +1,7 @@
 # coding: US-ASCII
 # frozen_string_literal: true
 
-require 'minitest_helper'
+require_relative 'helper'
 
 class TestRDocEncoding < RDoc::TestCase
 
@@ -54,7 +54,7 @@ class TestRDocEncoding < RDoc::TestCase
 
     contents = :junk
 
-    _, err = verbose_capture_io do
+    _, err = verbose_capture_output do
       contents = RDoc::Encoding.read_file @tempfile.path, Encoding::US_ASCII
     end
 
@@ -97,7 +97,7 @@ class TestRDocEncoding < RDoc::TestCase
     @tempfile.flush
 
     contents = :junk
-    _, err = verbose_capture_io do
+    _, err = verbose_capture_output do
       contents = RDoc::Encoding.read_file @tempfile.path, Encoding::UTF_8
     end
 
@@ -171,7 +171,7 @@ class TestRDocEncoding < RDoc::TestCase
 
     assert_nil encoding
 
-    assert_raises ArgumentError do
+    assert_raise ArgumentError do
       s = RDoc::Encoding.detect_encoding "# -*- encoding: undecided -*-\n"
     end
   end

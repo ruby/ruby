@@ -359,7 +359,14 @@ ossl_ssl_verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
 	    rb_ivar_set(ssl_obj, ID_callback_state, INT2NUM(status));
 	    return 0;
 	}
-	preverify_ok = ret == Qtrue;
+        if (ret != Qtrue) {
+            preverify_ok = 0;
+#if defined(X509_V_ERR_HOSTNAME_MISMATCH)
+            X509_STORE_CTX_set_error(ctx, X509_V_ERR_HOSTNAME_MISMATCH);
+#else
+            X509_STORE_CTX_set_error(ctx, X509_V_ERR_CERT_REJECTED);
+#endif
+        }
     }
 
     return ossl_verify_cb_call(cb, preverify_ok, ctx);
@@ -380,7 +387,7 @@ ossl_call_session_get_cb(VALUE ary)
 }
 
 static SSL_SESSION *
-#if OPENSSL_VERSION_NUMBER >= 0x10100000 && !defined(LIBRESSL_VERSION_NUMBER)
+#if (!defined(LIBRESSL_VERSION_NUMBER) ? OPENSSL_VERSION_NUMBER >= 0x10100000 : LIBRESSL_VERSION_NUMBER >= 0x2080000f)
 ossl_sslctx_session_get_cb(SSL *ssl, const unsigned char *buf, int len, int *copy)
 #else
 ossl_sslctx_session_get_cb(SSL *ssl, unsigned char *buf, int len, int *copy)
@@ -592,7 +599,7 @@ ssl_renegotiation_cb(const SSL *ssl)
 #if !defined(OPENSSL_NO_NEXTPROTONEG) || \
     defined(HAVE_SSL_CTX_SET_ALPN_SELECT_CB)
 static VALUE
-ssl_npn_encode_protocol_i(VALUE cur, VALUE encoded)
+ssl_npn_encode_protocol_i(RB_BLOCK_CALL_FUNC_ARGLIST(cur, encoded))
 {
     int len = RSTRING_LENINT(cur);
     char len_byte;
@@ -809,6 +816,10 @@ ossl_sslctx_setup(VALUE self)
 # endif
     }
 #endif /* OPENSSL_NO_EC */
+
+#ifdef HAVE_SSL_CTX_SET_POST_HANDSHAKE_AUTH
+    SSL_CTX_set_post_handshake_auth(ctx, 1);
+#endif
 
     val = rb_attr_get(self, id_i_cert_store);
     if (!NIL_P(val)) {
@@ -1828,7 +1839,6 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
 	else
 	    rb_str_modify_expand(str, ilen - RSTRING_LEN(str));
     }
-    OBJ_TAINT(str);
     rb_str_set_len(str, 0);
     if (ilen == 0)
 	return str;
@@ -1871,19 +1881,31 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
 			rb_eof_error();
 		    }
 		}
+                /* fall through */
 	    default:
 		ossl_raise(eSSLError, "SSL_read");
 	    }
         }
     }
     else {
-	ID meth = nonblock ? rb_intern("read_nonblock") : rb_intern("sysread");
+        ID meth = nonblock ? rb_intern("read_nonblock") : rb_intern("sysread");
 
-	rb_warning("SSL session is not started yet.");
-	if (nonblock)
-	    return rb_funcall(io, meth, 3, len, str, opts);
-	else
-	    return rb_funcall(io, meth, 2, len, str);
+        rb_warning("SSL session is not started yet.");
+#if defined(RB_PASS_KEYWORDS)
+        if (nonblock) {
+            VALUE argv[3];
+            argv[0] = len;
+            argv[1] = str;
+            argv[2] = opts;
+            return rb_funcallv_kw(io, meth, 3, argv, RB_PASS_KEYWORDS);
+        }
+#else
+        if (nonblock) {
+            return rb_funcall(io, meth, 3, len, str, opts);
+        }
+#endif
+        else
+            return rb_funcall(io, meth, 2, len, str);
     }
 
   end:
@@ -1970,11 +1992,21 @@ ossl_ssl_write_internal(VALUE self, VALUE str, VALUE opts)
 	ID meth = nonblock ?
 	    rb_intern("write_nonblock") : rb_intern("syswrite");
 
-	rb_warning("SSL session is not started yet.");
-	if (nonblock)
-	    return rb_funcall(io, meth, 2, str, opts);
-	else
-	    return rb_funcall(io, meth, 1, str);
+        rb_warning("SSL session is not started yet.");
+#if defined(RB_PASS_KEYWORDS)
+        if (nonblock) {
+            VALUE argv[2];
+            argv[0] = str;
+            argv[1] = opts;
+            return rb_funcallv_kw(io, meth, 2, argv, RB_PASS_KEYWORDS);
+        }
+#else
+        if (nonblock) {
+            return rb_funcall(io, meth, 2, str, opts);
+        }
+#endif
+        else
+            return rb_funcall(io, meth, 1, str);
     }
 
   end:
@@ -2277,7 +2309,57 @@ ossl_ssl_get_verify_result(VALUE self)
 
     GetSSL(self, ssl);
 
-    return INT2NUM(SSL_get_verify_result(ssl));
+    return LONG2NUM(SSL_get_verify_result(ssl));
+}
+
+/*
+ * call-seq:
+ *    ssl.finished_message => "finished message"
+ *
+ * Returns the last *Finished* message sent
+ *
+ */
+static VALUE
+ossl_ssl_get_finished(VALUE self)
+{
+    SSL *ssl;
+    char sizer[1], *buf;
+    size_t len;
+
+    GetSSL(self, ssl);
+
+    len = SSL_get_finished(ssl, sizer, 0);
+    if (len == 0)
+        return Qnil;
+
+    buf = ALLOCA_N(char, len);
+    SSL_get_finished(ssl, buf, len);
+    return rb_str_new(buf, len);
+}
+
+/*
+ * call-seq:
+ *    ssl.peer_finished_message => "peer finished message"
+ *
+ * Returns the last *Finished* message received
+ *
+ */
+static VALUE
+ossl_ssl_get_peer_finished(VALUE self)
+{
+    SSL *ssl;
+    char sizer[1], *buf;
+    size_t len;
+
+    GetSSL(self, ssl);
+
+    len = SSL_get_peer_finished(ssl, sizer, 0);
+    if (len == 0)
+        return Qnil;
+
+    buf = ALLOCA_N(char, len);
+    SSL_get_peer_finished(ssl, buf, len);
+    return rb_str_new(buf, len);
 }
 
 /*
@@ -2374,8 +2456,6 @@ ossl_ssl_tmp_key(VALUE self)
 # endif /* defined(HAVE_SSL_GET_SERVER_TMP_KEY) */
 #endif /* !defined(OPENSSL_NO_SOCK) */
 
-#undef rb_intern
-#define rb_intern(s) rb_intern_const(s)
 void
 Init_ossl_ssl(void)
 {
@@ -2386,8 +2466,8 @@ Init_ossl_ssl(void)
     rb_mWaitWritable = rb_define_module_under(rb_cIO, "WaitWritable");
 #endif
 
-    id_call = rb_intern("call");
-    ID_callback_state = rb_intern("callback_state");
+    id_call = rb_intern_const("call");
+    ID_callback_state = rb_intern_const("callback_state");
 
     ossl_ssl_ex_vcb_idx = SSL_get_ex_new_index(0, (void *)"ossl_ssl_ex_vcb_idx", 0, 0, 0);
     if (ossl_ssl_ex_vcb_idx < 0)
@@ -2454,7 +2534,7 @@ Init_ossl_ssl(void)
      * The _cert_, _key_, and _extra_chain_cert_ attributes are deprecated.
      * It is recommended to use #add_certificate instead.
      */
-    rb_attr(cSSLContext, rb_intern("cert"), 1, 1, Qfalse);
+    rb_attr(cSSLContext, rb_intern_const("cert"), 1, 1, Qfalse);
 
     /*
      * Context private key
@@ -2462,29 +2542,29 @@ Init_ossl_ssl(void)
      * The _cert_, _key_, and _extra_chain_cert_ attributes are deprecated.
      * It is recommended to use #add_certificate instead.
      */
-    rb_attr(cSSLContext, rb_intern("key"), 1, 1, Qfalse);
+    rb_attr(cSSLContext, rb_intern_const("key"), 1, 1, Qfalse);
 
     /*
      * A certificate or Array of certificates that will be sent to the client.
      */
-    rb_attr(cSSLContext, rb_intern("client_ca"), 1, 1, Qfalse);
+    rb_attr(cSSLContext, rb_intern_const("client_ca"), 1, 1, Qfalse);
 
     /*
      * The path to a file containing a PEM-format CA certificate
      */
-    rb_attr(cSSLContext, rb_intern("ca_file"), 1, 1, Qfalse);
+    rb_attr(cSSLContext, rb_intern_const("ca_file"), 1, 1, Qfalse);
 
     /*
      * The path to a directory containing CA certificates in PEM format.
      *
      * Files are looked up by subject's X509 name's hash value.
      */
-    rb_attr(cSSLContext, rb_intern("ca_path"), 1, 1, Qfalse);
+    rb_attr(cSSLContext, rb_intern_const("ca_path"), 1, 1, Qfalse);
 
     /*
      * Maximum session lifetime in seconds.
      */
-    rb_attr(cSSLContext, rb_intern("timeout"), 1, 1, Qfalse);
+    rb_attr(cSSLContext, rb_intern_const("timeout"), 1, 1, Qfalse);
 
     /*
      * Session verification mode.
@@ -2497,12 +2577,12 @@ Init_ossl_ssl(void)
      *
      * See SSL_CTX_set_verify(3) for details.
      */
-    rb_attr(cSSLContext, rb_intern("verify_mode"), 1, 1, Qfalse);
+    rb_attr(cSSLContext, rb_intern_const("verify_mode"), 1, 1, Qfalse);
 
     /*
      * Number of CA certificates to walk when verifying a certificate chain.
      */
-    rb_attr(cSSLContext, rb_intern("verify_depth"), 1, 1, Qfalse);
+    rb_attr(cSSLContext, rb_intern_const("verify_depth"), 1, 1, Qfalse);
 
     /*
      * A callback for additional certificate verification.  The callback is
@@ -2516,7 +2596,7 @@ Init_ossl_ssl(void)
      * If the callback returns +false+, the chain verification is immediately
      * stopped and a bad_certificate alert is then sent.
      */
-    rb_attr(cSSLContext, rb_intern("verify_callback"), 1, 1, Qfalse);
+    rb_attr(cSSLContext, rb_intern_const("verify_callback"), 1, 1, Qfalse);
 
     /*
      * Whether to check the server certificate is valid for the hostname.
@@ -2524,12 +2604,12 @@ Init_ossl_ssl(void)
      * In order to make this work, verify_mode must be set to VERIFY_PEER and
      * the server hostname must be given by OpenSSL::SSL::SSLSocket#hostname=.
      */
-    rb_attr(cSSLContext, rb_intern("verify_hostname"), 1, 1, Qfalse);
+    rb_attr(cSSLContext, rb_intern_const("verify_hostname"), 1, 1, Qfalse);
 
     /*
      * An OpenSSL::X509::Store used for certificate verification.
      */
-    rb_attr(cSSLContext, rb_intern("cert_store"), 1, 1, Qfalse);
+    rb_attr(cSSLContext, rb_intern_const("cert_store"), 1, 1, Qfalse);
 
     /*
      * An Array of extra X509 certificates to be added to the certificate
@@ -2538,7 +2618,7 @@ Init_ossl_ssl(void)
      * The _cert_, _key_, and _extra_chain_cert_ attributes are deprecated.
      * It is recommended to use #add_certificate instead.
      */
-    rb_attr(cSSLContext, rb_intern("extra_chain_cert"), 1, 1, Qfalse);
+    rb_attr(cSSLContext, rb_intern_const("extra_chain_cert"), 1, 1, Qfalse);
 
     /*
      * A callback invoked when a client certificate is requested by a server
@@ -2548,7 +2628,7 @@ Init_ossl_ssl(void)
      * containing an OpenSSL::X509::Certificate and an OpenSSL::PKey.  If any
      * other value is returned the handshake is suspended.
      */
-    rb_attr(cSSLContext, rb_intern("client_cert_cb"), 1, 1, Qfalse);
+    rb_attr(cSSLContext, rb_intern_const("client_cert_cb"), 1, 1, Qfalse);
 
 #if !defined(OPENSSL_NO_EC) && defined(HAVE_SSL_CTX_SET_TMP_ECDH_CALLBACK)
     /*
@@ -2561,7 +2641,7 @@ Init_ossl_ssl(void)
      * The callback is deprecated. This does not work with recent versions of
      * OpenSSL. Use OpenSSL::SSL::SSLContext#ecdh_curves= instead.
      */
-    rb_attr(cSSLContext, rb_intern("tmp_ecdh_callback"), 1, 1, Qfalse);
+    rb_attr(cSSLContext, rb_intern_const("tmp_ecdh_callback"), 1, 1, Qfalse);
 #endif
 
     /*
@@ -2569,7 +2649,7 @@ Init_ossl_ssl(void)
      * sessions for multiple applications to be distinguished, for example, by
      * name.
      */
-    rb_attr(cSSLContext, rb_intern("session_id_context"), 1, 1, Qfalse);
+    rb_attr(cSSLContext, rb_intern_const("session_id_context"), 1, 1, Qfalse);
 
     /*
      * A callback invoked on a server when a session is proposed by the client
@@ -2578,7 +2658,7 @@ Init_ossl_ssl(void)
      * The callback is invoked with the SSLSocket and session id.  The
      * callback may return a Session from an external cache.
      */
-    rb_attr(cSSLContext, rb_intern("session_get_cb"), 1, 1, Qfalse);
+    rb_attr(cSSLContext, rb_intern_const("session_get_cb"), 1, 1, Qfalse);
 
     /*
      * A callback invoked when a new session was negotiated.
@@ -2586,7 +2666,7 @@ Init_ossl_ssl(void)
      * The callback is invoked with an SSLSocket.  If +false+ is returned the
      * session will be removed from the internal cache.
      */
-    rb_attr(cSSLContext, rb_intern("session_new_cb"), 1, 1, Qfalse);
+    rb_attr(cSSLContext, rb_intern_const("session_new_cb"), 1, 1, Qfalse);
 
     /*
      * A callback invoked when a session is removed from the internal cache.
@@ -2597,18 +2677,18 @@ Init_ossl_ssl(void)
      * multi-threaded application. The callback is called inside a global lock
      * and it can randomly cause deadlock on Ruby thread switching.
      */
-    rb_attr(cSSLContext, rb_intern("session_remove_cb"), 1, 1, Qfalse);
+    rb_attr(cSSLContext, rb_intern_const("session_remove_cb"), 1, 1, Qfalse);
 
     rb_define_const(mSSLExtConfig, "HAVE_TLSEXT_HOST_NAME", Qtrue);
 
     /*
-     * A callback invoked whenever a new handshake is initiated. May be used
-     * to disable renegotiation entirely.
+     * A callback invoked whenever a new handshake is initiated on an
+     * established connection. May be used to disable renegotiation entirely.
      *
      * The callback is invoked with the active SSLSocket. The callback's
-     * return value is irrelevant, normal return indicates "approval" of the
+     * return value is ignored. A normal return indicates "approval" of the
      * renegotiation and will continue the process. To forbid renegotiation
-     * and to cancel the process, an Error may be raised within the callback.
+     * and to cancel the process, raise an exception within the callback.
      *
      * === Disable client renegotiation
      *
@@ -2616,13 +2696,11 @@ Init_ossl_ssl(void)
      * renegotiation entirely. You may use a callback as follows to implement
      * this feature:
      *
-     *   num_handshakes = 0
      *   ctx.renegotiation_cb = lambda do |ssl|
-     *     num_handshakes += 1
-     *     raise RuntimeError.new("Client renegotiation disabled") if num_handshakes > 1
+     *     raise RuntimeError, "Client renegotiation disabled"
      *   end
      */
-    rb_attr(cSSLContext, rb_intern("renegotiation_cb"), 1, 1, Qfalse);
+    rb_attr(cSSLContext, rb_intern_const("renegotiation_cb"), 1, 1, Qfalse);
 #ifndef OPENSSL_NO_NEXTPROTONEG
     /*
      * An Enumerable of Strings. Each String represents a protocol to be
@@ -2635,7 +2713,7 @@ Init_ossl_ssl(void)
      *
      *   ctx.npn_protocols = ["http/1.1", "spdy/2"]
      */
-    rb_attr(cSSLContext, rb_intern("npn_protocols"), 1, 1, Qfalse);
+    rb_attr(cSSLContext, rb_intern_const("npn_protocols"), 1, 1, Qfalse);
     /*
      * A callback invoked on the client side when the client needs to select
      * a protocol from the list sent by the server. Supported in OpenSSL 1.0.1
@@ -2652,7 +2730,7 @@ Init_ossl_ssl(void)
      *     protocols.first
      *   end
      */
-    rb_attr(cSSLContext, rb_intern("npn_select_cb"), 1, 1, Qfalse);
+    rb_attr(cSSLContext, rb_intern_const("npn_select_cb"), 1, 1, Qfalse);
 #endif
 
 #ifdef HAVE_SSL_CTX_SET_ALPN_SELECT_CB
@@ -2667,7 +2745,7 @@ Init_ossl_ssl(void)
      *
      *   ctx.alpn_protocols = ["http/1.1", "spdy/2", "h2"]
      */
-    rb_attr(cSSLContext, rb_intern("alpn_protocols"), 1, 1, Qfalse);
+    rb_attr(cSSLContext, rb_intern_const("alpn_protocols"), 1, 1, Qfalse);
     /*
      * A callback invoked on the server side when the server needs to select
      * a protocol from the list sent by the client. Supported in OpenSSL 1.0.2
@@ -2684,7 +2762,7 @@ Init_ossl_ssl(void)
      *     protocols.first
      *   end
      */
-    rb_attr(cSSLContext, rb_intern("alpn_select_cb"), 1, 1, Qfalse);
+    rb_attr(cSSLContext, rb_intern_const("alpn_select_cb"), 1, 1, Qfalse);
 #endif
 
     rb_define_alias(cSSLContext, "ssl_timeout", "timeout");
@@ -2797,6 +2875,8 @@ Init_ossl_ssl(void)
     rb_define_method(cSSLSocket, "client_ca", ossl_ssl_get_client_ca_list, 0);
     /* #hostname is defined in lib/openssl/ssl.rb */
     rb_define_method(cSSLSocket, "hostname=", ossl_ssl_set_hostname, 1);
+    rb_define_method(cSSLSocket, "finished_message", ossl_ssl_get_finished, 0);
+    rb_define_method(cSSLSocket, "peer_finished_message", ossl_ssl_get_peer_finished, 0);
 # ifdef HAVE_SSL_GET_SERVER_TMP_KEY
     rb_define_method(cSSLSocket, "tmp_key", ossl_ssl_tmp_key, 0);
 # endif
@@ -2910,16 +2990,16 @@ Init_ossl_ssl(void)
 #endif
 
 
-    sym_exception = ID2SYM(rb_intern("exception"));
-    sym_wait_readable = ID2SYM(rb_intern("wait_readable"));
-    sym_wait_writable = ID2SYM(rb_intern("wait_writable"));
+    sym_exception = ID2SYM(rb_intern_const("exception"));
+    sym_wait_readable = ID2SYM(rb_intern_const("wait_readable"));
+    sym_wait_writable = ID2SYM(rb_intern_const("wait_writable"));
 
-    id_tmp_dh_callback = rb_intern("tmp_dh_callback");
-    id_tmp_ecdh_callback = rb_intern("tmp_ecdh_callback");
-    id_npn_protocols_encoded = rb_intern("npn_protocols_encoded");
+    id_tmp_dh_callback = rb_intern_const("tmp_dh_callback");
+    id_tmp_ecdh_callback = rb_intern_const("tmp_ecdh_callback");
+    id_npn_protocols_encoded = rb_intern_const("npn_protocols_encoded");
 
 #define DefIVarID(name) do \
-    id_i_##name = rb_intern("@"#name); while (0)
+    id_i_##name = rb_intern_const("@"#name); while (0)
 
     DefIVarID(cert_store);
     DefIVarID(ca_file);

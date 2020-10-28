@@ -50,9 +50,9 @@ class Gem::StubSpecification < Gem::BasicSpecification
                        end
 
       path_list = parts.last
-      @require_paths = REQUIRE_PATH_LIST[path_list] || path_list.split("\0".freeze).map! { |x|
+      @require_paths = REQUIRE_PATH_LIST[path_list] || path_list.split("\0".freeze).map! do |x|
         REQUIRE_PATHS[x] || x
-      }
+      end
     end
   end
 
@@ -68,7 +68,7 @@ class Gem::StubSpecification < Gem::BasicSpecification
 
   def initialize(filename, base_dir, gems_dir, default_gem)
     super()
-    filename.untaint
+    filename.tap(&Gem::UNTAINT)
 
     self.loaded_from = filename
     @data            = nil
@@ -110,8 +110,7 @@ class Gem::StubSpecification < Gem::BasicSpecification
       begin
         saved_lineno = $.
 
-        # TODO It should be use `File.open`, but bundler-1.16.1 example expects Kernel#open.
-        open loaded_from, OPEN_MODE do |file|
+        File.open loaded_from, OPEN_MODE do |file|
           begin
             file.readline # discard encoding line
             stubline = file.readline.chomp
@@ -210,5 +209,4 @@ class Gem::StubSpecification < Gem::BasicSpecification
   def stubbed?
     data.is_a? StubLine
   end
-
 end

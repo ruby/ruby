@@ -113,6 +113,65 @@ class TestIO < Test::Unit::TestCase
     ].each{|thr| thr.join}
   end
 
+  def test_binmode_pipe
+    EnvUtil.with_default_internal(Encoding::UTF_8) do
+      EnvUtil.with_default_external(Encoding::UTF_8) do
+        begin
+          reader0, writer0 = IO.pipe
+          reader0.binmode
+          writer0.binmode
+
+          reader1, writer1 = IO.pipe
+
+          reader2, writer2 = IO.pipe(binmode: true)
+          assert_predicate writer0, :binmode?
+          assert_predicate writer2, :binmode?
+          assert_equal writer0.binmode?, writer2.binmode?
+          assert_equal writer0.external_encoding, writer2.external_encoding
+          assert_equal writer0.internal_encoding, writer2.internal_encoding
+          assert_predicate reader0, :binmode?
+          assert_predicate reader2, :binmode?
+          assert_equal reader0.binmode?, reader2.binmode?
+          assert_equal reader0.external_encoding, reader2.external_encoding
+          assert_equal reader0.internal_encoding, reader2.internal_encoding
+
+          reader3, writer3 = IO.pipe("UTF-8:UTF-8", binmode: true)
+          assert_predicate writer3, :binmode?
+          assert_equal writer1.external_encoding, writer3.external_encoding
+          assert_equal writer1.internal_encoding, writer3.internal_encoding
+          assert_predicate reader3, :binmode?
+          assert_equal reader1.external_encoding, reader3.external_encoding
+          assert_equal reader1.internal_encoding, reader3.internal_encoding
+
+          reader4, writer4 = IO.pipe("UTF-8:UTF-8", binmode: true)
+          assert_predicate writer4, :binmode?
+          assert_equal writer1.external_encoding, writer4.external_encoding
+          assert_equal writer1.internal_encoding, writer4.internal_encoding
+          assert_predicate reader4, :binmode?
+          assert_equal reader1.external_encoding, reader4.external_encoding
+          assert_equal reader1.internal_encoding, reader4.internal_encoding
+
+          reader5, writer5 = IO.pipe("UTF-8", "UTF-8", binmode: true)
+          assert_predicate writer5, :binmode?
+          assert_equal writer1.external_encoding, writer5.external_encoding
+          assert_equal writer1.internal_encoding, writer5.internal_encoding
+          assert_predicate reader5, :binmode?
+          assert_equal reader1.external_encoding, reader5.external_encoding
+          assert_equal reader1.internal_encoding, reader5.internal_encoding
+        ensure
+          [
+            reader0, writer0,
+            reader1, writer1,
+            reader2, writer2,
+            reader3, writer3,
+            reader4, writer4,
+            reader5, writer5,
+          ].compact.map(&:close)
+        end
+      end
+    end
+  end
+
   def test_pipe_block
     x = nil
     ret = IO.pipe {|r, w|
@@ -233,6 +292,19 @@ class TestIO < Test::Unit::TestCase
       assert_nil r.gets
       r.close
     end)
+
+    (0..3).each do |i|
+      pipe(proc do |w|
+        w.write("a" * ((4096 << i) - 4), "\r\n" "a\r\n")
+        w.close
+      end,
+      proc do |r|
+        r.gets
+        assert_equal "a", r.gets(chomp: true)
+        assert_nil r.gets
+        r.close
+      end)
+    end
   end
 
   def test_gets_chomp_rs_nil
@@ -333,16 +405,16 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
-  def test_codepoints
+  def test_each_codepoint_enumerator
     make_tempfile {|t|
-      bug2959 = '[ruby-core:28650]'
       a = ""
+      b = ""
       File.open(t, 'rt') {|f|
-        assert_warn(/deprecated/) {
-          f.codepoints {|c| a << c}
-        }
+        a = f.each_codepoint.take(4).pack('U*')
+        b = f.read(8)
       }
-      assert_equal("foo\nbar\nbaz\n", a, bug2959)
+      assert_equal("foo\n", a)
+      assert_equal("bar\nbaz\n", b)
     }
   end
 
@@ -351,7 +423,7 @@ class TestIO < Test::Unit::TestCase
     path = t.path
     t.close!
     assert_raise(Errno::ENOENT, "[ruby-dev:33072]") do
-      File.read(path, nil, nil, {})
+      File.read(path, nil, nil, **{})
     end
   end
 
@@ -554,11 +626,8 @@ class TestIO < Test::Unit::TestCase
       msg = 'r58534 [ruby-core:80969] [Backport #13533]'
       IO.pipe do |r,w|
         r.nonblock = true
-        assert_cpu_usage_low(msg) do
-          th = Thread.new { IO.copy_stream(r, IO::NULL) }
-          sleep 0.1
-          w.close
-          th.join
+        assert_cpu_usage_low(msg, stop: ->{w.close}) do
+          IO.copy_stream(r, IO::NULL)
         end
       end
     end
@@ -1326,7 +1395,7 @@ class TestIO < Test::Unit::TestCase
   def test_dup_many
     opts = {}
     opts[:rlimit_nofile] = 1024 if defined?(Process::RLIMIT_NOFILE)
-    assert_separately([], <<-'End', opts)
+    assert_separately([], <<-'End', **opts)
       a = []
       assert_raise(Errno::EMFILE, Errno::ENFILE, Errno::ENOMEM) do
         loop {a << IO.pipe}
@@ -1499,6 +1568,12 @@ class TestIO < Test::Unit::TestCase
     }
   end if have_nonblock?
 
+  def test_read_nonblock_invalid_exception
+    with_pipe {|r, w|
+      assert_raise(ArgumentError) {r.read_nonblock(4096, exception: 1)}
+    }
+  end if have_nonblock?
+
   def test_read_nonblock_no_exceptions
     skip '[ruby-core:90895] MJIT worker may leave fd open in a forked child' if RubyVM::MJIT.enabled? # TODO: consider acquiring GVL from MJIT worker.
     with_pipe {|r, w|
@@ -1532,6 +1607,12 @@ class TestIO < Test::Unit::TestCase
       rescue Errno::EWOULDBLOCK
         assert_kind_of(IO::WaitWritable, $!)
       end
+    }
+  end if have_nonblock?
+
+  def test_write_nonblock_invalid_exception
+    with_pipe {|r, w|
+      assert_raise(ArgumentError) {w.write_nonblock(4096, exception: 1)}
     }
   end if have_nonblock?
 
@@ -1695,23 +1776,25 @@ class TestIO < Test::Unit::TestCase
           f.gets; assert_equal(3, $.)
         end
       SRC
-
-      pipe(proc do |w|
-        w.puts "foo"
-        w.puts "bar"
-        w.puts "baz"
-        w.close
-      end, proc do |r|
-        r.gets; assert_equal(1, $.)
-        r.gets; assert_equal(2, $.)
-        r.lineno = 1000; assert_equal(2, $.)
-        r.gets; assert_equal(1001, $.)
-        r.gets; assert_equal(1001, $.)
-      end)
     }
   end
 
-  def test_readline
+  def test_set_lineno_gets
+    pipe(proc do |w|
+      w.puts "foo"
+      w.puts "bar"
+      w.puts "baz"
+      w.close
+    end, proc do |r|
+      r.gets; assert_equal(1, $.)
+      r.gets; assert_equal(2, $.)
+      r.lineno = 1000; assert_equal(2, $.)
+      r.gets; assert_equal(1001, $.)
+      r.gets; assert_equal(1001, $.)
+    end)
+  end
+
+  def test_set_lineno_readline
     pipe(proc do |w|
       w.puts "foo"
       w.puts "bar"
@@ -1737,70 +1820,6 @@ class TestIO < Test::Unit::TestCase
       r.each_char {|c| a << c }
       assert_equal(%w(f o o) + ["\n"] + %w(b a r) + ["\n"] + %w(b a z) + ["\n"], a)
     end)
-  end
-
-  def test_lines
-    verbose, $VERBOSE = $VERBOSE, nil
-    pipe(proc do |w|
-      w.puts "foo"
-      w.puts "bar"
-      w.puts "baz"
-      w.close
-    end, proc do |r|
-      e = nil
-      assert_warn(/deprecated/) {
-        e = r.lines
-      }
-      assert_equal("foo\n", e.next)
-      assert_equal("bar\n", e.next)
-      assert_equal("baz\n", e.next)
-      assert_raise(StopIteration) { e.next }
-    end)
-  ensure
-    $VERBOSE = verbose
-  end
-
-  def test_bytes
-    verbose, $VERBOSE = $VERBOSE, nil
-    pipe(proc do |w|
-      w.binmode
-      w.puts "foo"
-      w.puts "bar"
-      w.puts "baz"
-      w.close
-    end, proc do |r|
-      e = nil
-      assert_warn(/deprecated/) {
-        e = r.bytes
-      }
-      (%w(f o o) + ["\n"] + %w(b a r) + ["\n"] + %w(b a z) + ["\n"]).each do |c|
-        assert_equal(c.ord, e.next)
-      end
-      assert_raise(StopIteration) { e.next }
-    end)
-  ensure
-    $VERBOSE = verbose
-  end
-
-  def test_chars
-    verbose, $VERBOSE = $VERBOSE, nil
-    pipe(proc do |w|
-      w.puts "foo"
-      w.puts "bar"
-      w.puts "baz"
-      w.close
-    end, proc do |r|
-      e = nil
-      assert_warn(/deprecated/) {
-        e = r.chars
-      }
-      (%w(f o o) + ["\n"] + %w(b a r) + ["\n"] + %w(b a z) + ["\n"]).each do |c|
-        assert_equal(c, e.next)
-      end
-      assert_raise(StopIteration) { e.next }
-    end)
-  ensure
-    $VERBOSE = verbose
   end
 
   def test_readbyte
@@ -2196,6 +2215,21 @@ class TestIO < Test::Unit::TestCase
     assert_equal(o, o2)
   end
 
+  def test_open_redirect_keyword
+    o = Object.new
+    def o.to_open(**kw); kw; end
+    assert_equal({:a=>1}, open(o, a: 1))
+
+    assert_raise(ArgumentError) { open(o, {a: 1}) }
+
+    class << o
+      remove_method(:to_open)
+    end
+    def o.to_open(kw); kw; end
+    assert_equal({:a=>1}, open(o, a: 1))
+    assert_equal({:a=>1}, open(o, {a: 1}))
+  end
+
   def test_open_pipe
     open("|" + EnvUtil.rubybin, "r+") do |f|
       f.puts "puts 'foo'"
@@ -2217,6 +2251,9 @@ class TestIO < Test::Unit::TestCase
     end
     assert_raise(Errno::ENOENT, Errno::EINVAL) do
       Class.new(IO).binread("|#{EnvUtil.rubybin} -e puts")
+    end
+    assert_raise(Errno::ESPIPE) do
+      IO.read("|echo foo", 1, 1)
     end
   end
 
@@ -2388,6 +2425,17 @@ class TestIO < Test::Unit::TestCase
     end
   end
 
+  def test_reopen_ivar
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      f = File.open(IO::NULL)
+      f.instance_variable_set(:@foo, 42)
+      f.reopen(STDIN)
+      f.instance_variable_defined?(:@foo)
+      f.instance_variable_get(:@foo)
+    end;
+  end
+
   def test_foreach
     a = []
     IO.foreach("|" + EnvUtil.rubybin + " -e 'puts :foo; puts :bar; puts :baz'") {|x| a << x }
@@ -2403,15 +2451,15 @@ class TestIO < Test::Unit::TestCase
       assert_equal(["foo\n", "bar\n", "baz\n"], a)
 
       a = []
-      IO.foreach(t.path, {:mode => "r" }) {|x| a << x }
+      IO.foreach(t.path, :mode => "r") {|x| a << x }
       assert_equal(["foo\n", "bar\n", "baz\n"], a)
 
       a = []
-      IO.foreach(t.path, {:open_args => [] }) {|x| a << x }
+      IO.foreach(t.path, :open_args => []) {|x| a << x }
       assert_equal(["foo\n", "bar\n", "baz\n"], a)
 
       a = []
-      IO.foreach(t.path, {:open_args => ["r"] }) {|x| a << x }
+      IO.foreach(t.path, :open_args => ["r"]) {|x| a << x }
       assert_equal(["foo\n", "bar\n", "baz\n"], a)
 
       a = []
@@ -2467,11 +2515,13 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_print_separators
-    $, = ':'
-    $\ = "\n"
+    EnvUtil.suppress_warning {
+      $, = ':'
+      $\ = "\n"
+    }
     pipe(proc do |w|
       w.print('a')
-      w.print('a','b','c')
+      EnvUtil.suppress_warning {w.print('a','b','c')}
       w.close
     end, proc do |r|
       assert_equal("a\n", r.gets)
@@ -2655,13 +2705,6 @@ class TestIO < Test::Unit::TestCase
     }
   end if /freebsd|linux/ =~ RUBY_PLATFORM and defined? File::NOFOLLOW
 
-  def test_tainted
-    make_tempfile {|t|
-      assert_predicate(File.read(t.path, 4), :tainted?, '[ruby-dev:38826]')
-      assert_predicate(File.open(t.path) {|f| f.read(4)}, :tainted?, '[ruby-dev:38826]')
-    }
-  end
-
   def test_binmode_after_closed
     make_tempfile {|t|
       assert_raise(IOError) {t.binmode}
@@ -2719,7 +2762,7 @@ __END__
 
   def test_flush_in_finalizer2
     bug3910 = '[ruby-dev:42341]'
-    Tempfile.open("bug3910") {|t|
+    Tempfile.create("bug3910") {|t|
       path = t.path
       t.close
       begin
@@ -2738,7 +2781,6 @@ __END__
           end
         }
       end
-      t.close!
     }
   end
 
@@ -3032,9 +3074,8 @@ __END__
       assert_equal("\00f", File.read(path))
       assert_equal(1, File.write(path, "f", 0, encoding: "UTF-8"))
       assert_equal("ff", File.read(path))
-      assert_raise(TypeError) {
-        File.write(path, "foo", Object.new => Object.new)
-      }
+      File.write(path, "foo", Object.new => Object.new)
+      assert_equal("foo", File.read(path))
     end
   end
 
@@ -3358,10 +3399,17 @@ __END__
 
       tempfiles = []
       (0..fd_setsize+1).map {|i|
-        tempfiles << Tempfile.open("test_io_select_with_many_files")
+        tempfiles << Tempfile.create("test_io_select_with_many_files")
       }
 
-      IO.select(tempfiles)
+      begin
+        IO.select(tempfiles)
+      ensure
+        tempfiles.each { |t|
+          t.close
+          File.unlink(t.path)
+        }
+      end
     }, bug8080, timeout: 100
   end if defined?(Process::RLIMIT_NOFILE)
 
@@ -3535,15 +3583,27 @@ __END__
   end
 
   def test_open_flag_binary
+    binary_enc = Encoding.find("BINARY")
     make_tempfile do |t|
       open(t.path, File::RDONLY, flags: File::BINARY) do |f|
         assert_equal true, f.binmode?
+        assert_equal binary_enc, f.external_encoding
       end
       open(t.path, 'r', flags: File::BINARY) do |f|
         assert_equal true, f.binmode?
+        assert_equal binary_enc, f.external_encoding
       end
       open(t.path, mode: 'r', flags: File::BINARY) do |f|
         assert_equal true, f.binmode?
+        assert_equal binary_enc, f.external_encoding
+      end
+      open(t.path, File::RDONLY|File::BINARY) do |f|
+        assert_equal true, f.binmode?
+        assert_equal binary_enc, f.external_encoding
+      end
+      open(t.path, File::RDONLY|File::BINARY, autoclose: true) do |f|
+        assert_equal true, f.binmode?
+        assert_equal binary_enc, f.external_encoding
       end
     end
   end if File::BINARY != 0
@@ -3558,7 +3618,7 @@ __END__
 
   def test_race_gets_and_close
     opt = { signal: :ABRT, timeout: 200 }
-    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}", opt)
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}", **opt)
     bug13076 = '[ruby-core:78845] [Bug #13076]'
     begin;
       10.times do |i|
@@ -3727,38 +3787,40 @@ __END__
         end
       end
     end
-
-    def test_pread
-      make_tempfile { |t|
-        open(t.path) do |f|
-          assert_equal("bar", f.pread(3, 4))
-          buf = "asdf"
-          assert_equal("bar", f.pread(3, 4, buf))
-          assert_equal("bar", buf)
-          assert_raise(EOFError) { f.pread(1, f.size) }
-        end
-      }
-    end if IO.method_defined?(:pread)
-
-    def test_pwrite
-      make_tempfile { |t|
-        open(t.path, IO::RDWR) do |f|
-          assert_equal(3, f.pwrite("ooo", 4))
-          assert_equal("ooo", f.pread(3, 4))
-        end
-      }
-    end if IO.method_defined?(:pread) and IO.method_defined?(:pwrite)
   end
 
+  def test_pread
+    make_tempfile { |t|
+      open(t.path) do |f|
+        assert_equal("bar", f.pread(3, 4))
+        buf = "asdf"
+        assert_equal("bar", f.pread(3, 4, buf))
+        assert_equal("bar", buf)
+        assert_raise(EOFError) { f.pread(1, f.size) }
+      end
+    }
+  end if IO.method_defined?(:pread)
+
+  def test_pwrite
+    make_tempfile { |t|
+      open(t.path, IO::RDWR) do |f|
+        assert_equal(3, f.pwrite("ooo", 4))
+        assert_equal("ooo", f.pread(3, 4))
+      end
+    }
+  end if IO.method_defined?(:pread) and IO.method_defined?(:pwrite)
+
   def test_select_exceptfds
-    if Etc.uname[:sysname] == 'SunOS' && Etc.uname[:release] == '5.11'
-      skip "Solaris 11 fails this"
+    if Etc.uname[:sysname] == 'SunOS'
+      str = 'h'.freeze #(???) Only 1 byte with MSG_OOB on Solaris
+    else
+      str = 'hello'.freeze
     end
 
     TCPServer.open('localhost', 0) do |svr|
       con = TCPSocket.new('localhost', svr.addr[1])
       acc = svr.accept
-      assert_equal 5, con.send('hello', Socket::MSG_OOB)
+      assert_equal str.length, con.send(str, Socket::MSG_OOB)
       set = IO.select(nil, nil, [acc], 30)
       assert_equal([[], [], [acc]], set, 'IO#select exceptions array OK')
       acc.close
@@ -3804,21 +3866,22 @@ __END__
     end
   end
 
-  def test_select_leak
+  def test_select_memory_leak
     # avoid malloc arena explosion from glibc and jemalloc:
     env = {
       'MALLOC_ARENA_MAX' => '1',
       'MALLOC_ARENA_TEST' => '1',
       'MALLOC_CONF' => 'narenas:1',
     }
-    assert_no_memory_leak([env], <<-"end;", <<-"end;", rss: true, timeout: 60)
+    assert_no_memory_leak([env], "#{<<~"begin;"}\n#{<<~'else;'}", "#{<<~'end;'}", rss: true, timeout: 60)
+    begin;
       r, w = IO.pipe
       rset = [r]
       wset = [w]
       exc = StandardError.new(-"select used to leak on exception")
       exc.set_backtrace([])
       Thread.new { IO.select(rset, wset, nil, 0) }.join
-    end;
+    else;
       th = Thread.new do
         Thread.handle_interrupt(StandardError => :on_blocking) do
           begin
@@ -3842,5 +3905,23 @@ __END__
       assert_raise(TypeError) {Marshal.dump(r)}
       assert_raise(TypeError) {Marshal.dump(w)}
     }
+  end
+
+  def test_stdout_to_closed_pipe
+    EnvUtil.invoke_ruby(["-e", "loop {puts :ok}"], "", true, true) do
+      |in_p, out_p, err_p, pid|
+      out = out_p.gets
+      out_p.close
+      err = err_p.read
+    ensure
+      status = Process.wait2(pid)[1]
+      assert_equal("ok\n", out)
+      assert_empty(err)
+      assert_not_predicate(status, :success?)
+      if Signal.list["PIPE"]
+        assert_predicate(status, :signaled?)
+        assert_equal("PIPE", Signal.signame(status.termsig) || status.termsig)
+      end
+    end
   end
 end

@@ -33,12 +33,30 @@ static VALUE array_spec_RARRAY_PTR_assign(VALUE self, VALUE array, VALUE value) 
   return Qnil;
 }
 
+
+static VALUE array_spec_RARRAY_PTR_memcpy(VALUE self, VALUE array1, VALUE array2) {
+  VALUE *ptr1, *ptr2;
+  long size;
+  size = RARRAY_LEN(array1);
+  ptr1 = RARRAY_PTR(array1);
+  ptr2 = RARRAY_PTR(array2);
+  if (ptr1 != NULL && ptr2 != NULL) {
+    memcpy(ptr2, ptr1, size * sizeof(VALUE));
+  }
+  return Qnil;
+}
+
 static VALUE array_spec_RARRAY_LEN(VALUE self, VALUE array) {
   return INT2FIX(RARRAY_LEN(array));
 }
 
 static VALUE array_spec_RARRAY_AREF(VALUE self, VALUE array, VALUE index) {
   return RARRAY_AREF(array, FIX2INT(index));
+}
+
+static VALUE array_spec_RARRAY_ASET(VALUE self, VALUE array, VALUE index, VALUE value) {
+  RARRAY_ASET(array, FIX2INT(index), value);
+  return value;
 }
 
 static VALUE array_spec_rb_ary_aref(int argc, VALUE *argv, VALUE self) {
@@ -144,6 +162,14 @@ static VALUE array_spec_rb_ary_shift(VALUE self, VALUE array) {
   return rb_ary_shift(array);
 }
 
+static VALUE array_spec_rb_ary_sort(VALUE self, VALUE array) {
+  return rb_ary_sort(array);
+}
+
+static VALUE array_spec_rb_ary_sort_bang(VALUE self, VALUE array) {
+  return rb_ary_sort_bang(array);
+}
+
 static VALUE array_spec_rb_ary_store(VALUE self, VALUE array, VALUE offset, VALUE value) {
   rb_ary_store(array, FIX2INT(offset), value);
 
@@ -166,7 +192,7 @@ static VALUE array_spec_rb_assoc_new(VALUE self, VALUE first, VALUE second) {
   return rb_assoc_new(first, second);
 }
 
-static VALUE copy_ary(VALUE el, VALUE new_ary) {
+static VALUE copy_ary(RB_BLOCK_CALL_FUNC_ARGLIST(el, new_ary)) {
   return rb_ary_push(new_ary, el);
 }
 
@@ -178,7 +204,7 @@ static VALUE array_spec_rb_iterate(VALUE self, VALUE ary) {
   return new_ary;
 }
 
-static VALUE sub_pair(VALUE el, VALUE holder) {
+static VALUE sub_pair(RB_BLOCK_CALL_FUNC_ARGLIST(el, holder)) {
   return rb_ary_push(holder, rb_ary_entry(el, 1));
 }
 
@@ -194,7 +220,7 @@ static VALUE array_spec_rb_iterate_each_pair(VALUE self, VALUE obj) {
   return new_ary;
 }
 
-static VALUE iter_yield(VALUE el, VALUE ary) {
+static VALUE iter_yield(RB_BLOCK_CALL_FUNC_ARGLIST(el, ary)) {
   rb_yield(el);
   return Qnil;
 }
@@ -229,7 +255,9 @@ void Init_array_spec(void) {
   rb_define_method(cls, "RARRAY_LEN", array_spec_RARRAY_LEN, 1);
   rb_define_method(cls, "RARRAY_PTR_iterate", array_spec_RARRAY_PTR_iterate, 1);
   rb_define_method(cls, "RARRAY_PTR_assign", array_spec_RARRAY_PTR_assign, 2);
+  rb_define_method(cls, "RARRAY_PTR_memcpy", array_spec_RARRAY_PTR_memcpy, 2);
   rb_define_method(cls, "RARRAY_AREF", array_spec_RARRAY_AREF, 2);
+  rb_define_method(cls, "RARRAY_ASET", array_spec_RARRAY_ASET, 3);
   rb_define_method(cls, "rb_ary_aref", array_spec_rb_ary_aref, -1);
   rb_define_method(cls, "rb_ary_clear", array_spec_rb_ary_clear, 1);
   rb_define_method(cls, "rb_ary_delete", array_spec_rb_ary_delete, 2);
@@ -252,6 +280,8 @@ void Init_array_spec(void) {
   rb_define_method(cls, "rb_ary_reverse", array_spec_rb_ary_reverse, 1);
   rb_define_method(cls, "rb_ary_rotate", array_spec_rb_ary_rotate, 2);
   rb_define_method(cls, "rb_ary_shift", array_spec_rb_ary_shift, 1);
+  rb_define_method(cls, "rb_ary_sort", array_spec_rb_ary_sort, 1);
+  rb_define_method(cls, "rb_ary_sort_bang", array_spec_rb_ary_sort_bang, 1);
   rb_define_method(cls, "rb_ary_store", array_spec_rb_ary_store, 3);
   rb_define_method(cls, "rb_ary_concat", array_spec_rb_ary_concat, 2);
   rb_define_method(cls, "rb_ary_plus", array_spec_rb_ary_plus, 2);

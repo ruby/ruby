@@ -35,6 +35,22 @@ class TestRubyVMMJIT < Test::Unit::TestCase
     )
   end
 
+  def test_pause_waits_until_compaction
+    out, err = eval_with_jit(<<~'EOS', verbose: 1, min_calls: 1, wait: false)
+      def a() end; a
+      def b() end; b
+      RubyVM::MJIT.pause
+    EOS
+    assert_equal(
+      2, err.scan(/#{JITSupport::JIT_SUCCESS_PREFIX}/).size,
+      "unexpected stdout:\n```\n#{out}```\n\nstderr:\n```\n#{err}```",
+    )
+    assert_equal(
+      1, err.scan(/#{JITSupport::JIT_COMPACTION_PREFIX}/).size,
+      "unexpected stdout:\n```\n#{out}```\n\nstderr:\n```\n#{err}```",
+    ) unless RUBY_PLATFORM.match?(/mswin|mingw/) # compaction is not supported on Windows yet
+  end
+
   def test_pause_does_not_hang_on_full_units
     out, _ = eval_with_jit(<<~'EOS', verbose: 1, min_calls: 1, max_cache: 10, wait: false)
       i = 0

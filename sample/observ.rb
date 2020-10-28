@@ -27,5 +27,5 @@ class Clock
   end
 end
 
-clock = Clock.new(Tick.new)
+Clock.new(Tick.new)
 sleep

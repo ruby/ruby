@@ -11,6 +11,7 @@ exec_prefix = @exec_prefix@
 libdir = @libdir@
 top_srcdir = $(encsrcdir:/enc=)
 srcdir = $(top_srcdir)
+tooldir = $(top_srcdir)/tool
 arch = @arch@
 EXTOUT = @EXTOUT@
 hdrdir = $(srcdir)/include

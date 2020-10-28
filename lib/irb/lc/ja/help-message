@@ -21,16 +21,21 @@ Usage:  irb.rb [options] [programfile] [arguments]
 		    オブジェクトの作成方法を 0 から 3 のいずれかに設定する.
   --echo	    実行結果を表示する(デフォルト).
   --noecho	    実行結果を表示しない.
-  --inspect	    結果出力にinspectを用いる(bcモード以外はデフォルト).
+  --inspect	    結果出力にinspectを用いる.
   --noinspect	    結果出力にinspectを用いない.
-  --readline	    readlineライブラリを利用する.
-  --noreadline	    readlineライブラリを利用しない.
+  --multiline       マルチラインエディタを利用する.
+  --nomultiline     マルチラインエディタを利用しない.
+  --singleline      シングルラインエディタを利用する.
+  --nosingleline    シングルラインエディタを利用しない.
+  --colorize	    色付けを利用する.
+  --nocolorize	    色付けを利用しない.
   --prompt prompt-mode/--prompt-mode prompt-mode
 		    プロンプトモードを切替えます. 現在定義されているプ
 		    ロンプトモードは, default, simple, xmp, inf-rubyが
 		    用意されています.
   --inf-ruby-mode   emacsのinf-ruby-mode用のプロンプト表示を行なう. 特
-		    に指定がない限り, readlineライブラリは使わなくなる.
+                    に指定がない限り, シングルラインエディタとマルチラ
+                    インエディタは使わなくなる.
   --sample-book-mode/--simple-prompt
 		    非常にシンプルなプロンプトを用いるモードです.
   --noprompt	    プロンプト表示を行なわない.
@@ -40,8 +45,6 @@ Usage:  irb.rb [options] [programfile] [arguments]
   --back-trace-limit n
 		    バックトレース表示をバックトレースの頭から n, 後ろ
 		    からnだけ行なう. デフォルトは16
-
-  --irb_debug n	    irbのデバッグレベルをnに設定する(非推奨).
 
   --verbose	    詳細なメッセージを出力する.
   --noverbose	    詳細なメッセージを出力しない(デフォルト).

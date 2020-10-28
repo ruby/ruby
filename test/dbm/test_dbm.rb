@@ -63,7 +63,6 @@ if defined? DBM
       result = Object.new
       assert_same(result, @dbm_rdonly.fetch("bar") {|k| notfound = k; result})
       assert_equal("bar", notfound)
-      assert_predicate(notfound, :tainted?)
     end
   end
 

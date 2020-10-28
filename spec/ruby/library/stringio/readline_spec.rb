@@ -64,12 +64,13 @@ describe "StringIO#readline when passed no argument" do
     @io.readline.should == "this is\n"
 
     begin
-      old_sep, $/ = $/, " "
+      old_sep = $/
+      suppress_warning {$/ = " "}
       @io.readline.should == "an "
       @io.readline.should == "example\nfor "
       @io.readline.should == "StringIO#readline"
     ensure
-      $/ = old_sep
+      suppress_warning {$/ = old_sep}
     end
   end
 
@@ -106,26 +107,24 @@ describe "StringIO#readline when passed no argument" do
 
   it "raises an IOError if self is at the end" do
     @io.pos = 40
-    lambda { @io.readline }.should raise_error(IOError)
+    -> { @io.readline }.should raise_error(IOError)
   end
 end
 
 describe "StringIO#readline when in write-only mode" do
   it "raises an IOError" do
     io = StringIO.new("xyz", "w")
-    lambda { io.readline }.should raise_error(IOError)
+    -> { io.readline }.should raise_error(IOError)
 
     io = StringIO.new("xyz")
     io.close_read
-    lambda { io.readline }.should raise_error(IOError)
+    -> { io.readline }.should raise_error(IOError)
   end
 end
 
-ruby_version_is "2.4" do
-  describe "StringIO#readline when passed [chomp]" do
-    it "returns the data read without a trailing newline character" do
-      io = StringIO.new("this>is>an>example\n")
-      io.readline(chomp: true).should == "this>is>an>example"
-    end
+describe "StringIO#readline when passed [chomp]" do
+  it "returns the data read without a trailing newline character" do
+    io = StringIO.new("this>is>an>example\n")
+    io.readline(chomp: true).should == "this>is>an>example"
   end
 end

@@ -48,6 +48,24 @@ class TestDateConv < Test::Unit::TestCase
 		 [t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.usec])
   end
 
+  def test_to_time_to_date_roundtrip__from_gregorian_date
+    d = Date.new(1582, 10, 15)
+    t = d.to_time
+    assert_equal([1582, 10, 15, 0, 0, 0, 0],
+		 [t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.usec])
+    assert_equal(d, t.to_date)
+    assert_equal(d.jd, t.to_date.jd)
+  end
+
+  def test_to_time_to_date_roundtrip__from_julian_date
+    d = Date.new(1582, 10, 4)
+    t = d.to_time
+    assert_equal([1582, 10, 14, 0, 0, 0, 0],
+		 [t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.usec])
+    assert_equal(d, t.to_date)
+    assert_equal(d.jd, t.to_date.jd)
+  end
+
   def test_to_time__from_datetime
     d = DateTime.new(2004, 9, 19, 1, 2, 3, 8.to_r/24) + 456789.to_r/86400000000
     t = d.to_time

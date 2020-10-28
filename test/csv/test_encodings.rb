@@ -5,6 +5,7 @@ require_relative "helper"
 
 class TestCSVEncodings < Test::Unit::TestCase
   extend DifferentOFS
+  include Helper
 
   def setup
     super
@@ -241,12 +242,33 @@ class TestCSVEncodings < Test::Unit::TestCase
     assert_equal("UTF-8",      data.to_csv.encoding.name)
   end
 
+  def test_encoding_is_not_upgraded_for_non_ascii_content_during_writing_as_needed
+    data = ["\u00c0".encode("ISO-8859-1"), "\u3042"]
+    assert_equal([
+                   "ISO-8859-1",
+                   "UTF-8",
+                 ],
+                 data.collect {|field| field.encoding.name})
+    assert_raise(Encoding::CompatibilityError) do
+      data.to_csv
+    end
+  end
+
   def test_explicit_encoding
     bug9766 = '[ruby-core:62113] [Bug #9766]'
     s = CSV.generate(encoding: "Windows-31J") do |csv|
       csv << ["foo".force_encoding("ISO-8859-1"), "\u3042"]
     end
     assert_equal(["foo,\u3042\n".encode(Encoding::Windows_31J), Encoding::Windows_31J], [s, s.encoding], bug9766)
+  end
+
+  def test_encoding_with_default_internal
+    with_default_internal(Encoding::UTF_8) do
+      s = CSV.generate(String.new(encoding: Encoding::Big5), encoding: Encoding::Big5) do |csv|
+        csv << ["漢字"]
+      end
+      assert_equal(["漢字\n".encode(Encoding::Big5), Encoding::Big5], [s, s.encoding])
+    end
   end
 
   def test_row_separator_detection_with_invalid_encoding
@@ -256,35 +278,38 @@ class TestCSVEncodings < Test::Unit::TestCase
   end
 
   def test_invalid_encoding_row_error
-    csv = CSV.new("invalid,\xF8\r\nvalid,x\r\n".force_encoding("UTF-8"),
-                  encoding: "UTF-8")
+    csv = CSV.new("valid,x\rinvalid,\xF8\r".force_encoding("UTF-8"),
+                  encoding: "UTF-8", row_sep: "\r")
     error = assert_raise(CSV::MalformedCSVError) do
       csv.shift
+      csv.shift
     end
-    assert_equal("Invalid byte sequence in UTF-8 in line 1.",
+    assert_equal("Invalid byte sequence in UTF-8 in line 2.",
                  error.message)
   end
 
   private
 
-  def assert_parses(fields, encoding, options = { })
+  def assert_parses(fields, encoding, **options)
     encoding = Encoding.find(encoding) unless encoding.is_a? Encoding
     orig_fields = fields
-    fields   = encode_ary(fields, encoding)
-    data = ary_to_data(fields, options)
-    parsed   = CSV.parse(data, options)
+    fields = encode_ary(fields, encoding)
+    data = ary_to_data(fields, **options)
+    parsed = CSV.parse(data, **options)
     assert_equal(fields, parsed)
     parsed.flatten.each_with_index do |field, i|
       assert_equal(encoding, field.encoding, "Field[#{i + 1}] was transcoded.")
     end
     File.open(@temp_csv_path, "wb") {|f| f.print(data)}
-    CSV.open(@temp_csv_path, "rb:#{encoding}", options) do |csv|
+    CSV.open(@temp_csv_path, "rb:#{encoding}", **options) do |csv|
       csv.each_with_index do |row, i|
         assert_equal(fields[i], row)
       end
     end
     begin
-      CSV.open(@temp_csv_path, "rb:#{encoding}:#{__ENCODING__}", options) do |csv|
+      CSV.open(@temp_csv_path,
+               "rb:#{encoding}:#{__ENCODING__}",
+               **options) do |csv|
         csv.each_with_index do |row, i|
           assert_equal(orig_fields[i], row)
         end
@@ -292,7 +317,7 @@ class TestCSVEncodings < Test::Unit::TestCase
     rescue Encoding::ConverterNotFoundError
     end
     options[:encoding] = encoding.name
-    CSV.open(@temp_csv_path, options) do |csv|
+    CSV.open(@temp_csv_path, **options) do |csv|
       csv.each_with_index do |row, i|
         assert_equal(fields[i], row)
       end
@@ -301,7 +326,7 @@ class TestCSVEncodings < Test::Unit::TestCase
     options[:external_encoding] = encoding.name
     options[:internal_encoding] = __ENCODING__.name
     begin
-      CSV.open(@temp_csv_path, options) do |csv|
+      CSV.open(@temp_csv_path, **options) do |csv|
         csv.each_with_index do |row, i|
           assert_equal(orig_fields[i], row)
         end
@@ -314,7 +339,7 @@ class TestCSVEncodings < Test::Unit::TestCase
     ary.map { |row| row.map { |field| field.encode(encoding) } }
   end
 
-  def ary_to_data(ary, options = { })
+  def ary_to_data(ary, **options)
     encoding   = ary.flatten.first.encoding
     quote_char = (options[:quote_char] || '"').encode(encoding)
     col_sep    = (options[:col_sep]    || ",").encode(encoding)
@@ -326,9 +351,9 @@ class TestCSVEncodings < Test::Unit::TestCase
     }.join('').encode(encoding)
   end
 
-  def encode_for_tests(data, options = { })
-    yield ary_to_data(encode_ary(data, "UTF-8"),    options)
-    yield ary_to_data(encode_ary(data, "UTF-16BE"), options)
+  def encode_for_tests(data, **options)
+    yield ary_to_data(encode_ary(data, "UTF-8"),    **options)
+    yield ary_to_data(encode_ary(data, "UTF-16BE"), **options)
   end
 
   def each_encoding

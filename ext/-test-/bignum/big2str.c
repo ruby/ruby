@@ -1,4 +1,4 @@
-#include "internal.h"
+#include "internal/bignum.h"
 
 static VALUE
 big(VALUE x)

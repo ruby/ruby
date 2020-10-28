@@ -63,7 +63,7 @@ class Test_StringNormalize < Test::Unit::TestCase
   end
 
   def test_not_normalize_kc
-    %[
+    %W[
       \u2460
       \u2162
       \u3349
@@ -74,7 +74,7 @@ class Test_StringNormalize < Test::Unit::TestCase
       \u2121
       \u32A4
       \u3231
-    ].split.each do |src|
+    ].each do |src|
       result = Bug::String.new(src).normalize_ospath
       assert_equal src, result,
         "#{src.dump} is expected not to be normalized, but #{result.dump}"
@@ -82,7 +82,7 @@ class Test_StringNormalize < Test::Unit::TestCase
   end
 
   def test_dont_normalize_hfsplus
-    %[
+    %W[
       \u2190\u0338
       \u219A
       \u212B
@@ -95,7 +95,7 @@ class Test_StringNormalize < Test::Unit::TestCase
       \uFA10
       \uFA19
       \uFA26
-    ].split.each do |src|
+    ].each do |src|
       result = Bug::String.new(src).normalize_ospath
       assert_equal src, result,
         "#{src.dump} is expected not to be normalized, but #{result.dump}"

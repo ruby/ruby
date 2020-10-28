@@ -38,137 +38,37 @@ Zachary Scott (zzak)
 
 === Libraries
 
-[lib/English.rb]
-  _unmaintained_
-[lib/abbrev.rb]
-  Akinori MUSHA (knu)
-[lib/base64.rb]
-  Yusuke Endoh (mame)
-[lib/benchmark.rb]
-  _unmaintained_
-[lib/cgi.rb, lib/cgi/*]
-  Takeyuki Fujioka (xibbar)
-[lib/drb.rb, lib/drb/*]
-  Masatoshi SEKI (seki)
 [lib/debug.rb]
-  _unmaintained_
-[lib/delegate.rb]
-  _unmaintained_
-[lib/erb.rb]
-  Masatoshi SEKI (seki), Takashi Kokubun (k0kubun)
-[lib/find.rb]
-  Kazuki Tsujimoto (ktsj)
-[lib/getoptlong.rb]
   _unmaintained_
 [lib/mkmf.rb]
   _unmaintained_
-[lib/monitor.rb]
-  Shugo Maeda (shugo)
-[lib/net/ftp.rb]
-  Shugo Maeda (shugo)
-[lib/net/imap.rb]
-  Shugo Maeda (shugo)
-[lib/net/http.rb, lib/net/https.rb]
-  NARUSE, Yui (naruse)
-[lib/net/pop.rb]
-  _unmaintained_
-[lib/net/protocol.rb]
-  _unmaintained_
-[lib/net/smtp.rb]
-  _unmaintained_
-[lib/observer.rb]
-  _unmaintained_
-[lib/open-uri.rb]
-  Tanaka Akira (akr)
-[lib/open3.rb]
-  _unmaintained_
-[lib/optparse.rb, lib/optparse/*]
-  Nobuyuki Nakada (nobu)
-[lib/pp.rb]
-  Tanaka Akira (akr)
-[lib/prettyprint.rb]
-  Tanaka Akira (akr)
-[lib/profile.rb]
-  _unmaintained_
-[lib/profiler.rb]
-  _unmaintained_
-[lib/pstore.rb]
-  _unmaintained_
-[lib/racc/*]
-  Aaron Patterson (tenderlove)
-[lib/resolv-replace.rb]
-  Tanaka Akira (akr)
-[lib/resolv.rb]
-  Tanaka Akira (akr)
-[lib/rinda/*]
-  Masatoshi SEKI (seki)
-[lib/rubygems.rb, lib/ubygems.rb, lib/rubygems/*]
+[lib/rubygems.rb, lib/rubygems/*]
   Eric Hodel (drbrain), Hiroshi SHIBATA (hsbt)
   https://github.com/rubygems/rubygems
-[lib/set.rb]
-  Akinori MUSHA (knu)
-[lib/securerandom.rb]
-  Tanaka Akira (akr)
-[lib/shellwords.rb]
-  Akinori MUSHA (knu)
-[lib/singleton.rb]
-  Yukihiro Matsumoto (matz)
-[lib/tempfile.rb]
-  _unmaintained_
-[lib/tmpdir.rb]
-  _unmaintained_
-[lib/time.rb]
-  Tanaka Akira (akr)
-[lib/timeout.rb]
-  Yukihiro Matsumoto (matz)
-[lib/tsort.rb]
-  Tanaka Akira (akr)
 [lib/un.rb]
   WATANABE Hirofumi (eban)
 [lib/unicode_normalize.rb, lib/unicode_normalize/*]
   Martin J. Dürst
-[lib/uri.rb, lib/uri/*]
-  YAMADA, Akira (akira)
-[lib/weakref.rb]
-  _unmaintained_
-[lib/yaml.rb, lib/yaml/*]
-  Aaron Patterson (tenderlove), Hiroshi SHIBATA (hsbt)
 
 === Extensions
 
-[ext/cgi]
-  Nobuyoshi Nakada (nobu)
 [ext/continuation]
   Koichi Sasada (ko1)
 [ext/coverage]
   Yusuke Endoh (mame)
-[ext/digest, ext/digest/*]
-  Akinori MUSHA (knu)
 [ext/fiber]
   Koichi Sasada (ko1)
-[ext/io/nonblock]
-  Nobuyuki Nakada (nobu)
-[ext/io/wait]
-  Nobuyuki Nakada (nobu)
-[ext/nkf]
-  NARUSE, Yui (narse)
+[ext/monitor]
+  Koichi Sasada (ko1)
 [ext/objspace]
   _unmaintained_
-[ext/pathname]
-  Tanaka Akira (akr)
 [ext/pty]
   _unmaintained_
-[ext/racc]
-  Aaron Patterson (tenderlove)
-[ext/readline]
-  TAKAO Kouji (kouji)
 [ext/ripper]
   _unmaintained_
 [ext/socket]
   * Tanaka Akira (akr)
   * API change needs matz's approval
-[ext/syslog]
-  Akinori MUSHA (knu)
 [ext/win32]
   NAKAMURA Usaku (usa)
 [ext/win32ole]
@@ -178,119 +78,307 @@ Zachary Scott (zzak)
 
 === Libraries
 
+[lib/abbrev.rb]
+  Akinori MUSHA (knu)
+  https://github.com/ruby/abbrev
+[lib/base64.rb]
+  https://github.com/ruby/base64
+  Yusuke Endoh (mame)
+[lib/benchmark.rb]
+  _unmaintained_
+  https://github.com/ruby/benchmark
+  https://rubygems.org/gems/benchmark
 [lib/bundler.rb, lib/bundler/*]
   Hiroshi SHIBATA (hsbt)
-  https://github.com/bundler/bundler
-[lib/cmath.rb]
-  _unmaintained_
-  https://github.com/ruby/cmath
+  https://github.com/rubygems/rubygems
+  https://rubygems.org/gems/bundler
+[lib/cgi.rb, lib/cgi/*]
+  Takeyuki Fujioka (xibbar)
+  https://github.com/ruby/cgi
+  https://rubygems.org/gems/cgi
 [lib/csv.rb]
   Kenta Murata (mrkn), Kouhei Sutou (kou)
   https://github.com/ruby/csv
-[lib/e2mmap.rb]
-  Keiju ISHITSUKA (keiju)
+  https://rubygems.org/gems/csv
+[lib/English.rb]
+  _unmaintained_
+  https://github.com/ruby/English
+[lib/delegate.rb]
+  _unmaintained_
+  https://github.com/ruby/delegate
+  https://rubygems.org/gems/delegate
+[lib/did_you_mean.rb]
+  Yuki Nishijima (yuki24)
+  https://github.com/ruby/did_you_mean
+[ext/digest, ext/digest/*]
+  Akinori MUSHA (knu)
+  https://github.com/ruby/digest
+[lib/drb.rb, lib/drb/*]
+  Masatoshi SEKI (seki)
+  https://github.com/ruby/drb
+[lib/erb.rb]
+  Masatoshi SEKI (seki), Takashi Kokubun (k0kubun)
+  https://github.com/ruby/erb
 [lib/fileutils.rb]
   _unmaintained_
   https://github.com/ruby/fileutils
+  https://rubygems.org/gems/fileutils
+[lib/find.rb]
+  Kazuki Tsujimoto (ktsj)
+  https://github.com/ruby/find
 [lib/forwardable.rb]
   Keiju ISHITSUKA (keiju)
+  https://github.com/ruby/forwardable
+  https://rubygems.org/gems/forwardable
+[lib/getoptlong.rb]
+  _unmaintained_
+  https://github.com/ruby/getoptlong
+  https://rubygems.org/gems/getoptlong
 [lib/ipaddr.rb]
   Akinori MUSHA (knu)
+  https://github.com/ruby/ipaddr
+  https://rubygems.org/gems/ipaddr
 [lib/irb.rb, lib/irb/*]
   Keiju ISHITSUKA (keiju)
+  https://github.com/ruby/irb
+  https://rubygems.org/gems/irb
+[lib/optparse.rb, lib/optparse/*]
+  Nobuyuki Nakada (nobu)
+  https://github.com/ruby/optparse
 [lib/logger.rb]
   Naotoshi Seo (sonots)
+  https://github.com/ruby/logger
+  https://rubygems.org/gems/logger
 [lib/matrix.rb]
   Marc-Andre Lafortune (marcandre)
+  https://github.com/ruby/matrix
+  https://rubygems.org/gems/matrix
 [lib/mutex_m.rb]
   Keiju ISHITSUKA (keiju)
+  https://github.com/ruby/mutex_m
+  https://rubygems.org/gems/mutex_m
+[lib/net/ftp.rb]
+  Shugo Maeda (shugo)
+  https://github.com/ruby/net-ftp
+[lib/net/http.rb, lib/net/https.rb]
+  NARUSE, Yui (naruse)
+  https://github.com/ruby/net-http
+[lib/net/imap.rb]
+  Shugo Maeda (shugo)
+  https://github.com/ruby/net-imap
+[lib/net/pop.rb]
+  _unmaintained_
+  https://github.com/ruby/net-pop
+  https://rubygems.org/gems/net-pop
+[lib/net/smtp.rb]
+  _unmaintained_
+  https://github.com/ruby/net-smtp
+  https://rubygems.org/gems/net-smtp
+[lib/net/protocol.rb]
+  _unmaintained_
+  https://github.com/ruby/net-protocol
+[lib/observer.rb]
+  _unmaintained_
+  https://github.com/ruby/observer
+[lib/open3.rb]
+  _unmaintained_
+  https://github.com/ruby/open3
+  https://rubygems.org/gems/open3
+[lib/open-uri.rb]
+  Tanaka Akira (akr)
+  https://github.com/ruby/open-uri
 [lib/ostruct.rb]
   Marc-Andre Lafortune (marcandre)
+  https://github.com/ruby/ostruct
+  https://rubygems.org/gems/ostruct
+[lib/pp.rb]
+  Tanaka Akira (akr)
+  https://github.com/ruby/pp
+[lib/prettyprint.rb]
+  Tanaka Akira (akr)
+  https://github.com/ruby/prettyprint
 [lib/prime.rb]
   Yuki Sonoda (yugui)
+  https://github.com/ruby/prime
+[lib/pstore.rb]
+  _unmaintained_
+  https://github.com/ruby/pstore
+  https://rubygems.org/gems/pstore
+[lib/racc.rb, lib/racc/*]
+  Aaron Patterson (tenderlove), Hiroshi SHIBATA (hsbt)
+  https://github.com/ruby/racc
+  https://rubygems.org/gems/racc
+[lib/readline.rb]
+  aycabta
+  https://github.com/ruby/readline
+  https://rubygems.org/gems/readline
+[lib/resolv.rb]
+  Tanaka Akira (akr)
+  https://github.com/ruby/resolv
+[lib/resolv-replace.rb]
+  Tanaka Akira (akr)
+  https://github.com/ruby/resolv-replace
 [lib/rdoc.rb, lib/rdoc/*]
   Eric Hodel (drbrain), Hiroshi SHIBATA (hsbt)
   https://github.com/ruby/rdoc
-[lib/rexml/*]
-  Kouhei Sutou (kou)
-[lib/rss.rb, lib/rss/*]
-  Kouhei Sutou (kou)
-[lib/scanf.rb]
-  David A. Black (dblack)
-  https://github.com/ruby/scanf
-[lib/shell.rb, lib/shell/*]
-  Keiju ISHITSUKA (keiju)
-[lib/sync.rb]
-  Keiju ISHITSUKA (keiju)
+  https://rubygems.org/gems/rdoc
+[lib/reline.rb, lib/reline/*]
+  aycabta
+  https://github.com/ruby/reline
+  https://rubygems.org/gems/reline
+[lib/rinda/*]
+  Masatoshi SEKI (seki)
+  https://github.com/ruby/rinda
+[lib/securerandom.rb]
+  Tanaka Akira (akr)
+  https://github.com/ruby/securerandom
+[lib/set.rb]
+  Akinori MUSHA (knu)
+  https://github.com/ruby/set
+[lib/shellwords.rb]
+  Akinori MUSHA (knu)
+  https://github.com/ruby/shellwords
+[lib/singleton.rb]
+  Yukihiro Matsumoto (matz)
+  https://github.com/ruby/singleton
+  https://rubygems.org/gems/singleton
+[lib/tempfile.rb]
+  _unmaintained_
+  https://github.com/ruby/tempfile
+[lib/time.rb]
+  Tanaka Akira (akr)
+  https://github.com/ruby/time
+[lib/timeout.rb]
+  Yukihiro Matsumoto (matz)
+  https://github.com/ruby/timeout
 [lib/thwait.rb]
   Keiju ISHITSUKA (keiju)
+  https://github.com/ruby/thwait
+  https://rubygems.org/gems/thwait
+[lib/tmpdir.rb]
+  _unmaintained_
+  https://github.com/ruby/tmpdir
 [lib/tracer.rb]
   Keiju ISHITSUKA (keiju)
+  https://github.com/ruby/tracer
+[lib/tsort.rb]
+  Tanaka Akira (akr)
+  https://github.com/ruby/tsort
+[lib/uri.rb, lib/uri/*]
+  YAMADA, Akira (akira)
+  https://github.com/ruby/uri
 [lib/webrick.rb, lib/webrick/*]
   Eric Wong (normalperson)
   https://bugs.ruby-lang.org/
+  https://rubygems.org/gems/webrick
+[lib/yaml.rb, lib/yaml/*]
+  Aaron Patterson (tenderlove), Hiroshi SHIBATA (hsbt)
+  https://github.com/ruby/yaml
+[lib/weakref.rb]
+  _unmaintained_
+  https://github.com/ruby/weakref
 
 === Extensions
 
 [ext/bigdecimal]
   Kenta Murata (mrkn)
   https://github.com/ruby/bigdecimal
+  https://rubygems.org/gems/bigdecimal
+[ext/cgi]
+  Nobuyoshi Nakada (nobu)
+  https://github.com/ruby/cgi
+  https://rubygems.org/gems/cgi
 [ext/date]
   _unmaintained_
   https://github.com/ruby/date
+  https://rubygems.org/gems/date
 [ext/dbm]
   _unmaintained_
   https://github.com/ruby/dbm
+  https://rubygems.org/gems/dbm
 [ext/etc]
   Ruby core team
   https://github.com/ruby/etc
+  https://rubygems.org/gems/etc
 [ext/fcntl]
   Ruby core team
   https://github.com/ruby/fcntl
+  https://rubygems.org/gems/fcntl
 [ext/fiddle]
   Aaron Patterson (tenderlove)
   https://github.com/ruby/fiddle
+  https://rubygems.org/gems/fiddle
 [ext/gdbm]
   Yukihiro Matsumoto (matz)
   https://github.com/ruby/gdbm
+  https://rubygems.org/gems/gdbm
 [ext/io/console]
   Nobuyuki Nakada (nobu)
   https://github.com/ruby/io-console
+  https://rubygems.org/gems/io-console
+[ext/io/nonblock]
+  Nobuyuki Nakada (nobu)
+  https://github.com/ruby/io-nonblock
+[ext/io/wait]
+  Nobuyuki Nakada (nobu)
+  https://github.com/ruby/io-wait
 [ext/json]
   NARUSE, Yui (naruse), Hiroshi SHIBATA (hsbt)
   https://github.com/flori/json
+  https://rubygems.org/gems/json
+[ext/nkf]
+  NARUSE, Yui (naruse)
+  https://github.com/ruby/nkf
 [ext/openssl]
   Kazuki Yamaguchi (rhe)
   https://github.com/ruby/openssl
+  https://rubygems.org/gems/openssl
+[ext/pathname]
+  Tanaka Akira (akr)
+  https://github.com/ruby/pathname
 [ext/psych]
-  Aaron Patterson (tenderlove), Hiroshi SHIBATA(hsbt)
+  Aaron Patterson (tenderlove), Hiroshi SHIBATA (hsbt)
   https://github.com/ruby/psych
-[ext/sdbm]
-  Yukihiro Matsumoto (matz)
-  https://github.com/ruby/sdbm
+  https://rubygems.org/gems/psych
+[ext/racc]
+  Aaron Patterson (tenderlove), Hiroshi SHIBATA (hsbt)
+  https://github.com/ruby/racc
+  https://rubygems.org/gems/racc
+[ext/readline]
+  TAKAO Kouji (kouji)
+  https://github.com/ruby/readline-ext
+  https://rubygems.org/gems/readline-ext
 [ext/stringio]
   Nobuyuki Nakada (nobu)
   https://github.com/ruby/stringio
+  https://rubygems.org/gems/stringio
 [ext/strscan]
-  _unmaintained_
+  Kouhei Sutou (kou)
   https://github.com/ruby/strscan
+  https://rubygems.org/gems/strscan
+[ext/syslog]
+  Akinori MUSHA (knu)
+  https://github.com/ruby/syslog
 [ext/zlib]
   NARUSE, Yui (naruse)
   https://github.com/ruby/zlib
+  https://rubygems.org/gems/zlib
 
 == Bundled gems upstream repositories
 
-[did_you_mean]
-  https://github.com/yuki24/did_you_mean
 [minitest]
   https://github.com/seattlerb/minitest
-[net-telnet]
-  https://github.com/ruby/net-telnet
 [power_assert]
-  https://github.com/k-tsj/power_assert
+  https://github.com/ruby/power_assert
 [rake]
   https://github.com/ruby/rake
 [test-unit]
   https://github.com/test-unit/test-unit
-[xmlrpc]
-  https://github.com/ruby/xmlrpc
+[rexml]
+  https://github.com/ruby/rexml
+[rss]
+  https://github.com/ruby/rss
+[rbs]
+  https://github.com/ruby/rbs
+[typeprof]
+  http://github.com/ruby/typeprof

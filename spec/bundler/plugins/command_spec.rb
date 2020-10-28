@@ -18,7 +18,7 @@ RSpec.describe "command plugins" do
       end
     end
 
-    bundle "plugin install command-mah --source file://#{gem_repo2}"
+    bundle "plugin install command-mah --source #{file_uri_for(gem_repo2)}"
   end
 
   it "executes without arguments" do
@@ -46,7 +46,7 @@ RSpec.describe "command plugins" do
       end
     end
 
-    bundle "plugin install the-echoer --source file://#{gem_repo2}"
+    bundle "plugin install the-echoer --source #{file_uri_for(gem_repo2)}"
     expect(out).to include("Installed plugin the-echoer")
 
     bundle "echo tacos tofu lasange"
@@ -69,12 +69,12 @@ RSpec.describe "command plugins" do
       end
     end
 
-    bundle "plugin install copycat --source file://#{gem_repo2}"
+    bundle "plugin install copycat --source #{file_uri_for(gem_repo2)}"
 
     expect(out).not_to include("Installed plugin copycat")
 
-    expect(out).to include("Failed to install plugin")
+    expect(err).to include("Failed to install the following plugins: `copycat`")
 
-    expect(out).to include("Command(s) `mahcommand` declared by copycat are already registered.")
+    expect(err).to include("Command(s) `mahcommand` declared by copycat are already registered.")
   end
 end

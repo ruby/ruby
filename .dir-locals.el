@@ -24,6 +24,8 @@
 
  (c-mode . ((c-file-style . "ruby")))
 
+ (c++-mode . ((c-file-style . "ruby")))
+
  (change-log-mode .
      ((buffer-file-coding-system . us-ascii)
       (indent-tabs-mode . t)

@@ -51,7 +51,7 @@ class Downloader
   class GNU < self
     def self.download(name, *rest)
       if https?
-        super("https://raw.githubusercontent.com/gcc-mirror/gcc/master/#{name}", name, *rest)
+        super("https://cdn.jsdelivr.net/gh/gcc-mirror/gcc@master/#{name}", name, *rest)
       else
         super("https://repo.or.cz/official-gcc.git/blob_plain/HEAD:/#{name}", name, *rest)
       end
@@ -71,7 +71,7 @@ class Downloader
 
   class Unicode < self
     INDEX = {}  # cache index file information across files in the same directory
-    UNICODE_PUBLIC = "http://www.unicode.org/Public/"
+    UNICODE_PUBLIC = "https://www.unicode.org/Public/"
 
     def self.download(name, dir = nil, since = true, options = {})
       options = options.dup
@@ -81,17 +81,20 @@ class Downloader
         if INDEX.size == 0
           index_options = options.dup
           index_options[:cache_save] = false # TODO: make sure caching really doesn't work for index file
+          index_data = File.read(under(dir, "index.html")) rescue nil
           index_file = super(UNICODE_PUBLIC+name_dir_part, "#{name_dir_part}index.html", dir, true, index_options)
-          INDEX[:index] = IO.read index_file
+          INDEX[:index] = File.read(index_file)
+          since = true unless INDEX[:index] == index_data
         end
         file_base = File.basename(name, '.txt')
-        beta_name = INDEX[:index].match(/#{file_base}(-[0-9.]+d\d+)?\.txt/)[0]
+        return if file_base == '.' # Use pre-generated headers and tables
+        beta_name = INDEX[:index][/#{Regexp.quote(file_base)}(-[0-9.]+d\d+)?\.txt/]
         # make sure we always check for new versions of files,
         # because they can easily change in the beta period
-        super(UNICODE_PUBLIC+name_dir_part+beta_name, name, dir, true, options)
+        super(UNICODE_PUBLIC+name_dir_part+beta_name, name, dir, since, options)
       else
         index_file = Pathname.new(under(dir, name_dir_part+'index.html'))
-        if index_file.exist?
+        if index_file.exist? and name_dir_part !~ /^(12\.1\.0|emoji\/12\.0)/
           raise "Although Unicode is not in beta, file #{index_file} exists. " +
                 "Remove all files in this directory and in .downloaded-cache/ " +
                 "because they may be leftovers from the beta period."
@@ -118,7 +121,7 @@ class Downloader
         options['If-Modified-Since'] = since
       end
     end
-    options['Accept-Encoding'] = '*' # to disable Net::HTTP::GenericRequest#decode_content
+    options['Accept-Encoding'] = 'identity' # to disable Net::HTTP::GenericRequest#decode_content
     options
   end
 
@@ -189,7 +192,7 @@ class Downloader
       $stdout.flush
     end
     begin
-      data = with_retry(6) do
+      data = with_retry(9) do
         url.read(options.merge(http_options(file, since.nil? ? true : since)))
       end
     rescue OpenURI::HTTPError => http_error
@@ -285,14 +288,20 @@ class Downloader
   end
 
   def self.save_cache(cache, file, name)
-    if cache and !cache.eql?(file) and !cache.exist?
+    return unless cache or cache.eql?(file)
+    begin
+      st = cache.stat
+    rescue
       begin
         file.rename(cache)
       rescue
-      else
-        link_cache(cache, file, name)
+        return
       end
+    else
+      return unless st.mtime > file.lstat.mtime
+      file.unlink
     end
+    link_cache(cache, file, name)
   end
 
   def self.with_retry(max_times, &block)

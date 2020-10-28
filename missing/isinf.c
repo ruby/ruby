@@ -18,7 +18,7 @@ isinf(double n)
 
 #else
 
-#include "ruby/config.h"
+#include "ruby/internal/config.h"
 
 #if defined(HAVE_FINITE) && defined(HAVE_ISNAN)
 

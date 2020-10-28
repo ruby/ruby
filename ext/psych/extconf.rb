@@ -13,8 +13,10 @@ if enable_config("bundled-libyaml", false) || !(find_header('yaml.h') && find_li
   $VPATH << "$(srcdir)/yaml"
   $INCFLAGS << " -I$(srcdir)/yaml"
 
-  $srcs = Dir.glob("#{$srcdir}/{,yaml/}*.c").map {|n| File.basename(n)}
+  $srcs = Dir.glob("#{$srcdir}/{,yaml/}*.c").map {|n| File.basename(n)}.sort
 
+  header = 'yaml/yaml.h'
+  header = "{$(VPATH)}#{header}" if $nmake
   if have_macro("_WIN32")
     $CPPFLAGS << " -DYAML_DECLARE_STATIC -DHAVE_CONFIG_H"
   end
@@ -34,6 +36,8 @@ if enable_config("bundled-libyaml", false) || !(find_header('yaml.h') && find_li
   have_header 'config.h'
 end
 
-create_makefile 'psych'
+create_makefile 'psych' do |mk|
+  mk << "YAML_H = #{header}".strip << "\n"
+end
 
 # :startdoc:

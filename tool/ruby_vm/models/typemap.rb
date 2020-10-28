@@ -12,11 +12,10 @@
 
 RubyVM::Typemap = {
   "..."            => %w[. TS_VARIABLE],
-  "CALL_CACHE"     => %w[E TS_CALLCACHE],
-  "CALL_INFO"      => %w[C TS_CALLINFO],
+  "CALL_DATA"      => %w[C TS_CALLDATA],
   "CDHASH"         => %w[H TS_CDHASH],
-  "GENTRY"         => %w[G TS_GENTRY],
   "IC"             => %w[K TS_IC],
+  "IVC"            => %w[A TS_IVC],
   "ID"             => %w[I TS_ID],
   "ISE"            => %w[T TS_ISE],
   "ISEQ"           => %w[S TS_ISEQ],
@@ -25,6 +24,7 @@ RubyVM::Typemap = {
   "lindex_t"       => %w[L TS_LINDEX],
   "rb_insn_func_t" => %w[F TS_FUNCPTR],
   "rb_num_t"       => %w[N TS_NUM],
+  "RB_BUILTIN"     => %w[R TS_BUILTIN],
 }
 
 # :FIXME: should this method be here?

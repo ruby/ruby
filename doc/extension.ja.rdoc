@@ -215,17 +215,6 @@ rb_str_new_literal(const char *ptr) ::
 
   Cのリテラル文字列からRubyの文字列を生成する．
 
-rb_tainted_str_new(const char *ptr, long len) ::
-
-  汚染マークが付加された新しいRubyの文字列を生成する．外部
-  からのデータに基づく文字列には汚染マークが付加されるべき
-  である．
-
-rb_tainted_str_new2(const char *ptr) ::
-rb_tainted_str_new_cstr(const char *ptr) ::
-
-  Cの文字列から汚染マークが付加されたRubyの文字列を生成する．
-
 rb_str_append(VALUE str1, VALUE str2) ::
 
   Rubyの文字列str1にRubyの文字列str2を追加する．
@@ -1251,7 +1240,6 @@ Data_Get_Struct(data, type, sval) ::
   RB_INTEGER_TYPE_P(value)
   RB_FLOAT_TYPE_P(value)
   void Check_Type(VALUE value, int type)
-  SafeStringValue(value)
 
 === 型変換
 

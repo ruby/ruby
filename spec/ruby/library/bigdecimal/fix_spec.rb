@@ -34,7 +34,7 @@ describe "BigDecimal#fix" do
   it "correctly handles special values" do
     @infinity.fix.should == @infinity
     @infinity_neg.fix.should == @infinity_neg
-    @nan.fix.nan?.should == true
+    @nan.fix.should.nan?
   end
 
   it "returns 0 if the absolute value is < 1" do
@@ -49,7 +49,7 @@ describe "BigDecimal#fix" do
   end
 
   it "does not allow any arguments" do
-    lambda {
+    -> {
       @mixed.fix(10)
     }.should raise_error(ArgumentError)
   end

@@ -18,7 +18,7 @@ describe 'BasicSocket#sendmsg_nonblock' do
 
       describe 'without a destination address' do
         it "raises #{SocketSpecs.dest_addr_req_error}" do
-          lambda { @client.sendmsg_nonblock('hello') }.should raise_error(SocketSpecs.dest_addr_req_error)
+          -> { @client.sendmsg_nonblock('hello') }.should raise_error(SocketSpecs.dest_addr_req_error)
         end
       end
 
@@ -70,7 +70,7 @@ describe 'BasicSocket#sendmsg_nonblock' do
 
         it 'sends the message to the given address instead' do
           @client.sendmsg_nonblock('hello', 0, @alt_server.getsockname).should == 5
-          lambda { @server.recv(5) }.should block_caller
+          -> { @server.recv(5) }.should block_caller
           @alt_server.recv(5).should == 'hello'
         end
       end
@@ -94,9 +94,18 @@ describe 'BasicSocket#sendmsg_nonblock' do
         end
 
         it 'raises IO::WaitWritable when the underlying buffer is full' do
-          lambda {
+          -> {
             10.times { @client.sendmsg_nonblock('hello' * 1_000_000) }
           }.should raise_error(IO::WaitWritable)
+        end
+
+        it 'returns :wait_writable when the underlying buffer is full with exception: false' do
+          ret = nil
+          10.times {
+            ret = @client.sendmsg_nonblock('hello' * 1_000_000, exception: false)
+            break unless ret.is_a?(Integer)
+          }
+          ret.should == :wait_writable
         end
       end
     end

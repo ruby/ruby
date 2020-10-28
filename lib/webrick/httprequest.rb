@@ -9,6 +9,7 @@
 #
 # $IPR: httprequest.rb,v 1.64 2003/07/13 17:18:22 gotoyuzo Exp $
 
+require 'fiber'
 require 'uri'
 require_relative 'httpversion'
 require_relative 'httpstatus'
@@ -226,9 +227,9 @@ module WEBrick
         raise HTTPStatus::BadRequest, "bad URI `#{@unparsed_uri}'."
       end
 
-      if /close/io =~ self["connection"]
+      if /\Aclose\z/io =~ self["connection"]
         @keep_alive = false
-      elsif /keep-alive/io =~ self["connection"]
+      elsif /\Akeep-alive\z/io =~ self["connection"]
         @keep_alive = true
       elsif @http_version < "1.1"
         @keep_alive = false
@@ -273,13 +274,17 @@ module WEBrick
       self
     end
 
-    # for IO.copy_stream.  Note: we may return a larger string than +size+
-    # here; but IO.copy_stream does not care.
+    # for IO.copy_stream.
     def readpartial(size, buf = ''.b) # :nodoc
       res = @body_tmp.shift or raise EOFError, 'end of file reached'
+      if res.length > size
+        @body_tmp.unshift(res[size..-1])
+        res = res[0..size - 1]
+      end
       buf.replace(res)
       res.clear
-      @body_rd.resume # get more chunks
+      # get more chunks - check alive? because we can take a partial chunk
+      @body_rd.resume if @body_rd.alive?
       buf
     end
 
@@ -503,7 +508,7 @@ module WEBrick
       return unless socket
       if tc = self['transfer-encoding']
         case tc
-        when /chunked/io then read_chunked(socket, block)
+        when /\Achunked\z/io then read_chunked(socket, block)
         else raise HTTPStatus::NotImplemented, "Transfer-Encoding: #{tc}."
         end
       elsif self['content-length'] || @remaining_size
@@ -611,7 +616,12 @@ module WEBrick
       end
       if host_port = self["x-forwarded-host"]
         host_port = host_port.split(",", 2).first
-        @forwarded_host, tmp = host_port.split(":", 2)
+        if host_port =~ /\A(\[[0-9a-fA-F:]+\])(?::(\d+))?\z/
+          @forwarded_host = $1
+          tmp = $2
+        else
+          @forwarded_host, tmp = host_port.split(":", 2)
+        end
         @forwarded_port = (tmp || (@forwarded_proto == "https" ? 443 : 80)).to_i
       end
       if addrs = self["x-forwarded-for"]

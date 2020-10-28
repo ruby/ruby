@@ -12,37 +12,37 @@ describe "IO#advise" do
   end
 
   it "raises a TypeError if advise is not a Symbol" do
-    lambda {
+    -> {
       @io.advise("normal")
     }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if offset cannot be coerced to an Integer" do
-    lambda {
+    -> {
       @io.advise(:normal, "wat")
     }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if len cannot be coerced to an Integer" do
-    lambda {
+    -> {
       @io.advise(:normal, 0, "wat")
     }.should raise_error(TypeError)
   end
 
   it "raises a RangeError if offset is too big" do
-    lambda {
+    -> {
       @io.advise(:normal, 10 ** 32)
     }.should raise_error(RangeError)
   end
 
   it "raises a RangeError if len is too big" do
-    lambda {
+    -> {
       @io.advise(:normal, 0, 10 ** 32)
     }.should raise_error(RangeError)
   end
 
   it "raises a NotImplementedError if advise is not recognized" do
-    lambda{
+    ->{
       @io.advise(:foo)
     }.should raise_error(NotImplementedError)
   end
@@ -82,8 +82,7 @@ describe "IO#advise" do
                 `uname -r`.chomp
               end
       if (uname.split('.').map(&:to_i) <=> [3,6]) < 0
-        # [ruby-core:65355] tmpfs is not supported
-        1.should == 1
+        skip "[ruby-core:65355] tmpfs is not supported"
       else
         @io.advise(:willneed).should be_nil
       end
@@ -92,6 +91,6 @@ describe "IO#advise" do
 
   it "raises an IOError if the stream is closed" do
     @io.close
-    lambda { @io.advise(:normal) }.should raise_error(IOError)
+    -> { @io.advise(:normal) }.should raise_error(IOError)
   end
 end

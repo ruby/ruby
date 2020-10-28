@@ -31,7 +31,7 @@ describe :io_copy_stream_to_file, shared: true do
     obj = mock("io_copy_stream_to")
     obj.should_receive(:to_path).and_return(1)
 
-    lambda { IO.copy_stream(@object.from, obj) }.should raise_error(TypeError)
+    -> { IO.copy_stream(@object.from, obj) }.should raise_error(TypeError)
   end
 end
 
@@ -71,7 +71,7 @@ describe :io_copy_stream_to_io, shared: true do
   it "raises an IOError if the destination IO is not open for writing" do
     @to_io.close
     @to_io = new_io @to_name, "r"
-    lambda { IO.copy_stream @object.from, @to_io }.should raise_error(IOError)
+    -> { IO.copy_stream @object.from, @to_io }.should raise_error(IOError)
   end
 
   it "does not close the destination IO" do
@@ -125,7 +125,7 @@ describe "IO.copy_stream" do
     it "raises an IOError if the source IO is not open for reading" do
       @from_io.close
       @from_io = new_io @from_bigfile, "a"
-      lambda { IO.copy_stream @from_io, @to_name }.should raise_error(IOError)
+      -> { IO.copy_stream @from_io, @to_name }.should raise_error(IOError)
     end
 
     it "does not close the source IO" do
@@ -183,7 +183,7 @@ describe "IO.copy_stream" do
       obj = mock("io_copy_stream_from")
       obj.should_receive(:to_path).and_return(1)
 
-      lambda { IO.copy_stream(obj, @to_name) }.should raise_error(TypeError)
+      -> { IO.copy_stream(obj, @to_name) }.should raise_error(TypeError)
     end
 
     describe "to a file name" do
@@ -222,7 +222,7 @@ describe "IO.copy_stream" do
 
     platform_is_not :windows do
       it "raises an error when an offset is specified" do
-        lambda { IO.copy_stream(@from_io, @to_name, 8, 4) }.should raise_error(Errno::ESPIPE)
+        -> { IO.copy_stream(@from_io, @to_name, 8, 4) }.should raise_error(Errno::ESPIPE)
       end
     end
 
@@ -278,5 +278,45 @@ describe "IO.copy_stream" do
       IO.copy_stream(@io, @to_name)
     end
 
+  end
+
+
+  describe "with a destination that does partial reads" do
+    before do
+      @from_out, @from_in = IO.pipe
+      @to_out, @to_in = IO.pipe
+    end
+
+    after do
+      [@from_out, @from_in, @to_out, @to_in].each {|io| io.close rescue nil}
+    end
+
+    it "calls #write repeatedly on the destination Object" do
+      @from_in.write "1234"
+      @from_in.close
+
+      th = Thread.new do
+        IO.copy_stream(@from_out, @to_in)
+      end
+
+      copied = ""
+      4.times do
+        copied += @to_out.read(1)
+      end
+
+      th.join
+
+      copied.should == "1234"
+    end
+
+  end
+end
+
+describe "IO.copy_stream" do
+  it "does not use buffering when writing to STDOUT" do
+    IO.popen([*ruby_exe, fixture(__FILE__ , "copy_in_out.rb")], "r+") do |io|
+      io.write("bar")
+      io.read(3).should == "bar"
+    end
   end
 end

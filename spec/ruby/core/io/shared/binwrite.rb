@@ -24,9 +24,9 @@ describe :io_binwrite, shared: true do
   it "creates a file if missing" do
     fn = @filename + "xxx"
     begin
-      File.exist?(fn).should be_false
+      File.should_not.exist?(fn)
       IO.send(@method, fn, "test")
-      File.exist?(fn).should be_true
+      File.should.exist?(fn)
     ensure
       rm_r fn
     end
@@ -35,9 +35,9 @@ describe :io_binwrite, shared: true do
   it "creates file if missing even if offset given" do
     fn = @filename + "xxx"
     begin
-      File.exist?(fn).should be_false
+      File.should_not.exist?(fn)
       IO.send(@method, fn, "test", 0)
-      File.exist?(fn).should be_true
+      File.should.exist?(fn)
     ensure
       rm_r fn
     end
@@ -56,7 +56,7 @@ describe :io_binwrite, shared: true do
   end
 
   it "doesn't truncate and writes at the given offset after passing empty opts" do
-    IO.send(@method, @filename, "hello world!", 1, {})
+    IO.send(@method, @filename, "hello world!", 1, **{})
     File.read(@filename).should == "0hello world!34567890123456789"
   end
 
@@ -68,11 +68,11 @@ describe :io_binwrite, shared: true do
   end
 
   it "raises an error if readonly mode is specified" do
-    lambda { IO.send(@method, @filename, "abcde", mode: "r") }.should raise_error(IOError)
+    -> { IO.send(@method, @filename, "abcde", mode: "r") }.should raise_error(IOError)
   end
 
   it "truncates if empty :opts provided and offset skipped" do
-    IO.send(@method, @filename, "hello, world!", {})
+    IO.send(@method, @filename, "hello, world!", **{})
     File.read(@filename).should == "hello, world!"
   end
 end

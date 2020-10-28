@@ -150,7 +150,7 @@
 # a zero to give a sensible result.
 
 class Gem::Version
-  autoload :Requirement, 'rubygems/requirement'
+  autoload :Requirement, File.expand_path('requirement', __dir__)
 
   include Comparable
 
@@ -186,7 +186,7 @@ class Gem::Version
   #   ver3 = Version.create(nil)        # -> nil
 
   def self.create(input)
-    if self === input  # check yourself before you wreck yourself
+    if self === input # check yourself before you wreck yourself
       input
     elsif input.nil?
       nil
@@ -196,6 +196,8 @@ class Gem::Version
   end
 
   @@all = {}
+  @@bump = {}
+  @@release = {}
 
   def self.new(version) # :nodoc:
     return super unless Gem::Version == self
@@ -226,14 +228,14 @@ class Gem::Version
   # Pre-release (alpha) parts, e.g, 5.3.1.b.2 => 5.4, are ignored.
 
   def bump
-    @bump ||= begin
-                segments = self.segments
-                segments.pop while segments.any? { |s| String === s }
-                segments.pop if segments.size > 1
+    @@bump[self] ||= begin
+                       segments = self.segments
+                       segments.pop while segments.any? {|s| String === s }
+                       segments.pop if segments.size > 1
 
-                segments[-1] = segments[-1].succ
-                self.class.new segments.join(".")
-              end
+                       segments[-1] = segments[-1].succ
+                       self.class.new segments.join(".")
+                     end
   end
 
   ##
@@ -305,13 +307,13 @@ class Gem::Version
   # Non-prerelease versions return themselves.
 
   def release
-    @release ||= if prerelease?
-                   segments = self.segments
-                   segments.pop while segments.any? { |s| String === s }
-                   self.class.new segments.join('.')
-                 else
-                   self
-                 end
+    @@release[self] ||= if prerelease?
+                          segments = self.segments
+                          segments.pop while segments.any? {|s| String === s }
+                          self.class.new segments.join('.')
+                        else
+                          self
+                        end
   end
 
   def segments # :nodoc:
@@ -324,7 +326,7 @@ class Gem::Version
   def approximate_recommendation
     segments = self.segments
 
-    segments.pop    while segments.any? { |s| String === s }
+    segments.pop    while segments.any? {|s| String === s }
     segments.pop    while segments.size > 2
     segments.push 0 while segments.size < 2
 
@@ -343,8 +345,8 @@ class Gem::Version
     return unless Gem::Version === other
     return 0 if @version == other._version || canonical_segments == other.canonical_segments
 
-    lhsegments = _segments
-    rhsegments = other._segments
+    lhsegments = canonical_segments
+    rhsegments = other.canonical_segments
 
     lhsize = lhsegments.size
     rhsize = rhsegments.size
@@ -373,6 +375,12 @@ class Gem::Version
       end.reduce(&:concat)
   end
 
+  def freeze
+    prerelease?
+    canonical_segments
+    super
+  end
+
   protected
 
   def _version
@@ -391,7 +399,7 @@ class Gem::Version
 
   def _split_segments
     string_start = _segments.index {|s| s.is_a?(String) }
-    string_segments  = segments
+    string_segments = segments
     numeric_segments = string_segments.slice!(0, string_start || string_segments.size)
     return numeric_segments, string_segments
   end

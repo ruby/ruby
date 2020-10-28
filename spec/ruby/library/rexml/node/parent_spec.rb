@@ -1,20 +1,23 @@
 require_relative '../../../spec_helper'
-require 'rexml/document'
 
-describe "REXML::Node#parent?" do
-  it "returns true for Elements" do
-    e = REXML::Element.new("foo")
-    e.parent?.should == true
-  end
+ruby_version_is ''...'3.0' do
+  require 'rexml/document'
 
-  it "returns true for Documents" do
-    e = REXML::Document.new
-    e.parent?.should == true
-  end
+  describe "REXML::Node#parent?" do
+    it "returns true for Elements" do
+      e = REXML::Element.new("foo")
+      e.should.parent?
+    end
 
-  # This includes attributes, CDatas and declarations.
-  it "returns false for Texts" do
-    e = REXML::Text.new("foo")
-    e.parent?.should == false
+    it "returns true for Documents" do
+      e = REXML::Document.new
+      e.should.parent?
+    end
+
+    # This includes attributes, CDatas and declarations.
+    it "returns false for Texts" do
+      e = REXML::Text.new("foo")
+      e.should_not.parent?
+    end
   end
 end

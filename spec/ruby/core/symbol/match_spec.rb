@@ -19,52 +19,59 @@ describe "Symbol#=~" do
   it_behaves_like :symbol_match, :=~
 end
 
-ruby_version_is ""..."2.4" do
-  describe "Symbol#match" do
-    it_behaves_like :symbol_match, :match
+describe "Symbol#match" do
+  it "returns the MatchData" do
+    result = :abc.match(/b/)
+    result.should be_kind_of(MatchData)
+    result[0].should == 'b'
+  end
+
+  it "returns nil if there is no match" do
+    :a.match(/b/).should be_nil
+  end
+
+  it "sets the last match pseudo-variables" do
+    :a.match(/(.)/)[0].should == 'a'
+    $1.should == "a"
+  end
+
+  describe "when passed a block" do
+    it "yields the MatchData" do
+      :abc.match(/./) {|m| ScratchPad.record m }
+      ScratchPad.recorded.should be_kind_of(MatchData)
+    end
+
+    it "returns the block result" do
+      :abc.match(/./) { :result }.should == :result
+    end
+
+    it "does not yield if there is no match" do
+      ScratchPad.record []
+      :b.match(/a/) {|m| ScratchPad << m }
+      ScratchPad.recorded.should == []
+    end
   end
 end
 
-ruby_version_is "2.4" do
-  describe "Symbol#match" do
-    it "returns the MatchData" do
-      result = :abc.match(/b/)
-      result.should be_kind_of(MatchData)
-      result[0].should == 'b'
-    end
+describe "Symbol#match?" do
+  before :each do
+    # Resetting Regexp.last_match
+    /DONTMATCH/.match ''
+  end
 
-    it "returns nil if there is no match" do
-      :a.match(/b/).should be_nil
-    end
-
-    it "sets the last match pseudo-variables" do
-      :a.match(/(.)/)[0].should == 'a'
-      $1.should == "a"
+  context "when matches the given regex" do
+    it "returns true but does not set Regexp.last_match" do
+      :string.match?(/string/i).should be_true
+      Regexp.last_match.should be_nil
     end
   end
-end
 
-ruby_version_is "2.4" do
-  describe "Symbol#match?" do
-    before :each do
-      # Resetting Regexp.last_match
-      /DONTMATCH/.match ''
-    end
+  it "returns false when does not match the given regex" do
+    :string.match?(/STRING/).should be_false
+  end
 
-    context "when matches the given regex" do
-      it "returns true but does not set Regexp.last_match" do
-        :string.match?(/string/i).should be_true
-        Regexp.last_match.should be_nil
-      end
-    end
-
-    it "returns false when does not match the given regex" do
-      :string.match?(/STRING/).should be_false
-    end
-
-    it "takes matching position as the 2nd argument" do
-      :string.match?(/str/i, 0).should be_true
-      :string.match?(/str/i, 1).should be_false
-    end
+  it "takes matching position as the 2nd argument" do
+    :string.match?(/str/i, 0).should be_true
+    :string.match?(/str/i, 1).should be_false
   end
 end

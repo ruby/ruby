@@ -28,20 +28,20 @@ describe "IO.binread" do
     IO.binread(@fname, 5, 3).should == @contents.slice(3, 5)
   end
 
-  it "returns a String in ASCII-8BIT encoding" do
-    IO.binread(@fname).encoding.should == Encoding::ASCII_8BIT
+  it "returns a String in BINARY encoding" do
+    IO.binread(@fname).encoding.should == Encoding::BINARY
   end
 
-  it "returns a String in ASCII-8BIT encoding regardless of Encoding.default_internal" do
+  it "returns a String in BINARY encoding regardless of Encoding.default_internal" do
     Encoding.default_internal = Encoding::EUC_JP
-    IO.binread(@fname).encoding.should == Encoding::ASCII_8BIT
+    IO.binread(@fname).encoding.should == Encoding::BINARY
   end
 
   it "raises an ArgumentError when not passed a valid length" do
-    lambda { IO.binread @fname, -1 }.should raise_error(ArgumentError)
+    -> { IO.binread @fname, -1 }.should raise_error(ArgumentError)
   end
 
   it "raises an Errno::EINVAL when not passed a valid offset" do
-    lambda { IO.binread @fname, 0, -1  }.should raise_error(Errno::EINVAL)
+    -> { IO.binread @fname, 0, -1  }.should raise_error(Errno::EINVAL)
   end
 end

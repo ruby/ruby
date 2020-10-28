@@ -39,26 +39,28 @@ describe "Array#delete_if" do
     @a.freeze.delete_if.should be_an_instance_of(Enumerator)
   end
 
-  it "raises a #{frozen_error_class} on a frozen array" do
-    lambda { ArraySpecs.frozen_array.delete_if {} }.should raise_error(frozen_error_class)
+  it "raises a FrozenError on a frozen array" do
+    -> { ArraySpecs.frozen_array.delete_if {} }.should raise_error(FrozenError)
   end
 
-  it "raises a #{frozen_error_class} on an empty frozen array" do
-    lambda { ArraySpecs.empty_frozen_array.delete_if {} }.should raise_error(frozen_error_class)
+  it "raises a FrozenError on an empty frozen array" do
+    -> { ArraySpecs.empty_frozen_array.delete_if {} }.should raise_error(FrozenError)
   end
 
-  it "keeps tainted status" do
-    @a.taint
-    @a.tainted?.should be_true
-    @a.delete_if{ true }
-    @a.tainted?.should be_true
-  end
+  ruby_version_is ''...'2.7' do
+    it "keeps tainted status" do
+      @a.taint
+      @a.tainted?.should be_true
+      @a.delete_if{ true }
+      @a.tainted?.should be_true
+    end
 
-  it "keeps untrusted status" do
-    @a.untrust
-    @a.untrusted?.should be_true
-    @a.delete_if{ true }
-    @a.untrusted?.should be_true
+    it "keeps untrusted status" do
+      @a.untrust
+      @a.untrusted?.should be_true
+      @a.delete_if{ true }
+      @a.untrusted?.should be_true
+    end
   end
 
   it_behaves_like :enumeratorized_with_origin_size, :delete_if, [1,2,3]

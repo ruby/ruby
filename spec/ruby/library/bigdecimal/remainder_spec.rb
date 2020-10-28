@@ -5,7 +5,8 @@ describe "BigDecimal#remainder" do
 
   before :each do
     @zero = BigDecimal("0")
-    @one = BigDecimal("0")
+    @one = BigDecimal("1")
+    @three = BigDecimal("3")
     @mixed = BigDecimal("1.23456789")
     @pos_int = BigDecimal("2E5555")
     @neg_int = BigDecimal("-2E5555")
@@ -37,8 +38,8 @@ describe "BigDecimal#remainder" do
   end
 
   it "returns NaN used with zero" do
-    @mixed.remainder(@zero).nan?.should == true
-    @zero.remainder(@zero).nan?.should == true
+    @mixed.remainder(@zero).should.nan?
+    @zero.remainder(@zero).should.nan?
   end
 
   it "returns zero if used on zero" do
@@ -46,37 +47,44 @@ describe "BigDecimal#remainder" do
   end
 
   it "returns NaN if NaN is involved" do
-    @nan.remainder(@nan).nan?.should == true
-    @nan.remainder(@one).nan?.should == true
-    @one.remainder(@nan).nan?.should == true
-    @infinity.remainder(@nan).nan?.should == true
-    @nan.remainder(@infinity).nan?.should == true
+    @nan.remainder(@nan).should.nan?
+    @nan.remainder(@one).should.nan?
+    @one.remainder(@nan).should.nan?
+    @infinity.remainder(@nan).should.nan?
+    @nan.remainder(@infinity).should.nan?
   end
 
   it "returns NaN if Infinity is involved" do
-    @infinity.remainder(@infinity).nan?.should == true
-    @infinity.remainder(@one).nan?.should == true
-    @infinity.remainder(@mixed).nan?.should == true
-    @infinity.remainder(@one_minus).nan?.should == true
-    @infinity.remainder(@frac_1).nan?.should == true
-    @one.remainder(@infinity).nan?.should == true
+    @infinity.remainder(@infinity).should.nan?
+    @infinity.remainder(@one).should.nan?
+    @infinity.remainder(@mixed).should.nan?
+    @infinity.remainder(@one_minus).should.nan?
+    @infinity.remainder(@frac_1).should.nan?
+    @one.remainder(@infinity).should.nan?
 
-    @infinity_minus.remainder(@infinity_minus).nan?.should == true
-    @infinity_minus.remainder(@one).nan?.should == true
-    @one.remainder(@infinity_minus).nan?.should == true
-    @frac_2.remainder(@infinity_minus).nan?.should == true
+    @infinity_minus.remainder(@infinity_minus).should.nan?
+    @infinity_minus.remainder(@one).should.nan?
+    @one.remainder(@infinity_minus).should.nan?
+    @frac_2.remainder(@infinity_minus).should.nan?
 
-    @infinity.remainder(@infinity_minus).nan?.should == true
-    @infinity_minus.remainder(@infinity).nan?.should == true
+    @infinity.remainder(@infinity_minus).should.nan?
+    @infinity_minus.remainder(@infinity).should.nan?
   end
 
   it "coerces arguments to BigDecimal if possible" do
-    @one.remainder(2).should == @one
+    @three.remainder(2).should == @one
   end
 
+  describe "with Object" do
+    it "tries to coerce the other operand to self" do
+      object = mock("Object")
+      object.should_receive(:coerce).with(@three).and_return([@three, 2])
+      @three.remainder(object).should == @one
+    end
+  end
 
   it "raises TypeError if the argument cannot be coerced to BigDecimal" do
-    lambda {
+    -> {
       @one.remainder('2')
     }.should raise_error(TypeError)
   end

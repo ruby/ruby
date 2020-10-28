@@ -1,0 +1,14 @@
+prelude: |
+  small1 = [1, 2, 3]
+  small2 = [1, 2, 3, 4, 5]
+  small3 = [2, 3, 4, 5]
+  small4 = [2]
+  big1 = [1, 2, 3, 4] * 64
+  big2 = [1, 2, 3] * 64
+  big3 = [1, 2] * 64
+
+benchmark:
+  small-&: small1 & small2 & small3 & small4
+  small-intersection: small1.intersection(small2, small3, small4)
+  big-&: big1 & big2 & big3
+  big-intersection: big1.intersection(big2, big3)

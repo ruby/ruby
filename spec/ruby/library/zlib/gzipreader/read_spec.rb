@@ -2,8 +2,7 @@ require_relative '../../../spec_helper'
 require 'stringio'
 require 'zlib'
 
-describe "GzipReader#read" do
-
+describe "Zlib::GzipReader#read" do
   before :each do
     @data = '12345abcde'
     @zip = [31, 139, 8, 0, 44, 220, 209, 71, 0, 3, 51, 52, 50, 54, 49, 77,
@@ -29,7 +28,7 @@ describe "GzipReader#read" do
 
   it "does not accept a negative length to read" do
     gz = Zlib::GzipReader.new @io
-    lambda {
+    -> {
       gz.read(-1)
     }.should raise_error(ArgumentError)
   end
@@ -64,5 +63,4 @@ describe "GzipReader#read" do
       gz.read(2**16).should be_nil
     end
   end
-
 end

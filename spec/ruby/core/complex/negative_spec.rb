@@ -6,7 +6,7 @@ describe "Complex#negative?" do
 
     c.methods.should_not include(:negative?)
 
-    lambda {
+    -> {
       c.negative?
     }.should raise_error(NoMethodError)
   end

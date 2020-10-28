@@ -1,6 +1,10 @@
-[![Build Status](https://travis-ci.org/ruby/ruby.svg?branch=trunk)](https://travis-ci.org/ruby/ruby)
-[![Build status](https://ci.appveyor.com/api/projects/status/0sy8rrxut4o0k960/branch/trunk?svg=true)](https://ci.appveyor.com/project/ruby/ruby/branch/trunk)
-[![wercker status](https://app.wercker.com/status/e5e7e1704f62b76525022aa424aef6ef/s/trunk "wercker status")](https://app.wercker.com/project/byKey/e5e7e1704f62b76525022aa424aef6ef)
+[![Build Status](https://travis-ci.org/ruby/ruby.svg?branch=master)](https://travis-ci.org/ruby/ruby)
+[![Build status](https://ci.appveyor.com/api/projects/status/0sy8rrxut4o0k960/branch/master?svg=true)](https://ci.appveyor.com/project/ruby/ruby/branch/master)
+[![Actions Status](https://github.com/ruby/ruby/workflows/macOS/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"macOS")
+[![Actions Status](https://github.com/ruby/ruby/workflows/MinGW/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"MinGW")
+[![Actions Status](https://github.com/ruby/ruby/workflows/MJIT/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"MJIT")
+[![Actions Status](https://github.com/ruby/ruby/workflows/Ubuntu/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"Ubuntu")
+[![Actions Status](https://github.com/ruby/ruby/workflows/Windows/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"Windows")
 
 # Rubyとは
 
@@ -14,7 +18,7 @@ Rubyはテキスト処理関係の能力などに優れ，Perlと同じくらい
 
 *   シンプルな文法
 *   普通のオブジェクト指向機能(クラス，メソッドコールなど)
-*   特殊なオブジェクト指向機能(Mixin, 特異メソッドなど)
+*   特殊なオブジェクト指向機能(Mixin，特異メソッドなど)
 *   演算子オーバーロード
 *   例外処理機能
 *   イテレータとクロージャ
@@ -22,7 +26,7 @@ Rubyはテキスト処理関係の能力などに優れ，Perlと同じくらい
 *   ダイナミックローディング (アーキテクチャによる)
 *   移植性が高い．多くのUnix-like/POSIX互換プラットフォーム上で動くだけでなく，Windows， macOS，
     Haikuなどの上でも動く cf.
-    https://github.com/ruby/ruby/blob/trunk/doc/contributing.rdoc#platform-maintainers
+    https://github.com/ruby/ruby/blob/master/doc/contributing.rdoc#platform-maintainers
 
 
 ## 入手法
@@ -33,21 +37,29 @@ https://www.ruby-lang.org/ja/downloads/
 
 を参照してください．
 
-### Subversionで
+### Git
 
-開発先端のソースコードは次のコマンドで取得できます．
+ミラーをGitHubに公開しています． 以下のコマンドでリポジトリを取得できます．
 
-    $ svn co https://svn.ruby-lang.org/repos/ruby/trunk/ ruby
+    $ git clone https://github.com/ruby/ruby.git
+
+他のブランチの一覧は次のコマンドで見られます．
+
+    $ git ls-remote https://github.com/ruby/ruby.git
+
+Rubyリポジトリの本来のmasterは https://git.ruby-lang.org/ruby.git にあります．
+コミッタはこちらを使います．
+
+### Subversion
+
+古いRubyのバージョンのソースコードは次のコマンドで取得できます．
+
+    $ svn co https://svn.ruby-lang.org/repos/ruby/branches/ruby_2_6/ ruby
 
 他に開発中のブランチの一覧は次のコマンドで見られます．
 
     $ svn ls https://svn.ruby-lang.org/repos/ruby/branches/
 
-### Gitで
-
-SubversionのミラーをGitHubに公開しています． 以下のコマンドでリポジトリを取得できます．
-
-    $ git clone https://github.com/ruby/ruby.git
 
 ## ホームページ
 
@@ -90,7 +102,7 @@ Ruby拡張モジュールについて話し合うruby-extメーリングリス�
     環境によってはデフォルトのCコンパイラ用オプションが付きます． `configure` オプションで `optflags=..`
     `warnflags=..` 等で上書きできます．
 
-3.  (必要ならば)`defines.h` を編集する
+3.  (必要ならば)`include/ruby/defines.h` を編集する
 
     多分，必要無いと思います．
 
@@ -99,7 +111,8 @@ Ruby拡張モジュールについて話し合うruby-extメーリングリス�
     `ext/Setup` に記述したモジュールは静的にリンクされます．
 
     ダイナミックローディングをサポートしていないアーキテクチャでは `Setup` の1行目の「`option nodynamic`」という行のコ
-    メントを外す必要があります．また，このアーキテクチャで拡張モジュールを利用するためには，あらかじめ静的にリンクをしておく必要があります．
+    メントを外す必要があります．
+    また，このアーキテクチャで拡張モジュールを利用するためには，あらかじめ静的にリンクをしておく必要があります．
 
 5.  `make` を実行してコンパイルする
 
@@ -170,6 +183,3 @@ stackoverflow (https://ja.stackoverflow.com/) などのWebサイトに投稿し�
 Rubyのオリジナル版は，1995年にまつもとゆきひろ氏によって設計・開発されました．
 
 <mailto:matz@ruby-lang.org>
-
----
-created at: Thu Aug  3 11:57:36 JST 1995

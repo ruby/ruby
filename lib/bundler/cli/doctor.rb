@@ -4,8 +4,8 @@ require "rbconfig"
 
 module Bundler
   class CLI::Doctor
-    DARWIN_REGEX = /\s+(.+) \(compatibility /
-    LDD_REGEX = /\t\S+ => (\S+) \(\S+\)/
+    DARWIN_REGEX = /\s+(.+) \(compatibility /.freeze
+    LDD_REGEX = /\t\S+ => (\S+) \(\S+\)/.freeze
 
     attr_reader :options
 
@@ -56,7 +56,7 @@ module Bundler
     end
 
     def check!
-      require "bundler/cli/check"
+      require_relative "check"
       Bundler::CLI::Check.new({}).run
     end
 
@@ -93,14 +93,14 @@ module Bundler
       end
     end
 
-  private
+    private
 
     def check_home_permissions
       require "find"
       files_not_readable_or_writable = []
       files_not_rw_and_owned_by_different_user = []
       files_not_owned_by_current_user_but_still_rw = []
-      Find.find(Bundler.home.to_s).each do |f|
+      Find.find(Bundler.bundle_path.to_s).each do |f|
         if !File.writable?(f) || !File.readable?(f)
           if File.stat(f).uid != Process.uid
             files_not_rw_and_owned_by_different_user << f

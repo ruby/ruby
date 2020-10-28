@@ -6,11 +6,13 @@ describe "String#chomp" do
   describe "when passed no argument" do
     before do
       # Ensure that $/ is set to the default value
+      @verbose, $VERBOSE = $VERBOSE, nil
       @dollar_slash, $/ = $/, "\n"
     end
 
     after do
       $/ = @dollar_slash
+      $VERBOSE = @verbose
     end
 
     it "does not modify a String with no trailing carriage return or newline" do
@@ -38,8 +40,10 @@ describe "String#chomp" do
       "".chomp.should == ""
     end
 
-    it "taints the result if self is tainted" do
-      "abc".taint.chomp.tainted?.should be_true
+    ruby_version_is ''...'2.7' do
+      it "taints the result if self is tainted" do
+        "abc".taint.chomp.tainted?.should be_true
+      end
     end
 
     it "returns subclass instances when called on a subclass" do
@@ -63,8 +67,10 @@ describe "String#chomp" do
       str.chomp(nil).should_not equal(str)
     end
 
-    it "taints the result if self is tainted" do
-      "abc".taint.chomp(nil).tainted?.should be_true
+    ruby_version_is ''...'2.7' do
+      it "taints the result if self is tainted" do
+        "abc".taint.chomp(nil).tainted?.should be_true
+      end
     end
 
     it "returns an empty String when self is empty" do
@@ -93,8 +99,10 @@ describe "String#chomp" do
       "abc\r\n\r\n\r\n".chomp("").should == "abc"
     end
 
-    it "taints the result if self is tainted" do
-      "abc".taint.chomp("").tainted?.should be_true
+    ruby_version_is ''...'2.7' do
+      it "taints the result if self is tainted" do
+        "abc".taint.chomp("").tainted?.should be_true
+      end
     end
 
     it "returns an empty String when self is empty" do
@@ -115,8 +123,10 @@ describe "String#chomp" do
       "abc\r\n\r\n".chomp("\n").should == "abc\r\n"
     end
 
-    it "taints the result if self is tainted" do
-      "abc".taint.chomp("\n").tainted?.should be_true
+    ruby_version_is ''...'2.7' do
+      it "taints the result if self is tainted" do
+        "abc".taint.chomp("\n").tainted?.should be_true
+      end
     end
 
     it "returns an empty String when self is empty" do
@@ -134,7 +144,7 @@ describe "String#chomp" do
     it "raises a TypeError if #to_str does not return a String" do
       arg = mock("string chomp")
       arg.should_receive(:to_str).and_return(1)
-      lambda { "abc".chomp(arg) }.should raise_error(TypeError)
+      -> { "abc".chomp(arg) }.should raise_error(TypeError)
     end
   end
 
@@ -151,12 +161,14 @@ describe "String#chomp" do
       "".chomp("abc").should == ""
     end
 
-    it "taints the result if self is tainted" do
-      "abc".taint.chomp("abc").tainted?.should be_true
-    end
+    ruby_version_is ''...'2.7' do
+      it "taints the result if self is tainted" do
+        "abc".taint.chomp("abc").tainted?.should be_true
+      end
 
-    it "does not taint the result when the argument is tainted" do
-      "abc".chomp("abc".taint).tainted?.should be_false
+      it "does not taint the result when the argument is tainted" do
+        "abc".chomp("abc".taint).tainted?.should be_false
+      end
     end
 
     it "returns an empty String when the argument equals self" do
@@ -169,11 +181,13 @@ describe "String#chomp!" do
   describe "when passed no argument" do
     before do
       # Ensure that $/ is set to the default value
+      @verbose, $VERBOSE = $VERBOSE, nil
       @dollar_slash, $/ = $/, "\n"
     end
 
     after do
       $/ = @dollar_slash
+      $VERBOSE = @verbose
     end
 
     it "modifies self" do
@@ -201,8 +215,10 @@ describe "String#chomp!" do
       "".chomp!.should be_nil
     end
 
-    it "taints the result if self is tainted" do
-      "abc\n".taint.chomp!.tainted?.should be_true
+    ruby_version_is ''...'2.7' do
+      it "taints the result if self is tainted" do
+        "abc\n".taint.chomp!.tainted?.should be_true
+      end
     end
 
     it "returns subclass instances when called on a subclass" do
@@ -247,8 +263,10 @@ describe "String#chomp!" do
       "abc\r\n\r\n\r\n".chomp!("").should == "abc"
     end
 
-    it "taints the result if self is tainted" do
-      "abc\n".taint.chomp!("").tainted?.should be_true
+    ruby_version_is ''...'2.7' do
+      it "taints the result if self is tainted" do
+        "abc\n".taint.chomp!("").tainted?.should be_true
+      end
     end
 
     it "returns nil when self is empty" do
@@ -269,8 +287,10 @@ describe "String#chomp!" do
       "abc\r\n\r\n".chomp!("\n").should == "abc\r\n"
     end
 
-    it "taints the result if self is tainted" do
-      "abc\n".taint.chomp!("\n").tainted?.should be_true
+    ruby_version_is ''...'2.7' do
+      it "taints the result if self is tainted" do
+        "abc\n".taint.chomp!("\n").tainted?.should be_true
+      end
     end
 
     it "returns nil when self is empty" do
@@ -288,7 +308,7 @@ describe "String#chomp!" do
     it "raises a TypeError if #to_str does not return a String" do
       arg = mock("string chomp")
       arg.should_receive(:to_str).and_return(1)
-      lambda { "abc".chomp!(arg) }.should raise_error(TypeError)
+      -> { "abc".chomp!(arg) }.should raise_error(TypeError)
     end
   end
 
@@ -305,87 +325,91 @@ describe "String#chomp!" do
       "".chomp!("abc").should be_nil
     end
 
-    it "taints the result if self is tainted" do
-      "abc".taint.chomp!("abc").tainted?.should be_true
-    end
+    ruby_version_is ''...'2.7' do
+      it "taints the result if self is tainted" do
+        "abc".taint.chomp!("abc").tainted?.should be_true
+      end
 
-    it "does not taint the result when the argument is tainted" do
-      "abc".chomp!("abc".taint).tainted?.should be_false
+      it "does not taint the result when the argument is tainted" do
+        "abc".chomp!("abc".taint).tainted?.should be_false
+      end
     end
   end
 
-  it "raises a #{frozen_error_class} on a frozen instance when it is modified" do
+  it "raises a FrozenError on a frozen instance when it is modified" do
     a = "string\n\r"
     a.freeze
 
-    lambda { a.chomp! }.should raise_error(frozen_error_class)
+    -> { a.chomp! }.should raise_error(FrozenError)
   end
 
   # see [ruby-core:23666]
-  it "raises a #{frozen_error_class} on a frozen instance when it would not be modified" do
+  it "raises a FrozenError on a frozen instance when it would not be modified" do
     a = "string\n\r"
     a.freeze
-    lambda { a.chomp!(nil) }.should raise_error(frozen_error_class)
-    lambda { a.chomp!("x") }.should raise_error(frozen_error_class)
+    -> { a.chomp!(nil) }.should raise_error(FrozenError)
+    -> { a.chomp!("x") }.should raise_error(FrozenError)
   end
 end
 
-with_feature :encoding do
-  describe "String#chomp" do
-    before :each do
-      @before_separator = $/
-    end
-
-    after :each do
-      $/ = @before_separator
-    end
-
-    it "does not modify a multi-byte character" do
-      "あれ".chomp.should == "あれ"
-    end
-
-    it "removes the final carriage return, newline from a multibyte String" do
-      "あれ\r\n".chomp.should == "あれ"
-    end
-
-    it "removes the final carriage return, newline from a non-ASCII String" do
-      str = "abc\r\n".encode "utf-32be"
-      str.chomp.should == "abc".encode("utf-32be")
-    end
-
-    it "removes the final carriage return, newline from a non-ASCII String when the record separator is changed" do
-      $/ = "\n".encode("utf-8")
-      str = "abc\r\n".encode "utf-32be"
-      str.chomp.should == "abc".encode("utf-32be")
-    end
+describe "String#chomp" do
+  before :each do
+    @verbose, $VERBOSE = $VERBOSE, nil
+    @before_separator = $/
   end
 
-  describe "String#chomp!" do
-    before :each do
-      @before_separator = $/
-    end
+  after :each do
+    $/ = @before_separator
+    $VERBOSE = @verbose
+  end
 
-    after :each do
-      $/ = @before_separator
-    end
+  it "does not modify a multi-byte character" do
+    "あれ".chomp.should == "あれ"
+  end
 
-    it "returns nil when the String is not modified" do
-      "あれ".chomp!.should be_nil
-    end
+  it "removes the final carriage return, newline from a multibyte String" do
+    "あれ\r\n".chomp.should == "あれ"
+  end
 
-    it "removes the final carriage return, newline from a multibyte String" do
-      "あれ\r\n".chomp!.should == "あれ"
-    end
+  it "removes the final carriage return, newline from a non-ASCII String" do
+    str = "abc\r\n".encode "utf-32be"
+    str.chomp.should == "abc".encode("utf-32be")
+  end
 
-    it "removes the final carriage return, newline from a non-ASCII String" do
-      str = "abc\r\n".encode "utf-32be"
-      str.chomp!.should == "abc".encode("utf-32be")
-    end
+  it "removes the final carriage return, newline from a non-ASCII String when the record separator is changed" do
+    $/ = "\n".encode("utf-8")
+    str = "abc\r\n".encode "utf-32be"
+    str.chomp.should == "abc".encode("utf-32be")
+  end
+end
 
-    it "removes the final carriage return, newline from a non-ASCII String when the record separator is changed" do
-      $/ = "\n".encode("utf-8")
-      str = "abc\r\n".encode "utf-32be"
-      str.chomp!.should == "abc".encode("utf-32be")
-    end
+describe "String#chomp!" do
+  before :each do
+    @verbose, $VERBOSE = $VERBOSE, nil
+    @before_separator = $/
+  end
+
+  after :each do
+    $/ = @before_separator
+    $VERBOSE = @verbose
+  end
+
+  it "returns nil when the String is not modified" do
+    "あれ".chomp!.should be_nil
+  end
+
+  it "removes the final carriage return, newline from a multibyte String" do
+    "あれ\r\n".chomp!.should == "あれ"
+  end
+
+  it "removes the final carriage return, newline from a non-ASCII String" do
+    str = "abc\r\n".encode "utf-32be"
+    str.chomp!.should == "abc".encode("utf-32be")
+  end
+
+  it "removes the final carriage return, newline from a non-ASCII String when the record separator is changed" do
+    $/ = "\n".encode("utf-8")
+    str = "abc\r\n".encode "utf-32be"
+    str.chomp!.should == "abc".encode("utf-32be")
   end
 end

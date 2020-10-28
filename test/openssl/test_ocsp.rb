@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require_relative "utils"
 
 if defined?(OpenSSL)
@@ -50,26 +50,26 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
     cid = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert)
     assert_kind_of OpenSSL::OCSP::CertificateId, cid
     assert_equal @cert.serial, cid.serial
-    cid = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert, OpenSSL::Digest::SHA256.new)
+    cid = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert, OpenSSL::Digest.new('SHA256'))
     assert_kind_of OpenSSL::OCSP::CertificateId, cid
     assert_equal @cert.serial, cid.serial
   end
 
   def test_certificate_id_issuer_name_hash
     cid = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert)
-    assert_equal OpenSSL::Digest::SHA1.hexdigest(@cert.issuer.to_der), cid.issuer_name_hash
+    assert_equal OpenSSL::Digest.hexdigest('SHA1', @cert.issuer.to_der), cid.issuer_name_hash
     assert_equal "d91f736ac4dc3242f0fb9b77a3149bd83c5c43d0", cid.issuer_name_hash
   end
 
   def test_certificate_id_issuer_key_hash
     cid = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert)
-    assert_equal OpenSSL::Digest::SHA1.hexdigest(OpenSSL::ASN1.decode(@ca_cert.to_der).value[0].value[6].value[1].value), cid.issuer_key_hash
+    assert_equal OpenSSL::Digest.hexdigest('SHA1', OpenSSL::ASN1.decode(@ca_cert.to_der).value[0].value[6].value[1].value), cid.issuer_key_hash
     assert_equal "d1fef9fbf8ae1bc160cbfa03e2596dd873089213", cid.issuer_key_hash
   end
 
   def test_certificate_id_hash_algorithm
-    cid_sha1 = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert, OpenSSL::Digest::SHA1.new)
-    cid_sha256 = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert, OpenSSL::Digest::SHA256.new)
+    cid_sha1 = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert, OpenSSL::Digest.new('SHA1'))
+    cid_sha256 = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert, OpenSSL::Digest.new('SHA256'))
     assert_equal "sha1", cid_sha1.hash_algorithm
     assert_equal "sha256", cid_sha256.hash_algorithm
   end
@@ -84,6 +84,7 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
     assert_equal [cid.issuer_key_hash].pack("H*"), asn1.value[2].value
     assert_equal @cert.serial, asn1.value[3].value
     assert_equal der, OpenSSL::OCSP::CertificateId.new(der).to_der
+    assert_equal der, OpenSSL::OCSP::CertificateId.new(asn1).to_der
   end
 
   def test_certificate_id_dup
@@ -93,7 +94,7 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
 
   def test_request_der
     request = OpenSSL::OCSP::Request.new
-    cid = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert, OpenSSL::Digest::SHA1.new)
+    cid = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert, OpenSSL::Digest.new('SHA1'))
     request.add_certid(cid)
     request.sign(@cert, @cert_key, [@ca_cert], 0)
     asn1 = OpenSSL::ASN1.decode(request.to_der)
@@ -163,14 +164,14 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
 
   def test_request_dup
     request = OpenSSL::OCSP::Request.new
-    cid = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert, OpenSSL::Digest::SHA1.new)
+    cid = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert, OpenSSL::Digest.new('SHA1'))
     request.add_certid(cid)
     assert_equal request.to_der, request.dup.to_der
   end
 
   def test_basic_response_der
     bres = OpenSSL::OCSP::BasicResponse.new
-    cid = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert, OpenSSL::Digest::SHA1.new)
+    cid = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert, OpenSSL::Digest.new('SHA1'))
     bres.add_status(cid, OpenSSL::OCSP::V_CERTSTATUS_GOOD, 0, nil, -300, 500, [])
     bres.add_nonce("NONCE")
     bres.sign(@ocsp_cert, @ocsp_key, [@ca_cert], 0)
@@ -213,7 +214,7 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
 
   def test_basic_response_dup
     bres = OpenSSL::OCSP::BasicResponse.new
-    cid = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert, OpenSSL::Digest::SHA1.new)
+    cid = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert, OpenSSL::Digest.new('SHA1'))
     bres.add_status(cid, OpenSSL::OCSP::V_CERTSTATUS_GOOD, 0, nil, -300, 500, [])
     bres.sign(@ocsp_cert, @ocsp_key, [@ca_cert], 0)
     assert_equal bres.to_der, bres.dup.to_der
@@ -222,9 +223,9 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
   def test_basic_response_response_operations
     bres = OpenSSL::OCSP::BasicResponse.new
     now = Time.at(Time.now.to_i)
-    cid1 = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert, OpenSSL::Digest::SHA1.new)
-    cid2 = OpenSSL::OCSP::CertificateId.new(@ocsp_cert, @ca_cert, OpenSSL::Digest::SHA1.new)
-    cid3 = OpenSSL::OCSP::CertificateId.new(@ca_cert, @ca_cert, OpenSSL::Digest::SHA1.new)
+    cid1 = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert, OpenSSL::Digest.new('SHA1'))
+    cid2 = OpenSSL::OCSP::CertificateId.new(@ocsp_cert, @ca_cert, OpenSSL::Digest.new('SHA1'))
+    cid3 = OpenSSL::OCSP::CertificateId.new(@ca_cert, @ca_cert, OpenSSL::Digest.new('SHA1'))
     bres.add_status(cid1, OpenSSL::OCSP::V_CERTSTATUS_REVOKED, OpenSSL::OCSP::REVOKED_STATUS_UNSPECIFIED, now - 400, -300, nil, nil)
     bres.add_status(cid2, OpenSSL::OCSP::V_CERTSTATUS_GOOD, nil, nil, -300, 500, [])
 
@@ -256,8 +257,8 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
 
   def test_single_response_check_validity
     bres = OpenSSL::OCSP::BasicResponse.new
-    cid1 = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert, OpenSSL::Digest::SHA1.new)
-    cid2 = OpenSSL::OCSP::CertificateId.new(@ocsp_cert, @ca_cert, OpenSSL::Digest::SHA1.new)
+    cid1 = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert, OpenSSL::Digest.new('SHA1'))
+    cid2 = OpenSSL::OCSP::CertificateId.new(@ocsp_cert, @ca_cert, OpenSSL::Digest.new('SHA1'))
     bres.add_status(cid1, OpenSSL::OCSP::V_CERTSTATUS_REVOKED, OpenSSL::OCSP::REVOKED_STATUS_UNSPECIFIED, -400, -300, -50, [])
     bres.add_status(cid2, OpenSSL::OCSP::V_CERTSTATUS_REVOKED, OpenSSL::OCSP::REVOKED_STATUS_UNSPECIFIED, -400, -300, nil, [])
     bres.add_status(cid2, OpenSSL::OCSP::V_CERTSTATUS_GOOD, nil, nil, Time.now + 100, nil, nil)
@@ -276,7 +277,7 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
 
   def test_response
     bres = OpenSSL::OCSP::BasicResponse.new
-    cid = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert, OpenSSL::Digest::SHA1.new)
+    cid = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert, OpenSSL::Digest.new('SHA1'))
     bres.add_status(cid, OpenSSL::OCSP::V_CERTSTATUS_GOOD, 0, nil, -300, 500, [])
     bres.sign(@ocsp_cert, @ocsp_key, [])
     res = OpenSSL::OCSP::Response.create(OpenSSL::OCSP::RESPONSE_STATUS_SUCCESSFUL, bres)
@@ -287,7 +288,7 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
 
   def test_response_der
     bres = OpenSSL::OCSP::BasicResponse.new
-    cid = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert, OpenSSL::Digest::SHA1.new)
+    cid = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert, OpenSSL::Digest.new('SHA1'))
     bres.add_status(cid, OpenSSL::OCSP::V_CERTSTATUS_GOOD, 0, nil, -300, 500, [])
     bres.sign(@ocsp_cert, @ocsp_key, [@ca_cert], 0)
     res = OpenSSL::OCSP::Response.create(OpenSSL::OCSP::RESPONSE_STATUS_SUCCESSFUL, bres)

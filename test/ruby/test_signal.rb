@@ -137,11 +137,6 @@ class TestSignal < Test::Unit::TestCase
 
       assert_raise(ArgumentError) { Signal.trap }
 
-      assert_raise(SecurityError) do
-        s = proc {}.taint
-        Signal.trap(:INT, s)
-      end
-
       # FIXME!
       Signal.trap(:INT, nil)
       Signal.trap(:INT, "")
@@ -332,7 +327,6 @@ class TestSignal < Test::Unit::TestCase
     old = trap(:CHLD, 'IGNORE')
     cmd = [ EnvUtil.rubybin, '--disable=gems', '-e' ]
     assert(system(*cmd, 'exit!(0)'), 'no ECHILD')
-    t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
     IO.pipe do |r, w|
       pid = spawn(*cmd, "STDIN.read", in: r)
       nb = Process.wait(pid, Process::WNOHANG)
@@ -341,6 +335,7 @@ class TestSignal < Test::Unit::TestCase
         w.close
       end
       assert_raise(Errno::ECHILD) { Process.wait(pid) }
+      th.join
       assert_nil nb
     end
 

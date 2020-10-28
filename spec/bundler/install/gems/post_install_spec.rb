@@ -5,7 +5,7 @@ RSpec.describe "bundle install" do
     context "when gems include post install messages" do
       it "should display the post-install messages after installing" do
         gemfile <<-G
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem 'rack'
           gem 'thin'
           gem 'rack-obama'
@@ -24,7 +24,7 @@ RSpec.describe "bundle install" do
     context "when gems do not include post install messages" do
       it "should not display any post-install messages" do
         gemfile <<-G
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "activesupport"
         G
 
@@ -36,7 +36,7 @@ RSpec.describe "bundle install" do
     context "when a dependecy includes a post install message" do
       it "should display the post install message" do
         gemfile <<-G
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem 'rack_middleware'
         G
 
@@ -54,7 +54,7 @@ RSpec.describe "bundle install" do
           s.post_install_message = "Foo's post install message"
         end
         gemfile <<-G
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem 'foo', :git => '#{lib_path("foo-1.0")}'
         G
 
@@ -68,7 +68,7 @@ RSpec.describe "bundle install" do
           s.post_install_message = "Foo's post install message"
         end
         gemfile <<-G
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem 'foo', :git => '#{lib_path("foo-1.0")}'
         G
         bundle :install
@@ -77,7 +77,7 @@ RSpec.describe "bundle install" do
           s.post_install_message = "Foo's 1.1 post install message"
         end
         gemfile <<-G
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem 'foo', :git => '#{lib_path("foo-1.1")}'
         G
         bundle :install
@@ -91,7 +91,7 @@ RSpec.describe "bundle install" do
           s.post_install_message = "Foo's post install message"
         end
         gemfile <<-G
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem 'foo', :git => '#{lib_path("foo-1.0")}'
         G
 
@@ -110,7 +110,7 @@ RSpec.describe "bundle install" do
           s.post_install_message = nil
         end
         gemfile <<-G
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem 'foo', :git => '#{lib_path("foo-1.0")}'
         G
 
@@ -123,11 +123,11 @@ RSpec.describe "bundle install" do
   context "when ignore post-install messages for gem is set" do
     it "doesn't display any post-install messages" do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
 
-      bundle "config ignore_messages.rack true"
+      bundle "config set ignore_messages.rack true"
 
       bundle :install
       expect(out).not_to include("Post-install message")
@@ -137,11 +137,11 @@ RSpec.describe "bundle install" do
   context "when ignore post-install messages for all gems" do
     it "doesn't display any post-install messages" do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
 
-      bundle "config ignore_messages true"
+      bundle "config set ignore_messages true"
 
       bundle :install
       expect(out).not_to include("Post-install message")

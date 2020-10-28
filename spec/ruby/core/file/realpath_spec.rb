@@ -57,15 +57,21 @@ platform_is_not :windows do
     it "raises an Errno::ELOOP if the symlink points to itself" do
       File.unlink @link
       File.symlink(@link, @link)
-      lambda { File.realpath(@link) }.should raise_error(Errno::ELOOP)
+      -> { File.realpath(@link) }.should raise_error(Errno::ELOOP)
     end
 
     it "raises Errno::ENOENT if the file is absent" do
-      lambda { File.realpath(@fake_file) }.should raise_error(Errno::ENOENT)
+      -> { File.realpath(@fake_file) }.should raise_error(Errno::ENOENT)
     end
 
     it "raises Errno::ENOENT if the symlink points to an absent file" do
-      lambda { File.realpath(@fake_link) }.should raise_error(Errno::ENOENT)
+      -> { File.realpath(@fake_link) }.should raise_error(Errno::ENOENT)
+    end
+
+    it "converts the argument with #to_path" do
+      path = mock("path")
+      path.should_receive(:to_path).and_return(__FILE__)
+      File.realpath(path).should == File.realpath(__FILE__ )
     end
   end
 end

@@ -4,6 +4,10 @@ describe "Process.groups" do
   platform_is_not :windows do
     it "gets an Array of the gids of groups in the supplemental group access list" do
       groups = `id -G`.scan(/\d+/).map { |i| i.to_i }
+      # Include the standard `id` command output.  On macOS, GNU
+      # coreutils `id` is limited to NGROUPS_MAX groups, because of
+      # the backward compatibility of getgroups(2).
+      (groups |= `/usr/bin/id -G`.scan(/\d+/).map { |i| i.to_i }) rescue nil
       gid = Process.gid
 
       expected = (groups.sort - [gid]).uniq.sort
@@ -14,7 +18,7 @@ describe "Process.groups" do
 end
 
 describe "Process.groups=" do
-  platform_is_not :windows do
+  platform_is_not :windows, :android do
     as_superuser do
       it "sets the list of gids of groups in the supplemental group access list" do
         groups = Process.groups
@@ -46,14 +50,14 @@ describe "Process.groups=" do
           Process.groups.should == [ Process.gid ]
           supplementary = groups - [ Process.gid ]
           if supplementary.length > 0
-            lambda { Process.groups = supplementary }.should raise_error(Errno::EPERM)
+            -> { Process.groups = supplementary }.should raise_error(Errno::EPERM)
           end
         end
       end
 
       platform_is_not :aix do
         it "raises Errno::EPERM" do
-          lambda {
+          -> {
             Process.groups = [0]
           }.should raise_error(Errno::EPERM)
         end

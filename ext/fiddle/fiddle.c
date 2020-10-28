@@ -47,8 +47,9 @@ static VALUE
 rb_fiddle_malloc(VALUE self, VALUE size)
 {
     void *ptr;
-
-    ptr = (void*)ruby_xmalloc(NUM2SIZET(size));
+    size_t sizet = NUM2SIZET(size);
+    ptr = (void*)ruby_xmalloc(sizet);
+    memset(ptr, 0, sizet);
     return PTR2NUM(ptr);
 }
 
@@ -225,6 +226,14 @@ Init_fiddle(void)
      * C type - double
      */
     rb_define_const(mFiddle, "TYPE_DOUBLE",    INT2NUM(TYPE_DOUBLE));
+
+#ifdef HAVE_FFI_PREP_CIF_VAR
+    /* Document-const: TYPE_VARIADIC
+     *
+     * C type - ...
+     */
+    rb_define_const(mFiddle, "TYPE_VARIADIC",  INT2NUM(TYPE_VARIADIC));
+#endif
 
     /* Document-const: TYPE_SIZE_T
      *

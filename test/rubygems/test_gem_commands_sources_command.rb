@@ -3,15 +3,20 @@ require 'rubygems/test_case'
 require 'rubygems/commands/sources_command'
 
 class TestGemCommandsSourcesCommand < Gem::TestCase
-
   def setup
     super
-
-    spec_fetcher
 
     @cmd = Gem::Commands::SourcesCommand.new
 
     @new_repo = "http://beta-gems.example.com"
+
+    @old_https_proxy_config = Gem.configuration[:http_proxy]
+  end
+
+  def teardown
+    Gem.configuration[:http_proxy] = @old_https_proxy_config
+
+    super
   end
 
   def test_initialize_proxy
@@ -40,9 +45,9 @@ class TestGemCommandsSourcesCommand < Gem::TestCase
       fetcher.spec 'a', 1
     end
 
-    specs = Gem::Specification.map { |spec|
+    specs = Gem::Specification.map do |spec|
       [spec.name, spec.version, spec.original_platform]
-    }
+    end
 
     specs_dump_gz = StringIO.new
     Zlib::GzipWriter.wrap specs_dump_gz do |io|
@@ -68,7 +73,83 @@ class TestGemCommandsSourcesCommand < Gem::TestCase
     assert_equal '', @ui.error
   end
 
+  def test_execute_add_allow_typo_squatting_source
+    rubygems_org = "https://rubyems.org"
+
+    spec_fetcher do |fetcher|
+      fetcher.spec("a", 1)
+    end
+
+    specs = Gem::Specification.map do |spec|
+      [spec.name, spec.version, spec.original_platform]
+    end
+
+    specs_dump_gz = StringIO.new
+    Zlib::GzipWriter.wrap(specs_dump_gz) do |io|
+      Marshal.dump(specs, io)
+    end
+
+    @fetcher.data["#{rubygems_org}/specs.#{@marshal_version}.gz"] = specs_dump_gz.string
+    @cmd.handle_options %W[--add #{rubygems_org}]
+    ui = Gem::MockGemUi.new("y")
+
+    use_ui ui do
+      @cmd.execute
+    end
+
+    expected = "https://rubyems.org is too similar to https://rubygems.org\n\nDo you want to add this source? [yn]  https://rubyems.org added to sources\n"
+
+    assert_equal expected, ui.output
+
+    source = Gem::Source.new(rubygems_org)
+    assert Gem.sources.include?(source)
+
+    assert_empty ui.error
+  end
+
+  def test_execute_add_deny_typo_squatting_source
+    rubygems_org = "https://rubyems.org"
+
+    spec_fetcher do |fetcher|
+      fetcher.spec("a", 1)
+    end
+
+    specs = Gem::Specification.map do |spec|
+      [spec.name, spec.version, spec.original_platform]
+    end
+
+    specs_dump_gz = StringIO.new
+    Zlib::GzipWriter.wrap(specs_dump_gz) do |io|
+      Marshal.dump(specs, io)
+    end
+
+    @fetcher.data["#{rubygems_org}/specs.#{@marshal_version}.gz"] =
+      specs_dump_gz.string
+
+    @cmd.handle_options %W[--add #{rubygems_org}]
+
+    ui = Gem::MockGemUi.new("n")
+
+    use_ui ui do
+
+      assert_raises Gem::MockGemUi::TermError do
+        @cmd.execute
+      end
+    end
+
+    expected = "https://rubyems.org is too similar to https://rubygems.org\n\nDo you want to add this source? [yn]  "
+
+    assert_equal expected, ui.output
+
+    source = Gem::Source.new(rubygems_org)
+    refute Gem.sources.include?(source)
+
+    assert_empty ui.error
+  end
+
   def test_execute_add_nonexistent_source
+    spec_fetcher
+
     uri = "http://beta-gems.example.com/specs.#{@marshal_version}.gz"
     @fetcher.data[uri] = proc do
       raise Gem::RemoteFetcher::FetchError.new('it died', uri)
@@ -92,6 +173,8 @@ Error fetching http://beta-gems.example.com:
   end
 
   def test_execute_add_redundant_source
+    spec_fetcher
+
     @cmd.handle_options %W[--add #{@gem_repo}]
 
     use_ui @ui do
@@ -109,6 +192,8 @@ source #{@gem_repo} already present in the cache
   end
 
   def test_execute_add_redundant_source_trailing_slash
+    spec_fetcher
+
     # Remove pre-existing gem source (w/ slash)
     repo_with_slash = "http://gems.example.com/"
     @cmd.handle_options %W[--remove #{repo_with_slash}]
@@ -161,15 +246,15 @@ source http://gems.example.com/ already present in the cache
   end
 
   def test_execute_add_http_rubygems_org
-    http_rubygems_org = 'http://rubygems.org'
+    http_rubygems_org = 'http://rubygems.org/'
 
     spec_fetcher do |fetcher|
       fetcher.spec 'a', 1
     end
 
-    specs = Gem::Specification.map { |spec|
+    specs = Gem::Specification.map do |spec|
       [spec.name, spec.version, spec.original_platform]
-    }
+    end
 
     specs_dump_gz = StringIO.new
     Zlib::GzipWriter.wrap specs_dump_gz do |io|
@@ -180,6 +265,44 @@ source http://gems.example.com/ already present in the cache
       specs_dump_gz.string
 
     @cmd.handle_options %W[--add #{http_rubygems_org}]
+
+    ui = Gem::MockGemUi.new "n"
+
+    use_ui ui do
+      assert_raises Gem::MockGemUi::TermError do
+        @cmd.execute
+      end
+    end
+
+    assert_equal [@gem_repo], Gem.sources
+
+    expected = <<-EXPECTED
+    EXPECTED
+
+    assert_equal expected, @ui.output
+    assert_empty @ui.error
+  end
+
+  def test_execute_add_https_rubygems_org
+    https_rubygems_org = 'https://rubygems.org/'
+
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a', 1
+    end
+
+    specs = Gem::Specification.map do |spec|
+      [spec.name, spec.version, spec.original_platform]
+    end
+
+    specs_dump_gz = StringIO.new
+    Zlib::GzipWriter.wrap specs_dump_gz do |io|
+      Marshal.dump specs, io
+    end
+
+    @fetcher.data["#{https_rubygems_org}/specs.#{@marshal_version}.gz"] =
+      specs_dump_gz.string
+
+    @cmd.handle_options %W[--add #{https_rubygems_org}]
 
     ui = Gem::MockGemUi.new "n"
 
@@ -266,6 +389,8 @@ beta-gems.example.com is not a URI
   end
 
   def test_execute_remove_no_network
+    spec_fetcher
+
     @cmd.handle_options %W[--remove #{@gem_repo}]
 
     @fetcher.data["#{@gem_repo}Marshal.#{Gem.marshal_version}"] = proc do
@@ -296,5 +421,4 @@ beta-gems.example.com is not a URI
     assert_equal "source cache successfully updated\n", @ui.output
     assert_equal '', @ui.error
   end
-
 end

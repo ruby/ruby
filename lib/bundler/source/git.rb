@@ -1,14 +1,13 @@
 # frozen_string_literal: true
 
-require "bundler/vendored_fileutils"
-require "uri"
+require_relative "../vendored_fileutils"
 
 module Bundler
   class Source
     class Git < Path
-      autoload :GitProxy, "bundler/source/git/git_proxy"
+      autoload :GitProxy, File.expand_path("git/git_proxy", __dir__)
 
-      attr_reader :uri, :ref, :branch, :options, :submodules
+      attr_reader :uri, :ref, :branch, :options, :glob, :submodules
 
       def initialize(options)
         @options = options
@@ -48,13 +47,14 @@ module Bundler
       end
 
       def hash
-        [self.class, uri, ref, branch, name, version, submodules].hash
+        [self.class, uri, ref, branch, name, version, glob, submodules].hash
       end
 
       def eql?(other)
         other.is_a?(Git) && uri == other.uri && ref == other.ref &&
           branch == other.branch && name == other.name &&
-          version == other.version && submodules == other.submodules
+          version == other.version && glob == other.glob &&
+          submodules == other.submodules
       end
 
       alias_method :==, :eql?
@@ -118,18 +118,19 @@ module Bundler
       def local_override!(path)
         return false if local?
 
+        original_path = path
         path = Pathname.new(path)
         path = path.expand_path(Bundler.root) unless path.relative?
 
         unless options["branch"] || Bundler.settings[:disable_local_branch_check]
           raise GitError, "Cannot use local override for #{name} at #{path} because " \
-            ":branch is not specified in Gemfile. Specify a branch or use " \
-            "`bundle config --delete` to remove the local override"
+            ":branch is not specified in Gemfile. Specify a branch or run " \
+            "`bundle config unset local.#{override_for(original_path)}` to remove the local override"
         end
 
         unless path.exist?
           raise GitError, "Cannot use local override for #{name} because #{path} " \
-            "does not exist. Check `bundle config --delete` to remove the local override"
+            "does not exist. Run `bundle config unset local.#{override_for(original_path)}` to remove the local override"
         end
 
         set_local!(path)
@@ -229,7 +230,11 @@ module Bundler
         @allow_remote || @allow_cached
       end
 
-    private
+      def local?
+        @local
+      end
+
+      private
 
       def serialize_gemspecs_in(destination)
         destination = destination.expand_path(Bundler.root) if destination.relative?
@@ -255,12 +260,12 @@ module Bundler
         cached_revision && super
       end
 
-      def local?
-        @local
+      def requires_checkout?
+        allow_git_ops? && !local? && !cached_revision_checked_out?
       end
 
-      def requires_checkout?
-        allow_git_ops? && !local?
+      def cached_revision_checked_out?
+        cached_revision && cached_revision == revision && install_path.exist?
       end
 
       def base_name
@@ -279,7 +284,7 @@ module Bundler
         if uri =~ %r{^\w+://(\w+@)?}
           # Downcase the domain component of the URI
           # and strip off a trailing slash, if one is present
-          input = URI.parse(uri).normalize.to_s.sub(%r{/$}, "")
+          input = Bundler::URI.parse(uri).normalize.to_s.sub(%r{/$}, "")
         else
           # If there is no URI scheme, assume it is an ssh/git URI
           input = uri
@@ -309,12 +314,10 @@ module Bundler
       # no-op, since we validate when re-serializing the gemspec
       def validate_spec(_spec); end
 
-      if Bundler.rubygems.stubs_provide_full_functionality?
-        def load_gemspec(file)
-          stub = Gem::StubSpecification.gemspec_stub(file, install_path.parent, install_path.parent)
-          stub.full_gem_path = Pathname.new(file).dirname.expand_path(root).to_s.untaint
-          StubSpecification.from_stub(stub)
-        end
+      def load_gemspec(file)
+        stub = Gem::StubSpecification.gemspec_stub(file, install_path.parent, install_path.parent)
+        stub.full_gem_path = Pathname.new(file).dirname.expand_path(root).to_s.tap{|x| x.untaint if RUBY_VERSION < "2.7" }
+        StubSpecification.from_stub(stub)
       end
 
       def git_scope
@@ -323,6 +326,10 @@ module Bundler
 
       def extension_cache_slug(_)
         extension_dir_name
+      end
+
+      def override_for(path)
+        Bundler.settings.local_overrides.key(path)
       end
     end
   end

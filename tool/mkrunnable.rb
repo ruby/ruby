@@ -45,6 +45,10 @@ end
 
 def ln_safe(src, dest)
   ln_sf(src, dest)
+rescue Errno::ENOENT
+  # Windows disallows to create broken symboic links, probably because
+  # it is a kind of reparse points.
+  raise if File.exist?(src)
 end
 
 alias ln_dir_safe ln_safe
@@ -64,8 +68,8 @@ def relative_path_from(path, base)
   base = clean_path(base)
   path, base = [path, base].map{|s|s.split("/")}
   until path.empty? or base.empty? or path[0] != base[0]
-      path.shift
-      base.shift
+    path.shift
+    base.shift
   end
   path, base = [path, base].map{|s|s.join("/")}
   if /(\A|\/)\.\.\// =~ base

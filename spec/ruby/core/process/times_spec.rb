@@ -7,21 +7,29 @@ describe "Process.times" do
 
   it "returns current cpu times" do
     t = Process.times
+    user = t.utime
 
-    # Do busy work for a wall-clock interval.
-    start = Time.now
-    1 until (Time.now - start) > 0.5
+    1 until Process.times.utime > user
+    Process.times.utime.should > user
+  end
 
-    # Ensure times is larger. NOTE that there is no
-    # guarantee of an upper bound since anything may be
-    # happening at the OS level, so we ONLY check that at
-    # least an interval has elapsed. Also, we are assuming
-    # there is a correlation between wall clock time and
-    # process time. In practice, there is an observed
-    # discrepancy often 10% or greater. In other words,
-    # this is a very fuzzy test.
-    t2 = Process.times
-    diff = (t2.utime + t2.stime) - (t.utime + t.stime)
-    diff.should > 0
+  platform_is_not :windows do
+    it "uses getrusage when available to improve precision beyond milliseconds" do
+      max = 10_000
+      has_getrusage = max.times.find do
+        time = Process.clock_gettime(:GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID)
+        ('%.6f' % time).end_with?('000')
+      end
+      unless has_getrusage
+        skip "getrusage is not supported on this environment"
+      end
+
+      found = (max * 100).times.find do
+        time = Process.times.utime
+        ('%.6f' % time).end_with?('000')
+      end
+
+      found.should_not == nil
+    end
   end
 end

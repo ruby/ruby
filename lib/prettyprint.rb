@@ -102,7 +102,7 @@ class PrettyPrint
 
   # The maximum width of a line, before it is separated in to a newline
   #
-  # This defaults to 79, and should be a Fixnum
+  # This defaults to 79, and should be an Integer
   attr_reader :maxwidth
 
   # The value that is appended to +output+ to add a new line.
@@ -110,7 +110,7 @@ class PrettyPrint
   # This defaults to "\n", and should be String
   attr_reader :newline
 
-  # A lambda or Proc, that takes one argument, of a Fixnum, and returns
+  # A lambda or Proc, that takes one argument, of an Integer, and returns
   # the corresponding number of spaces.
   #
   # By default this is:
@@ -340,7 +340,7 @@ class PrettyPrint
     #
     # Arguments:
     # * +sep+ String of the separator
-    # * +width+ Fixnum width of the +sep+
+    # * +width+ Integer width of the +sep+
     # * +q+ parent PrettyPrint object, to base from
     def initialize(sep, width, q)
       @obj = sep

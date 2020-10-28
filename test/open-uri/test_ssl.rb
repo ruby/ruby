@@ -67,7 +67,7 @@ class TestOpenURISSL
 
   def setup_validation(srv, dr)
     cacert_filename = "#{dr}/cacert.pem"
-    open(cacert_filename, "w") {|f| f << CA_CERT }
+    URI.open(cacert_filename, "w") {|f| f << CA_CERT }
     srv.mount_proc("/data", lambda { |req, res| res.body = "ddd" } )
     cacert_filename
   end
@@ -75,7 +75,7 @@ class TestOpenURISSL
   def test_validation_success
     with_https {|srv, dr, url|
       cacert_filename = setup_validation(srv, dr)
-      open("#{url}/data", :ssl_ca_cert => cacert_filename) {|f|
+      URI.open("#{url}/data", :ssl_ca_cert => cacert_filename) {|f|
         assert_equal("200", f.status[0])
         assert_equal("ddd", f.read)
       }
@@ -85,7 +85,7 @@ class TestOpenURISSL
   def test_validation_noverify
     with_https {|srv, dr, url|
       setup_validation(srv, dr)
-      open("#{url}/data", :ssl_verify_mode => OpenSSL::SSL::VERIFY_NONE) {|f|
+      URI.open("#{url}/data", :ssl_verify_mode => OpenSSL::SSL::VERIFY_NONE) {|f|
         assert_equal("200", f.status[0])
         assert_equal("ddd", f.read)
       }
@@ -103,7 +103,7 @@ class TestOpenURISSL
     end
     with_https(log_tester) {|srv, dr, url, server_thread, server_log|
       setup_validation(srv, dr)
-      assert_raise(OpenSSL::SSL::SSLError) { open("#{url}/data") {} }
+      assert_raise(OpenSSL::SSL::SSLError) { URI.open("#{url}/data") {} }
     }
   end
 
@@ -149,7 +149,7 @@ class TestOpenURISSL
     }
     with_https_proxy(proxy_log_tester) {|srv, dr, url_, cacert_filename, cacert_directory, proxy_host, proxy_port|
       url = url_
-      open("#{url}/proxy", :proxy=>"http://#{proxy_host}:#{proxy_port}/", :ssl_ca_cert => cacert_filename) {|f|
+      URI.open("#{url}/proxy", :proxy=>"http://#{proxy_host}:#{proxy_port}/", :ssl_ca_cert => cacert_filename) {|f|
         assert_equal("200", f.status[0])
         assert_equal("proxy", f.read)
       }
@@ -165,7 +165,7 @@ class TestOpenURISSL
     }
     with_https_proxy(proxy_log_tester) {|srv, dr, url_, cacert_filename, cacert_directory, proxy_host, proxy_port|
       url = url_
-      open("#{url}/proxy", :proxy=>"http://#{proxy_host}:#{proxy_port}/", :ssl_ca_cert => cacert_directory) {|f|
+      URI.open("#{url}/proxy", :proxy=>"http://#{proxy_host}:#{proxy_port}/", :ssl_ca_cert => cacert_directory) {|f|
         assert_equal("200", f.status[0])
         assert_equal("proxy", f.read)
       }
@@ -175,18 +175,18 @@ class TestOpenURISSL
 end if defined?(OpenSSL::SSL)
 
 if defined?(OpenSSL::SSL)
-# cp /etc/ssl/openssl.cnf . # I copied from OpenSSL 1.0.2h source
+# cp /etc/ssl/openssl.cnf . # I copied from OpenSSL 1.1.1b source
 
 # mkdir demoCA demoCA/private demoCA/newcerts
 # touch demoCA/index.txt
 # echo 00 > demoCA/serial
-# openssl genrsa -des3 -out demoCA/private/cakey.pem 1024
+# openssl genrsa -des3 -out demoCA/private/cakey.pem 2048
 # openssl req -new -key demoCA/private/cakey.pem -out demoCA/careq.pem -subj "/C=JP/ST=Tokyo/O=RubyTest/CN=Ruby Test CA"
 # # basicConstraints=CA:TRUE is required; the default openssl.cnf has it in [v3_ca]
 # openssl ca -config openssl.cnf -extensions v3_ca -out demoCA/cacert.pem -startdate 090101000000Z -enddate 491231235959Z -batch -keyfile demoCA/private/cakey.pem -selfsign -infiles demoCA/careq.pem
 
 # mkdir server
-# openssl genrsa -des3 -out server/server.key 1024
+# openssl genrsa -des3 -out server/server.key 2048
 # openssl req -new -key server/server.key -out server/csr.pem -subj "/C=JP/ST=Tokyo/O=RubyTest/CN=127.0.0.1"
 # openssl ca -config openssl.cnf -startdate 090101000000Z -enddate 491231235959Z -in server/csr.pem -keyfile demoCA/private/cakey.pem -cert demoCA/cacert.pem -out server/cert.pem
 
@@ -199,7 +199,7 @@ Certificate:
     Data:
         Version: 3 (0x2)
         Serial Number: 0 (0x0)
-    Signature Algorithm: sha256WithRSAEncryption
+        Signature Algorithm: sha256WithRSAEncryption
         Issuer: C=JP, ST=Tokyo, O=RubyTest, CN=Ruby Test CA
         Validity
             Not Before: Jan  1 00:00:00 2009 GMT
@@ -207,49 +207,70 @@ Certificate:
         Subject: C=JP, ST=Tokyo, O=RubyTest, CN=Ruby Test CA
         Subject Public Key Info:
             Public Key Algorithm: rsaEncryption
-                Public-Key: (1024 bit)
+                RSA Public-Key: (2048 bit)
                 Modulus:
-                    00:be:74:41:33:c9:1b:e1:12:78:6b:b4:52:2e:ae:
-                    b6:e2:1e:58:65:57:2d:cb:07:3f:91:c9:53:7a:e7:
-                    2e:68:2c:0c:5d:8b:16:a7:42:4a:5c:6f:c7:aa:44:
-                    ff:6d:c6:d7:49:0e:b1:5d:03:5b:51:ce:d5:cc:cd:
-                    ab:69:cc:c2:43:76:b1:b2:30:3b:e7:f6:1f:3e:35:
-                    1d:21:75:41:96:eb:84:a0:34:6f:a4:5d:70:a2:b2:
-                    d5:fe:b9:45:47:a1:e8:ca:e3:b7:bb:4d:37:1c:f3:
-                    96:d4:2d:80:85:cd:8e:31:96:53:92:a0:fe:e4:4c:
-                    16:47:5e:c8:27:32:70:a8:6b
+                    00:ad:f3:4d:5b:0b:01:54:cc:86:36:d1:93:6b:33:
+                    56:25:90:61:d6:9a:a0:f4:24:20:ee:c8:14:ab:0f:
+                    4b:89:d8:7c:bb:c0:f8:7f:fb:e9:a2:d5:1c:6b:6f:
+                    dc:5c:23:b1:49:aa:2c:e8:ca:43:48:64:69:4b:8a:
+                    bd:44:57:9b:14:d9:7a:b2:49:00:d6:c2:74:67:62:
+                    52:1d:a9:32:df:fe:7a:22:20:49:83:e1:cb:3d:dc:
+                    1a:2a:f0:36:20:c1:e8:c8:89:d4:51:1a:68:91:20:
+                    e0:ba:67:0a:b2:6b:f8:e3:8c:f5:ee:a1:36:b1:89:
+                    ec:23:b6:f2:39:a9:b9:2e:ea:de:d9:86:e5:42:11:
+                    46:ed:10:9a:90:76:44:4e:4d:49:2d:49:e8:e3:cb:
+                    ff:7a:7d:80:cb:bf:c4:c3:69:ba:9c:60:4a:de:af:
+                    bf:26:78:b8:fb:46:d1:37:d0:89:ba:78:93:6a:37:
+                    a5:e9:58:e7:e2:e3:7d:7c:95:20:79:41:56:15:cd:
+                    b2:c6:3b:e1:b7:e7:ba:47:60:9a:05:b1:07:f3:26:
+                    72:9d:3b:1b:02:18:3d:d5:de:e6:e9:30:a9:b5:8f:
+                    15:1b:40:f9:64:61:54:d3:53:e8:c4:29:4a:89:f3:
+                    e5:0d:fd:16:61:ee:f2:6d:8a:45:a8:34:7e:53:46:
+                    8e:87
                 Exponent: 65537 (0x10001)
         X509v3 extensions:
             X509v3 Subject Key Identifier:
-                71:DB:DC:BA:F6:7F:75:31:7A:ED:AB:8B:48:93:86:94:1A:FF:30:58
+                A0:7E:0B:AD:A3:AD:37:D7:21:0B:75:6F:8A:90:5F:8C:C9:69:DF:98
             X509v3 Authority Key Identifier:
-                keyid:71:DB:DC:BA:F6:7F:75:31:7A:ED:AB:8B:48:93:86:94:1A:FF:30:58
+                keyid:A0:7E:0B:AD:A3:AD:37:D7:21:0B:75:6F:8A:90:5F:8C:C9:69:DF:98
 
-            X509v3 Basic Constraints:
+            X509v3 Basic Constraints: critical
                 CA:TRUE
     Signature Algorithm: sha256WithRSAEncryption
-         91:1c:45:a5:c0:4e:fc:54:39:62:33:80:7d:03:c1:b8:51:f7:
-         56:83:6c:a3:15:50:cf:92:a0:77:a3:34:16:b5:30:f0:33:5a:
-         be:6a:ac:17:87:70:f8:4e:4d:49:ac:8b:84:fd:e5:0f:15:d7:
-         9a:29:cc:a9:f5:97:f5:13:2a:86:3b:2d:f4:b7:b4:a2:7c:e1:
-         0e:2a:ff:91:64:31:8f:12:cc:99:bf:e1:de:8f:6f:7c:1b:e4:
-         cc:56:c8:bb:85:c9:ba:df:7f:07:7a:cd:03:22:2c:b6:f8:06:
-         35:72:72:b8:52:eb:62:15:85:2b:8f:8c:bc:27:3c:8b:de:32:
-         db:95
+         06:ea:06:02:19:9a:cb:94:a2:7e:c0:86:71:66:e7:a5:71:46:
+         a2:25:55:f5:e5:58:df:d1:91:58:e6:8a:0e:91:b3:22:4c:88:
+         4d:5f:02:af:0f:73:65:0d:af:9a:f2:e4:36:f3:1f:e8:28:1d:
+         9c:74:72:5b:f7:12:e8:fa:45:d6:df:e5:f1:d3:91:f4:0e:db:
+         e2:56:63:ee:82:57:6f:12:ad:d7:0d:de:5a:8c:3d:76:d2:87:
+         c9:48:1c:c4:f3:89:63:3c:c2:25:e0:dd:63:a6:4c:6c:5a:07:
+         7b:86:78:62:86:02:a1:ef:0e:41:75:c5:d4:61:ab:c3:3b:9b:
+         51:0b:e6:34:6d:0b:14:5a:2d:aa:d3:58:26:43:8f:4c:d7:45:
+         73:1e:67:66:5e:f3:0c:69:70:27:a1:d5:70:f3:5a:10:98:c8:
+         4f:8a:3b:9f:ad:8e:8d:49:8f:fb:f6:36:5d:4f:70:f9:4f:54:
+         33:cf:a2:a6:1d:8c:61:b9:30:42:f2:49:d1:3d:a1:f1:eb:1e:
+         78:a6:30:f8:8a:48:89:c7:3e:bd:0d:d8:72:04:a6:00:e5:62:
+         a4:13:3f:9e:b6:86:25:dc:d1:ff:3a:fc:f5:0e:e4:0e:f7:b8:
+         66:90:fe:4f:c2:54:2a:7f:61:6e:e7:4b:bf:40:7e:75:30:02:
+         5b:bb:91:1b
 -----BEGIN CERTIFICATE-----
-MIICVDCCAb2gAwIBAgIBADANBgkqhkiG9w0BAQsFADBHMQswCQYDVQQGEwJKUDEO
+MIIDXDCCAkSgAwIBAgIBADANBgkqhkiG9w0BAQsFADBHMQswCQYDVQQGEwJKUDEO
 MAwGA1UECAwFVG9reW8xETAPBgNVBAoMCFJ1YnlUZXN0MRUwEwYDVQQDDAxSdWJ5
 IFRlc3QgQ0EwHhcNMDkwMTAxMDAwMDAwWhcNNDkxMjMxMjM1OTU5WjBHMQswCQYD
 VQQGEwJKUDEOMAwGA1UECAwFVG9reW8xETAPBgNVBAoMCFJ1YnlUZXN0MRUwEwYD
-VQQDDAxSdWJ5IFRlc3QgQ0EwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBAL50
-QTPJG+ESeGu0Ui6utuIeWGVXLcsHP5HJU3rnLmgsDF2LFqdCSlxvx6pE/23G10kO
-sV0DW1HO1czNq2nMwkN2sbIwO+f2Hz41HSF1QZbrhKA0b6RdcKKy1f65RUeh6Mrj
-t7tNNxzzltQtgIXNjjGWU5Kg/uRMFkdeyCcycKhrAgMBAAGjUDBOMB0GA1UdDgQW
-BBRx29y69n91MXrtq4tIk4aUGv8wWDAfBgNVHSMEGDAWgBRx29y69n91MXrtq4tI
-k4aUGv8wWDAMBgNVHRMEBTADAQH/MA0GCSqGSIb3DQEBCwUAA4GBAJEcRaXATvxU
-OWIzgH0DwbhR91aDbKMVUM+SoHejNBa1MPAzWr5qrBeHcPhOTUmsi4T95Q8V15op
-zKn1l/UTKoY7LfS3tKJ84Q4q/5FkMY8SzJm/4d6Pb3wb5MxWyLuFybrffwd6zQMi
-LLb4BjVycrhS62IVhSuPjLwnPIveMtuV
+VQQDDAxSdWJ5IFRlc3QgQ0EwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIB
+AQCt801bCwFUzIY20ZNrM1YlkGHWmqD0JCDuyBSrD0uJ2Hy7wPh/++mi1Rxrb9xc
+I7FJqizoykNIZGlLir1EV5sU2XqySQDWwnRnYlIdqTLf/noiIEmD4cs93Boq8DYg
+wejIidRRGmiRIOC6Zwqya/jjjPXuoTaxiewjtvI5qbku6t7ZhuVCEUbtEJqQdkRO
+TUktSejjy/96fYDLv8TDabqcYErer78meLj7RtE30Im6eJNqN6XpWOfi4318lSB5
+QVYVzbLGO+G357pHYJoFsQfzJnKdOxsCGD3V3ubpMKm1jxUbQPlkYVTTU+jEKUqJ
+8+UN/RZh7vJtikWoNH5TRo6HAgMBAAGjUzBRMB0GA1UdDgQWBBSgfguto6031yEL
+dW+KkF+MyWnfmDAfBgNVHSMEGDAWgBSgfguto6031yELdW+KkF+MyWnfmDAPBgNV
+HRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUAA4IBAQAG6gYCGZrLlKJ+wIZxZuel
+cUaiJVX15Vjf0ZFY5ooOkbMiTIhNXwKvD3NlDa+a8uQ28x/oKB2cdHJb9xLo+kXW
+3+Xx05H0DtviVmPugldvEq3XDd5ajD120ofJSBzE84ljPMIl4N1jpkxsWgd7hnhi
+hgKh7w5BdcXUYavDO5tRC+Y0bQsUWi2q01gmQ49M10VzHmdmXvMMaXAnodVw81oQ
+mMhPijufrY6NSY/79jZdT3D5T1Qzz6KmHYxhuTBC8knRPaHx6x54pjD4ikiJxz69
+DdhyBKYA5WKkEz+etoYl3NH/Ovz1DuQO97hmkP5PwlQqf2Fu50u/QH51MAJbu5Eb
 -----END CERTIFICATE-----
 End
 
@@ -258,7 +279,7 @@ Certificate:
     Data:
         Version: 3 (0x2)
         Serial Number: 1 (0x1)
-    Signature Algorithm: sha256WithRSAEncryption
+        Signature Algorithm: sha256WithRSAEncryption
         Issuer: C=JP, ST=Tokyo, O=RubyTest, CN=Ruby Test CA
         Validity
             Not Before: Jan  1 00:00:00 2009 GMT
@@ -266,17 +287,26 @@ Certificate:
         Subject: C=JP, ST=Tokyo, O=RubyTest, CN=127.0.0.1
         Subject Public Key Info:
             Public Key Algorithm: rsaEncryption
-                Public-Key: (1024 bit)
+                RSA Public-Key: (2048 bit)
                 Modulus:
-                    00:bb:bd:74:69:53:58:50:24:79:f2:eb:db:8b:97:
-                    e4:69:a4:dd:48:0c:40:35:62:42:b3:35:8c:96:2a:
-                    62:76:98:b5:2a:e0:f8:78:33:b6:ff:f8:55:bf:44:
-                    69:21:d7:b5:0e:bd:8a:dd:31:1b:88:d5:b4:5e:7a:
-                    82:e0:ba:99:6c:04:76:e9:ff:e6:f8:f5:06:8e:7e:
-                    a4:db:db:eb:43:44:12:a7:ca:ca:2b:aa:5f:83:10:
-                    e2:9e:35:55:e8:e8:af:be:c8:7d:bb:c2:d4:aa:c1:
-                    1c:57:0b:c0:0c:3a:1d:6e:23:a9:03:26:7c:ea:8c:
-                    f0:86:61:ce:f1:ff:42:c7:23
+                    00:cb:b3:71:95:12:70:fc:db:d4:a9:a7:66:d6:d3:
+                    09:dd:06:80:19:e1:f2:d6:1e:31:b6:6b:20:75:51:
+                    dc:a7:37:a9:ac:5b:57:5d:69:36:b6:de:1d:2c:f6:
+                    44:64:f8:e8:d6:f0:da:38:6a:ba:c2:b1:9e:dc:bb:
+                    79:94:e0:25:0c:ce:76:87:17:5d:79:9e:14:9e:bd:
+                    4c:0d:aa:74:10:3a:96:ef:76:82:d5:72:16:b5:c1:
+                    ac:17:2d:90:83:73:5c:d7:a6:f5:36:0f:4c:55:f3:
+                    30:5d:19:dc:01:0e:f8:e6:fe:a5:ad:52:88:59:dc:
+                    4a:07:ed:a2:eb:a1:01:63:c4:8a:92:ba:06:80:9b:
+                    0d:85:f2:9f:f9:70:ac:d7:ad:f0:7a:3f:b8:92:2a:
+                    33:ca:69:d0:01:65:5d:31:38:1d:f6:1f:b2:17:07:
+                    7e:ac:88:67:a6:c4:5f:3e:93:94:61:e6:e4:49:9d:
+                    ba:d4:d2:e8:e3:93:d1:66:79:c5:e3:1d:f8:5a:50:
+                    54:58:3d:04:b0:fd:65:d1:b3:8a:b5:8a:30:5f:b2:
+                    dc:34:1a:14:f7:74:4c:03:29:97:63:5a:d7:de:bb:
+                    eb:7f:4a:2a:90:59:c0:2b:47:09:82:8f:75:de:14:
+                    3f:bc:78:9a:69:25:80:5b:6c:a0:65:12:0d:29:61:
+                    ac:f9
                 Exponent: 65537 (0x10001)
         X509v3 extensions:
             X509v3 Basic Constraints:
@@ -284,104 +314,167 @@ Certificate:
             Netscape Comment:
                 OpenSSL Generated Certificate
             X509v3 Subject Key Identifier:
-                7F:17:5A:58:88:96:E1:1F:44:EA:FF:AD:C6:2E:90:E2:95:32:DD:F0
+                EC:6B:7C:79:B8:3B:11:1D:42:F3:9A:2A:CF:9A:15:59:D7:F9:D8:C6
             X509v3 Authority Key Identifier:
-                keyid:71:DB:DC:BA:F6:7F:75:31:7A:ED:AB:8B:48:93:86:94:1A:FF:30:58
+                keyid:A0:7E:0B:AD:A3:AD:37:D7:21:0B:75:6F:8A:90:5F:8C:C9:69:DF:98
 
     Signature Algorithm: sha256WithRSAEncryption
-         1c:80:02:67:f0:4e:a8:5a:6a:73:9c:de:75:ad:7d:2e:e9:ce:
-         c3:2e:cd:70:b4:21:d9:42:0d:7c:0e:77:9e:97:91:13:02:77:
-         4a:cd:f6:fc:26:3d:42:2e:08:85:05:10:df:3a:5f:f0:77:85:
-         44:29:41:dd:03:6b:eb:e7:c8:89:8e:d1:57:a8:ac:43:c8:85:
-         c3:95:64:9f:a5:6e:e9:2e:6e:06:45:21:36:ec:d5:79:f5:0e:
-         a8:53:b5:f7:02:b0:59:12:e3:ae:73:25:fd:18:ab:23:b2:fc:
-         a9:f9:60:e5:a7:d8:ba:0f:db:be:17:81:25:90:fd:7a:21:cb:
-         fa:8b
+         29:14:db:71:e9:a0:86:f8:cc:4d:e4:8a:76:78:a7:ff:4e:94:
+         b4:4d:92:dc:57:9a:52:64:46:27:15:8b:4f:2a:18:a7:0d:fc:
+         d2:75:ce:4e:49:97:0b:46:71:57:23:e3:a5:c0:c5:71:94:fc:
+         f2:1d:3b:06:93:82:03:59:56:d4:fb:09:06:08:b4:97:50:33:
+         cf:58:89:dd:91:31:07:26:9a:7e:7f:8d:71:de:09:dc:4f:e5:
+         6b:a3:10:71:d4:50:24:43:a0:1c:f5:2a:d9:1a:fb:e3:d6:f1:
+         bc:6b:42:67:16:b4:3b:31:f4:ec:03:7d:78:e2:64:16:57:6d:
+         ba:7c:0c:e1:14:b2:7c:75:4e:2b:09:3e:86:e4:aa:cc:7e:5c:
+         2b:bd:8d:26:4d:49:36:74:86:fe:c5:a6:15:4a:af:e8:b4:4e:
+         d5:f2:e1:59:c2:fb:7e:c3:c4:f1:63:d8:c2:b0:9a:ae:31:96:
+         90:c3:09:d0:ce:2e:31:90:d7:83:dd:ac:31:cc:f7:87:41:08:
+         92:33:28:52:fa:2d:9e:ad:ae:6a:9f:c3:be:ce:c1:a6:e4:16:
+         2f:69:34:40:86:b6:10:21:0e:31:69:81:9e:fc:fd:c3:06:25:
+         65:37:d3:d9:4a:20:84:aa:e7:0e:60:7c:bf:3f:88:67:ac:e5:
+         8c:e0:61:d6
 -----BEGIN CERTIFICATE-----
-MIICfDCCAeWgAwIBAgIBATANBgkqhkiG9w0BAQsFADBHMQswCQYDVQQGEwJKUDEO
+MIIDgTCCAmmgAwIBAgIBATANBgkqhkiG9w0BAQsFADBHMQswCQYDVQQGEwJKUDEO
 MAwGA1UECAwFVG9reW8xETAPBgNVBAoMCFJ1YnlUZXN0MRUwEwYDVQQDDAxSdWJ5
 IFRlc3QgQ0EwHhcNMDkwMTAxMDAwMDAwWhcNNDkxMjMxMjM1OTU5WjBEMQswCQYD
 VQQGEwJKUDEOMAwGA1UECAwFVG9reW8xETAPBgNVBAoMCFJ1YnlUZXN0MRIwEAYD
-VQQDDAkxMjcuMC4wLjEwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBALu9dGlT
-WFAkefLr24uX5Gmk3UgMQDViQrM1jJYqYnaYtSrg+Hgztv/4Vb9EaSHXtQ69it0x
-G4jVtF56guC6mWwEdun/5vj1Bo5+pNvb60NEEqfKyiuqX4MQ4p41Vejor77IfbvC
-1KrBHFcLwAw6HW4jqQMmfOqM8IZhzvH/QscjAgMBAAGjezB5MAkGA1UdEwQCMAAw
-LAYJYIZIAYb4QgENBB8WHU9wZW5TU0wgR2VuZXJhdGVkIENlcnRpZmljYXRlMB0G
-A1UdDgQWBBR/F1pYiJbhH0Tq/63GLpDilTLd8DAfBgNVHSMEGDAWgBRx29y69n91
-MXrtq4tIk4aUGv8wWDANBgkqhkiG9w0BAQsFAAOBgQAcgAJn8E6oWmpznN51rX0u
-6c7DLs1wtCHZQg18Dneel5ETAndKzfb8Jj1CLgiFBRDfOl/wd4VEKUHdA2vr58iJ
-jtFXqKxDyIXDlWSfpW7pLm4GRSE27NV59Q6oU7X3ArBZEuOucyX9GKsjsvyp+WDl
-p9i6D9u+F4ElkP16Icv6iw==
+VQQDDAkxMjcuMC4wLjEwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDL
+s3GVEnD829Spp2bW0wndBoAZ4fLWHjG2ayB1UdynN6msW1ddaTa23h0s9kRk+OjW
+8No4arrCsZ7cu3mU4CUMznaHF115nhSevUwNqnQQOpbvdoLVcha1wawXLZCDc1zX
+pvU2D0xV8zBdGdwBDvjm/qWtUohZ3EoH7aLroQFjxIqSugaAmw2F8p/5cKzXrfB6
+P7iSKjPKadABZV0xOB32H7IXB36siGemxF8+k5Rh5uRJnbrU0ujjk9FmecXjHfha
+UFRYPQSw/WXRs4q1ijBfstw0GhT3dEwDKZdjWtfeu+t/SiqQWcArRwmCj3XeFD+8
+eJppJYBbbKBlEg0pYaz5AgMBAAGjezB5MAkGA1UdEwQCMAAwLAYJYIZIAYb4QgEN
+BB8WHU9wZW5TU0wgR2VuZXJhdGVkIENlcnRpZmljYXRlMB0GA1UdDgQWBBTsa3x5
+uDsRHULzmirPmhVZ1/nYxjAfBgNVHSMEGDAWgBSgfguto6031yELdW+KkF+MyWnf
+mDANBgkqhkiG9w0BAQsFAAOCAQEAKRTbcemghvjMTeSKdnin/06UtE2S3FeaUmRG
+JxWLTyoYpw380nXOTkmXC0ZxVyPjpcDFcZT88h07BpOCA1lW1PsJBgi0l1Azz1iJ
+3ZExByaafn+Ncd4J3E/la6MQcdRQJEOgHPUq2Rr749bxvGtCZxa0OzH07AN9eOJk
+FldtunwM4RSyfHVOKwk+huSqzH5cK72NJk1JNnSG/sWmFUqv6LRO1fLhWcL7fsPE
+8WPYwrCarjGWkMMJ0M4uMZDXg92sMcz3h0EIkjMoUvotnq2uap/Dvs7BpuQWL2k0
+QIa2ECEOMWmBnvz9wwYlZTfT2UoghKrnDmB8vz+IZ6zljOBh1g==
 -----END CERTIFICATE-----
 End
 
 TestOpenURISSL::SERVER_KEY = <<'End'
-Private-Key: (1024 bit)
+RSA Private-Key: (2048 bit, 2 primes)
 modulus:
-    00:bb:bd:74:69:53:58:50:24:79:f2:eb:db:8b:97:
-    e4:69:a4:dd:48:0c:40:35:62:42:b3:35:8c:96:2a:
-    62:76:98:b5:2a:e0:f8:78:33:b6:ff:f8:55:bf:44:
-    69:21:d7:b5:0e:bd:8a:dd:31:1b:88:d5:b4:5e:7a:
-    82:e0:ba:99:6c:04:76:e9:ff:e6:f8:f5:06:8e:7e:
-    a4:db:db:eb:43:44:12:a7:ca:ca:2b:aa:5f:83:10:
-    e2:9e:35:55:e8:e8:af:be:c8:7d:bb:c2:d4:aa:c1:
-    1c:57:0b:c0:0c:3a:1d:6e:23:a9:03:26:7c:ea:8c:
-    f0:86:61:ce:f1:ff:42:c7:23
+    00:cb:b3:71:95:12:70:fc:db:d4:a9:a7:66:d6:d3:
+    09:dd:06:80:19:e1:f2:d6:1e:31:b6:6b:20:75:51:
+    dc:a7:37:a9:ac:5b:57:5d:69:36:b6:de:1d:2c:f6:
+    44:64:f8:e8:d6:f0:da:38:6a:ba:c2:b1:9e:dc:bb:
+    79:94:e0:25:0c:ce:76:87:17:5d:79:9e:14:9e:bd:
+    4c:0d:aa:74:10:3a:96:ef:76:82:d5:72:16:b5:c1:
+    ac:17:2d:90:83:73:5c:d7:a6:f5:36:0f:4c:55:f3:
+    30:5d:19:dc:01:0e:f8:e6:fe:a5:ad:52:88:59:dc:
+    4a:07:ed:a2:eb:a1:01:63:c4:8a:92:ba:06:80:9b:
+    0d:85:f2:9f:f9:70:ac:d7:ad:f0:7a:3f:b8:92:2a:
+    33:ca:69:d0:01:65:5d:31:38:1d:f6:1f:b2:17:07:
+    7e:ac:88:67:a6:c4:5f:3e:93:94:61:e6:e4:49:9d:
+    ba:d4:d2:e8:e3:93:d1:66:79:c5:e3:1d:f8:5a:50:
+    54:58:3d:04:b0:fd:65:d1:b3:8a:b5:8a:30:5f:b2:
+    dc:34:1a:14:f7:74:4c:03:29:97:63:5a:d7:de:bb:
+    eb:7f:4a:2a:90:59:c0:2b:47:09:82:8f:75:de:14:
+    3f:bc:78:9a:69:25:80:5b:6c:a0:65:12:0d:29:61:
+    ac:f9
 publicExponent: 65537 (0x10001)
 privateExponent:
-    00:af:3a:ec:17:0a:f5:d9:07:d2:d3:4c:15:c5:3b:
-    66:b4:bc:6e:d5:ba:a9:8b:aa:45:3b:63:f5:ee:8b:
-    6d:0f:e9:04:e0:1a:cf:8f:d2:25:32:d1:a5:a7:3a:
-    c1:2e:17:5a:25:82:00:c4:e7:fb:1d:42:ea:71:6c:
-    c4:0f:e1:db:23:ff:1e:d6:c8:d6:60:ca:2d:06:fc:
-    54:3c:03:d4:09:96:bb:38:7a:22:a1:61:2c:f7:d0:
-    d0:90:6c:9f:61:ba:61:30:5a:aa:64:ad:43:3a:53:
-    38:e8:ba:cc:8c:51:3e:68:3e:3a:6a:0f:5d:5d:e0:
-    d6:df:f2:54:93:d3:14:22:a1
+    12:be:d5:b2:01:3b:72:99:8c:4d:7c:81:43:3d:b2:
+    87:ab:84:78:5d:49:aa:98:a6:bc:81:c9:3f:e2:a3:
+    aa:a3:bd:b2:85:c9:59:68:48:47:b5:d2:fb:83:42:
+    32:04:91:f0:cd:c3:57:33:c3:32:0d:84:70:0d:b4:
+    97:95:b4:f3:23:c0:d6:97:b8:db:6b:47:bc:7f:f1:
+    12:c4:df:df:6a:74:df:5e:89:95:b8:e5:0c:1e:e1:
+    86:54:84:1b:04:af:c3:8c:b2:be:21:d4:45:88:96:
+    a7:ca:ac:6b:50:84:69:45:7f:db:9e:5f:bb:dd:40:
+    d6:cf:f0:91:3c:84:d3:38:65:c9:15:f7:9e:37:aa:
+    1a:2e:bc:16:b6:95:be:bc:af:45:76:ba:ad:99:f6:
+    ef:6a:e8:fd:f0:31:89:19:c4:04:67:a1:ec:c4:79:
+    59:08:77:ab:0b:65:88:88:02:b1:38:5c:80:4e:27:
+    78:b2:a5:bd:b5:ad:d5:9c:4c:ea:ad:db:05:56:25:
+    70:28:da:22:fb:d8:de:8c:3b:78:fe:3e:cf:ed:1b:
+    f9:97:c6:b6:4a:bf:60:08:8f:dc:85:5e:b1:49:ab:
+    87:8b:68:72:f4:6a:3f:bc:db:a3:6c:f7:e8:b0:15:
+    bb:4b:ba:37:49:a2:d1:7c:f8:4f:1b:05:11:22:d9:
+    81
 prime1:
-    00:e8:ec:11:fe:e6:2b:23:21:29:d5:40:a6:11:ec:
-    4c:ae:4d:08:2a:71:18:ac:d1:3e:40:2f:12:41:59:
-    12:09:e2:f7:c2:d7:6b:0a:96:0a:06:e3:90:6a:4e:
-    b2:eb:25:b7:09:68:e9:13:ab:d0:5a:29:7a:e4:72:
-    1a:ee:46:a0:8b
+    00:fb:d2:cb:14:61:00:c1:7a:83:ba:fe:79:97:a2:
+    4d:5a:ea:40:78:96:6e:d2:be:71:5b:c6:2c:1f:c9:
+    18:48:6b:ae:20:86:87:b5:08:0b:17:69:ca:93:cd:
+    00:36:22:51:7b:d5:2d:8c:0c:0e:de:bc:86:a8:07:
+    0e:c5:57:e4:df:be:ed:7d:cc:b1:a4:d6:a8:2b:00:
+    65:2a:69:30:5e:dc:6d:6d:c4:c8:7e:20:34:eb:6f:
+    5e:cf:b3:b8:2e:8d:56:31:44:a8:17:ea:be:65:19:
+    ff:da:14:e0:0c:73:56:14:08:47:4c:5b:79:51:74:
+    5d:bc:e7:fe:01:2f:55:27:69
 prime2:
-    00:ce:57:5e:31:e9:c9:a8:5b:1f:55:af:67:e2:49:
-    2a:af:90:b6:02:c0:32:2f:ca:ae:1e:de:47:81:73:
-    a8:f8:37:53:70:93:24:62:77:d4:b8:80:30:9f:65:
-    26:20:46:ae:5a:65:6e:6d:af:68:4c:8d:e8:3c:f3:
-    d1:d1:d9:6e:c9
+    00:cf:14:54:47:bb:5f:5d:d6:2b:2d:ed:a6:8a:6f:
+    36:fc:47:5e:9f:84:ae:aa:1f:f8:44:50:91:15:f5:
+    ed:9d:29:d9:2b:2a:19:66:56:2e:96:15:b5:8e:a9:
+    7f:89:27:21:b5:57:55:7e:2a:c5:8c:93:fe:f6:0a:
+    a5:17:15:91:91:b3:7d:35:1a:d5:9a:2e:b8:0d:ad:
+    e6:97:6d:83:a3:27:29:ee:00:74:ef:57:34:f3:07:
+    ad:12:43:37:0c:5c:b7:26:34:bc:4e:3a:43:65:6b:
+    0c:b8:23:ac:77:fd:b2:23:eb:7b:65:70:f6:96:c4:
+    17:2c:aa:24:b8:a5:5e:b7:11
 exponent1:
-    03:f1:02:b8:f2:82:26:5d:08:4d:30:83:de:e7:c5:
-    c0:69:53:4b:0c:90:e3:53:c3:1e:e8:ed:01:28:15:
-    b3:0f:21:2c:2d:e3:04:d1:d7:27:98:b0:37:ec:4f:
-    00:c5:a9:9c:42:27:37:8a:ff:c2:96:d3:1a:8c:87:
-    c2:22:75:d3
+    00:92:32:ae:f4:05:dd:0a:76:b6:43:b9:b9:9d:ee:
+    fc:39:ec:05:c1:fc:94:1a:85:b6:0a:31:e3:2c:10:
+    f3:a8:17:db:df:c6:3a:c3:3f:08:31:6f:99:cc:75:
+    17:ca:55:e2:38:a2:6a:ef:03:91:1e:7f:15:2e:37:
+    ea:bb:67:6b:d8:fa:5f:a6:c9:4f:d9:03:46:5e:b0:
+    bc:0b:03:46:b1:cc:07:3b:d3:23:13:16:5f:a2:cf:
+    e5:9b:70:1b:5d:eb:70:3e:ea:3d:2c:a5:7c:23:f6:
+    14:33:e8:2a:ab:0f:ca:c9:96:84:ce:2f:cd:1f:1d:
+    0f:ce:bc:61:1b:0e:ff:c1:01
 exponent2:
-    6f:17:32:ab:84:c7:01:51:2d:e9:9f:ea:3a:36:52:
-    38:fb:9c:42:96:df:6e:43:9c:c3:19:c1:3d:bc:db:
-    77:e7:b1:90:a6:67:ac:6b:ff:a6:e5:bd:47:d3:d9:
-    56:ff:36:d7:8c:4c:8b:d9:28:3a:2f:1c:9d:d4:57:
-    5e:b7:c5:a1
+    00:9e:0b:f3:03:48:73:d1:e7:9a:cf:13:f9:ae:e0:
+    91:03:dc:e8:d0:30:f1:2a:30:fa:48:11:81:9a:54:
+    37:c5:62:e2:37:fa:8a:a6:3b:92:94:c3:fe:ec:e2:
+    5a:cf:70:09:5f:21:47:c3:e2:9b:21:de:f6:92:0c:
+    af:d1:bd:89:7b:bd:95:0b:49:ee:cb:1d:6b:26:2d:
+    9a:b7:ea:42:b4:ec:38:29:49:39:f6:4e:05:c0:93:
+    14:39:c3:09:29:ab:3d:b1:b0:40:24:28:7d:b5:d3:
+    0d:43:21:1f:09:f9:9b:d3:a4:6f:6a:8d:db:f6:57:
+    b5:24:46:bb:7e:1d:e0:fb:31
 coefficient:
-    45:50:47:66:56:e9:21:d9:40:0e:af:3f:f2:05:77:
-    ab:e7:08:40:97:88:2a:51:b3:7e:86:b0:b2:03:2e:
-    6d:36:3f:46:42:97:7d:5a:a2:93:6c:05:c2:8b:8b:
-    2d:af:d5:7d:75:e9:70:f0:2d:21:e3:b9:cf:4d:9a:
-    c4:97:e2:79
+    10:93:1d:c8:33:a5:c1:d3:84:6a:22:68:e5:60:cc:
+    9c:27:0a:52:0b:58:a3:0c:83:f4:f4:46:09:0c:a1:
+    41:a6:ea:bf:80:9d:0e:5d:d8:3d:25:00:c5:a1:35:
+    7a:8c:ea:95:16:94:c3:7c:8f:2b:e0:53:ea:66:ae:
+    19:be:55:04:3d:ee:e2:4b:a8:69:1b:7e:d8:09:7f:
+    ed:7c:ee:95:88:10:dc:4b:5b:bf:81:a4:e8:dc:7e:
+    4f:e5:c3:90:c4:e5:5a:90:10:32:d6:08:b5:1f:5d:
+    09:18:d8:44:28:e4:c4:c7:07:75:9b:9b:b3:80:86:
+    68:9d:fe:68:f3:4d:db:66
+writing RSA key
 -----BEGIN RSA PRIVATE KEY-----
-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
+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
 -----END RSA PRIVATE KEY-----
 End
 

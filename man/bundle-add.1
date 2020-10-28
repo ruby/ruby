@@ -1,13 +1,13 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "BUNDLE\-ADD" "1" "November 2018" "" ""
+.TH "BUNDLE\-ADD" "1" "October 2020" "" ""
 .
 .SH "NAME"
 \fBbundle\-add\fR \- Add gem to the Gemfile and run bundle install
 .
 .SH "SYNOPSIS"
-\fBbundle add\fR \fIGEM_NAME\fR [\-\-group=GROUP] [\-\-version=VERSION] [\-\-source=SOURCE] [\-\-skip\-install] [\-\-strict] [\-\-optimistic]
+\fBbundle add\fR \fIGEM_NAME\fR [\-\-group=GROUP] [\-\-version=VERSION] [\-\-source=SOURCE] [\-\-git=GIT] [\-\-branch=BRANCH] [\-\-skip\-install] [\-\-strict] [\-\-optimistic]
 .
 .SH "DESCRIPTION"
 Adds the named gem to the Gemfile and run \fBbundle install\fR\. \fBbundle install\fR can be avoided by using the flag \fB\-\-skip\-install\fR\.
@@ -43,6 +43,14 @@ Specify the group(s) for the added gem\. Multiple groups should be separated by 
 .TP
 \fB\-\-source\fR, , \fB\-s\fR
 Specify the source for the added gem\.
+.
+.TP
+\fB\-\-git\fR
+Specify the git source for the added gem\.
+.
+.TP
+\fB\-\-branch\fR
+Specify the git branch for the added gem\.
 .
 .TP
 \fB\-\-skip\-install\fR

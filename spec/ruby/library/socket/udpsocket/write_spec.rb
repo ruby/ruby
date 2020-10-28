@@ -10,7 +10,7 @@ describe "UDPSocket#write" do
       s2 = UDPSocket.new
       s2.connect(host, s1.addr[1])
 
-      lambda do
+      -> do
         s2.write('1' * 100_000)
       end.should raise_error(Errno::EMSGSIZE)
     ensure

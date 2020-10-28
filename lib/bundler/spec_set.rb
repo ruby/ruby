@@ -60,7 +60,6 @@ module Bundler
       @specs << value
       @lookup = nil
       @sorted = nil
-      value
     end
 
     def sort!
@@ -148,7 +147,7 @@ module Bundler
       sorted.each(&b)
     end
 
-  private
+    private
 
     def sorted
       rake = @specs.find {|s| s.name == "rake" }
@@ -163,11 +162,7 @@ module Bundler
     end
 
     def extract_circular_gems(error)
-      if Bundler.current_ruby.mri? && Bundler.current_ruby.on_19?
-        error.message.scan(/(\w+) \([^)]/).flatten
-      else
-        error.message.scan(/@name="(.*?)"/).flatten
-      end
+      error.message.scan(/@name="(.*?)"/).flatten
     end
 
     def lookup

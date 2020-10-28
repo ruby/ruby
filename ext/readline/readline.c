@@ -95,7 +95,6 @@ static char **readline_attempted_completion_function(const char *text,
 
 #define OutputStringValue(str) do {\
     StringValueCStr(str);\
-    rb_check_safe_obj(str);\
     (str) = rb_str_conv_enc((str), rb_enc_get(str), rb_locale_encoding());\
 } while (0)\
 
@@ -823,7 +822,7 @@ readline_s_redisplay(VALUE self)
  *
  * When working with auto-complete there are some strategies that work well.
  * To get some ideas you can take a look at the
- * completion.rb[https://svn.ruby-lang.org/repos/ruby/trunk/lib/irb/completion.rb]
+ * completion.rb[https://git.ruby-lang.org/ruby.git/tree/lib/irb/completion.rb]
  * file for irb.
  *
  * The common strategy is to take a list of possible completions and filter it
@@ -1382,7 +1381,7 @@ readline_s_set_basic_word_break_characters(VALUE self, VALUE str)
  * Raises NotImplementedError if the using readline library does not support.
  */
 static VALUE
-readline_s_get_basic_word_break_characters(VALUE self, VALUE str)
+readline_s_get_basic_word_break_characters(VALUE self)
 {
     if (rl_basic_word_break_characters == NULL)
         return Qnil;
@@ -1437,7 +1436,7 @@ readline_s_set_completer_word_break_characters(VALUE self, VALUE str)
  * Raises NotImplementedError if the using readline library does not support.
  */
 static VALUE
-readline_s_get_completer_word_break_characters(VALUE self, VALUE str)
+readline_s_get_completer_word_break_characters(VALUE self)
 {
     if (rl_completer_word_break_characters == NULL)
         return Qnil;
@@ -1552,7 +1551,7 @@ readline_s_set_basic_quote_characters(VALUE self, VALUE str)
  * Raises NotImplementedError if the using readline library does not support.
  */
 static VALUE
-readline_s_get_basic_quote_characters(VALUE self, VALUE str)
+readline_s_get_basic_quote_characters(VALUE self)
 {
     if (rl_basic_quote_characters == NULL)
         return Qnil;
@@ -1608,7 +1607,7 @@ readline_s_set_completer_quote_characters(VALUE self, VALUE str)
  * Raises NotImplementedError if the using readline library does not support.
  */
 static VALUE
-readline_s_get_completer_quote_characters(VALUE self, VALUE str)
+readline_s_get_completer_quote_characters(VALUE self)
 {
     if (rl_completer_quote_characters == NULL)
         return Qnil;
@@ -1662,7 +1661,7 @@ readline_s_set_filename_quote_characters(VALUE self, VALUE str)
  * Raises NotImplementedError if the using readline library does not support.
  */
 static VALUE
-readline_s_get_filename_quote_characters(VALUE self, VALUE str)
+readline_s_get_filename_quote_characters(VALUE self)
 {
     if (rl_filename_quote_characters == NULL)
         return Qnil;

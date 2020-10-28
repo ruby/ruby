@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require_relative "utils"
 
 if defined?(OpenSSL)
@@ -73,9 +73,12 @@ class OpenSSL::TestX509Certificate < OpenSSL::TestCase
       ["basicConstraints","CA:TRUE",true],
       ["keyUsage","keyCertSign, cRLSign",true],
       ["subjectKeyIdentifier","hash",false],
-      ["authorityKeyIdentifier","keyid:always",false],
+      ["authorityKeyIdentifier","issuer:always,keyid:always",false],
     ]
     ca_cert = issue_cert(@ca, @rsa2048, 1, ca_exts, nil, nil)
+    keyid = get_subject_key_id(ca_cert.to_der, hex: false)
+    assert_equal keyid, ca_cert.authority_key_identifier
+    assert_equal keyid, ca_cert.subject_key_identifier
     ca_cert.extensions.each_with_index{|ext, i|
       assert_equal(ca_exts[i].first, ext.oid)
       assert_equal(ca_exts[i].last, ext.critical?)
@@ -84,15 +87,88 @@ class OpenSSL::TestX509Certificate < OpenSSL::TestCase
     ee1_exts = [
       ["keyUsage","Non Repudiation, Digital Signature, Key Encipherment",true],
       ["subjectKeyIdentifier","hash",false],
-      ["authorityKeyIdentifier","keyid:always",false],
+      ["authorityKeyIdentifier","issuer:always,keyid:always",false],
       ["extendedKeyUsage","clientAuth, emailProtection, codeSigning",false],
       ["subjectAltName","email:ee1@ruby-lang.org",false],
+      ["authorityInfoAccess","caIssuers;URI:http://www.example.com/caIssuers,OCSP;URI:http://www.example.com/ocsp",false],
     ]
     ee1_cert = issue_cert(@ee1, @rsa1024, 2, ee1_exts, ca_cert, @rsa2048)
     assert_equal(ca_cert.subject.to_der, ee1_cert.issuer.to_der)
     ee1_cert.extensions.each_with_index{|ext, i|
       assert_equal(ee1_exts[i].first, ext.oid)
       assert_equal(ee1_exts[i].last, ext.critical?)
+    }
+    assert_nil(ee1_cert.crl_uris)
+
+    ef = OpenSSL::X509::ExtensionFactory.new
+    ef.config = OpenSSL::Config.parse(<<~_cnf_)
+      [crlDistPts]
+      URI.1 = http://www.example.com/crl
+      URI.2 = ldap://ldap.example.com/cn=ca?certificateRevocationList;binary
+    _cnf_
+    cdp_cert = generate_cert(@ee1, @rsa1024, 3, ca_cert)
+    ef.subject_certificate = cdp_cert
+    cdp_cert.add_extension(ef.create_extension("crlDistributionPoints", "@crlDistPts"))
+    cdp_cert.sign(@rsa2048, "sha256")
+    assert_equal(
+      ["http://www.example.com/crl", "ldap://ldap.example.com/cn=ca?certificateRevocationList;binary"],
+      cdp_cert.crl_uris
+    )
+
+    ef = OpenSSL::X509::ExtensionFactory.new
+    aia_cert = generate_cert(@ee1, @rsa1024, 4, ca_cert)
+    ef.subject_certificate = aia_cert
+    aia_cert.add_extension(
+      ef.create_extension(
+        "authorityInfoAccess",
+        "caIssuers;URI:http://www.example.com/caIssuers," \
+        "caIssuers;URI:ldap://ldap.example.com/cn=ca?authorityInfoAccessCaIssuers;binary," \
+        "OCSP;URI:http://www.example.com/ocsp," \
+        "OCSP;URI:ldap://ldap.example.com/cn=ca?authorityInfoAccessOcsp;binary",
+        false
+      )
+    )
+    aia_cert.sign(@rsa2048, "sha256")
+    assert_equal(
+      ["http://www.example.com/caIssuers", "ldap://ldap.example.com/cn=ca?authorityInfoAccessCaIssuers;binary"],
+      aia_cert.ca_issuer_uris
+    )
+    assert_equal(
+      ["http://www.example.com/ocsp", "ldap://ldap.example.com/cn=ca?authorityInfoAccessOcsp;binary"],
+      aia_cert.ocsp_uris
+    )
+
+    no_exts_cert = issue_cert(@ca, @rsa2048, 5, [], nil, nil)
+    assert_equal nil, no_exts_cert.authority_key_identifier
+    assert_equal nil, no_exts_cert.subject_key_identifier
+    assert_equal nil, no_exts_cert.crl_uris
+    assert_equal nil, no_exts_cert.ca_issuer_uris
+    assert_equal nil, no_exts_cert.ocsp_uris
+  end
+
+  def test_invalid_extension
+    integer = OpenSSL::ASN1::Integer.new(0)
+    invalid_exts_cert = generate_cert(@ee1, @rsa1024, 1, nil)
+    ["subjectKeyIdentifier", "authorityKeyIdentifier", "crlDistributionPoints", "authorityInfoAccess"].each do |ext|
+      invalid_exts_cert.add_extension(
+        OpenSSL::X509::Extension.new(ext, integer.to_der)
+      )
+    end
+
+    assert_raise(OpenSSL::ASN1::ASN1Error, "invalid extension") {
+      invalid_exts_cert.authority_key_identifier
+    }
+    assert_raise(OpenSSL::ASN1::ASN1Error, "invalid extension") {
+      invalid_exts_cert.subject_key_identifier
+    }
+    assert_raise(OpenSSL::ASN1::ASN1Error, "invalid extension") {
+      invalid_exts_cert.crl_uris
+    }
+    assert_raise(OpenSSL::ASN1::ASN1Error, "invalid extension") {
+      invalid_exts_cert.ca_issuer_uris
+    }
+    assert_raise(OpenSSL::ASN1::ASN1Error, "invalid extension") {
+      invalid_exts_cert.ocsp_uris
     }
   end
 
@@ -129,7 +205,7 @@ class OpenSSL::TestX509Certificate < OpenSSL::TestCase
   end
 
   def test_sign_and_verify_rsa_dss1
-    cert = issue_cert(@ca, @rsa2048, 1, [], nil, nil, digest: OpenSSL::Digest::DSS1.new)
+    cert = issue_cert(@ca, @rsa2048, 1, [], nil, nil, digest: OpenSSL::Digest.new('DSS1'))
     assert_equal(false, cert.verify(@rsa1024))
     assert_equal(true, cert.verify(@rsa2048))
     assert_equal(false, certificate_error_returns_false { cert.verify(@dsa256) })
@@ -187,6 +263,17 @@ class OpenSSL::TestX509Certificate < OpenSSL::TestCase
     assert_equal false, cert1 == cert3
     assert_equal false, cert1 == cert4
     assert_equal false, cert3 == cert4
+  end
+
+  def test_marshal
+    now = Time.now
+    cacert = issue_cert(@ca, @rsa1024, 1, [], nil, nil,
+      not_before: now, not_after: now + 3600)
+    cert = issue_cert(@ee1, @rsa2048, 2, [], cacert, @rsa1024,
+      not_before: now, not_after: now + 3600)
+    deserialized = Marshal.load(Marshal.dump(cert))
+
+    assert_equal cert.to_der, deserialized.to_der
   end
 
   private

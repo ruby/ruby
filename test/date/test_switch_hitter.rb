@@ -530,14 +530,14 @@ class TestSH < Test::Unit::TestCase
 
   def test_marshal14
     s = "\x04\x03u:\x01\x04Date\x01\v\x04\x03[\x01\x02i\x03\xE8i%T"
-    d = Marshal.load(s)
+    d = suppress_warning {Marshal.load(s)}
     assert_equal(Rational(4903887,2), d.ajd)
     assert_equal(Date::GREGORIAN, d.start)
   end
 
   def test_marshal16
     s = "\x04\x06u:\tDate\x0F\x04\x06[\ai\x03\xE8i%T"
-    d = Marshal.load(s)
+    d = suppress_warning {Marshal.load(s)}
     assert_equal(Rational(4903887,2), d.ajd)
     assert_equal(Date::GREGORIAN, d.start)
   end
@@ -566,35 +566,6 @@ class TestSH < Test::Unit::TestCase
     assert_equal(Rational(11769327817,4800), d.ajd)
     assert_equal(Rational(9,24), d.offset)
     assert_equal(Date::GREGORIAN, d.start)
-  end
-
-  def test_taint
-    h = Date._strptime('15:43+09:00', '%R%z')
-    assert_equal(false, h[:zone].tainted?)
-    h = Date._strptime('15:43+09:00'.dup.taint, '%R%z')
-    assert_equal(true, h[:zone].tainted?)
-
-    h = Date._strptime('1;1/0', '%d')
-    assert_equal(false, h[:leftover].tainted?)
-    h = Date._strptime('1;1/0'.dup.taint, '%d')
-    assert_equal(true, h[:leftover].tainted?)
-
-    h = Date._parse('15:43+09:00')
-    assert_equal(false, h[:zone].tainted?)
-    h = Date._parse('15:43+09:00'.dup.taint)
-    assert_equal(true, h[:zone].tainted?)
-
-    s = Date.today.strftime('new 105')
-    assert_equal(false, s.tainted?)
-    s = Date.today.strftime('new 105'.dup.taint)
-    assert_equal(true, s.tainted?)
-    s = Date.today.strftime("new \000 105".dup.taint)
-    assert_equal(true, s.tainted?)
-
-    s = DateTime.now.strftime('super $record')
-    assert_equal(false, s.tainted?)
-    s = DateTime.now.strftime('super $record'.dup.taint)
-    assert_equal(true, s.tainted?)
   end
 
   def test_enc
@@ -655,4 +626,12 @@ class TestSH < Test::Unit::TestCase
     assert_equal(true, Date.test_all)
   end if defined?(Date.test_all)
 
+  private
+
+  def suppress_warning
+    $VERBOSE, verbose = nil, $VERBOSE
+    yield
+  ensure
+    $VERBOSE = verbose
+  end
 end

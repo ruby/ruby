@@ -181,41 +181,11 @@ module Psych
       end
 
       def visit_Exception o
-        tag = ['!ruby/exception', o.class.name].join ':'
-
-        @emitter.start_mapping nil, tag, false, Nodes::Mapping::BLOCK
-
-        {
-          'message'   => private_iv_get(o, 'mesg'),
-          'backtrace' => private_iv_get(o, 'backtrace'),
-        }.each do |k,v|
-          next unless v
-          @emitter.scalar k, nil, nil, true, false, Nodes::Scalar::ANY
-          accept v
-        end
-
-        dump_ivars o
-
-        @emitter.end_mapping
+        dump_exception o, o.message.to_s
       end
 
       def visit_NameError o
-        tag = ['!ruby/exception', o.class.name].join ':'
-
-        @emitter.start_mapping nil, tag, false, Nodes::Mapping::BLOCK
-
-        {
-          'message'   => o.message.to_s,
-          'backtrace' => private_iv_get(o, 'backtrace'),
-        }.each do |k,v|
-          next unless v
-          @emitter.scalar k, nil, nil, true, false, Nodes::Scalar::ANY
-          accept v
-        end
-
-        dump_ivars o
-
-        @emitter.end_mapping
+        dump_exception o, o.message.to_s
       end
 
       def visit_Regexp o
@@ -458,21 +428,21 @@ module Psych
           node = @emitter.start_mapping(nil, tag, false, Psych::Nodes::Mapping::BLOCK)
           register(o, node)
 
-          # Dump the elements
-          accept 'elements'
-          @emitter.start_mapping nil, nil, true, Nodes::Mapping::BLOCK
-          o.each do |k,v|
-            accept k
-            accept v
-          end
-          @emitter.end_mapping
-
           # Dump the ivars
           accept 'ivars'
           @emitter.start_mapping nil, nil, true, Nodes::Mapping::BLOCK
           o.instance_variables.each do |ivar|
             accept ivar
             accept o.instance_variable_get ivar
+          end
+          @emitter.end_mapping
+
+          # Dump the elements
+          accept 'elements'
+          @emitter.start_mapping nil, nil, true, Nodes::Mapping::BLOCK
+          o.each do |k,v|
+            accept k
+            accept v
           end
           @emitter.end_mapping
 
@@ -490,6 +460,24 @@ module Psych
       end
 
       def dump_list o
+      end
+
+      def dump_exception o, msg
+        tag = ['!ruby/exception', o.class.name].join ':'
+
+        @emitter.start_mapping nil, tag, false, Nodes::Mapping::BLOCK
+
+        if msg
+          @emitter.scalar 'message', nil, nil, true, false, Nodes::Scalar::ANY
+          accept msg
+        end
+
+        @emitter.scalar 'backtrace', nil, nil, true, false, Nodes::Scalar::ANY
+        accept o.backtrace
+
+        dump_ivars o
+
+        @emitter.end_mapping
       end
 
       def format_time time

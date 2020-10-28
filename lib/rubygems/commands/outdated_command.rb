@@ -5,7 +5,6 @@ require 'rubygems/spec_fetcher'
 require 'rubygems/version_option'
 
 class Gem::Commands::OutdatedCommand < Gem::Command
-
   include Gem::LocalRemoteOptions
   include Gem::VersionOption
 

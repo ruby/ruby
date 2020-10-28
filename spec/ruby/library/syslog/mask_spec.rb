@@ -32,7 +32,7 @@ platform_is_not :windows do
       end
 
       it "returns nil if the log is closed" do
-        Syslog.opened?.should == false
+        Syslog.should_not.opened?
         Syslog.mask.should == nil
       end
 
@@ -91,7 +91,7 @@ platform_is_not :windows do
       end
 
       it "raises an error if the log is closed" do
-        lambda { Syslog.mask = 1337 }.should raise_error(RuntimeError)
+        -> { Syslog.mask = 1337 }.should raise_error(RuntimeError)
       end
 
       it "only accepts numbers" do
@@ -103,8 +103,8 @@ platform_is_not :windows do
           Syslog.mask = 3.1416
           Syslog.mask.should == 3
 
-          lambda { Syslog.mask = "oh hai" }.should raise_error(TypeError)
-          lambda { Syslog.mask = "43" }.should raise_error(TypeError)
+          -> { Syslog.mask = "oh hai" }.should raise_error(TypeError)
+          -> { Syslog.mask = "43" }.should raise_error(TypeError)
 
         end
       end

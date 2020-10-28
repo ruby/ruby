@@ -12,8 +12,6 @@ module Bundler
 
       warn_if_root
 
-      normalize_groups
-
       Bundler::SharedHelpers.set_env "RB_USER_INSTALL", "1" if Bundler::FREEBSD
 
       # Disable color in deployment mode
@@ -38,7 +36,8 @@ module Bundler
         if Bundler.feature_flag.deployment_means_frozen?
           Bundler.settings.set_command_option :deployment, true
         else
-          Bundler.settings.set_command_option :frozen, true
+          Bundler.settings.set_command_option :deployment, true if options[:deployment]
+          Bundler.settings.set_command_option :frozen, true if options[:frozen]
         end
       end
 
@@ -53,8 +52,8 @@ module Bundler
       Bundler::Fetcher.disable_endpoint = options["full-index"]
 
       if options["binstubs"]
-        Bundler::SharedHelpers.major_deprecation 3,
-          "The --binstubs option will be removed in favor of `bundle binstubs`"
+        Bundler::SharedHelpers.major_deprecation 2,
+          "The --binstubs option will be removed in favor of `bundle binstubs --all`"
       end
 
       Plugin.gemfile_install(Bundler.default_gemfile) if Bundler.feature_flag.plugins?
@@ -66,7 +65,7 @@ module Bundler
       Bundler.load.cache if Bundler.app_cache.exist? && !options["no-cache"] && !Bundler.frozen_bundle?
 
       Bundler.ui.confirm "Bundle complete! #{dependencies_count_for(definition)}, #{gems_installed_for(definition)}."
-      Bundler::CLI::Common.output_without_groups_message
+      Bundler::CLI::Common.output_without_groups_message(:install)
 
       if Bundler.use_system_gems?
         Bundler.ui.confirm "Use `bundle info [gemname]` to see where a bundled gem is installed."
@@ -80,9 +79,11 @@ module Bundler
       warn_ambiguous_gems
 
       if CLI::Common.clean_after_install?
-        require "bundler/cli/clean"
+        require_relative "clean"
         Bundler::CLI::Clean.new(options).run
       end
+
+      Bundler::CLI::Common.output_fund_metadata_summary
     rescue GemNotFound, VersionConflict => e
       if options[:local] && Bundler.app_cache.exist?
         Bundler.ui.warn "Some gems seem to be missing from your #{Bundler.settings.app_cache_path} directory."
@@ -101,7 +102,7 @@ module Bundler
       raise e
     end
 
-  private
+    private
 
     def warn_if_root
       return if Bundler.settings[:silence_root_warning] || Bundler::WINDOWS || !Process.uid.zero?
@@ -151,25 +152,24 @@ module Bundler
 
       check_for_group_conflicts_in_cli_options
 
-      Bundler.settings.set_command_option :with, nil if options[:with] == []
-      Bundler.settings.set_command_option :without, nil if options[:without] == []
-
       with = options.fetch(:with, [])
       with |= Bundler.settings[:with].map(&:to_s)
       with -= options[:without] if options[:without]
+      with = nil if options[:with] == []
 
       without = options.fetch(:without, [])
       without |= Bundler.settings[:without].map(&:to_s)
       without -= options[:with] if options[:with]
+      without = nil if options[:without] == []
 
-      options[:with]    = with
-      options[:without] = without
+      Bundler.settings.set_command_option :without, without
+      Bundler.settings.set_command_option :with,    with
     end
 
     def normalize_settings
       Bundler.settings.set_command_option :path, nil if options[:system]
       Bundler.settings.temporary(:path_relative_to_cwd => false) do
-        Bundler.settings.set_command_option :path, "vendor/bundle" if options[:deployment]
+        Bundler.settings.set_command_option :path, "vendor/bundle" if Bundler.settings[:deployment] && Bundler.settings[:path].nil?
       end
       Bundler.settings.set_command_option_if_given :path, options[:path]
       Bundler.settings.temporary(:path_relative_to_cwd => false) do
@@ -190,27 +190,22 @@ module Bundler
 
       Bundler.settings.set_command_option_if_given :clean, options["clean"]
 
-      unless Bundler.settings[:without] == options[:without] && Bundler.settings[:with] == options[:with]
-        # need to nil them out first to get around validation for backwards compatibility
-        Bundler.settings.set_command_option :without, nil
-        Bundler.settings.set_command_option :with,    nil
-        Bundler.settings.set_command_option :without, options[:without] - options[:with]
-        Bundler.settings.set_command_option :with,    options[:with]
-      end
+      normalize_groups if options[:without] || options[:with]
 
       options[:force] = options[:redownload]
     end
 
     def warn_ambiguous_gems
+      # TODO: remove this when we drop Bundler 1.x support
       Installer.ambiguous_gems.to_a.each do |name, installed_from_uri, *also_found_in_uris|
-        Bundler.ui.error "Warning: the gem '#{name}' was found in multiple sources."
-        Bundler.ui.error "Installed from: #{installed_from_uri}"
-        Bundler.ui.error "Also found in:"
-        also_found_in_uris.each {|uri| Bundler.ui.error "  * #{uri}" }
-        Bundler.ui.error "You should add a source requirement to restrict this gem to your preferred source."
-        Bundler.ui.error "For example:"
-        Bundler.ui.error "    gem '#{name}', :source => '#{installed_from_uri}'"
-        Bundler.ui.error "Then uninstall the gem '#{name}' (or delete all bundled gems) and then install again."
+        Bundler.ui.warn "Warning: the gem '#{name}' was found in multiple sources."
+        Bundler.ui.warn "Installed from: #{installed_from_uri}"
+        Bundler.ui.warn "Also found in:"
+        also_found_in_uris.each {|uri| Bundler.ui.warn "  * #{uri}" }
+        Bundler.ui.warn "You should add a source requirement to restrict this gem to your preferred source."
+        Bundler.ui.warn "For example:"
+        Bundler.ui.warn "    gem '#{name}', :source => '#{installed_from_uri}'"
+        Bundler.ui.warn "Then uninstall the gem '#{name}' (or delete all bundled gems) and then install again."
       end
     end
   end

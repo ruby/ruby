@@ -17,6 +17,7 @@ class TestGc < Test::Unit::TestCase
       1.upto(10000) {
         tmp = [0,1,2,3,4,5,6,7,8,9]
       }
+      tmp
     end
     l=nil
     100000.times {
@@ -53,7 +54,9 @@ class TestGc < Test::Unit::TestCase
 
   def test_start_full_mark
     return unless use_rgengc?
+    skip 'stress' if GC.stress
 
+    3.times { GC.start } # full mark and next time it should be minor mark
     GC.start(full_mark: false)
     assert_nil GC.latest_gc_info(:major_by)
 
@@ -62,6 +65,8 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_start_immediate_sweep
+    skip 'stress' if GC.stress
+
     GC.start(immediate_sweep: false)
     assert_equal false, GC.latest_gc_info(:immediate_sweep)
 
@@ -90,6 +95,9 @@ class TestGc < Test::Unit::TestCase
     GC.start
     GC.stat(stat)
     ObjectSpace.count_objects(count)
+    # repeat same methods invocation for cache object creation.
+    GC.stat(stat)
+    ObjectSpace.count_objects(count)
     assert_equal(count[:TOTAL]-count[:FREE], stat[:heap_live_slots])
     assert_equal(count[:FREE], stat[:heap_free_slots])
 
@@ -105,12 +113,16 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_stat_single
+    skip 'stress' if GC.stress
+
     stat = GC.stat
     assert_equal stat[:count], GC.stat(:count)
     assert_raise(ArgumentError){ GC.stat(:invalid) }
   end
 
   def test_stat_constraints
+    skip 'stress' if GC.stress
+
     stat = GC.stat
     assert_equal stat[:total_allocated_pages], stat[:heap_allocated_pages] + stat[:total_freed_pages]
     assert_operator stat[:heap_sorted_length], :>=, stat[:heap_eden_pages] + stat[:heap_allocatable_pages], "stat is: " + stat.inspect
@@ -124,6 +136,8 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_latest_gc_info
+    skip 'stress' if GC.stress
+
     assert_separately %w[--disable-gem], __FILE__, __LINE__, <<-'eom'
     GC.start
     count = GC.stat(:heap_free_slots) + GC.stat(:heap_allocatable_pages) * GC::INTERNAL_CONSTANTS[:HEAP_PAGE_OBJ_LIMIT]
@@ -131,10 +145,15 @@ class TestGc < Test::Unit::TestCase
     assert_equal :newobj, GC.latest_gc_info[:gc_by]
     eom
 
+    GC.latest_gc_info(h = {}) # allocate hash and rehearsal
     GC.start
-    assert_equal :force, GC.latest_gc_info[:major_by] if use_rgengc?
-    assert_equal :method, GC.latest_gc_info[:gc_by]
-    assert_equal true, GC.latest_gc_info[:immediate_sweep]
+    GC.start
+    GC.start
+    GC.latest_gc_info(h)
+
+    assert_equal :force,  h[:major_by] if use_rgengc?
+    assert_equal :method, h[:gc_by]
+    assert_equal true,    h[:immediate_sweep]
 
     GC.stress = true
     assert_equal :force, GC.latest_gc_info[:major_by]
@@ -253,6 +272,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_profiler_clear
+    skip "for now"
     assert_separately %w[--disable-gem], __FILE__, __LINE__, <<-'eom', timeout: 30
     GC::Profiler.enable
 
@@ -361,6 +381,14 @@ class TestGc < Test::Unit::TestCase
     assert_empty(out)
   end
 
+  def test_finalizer_passed_object_id
+    assert_in_out_err(%w[--disable-gems], <<-EOS, ["true"], [])
+      o = Object.new
+      obj_id = o.object_id
+      ObjectSpace.define_finalizer(o, ->(id){ p id == obj_id })
+    EOS
+  end
+
   def test_verify_internal_consistency
     assert_nil(GC.verify_internal_consistency)
   end
@@ -381,6 +409,10 @@ class TestGc < Test::Unit::TestCase
       GC.stress = true
       C.new
     end;
+  end
+
+  def test_gc_stress_at_startup
+    assert_in_out_err([{"RUBY_DEBUG"=>"gc_stress"}], '', [], [], '[Bug #15784]', success: true, timeout: 60)
   end
 
   def test_gc_disabled_start
@@ -445,5 +477,13 @@ class TestGc < Test::Unit::TestCase
     GC.start
     skip "finalizers did not get run" if @result.empty?
     assert_equal([:c1, :c2], @result)
+  end
+
+  def test_object_ids_never_repeat
+    GC.start
+    a = 1000.times.map { Object.new.object_id }
+    GC.start
+    b = 1000.times.map { Object.new.object_id }
+    assert_empty(a & b)
   end
 end

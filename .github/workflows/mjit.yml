@@ -1,0 +1,67 @@
+name: MJIT
+on: [push, pull_request]
+jobs:
+  make:
+    strategy:
+      matrix:
+        test_task: [ "check" ] # to make job names consistent
+        jit_opts: [ "--jit", "--jit-wait" ]
+      fail-fast: false
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[ci skip]')"
+    env:
+      TESTOPTS: '-q --tty=no'
+      RUN_OPTS: '--disable-gems ${{ matrix.jit_opts }}'
+      GITPULLOPTIONS: --no-tags origin ${{github.ref}}
+    steps:
+      - run: mkdir build
+        working-directory:
+      - name: Install libraries
+        run: |
+          set -x
+          sudo apt-get update -q || :
+          sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev libgdbm-dev bison autoconf ruby
+      - name: git config
+        run: |
+          git config --global advice.detachedHead 0
+      - uses: actions/checkout@v2
+        with:
+          path: src
+      - name: Fixed world writable dirs
+        run: |
+          chmod -v go-w $HOME $HOME/.config
+          sudo chmod -R go-w /usr/share
+          sudo bash -c 'IFS=:; for d in '"$PATH"'; do chmod -v go-w $d; done' || :
+      - name: Set ENV
+        run: |
+          echo "JOBS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
+      - run: autoconf
+        working-directory: src
+      - name: Run configure
+        run: ../src/configure -C --disable-install-doc
+      - run: make $JOBS incs
+      - run: make $JOBS
+      - run: sudo make $JOBS -s install
+      - run: make $JOBS -s test RUN_OPTS="$RUN_OPTS"
+        timeout-minutes: 10
+      - run: make $JOBS -s test-all RUN_OPTS="$RUN_OPTS"
+        timeout-minutes: 10
+      - run: make $JOBS -s test-spec RUN_OPTS="$RUN_OPTS"
+        timeout-minutes: 5
+      - uses: k0kubun/action-slack@v2.0.0
+        with:
+          payload: |
+            {
+              "ci": "GitHub Actions",
+              "env": "${{ github.workflow }} / ${{ matrix.test_task }} ${{ matrix.jit_opts }}",
+              "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "commit": "${{ github.sha }}",
+              "branch": "${{ github.ref }}".split('/').reverse()[0]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
+        if: failure() && github.event_name == 'push'
+
+defaults:
+  run:
+    working-directory: build

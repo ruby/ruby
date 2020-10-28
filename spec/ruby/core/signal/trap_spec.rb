@@ -4,8 +4,7 @@ platform_is_not :windows do
   describe "Signal.trap" do
     before :each do
       ScratchPad.clear
-
-      @proc = lambda { ScratchPad.record :proc_trap }
+      @proc = -> {}
       @saved_trap = Signal.trap(:HUP, @proc)
     end
 
@@ -48,29 +47,54 @@ platform_is_not :windows do
       ScratchPad.recorded.should be_true
     end
 
+    it "registers an handler doing nothing with :IGNORE" do
+      Signal.trap :HUP, :IGNORE
+      Process.kill(:HUP, Process.pid).should == 1
+    end
+
     it "ignores the signal when passed nil" do
       Signal.trap :HUP, nil
       Signal.trap(:HUP, @saved_trap).should be_nil
     end
 
-    it "accepts 'DEFAULT' as a symbol in place of a proc" do
+    it "accepts :DEFAULT in place of a proc" do
       Signal.trap :HUP, :DEFAULT
-      Signal.trap(:HUP, :DEFAULT).should == "DEFAULT"
+      Signal.trap(:HUP, @saved_trap).should == "DEFAULT"
     end
 
-    it "accepts 'SIG_DFL' as a symbol in place of a proc" do
+    it "accepts :SIG_DFL in place of a proc" do
       Signal.trap :HUP, :SIG_DFL
-      Signal.trap(:HUP, :SIG_DFL).should == "DEFAULT"
+      Signal.trap(:HUP, @saved_trap).should == "DEFAULT"
     end
 
-    it "accepts 'SIG_IGN' as a symbol in place of a proc" do
+    it "accepts :SIG_IGN in place of a proc" do
       Signal.trap :HUP, :SIG_IGN
-      Signal.trap(:HUP, :SIG_IGN).should == "IGNORE"
+      Signal.trap(:HUP, @saved_trap).should == "IGNORE"
     end
 
-    it "accepts 'IGNORE' as a symbol in place of a proc" do
+    it "accepts :IGNORE in place of a proc" do
       Signal.trap :HUP, :IGNORE
-      Signal.trap(:HUP, :IGNORE).should == "IGNORE"
+      Signal.trap(:HUP, @saved_trap).should == "IGNORE"
+    end
+
+    it "accepts 'SIG_DFL' in place of a proc" do
+      Signal.trap :HUP, "SIG_DFL"
+      Signal.trap(:HUP, @saved_trap).should == "DEFAULT"
+    end
+
+    it "accepts 'DEFAULT' in place of a proc" do
+      Signal.trap :HUP, "DEFAULT"
+      Signal.trap(:HUP, @saved_trap).should == "DEFAULT"
+    end
+
+    it "accepts 'SIG_IGN' in place of a proc" do
+      Signal.trap :HUP, "SIG_IGN"
+      Signal.trap(:HUP, @saved_trap).should == "IGNORE"
+    end
+
+    it "accepts 'IGNORE' in place of a proc" do
+      Signal.trap :HUP, "IGNORE"
+      Signal.trap(:HUP, @saved_trap).should == "IGNORE"
     end
 
     it "accepts long names as Strings" do
@@ -92,47 +116,11 @@ platform_is_not :windows do
       Signal.trap :HUP, @proc
       Signal.trap(:HUP, @saved_trap).should equal(@proc)
     end
-
-    it "accepts 'SIG_DFL' in place of a proc" do
-      Signal.trap :HUP, "SIG_DFL"
-      Signal.trap(:HUP, @saved_trap).should == "DEFAULT"
-    end
-
-    it "accepts 'DEFAULT' in place of a proc" do
-      Signal.trap :HUP, "DEFAULT"
-      Signal.trap(:HUP, @saved_trap).should == "DEFAULT"
-    end
-
-    it "accepts 'SIG_IGN' in place of a proc" do
-      Signal.trap :HUP, "SIG_IGN"
-      Signal.trap(:HUP, "SIG_IGN").should == "IGNORE"
-    end
-
-    it "accepts 'IGNORE' in place of a proc" do
-      Signal.trap :HUP, "IGNORE"
-      Signal.trap(:HUP, "IGNORE").should == "IGNORE"
-    end
   end
 
   describe "Signal.trap" do
-    cannot_be_trapped = %w[KILL STOP] # See man 2 signal
-    reserved_signals = %w[VTALRM]
-
-    if PlatformGuard.implementation?(:ruby)
-      reserved_signals += %w[SEGV ILL FPE BUS]
-    end
-
-    if PlatformGuard.implementation?(:truffleruby)
-      if !TruffleRuby.native?
-        reserved_signals += %w[SEGV ILL FPE USR1 QUIT]
-      end
-    end
-
-    if PlatformGuard.implementation?(:jruby)
-      reserved_signals += %w[SEGV ILL FPE BUS USR1 QUIT]
-    end
-
-    cannot_be_trapped.each do |signal|
+    # See man 2 signal
+    %w[KILL STOP].each do |signal|
       it "raises ArgumentError or Errno::EINVAL for SIG#{signal}" do
         -> {
           trap(signal, -> {})
@@ -143,17 +131,8 @@ platform_is_not :windows do
       end
     end
 
-    reserved_signals.each do |signal|
-      it "raises ArgumentError for reserved signal: SIG#{signal}" do
-        -> {
-          trap(signal, -> {})
-        }.should raise_error(ArgumentError, /can't trap reserved signal|Signal already used by VM or OS/)
-      end
-    end
-
-    it "allows to register a handler for all known signals, except reserved signals" do
-      excluded = cannot_be_trapped + reserved_signals
-      out = ruby_exe(fixture(__FILE__, "trap_all.rb"), args: [*excluded, "2>&1"])
+    it "allows to register a handler for all known signals, except reserved signals for which it raises ArgumentError" do
+      out = ruby_exe(fixture(__FILE__, "trap_all.rb"), args: "2>&1")
       out.should == "OK\n"
       $?.exitstatus.should == 0
     end
@@ -176,7 +155,7 @@ platform_is_not :windows do
       out = ruby_exe(code)
       status = $?
       out.should == "nil\n"
-      status.signaled?.should == true
+      status.should.signaled?
       status.termsig.should be_kind_of(Integer)
       Signal.signame(status.termsig).should == "PIPE"
     end

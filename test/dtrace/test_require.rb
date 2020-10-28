@@ -25,6 +25,12 @@ ruby$target:::require-return
   printf("%s\\n", copyinstr(arg0));
 }
       eoprobe
+      trap_probe(probe, ruby_program) { |d_file, rb_file, saw|
+	required = saw.map { |s| s.split }.find_all do |(required, _)|
+	  required == 'dtrace/dummy'
+	end
+	assert_equal 10, required.length
+      }
     end
 
     private

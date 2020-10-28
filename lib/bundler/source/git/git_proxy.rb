@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "shellwords"
-require "tempfile"
+
 module Bundler
   class Source
     class Git
@@ -18,26 +18,30 @@ module Bundler
         def initialize(command)
           msg = String.new
           msg << "Bundler is trying to run a `git #{command}` at runtime. You probably need to run `bundle install`. However, "
-          msg << "this error message could probably be more useful. Please submit a ticket at http://github.com/bundler/bundler/issues "
+          msg << "this error message could probably be more useful. Please submit a ticket at https://github.com/rubygems/rubygems/issues/new?labels=Bundler&template=bundler-related-issue.md "
           msg << "with steps to reproduce as well as the following\n\nCALLER: #{caller.join("\n")}"
           super msg
         end
       end
 
       class GitCommandError < GitError
-        def initialize(command, path = nil, extra_info = nil)
+        attr_reader :command
+
+        def initialize(command, path, destination_path, extra_info = nil)
+          @command = command
+
           msg = String.new
-          msg << "Git error: command `git #{command}` in directory #{SharedHelpers.pwd} has failed."
+          msg << "Git error: command `git #{command}` in directory #{destination_path} has failed."
           msg << "\n#{extra_info}" if extra_info
-          msg << "\nIf this error persists you could try removing the cache directory '#{path}'" if path && path.exist?
+          msg << "\nIf this error persists you could try removing the cache directory '#{path}'" if path.exist?
           super msg
         end
       end
 
-      class MissingGitRevisionError < GitError
-        def initialize(ref, repo)
+      class MissingGitRevisionError < GitCommandError
+        def initialize(command, path, destination_path, ref, repo)
           msg = "Revision #{ref} does not exist in the repository #{repo}. Maybe you misspelled it?"
-          super msg
+          super command, path, destination_path, msg
         end
       end
 
@@ -58,27 +62,19 @@ module Bundler
         end
 
         def revision
-          return @revision if @revision
-
-          begin
-            @revision ||= find_local_revision
-          rescue GitCommandError
-            raise MissingGitRevisionError.new(ref, URICredentialsFilter.credential_filtered_uri(uri))
-          end
-
-          @revision
+          @revision ||= find_local_revision
         end
 
         def branch
-          @branch ||= allowed_in_path do
-            git("rev-parse --abbrev-ref HEAD").strip
+          @branch ||= allowed_with_path do
+            git("rev-parse --abbrev-ref HEAD", :dir => path).strip
           end
         end
 
         def contains?(commit)
-          allowed_in_path do
-            result = git_null("branch --contains #{commit}")
-            $? == 0 && result =~ /^\* (.*)$/
+          allowed_with_path do
+            result, status = git_null("branch --contains #{commit}", :dir => path)
+            status.success? && result =~ /^\* (.*)$/
           end
         end
 
@@ -104,8 +100,8 @@ module Bundler
             return unless extra_ref
           end
 
-          in_path do
-            git_retry %(fetch --force --quiet --tags #{uri_escaped_with_configured_credentials} "refs/heads/*:refs/heads/*" #{extra_ref})
+          with_path do
+            git_retry %(fetch --force --quiet --tags #{uri_escaped_with_configured_credentials} "refs/heads/*:refs/heads/*" #{extra_ref}), :dir => path
           end
         end
 
@@ -129,56 +125,56 @@ module Bundler
             end
           end
           # method 2
-          SharedHelpers.chdir(destination) do
-            git_retry %(fetch --force --quiet --tags "#{path}")
+          git_retry %(fetch --force --quiet --tags "#{path}"), :dir => destination
 
-            begin
-              git "reset --hard #{@revision}"
-            rescue GitCommandError
-              raise MissingGitRevisionError.new(@revision, URICredentialsFilter.credential_filtered_uri(uri))
-            end
+          begin
+            git "reset --hard #{@revision}", :dir => destination
+          rescue GitCommandError => e
+            raise MissingGitRevisionError.new(e.command, path, destination, @revision, URICredentialsFilter.credential_filtered_uri(uri))
+          end
 
-            if submodules
-              git_retry "submodule update --init --recursive"
-            elsif Gem::Version.create(version) >= Gem::Version.create("2.9.0")
-              git_retry "submodule deinit --all --force"
-            end
+          if submodules
+            git_retry "submodule update --init --recursive", :dir => destination
+          elsif Gem::Version.create(version) >= Gem::Version.create("2.9.0")
+            inner_command = "git -C $toplevel submodule deinit --force $sm_path"
+            inner_command = inner_command.gsub("$") { '\$' } unless Bundler::WINDOWS
+            git_retry "submodule foreach --quiet \"#{inner_command}\"", :dir => destination
           end
         end
 
-      private
+        private
 
-        # TODO: Do not rely on /dev/null.
-        # Given that open3 is not cross platform until Ruby 1.9.3,
-        # the best solution is to pipe to /dev/null if it exists.
-        # If it doesn't, everything will work fine, but the user
-        # will get the $stderr messages as well.
-        def git_null(command)
-          git("#{command} 2>#{Bundler::NULL}", false)
+        def git_null(command, dir: SharedHelpers.pwd)
+          check_allowed(command)
+
+          out, status = SharedHelpers.with_clean_git_env do
+            capture_and_ignore_stderr("git #{command}", :chdir => dir.to_s)
+          end
+
+          [URICredentialsFilter.credential_filtered_string(out, uri), status]
         end
 
-        def git_retry(command)
+        def git_retry(command, dir: SharedHelpers.pwd)
           Bundler::Retry.new("`git #{URICredentialsFilter.credential_filtered_string(command, uri)}`", GitNotAllowedError).attempts do
-            git(command)
+            git(command, :dir => dir)
           end
         end
 
-        def git(command, check_errors = true, error_msg = nil)
-          command_with_no_credentials = URICredentialsFilter.credential_filtered_string(command, uri)
-          raise GitNotAllowedError.new(command_with_no_credentials) unless allow?
+        def git(command, dir: SharedHelpers.pwd)
+          command_with_no_credentials = check_allowed(command)
 
-          out = SharedHelpers.with_clean_git_env do
-            capture_and_filter_stderr(uri) { `git #{command}` }
+          out, status = SharedHelpers.with_clean_git_env do
+            capture_and_filter_stderr(uri, "git #{command}", :chdir => dir.to_s)
           end
 
-          stdout_with_no_credentials = URICredentialsFilter.credential_filtered_string(out, uri)
-          raise GitCommandError.new(command_with_no_credentials, path, error_msg) if check_errors && !$?.success?
-          stdout_with_no_credentials
+          raise GitCommandError.new(command_with_no_credentials, path, dir) unless status.success?
+
+          URICredentialsFilter.credential_filtered_string(out, uri)
         end
 
         def has_revision_cached?
           return unless @revision
-          in_path { git("cat-file -e #{@revision}") }
+          with_path { git("cat-file -e #{@revision}", :dir => path) }
           true
         rescue GitError
           false
@@ -189,9 +185,11 @@ module Bundler
         end
 
         def find_local_revision
-          allowed_in_path do
-            git("rev-parse --verify #{Shellwords.shellescape(ref)}", true).strip
+          allowed_with_path do
+            git("rev-parse --verify #{Shellwords.shellescape(ref)}", :dir => path).strip
           end
+        rescue GitCommandError => e
+          raise MissingGitRevisionError.new(e.command, path, path, ref, URICredentialsFilter.credential_filtered_uri(uri))
         end
 
         # Escape the URI for git commands
@@ -211,7 +209,7 @@ module Bundler
         # Adds credentials to the URI as Fetcher#configured_uri_for does
         def configured_uri_for(uri)
           if /https?:/ =~ uri
-            remote = URI(uri)
+            remote = Bundler::URI(uri)
             config_auth = Bundler.settings[remote.to_s] || Bundler.settings[remote.host]
             remote.userinfo ||= config_auth
             remote.to_s
@@ -224,37 +222,33 @@ module Bundler
           @git ? @git.allow_git_ops? : true
         end
 
-        def in_path(&blk)
+        def with_path(&blk)
           checkout unless path.exist?
-          _ = URICredentialsFilter # load it before we chdir
-          SharedHelpers.chdir(path, &blk)
+          blk.call
         end
 
-        def allowed_in_path
-          return in_path { yield } if allow?
+        def allowed_with_path
+          return with_path { yield } if allow?
           raise GitError, "The git source #{uri} is not yet checked out. Please run `bundle install` before trying to start your application"
         end
 
-        # TODO: Replace this with Open3 when upgrading to bundler 2
-        # Similar to #git_null, as Open3 is not cross-platform,
-        # a temporary way is to use Tempfile to capture the stderr.
-        # When replacing this using Open3, make sure git_null is
-        # also replaced by Open3, so stdout and stderr all got handled properly.
-        def capture_and_filter_stderr(uri)
-          return_value, captured_err = ""
-          backup_stderr = STDERR.dup
-          begin
-            Tempfile.open("captured_stderr") do |f|
-              STDERR.reopen(f)
-              return_value = yield
-              f.rewind
-              captured_err = f.read
-            end
-          ensure
-            STDERR.reopen backup_stderr
-          end
-          $stderr.puts URICredentialsFilter.credential_filtered_string(captured_err, uri) if uri && !captured_err.empty?
-          return_value
+        def check_allowed(command)
+          command_with_no_credentials = URICredentialsFilter.credential_filtered_string(command, uri)
+          raise GitNotAllowedError.new(command_with_no_credentials) unless allow?
+          command_with_no_credentials
+        end
+
+        def capture_and_filter_stderr(uri, cmd, chdir: SharedHelpers.pwd)
+          require "open3"
+          return_value, captured_err, status = Open3.capture3(cmd, :chdir => chdir)
+          Bundler.ui.warn URICredentialsFilter.credential_filtered_string(captured_err, uri) if uri && !captured_err.empty?
+          [return_value, status]
+        end
+
+        def capture_and_ignore_stderr(cmd, chdir: SharedHelpers.pwd)
+          require "open3"
+          return_value, _, status = Open3.capture3(cmd, :chdir => chdir)
+          [return_value, status]
         end
       end
     end

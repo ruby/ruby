@@ -21,7 +21,7 @@ describe "Kernel#`" do
 
   it "lets the standard error stream pass through to the inherited stderr" do
     cmd = ruby_cmd('STDERR.print "error stream"')
-    lambda {
+    -> {
       `#{cmd}`.should == ""
     }.should output_to_fd("error stream", STDERR)
   end
@@ -32,7 +32,7 @@ describe "Kernel#`" do
   end
 
   it "raises an Errno::ENOENT if the command is not executable" do
-    lambda { `nonexistent_command` }.should raise_error(Errno::ENOENT)
+    -> { `nonexistent_command` }.should raise_error(Errno::ENOENT)
   end
 
   platform_is_not :windows do
@@ -40,16 +40,16 @@ describe "Kernel#`" do
       ip = 'world'
       `echo disc #{ip}`
       $?.should be_kind_of(Process::Status)
-      $?.stopped?.should == false
-      $?.exited?.should == true
+      $?.should_not.stopped?
+      $?.should.exited?
       $?.exitstatus.should == 0
-      $?.success?.should == true
+      $?.should.success?
       `echo disc #{ip}; exit 99`
       $?.should be_kind_of(Process::Status)
-      $?.stopped?.should == false
-      $?.exited?.should == true
+      $?.should_not.stopped?
+      $?.should.exited?
       $?.exitstatus.should == 99
-      $?.success?.should == false
+      $?.should_not.success?
     end
   end
 
@@ -58,16 +58,16 @@ describe "Kernel#`" do
       ip = 'world'
       `echo disc #{ip}`
       $?.should be_kind_of(Process::Status)
-      $?.stopped?.should == false
-      $?.exited?.should == true
+      $?.should_not.stopped?
+      $?.should.exited?
       $?.exitstatus.should == 0
-      $?.success?.should == true
+      $?.should.success?
       `echo disc #{ip}& exit 99`
       $?.should be_kind_of(Process::Status)
-      $?.stopped?.should == false
-      $?.exited?.should == true
+      $?.should_not.stopped?
+      $?.should.exited?
       $?.exitstatus.should == 99
-      $?.success?.should == false
+      $?.should_not.success?
     end
   end
 end

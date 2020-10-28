@@ -1,0 +1,4 @@
+benchmark:
+  vm_lvar_set: |
+    a = b = c = d = e = f = g = h = j = k = l = m = n = o = p = q = r = 1
+loop_count: 30000000

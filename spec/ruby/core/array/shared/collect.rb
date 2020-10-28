@@ -37,21 +37,23 @@ describe :array_collect, shared: true do
 
   it "raises an ArgumentError when no block and with arguments" do
     a = [1, 2, 3]
-    lambda {
+    -> {
       a.send(@method, :foo)
     }.should raise_error(ArgumentError)
   end
 
-  it "does not copy tainted status" do
-    a = [1, 2, 3]
-    a.taint
-    a.send(@method){|x| x}.tainted?.should be_false
-  end
+  ruby_version_is ''...'2.7' do
+    it "does not copy tainted status" do
+      a = [1, 2, 3]
+      a.taint
+      a.send(@method){|x| x}.tainted?.should be_false
+    end
 
-  it "does not copy untrusted status" do
-    a = [1, 2, 3]
-    a.untrust
-    a.send(@method){|x| x}.untrusted?.should be_false
+    it "does not copy untrusted status" do
+      a = [1, 2, 3]
+      a.untrust
+      a.send(@method){|x| x}.untrusted?.should be_false
+    end
   end
 
   before :all do
@@ -94,38 +96,40 @@ describe :array_collect_b, shared: true do
     a.should == ["1!", "2!", "3!"]
   end
 
-  it "keeps tainted status" do
-    a = [1, 2, 3]
-    a.taint
-    a.tainted?.should be_true
-    a.send(@method){|x| x}
-    a.tainted?.should be_true
-  end
+  ruby_version_is ''...'2.7' do
+    it "keeps tainted status" do
+      a = [1, 2, 3]
+      a.taint
+      a.tainted?.should be_true
+      a.send(@method){|x| x}
+      a.tainted?.should be_true
+    end
 
-  it "keeps untrusted status" do
-    a = [1, 2, 3]
-    a.untrust
-    a.send(@method){|x| x}
-    a.untrusted?.should be_true
+    it "keeps untrusted status" do
+      a = [1, 2, 3]
+      a.untrust
+      a.send(@method){|x| x}
+      a.untrusted?.should be_true
+    end
   end
 
   describe "when frozen" do
-    it "raises a #{frozen_error_class}" do
-      lambda { ArraySpecs.frozen_array.send(@method) {} }.should raise_error(frozen_error_class)
+    it "raises a FrozenError" do
+      -> { ArraySpecs.frozen_array.send(@method) {} }.should raise_error(FrozenError)
     end
 
-    it "raises a #{frozen_error_class} when empty" do
-      lambda { ArraySpecs.empty_frozen_array.send(@method) {} }.should raise_error(frozen_error_class)
+    it "raises a FrozenError when empty" do
+      -> { ArraySpecs.empty_frozen_array.send(@method) {} }.should raise_error(FrozenError)
     end
 
-    it "raises a #{frozen_error_class} when calling #each on the returned Enumerator" do
+    it "raises a FrozenError when calling #each on the returned Enumerator" do
       enumerator = ArraySpecs.frozen_array.send(@method)
-      lambda { enumerator.each {|x| x } }.should raise_error(frozen_error_class)
+      -> { enumerator.each {|x| x } }.should raise_error(FrozenError)
     end
 
-    it "raises a #{frozen_error_class} when calling #each on the returned Enumerator when empty" do
+    it "raises a FrozenError when calling #each on the returned Enumerator when empty" do
       enumerator = ArraySpecs.empty_frozen_array.send(@method)
-      lambda { enumerator.each {|x| x } }.should raise_error(frozen_error_class)
+      -> { enumerator.each {|x| x } }.should raise_error(FrozenError)
     end
   end
 

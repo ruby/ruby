@@ -1,5 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
+require 'envutil'
 require 'drb/drb'
 require 'drb/extservm'
 require 'timeout'
@@ -11,9 +12,6 @@ class DRbService
   @@ruby << "-d" if $DEBUG
   def self.add_service_command(nm)
     dir = File.dirname(File.expand_path(__FILE__))
-    if /ssl/ =~ nm && RUBY_PLATFORM =~ /solaris/i
-      @@ruby[1..-1] = "-dv"
-    end
     DRb::ExtServManager.command[nm] = @@ruby + ["#{dir}/#{nm}"]
   end
 
@@ -35,7 +33,7 @@ class DRbService
   attr_reader :server
 
   def ext_service(name)
-    Timeout.timeout(100, RuntimeError) do
+    EnvUtil.timeout(100, RuntimeError) do
       manager.service(name)
     end
   end
@@ -45,6 +43,7 @@ class DRbService
     server.stop_service
     manager.instance_variable_get(:@queue)&.push(nil)
     manager.instance_variable_get(:@thread)&.join
+    DRb::DRbConn.stop_pool
   end
 end
 
@@ -115,7 +114,8 @@ module DRbBase
         end
       }
     end
-    @drb_service&.finish
+    @drb_service.finish
+    DRb::DRbConn.stop_pool
   end
 end
 
@@ -156,6 +156,14 @@ module DRbCore
       ary = @there.to_a
       assert_kind_of(DRb::DRbObject, ary)
     end
+  end
+
+  def test_02_basic_object
+    obj = @there.basic_object
+    assert_kind_of(DRb::DRbObject, obj)
+    assert_equal(1, obj.foo)
+    assert_raise(NoMethodError){obj.prot}
+    assert_raise(NoMethodError){obj.priv}
   end
 
   def test_02_unknown
@@ -207,12 +215,16 @@ module DRbCore
 
   def test_06_timeout
     skip if RUBY_PLATFORM.include?("armv7l-linux")
-    ten = Onecky.new(10)
-    assert_raise(Timeout::Error) do
-      @there.do_timeout(ten)
-    end
-    assert_raise(Timeout::Error) do
-      @there.do_timeout(ten)
+    skip if RUBY_PLATFORM.include?("sparc-solaris2.10")
+    skip if RubyVM::MJIT.enabled? # expecting a certain delay is difficult for --jit-wait CI
+    Timeout.timeout(60) do
+      ten = Onecky.new(10)
+      assert_raise(Timeout::Error) do
+        @there.do_timeout(ten)
+      end
+      assert_raise(Timeout::Error) do
+        @there.do_timeout(ten)
+      end
     end
   end
 

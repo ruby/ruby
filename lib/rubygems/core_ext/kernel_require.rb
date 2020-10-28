@@ -32,18 +32,47 @@ module Kernel
   # that file has already been loaded is preserved.
 
   def require(path)
+    if RUBYGEMS_ACTIVATION_MONITOR.respond_to?(:mon_owned?)
+      monitor_owned = RUBYGEMS_ACTIVATION_MONITOR.mon_owned?
+    end
     RUBYGEMS_ACTIVATION_MONITOR.enter
 
     path = path.to_path if path.respond_to? :to_path
 
     if spec = Gem.find_unresolved_default_spec(path)
-      Gem.remove_unresolved_default_spec(spec)
+      # Ensure -I beats a default gem
+      resolved_path = begin
+        rp = nil
+        load_path_check_index = Gem.load_path_insert_index - Gem.activated_gem_paths
+        Gem.suffixes.each do |s|
+          $LOAD_PATH[0...load_path_check_index].each do |lp|
+            safe_lp = lp.dup.tap(&Gem::UNTAINT)
+            begin
+              if File.symlink? safe_lp # for backward compatibility
+                next
+              end
+            rescue SecurityError
+              RUBYGEMS_ACTIVATION_MONITOR.exit
+              raise
+            end
+
+            full_path = File.expand_path(File.join(safe_lp, "#{path}#{s}"))
+            if File.file?(full_path)
+              rp = full_path
+              break
+            end
+          end
+          break if rp
+        end
+        rp
+      end
+
       begin
-        Kernel.send(:gem, spec.name)
+        Kernel.send(:gem, spec.name, Gem::Requirement.default_prerelease)
       rescue Exception
         RUBYGEMS_ACTIVATION_MONITOR.exit
         raise
-      end
+      end unless resolved_path
     end
 
     # If there are no unresolved deps, then we can use just try
@@ -101,7 +130,7 @@ module Kernel
 
       # Ok, now find a gem that has no conflicts, starting
       # at the highest version.
-      valid = found_specs.find { |s| !s.has_conflicts? }
+      valid = found_specs.find {|s| !s.has_conflicts? }
 
       unless valid
         le = Gem::LoadError.new "unable to find a version of '#{names.first}' to activate"
@@ -119,8 +148,7 @@ module Kernel
     RUBYGEMS_ACTIVATION_MONITOR.enter
 
     begin
-      if load_error.message.start_with?("Could not find") or
-          (load_error.message.end_with?(path) and Gem.try_activate(path))
+      if load_error.path == path and Gem.try_activate(path)
         require_again = true
       end
     ensure
@@ -130,6 +158,13 @@ module Kernel
     return gem_original_require(path) if require_again
 
     raise load_error
+  ensure
+    if RUBYGEMS_ACTIVATION_MONITOR.respond_to?(:mon_owned?)
+      if monitor_owned != (ow = RUBYGEMS_ACTIVATION_MONITOR.mon_owned?)
+        STDERR.puts [$$, Thread.current, $!, $!.backtrace].inspect if $!
+        raise "CRITICAL: RUBYGEMS_ACTIVATION_MONITOR.owned?: before #{monitor_owned} -> after #{ow}"
+      end
+    end
   end
 
   private :require

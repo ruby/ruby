@@ -2,8 +2,6 @@ require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
 describe "UnboundMethod#hash" do
-  it "needs to be reviewed for spec completeness"
-
   it "returns the same value for user methods that are eql?" do
     foo, bar = UnboundMethodSpecs::Methods.instance_method(:foo), UnboundMethodSpecs::Methods.instance_method(:bar)
     foo.hash.should == bar.hash

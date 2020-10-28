@@ -617,11 +617,11 @@ EOY
                 raise ArgumentError, "Not a Hash in domain.tld,2002/invoice: " + val.inspect
             end
         }
-        Psych.add_domain_type( "domain.tld,2002", 'invoice', &customer_proc )
-        Psych.add_domain_type( "domain.tld,2002", 'customer', &customer_proc )
+        Psych.add_domain_type( "domain.tld/2002", 'invoice', &customer_proc )
+        Psych.add_domain_type( "domain.tld/2002", 'customer', &customer_proc )
 		assert_parse_only( { "invoice"=> { "customers"=> [ { "given"=>"Chris", "type"=>"domain customer", "family"=>"Dumars" } ], "type"=>"domain invoice" } }, <<EOY
 # 'http://domain.tld,2002/invoice' is some type family.
-invoice: !domain.tld,2002/invoice
+invoice: !domain.tld/2002:invoice
   # 'seq' is shorthand for 'http://yaml.org/seq'.
   # This does not effect '^customer' below
   # because it is does not specify a prefix.
@@ -705,7 +705,7 @@ EOY
 	end
 
 	def test_spec_explicit_families
-        Psych.add_domain_type( "somewhere.com,2002", 'type' ) { |type, val|
+        Psych.add_domain_type( "somewhere.com/2002", 'type' ) { |type, val|
             "SOMEWHERE: #{val}"
         }
 		assert_parse_only(
@@ -717,7 +717,7 @@ picture: !binary |
  Pz7Y6OjuDg4J+fn5OTk6enp
  56enmleECcgggoBADs=
 
-hmm: !somewhere.com,2002/type |
+hmm: !somewhere.com/2002:type |
  family above is short for
  http://somewhere.com/type
 EOY
@@ -726,7 +726,7 @@ EOY
 
 	def test_spec_application_family
 		# Testing the clarkevans.com graphs
-		Psych.add_domain_type( "clarkevans.com,2002", 'graph/shape' ) { |type, val|
+		Psych.add_domain_type( "clarkevans.com/2002", 'graph/shape' ) { |type, val|
 			if Array === val
 				val << "Shape Container"
 				val
@@ -743,13 +743,13 @@ EOY
 				raise ArgumentError, "Invalid graph of type #{val.class}: " + val.inspect
 			end
 		}
-		Psych.add_domain_type( "clarkevans.com,2002", 'graph/circle', &one_shape_proc )
-		Psych.add_domain_type( "clarkevans.com,2002", 'graph/line', &one_shape_proc )
-		Psych.add_domain_type( "clarkevans.com,2002", 'graph/text', &one_shape_proc )
+		Psych.add_domain_type( "clarkevans.com/2002", 'graph/circle', &one_shape_proc )
+		Psych.add_domain_type( "clarkevans.com/2002", 'graph/line', &one_shape_proc )
+		Psych.add_domain_type( "clarkevans.com/2002", 'graph/text', &one_shape_proc )
         # MODIFIED to remove invalid Psych
 		assert_parse_only(
 			[[{"radius"=>7, "center"=>{"x"=>73, "y"=>129}, "TYPE"=>"Shape: graph/circle"}, {"finish"=>{"x"=>89, "y"=>102}, "TYPE"=>"Shape: graph/line", "start"=>{"x"=>73, "y"=>129}}, {"TYPE"=>"Shape: graph/text", "value"=>"Pretty vector drawing.", "start"=>{"x"=>73, "y"=>129}, "color"=>16772795}, "Shape Container"]], <<EOY
-- !clarkevans.com,2002/graph/shape
+- !clarkevans.com/2002:graph/shape
   - !/graph/circle
     center: &ORIGIN {x: 73, y: 129}
     radius: 7
@@ -771,8 +771,8 @@ EOY
 # have the same type and value.
 - 10.0
 - !float 10
-- !yaml.org,2002/float '10'
-- !yaml.org,2002/float "\\
+- !yaml.org/2002/float '10'
+- !yaml.org/2002/float "\\
   1\\
   0"
 EOY
@@ -1034,6 +1034,7 @@ EOY
     end
 
 	def test_ruby_struct
+		Struct.send(:remove_const, :MyBookStruct) if Struct.const_defined?(:MyBookStruct)
 		# Ruby structures
 		book_struct = Struct::new( "MyBookStruct", :author, :title, :year, :isbn )
 		assert_to_yaml(

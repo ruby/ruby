@@ -88,6 +88,8 @@ class CGICoreTest < Test::Unit::TestCase
     ## invalid parameter name
     assert_equal('', cgi['*notfound*'])
     assert_equal([], cgi.params['*notfound*'])
+  ensure
+    $stdin = STDIN
   end
 
   def test_cgi_core_params_encoding_check
@@ -125,6 +127,8 @@ class CGICoreTest < Test::Unit::TestCase
     else
       assert(true)
     end
+  ensure
+    $stdin = STDIN
   end
 
 

@@ -45,7 +45,7 @@ class TestUnicodeNormalize
 
   begin
     @@tests ||= read_tests
-  rescue Errno::ENOENT => e
+  rescue Errno::ENOENT
     @@tests ||= []
   end
 
@@ -185,6 +185,10 @@ class TestUnicodeNormalize
     assert_raise(Encoding::CompatibilityError) { "abc".force_encoding('ISO-8859-1').unicode_normalize }
     assert_raise(Encoding::CompatibilityError) { "abc".force_encoding('ISO-8859-1').unicode_normalize! }
     assert_raise(Encoding::CompatibilityError) { "abc".force_encoding('ISO-8859-1').unicode_normalized? }
+  end
+
+  def test_reiwa
+    assert_equal "\u4EE4\u548C", "\u32FF".unicode_normalize(:nfkc)
   end
 
   def test_us_ascii

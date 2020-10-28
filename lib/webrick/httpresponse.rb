@@ -51,8 +51,21 @@ module WEBrick
     attr_accessor :reason_phrase
 
     ##
-    # Body may be a String or IO-like object that responds to #read and
-    # #readpartial.
+    # Body may be:
+    # * a String;
+    # * an IO-like object that responds to +#read+ and +#readpartial+;
+    # * a Proc-like object that responds to +#call+.
+    #
+    # In the latter case, either #chunked= should be set to +true+,
+    # or <code>header['content-length']</code> explicitly provided.
+    # Example:
+    #
+    #   server.mount_proc '/' do |req, res|
+    #     res.chunked = true
+    #     # or
+    #     # res.header['content-length'] = 10
+    #     res.body = proc { |out| out.write(Time.now.to_s) }
+    #   end
 
     attr_accessor :body
 
@@ -113,13 +126,14 @@ module WEBrick
       @chunked = false
       @filename = nil
       @sent_size = 0
+      @bodytempfile = nil
     end
 
     ##
     # The response's HTTP status line
 
     def status_line
-      "HTTP/#@http_version #@status #@reason_phrase #{CRLF}"
+      "HTTP/#@http_version #@status #@reason_phrase".rstrip << CRLF
     end
 
     ##
@@ -141,6 +155,7 @@ module WEBrick
     # Sets the response header +field+ to +value+
 
     def []=(field, value)
+      @chunked = value.to_s.downcase == 'chunked' if field.downcase == 'transfer-encoding'
       @header[field.downcase] = value.to_s
     end
 
@@ -253,7 +268,10 @@ module WEBrick
       elsif %r{^multipart/byteranges} =~ @header['content-type']
         @header.delete('content-length')
       elsif @header['content-length'].nil?
-        unless @body.is_a?(IO)
+        if @body.respond_to? :readpartial
+        elsif @body.respond_to? :call
+          make_body_tempfile
+        else
           @header['content-length'] = (@body ? @body.bytesize : 0).to_s
         end
       end
@@ -281,6 +299,33 @@ module WEBrick
         end
       end
     end
+
+    def make_body_tempfile # :nodoc:
+      return if @bodytempfile
+      bodytempfile = Tempfile.create("webrick")
+      if @body.nil?
+        # nothing
+      elsif @body.respond_to? :readpartial
+        IO.copy_stream(@body, bodytempfile)
+        @body.close
+      elsif @body.respond_to? :call
+        @body.call(bodytempfile)
+      else
+        bodytempfile.write @body
+      end
+      bodytempfile.rewind
+      @body = @bodytempfile = bodytempfile
+      @header['content-length'] = bodytempfile.stat.size.to_s
+    end
+
+    def remove_body_tempfile # :nodoc:
+      if @bodytempfile
+        @bodytempfile.close
+        File.unlink @bodytempfile.path
+        @bodytempfile = nil
+      end
+    end
+
 
     ##
     # Sends the headers on +socket+
@@ -316,12 +361,6 @@ module WEBrick
       else
         send_body_string(socket)
       end
-    end
-
-    def to_s # :nodoc:
-      ret = ""
-      send_response(ret)
-      ret
     end
 
     ##
@@ -369,7 +408,8 @@ module WEBrick
     private
 
     def check_header(header_value)
-      if header_value =~ /\r\n/
+      header_value = header_value.to_s
+      if /[\r\n]/ =~ header_value
         raise InvalidHeader
       else
         header_value
@@ -445,6 +485,7 @@ module WEBrick
       ensure
         @body.close
       end
+      remove_body_tempfile
     end
 
     def send_body_string(socket)
@@ -477,7 +518,12 @@ module WEBrick
         socket.write("0#{CRLF}#{CRLF}")
       else
         size = @header['content-length'].to_i
-        @body.call(socket)
+        if @bodytempfile
+          @bodytempfile.rewind
+          IO.copy_stream(@bodytempfile, socket)
+        else
+          @body.call(socket)
+        end
         @sent_size = size
       end
     end

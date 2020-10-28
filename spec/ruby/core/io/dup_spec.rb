@@ -49,29 +49,29 @@ end
 
   it "allows closing the new IO without affecting the original" do
     @i.close
-    lambda { @f.gets }.should_not raise_error(Exception)
+    -> { @f.gets }.should_not raise_error(Exception)
 
-    @i.closed?.should == true
-    @f.closed?.should == false
+    @i.should.closed?
+    @f.should_not.closed?
   end
 
   it "allows closing the original IO without affecting the new one" do
     @f.close
-    lambda { @i.gets }.should_not raise_error(Exception)
+    -> { @i.gets }.should_not raise_error(Exception)
 
-    @i.closed?.should == false
-    @f.closed?.should == true
+    @i.should_not.closed?
+    @f.should.closed?
   end
 
   it "raises IOError on closed stream" do
-    lambda { IOSpecs.closed_io.dup }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.dup }.should raise_error(IOError)
   end
 
   it "always sets the close-on-exec flag for the new IO object" do
     @f.close_on_exec = true
     dup = @f.dup
     begin
-      dup.close_on_exec?.should == true
+      dup.should.close_on_exec?
     ensure
       dup.close
     end
@@ -79,7 +79,7 @@ end
     @f.close_on_exec = false
     dup = @f.dup
     begin
-      dup.close_on_exec?.should == true
+      dup.should.close_on_exec?
     ensure
       dup.close
     end

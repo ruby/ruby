@@ -14,13 +14,13 @@ RSpec.describe "bundle install" do
         end
       end
 
-      install_gemfile <<-G
-        source "file:\/\/localhost#{gem_repo2}"
+      install_gemfile <<-G, :raise_on_error => false
+        source "#{file_uri_for(gem_repo2)}"
         gem "rails"
       G
-      expect(last_command.bundler_err).to end_with(normalize_uri_file(<<-M.strip))
+      expect(err).to end_with(<<-M.strip)
 An error occurred while installing activesupport (2.3.2), and Bundler cannot continue.
-Make sure that `gem install activesupport -v '2.3.2' --source 'file://localhost#{gem_repo2}/'` succeeds before bundling.
+Make sure that `gem install activesupport -v '2.3.2' --source '#{file_uri_for(gem_repo2)}/'` succeeds before bundling.
 
 In Gemfile:
   rails was resolved to 2.3.2, which depends on
@@ -40,13 +40,13 @@ In Gemfile:
           RUBY
         end
 
-        install_gemfile <<-G
-          source "file:\/\/localhost#{gem_repo1}"
+        install_gemfile <<-G, :raise_on_error => false
+          source "#{file_uri_for(gem_repo1)}"
           gem "rails"
           gem "activesupport", :git => "#{lib_path("activesupport")}"
         G
 
-        expect(last_command.bundler_err).to end_with(<<-M.strip)
+        expect(err).to end_with(<<-M.strip)
 An error occurred while installing activesupport (2.3.2), and Bundler cannot continue.
 
 In Gemfile:
@@ -68,8 +68,8 @@ In Gemfile:
           RUBY
         end
 
-        install_gemfile <<-G
-          source "file:\/\/localhost#{gem_repo1}"
+        install_gemfile <<-G, :raise_on_error => false
+          source "#{file_uri_for(gem_repo1)}"
           gem "rails"
 
           git "#{lib_path("activesupport")}" do
@@ -77,7 +77,7 @@ In Gemfile:
           end
         G
 
-        expect(last_command.bundler_err).to end_with(<<-M.strip)
+        expect(err).to end_with(<<-M.strip)
 An error occurred while installing activesupport (2.3.2), and Bundler cannot continue.
 
 
@@ -105,21 +105,40 @@ In Gemfile:
         build_gem "a"
       end
 
-      install_gemfile <<-G
-        source "file:\/\/localhost#{gem_repo4}"
-        source "file:\/\/localhost#{gem_repo2}" do
+      install_gemfile <<-G, :raise_on_error => false
+        source "#{file_uri_for(gem_repo4)}"
+        source "#{file_uri_for(gem_repo2)}" do
           gem "rails"
         end
       G
-      expect(last_command.bundler_err).to end_with(normalize_uri_file(<<-M.strip))
+      expect(err).to end_with(<<-M.strip)
 An error occurred while installing activesupport (2.3.2), and Bundler cannot continue.
-Make sure that `gem install activesupport -v '2.3.2' --source 'file://localhost#{gem_repo2}/'` succeeds before bundling.
+Make sure that `gem install activesupport -v '2.3.2' --source '#{file_uri_for(gem_repo2)}/'` succeeds before bundling.
 
 In Gemfile:
   rails was resolved to 2.3.2, which depends on
     actionmailer was resolved to 2.3.2, which depends on
       activesupport
                      M
+    end
+
+    context "because the downloaded .gem was invalid" do
+      before do
+        build_repo4 do
+          build_gem "a"
+        end
+
+        gem_repo4("gems", "a-1.0.gem").open("w") {|f| f << "<html></html>" }
+      end
+
+      it "removes the downloaded .gem" do
+        install_gemfile <<-G, :raise_on_error => false
+          source "#{file_uri_for(gem_repo4)}"
+          gem "a"
+        G
+
+        expect(default_bundle_path("cache", "a-1.0.gem")).not_to exist
+      end
     end
   end
 end

@@ -4,7 +4,6 @@
 # with a spec that would be activated.
 
 class Gem::Resolver::Conflict
-
   ##
   # The specification that was activated prior to the conflict
 
@@ -55,7 +54,7 @@ class Gem::Resolver::Conflict
     activated   = @activated.spec.full_name
     dependency  = @failed_dep.dependency
     requirement = dependency.requirement
-    alternates  = dependency.matching_specs.map { |spec| spec.full_name }
+    alternates  = dependency.matching_specs.map {|spec| spec.full_name }
 
     unless alternates.empty?
       matching = <<-MATCHING.chomp
@@ -151,10 +150,4 @@ class Gem::Resolver::Conflict
   def requester
     @failed_dep.requester
   end
-
 end
-
-##
-# TODO: Remove in RubyGems 3
-
-Gem::Resolver::DependencyConflict = Gem::Resolver::Conflict # :nodoc:

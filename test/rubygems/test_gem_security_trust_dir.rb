@@ -6,7 +6,6 @@ unless defined?(OpenSSL::SSL)
 end
 
 class TestGemSecurityTrustDir < Gem::TestCase
-
   CHILD_CERT = load_cert 'child'
 
   def setup
@@ -18,7 +17,7 @@ class TestGemSecurityTrustDir < Gem::TestCase
   end
 
   def test_cert_path
-    digest = Gem::Security::DIGEST_ALGORITHM.hexdigest PUBLIC_CERT.subject.to_s
+    digest = OpenSSL::Digest.hexdigest Gem::Security::DIGEST_NAME, PUBLIC_CERT.subject.to_s
 
     expected = File.join @dest_dir, "cert-#{digest}.pem"
 
@@ -42,7 +41,7 @@ class TestGemSecurityTrustDir < Gem::TestCase
   end
 
   def test_name_path
-    digest = Gem::Security::DIGEST_ALGORITHM.hexdigest PUBLIC_CERT.subject.to_s
+    digest = OpenSSL::Digest.hexdigest Gem::Security::DIGEST_NAME, PUBLIC_CERT.subject.to_s
 
     expected = File.join @dest_dir, "cert-#{digest}.pem"
 
@@ -96,5 +95,4 @@ class TestGemSecurityTrustDir < Gem::TestCase
 
     assert_equal mask, File.stat(@dest_dir).mode unless win_platform?
   end
-
 end if defined?(OpenSSL::SSL)

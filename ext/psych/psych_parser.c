@@ -1,7 +1,6 @@
 #include <psych.h>
 
 VALUE cPsychParser;
-VALUE ePsychSyntaxError;
 
 static ID id_read;
 static ID id_path;
@@ -28,7 +27,7 @@ static ID id_event_location;
 static int io_reader(void * data, unsigned char *buf, size_t size, size_t *read)
 {
     VALUE io = (VALUE)data;
-    VALUE string = rb_funcall(io, id_read, 1, INT2NUM(size));
+    VALUE string = rb_funcall(io, id_read, 1, SIZET2NUM(size));
 
     *read = 0;
 
@@ -81,15 +80,18 @@ static VALUE allocate(VALUE klass)
 static VALUE make_exception(yaml_parser_t * parser, VALUE path)
 {
     size_t line, column;
+    VALUE ePsychSyntaxError;
 
     line = parser->context_mark.line + 1;
     column = parser->context_mark.column + 1;
 
+    ePsychSyntaxError = rb_const_get(mPsych, rb_intern("SyntaxError"));
+
     return rb_funcall(ePsychSyntaxError, rb_intern("new"), 6,
 	    path,
-	    INT2NUM(line),
-	    INT2NUM(column),
-	    INT2NUM(parser->problem_offset),
+	    SIZET2NUM(line),
+	    SIZET2NUM(column),
+	    SIZET2NUM(parser->problem_offset),
 	    parser->problem ? rb_usascii_str_new2(parser->problem) : Qnil,
 	    parser->context ? rb_usascii_str_new2(parser->context) : Qnil);
 }
@@ -254,7 +256,6 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
     yaml_parser_t * parser;
     yaml_event_t event;
     int done = 0;
-    int tainted = 0;
     int state = 0;
     int parser_encoding = YAML_ANY_ENCODING;
     int encoding = rb_utf8_encindex();
@@ -273,13 +274,10 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
     yaml_parser_delete(parser);
     yaml_parser_initialize(parser);
 
-    if (OBJ_TAINTED(yaml)) tainted = 1;
-
     if (rb_respond_to(yaml, id_read)) {
 	yaml = transcode_io(yaml, &parser_encoding);
 	yaml_parser_set_encoding(parser, parser_encoding);
 	yaml_parser_set_input(parser, io_reader, (void *)yaml);
-	if (RTEST(rb_obj_is_kind_of(yaml, rb_cIO))) tainted = 1;
     } else {
 	StringValue(yaml);
 	yaml = transcode_string(yaml, &parser_encoding);
@@ -305,10 +303,10 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
 	    rb_exc_raise(exception);
 	}
 
-	start_line = INT2NUM((long)event.start_mark.line);
-	start_column = INT2NUM((long)event.start_mark.column);
-	end_line = INT2NUM((long)event.end_mark.line);
-	end_column = INT2NUM((long)event.end_mark.column);
+	start_line = SIZET2NUM(event.start_mark.line);
+	start_column = SIZET2NUM(event.start_mark.column);
+	end_line = SIZET2NUM(event.end_mark.line);
+	end_column = SIZET2NUM(event.end_mark.column);
 
 	event_args[0] = handler;
 	event_args[1] = start_line;
@@ -323,7 +321,7 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
 		  VALUE args[2];
 
 		  args[0] = handler;
-		  args[1] = INT2NUM((long)event.data.stream_start.encoding);
+		  args[1] = INT2NUM(event.data.stream_start.encoding);
 		  rb_protect(protected_start_stream, (VALUE)args, &state);
 	      }
 	      break;
@@ -336,8 +334,8 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
 		VALUE version = event.data.document_start.version_directive ?
 		    rb_ary_new3(
 			(long)2,
-			INT2NUM((long)event.data.document_start.version_directive->major),
-			INT2NUM((long)event.data.document_start.version_directive->minor)
+			INT2NUM(event.data.document_start.version_directive->major),
+			INT2NUM(event.data.document_start.version_directive->minor)
 			) : rb_ary_new();
 
 		if(event.data.document_start.tag_directives.start) {
@@ -350,13 +348,11 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
 			VALUE prefix = Qnil;
 			if(start->handle) {
 			    handle = rb_str_new2((const char *)start->handle);
-			    if (tainted) OBJ_TAINT(handle);
 			    PSYCH_TRANSCODE(handle, encoding, internal_enc);
 			}
 
 			if(start->prefix) {
 			    prefix = rb_str_new2((const char *)start->prefix);
-			    if (tainted) OBJ_TAINT(prefix);
 			    PSYCH_TRANSCODE(prefix, encoding, internal_enc);
 			}
 
@@ -385,7 +381,6 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
 		VALUE alias = Qnil;
 		if(event.data.alias.anchor) {
 		    alias = rb_str_new2((const char *)event.data.alias.anchor);
-		    if (tainted) OBJ_TAINT(alias);
 		    PSYCH_TRANSCODE(alias, encoding, internal_enc);
 		}
 
@@ -404,19 +399,16 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
 		    (const char *)event.data.scalar.value,
 		    (long)event.data.scalar.length
 		    );
-		if (tainted) OBJ_TAINT(val);
 
 		PSYCH_TRANSCODE(val, encoding, internal_enc);
 
 		if(event.data.scalar.anchor) {
 		    anchor = rb_str_new2((const char *)event.data.scalar.anchor);
-		    if (tainted) OBJ_TAINT(anchor);
 		    PSYCH_TRANSCODE(anchor, encoding, internal_enc);
 		}
 
 		if(event.data.scalar.tag) {
 		    tag = rb_str_new2((const char *)event.data.scalar.tag);
-		    if (tainted) OBJ_TAINT(tag);
 		    PSYCH_TRANSCODE(tag, encoding, internal_enc);
 		}
 
@@ -426,7 +418,7 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
 		quoted_implicit =
 		    event.data.scalar.quoted_implicit == 0 ? Qfalse : Qtrue;
 
-		style = INT2NUM((long)event.data.scalar.style);
+		style = INT2NUM(event.data.scalar.style);
 
 		args[0] = handler;
 		args[1] = val;
@@ -446,21 +438,19 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
 		VALUE implicit, style;
 		if(event.data.sequence_start.anchor) {
 		    anchor = rb_str_new2((const char *)event.data.sequence_start.anchor);
-		    if (tainted) OBJ_TAINT(anchor);
 		    PSYCH_TRANSCODE(anchor, encoding, internal_enc);
 		}
 
 		tag = Qnil;
 		if(event.data.sequence_start.tag) {
 		    tag = rb_str_new2((const char *)event.data.sequence_start.tag);
-		    if (tainted) OBJ_TAINT(tag);
 		    PSYCH_TRANSCODE(tag, encoding, internal_enc);
 		}
 
 		implicit =
 		    event.data.sequence_start.implicit == 0 ? Qfalse : Qtrue;
 
-		style = INT2NUM((long)event.data.sequence_start.style);
+		style = INT2NUM(event.data.sequence_start.style);
 
 		args[0] = handler;
 		args[1] = anchor;
@@ -482,20 +472,18 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
 		VALUE implicit, style;
 		if(event.data.mapping_start.anchor) {
 		    anchor = rb_str_new2((const char *)event.data.mapping_start.anchor);
-		    if (tainted) OBJ_TAINT(anchor);
 		    PSYCH_TRANSCODE(anchor, encoding, internal_enc);
 		}
 
 		if(event.data.mapping_start.tag) {
 		    tag = rb_str_new2((const char *)event.data.mapping_start.tag);
-		    if (tainted) OBJ_TAINT(tag);
 		    PSYCH_TRANSCODE(tag, encoding, internal_enc);
 		}
 
 		implicit =
 		    event.data.mapping_start.implicit == 0 ? Qfalse : Qtrue;
 
-		style = INT2NUM((long)event.data.mapping_start.style);
+		style = INT2NUM(event.data.mapping_start.style);
 
 		args[0] = handler;
 		args[1] = anchor;
@@ -539,9 +527,9 @@ static VALUE mark(VALUE self)
 
     TypedData_Get_Struct(self, yaml_parser_t, &psych_parser_type, parser);
     mark_klass = rb_const_get_at(cPsychParser, rb_intern("Mark"));
-    args[0] = INT2NUM(parser->mark.index);
-    args[1] = INT2NUM(parser->mark.line);
-    args[2] = INT2NUM(parser->mark.column);
+    args[0] = SIZET2NUM(parser->mark.index);
+    args[1] = SIZET2NUM(parser->mark.line);
+    args[2] = SIZET2NUM(parser->mark.column);
 
     return rb_class_new_instance(3, args, mark_klass);
 }
@@ -569,7 +557,6 @@ void Init_psych_parser(void)
     rb_define_const(cPsychParser, "UTF16BE", INT2NUM(YAML_UTF16BE_ENCODING));
 
     rb_require("psych/syntax_error");
-    ePsychSyntaxError = rb_const_get(mPsych, rb_intern("SyntaxError"));
 
     rb_define_method(cPsychParser, "parse", parse, -1);
     rb_define_method(cPsychParser, "mark", mark, 0);

@@ -7,7 +7,6 @@ class Gem::Command
 end
 
 class TestGemCommand < Gem::TestCase
-
   def setup
     super
 
@@ -15,7 +14,7 @@ class TestGemCommand < Gem::TestCase
 
     @common_options = Gem::Command.common_options.dup
     Gem::Command.common_options.clear
-    Gem::Command.common_options <<  [
+    Gem::Command.common_options << [
       ['-x', '--exe', 'Execute'], lambda do |*a|
         @xopt = true
       end
@@ -32,7 +31,7 @@ class TestGemCommand < Gem::TestCase
 
   def test_self_add_specific_extra_args
     added_args = %w[--all]
-    @cmd.add_option '--all' do |v,o| end
+    @cmd.add_option('--all') {|v,o| }
 
     Gem::Command.add_specific_extra_args @cmd_name, added_args
 
@@ -53,6 +52,27 @@ class TestGemCommand < Gem::TestCase
     h = @cmd.add_extra_args []
 
     assert_equal [], h
+  end
+
+  def test_self_extra_args
+    verbose, $VERBOSE, separator = $VERBOSE, nil, $;
+    extra_args = Gem::Command.extra_args
+
+    Gem::Command.extra_args = %w[--all]
+    assert_equal %w[--all], Gem::Command.extra_args
+
+    Gem::Command.extra_args = "--file --help"
+    assert_equal %w[--file --help], Gem::Command.extra_args
+
+    $; = "="
+
+    Gem::Command.extra_args = "--awesome=true --verbose"
+    assert_equal %w[--awesome=true --verbose], Gem::Command.extra_args
+
+  ensure
+    Gem::Command.extra_args = extra_args
+    $; = separator
+    $VERBOSE = verbose
   end
 
   def test_basic_accessors
@@ -80,7 +100,7 @@ class TestGemCommand < Gem::TestCase
       @cmd.invoke
     end
 
-    assert_match %r|Usage: gem doit|, @ui.output
+    assert_match %r{Usage: gem doit}, @ui.output
   end
 
   def test_invoke
@@ -96,7 +116,7 @@ class TestGemCommand < Gem::TestCase
 
   def test_invoke_with_bad_options
     use_ui @ui do
-      @cmd.when_invoked do true end
+      @cmd.when_invoked { true }
 
       ex = assert_raises OptionParser::InvalidOption do
         @cmd.invoke('-zzz')
@@ -107,7 +127,7 @@ class TestGemCommand < Gem::TestCase
   end
 
   def test_invoke_with_common_options
-    @cmd.when_invoked do true end
+    @cmd.when_invoked { true }
 
     use_ui @ui do
       @cmd.invoke "-x"
@@ -166,7 +186,7 @@ class TestGemCommand < Gem::TestCase
       @cmd.invoke '-h'
     end
 
-    assert_match %r|Usage: gem doit|, @ui.output
+    assert_match %r{Usage: gem doit}, @ui.output
   end
 
   def test_option_recognition
@@ -193,6 +213,122 @@ class TestGemCommand < Gem::TestCase
     args = ['-h', 'command']
     @cmd.handles?(args)
     assert_equal ['-h', 'command'], args
+  end
+
+  def test_deprecate_option
+    deprecate_msg = <<-EXPECTED
+WARNING:  The \"--test\" option has been deprecated and will be removed in Rubygems 3.1.
+    EXPECTED
+
+    testCommand = Class.new(Gem::Command) do
+      def initialize
+        super('test', 'Gem::Command instance for testing')
+
+        add_option('-t', '--test', 'Test command') do |value, options|
+          options[:test] = true
+        end
+
+        deprecate_option('--test', version: '3.1')
+      end
+
+      def execute
+        true
+      end
+    end
+
+    cmd = testCommand.new
+
+    use_ui @ui do
+      cmd.invoke("--test")
+      assert_equal deprecate_msg, @ui.error
+    end
+  end
+
+  def test_deprecate_option_no_version
+    deprecate_msg = <<-EXPECTED
+WARNING:  The \"--test\" option has been deprecated and will be removed in future versions of Rubygems.
+    EXPECTED
+
+    testCommand = Class.new(Gem::Command) do
+      def initialize
+        super('test', 'Gem::Command instance for testing')
+
+        add_option('-t', '--test', 'Test command') do |value, options|
+          options[:test] = true
+        end
+
+        deprecate_option('--test')
+      end
+
+      def execute
+        true
+      end
+    end
+
+    cmd = testCommand.new
+
+    use_ui @ui do
+      cmd.invoke("--test")
+      assert_equal deprecate_msg, @ui.error
+    end
+  end
+
+  def test_deprecate_option_extra_message
+    deprecate_msg = <<-EXPECTED
+WARNING:  The \"--test\" option has been deprecated and will be removed in Rubygems 3.1. Whether you set `--test` mode or not, this dummy app always runs in test mode.
+    EXPECTED
+
+    testCommand = Class.new(Gem::Command) do
+      def initialize
+        super('test', 'Gem::Command instance for testing')
+
+        add_option('-t', '--test', 'Test command') do |value, options|
+          options[:test] = true
+        end
+
+        deprecate_option('--test', version: '3.1', extra_msg: 'Whether you set `--test` mode or not, this dummy app always runs in test mode.')
+      end
+
+      def execute
+        true
+      end
+    end
+
+    cmd = testCommand.new
+
+    use_ui @ui do
+      cmd.invoke("--test")
+      assert_equal deprecate_msg, @ui.error
+    end
+  end
+
+  def test_deprecate_option_extra_message_and_no_version
+    deprecate_msg = <<-EXPECTED
+WARNING:  The \"--test\" option has been deprecated and will be removed in future versions of Rubygems. Whether you set `--test` mode or not, this dummy app always runs in test mode.
+    EXPECTED
+
+    testCommand = Class.new(Gem::Command) do
+      def initialize
+        super('test', 'Gem::Command instance for testing')
+
+        add_option('-t', '--test', 'Test command') do |value, options|
+          options[:test] = true
+        end
+
+        deprecate_option('--test', extra_msg: 'Whether you set `--test` mode or not, this dummy app always runs in test mode.')
+      end
+
+      def execute
+        true
+      end
+    end
+
+    cmd = testCommand.new
+
+    use_ui @ui do
+      cmd.invoke("--test")
+      assert_equal deprecate_msg, @ui.error
+    end
   end
 
   def test_show_lookup_failure_suggestions_local
@@ -239,7 +375,7 @@ ERROR:  Could not find a valid gem 'other' (>= 0) in any repository
     end
 
     use_ui @ui do
-      @cmd.show_lookup_failure misspelled, Gem::Requirement.default, [], :remote
+      @cmd.show_lookup_failure misspelled, Gem::Requirement.default, []
     end
 
     expected = <<-EXPECTED
@@ -249,5 +385,4 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
     assert_equal expected, @ui.error
   end
-
 end

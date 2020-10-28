@@ -57,7 +57,7 @@ describe "Array#sample" do
   end
 
   it "raises ArgumentError when passed a negative count" do
-    lambda { [1, 2].sample(-1) }.should raise_error(ArgumentError)
+    -> { [1, 2].sample(-1) }.should raise_error(ArgumentError)
   end
 
   it "does not return subclass instances with Array subclass" do
@@ -65,23 +65,6 @@ describe "Array#sample" do
   end
 
   describe "with options" do
-    it "calls #to_hash to convert the passed Object" do
-      obj = mock("array_sample")
-      obj.should_receive(:to_hash).and_return({})
-      obj.should_not_receive(:to_int)
-
-      [1, 2].sample(obj).should be_an_instance_of(Fixnum)
-    end
-
-    it "calls #to_int on the first argument and #to_hash on the second when passed Objects" do
-      count = mock("array_sample_count")
-      count.should_receive(:to_int).and_return(2)
-      options = mock("array_sample_options")
-      options.should_receive(:to_hash).and_return({})
-
-      [1, 2].sample(count, options).size.should == 2
-    end
-
     it "calls #rand on the Object passed by the :random key in the arguments Hash" do
       obj = mock("array_sample_random")
       obj.should_receive(:rand).and_return(0.5)
@@ -92,7 +75,7 @@ describe "Array#sample" do
     it "raises a NoMethodError if an object passed for the RNG does not define #rand" do
       obj = BasicObject.new
 
-      lambda { [1, 2].sample(random: obj) }.should raise_error(NoMethodError)
+      -> { [1, 2].sample(random: obj) }.should raise_error(NoMethodError)
     end
 
     describe "when the object returned by #rand is a Fixnum" do
@@ -112,14 +95,14 @@ describe "Array#sample" do
         random = mock("array_sample_random")
         random.should_receive(:rand).and_return(-1)
 
-        lambda { [1, 2].sample(random: random) }.should raise_error(RangeError)
+        -> { [1, 2].sample(random: random) }.should raise_error(RangeError)
       end
 
       it "raises a RangeError if the value is equal to the Array size" do
         random = mock("array_sample_random")
         random.should_receive(:rand).and_return(2)
 
-        lambda { [1, 2].sample(random: random) }.should raise_error(RangeError)
+        -> { [1, 2].sample(random: random) }.should raise_error(RangeError)
       end
     end
   end
@@ -140,7 +123,7 @@ describe "Array#sample" do
       random = mock("array_sample_random")
       random.should_receive(:rand).and_return(value)
 
-      lambda { [1, 2].sample(random: random) }.should raise_error(RangeError)
+      -> { [1, 2].sample(random: random) }.should raise_error(RangeError)
     end
 
     it "raises a RangeError if the value is equal to the Array size" do
@@ -149,7 +132,7 @@ describe "Array#sample" do
       random = mock("array_sample_random")
       random.should_receive(:rand).and_return(value)
 
-      lambda { [1, 2].sample(random: random) }.should raise_error(RangeError)
+      -> { [1, 2].sample(random: random) }.should raise_error(RangeError)
     end
   end
 end

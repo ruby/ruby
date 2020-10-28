@@ -42,10 +42,18 @@ describe "BigDecimal#div" do
     }
   end
 
+  describe "with Object" do
+    it "tries to coerce the other operand to self" do
+      object = mock("Object")
+      object.should_receive(:coerce).with(@one).and_return([@one, @two])
+      @one.div(object).should == @zero
+    end
+  end
+
   it "raises FloatDomainError if NaN is involved" do
-    lambda { @one.div(@nan) }.should raise_error(FloatDomainError)
-    lambda { @nan.div(@one) }.should raise_error(FloatDomainError)
-    lambda { @nan.div(@nan) }.should raise_error(FloatDomainError)
+    -> { @one.div(@nan) }.should raise_error(FloatDomainError)
+    -> { @nan.div(@one) }.should raise_error(FloatDomainError)
+    -> { @nan.div(@nan) }.should raise_error(FloatDomainError)
   end
 
   it "returns 0 if divided by Infinity and no precision given" do
@@ -61,30 +69,30 @@ describe "BigDecimal#div" do
   end
 
   it "raises ZeroDivisionError if divided by zero and no precision given" do
-    lambda { @one.div(@zero) }.should raise_error(ZeroDivisionError)
-    lambda { @one.div(@zero_plus) }.should raise_error(ZeroDivisionError)
-    lambda { @one.div(@zero_minus) }.should raise_error(ZeroDivisionError)
+    -> { @one.div(@zero) }.should raise_error(ZeroDivisionError)
+    -> { @one.div(@zero_plus) }.should raise_error(ZeroDivisionError)
+    -> { @one.div(@zero_minus) }.should raise_error(ZeroDivisionError)
 
-    lambda { @zero.div(@zero) }.should raise_error(ZeroDivisionError)
-    lambda { @zero_minus.div(@zero_plus) }.should raise_error(ZeroDivisionError)
-    lambda { @zero_minus.div(@zero_minus) }.should raise_error(ZeroDivisionError)
-    lambda { @zero_plus.div(@zero_minus) }.should raise_error(ZeroDivisionError)
+    -> { @zero.div(@zero) }.should raise_error(ZeroDivisionError)
+    -> { @zero_minus.div(@zero_plus) }.should raise_error(ZeroDivisionError)
+    -> { @zero_minus.div(@zero_minus) }.should raise_error(ZeroDivisionError)
+    -> { @zero_plus.div(@zero_minus) }.should raise_error(ZeroDivisionError)
   end
 
   it "returns NaN if zero is divided by zero" do
-    @zero.div(@zero, 0).nan?.should == true
-    @zero_minus.div(@zero_plus, 0).nan?.should == true
-    @zero_plus.div(@zero_minus, 0).nan?.should == true
+    @zero.div(@zero, 0).should.nan?
+    @zero_minus.div(@zero_plus, 0).should.nan?
+    @zero_plus.div(@zero_minus, 0).should.nan?
 
-    @zero.div(@zero, 10).nan?.should == true
-    @zero_minus.div(@zero_plus, 10).nan?.should == true
-    @zero_plus.div(@zero_minus, 10).nan?.should == true
+    @zero.div(@zero, 10).should.nan?
+    @zero_minus.div(@zero_plus, 10).should.nan?
+    @zero_plus.div(@zero_minus, 10).should.nan?
   end
 
   it "raises FloatDomainError if (+|-) Infinity divided by 1 and no precision given" do
-    lambda { @infinity_minus.div(@one) }.should raise_error(FloatDomainError)
-    lambda { @infinity.div(@one) }.should raise_error(FloatDomainError)
-    lambda { @infinity_minus.div(@one_minus) }.should raise_error(FloatDomainError)
+    -> { @infinity_minus.div(@one) }.should raise_error(FloatDomainError)
+    -> { @infinity.div(@one) }.should raise_error(FloatDomainError)
+    -> { @infinity_minus.div(@one_minus) }.should raise_error(FloatDomainError)
   end
 
   it "returns (+|-)Infinity if (+|-)Infinity by 1 and precision given" do
@@ -94,8 +102,8 @@ describe "BigDecimal#div" do
   end
 
   it "returns NaN if Infinity / ((+|-) Infinity)" do
-    @infinity.div(@infinity_minus, 100000).nan?.should == true
-    @infinity_minus.div(@infinity, 1).nan?.should == true
+    @infinity.div(@infinity_minus, 100000).should.nan?
+    @infinity_minus.div(@infinity, 1).should.nan?
   end
 
 

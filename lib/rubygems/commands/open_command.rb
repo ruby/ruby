@@ -1,11 +1,8 @@
 # frozen_string_literal: true
-require 'English'
 require 'rubygems/command'
 require 'rubygems/version_option'
-require 'rubygems/util'
 
 class Gem::Commands::OpenCommand < Gem::Command
-
   include Gem::VersionOption
 
   def initialize
@@ -17,7 +14,7 @@ class Gem::Commands::OpenCommand < Gem::Command
     end
     add_option('-v', '--version VERSION', String,
                "Opens specific gem version") do |version|
-      options[:version]  = version
+      options[:version] = version
     end
   end
 

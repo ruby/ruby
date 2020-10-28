@@ -62,7 +62,7 @@ File.foreach "config.status" do |line|
     when /^(?:X|(?:MINI|RUN|(?:HAVE_)?BASE|BOOTSTRAP|BTEST)RUBY(?:_COMMAND)?$)/; next
     when /^INSTALLDOC|TARGET$/; next
     when /^DTRACE/; next
-    when /^MJIT_SUPPORT/; # pass
+    when /^MJIT_(CC|SUPPORT)$/; # pass
     when /^MJIT_/; next
     when /^(?:MAJOR|MINOR|TEENY)$/; vars[name] = val; next
     when /^LIBRUBY_D?LD/; next
@@ -268,7 +268,7 @@ print <<EOS if $unicode_emoji_version
   CONFIG["UNICODE_EMOJI_VERSION"] = #{$unicode_emoji_version.dump}
 EOS
 print <<EOS if /darwin/ =~ arch
-  CONFIG["SDKROOT"] = ENV["SDKROOT"] || "" # don't run xcrun everytime, usually useless.
+  CONFIG["SDKROOT"] = "\#{ENV['SDKROOT']}" # don't run xcrun every time, usually useless.
 EOS
 print <<EOS
   CONFIG["archdir"] = "$(rubyarchdir)"
@@ -283,9 +283,9 @@ print <<EOS
   #   require 'rbconfig'
   #
   #   print <<-END_OF_MAKEFILE
-  #   prefix = \#{Config::MAKEFILE_CONFIG['prefix']}
-  #   exec_prefix = \#{Config::MAKEFILE_CONFIG['exec_prefix']}
-  #   bindir = \#{Config::MAKEFILE_CONFIG['bindir']}
+  #   prefix = \#{RbConfig::MAKEFILE_CONFIG['prefix']}
+  #   exec_prefix = \#{RbConfig::MAKEFILE_CONFIG['exec_prefix']}
+  #   bindir = \#{RbConfig::MAKEFILE_CONFIG['bindir']}
   #   END_OF_MAKEFILE
   #
   #   => prefix = /usr/local
@@ -295,7 +295,7 @@ print <<EOS
   # RbConfig.expand is used for resolving references like above in rbconfig.
   #
   #   require 'rbconfig'
-  #   p Config.expand(Config::MAKEFILE_CONFIG["bindir"])
+  #   p RbConfig.expand(RbConfig::MAKEFILE_CONFIG["bindir"])
   #   # => "/usr/local/bin"
   MAKEFILE_CONFIG = {}
   CONFIG.each{|k,v| MAKEFILE_CONFIG[k] = v.dup}
@@ -333,8 +333,8 @@ print <<EOS
   # :nodoc:
   # call-seq:
   #
-  #   RbConfig.fire_update!(key, val)               -> string
-  #   RbConfig.fire_update!(key, val, mkconf, conf) -> string
+  #   RbConfig.fire_update!(key, val)               -> array
+  #   RbConfig.fire_update!(key, val, mkconf, conf) -> array
   #
   # updates +key+ in +mkconf+ with +val+, and all values depending on
   # the +key+ in +mkconf+.
@@ -347,7 +347,7 @@ print <<EOS
   #
   # returns updated keys list, or +nil+ if nothing changed.
   def RbConfig.fire_update!(key, val, mkconf = MAKEFILE_CONFIG, conf = CONFIG)
-    return if (old = mkconf[key]) == val
+    return if mkconf[key] == val
     mkconf[key] = val
     keys = [key]
     deps = []

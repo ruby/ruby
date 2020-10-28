@@ -40,7 +40,7 @@ describe :enumerator_lazy_select, shared: true do
   end
 
   it "raises an ArgumentError when not given a block" do
-    lambda { @yieldsmixed.send(@method) }.should raise_error(ArgumentError)
+    -> { @yieldsmixed.send(@method) }.should raise_error(ArgumentError)
   end
 
   describe "on a nested Lazy" do
@@ -56,5 +56,11 @@ describe :enumerator_lazy_select, shared: true do
         ScratchPad.recorded.should == [:before_yield]
       end
     end
+  end
+
+  it "works with an infinite enumerable" do
+    s = 0..Float::INFINITY
+    s.lazy.send(@method) { |n| true }.first(100).should ==
+      s.first(100).send(@method) { |n| true }
   end
 end

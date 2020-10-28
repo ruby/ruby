@@ -13,16 +13,16 @@ describe :string_concat, shared: true do
   end
 
   it "raises a TypeError if the given argument can't be converted to a String" do
-    lambda { 'hello '.send(@method, [])        }.should raise_error(TypeError)
-    lambda { 'hello '.send(@method, mock('x')) }.should raise_error(TypeError)
+    -> { 'hello '.send(@method, [])        }.should raise_error(TypeError)
+    -> { 'hello '.send(@method, mock('x')) }.should raise_error(TypeError)
   end
 
-  it "raises a #{frozen_error_class} when self is frozen" do
+  it "raises a FrozenError when self is frozen" do
     a = "hello"
     a.freeze
 
-    lambda { a.send(@method, "")     }.should raise_error(frozen_error_class)
-    lambda { a.send(@method, "test") }.should raise_error(frozen_error_class)
+    -> { a.send(@method, "")     }.should raise_error(FrozenError)
+    -> { a.send(@method, "test") }.should raise_error(FrozenError)
   end
 
   it "returns a String when given a subclass instance" do
@@ -39,14 +39,16 @@ describe :string_concat, shared: true do
     str.should be_an_instance_of(StringSpecs::MyString)
   end
 
-  it "taints self if other is tainted" do
-    "x".send(@method, "".taint).tainted?.should == true
-    "x".send(@method, "y".taint).tainted?.should == true
-  end
+  ruby_version_is ''...'2.7' do
+    it "taints self if other is tainted" do
+      "x".send(@method, "".taint).should.tainted?
+      "x".send(@method, "y".taint).should.tainted?
+    end
 
-  it "untrusts self if other is untrusted" do
-    "x".send(@method, "".untrust).untrusted?.should == true
-    "x".send(@method, "y".untrust).untrusted?.should == true
+    it "untrusts self if other is untrusted" do
+      "x".send(@method, "".untrust).should.untrusted?
+      "x".send(@method, "y".untrust).should.untrusted?
+    end
   end
 
   describe "with Integer" do
@@ -60,39 +62,39 @@ describe :string_concat, shared: true do
     end
 
     # #5855
-    it "returns a ASCII-8BIT string if self is US-ASCII and the argument is between 128-255 (inclusive)" do
+    it "returns a BINARY string if self is US-ASCII and the argument is between 128-255 (inclusive)" do
       a = ("".encode(Encoding::US_ASCII).send(@method, 128))
-      a.encoding.should == Encoding::ASCII_8BIT
+      a.encoding.should == Encoding::BINARY
       a.should == 128.chr
 
       a = ("".encode(Encoding::US_ASCII).send(@method, 255))
-      a.encoding.should == Encoding::ASCII_8BIT
+      a.encoding.should == Encoding::BINARY
       a.should == 255.chr
     end
 
     it "raises RangeError if the argument is an invalid codepoint for self's encoding" do
-      lambda { "".encode(Encoding::US_ASCII).send(@method, 256) }.should raise_error(RangeError)
-      lambda { "".encode(Encoding::EUC_JP).send(@method, 0x81)  }.should raise_error(RangeError)
+      -> { "".encode(Encoding::US_ASCII).send(@method, 256) }.should raise_error(RangeError)
+      -> { "".encode(Encoding::EUC_JP).send(@method, 0x81)  }.should raise_error(RangeError)
     end
 
     it "raises RangeError if the argument is negative" do
-      lambda { "".send(@method, -200)          }.should raise_error(RangeError)
-      lambda { "".send(@method, -bignum_value) }.should raise_error(RangeError)
+      -> { "".send(@method, -200)          }.should raise_error(RangeError)
+      -> { "".send(@method, -bignum_value) }.should raise_error(RangeError)
     end
 
     it "doesn't call to_int on its argument" do
       x = mock('x')
       x.should_not_receive(:to_int)
 
-      lambda { "".send(@method, x) }.should raise_error(TypeError)
+      -> { "".send(@method, x) }.should raise_error(TypeError)
     end
 
-    it "raises a #{frozen_error_class} when self is frozen" do
+    it "raises a FrozenError when self is frozen" do
       a = "hello"
       a.freeze
 
-      lambda { a.send(@method, 0)  }.should raise_error(frozen_error_class)
-      lambda { a.send(@method, 33) }.should raise_error(frozen_error_class)
+      -> { a.send(@method, 0)  }.should raise_error(FrozenError)
+      -> { a.send(@method, 33) }.should raise_error(FrozenError)
     end
   end
 end
@@ -112,7 +114,7 @@ describe :string_concat_encoding, shared: true do
     end
 
     it "raises Encoding::CompatibilityError if neither are empty" do
-      lambda { "x".encode("UTF-16LE").send(@method, "y".encode("UTF-8")) }.should raise_error(Encoding::CompatibilityError)
+      -> { "x".encode("UTF-16LE").send(@method, "y".encode("UTF-8")) }.should raise_error(Encoding::CompatibilityError)
     end
   end
 
@@ -130,7 +132,7 @@ describe :string_concat_encoding, shared: true do
     end
 
     it "raises Encoding::CompatibilityError if neither are empty" do
-      lambda { "x".encode("UTF-8").send(@method, "y".encode("UTF-16LE")) }.should raise_error(Encoding::CompatibilityError)
+      -> { "x".encode("UTF-8").send(@method, "y".encode("UTF-16LE")) }.should raise_error(Encoding::CompatibilityError)
     end
   end
 
@@ -148,13 +150,13 @@ describe :string_concat_encoding, shared: true do
     end
 
     it "raises Encoding::CompatibilityError if neither are ASCII-only" do
-      lambda { "\u00E9".encode("UTF-8").send(@method, "\u00E9".encode("ISO-8859-1")) }.should raise_error(Encoding::CompatibilityError)
+      -> { "\u00E9".encode("UTF-8").send(@method, "\u00E9".encode("ISO-8859-1")) }.should raise_error(Encoding::CompatibilityError)
     end
   end
 
-  describe "when self is ASCII-8BIT and argument is US-ASCII" do
-    it "uses ASCII-8BIT encoding" do
-      "abc".encode("ASCII-8BIT").send(@method, "123".encode("US-ASCII")).encoding.should == Encoding::ASCII_8BIT
+  describe "when self is BINARY and argument is US-ASCII" do
+    it "uses BINARY encoding" do
+      "abc".encode("BINARY").send(@method, "123".encode("US-ASCII")).encoding.should == Encoding::BINARY
     end
   end
 end

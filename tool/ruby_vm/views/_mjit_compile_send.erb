@@ -8,87 +8,108 @@
 %
 % # Optimized case of send / opt_send_without_block instructions.
 {
-    MAYBE_UNUSED(int pc_moved_p) = FALSE;
 % # compiler: Prepare operands which may be used by `insn.call_attribute`
 % insn.opes.each_with_index do |ope, i|
     MAYBE_UNUSED(<%= ope.fetch(:decl) %>) = (<%= ope.fetch(:type) %>)operands[<%= i %>];
 % end
-% # compiler: Use copied cc to avoid race condition
-    CALL_CACHE cc_copy = status->cc_entries + (cc - body->cc_entries);
+% # compiler: Use captured cc to avoid race condition
+    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
 %
-    if (has_valid_method_type(cc_copy)) {
-        const rb_iseq_t *iseq;
-        unsigned int argc = ci->orig_argc; /* unlike `ci->orig_argc`, `argc` may include blockarg */
-% if insn.name == 'send'
-        argc += ((ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0);
-% end
+% # compiler: Inline send insn where some supported fastpath is used.
+    const rb_iseq_t *iseq = NULL;
+    const CALL_INFO ci = cd->ci;
+    int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
+    extern bool rb_splat_or_kwargs_p(const struct rb_callinfo *restrict ci);
+    if (!status->compile_info->disable_send_cache && has_valid_method_type(captured_cc) && (
+%       # `CC_SET_FASTPATH(cd->cc, vm_call_cfunc_with_frame, ...)` in `vm_call_cfunc`
+        (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC
+         && !rb_splat_or_kwargs_p(ci) && !kw_splat)
+%       # `CC_SET_FASTPATH(cc, vm_call_iseq_setup_func(...), vm_call_iseq_optimizable_p(...))` in `vm_callee_setup_arg`,
+%       # and support only non-VM_CALL_TAILCALL path inside it
+        || (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_ISEQ
+            && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
+            && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
+    )) {
+        if (false && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+            fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
-        if (!(ci->flag & VM_CALL_TAILCALL) && /* inlining non-tailcall path */
-            cc_copy->me->def->type == VM_METHOD_TYPE_ISEQ && inlinable_iseq_p(ci, cc_copy, iseq = def_iseq_ptr(cc_copy->me->def)) /* CC_SET_FASTPATH in vm_callee_setup_arg */) {
-            int param_size = iseq->body->param.size; /* TODO: check calling->argc for argument_arity_error */
-
-            fprintf(f, "{\n");
-% # JIT: Declare stack_size to be used in some macro of _mjit_compile_insn_body.erb
-            if (status->local_stack_p) {
-                fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
-            }
+        int sp_inc = (int)sp_inc_of_sendish(ci);
+        fprintf(f, "{\n");
 
 % # JIT: Invalidate call cache if it requires vm_search_method. This allows to inline some of following things.
-            fprintf(f, "    if (UNLIKELY(GET_GLOBAL_METHOD_STATE() != %"PRI_SERIALT_PREFIX"u ||\n", cc_copy->method_state);
-            fprintf(f, "        RCLASS_SERIAL(CLASS_OF(stack[%d])) != %"PRI_SERIALT_PREFIX"u)) {\n", b->stack_size - 1 - argc, cc_copy->class_serial);
-            fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
-            fprintf(f, "        reg_cfp->sp = (VALUE *)reg_cfp->bp + %d;\n", b->stack_size + 1);
-            fprintf(f, "        goto cancel;\n");
-            fprintf(f, "    }\n");
+        bool opt_class_of = !maybe_special_const_class_p(captured_cc->klass); // If true, use RBASIC_CLASS instead of CLASS_OF to reduce code size
+        fprintf(f, "    const struct rb_callcache *cc = (const struct rb_callcache *)0x%"PRIxVALUE";\n", (VALUE)captured_cc);
+        fprintf(f, "    const rb_callable_method_entry_t *cc_cme = (const rb_callable_method_entry_t *)0x%"PRIxVALUE";\n", (VALUE)vm_cc_cme(captured_cc));
+        fprintf(f, "    const VALUE recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+        fprintf(f, "    if (UNLIKELY(%s || !vm_cc_valid_p(cc, cc_cme, %s(recv)))) {\n", opt_class_of ? "RB_SPECIAL_CONST_P(recv)" : "false", opt_class_of ? "RBASIC_CLASS" : "CLASS_OF");
+        fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "        goto send_cancel;\n");
+        fprintf(f, "    }\n");
 
 % # JIT: move sp and pc if necessary
 <%= render 'mjit_compile_pc_and_sp', locals: { insn: insn } -%>
 
-% # JIT: Print insn body in insns.def
+% # JIT: If ISeq is inlinable, call the inlined method without pushing a frame.
+        if (iseq && status->inlined_iseqs != NULL && iseq->body == status->inlined_iseqs[pos]) {
             fprintf(f, "    {\n");
+            fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
+            fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        stack[%d] = _mjit%d_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size + sp_inc - 1, status->compiled_id, pos);
+            fprintf(f, "        reg_cfp->self = orig_self;\n");
+            fprintf(f, "    }\n");
+        }
+        else {
+% # JIT: Forked `vm_sendish` (except method_explorer = vm_search_method_wrap) to inline various things
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE val;\n");
             fprintf(f, "        struct rb_calling_info calling;\n");
 % if insn.name == 'send'
-            fprintf(f, "        calling.block_handler = vm_caller_setup_arg_block(ec, reg_cfp, (CALL_INFO)0x%"PRIxVALUE", (rb_iseq_t *)0x%"PRIxVALUE", FALSE);\n", operands[0], operands[2]);
+            fprintf(f, "        calling.block_handler = vm_caller_setup_arg_block(ec, reg_cfp, (const struct rb_callinfo *)0x%"PRIxVALUE", (rb_iseq_t *)0x%"PRIxVALUE", FALSE);\n", (VALUE)ci, (VALUE)blockiseq);
 % else
             fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
 % end
-            fprintf(f, "        calling.argc = %d;\n", ci->orig_argc);
-            fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size - 1 - argc);
+            fprintf(f, "        calling.kw_splat = %d;\n", kw_splat);
+            fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
-% # JIT: Special CALL_METHOD. Bypass cc_copy->call and inline vm_call_iseq_setup_normal for vm_call_iseq_setup_func FASTPATH.
-            fprintf(f, "        {\n");
-            fprintf(f, "            VALUE v;\n");
-            fprintf(f, "            vm_call_iseq_setup_normal(ec, reg_cfp, &calling, (const rb_callable_method_entry_t *)0x%"PRIxVALUE", 0, %d, %d);\n",
-                    (VALUE)cc_copy->me, param_size, iseq->body->local_table_size); /* rb_simple_iseq_p checks rb_simple_iseq_p, which ensures has_opt == FALSE */
-            if (iseq->body->catch_except_p) {
-                fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                fprintf(f, "            v = vm_exec(ec, TRUE);\n");
+            if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
+%               # TODO: optimize this more
+                fprintf(f, "        struct rb_call_data cc_cd = { .ci = (CALL_INFO)0x%"PRIxVALUE", .cc = cc };\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling, &cc_cd);\n");
             }
-            else {
-                fprintf(f, "            if ((v = mjit_exec(ec)) == Qundef) {\n");
-                fprintf(f, "                VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); /* This is vm_call0_body's code after vm_call_iseq_setup */
-                fprintf(f, "                v = vm_exec(ec, FALSE);\n");
-                fprintf(f, "            }\n");
+            else { // VM_METHOD_TYPE_ISEQ
+%               # fastpath_applied_iseq_p checks rb_simple_iseq_p, which ensures has_opt == FALSE
+                fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
+                if (iseq->body->catch_except_p) {
+                    fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
+                    fprintf(f, "        val = vm_exec(ec, TRUE);\n");
+                }
+                else {
+                    fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
+                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
+                    fprintf(f, "            val = vm_exec(ec, FALSE);\n");
+                    fprintf(f, "        }\n");
+                }
             }
-            fprintf(f, "            stack[%d] = v;\n", b->stack_size - argc - 1);
-            fprintf(f, "        }\n");
-
+            fprintf(f, "        stack[%d] = val;\n", b->stack_size + sp_inc - 1);
             fprintf(f, "    }\n");
 
 % # JIT: We should evaluate ISeq modified for TracePoint if it's enabled. Note: This is slow.
-            fprintf(f, "    if (UNLIKELY(ruby_vm_event_enabled_global_flags & ISEQ_TRACE_EVENTS)) {\n");
-            fprintf(f, "        reg_cfp->sp = (VALUE *)reg_cfp->bp + %d;\n", b->stack_size + (int)<%= insn.call_attribute('sp_inc') %> + 1);
+            fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
+            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)<%= insn.call_attribute('sp_inc') %>);
             if (!pc_moved_p) {
                 fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
             }
+            fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
             fprintf(f, "        goto cancel;\n");
             fprintf(f, "    }\n");
+        }
 
 % # compiler: Move JIT compiler's internal stack pointer
-            b->stack_size += <%= insn.call_attribute('sp_inc') %>;
+        b->stack_size += <%= insn.call_attribute('sp_inc') %>;
 
-            fprintf(f, "}\n");
-            break;
-        }
+        fprintf(f, "}\n");
+        break;
     }
 }

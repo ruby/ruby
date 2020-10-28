@@ -28,4 +28,4 @@ gen3d 'ochoko.stl' do
   l----www----------www----l
 end
 ```
-`+` and `-` are the same meaning(just for apperance)
+`+` and `-` are the same meaning(just for appearance)

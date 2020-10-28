@@ -46,14 +46,14 @@ describe "C-API Mutex functions" do
 
     it "throws an exception when already locked in the same thread" do
       @m.lock
-      lambda { @s.rb_mutex_lock(@m) }.should raise_error(ThreadError)
+      -> { @s.rb_mutex_lock(@m) }.should raise_error(ThreadError)
       @m.locked?.should be_true
     end
   end
 
   describe "rb_mutex_unlock" do
     it "raises an exception when not locked" do
-      lambda { @s.rb_mutex_unlock(@m) }.should raise_error(ThreadError)
+      -> { @s.rb_mutex_unlock(@m) }.should raise_error(ThreadError)
       @m.locked?.should be_false
     end
 
@@ -66,22 +66,23 @@ describe "C-API Mutex functions" do
 
   describe "rb_mutex_sleep" do
     it "throws an exception when the mutex is not locked" do
-      lambda { @s.rb_mutex_sleep(@m, 0.1) }.should raise_error(ThreadError)
+      -> { @s.rb_mutex_sleep(@m, 0.1) }.should raise_error(ThreadError)
       @m.locked?.should be_false
     end
 
     it "sleeps when the mutex is locked" do
       @m.lock
-      start = Time.now
-      @s.rb_mutex_sleep(@m, 0.1)
-      (Time.now - start).should be_close(0.1, 0.2)
+      t1 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      @s.rb_mutex_sleep(@m, 0.001)
+      t2 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      (t2 - t1).should >= 0
       @m.locked?.should be_true
     end
   end
 
   describe "rb_mutex_synchronize" do
     it "calls the function while the mutex is locked" do
-      callback = lambda { @m.locked?.should be_true }
+      callback = -> { @m.locked?.should be_true }
       @s.rb_mutex_synchronize(@m, callback)
     end
   end

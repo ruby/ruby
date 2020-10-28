@@ -5,6 +5,7 @@
 #include "ruby/ruby.h"
 #include "ruby/encoding.h"
 #include "internal.h"
+#include "internal/error.h"
 #include <winbase.h>
 #include <wchar.h>
 #include <shlwapi.h>
@@ -156,7 +157,7 @@ replace_to_long_name(wchar_t **wfullpath, size_t size, size_t buffer_size)
     /*
       Skip long name conversion if the path is already long name.
       Short name is 8.3 format.
-      http://en.wikipedia.org/wiki/8.3_filename
+      https://en.wikipedia.org/wiki/8.3_filename
       This check can be skipped for directory components that have file
       extensions longer than 3 characters, or total lengths longer than
       12 characters.
@@ -187,6 +188,20 @@ replace_to_long_name(wchar_t **wfullpath, size_t size, size_t buffer_size)
 	}
 	path_len++;
 	pos--;
+    }
+
+    if ((pos >= *wfullpath + 2) &&
+        (*wfullpath)[0] == L'\\' && (*wfullpath)[1] == L'\\') {
+        /* UNC path: no short file name, and needs Network Share
+         * Management functions instead of FindFirstFile. */
+        if (pos == *wfullpath + 2) {
+            /* //host only */
+            return size;
+        }
+        if (!wmemchr(*wfullpath + 2, L'\\', pos - *wfullpath - 2)) {
+            /* //host/share only */
+            return size;
+        }
     }
 
     find_handle = FindFirstFileW(*wfullpath, &find_data);
@@ -538,7 +553,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     /* Determine require buffer size */
     size = GetFullPathNameW(buffer, PATH_BUFFER_SIZE, wfullpath_buffer, NULL);
     if (size > PATH_BUFFER_SIZE) {
-	/* allocate more memory than alloted originally by PATH_BUFFER_SIZE */
+	/* allocate more memory than allotted originally by PATH_BUFFER_SIZE */
 	wfullpath = ALLOC_N(wchar_t, size);
 	size = GetFullPathNameW(buffer, size, wfullpath, NULL);
     }

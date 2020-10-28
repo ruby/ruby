@@ -40,7 +40,7 @@ describe "BigDecimal#precs" do
   it "returns the maximum number of significant digits as the second value" do
     BigDecimal("3.14159").precs[1].should >= 6
     BigDecimal('1').precs[1].should >= 1
-    BigDecimal('1' + '0' * 100).precs[1] >= 101
+    BigDecimal('1' + '0' * 100).precs[1].should >= 101
     [@infinity, @infinity_neg, @nan, @zero, @zero_neg].each do |value|
       value.precs[1].should >= 1
     end

@@ -37,33 +37,33 @@ module ArraySpecs
     ]
   end
 
-  def self.array_with_utf8_and_7bit_ascii8bit_strings
+  def self.array_with_utf8_and_7bit_binary_strings
     [
       'bar',
       'báz',
-      'foo'.force_encoding('ASCII-8BIT')
+      'foo'.force_encoding('BINARY')
     ]
   end
 
-  def self.array_with_utf8_and_ascii8bit_strings
+  def self.array_with_utf8_and_binary_strings
     [
       'bar',
       'báz',
-      [255].pack('C').force_encoding('ASCII-8BIT')
+      [255].pack('C').force_encoding('BINARY')
     ]
   end
 
-  def self.array_with_usascii_and_7bit_ascii8bit_strings
+  def self.array_with_usascii_and_7bit_binary_strings
     [
       'bar'.force_encoding('US-ASCII'),
-      'foo'.force_encoding('ASCII-8BIT')
+      'foo'.force_encoding('BINARY')
     ]
   end
 
-  def self.array_with_usascii_and_ascii8bit_strings
+  def self.array_with_usascii_and_binary_strings
     [
       'bar'.force_encoding('US-ASCII'),
-      [255].pack('C').force_encoding('ASCII-8BIT')
+      [255].pack('C').force_encoding('BINARY')
     ]
   end
 end

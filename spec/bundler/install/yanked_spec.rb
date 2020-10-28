@@ -10,7 +10,7 @@ RSpec.context "when installing a bundle that includes yanked gems" do
   it "throws an error when the original gem version is yanked" do
     lockfile <<-L
        GEM
-         remote: file://#{gem_repo4}
+         remote: #{file_uri_for(gem_repo4)}
          specs:
            foo (10.0.0)
 
@@ -22,50 +22,52 @@ RSpec.context "when installing a bundle that includes yanked gems" do
 
     L
 
-    install_gemfile <<-G
-        source "file://#{gem_repo4}"
-        gem "foo", "10.0.0"
+    install_gemfile <<-G, :raise_on_error => false
+      source "#{file_uri_for(gem_repo4)}"
+      gem "foo", "10.0.0"
     G
 
-    expect(out).to include("Your bundle is locked to foo (10.0.0)")
+    expect(err).to include("Your bundle is locked to foo (10.0.0)")
   end
 
   it "throws the original error when only the Gemfile specifies a gem version that doesn't exist" do
-    install_gemfile <<-G
-        source "file://#{gem_repo4}"
-        gem "foo", "10.0.0"
+    bundle "config set force_ruby_platform true"
+
+    install_gemfile <<-G, :raise_on_error => false
+      source "#{file_uri_for(gem_repo4)}"
+      gem "foo", "10.0.0"
     G
 
-    expect(out).not_to include("Your bundle is locked to foo (10.0.0)")
-    expect(out).to include("Could not find gem 'foo (= 10.0.0)' in")
+    expect(err).not_to include("Your bundle is locked to foo (10.0.0)")
+    expect(err).to include("Could not find gem 'foo (= 10.0.0)' in")
   end
 end
 
 RSpec.context "when using gem before installing" do
   it "does not suggest the author has yanked the gem" do
     gemfile <<-G
-        source "file://#{gem_repo1}"
-        gem "rack", "0.9.1"
+      source "#{file_uri_for(gem_repo1)}"
+      gem "rack", "0.9.1"
     G
 
     lockfile <<-L
-       GEM
-         remote: file://#{gem_repo1}
-         specs:
-           rack (0.9.1)
+      GEM
+        remote: #{file_uri_for(gem_repo1)}
+        specs:
+          rack (0.9.1)
 
-       PLATFORMS
-         ruby
+      PLATFORMS
+        ruby
 
-       DEPENDENCIES
-         rack (= 0.9.1)
+      DEPENDENCIES
+        rack (= 0.9.1)
     L
 
-    bundle :list
+    bundle :list, :raise_on_error => false
 
-    expect(out).to include("Could not find rack-0.9.1 in any of the sources")
-    expect(out).to_not include("Your bundle is locked to rack (0.9.1), but that version could not be found in any of the sources listed in your Gemfile.")
-    expect(out).to_not include("If you haven't changed sources, that means the author of rack (0.9.1) has removed it.")
-    expect(out).to_not include("You'll need to update your bundle to a different version of rack (0.9.1) that hasn't been removed in order to install.")
+    expect(err).to include("Could not find rack-0.9.1 in any of the sources")
+    expect(err).to_not include("Your bundle is locked to rack (0.9.1), but that version could not be found in any of the sources listed in your Gemfile.")
+    expect(err).to_not include("If you haven't changed sources, that means the author of rack (0.9.1) has removed it.")
+    expect(err).to_not include("You'll need to update your bundle to a different version of rack (0.9.1) that hasn't been removed in order to install.")
   end
 end

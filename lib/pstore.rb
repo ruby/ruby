@@ -92,6 +92,8 @@ require "digest"
 # Needless to say, if you're storing valuable data with PStore, then you should
 # backup the PStore files from time to time.
 class PStore
+  VERSION = "0.1.0"
+
   RDWR_ACCESS = {mode: IO::RDWR | IO::CREAT | IO::BINARY, encoding: Encoding::ASCII_8BIT}.freeze
   RD_ACCESS = {mode: IO::RDONLY | IO::BINARY, encoding: Encoding::ASCII_8BIT}.freeze
   WR_ACCESS = {mode: IO::WRONLY | IO::CREAT | IO::TRUNC | IO::BINARY, encoding: Encoding::ASCII_8BIT}.freeze
@@ -374,7 +376,7 @@ class PStore
   def open_and_lock_file(filename, read_only)
     if read_only
       begin
-        file = File.new(filename, RD_ACCESS)
+        file = File.new(filename, **RD_ACCESS)
         begin
           file.flock(File::LOCK_SH)
           return file
@@ -386,7 +388,7 @@ class PStore
         return nil
       end
     else
-      file = File.new(filename, RDWR_ACCESS)
+      file = File.new(filename, **RDWR_ACCESS)
       file.flock(File::LOCK_EX)
       return file
     end
@@ -449,7 +451,7 @@ class PStore
 
   def save_data_with_atomic_file_rename_strategy(data, file)
     temp_filename = "#{@filename}.tmp.#{Process.pid}.#{rand 1000000}"
-    temp_file = File.new(temp_filename, WR_ACCESS)
+    temp_file = File.new(temp_filename, **WR_ACCESS)
     begin
       temp_file.flock(File::LOCK_EX)
       temp_file.write(data)

@@ -1,0 +1,11 @@
+--- libffi-3.2.1/src/closures.c	2014-11-08 21:47:24.000000000 +0900
++++ libffi-3.2.1/src/closures.c	2020-05-26 19:09:26.334088215 +0900
+@@ -26,7 +26,7 @@
+    DEALINGS IN THE SOFTWARE.
+    ----------------------------------------------------------------------- */
+ 
+-#if defined __linux__ && !defined _GNU_SOURCE
++#if (defined __linux__ || defined __CYGWIN__) && !defined _GNU_SOURCE
+ #define _GNU_SOURCE 1
+ #endif
+ 

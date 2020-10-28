@@ -199,10 +199,10 @@ if defined? Zlib
       z = Zlib::Deflate.new
       s = z.deflate("foo", Zlib::FULL_FLUSH)
       z.avail_out = 0
-      z.params(Zlib::NO_COMPRESSION, Zlib::FILTERED)
+      EnvUtil.suppress_warning {z.params(Zlib::NO_COMPRESSION, Zlib::FILTERED)}
       s << z.deflate("bar", Zlib::FULL_FLUSH)
       z.avail_out = 0
-      z.params(Zlib::BEST_COMPRESSION, Zlib::HUFFMAN_ONLY)
+      EnvUtil.suppress_warning {z.params(Zlib::BEST_COMPRESSION, Zlib::HUFFMAN_ONLY)}
       s << z.deflate("baz", Zlib::FINISH)
       assert_equal("foobarbaz", Zlib::Inflate.inflate(s))
 
@@ -415,10 +415,10 @@ if defined? Zlib
       z = Zlib::Deflate.new
       s = z.deflate("foo" * 1000, Zlib::FULL_FLUSH)
       z.avail_out = 0
-      z.params(Zlib::NO_COMPRESSION, Zlib::FILTERED)
+      EnvUtil.suppress_warning {z.params(Zlib::NO_COMPRESSION, Zlib::FILTERED)}
       s << z.deflate("bar" * 1000, Zlib::FULL_FLUSH)
       z.avail_out = 0
-      z.params(Zlib::BEST_COMPRESSION, Zlib::HUFFMAN_ONLY)
+      EnvUtil.suppress_warning {z.params(Zlib::BEST_COMPRESSION, Zlib::HUFFMAN_ONLY)}
       s << z.deflate("baz" * 1000, Zlib::FINISH)
 
       z = Zlib::Inflate.new
@@ -446,6 +446,30 @@ if defined? Zlib
   end
 
   class TestZlibGzipFile < Test::Unit::TestCase
+    def test_gzip_reader_zcat
+      Tempfile.create("test_zlib_gzip_file_to_io") {|t|
+        gz = Zlib::GzipWriter.new(t)
+        gz.print("foo")
+        gz.close
+        t = File.open(t.path, 'ab')
+        gz = Zlib::GzipWriter.new(t)
+        gz.print("bar")
+        gz.close
+
+        results = []
+        t = File.open(t.path)
+        Zlib::GzipReader.zcat(t) do |str|
+          results << str
+        end
+        assert_equal(["foo", "bar"], results)
+        t.close
+
+        t = File.open(t.path)
+        assert_equal("foobar", Zlib::GzipReader.zcat(t))
+        t.close
+      }
+    end
+
     def test_to_io
       Tempfile.create("test_zlib_gzip_file_to_io") {|t|
         t.close
@@ -486,6 +510,17 @@ if defined? Zlib
           assert_equal(tim.to_i, f.mtime.to_i)
         end
       }
+    end
+
+    def test_zero_mtime
+      sio = StringIO.new
+      gz = Zlib::GzipWriter.new(sio)
+      gz.mtime = 0
+      gz.write("Hi")
+      gz.close
+      reading_io = StringIO.new(sio.string)
+      reader = Zlib::GzipReader.new(reading_io)
+      assert_equal(0, reader.mtime.to_i)
     end
 
     def test_level
@@ -1103,7 +1138,6 @@ if defined? Zlib
   class TestZlib < Test::Unit::TestCase
     def test_version
       assert_instance_of(String, Zlib.zlib_version)
-      assert(Zlib.zlib_version.tainted?)
     end
 
     def test_adler32

@@ -13,6 +13,7 @@ describe "Heredoc string" do
 foo bar#{@ip}
 HERE
     s.should == "foo barxxx\n"
+    s.encoding.should == Encoding::US_ASCII
   end
 
   it 'allow HEREDOC with <<"identifier", interpolated' do
@@ -20,6 +21,7 @@ HERE
 foo bar#{@ip}
 HERE
     s.should == "foo barxxx\n"
+    s.encoding.should == Encoding::US_ASCII
   end
 
   it "allows HEREDOC with <<'identifier', no interpolation" do
@@ -27,6 +29,7 @@ HERE
 foo bar#{@ip}
 HERE
     s.should == 'foo bar#{@ip}' + "\n"
+    s.encoding.should == Encoding::US_ASCII
   end
 
   it "allows HEREDOC with <<-identifier, allowing to indent identifier, interpolated" do
@@ -35,6 +38,7 @@ HERE
     HERE
 
     s.should == "    foo barxxx\n"
+    s.encoding.should == Encoding::US_ASCII
   end
 
   it 'allows HEREDOC with <<-"identifier", allowing to indent identifier, interpolated' do
@@ -43,6 +47,7 @@ HERE
     HERE
 
     s.should == "    foo barxxx\n"
+    s.encoding.should == Encoding::US_ASCII
   end
 
   it "allows HEREDOC with <<-'identifier', allowing to indent identifier, no interpolation" do
@@ -51,6 +56,23 @@ HERE
     HERE
 
     s.should == '    foo bar#{@ip}' + "\n"
+    s.encoding.should == Encoding::US_ASCII
+  end
+
+  ruby_version_is "2.7" do
+    it 'raises SyntaxError if quoted HEREDOC identifier is ending not on same line' do
+      -> {
+        eval %{<<"HERE\n"\nraises syntax error\nHERE}
+      }.should raise_error(SyntaxError)
+    end
+  end
+
+  ruby_version_is ""..."2.7" do
+    it 'prints a warning if quoted HEREDOC identifier is ending not on same line' do
+      -> {
+        eval %{<<"HERE\n"\nit warns\nHERE}
+      }.should complain(/here document identifier ends with a newline/)
+    end
   end
 
   it "allows HEREDOC with <<~'identifier', allowing to indent identifier and content" do
@@ -80,6 +102,13 @@ HERE
 
   it "selects the least-indented line and removes its indentation from all the lines" do
     require_relative 'fixtures/squiggly_heredoc'
+    SquigglyHeredocSpecs.least_indented_on_the_first_line.should == "a\n  b\n    c\n"
     SquigglyHeredocSpecs.least_indented_on_the_last_line.should == "    a\n  b\nc\n"
+  end
+
+  it "selects the least-indented line and removes its indentation from all the lines for <<~'identifier'" do
+    require_relative 'fixtures/squiggly_heredoc'
+    SquigglyHeredocSpecs.least_indented_on_the_first_line_single.should == "a\n  b\n    c\n"
+    SquigglyHeredocSpecs.least_indented_on_the_last_line_single.should == "    a\n  b\nc\n"
   end
 end

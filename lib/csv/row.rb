@@ -4,7 +4,7 @@ require "forwardable"
 
 class CSV
   #
-  # A CSV::Row is part Array and part Hash.  It retains an order for the fields
+  # A CSV::Row is part Array and part Hash. It retains an order for the fields
   # and allows duplicates just as an Array would, but also allows you to access
   # fields by name just as you could if they were in a Hash.
   #
@@ -13,13 +13,13 @@ class CSV
   #
   class Row
     #
-    # Construct a new CSV::Row from +headers+ and +fields+, which are expected
-    # to be Arrays.  If one Array is shorter than the other, it will be padded
+    # Constructs a new CSV::Row from +headers+ and +fields+, which are expected
+    # to be Arrays. If one Array is shorter than the other, it will be padded
     # with +nil+ objects.
     #
     # The optional +header_row+ parameter can be set to +true+ to indicate, via
     # CSV::Row.header_row?() and CSV::Row.field_row?(), that this is a header
-    # row.  Otherwise, the row is assumes to be a field row.
+    # row. Otherwise, the row assumes to be a field row.
     #
     # A CSV::Row object supports the following Array methods through delegation:
     #
@@ -50,7 +50,7 @@ class CSV
 
     def initialize_copy(other)
       super
-      @row = @row.dup
+      @row = @row.collect(&:dup)
     end
 
     # Returns +true+ if this is a header row.
@@ -74,17 +74,17 @@ class CSV
     #   field( header, offset )
     #   field( index )
     #
-    # This method will return the field value by +header+ or +index+.  If a field
+    # This method will return the field value by +header+ or +index+. If a field
     # is not found, +nil+ is returned.
     #
     # When provided, +offset+ ensures that a header match occurs on or later
-    # than the +offset+ index.  You can use this to find duplicate headers,
+    # than the +offset+ index. You can use this to find duplicate headers,
     # without resorting to hard-coding exact indices.
     #
     def field(header_or_index, minimum_index = 0)
       # locate the pair
       finder = (header_or_index.is_a?(Integer) || header_or_index.is_a?(Range)) ? :[] : :assoc
-      pair   = @row[minimum_index..-1].send(finder, header_or_index)
+      pair   = @row[minimum_index..-1].public_send(finder, header_or_index)
 
       # return the field if we have a pair
       if pair.nil?
@@ -142,7 +142,7 @@ class CSV
     # assigns the +value+.
     #
     # Assigning past the end of the row with an index will set all pairs between
-    # to <tt>[nil, nil]</tt>.  Assigning to an unused header appends the new
+    # to <tt>[nil, nil]</tt>. Assigning to an unused header appends the new
     # pair.
     #
     def []=(*args)
@@ -172,8 +172,8 @@ class CSV
     #   <<( header_and_field_hash )
     #
     # If a two-element Array is provided, it is assumed to be a header and field
-    # and the pair is appended.  A Hash works the same way with the key being
-    # the header and the value being the field.  Anything else is assumed to be
+    # and the pair is appended. A Hash works the same way with the key being
+    # the header and the value being the field. Anything else is assumed to be
     # a lone field which is appended with a +nil+ header.
     #
     # This method returns the row for chaining.
@@ -191,7 +191,7 @@ class CSV
     end
 
     #
-    # A shortcut for appending multiple fields.  Equivalent to:
+    # A shortcut for appending multiple fields. Equivalent to:
     #
     #   args.each { |arg| csv_row << arg }
     #
@@ -209,8 +209,8 @@ class CSV
     #   delete( header, offset )
     #   delete( index )
     #
-    # Used to remove a pair from the row by +header+ or +index+.  The pair is
-    # located as described in CSV::Row.field().  The deleted pair is returned,
+    # Removes a pair from the row by +header+ or +index+. The pair is
+    # located as described in CSV::Row.field(). The deleted pair is returned,
     # or +nil+ if a pair could not be found.
     #
     def delete(header_or_index, minimum_index = 0)
@@ -325,7 +325,7 @@ class CSV
     end
 
     #
-    # Collapses the row into a simple Hash.  Be warned that this discards field
+    # Collapses the row into a simple Hash. Be warned that this discards field
     # order and clobbers duplicate fields.
     #
     def to_h
@@ -340,12 +340,12 @@ class CSV
     alias_method :to_ary, :to_a
 
     #
-    # Returns the row as a CSV String.  Headers are not used.  Equivalent to:
+    # Returns the row as a CSV String. Headers are not used. Equivalent to:
     #
     #   csv_row.fields.to_csv( options )
     #
     def to_csv(**options)
-      fields.to_csv(options)
+      fields.to_csv(**options)
     end
     alias_method :to_s, :to_csv
 
@@ -367,7 +367,9 @@ class CSV
       end
     end
 
+    #
     # A summary of fields, by header, in an ASCII compatible String.
+    #
     def inspect
       str = ["#<", self.class.to_s]
       each do |header, field|

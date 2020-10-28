@@ -113,5 +113,25 @@ module Psych
     def test_scan_strings_starting_with_underscores
       assert_equal "_100", ss.tokenize('_100')
     end
+
+    def test_scan_int_commas_and_underscores
+      # NB: This test is to ensure backward compatibility with prior Psych versions,
+      # not to test against any actual YAML specification.
+      assert_equal 123_456_789, ss.tokenize('123_456_789')
+      assert_equal 123_456_789, ss.tokenize('123,456,789')
+      assert_equal 123_456_789, ss.tokenize('1_2,3,4_5,6_789')
+      assert_equal 123_456_789, ss.tokenize('1_2,3,4_5,6_789_')
+
+      assert_equal 0b010101010, ss.tokenize('0b010101010')
+      assert_equal 0b010101010, ss.tokenize('0b0,1_0,1_,0,1_01,0')
+
+      assert_equal 01234567, ss.tokenize('01234567')
+      assert_equal 01234567, ss.tokenize('0_,,,1_2,_34567')
+
+      assert_equal 0x123456789abcdef, ss.tokenize('0x123456789abcdef')
+      assert_equal 0x123456789abcdef, ss.tokenize('0x12_,34,_56,_789abcdef')
+      assert_equal 0x123456789abcdef, ss.tokenize('0x_12_,34,_56,_789abcdef')
+      assert_equal 0x123456789abcdef, ss.tokenize('0x12_,34,_56,_789abcdef__')
+    end
   end
 end

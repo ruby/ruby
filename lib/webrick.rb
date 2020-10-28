@@ -15,6 +15,11 @@
 # WEBrick also includes tools for daemonizing a process and starting a process
 # at a higher privilege level and dropping permissions.
 #
+# == Security
+#
+# *Warning:* WEBrick is not recommended for production.  It only implements
+# basic security checks.
+#
 # == Starting an HTTP server
 #
 # To create a new WEBrick::HTTPServer that will listen to connections on port
@@ -139,9 +144,9 @@
 # servers.  See WEBrick::HTTPAuth, WEBrick::HTTPAuth::BasicAuth and
 # WEBrick::HTTPAuth::DigestAuth.
 #
-# == WEBrick as a Production Web Server
+# == WEBrick as a daemonized Web Server
 #
-# WEBrick can be run as a production server for small loads.
+# WEBrick can be run as a daemonized server for small loads.
 #
 # === Daemonizing
 #
@@ -212,7 +217,7 @@ require 'webrick/version.rb'
 require 'webrick/config.rb'
 require 'webrick/log.rb'
 require 'webrick/server.rb'
-require 'webrick/utils.rb'
+require_relative 'webrick/utils.rb'
 require 'webrick/accesslog'
 
 require 'webrick/htmlutils.rb'

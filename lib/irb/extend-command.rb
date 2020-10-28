@@ -32,7 +32,7 @@ module IRB # :nodoc:
 
     # Displays current configuration.
     #
-    # Modifing the configuration is achieved by sending a message to IRB.conf.
+    # Modifying the configuration is achieved by sending a message to IRB.conf.
     def irb_context
       IRB.CurrentContext
     end
@@ -46,58 +46,84 @@ module IRB # :nodoc:
     ]
 
     @EXTEND_COMMANDS = [
-      [:irb_current_working_workspace, :CurrentWorkingWorkspace, "irb/cmd/chws",
-       [:irb_print_working_workspace, OVERRIDE_ALL],
-       [:irb_cwws, OVERRIDE_ALL],
-       [:irb_pwws, OVERRIDE_ALL],
-       [:cwws, NO_OVERRIDE],
-       [:pwws, NO_OVERRIDE],
-       [:irb_current_working_binding, OVERRIDE_ALL],
-       [:irb_print_working_binding, OVERRIDE_ALL],
-       [:irb_cwb, OVERRIDE_ALL],
-       [:irb_pwb, OVERRIDE_ALL],
-    ],
-    [:irb_change_workspace, :ChangeWorkspace, "irb/cmd/chws",
-     [:irb_chws, OVERRIDE_ALL],
-     [:irb_cws, OVERRIDE_ALL],
-     [:chws, NO_OVERRIDE],
-     [:cws, NO_OVERRIDE],
-     [:irb_change_binding, OVERRIDE_ALL],
-     [:irb_cb, OVERRIDE_ALL],
-     [:cb, NO_OVERRIDE]],
+      [
+        :irb_current_working_workspace, :CurrentWorkingWorkspace, "irb/cmd/chws",
+        [:irb_print_working_workspace, OVERRIDE_ALL],
+        [:irb_cwws, OVERRIDE_ALL],
+        [:irb_pwws, OVERRIDE_ALL],
+        [:cwws, NO_OVERRIDE],
+        [:pwws, NO_OVERRIDE],
+        [:irb_current_working_binding, OVERRIDE_ALL],
+        [:irb_print_working_binding, OVERRIDE_ALL],
+        [:irb_cwb, OVERRIDE_ALL],
+        [:irb_pwb, OVERRIDE_ALL],
+      ],
+      [
+        :irb_change_workspace, :ChangeWorkspace, "irb/cmd/chws",
+        [:irb_chws, OVERRIDE_ALL],
+        [:irb_cws, OVERRIDE_ALL],
+        [:chws, NO_OVERRIDE],
+        [:cws, NO_OVERRIDE],
+        [:irb_change_binding, OVERRIDE_ALL],
+        [:irb_cb, OVERRIDE_ALL],
+        [:cb, NO_OVERRIDE],
+      ],
 
-    [:irb_workspaces, :Workspaces, "irb/cmd/pushws",
-     [:workspaces, NO_OVERRIDE],
-     [:irb_bindings, OVERRIDE_ALL],
-     [:bindings, NO_OVERRIDE]],
-    [:irb_push_workspace, :PushWorkspace, "irb/cmd/pushws",
-     [:irb_pushws, OVERRIDE_ALL],
-     [:pushws, NO_OVERRIDE],
-     [:irb_push_binding, OVERRIDE_ALL],
-     [:irb_pushb, OVERRIDE_ALL],
-     [:pushb, NO_OVERRIDE]],
-    [:irb_pop_workspace, :PopWorkspace, "irb/cmd/pushws",
-     [:irb_popws, OVERRIDE_ALL],
-     [:popws, NO_OVERRIDE],
-     [:irb_pop_binding, OVERRIDE_ALL],
-     [:irb_popb, OVERRIDE_ALL],
-     [:popb, NO_OVERRIDE]],
+      [
+        :irb_workspaces, :Workspaces, "irb/cmd/pushws",
+        [:workspaces, NO_OVERRIDE],
+        [:irb_bindings, OVERRIDE_ALL],
+        [:bindings, NO_OVERRIDE],
+      ],
+      [
+        :irb_push_workspace, :PushWorkspace, "irb/cmd/pushws",
+        [:irb_pushws, OVERRIDE_ALL],
+        [:pushws, NO_OVERRIDE],
+        [:irb_push_binding, OVERRIDE_ALL],
+        [:irb_pushb, OVERRIDE_ALL],
+        [:pushb, NO_OVERRIDE],
+      ],
+      [
+        :irb_pop_workspace, :PopWorkspace, "irb/cmd/pushws",
+        [:irb_popws, OVERRIDE_ALL],
+        [:popws, NO_OVERRIDE],
+        [:irb_pop_binding, OVERRIDE_ALL],
+        [:irb_popb, OVERRIDE_ALL],
+        [:popb, NO_OVERRIDE],
+      ],
 
-    [:irb_load, :Load, "irb/cmd/load"],
-    [:irb_require, :Require, "irb/cmd/load"],
-    [:irb_source, :Source, "irb/cmd/load",
-     [:source, NO_OVERRIDE]],
+      [
+        :irb_load, :Load, "irb/cmd/load"],
+      [
+        :irb_require, :Require, "irb/cmd/load"],
+      [
+        :irb_source, :Source, "irb/cmd/load",
+        [:source, NO_OVERRIDE],
+      ],
 
-    [:irb, :IrbCommand, "irb/cmd/subirb"],
-    [:irb_jobs, :Jobs, "irb/cmd/subirb",
-     [:jobs, NO_OVERRIDE]],
-    [:irb_fg, :Foreground, "irb/cmd/subirb",
-     [:fg, NO_OVERRIDE]],
-    [:irb_kill, :Kill, "irb/cmd/subirb",
-     [:kill, OVERRIDE_PRIVATE_ONLY]],
+      [
+        :irb, :IrbCommand, "irb/cmd/subirb"],
+      [
+        :irb_jobs, :Jobs, "irb/cmd/subirb",
+        [:jobs, NO_OVERRIDE],
+      ],
+      [
+        :irb_fg, :Foreground, "irb/cmd/subirb",
+        [:fg, NO_OVERRIDE],
+      ],
+      [
+        :irb_kill, :Kill, "irb/cmd/subirb",
+        [:kill, OVERRIDE_PRIVATE_ONLY],
+      ],
 
-    [:irb_help, :Help, "irb/cmd/help",
-     [:help, NO_OVERRIDE]],
+      [
+        :irb_help, :Help, "irb/cmd/help",
+        [:help, NO_OVERRIDE],
+      ],
+
+      [
+        :irb_info, :Info, "irb/cmd/info"
+      ],
 
     ]
 
@@ -147,11 +173,14 @@ module IRB # :nodoc:
             args << "&block"
             args = args.join(", ")
             line = __LINE__; eval %[
-              def #{cmd_name}(\#{args})
-            ExtendCommand::#{cmd_class}.execute(irb_context, \#{args})
+              unless self.class.class_variable_defined?(:@@#{cmd_name}_)
+              self.class.class_variable_set(:@@#{cmd_name}_, true)
+                def #{cmd_name}_(\#{args})
+                  ExtendCommand::#{cmd_class}.execute(irb_context, \#{args})
+                end
               end
             ], nil, __FILE__, line
-            send :#{cmd_name}, *opts, &b
+            __send__ :#{cmd_name}_, *opts, &b
           end
         ], nil, __FILE__, line
       else
@@ -239,7 +268,7 @@ module IRB # :nodoc:
         def #{cmd_name}(*opts, &b)
           Context.module_eval {remove_method(:#{cmd_name})}
           require "#{load_file}"
-          send :#{cmd_name}, *opts, &b
+          __send__ :#{cmd_name}, *opts, &b
         end
         for ali in aliases
           alias_method ali, cmd_name
@@ -262,8 +291,8 @@ module IRB # :nodoc:
       module_eval %[
         alias_method alias_name, base_method
         def #{base_method}(*opts)
-          send :#{extend_method}, *opts
-          send :#{alias_name}, *opts
+          __send__ :#{extend_method}, *opts
+          __send__ :#{alias_name}, *opts
         end
       ]
     end
@@ -278,8 +307,8 @@ module IRB # :nodoc:
       module_eval %[
         alias_method alias_name, base_method
         def #{base_method}(*opts)
-          send :#{alias_name}, *opts
-          send :#{extend_method}, *opts
+          __send__ :#{alias_name}, *opts
+          __send__ :#{extend_method}, *opts
         end
       ]
     end

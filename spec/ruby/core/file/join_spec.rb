@@ -104,15 +104,15 @@ describe "File.join" do
   it "raises an ArgumentError if passed a recursive array" do
     a = ["a"]
     a << a
-    lambda { File.join a }.should raise_error(ArgumentError)
+    -> { File.join a }.should raise_error(ArgumentError)
   end
 
   it "raises a TypeError exception when args are nil" do
-    lambda { File.join nil }.should raise_error(TypeError)
+    -> { File.join nil }.should raise_error(TypeError)
   end
 
   it "calls #to_str" do
-    lambda { File.join(mock('x')) }.should raise_error(TypeError)
+    -> { File.join(mock('x')) }.should raise_error(TypeError)
 
     bin = mock("bin")
     bin.should_receive(:to_str).exactly(:twice).and_return("bin")
@@ -129,11 +129,20 @@ describe "File.join" do
   end
 
   it "calls #to_path" do
-    lambda { File.join(mock('x')) }.should raise_error(TypeError)
+    -> { File.join(mock('x')) }.should raise_error(TypeError)
 
     bin = mock("bin")
     bin.should_receive(:to_path).exactly(:twice).and_return("bin")
     File.join(bin).should == "bin"
     File.join("usr", bin).should == "usr/bin"
+  end
+
+  it "raises errors for null bytes" do
+    -> { File.join("\x00x", "metadata.gz") }.should raise_error(ArgumentError) { |e|
+      e.message.should == 'string contains null byte'
+    }
+    -> { File.join("metadata.gz", "\x00x") }.should raise_error(ArgumentError) { |e|
+      e.message.should == 'string contains null byte'
+    }
   end
 end

@@ -1,8 +1,7 @@
-require 'mspec/expectations/expectations'
-require 'mspec/runner/formatters/dotted'
+require 'mspec/runner/formatters/base'
 
-class YamlFormatter < DottedFormatter
-  def initialize(out=nil)
+class YamlFormatter < BaseFormatter
+  def initialize(out = nil)
     super(nil)
 
     if out.nil?
@@ -14,9 +13,6 @@ class YamlFormatter < DottedFormatter
 
   def switch
     @out = @finish
-  end
-
-  def after(state)
   end
 
   def finish

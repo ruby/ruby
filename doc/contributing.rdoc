@@ -27,10 +27,10 @@ on your ticket.
   stable release. See
   {Downloading Ruby}[https://www.ruby-lang.org/en/downloads/].
 * Look to see if anyone already reported your issue, try
-  {searching on redmine}[https://bugs.ruby-lang.org/projects/ruby-trunk/issues]
+  {searching on redmine}[https://bugs.ruby-lang.org/projects/ruby-master/issues]
   for your problem.
 * If you can't find a ticket addressing your issue,
-  {create a new one}[https://bugs.ruby-lang.org/projects/ruby-trunk/issues/new].
+  {create a new one}[https://bugs.ruby-lang.org/projects/ruby-master/issues/new].
 * Choose the target version, usually current. Bugs will be first fixed in the
   current release and then {backported}[rdoc-label:label-Backport+Requests].
 * Fill in the Ruby version you're using when experiencing this issue
@@ -80,7 +80,9 @@ The current active platform maintainers are as follows:
   KOSAKI Motohiro (kosaki)
 [macOS]
   Kenta Murata (mrkn)
-[cygwin, bcc32, djgpp, wince, ...]
+[OpenBSD]
+  Jeremy Evans (jeremyevans0)
+[cygwin, ...]
   none. (Maintainer WANTED)
 
 == Reporting Security Issues
@@ -114,7 +116,7 @@ these? Quite a bit, actually:
 
 When a bug report goes for a while without any feedback, it goes to the bug
 graveyard which is unfortunate. If you check the {issues
-list}[https://bugs.ruby-lang.org/projects/ruby-trunk/issues] you will find lots
+list}[https://bugs.ruby-lang.org/projects/ruby-master/issues] you will find lots
 of delinquent bugs that require attention.
 
 You can help by verifying the existing tickets, try to reproduce the reported
@@ -129,7 +131,7 @@ redmine, if gone without notice. In this case the +patch+ command is your
 friend, see <code>man patch</code> for more information. Basically this would
 go something like this:
 
-  cd path/to/ruby/trunk
+  cd path/to/ruby
   patch -p0 < path/to/patch
 
 You will then be prompted to apply the patch with the associated files. After
@@ -154,8 +156,8 @@ If there's a new feature that you want to see added to Ruby, you will need to
 write a convincing proposal and patch to implement the feature.
 
 For new features in CRuby, use the {'Feature'
-tracker}[https://bugs.ruby-lang.org/projects/ruby-trunk/issues?set_filter=1&tracker_id=2]
-on ruby-trunk. For non-CRuby dependent features, features that would apply to
+tracker}[https://bugs.ruby-lang.org/projects/ruby-master/issues?set_filter=1&tracker_id=2]
+on ruby-master. For non-CRuby dependent features, features that would apply to
 alternate Ruby implementations such as JRuby and Rubinius, use the {CommonRuby
 tracker}[https://bugs.ruby-lang.org/projects/common-ruby].
 
@@ -215,7 +217,7 @@ Please note:
 == Backport Requests
 
 When a new version of Ruby is released, it starts at patch level 0 (p0), and
-bugs will be fixed first on the trunk branch. If it's determined that a bug
+bugs will be fixed first on the master branch. If it's determined that a bug
 exists in a previous version of Ruby that is still in the bug fix stage of
 maintenance, then a patch will be backported. After the maintenance stage of a
 particular Ruby version ends, it goes into "security fix only" mode which
@@ -245,34 +247,28 @@ Status and maintainers of branches are listed on the
 In order to help resolve existing issues and contributing patches to Ruby you
 need to be able to run the test suite.
 
-CRuby uses subversion for source control, you can find installation
-instructions and lots of great info to learn subversion on the
-{svnbook.red-bean.com}[http://svnbook.red-bean.com/]. For other resources see
-the {ruby-core documentation on
+CRuby uses git for source control, the {git homepage}[https://git-scm.com/]
+has installation instructions with links to documentation for learning more
+about git. There is a mirror of the repository on {github}[https://github.com/ruby/ruby].
+For other resources see the {ruby-core documentation on
 ruby-lang.org}[https://www.ruby-lang.org/en/community/ruby-core/].
-
-This guide will use git for contributing.  The {git
-homepage}[https://git-scm.com/] has installation instructions with links to
-documentation for learning more about git. There is a mirror of the subversion
-repository on {github}[https://github.com/ruby/ruby].
 
 Install the prerequisite dependencies for building the CRuby interpreter to
 run tests.
 
 * C compiler
-* autoconf
-* bison
-* gperf
-* ruby - Ruby itself is prerequisite in order to build Ruby from source. It
-  can be 1.8.
+* autoconf - 2.67 or later, preferably 2.69.
+* bison - 2.0 or later, preferably 3.4.
+* gperf - 3.0.3 or later, preferably 3.1.
+* ruby - Ruby itself is prerequisite in order to build Ruby from source.
+  You should use [a maintained version of Ruby](https://www.ruby-lang.org/en/downloads/).
 
 You should also have access to development headers for the following
 libraries, but these are not required:
 
-* Tcl/Tk
 * NDBM/QDBM
 * GDBM
-* OpenSSL
+* OpenSSL/LibreSSL
 * readline/editline(libedit)
 * zlib
 * libffi
@@ -283,15 +279,15 @@ Now let's build CRuby:
 
 * Checkout the CRuby source code:
 
-    git clone https://github.com/ruby/ruby.git ruby-trunk
+    git clone https://github.com/ruby/ruby.git ruby-master
 
 * Generate the configuration files and build:
 
-    cd ruby-trunk
+    cd ruby-master
     autoconf
     mkdir build && cd build # its good practice to build outside of source dir
-    mkdir ~/.rubies # we will install to .rubies/ruby-trunk in our home dir
-    ../configure --prefix="${HOME}/.rubies/ruby-trunk"
+    mkdir ~/.rubies # we will install to .rubies/ruby-master in our home dir
+    ../configure --prefix="${HOME}/.rubies/ruby-master"
     make up && make install
 
 After adding Ruby to your PATH, you should be ready to run the test suite:
@@ -348,7 +344,7 @@ Before you submit a patch, there are a few things you should know:
 
 To improve the chance your patch will be accepted please follow these simple rules:
 
-* Bug fixes should be committed on trunk first
+* Bug fixes should be committed on master first
 * Format of the patch file must be a unified diff (ie: diff -pu, svn diff, or git diff)
 * Don't introduce cosmetic changes
 * Follow the original coding style of the code
@@ -356,17 +352,17 @@ To improve the chance your patch will be accepted please follow these simple rul
 
 First thing you should do is check out the code if you haven't already:
 
-  git clone https://github.com/ruby/ruby.git ruby-trunk
+  git clone https://github.com/ruby/ruby.git ruby-master
 
 Now create a dedicated branch:
 
-  cd ruby-trunk
+  cd ruby-master
   git checkout -b my_new_branch
 
 The name of your branch doesn't really matter because it will only exist on
 your local computer and won't be part of the official Ruby repository. It will
 be used to create patches based on the differences between your branch and
-trunk, or edge Ruby.
+master, or edge Ruby.
 
 === Coding style
 
@@ -384,48 +380,25 @@ Here are some general rules to follow when writing Ruby and C code for CRuby:
 * ABBRs should be all upper case.
 * Do as others do
 
-=== ChangeLog
+=== Commit messages
 
-Although not required, if you wish to add a ChangeLog entry for your change
-please note:
+When you're ready to commit:
 
-You can use the following template for the ChangeLog entry on your commit:
+   git commit path/to/files
 
-  Thu Jan  1 00:00:00 2004  Your Name  <yourmail@example.com>
+This will open your editor in which you write your commit message.
+Use the following style for commit messages:
 
-  	* filename (function): short description of this commit.
-  	  This should include your intention of this change.
-  	  [bug:#number] [mailinglist:number]
+* Use a succinct subject line.
+* Include reasoning behind the change in the commit message, focusing on why
+  the change is being made.
+* Refer to redmine issue (such as Fixes [Bug #1234] or Implements
+  [Feature #3456]), or discussion on the mailing list
+  (such as [ruby-core:12345]).
+* For GitHub issues, use [GH-#] (such as [Fixes GH-234]).
+* Follow the style used by other committers.
 
-  	* filename2 (function2): additional description for this file/function.
-
-This follows {GNU Coding Standards for Change
-Logs}[http://www.gnu.org/prep/standards/html_node/Change-Logs.html#Change-Logs],
-some other requirements and tips:
-
-* Timestamps must be in JST (+09:00) in the style as above.
-* Two spaces between the timestamp and your name. Two spaces between
-  your name and your mail address.
-* One blank line between the timestamp and the description.
-* Indent the description with TAB. 2nd line should begin with TAB+2SP.
-* Write a entry (*) for each change.
-* Refer to redmine issue or discussion on the mailing list.
-* For GitHub issues, use [GH-#] (such as [Fixes GH-234]
-* One blank line between entries.
-* Do as other committers do.
-
-You can generate the ChangeLog entry by running <code>make change</code>
-
-When you're ready to commit, copy your ChangeLog entry into the commit message,
-keeping the same formatting and select your files:
-
-    git commit ChangeLog path/to/files
-
-In the likely event that your branch becomes outdated, you will have to update
-your working branch:
-
-    git fetch origin
-    git rebase remotes/origin/master
+=== Contributing your code
 
 Now that you've got some code you want to contribute, let's get set up to
 generate a patch. Start by forking the github mirror, check the {github docs on
@@ -442,7 +415,7 @@ Next copy the writable url for your fork and add it as a git remote, replace
 
 In order to generate a patch that you can upload to the bug tracker, we can use
 the github interface to review our changes just visit
-https://github.com/my_username/ruby/compare/trunk...my_new_branch
+https://github.com/my_username/ruby/compare/master...my_new_branch
 
 Next, you can simply add '.patch' to the end of this URL and it will generate
 the patch for you, save the file to your computer and upload it to the bug
@@ -457,3 +430,18 @@ You may use the {'git format-patch'}[https://git-scm.com/docs/git-format-patch]
 command to generate patch files to upload to redmine.  You may also use
 the {'git request-pull'}[https://git-scm.com/docs/git-request-pull] command for
 formatting pull request messages to redmine.
+
+=== Updating the official repository
+
+If you are a committer, you can push changes directly into the official
+repository:
+
+    git push origin your-branch-name:master
+
+However, it is likely will have become outdated, and you will have to
+update it.  In that case, run:
+
+    git fetch origin
+    git rebase remotes/origin/master
+
+and then try pushing your changes again.

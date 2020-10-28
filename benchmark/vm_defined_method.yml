@@ -1,0 +1,8 @@
+prelude: |
+  class Object
+    define_method(:m){}
+  end
+benchmark:
+  vm_defined_method: |
+    m; m; m; m; m; m; m; m;
+loop_count: 6000000

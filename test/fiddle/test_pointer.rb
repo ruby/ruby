@@ -79,13 +79,12 @@ module Fiddle
     def test_to_ptr_string
       str = "hello world"
       ptr = Pointer[str]
-      assert ptr.tainted?, 'pointer should be tainted'
       assert_equal str.length, ptr.size
       assert_equal 'hello', ptr[0,5]
     end
 
     def test_to_ptr_io
-      buf = Pointer.malloc(10)
+      buf = Pointer.malloc(10, Fiddle::RUBY_FREE)
       File.open(__FILE__, 'r') do |f|
         ptr = Pointer.to_ptr f
         fread = Function.new(@libc['fread'],
@@ -146,7 +145,11 @@ module Fiddle
 
     def test_free
       ptr = Pointer.malloc(4)
-      assert_nil ptr.free
+      begin
+        assert_nil ptr.free
+      ensure
+        Fiddle.free ptr
+      end
     end
 
     def test_free=
@@ -174,15 +177,21 @@ module Fiddle
 
     def test_size
       ptr = Pointer.malloc(4)
-      assert_equal 4, ptr.size
-      Fiddle.free ptr.to_i
+      begin
+        assert_equal 4, ptr.size
+      ensure
+        Fiddle.free ptr
+      end
     end
 
     def test_size=
       ptr = Pointer.malloc(4)
-      ptr.size = 10
-      assert_equal 10, ptr.size
-      Fiddle.free ptr.to_i
+      begin
+        ptr.size = 10
+        assert_equal 10, ptr.size
+      ensure
+        Fiddle.free ptr
+      end
     end
 
     def test_aref_aset

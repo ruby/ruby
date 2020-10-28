@@ -482,7 +482,7 @@ class RDoc::Store
     when :gem    then
       parent = File.expand_path '..', @path
       "gem #{File.basename parent}"
-    when :home   then '~/.rdoc'
+    when :home   then RDoc.home
     when :site   then 'ruby site'
     when :system then 'ruby core'
     else @path
@@ -723,7 +723,7 @@ class RDoc::Store
 
   def page name
     @text_files_hash.each_value.find do |file|
-      file.page_name == name
+      file.page_name == name or file.base_name == name
     end
   end
 
@@ -795,10 +795,8 @@ class RDoc::Store
 
     return if @dry_run
 
-    marshal = Marshal.dump @cache
-
     File.open cache_path, 'wb' do |io|
-      io.write marshal
+      Marshal.dump @cache, io
     end
   end
 
@@ -871,10 +869,8 @@ class RDoc::Store
 
     FileUtils.rm_f to_delete
 
-    marshal = Marshal.dump klass
-
     File.open path, 'wb' do |io|
-      io.write marshal
+      Marshal.dump klass, io
     end
   end
 
@@ -896,10 +892,8 @@ class RDoc::Store
 
     return if @dry_run
 
-    marshal = Marshal.dump method
-
     File.open method_file(full_name, method.full_name), 'wb' do |io|
-      io.write marshal
+      Marshal.dump method, io
     end
   end
 
@@ -918,10 +912,8 @@ class RDoc::Store
 
     return if @dry_run
 
-    marshal = Marshal.dump page
-
     File.open path, 'wb' do |io|
-      io.write marshal
+      Marshal.dump page, io
     end
   end
 

@@ -26,8 +26,8 @@ describe :array_push, shared: true do
     array.send(@method, :last).should == [1, 'two', 3.0, array, array, array, array, array, :last]
   end
 
-  it "raises a #{frozen_error_class} on a frozen array" do
-    lambda { ArraySpecs.frozen_array.send(@method, 1) }.should raise_error(frozen_error_class)
-    lambda { ArraySpecs.frozen_array.send(@method) }.should raise_error(frozen_error_class)
+  it "raises a FrozenError on a frozen array" do
+    -> { ArraySpecs.frozen_array.send(@method, 1) }.should raise_error(FrozenError)
+    -> { ArraySpecs.frozen_array.send(@method) }.should raise_error(FrozenError)
   end
 end

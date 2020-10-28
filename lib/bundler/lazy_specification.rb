@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
-require "uri"
-require "bundler/match_platform"
+require_relative "match_platform"
 
 module Bundler
   class LazySpecification
@@ -13,7 +12,7 @@ module Bundler
         [name, version, platform_string] <=> [other.name, other.version, other.platform_string]
       end
 
-    protected
+      protected
 
       def platform_string
         platform_string = platform.to_s
@@ -47,6 +46,14 @@ module Bundler
       identifier == other.identifier
     end
 
+    def eql?(other)
+      identifier.eql?(other.identifier)
+    end
+
+    def hash
+      identifier.hash
+    end
+
     def satisfies?(dependency)
       @name == dependency.name && dependency.requirement.satisfied_by?(Gem::Version.new(@version))
     end
@@ -69,15 +76,20 @@ module Bundler
     end
 
     def __materialize__
-      search_object = Bundler.feature_flag.specific_platform? || Bundler.settings[:force_ruby_platform] ? self : Dependency.new(name, version)
       @specification = if source.is_a?(Source::Gemspec) && source.gemspec.name == name
         source.gemspec.tap {|s| s.source = source }
       else
-        search = source.specs.search(search_object).last
-        if search && Gem::Platform.new(search.platform) != Gem::Platform.new(platform) && !search.runtime_dependencies.-(dependencies.reject {|d| d.type == :development }).empty?
+        search_object = Bundler.feature_flag.specific_platform? || Bundler.settings[:force_ruby_platform] ? self : Dependency.new(name, version)
+        platform_object = Gem::Platform.new(platform)
+        candidates = source.specs.search(search_object)
+        same_platform_candidates = candidates.select do |spec|
+          MatchPlatform.platforms_match?(spec.platform, platform_object)
+        end
+        search = same_platform_candidates.last || candidates.last
+        if search && Gem::Platform.new(search.platform) != platform_object && !search.runtime_dependencies.-(dependencies.reject {|d| d.type == :development }).empty?
           Bundler.ui.warn "Unable to use the platform-specific (#{search.platform}) version of #{name} (#{version}) " \
             "because it has different dependencies from the #{platform} version. " \
-            "To use the platform-specific version of the gem, run `bundle config specific_platform true` and install again."
+            "To use the platform-specific version of the gem, run `bundle config set --local specific_platform true` and install again."
           search = source.specs.search(self).last
         end
         search.dependencies = dependencies if search && (search.is_a?(RemoteSpecification) || search.is_a?(EndpointSpecification))
@@ -106,7 +118,7 @@ module Bundler
       " #{source.revision[0..6]}"
     end
 
-  private
+    private
 
     def to_ary
       nil

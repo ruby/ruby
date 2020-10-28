@@ -3,7 +3,6 @@ require 'rubygems/package/tar_test_case'
 require 'rubygems/package'
 
 class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
-
   def setup
     super
 
@@ -43,19 +42,19 @@ class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
 
     assert @entry.bytes_read
 
-    e = assert_raises IOError do @entry.eof? end
+    e = assert_raises(IOError) { @entry.eof? }
     assert_equal 'closed Gem::Package::TarReader::Entry', e.message
 
-    e = assert_raises IOError do @entry.getc end
+    e = assert_raises(IOError) { @entry.getc }
     assert_equal 'closed Gem::Package::TarReader::Entry', e.message
 
-    e = assert_raises IOError do @entry.pos end
+    e = assert_raises(IOError) { @entry.pos }
     assert_equal 'closed Gem::Package::TarReader::Entry', e.message
 
-    e = assert_raises IOError do @entry.read end
+    e = assert_raises(IOError) { @entry.read }
     assert_equal 'closed Gem::Package::TarReader::Entry', e.message
 
-    e = assert_raises IOError do @entry.rewind end
+    e = assert_raises(IOError) { @entry.rewind }
     assert_equal 'closed Gem::Package::TarReader::Entry', e.message
   end
 
@@ -76,6 +75,7 @@ class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
   end
 
   def test_full_name_null
+    skip "jruby strips the null byte and does not think it's corrupt" if Gem.java_platform?
     @entry.header.prefix << "\000"
 
     e = assert_raises Gem::Package::TarInvalidError do
@@ -149,5 +149,4 @@ class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
 
     assert_equal char, @entry.getc
   end
-
 end

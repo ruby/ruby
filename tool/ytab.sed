@@ -14,6 +14,7 @@ a\
 }
 /^yydestruct.*yymsg/,/{/{
   /^yydestruct/{
+    /,$/N
     /[, *]p)/!{
       H
       s/^/ruby_parser_&/
@@ -67,6 +68,8 @@ a\
 /^yy_reduce_print/,/^}/{
   s/fprintf *(stderr,/YYFPRINTF (p,/g
 }
+s/^yysyntax_error (/&struct parser_params *p, /
+s/ yysyntax_error (/&p, /
 s/\( YYFPRINTF *(\)yyoutput,/\1p,/
 s/\( YYFPRINTF *(\)yyo,/\1p,/
 s/\( YYFPRINTF *(\)stderr,/\1p,/

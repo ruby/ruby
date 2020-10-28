@@ -29,7 +29,7 @@ platform_is_not :windows do # hangs
         it 'shuts down a socket for writing' do
           @client.shutdown(Socket::SHUT_WR)
 
-          lambda { @client.write('hello') }.should raise_error(Errno::EPIPE)
+          -> { @client.write('hello') }.should raise_error(Errno::EPIPE)
         end
 
         it 'shuts down a socket for reading and writing' do
@@ -37,11 +37,11 @@ platform_is_not :windows do # hangs
 
           @client.recv(1).should be_empty
 
-          lambda { @client.write('hello') }.should raise_error(Errno::EPIPE)
+          -> { @client.write('hello') }.should raise_error(Errno::EPIPE)
         end
 
         it 'raises ArgumentError when using an invalid option' do
-          lambda { @server.shutdown(666) }.should raise_error(ArgumentError)
+          -> { @server.shutdown(666) }.should raise_error(ArgumentError)
         end
       end
 
@@ -61,13 +61,13 @@ platform_is_not :windows do # hangs
         it 'shuts down a socket for writing using :WR' do
           @client.shutdown(:WR)
 
-          lambda { @client.write('hello') }.should raise_error(Errno::EPIPE)
+          -> { @client.write('hello') }.should raise_error(Errno::EPIPE)
         end
 
         it 'shuts down a socket for writing using :SHUT_WR' do
           @client.shutdown(:SHUT_WR)
 
-          lambda { @client.write('hello') }.should raise_error(Errno::EPIPE)
+          -> { @client.write('hello') }.should raise_error(Errno::EPIPE)
         end
 
         it 'shuts down a socket for reading and writing' do
@@ -75,11 +75,11 @@ platform_is_not :windows do # hangs
 
           @client.recv(1).should be_empty
 
-          lambda { @client.write('hello') }.should raise_error(Errno::EPIPE)
+          -> { @client.write('hello') }.should raise_error(Errno::EPIPE)
         end
 
         it 'raises ArgumentError when using an invalid option' do
-          lambda { @server.shutdown(:Nope) }.should raise_error(SocketError)
+          -> { @server.shutdown(:Nope) }.should raise_error(SocketError)
         end
       end
 
@@ -99,17 +99,17 @@ platform_is_not :windows do # hangs
         it 'shuts down a socket for writing using "WR"' do
           @client.shutdown('WR')
 
-          lambda { @client.write('hello') }.should raise_error(Errno::EPIPE)
+          -> { @client.write('hello') }.should raise_error(Errno::EPIPE)
         end
 
         it 'shuts down a socket for writing using "SHUT_WR"' do
           @client.shutdown('SHUT_WR')
 
-          lambda { @client.write('hello') }.should raise_error(Errno::EPIPE)
+          -> { @client.write('hello') }.should raise_error(Errno::EPIPE)
         end
 
         it 'raises ArgumentError when using an invalid option' do
-          lambda { @server.shutdown('Nope') }.should raise_error(SocketError)
+          -> { @server.shutdown('Nope') }.should raise_error(SocketError)
         end
       end
 
@@ -141,13 +141,13 @@ platform_is_not :windows do # hangs
 
           @client.recv(1).should be_empty
 
-          lambda { @client.write('hello') }.should raise_error(Errno::EPIPE)
+          -> { @client.write('hello') }.should raise_error(Errno::EPIPE)
         end
       end
 
       describe 'using an object that does not respond to #to_str' do
         it 'raises TypeError' do
-          lambda { @server.shutdown(mock(:dummy)) }.should raise_error(TypeError)
+          -> { @server.shutdown(mock(:dummy)) }.should raise_error(TypeError)
         end
       end
     end

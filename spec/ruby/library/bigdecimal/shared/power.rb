@@ -53,8 +53,8 @@ describe :bigdecimal_power, shared: true do
   end
 
   it "returns NaN if self is NaN" do
-    BigDecimal("NaN").send(@method, -5).nan?.should == true
-    BigDecimal("NaN").send(@method, 5).nan?.should == true
+    BigDecimal("NaN").send(@method, -5).should.nan?
+    BigDecimal("NaN").send(@method, 5).should.nan?
   end
 
   it "returns 0.0 if self is infinite and argument is negative" do

@@ -124,28 +124,16 @@ describe "Integer#<=>" do
         @big <=> @num
       end
 
-      ruby_version_is ""..."2.5" do
-        it "returns nil if #coerce raises an exception" do
-          @num.should_receive(:coerce).with(@big).and_raise(RuntimeError)
-          lambda {
-            @result = (@big <=> @num)
-          }.should complain(/Numerical comparison operators will no more rescue exceptions/)
-          @result.should be_nil
-        end
-      end
-
-      ruby_version_is "2.5" do
-        it "lets the exception go through if #coerce raises an exception" do
-          @num.should_receive(:coerce).with(@big).and_raise(RuntimeError.new("my error"))
-          lambda {
-            @big <=> @num
-          }.should raise_error(RuntimeError, "my error")
-        end
+      it "lets the exception go through if #coerce raises an exception" do
+        @num.should_receive(:coerce).with(@big).and_raise(RuntimeError.new("my error"))
+        -> {
+          @big <=> @num
+        }.should raise_error(RuntimeError, "my error")
       end
 
       it "raises an exception if #coerce raises a non-StandardError exception" do
         @num.should_receive(:coerce).with(@big).and_raise(Exception)
-        lambda { @big <=> @num }.should raise_error(Exception)
+        -> { @big <=> @num }.should raise_error(Exception)
       end
 
       it "returns nil if #coerce does not return an Array" do
@@ -174,7 +162,7 @@ describe "Integer#<=>" do
       (infinity_value <=> Float::MAX.to_i*2).should == 1
     end
 
-    it "returns -1 when self is negative and other is Infinty" do
+    it "returns -1 when self is negative and other is Infinity" do
       (-Float::MAX.to_i*2 <=> infinity_value).should == -1
     end
 

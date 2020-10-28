@@ -7,13 +7,13 @@ describe "DateTime.now" do
   end
 
   it "sets the current date" do
-    (DateTime.now - Date.today).to_f.should be_close(0.0, 2.0)
+    (DateTime.now - Date.today).to_f.should be_close(0.0, TIME_TOLERANCE)
   end
 
   it "sets the current time" do
     dt = DateTime.now
     now = Time.now
-    (dt.to_time - now).should be_close(0.0, 10.0)
+    (dt.to_time - now).should be_close(0.0, TIME_TOLERANCE)
   end
 
   it "grabs the local timezone" do

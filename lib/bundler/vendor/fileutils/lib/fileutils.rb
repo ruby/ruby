@@ -1,4 +1,11 @@
 # frozen_string_literal: true
+
+begin
+  require 'rbconfig'
+rescue LoadError
+  # for make mjit-headers
+end
+
 #
 # = fileutils.rb
 #
@@ -15,48 +22,58 @@
 #
 #   require 'bundler/vendor/fileutils/lib/fileutils'
 #
-#   Bundler::FileUtils.cd(dir, options)
-#   Bundler::FileUtils.cd(dir, options) {|dir| block }
+#   Bundler::FileUtils.cd(dir, **options)
+#   Bundler::FileUtils.cd(dir, **options) {|dir| block }
 #   Bundler::FileUtils.pwd()
-#   Bundler::FileUtils.mkdir(dir, options)
-#   Bundler::FileUtils.mkdir(list, options)
-#   Bundler::FileUtils.mkdir_p(dir, options)
-#   Bundler::FileUtils.mkdir_p(list, options)
-#   Bundler::FileUtils.rmdir(dir, options)
-#   Bundler::FileUtils.rmdir(list, options)
-#   Bundler::FileUtils.ln(target, link, options)
-#   Bundler::FileUtils.ln(targets, dir, options)
-#   Bundler::FileUtils.ln_s(target, link, options)
-#   Bundler::FileUtils.ln_s(targets, dir, options)
-#   Bundler::FileUtils.ln_sf(target, link, options)
-#   Bundler::FileUtils.cp(src, dest, options)
-#   Bundler::FileUtils.cp(list, dir, options)
-#   Bundler::FileUtils.cp_r(src, dest, options)
-#   Bundler::FileUtils.cp_r(list, dir, options)
-#   Bundler::FileUtils.mv(src, dest, options)
-#   Bundler::FileUtils.mv(list, dir, options)
-#   Bundler::FileUtils.rm(list, options)
-#   Bundler::FileUtils.rm_r(list, options)
-#   Bundler::FileUtils.rm_rf(list, options)
-#   Bundler::FileUtils.install(src, dest, options)
-#   Bundler::FileUtils.chmod(mode, list, options)
-#   Bundler::FileUtils.chmod_R(mode, list, options)
-#   Bundler::FileUtils.chown(user, group, list, options)
-#   Bundler::FileUtils.chown_R(user, group, list, options)
-#   Bundler::FileUtils.touch(list, options)
+#   Bundler::FileUtils.mkdir(dir, **options)
+#   Bundler::FileUtils.mkdir(list, **options)
+#   Bundler::FileUtils.mkdir_p(dir, **options)
+#   Bundler::FileUtils.mkdir_p(list, **options)
+#   Bundler::FileUtils.rmdir(dir, **options)
+#   Bundler::FileUtils.rmdir(list, **options)
+#   Bundler::FileUtils.ln(target, link, **options)
+#   Bundler::FileUtils.ln(targets, dir, **options)
+#   Bundler::FileUtils.ln_s(target, link, **options)
+#   Bundler::FileUtils.ln_s(targets, dir, **options)
+#   Bundler::FileUtils.ln_sf(target, link, **options)
+#   Bundler::FileUtils.cp(src, dest, **options)
+#   Bundler::FileUtils.cp(list, dir, **options)
+#   Bundler::FileUtils.cp_r(src, dest, **options)
+#   Bundler::FileUtils.cp_r(list, dir, **options)
+#   Bundler::FileUtils.mv(src, dest, **options)
+#   Bundler::FileUtils.mv(list, dir, **options)
+#   Bundler::FileUtils.rm(list, **options)
+#   Bundler::FileUtils.rm_r(list, **options)
+#   Bundler::FileUtils.rm_rf(list, **options)
+#   Bundler::FileUtils.install(src, dest, **options)
+#   Bundler::FileUtils.chmod(mode, list, **options)
+#   Bundler::FileUtils.chmod_R(mode, list, **options)
+#   Bundler::FileUtils.chown(user, group, list, **options)
+#   Bundler::FileUtils.chown_R(user, group, list, **options)
+#   Bundler::FileUtils.touch(list, **options)
 #
-# The <tt>options</tt> parameter is a hash of options, taken from the list
-# <tt>:force</tt>, <tt>:noop</tt>, <tt>:preserve</tt>, and <tt>:verbose</tt>.
-# <tt>:noop</tt> means that no changes are made.  The other three are obvious.
-# Each method documents the options that it honours.
+# Possible <tt>options</tt> are:
+#
+# <tt>:force</tt> :: forced operation (rewrite files if exist, remove
+#                    directories if not empty, etc.);
+# <tt>:verbose</tt> :: print command to be run, in bash syntax, before
+#                      performing it;
+# <tt>:preserve</tt> :: preserve object's group, user and modification
+#                       time on copying;
+# <tt>:noop</tt> :: no changes are made (usable in combination with
+#                   <tt>:verbose</tt> which will print the command to run)
+#
+# Each method documents the options that it honours. See also ::commands,
+# ::options and ::options_of methods to introspect which command have which
+# options.
 #
 # All methods that have the concept of a "source" file or directory can take
 # either one file or a list of files in that argument.  See the method
 # documentation for examples.
 #
-# There are some `low level' methods, which do not accept any option:
+# There are some `low level' methods, which do not accept keyword arguments:
 #
-#   Bundler::FileUtils.copy_entry(src, dest, preserve = false, dereference = false)
+#   Bundler::FileUtils.copy_entry(src, dest, preserve = false, dereference_root = false, remove_destination = false)
 #   Bundler::FileUtils.copy_file(src, dest, preserve = false, dereference = true)
 #   Bundler::FileUtils.copy_stream(srcstream, deststream)
 #   Bundler::FileUtils.remove_entry(path, force = false)
@@ -84,8 +101,8 @@
 # files/directories.  This equates to passing the <tt>:noop</tt> and
 # <tt>:verbose</tt> flags to methods in Bundler::FileUtils.
 #
-
 module Bundler::FileUtils
+  VERSION = "1.4.1"
 
   def self.private_module_function(name)   #:nodoc:
     module_function name
@@ -106,19 +123,22 @@ module Bundler::FileUtils
   #
   # Changes the current directory to the directory +dir+.
   #
-  # If this method is called with block, resumes to the old
-  # working directory after the block execution finished.
+  # If this method is called with block, resumes to the previous
+  # working directory after the block execution has finished.
   #
-  #   Bundler::FileUtils.cd('/', :verbose => true)   # chdir and report it
+  #   Bundler::FileUtils.cd('/')  # change directory
   #
-  #   Bundler::FileUtils.cd('/') do  # chdir
+  #   Bundler::FileUtils.cd('/', verbose: true)   # change directory and report it
+  #
+  #   Bundler::FileUtils.cd('/') do  # change directory
   #     # ...               # do something
   #   end                   # return to original directory
   #
   def cd(dir, verbose: nil, &block) # :yield: dir
     fu_output_message "cd #{dir}" if verbose
-    Dir.chdir(dir, &block)
+    result = Dir.chdir(dir, &block)
     fu_output_message 'cd -' if verbose and block
+    result
   end
   module_function :cd
 
@@ -153,9 +173,9 @@ module Bundler::FileUtils
   # Creates one or more directories.
   #
   #   Bundler::FileUtils.mkdir 'test'
-  #   Bundler::FileUtils.mkdir %w( tmp data )
-  #   Bundler::FileUtils.mkdir 'notexist', :noop => true  # Does not really create.
-  #   Bundler::FileUtils.mkdir 'tmp', :mode => 0700
+  #   Bundler::FileUtils.mkdir %w(tmp data)
+  #   Bundler::FileUtils.mkdir 'notexist', noop: true  # Does not really create.
+  #   Bundler::FileUtils.mkdir 'tmp', mode: 0700
   #
   def mkdir(list, mode: nil, noop: nil, verbose: nil)
     list = fu_list(list)
@@ -174,7 +194,7 @@ module Bundler::FileUtils
   #
   #   Bundler::FileUtils.mkdir_p '/usr/local/lib/ruby'
   #
-  # causes to make following directories, if it does not exist.
+  # causes to make following directories, if they do not exist.
   #
   # * /usr
   # * /usr/local
@@ -238,22 +258,22 @@ module Bundler::FileUtils
   #   Bundler::FileUtils.rmdir 'somedir'
   #   Bundler::FileUtils.rmdir %w(somedir anydir otherdir)
   #   # Does not really remove directory; outputs message.
-  #   Bundler::FileUtils.rmdir 'somedir', :verbose => true, :noop => true
+  #   Bundler::FileUtils.rmdir 'somedir', verbose: true, noop: true
   #
   def rmdir(list, parents: nil, noop: nil, verbose: nil)
     list = fu_list(list)
     fu_output_message "rmdir #{parents ? '-p ' : ''}#{list.join ' '}" if verbose
     return if noop
     list.each do |dir|
-      begin
-        Dir.rmdir(dir = remove_trailing_slash(dir))
-        if parents
+      Dir.rmdir(dir = remove_trailing_slash(dir))
+      if parents
+        begin
           until (parent = File.dirname(dir)) == '.' or parent == dir
             dir = parent
             Dir.rmdir(dir)
           end
+        rescue Errno::ENOTEMPTY, Errno::EEXIST, Errno::ENOENT
         end
-      rescue Errno::ENOTEMPTY, Errno::EEXIST, Errno::ENOENT
       end
     end
   end
@@ -267,7 +287,7 @@ module Bundler::FileUtils
   #
   # In the first form, creates a hard link +link+ which points to +target+.
   # If +link+ already exists, raises Errno::EEXIST.
-  # But if the :force option is set, overwrites +link+.
+  # But if the +force+ option is set, overwrites +link+.
   #
   #   Bundler::FileUtils.ln 'gcc', 'cc', verbose: true
   #   Bundler::FileUtils.ln '/usr/bin/emacs21', '/usr/bin/emacs'
@@ -294,6 +314,39 @@ module Bundler::FileUtils
   module_function :link
 
   #
+  # Hard link +src+ to +dest+. If +src+ is a directory, this method links
+  # all its contents recursively. If +dest+ is a directory, links
+  # +src+ to +dest/src+.
+  #
+  # +src+ can be a list of files.
+  #
+  # If +dereference_root+ is true, this method dereference tree root.
+  #
+  # If +remove_destination+ is true, this method removes each destination file before copy.
+  #
+  #   Bundler::FileUtils.rm_r site_ruby + '/mylib', force: true
+  #   Bundler::FileUtils.cp_lr 'lib/', site_ruby + '/mylib'
+  #
+  #   # Examples of linking several files to target directory.
+  #   Bundler::FileUtils.cp_lr %w(mail.rb field.rb debug/), site_ruby + '/tmail'
+  #   Bundler::FileUtils.cp_lr Dir.glob('*.rb'), '/home/aamine/lib/ruby', noop: true, verbose: true
+  #
+  #   # If you want to link all contents of a directory instead of the
+  #   # directory itself, c.f. src/x -> dest/x, src/y -> dest/y,
+  #   # use the following code.
+  #   Bundler::FileUtils.cp_lr 'src/.', 'dest'  # cp_lr('src', 'dest') makes dest/src, but this doesn't.
+  #
+  def cp_lr(src, dest, noop: nil, verbose: nil,
+            dereference_root: true, remove_destination: false)
+    fu_output_message "cp -lr#{remove_destination ? ' --remove-destination' : ''} #{[src,dest].flatten.join ' '}" if verbose
+    return if noop
+    fu_each_src_dest(src, dest) do |s, d|
+      link_entry s, d, dereference_root, remove_destination
+    end
+  end
+  module_function :cp_lr
+
+  #
   # :call-seq:
   #   Bundler::FileUtils.ln_s(target, link, force: nil, noop: nil, verbose: nil)
   #   Bundler::FileUtils.ln_s(target,  dir, force: nil, noop: nil, verbose: nil)
@@ -301,7 +354,7 @@ module Bundler::FileUtils
   #
   # In the first form, creates a symbolic link +link+ which points to +target+.
   # If +link+ already exists, raises Errno::EEXIST.
-  # But if the :force option is set, overwrites +link+.
+  # But if the <tt>force</tt> option is set, overwrites +link+.
   #
   #   Bundler::FileUtils.ln_s '/usr/bin/ruby', '/usr/local/bin/ruby'
   #   Bundler::FileUtils.ln_s 'verylongsourcefilename.c', 'c', force: true
@@ -340,6 +393,26 @@ module Bundler::FileUtils
   module_function :ln_sf
 
   #
+  # Hard links a file system entry +src+ to +dest+.
+  # If +src+ is a directory, this method links its contents recursively.
+  #
+  # Both of +src+ and +dest+ must be a path name.
+  # +src+ must exist, +dest+ must not exist.
+  #
+  # If +dereference_root+ is true, this method dereferences the tree root.
+  #
+  # If +remove_destination+ is true, this method removes each destination file before copy.
+  #
+  def link_entry(src, dest, dereference_root = false, remove_destination = false)
+    Entry_.new(src, nil, dereference_root).traverse do |ent|
+      destent = Entry_.new(dest, ent.rel, false)
+      File.unlink destent.path if remove_destination && File.file?(destent.path)
+      ent.link destent.path
+    end
+  end
+  module_function :link_entry
+
+  #
   # Copies a file content +src+ to +dest+.  If +dest+ is a directory,
   # copies +src+ to +dest/src+.
   #
@@ -347,7 +420,7 @@ module Bundler::FileUtils
   #
   #   Bundler::FileUtils.cp 'eval.c', 'eval.c.org'
   #   Bundler::FileUtils.cp %w(cgi.rb complex.rb date.rb), '/usr/lib/ruby/1.6'
-  #   Bundler::FileUtils.cp %w(cgi.rb complex.rb date.rb), '/usr/lib/ruby/1.6', :verbose => true
+  #   Bundler::FileUtils.cp %w(cgi.rb complex.rb date.rb), '/usr/lib/ruby/1.6', verbose: true
   #   Bundler::FileUtils.cp 'symlink', 'dest'   # copy content, "dest" is not a symlink
   #
   def cp(src, dest, preserve: nil, noop: nil, verbose: nil)
@@ -369,13 +442,17 @@ module Bundler::FileUtils
   #
   # +src+ can be a list of files.
   #
+  # If +dereference_root+ is true, this method dereference tree root.
+  #
+  # If +remove_destination+ is true, this method removes each destination file before copy.
+  #
   #   # Installing Ruby library "mylib" under the site_ruby
-  #   Bundler::FileUtils.rm_r site_ruby + '/mylib', :force
+  #   Bundler::FileUtils.rm_r site_ruby + '/mylib', force: true
   #   Bundler::FileUtils.cp_r 'lib/', site_ruby + '/mylib'
   #
   #   # Examples of copying several files to target directory.
   #   Bundler::FileUtils.cp_r %w(mail.rb field.rb debug/), site_ruby + '/tmail'
-  #   Bundler::FileUtils.cp_r Dir.glob('*.rb'), '/home/foo/lib/ruby', :noop => true, :verbose => true
+  #   Bundler::FileUtils.cp_r Dir.glob('*.rb'), '/home/foo/lib/ruby', noop: true, verbose: true
   #
   #   # If you want to copy all contents of a directory instead of the
   #   # directory itself, c.f. src/x -> dest/x, src/y -> dest/y,
@@ -410,9 +487,13 @@ module Bundler::FileUtils
   # If +remove_destination+ is true, this method removes each destination file before copy.
   #
   def copy_entry(src, dest, preserve = false, dereference_root = false, remove_destination = false)
-    Entry_.new(src, nil, dereference_root).wrap_traverse(proc do |ent|
+    if dereference_root
+      src = File.realpath(src)
+    end
+
+    Entry_.new(src, nil, false).wrap_traverse(proc do |ent|
       destent = Entry_.new(dest, ent.rel, false)
-      File.unlink destent.path if remove_destination && File.file?(destent.path)
+      File.unlink destent.path if remove_destination && (File.file?(destent.path) || File.symlink?(destent.path))
       ent.copy destent.path
     end, proc do |ent|
       destent = Entry_.new(dest, ent.rel, false)
@@ -447,10 +528,10 @@ module Bundler::FileUtils
   # disk partition, the file is copied then the original file is removed.
   #
   #   Bundler::FileUtils.mv 'badname.rb', 'goodname.rb'
-  #   Bundler::FileUtils.mv 'stuff.rb', '/notexist/lib/ruby', :force => true  # no error
+  #   Bundler::FileUtils.mv 'stuff.rb', '/notexist/lib/ruby', force: true  # no error
   #
   #   Bundler::FileUtils.mv %w(junk.txt dust.txt), '/home/foo/.trash/'
-  #   Bundler::FileUtils.mv Dir.glob('test*.rb'), 'test', :noop => true, :verbose => true
+  #   Bundler::FileUtils.mv Dir.glob('test*.rb'), 'test', noop: true, verbose: true
   #
   def mv(src, dest, force: nil, noop: nil, verbose: nil, secure: nil)
     fu_output_message "mv#{force ? ' -f' : ''} #{[src,dest].flatten.join ' '}" if verbose
@@ -461,13 +542,12 @@ module Bundler::FileUtils
         if destent.exist?
           if destent.directory?
             raise Errno::EEXIST, d
-          else
-            destent.remove_file if rename_cannot_overwrite_file?
           end
         end
         begin
           File.rename s, d
-        rescue Errno::EXDEV
+        rescue Errno::EXDEV,
+               Errno::EPERM # move from unencrypted to encrypted dir (ext4)
           copy_entry s, d, true
           if secure
             remove_entry_secure s, force
@@ -485,18 +565,13 @@ module Bundler::FileUtils
   alias move mv
   module_function :move
 
-  def rename_cannot_overwrite_file?   #:nodoc:
-    /emx/ =~ RUBY_PLATFORM
-  end
-  private_module_function :rename_cannot_overwrite_file?
-
   #
   # Remove file(s) specified in +list+.  This method cannot remove directories.
   # All StandardErrors are ignored when the :force option is set.
   #
   #   Bundler::FileUtils.rm %w( junk.txt dust.txt )
   #   Bundler::FileUtils.rm Dir.glob('*.so')
-  #   Bundler::FileUtils.rm 'NotExistFile', :force => true   # never raises exception
+  #   Bundler::FileUtils.rm 'NotExistFile', force: true   # never raises exception
   #
   def rm(list, force: nil, noop: nil, verbose: nil)
     list = fu_list(list)
@@ -515,7 +590,7 @@ module Bundler::FileUtils
   #
   # Equivalent to
   #
-  #   Bundler::FileUtils.rm(list, :force => true)
+  #   Bundler::FileUtils.rm(list, force: true)
   #
   def rm_f(list, noop: nil, verbose: nil)
     rm list, force: true, noop: noop, verbose: verbose
@@ -531,18 +606,18 @@ module Bundler::FileUtils
   # StandardError when :force option is set.
   #
   #   Bundler::FileUtils.rm_r Dir.glob('/tmp/*')
-  #   Bundler::FileUtils.rm_r 'some_dir', :force => true
+  #   Bundler::FileUtils.rm_r 'some_dir', force: true
   #
   # WARNING: This method causes local vulnerability
   # if one of parent directories or removing directory tree are world
   # writable (including /tmp, whose permission is 1777), and the current
   # process has strong privilege such as Unix super user (root), and the
   # system has symbolic link.  For secure removing, read the documentation
-  # of #remove_entry_secure carefully, and set :secure option to true.
-  # Default is :secure=>false.
+  # of remove_entry_secure carefully, and set :secure option to true.
+  # Default is <tt>secure: false</tt>.
   #
-  # NOTE: This method calls #remove_entry_secure if :secure option is set.
-  # See also #remove_entry_secure.
+  # NOTE: This method calls remove_entry_secure if :secure option is set.
+  # See also remove_entry_secure.
   #
   def rm_r(list, force: nil, noop: nil, verbose: nil, secure: nil)
     list = fu_list(list)
@@ -561,10 +636,10 @@ module Bundler::FileUtils
   #
   # Equivalent to
   #
-  #   Bundler::FileUtils.rm_r(list, :force => true)
+  #   Bundler::FileUtils.rm_r(list, force: true)
   #
   # WARNING: This method causes local vulnerability.
-  # Read the documentation of #rm_r first.
+  # Read the documentation of rm_r first.
   #
   def rm_rf(list, noop: nil, verbose: nil, secure: nil)
     rm_r list, force: true, noop: noop, verbose: verbose, secure: secure
@@ -578,7 +653,7 @@ module Bundler::FileUtils
   # This method removes a file system entry +path+.  +path+ shall be a
   # regular file, a directory, or something.  If +path+ is a directory,
   # remove it recursively.  This method is required to avoid TOCTTOU
-  # (time-of-check-to-time-of-use) local security vulnerability of #rm_r.
+  # (time-of-check-to-time-of-use) local security vulnerability of rm_r.
   # #rm_r causes security hole when:
   #
   # * Parent directory is world writable (including /tmp).
@@ -601,8 +676,8 @@ module Bundler::FileUtils
   #
   # For details of this security vulnerability, see Perl's case:
   #
-  # * http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=CAN-2005-0448
-  # * http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=CAN-2004-0452
+  # * https://cve.mitre.org/cgi-bin/cvename.cgi?name=CAN-2005-0448
+  # * https://cve.mitre.org/cgi-bin/cvename.cgi?name=CAN-2004-0452
   #
   # For fileutils.rb, this vulnerability is reported in [ruby-dev:26100].
   #
@@ -626,22 +701,38 @@ module Bundler::FileUtils
     unless parent_st.sticky?
       raise ArgumentError, "parent directory is world writable, Bundler::FileUtils#remove_entry_secure does not work; abort: #{path.inspect} (parent directory mode #{'%o' % parent_st.mode})"
     end
+
     # freeze tree root
     euid = Process.euid
-    File.open(fullpath + '/.') {|f|
-      unless fu_stat_identical_entry?(st, f.stat)
-        # symlink (TOC-to-TOU attack?)
-        File.unlink fullpath
-        return
-      end
-      f.chown euid, -1
-      f.chmod 0700
-      unless fu_stat_identical_entry?(st, File.lstat(fullpath))
-        # TOC-to-TOU attack?
-        File.unlink fullpath
-        return
-      end
-    }
+    dot_file = fullpath + "/."
+    begin
+      File.open(dot_file) {|f|
+        unless fu_stat_identical_entry?(st, f.stat)
+          # symlink (TOC-to-TOU attack?)
+          File.unlink fullpath
+          return
+        end
+        f.chown euid, -1
+        f.chmod 0700
+      }
+    rescue Errno::EISDIR # JRuby in non-native mode can't open files as dirs
+      File.lstat(dot_file).tap {|fstat|
+        unless fu_stat_identical_entry?(st, fstat)
+          # symlink (TOC-to-TOU attack?)
+          File.unlink fullpath
+          return
+        end
+        File.chown euid, -1, dot_file
+        File.chmod 0700, dot_file
+      }
+    end
+
+    unless fu_stat_identical_entry?(st, File.lstat(fullpath))
+      # TOC-to-TOU attack?
+      File.unlink fullpath
+      return
+    end
+
     # ---- tree root is frozen ----
     root = Entry_.new(path)
     root.preorder_traverse do |ent|
@@ -681,7 +772,7 @@ module Bundler::FileUtils
   # +path+ might be a regular file, a directory, or something.
   # If +path+ is a directory, remove it recursively.
   #
-  # See also #remove_entry_secure.
+  # See also remove_entry_secure.
   #
   def remove_entry(path, force = false)
     Entry_.new(path).postorder_traverse do |ent|
@@ -742,8 +833,15 @@ module Bundler::FileUtils
   #
   def compare_stream(a, b)
     bsize = fu_stream_blksize(a, b)
-    sa = String.new(capacity: bsize)
-    sb = String.new(capacity: bsize)
+
+    if RUBY_VERSION > "2.4"
+      sa = String.new(capacity: bsize)
+      sb = String.new(capacity: bsize)
+    else
+      sa = String.new
+      sb = String.new
+    end
+
     begin
       a.read(bsize, sa)
       b.read(bsize, sb)
@@ -758,8 +856,8 @@ module Bundler::FileUtils
   # mode to +mode+.  If +dest+ is a directory, destination is +dest+/+src+.
   # This method removes destination before copy.
   #
-  #   Bundler::FileUtils.install 'ruby', '/usr/local/bin/ruby', :mode => 0755, :verbose => true
-  #   Bundler::FileUtils.install 'lib.rb', '/usr/local/lib/ruby/site_ruby', :verbose => true
+  #   Bundler::FileUtils.install 'ruby', '/usr/local/bin/ruby', mode: 0755, verbose: true
+  #   Bundler::FileUtils.install 'lib.rb', '/usr/local/lib/ruby/site_ruby', verbose: true
   #
   def install(src, dest, mode: nil, owner: nil, group: nil, preserve: nil,
               noop: nil, verbose: nil)
@@ -889,12 +987,12 @@ module Bundler::FileUtils
   # Absolute mode is
   #   Bundler::FileUtils.chmod 0755, 'somecommand'
   #   Bundler::FileUtils.chmod 0644, %w(my.rb your.rb his.rb her.rb)
-  #   Bundler::FileUtils.chmod 0755, '/usr/bin/ruby', :verbose => true
+  #   Bundler::FileUtils.chmod 0755, '/usr/bin/ruby', verbose: true
   #
   # Symbolic mode is
   #   Bundler::FileUtils.chmod "u=wrx,go=rx", 'somecommand'
   #   Bundler::FileUtils.chmod "u=wr,go=rr", %w(my.rb your.rb his.rb her.rb)
-  #   Bundler::FileUtils.chmod "u=wrx,go=rx", '/usr/bin/ruby', :verbose => true
+  #   Bundler::FileUtils.chmod "u=wrx,go=rx", '/usr/bin/ruby', verbose: true
   #
   # "a" :: is user, group, other mask.
   # "u" :: is user's mask.
@@ -954,7 +1052,7 @@ module Bundler::FileUtils
   # the attribute.
   #
   #   Bundler::FileUtils.chown 'root', 'staff', '/usr/local/bin/ruby'
-  #   Bundler::FileUtils.chown nil, 'bin', Dir.glob('/usr/bin/*'), :verbose => true
+  #   Bundler::FileUtils.chown nil, 'bin', Dir.glob('/usr/bin/*'), verbose: true
   #
   def chown(user, group, list, noop: nil, verbose: nil)
     list = fu_list(list)
@@ -978,7 +1076,7 @@ module Bundler::FileUtils
   # method does not change the attribute.
   #
   #   Bundler::FileUtils.chown_R 'www', 'www', '/var/www/htdocs'
-  #   Bundler::FileUtils.chown_R 'cvs', 'cvs', '/var/cvs', :verbose => true
+  #   Bundler::FileUtils.chown_R 'cvs', 'cvs', '/var/cvs', verbose: true
   #
   def chown_R(user, group, list, noop: nil, verbose: nil, force: nil)
     list = fu_list(list)
@@ -1001,11 +1099,6 @@ module Bundler::FileUtils
   end
   module_function :chown_R
 
-  begin
-    require 'etc'
-  rescue LoadError # rescue LoadError for miniruby
-  end
-
   def fu_get_uid(user)   #:nodoc:
     return nil unless user
     case user
@@ -1014,6 +1107,7 @@ module Bundler::FileUtils
     when /\A\d+\z/
       user.to_i
     else
+      require 'etc'
       Etc.getpwnam(user) ? Etc.getpwnam(user).uid : nil
     end
   end
@@ -1027,6 +1121,7 @@ module Bundler::FileUtils
     when /\A\d+\z/
       group.to_i
     else
+      require 'etc'
       Etc.getgrnam(group) ? Etc.getgrnam(group).gid : nil
     end
   end
@@ -1067,8 +1162,11 @@ module Bundler::FileUtils
   module StreamUtils_
     private
 
-    def fu_windows?
-      /mswin|mingw|bccwin|emx/ =~ RUBY_PLATFORM
+    case (defined?(::RbConfig) ? ::RbConfig::CONFIG['host_os'] : ::RUBY_PLATFORM)
+    when /mswin|mingw/
+      def fu_windows?; true end
+    else
+      def fu_windows?; false end
     end
 
     def fu_copy_stream0(src, dest, blksize = nil)   #:nodoc:
@@ -1193,9 +1291,16 @@ module Bundler::FileUtils
     def entries
       opts = {}
       opts[:encoding] = ::Encoding::UTF_8 if fu_windows?
-      Dir.entries(path(), opts)\
-          .reject {|n| n == '.' or n == '..' }\
-          .map {|n| Entry_.new(prefix(), join(rel(), n.untaint)) }
+
+      files = if Dir.respond_to?(:children)
+        Dir.children(path, **opts)
+      else
+        Dir.entries(path(), **opts)
+           .reject {|n| n == '.' or n == '..' }
+      end
+
+      untaint = RUBY_VERSION < '2.7'
+      files.map {|n| Entry_.new(prefix(), join(rel(), untaint ? n.untaint : n)) }
     end
 
     def stat
@@ -1250,6 +1355,22 @@ module Bundler::FileUtils
       end
     end
 
+    def link(dest)
+      case
+      when directory?
+        if !File.exist?(dest) and descendant_directory?(dest, path)
+          raise ArgumentError, "cannot link directory %s to itself %s" % [path, dest]
+        end
+        begin
+          Dir.mkdir dest
+        rescue
+          raise unless File.directory?(dest)
+        end
+      else
+        File.link path(), dest
+      end
+    end
+
     def copy(dest)
       lstat
       case
@@ -1266,18 +1387,21 @@ module Bundler::FileUtils
         end
       when symlink?
         File.symlink File.readlink(path()), dest
-      when chardev?
-        raise "cannot handle device file" unless File.respond_to?(:mknod)
-        mknod dest, ?c, 0666, lstat().rdev
-      when blockdev?
-        raise "cannot handle device file" unless File.respond_to?(:mknod)
-        mknod dest, ?b, 0666, lstat().rdev
+      when chardev?, blockdev?
+        raise "cannot handle device file"
       when socket?
-        raise "cannot handle socket" unless File.respond_to?(:mknod)
-        mknod dest, nil, lstat().mode, 0
+        begin
+          require 'socket'
+        rescue LoadError
+          raise "cannot handle socket"
+        else
+          raise "cannot handle socket" unless defined?(UNIXServer)
+        end
+        UNIXServer.new(dest).close
+        File.chmod lstat().mode, dest
       when pipe?
         raise "cannot handle FIFO" unless File.respond_to?(:mkfifo)
-        mkfifo dest, 0666
+        File.mkfifo dest, lstat().mode
       when door?
         raise "cannot handle door: #{path()}"
       else
@@ -1396,14 +1520,14 @@ module Bundler::FileUtils
 
     private
 
-    $fileutils_rb_have_lchmod = nil
+    @@fileutils_rb_have_lchmod = nil
 
     def have_lchmod?
       # This is not MT-safe, but it does not matter.
-      if $fileutils_rb_have_lchmod == nil
-        $fileutils_rb_have_lchmod = check_have_lchmod?
+      if @@fileutils_rb_have_lchmod == nil
+        @@fileutils_rb_have_lchmod = check_have_lchmod?
       end
-      $fileutils_rb_have_lchmod
+      @@fileutils_rb_have_lchmod
     end
 
     def check_have_lchmod?
@@ -1414,14 +1538,14 @@ module Bundler::FileUtils
       return false
     end
 
-    $fileutils_rb_have_lchown = nil
+    @@fileutils_rb_have_lchown = nil
 
     def have_lchown?
       # This is not MT-safe, but it does not matter.
-      if $fileutils_rb_have_lchown == nil
-        $fileutils_rb_have_lchown = check_have_lchown?
+      if @@fileutils_rb_have_lchown == nil
+        @@fileutils_rb_have_lchown = check_have_lchown?
       end
-      $fileutils_rb_have_lchown
+      @@fileutils_rb_have_lchown
     end
 
     def check_have_lchown?
@@ -1443,10 +1567,13 @@ module Bundler::FileUtils
     else
       DIRECTORY_TERM = "(?=/|\\z)"
     end
-    SYSCASE = File::FNM_SYSCASE.nonzero? ? "-i" : ""
 
     def descendant_directory?(descendant, ascendant)
-      /\A(?#{SYSCASE}:#{Regexp.quote(ascendant)})#{DIRECTORY_TERM}/ =~ File.dirname(descendant)
+      if File::FNM_SYSCASE.nonzero?
+        File.expand_path(File.dirname(descendant)).casecmp(File.expand_path(ascendant)) == 0
+      else
+        File.expand_path(File.dirname(descendant)) == File.expand_path(ascendant)
+      end
     end
   end   # class Entry_
 
@@ -1485,13 +1612,13 @@ module Bundler::FileUtils
   end
   private_module_function :fu_same?
 
-  @fileutils_output = $stderr
-  @fileutils_label  = ''
-
   def fu_output_message(msg)   #:nodoc:
-    @fileutils_output ||= $stderr
-    @fileutils_label  ||= ''
-    @fileutils_output.puts @fileutils_label + msg
+    output = @fileutils_output if defined?(@fileutils_output)
+    output ||= $stderr
+    if defined?(@fileutils_label)
+      msg = @fileutils_label + msg
+    end
+    output.puts msg
   end
   private_module_function :fu_output_message
 
@@ -1502,8 +1629,11 @@ module Bundler::FileUtils
     tbl
   }
 
+  public
+
   #
-  # Returns an Array of method names which have any options.
+  # Returns an Array of names of high-level methods that accept any keyword
+  # arguments.
   #
   #   p Bundler::FileUtils.commands  #=> ["chmod", "cp", "cp_r", "install", ...]
   #
@@ -1542,7 +1672,7 @@ module Bundler::FileUtils
   end
 
   #
-  # Returns an Array of method names which have the option +opt+.
+  # Returns an Array of methods names which have the option +opt+.
   #
   #   p Bundler::FileUtils.collect_method(:preserve) #=> ["cp", "cp_r", "copy", "install"]
   #
@@ -1550,14 +1680,16 @@ module Bundler::FileUtils
     OPT_TABLE.keys.select {|m| OPT_TABLE[m].include?(opt) }
   end
 
-  LOW_METHODS = singleton_methods(false) - collect_method(:noop).map(&:intern)
-  module LowMethods
+  private
+
+  LOW_METHODS = singleton_methods(false) - collect_method(:noop).map(&:intern) # :nodoc:
+  module LowMethods # :nodoc: internal use only
     private
     def _do_nothing(*)end
     ::Bundler::FileUtils::LOW_METHODS.map {|name| alias_method name, :_do_nothing}
   end
 
-  METHODS = singleton_methods() - [:private_module_function,
+  METHODS = singleton_methods() - [:private_module_function,                  # :nodoc:
       :commands, :options, :have_option?, :options_of, :collect_method]
 
   #
@@ -1567,8 +1699,6 @@ module Bundler::FileUtils
   #
   module Verbose
     include Bundler::FileUtils
-    @fileutils_output  = $stderr
-    @fileutils_label   = ''
     names = ::Bundler::FileUtils.collect_method(:verbose)
     names.each do |name|
       module_eval(<<-EOS, __FILE__, __LINE__ + 1)
@@ -1592,8 +1722,6 @@ module Bundler::FileUtils
   module NoWrite
     include Bundler::FileUtils
     include LowMethods
-    @fileutils_output  = $stderr
-    @fileutils_label   = ''
     names = ::Bundler::FileUtils.collect_method(:noop)
     names.each do |name|
       module_eval(<<-EOS, __FILE__, __LINE__ + 1)
@@ -1618,8 +1746,6 @@ module Bundler::FileUtils
   module DryRun
     include Bundler::FileUtils
     include LowMethods
-    @fileutils_output  = $stderr
-    @fileutils_label   = ''
     names = ::Bundler::FileUtils.collect_method(:noop)
     names.each do |name|
       module_eval(<<-EOS, __FILE__, __LINE__ + 1)

@@ -14,8 +14,8 @@ describe "Regexp#encoding" do
     /ASCII/n.encoding.should == Encoding::US_ASCII
   end
 
-  it "returns ASCII-8BIT if the 'n' modifier is supplied and non-US-ASCII characters are present" do
-    /\xc2\xa1/n.encoding.should == Encoding::ASCII_8BIT
+  it "returns BINARY if the 'n' modifier is supplied and non-US-ASCII characters are present" do
+    /\xc2\xa1/n.encoding.should == Encoding::BINARY
   end
 
   it "defaults to UTF-8 if \\u escapes appear" do
@@ -54,5 +54,9 @@ describe "Regexp#encoding" do
     Encoding.default_internal = Encoding::EUC_JP
     /foo/.encoding.should_not == Encoding::EUC_JP
     Encoding.default_internal = old_internal
+  end
+
+  it "allows otherwise invalid characters if NOENCODING is specified" do
+    Regexp.new('([\x00-\xFF])', Regexp::IGNORECASE | Regexp::NOENCODING).encoding.should == Encoding::BINARY
   end
 end

@@ -30,6 +30,7 @@
 #
 
 module Open3
+  VERSION = "0.1.0"
 
   # Open stdin, stdout, and stderr streams and start external executable.
   # In addition, a thread to wait for the started process is created.
@@ -206,6 +207,13 @@ module Open3
     opts[[:out, :err]] = out_w
 
     popen_run(cmd, opts, [in_r, out_w], [in_w, out_r], &block)
+  ensure
+    if block
+      in_r.close
+      in_w.close
+      out_r.close
+      out_w.close
+    end
   end
   module_function :popen2e
 

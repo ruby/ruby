@@ -128,6 +128,13 @@ class Rational_Test < Test::Unit::TestCase
     assert_raise(TypeError){Rational(Object.new, Object.new)}
     assert_raise(TypeError){Rational(1, Object.new)}
 
+    bug12485 = '[ruby-core:75995] [Bug #12485]'
+    o = Object.new
+    def o.to_int; 1; end
+    assert_equal(1, Rational(o, 1), bug12485)
+    assert_equal(1, Rational(1, o), bug12485)
+    assert_equal(1, Rational(o, o), bug12485)
+
     o = Object.new
     def o.to_r; 1/42r; end
     assert_equal(1/42r, Rational(o))
@@ -158,6 +165,14 @@ class Rational_Test < Test::Unit::TestCase
     if (1.0/0).infinite?
       assert_raise(FloatDomainError){Rational(1.0/0)}
     end
+
+    bug16518 = "[ruby-core:96942] [Bug #16518]"
+    cls = Class.new(Numeric) do
+      def /(y); 42; end
+      def to_r; 1r; end
+      def to_int; 1; end
+    end
+    assert_equal(1/2r, Rational(cls.new, 2), bug16518)
   end
 
   def test_attr
@@ -808,6 +823,12 @@ class Rational_Test < Test::Unit::TestCase
     assert_raise(ZeroDivisionError) {Rational("1/0")}
   end
 
+  def test_Rational_with_invalid_exception
+    assert_raise(ArgumentError) {
+      Rational("1/1", exception: 1)
+    }
+  end
+
   def test_Rational_without_exception
     assert_nothing_raised(ArgumentError) {
       assert_equal(nil, Rational("5/3x", exception: false))
@@ -826,6 +847,18 @@ class Rational_Test < Test::Unit::TestCase
     }
     assert_nothing_raised(TypeError) {
       assert_equal(nil, Rational(1, Object.new, exception: false))
+    }
+
+    bug12485 = '[ruby-core:75995] [Bug #12485]'
+    assert_nothing_raised(RuntimeError, bug12485) {
+      o = Object.new
+      def o.to_int; raise; end
+      assert_equal(nil, Rational(o, exception: false))
+    }
+    assert_nothing_raised(RuntimeError, bug12485) {
+      o = Object.new
+      def o.to_int; raise; end
+      assert_equal(nil, Rational(1, o, exception: false))
     }
 
     o = Object.new;

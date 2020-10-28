@@ -131,10 +131,10 @@ class TestThreadQueue < Test::Unit::TestCase
   def test_thr_kill
     bug5343 = '[ruby-core:39634]'
     Dir.mktmpdir {|d|
-      timeout = 60
+      timeout = EnvUtil.apply_timeout_scale(60)
       total_count = 250
       begin
-        assert_normal_exit(<<-"_eom", bug5343, {:timeout => timeout, :chdir=>d})
+        assert_normal_exit(<<-"_eom", bug5343, **{:timeout => timeout, :chdir=>d})
           #{total_count}.times do |i|
             open("test_thr_kill_count", "w") {|f| f.puts i }
             queue = Queue.new
@@ -331,11 +331,14 @@ class TestThreadQueue < Test::Unit::TestCase
   def test_sized_queue_one_closed_interrupt
     q = SizedQueue.new 1
     q << :one
-    t1 = Thread.new { q << :two }
+    t1 = Thread.new {
+      Thread.current.report_on_exception = false
+      q << :two
+    }
     sleep 0.01 until t1.stop?
     q.close
+    assert_raise(ClosedQueueError) {t1.join}
 
-    t1.kill.join
     assert_equal 1, q.size
     assert_equal :one, q.pop
     assert q.empty?, "queue not empty"
@@ -343,21 +346,25 @@ class TestThreadQueue < Test::Unit::TestCase
 
   # make sure that shutdown state is handled properly by empty? for the non-blocking case
   def test_empty_non_blocking
-    return
     q = SizedQueue.new 3
     3.times{|i| q << i}
 
     # these all block cos the queue is full
-    prod_threads = 4.times.map{|i| Thread.new{q << 3+i}}
-    sleep 0.01 until prod_threads.all?{|thr| thr.status == 'sleep'}
-    q.close
+    prod_threads = 4.times.map {|i|
+      Thread.new {
+        Thread.current.report_on_exception = false
+        q << 3+i
+      }
+    }
+    sleep 0.01 until prod_threads.all?{|thr| thr.stop?}
 
     items = []
     # sometimes empty? is false but pop will raise ThreadError('empty'),
     # meaning a value is not immediately available but will be soon.
-    until q.empty?
-      items << q.pop(non_block=true) rescue nil
+    while prod_threads.any?(&:alive?) or !q.empty?
+      items << q.pop(true) rescue nil
     end
+    assert_join_threads(prod_threads)
     items.compact!
 
     assert_equal 7.times.to_a, items.sort
@@ -474,7 +481,7 @@ class TestThreadQueue < Test::Unit::TestCase
     prod_threads.each{|t|
       begin
         t.join
-      rescue => e
+      rescue
       end
     }
   end
@@ -553,6 +560,10 @@ class TestThreadQueue < Test::Unit::TestCase
     if ENV['APPVEYOR'] == 'True' && RUBY_PLATFORM.match?(/mswin/)
       skip 'This test fails too often on AppVeyor vs140'
     end
+    if RUBY_PLATFORM.match?(/mingw/)
+      skip 'This test fails too often on MinGW'
+    end
+
     assert_in_out_err([], <<-INPUT, %w(INT INT exit), [])
       q = Queue.new
       trap(:INT){
@@ -561,6 +572,7 @@ class TestThreadQueue < Test::Unit::TestCase
       Thread.new{
         loop{
           Process.kill :INT, $$
+          sleep 0.1
         }
       }
       puts q.pop

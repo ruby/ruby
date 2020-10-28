@@ -1,7 +1,7 @@
 @echo off
 :optloop
 if "%1" == "-f" shift
-if "%1" == "-r" (shift & set recursive=1 & goto :optloop)
+if "%1" == "-r" (shift & set "recursive=1" & goto :optloop)
 if "%recursive%" == "1" goto :recursive
 :begin
 if "%1" == "" goto :end

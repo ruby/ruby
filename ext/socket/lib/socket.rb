@@ -223,8 +223,8 @@ class Addrinfo
   #   #   #<Addrinfo: [::1]:80 TCP (:80)>
   #   #   #<Addrinfo: [::1]:80 UDP (:80)>
   #
-  def self.foreach(nodename, service, family=nil, socktype=nil, protocol=nil, flags=nil, &block)
-    Addrinfo.getaddrinfo(nodename, service, family, socktype, protocol, flags).each(&block)
+  def self.foreach(nodename, service, family=nil, socktype=nil, protocol=nil, flags=nil, timeout: nil, &block)
+    Addrinfo.getaddrinfo(nodename, service, family, socktype, protocol, flags, timeout: timeout).each(&block)
   end
 end
 
@@ -606,6 +606,7 @@ class Socket < BasicSocket
   # _opts_ may have following options:
   #
   # [:connect_timeout] specify the timeout in seconds.
+  # [:resolv_timeout] specify the name resolution timeout in seconds.
   #
   # If a block is given, the block is called with the socket.
   # The value of the block is returned.
@@ -619,7 +620,7 @@ class Socket < BasicSocket
   #     puts sock.read
   #   }
   #
-  def self.tcp(host, port, local_host = nil, local_port = nil, connect_timeout: nil) # :yield: socket
+  def self.tcp(host, port, local_host = nil, local_port = nil, connect_timeout: nil, resolv_timeout: nil) # :yield: socket
     last_error = nil
     ret = nil
 
@@ -628,7 +629,7 @@ class Socket < BasicSocket
       local_addr_list = Addrinfo.getaddrinfo(local_host, local_port, nil, :STREAM, nil)
     end
 
-    Addrinfo.foreach(host, port, nil, :STREAM) {|ai|
+    Addrinfo.foreach(host, port, nil, :STREAM, timeout: resolv_timeout) {|ai|
       if local_addr_list
         local_addr = local_addr_list.find {|local_ai| local_ai.afamily == ai.afamily }
         next unless local_addr

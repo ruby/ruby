@@ -176,6 +176,11 @@ class PPSingleLineTest < Test::Unit::TestCase
     assert_equal("{1=>1}", PP.singleline_pp({ 1 => 1}, ''.dup)) # [ruby-core:02699]
     assert_equal("[1#{', 1'*99}]", PP.singleline_pp([1]*100, ''.dup))
   end
+
+  def test_hash_in_array
+    assert_equal("[{}]", PP.singleline_pp([->(*a){a.last.clear}.ruby2_keywords.call(a: 1)], ''.dup))
+    assert_equal("[{}]", PP.singleline_pp([Hash.ruby2_keywords_hash({})], ''.dup))
+  end
 end
 
 class PPDelegateTest < Test::Unit::TestCase
@@ -183,6 +188,18 @@ class PPDelegateTest < Test::Unit::TestCase
 
   def test_delegate
     assert_equal("[]\n", A.new([]).pretty_inspect, "[ruby-core:25804]")
+  end
+
+  def test_delegate_cycle
+    a = HasPrettyPrint.new nil
+
+    a.instance_eval {@a = a}
+    cycle_pretty_inspect = a.pretty_inspect
+
+    a.instance_eval {@a = SimpleDelegator.new(a)}
+    delegator_cycle_pretty_inspect = a.pretty_inspect
+
+    assert_equal(cycle_pretty_inspect, delegator_cycle_pretty_inspect)
   end
 end
 
@@ -194,12 +211,14 @@ class PPFileStatTest < Test::Unit::TestCase
   end
 end
 
-class PPAbstractSyntaxTree < Test::Unit::TestCase
-  AST = RubyVM::AbstractSyntaxTree
-  def test_literal
-    ast = AST.parse("1")
-    expected = "(SCOPE@1:0-1:1 tbl: [] args: nil body: (LIT@1:0-1:1 1))"
-    assert_equal(expected, PP.singleline_pp(ast, ''.dup), ast)
+if defined?(RubyVM)
+  class PPAbstractSyntaxTree < Test::Unit::TestCase
+    AST = RubyVM::AbstractSyntaxTree
+    def test_lasgn_literal
+      ast = AST.parse("_=1")
+      expected = "(SCOPE@1:0-1:3 tbl: [:_] args: nil body: (LASGN@1:0-1:3 :_ (LIT@1:2-1:3 1)))"
+      assert_equal(expected, PP.singleline_pp(ast, ''.dup), ast)
+    end
   end
 end
 

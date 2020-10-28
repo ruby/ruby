@@ -8,63 +8,6 @@
 %;
 #line <%= __LINE__ + 1 %> <%=cstr __FILE__ %>
 
-static bool
-leafness_of_getglobal(VALUE gentry)
-{
-    const struct rb_global_entry *e = (void *)gentry;
-
-    if (UNLIKELY(rb_gvar_is_traced(e))) {
-        return false;
-    }
-    else {
-        /* We cannot write this function using a switch() because a
-         * case label cannot be a function pointer. */
-        static rb_gvar_getter_t *const allowlist[] = {
-            rb_gvar_val_getter,
-            rb_gvar_var_getter,
-            /* rb_gvar_undef_getter issues rb_warning() */
-        };
-        rb_gvar_getter_t *f = rb_gvar_getter_function_of(e);
-        int i;
-
-        for (i = 0; i < numberof(allowlist); i++) {
-            if (f == allowlist[i]) {
-                return true;
-            }
-        }
-        return false;
-    }
-}
-
-static bool
-leafness_of_setglobal(VALUE gentry)
-{
-    const struct rb_global_entry *e = (void *)gentry;
-
-    if (UNLIKELY(rb_gvar_is_traced(e))) {
-        return false;
-    }
-    else {
-        /* We cannot write this function using a switch() because a
-         * case label cannot be a function pointer. */
-        static rb_gvar_setter_t *const allowlist[] = {
-            rb_gvar_val_setter,
-            /* rb_gvar_readonly_setter issues rb_name_error() */
-            rb_gvar_var_setter,
-            rb_gvar_undef_setter,
-        };
-        rb_gvar_setter_t *f = rb_gvar_setter_function_of(e);
-        int i;
-
-        for (i = 0; i < numberof(allowlist); i++) {
-            if (f == allowlist[i]) {
-                return true;
-            }
-        }
-        return false;
-    }
-}
-
 #include "iseq.h"
 
 static bool
@@ -81,6 +24,7 @@ leafness_of_defined(rb_num_t op_type)
       case DEFINED_ZSUPER:
         return false;
       case DEFINED_CONST:
+      case DEFINED_CONST_FROM:
         /* has rb_autoload_load(); */
         return false;
       case DEFINED_FUNC:

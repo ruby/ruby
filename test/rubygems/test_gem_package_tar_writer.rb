@@ -4,9 +4,13 @@ require 'rubygems/package/tar_writer'
 require 'minitest/mock'
 
 class TestGemPackageTarWriter < Gem::Package::TarTestCase
-
   def setup
     super
+
+    # Setting `@default_source_date_epoch` to `nil` effectively resets the
+    # value used for `Gem.source_date_epoch` whenever `$SOURCE_DATE_EPOCH`
+    # is not set.
+    Gem.instance_variable_set(:'@default_source_date_epoch', nil)
 
     @data = 'abcde12345'
     @io = TempIO.new
@@ -25,7 +29,9 @@ class TestGemPackageTarWriter < Gem::Package::TarTestCase
 
   def test_add_file
     Time.stub :now, Time.at(1458518157) do
-      @tar_writer.add_file 'x', 0644 do |f| f.write 'a' * 10 end
+      @tar_writer.add_file 'x', 0644 do |f|
+        f.write 'a' * 10
+      end
 
       assert_headers_equal(tar_file_header('x', '', 0644, 10, Time.now),
                          @io.string[0, 512])
@@ -65,7 +71,7 @@ class TestGemPackageTarWriter < Gem::Package::TarTestCase
   end
 
   def test_add_file_digest
-    digest_algorithms = Digest::SHA1, Digest::SHA512
+    digest_algorithms = Digest::SHA1.new, Digest::SHA512.new
 
     Time.stub :now, Time.at(1458518157) do
       digests = @tar_writer.add_file_digest 'x', 0644, digest_algorithms do |io|
@@ -88,7 +94,7 @@ class TestGemPackageTarWriter < Gem::Package::TarTestCase
   end
 
   def test_add_file_digest_multiple
-    digest_algorithms = [Digest::SHA1, Digest::SHA512]
+    digest_algorithms = [Digest::SHA1.new, Digest::SHA512.new]
 
     Time.stub :now, Time.at(1458518157) do
       digests = @tar_writer.add_file_digest 'x', 0644, digest_algorithms do |io|
@@ -122,7 +128,6 @@ class TestGemPackageTarWriter < Gem::Package::TarTestCase
 
       assert_headers_equal(tar_file_header('x', '', 0644, 10, Time.now),
                            @io.string[0, 512])
-
 
       assert_equal "aaaaaaaaaa#{"\0" * 502}", @io.string[512, 512]
 
@@ -160,7 +165,9 @@ class TestGemPackageTarWriter < Gem::Package::TarTestCase
 
   def test_add_file_simple
     Time.stub :now, Time.at(1458518157) do
-      @tar_writer.add_file_simple 'x', 0644, 10 do |io| io.write "a" * 10 end
+      @tar_writer.add_file_simple 'x', 0644, 10 do |io|
+        io.write "a" * 10
+      end
 
       assert_headers_equal(tar_file_header('x', '', 0644, 10, Time.now),
                          @io.string[0, 512])
@@ -173,7 +180,9 @@ class TestGemPackageTarWriter < Gem::Package::TarTestCase
   def test_add_file_simple_source_date_epoch
     ENV["SOURCE_DATE_EPOCH"] = "123456789"
     Time.stub :now, Time.at(1458518157) do
-      @tar_writer.add_file_simple 'x', 0644, 10 do |io| io.write "a" * 10 end
+      @tar_writer.add_file_simple 'x', 0644, 10 do |io|
+        io.write "a" * 10
+      end
 
       assert_headers_equal(tar_file_header('x', '', 0644, 10, Time.at(ENV["SOURCE_DATE_EPOCH"].to_i).utc),
                          @io.string[0, 512])
@@ -192,10 +201,10 @@ class TestGemPackageTarWriter < Gem::Package::TarTestCase
   end
 
   def test_add_file_simple_data
-    @tar_writer.add_file_simple("lib/foo/bar", 0, 10) { |f| f.write @data }
+    @tar_writer.add_file_simple("lib/foo/bar", 0, 10) {|f| f.write @data }
     @tar_writer.flush
 
-    assert_equal @data + ("\0" * (512-@data.size)),
+    assert_equal @data + ("\0" * (512 - @data.size)),
                  @io.string[512, 512]
   end
 
@@ -295,7 +304,7 @@ class TestGemPackageTarWriter < Gem::Package::TarTestCase
 
     # note, GNU tar 1.28 is unable to handle this case too,
     # tested with "tar --format=ustar -cPf /tmp/foo.tartar -- /aaaaaa....a"
-    name = '/'  + 'a' * 100
+    name = '/' + 'a' * 100
     exception = assert_raises Gem::Package::TooLongFileName do
       @tar_writer.split_name name
     end
@@ -320,5 +329,4 @@ class TestGemPackageTarWriter < Gem::Package::TarTestCase
     end
     assert_includes exception.message, name
   end
-
 end

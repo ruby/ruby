@@ -90,7 +90,6 @@ rb_fiddle_ptr_new2(VALUE klass, void *ptr, long size, freefunc_t func)
     data->ptr = ptr;
     data->free = func;
     data->size = size;
-    OBJ_TAINT(val);
 
     return val;
 }
@@ -194,14 +193,34 @@ rb_fiddle_ptr_initialize(int argc, VALUE argv[], VALUE self)
 
 /*
  * call-seq:
- *
  *    Fiddle::Pointer.malloc(size, freefunc = nil)  => fiddle pointer instance
+ *
+ * == Examples
+ *
+ *    # Relying on the garbage collector - may lead to unlimited memory allocated before freeing any, but safe
+ *    pointer = Fiddle::Pointer.malloc(size, Fiddle::RUBY_FREE)
+ *    ...
+ *
+ *    # Manual freeing
+ *    pointer = Fiddle::Pointer.malloc(size)
+ *    begin
+ *      ...
+ *    ensure
+ *      Fiddle.free pointer
+ *    end
+ *
+ *    # No free function and no call to free - the native memory will leak if the pointer is garbage collected
+ *    pointer = Fiddle::Pointer.malloc(size)
+ *    ...
  *
  * Allocate +size+ bytes of memory and associate it with an optional
  * +freefunc+ that will be called when the pointer is garbage collected.
- *
  * +freefunc+ must be an address pointing to a function or an instance of
- * Fiddle::Function
+ * +Fiddle::Function+. Using +freefunc+ may lead to unlimited memory being
+ * allocated before any is freed as the native memory the pointer references
+ * does not contribute to triggering the Ruby garbage collector. Consider
+ * manually freeing the memory as illustrated above. You cannot combine
+ * the techniques as this may lead to a double-free.
  */
 static VALUE
 rb_fiddle_ptr_s_malloc(int argc, VALUE argv[], VALUE klass)
@@ -376,11 +395,11 @@ rb_fiddle_ptr_to_s(int argc, VALUE argv[], VALUE self)
     TypedData_Get_Struct(self, struct ptr_data, &fiddle_ptr_data_type, data);
     switch (rb_scan_args(argc, argv, "01", &arg1)) {
       case 0:
-	val = rb_tainted_str_new2((char*)(data->ptr));
+	val = rb_str_new2((char*)(data->ptr));
 	break;
       case 1:
 	len = NUM2INT(arg1);
-	val = rb_tainted_str_new((char*)(data->ptr), len);
+	val = rb_str_new((char*)(data->ptr), len);
 	break;
       default:
 	rb_bug("rb_fiddle_ptr_to_s");
@@ -414,11 +433,11 @@ rb_fiddle_ptr_to_str(int argc, VALUE argv[], VALUE self)
     TypedData_Get_Struct(self, struct ptr_data, &fiddle_ptr_data_type, data);
     switch (rb_scan_args(argc, argv, "01", &arg1)) {
       case 0:
-	val = rb_tainted_str_new((char*)(data->ptr),data->size);
+	val = rb_str_new((char*)(data->ptr),data->size);
 	break;
       case 1:
 	len = NUM2INT(arg1);
-	val = rb_tainted_str_new((char*)(data->ptr), len);
+	val = rb_str_new((char*)(data->ptr), len);
 	break;
       default:
 	rb_bug("rb_fiddle_ptr_to_str");
@@ -551,7 +570,7 @@ rb_fiddle_ptr_aref(int argc, VALUE argv[], VALUE self)
       case 2:
 	offset = NUM2ULONG(arg0);
 	len    = NUM2ULONG(arg1);
-	retval = rb_tainted_str_new((char *)data->ptr + offset, len);
+	retval = rb_str_new((char *)data->ptr + offset, len);
 	break;
       default:
 	rb_bug("rb_fiddle_ptr_aref()");
@@ -669,7 +688,6 @@ rb_fiddle_ptr_s_to_ptr(VALUE self, VALUE val)
 	if (num == val) wrap = 0;
 	ptr = rb_fiddle_ptr_new(NUM2PTR(num), 0, NULL);
     }
-    OBJ_INFECT(ptr, val);
     if (wrap) RPTR_DATA(ptr)->wrap[0] = wrap;
     return ptr;
 }

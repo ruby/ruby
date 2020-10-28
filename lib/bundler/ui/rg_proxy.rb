@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "bundler/ui"
+require_relative "../ui"
 require "rubygems/user_interaction"
 
 module Bundler

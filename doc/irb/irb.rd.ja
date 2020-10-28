@@ -40,39 +40,46 @@ irbの使い方は, Rubyさえ知っていればいたって簡単です. 基本
   irb.rb [options] file_name opts
   options:
   -f		    ~/.irbrc を読み込まない.
-  -m		    bcモード(分数, 行列の計算ができる)
   -d                $DEBUG をtrueにする(ruby -d と同じ)
-  -Kc		    ruby -Kcと同じ
   -r load-module    ruby -r と同じ.
-  --verbose	    これから実行する行を表示する(デフォルト)
-  --noverbose	    これから実行する行を表示しない
-  --echo	    実行結果を表示する(デフォルト)
-  --noecho	    実行結果を表示しない
-  --inspect	    結果出力にinspectを用いる(bcモード以外はデフォルト).
+  -I path           $LOAD_PATH に path を追加する.
+  -U                ruby -U と同じ.
+  -E enc            ruby -E と同じ.
+  -w                ruby -w と同じ.
+  -W[level=2]       ruby -W と同じ.
+  --context-mode n  新しいワークスペースを作成した時に関連する Binding
+		    オブジェクトの作成方法を 0 から 3 のいずれかに設定する.
+  --echo	    実行結果を表示する(デフォルト).
+  --noecho	    実行結果を表示しない.
+  --inspect	    結果出力にinspectを用いる.
   --noinspect	    結果出力にinspectを用いない.
-  --readline	    readlineライブラリを利用する.
-  --noreadline	    readlineライブラリを利用しない. デフォルトの動作は,
-		    inf-ruby-mode以外でreadlineライブラリを利用しよう
-		    とする.
-  --prompt prompt-mode
-  --prompt-mode prompt-mode
+  --singleline      シングルラインエディタを利用する.
+  --nosingleline    シングルラインエディタを利用しない. デフォルトの動
+                    作は, inf-ruby-mode以外でシングルラインエディタを利
+                    用しようとする.
+  --colorize	    色付けを利用する.
+  --nocolorize	    色付けを利用しない.
+  --prompt prompt-mode/--prompt-mode prompt-mode
 		    プロンプトモードを切替えます. 現在定義されているプ
 		    ロンプトモードは, default, simple, xmp, inf-rubyが
-		    用意されています. デフォルトはdefaultプロンプトモー
-		    ドになっています.
-
+		    用意されています.
   --inf-ruby-mode   emacsのinf-ruby-mode用のプロンプト表示を行なう. 特
-		    に指定がない限り, readlineライブラリは使わなくなる.
+		    に指定がない限り, ラインエディタは使わなくなる.
   --simple-prompt
 		    非常にシンプルなプロンプトを用いるモードです.
   --noprompt	    プロンプト表示を行なわない.
+  --single-irb	    irb 中で self を実行して得られるオブジェクトをサ
+		    ブ irb と共有する.
   --tracer	    コマンド実行時にトレースを行なう.
   --back-trace-limit n
 		    バックトレース表示をバックトレースの頭から n, 後ろ
 		    からnだけ行なう. デフォルトは16
-  --irb_debug n	    irbのデバッグデバッグレベルをnに設定する(利用しな
-		    い方が無難でしょう).
-  -v, --version	    irbのバージョンを表示する
+
+  --verbose	    詳細なメッセージを出力する.
+  --noverbose	    詳細なメッセージを出力しない(デフォルト).
+  -v, --version	    irbのバージョンを表示する.
+  -h, --help	    irb のヘルプを表示する.
+  --		    以降のコマンドライン引数をオプションとして扱わない.
 
 = コンフィギュレーション
 
@@ -91,13 +98,12 @@ irb起動時に``~/.irbrc''を読み込みます. もし存在しない場合は
   IRB.conf[:IRB_RC] = nil
   IRB.conf[:BACK_TRACE_LIMIT]=16
   IRB.conf[:USE_LOADER] = false
-  IRB.conf[:USE_READLINE] = nil
+  IRB.conf[:USE_SINGLELINE] = nil
   IRB.conf[:USE_TRACER] = false
   IRB.conf[:IGNORE_SIGINT] = true
   IRB.conf[:IGNORE_EOF] = false
   IRB.conf[:PROMPT_MODE] = :DEFAULT
   IRB.conf[:PROMPT] = {...}
-  IRB.conf[:DEBUG_LEVEL]=0
   IRB.conf[:VERBOSE]=true
 
 == プロンプトの設定
@@ -183,9 +189,6 @@ irb拡張コマンドは, 簡単な名前と頭に`irb_'をつけた名前と両
     バックトレース表示をバックトレースの頭からn, 後ろからnだけ行なう.
     デフォルトは16
 
---- conf.debug_level = N
-    irb用のデバッグレベルの設定
-
 --- conf.ignore_eof = true/false
     ^Dが入力された時の動作を設定する. trueの時は^Dを無視する, falseの
     時はirbを終了する.
@@ -197,7 +200,8 @@ irb拡張コマンドは, 簡単な名前と頭に`irb_'をつけた名前と両
       実行中: 実行を中止する.
 
 --- conf.inf_ruby_mode = true/false
-    inf-ruby-mode用のプロンプト表示を行なう. デフォルトはfalse.
+    inf-ruby-mode用のプロンプト表示を行なう. デフォルトはfalse. 特に指定
+    がない限り, ラインエディタは使わなくなる.
 
 --- conf.inspect_mode = true/false/nil
     インスペクトモードを設定する.
@@ -225,12 +229,19 @@ irb拡張コマンドは, 簡単な名前と頭に`irb_'をつけた名前と両
 --- conf.use_prompt = true/false
     プロンプト表示するかどうか? デフォルトではプロンプトを表示する.
 
---- conf.use_readline = true/false/nil
-    readlineを使うかどうか?
-    true: readlineを使う.
-    false: readlineを使わない.
-    nil: (デフォルト)inf-ruby-mode以外でreadlineライブラリを利用しよ
-         うとする.
+--- conf.use_multiline = true/false/nil
+    マルチラインエディタを使うかどうか?
+    true: マルチラインエディタを使う.
+    false: マルチラインエディタを使わない.
+    nil: (デフォルト)inf-ruby-mode以外でマルチラインエディタを利用しよう
+    とする.
+
+--- conf.use_singleline = true/false/nil
+    シングルラインエディタを使うかどうか?
+    true: シングルラインエディタを使う.
+    false: シングルラインエディタを使わない.
+    nil: (デフォルト)inf-ruby-modeとマルチラインエディタ以外でシングルラ
+         インエディタを利用しようとする.
 #
 #--- conf.verbose=T/F
 #    irbからいろいろなメッセージを出力するか?

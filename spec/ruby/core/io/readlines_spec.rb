@@ -17,16 +17,16 @@ describe "IO#readlines" do
 
   it "raises an IOError if the stream is closed" do
     @io.close
-    lambda { @io.readlines }.should raise_error(IOError)
+    -> { @io.readlines }.should raise_error(IOError)
   end
 
   describe "when passed no arguments" do
     before :each do
-      @sep, $/ = $/, " "
+      suppress_warning {@sep, $/ = $/, " "}
     end
 
     after :each do
-      $/ = @sep
+      suppress_warning {$/ = @sep}
     end
 
     it "returns an Array containing lines based on $/" do
@@ -101,31 +101,6 @@ describe "IO#readlines" do
       @io.readlines(obj).should == IOSpecs.lines_r_separator
     end
   end
-
-  describe "when passed a string that starts with a |" do
-    it "gets data from the standard out of the subprocess" do
-      cmd = "|sh -c 'echo hello;echo line2'"
-      platform_is :windows do
-        cmd = "|cmd.exe /C echo hello&echo line2"
-      end
-      lines = IO.readlines(cmd)
-      lines.should == ["hello\n", "line2\n"]
-    end
-
-    with_feature :fork do
-      it "gets data from a fork when passed -" do
-        lines = IO.readlines("|-")
-
-        if lines # parent
-          lines.should == ["hello\n", "from a fork\n"]
-        else
-          puts "hello"
-          puts "from a fork"
-          exit!
-        end
-      end
-    end
-  end
 end
 
 describe "IO#readlines" do
@@ -138,14 +113,14 @@ describe "IO#readlines" do
   end
 
   it "raises an IOError if the stream is opened for append only" do
-    lambda do
-      File.open(@name, fmode("a:utf-8")) { |f| f.readlines }
+    -> do
+      File.open(@name, "a:utf-8") { |f| f.readlines }
     end.should raise_error(IOError)
   end
 
   it "raises an IOError if the stream is opened for write only" do
-    lambda do
-      File.open(@name, fmode("w:utf-8")) { |f| f.readlines }
+    -> do
+      File.open(@name, "w:utf-8") { |f| f.readlines }
     end.should raise_error(IOError)
   end
 end
@@ -169,6 +144,31 @@ describe "IO.readlines" do
     $_.should == "test"
   end
 
+  describe "when passed a string that starts with a |" do
+    it "gets data from the standard out of the subprocess" do
+      cmd = "|sh -c 'echo hello;echo line2'"
+      platform_is :windows do
+        cmd = "|cmd.exe /C echo hello&echo line2"
+      end
+      lines = IO.readlines(cmd)
+      lines.should == ["hello\n", "line2\n"]
+    end
+
+    platform_is_not :windows do
+      it "gets data from a fork when passed -" do
+        lines = IO.readlines("|-")
+
+        if lines # parent
+          lines.should == ["hello\n", "from a fork\n"]
+        else
+          puts "hello"
+          puts "from a fork"
+          exit!
+        end
+      end
+    end
+  end
+
   it_behaves_like :io_readlines, :readlines
   it_behaves_like :io_readlines_options_19, :readlines
 end
@@ -184,7 +184,7 @@ describe "IO.readlines" do
   after :each do
     Encoding.default_external = @external
     Encoding.default_internal = @internal
-    $/ = @dollar_slash
+    suppress_warning {$/ = @dollar_slash}
   end
 
   it "encodes lines using the default external encoding" do
@@ -196,15 +196,15 @@ describe "IO.readlines" do
   it "encodes lines using the default internal encoding, when set" do
     Encoding.default_external = Encoding::UTF_8
     Encoding.default_internal = Encoding::UTF_16
-    $/ = $/.encode Encoding::UTF_16
+    suppress_warning {$/ = $/.encode Encoding::UTF_16}
     lines = IO.readlines(@name)
     lines.all? { |s| s.encoding == Encoding::UTF_16 }.should be_true
   end
 
-  it "ignores the default internal encoding if the external encoding is ASCII-8BIT" do
-    Encoding.default_external = Encoding::ASCII_8BIT
+  it "ignores the default internal encoding if the external encoding is BINARY" do
+    Encoding.default_external = Encoding::BINARY
     Encoding.default_internal = Encoding::UTF_8
     lines = IO.readlines(@name)
-    lines.all? { |s| s.encoding == Encoding::ASCII_8BIT }.should be_true
+    lines.all? { |s| s.encoding == Encoding::BINARY }.should be_true
   end
 end

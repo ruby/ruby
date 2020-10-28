@@ -3,9 +3,10 @@ require 'rubygems/installer_test_case'
 require 'rubygems/uninstaller'
 
 class TestGemUninstaller < Gem::InstallerTestCase
-
   def setup
     super
+    @installer = setup_base_installer
+    @user_installer = setup_base_user_installer
     common_installer_setup
 
     build_rake_in do
@@ -22,9 +23,10 @@ class TestGemUninstaller < Gem::InstallerTestCase
   end
 
   def test_initialize_expand_path
-    uninstaller = Gem::Uninstaller.new nil, :install_dir => '/foo//bar'
+    FileUtils.mkdir_p 'foo/bar'
+    uninstaller = Gem::Uninstaller.new nil, :install_dir => 'foo//bar'
 
-    assert_match %r|/foo/bar$|, uninstaller.instance_variable_get(:@gem_home)
+    assert_match %r{foo/bar$}, uninstaller.instance_variable_get(:@gem_home)
   end
 
   def test_ask_if_ok
@@ -133,6 +135,7 @@ class TestGemUninstaller < Gem::InstallerTestCase
   end
 
   def test_remove_not_in_home
+    Dir.mkdir "#{@gemhome}2"
     uninstaller = Gem::Uninstaller.new nil, :install_dir => "#{@gemhome}2"
 
     e = assert_raises Gem::GemNotInHomeException do
@@ -147,6 +150,77 @@ class TestGemUninstaller < Gem::InstallerTestCase
     assert_equal expected, e.message
 
     assert_path_exists @spec.gem_dir
+  end
+
+  def test_remove_symlinked_gem_home
+    skip "Symlinks not supported or not enabled" unless symlink_supported?
+
+    Dir.mktmpdir("gem_home") do |dir|
+      symlinked_gem_home = "#{dir}/#{File.basename(@gemhome)}"
+
+      FileUtils.ln_s(@gemhome, dir)
+
+      uninstaller = Gem::Uninstaller.new nil, :install_dir => symlinked_gem_home
+
+      use_ui ui do
+        uninstaller.remove @spec
+      end
+
+      refute_path_exists @spec.gem_dir
+    end
+  end
+
+  def test_remove_plugins
+    write_file File.join(@tempdir, 'lib', 'rubygems_plugin.rb') do |io|
+      io.write "puts __FILE__"
+    end
+
+    @spec.files += %w[lib/rubygems_plugin.rb]
+
+    Gem::Installer.at(Gem::Package.build(@spec)).install
+
+    plugin_path = File.join Gem.plugindir, 'a_plugin.rb'
+    assert File.exist?(plugin_path), 'plugin not written'
+
+    Gem::Uninstaller.new(nil).remove_plugins @spec
+
+    refute File.exist?(plugin_path), 'plugin not removed'
+  end
+
+  def test_remove_plugins_with_install_dir
+    write_file File.join(@tempdir, 'lib', 'rubygems_plugin.rb') do |io|
+      io.write "puts __FILE__"
+    end
+
+    @spec.files += %w[lib/rubygems_plugin.rb]
+
+    Gem::Installer.at(Gem::Package.build(@spec)).install
+
+    plugin_path = File.join Gem.plugindir, 'a_plugin.rb'
+    assert File.exist?(plugin_path), 'plugin not written'
+
+    Dir.mkdir "#{@gemhome}2"
+    Gem::Uninstaller.new(nil, :install_dir => "#{@gemhome}2").remove_plugins @spec
+
+    assert File.exist?(plugin_path), 'plugin unintentionally removed'
+  end
+
+  def test_regenerate_plugins_for
+    write_file File.join(@tempdir, 'lib', 'rubygems_plugin.rb') do |io|
+      io.write "puts __FILE__"
+    end
+
+    @spec.files += %w[lib/rubygems_plugin.rb]
+
+    Gem::Installer.at(Gem::Package.build(@spec)).install
+
+    plugin_path = File.join Gem.plugindir, 'a_plugin.rb'
+    assert File.exist?(plugin_path), 'plugin not written'
+
+    FileUtils.rm plugin_path
+    Gem::Uninstaller.new(nil).regenerate_plugins_for @spec, Gem.plugindir
+
+    assert File.exist?(plugin_path), 'plugin not regenerated'
   end
 
   def test_path_ok_eh
@@ -201,13 +275,13 @@ class TestGemUninstaller < Gem::InstallerTestCase
 
     uninstaller = Gem::Uninstaller.new spec.name, :executables => true
 
-    e = assert_raises Gem::InstallError do
+    use_ui @ui do
       uninstaller.uninstall
     end
 
-    assert_equal 'gem "default" cannot be uninstalled ' +
-                 'because it is a default gem',
-                 e.message
+    lines = @ui.output.split("\n")
+
+    assert_equal 'Gem default-2 cannot be uninstalled because it is a default gem', lines.shift
   end
 
   def test_uninstall_default_gem_with_same_version
@@ -313,6 +387,7 @@ create_makefile '#{@spec.name}'
   end
 
   def test_uninstall_wrong_repo
+    Dir.mkdir "#{@gemhome}2"
     Gem.use_paths "#{@gemhome}2", [@gemhome]
 
     uninstaller = Gem::Uninstaller.new @spec.name, :executables => true
@@ -368,7 +443,10 @@ create_makefile '#{@spec.name}'
   end
 
   def test_uninstall_prompts_about_broken_deps
-    quick_gem 'r', '1' do |s| s.add_dependency 'q', '= 1' end
+    quick_gem 'r', '1' do |s|
+      s.add_dependency 'q', '= 1'
+    end
+
     quick_gem 'q', '1'
 
     un = Gem::Uninstaller.new('q')
@@ -381,17 +459,23 @@ create_makefile '#{@spec.name}'
     lines = ui.output.split("\n")
     lines.shift
 
-    assert_match %r!You have requested to uninstall the gem:!, lines.shift
+    assert_match %r{You have requested to uninstall the gem:}, lines.shift
     lines.shift
     lines.shift
 
-    assert_match %r!r-1 depends on q \(= 1\)!, lines.shift
-    assert_match %r!Successfully uninstalled q-1!, lines.last
+    assert_match %r{r-1 depends on q \(= 1\)}, lines.shift
+    assert_match %r{Successfully uninstalled q-1}, lines.last
   end
 
   def test_uninstall_only_lists_unsatisfied_deps
-    quick_gem 'r', '1' do |s| s.add_dependency 'q', '~> 1.0' end
-    quick_gem 'x', '1' do |s| s.add_dependency 'q', '= 1.0'  end
+    quick_gem 'r', '1' do |s|
+      s.add_dependency 'q', '~> 1.0'
+    end
+
+    quick_gem 'x', '1' do |s|
+      s.add_dependency 'q', '= 1.0'
+    end
+
     quick_gem 'q', '1.0'
     quick_gem 'q', '1.1'
 
@@ -405,16 +489,19 @@ create_makefile '#{@spec.name}'
     lines = ui.output.split("\n")
     lines.shift
 
-    assert_match %r!You have requested to uninstall the gem:!, lines.shift
+    assert_match %r{You have requested to uninstall the gem:}, lines.shift
     lines.shift
     lines.shift
 
-    assert_match %r!x-1 depends on q \(= 1.0\)!, lines.shift
-    assert_match %r!Successfully uninstalled q-1.0!, lines.last
+    assert_match %r{x-1 depends on q \(= 1.0\)}, lines.shift
+    assert_match %r{Successfully uninstalled q-1.0}, lines.last
   end
 
   def test_uninstall_doesnt_prompt_when_other_gem_satisfies_requirement
-    quick_gem 'r', '1' do |s| s.add_dependency 'q', '~> 1.0' end
+    quick_gem 'r', '1' do |s|
+      s.add_dependency 'q', '~> 1.0'
+    end
+
     quick_gem 'q', '1.0'
     quick_gem 'q', '1.1'
 
@@ -431,7 +518,10 @@ create_makefile '#{@spec.name}'
   end
 
   def test_uninstall_doesnt_prompt_when_removing_a_dev_dep
-    quick_gem 'r', '1' do |s| s.add_development_dependency 'q', '= 1.0' end
+    quick_gem 'r', '1' do |s|
+      s.add_development_dependency 'q', '= 1.0'
+    end
+
     quick_gem 'q', '1.0'
 
     un = Gem::Uninstaller.new('q', :version => "1.0")
@@ -447,7 +537,10 @@ create_makefile '#{@spec.name}'
   end
 
   def test_uninstall_doesnt_prompt_and_raises_when_abort_on_dependent_set
-    quick_gem 'r', '1' do |s| s.add_dependency 'q', '= 1' end
+    quick_gem 'r', '1' do |s|
+      s.add_dependency 'q', '= 1'
+    end
+
     quick_gem 'q', '1'
 
     un = Gem::Uninstaller.new('q', :abort_on_dependent => true)
@@ -477,12 +570,41 @@ create_makefile '#{@spec.name}'
     lines = ui.output.split("\n")
     lines.shift
 
-    assert_match %r!You have requested to uninstall the gem:!, lines.shift
+    assert_match %r{You have requested to uninstall the gem:}, lines.shift
     lines.shift
     lines.shift
 
-    assert_match %r!r-1 depends on q \(= 1, development\)!, lines.shift
-    assert_match %r!Successfully uninstalled q-1!, lines.last
+    assert_match %r{r-1 depends on q \(= 1, development\)}, lines.shift
+    assert_match %r{Successfully uninstalled q-1}, lines.last
+  end
+
+  def test_uninstall_prompt_only_lists_the_dependents_that_prevented_uninstallation
+    quick_gem 'r', '1' do |s|
+      s.add_development_dependency 'q', '= 1'
+    end
+
+    quick_gem 's', '1' do |s|
+      s.add_dependency 'q', '= 1'
+    end
+
+    quick_gem 'q', '1'
+
+    un = Gem::Uninstaller.new('q', :check_dev => false)
+    ui = Gem::MockGemUi.new("y\n")
+
+    use_ui ui do
+      un.uninstall
+    end
+
+    lines = ui.output.split("\n")
+    lines.shift
+
+    assert_match %r{You have requested to uninstall the gem:}, lines.shift
+    lines.shift
+    lines.shift
+
+    assert_match %r{s-1 depends on q \(= 1\)}, lines.shift
+    assert_match %r{Successfully uninstalled q-1}, lines.last
   end
 
   def test_uninstall_no_permission
@@ -501,5 +623,45 @@ create_makefile '#{@spec.name}'
         uninstaller.uninstall
       end
     end
+  end
+
+  def test_uninstall_keeps_plugins_up_to_date
+    write_file File.join(@tempdir, 'lib', 'rubygems_plugin.rb') do |io|
+      io.write "puts __FILE__"
+    end
+
+    plugin_path = File.join Gem.plugindir, 'a_plugin.rb'
+
+    @spec.version = '1'
+    Gem::Installer.at(Gem::Package.build(@spec)).install
+
+    refute File.exist?(plugin_path), 'version without plugin installed, but plugin written'
+
+    @spec.files += %w[lib/rubygems_plugin.rb]
+    @spec.version = '2'
+    Gem::Installer.at(Gem::Package.build(@spec)).install
+
+    assert File.exist?(plugin_path), 'version with plugin installed, but plugin not written'
+    assert_match %r{\Arequire.*a-2/lib/rubygems_plugin\.rb}, File.read(plugin_path), 'written plugin has incorrect content'
+
+    @spec.version = '3'
+    Gem::Installer.at(Gem::Package.build(@spec)).install
+
+    assert File.exist?(plugin_path), 'version with plugin installed, but plugin removed'
+    assert_match %r{\Arequire.*a-3/lib/rubygems_plugin\.rb}, File.read(plugin_path), 'old version installed, but plugin updated'
+
+    Gem::Uninstaller.new('a', :version => '1', :executables => true).uninstall
+
+    assert File.exist?(plugin_path), 'plugin removed when old version uninstalled'
+    assert_match %r{\Arequire.*a-3/lib/rubygems_plugin\.rb}, File.read(plugin_path), 'old version uninstalled, but plugin updated'
+
+    Gem::Uninstaller.new('a', version: '3', :executables => true).uninstall
+
+    assert File.exist?(plugin_path), 'plugin removed when old version uninstalled and another version with plugin still present'
+    assert_match %r{\Arequire.*a-2/lib/rubygems_plugin\.rb}, File.read(plugin_path), 'latest version uninstalled, but plugin not updated to previous version'
+
+    Gem::Uninstaller.new('a', version: '2', :executables => true).uninstall
+
+    refute File.exist?(plugin_path), 'last version uninstalled, but plugin still present'
   end
 end

@@ -1,13 +1,22 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
+require_relative '../process/fixtures/common'
 
 describe "IO.popen" do
+  ProcessSpecs.use_system_ruby(self)
+
   before :each do
+    @fname = tmp("IO_popen_spec")
     @io = nil
+    @var = "$FOO"
+    platform_is :windows do
+      @var = "%FOO%"
+    end
   end
 
   after :each do
-    @io.close if @io
+    @io.close if @io and !@io.closed?
+    rm_r @fname
   end
 
   it "returns an open IO" do
@@ -16,26 +25,14 @@ describe "IO.popen" do
   end
 
   it "reads a read-only pipe" do
-    @io = IO.popen(ruby_cmd('puts "foo"'), "r")
+    @io = IO.popen('echo foo', "r")
     @io.read.should == "foo\n"
   end
 
   it "raises IOError when writing a read-only pipe" do
-    @io = IO.popen(ruby_cmd('puts "foo"'), "r")
-    lambda { @io.write('bar') }.should raise_error(IOError)
+    @io = IO.popen('echo foo', "r")
+    -> { @io.write('bar') }.should raise_error(IOError)
     @io.read.should == "foo\n"
-  end
-end
-
-describe "IO.popen" do
-  before :each do
-    @fname = tmp("IO_popen_spec")
-    @io = nil
-  end
-
-  after :each do
-    @io.close if @io and !@io.closed?
-    rm_r @fname
   end
 
   it "sees an infinitely looping subprocess exit when read pipe is closed" do
@@ -55,7 +52,7 @@ describe "IO.popen" do
 
   it "raises IOError when reading a write-only pipe" do
     @io = IO.popen(ruby_cmd('IO.copy_stream(STDIN,STDOUT)'), "w")
-    lambda { @io.read }.should raise_error(IOError)
+    -> { @io.read }.should raise_error(IOError)
   end
 
   it "reads and writes a read/write pipe" do
@@ -80,10 +77,10 @@ describe "IO.popen" do
     Process.kill "KILL", pid
     @io.close
     platform_is_not :windows do
-      $?.signaled?.should == true
+      $?.should.signaled?
     end
     platform_is :windows do
-      $?.exited?.should == true
+      $?.should.exited?
     end
   end
 
@@ -96,16 +93,6 @@ describe "IO.popen" do
     mode = mock("mode")
     mode.should_receive(:to_str).and_return("r")
     @io = IO.popen(ruby_cmd('exit 0'), mode)
-  end
-end
-
-describe "IO.popen" do
-  before :each do
-    @io = nil
-  end
-
-  after :each do
-    @io.close if @io
   end
 
   describe "with a block" do
@@ -136,7 +123,7 @@ describe "IO.popen" do
     end
   end
 
-  with_feature :fork do
+  platform_is_not :windows do
     it "starts returns a forked process if the command is -" do
       io = IO.popen("-")
 
@@ -153,33 +140,31 @@ describe "IO.popen" do
     end
   end
 
-  with_feature :encoding do
-    it "has the given external encoding" do
-      @io = IO.popen(ruby_cmd('exit'), external_encoding: Encoding::EUC_JP)
-      @io.external_encoding.should == Encoding::EUC_JP
-    end
+  it "has the given external encoding" do
+    @io = IO.popen(ruby_cmd('exit'), external_encoding: Encoding::EUC_JP)
+    @io.external_encoding.should == Encoding::EUC_JP
+  end
 
-    it "has the given internal encoding" do
-      @io = IO.popen(ruby_cmd('exit'), internal_encoding: Encoding::EUC_JP)
-      @io.internal_encoding.should == Encoding::EUC_JP
-    end
+  it "has the given internal encoding" do
+    @io = IO.popen(ruby_cmd('exit'), internal_encoding: Encoding::EUC_JP)
+    @io.internal_encoding.should == Encoding::EUC_JP
+  end
 
-    it "sets the internal encoding to nil if it's the same as the external encoding" do
-      @io = IO.popen(ruby_cmd('exit'), external_encoding: Encoding::EUC_JP,
-                            internal_encoding: Encoding::EUC_JP)
-      @io.internal_encoding.should be_nil
-    end
+  it "sets the internal encoding to nil if it's the same as the external encoding" do
+    @io = IO.popen(ruby_cmd('exit'), external_encoding: Encoding::EUC_JP,
+                          internal_encoding: Encoding::EUC_JP)
+    @io.internal_encoding.should be_nil
   end
 
   context "with a leading ENV Hash" do
     it "accepts a single String command" do
-      IO.popen({"FOO" => "bar"}, ruby_cmd('puts ENV["FOO"]')) do |io|
+      IO.popen({"FOO" => "bar"}, "echo #{@var}") do |io|
         io.read.should == "bar\n"
       end
     end
 
     it "accepts a single String command, and an IO mode" do
-      IO.popen({"FOO" => "bar"}, ruby_cmd('puts ENV["FOO"]'), "r") do |io|
+      IO.popen({"FOO" => "bar"}, "echo #{@var}", "r") do |io|
         io.read.should == "bar\n"
       end
     end

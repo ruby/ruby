@@ -24,6 +24,7 @@ module Psych
       end
 
       def test_legacy_struct
+        Struct.send(:remove_const, :AWESOME) if Struct.const_defined?(:AWESOME)
         foo = Struct.new('AWESOME', :bar)
         assert_equal foo.new('baz'), Psych.load(<<-eoyml)
 !ruby/struct:AWESOME

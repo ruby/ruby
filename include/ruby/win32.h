@@ -146,7 +146,7 @@ typedef int clockid_t;
 #define HAVE_UTIMENSAT 1
 #define AT_FDCWD		-100
 #define utimensat(_d, _p, _t, _f)	rb_w32_utimensat(_d, _p, _t, _f)
-#define lseek(_f, _o, _w)	_lseeki64(_f, _o, _w)
+#define lseek(_f, _o, _w)	rb_w32_lseek(_f, _o, _w)
 
 #define pipe(p)			rb_w32_pipe(p)
 #define open			rb_w32_open
@@ -751,6 +751,7 @@ int  rb_w32_fclose(FILE*);
 int  rb_w32_pipe(int[2]);
 ssize_t rb_w32_read(int, void *, size_t);
 ssize_t rb_w32_write(int, const void *, size_t);
+off_t  rb_w32_lseek(int, off_t, int);
 int  rb_w32_utime(const char *, const struct utimbuf *);
 int  rb_w32_uutime(const char *, const struct utimbuf *);
 int  rb_w32_utimes(const char *, const struct timeval *);

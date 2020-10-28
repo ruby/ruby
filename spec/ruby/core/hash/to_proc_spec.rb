@@ -19,16 +19,28 @@ describe "Hash#to_proc" do
       @proc = @hash.to_proc
     end
 
-    it "is not a lambda" do
-      @proc.lambda?.should == false
+    ruby_version_is ""..."3.0" do
+      it "is not a lambda" do
+        @proc.should_not.lambda?
+      end
+    end
+
+    ruby_version_is "3.0" do
+      it "is a lambda" do
+        @proc.should.lambda?
+      end
+
+      it "has an arity of 1" do
+        @proc.arity.should == 1
+      end
     end
 
     it "raises ArgumentError if not passed exactly one argument" do
-      lambda {
+      -> {
         @proc.call
       }.should raise_error(ArgumentError)
 
-      lambda {
+      -> {
         @proc.call 1, 2
       }.should raise_error(ArgumentError)
     end
@@ -81,7 +93,7 @@ describe "Hash#to_proc" do
     end
 
     it "raises an ArgumentError when calling #call on the Proc with no arguments" do
-      lambda { @hash.to_proc.call }.should raise_error(ArgumentError)
+      -> { @hash.to_proc.call }.should raise_error(ArgumentError)
     end
   end
 end

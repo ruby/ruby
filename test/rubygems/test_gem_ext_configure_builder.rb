@@ -3,7 +3,6 @@ require 'rubygems/test_case'
 require 'rubygems/ext'
 
 class TestGemExtConfigureBuilder < Gem::TestCase
-
   def setup
     super
 
@@ -61,7 +60,7 @@ class TestGemExtConfigureBuilder < Gem::TestCase
 
     assert_match(/^current directory:/, output.shift)
     assert_equal "#{sh_prefix_configure}#{@dest_path}", output.shift
-    assert_match %r(#{shell_error_msg}), output.shift
+    assert_match %r{#{shell_error_msg}}, output.shift
     assert_equal true, output.empty?
   end
 
@@ -83,5 +82,4 @@ class TestGemExtConfigureBuilder < Gem::TestCase
     assert_contains_make_command '', output[4]
     assert_contains_make_command 'install', output[7]
   end
-
 end

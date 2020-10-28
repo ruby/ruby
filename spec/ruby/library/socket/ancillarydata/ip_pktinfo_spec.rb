@@ -89,7 +89,7 @@ with_feature :ancillary_data, :pktinfo do
         end
 
         it 'is not the same object as the input Addrinfo' do
-          @addr.should_not == @source
+          @addr.should_not equal @source
         end
       end
 
@@ -109,7 +109,7 @@ with_feature :ancillary_data, :pktinfo do
         end
 
         it 'is not the same object as the input Addrinfo' do
-          @addr.should_not == @dest
+          @addr.should_not equal @dest
         end
       end
     end

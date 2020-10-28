@@ -1,18 +1,21 @@
 require_relative '../../../spec_helper'
-require 'rexml/document'
 
-describe "REXML::Attribute#==" do
-  it "returns true if other has equal name and value" do
-    a1 = REXML::Attribute.new("foo", "bar")
-    a1.should == a1.clone
+ruby_version_is ''...'3.0' do
+  require 'rexml/document'
 
-    a2 = REXML::Attribute.new("foo", "bar")
-    a1.should == a2
+  describe "REXML::Attribute#==" do
+    it "returns true if other has equal name and value" do
+      a1 = REXML::Attribute.new("foo", "bar")
+      a1.should == a1.clone
 
-    a3 = REXML::Attribute.new("foo", "bla")
-    a1.should_not == a3
+      a2 = REXML::Attribute.new("foo", "bar")
+      a1.should == a2
 
-    a4 = REXML::Attribute.new("baz", "bar")
-    a1.should_not == a4
+      a3 = REXML::Attribute.new("foo", "bla")
+      a1.should_not == a3
+
+      a4 = REXML::Attribute.new("baz", "bar")
+      a1.should_not == a4
+    end
   end
 end

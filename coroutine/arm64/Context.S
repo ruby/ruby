@@ -2,18 +2,21 @@
 ##  This file is part of the "Coroutine" project and released under the MIT License.
 ##
 ##  Created by Samuel Williams on 10/5/2018.
-##  Copyright, 2018, by Samuel Williams. All rights reserved.
+##  Copyright, 2018, by Samuel Williams.
 ##
+
+#define TOKEN_PASTE(x,y) x##y
+#define PREFIXED_SYMBOL(prefix,name) TOKEN_PASTE(prefix,name)
 
 .text
 .align 2
 
-.global coroutine_transfer
-coroutine_transfer:
+.global PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer)
+PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer):
 
 	# Make space on the stack for caller registers
 	sub sp, sp, 0xb0
-	
+
 	# Save caller registers
 	stp d8, d9, [sp, 0x00]
 	stp d10, d11, [sp, 0x10]

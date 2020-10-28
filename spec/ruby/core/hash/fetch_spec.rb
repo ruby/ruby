@@ -4,10 +4,16 @@ require_relative '../../shared/hash/key_error'
 
 describe "Hash#fetch" do
   context "when the key is not found" do
-    it_behaves_like :key_error, ->(obj, key) { obj.fetch(key) }, Hash.new(a: 5)
-    it_behaves_like :key_error, ->(obj, key) { obj.fetch(key) }, {}
-    it_behaves_like :key_error, ->(obj, key) { obj.fetch(key) }, Hash.new { 5 }
-    it_behaves_like :key_error, ->(obj, key) { obj.fetch(key) }, Hash.new(5)
+    it_behaves_like :key_error, -> obj, key { obj.fetch(key) }, Hash.new(a: 5)
+    it_behaves_like :key_error, -> obj, key { obj.fetch(key) }, {}
+    it_behaves_like :key_error, -> obj, key { obj.fetch(key) }, Hash.new { 5 }
+    it_behaves_like :key_error, -> obj, key { obj.fetch(key) }, Hash.new(5)
+
+    it "formats the object with #inspect in the KeyError message" do
+      -> {
+        {}.fetch('foo')
+      }.should raise_error(KeyError, 'key not found: "foo"')
+    end
   end
 
   it "returns the value for key" do
@@ -25,14 +31,14 @@ describe "Hash#fetch" do
   end
 
   it "gives precedence to the default block over the default argument when passed both" do
-    lambda {
+    -> {
       @result = {}.fetch(9, :foo) { |i| i * i }
     }.should complain(/block supersedes default value argument/)
     @result.should == 81
   end
 
   it "raises an ArgumentError when not passed one or two arguments" do
-    lambda { {}.fetch()        }.should raise_error(ArgumentError)
-    lambda { {}.fetch(1, 2, 3) }.should raise_error(ArgumentError)
+    -> { {}.fetch()        }.should raise_error(ArgumentError)
+    -> { {}.fetch(1, 2, 3) }.should raise_error(ArgumentError)
   end
 end

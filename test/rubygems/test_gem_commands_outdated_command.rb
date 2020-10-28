@@ -3,7 +3,6 @@ require 'rubygems/test_case'
 require 'rubygems/commands/outdated_command'
 
 class TestGemCommandsOutdatedCommand < Gem::TestCase
-
   def setup
     super
 

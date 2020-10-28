@@ -19,44 +19,12 @@
 
 language: c
 
+os: linux
+
 dist: xenial
-
-osx_image: xcode10.1
-
-sudo: false
 
 git:
   quiet: true
-
-addons:
-  apt:
-    config:
-      retries: true
-    update: true
-    sources:
-      - ubuntu-toolchain-r-test
-    packages:
-      - gcc-8
-      - libffi-dev
-      - libgdbm-dev
-      - libgmp-dev
-      - libjemalloc-dev
-      - libncurses5-dev
-      - libncursesw5-dev
-      - libreadline6-dev
-      - libssl-dev
-      - libyaml-dev
-      - openssl
-      - valgrind
-      - zlib1g-dev
-  homebrew:
-    packages:
-      - gdbm
-      - gmp
-      - libffi
-      - openssl@1.1
-      - zlib
-      - ccache
 
 cache:
   ccache: true
@@ -66,269 +34,244 @@ cache:
 
 env:
   global:
+    # Reset timestamps early
+    - _=$(touch NEWS && find . -type f -exec touch -r NEWS {} +)
     - CONFIGURE_TTY=no
     - CCACHE_COMPILERCHECK=none
     - CCACHE_NOCOMPRESS=1
     - CCACHE_MAXSIZE=512Mi
-    - >-
-      NPROC="`case ${TRAVIS_OS_NAME} in
-      osx)   sysctl -n hw.activecpu ;;
-      linux) nproc ;;
-      esac`"
+    - NPROC="`nproc`"
     # JOBS and SETARCH are overridden when necessary; see below.
     - JOBS=-j$((1+${NPROC}))
     - SETARCH=
     - RUBY_PREFIX=/tmp/ruby-prefix
     - GEMS_FOR_TEST='timezone tzinfo'
+    - UPDATE_UNICODE="UNICODE_FILES=. UNICODE_PROPERTY_FILES=. UNICODE_AUXILIARY_FILES=. UNICODE_EMOJI_FILES=."
+    - BEFORE_INSTALL=true
+    # https://github.com/travis-ci/travis-build/blob/e411371dda21430a60f61b8f3f57943d2fe4d344/lib/travis/build/bash/travis_apt_get_options.bash#L7
+    - travis_apt_get_options='--allow-downgrades --allow-remove-essential --allow-change-held-packages'
+    - travis_apt_get_options="-yq --no-install-suggests --no-install-recommends $travis_apt_get_options"
 
 .org.ruby-lang.ci.matrix-definitions:
-
-  - &cron-only
-    if: (type = cron) AND (branch = trunk) AND (fork = false)
 
   - &make-test-only
     script:
       - $SETARCH make -s test TESTOPTS="${TESTOPTS=$JOBS -q --tty=no}"
 
-  - &linux
-    os: linux
+  - &gcc-8
     compiler: gcc-8
-
-  - &osx
-    os: osx
-    compiler: clang
+    # # Not using addon to control retries
+    # addons:
+    #   apt:
+    #     sources:
+    #       - ubuntu-toolchain-r-test
     before_install:
-      - /usr/local/opt/openssl@1.1/bin/openssl version
+      - bash -cx "${BEFORE_INSTALL}"
+      - tool/travis_retry.sh sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
+      - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
+      - >-
+        tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install
+        ccache
+        gcc-8
+        g++-8
+        libffi-dev
+        libgdbm-dev
+        libncurses5-dev
+        libncursesw5-dev
+        libreadline6-dev
+        libssl-dev
+        libyaml-dev
+        openssl
+        zlib1g-dev
+
+  - &clang-8
+    compiler: clang-8
+    addons:
+      apt:
+        # Not doing this manually unlike other sources, because it has been stable.
+        sources:
+          - llvm-toolchain-xenial-8
+        config:
+          retries: true
+    before_install:
+      - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
+      - >-
+        tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install
+        clang-8
+        llvm-8-tools
+        libffi-dev
+        libgdbm-dev
+        libncurses5-dev
+        libncursesw5-dev
+        libreadline6-dev
+        libssl-dev
+        libyaml-dev
+        openssl
+        zlib1g-dev
 
   # --------
 
   - &x86_64-linux
     name: x86_64-linux
-    <<: *linux
+    <<: *gcc-8
 
-  - &jemalloc
-    name: --with-jemalloc
-    <<: *linux
-    <<: *cron-only
-    env:
-      - CONFIG_FLAG='--with-gmp --with-jemalloc --with-valgrind'
+  - &arm64-linux
+    name: arm64-linux
+    arch: arm64
+    <<: *gcc-8
 
-  - &VM_CHECK_MODE
-    name: VM_CHECK_MODE=3
-    <<: *linux
-    <<: *cron-only
-    <<: *make-test-only
-    env:
-      - cppflags=-DVM_CHECK_MODE=0x0003
-
-  - &FIBER_USE_sjlj
-    name: FIBER_USE_NATIVE=0
-    <<: *linux
-    <<: *cron-only
-    env:
-      - cppflags=-DFIBER_USE_NATIVE=0
-
-  - &TOKEN_THREADED_CODE
-    name: TOKEN_THREADED_CODE
-    <<: *linux
-    <<: *cron-only
-    <<: *make-test-only
-    env:
-      - cppflags=-DOPT_THREADED_CODE=1
-
-  - &CALL_THREADED_CODE
-    name: CALL_THREADED_CODE
-    <<: *linux
-    <<: *cron-only
-    <<: *make-test-only
-    env:
-      - cppflags=-DOPT_THREADED_CODE=2
-
-  - &NO_THREADED_CODE
-    name: NO_THREADED_CODE
-    <<: *linux
-    <<: *cron-only
-    <<: *make-test-only
-    env:
-      - cppflags=-DOPT_THREADED_CODE=3
+  - &s390x-linux
+    name: s390x-linux
+    arch: s390x
+    <<: *gcc-8
 
   - &ASAN
     name: -fsanitize=address
-    <<: *linux
-    #<<: *cron-only
+    <<: *clang-8
     <<: *make-test-only
-    compiler: clang
     env:
+      - GEMS_FOR_TEST=
       - ASAN_OPTIONS=detect_leaks=0
-      - cflags='-march=native -fsanitize=address -fno-omit-frame-pointer'
+      - cflags='-U_FORTIFY_SOURCE -march=native -fsanitize=address -fno-omit-frame-pointer -fPIC'
       - debugflags=-ggdb3
       - optflags=-O1
-      - LD=clang
-      - LDFLAGS=-fsanitize=address
+      - LD=clang-8
+      - LDFLAGS='-fsanitize=address -fPIC'
+      - CONFIG_FLAG='--with-out-ext=openssl --without-gmp --without-jemalloc --without-valgrind'
 
   - &MSAN
     name: -fsanitize=memory
-    <<: *linux
-    #<<: *cron-only
+    <<: *clang-8
     <<: *make-test-only
-    compiler: clang
     env:
-      - cflags='-fsanitize=memory -fsanitize-memory-track-origins=2 -fno-omit-frame-pointer'
+      - GEMS_FOR_TEST=
+      - cflags='-U_FORTIFY_SOURCE -fsanitize=memory -fsanitize-memory-track-origins=2 -fno-omit-frame-pointer -fPIC'
       - optflags=-O1
-      - LD=clang
-      - LDFLAGS=-fsanitize=memory
-      - CONFIG_FLAG=--with-out-ext=openssl
+      - LD=clang-8
+      - LDFLAGS='-fsanitize=memory -fPIC'
+      - CONFIG_FLAG='--with-out-ext=openssl --without-gmp --without-jemalloc --without-valgrind'
 
   - &UBSAN
     name: -fsanitize=undefined
-    <<: *linux
-    #<<: *cron-only
+    <<: *clang-8
     <<: *make-test-only
-    compiler: clang
     env:
-      - cflags='-fsanitize=undefined,integer,nullability -fno-omit-frame-pointer'
+      - GEMS_FOR_TEST=
+      - cflags='-U_FORTIFY_SOURCE -fsanitize=undefined,integer,nullability -fno-sanitize=implicit-integer-sign-change,unsigned-integer-overflow'
       - cppflags=-DUNALIGNED_WORD_ACCESS=0
       - debugflags=-ggdb3
       - optflags='-O1 -march=native'
-      - LD=clang
-      - LDFLAGS=-fsanitize=undefined,integer,nullability
+      - LD=clang-8
+      - LDFLAGS='-fsanitize=undefined,integer,nullability -fno-sanitize=implicit-integer-sign-change,unsigned-integer-overflow'
 
   - &i686-linux
     name: i686-linux
-    <<: *linux
-    sudo: required
+    compiler: gcc-8
     env:
       - GCC_FLAGS=-m32
+      - CXX='g++-8 -m32'
       - debugflags=-g0
       - SETARCH='setarch i686 --verbose --3gb'
-    addons:
-      apt:
-        config:
-          retries: true
-        update: true
-        sources:
-          - ubuntu-toolchain-r-test
-        packages:
-          - gcc-8-multilib
-          - libffi-dev:i386
-          - libffi6:i386
-          - libgdbm-dev:i386
-          - libgdbm3:i386
-          - libncurses5-dev:i386
-          - libncurses5:i386
-          - libncursesw5-dev:i386
-          - libreadline6-dev:i386
-          - libreadline6:i386
-          - libssl-dev:i386
-          - libssl1.0.0:i386
-          - linux-libc-dev:i386
-          - zlib1g-dev:i386
-          - zlib1g:i386
-
-  - &pedanticism
-    name: -std=c99 -pedantic
-    <<: *linux
-    <<: *make-test-only
-    compiler: clang
-    env:
-      - GCC_FLAGS='-std=c99 -Werror=pedantic -pedantic-errors'
-      - CONFIG_FLAG=
-      - JOBS=
-      - >-
-        warnflags='
-        -Wall
-        -Wextra
-        -Werror=deprecated-declarations
-        -Werror=division-by-zero
-        -Werror=extra-tokens
-        -Werror=implicit-function-declaration
-        -Werror=implicit-int
-        -Werror=pointer-arith
-        -Werror=shorten-64-to-32
-        -Werror=write-strings
-        -Wmissing-noreturn
-        -Wno-constant-logical-operand
-        -Wno-missing-field-initializers
-        -Wno-overlength-strings
-        -Wno-parentheses-equality
-        -Wno-self-assign
-        -Wno-tautological-compare
-        -Wno-unused-local-typedef
-        -Wno-unused-parameter
-        -Wunused-variable
-        '
-      - LDFLAGS=-Wno-unused-command-line-argument
-
-  - &rubyspec
-    name: ruby/spec on Ruby 2.3 # to ensure version guards are correctly added
-    <<: *linux
-    language: ruby
-    rvm: 2.3.8
-    addons:
-      apt:
-        packages:
+    # # Not using addon to control retries
+    # addons:
+    #   apt:
+    #     sources:
+    #       - ubuntu-toolchain-r-test
     before_install:
-    install:
-    before_script: chmod -R u+w spec/ruby
-    # -j randomly hangs. Using -fs to make sure we can know problematic spec on failure.
-    script: ruby -C spec/ruby ../mspec/bin/mspec -fs .
+      - tool/travis_retry.sh sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
+      - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
+      - >-
+        tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install
+        gcc-8-multilib
+        g++-8
+        g++-8-multilib
+        libstdc++-8-dev:i386
+        libffi-dev:i386
+        libffi6:i386
+        libgdbm-dev:i386
+        libgdbm3:i386
+        libncurses5-dev:i386
+        libncurses5:i386
+        libncursesw5-dev:i386
+        libreadline6-dev:i386
+        libreadline6:i386
+        libssl-dev:i386
+        libssl1.0.0:i386
+        linux-libc-dev:i386
+        zlib1g-dev:i386
+        zlib1g:i386
 
-  - &x86_64-darwin17
-    name: x86_64-darwin17
-    <<: *osx
+  - &arm32-linux
+    name: arm32-linux
+    arch: arm64
+    # https://packages.ubuntu.com/xenial/crossbuild-essential-armhf
+    compiler: arm-linux-gnueabihf-gcc
     env:
-      - CONFIG_FLAG=--with-opt-dir=/usr/local/opt/openssl@1.1:/usr/local/opt/zlib
-      - TEST_ALL_OPTS="--tty=no --excludes=\$(TESTSDIR)/excludes/_travis/osx"
-      # Disabling -j3 because it seems to cause a hang on building Ruby: https://travis-ci.org/ruby/ruby/jobs/471021727
-      - JOBS=
+      - debugflags=-g0
+      - SETARCH='setarch linux32 --verbose --32bit'
+    before_install:
+      - sudo dpkg --add-architecture armhf
+      - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
+      - >-
+        tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install
+        ccache
+        crossbuild-essential-armhf
+        libc6:armhf
+        libstdc++-5-dev:armhf
+        libffi-dev:armhf
+        libffi6:armhf
+        libgdbm-dev:armhf
+        libgdbm3:armhf
+        libncurses5-dev:armhf
+        libncurses5:armhf
+        libncursesw5-dev:armhf
+        libreadline6-dev:armhf
+        libreadline6:armhf
+        libssl-dev:armhf
+        libssl1.0.0:armhf
+        linux-libc-dev:armhf
+        zlib1g-dev:armhf
+        zlib1g:armhf
 
-  - &universal-darwin17
-    name: uinversal.x86_64h-darwin17
-    <<: *osx
-    <<: *cron-only
+  - &baseruby
+    name: "BASERUBY: Ruby 2.2"
+    <<: *gcc-8
     <<: *make-test-only
-    env:
-      - CONFIG_FLAG=--with-arch=x86_64h,x86_64,i386
-      - TEST_ALL_OPTS="$JOBS -q --tty=no --excludes=\$(TESTSDIR)/excludes/_travis/osx"
+    language: ruby
+    rvm: 2.2
 
 matrix:
   include:
-    # to reduce time for finishing all jobs, run the slowest osx build first.
-    - <<: *x86_64-darwin17
+    # Build every commit:
     - <<: *x86_64-linux
     - <<: *i686-linux
-    - <<: *jemalloc
-    - <<: *pedanticism
+    - <<: *baseruby
+    # Build every commit (Allowed Failures):
+    - <<: *arm32-linux
+    - <<: *arm64-linux
+    - <<: *s390x-linux
     - <<: *ASAN
     - <<: *MSAN
     - <<: *UBSAN
-    - <<: *VM_CHECK_MODE
-    - <<: *FIBER_USE_sjlj
-    - <<: *TOKEN_THREADED_CODE
-    - <<: *CALL_THREADED_CODE
-    - <<: *NO_THREADED_CODE
-    - <<: *rubyspec
   allow_failures:
-    - name: uinversal.x86_64h-darwin17
+    - name: arm32-linux
+    - name: arm64-linux
+    - name: s390x-linux
     - name: -fsanitize=address
     - name: -fsanitize=memory
-    - name: -fsanitize=undefined
   fast_finish: true
 
 before_script:
-  - echo JOBS=${JOBS} SETARCH=${SETARCH}
-  - $SETARCH uname -a
-  - $SETARCH uname -r
   - rm -fr .ext autom4te.cache
-  - echo $TERM
   - |-
     [ -d ~/.downloaded-cache ] ||
     mkdir ~/.downloaded-cache
   - ln -s ~/.downloaded-cache
   - "> config.status"
   - "> .rbconfig.time"
-  - sed -f tool/prereq.status Makefile.in common.mk > Makefile
-  - make -s $JOBS update-download
+  - sed -f tool/prereq.status template/Makefile.in common.mk > Makefile
+  - make touch-unicode-files
+  - make -s $JOBS $UPDATE_UNICODE up
   - make -s $JOBS srcs
   - rm -f config.status Makefile rbconfig.rb .rbconfig.time
   - |-
@@ -341,7 +284,6 @@ before_script:
   - chmod -R a-w .
   - chmod -R u+w build config_1st config_2nd
   - cd build
-  - ccache --show-stats
   - |-
     case "$CC" in
     gcc*)   CC="ccache $CC${GCC_FLAGS:+ }$GCC_FLAGS -fno-diagnostics-color";;
@@ -360,46 +302,42 @@ before_script:
   - rm -rf ~/config_2nd
   - mv ../config_2nd ~
   - chmod u-w ..
-  - $SETARCH make -s $JOBS && make install
-  - ccache --show-stats
+  - $SETARCH make -s $JOBS
+  - make -s install
   - |-
     [ -z "${GEMS_FOR_TEST}" ] ||
     $RUBY_PREFIX/bin/gem install --no-document $GEMS_FOR_TEST
+  - echo "raise 'do not load ~/.irbrc in test'" > ~/.irbrc
 
 script:
-  - $SETARCH make -s test TESTOPTS="${TESTOPTS=$JOBS -q --tty=no}"
-  - travis_wait 40 $SETARCH make -s test-all -o exts TESTOPTS="${TEST_ALL_OPTS=$TESTOPTS}" RUBYOPT="-w"
+  - $SETARCH make -s test -o showflags TESTOPTS="${TESTOPTS=$JOBS -q --tty=no}"
+  - travis_wait 50 $SETARCH make -s test-all -o exts TESTOPTS="${TESTOPTS} ${TEST_ALL_OPTS}" RUBYOPT="-w"
   - $SETARCH make -s test-spec MSPECOPT=-ff # not using `-j` because sometimes `mspec -j` silently dies
+  - $SETARCH make -s -o showflags leaked-globals
 
 # Branch matrix.  Not all branches are Travis-ready so we limit branches here.
 branches:
   only:
-    - trunk
-    - ruby_2_3
+    - master
     - ruby_2_4
     - ruby_2_5
     - ruby_2_6
-    - /^feature\//
-    - /^bug\//
-    - /^travis-/
+    - ruby_2_7
 
 # We want to be notified when something happens.
 notifications:
   irc:
     channels:
       - "chat.freenode.net#ruby-core"
-      - "chat.freenode.net#ruby-ja"
     on_success: change # [always|never|change] # default: always
     on_failure: always # [always|never|change] # default: always
     template:
       - "%{message} by @%{author}: See %{build_url}"
 
-  slack:
-    rooms:
-      - secure: i1GLETSKye85ea6dGNA3MxI/5myChmMFiZtBd5C69xK+s1sBFqEgOSbaSf9KHc0CYrHVyNhQMaZRruieV7xS+6Pfs0Zvxf1DO6QQTWC2KhkqwFDLvZncAzjoyASdR90hbr+iRPOngQ+HJuE94zemALAwEqNAinzA74PMiJXktqY= # ruby:<token>#commits
-      - secure: ah7UEHBvncXT7bM5mvYIQAO+tIyV/wl7nXLb7wQD16dO2v8Gragy0mWjB79Q09hrrMGmp6H9bCDpdGS80boIA5EHaHoG4QaP0i9bsSt8U2AMWgZtfyIgQKJ4H2kXkGlrjO+AXTgnIkP7LNjdgAVUUTGQPb26T3QmoN2Splt+fIQ= # ruby:<token>#alerts
-    on_pull_requests: false
-    on_success: change
+  webhooks:
+    urls:
+      - secure: mRsoS/UbqDkKkW5p3AEqM27d4SZnV6Gsylo3bm8T/deltQzTsGzZwrm7OIBXZv0UFZdE68XmPlyHfZFLSP2V9QZ7apXMf9/vw0GtcSe1gchtnjpAPF6lYBn7nMCbVPPx9cS0dwL927fjdRM1vj7IKZ2bk4F0lAJ25R25S6teqdk= # ruby-lang slack: ruby/simpler-alerts-bot (travis)
+    on_success: never
     on_failure: always
 
   email:

@@ -27,19 +27,19 @@ describe "URI#select" do
     uri.to_s.should == 'http://foo:bar@zab:8080/?a=1#b123'
 
     uri = URI.parse('http://example.com')
-    lambda { uri.password = 'bar' }.should raise_error(URI::InvalidURIError)
+    -> { uri.password = 'bar' }.should raise_error(URI::InvalidURIError)
     uri.userinfo = 'foo:bar'
     uri.to_s.should == 'http://foo:bar@example.com'
-    lambda { uri.registry = 'bar' }.should raise_error(URI::InvalidURIError)
-    lambda { uri.opaque = 'bar' }.should raise_error(URI::InvalidURIError)
+    -> { uri.registry = 'bar' }.should raise_error(URI::InvalidURIError)
+    -> { uri.opaque = 'bar' }.should raise_error(URI::InvalidURIError)
 
     uri = URI.parse('mailto:foo@example.com')
-    lambda { uri.user = 'bar' }.should raise_error(URI::InvalidURIError)
-    lambda { uri.password = 'bar' }.should raise_error(URI::InvalidURIError)
-    lambda { uri.userinfo = ['bar', 'baz'] }.should raise_error(URI::InvalidURIError)
-    lambda { uri.host = 'bar' }.should raise_error(URI::InvalidURIError)
-    lambda { uri.port = 'bar' }.should raise_error(URI::InvalidURIError)
-    lambda { uri.path = 'bar' }.should raise_error(URI::InvalidURIError)
-    lambda { uri.query = 'bar' }.should raise_error(URI::InvalidURIError)
+    -> { uri.user = 'bar' }.should raise_error(URI::InvalidURIError)
+    -> { uri.password = 'bar' }.should raise_error(URI::InvalidURIError)
+    -> { uri.userinfo = ['bar', 'baz'] }.should raise_error(URI::InvalidURIError)
+    -> { uri.host = 'bar' }.should raise_error(URI::InvalidURIError)
+    -> { uri.port = 'bar' }.should raise_error(URI::InvalidURIError)
+    -> { uri.path = 'bar' }.should raise_error(URI::InvalidURIError)
+    -> { uri.query = 'bar' }.should raise_error(URI::InvalidURIError)
   end
 end

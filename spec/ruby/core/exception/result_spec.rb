@@ -1,11 +1,5 @@
 require_relative '../../spec_helper'
 
-describe "StopIteration" do
-  it "is a subclass of IndexError" do
-    StopIteration.superclass.should equal(IndexError)
-  end
-end
-
 describe "StopIteration#result" do
   before :each do
     obj = Object.new
@@ -20,7 +14,7 @@ describe "StopIteration#result" do
   it "returns the method-returned-object from an Enumerator" do
     @enum.next
     @enum.next
-    lambda { @enum.next }.should(
+    -> { @enum.next }.should(
       raise_error(StopIteration) do |error|
         error.result.should equal(:method_returned)
       end

@@ -1,13 +1,15 @@
 # coding: UTF-8
 # frozen_string_literal: true
 
-require 'minitest_helper'
+require_relative 'helper'
 require 'rdoc/markup/block_quote'
 require 'rdoc/markdown'
 
 class TestRDocMarkdown < RDoc::TestCase
 
   def setup
+    super
+
     @RM = RDoc::Markup
 
     @parser = RDoc::Markdown.new
@@ -717,7 +719,7 @@ Some text. ^[With a footnote]
   def test_parse_note_no_notes
     @parser.notes = false
 
-    assert_raises RDoc::Markdown::ParseError do
+    assert_raise RDoc::Markdown::ParseError do
       parse "Some text.[^1]"
     end
   end

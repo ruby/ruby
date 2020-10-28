@@ -167,21 +167,27 @@ ossl_pkey_new_from_data(int argc, VALUE *argv, VALUE self)
     pass = ossl_pem_passwd_value(pass);
 
     bio = ossl_obj2bio(&data);
-    if (!(pkey = d2i_PrivateKey_bio(bio, NULL))) {
-	OSSL_BIO_reset(bio);
-	if (!(pkey = PEM_read_bio_PrivateKey(bio, NULL, ossl_pem_passwd_cb, (void *)pass))) {
-	    OSSL_BIO_reset(bio);
-	    if (!(pkey = d2i_PUBKEY_bio(bio, NULL))) {
-		OSSL_BIO_reset(bio);
-		pkey = PEM_read_bio_PUBKEY(bio, NULL, ossl_pem_passwd_cb, (void *)pass);
-	    }
-	}
-    }
+    if ((pkey = d2i_PrivateKey_bio(bio, NULL)))
+	goto ok;
+    OSSL_BIO_reset(bio);
+    if ((pkey = d2i_PKCS8PrivateKey_bio(bio, NULL, ossl_pem_passwd_cb, (void *)pass)))
+	goto ok;
+    OSSL_BIO_reset(bio);
+    if ((pkey = d2i_PUBKEY_bio(bio, NULL)))
+	goto ok;
+    OSSL_BIO_reset(bio);
+    /* PEM_read_bio_PrivateKey() also parses PKCS #8 formats */
+    if ((pkey = PEM_read_bio_PrivateKey(bio, NULL, ossl_pem_passwd_cb, (void *)pass)))
+	goto ok;
+    OSSL_BIO_reset(bio);
+    if ((pkey = PEM_read_bio_PUBKEY(bio, NULL, NULL, NULL)))
+	goto ok;
 
     BIO_free(bio);
-    if (!pkey)
-	ossl_raise(ePKeyError, "Could not parse PKey");
+    ossl_raise(ePKeyError, "Could not parse PKey");
 
+ok:
+    BIO_free(bio);
     return ossl_pkey_new(pkey);
 }
 
@@ -294,6 +300,160 @@ ossl_pkey_initialize(VALUE self)
 }
 
 /*
+ * call-seq:
+ *    pkey.oid -> string
+ *
+ * Returns the short name of the OID associated with _pkey_.
+ */
+static VALUE
+ossl_pkey_oid(VALUE self)
+{
+    EVP_PKEY *pkey;
+    int nid;
+
+    GetPKey(self, pkey);
+    nid = EVP_PKEY_id(pkey);
+    return rb_str_new_cstr(OBJ_nid2sn(nid));
+}
+
+/*
+ * call-seq:
+ *    pkey.inspect -> string
+ *
+ * Returns a string describing the PKey object.
+ */
+static VALUE
+ossl_pkey_inspect(VALUE self)
+{
+    EVP_PKEY *pkey;
+    int nid;
+
+    GetPKey(self, pkey);
+    nid = EVP_PKEY_id(pkey);
+    return rb_sprintf("#<%"PRIsVALUE":%p oid=%s>",
+                      rb_class_name(CLASS_OF(self)), (void *)self,
+                      OBJ_nid2sn(nid));
+}
+
+static VALUE
+do_pkcs8_export(int argc, VALUE *argv, VALUE self, int to_der)
+{
+    EVP_PKEY *pkey;
+    VALUE cipher, pass;
+    const EVP_CIPHER *enc = NULL;
+    BIO *bio;
+
+    GetPKey(self, pkey);
+    rb_scan_args(argc, argv, "02", &cipher, &pass);
+    if (argc > 0) {
+	/*
+	 * TODO: EncryptedPrivateKeyInfo actually has more options.
+	 * Should they be exposed?
+	 */
+	enc = ossl_evp_get_cipherbyname(cipher);
+	pass = ossl_pem_passwd_value(pass);
+    }
+
+    bio = BIO_new(BIO_s_mem());
+    if (!bio)
+	ossl_raise(ePKeyError, "BIO_new");
+    if (to_der) {
+	if (!i2d_PKCS8PrivateKey_bio(bio, pkey, enc, NULL, 0,
+				     ossl_pem_passwd_cb, (void *)pass)) {
+	    BIO_free(bio);
+	    ossl_raise(ePKeyError, "i2d_PKCS8PrivateKey_bio");
+	}
+    }
+    else {
+	if (!PEM_write_bio_PKCS8PrivateKey(bio, pkey, enc, NULL, 0,
+					   ossl_pem_passwd_cb, (void *)pass)) {
+	    BIO_free(bio);
+	    ossl_raise(ePKeyError, "PEM_write_bio_PKCS8PrivateKey");
+	}
+    }
+    return ossl_membio2str(bio);
+}
+
+/*
+ * call-seq:
+ *    pkey.private_to_der                   -> string
+ *    pkey.private_to_der(cipher, password) -> string
+ *
+ * Serializes the private key to DER-encoded PKCS #8 format. If called without
+ * arguments, unencrypted PKCS #8 PrivateKeyInfo format is used. If called with
+ * a cipher name and a password, PKCS #8 EncryptedPrivateKeyInfo format with
+ * PBES2 encryption scheme is used.
+ */
+static VALUE
+ossl_pkey_private_to_der(int argc, VALUE *argv, VALUE self)
+{
+    return do_pkcs8_export(argc, argv, self, 1);
+}
+
+/*
+ * call-seq:
+ *    pkey.private_to_pem                   -> string
+ *    pkey.private_to_pem(cipher, password) -> string
+ *
+ * Serializes the private key to PEM-encoded PKCS #8 format. See #private_to_der
+ * for more details.
+ */
+static VALUE
+ossl_pkey_private_to_pem(int argc, VALUE *argv, VALUE self)
+{
+    return do_pkcs8_export(argc, argv, self, 0);
+}
+
+static VALUE
+do_spki_export(VALUE self, int to_der)
+{
+    EVP_PKEY *pkey;
+    BIO *bio;
+
+    GetPKey(self, pkey);
+    bio = BIO_new(BIO_s_mem());
+    if (!bio)
+	ossl_raise(ePKeyError, "BIO_new");
+    if (to_der) {
+	if (!i2d_PUBKEY_bio(bio, pkey)) {
+	    BIO_free(bio);
+	    ossl_raise(ePKeyError, "i2d_PUBKEY_bio");
+	}
+    }
+    else {
+	if (!PEM_write_bio_PUBKEY(bio, pkey)) {
+	    BIO_free(bio);
+	    ossl_raise(ePKeyError, "PEM_write_bio_PUBKEY");
+	}
+    }
+    return ossl_membio2str(bio);
+}
+
+/*
+ * call-seq:
+ *    pkey.public_to_der -> string
+ *
+ * Serializes the public key to DER-encoded X.509 SubjectPublicKeyInfo format.
+ */
+static VALUE
+ossl_pkey_public_to_der(VALUE self)
+{
+    return do_spki_export(self, 1);
+}
+
+/*
+ * call-seq:
+ *    pkey.public_to_pem -> string
+ *
+ * Serializes the public key to PEM-encoded X.509 SubjectPublicKeyInfo format.
+ */
+static VALUE
+ossl_pkey_public_to_pem(VALUE self)
+{
+    return do_spki_export(self, 0);
+}
+
+/*
  *  call-seq:
  *      pkey.sign(digest, data) -> String
  *
@@ -306,7 +466,7 @@ ossl_pkey_initialize(VALUE self)
  *
  * == Example
  *   data = 'Sign me!'
- *   digest = OpenSSL::Digest::SHA256.new
+ *   digest = OpenSSL::Digest.new('SHA256')
  *   pkey = OpenSSL::PKey::RSA.new(2048)
  *   signature = pkey.sign(digest, data)
  */
@@ -360,7 +520,7 @@ ossl_pkey_sign(VALUE self, VALUE digest, VALUE data)
  *
  * == Example
  *   data = 'Sign me!'
- *   digest = OpenSSL::Digest::SHA256.new
+ *   digest = OpenSSL::Digest.new('SHA256')
  *   pkey = OpenSSL::PKey::RSA.new(2048)
  *   signature = pkey.sign(digest, data)
  *   pub_key = pkey.public_key
@@ -491,6 +651,12 @@ Init_ossl_pkey(void)
 
     rb_define_alloc_func(cPKey, ossl_pkey_alloc);
     rb_define_method(cPKey, "initialize", ossl_pkey_initialize, 0);
+    rb_define_method(cPKey, "oid", ossl_pkey_oid, 0);
+    rb_define_method(cPKey, "inspect", ossl_pkey_inspect, 0);
+    rb_define_method(cPKey, "private_to_der", ossl_pkey_private_to_der, -1);
+    rb_define_method(cPKey, "private_to_pem", ossl_pkey_private_to_pem, -1);
+    rb_define_method(cPKey, "public_to_der", ossl_pkey_public_to_der, 0);
+    rb_define_method(cPKey, "public_to_pem", ossl_pkey_public_to_pem, 0);
 
     rb_define_method(cPKey, "sign", ossl_pkey_sign, 2);
     rb_define_method(cPKey, "verify", ossl_pkey_verify, 3);

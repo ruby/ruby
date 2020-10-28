@@ -152,10 +152,9 @@ setproctitle(const char *fmt, ...)
 		return;
 #endif
 
+	/* fmt must be non-NULL */
 	va_start(ap, fmt);
-	if (fmt != NULL) {
-		vsnprintf(ptitle, sizeof(ptitle) , fmt, ap);
-	}
+	vsnprintf(ptitle, sizeof(ptitle), fmt, ap);
 	va_end(ap);
 
 #if SPT_TYPE == SPT_PSTAT

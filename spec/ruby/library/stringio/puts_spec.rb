@@ -30,11 +30,12 @@ describe "StringIO#puts when passed an Array" do
 
   it "does not honor the global output record separator $\\" do
     begin
-      old_rs, $\ = $\, "test"
+      old_rs = $\
+      suppress_warning {$\ = "test"}
       @io.puts([1, 2, 3, 4])
       @io.string.should == "1\n2\n3\n4\n"
     ensure
-      $\ = old_rs
+      suppress_warning {$\ = old_rs}
     end
   end
 
@@ -51,6 +52,14 @@ describe "StringIO#puts when passed an Array" do
     @io.puts([obj])
     @io.string.should == "to_s\n"
   end
+
+  it "returns general object info if :to_s does not return a string" do
+    object = mock('hola')
+    object.should_receive(:to_s).and_return(false)
+
+    @io.puts(object).should == nil
+    @io.string.should == object.inspect.split(" ")[0] + ">\n"
+  end
 end
 
 describe "StringIO#puts when passed 1 or more objects" do
@@ -60,11 +69,12 @@ describe "StringIO#puts when passed 1 or more objects" do
 
   it "does not honor the global output record separator $\\" do
     begin
-      old_rs, $\ = $\, "test"
+      old_rs = $\
+      suppress_warning {$\ = "test"}
       @io.puts(1, 2, 3, 4)
       @io.string.should == "1\n2\n3\n4\n"
     ensure
-      $\ = old_rs
+      suppress_warning {$\ = old_rs}
     end
   end
 
@@ -109,11 +119,12 @@ describe "StringIO#puts when passed no arguments" do
 
   it "does not honor the global output record separator $\\" do
     begin
-      old_rs, $\ = $\, "test"
+      old_rs = $\
+      suppress_warning {$\ = "test"}
       @io.puts
       @io.string.should == "\n"
     ensure
-      $\ = old_rs
+      suppress_warning {$\ = old_rs}
     end
   end
 end
@@ -140,11 +151,11 @@ end
 describe "StringIO#puts when self is not writable" do
   it "raises an IOError" do
     io = StringIO.new("test", "r")
-    lambda { io.puts }.should raise_error(IOError)
+    -> { io.puts }.should raise_error(IOError)
 
     io = StringIO.new("test")
     io.close_write
-    lambda { io.puts }.should raise_error(IOError)
+    -> { io.puts }.should raise_error(IOError)
   end
 end
 

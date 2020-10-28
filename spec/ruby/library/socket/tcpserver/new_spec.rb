@@ -40,7 +40,25 @@ describe "TCPServer.new" do
   end
 
   it "binds to INADDR_ANY if the hostname is empty and the port is a string" do
-    @server = TCPServer.new('', 0)
+    @server = TCPServer.new('', '0')
+    addr = @server.addr
+    addr[0].should == 'AF_INET'
+    addr[1].should be_kind_of(Integer)
+    addr[2].should == '0.0.0.0'
+    addr[3].should == '0.0.0.0'
+  end
+
+  it "binds to a port if the port is explicitly nil" do
+    @server = TCPServer.new('', nil)
+    addr = @server.addr
+    addr[0].should == 'AF_INET'
+    addr[1].should be_kind_of(Integer)
+    addr[2].should == '0.0.0.0'
+    addr[3].should == '0.0.0.0'
+  end
+
+  it "binds to a port if the port is an empty string" do
+    @server = TCPServer.new('', '')
     addr = @server.addr
     addr[0].should == 'AF_INET'
     addr[1].should be_kind_of(Integer)
@@ -49,7 +67,7 @@ describe "TCPServer.new" do
   end
 
   it "coerces port to string, then determines port from that number or service name" do
-    lambda { TCPServer.new(SocketSpecs.hostname, Object.new) }.should raise_error(TypeError)
+    -> { TCPServer.new(SocketSpecs.hostname, Object.new) }.should raise_error(TypeError)
 
     port = Object.new
     port.should_receive(:to_str).and_return("0")
@@ -62,8 +80,25 @@ describe "TCPServer.new" do
     # pick such a service port that will be able to reliably bind...
   end
 
+  it "has a single argument form and treats it as a port number" do
+    @server = TCPServer.new(0)
+    addr = @server.addr
+    addr[1].should be_kind_of(Integer)
+  end
+
+  it "coerces port to a string when it is the only argument" do
+    -> { TCPServer.new(Object.new) }.should raise_error(TypeError)
+
+    port = Object.new
+    port.should_receive(:to_str).and_return("0")
+
+    @server = TCPServer.new(port)
+    addr = @server.addr
+    addr[1].should be_kind_of(Integer)
+  end
+
   it "raises Errno::EADDRNOTAVAIL when the address is unknown" do
-    lambda { TCPServer.new("1.2.3.4", 0) }.should raise_error(Errno::EADDRNOTAVAIL)
+    -> { TCPServer.new("1.2.3.4", 0) }.should raise_error(Errno::EADDRNOTAVAIL)
   end
 
   # There is no way to make this fail-proof on all machines, because
@@ -71,7 +106,7 @@ describe "TCPServer.new" do
   # traditionally invalidly named ones.
   quarantine! do
     it "raises a SocketError when the host is unknown" do
-      lambda {
+      -> {
         TCPServer.new("--notavalidname", 0)
       }.should raise_error(SocketError)
     end
@@ -79,7 +114,7 @@ describe "TCPServer.new" do
 
   it "raises Errno::EADDRINUSE when address is already in use" do
     @server = TCPServer.new('127.0.0.1', 0)
-    lambda {
+    -> {
       @server = TCPServer.new('127.0.0.1', @server.addr[1])
     }.should raise_error(Errno::EADDRINUSE)
   end

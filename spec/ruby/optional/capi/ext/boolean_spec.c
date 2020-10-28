@@ -29,5 +29,5 @@ void Init_boolean_spec(void) {
 }
 
 #ifdef __cplusplus
-extern "C" {
+}
 #endif

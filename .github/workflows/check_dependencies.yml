@@ -1,0 +1,45 @@
+name: Check Dependencies
+on: [push, pull_request]
+jobs:
+  update-deps:
+    strategy:
+      matrix:
+        os: [ubuntu-20.04, macos-latest]
+      fail-fast: true
+    runs-on: ${{ matrix.os }}
+    if: "!contains(github.event.head_commit.message, '[ci skip]')"
+    steps:
+      - name: Install libraries
+        run: |
+          set -x
+          sudo apt-get update -q || :
+          sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev libgdbm-dev bison autoconf ruby
+        if: "contains(matrix.os, 'ubuntu')"
+      - name: Install libraries
+        run: |
+          brew upgrade
+          brew install gdbm gmp libffi openssl@1.1 zlib autoconf automake libtool readline
+        if: "contains(matrix.os, 'macos')"
+      - name: git config
+        run: |
+          git config --global advice.detachedHead 0
+      - uses: actions/checkout@v2
+      - run: autoconf
+      - name: Run configure
+        run: ./configure -C --disable-install-doc --disable-rubygems --with-gcc 'optflags=-O0' 'debugflags=-save-temps=obj -g'
+      - run: make all golf
+      - run: ruby tool/update-deps --fix
+      - run: git diff --no-ext-diff --ignore-submodules --exit-code
+      - uses: k0kubun/action-slack@v2.0.0
+        with:
+          payload: |
+            {
+              "ci": "GitHub Actions",
+              "env": "${{ matrix.os }} / Dependencies need to update",
+              "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "commit": "${{ github.sha }}",
+              "branch": "${{ github.ref }}".split('/').reverse()[0]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
+        if: failure() && github.event_name == 'push'

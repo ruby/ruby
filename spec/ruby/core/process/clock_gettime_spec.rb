@@ -1,18 +1,10 @@
 require_relative '../../spec_helper'
+require_relative 'fixtures/clocks'
 
 describe "Process.clock_gettime" do
-  platform_is_not :windows, :solaris do
-    Process.constants.select { |c|
-      c.to_s.start_with?('CLOCK_') &&
-      # These require CAP_WAKE_ALARM and are not documented in clock_gettime(),
-      # they return EINVAL if the permission is not granted.
-      c != :CLOCK_BOOTTIME_ALARM &&
-      c != :CLOCK_REALTIME_ALARM
-    }.each do |c|
-      it "can be called with Process::#{c}" do
-        value = Process.const_get(c)
-        Process.clock_gettime(value).should be_an_instance_of(Float)
-      end
+  ProcessSpecs.clock_constants.each do |name, value|
+    it "can be called with Process::#{name}" do
+      Process.clock_gettime(value).should be_an_instance_of(Float)
     end
   end
 
@@ -28,7 +20,7 @@ describe "Process.clock_gettime" do
     end
 
     it 'raises an ArgumentError for an invalid time unit' do
-      lambda { Process.clock_gettime(Process::CLOCK_MONOTONIC, :bad) }.should raise_error(ArgumentError)
+      -> { Process.clock_gettime(Process::CLOCK_MONOTONIC, :bad) }.should raise_error(ArgumentError)
     end
 
     it 'defaults to :float_second' do
@@ -36,7 +28,8 @@ describe "Process.clock_gettime" do
       t2 = Process.clock_gettime(Process::CLOCK_MONOTONIC, :float_second)
 
       t1.should be_an_instance_of(Float)
-      t2.should be_close(t1, 2.0)  # 2.0 is chosen arbitrarily to allow for time skew without admitting failure cases, which would be off by an order of magnitude.
+      t2.should be_an_instance_of(Float)
+      t2.should be_close(t1, TIME_TOLERANCE)
     end
 
     it 'uses the default time unit (:float_second) when passed nil' do
@@ -44,7 +37,101 @@ describe "Process.clock_gettime" do
       t2 = Process.clock_gettime(Process::CLOCK_MONOTONIC, :float_second)
 
       t1.should be_an_instance_of(Float)
-      t2.should be_close(t1, 2.0) # 2.0 is chosen arbitrarily to allow for time skew without admitting failure cases, which would be off by an order of magnitude.
+      t2.should be_an_instance_of(Float)
+      t2.should be_close(t1, TIME_TOLERANCE)
+    end
+  end
+
+  describe "supports the platform clocks mentioned in the documentation" do
+    it "CLOCK_REALTIME" do
+      Process.clock_gettime(Process::CLOCK_REALTIME).should be_an_instance_of(Float)
+    end
+
+    it "CLOCK_MONOTONIC" do
+      Process.clock_gettime(Process::CLOCK_MONOTONIC).should be_an_instance_of(Float)
+    end
+
+    # These specs need macOS 10.12+ / darwin 16+
+    guard_not -> { platform_is_not(:darwin) or RUBY_PLATFORM[/darwin\d+/].to_i >= 16 } do
+      platform_is :linux, :openbsd, :darwin do
+        it "CLOCK_PROCESS_CPUTIME_ID" do
+          Process.clock_gettime(Process::CLOCK_PROCESS_CPUTIME_ID).should be_an_instance_of(Float)
+        end
+      end
+
+      platform_is :linux, :freebsd, :openbsd, :darwin do
+        it "CLOCK_THREAD_CPUTIME_ID" do
+          Process.clock_gettime(Process::CLOCK_THREAD_CPUTIME_ID).should be_an_instance_of(Float)
+        end
+      end
+
+      platform_is :freebsd, :openbsd do
+        it "CLOCK_VIRTUAL" do
+          Process.clock_gettime(Process::CLOCK_VIRTUAL).should be_an_instance_of(Float)
+        end
+
+        it "CLOCK_PROF" do
+          Process.clock_gettime(Process::CLOCK_PROF).should be_an_instance_of(Float)
+        end
+
+        it "CLOCK_UPTIME" do
+          Process.clock_gettime(Process::CLOCK_UPTIME).should be_an_instance_of(Float)
+        end
+      end
+
+      platform_is :linux, :darwin do
+        it "CLOCK_MONOTONIC_RAW" do
+          Process.clock_gettime(Process::CLOCK_MONOTONIC_RAW).should be_an_instance_of(Float)
+        end
+      end
+
+      platform_is :darwin do
+        it "CLOCK_MONOTONIC_RAW_APPROX" do
+          Process.clock_gettime(Process::CLOCK_MONOTONIC_RAW_APPROX).should be_an_instance_of(Float)
+        end
+
+        it "CLOCK_UPTIME_RAW and CLOCK_UPTIME_RAW_APPROX" do
+          Process.clock_gettime(Process::CLOCK_UPTIME_RAW).should be_an_instance_of(Float)
+          Process.clock_gettime(Process::CLOCK_UPTIME_RAW_APPROX).should be_an_instance_of(Float)
+        end
+      end
+
+      platform_is :freebsd do
+        it "CLOCK_REALTIME_FAST and CLOCK_REALTIME_PRECISE" do
+          Process.clock_gettime(Process::CLOCK_REALTIME_FAST).should be_an_instance_of(Float)
+          Process.clock_gettime(Process::CLOCK_REALTIME_PRECISE).should be_an_instance_of(Float)
+        end
+
+        it "CLOCK_MONOTONIC_FAST and CLOCK_MONOTONIC_PRECISE" do
+          Process.clock_gettime(Process::CLOCK_MONOTONIC_FAST).should be_an_instance_of(Float)
+          Process.clock_gettime(Process::CLOCK_MONOTONIC_PRECISE).should be_an_instance_of(Float)
+        end
+
+        it "CLOCK_UPTIME_FAST and CLOCK_UPTIME_PRECISE" do
+          Process.clock_gettime(Process::CLOCK_UPTIME_FAST).should be_an_instance_of(Float)
+          Process.clock_gettime(Process::CLOCK_UPTIME_PRECISE).should be_an_instance_of(Float)
+        end
+
+        it "CLOCK_SECOND" do
+          Process.clock_gettime(Process::CLOCK_SECOND).should be_an_instance_of(Float)
+        end
+      end
+
+      platform_is :linux do
+        it "CLOCK_REALTIME_COARSE and CLOCK_REALTIME_ALARM" do
+          Process.clock_gettime(Process::CLOCK_REALTIME_COARSE).should be_an_instance_of(Float)
+          Process.clock_gettime(Process::CLOCK_REALTIME_ALARM).should be_an_instance_of(Float)
+        end
+
+        it "CLOCK_MONOTONIC_COARSE" do
+          Process.clock_gettime(Process::CLOCK_MONOTONIC_COARSE).should be_an_instance_of(Float)
+        end
+
+        it "CLOCK_BOOTTIME and CLOCK_BOOTTIME_ALARM" do
+          Process.clock_gettime(Process::CLOCK_BOOTTIME).should be_an_instance_of(Float)
+          Process.clock_gettime(Process::CLOCK_BOOTTIME_ALARM).should be_an_instance_of(Float)
+        end
+      end
     end
   end
 end

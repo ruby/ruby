@@ -17,6 +17,16 @@ map:
       assert_equal hash, doc
     end
 
+    def test_merge_key_with_bare_hash_symbolized_names
+      doc = Psych.load <<-eodoc, symbolize_names: true
+map:
+  <<:
+    hello: world
+      eodoc
+      hash = { map: { hello: "world" } }
+      assert_equal hash, doc
+    end
+
     def test_roundtrip_with_chevron_key
       h = {}
       v = { 'a' => h, '<<' => h }

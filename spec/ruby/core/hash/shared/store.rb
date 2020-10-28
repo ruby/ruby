@@ -50,7 +50,7 @@ describe :hash_store, shared: true do
     key << "bar"
 
     h.should == { "foo" => 0 }
-    h.keys[0].frozen?.should == true
+    h.keys[0].should.frozen?
   end
 
   it "doesn't duplicate and freeze already frozen string keys" do
@@ -86,13 +86,30 @@ describe :hash_store, shared: true do
     h.keys.last.should_not equal(key2)
   end
 
-  it "raises a #{frozen_error_class} if called on a frozen instance" do
-    lambda { HashSpecs.frozen_hash.send(@method, 1, 2) }.should raise_error(frozen_error_class)
+  it "raises a FrozenError if called on a frozen instance" do
+    -> { HashSpecs.frozen_hash.send(@method, 1, 2) }.should raise_error(FrozenError)
   end
 
   it "does not raise an exception if changing the value of an existing key during iteration" do
       hash = {1 => 2, 3 => 4, 5 => 6}
       hash.each { hash.send(@method, 1, :foo) }
       hash.should == {1 => :foo, 3 => 4, 5 => 6}
+  end
+
+  it "does not dispatch to hash for Boolean, Integer, Float, String, or Symbol" do
+    code = <<-EOC
+      load '#{fixture __FILE__, "name.rb"}'
+      hash = {}
+      [true, false, 1, 2.0, "hello", :ok].each do |value|
+        hash[value] = 42
+        raise "incorrect value" unless hash[value] == 42
+        hash[value] = 43
+        raise "incorrect value" unless hash[value] == 43
+      end
+      puts "OK"
+      puts hash.size
+    EOC
+    result = ruby_exe(code, args: "2>&1")
+    result.should == "OK\n6\n"
   end
 end

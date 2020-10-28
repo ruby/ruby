@@ -77,7 +77,7 @@ describe "Zlib::Inflate.inflate" do
     # add bytes, one by one, but not all
     result = ""
     data.each_byte { |d| result << z.inflate(d.chr)}
-    lambda { result << z.finish }.should raise_error(Zlib::BufError)
+    -> { result << z.finish }.should raise_error(Zlib::BufError)
   end
 
   it "properly handles excessive data, byte-by-byte" do

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "bundler/lockfile_parser"
+require_relative "lockfile_parser"
 require "set"
 
 module Bundler
@@ -77,12 +77,17 @@ module Bundler
       @locked_bundler_version = nil
       @locked_ruby_version    = nil
       @locked_specs_incomplete_for_platform = false
+      @new_platform = nil
 
       if lockfile && File.exist?(lockfile)
         @lockfile_contents = Bundler.read_file(lockfile)
         @locked_gems = LockfileParser.new(@lockfile_contents)
         @locked_platforms = @locked_gems.platforms
-        @platforms = @locked_platforms.dup
+        if Bundler.settings[:force_ruby_platform]
+          @platforms = [Gem::Platform::RUBY]
+        else
+          @platforms = @locked_platforms.dup
+        end
         @locked_bundler_version = @locked_gems.bundler_version
         @locked_ruby_version = @locked_gems.ruby_version
 
@@ -113,7 +118,7 @@ module Bundler
       end
       @unlocking ||= @unlock[:ruby] ||= (!@locked_ruby_version ^ !@ruby_version)
 
-      add_current_platform unless Bundler.frozen_bundle?
+      add_platforms unless Bundler.frozen_bundle?
 
       converge_path_sources_to_gemspec_sources
       @path_changes = converge_paths
@@ -167,7 +172,7 @@ module Bundler
     def specs
       @specs ||= begin
         begin
-          specs = resolve.materialize(Bundler.settings[:cache_all_platforms] ? dependencies : requested_dependencies)
+          specs = resolve.materialize(requested_dependencies)
         rescue GemNotFound => e # Handle yanked gem
           gem_name, gem_version = extract_gem_info(e)
           locked_gem = @locked_specs[gem_name].last
@@ -192,10 +197,6 @@ module Bundler
 
     def removed_specs
       @locked_specs - specs
-    end
-
-    def new_platform?
-      @new_platform
     end
 
     def missing_specs
@@ -227,14 +228,27 @@ module Bundler
       end
     end
 
+    def requested_dependencies
+      groups = requested_groups
+      groups.map!(&:to_sym)
+      dependencies_for(groups)
+    end
+
     def current_dependencies
-      dependencies.select(&:should_include?)
+      dependencies.select do |d|
+        d.should_include? && !d.gem_platforms(@platforms).empty?
+      end
     end
 
     def specs_for(groups)
-      deps = dependencies.select {|d| (d.groups & groups).any? }
-      deps.delete_if {|d| !d.should_include? }
+      deps = dependencies_for(groups)
       specs.for(expand_dependencies(deps))
+    end
+
+    def dependencies_for(groups)
+      current_dependencies.reject do |d|
+        (d.groups & groups).empty?
+      end
     end
 
     # Resolve all the dependencies specified in Gemfile. It ensures that
@@ -312,12 +326,8 @@ module Bundler
       sources.rubygems_sources.any? {|s| s.remotes.any? }
     end
 
-    def has_local_dependencies?
-      !sources.path_sources.empty? || !sources.git_sources.empty?
-    end
-
     def spec_git_paths
-      sources.git_sources.map {|s| s.path.to_s }
+      sources.git_sources.map {|s| File.realpath(s.path) if File.exist?(s.path) }.compact
     end
 
     def groups
@@ -331,7 +341,7 @@ module Bundler
       # i.e., Windows with `git config core.autocrlf=true`
       contents.gsub!(/\n/, "\r\n") if @lockfile_contents.match("\r\n")
 
-      if @locked_bundler_version && Bundler.feature_flag.lockfile_upgrade_warning?
+      if @locked_bundler_version
         locked_major = @locked_bundler_version.segments.first
         current_major = Gem::Version.create(Bundler::VERSION).segments.first
 
@@ -385,7 +395,7 @@ module Bundler
     end
 
     def to_lock
-      require "bundler/lockfile_generator"
+      require_relative "lockfile_generator"
       LockfileGenerator.generate(self)
     end
 
@@ -396,12 +406,10 @@ module Bundler
              "updated #{Bundler.default_lockfile.relative_path_from(SharedHelpers.pwd)} to version control."
 
       unless explicit_flag
-        suggested_command = if Bundler.settings.locations("frozen")[:global]
-          "bundle config --delete frozen"
+        suggested_command = if Bundler.settings.locations("frozen").keys.&([:global, :local]).any?
+          "bundle config unset frozen"
         elsif Bundler.settings.locations("deployment").keys.&([:global, :local]).any?
-          "bundle config --delete deployment"
-        else
-          "bundle install --no-deployment"
+          "bundle config unset deployment"
         end
         msg << "\n\nIf this is a development machine, remove the #{Bundler.default_gemfile} " \
                "freeze \nby running `#{suggested_command}`."
@@ -450,9 +458,9 @@ module Bundler
       @locked_deps.each  {|name, d| both_sources[name][1] = d.source }
 
       both_sources.each do |name, (dep, lock_source)|
-        next unless (dep.nil? && !lock_source.nil?) || (!dep.nil? && !lock_source.nil? && !lock_source.can_lock?(dep))
+        next if lock_source.nil? || (dep && lock_source.can_lock?(dep))
         gemfile_source_name = (dep && dep.source) || "no specified source"
-        lockfile_source_name = lock_source || "no specified source"
+        lockfile_source_name = lock_source
         changed << "* #{name} from `#{gemfile_source_name}` to `#{lockfile_source_name}`"
       end
 
@@ -518,12 +526,6 @@ module Bundler
       raise InvalidOption, "Unable to remove the platform `#{platform}` since the only platforms are #{@platforms.join ", "}"
     end
 
-    def add_current_platform
-      current_platform = Bundler.local_platform
-      add_platform(current_platform) if Bundler.feature_flag.specific_platform?
-      add_platform(generic(current_platform))
-    end
-
     def find_resolved_spec(current_spec)
       specs.find_by_name_and_platform(current_spec.name, current_spec.platform)
     end
@@ -543,7 +545,20 @@ module Bundler
       @unlocking
     end
 
-  private
+    private
+
+    def add_platforms
+      (@dependencies.flat_map(&:expanded_platforms) + current_platforms).uniq.each do |platform|
+        add_platform(platform)
+      end
+    end
+
+    def current_platforms
+      [].tap do |platforms|
+        platforms << local_platform if Bundler.feature_flag.specific_platform?
+        platforms << generic_local_platform
+      end
+    end
 
     def change_reason
       if unlocking?
@@ -643,7 +658,7 @@ module Bundler
     end
 
     def converge_rubygems_sources
-      return false if Bundler.feature_flag.lockfile_uses_separate_rubygems_sources?
+      return false if Bundler.feature_flag.disable_multisource?
 
       changes = false
 
@@ -699,9 +714,6 @@ module Bundler
           dep.source = locked_source.source
         elsif dep.source
           dep.source = sources.get(dep.source)
-        end
-        if dep.source.is_a?(Source::Gemspec)
-          dep.platforms.concat(@platforms.map {|p| Dependency::REVERSE_PLATFORM_MAP[p] }.flatten(1)).uniq!
         end
       end
 
@@ -782,7 +794,7 @@ module Bundler
 
         # Path sources have special logic
         if s.source.instance_of?(Source::Path) || s.source.instance_of?(Source::Gemspec)
-          other_sources_specs = begin
+          new_specs = begin
             s.source.specs
           rescue PathError, GitError
             # if we won't need the source (according to the lockfile),
@@ -794,25 +806,26 @@ module Bundler
             raise
           end
 
-          other = other_sources_specs[s].first
+          new_spec = new_specs[s].first
 
           # If the spec is no longer in the path source, unlock it. This
           # commonly happens if the version changed in the gemspec
-          next unless other
+          next unless new_spec
 
-          deps2 = other.dependencies.select {|d| d.type != :development }
-          runtime_dependencies = s.dependencies.select {|d| d.type != :development }
-          # If the dependencies of the path source have changed, unlock it
-          next unless runtime_dependencies.sort == deps2.sort
+          new_runtime_deps = new_spec.dependencies.select {|d| d.type != :development }
+          old_runtime_deps = s.dependencies.select {|d| d.type != :development }
+          # If the dependencies of the path source have changed and locked spec can't satisfy new dependencies, unlock it
+          next unless new_runtime_deps.sort == old_runtime_deps.sort || new_runtime_deps.all? {|d| satisfies_locked_spec?(d) }
+
+          s.dependencies.replace(new_spec.dependencies)
         end
 
         converged << s
       end
 
       resolve = SpecSet.new(converged)
-      expanded_deps = expand_dependencies(deps, true)
-      @locked_specs_incomplete_for_platform = !resolve.for(expanded_deps, @unlock[:gems], true, true)
-      resolve = resolve.for(expanded_deps, @unlock[:gems], false, false, false)
+      @locked_specs_incomplete_for_platform = !resolve.for(expand_dependencies(requested_dependencies & deps), @unlock[:gems], true, true)
+      resolve = resolve.for(expand_dependencies(deps, true), @unlock[:gems], false, false, false)
       diff    = nil
 
       # Now, we unlock any sources that do not have anymore gems pinned to it
@@ -849,61 +862,45 @@ module Bundler
 
     def metadata_dependencies
       @metadata_dependencies ||= begin
-        ruby_versions = concat_ruby_version_requirements(@ruby_version)
-        if ruby_versions.empty? || !@ruby_version.exact?
-          concat_ruby_version_requirements(RubyVersion.system)
-          concat_ruby_version_requirements(locked_ruby_version_object) unless @unlock[:ruby]
-        end
+        ruby_versions = ruby_version_requirements(@ruby_version)
         [
-          Dependency.new("ruby\0", ruby_versions),
-          Dependency.new("rubygems\0", Gem::VERSION),
+          Dependency.new("Ruby\0", ruby_versions),
+          Dependency.new("RubyGems\0", Gem::VERSION),
         ]
       end
     end
 
-    def concat_ruby_version_requirements(ruby_version, ruby_versions = [])
-      return ruby_versions unless ruby_version
+    def ruby_version_requirements(ruby_version)
+      return [] unless ruby_version
       if ruby_version.patchlevel
-        ruby_versions << ruby_version.to_gem_version_with_patchlevel
+        [ruby_version.to_gem_version_with_patchlevel]
       else
-        ruby_versions.concat(ruby_version.versions.map do |version|
+        ruby_version.versions.map do |version|
           requirement = Gem::Requirement.new(version)
           if requirement.exact?
             "~> #{version}.0"
           else
             requirement
           end
-        end)
+        end
       end
     end
 
     def expand_dependencies(dependencies, remote = false)
-      sorted_platforms = Resolver.sort_platforms(@platforms)
       deps = []
       dependencies.each do |dep|
         dep = Dependency.new(dep, ">= 0") unless dep.respond_to?(:name)
-        next if !remote && !dep.current_platform?
-        platforms = dep.gem_platforms(sorted_platforms)
-        if platforms.empty? && !Bundler.settings[:disable_platform_warnings]
-          mapped_platforms = dep.platforms.map {|p| Dependency::PLATFORM_MAP[p] }
-          Bundler.ui.warn \
-            "The dependency #{dep} will be unused by any of the platforms Bundler is installing for. " \
-            "Bundler is installing for #{@platforms.join ", "} but the dependency " \
-            "is only for #{mapped_platforms.join ", "}. " \
-            "To add those platforms to the bundle, " \
-            "run `bundle lock --add-platform #{mapped_platforms.join " "}`."
-        end
-        platforms.each do |p|
-          deps << DepProxy.new(dep, p) if remote || p == generic_local_platform
-        end
+        next unless remote || dep.current_platform?
+        target_platforms = dep.gem_platforms(remote ? Resolver.sort_platforms(@platforms) : [generic_local_platform])
+        deps += expand_dependency_with_platforms(dep, target_platforms)
       end
       deps
     end
 
-    def requested_dependencies
-      groups = requested_groups
-      groups.map!(&:to_sym)
-      dependencies.reject {|d| !d.should_include? || (d.groups & groups).empty? }
+    def expand_dependency_with_platforms(dep, platforms)
+      platforms.map do |p|
+        DepProxy.new(dep, p)
+      end
     end
 
     def source_requirements
@@ -915,7 +912,7 @@ module Bundler
       # look for that gemspec (or its dependencies)
       default = sources.default_source
       source_requirements = { :default => default }
-      default = nil unless Bundler.feature_flag.lockfile_uses_separate_rubygems_sources?
+      default = nil unless Bundler.feature_flag.disable_multisource?
       dependencies.each do |dep|
         next unless source = dep.source || default
         source_requirements[dep.name] = source
@@ -929,7 +926,7 @@ module Bundler
 
     def pinned_spec_names(skip = nil)
       pinned_names = []
-      default = Bundler.feature_flag.lockfile_uses_separate_rubygems_sources? && sources.default_source
+      default = Bundler.feature_flag.disable_multisource? && sources.default_source
       @dependencies.each do |dep|
         next unless dep_source = dep.source || default
         next if dep_source == skip
@@ -977,7 +974,10 @@ module Bundler
       dependencies_by_name = dependencies.inject({}) {|memo, dep| memo.update(dep.name => dep) }
       @locked_gems.specs.reduce({}) do |requirements, locked_spec|
         name = locked_spec.name
-        next requirements if @locked_gems.dependencies[name] != dependencies_by_name[name]
+        dependency = dependencies_by_name[name]
+        next requirements unless dependency
+        next requirements if @locked_gems.dependencies[name] != dependency
+        next requirements if dependency.source.is_a?(Source::Path)
         dep = Gem::Dependency.new(name, ">= #{locked_spec.version}")
         requirements[name] = DepProxy.new(dep, locked_spec.platform)
         requirements

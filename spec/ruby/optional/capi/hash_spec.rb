@@ -36,7 +36,7 @@ describe "C-API Hash function" do
       obj = mock("rb_hash no to_int")
       obj.should_receive(:hash).and_return(nil)
 
-      lambda { @s.rb_hash(obj) }.should raise_error(TypeError)
+      -> { @s.rb_hash(obj) }.should raise_error(TypeError)
     end
   end
 
@@ -47,6 +47,14 @@ describe "C-API Hash function" do
 
     it "creates a hash with no default proc" do
       @s.rb_hash_new {}.default_proc.should be_nil
+    end
+  end
+
+  describe "rb_ident_hash_new" do
+    it "returns a new compare by identity hash" do
+      result = @s.rb_ident_hash_new
+      result.should == {}
+      result.compare_by_identity?.should == true
     end
   end
 
@@ -131,15 +139,15 @@ describe "C-API Hash function" do
 
     it "raises a KeyError if the key is not found and default is set" do
       @hsh.default = :d
-      lambda { @s.rb_hash_fetch(@hsh, :c) }.should raise_error(KeyError)
+      -> { @s.rb_hash_fetch(@hsh, :c) }.should raise_error(KeyError)
     end
 
     it "raises a KeyError if the key is not found and no default is set" do
-      lambda { @s.rb_hash_fetch(@hsh, :c) }.should raise_error(KeyError)
+      -> { @s.rb_hash_fetch(@hsh, :c) }.should raise_error(KeyError)
     end
 
     context "when key is not found" do
-      it_behaves_like :key_error, -> (obj, key) {
+      it_behaves_like :key_error, -> obj, key {
         @s.rb_hash_fetch(obj, key)
       }, { a: 1 }
     end
@@ -211,6 +219,11 @@ describe "C-API Hash function" do
 
         @s.rb_hash_lookup2(hash, :chunky, 10).should == 10
       end
+
+      it "returns undefined if that is the default value specified" do
+        hsh = Hash.new(0)
+        @s.rb_hash_lookup2_default_undef(hsh, :chunky).should be_true
+      end
     end
   end
 
@@ -240,13 +253,22 @@ describe "C-API Hash function" do
     end
 
     it "raises a TypeError if the argument does not respond to #to_hash" do
-      lambda { @s.rb_Hash(42) }.should raise_error(TypeError)
+      -> { @s.rb_Hash(42) }.should raise_error(TypeError)
     end
 
     it "raises a TypeError if #to_hash does not return a hash" do
       h = BasicObject.new
       def h.to_hash; 42; end
-      lambda { @s.rb_Hash(h) }.should raise_error(TypeError)
+      -> { @s.rb_Hash(h) }.should raise_error(TypeError)
+    end
+  end
+
+  describe "hash code functions" do
+    it "computes a deterministic number" do
+      hash_code = @s.compute_a_hash_code(53)
+      hash_code.should be_an_instance_of(Integer)
+      hash_code.should == @s.compute_a_hash_code(53)
+      @s.compute_a_hash_code(90).should == @s.compute_a_hash_code(90)
     end
   end
 end

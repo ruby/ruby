@@ -70,7 +70,7 @@ class RDoc::RubygemsHook
   def self.load_rdoc
     return if @rdoc_version
 
-    require 'rdoc/rdoc'
+    require_relative 'rdoc'
 
     @rdoc_version = Gem::Version.new ::RDoc::VERSION
   end
@@ -158,7 +158,7 @@ class RDoc::RubygemsHook
 
     case config_args = Gem.configuration[:rdoc]
     when String then
-      args = args.concat config_args.split
+      args = args.concat config_args.split(' ')
     when Array then
       args = args.concat config_args
     end

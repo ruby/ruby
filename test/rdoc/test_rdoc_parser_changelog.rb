@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'minitest_helper'
+require_relative 'helper'
 
 class TestRDocParserChangeLog < RDoc::TestCase
 
@@ -14,6 +14,8 @@ class TestRDocParserChangeLog < RDoc::TestCase
 
   def teardown
     @tempfile.close!
+
+    super
   end
 
   def test_class_can_parse

@@ -1,5 +1,3 @@
-[![Build Status](https://travis-ci.org/ruby/mspec.svg?branch=master)](https://travis-ci.org/ruby/mspec)
-
 ## Overview
 
 MSpec is a specialized framework that is syntax-compatible with RSpec 2 for
@@ -38,7 +36,7 @@ specs in a manner compatible with multiple Ruby implementations.
 
 ## Requirements
 
-MSpec requires Ruby 2.3 or more recent.
+MSpec requires Ruby 2.5 or more recent.
 
 ## Bundler
 
@@ -58,7 +56,7 @@ ruby -S bundle install
 ## Running Specs
 
 Use RSpec to run the MSpec specs. There are no plans currently to make the
-MSpec specs runnable by MSpec.
+MSpec specs runnable by MSpec: https://github.com/ruby/mspec/issues/19.
 
 After installing the gem dependencies, the specs can be run as follows:
 

@@ -12,7 +12,7 @@ describe "Regexps with grouping" do
   end
 
   it "raises a SyntaxError when parentheses aren't balanced" do
-   lambda { eval "/(hay(st)ack/" }.should raise_error(SyntaxError)
+   -> { eval "/(hay(st)ack/" }.should raise_error(SyntaxError)
   end
 
   it "supports (?: ) (non-capturing group)" do

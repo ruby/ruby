@@ -17,13 +17,13 @@ describe "File.new" do
   it "returns a new File with mode string" do
     @fh = File.new(@file, 'w')
     @fh.should be_kind_of(File)
-    File.exist?(@file).should == true
+    File.should.exist?(@file)
   end
 
   it "returns a new File with mode num" do
     @fh = File.new(@file, @flags)
     @fh.should be_kind_of(File)
-    File.exist?(@file).should == true
+    File.should.exist?(@file)
   end
 
   it "returns a new File with modus num and permissions" do
@@ -34,7 +34,7 @@ describe "File.new" do
     platform_is_not :windows do
       File.stat(@file).mode.to_s(8).should == "100744"
     end
-    File.exist?(@file).should == true
+    File.should.exist?(@file)
   end
 
   it "creates the file and returns writable descriptor when called with 'w' mode and r-o permissions" do
@@ -44,11 +44,11 @@ describe "File.new" do
     rm_r @file
     begin
       f = File.new(@file, "w", 0444)
-      lambda { f.puts("test") }.should_not raise_error(IOError)
+      -> { f.puts("test") }.should_not raise_error(IOError)
     ensure
       f.close
     end
-    File.exist?(@file).should == true
+    File.should.exist?(@file)
     File.read(@file).should == "test\n"
   end
 
@@ -75,81 +75,81 @@ describe "File.new" do
     fh_copy = File.new(@fh.fileno)
     fh_copy.autoclose = false
     fh_copy.should be_kind_of(File)
-    File.exist?(@file).should == true
+    File.should.exist?(@file)
   end
 
   it "creates a new file when use File::EXCL mode" do
     @fh = File.new(@file, File::EXCL)
     @fh.should be_kind_of(File)
-    File.exist?(@file).should == true
+    File.should.exist?(@file)
   end
 
   it "raises an Errorno::EEXIST if the file exists when create a new file with File::CREAT|File::EXCL" do
-    lambda { @fh = File.new(@file, File::CREAT|File::EXCL) }.should raise_error(Errno::EEXIST)
+    -> { @fh = File.new(@file, File::CREAT|File::EXCL) }.should raise_error(Errno::EEXIST)
   end
 
   it "creates a new file when use File::WRONLY|File::APPEND mode" do
     @fh = File.new(@file, File::WRONLY|File::APPEND)
     @fh.should be_kind_of(File)
-    File.exist?(@file).should == true
+    File.should.exist?(@file)
   end
 
   it "returns a new File when use File::APPEND mode" do
     @fh = File.new(@file, File::APPEND)
     @fh.should be_kind_of(File)
-    File.exist?(@file).should == true
+    File.should.exist?(@file)
   end
 
   it "returns a new File when use File::RDONLY|File::APPEND mode" do
     @fh = File.new(@file, File::RDONLY|File::APPEND)
     @fh.should be_kind_of(File)
-    File.exist?(@file).should == true
+    File.should.exist?(@file)
   end
 
   it "returns a new File when use File::RDONLY|File::WRONLY mode" do
     @fh = File.new(@file, File::RDONLY|File::WRONLY)
     @fh.should be_kind_of(File)
-    File.exist?(@file).should == true
+    File.should.exist?(@file)
   end
 
 
   it "creates a new file when use File::WRONLY|File::TRUNC mode" do
     @fh = File.new(@file, File::WRONLY|File::TRUNC)
     @fh.should be_kind_of(File)
-    File.exist?(@file).should == true
+    File.should.exist?(@file)
   end
 
   it "coerces filename using to_str" do
     name = mock("file")
     name.should_receive(:to_str).and_return(@file)
     @fh = File.new(name, "w")
-    File.exist?(@file).should == true
+    File.should.exist?(@file)
   end
 
   it "coerces filename using #to_path" do
     name = mock("file")
     name.should_receive(:to_path).and_return(@file)
     @fh = File.new(name, "w")
-    File.exist?(@file).should == true
+    File.should.exist?(@file)
   end
 
   it "raises a TypeError if the first parameter can't be coerced to a string" do
-    lambda { File.new(true) }.should raise_error(TypeError)
-    lambda { File.new(false) }.should raise_error(TypeError)
+    -> { File.new(true) }.should raise_error(TypeError)
+    -> { File.new(false) }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if the first parameter is nil" do
-    lambda { File.new(nil) }.should raise_error(TypeError)
+    -> { File.new(nil) }.should raise_error(TypeError)
   end
 
   it "raises an Errno::EBADF if the first parameter is an invalid file descriptor" do
-    lambda { File.new(-1) }.should raise_error(Errno::EBADF)
+    -> { File.new(-1) }.should raise_error(Errno::EBADF)
   end
 
   platform_is_not :windows do
     it "can't alter mode or permissions when opening a file" do
       @fh = File.new(@file)
-      lambda {
+      -> {
         f = File.new(@fh.fileno, @flags)
         f.autoclose = false
       }.should raise_error(Errno::EINVAL)

@@ -5,7 +5,6 @@ require 'rubygems/request_set'
 require 'rubygems/rdoc'
 
 class TestGemCommandsInstallCommand < Gem::TestCase
-
   def setup
     super
     common_installer_setup
@@ -43,7 +42,7 @@ class TestGemCommandsInstallCommand < Gem::TestCase
       end
     end
 
-    assert_equal %w[a-2], @cmd.installed_specs.map { |spec| spec.full_name }
+    assert_equal %w[a-2], @cmd.installed_specs.map {|spec| spec.full_name }
   end
 
   def test_execute_explicit_version_includes_prerelease
@@ -65,7 +64,7 @@ class TestGemCommandsInstallCommand < Gem::TestCase
       end
     end
 
-    assert_equal %w[a-2.a], @cmd.installed_specs.map { |spec| spec.full_name }
+    assert_equal %w[a-2.a], @cmd.installed_specs.map {|spec| spec.full_name }
   end
 
   def test_execute_local
@@ -91,7 +90,65 @@ class TestGemCommandsInstallCommand < Gem::TestCase
       end
     end
 
-    assert_equal %w[a-2], @cmd.installed_specs.map { |spec| spec.full_name }
+    assert_equal %w[a-2], @cmd.installed_specs.map {|spec| spec.full_name }
+
+    assert_match "1 gem installed", @ui.output
+  end
+
+  def test_execute_local_dependency_nonexistent
+    specs = spec_fetcher do |fetcher|
+      fetcher.gem 'foo', 2, 'bar' => '0.5'
+    end
+
+    @cmd.options[:domain] = :local
+
+    FileUtils.mv specs['foo-2'].cache_file, @tempdir
+
+    @cmd.options[:args] = ['foo']
+
+    use_ui @ui do
+      orig_dir = Dir.pwd
+      begin
+        Dir.chdir @tempdir
+        e = assert_raises Gem::MockGemUi::TermError do
+          @cmd.execute
+        end
+        assert_equal 2, e.exit_code
+      ensure
+        Dir.chdir orig_dir
+      end
+    end
+
+    expected = <<-EXPECTED
+ERROR:  Could not find a valid gem 'bar' (= 0.5) (required by 'foo' (>= 0)) in any repository
+    EXPECTED
+
+    assert_equal expected, @ui.error
+  end
+
+  def test_execute_local_dependency_nonexistent_ignore_dependencies
+    specs = spec_fetcher do |fetcher|
+      fetcher.gem 'foo', 2, 'bar' => '0.5'
+    end
+
+    @cmd.options[:domain] = :local
+    @cmd.options[:ignore_dependencies] = true
+
+    FileUtils.mv specs['foo-2'].cache_file, @tempdir
+
+    @cmd.options[:args] = ['foo']
+
+    use_ui @ui do
+      orig_dir = Dir.pwd
+      begin
+        Dir.chdir orig_dir
+        assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+          @cmd.execute
+        end
+      ensure
+        Dir.chdir orig_dir
+      end
+    end
 
     assert_match "1 gem installed", @ui.output
   end
@@ -124,7 +181,7 @@ class TestGemCommandsInstallCommand < Gem::TestCase
       end
     end
 
-    assert_equal %w[a-2 b-2.a c-3], @cmd.installed_specs.map { |spec| spec.full_name }.sort
+    assert_equal %w[a-2 b-2.a c-3], @cmd.installed_specs.map {|spec| spec.full_name }.sort
 
     assert_match "3 gems installed", @ui.output
   end
@@ -164,6 +221,25 @@ class TestGemCommandsInstallCommand < Gem::TestCase
     spec_fetcher
 
     @cmd.options[:domain] = :local
+
+    @cmd.options[:args] = %w[no_such_gem]
+
+    use_ui @ui do
+      e = assert_raises Gem::MockGemUi::TermError do
+        @cmd.execute
+      end
+      assert_equal 2, e.exit_code
+    end
+
+    # HACK no repository was checked
+    assert_match(/ould not find a valid gem 'no_such_gem'/, @ui.error)
+  end
+
+  def test_execute_local_missing_ignore_dependencies
+    spec_fetcher
+
+    @cmd.options[:domain] = :local
+    @cmd.options[:ignore_dependencies] = true
 
     @cmd.options[:args] = %w[no_such_gem]
 
@@ -260,7 +336,7 @@ ERROR:  Could not find a valid gem 'bar' (= 0.5) (required by 'foo' (>= 0)) in a
     errs = @ui.error.split("\n")
 
     assert_match(/ould not find a valid gem 'nonexistent'/, errs.shift)
-    assert_match(%r!Unable to download data from http://not-there.nothing!, errs.shift)
+    assert_match(%r{Unable to download data from http://not-there.nothing}, errs.shift)
   end
 
   def test_execute_nonexistent_hint_disabled
@@ -372,7 +448,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       end
     end
 
-    assert_equal %w[a-1], @cmd.installed_specs.map { |spec| spec.full_name }
+    assert_equal %w[a-1], @cmd.installed_specs.map {|spec| spec.full_name }
   end
 
   def test_execute_prerelease_wins_over_previous_ver
@@ -390,7 +466,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       end
     end
 
-    assert_equal %w[a-2.a], @cmd.installed_specs.map { |spec| spec.full_name }
+    assert_equal %w[a-2.a], @cmd.installed_specs.map {|spec| spec.full_name }
   end
 
   def test_execute_with_version_specified_by_colon
@@ -407,7 +483,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       end
     end
 
-    assert_equal %w[a-1], @cmd.installed_specs.map { |spec| spec.full_name }
+    assert_equal %w[a-1], @cmd.installed_specs.map {|spec| spec.full_name }
   end
 
   def test_execute_prerelease_skipped_when_non_pre_available
@@ -425,7 +501,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       end
     end
 
-    assert_equal %w[a-2], @cmd.installed_specs.map { |spec| spec.full_name }
+    assert_equal %w[a-2], @cmd.installed_specs.map {|spec| spec.full_name }
   end
 
   def test_execute_rdoc
@@ -505,7 +581,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       fetcher.gem 'a', 2
     end
 
-    args = %w!--with-awesome=true --more-awesome=yes!
+    args = %w[--with-awesome=true --more-awesome=yes]
 
     Gem::Command.build_args = args
 
@@ -537,7 +613,6 @@ ERROR:  Possible alternatives: non_existent_with_hint
     assert_equal args, a2.build_args
   end
 
-
   def test_execute_remote
     spec_fetcher do |fetcher|
       fetcher.gem 'a', 2
@@ -551,7 +626,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       end
     end
 
-    assert_equal %w[a-2], @cmd.installed_specs.map { |spec| spec.full_name }
+    assert_equal %w[a-2], @cmd.installed_specs.map {|spec| spec.full_name }
 
     assert_match "1 gem installed", @ui.output
   end
@@ -571,7 +646,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       end
     end
 
-    assert_equal %w[a-2], @cmd.installed_specs.map { |spec| spec.full_name }
+    assert_equal %w[a-2], @cmd.installed_specs.map {|spec| spec.full_name }
 
     assert_match "1 gem installed", @ui.output
   end
@@ -594,7 +669,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
     @cmd.options[:args] = [a2.name]
 
-    gemdir     = File.join @gemhome, 'specifications'
+    gemdir = File.join @gemhome, 'specifications'
 
     a2_gemspec = File.join(gemdir, "a-2.gemspec")
     a1_gemspec = File.join(gemdir, "a-1.gemspec")
@@ -612,7 +687,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       end
     end
 
-    assert_equal %w[a-1], @cmd.installed_specs.map { |spec| spec.full_name }
+    assert_equal %w[a-1], @cmd.installed_specs.map {|spec| spec.full_name }
 
     assert_match "1 gem installed", @ui.output
 
@@ -646,7 +721,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       end
     end
 
-    assert_equal %w[a-2 b-2], @cmd.installed_specs.map { |spec| spec.full_name }
+    assert_equal %w[a-2 b-2], @cmd.installed_specs.map {|spec| spec.full_name }
 
     assert_match "2 gems installed", @ui.output
   end
@@ -688,7 +763,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       end
     end
 
-    assert_equal %w[a-1 b-1], @cmd.installed_specs.map { |spec| spec.full_name }
+    assert_equal %w[a-1 b-1], @cmd.installed_specs.map {|spec| spec.full_name }
   end
 
   def test_execute_conservative
@@ -714,7 +789,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       end
     end
 
-    assert_equal %w[b-2], @cmd.installed_specs.map { |spec| spec.full_name }
+    assert_equal %w[b-2], @cmd.installed_specs.map {|spec| spec.full_name }
 
     assert_equal "", @ui.error
     assert_match "1 gem installed", @ui.output
@@ -736,7 +811,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
     @cmd.install_gem 'a', '>= 0'
 
-    assert_equal %w[a-2], @cmd.installed_specs.map { |s| s.full_name }
+    assert_equal %w[a-2], @cmd.installed_specs.map {|s| s.full_name }
 
     assert done_installing, 'documentation was not generated'
   end
@@ -750,7 +825,24 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
     @cmd.install_gem 'a', '>= 0'
 
-    assert_equal %w[a-2], @cmd.installed_specs.map { |spec| spec.full_name }
+    assert_equal %w[a-2], @cmd.installed_specs.map {|spec| spec.full_name }
+  end
+
+  def test_install_gem_ignore_dependencies_remote_platform_local
+    local = Gem::Platform.local
+    spec_fetcher do |fetcher|
+      fetcher.gem 'a', 3
+
+      fetcher.gem 'a', 3 do |s|
+        s.platform = local
+      end
+    end
+
+    @cmd.options[:ignore_dependencies] = true
+
+    @cmd.install_gem 'a', '>= 0'
+
+    assert_equal %W[a-3-#{local}], @cmd.installed_specs.map {|spec| spec.full_name }
   end
 
   def test_install_gem_ignore_dependencies_specific_file
@@ -764,7 +856,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
     @cmd.install_gem File.join(@tempdir, spec.file_name), nil
 
-    assert_equal %w[a-2], @cmd.installed_specs.map { |s| s.full_name }
+    assert_equal %w[a-2], @cmd.installed_specs.map {|s| s.full_name }
   end
 
   def test_parses_requirement_from_gemname
@@ -793,7 +885,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
     end
 
     assert_equal 2, e.exit_code
-    assert_match %r!Could not find a valid gem 'a' \(= 10.0\)!, @ui.error
+    assert_match %r{Could not find a valid gem 'a' \(= 10.0\)}, @ui.error
   end
 
   def test_show_errors_on_failure
@@ -834,7 +926,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       end
     end
 
-    assert_equal %w[a-2], @cmd.installed_specs.map { |spec| spec.full_name }
+    assert_equal %w[a-2], @cmd.installed_specs.map {|spec| spec.full_name }
 
     assert_match "1 gem installed", @ui.output
 
@@ -861,7 +953,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       end
     end
 
-    assert_equal %w[], @cmd.installed_specs.map { |spec| spec.full_name }
+    assert_equal %w[], @cmd.installed_specs.map {|spec| spec.full_name }
 
     assert_match "Using a (2)", @ui.output
     assert File.exist?("#{@gemdeps}.lock")
@@ -885,7 +977,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       end
     end
 
-    assert_equal %w[], @cmd.installed_specs.map { |spec| spec.full_name }
+    assert_equal %w[], @cmd.installed_specs.map {|spec| spec.full_name }
 
     assert_match "Using a (2)", @ui.output
     assert !File.exist?("#{@gemdeps}.lock")
@@ -910,7 +1002,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       end
     end
 
-    assert_equal %w[], @cmd.installed_specs.map { |spec| spec.full_name }
+    assert_equal %w[], @cmd.installed_specs.map {|spec| spec.full_name }
 
     assert_match "Using a (1)", @ui.output
   end
@@ -932,7 +1024,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       end
     end
 
-    assert_equal %w[a-2], @cmd.installed_specs.map { |spec| spec.full_name }
+    assert_equal %w[a-2], @cmd.installed_specs.map {|spec| spec.full_name }
 
     assert_match "Installing a (2)", @ui.output
   end
@@ -955,7 +1047,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       end
     end
 
-    names = @cmd.installed_specs.map { |spec| spec.full_name }
+    names = @cmd.installed_specs.map {|spec| spec.full_name }
 
     assert_equal %w[q-1.0 r-2.0], names
 
@@ -982,7 +1074,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       end
     end
 
-    names = @cmd.installed_specs.map { |spec| spec.full_name }
+    names = @cmd.installed_specs.map {|spec| spec.full_name }
 
     assert_equal %w[r-2.0], names
 
@@ -1009,7 +1101,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       end
     end
 
-    names = @cmd.installed_specs.map { |spec| spec.full_name }
+    names = @cmd.installed_specs.map {|spec| spec.full_name }
 
     assert_equal %w[q-1.0 r-2.0], names
 
@@ -1041,7 +1133,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       end
     end
 
-    names = @cmd.installed_specs.map { |spec| spec.full_name }
+    names = @cmd.installed_specs.map {|spec| spec.full_name }
 
     assert_equal %w[q-1.0 r-2.0], names
 
@@ -1076,7 +1168,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       end
     end
 
-    names = @cmd.installed_specs.map { |spec| spec.full_name }
+    names = @cmd.installed_specs.map {|spec| spec.full_name }
 
     assert_equal %w[r-2.0], names
 
@@ -1142,4 +1234,115 @@ ERROR:  Possible alternatives: non_existent_with_hint
     assert_equal [:test, :development], @cmd.options[:without_groups]
   end
 
+  def test_explain_platform_local
+    local = Gem::Platform.local
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a', 2
+
+      fetcher.spec 'a', 2 do |s|
+        s.platform = local
+      end
+    end
+
+    @cmd.options[:explain] = true
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+        @cmd.execute
+      end
+    end
+
+    out = @ui.output.split "\n"
+
+    assert_equal "Gems to install:", out.shift
+    assert_equal "  a-2-#{local}", out.shift
+    assert_empty out
+  end
+
+  def test_explain_platform_local_ignore_dependencies
+    local = Gem::Platform.local
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a', 3
+
+      fetcher.spec 'a', 3 do |s|
+        s.platform = local
+      end
+    end
+
+    @cmd.options[:ignore_dependencies] = true
+    @cmd.options[:explain] = true
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+        @cmd.execute
+      end
+    end
+
+    out = @ui.output.split "\n"
+
+    assert_equal "Gems to install:", out.shift
+    assert_equal "  a-3-#{local}", out.shift
+    assert_empty out
+  end
+
+  def test_explain_platform_ruby
+    local = Gem::Platform.local
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a', 2
+
+      fetcher.spec 'a', 2 do |s|
+        s.platform = local
+      end
+    end
+
+    # equivalent to --platform=ruby
+    Gem.platforms = [Gem::Platform::RUBY]
+
+    @cmd.options[:explain] = true
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+        @cmd.execute
+      end
+    end
+
+    out = @ui.output.split "\n"
+
+    assert_equal "Gems to install:", out.shift
+    assert_equal "  a-2", out.shift
+    assert_empty out
+  end
+
+  def test_explain_platform_ruby_ignore_dependencies
+    local = Gem::Platform.local
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a', 3
+
+      fetcher.spec 'a', 3 do |s|
+        s.platform = local
+      end
+    end
+
+    # equivalent to --platform=ruby
+    Gem.platforms = [Gem::Platform::RUBY]
+
+    @cmd.options[:ignore_dependencies] = true
+    @cmd.options[:explain] = true
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+        @cmd.execute
+      end
+    end
+
+    out = @ui.output.split "\n"
+
+    assert_equal "Gems to install:", out.shift
+    assert_equal "  a-3", out.shift
+    assert_empty out
+  end
 end

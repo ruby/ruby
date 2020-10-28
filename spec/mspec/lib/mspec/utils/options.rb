@@ -34,7 +34,7 @@ class MSpecOptions
 
   attr_accessor :config, :banner, :width, :options
 
-  def initialize(banner="", width=30, config=nil)
+  def initialize(banner = "", width = 30, config = nil)
     @banner   = banner
     @config   = config
     @width    = width
@@ -94,7 +94,7 @@ class MSpecOptions
     @options.find { |o| o.match? opt }
   end
 
-  # Processes an option. Calles the #on_extra block (or default) for
+  # Processes an option. Calls the #on_extra block (or default) for
   # unrecognized options. For registered options, possibly fetches an
   # argument and invokes the option's block if it is not nil.
   def process(argv, entry, opt, arg)
@@ -123,7 +123,7 @@ class MSpecOptions
 
   # Parses an array of command line entries, calling blocks for
   # registered options.
-  def parse(argv=ARGV)
+  def parse(argv = ARGV)
     argv = Array(argv).dup
 
     while entry = argv.shift
@@ -274,6 +274,8 @@ class MSpecOptions
         config[:formatter] = SpinnerFormatter
       when 't', 'method'
         config[:formatter] = MethodFormatter
+      when 'e', 'stats'
+        config[:formatter] = StatsPerFileFormatter
       when 'y', 'yaml'
         config[:formatter] = YamlFormatter
       when 'p', 'profile'
@@ -281,7 +283,7 @@ class MSpecOptions
       when 'j', 'junit'
         config[:formatter] = JUnitFormatter
       else
-        abort "Unknown format: #{o}\n#{@parser}" unless File.exist?(o)
+        abort "Unknown format: #{o}" unless File.exist?(o)
         require File.expand_path(o)
         if Object.const_defined?(:CUSTOM_MSPEC_FORMATTER)
           config[:formatter] = CUSTOM_MSPEC_FORMATTER
@@ -300,6 +302,7 @@ class MSpecOptions
     doc "       m, summary               SummaryFormatter"
     doc "       a, *, spin               SpinnerFormatter"
     doc "       t, method                MethodFormatter"
+    doc "       e, stats                 StatsPerFileFormatter"
     doc "       y, yaml                  YamlFormatter"
     doc "       p, profile               ProfileFormatter"
     doc "       j, junit                 JUnitFormatter\n"
@@ -377,14 +380,14 @@ class MSpecOptions
   def randomize
     on("-H", "--random",
        "Randomize the list of spec files") do
-      MSpec.randomize
+      MSpec.randomize = true
     end
   end
 
   def repeat
     on("-R", "--repeat", "NUMBER",
        "Repeatedly run an example NUMBER times") do |o|
-      MSpec.repeat = o.to_i
+      MSpec.repeat = Integer(o)
     end
   end
 
@@ -392,11 +395,11 @@ class MSpecOptions
     on("-V", "--verbose", "Output the name of each file processed") do
       obj = Object.new
       def obj.start
-        @width = MSpec.retrieve(:files).inject(0) { |max, f| f.size > max ? f.size : max }
+        @width = MSpec.files_array.inject(0) { |max, f| f.size > max ? f.size : max }
       end
       def obj.load
-        file = MSpec.retrieve :file
-        STDERR.print "\n#{file.ljust(@width)}"
+        file = MSpec.file
+        STDERR.print "\n#{file.ljust(@width)}\n"
       end
       MSpec.register :start, obj
       MSpec.register :load, obj
@@ -414,8 +417,16 @@ class MSpecOptions
   end
 
   def interrupt
-    on("--int-spec", "Control-C interupts the current spec only") do
+    on("--int-spec", "Control-C interrupts the current spec only") do
       config[:abort] = false
+    end
+  end
+
+  def timeout
+    on("--timeout", "TIMEOUT", "Abort if a spec takes longer than TIMEOUT seconds") do |timeout|
+      require 'mspec/runner/actions/timeout'
+      timeout = Float(timeout)
+      TimeoutAction.new(timeout).register
     end
   end
 
@@ -459,8 +470,6 @@ class MSpecOptions
   end
 
   def all
-    # Generated with:
-    # puts File.read(__FILE__).scan(/def (\w+).*\n\s*on\(/)
     configure {}
     targets
     formatters
@@ -473,6 +482,7 @@ class MSpecOptions
     repeat
     verbose
     interrupt
+    timeout
     verify
     action_filters
     actions

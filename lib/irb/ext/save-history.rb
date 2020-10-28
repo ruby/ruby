@@ -9,8 +9,6 @@
 #
 #
 
-require "readline"
-
 module IRB
   module HistorySavingAbility # :nodoc:
   end
@@ -27,7 +25,7 @@ module IRB
       IRB.conf[:SAVE_HISTORY]
     end
 
-    remove_method :save_history= if respond_to?(:save_history=)
+    remove_method(:save_history=) if method_defined?(:save_history=)
     # Sets <code>IRB.conf[:SAVE_HISTORY]</code> to the given +val+ and calls
     # #init_save_history with this context.
     #
@@ -58,8 +56,6 @@ module IRB
   end
 
   module HistorySavingAbility # :nodoc:
-    include Readline
-
     def HistorySavingAbility.extended(obj)
       IRB.conf[:AT_EXIT].push proc{obj.save_history}
       obj.load_history
@@ -67,19 +63,31 @@ module IRB
     end
 
     def load_history
+      return unless self.class.const_defined?(:HISTORY)
+      history = self.class::HISTORY
       if history_file = IRB.conf[:HISTORY_FILE]
         history_file = File.expand_path(history_file)
       end
       history_file = IRB.rc_file("_history") unless history_file
       if File.exist?(history_file)
-        open(history_file) do |f|
-          f.each {|l| HISTORY << l.chomp}
+        open(history_file, "r:#{IRB.conf[:LC_MESSAGES].encoding}") do |f|
+          f.each { |l|
+            l = l.chomp
+            if self.class == ReidlineInputMethod and history.last&.end_with?("\\")
+              history.last.delete_suffix!("\\")
+              history.last << "\n" << l
+            else
+              history << l
+            end
+          }
         end
       end
     end
 
     def save_history
-      if num = IRB.conf[:SAVE_HISTORY] and (num = num.to_i) > 0
+      return unless self.class.const_defined?(:HISTORY)
+      history = self.class::HISTORY
+      if num = IRB.conf[:SAVE_HISTORY] and (num = num.to_i) != 0
         if history_file = IRB.conf[:HISTORY_FILE]
           history_file = File.expand_path(history_file)
         end
@@ -91,13 +99,20 @@ module IRB
             File.chmod(0600, history_file)
           end
         rescue Errno::ENOENT
+        rescue Errno::EPERM
+          return
         rescue
           raise
         end
 
-        open(history_file, 'w', 0600 ) do |f|
-          hist = HISTORY.to_a
-          f.puts(hist[-num..-1] || hist)
+        open(history_file, "w:#{IRB.conf[:LC_MESSAGES].encoding}", 0600) do |f|
+          hist = history.map{ |l| l.split("\n").join("\\\n") }
+          begin
+            hist = hist.last(num) if hist.size > num and num > 0
+          rescue RangeError # bignum too big to convert into `long'
+            # Do nothing because the bignum should be treated as inifinity
+          end
+          f.puts(hist)
         end
       end
     end

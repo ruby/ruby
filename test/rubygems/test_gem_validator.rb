@@ -1,14 +1,12 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
-require "rubygems/simple_gem"
-require 'rubygems/validator'
+
+require "rubygems/test_case"
+require "rubygems/validator"
 
 class TestGemValidator < Gem::TestCase
-
   def setup
     super
 
-    @simple_gem = SIMPLE_GEM
     @validator = Gem::Validator.new
   end
 
@@ -41,5 +39,4 @@ class TestGemValidator < Gem::TestCase
 
     assert_empty alien
   end
-
 end

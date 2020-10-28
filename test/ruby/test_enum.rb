@@ -239,6 +239,62 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(2.0+3.0i, [2.0, 3.0i].inject(:+))
   end
 
+  def test_inject_op_redefined
+    assert_separately([], "#{<<~"end;"}\n""end")
+    k = Class.new do
+      include Enumerable
+      def each
+        yield 1
+        yield 2
+        yield 3
+      end
+    end
+    all_assertions_foreach("", *%i[+ * / - %]) do |op|
+      bug = '[ruby-dev:49510] [Bug#12178] should respect redefinition'
+      begin
+        Integer.class_eval do
+          alias_method :orig, op
+          define_method(op) do |x|
+            0
+          end
+        end
+        assert_equal(0, k.new.inject(op), bug)
+      ensure
+        Integer.class_eval do
+          undef_method op
+          alias_method op, :orig
+        end
+      end
+    end;
+  end
+
+  def test_inject_op_private
+    assert_separately([], "#{<<~"end;"}\n""end")
+    k = Class.new do
+      include Enumerable
+      def each
+        yield 1
+        yield 2
+        yield 3
+      end
+    end
+    all_assertions_foreach("", *%i[+ * / - %]) do |op|
+      bug = '[ruby-core:81349] [Bug #13592] should respect visibility'
+      assert_raise_with_message(NoMethodError, /private method/, bug) do
+        begin
+          Integer.class_eval do
+            private op
+          end
+          k.new.inject(op)
+        ensure
+          Integer.class_eval do
+            public op
+          end
+        end
+      end
+    end;
+  end
+
   def test_inject_array_op_redefined
     assert_separately([], "#{<<~"end;"}\n""end")
     all_assertions_foreach("", *%i[+ * / - %]) do |op|
@@ -276,6 +332,25 @@ class TestEnumerable < Test::Unit::TestCase
           end
         end
       end
+    end;
+  end
+
+  def test_refine_Enumerable_then_include
+    assert_separately([], "#{<<~"end;"}\n")
+      module RefinementBug
+        refine Enumerable do
+          def refined_method
+            :rm
+          end
+        end
+      end
+      using RefinementBug
+
+      class A
+        include Enumerable
+      end
+
+      assert_equal(:rm, [].refined_method)
     end;
   end
 
@@ -735,6 +810,19 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([2,1,3,2,1], @obj.reverse_each.to_a)
   end
 
+  def test_reverse_each_memory_corruption
+    bug16354 = '[ruby-dev:50867]'
+    assert_normal_exit %q{
+      size = 1000
+      (0...size).reverse_each do |i|
+        i.inspect
+        ObjectSpace.each_object(Array) do |a|
+          a.clear if a.length == size
+        end
+      end
+    }, bug16354
+  end
+
   def test_chunk
     e = [].chunk {|elt| true }
     assert_equal([], e.to_a)
@@ -1134,5 +1222,15 @@ class TestEnumerable < Test::Unit::TestCase
       end
     end
     assert_equal [1, 2, 3, 4, 5], (1..5).sort_by{|e| klass.new e}
+  end
+
+  def test_filter_map
+    @obj = (1..8).to_a
+    assert_equal([4, 8, 12, 16], @obj.filter_map { |i| i * 2 if i.even? })
+    assert_equal([2, 4, 6, 8, 10, 12, 14, 16], @obj.filter_map { |i| i * 2 })
+    assert_equal([0, 0, 0, 0, 0, 0, 0, 0], @obj.filter_map { 0 })
+    assert_equal([], @obj.filter_map { false })
+    assert_equal([], @obj.filter_map { nil })
+    assert_instance_of(Enumerator, @obj.filter_map)
   end
 end

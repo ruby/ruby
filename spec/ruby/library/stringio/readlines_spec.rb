@@ -51,10 +51,11 @@ describe "StringIO#readlines when passed no argument" do
 
   it "returns an Array containing lines based on $/" do
     begin
-      old_sep, $/ = $/, " "
+      old_sep = $/;
+      suppress_warning {$/ = " "}
       @io.readlines.should == ["this ", "is\nan ", "example\nfor ", "StringIO#readlines"]
     ensure
-      $/ = old_sep
+      suppress_warning {$/ = old_sep}
     end
   end
 
@@ -83,19 +84,17 @@ end
 describe "StringIO#readlines when in write-only mode" do
   it "raises an IOError" do
     io = StringIO.new("xyz", "w")
-    lambda { io.readlines }.should raise_error(IOError)
+    -> { io.readlines }.should raise_error(IOError)
 
     io = StringIO.new("xyz")
     io.close_read
-    lambda { io.readlines }.should raise_error(IOError)
+    -> { io.readlines }.should raise_error(IOError)
   end
 end
 
-ruby_version_is "2.4" do
-  describe "StringIO#readlines when passed [chomp]" do
-    it "returns the data read without a trailing newline character" do
-      io = StringIO.new("this>is\nan>example\r\n")
-      io.readlines(chomp: true).should == ["this>is", "an>example"]
-    end
+describe "StringIO#readlines when passed [chomp]" do
+  it "returns the data read without a trailing newline character" do
+    io = StringIO.new("this>is\nan>example\r\n")
+    io.readlines(chomp: true).should == ["this>is", "an>example"]
   end
 end

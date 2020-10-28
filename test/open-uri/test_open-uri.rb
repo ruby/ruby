@@ -81,7 +81,7 @@ class TestOpenURI < Test::Unit::TestCase
   def test_200
     with_http {|srv, dr, url|
       srv.mount_proc("/foo200", lambda { |req, res| res.body = "foo200" } )
-      open("#{url}/foo200") {|f|
+      URI.open("#{url}/foo200") {|f|
         assert_equal("200", f.status[0])
         assert_equal("foo200", f.read)
       }
@@ -92,7 +92,7 @@ class TestOpenURI < Test::Unit::TestCase
     with_http {|srv, dr, url|
       content = "foo200big"*10240
       srv.mount_proc("/foo200big", lambda { |req, res| res.body = content } )
-      open("#{url}/foo200big") {|f|
+      URI.open("#{url}/foo200big") {|f|
         assert_equal("200", f.status[0])
         assert_equal(content, f.read)
       }
@@ -105,7 +105,7 @@ class TestOpenURI < Test::Unit::TestCase
       assert_match(%r{ERROR `/not-exist' not found}, server_log[0])
     }
     with_http(log_tester) {|srv, dr, url, server_thread, server_log|
-      exc = assert_raise(OpenURI::HTTPError) { open("#{url}/not-exist") {} }
+      exc = assert_raise(OpenURI::HTTPError) { URI.open("#{url}/not-exist") {} }
       assert_equal("404", exc.io.status[0])
     }
   end
@@ -114,7 +114,7 @@ class TestOpenURI < Test::Unit::TestCase
     with_http {|srv, dr, url|
       srv.mount_proc("/foo_ou", lambda { |req, res| res.body = "foo_ou" } )
       u = URI("#{url}/foo_ou")
-      open(u) {|f|
+      URI.open(u) {|f|
         assert_equal("200", f.status[0])
         assert_equal("foo_ou", f.read)
       }
@@ -122,7 +122,7 @@ class TestOpenURI < Test::Unit::TestCase
   end
 
   def test_open_too_many_arg
-    assert_raise(ArgumentError) { open("http://192.0.2.1/tma", "r", 0666, :extra) {} }
+    assert_raise(ArgumentError) { URI.open("http://192.0.2.1/tma", "r", 0666, :extra) {} }
   end
 
   def test_read_timeout
@@ -169,28 +169,28 @@ class TestOpenURI < Test::Unit::TestCase
   end
 
   def test_invalid_option
-    assert_raise(ArgumentError) { open("http://127.0.0.1/", :invalid_option=>true) {} }
+    assert_raise(ArgumentError) { URI.open("http://127.0.0.1/", :invalid_option=>true) {} }
   end
 
   def test_mode
     with_http {|srv, dr, url|
       srv.mount_proc("/mode", lambda { |req, res| res.body = "mode" } )
-      open("#{url}/mode", "r") {|f|
+      URI.open("#{url}/mode", "r") {|f|
         assert_equal("200", f.status[0])
         assert_equal("mode", f.read)
       }
-      open("#{url}/mode", "r", 0600) {|f|
+      URI.open("#{url}/mode", "r", 0600) {|f|
         assert_equal("200", f.status[0])
         assert_equal("mode", f.read)
       }
-      assert_raise(ArgumentError) { open("#{url}/mode", "a") {} }
-      open("#{url}/mode", "r:us-ascii") {|f|
+      assert_raise(ArgumentError) { URI.open("#{url}/mode", "a") {} }
+      URI.open("#{url}/mode", "r:us-ascii") {|f|
         assert_equal(Encoding::US_ASCII, f.read.encoding)
       }
-      open("#{url}/mode", "r:utf-8") {|f|
+      URI.open("#{url}/mode", "r:utf-8") {|f|
         assert_equal(Encoding::UTF_8, f.read.encoding)
       }
-      assert_raise(ArgumentError) { open("#{url}/mode", "r:invalid-encoding") {} }
+      assert_raise(ArgumentError) { URI.open("#{url}/mode", "r:invalid-encoding") {} }
     }
   end
 
@@ -198,7 +198,7 @@ class TestOpenURI < Test::Unit::TestCase
     with_http {|srv, dr, url|
       srv.mount_proc("/without_block", lambda { |req, res| res.body = "without_block" } )
       begin
-        f = open("#{url}/without_block")
+        f = URI.open("#{url}/without_block")
         assert_equal("200", f.status[0])
         assert_equal("without_block", f.read)
       ensure
@@ -211,7 +211,7 @@ class TestOpenURI < Test::Unit::TestCase
     with_http {|srv, dr, url|
       srv.mount_proc("/close200", lambda { |req, res| res.body = "close200" } )
       assert_nothing_raised {
-        open("#{url}/close200") {|f|
+        URI.open("#{url}/close200") {|f|
           f.close
         }
       }
@@ -223,7 +223,7 @@ class TestOpenURI < Test::Unit::TestCase
       content = "close200big"*10240
       srv.mount_proc("/close200big", lambda { |req, res| res.body = content } )
       assert_nothing_raised {
-        open("#{url}/close200big") {|f|
+        URI.open("#{url}/close200big") {|f|
           f.close
         }
       }
@@ -235,7 +235,7 @@ class TestOpenURI < Test::Unit::TestCase
     myheader2 = nil
     with_http {|srv, dr, url|
       srv.mount_proc("/h/") {|req, res| myheader2 = req['myheader']; res.body = "foo" }
-      open("#{url}/h/", 'MyHeader'=>myheader1) {|f|
+      URI.open("#{url}/h/", 'MyHeader'=>myheader1) {|f|
         assert_equal("foo", f.read)
         assert_equal(myheader1, myheader2)
       }
@@ -244,13 +244,13 @@ class TestOpenURI < Test::Unit::TestCase
 
   def test_multi_proxy_opt
     assert_raise(ArgumentError) {
-      open("http://127.0.0.1/", :proxy_http_basic_authentication=>true, :proxy=>true) {}
+      URI.open("http://127.0.0.1/", :proxy_http_basic_authentication=>true, :proxy=>true) {}
     }
   end
 
   def test_non_http_proxy
     assert_raise(RuntimeError) {
-      open("http://127.0.0.1/", :proxy=>URI("ftp://127.0.0.1/")) {}
+      URI.open("http://127.0.0.1/", :proxy=>URI("ftp://127.0.0.1/")) {}
     }
   end
 
@@ -273,28 +273,28 @@ class TestOpenURI < Test::Unit::TestCase
       begin
         proxy_thread = proxy.start
         srv.mount_proc("/proxy", lambda { |req, res| res.body = "proxy" } )
-        open("#{url}/proxy", :proxy=>proxy_url) {|f|
+        URI.open("#{url}/proxy", :proxy=>proxy_url) {|f|
           assert_equal("200", f.status[0])
           assert_equal("proxy", f.read)
         }
         assert_match(/#{Regexp.quote url}/, proxy_auth_log); proxy_auth_log.clear
-        open("#{url}/proxy", :proxy=>URI(proxy_url)) {|f|
+        URI.open("#{url}/proxy", :proxy=>URI(proxy_url)) {|f|
           assert_equal("200", f.status[0])
           assert_equal("proxy", f.read)
         }
         assert_match(/#{Regexp.quote url}/, proxy_auth_log); proxy_auth_log.clear
-        open("#{url}/proxy", :proxy=>nil) {|f|
+        URI.open("#{url}/proxy", :proxy=>nil) {|f|
           assert_equal("200", f.status[0])
           assert_equal("proxy", f.read)
         }
         assert_equal("", proxy_auth_log); proxy_auth_log.clear
         assert_raise(ArgumentError) {
-          open("#{url}/proxy", :proxy=>:invalid) {}
+          URI.open("#{url}/proxy", :proxy=>:invalid) {}
         }
         assert_equal("", proxy_auth_log); proxy_auth_log.clear
         with_env("http_proxy"=>proxy_url) {
           # should not use proxy for 127.0.0.0/8.
-          open("#{url}/proxy") {|f|
+          URI.open("#{url}/proxy") {|f|
             assert_equal("200", f.status[0])
             assert_equal("proxy", f.read)
           }
@@ -330,7 +330,7 @@ class TestOpenURI < Test::Unit::TestCase
       begin
         th = proxy.start
         srv.mount_proc("/proxy", lambda { |req, res| res.body = "proxy" } )
-        exc = assert_raise(OpenURI::HTTPError) { open("#{url}/proxy", :proxy=>proxy_url) {} }
+        exc = assert_raise(OpenURI::HTTPError) { URI.open("#{url}/proxy", :proxy=>proxy_url) {} }
         assert_equal("407", exc.io.status[0])
         assert_match(/#{Regexp.quote url}/, proxy_auth_log); proxy_auth_log.clear
       ensure
@@ -363,14 +363,14 @@ class TestOpenURI < Test::Unit::TestCase
       begin
         th = proxy.start
         srv.mount_proc("/proxy", lambda { |req, res| res.body = "proxy" } )
-        open("#{url}/proxy",
+        URI.open("#{url}/proxy",
             :proxy_http_basic_authentication=>[proxy_url, "user", "pass"]) {|f|
           assert_equal("200", f.status[0])
           assert_equal("proxy", f.read)
         }
         assert_match(/#{Regexp.quote url}/, proxy_auth_log); proxy_auth_log.clear
         assert_raise(ArgumentError) {
-          open("#{url}/proxy",
+          URI.open("#{url}/proxy",
               :proxy_http_basic_authentication=>[true, "user", "pass"]) {}
         }
         assert_equal("", proxy_auth_log); proxy_auth_log.clear
@@ -404,7 +404,7 @@ class TestOpenURI < Test::Unit::TestCase
       begin
         th = proxy.start
         srv.mount_proc("/proxy", lambda { |req, res| res.body = "proxy" } )
-        open("#{url}/proxy", :proxy => proxy_url) {|f|
+        URI.open("#{url}/proxy", :proxy => proxy_url) {|f|
           assert_equal("200", f.status[0])
           assert_equal("proxy", f.read)
         }
@@ -423,12 +423,12 @@ class TestOpenURI < Test::Unit::TestCase
       srv.mount_proc("/r1/") {|req, res| res.status = 301; res["location"] = "#{url}/r2"; res.body = "r1" }
       srv.mount_proc("/r2/") {|req, res| res.body = "r2" }
       srv.mount_proc("/to-file/") {|req, res| res.status = 301; res["location"] = "file:///foo" }
-      open("#{url}/r1/") {|f|
+      URI.open("#{url}/r1/") {|f|
         assert_equal("#{url}/r2", f.base_uri.to_s)
         assert_equal("r2", f.read)
       }
-      assert_raise(OpenURI::HTTPRedirect) { open("#{url}/r1/", :redirect=>false) {} }
-      assert_raise(RuntimeError) { open("#{url}/to-file/") {} }
+      assert_raise(OpenURI::HTTPRedirect) { URI.open("#{url}/r1/", :redirect=>false) {} }
+      assert_raise(RuntimeError) { URI.open("#{url}/to-file/") {} }
     }
   end
 
@@ -436,7 +436,7 @@ class TestOpenURI < Test::Unit::TestCase
     with_http {|srv, dr, url|
       srv.mount_proc("/r1/") {|req, res| res.status = 301; res["location"] = "#{url}/r2"; res.body = "r1" }
       srv.mount_proc("/r2/") {|req, res| res.status = 301; res["location"] = "#{url}/r1"; res.body = "r2" }
-      assert_raise(RuntimeError) { open("#{url}/r1/") {} }
+      assert_raise(RuntimeError) { URI.open("#{url}/r1/") {} }
     }
   end
 
@@ -515,7 +515,7 @@ class TestOpenURI < Test::Unit::TestCase
   def test_redirect_auth_success
     with_http {|srv, dr, url|
       setup_redirect_auth(srv, url)
-      open("#{url}/r2/", :http_basic_authentication=>['user', 'pass']) {|f|
+      URI.open("#{url}/r2/", :http_basic_authentication=>['user', 'pass']) {|f|
         assert_equal("r2", f.read)
       }
     }
@@ -528,7 +528,7 @@ class TestOpenURI < Test::Unit::TestCase
     }
     with_http(log_tester) {|srv, dr, url, server_thread, server_log|
       setup_redirect_auth(srv, url)
-      exc = assert_raise(OpenURI::HTTPError) { open("#{url}/r2/") {} }
+      exc = assert_raise(OpenURI::HTTPError) { URI.open("#{url}/r2/") {} }
       assert_equal("401", exc.io.status[0])
     }
   end
@@ -540,13 +540,13 @@ class TestOpenURI < Test::Unit::TestCase
     }
     with_http(log_tester) {|srv, dr, url, server_thread, server_log|
       setup_redirect_auth(srv, url)
-      exc = assert_raise(OpenURI::HTTPError) { open("#{url}/r1/", :http_basic_authentication=>['user', 'pass']) {} }
+      exc = assert_raise(OpenURI::HTTPError) { URI.open("#{url}/r1/", :http_basic_authentication=>['user', 'pass']) {} }
       assert_equal("401", exc.io.status[0])
     }
   end
 
   def test_userinfo
-    assert_raise(ArgumentError) { open("http://user:pass@127.0.0.1/") {} }
+    assert_raise(ArgumentError) { URI.open("http://user:pass@127.0.0.1/") {} }
   end
 
   def test_progress
@@ -555,7 +555,7 @@ class TestOpenURI < Test::Unit::TestCase
       srv.mount_proc("/data/") {|req, res| res.body = content }
       length = []
       progress = []
-      open("#{url}/data/",
+      URI.open("#{url}/data/",
            :content_length_proc => lambda {|n| length << n },
            :progress_proc => lambda {|n| progress << n }
           ) {|f|
@@ -575,7 +575,7 @@ class TestOpenURI < Test::Unit::TestCase
       srv.mount_proc("/data/") {|req, res| res.body = content; res.chunked = true }
       length = []
       progress = []
-      open("#{url}/data/",
+      URI.open("#{url}/data/",
            :content_length_proc => lambda {|n| length << n },
            :progress_proc => lambda {|n| progress << n }
           ) {|f|
@@ -605,25 +605,25 @@ class TestOpenURI < Test::Unit::TestCase
       srv.mount_proc("/u8/") {|req, res| res.body = content_u8; res['content-type'] = 'text/plain; charset=utf-8' }
       srv.mount_proc("/ej/") {|req, res| res.body = content_ej; res['content-type'] = 'TEXT/PLAIN; charset=EUC-JP' }
       srv.mount_proc("/nc/") {|req, res| res.body = "aa"; res['content-type'] = 'Text/Plain' }
-      open("#{url}/u8/") {|f|
+      URI.open("#{url}/u8/") {|f|
         assert_equal(content_u8, f.read)
         assert_equal("text/plain", f.content_type)
         assert_equal("utf-8", f.charset)
       }
-      open("#{url}/ej/") {|f|
+      URI.open("#{url}/ej/") {|f|
         assert_equal(content_ej, f.read)
         assert_equal("text/plain", f.content_type)
         assert_equal("euc-jp", f.charset)
         assert_equal(Encoding::EUC_JP, f.read.encoding)
       }
-      open("#{url}/ej/", 'r:utf-8') {|f|
+      URI.open("#{url}/ej/", 'r:utf-8') {|f|
         # override charset with encoding option
         assert_equal(content_ej.dup.force_encoding('utf-8'), f.read)
         assert_equal("text/plain", f.content_type)
         assert_equal("euc-jp", f.charset)
         assert_equal(Encoding::UTF_8, f.read.encoding)
       }
-      open("#{url}/ej/", :encoding=>'utf-8') {|f|
+      URI.open("#{url}/ej/", :encoding=>'utf-8') {|f|
         # override charset with encoding option
         assert_equal(content_ej.dup.force_encoding('utf-8'), f.read)
         assert_equal("text/plain", f.content_type)
@@ -631,12 +631,12 @@ class TestOpenURI < Test::Unit::TestCase
         assert_equal(Encoding::UTF_8, f.read.encoding)
       }
       assert_raise(ArgumentError) {
-        open("#{url}/ej/", 'r:utf-8', :encoding=>'utf-8') {|f| }
+        URI.open("#{url}/ej/", 'r:utf-8', :encoding=>'utf-8') {|f| }
       }
-      open("#{url}/nc/") {|f|
+      URI.open("#{url}/nc/") {|f|
         assert_equal("aa", f.read)
         assert_equal("text/plain", f.content_type)
-        assert_equal("iso-8859-1", f.charset)
+        assert_equal("utf-8", f.charset)
         assert_equal("unknown", f.charset { "unknown" })
       }
     }
@@ -646,7 +646,7 @@ class TestOpenURI < Test::Unit::TestCase
     with_http {|srv, dr, url|
       content_u8 = "\u3042"
       srv.mount_proc("/qu8/") {|req, res| res.body = content_u8; res['content-type'] = 'text/plain; charset="utf\-8"' }
-      open("#{url}/qu8/") {|f|
+      URI.open("#{url}/qu8/") {|f|
         assert_equal(content_u8, f.read)
         assert_equal("text/plain", f.content_type)
         assert_equal("utf-8", f.charset)
@@ -657,7 +657,7 @@ class TestOpenURI < Test::Unit::TestCase
   def test_last_modified
     with_http {|srv, dr, url|
       srv.mount_proc("/data/") {|req, res| res.body = "foo"; res['last-modified'] = 'Fri, 07 Aug 2009 06:05:04 GMT' }
-      open("#{url}/data/") {|f|
+      URI.open("#{url}/data/") {|f|
         assert_equal("foo", f.read)
         assert_equal(Time.utc(2009,8,7,6,5,4), f.last_modified)
       }
@@ -671,15 +671,15 @@ class TestOpenURI < Test::Unit::TestCase
       srv.mount_proc("/data/") {|req, res| res.body = content_gz; res['content-encoding'] = 'gzip' }
       srv.mount_proc("/data2/") {|req, res| res.body = content_gz; res['content-encoding'] = 'gzip'; res.chunked = true }
       srv.mount_proc("/noce/") {|req, res| res.body = content_gz }
-      open("#{url}/data/") {|f|
+      URI.open("#{url}/data/") {|f|
         assert_equal [], f.content_encoding
         assert_equal(content, f.read)
       }
-      open("#{url}/data2/") {|f|
+      URI.open("#{url}/data2/") {|f|
         assert_equal [], f.content_encoding
         assert_equal(content, f.read)
       }
-      open("#{url}/noce/") {|f|
+      URI.open("#{url}/noce/") {|f|
         assert_equal [], f.content_encoding
         assert_equal(content_gz, f.read.force_encoding("ascii-8bit"))
       }
@@ -693,7 +693,7 @@ class TestOpenURI < Test::Unit::TestCase
         res.cookies << "name2=value2; blabla"
         res.body = "foo"
       }
-      open("#{url}/mcookie/") {|f|
+      URI.open("#{url}/mcookie/") {|f|
         assert_equal("foo", f.read)
         assert_equal(["name1=value1; blabla", "name2=value2; blabla"],
                      f.metas['set-cookie'].sort)

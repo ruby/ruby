@@ -2,7 +2,6 @@
 
 #include <time.h>
 
-int rsock_cmsg_cloexec_state = -1; /* <0: unknown, 0: ignored, >0: working */
 static VALUE sym_wait_readable, sym_wait_writable;
 
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
@@ -1137,6 +1136,7 @@ bsock_sendmsg_internal(VALUE sock, VALUE data, VALUE vflags,
     rb_io_t *fptr;
     struct msghdr mh;
     struct iovec iov;
+    VALUE tmp;
     int controls_num;
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
     VALUE controls_str = 0;
@@ -1151,6 +1151,7 @@ bsock_sendmsg_internal(VALUE sock, VALUE data, VALUE vflags,
 #endif
 
     StringValue(data);
+    tmp = rb_str_tmp_frozen_acquire(data);
 
     if (!RB_TYPE_P(controls, T_ARRAY)) {
 	controls = rb_ary_new();
@@ -1261,8 +1262,8 @@ bsock_sendmsg_internal(VALUE sock, VALUE data, VALUE vflags,
     }
     mh.msg_iovlen = 1;
     mh.msg_iov = &iov;
-    iov.iov_base = RSTRING_PTR(data);
-    iov.iov_len = RSTRING_LEN(data);
+    iov.iov_base = RSTRING_PTR(tmp);
+    iov.iov_len = RSTRING_LEN(tmp);
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
     if (controls_str) {
         mh.msg_control = RSTRING_PTR(controls_str);
@@ -1295,6 +1296,7 @@ bsock_sendmsg_internal(VALUE sock, VALUE data, VALUE vflags,
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
     RB_GC_GUARD(controls_str);
 #endif
+    rb_str_tmp_frozen_release(data, tmp);
 
     return SSIZET2NUM(ss);
 }
@@ -1426,10 +1428,7 @@ make_io_for_unix_rights(VALUE ctl, struct cmsghdr *cmh, char *msg_end)
             if (fstat(fd, &stbuf) == -1)
                 rb_raise(rb_eSocket, "invalid fd in SCM_RIGHTS");
             rb_update_max_fd(fd);
-            if (rsock_cmsg_cloexec_state < 0)
-                rsock_cmsg_cloexec_state = rsock_detect_cloexec(fd);
-            if (rsock_cmsg_cloexec_state == 0 || fd <= 2)
-                rb_maygvl_fd_fix_cloexec(fd);
+            rb_maygvl_fd_fix_cloexec(fd);
             if (S_ISSOCK(stbuf.st_mode))
                 io = rsock_init_sock(rb_obj_alloc(rb_cSocket), fd);
             else
@@ -1628,10 +1627,9 @@ bsock_recvmsg_internal(VALUE sock,
     }
 
     if (NIL_P(dat_str))
-        dat_str = rb_tainted_str_new(datbuf, ss);
+        dat_str = rb_str_new(datbuf, ss);
     else {
         rb_str_resize(dat_str, ss);
-        OBJ_TAINT(dat_str);
 	rb_obj_reveal(dat_str, rb_cString);
     }
 
@@ -1657,7 +1655,7 @@ bsock_recvmsg_internal(VALUE sock,
             }
             ctl_end = (char*)cmh + cmh->cmsg_len;
 	    clen = (ctl_end <= msg_end ? ctl_end : msg_end) - (char*)CMSG_DATA(cmh);
-            ctl = ancdata_new(family, cmh->cmsg_level, cmh->cmsg_type, rb_tainted_str_new((char*)CMSG_DATA(cmh), clen));
+            ctl = ancdata_new(family, cmh->cmsg_level, cmh->cmsg_type, rb_str_new((char*)CMSG_DATA(cmh), clen));
             if (request_scm_rights)
                 make_io_for_unix_rights(ctl, cmh, msg_end);
             else

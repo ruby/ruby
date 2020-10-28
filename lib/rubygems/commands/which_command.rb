@@ -52,13 +52,11 @@ requiring to see why it does not behave as you expect.
         end
       end
 
-      # TODO: this is totally redundant and stupid
       paths = find_paths arg, dirs
 
       if paths.empty?
         alert_error "Can't find Ruby library file or shared library #{arg}"
-
-        found &&= false
+        found = false
       else
         say paths
       end
@@ -86,5 +84,4 @@ requiring to see why it does not behave as you expect.
   def usage # :nodoc:
     "#{program_name} FILE [FILE ...]"
   end
-
 end

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "bundler/vendored_thor"
+require_relative "../vendored_thor"
 
 module Bundler
   module UI
@@ -10,9 +10,7 @@ module Bundler
       attr_writer :shell
 
       def initialize(options = {})
-        if options["no-color"] || !$stdout.tty?
-          Thor::Base.shell = Thor::Shell::Basic
-        end
+        Thor::Base.shell = options["no-color"] ? Thor::Shell::Basic : nil
         @shell = Thor::Base.shell.new
         @level = ENV["DEBUG"] ? "debug" : "info"
         @warning_history = []
@@ -30,19 +28,17 @@ module Bundler
         tell_me(msg, :green, newline) if level("confirm")
       end
 
-      def warn(msg, newline = nil)
+      def warn(msg, newline = nil, color = :yellow)
         return unless level("warn")
         return if @warning_history.include? msg
         @warning_history << msg
 
-        return tell_err(msg, :yellow, newline) if Bundler.feature_flag.error_on_stderr?
-        tell_me(msg, :yellow, newline)
+        tell_err(msg, color, newline)
       end
 
-      def error(msg, newline = nil)
+      def error(msg, newline = nil, color = :red)
         return unless level("error")
-        return tell_err(msg, :red, newline) if Bundler.feature_flag.error_on_stderr?
-        tell_me(msg, :red, newline)
+        tell_err(msg, color, newline)
       end
 
       def debug(msg, newline = nil)
@@ -96,7 +92,7 @@ module Bundler
         []
       end
 
-    private
+      private
 
       # valimism
       def tell_me(msg, color = nil, newline = nil)

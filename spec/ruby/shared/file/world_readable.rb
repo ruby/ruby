@@ -35,9 +35,9 @@ describe :file_world_readable, shared: true do
   end
 
   it "returns a Fixnum if the file is a directory and chmod 644" do
-    dir = rand().to_s + '-ww'
+    dir = tmp(rand().to_s + '-ww')
     Dir.mkdir(dir)
-    Dir.exist?(dir).should be_true
+    Dir.should.exist?(dir)
     File.chmod(0644, dir)
     @object.world_readable?(dir).should be_an_instance_of(Fixnum)
     Dir.rmdir(dir)

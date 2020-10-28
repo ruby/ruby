@@ -8,8 +8,8 @@ describe "Vector.each2" do
   end
 
   it "requires one argument" do
-    lambda { @v.each2(@v2, @v2){} }.should raise_error(ArgumentError)
-    lambda { @v.each2(){} }.should raise_error(ArgumentError)
+    -> { @v.each2(@v2, @v2){} }.should raise_error(ArgumentError)
+    -> { @v.each2(){} }.should raise_error(ArgumentError)
   end
 
   describe "given one argument" do
@@ -20,8 +20,8 @@ describe "Vector.each2" do
     end
 
     it "raises a DimensionMismatch error if the Vector size is different" do
-      lambda { @v.each2(Vector[1,2]){}     }.should raise_error(Vector::ErrDimensionMismatch)
-      lambda { @v.each2(Vector[1,2,3,4]){} }.should raise_error(Vector::ErrDimensionMismatch)
+      -> { @v.each2(Vector[1,2]){}     }.should raise_error(Vector::ErrDimensionMismatch)
+      -> { @v.each2(Vector[1,2,3,4]){} }.should raise_error(Vector::ErrDimensionMismatch)
     end
 
     it "yields arguments in sequence" do

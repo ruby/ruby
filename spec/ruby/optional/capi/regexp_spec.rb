@@ -9,11 +9,19 @@ describe "C-API Regexp function" do
 
   describe "rb_reg_new" do
     it "returns a new valid Regexp" do
-      my_re = @p.a_re
+      my_re = @p.a_re("a", 0)
       my_re.kind_of?(Regexp).should == true
       ('1a' =~ my_re).should == 1
       ('1b' =~ my_re).should == nil
       my_re.source.should == 'a'
+    end
+
+    it "returns a Regexp with the given options" do
+      @p.a_re("a", 0).options == 0
+      @p.a_re("a", Regexp::IGNORECASE).options.should == Regexp::IGNORECASE
+      @p.a_re("a", Regexp::EXTENDED).options.should == Regexp::EXTENDED
+      @p.a_re("a", Regexp::EXTENDED | Regexp::IGNORECASE).options.should == Regexp::EXTENDED | Regexp::IGNORECASE
+      @p.a_re("a", Regexp::MULTILINE).options.should == Regexp::MULTILINE
     end
   end
 
@@ -66,6 +74,10 @@ describe "C-API Regexp function" do
       @p.rb_backref_get.should == md
       md = /c/.match('ab')
       @p.rb_backref_get.should == md
+    end
+
+    it "returns MatchData when used with rb_reg_match" do
+       @p.rb_reg_match_backref_get(/a/, 'ab')[0].should == 'a'
     end
   end
 end

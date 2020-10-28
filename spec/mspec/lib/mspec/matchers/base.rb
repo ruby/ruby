@@ -10,98 +10,52 @@ class Module
   include MSpecMatchers
 end
 
-class SpecPositiveOperatorMatcher
+class SpecPositiveOperatorMatcher < BasicObject
   def initialize(actual)
     @actual = actual
   end
 
   def ==(expected)
-    unless @actual == expected
-      SpecExpectation.fail_with("Expected #{@actual.pretty_inspect}",
-                            "to equal #{expected.pretty_inspect}")
-    end
+    method_missing(:==, expected)
   end
 
-  def <(expected)
-    unless @actual < expected
-      SpecExpectation.fail_with("Expected #{@actual.pretty_inspect}",
-                            "to be less than #{expected.pretty_inspect}")
-    end
+  def !=(expected)
+    method_missing(:!=, expected)
   end
 
-  def <=(expected)
-    unless @actual <= expected
-      SpecExpectation.fail_with("Expected #{@actual.pretty_inspect}",
-                            "to be less than or equal to #{expected.pretty_inspect}")
-    end
+  def equal?(expected)
+    method_missing(:equal?, expected)
   end
 
-  def >(expected)
-    unless @actual > expected
-      SpecExpectation.fail_with("Expected #{@actual.pretty_inspect}",
-                            "to be greater than #{expected.pretty_inspect}")
-    end
-  end
-
-  def >=(expected)
-    unless @actual >= expected
-      SpecExpectation.fail_with("Expected #{@actual.pretty_inspect}",
-                            "to be greater than or equal to #{expected.pretty_inspect}")
-    end
-  end
-
-  def =~(expected)
-    unless @actual =~ expected
-      SpecExpectation.fail_with("Expected #{@actual.pretty_inspect}",
-                            "to match #{expected.pretty_inspect}")
+  def method_missing(name, *args, &block)
+    result = @actual.__send__(name, *args, &block)
+    unless result
+      ::SpecExpectation.fail_predicate(@actual, name, args, block, result, "to be truthy")
     end
   end
 end
 
-class SpecNegativeOperatorMatcher
+class SpecNegativeOperatorMatcher < BasicObject
   def initialize(actual)
     @actual = actual
   end
 
   def ==(expected)
-    if @actual == expected
-      SpecExpectation.fail_with("Expected #{@actual.pretty_inspect}",
-                            "not to equal #{expected.pretty_inspect}")
-    end
+    method_missing(:==, expected)
   end
 
-  def <(expected)
-    if @actual < expected
-      SpecExpectation.fail_with("Expected #{@actual.pretty_inspect}",
-                            "not to be less than #{expected.pretty_inspect}")
-    end
+  def !=(expected)
+    method_missing(:!=, expected)
   end
 
-  def <=(expected)
-    if @actual <= expected
-      SpecExpectation.fail_with("Expected #{@actual.pretty_inspect}",
-                            "not to be less than or equal to #{expected.pretty_inspect}")
-    end
+  def equal?(expected)
+    method_missing(:equal?, expected)
   end
 
-  def >(expected)
-    if @actual > expected
-      SpecExpectation.fail_with("Expected #{@actual.pretty_inspect}",
-                            "not to be greater than #{expected.pretty_inspect}")
-    end
-  end
-
-  def >=(expected)
-    if @actual >= expected
-      SpecExpectation.fail_with("Expected #{@actual.pretty_inspect}",
-                            "not to be greater than or equal to #{expected.pretty_inspect}")
-    end
-  end
-
-  def =~(expected)
-    if @actual =~ expected
-      SpecExpectation.fail_with("Expected #{@actual.pretty_inspect}",
-                            "not to match #{expected.pretty_inspect}")
+  def method_missing(name, *args, &block)
+    result = @actual.__send__(name, *args, &block)
+    if result
+      ::SpecExpectation.fail_predicate(@actual, name, args, block, result, "to be falsy")
     end
   end
 end

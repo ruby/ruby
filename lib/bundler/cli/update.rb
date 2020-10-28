@@ -58,24 +58,44 @@ module Bundler
       Bundler.settings.set_command_option_if_given :jobs, opts["jobs"]
 
       Bundler.definition.validate_runtime!
+
+      if locked_gems = Bundler.definition.locked_gems
+        previous_locked_info = locked_gems.specs.reduce({}) do |h, s|
+          h[s.name] = { :spec => s, :version => s.version, :source => s.source.to_s }
+          h
+        end
+      end
+
       installer = Installer.install Bundler.root, Bundler.definition, opts
       Bundler.load.cache if Bundler.app_cache.exist?
 
       if CLI::Common.clean_after_install?
-        require "bundler/cli/clean"
+        require_relative "clean"
         Bundler::CLI::Clean.new(options).run
       end
 
-      if locked_gems = Bundler.definition.locked_gems
+      if locked_gems
         gems.each do |name|
-          locked_version = locked_gems.specs.find {|s| s.name == name }
-          locked_version &&= locked_version.version
-          next unless locked_version
-          new_version = Bundler.definition.specs[name].first
-          new_version &&= new_version.version
-          if !new_version
-            Bundler.ui.warn "Bundler attempted to update #{name} but it was removed from the bundle"
-          elsif new_version < locked_version
+          locked_info = previous_locked_info[name]
+          next unless locked_info
+
+          locked_spec = locked_info[:spec]
+          new_spec = Bundler.definition.specs[name].first
+          unless new_spec
+            if Bundler.rubygems.platforms.none? {|p| locked_spec.match_platform(p) }
+              Bundler.ui.warn "Bundler attempted to update #{name} but it was not considered because it is for a different platform from the current one"
+            end
+
+            next
+          end
+
+          locked_source = locked_info[:source]
+          new_source = new_spec.source.to_s
+          next if locked_source != new_source
+
+          new_version = new_spec.version
+          locked_version = locked_info[:version]
+          if new_version < locked_version
             Bundler.ui.warn "Note: #{name} version regressed from #{locked_version} to #{new_version}"
           elsif new_version == locked_version
             Bundler.ui.warn "Bundler attempted to update #{name} but its version stayed the same"
@@ -84,8 +104,10 @@ module Bundler
       end
 
       Bundler.ui.confirm "Bundle updated!"
-      Bundler::CLI::Common.output_without_groups_message
+      Bundler::CLI::Common.output_without_groups_message(:update)
       Bundler::CLI::Common.output_post_install_messages installer.post_install_messages
+
+      Bundler::CLI::Common.output_fund_metadata_summary
     end
   end
 end

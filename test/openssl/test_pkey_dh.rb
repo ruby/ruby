@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require_relative 'utils'
 
 if defined?(OpenSSL) && defined?(OpenSSL::PKey::DH)
@@ -19,7 +19,7 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
   end
 
   def test_DHparams
-    dh1024 = Fixtures.pkey_dh("dh1024")
+    dh1024 = Fixtures.pkey("dh1024")
     asn1 = OpenSSL::ASN1::Sequence([
       OpenSSL::ASN1::Integer(dh1024.p),
       OpenSSL::ASN1::Integer(dh1024.g)
@@ -42,7 +42,7 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
   end
 
   def test_public_key
-    dh = Fixtures.pkey_dh("dh1024")
+    dh = Fixtures.pkey("dh1024")
     public_key = dh.public_key
     assert_no_key(public_key) #implies public_key.public? is false!
     assert_equal(dh.to_der, public_key.to_der)
@@ -50,14 +50,14 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
   end
 
   def test_generate_key
-    dh = Fixtures.pkey_dh("dh1024").public_key # creates a copy
+    dh = Fixtures.pkey("dh1024").public_key # creates a copy
     assert_no_key(dh)
     dh.generate_key!
     assert_key(dh)
   end
 
   def test_key_exchange
-    dh = Fixtures.pkey_dh("dh1024")
+    dh = Fixtures.pkey("dh1024")
     dh2 = dh.public_key
     dh.generate_key!
     dh2.generate_key!
@@ -72,6 +72,13 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
     dh2.set_pqg(dh2.p + 1, nil, dh2.g)
     assert_not_equal dh2.p, dh.p
     assert_equal dh2.g, dh.g
+  end
+
+  def test_marshal
+    dh = Fixtures.pkey("dh1024")
+    deserialized = Marshal.load(Marshal.dump(dh))
+
+    assert_equal dh.to_der, deserialized.to_der
   end
 
   private

@@ -53,10 +53,10 @@ describe "Predefined global $~" do
 
   it "is set to nil if the last match was unsuccessful" do
     /foo/ =~ 'foo'
-    $~.nil?.should == false
+    $~.should_not.nil?
 
     /foo/ =~ 'bar'
-    $~.nil?.should == true
+    $~.should.nil?
   end
 
   it "is set at the method-scoped level rather than block-scoped" do
@@ -92,8 +92,8 @@ describe "Predefined global $~" do
     $~ = /foo/.match("foo")
     $~.should be_an_instance_of(MatchData)
 
-    lambda { $~ = Object.new }.should raise_error(TypeError)
-    lambda { $~ = 1 }.should raise_error(TypeError)
+    -> { $~ = Object.new }.should raise_error(TypeError)
+    -> { $~ = 1 }.should raise_error(TypeError)
   end
 
   it "changes the value of derived capture globals when assigned" do
@@ -136,11 +136,9 @@ describe "Predefined global $&" do
     $&.should == 'foo'
   end
 
-  with_feature :encoding do
-    it "sets the encoding to the encoding of the source String" do
-      "abc".force_encoding(Encoding::EUC_JP) =~ /b/
-      $&.encoding.should equal(Encoding::EUC_JP)
-    end
+  it "sets the encoding to the encoding of the source String" do
+    "abc".force_encoding(Encoding::EUC_JP) =~ /b/
+    $&.encoding.should equal(Encoding::EUC_JP)
   end
 end
 
@@ -151,16 +149,14 @@ describe "Predefined global $`" do
     $`.should == 'bar'
   end
 
-  with_feature :encoding do
-    it "sets the encoding to the encoding of the source String" do
-      "abc".force_encoding(Encoding::EUC_JP) =~ /b/
-      $`.encoding.should equal(Encoding::EUC_JP)
-    end
+  it "sets the encoding to the encoding of the source String" do
+    "abc".force_encoding(Encoding::EUC_JP) =~ /b/
+    $`.encoding.should equal(Encoding::EUC_JP)
+  end
 
-    it "sets an empty result to the encoding of the source String" do
-      "abc".force_encoding(Encoding::ISO_8859_1) =~ /a/
-      $`.encoding.should equal(Encoding::ISO_8859_1)
-    end
+  it "sets an empty result to the encoding of the source String" do
+    "abc".force_encoding(Encoding::ISO_8859_1) =~ /a/
+    $`.encoding.should equal(Encoding::ISO_8859_1)
   end
 end
 
@@ -171,16 +167,14 @@ describe "Predefined global $'" do
     $'.should == 'baz'
   end
 
-  with_feature :encoding do
-    it "sets the encoding to the encoding of the source String" do
-      "abc".force_encoding(Encoding::EUC_JP) =~ /b/
-      $'.encoding.should equal(Encoding::EUC_JP)
-    end
+  it "sets the encoding to the encoding of the source String" do
+    "abc".force_encoding(Encoding::EUC_JP) =~ /b/
+    $'.encoding.should equal(Encoding::EUC_JP)
+  end
 
-    it "sets an empty result to the encoding of the source String" do
-      "abc".force_encoding(Encoding::ISO_8859_1) =~ /c/
-      $'.encoding.should equal(Encoding::ISO_8859_1)
-    end
+  it "sets an empty result to the encoding of the source String" do
+    "abc".force_encoding(Encoding::ISO_8859_1) =~ /c/
+    $'.encoding.should equal(Encoding::ISO_8859_1)
   end
 end
 
@@ -196,11 +190,9 @@ describe "Predefined global $+" do
     $+.should == 'a'
   end
 
-  with_feature :encoding do
-    it "sets the encoding to the encoding of the source String" do
-      "abc".force_encoding(Encoding::EUC_JP) =~ /(b)/
-      $+.encoding.should equal(Encoding::EUC_JP)
-    end
+  it "sets the encoding to the encoding of the source String" do
+    "abc".force_encoding(Encoding::EUC_JP) =~ /(b)/
+    $+.encoding.should equal(Encoding::EUC_JP)
   end
 end
 
@@ -225,11 +217,9 @@ describe "Predefined globals $1..N" do
     test("-").should == nil
   end
 
-  with_feature :encoding do
-    it "sets the encoding to the encoding of the source String" do
-      "abc".force_encoding(Encoding::EUC_JP) =~ /(b)/
-      $1.encoding.should equal(Encoding::EUC_JP)
-    end
+  it "sets the encoding to the encoding of the source String" do
+    "abc".force_encoding(Encoding::EUC_JP) =~ /(b)/
+    $1.encoding.should equal(Encoding::EUC_JP)
   end
 end
 
@@ -243,12 +233,12 @@ describe "Predefined global $stdout" do
   end
 
   it "raises TypeError error if assigned to nil" do
-    lambda { $stdout = nil }.should raise_error(TypeError)
+    -> { $stdout = nil }.should raise_error(TypeError)
   end
 
   it "raises TypeError error if assigned to object that doesn't respond to #write" do
     obj = mock('object')
-    lambda { $stdout = obj }.should raise_error(TypeError)
+    -> { $stdout = obj }.should raise_error(TypeError)
 
     obj.stub!(:write)
     $stdout = obj
@@ -408,6 +398,22 @@ describe "Predefined global $!" do
       $!.should == nil
     end
 
+    it "should be cleared when an exception is rescued even when a non-local return from block" do
+      def foo
+        [ 1 ].each do
+          begin
+            raise StandardError.new('err')
+          rescue => e
+            $!.should == e
+            return
+          end
+        end
+      end
+
+      foo
+      $!.should == nil
+    end
+
     it "should not be cleared when an exception is not rescued" do
       e = StandardError.new
       begin
@@ -538,6 +544,7 @@ $stdout          IO              The current standard output. Assignment to $std
 
 describe "Predefined global $/" do
   before :each do
+    @verbose, $VERBOSE = $VERBOSE, nil
     @dollar_slash = $/
     @dollar_dash_zero = $-0
   end
@@ -545,6 +552,7 @@ describe "Predefined global $/" do
   after :each do
     $/ = @dollar_slash
     $-0 = @dollar_dash_zero
+    $VERBOSE = @verbose
   end
 
   it "can be assigned a String" do
@@ -572,20 +580,21 @@ describe "Predefined global $/" do
     obj = mock("$/ value")
     obj.should_not_receive(:to_str)
 
-    lambda { $/ = obj }.should raise_error(TypeError)
+    -> { $/ = obj }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if assigned a Fixnum" do
-    lambda { $/ = 1 }.should raise_error(TypeError)
+    -> { $/ = 1 }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if assigned a boolean" do
-    lambda { $/ = true }.should raise_error(TypeError)
+    -> { $/ = true }.should raise_error(TypeError)
   end
 end
 
 describe "Predefined global $-0" do
   before :each do
+    @verbose, $VERBOSE = $VERBOSE, nil
     @dollar_slash = $/
     @dollar_dash_zero = $-0
   end
@@ -593,6 +602,7 @@ describe "Predefined global $-0" do
   after :each do
     $/ = @dollar_slash
     $-0 = @dollar_dash_zero
+    $VERBOSE = @verbose
   end
 
   it "can be assigned a String" do
@@ -619,15 +629,15 @@ describe "Predefined global $-0" do
     obj = mock("$-0 value")
     obj.should_not_receive(:to_str)
 
-    lambda { $-0 = obj }.should raise_error(TypeError)
+    -> { $-0 = obj }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if assigned a Fixnum" do
-    lambda { $-0 = 1 }.should raise_error(TypeError)
+    -> { $-0 = 1 }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if assigned a boolean" do
-    lambda { $-0 = true }.should raise_error(TypeError)
+    -> { $-0 = true }.should raise_error(TypeError)
   end
 end
 
@@ -641,7 +651,13 @@ describe "Predefined global $," do
   end
 
   it "raises TypeError if assigned a non-String" do
-    lambda { $, = Object.new }.should raise_error(TypeError)
+    -> { $, = Object.new }.should raise_error(TypeError)
+  end
+
+  ruby_version_is "2.7" do
+    it "warns if assigned non-nil" do
+      -> { $, = "_" }.should complain(/warning: `\$,' is deprecated/)
+    end
   end
 end
 
@@ -668,7 +684,19 @@ describe "Predefined global $." do
     obj = mock("bad-value")
     obj.should_receive(:to_int).and_return('abc')
 
-    lambda { $. = obj }.should raise_error(TypeError)
+    -> { $. = obj }.should raise_error(TypeError)
+  end
+end
+
+describe "Predefined global $;" do
+  after :each do
+    $; = nil
+  end
+
+  ruby_version_is "2.7" do
+    it "warns if assigned non-nil" do
+      -> { $; = "_" }.should complain(/warning: `\$;' is deprecated/)
+    end
   end
 end
 
@@ -781,8 +809,6 @@ __LINE__         String          The current line number in the source file. [r/
 $LOAD_PATH       Array           A synonym for $:. [r/o]
 $-p              Object          Set to true if the -p option (which puts an implicit while gets . . . end
                                  loop around your program) is present on the command line. [r/o]
-$SAFE            Fixnum          The current safe level. This variable’s value may never be
-                                 reduced by assignment. [thread] (Not implemented in Rubinius)
 $VERBOSE         Object          Set to true if the -v, --version, -W, or -w option is specified on the com-
                                  mand line. Set to false if no option, or -W1 is given. Set to nil if -W0
                                  was specified. Setting this option to true causes the interpreter and some
@@ -812,15 +838,15 @@ describe "Execution variable $:" do
   end
 
   it "is read-only" do
-    lambda {
+    -> {
       $: = []
     }.should raise_error(NameError)
 
-    lambda {
+    -> {
       $LOAD_PATH = []
     }.should raise_error(NameError)
 
-    lambda {
+    -> {
       $-I = []
     }.should raise_error(NameError)
   end
@@ -832,11 +858,11 @@ describe "Global variable $\"" do
   end
 
   it "is read-only" do
-    lambda {
+    -> {
       $" = []
     }.should raise_error(NameError)
 
-    lambda {
+    -> {
       $LOADED_FEATURES = []
     }.should raise_error(NameError)
   end
@@ -844,7 +870,7 @@ end
 
 describe "Global variable $<" do
   it "is read-only" do
-    lambda {
+    -> {
       $< = nil
     }.should raise_error(NameError)
   end
@@ -852,7 +878,7 @@ end
 
 describe "Global variable $FILENAME" do
   it "is read-only" do
-    lambda {
+    -> {
       $FILENAME = "-"
     }.should raise_error(NameError)
   end
@@ -860,7 +886,7 @@ end
 
 describe "Global variable $?" do
   it "is read-only" do
-    lambda {
+    -> {
       $? = nil
     }.should raise_error(NameError)
   end
@@ -873,19 +899,19 @@ end
 
 describe "Global variable $-a" do
   it "is read-only" do
-    lambda { $-a = true }.should raise_error(NameError)
+    -> { $-a = true }.should raise_error(NameError)
   end
 end
 
 describe "Global variable $-l" do
   it "is read-only" do
-    lambda { $-l = true }.should raise_error(NameError)
+    -> { $-l = true }.should raise_error(NameError)
   end
 end
 
 describe "Global variable $-p" do
   it "is read-only" do
-    lambda { $-p = true }.should raise_error(NameError)
+    -> { $-p = true }.should raise_error(NameError)
   end
 end
 
@@ -907,6 +933,14 @@ describe "Global variable $-d" do
 end
 
 describe "Global variable $VERBOSE" do
+  before :each do
+    @verbose = $VERBOSE
+  end
+
+  after :each do
+    $VERBOSE = @verbose
+  end
+
   it "converts truthy values to true" do
     [true, 1, 0, [], ""].each do |true_value|
       $VERBOSE = true_value
@@ -984,7 +1018,7 @@ describe "Global variable $0" do
   end
 
   it "raises a TypeError when not given an object that can be coerced to a String" do
-    lambda { $0 = nil }.should raise_error(TypeError)
+    -> { $0 = nil }.should raise_error(TypeError)
   end
 end
 
@@ -1026,7 +1060,7 @@ describe "The predefined standard object nil" do
   end
 
   it "raises a SyntaxError if assigned to" do
-    lambda { eval("nil = true") }.should raise_error(SyntaxError)
+    -> { eval("nil = true") }.should raise_error(SyntaxError)
   end
 end
 
@@ -1036,7 +1070,7 @@ describe "The predefined standard object true" do
   end
 
   it "raises a SyntaxError if assigned to" do
-    lambda { eval("true = false") }.should raise_error(SyntaxError)
+    -> { eval("true = false") }.should raise_error(SyntaxError)
   end
 end
 
@@ -1046,13 +1080,13 @@ describe "The predefined standard object false" do
   end
 
   it "raises a SyntaxError if assigned to" do
-    lambda { eval("false = nil") }.should raise_error(SyntaxError)
+    -> { eval("false = nil") }.should raise_error(SyntaxError)
   end
 end
 
 describe "The self pseudo-variable" do
   it "raises a SyntaxError if assigned to" do
-    lambda { eval("self = 1") }.should raise_error(SyntaxError)
+    -> { eval("self = 1") }.should raise_error(SyntaxError)
   end
 end
 
@@ -1065,8 +1099,6 @@ The following constants are defined by the Ruby interpreter.
 DATA                 IO          If the main program file contains the directive __END__, then
                                  the constant DATA will be initialized so that reading from it will
                                  return lines following __END__ from the source file.
-FALSE                FalseClass  Synonym for false.
-NIL                  NilClass    Synonym for nil.
 RUBY_PLATFORM        String      The identifier of the platform running this program. This string
                                  is in the same form as the platform identifier used by the GNU
                                  configure utility (which is not a coincidence).
@@ -1084,50 +1116,9 @@ SCRIPT_LINES__       Hash        If a constant SCRIPT_LINES__ is defined and ref
                                  the value.
 TOPLEVEL_BINDING     Binding     A Binding object representing the binding at Ruby’s top level—
                                  the level where programs are initially executed.
-TRUE                 TrueClass   Synonym for true.
 =end
 
 describe "The predefined global constants" do
-  ruby_version_is ""..."2.4" do
-    it "includes TRUE" do
-      Object.const_defined?(:TRUE).should == true
-      TRUE.should equal(true)
-    end
-
-    it "includes FALSE" do
-      Object.const_defined?(:FALSE).should == true
-      FALSE.should equal(false)
-    end
-
-    it "includes NIL" do
-      Object.const_defined?(:NIL).should == true
-      NIL.should equal(nil)
-    end
-  end
-
-  ruby_version_is "2.4" do
-    it "includes TRUE" do
-      Object.const_defined?(:TRUE).should == true
-      -> {
-        TRUE.should equal(true)
-      }.should complain(/constant ::TRUE is deprecated/)
-    end
-
-    it "includes FALSE" do
-      Object.const_defined?(:FALSE).should == true
-      -> {
-        FALSE.should equal(false)
-      }.should complain(/constant ::FALSE is deprecated/)
-    end
-
-    it "includes NIL" do
-      Object.const_defined?(:NIL).should == true
-      -> {
-        NIL.should equal(nil)
-      }.should complain(/constant ::NIL is deprecated/)
-    end
-  end
-
   it "includes STDIN" do
     Object.const_defined?(:STDIN).should == true
   end
@@ -1158,110 +1149,108 @@ describe "The predefined global constants" do
 
 end
 
-with_feature :encoding do
-  describe "The predefined global constant" do
-    before :each do
-      @external = Encoding.default_external
-      @internal = Encoding.default_internal
+describe "The predefined global constant" do
+  before :each do
+    @external = Encoding.default_external
+    @internal = Encoding.default_internal
+  end
+
+  after :each do
+    Encoding.default_external = @external
+    Encoding.default_internal = @internal
+  end
+
+  describe "STDIN" do
+    it "has the same external encoding as Encoding.default_external" do
+      STDIN.external_encoding.should equal(Encoding.default_external)
     end
 
-    after :each do
-      Encoding.default_external = @external
-      Encoding.default_internal = @internal
+    it "has the same external encoding as Encoding.default_external when that encoding is changed" do
+      Encoding.default_external = Encoding::ISO_8859_16
+      STDIN.external_encoding.should equal(Encoding::ISO_8859_16)
     end
 
-    describe "STDIN" do
-      it "has the same external encoding as Encoding.default_external" do
-        STDIN.external_encoding.should equal(Encoding.default_external)
-      end
-
-      it "has the same external encoding as Encoding.default_external when that encoding is changed" do
-        Encoding.default_external = Encoding::ISO_8859_16
-        STDIN.external_encoding.should equal(Encoding::ISO_8859_16)
-      end
-
-      it "has the encodings set by #set_encoding" do
-        code = "STDIN.set_encoding Encoding::IBM775, Encoding::IBM866; " \
-               "p [STDIN.external_encoding.name, STDIN.internal_encoding.name]"
-        ruby_exe(code).chomp.should == %{["IBM775", "IBM866"]}
-      end
-
-      it "retains the encoding set by #set_encoding when Encoding.default_external is changed" do
-        code = "STDIN.set_encoding Encoding::IBM775, Encoding::IBM866; " \
-               "Encoding.default_external = Encoding::ISO_8859_16;" \
-               "p [STDIN.external_encoding.name, STDIN.internal_encoding.name]"
-        ruby_exe(code).chomp.should == %{["IBM775", "IBM866"]}
-      end
-
-      it "has nil for the internal encoding" do
-        STDIN.internal_encoding.should be_nil
-      end
-
-      it "has nil for the internal encoding despite Encoding.default_internal being changed" do
-        Encoding.default_internal = Encoding::IBM437
-        STDIN.internal_encoding.should be_nil
-      end
+    it "has the encodings set by #set_encoding" do
+      code = "STDIN.set_encoding Encoding::IBM775, Encoding::IBM866; " \
+             "p [STDIN.external_encoding.name, STDIN.internal_encoding.name]"
+      ruby_exe(code).chomp.should == %{["IBM775", "IBM866"]}
     end
 
-    describe "STDOUT" do
-      it "has nil for the external encoding" do
-        STDOUT.external_encoding.should be_nil
-      end
-
-      it "has nil for the external encoding despite Encoding.default_external being changed" do
-        Encoding.default_external = Encoding::ISO_8859_1
-        STDOUT.external_encoding.should be_nil
-      end
-
-      it "has the encodings set by #set_encoding" do
-        code = "STDOUT.set_encoding Encoding::IBM775, Encoding::IBM866; " \
-               "p [STDOUT.external_encoding.name, STDOUT.internal_encoding.name]"
-        ruby_exe(code).chomp.should == %{["IBM775", "IBM866"]}
-      end
-
-      it "has nil for the internal encoding" do
-        STDOUT.internal_encoding.should be_nil
-      end
-
-      it "has nil for the internal encoding despite Encoding.default_internal being changed" do
-        Encoding.default_internal = Encoding::IBM437
-        STDOUT.internal_encoding.should be_nil
-      end
+    it "retains the encoding set by #set_encoding when Encoding.default_external is changed" do
+      code = "STDIN.set_encoding Encoding::IBM775, Encoding::IBM866; " \
+             "Encoding.default_external = Encoding::ISO_8859_16;" \
+             "p [STDIN.external_encoding.name, STDIN.internal_encoding.name]"
+      ruby_exe(code).chomp.should == %{["IBM775", "IBM866"]}
     end
 
-    describe "STDERR" do
-      it "has nil for the external encoding" do
-        STDERR.external_encoding.should be_nil
-      end
-
-      it "has nil for the external encoding despite Encoding.default_external being changed" do
-        Encoding.default_external = Encoding::ISO_8859_1
-        STDERR.external_encoding.should be_nil
-      end
-
-      it "has the encodings set by #set_encoding" do
-        code = "STDERR.set_encoding Encoding::IBM775, Encoding::IBM866; " \
-               "p [STDERR.external_encoding.name, STDERR.internal_encoding.name]"
-        ruby_exe(code).chomp.should == %{["IBM775", "IBM866"]}
-      end
-
-      it "has nil for the internal encoding" do
-        STDERR.internal_encoding.should be_nil
-      end
-
-      it "has nil for the internal encoding despite Encoding.default_internal being changed" do
-        Encoding.default_internal = Encoding::IBM437
-        STDERR.internal_encoding.should be_nil
-      end
+    it "has nil for the internal encoding" do
+      STDIN.internal_encoding.should be_nil
     end
 
-    describe "ARGV" do
-      it "contains Strings encoded in locale Encoding" do
-        code = fixture __FILE__, "argv_encoding.rb"
-        result = ruby_exe(code, args: "a b")
-        encoding = Encoding.default_external
-        result.chomp.should == %{["#{encoding}", "#{encoding}"]}
-      end
+    it "has nil for the internal encoding despite Encoding.default_internal being changed" do
+      Encoding.default_internal = Encoding::IBM437
+      STDIN.internal_encoding.should be_nil
+    end
+  end
+
+  describe "STDOUT" do
+    it "has nil for the external encoding" do
+      STDOUT.external_encoding.should be_nil
+    end
+
+    it "has nil for the external encoding despite Encoding.default_external being changed" do
+      Encoding.default_external = Encoding::ISO_8859_1
+      STDOUT.external_encoding.should be_nil
+    end
+
+    it "has the encodings set by #set_encoding" do
+      code = "STDOUT.set_encoding Encoding::IBM775, Encoding::IBM866; " \
+             "p [STDOUT.external_encoding.name, STDOUT.internal_encoding.name]"
+      ruby_exe(code).chomp.should == %{["IBM775", "IBM866"]}
+    end
+
+    it "has nil for the internal encoding" do
+      STDOUT.internal_encoding.should be_nil
+    end
+
+    it "has nil for the internal encoding despite Encoding.default_internal being changed" do
+      Encoding.default_internal = Encoding::IBM437
+      STDOUT.internal_encoding.should be_nil
+    end
+  end
+
+  describe "STDERR" do
+    it "has nil for the external encoding" do
+      STDERR.external_encoding.should be_nil
+    end
+
+    it "has nil for the external encoding despite Encoding.default_external being changed" do
+      Encoding.default_external = Encoding::ISO_8859_1
+      STDERR.external_encoding.should be_nil
+    end
+
+    it "has the encodings set by #set_encoding" do
+      code = "STDERR.set_encoding Encoding::IBM775, Encoding::IBM866; " \
+             "p [STDERR.external_encoding.name, STDERR.internal_encoding.name]"
+      ruby_exe(code).chomp.should == %{["IBM775", "IBM866"]}
+    end
+
+    it "has nil for the internal encoding" do
+      STDERR.internal_encoding.should be_nil
+    end
+
+    it "has nil for the internal encoding despite Encoding.default_internal being changed" do
+      Encoding.default_internal = Encoding::IBM437
+      STDERR.internal_encoding.should be_nil
+    end
+  end
+
+  describe "ARGV" do
+    it "contains Strings encoded in locale Encoding" do
+      code = fixture __FILE__, "argv_encoding.rb"
+      result = ruby_exe(code, args: "a b")
+      encoding = Encoding.default_external
+      result.chomp.should == %{["#{encoding}", "#{encoding}"]}
     end
   end
 end

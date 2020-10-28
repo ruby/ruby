@@ -9,6 +9,7 @@ require 'strscan'
 require 'optparse'
 require 'abbrev'
 require 'pp'
+require 'shellwords'
 begin
   require 'readline'
 rescue LoadError
@@ -95,48 +96,8 @@ class String
   end
 end
 
-def wcwidth(wc)
-  return 8 if wc == "\t"
-  n = wc.ord
-  if n < 0x20
-    0
-  elsif n < 0x80
-    1
-  else
-    2
-  end
-end
-
-def fold(str, col)
-  i = 0
-  size = str.size
-  len = 0
-  while i < size
-    case c = str[i]
-    when "\r", "\n"
-      len = 0
-    else
-      d = wcwidth(c)
-      len += d
-      if len == col
-        str.insert(i+1, "\n")
-        len = 0
-        i += 2
-        next
-      elsif len > col
-        str.insert(i, "\n")
-        len = d
-        i += 2
-        next
-      end
-    end
-    i += 1
-  end
-  str
-end
-
 class StringScanner
-  # lx: limit of x (colmns of screen)
+  # lx: limit of x (columns of screen)
   # ly: limit of y (rows of screen)
   def getrows(lx, ly)
     cp1 = charpos
@@ -275,12 +236,12 @@ class << Readline
   end
 end unless defined?(Readline.readline)
 
-def mergeinfo
-  `svn propget svn:mergeinfo #{RUBY_REPO_PATH}`
-end
-
 def find_svn_log(pattern)
   `svn log --xml --stop-on-copy --search="#{pattern}" #{RUBY_REPO_PATH}`
+end
+
+def find_git_log(pattern)
+  `git #{RUBY_REPO_PATH ? "-C #{RUBY_REPO_PATH.shellescape}" : ""} log --grep="#{pattern}"`
 end
 
 def show_last_journal(http, uri)
@@ -306,9 +267,11 @@ end
 def backport_command_string
   unless @changesets.respond_to?(:validated)
     @changesets = @changesets.select do |c|
-      # check if the revision is included in trunk
+      next false if c.match(/\A\d{1,6}\z/) # skip SVN revision
+
+      # check if the Git revision is included in trunk
       begin
-        uri = URI("#{REDMINE_BASE}/projects/ruby-trunk/repository/trunk/revisions/#{c}")
+        uri = URI("#{REDMINE_BASE}/projects/ruby-master/repository/git/revisions/#{c}")
         uri.read($openuri_options)
         true
       rescue
@@ -338,7 +301,7 @@ class CommandSyntaxError < RuntimeError; end
 commands = {
   "ls" => proc{|args|
     raise CommandSyntaxError unless /\A(\d+)?\z/ =~ args
-    uri = URI(REDMINE_BASE+'/projects/ruby-trunk/issues.json?'+URI.encode_www_form(@query.dup.merge('page' => ($1 ? $1.to_i : 1))))
+    uri = URI(REDMINE_BASE+'/projects/ruby-master/issues.json?'+URI.encode_www_form(@query.dup.merge('page' => ($1 ? $1.to_i : 1))))
     # puts uri
     res = JSON(uri.read($openuri_options))
     @issues = issues = res["issues"]
@@ -386,7 +349,7 @@ eom
     i["custom_fields"].each do |x|
       sio.puts "%-10s: %s" % [x["name"], x["value"]]
     end
-    #res["attachements"].each do |x|
+    #res["attachments"].each do |x|
     #end
     sio.puts i["description"]
     sio.puts
@@ -413,13 +376,21 @@ eom
 
   "rel" => proc{|args|
     # this feature requires custom redmine which allows add_related_issue API
-    raise CommandSyntaxError unless /\Ar?(\d+)\z/ =~ args
+    case args
+    when /\Ar?(\d+)\z/ # SVN
+      rev = $1
+      uri = URI("#{REDMINE_BASE}/projects/ruby-master/repository/trunk/revisions/#{rev}/issues.json")
+    when /\A\h{7,40}\z/ # Git
+      rev = args
+      uri = URI("#{REDMINE_BASE}/projects/ruby-master/repository/git/revisions/#{rev}/issues.json")
+    else
+      raise CommandSyntaxError
+    end
     unless @issue
       puts "ticket not selected"
       next
     end
-    rev = $1
-    uri = URI("#{REDMINE_BASE}/projects/ruby-trunk/repository/trunk/revisions/#{rev}/issues.json")
+
     Net::HTTP.start(uri.host, uri.port, http_options) do |http|
       res = http.post(uri.path, "issue_id=#@issue",
                      'X-Redmine-API-Key' => REDMINE_API_KEY)
@@ -429,7 +400,7 @@ eom
         if $!.respond_to?(:response) && $!.response.is_a?(Net::HTTPConflict)
           $stderr.puts "the revision has already related to the ticket"
         else
-          $stderr.puts "deployed redmine doesn't have https://github.com/ruby/bugs.ruby-lang.org/commit/01fbba60d68cb916ddbccc8a8710e68c5217171d\nask naruse or hsbt"
+          $stderr.puts "#{$!.class}: #{$!.message}\n\ndeployed redmine doesn't have https://github.com/ruby/bugs.ruby-lang.org/commit/01fbba60d68cb916ddbccc8a8710e68c5217171d\nask naruse or hsbt"
         end
         next
       end
@@ -465,11 +436,23 @@ eom
       next
     end
 
-    log = find_svn_log("##@issue]")
-    if log && /revision="(?<rev>\d+)/ =~ log
+    if system("svn info #{RUBY_REPO_PATH&.shellescape}", %i(out err) => IO::NULL) # SVN
+      if (log = find_svn_log("##@issue]")) && (/revision="(?<rev>\d+)/ =~ log)
+        rev = "r#{rev}"
+      end
+    else # Git
+      if log = find_git_log("##@issue]")
+        /^commit (?<rev>\h{40})$/ =~ log
+      end
+    end
+    if log && rev
       str = log[/merge revision\(s\) ([^:]+)(?=:)/]
-      str.insert(5, "d")
-      str = "ruby_#{TARGET_VERSION.tr('.','_')} r#{rev} #{str}."
+      if str
+        str.insert(5, "d")
+        str = "ruby_#{TARGET_VERSION.tr('.','_')} #{rev} #{str}."
+      else
+        str = "ruby_#{TARGET_VERSION.tr('.','_')} #{rev}."
+      end
       if notes
         str << "\n"
         str << notes

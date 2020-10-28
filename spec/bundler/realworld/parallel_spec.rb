@@ -11,11 +11,7 @@ RSpec.describe "parallel", :realworld => true, :sometimes => true do
 
     bundle :install, :jobs => 4, :env => { "DEBUG" => "1" }
 
-    if Bundler.rubygems.provides?(">= 2.1.0")
-      expect(out).to match(/[1-3]: /)
-    else
-      expect(out).to include("is not threadsafe")
-    end
+    expect(out).to match(/[1-3]: /)
 
     bundle "info activesupport --path"
     expect(out).to match(/activesupport/)
@@ -38,13 +34,9 @@ RSpec.describe "parallel", :realworld => true, :sometimes => true do
       gem 'i18n', '~> 0.6.0' # Because 0.7+ requires Ruby 1.9.3+
     G
 
-    bundle :update, :jobs => 4, :env => { "DEBUG" => "1" }, :all => bundle_update_requires_all?
+    bundle :update, :jobs => 4, :env => { "DEBUG" => "1" }, :all => true
 
-    if Bundler.rubygems.provides?(">= 2.1.0")
-      expect(out).to match(/[1-3]: /)
-    else
-      expect(out).to include("is not threadsafe")
-    end
+    expect(out).to match(/[1-3]: /)
 
     bundle "info activesupport --path"
     expect(out).to match(/activesupport-3\.2\.\d+/)
@@ -61,7 +53,7 @@ RSpec.describe "parallel", :realworld => true, :sometimes => true do
 
     bundle :install, :standalone => true, :jobs => 4
 
-    ruby <<-RUBY, :no_lib => true
+    ruby <<-RUBY
       $:.unshift File.expand_path("bundle")
       require "bundler/setup"
 

@@ -1,11 +1,22 @@
-require 'mspec/runner/formatters/spinner'
+module MultiFormatter
+  def self.extend_object(obj)
+    super
+    obj.multi_initialize
+  end
 
-class MultiFormatter < SpinnerFormatter
-  def initialize(out=nil)
-    super(out)
-    @counter = @tally = Tally.new
+  def multi_initialize
+    @tally = TallyAction.new
+    @counter = @tally.counter
     @timer = TimerAction.new
     @timer.start
+  end
+
+  def register
+    super
+
+    MSpec.register :start, self
+    MSpec.register :unload, self
+    MSpec.unregister :before, self
   end
 
   def aggregate_results(files)
@@ -21,20 +32,16 @@ class MultiFormatter < SpinnerFormatter
 
       if d # The file might be empty if the child process died
         @exceptions += Array(d['exceptions'])
-        @tally.files!        d['files']
-        @tally.examples!     d['examples']
-        @tally.expectations! d['expectations']
-        @tally.errors!       d['errors']
-        @tally.failures!     d['failures']
+        @counter.files!        d['files']
+        @counter.examples!     d['examples']
+        @counter.expectations! d['expectations']
+        @counter.errors!       d['errors']
+        @counter.failures!     d['failures']
       end
     end
   end
 
   def print_exception(exc, count)
     print "\n#{count})\n#{exc}\n"
-  end
-
-  def finish
-    super(false)
   end
 end

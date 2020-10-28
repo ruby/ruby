@@ -22,6 +22,10 @@ describe "Digest::SHA256.file" do
       Digest::SHA256.file(@file).digest.should == SHA256Constants::Digest
     end
 
+    it "can be used with frozen-string-literal" do
+      ruby_exe("require 'digest'; puts Digest::SHA256.file(#{@file.inspect}).digest.inspect", options: "--enable=frozen-string-literal").chomp.should == SHA256Constants::Digest.inspect
+    end
+
     it "calls #to_str on an object and returns the Digest::SHA256 with the result" do
       obj = mock("to_str")
       obj.should_receive(:to_str).and_return(@file)
@@ -34,10 +38,10 @@ describe "Digest::SHA256.file" do
   it_behaves_like :file_read_directory, :file, Digest::SHA256
 
   it "raises a Errno::ENOENT when passed a path that does not exist" do
-    lambda { Digest::SHA256.file("") }.should raise_error(Errno::ENOENT)
+    -> { Digest::SHA256.file("") }.should raise_error(Errno::ENOENT)
   end
 
   it "raises a TypeError when passed nil" do
-    lambda { Digest::SHA256.file(nil) }.should raise_error(TypeError)
+    -> { Digest::SHA256.file(nil) }.should raise_error(TypeError)
   end
 end

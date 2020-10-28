@@ -10,8 +10,8 @@ describe "Integer#chr without argument" do
   end
 
   it "raises a RangeError is self is less than 0" do
-    lambda { -1.chr }.should raise_error(RangeError)
-    lambda { -bignum_value.chr }.should raise_error(RangeError)
+    -> { -1.chr }.should raise_error(RangeError)
+    -> { -bignum_value.chr }.should raise_error(RangeError)
   end
 
   describe "when Encoding.default_internal is nil" do
@@ -30,9 +30,9 @@ describe "Integer#chr without argument" do
     end
 
     describe "and self is between 128 and 255 (inclusive)" do
-      it "returns an ASCII-8BIT String" do
+      it "returns a binary String" do
         (128..255).each do |c|
-          c.chr.encoding.should == Encoding::ASCII_8BIT
+          c.chr.encoding.should == Encoding::BINARY
         end
       end
 
@@ -44,8 +44,8 @@ describe "Integer#chr without argument" do
     end
 
     it "raises a RangeError is self is greater than 255" do
-      lambda { 256.chr }.should raise_error(RangeError)
-      lambda { bignum_value.chr }.should raise_error(RangeError)
+      -> { 256.chr }.should raise_error(RangeError)
+      -> { bignum_value.chr }.should raise_error(RangeError)
     end
   end
 
@@ -81,13 +81,13 @@ describe "Integer#chr without argument" do
     end
 
     describe "and self is between 128 and 255 (inclusive)" do
-      it "returns an ASCII-8BIT String" do
+      it "returns a binary String" do
         (128..255).each do |c|
           Encoding.default_internal = Encoding::UTF_8
-          c.chr.encoding.should == Encoding::ASCII_8BIT
+          c.chr.encoding.should == Encoding::BINARY
 
           Encoding.default_internal = Encoding::SHIFT_JIS
-          c.chr.encoding.should == Encoding::ASCII_8BIT
+          c.chr.encoding.should == Encoding::BINARY
         end
       end
 
@@ -126,14 +126,14 @@ describe "Integer#chr without argument" do
       # #5864
       it "raises RangeError if self is invalid as a codepoint in the default internal encoding" do
         [ [0x0100, "US-ASCII"],
-          [0x0100, "ASCII-8BIT"],
+          [0x0100, "BINARY"],
           [0x0100, "EUC-JP"],
           [0xA1A0, "EUC-JP"],
           [0x0100, "ISO-8859-9"],
           [620,    "TIS-620"]
         ].each do |integer, encoding_name|
           Encoding.default_internal = Encoding.find(encoding_name)
-          lambda { integer.chr }.should raise_error(RangeError)
+          -> { integer.chr }.should raise_error(RangeError)
         end
       end
     end
@@ -150,7 +150,7 @@ describe "Integer#chr with an encoding argument" do
   end
 
   it "accepts a String as an argument" do
-    lambda { 0xA4A2.chr('euc-jp') }.should_not raise_error
+    -> { 0xA4A2.chr('euc-jp') }.should_not raise_error
   end
 
   it "converts a String to an Encoding as Encoding.find does" do
@@ -161,22 +161,22 @@ describe "Integer#chr with an encoding argument" do
 
   # http://redmine.ruby-lang.org/issues/4869
   it "raises a RangeError is self is less than 0" do
-    lambda { -1.chr(Encoding::UTF_8) }.should raise_error(RangeError)
-    lambda { -bignum_value.chr(Encoding::EUC_JP) }.should raise_error(RangeError)
+    -> { -1.chr(Encoding::UTF_8) }.should raise_error(RangeError)
+    -> { -bignum_value.chr(Encoding::EUC_JP) }.should raise_error(RangeError)
   end
 
   it "raises a RangeError if self is too large" do
-    lambda { 2206368128.chr(Encoding::UTF_8) }.should raise_error(RangeError)
+    -> { 2206368128.chr(Encoding::UTF_8) }.should raise_error(RangeError)
   end
 
   it "returns a String with the specified encoding" do
     0x0000.chr(Encoding::US_ASCII).encoding.should == Encoding::US_ASCII
     0x007F.chr(Encoding::US_ASCII).encoding.should == Encoding::US_ASCII
 
-    0x0000.chr(Encoding::ASCII_8BIT).encoding.should == Encoding::ASCII_8BIT
-    0x007F.chr(Encoding::ASCII_8BIT).encoding.should == Encoding::ASCII_8BIT
-    0x0080.chr(Encoding::ASCII_8BIT).encoding.should == Encoding::ASCII_8BIT
-    0x00FF.chr(Encoding::ASCII_8BIT).encoding.should == Encoding::ASCII_8BIT
+    0x0000.chr(Encoding::BINARY).encoding.should == Encoding::BINARY
+    0x007F.chr(Encoding::BINARY).encoding.should == Encoding::BINARY
+    0x0080.chr(Encoding::BINARY).encoding.should == Encoding::BINARY
+    0x00FF.chr(Encoding::BINARY).encoding.should == Encoding::BINARY
 
     0x0000.chr(Encoding::UTF_8).encoding.should == Encoding::UTF_8
     0x007F.chr(Encoding::UTF_8).encoding.should == Encoding::UTF_8
@@ -197,10 +197,10 @@ describe "Integer#chr with an encoding argument" do
     0x0000.chr(Encoding::US_ASCII).bytes.to_a.should == [0x00]
     0x007F.chr(Encoding::US_ASCII).bytes.to_a.should == [0x7F]
 
-    0x0000.chr(Encoding::ASCII_8BIT).bytes.to_a.should == [0x00]
-    0x007F.chr(Encoding::ASCII_8BIT).bytes.to_a.should == [0x7F]
-    0x0080.chr(Encoding::ASCII_8BIT).bytes.to_a.should == [0x80]
-    0x00FF.chr(Encoding::ASCII_8BIT).bytes.to_a.should == [0xFF]
+    0x0000.chr(Encoding::BINARY).bytes.to_a.should == [0x00]
+    0x007F.chr(Encoding::BINARY).bytes.to_a.should == [0x7F]
+    0x0080.chr(Encoding::BINARY).bytes.to_a.should == [0x80]
+    0x00FF.chr(Encoding::BINARY).bytes.to_a.should == [0xFF]
 
     0x0000.chr(Encoding::UTF_8).bytes.to_a.should == [0x00]
     0x007F.chr(Encoding::UTF_8).bytes.to_a.should == [0x7F]
@@ -220,7 +220,7 @@ describe "Integer#chr with an encoding argument" do
   # #5864
   it "raises RangeError if self is invalid as a codepoint in the specified encoding" do
     [ [0x80,   "US-ASCII"],
-      [0x0100, "ASCII-8BIT"],
+      [0x0100, "BINARY"],
       [0x0100, "EUC-JP"],
       [0xA1A0, "EUC-JP"],
       [0xA1,   "EUC-JP"],
@@ -237,7 +237,20 @@ describe "Integer#chr with an encoding argument" do
       [0xDC00, "UTF-16"],
       [0xDFFF, "UTF-16"],
     ].each do |integer, encoding_name|
-      lambda { integer.chr(encoding_name) }.should raise_error(RangeError)
+      -> { integer.chr(encoding_name) }.should raise_error(RangeError)
+    end
+  end
+
+  ruby_version_is "2.7" do
+    it 'returns a String encoding self interpreted as a codepoint in the CESU-8 encoding' do
+      # see more details here https://en.wikipedia.org/wiki/CESU-8
+      # code points from U+0000 to U+FFFF is encoded in the same way as in UTF-8
+      0x0045.chr(Encoding::CESU_8).bytes.should == 0x0045.chr(Encoding::UTF_8).bytes
+
+      # code points in range from U+10000 to U+10FFFF is CESU-8 data containing a 6-byte surrogate pair,
+      # which decodes to a 4-byte UTF-8 string
+      0x10400.chr(Encoding::CESU_8).bytes.should != 0x10400.chr(Encoding::UTF_8).bytes
+      0x10400.chr(Encoding::CESU_8).bytes.to_a.should == [0xED, 0xA0, 0x81, 0xED, 0xB0, 0x80]
     end
   end
 end

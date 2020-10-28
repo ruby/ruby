@@ -24,7 +24,7 @@ class Regexp
 
   # Stores class name (Regexp) with options <tt>o</tt> and source <tt>s</tt>
   # (Regexp or String) as JSON string
-  def to_json(*)
-    as_json.to_json
+  def to_json(*args)
+    as_json.to_json(*args)
   end
 end

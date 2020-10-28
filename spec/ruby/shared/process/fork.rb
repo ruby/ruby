@@ -8,7 +8,7 @@ describe :process_fork, shared: true do
     end
 
     it "raises a NotImplementedError when called" do
-      lambda { @object.fork }.should raise_error(NotImplementedError)
+      -> { @object.fork }.should raise_error(NotImplementedError)
     end
   end
 
@@ -60,7 +60,7 @@ describe :process_fork, shared: true do
       else
         Process.waitpid(child_id)
       end
-      File.exist?(@file).should == true
+      File.should.exist?(@file)
     end
 
     it "runs a block in a child process" do
@@ -69,7 +69,7 @@ describe :process_fork, shared: true do
         Process.exit!
       }
       Process.waitpid(pid)
-      File.exist?(@file).should == true
+      File.should.exist?(@file)
     end
 
     it "marks threads from the parent as killed" do

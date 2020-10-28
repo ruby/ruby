@@ -5,7 +5,6 @@ require 'rubygems/package'
 require 'rubygems/installer'
 require 'rubygems/spec_fetcher'
 require 'rubygems/user_interaction'
-require 'rubygems/source'
 require 'rubygems/available_set'
 require 'rubygems/deprecate'
 
@@ -13,7 +12,6 @@ require 'rubygems/deprecate'
 # Installs a gem along with all its dependencies from local and remote gems.
 
 class Gem::DependencyInstaller
-
   include Gem::UserInteraction
   extend Gem::Deprecate
 
@@ -29,7 +27,7 @@ class Gem::DependencyInstaller
     :wrappers            => true,
     :build_args          => nil,
     :build_docs_in_background => false,
-    :install_as_default  => false
+    :install_as_default => false
   }.freeze
 
   ##
@@ -88,14 +86,14 @@ class Gem::DependencyInstaller
     @wrappers            = options[:wrappers]
     @build_args          = options[:build_args]
     @build_docs_in_background = options[:build_docs_in_background]
-    @install_as_default  = options[:install_as_default]
-    @dir_mode            = options[:dir_mode]
-    @data_mode           = options[:data_mode]
-    @prog_mode           = options[:prog_mode]
+    @install_as_default = options[:install_as_default]
+    @dir_mode = options[:dir_mode]
+    @data_mode = options[:data_mode]
+    @prog_mode = options[:prog_mode]
 
     # Indicates that we should not try to update any deps unless
     # we absolutely must.
-    @minimal_deps        = options[:minimal_deps]
+    @minimal_deps = options[:minimal_deps]
 
     @available      = nil
     @installed_gems = []
@@ -104,76 +102,6 @@ class Gem::DependencyInstaller
     @cache_dir = options[:cache_dir] || @install_dir
 
     @errors = []
-  end
-
-  ##
-  #--
-  # TODO remove at RubyGems 4, no longer used
-
-  def add_found_dependencies(to_do, dependency_list) # :nodoc:
-    seen = {}
-    dependencies = Hash.new { |h, name| h[name] = Gem::Dependency.new name }
-
-    until to_do.empty? do
-      spec = to_do.shift
-
-      # HACK why is spec nil?
-      next if spec.nil? or seen[spec.name]
-      seen[spec.name] = true
-
-      deps = spec.runtime_dependencies
-
-      if @development
-        if @dev_shallow
-          if @toplevel_specs.include? spec.full_name
-            deps |= spec.development_dependencies
-          end
-        else
-          deps |= spec.development_dependencies
-        end
-      end
-
-      deps.each do |dep|
-        dependencies[dep.name] = dependencies[dep.name].merge dep
-
-        if @minimal_deps
-          next if Gem::Specification.any? do |installed_spec|
-                    dep.name == installed_spec.name and
-                      dep.requirement.satisfied_by? installed_spec.version
-                  end
-        end
-
-        results = find_gems_with_sources(dep)
-
-        results.sorted.each do |t|
-          to_do.push t.spec
-        end
-
-        results.remove_installed! dep
-
-        @available << results
-        results.inject_into_list dependency_list
-      end
-    end
-
-    dependency_list.remove_specs_unsatisfied_by dependencies
-  end
-  deprecate :add_found_dependencies, :none, 2018, 12
-
-  ##
-  # Creates an AvailableSet to install from based on +dep_or_name+ and
-  # +version+
-
-  def available_set_for(dep_or_name, version) # :nodoc:
-    if String === dep_or_name
-      find_spec_by_name_and_version dep_or_name, version, @prerelease
-    else
-      dep = dep_or_name.dup
-      dep.prerelease = @prerelease
-      @available = find_gems_with_sources dep
-    end
-
-    @available.pick_best!
   end
 
   ##
@@ -213,9 +141,8 @@ class Gem::DependencyInstaller
 
     if consider_remote?
       begin
-        # TODO this is pulled from #spec_for_dependency to allow
+        # This is pulled from #spec_for_dependency to allow
         # us to filter tuples before fetching specs.
-        #
         tuples, errors = Gem::SpecFetcher.fetcher.search_for_dependency dep
 
         if best_only && !tuples.empty?
@@ -266,91 +193,7 @@ class Gem::DependencyInstaller
 
     set
   end
-
-  ##
-  # Finds a spec and the source_uri it came from for gem +gem_name+ and
-  # +version+.  Returns an Array of specs and sources required for
-  # installation of the gem.
-
-  def find_spec_by_name_and_version(gem_name,
-                                    version = Gem::Requirement.default,
-                                    prerelease = false)
-    set = Gem::AvailableSet.new
-
-    if consider_local?
-      if gem_name =~ /\.gem$/ and File.file? gem_name
-        src = Gem::Source::SpecificFile.new(gem_name)
-        set.add src.spec, src
-      elsif gem_name =~ /\.gem$/
-        Dir[gem_name].each do |name|
-          begin
-            src = Gem::Source::SpecificFile.new name
-            set.add src.spec, src
-          rescue Gem::Package::FormatError
-          end
-        end
-      else
-        local = Gem::Source::Local.new
-
-        if s = local.find_gem(gem_name, version)
-          set.add s, local
-        end
-      end
-    end
-
-    if set.empty?
-      dep = Gem::Dependency.new gem_name, version
-      dep.prerelease = true if prerelease
-
-      set = find_gems_with_sources(dep, true)
-      set.match_platform!
-    end
-
-    if set.empty?
-      raise Gem::SpecificGemNotFoundException.new(gem_name, version, @errors)
-    end
-
-    @available = set
-  end
-
-  ##
-  # Gathers all dependencies necessary for the installation from local and
-  # remote sources unless the ignore_dependencies was given.
-  #--
-  # TODO remove at RubyGems 4
-
-  def gather_dependencies # :nodoc:
-    specs = @available.all_specs
-
-    # these gems were listed by the user, always install them
-    keep_names = specs.map { |spec| spec.full_name }
-
-    if @dev_shallow
-      @toplevel_specs = keep_names
-    end
-
-    dependency_list = Gem::DependencyList.new @development
-    dependency_list.add(*specs)
-    to_do = specs.dup
-    add_found_dependencies to_do, dependency_list unless @ignore_dependencies
-
-    # REFACTOR maybe abstract away using Gem::Specification.include? so
-    # that this isn't dependent only on the currently installed gems
-    dependency_list.specs.reject! { |spec|
-      not keep_names.include?(spec.full_name) and
-      Gem::Specification.include?(spec)
-    }
-
-    unless dependency_list.ok? or @ignore_dependencies or @force
-      reason = dependency_list.why_not_ok?.map { |k,v|
-        "#{k} requires #{v.join(", ")}"
-      }.join("; ")
-      raise Gem::DependencyError, "Unable to resolve dependencies: #{reason}"
-    end
-
-    @gems_to_install = dependency_list.dependency_order.reverse
-  end
-  deprecate :gather_dependencies, :none, 2018, 12
+  rubygems_deprecate :find_gems_with_sources
 
   def in_background(what) # :nodoc:
     fork_happened = false
@@ -491,5 +334,4 @@ class Gem::DependencyInstaller
 
     request_set
   end
-
 end

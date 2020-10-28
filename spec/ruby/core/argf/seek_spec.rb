@@ -57,7 +57,7 @@ describe "ARGF.seek" do
 
   it "takes at least one argument (offset)" do
     argf [@file1_name] do
-      lambda { @argf.seek }.should raise_error(ArgumentError)
+      -> { @argf.seek }.should raise_error(ArgumentError)
     end
   end
 end

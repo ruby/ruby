@@ -93,7 +93,7 @@ describe ExceptionState, "#message" do
 
   it "returns <No message> if the exception message is empty" do
     exc = ExceptionState.new @state, "", Exception.new("")
-    exc.message.should == "<No message>"
+    exc.message.should == "Exception: <No message>"
   end
 
   it "returns the message without exception class when the exception is an SpecExpectationNotMetError" do

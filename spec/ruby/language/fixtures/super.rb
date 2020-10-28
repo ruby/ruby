@@ -1,4 +1,4 @@
-module Super
+module SuperSpecs
   module S1
     class A
       def foo(a)
@@ -282,7 +282,7 @@ module Super
     #
     # When name3 is called then, Alias2 (NOT Alias3) is presented as the
     # current module to Alias2#name, so that when super is called,
-    # Alias2->superclass is next.
+    # Alias2's superclass is next.
     #
     # Otherwise, Alias2 is next, which is where name was to begin with,
     # causing the wrong #name method to be called.
@@ -377,12 +377,12 @@ module Super
       end
 
       def b
-        block_ref = lambda { 15 }
+        block_ref = -> { 15 }
         [super { 14 }, super(&block_ref)]
       end
 
       def c
-        block_ref = lambda { 16 }
+        block_ref = -> { 16 }
         super(&block_ref)
       end
     end
@@ -449,6 +449,52 @@ module Super
       end
 
       def m_modified(a, b, *args)
+        args[1] = 14
+        super
+      end
+    end
+  end
+
+  module ZSuperWithRestAndPost
+    class A
+      def m(*args, a, b)
+        args
+      end
+
+      def m_modified(*args, a, b)
+        args
+      end
+    end
+
+    class B < A
+      def m(*args, a, b)
+        super
+      end
+
+      def m_modified(*args, a, b)
+        args[1] = 14
+        super
+      end
+    end
+  end
+
+  module ZSuperWithRestOthersAndPost
+    class A
+      def m(a, *args, b)
+        args
+      end
+
+      def m_modified(a, *args, b)
+        args
+      end
+    end
+
+    class B < A
+      def m(a, *args, b)
+        super
+      end
+
+      def m_modified(a, *args, b)
         args[1] = 14
         super
       end

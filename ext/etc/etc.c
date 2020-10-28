@@ -52,6 +52,14 @@ char *getenv();
 #endif
 char *getlogin();
 
+#define RUBY_ETC_VERSION "1.1.0"
+
+#ifdef HAVE_RB_DEPRECATE_CONSTANT
+void rb_deprecate_constant(VALUE mod, const char *name);
+#else
+# define rb_deprecate_constant(mod,name) ((void)(mod),(void)(name))
+#endif
+
 #include "constdefs.h"
 
 /* call-seq:
@@ -98,7 +106,7 @@ static VALUE
 safe_setup_str(const char *str)
 {
     if (str == 0) str = "";
-    return rb_tainted_str_new2(str);
+    return rb_str_new2(str);
 }
 
 static VALUE
@@ -117,6 +125,12 @@ safe_setup_filesystem_str(const char *str)
 #endif
 
 #ifdef HAVE_GETPWENT
+# ifdef __APPLE__
+#   define PW_TIME2VAL(t) INT2NUM((int)(t))
+# else
+#   define PW_TIME2VAL(t) TIMET2NUM(t)
+# endif
+
 static VALUE
 setup_passwd(struct passwd *pwd)
 {
@@ -134,7 +148,7 @@ setup_passwd(struct passwd *pwd)
 			 safe_setup_filesystem_str(pwd->pw_dir),
 			 safe_setup_filesystem_str(pwd->pw_shell),
 #ifdef HAVE_STRUCT_PASSWD_PW_CHANGE
-			 INT2NUM(pwd->pw_change),
+			 PW_TIME2VAL(pwd->pw_change),
 #endif
 #ifdef HAVE_STRUCT_PASSWD_PW_QUOTA
 			 INT2NUM(pwd->pw_quota),
@@ -149,7 +163,7 @@ setup_passwd(struct passwd *pwd)
 			 safe_setup_locale_str(pwd->pw_comment),
 #endif
 #ifdef HAVE_STRUCT_PASSWD_PW_EXPIRE
-			 INT2NUM(pwd->pw_expire),
+			 PW_TIME2VAL(pwd->pw_expire),
 #endif
 			 0		/*dummy*/
 	);
@@ -217,7 +231,6 @@ etc_getpwnam(VALUE obj, VALUE nam)
     struct passwd *pwd;
     const char *p = StringValueCStr(nam);
 
-    rb_check_safe_obj(nam);
     pwd = getpwnam(p);
     if (pwd == 0) rb_raise(rb_eArgError, "can't find user for %"PRIsVALUE, nam);
     return setup_passwd(pwd);
@@ -229,7 +242,7 @@ etc_getpwnam(VALUE obj, VALUE nam)
 #ifdef HAVE_GETPWENT
 static int passwd_blocking = 0;
 static VALUE
-passwd_ensure(void)
+passwd_ensure(VALUE _)
 {
     endpwent();
     passwd_blocking = (int)Qfalse;
@@ -237,7 +250,7 @@ passwd_ensure(void)
 }
 
 static VALUE
-passwd_iterate(void)
+passwd_iterate(VALUE _)
 {
     struct passwd *pw;
 
@@ -461,7 +474,6 @@ etc_getgrnam(VALUE obj, VALUE nam)
     struct group *grp;
     const char *p = StringValueCStr(nam);
 
-    rb_check_safe_obj(nam);
     grp = getgrnam(p);
     if (grp == 0) rb_raise(rb_eArgError, "can't find group for %"PRIsVALUE, nam);
     return setup_group(grp);
@@ -473,7 +485,7 @@ etc_getgrnam(VALUE obj, VALUE nam)
 #ifdef HAVE_GETGRENT
 static int group_blocking = 0;
 static VALUE
-group_ensure(void)
+group_ensure(VALUE _)
 {
     endgrent();
     group_blocking = (int)Qfalse;
@@ -482,7 +494,7 @@ group_ensure(void)
 
 
 static VALUE
-group_iterate(void)
+group_iterate(VALUE _)
 {
     struct group *pw;
 
@@ -645,7 +657,7 @@ etc_sysconfdir(VALUE obj)
  * Returns system temporary directory; typically "/tmp".
  */
 static VALUE
-etc_systmpdir(void)
+etc_systmpdir(VALUE _)
 {
     VALUE tmpdir;
 #ifdef _WIN32
@@ -677,7 +689,10 @@ etc_systmpdir(void)
     }
 # endif
 #endif
+#ifndef RB_PASS_KEYWORDS
+    /* untaint on Ruby < 2.7 */
     FL_UNSET(tmpdir, FL_TAINT);
+#endif
     return tmpdir;
 }
 
@@ -754,9 +769,6 @@ etc_uname(VALUE obj)
 # ifndef PROCESSOR_ARCHITECTURE_AMD64
 #   define PROCESSOR_ARCHITECTURE_AMD64 9
 # endif
-# ifndef PROCESSOR_ARCHITECTURE_IA64
-#   define PROCESSOR_ARCHITECTURE_IA64 6
-# endif
 # ifndef PROCESSOR_ARCHITECTURE_INTEL
 #   define PROCESSOR_ARCHITECTURE_INTEL 0
 # endif
@@ -767,9 +779,6 @@ etc_uname(VALUE obj)
 	break;
       case PROCESSOR_ARCHITECTURE_ARM:
 	mach = "ARM";
-	break;
-      case PROCESSOR_ARCHITECTURE_IA64:
-	mach = "IA64";
 	break;
       case PROCESSOR_ARCHITECTURE_INTEL:
 	mach = "x86";
@@ -1068,6 +1077,7 @@ Init_etc(void)
     VALUE mEtc;
 
     mEtc = rb_define_module("Etc");
+    rb_define_const(mEtc, "VERSION", rb_str_new_cstr(RUBY_ETC_VERSION));
     init_constants(mEtc);
 
     rb_define_module_function(mEtc, "getlogin", etc_getlogin, 0);
@@ -1167,6 +1177,7 @@ Init_etc(void)
     rb_define_const(mEtc, "Passwd", sPasswd);
 #endif
     rb_define_const(rb_cStruct, "Passwd", sPasswd); /* deprecated name */
+    rb_deprecate_constant(rb_cStruct, "Passwd");
     rb_extend_object(sPasswd, rb_mEnumerable);
     rb_define_singleton_method(sPasswd, "each", etc_each_passwd, 0);
 
@@ -1202,6 +1213,7 @@ Init_etc(void)
     rb_define_const(mEtc, "Group", sGroup);
 #endif
     rb_define_const(rb_cStruct, "Group", sGroup); /* deprecated name */
+    rb_deprecate_constant(rb_cStruct, "Group");
     rb_extend_object(sGroup, rb_mEnumerable);
     rb_define_singleton_method(sGroup, "each", etc_each_group, 0);
 #endif

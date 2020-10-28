@@ -23,6 +23,10 @@ module TestStruct
 
     test.bar = 47
     assert_equal(47, test.bar)
+
+    @Struct.class_eval do
+      remove_const :Test
+    end
   end
 
   # [ruby-dev:26247] more than 10 struct members causes segmentation fault
@@ -60,6 +64,10 @@ module TestStruct
     assert_equal(1, o.a)
   end
 
+  def test_attrset_id
+    assert_raise(ArgumentError) { Struct.new(:x=) }
+  end
+
   def test_members
     klass = @Struct.new(:a)
     o = klass.new(1)
@@ -92,11 +100,16 @@ module TestStruct
     assert_equal([:utime, :stime, :cutime, :cstime], Process.times.members)
   end
 
+  def test_struct_new_with_empty_hash
+    assert_equal({:a=>1}, Struct.new(:a, {}).new({:a=>1}).a)
+  end
+
   def test_struct_new_with_keyword_init
     @Struct.new("KeywordInitTrue", :a, :b, keyword_init: true)
     @Struct.new("KeywordInitFalse", :a, :b, keyword_init: false)
 
     assert_raise(ArgumentError) { @Struct::KeywordInitTrue.new(1, 2) }
+    assert_raise(ArgumentError) { @Struct::KeywordInitTrue.new({a: 100}, 2) }
     assert_nothing_raised { @Struct::KeywordInitFalse.new(1, 2) }
     assert_nothing_raised { @Struct::KeywordInitTrue.new(a: 1, b: 2) }
     assert_raise(ArgumentError) { @Struct::KeywordInitTrue.new(1, b: 2) }
@@ -104,11 +117,25 @@ module TestStruct
     assert_equal @Struct::KeywordInitTrue.new(a: 1, b: 2).values, @Struct::KeywordInitFalse.new(1, 2).values
     assert_equal "#{@Struct}::KeywordInitFalse", @Struct::KeywordInitFalse.inspect
     assert_equal "#{@Struct}::KeywordInitTrue(keyword_init: true)", @Struct::KeywordInitTrue.inspect
+    # eval is needed to prevent the warning duplication filter
+    k = Class.new(@Struct::KeywordInitTrue) {def initialize(b, options); super(a: options, b: b); end}
+    o = assert_warn('') { k.new(42, {foo: 1, bar: 2}) }
+    assert_equal(1, o.a[:foo])
 
     @Struct.instance_eval do
       remove_const(:KeywordInitTrue)
       remove_const(:KeywordInitFalse)
     end
+  end
+
+  def test_struct_new_with_keyword_init_and_block
+    struct = @Struct.new(:a, :b, keyword_init: true) do
+      def c
+        a + b
+      end
+    end
+
+    assert_equal(3, struct.new(a: 1, b: 2).c)
   end
 
   def test_initialize
@@ -120,6 +147,17 @@ module TestStruct
       end
     end
     assert_equal 3, klass.new(1,2).total
+  end
+
+  def test_initialize_with_kw
+    klass = @Struct.new(:foo, :options) do
+      def initialize(foo, **options)
+        super(foo, options)
+      end
+    end
+    assert_equal({}, klass.new(42, **Hash.new).options)
+    x = assert_warn('') { klass.new(1, bar: 2) }
+    assert_equal 2, x.options[:bar]
   end
 
   def test_each
@@ -275,6 +313,7 @@ module TestStruct
     klass = @Struct.new(:a)
     o = klass.new(1)
     assert_kind_of(Integer, o.hash)
+    assert_kind_of(String, o.hash.to_s)
   end
 
   def test_eql
@@ -300,15 +339,19 @@ module TestStruct
   end
 
   def test_redefinition_warning
-    @Struct.new("RedefinitionWarning")
+    @Struct.new(name = "RedefinitionWarning")
     e = EnvUtil.verbose_warning do
       @Struct.new("RedefinitionWarning")
     end
     assert_match(/redefining constant #@Struct::RedefinitionWarning/, e)
+
+    @Struct.class_eval do
+      remove_const name
+    end
   end
 
   def test_nonascii
-    struct_test = @Struct.new("R\u{e9}sum\u{e9}", :"r\u{e9}sum\u{e9}")
+    struct_test = @Struct.new(name = "R\u{e9}sum\u{e9}", :"r\u{e9}sum\u{e9}")
     assert_equal(@Struct.const_get("R\u{e9}sum\u{e9}"), struct_test, '[ruby-core:24849]')
     a = struct_test.new(42)
     assert_equal("#<struct #@Struct::R\u{e9}sum\u{e9} r\u{e9}sum\u{e9}=42>", a.inspect, '[ruby-core:24849]')
@@ -317,6 +360,10 @@ module TestStruct
     end
     assert_nothing_raised(Encoding::CompatibilityError) do
       assert_match(/redefining constant #@Struct::R\u{e9}sum\u{e9}/, e)
+    end
+
+    @Struct.class_eval do
+      remove_const name
     end
   end
 
@@ -400,10 +447,22 @@ module TestStruct
     assert_nil(o.dig(:b, 0))
   end
 
-  def test_new_dupilicate
+  def test_new_duplicate
     bug12291 = '[ruby-core:74971] [Bug #12291]'
     assert_raise_with_message(ArgumentError, /duplicate member/, bug12291) {
       @Struct.new(:a, :a)
+    }
+  end
+
+  def test_deconstruct_keys
+    klass = @Struct.new(:a, :b)
+    o = klass.new(1, 2)
+    assert_equal({a: 1, b: 2}, o.deconstruct_keys(nil))
+    assert_equal({a: 1, b: 2}, o.deconstruct_keys([:b, :a]))
+    assert_equal({a: 1}, o.deconstruct_keys([:a]))
+    assert_not_send([o.deconstruct_keys([:a, :c]), :key?, :c])
+    assert_raise(TypeError) {
+      o.deconstruct_keys(0)
     }
   end
 
