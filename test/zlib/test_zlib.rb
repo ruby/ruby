@@ -1145,6 +1145,19 @@ if defined? Zlib
       assert_equal(0x02820145, Zlib.adler32("foo"))
       assert_equal(0x02820145, Zlib.adler32("o", Zlib.adler32("fo")))
       assert_equal(0x8a62c964, Zlib.adler32("abc\x01\x02\x03" * 10000))
+      Tempfile.create("test_zlib_gzip_file_to_io") {|t|
+        File.binwrite(t.path, "foo")
+        t.rewind
+        assert_equal(0x02820145, Zlib.adler32(t))
+
+        t.rewind
+        crc = Zlib.adler32(t.read(2))
+        assert_equal(0x02820145, Zlib.adler32(t, crc))
+
+        File.binwrite(t.path, "abc\x01\x02\x03" * 10000)
+        t.rewind
+        assert_equal(0x8a62c964, Zlib.adler32(t))
+      }
     end
 
     def test_adler32_combine
@@ -1167,6 +1180,19 @@ if defined? Zlib
       assert_equal(0x8c736521, Zlib.crc32("foo"))
       assert_equal(0x8c736521, Zlib.crc32("o", Zlib.crc32("fo")))
       assert_equal(0x07f0d68f, Zlib.crc32("abc\x01\x02\x03" * 10000))
+      Tempfile.create("test_zlib_gzip_file_to_io") {|t|
+        File.binwrite(t.path, "foo")
+        t.rewind
+        assert_equal(0x8c736521, Zlib.crc32(t))
+
+        t.rewind
+        crc = Zlib.crc32(t.read(2))
+        assert_equal(0x8c736521, Zlib.crc32(t, crc))
+
+        File.binwrite(t.path, "abc\x01\x02\x03" * 10000)
+        t.rewind
+        assert_equal(0x07f0d68f, Zlib.crc32(t))
+      }
     end
 
     def test_crc32_combine
