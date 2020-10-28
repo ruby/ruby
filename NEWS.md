@@ -178,6 +178,9 @@ Outstanding ones only.
       blocking. [[Feature #16786]]
     * `Thread#join` invokes the scheduler hooks `block`/`unblock` in a
       non-blocking execution context. [[Feature #16786]]
+    * `Thread.ignore_deadlock` accessor for disabling the default deadlock
+      detection, allowing the use of signal handlers to break deadlock.
+      [[Bug #13768]]
 
 * Mutex
 
