@@ -796,10 +796,11 @@ opt_send_without_block
 
 /* invoke method. */
 DEFINE_INSN
-send_sym
+sendsym
 (CALL_DATA cd, ISEQ blockiseq)
 (...)
 (VALUE val)
+// attr bool handles_sp = true;
 // attr rb_snum_t sp_inc = sp_inc_of_sendish(cd->ci);
 // attr rb_snum_t comptime_sp_inc = sp_inc_of_sendish(ci);
 {
@@ -816,7 +817,7 @@ send_sym
 
 /* Invoke method without block */
 DEFINE_INSN
-opt_send_sym_without_block
+opt_sendsym_without_block
 (CALL_DATA cd)
 (...)
 (VALUE val)

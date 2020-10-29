@@ -277,8 +277,8 @@ const ID rb_iseq_shared_exc_local_tbl[] = {idERROR_INFO};
 #define ADD_SEND_R(seq, line, id, argc, block, flag, keywords) \
   ADD_ELEM((seq), (LINK_ELEMENT *) new_insn_send(iseq, (line), (id), (VALUE)(argc), (block), (VALUE)(flag), (keywords)))
 
-#define ADD_SEND_SYM_R(seq, line, id, argc, block, flag, keywords) \
-  ADD_ELEM((seq), (LINK_ELEMENT *) new_insn_send_sym(iseq, (line), (id), (VALUE)(argc), (block), (VALUE)(flag), (keywords)))
+#define ADD_SENDSYM_R(seq, line, id, argc, block, flag, keywords) \
+  ADD_ELEM((seq), (LINK_ELEMENT *) new_insn_sendsym(iseq, (line), (id), (VALUE)(argc), (block), (VALUE)(flag), (keywords)))
 
 #define ADD_TRACE(seq, event) \
   ADD_ELEM((seq), (LINK_ELEMENT *)new_trace_body(iseq, (event), 0))
@@ -1314,12 +1314,12 @@ new_insn_send(rb_iseq_t *iseq, int line_no, ID id, VALUE argc, const rb_iseq_t *
 }
 
 static INSN *
-new_insn_send_sym(rb_iseq_t *iseq, int line_no, ID id, VALUE argc, const rb_iseq_t *blockiseq, VALUE flag, struct rb_callinfo_kwarg *keywords)
+new_insn_sendsym(rb_iseq_t *iseq, int line_no, ID id, VALUE argc, const rb_iseq_t *blockiseq, VALUE flag, struct rb_callinfo_kwarg *keywords)
 {
     VALUE *operands = compile_data_calloc2(iseq, sizeof(VALUE), 2);
     operands[0] = (VALUE)new_callinfo(iseq, id, FIX2INT(argc), FIX2INT(flag), keywords, blockiseq != NULL);
     operands[1] = (VALUE)blockiseq;
-    return new_insn_core(iseq, line_no, BIN(send_sym), 2, operands);
+    return new_insn_core(iseq, line_no, BIN(sendsym), 2, operands);
 }
 
 static rb_iseq_t *
@@ -7465,7 +7465,7 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
     const NODE *argn = node->nd_args;
 
     // optimize __send__
-    bool send_sym = false;
+    bool sendsym = false;
     if (mid == id__send__ && argn) {
         if (nd_type(argn) == NODE_LIST && nd_type(argn->nd_head) == NODE_LIT && SYMBOL_P(argn->nd_head->nd_lit)) {
             mid = SYM2ID(argn->nd_head->nd_lit);
@@ -7480,7 +7480,7 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
             flag |= VM_CALL_OPT_SEND;
         }
         else {
-            send_sym = true;
+            sendsym = true;
         }
     }
 
@@ -7507,8 +7507,8 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
         flag |= VM_CALL_FCALL;
     }
 
-    if (send_sym) {
-        ADD_SEND_SYM_R(ret, line, mid, argc, parent_block, INT2FIX(flag), keywords);
+    if (sendsym) {
+        ADD_SENDSYM_R(ret, line, mid, argc, parent_block, INT2FIX(flag), keywords);
     }
     else {
         ADD_SEND_R(ret, line, mid, argc, parent_block, INT2FIX(flag), keywords);
