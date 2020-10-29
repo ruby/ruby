@@ -7,8 +7,15 @@ prelude: |
     end
   end
 
+  class D
+    def mmm
+    end
+  end
+
   o = C.new
   m = :m
+
+  oo = D.new
 
   def call(o, m)
     o.__send__ m
@@ -21,4 +28,5 @@ benchmark:
   vm_send_var_alt: |
     call(o, :m)
     call(o, :mm)
+    call(oo, :mmm)
 loop_count: 6000000
