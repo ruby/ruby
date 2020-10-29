@@ -363,6 +363,65 @@ if defined? Zlib
       }
     end
 
+    def test_inflate_buffer
+      s = Zlib::Deflate.deflate("foo")
+      z = Zlib::Inflate.new
+      buf = String.new
+      s = z.inflate(s, buffer: buf)
+      assert_same(buf, s)
+      buf = String.new
+      s << z.inflate(nil, buffer: buf)
+      assert_equal("foo", s)
+      z.inflate("foo", buffer: buf) # ???
+      z << "foo" # ???
+    end
+
+    def test_inflate_buffer_partial_input
+      deflated = Zlib::Deflate.deflate "\0"
+
+      z = Zlib::Inflate.new
+
+      inflated = "".dup
+
+      buf = String.new
+      deflated.each_char do |byte|
+        inflated << z.inflate(byte, buffer: buf)
+      end
+
+      inflated << z.finish
+
+      assert_equal "\0", inflated
+    end
+
+    def test_inflate_buffer_chunked
+      # s = Zlib::Deflate.deflate("0" * 100_000)
+      zeros = "x\234\355\3011\001\000\000\000\302\240J\353\237\316\032\036@" \
+              "\001\000\000\000\000\000\000\000\000\000\000\000\000\000\000" \
+              "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000" \
+              "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000" \
+              "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000" \
+              "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000" \
+              "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000" \
+              "\000\000\000\000\000\000\000\257\006\351\247BH"
+
+      chunks = []
+
+      z = Zlib::Inflate.new
+
+      buf = String.new
+      z.inflate(zeros, buffer: buf) do |chunk|
+        assert_same(buf, chunk)
+        chunks << chunk.dup
+      end
+
+      assert_equal [16384, 16384, 16384, 16384, 16384, 16384, 1696],
+                   chunks.map { |chunk| chunk.size }
+
+      assert chunks.all? { |chunk|
+        chunk =~ /\A0+\z/
+      }
+    end
+
     def test_inflate_chunked_break
       # zeros = Zlib::Deflate.deflate("0" * 100_000)
       zeros = "x\234\355\3011\001\000\000\000\302\240J\353\237\316\032\036@" \

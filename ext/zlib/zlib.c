@@ -56,7 +56,10 @@ max_uint(long n)
 #define MAX_UINT(n) (uInt)(n)
 #endif
 
-static ID id_dictionaries, id_read;
+#define OPTHASH_GIVEN_P(opts) \
+    (argc > 0 && !NIL_P((opts) = rb_check_hash_type(argv[argc-1])) && (--argc, 1))
+
+static ID id_dictionaries, id_read, id_buffer;
 
 /*--------- Prototypes --------*/
 
@@ -130,7 +133,7 @@ static VALUE rb_inflate_s_allocate(VALUE);
 static VALUE rb_inflate_initialize(int, VALUE*, VALUE);
 static VALUE rb_inflate_s_inflate(VALUE, VALUE);
 static void do_inflate(struct zstream*, VALUE);
-static VALUE rb_inflate_inflate(VALUE, VALUE);
+static VALUE rb_inflate_inflate(int, VALUE*, VALUE);
 static VALUE rb_inflate_addstr(VALUE, VALUE);
 static VALUE rb_inflate_sync(VALUE, VALUE);
 static VALUE rb_inflate_sync_point_p(VALUE);
@@ -557,7 +560,8 @@ struct zstream {
 #define ZSTREAM_FLAG_CLOSING    0x8
 #define ZSTREAM_FLAG_GZFILE     0x10 /* disallows yield from expand_buffer for
                                         gzip*/
-#define ZSTREAM_FLAG_UNUSED     0x20
+#define ZSTREAM_REUSE_BUFFER    0x20
+#define ZSTREAM_FLAG_UNUSED     0x40
 
 #define ZSTREAM_READY(z)       ((z)->flags |= ZSTREAM_FLAG_READY)
 #define ZSTREAM_IS_READY(z)    ((z)->flags & ZSTREAM_FLAG_READY)
@@ -565,6 +569,8 @@ struct zstream {
 #define ZSTREAM_IS_CLOSING(z)  ((z)->flags & ZSTREAM_FLAG_CLOSING)
 #define ZSTREAM_IS_GZFILE(z)   ((z)->flags & ZSTREAM_FLAG_GZFILE)
 #define ZSTREAM_BUF_FILLED(z)  (NIL_P((z)->buf) ? 0 : RSTRING_LEN((z)->buf))
+
+#define ZSTREAM_REUSE_BUFFER_P(z)     ((z)->flags & ZSTREAM_REUSE_BUFFER)
 
 #define ZSTREAM_EXPAND_BUFFER_OK          0
 
@@ -642,11 +648,19 @@ zstream_expand_buffer(struct zstream *z)
 	if (buf_filled >= ZSTREAM_AVAIL_OUT_STEP_MAX) {
 	    int state = 0;
 
-	    rb_obj_reveal(z->buf, rb_cString);
+            if (!ZSTREAM_REUSE_BUFFER_P(z)) {
+	        rb_obj_reveal(z->buf, rb_cString);
+            }
 
 	    rb_protect(rb_yield, z->buf, &state);
 
-	    z->buf = Qnil;
+            if (ZSTREAM_REUSE_BUFFER_P(z)) {
+                rb_str_modify(z->buf);
+                rb_str_set_len(z->buf, 0);
+            }
+            else {
+                z->buf = Qnil;
+            }
 	    zstream_expand_buffer_into(z, ZSTREAM_AVAIL_OUT_STEP_MAX);
 
 	    if (state)
@@ -764,7 +778,9 @@ zstream_detach_buffer(struct zstream *z)
     }
     else {
 	dst = z->buf;
-	rb_obj_reveal(dst, rb_cString);
+        if (!ZSTREAM_REUSE_BUFFER_P(z)) {
+	    rb_obj_reveal(dst, rb_cString);
+        }
     }
 
     z->buf = Qnil;
@@ -2013,8 +2029,8 @@ rb_inflate_add_dictionary(VALUE obj, VALUE dictionary)
  * Document-method: Zlib::Inflate#inflate
  *
  * call-seq:
- *   inflate(deflate_string)                 -> String
- *   inflate(deflate_string) { |chunk| ... } -> nil
+ *   inflate(deflate_string, buffer: nil)                 -> String
+ *   inflate(deflate_string, buffer: nil) { |chunk| ... } -> nil
  *
  * Inputs +deflate_string+ into the inflate stream and returns the output from
  * the stream.  Calling this method, both the input and the output buffer of
@@ -2023,6 +2039,15 @@ rb_inflate_add_dictionary(VALUE obj, VALUE dictionary)
  *
  * If a block is given consecutive inflated chunks from the +deflate_string+
  * are yielded to the block and +nil+ is returned.
+ *
+ * If a :buffer keyword argument is given and not nil:
+ *
+ * * The :buffer keyword should be a String, and will used as the output buffer.
+ *   Using this option can reuse the memory required during inflation.
+ * * When not passing a block, the return value will be the same object as the
+ *   :buffer keyword argument.
+ * * When passing a block, the yielded chunks will be the same value as the
+ *   :buffer keyword argument.
  *
  * Raises a Zlib::NeedDict exception if a preset dictionary is needed to
  * decompress.  Set the dictionary by Zlib::Inflate#set_dictionary and then
@@ -2047,10 +2072,37 @@ rb_inflate_add_dictionary(VALUE obj, VALUE dictionary)
  * See also Zlib::Inflate.new
  */
 static VALUE
-rb_inflate_inflate(VALUE obj, VALUE src)
+rb_inflate_inflate(int argc, VALUE* argv, VALUE obj)
 {
     struct zstream *z = get_zstream(obj);
-    VALUE dst;
+    VALUE dst, src, opts, buffer = Qnil;
+
+    if (OPTHASH_GIVEN_P(opts)) {
+        VALUE buf;
+        rb_get_kwargs(opts, &id_buffer, 0, 1, &buf);
+        if (buf != Qundef && buf != Qnil) {
+            buffer = StringValue(buf);
+        }
+    }
+    if (buffer != Qnil) {
+        if (!(ZSTREAM_REUSE_BUFFER_P(z) && z->buf == buffer)) {
+            long len = RSTRING_LEN(buffer);
+            if (len >= ZSTREAM_AVAIL_OUT_STEP_MAX) {
+                rb_str_modify(buffer);
+            }
+            else {
+                len = ZSTREAM_AVAIL_OUT_STEP_MAX - len;
+                rb_str_modify_expand(buffer, len);
+            }
+            rb_str_set_len(buffer, 0);
+            z->flags |= ZSTREAM_REUSE_BUFFER;
+            z->buf = buffer;
+        }
+    } else if (ZSTREAM_REUSE_BUFFER_P(z)) {
+        z->flags &= ~ZSTREAM_REUSE_BUFFER;
+        z->buf = Qnil;
+    }
+    rb_scan_args(argc, argv, "10", &src);
 
     if (ZSTREAM_IS_FINISHED(z)) {
 	if (NIL_P(src)) {
@@ -2059,7 +2111,11 @@ rb_inflate_inflate(VALUE obj, VALUE src)
 	else {
 	    StringValue(src);
 	    zstream_append_buffer2(z, src);
-	    dst = rb_str_new(0, 0);
+	    if (ZSTREAM_REUSE_BUFFER_P(z)) {
+                dst = rb_str_resize(buffer, 0);
+            } else {
+                dst = rb_str_new(0, 0);
+            }
 	}
     }
     else {
@@ -4340,8 +4396,6 @@ zlib_gzip_end(struct gzfile *gz)
     zstream_end(&gz->z);
 }
 
-#define OPTHASH_GIVEN_P(opts) \
-    (argc > 0 && !NIL_P((opts) = rb_check_hash_type(argv[argc-1])) && (--argc, 1))
 static ID id_level, id_strategy;
 static VALUE zlib_gzip_run(VALUE arg);
 
@@ -4588,7 +4642,7 @@ Init_zlib(void)
     rb_define_alloc_func(cInflate, rb_inflate_s_allocate);
     rb_define_method(cInflate, "initialize", rb_inflate_initialize, -1);
     rb_define_method(cInflate, "add_dictionary", rb_inflate_add_dictionary, 1);
-    rb_define_method(cInflate, "inflate", rb_inflate_inflate, 1);
+    rb_define_method(cInflate, "inflate", rb_inflate_inflate, -1);
     rb_define_method(cInflate, "<<", rb_inflate_addstr, 1);
     rb_define_method(cInflate, "sync", rb_inflate_sync, 1);
     rb_define_method(cInflate, "sync_point?", rb_inflate_sync_point_p, 0);
@@ -4797,6 +4851,7 @@ Init_zlib(void)
 
     id_level = rb_intern("level");
     id_strategy = rb_intern("strategy");
+    id_buffer = rb_intern("buffer");
 #endif /* GZIP_SUPPORT */
 }
 
