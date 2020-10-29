@@ -2506,6 +2506,9 @@ AS_CASE([$rb_cv_coroutine], [yes|''], [
         [*-openbsd*], [
             rb_cv_coroutine=copy
         ],
+        [*-haiku*], [
+            rb_cv_coroutine=copy
+        ],
         [
             rb_cv_coroutine=ucontext
         ]
