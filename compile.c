@@ -3443,7 +3443,7 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 	}
     }
 
-    if (IS_INSN_ID(iobj, send)) {
+    if (IS_INSN_ID(iobj, send) || IS_INSN_ID(iobj, sendsym)) {
         const struct rb_callinfo *ci = (struct rb_callinfo *)OPERAND_AT(iobj, 0);
         const rb_iseq_t *blockiseq = (rb_iseq_t *)OPERAND_AT(iobj, 1);
 
@@ -3489,7 +3489,7 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 	}
 
 	if ((vm_ci_flag(ci) & VM_CALL_ARGS_BLOCKARG) == 0 && blockiseq == NULL) {
-	    iobj->insn_id = BIN(opt_send_without_block);
+            iobj->insn_id = IS_INSN_ID(iobj, send) ? BIN(opt_send_without_block) : BIN(opt_sendsym_without_block);
 	    iobj->operand_size = insn_len(iobj->insn_id) - 1;
 	}
     }
