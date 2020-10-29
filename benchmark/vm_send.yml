@@ -2,13 +2,23 @@ prelude: |
   class C
     def m
     end
+
+    def mm
+    end
   end
 
   o = C.new
   m = :m
+
+  def call(o, m)
+    o.__send__ m
+  end
 benchmark:
   vm_send: |
     o.__send__ :m
   vm_send_var: |
     o.__send__ m
+  vm_send_var_alt: |
+    call(o, :m)
+    call(o, :mm)
 loop_count: 6000000
