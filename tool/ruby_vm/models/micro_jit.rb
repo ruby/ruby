@@ -11,6 +11,8 @@
 # details.
 
 module RubyVM::MicroJIT
+  ScrapeResult = Struct.new(:pre_call_bytes, :post_call_bytes, :disassembly_lines)
+
   class << self
     def target_platform
       # Note, checking RUBY_PLATRFORM doesn't work when cross compiling
@@ -117,8 +119,9 @@ module RubyVM::MicroJIT
       raise 'generated code for example too long' unless jmp_idx < 10
       handler_instructions = instructions[(0..jmp_idx)]
 
+      disassembly_lines = handler_instructions.map {|_, _, line| line}
       puts "Disassembly for the example handler:"
-      puts handler_instructions.map {|_, _, line| line}
+      puts disassembly_lines
 
 
       raise 'rip reference in example makes copying unsafe' if handler_instructions.any? { |_, _, full_line| full_line.downcase.include?('rip') }
@@ -144,7 +147,11 @@ module RubyVM::MicroJIT
         post_call_bytes += bytes.split
       end
 
-      [pre_call_bytes, post_call_bytes]
+      ScrapeResult.new(
+        comma_separated_hex_string(pre_call_bytes),
+        comma_separated_hex_string(post_call_bytes),
+        disassembly_lines
+      )
     end
 
     def darwin_scrape(instruction_id)
@@ -169,13 +176,11 @@ module RubyVM::MicroJIT
       disassemble(handler_offset)
     end
 
-    def make_result(success, pre_call, post_call, pre_call_with_ec, post_call_with_ec)
+    def make_result(success, without_pc, with_pc)
       [success ? 1 : 0,
        [
-         ['ujit_pre_call_bytes', comma_separated_hex_string(pre_call)],
-         ['ujit_post_call_bytes', comma_separated_hex_string(post_call)],
-         ['ujit_pre_call_with_ec_bytes', comma_separated_hex_string(pre_call_with_ec)],
-         ['ujit_post_call_with_ec_bytes', comma_separated_hex_string(post_call_with_ec)]
+         ['ujit_without_ec', without_pc],
+         ['ujit_with_ec', with_pc],
        ]
       ]
     end
@@ -193,12 +198,14 @@ module RubyVM::MicroJIT
     end
 
     def scrape
-      pre, post = scrape_instruction(RubyVM::Instructions.find_index { |insn| insn.name == 'ujit_call_example' })
-      pre_with_ec, post_with_ec = scrape_instruction(RubyVM::Instructions.find_index { |insn| insn.name == 'ujit_call_example_with_ec' })
-      make_result(true, pre, post, pre_with_ec, post_with_ec)
+      without_ec = scrape_instruction(RubyVM::Instructions.find_index { |insn| insn.name == 'ujit_call_example' })
+      with_ec = scrape_instruction(RubyVM::Instructions.find_index { |insn| insn.name == 'ujit_call_example_with_ec' })
+      make_result(true, without_ec, with_ec)
     rescue => e
       print_warning("scrape failed: #{e.message}")
-      make_result(false, ['cc'], ['cc'], ['cc'], ['cc'])
+      int3 = '0xcc'
+      failure_result = ScrapeResult.new(int3, int3, ['int3'])
+      make_result(false, failure_result, failure_result)
     end
 
     def print_warning(text)

@@ -304,8 +304,8 @@ x86opnd_t ctx_stack_opnd(ctx_t* ctx, int32_t idx)
 static void
 ujit_gen_entry(codeblock_t* cb)
 {
-    for (size_t i = 0; i < sizeof(ujit_pre_call_with_ec_bytes); ++i)
-        cb_write_byte(cb, ujit_pre_call_with_ec_bytes[i]);
+    for (size_t i = 0; i < sizeof(ujit_with_ec_pre_call_bytes); ++i)
+        cb_write_byte(cb, ujit_with_ec_pre_call_bytes[i]);
 }
 
 /**
@@ -327,8 +327,8 @@ ujit_gen_exit(codeblock_t* cb, ctx_t* ctx, VALUE* exit_pc)
     mov(cb, member_opnd(REG_CFP, rb_control_frame_t, pc), RAX);
 
     // Write the post call bytes
-    for (size_t i = 0; i < sizeof(ujit_post_call_with_ec_bytes); ++i)
-        cb_write_byte(cb, ujit_post_call_with_ec_bytes[i]);
+    for (size_t i = 0; i < sizeof(ujit_with_ec_post_call_bytes); ++i)
+        cb_write_byte(cb, ujit_with_ec_post_call_bytes[i]);
 }
 
 /**
