@@ -241,14 +241,16 @@ opcode_at_pc(const rb_iseq_t *iseq, const VALUE *pc)
 }
 
 // Get the current instruction opcode from the context object
-int ctx_get_opcode(ctx_t *ctx)
+static int
+ctx_get_opcode(ctx_t *ctx)
 {
     return opcode_at_pc(ctx->iseq, ctx->pc);
 }
 
 
 // Get an instruction argument from the context object
-VALUE ctx_get_arg(ctx_t* ctx, size_t arg_idx)
+static VALUE
+ctx_get_arg(ctx_t* ctx, size_t arg_idx)
 {
     assert (arg_idx + 1 < insn_len(ctx_get_opcode(ctx)));
     return *(ctx->pc + arg_idx + 1);
@@ -257,7 +259,8 @@ VALUE ctx_get_arg(ctx_t* ctx, size_t arg_idx)
 /*
 Get an operand for the adjusted stack pointer address
 */
-x86opnd_t ctx_sp_opnd(ctx_t* ctx, int32_t offset_bytes)
+static x86opnd_t
+ctx_sp_opnd(ctx_t* ctx, int32_t offset_bytes)
 {
     int32_t offset = (ctx->stack_diff) * 8 + offset_bytes;
     return mem_opnd(64, REG_SP, offset);
@@ -267,7 +270,8 @@ x86opnd_t ctx_sp_opnd(ctx_t* ctx, int32_t offset_bytes)
 Make space on the stack for N values
 Return a pointer to the new stack top
 */
-x86opnd_t ctx_stack_push(ctx_t* ctx, size_t n)
+static x86opnd_t
+ctx_stack_push(ctx_t* ctx, size_t n)
 {
     ctx->stack_diff += n;
 
@@ -280,7 +284,8 @@ x86opnd_t ctx_stack_push(ctx_t* ctx, size_t n)
 Pop N values off the stack
 Return a pointer to the stack top before the pop operation
 */
-x86opnd_t ctx_stack_pop(ctx_t* ctx, size_t n)
+static x86opnd_t
+ctx_stack_pop(ctx_t* ctx, size_t n)
 {
     // SP points just above the topmost value
     int32_t offset = (ctx->stack_diff - 1) * 8;
@@ -291,7 +296,8 @@ x86opnd_t ctx_stack_pop(ctx_t* ctx, size_t n)
     return top;
 }
 
-x86opnd_t ctx_stack_opnd(ctx_t* ctx, int32_t idx)
+static x86opnd_t
+ctx_stack_opnd(ctx_t* ctx, int32_t idx)
 {
     // SP points just above the topmost value
     int32_t offset = (ctx->stack_diff - 1 - idx) * 8;
@@ -334,7 +340,7 @@ ujit_gen_exit(codeblock_t* cb, ctx_t* ctx, VALUE* exit_pc)
 /**
 Generate an out-of-line exit to return to the interpreter
 */
-uint8_t*
+static uint8_t *
 ujit_side_exit(codeblock_t* cb, ctx_t* ctx, VALUE* exit_pc)
 {
     uint8_t* code_ptr = cb_get_ptr(cb, cb->write_pos);
@@ -465,7 +471,7 @@ ujit_compile_insn(const rb_iseq_t *iseq, unsigned int insn_idx, unsigned int *ne
     return code_ptr;
 }
 
-bool
+static bool
 gen_dup(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 {
     x86opnd_t dup_val = ctx_stack_pop(ctx, 1);
@@ -477,14 +483,14 @@ gen_dup(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     return true;
 }
 
-bool
+static bool
 gen_nop(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 {
     // Do nothing
     return true;
 }
 
-bool
+static bool
 gen_pop(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 {
     // Decrement SP
@@ -492,7 +498,7 @@ gen_pop(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     return true;
 }
 
-bool
+static bool
 gen_putnil(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 {
     // Write constant at SP
@@ -501,7 +507,7 @@ gen_putnil(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     return true;
 }
 
-bool
+static bool
 gen_putobject(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 {
     // Load the argument from the bytecode sequence.
@@ -517,7 +523,7 @@ gen_putobject(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     return true;
 }
 
-bool
+static bool
 gen_putobject_int2fix(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 {
     int opcode = ctx_get_opcode(ctx);
@@ -530,7 +536,7 @@ gen_putobject_int2fix(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     return true;
 }
 
-bool
+static bool
 gen_putself(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 {
     // Load self from CFP
@@ -543,7 +549,7 @@ gen_putself(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     return true;
 }
 
-bool
+static bool
 gen_getlocal_wc0(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 {
     // Load environment pointer EP from CFP
@@ -563,7 +569,7 @@ gen_getlocal_wc0(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     return true;
 }
 
-bool
+static bool
 gen_setlocal_wc0(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 {
     /*
@@ -604,7 +610,7 @@ gen_setlocal_wc0(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     return true;
 }
 
-bool
+static bool
 gen_opt_minus(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 {
     // Create a size-exit to fall back to the interpreter
@@ -667,7 +673,7 @@ check_cfunc_dispatch(VALUE receiver, struct rb_call_data *cd, void *callee, rb_c
 
 MJIT_FUNC_EXPORTED VALUE rb_hash_has_key(VALUE hash, VALUE key);
 
-bool
+static bool
 cfunc_needs_frame(const rb_method_cfunc_t *cfunc)
 {
     void* fptr = (void*)cfunc->func;
@@ -680,7 +686,7 @@ cfunc_needs_frame(const rb_method_cfunc_t *cfunc)
     );
 }
 
-bool
+static bool
 gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 {
     // Relevant definitions:
