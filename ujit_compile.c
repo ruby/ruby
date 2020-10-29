@@ -25,6 +25,8 @@
 #define UJIT_CHECK_MODE 0
 #endif
 
+// >= 1: print when output code invalidation happens
+// >= 2: dump list of instructions when regions compile
 #ifndef UJIT_DUMP_MODE
 #define UJIT_DUMP_MODE 0
 #endif
@@ -358,22 +360,20 @@ Compile a sequence of bytecode instructions starting at `insn_idx`.
 Return the index to the first instruction not compiled in the sequence
 through `next_ujit_idx`. Return `NULL` in case compilation fails.
 */
-uint8_t *
+static uint8_t *
 ujit_compile_insn(const rb_iseq_t *iseq, unsigned int insn_idx, unsigned int *next_ujit_idx)
 {
     assert (cb != NULL);
-
+    unsigned first_insn_idx = insn_idx;
     VALUE *encoded = iseq->body->iseq_encoded;
 
     // NOTE: if we are ever deployed in production, we
     // should probably just log an error and return NULL here,
     // so we can fail more gracefully
-    if (cb->write_pos + 1024 >= cb->mem_size)
-    {
+    if (cb->write_pos + 1024 >= cb->mem_size) {
         rb_bug("out of executable memory");
     }
-    if (ocb->write_pos + 1024 >= ocb->mem_size)
-    {
+    if (ocb->write_pos + 1024 >= ocb->mem_size) {
         rb_bug("out of executable memory (outlined block)");
     }
 
@@ -396,9 +396,8 @@ ujit_compile_insn(const rb_iseq_t *iseq, unsigned int insn_idx, unsigned int *ne
     ctx.replacement_idx = insn_idx;
 
     // For each instruction to compile
-    size_t num_instrs;
-    for (num_instrs = 0;; ++num_instrs)
-    {
+    unsigned num_instrs;
+    for (num_instrs = 0;; ++num_instrs) {
         // Set the current PC
         ctx.pc = &encoded[insn_idx];
 
@@ -407,16 +406,14 @@ ujit_compile_insn(const rb_iseq_t *iseq, unsigned int insn_idx, unsigned int *ne
 
         // Lookup the codegen function for this instruction
         st_data_t st_gen_fn;
-        if (!rb_st_lookup(gen_fns, opcode, &st_gen_fn))
-        {
+        if (!rb_st_lookup(gen_fns, opcode, &st_gen_fn)) {
             //print_int(cb, imm_opnd(num_instrs));
             //print_str(cb, insn_name(opcode));
             break;
         }
 
         // Write the pre call bytes before the first instruction
-        if (num_instrs == 0)
-        {
+        if (num_instrs == 0) {
             ujit_gen_entry(cb);
 
             // Load the current SP from the CFP into REG_SP
@@ -425,28 +422,45 @@ ujit_compile_insn(const rb_iseq_t *iseq, unsigned int insn_idx, unsigned int *ne
 
         // Call the code generation function
         codegen_fn gen_fn = (codegen_fn)st_gen_fn;
-        if (!gen_fn(cb, ocb, &ctx))
-        {
+        if (!gen_fn(cb, ocb, &ctx)) {
             break;
         }
 
     	// Move to the next instruction
         insn_idx += insn_len(opcode);
+
+        // Ensure we only have one send per region. Our code invalidation mechanism can't
+        // invalidate running code and one send could invalidate the other if we had
+        // multiple in the same region.
+        if (opcode == BIN(opt_send_without_block)) {
+            break;
+        }
     }
 
     // Let the caller know how many instructions ujit compiled
     *next_ujit_idx = insn_idx;
 
     // If no instructions were compiled
-    if (num_instrs == 0)
-    {
+    if (num_instrs == 0) {
         return NULL;
     }
 
     // Generate code to exit to the interpreter
-    ujit_gen_exit(cb, &ctx, ctx.pc);
+    ujit_gen_exit(cb, &ctx, &encoded[*next_ujit_idx]);
 
     addr2insn_bookkeeping(code_ptr, first_opcode);
+
+    if (UJIT_DUMP_MODE >= 2) {
+        // Dump list of compiled instrutions
+        fprintf(stderr, "Compiled the following for iseq=%p:\n", (void *)iseq);
+        VALUE *pc = &encoded[first_insn_idx];
+        VALUE *end_pc = &encoded[*next_ujit_idx];
+        while (pc < end_pc) {
+            int opcode = opcode_at_pc(iseq, pc);
+            fprintf(stderr, "  %04td %s\n", pc - encoded, insn_name(opcode));
+            pc += insn_len(opcode);
+        }
+    }
 
     return code_ptr;
 }
