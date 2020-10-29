@@ -1,5 +1,7 @@
 == Recipes for Parsing \CSV
 
+These recipes are specific code examples for specific \CSV parsing tasks.
+
 For other recipes, see {Recipes for CSV}[./recipes_rdoc.html].
 
 All code snippets on this page assume that the following has been executed:
