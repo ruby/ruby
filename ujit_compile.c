@@ -354,11 +354,12 @@ ujit_side_exit(codeblock_t* cb, ctx_t* ctx, VALUE* exit_pc)
 }
 
 /*
-Generate a chunk of machine code for one individual bytecode instruction
-Eventually, this will handle multiple instructions in a sequence
+Compile a sequence of bytecode instructions starting at `insn_idx`.
+Return the index to the first instruction not compiled in the sequence
+through `next_ujit_idx`. Return `NULL` in case compilation fails.
 */
 uint8_t *
-ujit_compile_insn(const rb_iseq_t *iseq, unsigned int insn_idx, unsigned int* next_ujit_idx)
+ujit_compile_insn(const rb_iseq_t *iseq, unsigned int insn_idx, unsigned int *next_ujit_idx)
 {
     assert (cb != NULL);
 
