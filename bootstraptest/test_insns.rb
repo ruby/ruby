@@ -181,6 +181,8 @@ tests = [
 
   [ 'opt_send_without_block', %q{ true.to_s }, ],
   [ 'send',                   %q{ true.tap {|i| i.to_s } }, ],
+  [ 'opt_sendsym_without_block', %q{ true.__send__("to_s".to_sym) }, ],
+  [ 'sendsym',                   %q{ true.__send__("tap".to_sym) {|i| i.to_s } }, ],
   [ 'leave',                  %q{ def x; true; end; x }, ],
   [ 'invokesuper',            <<-'},', ], # {
     class X < String
