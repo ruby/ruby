@@ -922,6 +922,33 @@ assert_equal 'true', %q{
   [a.frozen?, a[0].frozen?] == [true, false]
 }
 
+# Ractor.make_shareable(a_proc) makes a proc shareable.
+assert_equal 'true', %q{
+  a = [1, [2, 3], {a: "4"}]
+  pr = Proc.new do
+    a
+  end
+  Ractor.make_shareable(a) # referred value should be shareable
+  Ractor.make_shareable(pr)
+  Ractor.shareable?(pr)
+}
+
+# Ractor.make_shareable(a_proc) makes a proc shareable.
+assert_equal 'can not make a Proc shareable because it accesses outer variables (a).', %q{
+  a = b = nil
+  pr = Proc.new do
+    c = b # assign to a is okay because c is block local variable
+          # reading b is okay
+    a = b # assign to a is not allowed #=> Ractor::Error
+  end
+
+  begin
+    Ractor.make_shareable(pr)
+  rescue => e
+    e.message
+  end
+}
+
 ###
 ### Synchronization tests
 ###

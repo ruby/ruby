@@ -2688,13 +2688,15 @@ vm_call_bmethod_body(rb_execution_context_t *ec, struct rb_calling_info *calling
     VALUE val;
     const struct rb_callcache *cc = cd->cc;
     const rb_callable_method_entry_t *cme = vm_cc_cme(cc);
+    VALUE procv = cme->def->body.bmethod.proc;
 
-    if (cme->def->body.bmethod.defined_ractor != rb_ec_ractor_ptr(ec)->self) {
+    if (!RB_OBJ_SHAREABLE_P(procv) &&
+        cme->def->body.bmethod.defined_ractor != rb_ec_ractor_ptr(ec)->self) {
         rb_raise(rb_eRuntimeError, "defined in a different Ractor");
     }
 
     /* control block frame */
-    GetProcPtr(cme->def->body.bmethod.proc, proc);
+    GetProcPtr(procv, proc);
     val = rb_vm_invoke_bmethod(ec, proc, calling->recv, calling->argc, argv, calling->kw_splat, calling->block_handler, vm_cc_cme(cc));
 
     return val;
