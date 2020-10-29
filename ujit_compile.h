@@ -25,7 +25,6 @@ bool rb_ujit_enabled_p(void)
 
 void rb_ujit_method_lookup_change(VALUE cme_or_cc);
 void rb_ujit_init(void);
-uint8_t *ujit_compile_insn(const rb_iseq_t *iseq, unsigned int insn_idx, unsigned int *next_ujit_idx);
 void rb_ujit_compile_iseq(const rb_iseq_t *iseq);
 
 #endif
