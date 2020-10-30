@@ -1014,7 +1014,7 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
                     VALUE v = src_env->env[j];
                     if (!rb_ractor_shareable_p(v)) {
                         rb_raise(rb_ractor_error_class(),
-                                 "can not make shareable Proc because it can refere unshareable object %"
+                                 "can not make shareable Proc because it can refer unshareable object %"
                                  PRIsVALUE" from variable `%s'", rb_inspect(v), rb_id2name(id));
                     }
                     env_body[j] = v;
