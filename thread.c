@@ -4504,7 +4504,13 @@ rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
         } while (wait_retryable(&result, lerrno, to, end));
     }
     EC_POP_TAG();
-    list_del(&wfd.wfd_node);
+
+    RB_VM_LOCK_ENTER();
+    {
+        list_del(&wfd.wfd_node);
+    }
+    RB_VM_LOCK_LEAVE();
+
     if (state) {
         EC_JUMP_TAG(wfd.th->ec, state);
     }
