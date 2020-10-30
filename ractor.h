@@ -10,15 +10,15 @@
 
 enum rb_ractor_basket_type {
     basket_type_none,
-    basket_type_shareable,
-    basket_type_copy_marshal,
-    basket_type_copy_custom,
+    basket_type_ref,
+    basket_type_copy,
     basket_type_move,
-    basket_type_exception,
+    basket_type_will,
 };
 
 struct rb_ractor_basket {
     enum rb_ractor_basket_type type;
+    bool exception;
     VALUE v;
     VALUE sender;
 };
