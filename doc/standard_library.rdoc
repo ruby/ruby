@@ -8,7 +8,6 @@ description.
 
 == Libraries
 
-DEBUGGER__:: Debugging functionality for Ruby
 MakeMakefile:: Module used to generate a Makefile for C extensions
 RbConfig:: Information of your configure and build of Ruby
 Gem:: Package management framework for Ruby
@@ -33,6 +32,7 @@ Benchmark:: Provides methods to measure and report the time used to execute code
 Bundler:: Manage your Ruby application's gem dependencies
 CGI:: Support for the Common Gateway Interface protocol
 CSV:: Provides an interface to read and write CSV files and data
+DEBUGGER__:: Debugging functionality for Ruby
 Delegator:: Provides three abilities to delegate method calls to an object
 DidYouMean:: "Did you mean?" experience in Ruby
 Digest:: Provides a framework for message digest libraries
