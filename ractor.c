@@ -445,7 +445,7 @@ static void
 ractor_move_setup(struct rb_ractor_basket *b, VALUE obj)
 {
     if (rb_ractor_shareable_p(obj)) {
-        b->type = basket_type_shareable;
+        b->type = basket_type_ref;
         b->v = obj;
     }
     else {
@@ -463,35 +463,41 @@ ractor_basket_clear(struct rb_ractor_basket *b)
     b->sender = Qfalse;
 }
 
+static void ractor_reset_belonging(VALUE obj); // in this file
+
 static VALUE
 ractor_basket_accept(struct rb_ractor_basket *b)
 {
     VALUE v;
     switch (b->type) {
-      case basket_type_shareable:
+      case basket_type_ref:
         VM_ASSERT(rb_ractor_shareable_p(b->v));
         v = b->v;
         break;
-      case basket_type_copy_marshal:
+      case basket_type_copy:
         v = rb_marshal_load(b->v);
         RB_GC_GUARD(b->v);
         break;
-      case basket_type_exception:
-        {
-            VALUE cause = rb_marshal_load(b->v);
-            VALUE err = rb_exc_new_cstr(rb_eRactorRemoteError, "thrown by remote Ractor.");
-            rb_ivar_set(err, rb_intern("@ractor"), b->sender);
-            ractor_basket_clear(b);
-            rb_ec_setup_exception(NULL, err, cause);
-            rb_exc_raise(err);
-        }
-        // unreachable
       case basket_type_move:
         v = ractor_moved_setup(b->v);
+        break;
+      case basket_type_will:
+        v = b->v;
+        ractor_reset_belonging(v);
         break;
       default:
         rb_bug("unreachable");
     }
+
+    if (b->exception) {
+        VALUE cause = v;
+        VALUE err = rb_exc_new_cstr(rb_eRactorRemoteError, "thrown by remote Ractor.");
+        rb_ivar_set(err, rb_intern("@ractor"), b->sender);
+        ractor_basket_clear(b);
+        rb_ec_setup_exception(NULL, err, cause);
+        rb_exc_raise(err);
+    }
+
     ractor_basket_clear(b);
     return v;
 }
@@ -500,18 +506,12 @@ static void
 ractor_copy_setup(struct rb_ractor_basket *b, VALUE obj)
 {
     if (rb_ractor_shareable_p(obj)) {
-        b->type = basket_type_shareable;
+        b->type = basket_type_ref;
         b->v = obj;
     }
     else {
-#if 0
-        // TODO: consider custom copy protocol
-        switch (BUILTIN_TYPE(obj)) {
-
-        }
-#endif
         b->v = rb_marshal_dump(obj, Qnil);
-        b->type = basket_type_copy_marshal;
+        b->type = basket_type_copy;
     }
 }
 
@@ -778,27 +778,29 @@ ractor_send_basket(rb_execution_context_t *ec, rb_ractor_t *r, struct rb_ractor_
 }
 
 static void
-ractor_basket_setup(rb_execution_context_t *ec, struct rb_ractor_basket *basket, VALUE obj, VALUE move, bool exc)
+ractor_basket_setup(rb_execution_context_t *ec, struct rb_ractor_basket *basket, VALUE obj, VALUE move, bool exc, bool is_will)
 {
     basket->sender = rb_ec_ractor_ptr(ec)->self;
+    basket->exception = exc;
 
-    if (!RTEST(move)) {
+    if (is_will) {
+        basket->type = basket_type_will;
+        basket->v = obj;
+    }
+    else if (!RTEST(move)) {
         ractor_copy_setup(basket, obj);
     }
     else {
         ractor_move_setup(basket, obj);
     }
 
-    if (exc) {
-        basket->type = basket_type_exception;
-    }
 }
 
 static VALUE
 ractor_send(rb_execution_context_t *ec, rb_ractor_t *r, VALUE obj, VALUE move)
 {
     struct rb_ractor_basket basket;
-    ractor_basket_setup(ec, &basket, obj, move, false);
+    ractor_basket_setup(ec, &basket, obj, move, false, false);
     ractor_send_basket(ec, r, &basket);
     return r->self;
 }
@@ -942,7 +944,7 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, int alen, VALUE yield
         wait_status |= wait_yielding;
         alen++;
 
-        ractor_basket_setup(ec, &cr->wait.yielded_basket, yielded_value, move, false);
+        ractor_basket_setup(ec, &cr->wait.yielded_basket, yielded_value, move, false, false);
     }
 
     // TODO: shuffle actions
@@ -1400,7 +1402,7 @@ ractor_yield_atexit(rb_execution_context_t *ec, rb_ractor_t *cr, VALUE v, bool e
     ASSERT_ractor_unlocking(cr);
 
     struct rb_ractor_basket basket;
-    ractor_basket_setup(ec, &basket, v, Qfalse, exc);
+    ractor_basket_setup(ec, &basket, v, Qfalse, exc, true);
 
   retry:
     if (ractor_try_yield(ec, cr, &basket)) {
@@ -1921,7 +1923,7 @@ obj_hash_traverse_i(VALUE key, VALUE val, VALUE ptr)
 }
 
 static void
-obj_tdata_traverse_i(VALUE obj, void *ptr)
+obj_traverse_reachable_i(VALUE obj, void *ptr)
 {
     struct obj_traverse_callback_data *d = (struct obj_traverse_callback_data *)ptr;
 
@@ -2031,12 +2033,13 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
         break;
 
       case T_DATA:
+      case T_IMEMO:
         {
             struct obj_traverse_callback_data d = {
                 .stop = false,
                 .data = data,
             };
-            rb_objspace_reachable_objects_from(obj, obj_tdata_traverse_i, &d);
+            rb_objspace_reachable_objects_from(obj, obj_traverse_reachable_i, &d);
             if (d.stop) return 1;
         }
         break;
@@ -2178,6 +2181,35 @@ rb_ractor_shareable_p_continue(VALUE obj)
     else {
         return true;
     }
+}
+
+#if RACTOR_CHECK_MODE > 0
+static enum obj_traverse_iterator_result
+reset_belonging_enter(VALUE obj)
+{
+    if (rb_ractor_shareable_p(obj)) {
+        return traverse_skip;
+    }
+    else {
+        rb_ractor_setup_belonging(obj);
+        return traverse_cont;
+    }
+}
+
+static enum obj_traverse_iterator_result
+null_leave(VALUE obj)
+{
+    return traverse_cont;
+}
+#endif
+
+static void
+ractor_reset_belonging(VALUE obj)
+{
+#if RACTOR_CHECK_MODE > 0
+    rb_obj_traverse(obj, reset_belonging_enter, null_leave);
+    
+#endif
 }
 
 #include "ractor.rbinc"
