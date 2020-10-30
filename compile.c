@@ -1624,7 +1624,7 @@ access_outer_variables(const rb_iseq_t *iseq, int level, ID id, bool write)
         if (!ovs) {
             ovs = iseq->body->outer_variables = rb_id_table_create(8);
         }
-        
+
         if (rb_id_table_lookup(iseq->body->outer_variables, id, &val)) {
             if (write && !val) {
                 rb_id_table_insert(iseq->body->outer_variables, id, Qtrue);
