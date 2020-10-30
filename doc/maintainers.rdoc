@@ -71,8 +71,6 @@ Zachary Scott (zzak)
   * API change needs matz's approval
 [ext/win32]
   NAKAMURA Usaku (usa)
-[ext/win32ole]
-  Masaki Suketa (suke)
 
 == Default gems Maintainers
 
@@ -359,6 +357,8 @@ Zachary Scott (zzak)
 [ext/syslog]
   Akinori MUSHA (knu)
   https://github.com/ruby/syslog
+[ext/win32ole]
+  Masaki Suketa (suke)
 [ext/zlib]
   NARUSE, Yui (naruse)
   https://github.com/ruby/zlib
