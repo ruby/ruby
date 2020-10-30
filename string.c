@@ -3563,7 +3563,6 @@ rb_strseq_index(VALUE str, VALUE sub, long offset, int in_byte)
 {
     const char *str_ptr, *str_ptr_end, *sub_ptr;
     long str_len, sub_len;
-    int single_byte = single_byte_optimizable(str);
     rb_encoding *enc;
 
     enc = rb_enc_check(str, sub);
@@ -3579,6 +3578,7 @@ rb_strseq_index(VALUE str, VALUE sub, long offset, int in_byte)
 
     if (offset != 0) {
 	long str_len_char, sub_len_char;
+        int single_byte = single_byte_optimizable(str);
 	str_len_char = (in_byte || single_byte) ? str_len : str_strlen(str, enc);
 	sub_len_char = in_byte ? sub_len : str_strlen(sub, enc);
 	if (offset < 0) {
