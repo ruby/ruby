@@ -933,6 +933,17 @@ assert_equal 'true', %q{
   Ractor.shareable?(pr)
 }
 
+# define_method() can invoke different Ractor's proc if the proc is shareable.
+assert_equal '1', %q{
+  class C
+    a = 1
+    define_method "foo", Ractor.make_shareable(Proc.new{ a })
+    a = 2
+  end
+
+  Ractor.new{ C.new.foo }.take
+}
+
 # Ractor.make_shareable(a_proc) makes a proc shareable.
 assert_equal 'can not make a Proc shareable because it accesses outer variables (a).', %q{
   a = b = nil
