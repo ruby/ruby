@@ -478,7 +478,6 @@ static int iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *anchor, const NODE *n
 static int iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *const anchor);
 static int iseq_setup_insn(rb_iseq_t *iseq, LINK_ANCHOR *const anchor);
 static int iseq_optimize(rb_iseq_t *iseq, LINK_ANCHOR *const anchor);
-static int iseq_optimize_after_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor);
 static int iseq_insns_unification(rb_iseq_t *iseq, LINK_ANCHOR *const anchor);
 
 static int iseq_set_local_table(rb_iseq_t *iseq, const ID *tbl);
@@ -1468,7 +1467,6 @@ iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 
     debugs("[compile step 4.1 (iseq_set_sequence)]\n");
     if (!iseq_set_sequence(iseq, anchor)) return COMPILE_NG;
-    iseq_optimize_after_set_sequence(iseq, anchor);
     if (compile_debug > 5)
 	dump_disasm_list(FIRST_ELEMENT(anchor));
 
@@ -2270,14 +2268,16 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 	    }
 	  case ISEQ_ELEMENT_ADJUST:
 	    {
-                ADJUST *adjust = (ADJUST *)list;
-                int orig_sp = sp;
-                sp = adjust->label ? adjust->label->sp : 0;
-                if (adjust->line_no != -1 && orig_sp - sp > 0) {
-                    if (orig_sp - sp > 1) code_index++; /* 1 operand */
-                    code_index++; /* insn */
-                    insn_num++;
-                }
+		ADJUST *adjust = (ADJUST *)list;
+		if (adjust->line_no != -1) {
+		    int orig_sp = sp;
+		    sp = adjust->label ? adjust->label->sp : 0;
+		    if (orig_sp - sp > 0) {
+			if (orig_sp - sp > 1) code_index++; /* 1 operand */
+			code_index++; /* insn */
+			insn_num++;
+		    }
+		}
 		break;
 	    }
 	  default: break;
@@ -2856,20 +2856,6 @@ ci_argc_set(const rb_iseq_t *iseq, const struct rb_callinfo *ci, int argc)
 }
 
 static int
-iseq_peephole_optimize_after_set_sequence(rb_iseq_t *iseq, LINK_ELEMENT *list)
-{
-    INSN *const iobj = (INSN *)list;
-
-    optimize_checktype(iseq, iobj);
-
-    if (IS_INSN_ID(iobj, jump) || IS_INSN_ID(iobj, leave)) {
-        remove_unreachable_chunk(iseq, iobj->link.next);
-    }
-
-    return COMPILE_OK;
-}
-
-static int
 iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcallopt)
 {
     INSN *const iobj = (INSN *)list;
@@ -2907,6 +2893,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	     *      LABEL2 directly
 	     */
 	    replace_destination(iobj, diobj);
+	    remove_unreachable_chunk(iseq, iobj->link.next);
 	    goto again;
 	}
         else if (IS_INSN_ID(diobj, leave)) {
@@ -2980,6 +2967,9 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		ELEM_REPLACE(&piobj->link, &popiobj->link);
 	    }
 	}
+	if (remove_unreachable_chunk(iseq, iobj->link.next)) {
+	    goto again;
+	}
     }
 
     /*
@@ -3010,6 +3000,10 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	    OPERAND_AT(range, 0) = lit_range;
 	    RB_OBJ_WRITTEN(iseq, Qundef, lit_range);
 	}
+    }
+
+    if (IS_INSN_ID(iobj, leave)) {
+	remove_unreachable_chunk(iseq, iobj->link.next);
     }
 
     if (IS_INSN_ID(iobj, branchif) ||
@@ -3541,25 +3535,6 @@ iseq_optimize(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 	      case LABEL_RESCUE_END:
 		if (!--rescue_level) tailcallopt = do_tailcallopt;
 		break;
-	    }
-	}
-	list = list->next;
-    }
-    return COMPILE_OK;
-}
-
-static int
-iseq_optimize_after_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
-{
-    LINK_ELEMENT *list;
-    const int do_peepholeopt = ISEQ_COMPILE_DATA(iseq)->option->peephole_optimization;
-
-    list = FIRST_ELEMENT(anchor);
-
-    while (list) {
-	if (IS_INSN(list)) {
-	    if (do_peepholeopt) {
-		iseq_peephole_optimize_after_set_sequence(iseq, list);
 	    }
 	}
 	list = list->next;
