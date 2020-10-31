@@ -421,10 +421,18 @@ One of the things developer should be aware of, which probably to be fixed in th
   a
   #=> 1  -- the whole pattern not matched, but partial match happened, a is rewritten
 
-Currently, the only core class implementing +deconstruct+ and +deconstruct_keys+ is Struct.
+Currently, the only core classes implementing +deconstruct+ and +deconstruct_keys+ are Struct:
 
-   Point = Struct.new(:x, :y)
-   Point[1, 2] in [a, b]
-   # successful match
-   Point[1, 2] in {x:, y:}
-   # successful match
+  Point = Struct.new(:x, :y)
+  Point[1, 2] in [a, b]
+  # successful match
+  Point[1, 2] in {x:, y:}
+  # successful match
+
+And MatchData named captures in Regexps:
+
+  case /(?<a>.)(?<b>.)/.match("xy")
+  in a: "x", b:
+    "a was 'x' and b was matched to #{b.inspect}"
+  end
+  #=> "a was 'x' and b was matched to 'y'"

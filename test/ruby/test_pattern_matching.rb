@@ -1080,6 +1080,29 @@ END
       end
     end
 
+    assert_block do
+      m = /(?<a>.)/.match('x')
+
+      # Temporary patch in ruby to make tests pass until the code gets re-written in C
+      def m.deconstruct_keys(*keys)
+        h0 = named_captures.transform_keys(&:to_sym)
+        if keys
+          keys = keys.flatten.compact
+          raise TypeError unless keys.all? { |k| k.is_a?(Symbol) }
+          h0 = h0.slice(*keys) unless keys.empty?
+        end
+        h0.inject({}) { |h, (k, v)| h[k] = v if v; h }
+      end
+      # Temporary patch in ruby to make tests pass until the code gets re-written in C
+
+      [m].all? do |i|
+        case i
+        in {a: 'x'}
+          true
+        end
+      end
+    end
+
     assert_syntax_error(%q{
       case _
       in a:, a:

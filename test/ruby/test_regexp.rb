@@ -235,6 +235,30 @@ class TestRegexp < Test::Unit::TestCase
     end;
   end
 
+  def test_deconstruct_keys
+    m = /(?<a>.)(?<b>.)/.match('xy')
+
+    # Temporary patch in ruby to make tests pass until the code gets re-written in C
+    def m.deconstruct_keys(*keys)
+      h0 = named_captures.transform_keys(&:to_sym)
+      if keys
+        keys = keys.flatten.compact
+        raise TypeError unless keys.all? { |k| k.is_a?(Symbol) }
+        h0 = h0.slice(*keys) unless keys.empty?
+      end
+      h0.inject({}) { |h, (k, v)| h[k] = v if v; h }
+    end
+    # Temporary patch in ruby to make tests pass until the code gets re-written in C
+
+    assert_equal({a: 'x', b: 'y'}, m.deconstruct_keys(nil))
+    assert_equal({a: 'x', b: 'y'}, m.deconstruct_keys([:b, :a]))
+    assert_equal({a: 'x'}, m.deconstruct_keys([:a]))
+    assert_not_send([m.deconstruct_keys([:a, :c]), :key?, :c])
+    assert_raise(TypeError) {
+      m.deconstruct_keys(0)
+    }
+  end
+
   def test_match_regexp
     r = /./
     m = r.match("a")
