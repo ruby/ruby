@@ -3553,7 +3553,6 @@ iseq_optimize_after_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 {
     LINK_ELEMENT *list;
     const int do_peepholeopt = ISEQ_COMPILE_DATA(iseq)->option->peephole_optimization;
-    int rescue_level = 0;
 
     list = FIRST_ELEMENT(anchor);
 
