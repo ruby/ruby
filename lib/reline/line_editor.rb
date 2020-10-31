@@ -187,6 +187,7 @@ class Reline::LineEditor
     @searching_prompt = nil
     @first_char = true
     @eof = false
+    @continuous_insertion_buffer = String.new(encoding: @encoding)
     reset_line
   end
 
@@ -728,6 +729,18 @@ class Reline::LineEditor
     method_obj and method_obj.parameters.length != 1
   end
 
+  def wrap_method_call(method_symbol, method_obj, key)
+    if @config.editing_mode_is?(:emacs, :vi_insert) and @waiting_proc.nil? and @waiting_operator_proc.nil?
+      not_insertion = method_symbol != :ed_insert
+      process_insert(force: not_insertion)
+    end
+    if @vi_arg
+      method_obj.(key, arg: @vi_arg)
+    else
+      method_obj.(key)
+    end
+  end
+
   private def process_key(key, method_symbol)
     if method_symbol and respond_to?(method_symbol, true)
       method_obj = method(method_symbol)
@@ -737,10 +750,10 @@ class Reline::LineEditor
     if method_symbol and key.is_a?(Symbol)
       if @vi_arg and argumentable?(method_obj)
         run_for_operators(key, method_symbol) do
-          method_obj.(key, arg: @vi_arg)
+          wrap_method_call(method_symbol, method_obj, key)
         end
       else
-        method_obj&.(key)
+        wrap_method_call(method_symbol, method_obj, key) if method_obj
       end
       @kill_ring.process
       @vi_arg = nil
@@ -750,12 +763,12 @@ class Reline::LineEditor
       else
         if argumentable?(method_obj)
           run_for_operators(key, method_symbol) do
-            method_obj.(key, arg: @vi_arg)
+            wrap_method_call(method_symbol, method_obj, key)
           end
         elsif @waiting_proc
           @waiting_proc.(key)
         elsif method_obj
-          method_obj.(key)
+          wrap_method_call(method_symbol, method_obj, key)
         else
           ed_insert(key)
         end
@@ -767,10 +780,10 @@ class Reline::LineEditor
       @kill_ring.process
     elsif method_obj
       if method_symbol == :ed_argument_digit
-        method_obj.(key)
+        wrap_method_call(method_symbol, method_obj, key)
       else
         run_for_operators(key, method_symbol) do
-          method_obj.(key)
+          wrap_method_call(method_symbol, method_obj, key)
         end
       end
       @kill_ring.process
@@ -832,6 +845,7 @@ class Reline::LineEditor
         result = call_completion_proc
         if result.is_a?(Array)
           completion_occurs = true
+          process_insert
           complete(result)
         end
       end
@@ -840,6 +854,7 @@ class Reline::LineEditor
         result = call_completion_proc
         if result.is_a?(Array)
           completion_occurs = true
+          process_insert
           move_completed_list(result, "\C-p".ord == key.char ? :up : :down)
         end
       end
@@ -1092,38 +1107,55 @@ class Reline::LineEditor
 
   private def ed_unassigned(key) end # do nothing
 
+  private def process_insert(force: false)
+    return if @continuous_insertion_buffer.empty? or (Reline::IOGate.in_pasting? and not force)
+    width = Reline::Unicode.calculate_width(@continuous_insertion_buffer)
+    bytesize = @continuous_insertion_buffer.bytesize
+    if @cursor == @cursor_max
+      @line += @continuous_insertion_buffer
+    else
+      @line = byteinsert(@line, @byte_pointer, @continuous_insertion_buffer)
+    end
+    @byte_pointer += bytesize
+    @cursor += width
+    @cursor_max += width
+    @continuous_insertion_buffer.clear
+  end
+
   private def ed_insert(key)
+    str = nil
+    width = nil
+    bytesize = nil
     if key.instance_of?(String)
       begin
         key.encode(Encoding::UTF_8)
       rescue Encoding::UndefinedConversionError
         return
       end
-      width = Reline::Unicode.get_mbchar_width(key)
-      if @cursor == @cursor_max
-        @line += key
-      else
-        @line = byteinsert(@line, @byte_pointer, key)
-      end
-      @byte_pointer += key.bytesize
-      @cursor += width
-      @cursor_max += width
+      str = key
+      bytesize = key.bytesize
     else
       begin
         key.chr.encode(Encoding::UTF_8)
       rescue Encoding::UndefinedConversionError
         return
       end
-      if @cursor == @cursor_max
-        @line += key.chr
-      else
-        @line = byteinsert(@line, @byte_pointer, key.chr)
-      end
-      width = Reline::Unicode.get_mbchar_width(key.chr)
-      @byte_pointer += 1
-      @cursor += width
-      @cursor_max += width
+      str = key.chr
+      bytesize = 1
     end
+    if Reline::IOGate.in_pasting?
+      @continuous_insertion_buffer << str
+      return
+    end
+    width = Reline::Unicode.get_mbchar_width(str)
+    if @cursor == @cursor_max
+      @line += str
+    else
+      @line = byteinsert(@line, @byte_pointer, str)
+    end
+    @byte_pointer += bytesize
+    @cursor += width
+    @cursor_max += width
   end
   alias_method :ed_digit, :ed_insert
   alias_method :self_insert, :ed_insert
@@ -1609,6 +1641,7 @@ class Reline::LineEditor
   end
 
   private def ed_newline(key)
+    process_insert(force: true)
     if @is_multiline
       if @config.editing_mode_is?(:vi_command)
         if @line_index < (@buffer_of_lines.size - 1)
