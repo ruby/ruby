@@ -37,7 +37,7 @@ Delegator:: Provides three abilities to delegate method calls to an object
 DidYouMean:: "Did you mean?" experience in Ruby
 Digest:: Provides a framework for message digest libraries
 DRb:: Distributed object system for Ruby
-English.rb:: Require 'English.rb' to reference global variables with less cryptic names
+English:: Provides references to special global variables with less cryptic names
 ERB:: An easy to use but powerful templating system for Ruby
 FileUtils:: Several file utility methods for copying, moving, removing, etc
 Find:: This module supports top-down traversal of a set of file paths
