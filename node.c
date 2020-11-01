@@ -1328,9 +1328,11 @@ mark_ast_value(void *ctx, NODE * node)
       case NODE_DXSTR:
       case NODE_DREGX:
       case NODE_DSYM:
+        rb_gc_mark_movable(node->nd_lit);
+        break;
       case NODE_ARYPTN:
       case NODE_FNDPTN:
-        rb_gc_mark_movable(node->nd_lit);
+        rb_gc_mark_movable(node->nd_rval);
         break;
       default:
         rb_bug("unreachable node %s", ruby_node_name(nd_type(node)));
@@ -1355,9 +1357,11 @@ update_ast_value(void *ctx, NODE * node)
       case NODE_DXSTR:
       case NODE_DREGX:
       case NODE_DSYM:
+        node->nd_lit = rb_gc_location(node->nd_lit);
+        break;
       case NODE_ARYPTN:
       case NODE_FNDPTN:
-        node->nd_lit = rb_gc_location(node->nd_lit);
+        node->nd_rval = rb_gc_location(node->nd_rval);
         break;
       default:
         rb_bug("unreachable");
