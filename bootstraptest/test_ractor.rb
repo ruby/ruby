@@ -407,7 +407,7 @@ assert_equal 'false', %q{
 }
 
 # To copy the object, now Marshal#dump is used
-assert_equal 'no _dump_data is defined for class Thread', %q{
+assert_equal "allocator undefined for Thread", %q{
   obj = Thread.new{}
   begin
     r = Ractor.new obj do |msg|
