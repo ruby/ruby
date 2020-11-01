@@ -1473,13 +1473,13 @@ END
     assert_warn('') {eval(code)}
 
     Warning[:experimental] = true
-    assert_warn(/Pattern matching is experimental/) {eval(code)}
+    assert_warn(/is experimental/) {eval(code)}
   ensure
     Warning[:experimental] = w
   end
 
   def test_experimental_warning
-    assert_experimental_warning("case 0; in 0; end")
+    assert_experimental_warning("case [0]; in [*, 0, *]; end")
     assert_experimental_warning("0 => 0")
   end
 end

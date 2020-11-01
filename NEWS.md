@@ -48,7 +48,23 @@ sufficient information, see the ChangeLog file or Redmine
   instead of a warning. yield in a class definition outside of a method
   is now a SyntaxError instead of a LocalJumpError.  [[Feature #15575]]
 
-* Find pattern is added. [[Feature #16828]]
+* Pattern matching is no longer experimental. [[Feature #17260]]
+
+* One-line pattern matching now uses `=>` instead of `in`.  [EXPERIMENTAL]
+  [[Feature #17260]]
+
+    ```ruby
+    # version 3.0
+    {a: 0, b: 1} => {a:}
+    p a # => 0
+    
+    # version 2.7
+    {a: 0, b: 1} in {a:}
+    p a # => 0
+    ```
+
+* Find pattern is added.  [EXPERIMENTAL]
+  [[Feature #16828]]
 
     ```ruby
     case ["a", 1, "b", "c", 2, "d", "e", "f", 3]

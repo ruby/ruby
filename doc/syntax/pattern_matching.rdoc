@@ -1,12 +1,8 @@
 = Pattern matching
 
-Pattern matching is an experimental feature allowing deep matching of structured values: checking the structure and binding the matched parts to local variables.
+Pattern matching is a feature allowing deep matching of structured values: checking the structure and binding the matched parts to local variables.
 
-Pattern matching in Ruby is implemented with the +in+ operator, which can be used in a standalone expression:
-
-    <expression> in <pattern>
-
-or within the +case+ statement:
+Pattern matching in Ruby is implemented with the +case+/+in+ expression:
 
     case <expression>
     in <pattern1>
@@ -19,11 +15,15 @@ or within the +case+ statement:
       ...
     end
 
-(Note that +in+ and +when+ branches can *not* be mixed in one +case+ statement.)
+or with the +=>+ operator, which can be used in a standalone expression:
 
-Pattern matching is _exhaustive_: if variable doesn't match pattern (in a separate +in+ statement), or doesn't matches any branch of +case+ statement (and +else+ branch is absent), +NoMatchingPatternError+ is raised.
+    <expression> => <pattern>
 
-Therefore, +case+ statement might be used for conditional matching and unpacking:
+(Note that +in+ and +when+ branches can *not* be mixed in one +case+ expression.)
+
+Pattern matching is _exhaustive_: if variable doesn't match pattern (in a separate +in+ clause), or doesn't matches any branch of +case+ expression (and +else+ branch is absent), +NoMatchingPatternError+ is raised.
+
+Therefore, +case+ expression might be used for conditional matching and unpacking:
 
   config = {db: {user: 'admin', password: 'abc123'}}
 
@@ -37,11 +37,11 @@ Therefore, +case+ statement might be used for conditional matching and unpacking
   end
   # Prints: "Connect with user 'admin'"
 
-whilst standalone +in+ statement is most useful when expected data structure is known beforehand, to just unpack parts of it:
+whilst the +=>+ operator is most useful when expected data structure is known beforehand, to just unpack parts of it:
 
   config = {db: {user: 'admin', password: 'abc123'}}
 
-  config in {db: {user:}} # will raise if the config's structure is unexpected
+  config => {db: {user:}} # will raise if the config's structure is unexpected
 
   puts "Connect with user '#{user}'"
   # Prints: "Connect with user 'admin'"
@@ -113,7 +113,7 @@ Both array and hash patterns support "rest" specification:
   end
   #=> "matched"
 
-In +case+ (but not in standalone +in+) statement, parentheses around both kinds of patterns could be omitted
+In +case+ (but not in +=>+) expression, parentheses around both kinds of patterns could be omitted
 
   case [1, 2]
   in Integer, Integer
@@ -378,53 +378,23 @@ Additionally, when matching custom classes, expected class could be specified as
 
 == Current feature status
 
-As of Ruby 2.7, feature is considered _experimental_: its syntax can change in the future, and the performance is not optimized yet. Every time you use pattern matching in code, the warning will be printed:
+As of Ruby 3.0, one-line pattern matching and find pattern are considered _experimental_: its syntax can change in the future. Every time you use these features in code, the warning will be printed:
 
-  {a: 1, b: 2} in {a:}
-  # warning: Pattern matching is experimental, and the behavior may change in future versions of Ruby!
+  [0] => [*, 0, *]
+  # warning: Find pattern is experimental, and the behavior may change in future versions of Ruby!
+  # warning: One-line pattern matching is experimental, and the behavior may change in future versions of Ruby!
 
 To suppress this warning, one may use newly introduced Warning::[]= method:
 
   Warning[:experimental] = false
-  eval('{a: 1, b: 2} in {a:}')
+  eval('[0] => [*, 0, *]')
   # ...no warning printed...
 
 Note that pattern-matching warning is raised at a compile time, so this will not suppress warning:
 
   Warning[:experimental] = false # At the time this line is evaluated, the parsing happened and warning emitted
-  {a: 1, b: 2} in {a:}
+  [0] => [*, 0, *]
 
 So, only subsequently loaded files or `eval`-ed code is affected by switching the flag.
 
 Alternatively, command-line key <code>-W:no-experimental</code> can be used to turn off "experimental" feature warnings.
-
-One of the things developer should be aware of, which probably to be fixed in the upcoming versions, is that pattern matching statement rewrites mentioned local variables on partial match, <i>even if the whole pattern is not matched</i>.
-
-  a = 5
-  case [1, 2]
-  in String => a, String
-    "matched"
-  else
-    "not matched"
-  end
-  #=> "not matched"
-  a
-  #=> 5  -- even partial match not happened, a is not rewritten
-
-  case [1, 2]
-  in a, String
-    "matched"
-  else
-    "not matched"
-  end
-  #=> "not matched"
-  a
-  #=> 1  -- the whole pattern not matched, but partial match happened, a is rewritten
-
-Currently, the only core class implementing +deconstruct+ and +deconstruct_keys+ is Struct.
-
-   Point = Struct.new(:x, :y)
-   Point[1, 2] in [a, b]
-   # successful match
-   Point[1, 2] in {x:, y:}
-   # successful match
