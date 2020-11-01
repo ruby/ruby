@@ -11,10 +11,15 @@ ruby_version_is "2.7" do
 
     ruby_version_is "3.0" do
       it "can be standalone assoc operator that deconstructs value" do
-        eval(<<-RUBY).should == [0, 1]
-          [0, 1] => [a, b]
-          [a, b]
-        RUBY
+        $VERBOSE, verbose = nil, $VERBOSE
+        begin
+          eval(<<-RUBY).should == [0, 1]
+            [0, 1] => [a, b]
+            [a, b]
+          RUBY
+        ensure
+          $VERBOSE = verbose
+        end
       end
     end
 
