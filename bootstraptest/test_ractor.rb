@@ -960,6 +960,68 @@ assert_equal 'can not make a Proc shareable because it accesses outer variables 
   end
 }
 
+# basket APIs
+assert_equal "10000", %q{
+  USE_BASKET = true
+
+  receive2yield = Ractor.new do
+    loop do
+      if USE_BASKET
+        Ractor.yield_basket Ractor.receive_basket
+      else
+        Ractor.yield Ractor.receive
+      end
+    end
+  end
+
+  receive2send = Ractor.new receive2yield do |r|
+    loop do
+      if USE_BASKET
+        r.send_basket Ractor.receive_basket
+      else
+        r.send Ractor.receive
+      end
+    end
+  end
+
+  take2yield = Ractor.new receive2yield do |from|
+    loop do
+      if USE_BASKET
+        Ractor.yield_basket from.take_basket
+      else
+        Ractor.yield from.take
+      end
+    end
+  end
+
+  take2send = Ractor.new take2yield, Ractor.current do |from, to|
+    loop do
+      if USE_BASKET
+        to.send_basket from.take_basket
+      else
+        to.send from.take
+      end
+    end
+  end
+
+  AN = 1_000
+  LN = 10
+
+  ary = Array.new(AN) # 1000
+
+  # main ->
+  # receive2send ->
+  # receive2yield ->
+  # take2yield ->
+  # take2send ->
+  # main
+
+  LN.times.map{
+    receive2send << ary
+    Ractor.receive.size
+  }.inject(:+) #=> AN * LN
+}
+
 ###
 ### Synchronization tests
 ###

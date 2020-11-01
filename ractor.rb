@@ -76,7 +76,7 @@ class Ractor
       VALUE rv;
       VALUE v = ractor_select(ec, rs, RARRAY_LENINT(ractors),
                               yield_unspecified == Qtrue ? Qundef : yield_value,
-                              (bool)RTEST(move) ? true : false, &rv);
+                              (bool)RTEST(move) ? true : false, false, &rv);
       return rb_ary_new_from_args(2, rv, v);
     }
   end
@@ -84,7 +84,13 @@ class Ractor
   # Receive an incoming message from Ractor's incoming queue.
   def self.receive
     __builtin_cexpr! %q{
-      ractor_receive(ec, rb_ec_ractor_ptr(ec))
+      ractor_receive_value(ec)
+    }
+  end
+
+  def self.receive_basket
+    __builtin_cexpr! %q{
+      ractor_receive_basket(ec)
     }
   end
 
@@ -94,8 +100,8 @@ class Ractor
 
   private def receive
     __builtin_cexpr! %q{
-      // TODO: check current actor
-      ractor_receive(ec, RACTOR_PTR(self))
+      // TODO: check current ractor
+      ractor_receive_value(ec)
     }
   end
   alias recv receive
@@ -114,10 +120,22 @@ class Ractor
   end
   alias << send
 
+  def send_basket(basket)
+    __builtin_cexpr! %q{
+      ractor_send_basket_m(ec, RACTOR_PTR(self), basket)
+    }
+  end
+
   # yield a message to the ractor's outgoing port.
   def self.yield(obj, move: false)
     __builtin_cexpr! %q{
-      ractor_yield(ec, rb_ec_ractor_ptr(ec), obj, move)
+      ractor_yield(ec, obj, move)
+    }
+  end
+
+  def self.yield_basket(basket)
+    __builtin_cexpr! %q{
+      ractor_yield_basket(ec, basket)
     }
   end
 
@@ -129,6 +147,12 @@ class Ractor
   def take
     __builtin_cexpr! %q{
       ractor_take(ec, RACTOR_PTR(self))
+    }
+  end
+
+  def take_basket
+    __builtin_cexpr! %q{
+      ractor_take_basket(ec, RACTOR_PTR(self))
     }
   end
 

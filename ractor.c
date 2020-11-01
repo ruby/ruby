@@ -15,6 +15,7 @@
 #include "gc.h"
 
 static VALUE rb_cRactor;
+static VALUE rb_cRactorBasket;
 static VALUE rb_eRactorError;
 static VALUE rb_eRactorRemoteError;
 static VALUE rb_eRactorMovedError;
@@ -364,40 +365,63 @@ ractor_basket_clear(struct rb_ractor_basket *b)
 
 static VALUE ractor_reset_belonging(VALUE obj); // in this file
 
+
+
 static VALUE
-ractor_basket_accept(struct rb_ractor_basket *b)
+ractor_basket_accept(struct rb_ractor_basket *b, bool need_basket)
 {
     VALUE v;
 
-    switch (b->type) {
-      case basket_type_ref:
-        VM_ASSERT(rb_ractor_shareable_p(b->v));
-        v = b->v;
-        break;
-      case basket_type_copy:
-      case basket_type_move:
-      case basket_type_will:
-        v = ractor_reset_belonging(b->v);
-        break;
-      default:
-        rb_bug("unreachable");
-    }
+    if (!need_basket) {
+        switch (b->type) {
+          case basket_type_ref:
+            VM_ASSERT(rb_ractor_shareable_p(b->v));
+            v = b->v;
+            break;
+          case basket_type_copy:
+          case basket_type_move:
+          case basket_type_will:
+            v = ractor_reset_belonging(b->v);
+            break;
+          default:
+            rb_bug("unreachable");
+        }
 
-    if (b->exception) {
-        VALUE cause = v;
-        VALUE err = rb_exc_new_cstr(rb_eRactorRemoteError, "thrown by remote Ractor.");
-        rb_ivar_set(err, rb_intern("@ractor"), b->sender);
-        ractor_basket_clear(b);
-        rb_ec_setup_exception(NULL, err, cause);
-        rb_exc_raise(err);
+        if (b->exception) {
+            VALUE cause = v;
+            VALUE err = rb_exc_new_cstr(rb_eRactorRemoteError, "thrown by remote Ractor.");
+            rb_ivar_set(err, rb_intern("@ractor"), b->sender);
+            ractor_basket_clear(b);
+            rb_ec_setup_exception(NULL, err, cause);
+            rb_exc_raise(err);
+        }
+    }
+    else {
+        v = rb_obj_alloc(rb_cRactorBasket);
+        rb_ivar_set(v, rb_intern("sender"), b->sender);
+        rb_ivar_set(v, rb_intern("v"),      b->v);
+
+        if (b->type & 0x01) FL_SET_RAW(v, FL_USER2);
+        if (b->type & 0x02) FL_SET_RAW(v, FL_USER3);
+        if (b->type & 0x04) FL_SET_RAW(v, FL_USER4);
+        if (b->exception)   FL_SET_RAW(v, FL_USER5);
     }
 
     ractor_basket_clear(b);
     return v;
 }
 
+static void
+ractor_basket_setup_from_value(struct rb_ractor_basket *basket, VALUE basketv)
+{
+    basket->sender    = rb_ivar_get(basketv, rb_intern("sender"));
+    basket->v         = rb_ivar_get(basketv, rb_intern("v"));
+    basket->type      = (enum rb_ractor_basket_type)(FL_TEST_RAW(basketv, FL_USER2 | FL_USER3 | FL_USER4) >> (RUBY_FL_USHIFT + 2));
+    basket->exception = FL_TEST_RAW(basketv, FL_USER5);
+}
+
 static VALUE
-ractor_try_receive(rb_execution_context_t *ec, rb_ractor_t *r)
+ractor_try_receive(rb_execution_context_t *ec, rb_ractor_t *r, bool need_basket)
 {
     struct rb_ractor_queue *rq = &r->incoming_queue;
     struct rb_ractor_basket basket;
@@ -411,7 +435,7 @@ ractor_try_receive(rb_execution_context_t *ec, rb_ractor_t *r)
         }
     }
 
-    return ractor_basket_accept(&basket);
+    return ractor_basket_accept(&basket, need_basket);
 }
 
 static void *
@@ -609,28 +633,34 @@ ractor_waiting_list_shift(rb_ractor_t *r, struct rb_ractor_waiting_list *wl)
 }
 
 static VALUE
-ractor_receive(rb_execution_context_t *ec, rb_ractor_t *r)
+ractor_receive(rb_execution_context_t *ec, bool need_basket)
 {
-    VM_ASSERT(r == rb_ec_ractor_ptr(ec));
+    rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
     VALUE v;
 
-    while ((v = ractor_try_receive(ec, r)) == Qundef) {
-        RACTOR_LOCK(r);
+    while ((v = ractor_try_receive(ec, cr, need_basket)) == Qundef) {
+        RACTOR_LOCK(cr);
         {
-            if (ractor_queue_empty_p(r, &r->incoming_queue)) {
-                VM_ASSERT(r->wait.status == wait_none);
-                VM_ASSERT(r->wait.wakeup_status == wakeup_none);
-                r->wait.status = wait_receiving;
+            if (ractor_queue_empty_p(cr, &cr->incoming_queue)) {
+                VM_ASSERT(cr->wait.status == wait_none);
+                VM_ASSERT(cr->wait.wakeup_status == wakeup_none);
+                cr->wait.status = wait_receiving;
 
-                ractor_sleep(ec, r);
+                ractor_sleep(ec, cr);
 
-                r->wait.wakeup_status = wakeup_none;
+                cr->wait.wakeup_status = wakeup_none;
             }
         }
-        RACTOR_UNLOCK(r);
+        RACTOR_UNLOCK(cr);
     }
 
     return v;
+}
+
+static VALUE
+ractor_receive_value(rb_execution_context_t *ec)
+{
+    return ractor_receive(ec, false);
 }
 
 static void
@@ -676,8 +706,8 @@ ractor_basket_setup(rb_execution_context_t *ec, struct rb_ractor_basket *basket,
         basket->v = obj;
     }
     else if (!RTEST(move)) {
-        basket->v = ractor_copy(obj);
         basket->type = basket_type_copy;
+        basket->v = ractor_copy(obj);
     }
     else {
         basket->type = basket_type_move;
@@ -695,7 +725,7 @@ ractor_send(rb_execution_context_t *ec, rb_ractor_t *r, VALUE obj, VALUE move)
 }
 
 static VALUE
-ractor_try_take(rb_execution_context_t *ec, rb_ractor_t *r)
+ractor_try_take(rb_execution_context_t *ec, rb_ractor_t *r, bool need_basket)
 {
     struct rb_ractor_basket basket = {
         .type = basket_type_none,
@@ -727,7 +757,7 @@ ractor_try_take(rb_execution_context_t *ec, rb_ractor_t *r)
         }
     }
     else {
-        return ractor_basket_accept(&basket);
+        return ractor_basket_accept(&basket, need_basket);
     }
 }
 
@@ -781,7 +811,7 @@ ractor_try_yield(rb_execution_context_t *ec, rb_ractor_t *cr, struct rb_ractor_b
 
 // select(r1, r2, r3, receive: true, yield: obj)
 static VALUE
-ractor_select(rb_execution_context_t *ec, const VALUE *rs, int alen, VALUE yielded_value, bool move, VALUE *ret_r)
+ractor_select(rb_execution_context_t *ec, const VALUE *rs, int alen, VALUE yielded_value, bool move, bool need_basket, VALUE *ret_r)
 {
     rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
     VALUE crv = cr->self;
@@ -833,7 +863,12 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, int alen, VALUE yield
         wait_status |= wait_yielding;
         alen++;
 
-        ractor_basket_setup(ec, &cr->wait.yielded_basket, yielded_value, move, false, false);
+        if (!need_basket) {
+            ractor_basket_setup(ec, &cr->wait.yielded_basket, yielded_value, move, false, false);
+        }
+        else {
+            ractor_basket_setup_from_value(&cr->wait.yielded_basket, yielded_value);
+        }
     }
 
     // TODO: shuffle actions
@@ -846,7 +881,7 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, int alen, VALUE yield
             switch (actions[i].type) {
               case ractor_select_action_take:
                 rv = actions[i].v;
-                v = ractor_try_take(ec, RACTOR_PTR(rv));
+                v = ractor_try_take(ec, RACTOR_PTR(rv), need_basket);
                 if (v != Qundef) {
                     *ret_r = rv;
                     ret = v;
@@ -854,7 +889,7 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, int alen, VALUE yield
                 }
                 break;
               case ractor_select_action_receive:
-                v = ractor_try_receive(ec, cr);
+                v = ractor_try_receive(ec, cr, false);
                 if (v != Qundef) {
                     *ret_r = ID2SYM(rb_intern("receive"));
                     ret = v;
@@ -984,7 +1019,7 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, int alen, VALUE yield
             VM_ASSERT(cr->wait.taken_basket.type != basket_type_none);
             *ret_r = cr->wait.taken_basket.sender;
             VM_ASSERT(rb_ractor_p(*ret_r));
-            ret = ractor_basket_accept(&cr->wait.taken_basket);
+            ret = ractor_basket_accept(&cr->wait.taken_basket, need_basket);
             goto cleanup;
           case wakeup_by_take:
             *ret_r = ID2SYM(rb_intern("yield"));
@@ -1024,10 +1059,10 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, int alen, VALUE yield
 }
 
 static VALUE
-ractor_yield(rb_execution_context_t *ec, rb_ractor_t *r, VALUE obj, VALUE move)
+ractor_yield(rb_execution_context_t *ec, VALUE obj, VALUE move)
 {
     VALUE ret_r;
-    ractor_select(ec, NULL, 0, obj, RTEST(move) ? true : false, &ret_r);
+    ractor_select(ec, NULL, 0, obj, RTEST(move) ? true : false, false, &ret_r);
     return Qnil;
 }
 
@@ -1035,7 +1070,38 @@ static VALUE
 ractor_take(rb_execution_context_t *ec, rb_ractor_t *r)
 {
     VALUE ret_r;
-    VALUE v = ractor_select(ec, &r->self, 1, Qundef, false, &ret_r);
+    VALUE v = ractor_select(ec, &r->self, 1, Qundef, false, false, &ret_r);
+    return v;
+}
+
+static VALUE
+ractor_receive_basket(rb_execution_context_t *ec)
+{
+    return ractor_receive(ec, true);
+}
+
+static VALUE
+ractor_send_basket_m(rb_execution_context_t *ec, rb_ractor_t *r, VALUE basketv)
+{
+    struct rb_ractor_basket basket;
+    ractor_basket_setup_from_value(&basket, basketv);
+    ractor_send_basket(ec, r, &basket);
+    return r->self;
+}
+
+static VALUE
+ractor_yield_basket(rb_execution_context_t *ec, VALUE basketv)
+{
+    VALUE ret_r;
+    ractor_select(ec, NULL, 0, basketv, false, true, &ret_r);
+    return Qnil;
+}
+
+static VALUE
+ractor_take_basket(rb_execution_context_t *ec, rb_ractor_t *r)
+{
+    VALUE ret_r;
+    VALUE v = ractor_select(ec, &r->self, 1, Qundef, false, true, &ret_r);
     return v;
 }
 
@@ -1353,7 +1419,7 @@ void
 rb_ractor_receive_parameters(rb_execution_context_t *ec, rb_ractor_t *r, int len, VALUE *ptr)
 {
     for (int i=0; i<len; i++) {
-        ptr[i] = ractor_receive(ec, r);
+        ptr[i] = ractor_receive_value(ec);
     }
 }
 
@@ -1655,6 +1721,7 @@ void
 Init_Ractor(void)
 {
     rb_cRactor = rb_define_class("Ractor", rb_cObject);
+    rb_cRactorBasket      = rb_define_class_under(rb_cRactor, "Basket", rb_cObject);
     rb_eRactorError       = rb_define_class_under(rb_cRactor, "Error", rb_eRuntimeError);
     rb_eRactorRemoteError = rb_define_class_under(rb_cRactor, "RemoteError", rb_eRactorError);
     rb_eRactorMovedError  = rb_define_class_under(rb_cRactor, "MovedError",  rb_eRactorError);
