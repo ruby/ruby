@@ -1926,6 +1926,26 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_equal([0, 0], @line_editor.instance_variable_get(:@mark_pointer))
   end
 
+  def test_em_exchange_mark_without_mark
+    input_keys('aaa bbb ccc ddd')
+    assert_byte_pointer_size('aaa bbb ccc ddd')
+    assert_cursor(15)
+    assert_cursor_max(15)
+    assert_line('aaa bbb ccc ddd')
+    input_keys("\C-a\M-f", false)
+    assert_byte_pointer_size('aaa')
+    assert_cursor(3)
+    assert_cursor_max(15)
+    assert_line('aaa bbb ccc ddd')
+    assert_equal(nil, @line_editor.instance_variable_get(:@mark_pointer))
+    input_key_by_symbol(:em_exchange_mark)
+    assert_byte_pointer_size('aaa')
+    assert_cursor(3)
+    assert_cursor_max(15)
+    assert_line('aaa bbb ccc ddd')
+    assert_equal(nil, @line_editor.instance_variable_get(:@mark_pointer))
+  end
+
   def test_modify_lines_with_wrong_rs
     verbose, $VERBOSE = $VERBOSE, nil
     original_global_slash = $/

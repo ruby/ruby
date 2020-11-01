@@ -2342,6 +2342,7 @@ class Reline::LineEditor
   alias_method :set_mark, :em_set_mark
 
   private def em_exchange_mark(key)
+    return unless @mark_pointer
     new_pointer = [@byte_pointer, @line_index]
     @previous_line_index = @line_index
     @byte_pointer, @line_index = @mark_pointer
