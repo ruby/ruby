@@ -181,6 +181,31 @@ Outstanding ones only.
             p C.ancestors #=> [C, M1, M2, Object, Kernel, BasicObject]
             ```
 
+    * New method
+
+      * Module#descendants, which returns a list of modules including
+        specified module or a list of subclasses inheriting from
+        specified class (including specified module/class itself).
+        [[Feature #14394]]
+
+        ```ruby
+        module A; end
+        module B; end
+        module C; end
+        B.include A
+        C.include B
+        p A.descendants    #=> [A, C, B]
+        p B.descendants    #=> [B, C]
+        p C.descendants    #=> [C]
+
+        class A; end
+        class B < A; end
+        class C < B; end
+        p A.descendants    #=> [A, B, C]
+        p B.descendants    #=> [B, C]
+        p C.descendants    #=> [C]
+        ```
+
 * Range
 
     * All Range objects are frozen. [Feature #15504]
@@ -536,3 +561,4 @@ end
 [Feature #17122]: https://bugs.ruby-lang.org/issues/17122
 [Feature #17134]: https://bugs.ruby-lang.org/issues/17134
 [GH-2991]:        https://github.com/ruby/ruby/pull/2991
+[Feature #14394]: https://bugs.ruby-lang.org/issues/14394
