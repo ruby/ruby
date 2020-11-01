@@ -41,11 +41,9 @@ ruby_version_is "2.7" do
     it "warns about pattern matching is experimental feature" do
       -> {
         eval <<~RUBY
-          case 0
-            in 0
-          end
+          1 => a
         RUBY
-      }.should complain(/warning: Pattern matching is experimental, and the behavior may change in future versions of Ruby!/)
+      }.should complain(/warning: One-line pattern matching is experimental, and the behavior may change in future versions of Ruby!/)
     end
 
     it "binds variables" do

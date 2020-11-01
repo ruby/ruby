@@ -8,8 +8,8 @@ ruby_version_is '2.7' do
     end
 
     it "emits and suppresses warnings for :experimental" do
-      ruby_exe('Warning[:experimental] = true; eval("case 0; in a; end")', args: "2>&1").should =~ /is experimental/
-      ruby_exe('Warning[:experimental] = false; eval("case 0; in a; end")', args: "2>&1").should == ""
+      ruby_exe('Warning[:experimental] = true; eval("1 => a")', args: "2>&1").should =~ /is experimental/
+      ruby_exe('Warning[:experimental] = false; eval("1 => a")', args: "2>&1").should == ""
     end
 
     it "raises for unknown category" do
