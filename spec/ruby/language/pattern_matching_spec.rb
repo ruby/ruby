@@ -38,12 +38,20 @@ ruby_version_is "2.7" do
       RUBY
     end
 
-    it "warns about pattern matching is experimental feature" do
-      -> {
-        eval <<~RUBY
-          1 => a
-        RUBY
-      }.should complain(/warning: One-line pattern matching is experimental, and the behavior may change in future versions of Ruby!/)
+    describe "warning" do
+      before do
+        ruby_version_is ""..."3.0" do
+          @src = 'case 0; in a; end'
+        end
+
+        ruby_version_is "3.0" do
+          @src = '1 => a'
+        end
+      end
+
+      it "warns about pattern matching is experimental feature" do
+        -> { eval @src }.should complain(/pattern matching is experimental, and the behavior may change in future versions of Ruby!/i)
+      end
     end
 
     it "binds variables" do

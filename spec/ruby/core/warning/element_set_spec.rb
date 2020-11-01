@@ -7,9 +7,21 @@ ruby_version_is '2.7' do
       ruby_exe('Warning[:deprecated] = false; $; = ""', args: "2>&1").should == ""
     end
 
-    it "emits and suppresses warnings for :experimental" do
-      ruby_exe('Warning[:experimental] = true; eval("1 => a")', args: "2>&1").should =~ /is experimental/
-      ruby_exe('Warning[:experimental] = false; eval("1 => a")', args: "2>&1").should == ""
+    describe ":experimental" do
+      before do
+        ruby_version_is ""..."3.0" do
+          @src = 'case 0; in a; end'
+        end
+
+        ruby_version_is "3.0" do
+          @src = '1 => a'
+        end
+      end
+
+      it "emits and suppresses warnings for :experimental" do
+        ruby_exe("Warning[:experimental] = true; eval('#{@src}')", args: "2>&1").should =~ /is experimental/
+        ruby_exe("Warning[:experimental] = false; eval('#{@src}')", args: "2>&1").should == ""
+      end
     end
 
     it "raises for unknown category" do
