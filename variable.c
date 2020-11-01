@@ -1671,6 +1671,27 @@ rb_copy_generic_ivar(VALUE clone, VALUE obj)
 }
 
 void
+rb_replace_generic_ivar(VALUE clone, VALUE obj)
+{
+    RUBY_ASSERT(FL_TEST(obj, FL_EXIVAR));
+
+    RB_VM_LOCK_ENTER();
+    {
+        struct gen_ivtbl **ivtbl;
+        if (st_lookup(generic_iv_tbl_, (st_data_t)obj, (st_data_t *)&ivtbl)) {
+            st_insert(generic_iv_tbl_, (st_data_t)clone, (st_data_t)ivtbl);
+            st_delete(generic_iv_tbl_, (st_data_t *)&obj, NULL);
+        }
+        else {
+            rb_bug("unreachable");
+        }
+    }
+    RB_VM_LOCK_LEAVE();
+
+    FL_SET(clone, FL_EXIVAR);
+}
+
+void
 rb_ivar_foreach(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg)
 {
     if (SPECIAL_CONST_P(obj)) return;

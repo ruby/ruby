@@ -2292,18 +2292,6 @@ rb_newobj_of(VALUE klass, VALUE flags)
     return newobj_of(klass, flags & ~FL_WB_PROTECTED, 0, 0, 0, flags & FL_WB_PROTECTED);
 }
 
-VALUE
-rb_newobj_with(VALUE src)
-{
-    VALUE klass = RBASIC_CLASS(src);
-    VALUE flags = RBASIC(src)->flags;
-
-    VALUE v1 = RANY(src)->as.values.v1;
-    VALUE v2 = RANY(src)->as.values.v2;
-    VALUE v3 = RANY(src)->as.values.v3;
-    return newobj_of(klass, flags & ~FL_WB_PROTECTED, v1, v2, v3, flags & FL_WB_PROTECTED);
-}
-
 #define UNEXPECTED_NODE(func) \
     rb_bug(#func"(): GC does not handle T_NODE 0x%x(%p) 0x%"PRIxVALUE, \
 	   BUILTIN_TYPE(obj), (void*)(obj), RBASIC(obj)->flags)
