@@ -771,7 +771,7 @@ class Reline::LineEditor
         elsif method_obj
           wrap_method_call(method_symbol, method_obj, key)
         else
-          ed_insert(key)
+          ed_insert(key) unless @config.editing_mode_is?(:vi_command)
         end
         @kill_ring.process
         @vi_arg = nil
@@ -789,7 +789,7 @@ class Reline::LineEditor
       end
       @kill_ring.process
     else
-      ed_insert(key)
+      ed_insert(key) unless @config.editing_mode_is?(:vi_command)
     end
   end
 

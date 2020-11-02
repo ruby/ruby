@@ -1250,4 +1250,17 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
     assert_cursor_max(16)
     assert_line('aaa bbb  ddd eee')
   end
+
+  def test_unimplemented_vi_command_should_be_no_op
+    input_keys("abc\C-[h")
+    assert_byte_pointer_size('a')
+    assert_cursor(1)
+    assert_cursor_max(3)
+    assert_line('abc')
+    input_keys('@')
+    assert_byte_pointer_size('a')
+    assert_cursor(1)
+    assert_cursor_max(3)
+    assert_line('abc')
+  end
 end
