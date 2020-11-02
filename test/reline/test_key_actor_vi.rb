@@ -1215,6 +1215,19 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
     assert_line('aaa ddd eee')
   end
 
+  def test_vi_delete_meta_with_vi_next_char
+    input_keys("aaa bbb ccc ___ ddd\C-[02w")
+    assert_byte_pointer_size('aaa bbb ')
+    assert_cursor(8)
+    assert_cursor_max(19)
+    assert_line('aaa bbb ccc ___ ddd')
+    input_keys('df_')
+    assert_byte_pointer_size('aaa bbb ')
+    assert_cursor(8)
+    assert_cursor_max(15)
+    assert_line('aaa bbb ___ ddd')
+  end
+
   def test_vi_change_meta
     input_keys("aaa bbb ccc ddd eee\C-[02w")
     assert_byte_pointer_size('aaa bbb ')
