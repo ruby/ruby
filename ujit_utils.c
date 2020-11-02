@@ -57,7 +57,7 @@ void print_int(codeblock_t* cb, x86opnd_t opnd)
 
 static void print_ptr_cfun(void* val)
 {
-    printf("%llX\n", val);
+    printf("%p\n", val);
 }
 
 void print_ptr(codeblock_t* cb, x86opnd_t opnd)
