@@ -735,7 +735,7 @@ class Reline::LineEditor
       not_insertion = method_symbol != :ed_insert
       process_insert(force: not_insertion)
     end
-    if @vi_arg
+    if @vi_arg and argumentable?(method_obj)
       method_obj.(key, arg: @vi_arg)
     else
       method_obj.(key)

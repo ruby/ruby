@@ -1228,6 +1228,19 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
     assert_line('aaa bbb ___ ddd')
   end
 
+  def test_vi_delete_meta_with_arg
+    input_keys("aaa bbb ccc\C-[02w")
+    assert_byte_pointer_size('aaa bbb ')
+    assert_cursor(8)
+    assert_cursor_max(11)
+    assert_line('aaa bbb ccc')
+    input_keys('2dl') # TODO This should delete 2 chars.
+    assert_byte_pointer_size('aaa bbb ')
+    assert_cursor(8)
+    assert_cursor_max(10)
+    assert_line('aaa bbb cc')
+  end
+
   def test_vi_change_meta
     input_keys("aaa bbb ccc ddd eee\C-[02w")
     assert_byte_pointer_size('aaa bbb ')
