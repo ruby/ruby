@@ -1276,4 +1276,22 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
     assert_cursor_max(3)
     assert_line('abc')
   end
+
+  def test_vi_yank
+    input_keys("foo bar\C-[0")
+    assert_line('foo bar')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(7)
+    input_keys('y3l')
+    assert_line('foo bar')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(7)
+    input_keys('P')
+    assert_line('foofoo bar')
+    assert_byte_pointer_size('fo')
+    assert_cursor(2)
+    assert_cursor_max(10)
+  end
 end

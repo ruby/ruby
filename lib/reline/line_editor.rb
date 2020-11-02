@@ -2083,6 +2083,14 @@ class Reline::LineEditor
   end
 
   private def vi_yank(key)
+    @waiting_operator_proc = proc { |cursor_diff, byte_pointer_diff|
+      if byte_pointer_diff > 0
+        cut = @line.byteslice(@byte_pointer, byte_pointer_diff)
+      elsif byte_pointer_diff < 0
+        cut = @line.byteslice(@byte_pointer + byte_pointer_diff, -byte_pointer_diff)
+      end
+      copy_for_vi(cut)
+    }
   end
 
   private def vi_list_or_eof(key)
