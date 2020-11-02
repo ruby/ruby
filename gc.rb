@@ -31,11 +31,32 @@ module GC
   #  are not guaranteed to be future-compatible, and may be ignored if the
   #  underlying implementation does not support them.
   def self.start full_mark: true, immediate_mark: true, immediate_sweep: true
-    Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep
+    Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep, false
   end
 
   def garbage_collect full_mark: true, immediate_mark: true, immediate_sweep: true
-    Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep
+    Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep, false
+  end
+
+  #  call-seq:
+  #     GC.auto_compact    -> true or false
+  #
+  #  Returns whether or not automatic compaction has been enabled.
+  #
+  def self.auto_compact
+    Primitive.gc_get_auto_compact
+  end
+
+  #  call-seq:
+  #     GC.auto_compact = flag
+  #
+  #  Updates automatic compaction mode.
+  #
+  #  When enabled, the compactor will execute on every major collection.
+  #
+  #  Enabling compaction will degrade performance on major collections.
+  def self.auto_compact=(flag)
+    Primitive.gc_set_auto_compact(flag)
   end
 
   #  call-seq:
@@ -163,8 +184,23 @@ module GC
     Primitive.gc_latest_gc_info hash_or_key
   end
 
+  #  call-seq:
+  #     GC.latest_compact_info -> {:considered=>{:T_CLASS=>11}, :moved=>{:T_CLASS=>11}}
+  #
+  #  Returns information about object moved in the most recent GC compaction.
+  #
+  # The returned hash has two keys :considered and :moved.  The hash for
+  # :considered lists the number of objects that were considered for movement
+  # by the compactor, and the :moved hash lists the number of objects that
+  # were actually moved.  Some objects can't be moved (maybe they were pinned)
+  # so these numbers can be used to calculate compaction efficiency.
+  def self.latest_compact_info
+    Primitive.gc_compact_stats
+  end
+
   def self.compact
-    Primitive.rb_gc_compact
+    Primitive.gc_start_internal true, true, true, true
+    Primitive.gc_compact_stats
   end
 
   # call-seq:
@@ -182,13 +218,23 @@ module GC
   # object, that object should be pushed on the mark stack, and will
   # make a SEGV.
   def self.verify_compaction_references(toward: nil, double_heap: false)
-    Primitive.gc_verify_compaction_references(toward, double_heap)
+    if double_heap
+      Primitive.gc_double_heap_size
+    end
+
+    if toward == :empty
+      Primitive.gc_sort_heap_by_empty_slots
+    end
+
+    Primitive.gc_start_internal true, true, true, true
+    Primitive.gc_check_references_for_moved
+    Primitive.gc_compact_stats
   end
 end
 
 module ObjectSpace
   def garbage_collect full_mark: true, immediate_mark: true, immediate_sweep: true
-    Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep
+    Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep, false
   end
 
   module_function :garbage_collect
