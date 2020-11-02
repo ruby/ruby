@@ -7916,12 +7916,12 @@ parser_get_bool(struct parser_params *p, const char *name, const char *val)
 {
     switch (*val) {
       case 't': case 'T':
-	if (strcasecmp(val, "true") == 0) {
+	if (STRCASECMP(val, "true") == 0) {
 	    return TRUE;
 	}
 	break;
       case 'f': case 'F':
-	if (strcasecmp(val, "false") == 0) {
+	if (STRCASECMP(val, "false") == 0) {
 	    return FALSE;
 	}
 	break;
