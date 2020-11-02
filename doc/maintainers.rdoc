@@ -415,5 +415,3 @@ Yukihiro Matsumoto (matz)
   https://github.com/ruby/rbs
 [typeprof]
   https://github.com/ruby/typeprof
-[lib/webrick.rb, lib/webrick/*]
-  https://github.com/ruby/webrick
