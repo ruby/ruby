@@ -1178,26 +1178,27 @@ x = __ENCODING__
     assert_warning(/invalid value/) do
       assert_valid_syntax("# shareable_constant_value: invalid-option", verbose: true)
     end
+    assert_warning(/ignored/) do
+      assert_valid_syntax("nil # shareable_constant_value: true", verbose: true)
+    end
     a, b, c = Class.new.class_eval("#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       # shareable_constant_value: true
       A = [[1]]
       # shareable_constant_value: false
       B = [[2]]
-      C = # shareable_constant_value: true
-        [[3]]
 
-      [A, B, C]
+      [A, B]
     end;
     assert_send([Ractor, :shareable?, a])
     assert_not_send([Ractor, :shareable?, b])
-    assert_send([Ractor, :shareable?, c])
     assert_equal([1], a[0])
     assert_send([Ractor, :shareable?, a[0]])
     a, b = Class.new.class_eval("#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       # shareable_constant_value: false
-      class X # shareable_constant_value: true
+      class X
+        # shareable_constant_value: true
         A = [[1]]
       end
       B = []

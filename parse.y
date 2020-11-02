@@ -7982,6 +7982,13 @@ parser_set_compile_option_flag(struct parser_params *p, const char *name, const 
 static void
 parser_set_shareable_constant_value(struct parser_params *p, const char *name, const char *val)
 {
+    for (const char *s = p->lex.pbeg, *e = p->lex.pcur; s < e; ++s) {
+	if (*s == ' ' || *s == '\t') continue;
+	if (*s == '#') break;
+	rb_warning1("`%s' is ignored unless in comment-only line", WARN_S(name));
+	return;
+    }
+
     int b = parser_get_bool(p, name, val);
     if (b >= 0) p->ctxt.shareable_constant_value = b;
 }
