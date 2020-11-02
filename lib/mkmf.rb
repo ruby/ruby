@@ -784,7 +784,7 @@ int main() {printf("%"PRI_CONFTEST_PREFIX"#{neg ? 'd' : 'u'}\\n", conftest_const
     if opt and !opt.empty?
       [[:to_str], [:join, " "], [:to_s]].each do |meth, *args|
         if opt.respond_to?(meth)
-          break opt = opt.send(meth, *args)
+          break opt = opt.__send__(meth, *args)
         end
       end
       opt = "#{opt} #{libs}"
@@ -982,7 +982,7 @@ SRC
       if noun
         [[:to_str], [:join, ","], [:to_s]].each do |meth, *args|
           if noun.respond_to?(meth)
-            break noun = noun.send(meth, *args)
+            break noun = noun.__send__(meth, *args)
           end
         end
         unless noun.empty?

@@ -51,4 +51,16 @@ describe 'Kernel#caller' do
       locations2.map(&:to_s).should == locations1[2..-1].map(&:to_s)
     end
   end
+
+  guard -> { Kernel.instance_method(:tap).source_location } do
+    it "includes core library methods defined in Ruby" do
+      file, line = Kernel.instance_method(:tap).source_location
+      file.should.start_with?('<internal:')
+
+      loc = nil
+      tap { loc = caller(1, 1)[0] }
+      loc.should.end_with? "in `tap'"
+      loc.should.start_with? "<internal:"
+    end
+  end
 end

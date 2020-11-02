@@ -2734,8 +2734,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        if ((RANY(obj)->as.basic.flags & ROBJECT_EMBED) ||
-            RANY(obj)->as.object.as.heap.ivptr == NULL) {
+        if (RANY(obj)->as.basic.flags & ROBJECT_EMBED) {
             RB_DEBUG_COUNTER_INC(obj_obj_embed);
         }
         else if (ROBJ_TRANSIENT_P(obj)) {
@@ -4077,9 +4076,8 @@ obj_memsize_of(VALUE obj, int use_all_types)
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-	if (!(RBASIC(obj)->flags & ROBJECT_EMBED) &&
-	    ROBJECT(obj)->as.heap.ivptr) {
-	    size += ROBJECT(obj)->as.heap.numiv * sizeof(VALUE);
+	if (!(RBASIC(obj)->flags & ROBJECT_EMBED)) {
+	    size += ROBJECT_NUMIV(obj) * sizeof(VALUE);
 	}
 	break;
       case T_MODULE:
@@ -5703,16 +5701,14 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
         {
             const VALUE * const ptr = ROBJECT_IVPTR(obj);
 
-            if (ptr) {
-                uint32_t i, len = ROBJECT_NUMIV(obj);
-                for (i  = 0; i < len; i++) {
-                    gc_mark(objspace, ptr[i]);
-                }
+            uint32_t i, len = ROBJECT_NUMIV(obj);
+            for (i  = 0; i < len; i++) {
+                gc_mark(objspace, ptr[i]);
+            }
 
-                if (LIKELY(during_gc) &&
+            if (LIKELY(during_gc) &&
                     ROBJ_TRANSIENT_P(obj)) {
-                    rb_transient_heap_mark(obj, ptr);
-                }
+                rb_transient_heap_mark(obj, ptr);
             }
         }
 	break;
@@ -8210,11 +8206,9 @@ gc_ref_update_object(rb_objspace_t * objspace, VALUE v)
 {
     VALUE *ptr = ROBJECT_IVPTR(v);
 
-    if (ptr) {
-        uint32_t i, len = ROBJECT_NUMIV(v);
-        for (i = 0; i < len; i++) {
-            UPDATE_IF_MOVED(objspace, ptr[i]);
-        }
+    uint32_t i, len = ROBJECT_NUMIV(v);
+    for (i = 0; i < len; i++) {
+        UPDATE_IF_MOVED(objspace, ptr[i]);
     }
 }
 

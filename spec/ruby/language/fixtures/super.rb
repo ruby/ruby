@@ -455,6 +455,52 @@ module SuperSpecs
     end
   end
 
+  module ZSuperWithRestAndPost
+    class A
+      def m(*args, a, b)
+        args
+      end
+
+      def m_modified(*args, a, b)
+        args
+      end
+    end
+
+    class B < A
+      def m(*args, a, b)
+        super
+      end
+
+      def m_modified(*args, a, b)
+        args[1] = 14
+        super
+      end
+    end
+  end
+
+  module ZSuperWithRestOthersAndPost
+    class A
+      def m(a, *args, b)
+        args
+      end
+
+      def m_modified(a, *args, b)
+        args
+      end
+    end
+
+    class B < A
+      def m(a, *args, b)
+        super
+      end
+
+      def m_modified(a, *args, b)
+        args[1] = 14
+        super
+      end
+    end
+  end
+
   module ZSuperWithRestReassigned
     class A
       def a(*args)

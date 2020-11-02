@@ -418,7 +418,7 @@ struct rb_iseq_constant_body {
 
     char catch_except_p; /* If a frame of this ISeq may catch exception, set TRUE */
     bool builtin_inline_p; // This ISeq's builtin func is safe to be inlined by MJIT
-    char access_outer_variables;
+    struct rb_id_table *outer_variables;
 
 #if USE_MJIT
     /* The following fields are MJIT related info.  */
@@ -595,7 +595,7 @@ typedef struct rb_vm_struct {
     unsigned int running: 1;
     unsigned int thread_abort_on_exception: 1;
     unsigned int thread_report_on_exception: 1;
-    unsigned int safe_level_: 1;
+    unsigned int thread_ignore_deadlock: 1;
 
     /* object management */
     VALUE mark_object_ary;
@@ -1017,11 +1017,13 @@ typedef enum {
 RUBY_SYMBOL_EXPORT_BEGIN
 
 /* node -> iseq */
-rb_iseq_t *rb_iseq_new         (const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath, const rb_iseq_t *parent, enum iseq_type);
-rb_iseq_t *rb_iseq_new_top     (const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath, const rb_iseq_t *parent);
-rb_iseq_t *rb_iseq_new_main    (const rb_ast_body_t *ast,             VALUE path, VALUE realpath, const rb_iseq_t *parent);
-rb_iseq_t *rb_iseq_new_with_opt(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath, VALUE first_lineno,
-				const rb_iseq_t *parent, enum iseq_type, const rb_compile_option_t*);
+rb_iseq_t *rb_iseq_new         (const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath,                     const rb_iseq_t *parent, enum iseq_type);
+rb_iseq_t *rb_iseq_new_top     (const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath,                     const rb_iseq_t *parent);
+rb_iseq_t *rb_iseq_new_main    (const rb_ast_body_t *ast,             VALUE path, VALUE realpath,                     const rb_iseq_t *parent);
+rb_iseq_t *rb_iseq_new_eval    (const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath, VALUE first_lineno, const rb_iseq_t *parent, int isolated_depth);
+rb_iseq_t *rb_iseq_new_with_opt(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath, VALUE first_lineno, const rb_iseq_t *parent, int isolated_depth,
+                                enum iseq_type, const rb_compile_option_t*);
+
 struct iseq_link_anchor;
 struct rb_iseq_new_with_callback_callback_func {
     VALUE flags;
@@ -1156,18 +1158,19 @@ enum {
     VM_FRAME_MAGIC_MASK   = 0x7fff0001,
 
     /* frame flag */
-    VM_FRAME_FLAG_PASSED    = 0x0010,
     VM_FRAME_FLAG_FINISH    = 0x0020,
     VM_FRAME_FLAG_BMETHOD   = 0x0040,
     VM_FRAME_FLAG_CFRAME    = 0x0080,
     VM_FRAME_FLAG_LAMBDA    = 0x0100,
     VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM = 0x0200,
     VM_FRAME_FLAG_CFRAME_KW = 0x0400,
+    VM_FRAME_FLAG_PASSED    = 0x0800,
 
     /* env flag */
     VM_ENV_FLAG_LOCAL       = 0x0002,
     VM_ENV_FLAG_ESCAPED     = 0x0004,
-    VM_ENV_FLAG_WB_REQUIRED = 0x0008
+    VM_ENV_FLAG_WB_REQUIRED = 0x0008,
+    VM_ENV_FLAG_ISOLATED    = 0x0010,
 };
 
 #define VM_ENV_DATA_SIZE             ( 3)

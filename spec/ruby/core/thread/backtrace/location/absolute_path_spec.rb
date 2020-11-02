@@ -36,6 +36,19 @@ describe 'Thread::Backtrace::Location#absolute_path' do
     end
   end
 
+  context "when used in a core method" do
+    it "returns nil" do
+      location = nil
+      tap { location = caller_locations(1, 1)[0] }
+      location.label.should == "tap"
+      if location.path.start_with?("<internal:")
+        location.absolute_path.should == nil
+      else
+        location.absolute_path.should == File.realpath(__FILE__)
+      end
+    end
+  end
+
   context "canonicalization" do
     platform_is_not :windows do
       before :each do

@@ -114,6 +114,22 @@ describe "Kernel#warn" do
       end
     end
 
+    guard -> { Kernel.instance_method(:tap).source_location } do
+      it "skips <internal: core library methods defined in Ruby" do
+        file, line = Kernel.instance_method(:tap).source_location
+        file.should.start_with?('<internal:')
+
+        file = fixture(__FILE__ , "warn_core_method.rb")
+        n = 9
+        ruby_exe(file, options: "--disable-gems", args: "2>&1").lines.should == [
+          "#{file}:#{n+0}: warning: use X instead\n",
+          "#{file}:#{n+1}: warning: use X instead\n",
+          "#{file}:#{n+2}: warning: use X instead\n",
+          "#{file}:#{n+4}: warning: use X instead\n",
+        ]
+      end
+    end
+
     ruby_version_is "3.0" do
       it "accepts :category keyword with a symbol" do
         -> {
@@ -196,5 +212,36 @@ describe "Kernel#warn" do
     h = {}
     -> { warn(**h) }.should_not complain(verbose: true)
     -> { warn('foo', **h) }.should complain("foo\n")
+  end
+
+  it "does not call Warning.warn if self is the Warning module" do
+    # RubyGems redefines Kernel#warn so we need to use a subprocess and disable RubyGems here
+    code = <<-RUBY
+    def Warning.warn(*args, **kwargs)
+      raise 'should not be called'
+    end
+    Kernel.instance_method(:warn).bind(Warning).call('Kernel#warn spec edge case')
+    RUBY
+    out = ruby_exe(code, args: "2>&1", options: "--disable-gems")
+    out.should == "Kernel#warn spec edge case\n"
+    $?.should.success?
+  end
+
+  it "avoids recursion if Warning#warn is redefined and calls super" do
+    # This works because of the spec above, which is the workaround for it.
+    # Note that redefining Warning#warn is a mistake which would naturally end in infinite recursion,
+    # Warning.extend Module.new { def warn } should be used instead.
+    # RubyGems redefines Kernel#warn so we need to use a subprocess and disable RubyGems here
+    code = <<-RUBY
+    module Warning
+      def warn(*args, **kwargs)
+        super
+      end
+    end
+    warn "avoid infinite recursion"
+    RUBY
+    out = ruby_exe(code, args: "2>&1", options: "--disable-gems")
+    out.should == "avoid infinite recursion\n"
+    $?.should.success?
   end
 end

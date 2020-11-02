@@ -180,7 +180,7 @@ module IRB # :nodoc:
                 end
               end
             ], nil, __FILE__, line
-            send :#{cmd_name}_, *opts, &b
+            __send__ :#{cmd_name}_, *opts, &b
           end
         ], nil, __FILE__, line
       else
@@ -268,7 +268,7 @@ module IRB # :nodoc:
         def #{cmd_name}(*opts, &b)
           Context.module_eval {remove_method(:#{cmd_name})}
           require "#{load_file}"
-          send :#{cmd_name}, *opts, &b
+          __send__ :#{cmd_name}, *opts, &b
         end
         for ali in aliases
           alias_method ali, cmd_name
@@ -291,8 +291,8 @@ module IRB # :nodoc:
       module_eval %[
         alias_method alias_name, base_method
         def #{base_method}(*opts)
-          send :#{extend_method}, *opts
-          send :#{alias_name}, *opts
+          __send__ :#{extend_method}, *opts
+          __send__ :#{alias_name}, *opts
         end
       ]
     end
@@ -307,8 +307,8 @@ module IRB # :nodoc:
       module_eval %[
         alias_method alias_name, base_method
         def #{base_method}(*opts)
-          send :#{alias_name}, *opts
-          send :#{extend_method}, *opts
+          __send__ :#{alias_name}, *opts
+          __send__ :#{extend_method}, *opts
         end
       ]
     end

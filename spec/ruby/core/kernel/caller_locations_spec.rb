@@ -65,4 +65,16 @@ describe 'Kernel#caller_locations' do
   it "must return the same locations when called with 1..-1 and when called with no arguments" do
     caller_locations.map(&:to_s).should == caller_locations(1..-1).map(&:to_s)
   end
+
+  guard -> { Kernel.instance_method(:tap).source_location } do
+    it "includes core library methods defined in Ruby" do
+      file, line = Kernel.instance_method(:tap).source_location
+      file.should.start_with?('<internal:')
+
+      loc = nil
+      tap { loc = caller_locations(1, 1)[0] }
+      loc.label.should == "tap"
+      loc.path.should.start_with? "<internal:"
+    end
+  end
 end

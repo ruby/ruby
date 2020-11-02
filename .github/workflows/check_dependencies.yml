@@ -17,7 +17,6 @@ jobs:
         if: "contains(matrix.os, 'ubuntu')"
       - name: Install libraries
         run: |
-          export WAITS='5 60'
           brew upgrade
           brew install gdbm gmp libffi openssl@1.1 zlib autoconf automake libtool readline
         if: "contains(matrix.os, 'macos')"

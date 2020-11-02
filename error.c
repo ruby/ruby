@@ -504,7 +504,8 @@ warning_write(int argc, VALUE *argv, VALUE buf)
     return buf;
 }
 
-VALUE rb_ec_backtrace_location_ary(rb_execution_context_t *ec, long lev, long n);
+VALUE rb_ec_backtrace_location_ary(const rb_execution_context_t *ec, long lev, long n, bool skip_internal);
+
 static VALUE
 rb_warn_m(rb_execution_context_t *ec, VALUE exc, VALUE msgs, VALUE uplevel, VALUE category)
 {
@@ -519,7 +520,7 @@ rb_warn_m(rb_execution_context_t *ec, VALUE exc, VALUE msgs, VALUE uplevel, VALU
             if (lev < 0) {
                 rb_raise(rb_eArgError, "negative level (%ld)", lev);
             }
-            location = rb_ec_backtrace_location_ary(ec, lev + 1, 1);
+            location = rb_ec_backtrace_location_ary(ec, lev + 1, 1, TRUE);
             if (!NIL_P(location)) {
                 location = rb_ary_entry(location, 0);
             }

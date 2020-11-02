@@ -745,7 +745,7 @@ module Net
     def authenticate(user, secret, authtype = DEFAULT_AUTH_TYPE)
       check_auth_method authtype
       check_auth_args user, secret
-      send auth_method(authtype), user, secret
+      public_send auth_method(authtype), user, secret
     end
 
     def auth_plain(user, secret)

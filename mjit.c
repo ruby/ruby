@@ -109,9 +109,7 @@ mjit_gc_exit_hook(void)
         return;
     CRITICAL_SECTION_START(4, "mjit_gc_exit_hook");
     in_gc--;
-    if (in_gc < 0) { // Don't allow underflow
-        in_gc = 0;
-    }
+    RUBY_ASSERT_ALWAYS(in_gc >= 0);
     if (!in_gc) {
         verbose(4, "Sending wakeup signal to workers after GC");
         rb_native_cond_broadcast(&mjit_gc_wakeup);

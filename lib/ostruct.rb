@@ -36,15 +36,15 @@
 # Hash keys with spaces or characters that could normally not be used for
 # method calls (e.g. <code>()[]*</code>) will not be immediately available
 # on the OpenStruct object as a method for retrieval or assignment, but can
-# still be reached through the Object#send method or using [].
+# still be reached through the Object#__send__ method or using [].
 #
 #   measurements = OpenStruct.new("length (in inches)" => 24)
 #   measurements[:"length (in inches)"]       # => 24
-#   measurements.send("length (in inches)")   # => 24
+#   measurements.__send__("length (in inches)")   # => 24
 #
 #   message = OpenStruct.new(:queued? => true)
 #   message.queued?                           # => true
-#   message.send("queued?=", false)
+#   message.__send__("queued?=", false)
 #   message.queued?                           # => false
 #
 # Removing the presence of an attribute requires the execution of the

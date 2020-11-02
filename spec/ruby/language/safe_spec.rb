@@ -135,4 +135,18 @@ describe "The $SAFE variable" do
       }.call
     end
   end
+
+  ruby_version_is "2.7"..."3.0" do
+    it "warn when access" do
+      -> {
+        $SAFE
+      }.should complain(/\$SAFE will become a normal global variable in Ruby 3.0/)
+    end
+
+    it "warn when set" do
+      -> {
+        $SAFE = 1
+      }.should complain(/\$SAFE will become a normal global variable in Ruby 3.0/)
+    end
+  end
 end

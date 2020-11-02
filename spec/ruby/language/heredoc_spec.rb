@@ -59,6 +59,22 @@ HERE
     s.encoding.should == Encoding::US_ASCII
   end
 
+  ruby_version_is "2.7" do
+    it 'raises SyntaxError if quoted HEREDOC identifier is ending not on same line' do
+      -> {
+        eval %{<<"HERE\n"\nraises syntax error\nHERE}
+      }.should raise_error(SyntaxError)
+    end
+  end
+
+  ruby_version_is ""..."2.7" do
+    it 'prints a warning if quoted HEREDOC identifier is ending not on same line' do
+      -> {
+        eval %{<<"HERE\n"\nit warns\nHERE}
+      }.should complain(/here document identifier ends with a newline/)
+    end
+  end
+
   it "allows HEREDOC with <<~'identifier', allowing to indent identifier and content" do
     require_relative 'fixtures/squiggly_heredoc'
     SquigglyHeredocSpecs.message.should == "character density, n.:\n  The number of very weird people in the office.\n"

@@ -81,6 +81,7 @@ assert_equal 'ok', %q{
   r.take
 }
 
+# Pass multiple arguments to Ractor.new
 assert_equal 'ok', %q{
   # ping-pong with two args
   r =  Ractor.new 'ping', 'pong' do |msg, msg2|
@@ -117,6 +118,7 @@ assert_equal 'ok', %q{
   'ok' if r == r1 and obj == 'r1'
 }
 
+# Ractor.select from two ractors.
 assert_equal '["r1", "r2"]', %q{
   # select 2
   r1 = Ractor.new{'r1'}
@@ -131,6 +133,7 @@ assert_equal '["r1", "r2"]', %q{
   as.sort #=> ["r1", "r2"]
 }
 
+# Ractor.select from multiple ractors.
 assert_equal 'true', %q{
   def test n
     rs = (1..n).map do |i|
@@ -178,6 +181,7 @@ assert_equal 'ok', %q{
   end
 }
 
+# Raise Ractor::ClosedError when try to send into a terminated ractor
 assert_equal 'ok', %q{
   r = Ractor.new do
   end
@@ -416,7 +420,7 @@ assert_equal 'no _dump_data is defined for class Thread', %q{
   end
 }
 
-# send sharable and unsharable objects
+# send shareable and unshareable objects
 assert_equal "ok", %q{
   echo_ractor = Ractor.new do
     loop do
@@ -663,7 +667,7 @@ assert_equal 'true', %q{
      '$stderr' => $stderr.inspect,
     }
   end
-  
+
   h = Ractor.new do
     ractor_local_globals
   end.take
@@ -698,7 +702,7 @@ assert_equal 'ArgumentError', %q{
   end
 }
 
-# ivar in sharable-objects are not allowed to access from non-main Ractor
+# ivar in shareable-objects are not allowed to access from non-main Ractor
 assert_equal 'can not access instance variables of classes/modules from non-main Ractors', %q{
   class C
     @iv = 'str'
@@ -718,7 +722,7 @@ assert_equal 'can not access instance variables of classes/modules from non-main
   end
 }
 
-# ivar in sharable-objects are not allowed to access from non-main Ractor
+# ivar in shareable-objects are not allowed to access from non-main Ractor
 assert_equal 'can not access instance variables of shareable objects from non-main Ractors', %q{
   shared = Ractor.new{}
   shared.instance_variable_set(:@iv, 'str')
@@ -734,7 +738,7 @@ assert_equal 'can not access instance variables of shareable objects from non-ma
   end
 }
 
-# But a sharable object is frozen, it is allowed to access ivars from non-main Ractor
+# But a shareable object is frozen, it is allowed to access ivars from non-main Ractor
 assert_equal '11', %q{
   [Object.new, [], ].map{|obj|
     obj.instance_variable_set('@a', 1)
@@ -746,7 +750,7 @@ assert_equal '11', %q{
   }.join
 }
 
-# cvar in sharable-objects are not allowed to access from non-main Ractor
+# cvar in shareable-objects are not allowed to access from non-main Ractor
 assert_equal 'can not access class variables from non-main Ractors', %q{
   class C
     @@cv = 'str'
@@ -765,8 +769,8 @@ assert_equal 'can not access class variables from non-main Ractors', %q{
   end
 }
 
-# Getting non-sharable objects via constants by other Ractors is not allowed
-assert_equal 'can not access non-sharable objects in constant C::CONST by non-main Ractor.', %q{
+# Getting non-shareable objects via constants by other Ractors is not allowed
+assert_equal 'can not access non-shareable objects in constant C::CONST by non-main Ractor.', %q{
   class C
     CONST = 'str'
   end
@@ -780,7 +784,7 @@ assert_equal 'can not access non-sharable objects in constant C::CONST by non-ma
   end
 }
 
-# Setting non-sharable objects into constants by other Ractors is not allowed
+# Setting non-shareable objects into constants by other Ractors is not allowed
 assert_equal 'can not set constants with non-shareable objects by non-main Ractors', %q{
   class C
   end

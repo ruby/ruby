@@ -90,7 +90,9 @@ describe :range_cover, shared: true do
       end
     end
   end
+end
 
+describe :range_cover_subrange, shared: true do
   ruby_version_is "2.6" do
     context "range argument" do
       it "accepts range argument" do

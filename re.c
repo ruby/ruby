@@ -2944,7 +2944,9 @@ rb_reg_init_str_enc(VALUE re, VALUE s, rb_encoding *enc, int options)
 MJIT_FUNC_EXPORTED VALUE
 rb_reg_new_ary(VALUE ary, int opt)
 {
-    return rb_reg_new_str(rb_reg_preprocess_dregexp(ary, opt), opt);
+    VALUE re = rb_reg_new_str(rb_reg_preprocess_dregexp(ary, opt), opt);
+    rb_obj_freeze(re);
+    return re;
 }
 
 VALUE

@@ -105,6 +105,7 @@ struct iseq_compile_data {
     int last_line;
     int label_no;
     int node_level;
+    int isolated_depth;
     unsigned int ci_index;
     const rb_compile_option_t *option;
     struct rb_id_table *ivar_cache_table;

@@ -2509,7 +2509,7 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
     if (c != Qundef) {
         if (UNLIKELY(!rb_ractor_main_p())) {
             if (!rb_ractor_shareable_p(c)) {
-                rb_raise(rb_eNameError, "can not access non-sharable objects in constant %"PRIsVALUE"::%s by non-main Ractor.", rb_class_path(klass), rb_id2name(id));
+                rb_raise(rb_eNameError, "can not access non-shareable objects in constant %"PRIsVALUE"::%s by non-main Ractor.", rb_class_path(klass), rb_id2name(id));
             }
         }
         return c;

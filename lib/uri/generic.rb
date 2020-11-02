@@ -1097,7 +1097,7 @@ module URI
     #   # => "http://my.example.com/main.rbx?page=1"
     #
     def merge(oth)
-      rel = parser.send(:convert_to_uri, oth)
+      rel = parser.__send__(:convert_to_uri, oth)
 
       if rel.absolute?
         #raise BadURIError, "both URI are absolute" if absolute?
@@ -1182,7 +1182,7 @@ module URI
 
     # :stopdoc:
     def route_from0(oth)
-      oth = parser.send(:convert_to_uri, oth)
+      oth = parser.__send__(:convert_to_uri, oth)
       if self.relative?
         raise BadURIError,
           "relative URI: #{self}"
@@ -1290,7 +1290,7 @@ module URI
     #   #=> #<URI::Generic /main.rbx?page=1>
     #
     def route_to(oth)
-      parser.send(:convert_to_uri, oth).route_from(self)
+      parser.__send__(:convert_to_uri, oth).route_from(self)
     end
 
     #
@@ -1404,7 +1404,7 @@ module URI
     # Returns an Array of the components defined from the COMPONENT Array.
     def component_ary
       component.collect do |x|
-        self.send(x)
+        self.__send__(x)
       end
     end
     protected :component_ary
@@ -1429,7 +1429,7 @@ module URI
     def select(*components)
       components.collect do |c|
         if component.include?(c)
-          self.send(c)
+          self.__send__(c)
         else
           raise ArgumentError,
             "expected of components of #{self.class} (#{self.class.component.join(', ')})"

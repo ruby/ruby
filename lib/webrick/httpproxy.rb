@@ -115,7 +115,7 @@ module WEBrick
       proxy_auth(req, res)
 
       begin
-        self.send("do_#{req.request_method}", req, res)
+        public_send("do_#{req.request_method}", req, res)
       rescue NoMethodError
         raise HTTPStatus::MethodNotAllowed,
           "unsupported method `#{req.request_method}'."
