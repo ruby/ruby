@@ -7926,7 +7926,7 @@ parser_get_bool(struct parser_params *p, const char *name, const char *val)
 	}
 	break;
     }
-    rb_compile_warning(p->ruby_sourcefile, p->ruby_sourceline, "invalid value for %s: %s", name, val);
+    rb_warning2("invalid value for %s: %s", WARN_S(name), WARN_S(val));
     return -1;
 }
 
