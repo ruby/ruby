@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require 'webrick'
 require 'zlib'
 require 'erb'
 require 'uri'
@@ -424,6 +423,13 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
   ERB
 
   def self.run(options)
+    begin
+      require 'webrick'
+    rescue LoadError
+      puts "webrick is not found. You may need to `gem install webrick` to install webrick."
+      exit
+    end
+
     new(options[:gemdir], options[:port], options[:daemon],
         options[:launch], options[:addresses]).run
   end
