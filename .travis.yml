@@ -233,19 +233,11 @@ env:
         zlib1g-dev:armhf
         zlib1g:armhf
 
-  - &baseruby
-    name: "BASERUBY: Ruby 2.2"
-    <<: *gcc-8
-    <<: *make-test-only
-    language: ruby
-    rvm: 2.2
-
 matrix:
   include:
     # Build every commit:
     - <<: *x86_64-linux
     - <<: *i686-linux
-    - <<: *baseruby
     # Build every commit (Allowed Failures):
     - <<: *arm32-linux
     - <<: *arm64-linux
