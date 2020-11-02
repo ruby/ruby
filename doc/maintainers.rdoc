@@ -293,10 +293,6 @@ Yukihiro Matsumoto (matz)
   YAMADA, Akira (akira)
   https://github.com/ruby/uri
   https://rubygems.org/gems/uri
-[lib/webrick.rb, lib/webrick/*]
-  Eric Wong (normalperson)
-  https://bugs.ruby-lang.org/
-  https://rubygems.org/gems/webrick
 [lib/yaml.rb, lib/yaml/*]
   Aaron Patterson (tenderlove), Hiroshi SHIBATA (hsbt)
   https://github.com/ruby/yaml
@@ -419,3 +415,5 @@ Yukihiro Matsumoto (matz)
   https://github.com/ruby/rbs
 [typeprof]
   https://github.com/ruby/typeprof
+[lib/webrick.rb, lib/webrick/*]
+  https://github.com/ruby/webrick

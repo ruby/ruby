@@ -81,7 +81,6 @@ DEFAULT_GEM_LIBS = %w[
   sync
   thwait
   tracer
-  webrick
 ]
 
 DEFAULT_GEM_EXTS = %w[
