@@ -6057,7 +6057,7 @@ rb_ary_count(int argc, VALUE *argv, VALUE ary)
 }
 
 static VALUE
-flatten(VALUE ary, int level, VALUE klass)
+flatten(VALUE ary, int level)
 {
     long i;
     VALUE stack, result, tmp = 0, elt, vmemo;
@@ -6144,7 +6144,7 @@ flatten(VALUE ary, int level, VALUE klass)
 	st_clear(memo);
     }
 
-    RBASIC_SET_CLASS(result, klass);
+    RBASIC_SET_CLASS(result, rb_cArray);
     return result;
 }
 
@@ -6187,7 +6187,7 @@ rb_ary_flatten_bang(int argc, VALUE *argv, VALUE ary)
     if (!NIL_P(lv)) level = NUM2INT(lv);
     if (level == 0) return Qnil;
 
-    result = flatten(ary, level, rb_obj_class(ary));
+    result = flatten(ary, level);
     if (result == ary) {
 	return Qnil;
     }
@@ -6239,7 +6239,7 @@ rb_ary_flatten(int argc, VALUE *argv, VALUE ary)
         if (level == 0) return ary_make_shared_copy(ary);
     }
 
-    result = flatten(ary, level, rb_cArray);
+    result = flatten(ary, level);
     if (result == ary) {
         result = ary_make_shared_copy(ary);
     }
