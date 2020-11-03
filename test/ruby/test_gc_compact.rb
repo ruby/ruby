@@ -55,7 +55,6 @@ class TestGCCompact < Test::Unit::TestCase
 
   def test_gc_compact_stats
     list = []
-    list2 = []
 
     # Try to make some fragmentation
     500.times {
