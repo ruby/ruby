@@ -82,13 +82,6 @@ sufficient information, see the ChangeLog file or Redmine
   class variable from the toplevel scope is now a RuntimeError.
   [[Bug #14541]]
 
-* Rightward assignment statement is added.  [EXPERIMENTAL]
-  [[Feature #15921]]
-
-    ```ruby
-    fib(10) => x
-    ```
-
 * Endless method definition is added.  [EXPERIMENTAL]
   [[Feature #16746]]
 
