@@ -514,6 +514,7 @@ end
 [Bug #12136]:     https://bugs.ruby-lang.org/issues/12136
 [Bug #12706]:     https://bugs.ruby-lang.org/issues/12706
 [Feature #13767]: https://bugs.ruby-lang.org/issues/13767
+[Bug #13768]:     https://bugs.ruby-lang.org/issues/13768
 [Feature #14183]: https://bugs.ruby-lang.org/issues/14183
 [Bug #14266]:     https://bugs.ruby-lang.org/issues/14266
 [Feature #14413]: https://bugs.ruby-lang.org/issues/14413
@@ -545,4 +546,7 @@ end
 [Feature #17104]: https://bugs.ruby-lang.org/issues/17104
 [Feature #17122]: https://bugs.ruby-lang.org/issues/17122
 [Feature #17134]: https://bugs.ruby-lang.org/issues/17134
+[Feature #17176]: https://bugs.ruby-lang.org/issues/17176
+[Feature #17260]: https://bugs.ruby-lang.org/issues/17260
+[Feature #17260]: https://bugs.ruby-lang.org/issues/17260
 [GH-2991]:        https://github.com/ruby/ruby/pull/2991
