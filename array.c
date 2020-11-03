@@ -1189,7 +1189,7 @@ ary_make_partial_step(VALUE ary, VALUE klass, long offset, long len, long step)
 static VALUE
 ary_make_shared_copy(VALUE ary)
 {
-    return ary_make_partial(ary, rb_obj_class(ary), 0, RARRAY_LEN(ary));
+    return ary_make_partial(ary, rb_cArray, 0, RARRAY_LEN(ary));
 }
 
 enum ary_take_pos_flags
@@ -1628,7 +1628,7 @@ rb_ary_subseq_step(VALUE ary, long beg, long len, long step)
     if (alen < len || alen < beg + len) {
 	len = alen - beg;
     }
-    klass = rb_obj_class(ary);
+    klass = rb_cArray;
     if (len == 0) return ary_new(klass, 0);
     if (step == 0)
         rb_raise(rb_eArgError, "slice step cannot be zero");
@@ -4010,7 +4010,6 @@ ary_slice_bang_by_rb_ary_splice(VALUE ary, long pos, long len)
     }
     else {
         VALUE arg2 = rb_ary_new4(len, RARRAY_CONST_PTR_TRANSIENT(ary)+pos);
-        RBASIC_SET_CLASS(arg2, rb_obj_class(ary));
         rb_ary_splice(ary, pos, len, 0, 0);
         return arg2;
     }
@@ -4820,7 +4819,7 @@ rb_ary_times(VALUE ary, VALUE times)
 
     len = NUM2LONG(times);
     if (len == 0) {
-	ary2 = ary_new(rb_obj_class(ary), 0);
+        ary2 = ary_new(rb_cArray, 0);
 	goto out;
     }
     if (len < 0) {
@@ -4831,7 +4830,7 @@ rb_ary_times(VALUE ary, VALUE times)
     }
     len *= RARRAY_LEN(ary);
 
-    ary2 = ary_new(rb_obj_class(ary), len);
+    ary2 = ary_new(rb_cArray, len);
     ARY_SET_LEN(ary2, len);
 
     ptr = RARRAY_CONST_PTR_TRANSIENT(ary);
@@ -5947,7 +5946,6 @@ rb_ary_uniq(VALUE ary)
 	hash = ary_make_hash(ary);
 	uniq = rb_hash_values(hash);
     }
-    RBASIC_SET_CLASS(uniq, rb_obj_class(ary));
     if (hash) {
         ary_recycle_hash(hash);
     }
@@ -6146,7 +6144,7 @@ flatten(VALUE ary, int level)
 	st_clear(memo);
     }
 
-    RBASIC_SET_CLASS(result, rb_obj_class(ary));
+    RBASIC_SET_CLASS(result, rb_cArray);
     return result;
 }
 
