@@ -109,6 +109,24 @@ option shows the help message via the pager designated by the value.
 
 Outstanding ones only.
 
+* Array
+
+    * Modified methods
+
+        * The following methods now return Array instances instead of
+          subclass instances when called on subclass instances:
+          [[Bug #6087]]
+
+            * `Array#drop`
+            * `Array#drop_while`
+            * `Array#flatten`
+            * `Array#slice!`
+            * `Array#slice/#[]`
+            * `Array#take`
+            * `Array#take_while`
+            * `Array#uniq`
+            * `Array#*`
+
 * Dir
 
     * Modified method
@@ -498,6 +516,7 @@ end
 
 
 [Bug #4352]:      https://bugs.ruby-lang.org/issues/4352
+[Bug #6087]:      https://bugs.ruby-lang.org/issues/6087
 [Bug #8382]:      https://bugs.ruby-lang.org/issues/8382
 [Bug #8446]:      https://bugs.ruby-lang.org/issues/8446
 [Feature #8661]:  https://bugs.ruby-lang.org/issues/8661
