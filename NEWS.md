@@ -267,7 +267,7 @@ Outstanding ones only.
 
         * `GC.auto_compact=`, `GC.auto_compact` can be used to control when
           compaction runs.  Setting `auto_compact=` to true will cause
-          compaction to occurr duing major collections.  At the moment,
+          compaction to occurr during major collections.  At the moment,
           compaction adds significant overhead to major collections, so please
           test first!
           [[Feature #17176]]
