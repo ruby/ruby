@@ -62,7 +62,7 @@
 #define TRANSIENT_HEAP_TOTAL_SIZE  (1024 * 1024 *   32) /* 32 MB */
 #define TRANSIENT_HEAP_ALLOC_MAX   (1024 *    2       ) /* 2 KB */
 #define TRANSIENT_HEAP_BLOCK_NUM   (TRANSIENT_HEAP_TOTAL_SIZE / TRANSIENT_HEAP_BLOCK_SIZE)
-#define TRANSIENT_HEAP_USABLE_SIZE TRANSIENT_HEAP_BLOCK_SIZE - sizeof(struct transient_heap_block_header)
+#define TRANSIENT_HEAP_USABLE_SIZE (TRANSIENT_HEAP_BLOCK_SIZE - sizeof(struct transient_heap_block_header))
 
 #define TRANSIENT_HEAP_ALLOC_MAGIC 0xfeab
 #define TRANSIENT_HEAP_ALLOC_ALIGN RUBY_ALIGNOF(void *)
@@ -344,7 +344,7 @@ transient_heap_allocatable_header(struct transient_heap* theap, size_t size)
     struct transient_heap_block *block = theap->using_blocks;
 
     while (block) {
-        TH_ASSERT(block->info.index <= TRANSIENT_HEAP_USABLE_SIZE);
+        TH_ASSERT(block->info.index <= (int16_t)TRANSIENT_HEAP_USABLE_SIZE);
 
         if (TRANSIENT_HEAP_USABLE_SIZE - block->info.index >= size) {
             struct transient_alloc_header *header = (void *)&block->buff[block->info.index];
