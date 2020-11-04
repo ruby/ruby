@@ -197,7 +197,6 @@ env:
 matrix:
   include:
     # Build every commit:
-    - <<: *x86_64-linux
     - <<: *i686-linux
     # Build every commit (Allowed Failures):
     - <<: *arm32-linux
