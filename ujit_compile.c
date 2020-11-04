@@ -402,8 +402,8 @@ ujit_compile_insn(const rb_iseq_t *iseq, unsigned int insn_idx, unsigned int *ne
     ctx.replacement_idx = insn_idx;
 
     // For each instruction to compile
-    unsigned num_instrs;
-    for (num_instrs = 0;; ++num_instrs) {
+    unsigned num_instrs = 0;
+    for (;;) {
         // Set the current PC
         ctx.pc = &encoded[insn_idx];
 
@@ -434,6 +434,7 @@ ujit_compile_insn(const rb_iseq_t *iseq, unsigned int insn_idx, unsigned int *ne
 
     	// Move to the next instruction
         insn_idx += insn_len(opcode);
+        num_instrs++;
 
         // Ensure we only have one send per region. Our code invalidation mechanism can't
         // invalidate running code and one send could invalidate the other if we had
