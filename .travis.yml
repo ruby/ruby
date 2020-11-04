@@ -125,45 +125,6 @@ env:
     arch: s390x
     <<: *gcc-8
 
-  - &ASAN
-    name: -fsanitize=address
-    <<: *clang-8
-    <<: *make-test-only
-    env:
-      - GEMS_FOR_TEST=
-      - ASAN_OPTIONS=detect_leaks=0
-      - cflags='-U_FORTIFY_SOURCE -march=native -fsanitize=address -fno-omit-frame-pointer -fPIC'
-      - debugflags=-ggdb3
-      - optflags=-O1
-      - LD=clang-8
-      - LDFLAGS='-fsanitize=address -fPIC'
-      - CONFIG_FLAG='--with-out-ext=openssl --without-gmp --without-jemalloc --without-valgrind'
-
-  - &MSAN
-    name: -fsanitize=memory
-    <<: *clang-8
-    <<: *make-test-only
-    env:
-      - GEMS_FOR_TEST=
-      - cflags='-U_FORTIFY_SOURCE -fsanitize=memory -fsanitize-memory-track-origins=2 -fno-omit-frame-pointer -fPIC'
-      - optflags=-O1
-      - LD=clang-8
-      - LDFLAGS='-fsanitize=memory -fPIC'
-      - CONFIG_FLAG='--with-out-ext=openssl --without-gmp --without-jemalloc --without-valgrind'
-
-  - &UBSAN
-    name: -fsanitize=undefined
-    <<: *clang-8
-    <<: *make-test-only
-    env:
-      - GEMS_FOR_TEST=
-      - cflags='-U_FORTIFY_SOURCE -fsanitize=undefined,integer,nullability -fno-sanitize=implicit-integer-sign-change,unsigned-integer-overflow'
-      - cppflags=-DUNALIGNED_WORD_ACCESS=0
-      - debugflags=-ggdb3
-      - optflags='-O1 -march=native'
-      - LD=clang-8
-      - LDFLAGS='-fsanitize=undefined,integer,nullability -fno-sanitize=implicit-integer-sign-change,unsigned-integer-overflow'
-
   - &i686-linux
     name: i686-linux
     compiler: gcc-8
@@ -242,15 +203,10 @@ matrix:
     - <<: *arm32-linux
     - <<: *arm64-linux
     - <<: *s390x-linux
-    - <<: *ASAN
-    - <<: *MSAN
-    - <<: *UBSAN
   allow_failures:
     - name: arm32-linux
     - name: arm64-linux
     - name: s390x-linux
-    - name: -fsanitize=address
-    - name: -fsanitize=memory
   fast_finish: true
 
 before_script:
