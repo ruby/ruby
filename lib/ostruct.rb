@@ -203,7 +203,6 @@ class OpenStruct
   # Provides marshalling support for use by the Marshal library.
   #
   alias_method :marshal_load, :update_to_values! # :nodoc:
-  public :marshal_load
 
   #
   # Used internally to defined properties on the
