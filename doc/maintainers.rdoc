@@ -381,4 +381,4 @@ Zachary Scott (zzak)
 [rbs]
   https://github.com/ruby/rbs
 [typeprof]
-  http://github.com/ruby/typeprof
+  https://github.com/ruby/typeprof
