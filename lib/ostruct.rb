@@ -107,7 +107,7 @@
 # For all these reasons, consider not using OpenStruct at all.
 #
 class OpenStruct
-  VERSION = "0.2.0"
+  VERSION = "0.3.1"
 
   #
   # Creates a new OpenStruct object.  By default, the resulting OpenStruct
