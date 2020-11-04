@@ -316,6 +316,21 @@ class Matrix
     Matrix.combine(self, *matrices, &block)
   end
 
+  # Creates a new matrix via multiplying by <i>other_matrix</i>.
+  #
+  #   x = Matrix[[1, 2], [3, 4]]
+  #   y = Matrix[[5, 6], [7, 8]]
+  #   x.dot(y) # => Matrix[[19, 22], [43, 50]]
+  def dot(other_matrix)
+    raise ErrDimensionMismatch if column_count != other_matrix.row_count
+
+    Matrix.build row_count, other_matrix.column_count do |row, col|
+      row(row).dot other_matrix.column(col)
+    end
+  end
+  alias_method :mult, :dot
+  alias_method :multiply, :dot
+
   #
   # Matrix.new is private; use ::rows, ::columns, ::[], etc... to create.
   #
