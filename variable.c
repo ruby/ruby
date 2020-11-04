@@ -1407,7 +1407,7 @@ obj_ivar_set(VALUE obj, ID id, VALUE val)
 {
     VALUE klass = rb_obj_class(obj);
     struct ivar_update ivup;
-    uint32_t i, len;
+    uint32_t len;
     ivup.iv_extended = 0;
     ivup.u.iv_index_tbl = iv_index_tbl_make(obj, klass);
 
@@ -1420,33 +1420,24 @@ obj_ivar_set(VALUE obj, ID id, VALUE val)
     len = ROBJECT_NUMIV(obj);
     if (len <= ivup.index) {
         VALUE *ptr = ROBJECT_IVPTR(obj);
-        if (ivup.index < ROBJECT_EMBED_LEN_MAX) {
-            RBASIC(obj)->flags |= ROBJECT_EMBED;
-            ptr = ROBJECT(obj)->as.ary;
-            for (i = 0; i < ROBJECT_EMBED_LEN_MAX; i++) {
-                ptr[i] = Qundef;
-            }
+        VALUE *newptr;
+        uint32_t newsize = iv_index_tbl_newsize(&ivup);
+
+        if (RBASIC(obj)->flags & ROBJECT_EMBED) {
+            newptr = obj_ivar_heap_alloc(obj, newsize);
+            MEMCPY(newptr, ptr, VALUE, len);
+            RBASIC(obj)->flags &= ~ROBJECT_EMBED;
+            ROBJECT(obj)->as.heap.ivptr = newptr;
         }
         else {
-            VALUE *newptr;
-            uint32_t newsize = iv_index_tbl_newsize(&ivup);
-
-            if (RBASIC(obj)->flags & ROBJECT_EMBED) {
-                newptr = obj_ivar_heap_alloc(obj, newsize);
-                MEMCPY(newptr, ptr, VALUE, len);
-                RBASIC(obj)->flags &= ~ROBJECT_EMBED;
-                ROBJECT(obj)->as.heap.ivptr = newptr;
-            }
-            else {
-                newptr = obj_ivar_heap_realloc(obj, len, newsize);
-            }
-
-            for (; len < newsize; len++) {
-                newptr[len] = Qundef;
-            }
-            ROBJECT(obj)->as.heap.numiv = newsize;
-            ROBJECT(obj)->as.heap.iv_index_tbl = ivup.u.iv_index_tbl;
+            newptr = obj_ivar_heap_realloc(obj, len, newsize);
         }
+
+        for (; len < newsize; len++) {
+            newptr[len] = Qundef;
+        }
+        ROBJECT(obj)->as.heap.numiv = newsize;
+        ROBJECT(obj)->as.heap.iv_index_tbl = ivup.u.iv_index_tbl;
     }
     RB_OBJ_WRITE(obj, &ROBJECT_IVPTR(obj)[ivup.index], val);
 
