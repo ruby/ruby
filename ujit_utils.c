@@ -36,7 +36,7 @@ void pop_regs(codeblock_t* cb)
 
 static void print_int_cfun(int64_t val)
 {
-    printf("%lld\n", (long long int)val);
+    fprintf(stderr, "%lld\n", (long long int)val);
 }
 
 void print_int(codeblock_t* cb, x86opnd_t opnd)
@@ -57,7 +57,7 @@ void print_int(codeblock_t* cb, x86opnd_t opnd)
 
 static void print_ptr_cfun(void* val)
 {
-    printf("%p\n", val);
+    fprintf(stderr, "%p\n", val);
 }
 
 void print_ptr(codeblock_t* cb, x86opnd_t opnd)
@@ -75,7 +75,7 @@ void print_ptr(codeblock_t* cb, x86opnd_t opnd)
 
 static void print_str_cfun(const char* str)
 {
-    printf("%s\n", str);
+    fprintf(stderr, "%s\n", str);
 }
 
 // Print a constant string to stdout
