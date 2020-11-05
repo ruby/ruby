@@ -8512,11 +8512,9 @@ compare_free_slots(const void *left, const void *right, void *dummy)
     return left_page->free_slots - right_page->free_slots;
 }
 
-static VALUE
-gc_sort_heap_by_empty_slots(rb_execution_context_t *ec, VALUE self)
+static void
+gc_sort_heap_by_empty_slots(rb_objspace_t *objspace)
 {
-    rb_objspace_t *objspace = &rb_objspace;
-
     size_t total_pages = heap_eden->total_pages;
     size_t size = size_mul_or_raise(total_pages, sizeof(struct heap_page *), rb_eRuntimeError);
     struct heap_page *page = 0, **page_list = malloc(size);
@@ -8524,49 +8522,29 @@ gc_sort_heap_by_empty_slots(rb_execution_context_t *ec, VALUE self)
 
     gc_rest(objspace);
 
-    RB_VM_LOCK_ENTER();
-    {
-        list_for_each(&heap_eden->pages, page, page_node) {
-            page_list[i++] = page;
-            GC_ASSERT(page != NULL);
-        }
-        GC_ASSERT(total_pages > 0);
-        GC_ASSERT((size_t)i == total_pages);
-
-        /* Sort the heap so "filled pages" are first. `heap_add_page` adds to the
-         * head of the list, so empty pages will end up at the start of the heap */
-        ruby_qsort(page_list, total_pages, sizeof(struct heap_page *), compare_free_slots, NULL);
-
-        /* Reset the eden heap */
-        list_head_init(&objspace->eden_heap.pages);
-        heap_eden->free_pages = NULL;
-
-        for (i = 0; i < total_pages; i++) {
-            list_add(&heap_eden->pages, &page_list[i]->page_node);
-            if (page_list[i]->free_slots != 0) {
-                heap_add_freepage(heap_eden, page_list[i]);
-            }
-        }
-
-        free(page_list);
+    list_for_each(&heap_eden->pages, page, page_node) {
+        page_list[i++] = page;
+        GC_ASSERT(page != NULL);
     }
-    RB_VM_LOCK_LEAVE();
+    GC_ASSERT(total_pages > 0);
+    GC_ASSERT((size_t)i == total_pages);
 
-    return Qnil;
-}
+    /* Sort the heap so "filled pages" are first. `heap_add_page` adds to the
+     * head of the list, so empty pages will end up at the start of the heap */
+    ruby_qsort(page_list, total_pages, sizeof(struct heap_page *), compare_free_slots, NULL);
 
-static VALUE
-gc_double_heap_size(rb_execution_context_t *ec, VALUE self)
-{
-    rb_objspace_t *objspace = &rb_objspace;
+    /* Reset the eden heap */
+    list_head_init(&objspace->eden_heap.pages);
+    heap_eden->free_pages = NULL;
 
-    RB_VM_LOCK_ENTER();
-    {
-        heap_add_pages(objspace, heap_eden, heap_allocated_pages);
+    for (i = 0; i < total_pages; i++) {
+        list_add(&heap_eden->pages, &page_list[i]->page_node);
+        if (page_list[i]->free_slots != 0) {
+            heap_add_freepage(heap_eden, page_list[i]);
+        }
     }
-    RB_VM_LOCK_LEAVE();
 
-    return Qnil;
+    free(page_list);
 }
 
 static void
@@ -9272,12 +9250,28 @@ heap_check_moved_i(void *vstart, void *vend, size_t stride, void *data)
 }
 
 static VALUE
-gc_check_references_for_moved(rb_execution_context_t *ec, VALUE self)
+gc_verify_compaction_references(rb_execution_context_t *ec, VALUE self, VALUE double_heap, VALUE toward_empty)
 {
     rb_objspace_t *objspace = &rb_objspace;
+
+    RB_VM_LOCK_ENTER();
+    {
+        if (RTEST(double_heap)) {
+            heap_add_pages(objspace, heap_eden, heap_allocated_pages);
+        }
+
+        if (RTEST(toward_empty)) {
+            gc_sort_heap_by_empty_slots(objspace);
+        }
+    }
+    RB_VM_LOCK_LEAVE();
+
+    gc_start_internal(ec, self, Qtrue, Qtrue, Qtrue, Qtrue);
+
     objspace_reachable_objects_from_root(objspace, root_obj_check_moved_i, NULL);
     objspace_each_objects(objspace, heap_check_moved_i, NULL);
-    return Qnil;
+
+    return gc_compact_stats(ec, self);
 }
 
 VALUE
