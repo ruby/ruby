@@ -8520,8 +8520,6 @@ gc_sort_heap_by_empty_slots(rb_objspace_t *objspace)
     struct heap_page *page = 0, **page_list = malloc(size);
     size_t i = 0;
 
-    gc_rest(objspace);
-
     list_for_each(&heap_eden->pages, page, page_node) {
         page_list[i++] = page;
         assert(page != NULL);
@@ -9256,6 +9254,8 @@ gc_verify_compaction_references(rb_execution_context_t *ec, VALUE self, VALUE do
 
     RB_VM_LOCK_ENTER();
     {
+        gc_rest(objspace);
+
         if (RTEST(double_heap)) {
             heap_add_pages(objspace, heap_eden, heap_allocated_pages);
         }
