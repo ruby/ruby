@@ -43,8 +43,6 @@ Zachary Scott (zzak)
 [lib/rubygems.rb, lib/rubygems/*]
   Eric Hodel (drbrain), Hiroshi SHIBATA (hsbt)
   https://github.com/rubygems/rubygems
-[lib/un.rb]
-  WATANABE Hirofumi (eban)
 [lib/unicode_normalize.rb, lib/unicode_normalize/*]
   Martin J. Dürst
 
@@ -262,6 +260,8 @@ Zachary Scott (zzak)
 [lib/tsort.rb]
   Tanaka Akira (akr)
   https://github.com/ruby/tsort
+[lib/un.rb]
+  WATANABE Hirofumi (eban)
 [lib/uri.rb, lib/uri/*]
   YAMADA, Akira (akira)
   https://github.com/ruby/uri

@@ -11,7 +11,6 @@ description.
 MakeMakefile:: Module used to generate a Makefile for C extensions
 RbConfig:: Information of your configure and build of Ruby
 Gem:: Package management framework for Ruby
-un.rb:: Utilities to replace common UNIX commands
 
 == Extensions
 
@@ -78,6 +77,7 @@ Timeout:: Auto-terminate potentially long-running operations in Ruby
 tmpdir.rb:: Extends the Dir class to manage the OS temporary file path
 Tracer:: Outputs a source level execution trace of a Ruby program
 TSort:: Topological sorting using Tarjan's algorithm
+un.rb:: Utilities to replace common UNIX commands
 URI:: A Ruby module providing support for Uniform Resource Identifiers
 WEBrick:: An HTTP server toolkit for Ruby
 YAML:: Ruby client library for the Psych YAML implementation
