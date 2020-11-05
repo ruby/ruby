@@ -88,7 +88,7 @@ def cp
     options[:preserve] = true if options.delete :p
     dest = argv.pop
     argv = argv[0] if argv.size == 1
-    FileUtils.__send__ cmd, argv, dest, **options
+    FileUtils.send cmd, argv, dest, **options
   end
 end
 
@@ -109,7 +109,7 @@ def ln
     options[:force] = true if options.delete :f
     dest = argv.pop
     argv = argv[0] if argv.size == 1
-    FileUtils.__send__ cmd, argv, dest, **options
+    FileUtils.send cmd, argv, dest, **options
   end
 end
 
@@ -144,7 +144,7 @@ def rm
     cmd = "rm"
     cmd += "_r" if options.delete :r
     options[:force] = true if options.delete :f
-    FileUtils.__send__ cmd, argv, **options
+    FileUtils.send cmd, argv, **options
   end
 end
 
@@ -161,7 +161,7 @@ def mkdir
   setup("p") do |argv, options|
     cmd = "mkdir"
     cmd += "_p" if options.delete :p
-    FileUtils.__send__ cmd, argv, **options
+    FileUtils.send cmd, argv, **options
   end
 end
 

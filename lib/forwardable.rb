@@ -189,7 +189,7 @@ module Forwardable
     # If it's not a class or module, it's an instance
     mod = Module === self ? self : singleton_class
     ret = mod.module_eval(&gen)
-    mod.__send__(:ruby2_keywords, ali) if RUBY_VERSION >= '2.7'
+    mod.send(:ruby2_keywords, ali) if RUBY_VERSION >= '2.7'
     ret
   end
 
