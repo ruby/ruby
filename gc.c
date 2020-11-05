@@ -8524,29 +8524,33 @@ gc_sort_heap_by_empty_slots(rb_execution_context_t *ec, VALUE self)
 
     gc_rest(objspace);
 
-    list_for_each(&heap_eden->pages, page, page_node) {
-        page_list[i++] = page;
-        GC_ASSERT(page != NULL);
-    }
-    GC_ASSERT(total_pages > 0);
-    GC_ASSERT((size_t)i == total_pages);
-
-    /* Sort the heap so "filled pages" are first. `heap_add_page` adds to the
-     * head of the list, so empty pages will end up at the start of the heap */
-    ruby_qsort(page_list, total_pages, sizeof(struct heap_page *), compare_free_slots, NULL);
-
-    /* Reset the eden heap */
-    list_head_init(&objspace->eden_heap.pages);
-    heap_eden->free_pages = NULL;
-
-    for (i = 0; i < total_pages; i++) {
-        list_add(&heap_eden->pages, &page_list[i]->page_node);
-        if (page_list[i]->free_slots != 0) {
-            heap_add_freepage(heap_eden, page_list[i]);
+    RB_VM_LOCK_ENTER();
+    {
+        list_for_each(&heap_eden->pages, page, page_node) {
+            page_list[i++] = page;
+            GC_ASSERT(page != NULL);
         }
-    }
+        GC_ASSERT(total_pages > 0);
+        GC_ASSERT((size_t)i == total_pages);
 
-    free(page_list);
+        /* Sort the heap so "filled pages" are first. `heap_add_page` adds to the
+         * head of the list, so empty pages will end up at the start of the heap */
+        ruby_qsort(page_list, total_pages, sizeof(struct heap_page *), compare_free_slots, NULL);
+
+        /* Reset the eden heap */
+        list_head_init(&objspace->eden_heap.pages);
+        heap_eden->free_pages = NULL;
+
+        for (i = 0; i < total_pages; i++) {
+            list_add(&heap_eden->pages, &page_list[i]->page_node);
+            if (page_list[i]->free_slots != 0) {
+                heap_add_freepage(heap_eden, page_list[i]);
+            }
+        }
+
+        free(page_list);
+    }
+    RB_VM_LOCK_LEAVE();
 
     return Qnil;
 }
@@ -8556,7 +8560,11 @@ gc_double_heap_size(rb_execution_context_t *ec, VALUE self)
 {
     rb_objspace_t *objspace = &rb_objspace;
 
-    heap_add_pages(objspace, heap_eden, heap_allocated_pages);
+    RB_VM_LOCK_ENTER();
+    {
+        heap_add_pages(objspace, heap_eden, heap_allocated_pages);
+    }
+    RB_VM_LOCK_LEAVE();
 
     return Qnil;
 }
