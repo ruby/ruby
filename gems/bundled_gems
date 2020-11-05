@@ -5,5 +5,5 @@ rake 13.0.1 https://github.com/ruby/rake
 test-unit 3.3.6 https://github.com/test-unit/test-unit 3.3.6
 rexml 3.2.4 https://github.com/ruby/rexml
 rss 0.2.9 https://github.com/ruby/rss 0.2.9
-rbs 0.13.1 https://github.com/ruby/rbs
-typeprof 0.4.0 https://github.com/ruby/typeprof
+rbs 0.16.0 https://github.com/ruby/rbs
+typeprof 0.4.1 https://github.com/ruby/typeprof
