@@ -222,11 +222,16 @@ class RubyLex
     begin # check if parser error are available
       verbose, $VERBOSE = $VERBOSE, nil
       case RUBY_ENGINE
+      when 'ruby'
+        self.class.compile_with_errors_suppressed(code) do |inner_code, line_no|
+          RubyVM::InstructionSequence.compile(inner_code, nil, nil, line_no)
+        end
       when 'jruby'
         JRuby.compile_ir(code)
       else
-        self.class.compile_with_errors_suppressed(code) do |inner_code, line_no|
-          RubyVM::InstructionSequence.compile(inner_code, nil, nil, line_no)
+        catch(:valid) do
+          eval("BEGIN { throw :valid, true }\n#{code}")
+          false
         end
       end
     rescue EncodingError
