@@ -135,4 +135,4 @@ module IRB
   end
 end
 
-IRB.send(:easter_egg, ARGV[0]&.to_sym) if $0 == __FILE__
+IRB.__send__(:easter_egg, ARGV[0]&.to_sym) if $0 == __FILE__
