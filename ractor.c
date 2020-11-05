@@ -2181,6 +2181,24 @@ void rb_hash_transient_heap_evacuate(VALUE hash, int promote);
 void rb_struct_transient_heap_evacuate(VALUE st, int promote);
 #endif
 
+static void
+obj_refer_only_shareables_p_i(VALUE obj, void *ptr)
+{
+    int *pcnt = (int *)ptr;
+
+    if (!rb_ractor_shareable_p(obj)) {
+        pcnt++;
+    }
+}
+
+static int
+obj_refer_only_shareables_p(VALUE obj)
+{
+    int cnt = 0;
+    rb_objspace_reachable_objects_from(obj, obj_refer_only_shareables_p_i, &cnt);
+    return cnt == 0;
+}
+
 static int
 obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
 {
@@ -2329,6 +2347,14 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
         break;
 
       case T_DATA:
+        if (!data->move && obj_refer_only_shareables_p(obj)) {
+            break;
+        }
+        else {
+            rb_raise(rb_eRactorError, "can not %s %"PRIsVALUE" object.",
+                     data->move ? "move" : "copy", rb_class_of(obj));
+        }
+
       case T_IMEMO:
         // not supported yet
         return 1;
