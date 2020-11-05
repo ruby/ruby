@@ -8524,10 +8524,10 @@ gc_sort_heap_by_empty_slots(rb_objspace_t *objspace)
 
     list_for_each(&heap_eden->pages, page, page_node) {
         page_list[i++] = page;
-        GC_ASSERT(page != NULL);
+        assert(page != NULL);
     }
-    GC_ASSERT(total_pages > 0);
-    GC_ASSERT((size_t)i == total_pages);
+    assert(total_pages > 0);
+    assert((size_t)i == total_pages);
 
     /* Sort the heap so "filled pages" are first. `heap_add_page` adds to the
      * head of the list, so empty pages will end up at the start of the heap */
