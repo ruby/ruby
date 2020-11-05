@@ -3903,7 +3903,7 @@ sum_iter_Kahan_Babuska(VALUE i, struct enum_sum_memo *memo)
 {
     /*
      * Kahan-Babuska balancing compensated summation algorithm
-     * See http://link.springer.com/article/10.1007/s00607-005-0139-x
+     * See https://link.springer.com/article/10.1007/s00607-005-0139-x
      */
     double x;
 

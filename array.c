@@ -7687,7 +7687,7 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
     if (RB_FLOAT_TYPE_P(e)) {
         /*
          * Kahan-Babuska balancing compensated summation algorithm
-         * See http://link.springer.com/article/10.1007/s00607-005-0139-x
+         * See https://link.springer.com/article/10.1007/s00607-005-0139-x
          */
         double f, c;
         double x, t;
