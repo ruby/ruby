@@ -61,7 +61,7 @@ module RubyVM::MicroJIT
           return [split_line[3], Integer(split_line[0], 16)]
         end
       end
-      raise 'Failed to find section and offset for the the instruction address table'
+      raise 'Failed to find section and offset for the instruction address table'
     end
 
     def get_handler_offset(table_section, table_offset, insn_id)
