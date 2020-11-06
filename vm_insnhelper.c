@@ -1213,7 +1213,7 @@ vm_setivar(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, const str
 	    VALUE *ptr = ROBJECT_IVPTR(obj);
 	    index = !is_attr ? ic->entry->index : vm_cc_attr_index(cc)-1;
 
-	    if (index >= ROBJECT_NUMIV(obj)) {
+            if (index >= ROBJECT_NUMIV(obj)) {
                 st_table * iv_idx_tbl = ROBJECT_IV_INDEX_TBL(obj);
                 rb_init_iv_list(obj, ROBJECT_NUMIV(obj), (uint32_t)iv_idx_tbl->num_entries, iv_idx_tbl);
                 ptr = ROBJECT_IVPTR(obj);
