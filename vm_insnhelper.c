@@ -4280,7 +4280,23 @@ vm_opt_send_method_id(struct rb_control_frame_struct *reg_cfp,
     int i = argc - 1;
     VALUE sym = TOPN(i);
     if (!SYMBOL_P(sym)) return cd;
-    ID mid = SYM2ID(sym);
+    ID mid = rb_check_id(&sym);
+    if (UNLIKELY(! mid)) return cd;
+
+    // E.g. when i == 2
+    //
+    //   |      |        |      |  TOPN
+    //   +------+        |      |
+    //   | arg1 | ---+   |      |    0
+    //   +------+    |   +------+
+    //   | arg0 | -+ +-> | arg1 |    1
+    //   +------+  |     +------+
+    //   | sym  |  +---> | arg0 |    2
+    //   +------+        +------+
+    //   | recv |        | recv |    3
+    // --+------+--------+------+------
+    //
+    // shift arguments
     if (i > 0) {
         MEMMOVE(&TOPN(i), &TOPN(i-1), VALUE, i);
     }

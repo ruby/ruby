@@ -5,6 +5,9 @@ prelude: |
 
     def mm
     end
+
+    def method_missing(*)
+    end
   end
 
   class D
@@ -14,6 +17,7 @@ prelude: |
 
   o = C.new
   m = :m
+  missing = :missing
 
   oo = D.new
 
@@ -29,4 +33,8 @@ benchmark:
     call(o, :m)
     call(o, :mm)
     call(oo, :mmm)
+  vm_send_sym_missing: |
+    o.__send__ :missing
+  vm_send_var_missing: |
+    o.__send__ missing
 loop_count: 6000000
