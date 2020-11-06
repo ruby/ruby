@@ -1402,6 +1402,28 @@ rb_obj_transient_heap_evacuate(VALUE obj, int promote)
 }
 #endif
 
+void
+rb_init_iv_list(VALUE obj, uint32_t len, uint32_t newsize, st_table * index_tbl)
+{
+    VALUE *ptr = ROBJECT_IVPTR(obj);
+    VALUE *newptr;
+
+    if (RBASIC(obj)->flags & ROBJECT_EMBED) {
+        newptr = obj_ivar_heap_alloc(obj, newsize);
+        MEMCPY(newptr, ptr, VALUE, len);
+        RBASIC(obj)->flags &= ~ROBJECT_EMBED;
+        ROBJECT(obj)->as.heap.ivptr = newptr;
+    } else {
+        newptr = obj_ivar_heap_realloc(obj, len, newsize);
+    }
+
+    for (; len < newsize; len++) {
+        newptr[len] = Qundef;
+    }
+    ROBJECT(obj)->as.heap.numiv = newsize;
+    ROBJECT(obj)->as.heap.iv_index_tbl = index_tbl;
+}
+
 static VALUE
 obj_ivar_set(VALUE obj, ID id, VALUE val)
 {
@@ -1419,25 +1441,8 @@ obj_ivar_set(VALUE obj, ID id, VALUE val)
 
     len = ROBJECT_NUMIV(obj);
     if (len <= ivup.index) {
-        VALUE *ptr = ROBJECT_IVPTR(obj);
-        VALUE *newptr;
         uint32_t newsize = iv_index_tbl_newsize(&ivup);
-
-        if (RBASIC(obj)->flags & ROBJECT_EMBED) {
-            newptr = obj_ivar_heap_alloc(obj, newsize);
-            MEMCPY(newptr, ptr, VALUE, len);
-            RBASIC(obj)->flags &= ~ROBJECT_EMBED;
-            ROBJECT(obj)->as.heap.ivptr = newptr;
-        }
-        else {
-            newptr = obj_ivar_heap_realloc(obj, len, newsize);
-        }
-
-        for (; len < newsize; len++) {
-            newptr[len] = Qundef;
-        }
-        ROBJECT(obj)->as.heap.numiv = newsize;
-        ROBJECT(obj)->as.heap.iv_index_tbl = ivup.u.iv_index_tbl;
+        rb_init_iv_list(obj, len, newsize, ivup.u.iv_index_tbl);
     }
     RB_OBJ_WRITE(obj, &ROBJECT_IVPTR(obj)[ivup.index], val);
 

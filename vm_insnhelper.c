@@ -1213,11 +1213,21 @@ vm_setivar(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, const str
 	    VALUE *ptr = ROBJECT_IVPTR(obj);
 	    index = !is_attr ? ic->entry->index : vm_cc_attr_index(cc)-1;
 
-	    if (RB_DEBUG_COUNTER_INC_UNLESS(ivar_set_ic_miss_oorange, index < ROBJECT_NUMIV(obj))) {
+	    if (index < ROBJECT_NUMIV(obj)) {
 		RB_OBJ_WRITE(obj, &ptr[index], val);
 		RB_DEBUG_COUNTER_INC(ivar_set_ic_hit);
 		return val; /* inline cache hit */
-	    }
+	    } else {
+                st_table * iv_idx_tbl = RCLASS_IV_INDEX_TBL(rb_class_real(klass));
+                if (index < iv_idx_tbl->num_entries) {
+                    rb_init_iv_list(obj, ROBJECT_NUMIV(obj), iv_idx_tbl->num_entries, iv_idx_tbl);
+                    ptr = ROBJECT_IVPTR(obj);
+                    RB_OBJ_WRITE(obj, &ptr[index], val);
+                    RB_DEBUG_COUNTER_INC(ivar_set_ic_hit);
+                    return val; /* inline cache hit */
+                }
+            }
+            RB_DEBUG_COUNTER_INC(ivar_set_ic_miss_oorange);
 	}
 	else {
 	    struct st_table *iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
