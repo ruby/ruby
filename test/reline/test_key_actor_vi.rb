@@ -1224,8 +1224,8 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
     input_keys('df_')
     assert_byte_pointer_size('aaa bbb ')
     assert_cursor(8)
-    assert_cursor_max(15)
-    assert_line('aaa bbb ___ ddd')
+    assert_cursor_max(14)
+    assert_line('aaa bbb __ ddd')
   end
 
   def test_vi_delete_meta_with_arg
@@ -1293,5 +1293,64 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
     assert_byte_pointer_size('fo')
     assert_cursor(2)
     assert_cursor_max(10)
+  end
+
+  def test_vi_end_word_with_operator
+    input_keys("foo bar\C-[0")
+    assert_line('foo bar')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(7)
+    input_keys('de')
+    assert_line(' bar')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(4)
+    input_keys('de')
+    assert_line('')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    input_keys('de')
+    assert_line('')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+  end
+
+  def test_vi_end_big_word_with_operator
+    input_keys("aaa   b{b}}}b\C-[0")
+    assert_line('aaa   b{b}}}b')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(13)
+    input_keys('dE')
+    assert_line('   b{b}}}b')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(10)
+    input_keys('dE')
+    assert_line('')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    input_keys('dE')
+    assert_line('')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+  end
+
+  def test_vi_next_char_with_operator
+    input_keys("foo bar\C-[0")
+    assert_line('foo bar')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(7)
+    input_keys('df ')
+    assert_line('bar')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(3)
   end
 end

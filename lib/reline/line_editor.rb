@@ -698,7 +698,7 @@ class Reline::LineEditor
     if @waiting_operator_proc
       if VI_MOTIONS.include?(method_symbol)
         old_cursor, old_byte_pointer = @cursor, @byte_pointer
-        block.()
+        block.(true)
         unless @waiting_proc
           cursor_diff, byte_pointer_diff = @cursor - old_cursor, @byte_pointer - old_byte_pointer
           @cursor, @byte_pointer = old_cursor, old_byte_pointer
@@ -718,27 +718,41 @@ class Reline::LineEditor
         end
       else
         # Ignores operator when not motion is given.
-        block.()
+        block.(false)
       end
       @waiting_operator_proc = nil
     else
-      block.()
+      block.(false)
     end
   end
 
   private def argumentable?(method_obj)
-    method_obj and method_obj.parameters.length != 1
+    method_obj and method_obj.parameters.any? { |param| param[0] == :key and param[1] == :arg }
   end
 
-  def wrap_method_call(method_symbol, method_obj, key)
+  private def inclusive?(method_obj)
+    # If a motion method with the keyword argument "inclusive" follows the
+    # operator, it must contain the character at the cursor position.
+    method_obj and method_obj.parameters.any? { |param| param[0] == :key and param[1] == :inclusive }
+  end
+
+  def wrap_method_call(method_symbol, method_obj, key, with_operator = false)
     if @config.editing_mode_is?(:emacs, :vi_insert) and @waiting_proc.nil? and @waiting_operator_proc.nil?
       not_insertion = method_symbol != :ed_insert
       process_insert(force: not_insertion)
     end
     if @vi_arg and argumentable?(method_obj)
-      method_obj.(key, arg: @vi_arg)
+      if with_operator and inclusive?(method_obj)
+        method_obj.(key, arg: @vi_arg, inclusive: true)
+      else
+        method_obj.(key, arg: @vi_arg)
+      end
     else
-      method_obj.(key)
+      if with_operator and inclusive?(method_obj)
+        method_obj.(key, inclusive: true)
+      else
+        method_obj.(key)
+      end
     end
   end
 
@@ -750,8 +764,8 @@ class Reline::LineEditor
     end
     if method_symbol and key.is_a?(Symbol)
       if @vi_arg and argumentable?(method_obj)
-        run_for_operators(key, method_symbol) do
-          wrap_method_call(method_symbol, method_obj, key)
+        run_for_operators(key, method_symbol) do |with_operator|
+          wrap_method_call(method_symbol, method_obj, key, with_operator)
         end
       else
         wrap_method_call(method_symbol, method_obj, key) if method_obj
@@ -763,8 +777,8 @@ class Reline::LineEditor
         ed_argument_digit(key)
       else
         if argumentable?(method_obj)
-          run_for_operators(key, method_symbol) do
-            wrap_method_call(method_symbol, method_obj, key)
+          run_for_operators(key, method_symbol) do |with_operator|
+            wrap_method_call(method_symbol, method_obj, key, with_operator)
           end
         elsif @waiting_proc
           @waiting_proc.(key)
@@ -783,8 +797,8 @@ class Reline::LineEditor
       if method_symbol == :ed_argument_digit
         wrap_method_call(method_symbol, method_obj, key)
       else
-        run_for_operators(key, method_symbol) do
-          wrap_method_call(method_symbol, method_obj, key)
+        run_for_operators(key, method_symbol) do |with_operator|
+          wrap_method_call(method_symbol, method_obj, key, with_operator)
         end
       end
       @kill_ring.process
@@ -1962,13 +1976,22 @@ class Reline::LineEditor
     vi_prev_word(key, arg: arg) if arg > 0
   end
 
-  private def vi_end_word(key, arg: 1)
+  private def vi_end_word(key, arg: 1, inclusive: false)
     if @line.bytesize > @byte_pointer
       byte_size, width = Reline::Unicode.vi_forward_end_word(@line, @byte_pointer)
       @byte_pointer += byte_size
       @cursor += width
     end
     arg -= 1
+    if inclusive and arg.zero?
+      byte_size = Reline::Unicode.get_next_mbchar_size(@line, @byte_pointer)
+      if byte_size > 0
+        c = @line.byteslice(@byte_pointer, byte_size)
+        width = Reline::Unicode.get_mbchar_width(c)
+        @byte_pointer += byte_size
+        @cursor += width
+      end
+    end
     vi_end_word(key, arg: arg) if arg > 0
   end
 
@@ -1992,13 +2015,22 @@ class Reline::LineEditor
     vi_prev_big_word(key, arg: arg) if arg > 0
   end
 
-  private def vi_end_big_word(key, arg: 1)
+  private def vi_end_big_word(key, arg: 1, inclusive: false)
     if @line.bytesize > @byte_pointer
       byte_size, width = Reline::Unicode.vi_big_forward_end_word(@line, @byte_pointer)
       @byte_pointer += byte_size
       @cursor += width
     end
     arg -= 1
+    if inclusive and arg.zero?
+      byte_size = Reline::Unicode.get_next_mbchar_size(@line, @byte_pointer)
+      if byte_size > 0
+        c = @line.byteslice(@byte_pointer, byte_size)
+        width = Reline::Unicode.get_mbchar_width(c)
+        @byte_pointer += byte_size
+        @cursor += width
+      end
+    end
     vi_end_big_word(key, arg: arg) if arg > 0
   end
 
@@ -2235,15 +2267,15 @@ class Reline::LineEditor
     }
   end
 
-  private def vi_next_char(key, arg: 1)
-    @waiting_proc = ->(key_for_proc) { search_next_char(key_for_proc, arg) }
+  private def vi_next_char(key, arg: 1, inclusive: false)
+    @waiting_proc = ->(key_for_proc) { search_next_char(key_for_proc, arg, inclusive: inclusive) }
   end
 
-  private def vi_to_next_char(key, arg: 1)
-    @waiting_proc = ->(key_for_proc) { search_next_char(key_for_proc, arg, true) }
+  private def vi_to_next_char(key, arg: 1, inclusive: false)
+    @waiting_proc = ->(key_for_proc) { search_next_char(key_for_proc, arg, need_prev_char: true, inclusive: inclusive) }
   end
 
-  private def search_next_char(key, arg, need_prev_char = false)
+  private def search_next_char(key, arg, need_prev_char: false, inclusive: false)
     if key.instance_of?(String)
       inputed_char = key
     else
@@ -2279,6 +2311,15 @@ class Reline::LineEditor
       byte_size, width = prev_total
       @byte_pointer += byte_size
       @cursor += width
+    end
+    if inclusive
+      byte_size = Reline::Unicode.get_next_mbchar_size(@line, @byte_pointer)
+      if byte_size > 0
+        c = @line.byteslice(@byte_pointer, byte_size)
+        width = Reline::Unicode.get_mbchar_width(c)
+        @byte_pointer += byte_size
+        @cursor += width
+      end
     end
     @waiting_proc = nil
   end
