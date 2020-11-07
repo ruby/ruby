@@ -834,7 +834,6 @@ rb_define_class_id_under(VALUE outer, ID id, VALUE super)
     rb_const_set(outer, id, klass);
     rb_class_inherited(super, klass);
     rb_vm_add_root_module(klass);
-    rb_gc_register_mark_object(klass);
 
     return klass;
 }
@@ -872,7 +871,6 @@ rb_define_module(const char *name)
     }
     module = rb_define_module_id(id);
     rb_vm_add_root_module(module);
-    rb_gc_register_mark_object(module);
     rb_const_set(rb_cObject, id, module);
 
     return module;
