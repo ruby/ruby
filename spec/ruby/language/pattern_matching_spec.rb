@@ -316,26 +316,26 @@ ruby_version_is "2.7" do
       end
 
       it "supports using _ in a pattern several times" do
-        eval(<<~RUBY).should == 2
+        eval(<<~RUBY).should == true
           case [0, 1, 2]
             in [0, _, _]
-              _
+              true
           end
         RUBY
       end
 
       it "supports using any name with _ at the beginning in a pattern several times" do
-        eval(<<~RUBY).should == 2
+        eval(<<~RUBY).should == true
           case [0, 1, 2]
             in [0, _x, _x]
-              _x
+              true
           end
         RUBY
 
-        eval(<<~RUBY).should == 2
+        eval(<<~RUBY).should == true
           case {a: 0, b: 1, c: 2}
             in {a: 0, b: _x, c: _x}
-              _x
+              true
           end
         RUBY
       end
@@ -566,19 +566,6 @@ ruby_version_is "2.7" do
             in [a, b, c]
               [a, b, c]
           end
-        RUBY
-      end
-
-      it "binds variable even if patter matches only partially" do
-        a = nil
-
-        eval(<<~RUBY).should == 0
-          case [0, 1, 2]
-            in [a, 1, 3]
-          else
-          end
-
-          a
         RUBY
       end
 
@@ -870,7 +857,7 @@ ruby_version_is "2.7" do
           end
         RUBY
 
-        ScratchPad.recorded.should == [[[:a, :b, :c]]]
+        ScratchPad.recorded.sort.should == [[[:a, :b, :c]]]
       end
 
       it "passes keys specified in pattern to #deconstruct_keys method if pattern contains double splat operator **" do
@@ -887,7 +874,7 @@ ruby_version_is "2.7" do
           end
         RUBY
 
-        ScratchPad.recorded.should == [[[:a, :b]]]
+        ScratchPad.recorded.sort.should == [[[:a, :b]]]
       end
 
       it "passes nil to #deconstruct_keys method if pattern contains double splat operator **rest" do
@@ -913,19 +900,6 @@ ruby_version_is "2.7" do
             in {a: x, b: y, c: z}
               [x, y, z]
           end
-        RUBY
-      end
-
-      it "binds variable even if pattern matches only partially" do
-        x = nil
-
-        eval(<<~RUBY).should == 0
-          case {a: 0, b: 1}
-            in {a: x, b: 2}
-          else
-          end
-
-          x
         RUBY
       end
 
