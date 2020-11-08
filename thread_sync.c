@@ -29,15 +29,15 @@ sync_wakeup(struct list_head *head, long max)
     list_for_each_safe(head, cur, next, node) {
         list_del_init(&cur->node);
 
-        if (cur->th->scheduler != Qnil) {
-            rb_scheduler_unblock(cur->th->scheduler, cur->self, rb_fiberptr_self(cur->fiber));
-        }
-
         if (cur->th->status != THREAD_KILLED) {
-            if (cur->th->scheduler == Qnil) {
+            
+            if (cur->th->scheduler != Qnil) {
+                rb_scheduler_unblock(cur->th->scheduler, cur->self, rb_fiberptr_self(cur->fiber));
+            } else {
                 rb_threadptr_interrupt(cur->th);
                 cur->th->status = THREAD_RUNNABLE;
             }
+
             if (--max == 0) return;
         }
     }
