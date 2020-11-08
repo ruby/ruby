@@ -156,7 +156,7 @@ class TestResolvDNS < Test::Unit::TestCase
             ra =     (flags & 0x0080) >> 7
             z =      (flags & 0x0070) >> 4
             rcode =   flags & 0x000f
-            rest = msg[12..-1]
+            _rest = msg[12..-1]
 
             questions = msg.bytes[12..-1]
             labels = []
