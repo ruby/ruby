@@ -1,0 +1,12 @@
+prelude: |
+  sary = Array.new(10)
+  mary = Array.new(1000)
+  lary = Array.new(30_000_000)
+benchmark:
+  - sary.deconstruct
+  - mary.deconstruct
+  - lary.deconstruct
+  - sary.to_ary
+  - mary.to_ary
+  - lary.to_ary
+loop_count: 20000000

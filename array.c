@@ -2902,19 +2902,6 @@ rb_ary_to_h(VALUE ary)
     return hash;
 }
 
-/*
- *  call-seq:
- *    array.to_ary -> self
- *
- *  Returns +self+.
- */
-
-static VALUE
-rb_ary_to_ary_m(VALUE ary)
-{
-    return ary;
-}
-
 static void
 ary_reverse(VALUE *p1, VALUE *p2)
 {
@@ -7750,12 +7737,6 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
     return v;
 }
 
-static VALUE
-rb_ary_deconstruct(VALUE ary)
-{
-    return ary;
-}
-
 /*
  *  An \Array is an ordered, integer-indexed collection of objects,
  *  called _elements_.  Any object may be an \Array element.
@@ -8029,7 +8010,6 @@ Init_Array(void)
     rb_define_alias(rb_cArray,  "to_s", "inspect");
     rb_define_method(rb_cArray, "to_a", rb_ary_to_a, 0);
     rb_define_method(rb_cArray, "to_h", rb_ary_to_h, 0);
-    rb_define_method(rb_cArray, "to_ary", rb_ary_to_ary_m, 0);
 
     rb_define_method(rb_cArray, "==", rb_ary_equal, 1);
     rb_define_method(rb_cArray, "eql?", rb_ary_eql, 1);
@@ -8136,8 +8116,6 @@ Init_Array(void)
     rb_define_method(rb_cArray, "one?", rb_ary_one_p, -1);
     rb_define_method(rb_cArray, "dig", rb_ary_dig, -1);
     rb_define_method(rb_cArray, "sum", rb_ary_sum, -1);
-
-    rb_define_method(rb_cArray, "deconstruct", rb_ary_deconstruct, 0);
 }
 
 #include "array.rbinc"

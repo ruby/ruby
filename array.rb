@@ -56,4 +56,18 @@ class Array
   def sample(n = (ary = false), random: Random)
     Primitive.rb_ary_sample(random, n, ary)
   end
+
+  #
+  #  call-seq:
+  #    array.to_ary -> self
+  #
+  #  Returns +self+.
+  #
+  def to_ary
+    return self
+  end
+
+  def deconstruct
+    return self
+  end
 end
