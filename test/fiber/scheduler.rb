@@ -135,12 +135,7 @@ class Scheduler
 
   # Used for Kernel#sleep and Mutex#sleep
   def kernel_sleep(duration = nil)
-    # p [__method__, duration]
-    if duration
-      @waiting[Fiber.current] = current_time + duration
-    end
-
-    Fiber.yield
+    self.block(:sleep, duration)
 
     return true
   end
