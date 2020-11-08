@@ -1,7 +1,7 @@
 require_relative 'scheduler'
 
 scheduler = Scheduler.new
-Thread.current.scheduler = scheduler
+Fiber.set_scheduler scheduler
 
 ary = []
 Fiber.schedule do

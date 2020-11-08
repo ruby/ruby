@@ -1,7 +1,7 @@
 require_relative 'scheduler'
 
 def some_yielder
-  p [Fiber.current, Thread.current.scheduler, Thread.current.blocking?]
+  p [Fiber.current, Fiber.scheduler, Fiber.blocking?]
   yield 1
   sleep 0.1
   yield 2
@@ -12,7 +12,7 @@ def enumerator
 end
 
 scheduler = Scheduler.new
-Thread.current.scheduler = scheduler
+Fiber.set_scheduler(scheduler)
 
 ary = []
 Fiber.schedule do
