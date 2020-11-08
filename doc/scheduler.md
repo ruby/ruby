@@ -73,7 +73,7 @@ program.
 Fibers can be used to create non-blocking execution contexts.
 
 ~~~ ruby
-Fiber.new(blocking: false) do
+Fiber.new do
   puts Fiber.current.blocking? # false
 
   # May invoke `Fiber.scheduler&.io_wait`.
