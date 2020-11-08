@@ -136,7 +136,7 @@ class TestFiberMutex < Test::Unit::TestCase
 
     thread.join
 
-    assert_operator signalled, :>, 1
+    assert_equal 3, signalled
   end
 
   def test_queue
