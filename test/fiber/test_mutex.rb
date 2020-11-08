@@ -108,7 +108,7 @@ class TestFiberMutex < Test::Unit::TestCase
 
     signalled = 0
 
-    thread = Thread.new do
+    Thread.new do
       scheduler = Scheduler.new
       Fiber.set_scheduler scheduler
 
@@ -132,11 +132,9 @@ class TestFiberMutex < Test::Unit::TestCase
       end
 
       scheduler.run
-    end
+    end.join
 
-    thread.join
-
-    assert_operator signalled, :>, 1
+    assert_equal 3, signalled
   end
 
   def test_queue
