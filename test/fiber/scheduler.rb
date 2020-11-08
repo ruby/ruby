@@ -25,7 +25,7 @@ class Scheduler
     @blocking = 0
     @ready = []
 
-    @urgent = nil
+    @urgent = IO.pipe
   end
 
   attr :readable
@@ -47,8 +47,6 @@ class Scheduler
   end
 
   def run
-    @urgent = IO.pipe
-
     while @readable.any? or @writable.any? or @waiting.any? or @blocking.positive?
       # Can only handle file descriptors up to 1024...
       readable, writable = IO.select(@readable.keys + [@urgent.first], @writable.keys, [], next_timeout)
@@ -95,9 +93,6 @@ class Scheduler
         end
       end
     end
-  ensure
-    @urgent.each(&:close)
-    @urgent = nil
   end
 
   def close
@@ -105,6 +100,9 @@ class Scheduler
 
     self.run
   ensure
+    @urgent.each(&:close)
+    @urgent = nil
+
     @closed = true
 
     # We freeze to detect any unintended modifications after the scheduler is closed:
@@ -142,7 +140,8 @@ class Scheduler
 
   # Used when blocking on synchronization (Mutex#lock, Queue#pop, SizedQueue#push, ...)
   def block(blocker, timeout = nil)
-    # p [__method__, blocker, timeout]
+    # $stderr.puts [__method__, blocker, timeout].inspect
+
     if timeout
       @waiting[Fiber.current] = current_time + timeout
       begin
@@ -164,14 +163,14 @@ class Scheduler
   # Used when synchronization wakes up a previously-blocked fiber (Mutex#unlock, Queue#push, ...).
   # This might be called from another thread.
   def unblock(blocker, fiber)
-    # p [__method__, blocker, fiber]
+    # $stderr.puts [__method__, blocker, fiber].inspect
+
     @lock.synchronize do
       @ready << fiber
     end
 
-    if io = @urgent&.last
-      io.write_nonblock('.')
-    end
+    io = @urgent.last
+    io.write_nonblock('.')
   end
 
   def fiber(&block)
