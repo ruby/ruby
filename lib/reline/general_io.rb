@@ -1,6 +1,10 @@
 require 'timeout'
 
 class Reline::GeneralIO
+  def self.reset
+    @@pasting = false
+  end
+
   def self.encoding
     RUBY_PLATFORM =~ /mswin|mingw/ ? Encoding::UTF_8 : Encoding::default_external
   end
@@ -67,8 +71,18 @@ class Reline::GeneralIO
   def self.set_winch_handler(&handler)
   end
 
+  @@pasting = false
+
   def self.in_pasting?
-    false
+    @@pasting
+  end
+
+  def self.start_pasting
+    @@pasting = true
+  end
+
+  def self.finish_pasting
+    @@pasting = false
   end
 
   def self.prep

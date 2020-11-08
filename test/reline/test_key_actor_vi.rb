@@ -1353,4 +1353,26 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
     assert_cursor(0)
     assert_cursor_max(3)
   end
+
+  def test_pasting
+    start_pasting
+    input_keys('ab')
+    finish_pasting
+    input_keys('c')
+    assert_line('abc')
+    assert_byte_pointer_size('abc')
+    assert_cursor(3)
+    assert_cursor_max(3)
+  end
+
+  def test_pasting_fullwidth
+    start_pasting
+    input_keys('あ')
+    finish_pasting
+    input_keys('い')
+    assert_line('あい')
+    assert_byte_pointer_size('あい')
+    assert_cursor(4)
+    assert_cursor_max(4)
+  end
 end

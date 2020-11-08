@@ -1161,6 +1161,8 @@ class Reline::LineEditor
     if Reline::IOGate.in_pasting?
       @continuous_insertion_buffer << str
       return
+    elsif not @continuous_insertion_buffer.empty?
+      process_insert
     end
     width = Reline::Unicode.get_mbchar_width(str)
     if @cursor == @cursor_max

@@ -62,6 +62,30 @@ begin
       EOC
     end
 
+    def test_fullwidth
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
+      write(":あ\n")
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        prompt> :あ
+        => :あ
+        prompt>
+      EOC
+    end
+
+    def test_two_fullwidth
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
+      write(":あい\n")
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        prompt> :あい
+        => :あい
+        prompt>
+      EOC
+    end
+
     def test_finish_autowrapped_line
       start_terminal(10, 40, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
       write("[{'user'=>{'email'=>'a@a', 'id'=>'ABC'}, 'version'=>4, 'status'=>'succeeded'}]\n")
