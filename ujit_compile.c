@@ -113,7 +113,7 @@ struct compiled_region_array {
         const rb_iseq_t *iseq;
         size_t start_idx;
         uint8_t *code;
-    }data[];
+    } data[];
 };
 
 // Add an element to a region array, or allocate a new region array.
@@ -346,14 +346,25 @@ ujit_side_exit(codeblock_t* cb, ctx_t* ctx, VALUE* exit_pc)
 {
     uint8_t* code_ptr = cb_get_ptr(cb, cb->write_pos);
 
+    // Table mapping opcodes to interpreter handlers
+    const void * const *table = rb_vm_get_insns_address_table();
+
+    // Write back the old instruction at the entry PC
+    // To deotimize the code block this instruction belongs to
+    VALUE* entry_pc = &ctx->iseq->body->iseq_encoded[ctx->start_idx];
+    int entry_opcode = opcode_at_pc(ctx->iseq, entry_pc);
+    void* entry_instr = (void*)table[entry_opcode];
+    mov(cb, RAX, const_ptr_opnd(entry_pc));
+    mov(cb, RCX, const_ptr_opnd(entry_instr));
+    mov(cb, mem_opnd(64, RAX, 0), RCX);
+
     // Write back the old instruction at the exit PC
     // Otherwise the interpreter may jump right back to the
     // JITted code we're trying to exit
-    const void * const *table = rb_vm_get_insns_address_table();
-    int opcode = opcode_at_pc(ctx->iseq, exit_pc);
-    void* old_instr = (void*)table[opcode];
+    int exit_opcode = opcode_at_pc(ctx->iseq, exit_pc);
+    void* exit_instr = (void*)table[exit_opcode];
     mov(cb, RAX, const_ptr_opnd(exit_pc));
-    mov(cb, RCX, const_ptr_opnd(old_instr));
+    mov(cb, RCX, const_ptr_opnd(exit_instr));
     mov(cb, mem_opnd(64, RAX, 0), RCX);
 
     // Generate the code to exit to the interpreters
