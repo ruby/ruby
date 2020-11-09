@@ -1747,65 +1747,97 @@ range_count(int argc, VALUE *argv, VALUE range)
     }
 }
 
-/*  A Range represents an interval---a set of values with a
- *  beginning and an end. Ranges may be constructed using the
- *  <em>s</em><code>..</code><em>e</em> and
- *  <em>s</em><code>...</code><em>e</em> literals, or with
- *  Range::new. Ranges constructed using <code>..</code>
- *  run from the beginning to the end inclusively. Those created using
- *  <code>...</code> exclude the end value. When used as an iterator,
- *  ranges return each value in the sequence.
+/*  A \Range represents an ordered collection of values
+ *  within an interval.
  *
- *     (-1..-5).to_a      #=> []
- *     (-5..-1).to_a      #=> [-5, -4, -3, -2, -1]
- *     ('a'..'e').to_a    #=> ["a", "b", "c", "d", "e"]
- *     ('a'...'e').to_a   #=> ["a", "b", "c", "d"]
+ *  == Creating Ranges
  *
- *  == Beginless/Endless Ranges
+ *  === Literal Notation
  *
- *  A "beginless range" and "endless range" represents a semi-infinite
- *  range.  Literal notation for a beginless range is:
+ *  You can create a \Range using a literal notation:
+ *    r = (0..4)
+ *    r # => 0..4
+ *    r.class # => Range
  *
- *     (..1)
- *     # or
- *     (...1)
+ *  Using the double-dot notation above creates a \Range whose
+ *  values include the end-value:
+ *    r.entries # => [0, 1, 2, 3, 4]
  *
- *  Literal notation for an endless range is:
+ *  Using the triple-dot notation excludes that end-value:
+ *    r = (0...4)
+ *    r
+ *    r.entries # => [0, 1, 2, 3]
  *
- *     (1..)
- *     # or similarly
- *     (1...)
+ *  === \Range Constructor
  *
- *  Which is equivalent to
+ *  You can create a \Range using the constructor method
+ *  +Range.new+ with arguments +begin+ and +end+;
+ *  by default, value +end+ is included:
+ *    r = Range.new(0, 4)
+ *    r.entries # => [0, 1, 2, 3, 4]
+ *  You can exclude it by passing a third argument, +exclude_end+ as +true+:
+ *    r = Range.new(0, 4, true)
+ *    r.entries # => [0, 1, 2, 3]
  *
- *     (1..nil)  # or similarly (1...nil)
- *     Range.new(1, nil) # or Range.new(1, nil, true)
+ *  You can create a \Range with any two values, +begin+ and +end+,
+ *  that can be compared using operator <tt><=></tt>:
+ *    ('a'..'e').entries # => ["a", "b", "c", "d", "e"]
+ *  If +begin+ and +end+ cannot be thus compared, an ArgumentError is raised.
  *
- *  Beginless/endless ranges are useful, for example, for idiomatic
- *  slicing of arrays:
+ *  === Beginless and Endless Ranges
  *
- *    [1, 2, 3, 4, 5][...2]   # => [1, 2]
- *    [1, 2, 3, 4, 5][2...]   # => [3, 4, 5]
+ *  A _beginless range_ is a \Range whose  begin value is +nil+:
+ *    (..1).begin # => nil
+ *    (...1).begin # => nil
+ *    Range.new(nil, 1).begin # => nil
  *
- *  Some implementation details:
+ *  An _endless range_ is a \Range whose end value is +nil+
+ *    (0..).end # => nil
+ *    (0...).end # => nil
+ *    Range.new(0, nil).end # => nil
  *
- *  * +begin+ of beginless range and +end+ of endless range are +nil+;
- *  * +each+ of beginless range raises an exception;
- *  * +each+ of endless range enumerates infinite sequence (may be
- *    useful in combination with Enumerable#take_while or similar
- *    methods);
- *  * <code>(1..)</code> and <code>(1...)</code> are not equal,
- *    although technically representing the same sequence.
+ *  Beginless and endless ranges can be useful for slicing \Arrays:
+ *    [0, 1, 2, 3, 4][..2] # => [0, 1, 2]
+ *    [0, 1, 2, 3, 4][2..] # => [2, 3, 4]
  *
- *  == Custom Objects in Ranges
+ *  Note that for a given begin value, the two forms of an endless \Range
+ *  include the same values, but are not formally equal:
+ *    (0..) == (0...) # => false
  *
- *  Ranges can be constructed using any objects that can be compared
- *  using the <code><=></code> operator.
- *  Methods that treat the range as a sequence (#each and methods inherited
- *  from Enumerable) expect the begin object to implement a
- *  <code>succ</code> method to return the next object in sequence.
- *  The #step and #include? methods require the begin
- *  object to implement <code>succ</code> or to be numeric.
+ *  == Iterating Over Ranges
+ *
+ *  You can use instance method Range#each to iterate through the values in a \Range:
+ *    range = (0..4)
+ *    range.entries # => [0, 1, 2, 3, 4]
+ *    sum = 0
+ *    range.each {|value| sum += value }
+ *    sum # => 10
+ *
+ *  Method +each+ uses method +begin.succ+ and method +succ+ again on each successor value.
+ *  If +begin+ or any of its successors does not respond to +succ+, a TypeError is raised.
+ *
+ *  You an use instance method Range#step to specify the interval +n+ between successive values;
+ *  the default is 1:
+ *    range = (0..4)
+ *    range.entries # => [0, 1, 2, 3, 4]
+ *    sum = 0
+ *    range.step {|value| sum += value}
+ *    sum # => 10
+ *  With a non-default +n+:
+ *    sum = 0
+ *    (0..4).step(2) {|value| sum += value}
+ *    sum # => 10 # => 6
+ *
+ *  You can step through \Floats, but the result may not be what you want:
+ *    (0.0..0.4).step(0.1).entries # => [0.0, 0.1, 0.2, 0.30000000000000004, 0.4]
+ *
+ *   == Custom Objects in Ranges
+ *
+ *  A \Range may be constructed using any objects +begin+ and +end+
+ *  that can be compared using operator <tt><=></tt>.
+ *
+ *  A method that treats the range as a sequence (e.g., method Range#each)
+ *  will call method +succ+ to get the next object in the sequence.
  *
  *  In the <code>Xs</code> class below both <code><=></code> and
  *  <code>succ</code> are implemented so <code>Xs</code> can be used
@@ -1835,7 +1867,7 @@ range_count(int argc, VALUE *argv, VALUE range)
  *  An example of using <code>Xs</code> to construct a range:
  *
  *     r = Xs.new(3)..Xs.new(6)   #=> xxx..xxxxxx
- *     r.to_a                     #=> [xxx, xxxx, xxxxx, xxxxxx]
+ *     r.entries                  #=> [xxx, xxxx, xxxxx, xxxxxx]
  *     r.member?(Xs.new(5))       #=> true
  *
  */
