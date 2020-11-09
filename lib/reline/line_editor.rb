@@ -1229,6 +1229,7 @@ class Reline::LineEditor
     arg -= 1
     ed_prev_char(key, arg: arg) if arg > 0
   end
+  alias_method :backward_char, :ed_prev_char
 
   private def vi_first_print(key)
     @byte_pointer, @cursor = Reline::Unicode.vi_first_print(@line)
@@ -1956,7 +1957,6 @@ class Reline::LineEditor
     ed_prev_char(key)
     @config.editing_mode = :vi_command
   end
-  alias_method :backward_char, :ed_prev_char
 
   private def vi_next_word(key, arg: 1)
     if @line.bytesize > @byte_pointer
