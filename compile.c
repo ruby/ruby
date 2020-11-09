@@ -7469,22 +7469,16 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
     if (mid == id__send__ && argn) {
         if (nd_type(argn) == NODE_LIST && nd_type(argn->nd_head) == NODE_LIT && SYMBOL_P(argn->nd_head->nd_lit)) {
             VALUE name = argn->nd_head->nd_lit;
-            ID name_id = rb_check_id(&name);
-            if (LIKELY(name_id)) {
-                mid = SYM2ID(name);
-                argn = argn->nd_next;
+            mid = SYM2ID(name);
+            argn = argn->nd_next;
 
-                // type is not NODE_VCALL because of arguments
+            // type is not NODE_VCALL because of arguments
 
-                // always mark as FCALL for private methods
-                flag |= VM_CALL_FCALL;
+            // always mark as FCALL for private methods
+            flag |= VM_CALL_FCALL;
 
-                // mark OPT_SEND for protected methods
-                flag |= VM_CALL_OPT_SEND;
-            }
-            else {
-                sendsym = true;
-            }
+            // mark OPT_SEND for protected methods
+            flag |= VM_CALL_OPT_SEND;
         }
         else {
             sendsym = true;
