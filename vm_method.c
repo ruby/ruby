@@ -1941,13 +1941,13 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
 
 /*
  *  call-seq:
- *     alias_method(new_name, old_name)   -> self
+ *     alias_method(new_name, old_name)   -> symbol
  *
  *  Makes <i>new_name</i> a new copy of the method <i>old_name</i>. This can
  *  be used to retain access to methods that are overridden.
  *
  *     module Mod
- *       alias_method :orig_exit, :exit
+ *       alias_method :orig_exit, :exit #=> :orig_exit
  *       def exit(code=0)
  *         puts "Exiting with code #{code}"
  *         orig_exit(code)
@@ -1968,8 +1968,19 @@ rb_mod_alias_method(VALUE mod, VALUE newname, VALUE oldname)
     if (!oldid) {
 	rb_print_undef_str(mod, oldname);
     }
-    rb_alias(mod, rb_to_id(newname), oldid);
-    return mod;
+    VALUE id = rb_to_id(newname);
+    rb_alias(mod, id, oldid);
+    return ID2SYM(id);
+}
+
+static void
+check_and_export_method(VALUE self, VALUE name, rb_method_visibility_t visi)
+{
+    ID id = rb_check_id(&name);
+    if (!id) {
+	rb_print_undef_str(self, name);
+    }
+    rb_export_method(self, id, visi);
 }
 
 static void
@@ -1984,13 +1995,19 @@ set_method_visibility(VALUE self, int argc, const VALUE *argv, rb_method_visibil
 	return;
     }
 
-    for (i = 0; i < argc; i++) {
-	VALUE v = argv[i];
-	ID id = rb_check_id(&v);
-	if (!id) {
-	    rb_print_undef_str(self, v);
+
+    VALUE v;
+
+    if (argc == 1 && (v = rb_check_array_type(argv[0])) != Qnil) {
+        long j;
+
+	for (j = 0; j < RARRAY_LEN(v); j++) {
+	    check_and_export_method(self, RARRAY_AREF(v, j), visi);
 	}
-	rb_export_method(self, id, visi);
+    } else {
+        for (i = 0; i < argc; i++) {
+            check_and_export_method(self, argv[i], visi);
+        }
     }
 }
 
@@ -2012,6 +2029,7 @@ set_visibility(int argc, const VALUE *argv, VALUE module, rb_method_visibility_t
  *     public                 -> self
  *     public(symbol, ...)    -> self
  *     public(string, ...)    -> self
+ *     public(array)          -> self
  *
  *  With no arguments, sets the default visibility for subsequently
  *  defined methods to public. With arguments, sets the named methods to
@@ -2030,6 +2048,7 @@ rb_mod_public(int argc, VALUE *argv, VALUE module)
  *     protected                -> self
  *     protected(symbol, ...)   -> self
  *     protected(string, ...)   -> self
+ *     protected(array)         -> self
  *
  *  With no arguments, sets the default visibility for subsequently
  *  defined methods to protected. With arguments, sets the named methods
@@ -2057,6 +2076,7 @@ rb_mod_protected(int argc, VALUE *argv, VALUE module)
  *     private                 -> self
  *     private(symbol, ...)    -> self
  *     private(string, ...)    -> self
+ *     private(array)          -> self
  *
  *  With no arguments, sets the default visibility for subsequently
  *  defined methods to private. With arguments, sets the named methods
