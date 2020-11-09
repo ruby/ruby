@@ -1957,6 +1957,7 @@ class Reline::LineEditor
     ed_prev_char(key)
     @config.editing_mode = :vi_command
   end
+  alias_method :vi_movement_mode, :vi_command_mode
 
   private def vi_next_word(key, arg: 1)
     if @line.bytesize > @byte_pointer

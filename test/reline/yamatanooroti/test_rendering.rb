@@ -384,6 +384,20 @@ begin
       EOC
     end
 
+    def test_binding_for_vi_movement_mode
+      write_inputrc <<~LINES
+        set editing-mode vi
+        "\\C-j": vi-movement-mode
+      LINES
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
+      write(":1234\C-jhhhi0")
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        prompt> :01234
+      EOC
+    end
+
     private def write_inputrc(content)
       File.open(@inputrc_file, 'w') do |f|
         f.write content
