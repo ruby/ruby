@@ -47,10 +47,12 @@ typedef struct ctx_struct
 
     // The iseq that owns the region that is compiling
     const rb_iseq_t *iseq;
-    // Index in the iseq to the opcode we are replacing
-    size_t replacement_idx;
-    // The start of output code
-    uint8_t *region_start;
+
+    // Index in the iseq of the opcode we are replacing
+    size_t start_idx;
+
+    // The start of the generated code
+    uint8_t *code_ptr;
 
 } ctx_t;
 
@@ -109,14 +111,14 @@ struct compiled_region_array {
     int32_t capa;
     struct compiled_region {
         const rb_iseq_t *iseq;
-        size_t replacement_idx;
+        size_t start_idx;
         uint8_t *code;
     }data[];
 };
 
 // Add an element to a region array, or allocate a new region array.
 static struct compiled_region_array *
-add_compiled_region(struct compiled_region_array *array, const rb_iseq_t *iseq, size_t replacement_idx, uint8_t *code)
+add_compiled_region(struct compiled_region_array *array, const rb_iseq_t *iseq, size_t start_idx, uint8_t *code)
 {
     if (!array) {
         // Allocate a brand new array with space for one
@@ -132,7 +134,7 @@ add_compiled_region(struct compiled_region_array *array, const rb_iseq_t *iseq, 
     }
     // Check if the region is already present
     for (int32_t i = 0; i < array->size; i++) {
-        if (array->data[i].iseq == iseq && array->data[i].replacement_idx == replacement_idx) {
+        if (array->data[i].iseq == iseq && array->data[i].start_idx == start_idx) {
             return array;
         }
     }
@@ -152,7 +154,7 @@ add_compiled_region(struct compiled_region_array *array, const rb_iseq_t *iseq, 
 
     int32_t size = array->size;
     array->data[size].iseq = iseq;
-    array->data[size].replacement_idx = replacement_idx;
+    array->data[size].start_idx = start_idx;
     array->data[size].code = code;
     array->size++;
     return array;
@@ -166,7 +168,7 @@ add_lookup_dependency_i(st_data_t *key, st_data_t *value, st_data_t data, int ex
     if (existing) {
         regions = (struct compiled_region_array *)*value;
     }
-    regions = add_compiled_region(regions, ctx->iseq, ctx->replacement_idx, ctx->region_start);
+    regions = add_compiled_region(regions, ctx->iseq, ctx->start_idx, ctx->code_ptr);
     if (!regions) {
         rb_bug("ujit: failed to add method lookup dependency"); // TODO: we could bail out of compiling instead
     }
@@ -246,7 +248,6 @@ ctx_get_opcode(ctx_t *ctx)
 {
     return opcode_at_pc(ctx->iseq, ctx->pc);
 }
-
 
 // Get an instruction argument from the context object
 static VALUE
@@ -398,8 +399,8 @@ ujit_compile_insn(const rb_iseq_t *iseq, unsigned int insn_idx, unsigned int *ne
     ctx.pc = NULL;
     ctx.stack_diff = 0;
     ctx.iseq = iseq;
-    ctx.region_start = code_ptr;
-    ctx.replacement_idx = insn_idx;
+    ctx.code_ptr = code_ptr;
+    ctx.start_idx = insn_idx;
 
     // For each instruction to compile
     unsigned num_instrs = 0;
@@ -975,14 +976,14 @@ rb_ujit_method_lookup_change(VALUE cme_or_cc)
         for (int32_t i = 0; i < array->size; i++) {
             struct compiled_region *region = &array->data[i];
             const struct rb_iseq_constant_body *body = region->iseq->body;
-            RUBY_ASSERT((unsigned int)region->replacement_idx < body->iseq_size);
+            RUBY_ASSERT((unsigned int)region->start_idx < body->iseq_size);
             // Restore region address to interpreter address in bytecode sequence
-            if (body->iseq_encoded[region->replacement_idx] == (VALUE)region->code) {
+            if (body->iseq_encoded[region->start_idx] == (VALUE)region->code) {
                 const void *const *code_threading_table = rb_vm_get_insns_address_table();
                 int opcode = rb_vm_insn_addr2insn(region->code);
-                body->iseq_encoded[region->replacement_idx] = (VALUE)code_threading_table[opcode];
+                body->iseq_encoded[region->start_idx] = (VALUE)code_threading_table[opcode];
                 if (UJIT_DUMP_MODE > 0) {
-                    fprintf(stderr, "cc_or_cme=%p now out of date. Restored idx=%u in iseq=%p\n", (void *)cme_or_cc, (unsigned)region->replacement_idx, (void *)region->iseq);
+                    fprintf(stderr, "cc_or_cme=%p now out of date. Restored idx=%u in iseq=%p\n", (void *)cme_or_cc, (unsigned)region->start_idx, (void *)region->iseq);
                 }
             }
         }
