@@ -2462,7 +2462,7 @@ class Resolv
     ##
     # IPv6 link local address format fe80:b:c:d:e:f:g:h%em1
     Regex_8HexLinkLocal = /\A
-      fe80
+      [Ff][Ee]80
       (?::[0-9A-Fa-f]{1,4}){7}
       %[0-9A-Za-z]+
       \z/x
@@ -2471,7 +2471,7 @@ class Resolv
     # Compressed IPv6 link local address format fe80::b%em1
 
     Regex_CompressedHexLinkLocal = /\A
-      fe80:
+      [Ff][Ee]80:
       (?:
         ((?:[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{1,4})*)?) ::
         ((?:[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{1,4})*)?)
