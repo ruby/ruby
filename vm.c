@@ -2597,7 +2597,7 @@ rb_vm_register_special_exception_str(enum ruby_special_exceptions sp, VALUE cls,
 }
 
 int
-rb_vm_add_root_module(ID id, VALUE module)
+rb_vm_add_root_module(VALUE module)
 {
     rb_vm_t *vm = GET_VM();
 
