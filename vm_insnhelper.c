@@ -1237,6 +1237,17 @@ vm_setivar(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, const str
 		else {
 		    vm_cc_attr_index_set(cc, (int)(ent->index + 1));
 		}
+
+                index = ent->index;
+
+                VALUE *ptr = ROBJECT_IVPTR(obj);
+                if (index >= ROBJECT_NUMIV(obj)) {
+                    rb_init_iv_list(obj, ROBJECT_NUMIV(obj), (uint32_t)iv_index_tbl->num_entries, iv_index_tbl);
+                    ptr = ROBJECT_IVPTR(obj);
+                }
+                RB_OBJ_WRITE(obj, &ptr[index], val);
+
+                return val;
 	    }
 	    /* fall through */
 	}
