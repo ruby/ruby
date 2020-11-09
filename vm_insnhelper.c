@@ -1246,6 +1246,7 @@ vm_setivar(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, const str
                     ptr = ROBJECT_IVPTR(obj);
                 }
                 RB_OBJ_WRITE(obj, &ptr[index], val);
+                RB_DEBUG_COUNTER_INC(ivar_set_ic_miss_iv_hit);
 
                 return val;
 	    }
