@@ -231,7 +231,7 @@ module Racc
       map = '-' * 10240
 
       # sort long to short
-      entries.sort! {|a,b| b[0].size <=> a[0].size }
+      entries.sort_by!.with_index {|a,i| [-a[0].size, i] }
 
       entries.each do |arr, chkval, expr, min, ptri|
         if upper + arr.size > map.size
