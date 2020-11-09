@@ -145,4 +145,12 @@ describe "Module#attr" do
   it "is a public method" do
     Module.should have_public_instance_method(:attr, false)
   end
+
+  it "returns an array of defined methods names as symbols" do
+    Class.new do
+      (attr :foo, 'bar').should == [:foo, :bar]
+      (attr :baz, false).should == [:baz]
+      (attr :qux, true).should == [:qux, :qux=]
+    end
+  end
 end
