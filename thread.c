@@ -1789,23 +1789,23 @@ rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd)
     rb_execution_context_t * volatile ec = GET_EC();
     volatile int saved_errno = 0;
     enum ruby_tag_type state;
-    struct waiting_fd wfd;
+    COROUTINE_STACK_LOCAL(struct waiting_fd, wfd);
 
-    wfd.fd = fd;
-    wfd.th = rb_ec_thread_ptr(ec);
+    wfd->fd = fd;
+    wfd->th = rb_ec_thread_ptr(ec);
 
     RB_VM_LOCK_ENTER();
     {
-        list_add(&rb_ec_vm_ptr(ec)->waiting_fds, &wfd.wfd_node);
+        list_add(&rb_ec_vm_ptr(ec)->waiting_fds, &wfd->wfd_node);
     }
     RB_VM_LOCK_LEAVE();
 
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-	BLOCKING_REGION(wfd.th, {
+	BLOCKING_REGION(wfd->th, {
 	    val = func(data1);
 	    saved_errno = errno;
-	}, ubf_select, wfd.th, FALSE);
+	}, ubf_select, wfd->th, FALSE);
     }
     EC_POP_TAG();
 
@@ -1815,7 +1815,8 @@ rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd)
      */
     RB_VM_LOCK_ENTER();
     {
-        list_del(&wfd.wfd_node);
+        list_del(&wfd->wfd_node);
+        COROUTINE_STACK_FREE(wfd);
     }
     RB_VM_LOCK_LEAVE();
 
