@@ -309,6 +309,16 @@ assert_equal 'ok', %q{
   end
 }
 
+# a ractor with closed outgoing port should terminate
+assert_equal 'ok', %q{
+  Ractor.new do
+    close_outgoing
+  end
+
+  true until Ractor.count == 1
+  :ok
+}
+
 # multiple Ractors can receive (wait) from one Ractor
 assert_equal '[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]', %q{
   pipe = Ractor.new do
