@@ -6,6 +6,7 @@
 #include "vm_callinfo.h"
 #include "builtin.h"
 #include "internal/compile.h"
+#include "internal/class.h"
 #include "insns_info.inc"
 #include "ujit_compile.h"
 #include "ujit_asm.h"
@@ -624,6 +625,71 @@ gen_setlocal_wc0(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 }
 
 static bool
+gen_getinstancevariable(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
+{
+    IVC ic = (IVC)ctx_get_arg(ctx, 1);
+
+    // Check that the inline cache has been set, slot index is known
+    if (!ic->entry)
+    {
+        return false;
+    }
+
+    uint32_t ivar_index = ic->entry->index;
+
+    // Create a size-exit to fall back to the interpreter
+    uint8_t* side_exit = ujit_side_exit(ocb, ctx, ctx->pc);
+
+    // Load self from CFP
+    mov(cb, REG0, member_opnd(REG_CFP, rb_control_frame_t, self));
+
+    // Check that the receiver is a heap object
+    test(cb, REG0, imm_opnd(RUBY_IMMEDIATE_MASK));
+    jnz_ptr(cb, side_exit);
+    cmp(cb, REG0, imm_opnd(Qfalse));
+    je_ptr(cb, side_exit);
+    cmp(cb, REG0, imm_opnd(Qnil));
+    je_ptr(cb, side_exit);
+
+    // Bail if receiver class is different from compiled time call cache class
+    x86opnd_t klass_opnd = mem_opnd(64, REG0, offsetof(struct RBasic, klass));
+    mov(cb, REG1, klass_opnd);
+    x86opnd_t serial_opnd = mem_opnd(64, REG1, offsetof(struct RClass, class_serial));
+    cmp(cb, serial_opnd, imm_opnd(ic->entry->class_serial));
+    jne_ptr(cb, side_exit);
+
+    // Bail if the ivars are not on the extended table
+    // See ROBJECT_IVPTR() from include/ruby/internal/core/robject.h
+    x86opnd_t flags_opnd = member_opnd(REG0, struct RBasic, flags);
+    test(cb, flags_opnd, imm_opnd(ROBJECT_EMBED));
+    jnz_ptr(cb, side_exit);
+
+    // Check that this is a Ruby object (not a string, etc)
+    mov(cb, REG1, flags_opnd);
+    and(cb, REG1, imm_opnd(RUBY_T_MASK));
+    cmp(cb, REG1, imm_opnd(T_OBJECT));
+    jne_ptr(cb, side_exit);
+
+    // Get a pointer to the extended table
+    x86opnd_t tbl_opnd = mem_opnd(64, REG0, offsetof(struct RObject, as.heap.ivptr));
+    mov(cb, REG0, tbl_opnd);
+
+    // Read the ivar from the extended table
+    x86opnd_t ivar_opnd = mem_opnd(64, REG0, sizeof(VALUE) * ivar_index);
+    mov(cb, REG0, ivar_opnd);
+
+    // Check that the ivar is not Qundef
+    cmp(cb, REG0, imm_opnd(Qundef));
+    je_ptr(cb, side_exit);
+
+    // Push the ivar on the stack
+    x86opnd_t out_opnd = ctx_stack_push(ctx, 1);
+    mov(cb, out_opnd, REG0);
+
+    return true;
+}
+
+static bool
 gen_opt_minus(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 {
     // Create a size-exit to fall back to the interpreter
@@ -1035,6 +1101,7 @@ rb_ujit_init(void)
     st_insert(gen_fns, (st_data_t)BIN(putself), (st_data_t)&gen_putself);
     st_insert(gen_fns, (st_data_t)BIN(getlocal_WC_0), (st_data_t)&gen_getlocal_wc0);
     st_insert(gen_fns, (st_data_t)BIN(setlocal_WC_0), (st_data_t)&gen_setlocal_wc0);
+    st_insert(gen_fns, (st_data_t)BIN(getinstancevariable), (st_data_t)&gen_getinstancevariable);
     st_insert(gen_fns, (st_data_t)BIN(opt_minus), (st_data_t)&gen_opt_minus);
     st_insert(gen_fns, (st_data_t)BIN(opt_send_without_block), (st_data_t)&gen_opt_send_without_block);
 
