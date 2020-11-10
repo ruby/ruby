@@ -396,6 +396,39 @@ assert_equal '[RuntimeError, "ok", true]', %q{
   end
 }
 
+# threads in a ractor will killed
+assert_equal '{:ok=>3}', %q{
+  Ractor.new Ractor.current do |main|
+    q = Queue.new
+    Thread.new do
+      q << true
+      loop{}
+    ensure
+      main << :ok
+    end
+
+    Thread.new do
+      q << true
+      while true
+      end
+    ensure
+      main << :ok
+    end
+
+    Thread.new do
+      q << true
+      sleep 1
+    ensure
+      main << :ok
+    end
+
+    # wait for the start of all threads
+    3.times{q.pop}
+  end
+
+  3.times.map{Ractor.receive}.tally
+}
+
 # unshareable object are copied
 assert_equal 'false', %q{
   obj = 'str'.dup
@@ -515,7 +548,6 @@ assert_equal [false, true, false].inspect, %q{
   results << check(C.new(true).freeze)  # true
   results << check(C.new(false).freeze) # false
 }
-
 
 # move example2: String
 # touching moved object causes an error

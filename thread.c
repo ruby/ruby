@@ -587,16 +587,15 @@ rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th)
 }
 
 void
-rb_thread_terminate_all(void)
+rb_thread_terminate_all(rb_thread_t *th)
 {
-    rb_thread_t *volatile th = GET_THREAD(); /* main thread */
+    rb_ractor_t *cr = th->ractor;
     rb_execution_context_t * volatile ec = th->ec;
-    rb_ractor_t *r = th->ractor;
     volatile int sleeping = 0;
 
-    if (r->threads.main != th) {
+    if (cr->threads.main != th) {
         rb_bug("rb_thread_terminate_all: called by child thread (%p, %p)",
-               (void *)r->threads.main, (void *)th);
+               (void *)cr->threads.main, (void *)th);
     }
 
     /* unlock all locking mutexes */
@@ -606,9 +605,9 @@ rb_thread_terminate_all(void)
     if (EC_EXEC_TAG() == TAG_NONE) {
       retry:
 	thread_debug("rb_thread_terminate_all (main thread: %p)\n", (void *)th);
-	terminate_all(th->ractor, th);
+	terminate_all(cr, th);
 
-	while (rb_ractor_living_thread_num(th->ractor) > 1) {
+	while (rb_ractor_living_thread_num(cr) > 1) {
             rb_hrtime_t rel = RB_HRTIME_PER_SEC;
 	    /*q
 	     * Thread exiting routine in thread_start_func_2 notify
@@ -854,6 +853,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
 	}
 
         if (th->invoke_type == thread_invoke_type_ractor_proc) {
+            rb_thread_terminate_all(th);
             rb_ractor_teardown(th->ec);
         }
 

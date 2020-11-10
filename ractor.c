@@ -1591,7 +1591,7 @@ rb_ractor_terminate_interrupt_main_thread(rb_ractor_t *r)
     }
 }
 
-void rb_thread_terminate_all(void); // thread.c
+void rb_thread_terminate_all(rb_thread_t *th); // thread.c
 
 static void
 ractor_terminal_interrupt_all(rb_vm_t *vm)
@@ -1620,7 +1620,7 @@ rb_ractor_terminate_all(void)
         ractor_terminal_interrupt_all(vm); // kill all ractors
         RB_VM_UNLOCK();
     }
-    rb_thread_terminate_all(); // kill other threads in main-ractor and wait
+    rb_thread_terminate_all(GET_THREAD()); // kill other threads in main-ractor and wait
 
     RB_VM_LOCK();
     {

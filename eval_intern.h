@@ -293,7 +293,6 @@ rb_cref_t *rb_vm_cref(void);
 rb_cref_t *rb_vm_cref_replace_with_duplicated_cref(void);
 VALUE rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg, VALUE block_handler, VALUE filename);
 void rb_vm_set_progname(VALUE filename);
-void rb_thread_terminate_all(void);
 VALUE rb_vm_cbase(void);
 
 /* vm_backtrace.c */
