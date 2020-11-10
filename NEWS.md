@@ -278,7 +278,7 @@ Outstanding ones only.
 
         * `GC.auto_compact=`, `GC.auto_compact` can be used to control when
           compaction runs.  Setting `auto_compact=` to true will cause
-          compaction to occurr during major collections.  At the moment,
+          compaction to occur during major collections.  At the moment,
           compaction adds significant overhead to major collections, so please
           test first!
           [[Feature #17176]]
@@ -427,9 +427,9 @@ Excluding feature bug fixes.
   * Inline method caches pointed from ISeq can be accessed by multiple Ractors
     in parallel and synchronization is needed even for method caches. However,
     such synchronization can be overhead so introducing new inline method cache
-    mehanisms, (1) Disposable inline method cache (2) per-Class method cache
+    mechanisms, (1) Disposable inline method cache (2) per-Class method cache
     and (3) new invalidation mechanism. (1) can avoid per-method call
-    syncrhonization because it only use atomic operations.
+    synchronization because it only uses atomic operations.
     See the ticket for more details.
 
 * The number of hashes allocated when using a keyword splat in
@@ -459,7 +459,7 @@ Excluding feature bug fixes.
 
 * Optimize C method call a little
 
-## Statis analysis
+## Static analysis
 
 ### RBS
 
