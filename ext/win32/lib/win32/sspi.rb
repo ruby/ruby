@@ -11,7 +11,7 @@
 # Ruby Distribution License or GNU General Public License.
 #
 
-require 'win32/importer'
+require 'fiddle/import'
 
 # Implements bindings to Win32 SSPI functions, focused on authentication to a proxy server over HTTP.
 module Win32
@@ -36,7 +36,7 @@ module Win32
 
     # Win32 API Functions. Uses Win32API to bind methods to constants contained in class.
     module API
-      extend Importer
+      extend Fiddle::Importer
       dlload "secur32.dll"
       [
         # Can be called with AcquireCredentialsHandleA.call()
