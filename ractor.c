@@ -1288,6 +1288,10 @@ ractor_create(rb_execution_context_t *ec, VALUE self, VALUE loc, VALUE name, VAL
 static void
 ractor_yield_atexit(rb_execution_context_t *ec, rb_ractor_t *cr, VALUE v, bool exc)
 {
+    if (cr->outgoing_port_closed) {
+        return;
+    }
+
     ASSERT_ractor_unlocking(cr);
 
     struct rb_ractor_basket basket;
