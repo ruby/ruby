@@ -66,9 +66,14 @@ VALUE rb_usascii_str_new(const char*, long);
 VALUE rb_usascii_str_new_cstr(const char*);
 VALUE rb_utf8_str_new(const char*, long);
 VALUE rb_utf8_str_new_cstr(const char*);
-VALUE rb_str_new_static(const char *, long);
-VALUE rb_usascii_str_new_static(const char *, long);
-VALUE rb_utf8_str_new_static(const char *, long);
+/**
+ *  *_str_new_static functions are intended for C string literals.
+ *  They require memory in the range [ptr, ptr+len] to always be readable.
+ *  Note that this range covers a total of len + 1 bytes.
+ */
+VALUE rb_str_new_static(const char *ptr, long len);
+VALUE rb_usascii_str_new_static(const char *ptr, long len);
+VALUE rb_utf8_str_new_static(const char *ptr, long len);
 void rb_str_free(VALUE);
 void rb_str_shared_replace(VALUE, VALUE);
 VALUE rb_str_buf_append(VALUE, VALUE);

@@ -48,7 +48,23 @@ sufficient information, see the ChangeLog file or Redmine
   instead of a warning. yield in a class definition outside of a method
   is now a SyntaxError instead of a LocalJumpError.  [[Feature #15575]]
 
-* Find pattern is added. [[Feature #16828]]
+* Pattern matching is no longer experimental. [[Feature #17260]]
+
+* One-line pattern matching now uses `=>` instead of `in`.  [EXPERIMENTAL]
+  [[Feature #17260]]
+
+    ```ruby
+    # version 3.0
+    {a: 0, b: 1} => {a:}
+    p a # => 0
+    
+    # version 2.7
+    {a: 0, b: 1} in {a:}
+    p a # => 0
+    ```
+
+* Find pattern is added.  [EXPERIMENTAL]
+  [[Feature #16828]]
 
     ```ruby
     case ["a", 1, "b", "c", 2, "d", "e", "f", 3]
@@ -65,13 +81,6 @@ sufficient information, see the ChangeLog file or Redmine
   it only issued a warning in verbose mode.  Additionally, accessing a
   class variable from the toplevel scope is now a RuntimeError.
   [[Bug #14541]]
-
-* Rightward assignment statement is added.  [EXPERIMENTAL]
-  [[Feature #15921]]
-
-    ```ruby
-    fib(10) => x
-    ```
 
 * Endless method definition is added.  [EXPERIMENTAL]
   [[Feature #16746]]
@@ -245,6 +254,16 @@ Outstanding ones only.
 
         * Warning#warn now supports a category kwarg.
         [[Feature #17122]]
+
+* GC
+    * New method
+
+        * `GC.auto_compact=`, `GC.auto_compact` can be used to control when
+          compaction runs.  Setting `auto_compact=` to true will cause
+          compaction to occurr during major collections.  At the moment,
+          compaction adds significant overhead to major collections, so please
+          test first!
+          [[Feature #17176]]
 
 ## Stdlib updates
 
@@ -488,6 +507,7 @@ end
 [Bug #12136]:     https://bugs.ruby-lang.org/issues/12136
 [Bug #12706]:     https://bugs.ruby-lang.org/issues/12706
 [Feature #13767]: https://bugs.ruby-lang.org/issues/13767
+[Bug #13768]:     https://bugs.ruby-lang.org/issues/13768
 [Feature #14183]: https://bugs.ruby-lang.org/issues/14183
 [Bug #14266]:     https://bugs.ruby-lang.org/issues/14266
 [Feature #14413]: https://bugs.ruby-lang.org/issues/14413
@@ -519,4 +539,7 @@ end
 [Feature #17104]: https://bugs.ruby-lang.org/issues/17104
 [Feature #17122]: https://bugs.ruby-lang.org/issues/17122
 [Feature #17134]: https://bugs.ruby-lang.org/issues/17134
+[Feature #17176]: https://bugs.ruby-lang.org/issues/17176
+[Feature #17260]: https://bugs.ruby-lang.org/issues/17260
+[Feature #17260]: https://bugs.ruby-lang.org/issues/17260
 [GH-2991]:        https://github.com/ruby/ruby/pull/2991

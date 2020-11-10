@@ -610,7 +610,7 @@ prepare_iseq_build(rb_iseq_t *iseq,
     ISEQ_COMPILE_DATA(iseq)->option = option;
     ISEQ_COMPILE_DATA(iseq)->ivar_cache_table = NULL;
     ISEQ_COMPILE_DATA(iseq)->builtin_function_table = GET_VM()->builtin_function_table;
-    
+
 
     if (option->coverage_enabled) {
 	VALUE coverages = rb_get_coverages();

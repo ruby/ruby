@@ -1305,6 +1305,9 @@ new_insn_send(rb_iseq_t *iseq, int line_no, ID id, VALUE argc, const rb_iseq_t *
     VALUE *operands = compile_data_calloc2(iseq, sizeof(VALUE), 2);
     operands[0] = (VALUE)new_callinfo(iseq, id, FIX2INT(argc), FIX2INT(flag), keywords, blockiseq != NULL);
     operands[1] = (VALUE)blockiseq;
+    if (blockiseq) {
+        RB_OBJ_WRITTEN(iseq, Qundef, blockiseq);
+    }
     return new_insn_core(iseq, line_no, BIN(send), 2, operands);
 }
 
@@ -1625,7 +1628,7 @@ access_outer_variables(const rb_iseq_t *iseq, int level, ID id, bool write)
         if (!ovs) {
             ovs = iseq->body->outer_variables = rb_id_table_create(8);
         }
-        
+
         if (rb_id_table_lookup(iseq->body->outer_variables, id, &val)) {
             if (write && !val) {
                 rb_id_table_insert(iseq->body->outer_variables, id, Qtrue);

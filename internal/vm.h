@@ -47,6 +47,7 @@ rb_serial_t rb_next_class_serial(void);
 /* vm.c */
 VALUE rb_obj_is_thread(VALUE obj);
 void rb_vm_mark(void *ptr);
+void rb_vm_each_stack_value(void *ptr, void (*cb)(VALUE, void*), void *ctx);
 PUREFUNC(VALUE rb_vm_top_self(void));
 void rb_vm_inc_const_missing_count(void);
 const void **rb_vm_get_insns_address_table(void);

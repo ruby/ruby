@@ -21,6 +21,12 @@ static VALUE rb_eRactorMovedError;
 static VALUE rb_eRactorClosedError;
 static VALUE rb_cRactorMovedObject;
 
+VALUE
+rb_ractor_error_class(void)
+{
+    return rb_eRactorError;
+}
+
 RUBY_SYMBOL_EXPORT_BEGIN
 // to share with MJIT
 bool ruby_multi_ractor;
@@ -348,107 +354,6 @@ ractor_queue_enq(rb_ractor_t *r, struct rb_ractor_queue *rq, struct rb_ractor_ba
     // fprintf(stderr, "%s %p->cnt:%d\n", __func__, rq, rq->cnt);
 }
 
-VALUE rb_newobj_with(VALUE src); // gc.c
-
-static VALUE
-ractor_moving_new(VALUE obj)
-{
-    // create moving object
-    VALUE v = rb_newobj_with(obj);
-
-    // invalidate src object
-    struct RVALUE {
-        VALUE flags;
-        VALUE klass;
-        VALUE v1;
-        VALUE v2;
-        VALUE v3;
-    } *rv = (void *)obj;
-
-    rv->klass = rb_cRactorMovedObject;
-    rv->v1 = 0;
-    rv->v2 = 0;
-    rv->v3 = 0;
-
-    // TODO: record moved location
-    // TODO: check flags for each data types
-
-    return v;
-}
-
-static VALUE
-ractor_move_shallow_copy(VALUE obj)
-{
-    if (rb_ractor_shareable_p(obj)) {
-        return obj;
-    }
-    else {
-        switch (BUILTIN_TYPE(obj)) {
-          case T_STRING:
-          case T_FILE:
-            if (!FL_TEST_RAW(obj, RUBY_FL_EXIVAR)) {
-                return ractor_moving_new(obj);
-            }
-            break;
-          case T_ARRAY:
-            if (!FL_TEST_RAW(obj, RUBY_FL_EXIVAR)) {
-                VALUE ary = ractor_moving_new(obj);
-                long len = RARRAY_LEN(ary);
-                for (long i=0; i<len; i++) {
-                    VALUE e = RARRAY_AREF(ary, i);
-                    RARRAY_ASET(ary, i, ractor_move_shallow_copy(e)); // confirm WB
-                }
-                return ary;
-            }
-            break;
-          default:
-            break;
-        }
-
-        rb_raise(rb_eRactorError, "can't move this this kind of object:%"PRIsVALUE, obj);
-    }
-}
-
-static VALUE
-ractor_moved_setup(VALUE obj)
-{
-#if RACTOR_CHECK_MODE
-    switch (BUILTIN_TYPE(obj)) {
-      case T_STRING:
-      case T_FILE:
-        rb_ractor_setup_belonging(obj);
-        break;
-      case T_ARRAY:
-        rb_ractor_setup_belonging(obj);
-        long len = RARRAY_LEN(obj);
-        for (long i=0; i<len; i++) {
-            VALUE e = RARRAY_AREF(obj, i);
-            if (!rb_ractor_shareable_p(e)) {
-                ractor_moved_setup(e);
-            }
-        }
-        break;
-      default:
-        rb_bug("unreachable");
-    }
-#endif
-    return obj;
-}
-
-static void
-ractor_move_setup(struct rb_ractor_basket *b, VALUE obj)
-{
-    if (rb_ractor_shareable_p(obj)) {
-        b->type = basket_type_shareable;
-        b->v = obj;
-    }
-    else {
-        b->type = basket_type_move;
-        b->v = ractor_move_shallow_copy(obj);
-        return;
-    }
-}
-
 static void
 ractor_basket_clear(struct rb_ractor_basket *b)
 {
@@ -457,56 +362,38 @@ ractor_basket_clear(struct rb_ractor_basket *b)
     b->sender = Qfalse;
 }
 
+static VALUE ractor_reset_belonging(VALUE obj); // in this file
+
 static VALUE
 ractor_basket_accept(struct rb_ractor_basket *b)
 {
     VALUE v;
+
     switch (b->type) {
-      case basket_type_shareable:
+      case basket_type_ref:
         VM_ASSERT(rb_ractor_shareable_p(b->v));
         v = b->v;
         break;
-      case basket_type_copy_marshal:
-        v = rb_marshal_load(b->v);
-        RB_GC_GUARD(b->v);
-        break;
-      case basket_type_exception:
-        {
-            VALUE cause = rb_marshal_load(b->v);
-            VALUE err = rb_exc_new_cstr(rb_eRactorRemoteError, "thrown by remote Ractor.");
-            rb_ivar_set(err, rb_intern("@ractor"), b->sender);
-            ractor_basket_clear(b);
-            rb_ec_setup_exception(NULL, err, cause);
-            rb_exc_raise(err);
-        }
-        // unreachable
+      case basket_type_copy:
       case basket_type_move:
-        v = ractor_moved_setup(b->v);
+      case basket_type_will:
+        v = ractor_reset_belonging(b->v);
         break;
       default:
         rb_bug("unreachable");
     }
+
+    if (b->exception) {
+        VALUE cause = v;
+        VALUE err = rb_exc_new_cstr(rb_eRactorRemoteError, "thrown by remote Ractor.");
+        rb_ivar_set(err, rb_intern("@ractor"), b->sender);
+        ractor_basket_clear(b);
+        rb_ec_setup_exception(NULL, err, cause);
+        rb_exc_raise(err);
+    }
+
     ractor_basket_clear(b);
     return v;
-}
-
-static void
-ractor_copy_setup(struct rb_ractor_basket *b, VALUE obj)
-{
-    if (rb_ractor_shareable_p(obj)) {
-        b->type = basket_type_shareable;
-        b->v = obj;
-    }
-    else {
-#if 0
-        // TODO: consider custom copy protocol
-        switch (BUILTIN_TYPE(obj)) {
-
-        }
-#endif
-        b->v = rb_marshal_dump(obj, Qnil);
-        b->type = basket_type_copy_marshal;
-    }
 }
 
 static VALUE
@@ -771,20 +658,30 @@ ractor_send_basket(rb_execution_context_t *ec, rb_ractor_t *r, struct rb_ractor_
     }
 }
 
+static VALUE ractor_move(VALUE obj); // in this file
+static VALUE ractor_copy(VALUE obj); // in this file
+
 static void
-ractor_basket_setup(rb_execution_context_t *ec, struct rb_ractor_basket *basket, VALUE obj, VALUE move, bool exc)
+ractor_basket_setup(rb_execution_context_t *ec, struct rb_ractor_basket *basket, VALUE obj, VALUE move, bool exc, bool is_will)
 {
     basket->sender = rb_ec_ractor_ptr(ec)->self;
+    basket->exception = exc;
 
-    if (!RTEST(move)) {
-        ractor_copy_setup(basket, obj);
+    if (is_will) {
+        basket->type = basket_type_will;
+        basket->v = obj;
+    }
+    else if (rb_ractor_shareable_p(obj)) {
+        basket->type = basket_type_ref;
+        basket->v = obj;
+    }
+    else if (!RTEST(move)) {
+        basket->v = ractor_copy(obj);
+        basket->type = basket_type_copy;
     }
     else {
-        ractor_move_setup(basket, obj);
-    }
-
-    if (exc) {
-        basket->type = basket_type_exception;
+        basket->type = basket_type_move;
+        basket->v = ractor_move(obj);
     }
 }
 
@@ -792,7 +689,7 @@ static VALUE
 ractor_send(rb_execution_context_t *ec, rb_ractor_t *r, VALUE obj, VALUE move)
 {
     struct rb_ractor_basket basket;
-    ractor_basket_setup(ec, &basket, obj, move, false);
+    ractor_basket_setup(ec, &basket, obj, move, false, false);
     ractor_send_basket(ec, r, &basket);
     return r->self;
 }
@@ -936,7 +833,7 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, int alen, VALUE yield
         wait_status |= wait_yielding;
         alen++;
 
-        ractor_basket_setup(ec, &cr->wait.yielded_basket, yielded_value, move, false);
+        ractor_basket_setup(ec, &cr->wait.yielded_basket, yielded_value, move, false, false);
     }
 
     // TODO: shuffle actions
@@ -1394,7 +1291,7 @@ ractor_yield_atexit(rb_execution_context_t *ec, rb_ractor_t *cr, VALUE v, bool e
     ASSERT_ractor_unlocking(cr);
 
     struct rb_ractor_basket basket;
-    ractor_basket_setup(ec, &basket, v, Qfalse, exc);
+    ractor_basket_setup(ec, &basket, v, Qfalse, exc, true);
 
   retry:
     if (ractor_try_yield(ec, cr, &basket)) {
@@ -1915,7 +1812,7 @@ obj_hash_traverse_i(VALUE key, VALUE val, VALUE ptr)
 }
 
 static void
-obj_tdata_traverse_i(VALUE obj, void *ptr)
+obj_traverse_reachable_i(VALUE obj, void *ptr)
 {
     struct obj_traverse_callback_data *d = (struct obj_traverse_callback_data *)ptr;
 
@@ -2025,12 +1922,13 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
         break;
 
       case T_DATA:
+      case T_IMEMO:
         {
             struct obj_traverse_callback_data d = {
                 .stop = false,
                 .data = data,
             };
-            rb_objspace_reachable_objects_from(obj, obj_tdata_traverse_i, &d);
+            rb_objspace_reachable_objects_from(obj, obj_traverse_reachable_i, &d);
             if (d.stop) return 1;
         }
         break;
@@ -2069,28 +1967,44 @@ rb_obj_traverse(VALUE obj,
 }
 
 static int
-frozen_shareable_p(VALUE obj)
+frozen_shareable_p(VALUE obj, bool *made_shareable)
 {
-    if (!RB_TYPE_P(obj, T_DATA) ||
-        (RTYPEDDATA_P(obj) &&
-         RTYPEDDATA_TYPE(obj)->flags & RUBY_TYPED_FROZEN_SHAREABLE)) {
+    if (!RB_TYPE_P(obj, T_DATA)) {
         return true;
     }
-    else {
-        return false;
+    else if (RTYPEDDATA_P(obj)) {
+        const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
+        if (type->flags & RUBY_TYPED_FROZEN_SHAREABLE) {
+            return true;
+        }
+        else if (made_shareable && rb_obj_is_proc(obj)) {
+            // special path to make shareable Proc.
+            rb_proc_ractor_make_shareable(obj);
+            *made_shareable = true;
+            VM_ASSERT(RB_OBJ_SHAREABLE_P(obj));
+            return false;
+        }
     }
+
+    return false;
 }
 
 static enum obj_traverse_iterator_result
 make_shareable_check_shareable(VALUE obj)
 {
     VM_ASSERT(!SPECIAL_CONST_P(obj));
+    bool made_shareable = false;
 
     if (RB_OBJ_SHAREABLE_P(obj)) {
         return traverse_skip;
     }
-    else if (!frozen_shareable_p(obj)) {
-        rb_raise(rb_eRactorError, "can not make shareable object for %"PRIsVALUE, obj);
+    else if (!frozen_shareable_p(obj, &made_shareable)) {
+        if (made_shareable) {
+            return traverse_skip;
+        }
+        else {
+            rb_raise(rb_eRactorError, "can not make shareable object for %"PRIsVALUE, obj);
+        }
     }
 
     if (!RB_OBJ_FROZEN_RAW(obj)) {
@@ -2098,6 +2012,10 @@ make_shareable_check_shareable(VALUE obj)
 
         if (UNLIKELY(!RB_OBJ_FROZEN_RAW(obj))) {
             rb_raise(rb_eRactorError, "#freeze does not freeze object correctly");
+        }
+
+        if (RB_OBJ_SHAREABLE_P(obj)) {
+            return traverse_skip;
         }
     }
 
@@ -2134,7 +2052,7 @@ shareable_p_enter(VALUE obj)
         return traverse_skip;
     }
     else if (RB_OBJ_FROZEN_RAW(obj) &&
-             frozen_shareable_p(obj)) {
+             frozen_shareable_p(obj, NULL)) {
         return traverse_cont;
     }
 
@@ -2151,6 +2069,419 @@ rb_ractor_shareable_p_continue(VALUE obj)
     }
     else {
         return true;
+    }
+}
+
+#if RACTOR_CHECK_MODE > 0
+static enum obj_traverse_iterator_result
+reset_belonging_enter(VALUE obj)
+{
+    if (rb_ractor_shareable_p(obj)) {
+        return traverse_skip;
+    }
+    else {
+        rb_ractor_setup_belonging(obj);
+        return traverse_cont;
+    }
+}
+
+static enum obj_traverse_iterator_result
+null_leave(VALUE obj)
+{
+    return traverse_cont;
+}
+#endif
+
+static VALUE
+ractor_reset_belonging(VALUE obj)
+{
+#if RACTOR_CHECK_MODE > 0
+    rp(obj);
+    rb_obj_traverse(obj, reset_belonging_enter, null_leave);
+#endif
+    return obj;
+}
+
+
+/// traverse and replace function
+
+// 2: stop search
+// 1: skip child
+// 0: continue
+
+struct obj_traverse_replace_data;
+static int obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data);
+typedef enum obj_traverse_iterator_result (*rb_obj_traverse_replace_enter_func)(VALUE obj, struct obj_traverse_replace_data *data);
+typedef enum obj_traverse_iterator_result (*rb_obj_traverse_replace_leave_func)(VALUE obj, struct obj_traverse_replace_data *data);
+
+struct obj_traverse_replace_data {
+    rb_obj_traverse_replace_enter_func enter_func;
+    rb_obj_traverse_replace_leave_func leave_func;
+
+    st_table *rec;
+    VALUE rec_hash;
+
+    VALUE replacement;
+    bool move;
+};
+
+struct obj_traverse_replace_callback_data {
+    bool stop;
+    VALUE src;
+    struct obj_traverse_replace_data *data;
+};
+
+static int
+obj_hash_traverse_replace_foreach_i(st_data_t key, st_data_t value, st_data_t argp, int error)
+{
+    return ST_REPLACE;
+}
+
+static int
+obj_hash_traverse_replace_i(st_data_t *key, st_data_t *val, st_data_t ptr, int exists)
+{
+    struct obj_traverse_replace_callback_data *d = (struct obj_traverse_replace_callback_data *)ptr;
+    struct obj_traverse_replace_data *data = d->data;
+
+    if (obj_traverse_replace_i(*key, data)) {
+        d->stop = true;
+        return ST_STOP;
+    }
+    else if (*key != data->replacement) {
+        VALUE v = *key = data->replacement;
+        RB_OBJ_WRITTEN(d->src, Qundef, v);
+    }
+
+    if (obj_traverse_replace_i(*val, data)) {
+        d->stop = true;
+        return ST_STOP;
+    }
+    else if (*val != data->replacement) {
+        VALUE v = *val = data->replacement;
+        RB_OBJ_WRITTEN(d->src, Qundef, v);
+    }
+
+    return ST_CONTINUE;
+}
+
+static struct st_table *
+obj_traverse_replace_rec(struct obj_traverse_replace_data *data)
+{
+    if (UNLIKELY(!data->rec)) {
+        data->rec_hash = rb_ident_hash_new();
+        data->rec = rb_hash_st_table(data->rec_hash);
+    }
+    return data->rec;
+}
+
+#if USE_TRANSIENT_HEAP
+void rb_ary_transient_heap_evacuate(VALUE ary, int promote);
+void rb_obj_transient_heap_evacuate(VALUE obj, int promote);
+void rb_hash_transient_heap_evacuate(VALUE hash, int promote);
+void rb_struct_transient_heap_evacuate(VALUE st, int promote);
+#endif
+
+static int
+obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
+{
+    VALUE replacement;
+
+    if (RB_SPECIAL_CONST_P(obj)) {
+        data->replacement = obj;
+        return 0;
+    }
+
+    switch (data->enter_func(obj, data)) {
+      case traverse_cont: break;
+      case traverse_skip: return 0; // skip children
+      case traverse_stop: return 1; // stop search
+    }
+
+    replacement = data->replacement;
+
+    if (UNLIKELY(st_lookup(obj_traverse_replace_rec(data), (st_data_t)obj, (st_data_t *)&replacement))) {
+        data->replacement = replacement;
+        return 0;
+    }
+    else {
+        st_insert(obj_traverse_replace_rec(data), (st_data_t)obj, (st_data_t)replacement);
+    }
+
+    if (!data->move) {
+        obj = replacement;
+    }
+
+#define CHECK_AND_REPLACE(v) do { \
+    VALUE _val = (v); \
+    if (obj_traverse_replace_i(_val, data)) { return 1; } \
+    else if (data->replacement != _val)     { RB_OBJ_WRITE(obj, &v, data->replacement); } \
+} while (0)
+
+    if (UNLIKELY(FL_TEST_RAW(obj, FL_EXIVAR))) {
+        struct gen_ivtbl *ivtbl;
+        rb_ivar_generic_ivtbl_lookup(obj, &ivtbl);
+        for (uint32_t i = 0; i < ivtbl->numiv; i++) {
+            if (ivtbl->ivptr[i] != Qundef) {
+                CHECK_AND_REPLACE(ivtbl->ivptr[i]);
+            }
+        }
+    }
+
+    switch (BUILTIN_TYPE(obj)) {
+      // no child node
+      case T_FLOAT:
+      case T_BIGNUM:
+      case T_REGEXP:
+      case T_FILE:
+      case T_SYMBOL:
+      case T_MATCH:
+        break;
+      case T_STRING:
+        rb_str_modify(obj);
+        break;
+
+      case T_OBJECT:
+        {
+#if USE_TRANSIENT_HEAP
+            if (data->move) rb_obj_transient_heap_evacuate(obj, TRUE);
+#endif
+
+            uint32_t len = ROBJECT_NUMIV(obj);
+            VALUE *ptr = ROBJECT_IVPTR(obj);
+
+            for (uint32_t i=0; i<len; i++) {
+                if (ptr[i] != Qundef) {
+                    CHECK_AND_REPLACE(ptr[i]);
+                }
+            }
+        }
+        break;
+
+      case T_ARRAY:
+        {
+            rb_ary_modify(obj);
+#if USE_TRANSIENT_HEAP
+            if (data->move) rb_ary_transient_heap_evacuate(obj, TRUE);
+#endif
+
+            for (int i = 0; i < RARRAY_LENINT(obj); i++) {
+                VALUE e = rb_ary_entry(obj, i);
+
+                if (obj_traverse_replace_i(e, data)) {
+                    return 1;
+                }
+                else if (e != data->replacement) {
+                    RARRAY_ASET(obj, i, data->replacement);
+                }
+            }
+            RB_GC_GUARD(obj);
+        }
+        break;
+
+      case T_HASH:
+        {
+#if USE_TRANSIENT_HEAP
+            if (data->move) rb_hash_transient_heap_evacuate(obj, TRUE);
+#endif
+            struct obj_traverse_replace_callback_data d = {
+                .stop = false,
+                .data = data,
+                .src = obj,
+            };
+            rb_hash_stlike_foreach_with_replace(obj,
+                                                obj_hash_traverse_replace_foreach_i,
+                                                obj_hash_traverse_replace_i,
+                                                (VALUE)&d);
+            if (d.stop) return 1;
+            // TODO: rehash here?
+
+            VALUE ifnone = RHASH_IFNONE(obj);
+            if (obj_traverse_replace_i(ifnone, data)) {
+                return 1;
+            }
+            else if (ifnone != data->replacement) {
+                RHASH_SET_IFNONE(obj, data->replacement);
+            }
+        }
+        break;
+
+      case T_STRUCT:
+        {
+#if USE_TRANSIENT_HEAP
+            if (data->move) rb_struct_transient_heap_evacuate(obj, TRUE);
+#endif
+            long len = RSTRUCT_LEN(obj);
+            const VALUE *ptr = RSTRUCT_CONST_PTR(obj);
+
+            for (long i=0; i<len; i++) {
+                CHECK_AND_REPLACE(ptr[i]);
+            }
+        }
+        break;
+
+      case T_RATIONAL:
+        CHECK_AND_REPLACE(RRATIONAL(obj)->num);
+        CHECK_AND_REPLACE(RRATIONAL(obj)->den);
+        break;
+      case T_COMPLEX:
+        CHECK_AND_REPLACE(RCOMPLEX(obj)->real);
+        CHECK_AND_REPLACE(RCOMPLEX(obj)->imag);
+        break;
+
+      case T_DATA:
+      case T_IMEMO:
+        // not supported yet
+        return 1;
+
+      // unreachable
+      case T_CLASS:
+      case T_MODULE:
+      case T_ICLASS:
+      default:
+        rp(obj);
+        rb_bug("unreachable");
+    }
+
+    data->replacement = replacement;
+
+    if (data->leave_func(obj, data) == traverse_stop) {
+        return 1;
+    }
+    else {
+        return 0;
+    }
+}
+
+// 0: traverse all
+// 1: stopped
+static VALUE
+rb_obj_traverse_replace(VALUE obj,
+                        rb_obj_traverse_replace_enter_func enter_func,
+                        rb_obj_traverse_replace_leave_func leave_func,
+                        bool move)
+{
+    struct obj_traverse_replace_data data = {
+        .enter_func = enter_func,
+        .leave_func = leave_func,
+        .rec = NULL,
+        .replacement = Qundef,
+        .move = move,
+    };
+
+    if (obj_traverse_replace_i(obj, &data)) {
+        return Qundef;
+    }
+    else {
+        return data.replacement;
+    }
+}
+
+struct RVALUE {
+    VALUE flags;
+    VALUE klass;
+    VALUE v1;
+    VALUE v2;
+    VALUE v3;
+};
+
+static const VALUE fl_users = FL_USER1  | FL_USER2  | FL_USER3  |
+                              FL_USER4  | FL_USER5  | FL_USER6  | FL_USER7  |
+                              FL_USER8  | FL_USER9  | FL_USER10 | FL_USER11 |
+                              FL_USER12 | FL_USER13 | FL_USER14 | FL_USER15 |
+                              FL_USER16 | FL_USER17 | FL_USER18 | FL_USER19;
+
+static void
+ractor_moved_bang(VALUE obj)
+{
+    // invalidate src object
+    struct RVALUE *rv = (void *)obj;
+
+    rv->klass = rb_cRactorMovedObject;
+    rv->v1 = 0;
+    rv->v2 = 0;
+    rv->v3 = 0;
+    rv->flags = rv->flags & ~fl_users;
+
+    // TODO: record moved location
+}
+
+static enum obj_traverse_iterator_result
+move_enter(VALUE obj, struct obj_traverse_replace_data *data)
+{
+    if (rb_ractor_shareable_p(obj)) {
+        data->replacement = obj;
+        return traverse_skip;
+    }
+    else {
+        data->replacement = rb_obj_alloc(RBASIC_CLASS(obj));
+        return traverse_cont;
+    }
+}
+
+void rb_replace_generic_ivar(VALUE clone, VALUE obj); // variable.c
+
+static enum obj_traverse_iterator_result
+move_leave(VALUE obj, struct obj_traverse_replace_data *data)
+{
+    VALUE v = data->replacement;
+    struct RVALUE *dst = (struct RVALUE *)v;
+    struct RVALUE *src = (struct RVALUE *)obj;
+
+    dst->flags = (dst->flags & ~fl_users) | (src->flags & fl_users);
+
+    dst->v1 = src->v1;
+    dst->v2 = src->v2;
+    dst->v3 = src->v3;
+
+    if (UNLIKELY(FL_TEST_RAW(obj, FL_EXIVAR))) {
+        rb_replace_generic_ivar(v, obj);
+    }
+
+    // TODO: generic_ivar
+
+    ractor_moved_bang(obj);
+    return traverse_cont;
+}
+
+static VALUE
+ractor_move(VALUE obj)
+{
+    VALUE val = rb_obj_traverse_replace(obj, move_enter, move_leave, true);
+    if (val != Qundef) {
+        return val;
+    }
+    else {
+        rb_raise(rb_eRactorError, "can not move the object");
+    }
+}
+
+static enum obj_traverse_iterator_result
+copy_enter(VALUE obj, struct obj_traverse_replace_data *data)
+{
+    if (rb_ractor_shareable_p(obj)) {
+        data->replacement = obj;
+        return traverse_skip;
+    }
+    else {
+        data->replacement = rb_obj_clone(obj);
+        return traverse_cont;
+    }
+}
+
+static enum obj_traverse_iterator_result
+copy_leave(VALUE obj, struct obj_traverse_replace_data *data)
+{
+    return traverse_cont;
+}
+
+static VALUE ractor_copy(VALUE obj)
+{
+    VALUE val = rb_obj_traverse_replace(obj, copy_enter, copy_leave, false);
+    if (val != Qundef) {
+        return val;
+    }
+    else {
+        rb_raise(rb_eRactorError, "can not copy the object");
     }
 }
 

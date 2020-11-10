@@ -8,7 +8,6 @@ description.
 
 == Libraries
 
-DEBUGGER__:: Debugging functionality for Ruby
 MakeMakefile:: Module used to generate a Makefile for C extensions
 RbConfig:: Information of your configure and build of Ruby
 Gem:: Package management framework for Ruby
@@ -22,7 +21,6 @@ objspace:: Extends ObjectSpace module to add methods for internal statistics
 PTY:: Creates and manages pseudo terminals
 Ripper:: Provides an interface for parsing Ruby programs into S-expressions
 Socket:: Access underlying OS socket implementations
-WIN32OLE:: Provides an interface for OLE Automation in Ruby
 
 = Default gems
 
@@ -34,11 +32,12 @@ Benchmark:: Provides methods to measure and report the time used to execute code
 Bundler:: Manage your Ruby application's gem dependencies
 CGI:: Support for the Common Gateway Interface protocol
 CSV:: Provides an interface to read and write CSV files and data
+DEBUGGER__:: Debugging functionality for Ruby
 Delegator:: Provides three abilities to delegate method calls to an object
 DidYouMean:: "Did you mean?" experience in Ruby
 Digest:: Provides a framework for message digest libraries
 DRb:: Distributed object system for Ruby
-English.rb:: Require 'English.rb' to reference global variables with less cryptic names
+English:: Provides references to special global variables with less cryptic names
 ERB:: An easy to use but powerful templating system for Ruby
 FileUtils:: Several file utility methods for copying, moving, removing, etc
 Find:: This module supports top-down traversal of a set of file paths
@@ -103,6 +102,7 @@ Readline:: Provides an interface for GNU Readline and Edit Line (libedit)
 StringIO:: Pseudo I/O on String objects
 StringScanner:: Provides lexical scanning operations on a String
 Syslog:: Ruby interface for the POSIX system logging facility
+WIN32OLE:: Provides an interface for OLE Automation in Ruby
 Zlib:: Ruby interface for the zlib compression/decompression library
 
 = Bundled gems

@@ -502,7 +502,6 @@ static NODE *new_find_pattern(struct parser_params *p, NODE *constant, NODE *fnd
 static NODE *new_find_pattern_tail(struct parser_params *p, ID pre_rest_arg, NODE *args, ID post_rest_arg, const YYLTYPE *loc);
 static NODE *new_hash_pattern(struct parser_params *p, NODE *constant, NODE *hshptn, const YYLTYPE *loc);
 static NODE *new_hash_pattern_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, const YYLTYPE *loc);
-static NODE *new_case3(struct parser_params *p, NODE *val, NODE *pat, const YYLTYPE *loc);
 
 static NODE *new_kw_arg(struct parser_params *p, NODE *k, const YYLTYPE *loc);
 static NODE *args_with_numbered(struct parser_params*,NODE*,int);
@@ -1661,7 +1660,11 @@ expr		: command_call
 		    {
 			p->ctxt.in_kwarg = $<ctxt>3.in_kwarg;
 		    /*%%%*/
-			$$ = new_case3(p, $1, NEW_IN($5, 0, 0, &@5), &@$);
+			$$ = NEW_CASE3($1, NEW_IN($5, 0, 0, &@5), &@$);
+
+			if (rb_warning_category_enabled_p(RB_WARN_CATEGORY_EXPERIMENTAL))
+			    rb_warn0L(nd_line($$), "One-line pattern matching is experimental, and the behavior may change in future versions of Ruby!");
+
 		    /*% %*/
 		    /*% ripper: case!($1, in!($5, Qnil, Qnil)) %*/
 		    }
@@ -2998,7 +3001,7 @@ primary		: literal
 		  k_end
 		    {
 		    /*%%%*/
-			$$ = new_case3(p, $2, $4, &@$);
+			$$ = NEW_CASE3($2, $4, &@$);
 		    /*% %*/
 		    /*% ripper: case!($2, $4) %*/
 		    }
@@ -4176,6 +4179,9 @@ p_args_tail	: p_rest
 p_find		: p_rest ',' p_args_post ',' p_rest
 		    {
 			$$ = new_find_pattern_tail(p, $1, $3, $5, &@$);
+
+			if (rb_warning_category_enabled_p(RB_WARN_CATEGORY_EXPERIMENTAL))
+			    rb_warn0L(nd_line($$), "Find pattern is experimental, and the behavior may change in future versions of Ruby!");
 		    }
 		;
 
@@ -7910,17 +7916,17 @@ parser_get_bool(struct parser_params *p, const char *name, const char *val)
 {
     switch (*val) {
       case 't': case 'T':
-	if (strcasecmp(val, "true") == 0) {
+	if (STRCASECMP(val, "true") == 0) {
 	    return TRUE;
 	}
 	break;
       case 'f': case 'F':
-	if (strcasecmp(val, "false") == 0) {
+	if (STRCASECMP(val, "false") == 0) {
 	    return FALSE;
 	}
 	break;
     }
-    rb_compile_warning(p->ruby_sourcefile, p->ruby_sourceline, "invalid value for %s: %s", name, val);
+    rb_warning2("invalid value for %s: %s", WARN_S(name), WARN_S(val));
     return -1;
 }
 
@@ -11600,7 +11606,7 @@ new_array_pattern_tail(struct parser_params *p, NODE *pre_args, int has_rest, ID
     VALUE tmpbuf = rb_imemo_tmpbuf_auto_free_pointer();
     struct rb_ary_pattern_info *apinfo = ZALLOC(struct rb_ary_pattern_info);
     rb_imemo_tmpbuf_set_ptr(tmpbuf, apinfo);
-    node = NEW_NODE(NODE_ARYPTN, tmpbuf, 0, apinfo, loc);
+    node = NEW_NODE(NODE_ARYPTN, 0, tmpbuf, apinfo, loc);
     RB_OBJ_WRITTEN(p->ast, Qnil, tmpbuf);
 
     apinfo->pre_args = pre_args;
@@ -11639,7 +11645,7 @@ new_find_pattern_tail(struct parser_params *p, ID pre_rest_arg, NODE *args, ID p
     VALUE tmpbuf = rb_imemo_tmpbuf_auto_free_pointer();
     struct rb_fnd_pattern_info *fpinfo = ZALLOC(struct rb_fnd_pattern_info);
     rb_imemo_tmpbuf_set_ptr(tmpbuf, fpinfo);
-    node = NEW_NODE(NODE_FNDPTN, tmpbuf, 0, fpinfo, loc);
+    node = NEW_NODE(NODE_FNDPTN, 0, tmpbuf, fpinfo, loc);
     RB_OBJ_WRITTEN(p->ast, Qnil, tmpbuf);
 
     fpinfo->pre_rest_arg = pre_rest_arg ? assignable(p, pre_rest_arg, 0, loc) : NODE_SPECIAL_NO_NAME_REST;
@@ -11673,19 +11679,9 @@ new_hash_pattern_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, co
 	kw_rest_arg_node = NULL;
     }
 
-    node = NEW_NODE(NODE_HSHPTN, kw_args, 0, kw_rest_arg_node, loc);
+    node = NEW_NODE(NODE_HSHPTN, 0, kw_args, kw_rest_arg_node, loc);
 
     p->ruby_sourceline = saved_line;
-    return node;
-}
-
-static NODE *
-new_case3(struct parser_params *p, NODE *val, NODE *pat, const YYLTYPE *loc)
-{
-    NODE *node = NEW_CASE3(val, pat, loc);
-
-    if (rb_warning_category_enabled_p(RB_WARN_CATEGORY_EXPERIMENTAL))
-	rb_warn0L(nd_line(node), "Pattern matching is experimental, and the behavior may change in future versions of Ruby!");
     return node;
 }
 

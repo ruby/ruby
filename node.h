@@ -273,8 +273,8 @@ typedef struct RNode {
 
 #define nd_brace u2.argc
 
-#define nd_pkwargs    u1.node
-#define nd_pconst     u2.node
+#define nd_pconst     u1.node
+#define nd_pkwargs    u2.node
 #define nd_pkwrestarg u3.node
 
 #define nd_apinfo u3.apinfo

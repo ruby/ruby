@@ -1588,6 +1588,12 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal("frozen_string_literal", args[0])
   end
 
+  def test_warning_invalid_magic_comment
+    fmt, *args = warning("#-*- frozen-string-literal: nottrue -*-")
+    assert_match(/invalid value/, fmt)
+    assert_equal(%w"frozen_string_literal nottrue", args)
+  end
+
   def test_warn_cr_in_middle
     fmt = nil
     assert_warn("") {fmt, = warn("\r;")}

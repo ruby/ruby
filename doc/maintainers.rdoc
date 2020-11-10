@@ -38,8 +38,6 @@ Zachary Scott (zzak)
 
 === Libraries
 
-[lib/debug.rb]
-  _unmaintained_
 [lib/mkmf.rb]
   _unmaintained_
 [lib/rubygems.rb, lib/rubygems/*]
@@ -71,8 +69,6 @@ Zachary Scott (zzak)
   * API change needs matz's approval
 [ext/win32]
   NAKAMURA Usaku (usa)
-[ext/win32ole]
-  Masaki Suketa (suke)
 
 == Default gems Maintainers
 
@@ -103,6 +99,8 @@ Zachary Scott (zzak)
 [lib/English.rb]
   _unmaintained_
   https://github.com/ruby/English
+[lib/debug.rb]
+  _unmaintained_
 [lib/delegate.rb]
   _unmaintained_
   https://github.com/ruby/delegate
@@ -359,6 +357,8 @@ Zachary Scott (zzak)
 [ext/syslog]
   Akinori MUSHA (knu)
   https://github.com/ruby/syslog
+[ext/win32ole]
+  Masaki Suketa (suke)
 [ext/zlib]
   NARUSE, Yui (naruse)
   https://github.com/ruby/zlib

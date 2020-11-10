@@ -407,7 +407,7 @@ assert_equal 'false', %q{
 }
 
 # To copy the object, now Marshal#dump is used
-assert_equal 'no _dump_data is defined for class Thread', %q{
+assert_equal "allocator undefined for Thread", %q{
   obj = Thread.new{}
   begin
     r = Ractor.new obj do |msg|
@@ -920,6 +920,44 @@ assert_equal 'true', %q{
   r = Ractor.new{}
   Ractor.make_shareable(a = [r])
   [a.frozen?, a[0].frozen?] == [true, false]
+}
+
+# Ractor.make_shareable(a_proc) makes a proc shareable.
+assert_equal 'true', %q{
+  a = [1, [2, 3], {a: "4"}]
+  pr = Proc.new do
+    a
+  end
+  Ractor.make_shareable(a) # referred value should be shareable
+  Ractor.make_shareable(pr)
+  Ractor.shareable?(pr)
+}
+
+# define_method() can invoke different Ractor's proc if the proc is shareable.
+assert_equal '1', %q{
+  class C
+    a = 1
+    define_method "foo", Ractor.make_shareable(Proc.new{ a })
+    a = 2
+  end
+
+  Ractor.new{ C.new.foo }.take
+}
+
+# Ractor.make_shareable(a_proc) makes a proc shareable.
+assert_equal 'can not make a Proc shareable because it accesses outer variables (a).', %q{
+  a = b = nil
+  pr = Proc.new do
+    c = b # assign to a is okay because c is block local variable
+          # reading b is okay
+    a = b # assign to a is not allowed #=> Ractor::Error
+  end
+
+  begin
+    Ractor.make_shareable(pr)
+  rescue => e
+    e.message
+  end
 }
 
 ###

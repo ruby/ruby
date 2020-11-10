@@ -1712,16 +1712,6 @@ eom
     assert_equal [[4, 1, 5, 2, 3], {a: 1}], obj.foo(4, 5, 2, 3, a: 1){|args, kws| [args, kws]}
   end
 
-  def test_rightward_assign
-    a = b = nil
-    EnvUtil.suppress_warning {eval("1 => a")}
-    assert_equal(1, a)
-    EnvUtil.suppress_warning {eval("13.divmod(5) => [a,b]")}
-    assert_equal([2,3], [a, b])
-    EnvUtil.suppress_warning {eval("1+2 => a")}
-    assert_equal(3, a)
-  end
-
   private
 
   def not_label(x) @result = x; @not_label ||= nil end
