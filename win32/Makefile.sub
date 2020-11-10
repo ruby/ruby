@@ -863,6 +863,9 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define HAVE_STRCHR 1
 #define HAVE_STRSTR 1
 #define HAVE_FLOCK 1
+!if $(MSC_VER) >= 1800
+#define HAVE_ISINF 1
+!endif
 #define HAVE_ISNAN 1
 #define HAVE_FINITE 1
 !if $(RT_VER) >= 120
