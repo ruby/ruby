@@ -1038,13 +1038,13 @@ gen_ivtbl_dup(const struct gen_ivtbl *orig)
 static uint32_t
 iv_index_tbl_newsize(struct ivar_update *ivup)
 {
-    uint32_t index = (uint32_t)ivup->index;	/* should not overflow */
-    uint32_t newsize = (index+1) + (index+1)/4; /* (index+1)*1.25 */
-
     if (!ivup->iv_extended) {
-        newsize = (uint32_t)ivup->u.iv_index_tbl->num_entries;
+        return (uint32_t)ivup->u.iv_index_tbl->num_entries;
     }
-    return newsize;
+    else {
+        uint32_t index = (uint32_t)ivup->index;	/* should not overflow */
+        return (index+1) + (index+1)/4; /* (index+1)*1.25 */
+    }
 }
 
 static int
