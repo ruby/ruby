@@ -164,14 +164,6 @@ class Ractor
     }
   end
 
-  # Closes both incoming and outgoing ports.
-  def close
-    close_incoming
-    close_outgoing
-
-    self
-  end
-
   # utility method
   def self.shareable? obj
     __builtin_cexpr! %q{
