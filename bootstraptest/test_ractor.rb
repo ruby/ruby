@@ -201,8 +201,8 @@ assert_equal 'ok', %q{
 # Raise Ractor::ClosedError when try to send into a closed actor
 assert_equal 'ok', %q{
   r = Ractor.new { Ractor.receive }
+  r.close_incoming
 
-  r.close
   begin
     r.send(1)
   rescue Ractor::ClosedError
@@ -219,7 +219,7 @@ assert_equal 'ok', %q{
     Ractor.receive
   end
 
-  r.close
+  r.close_outgoing
   begin
     r.take
   rescue Ractor::ClosedError
