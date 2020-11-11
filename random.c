@@ -625,7 +625,9 @@ random_seed(VALUE _)
 }
 
 /*
- * call-seq: Random.urandom(size) -> string
+ * call-seq:
+ *    Random.os_random(size) -> string
+ *    Random.urandom(size) -> string
  *
  * Returns a string, using platform providing features.
  * Returned value is expected to be a cryptographically secure
@@ -633,12 +635,9 @@ random_seed(VALUE _)
  * This method raises a RuntimeError if the feature provided by platform
  * failed to prepare the result.
  *
- * In 2017, Linux manpage random(7) writes that "no cryptographic
- * primitive available today can hope to promise more than 256 bits of
- * security".  So it might be questionable to pass size > 32 to this
- * method.
+ *   Random.os_random(8)  #=> "\x78\x41\xBA\xAF\x7D\xEA\xD8\xEA"
  *
- *   Random.urandom(8)  #=> "\x78\x41\xBA\xAF\x7D\xEA\xD8\xEA"
+ * Random::urandom is an alias for Random::os_random.
  */
 static VALUE
 random_raw_seed(VALUE self, VALUE size)
@@ -810,9 +809,8 @@ rand_mt_get_bytes(rb_random_t *rnd, void *ptr, size_t n)
  * +number+.  The previous seed value is returned.
  *
  * If +number+ is omitted, seeds the generator using a source of entropy
- * provided by the operating system, if available (/dev/urandom on Unix systems
- * or the RSA cryptographic provider on Windows), which is then combined with
- * the time, the process id, and a sequence number.
+ * provided by the operating system, if available (see SecureRandom), which is
+ * then combined with the time, the process id, and a sequence number.
  *
  * srand may be used to ensure repeatable sequences of pseudo-random numbers
  * between different runs of the program. By setting the seed to a known value,
@@ -1712,7 +1710,8 @@ InitVM_Random(void)
     rb_define_singleton_method(rb_cRandom, "rand", random_s_rand, -1);
     rb_define_singleton_method(rb_cRandom, "bytes", random_s_bytes, 1);
     rb_define_singleton_method(rb_cRandom, "new_seed", random_seed, 0);
-    rb_define_singleton_method(rb_cRandom, "urandom", random_raw_seed, 1);
+    rb_define_singleton_method(rb_cRandom, "os_random", random_raw_seed, 1);
+    rb_define_alias(rb_singleton_class(rb_cRandom),  "urandom", "os_random");
     rb_define_private_method(CLASS_OF(rb_cRandom), "state", random_s_state, 0);
     rb_define_private_method(CLASS_OF(rb_cRandom), "left", random_s_left, 0);
 

@@ -12,9 +12,12 @@
 #
 # It supports the following secure random number generators:
 #
-# * openssl
+# * getrandom if available
+# * arc4random on OpenBSD 5.6+, NetBSD 7.0+, FreeBSD 12.0+
+# * SecRandomCopyBytes on MacOS 10.7+
+# * CryptGenRandom on Windows
 # * /dev/urandom
-# * Win32
+# * openssl
 #
 # SecureRandom is extended by the Random::Formatter module which
 # defines the following methods:
@@ -79,7 +82,7 @@ module SecureRandom
       unless @pid == pid
         now = Process.clock_gettime(Process::CLOCK_REALTIME, :nanosecond)
         OpenSSL::Random.random_add([now, @pid, pid].join(""), 0.0)
-        seed = Random.urandom(16)
+        seed = Random.os_random(16)
         if (seed)
           OpenSSL::Random.random_add(seed, 16)
         end
@@ -88,8 +91,8 @@ module SecureRandom
       return OpenSSL::Random.random_bytes(n)
     end
 
-    def gen_random_urandom(n)
-      ret = Random.urandom(n)
+    def gen_random_os(n)
+      ret = Random.os_random(n)
       unless ret
         raise NotImplementedError, "No random device"
       end
@@ -99,7 +102,7 @@ module SecureRandom
       ret
     end
 
-    ret = Random.urandom(1)
+    ret = Random.os_random(1)
     if ret.nil?
       begin
         require 'openssl'
@@ -109,7 +112,7 @@ module SecureRandom
         alias gen_random gen_random_openssl
       end
     else
-      alias gen_random gen_random_urandom
+      alias gen_random gen_random_os
     end
 
     public :gen_random
