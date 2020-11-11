@@ -16,6 +16,8 @@
 # undef _WIN32
 # endif
 
+#define USE_VM_CLOCK 1
+
 WINBASEAPI BOOL WINAPI
 TryEnterCriticalSection(IN OUT LPCRITICAL_SECTION lpCriticalSection);
 
