@@ -341,7 +341,6 @@ rb_thread_s_debug_set(VALUE self, VALUE val)
 #endif
 
 NOINLINE(static int thread_start_func_2(rb_thread_t *th, VALUE *stack_start));
-static void timer_thread_function(rb_execution_context_t *ec);
 void ruby_sigchld_handler(rb_vm_t *); /* signal.c */
 
 static void
@@ -4571,15 +4570,6 @@ rb_threadptr_check_signal(rb_thread_t *mth)
     if (rb_signal_buff_size() > 0) {
 	/* wakeup main thread */
 	threadptr_trap_interrupt(mth);
-    }
-}
-
-static void
-timer_thread_function(rb_execution_context_t *ec)
-{
-    // strictly speaking, accessing gvl->owner is not thread-safe
-    if (ec) {
-        RUBY_VM_SET_TIMER_INTERRUPT(ec);
     }
 }
 

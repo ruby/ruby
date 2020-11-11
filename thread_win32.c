@@ -710,13 +710,9 @@ timer_thread_func(void *dummy)
     rb_vm_t *vm = GET_VM();
     thread_debug("timer_thread\n");
     rb_w32_set_thread_description(GetCurrentThread(), L"ruby-timer-thread");
-    while (WaitForSingleObject(timer_thread.lock, TIME_QUANTUM_USEC/1000) ==
-	   WAIT_TIMEOUT) {
-        rb_execution_context_t *running_ec = vm->ractor.main_ractor->threads.running_ec;
-
-        if (running_ec) {
-            timer_thread_function(running_ec);
-        }
+    while (WaitForSingleObject(timer_thread.lock,
+                               TIME_QUANTUM_USEC/1000) == WAIT_TIMEOUT) {
+        vm->clock++;
 	ruby_sigchld_handler(vm); /* probably no-op */
 	rb_threadptr_check_signal(vm->ractor.main_thread);
     }
