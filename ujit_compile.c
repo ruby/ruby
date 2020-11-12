@@ -635,6 +635,12 @@ gen_getinstancevariable(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
         return false;
     }
 
+    // If the class uses the default allocator, instances should all be T_OBJECT
+    if (rb_get_alloc_func(ic->entry->class_value) != rb_class_allocate_instance)
+    {
+        return false;
+    }
+
     uint32_t ivar_index = ic->entry->index;
 
     // Create a size-exit to fall back to the interpreter
@@ -663,12 +669,6 @@ gen_getinstancevariable(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     x86opnd_t flags_opnd = member_opnd(REG0, struct RBasic, flags);
     test(cb, flags_opnd, imm_opnd(ROBJECT_EMBED));
     jnz_ptr(cb, side_exit);
-
-    // Check that this is a Ruby object (not a string, etc)
-    mov(cb, REG1, flags_opnd);
-    and(cb, REG1, imm_opnd(RUBY_T_MASK));
-    cmp(cb, REG1, imm_opnd(T_OBJECT));
-    jne_ptr(cb, side_exit);
 
     // Get a pointer to the extended table
     x86opnd_t tbl_opnd = mem_opnd(64, REG0, offsetof(struct RObject, as.heap.ivptr));
