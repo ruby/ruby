@@ -1811,7 +1811,7 @@ singleton_class_of(VALUE obj)
 
     klass = RBASIC(obj)->klass;
     if (!(FL_TEST(klass, FL_SINGLETON) &&
-	  rb_ivar_get(klass, id_attached) == obj)) {
+          rb_attr_get(klass, id_attached) == obj)) {
 	rb_serial_t serial = RCLASS_SERIAL(klass);
 	klass = rb_make_metaclass(obj, klass);
 	RCLASS_SERIAL(klass) = serial;
@@ -1852,7 +1852,7 @@ rb_singleton_class_get(VALUE obj)
     }
     klass = RBASIC(obj)->klass;
     if (!FL_TEST(klass, FL_SINGLETON)) return Qnil;
-    if (rb_ivar_get(klass, id_attached) != obj) return Qnil;
+    if (rb_attr_get(klass, id_attached) != obj) return Qnil;
     return klass;
 }
 
