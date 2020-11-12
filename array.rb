@@ -39,8 +39,8 @@ class Array
   #    a.sample # => 8
   # If +self+ is empty, returns +nil+.
   #
-  # When argument +n+ is given (but not keyword argument +random+),
-  # returns a new \Array containing +n+ random elements from +self+:
+  # When argument +n+ is given, returns a new \Array containing +n+ random
+  # elements from +self+:
   #    a.sample(3) # => [8, 9, 2]
   #    a.sample(6) # => [9, 6, 10, 3, 1, 4]
   # Returns no more than <tt>a.size</tt> elements
