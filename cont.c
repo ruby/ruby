@@ -1825,19 +1825,19 @@ rb_fiber_initialize_kw(int argc, VALUE* argv, VALUE self, int kw_splat)
     VALUE blocking = Qfalse;
 
     if (kw_splat != RB_NO_KEYWORDS) {
-      VALUE options = Qnil;
-      VALUE arguments[2] = {Qundef};
+        VALUE options = Qnil;
+        VALUE arguments[2] = {Qundef};
 
-      argc = rb_scan_args_kw(kw_splat, argc, argv, ":", &options);
-      rb_get_kwargs(options, fiber_initialize_keywords, 0, 2, arguments);
+        argc = rb_scan_args_kw(kw_splat, argc, argv, ":", &options);
+        rb_get_kwargs(options, fiber_initialize_keywords, 0, 2, arguments);
 
-      if (arguments[0] != Qundef) {
-        blocking = arguments[0];
-      }
-      
-      if (arguments[1] != Qundef) {
-        pool = arguments[1];
-      }
+        if (arguments[0] != Qundef) {
+            blocking = arguments[0];
+        }
+
+        if (arguments[1] != Qundef) {
+            pool = arguments[1];
+        }
     }
 
     return fiber_initialize(self, rb_block_proc(), rb_fiber_pool_default(pool), RTEST(blocking));
