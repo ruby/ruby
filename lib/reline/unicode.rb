@@ -89,6 +89,9 @@ class Reline::Unicode
     | #{ EastAsianWidth::TYPE_NA }
     | #{ EastAsianWidth::TYPE_N }
     )
+  | (?<ambiguous_width>
+      #{EastAsianWidth::TYPE_A}
+    )
   /x
 
   def self.get_mbchar_width(mbchar)
@@ -98,6 +101,7 @@ class Reline::Unicode
     when m[:width_3] then 3
     when m[:width_0] then 0
     when m[:width_1] then 1
+    when m[:ambiguous_width] then Reline.ambiguous_width
     else
       nil
     end
