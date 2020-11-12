@@ -636,6 +636,9 @@ gen_getinstancevariable(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     }
 
     // If the class uses the default allocator, instances should all be T_OBJECT
+    // NOTE: This assumes nobody changes the allocator of the class after allocation.
+    //       Eventually, we can encode whether an object is T_OBJECT or not
+    //       inside object shapes.
     if (rb_get_alloc_func(ic->entry->class_value) != rb_class_allocate_instance)
     {
         return false;
