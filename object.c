@@ -340,7 +340,6 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
 	}
 	ROBJECT(dest)->as.heap.ivptr = ptr;
 	ROBJECT(dest)->as.heap.numiv = len;
-	ROBJECT(dest)->as.heap.iv_index_tbl = ROBJECT(obj)->as.heap.iv_index_tbl;
 	RBASIC(dest)->flags &= ~ROBJECT_EMBED;
     }
 }

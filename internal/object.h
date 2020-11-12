@@ -69,14 +69,8 @@ RBIMPL_ATTR_PURE()
 static inline struct st_table *
 ROBJECT_IV_INDEX_TBL_inline(VALUE obj)
 {
-    if (RB_FL_ANY_RAW(obj, ROBJECT_EMBED)) {
-        VALUE klass = rb_obj_class(obj);
-        return RCLASS_IV_INDEX_TBL(klass);
-    }
-    else {
-        const struct RObject *const ptr = ROBJECT(obj);
-        return ptr->as.heap.iv_index_tbl;
-    }
+    VALUE klass = rb_obj_class(obj);
+    return RCLASS_IV_INDEX_TBL(klass);
 }
 #define ROBJECT_IV_INDEX_TBL ROBJECT_IV_INDEX_TBL_inline
 

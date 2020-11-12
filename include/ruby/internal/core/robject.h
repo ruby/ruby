@@ -55,7 +55,6 @@ struct RObject {
         struct {
             uint32_t numiv;
             VALUE *ivptr;
-            struct st_table *iv_index_tbl; /* shortcut for RCLASS_IV_INDEX_TBL(rb_obj_class(obj)) */
         } heap;
         VALUE ary[ROBJECT_EMBED_LEN_MAX];
     } as;

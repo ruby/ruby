@@ -1421,7 +1421,6 @@ rb_init_iv_list(VALUE obj, uint32_t len, uint32_t newsize, st_table * index_tbl)
         newptr[len] = Qundef;
     }
     ROBJECT(obj)->as.heap.numiv = newsize;
-    ROBJECT(obj)->as.heap.iv_index_tbl = index_tbl;
 }
 
 static VALUE
