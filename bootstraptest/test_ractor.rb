@@ -1050,3 +1050,45 @@ assert_equal "#{n}#{n}", %Q{
 }
 
 end # if !ENV['GITHUB_WORKFLOW']
+
+###
+### Ractor::LVar
+###
+
+# LVar is ractor-local values
+assert_equal 'abcd', %q{
+  LV1 = Ractor::LVar.new
+  LV2 = Ractor::LVar.new
+  LV1.value = 'a'
+  LV2.value = 'b'
+  cd = Ractor.new{
+    LV1.value = 'c'
+    LV2.value = 'd'
+
+    LV1.value + LV2.value
+  }.take
+
+  LV1.value + LV2.value + cd
+}
+
+# LVar can has default_proc
+assert_equal '[256, 256]', %q{
+  LV = Ractor::LVar.new{ 128 }
+  LV.value += 128
+
+  cnt = Ractor.new{
+    LV.value += 128
+  }.take
+
+  [LV.value, cnt]
+}
+
+# default_proc should be isoalted
+assert_equal "ArgumentError", %q{
+  i = 0
+  begin
+    LV = Ractor::LVar.new{ i += 1 }
+  rescue => e
+    e.class
+  end
+}

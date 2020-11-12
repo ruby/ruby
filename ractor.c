@@ -20,6 +20,7 @@ static VALUE rb_eRactorRemoteError;
 static VALUE rb_eRactorMovedError;
 static VALUE rb_eRactorClosedError;
 static VALUE rb_cRactorMovedObject;
+static VALUE rb_cRactorLVar;
 
 VALUE
 rb_ractor_error_class(void)
@@ -176,6 +177,8 @@ ractor_queue_mark(struct rb_ractor_queue *rq)
     }
 }
 
+static void ractor_local_storage_mark(rb_ractor_t *r);
+
 static void
 ractor_mark(void *ptr)
 {
@@ -199,6 +202,8 @@ ractor_mark(void *ptr)
             rb_gc_mark(th->self);
         }
     }
+
+    ractor_local_storage_mark(r);
 }
 
 static void
@@ -1679,6 +1684,8 @@ Init_Ractor(void)
     rb_define_method(rb_cRactorMovedObject, "instance_exec", ractor_moved_missing, -1);
 
     rb_obj_freeze(rb_cRactorMovedObject);
+
+    rb_cRactorLVar = rb_define_class_under(rb_cRactor, "LVar", rb_cObject);
 }
 
 void
@@ -2513,6 +2520,202 @@ static VALUE ractor_copy(VALUE obj)
     else {
         rb_raise(rb_eRactorError, "can not copy the object");
     }
+}
+
+// Ractor local storage
+
+typedef st_data_t rb_ractor_local_key_t;
+static rb_ractor_local_key_t latest_key_index = 1;
+
+static struct ractor_freed_lvars {
+    int cnt;
+    int capa;
+    rb_ractor_local_key_t *keys;
+} freed_lvars;
+
+static int
+ractor_local_storage_mark_i(st_data_t key, st_data_t val, st_data_t dmy)
+{
+    rb_gc_mark(val);
+    return ST_CONTINUE;
+}
+
+static void
+ractor_local_storage_mark(rb_ractor_t *r)
+{
+    if (r->local_storage) {
+        st_foreach(r->local_storage, ractor_local_storage_mark_i, 0);
+
+        for (int i=0; i<freed_lvars.cnt; i++) {
+            rb_ractor_local_key_t key = freed_lvars.keys[i];
+            st_delete(r->local_storage, &key, NULL);
+        }
+    }
+}
+
+rb_ractor_local_key_t
+rb_ractor_local_newkey(void)
+{
+    rb_ractor_local_key_t key;
+    RB_VM_LOCK_ENTER();
+    key = latest_key_index;
+    latest_key_index++;
+    RB_VM_LOCK_LEAVE();
+
+    if (key == 0) {
+        rb_bug("keys for Ractor::LVar is overflow."); // 32bit CPU
+    }
+    else {
+        return key;
+    }
+}
+
+void
+rb_ractor_local_delkey(rb_ractor_local_key_t key)
+{
+    RB_VM_LOCK_ENTER();
+    {
+        if (freed_lvars.cnt == freed_lvars.capa) {
+            freed_lvars.capa = freed_lvars.capa ? freed_lvars.capa * 2 : 4;
+            REALLOC_N(freed_lvars.keys, rb_ractor_local_key_t, freed_lvars.capa);
+        }
+        freed_lvars.keys[freed_lvars.cnt++] = key;
+    }
+    RB_VM_LOCK_LEAVE();
+}
+
+static bool
+ractor_local_aref(rb_ractor_t *cr, rb_ractor_local_key_t key, VALUE *pval)
+{
+    if (cr->local_storage && st_lookup(cr->local_storage, key, (st_data_t *)pval)) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
+bool
+rb_ractor_local_storage_aref(rb_ractor_local_key_t key, VALUE *pval)
+{
+    return ractor_local_aref(GET_RACTOR(), key, pval);
+}
+
+static void
+ractor_local_aset(rb_ractor_t *cr, rb_ractor_local_key_t key, VALUE val)
+{
+    if (cr->local_storage == NULL) {
+        cr->local_storage = st_init_numtable();
+    }
+
+    st_insert(cr->local_storage, key, val);
+}
+
+void
+rb_ractor_local_storage_aset(rb_ractor_local_key_t key, VALUE val)
+{
+    ractor_local_aset(GET_RACTOR(), key, val);
+}
+
+#define DEFAULT_KEYS_CAPA 0x10
+
+void
+rb_ractor_finish_marking(void)
+{
+    freed_lvars.cnt = 0;
+    if (freed_lvars.capa > DEFAULT_KEYS_CAPA) {
+        freed_lvars.capa = DEFAULT_KEYS_CAPA;
+        REALLOC_N(freed_lvars.keys, rb_ractor_local_key_t, DEFAULT_KEYS_CAPA);
+    }
+}
+
+// Ractor::LVar
+
+struct ractor_lvar {
+    rb_ractor_local_key_t key;
+    VALUE default_proc;
+};
+
+static void
+ractor_lvar_mark(void *ptr)
+{
+    struct ractor_lvar *lvar = (struct ractor_lvar *)ptr;
+    rb_gc_mark(lvar->default_proc);
+}
+
+static void
+ractor_lvar_free(void *ptr)
+{
+    struct ractor_lvar *lvar = (struct ractor_lvar *)ptr;
+    rb_ractor_local_delkey(lvar->key);
+    ruby_xfree(lvar);
+}
+
+static size_t
+ractor_lvar_memsize(const void *ptr)
+{
+    return sizeof(struct ractor_lvar);
+}
+
+static const rb_data_type_t ractor_lvar_data_type = {
+    "ractor/lvar",
+    {
+        ractor_lvar_mark,
+        ractor_lvar_free,
+        ractor_lvar_memsize,
+        NULL, // update
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+};
+
+static VALUE
+ractor_lvar_new(rb_execution_context_t *ec, VALUE default_proc)
+{
+    struct ractor_lvar *lvar;
+    VALUE lv = TypedData_Make_Struct(rb_cRactorLVar, struct ractor_lvar, &ractor_lvar_data_type, lvar);
+    lvar->key = rb_ractor_local_newkey();
+    lvar->default_proc = RTEST(default_proc) ? rb_proc_isolate_bang(default_proc) : Qfalse;
+    FL_SET_RAW(lv, RUBY_FL_SHAREABLE);
+    return lv;
+}
+
+static struct ractor_lvar *
+ractor_lvar_ptr(VALUE self)
+{
+    VM_ASSERT(rb_typeddata_is_kind_of(self, &ractor_lvar_data_type));
+    return DATA_PTR(self);
+}
+
+static VALUE
+ractor_lvar_value(rb_execution_context_t *ec, VALUE self)
+{
+    VALUE val;
+    rb_ractor_local_key_t key = ractor_lvar_ptr(self)->key;
+    rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
+
+    if (ractor_local_aref(cr, key, &val)) {
+        return val;
+    }
+    else {
+        VALUE default_proc = ractor_lvar_ptr(self)->default_proc;
+
+        if (default_proc) {
+            VALUE val = rb_proc_call_with_block(default_proc, 0, NULL, Qnil);
+            ractor_local_aset(cr, key, val);
+            return val;
+        }
+        else {
+            return Qnil;
+        }
+    }
+}
+
+static VALUE
+ractor_lvar_value_set(rb_execution_context_t *ec, VALUE self, VALUE val)
+{
+    rb_ractor_local_key_t key = ractor_lvar_ptr(self)->key;
+    ractor_local_aset(rb_ec_ractor_ptr(ec), key, val);
+    return val;
 }
 
 #include "ractor.rbinc"

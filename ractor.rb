@@ -176,4 +176,29 @@ class Ractor
       rb_ractor_make_shareable(obj);
     }
   end
+
+  class LVar
+    def self.new &b
+      b = b # TODO: builtin system's bug
+      __builtin_cexpr! %q{
+        ractor_lvar_new(ec, b)
+      }
+    end
+
+    def value
+      __builtin_cexpr! %q{
+        ractor_lvar_value(ec, self)
+      }
+    end
+
+    def value= val
+      __builtin_cexpr! %q{
+        ractor_lvar_value_set(ec, self, val)
+      }
+    end
+
+    def inspect
+      "#<Ractor::LVar #{self.value.inspect}>"
+    end
+  end
 end

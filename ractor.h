@@ -121,6 +121,10 @@ struct rb_ractor_struct {
 
     struct list_node vmlr_node;
 
+    // ractor local data
+
+    st_table *local_storage;
+
     VALUE r_stdin;
     VALUE r_stdout;
     VALUE r_stderr;
@@ -158,6 +162,8 @@ void rb_ractor_blocking_threads_dec(rb_ractor_t *r, const char *file, int line);
 void rb_ractor_vm_barrier_interrupt_running_thread(rb_ractor_t *r);
 void rb_ractor_terminate_interrupt_main_thread(rb_ractor_t *r);
 void rb_ractor_terminate_all(void);
+
+void rb_ractor_finish_marking(void);
 
 static inline bool
 rb_ractor_status_p(rb_ractor_t *r, enum ractor_status status)
