@@ -77,19 +77,39 @@ ROBJECT_NUMIV(VALUE obj)
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
-static inline VALUE *
-ROBJECT_IVPTR(VALUE obj)
+static inline VALUE
+ROBJECT_IV_GET(VALUE obj, uint32_t idx)
 {
     RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
 
     struct RObject *const ptr = ROBJECT(obj);
 
     if (RB_FL_ANY_RAW(obj, ROBJECT_EMBED)) {
-        return ptr->as.ary;
+        return ptr->as.ary[idx];
     }
     else {
-        return ptr->as.heap.ivptr;
+        return ptr->as.heap.ivptr[idx];
     }
+}
+
+RBIMPL_ATTR_ARTIFICIAL()
+static inline void
+ROBJECT_IV_SET(VALUE obj, uint32_t idx, VALUE v)
+{
+    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
+
+    VALUE *ivs;
+
+    struct RObject *const ptr = ROBJECT(obj);
+
+    if (RB_FL_ANY_RAW(obj, ROBJECT_EMBED)) {
+        ivs = ptr->as.ary;
+    }
+    else {
+        ivs = ptr->as.heap.ivptr;
+    }
+
+    RB_OBJ_WRITE(obj, &ivs[idx], v);
 }
 
 #endif /* RBIMPL_ROBJECT_H */

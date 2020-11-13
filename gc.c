@@ -6197,16 +6197,14 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 
       case T_OBJECT:
         {
-            const VALUE * const ptr = ROBJECT_IVPTR(obj);
-
             uint32_t i, len = ROBJECT_NUMIV(obj);
             for (i  = 0; i < len; i++) {
-                gc_mark(objspace, ptr[i]);
+                gc_mark(objspace, ROBJECT_IV_GET(obj, i));
             }
 
             if (LIKELY(during_gc) &&
                     ROBJ_TRANSIENT_P(obj)) {
-                rb_transient_heap_mark(obj, ptr);
+                rb_transient_heap_mark(obj, ROBJECT(obj)->as.heap.ivptr);
             }
         }
 	break;
@@ -8565,11 +8563,12 @@ gc_ref_update_array(rb_objspace_t * objspace, VALUE v)
 static void
 gc_ref_update_object(rb_objspace_t * objspace, VALUE v)
 {
-    VALUE *ptr = ROBJECT_IVPTR(v);
-
     uint32_t i, len = ROBJECT_NUMIV(v);
     for (i = 0; i < len; i++) {
-        UPDATE_IF_MOVED(objspace, ptr[i]);
+        VALUE item = ROBJECT_IV_GET(v, i);
+        if (gc_object_moved_p(objspace, item)) {
+            ROBJECT_IV_SET(v, i, rb_gc_location(item));
+        }
     }
 }
 
@@ -12256,7 +12255,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
                     APPENDF((BUFF_ARGS, "(embed) len:%d", len));
                 }
                 else {
-                    VALUE *ptr = ROBJECT_IVPTR(obj);
+                    VALUE *ptr = ROBJECT(obj)->as.heap.ivptr;
                     APPENDF((BUFF_ARGS, "len:%d ptr:%p", len, (void *)ptr));
                 }
             }

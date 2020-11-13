@@ -1115,7 +1115,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
 
         if (LIKELY(BUILTIN_TYPE(obj) == T_OBJECT) &&
             LIKELY(index < ROBJECT_NUMIV(obj))) {
-            val = ROBJECT_IVPTR(obj)[index];
+            val = ROBJECT_IV_GET(obj, index);
         }
         else if (FL_TEST_RAW(obj, FL_EXIVAR)) {
             struct gen_ivtbl *ivtbl;
@@ -1135,7 +1135,6 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
         if (BUILTIN_TYPE(obj) == T_OBJECT) {
             iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
             numiv = ROBJECT_NUMIV(obj);
-            ivptr = ROBJECT_IVPTR(obj);
             goto fill;
 	}
         else if (FL_TEST_RAW(obj, FL_EXIVAR)) {
@@ -1169,7 +1168,11 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
                 }
 
                 if (ent->index < numiv) {
-                    val = ivptr[ent->index];
+                    if (BUILTIN_TYPE(obj) == T_OBJECT) {
+                        val = ROBJECT_IV_GET(obj, ent->index);
+                    } else {
+                        val = ivptr[ent->index];
+                    }
                 }
             }
         }
@@ -1210,15 +1213,13 @@ vm_setivar(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, const str
 	if (LIKELY(
 	    (!is_attr && RB_DEBUG_COUNTER_INC_UNLESS(ivar_set_ic_miss_serial, ic->entry && ic->entry->class_serial  == RCLASS_SERIAL(klass))) ||
             ( is_attr && RB_DEBUG_COUNTER_INC_UNLESS(ivar_set_ic_miss_unset, vm_cc_attr_index(cc) > 0)))) {
-	    VALUE *ptr = ROBJECT_IVPTR(obj);
 	    index = !is_attr ? ic->entry->index : vm_cc_attr_index(cc)-1;
 
             if (index >= ROBJECT_NUMIV(obj)) {
                 st_table * iv_idx_tbl = ROBJECT_IV_INDEX_TBL(obj);
                 rb_init_iv_list(obj, ROBJECT_NUMIV(obj), (uint32_t)iv_idx_tbl->num_entries, iv_idx_tbl);
-                ptr = ROBJECT_IVPTR(obj);
             }
-            RB_OBJ_WRITE(obj, &ptr[index], val);
+            ROBJECT_IV_SET(obj, index, val);
             RB_DEBUG_COUNTER_INC(ivar_set_ic_hit);
             return val; /* inline cache hit */
 	}
@@ -1240,12 +1241,10 @@ vm_setivar(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, const str
 
                 index = ent->index;
 
-                VALUE *ptr = ROBJECT_IVPTR(obj);
                 if (index >= ROBJECT_NUMIV(obj)) {
                     rb_init_iv_list(obj, ROBJECT_NUMIV(obj), (uint32_t)iv_index_tbl->num_entries, iv_index_tbl);
-                    ptr = ROBJECT_IVPTR(obj);
                 }
-                RB_OBJ_WRITE(obj, &ptr[index], val);
+                ROBJECT_IV_SET(obj, index, val);
                 RB_DEBUG_COUNTER_INC(ivar_set_ic_miss_iv_hit);
 
                 return val;

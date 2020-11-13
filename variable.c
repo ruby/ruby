@@ -1183,11 +1183,10 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
         {
             uint32_t index;
             uint32_t len = ROBJECT_NUMIV(obj);
-            VALUE *ptr = ROBJECT_IVPTR(obj);
 
             if (iv_index_tbl_lookup(ROBJECT_IV_INDEX_TBL(obj), id, &index) &&
                 index < len &&
-                (val = ptr[index]) != Qundef) {
+                (val = ROBJECT_IV_GET(obj, index)) != Qundef) {
                 return val;
             }
             else {
@@ -1237,7 +1236,7 @@ rb_attr_get(VALUE obj, ID id)
 static VALUE
 rb_ivar_delete(VALUE obj, ID id, VALUE undef)
 {
-    VALUE val, *ptr;
+    VALUE val;
     struct st_table *iv_index_tbl;
     uint32_t len, index;
 
@@ -1245,12 +1244,11 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
         len = ROBJECT_NUMIV(obj);
-        ptr = ROBJECT_IVPTR(obj);
         iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
         if (iv_index_tbl_lookup(iv_index_tbl, id, &index) &&
             index < len) {
-            val = ptr[index];
-            ptr[index] = Qundef;
+            val = ROBJECT_IV_GET(obj, index);
+            ROBJECT_IV_SET(obj, index, Qundef);
 
             if (val != Qundef) {
                 return val;
@@ -1386,7 +1384,7 @@ rb_obj_transient_heap_evacuate(VALUE obj, int promote)
 {
     if (ROBJ_TRANSIENT_P(obj)) {
         uint32_t len = ROBJECT_NUMIV(obj);
-        const VALUE *old_ptr = ROBJECT_IVPTR(obj);
+        const VALUE *old_ptr = ROBJECT(obj)->as.heap.ivptr;
         VALUE *new_ptr;
 
         if (promote) {
@@ -1405,10 +1403,10 @@ rb_obj_transient_heap_evacuate(VALUE obj, int promote)
 void
 rb_init_iv_list(VALUE obj, uint32_t len, uint32_t newsize, st_table * index_tbl)
 {
-    VALUE *ptr = ROBJECT_IVPTR(obj);
     VALUE *newptr;
 
     if (RBASIC(obj)->flags & ROBJECT_EMBED) {
+        VALUE * ptr = ROBJECT(obj)->as.ary;
         newptr = obj_ivar_heap_alloc(obj, newsize);
         MEMCPY(newptr, ptr, VALUE, len);
         RBASIC(obj)->flags &= ~ROBJECT_EMBED;
@@ -1443,7 +1441,7 @@ obj_ivar_set(VALUE obj, ID id, VALUE val)
         uint32_t newsize = iv_index_tbl_newsize(&ivup);
         rb_init_iv_list(obj, len, newsize, ivup.u.iv_index_tbl);
     }
-    RB_OBJ_WRITE(obj, &ROBJECT_IVPTR(obj)[ivup.index], val);
+    ROBJECT_IV_SET(obj, (uint32_t)ivup.index, val);
 
     return val;
 }
@@ -1499,7 +1497,7 @@ rb_ivar_defined(VALUE obj, ID id)
         iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
         if (iv_index_tbl_lookup(iv_index_tbl, id, &index) &&
             index < ROBJECT_NUMIV(obj) &&
-            (val = ROBJECT_IVPTR(obj)[index]) != Qundef) {
+            (val = ROBJECT_IV_GET(obj, index)) != Qundef) {
             return Qtrue;
         }
 	break;
@@ -1558,7 +1556,7 @@ obj_ivar_each(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg)
     uint32_t i=0;
 
     for (i=0; i < ROBJECT_NUMIV(obj); i++) {
-        VALUE val = ROBJECT_IVPTR(obj)[i];
+        VALUE val = ROBJECT_IV_GET(obj, i);
         if (ivar_each_i(iv_index_tbl, val, i, func, arg)) {
             return;
         }
@@ -1720,9 +1718,8 @@ rb_ivar_count(VALUE obj)
       case T_OBJECT:
 	if (ROBJECT_IV_INDEX_TBL(obj) != 0) {
 	    st_index_t i, count, num = ROBJECT_NUMIV(obj);
-	    const VALUE *const ivptr = ROBJECT_IVPTR(obj);
 	    for (i = count = 0; i < num; ++i) {
-		if (ivptr[i] != Qundef) {
+		if (ROBJECT_IV_GET(obj, (uint32_t)i) != Qundef) {
 		    count++;
 		}
 	    }
@@ -1851,8 +1848,8 @@ rb_obj_remove_instance_variable(VALUE obj, VALUE name)
         iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
         if (iv_index_tbl_lookup(iv_index_tbl, id, &index) &&
             index < ROBJECT_NUMIV(obj) &&
-            (val = ROBJECT_IVPTR(obj)[index]) != Qundef) {
-            ROBJECT_IVPTR(obj)[index] = Qundef;
+            (val = ROBJECT_IV_GET(obj, index)) != Qundef) {
+            ROBJECT_IV_SET(obj, index, Qundef);
             return val;
         }
 	break;

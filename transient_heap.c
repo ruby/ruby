@@ -598,7 +598,7 @@ transient_heap_ptr(VALUE obj, int error)
         break;
       case T_OBJECT:
         if (ROBJ_TRANSIENT_P(obj)) {
-            ptr = ROBJECT_IVPTR(obj);
+            ptr = ROBJECT(obj)->as.heap.ivptr;
         }
         break;
       case T_STRUCT:
