@@ -1418,7 +1418,7 @@ rb_init_iv_list(VALUE obj, uint32_t len, uint32_t newsize, st_table * index_tbl)
     for (; len < newsize; len++) {
         newptr[len] = Qundef;
     }
-    ROBJECT(obj)->as.heap.numiv = newsize;
+    ROBJECT_SET_NUMIV(obj, newsize);
 }
 
 static VALUE

@@ -60,6 +60,20 @@ struct RObject {
     } as;
 };
 
+RBIMPL_ATTR_ARTIFICIAL()
+static inline void
+ROBJECT_SET_NUMIV(VALUE obj, uint32_t numiv)
+{
+    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
+
+    if (RB_FL_ANY_RAW(obj, ROBJECT_EMBED)) {
+        fprintf(stderr, "setter called on embedded\n");
+        assert(0);
+    }
+
+    ROBJECT(obj)->as.heap.numiv = numiv;
+}
+
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
 static inline uint32_t
