@@ -26,7 +26,7 @@ describe "Net::HTTP#send_request" do
       response = @http.send_request("HEAD", "/request")
       response.body.should be_nil
 
-      @methods.each do |method|
+      (@methods - %w[POST PUT]).each do |method|
         response = @http.send_request(method, "/request")
         response.body.should == "Request type: #{method}"
       end
