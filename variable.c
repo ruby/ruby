@@ -1361,19 +1361,19 @@ obj_ivar_heap_realloc(VALUE obj, int32_t len, size_t newsize)
     int i;
 
     if (ROBJ_TRANSIENT_P(obj)) {
-        const VALUE *orig_ptr = ROBJECT(obj)->as.heap.ivptr;
+        const VALUE *orig_ptr = ROBJECT_IVPTR(obj);
         newptr = obj_ivar_heap_alloc(obj, newsize);
 
         assert(newptr);
-        ROBJECT(obj)->as.heap.ivptr = newptr;
         for (i=0; i<(int)len; i++) {
             newptr[i] = orig_ptr[i];
         }
     }
     else {
-        REALLOC_N(ROBJECT(obj)->as.heap.ivptr, VALUE, newsize);
-        newptr = ROBJECT(obj)->as.heap.ivptr;
+        newptr = xrealloc2(ROBJECT_IVPTR(obj), newsize, sizeof(VALUE));
     }
+
+    ROBJECT_SET_IVPTR(obj, newptr);
 
     return newptr;
 }
@@ -1384,7 +1384,7 @@ rb_obj_transient_heap_evacuate(VALUE obj, int promote)
 {
     if (ROBJ_TRANSIENT_P(obj)) {
         uint32_t len = ROBJECT_NUMIV(obj);
-        const VALUE *old_ptr = ROBJECT(obj)->as.heap.ivptr;
+        const VALUE *old_ptr = ROBJECT_IVPTR(obj);
         VALUE *new_ptr;
 
         if (promote) {
@@ -1395,7 +1395,7 @@ rb_obj_transient_heap_evacuate(VALUE obj, int promote)
             new_ptr = obj_ivar_heap_alloc(obj, len);
         }
         MEMCPY(new_ptr, old_ptr, VALUE, len);
-        ROBJECT(obj)->as.heap.ivptr = new_ptr;
+        ROBJECT_SET_IVPTR(obj, new_ptr);
     }
 }
 #endif
@@ -1410,7 +1410,7 @@ rb_init_iv_list(VALUE obj, uint32_t len, uint32_t newsize, st_table * index_tbl)
         newptr = obj_ivar_heap_alloc(obj, newsize);
         MEMCPY(newptr, ptr, VALUE, len);
         RBASIC(obj)->flags &= ~ROBJECT_EMBED;
-        ROBJECT(obj)->as.heap.ivptr = newptr;
+        ROBJECT_SET_IVPTR(obj, newptr);
     } else {
         newptr = obj_ivar_heap_realloc(obj, len, newsize);
     }

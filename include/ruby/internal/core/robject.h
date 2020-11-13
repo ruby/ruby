@@ -75,6 +75,42 @@ ROBJECT_NUMIV(VALUE obj)
     }
 }
 
+RBIMPL_ATTR_ARTIFICIAL()
+static inline void
+ROBJECT_SET_IVPTR(VALUE obj, VALUE * buf)
+{
+    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
+
+    struct RObject *const ptr = ROBJECT(obj);
+
+    if (RB_FL_ANY_RAW(obj, ROBJECT_EMBED)) {
+        fprintf(stderr, "setter called on embedded\n");
+        assert(0);
+    }
+    else {
+        ptr->as.heap.ivptr = buf;
+    }
+}
+
+RBIMPL_ATTR_PURE_UNLESS_DEBUG()
+RBIMPL_ATTR_ARTIFICIAL()
+static inline VALUE *
+ROBJECT_IVPTR(VALUE obj)
+{
+    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
+
+    struct RObject *const ptr = ROBJECT(obj);
+
+    if (RB_FL_ANY_RAW(obj, ROBJECT_EMBED)) {
+        fprintf(stderr, "getter called on embedded\n");
+        assert(0);
+        return ptr->as.ary;
+    }
+    else {
+        return ptr->as.heap.ivptr;
+    }
+}
+
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
 static inline VALUE

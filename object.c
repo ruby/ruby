@@ -336,11 +336,11 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
 	VALUE *ptr = 0;
 	if (len > 0) {
 	    ptr = ALLOC_N(VALUE, len);
-	    MEMCPY(ptr, ROBJECT(obj)->as.heap.ivptr, VALUE, len);
+	    MEMCPY(ptr, ROBJECT_IVPTR(obj), VALUE, len);
 	}
-	ROBJECT(dest)->as.heap.ivptr = ptr;
-	ROBJECT(dest)->as.heap.numiv = len;
 	RBASIC(dest)->flags &= ~ROBJECT_EMBED;
+	ROBJECT(dest)->as.heap.numiv = len;
+        ROBJECT_SET_IVPTR(dest, ptr);
     }
 }
 

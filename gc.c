@@ -2748,7 +2748,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
             RB_DEBUG_COUNTER_INC(obj_obj_transient);
         }
         else {
-            xfree(RANY(obj)->as.object.as.heap.ivptr);
+            xfree(ROBJECT_IVPTR(obj));
             RB_DEBUG_COUNTER_INC(obj_obj_ptr);
         }
         break;
@@ -6204,7 +6204,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 
             if (LIKELY(during_gc) &&
                     ROBJ_TRANSIENT_P(obj)) {
-                rb_transient_heap_mark(obj, ROBJECT(obj)->as.heap.ivptr);
+                rb_transient_heap_mark(obj, ROBJECT_IVPTR(obj));
             }
         }
 	break;
@@ -12255,7 +12255,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
                     APPENDF((BUFF_ARGS, "(embed) len:%d", len));
                 }
                 else {
-                    VALUE *ptr = ROBJECT(obj)->as.heap.ivptr;
+                    VALUE *ptr = ROBJECT_IVPTR(obj);
                     APPENDF((BUFF_ARGS, "len:%d ptr:%p", len, (void *)ptr));
                 }
             }
