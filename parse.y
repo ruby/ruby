@@ -26,18 +26,11 @@
 #include <errno.h>
 #include <stdio.h>
 
-struct lex_context {
-    unsigned int in_defined: 1;
-    unsigned int in_kwarg: 1;
-    unsigned int in_def: 1;
-    unsigned int in_class: 1;
-    unsigned int shareable_constant_value: 1;
-};
-
-#define NO_LEX_CTXT (struct lex_context){0}
+struct lex_context;
 
 #include "internal.h"
 #include "internal/compile.h"
+#include "internal/compilers.h"
 #include "internal/complex.h"
 #include "internal/error.h"
 #include "internal/hash.h"
@@ -52,7 +45,6 @@ struct lex_context {
 #include "internal/util.h"
 #include "internal/variable.h"
 #include "node.h"
-#include "parse.h"
 #include "probes.h"
 #include "regenc.h"
 #include "ruby/encoding.h"
@@ -62,6 +54,24 @@ struct lex_context {
 #include "ruby/util.h"
 #include "ruby/ractor.h"
 #include "symbol.h"
+
+enum shareability {
+    shareable_none,
+    shareable_literal,
+    shareable_everything,
+};
+
+struct lex_context {
+    unsigned int in_defined: 1;
+    unsigned int in_kwarg: 1;
+    unsigned int in_def: 1;
+    unsigned int in_class: 1;
+    BITFIELD(enum shareability, shareable_constant_value, 2);
+};
+
+#include "parse.h"
+
+#define NO_LEX_CTXT (struct lex_context){0}
 
 #define AREF(ary, i) RARRAY_AREF(ary, i)
 
@@ -7925,6 +7935,8 @@ comment_at_top(struct parser_params *p)
 typedef long (*rb_magic_comment_length_t)(struct parser_params *p, const char *name, long len);
 typedef void (*rb_magic_comment_setter_t)(struct parser_params *p, const char *name, const char *val);
 
+static int parser_invalid_pragma_value(struct parser_params *p, const char *name, const char *val);
+
 static void
 magic_comment_encoding(struct parser_params *p, const char *name, const char *val)
 {
@@ -7949,6 +7961,12 @@ parser_get_bool(struct parser_params *p, const char *name, const char *val)
 	}
 	break;
     }
+    return parser_invalid_pragma_value(p, name, val);
+}
+
+static int
+parser_invalid_pragma_value(struct parser_params *p, const char *name, const char *val)
+{
     rb_warning2("invalid value for %s: %s", WARN_S(name), WARN_S(val));
     return -1;
 }
@@ -7989,8 +8007,27 @@ parser_set_shareable_constant_value(struct parser_params *p, const char *name, c
 	return;
     }
 
-    int b = parser_get_bool(p, name, val);
-    if (b >= 0) p->ctxt.shareable_constant_value = b;
+    switch (*val) {
+      case 'n': case 'N':
+	if (STRCASECMP(val, "none") == 0) {
+	    p->ctxt.shareable_constant_value = shareable_none;
+	    return;
+	}
+	break;
+      case 'l': case 'L':
+	if (STRCASECMP(val, "literal") == 0) {
+	    p->ctxt.shareable_constant_value = shareable_literal;
+	    return;
+	}
+	break;
+      case 'e': case 'E':
+	if (STRCASECMP(val, "experimental_everything") == 0) {
+	    p->ctxt.shareable_constant_value = shareable_everything;
+	    return;
+	}
+	break;
+    }
+    parser_invalid_pragma_value(p, name, val);
 }
 
 # if WARN_PAST_SCOPE
@@ -10931,14 +10968,31 @@ mark_lvar_used(struct parser_params *p, NODE *rhs)
 extern VALUE rb_mRubyVMFrozenCore;
 
 static NODE *
-shareable_constant_value(struct parser_params *p, NODE *value, int shareable, const YYLTYPE *loc)
+shareable_literal_constant(struct parser_params *p, NODE *value)
 {
-    if (shareable) {
-	NODE *fcore = NEW_LIT(rb_mRubyVMFrozenCore, loc);
-	value = NEW_CALL(fcore, rb_intern("make_shareable"),
-			NEW_LIST(value, loc), loc);
-    }
     return value;
+}
+
+static NODE *
+shareable_constant_value(struct parser_params *p, NODE *value, enum shareability shareable, const YYLTYPE *loc)
+{
+    switch (shareable) {
+      case shareable_none:
+	return value;
+
+      case shareable_literal:
+	return shareable_literal_constant(p, value);
+
+      case shareable_everything:
+	break;
+
+      default:
+	UNREACHABLE_RETURN(0);
+    }
+
+    NODE *fcore = NEW_LIT(rb_mRubyVMFrozenCore, loc);
+    return NEW_CALL(fcore, rb_intern("make_shareable"),
+		    NEW_LIST(value, loc), loc);
 }
 
 static NODE *
