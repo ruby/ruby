@@ -55,6 +55,10 @@ describe "String#chomp" do
       $/ = "cdef"
       "abcdef".chomp.should == "ab"
     end
+
+    it "removes one trailing newline for string with invalid encoding" do
+      "\xa0\xa1\n".chomp.should == "\xa0\xa1"
+    end
   end
 
   describe "when passed nil" do
@@ -107,6 +111,10 @@ describe "String#chomp" do
 
     it "returns an empty String when self is empty" do
       "".chomp("").should == ""
+    end
+
+    it "removes one trailing newline for string with invalid encoding" do
+      "\xa0\xa1\n".chomp("").should == "\xa0\xa1"
     end
   end
 

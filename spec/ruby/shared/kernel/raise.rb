@@ -50,20 +50,43 @@ describe :kernel_raise, shared: true do
   end
 
   it "re-raises a previously rescued exception without overwriting the backtrace" do
-    begin
-      initial_raise_line = __LINE__; @object.raise 'raised'
-    rescue => raised
-      begin
-        raise_again_line = __LINE__; @object.raise raised
-      rescue => raised_again
-        # This spec is written using #backtrace and matching the line number
-        # from the string, as backtrace_locations is a more advanced
-        # method that is not always supported by implementations.
+    # This spec is written using #backtrace and matching the line number
+    # from the string, as backtrace_locations is a more advanced
+    # method that is not always supported by implementations.
+    #
+    initial_raise_line = nil
+    raise_again_line = nil
+    raised_again = nil
 
-        raised_again.backtrace.first.should include("#{__FILE__}:#{initial_raise_line}:")
-        raised_again.backtrace.first.should_not include("#{__FILE__}:#{raise_again_line}:")
+    if defined?(FiberSpecs::NewFiberToRaise) and @object == FiberSpecs::NewFiberToRaise
+      fiber = Fiber.new do
+        begin
+          initial_raise_line = __LINE__; Fiber.yield
+        rescue => raised
+          begin
+            raise_again_line = __LINE__; Fiber.yield raised
+          rescue => raised_again
+            raised_again
+          end
+        end
+      end
+      fiber.resume
+      raised = fiber.raise 'raised'
+      raised_again = fiber.raise raised
+    else
+      begin
+        initial_raise_line = __LINE__; @object.raise 'raised'
+      rescue => raised
+        begin
+          raise_again_line = __LINE__; @object.raise raised
+        rescue => raised_again
+          raised_again
+        end
       end
     end
+
+    raised_again.backtrace.first.should include("#{__FILE__}:#{initial_raise_line}:")
+    raised_again.backtrace.first.should_not include("#{__FILE__}:#{raise_again_line}:")
   end
 
   it "allows Exception, message, and backtrace parameters" do
