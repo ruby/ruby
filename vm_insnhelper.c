@@ -1114,7 +1114,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
         RB_DEBUG_COUNTER_INC(ivar_get_ic_hit);
 
         if (LIKELY(BUILTIN_TYPE(obj) == T_OBJECT) &&
-            LIKELY(index < ROBJECT_NUMIV(obj))) {
+            LIKELY(index < ROBJECT_EMBED_LEN_MAX || index < ROBJECT_NUMIV(obj))) {
             val = ROBJECT_IV_GET(obj, index);
         }
         else if (FL_TEST_RAW(obj, FL_EXIVAR)) {

@@ -51,12 +51,11 @@ struct st_table;
 
 struct RObject {
     struct RBasic basic;
-    union {
+    struct {
+        VALUE ary[ROBJECT_EMBED_LEN_MAX];
         struct {
-            uint32_t numiv;
             VALUE *ivptr;
         } heap;
-        VALUE ary[ROBJECT_EMBED_LEN_MAX];
     } as;
 };
 
@@ -71,7 +70,7 @@ ROBJECT_SET_NUMIV(VALUE obj, uint32_t numiv)
         assert(0);
     }
 
-    ROBJECT(obj)->as.heap.numiv = numiv;
+    ROBJECT(obj)->as.heap.ivptr[0] = (VALUE)numiv;
 }
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
@@ -81,11 +80,11 @@ ROBJECT_NUMIV(VALUE obj)
 {
     RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
 
-    if (RB_FL_ANY_RAW(obj, ROBJECT_EMBED)) {
+    if ((VALUE)ROBJECT(obj)->as.heap.ivptr == Qundef) {
         return ROBJECT_EMBED_LEN_MAX;
     }
     else {
-        return ROBJECT(obj)->as.heap.numiv;
+        return (uint32_t)ROBJECT(obj)->as.heap.ivptr[0];
     }
 }
 
@@ -134,11 +133,11 @@ ROBJECT_IV_GET(VALUE obj, uint32_t idx)
 
     struct RObject *const ptr = ROBJECT(obj);
 
-    if (RB_FL_ANY_RAW(obj, ROBJECT_EMBED)) {
+    if (idx < ROBJECT_EMBED_LEN_MAX) {
         return ptr->as.ary[idx];
     }
     else {
-        return ptr->as.heap.ivptr[idx];
+        return ptr->as.heap.ivptr[idx + 1];
     }
 }
 
@@ -152,10 +151,11 @@ ROBJECT_IV_SET(VALUE obj, uint32_t idx, VALUE v)
 
     struct RObject *const ptr = ROBJECT(obj);
 
-    if (RB_FL_ANY_RAW(obj, ROBJECT_EMBED)) {
+    if (idx < ROBJECT_EMBED_LEN_MAX) {
         ivs = ptr->as.ary;
     }
     else {
+        idx++;
         ivs = ptr->as.heap.ivptr;
     }
 
