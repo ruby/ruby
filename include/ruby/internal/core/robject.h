@@ -65,11 +65,6 @@ ROBJECT_SET_NUMIV(VALUE obj, uint32_t numiv)
 {
     RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
 
-    if (RB_FL_ANY_RAW(obj, ROBJECT_EMBED)) {
-        fprintf(stderr, "setter called on embedded\n");
-        assert(0);
-    }
-
     ROBJECT(obj)->as.heap.ivptr[0] = (VALUE)numiv;
 }
 
@@ -96,13 +91,7 @@ ROBJECT_SET_IVPTR(VALUE obj, VALUE * buf)
 
     struct RObject *const ptr = ROBJECT(obj);
 
-    if (RB_FL_ANY_RAW(obj, ROBJECT_EMBED)) {
-        fprintf(stderr, "setter called on embedded\n");
-        assert(0);
-    }
-    else {
-        ptr->as.heap.ivptr = buf;
-    }
+    ptr->as.heap.ivptr = buf;
 }
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
@@ -114,14 +103,7 @@ ROBJECT_IVPTR(VALUE obj)
 
     struct RObject *const ptr = ROBJECT(obj);
 
-    if (RB_FL_ANY_RAW(obj, ROBJECT_EMBED)) {
-        fprintf(stderr, "getter called on embedded\n");
-        assert(0);
-        return ptr->as.ary;
-    }
-    else {
-        return ptr->as.heap.ivptr;
-    }
+    return ptr->as.heap.ivptr;
 }
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
