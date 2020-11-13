@@ -1183,9 +1183,9 @@ x = __ENCODING__
     end
     a, b, c = Class.new.class_eval("#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
-      # shareable_constant_value: true
+      # shareable_constant_value: experimental_everything
       A = [[1]]
-      # shareable_constant_value: false
+      # shareable_constant_value: none
       B = [[2]]
 
       [A, B]
@@ -1196,9 +1196,9 @@ x = __ENCODING__
     assert_send([Ractor, :shareable?, a[0]])
     a, b = Class.new.class_eval("#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
-      # shareable_constant_value: false
+      # shareable_constant_value: none
       class X
-        # shareable_constant_value: true
+        # shareable_constant_value: experimental_everything
         A = [[1]]
       end
       B = []
