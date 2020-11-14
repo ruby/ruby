@@ -179,6 +179,7 @@ class Reline::LineEditor
     @vi_arg = nil
     @waiting_proc = nil
     @waiting_operator_proc = nil
+    @waiting_operator_vi_arg = nil
     @completion_journey_data = nil
     @completion_state = CompletionState::NORMAL
     @perfect_matched = nil
@@ -698,6 +699,7 @@ class Reline::LineEditor
     if @waiting_operator_proc
       if VI_MOTIONS.include?(method_symbol)
         old_cursor, old_byte_pointer = @cursor, @byte_pointer
+        @vi_arg = @waiting_operator_vi_arg if @waiting_operator_vi_arg > 1
         block.(true)
         unless @waiting_proc
           cursor_diff, byte_pointer_diff = @cursor - old_cursor, @byte_pointer - old_byte_pointer
@@ -721,6 +723,8 @@ class Reline::LineEditor
         block.(false)
       end
       @waiting_operator_proc = nil
+      @waiting_operator_vi_arg = nil
+      @vi_arg = nil
     else
       block.(false)
     end
@@ -2088,7 +2092,7 @@ class Reline::LineEditor
     @cursor = 0
   end
 
-  private def vi_change_meta(key)
+  private def vi_change_meta(key, arg: 1)
     @waiting_operator_proc = proc { |cursor_diff, byte_pointer_diff|
       if byte_pointer_diff > 0
         @line, cut = byteslice!(@line, @byte_pointer, byte_pointer_diff)
@@ -2101,9 +2105,10 @@ class Reline::LineEditor
       @byte_pointer += byte_pointer_diff if byte_pointer_diff < 0
       @config.editing_mode = :vi_insert
     }
+    @waiting_operator_vi_arg = arg
   end
 
-  private def vi_delete_meta(key)
+  private def vi_delete_meta(key, arg: 1)
     @waiting_operator_proc = proc { |cursor_diff, byte_pointer_diff|
       if byte_pointer_diff > 0
         @line, cut = byteslice!(@line, @byte_pointer, byte_pointer_diff)
@@ -2115,9 +2120,10 @@ class Reline::LineEditor
       @cursor_max -= cursor_diff.abs
       @byte_pointer += byte_pointer_diff if byte_pointer_diff < 0
     }
+    @waiting_operator_vi_arg = arg
   end
 
-  private def vi_yank(key)
+  private def vi_yank(key, arg: 1)
     @waiting_operator_proc = proc { |cursor_diff, byte_pointer_diff|
       if byte_pointer_diff > 0
         cut = @line.byteslice(@byte_pointer, byte_pointer_diff)
@@ -2126,6 +2132,7 @@ class Reline::LineEditor
       end
       copy_for_vi(cut)
     }
+    @waiting_operator_vi_arg = arg
   end
 
   private def vi_list_or_eof(key)

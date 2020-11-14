@@ -1234,11 +1234,11 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
     assert_cursor(8)
     assert_cursor_max(11)
     assert_line('aaa bbb ccc')
-    input_keys('2dl') # TODO This should delete 2 chars.
+    input_keys('2dl')
     assert_byte_pointer_size('aaa bbb ')
     assert_cursor(8)
-    assert_cursor_max(10)
-    assert_line('aaa bbb cc')
+    assert_cursor_max(9)
+    assert_line('aaa bbb c')
   end
 
   def test_vi_change_meta
