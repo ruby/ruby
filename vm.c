@@ -1792,6 +1792,36 @@ rb_iter_break_value(VALUE val)
     vm_iter_break(GET_EC(), val);
 }
 
+NORETURN(static void vm_fiber_break(rb_execution_context_t *ec, VALUE reason));
+
+static void
+vm_fiber_break(rb_execution_context_t *ec, VALUE reason)
+{
+    const rb_control_frame_t
+        *cfp = NULL,
+        *next_cfp = ec->cfp,
+        *end_cfp = RUBY_VM_END_CONTROL_FRAME(ec);
+
+    /* SDR(); */
+    /* find the top control fraom of the fiber */
+    do {
+        cfp = next_cfp;
+        next_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+    } while (RUBY_VM_VALID_CONTROL_FRAME_P(next_cfp, end_cfp));
+    VM_ASSERT(cfp);
+
+    ec->errinfo = (VALUE)THROW_DATA_NEW(reason, cfp, TAG_BREAK);
+    EC_JUMP_TAG(ec, TAG_BREAK);
+    VM_UNREACHABLE(vm_fiber_break);
+}
+
+void
+rb_fiber_break(VALUE reason)
+{
+    vm_fiber_break(GET_EC(), reason);
+    VM_UNREACHABLE(rb_fiber_break);
+}
+
 /* optimization: redefine management */
 
 static st_table *vm_opt_method_table = 0;

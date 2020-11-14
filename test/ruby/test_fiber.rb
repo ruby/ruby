@@ -121,6 +121,14 @@ class TestFiber < Test::Unit::TestCase
     }
   end
 
+  def test_break
+    assert_raise(LocalJumpError){
+      fib = Fiber.new { break :value }
+      assert_equal(:value, fib.resume)
+      assert_not_predicate(fib, :alive?)
+    }
+  end
+
   def test_return
     assert_raise(LocalJumpError){
       Fiber.new do
@@ -167,6 +175,199 @@ class TestFiber < Test::Unit::TestCase
     end
     fib.resume
     assert_equal(:ok, fib.raise)
+  end
+
+  class CancelHelper
+    attr_reader :log
+    def initialize; @log = [] end
+
+    # just to demonstrate jumping multiple stack frames through method calls
+    def deep_call(i)
+      log << :"start_#{i}"
+      0 < i ? deep_call(i-1) : Fiber.yield(:bottom)
+      log << :"finish_#{i}"
+    rescue Exception
+      log << :"rescue_#{i}"
+    else
+      log << :"else_#{i}"
+    ensure
+      log << :"ensure_#{i}"
+    end
+
+  end
+
+  def test_cancel_runs_ensure_block
+    log = []
+    fib = Fiber.new do |init|
+      log << init
+      log << Fiber.yield(:yield_1)
+      log << Fiber.yield(:yield_2)
+      :done
+    rescue Exception
+      log << :rescue
+    else
+      log << :else
+    ensure
+      log << :ensured
+    end
+    assert_equal(:yield_1, fib.resume(:init))
+    assert_equal(nil, fib.cancel)
+    assert_equal([:init, :ensured], log)
+  end
+
+  def test_cancel_runs_all_ensure_blocks_in_stack
+    helper = CancelHelper.new
+    f = Fiber.new { helper.deep_call(5) }
+    assert_equal(:bottom, f.resume)
+    assert_equal([
+      :start_5, :start_4, :start_3, :start_2, :start_1, :start_0,
+    ], helper.log)
+    helper.log.clear
+    reason = Object.new
+    assert_equal(reason, f.cancel(reason))
+    assert_equal([
+      :ensure_0, :ensure_1, :ensure_2, :ensure_3, :ensure_4, :ensure_5,
+    ], helper.log)
+  end
+
+  def test_cancel_resuming_proc_cancels_its_children
+    log = []
+    fibers = (0..4).map {|i|
+      Fiber.new do |init|
+        log << init
+        if Fiber.current == fibers.last
+          log << :canceling2
+          log << fibers[2].cancel(:canceled)
+        else
+          log << fibers[i+1].resume(:"resume#{i+1}")
+        end
+        log << :"done#{i}"
+        :"retval#{i}"
+      ensure
+        log << :"ensure#{i}"
+      end
+    }
+    log << fibers.first.resume(:resume0)
+    assert_equal([
+      :resume0, :resume1, :resume2, :resume3, :resume4,
+      :canceling2,
+      :ensure4, :ensure3, :ensure2,
+      :canceled,
+      :done1, :ensure1, :retval1,
+      :done0, :ensure0, :retval0,
+    ], log)
+  end
+
+  def test_multiple_cancels
+    root = Fiber.current
+    f2 = nil
+    log = []
+    f1 = Fiber.new do |init|
+      log << [:f1_init, init]
+      log << [:f1_child_yielded, f2.resume(:resumed_by_f1)]
+      log << :f1_unreachable
+    end
+    f2 = Fiber.new do |init|
+      log << [:f2_init, init]
+      log << [:f2_txfr_back, root.transfer(:f2_txfr1)]
+      log << :f2_unreachable
+    ensure
+      root.transfer :f2_txfr2
+      root.transfer :f2_txfr3
+    end
+    assert_equal(:f2_txfr1, f1.transfer(:txfr_from_root))
+    assert_equal(:f2_txfr2, f1.cancel(:cancel1))
+    assert_equal(:cancel2,  f1.cancel(:cancel2))
+    assert_equal([%i[f1_init txfr_from_root], %i[f2_init resumed_by_f1]], log)
+  end
+
+  def test_canceling_during_ensure
+    log = []
+    f = Fiber.new do |init|
+      log << Fiber.current.canceled?
+      log << Fiber.yield(:yielded_from_fiber)
+      log << :unreachable
+    ensure
+      log << Fiber.current.canceled?
+      log << Fiber.yield(:yielded_from_ensure1)
+      log << Fiber.current.canceled?
+      log << Fiber.yield(:yielded_from_ensure2)
+    end
+    log << f.resume
+    assert_not_predicate(f, :canceled?)
+    log << f.cancel(:cancel1)
+    assert_predicate(f, :canceled?)
+    log << f.cancel(:cancel2)
+    assert_predicate(f, :canceled?)
+    assert_not_predicate(f, :alive?)
+    assert_equal([
+      false, :yielded_from_fiber, # cancel called
+      true, :yielded_from_ensure1,
+      :cancel2,
+    ], log)
+  end
+
+  def test_canceling_current_fiber
+    log = []
+    f = Fiber.new do
+      log << :started
+      Fiber.current.cancel
+      log << :done
+    end
+    f.resume
+    assert_equal([:started], log)
+    assert_not_predicate(f, :alive?)
+  end
+
+  def test_canceling_transfering_procs
+    log = []
+    f2 = nil
+    f1 = Fiber.new do |init|
+      log << init
+      log << f2.transfer(:txfr2_from1)
+      log << :done1
+      :return1
+    ensure
+      log << :ensure1
+    end
+    f2 = Fiber.new do |init|
+      log << init
+      log << f1.cancel(:cancel1_from2)
+      log << :done2
+      :return2
+    ensure
+      log << :ensure2
+    end
+    assert_equal(:cancel1_from2, f1.transfer(:txfr1_from_root))
+    assert_equal([:txfr1_from_root, :txfr2_from1, :ensure1], log)
+    log.clear
+    assert_equal(:return2, f2.transfer(:txfr2_from_root))
+    assert_equal([:txfr2_from_root, :done2, :ensure2], log)
+  end
+
+  def test_cancel_unborn_fiber
+    fib = Fiber.new{ :unreachable }
+    assert_equal("cancel unborn", fib.cancel("cancel unborn"))
+    assert_not_predicate(fib, :alive?)
+  end
+
+  def test_cancel_aliver_fiber
+    assert_raise(FiberError){
+      fib = Fiber.new{}
+      fib.resume
+      fib.cancel "cancel in dead fiber"
+    }
+  end
+
+  def test_cancel_unborn_and_dead_fibers
+    fib = Fiber.new{ :unreachable }
+    assert_equal("cancel unborn", fib.cancel("cancel unborn"))
+    assert_not_predicate(fib, :alive?)
+    assert_raise(FiberError){
+      fib = Fiber.new{}
+      fib.resume
+      fib.cancel "cancel in dead fiber"
+    }
   end
 
   def test_transfer

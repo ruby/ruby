@@ -3379,8 +3379,10 @@ cont.$(OBJEXT): {$(VPATH)}st.h
 cont.$(OBJEXT): {$(VPATH)}subst.h
 cont.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 cont.$(OBJEXT): {$(VPATH)}thread_native.h
+cont.$(OBJEXT): {$(VPATH)}vm_callinfo.h
 cont.$(OBJEXT): {$(VPATH)}vm_core.h
 cont.$(OBJEXT): {$(VPATH)}vm_debug.h
+cont.$(OBJEXT): {$(VPATH)}vm_insnhelper.h
 cont.$(OBJEXT): {$(VPATH)}vm_opts.h
 debug.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 debug.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h

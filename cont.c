@@ -28,6 +28,9 @@
 #include "internal/scheduler.h"
 #include "mjit.h"
 #include "vm_core.h"
+#include "vm_callinfo.h"
+#include "vm_insnhelper.h"
+
 #include "id_table.h"
 #include "ractor_core.h"
 
@@ -237,11 +240,13 @@ struct rb_fiber_struct {
     VALUE first_proc;
     struct rb_fiber_struct *prev;
     VALUE resuming_fiber;
+    VALUE cancel_reason;
 
     BITFIELD(enum fiber_status, status, 2);
     /* Whether the fiber is allowed to implicitly yield. */
     unsigned int yielding : 1;
     unsigned int blocking : 1;
+    unsigned int canceled : 1;
 
     struct coroutine_context context;
     struct fiber_pool_stack stack;
@@ -1006,6 +1011,8 @@ fiber_compact(void *ptr)
 
     if (fiber->prev) rb_fiber_update_self(fiber->prev);
 
+    if (fiber->cancel_reason) fiber->cancel_reason = rb_gc_location(fiber->cancel_reason);
+
     cont_compact(&fiber->cont);
     fiber_verify(fiber);
 }
@@ -1018,6 +1025,7 @@ fiber_mark(void *ptr)
     fiber_verify(fiber);
     rb_gc_mark_movable(fiber->first_proc);
     if (fiber->prev) rb_fiber_mark_self(fiber->prev);
+    if (fiber->cancel_reason) rb_gc_mark_movable(fiber->cancel_reason);
     cont_mark(&fiber->cont);
     RUBY_MARK_LEAVE("cont");
 }
@@ -1770,6 +1778,7 @@ fiber_t_alloc(VALUE fiber_value, unsigned int blocking)
     rb_ec_clear_vm_stack(&fiber->cont.saved_ec);
 
     fiber->prev = NULL;
+    fiber->cancel_reason = Qundef;
 
     /* fiber->status == 0 == CREATED
      * So that we don't need to set status: fiber_status_set(fiber, FIBER_CREATED); */
@@ -1899,6 +1908,8 @@ static void rb_fiber_terminate(rb_fiber_t *fiber, int need_interrupt);
 void
 rb_fiber_start(void)
 {
+    rb_execution_context_t *ec = GET_EC();
+    rb_control_frame_t *const cfp = ec->cfp;
     rb_thread_t * volatile th = GET_THREAD();
     rb_fiber_t *fiber = th->ec->fiber_ptr;
     rb_proc_t *proc;
@@ -1926,6 +1937,18 @@ rb_fiber_start(void)
 
         EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_FIBER_SWITCH, th->self, 0, 0, 0, Qnil);
         cont->value = rb_vm_invoke_proc(th->ec, proc, argc, argv, cont->kw_splat, VM_BLOCK_HANDLER_NONE);
+    }
+    else if (state == TAG_BREAK) {
+        rb_context_t *cont = &VAR_FROM_MEMORY(fiber)->cont;
+        const struct vm_throw_data *const err = (struct vm_throw_data *)ec->errinfo;
+        const rb_control_frame_t *const escape_cfp = THROW_DATA_CATCH_FRAME(err);
+        if (cfp == escape_cfp) {
+            rb_vm_rewind_cfp(ec, cfp);
+            state = 0;
+            ec->tag->state = TAG_NONE;
+            ec->errinfo = Qnil;
+            cont->value = THROW_DATA_VAL(err);
+        }
     }
     EC_POP_TAG();
 
@@ -2101,6 +2124,8 @@ fiber_store(rb_fiber_t *next_fiber, rb_thread_t *th)
     return fiber->cont.value;
 }
 
+static void fiber_check_canceled(void);
+
 static inline VALUE
 fiber_switch(rb_fiber_t *fiber, int argc, const VALUE *argv, int kw_splat, VALUE resuming_fiber, bool yielding)
 {
@@ -2185,6 +2210,8 @@ fiber_switch(rb_fiber_t *fiber, int argc, const VALUE *argv, int kw_splat, VALUE
 
     EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_FIBER_SWITCH, th->self, 0, 0, 0, Qnil);
 
+    fiber_check_canceled();
+
     return value;
 }
 
@@ -2235,6 +2262,112 @@ rb_fiber_terminate(rb_fiber_t *fiber, int need_interrupt)
     next_fiber = return_fiber(true);
     if (need_interrupt) RUBY_VM_SET_INTERRUPT(&next_fiber->cont.saved_ec);
     fiber_switch(next_fiber, 1, &value, RB_NO_KEYWORDS, Qfalse, false);
+}
+
+static void
+fiber_check_canceled(void)
+{
+    rb_fiber_t *fiber = fiber_current();
+    VALUE reason = fiber->cancel_reason;
+    if (fiber->canceled && reason != Qundef) {
+        fiber->cancel_reason = Qundef;
+        rb_fiber_break(reason);
+    }
+}
+
+/*
+ *  call-seq:
+ *     fiber.canceled? -> true or false
+ *
+ *  Returns true when a fiber has been canceled. This method can return true for
+ *  a living fibers that haven't completed yet, e.g. executing +ensure+ blocks.
+ */
+static VALUE
+rb_fiber_canceled_p(VALUE fiber_value)
+{
+    rb_fiber_t *fiber = fiber_ptr(fiber_value);
+    return fiber->canceled ? Qtrue : Qfalse;
+}
+
+static VALUE
+fiber_cancel(VALUE fiber_value, VALUE reason)
+{
+    rb_fiber_t *fiber = fiber_ptr(fiber_value);
+
+    rb_context_t *cont = &fiber->cont;
+    rb_thread_t *th = GET_THREAD();
+
+    if (FIBER_TERMINATED_P(fiber)) {
+        rb_raise(rb_eFiberError, "attempt to cancel a terminated fiber");
+    }
+    else if (cont_thread_value(cont) != th->self) {
+        rb_raise(rb_eFiberError, "fiber called across threads");
+    }
+    else if (fiber == th->root_fiber) {
+        rb_raise(rb_eFiberError, "attempt to cancel root fiber");
+    }
+
+    rb_fiber_t *current_fiber = fiber_current();
+    fiber->canceled = 1;
+
+    /* abort and return reason immediately */
+    if (FIBER_CREATED_P(fiber)) {
+        rb_fiber_close(fiber);
+        return reason;
+    }
+
+    /* mark canceled and save reason */
+    fiber->cancel_reason = reason;
+
+    /* cancel running, resuming, yielding, or transferring */
+    if (fiber == current_fiber) {
+        fiber_check_canceled();
+        VM_UNREACHABLE(fiber_cancel);
+    }
+    else if (fiber->resuming_fiber) {
+        return fiber_cancel(fiber->resuming_fiber, reason);
+    }
+    else if (fiber->yielding) {
+        return fiber_switch(fiber, 0, NULL, RB_NO_KEYWORDS, fiber_value, false);
+    }
+    else /* transferring */ {
+        return fiber_switch(fiber, 0, NULL, RB_NO_KEYWORDS, Qfalse, false);
+    }
+}
+
+/*
+ *  call-seq:
+ *     fiber.cancel         -> nil    or obj from yield/transfer
+ *     fiber.cancel(reason) -> reason or obj from yield/transfer
+ *
+ *  Cancels the fiber from the point at which the last +Fiber.yield+ was called.
+ *  This behaves as-if using +break_ to escape from a block or +return+ to
+ *  escape a method. The fiber will not complete until it has run all of the
+ *  +ensure+ blocks in its call stack (all +rescue+ and +else+ blocks are
+ *  skipped).
+ *
+ *  If the fiber is yielding or transfering, control will immediately transfer
+ *  to it.  A resuming fiber will mark itself as +cancelled?+, then cancel the
+ *  fiber it is resuming and wait for it to yield back. The cancelation will
+ *  propagate down the chain of resumed fibers until control is transfered to
+ *  the fiber at the end of the resume chain. When the fiber is yielded back
+ *  into, it will start running its +ensure+ blocks.
+ *
+ *  Canceling more than once will re-propagate cancel to any currently resumed
+ *  fibers, and behave like calling +break_ or +return+ from inside +ensure+.
+ *  The most recent cancel reason will be returned.
+ *
+ *  Immediately returns +reason+ if called on the current fiber or an unstarted
+ *  fiber. Terminates an unstarted fiber without starting it. Raises
+ *  +FiberError+ if fiber is already terminated.
+ *
+ */
+static VALUE
+rb_fiber_cancel(int argc, VALUE *argv, VALUE fiber_value)
+{
+    VALUE reason = Qnil;
+    rb_scan_args(argc, argv, "01", &reason);
+    return fiber_cancel(fiber_value, reason);
 }
 
 VALUE
@@ -2623,6 +2756,8 @@ Init_Cont(void)
     rb_define_method(rb_cFiber, "blocking?", rb_fiber_blocking_p, 0);
     rb_define_method(rb_cFiber, "resume", rb_fiber_m_resume, -1);
     rb_define_method(rb_cFiber, "raise", rb_fiber_raise, -1);
+    rb_define_method(rb_cFiber, "cancel", rb_fiber_cancel, -1);
+    rb_define_method(rb_cFiber, "canceled?", rb_fiber_canceled_p, 0);
     rb_define_method(rb_cFiber, "backtrace", rb_fiber_backtrace, -1);
     rb_define_method(rb_cFiber, "backtrace_locations", rb_fiber_backtrace_locations, -1);
     rb_define_method(rb_cFiber, "to_s", fiber_to_s, 0);
