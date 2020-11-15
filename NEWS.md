@@ -57,7 +57,7 @@ sufficient information, see the ChangeLog file or Redmine
     # version 3.0
     {a: 0, b: 1} => {a:}
     p a # => 0
-    
+
     # version 2.7
     {a: 0, b: 1} in {a:}
     p a # => 0
@@ -191,10 +191,6 @@ Outstanding ones only.
             M1.include M2
             p C.ancestors #=> [C, M1, M2, Object, Kernel, BasicObject]
             ```
-
-* Range
-
-    * All Range objects are frozen. [Feature #15504]
 
 * Thread
 
@@ -338,10 +334,10 @@ Outstanding ones only.
 
 Excluding feature bug fixes.
 
-* Regexp literals are frozen [[Feature #8948]] [[Feature #16377]]
-
+* Regexp literals and all Range objects are frozen [[Feature #8948]] [[Feature #16377] [Feature #15504]]
     ```ruby
     /foo/.frozen? #=> true
+    (42...).frozen? # => true
     ```
 
 * EXPERIMENTAL: Hash#each consistently yields a 2-element array [[Bug #12706]]
