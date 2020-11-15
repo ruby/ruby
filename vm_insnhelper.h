@@ -247,7 +247,7 @@ THROW_DATA_CONSUMED_SET(struct vm_throw_data *obj)
 
 /* If this returns true, an optimized function returned by `vm_call_iseq_setup_func`
    can be used as a fastpath. */
-static bool
+static inline bool
 vm_call_iseq_optimizable_p(const struct rb_callinfo *ci, const struct rb_callcache *cc)
 {
     return !IS_ARGS_SPLAT(ci) && !IS_ARGS_KEYWORD(ci) &&
