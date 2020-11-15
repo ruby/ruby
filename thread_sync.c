@@ -839,15 +839,27 @@ queue_closed_result(VALUE self, struct rb_queue *q)
 /*
  * Document-method: Queue::new
  *
- * Creates a new queue instance.
+ * Creates a new queue instance, optionally using the contents of an Enumerable
+ * for its initial state.
+ *
+ *  Example:
+ *
+ *    	q = Queue.new
+ *    	q = Queue.new([a, b, c])
+ *    	q = Queue.new(items)
  */
 
 static VALUE
-rb_queue_initialize(VALUE self)
+rb_queue_initialize(int argc, VALUE *argv, VALUE self)
 {
+    VALUE initial;
     struct rb_queue *q = queue_ptr(self);
     RB_OBJ_WRITE(self, &q->que, ary_buf_new());
     list_head_init(queue_waitq(q));
+    rb_scan_args(argc, argv, "01", &initial);
+    if (argc == 1) {
+        rb_ary_concat(q->que, rb_convert_type(initial, T_ARRAY, "Array", "to_ary"));
+    }
     return self;
 }
 
@@ -1570,7 +1582,7 @@ Init_thread_sync(void)
 
     rb_eClosedQueueError = rb_define_class("ClosedQueueError", rb_eStopIteration);
 
-    rb_define_method(rb_cQueue, "initialize", rb_queue_initialize, 0);
+    rb_define_method(rb_cQueue, "initialize", rb_queue_initialize, -1);
     rb_undef_method(rb_cQueue, "initialize_copy");
     rb_define_method(rb_cQueue, "marshal_dump", undumpable, 0);
     rb_define_method(rb_cQueue, "close", rb_queue_close, 0);
