@@ -836,18 +836,43 @@ queue_closed_result(VALUE self, struct rb_queue *q)
  *
  */
 
+#define id_each idEach
+static ID id_each_entry;
+
+static VALUE
+push_to_queue(RB_BLOCK_CALL_FUNC_ARGLIST(n, que))
+{
+    rb_ary_push(que, n);
+    return Qnil;
+}
+
 /*
  * Document-method: Queue::new
  *
- * Creates a new queue instance.
+ * Creates a new queue instance, optionally using the contents of an Enumerable
+ * for its initial state.
+ *
+ *  Example:
+ *
+ *    	q = Queue.new
+ *    	q = Queue.new([a, b, c])
+ *    	q = Queue.new(items)
  */
 
 static VALUE
-rb_queue_initialize(VALUE self)
+rb_queue_initialize(int argc, VALUE *argv, VALUE self)
 {
+    VALUE initial;
     struct rb_queue *q = queue_ptr(self);
     RB_OBJ_WRITE(self, &q->que, ary_buf_new());
     list_head_init(queue_waitq(q));
+    rb_scan_args(argc, argv, "01", &initial);
+    if (argc == 1) {
+        if (rb_check_block_call(initial, id_each_entry, 0, 0, push_to_queue, q->que) == Qundef &&
+            rb_check_block_call(initial, id_each, 0, 0, push_to_queue, q->que) == Qundef) {
+            rb_raise(rb_eArgError, "value must be enumerable");
+        }
+    }
     return self;
 }
 
@@ -1570,7 +1595,7 @@ Init_thread_sync(void)
 
     rb_eClosedQueueError = rb_define_class("ClosedQueueError", rb_eStopIteration);
 
-    rb_define_method(rb_cQueue, "initialize", rb_queue_initialize, 0);
+    rb_define_method(rb_cQueue, "initialize", rb_queue_initialize, -1);
     rb_undef_method(rb_cQueue, "initialize_copy");
     rb_define_method(rb_cQueue, "marshal_dump", undumpable, 0);
     rb_define_method(rb_cQueue, "close", rb_queue_close, 0);
@@ -1613,6 +1638,7 @@ Init_thread_sync(void)
     rb_define_alloc_func(rb_cConditionVariable, condvar_alloc);
 
     id_sleep = rb_intern("sleep");
+    id_each_entry = rb_intern("each_entry");
 
     rb_define_method(rb_cConditionVariable, "initialize", rb_condvar_initialize, 0);
     rb_undef_method(rb_cConditionVariable, "initialize_copy");
