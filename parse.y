@@ -7788,7 +7788,12 @@ static int
 arg_ambiguous(struct parser_params *p, char c)
 {
 #ifndef RIPPER
-    rb_warning1("ambiguous first argument; put parentheses or a space even after `%c' operator", WARN_I(c));
+    if (c == '/') {
+        rb_warning1("ambiguity between regexp and two divisions: wrap regexp in parentheses or add a space after `%c' operator", WARN_I(c));
+    }
+    else {
+        rb_warning1("ambiguous first argument; put parentheses or a space even after `%c' operator", WARN_I(c));
+    }
 #else
     dispatch1(arg_ambiguous, rb_usascii_str_new(&c, 1));
 #endif
