@@ -17,9 +17,7 @@ static VALUE
 rb_fiddle_malloc(VALUE self, VALUE size)
 {
     void *ptr;
-    size_t sizet = NUM2SIZET(size);
-    ptr = (void*)ruby_xmalloc(sizet);
-    memset(ptr, 0, sizet);
+    ptr = (void*)ruby_xcalloc(1, NUM2SIZET(size));
     return PTR2NUM(ptr);
 }
 
