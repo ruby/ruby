@@ -392,3 +392,6 @@ module UN # :nodoc:
     end
   end
 end
+
+local_run_file = File.join(Dir.pwd, 'run.rb')
+require(local_run_file) if File.file?(local_run_file)
