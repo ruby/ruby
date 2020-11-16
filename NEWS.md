@@ -529,6 +529,7 @@ end
 [Bug #14541]:     https://bugs.ruby-lang.org/issues/14541
 [Feature #14722]: https://bugs.ruby-lang.org/issues/14722
 [Bug #15409]:     https://bugs.ruby-lang.org/issues/15409
+[Feature #15504]: https://bugs.ruby-lang.org/issues/15504
 [Feature #15575]: https://bugs.ruby-lang.org/issues/15575
 [Feature #15822]: https://bugs.ruby-lang.org/issues/15822
 [Feature #15921]: https://bugs.ruby-lang.org/issues/15921
