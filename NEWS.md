@@ -334,7 +334,7 @@ Outstanding ones only.
 
 Excluding feature bug fixes.
 
-* Regexp literals and all Range objects are frozen [[Feature #8948]] [[Feature #16377] [Feature #15504]]
+* Regexp literals and all Range objects are frozen [[Feature #8948]] [[Feature #16377]] [[Feature #15504]]
     ```ruby
     /foo/.frozen? #=> true
     (42...).frozen? # => true
