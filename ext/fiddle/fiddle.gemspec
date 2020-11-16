@@ -66,5 +66,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rake"
   spec.add_development_dependency "rake-compiler"
 
-  spec.metadata["msys2_mingw_dependencies"] = "libffi"
+  # ruby head for mingw uses sub!:
+  # https://github.com/MSP-Greg/ruby-loco/blob/master/patches/__operating_system.rb.patch
+  spec.metadata["msys2_mingw_dependencies"] = +"libffi"
 end
