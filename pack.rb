@@ -212,7 +212,7 @@ class String
   #  V             | Integer | 32-bit unsigned, VAX (little-endian) byte order
   #                |         |
   #  U             | Integer | UTF-8 character
-  #  w             | Integer | BER-compressed integer (see Array.pack)
+  #  w             | Integer | BER-compressed integer (see Array#pack)
   #
   #  Float        |         |
   #  Directive    | Returns | Meaning
