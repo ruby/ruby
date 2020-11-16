@@ -271,13 +271,14 @@ AS_CASE(["$host_os:$build_os"],
     # clang version 1.0 (http://llvm.org/svn/llvm-project/cfe/tags/Apple/clang-23 exported)
     # Apple clang version 2.0 (tags/Apple/clang-137) (based on LLVM 2.9svn)
     # Apple clang version 2.1 (tags/Apple/clang-163.7.1) (based on LLVM 3.0svn)
-    AS_IF([! $CC -E -xc - <<SRC >/dev/null], [
-	@%:@if defined __APPLE_CC__ && defined __clang_major__ && __clang_major__ < 3
-	@%:@error premature clang
-	@%:@endif
-SRC
-	AC_MSG_ERROR([clang version 3.0 or later is required])
-    ])
+    AC_PREPROC_IFELSE(
+	[AC_LANG_PROGRAM([
+	    @%:@if defined __APPLE_CC__ && defined __clang_major__ && __clang_major__ < 3
+	    @%:@error premature clang
+	    @%:@endif
+	])],
+	[],
+	[AC_MSG_ERROR([clang version 3.0 or later is required])])
 ])
 
 AS_CASE(["$target_os"],
