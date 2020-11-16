@@ -2175,6 +2175,31 @@ class TestSetTraceFunc < Test::Unit::TestCase
     assert_equal 'target_line is specified, but line event is not specified', e.message
   end
 
+  def test_tracepoint_enable_with_target_line_two_times
+    events = []
+    line_0 = __LINE__
+    code1 = proc{
+      events << 1 # tp1
+      events << 2
+      events << 3 # tp2
+    }
+
+    tp1 = TracePoint.new(:line) do |tp|
+      events << :tp1
+    end
+    tp2 = TracePoint.new(:line) do |tp|
+      events << :tp2
+    end
+
+    tp1.enable(target: code1, target_line: line_0 + 2) do
+      tp2.enable(target: code1, target_line: line_0 + 4) do
+        # two hooks
+        code1.call
+      end
+    end
+    assert_equal [:tp1, 1, 2, :tp2, 3], events
+  end
+
   def test_script_compiled
     events = []
     tp = TracePoint.new(:script_compiled){|tp|
