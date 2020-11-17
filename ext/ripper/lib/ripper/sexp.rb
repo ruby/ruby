@@ -28,10 +28,16 @@ class Ripper
   #           [:paren, [:params, [[:@ident, "a", [1, 6]]], nil, nil, nil, nil, nil, nil]],
   #           [:bodystmt, [[:var_ref, [:@kw, "nil", [1, 9]]]], nil, nil, nil]]]]
   #
-  def Ripper.sexp(src, filename = '-', lineno = 1)
+  def Ripper.sexp(src, filename = '-', lineno = 1, raise_errors: false)
     builder = SexpBuilderPP.new(src, filename, lineno)
     sexp = builder.parse
-    sexp unless builder.error?
+    if builder.error?
+      if raise_errors
+        raise SyntaxError, builder.error
+      end
+    else
+      sexp
+    end
   end
 
   # [EXPERIMENTAL]
@@ -54,13 +60,21 @@ class Ripper
   #             nil,
   #             nil]]]]
   #
-  def Ripper.sexp_raw(src, filename = '-', lineno = 1)
+  def Ripper.sexp_raw(src, filename = '-', lineno = 1, raise_errors: false)
     builder = SexpBuilder.new(src, filename, lineno)
     sexp = builder.parse
-    sexp unless builder.error?
+    if builder.error?
+      if raise_errors
+        raise SyntaxError, builder.error
+      end
+    else
+      sexp
+    end
   end
 
   class SexpBuilder < ::Ripper   #:nodoc:
+    attr_reader :error
+
     private
 
     def dedent_element(e, width)
@@ -107,6 +121,12 @@ class Ripper
         end
       End
     end
+
+    def on_error(mesg)
+      @error = mesg
+    end
+    alias on_parse_error on_error
+    alias compile_error on_error
   end
 
   class SexpBuilderPP < SexpBuilder #:nodoc:

@@ -507,4 +507,9 @@ eot
     assert_equal(:hshptn, hshptn[0])
     assert_equal([:@label, "a:"], hshptn.dig(2, 0, 0))
   end
+
+  def test_raise_errors_keyword
+    assert_raise(SyntaxError) { Ripper.sexp('def req(true) end', raise_errors: true) }
+    assert_raise(SyntaxError) { Ripper.sexp_raw('def req(true) end', raise_errors: true) }
+  end
 end if ripper_test
