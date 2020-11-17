@@ -1821,7 +1821,7 @@ rb_flo_is_finite_p(VALUE num)
 }
 
 static VALUE
-flo_prev_or_next(VALUE flo, double value)
+flo_nextafter(VALUE flo, double value)
 {
     double x, y;
     x = NUM2DBL(flo);
@@ -1884,7 +1884,7 @@ flo_prev_or_next(VALUE flo, double value)
 static VALUE
 flo_next_float(VALUE vx)
 {
-    return flo_prev_or_next(vx, HUGE_VAL);
+    return flo_nextafter(vx, HUGE_VAL);
 }
 
 /*
@@ -1932,7 +1932,7 @@ flo_next_float(VALUE vx)
 static VALUE
 flo_prev_float(VALUE vx)
 {
-    return flo_prev_or_next(vx, -HUGE_VAL);
+    return flo_nextafter(vx, -HUGE_VAL);
 }
 
 /*
