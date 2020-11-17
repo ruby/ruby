@@ -137,7 +137,7 @@ module Net
         smtp = Net::SMTP.new("localhost", servers[0].local_address.ip_port)
         smtp.enable_tls
         smtp.open_timeout = 1
-        smtp.start do
+        smtp.start(tls_verify: false) do
         end
       ensure
         sock.close if sock
