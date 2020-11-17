@@ -125,4 +125,4 @@ module Net
     end
 
   end
-end
+end unless /mswin|mingw/ =~ RUBY_PLATFORM
