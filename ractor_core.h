@@ -1,8 +1,8 @@
 #include "ruby/ruby.h"
+#include "ruby/ractor.h"
 #include "vm_core.h"
 #include "id_table.h"
 #include "vm_debug.h"
-#include "ractor_pub.h"
 
 #ifndef RACTOR_CHECK_MODE
 #define RACTOR_CHECK_MODE (0 || VM_CHECK_MODE || RUBY_DEBUG)
@@ -158,6 +158,20 @@ void rb_ractor_blocking_threads_dec(rb_ractor_t *r, const char *file, int line);
 void rb_ractor_vm_barrier_interrupt_running_thread(rb_ractor_t *r);
 void rb_ractor_terminate_interrupt_main_thread(rb_ractor_t *r);
 void rb_ractor_terminate_all(void);
+bool rb_ractor_main_p_(void);
+
+RUBY_EXTERN bool ruby_multi_ractor;
+
+static inline bool
+rb_ractor_main_p(void)
+{
+    if (!ruby_multi_ractor) {
+        return true;
+    }
+    else {
+        return rb_ractor_main_p_();
+    }
+}
 
 static inline bool
 rb_ractor_status_p(rb_ractor_t *r, enum ractor_status status)

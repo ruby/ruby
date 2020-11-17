@@ -112,7 +112,7 @@
 #include "vm_core.h"
 #include "vm_sync.h"
 #include "vm_callinfo.h"
-#include "ractor.h"
+#include "ractor_core.h"
 
 #include "builtin.h"
 

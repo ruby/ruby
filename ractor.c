@@ -2,10 +2,11 @@
 
 #include "ruby/ruby.h"
 #include "ruby/thread.h"
+#include "ruby/ractor.h"
 #include "ruby/thread_native.h"
 #include "vm_core.h"
 #include "vm_sync.h"
-#include "ractor.h"
+#include "ractor_core.h"
 #include "internal/complex.h"
 #include "internal/error.h"
 #include "internal/hash.h"
@@ -14,7 +15,7 @@
 #include "variable.h"
 #include "gc.h"
 
-static VALUE rb_cRactor;
+VALUE rb_cRactor;
 static VALUE rb_eRactorError;
 static VALUE rb_eRactorRemoteError;
 static VALUE rb_eRactorMovedError;

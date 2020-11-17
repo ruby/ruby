@@ -37,7 +37,7 @@
 #include "probes_helper.h"
 #include "ruby/vm.h"
 #include "vm_core.h"
-#include "ractor.h"
+#include "ractor_core.h"
 
 NORETURN(void rb_raise_jump(VALUE, VALUE));
 void rb_ec_clear_current_thread_trace_func(const rb_execution_context_t *ec);

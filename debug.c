@@ -26,7 +26,7 @@
 #include "vm_debug.h"
 #include "vm_callinfo.h"
 #include "ruby/thread_native.h"
-#include "ractor.h"
+#include "ractor_core.h"
 
 /* This is the only place struct RIMemo is actually used */
 struct RIMemo {

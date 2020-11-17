@@ -57,8 +57,8 @@ struct lex_context {
 #include "ruby/ruby.h"
 #include "ruby/st.h"
 #include "ruby/util.h"
+#include "ruby/ractor.h"
 #include "symbol.h"
-#include "ractor_pub.h"
 
 #define AREF(ary, i) RARRAY_AREF(ary, i)
 

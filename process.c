@@ -114,7 +114,7 @@ int initgroups(const char *, rb_gid_t);
 #include "ruby/thread.h"
 #include "ruby/util.h"
 #include "vm_core.h"
-#include "ractor_pub.h"
+#include "ruby/ractor.h"
 
 /* define system APIs */
 #ifdef _WIN32

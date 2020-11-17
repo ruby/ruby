@@ -36,7 +36,7 @@
 #include "transient_heap.h"
 #include "variable.h"
 #include "vm_core.h"
-#include "ractor_pub.h"
+#include "ractor_core.h"
 #include "vm_sync.h"
 
 typedef void rb_gvar_compact_t(void *var);

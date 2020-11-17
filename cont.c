@@ -29,7 +29,7 @@
 #include "mjit.h"
 #include "vm_core.h"
 #include "id_table.h"
-#include "ractor.h"
+#include "ractor_core.h"
 
 static const int DEBUG = 0;
 

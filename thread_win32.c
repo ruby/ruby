@@ -52,12 +52,12 @@ w32_error(const char *func)
 }
 
 static int
-w32_mutex_lock(HANDLE lock)
+w32_mutex_lock(HANDLE lock, bool try)
 {
     DWORD result;
     while (1) {
         thread_debug("rb_native_mutex_lock: %p\n", lock);
-	result = w32_wait_events(&lock, 1, INFINITE, 0);
+        result = w32_wait_events(&lock, 1, try ? 0 : INFINITE, 0);
 	switch (result) {
 	  case WAIT_OBJECT_0:
 	    /* get mutex object */
@@ -70,7 +70,7 @@ w32_mutex_lock(HANDLE lock)
 	    return 0;
 	  case WAIT_TIMEOUT:
 	    thread_debug("timeout mutex: %p\n", lock);
-	    break;
+            return EBUSY;
 	  case WAIT_ABANDONED:
 	    rb_bug("win32_mutex_lock: WAIT_ABANDONED");
 	    break;
@@ -97,7 +97,7 @@ w32_mutex_create(void)
 static void
 gvl_acquire(rb_global_vm_lock_t *gvl, rb_thread_t *th)
 {
-    w32_mutex_lock(gvl->lock);
+    w32_mutex_lock(gvl->lock, false);
     if (GVL_DEBUG) fprintf(stderr, "gvl acquire (%p): acquire\n", th);
 }
 
@@ -323,9 +323,19 @@ void
 rb_native_mutex_lock(rb_nativethread_lock_t *lock)
 {
 #if USE_WIN32_MUTEX
-    w32_mutex_lock(lock->mutex);
+    w32_mutex_lock(lock->mutex, false);
 #else
     EnterCriticalSection(&lock->crit);
+#endif
+}
+
+int
+rb_native_mutex_trylock(rb_nativethread_lock_t *lock)
+{
+#if USE_WIN32_MUTEX
+    return w32_mutex_lock(lock->mutex, true);
+#else
+    return TryEnterCriticalSection(&lock->crit) == 0 ? EBUSY : 0;
 #endif
 }
 
@@ -337,27 +347,6 @@ rb_native_mutex_unlock(rb_nativethread_lock_t *lock)
     ReleaseMutex(lock->mutex);
 #else
     LeaveCriticalSection(&lock->crit);
-#endif
-}
-
-RBIMPL_ATTR_MAYBE_UNUSED()
-static int
-native_mutex_trylock(rb_nativethread_lock_t *lock)
-{
-#if USE_WIN32_MUTEX
-    int result;
-    thread_debug("native_mutex_trylock: %p\n", lock->mutex);
-    result = w32_wait_events(&lock->mutex, 1, 1, 0);
-    thread_debug("native_mutex_trylock result: %d\n", result);
-    switch (result) {
-      case WAIT_OBJECT_0:
-	return 0;
-      case WAIT_TIMEOUT:
-	return EBUSY;
-    }
-    return EINVAL;
-#else
-    return TryEnterCriticalSection(&lock->crit) == 0;
 #endif
 }
 

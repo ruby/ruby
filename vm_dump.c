@@ -35,7 +35,7 @@
 #include "internal/vm.h"
 #include "iseq.h"
 #include "vm_core.h"
-#include "ractor.h"
+#include "ractor_core.h"
 
 #define MAX_POSBUF 128
 
