@@ -145,4 +145,9 @@ class TestRipper::Lexer < Test::Unit::TestCase
     token = Ripper.lex("a( foo, bar: baz }").last
     assert_equal [[1, 17], :on_embexpr_end, "}", state(:EXPR_ARG)], token
   end
+
+  def test_raise_errors_keyword
+    assert_raise(SyntaxError) { Ripper.tokenize('def req(true) end', raise_errors: true) }
+    assert_raise(SyntaxError) { Ripper.tokenize('def req(true) end', raise_errors: true) }
+  end
 end
