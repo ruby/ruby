@@ -105,6 +105,11 @@ non-empty value, and the standard input and output are tty, `--help`
 option shows the help message via the pager designated by the value.
 [[Feature #16754]]
 
+### `--backtrace-limit` option
+
+`--backtrace-limit` option limits the maximum length of backtrace.
+[[Feature #8661]]
+
 ## Core classes updates
 
 Outstanding ones only.
