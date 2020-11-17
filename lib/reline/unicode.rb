@@ -95,6 +95,12 @@ class Reline::Unicode
   /x
 
   def self.get_mbchar_width(mbchar)
+    ord = mbchar.ord
+    if (0x00 <= ord and ord <= 0x1F)
+      return 2
+    elsif (0x20 <= ord and ord <= 0x7E)
+      return 1
+    end
     m = mbchar.encode(Encoding::UTF_8).match(MBCharWidthRE)
     case
     when m[:width_2_1], m[:width_2_2] then 2
