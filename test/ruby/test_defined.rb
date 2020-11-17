@@ -302,6 +302,39 @@ class TestDefined < Test::Unit::TestCase
     assert_nil(defined?(TestDefined::Object))
   end
 
+  def test_super_with_method_missing
+    c0 = EnvUtil.labeled_class("C0") do
+      attr_reader :calls
+
+      def initialize
+        @calls = []
+      end
+
+      def method_missing(*args)
+        @calls << [:method_missing, *args]
+      end
+
+      def respond_to_missing?(*args)
+        @calls << [:respond_to_missing?, *args]
+        true
+      end
+    end
+
+    c1 = EnvUtil.labeled_class("C1", c0) do
+      def foo
+        super
+        defined?(super)
+      end
+    end
+
+    c = c1.new
+    assert_not_nil(c.foo)
+    assert_equal([
+                   [:method_missing, :foo],
+                   [:respond_to_missing?, :foo, true],
+                 ], c.calls)
+  end
+
   class RefinedClass
   end
 
