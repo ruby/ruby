@@ -503,9 +503,6 @@ end
   splats, those are now removed just as they are for methods not
   using `ruby2_keywords`.
 
-* Taint deprecation warnings are now issued in regular mode in
-  addition to verbose warning mode.  [[Feature #16131]]
-
 * When an exception is caught in the default handler, the error
   message and backtrace are printed in order from the innermost.
   [[Feature #8661]]
