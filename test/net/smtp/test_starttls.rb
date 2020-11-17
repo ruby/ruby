@@ -118,4 +118,4 @@ module Net
       assert_nothing_raised { smtp.enable_starttls_auto }
     end
   end
-end
+end unless /mswin|mingw/ =~ RUBY_PLATFORM
