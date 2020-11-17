@@ -125,6 +125,7 @@ class Ripper
     def on_error(mesg)
       @error = mesg
     end
+    remove_method :on_parse_error
     alias on_parse_error on_error
     alias compile_error on_error
   end
