@@ -92,9 +92,9 @@ when /aix/
     funcs=%w!sin sinf strcpy strncpy!
     expfile='dltest.exp'
     require 'tmpdir'
-    Dir.mktmpdir do |dir|
+    Dir.mktmpdir do |_dir|
       begin
-        Dir.chdir dir
+        Dir.chdir _dir
         %x!/usr/bin/ar x /usr/lib/libc.a #{cobjs.join(' ')}!
         %x!/usr/bin/ar x /usr/lib/libm.a #{mobjs.join(' ')}!
         %x!echo "#{funcs.join("\n")}\n" > #{expfile}!
