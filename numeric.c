@@ -1820,22 +1820,12 @@ rb_flo_is_finite_p(VALUE num)
     return Qtrue;
 }
 
-enum flo_prevnext_flags
-{
-    FLOAT_PREV = 0,
-    FLOAT_NEXT = 1
-};
-
 static VALUE
-flo_prev_or_next(VALUE flo, int flag)
+flo_prev_or_next(VALUE flo, double value)
 {
     double x, y;
     x = NUM2DBL(flo);
-    if (flag == 1)
-      y = nextafter(x, HUGE_VAL);
-    else
-      y = nextafter(x, -HUGE_VAL);
-
+    y = nextafter(x, value);
     return DBL2NUM(y);
 }
 
@@ -1894,7 +1884,7 @@ flo_prev_or_next(VALUE flo, int flag)
 static VALUE
 flo_next_float(VALUE vx)
 {
-    return flo_prev_or_next(vx, FLOAT_NEXT);
+    return flo_prev_or_next(vx, HUGE_VAL);
 }
 
 /*
@@ -1942,7 +1932,7 @@ flo_next_float(VALUE vx)
 static VALUE
 flo_prev_float(VALUE vx)
 {
-    return flo_prev_or_next(vx, FLOAT_PREV);
+    return flo_prev_or_next(vx, -HUGE_VAL);
 }
 
 /*
