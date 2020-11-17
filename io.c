@@ -134,7 +134,7 @@
 #include "ruby/thread.h"
 #include "ruby/util.h"
 #include "ruby_atomic.h"
-#include "ractor_pub.h"
+#include "ruby/ractor.h"
 
 #if !USE_POLL
 #  include "vm_core.h"

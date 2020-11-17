@@ -26,7 +26,6 @@
 #include "ruby/encoding.h"
 #include "ruby/util.h"
 #include "ruby_assert.h"
-#include "ractor_pub.h"
 #include "vm_sync.h"
 
 #ifndef ENC_DEBUG

@@ -94,7 +94,7 @@
 #include "ruby/thread_native.h"
 #include "timev.h"
 #include "vm_core.h"
-#include "ractor.h"
+#include "ractor_core.h"
 #include "vm_debug.h"
 #include "vm_sync.h"
 

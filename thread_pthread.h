@@ -17,8 +17,6 @@
 #define RB_NATIVETHREAD_LOCK_INIT PTHREAD_MUTEX_INITIALIZER
 #define RB_NATIVETHREAD_COND_INIT PTHREAD_COND_INITIALIZER
 
-typedef pthread_cond_t rb_nativethread_cond_t;
-
 typedef struct native_thread_data_struct {
     union {
         struct list_node ubf;
@@ -38,18 +36,6 @@ typedef struct native_thread_data_struct {
         rb_nativethread_cond_t gvlq; /* vm->gvl.lock */
     } cond;
 } native_thread_data_t;
-
-void rb_native_mutex_lock(rb_nativethread_lock_t *lock);
-int  rb_native_mutex_trylock(rb_nativethread_lock_t *lock);
-void rb_native_mutex_unlock(rb_nativethread_lock_t *lock);
-void rb_native_mutex_initialize(rb_nativethread_lock_t *lock);
-void rb_native_mutex_destroy(rb_nativethread_lock_t *lock);
-void rb_native_cond_signal(rb_nativethread_cond_t *cond);
-void rb_native_cond_broadcast(rb_nativethread_cond_t *cond);
-void rb_native_cond_wait(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *mutex);
-void rb_native_cond_timedwait(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *mutex, unsigned long msec);
-void rb_native_cond_initialize(rb_nativethread_cond_t *cond);
-void rb_native_cond_destroy(rb_nativethread_cond_t *cond);
 
 #undef except
 #undef try

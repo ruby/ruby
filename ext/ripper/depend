@@ -210,6 +210,7 @@ ripper.o: $(hdrdir)/ruby/io.h
 ripper.o: $(hdrdir)/ruby/missing.h
 ripper.o: $(hdrdir)/ruby/onigmo.h
 ripper.o: $(hdrdir)/ruby/oniguruma.h
+ripper.o: $(hdrdir)/ruby/ractor.h
 ripper.o: $(hdrdir)/ruby/regex.h
 ripper.o: $(hdrdir)/ruby/ruby.h
 ripper.o: $(hdrdir)/ruby/st.h
@@ -244,7 +245,6 @@ ripper.o: $(top_srcdir)/internal/variable.h
 ripper.o: $(top_srcdir)/internal/vm.h
 ripper.o: $(top_srcdir)/internal/warnings.h
 ripper.o: $(top_srcdir)/node.h
-ripper.o: $(top_srcdir)/ractor_pub.h
 ripper.o: $(top_srcdir)/regenc.h
 ripper.o: $(top_srcdir)/ruby_assert.h
 ripper.o: $(top_srcdir)/symbol.h

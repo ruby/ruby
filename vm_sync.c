@@ -1,6 +1,6 @@
 #include "vm_core.h"
 #include "vm_sync.h"
-#include "ractor.h"
+#include "ractor_core.h"
 #include "vm_debug.h"
 #include "gc.h"
 
