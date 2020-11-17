@@ -2214,6 +2214,58 @@ enum_one(int argc, VALUE *argv, VALUE obj)
     return result;
 }
 
+DEFINE_ENUMFUNCS(many)
+{
+    if (RTEST(result)) {
+	if (memo->v1 == Qundef) {
+	    MEMO_V1_SET(memo, Qfalse);
+	}
+	else if (memo->v1 == Qfalse) {
+	    MEMO_V1_SET(memo, Qtrue);
+	    rb_iter_break();
+	}
+    }
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     enum.many? [{ |obj| block }]   -> true or false
+ *     enum.many?(pattern)            -> true or false
+ *
+ *  Passes each element of the collection to the given block. The method
+ *  returns <code>true</code> if the block returns truthy value
+ *  more than once. If the block is not given, <code>many?</code>
+ *  will return <code>true</code> only if more than one of the
+ *  collection members are truthy.
+ *
+ *  If instead a pattern is supplied, the method returns whether
+ *  <code>pattern === element</code> for more than one of the
+ *  collection member.
+ *
+ *     %w{ant bear cat}.many? { |word| word.length == 4 }  #=> false
+ *     %w{ant bear cat}.many? { |word| word.length > 4 }   #=> false
+ *     %w{ant bear cat}.many? { |word| word.length < 4 }   #=> true
+ *     %w{ant bear cat}.many?(/t/)                         #=> true
+ *     [ nil, true, 99 ].many?                             #=> true
+ *     [ nil, true, false ].many?                          #=> false
+ *     [ nil, 42, 99 ].many?(Integer)                      #=> true
+ *     [].many?                                            #=> false
+ *
+ */
+static VALUE
+enum_many(int argc, VALUE *argv, VALUE obj)
+{
+    struct MEMO *memo = MEMO_ENUM_NEW(Qundef);
+    VALUE result;
+
+    WARN_UNUSED_BLOCK(argc);
+    rb_block_call(obj, id_each, 0, 0, ENUMFUNC(many), (VALUE)memo);
+    result = memo->v1;
+    if (result == Qundef) return Qfalse;
+    return result;
+}
+
 DEFINE_ENUMFUNCS(none)
 {
     if (RTEST(result)) {
@@ -5147,6 +5199,7 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "all?", enum_all, -1);
     rb_define_method(rb_mEnumerable, "any?", enum_any, -1);
     rb_define_method(rb_mEnumerable, "one?", enum_one, -1);
+    rb_define_method(rb_mEnumerable, "many?", enum_many, -1);
     rb_define_method(rb_mEnumerable, "none?", enum_none, -1);
     rb_define_method(rb_mEnumerable, "min", enum_min, -1);
     rb_define_method(rb_mEnumerable, "max", enum_max, -1);
