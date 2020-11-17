@@ -3770,7 +3770,7 @@ vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_
       }
       case DEFINED_FUNC:
 	klass = CLASS_OF(v);
-	if (rb_ec_obj_respond_to(ec, v, SYM2ID(obj), TRUE)) {
+	if (rb_ec_obj_respond_to(ec, klass, v, SYM2ID(obj), TRUE)) {
 	    expr_type = DEFINED_METHOD;
 	}
 	break;
@@ -3811,7 +3811,7 @@ vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_
 		VALUE klass = vm_search_normal_superclass(me->defined_class);
 		ID id = me->def->original_id;
 
-		if (rb_method_boundp(klass, id, 0)) {
+		if (rb_ec_obj_respond_to(ec, klass, GET_SELF(), id, TRUE)) {
 		    expr_type = DEFINED_ZSUPER;
 		}
 	    }

@@ -99,7 +99,7 @@ MJIT_SYMBOL_EXPORT_END
 /* vm_method.c */
 struct rb_execution_context_struct;
 MJIT_SYMBOL_EXPORT_BEGIN
-int rb_ec_obj_respond_to(struct rb_execution_context_struct *ec, VALUE obj, ID id, int priv);
+int rb_ec_obj_respond_to(struct rb_execution_context_struct *ec, VALUE klass, VALUE obj, ID id, int priv);
 MJIT_SYMBOL_EXPORT_END
 
 /* vm_dump.c */
