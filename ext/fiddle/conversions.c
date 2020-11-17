@@ -220,7 +220,7 @@ value_to_generic(int type, VALUE src, fiddle_generic *dst)
 {
     /* src isn't safe from GC when type is TYPE_CONST_STRING and src
      * isn't String. */
-    return rb_fiddle_value_to_generic(type, &src, dst);
+    rb_fiddle_value_to_generic(type, &src, dst);
 }
 
 VALUE
