@@ -335,6 +335,10 @@ Outstanding ones only.
       tcp_socket = TCPSocket.new("example.com", 80, resolv_timeout: 10)
       ```
 
+* Fiddle
+
+    * Update to Fiddle 1.0.2
+
 ## Compatibility issues
 
 Excluding feature bug fixes.
