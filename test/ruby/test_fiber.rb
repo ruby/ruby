@@ -351,23 +351,11 @@ class TestFiber < Test::Unit::TestCase
     assert_not_predicate(fib, :alive?)
   end
 
-  def test_cancel_aliver_fiber
-    assert_raise(FiberError){
-      fib = Fiber.new{}
-      fib.resume
-      fib.cancel "cancel in dead fiber"
-    }
-  end
-
-  def test_cancel_unborn_and_dead_fibers
-    fib = Fiber.new{ :unreachable }
-    assert_equal("cancel unborn", fib.cancel("cancel unborn"))
-    assert_not_predicate(fib, :alive?)
-    assert_raise(FiberError){
-      fib = Fiber.new{}
-      fib.resume
-      fib.cancel "cancel in dead fiber"
-    }
+  def test_cancel_dead_fiber
+    fib = Fiber.new{}
+    fib.resume
+    assert_equal(nil, fib.cancel("cancel dead"))
+    assert_not_predicate(fib, :canceled?)
   end
 
   def test_transfer

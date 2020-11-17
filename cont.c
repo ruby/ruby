@@ -2298,7 +2298,7 @@ fiber_cancel(VALUE fiber_value, VALUE reason)
     rb_thread_t *th = GET_THREAD();
 
     if (FIBER_TERMINATED_P(fiber)) {
-        rb_raise(rb_eFiberError, "attempt to cancel a terminated fiber");
+        return Qnil;
     }
     else if (cont_thread_value(cont) != th->self) {
         rb_raise(rb_eFiberError, "fiber called across threads");
@@ -2358,8 +2358,8 @@ fiber_cancel(VALUE fiber_value, VALUE reason)
  *  The most recent cancel reason will be returned.
  *
  *  Immediately returns +reason+ if called on the current fiber or an unstarted
- *  fiber. Terminates an unstarted fiber without starting it. Raises
- *  +FiberError+ if fiber is already terminated.
+ *  fiber. Terminates an unstarted fiber without starting it. Returns nil if the
+ *  fiber is already terminated.
  *
  */
 static VALUE
