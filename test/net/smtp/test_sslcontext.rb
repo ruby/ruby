@@ -39,7 +39,8 @@ module Net
     end
 
     def start_smtpd(starttls)
-      @server_socket, @client_socket = UNIXSocket.pair
+      @server_socket, @client_socket = Object.const_defined?(:UNIXSocket) ?
+        UNIXSocket.pair : Socket.pair(:INET, :STREAM, 0)
       @starttls_executed = false
       @server_thread = Thread.new(@server_socket) do |s|
         s.puts "220 fakeserver\r\n"
@@ -125,4 +126,4 @@ module Net
     end
 
   end
-end unless /mswin|mingw/ =~ RUBY_PLATFORM
+end
