@@ -9,11 +9,11 @@
 #endif
 
 enum rb_ractor_basket_type {
-    basket_type_none,
-    basket_type_ref,
-    basket_type_copy,
-    basket_type_move,
-    basket_type_will,
+    basket_type_none = 0,
+    basket_type_ref  = 1,
+    basket_type_copy = 2,
+    basket_type_move = 3,
+    basket_type_will = 4, // 3 bit
 };
 
 struct rb_ractor_basket {
