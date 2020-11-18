@@ -201,6 +201,7 @@ static VALUE str_new_shared(VALUE klass, VALUE str);
 static VALUE str_new_frozen(VALUE klass, VALUE orig);
 static VALUE str_new_frozen_buffer(VALUE klass, VALUE orig, int copy_encoding);
 static VALUE str_new_static(VALUE klass, const char *ptr, long len, int encindex);
+static VALUE str_new(VALUE klass, const char *ptr, long len);
 static void str_make_independent_expand(VALUE str, long len, long expand, const int termlen);
 static inline void str_modifiable(VALUE str);
 static VALUE rb_str_downcase(int argc, VALUE *argv, VALUE str);
@@ -271,7 +272,7 @@ mustnot_wchar(VALUE str)
 
 static int fstring_cmp(VALUE a, VALUE b);
 
-static VALUE register_fstring(VALUE str);
+static VALUE register_fstring(VALUE str, bool copy);
 
 const struct st_hash_type rb_fstring_hash_type = {
     fstring_cmp,
@@ -280,10 +281,16 @@ const struct st_hash_type rb_fstring_hash_type = {
 
 #define BARE_STRING_P(str) (!FL_ANY_RAW(str, FL_EXIVAR) && RBASIC_CLASS(str) == rb_cString)
 
+struct fstr_update_arg {
+    VALUE fstr;
+    bool copy;
+};
+
 static int
-fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
+fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t data, int existing)
 {
-    VALUE *fstr = (VALUE *)arg;
+
+    struct fstr_update_arg *arg = (struct fstr_update_arg *)data;
     VALUE str = (VALUE)*key;
 
     if (existing) {
@@ -291,18 +298,25 @@ fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t arg, int existi
 	 * at next time */
 
 	if (rb_objspace_garbage_object_p(str)) {
-	    *fstr = Qundef;
+	    arg->fstr = Qundef;
 	    return ST_DELETE;
 	}
 
-	*fstr = str;
+	arg->fstr = str;
 	return ST_STOP;
     }
     else {
 	if (FL_TEST_RAW(str, STR_FAKESTR)) {
-	    str = str_new_static(rb_cString, RSTRING(str)->as.heap.ptr,
-				 RSTRING(str)->as.heap.len,
-				 ENCODING_GET(str));
+	    if (arg->copy) {
+		VALUE new_str = str_new(rb_cString, RSTRING(str)->as.heap.ptr, RSTRING(str)->as.heap.len);
+		rb_enc_copy(new_str, str);
+		str = new_str;
+	    }
+	    else {
+		str = str_new_static(rb_cString, RSTRING(str)->as.heap.ptr,
+				     RSTRING(str)->as.heap.len,
+				     ENCODING_GET(str));
+	    }
 	    OBJ_FREEZE_RAW(str);
 	}
 	else {
@@ -319,7 +333,7 @@ fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t arg, int existi
 	}
 	RBASIC(str)->flags |= RSTRING_FSTR;
 
-	*key = *value = *fstr = str;
+	*key = *value = arg->fstr = str;
 	return ST_CONTINUE;
     }
 }
@@ -351,7 +365,7 @@ rb_fstring(VALUE str)
     if (!OBJ_FROZEN(str))
         rb_str_resize(str, RSTRING_LEN(str));
 
-    fstr = register_fstring(str);
+    fstr = register_fstring(str, FALSE);
 
     if (!bare) {
 	str_replace_shared_without_enc(str, fstr);
@@ -362,27 +376,26 @@ rb_fstring(VALUE str)
 }
 
 static VALUE
-register_fstring(VALUE str)
+register_fstring(VALUE str, bool copy)
 {
-    VALUE ret;
+    struct fstr_update_arg args;
+    args.copy = copy;
 
     RB_VM_LOCK_ENTER();
     {
         st_table *frozen_strings = rb_vm_fstring_table();
-
         do {
-            ret = str;
-            st_update(frozen_strings, (st_data_t)str,
-                      fstr_update_callback, (st_data_t)&ret);
-        } while (ret == Qundef);
+            args.fstr = str;
+            st_update(frozen_strings, (st_data_t)str, fstr_update_callback, (st_data_t)&args);
+        } while (args.fstr == Qundef);
     }
     RB_VM_LOCK_LEAVE();
 
-    assert(OBJ_FROZEN(ret));
-    assert(!FL_TEST_RAW(ret, STR_FAKESTR));
-    assert(!FL_TEST_RAW(ret, FL_EXIVAR));
-    assert(RBASIC_CLASS(ret) == rb_cString);
-    return ret;
+    assert(OBJ_FROZEN(args.fstr));
+    assert(!FL_TEST_RAW(args.fstr, STR_FAKESTR));
+    assert(!FL_TEST_RAW(args.fstr, FL_EXIVAR));
+    assert(RBASIC_CLASS(args.fstr) == rb_cString);
+    return args.fstr;
 }
 
 static VALUE
@@ -418,14 +431,14 @@ MJIT_FUNC_EXPORTED VALUE
 rb_fstring_new(const char *ptr, long len)
 {
     struct RString fake_str;
-    return register_fstring(setup_fake_str(&fake_str, ptr, len, ENCINDEX_US_ASCII));
+    return register_fstring(setup_fake_str(&fake_str, ptr, len, ENCINDEX_US_ASCII), FALSE);
 }
 
 VALUE
 rb_fstring_enc_new(const char *ptr, long len, rb_encoding *enc)
 {
     struct RString fake_str;
-    return register_fstring(rb_setup_fake_str(&fake_str, ptr, len, enc));
+    return register_fstring(rb_setup_fake_str(&fake_str, ptr, len, enc), FALSE);
 }
 
 VALUE
@@ -11418,25 +11431,27 @@ rb_str_to_interned_str(VALUE str)
 VALUE
 rb_interned_str(const char *ptr, long len)
 {
-    return rb_fstring_new(ptr, len);
+    struct RString fake_str;
+    return register_fstring(setup_fake_str(&fake_str, ptr, len, ENCINDEX_US_ASCII), TRUE);
 }
 
 VALUE
 rb_interned_str_cstr(const char *ptr)
 {
-    return rb_fstring_cstr(ptr);
+    return rb_interned_str(ptr, strlen(ptr));
 }
 
 VALUE
 rb_enc_interned_str(const char *ptr, long len, rb_encoding *enc)
 {
-    return rb_fstring_enc_new(ptr, len, enc);
+    struct RString fake_str;
+    return register_fstring(rb_setup_fake_str(&fake_str, ptr, len, enc), TRUE);
 }
 
 VALUE
 rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
 {
-    return rb_fstring_enc_new(ptr, strlen(ptr), enc);
+    return rb_enc_interned_str(ptr, strlen(ptr), enc);
 }
 
 /*
