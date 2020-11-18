@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 require_relative '../../shared/kernel/raise'
+require "fiber"
 
 ruby_version_is "2.7" do
   describe "Fiber#raise" do
@@ -66,11 +67,30 @@ ruby_version_is "2.7" do
       end.join
     end
 
+    it "raises a FiberError if invoked on a transferring Fiber" do
+      root = Fiber.current
+      fiber = Fiber.new { root.transfer }
+      fiber.transfer
+      -> { fiber.raise }.should raise_error(FiberError, /cannot resume transferred Fiber|attempt to resume a transferring fiber/i)
+    end
+
     it "kills Fiber" do
       fiber = Fiber.new { Fiber.yield :first; :second }
       fiber.resume
       -> { fiber.raise }.should raise_error
       -> { fiber.resume }.should raise_error(FiberError, /dead fiber called|attempt to resume a terminated fiber/)
+    end
+  end
+
+end
+
+ruby_version_is "3.0" do
+  describe "Fiber#raise" do
+    it "transfers and raises with the transfer keyword" do
+      root = Fiber.current
+      fiber = Fiber.new { root.transfer }
+      fiber.transfer
+      -> { fiber.raise "msg", transfer: true }.should raise_error(RuntimeError, "msg")
     end
   end
 end
