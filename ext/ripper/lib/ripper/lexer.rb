@@ -14,6 +14,11 @@ require 'ripper/core'
 class Ripper
 
   # Tokenizes the Ruby program and returns an array of strings.
+  # The +filename+ and +lineno+ arguments are mostly ignored, since the
+  # return value is just the tokenized input.
+  # By default, this method does not handle syntax errors in +src+,
+  # ignoring tokens after the syntax error.  Use the +raise_errors+ keyword
+  # to raise a SyntaxError for an error in +src+.
   #
   #   p Ripper.tokenize("def m(a) nil end")
   #      # => ["def", " ", "m", "(", "a", ")", " ", "nil", " ", "end"]
@@ -32,6 +37,10 @@ class Ripper
   # Tokenizes the Ruby program and returns an array of an array,
   # which is formatted like
   # <code>[[lineno, column], type, token, state]</code>.
+  # The +filename+ argument is mostly ignored.
+  # By default, this method does not handle syntax errors in +src+,
+  # ignoring tokens after the syntax error.  Use the +raise_errors+ keyword
+  # to raise a SyntaxError for an error in +src+.
   #
   #   require 'ripper'
   #   require 'pp'

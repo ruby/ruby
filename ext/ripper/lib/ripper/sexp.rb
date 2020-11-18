@@ -17,6 +17,10 @@ class Ripper
   # Parses +src+ and create S-exp tree.
   # Returns more readable tree rather than Ripper.sexp_raw.
   # This method is mainly for developer use.
+  # The +filename+ argument is mostly ignored.
+  # By default, this method does not handle syntax errors in +src+,
+  # returning +nil+ in such cases. Use the +raise_errors+ keyword
+  # to raise a SyntaxError for an error in +src+.
   #
   #   require 'ripper'
   #   require 'pp'
@@ -43,6 +47,10 @@ class Ripper
   # [EXPERIMENTAL]
   # Parses +src+ and create S-exp tree.
   # This method is mainly for developer use.
+  # The +filename+ argument is mostly ignored.
+  # By default, this method does not handle syntax errors in +src+,
+  # returning +nil+ in such cases. Use the +raise_errors+ keyword
+  # to raise a SyntaxError for an error in +src+.
   #
   #   require 'ripper'
   #   require 'pp'
