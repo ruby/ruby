@@ -18,8 +18,15 @@ class Ripper
   #   p Ripper.tokenize("def m(a) nil end")
   #      # => ["def", " ", "m", "(", "a", ")", " ", "nil", " ", "end"]
   #
-  def Ripper.tokenize(src, filename = '-', lineno = 1)
-    Lexer.new(src, filename, lineno).tokenize
+  def Ripper.tokenize(src, filename = '-', lineno = 1, raise_errors: false)
+    r = Lexer.new(src, filename, lineno)
+    ret = r.tokenize
+
+    if raise_errors && !r.errors.empty?
+      raise SyntaxError, r.errors.map(&:message).join(' ;')
+    end
+
+    ret
   end
 
   # Tokenizes the Ruby program and returns an array of an array,
@@ -41,8 +48,15 @@ class Ripper
   #        [[1, 12], :on_sp,     " ",   END      ],
   #        [[1, 13], :on_kw,     "end", END      ]]
   #
-  def Ripper.lex(src, filename = '-', lineno = 1)
-    Lexer.new(src, filename, lineno).lex
+  def Ripper.lex(src, filename = '-', lineno = 1, raise_errors: false)
+    r = Lexer.new(src, filename, lineno)
+    ret = r.lex
+
+    if raise_errors && !r.errors.empty?
+      raise SyntaxError, r.errors.map(&:message).join(' ;')
+    end
+
+    ret
   end
 
   class Lexer < ::Ripper   #:nodoc: internal use only
