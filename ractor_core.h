@@ -160,6 +160,10 @@ void rb_ractor_terminate_interrupt_main_thread(rb_ractor_t *r);
 void rb_ractor_terminate_all(void);
 bool rb_ractor_main_p_(void);
 
+RUBY_SYMBOL_EXPORT_BEGIN
+bool rb_ractor_shareable_p_continue(VALUE obj);
+RUBY_SYMBOL_EXPORT_END
+
 RUBY_EXTERN bool ruby_multi_ractor;
 
 static inline bool
