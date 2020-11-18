@@ -169,6 +169,16 @@ class TestFiber < Test::Unit::TestCase
     assert_equal(:ok, fib.raise)
   end
 
+  def test_raise_transferring_fiber
+    root = Fiber.current
+    fib = Fiber.new { root.transfer }
+    fib.transfer
+    assert_raise(RuntimeError){
+      fib.raise "can raise with transfer: true"
+    }
+    assert_not_predicate(fib, :alive?)
+  end
+
   def test_transfer
     ary = []
     f2 = nil
