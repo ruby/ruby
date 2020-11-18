@@ -2328,11 +2328,43 @@ rb_fiber_m_resume(int argc, VALUE *argv, VALUE fiber)
     return rb_fiber_resume_kw(fiber, argc, argv, rb_keyword_given_p());
 }
 
+static VALUE rb_fiber_transfer_kw(VALUE fiber_value, int argc, VALUE *argv, int kw_splat);
+
+static VALUE
+rb_fiber_raise_kw(int argc, VALUE* argv, VALUE fiber_value, int kw_splat)
+{
+    VALUE transfer = Qfalse;
+    if (argc > 0) {
+        if (rb_scan_args_keyword_p(kw_splat, argv[argc-1])) {
+            static ID fiber_raise_keywords[1];
+            if (!fiber_raise_keywords[0]) {
+                fiber_raise_keywords[0] = rb_intern_const("transfer");
+            }
+
+            rb_get_kwargs(argv[argc-1], fiber_raise_keywords, 0, 1, &transfer);
+            argc--;
+
+            if (transfer == Qundef) {
+                transfer = Qfalse;
+            }
+        }
+    }
+
+    VALUE exc = rb_make_exception(argc, argv);
+
+    if (RTEST(transfer)) {
+        return rb_fiber_transfer_kw(fiber_value, -1, &exc, RB_NO_KEYWORDS);
+    }
+
+    return rb_fiber_resume_kw(fiber_value, -1, &exc, RB_NO_KEYWORDS);
+}
+
 /*
  *  call-seq:
  *     fiber.raise                                 -> obj
  *     fiber.raise(string)                         -> obj
  *     fiber.raise(exception [, string [, array]]) -> obj
+ *     fiber.raise(*args, transfer: true)          -> obj
  *
  *  Raises an exception in the fiber at the point at which the last
  *  +Fiber.yield+ was called. If the fiber has not been started or has
@@ -2346,12 +2378,16 @@ rb_fiber_m_resume(int argc, VALUE *argv, VALUE fiber)
  *  the exception, and the third parameter is an array of callback information.
  *  Exceptions are caught by the +rescue+ clause of <code>begin...end</code>
  *  blocks.
+ *
+ *  By specifying a keyword argument +transfer+ to +true+, an exception can be
+ *  raised in a new or transferring fiber, as if +transfer+ were called.
+ *  Otherwise, the fiber must be new or yielding and will be resumed, as if
+ *  +resume+ were called.
  */
 static VALUE
 rb_fiber_raise(int argc, VALUE *argv, VALUE fiber)
 {
-    VALUE exc = rb_make_exception(argc, argv);
-    return rb_fiber_resume_kw(fiber, -1, &exc, RB_NO_KEYWORDS);
+    return rb_fiber_raise_kw(argc, argv, fiber, rb_keyword_given_p());
 }
 
 static VALUE
@@ -2421,6 +2457,12 @@ rb_fiber_backtrace_locations(int argc, VALUE *argv, VALUE fiber)
 static VALUE
 rb_fiber_m_transfer(int argc, VALUE *argv, VALUE fiber_value)
 {
+    return rb_fiber_transfer_kw(fiber_value, argc, argv, rb_keyword_given_p());
+}
+
+static VALUE
+rb_fiber_transfer_kw(VALUE fiber_value, int argc, VALUE *argv, int kw_splat)
+{
     rb_fiber_t *fiber = fiber_ptr(fiber_value);
     if (RTEST(fiber->resuming_fiber)) {
         rb_raise(rb_eFiberError, "attempt to transfer to a resuming fiber");
@@ -2428,7 +2470,7 @@ rb_fiber_m_transfer(int argc, VALUE *argv, VALUE fiber_value)
     if (fiber->yielding) {
         rb_raise(rb_eFiberError, "attempt to transfer to a yielding fiber");
     }
-    return fiber_switch(fiber, argc, argv, rb_keyword_given_p(), Qfalse, false);
+    return fiber_switch(fiber, argc, argv, kw_splat, Qfalse, false);
 }
 
 /*
