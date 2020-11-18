@@ -35,11 +35,16 @@ class Reline::Unicode
   }
   EscapedChars = EscapedPairs.keys.map(&:chr)
 
-  CSI_REGEXP = /\e\[[\d;]*[ABCDEFGHJKSTfminsuhl]/
-  OSC_REGEXP = /\e\]\d+(?:;[^;]+)*\a/
   NON_PRINTING_START = "\1"
   NON_PRINTING_END = "\2"
-  WIDTH_SCANNER = /\G(?:#{NON_PRINTING_START}|#{NON_PRINTING_END}|#{CSI_REGEXP}|#{OSC_REGEXP}|\X)/
+  CSI_REGEXP = /\e\[[\d;]*[ABCDEFGHJKSTfminsuhl]/
+  OSC_REGEXP = /\e\]\d+(?:;[^;]+)*\a/
+  WIDTH_SCANNER = /\G(?:(#{NON_PRINTING_START})|(#{NON_PRINTING_END})|(#{CSI_REGEXP})|(#{OSC_REGEXP})|(\X))/o
+  NON_PRINTING_START_INDEX = 0
+  NON_PRINTING_END_INDEX = 1
+  CSI_REGEXP_INDEX = 2
+  OSC_REGEXP_INDEX = 3
+  GRAPHEME_CLUSTER_INDEX = 4
 
   def self.get_mbchar_byte_size_by_first_char(c)
     # Checks UTF-8 character byte size
@@ -119,13 +124,14 @@ class Reline::Unicode
       rest = str.encode(Encoding::UTF_8)
       in_zero_width = false
       rest.scan(WIDTH_SCANNER) do |gc|
-        case gc
-        when NON_PRINTING_START
+        case
+        when gc[NON_PRINTING_START_INDEX]
           in_zero_width = true
-        when NON_PRINTING_END
+        when gc[NON_PRINTING_END_INDEX]
           in_zero_width = false
-        when CSI_REGEXP, OSC_REGEXP
-        else
+        when gc[CSI_REGEXP_INDEX], gc[OSC_REGEXP_INDEX]
+        when gc[GRAPHEME_CLUSTER_INDEX]
+          gc = gc[GRAPHEME_CLUSTER_INDEX]
           unless in_zero_width
             width += get_mbchar_width(gc)
           end
@@ -146,14 +152,17 @@ class Reline::Unicode
     rest = str.encode(Encoding::UTF_8)
     in_zero_width = false
     rest.scan(WIDTH_SCANNER) do |gc|
-      case gc
-      when NON_PRINTING_START
+      case
+      when gc[NON_PRINTING_START_INDEX]
         in_zero_width = true
-      when NON_PRINTING_END
+      when gc[NON_PRINTING_END_INDEX]
         in_zero_width = false
-      when CSI_REGEXP, OSC_REGEXP
-        lines.last << gc
-      else
+      when gc[CSI_REGEXP_INDEX]
+        lines.last << gc[CSI_REGEXP_INDEX]
+      when gc[OSC_REGEXP_INDEX]
+        lines.last << gc[OSC_REGEXP_INDEX]
+      when gc[GRAPHEME_CLUSTER_INDEX]
+        gc = gc[GRAPHEME_CLUSTER_INDEX]
         unless in_zero_width
           mbchar_width = get_mbchar_width(gc)
           if (width += mbchar_width) > max_width
