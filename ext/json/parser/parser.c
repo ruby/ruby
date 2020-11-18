@@ -2354,7 +2354,7 @@ static char *JSON_parse_array(JSON_Parser *json, char *p, char *pe, VALUE *resul
 }
 
 static const size_t MAX_STACK_BUFFER_SIZE = 128;
-static VALUE json_string_unescape(char *string, char *stringEnd)
+static VALUE json_string_unescape(char *string, char *stringEnd, int intern, int symbolize)
 {
 	VALUE result = Qnil;
 	size_t bufferSize = stringEnd - string;
@@ -2363,10 +2363,9 @@ static VALUE json_string_unescape(char *string, char *stringEnd)
 	char buf[4];
 
 	if (bufferSize > MAX_STACK_BUFFER_SIZE) {
-		buffer = xmalloc(bufferSize);
-		bufferStart = buffer;
+		bufferStart = buffer = ALLOC_N(char, bufferSize);
 	} else {
-		bufferStart = buffer = alloca(bufferSize);
+		bufferStart = buffer = ALLOCA_N(char, bufferSize);
 	}
 
 	while (pe < stringEnd) {
@@ -2453,15 +2452,42 @@ static VALUE json_string_unescape(char *string, char *stringEnd)
 		buffer += pe - p;
 	}
 
-	#ifdef HAVE_RUBY_ENCODING_H
-	result = rb_utf8_str_new(bufferStart, buffer - bufferStart);
-	#else
-	result = rb_str_new(bufferStart, buffer - bufferStart);
-	#endif
+	# ifdef HAVE_RB_ENC_INTERNED_STR
+	if (intern) {
+		result = rb_enc_interned_str(bufferStart, (long)(buffer - bufferStart), rb_utf8_encoding());
+	} else {
+		result = rb_utf8_str_new(bufferStart, (long)(buffer - bufferStart));
+	}
+	if (bufferSize > MAX_STACK_BUFFER_SIZE) {
+		free(bufferStart);
+	}
+	# else
+	result = rb_utf8_str_new(bufferStart, (long)(buffer - bufferStart));
 
 	if (bufferSize > MAX_STACK_BUFFER_SIZE) {
 		free(bufferStart);
 	}
+
+	if (intern) {
+		# if STR_UMINUS_DEDUPE_FROZEN
+		// Starting from MRI 2.8 it is preferable to freeze the string
+		// before deduplication so that it can be interned directly
+		// otherwise it would be duplicated first which is wasteful.
+		result = rb_funcall(rb_str_freeze(result), i_uminus, 0);
+		# elif STR_UMINUS_DEDUPE
+		// MRI 2.5 and older do not deduplicate strings that are already
+		// frozen.
+		result = rb_funcall(result, i_uminus, 0);
+		# else
+		result = rb_str_freeze(result);
+		# endif
+	}
+	# endif
+
+	if (symbolize) {
+		result = rb_str_intern(result);
+	}
+
 	return result;
 }
 
@@ -2490,7 +2516,7 @@ static const char _JSON_string_nfa_pop_trans[] = {
 };
 
 
-#line 586 "parser.rl"
+#line 612 "parser.rl"
 
 
 static int
@@ -2515,7 +2541,7 @@ static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *resu
 		cs = (int)JSON_string_start;
 	}
 
-	#line 606 "parser.rl"
+	#line 632 "parser.rl"
 
 	json->memo = p;
 
@@ -2576,9 +2602,9 @@ static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *resu
 		}
 		ctr2:
 		{
-			#line 573 "parser.rl"
+			#line 599 "parser.rl"
 
-			*result = json_string_unescape(json->memo + 1, p);
+			*result = json_string_unescape(json->memo + 1, p, json->parsing_name || json-> freeze, json->parsing_name && json->symbolize_names);
 			if (NIL_P(*result)) {
 				{p = p - 1; }
 				{p+= 1; cs = 8; goto _out;}
@@ -2588,7 +2614,7 @@ static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *resu
 			}
 		}
 		{
-			#line 583 "parser.rl"
+			#line 609 "parser.rl"
 			{p = p - 1; } {p+= 1; cs = 8; goto _out;} }
 
 		goto st8;
@@ -2703,7 +2729,7 @@ static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *resu
 		_out: {}
 	}
 
-	#line 608 "parser.rl"
+	#line 634 "parser.rl"
 
 
 	if (json->create_additions && RTEST(match_string = json->match_string)) {
@@ -2717,26 +2743,6 @@ static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *resu
 		}
 	}
 
-	if (json->symbolize_names && json->parsing_name) {
-		*result = rb_str_intern(*result);
-	} else if (RB_TYPE_P(*result, T_STRING)) {
-		# if STR_UMINUS_DEDUPE_FROZEN
-		if (json->freeze) {
-			// Starting from MRI 2.8 it is preferable to freeze the string
-			// before deduplication so that it can be interned directly
-			// otherwise it would be duplicated first which is wasteful.
-			*result = rb_funcall(rb_str_freeze(*result), i_uminus, 0);
-		}
-		# elif STR_UMINUS_DEDUPE
-		if (json->freeze) {
-			// MRI 2.5 and older do not deduplicate strings that are already
-			// frozen.
-			*result = rb_funcall(*result, i_uminus, 0);
-		}
-		# else
-		rb_str_resize(*result, RSTRING_LEN(*result));
-		# endif
-	}
 	if (cs >= JSON_string_first_final) {
 		return p + 1;
 	} else {
@@ -2936,7 +2942,7 @@ static const char _JSON_nfa_pop_trans[] = {
 };
 
 
-#line 829 "parser.rl"
+#line 835 "parser.rl"
 
 
 /*
@@ -2957,7 +2963,7 @@ static VALUE cParser_parse(VALUE self)
 		cs = (int)JSON_start;
 	}
 
-	#line 845 "parser.rl"
+	#line 851 "parser.rl"
 
 	p = json->source;
 	pe = p + json->len;
@@ -3050,7 +3056,7 @@ static VALUE cParser_parse(VALUE self)
 		goto _out;
 		ctr2:
 		{
-			#line 821 "parser.rl"
+			#line 827 "parser.rl"
 
 			char *np = JSON_parse_value(json, p, pe, &result, 0);
 			if (np == NULL) { {p = p - 1; } {p+= 1; cs = 10; goto _out;} } else {p = (( np))-1;}
@@ -3204,7 +3210,7 @@ static VALUE cParser_parse(VALUE self)
 		_out: {}
 	}
 
-	#line 848 "parser.rl"
+	#line 854 "parser.rl"
 
 
 	if (cs >= JSON_first_final && p == pe) {

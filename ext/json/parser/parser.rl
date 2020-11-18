@@ -453,7 +453,7 @@ static char *JSON_parse_array(JSON_Parser *json, char *p, char *pe, VALUE *resul
 }
 
 static const size_t MAX_STACK_BUFFER_SIZE = 128;
-static VALUE json_string_unescape(char *string, char *stringEnd)
+static VALUE json_string_unescape(char *string, char *stringEnd, int intern, int symbolize)
 {
     VALUE result = Qnil;
     size_t bufferSize = stringEnd - string;
@@ -462,10 +462,9 @@ static VALUE json_string_unescape(char *string, char *stringEnd)
     char buf[4];
 
     if (bufferSize > MAX_STACK_BUFFER_SIZE) {
-      buffer = xmalloc(bufferSize);
-      bufferStart = buffer;
+      bufferStart = buffer = ALLOC_N(char, bufferSize);
     } else {
-      bufferStart = buffer = alloca(bufferSize);
+      bufferStart = buffer = ALLOCA_N(char, bufferSize);
     }
 
     while (pe < stringEnd) {
@@ -552,15 +551,42 @@ static VALUE json_string_unescape(char *string, char *stringEnd)
       buffer += pe - p;
     }
 
-    #ifdef HAVE_RUBY_ENCODING_H
-      result = rb_utf8_str_new(bufferStart, buffer - bufferStart);
-    #else
-      result = rb_str_new(bufferStart, buffer - bufferStart);
-    #endif
+# ifdef HAVE_RB_ENC_INTERNED_STR
+      if (intern) {
+        result = rb_enc_interned_str(bufferStart, (long)(buffer - bufferStart), rb_utf8_encoding());
+      } else {
+        result = rb_utf8_str_new(bufferStart, (long)(buffer - bufferStart));
+      }
+      if (bufferSize > MAX_STACK_BUFFER_SIZE) {
+        free(bufferStart);
+      }
+# else
+      result = rb_utf8_str_new(bufferStart, (long)(buffer - bufferStart));
 
-    if (bufferSize > MAX_STACK_BUFFER_SIZE) {
-      free(bufferStart);
+      if (bufferSize > MAX_STACK_BUFFER_SIZE) {
+        free(bufferStart);
+      }
+
+      if (intern) {
+  # if STR_UMINUS_DEDUPE_FROZEN
+        // Starting from MRI 2.8 it is preferable to freeze the string
+        // before deduplication so that it can be interned directly
+        // otherwise it would be duplicated first which is wasteful.
+        result = rb_funcall(rb_str_freeze(result), i_uminus, 0);
+  # elif STR_UMINUS_DEDUPE
+        // MRI 2.5 and older do not deduplicate strings that are already
+        // frozen.
+        result = rb_funcall(result, i_uminus, 0);
+  # else
+        result = rb_str_freeze(result);
+  # endif
+      }
+# endif
+
+    if (symbolize) {
+      result = rb_str_intern(result);
     }
+
     return result;
 }
 
@@ -571,7 +597,7 @@ static VALUE json_string_unescape(char *string, char *stringEnd)
     write data;
 
     action parse_string {
-        *result = json_string_unescape(json->memo + 1, p);
+        *result = json_string_unescape(json->memo + 1, p, json->parsing_name || json-> freeze, json->parsing_name && json->symbolize_names);
         if (NIL_P(*result)) {
             fhold;
             fbreak;
@@ -617,26 +643,6 @@ static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *resu
           }
     }
 
-    if (json->symbolize_names && json->parsing_name) {
-      *result = rb_str_intern(*result);
-    } else if (RB_TYPE_P(*result, T_STRING)) {
-# if STR_UMINUS_DEDUPE_FROZEN
-      if (json->freeze) {
-        // Starting from MRI 2.8 it is preferable to freeze the string
-        // before deduplication so that it can be interned directly
-        // otherwise it would be duplicated first which is wasteful.
-        *result = rb_funcall(rb_str_freeze(*result), i_uminus, 0);
-      }
-# elif STR_UMINUS_DEDUPE
-      if (json->freeze) {
-        // MRI 2.5 and older do not deduplicate strings that are already
-        // frozen.
-        *result = rb_funcall(*result, i_uminus, 0);
-      }
-# else
-      rb_str_resize(*result, RSTRING_LEN(*result));
-# endif
-    }
     if (cs >= JSON_string_first_final) {
         return p + 1;
     } else {
