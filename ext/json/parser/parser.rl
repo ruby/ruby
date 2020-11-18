@@ -452,17 +452,30 @@ static char *JSON_parse_array(JSON_Parser *json, char *p, char *pe, VALUE *resul
     }
 }
 
-static VALUE json_string_unescape(VALUE result, char *string, char *stringEnd)
+static const size_t MAX_STACK_BUFFER_SIZE = 128;
+static VALUE json_string_unescape(char *string, char *stringEnd)
 {
-    char *p = string, *pe = string, *unescape;
+    VALUE result = Qnil;
+    size_t bufferSize = stringEnd - string;
+    char *p = string, *pe = string, *unescape, *bufferStart, *buffer;
     int unescape_len;
     char buf[4];
+
+    if (bufferSize > MAX_STACK_BUFFER_SIZE) {
+      buffer = xmalloc(bufferSize);
+      bufferStart = buffer;
+    } else {
+      bufferStart = buffer = alloca(bufferSize);
+    }
 
     while (pe < stringEnd) {
         if (*pe == '\\') {
             unescape = (char *) "?";
             unescape_len = 1;
-            if (pe > p) rb_str_buf_cat(result, p, pe - p);
+            if (pe > p) {
+              MEMCPY(buffer, p, char, pe - p);
+              buffer += pe - p;
+            }
             switch (*++pe) {
                 case 'n':
                     unescape = (char *) "\n";
@@ -487,6 +500,9 @@ static VALUE json_string_unescape(VALUE result, char *string, char *stringEnd)
                     break;
                 case 'u':
                     if (pe > stringEnd - 4) {
+                      if (bufferSize > MAX_STACK_BUFFER_SIZE) {
+                        free(bufferStart);
+                      }
                       rb_enc_raise(
                         EXC_ENCODING eParserError,
                         "%u: incomplete unicode character escape sequence at '%s'", __LINE__, p
@@ -497,6 +513,9 @@ static VALUE json_string_unescape(VALUE result, char *string, char *stringEnd)
                         if (UNI_SUR_HIGH_START == (ch & 0xFC00)) {
                             pe++;
                             if (pe > stringEnd - 6) {
+                              if (bufferSize > MAX_STACK_BUFFER_SIZE) {
+                                free(bufferStart);
+                              }
                               rb_enc_raise(
                                 EXC_ENCODING eParserError,
                                 "%u: incomplete surrogate pair at '%s'", __LINE__, p
@@ -520,13 +539,28 @@ static VALUE json_string_unescape(VALUE result, char *string, char *stringEnd)
                     p = pe;
                     continue;
             }
-            rb_str_buf_cat(result, unescape, unescape_len);
+            MEMCPY(buffer, unescape, char, unescape_len);
+            buffer += unescape_len;
             p = ++pe;
         } else {
             pe++;
         }
     }
-    rb_str_buf_cat(result, p, pe - p);
+
+    if (pe > p) {
+      MEMCPY(buffer, p, char, pe - p);
+      buffer += pe - p;
+    }
+
+    #ifdef HAVE_RUBY_ENCODING_H
+      result = rb_utf8_str_new(bufferStart, buffer - bufferStart);
+    #else
+      result = rb_str_new(bufferStart, buffer - bufferStart);
+    #endif
+
+    if (bufferSize > MAX_STACK_BUFFER_SIZE) {
+      free(bufferStart);
+    }
     return result;
 }
 
@@ -537,12 +571,11 @@ static VALUE json_string_unescape(VALUE result, char *string, char *stringEnd)
     write data;
 
     action parse_string {
-        *result = json_string_unescape(*result, json->memo + 1, p);
+        *result = json_string_unescape(json->memo + 1, p);
         if (NIL_P(*result)) {
             fhold;
             fbreak;
         } else {
-            FORCE_UTF8(*result);
             fexec p + 1;
         }
     }
@@ -569,7 +602,6 @@ static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *resu
     int cs = EVIL;
     VALUE match_string;
 
-    *result = rb_str_buf_new(0);
     %% write init;
     json->memo = p;
     %% write exec;
