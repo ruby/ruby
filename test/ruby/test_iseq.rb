@@ -98,6 +98,22 @@ class TestISeq < Test::Unit::TestCase
     assert_include(RubyVM::InstructionSequence.of(obj.method(name)).disasm, name)
   end
 
+  def test_compile_file_encoding
+    Tempfile.create(%w"test_iseq .rb") do |f|
+      f.puts "{ '\u00de' => 'Th', '\u00df' => 'ss', '\u00e0' => 'a' }"
+      f.close
+
+      previous_external = Encoding.default_external
+      Encoding.default_external = Encoding::US_ASCII
+      begin
+        load f.path
+        RubyVM::InstructionSequence.compile_file(f.path)
+      ensure
+        Encoding.default_external = previous_external
+      end
+    end
+  end
+
   LINE_BEFORE_METHOD = __LINE__
   def method_test_line_trace
 

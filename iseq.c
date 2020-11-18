@@ -1303,7 +1303,7 @@ iseqw_s_compile_file(int argc, VALUE *argv, VALUE self)
 
     parser = rb_parser_new();
     rb_parser_set_context(parser, NULL, FALSE);
-    ast = rb_parser_compile_file_path(parser, file, f, NUM2INT(line));
+    ast = (rb_ast_t *)rb_parser_load_file(parser, file);
     if (!ast->body.root) exc = GET_EC()->errinfo;
 
     rb_io_close(f);
