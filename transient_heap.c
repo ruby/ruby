@@ -154,7 +154,7 @@ transient_heap_dump(struct transient_heap* theap)
     transient_heap_blocks_dump(theap, theap->free_blocks, "free_blocks");
 }
 
-/* Debug: dump all tarnsient_heap blocks */
+/* Debug: dump all transient_heap blocks */
 void
 rb_transient_heap_dump(void)
 {
@@ -718,7 +718,7 @@ transient_heap_block_evacuate(struct transient_heap* theap, struct transient_hea
         asan_unpoison_memory_region(header, sizeof *header, true);
         VALUE obj = header->obj;
         TH_ASSERT(header->magic == TRANSIENT_HEAP_ALLOC_MAGIC);
-        if (header->magic != TRANSIENT_HEAP_ALLOC_MAGIC) rb_bug("rb_transient_heap_mark: wrong header %s\n", rb_obj_info(obj));
+        if (header->magic != TRANSIENT_HEAP_ALLOC_MAGIC) rb_bug("transient_heap_block_evacuate: wrong header %p %s\n", (void *)header, rb_obj_info(obj));
 
         if (TRANSIENT_HEAP_DEBUG >= 3) fprintf(stderr, " * transient_heap_block_evacuate %p %s\n", (void *)header, rb_obj_info(obj));
 
@@ -739,7 +739,7 @@ transient_heap_block_evacuate(struct transient_heap* theap, struct transient_hea
                 rb_hash_transient_heap_evacuate(obj, !TRANSIENT_HEAP_DEBUG_DONT_PROMOTE);
                 break;
               default:
-                rb_bug("unsupporeted: %s\n", rb_obj_info(obj));
+                rb_bug("unsupported: %s\n", rb_obj_info(obj));
             }
             header->obj = Qundef; /* for debug */
         }
@@ -912,7 +912,7 @@ rb_transient_heap_start_marking(int full_marking)
 
     struct transient_heap* theap = transient_heap_get();
 
-    if (TRANSIENT_HEAP_DEBUG >= 1) fprintf(stderr, "!! rb_transient_heap_start_marking objects:%d blocks:%d promtoed:%d full_marking:%d\n",
+    if (TRANSIENT_HEAP_DEBUG >= 1) fprintf(stderr, "!! rb_transient_heap_start_marking objects:%d blocks:%d promoted:%d full_marking:%d\n",
                                            theap->total_objects, theap->total_blocks, theap->promoted_objects_index, full_marking);
     if (TRANSIENT_HEAP_DEBUG >= 2) transient_heap_dump(theap);
 

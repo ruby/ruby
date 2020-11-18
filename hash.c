@@ -532,7 +532,7 @@ hash_verify_(VALUE hash, const char *file, int line)
         HASH_ASSERT(RHASH_AR_TABLE_BOUND_RAW(hash) == 0);
     }
 
-#if USE_TRANSIENT_HEP
+#if USE_TRANSIENT_HEAP
     if (RHASH_TRANSIENT_P(hash)) {
         volatile st_data_t MAYBE_UNUSED(key) = RHASH_AR_TABLE_REF(hash, 0)->key; /* read */
         HASH_ASSERT(RHASH_AR_TABLE(hash) != NULL);
