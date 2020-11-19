@@ -31,6 +31,10 @@ class Ripper
       raise SyntaxError, r.errors.map(&:message).join(' ;')
     end
 
+    until (tokens = r.tokenize).empty?
+      ret.concat(tokens)
+    end
+
     ret
   end
 
@@ -63,6 +67,10 @@ class Ripper
 
     if raise_errors && !r.errors.empty?
       raise SyntaxError, r.errors.map(&:message).join(' ;')
+    end
+
+    until (tokens = r.lex).empty?
+      ret.concat(tokens)
     end
 
     ret

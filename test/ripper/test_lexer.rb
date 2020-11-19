@@ -150,4 +150,12 @@ class TestRipper::Lexer < Test::Unit::TestCase
     assert_raise(SyntaxError) { Ripper.tokenize('def req(true) end', raise_errors: true) }
     assert_raise(SyntaxError) { Ripper.tokenize('def req(true) end', raise_errors: true) }
   end
+
+  def test_tokenize_with_syntax_error
+    assert_equal "end", Ripper.tokenize("def req(true) end").last
+  end
+
+  def test_lex_with_syntax_error
+    assert_equal [[1, 14], :on_kw, "end", state(:EXPR_END)], Ripper.lex("def req(true) end").last
+  end
 end
