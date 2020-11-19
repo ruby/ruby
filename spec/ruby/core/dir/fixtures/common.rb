@@ -172,6 +172,8 @@ module DirSpecs
       expected_paths - ['..']
     end
   else
-    alias expected_glob_paths expected_paths
+    def self.expected_glob_paths
+      expected_paths
+    end
   end
 end
