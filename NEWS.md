@@ -369,31 +369,43 @@ Excluding feature bug fixes.
 
     * The following libraries are promoted the default gems from stdlib.
 
+        * English
         * abbrev
         * base64
-        * English
+        * drb
+        * debug
         * erb
         * find
-        * io-nonblock
-        * io-wait
         * net-ftp
         * net-http
         * net-imap
         * net-protocol
-        * nkf
         * open-uri
         * optparse
-        * resolv
+        * pp
+        * prettyprint
         * resolv-replace
+        * resolv
         * rinda
-        * securerandom
         * set
+        * securerandom
         * shellwords
         * tempfile
-        * time
         * tmpdir
+        * time
         * tsort
+        * un
         * weakref
+
+    * The following extensions are promoted the default gems from stdlib.
+
+        * digest
+        * io-nonblock
+        * io-wait
+        * nkf
+        * pathname
+        * syslog
+        * win32ole
 
 * Bundled gems
 
