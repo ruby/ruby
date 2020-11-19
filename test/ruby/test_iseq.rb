@@ -103,13 +103,13 @@ class TestISeq < Test::Unit::TestCase
       f.puts "{ '\u00de' => 'Th', '\u00df' => 'ss', '\u00e0' => 'a' }"
       f.close
 
-      previous_external = Encoding.default_external
-      Encoding.default_external = Encoding::US_ASCII
-      begin
-        load f.path
-        RubyVM::InstructionSequence.compile_file(f.path)
-      ensure
-        Encoding.default_external = previous_external
+      EnvUtil.with_default_external(Encoding::US_ASCII) do
+        assert_warn('') {
+          load f.path
+        }
+        assert_nothing_raised(SyntaxError) {
+          RubyVM::InstructionSequence.compile_file(f.path)
+        }
       end
     end
   end
