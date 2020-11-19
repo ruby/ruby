@@ -210,7 +210,7 @@ describe :dir_glob, shared: true do
     end
   end
 
-  ruby_version_is ''...'3.0' do
+  ruby_version_is '3.0' do
     it "recursively matches any subdirectories including ./ with '.**/'" do
       Dir.chdir("#{DirSpecs.mock_dir}/subdir_one") do
         Dir.send(@method, '.**/').should == ['./']
