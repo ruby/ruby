@@ -120,8 +120,16 @@ describe :dir_glob, shared: true do
     Dir.send(@method, 'special/test\{1\}/*').should == ['special/test{1}/file[1]']
   end
 
-  it "matches dotfiles with '.*'" do
-    Dir.send(@method, '.*').sort.should == %w|. .. .dotfile .dotsubdir|.sort
+  ruby_version_is ''...'3.0' do
+    it "matches dotfiles with '.*'" do
+      Dir.send(@method, '.*').sort.should == %w|. .. .dotfile .dotsubdir|.sort
+    end
+  end
+
+  ruby_version_is '3.0' do
+    it "matches dotfiles except .. with '.*'" do
+      Dir.send(@method, '.*').sort.should == %w|. .dotfile .dotsubdir|.sort
+    end
   end
 
   it "matches non-dotfiles with '*<non-special characters>'" do
@@ -165,8 +173,16 @@ describe :dir_glob, shared: true do
     Dir.send(@method, '**').sort.should == expected
   end
 
-  it "matches dotfiles in the current directory with '.**'" do
-    Dir.send(@method, '.**').sort.should == %w|. .. .dotsubdir .dotfile|.sort
+  ruby_version_is ''...'3.0' do
+    it "matches dotfiles in the current directory with '.**'" do
+      Dir.send(@method, '.**').sort.should == %w|. .. .dotsubdir .dotfile|.sort
+    end
+  end
+
+  ruby_version_is '3.0' do
+    it "matches dotfiles in the current directory except .. with '.**'" do
+      Dir.send(@method, '.**').sort.should == %w|. .dotsubdir .dotfile|.sort
+    end
   end
 
   it "recursively matches any nondot subdirectories with '**/'" do
@@ -186,9 +202,19 @@ describe :dir_glob, shared: true do
     Dir.send(@method, '**/').sort.should == expected
   end
 
-  it "recursively matches any subdirectories including ./ and ../ with '.**/'" do
-    Dir.chdir("#{DirSpecs.mock_dir}/subdir_one") do
-      Dir.send(@method, '.**/').sort.should == %w|./ ../|.sort
+  ruby_version_is ''...'3.0' do
+    it "recursively matches any subdirectories including ./ and ../ with '.**/'" do
+      Dir.chdir("#{DirSpecs.mock_dir}/subdir_one") do
+        Dir.send(@method, '.**/').sort.should == %w|./ ../|.sort
+      end
+    end
+  end
+
+  ruby_version_is ''...'3.0' do
+    it "recursively matches any subdirectories including ./ with '.**/'" do
+      Dir.chdir("#{DirSpecs.mock_dir}/subdir_one") do
+        Dir.send(@method, '.**/').should == ['./']
+      end
     end
   end
 
@@ -231,7 +257,7 @@ describe :dir_glob, shared: true do
   end
 
   it "matches dot or non-dotfiles with '{,.}*'" do
-    Dir.send(@method, '{,.}*').sort.should == DirSpecs.expected_paths
+    Dir.send(@method, '{,.}*').sort.should == DirSpecs.expected_glob_paths
   end
 
   it "respects the order of {} expressions, expanding left most first" do

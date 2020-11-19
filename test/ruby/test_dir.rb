@@ -161,7 +161,7 @@ class TestDir < Test::Unit::TestCase
   end
 
   def test_glob
-    assert_equal((%w(. ..) + ("a".."z").to_a).map{|f| File.join(@root, f) },
+    assert_equal((%w(.) + ("a".."z").to_a).map{|f| File.join(@root, f) },
                  Dir.glob(File.join(@root, "*"), File::FNM_DOTMATCH))
     assert_equal([@root] + ("a".."z").map {|f| File.join(@root, f) },
                  Dir.glob([@root, File.join(@root, "*")]))

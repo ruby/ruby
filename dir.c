@@ -2421,18 +2421,39 @@ glob_helper(
 
 	    name = dp->d_name;
 	    namlen = dp->d_namlen;
-	    if (recursive && name[0] == '.') {
-		++dotfile;
-		if (namlen == 1) {
-		    /* unless DOTMATCH, skip current directories not to recurse infinitely */
-		    if (!(flags & FNM_DOTMATCH)) continue;
-		    ++dotfile;
-		    new_pathtype = path_directory; /* force to skip stat/lstat */
-		}
-		else if (namlen == 2 && name[1] == '.') {
-		    /* always skip parent directories not to recurse infinitely */
-		    continue;
-		}
+            if (name[0] == '.') {
+                if (recursive) {
+                    ++dotfile;
+                    if (namlen == 1) {
+                        /* unless DOTMATCH, skip current directories not to recurse infinitely */
+                        if (!(flags & FNM_DOTMATCH)) continue;
+
+                        VALUE ary = ((struct glob_args *)arg)->value;
+                        VALUE str;
+
+                        /* If recursing and last entry in result matches current path
+                           this represents the same directory and should be skipped.
+                           This approach works because the algorithm uses a depth-first
+                           search, as long as . is the first entry in the directory.
+                           */
+                        if (RB_TYPE_P(ary, T_ARRAY) &&
+                                (str = rb_ary_last(0, 0, ary)) &&
+                                RB_TYPE_P(str, T_STRING) &&
+                                strncmp(RSTRING_PTR(str), path, RSTRING_LEN(str)) == 0) {
+                            continue;
+                        }
+                        ++dotfile;
+                        new_pathtype = path_directory; /* force to skip stat/lstat */
+                    }
+                    else if (namlen == 2 && name[1] == '.') {
+                        /* always skip parent directories not to recurse infinitely */
+                        continue;
+                    }
+                }
+                else if (magical == 2 && namlen == 2 && name[1] == '.') {
+                    /* always skip parent directories when using a * glob */
+                    continue;
+                }
 	    }
 
 # if NORMALIZE_UTF8PATH

@@ -166,4 +166,12 @@ module DirSpecs
       subdir_two
     ]
   end
+
+  if RUBY_VERSION > '3.0'
+    def self.expected_glob_paths
+      expected_paths - ['..']
+    end
+  else
+    alias expected_glob_paths expected_paths
+  end
 end

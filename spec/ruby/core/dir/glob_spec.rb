@@ -39,7 +39,7 @@ describe "Dir.glob" do
   end
 
   it "matches both dot and non-dotfiles with '*' and option File::FNM_DOTMATCH" do
-    Dir.glob('*', File::FNM_DOTMATCH).sort.should == DirSpecs.expected_paths
+    Dir.glob('*', File::FNM_DOTMATCH).sort.should == DirSpecs.expected_glob_paths
   end
 
   it "matches files with any beginning with '*<non-special characters>' and option File::FNM_DOTMATCH" do
@@ -47,7 +47,7 @@ describe "Dir.glob" do
   end
 
   it "matches any files in the current directory with '**' and option File::FNM_DOTMATCH" do
-    Dir.glob('**', File::FNM_DOTMATCH).sort.should == DirSpecs.expected_paths
+    Dir.glob('**', File::FNM_DOTMATCH).sort.should == DirSpecs.expected_glob_paths
   end
 
   it "recursively matches any subdirectories except './' or '../' with '**/' from the current directory and option File::FNM_DOTMATCH" do
