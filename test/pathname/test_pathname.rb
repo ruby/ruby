@@ -1266,7 +1266,7 @@ class TestPathname < Test::Unit::TestCase
       open("f", "w") {|f| f.write "abc" }
       Dir.chdir("/") {
         assert_equal(
-          [Pathname("."), Pathname(".."), Pathname("f")],
+          [Pathname("."), Pathname("f")],
           Pathname.glob("*", File::FNM_DOTMATCH, base: dir).sort)
       }
     }
