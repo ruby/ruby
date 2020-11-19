@@ -187,6 +187,7 @@ class Reline::LineEditor
     @first_prompt = true
     @searching_prompt = nil
     @first_char = true
+    @add_newline_to_end_of_buffer = false
     @eof = false
     @continuous_insertion_buffer = String.new(encoding: @encoding)
     reset_line
@@ -352,7 +353,22 @@ class Reline::LineEditor
     end
     new_highest_in_this = calculate_height_by_width(prompt_width + calculate_width(@line.nil? ? '' : @line))
     # FIXME: end of logical line sometimes breaks
-    if @previous_line_index or new_highest_in_this != @highest_in_this
+    if @add_newline_to_end_of_buffer
+      scroll_down(1)
+      new_lines = whole_lines(index: @previous_line_index, line: @line)
+      prompt, prompt_width, prompt_list = check_multiline_prompt(new_lines, prompt)
+      @buffer_of_lines[@previous_line_index] = @line
+      @line = @buffer_of_lines[@line_index]
+      render_partial(prompt, prompt_width, @line, false)
+      @cursor = @cursor_max = calculate_width(@line)
+      @byte_pointer = @line.bytesize
+      @highest_in_all += @highest_in_this
+      @highest_in_this = calculate_height_by_width(prompt_width + @cursor_max)
+      @first_line_started_from += @started_from + 1
+      @started_from = calculate_height_by_width(prompt_width + @cursor) - 1
+      @previous_line_index = nil
+      @add_newline_to_end_of_buffer = false
+    elsif @previous_line_index or new_highest_in_this != @highest_in_this
       if @previous_line_index
         new_lines = whole_lines(index: @previous_line_index, line: @line)
       else
@@ -1116,6 +1132,9 @@ class Reline::LineEditor
 
   private def key_newline(key)
     if @is_multiline
+      if (@buffer_of_lines.size - 1) == @line_index and @line.bytesize == @byte_pointer
+        @add_newline_to_end_of_buffer = true
+      end
       next_line = @line.byteslice(@byte_pointer, @line.bytesize - @byte_pointer)
       cursor_line = @line.byteslice(0, @byte_pointer)
       insert_new_line(cursor_line, next_line)
