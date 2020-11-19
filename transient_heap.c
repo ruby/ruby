@@ -862,7 +862,7 @@ blocks_clear_marked_index(struct transient_heap_block* block)
 }
 
 static void
-transient_heap_block_update_refs(struct transient_heap* theap, struct transient_heap_block* block)
+transient_heap_block_update_refs(struct transient_heap_block* block)
 {
     int marked_index = block->info.last_marked_index;
 
@@ -879,10 +879,10 @@ transient_heap_block_update_refs(struct transient_heap* theap, struct transient_
 }
 
 static void
-transient_heap_blocks_update_refs(struct transient_heap* theap, struct transient_heap_block *block, const char *type_str)
+transient_heap_blocks_update_refs(struct transient_heap_block *block)
 {
     while (block) {
-        transient_heap_block_update_refs(theap, block);
+        transient_heap_block_update_refs(block);
         block = block->info.next_block;
     }
 }
@@ -895,8 +895,8 @@ rb_transient_heap_update_references(void)
     struct transient_heap* theap = transient_heap_get();
     int i;
 
-    transient_heap_blocks_update_refs(theap, theap->using_blocks, "using_blocks");
-    transient_heap_blocks_update_refs(theap, theap->marked_blocks, "marked_blocks");
+    transient_heap_blocks_update_refs(theap->using_blocks);
+    transient_heap_blocks_update_refs(theap->marked_blocks);
 
     for (i=0; i<theap->promoted_objects_index; i++) {
         VALUE obj = theap->promoted_objects[i];
