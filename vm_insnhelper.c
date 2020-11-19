@@ -1197,6 +1197,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
     }
 }
 
+ALWAYS_INLINE(static VALUE vm_setivar(VALUE, ID, VALUE, const rb_iseq_t *, IVC, const struct rb_callcache *, int));
 static inline VALUE
 vm_setivar(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, const struct rb_callcache *cc, int is_attr)
 {
