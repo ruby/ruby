@@ -51,7 +51,12 @@ class Downloader
   class GNU < self
     def self.download(name, *rest)
       if https?
-        super("https://cdn.jsdelivr.net/gh/gcc-mirror/gcc@master/#{name}", name, *rest)
+        begin
+          super("https://cdn.jsdelivr.net/gh/gcc-mirror/gcc@master/#{name}", name, *rest)
+        rescue => e
+          STDERR.puts "Download failed (#{e.message}), try another URL"
+          super("https://raw.githubusercontent.com/gcc-mirror/gcc/master/#{name}", name, *rest)
+        end
       else
         super("https://repo.or.cz/official-gcc.git/blob_plain/HEAD:/#{name}", name, *rest)
       end
