@@ -88,9 +88,12 @@ class RubyLex
 
   def ripper_lex_without_warning(code)
     verbose, $VERBOSE = $VERBOSE, nil
-    tokens = nil
+    tokens = []
     self.class.compile_with_errors_suppressed(code) do |inner_code, line_no|
-      tokens = Ripper.lex(inner_code, '-', line_no)
+      lexer = Ripper::Lexer.new(inner_code, '-', line_no)
+      until (ts = lexer.lex).empty?
+        tokens.concat(ts)
+      end
     end
     $VERBOSE = verbose
     tokens
