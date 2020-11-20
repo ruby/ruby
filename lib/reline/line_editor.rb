@@ -78,7 +78,12 @@ class Reline::LineEditor
     end
     return [prompt, calculate_width(prompt, true), [prompt] * buffer.size] if simplified_rendering?
     if @prompt_proc
-      prompt_list = @prompt_proc.(buffer)
+      if @cached_prompt_list and Time.now.to_f < (@prompt_cache_time + 0.5)
+        prompt_list = @cached_prompt_list
+      else
+        prompt_list = @cached_prompt_list = @prompt_proc.(buffer)
+        @prompt_cache_time = Time.now.to_f
+      end
       prompt_list.map!{ prompt } if @vi_arg or @searching_prompt
       if @config.show_mode_in_prompt
         if @config.editing_mode_is?(:vi_command)
@@ -191,6 +196,8 @@ class Reline::LineEditor
     @first_char = true
     @add_newline_to_end_of_buffer = false
     @just_cursor_moving = false
+    @cached_prompt_list = nil
+    @prompt_cache_time = nil
     @eof = false
     @continuous_insertion_buffer = String.new(encoding: @encoding)
     reset_line
