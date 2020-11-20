@@ -59,6 +59,8 @@ class Reline::LineEditor
   def simplified_rendering?
     if finished?
       false
+    elsif @just_cursor_moving and not @rerender_all
+      true
     else
       not @rerender_all and not finished? and Reline::IOGate.in_pasting?
     end
@@ -188,6 +190,7 @@ class Reline::LineEditor
     @searching_prompt = nil
     @first_char = true
     @add_newline_to_end_of_buffer = false
+    @just_cursor_moving = false
     @eof = false
     @continuous_insertion_buffer = String.new(encoding: @encoding)
     reset_line
@@ -335,6 +338,10 @@ class Reline::LineEditor
     if @add_newline_to_end_of_buffer
       rerender_added_newline
       @add_newline_to_end_of_buffer = false
+    elsif @just_cursor_moving and not @rerender_all
+      just_move_cursor
+      @just_cursor_moving = false
+      return
     elsif @previous_line_index or new_highest_in_this != @highest_in_this
       rerender_changed_current_line
       @previous_line_index = nil
@@ -379,6 +386,25 @@ class Reline::LineEditor
     @highest_in_this = calculate_height_by_width(prompt_width + @cursor_max)
     @first_line_started_from += @started_from + 1
     @started_from = calculate_height_by_width(prompt_width + @cursor) - 1
+    @previous_line_index = nil
+  end
+
+  def just_move_cursor
+    prompt, prompt_width, prompt_list = check_multiline_prompt(@buffer_of_lines, prompt)
+    move_cursor_up(@started_from)
+    new_first_line_started_from =
+      if @line_index.zero?
+        0
+      else
+        calculate_height_by_lines(@buffer_of_lines[0..(@line_index - 1)], prompt_list || prompt)
+      end
+    @line = @buffer_of_lines[@line_index]
+    move_cursor_down(new_first_line_started_from - @first_line_started_from)
+    @first_line_started_from = new_first_line_started_from
+    calculate_nearest_cursor
+    @started_from = calculate_height_by_width(prompt_width + @cursor) - 1
+    move_cursor_down(@started_from)
+    Reline::IOGate.move_cursor_column((prompt_width + @cursor) % @screen_size.last)
     @previous_line_index = nil
   end
 
@@ -922,6 +948,13 @@ class Reline::LineEditor
     end
     unless completion_occurs
       @completion_state = CompletionState::NORMAL
+    end
+    unless Reline::IOGate.in_pasting?
+      if @previous_line_index and @buffer_of_lines[@previous_line_index] == @line
+        @just_cursor_moving = true
+      elsif @previous_line_index.nil? and @buffer_of_lines[@line_index] == @line
+        @just_cursor_moving = true
+      end
     end
     if @is_multiline and @auto_indent_proc and not simplified_rendering?
       process_auto_indent
