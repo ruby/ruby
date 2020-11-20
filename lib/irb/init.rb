@@ -108,7 +108,7 @@ module IRB # :nodoc:
     @CONF[:PROMPT_MODE] = (STDIN.tty? ? :DEFAULT : :NULL)
     @CONF[:AUTO_INDENT] = true
 
-    @CONF[:CONTEXT_MODE] = 3 # use binding in function on TOPLEVEL_BINDING
+    @CONF[:CONTEXT_MODE] = 4 # use a copy of TOPLEVEL_BINDING
     @CONF[:SINGLE_IRB] = false
 
     @CONF[:LC_MESSAGES] = Locale.new
