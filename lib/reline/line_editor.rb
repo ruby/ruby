@@ -50,6 +50,8 @@ class Reline::LineEditor
   CompletionJourneyData = Struct.new('CompletionJourneyData', :preposing, :postposing, :list, :pointer)
   MenuInfo = Struct.new('MenuInfo', :target, :list)
 
+  PROMPT_LIST_CACHE_TIMEOUT = 0.5
+
   def initialize(config, encoding)
     @config = config
     @completion_append_character = ''
@@ -78,7 +80,7 @@ class Reline::LineEditor
     end
     return [prompt, calculate_width(prompt, true), [prompt] * buffer.size] if simplified_rendering?
     if @prompt_proc
-      if @cached_prompt_list and Time.now.to_f < (@prompt_cache_time + 0.5)
+      if @cached_prompt_list and Time.now.to_f < (@prompt_cache_time + PROMPT_LIST_CACHE_TIMEOUT) and buffer.size == @cached_prompt_list.size
         prompt_list = @cached_prompt_list
       else
         prompt_list = @cached_prompt_list = @prompt_proc.(buffer)

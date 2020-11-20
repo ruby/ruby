@@ -398,6 +398,18 @@ begin
       EOC
     end
 
+    def test_prompt_list_caching
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl --prompt-list-cache-timeout 10 --dynamic-prompt}, startup_message: 'Multiline REPL.')
+      write("def hoge\n  3\nend")
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        [0000]> def hoge
+        [0001]>   3
+        [0002]> end
+      EOC
+    end
+
     private def write_inputrc(content)
       File.open(@inputrc_file, 'w') do |f|
         f.write content
