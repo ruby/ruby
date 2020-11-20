@@ -638,7 +638,7 @@ guard_self_is_object(codeblock_t *cb, x86opnd_t self_opnd, uint8_t *side_exit, c
         cmp(cb, self_opnd, imm_opnd(Qnil));
         je_ptr(cb, side_exit);
         ctx->self_is_object = true;
-    }   
+    }
 }
 
 static bool
@@ -781,7 +781,7 @@ gen_opt_minus(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     // Note: we generate the side-exit before popping operands from the stack
     uint8_t* side_exit = ujit_side_exit(ocb, ctx, ctx->pc);
 
-    // TODO: make a helper function for this
+    // TODO: make a helper function for guarding on op-not-redefined
     // Make sure that minus isn't redefined for integers
     mov(cb, RAX, const_ptr_opnd(ruby_current_vm_ptr));
     test(
@@ -802,10 +802,50 @@ gen_opt_minus(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     jz_ptr(cb, side_exit);
 
     // Subtract arg0 - arg1 and test for overflow
-    mov(cb, RAX, arg0);
-    sub(cb, RAX, arg1);
+    mov(cb, REG0, arg0);
+    sub(cb, REG0, arg1);
     jo_ptr(cb, side_exit);
-    add(cb, RAX, imm_opnd(1));
+    add(cb, REG0, imm_opnd(1));
+
+    // Push the output on the stack
+    x86opnd_t dst = ctx_stack_push(ctx, 1);
+    mov(cb, dst, RAX);
+
+    return true;
+}
+
+static bool
+gen_opt_plus(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
+{
+    // Create a size-exit to fall back to the interpreter
+    // Note: we generate the side-exit before popping operands from the stack
+    uint8_t* side_exit = ujit_side_exit(ocb, ctx, ctx->pc);
+
+    // TODO: make a helper function for guarding on op-not-redefined
+    // Make sure that plus isn't redefined for integers
+    mov(cb, RAX, const_ptr_opnd(ruby_current_vm_ptr));
+    test(
+        cb,
+        member_opnd_idx(RAX, rb_vm_t, redefined_flag, BOP_PLUS),
+        imm_opnd(INTEGER_REDEFINED_OP_FLAG)
+    );
+    jnz_ptr(cb, side_exit);
+
+    // Get the operands and destination from the stack
+    x86opnd_t arg1 = ctx_stack_pop(ctx, 1);
+    x86opnd_t arg0 = ctx_stack_pop(ctx, 1);
+
+    // If not fixnums, fall back
+    test(cb, arg0, imm_opnd(RUBY_FIXNUM_FLAG));
+    jz_ptr(cb, side_exit);
+    test(cb, arg1, imm_opnd(RUBY_FIXNUM_FLAG));
+    jz_ptr(cb, side_exit);
+
+    // Add arg0 + arg1 and test for overflow
+    mov(cb, REG0, arg0);
+    sub(cb, REG0, imm_opnd(1));
+    add(cb, REG0, arg1);
+    jo_ptr(cb, side_exit);
 
     // Push the output on the stack
     x86opnd_t dst = ctx_stack_push(ctx, 1);
@@ -1189,6 +1229,7 @@ rb_ujit_init(void)
     st_insert(gen_fns, (st_data_t)BIN(getinstancevariable), (st_data_t)&gen_getinstancevariable);
     st_insert(gen_fns, (st_data_t)BIN(setinstancevariable), (st_data_t)&gen_setinstancevariable);
     st_insert(gen_fns, (st_data_t)BIN(opt_minus), (st_data_t)&gen_opt_minus);
+    st_insert(gen_fns, (st_data_t)BIN(opt_plus), (st_data_t)&gen_opt_plus);
     st_insert(gen_fns, (st_data_t)BIN(opt_send_without_block), (st_data_t)&gen_opt_send_without_block);
 
     method_lookup_dependency = st_init_numtable();
