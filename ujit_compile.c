@@ -55,6 +55,9 @@ typedef struct ctx_struct
     // The start of the generated code
     uint8_t *code_ptr;
 
+    // Whether we know self is a heap object
+    bool self_is_heap_object;
+
 } ctx_t;
 
 // MicroJIT code generation function signature
@@ -407,9 +410,7 @@ ujit_compile_insn(const rb_iseq_t *iseq, unsigned int insn_idx, unsigned int *ne
     int first_opcode = opcode_at_pc(iseq, &encoded[insn_idx]);
 
     // Create codegen context
-    ctx_t ctx;
-    ctx.pc = NULL;
-    ctx.stack_diff = 0;
+    ctx_t ctx = { 0 };
     ctx.iseq = iseq;
     ctx.code_ptr = code_ptr;
     ctx.start_idx = insn_idx;
@@ -624,6 +625,22 @@ gen_setlocal_wc0(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     return true;
 }
 
+// Check that `self` is a pointer to an object on the GC heap
+static void
+ensure_self_is_heap_object(codeblock_t *cb, x86opnd_t storage_for_self, uint8_t *side_exit, ctx_t *ctx)
+{
+    // `self` is constant throughout the entire region, so we only need to do this check once.
+    if (!ctx->self_is_heap_object) {
+        test(cb, storage_for_self, imm_opnd(RUBY_IMMEDIATE_MASK));
+        jnz_ptr(cb, side_exit);
+        cmp(cb, storage_for_self, imm_opnd(Qfalse));
+        je_ptr(cb, side_exit);
+        cmp(cb, storage_for_self, imm_opnd(Qnil));
+        je_ptr(cb, side_exit);
+        ctx->self_is_heap_object = true;
+    }
+}
+
 static bool
 gen_getinstancevariable(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 {
@@ -652,13 +669,7 @@ gen_getinstancevariable(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     // Load self from CFP
     mov(cb, REG0, member_opnd(REG_CFP, rb_control_frame_t, self));
 
-    // Check that the receiver is a heap object
-    test(cb, REG0, imm_opnd(RUBY_IMMEDIATE_MASK));
-    jnz_ptr(cb, side_exit);
-    cmp(cb, REG0, imm_opnd(Qfalse));
-    je_ptr(cb, side_exit);
-    cmp(cb, REG0, imm_opnd(Qnil));
-    je_ptr(cb, side_exit);
+    ensure_self_is_heap_object(cb, REG0, side_exit, ctx);
 
     // Bail if receiver class is different from compiled time call cache class
     x86opnd_t klass_opnd = mem_opnd(64, REG0, offsetof(struct RBasic, klass));
@@ -720,13 +731,7 @@ gen_setinstancevariable(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     // Load self from CFP
     mov(cb, REG0, member_opnd(REG_CFP, rb_control_frame_t, self));
 
-    // Check that the receiver is a heap object
-    test(cb, REG0, imm_opnd(RUBY_IMMEDIATE_MASK));
-    jnz_ptr(cb, side_exit);
-    cmp(cb, REG0, imm_opnd(Qfalse));
-    je_ptr(cb, side_exit);
-    cmp(cb, REG0, imm_opnd(Qnil));
-    je_ptr(cb, side_exit);
+    ensure_self_is_heap_object(cb, REG0, side_exit, ctx);
 
     // Bail if receiver class is different from compiled time call cache class
     x86opnd_t klass_opnd = mem_opnd(64, REG0, offsetof(struct RBasic, klass));
