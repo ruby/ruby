@@ -23,19 +23,8 @@ class Ripper
   #   p Ripper.tokenize("def m(a) nil end")
   #      # => ["def", " ", "m", "(", "a", ")", " ", "nil", " ", "end"]
   #
-  def Ripper.tokenize(src, filename = '-', lineno = 1, raise_errors: false)
-    r = Lexer.new(src, filename, lineno)
-    ret = r.tokenize
-
-    if raise_errors && !r.errors.empty?
-      raise SyntaxError, r.errors.map(&:message).join(' ;')
-    end
-
-    until (tokens = r.tokenize).empty?
-      ret.concat(tokens)
-    end
-
-    ret
+  def Ripper.tokenize(src, filename = '-', lineno = 1, **kw)
+    Lexer.new(src, filename, lineno).tokenize(**kw)
   end
 
   # Tokenizes the Ruby program and returns an array of an array,
@@ -61,19 +50,8 @@ class Ripper
   #        [[1, 12], :on_sp,     " ",   END      ],
   #        [[1, 13], :on_kw,     "end", END      ]]
   #
-  def Ripper.lex(src, filename = '-', lineno = 1, raise_errors: false)
-    r = Lexer.new(src, filename, lineno)
-    ret = r.lex
-
-    if raise_errors && !r.errors.empty?
-      raise SyntaxError, r.errors.map(&:message).join(' ;')
-    end
-
-    until (tokens = r.lex).empty?
-      ret.concat(tokens)
-    end
-
-    ret
+  def Ripper.lex(src, filename = '-', lineno = 1, **kw)
+    Lexer.new(src, filename, lineno).lex(**kw)
   end
 
   class Lexer < ::Ripper   #:nodoc: internal use only
@@ -126,17 +104,17 @@ class Ripper
 
     attr_reader :errors
 
-    def tokenize
-      parse().sort_by(&:pos).map(&:tok)
+    def tokenize(**kw)
+      parse(**kw).sort_by(&:pos).map(&:tok)
     end
 
-    def lex
-      parse().sort_by(&:pos).map(&:to_a)
+    def lex(**kw)
+      parse(**kw).sort_by(&:pos).map(&:to_a)
     end
 
     # parse the code and returns elements including errors.
-    def scan
-      result = (parse() + errors + @stack.flatten).uniq.sort_by {|e| [*e.pos, (e.message ? -1 : 0)]}
+    def scan(**kw)
+      result = (parse(**kw) + errors + @stack.flatten).uniq.sort_by {|e| [*e.pos, (e.message ? -1 : 0)]}
       result.each_with_index do |e, i|
         if e.event == :on_parse_error and e.tok.empty? and (pre = result[i-1]) and
           pre.pos[0] == e.pos[0] and (pre.pos[1] + pre.tok.size) == e.pos[1]
@@ -149,13 +127,19 @@ class Ripper
       result
     end
 
-    def parse
+    def parse(raise_errors: false)
       @errors = []
       @buf = []
       @stack = []
-      super
+      super()
+      if raise_errors and !@errors.empty?
+        raise SyntaxError, @errors.map(&:message).join(' ;')
+      end
       @buf.flatten!
-      @buf
+      unless (result = @buf).empty?
+        result.concat(@buf) until (@buf = []; super(); @buf.empty?)
+      end
+      result
     end
 
     private
