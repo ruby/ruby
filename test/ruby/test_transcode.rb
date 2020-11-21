@@ -469,6 +469,25 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u00A0", "\xFF", 'IBM437') # non-breaking space
   end
 
+  def test_IBM720
+    assert_raise(Encoding::UndefinedConversionError) { "\x80".encode("utf-8", 'IBM720') }
+    assert_raise(Encoding::UndefinedConversionError) { "\x8F".encode("utf-8", 'IBM720') }
+    assert_raise(Encoding::UndefinedConversionError) { "\x90".encode("utf-8", 'IBM720') }
+    check_both_ways("\u0627", "\x9F", 'IBM720') # ا
+    check_both_ways("\u0628", "\xA0", 'IBM720') # ب
+    check_both_ways("\u00BB", "\xAF", 'IBM720') # »
+    check_both_ways("\u2591", "\xB0", 'IBM720') # ░
+    check_both_ways("\u2510", "\xBF", 'IBM720') # ┐
+    check_both_ways("\u2514", "\xC0", 'IBM720') # └
+    check_both_ways("\u2567", "\xCF", 'IBM720') # ╧
+    check_both_ways("\u2568", "\xD0", 'IBM720') # ╨
+    check_both_ways("\u2580", "\xDF", 'IBM720') # ▀
+    check_both_ways("\u0636", "\xE0", 'IBM720') # ض
+    check_both_ways("\u064A", "\xEF", 'IBM720') # ي
+    check_both_ways("\u2261", "\xF0", 'IBM720') # ≡
+    check_both_ways("\u00A0", "\xFF", 'IBM720') # non-breaking space
+  end
+
   def test_IBM775
     check_both_ways("\u0106", "\x80", 'IBM775') # Ć
     check_both_ways("\u00C5", "\x8F", 'IBM775') # Å
