@@ -934,7 +934,6 @@ compact_all_jit_code(void)
 {
 # if USE_HEADER_TRANSFORMATION
     struct rb_mjit_unit *unit, *cur = 0;
-    double start_time, end_time;
     static const char c_ext[] = ".c";
     static const char so_ext[] = DLEXT;
     char c_file[MAXPATHLEN], so_file[MAXPATHLEN];
@@ -947,17 +946,17 @@ compact_all_jit_code(void)
 
     sprint_uniq_filename(c_file, (int)sizeof(c_file), unit->id, MJIT_TMP_PREFIX, c_ext);
     CRITICAL_SECTION_START(3, "in compact_all_jit_code to guard .c files from unload_units");
-    bool success = compile_compact_jit_code(c_file);
     in_compact = true;
     CRITICAL_SECTION_FINISH(3, "in compact_all_jit_code to guard .c files from unload_units");
 
-    start_time = real_ms_time();
+    bool success = compile_compact_jit_code(c_file);
+    double start_time = real_ms_time();
     if (success) {
         success = compile_c_to_so(c_file, so_file);
         if (!mjit_opts.save_temps)
             remove_file(c_file);
     }
-    end_time = real_ms_time();
+    double end_time = real_ms_time();
 
     CRITICAL_SECTION_START(3, "in compact_all_jit_code to release .c files");
     in_compact = false;
