@@ -271,8 +271,8 @@ Outstanding ones only.
 
     * Modified methods
 
-        * The following methods now return String instances instead of
-          subclass instances when called on subclass instances:
+        * The following methods now return or yield String instances
+          instead of subclass instances when called on subclass instances:
           [[Bug #10845]]
 
             * `String#*`
@@ -285,7 +285,9 @@ Outstanding ones only.
             * `String#delete_suffix`
             * `String#downcase`
             * `String#dump`
-            * `String#each/#each_line`
+            * `String#each_char`
+            * `String#each_grapheme_cluster`
+            * `String#each_line`
             * `String#gsub`
             * `String#ljust`
             * `String#lstrip`
