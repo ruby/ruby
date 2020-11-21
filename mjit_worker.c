@@ -1084,10 +1084,6 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     int c_file_len = (int)sizeof(c_file_buff);
     static const char c_ext[] = ".c";
     static const char so_ext[] = DLEXT;
-#ifndef _MSC_VER
-    static const char o_ext[] = ".o";
-    char *o_file;
-#endif
 
     c_file_len = sprint_uniq_filename(c_file_buff, c_file_len, unit->id, MJIT_TMP_PREFIX, c_ext);
     if (c_file_len >= (int)sizeof(c_file_buff)) {
@@ -1097,11 +1093,6 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     }
     ++c_file_len;
 
-#ifndef _MSC_VER
-    o_file = alloca(c_file_len - sizeof(c_ext) + sizeof(o_ext));
-    memcpy(o_file, c_file, c_file_len - sizeof(c_ext));
-    memcpy(&o_file[c_file_len - sizeof(c_ext)], o_ext, sizeof(o_ext));
-#endif
     so_file = alloca(c_file_len - sizeof(c_ext) + sizeof(so_ext));
     memcpy(so_file, c_file, c_file_len - sizeof(c_ext));
     memcpy(&so_file[c_file_len - sizeof(c_ext)], so_ext, sizeof(so_ext));
