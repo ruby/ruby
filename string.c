@@ -1336,14 +1336,6 @@ rb_str_new_with_class(VALUE obj, const char *ptr, long len)
 }
 
 static VALUE
-str_new_empty(VALUE str)
-{
-    VALUE v = rb_str_new_with_class(str, 0, 0);
-    rb_enc_copy(v, str);
-    return v;
-}
-
-static VALUE
 str_new_empty_String(VALUE str)
 {
     VALUE v = rb_str_new(0, 0);
