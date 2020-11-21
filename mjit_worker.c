@@ -140,10 +140,10 @@ typedef intptr_t pid_t;
 // JIT compaction requires the header transformation because linking multiple .o files
 // doesn't work without having `static` in the same function definitions. We currently
 // don't support transforming the MJIT header on Windows.
-#ifndef _WIN32
-# define USE_JIT_COMPACTION 1
-#else
+#ifdef _WIN32
 # define USE_JIT_COMPACTION 0
+#else
+# define USE_JIT_COMPACTION 1
 #endif
 
 // The unit structure that holds metadata of ISeq for MJIT.
@@ -153,7 +153,7 @@ struct rb_mjit_unit {
     // Dlopen handle of the loaded object file.
     void *handle;
     rb_iseq_t *iseq;
-#ifdef USE_JIT_COMPACTION
+#if USE_JIT_COMPACTION
     // This value is always set for `compact_all_jit_code`. Also used for lazy deletion.
     char *c_file;
     // true if it's inherited from parent Ruby process and lazy deletion should be skipped.
@@ -401,7 +401,7 @@ remove_file(const char *filename)
 static void
 clean_temp_files(struct rb_mjit_unit *unit)
 {
-#ifdef USE_JIT_COMPACTION
+#if USE_JIT_COMPACTION
     if (unit->c_file) {
         char *c_file = unit->c_file;
 
@@ -1172,7 +1172,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
 
     start_time = real_ms_time();
     success = compile_c_to_so(c_file, so_file);
-#ifdef USE_JIT_COMPACTION
+#if USE_JIT_COMPACTION
     if (success) {
         // Always set c_file for compaction. The value is also used for lazy deletion.
         unit->c_file = strdup(c_file);
@@ -1311,7 +1311,7 @@ mjit_worker(void)
             }
             CRITICAL_SECTION_FINISH(3, "in jit func replace");
 
-#ifdef USE_JIT_COMPACTION
+#if USE_JIT_COMPACTION
             // Combine .o files to one .so and reload all jit_func to improve memory locality.
             if (compact_units.length < max_compact_size
                 && ((!mjit_opts.wait && unit_queue.length == 0 && active_units.length > 1)
