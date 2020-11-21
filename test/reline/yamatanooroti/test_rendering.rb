@@ -373,6 +373,19 @@ begin
       EOC
     end
 
+    def test_foced_newline_insertion
+      start_terminal(10, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
+      #write("def a\nend\C-p\C-e\e\C-m  3")
+      write("def a\nend\C-p\C-e\e\x0D")
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        prompt> def a
+        prompt>
+        prompt> end
+      EOC
+    end
+
     def test_multiline_incremental_search
       start_terminal(6, 25, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
       write("def a\n  8\nend\ndef b\n  3\nend\C-s8")

@@ -197,7 +197,7 @@ class Reline::LineEditor
     @searching_prompt = nil
     @first_char = true
     @add_newline_to_end_of_buffer = false
-    @just_cursor_moving = false
+    @just_cursor_moving = nil
     @cached_prompt_list = nil
     @prompt_cache_time = nil
     @eof = false
@@ -246,6 +246,7 @@ class Reline::LineEditor
     @buffer_of_lines.insert(@line_index + 1, String.new(next_line, encoding: @encoding))
     @previous_line_index = @line_index
     @line_index += 1
+    @just_cursor_moving = false
   end
 
   private def calculate_height_by_width(width)
@@ -923,6 +924,7 @@ class Reline::LineEditor
   end
 
   def input_key(key)
+    @just_cursor_moving = nil
     if key.char.nil?
       if @first_char
         @line = nil
@@ -958,12 +960,16 @@ class Reline::LineEditor
     unless completion_occurs
       @completion_state = CompletionState::NORMAL
     end
-    unless Reline::IOGate.in_pasting?
+    if not Reline::IOGate.in_pasting? and @just_cursor_moving.nil?
       if @previous_line_index and @buffer_of_lines[@previous_line_index] == @line
         @just_cursor_moving = true
       elsif @previous_line_index.nil? and @buffer_of_lines[@line_index] == @line
         @just_cursor_moving = true
+      else
+        @just_cursor_moving = false
       end
+    else
+      @just_cursor_moving = false
     end
     if @is_multiline and @auto_indent_proc and not simplified_rendering?
       process_auto_indent
