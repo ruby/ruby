@@ -879,7 +879,7 @@ mjit_resume(void)
     return Qtrue;
 }
 
-// Skip calling `clean_object_files` for units which currently exist in the list.
+// Skip calling `clean_temp_files` for units which currently exist in the list.
 static void
 skip_cleaning_object_files(struct rb_mjit_unit_list *list)
 {
@@ -887,7 +887,7 @@ skip_cleaning_object_files(struct rb_mjit_unit_list *list)
 
     // No mutex for list, assuming MJIT worker does not exist yet since it's immediately after fork.
     list_for_each_safe(&list->head, unit, next, unode) {
-#ifndef _MSC_VER // Actually mswin does not reach here since it doesn't have fork
+#ifdef USE_JIT_COMPACTION
         if (unit->c_file) unit->c_file_inherited_p = true;
 #endif
 

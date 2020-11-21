@@ -137,6 +137,15 @@ typedef intptr_t pid_t;
 
 #define MJIT_TMP_PREFIX "_ruby_mjit_"
 
+// JIT compaction requires the header transformation because linking multiple .o files
+// doesn't work without having `static` in the same function definitions. We currently
+// don't support transforming the MJIT header on Windows.
+#ifndef _WIN32
+# define USE_JIT_COMPACTION 1
+#else
+# define USE_JIT_COMPACTION 0
+#endif
+
 // The unit structure that holds metadata of ISeq for MJIT.
 struct rb_mjit_unit {
     // Unique order number of unit.
@@ -144,7 +153,7 @@ struct rb_mjit_unit {
     // Dlopen handle of the loaded object file.
     void *handle;
     rb_iseq_t *iseq;
-#ifndef _MSC_VER
+#ifdef USE_JIT_COMPACTION
     // This value is always set for `compact_all_jit_code`. Also used for lazy deletion.
     char *c_file;
     // true if it's inherited from parent Ruby process and lazy deletion should be skipped.
@@ -392,7 +401,7 @@ remove_file(const char *filename)
 static void
 clean_temp_files(struct rb_mjit_unit *unit)
 {
-#ifndef _MSC_VER
+#ifdef USE_JIT_COMPACTION
     if (unit->c_file) {
         char *c_file = unit->c_file;
 
@@ -893,16 +902,11 @@ compile_c_to_so(const char *c_file, const char *so_file)
     }
     return exit_code == 0;
 }
+#endif // _MSC_VER
 
+#if USE_JIT_COMPACTION
 static void compile_prelude(FILE *f);
 
-# ifndef _WIN32 // This requires header transformation but we don't transform header on Windows for now
-#  define USE_HEADER_TRANSFORMATION 1
-# else
-#  define USE_HEADER_TRANSFORMATION 0
-# endif
-
-# if USE_HEADER_TRANSFORMATION
 static bool
 compile_compact_jit_code(char* c_file)
 {
@@ -925,14 +929,12 @@ compile_compact_jit_code(char* c_file)
     fclose(f);
     return true;
 }
-# endif // USE_HEADER_TRANSFORMATION
 
 // Compile all cached .c files and build a single .so file. Reload all JIT func from it.
 // This improves the code locality for better performance in terms of iTLB and iCache.
 static void
 compact_all_jit_code(void)
 {
-# if USE_HEADER_TRANSFORMATION
     struct rb_mjit_unit *unit, *cur = 0;
     static const char c_ext[] = ".c";
     static const char so_ext[] = DLEXT;
@@ -1000,10 +1002,8 @@ compact_all_jit_code(void)
         free(unit);
         verbose(1, "JIT compaction failure (%.1fms): Failed to compact methods", end_time - start_time);
     }
-# endif // USE_HEADER_TRANSFORMATION
 }
-
-#endif // _MSC_VER
+#endif // USE_JIT_COMPACTION
 
 static void *
 load_func_from_so(const char *so_file, const char *funcname, struct rb_mjit_unit *unit)
@@ -1172,10 +1172,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
 
     start_time = real_ms_time();
     success = compile_c_to_so(c_file, so_file);
-#ifdef _MSC_VER
-    if (!mjit_opts.save_temps)
-        remove_file(c_file);
-#else
+#ifdef USE_JIT_COMPACTION
     if (success) {
         // Always set c_file for compaction. The value is also used for lazy deletion.
         unit->c_file = strdup(c_file);
@@ -1184,6 +1181,9 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
         }
     }
     if (!mjit_opts.save_temps && unit->c_file == NULL)
+        remove_file(c_file);
+#else
+    if (!mjit_opts.save_temps)
         remove_file(c_file);
 #endif
     end_time = real_ms_time();
@@ -1311,7 +1311,7 @@ mjit_worker(void)
             }
             CRITICAL_SECTION_FINISH(3, "in jit func replace");
 
-#ifndef _MSC_VER
+#ifdef USE_JIT_COMPACTION
             // Combine .o files to one .so and reload all jit_func to improve memory locality.
             if (compact_units.length < max_compact_size
                 && ((!mjit_opts.wait && unit_queue.length == 0 && active_units.length > 1)
