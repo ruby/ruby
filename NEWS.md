@@ -267,6 +267,46 @@ Outstanding ones only.
           named.  The returned string cannot be modified.
           [[Feature #16150]]
 
+* String
+
+    * Modified methods
+
+        * The following methods now return String instances instead of
+          subclass instances when called on subclass instances:
+          [[Bug #10845]]
+
+            * `String#*`
+            * `String#capitalize`
+            * `String#center`
+            * `String#chomp`
+            * `String#chop`
+            * `String#delete`
+            * `String#delete_prefix`
+            * `String#delete_suffix`
+            * `String#downcase`
+            * `String#dump`
+            * `String#each/#each_line`
+            * `String#gsub`
+            * `String#ljust`
+            * `String#lstrip`
+            * `String#partition`
+            * `String#reverse`
+            * `String#rjust`
+            * `String#rpartition`
+            * `String#rstrip`
+            * `String#scrub`
+            * `String#slice!`
+            * `String#slice/#[]`
+            * `String#split`
+            * `String#squeeze`
+            * `String#strip`
+            * `String#sub`
+            * `String#succ/#next`
+            * `String#swapcase`
+            * `String#tr`
+            * `String#tr_s`
+            * `String#upcase`
+
 * Warning
 
     * Modified method
@@ -537,6 +577,7 @@ end
 [Feature #8709]:  https://bugs.ruby-lang.org/issues/8709
 [Feature #8948]:  https://bugs.ruby-lang.org/issues/8948
 [Feature #9573]:  https://bugs.ruby-lang.org/issues/9573
+[Bug #10845]:     https://bugs.ruby-lang.org/issues/10845
 [Bug #12136]:     https://bugs.ruby-lang.org/issues/12136
 [Bug #12706]:     https://bugs.ruby-lang.org/issues/12706
 [Feature #13767]: https://bugs.ruby-lang.org/issues/13767
