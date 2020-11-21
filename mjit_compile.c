@@ -320,8 +320,16 @@ compile_cancel_handler(FILE *f, const struct rb_iseq_constant_body *body, struct
 extern int
 mjit_capture_cc_entries(const struct rb_iseq_constant_body *compiled_iseq, const struct rb_iseq_constant_body *captured_iseq);
 
-extern bool mjit_copy_cache_from_main_thread(const rb_iseq_t *iseq,
-                                             union iseq_inline_storage_entry *is_entries);
+// Copy current is_entries and use it throughout the current compilation consistently.
+// While ic->entry has been immutable since https://github.com/ruby/ruby/pull/3662,
+// we still need this to avoid a race condition between entries and ivar_serial/max_ivar_index.
+static void
+mjit_capture_is_entries(const struct rb_iseq_constant_body *body, union iseq_inline_storage_entry *is_entries)
+{
+    if (is_entries == NULL)
+        return;
+    memcpy(is_entries, body->is_entries, sizeof(union iseq_inline_storage_entry) * body->is_size);
+}
 
 static bool
 mjit_compile_body(FILE *f, const rb_iseq_t *iseq, struct compile_status *status)
@@ -429,6 +437,8 @@ inlinable_iseq_p(const struct rb_iseq_constant_body *body)
 static void
 init_ivar_compile_status(const struct rb_iseq_constant_body *body, struct compile_status *status)
 {
+    mjit_capture_is_entries(body, status->is_entries);
+
     int num_ivars = 0;
     unsigned int pos = 0;
     status->max_ivar_index = 0;
@@ -528,8 +538,7 @@ precompile_inlinable_iseqs(FILE *f, const rb_iseq_t *iseq, struct compile_status
                     .param_size = child_iseq->body->param.size,
                     .local_size = child_iseq->body->local_table_size
                 };
-                if ((child_iseq->body->ci_size > 0 && child_status.cc_entries_index == -1)
-                    || (child_status.is_entries != NULL && !mjit_copy_cache_from_main_thread(child_iseq, child_status.is_entries))) {
+                if (child_iseq->body->ci_size > 0 && child_status.cc_entries_index == -1) {
                     return false;
                 }
                 init_ivar_compile_status(child_iseq->body, &child_status);
@@ -556,8 +565,7 @@ mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id)
 {
     struct compile_status status = { .compiled_iseq = iseq->body, .compiled_id = id };
     INIT_COMPILE_STATUS(status, iseq->body, true);
-    if ((iseq->body->ci_size > 0 && status.cc_entries_index == -1)
-        || (status.is_entries != NULL && !mjit_copy_cache_from_main_thread(iseq, status.is_entries))) {
+    if (iseq->body->ci_size > 0 && status.cc_entries_index == -1) {
         return false;
     }
     init_ivar_compile_status(iseq->body, &status);

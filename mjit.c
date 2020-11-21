@@ -27,40 +27,6 @@
 
 #include "mjit_worker.c"
 
-// Copy ISeq's states so that race condition does not happen on compilation.
-static void
-mjit_copy_job_handler(void *data)
-{
-    mjit_copy_job_t *job = data;
-    if (stop_worker_p) { // check if mutex is still alive, before calling CRITICAL_SECTION_START.
-        return;
-    }
-
-    CRITICAL_SECTION_START(3, "in mjit_copy_job_handler");
-    // Make sure that this job is never executed when:
-    //   1. job is being modified
-    //   2. alloca memory inside job is expired
-    //   3. ISeq is GC-ed
-    if (job->finish_p) {
-        CRITICAL_SECTION_FINISH(3, "in mjit_copy_job_handler");
-        return;
-    }
-    else if (job->iseq == NULL) { // ISeq GC notified in mjit_free_iseq
-        job->finish_p = true;
-        CRITICAL_SECTION_FINISH(3, "in mjit_copy_job_handler");
-        return;
-    }
-
-    const struct rb_iseq_constant_body *body = job->iseq->body;
-    if (job->is_entries) {
-        memcpy(job->is_entries, body->is_entries, sizeof(union iseq_inline_storage_entry) * body->is_size);
-    }
-
-    job->finish_p = true;
-    rb_native_cond_broadcast(&mjit_worker_wakeup);
-    CRITICAL_SECTION_FINISH(3, "in mjit_copy_job_handler");
-}
-
 extern int rb_thread_create_mjit_thread(void (*worker_func)(void));
 
 // Return an unique file name in /tmp with PREFIX and SUFFIX and
@@ -154,9 +120,6 @@ mjit_free_iseq(const rb_iseq_t *iseq)
         return;
 
     CRITICAL_SECTION_START(4, "mjit_free_iseq");
-    if (mjit_copy_job.iseq == iseq) {
-        mjit_copy_job.iseq = NULL;
-    }
     if (iseq->body->jit_unit) {
         // jit_unit is not freed here because it may be referred by multiple
         // lists of units. `get_from_list` and `mjit_finish` do the job.
@@ -1050,19 +1013,11 @@ mjit_mark(void)
         return;
     RUBY_MARK_ENTER("mjit");
 
-    CRITICAL_SECTION_START(4, "mjit_mark");
-    VALUE iseq = (VALUE)mjit_copy_job.iseq;
-    CRITICAL_SECTION_FINISH(4, "mjit_mark");
-
-    // Don't wrap critical section with this. This may trigger GC,
-    // and in that case mjit_gc_start_hook causes deadlock.
-    if (iseq) rb_gc_mark(iseq);
-
     struct rb_mjit_unit *unit = NULL;
     CRITICAL_SECTION_START(4, "mjit_mark");
     list_for_each(&unit_queue.head, unit, unode) {
         if (unit->iseq) { // ISeq is still not GCed
-            iseq = (VALUE)unit->iseq;
+            VALUE iseq = (VALUE)unit->iseq;
             CRITICAL_SECTION_FINISH(4, "mjit_mark rb_gc_mark");
 
             // Don't wrap critical section with this. This may trigger GC,
