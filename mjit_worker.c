@@ -860,45 +860,27 @@ make_pch(void)
 }
 
 // Compile .c file to .so file. It returns true if it succeeds. (non-mswin)
-// Not compiling .c to .so directly because it fails on MinGW, and this helps
-// to generate no .dSYM on macOS.
 static bool
 compile_c_to_so(const char *c_file, const char *so_file)
 {
-    char* o_file = alloca(strlen(c_file) + 1);
-    strcpy(o_file, c_file);
-    o_file[strlen(c_file) - 1] = 'o';
-
     const char *o_args[] = {
-        "-o", o_file, c_file,
+        "-o", so_file, c_file,
 # ifdef __clang__
         "-include-pch", pch_file,
 # endif
-        "-c", NULL
+# ifdef _WIN32
+        libruby_pathflag,
+# endif
+        NULL
     };
-    char **args = form_args(5, cc_common_args, CC_CODEFLAG_ARGS, cc_added_args, o_args, CC_LINKER_ARGS);
+    char **args = form_args(7, cc_common_args, CC_CODEFLAG_ARGS, cc_added_args,
+                            o_args, CC_LIBS, CC_DLDFLAGS_ARGS, CC_LINKER_ARGS);
     if (args == NULL) return false;
     int exit_code = exec_process(cc_path, args);
     free(args);
     if (exit_code != 0) {
-        verbose(2, "compile_c_to_so: failed to compile .c to .o: %d", exit_code);
+        verbose(2, "compile_c_to_so: failed to compile .c to .so: %d", exit_code);
         return false;
-    }
-
-    const char *so_args[] = {
-        "-o", so_file,
-# ifdef _WIN32
-        libruby_pathflag,
-# endif
-        o_file, NULL
-    };
-    args = form_args(6, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS, so_args, CC_LIBS, CC_DLDFLAGS_ARGS, CC_LINKER_ARGS);
-    if (args == NULL) return false;
-    exit_code = exec_process(cc_path, args);
-    free(args);
-    if (!mjit_opts.save_temps) remove_file(o_file);
-    if (exit_code != 0) {
-        verbose(2, "compile_c_to_so: failed to link .o to .so: %d", exit_code);
     }
     return exit_code == 0;
 }
