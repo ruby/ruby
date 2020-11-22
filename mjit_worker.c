@@ -873,8 +873,8 @@ compile_c_to_so(const char *c_file, const char *so_file)
 # endif
         NULL
     };
-    char **args = form_args(7, cc_common_args, CC_CODEFLAG_ARGS, cc_added_args,
-                            o_args, CC_LIBS, CC_DLDFLAGS_ARGS, CC_LINKER_ARGS);
+    char **args = form_args(8, cc_common_args, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,
+                            cc_added_args, o_args, CC_LIBS, CC_DLDFLAGS_ARGS, CC_LINKER_ARGS);
     if (args == NULL) return false;
     int exit_code = exec_process(cc_path, args);
     free(args);
