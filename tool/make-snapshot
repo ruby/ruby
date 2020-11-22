@@ -311,7 +311,7 @@ def package(vcs, rev, destdir, tmp = nil)
   end
   if $srcdir
     Dir.glob($srcdir + "/{tool/config.{guess,sub},gems/*.gem,.downloaded-cache/*,enc/unicode/data/**/*.txt}") do |file|
-      puts "copying #{file}"
+      puts "copying #{file}" if $VERBOSE
       dest = exported + file[$srcdir.size..-1]
       FileUtils.mkpath(File.dirname(dest))
       begin
