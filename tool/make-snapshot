@@ -497,6 +497,7 @@ touch-unicode-files:
       system(*%W"#{YACC} -o parse.c parse.y")
     end
     vcs.after_export(".") if exported
+    clean.concat(Dir.glob("ext/**/autom4te.cache"))
     FileUtils.rm_rf(clean) unless $keep_temp
     FileUtils.rm_rf(".downloaded-cache")
     if File.exist?("gems/bundled_gems")
