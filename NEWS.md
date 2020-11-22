@@ -146,6 +146,12 @@ Outstanding ones only.
         * ENV.except, which returns a hash excluding the given keys
           and their values.  [[Feature #15822]]
 
+* Encoding
+
+    * New encoding
+
+        * Added new encoding IBM720.  [[Feature #16233]]
+
 * Hash
 
     * Modified method
@@ -599,6 +605,7 @@ end
 [Feature #16150]: https://bugs.ruby-lang.org/issues/16150
 [Feature #16166]: https://bugs.ruby-lang.org/issues/16166
 [Feature #16175]: https://bugs.ruby-lang.org/issues/16175
+[Feature #16233]: https://bugs.ruby-lang.org/issues/16233
 [Feature #16260]: https://bugs.ruby-lang.org/issues/16260
 [Feature #16274]: https://bugs.ruby-lang.org/issues/16274
 [Feature #16377]: https://bugs.ruby-lang.org/issues/16377
