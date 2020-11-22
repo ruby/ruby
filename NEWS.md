@@ -387,6 +387,10 @@ Outstanding ones only.
 
     * Update to Fiddle 1.0.2
 
+* CSV
+
+    * Update to CSV 3.1.9
+
 ## Compatibility issues
 
 Excluding feature bug fixes.
