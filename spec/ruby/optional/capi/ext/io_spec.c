@@ -203,7 +203,9 @@ VALUE io_spec_rb_io_close(VALUE self, VALUE io) {
 
 VALUE io_spec_rb_io_set_nonblock(VALUE self, VALUE io) {
   rb_io_t* fp;
+#ifdef F_GETFL
   int flags;
+#endif
   GetOpenFile(io, fp);
   rb_io_set_nonblock(fp);
 #ifdef F_GETFL
