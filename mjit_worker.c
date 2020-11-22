@@ -912,17 +912,12 @@ compile_compact_jit_code(char* c_file)
     list_for_each(&active_units.head, child_unit, unode) {
         if (child_unit->iseq == NULL) iseq_gced = true;
     }
-    if (iseq_gced) {
+    in_jit = !iseq_gced;
+    CRITICAL_SECTION_FINISH(3, "before mjit_compile to wait GC finish");
+    if (!in_jit) {
         fclose(f);
         if (!mjit_opts.save_temps)
             remove_file(c_file);
-        in_jit = false; // just being explicit for return
-    }
-    else {
-        in_jit = true;
-    }
-    CRITICAL_SECTION_FINISH(3, "before mjit_compile to wait GC finish");
-    if (!in_jit) {
         return false;
     }
 
@@ -1141,17 +1136,12 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
         rb_native_cond_wait(&mjit_gc_wakeup, &mjit_engine_mutex);
     }
     // We need to check again here because we could've waited on GC above
-    if (unit->iseq == NULL) {
+    in_jit = (unit->iseq != NULL);
+    CRITICAL_SECTION_FINISH(3, "before mjit_compile to wait GC finish");
+    if (!in_jit) {
         fclose(f);
         if (!mjit_opts.save_temps)
             remove_file(c_file);
-        in_jit = false; // just being explicit for return
-    }
-    else {
-        in_jit = true;
-    }
-    CRITICAL_SECTION_FINISH(3, "before mjit_compile to wait GC finish");
-    if (!in_jit) {
         return (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC;
     }
 
