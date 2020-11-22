@@ -945,7 +945,8 @@ cont_free(void *ptr)
 
     RUBY_FREE_UNLESS_NULL(cont->saved_vm_stack.ptr);
 
-    if (mjit_enabled && cont->mjit_cont != NULL) {
+    if (mjit_enabled) {
+        VM_ASSERT(cont->mjit_cont != NULL);
         mjit_cont_free(cont->mjit_cont);
     }
     /* free rb_cont_t or rb_fiber_t */
@@ -1155,11 +1156,10 @@ VALUE rb_fiberptr_self(struct rb_fiber_struct *fiber)
     return fiber->cont.self;
 }
 
+// This is used for root_fiber because other fibers call cont_init_mjit_cont through cont_new.
 void
 rb_fiber_init_mjit_cont(struct rb_fiber_struct *fiber)
 {
-    // Currently this function is meant for root_fiber. Others go through cont_new.
-    // XXX: Is this mjit_cont `mjit_cont_free`d?
     cont_init_mjit_cont(&fiber->cont);
 }
 
@@ -1987,6 +1987,9 @@ rb_threadptr_root_fiber_setup(rb_thread_t *th)
     fiber->blocking = 1;
     fiber_status_set(fiber, FIBER_RESUMED); /* skip CREATED */
     th->ec = &fiber->cont.saved_ec;
+    // This skips mjit_cont_new for the initial thread because mjit_enabled is always false
+    // at this point. mjit_init calls rb_fiber_init_mjit_cont again for this root_fiber.
+    rb_fiber_init_mjit_cont(fiber);
 }
 
 void

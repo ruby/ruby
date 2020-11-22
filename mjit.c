@@ -262,7 +262,7 @@ mark_ec_units(rb_execution_context_t *ec)
         if (cfp->pc && (iseq = cfp->iseq) != NULL
             && imemo_type((VALUE) iseq) == imemo_iseq
             && (iseq->body->jit_unit) != NULL) {
-            iseq->body->jit_unit->used_code_p = TRUE;
+            iseq->body->jit_unit->used_code_p = true;
         }
 
         if (cfp == ec->cfp)
@@ -275,8 +275,6 @@ mark_ec_units(rb_execution_context_t *ec)
 static void
 unload_units(void)
 {
-    //rb_vm_t *vm = GET_THREAD()->vm;
-    //rb_thread_t *th = NULL;
     struct rb_mjit_unit *unit = 0, *next, *worst;
     struct mjit_cont *cont;
     int delete_num, units_num = active_units.length;
@@ -293,16 +291,14 @@ unload_units(void)
     // Detect units which are in use and can't be unloaded.
     list_for_each(&active_units.head, unit, unode) {
         assert(unit->iseq != NULL && unit->handle != NULL);
-        unit->used_code_p = FALSE;
+        unit->used_code_p = false;
     }
-    // TODO
-    //list_for_each(&vm->living_threads, th, lt_node) {
-    //    mark_ec_units(th->ec);
-    //}
+    // All threads have a root_fiber which has a mjit_cont. Other normal fibers also
+    // have a mjit_cont. Thus we can check ISeqs in use by scanning ec of mjit_conts.
     for (cont = first_cont; cont != NULL; cont = cont->next) {
         mark_ec_units(cont->ec);
     }
-    // TODO: check slale_units and unload unused ones! (note that the unit is not associated to ISeq anymore)
+    // TODO: check stale_units and unload unused ones! (note that the unit is not associated to ISeq anymore)
 
     // Remove 1/10 units more to decrease unloading calls.
     // TODO: Calculate max total_calls in unit_queue and don't unload units
@@ -801,7 +797,11 @@ mjit_init(const struct mjit_options *opts)
     rb_native_cond_initialize(&mjit_worker_wakeup);
     rb_native_cond_initialize(&mjit_gc_wakeup);
 
-    // Make sure root_fiber's saved_ec is scanned by mark_ec_units
+    // Make sure the saved_ec of the initial thread's root_fiber is scanned by mark_ec_units.
+    //
+    // rb_threadptr_root_fiber_setup for the initial thread is called before mjit_init,
+    // meaning mjit_cont_new is skipped for the root_fiber. Therefore we need to call
+    // rb_fiber_init_mjit_cont again with mjit_enabled=true to set the root_fiber's mjit_cont.
     rb_fiber_init_mjit_cont(GET_EC()->fiber_ptr);
 
     // Initialize class_serials cache for compilation

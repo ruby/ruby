@@ -166,7 +166,7 @@ struct rb_mjit_unit {
     char *so_file;
 #endif
     // Only used by unload_units. Flag to check this unit is currently on stack or not.
-    char used_code_p;
+    bool used_code_p;
     struct list_node unode;
     // mjit_compile's optimization switches
     struct rb_mjit_compile_info compile_info;
