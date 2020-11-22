@@ -921,6 +921,13 @@ compile_compact_jit_code(char* c_file)
         return false;
     }
 
+    // This entire loop lock GC so that we do not need to consider a case that
+    // ISeq is GC-ed in a middle of re-compilation. It takes 3~4ms with 100 methods
+    // on my machine. It's not too bad compared to compilation time of C (7200~8000ms),
+    // but it might be larger if we use a larger --jit-max-cache.
+    //
+    // TODO: Consider using a more granular lock after we implement inlining across
+    // compacted functions (not done yet).
     bool success = true;
     list_for_each(&active_units.head, child_unit, unode) {
         char funcname[MAXPATHLEN];
