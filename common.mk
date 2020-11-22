@@ -1266,11 +1266,12 @@ lldb-ruby: $(PROGRAM) PHONY
 	lldb $(enable_shared:yes=-o 'target modules add ${LIBRUBY_SO}') -o '$(LLDB_INIT)' $(PROGRAM) -- $(TESTRUN_SCRIPT)
 
 DISTPKGS = gzip,zip,all
+PKGSDIR = tmp
 dist:
 	$(BASERUBY) $(tooldir)/make-snapshot \
 	-srcdir=$(srcdir) -packages=$(DISTPKGS) \
 	-unicode-version=$(UNICODE_VERSION) \
-	tmp $(RELNAME)
+	$(DISTOPTS) $(PKGSDIR) $(RELNAME)
 
 up:: update-remote
 
