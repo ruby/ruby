@@ -384,7 +384,7 @@ class RubyLex
           end
         else
           if in_oneliner_def == :BODY
-            # one[-liner method definition
+            # one-liner method definition
             depth_difference -= 1
           end
           in_oneliner_def = nil
