@@ -944,9 +944,9 @@ compact_all_jit_code(void)
     unit = calloc(1, sizeof(struct rb_mjit_unit)); // To prevent GC, don't use ZALLOC
     if (unit == NULL) return;
     unit->id = current_unit_num++;
+    sprint_uniq_filename(c_file, (int)sizeof(c_file), unit->id, MJIT_TMP_PREFIX, c_ext);
     sprint_uniq_filename(so_file, (int)sizeof(so_file), unit->id, MJIT_TMP_PREFIX, so_ext);
 
-    sprint_uniq_filename(c_file, (int)sizeof(c_file), unit->id, MJIT_TMP_PREFIX, c_ext);
     CRITICAL_SECTION_START(3, "in compact_all_jit_code to guard .c files from unload_units");
     in_compact = true;
     CRITICAL_SECTION_FINISH(3, "in compact_all_jit_code to guard .c files from unload_units");
@@ -1076,30 +1076,16 @@ compile_prelude(FILE *f)
 static mjit_func_t
 convert_unit_to_func(struct rb_mjit_unit *unit)
 {
-    char c_file_buff[MAXPATHLEN], *c_file = c_file_buff, *so_file, funcname[MAXPATHLEN];
-    int fd;
-    FILE *f;
-    void *func;
-    double start_time, end_time;
-    int c_file_len = (int)sizeof(c_file_buff);
     static const char c_ext[] = ".c";
     static const char so_ext[] = DLEXT;
+    char c_file[MAXPATHLEN], so_file[MAXPATHLEN], funcname[MAXPATHLEN];
 
-    c_file_len = sprint_uniq_filename(c_file_buff, c_file_len, unit->id, MJIT_TMP_PREFIX, c_ext);
-    if (c_file_len >= (int)sizeof(c_file_buff)) {
-        ++c_file_len;
-        c_file = alloca(c_file_len);
-        c_file_len = sprint_uniq_filename(c_file, c_file_len, unit->id, MJIT_TMP_PREFIX, c_ext);
-    }
-    ++c_file_len;
-
-    so_file = alloca(c_file_len - sizeof(c_ext) + sizeof(so_ext));
-    memcpy(so_file, c_file, c_file_len - sizeof(c_ext));
-    memcpy(&so_file[c_file_len - sizeof(c_ext)], so_ext, sizeof(so_ext));
-
+    sprint_uniq_filename(c_file, (int)sizeof(c_file), unit->id, MJIT_TMP_PREFIX, c_ext);
+    sprint_uniq_filename(so_file, (int)sizeof(so_file), unit->id, MJIT_TMP_PREFIX, so_ext);
     sprint_funcname(funcname, unit);
 
-    fd = rb_cloexec_open(c_file, c_file_access_mode, 0600);
+    FILE *f;
+    int fd = rb_cloexec_open(c_file, c_file_access_mode, 0600);
     if (fd < 0 || (f = fdopen(fd, "w")) == NULL) {
         int e = errno;
         if (fd >= 0) (void)close(fd);
@@ -1161,7 +1147,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
         return (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC;
     }
 
-    start_time = real_ms_time();
+    double start_time = real_ms_time();
     success = compile_c_to_so(c_file, so_file);
 #if USE_JIT_COMPACTION
     if (success) {
@@ -1177,14 +1163,14 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     if (!mjit_opts.save_temps)
         remove_file(c_file);
 #endif
-    end_time = real_ms_time();
+    double end_time = real_ms_time();
 
     if (!success) {
         verbose(2, "Failed to generate so: %s", so_file);
         return (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC;
     }
 
-    func = load_func_from_so(so_file, funcname, unit);
+    void *func = load_func_from_so(so_file, funcname, unit);
     if (!mjit_opts.save_temps)
         remove_so_file(so_file, unit);
 
