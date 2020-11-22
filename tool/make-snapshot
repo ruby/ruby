@@ -242,6 +242,16 @@ class MAKE < Struct.new(:prog, :args)
   end
 end
 
+def measure
+  clock = Process::CLOCK_MONOTONIC
+  t0 = Process.clock_gettime(clock)
+  STDOUT.flush
+  result = yield
+  printf(" %6.3f", Process.clock_gettime(clock) - t0)
+  STDOUT.flush
+  result
+end
+
 def package(vcs, rev, destdir, tmp = nil)
   pwd = Dir.pwd
   patchlevel = false
@@ -544,7 +554,7 @@ touch-unicode-files:
       else
         tarball = ext == ".tar" ? file : "#{$archname||v}.tar"
         print "creating tarball... #{tarball}"
-        if tar_create(tarball, v)
+        if measure {tar_create(tarball, v)}
           puts $colorize.pass(" done")
           File.utime(modified, modified, tarball) if modified
           next if tarball == file
@@ -555,7 +565,7 @@ touch-unicode-files:
         end
       end
       print "creating #{mesg} tarball... #{file}"
-      done = system(*cmd, tarball, out: file)
+      done = measure {system(*cmd, tarball, out: file)}
     else
       print "creating #{mesg} archive... #{file}"
       if Hash === cmd.last
@@ -564,7 +574,7 @@ touch-unicode-files:
       else
         (cmd = cmd.dup) << file << v
       end
-      done = system(*cmd)
+      done = measure {system(*cmd)}
     end
     if done
       puts $colorize.pass(" done")
