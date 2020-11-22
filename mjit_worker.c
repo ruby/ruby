@@ -923,32 +923,16 @@ compile_compact_jit_code(char* c_file)
 
     bool success = true;
     list_for_each(&active_units.head, child_unit, unode) {
-        static const char c_ext[] = ".c";
-        char child_c[MAXPATHLEN], funcname[MAXPATHLEN];
-        sprint_uniq_filename(child_c, (int)sizeof(child_c), child_unit->id, MJIT_TMP_PREFIX, c_ext);
+        char funcname[MAXPATHLEN];
         sprint_funcname(funcname, child_unit);
 
-        if (mjit_opts.save_temps) remove_file(child_c); // Remove old one
-        int child_fd = rb_cloexec_open(child_c, c_file_access_mode, 0600);
-        FILE *child_f;
-        if (child_fd < 0 || (child_f = fdopen(child_fd, "w")) == NULL) {
-            int e = errno;
-            if (fd >= 0) (void)close(child_fd);
-            verbose(1, "Failed to fopen '%s', giving up JIT for it (%s)", child_c, strerror(e));
-            success = false;
-        }
-        else {
-            long iseq_lineno = 0;
-            if (FIXNUM_P(child_unit->iseq->body->location.first_lineno))
-                // FIX2INT may fallback to rb_num2long(), which is a method call and dangerous in MJIT worker. So using only FIX2LONG.
-                iseq_lineno = FIX2LONG(child_unit->iseq->body->location.first_lineno);
-            fprintf(child_f, "/* %s@%s:%ld */\n\n", RSTRING_PTR(child_unit->iseq->body->location.label),
-                    RSTRING_PTR(rb_iseq_path(child_unit->iseq)), iseq_lineno);
-            success &= mjit_compile(child_f, child_unit->iseq, funcname, child_unit->id);
-            fclose(child_f);
-        }
-
-        fprintf(f, "#include \"%s\"\n", child_c);
+        long iseq_lineno = 0;
+        if (FIXNUM_P(child_unit->iseq->body->location.first_lineno))
+            // FIX2INT may fallback to rb_num2long(), which is a method call and dangerous in MJIT worker. So using only FIX2LONG.
+            iseq_lineno = FIX2LONG(child_unit->iseq->body->location.first_lineno);
+        fprintf(f, "\n/* %s@%s:%ld */\n", RSTRING_PTR(child_unit->iseq->body->location.label),
+                RSTRING_PTR(rb_iseq_path(child_unit->iseq)), iseq_lineno);
+        success &= mjit_compile(f, child_unit->iseq, funcname, child_unit->id);
     }
 
     // release blocking mjit_gc_start_hook
@@ -987,16 +971,8 @@ compact_all_jit_code(void)
     double start_time = real_ms_time();
     if (success) {
         success = compile_c_to_so(c_file, so_file);
-        if (!mjit_opts.save_temps) {
+        if (!mjit_opts.save_temps)
             remove_file(c_file);
-            struct rb_mjit_unit *child_unit = 0;
-            list_for_each(&active_units.head, child_unit, unode) {
-                static const char c_ext[] = ".c";
-                char child_c[MAXPATHLEN];
-                sprint_uniq_filename(child_c, (int)sizeof(child_c), child_unit->id, MJIT_TMP_PREFIX, c_ext);
-                remove_file(child_c);
-            }
-        }
     }
     double end_time = real_ms_time();
 
