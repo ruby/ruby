@@ -153,14 +153,6 @@ struct rb_mjit_unit {
     // Dlopen handle of the loaded object file.
     void *handle;
     rb_iseq_t *iseq;
-#if USE_JIT_COMPACTION
-    // This value is always set for `compact_all_jit_code`. Also used for lazy deletion.
-    char *c_file;
-    // true if it's inherited from parent Ruby process and lazy deletion should be skipped.
-    // `c_file = NULL` can't be used to skip lazy deletion because `c_file` could be used
-    // by child for `compact_all_jit_code`.
-    bool c_file_inherited_p;
-#endif
 #if defined(_WIN32)
     // DLL cannot be removed while loaded on Windows. If this is set, it'll be lazily deleted.
     char *so_file;
@@ -397,23 +389,10 @@ remove_file(const char *filename)
     }
 }
 
-// Lazily delete .c and/or .so files.
+// Lazily delete .so files.
 static void
 clean_temp_files(struct rb_mjit_unit *unit)
 {
-#if USE_JIT_COMPACTION
-    if (unit->c_file) {
-        char *c_file = unit->c_file;
-
-        unit->c_file = NULL;
-        // For compaction, unit->c_file is always set when compilation succeeds.
-        // So save_temps needs to be checked here.
-        if (!mjit_opts.save_temps && !unit->c_file_inherited_p)
-            remove_file(c_file);
-        free(c_file);
-    }
-#endif
-
 #if defined(_WIN32)
     if (unit->so_file) {
         char *so_file = unit->so_file;
@@ -921,13 +900,71 @@ compile_compact_jit_code(char* c_file)
 
     compile_prelude(f);
 
-    struct rb_mjit_unit *cur = 0;
-    list_for_each(&active_units.head, cur, unode) {
-        fprintf(f, "#include \"%s\"\n", cur->c_file);
+    // wait until mjit_gc_exit_hook is called
+    CRITICAL_SECTION_START(3, "before mjit_compile to wait GC finish");
+    while (in_gc) {
+        verbose(3, "Waiting wakeup from GC");
+        rb_native_cond_wait(&mjit_gc_wakeup, &mjit_engine_mutex);
+    }
+    // We need to check again here because we could've waited on GC above
+    bool iseq_gced = false;
+    struct rb_mjit_unit *child_unit = 0;
+    list_for_each(&active_units.head, child_unit, unode) {
+        if (child_unit->iseq == NULL) iseq_gced = true;
+    }
+    if (iseq_gced) {
+        fclose(f);
+        if (!mjit_opts.save_temps)
+            remove_file(c_file);
+        in_jit = false; // just being explicit for return
+    }
+    else {
+        in_jit = true;
+    }
+    CRITICAL_SECTION_FINISH(3, "before mjit_compile to wait GC finish");
+    if (!in_jit) {
+        return false;
     }
 
+    bool success = true;
+    list_for_each(&active_units.head, child_unit, unode) {
+        static const char c_ext[] = ".c";
+        char child_c[MAXPATHLEN], funcname[MAXPATHLEN];
+        sprint_uniq_filename(child_c, (int)sizeof(child_c), child_unit->id, MJIT_TMP_PREFIX, c_ext);
+        sprint_funcname(funcname, child_unit);
+
+        if (mjit_opts.save_temps) remove_file(child_c); // Remove old one
+        int child_fd = rb_cloexec_open(child_c, c_file_access_mode, 0600);
+        FILE *child_f;
+        if (child_fd < 0 || (child_f = fdopen(child_fd, "w")) == NULL) {
+            int e = errno;
+            if (fd >= 0) (void)close(child_fd);
+            verbose(1, "Failed to fopen '%s', giving up JIT for it (%s)", child_c, strerror(e));
+            success = false;
+        }
+        else {
+            long iseq_lineno = 0;
+            if (FIXNUM_P(child_unit->iseq->body->location.first_lineno))
+                // FIX2INT may fallback to rb_num2long(), which is a method call and dangerous in MJIT worker. So using only FIX2LONG.
+                iseq_lineno = FIX2LONG(child_unit->iseq->body->location.first_lineno);
+            fprintf(child_f, "/* %s@%s:%ld */\n\n", RSTRING_PTR(child_unit->iseq->body->location.label),
+                    RSTRING_PTR(rb_iseq_path(child_unit->iseq)), iseq_lineno);
+            success &= mjit_compile(child_f, child_unit->iseq, funcname, child_unit->id);
+            fclose(child_f);
+        }
+
+        fprintf(f, "#include \"%s\"\n", child_c);
+    }
+
+    // release blocking mjit_gc_start_hook
+    CRITICAL_SECTION_START(3, "after mjit_compile to wakeup client for GC");
+    in_jit = false;
+    verbose(3, "Sending wakeup signal to client in a mjit-worker for GC");
+    rb_native_cond_signal(&mjit_client_wakeup);
+    CRITICAL_SECTION_FINISH(3, "in worker to wakeup client for GC");
+
     fclose(f);
-    return true;
+    return success;
 }
 
 // Compile all cached .c files and build a single .so file. Reload all JIT func from it.
@@ -955,8 +992,16 @@ compact_all_jit_code(void)
     double start_time = real_ms_time();
     if (success) {
         success = compile_c_to_so(c_file, so_file);
-        if (!mjit_opts.save_temps)
+        if (!mjit_opts.save_temps) {
             remove_file(c_file);
+            struct rb_mjit_unit *child_unit = 0;
+            list_for_each(&active_units.head, child_unit, unode) {
+                static const char c_ext[] = ".c";
+                char child_c[MAXPATHLEN];
+                sprint_uniq_filename(child_c, (int)sizeof(child_c), child_unit->id, MJIT_TMP_PREFIX, c_ext);
+                remove_file(child_c);
+            }
+        }
     }
     double end_time = real_ms_time();
 
@@ -1046,10 +1091,6 @@ compile_prelude(FILE *f)
     const char *s = pch_file;
     const char *e = header_name_end(s);
 
-# ifndef _MSC_VER // Visual Studio doesn't expect macro changes around headers. Anyway we don't support compaction there...
-    fprintf(f, "#ifndef MJIT_PCH\n");
-    fprintf(f, "#define MJIT_PCH\n");
-# endif
     fprintf(f, "#include \"");
     // print pch_file except .gch for gcc, but keep .pch for mswin
     for (; s < e; s++) {
@@ -1060,9 +1101,6 @@ compile_prelude(FILE *f)
         fputc(*s, f);
     }
     fprintf(f, "\"\n");
-# ifndef _MSC_VER
-    fprintf(f, "#endif\n");
-# endif
 #endif
 
 #ifdef _WIN32
@@ -1102,7 +1140,6 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
         verbose(3, "Waiting wakeup from GC");
         rb_native_cond_wait(&mjit_gc_wakeup, &mjit_engine_mutex);
     }
-
     // We need to check again here because we could've waited on GC above
     if (unit->iseq == NULL) {
         fclose(f);
@@ -1149,20 +1186,8 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
 
     double start_time = real_ms_time();
     success = compile_c_to_so(c_file, so_file);
-#if USE_JIT_COMPACTION
-    if (success) {
-        // Always set c_file for compaction. The value is also used for lazy deletion.
-        unit->c_file = strdup(c_file);
-        if (unit->c_file == NULL) {
-            mjit_warning("failed to allocate memory to remember '%s' (%s), removing it...", c_file, strerror(errno));
-        }
-    }
-    if (!mjit_opts.save_temps && unit->c_file == NULL)
-        remove_file(c_file);
-#else
     if (!mjit_opts.save_temps)
         remove_file(c_file);
-#endif
     double end_time = real_ms_time();
 
     if (!success) {

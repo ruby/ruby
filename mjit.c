@@ -887,10 +887,6 @@ skip_cleaning_object_files(struct rb_mjit_unit_list *list)
 
     // No mutex for list, assuming MJIT worker does not exist yet since it's immediately after fork.
     list_for_each_safe(&list->head, unit, next, unode) {
-#if USE_JIT_COMPACTION
-        if (unit->c_file) unit->c_file_inherited_p = true;
-#endif
-
 #if defined(_WIN32) // mswin doesn't reach here either. This is for MinGW.
         if (unit->so_file) unit->so_file = NULL;
 #endif
