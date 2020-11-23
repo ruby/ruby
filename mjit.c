@@ -467,14 +467,6 @@ rb_mjit_recompile_exivar(const rb_iseq_t *iseq)
     mjit_recompile(iseq);
 }
 
-// Recompile iseq, disabling method inlining
-void
-rb_mjit_recompile_inlining(const rb_iseq_t *iseq)
-{
-    rb_mjit_iseq_compile_info(iseq->body)->disable_inlining = true;
-    mjit_recompile(iseq);
-}
-
 extern VALUE ruby_archlibdir_path, ruby_prefix_path;
 
 // Initialize header_file, pch_file, libruby_pathflag. Return true on success.
@@ -1038,7 +1030,7 @@ mjit_mark_cc_entries(const struct rb_iseq_constant_body *const body)
 {
     const struct rb_callcache **cc_entries;
     if (body->jit_unit && (cc_entries = body->jit_unit->cc_entries) != NULL) {
-        // It must be `body->jit_unit->cc_entries_size` instead of `body->ci_size` to mark children's cc_entries
+        // It must be `body->jit_unit->cc_entries_size` instead of `body->ci_size` to mark cc of all compiled codes.
         for (unsigned int i = 0; i < body->jit_unit->cc_entries_size; i++) {
             const struct rb_callcache *cc = cc_entries[i];
             if (cc != NULL && vm_cc_markable(cc)) {

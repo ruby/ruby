@@ -13,7 +13,7 @@
     MAYBE_UNUSED(<%= ope.fetch(:decl) %>) = (<%= ope.fetch(:type) %>)operands[<%= i %>];
 % end
 % # compiler: Use captured cc to avoid race condition
-    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    const struct rb_callcache *captured_cc = captured_cc_entries(body, status)[call_data_index(cd, body)];
 %
 % # compiler: Inline send insn where some supported fastpath is used.
     const rb_iseq_t *iseq = NULL;
@@ -51,16 +51,7 @@
 % # JIT: move sp and pc if necessary
 <%= render 'mjit_compile_pc_and_sp', locals: { insn: insn } -%>
 
-% # JIT: If ISeq is inlinable, call the inlined method without pushing a frame.
-        if (iseq && status->inlined_iseqs != NULL && iseq->body == status->inlined_iseqs[pos]) {
-            fprintf(f, "    {\n");
-            fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
-            fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size + sp_inc - 1);
-            fprintf(f, "        stack[%d] = _mjit%d_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size + sp_inc - 1, status->compiled_id, pos);
-            fprintf(f, "        reg_cfp->self = orig_self;\n");
-            fprintf(f, "    }\n");
-        }
-        else {
+        {
 % # JIT: Forked `vm_sendish` (except method_explorer = vm_search_method_wrap) to inline various things
             fprintf(f, "    {\n");
             fprintf(f, "        VALUE val;\n");

@@ -164,7 +164,7 @@ struct rb_mjit_unit {
     struct rb_mjit_compile_info compile_info;
     // captured CC values, they should be marked with iseq.
     const struct rb_callcache **cc_entries;
-    unsigned int cc_entries_size; // iseq->body->ci_size + ones of inlined iseqs
+    unsigned int cc_entries_size; // iseq->body->ci_size * the number of compiles
 };
 
 // Linked list of struct rb_mjit_unit.
@@ -1189,19 +1189,20 @@ mjit_iseq_cc_entries(const struct rb_iseq_constant_body *const body)
     return body->jit_unit->cc_entries;
 }
 
-// Capture cc entries of `captured_iseq` and append them to `compiled_iseq->jit_unit->cc_entries`.
-// This is needed when `captured_iseq` is inlined by `compiled_iseq` and GC needs to mark inlined cc.
+// Capture cc entries of `body` to `body->jit_unit->cc_entries`.
+// This is used for marking CCs on GC.
 //
-// Index to refer to `compiled_iseq->jit_unit->cc_entries` is returned instead of the address
-// because old addresses may be invalidated by `realloc` later. -1 is returned on failure.
+// Index to refer to `compiled_iseq->jit_unit->cc_entries` is returned
+// instead of the address because old addresses may be invalidated by
+// `realloc` later. -1 is returned on failure.
 //
 // This assumes that it's safe to reference cc without acquiring GVL.
 int
-mjit_capture_cc_entries(const struct rb_iseq_constant_body *compiled_iseq, const struct rb_iseq_constant_body *captured_iseq)
+mjit_capture_cc_entries(const struct rb_iseq_constant_body *body)
 {
-    struct rb_mjit_unit *unit = compiled_iseq->jit_unit;
-    unsigned int new_entries_size = unit->cc_entries_size + captured_iseq->ci_size;
-    VM_ASSERT(captured_iseq->ci_size > 0);
+    VM_ASSERT(body->ci_size > 0);
+    struct rb_mjit_unit *unit = body->jit_unit;
+    unsigned int new_entries_size = unit->cc_entries_size + body->ci_size;
 
     // Allocate new cc_entries and append them to unit->cc_entries
     const struct rb_callcache **cc_entries;
@@ -1220,11 +1221,10 @@ mjit_capture_cc_entries(const struct rb_iseq_constant_body *compiled_iseq, const
     }
     unit->cc_entries_size = new_entries_size;
 
-    // Capture cc to cc_enties
-    for (unsigned int i = 0; i < captured_iseq->ci_size; i++) {
-        cc_entries[i] = captured_iseq->call_data[i].cc;
+    // Capture cc to cc_entries
+    for (unsigned int i = 0; i < body->ci_size; i++) {
+        cc_entries[i] = body->call_data[i].cc;
     }
-
     return cc_entries_index;
 }
 

@@ -68,8 +68,6 @@ struct rb_mjit_compile_info {
     bool disable_exivar_cache;
     // Disable send/opt_send_without_block optimizations based on inline cache
     bool disable_send_cache;
-    // Disable method inlining
-    bool disable_inlining;
 };
 
 typedef VALUE (*mjit_func_t)(rb_execution_context_t *, rb_control_frame_t *);
@@ -84,7 +82,6 @@ extern struct rb_mjit_compile_info* rb_mjit_iseq_compile_info(const struct rb_is
 extern void rb_mjit_recompile_send(const rb_iseq_t *iseq);
 extern void rb_mjit_recompile_ivar(const rb_iseq_t *iseq);
 extern void rb_mjit_recompile_exivar(const rb_iseq_t *iseq);
-extern void rb_mjit_recompile_inlining(const rb_iseq_t *iseq);
 RUBY_SYMBOL_EXPORT_END
 
 extern bool mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id);

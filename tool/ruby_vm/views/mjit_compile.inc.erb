@@ -56,7 +56,7 @@ switch (insn) {
 %   when *send_compatible_opt_insns
 %     # To avoid cancel, just emit `opt_send_without_block` instead of `opt_*` insn if call cache is populated.
 %     cd_index = insn.opes.index { |o| o.fetch(:type) == 'CALL_DATA' }
-      if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[<%= cd_index %>], body)], BIN(<%= insn.name %>))) {
+      if (has_cache_for_send(captured_cc_entries(body, status)[call_data_index((CALL_DATA)operands[<%= cd_index %>], body)], BIN(<%= insn.name %>))) {
 <%=       render 'mjit_compile_send', locals: { insn: opt_send_without_block } -%>
 <%=       render 'mjit_compile_insn', locals: { insn: opt_send_without_block } -%>
           break;
@@ -79,8 +79,7 @@ switch (insn) {
           status->success = false;
       }
 %     end
-%     # Skip vm_pop_frame for inlined call
-      if (status->inlined_iseqs != NULL) { // the current ISeq is NOT being inlined
+      {
 %         # Cancel on interrupts to make leave insn leaf
           fprintf(f, "    if (UNLIKELY(RUBY_VM_INTERRUPTED_ANY(ec))) {\n");
           fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
