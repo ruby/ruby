@@ -9,8 +9,9 @@
 **********************************************************************/
 
 #include "ruby/internal/config.h"
+#include "ruby/internal/stdbool.h"
 
-#if USE_MJIT
+# if USE_MJIT
 
 #include "debug_counter.h"
 #include "ruby.h"
@@ -112,11 +113,11 @@ mjit_target_iseq_p(struct rb_iseq_constant_body *body)
         && body->iseq_size < JIT_ISEQ_SIZE_THRESHOLD;
 }
 
-#ifdef MJIT_HEADER
+#  ifdef MJIT_HEADER
 NOINLINE(static COLDFUNC VALUE mjit_exec_slowpath(rb_execution_context_t *ec, const rb_iseq_t *iseq, struct rb_iseq_constant_body *body));
-#else
+#  else
 static inline VALUE mjit_exec_slowpath(rb_execution_context_t *ec, const rb_iseq_t *iseq, struct rb_iseq_constant_body *body);
-#endif
+#  endif
 static VALUE
 mjit_exec_slowpath(rb_execution_context_t *ec, const rb_iseq_t *iseq, struct rb_iseq_constant_body *body)
 {
@@ -162,26 +163,32 @@ mjit_exec(rb_execution_context_t *ec)
 
     mjit_func_t func = body->jit_func;
     if (UNLIKELY((uintptr_t)func <= LAST_JIT_ISEQ_FUNC)) {
-#     ifdef MJIT_HEADER
+#  ifdef MJIT_HEADER
         RB_DEBUG_COUNTER_INC(mjit_frame_JT2VM);
-#     else
+#  else
         RB_DEBUG_COUNTER_INC(mjit_frame_VM2VM);
-#     endif
+#  endif
         return mjit_exec_slowpath(ec, iseq, body);
     }
 
-# ifdef MJIT_HEADER
+#  ifdef MJIT_HEADER
     RB_DEBUG_COUNTER_INC(mjit_frame_JT2JT);
-# else
+#  else
     RB_DEBUG_COUNTER_INC(mjit_frame_VM2JT);
-# endif
+#  endif
     RB_DEBUG_COUNTER_INC(mjit_exec_call_func);
     return func(ec, ec->cfp);
 }
 
 void mjit_child_after_fork(void);
 
-#else // USE_MJIT
+extern bool mjit_enabled;
+VALUE mjit_pause(bool wait_p);
+VALUE mjit_resume(void);
+void mjit_finish(bool close_handle_p);
+
+# else // USE_MJIT
+
 static inline struct mjit_cont *mjit_cont_new(rb_execution_context_t *ec){return NULL;}
 static inline void mjit_cont_free(struct mjit_cont *cont){}
 static inline void mjit_gc_start_hook(void){}
@@ -193,5 +200,10 @@ static inline void mjit_remove_class_serial(rb_serial_t class_serial){}
 static inline VALUE mjit_exec(rb_execution_context_t *ec) { return Qundef; /* unreachable */ }
 static inline void mjit_child_after_fork(void){}
 
-#endif // USE_MJIT
+#define mjit_enabled 0
+static inline VALUE mjit_pause(bool wait_p){ return Qnil; } // unreachable
+static inline VALUE mjit_resume(void){ return Qnil; } // unreachable
+static inline void mjit_finish(bool close_handle_p){}
+
+# endif // USE_MJIT
 #endif // RUBY_MJIT_H
