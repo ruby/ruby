@@ -11,9 +11,10 @@
 
 // To share variables privately, include mjit_worker.c instead of linking.
 
+#include "ruby/internal/config.h" // defines USE_MJIT
+
 #if USE_MJIT
 
-#include "ruby/internal/config.h"
 #include "constant.h"
 #include "id_table.h"
 #include "internal.h"

@@ -10,7 +10,7 @@
 // call Ruby methods (C functions that may call rb_funcall) or trigger
 // GC (using ZALLOC, xmalloc, xfree, etc.) in this file.
 
-#include "ruby/internal/config.h"
+#include "ruby/internal/config.h" // defines USE_MJIT
 
 #if USE_MJIT
 

@@ -8,7 +8,7 @@
 
 **********************************************************************/
 
-#include "ruby/internal/config.h"
+#include "ruby/internal/config.h" // defines USE_MJIT
 #include "ruby/internal/stdbool.h"
 #include "vm_core.h"
 
