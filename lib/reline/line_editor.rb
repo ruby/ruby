@@ -165,7 +165,7 @@ class Reline::LineEditor
     @cleared = false
     @rerender_all = false
     @history_pointer = nil
-    @kill_ring = Reline::KillRing.new
+    @kill_ring ||= Reline::KillRing.new
     @vi_clipboard = ''
     @vi_arg = nil
     @waiting_proc = nil
