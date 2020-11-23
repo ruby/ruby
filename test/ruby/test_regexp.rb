@@ -1196,6 +1196,20 @@ class TestRegexp < Test::Unit::TestCase
     }
   end
 
+  def test_quantifier_reduction
+    assert_equal('aa', eval('/(a+?)*/').match('aa')[0])
+    assert_equal('aa', eval('/(?:a+?)*/').match('aa')[0])
+
+    quantifiers = %w'? * + ?? *? +?'
+    quantifiers.each do |q1|
+      quantifiers.each do |q2|
+        r1 = eval("/(a#{q1})#{q2}/").match('aa')[0]
+        r2 = eval("/(?:a#{q1})#{q2}/").match('aa')[0]
+        assert_equal(r1, r2)
+      end
+    end
+  end
+
   def test_once
     pr1 = proc{|i| /#{i}/o}
     assert_equal(/0/, pr1.call(0))
