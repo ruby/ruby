@@ -22,7 +22,6 @@
 #include "gc.h"
 #include "internal.h"
 #include "internal/cont.h"
-#include "internal/mjit.h"
 #include "internal/proc.h"
 #include "internal/warnings.h"
 #include "internal/scheduler.h"

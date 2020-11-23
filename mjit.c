@@ -22,7 +22,6 @@
 #include "internal/cont.h"
 #include "internal/file.h"
 #include "internal/hash.h"
-#include "internal/mjit.h"
 #include "internal/warnings.h"
 
 #include "mjit_worker.c"

@@ -18,7 +18,6 @@
 #include "internal/error.h"
 #include "internal/eval.h"
 #include "internal/inits.h"
-#include "internal/mjit.h"
 #include "internal/object.h"
 #include "internal/parse.h"
 #include "internal/proc.h"

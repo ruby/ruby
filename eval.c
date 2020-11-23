@@ -26,7 +26,6 @@
 #include "internal/hash.h"
 #include "internal/inits.h"
 #include "internal/io.h"
-#include "internal/mjit.h"
 #include "internal/object.h"
 #include "internal/thread.h"
 #include "internal/variable.h"
