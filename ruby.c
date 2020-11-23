@@ -1656,7 +1656,8 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     const rb_iseq_t *iseq;
     rb_encoding *enc, *lenc;
 #if UTF8_PATH
-    rb_encoding *uenc, *ienc = 0;
+    rb_encoding *ienc = 0;
+    rb_encoding *const uenc = rb_utf8_encoding();
 #endif
     const char *s;
     char fbuf[MAXPATHLEN];
@@ -1850,8 +1851,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 #endif
     }
     script_name = opt->script_name;
-    rb_enc_associate(opt->script_name,
-		     IF_UTF8_PATH(uenc = rb_utf8_encoding(), lenc));
+    rb_enc_associate(opt->script_name, IF_UTF8_PATH(uenc, lenc));
 #if UTF8_PATH
     if (uenc != lenc) {
 	opt->script_name = str_conv_enc(opt->script_name, uenc, lenc);
