@@ -937,8 +937,11 @@ compile_compact_jit_code(char* c_file)
         if (FIXNUM_P(child_unit->iseq->body->location.first_lineno))
             // FIX2INT may fallback to rb_num2long(), which is a method call and dangerous in MJIT worker. So using only FIX2LONG.
             iseq_lineno = FIX2LONG(child_unit->iseq->body->location.first_lineno);
-        fprintf(f, "\n/* %s@%s:%ld */\n", RSTRING_PTR(child_unit->iseq->body->location.label),
-                RSTRING_PTR(rb_iseq_path(child_unit->iseq)), iseq_lineno);
+        const char *sep = "@";
+        const char *iseq_label = RSTRING_PTR(child_unit->iseq->body->location.label);
+        const char *iseq_path = RSTRING_PTR(rb_iseq_path(child_unit->iseq));
+        if (!iseq_label) iseq_label = sep = "";
+        fprintf(f, "\n/* %s%s%s:%ld */\n", iseq_label, sep, iseq_path, iseq_lineno);
         success &= mjit_compile(f, child_unit->iseq, funcname, child_unit->id);
     }
 
