@@ -10,12 +10,12 @@
 
 #include "ruby/internal/config.h"
 #include "ruby/internal/stdbool.h"
+#include "vm_core.h"
 
 # if USE_MJIT
 
 #include "debug_counter.h"
 #include "ruby.h"
-#include "vm_core.h"
 
 // Special address values of a function generated from the
 // corresponding iseq by MJIT:

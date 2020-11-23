@@ -10020,6 +10020,7 @@ process.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 process.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 process.$(OBJEXT): {$(VPATH)}config.h
 process.$(OBJEXT): {$(VPATH)}constant.h
+process.$(OBJEXT): {$(VPATH)}debug_counter.h
 process.$(OBJEXT): {$(VPATH)}defines.h
 process.$(OBJEXT): {$(VPATH)}dln.h
 process.$(OBJEXT): {$(VPATH)}encoding.h
