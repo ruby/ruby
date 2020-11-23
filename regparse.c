@@ -4348,7 +4348,7 @@ fetch_char_property_to_ctype(UChar** src, UChar* end, ScanEnv* env)
   OnigEncoding enc = env->enc;
   UChar *prev, *start, *p = *src;
 
-  r = 0;
+  r = ONIGERR_INVALID_CHAR_PROPERTY_NAME;
   start = prev = p;
 
   while (!PEND) {
@@ -4362,7 +4362,6 @@ fetch_char_property_to_ctype(UChar** src, UChar* end, ScanEnv* env)
       return r;
     }
     else if (c == '(' || c == ')' || c == '{' || c == '|') {
-      r = ONIGERR_INVALID_CHAR_PROPERTY_NAME;
       break;
     }
   }

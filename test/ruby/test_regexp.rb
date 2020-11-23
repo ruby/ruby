@@ -57,6 +57,17 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal('Ruby', 'Ruby'.sub(/[^a-z]/i, '-'))
   end
 
+  def test_premature_end_char_property
+    ["\\p{",
+     "\\p{".dup.force_encoding("UTF-8"),
+     "\\p{".dup.force_encoding("US-ASCII")
+    ].each do |string|
+      assert_raise(RegexpError) do
+        Regexp.new(string)
+      end
+    end
+  end
+
   def test_assert_normal_exit
     # moved from knownbug.  It caused core.
     Regexp.union("a", "a")
