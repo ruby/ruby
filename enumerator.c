@@ -3633,9 +3633,9 @@ arith_seq_last(int argc, VALUE *argv, VALUE self)
         return rb_ary_new_capa(0);
     }
 
-    last = rb_int_plus(b, rb_int_mul(s, len_1));
+    last = rb_funcall(b, '+', 1, rb_funcall(s, '*', 1, len_1));
     if ((last_is_adjusted = arith_seq_exclude_end_p(self) && rb_equal(last, e))) {
-        last = rb_int_minus(last, s);
+        last = rb_funcall(last, '-', 1, s);
     }
 
     if (argc == 0) {
