@@ -3090,6 +3090,17 @@ Init_heap(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
 
+#if defined(HAVE_SYSCONF) && defined(_SC_PAGE_SIZE)
+    /* If Ruby's heap pages are not a multiple of the system page size, we
+     * cannot use mprotect for the read barrier, so we must disable automatic
+     * compaction. */
+    int pagesize;
+    pagesize = (int)sysconf(_SC_PAGE_SIZE);
+    if ((HEAP_PAGE_SIZE % pagesize) != 0) {
+        ruby_enable_autocompact = 0;
+    }
+#endif
+
     objspace->next_object_id = INT2FIX(OBJ_ID_INITIAL);
     objspace->id_to_obj_tbl = st_init_table(&object_id_hash_type);
     objspace->obj_to_id_tbl = st_init_numtable();
@@ -9890,6 +9901,16 @@ gc_disable(rb_execution_context_t *ec, VALUE _)
 static VALUE
 gc_set_auto_compact(rb_execution_context_t *ec, VALUE _, VALUE v)
 {
+#if defined(HAVE_SYSCONF) && defined(_SC_PAGE_SIZE)
+    /* If Ruby's heap pages are not a multiple of the system page size, we
+     * cannot use mprotect for the read barrier, so we must disable automatic
+     * compaction. */
+    int pagesize;
+    pagesize = (int)sysconf(_SC_PAGE_SIZE);
+    if ((HEAP_PAGE_SIZE % pagesize) != 0) {
+        rb_raise(rb_eNotImpError, "Automatic compaction isn't available on this platform");
+    }
+#endif
     ruby_enable_autocompact = RTEST(v);
     return v;
 }
