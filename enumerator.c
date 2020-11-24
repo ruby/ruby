@@ -517,27 +517,25 @@ static VALUE
 lazy_to_enum_i(VALUE self, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn, int kw_splat);
 
 VALUE
-rb_enumeratorize_with_size(VALUE obj, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn)
+rb_enumeratorize_with_size_kw(VALUE obj, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn, int kw_splat)
 {
-    /* Similar effect as calling obj.to_enum, i.e. dispatching to either
-       Kernel#to_enum vs Lazy#to_enum */
-    if (RTEST(rb_obj_is_kind_of(obj, rb_cLazy)))
-        return lazy_to_enum_i(obj, meth, argc, argv, size_fn, rb_keyword_given_p());
-    else
-	return enumerator_init(enumerator_allocate(rb_cEnumerator),
-                               obj, meth, argc, argv, size_fn, Qnil, rb_keyword_given_p());
+    VALUE base_class = rb_cEnumerator;
+
+    if (RTEST(rb_obj_is_kind_of(obj, rb_cLazy))) {
+        base_class = rb_cLazy;
+    }
+    else if (RTEST(rb_obj_is_kind_of(obj, rb_cEnumChain))) {
+        obj = enumerator_init(enumerator_allocate(rb_cEnumerator), obj, sym_each, 0, 0, 0, Qnil, false);
+    }
+
+    return enumerator_init(enumerator_allocate(base_class),
+                           obj, meth, argc, argv, size_fn, Qnil, kw_splat);
 }
 
 VALUE
-rb_enumeratorize_with_size_kw(VALUE obj, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn, int kw_splat)
+rb_enumeratorize_with_size(VALUE obj, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn)
 {
-    /* Similar effect as calling obj.to_enum, i.e. dispatching to either
-       Kernel#to_enum vs Lazy#to_enum */
-    if (RTEST(rb_obj_is_kind_of(obj, rb_cLazy)))
-        return lazy_to_enum_i(obj, meth, argc, argv, size_fn, kw_splat);
-    else
-        return enumerator_init(enumerator_allocate(rb_cEnumerator),
-                               obj, meth, argc, argv, size_fn, Qnil, kw_splat);
+    return rb_enumeratorize_with_size_kw(obj, meth, argc, argv, size_fn, rb_keyword_given_p());
 }
 
 static VALUE

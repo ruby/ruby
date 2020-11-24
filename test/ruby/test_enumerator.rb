@@ -816,6 +816,10 @@ class TestEnumerator < Test::Unit::TestCase
     )
   end
 
+  def test_chain_with_index
+    assert_equal([[3, 0], [4, 1]], [3].chain([4]).with_index.to_a)
+  end
+
   def test_produce
     assert_raise(ArgumentError) { Enumerator.produce }
 
