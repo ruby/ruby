@@ -144,6 +144,7 @@ class TestGemPlatform < Gem::TestCase
     test_cases.each do |arch, expected|
       platform = Gem::Platform.new arch
       assert_equal expected, platform.to_a, arch.inspect
+      assert_equal expected, Gem::Platform.new(platform.to_s).to_a, arch.inspect
     end
   end
 
