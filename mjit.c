@@ -183,7 +183,10 @@ mjit_cont_new(rb_execution_context_t *ec)
 {
     struct mjit_cont *cont;
 
-    cont = ZALLOC(struct mjit_cont);
+    // We need to use calloc instead of something like ZALLOC to avoid triggering GC here.
+    // When this function is called from rb_thread_alloc through rb_threadptr_root_fiber_setup,
+    // the thread is still being prepared and marking it causes SEGV.
+    cont = calloc(1, sizeof(struct mjit_cont));
     cont->ec = ec;
 
     CRITICAL_SECTION_START(3, "in mjit_cont_new");
@@ -218,7 +221,7 @@ mjit_cont_free(struct mjit_cont *cont)
     }
     CRITICAL_SECTION_FINISH(3, "in mjit_cont_new");
 
-    xfree(cont);
+    free(cont);
 }
 
 // Finish work with continuation info.
