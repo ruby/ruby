@@ -187,6 +187,8 @@ mjit_cont_new(rb_execution_context_t *ec)
     // When this function is called from rb_thread_alloc through rb_threadptr_root_fiber_setup,
     // the thread is still being prepared and marking it causes SEGV.
     cont = calloc(1, sizeof(struct mjit_cont));
+    if (cont == NULL)
+        rb_memerror();
     cont->ec = ec;
 
     CRITICAL_SECTION_START(3, "in mjit_cont_new");
