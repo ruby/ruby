@@ -70,7 +70,7 @@ class Gem::Platform
     when String then
       arch = arch.split "-"
 
-      if arch.length > 2 && arch.last !~ (/\d/) # reassemble x86-linux-gnu
+      if arch.length > 2 && arch.last !~ /\d+(\.\d+)?$/ # reassemble x86-linux-{libc}
         extra = arch.pop
         arch.last << "-#{extra}"
       end
