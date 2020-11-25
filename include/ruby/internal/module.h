@@ -25,6 +25,10 @@
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
+/**
+ * GC compaction note: class and modules returned by these four functions
+ * do not move.
+ */
 VALUE rb_define_class(const char*,VALUE);
 VALUE rb_define_module(const char*);
 VALUE rb_define_class_under(VALUE, const char*, VALUE);

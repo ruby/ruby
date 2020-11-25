@@ -791,6 +791,7 @@ rb_define_class(const char *name, VALUE super)
  *
  * \note if a class named \a name is already defined and its superclass is
  *       \a super, the function just returns the defined class.
+ * \note the compaction GC does not move classes returned by this function.
  */
 VALUE
 rb_define_class_under(VALUE outer, const char *name, VALUE super)
@@ -814,6 +815,7 @@ rb_define_class_under(VALUE outer, const char *name, VALUE super)
  *
  * \note if a class named \a name is already defined and its superclass is
  *       \a super, the function just returns the defined class.
+ * \note the compaction GC does not move classes returned by this function.
  */
 VALUE
 rb_define_class_id_under(VALUE outer, ID id, VALUE super)
@@ -866,6 +868,9 @@ rb_define_module_id(ID id)
     return rb_module_new();
 }
 
+/*!
+ * \note the compaction GC does not move modules returned by this function.
+ */
 VALUE
 rb_define_module(const char *name)
 {
@@ -890,6 +895,9 @@ rb_define_module(const char *name)
     return module;
 }
 
+/*!
+ * \note the compaction GC does not move modules returned by this function.
+ */
 VALUE
 rb_define_module_under(VALUE outer, const char *name)
 {
