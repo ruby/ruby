@@ -595,10 +595,12 @@ class TestISeq < Test::Unit::TestCase
       f.binmode
       f.write(RubyVM::InstructionSequence.of(1.method(:abs)).to_binary)
       f.close
-      assert_normal_exit("#{<<~"begin;"}\n#{<<~'end;'}")
-      path = ""#{f.path.dump}
+      assert_separately(["-", f.path], "#{<<~"begin;"}\n#{<<~'end;'}")
       begin;
-        RubyVM::InstructionSequence.load_from_binary(File.binread(path))
+        bin = File.binread(ARGV[0])
+        assert_raise(ArgumentError) do
+          RubyVM::InstructionSequence.load_from_binary(bin)
+        end
       end;
     end
   end
