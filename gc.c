@@ -682,7 +682,7 @@ typedef struct rb_objspace {
 	unsigned int dont_gc : 1;
 	unsigned int dont_incremental : 1;
 	unsigned int during_gc : 1;
-        unsigned int during_compacting : 2;
+        unsigned int during_compacting : 1;
 	unsigned int gc_stressful: 1;
 	unsigned int has_hook: 1;
 	unsigned int during_minor_gc : 1;
@@ -3090,17 +3090,6 @@ Init_heap(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
 
-#if defined(HAVE_SYSCONF) && defined(_SC_PAGE_SIZE)
-    /* If Ruby's heap pages are not a multiple of the system page size, we
-     * cannot use mprotect for the read barrier, so we must disable automatic
-     * compaction. */
-    int pagesize;
-    pagesize = (int)sysconf(_SC_PAGE_SIZE);
-    if ((HEAP_PAGE_SIZE % pagesize) != 0) {
-        ruby_enable_autocompact = 0;
-    }
-#endif
-
     objspace->next_object_id = INT2FIX(OBJ_ID_INITIAL);
     objspace->id_to_obj_tbl = st_init_table(&object_id_hash_type);
     objspace->obj_to_id_tbl = st_init_numtable();
@@ -4400,11 +4389,6 @@ static VALUE gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free);
 static void
 lock_page_body(rb_objspace_t *objspace, struct heap_page_body *body)
 {
-    /* If this is an explicit compaction (GC.compact), we don't need a read
-     * barrier, so just return early. */
-    if (objspace->flags.during_compacting >> 1) {
-        return;
-    }
 #if defined(_WIN32)
     DWORD old_protect;
 
@@ -4421,11 +4405,6 @@ lock_page_body(rb_objspace_t *objspace, struct heap_page_body *body)
 static void
 unlock_page_body(rb_objspace_t *objspace, struct heap_page_body *body)
 {
-    /* If this is an explicit compaction (GC.compact), we don't need a read
-     * barrier, so just return early. */
-    if (objspace->flags.during_compacting >> 1) {
-        return;
-    }
 #if defined(_WIN32)
     DWORD old_protect;
 
@@ -7051,7 +7030,7 @@ gc_marks_start(rb_objspace_t *objspace, int full_mark)
 #endif
 	objspace->flags.during_minor_gc = FALSE;
         if (ruby_enable_autocompact) {
-            objspace->flags.during_compacting |= TRUE;
+            objspace->flags.during_compacting = TRUE;
         }
 	objspace->profile.major_gc_count++;
 	objspace->rgengc.uncollectible_wb_unprotected_objects = 0;
@@ -8078,9 +8057,7 @@ gc_start(rb_objspace_t *objspace, int reason)
 
     /* reason may be clobbered, later, so keep set immediate_sweep here */
     objspace->flags.immediate_sweep = !!((unsigned)reason & GPR_FLAG_IMMEDIATE_SWEEP);
-
-    /* Explicitly enable compaction (GC.compact) */
-    objspace->flags.during_compacting = (!!((unsigned)reason & GPR_FLAG_COMPACT) << 1);
+    objspace->flags.during_compacting = !!((unsigned)reason & GPR_FLAG_COMPACT);
 
     if (!heap_allocated_pages) return FALSE; /* heap is not ready */
     if (!(reason & GPR_FLAG_METHOD) && !ready_to_gc(objspace)) return TRUE; /* GC is not allowed */
@@ -9271,19 +9248,6 @@ heap_check_moved_i(void *vstart, void *vend, size_t stride, void *data)
 }
 
 static VALUE
-gc_compact(rb_execution_context_t *ec, VALUE self)
-{
-    /* Clear the heap. */
-    gc_start_internal(ec, self, Qtrue, Qtrue, Qtrue, Qfalse);
-
-    /* At this point, all references are live and the mutator is not allowed
-     * to run, so we don't need a read barrier. */
-    gc_start_internal(ec, self, Qtrue, Qtrue, Qtrue, Qtrue);
-
-    return gc_compact_stats(ec, self);
-}
-
-static VALUE
 gc_verify_compaction_references(rb_execution_context_t *ec, VALUE self, VALUE double_heap, VALUE toward_empty)
 {
     rb_objspace_t *objspace = &rb_objspace;
@@ -9901,16 +9865,6 @@ gc_disable(rb_execution_context_t *ec, VALUE _)
 static VALUE
 gc_set_auto_compact(rb_execution_context_t *ec, VALUE _, VALUE v)
 {
-#if defined(HAVE_SYSCONF) && defined(_SC_PAGE_SIZE)
-    /* If Ruby's heap pages are not a multiple of the system page size, we
-     * cannot use mprotect for the read barrier, so we must disable automatic
-     * compaction. */
-    int pagesize;
-    pagesize = (int)sysconf(_SC_PAGE_SIZE);
-    if ((HEAP_PAGE_SIZE % pagesize) != 0) {
-        rb_raise(rb_eNotImpError, "Automatic compaction isn't available on this platform");
-    }
-#endif
     ruby_enable_autocompact = RTEST(v);
     return v;
 }

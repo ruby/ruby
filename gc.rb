@@ -199,7 +199,8 @@ module GC
   end
 
   def self.compact
-    Primitive.gc_compact
+    Primitive.gc_start_internal true, true, true, true
+    Primitive.gc_compact_stats
   end
 
   # call-seq:
