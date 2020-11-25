@@ -821,7 +821,7 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, int alen, VALUE yield
             wait_status |= wait_taking;
         }
         else {
-            rb_raise(rb_eArgError, "It should be ractor objects");
+            rb_raise(rb_eArgError, "should be a ractor object, but %"PRIsVALUE, v);
         }
     }
     rs = NULL;
