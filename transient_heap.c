@@ -776,6 +776,7 @@ static void
 transient_heap_evacuate(void *dmy)
 {
     RB_VM_LOCK_ENTER();
+    rb_vm_barrier();
     {
         struct transient_heap* theap = transient_heap_get();
 
