@@ -859,6 +859,7 @@ rb_module_new(void)
     return (VALUE)mdl;
 }
 
+// Kept for compatibility. Use rb_module_new() instead.
 VALUE
 rb_define_module_id(ID id)
 {
@@ -882,7 +883,7 @@ rb_define_module(const char *name)
         rb_vm_add_root_module(module);
 	return module;
     }
-    module = rb_define_module_id(id);
+    module = rb_module_new();
     rb_vm_add_root_module(module);
     rb_const_set(rb_cObject, id, module);
 
@@ -909,7 +910,7 @@ rb_define_module_id_under(VALUE outer, ID id)
 	}
 	return module;
     }
-    module = rb_define_module_id(id);
+    module = rb_module_new();
     rb_const_set(outer, id, module);
     rb_set_class_path_string(module, outer, rb_id2str(id));
     rb_gc_register_mark_object(module);

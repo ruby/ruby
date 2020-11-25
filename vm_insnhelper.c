@@ -4043,7 +4043,7 @@ static VALUE
 vm_declare_module(ID id, VALUE cbase)
 {
     /* new module declaration */
-    return declare_under(id, cbase, rb_define_module_id(id));
+    return declare_under(id, cbase, rb_module_new());
 }
 
 NORETURN(static void unmatched_redefinition(const char *type, VALUE cbase, ID id, VALUE old));
