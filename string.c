@@ -7942,6 +7942,7 @@ rb_str_count(int argc, VALUE *argv, VALUE str)
     char *s, *send;
     int i;
     int ascompat;
+    size_t n = 0;
 
     rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
 
@@ -7954,7 +7955,6 @@ rb_str_count(int argc, VALUE *argv, VALUE str)
 	    (ptstr = RSTRING_PTR(tstr),
 	     ONIGENC_IS_ALLOWED_REVERSE_MATCH(enc, (const unsigned char *)ptstr, (const unsigned char *)ptstr+1)) &&
 	    !is_broken_string(str)) {
-	    int n = 0;
 	    int clen;
 	    unsigned char c = rb_enc_codepoint_len(ptstr, ptstr+1, &clen, enc);
 
@@ -7964,7 +7964,7 @@ rb_str_count(int argc, VALUE *argv, VALUE str)
 	    while (s < send) {
 		if (*(unsigned char*)s++ == c) n++;
 	    }
-	    return INT2NUM(n);
+	    return SIZET2NUM(n);
 	}
     }
 
@@ -7980,13 +7980,12 @@ rb_str_count(int argc, VALUE *argv, VALUE str)
     if (!s || RSTRING_LEN(str) == 0) return INT2FIX(0);
     send = RSTRING_END(str);
     ascompat = rb_enc_asciicompat(enc);
-    i = 0;
     while (s < send) {
 	unsigned int c;
 
 	if (ascompat && (c = *(unsigned char*)s) < 0x80) {
 	    if (table[c]) {
-		i++;
+		n++;
 	    }
 	    s++;
 	}
@@ -7994,13 +7993,13 @@ rb_str_count(int argc, VALUE *argv, VALUE str)
 	    int clen;
 	    c = rb_enc_codepoint_len(s, send, &clen, enc);
 	    if (tr_find(c, table, del, nodel)) {
-		i++;
+		n++;
 	    }
 	    s += clen;
 	}
     }
 
-    return INT2NUM(i);
+    return SIZET2NUM(n);
 }
 
 static VALUE
