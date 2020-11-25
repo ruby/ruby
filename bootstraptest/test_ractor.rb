@@ -134,7 +134,7 @@ assert_equal '["r1", "r2"]', %q{
 }
 
 # Ractor.select from multiple ractors.
-assert_equal 'true', %q{
+assert_equal 30.times.map { 'ok' }.to_s, %q{
   def test n
     rs = (1..n).map do |i|
       Ractor.new(i) do |i|
@@ -160,7 +160,7 @@ assert_equal 'true', %q{
 
   30.times.map{|i|
     test i
-  }.all?('ok')
+  }
 }
 
 # Outgoing port of a ractor will be closed when the Ractor is terminated.
