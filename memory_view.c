@@ -493,8 +493,11 @@ rb_memory_view_release(rb_memory_view_t* view)
 {
     VALUE klass = CLASS_OF(view->obj);
     const rb_memory_view_entry_t *entry = lookup_memory_view_entry(klass);
-    if (entry)
-        return (*entry->release_func)(view->obj, view);
+    if (entry) {
+        int rv = (*entry->release_func)(view->obj, view);
+        view->obj = Qnil;
+        return rv;
+    }
     else
         return 0;
 }
