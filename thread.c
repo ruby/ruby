@@ -831,18 +831,19 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
 		/* exit on main_thread. */
 	    }
 	    else {
-                if (th->invoke_type == thread_invoke_type_ractor_proc) {
-                    rb_ractor_atexit_exception(th->ec);
-                }
-
                 if (th->report_on_exception) {
 		    VALUE mesg = rb_thread_to_s(th->self);
 		    rb_str_cat_cstr(mesg, " terminated with exception (report_on_exception is true):\n");
 		    rb_write_error_str(mesg);
 		    rb_ec_error_print(th->ec, errinfo);
 		}
-		if (th->vm->thread_abort_on_exception ||
-		    th->abort_on_exception || RTEST(ruby_debug)) {
+
+                if (th->invoke_type == thread_invoke_type_ractor_proc) {
+                    rb_ractor_atexit_exception(th->ec);
+                }
+
+                if (th->vm->thread_abort_on_exception ||
+                    th->abort_on_exception || RTEST(ruby_debug)) {
 		    /* exit on main_thread */
 		}
 		else {
