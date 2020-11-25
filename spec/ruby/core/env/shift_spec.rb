@@ -42,9 +42,10 @@ describe "ENV.shift" do
   it "uses the locale encoding if Encoding.default_internal is nil" do
     Encoding.default_internal = nil
 
+    encoding = platform_is(:windows) ? Encoding::UTF_8 : Encoding.find('locale')
     pair = ENV.shift
-    pair.first.encoding.should equal(Encoding.find("locale"))
-    pair.last.encoding.should equal(Encoding.find("locale"))
+    pair.first.encoding.should equal(encoding)
+    pair.last.encoding.should equal(encoding)
   end
 
   it "transcodes from the locale encoding to Encoding.default_internal if set" do

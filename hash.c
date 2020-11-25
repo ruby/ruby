@@ -4823,22 +4823,7 @@ static char **my_environ;
 #undef environ
 #define environ my_environ
 #undef getenv
-static char *(*w32_getenv)(const char*);
-static char *
-w32_getenv_unknown(const char *name)
-{
-    char *(*func)(const char*);
-    if (rb_locale_encindex() == rb_ascii8bit_encindex()) {
-	func = rb_w32_getenv;
-    }
-    else {
-	func = rb_w32_ugetenv;
-    }
-    /* atomic assignment in flat memory model */
-    return (w32_getenv = func)(name);
-}
-static char *(*w32_getenv)(const char*) = w32_getenv_unknown;
-#define getenv(n) w32_getenv(n)
+#define getenv(n) rb_w32_ugetenv(n)
 #elif defined(__APPLE__)
 #undef environ
 #define environ (*_NSGetEnviron())
@@ -4857,20 +4842,20 @@ extern char **environ;
 #define ENVNMATCH(s1, s2, n) (memcmp((s1), (s2), (n)) == 0)
 #endif
 
+static inline rb_encoding *
+env_encoding()
+{
+#ifdef _WIN32
+    return rb_utf8_encoding();
+#else
+    return rb_locale_encoding();
+#endif
+}
+
 static VALUE
 env_enc_str_new(const char *ptr, long len, rb_encoding *enc)
 {
-#ifdef _WIN32
-    rb_encoding *internal = rb_default_internal_encoding();
-    const int ecflags = ECONV_INVALID_REPLACE | ECONV_UNDEF_REPLACE;
-    rb_encoding *utf8 = rb_utf8_encoding();
-    VALUE str = rb_enc_str_new(NULL, 0, (internal ? internal : enc));
-    if (NIL_P(rb_str_cat_conv_enc_opts(str, 0, ptr, len, utf8, ecflags, Qnil))) {
-        rb_str_initialize(str, ptr, len, NULL);
-    }
-#else
     VALUE str = rb_external_str_new_with_enc(ptr, len, enc);
-#endif
 
     rb_obj_freeze(str);
     return str;
@@ -4885,7 +4870,7 @@ env_enc_str_new_cstr(const char *ptr, rb_encoding *enc)
 static VALUE
 env_str_new(const char *ptr, long len)
 {
-    return env_enc_str_new(ptr, len, rb_locale_encoding());
+    return env_enc_str_new(ptr, len, env_encoding());
 }
 
 static VALUE
@@ -4897,46 +4882,23 @@ env_str_new2(const char *ptr)
 
 static const char TZ_ENV[] = "TZ";
 
-static rb_encoding *
-env_encoding_for(const char *name, const char *ptr)
-{
-    if (ENVMATCH(name, PATH_ENV)) {
-	return rb_filesystem_encoding();
-    }
-    else {
-	return rb_locale_encoding();
-    }
-}
-
 static VALUE
 env_name_new(const char *name, const char *ptr)
 {
-    return env_enc_str_new_cstr(ptr, env_encoding_for(name, ptr));
+    return env_enc_str_new_cstr(ptr, env_encoding());
 }
 
 static void *
 get_env_cstr(
-#ifdef _WIN32
-    volatile VALUE *pstr,
-#else
     VALUE str,
-#endif
     const char *name)
 {
-#ifdef _WIN32
-    VALUE str = *pstr;
-#endif
     char *var;
     rb_encoding *enc = rb_enc_get(str);
     if (!rb_enc_asciicompat(enc)) {
 	rb_raise(rb_eArgError, "bad environment variable %s: ASCII incompatible encoding: %s",
 		 name, rb_enc_name(enc));
     }
-#ifdef _WIN32
-    if (!rb_enc_str_asciionly_p(str)) {
-	*pstr = str = rb_str_conv_enc(str, NULL, rb_utf8_encoding());
-    }
-#endif
     var = RSTRING_PTR(str);
     if (memchr(var, '\0', RSTRING_LEN(str))) {
 	rb_raise(rb_eArgError, "bad environment variable %s: contains null byte", name);
@@ -4944,13 +4906,8 @@ get_env_cstr(
     return rb_str_fill_terminator(str, 1); /* ASCII compatible */
 }
 
-#ifdef _WIN32
-#define get_env_ptr(var, val) \
-    (var = get_env_cstr(&(val), #var))
-#else
 #define get_env_ptr(var, val) \
     (var = get_env_cstr(val, #var))
-#endif
 
 static inline const char *
 env_name(volatile VALUE *s)
@@ -4991,9 +4948,6 @@ env_delete(VALUE name)
 	VALUE value = env_str_new2(val);
 
 	ruby_setenv(nam, 0);
-	if (ENVMATCH(nam, PATH_ENV)) {
-	    RB_GC_GUARD(name);
-	}
 	return value;
     }
     return Qnil;
@@ -5415,9 +5369,6 @@ env_aset(VALUE nm, VALUE val)
     get_env_ptr(value, val);
 
     ruby_setenv(name, value);
-    if (ENVMATCH(name, PATH_ENV)) {
-	RB_GC_GUARD(nm);
-    }
     reset_by_modified_env(name);
     return val;
 }
