@@ -222,6 +222,7 @@ ractor_free(void *ptr)
     rb_native_cond_destroy(&r->wait.cond);
     ractor_queue_free(&r->incoming_queue);
     ractor_waiting_list_free(&r->taking_ractors);
+    if (r->default_rand) ruby_xfree(r->default_rand);
     ruby_xfree(r);
 }
 
@@ -1764,6 +1765,21 @@ rb_ractor_stderr_set(VALUE err)
     else {
         rb_ractor_t *cr = GET_RACTOR();
         RB_OBJ_WRITE(cr->self, &cr->r_stderr, err);
+    }
+}
+
+void *
+rb_ractor_default_rand(void *ptr)
+{
+    if (rb_ractor_main_p()) {
+        static void *default_rnd;
+        if (UNLIKELY(ptr != NULL)) default_rnd = ptr;
+        return default_rnd;
+    }
+    else {
+        rb_ractor_t *cr = GET_RACTOR();
+        if (UNLIKELY(ptr != NULL)) cr->default_rand = ptr;
+        return cr->default_rand;
     }
 }
 
