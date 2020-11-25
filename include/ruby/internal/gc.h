@@ -45,10 +45,8 @@ void rb_global_variable(VALUE *);
 void rb_gc_unregister_address(VALUE *valptr);
 
 /**
- * Inform the garbage collector that `object` is a live Ruby object. Note that
- * the garbage collector is free to move `object` and so it is not correct to
- * save `object` into a C global constant and assume that it will always refer
- * to the same Ruby object.
+ * Inform the garbage collector that `object` is a live Ruby object that should
+ * not be moved.
  *
  * See also: rb_gc_register_address()
  */
