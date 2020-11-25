@@ -127,6 +127,8 @@ struct rb_ractor_struct {
     VALUE verbose;
     VALUE debug;
 
+    void *default_rand; // used in random.c
+
     // gc.c rb_objspace_reachable_objects_from
     struct gc_mark_func_data_struct {
         void *data;

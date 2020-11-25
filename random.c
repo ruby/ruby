@@ -120,8 +120,6 @@ typedef struct {
 
 #define DEFAULT_SEED_CNT 4
 
-static rb_random_mt_t default_rand;
-
 static VALUE rand_init(const rb_random_interface_t *, rb_random_t *, VALUE);
 static VALUE random_seed(VALUE);
 static void fill_random_seed(uint32_t *seed, size_t cnt);
@@ -149,9 +147,21 @@ rand_start(rb_random_mt_t *r)
 }
 
 static rb_random_mt_t *
+default_rand(void)
+{
+    void *rb_ractor_default_rand(void *); // ractor.c
+    rb_random_mt_t *rnd = (rb_random_mt_t *)rb_ractor_default_rand(NULL);
+    if (rnd == NULL) {
+        rnd = ZALLOC(rb_random_mt_t);
+        rb_ractor_default_rand(rnd);
+    }
+    return rnd;
+}
+
+static rb_random_mt_t *
 default_mt(void)
 {
-    return rand_mt_start(&default_rand);
+    return rand_mt_start(default_rand());
 }
 
 unsigned int
@@ -230,7 +240,7 @@ const rb_data_type_t rb_random_data_type = {
 static void
 random_mt_free(void *ptr)
 {
-    if (ptr != &default_rand)
+    if (ptr != default_rand())
 	xfree(ptr);
 }
 
@@ -274,7 +284,7 @@ static rb_random_t *
 try_get_rnd(VALUE obj)
 {
     if (obj == rb_cRandom) {
-	return rand_start(&default_rand);
+	return rand_start(default_rand());
     }
     if (!rb_typeddata_is_kind_of(obj, &rb_random_data_type)) return NULL;
     if (RTYPEDDATA_TYPE(obj) == &random_mt_type)
@@ -290,7 +300,7 @@ try_get_rnd(VALUE obj)
 static const rb_random_interface_t *
 try_rand_if(VALUE obj, rb_random_t *rnd)
 {
-    if (rnd == &default_rand.base) {
+    if (rnd == &default_rand()->base) {
 	return &random_mt_if;
     }
     return rb_rand_if(obj);
@@ -709,7 +719,7 @@ rand_mt_state(VALUE obj)
 static VALUE
 random_s_state(VALUE klass)
 {
-    return mt_state(&default_rand.mt);
+    return mt_state(&default_rand()->mt);
 }
 
 /* :nodoc: */
@@ -724,7 +734,7 @@ rand_mt_left(VALUE obj)
 static VALUE
 random_s_left(VALUE klass)
 {
-    return INT2FIX(default_rand.mt.left);
+    return INT2FIX(default_rand()->mt.left);
 }
 
 /* :nodoc: */
@@ -829,7 +839,7 @@ static VALUE
 rb_f_srand(int argc, VALUE *argv, VALUE obj)
 {
     VALUE seed, old;
-    rb_random_mt_t *r = &default_rand;
+    rb_random_mt_t *r = rand_mt_start(default_rand());
 
     if (rb_check_arity(argc, 0, 1) == 0) {
         seed = random_seed(obj);
@@ -1191,8 +1201,15 @@ rb_random_bytes(VALUE obj, long n)
 static VALUE
 random_s_bytes(VALUE obj, VALUE len)
 {
-    rb_random_t *rnd = rand_start(&default_rand);
+    rb_random_t *rnd = rand_start(default_rand());
     return rand_bytes(&random_mt_if, rnd, NUM2LONG(rb_to_int(len)));
+}
+
+static VALUE
+random_s_seed(VALUE obj)
+{
+    rb_random_mt_t *rnd = rand_mt_start(default_rand());
+    return rnd->base.seed;
 }
 
 static VALUE
@@ -1518,7 +1535,7 @@ static VALUE
 rb_f_rand(int argc, VALUE *argv, VALUE obj)
 {
     VALUE vmax;
-    rb_random_t *rnd = rand_start(&default_rand);
+    rb_random_t *rnd = rand_start(default_rand());
 
     if (rb_check_arity(argc, 0, 1) && !NIL_P(vmax = argv[0])) {
         VALUE v = rand_range(obj, rnd, vmax);
@@ -1543,7 +1560,7 @@ rb_f_rand(int argc, VALUE *argv, VALUE obj)
 static VALUE
 random_s_rand(int argc, VALUE *argv, VALUE obj)
 {
-    VALUE v = rand_random(argc, argv, Qnil, rand_start(&default_rand));
+    VALUE v = rand_random(argc, argv, Qnil, rand_start(default_rand()));
     check_random_number(v, argv);
     return v;
 }
@@ -1626,27 +1643,10 @@ Init_RandomSeedCore(void)
     explicit_bzero(&mt, sizeof(mt));
 }
 
-/* construct Random::DEFAULT bits */
-static VALUE
-Init_Random_default(VALUE klass)
-{
-    rb_random_mt_t *r = &default_rand;
-    struct MT *mt = &r->mt;
-    VALUE v = TypedData_Wrap_Struct(klass, &random_mt_type, r);
-
-    rb_gc_register_mark_object(v);
-    with_random_seed(DEFAULT_SEED_CNT, 1) {
-        init_by_array(mt, seedbuf, DEFAULT_SEED_CNT);
-        r->base.seed = make_seed_value(seedbuf, DEFAULT_SEED_CNT);
-    }
-
-    return v;
-}
-
 void
 rb_reset_random_seed(void)
 {
-    rb_random_mt_t *r = &default_rand;
+    rb_random_mt_t *r = default_rand();
     uninit_genrand(&r->mt);
     r->base.seed = INT2FIX(0);
 }
@@ -1701,17 +1701,12 @@ InitVM_Random(void)
     rb_define_private_method(rb_cRandom, "left", rand_mt_left, 0);
     rb_define_method(rb_cRandom, "==", rand_mt_equal, 1);
 
-    {
-	/* Direct access to Ruby's Pseudorandom number generator (PRNG). */
-        VALUE rand_default = Init_Random_default(rb_cRandom);
-	/* The default Pseudorandom number generator.  Used by class
-	 * methods of Random. */
-	rb_define_const(rb_cRandom, "DEFAULT", rand_default);
-    }
+    rb_define_const(rb_cRandom, "DEFAULT", rb_cRandom);
 
     rb_define_singleton_method(rb_cRandom, "srand", rb_f_srand, -1);
     rb_define_singleton_method(rb_cRandom, "rand", random_s_rand, -1);
     rb_define_singleton_method(rb_cRandom, "bytes", random_s_bytes, 1);
+    rb_define_singleton_method(rb_cRandom, "seed", random_s_seed, 0);
     rb_define_singleton_method(rb_cRandom, "new_seed", random_seed, 0);
     rb_define_singleton_method(rb_cRandom, "urandom", random_raw_seed, 1);
     rb_define_private_method(CLASS_OF(rb_cRandom), "state", random_s_state, 0);
