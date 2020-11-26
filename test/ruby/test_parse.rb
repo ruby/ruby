@@ -1187,11 +1187,14 @@ x = __ENCODING__
       A = [[1]]
       # shareable_constant_value: none
       B = [[2]]
+      # shareable_constant_value: literal
+      C = [["shareable", "constant#{nil}"]]
 
-      [A, B]
+      [A, B, C]
     end;
     assert_send([Ractor, :shareable?, a])
     assert_not_send([Ractor, :shareable?, b])
+    assert_send([Ractor, :shareable?, c])
     assert_equal([1], a[0])
     assert_send([Ractor, :shareable?, a[0]])
     a, b = Class.new.class_eval("#{<<~"begin;"}\n#{<<~'end;'}")
@@ -1208,6 +1211,12 @@ x = __ENCODING__
     assert_not_send([Ractor, :shareable?, b])
     assert_equal([1], a[0])
     assert_send([Ractor, :shareable?, a[0]])
+
+    assert_syntax_error("#{<<~"begin;"}\n#{<<~'end;'}", /unshareable expression/)
+    begin;
+      # shareable_constant_value: literal
+      C = ["Not " + "shareable"]
+    end;
   end
 
 =begin
