@@ -191,7 +191,9 @@ class Ripper
     def on_error(mesg)
       @errors.push Elem.new([lineno(), column()], __callee__, token(), state(), mesg)
     end
-    alias on_parse_error on_error
+    PARSER_EVENTS.grep(/_error\z/) do |e|
+      alias_method "on_#{e}", :on_error
+    end
     alias compile_error on_error
 
     (SCANNER_EVENTS.map {|event|:"on_#{event}"} - private_instance_methods(false)).each do |event|
