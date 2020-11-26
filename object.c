@@ -401,6 +401,12 @@ static VALUE
 rb_obj_clone2(rb_execution_context_t *ec, VALUE obj, VALUE freeze)
 {
     VALUE kwfreeze = obj_freeze_opt(freeze);
+    return rb_obj_clone_freeze(obj, kwfreeze);
+}
+
+VALUE
+rb_obj_clone_freeze(VALUE obj, VALUE kwfreeze)
+{
     if (!special_object_p(obj))
 	return mutable_obj_clone(obj, kwfreeze);
     return immutable_obj_clone(obj, kwfreeze);

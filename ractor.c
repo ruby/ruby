@@ -2128,6 +2128,7 @@ struct obj_traverse_replace_data {
 
     VALUE replacement;
     bool move;
+    bool freeze;
 };
 
 struct obj_traverse_replace_callback_data {
@@ -2208,6 +2209,7 @@ static int
 obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
 {
     VALUE replacement;
+    bool freeze;
 
     if (RB_SPECIAL_CONST_P(obj)) {
         data->replacement = obj;
@@ -2221,6 +2223,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
     }
 
     replacement = data->replacement;
+    freeze = data->freeze;
 
     if (UNLIKELY(st_lookup(obj_traverse_replace_rec(data), (st_data_t)obj, (st_data_t *)&replacement))) {
         data->replacement = replacement;
@@ -2373,6 +2376,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
         rb_bug("unreachable");
     }
 
+    data->freeze = freeze;
     data->replacement = replacement;
 
     if (data->leave_func(obj, data) == traverse_stop) {
@@ -2491,10 +2495,12 @@ copy_enter(VALUE obj, struct obj_traverse_replace_data *data)
 {
     if (rb_ractor_shareable_p(obj)) {
         data->replacement = obj;
+        data->freeze = false;
         return traverse_skip;
     }
     else {
-        data->replacement = rb_obj_clone(obj);
+        data->replacement = rb_obj_clone_freeze(obj, Qfalse);
+        data->freeze = !!OBJ_FROZEN(obj);
         return traverse_cont;
     }
 }
@@ -2502,6 +2508,9 @@ copy_enter(VALUE obj, struct obj_traverse_replace_data *data)
 static enum obj_traverse_iterator_result
 copy_leave(VALUE obj, struct obj_traverse_replace_data *data)
 {
+    if (data->freeze) {
+        OBJ_FREEZE(data->replacement);
+    }
     return traverse_cont;
 }
 

@@ -42,6 +42,7 @@ VALUE rb_obj_is_instance_of(VALUE, VALUE);
 VALUE rb_obj_is_kind_of(VALUE, VALUE);
 VALUE rb_obj_alloc(VALUE);
 VALUE rb_obj_clone(VALUE);
+VALUE rb_obj_clone_freeze(VALUE, VALUE);
 VALUE rb_obj_dup(VALUE);
 VALUE rb_obj_init_copy(VALUE,VALUE);
 VALUE rb_obj_taint(VALUE);
