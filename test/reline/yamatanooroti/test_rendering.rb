@@ -423,6 +423,24 @@ begin
       EOC
     end
 
+    def test_enable_bracketed_paste
+      write_inputrc <<~LINES
+        set enable-bracketed-paste on
+      LINES
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
+      write("\e[200~,")
+      write("def hoge\n  3\nend\n")
+      write("\e[200~.")
+      close
+      assert_screen(<<~EOC)
+        prompt> def hoge
+        prompt>   3
+        prompt> end
+        => :hoge
+        prompt>
+      EOC
+    end
+
     private def write_inputrc(content)
       File.open(@inputrc_file, 'w') do |f|
         f.write content

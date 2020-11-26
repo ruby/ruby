@@ -44,6 +44,7 @@ module Reline
       self.output = STDOUT
       yield self
       @completion_quote_character = nil
+      @bracketed_paste_finished = false
     end
 
     def encoding
@@ -243,6 +244,10 @@ module Reline
               line_editor.input_key(c)
               line_editor.rerender
             }
+            if @bracketed_paste_finished
+              line_editor.rerender_all
+              @bracketed_paste_finished = false
+            end
           }
           if prev_pasting_state == true and not Reline::IOGate.in_pasting? and not line_editor.finished?
             prev_pasting_state = false
@@ -275,8 +280,13 @@ module Reline
       buffer = []
       loop do
         c = Reline::IOGate.getc
-        buffer << c
-        result = key_stroke.match_status(buffer)
+        if c == -1
+          result = :unmatched
+          @bracketed_paste_finished = true
+        else
+          buffer << c
+          result = key_stroke.match_status(buffer)
+        end
         case result
         when :matched
           expanded = key_stroke.expand(buffer).map{ |expanded_c|
