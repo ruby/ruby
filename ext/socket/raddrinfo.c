@@ -340,6 +340,116 @@ rb_getaddrinfo(const char *node, const char *service,
 }
 
 #ifdef HAVE_GETADDRINFO_A
+struct gaicbs {
+    struct gaicbs *next;
+    struct gaicb *gaicb;
+};
+
+/* linked list to retain all outstanding and ongoing requests */
+static struct gaicbs *requests = NULL;
+
+static void
+gaicbs_add(struct gaicb *req)
+{
+    struct gaicbs *request;
+
+    if (!req) return;
+    request = (struct gaicbs *)xmalloc(sizeof(struct gaicbs));
+    request->gaicb = req;
+    request->next = requests;
+
+    requests = request;
+}
+
+static void
+gaicbs_remove(struct gaicb *req)
+{
+    struct gaicbs *request = requests;
+    struct gaicbs *prev = NULL;
+
+    if (!req) return;
+
+    while (request) {
+        if (request->gaicb == req) break;
+        prev = request;
+        request = request->next;
+    }
+
+    if (request) {
+        if (prev) {
+            prev->next = request->next;
+        } else {
+            requests = request->next;
+        }
+        xfree(request);
+    }
+}
+
+static void
+gaicbs_cancel_all(void)
+{
+    struct gaicbs *request = requests;
+    struct gaicbs *tmp, *prev = NULL;
+    int ret;
+
+    while (request) {
+        ret = gai_cancel(request->gaicb);
+        if (ret == EAI_NOTCANCELED) {
+            // continue to next request
+            prev = request;
+            request = request->next;
+        } else {
+            // remove the request from the list
+            if (prev) {
+                prev->next = request->next;
+            } else {
+                requests = request->next;
+            }
+            tmp = request;
+            request = request->next;
+            xfree(tmp);
+        }
+    }
+}
+
+static void
+gaicbs_wait_all(void)
+{
+    struct gaicbs *request = requests;
+    int size = 0;
+
+    // count gaicbs
+    while (request) {
+        size++;
+        request = request->next;
+    }
+
+    // create list to wait
+    const struct gaicb *reqs[size];
+    request = requests;
+    for (int i=0; request; i++) {
+        reqs[i] = request->gaicb;
+        request = request->next;
+    }
+
+    // wait requests
+    gai_suspend(reqs, size, NULL); // ignore result intentionally
+}
+
+/*  A mitigation for [Bug #17220].
+    It cancels all outstanding requests and waits for ongoing requests.
+    Then, it waits internal worker threads in getaddrinfo_a(3) to be finished. */
+void
+rb_getaddrinfo_a_before_exec(void)
+{
+    gaicbs_cancel_all();
+    gaicbs_wait_all();
+
+    /* wait worker threads in getaddrinfo_a(3) to be finished.
+       they will finish after 1 second sleep. */
+    sleep(1);
+}
+
 int
 rb_getaddrinfo_a(const char *node, const char *service,
                const struct addrinfo *hints,
@@ -364,11 +474,13 @@ rb_getaddrinfo_a(const char *node, const char *service,
 	reqs[0] = &req;
 	ret = getaddrinfo_a(GAI_NOWAIT, reqs, 1, NULL);
 	if (ret) return ret;
+        gaicbs_add(&req);
 
 	arg.req = &req;
 	arg.timeout = timeout;
 
 	ret = (int)(VALUE)rb_thread_call_without_gvl(nogvl_gai_suspend, &arg, RUBY_UBF_IO, 0);
+        gaicbs_remove(&req);
         if (ret && ret != EAI_ALLDONE) {
             /* EAI_ALLDONE indicates that the request already completed and gai_suspend was redundant */
             /* on Ubuntu 18.04 (or other systems), gai_suspend(3) returns EAI_SYSTEM/ENOENT on timeout */
@@ -2758,4 +2870,8 @@ rsock_init_addrinfo(void)
 
     rb_define_method(rb_cAddrinfo, "marshal_dump", addrinfo_mdump, 0);
     rb_define_method(rb_cAddrinfo, "marshal_load", addrinfo_mload, 1);
+
+#ifdef HAVE_GETADDRINFO_A
+    rb_socket_before_exec_func = rb_getaddrinfo_a_before_exec;
+#endif
 }

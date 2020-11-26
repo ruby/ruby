@@ -102,6 +102,16 @@ class TestSocket < Test::Unit::TestCase
     assert_nothing_raised('[ruby-core:29427]'){ TCPServer.open('localhost', 0) {} }
   end
 
+  def test_getaddrinfo_after_fork
+    skip "fork not supported" unless Process.respond_to?(:fork)
+    assert_normal_exit(<<-"end;", '[ruby-core:100329] [Bug #17220]')
+      require "socket"
+      Socket.getaddrinfo("localhost", nil)
+      pid = fork { Socket.getaddrinfo("localhost", nil) }
+      assert_equal pid, Timeout.timeout(30) { Process.wait(pid) }
+    end;
+  end
+
 
   def test_getnameinfo
     assert_raise(SocketError) { Socket.getnameinfo(["AF_UNIX", 80, "0.0.0.0"]) }

@@ -1152,6 +1152,7 @@ AC_CHECK_LIB(crypt, crypt)      # glibc (GNU/Linux, GNU/Hurd, GNU/kFreeBSD)
 AC_CHECK_LIB(dl, dlopen)	# Dynamic linking for SunOS/Solaris and SYSV
 AC_CHECK_LIB(dld, shl_load)	# Dynamic linking for HP-UX
 AC_CHECK_LIB(socket, shutdown)  # SunOS/Solaris
+AC_CHECK_LIB(anl, getaddrinfo_a)
 
 dnl Checks for header files.
 AC_HEADER_DIRENT
@@ -1943,6 +1944,7 @@ AC_CHECK_FUNCS(fsync)
 AC_CHECK_FUNCS(ftruncate)
 AC_CHECK_FUNCS(ftruncate64)		# used for Win32 platform
 AC_CHECK_FUNCS(getattrlist)
+AC_CHECK_FUNCS(getaddrinfo_a)
 AC_CHECK_FUNCS(getcwd)
 AC_CHECK_FUNCS(getgidx)
 AC_CHECK_FUNCS(getgrnam)
