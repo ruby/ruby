@@ -10985,31 +10985,149 @@ mark_lvar_used(struct parser_params *p, NODE *rhs)
 extern VALUE rb_mRubyVMFrozenCore;
 
 static NODE *
-shareable_literal_constant(struct parser_params *p, NODE *value)
+shareable_literal_node(struct parser_params *p, NODE *value, const YYLTYPE *loc)
 {
+    NODE *fcore = NEW_LIT(rb_mRubyVMFrozenCore, loc);
+    return NEW_CALL(fcore, rb_intern("make_shareable"),
+		    NEW_LIST(value, loc), loc);
+}
+
+static int is_static_content(NODE *node);
+
+static VALUE
+shareable_literal_value(NODE *node)
+{
+    if (!node) return Qnil;
+    enum node_type type = nd_type(node);
+    switch (type) {
+      case NODE_TRUE:
+	return Qtrue;
+      case NODE_FALSE:
+	return Qfalse;
+      case NODE_NIL:
+	return Qnil;
+      case NODE_LIT:
+	return node->nd_lit;
+      default:
+	return Qundef;
+    }
+}
+
+VALUE rb_ractor_make_shareable(VALUE obj);
+
+static NODE *
+shareable_literal_constant(struct parser_params *p, NODE *value, enum shareability shareable, const YYLTYPE *loc)
+{
+    VALUE lit;
+
+    if (!value) return 0;
+    enum node_type type = nd_type(value);
+    switch (type) {
+      case NODE_TRUE:
+      case NODE_FALSE:
+      case NODE_NIL:
+      case NODE_LIT:
+      case NODE_DSTR:
+	break;
+
+      case NODE_STR:
+	lit = rb_fstring(value->nd_lit);
+	nd_set_type(value, NODE_LIT);
+	RB_OBJ_WRITE(p->ast, &value->nd_lit, lit);
+	break;
+
+      case NODE_ZLIST:
+	nd_set_type(value, NODE_LIT);
+	RB_OBJ_WRITE(p->ast, &value->nd_lit, rb_ary_new());
+	break;
+
+      case NODE_LIST:
+	lit = rb_ary_new();
+	for (NODE *n = value; n; n = n->nd_next) {
+	    NODE *elt = n->nd_head;
+	    if (elt && !(elt = shareable_literal_constant(p, elt, shareable, &elt->nd_loc))) {
+		if (lit) {
+		    rb_ary_clear(lit);
+		    lit = Qfalse;
+		}
+		continue;
+	    }
+	    if (lit) {
+		VALUE e = shareable_literal_value(elt);
+		if (e != Qundef) {
+		    rb_ary_push(lit, e);
+		}
+		else {
+		    rb_ary_clear(lit);
+		    lit = Qfalse;
+		}
+	    }
+	}
+	if (!lit) return 0;
+	nd_set_type(value, NODE_LIT);
+	RB_OBJ_WRITE(p->ast, &value->nd_lit, rb_ractor_make_shareable(lit));
+	break;
+
+      case NODE_HASH:
+	if (!value->nd_brace) return 0;
+	lit = rb_hash_new();
+	for (NODE *n = value->nd_head; n; n = n->nd_next->nd_next) {
+	    NODE *key = n->nd_head;
+	    NODE *val = n->nd_next->nd_head;
+	    if ((key && !(key = shareable_literal_constant(p, key, shareable, &key->nd_loc))) ||
+		(val && !(val = shareable_literal_constant(p, val, shareable, &val->nd_loc)))) {
+		if (lit) {
+		    rb_hash_clear(lit);
+		    lit = Qfalse;
+		}
+		continue;
+	    }
+	    if (lit) {
+		VALUE k = shareable_literal_value(key);
+		VALUE v = shareable_literal_value(val);
+		if (k != Qundef && v != Qundef) {
+		    rb_hash_aset(lit, k, v);
+		}
+		else {
+		    rb_hash_clear(lit);
+		    lit = Qfalse;
+		}
+	    }
+	}
+	if (!lit) return 0;
+	nd_set_type(value, NODE_LIT);
+	RB_OBJ_WRITE(p->ast, &value->nd_lit, rb_ractor_make_shareable(lit));
+	break;
+
+      default:
+	if (shareable == shareable_literal)
+	    yyerror1(loc, "unshareable expression");
+	return 0;
+    }
     return value;
 }
 
 static NODE *
 shareable_constant_value(struct parser_params *p, NODE *value, enum shareability shareable, const YYLTYPE *loc)
 {
+    if (!value) return 0;
     switch (shareable) {
       case shareable_none:
 	return value;
 
       case shareable_literal:
-	return shareable_literal_constant(p, value);
-
       case shareable_everything:
+	{
+	    NODE *lit = shareable_literal_constant(p, value, shareable, loc);
+	    if (lit) return lit;
+	}
 	break;
 
       default:
 	UNREACHABLE_RETURN(0);
     }
 
-    NODE *fcore = NEW_LIT(rb_mRubyVMFrozenCore, loc);
-    return NEW_CALL(fcore, rb_intern("make_shareable"),
-		    NEW_LIST(value, loc), loc);
+    return shareable_literal_node(p, value, loc);
 }
 
 static NODE *

@@ -995,6 +995,7 @@ collect_outer_variable_names(ID id, VALUE val, void *ptr)
 }
 
 VALUE rb_ractor_error_class(void);
+VALUE rb_ractor_make_shareable(VALUE obj);
 
 static const rb_env_t *
 env_copy(const VALUE *src_ep, VALUE read_only_variables)
