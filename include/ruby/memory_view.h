@@ -136,6 +136,10 @@ int rb_memory_view_available_p(VALUE obj);
 int rb_memory_view_get(VALUE obj, rb_memory_view_t* memory_view, int flags);
 int rb_memory_view_release(rb_memory_view_t* memory_view);
 
+/* for testing */
+RUBY_EXTERN VALUE rb_memory_view_exported_object_registry;
+RUBY_EXTERN const rb_data_type_t rb_memory_view_exported_object_registry_data_type;
+
 RBIMPL_SYMBOL_EXPORT_END()
 
 RBIMPL_ATTR_PURE()

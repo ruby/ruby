@@ -197,6 +197,14 @@ class TestMemoryView < Test::Unit::TestCase
     assert_equal(expected_result, members)
   end
 
+  def test_ref_count_with_exported_object
+    es = MemoryViewTestUtils::ExportableString.new("ruby")
+    assert_equal(1, MemoryViewTestUtils.ref_count_while_exporting(es, 1))
+    assert_equal(2, MemoryViewTestUtils.ref_count_while_exporting(es, 2))
+    assert_equal(10, MemoryViewTestUtils.ref_count_while_exporting(es, 10))
+    assert_nil(MemoryViewTestUtils.ref_count_while_exporting(es, 0))
+  end
+
   def test_rb_memory_view_init_as_byte_array
     # ExportableString's memory view is initialized by rb_memory_view_init_as_byte_array
     es = MemoryViewTestUtils::ExportableString.new("ruby")
