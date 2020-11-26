@@ -148,7 +148,6 @@ class TestRipper::Lexer < Test::Unit::TestCase
 
   def test_raise_errors_keyword
     assert_raise(SyntaxError) { Ripper.tokenize('def req(true) end', raise_errors: true) }
-    assert_raise(SyntaxError) { Ripper.tokenize('def req(true) end', raise_errors: true) }
   end
 
   def test_tokenize_with_syntax_error
