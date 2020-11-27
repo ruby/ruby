@@ -45,10 +45,8 @@ class TestJIT < Test::Unit::TestCase
     # ci.rvm.jp caches its build environment. Clean up temporary files left by SEGV.
     if ENV['RUBY_DEBUG']&.include?('ci')
       Dir.glob("#{ENV.fetch('TMPDIR', '/tmp')}/_ruby_mjit_p*u*.*").each do |file|
-        if File.mtime(file) < Time.now - 60 * 60 * 24
-          puts "test/ruby/test_jit.rb: removing #{file}"
-          File.unlink(file)
-        end
+        puts "test/ruby/test_jit.rb: removing #{file}"
+        File.unlink(file)
       end
     end
 
