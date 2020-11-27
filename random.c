@@ -158,6 +158,13 @@ default_rand(void)
     return rnd;
 }
 
+void
+rb_default_rand_mark(void *ptr)
+{
+    rb_random_mt_t *rnd = (rb_random_mt_t *)ptr;
+    rb_gc_mark(rnd->base.seed);
+}
+
 static rb_random_mt_t *
 default_mt(void)
 {

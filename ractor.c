@@ -200,6 +200,11 @@ ractor_mark(void *ptr)
             rb_gc_mark(th->self);
         }
     }
+
+    if (r->default_rand) {
+        void rb_default_rand_mark(void *); // random.c
+        rb_default_rand_mark(r->default_rand);
+    }
 }
 
 static void
@@ -1773,7 +1778,10 @@ rb_ractor_default_rand(void *ptr)
 {
     if (rb_ractor_main_p()) {
         static void *default_rnd;
-        if (UNLIKELY(ptr != NULL)) default_rnd = ptr;
+        if (UNLIKELY(ptr != NULL)) {
+            rb_ractor_t *cr = GET_RACTOR();
+            cr->default_rand = default_rnd = ptr;
+        }
         return default_rnd;
     }
     else {
