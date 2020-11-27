@@ -36,6 +36,8 @@ struct rb_ractor_waiting_list {
     rb_ractor_t **ractors;
 };
 
+struct rb_random_struct; // c.f. ruby/random.h
+
 struct rb_ractor_struct {
     // ractor lock
     rb_nativethread_lock_t lock;
@@ -127,7 +129,7 @@ struct rb_ractor_struct {
     VALUE verbose;
     VALUE debug;
 
-    void *default_rand; // used in random.c
+    struct rb_random_struct *default_rand; // used in random.c
 
     // gc.c rb_objspace_reachable_objects_from
     struct gc_mark_func_data_struct {

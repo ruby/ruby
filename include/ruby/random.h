@@ -14,9 +14,10 @@
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
-typedef struct {
+struct rb_random_struct {
     VALUE seed;
-} rb_random_t;
+};
+typedef struct rb_random_struct rb_random_t;
 
 typedef void rb_random_init_func(rb_random_t *, const uint32_t *, size_t);
 typedef unsigned int rb_random_get_int32_func(rb_random_t *);

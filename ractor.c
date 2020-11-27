@@ -1773,11 +1773,11 @@ rb_ractor_stderr_set(VALUE err)
     }
 }
 
-void *
-rb_ractor_default_rand(void *ptr)
+struct rb_random_struct *
+rb_ractor_default_rand(struct rb_random_struct *ptr)
 {
     if (rb_ractor_main_p()) {
-        static void *default_rnd;
+        static struct rb_random_struct *default_rnd;
         if (UNLIKELY(ptr != NULL)) {
             rb_ractor_t *cr = GET_RACTOR();
             cr->default_rand = default_rnd = ptr;

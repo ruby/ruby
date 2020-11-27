@@ -149,11 +149,11 @@ rand_start(rb_random_mt_t *r)
 static rb_random_mt_t *
 default_rand(void)
 {
-    void *rb_ractor_default_rand(void *); // ractor.c
+    rb_random_t *rb_ractor_default_rand(rb_random_t *); // ractor.c
     rb_random_mt_t *rnd = (rb_random_mt_t *)rb_ractor_default_rand(NULL);
     if (rnd == NULL) {
         rnd = ZALLOC(rb_random_mt_t);
-        rb_ractor_default_rand(rnd);
+        rb_ractor_default_rand(&rnd->base);
     }
     return rnd;
 }
