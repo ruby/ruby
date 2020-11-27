@@ -149,6 +149,12 @@ describe "Hash literal" do
     -> { {**obj} }.should raise_error(TypeError)
   end
 
+  it "raises a TypeError if the object does not respond to #to_hash" do
+    obj = 42
+    -> { {**obj} }.should raise_error(TypeError)
+    -> { {a: 1, **obj} }.should raise_error(TypeError)
+  end
+
   it "does not change encoding of literal string keys during creation" do
     binary_hash = HashStringsBinary.literal_hash
     utf8_hash = HashStringsUTF8.literal_hash

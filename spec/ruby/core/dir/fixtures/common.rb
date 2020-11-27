@@ -36,6 +36,8 @@ module DirSpecs
         .dotfile
         .dotsubdir/.dotfile
         .dotsubdir/nondotfile
+        nested/.dotsubir/.dotfile
+        nested/.dotsubir/nondotfile
 
         deeply/.dotfile
         deeply/nested/.dotfile.ext
@@ -160,6 +162,7 @@ module DirSpecs
       dir_filename_ordering
       file_one.ext
       file_two.ext
+      nested
       nondotfile
       special
       subdir_one

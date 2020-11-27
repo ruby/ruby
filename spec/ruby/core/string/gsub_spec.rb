@@ -475,6 +475,11 @@ describe "String#gsub with pattern and block" do
     offsets.should == [[1, 2], [4, 5]]
   end
 
+  it "does not set $~ for procs created from methods" do
+    str = "hello"
+    str.gsub("l", &StringSpecs::SpecialVarProcessor.new.method(:process)).should == "he<unset><unset>o"
+  end
+
   it "restores $~ after leaving the block" do
     [/./, "l"].each do |pattern|
       old_md = nil
