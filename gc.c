@@ -4598,7 +4598,13 @@ static void
 read_barrier_signal(int sig, siginfo_t * info, void * data)
 {
     extern int ruby_on_ci;
-    if (ruby_on_ci) { // read_barrier_handler may crash. Report a backtrace first on CI.
+    if (ruby_on_ci) { // `read_barrier_handler` may crash. Report backtraces first on CI.
+# if HAVE_BACKTRACE // `rb_bug_without_die` may crash on `control_frame_dump`. Report a C backtrace first.
+        fprintf(stderr, "-- C level backtrace (read_barrier_signal) "
+                "-------------------------------------------\n");
+        rb_print_backtrace();
+        fprintf(stderr, "\n");
+# endif
         extern void rb_bug_without_die(const char *fmt, ...);
         rb_bug_without_die("died with read_barrier_signal installed");
     }
