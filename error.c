@@ -733,17 +733,25 @@ die(void)
 }
 
 void
-rb_bug(const char *fmt, ...)
+rb_bug_without_die(const char *fmt, ...)
 {
     const char *file = NULL;
     int line = 0;
 
     if (GET_EC()) {
-	file = rb_source_location_cstr(&line);
+        file = rb_source_location_cstr(&line);
     }
 
     report_bug(file, line, fmt, NULL);
+}
 
+void
+rb_bug(const char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    rb_bug_without_die(fmt, args);
+    va_end(args);
     die();
 }
 

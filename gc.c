@@ -4597,7 +4597,12 @@ static struct sigaction old_sigsegv_handler;
 static void
 read_barrier_signal(int sig, siginfo_t * info, void * data)
 {
-	read_barrier_handler((intptr_t)info->si_addr);
+    extern int ruby_on_ci;
+    if (ruby_on_ci) { // read_barrier_handler may crash. Report a backtrace first on CI.
+        extern void rb_bug_without_die(const char *fmt, ...);
+        rb_bug_without_die("died with read_barrier_signal installed");
+    }
+    read_barrier_handler((intptr_t)info->si_addr);
 }
 
 static void uninstall_handlers(void)
