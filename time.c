@@ -5498,6 +5498,7 @@ tm_from_time(VALUE klass, VALUE time)
     ttm = DATA_PTR(tm);
     v = &vtm;
     GMTIMEW(ttm->timew = tobj->timew, v);
+    ttm->timew = wsub(ttm->timew, v->subsecx);
     v->subsecx = INT2FIX(0);
     v->zone = Qnil;
     ttm->vtm = *v;
