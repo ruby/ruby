@@ -1672,7 +1672,8 @@ rb_reset_random_seed(void)
  * marshaled, allowing sequences to be saved and resumed.
  *
  * PRNGs are currently implemented as a modified Mersenne Twister with a period
- * of 2**19937-1.
+ * of 2**19937-1.  As this algorithm is _not_ for cryptographical use, you must
+ * use SecureRandom for security purpose, instead of this PRNG.
  */
 
 void
