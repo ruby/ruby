@@ -63,6 +63,7 @@
 #include "internal/sanitizers.h"
 #include "ruby_atomic.h"
 #include "ruby/random.h"
+#include "ruby/ractor.h"
 
 typedef int int_must_be_32bit_at_least[sizeof(int) * CHAR_BIT < 32 ? -1 : 1];
 
@@ -146,23 +147,31 @@ rand_start(rb_random_mt_t *r)
     return &rand_mt_start(r)->base;
 }
 
-static rb_random_mt_t *
-default_rand(void)
-{
-    rb_random_t *rb_ractor_default_rand(rb_random_t *); // ractor.c
-    rb_random_mt_t *rnd = (rb_random_mt_t *)rb_ractor_default_rand(NULL);
-    if (rnd == NULL) {
-        rnd = ZALLOC(rb_random_mt_t);
-        rb_ractor_default_rand(&rnd->base);
-    }
-    return rnd;
-}
+static rb_ractor_local_key_t default_rand_key;
 
-void
-rb_default_rand_mark(void *ptr)
+static void
+default_rand_mark(void *ptr)
 {
     rb_random_mt_t *rnd = (rb_random_mt_t *)ptr;
     rb_gc_mark(rnd->base.seed);
+}
+
+static const struct rb_ractor_local_storage_type default_rand_key_storage_type = {
+    default_rand_mark,
+    ruby_xfree,
+};
+
+static rb_random_mt_t *
+default_rand(void)
+{
+    rb_random_mt_t *rnd;
+
+    if ((rnd = rb_ractor_local_storage_ptr(default_rand_key)) == NULL) {
+        rnd = ZALLOC(rb_random_mt_t);
+        rb_ractor_local_storage_ptr_set(default_rand_key, rnd);
+    }
+
+    return rnd;
 }
 
 static rb_random_mt_t *
@@ -1727,6 +1736,8 @@ InitVM_Random(void)
 	rb_define_method(m, "random_number", rand_random_number, -1);
 	rb_define_method(m, "rand", rand_random_number, -1);
     }
+
+    default_rand_key = rb_ractor_local_storage_ptr_newkey(&default_rand_key_storage_type);
 }
 
 #undef rb_intern

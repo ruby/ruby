@@ -7273,6 +7273,7 @@ gc_marks_finish(rb_objspace_t *objspace)
     }
 
     rb_transient_heap_finish_marking();
+    rb_ractor_finish_marking();
 
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_END_MARK, 0);
 

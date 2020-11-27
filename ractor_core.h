@@ -123,13 +123,15 @@ struct rb_ractor_struct {
 
     struct list_node vmlr_node;
 
+    // ractor local data
+
+    st_table *local_storage;
+
     VALUE r_stdin;
     VALUE r_stdout;
     VALUE r_stderr;
     VALUE verbose;
     VALUE debug;
-
-    struct rb_random_struct *default_rand; // used in random.c
 
     // gc.c rb_objspace_reachable_objects_from
     struct gc_mark_func_data_struct {
@@ -163,9 +165,15 @@ void rb_ractor_vm_barrier_interrupt_running_thread(rb_ractor_t *r);
 void rb_ractor_terminate_interrupt_main_thread(rb_ractor_t *r);
 void rb_ractor_terminate_all(void);
 bool rb_ractor_main_p_(void);
+void rb_ractor_finish_marking(void);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 bool rb_ractor_shareable_p_continue(VALUE obj);
+
+// THIS FUNCTION SHOULD NOT CALL WHILE INCREMENTAL MARKING!!
+// This function is for T_DATA::free_func
+void rb_ractor_local_storage_delkey(rb_ractor_local_key_t key);
+
 RUBY_SYMBOL_EXPORT_END
 
 RUBY_EXTERN bool ruby_multi_ractor;
