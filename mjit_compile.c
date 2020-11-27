@@ -268,7 +268,7 @@ compile_inlined_cancel_handler(FILE *f, const struct rb_iseq_constant_body *body
     fprintf(f, "    calling.argc = %d;\n", inline_context->orig_argc);
     fprintf(f, "    calling.recv = reg_cfp->self;\n");
     fprintf(f, "    reg_cfp->self = orig_self;\n");
-    fprintf(f, "    vm_call_iseq_setup_normal(ec, reg_cfp, &calling, (const rb_callable_method_entry_t *)0x%"PRIxVALUE", 0, %d, %d);\n\n",
+    fprintf(f, "    vm_call_iseq_setup_normal(ec, reg_cfp, &calling, (const rb_callable_method_entry_t *)0x%"PRIxVALUE", 0, %d, %d, 0);\n\n",
             inline_context->me, inline_context->param_size, inline_context->local_size); // fastpath_applied_iseq_p checks rb_simple_iseq_p, which ensures has_opt == FALSE
 
     // Start usual cancel from here.

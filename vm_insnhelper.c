@@ -2010,7 +2010,7 @@ vm_base_ptr(const rb_control_frame_t *cfp)
 #include "vm_args.c"
 
 static inline VALUE vm_call_iseq_setup_2(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, struct rb_call_data *cd, int opt_pc, int param_size, int local_size);
-ALWAYS_INLINE(static VALUE vm_call_iseq_setup_normal(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, const rb_callable_method_entry_t *me, int opt_pc, int param_size, int local_size));
+ALWAYS_INLINE(static VALUE vm_call_iseq_setup_normal(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, const rb_callable_method_entry_t *me, int opt_pc, int param_size, int local_size, VALUE extra_type));
 static inline VALUE vm_call_iseq_setup_tailcall(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, struct rb_call_data *cd, int opt_pc);
 static VALUE vm_call_super_method(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling, struct rb_call_data *cd);
 static VALUE vm_call_method_nome(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, struct rb_call_data *cd);
@@ -2036,7 +2036,7 @@ vm_call_iseq_setup_normal_0start(rb_execution_context_t *ec, rb_control_frame_t 
     const rb_iseq_t *iseq = def_iseq_ptr(vm_cc_cme(cc)->def);
     int param = iseq->body->param.size;
     int local = iseq->body->local_table_size;
-    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(cc), 0, param, local);
+    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(cc), 0, param, local, 0);
 }
 
 MJIT_STATIC bool
@@ -2189,7 +2189,7 @@ vm_call_iseq_setup_normal_opt_start(rb_execution_context_t *ec, rb_control_frame
     }
 #endif
 
-    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(cc), opt_pc, param - delta, local);
+    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(cc), opt_pc, param - delta, local, 0);
 }
 
 static VALUE
@@ -2247,7 +2247,7 @@ vm_call_iseq_setup_kwparm_kwarg(rb_execution_context_t *ec, rb_control_frame_t *
 
     int param = iseq->body->param.size;
     int local = iseq->body->local_table_size;
-    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(cc), 0, param, local);
+    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(cc), 0, param, local, 0);
 }
 
 static VALUE
@@ -2277,7 +2277,7 @@ vm_call_iseq_setup_kwparm_nokwarg(rb_execution_context_t *ec, rb_control_frame_t
 
     int param = iseq->body->param.size;
     int local = iseq->body->local_table_size;
-    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(cc), 0, param, local);
+    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(cc), 0, param, local, 0);
 }
 
 static inline int
@@ -2395,7 +2395,7 @@ vm_call_iseq_setup_2(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct
     const struct rb_callcache *cc = cd->cc;
 
     if (LIKELY(!(vm_ci_flag(ci) & VM_CALL_TAILCALL))) {
-        return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(cc), opt_pc, param_size, local_size);
+        return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(cc), opt_pc, param_size, local_size, 0);
     }
     else {
         return vm_call_iseq_setup_tailcall(ec, cfp, calling, cd, opt_pc);
@@ -2404,14 +2404,14 @@ vm_call_iseq_setup_2(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct
 
 static inline VALUE
 vm_call_iseq_setup_normal(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, const rb_callable_method_entry_t *me,
-                          int opt_pc, int param_size, int local_size)
+                          int opt_pc, int param_size, int local_size, VALUE extra_type)
 {
     const rb_iseq_t *iseq = def_iseq_ptr(me->def);
     VALUE *argv = cfp->sp - calling->argc;
     VALUE *sp = argv + param_size;
     cfp->sp = argv - 1 /* recv */;
 
-    vm_push_frame(ec, iseq, VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL, calling->recv,
+    vm_push_frame(ec, iseq, VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL | extra_type, calling->recv,
                   calling->block_handler, (VALUE)me,
                   iseq->body->iseq_encoded + opt_pc, sp,
                   local_size - param_size,
