@@ -81,13 +81,14 @@
             }
             else { // VM_METHOD_TYPE_ISEQ
 %               # fastpath_applied_iseq_p checks rb_simple_iseq_p, which ensures has_opt == FALSE
-                fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d, VM_FRAME_FLAG_FINISH);\n", // Set VM_FRAME_FLAG_FINISH like vm_call0_body
-                        iseq->body->param.size, iseq->body->local_table_size);
+                fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
+                    fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
                     fprintf(f, "        val = vm_exec(ec, TRUE);\n");
                 }
                 else {
                     fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
+                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
                     fprintf(f, "            val = vm_exec(ec, FALSE);\n");
                     fprintf(f, "        }\n");
                 }

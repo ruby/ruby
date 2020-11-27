@@ -19,7 +19,7 @@ static VALUE
 <%= fname(param, local) %>(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, struct rb_call_data *cd)
 {
     RB_DEBUG_COUNTER_INC(ccf_iseq_fix);
-    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(cd->cc), 0, <%= param %>, <%= local %>, 0);
+    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(cd->cc), 0, <%= param %>, <%= local %>);
 }
 
 %   }
