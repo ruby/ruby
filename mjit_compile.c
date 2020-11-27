@@ -348,6 +348,8 @@ mjit_compile_body(FILE *f, const rb_iseq_t *iseq, struct compile_status *status)
         fprintf(f, "    static const rb_iseq_t *original_iseq = (const rb_iseq_t *)0x%"PRIxVALUE";\n", (VALUE)iseq);
     fprintf(f, "    static const VALUE *const original_body_iseq = (VALUE *)0x%"PRIxVALUE";\n",
             (VALUE)body->iseq_encoded);
+    fprintf(f, "    VALUE cfp_self = reg_cfp->self;\n"); // cache self across the method
+    fprintf(f, "#define GET_SELF() cfp_self\n");
 
     // Generate merged ivar guards first if needed
     if (!status->compile_info->disable_ivar_cache && status->merge_ivar_guards_p) {
@@ -379,6 +381,7 @@ mjit_compile_body(FILE *f, const rb_iseq_t *iseq, struct compile_status *status)
 
     compile_insns(f, body, 0, 0, status);
     compile_cancel_handler(f, body, status);
+    fprintf(f, "#undef GET_SELF");
     return status->success;
 }
 
