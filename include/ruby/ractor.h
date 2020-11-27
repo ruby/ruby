@@ -12,6 +12,14 @@
  *             file COPYING are met.  Consult the file for details.
  */
 
+struct rb_ractor_local_storage_type {
+    void (*mark)(void *ptr);
+    void (*free)(void *ptr);
+    // TODO: update
+};
+
+typedef struct rb_ractor_local_key_struct *rb_ractor_local_key_t;
+
 RUBY_SYMBOL_EXPORT_BEGIN
 RUBY_EXTERN VALUE rb_cRactor;
 
@@ -21,6 +29,17 @@ VALUE rb_ractor_stderr(void);
 void rb_ractor_stdin_set(VALUE);
 void rb_ractor_stdout_set(VALUE);
 void rb_ractor_stderr_set(VALUE);
+
+rb_ractor_local_key_t rb_ractor_local_storage_value_newkey(void);
+VALUE rb_ractor_local_storage_value(rb_ractor_local_key_t key);
+void  rb_ractor_local_storage_value_set(rb_ractor_local_key_t key, VALUE val);
+
+RUBY_EXTERN const struct rb_ractor_local_storage_type rb_ractor_local_storage_type_free;
+#define RB_RACTOR_LOCAL_STORAGE_TYPE_FREE (&rb_ractor_local_storage_type_free)
+
+rb_ractor_local_key_t rb_ractor_local_storage_ptr_newkey(const struct rb_ractor_local_storage_type *type);
+void *rb_ractor_local_storage_ptr(rb_ractor_local_key_t key);
+void  rb_ractor_local_storage_ptr_set(rb_ractor_local_key_t key, void *ptr);
 
 RUBY_SYMBOL_EXPORT_END
 

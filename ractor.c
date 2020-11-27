@@ -177,6 +177,9 @@ ractor_queue_mark(struct rb_ractor_queue *rq)
     }
 }
 
+static void ractor_local_storage_mark(rb_ractor_t *r);
+static void ractor_local_storage_free(rb_ractor_t *r);
+
 static void
 ractor_mark(void *ptr)
 {
@@ -201,10 +204,7 @@ ractor_mark(void *ptr)
         }
     }
 
-    if (r->default_rand) {
-        void rb_default_rand_mark(void *); // random.c
-        rb_default_rand_mark(r->default_rand);
-    }
+    ractor_local_storage_mark(r);
 }
 
 static void
@@ -227,7 +227,7 @@ ractor_free(void *ptr)
     rb_native_cond_destroy(&r->wait.cond);
     ractor_queue_free(&r->incoming_queue);
     ractor_waiting_list_free(&r->taking_ractors);
-    if (r->default_rand) ruby_xfree(r->default_rand);
+    ractor_local_storage_free(r);
     ruby_xfree(r);
 }
 
@@ -1773,24 +1773,6 @@ rb_ractor_stderr_set(VALUE err)
     }
 }
 
-struct rb_random_struct *
-rb_ractor_default_rand(struct rb_random_struct *ptr)
-{
-    if (rb_ractor_main_p()) {
-        static struct rb_random_struct *default_rnd;
-        if (UNLIKELY(ptr != NULL)) {
-            rb_ractor_t *cr = GET_RACTOR();
-            cr->default_rand = default_rnd = ptr;
-        }
-        return default_rnd;
-    }
-    else {
-        rb_ractor_t *cr = GET_RACTOR();
-        if (UNLIKELY(ptr != NULL)) cr->default_rand = ptr;
-        return cr->default_rand;
-    }
-}
-
 /// traverse function
 
 // 2: stop search
@@ -2537,6 +2519,202 @@ static VALUE ractor_copy(VALUE obj)
     }
     else {
         rb_raise(rb_eRactorError, "can not copy the object");
+    }
+}
+
+// Ractor local storage
+
+struct rb_ractor_local_key_struct {
+    const struct rb_ractor_local_storage_type *type;
+    void *main_cache;
+};
+
+static struct freed_ractor_local_keys_struct {
+    int cnt;
+    int capa;
+    rb_ractor_local_key_t *keys;
+} freed_ractor_local_keys;
+
+static int
+ractor_local_storage_mark_i(st_data_t key, st_data_t val, st_data_t dmy)
+{
+    struct rb_ractor_local_key_struct *k = (struct rb_ractor_local_key_struct *)key;
+    if (k->type->mark) (*k->type->mark)((void *)val);
+    return ST_CONTINUE;
+}
+
+static void
+ractor_local_storage_mark(rb_ractor_t *r)
+{
+    if (r->local_storage) {
+        st_foreach(r->local_storage, ractor_local_storage_mark_i, 0);
+
+        for (int i=0; i<freed_ractor_local_keys.cnt; i++) {
+            rb_ractor_local_key_t key = freed_ractor_local_keys.keys[i];
+            st_data_t val;
+            if (st_delete(r->local_storage, (st_data_t *)&key, &val) &&
+                key->type->free) {
+                (*key->type->free)((void *)val);
+            }
+        }
+    }
+}
+
+static int
+ractor_local_storage_free_i(st_data_t key, st_data_t val, st_data_t dmy)
+{
+    struct rb_ractor_local_key_struct *k = (struct rb_ractor_local_key_struct *)key;
+    if (k->type->free) (*k->type->free)((void *)val);
+    return ST_CONTINUE;
+}
+
+static void
+ractor_local_storage_free(rb_ractor_t *r)
+{
+    if (r->local_storage) {
+        st_foreach(r->local_storage, ractor_local_storage_free_i, 0);
+        st_free_table(r->local_storage);
+    }
+}
+
+static void
+rb_ractor_local_storage_value_mark(void *ptr)
+{
+    rb_gc_mark((VALUE)ptr);
+}
+
+static const struct rb_ractor_local_storage_type ractor_local_storage_type_null = {
+    NULL,
+    NULL,
+};
+
+const struct rb_ractor_local_storage_type rb_ractor_local_storage_type_free = {
+    NULL,
+    ruby_xfree,
+};
+
+static const struct rb_ractor_local_storage_type ractor_local_storage_type_value = {
+    rb_ractor_local_storage_value_mark,
+    NULL,
+};
+
+rb_ractor_local_key_t
+rb_ractor_local_storage_ptr_newkey(const struct rb_ractor_local_storage_type *type)
+{
+    rb_ractor_local_key_t key = ALLOC(struct rb_ractor_local_key_struct);
+    key->type = type ? type : &ractor_local_storage_type_null;
+    key->main_cache = (void *)Qundef;
+    return key;
+}
+
+rb_ractor_local_key_t
+rb_ractor_local_storage_value_newkey(void)
+{
+    return rb_ractor_local_storage_ptr_newkey(&ractor_local_storage_type_value);
+}
+
+void
+rb_ractor_local_storage_delkey(rb_ractor_local_key_t key)
+{
+    RB_VM_LOCK_ENTER();
+    {
+        if (freed_ractor_local_keys.cnt == freed_ractor_local_keys.capa) {
+            freed_ractor_local_keys.capa = freed_ractor_local_keys.capa ? freed_ractor_local_keys.capa * 2 : 4;
+            REALLOC_N(freed_ractor_local_keys.keys, rb_ractor_local_key_t, freed_ractor_local_keys.capa);
+        }
+        freed_ractor_local_keys.keys[freed_ractor_local_keys.cnt++] = key;
+    }
+    RB_VM_LOCK_LEAVE();
+}
+
+static bool
+ractor_local_ref(rb_ractor_local_key_t key, void **pret)
+{
+    if (rb_ractor_main_p()) {
+        if ((VALUE)key->main_cache != Qundef) {
+            *pret = key->main_cache;
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+    else {
+        rb_ractor_t *cr = GET_RACTOR();
+
+        if (cr->local_storage && st_lookup(cr->local_storage, (st_data_t)key, (st_data_t *)pret)) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+}
+
+static void
+ractor_local_set(rb_ractor_local_key_t key, void *ptr)
+{
+    rb_ractor_t *cr = GET_RACTOR();
+
+    if (cr->local_storage == NULL) {
+        cr->local_storage = st_init_numtable();
+    }
+
+    st_insert(cr->local_storage, (st_data_t)key, (st_data_t)ptr);
+
+    if (rb_ractor_main_p()) {
+        key->main_cache = ptr;
+    }
+}
+
+VALUE
+rb_ractor_local_storage_value(rb_ractor_local_key_t key)
+{
+    VALUE val;
+    if (ractor_local_ref(key, (void **)&val)) {
+        return val;
+    }
+    else {
+        return Qnil;
+    }
+}
+
+void
+rb_ractor_local_storage_value_set(rb_ractor_local_key_t key, VALUE val)
+{
+    ractor_local_set(key, (void *)val);
+}
+
+void *
+rb_ractor_local_storage_ptr(rb_ractor_local_key_t key)
+{
+    void *ret;
+    if (ractor_local_ref(key, &ret)) {
+        return ret;
+    }
+    else {
+        return NULL;
+    }
+}
+
+void
+rb_ractor_local_storage_ptr_set(rb_ractor_local_key_t key, void *ptr)
+{
+    ractor_local_set(key, ptr);
+}
+
+#define DEFAULT_KEYS_CAPA 0x10
+
+void
+rb_ractor_finish_marking(void)
+{
+    for (int i=0; i<freed_ractor_local_keys.cnt; i++) {
+        ruby_xfree(freed_ractor_local_keys.keys[i]);
+    }
+    freed_ractor_local_keys.cnt = 0;
+    if (freed_ractor_local_keys.capa > DEFAULT_KEYS_CAPA) {
+        freed_ractor_local_keys.capa = DEFAULT_KEYS_CAPA;
+        REALLOC_N(freed_ractor_local_keys.keys, rb_ractor_local_key_t, DEFAULT_KEYS_CAPA);
     }
 }
 
