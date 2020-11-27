@@ -2259,9 +2259,6 @@ zone_timelocal(VALUE zone, VALUE time)
     s = extract_time(utc);
     zone_set_offset(zone, tobj, t, s);
     s = rb_time_magnify(s);
-    if (tobj->vtm.subsecx != INT2FIX(0)) {
-        s = wadd(s, v2w(tobj->vtm.subsecx));
-    }
     tobj->timew = s;
     zone_set_dst(zone, tobj, tm);
     return 1;
