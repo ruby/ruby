@@ -324,6 +324,7 @@ class Reline::LineEditor
 
   def rerender_all
     @rerender_all = true
+    process_insert(force: true)
     rerender
   end
 

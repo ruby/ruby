@@ -6,7 +6,8 @@ begin
   class Reline::TestRendering < Yamatanooroti::TestCase
     def setup
       @pwd = Dir.pwd
-      @tmpdir = File.join(File.expand_path(Dir.tmpdir), "test_reline_config_#{$$}")
+      suffix = '%010d' % Random.rand(0..65535)
+      @tmpdir = File.join(File.expand_path(Dir.tmpdir), "test_reline_config_#{$$}_#{suffix}")
       begin
         Dir.mkdir(@tmpdir)
       rescue Errno::EEXIST
@@ -429,15 +430,14 @@ begin
       LINES
       start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
       write("\e[200~,")
-      write("def hoge\n  3\nend\n")
+      write("def hoge\n  3\nend")
       write("\e[200~.")
       close
       assert_screen(<<~EOC)
+        Multiline REPL.
         prompt> def hoge
         prompt>   3
         prompt> end
-        => :hoge
-        prompt>
       EOC
     end
 
