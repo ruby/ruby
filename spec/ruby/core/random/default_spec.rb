@@ -13,8 +13,8 @@ describe "Random::DEFAULT" do
   end
 
   ruby_version_is '3.0' do
-    it "returns a Random instance" do
-      Random::DEFAULT.should be_an_instance_of(Class)
+    it "refers to the Random class" do
+      Random::DEFAULT.should.equal?(Random)
     end
   end
 
