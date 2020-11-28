@@ -1259,9 +1259,9 @@ static struct mjit_cont *first_cont;
 static void
 unload_units(void)
 {
-    struct rb_mjit_unit *unit = 0, *next, *worst;
+    struct rb_mjit_unit *unit = 0, *next;
     struct mjit_cont *cont;
-    int delete_num, units_num = active_units.length;
+    int units_num = active_units.length;
 
     // For now, we don't unload units when ISeq is GCed. We should
     // unload such ISeqs first here.
@@ -1284,29 +1284,35 @@ unload_units(void)
     }
     // TODO: check stale_units and unload unused ones! (note that the unit is not associated to ISeq anymore)
 
-    // Remove 1/10 units more to decrease unloading calls.
-    // TODO: Calculate max total_calls in unit_queue and don't unload units
-    // whose total_calls are larger than the max.
-    delete_num = active_units.length / 10;
-    for (; active_units.length > mjit_opts.max_cache_size - delete_num;) {
-        // Find one unit that has the minimum total_calls.
-        worst = NULL;
+    // Unload units whose total_calls is smaller than any total_calls in unit_queue.
+    // TODO: make the algorithm more efficient
+    long unsigned prev_queue_calls = -1;
+    while (true) {
+        // Calculate the next max total_calls in unit_queue
+        long unsigned max_queue_calls = 0;
+        list_for_each(&unit_queue.head, unit, unode) {
+            if (unit->iseq != NULL && max_queue_calls < unit->iseq->body->total_calls
+                    && unit->iseq->body->total_calls < prev_queue_calls) {
+                max_queue_calls = unit->iseq->body->total_calls;
+            }
+        }
+        prev_queue_calls = max_queue_calls;
+
+        bool unloaded_p = false;
         list_for_each(&active_units.head, unit, unode) {
             if (unit->used_code_p) // We can't unload code on stack.
                 continue;
 
-            if (worst == NULL || worst->iseq->body->total_calls > unit->iseq->body->total_calls) {
-                worst = unit;
+            if (max_queue_calls > unit->iseq->body->total_calls) {
+                verbose(2, "Unloading unit %d (calls=%lu, threshold=%lu)",
+                        unit->id, unit->iseq->body->total_calls, max_queue_calls);
+                assert(unit->handle != NULL);
+                remove_from_list(unit, &active_units);
+                free_unit(unit);
+                unloaded_p = true;
             }
         }
-        if (worst == NULL)
-            break;
-
-        // Unload the worst node.
-        verbose(2, "Unloading unit %d (calls=%lu)", worst->id, worst->iseq->body->total_calls);
-        assert(worst->handle != NULL);
-        remove_from_list(worst, &active_units);
-        free_unit(worst);
+        if (!unloaded_p) break;
     }
 
     if (units_num > active_units.length) {
