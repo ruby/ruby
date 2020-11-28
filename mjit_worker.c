@@ -225,8 +225,8 @@ static rb_nativethread_cond_t mjit_gc_wakeup;
 static int in_gc = 0;
 // True when JIT is working.
 static bool in_jit = false;
-// True when unload_units is requested from Ruby threads.
-static bool unload_units_p = false;
+// The times when unload_units is requested. unload_units is called after some requests.
+static int unload_requests = 0;
 // Set to true to stop worker.
 static bool stop_worker_p;
 // Set to true if worker is stopped.
@@ -910,9 +910,11 @@ compile_compact_jit_code(char* c_file)
     bool iseq_gced = false;
     struct rb_mjit_unit *child_unit = 0;
     list_for_each(&active_units.head, child_unit, unode) {
-        if (child_unit->iseq == NULL) {
+        if (child_unit->iseq == NULL) { // ISeq is GC-ed
             iseq_gced = true;
             verbose(1, "JIT compaction: A method for JIT code u%d is obsoleted. Compaction will be skipped.", child_unit->id);
+            remove_from_list(child_unit, &active_units);
+            free_unit(child_unit); // unload it without waiting for throttled unload_units to retry compaction quickly
         }
     }
     in_jit = !iseq_gced;
@@ -1331,6 +1333,10 @@ mjit_worker(void)
     int max_compact_size = mjit_opts.max_cache_size / 10;
     if (max_compact_size < 10) max_compact_size = 10;
 
+    // Run unload_units after it's requested `max_cache_size / 10` (default: 10) times.
+    // This throttles the call to mitigate locking in unload_units.
+    int unload_threshold = mjit_opts.max_cache_size / 10;
+
 #ifndef _MSC_VER
     if (pch_status == PCH_NOT_READY) {
         make_pch();
@@ -1356,10 +1362,10 @@ mjit_worker(void)
             rb_native_cond_wait(&mjit_worker_wakeup, &mjit_engine_mutex);
             verbose(3, "Getting wakeup from client");
 
-            if (unload_units_p) {
+            if (unload_requests >= unload_threshold) {
                 RB_DEBUG_COUNTER_INC(mjit_unload_units);
                 unload_units();
-                unload_units_p = false;
+                unload_requests = 0;
 
                 if (active_units.length == mjit_opts.max_cache_size && mjit_opts.wait) { // Sometimes all methods may be in use
                     mjit_opts.max_cache_size++; // avoid infinite loop on `rb_mjit_wait_call`. Note that --jit-wait is just for testing.
