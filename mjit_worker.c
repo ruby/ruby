@@ -227,6 +227,8 @@ static int in_gc = 0;
 static bool in_jit = false;
 // The times when unload_units is requested. unload_units is called after some requests.
 static int unload_requests = 0;
+// The total number of unloaded units.
+static int total_unloads = 0;
 // Set to true to stop worker.
 static bool stop_worker_p;
 // Set to true if worker is stopped.
@@ -1319,6 +1321,7 @@ unload_units(void)
 
     if (units_num > active_units.length) {
         verbose(1, "Too many JIT code -- %d units unloaded", units_num - active_units.length);
+        total_unloads += units_num - active_units.length;
     }
 }
 
@@ -1334,8 +1337,8 @@ mjit_worker(void)
     if (max_compact_size < 10) max_compact_size = 10;
 
     // Run unload_units after it's requested `max_cache_size / 10` (default: 10) times.
-    // This throttles the call to mitigate locking in unload_units.
-    int unload_threshold = mjit_opts.max_cache_size / 10;
+    // This throttles the call to mitigate locking in unload_units. It also throttles JIT compaction.
+    int throttle_threshold = mjit_opts.max_cache_size / 10;
 
 #ifndef _MSC_VER
     if (pch_status == PCH_NOT_READY) {
@@ -1362,7 +1365,7 @@ mjit_worker(void)
             rb_native_cond_wait(&mjit_worker_wakeup, &mjit_engine_mutex);
             verbose(3, "Getting wakeup from client");
 
-            if (unload_requests >= unload_threshold) {
+            if (unload_requests >= throttle_threshold) {
                 RB_DEBUG_COUNTER_INC(mjit_unload_units);
                 unload_units();
                 unload_requests = 0;
@@ -1402,7 +1405,7 @@ mjit_worker(void)
             // Combine .o files to one .so and reload all jit_func to improve memory locality.
             if (compact_units.length < max_compact_size
                 && ((!mjit_opts.wait && unit_queue.length == 0 && active_units.length > 1)
-                    || active_units.length == mjit_opts.max_cache_size)) {
+                    || (active_units.length == mjit_opts.max_cache_size && compact_units.length * throttle_threshold <= total_unloads))) { // throttle compaction by total_unloads
                 compact_all_jit_code();
             }
 #endif
