@@ -695,7 +695,7 @@ class TestJIT < Test::Unit::TestCase
       # On --jit-wait, when the number of JIT-ed code reaches --jit-max-cache,
       # it should trigger compaction.
       unless RUBY_PLATFORM.match?(/mswin|mingw/) # compaction is not supported on Windows yet
-        assert_equal(3, compactions.size, debug_info)
+        assert_equal(1, compactions.size, debug_info)
       end
 
       if RUBY_PLATFORM.match?(/mswin/)
