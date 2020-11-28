@@ -166,16 +166,6 @@ free_list(struct rb_mjit_unit_list *list, bool close_handle_p)
     list->length = 0;
 }
 
-// MJIT info related to an existing continutaion.
-struct mjit_cont {
-    rb_execution_context_t *ec; // continuation ec
-    struct mjit_cont *prev, *next; // used to form lists
-};
-
-// Double linked list of registered continuations. This is used to detect
-// units which are in use in unload_units.
-static struct mjit_cont *first_cont;
-
 // Register a new continuation with execution context `ec`. Return MJIT info about
 // the continuation.
 struct mjit_cont *
@@ -253,87 +243,6 @@ create_unit(const rb_iseq_t *iseq)
     iseq->body->jit_unit = unit;
 }
 
-// Set up field `used_code_p` for unit iseqs whose iseq on the stack of ec.
-static void
-mark_ec_units(rb_execution_context_t *ec)
-{
-    const rb_control_frame_t *cfp;
-
-    if (ec->vm_stack == NULL)
-        return;
-    for (cfp = RUBY_VM_END_CONTROL_FRAME(ec) - 1; ; cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
-        const rb_iseq_t *iseq;
-        if (cfp->pc && (iseq = cfp->iseq) != NULL
-            && imemo_type((VALUE) iseq) == imemo_iseq
-            && (iseq->body->jit_unit) != NULL) {
-            iseq->body->jit_unit->used_code_p = true;
-        }
-
-        if (cfp == ec->cfp)
-            break; // reached the most recent cfp
-    }
-}
-
-// Unload JIT code of some units to satisfy the maximum permitted
-// number of units with a loaded code.
-static void
-unload_units(void)
-{
-    struct rb_mjit_unit *unit = 0, *next, *worst;
-    struct mjit_cont *cont;
-    int delete_num, units_num = active_units.length;
-
-    // For now, we don't unload units when ISeq is GCed. We should
-    // unload such ISeqs first here.
-    list_for_each_safe(&active_units.head, unit, next, unode) {
-        if (unit->iseq == NULL) { // ISeq is GCed.
-            remove_from_list(unit, &active_units);
-            free_unit(unit);
-        }
-    }
-
-    // Detect units which are in use and can't be unloaded.
-    list_for_each(&active_units.head, unit, unode) {
-        assert(unit->iseq != NULL && unit->handle != NULL);
-        unit->used_code_p = false;
-    }
-    // All threads have a root_fiber which has a mjit_cont. Other normal fibers also
-    // have a mjit_cont. Thus we can check ISeqs in use by scanning ec of mjit_conts.
-    for (cont = first_cont; cont != NULL; cont = cont->next) {
-        mark_ec_units(cont->ec);
-    }
-    // TODO: check stale_units and unload unused ones! (note that the unit is not associated to ISeq anymore)
-
-    // Remove 1/10 units more to decrease unloading calls.
-    // TODO: Calculate max total_calls in unit_queue and don't unload units
-    // whose total_calls are larger than the max.
-    delete_num = active_units.length / 10;
-    for (; active_units.length > mjit_opts.max_cache_size - delete_num;) {
-        // Find one unit that has the minimum total_calls.
-        worst = NULL;
-        list_for_each(&active_units.head, unit, unode) {
-            if (unit->used_code_p) // We can't unload code on stack.
-                continue;
-
-            if (worst == NULL || worst->iseq->body->total_calls > unit->iseq->body->total_calls) {
-                worst = unit;
-            }
-        }
-        if (worst == NULL)
-            break;
-
-        // Unload the worst node.
-        verbose(2, "Unloading unit %d (calls=%lu)", worst->id, worst->iseq->body->total_calls);
-        assert(worst->handle != NULL);
-        remove_from_list(worst, &active_units);
-        free_unit(worst);
-    }
-
-    if (units_num > active_units.length) {
-        verbose(1, "Too many JIT code -- %d units unloaded", units_num - active_units.length);
-    }
-}
-
 static void
 mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_info *compile_info)
 {
@@ -352,16 +261,7 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_inf
     CRITICAL_SECTION_START(3, "in add_iseq_to_process");
     add_to_list(iseq->body->jit_unit, &unit_queue);
     if (active_units.length >= mjit_opts.max_cache_size) {
-        if (in_compact) {
-            verbose(1, "Too many JIT code, but skipped unloading units for JIT compaction");
-        } else {
-            RB_DEBUG_COUNTER_INC(mjit_unload_units);
-            unload_units();
-        }
-        if (active_units.length == mjit_opts.max_cache_size && mjit_opts.wait) { // Sometimes all methods may be in use
-            mjit_opts.max_cache_size++; // avoid infinite loop on `rb_mjit_wait_call`. Note that --jit-wait is just for testing.
-            verbose(1, "No units can be unloaded -- incremented max-cache-size to %d for --jit-wait", mjit_opts.max_cache_size);
-        }
+        unload_units_p = true;
     }
     verbose(3, "Sending wakeup signal to workers in mjit_add_iseq_to_process");
     rb_native_cond_broadcast(&mjit_worker_wakeup);
