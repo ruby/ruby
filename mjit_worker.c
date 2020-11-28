@@ -910,7 +910,10 @@ compile_compact_jit_code(char* c_file)
     bool iseq_gced = false;
     struct rb_mjit_unit *child_unit = 0;
     list_for_each(&active_units.head, child_unit, unode) {
-        if (child_unit->iseq == NULL) iseq_gced = true;
+        if (child_unit->iseq == NULL) {
+            iseq_gced = true;
+            verbose(1, "JIT compaction: A method for JIT code u%d is obsoleted. Compaction will be skipped.", child_unit->id);
+        }
     }
     in_jit = !iseq_gced;
     CRITICAL_SECTION_FINISH(3, "before mjit_compile to wait GC finish");
