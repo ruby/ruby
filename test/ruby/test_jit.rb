@@ -690,15 +690,11 @@ class TestJIT < Test::Unit::TestCase
         assert_match(/\A#{JIT_SUCCESS_PREFIX}: mjit#{i}@\(eval\):/, errs[i], debug_info)
       end
 
+      assert_equal("No units can be unloaded -- incremented max-cache-size to 11 for --jit-wait\n", errs[10], debug_info)
+      assert_match(/\A#{JIT_SUCCESS_PREFIX}: mjit10@\(eval\):/, errs[11], debug_info)
       # On --jit-wait, when the number of JIT-ed code reaches --jit-max-cache,
       # it should trigger compaction.
-      if RUBY_PLATFORM.match?(/mswin|mingw/) # compaction is not supported on Windows yet
-        assert_equal("Too many JIT code -- 1 units unloaded\n", errs[10], debug_info)
-        assert_match(/\A#{JIT_SUCCESS_PREFIX}: mjit10@\(eval\):/, errs[11], debug_info)
-      else
-        assert_equal("No units can be unloaded -- incremented max-cache-size to 11 for --jit-wait\n", errs[10], debug_info)
-        assert_match(/\A#{JIT_SUCCESS_PREFIX}: mjit10@\(eval\):/, errs[11], debug_info)
-
+      unless RUBY_PLATFORM.match?(/mswin|mingw/) # compaction is not supported on Windows yet
         assert_equal(3, compactions.size, debug_info)
       end
 
