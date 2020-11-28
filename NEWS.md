@@ -44,6 +44,10 @@ sufficient information, see the ChangeLog file or Redmine
   C-API methods related to $SAFE have been removed.
   [[Feature #16131]]
 
+* $KCODE is now a normal global variable with no special behavior.  No
+  warnings are emitted by access/assignment to it, and the assigned
+  value will be returned.  [[Feature #17136]]
+
 * yield in singleton class definitions in methods is now a SyntaxError
   instead of a warning. yield in a class definition outside of a method
   is now a SyntaxError instead of a LocalJumpError.  [[Feature #15575]]
@@ -627,6 +631,7 @@ end
 [Feature #17104]: https://bugs.ruby-lang.org/issues/17104
 [Feature #17122]: https://bugs.ruby-lang.org/issues/17122
 [Feature #17134]: https://bugs.ruby-lang.org/issues/17134
+[Feature #17136]: https://bugs.ruby-lang.org/issues/17136
 [Feature #17176]: https://bugs.ruby-lang.org/issues/17176
 [Feature #17260]: https://bugs.ruby-lang.org/issues/17260
 [Feature #17260]: https://bugs.ruby-lang.org/issues/17260
