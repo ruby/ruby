@@ -1351,6 +1351,7 @@ rb_str_buf_new(long capa)
 {
     VALUE str = str_alloc(rb_cString);
 
+    if (capa <= RSTRING_EMBED_LEN_MAX) return str;
     if (capa < STR_BUF_MIN_SIZE) {
 	capa = STR_BUF_MIN_SIZE;
     }
