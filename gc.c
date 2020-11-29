@@ -4597,18 +4597,25 @@ static struct sigaction old_sigsegv_handler;
 static void
 read_barrier_signal(int sig, siginfo_t * info, void * data)
 {
-    extern int ruby_on_ci;
-    if (ruby_on_ci) { // `read_barrier_handler` may crash. Report backtraces first on CI.
-# if HAVE_BACKTRACE // `rb_bug_without_die` may crash on `control_frame_dump`. Report a C backtrace first.
-        fprintf(stderr, "-- C level backtrace (read_barrier_signal) "
-                "-------------------------------------------\n");
-        rb_print_backtrace();
-        fprintf(stderr, "\n");
-# endif
-        extern void rb_bug_without_die(const char *fmt, ...);
-        rb_bug_without_die("died with read_barrier_signal installed");
-    }
+    // setup SEGV/BUS handlers for errors
+    struct sigaction prev_sigbus, prev_sigsegv;
+    sigaction(SIGBUS, &old_sigbus_handler, &prev_sigbus);
+    sigaction(SIGSEGV, &old_sigsegv_handler, &prev_sigsegv);
+
+    // enable SIGBUS/SEGV
+    sigset_t set, prev_set;
+    sigemptyset(&set);
+    sigaddset(&set, SIGBUS);
+    sigaddset(&set, SIGSEGV);
+    sigprocmask(SIG_UNBLOCK, &set, &prev_set);
+
+    // run handler
     read_barrier_handler((intptr_t)info->si_addr);
+
+    // reset SEGV/BUS handlers
+    sigaction(SIGBUS, &prev_sigbus, NULL);
+    sigaction(SIGSEGV, &prev_sigsegv, NULL);
+    sigprocmask(SIG_SETMASK, &prev_set, NULL);
 }
 
 static void uninstall_handlers(void)
