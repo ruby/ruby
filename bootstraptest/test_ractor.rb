@@ -975,6 +975,15 @@ assert_equal 'true', %q{
   Ractor.shareable?(pr)
 }
 
+# Ractor.shareable?(recursive_objects)
+assert_equal '[false, false]', %q{
+  y = []
+  x = [y, {}].freeze
+  y << x
+  y.freeze
+  [Ractor.shareable?(x), Ractor.shareable?(y)]
+}
+
 # define_method() can invoke different Ractor's proc if the proc is shareable.
 assert_equal '1', %q{
   class C
