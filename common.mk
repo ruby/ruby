@@ -732,6 +732,7 @@ RUBYSPEC_CAPIEXT = spec/ruby/optional/capi/ext
 clean-spec: PHONY
 	-$(Q) $(RM) $(RUBYSPEC_CAPIEXT)/*.$(OBJEXT) $(RUBYSPEC_CAPIEXT)/*.$(DLEXT)
 	-$(Q) $(RMDIRS) $(RUBYSPEC_CAPIEXT) 2> $(NULL) || $(NULLCMD)
+	-$(Q) $(RMALL) rubyspec_temp
 
 check: main test test-tool test-all test-spec
 	$(ECHO) check succeeded
