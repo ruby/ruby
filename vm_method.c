@@ -347,27 +347,53 @@ extern int rb_method_definition_eq(const rb_method_definition_t *d1, const rb_me
 static VALUE
 (*call_cfunc_invoker_func(int argc))(VALUE recv, int argc, const VALUE *, VALUE (*func)(ANYARGS))
 {
-    switch (argc) {
-      case -2: return &call_cfunc_m2;
-      case -1: return &call_cfunc_m1;
-      case 0: return &call_cfunc_0;
-      case 1: return &call_cfunc_1;
-      case 2: return &call_cfunc_2;
-      case 3: return &call_cfunc_3;
-      case 4: return &call_cfunc_4;
-      case 5: return &call_cfunc_5;
-      case 6: return &call_cfunc_6;
-      case 7: return &call_cfunc_7;
-      case 8: return &call_cfunc_8;
-      case 9: return &call_cfunc_9;
-      case 10: return &call_cfunc_10;
-      case 11: return &call_cfunc_11;
-      case 12: return &call_cfunc_12;
-      case 13: return &call_cfunc_13;
-      case 14: return &call_cfunc_14;
-      case 15: return &call_cfunc_15;
-      default:
-	rb_bug("call_cfunc_func: unsupported length: %d", argc);
+    if (!GET_THREAD()->ext_config.ractor_safe) {
+        switch (argc) {
+          case -2: return &call_cfunc_m2;
+          case -1: return &call_cfunc_m1;
+          case 0: return &call_cfunc_0;
+          case 1: return &call_cfunc_1;
+          case 2: return &call_cfunc_2;
+          case 3: return &call_cfunc_3;
+          case 4: return &call_cfunc_4;
+          case 5: return &call_cfunc_5;
+          case 6: return &call_cfunc_6;
+          case 7: return &call_cfunc_7;
+          case 8: return &call_cfunc_8;
+          case 9: return &call_cfunc_9;
+          case 10: return &call_cfunc_10;
+          case 11: return &call_cfunc_11;
+          case 12: return &call_cfunc_12;
+          case 13: return &call_cfunc_13;
+          case 14: return &call_cfunc_14;
+          case 15: return &call_cfunc_15;
+          default:
+            rb_bug("unsupported length: %d", argc);
+        }
+    }
+    else {
+        switch (argc) {
+          case -2: return &ractor_safe_call_cfunc_m2;
+          case -1: return &ractor_safe_call_cfunc_m1;
+          case 0: return  &ractor_safe_call_cfunc_0;
+          case 1: return  &ractor_safe_call_cfunc_1;
+          case 2: return  &ractor_safe_call_cfunc_2;
+          case 3: return  &ractor_safe_call_cfunc_3;
+          case 4: return  &ractor_safe_call_cfunc_4;
+          case 5: return  &ractor_safe_call_cfunc_5;
+          case 6: return  &ractor_safe_call_cfunc_6;
+          case 7: return  &ractor_safe_call_cfunc_7;
+          case 8: return  &ractor_safe_call_cfunc_8;
+          case 9: return  &ractor_safe_call_cfunc_9;
+          case 10: return &ractor_safe_call_cfunc_10;
+          case 11: return &ractor_safe_call_cfunc_11;
+          case 12: return &ractor_safe_call_cfunc_12;
+          case 13: return &ractor_safe_call_cfunc_13;
+          case 14: return &ractor_safe_call_cfunc_14;
+          case 15: return &ractor_safe_call_cfunc_15;
+          default:
+            rb_bug("unsupported length: %d", argc);
+        }
     }
 }
 
