@@ -2309,14 +2309,6 @@ rb_hash_key(VALUE hash, VALUE value)
     return args[1];
 }
 
-/* :nodoc: */
-static VALUE
-rb_hash_index(VALUE hash, VALUE value)
-{
-    rb_warn_deprecated("Hash#index", "Hash#key");
-    return rb_hash_key(hash, value);
-}
-
 int
 rb_hash_stlike_delete(VALUE hash, st_data_t *pkey, st_data_t *pval)
 {
@@ -6251,19 +6243,6 @@ env_key(VALUE dmy, VALUE value)
     return Qnil;
 }
 
-/*
- * call-seq:
- *   ENV.index(value) -> name
- *
- * Deprecated method that is equivalent to ENV.key.
- */
-static VALUE
-env_index(VALUE dmy, VALUE value)
-{
-    rb_warn_deprecated("ENV.index", "ENV.key");
-    return env_key(dmy, value);
-}
-
 static VALUE
 env_to_hash(void)
 {
@@ -6951,7 +6930,6 @@ Init_Hash(void)
     rb_define_method(rb_cHash, "default_proc", rb_hash_default_proc, 0);
     rb_define_method(rb_cHash, "default_proc=", rb_hash_set_default_proc, 1);
     rb_define_method(rb_cHash, "key", rb_hash_key, 1);
-    rb_define_method(rb_cHash, "index", rb_hash_index, 1);
     rb_define_method(rb_cHash, "size", rb_hash_size, 0);
     rb_define_method(rb_cHash, "length", rb_hash_size, 0);
     rb_define_method(rb_cHash, "empty?", rb_hash_empty_p, 0);
@@ -7137,7 +7115,6 @@ Init_Hash(void)
     rb_define_singleton_method(envtbl, "to_a", env_to_a, 0);
     rb_define_singleton_method(envtbl, "to_s", env_to_s, 0);
     rb_define_singleton_method(envtbl, "key", env_key, 1);
-    rb_define_singleton_method(envtbl, "index", env_index, 1);
     rb_define_singleton_method(envtbl, "size", env_size, 0);
     rb_define_singleton_method(envtbl, "length", env_size, 0);
     rb_define_singleton_method(envtbl, "empty?", env_empty_p, 0);
