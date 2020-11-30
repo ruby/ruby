@@ -2089,7 +2089,7 @@ rb_ractor_make_shareable(VALUE obj)
 {
     rb_obj_traverse(obj,
                     make_shareable_check_shareable,
-                    mark_shareable, mark_shareable);
+                    null_leave, mark_shareable);
     return obj;
 }
 
