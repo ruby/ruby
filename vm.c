@@ -3054,6 +3054,7 @@ th_init(rb_thread_t *th, VALUE self)
 #endif
     th->name = Qnil;
     th->report_on_exception = th->vm->thread_report_on_exception;
+    th->ext_config.ractor_safe = true;
 }
 
 static VALUE

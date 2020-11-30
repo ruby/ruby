@@ -997,6 +997,25 @@ rb_resolve_feature_path(VALUE klass, VALUE fname)
     return rb_ary_new_from_args(2, sym, path);
 }
 
+static void
+ext_config_push(rb_thread_t *th, struct rb_ext_config *prev)
+{
+    *prev = th->ext_config;
+    th->ext_config = (struct rb_ext_config){0};
+}
+
+static void
+ext_config_pop(rb_thread_t *th, struct rb_ext_config *prev)
+{
+    th->ext_config = *prev;
+}
+
+void
+rb_ext_ractor_safe(bool flag)
+{
+    GET_THREAD()->ext_config.ractor_safe = flag;
+}
+
 /*
  * returns
  *  0: if already loaded (false)
@@ -1015,6 +1034,8 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception)
     enum ruby_tag_type state;
     char *volatile ftptr = 0;
     VALUE path;
+    volatile bool reset_ext_config = false;
+    struct rb_ext_config prev_ext_config;
 
     fname = rb_get_path(fname);
     path = rb_str_encode_ospath(fname);
@@ -1045,6 +1066,8 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception)
 		    break;
 
 		  case 's':
+                    reset_ext_config = true;
+                    ext_config_push(th, &prev_ext_config);
 		    handle = (long)rb_vm_call_cfunc(rb_vm_top_self(), load_ext,
 						    path, VM_BLOCK_HANDLER_NONE, path);
 		    rb_ary_push(ruby_dln_librefs, LONG2NUM(handle));
@@ -1055,9 +1078,12 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception)
 	}
     }
     EC_POP_TAG();
+
     th = rb_ec_thread_ptr(ec);
     th->top_self = self;
     th->top_wrapper = wrapper;
+    if (reset_ext_config) ext_config_pop(th, &prev_ext_config);
+
     if (ftptr) load_unlock(RSTRING_PTR(path), !state);
 
     if (state) {

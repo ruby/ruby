@@ -912,6 +912,10 @@ void rb_ec_initialize_vm_stack(rb_execution_context_t *ec, VALUE *stack, size_t 
 // @param ec the execution context to update.
 void rb_ec_clear_vm_stack(rb_execution_context_t *ec);
 
+struct rb_ext_config {
+    bool ractor_safe;
+};
+
 typedef struct rb_ractor_struct rb_ractor_t;
 
 typedef struct rb_thread_struct {
@@ -999,6 +1003,8 @@ typedef struct rb_thread_struct {
 
     /* misc */
     VALUE name;
+
+    struct rb_ext_config ext_config;
 
 #ifdef USE_SIGALTSTACK
     void *altstack;
@@ -1993,6 +1999,8 @@ extern void rb_clear_coverages(void);
 extern void rb_reset_coverages(void);
 
 void rb_postponed_job_flush(rb_vm_t *vm);
+
+extern VALUE rb_eRactorUnsafeError; // ractor.c
 
 RUBY_SYMBOL_EXPORT_END
 
