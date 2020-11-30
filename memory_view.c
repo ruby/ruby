@@ -76,6 +76,18 @@ get_exported_object_table(void)
     return table;
 }
 
+static int
+update_exported_object_ref_count(st_data_t *key, st_data_t *val, st_data_t arg, int existing)
+{
+    if (existing) {
+        *val += 1;
+    }
+    else {
+        *val = 1;
+    }
+    return ST_CONTINUE;
+}
+
 static void
 register_exported_object(VALUE obj)
 {
@@ -85,15 +97,7 @@ register_exported_object(VALUE obj)
 
     st_table *table = get_exported_object_table();
 
-    st_data_t count;
-    if (st_lookup(table, (st_data_t)obj, &count)) {
-        ++count;
-        st_insert(table, (st_data_t)obj, count);
-    }
-    else {
-        count = 1;
-        st_add_direct(table, (st_data_t)obj, count);
-    }
+    st_update(table, (st_data_t)obj, update_exported_object_ref_count, 0);
 }
 
 static void
