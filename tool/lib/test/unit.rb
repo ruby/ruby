@@ -203,6 +203,10 @@ module Test
         opts.on '--ruby VAL', "Path to ruby which is used at -j option" do |a|
           options[:ruby] = a.split(/ /).reject(&:empty?)
         end
+
+        opts.on '--timetable-data=FILE', "Path to timetable data" do |a|
+          options[:timetable_data] = a
+        end
       end
 
       class Worker
@@ -216,8 +220,12 @@ module Test
         end
 
         attr_reader :quit_called
+        attr_accessor :start_time
+
+        @@worker_number = 0
 
         def initialize(io, pid, status)
+          @num = (@@worker_number += 1)
           @io = io
           @pid = pid
           @status = status
@@ -226,6 +234,10 @@ module Test
           @loadpath = []
           @hooks = {}
           @quit_called = false
+        end
+
+        def name
+          "Worker #{@num}"
         end
 
         def puts(*args)
@@ -240,6 +252,7 @@ module Test
             @loadpath = $:.dup
             puts "run #{task} #{type}"
             @status = :prepare
+            @start_time = Time.now
           rescue Errno::EPIPE
             died
           rescue IOError
@@ -405,6 +418,7 @@ module Test
         worker = @workers_hash[io]
         cmd = worker.read
         cmd.sub!(/\A\.+/, '') if cmd # read may return nil
+
         case cmd
         when ''
           # just only dots, ignore
@@ -437,10 +451,19 @@ module Test
           rep    << {file: worker.real_file, report: r[2], result: r[3], testcase: r[5]}
           $:.push(*r[4]).uniq!
           jobs_status(worker) if @options[:job_status] == :replace
+
           return true
         when /^record (.+?)$/
           begin
             r = Marshal.load($1.unpack("m")[0])
+
+            suite = r.first
+            key = [worker.name, suite]
+            if @records[key]
+              @records[key][1] = worker.start_time = Time.now
+            else
+              @records[key] = [worker.start_time, Time.now]
+            end
           rescue => e
             print "unknown record: #{e.message} #{$1.unpack("m")[0].dump}"
             return true
@@ -467,6 +490,8 @@ module Test
       end
 
       def _run_parallel suites, type, result
+        @records = {}
+
         if @options[:parallel] < 1
           warn "Error: parameter of -j option should be greater than 0."
           return
@@ -480,7 +505,9 @@ module Test
         when :random
           @tasks.shuffle!
         else
-          # sorted
+          # JIT first
+          ts = @tasks.group_by{|e| /test_jit/ =~ e ? 0 : 1}
+          @tasks = ts[0] + ts[1] if ts.size == 2
         end
 
         @need_quit = false
@@ -514,6 +541,14 @@ module Test
           @interrupt = ex
           return result
         ensure
+          if file = @options[:timetable_data]
+            open(file, 'w'){|f|
+              @records.each{|(worker, suite), (st, ed)|
+                f.puts '[' + [worker.dump, suite.dump, st.to_f * 1_000, ed.to_f * 1_000].join(", ") + '],'
+              }
+            }
+          end
+
           if @interrupt
             @ios.select!{|x| @workers_hash[x].status == :running }
             while !@ios.empty? && (__io = IO.select(@ios,[],[],10))
