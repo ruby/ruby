@@ -1807,6 +1807,8 @@ typedef enum obj_traverse_iterator_result (*rb_obj_traverse_enter_func)(VALUE ob
 typedef enum obj_traverse_iterator_result (*rb_obj_traverse_leave_func)(VALUE obj);
 typedef enum obj_traverse_iterator_result (*rb_obj_traverse_final_func)(VALUE obj);
 
+static enum obj_traverse_iterator_result null_leave(VALUE obj);
+
 struct obj_traverse_data {
     rb_obj_traverse_enter_func enter_func;
     rb_obj_traverse_leave_func leave_func;
@@ -1972,7 +1974,7 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
         rb_bug("unreachable");
     }
 
-    if (data->leave_func && data->leave_func(obj) == traverse_stop) {
+    if (data->leave_func(obj) == traverse_stop) {
         return 1;
     }
     else {
@@ -2087,7 +2089,7 @@ rb_ractor_make_shareable(VALUE obj)
 {
     rb_obj_traverse(obj,
                     make_shareable_check_shareable,
-                    mark_shareable, NULL);
+                    mark_shareable, mark_shareable);
     return obj;
 }
 
@@ -2116,7 +2118,7 @@ MJIT_FUNC_EXPORTED bool
 rb_ractor_shareable_p_continue(VALUE obj)
 {
     if (rb_obj_traverse(obj,
-                        shareable_p_enter, NULL,
+                        shareable_p_enter, null_leave,
                         mark_shareable)) {
         return false;
     }
@@ -2137,20 +2139,20 @@ reset_belonging_enter(VALUE obj)
         return traverse_cont;
     }
 }
+#endif
 
 static enum obj_traverse_iterator_result
 null_leave(VALUE obj)
 {
     return traverse_cont;
 }
-#endif
 
 static VALUE
 ractor_reset_belonging(VALUE obj)
 {
 #if RACTOR_CHECK_MODE > 0
     rp(obj);
-    rb_obj_traverse(obj, reset_belonging_enter, null_leave);
+    rb_obj_traverse(obj, reset_belonging_enter, null_leave, NULL);
 #endif
     return obj;
 }
