@@ -2782,12 +2782,11 @@ rb_execution_context_update(const rb_execution_context_t *ec)
             cfp->iseq = (rb_iseq_t *)rb_gc_location((VALUE)cfp->iseq);
             cfp->block_code = (void *)rb_gc_location((VALUE)cfp->block_code);
 
-            while (!VM_ENV_LOCAL_P(ep)) {
+            if (!VM_ENV_LOCAL_P(ep)) {
                 if (VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED)) {
                     VM_FORCE_WRITE(&ep[VM_ENV_DATA_INDEX_ENV], rb_gc_location(ep[VM_ENV_DATA_INDEX_ENV]));
                     VM_FORCE_WRITE(&ep[VM_ENV_DATA_INDEX_ME_CREF], rb_gc_location(ep[VM_ENV_DATA_INDEX_ME_CREF]));
                 }
-                ep = VM_ENV_PREV_EP(ep);
             }
 
             cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
@@ -2823,12 +2822,11 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
             rb_gc_mark_movable((VALUE)cfp->iseq);
             rb_gc_mark_movable((VALUE)cfp->block_code);
 
-            while (!VM_ENV_LOCAL_P(ep)) {
+            if (!VM_ENV_LOCAL_P(ep)) {
 		if (VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED)) {
                     rb_gc_mark_movable(ep[VM_ENV_DATA_INDEX_ENV]);
                     rb_gc_mark(ep[VM_ENV_DATA_INDEX_ME_CREF]);
 		}
-                ep = VM_ENV_PREV_EP(ep);
             }
 
 	    cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
