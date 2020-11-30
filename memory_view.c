@@ -7,6 +7,7 @@
 **********************************************************************/
 
 #include "internal.h"
+#include "internal/hash.h"
 #include "internal/variable.h"
 #include "internal/util.h"
 #include "ruby/memory_view.h"
@@ -15,10 +16,119 @@
     (result) = RUBY_ALIGNOF(T); \
 } while(0)
 
+// Exported Object Registry
+
+VALUE rb_memory_view_exported_object_registry = Qundef;
+
+static int
+exported_object_registry_mark_key_i(st_data_t key, st_data_t value, st_data_t data)
+{
+    rb_gc_mark(key);
+    return ST_CONTINUE;
+}
+
+static void
+exported_object_registry_mark(void *ptr)
+{
+    st_table *table = ptr;
+    st_foreach(table, exported_object_registry_mark_key_i, 0);
+}
+
+static void
+exported_object_registry_free(void *ptr)
+{
+    st_table *table = ptr;
+    st_clear(table);
+    st_free_table(table);
+}
+
+const rb_data_type_t rb_memory_view_exported_object_registry_data_type = {
+    "memory_view/exported_object_registry",
+    {
+	exported_object_registry_mark,
+	exported_object_registry_free,
+	0,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+};
+
+static void
+init_exported_object_registry(void)
+{
+    if (rb_memory_view_exported_object_registry != Qundef) {
+        return;
+    }
+
+    st_table *table = rb_init_identtable();
+    VALUE obj = TypedData_Wrap_Struct(
+        0, &rb_memory_view_exported_object_registry_data_type, table);
+    rb_gc_register_mark_object(obj);
+    rb_memory_view_exported_object_registry = obj;
+}
+
+static inline st_table *
+get_exported_object_table(void)
+{
+    st_table *table;
+    TypedData_Get_Struct(rb_memory_view_exported_object_registry, st_table,
+                         &rb_memory_view_exported_object_registry_data_type,
+                         table);
+    return table;
+}
+
+static int
+update_exported_object_ref_count(st_data_t *key, st_data_t *val, st_data_t arg, int existing)
+{
+    if (existing) {
+        *val += 1;
+    }
+    else {
+        *val = 1;
+    }
+    return ST_CONTINUE;
+}
+
+static void
+register_exported_object(VALUE obj)
+{
+    if (rb_memory_view_exported_object_registry == Qundef) {
+        init_exported_object_registry();
+    }
+
+    st_table *table = get_exported_object_table();
+
+    st_update(table, (st_data_t)obj, update_exported_object_ref_count, 0);
+}
+
+static void
+unregister_exported_object(VALUE obj)
+{
+    if (rb_memory_view_exported_object_registry == Qundef) {
+        return;
+    }
+
+    st_table *table = get_exported_object_table();
+
+    st_data_t count;
+    if (!st_lookup(table, (st_data_t)obj, &count)) {
+        return;
+    }
+
+    if (--count == 0) {
+        st_data_t key = (st_data_t)obj;
+        st_delete(table, &key, &count);
+    }
+    else {
+        st_insert(table, (st_data_t)obj, count);
+    }
+}
+
+// MemoryView
+
 static ID id_memory_view;
 
 static const rb_data_type_t memory_view_entry_data_type = {
-    "memory_view",
+    "memory_view/entry",
     {
 	0,
 	0,
@@ -481,8 +591,13 @@ rb_memory_view_get(VALUE obj, rb_memory_view_t* view, int flags)
 {
     VALUE klass = CLASS_OF(obj);
     const rb_memory_view_entry_t *entry = lookup_memory_view_entry(klass);
-    if (entry)
-        return (*entry->get_func)(obj, view, flags);
+    if (entry) {
+        int rv = (*entry->get_func)(obj, view, flags);
+        if (rv) {
+            register_exported_object(view->obj);
+        }
+        return rv;
+    }
     else
         return 0;
 }
@@ -493,8 +608,17 @@ rb_memory_view_release(rb_memory_view_t* view)
 {
     VALUE klass = CLASS_OF(view->obj);
     const rb_memory_view_entry_t *entry = lookup_memory_view_entry(klass);
-    if (entry)
-        return (*entry->release_func)(view->obj, view);
+    if (entry) {
+        int rv = 1;
+        if (entry->release_func) {
+            rv = (*entry->release_func)(view->obj, view);
+        }
+        if (rv) {
+            unregister_exported_object(view->obj);
+            view->obj = Qnil;
+        }
+        return rv;
+    }
     else
         return 0;
 }
