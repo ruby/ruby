@@ -363,7 +363,7 @@ See Regexp for a description of the syntax of regular expressions.
 
 == Procs
 
-A proc can be created with <tt>-></tt>:
+A lambda proc can be created with <tt>-></tt>:
 
   -> { 1 + 1 }
 
