@@ -39,13 +39,12 @@ rb_vm_locked_p(void)
 }
 
 static void
-vm_lock_enter(rb_vm_t *vm, bool locked, unsigned int *lev APPEND_LOCATION_ARGS)
+vm_lock_enter(rb_ractor_t *cr, rb_vm_t *vm, bool locked, unsigned int *lev APPEND_LOCATION_ARGS)
 {
     if (locked) {
         ASSERT_vm_locking();
     }
     else {
-        rb_ractor_t *cr = GET_RACTOR();
 #if RACTOR_CHECK_MODE
         // locking ractor and acquire VM lock will cause deadlock
         VM_ASSERT(cr->locked_by != cr->self);
@@ -128,7 +127,19 @@ MJIT_FUNC_EXPORTED void
 rb_vm_lock_enter_body(unsigned int *lev APPEND_LOCATION_ARGS)
 {
     rb_vm_t *vm = GET_VM();
-    vm_lock_enter(vm, vm_locked(vm), lev APPEND_LOCATION_PARAMS);
+    if (vm_locked(vm)) {
+        vm_lock_enter(NULL, vm, true, lev APPEND_LOCATION_PARAMS);
+    }
+    else {
+        vm_lock_enter(GET_RACTOR(), vm, false, lev APPEND_LOCATION_PARAMS);
+    }
+}
+
+MJIT_FUNC_EXPORTED void
+rb_vm_lock_enter_body_cr(rb_ractor_t *cr, unsigned int *lev APPEND_LOCATION_ARGS)
+{
+    rb_vm_t *vm = GET_VM();
+    vm_lock_enter(cr, vm, vm_locked(vm), lev APPEND_LOCATION_PARAMS);
 }
 
 MJIT_FUNC_EXPORTED void
@@ -142,7 +153,8 @@ rb_vm_lock_body(LOCATION_ARGS)
 {
     rb_vm_t *vm = GET_VM();
     ASSERT_vm_unlocking();
-    vm_lock_enter(vm, false, &vm->ractor.sync.lock_rec APPEND_LOCATION_PARAMS);
+
+    vm_lock_enter(GET_RACTOR(), vm, false, &vm->ractor.sync.lock_rec APPEND_LOCATION_PARAMS);
 }
 
 void
