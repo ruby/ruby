@@ -3,7 +3,6 @@
 #define RUBY_VM_SYNC_H
 
 #include "vm_debug.h"
-RUBY_EXTERN bool ruby_multi_ractor;
 
 #if USE_RUBY_DEBUG_LOG
 #define LOCATION_ARGS const char *file, int line
@@ -29,10 +28,12 @@ void rb_vm_barrier(void);
 #include "vm_core.h"
 #endif
 
+extern struct rb_ractor_struct *ruby_single_main_ractor; // ractor.c
+
 static inline bool
 rb_multi_ractor_p(void)
 {
-    if (LIKELY(!ruby_multi_ractor)) {
+    if (LIKELY(ruby_single_main_ractor)) {
         // 0 on boot time.
         RUBY_ASSERT(GET_VM()->ractor.cnt <= 1);
         return false;

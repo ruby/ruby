@@ -1799,11 +1799,18 @@ rb_current_thread(void)
     return rb_ec_thread_ptr(ec);
 }
 
+extern struct rb_ractor_struct *ruby_single_main_ractor; // ractor.c
+
 static inline rb_ractor_t *
 rb_current_ractor(void)
 {
-    const rb_execution_context_t *ec = GET_EC();
-    return rb_ec_ractor_ptr(ec);
+    if (ruby_single_main_ractor) {
+        return ruby_single_main_ractor;
+    }
+    else {
+        const rb_execution_context_t *ec = GET_EC();
+        return rb_ec_ractor_ptr(ec);
+    }
 }
 
 static inline rb_vm_t *
