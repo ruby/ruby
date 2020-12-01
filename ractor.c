@@ -2294,7 +2294,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
       case T_MATCH:
         break;
       case T_STRING:
-        rb_str_modify(obj);
+        rb_str_make_independent(obj);
         break;
 
       case T_OBJECT:

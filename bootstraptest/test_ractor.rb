@@ -1022,10 +1022,18 @@ assert_equal 'can not make a Proc shareable because it accesses outer variables 
   end
 }
 
-# Ractor deep copies frozen objects
+# Ractor deep copies frozen objects (ary)
 assert_equal '[true, false]', %q{
   Ractor.new([[]].freeze) { |ary|
     [ary.frozen?, ary.first.frozen? ]
+  }.take
+}
+
+# Ractor deep copies frozen objects (str)
+assert_equal '[true, false]', %q{
+  s = String.new.instance_eval { @x = []; freeze}
+  Ractor.new(s) { |s|
+    [s.frozen?, s.instance_variable_get(:@x).frozen?]
   }.take
 }
 
