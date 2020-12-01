@@ -214,6 +214,16 @@ str_make_independent(VALUE str)
     str_make_independent_expand((str), len, 0L, termlen);
 }
 
+static inline int str_dependent_p(VALUE str);
+
+void
+rb_str_make_independent(VALUE str)
+{
+    if (str_dependent_p(str)) {
+        str_make_independent(str);
+    }
+}
+
 /* symbols for [up|down|swap]case/capitalize options */
 static VALUE sym_ascii, sym_turkic, sym_lithuanian, sym_fold;
 
@@ -324,7 +334,7 @@ fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t data, int exist
 		str = str_new_frozen(rb_cString, str);
 	    if (STR_SHARED_P(str)) { /* str should not be shared */
 		/* shared substring  */
-		str_make_independent(str);
+                str_make_independent(str);
 		assert(OBJ_FROZEN(str));
 	    }
 	    if (!BARE_STRING_P(str)) {
