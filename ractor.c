@@ -2314,7 +2314,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
 
       case T_ARRAY:
         {
-            rb_ary_modify(obj);
+            rb_ary_cancel_sharing(obj);
 #if USE_TRANSIENT_HEAP
             if (data->move) rb_ary_transient_heap_evacuate(obj, TRUE);
 #endif
@@ -2537,7 +2537,8 @@ copy_leave(VALUE obj, struct obj_traverse_replace_data *data)
     return traverse_cont;
 }
 
-static VALUE ractor_copy(VALUE obj)
+static VALUE
+ractor_copy(VALUE obj)
 {
     VALUE val = rb_obj_traverse_replace(obj, copy_enter, copy_leave, false);
     if (val != Qundef) {
