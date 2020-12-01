@@ -176,12 +176,10 @@ void rb_ractor_local_storage_delkey(rb_ractor_local_key_t key);
 
 RUBY_SYMBOL_EXPORT_END
 
-RUBY_EXTERN bool ruby_multi_ractor;
-
 static inline bool
 rb_ractor_main_p(void)
 {
-    if (!ruby_multi_ractor) {
+    if (ruby_single_main_ractor) {
         return true;
     }
     else {

@@ -30,8 +30,10 @@ rb_ractor_error_class(void)
 }
 
 RUBY_SYMBOL_EXPORT_BEGIN
+
 // to share with MJIT
-bool ruby_multi_ractor;
+rb_ractor_t *ruby_single_main_ractor;
+
 RUBY_SYMBOL_EXPORT_END
 
 static void vm_ractor_blocking_cnt_inc(rb_vm_t *vm, rb_ractor_t *r, const char *file, int line);
@@ -1153,9 +1155,9 @@ vm_insert_ractor(rb_vm_t *vm, rb_ractor_t *r)
         else {
             vm_ractor_blocking_cnt_inc(vm, r, __FILE__, __LINE__);
 
-            RUBY_DEBUG_LOG("ruby_multi_ractor=true", 0);
             // enable multi-ractor mode
-            ruby_multi_ractor = true;
+            RUBY_DEBUG_LOG("enable multi-ractor mode", 0);
+            ruby_single_main_ractor = NULL;
 
             if (rb_warning_category_enabled_p(RB_WARN_CATEGORY_EXPERIMENTAL)) {
                 rb_warn("Ractor is experimental, and the behavior may change in future versions of Ruby! Also there are many implementation issues.");
@@ -1212,6 +1214,7 @@ rb_ractor_main_alloc(void)
     r->id = ++ractor_last_id;
     r->loc = Qnil;
     r->name = Qnil;
+    ruby_single_main_ractor = r;
 
     return r;
 }
