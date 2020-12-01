@@ -562,34 +562,33 @@ rb_ary_modify_check(VALUE ary)
 }
 
 void
-rb_ary_modify(VALUE ary)
+rb_ary_cancel_sharing(VALUE ary)
 {
-    rb_ary_modify_check(ary);
     if (ARY_SHARED_P(ary)) {
-	long shared_len, len = RARRAY_LEN(ary);
+        long shared_len, len = RARRAY_LEN(ary);
         VALUE shared_root = ARY_SHARED_ROOT(ary);
 
         ary_verify(shared_root);
 
         if (len <= RARRAY_EMBED_LEN_MAX) {
-	    const VALUE *ptr = ARY_HEAP_PTR(ary);
+            const VALUE *ptr = ARY_HEAP_PTR(ary);
             FL_UNSET_SHARED(ary);
             FL_SET_EMBED(ary);
-	    MEMCPY((VALUE *)ARY_EMBED_PTR(ary), ptr, VALUE, len);
+            MEMCPY((VALUE *)ARY_EMBED_PTR(ary), ptr, VALUE, len);
             rb_ary_decrement_share(shared_root);
             ARY_SET_EMBED_LEN(ary, len);
         }
         else if (ARY_SHARED_ROOT_OCCUPIED(shared_root) && len > ((shared_len = RARRAY_LEN(shared_root))>>1)) {
             long shift = RARRAY_CONST_PTR_TRANSIENT(ary) - RARRAY_CONST_PTR_TRANSIENT(shared_root);
-	    FL_UNSET_SHARED(ary);
+            FL_UNSET_SHARED(ary);
             ARY_SET_PTR(ary, RARRAY_CONST_PTR_TRANSIENT(shared_root));
-	    ARY_SET_CAPA(ary, shared_len);
+            ARY_SET_CAPA(ary, shared_len);
             RARRAY_PTR_USE_TRANSIENT(ary, ptr, {
-		MEMMOVE(ptr, ptr+shift, VALUE, len);
-	    });
+                MEMMOVE(ptr, ptr+shift, VALUE, len);
+            });
             FL_SET_EMBED(shared_root);
             rb_ary_decrement_share(shared_root);
-	}
+        }
         else {
             VALUE *ptr = ary_heap_alloc(ary, len);
             MEMCPY(ptr, ARY_HEAP_PTR(ary), VALUE, len);
@@ -598,9 +597,16 @@ rb_ary_modify(VALUE ary)
             ARY_SET_PTR(ary, ptr);
         }
 
-	rb_gc_writebarrier_remember(ary);
+        rb_gc_writebarrier_remember(ary);
     }
     ary_verify(ary);
+}
+
+void
+rb_ary_modify(VALUE ary)
+{
+    rb_ary_modify_check(ary);
+    rb_ary_cancel_sharing(ary);
 }
 
 static VALUE
