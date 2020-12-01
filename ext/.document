@@ -30,6 +30,8 @@ io/wait/wait.c
 json/generator/generator.c
 json/lib
 json/parser/parser.c
+monitor/lib
+monitor/monitor.c
 nkf/lib
 nkf/nkf.c
 objspace/objspace.c
