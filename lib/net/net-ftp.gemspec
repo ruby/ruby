@@ -32,4 +32,5 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   spec.add_dependency "net-protocol"
+  spec.add_dependency "time"
 end
