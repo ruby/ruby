@@ -973,6 +973,9 @@ queue_do_pop(VALUE self, struct rb_queue *q, int should_block)
             rb_raise(rb_eThreadError, "queue empty");
         }
         else if (queue_closed_p(self)) {
+            if (rb_block_given_p()) {
+                return rb_yield(Qundef);
+            }
             return queue_closed_result(self, q);
         }
         else {
@@ -1014,12 +1017,18 @@ queue_pop_should_block(int argc, const VALUE *argv)
  *   pop(non_block=false)
  *   deq(non_block=false)
  *   shift(non_block=false)
+ *   pop(non_block=false) { ... }
+ *   deq(non_block=false) { ... }
+ *   shift(non_block=false) { ... }
  *
  * Retrieves data from the queue.
  *
  * If the queue is empty, the calling thread is suspended until data is pushed
  * onto the queue. If +non_block+ is true, the thread isn't suspended, and
  * +ThreadError+ is raised.
+ *
+ * If the queue is closed, returns the result of the given block, or `nil`
+ * if no block is given.
  */
 
 static VALUE
@@ -1264,12 +1273,18 @@ szqueue_do_pop(VALUE self, int should_block)
  *   pop(non_block=false)
  *   deq(non_block=false)
  *   shift(non_block=false)
- *
+ *   pop(non_block=false) { ... }
+ *   deq(non_block=false) { ... }
+ *   shift(non_block=false) { ... }
+  *
  * Retrieves data from the queue.
  *
  * If the queue is empty, the calling thread is suspended until data is pushed
  * onto the queue. If +non_block+ is true, the thread isn't suspended, and
  * +ThreadError+ is raised.
+ *
+ * If the queue is closed, returns the result of the given block, or `nil`
+ * if no block is given.
  */
 
 static VALUE

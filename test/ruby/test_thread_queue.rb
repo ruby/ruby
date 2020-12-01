@@ -291,6 +291,7 @@ class TestThreadQueue < Test::Unit::TestCase
       assert_raise_with_message(ClosedQueueError, /closed/){q << :nothing}
       assert_equal q.pop, :something
       assert_nil q.pop
+      assert_equal :closed, q.pop { :closed }
       assert_nil q.pop
       # non-blocking
       assert_raise_with_message(ThreadError, /queue empty/){q.pop(non_block=true)}
