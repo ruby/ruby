@@ -1911,6 +1911,8 @@ heap_page_create(rb_objspace_t *objspace)
 static void
 heap_add_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *page)
 {
+    /* Adding to eden heap during incremental sweeping is forbidden */
+    GC_ASSERT(!(heap == heap_eden && heap->sweeping_page));
     page->flags.in_tomb = (heap == heap_tomb);
     list_add(&heap->pages, &page->page_node);
     heap->total_pages++;
@@ -5095,9 +5097,6 @@ gc_sweep_continue(rb_objspace_t *objspace, rb_heap_t *heap)
 
     unsigned int lock_lev;
     gc_enter(objspace, "sweep_continue", &lock_lev);
-    if (objspace->rgengc.need_major_gc == GPR_FLAG_NONE && heap_increment(objspace, heap)) {
-	gc_report(3, objspace, "gc_sweep_continue: success heap_increment().\n");
-    }
     gc_sweep_step(objspace, heap);
     gc_exit(objspace, "sweep_continue", &lock_lev);
 }
