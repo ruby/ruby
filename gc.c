@@ -12281,6 +12281,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
             }
 	    break;
 	  case T_STRING: {
+            if (STR_SHARED_P(obj)) APPENDF((BUFF_ARGS, " [shared] "));
             APPENDF((BUFF_ARGS, "%.*s", str_len_no_raise(obj), RSTRING_PTR(obj)));
 	    break;
 	  }
