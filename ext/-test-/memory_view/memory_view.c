@@ -35,7 +35,8 @@ exportable_string_get_memory_view(VALUE obj, rb_memory_view_t *view, int flags)
 static int
 exportable_string_memory_view_available_p(VALUE obj)
 {
-    return Qtrue;
+    VALUE str = rb_ivar_get(obj, id_str);
+    return !NIL_P(str);
 }
 
 static const rb_memory_view_entry_t exportable_string_memory_view_entry = {
@@ -232,6 +233,9 @@ memory_view_ref_count_while_exporting(VALUE mod, VALUE obj, VALUE n)
 static VALUE
 expstr_initialize(VALUE obj, VALUE s)
 {
+    if (!NIL_P(s)) {
+        Check_Type(s, T_STRING);
+    }
     rb_ivar_set(obj, id_str, s);
     return Qnil;
 }

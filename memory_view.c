@@ -592,6 +592,10 @@ rb_memory_view_get(VALUE obj, rb_memory_view_t* view, int flags)
     VALUE klass = CLASS_OF(obj);
     const rb_memory_view_entry_t *entry = lookup_memory_view_entry(klass);
     if (entry) {
+        if (!(*entry->available_p_func)(obj)) {
+            return 0;
+        }
+
         int rv = (*entry->get_func)(obj, view, flags);
         if (rv) {
             register_exported_object(view->obj);

@@ -197,6 +197,13 @@ class TestMemoryView < Test::Unit::TestCase
     assert_equal(expected_result, members)
   end
 
+  def test_rb_memory_view_available_p
+    es = MemoryViewTestUtils::ExportableString.new("ruby")
+    assert_equal(true, MemoryViewTestUtils.available?(es))
+    es = MemoryViewTestUtils::ExportableString.new(nil)
+    assert_equal(false, MemoryViewTestUtils.available?(es))
+  end
+
   def test_ref_count_with_exported_object
     es = MemoryViewTestUtils::ExportableString.new("ruby")
     assert_equal(1, MemoryViewTestUtils.ref_count_while_exporting(es, 1))
@@ -221,6 +228,12 @@ class TestMemoryView < Test::Unit::TestCase
                    sub_offsets: nil
                  },
                  memory_view_info)
+  end
+
+  def test_rb_memory_view_get_with_memory_view_unavailable_object
+    es = MemoryViewTestUtils::ExportableString.new(nil)
+    memory_view_info = MemoryViewTestUtils.get_memory_view_info(es)
+    assert_nil(memory_view_info)
   end
 
   def test_rb_memory_view_fill_contiguous_strides
