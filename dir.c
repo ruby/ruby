@@ -3342,6 +3342,14 @@ rb_file_directory_p(void)
 }
 #endif
 
+/* :nodoc: */
+static VALUE
+rb_dir_exists_p(VALUE obj, VALUE fname)
+{
+    rb_warn_deprecated("Dir.exists?", "Dir.exist?");
+    return rb_file_directory_p(obj, fname);
+}
+
 static void *
 nogvl_dir_empty_p(void *ptr)
 {
@@ -3470,6 +3478,7 @@ Init_Dir(void)
     rb_define_singleton_method(rb_cDir,"home", dir_s_home, -1);
 
     rb_define_singleton_method(rb_cDir,"exist?", rb_file_directory_p, 1);
+    rb_define_singleton_method(rb_cDir,"exists?", rb_dir_exists_p, 1);
     rb_define_singleton_method(rb_cDir,"empty?", rb_dir_s_empty_p, 1);
 
     rb_define_singleton_method(rb_cFile,"fnmatch", file_s_fnmatch, -1);
