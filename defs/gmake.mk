@@ -248,9 +248,9 @@ HELP_EXTRA_TASKS = \
 
 extract-gems: $(HAVE_BASERUBY:yes=update-gems)
 
-BUNDLED_GEMS := $(shell sed '/^[ 	]*\#/d;/^[ 	]*$$/d;s/[ 	][ 	]*/-/;s/[ 	].*//' $(srcdir)/gems/bundled_gems)
+bundled-gems := $(shell sed '/^[ 	]*\#/d;/^[ 	]*$$/d;s/[ 	][ 	]*/-/;s/[ 	].*//' $(srcdir)/gems/bundled_gems)
 
-update-gems: | $(patsubst %,gems/%.gem,$(BUNDLED_GEMS))
+update-gems: | $(patsubst %,gems/%.gem,$(bundled-gems))
 
 test-bundler-precheck: | $(srcdir)/.bundle/cache
 
@@ -269,7 +269,7 @@ gems/%.gem:
 	    -e 'File.unlink(*old) and' \
 	    -e 'FileUtils.rm_rf(old.map{'"|n|"'n.chomp(".gem")})'
 
-extract-gems: | $(patsubst %,.bundle/gems/%,$(BUNDLED_GEMS))
+extract-gems: | $(patsubst %,.bundle/gems/%,$(bundled-gems))
 
 .bundle/gems/%: gems/%.gem | .bundle/gems
 	$(ECHO) Extracting bundle gem $*...
