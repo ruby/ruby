@@ -2,9 +2,11 @@ require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 require_relative 'shared/codepoints'
 
-# See redmine #1667
-describe "IO#each_codepoint" do
-  it_behaves_like :io_codepoints, :codepoints
+ruby_version_is ""..."3.0" do
+  # See redmine #1667
+  describe "IO#each_codepoint" do
+    it_behaves_like :io_codepoints, :codepoints
+  end
 end
 
 describe "IO#each_codepoint" do
