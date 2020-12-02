@@ -1810,7 +1810,9 @@ vm_redefinition_check_flag(VALUE klass)
     if (klass == rb_cArray)  return ARRAY_REDEFINED_OP_FLAG;
     if (klass == rb_cHash)   return HASH_REDEFINED_OP_FLAG;
     if (klass == rb_cSymbol) return SYMBOL_REDEFINED_OP_FLAG;
+#if 0
     if (klass == rb_cTime)   return TIME_REDEFINED_OP_FLAG;
+#endif
     if (klass == rb_cRegexp) return REGEXP_REDEFINED_OP_FLAG;
     if (klass == rb_cNilClass) return NIL_REDEFINED_OP_FLAG;
     if (klass == rb_cTrueClass) return TRUE_REDEFINED_OP_FLAG;
@@ -1920,7 +1922,7 @@ vm_init_redefined_flag(void)
     OP(Length, LENGTH), (C(Array), C(String), C(Hash));
     OP(Size, SIZE), (C(Array), C(String), C(Hash));
     OP(EmptyP, EMPTY_P), (C(Array), C(String), C(Hash));
-    OP(Succ, SUCC), (C(Integer), C(String), C(Time));
+    OP(Succ, SUCC), (C(Integer), C(String));
     OP(EqTilde, MATCH), (C(Regexp), C(String));
     OP(Freeze, FREEZE), (C(String));
     OP(UMinus, UMINUS), (C(String));
