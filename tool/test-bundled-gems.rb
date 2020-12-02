@@ -11,6 +11,7 @@ ruby = ENV['RUBY'] || RbConfig.ruby
 File.foreach("#{gem_dir}/bundled_gems") do |line|
   next if /^\s*(?:#|$)/ =~ line
   gem = line.split.first
+  next if ARGV.any? {|pat| !File.fnmatch?(pat, gem)}
   puts "\nTesting the #{gem} gem"
 
   test_command = "#{ruby} -C #{gem_dir}/src/#{gem} -Ilib #{rake} test"

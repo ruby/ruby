@@ -1363,8 +1363,9 @@ no-test-bundled-gems:
 # Override this to allow failure of specific gems on CI
 # TEST_BUNDLED_GEMS_ALLOW_FAILURES =
 
+BUNDLED_GEMS =
 test-bundled-gems-run: $(PREPARE_BUNDLED_GEMS)
-	$(Q) $(XRUBY) $(tooldir)/test-bundled-gems.rb
+	$(Q) $(XRUBY) $(tooldir)/test-bundled-gems.rb $(BUNDLED_GEMS)
 
 test-bundler-precheck: $(TEST_RUNNABLE)-test-bundler-precheck
 no-test-bundler-precheck:
