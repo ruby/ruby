@@ -972,9 +972,11 @@ rb_vm_bugreport(const void *ctx)
 	(((len = RSTRING_LEN(s)) > max_name_length) ? max_name_length : (int)len)
 
 	name = vm->progname;
-	fprintf(stderr, "* Loaded script: %.*s\n",
-		LIMITED_NAME_LENGTH(name), RSTRING_PTR(name));
-	fprintf(stderr, "\n");
+        if (name) {
+	    fprintf(stderr, "* Loaded script: %.*s\n",
+		    LIMITED_NAME_LENGTH(name), RSTRING_PTR(name));
+	    fprintf(stderr, "\n");
+        }
 	fprintf(stderr, "* Loaded features:\n\n");
 	for (i=0; i<RARRAY_LEN(vm->loaded_features); i++) {
 	    name = RARRAY_AREF(vm->loaded_features, i);
