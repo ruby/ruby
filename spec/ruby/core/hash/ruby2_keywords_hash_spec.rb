@@ -1,7 +1,7 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
-ruby_version_is "2.7" do
+ruby_version_is "2.7"..."3.0" do
   describe "Hash.ruby2_keywords_hash?" do
     it "returns false if the Hash is not a keywords Hash" do
       Hash.ruby2_keywords_hash?({}).should == false
@@ -18,6 +18,12 @@ ruby_version_is "2.7" do
 
     it "raises TypeError for non-Hash" do
       -> { Hash.ruby2_keywords_hash?(nil) }.should raise_error(TypeError)
+    end
+
+    ruby_version_is "3.0" do
+      it "returns false for non-Hash" do
+        Hash.ruby2_keywords_hash?(nil).should == false
+      end
     end
   end
 

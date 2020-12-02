@@ -1919,7 +1919,7 @@ rb_hash_s_try_convert(VALUE dummy, VALUE hash)
 static VALUE
 rb_hash_s_ruby2_keywords_hash_p(VALUE dummy, VALUE hash)
 {
-    Check_Type(hash, T_HASH);
+    if (!RB_TYPE_P(hash, T_HASH)) return Qfalse;
     return (RHASH(hash)->basic.flags & RHASH_PASS_AS_KEYWORDS) ? Qtrue : Qfalse;
 }
 
