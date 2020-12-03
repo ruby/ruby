@@ -40,7 +40,8 @@ static void
 ASSERT_ractor_unlocking(rb_ractor_t *r)
 {
 #if RACTOR_CHECK_MODE > 0
-    if (r->locked_by == GET_RACTOR()->self) {
+    // GET_EC is NULL in an MJIT worker
+    if (GET_EC() != NULL && r->locked_by == GET_RACTOR()->self) {
         rb_bug("recursive ractor locking");
     }
 #endif
@@ -50,7 +51,8 @@ static void
 ASSERT_ractor_locking(rb_ractor_t *r)
 {
 #if RACTOR_CHECK_MODE > 0
-    if (r->locked_by != GET_RACTOR()->self) {
+    // GET_EC is NULL in an MJIT worker
+    if (GET_EC() != NULL && r->locked_by != GET_RACTOR()->self) {
         rp(r->locked_by);
         rb_bug("ractor lock is not acquired.");
     }
@@ -66,7 +68,9 @@ ractor_lock(rb_ractor_t *r, const char *file, int line)
     rb_native_mutex_lock(&r->lock);
 
 #if RACTOR_CHECK_MODE > 0
-    r->locked_by = GET_RACTOR()->self;
+    if (GET_EC() != NULL) { // GET_EC is NULL in an MJIT worker
+        r->locked_by = GET_RACTOR()->self;
+    }
 #endif
 
     RUBY_DEBUG_LOG2(file, line, "locked  r:%u%s", r->id, GET_RACTOR() == r ? " (self)" : "");
