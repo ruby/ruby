@@ -8,6 +8,7 @@ Gem::Specification.new do |spec|
   spec.description   = spec.summary
   spec.homepage      = "https://github.com/ruby/win32ole"
   spec.required_ruby_version = Gem::Requirement.new(">= 2.3.0")
+  spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = spec.homepage
