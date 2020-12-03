@@ -13,6 +13,12 @@
 
 #define numberof(ary) (int)(sizeof(ary)/sizeof((ary)[0]))
 
+#if !defined(TLS1_3_VERSION) && \
+    defined(LIBRESSL_VERSION_NUMBER) && \
+    LIBRESSL_VERSION_NUMBER >= 0x3020000fL
+#  define TLS1_3_VERSION 0x0304
+#endif
+
 #ifdef _WIN32
 #  define TO_SOCKET(s) _get_osfhandle(s)
 #else

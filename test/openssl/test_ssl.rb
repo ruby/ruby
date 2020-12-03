@@ -306,7 +306,10 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
 
   def test_client_auth_success
     vflag = OpenSSL::SSL::VERIFY_PEER|OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT
-    start_server(verify_mode: vflag) { |port|
+    start_server(verify_mode: vflag,
+      ctx_proc: proc { |ctx|
+        ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION if libressl?(3, 2, 0)
+    }) { |port|
       ctx = OpenSSL::SSL::SSLContext.new
       ctx.key = @cli_key
       ctx.cert = @cli_cert
@@ -348,6 +351,8 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_client_ca
+    pend "LibreSSL 3.2 has broken client CA support" if libressl?(3, 2, 0)
+
     ctx_proc = Proc.new do |ctx|
       ctx.client_ca = [@ca_cert]
     end
@@ -453,7 +458,11 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       ssl.sync_close = true
       begin
         assert_raise(OpenSSL::SSL::SSLError){ ssl.connect }
-        assert_equal(OpenSSL::X509::V_ERR_SELF_SIGNED_CERT_IN_CHAIN, ssl.verify_result)
+        assert_include(
+          [
+            OpenSSL::X509::V_ERR_SELF_SIGNED_CERT_IN_CHAIN,
+            OpenSSL::X509::V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY
+          ], ssl.verify_result)
       ensure
         ssl.close
       end
@@ -523,6 +532,8 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     start_server(accept_proc: proc { |server|
       server_finished = server.finished_message
       server_peer_finished = server.peer_finished_message
+    }, ctx_proc: proc { |ctx|
+      ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION if libressl?(3, 2, 0)
     }) { |port|
       ctx = OpenSSL::SSL::SSLContext.new
       ctx.verify_mode = OpenSSL::SSL::VERIFY_NONE
@@ -913,11 +924,13 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
 
   def test_verify_hostname_on_connect
     ctx_proc = proc { |ctx|
+      san = "DNS:a.example.com,DNS:*.b.example.com"
+      san += ",DNS:c*.example.com,DNS:d.*.example.com" unless libressl?(3, 2, 2)
       exts = [
         ["keyUsage", "keyEncipherment,digitalSignature", true],
-        ["subjectAltName", "DNS:a.example.com,DNS:*.b.example.com," \
-                           "DNS:c*.example.com,DNS:d.*.example.com"],
+        ["subjectAltName", san],
       ]
+ 
       ctx.cert = issue_cert(@svr, @svr_key, 4, exts, @ca_cert, @ca_key)
       ctx.key = @svr_key
     }
@@ -939,6 +952,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
         ["cx.example.com", true],
         ["d.x.example.com", false],
       ].each do |name, expected_ok|
+        next if name.start_with?('cx') if libressl?(3, 2, 2)
         begin
           sock = TCPSocket.new("127.0.0.1", port)
           ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
@@ -1001,7 +1015,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     start_server(ignore_listener_error: true) { |port|
       ctx = OpenSSL::SSL::SSLContext.new
       ctx.set_params
-      assert_raise_with_message(OpenSSL::SSL::SSLError, /self signed/) {
+      assert_raise_with_message(OpenSSL::SSL::SSLError, /self signed|unable to get local issuer certificate/) {
         server_connect(port, ctx)
       }
     }
@@ -1609,6 +1623,7 @@ end
     ctx_proc = -> ctx {
       # Enable both ECDHE (~ TLS 1.2) cipher suites and TLS 1.3
       ctx.ciphers = "DEFAULT:!kRSA:!kEDH"
+      ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION if libressl?(3, 2, 0)
       ctx.ecdh_curves = "P-384:P-521"
     }
     start_server(ctx_proc: ctx_proc, ignore_listener_error: true) do |port|

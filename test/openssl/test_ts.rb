@@ -382,6 +382,7 @@ _end_of_pem_
   end
 
   def test_verify_ee_wrong_root_no_intermediate
+    pend "LibreSSL 3.2.2 Timestamp Issue" if libressl?(3, 2, 2)
     assert_raise(OpenSSL::Timestamp::TimestampError) do
       ts, req = timestamp_ee
       ts.verify(req, intermediate_store)
@@ -389,6 +390,7 @@ _end_of_pem_
   end
 
   def test_verify_ee_wrong_root_wrong_intermediate
+    pend "LibreSSL 3.2.2 Timestamp Issue" if libressl?(3, 2, 2)
     assert_raise(OpenSSL::Timestamp::TimestampError) do
       ts, req = timestamp_ee
       ts.verify(req, intermediate_store, [ca_cert])
