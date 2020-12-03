@@ -1827,7 +1827,7 @@ class TestIO < Test::Unit::TestCase
     end)
   end
 
-  def test_each_byte
+  def test_each_byte2
     pipe(proc do |w|
       w.binmode
       w.puts "foo"
@@ -1846,7 +1846,7 @@ class TestIO < Test::Unit::TestCase
     end)
   end
 
-  def test_each_char
+  def test_each_char2
     pipe(proc do |w|
       w.puts "foo"
       w.puts "bar"
