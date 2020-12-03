@@ -119,6 +119,8 @@ mjit_free_iseq(const rb_iseq_t *iseq)
         return;
 
     CRITICAL_SECTION_START(4, "mjit_free_iseq");
+    RUBY_ASSERT_ALWAYS(in_gc);
+    RUBY_ASSERT_ALWAYS(!in_jit);
     if (iseq->body->jit_unit) {
         // jit_unit is not freed here because it may be referred by multiple
         // lists of units. `get_from_list` and `mjit_finish` do the job.
