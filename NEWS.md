@@ -240,6 +240,12 @@ Outstanding ones only.
     * `Kernel.sleep(...)` invokes the scheduler hook `#kernel_sleep(...)` in a
       non-blocking execution context. [[Feature #16786]]
 
+* Proc
+
+    * `Proc#==` and `Proc#eql?` are now defined and will return true for
+      separate Proc instances if the procs were created from the same block.
+      [[Feature #14267]]
+
 * IO
 
     * `IO#nonblock?` now defaults to `true`. [[Feature #16786]]
@@ -600,6 +606,7 @@ end
 [Bug #13768]:     https://bugs.ruby-lang.org/issues/13768
 [Feature #14183]: https://bugs.ruby-lang.org/issues/14183
 [Bug #14266]:     https://bugs.ruby-lang.org/issues/14266
+[Feature #14267]: https://bugs.ruby-lang.org/issues/14267
 [Feature #14413]: https://bugs.ruby-lang.org/issues/14413
 [Bug #14541]:     https://bugs.ruby-lang.org/issues/14541
 [Feature #14722]: https://bugs.ruby-lang.org/issues/14722
