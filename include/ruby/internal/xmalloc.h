@@ -54,6 +54,26 @@ RBIMPL_ATTR_NODISCARD()
 RBIMPL_ATTR_RESTRICT()
 RBIMPL_ATTR_RETURNS_NONNULL()
 RBIMPL_ATTR_ALLOC_SIZE((1))
+/**
+ * Allocates an  object instance.  It is  largely the same as  system malloc(),
+ * except:
+ *
+ *   - It raises Ruby exceptions instead of returning NULL, and
+ *   - In case of `ENOMEM` it tries to GC to make some roon.
+ *
+ * @param[in]  size          Requested amount of memory.
+ * @throw      rb_eMemError  No space left for `size` bytes allocation.
+ * @return     A valid pointer  to an allocated storage instance;  which has at
+ *             least `size` bytes width, with appropriate alignment detected by
+ *             the underlying malloc() routine.
+ * @note       It doesn't return NULL.
+ * @note       Unlike some malloc() implementations, it allocates something and
+ *             returns a meaningful value even when `size` is equl to zero.
+ * @warning    The return  value shall  be invalidated  exactly once  by either
+ *             ruby_xfree(),  ruby_xrealloc(), or  ruby_xrealloc2().   It is  a
+ *             failure to pass it to system free(), because the system and Ruby
+ *             might or might not share the same malloc() implementation.
+ */
 void *ruby_xmalloc(size_t size)
 RBIMPL_ATTR_NOEXCEPT(malloc(size))
 ;
@@ -62,6 +82,29 @@ RBIMPL_ATTR_NODISCARD()
 RBIMPL_ATTR_RESTRICT()
 RBIMPL_ATTR_RETURNS_NONNULL()
 RBIMPL_ATTR_ALLOC_SIZE((1,2))
+/**
+ * Identical to ruby_xmalloc(), except it allocates `nelems` * `elemsiz` bytes.
+ * This is needed  because the multiplication could integer  overflow.  On such
+ * situations  Ruby does  not try  to  allocate at  all but  raises Ruby  level
+ * exceptions  instead.  If  there  is  no integer  overflow  the behaviour  is
+ * exactly the same as `ruby_xmalloc(nelems*elemsiz)`.
+ *
+ * @param[in]  nelems        Number of elements.
+ * @param[in]  elemsiz       Size of an element.
+ * @throw      rb_eMemError  No space left for allocation.
+ * @throw      rb_eArgError  `nelems` * `elemsiz` would overflow.
+ * @return     A valid pointer  to an allocated storage instance;  which has at
+ *             least  `nelems`  *  `elemsiz`   bytes  width,  with  appropriate
+ *             alignment detected by the underlying malloc() routine.
+ * @note       It doesn't return NULL.
+ * @note       Unlike some malloc() implementations, it allocates something and
+ *             returns a  meaningful value even  when `nelems` or  `elemsiz` or
+ *             both are zero.
+ * @warning    The return  value shall  be invalidated  exactly once  by either
+ *             ruby_xfree(),  ruby_xrealloc(), or  ruby_xrealloc2().   It is  a
+ *             failure to pass it to system free(), because the system and Ruby
+ *             might or might not share the same malloc() implementation.
+ */
 void *ruby_xmalloc2(size_t nelems, size_t elemsiz)
 RBIMPL_ATTR_NOEXCEPT(malloc(nelems * elemsiz))
 ;
@@ -70,6 +113,27 @@ RBIMPL_ATTR_NODISCARD()
 RBIMPL_ATTR_RESTRICT()
 RBIMPL_ATTR_RETURNS_NONNULL()
 RBIMPL_ATTR_ALLOC_SIZE((1,2))
+/**
+ * Identical  to ruby_xmalloc2(),  except it  zero-fills the  region before  it
+ * returns.  This could also be seen  as a routine identical to ruby_xmalloc(),
+ * except it calls calloc() instead of malloc() internally.
+ *
+ * @param[in]  nelems        Number of elements.
+ * @param[in]  elemsiz       Size of an element.
+ * @throw      rb_eMemError  No space left for allocation.
+ * @throw      rb_eArgError  `nelems` * `elemsiz` would overflow.
+ * @return     A valid pointer  to an allocated storage instance;  which has at
+ *             least  `nelems`  *  `elemsiz`   bytes  width,  with  appropriate
+ *             alignment detected by the underlying calloc() routine.
+ * @note       It doesn't return NULL.
+ * @note       Unlike some calloc() implementations, it allocates something and
+ *             returns a  meaningful value even  when `nelems` or  `elemsiz` or
+ *             both are zero.
+ * @warning    The return  value shall  be invalidated  exactly once  by either
+ *             ruby_xfree(),  ruby_xrealloc(), or  ruby_xrealloc2().   It is  a
+ *             failure to pass it to system free(), because the system and Ruby
+ *             might or might not share the same malloc() implementation.
+ */
 void *ruby_xcalloc(size_t nelems, size_t elemsiz)
 RBIMPL_ATTR_NOEXCEPT(calloc(nelems, elemsiz))
 ;
@@ -77,6 +141,39 @@ RBIMPL_ATTR_NOEXCEPT(calloc(nelems, elemsiz))
 RBIMPL_ATTR_NODISCARD()
 RBIMPL_ATTR_RETURNS_NONNULL()
 RBIMPL_ATTR_ALLOC_SIZE((2))
+/**
+ * Resize the object instance.
+ *
+ * @param[in]  ptr           A  valid pointer  to an  object instance  that was
+ *                           previously  returned  from either  ruby_xmalloc(),
+ *                           ruby_xmalloc2(),  ruby_xcalloc(), ruby_xrealloc(),
+ *                           or ruby_xrealloc2().
+ * @param[in]  newsiz        Requested new amount of memory.
+ * @throw      rb_eMemError  No space left for `newsiz` bytes allocation.
+ * @retval     ptr           In case  the function  returns the  passed pointer
+ *                           as-is, the object instance  that the pointer holds
+ *                           is  either  grown or  shrunken  to  have at  least
+ *                           `newsiz` bytes.
+ * @retval     otherwise     A  valid  pointer  to  a  newly  allocated  object
+ *                           instance which has at  least `newsiz` bytes width,
+ *                           and  holds previous  contents of  `ptr`.  In  this
+ *                           case `ptr` is  invalidated as if it  was passed to
+ *                           ruby_xfree().
+ * @note       It doesn't return NULL.
+ * @warning    Unlike some realloc() implementations, passing zero to `elemsiz`
+ *             is not the  same as calling ruby_xfree(),  because this function
+ *             never returns NULL.  Something meaningful still returns then.
+ * @warning    It is  a failure not to  check the return value.   Do not assume
+ *             anything on  it.  It could  be either identical to,  or distinct
+ *             form the passed argument.
+ * @warning    Do not  assume anything  on the alignment  of the  return value.
+ *             There is  no guarantee  that it  inherits the  passed argument's
+ *             one.
+ * @warning    The return  value shall  be invalidated  exactly once  by either
+ *             ruby_xfree(),  ruby_xrealloc(), or  ruby_xrealloc2().   It is  a
+ *             failure to pass it to system free(), because the system and Ruby
+ *             might or might not share the same malloc() implementation.
+ */
 void *ruby_xrealloc(void *ptr, size_t newsiz)
 RBIMPL_ATTR_NOEXCEPT(realloc(ptr, newsiz))
 ;
@@ -84,10 +181,73 @@ RBIMPL_ATTR_NOEXCEPT(realloc(ptr, newsiz))
 RBIMPL_ATTR_NODISCARD()
 RBIMPL_ATTR_RETURNS_NONNULL()
 RBIMPL_ATTR_ALLOC_SIZE((2,3))
+/**
+ * Identical to ruby_xrealloc(), except it resizes the given object instance to
+ * `newelems`  * `newsiz`  bytes.  This  is needed  because the  multiplication
+ * could integer overflow.   On such situations Ruby does not  try to touch the
+ * contents  of  argument pointer  at  all  but  raises Ruby  level  exceptions
+ * instead.  If there is no integer  overflow the behaviour is exactly the same
+ * as `ruby_xrealloc(ptr,nelems*elemsiz)`.
+ *
+ * This  is   roughly  the  same   as  reallocarray()  function   that  OpenBSD
+ * etc. provides, but also interacts with our GC.
+ *
+ * @param[in]  ptr           A  valid pointer  to an  object instance  that was
+ *                           previously  returned  from either  ruby_xmalloc(),
+ *                           ruby_xmalloc2(),  ruby_xcalloc(), ruby_xrealloc(),
+ *                           or ruby_xrealloc2().
+ * @param[in]  newelems      Requested new number of elements.
+ * @param[in]  newsiz        Requested new size of each element.
+ * @throw      rb_eMemError  No space left for  allocation.
+ * @throw      rb_eArgError  `newelems` * `newsiz` would overflow.
+ * @retval     ptr           In case  the function  returns the  passed pointer
+ *                           as-is, the object instance  that the pointer holds
+ *                           is  either  grown or  shrunken  to  have at  least
+ *                           `newelems` * `newsiz` bytes.
+ * @retval     otherwise     A  valid  pointer  to  a  newly  allocated  object
+ *                           instance which has at  least `newelems` * `newsiz`
+ *                           bytes width, and holds previous contents of `ptr`.
+ *                           In this  case `ptr`  is invalidated  as if  it was
+ *                           passed to ruby_xfree().
+ * @note       It doesn't return NULL.
+ * @warning    Unlike some  realloc() implementations,  passing zero  to either
+ *             `newelems`   or  `elemsiz`   are   not  the   same  as   calling
+ *             ruby_xfree(),   because  this   function  never   returns  NULL.
+ *             Something meaningful still returns then.
+ * @warning    It is  a failure not to  check the return value.   Do not assume
+ *             anything on  it.  It could  be either identical to,  or distinct
+ *             form the passed argument.
+ * @warning    Do not  assume anything  on the alignment  of the  return value.
+ *             There is  no guarantee  that it  inherits the  passed argument's
+ *             one.
+ * @warning    The return  value shall  be invalidated  exactly once  by either
+ *             ruby_xfree(),  ruby_xrealloc(), or  ruby_xrealloc2().   It is  a
+ *             failure to pass it to system free(), because the system and Ruby
+ *             might or might not share the same malloc() implementation.
+ */
 void *ruby_xrealloc2(void *ptr, size_t newelems, size_t newsiz)
 RBIMPL_ATTR_NOEXCEPT(realloc(ptr, newelems * newsiz))
 ;
 
+/**
+ * Deallocates an object instance.
+ *
+ * @param[out]  ptr  Either NULL,  or a valid pointer  previously returned from
+ *                   one  of  ruby_xmalloc(), ruby_xmalloc2(),  ruby_xcalloc(),
+ *                   ruby_xrealloc(), or ruby_xrealloc2().
+ * @warning     Every single  object instance that was  previously allocated by
+ *              either    ruby_xmalloc(),   ruby_xmalloc2(),    ruby_xcalloc(),
+ *              ruby_xrealloc(),  or  ruby_xrealloc2()   shall  be  invalidated
+ *              exactly once by  either passing it to  ruby_xfree(), or passing
+ *              it to  either ruby_xrealloc(), ruby_xrealloc2() then  check the
+ *              return value for invalidation.
+ * @warning     Do not pass anytihng other  than pointers described above.  For
+ *              instance pointers returned from malloc() or mmap() shall not be
+ *              passed  to   this  function,  because  the   underlying  memory
+ *              management mechanism could differ.
+ * @warning     Do  not pass  any invalid  pointers  to this  function e.g.  by
+ *              calling it twice with a same argument.
+ */
 void ruby_xfree(void *ptr)
 RBIMPL_ATTR_NOEXCEPT(free(ptr))
 ;
